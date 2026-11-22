@@ -1,0 +1,127 @@
+orthant 2 language
+
+% 0 1 0 1049ac858f91dbe70b758274b29bcb37
+
+@ 0 1 0 1c92afa41738b7230a27b9a101ce7f56
++ Levée lorsque Xylophone ne parvient pas à lire une valeur depuis du XML.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 120790e0196010070f59453a43748404
++ C'est l'erreur de *décodage* : le document a été analysé, mais une valeur n'a pas pu en être
++ lue. Un document qui n'est pas du tout du XML bien formé est une
++ `Parse.Error` (`↯/s.60.2`) sur le format `Xml`, et l'échec de l'évaluation d'une
++ expression XPath est `↯/s.128.2`.
+
+@ 0 3 0 198619eef95bf50f02a086e5061a8b79
++ Ces erreurs sont levées *et l'exécution continue* : un enregistrement qui a plusieurs champs
++ erronés accumule une erreur par champ au lieu de s'arrêter à la première. La raison dit ce qui
++ n'a pas fonctionné ; le `Foci[Xml.Focus]` ambiant dit où.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 0663ad2cc1085314025eed7bb8567a24
++ column  Raison
++ column  Signification
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+@ 0 2 0 18c836eface5f1c611da7cbc7b41c6e9
++ column  Résolution
++ row  `↯/s.128.1.1`  `Malformed`  L'élément avait du texte, mais celui-ci ne représentait pas une valeur du type attendu.  `[↯/s.128.1.1] the XML could not be read because the text abc is not a valid Int`  Corrigez le contenu, ou lisez le champ avec un type qui l'admet.
+
+% 1 1 0 0ed7d0c8444756e803ddfb6e66ff503f
+
+% 0 1 0 16605d435109cd63103c7dcfef503ce8
+
+% 0 1 0 1dac19ff3be6145b0900b4fcb9a74ac2
+
+@ 0 1 0 15e24f372f9913261bd9c58adcf8776a
++   cell  L'élément était présent mais ne portait aucun texte à lire avec le type attendu.
+
+% 0 1 0 1525b5d0b05a71631bb21546834a1409
+
+% 1 1 0 0e189d7b48e07b321961ab3a763c3b01
+
+% 2 1 0 0edb21ca2fca8bcc1fb2d94c4baeb411
+
+% 0 1 0 1a9fc7cbd6acd636035607fdf2c0b02d
+
+% 0 1 0 01114166bbcb42720bbfc761c98098ac
+
+@ 0 1 0 1c4cf7c8c736204c025b408fb2424604
++   cell  Aucun élément ni attribut n'a fourni une valeur requise d'un type connu.
+
+% 1 1 0 18e63faac2a837790091b580fc2b4fd1
+
+% 2 1 0 0133741592f5f4941704711726e454a3
+
+% 3 1 0 0ba7ade06b4ab4741ab946e6debb6032
+
+% 0 1 0 1edf32545c4fdf09166f922bf6312371
+
+% 0 1 0 010b477e2687fba50572d1c7e83849a1
+
+@ 0 1 0 03b701f70a44d6160ed3aa7fb1a10a05
++   cell  Un enregistrement imbriqué requis n'avait pas d'élément, et aucun `Default` n'était dans la portée.
+
+% 1 1 0 0f32e22349c39c9f0f4a9611e16835bd
+
+@ 0 1 0 1906458fcf7c824a02d24e9d6e76d26f
++   cell  Fournissez l'élément, ou donnez au type un `Default`.
+
+% 1 1 0 1eed447c134aa2a911900ed72fa8546d
+
+% 0 1 0 031e9cdce1f2e7dd09891c59f9a196b6
+
+% 0 1 0 0dd6a05c4dd1d0da107394de6bf4c9ce
+
+@ 0 1 0 18ee0db50f2bf7471502fd6406f46a08
++   cell  Un type somme requis n'avait pas d'élément, et aucun `Default` n'était dans la portée.
+
+% 1 1 0 1654fa0202074ea40533fb24400f1e0c
+
+% 2 1 0 060eba83e33a7cb01002b7a0a18187f9
+
+@ 0 1 0 199cb074c02bc4a503a73fb2b86a01a9
++ row  `↯/s.128.1.6`  `UnknownVariant`  L'attribut discriminant ne nommait aucune variante de la somme en cours de lecture.  `[↯/s.128.1.6] the XML could not be read because circle does not name a variant of Shape`  Utilisez l'un des noms de variantes de la somme, ou renommez la variante.
+
+% 1 1 0 01682fd481086ee51f07e963ac901e8f
+
+% 0 1 0 0b9d71eded38f9830fbc30b600827d3f
+
+% 0 1 0 0258c2b6ecfc64921726871f3b40d44b
+
+@ 0 1 0 0e37b8e218db4b3004e98645f88bdb3a
++   cell  Un élément ne portait aucun texte, lu par un codec de texte générique qui ne nomme pas son type cible.
+
+% 1 1 0 1cf5020f2008823d0235cfb261d50d4d
+
+% 2 1 0 183cd7e21449cb04042fc9bc1b1c3afd
+
+% 3 1 0 1d00739b5349c7d40b371a099ecbf355
+
+% 0 1 0 0fdcdc7672dc025602d5bae403f2f084
+
+% 0 1 0 0c4bbfa093ec2fda1aed326cc56e8ac9
+
+@ 0 1 0 00323e085b36abd1105814c771ee8e11
++   cell  Un élément ou un attribut n'était pas présent, lu par un codec qui ne nomme pas son type cible.
+
+% 1 1 0 148bb0f700c692261ea73cde3ff66b82
+
+% 2 1 0 1e02db542707202701b1f77d972b2ab9
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 0b9e1cd9012488d00d7fc124b43a97b0
++ - Source : `lib/xylophone/src/core/xylophone.Xml.scala`
++ - Voir aussi : `↯/s.60.2` (`Parse.Error`) pour un document malformé, `↯/s.128.2` pour l'évaluation XPath

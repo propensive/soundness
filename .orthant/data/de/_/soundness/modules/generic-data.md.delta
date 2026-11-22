@@ -1,0 +1,177 @@
+orthant 2 language
+
+@ 0 1 0 05575ee322adad9e18f418b61ef701fd
++ ## Generische Daten
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 1e8727bf8516e78c0f139b3c9a14389c
++ Ein Wert muss manchmal die Welt verlassen, in der seine Klasse bekannt ist, und unversehrt
++ ankommen: in einem anderen Classloader, in einem anderen Prozess oder jenseits einer
++ Staging-Grenze. Die Darstellung `Pojo` trägt jeden Scala-Wert nur mit den Typen, die jeder
++ JVM-Kontext teilt. Das sind geboxte Primitive, Strings und Arrays von Objekten.
+
+@ 0 2 0 06f629db74db4cec0aca3dcec27f6930
++ Eine Case-Klasse oder eine Aufzählung wird mit [abgeleiteten][Ableitung] Codecs in ein `Pojo` und
++ zurück umgewandelt, sodass der Wert den Übergang übersteht, ohne dass seine Klasse mitreist.
+
+@ 0 1 0 18c7bb4feed79da116b43923bfd1e1ae
++ ### Über Classloader-neutrale Daten
+
+@ 0 4 0 0185108e59a49ecc0896bd5c64fdcf6c
++ Ein Scala-Objekt ist an seine Klasse geschweißt und seine Klasse an den Classloader, der sie
++ definiert hat. Übergibt man das Objekt an Code, der anderswo geladen wurde, etwa an ein isoliertes
++ Plugin oder eine Berechnung, die auf einer anderen Maschine gestagt wurde, kann die empfangende
++ Seite es nicht zurückcasten. Die „gleiche“ Klasse aus einem anderen Loader ist eine andere Klasse.
+
+@ 0 2 0 189b778b4f10d9770934d61592c19852
++ Vollständige Serialisierung löst das mit schwerer Maschinerie. Strings zu übergeben löst es, indem
++ man die Struktur aufgibt.
+
+@ 0 5 0 0fe8df2d6074b42316994a3d5443ad37
++ Ein `Pojo` behält die Struktur und lässt die Klasse fallen. Ein Produkt wird zu einem Array seiner
++ Felder, eine Variante zu einem beschrifteten Paar und ein Primitiv zu seiner geboxten Form. All
++ dies sind vom JDK definierte Typen, die auf beiden Seiten jeder Grenze dasselbe bedeuten. Das ist
++ der Transport unter der [gestagten](staging.md) entfernten Ausführung, und auf diese Weise auf
++ einer generischen Darstellung zu arbeiten ist das, worauf
++ [Komponierbarkeit](../../philosophy/composability.md) zwischen Formaten beruht.
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ Alles stammt aus dem Paket `soundness`. Die Beispiele werfen jeden Fehler als Exception, und der
++ letzte Import erlaubt ihnen, ihre Ergebnisse auszugeben:
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 174e339ee5ceabff091d520aa1b0e1c7
++ ### Kodieren und Dekodieren
+
+@ 0 1 0 02f7b681af11813618013a283bfd50c1
++ `pojo` kodiert einen Wert. Das Ergebnis enthält nur Arrays, Strings und geboxte Primitive:
+
+% 2 1 0 07b54dad24333a5c1a37e4951794968a
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 034e076457a0e98711994539fb32c914
+
+% 0 1 0 118069b5d3abbcc6100be564454eac3b
+
+% 0 1 0 1906a16bac8758cd038a4e6ab8143665
+
+% 1 1 0 0d44369c9835dc081ff01e336aaf1867
+
+@ 0 2 0 1a8ea710104f771c13a574ed3b6b2439
++ `as` dekodiert ihn. Die empfangende Seite muss den Typ angeben, den sie erwartet, und die Daten
++ passen möglicherweise nicht zu diesem Typ, sodass das Dekodieren fehlschlagen kann und eine
++ [Strategie] braucht:
+
+% 2 1 0 12d2fd0d40691e5b0ba733c57d257fc2
+
+% 3 1 0 0d3e2410d2bd29f91aa87d530430c3bd
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 0ba4da68bdc981af039a865f182de32d
+
+% 1 1 0 1da90f5621ed06d00334282d3c383b85
+
+@ 0 2 0 07f0cda0cadf16651d05538e23f89597
++ Daten, die nicht wie der erwartete Typ gestaltet sind, lösen einen `Pojo.Error` aus. Ein String
++ etwa ist keine `Person`:
+
+% 2 1 0 175d63a2de02900c0c274b626e1e110a
+
+% 3 1 0 0b8a0386ce5da91a15a93c57c4e59908
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 17527d5dcb417e3907b1d951064acd76
+
+% 1 1 0 1fcabf01c9ebf7ea18070c8a07160898
+
+@ 0 2 0 18869724333bbff91033c5b53fe6fadd
++ Verschachtelte Case-Klassen, Collections und Aufzählungen leiten alle ihre Umwandlungen ab, sodass
++ jeder Wert, der wie Daten gestaltet ist, ohne Vorbereitung hinüberkommt.
+
+@ 0 1 0 04b699a8a8d550e10c2a50278c0903a2
++ ### Die Darstellung
+
+@ 0 1 0 1c5f9b65cb00b214123773548be9ce2f
++ Die Kodierung ist bewusst durchschaubar:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 7 0 17b5226dafc1b71e1431fed19b121be4
++ column  Scala-Wert
++ column  Pojo-Form
++ row  `Text` oder `String`  ein `String`
++ row  `Int`, `Long`, `Float`, `Double`, `Char`, `Boolean` oder `Byte`  seine geboxte `java.lang`-Form
++ row  eine Collection: `List`, `Set`, `Sequence` oder ein anderes `Iterable`  ein `Array[Object]` ihrer Elemente
++ row  eine Case-Klasse  ein `Array[Object]` ihrer Felder in der Reihenfolge der Deklaration
++ row  ein Fall einer Aufzählung  ein `Array[Object]`-Paar aus seinem Namen und seinen Nutzdaten
+
+% 1 1 0 059f2076fcb82d7d16919813d484499e
+
+@ 0 3 0 1a4146576b91b61e0ce6598e9912f4dc
++ So ist `Person(t"Bottom", 35).pojo` ein Array aus dem String `"Bottom"` und der geboxten Ganzzahl
++ `35`, und der Fall `Green` einer Aufzählung ist ein Array aus dem String `"Green"` und einem leeren
++ Array:
+
+% 2 1 0 0af69be56b392a231ee10e988de75b28
+
+% 0 1 0 1a62de65f428a3821fef2470e29d9f0c
+
+% 0 1 0 0ccc6e7a0efbb9251014fc513abaad21
+
+% 0 1 0 1a2c4e68f787125f0feddaa6afb709d6
+
+% 0 1 0 069d46aea07348b1033c6c77c48249e6
+
+% 1 1 0 0973d9ab4613af3a13e09bb6eb92e565
+
+@ 0 2 0 1df27b3a8342bc051b3f8534a8d78a0a
++ Beide Seiten leiten den Codec aus derselben Typdefinition ab, sodass die Kodierung bei der
++ Übertragung kein Schema braucht. Es bedeutet allerdings, dass sich beide Seiten auf diese
++ Definition einigen müssen.
+
+@ 0 2 0 0ca25f71369613f70dc9d373996ad953
++ `Pojo` ist ein [opaker Typ] über den JDK-Typen, die er zulässt. Ein `Pojo` kann nicht mit einem
++ beliebigen `Object` verwechselt werden, und der einzige Weg, eines zu erzeugen, führt über einen
++ Encoder.
+
+@ 0 1 0 148a1d98274519f808d6fe132e61028d
++ ### Wo es verwendet wird
+
+@ 0 4 0 15e69c15c0da05e61c773bbc3c712dd4
++ Der offensichtliche Fall ist eine Grenze zwischen Classloadern. Code, der in einem isolierten
++ Loader geladen wird, etwa ein Plugin, ein kompiliertes Fragment oder eine abgeschottete
++ Erweiterung, teilt die Klassen des JDK mit seinem Host und sonst nichts. Die Klassen des JDK sind
++ daher genau das Vokabular, das die beiden sprechen können. [Klassenpfad](classpath.md) beschreibt
++ Classloader.
+
+@ 0 3 0 158a496aa682f153073f47448365eb14
++ Dieselbe Überlegung gilt über eine Grenze zwischen Prozessen hinweg, und das verwendet die
++ [gestagte](staging.md) entfernte Ausführung. Die Argumente einer gestagten Berechnung werden auf
++ einer Seite kodiert, gesendet und auf der fernen Seite gegen den Typ dekodiert, den der gestagte
++ Code erwartet.
+
+@ 0 2 0 1b8060ae3906fe51158553d1f8bd79a0
++ Nichts an der Darstellung ist spezifisch für eine der beiden Verwendungen. Jede Grenze, die
++ geboxte Primitive, Strings und Arrays von Objekten tragen kann, kann einen Scala-Wert tragen.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 1 0 0ac5cdd3d5602f8d0fcb66e3e23c08cc
++ - [Ableitung](derivation.md) erklärt die Maschinerie, die die Codecs erzeugt.

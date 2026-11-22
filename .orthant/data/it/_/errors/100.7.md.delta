@@ -1,0 +1,57 @@
+orthant 2 language
+
+% 0 1 0 0208ccc222751e2400ea430024918355
+
+@ 0 1 0 04893579923c8bd9017cc2b1c33c6060
++ Sollevato quando un valore non può essere analizzato come un indirizzo MAC valido.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0d63c2e4d08425ee13a2ddc6ea8ab692
++ Urticose si aspetta gli indirizzi MAC come sei gruppi esadecimali di due cifre separati da due
++ punti, per esempio `01:23:45:67:89:ab`. Il messaggio è
++ `the MAC address is not valid because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 01743cf3aff225890d38f1579592d3e2
+
+@ 0 1 0 1ad10da60bc99ba204ea613f515847cd
++ L'indirizzo non ha sei gruppi separati da due punti.
+
+@ 0 1 0 1dfa66de393809dc14ff83d28c0b42df
++ **Esempio.** `[↯/s.100.7.1] the MAC address is not valid because there should be six colon-separated groups, but there were 5`
+
+@ 0 1 0 1fb55b502d0a64f019129685f9e20fd9
++ **Soluzione.** Usare esattamente sei gruppi uniti da `:`.
+
+% 0 1 0 118f2556d2e4a0cb13872bc1e5cab8ad
+
+@ 0 1 0 1b0f0d73fa6af8af11490c85f9b3aeaf
++ Un gruppo non è lungo esattamente due cifre esadecimali.
+
+@ 0 1 0 141ea87763183504089310af0b8ead12
++ **Esempio.** `[↯/s.100.7.2] the MAC address is not valid because group 3 should be two hex digits, but its length is 3`
+
+@ 0 2 0 0b69c54e2e3ed5a4103511bf42f1e648
++ **Soluzione.** Completare i gruppi di una sola cifra con uno zero iniziale, oppure eliminare le
++ cifre in eccesso.
+
+% 0 1 0 1d2ec7318321bb920552c21ef5534c25
+
+@ 0 1 0 1478101cc368bb2b099c5e394e3676e8
++ Un gruppo contiene caratteri che non sono cifre esadecimali.
+
+@ 0 1 0 08185ce599338680183efb2a26126cf2
++ **Esempio.** `[↯/s.100.7.3] the MAC address is not valid because group 4 should be a two-digit hex number, but it is xy`
+
+@ 0 1 0 0bbeb8f66808e15e1da05a5b692f7a8d
++ **Soluzione.** Usare solo `0`-`9` e `a`-`f`/`A`-`F`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 12ca3c998dde439e07bfac83b65fead3
++ - Sorgente: `lib/urticose/src/core/urticose.internal.scala`

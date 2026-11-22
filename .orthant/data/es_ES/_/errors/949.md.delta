@@ -1,0 +1,16 @@
+orthant 2 language
+
+@ 0 1 0 071cd1358721f7621e31e6b1a5a93433
++ # `SN-949` — `CodlError` (retirado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este error ya no existe. La página se conserva para que el código no se reutilice, y para que una
++ referencia a él desde una versión anterior pueda seguir resolviéndose.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Qué fue de ello
+
+@ 0 3 0 07275821160c878617fe4b8e3a078454
++ Se ha eliminado el módulo `cellulose`, que implementaba CoDL. Su papel lo cumple
++ [TEL](../en/modules/tel.md), que es un lenguaje de datos del mismo tipo, basado en la sangría y
++ tipado por esquemas.

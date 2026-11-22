@@ -1,4 +1,0 @@
-orthant 1 language
-
--       val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str)(text => Json(text.upper))
-+       val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str)(text => Json(text.upper))

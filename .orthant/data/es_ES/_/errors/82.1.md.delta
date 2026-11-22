@@ -1,0 +1,46 @@
+orthant 2 language
+
+% 0 1 0 004a189db3b8fc040486759a485ec99f
+
+@ 0 1 0 0b1e50fb8169bb1f1f7db2befe00827b
++ Se lanza cuando el audio no puede reproducirse en un dispositivo de salida.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0dd58583515e43331e9883628a891426
++ Un dispositivo de salida es una salida de audio física o virtual. Este error abarca un dispositivo
++ que no está disponible, uno que está en uso y uno que no puede aceptar la frecuencia de muestreo, la
++ profundidad de bits o la disposición de canales del audio.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+% 0 1 0 131917d41888c93508d3b2f020d1ab2a
+
+% 0 1 0 04373e3de0a557441ec7591974ea4594
+
+% 0 1 0 19a7267ec8af97de03b031d0bfa97411
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 3 0 0cd1f40d9e8ce3c41b797ad9abb153a1
++ Comprueba que el dispositivo está presente y que otro proceso no lo tiene en uso exclusivo. Cuando
++ la culpa es de la configuración, convierte el audio a un formato que el dispositivo acepte, o
++ consulta el dispositivo de salida antes de reproducir.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 1cb78eb31e7ff2be1891b6495803e5dd
++ - Código fuente: `lib/cacophony/src/core/cacophony.Outlet.scala`

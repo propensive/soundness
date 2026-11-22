@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 6 0 028183159a36bc8510d256d502a7fd76
++ Internamente, una permutación se almacena como su
++ [tabla de inversiones](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) en base
++ factorial, que es un único entero que la identifica de forma unívoca. Eso hace que las
++ permutaciones sean compactas de almacenar y de enumerar: `Permutation.bySize(n)` da las `n!`,
++ como una [cadena](collections.md#lazy-chains) perezosa. Una permutación de *n* elementos ocupa un
++ espacio O(*n* log *n*), que es el mínimo posible, ya que hay *n*! que distinguir.
+
+% 0 2 0 1509aa9fc2d59aab049a65e78d949d44
+
+@ 0 4 0 0f8b86e915c7fa4d015a05b8e723c808
++ Una permutación deja intactas todas las posiciones posteriores a la última que mueve, así que
++ `shuffle`, cuyo sexto índice se queda en su sitio, es una permutación de cinco. Por tanto, aplicar
++ una a una secuencia más larga no es un error: reordena las posiciones iniciales que abarca, y deja
++ el resto donde estaba. Un único índice se transforma de la misma manera, con `shuffle(3)`.

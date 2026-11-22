@@ -1,0 +1,50 @@
+orthant 2 language
+
+% 0 1 0 1a5c5ca1bbaf82c50b31f768066decba
+
+@ 0 1 0 1bd9a29ca4bfa65d0d6ad398041038c3
++ Sollevato quando Telekinesis non riesce ad analizzare una risposta HTTP.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 0ac2305089dd7b3712429f06a87c0e47
++ Una volta stabilita una connessione, la risposta viene letta e analizzata. Questo errore segnala
++ una risposta malformata. Il messaggio è `could not
+
+% 0 1 0 197596c46a99799d121267c7fa0c6103
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 012f0302ee1effe10e5321d2fc0a9a2c
+
+@ 0 2 0 1d66d4cec0cad4ec045a499ed96f8726
++ Nella posizione corrente del parser era atteso un carattere specifico, ma ne è stato incontrato
++ uno diverso.
+
+@ 0 1 0 10f5529094aa93f204367cd3456fdb3b
++ **Esempio.** `[↯/s.103.1.1] could not parse HTTP response because X was found when : was expected`
+
+@ 0 2 0 0fa619df47d732f3049794282b1e6c65
++ **Soluzione.** Verificare che il server produca HTTP valido; se il peer non è standard, puntare
++ Telekinesis verso un'implementazione conforme.
+
+% 0 1 0 1c688d86e69a583a1a8ee1f2a5659a63
+
+@ 0 2 0 10e5ec376b5433aa0313b6723f14e232
++ Il codice di stato HTTP nella riga di risposta non era di tre cifre o comunque non era
++ analizzabile.
+
+@ 0 1 0 0f53952acde36f01113c98eb25bd02f8
++ **Esempio.** `[↯/s.103.1.2] could not parse HTTP response because the HTTP status code 12 was invalid`
+
+@ 0 2 0 148eea84cf6ff2f1055cf43853902182
++ **Soluzione.** Il peer produce una riga di stato non conforme; correggere il server o usarne un
++ altro.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 082742a867b8ffd405367b3235b24eba
++ - Sorgente: `lib/telekinesis/src/core/telekinesis.Http.scala`

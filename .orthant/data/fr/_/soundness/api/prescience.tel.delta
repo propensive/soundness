@@ -1,0 +1,403 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0974b95d2450cfe20d1272f99940498e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f4f0c4707ac858807a73212a5ad6c39
++ info
++     une preuve de concept : des instances de classes de types qui génèrent du code à l'expansion
++     des macros, évaluées par la macro de dérivation
+
+@ 0 8 0 04afa18e98256d560ea7ae60773cb33e
++ detail
++     _Prescience_ illustre une technique : une classe de types, `Inlinable`, dont la méthode
++     principale est un générateur de code — elle prend une `Expr` de son entrée et renvoie une
++     `Expr` de la valeur décodée — pour qu'une macro de dérivation puisse insérer par splice le
++     code d'une instance écrite à la main directement dans le code qu'elle génère, plutôt qu'un
++     appel à l'instance à l'exécution. C'est le mécanisme derrière les classes de types `Inlinable`
++     des lecteurs et écrivains mis en étapes des bibliothèques de formats (`jacinta`,
++     `breviloquence`, `locomotion`, le BinTEL de `stratiform`), démontré ici isolément sur un
++     format de transmission jouet.
+
+@ 0 3 0 0840d1651b162d6f0023bc9a8e169ab3
++     La difficulté est qu'une macro ne détient qu'une `Expr` d'une instance qu'elle invoque, alors
++     qu'elle a besoin de l'instance vivante pour appeler `read`. La macro de dérivation,
++     `Prescience.read`, l'obtient en jusqu'à trois niveaux, champ par champ :
+
+@ 0 9 0 17c37cf21a2cabf810d6a16e843326de
++     - **Niveau A** : une instance qui est une référence à un objet statique précompilé, ou un
++       membre sans paramètre d'un tel objet, est chargée au moyen du chargeur de classes des macros
++       et utilisée directement, comme l'interpréteur de splices du compilateur charge lui-même une
++       implémentation de macro.
++     - **Niveau B** (`Prescience.readStaging` uniquement) : une instance que la recherche implicite
++       peut trouver depuis la portée globale (compagnons et givens de niveau package dans le
++       classpath), y compris un given conditionnel, est invoquée dans un nouveau `staging.Compiler`
++       interne à la macro et exécutée, au prix d'une exécution complète du compilateur par
++       instance, signalée par un diagnostic d'information.
++     - **Exécution** : tout le reste — un given à portée lexicale, ou un given compilé dans la même
++       exécution que le site d'utilisation — reçoit à la place un appel inséré par splice à son
++       `Inlinable#readRuntime`.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 04c2e69897d904dd1e83ea747e99b812
+
+% 0 1 0 173b371c6ae83ec10827dc674c30b6dd
+
+% 0 1 0 19493503eabc5b741ddccd1715fc9fa2
+
+% 0 1 0 0e83a5c1e90a1cd00119a8ec3b21cd7c
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 4 0 15eb71e4790c5b350c94fe3b296017aa
++     Une instance définie dans l'exécution de compilation qui développe la macro n'est jamais
++     évaluée, dans aucun des niveaux : son fichier de classe soit n'existe pas encore, soit est
++     périmé depuis une compilation incrémentale précédente ; elle passe donc toujours par le niveau
++     exécution, et les builds propres et incrémentaux s'accordent. La sortie est la même à chaque
++     niveau ; seul diffère l'endroit où le code a été généré.
+
+@ 0 6 0 0929e69c0aae64211391a169d440ee42
++     La bibliothèque a deux ensembles de sources, tous deux limités à la JVM, puisque la technique
++     nécessite le chargeur de classes des macros et les artefacts `scala3-compiler` et
++     `scala3-staging` : `prescience.core` (`Inlinable`, `Prescience` et la macro) et
++     `prescience.leaves` (des instances d'exemple, compilées une étape avant tout site
++     d'utilisation, pour que le niveau A puisse les charger). Rien n'est exporté vers le package
++     parapluie `soundness` : importez `prescience.*`, et les givens d'exemple par leur nom depuis
++     `prescience.inlinables`, puisque `import pkg.*` n'importe pas les givens.
+
+% 0 1 0 1a67559e9e07e67f0dce9c0c6a32e912
+
+% 0 1 0 1fd7359c9fa719e70b2b9f02d1be5899
+
+% 0 1 0 0196848d0eed20fb08b086fca09c82dc
+
+@ 0 1 0 1b1071fafecc5d561cac547c9bada258
++ entry .Inlinable
++   info
++       une classe de types dont les instances génèrent le code qui lit leur type, pour qu'une macro
++       de dérivation l'insère
+
+@ 0 5 0 02eae2aca961807104913f57850358d6
++   detail
++       `T is Inlinable` a deux méthodes qui doivent s'accorder : `#read`, exécutée à l'expansion de
++       la macro et qui renvoie le *code* lisant un `T` à partir d'une expression `String`, et
++       `#readRuntime`, la même lecture effectuée à l'exécution, que la macro de dérivation appelle
++       quand elle ne peut pas obtenir l'instance vivante au moment de l'expansion.
+
+% 2 1 0 095203c8dbba59d4082c63972749e0b8
+
+% 3 1 0 1a366b674b86ef980489b8aa0fb62dff
+
+% 4 1 0 18c688412a460c48074f83210d8c92bf
+
+% 0 1 0 19cc96edc586318316b31ec0030d2a58
+
+% 0 1 0 08d384165f98242111e3f7eab610dd74
+
+% 0 1 0 109ccb9784661b880a56804c15cea582
+
+% 0 1 0 088eb31ef854748302ff33db79a2bbcd
+
+% 0 1 0 112fe295da9c383a104581ff7c6d97d0
+
+% 0 1 0 1054f55a7d8350bc18d85b66a33a2ede
+
+% 0 1 0 071fd481869f08ab18f9fa835cc4666c
+
+% 0 1 0 0f84a150133923bc0cfecd719b1ae86c
+
+% 0 1 0 190e6f83abb95de411dfd519a16995e3
+
+% 1 1 0 0bd3c325f98acad7048b0c6fdb98e0df
+
+@ 0 4 0 14dda2abd6bb683c169a2c18a5beecc6
++       L'utilisation de `#read` dépend de l'endroit où se trouve l'instance : un objet statique ou
++       un membre d'un tel objet, compilé avant le site d'utilisation, est évalué par
++       `Prescience.read` ; un given conditionnel dans un compagnon seulement par
++       `Prescience.readStaging` ; tout ce qui est compilé dans la même exécution, ou à portée
++       lexicale, seulement au moyen de `#readRuntime`.
+
+% 0 1 0 03d42e08af053b4912ba99fb5a1bc6b2
+
+@ 0 1 0 1db91c05412757d115dc2c98cecd37bf
++   entry #read
++     info
++         le code lisant une valeur de ce type à partir d'une expression `String`, généré à
++         l'expansion de la macro
+
+@ 0 2 0 16938d5b950e06981f7b89fd6df63607
++     detail
++         Appelée par la macro de dérivation avec une `Expr[String]` du texte du champ et un
++         `Quotes` ; l'`Expr[Self]` renvoyée est insérée par splice dans le lecteur généré à la
++         place de tout appel.
+
+@ 0 1 0 137803cb06f4bb4b06026f24612a8f2c
++   entry #readRuntime
++     info
++         lit une valeur de ce type à partir de texte à l'exécution, quand l'instance ne peut pas
++         être évaluée à l'expansion
+
+@ 0 2 0 18a5a397cedf8b3f0fd01d7a00815275
++     detail
++         Doit donner le même résultat que le code que génère `#read`, puisque l'utilisation de
++         l'une ou l'autre dépend de l'endroit où l'instance est définie et de la façon dont le
++         programme est compilé.
+
+@ 0 1 0 19a15888f844ee301facf0396a9c154b
++ entry .Prescience
++   info
++       les macros de dérivation : un lecteur de case class assemblé à partir des instances
++       d'`Inlinable` de ses champs
+
+@ 0 5 0 0a08dca690c306fc036aacc151ce6270
++   detail
++       Chaque méthode dérive, pour une case class non générique, un lecteur à partir d'une ligne de
++       champs séparés par des virgules (un format jouet : c'est le mécanisme qui compte) : l'entrée
++       est découpée une seule fois, et le code de chaque champ provient de l'instance d'`Inlinable`
++       de son type, insérée quand l'instance peut être évaluée au moment de l'expansion, et sinon
++       un appel à `Inlinable#readRuntime`.
+
+% 2 1 0 00f9092c8379ecfb14a280a8da0046f4
+
+% 3 1 0 0fa94a383f99adcc0e42769ea304acac
+
+% 4 1 0 00381d6811bca08b0f8435c30a740e9a
+
+% 0 1 0 01bb0085309bc0240b6190f59a428dc9
+
+% 0 1 0 1ce8fc6aa42b16f91fa2d5b2f0cdba65
+
+% 0 1 0 14e1a5006e7d33bb06cc0c4040ef0c24
+
+% 1 1 0 1d2c0ffec023f335189efa46ea33e9bb
+
+@ 0 2 0 16e1c8af2c191bc71f00126424353192
++       Un type qui n'est pas une case class, une case class générique, ou un type de champ sans
++       `Inlinable` dans la portée, est une erreur de compilation.
+
+% 0 1 0 068be8b9328b11d118fc95678d1d408e
+
+@ 0 1 0 0c4e66aa998b936904198810544b1f15
++   entry .read
++     info
++         lit une case class à partir de texte séparé par des virgules, en insérant chaque instance
++         de champ évaluable statiquement
+
+@ 0 3 0 07cff0eb187f14660f684c99b2864f7b
++     detail
++         Niveau A uniquement : une instance qui se résout en un objet statique précompilé, ou en un
++         membre sans paramètre d'un tel objet, apporte son code `Inlinable#read` ; toute autre
++         instance est appelée à l'exécution au moyen d'`Inlinable#readRuntime`.
+
+@ 0 1 0 155ba2b56ddf229a07b52006f90e8d54
++   entry .readStaging
++     info
++         comme `Prescience.read`, en évaluant aussi les givens conditionnels et dérivés avec un
++         compilateur interne à la macro
+
+@ 0 7 0 1100eec442f26e7405474d5a07575f4f
++     detail
++         Pour chaque champ dont le niveau A ne peut pas évaluer l'instance, exécute la recherche
++         implicite dans un nouveau `scala.quoted.staging.Compiler` sur le classpath des macros
++         (moins le répertoire de sortie courant) et utilise l'instance qu'elle produit. Cela ne
++         voit que les givens atteignables depuis la portée globale (compagnons et givens de niveau
++         package dans le classpath), et non ceux à portée lexicale, ne fonctionne que pour des
++         types de classes non génériques, et coûte une exécution complète du compilateur en mémoire
++         par instance, chacune signalée par un diagnostic d'information avec sa durée. Un champ
++         qu'il ne peut pas servir passe par le niveau exécution.
+
+@ 0 1 0 1db33178c1de050d1ab135d485d02139
++ entry .internal
++   info
++       l'implémentation de macro derrière `Prescience.read` et `Prescience.readStaging`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 3 0 005c6ca2c7ec717a0dfd99f3533da246
++   detail
++       Pas destiné à un usage direct. Son `readStaged` public est la macro qu'insèrent par splice
++       `Prescience.read` et `Prescience.readStaging`, avec un indicateur qui choisit si le niveau B
++       s'exécute.
+
+@ 0 1 0 130728dd898f35cc17b4ca6f4e5828b0
++   entry .readStaged
++     info
++         la macro de dérivation : un lecteur pour une case class, avec ou sans le niveau de mise en
++         étapes
+
+@ 0 1 0 05e37942e8e951ef043e2051241b0826
++     detail
++         Pas destiné à un usage direct ; appelé depuis les splices de `Prescience.read` et
++         `Prescience.readStaging`.
+
+@ 0 1 0 1984419fa3436385010e3783f3a46b4b
++ entry .inlinables
++   info
++       des givens `Inlinable` d'exemple pour `Int`, `String` et `Boolean`, en tant que membres d'un
++       objet statique
+
+@ 0 5 0 18b8d330d315e6590ea9be97ab9f4ec2
++   detail
++       Des alias de givens définis dans `prescience.leaves`, pour qu'ils soient compilés avant tout
++       site d'utilisation et que le niveau A puisse les évaluer par le chemin d'accès aux membres
++       (charger l'objet, invoquer l'accesseur sans paramètre). Importez-les par leur nom, puisque
++       `import prescience.inlinables.*` n'importe pas les givens :
+
+% 2 1 0 04b06c9f3d7f9a4d0cbd40c58130c01c
+
+% 3 1 0 05c472be778e1d890ebf1558ede12891
+
+% 4 1 0 1aab5c5520c365cf0e1ee109a49955d8
+
+% 0 1 0 03413ea95b05279f1482dad625d5d201
+
+% 0 1 0 18b340a875490bb917eb6b6e3ac05d4a
+
+% 0 1 0 1ff745f3fd6952b21e59823b60b34687
+
+% 1 1 0 11ee144e41c131030e3cecc0d988f535
+
+@ 0 3 0 147cdde9185d09fc19638f3fadff793c
++       Les méthodes `Inlinable#readRuntime` des instances lèvent une `AssertionError` à dessein :
++       un lecteur qui se serait rabattu en silence sur le niveau exécution échoue donc bruyamment :
++       ce sont des démonstrations du niveau A, et non des instances d'usage général.
+
+% 0 1 0 1b8b991cf49716ff1f5b1930d8dcce3f
+
+@ 0 1 0 0a9dfe1fe0968c4e10d5414949abbe35
++   entry .int
++     info
++         `Int is Inlinable`, sous le nom `IntInlinable`
+
+@ 0 1 0 06efafac0594f6fb171bff4bd63171d2
++   entry .string
++     info
++         `String is Inlinable`, sous le nom `StringInlinable`
+
+@ 0 1 0 11f42029e15ec2e01f59c6f352c30e87
++   entry .boolean
++     info
++         `Boolean is Inlinable`, sous le nom `BooleanInlinable`
+
+@ 0 1 0 0436df64d9fba49f11371fd1508549c1
++ entry .IntInlinable
++   info
++       un `Int is Inlinable` statique qui analyse le texte rogné du champ comme un entier
+
+@ 0 3 0 08a687f65a7448031458d150574ddafc
++   detail
++       Le code généré est `Integer.parseInt` du texte rogné. Son `#readRuntime` lève une
++       `AssertionError`, puisqu'il existe pour prouver que le niveau A l'a évalué au moment de
++       l'expansion.
+
+@ 0 1 0 056396b5d54db03e09df2c666f917b86
++   entry .Self
++     info
++         `Int`
+
+@ 0 1 0 0312ccd9c118870714137579c5a6cdf5
++   entry .read
++     info
++         le code qui analyse une expression `String` rognée comme un `Int`
+
+@ 1 1 0 00f581e7d6816a0a006e97a9bf714003
++   entry .readRuntime
++     info
++         lève toujours une exception : cette instance est uniquement destinée à être insérée
+
+@ 0 1 0 085a69a1aeba5bc713f9869e4c866c79
++ entry .StringInlinable
++   info
++       un `String is Inlinable` statique dont le code généré est le texte du champ lui-même
+
+@ 0 3 0 0314676459d78ee21176ecf18f1aa379
++   detail
++       Son `#readRuntime` lève une `AssertionError`, puisqu'il existe pour prouver que le niveau A
++       l'a évalué au moment de l'expansion.
+
+@ 0 1 0 0980e4945ae84d3a02904437166c3952
++   entry .Self
++     info
++         `String`
+
+@ 0 1 0 129a6a503a58f0c81eba6256502907f6
++   entry .read
++     info
++         l'expression `String` du champ, inchangée
+
+@ 1 1 0 09b87004474815041b716e7409999fc7
++   entry .readRuntime
++     info
++         lève toujours une exception : cette instance est uniquement destinée à être insérée
+
+@ 0 1 0 03dfb86fb32a8262134fcd8106c906b8
++ entry .BooleanInlinable
++   info
++       un `Boolean is Inlinable` statique qui analyse le texte rogné du champ comme un booléen
+
+@ 0 3 0 1b9e04fe6bae6b5c1c8f8028281ea92b
++   detail
++       Le code généré est `java.lang.Boolean.parseBoolean` du texte rogné : tout ce qui n'est pas
++       `true` (quelle que soit la casse) vaut donc `false`. Son `#readRuntime` lève une
++       `AssertionError`.
+
+@ 0 1 0 1f42a50a957a27551b469bbf09a9c776
++   entry .Self
++     info
++         `Boolean`
+
+@ 0 1 0 10dadfa5ba185cb21163e841cff0aced
++   entry .read
++     info
++         le code qui analyse une expression `String` rognée comme un `Boolean`
+
+@ 1 1 0 102635ead65d96c212d263aba7c234ba
++   entry .readRuntime
++     info
++         lève toujours une exception : cette instance est uniquement destinée à être insérée
+
+@ 0 1 0 0090d3e87faf2de8151ec30ce47c1a63
++ entry .Celsius
++   info
++       un type d'exemple dont seul le niveau de mise en étapes peut évaluer le given conditionnel
++       du compagnon
+
+@ 0 6 0 0514c9e286b36ad70e0e7a56b25f955c
++   detail
++       `Celsius(degrees)` a un given `Inlinable` dans son compagnon avec un paramètre
++       `DummyImplicit` : une instance invoquée est donc une application plutôt qu'un chemin
++       statique, et le niveau A ne peut pas la charger ; `Prescience.readStaging` la résout et
++       l'exécute avec le compilateur interne à la macro, et insère son code. Son
++       `Inlinable#readRuntime` lève une exception : une lecture réussie prouve donc que c'est le
++       niveau de mise en étapes qui a fait le travail.
+
+% 2 1 0 0b6c8a7b25d710f90b81de52b92a6366
+
+% 3 1 0 1e97f48484f0d46915baba71209a4bf4
+
+% 4 1 0 04a1b66b4097f02210a16be5a8ea7aaa
+
+% 0 1 0 1f685b1abac5b42908124fb30dedce35
+
+% 0 1 0 102c382bc17710831630c57a5fe79c16
+
+% 0 1 0 0b0cdafbd9a04d5d18948d997894d858
+
+% 1 1 0 06a69edb1de1191905b9e5f778574c78
+
+@ 0 1 0 1bc52e2e756d93871b89988387364ed6
++   entry .inlinable
++     info
++         le given conditionnel `Celsius is Inlinable`, évaluable seulement par
++         `Prescience.readStaging`
+
+@ 0 1 0 130acaa2eaceda3d03aa50bd7dc919f8
++   entry #degrees
++     info
++         la température, en degrés Celsius entiers

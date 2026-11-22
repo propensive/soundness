@@ -1,0 +1,232 @@
+orthant 2 language
+
+@ 0 1 0 0494433b492191e6042b734ec0d7f908
++ ## Sillabazione
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 6 0 0c412b650d34c9e406ed77dd93a4696d
++ Spezzare una parola alla fine di una riga è accettabile solo in certi punti, e trovare quei
++ punti è il compito della [sillabazione](https://en.wikipedia.org/wiki/Syllabification). Le
++ parole vengono sillabate con lo stesso algoritmo, e gli stessi file di pattern, di
++ [TeX](https://en.wikipedia.org/wiki/TeX), per la cui composizione tipografica la tecnica è stata
++ inventata. A una parola si aggiungono i suoi punti di divisione ammessi, oppure la si sillaba con
++ un carattere scelto, oppure la si divide nelle sue sillabe.
+
+@ 0 3 0 0cc5a2846631ab6408e8249204d4b18c
++ I pattern di una lingua sono un [valore contestuale], e l'inglese americano è fornito.
++ L'insieme dei pattern può essere esteso, o sostituito a partire da qualsiasi file di pattern TeX,
++ dove una parola si spezza in un modo che i pattern standard non conoscono.
+
+@ 0 1 0 0019c813b8952ea80127b98757a8d33a
++ ### Sulla sillabazione
+
+@ 0 5 0 01a0b03c01faae9d158fb9f1797c7f8a
++ Dove una parola possa spezzarsi non è qualcosa che un algoritmo possa leggere dalla sua grafia.
++ *hy-phen-ation* si spezza tra sillabe che nessuna regola semplice individua. L'algoritmo di Liang,
++ costruito per TeX, risolve il problema con un dizionario di migliaia di piccoli pattern di
++ punteggio, ricavati da veri dizionari di sillabazione. Resta lo standard, perché è preciso e
++ veloce, e i suoi file di pattern esistono per molte lingue.
+
+@ 0 2 0 1e0ee0ced0b9bd511eb2ab1784a7745c
++ Quell'algoritmo è implementato qui, sui file di pattern standard, ed è offerto come tre
++ operazioni sul [testo](text.md), con la lingua fornita come [given]:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0147b76e17e889b01d85879409c1b626
++ column  Operazione
++ column  Restituisce
++ column  Per
++ row  `hyphenate`  il `Text` con un carattere di trattino in ogni punto di divisione ammesso  testo da comporre in righe
++ row  `syllables`  una `Sequence[Text]` di sillabe e di sequenze di caratteri non alfabetici  analisi delle parti di una parola
++ row  `breakPoints`  un `Array[Int]` di posizioni di divisione  codice che colloca da sé le divisioni
+
+% 1 1 0 032e8a754ab89d4b0ed06a41312a51fc
+
+@ 0 3 0 032d6f02fc779c7018b9757afc4c7296
++ Spezzare il testo nei punti giusti è una funzione pura dei pattern della lingua, e tale resta,
++ il che è [immutabilità](../../philosophy/immutability.md) in un dominio che invita a
++ un'iterazione con stato.
+
+@ 0 2 0 18c85857c0e7a28e149dfcf775c1be30
++ Tutto viene dal package `soundness`, con i pattern inglesi nell'ambito. L'ultimo import permette
++ agli esempi di stampare i loro risultati:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 08f070a70bdb87031db2223cc0bdebe1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1e24313b739f716e1525cadfcaa84fc1
++ ### Sillabare
+
+@ 0 3 0 1fcdcdc81bd11882190d68785d4db398
++ `hyphenate` inserisce un carattere di trattino in ogni punto di divisione ammesso. Il predefinito
++ è il [trattino morbido](https://en.wikipedia.org/wiki/Soft_hyphen) Unicode, che è invisibile a
++ meno che una riga non si spezzi davvero lì. Passando un carattere visibile si vedono i punti di
++ divisione:
+
+% 2 1 0 1ffb0e187611d4661fdc0089c7d4547e
+
+% 3 1 0 06e3dd52e5dcdf541c7594375b601416
+
+% 4 1 0 0fbb517eb8bc7cf51e0a1a70ce6d01bb
+
+% 0 1 0 1d9baa8cc06e8f4800981feb5c8b547b
+
+% 0 1 0 07ec3a8f0e0302101739021af21597cc
+
+% 1 1 0 1e5cab8b5b86cbfe18e28f8af2b85ae6
+
+@ 0 2 0 1208113247474cf3119b1a08911da798
++ `leftMin` e `rightMin` mantengono un numero minimo di caratteri attaccati prima della prima
++ divisione e dopo l'ultima, così che una divisione non lasci mai isolate una o due lettere:
+
+% 2 1 0 06ca336f4cd0e70e05319194a413ea9c
+
+% 3 1 0 04dbaab269f631db05b72df5b738132b
+
+% 4 1 0 09c4730ff66172fb02fbc41e9266ec97
+
+% 0 1 0 0b9c11cd2c15f5e41b5143fb3036c699
+
+% 0 1 0 0763edefe3a86e5e0805ecab6d62e5e3
+
+% 1 1 0 1aa664b7d47341f603999e421f345f49
+
+@ 0 1 0 10e47f90842cecc709330cc5658f2f4e
++ ### Sillabe
+
+@ 0 2 0 17c0e0e0e3c0aa3e1b4f7ae48da6030b
++ `syllables` divide il testo nelle sue parti. Ogni sillaba è un segmento, e ogni sequenza di
++ caratteri che non sono lettere passa come segmento a sé:
+
+% 2 1 0 169f409f49e4489d000bfa55e76ffb8b
+
+% 3 1 0 0fc3491fb15e28b3069aab37b7f16b61
+
+% 4 1 0 0a5d3762fa710276107803e3e007d270
+
+% 0 1 0 0b0321678fc9221505804bf3af366266
+
+% 1 1 0 184b1adbc62ee84c030adcae49302e74
+
+@ 0 1 0 056fd70d42d476bf14425517f349ae61
++ ### Punti di divisione
+
+@ 0 2 0 0e6f09bc00e7188700b4d1f6c80480a7
++ `breakPoints` dà le posizioni grezze in cui una parola può spezzarsi. È per il codice che colloca
++ da sé le divisioni, come un algoritmo che manda a capo le righe, invece di inserire caratteri:
+
+% 2 1 0 1c462e58b47d0b4617e700b43d01a517
+
+% 3 1 0 02a6ea41b4e9ccab047264dd8e5ca56d
+
+% 4 1 0 0253eacb121c4f2711637506fab11a0d
+
+% 0 1 0 06e3fa7c89ec9b571c2d2e857a3d81ab
+
+% 1 1 0 1ea9002471ceca0511b2810f3f46785f
+
+@ 0 1 0 1d3572d220ee1b2300ebead6b8534081
++ ### Testo che non è una sola parola
+
+@ 0 3 0 0f6273f097ef9f470527a836444c9cb4
++ La sillabazione si applica alle lettere, e il testo raramente è fatto solo di lettere. Ogni
++ sequenza di lettere viene sillabata in modo indipendente. Tutto il resto, come spazi,
++ punteggiatura e cifre, passa senza modifiche:
+
+% 2 1 0 1c7783518e875fff1cd21106c7a3d210
+
+% 3 1 0 13e99b92a20999bd104a8cbd73b1a039
+
+% 4 1 0 1696541e326560bd01950643a60a0e5f
+
+% 0 1 0 15f5e008b2e30f4312e9ee06706117ad
+
+% 0 1 0 0486ede99adf87ab03d77f000bf6b22e
+
+% 1 1 0 0eb88affaf708b8d121ffd6f866abf9e
+
+@ 0 3 0 0dd1cf2f76fd08d408c462d08af0d857
++ Entrambe le parole del primo testo sono troppo corte per essere spezzate. `syllables` segue la
++ stessa regola, e dà le sequenze che non sono lettere come segmenti a sé, così rimettendo insieme
++ i segmenti si riproduce esattamente il testo originale.
+
+@ 0 1 0 035cd0e7ea80d44f1643ec05dc3ce8e0
++ ### Estendere i pattern
+
+@ 0 2 0 1ed321a67d1e63371ece6aa6795b4ca1
++ A una parola di un campo specialistico, che i pattern standard spezzano male o non spezzano
++ affatto, si insegna la divisione con un pattern in più, nella notazione di TeX, sovrapposto
++ all'insieme esistente:
+
+% 2 1 0 006f39b4cbac1a6b1bb050a66fd72ee0
+
+% 3 1 0 056fec36b21ae86f1dfeaf6071a68420
+
+% 4 1 0 1b9202f3bc3af0ab0459836a97d9bd40
+
+% 5 1 0 0fe5d1c09c74358d0f33df7b61f1d97f
+
+% 0 1 0 1b7f16e4fa2180d617d6fa11a37b38a9
+
+% 0 1 0 1d3076c36eafe0de18878ea1a8acd0f2
+
+% 1 1 0 14f6a709f6e8e7f51d563c447f40b28f
+
+@ 0 3 0 0c53230de008ff091410c1b8c8c7e9eb
++ I pattern si fondono prendendo il punteggio più alto in ogni posizione. Un pattern aggiunto con
++ un punteggio dispari ripristina quindi una divisione che un pattern standard con un punteggio
++ pari aveva vietato. È così che si corregge una parola, senza disturbare il resto della lingua.
+
+@ 0 2 0 1184b8585675dd8901578fb835cca521
++ Alcune parole non le azzecca nessun pattern. Un'*eccezione* dichiara esplicitamente le divisioni
++ di una parola, e ha la precedenza sull'algoritmo:
+
+% 2 1 0 0396ed7e06fe982d191ea796bd80144c
+
+% 3 1 0 144695626d9df522149b740d85ee80a3
+
+% 4 1 0 05e73c20457ac49c091f981a668bd74e
+
+% 5 1 0 0f4e8ae93bab354b14f9f2a8fca9a6ff
+
+% 0 1 0 021f767ea6c4f53116e959e8365bd532
+
+% 0 1 0 0ce3e73f9fb62df811716001a5c42847
+
+% 1 1 0 0fd5effad54bc69407f7527590c96db1
+
+@ 0 2 0 190e0a094e0ce14b08d5d6fff66cb3ec
++ L'insieme inglese standard contiene già l'elenco di eccezioni distribuito con TeX, così
++ `associate` si spezza come `as-so-ciate`, e `table` come `ta-ble`, dove i soli pattern non lo
++ farebbero.
+
+@ 0 2 0 1a3f50a0aa687a6105efeffb056783f7
++ Una lingua intera si fornisce allo stesso modo. `Hyphenation.fromTex` legge qualsiasi file di
++ pattern TeX, così le lingue pubblicate per TeX sono disponibili caricandone i pattern.
+
+@ 0 1 0 07f43d5a194b97ae19d524abf4a3eb69
++ ### Quando non ci sono pattern disponibili
+
+@ 0 4 0 089d68a7bdf08bbf02a6c070466a7be3
++ Una lingua per cui non è stato caricato alcun insieme di pattern non sillaba nulla, e non tira a
++ indovinare. `hyphenate` dà il testo invariato, e `breakPoints` è vuoto. Un algoritmo che manda a
++ capo le righe ripiega quindi sulla divisione agli spazi, che è il comportamento corretto, e non
++ inventa divisioni in una lingua di cui non conosce le regole.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 3 0 1f14cf5da6c0d3e70bfbdc0ec5a8e515
++ - [Tabelle](tables.md) manda a capo il testo di una colonna con la sillabazione.
++ - [Testo](text.md) descrive le altre operazioni sul testo.
++ - [PDF](pdf.md) e [Pagine](pages.md) compongono paragrafi che si spezzano su più righe.

@@ -1,0 +1,130 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1c6eb85f7715f09e0792c007bb737bcf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ef7c4cc2e63dd810c6206205ed7ba3c
++ info   Mengen der Fälle einer Aufzählung, in die Bits eines einzigen `Long` gepackt, je Fall geprüft und gesetzt
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1b1fcf8214caf5a702984d9496d7b683
++     _Vexillology_ gibt Bit-Flags eine typisierte Oberfläche. `Flags[Color]` ist eine Menge von
++     An-oder-aus-Flags über die Fälle der Aufzählung `Color`, gehalten in den Bits eines einzigen
++     `Long`, wobei jedem Fall das Bit seiner Ordinalzahl gehört. Ein Flag wird geprüft und gesetzt,
++     indem man den Fall nennt statt einer magischen Bitnummer, sodass ein Bit, das etwas anderes
++     oder nichts bedeutet, nicht erreicht werden kann; und der Wert bleibt ein einziges
++     Maschinenwort — kostenlos zu kopieren, billig zu speichern, natürlich in einem Binärformat —,
++     wo ein `Set[Color]` allozieren würde.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0af2a59cff40b5c9019c56f5eb1885de
+
+% 0 1 0 1d10a572fae04e8d116974175da28781
+
+% 0 1 0 0f95d5f3aa2e937907b24d60a5df4719
+
+% 0 1 0 1ea3958aaf72c5d1030cf913cd96d8af
+
+% 0 1 0 05864085c650310810828bfe91691b4f
+
+% 0 1 0 1d74062d421567f01384f1f939695848
+
+% 0 1 0 14d13d1f18f362680275d3558af476f8
+
+% 0 1 0 04750537132403ad175598283296cd59
+
+% 0 1 0 0b63a119e100ded215b7b51dc46bb03a
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 13d852fb4e6865270cd75ac7683e2cee
++     Ein `Flags`-Wert ist unveränderlich: Jede Zuweisung erzeugt einen neuen, sodass die Variable
++     mit der Update-Syntax neu zugewiesen wird, `flags = flags(Orange) = true`. Die Operationen
++     brauchen eine Aufzählung, die `Enumerable` ist, und das ist jedes `enum` von Scala 3 mit
++     Singleton-Fällen.
+
+@ 0 2 0 11aa7e266e6b3a240797cec39786981c
++     Die Bibliothek hat ein einziges Source-Set, `vexillology.core`, und alles wird in das
++     Umbrella `soundness` exportiert.
+
+% 0 1 0 019efc2e4f73acb506f6381eb98952b6
+
+@ 0 1 0 07886f05135c25460305f18b26b45578
++ entry .Flags   eine Menge der Fälle einer Aufzählung, als Bits in ein einziges `Long` gepackt
+
+% 1 1 0 108f60404f206b9f1823848ae630da0a
+
+@ 0 4 0 14ae1779cab1ce7c0411612a59a20745
++       `Flags[Enumeration]` ist der hier exportierte opake Typ `vexillology.internal.Flags`: ein
++       `Long`, in dem das Bit *n* gesetzt ist, wenn der Fall der Aufzählung mit der Ordinalzahl
++       *n* in der Menge ist. `Flags[Color]()` ist die leere Menge, und drei
++       Erweiterungsmethoden, ohne jeden Import im impliziten Geltungsbereich, verwenden sie:
+
+@ 0 4 0 035a5a79821fbfc11012114c1a3b43ab
++       - `flags(case)` prüft, ob ein Fall gesetzt ist;
++       - `flags(case) = enabled` (also `flags.update(case, enabled)`) erzeugt einen neuen Wert,
++         in dem der Fall gesetzt oder gelöscht ist;
++       - `flags.set` liest die Flags als gewöhnliches `Set` der Fälle aus.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 1089ca35127374810e7f548d669d576d
+
+% 0 1 0 1ab3b3d18b9086f913e0e0c49c4017ed
+
+% 0 1 0 1357cfbd063de8db0a6312f5733e37c2
+
+% 0 1 0 0ac63c7898504d7716ef4bfa572027f7
+
+% 0 1 0 10bf6b93c183bf69142d0a47a493c686
+
+% 0 1 0 0f7fab3690ef35161d5744336c2b581a
+
+% 0 1 0 1728e0adebfc754c06dddcd449b8c88b
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 4 0 112c8c89532d487617e1b1876bb21caf
++       Ein `Long` hat 64 Bits, sodass eine Aufzählung mit bis zu 64 Fällen hineinpasst. Darüber
++       hinaus läuft die Bitposition eines Falls über, und er teilt sich ein Bit mit einem
++       niedrigeren Fall: Es gibt keine Prüfung. Jede Methode nimmt einen Fall eines
++       Singleton-Typs, sodass ein Enum-Fall mit Parametern kein Flag sein kann.
+
+% 0 1 0 03c3be223d45fc1602f45e1db973199e
+
+@ 0 1 0 061e5d2caf21abe6084796807bee42af
++ entry .internal   die Heimat des opaken Typs `Flags` und seiner Operationen
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 17e7a57fc22507730b884c4c68297440
++       Nicht zur direkten Verwendung: Das Objekt existiert, um den opaken Typ `Flags` und die
++       Erweiterungsmethoden darauf zu halten, die überall dort im impliziten Geltungsbereich sind,
++       wo ein `Flags` ist, da sie sein umschließendes Objekt teilen. `Flags` wird von hier in das
++       Paket `vexillology` exportiert, dessen Seite die vollständige Darstellung enthält.
++   entry .Flags   eine Menge der Fälle einer Aufzählung, in ein `Long` gepackt; siehe `vexillology.Flags`
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 10 0 1ac5189c5f90b6850ebef677d5050144
++         Der opake Typ über `Long`. Seine Seite unter dem Paket `vexillology` enthält die
++         vollständige Darstellung.
++     entry .apply   die leere Menge von Flags über eine Aufzählung, ohne gesetztes Bit, `Flags[Color]()`
++   entry .apply   ob ein Fall in bestimmten Flags gesetzt ist, `flags(case)`
++       Braucht eine Aufzählung, die `Enumerable` ist, um die Ordinalzahl des Falls zu finden.
++   entry .update   eine Kopie bestimmter Flags, in der ein Fall gesetzt oder gelöscht ist, `flags(case) = enabled`
++       Gibt das neue `Flags` zurück, statt den Empfänger zu ändern, sodass eine Variable, die die
++       Flags hält, neu zugewiesen wird: `flags = flags(Orange) = true`.
++   entry .set   die in bestimmten Flags gesetzten Fälle, als `Set` der Aufzählung
++       Besucht nur die gesetzten Bits, das niedrigste zuerst.

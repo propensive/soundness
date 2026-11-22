@@ -1,0 +1,281 @@
+orthant 2 language
+
+@ 0 1 0 08e0b694988a31f511a97ddb02d6999d
++ # Normas de registro de Soundness
+
+@ 0 3 0 08c29def8df32e1010c968e21762738f
++ Este documento define cuándo, qué y cómo registrar en las bibliotecas de Soundness. Complementa
++ `syntax.md` (espacios en blanco y formato) y `naming.md` (nombres de fábricas). Los ejemplos
++ proceden de `lib/*/src/core/*.scala`.
+
+@ 0 5 0 1e087fd7e1d81ce406294327c26bb9c5
++ El registro es seguro en cuanto a tipos: un método que registra declara el requisito en su tipo de
++ retorno con el tipo infijo `logs`, y emite valores de un tipo `Event` propio del módulo, nunca
++ cadenas en bruto. Un `Logger` (un `Sink`) definido en el ámbito del llamante recibe los eventos; si
++ no hay ningún logger en el ámbito, el registro es silencioso y gratuito, de modo que una declaración
++ `logs` no impone nada a los llamantes.
+
+@ 0 1 0 1452f29ec01ef3a904e101a152b1321e
++ ## 1. Cuándo registrar
+
+@ 0 2 0 1681b4dd05f344f20ff4f3c321f7c1b6
++ Un método debe registrar si, y solo si, realiza un **efecto secundario observable con latencia o con
++ un modo de fallo**:
+
+% 2 1 0 156a2e8f8fa25727024ecb63b084fc43
+
+@ 0 6 0 0081e9817a7f59321c3c72b4de33da5a
++ column  Categoría
++ column  Operaciones
++ row  Red  conectar, ligar, escuchar, aceptar, enviar, recibir, cerrar, cambiar de protocolo
++ row  Sistema de ficheros  abrir, leer, escribir, crear, eliminar, mover, crear enlaces simbólicos, vigilar
++ row  Procesos  generar, matar, esperar, enviar señales
++ row  Servicios externos  peticiones HTTP, protocolos de demonios, Docker, registros de paquetes, descargas y subidas
+
+% 1 1 0 0c3c809722009b3709d7805ffe34284f
+
+@ 0 3 0 040f948dab83124908def2e95b80f552
++ El trabajo puro, limitado por la CPU o en memoria **no debe** registrar: el hashing, el cifrado, el
++ análisis, los códecs, la serialización, la aritmética y la manipulación de estructuras de datos no
++ producen ninguna salida de registro, por costosos que sean.
+
+@ 0 1 0 06ca5da3aecb3dfb048c616c52471930
++ Un método se adhiere nombrando su tipo de evento en el tipo de retorno:
+
+% 2 1 0 0db7d9ec6178741c1ba376bad1d5bb0d
+
+% 3 1 0 0181daae89884fd804d3262d38c16275
+
+% 4 1 0 1810d6f8fd05d786120618a02486dfce
+
+% 0 1 0 0bf1196a40e6fb061f82f61fa116ceba
+
+% 1 1 0 102975cc429b970e0f6a426c936c6d3a
+
+@ 0 1 0 06f77517ff91aeb010b640c665922778
++ Un método puede registrar más de un tipo de evento encadenándolos:
+
+% 2 1 0 07f85c7100f1f52210ec1c75d482c9e9
+
+% 3 1 0 1fa9a643816227d2141f2f6156e002e0
+
+% 4 1 0 195aa014f5491e720939a05e17adf52a
+
+% 0 1 0 175e93147a4599c90da57dc57c849051
+
+% 1 1 0 14e76639192125d600b9abf657f48f4b
+
+@ 0 5 0 1e304f95509cdb2006f8a56e21dc4188
++ **No** añadas un requisito `logs` (ni una llamada a `Log`) dentro de un método que implementa el
++ método abstracto de una clase de tipos: el parámetro de contexto adicional cambia la signatura y
++ rompe la sobrescritura. Registra en su lugar en el método de extensión público que *llama* a la
++ clase de tipos; esa es además la granularidad adecuada (una entrada por operación de nivel de
++ usuario, no por despacho interno).
+
+@ 0 1 0 16f17a575f8f155d06047645dc7b8299
++ ## 2. Niveles
+
+@ 0 1 0 05d49585e1e08ed30d7edcf1560c5e20
++ `Level` tiene cuatro valores, elegidos por **frecuencia y gravedad** a la vez:
+
+% 2 1 0 10c2c0ad141266720a54e02226333ff9
+
+@ 0 6 0 04d1236aeac5487d011f8bfa1b7283fa
++ column  Nivel
++ column  Para
++ column  Ejemplos
++ row  `Fine`  detalle frecuente, por unidad, útil solo al depurar  cada trama, paquete, apertura de fichero, petición recibida, acierto de caché
++ row  `Info`  una línea por operación lógica significativa o hito del ciclo de vida  una conexión establecida, un servidor que ya escucha, una petición enviada, un proceso iniciado, un archivo abierto, una descarga terminada
++ row  `Warn`  una condición recuperable, o inesperada pero gestionada  una muerte forzada, una conexión reiniciada o un reintento, un flujo roto, un tiempo de espera por inactividad, una infracción de protocolo gestionada con elegancia, una alternativa tomada
+
+% 0 1 0 0f3659617b5f619a065d23e2fc87835b
+
+@ 0 1 0 1b33bbb2b14ed55a00ad46791fc3301c
++   cell  una operación que falló de forma irrecuperable, emitida junto con el `Error` que se lanza; se usa con moderación
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+% 1 1 0 1a8eadecc0663acd1b08d1b94578a18d
+
+@ 0 2 0 1eab22a97b9ebc130247283dc3920912
++ Supón que `Fine` está normalmente desactivado, y sé prolijo en él: un envío por paquete es `Fine`
++ aunque sea «normal», mientras que una ligadura por conexión es `Info`.
+
+@ 0 1 0 07d622d9dde49f4c1fb1e34fe829d832
++ ## 3. Qué registrar
+
+@ 0 11 0 1572579f56d51a8310445b1ab2b06a6a
++ - **Identifica el recurso**: dirección y puerto, ruta, PID, URL, identificador de flujo, nombre de
++   archivo o de entrada, identificador de contenedor.
++ - **Cuantifica cuando sea barato**: recuentos de bytes, recuentos de entradas, milisegundos
++   transcurridos, códigos de estado, códigos de salida.
++ - **Nunca registres secretos**: credenciales, tokens, cookies, material de claves, cabeceras de
++   autorización, ni cuerpos enteros de peticiones y respuestas. Registra en su lugar una versión
++   censurada, un tamaño o un breve avance.
++ - **Acota el tamaño**: registra longitudes y avances, no cargas útiles enteras.
++ - **Lleva campos tipados**, no cadenas ya formateadas. El caso del evento contiene los valores; la
++   instancia de `Communicable` se encarga del formato (§4). Así el evento sigue siendo seguro en
++   cuanto a tipos, y la representación puede variar según el sumidero.
+
+@ 0 1 0 09410b4e0efe26e619d572de2c32b527
++ ### Coste cuando está desactivado
+
+@ 0 5 0 112082b8f10ec34617cbcfa0abe81eba
++ `Log.fine`/`info`/`warn`/`fail` reciben su argumento **por nombre**, y `Loggable.fanOut` consulta el
++ `accepts(level)` de cada sumidero *antes* de forzarlo. Así, cuando no hay ningún sumidero en el
++ ámbito, o ninguno acepta el nivel, el valor del evento nunca se construye y sus campos nunca se
++ evalúan: una sentencia de registro desactivada no cuesta nada. Escribe llamadas de registro con
++ libertad; no las protejas.
+
+@ 0 2 0 1dfd1ebf64d66c0b05dcb54b8b13a151
++ Por eso, es preferible pasar al evento los **valores tipados originales** y dejar que el
++ `Communicable` los represente, en lugar de convertirlos en el punto de llamada:
+
+% 2 1 0 0d7ab4ae5df467821db024579f671d18
+
+% 0 1 0 11e48f52e1139b59085181d41a0dd2ec
+
+% 0 1 0 081758635e05aef0047fae85da5d5d01
+
+% 1 1 0 13da109cafdc4aac0f15e5f3b6aa9f93
+
+@ 0 2 0 0baf797dbd04aec21af39247352c3ecb
++ Ambas formas son gratuitas cuando el registro está desactivado (el argumento es por nombre), pero los
++ campos tipados mantienen el evento seguro en cuanto a tipos y permiten que la representación varíe
++ según el sumidero.
+
+@ 0 3 0 1578bc3eb46e1e3b1cb6abeb7b2cc9ad
++ **Excepción: contexto del punto de llamada.** Cuando representar un valor necesita información que
++ solo está disponible en el punto de llamada (por ejemplo, un `serpentine.Path on plane` cuya forma
++ textual depende de su `plane`), captura el `Text` representado *allí*:
+
+% 2 1 0 1d81ff96ff26bfcb05c9ae33cc787cbd
+
+% 0 1 0 135e23cece8d7bf611b07dec57013942
+
+% 0 1 0 184d37cf33f9457a1127497bae183e3f
+
+% 1 1 0 00ceb76ca5af684a038b1700c01a16d1
+
+@ 0 2 0 1e9822e15fd156430194498120503818
++ Esto es correcto, no una concesión: el `.show` se ejecuta en el punto de llamada (por nombre), donde
++ existe el contexto, y aun así solo cuando el evento se registra de verdad.
+
+@ 0 1 0 11336d2062a8f59e17b5b559d86da4f3
++ ## 4. Tipos de evento
+
+@ 0 5 0 0ce0565b67855dbf11acec01e64733d4
++ Cada módulo que registra define un único `enum` llamado `Event`, anidado en el objeto que nombra su
++ dominio (`Exec.Event`, `Http.Event`, `Io.Event`), con el `object` compañero antes del `enum` (L3).
++ Los casos son sintagmas verbales o nominales en CamelCase que llevan los valores pertinentes como
++ campos tipados, y cada uno extiende las categorías de `Log` a las que pertenece:
+
+% 2 1 0 0a3cca879222b92401767d6e486df091
+
+% 0 1 0 1277063c7bdd1d731bcdce7023a33956
+
+% 0 1 0 12db4c6f0e04c7e10b5ef43a651e18aa
+
+% 0 1 0 1f4223029820c8ec196d5562cd0c8697
+
+% 0 1 0 0d37077fd805d5e90adc33e03b484a96
+
+% 0 1 0 12a3e1ae811cece70cba6bca884808af
+
+% 0 1 0 1c9bd2b634f74ac814d2405021c64643
+
+% 0 1 0 1b8cc76448c909d11dc63ab3f74dab5b
+
+% 0 1 0 1394eac630bcee8004b6e550f6929f1e
+
+% 0 1 0 0d8652fa5bab9a881ce6ba614d123494
+
+% 0 1 0 137ba6468e943c9c0d51c5a6038e451a
+
+% 0 1 0 17c9f90ac3656ee40c636e5c5a616834
+
+% 0 1 0 12eb61a5bf05c1bf0a9241057efe8930
+
+% 1 1 0 046ef472df7506c902549456381afa3a
+
+@ 0 2 0 1498f4b54a3eb78610f9a3326e82e627
++ El objeto compañero contiene un `given communicable: <Event> is Communicable` que asigna a cada caso
++ un mensaje `m"..."`, con las flechas `=>` alineadas (Consequent Style `T1`).
+
+@ 0 1 0 166f8540cff5d74b1151be902deedc2d
++ El tipo de evento debe exportarse al paquete `soundness` (L4).
+
+@ 0 1 0 1673f8529b5e06a30835ea2ad5292ed8
++ ### Composición con `Exec.Event`
+
+@ 0 2 0 18c9f08055b887091d14db2bf270d384
++ Un módulo que lanza un subproceso reutiliza `guillotine.Exec.Event` transcribiéndolo a su propio
++ evento, en lugar de duplicar los casos de proceso:
+
+% 2 1 0 0ca4ae5a1da99cfd1adc16b40910c91b
+
+% 0 1 0 107b080443af67aa06458ae802a1eb63
+
+% 1 1 0 1bb97bb535c76ce21fca073583206ea1
+
+@ 0 1 0 04dfb520f3cdd1e21813ae1a3d5278f2
++ (patrón existente: `CliEvent`, `octogenarian.Commandline.Event`).
+
+@ 0 1 0 1112496d901103651b9543553c25b4b2
++ ## 5. Estilo de los mensajes
+
+@ 0 3 0 126c563dc14a37f417864e4ca9f49a14
++ Los mensajes de registro van en minúsculas, son escuetos, están en presente, no llevan punto final e
++ interpolan el contexto pertinente, en consonancia con el estilo de la casa para los mensajes de
++ error de `fulminate` (véase `messages.md`):
+
+% 2 1 0 07b3fcd936a0e17d1863e3f1bdbbcb05
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 06158e9bc85c13c003ff2339606d0a72
+
+% 0 1 0 05b0531bffad75c50786cf98f6a48067
+
+% 0 1 0 0f1cd01037abf94513d257a95762db6e
+
+% 0 1 0 18f1f955701de7be1b8e8ebefa0572cf
+
+% 1 1 0 068d136e6a929596193c4784204a48a8
+
+@ 0 2 0 12fc6083ed1f2d2306c6ee2a5fa6bb9c
++ Un mensaje debe decir algo concreto: `m"a failure occurred"` no es aceptable; nombra lo que falló e
++ incluye el identificador.
+
+@ 0 1 0 19bbdb8224d24dcc1c44c1bc3999cc7c
++ ## 6. Emisión
+
+@ 0 2 0 15c3dd19bfe2c49509ad5f3880ec09aa
++ Llama a `Log.fine`, `Log.info`, `Log.warn` o `Log.fail` con un valor de evento en el punto en que se
++ produce el efecto secundario:
+
+% 2 1 0 00fc8c5fd954b1c51ab7c4434fb23bc6
+
+% 0 1 0 0a310de662488d011998d4f884f53808
+
+% 0 1 0 02c13a33050af80c021a7bf46ea845c9
+
+% 0 1 0 126a62f804b1ee111a800817f6389f9b
+
+% 1 1 0 0b842d8e793572ae0dc869ba8aec8788
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 09ca4ed74a957fec117bc83b7662d366
+
+% 0 1 0 12457ff022faa0f206174cad515f807c
+
+% 0 1 0 06e37c9a40772d7c0ef0a61181e6d04b
+
+% 1 1 0 1e876abb6cb3e19b17235682eab1593e
+
+@ 0 2 0 11897875e88f24af020f95c18270cce8
++ Un evento del ciclo de vida se registra una vez, en `Info`; un evento por unidad (por trama, por
++ fichero) se registra en `Fine`; una anomalía gestionada se registra en `Warn`.

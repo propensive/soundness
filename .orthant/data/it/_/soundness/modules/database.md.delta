@@ -1,0 +1,261 @@
+orthant 2 language
+
+@ 0 1 0 18967b6efd75bc2c1d60c408646b615d
++ ## Database
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 4 0 140fdeea2cfa79541fb369f465c03ddb
++ Un `Database` è un deposito in memoria per entità tipizzate e per le relazioni tra di esse. Un
++ valore viene memorizzato una sola volta, e identificato da un riferimento tipizzato. Le relazioni
++ che un database supporta sono dichiarate *nel suo tipo*, quindi mettere in relazione due entità che
++ lo schema non collega è un errore di compilazione.
+
+@ 0 2 0 184c99bcd8afe9620bac67ef5da7a1d4
++ Ha la forma di un database relazionale, con entità, chiavi esterne e join, per i molti programmi i
++ cui dati di lavoro stanno in memoria e il cui schema dovrebbe essere verificato dal compilatore.
+
+@ 0 1 0 0dc5d803f13483f11e1d807cb28f3c0b
++ ### Sulla memorizzazione tipizzata
+
+@ 0 5 0 1e24a89bd25703b71f34ae1f6fce2aff
++ I modelli di dati in memoria tendono a scivolare verso mappe di mappe: entità indicizzate per id,
++ relazioni come `Map[Id, Set[Id]]`, e lo schema, che dice quali tipi di cose possono essere in
++ relazione con quali, che vive solo nelle convenzioni. Il compilatore conosce i tipi di tutto il
++ resto, e non sa nulla di quali relazioni debbano esistere. Così una scatola assegnata a una persona,
++ in un dominio in cui le scatole appartengono agli scaffali, è una sorpresa a [runtime], o una
++ corruzione silenziosa.
+
+@ 0 4 0 044a784cc381f3ca1328784d8122039d
++ Qui le relazioni sono un tipo. Un database viene creato *come* database della sua tupla di
++ relazioni, e ogni assegnazione, rimozione e ricerca viene verificata rispetto a essa.
++ Un'operazione che lo schema non consente non si può scrivere, e questa è la
++ [sicurezza per costruzione](../../philosophy/safety-by-construction.md) applicata a un modello di
++ dati.
+
+@ 0 3 0 08aa286919641a121102266c73c6718f
++ Tutto proviene dal package `soundness`. Il secondo import sceglie una
++ [strategia](errors.md#choosing-a-strategy) per gli errori, e il terzo permette agli esempi di
++ stampare i loro risultati:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 19457510374c1569056d9ed2ced73c99
++ ### Dichiarare un database
+
+@ 0 1 0 1130b81dad0ea38705f197185df557cf
++ Le relazioni formano il tipo del database. `A -< B` si legge «un `A` può avere dei `B`»:
+
+% 2 1 0 073243d8c0176ba007886d9152cf74c4
+
+% 0 1 0 008b582ca68a2fe50d6452dfb866ce0d
+
+% 0 1 0 062420b0159c36820671d1defd520112
+
+% 0 1 0 0dec36f4c2ada2820a9221a57a4e1dea
+
+% 0 1 0 01959242600251151c00cbc1d8f8cd6c
+
+% 1 1 0 09d0ff4c64095caf1bd2bff97d072c84
+
+@ 0 1 0 0140a54dfe3cded40f30be6425793ae3
++ ### Memorizzare e riferire
+
+@ 0 3 0 038a2ab02357eded1bdaf39c85e101ba
++ `store` esegue l'interning di un valore, e ne restituisce il riferimento tipizzato. Il riferimento
++ è un `Ref of Box in db.type`, quindi non può essere confuso con un riferimento di un altro database,
++ o a un altro tipo:
+
+% 2 1 0 14a7711c35c2147618aba4905c1b770d
+
+% 0 1 0 0b40270a665a9c341dbd4bd3bce93134
+
+% 0 1 0 0c29a88754b108fe09cb052c52b2d5f5
+
+% 1 1 0 0e60321081f6bd6412ada9a605125ebd
+
+@ 0 1 0 0b569b894e117c3c05b8b84da2a66ceb
++ Un riferimento si dereferenzia applicandolo, il che restituisce il valore:
+
+% 2 1 0 094e52ea372286b6083db4758d515b36
+
+% 3 1 0 0e1792809bc986a9065d30b679c8b5b7
+
+% 4 1 0 0de1865a38ce09b30904dcce819dc0dd
+
+% 0 1 0 0ce42b5ace7737ef164241bbead23c71
+
+% 1 1 0 09f5d1e6896ab5170a39008146e677f2
+
+@ 0 1 0 15050fb8a25563aa00680f8f85234061
++ ### Riferimenti per chiave
+
+@ 0 4 0 019264e28983e5cf0cc4f6e095b56d90
++ Un riferimento non deve per forza provenire da `store`. Dove un'entità porta la propria chiave,
++ come un indirizzo email o un codice prodotto, un `Reference` a essa è quella chiave, tipizzata da
++ ciò a cui si riferisce. Un'istanza di `Resolvable` dice come una chiave trova la sua entità. Questa
++ è costruita da un insieme di valori, e li cerca per il campo marcato `@primary`:
+
+% 2 1 0 0a23ebd56876a8b20260b2ec41267ce8
+
+% 0 1 0 08b9bc67268c95300da76963aa47c11f
+
+% 0 1 0 105f3cb122006dd717a92d5486945bc2
+
+% 0 1 0 04043e95f61aa8e90a7195c6e6b42f2c
+
+% 0 1 0 01d0074750383f5f0057f398305571bb
+
+% 1 1 0 1e2b0f3ecf08721f1db367c7c9e9ee1b
+
+@ 0 2 0 1612facf44d3588019e3b1d202e4e452
++ Con questa nell'ambito, `ref` prende il riferimento di un valore, che non contiene altro che la sua
++ chiave. Applicare il riferimento lo risolve di nuovo nel valore:
+
+% 2 1 0 1fb15cb142be746c02e49e9d3184f5cb
+
+% 3 1 0 03d902e285e83d6108edfe7e8cbc0f02
+
+% 4 1 0 1818a6fab4b1099d0d93bb8f072503d7
+
+% 0 1 0 0cd13a7c06e8e22701f59b08046feb5c
+
+% 0 1 0 1fef0199fad8443e143e8e0f02d63b26
+
+% 0 1 0 15989f53ceca089c084fc38b5bf9c6c5
+
+% 1 1 0 034ecba0cb2c4bed13d2fa586ece26a8
+
+@ 0 2 0 067c848e98c704b10213a67c0ddeed49
++ Un riferimento costruito da una chiave che non corrisponde a nulla solleva un `Reference.Error`
++ quando viene applicato, e non quando viene costruito:
+
+% 2 1 0 0333c70242ea595512cc06e25124777f
+
+% 3 1 0 01ff7f9764776ee207c0a122432aa86f
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 05a3a48c08da48f61aabb34f9da39133
+
+% 1 1 0 14de7a8a35c0d99f0b772b9c0191e610
+
+@ 0 1 0 011acc11e285e5c81b310b456eb87cd0
++ ### Mettere in relazione
+
+@ 0 2 0 1de8c7b2d4ae25991a4e96ad5256dae3
++ I riferimenti si mettono in relazione con `assign`, si scollegano con `unassign`, e si percorrono
++ con `lookup`. Ciascuno è valido solo per una relazione che il tipo del database dichiara:
+
+% 2 1 0 07d6a3bca15e839e091e2edd098e5239
+
+% 3 1 0 19480f3da8da3fb50c6168bb766192bf
+
+% 4 1 0 053256ee676e9d2d0ee1c450618ba614
+
+% 5 1 0 1a11f4c211e9a6771e2c29672515ad75
+
+% 1 1 0 03a43799137b5c610cb485d59c5c4f26
+
+% 0 1 0 1979f98dfa7927a409826f12b08e20c9
+
+% 1 1 0 04417edcee1cd59a160d5ba2a06bc283
+
+% 1 1 0 05ecc50aad7a2df217622478403af213
+
+@ 0 1 0 10f92ddaf8f00d4a0141528c243cd0a6
++ Non esiste una relazione `Box -< Shelf`, quindi a una scatola non si può assegnare uno scaffale:
+
+% 2 1 0 1213394458eecd441d07ed8b5940500e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1b1781970f9f0eb30b07f880e970c0a9
+
+% 1 1 0 19fd2ca0aaa5841b1650c4c349864b8b
+
+@ 0 2 0 0a1ac4e5974a44bb1703bab934938db6
++ È proprio questo il punto. Lo schema non è documentazione ma un tipo, e un'operazione che ne esce
++ non viene mai eseguita, perché non compila mai.
+
+@ 0 3 0 16cda9bce8f32dff0d5893d8c9144255
++ `ref` trova il riferimento per un valore che è già memorizzato, e solleva un `Database.Error` dove
++ non lo è. È così che un valore che arriva da altrove viene abbinato a ciò che il database contiene
++ già, anziché essere memorizzato una seconda volta.
+
+% 0 1 0 1bb0030fd9b341c51b202d80cfbde761
+
+@ 0 2 0 1a32f8c353d3a80e018cbdf59fab645e
++ `store` *esegue l'interning*. Memorizzare due volte un valore uguale dà lo stesso riferimento,
++ quindi l'identità nel database è per valore, e non per allocazione:
+
+% 2 1 0 08270d900433d35f172b0c8e7bf6cb3c
+
+% 3 1 0 0f9801327b2768ac0eaab4141ac8d879
+
+% 4 1 0 0adf70204248b7fd0fe08064a719240b
+
+% 0 1 0 109f80e8cb91e34c1e8e6742477fa834
+
+% 1 1 0 1c0994003ed63a9c008b824ab707d84b
+
+@ 0 2 0 168b94a2319135b81c79be1e2bb06887
++ È questo che rende un riferimento sicuro da confrontare, da usare come chiave e da tenere al posto
++ del valore che nomina.
+
+@ 0 3 0 066ce4678e33a29d1497d7ab5aa25dee
++ Un riferimento è un handle opaco, non un puntatore né un indice in una tabella che il chiamante può
++ vedere. Un riferimento di un database non può essere dereferenziato rispetto a un altro. Il tipo
++ dice a quale database appartiene, e non c'è modo di costruirne uno che menta.
+
+@ 0 1 0 08738ff9214c82e812358f7e33270b16
++ ### Interrogare
+
+@ 0 2 0 0315304e089359561d2da4c47ff7ac1f
++ `lookup` segue una relazione, e fornisce ogni riferimento del tipo richiesto. Una query che deve
++ selezionare anziché percorrere è un predicato sui valori di quei riferimenti:
+
+% 2 1 0 0880ee68cc36f9141b817a522fa1e97c
+
+% 3 1 0 1367daa5ffc081e60c3cef4853f66e68
+
+% 4 1 0 00ba3885a8ee3768028b13777b20838e
+
+% 5 1 0 0548678e53d3e125041be6a1e8718549
+
+% 0 1 0 15880bda0b69364209186f5c2b658d8d
+
+% 0 1 0 048e1a4544020cdf1d1cefad4ad04717
+
+% 1 1 0 119cad234a7c7a0e0b7c8678ac2b3a35
+
+@ 0 3 0 19c73b58418d76140ca6f55ddae6acf8
++ Il predicato è una normale funzione sul tipo memorizzato, quindi una query si scrive in Scala, e
++ non in un linguaggio di query incorporato in stringhe. Il compilatore la verifica come il resto del
++ programma.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 6 0 0f34e6307294ae410730705a07addfa0
++ - [Annotazioni](annotations.md#finding-the-annotated-field) descrive `@primary`, che marca la
++   chiave in base a cui cerca un `Resolvable`.
++ - [Collezioni](collections.md) descrive le operazioni su `Set` che una ricerca supporta.
++ - [Errori](errors.md) descrive `safely` e le strategie che affrontano un `Reference.Error`.
++ - [Record](records.md) tipizza i dati il cui schema proviene da un database reale.
++ - [Server HTTP](http-server.md) serve i dati che un database contiene.

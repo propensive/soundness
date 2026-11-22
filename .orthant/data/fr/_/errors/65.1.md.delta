@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 1130a29ac6ab8fae16274fa43284cdad
++ # `↯/s.65.1` — Chemin valide sur aucune plateforme
+
+@ 0 1 0 0377cc25ae4618e61c052c737eff351f
++ Levée à la compilation lorsqu'un littéral de chemin n'est valide ni sous Windows, ni sous POSIX.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 0011d2979a2fa9aa085e9a308dce33b2
++ Un littéral de chemin dont la plateforme n'est pas indiquée doit être valide sur au moins une
++ plateforme pour que le littéral ait un sens.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 02651b34e4cb096716f65e56185c06df
+
+% 1 1 0 1f81e5bf315b1ac30913edb501c089f5
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 1af2fc72ed51eceb082756eb314ca036
++ Corrigez le chemin, ou indiquez explicitement la plateforme : un chemin valide sur une
++ plateforme et non sur l'autre est accepté lorsqu'il précise à laquelle il est destiné.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0453d169b012b5610df1fc7430ba1a61
++ - Source : `lib/galilei/src/core/galilei.internal.scala`

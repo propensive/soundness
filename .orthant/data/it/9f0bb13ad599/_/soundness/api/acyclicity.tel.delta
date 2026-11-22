@@ -1,0 +1,23 @@
+orthant 2 language
+
+% 0 4 0 00c2b0b4755587fb158510c7379f9947
+
+@ 0 4 0 00e8b1f2d88a57b91a87591af6b117e0
++       Gli strati e i collegamenti sono `Sequence`, letti per `Ordinal`, e `rank` e `position` sono
++       `Map`, quindi ogni lettura risponde con un `Optional`: `Unset` per uno strato che non c'è, o
++       per un nodo che non è nel grafo. `LayeredDagDiagram` di `dendrology` assegna le colonne a una stratificazione e la
++       disegna; un disegno diverso prende direttamente `layers` e `links`.
+
+@ 0 11 0 13b2ff4a59f011121d17e855e3ec1fcf
++   entry .Vertex   una posizione in uno strato: un nodo del grafo, o il punto in cui un arco più lungo lo attraversa
++       Un enum: `Real(value)` è un nodo del grafo, e `Virtual(source, target)` è il punto in cui
++       l'arco da `source` a `target`, che attraversa più strati, passa per questo. Un disegno
++       assegna una colonna a un vertice virtuale e vi fa passare l'arco.
++   entry #layers   gli strati, dall'alto in basso, ciascuno una `Sequence` di `Layering.Vertex` nell'ordine di disegno
++   entry #links   `links(i)` unisce lo strato `i` allo strato `i + 1`, come coppie di posizioni all'interno di ciascuno
++       Una `Sequence` con una `List` di collegamenti per ogni strato tranne l'ultimo. Ogni
++       collegamento unisce strati adiacenti: un arco che ne attraversa di più viene spezzato
++       nei suoi vertici virtuali.
++   entry #rank   lo strato di ogni nodo, come `Map`
++   entry #position   la posizione di ogni nodo all'interno del suo strato, come `Map`
++   entry #crossings   quante coppie di collegamenti si incrociano, sull'intera stratificazione

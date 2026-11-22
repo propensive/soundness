@@ -1,0 +1,175 @@
+orthant 2 language
+
+@ 0 1 0 03e11e70016f3c9e06b420d724906b93
++ # Convenzioni di denominazione dei metodi
+
+@ 0 5 0 0adab9a619d1f8cc0fe657a8151b4bb3
++ Questo documento definisce i significati canonici dei metodi factory e di inizializzazione con
++ nome usati in modo coerente in tutto il codice. Per il *perché* i nomi sono scelti come sono —
++ metodi che formano frasi, parametri di tipo lunghi una parola e unicità nell'intero namespace —
++ vedi [denominazione](../philosophy/naming.md) e [prosa elegante](../philosophy/elegant-prose.md).
+
+@ 0 1 0 03d183e4e326b30919e360b515dd8617
++ ## Nomi standard
+
+@ 0 1 0 15bdca24cb76d3bf12dff81f81950fea
++ Ogni nome ha un solo significato; le sezioni seguenti li danno per esteso:
+
+% 2 1 0 05111a77653eae0513c69c39cf24d309
+
+@ 0 12 0 0e1142eed29bfea40ff65219120a1c2f
++ column  Nome
++ column  Stato
++ column  Significato
++ column  Esempi
++ row  `apply`  standard  la factory predefinita, usata ogni volta che è possibile
++ row  `build`  standard  assemblaggio guidato da una callback fornita dal chiamante  `Data.build`, `Text.build`, `Specification.build`
++ row  `create`  standard  porta in esistenza una risorsa in un sistema esterno  directory, file, socket, FIFO
++ row  `make`  standard  costruzione da input con nomi dinamici, accanto a un `apply` esistente
++ row  `initialize`  standard  un contesto nuovo per un'esecuzione di un'operazione ripetibile  `Hash.initialize`, `Aes.initialize`
++ row  `init`  non standard  solo `Git.init`, sul modello del comando `git init`  `Git.init`
++ row  `construct`  non standard  solo `wisteria.ProductDerivation.construct`  `ProductDerivation.construct`
++ row  `of`  non standard  un cast privato che restringe un tipo a `X of Y`
+
+% 1 1 0 0f33c31fcdee626301644907633d969a
+
+% 0 1 0 17a0192866c35e6b00588126be21f3f3
+
+@ 0 3 0 194f1dfb395f601919e8db1318a5e76e
++ Il metodo factory standard di Scala. Si usa ogni volta che è possibile. Tutti gli altri nomi di
++ questo documento esistono perché `apply` non si può usare — di solito per conflitti nella
++ risoluzione degli overload con un `apply` esistente.
+
+% 0 1 0 1587cb14a269644a11f50580bfb3040b
+
+@ 0 2 0 1b4ef045e70539751d169607489ca6c5
++ Assembla un'istanza tramite una callback fornita dal chiamante che guida la costruzione. Le due
++ forme concrete sono:
+
+@ 0 6 0 0732f7cd3592b8bf1056d759a3a43a21
++ - **Alloca → modifica → congela**: si alloca una struttura intermedia mutabile, la si passa alla
++   lambda del chiamante perché la popoli, poi la si congela in un risultato immutabile. Esempi:
++   `Data.build`, `Array.scribe`, `Text.build`.
++ - **Assemblaggio guidato da callback a partire da dati di origine**: il chiamante fornisce una
++   funzione che specifica come estrarre o trasformare i campi da un valore di origine. Esempi:
++   `Specification.build`, `Addressable.build`.
+
+@ 0 2 0 132ea1f351cdc8be119bc29194023d6d
++ In entrambe le forme il chiamante controlla il processo di assemblaggio tramite l'argomento
++ funzione, invece di fornire direttamente il valore finito.
+
+% 0 1 0 0f0f0e2fb7f320fa1cc5a63efc05fc2c
+
+@ 0 4 0 05087d5dcc2e87cd0df908e02785ea74
++ Porta in esistenza una risorsa in un sistema esterno, e ha sempre effetti collaterali. Si usa per
++ le risorse del filesystem (directory, file, socket, FIFO). È la controparte di `apply`/`build`
++ per le operazioni che non sono pure.
+
+% 0 1 0 1873a23489c3c36b0f199470c3d85b28
+
+@ 0 4 0 072c23fdde042b491ce667733c2a2e64
++ Costruisce un valore da input con nomi dinamici, e corrisponde a un'implementazione di
++ `applyDynamicNamed`. Anche se altre factory possono usare parametri con nomi dinamici, `make` si
++ usa dove esiste già un altro metodo `apply` non dinamico.
+
+% 0 1 0 09dadde8cb66d43d047503c45ea29022
+
+@ 0 7 0 0bac543749c63a2019f4c54eac969217
++ Restituisce un contesto operativo nuovo per un'operazione ripetibile. Tra gli esempi ci sono una
++ nuova esecuzione di un digest di hash (`Hash.initialize`), un'istanza di cifrario
++ (`Aes.initialize`), un trasporto di file aperto (`Openable.initialize`) o una nuova sessione
++ (`McpServer.initialize`). L'operazione può essere pura o comportare l'acquisizione di risorse;
++ ciò che accomuna questi casi è che il risultato rappresenta l'inizio di un singolo uso di
++ un'operazione che si può ricominciare da capo.
+
+@ 0 1 0 1a58b0e6bb5f83d00fed5a36a97e4ad0
++ ## Nomi non standard
+
+% 0 1 0 15dad777cf39f0a4010ae37861b9fb27
+
+@ 0 2 0 1855054d6b9a80c70c3839961d6576b4
++ Si usa solo per `Git.init`, che segue il nome del comando CLI `git init`. Ovunque altrove si
++ preferisce `initialize`.
+
+% 0 1 0 1e92a0c0e4f46ce8181792b70b39f4d0
+
+@ 0 3 0 18e5aff42653ad911f8af18a8862e953
++ Riservato esclusivamente a `wisteria.ProductDerivation.construct`. È un caso speciale
++ deliberato, usato nella derivazione di typeclass a tempo di compilazione, e non segue lo schema
++ generale di denominazione delle factory.
+
+% 0 1 0 14e2e0a3a949744e08288c970ed8c21a
+
+@ 0 4 0 0e5462cb1c2bad5a14d377b49f92ad18
++ Si usa solo come metodo d'istanza che restringe un tipo a una forma `X of Y` parametrizzata da un
++ fantasma. Il corpo è sempre un cast (`asInstanceOf`), e il tipo di ritorno è letteralmente
++ `this.type of topic`. Questi metodi sono privati nei rispettivi package.
+
+@ 0 1 0 09851360f6913ae00e36d0bb49639d4a
++ ## Il prefisso `unsafe`
+
+@ 0 5 0 1c3e739d695f9de00fe56df7961f0db7
++ Un metodo che prende `vacuous.Unsafe` come parametro `using` è subordinato: il suo chiamante deve
++ possedere il token, il che in pratica significa scrivere `(using Unsafe)` o trovarsi dentro un
++ blocco `unsafely`. Ognuno di questi metodi ha un nome con il prefisso `unsafe` seguito da una
++ lettera maiuscola — `unsafeBuffer`, `unsafeAttested`, `unsafeChild` — così che il confine sia
++ visibile nel punto di chiamata e non solo nella firma.
+
+@ 0 4 0 0a3b769253dacf9919964dd01c8de7ea
++ Questo viene verificato. La regola Consequent `S1.1` è `strict` per ogni componente, quindi un
++ metodo subordinato con un nome ordinario fa fallire la build. Dove il nome non può prendere un
++ prefisso, il metodo viene rinominato invece che esentato: `Regex.apply(parts)(using
++ Unsafe)` è diventato `Regex.unsafeFrom(parts)`.
+
+@ 0 3 0 036ec849c45cffc50eaa0c7faba0005c
++ Due definizioni sono fuori dalla regola perché nessuna delle due ha un nome a cui mettere il
++ prefisso: un costruttore, e un `given`, che si evoca per tipo. Entrambe restano subordinate, e
++ l'argomento sul perché il cancello sia solido va in un commento accanto a loro.
+
+@ 0 2 0 02fd982e0c8f66941ead3185c26de225
++ L'inverso — un metodo con il prefisso `unsafe` deve essere subordinato — è `S1.2`, ed è per ora
++ consultivo invece che rigoroso. Otto definizioni lo violano:
+
+% 2 1 0 0fe376c0e9ac1b3618138b344e57a631
+
+@ 0 2 0 04d97bbd107ea5781a8c8760265dea44
++ column  Componente
++ column  Definizioni
+
+% 0 1 0 01f22307b9002ced1028d7065ee284ee
+
+@ 0 1 0 0c8223e0db0ff23a17af6ed4966fec93
++ row  vacuous  `Optional.unsafeGet` (privato al gruppo di estensioni)
+
+% 0 1 0 03baf2dc658d817f0cf9d236a3d8bd2c
+
+% 0 1 0 04a20e72f90900330a4a0c029413c786
+
+% 1 1 0 1c0e93a3adfa6c2814bd846956d56b4d
+
+@ 0 1 0 04d3eea5f681c6011b566c011fc7a9ac
++ (`archimedes.Ergo.unsafeInterpolate` è subordinato dallo svuotamento delle strategie
++ d'ambiente.)
+
+@ 0 8 0 125d0e603d9b774006380070d124d5eb
++ Subordinarli è voluto ed è tracciato come seguito, non rifiutato: una prova ha mostrato che la
++ modifica raggiunge centinaia di punti di chiamata, una buona parte dei quali sono chiamate a
++ blocco con due punti (`Array.unsafeFrozen:` su un argomento indentato) che non possono prendere
++ un'ulteriore lista di argomenti senza essere ristrutturate. `Optional.unsafeGet` richiede prima
++ una modifica sua: si trova in un gruppo di estensioni che porta una clausola `using
++ Optionality[optional.type]`, e un `(using Unsafe)` esplicito si lega invece a quella clausola
++ iniziale, quindi il metodo deve lasciare il gruppo prima di poter essere subordinato.
+
+@ 0 3 0 0cd3d8201553f7c51ec5e69b9ac52c78
++ Fino ad allora il censimento li conta come `unsafe-ungated`, che è la registrazione affidabile:
++ un avviso `S1.2` viene scartato ogni volta che il compilatore ha già segnalato qualcosa in una
++ posizione che lo racchiude nello stesso file.
+
+@ 0 2 0 00480bd6a9cd8336001ec06974cbccb7
++ Il prefisso è un marcatore, non una licenza. Dice che una garanzia si ferma qui, il che è l'inizio
++ di un argomento sul perché ciò sia solido, non la sua fine.
+
+@ 0 3 0 1e60644f1f450d7e0a0431151fd8460a
++ `unsafely` stesso non è coperto: il prefisso deve essere una parola intera — `unsafe` da solo, o
++ `unsafe` seguito da una maiuscola — quindi il blocco che fornisce il token è esente per
++ costruzione, mentre un metodo chiamato semplicemente `unsafe` non lo è.

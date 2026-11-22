@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 1469909138eb5b2811d3f170adf2b9d8
++ # `↯/s.27.7` — Valor `S16` acima de `Short.MaxValue`
+
+@ 0 2 0 09fd53daf321b5c8152053506222719d
++ Lançado em tempo de compilação pela macro `s16` do Hypotenuse quando o valor
++ excede `32767`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 1 0 064829a75424772e1186d478a899859b
++ Um `S16` (inteiro de 16 bits com sinal) tem `Short.MaxValue` como limite superior.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 13e78a9f2f36ce2b1ab32e20b7c3a8ef
+
+% 1 1 0 1c339b2876d98232051941807867b72f
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 17ccb540fc7f5b6b11388cd4d30a95b3
++ Forneça um valor no intervalo `-32768`–`32767`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 2 0 1670b5a1d401440e1b2b356791d92b91
++ - Os outros erros de literais inteiros: [Famílias](README.md#families)
++ - Código-fonte: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

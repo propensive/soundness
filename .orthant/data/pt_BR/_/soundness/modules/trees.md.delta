@@ -1,0 +1,321 @@
+orthant 2 language
+
+@ 0 1 0 022985c85cceb6871d5930cfe7dbb249
++ ## Árvores
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 3 0 16dad597a7e5fc2b11ff7f6bc0feac90
++ Uma hierarquia, como uma listagem de arquivos ou uma organização, é desenhada como texto com
++ caracteres de desenho de caixa. Um `TreeDiagram` desenha uma árvore. Os diagramas de DAG desenham
++ [grafos](graphs.md) cujos nós podem ter vários pais, numa grade densa ou nas raias conhecidas do
++ `git log --graph`.
+
+@ 0 2 0 03ee37230585367a0059993707abff23
++ Cada diagrama é um valor que produz linhas. Sua saída é impressa, estilizada ou embutida como
++ qualquer outro texto.
+
+@ 0 1 0 1b00c741fb591dc518f64c3e9d04518f
++ ### Sobre o desenho de hierarquias
+
+@ 0 4 0 17559bc1fdefb7d61f68c7fd5b5cb231
++ O `└─` e o `├─` de uma listagem de diretório parecem triviais, e não são. O prefixo de cada linha
++ depende de quais de seus ancestrais têm irmãos posteriores, de modo que o estado do desenho é
++ passado por toda a travessia. Um grafo acíclico dirigido é mais difícil. Um nó com dois pais nem
++ sequer pode ser desenhado como árvore, e dispor as raias que ligam os nós é um algoritmo de
++ verdade.
+
+@ 0 3 0 1d584593d585b96b16175326c68799f8
++ Layout e renderização são mantidos separados. Um diagrama calcula linhas de *ladrilhos*, e um
++ estilo mapeia cada ladrilho em caracteres. O mesmo layout é, portanto, desenhado em Unicode ou em
++ ASCII, simples ou com estilo. Isso é [desacoplamento](../../philosophy/decoupling.md) entre
++ estrutura e aparência.
+
+@ 0 2 0 10ca3eebe55ffbb90860886df52786ee
++ Tudo vem do pacote `soundness`. Os outros imports escolhem um estilo para as árvores e permitem
++ que os exemplos imprimam seus resultados:
+
+% 2 1 0 12576e583010dd7005c3bee03121485f
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1292755f8bcf70420be460e3b1af01d4
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 1 1 0 03bb0dfc22cf76b90cac31f160f05ccf
+
+@ 0 1 0 165c185a859812a913b72305821c0273
++ ### Árvores
+
+@ 0 2 0 1bdf9dce8a856ff205677f4fa9bd68ff
++ Uma árvore é dada como suas raízes e uma forma de alcançar os filhos de qualquer nó. Aqui essa
++ forma é uma função, `_.children`:
+
+% 2 1 0 0995ead62c7ac1841fdb75bbbdb4624d
+
+% 0 1 0 0b3e3ca412ff7f5e03a3137e42947294
+
+% 0 1 0 0a66c1373ba7371b18617a9bc557a100
+
+% 0 1 0 101198d4512177e401a2bed5b9e161fe
+
+% 0 1 0 00a9be4dfb79abcb0ac470ea8b54affe
+
+% 0 1 0 1510118e1fa685e4053de9d331eb31b5
+
+% 1 1 0 1a8b77feeaa4fa960aa6698e779967ea
+
+@ 0 1 0 0a72135f67a85ae40036a58f64a55408
++ `render` recebe uma função de um nó para seu rótulo e dá as linhas a imprimir:
+
+% 2 1 0 1573372695c0fc030b33d09194eac95a
+
+% 3 1 0 18583f4d4405d1d01b5c3e945103f0d3
+
+% 4 1 0 07abcb46af71095002aa1505d75fe12f
+
+% 0 1 0 13a5644b6d48f7ed11a6befc59d8d9be
+
+% 1 1 0 1c5f88df1799f597140617419b78897b
+
+@ 0 1 0 1197055d80e01b430a86ffc577efadce
++ Outro estilo desenha o mesmo diagrama de outra maneira. `roundedTreeStyle` arredonda os cantos:
+
+% 2 1 0 039804a2e31a34b8051cf67be24bb00b
+
+% 3 1 0 0488e85a11e49fd60eea75d783faa73e
+
+% 4 1 0 13dc3253acbd26050f370f263fab6a0d
+
+% 5 1 0 1d80bb5e681aa0180775611ad077c9aa
+
+% 0 1 0 0704b436f9a376cd14dca981c60c8010
+
+% 1 1 0 073fb35869725c76007f6b7adc7c193a
+
+% 2 1 0 17128839f0e7b5e61e8bd8386c0e1104
+
+@ 0 2 0 1330cd2ea7b3b7ba1e502b8dff88a9aa
++ `asciiTreeStyle` usa apenas caracteres ASCII, para uma saída que precisa sobreviver ao terminal
++ mais simples:
+
+% 2 1 0 1be2d49586fc2e4b0ecb61e096e7fa38
+
+% 3 1 0 1ee8f05bb34a25981d8b550aa988fbea
+
+% 4 1 0 032b52100e4da7910f84ac861bcaec0f
+
+% 5 1 0 01d73a235756e96705a026325e03186d
+
+% 0 1 0 0433e80e613ebb9e0d1777441fb8c910
+
+% 1 1 0 01923739a154564d1c404f3a69b57e52
+
+% 2 1 0 1eb29590ca458d970b9ee7ccfed987c5
+
+@ 0 1 0 0c607237e0f35c1c055c4bb3a0908aa5
++ ### Grafos
+
+@ 0 4 0 0ffcaf43982a70461fc010f2c6cff8a0
++ Um [`Dag`](graphs.md) é desenhado em dois layouts. `DagDiagram` é a forma densa, com cada aresta
++ desenhada numa grade de ladrilhos de conexão. `LaneDagDiagram` é a forma em raias, que é como o
++ histórico de um repositório costuma ser desenhado: os nós são círculos sobre raias verticais, e
++ as arestas fluem entre elas.
+
+% 2 1 0 0d1c2eedfd74ba6a01991a16ed767938
+
+% 0 1 0 07261c6022c48af20769722a7db1842a
+
+% 0 1 0 0113ecd3cd2f810810d22a6b0e5b8695
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1bd08d5dfb13e48d1f31b90bd13a4e50
+
+% 1 1 0 08e732deda7221e31b0f1217861c3fdc
+
+% 3 1 0 1a2101ed67cf96790800a2acfbd1dc1f
+
+% 4 1 0 10f542f6948424921ceea73af2769522
+
+% 5 1 0 1bc45463d1b874ed0ce4e08ceba46425
+
+% 0 1 0 017019c71978fd6910003bb51f25dcbc
+
+% 1 1 0 02d73e3e4147f8a81c94ab4d76890a49
+
+@ 0 1 0 0c2bbfd2de213e0a1b89f96d16fc1e87
++ Um histórico que se ramifica e se junta precisa de uma segunda raia:
+
+% 2 1 0 19da1c53a10b4c071f7c6e218a991d5e
+
+% 0 1 0 032c9258c26a4c5f09935c6f904f2df1
+
+% 0 1 0 0bcf42311a5a32bb0d42e27c3985c617
+
+% 0 1 0 0fa92b9f681ef2081904904e06cf5125
+
+% 0 1 0 08c969a936f56b511442f92fc2a98dcd
+
+% 0 1 0 127df8c9347d9c490ced0842a1bcd200
+
+% 1 1 0 0fd31be21bb95a880baf820e2bbc79bf
+
+% 3 1 0 045c391933a5a75a106fd21a9b10ec14
+
+% 4 1 0 1dc3f278115ed8f915dad93504ee881c
+
+% 5 1 0 13754d709657cf861d3664bfb8b71988
+
+% 0 1 0 02549bd9fed3c8a31873fcf82a2b7470
+
+% 1 1 0 0989093b4889899d0e9f182a2e9c9445
+
+@ 0 3 0 1188b50e6d7f1e4e1c55d92ca8595979
++ Uma função de glifos, dada por nó, marca nós escolhidos, como o commit atual ou uma build com
++ falha. `compact` compacta o layout. `LayeredDagDiagram` dispõe os nós em níveis em vez de raias.
+
+@ 0 1 0 06d71c1b84710ff00b5c28b987fff7a5
++ ### Estrutura e estilo separados
+
+@ 0 4 0 0762056fcfadc39110fafd21630a81c3
++ Um diagrama expõe suas linhas: os ladrilhos de cada linha e o nó a que a linha se refere. Um
++ consumidor pode, portanto, renderizar as linhas por conta própria, colorindo os rótulos de um tipo
++ de nó ou acrescentando uma nota a outro. Os caracteres de desenho de caixa continuam sendo assunto
++ do estilo, e o significado continua sendo de quem chama.
+
+% 2 1 0 090ecb413b780e1204650c3fe57459e8
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 1 1 0 1218c1987ab70ea81c56d0bc64fe9601
+
+% 3 1 0 0d2f300f319dcc9614cc95c530244c4a
+
+% 4 1 0 163a26af771f1c5e17ba43798d4fdbc8
+
+% 5 1 0 0512f81883a6ec811c18b4441862470e
+
+% 0 1 0 0834efd018d5064b006771ac6b68aba8
+
+% 1 1 0 153062051314cc830a63efc544baf97b
+
+@ 0 2 0 1e53f23f015e803007a2d10df65e7b87
++ `nodes` dá o nó de cada linha, na ordem do desenho, e `tiles` dá os ladrilhos de cada linha. Aqui
++ cada rótulo é precedido pelo número de ladrilhos na sua linha, que é a profundidade do seu nó.
+
+@ 0 3 0 1b26e3546e8c5fd119f7b65e7ba993fb
++ Um `TreeDiagram.Tile` é uma de quatro coisas, e um estilo diz no que cada uma se torna. Um
++ `TreeDiagram.TextualStyle` o diz com quatro pequenos pedaços de texto, que é tudo de que um novo
++ estilo precisa:
+
+% 2 1 0 0cb4ab0905efd8b41fa7bcabe1c73390
+
+@ 0 8 0 1f05400e0123732d1e7cea8102da33ab
++ column  Ladrilho
++ column  É
++ column  Argumento
++ column  Em `myStyle`
++ row  `Space`  um espaço  `space`  dois espaços
++ row  `Last`  um último ramo  `last`  `└─`
++ row  `Branch`  um ramo  `branch`  `├─`
++ row  `Extender`  uma linha que continua para baixo além de um nó  `extender`  `│` e um espaço
+
+% 1 1 0 022660d69e1ca8ec061c9d5bbd1bccde
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 1d96cfc8a2ab695a1d0399f73370b029
+
+% 1 1 0 0863b562326e683b09cd13f74f88bff3
+
+@ 0 3 0 15e8a6a624a1f42008e045829d2884c7
++ Um estilo é parametrizado pelo tipo de linha, e não está fixado em `Text`. Um diagrama pode,
++ portanto, ser renderizado diretamente em [saída de terminal](terminal.md) com estilo, com as
++ linhas da árvore numa cor e os rótulos em outra, e com as larguras ainda calculadas corretamente.
+
+@ 0 1 0 0160a3345a5d769a06c20cf68aeb10bc
++ ### Fornecendo a árvore
+
+@ 0 2 0 0c98519c603ac7a910e065128ee00092
++ Uma árvore é dada de uma de duas formas. `TreeDiagram.by` recebe uma função de um nó para seus
++ filhos. Isso convém a uma estrutura que já está em mãos.
+
+@ 0 3 0 1ea9b2ba13ac63cb1c816d6c8de30af2
++ `TreeDiagram.apply` recebe apenas as raízes, e encontra os filhos por meio de uma instância
++ `Expandable` no tipo do nó. Isso convém a um tipo de nó que tem um significado natural de
++ “filhos”: um caminho do sistema de arquivos, uma dependência, um nó de sintaxe.
+
+% 2 1 0 125a4c821bc4f1ab00173fc72219bde3
+
+% 0 1 0 07f75bda0013991f05b13eeec12c772e
+
+% 1 1 0 031896e87fa854390a61643cdcd4fbc0
+
+% 0 1 0 1ef6d85cbf8b2047106181665dbd79ab
+
+% 0 1 0 0e7d1f49cdf9ef541172455388c6ef8b
+
+% 1 1 0 0cbd328ee7075c27071158bdd2004149
+
+% 0 1 0 097add2b36cdb59e056d0fcbfc689ea5
+
+% 0 1 0 1688ce31ca9515dd0fbbc3661753d5b1
+
+% 1 1 0 021a95a89556858002683b8d1cf5c6bb
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 2 0 1d3794d7234d9d2d1d354fddb7aafd38
++ As linhas são produzidas de forma preguiçosa. Uma árvore grande ou profunda é desenhada até onde é
++ consumida, e não além.
+
+@ 0 6 0 067fb29aff28cbc50de8964feba22c24
++ A preguiça tem um limite, que pertence ao próprio desenho. Para renderizar uma linha, o diagrama
++ precisa saber quantos filhos tem cada *ancestral* do nó atual. Um nó cujo avô tem irmãos
++ posteriores precisa de uma linha vertical descendo pela coluna do avô. Um nó cujo avô foi o último
++ de seus irmãos precisa dessa coluna em branco. Nada sobre os descendentes de nós *posteriores* é
++ necessário até que a travessia chegue a eles, de modo que até uma árvore infinita pode ser
++ desenhada.
+
+@ 0 1 0 0afd48545764b8a500a8e1d7c5b2fe31
++ ### Escolhendo um layout de grafo
+
+@ 0 1 0 0f2142340682d33711a6c41558881a1a
++ Os três diagramas de grafos respondem a perguntas diferentes:
+
+% 2 1 0 06968a144d7c668302d988682140f4d1
+
+@ 0 6 0 10dec765b86a53ed11b1ef1a7c4e17d6
++ column  Diagrama
++ column  Desenha
++ column  Convém a
++ row  `DagDiagram`  cada aresta, numa grade de ladrilhos de conexão  um grafo pequeno com arestas complicadas
++ row  `LaneDagDiagram`  cada nó sobre uma raia vertical, como se desenha o histórico de controle de versão  um grafo longo com poucos ramos concorrentes
++ row  `LayeredDagDiagram`  nós em níveis por profundidade, ordenados dentro de cada nível para que o mínimo possível de linhas de conexão se cruze  mostrar o que depende do quê, em vez do que aconteceu em que ordem
+
+% 1 1 0 1ef8a8f70c24378e00afe8f0b62647c5
+
+@ 0 3 0 1cb1a8eb630ccc981a7ab88989cf2800
++ Os níveis de um `LayeredDagDiagram` vêm do arranjo `layered` do grafo. Assim,
++ `import rankings.balancedRanking` muda o desenho, assim como muda a
++ [organização em camadas](graphs.md).
+
+@ 0 3 0 1618cffadb0b6aff153c344c74b32699
++ Os três aceitam qualquer grafo que tenha uma ordem topológica: um `Dag`, uma `Topology` congelada
++ ou um `Hasse`. Desenhar um deles não pode falhar. Um `Digraph` pode conter um ciclo, e não tem
++ desenho até que `acyclic` o tenha convertido.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 5 0 06cd1f258e0db147142e76f103c2d713
++ - [Grafos](graphs.md) descreve `Dag`, `Digraph` e a organização em camadas que esses diagramas desenham.
++ - [Terminal](terminal.md) descreve o texto com estilo em que um diagrama pode ser renderizado.
++ - [Sistema de arquivos](filesystem.md) e [caminhos](paths.md) descrevem uma origem comum de árvores.
++ - [Git](git.md) lê o histórico de commits a que um diagrama de raias convém.
++ - [Tabelas](tables.md) dispõe dados tabulares como texto, no mesmo espírito.

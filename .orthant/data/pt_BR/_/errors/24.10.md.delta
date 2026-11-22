@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 16512445eb79d4e01062b9d118eb6be8
++ # `↯/s.24.10` — O padrão não é um tipo `Error` distinto
+
+@ 0 2 0 01fe3c271da94faf11e8074c51ec00d6
++ Lançado pelo extrator de tipos de padrão do Contingency quando um padrão não corresponde a um
++ subtipo distinto de `Error`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 08eae5c2cff1e94903419895677d3bef
++ Cada padrão de recuperação precisa identificar uma subclasse específica de `Error`, porque os
++ padrões são usados para conduzir o raciocínio no nível de tipos sobre quais erros restam depois
++ do tratamento. Um padrão que não casa com nenhum tipo `Error` específico não pode ser usado.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 02685f378d1c1f29141394f072fe9a60
+
+% 1 1 0 1022ee2d3e2f8cad1c5961b37ade75f4
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 1e50797681c7c0ed033feb3dfd7a8f3e
++ Case com uma subclasse concreta de `Error`, por exemplo `error: HostnameError`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 0a577f73475efca20b96d2f17614deed
++ - Código-fonte: `lib/contingency/src/core/contingency.internal.scala`

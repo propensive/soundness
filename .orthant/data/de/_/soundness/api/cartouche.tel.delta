@@ -1,0 +1,595 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06b23605c41af6441e37b1b6371b75e9
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e801473b9d9e33416d5d017c95661fc
++ info   Platzierung von Beschriftungen: findet für jedes Textstück auf einem Bild eine Position, frei vom Rest
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1f9a0f08a918a10d0b82fedd5f53b0ed
++     _Cartouche_ entscheidet, wohin jede Beschriftung auf einem Bild kommt. Text wird neben das
++     Ding gesetzt, das er benennt — eine Notiz an einen Punkt, ein Name an eine Stadt, ein
++     Prozentwert in ein Tortenstück —, und wenn zwei Dinge nahe beieinander liegen, kollidieren
++     ihre Beschriftungen. Cartouche nimmt jede Beschriftung (eine `Caption`: ihre gemessene
++     Größe, den Punkt, den sie beschreibt, und die Seiten, auf denen sie liegen darf) zusammen mit
++     allem auf der Seite, was Text nicht verdecken darf (jeweils ein `Obstacle`), und findet für
++     jede eine `Caption.Position`. Diagramme verwenden es für ihre Beschriftungen; eine Karte
++     würde es für ihre Ortsnamen verwenden. Die Engine sieht nur Geometrie, in einem nach unten
++     gerichteten y-Koordinatensystem, wie SVG es hat: Wer den Text zeichnet, misst ihn.
+
+@ 0 5 0 0fa1352abb9f107f012317f530969cbe
++     Der Code, der ein Bild aufbaut, weiß, was jede Beschriftung sagt, aber nicht, wo die anderen
++     landen werden, daher führt `arrange` diesen Code zweimal aus. Der erste Durchlauf zeichnet
++     jeden Aufruf von `position`, `avoid` und `canvas` auf und beantwortet jedes `position`
++     vorläufig; der `Arranger` im Geltungsbereich löst dann die gesamte Anordnung; und der zweite
++     Durchlauf beantwortet jedes `position` mit seinem gelösten Platz. Der Wert von `arrange` ist
++     der des zweiten Durchlaufs.
+
+% 2 1 0 02d2230cc0d0412d0c890f1ddc859355
+
+% 3 1 0 190299e209cc4a061b9cbaf577a652e8
+
+% 0 1 0 0f930d453d5b8fc61a2568d8b2394d74
+
+% 0 1 0 14f7862be4a7ce250e219f0b0ec52154
+
+% 0 1 0 1765cc09e6a1193e1031704c60cb278e
+
+% 0 1 0 0ce2f2da9a3490db14c275a3ad7bee9e
+
+% 1 1 0 1b8b83463b55c0f700785170329c0881
+
+@ 0 3 0 115066fca4d3f3c41017e166ba178f8d
++     Der Rumpf muss daher **wiederholbar** sein: jedes Mal dieselben `position`-Aufrufe in
++     derselben Reihenfolge, und nichts darf geschehen, was nicht zweimal geschehen sollte. Ein
++     Zähler, der die Beschriftungen nummeriert, gehört in den Rumpf, wo er mit dem zweiten
++     Durchlauf neu beginnt.
+
+@ 0 4 0 1f8ce5ecd81357ff1917d90ab203d6ea
++     Welcher Algorithmus anordnet, bestimmt der `Arranger` im Geltungsbereich: die gierige
++     Vorgabe aus dem Begleitobjekt von `Arranger`, einer, der namentlich aus dem Paket
++     `arrangers` importiert wird (`import soundness.*` importiert keine Givens), oder ein
++     konfigurierter `Arranger.Greedy` oder `Arranger.Annealing`, der als lokales Given gebunden
++     wird.
+
+@ 0 3 0 12433aabb0e07aff1190255056f25d9a
++     Die Bibliothek hat ein Source-Set, `cartouche.core`, das für jede Plattform kompiliert.
++     Alles wird in das Umbrella `soundness` exportiert, und das Auswahlpaket `arrangers` wird mit
++     dem eigenen des Umbrella zusammengeführt.
+
+% 0 1 0 0f49140743c8c46516706c51e3c4ebca
+
+% 0 1 0 011a27b591ad86660c6bd6fa70c7949d
+
+% 0 1 0 0e155f583a8e620408bc2f8c594677bd
+
+% 0 1 0 11c814630297185a10fc20263a04b722
+
+% 0 1 0 1ba23050185bff670a018354e444bdd2
+
+@ 0 1 0 088c9db08975d1e71060a165abb7d414
++ entry .arrange   führt einen bildaufbauenden Rumpf zweimal aus und beantwortet seine `position`-Aufrufe mit einer Anordnung
+
+% 1 1 0 064289f02572fb3f0e395be9ac9d889a
+
+@ 0 7 0 156389407f21c90100b827399daacc13
++       `arrange(body)` führt `body` einmal mit einem aufzeichnenden `Arranger.Pass` aus, in dem
++       jedes `position` mit `Caption.provisional` antwortet — der Beschriftung dort, wo sie
++       angefragt wurde, auf ihrer erstgewählten Seite — und jedes `avoid` und `canvas` notiert
++       wird; das Ergebnis dieses Durchlaufs wird verworfen. Der `Arranger` im Geltungsbereich
++       platziert dann alle aufgezeichneten Captions gegen die aufgezeichneten Hindernisse und die
++       Zeichenfläche, und der Rumpf wird erneut ausgeführt, wobei jeder `position`-Aufruf mit
++       seiner gelösten `Caption.Position` beantwortet wird, den Aufrufen des ersten Durchlaufs
++       anhand ihrer Reihenfolge zugeordnet. Das Ergebnis des zweiten Durchlaufs ist das von
++       `arrange`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 04c916801aa89a3b15ec6c26b8e2c93a
++         label Nichts im Weg: Die Beschriftung liegt im Osten
+
+% 1 1 0 15a92bc3bb87672e103b7f3cea7c086c
+
+% 2 1 0 1c5e477129e24c991631139742747a93
+
+% 4 1 0 0bfdd7cdbc3a50841d23838d72c21a25
+
+% 0 1 0 024ae26309597dc1132fa0e6025ea990
+
+% 1 1 0 19501732bd82408f01afd6a17c6edda0
+
+@ 0 1 0 1e4aeb3c6124c33f1ad8d363f6e9159d
++         label Ein Kasten im Osten: Die Beschriftung weicht nach Westen aus
+
+% 1 1 0 1ae99e4baeea973d0585a67e739dcb58
+
+% 2 1 0 11f2a46fbf625f350be3a827cbfa04b5
+
+% 4 1 0 09c235a31aa8bf0408f2c78a77a9b5c8
+
+% 0 1 0 0a52c19896ca806e1b70520252c07d20
+
+% 0 1 0 17e6db6dec2e9b0c12f3a3c3b135eb37
+
+% 1 1 0 03df8e6176ebd856196354f0944d1ee5
+
+@ 0 1 0 06c991ef2dd2335a0dad8b2ca75d3c57
++         label Nur Süden erlaubt, und blockiert: Die Beschriftung wird verschoben, mit einer Führungslinie
+
+% 1 1 0 05190a3be9a6716c0d8bfd76705d0e97
+
+% 2 1 0 1953ca498cc6f67e0922f6de3461a5c4
+
+% 4 1 0 037ca9d0a379d737057a30acbae642a2
+
+% 0 1 0 14bc0f114e3faa420883ec1a20784750
+
+% 0 1 0 1a35a1ca383882571429f831f7521c99
+
+% 0 1 0 1a2bcef174fddc5915b2815e805aa5b0
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 00f01867f14a56680b334509962f0ec9
++       Der Rumpf muss in beiden Durchläufen dieselben Aufrufe in derselben Reihenfolge machen und
++       keine anderen Effekte haben. Ein Aufruf im zweiten Durchlauf, den der erste nicht gemacht
++       hat, oder einer mit einer anderen Caption wird vorläufig beantwortet und als
++       `Arranger.Pass#diverged` aufgezeichnet.
+
+% 1 1 0 1ad9dc1e6300643205bf0417a6d8a61e
+
+% 1 1 0 01cefda173e9a12a1885a3a58888071b
+
+% 2 1 0 0b8171df598b7133022fff274f08136c
+
+% 0 1 0 025cfa407742f0280e2e3e0ecf4dd8a2
+
+@ 0 7 0 027ace35ce26078405f5247a563d155d
++ entry .position   fragt innerhalb eines `arrange`-Rumpfs einen Platz für eine Beschriftung an
++     Braucht den `Arranger.Pass`, den `arrange` bereitstellt. Nimmt eine `Caption` oder direkt
++     die Teile der Caption: `width` und `height` (die gemessene Beschriftung), `x` und `y` (den
++     Zielpunkt) und optional `attachments` (die Seiten, auf denen sie liegen darf, die beste
++     zuerst; standardmäßig `Caption.Attachment.compass`), `standoff`, `reach`, `padding`,
++     `priority` und `fallback`, jeweils wie `Caption` es beschreibt. Im ersten Durchlauf des
++     Rumpfs ist die Antwort vorläufig; im zweiten ist sie die gelöste `Caption.Position`.
+
+% 2 1 0 16868ee13f6968e11cf54c6b08310250
+
+% 3 1 0 0e55ebf15d4060ef06a39ec8e1ded4c7
+
+% 0 1 0 1c2ed1219e8a168714ed9825fcb15453
+
+% 0 1 0 1f17fcdbb3aa2b3618e2a5e774147ce4
+
+% 1 1 0 0831c7ff13fc88b200f0d3573b1b94b4
+
+@ 0 5 0 1c8bc2c01d655466003dad376aced00e
++ entry .avoid   deklariert innerhalb eines `arrange`-Rumpfs Hindernisse, über die keine Beschriftung gesetzt werden darf
++     Nimmt beliebig viele `Obstacle`s — ein `Obstacle.Box` für einen Balken oder eine Legende,
++     ein `Obstacle.Line` für jedes Segment einer gezeichneten Linie, ein `Obstacle.Disc` für
++     eine Markierung — und fügt sie der Anordnung hinzu. Braucht den `Arranger.Pass`, den
++     `arrange` bereitstellt; nur die Aufrufe des ersten Durchlaufs zählen.
+
+% 2 1 0 0b130e656e607d3313434de6863a692f
+
+% 3 1 0 0a37784d9a6887e10075b3ba4fc9d8ca
+
+% 5 1 0 0de1e4035e71e3a10acb53e05456d759
+
+% 0 1 0 0be6ce594f44b4811a115ea865eb0770
+
+% 0 1 0 18b009d6512271f9080e9f25ccebe0e1
+
+% 1 1 0 029893d87378fcd10a35def2574c7038
+
+@ 0 3 0 162cc59949a9ecfc06d384032808ab4a
++ entry .canvas   deklariert innerhalb eines `arrange`-Rumpfs den Bereich, in dem Beschriftungen bleiben müssen
++     Nimmt ein `Obstacle.Box`; der Teil der Fläche einer Beschriftung außerhalb davon zählt als
++     Kollision. Ohne Zeichenfläche ist die Seite unbegrenzt, und wenn der Rumpf mehr als eine
++     deklariert, gewinnt die letzte.
+
+% 2 1 0 035598e209e56d3e0109c53ef10893cf
+
+% 3 1 0 0caa193bf7aafbc71d8be4a0052be7f3
+
+% 5 1 0 1d6ed4f7ec4362990ba974ef41c71159
+
+% 0 1 0 0f2e27567938ffac008351017fc1b295
+
+% 0 1 0 1c91111d9ec6993911393bdae4cc85ed
+
+% 1 1 0 06ac1c627bbe9cff166053df7e78313d
+
+@ 0 1 0 0c7c9923b6caadf91c20761053360ac0
++ entry .Caption   eine Anfrage, eine Beschriftung zu platzieren: ihre Größe, der Punkt, den sie beschreibt, und wie sie gesetzt werden darf
+
+% 1 1 0 01b5ee5f13e661aa0e3f2fd0f93ca0c0
+
+@ 0 9 0 1b761a4ed72361b60a17a057fce485f9
++       Eine Case-Klasse mit der Geometrie einer Beschriftung. `width` und `height` sind ihre
++       gemessene Größe; `x` und `y` das Ziel, das sie beschreibt. `attachments` listet die Seiten
++       des Ziels, auf denen sie liegen darf, die beste zuerst (standardmäßig
++       `Caption.Attachment.compass`); eine Caption ohne Seiten wird wie eine behandelt, die im
++       Osten liegen darf. `standoff` ist der Abstand zwischen dem Ziel und der nahen Kante der
++       Beschriftung, für eine Beschriftung neben einer Markierung statt auf ihrer Mitte. `reach`
++       gibt an, wie weit der Ankerpunkt der Beschriftung von ihrem Ziel verschoben werden darf,
++       wenn jede Seite blockiert ist; die Vorgabe, null, hält sie fest. `padding` ist der um die
++       Beschriftung geforderte Freiraum. Captions mit höherer `priority` werden zuerst platziert
++       und behalten so ihre Ziele. `fallback` sagt, was aus einer Beschriftung wird, die überall
++       kollidiert, wo sie hingesetzt wird.
+
+% 2 1 0 0b42f840c2e96de20fac7258fcd5889e
+
+% 3 1 0 04a7881e544ac62e085886e369552e43
+
+% 0 1 0 1cc0d887a5117c5e05ea42fcf912440a
+
+% 0 1 0 0389a70a6e5ad4521b6bac84226b1054
+
+% 1 1 0 01f1689a4f0ca41905d4f4e96a80e7c4
+
+@ 0 3 0 17d93527bb64988711a431f93a7bff76
++       Eine Caption mit einer Seite und ohne Reichweite wird genau dort platziert, wo sie es
++       verlangt, was auch immer dort ist, und alles nach ihr weicht ihr aus: So bleiben die
++       Teilstrich-Beschriftungen und die Legende eines Diagramms stehen, während sich seine
++       Punktbeschriftungen bewegen.
+
+% 0 1 0 157a37a9e0382c7d1d52bc28a16ad187
+
+% 0 1 0 0899ba996f1a94010ce54b2bca43a7dc
+
+% 1 1 0 1491c192403d00b30fbf08d81707d09a
+
+@ 0 20 0 04b69f0ebfc760e21e8a8f310cba94bb
++   entry #width   die gemessene Breite der Beschriftung
++   entry #height   die gemessene Höhe der Beschriftung
++   entry #x   die horizontale Koordinate des Ziels, das die Beschriftung beschreibt
++   entry #y   die vertikale Koordinate des Ziels, nach unten zunehmend
++   entry #attachments   die Seiten des Ziels, auf denen die Beschriftung liegen darf, die beste zuerst
++   entry #standoff   der Abstand zwischen dem Ziel und der nahen Kante der Beschriftung
++   entry #reach   wie weit die Beschriftung von ihrem Ziel verschoben werden darf, wenn jede Seite blockiert ist
++   entry #padding   der um den Kasten der Beschriftung geforderte Freiraum
++   entry #priority   die Platzierungsreihenfolge: Eine höhere Priorität wird früher platziert und behält ihr Ziel
++   entry #fallback   ob eine Beschriftung, die überall kollidiert, trotzdem gezeichnet oder verborgen wird
++   entry #sides   die zu versuchenden Seiten: `#attachments` oder allein `East`, wenn das leer ist
++   entry #anchor   der Ankerpunkt der Beschriftung auf einer Seite ihres Ziels, um einen Versatz verschoben
++       `caption.anchor(attachment, dx, dy)` ist das Ziel, verschoben um (`dx`, `dy`) und dann um
++       `#standoff` in Richtung der Seite.
++   entry #footprint   der Kasten, den die Beschriftung einnimmt, wenn sie an einem Punkt auf einer Seite verankert ist
++       `Obstacle.Box.around` mit der Größe der Caption.
++   entry .provisional   die Antwort vor der Anordnung: die Beschriftung an ihrem Ziel, auf ihrer ersten Seite
++       Was jeder `position`-Aufruf im ersten Durchlauf eines `arrange`-Rumpfs erhält und was ein
++       Aufruf, der vom ersten Durchlauf abweicht, im zweiten erhält.
++   entry .Attachment   auf welcher Seite ihres Ziels eine Beschriftung liegt: die acht Himmelsrichtungen oder `Center`
+
+% 1 1 0 058a65202c21bd8d1f2125732a0c9422
+
+@ 0 6 0 05f64defba7d532f1ee37d0e6ba4c40f
++         Ein Enum in einem nach unten gerichteten Koordinatensystem, sodass `North` über dem Ziel
++         liegt. Seine Fälle sind `North`, `Northeast`, `East`, `Southeast`, `South`, `Southwest`,
++         `West`, `Northwest` und `Center`. Der Ankerpunkt einer Beschriftung ist ihre dem Ziel
++         nächstgelegene Kante: für `East` die Mitte ihrer linken Kante, für `North` die Mitte
++         ihrer unteren Kante, für `Center` ihr Mittelpunkt, sodass ein Renderer seine eigene
++         Ausrichtung aus der Seite ableitet (`text-anchor` und `dominant-baseline` eines
++         SVG-`text`-Elements).
+
+% 2 1 0 1ca7bfd0f1c81358134daa2546da1e35
+
+% 3 1 0 1aa13a6f2566c2d61caefe3fcc9e844c
+
+% 0 1 0 13913f8510433f170f081eb52aa4a262
+
+% 0 1 0 1f06db615423af62034f35e6d690bb84
+
+% 1 1 0 1105b6cb7ffe45b70ae1a1a7726588e9
+
+@ 0 8 0 0a7bd5cd2e1e46bc0ca318aac1ac811c
++     entry .compass   die kartografische Vorliebe: Osten, Westen, die vier Diagonalen, dann Norden und Süden
++     entry .cardinal   Osten, Westen, Norden und Süden, in dieser Reihenfolge
++     entry #dx   der horizontale Einheitsversatz vom Ziel zur nahen Kante der Beschriftung: -1, 0 oder 1
++     entry #dy   der vertikale Einheitsversatz vom Ziel zur nahen Kante der Beschriftung: -1, 0 oder 1
++   entry .Fallback   was aus einer Beschriftung wird, die überall, wo sie hingesetzt wird, etwas überlappt
++       Ein Enum mit zwei Fällen. `Overlap`, die Vorgabe, zeichnet die Beschriftung an der
++       Position, an der sie am wenigsten überlappt. `Hide` zeichnet sie nicht: Ihr
++       `Caption.Position#visible` ist `false`, der Rumpf zeichnet nichts für sie, und sie
++       blockiert nichts für die nach ihr platzierten Beschriftungen.
+
+% 2 1 0 03f85aae2c6fa9611442bfc243757931
+
+% 3 1 0 0b1cbd820d120e7d1c1c092640c857a1
+
+% 0 1 0 128ea21b9794b7e60caaf5345577b222
+
+% 0 1 0 0b23cf323a84886d192342cd62167be5
+
+% 0 1 0 1e30ae471fc597f405a06e2c92952e73
+
+% 0 1 0 0e0cc0589c0cbf6b17bd5eb9c3dbbbdd
+
+% 1 1 0 0770ead20c15800d1dfdaab1267fb5de
+
+@ 0 1 0 1c74bdf436404c930a5420ecb7693688
++   entry .Leader   eine Linie von der Kante einer verschobenen Beschriftung zurück zu dem Ziel, das sie beschreibt
+
+% 1 1 0 035632d8f693394907a7fe3bcc7a6daf
+
+@ 0 9 0 1ea0d0521e995e4b040da8a8cb77b6b9
++         Gezeichnet für eine Beschriftung, die weiter von ihrem Ziel verschoben wurde als die
++         Führungslinien-Schwelle des Arrangers. Sie verläuft vom nächstgelegenen Punkt auf dem
++         Kasten der Beschriftung zum Ziel. Spätere Beschriftungen meiden eine Führungslinie, wie
++         sie die Beschriftung meiden, zu der sie gehört; eine Führungslinie darf ein festes
++         Hindernis kreuzen, da sie genau dazu da ist, an einer Markierung vorbei auf das Ziel zu
++         zeigen, aber keine andere Beschriftung.
++     entry #x1   die horizontale Koordinate des Endes an der Kante der Beschriftung
++     entry #y1   die vertikale Koordinate des Endes an der Kante der Beschriftung
++     entry #x2   die horizontale Koordinate des Endes am Ziel
++     entry #y2   die vertikale Koordinate des Endes am Ziel
++   entry .Position   der angeordnete Platz einer Beschriftung: Ankerpunkt, Seite, Grundfläche, Führungslinie und Sichtbarkeit
+
+% 1 1 0 1343b2d4d47668f70e0c6694864a8f39
+
+@ 0 4 0 076aba6b2dbe64f309c6e54fe751f3e2
++         Was `position` antwortet. Der Text wird bei (`#x`, `#y`) gesetzt, mit der Ausrichtung,
++         die sein `#attachment` impliziert, und nimmt `#box` ein; `#leader` ist die Linie, die
++         zurück zum Ziel zu zeichnen ist, falls die Beschriftung so weit verschoben wurde, dass
++         sie eine braucht; und `#visible` ist `false` für eine Beschriftung mit
++         `Caption.Fallback.Hide`, die nicht frei platziert werden konnte.
+
+% 2 1 0 0ca1e88253fc6bd41922d08979447fd2
+
+% 3 1 0 0f3826d8103703df1f255e6f7aab7aec
+
+% 0 1 0 0f39e7722fc9b2ab041cd59644012251
+
+% 0 1 0 0ff0de59855274411f5b7436d1f4d934
+
+% 1 1 0 1af780c8ad57dc81151359b5c509f3df
+
+@ 0 6 0 078cd5131a370551095e903c6482ea9d
++     entry #x   die horizontale Koordinate des Ankerpunkts der Beschriftung
++     entry #y   die vertikale Koordinate des Ankerpunkts der Beschriftung
++     entry #attachment   die Seite des Ziels, auf der die Beschriftung liegt und aus der ihre Ausrichtung folgt
++     entry #box   der Kasten, den die Beschriftung einnimmt
++     entry #leader   die zurück zum Ziel zu zeichnende Führungslinie oder `Unset`, wenn keine nötig ist
++     entry #visible   ob die Beschriftung überhaupt gezeichnet werden soll
+
+@ 0 1 0 18c6fa005845f6260aadefcadb06941c
++ entry .Obstacle   etwas, über das keine Beschriftung gesetzt werden darf: ein Kasten, eine gezogene Linie oder eine Scheibe
+
+% 1 1 0 02df2b3c0496ecbd0760cde5d0146b96
+
+@ 0 5 0 07d4aa8a832c50511d888dee9a7b6bd7
++       Ein versiegelter Trait aus drei Formen, von denen jede `#overlap` beantwortet — wie viel
++       eines Kastens sie bedeckt, in Flächeneinheiten. Die Antwort ist genau null, wenn die beiden
++       disjunkt sind, und ihr Betrag ordnet nur Kandidatenpositionen gegeneinander, daher ist der
++       einer Scheibe eine Schätzung. Hindernisse werden in einem `arrange`-Rumpf mit `avoid`
++       deklariert und die Zeichenfläche mit `canvas`; die Grundfläche und die Führungslinie jeder
++       platzierten Beschriftung werden zu Hindernissen für die Beschriftungen nach ihr.
+
+% 1 1 0 1f23fc055b6a8c211cdd6e82a64c75c7
+
+% 2 1 0 1a490104b459cbb40a4b00f8eb80f336
+
+@ 0 2 0 0e370975db9e53a1102789034ad5343a
++   entry #overlap   wie viel eines Kastens dieses Hindernis bedeckt: genau null, wenn sie disjunkt sind
++   entry .Box   ein achsenparalleles Rechteck in einem nach unten gerichteten Koordinatensystem: ein Balken, eine Legende, die Grundfläche einer Beschriftung
+
+% 1 1 0 1d639e5f9966cb1d1579a6ab1b52d2a7
+
+@ 0 2 0 149c4750d09c18e0069edd0ff80db524
++         Gegeben durch seine Kanten `#left` und `#top` sowie seine `#width` und `#height`. Als
++         Hindernis ist seine Überlappung mit einem anderen Kasten die Fläche, die sie teilen.
+
+% 2 1 0 13a0ddbc5b4d61570e0f162e858367ca
+
+% 3 1 0 02782a06d6b951231e28b77f30ab2eae
+
+% 0 1 0 136c6df93614da980284b54106ea80f1
+
+% 0 1 0 15ccc1392729e2de0b2b48c6930574e4
+
+% 1 1 0 04eedf50127884ae0d1d84f979e538c3
+
+@ 0 17 0 121b44afa6f5b18d1ae2297eba056a3e
++     entry .around   die Grundfläche einer Beschriftung, die an einem Punkt auf einer Seite ihres Ziels verankert ist
++         `Obstacle.Box.around(x, y, width, height, attachment)`: Für `East` ist der Ankerpunkt die
++         Mitte der linken Kante des Kastens, für `North` die Mitte seiner Unterkante, für
++         `Center` sein Mittelpunkt.
++     entry #left   die linke Kante des Kastens
++     entry #top   die obere Kante des Kastens
++     entry #width   die Breite des Kastens
++     entry #height   die Höhe des Kastens
++     entry #right   die rechte Kante des Kastens
++     entry #bottom   die untere Kante des Kastens
++     entry #area   die Fläche des Kastens
++     entry #centerX   die horizontale Koordinate des Mittelpunkts des Kastens
++     entry #centerY   die vertikale Koordinate des Mittelpunkts des Kastens
++     entry #pad   der Kasten, auf jeder Seite um einen Betrag vergrößert
++     entry #excess   wie viel der Fläche dieses Kastens außerhalb eines anderen Kastens liegt, etwa der Zeichenfläche
++     entry #contains   ob ein Punkt im Kasten liegt, Kanten eingeschlossen
++     entry #nearest   der Punkt auf dem Umfang des Kastens, der einem gegebenen Punkt am nächsten liegt, wo eine Führungslinie auf ihn trifft
++   entry .Line   ein gezogenes Segment: eine Kante eines gezeichneten Linienzugs oder eine Führungslinie
+
+% 1 1 0 1f1d0f11642749c4044bf3111d587221
+
+@ 0 11 0 038115e0f767ab5b0f98b981e4289f12
++         Von (`#x1`, `#y1`) nach (`#x2`, `#y2`), mit einer Strichbreite `#width`, die standardmäßig
++         1 ist. Seine Überlappung mit einem Kasten ist die Länge des Segments innerhalb des
++         Kastens, ermittelt durch Liang-Barsky-Clipping, mal seiner Breite, sodass eine
++         Beschriftung es nicht berühren darf. Ein Linienzug wird als seine Segmente gemieden.
++     entry #x1   die horizontale Koordinate des Anfangs des Segments
++     entry #y1   die vertikale Koordinate des Anfangs des Segments
++     entry #x2   die horizontale Koordinate des Endes des Segments
++     entry #y2   die vertikale Koordinate des Endes des Segments
++     entry #width   die Strichbreite, mit der die geclippte Länge multipliziert wird
++     entry #length   die Länge des Segments
++   entry .Disc   ein gefüllter Kreis, etwa die Markierung eines Streudiagramms
+
+% 1 1 0 0d0db0eb1aa12962172c8dc9d423ed54
+
+@ 0 6 0 068f4d383f594da019542adfc65b2a01
++         Zentriert bei (`#x`, `#y`). Ein Kasten ist genau dann frei von ihr, wenn der
++         nächstgelegene Punkt des Kastens mindestens `#radius` vom Mittelpunkt entfernt ist;
++         andernfalls wird die Überlappung als die Überlappung des Kastens mit dem umschließenden
++         Quadrat der Scheibe geschätzt, skaliert mit π/4.
++     entry #x   die horizontale Koordinate des Mittelpunkts
++     entry #y   die vertikale Koordinate des Mittelpunkts
++     entry #radius   der Radius der Scheibe
+
+@ 0 1 0 13760589db0496f701311aadc5403328
++ entry .Arranger   ein Algorithmus, der für jede Caption eine Position findet, gegeben alles andere auf der Seite
+
+% 1 1 0 1dd3063f2d57ec6f13fdfc6cc6734b28
+
+@ 0 4 0 1dc6a90f6d09b2a80397edadd25e4219
++       Ein Trait mit einer einzigen Methode: `#arrange` nimmt die Captions, die Hindernisse und
++       die optionale Zeichenfläche und antwortet mit einer `Caption.Position` für jede Caption, in
++       der Reihenfolge der Captions. `arrange` verwendet den im Geltungsbereich: `.greedy` aus dem
++       Begleitobjekt, sofern nicht ein anderer aus dem Paket `arrangers` importiert oder als
++       lokales Given gebunden wird.
+
+% 2 1 0 13f2daf1e43e3d2f1605a10c419eb759
+
+% 3 1 0 01b7c58fb39353f11a1e8cd7bfece576
+
+% 0 1 0 17c3c969b6faf1dc039d64e6e6e04cbc
+
+% 2 1 0 16209625213cd0b9144a0297bbb90010
+
+% 3 1 0 1e7ac317d65570ef139b21dcd6eefe9a
+
+% 1 1 0 082b20d2ddb0adc60711243386e1b1e2
+
+@ 0 6 0 1d901379b58d3d581b5efe014deb4509
++       Beide eingebauten Arranger probieren für jede Caption eine endliche Liste von Kandidaten,
++       die am wenigsten verschobenen zuerst: jede Seite am Ziel, dann jede Seite in jeder von acht
++       Richtungen einen `step` entfernt, dann zwei Schritte und so weiter bis zur `reach` der
++       Caption oder `rings` Schritten. Die Kollision eines Kandidaten ist die Fläche seiner
++       aufgefüllten Grundfläche unter jedem festen Hindernis, jeder platzierten Beschriftung und
++       jeder platzierten Führungslinie, zuzüglich seiner Fläche außerhalb der Zeichenfläche und der
++       Länge seiner eigenen Führungslinie über platzierte Beschriftungen hinweg.
+
+% 0 1 0 14fdc156f5593bb30758bdc18ab590f4
+
+% 0 1 0 104aba3926f1e9ae13424a5c7c5ae017
+
+@ 0 5 0 19c51f01dc600ed00506f4d81fad62d0
++   entry #arrange   Positionen für die Captions, in ihrer Reihenfolge, gegeben die Hindernisse und die Zeichenfläche
++   entry .greedy   der vorgegebene Arranger: `Arranger.Greedy()` mit seinen vorgegebenen Parametern
++       Im impliziten Geltungsbereich, sodass `arrange` keinen Import braucht; ein aus
++       `arrangers` importiertes oder lokal deklariertes Given hat Vorrang.
++   entry .Pass   ein Durchlauf eines `arrange`-Rumpfs: zeichnet im ersten Anfragen auf, beantwortet sie im zweiten
+
+% 1 1 0 1e5a47432d3d6c8f0d0eb4345873ad91
+
+@ 0 9 0 09ae2163a3e35560134337a50a0d9a03
++         Der Kontextwert, den `arrange` seinem Rumpf bereitstellt und den `position`, `avoid` und
++         `canvas` brauchen. Er ist veränderlich und wird von `arrange` für einen Durchlauf
++         erzeugt, nie geteilt, und kann anderswo nicht konstruiert werden.
++     entry #solved   ob dies der zweite Durchlauf ist, dessen Antworten die gelösten Positionen sind
++     entry #diverged   ob der zweite Durchlauf etwas angefragt hat, was der erste nicht angefragt hat
++         Ein Aufruf über die aufgezeichneten hinaus, oder einer, dessen Caption sich von der des
++         ersten Durchlaufs an derselben Position in der Reihenfolge unterscheidet, wird vorläufig
++         beantwortet und setzt dieses Flag: Der Rumpf war nicht wiederholbar.
++   entry .Greedy   platziert jede Caption in Prioritätsreihenfolge an ihrer besten Stelle, gegeben die bereits platzierten
+
+% 1 1 0 0c921040432db6da1289f34dd52f0f11
+
+@ 0 6 0 10f69d08da54140e149469ce3f5153ca
++         Jede Caption, die mit der höchsten `priority` zuerst und sonst in Reihenfolge, nimmt den
++         am wenigsten verschobenen Kandidaten, der frei von allem vor ihr Platzierten ist, oder
++         den am wenigsten kollidierenden, wenn keiner frei ist. Deterministisch und begrenzt durch
++         die Anzahl der Kandidaten: höchstens 1 + 8 × `rings` pro Seite. Eine früh platzierte
++         Caption wird nie verschoben, um Platz für eine später platzierte zu machen, was auf einem
++         dichten Bild Kollisionen hinterlassen kann, die eine andere Reihenfolge vermieden hätte;
++         `Arranger.Annealing` geht das an.
+
+@ 0 10 0 030792a73a231d881958801b1ed786de
++         Die Parameter: `step` (Vorgabe 4) ist der Abstand zwischen Ringen von Kandidaten,
++         `rings` (Vorgabe 8), wie viele Ringe nach außen gesucht werden, `leaderThreshold`
++         (Vorgabe 6) die Verschiebung, ab der eine Führungslinie gezeichnet wird, und
++         `leaderWidth` (Vorgabe 1) die Strichbreite, die eine Führungslinie als Hindernis erhält.
++     entry #step   der Abstand zwischen aufeinanderfolgenden Ringen von Kandidatenpositionen
++     entry #rings   wie viele Ringe von Kandidaten gesucht werden, vor der Reichweite der Caption
++     entry #leaderThreshold   die Verschiebung, ab der eine Beschriftung eine Führungslinie erhält
++     entry #leaderWidth   die Strichbreite einer Führungslinie, als Hindernis für andere Beschriftungen
++     entry #arrange   platziert die Captions gierig und verbirgt diejenigen, die kollidieren und verborgen werden wollen
++   entry .Annealing   verfeinert die gierige Anordnung durch simuliertes Abkühlen, ausgehend von einem festen Seed
+
+% 1 1 0 02bd1e25185bfd0e0b053f32088b414b
+
+@ 0 7 0 06417e7a803e1bdd1eed1726d8ccb413
++         Beginnt mit der gierigen Anordnung und verschiebt dann wiederholt eine zufällige Caption
++         auf einen zufälligen ihrer Kandidaten, wobei ein Zug angenommen wird, der die
++         Gesamtkollision und die gewichtete Verschiebung senkt, und einer, der sie erhöht, mit
++         einer Wahrscheinlichkeit, die sinkt, während die Temperatur abkühlt. Anders als beim
++         gierigen Durchgang kann eine früh platzierte Caption verschoben werden, um Platz für eine
++         später platzierte zu machen. Die zufälligen Züge werden über capricious aus `seed`
++         gezogen, sodass dieselbe Eingabe jedes Mal gleich angeordnet wird, und `iterations`
++         begrenzt die Arbeit genau. Captions, die immer noch kollidieren und verborgen werden
++         wollen, werden verborgen, die unwichtigsten zuerst.
+
+% 2 1 0 11534037e3ba0333139ad269514189c9
+
+% 3 1 0 1e1c36901849cd9c126ae4f35626f097
+
+% 0 1 0 071561058896c7330f34479307214b6a
+
+% 1 1 0 0d9c89185fc59c3e1be3936932313d20
+
+@ 0 14 0 128a545ce22c2dfc1034505cbc2605a2
++         Parameter mit ihren Vorgaben: `seed` (`Seed(0L)`), `iterations` (4000),
++         `temperature` (1.0), `cooling` (0.995, der bei jedem Zug angewandte Faktor),
++         `displacementWeight` (0.05, wie stark die Verschiebung gegenüber der Kollision zählt)
++         sowie `step`, `rings`, `leaderThreshold` und `leaderWidth` wie bei `Arranger.Greedy`.
++     entry #seed   der Seed, aus dem die zufälligen Züge gezogen werden
++     entry #iterations   die genaue Anzahl der zu versuchenden Züge
++     entry #temperature   die Anfangstemperatur, die skaliert, wie bereitwillig ein schlechterer Zug angenommen wird
++     entry #cooling   der Faktor, mit dem die Temperatur nach jedem Zug multipliziert wird
++     entry #step   der Abstand zwischen aufeinanderfolgenden Ringen von Kandidatenpositionen
++     entry #rings   wie viele Ringe von Kandidaten gesucht werden, vor der Reichweite der Caption
++     entry #leaderThreshold   die Verschiebung, ab der eine Beschriftung eine Führungslinie erhält
++     entry #leaderWidth   die Strichbreite einer Führungslinie, als Hindernis für andere Beschriftungen
++     entry #displacementWeight   wie schwer der Abstand einer Beschriftung von ihrem Ziel gegen sie zählt
++     entry #arrange   kühlt die Anordnung ausgehend vom gierigen Start ab und verbirgt dann, was verborgen werden muss
+
+@ 0 1 0 12ca3e491d5610661d943d241a8211d5
++ entry .arrangers   die eingebauten Arranger, jeder ein Given, das namentlich importiert wird
+
+% 1 1 0 13bab8bc64ba3d201325ab36ca865455
+
+@ 0 4 0 1c7a808d87f374fb15a9c7e30bf0bbfd
++       Der `Arranger` im Geltungsbereich entscheidet, wie `arrange` Beschriftungen platziert. Das
++       Begleitobjekt von `Arranger` liefert standardmäßig den gierigen; einen davon namentlich zu
++       importieren oder einen konfigurierten `Arranger.Greedy` oder `Arranger.Annealing` als
++       lokales Given zu binden, überschreibt ihn. `import soundness.*` importiert keine Givens,
++       daher wird jeder namentlich importiert.
+
+% 2 1 0 12c6069bc5ff53cf022ad836493dc4c3
+
+% 3 1 0 1063f763926a5e0308a5631e6772b492
+
+% 0 1 0 075d39f9c7df0f841fd3f22930e552d6
+
+% 2 1 0 09016133b09127f61d92bf50526f314e
+
+% 3 1 0 0ec34f66b294d11a1a1b7a64939169d4
+
+% 0 1 0 09beca149977b55211cd35e8a8791f0f
+
+% 0 1 0 0295d51219211984050cfc53bbc4e962
+
+% 1 1 0 05de78e533337026038fd62566beb1c2
+
+@ 0 2 0 1ae875e88eb4cb3c0b18c7dddee5382f
++   entry .greedyArranger   `Arranger.Greedy()`: deterministisch, nach Priorität geordnet, sieht eine Beschriftung nie erneut an
++   entry .annealingArranger   `Arranger.Annealing()`: simuliertes Abkühlen ausgehend vom gierigen Start, Seed 0

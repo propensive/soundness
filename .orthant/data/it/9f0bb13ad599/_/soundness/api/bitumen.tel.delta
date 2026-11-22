@@ -1,0 +1,15 @@
+orthant 2 language
+
+% 4 1 0 15e6a895458bd2d6147acefbbfe52eef
+
+% 4 1 0 01433c0f4787890615aaec8a85cd9611
+
+% 4 1 0 0122d02c7f95aad1136f263bc9575658
+
+@ 0 6 0 1c74390e481d23371a212d68849cc0ca
++     Ha bisogno delle politiche `CreateParents` e `OverwritePreexisting` per il piano
++     (importate per nome da `filesystemOptions`), di una `Tactic[Io.Error]` e di una
++     `Tactic[Tar.Error]`. Le modalità vengono impostate attraverso l'attributo `unix:mode`, e
++     lasciate silenziosamente al valore predefinito del filesystem dove questo non è supportato.
++     Per estrarre un archivio troppo grande per essere tenuto come `Tarfile`, si itera
++     `Tarfile.read` o un blocco `open[Tar]` e si costruisce un `Tarfile` di una voce alla volta.

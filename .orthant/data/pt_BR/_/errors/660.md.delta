@@ -1,0 +1,16 @@
+orthant 2 language
+
+@ 0 1 0 1e31b6c8ad7c9e9614d5038f040041fd
++ # `SN-660` — O método de extensão do interpolador deve ser `inline` (aposentado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este erro não existe mais. A página é mantida para que o código não seja reutilizado, e para
++ que uma referência a ele vinda de uma versão mais antiga ainda possa ser resolvida.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## O que aconteceu
+
+@ 0 3 0 0b492283b067c74e0a1ec9e5a330d239
++ Esta verificação pertencia à API `Interpolator` do Contextual, que foi substituída pela
++ classe de tipos `Interpolable`. Um método de prefixo agora é declarado `transparent inline` como
++ parte do padrão, e o requisito é imposto pela assinatura, e não por uma verificação.

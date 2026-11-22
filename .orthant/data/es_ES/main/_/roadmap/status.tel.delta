@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 3 0 148a30337b22668a138439c53376660b
++ # Índice legible por máquina de los elementos de la hoja de ruta. Un registro `item` por elemento
++ # en los nueve ficheros de líneas de trabajo de doc/work/roadmap/. Este fichero es la única fuente del
++ # estado: los ficheros en prosa nunca afirman que algo esté terminado; enlazan aquí.
+
+@ 0 2 0 1150a678e12de40b1108079fd587f3ad
++   baseline  1669 bucles while, 993 readUnchecked, 514 charAt en el núcleo de lib (2026-10-21, después de que #2274 hiciera del Array congelado el único array inmutable; 1606, 476, 507 el 2026-09-25)
++   criterion  ninguna colección expone un apply indexado parcial (issue #1666); cada while que queda tiene una forma que sanciona doc/work/standards/loops.md, con un comentario que nombra su invariante
+
+@ 0 1 0 00b880a91082413204e9196c41d2f096
++   criterion  doc/work/standards/capabilities.md existe, define cada etiqueta que reconoce el censo, y las secciones de recetas de rep/DECISIONS.md enlazan con él
+
+@ 0 2 0 0dc0dcbd00f7c47016ed4ce89be1e923
++   baseline  104 de 145 filas se compilan para JavaScript, 108 para Native, 34 exclusiones de JavaScript con motivo; etc/check-compatibility.py regenera y comprueba el fichero en make build (2026-10-21; 101 de 144 el 2026-09-25; 94 de 132 el 2026-08-01)
++   criterion  la CI regenera etc/compatibility.tsv, falla si hay divergencias, y no hay ninguna exclusión sin motivo
+
+@ 0 1 0 1d5dac460d0144ed0e9ce85ab7f751a9
++   criterion  todo motivo de exclusión de etc/compatibility.tsv es inherente; una comprobación del vocabulario de motivos lo impone en la CI
+
+@ 0 2 0 173a4b08b8f1520e09515e59d4878c6f
++   baseline  4 nombres renombrados siguen en el nivel superior; se listan 61 familias de prefijos con 210 nombres más 216 nombres sueltos (2026-09-25)
++   criterion  la tabla de renombrados de etc/api-nesting-proposal.md está aplicada por completo, y la sección 'Remaining names by prefix family' de etc/api-reduction-candidates.md no lista ningún nombre fuera de 'Reviewed items which should not be moved'
+
+@ 0 2 0 0675b33ae36d6a561117a05e02987c2d
++   baseline  3 abreviaturas C2 listadas (2026-09-25)
++   criterion  la sección C2 de etc/api-reduction-candidates.md está vacía (C3 y C3b quedaron sustituidas por etc/api-nesting-proposal.md y se cerraron con ella)
+
+@ 0 1 0 06c6c31327182c871e92b37f5e2c26af
++   criterion  etc/api-reduction-candidates.md ya no existe
+
+@ 0 2 0 0051b6e0c43f7f740580661bc8f6c07d
++   baseline  0 nombres exportados por dos bibliotecas; 19 de 22 filas R8 de alta confianza hechas; Tag/Renderable siguen con @unexported (2026-11-12, más tarde; 6 nombres, 2 homónimos con @unexported, ~110 candidatos R8 ese mismo día, antes)
++   criterion  ningún nombre se exporta desde más de una biblioteca, ningún @unexported esquiva un conflicto, y cada fila de las tablas R8 de etc/api-nesting-proposal.md está aplicada o revisada y conservada
+
+% 0 1 0 131794d631e522870773aff16ae8aac7
+
+@ 0 2 0 07a6b381d30a92cb023b924906e9d974
++   baseline  101 temas en doc/work/soundness/modules/; 145 de 145 bibliotecas cubiertas (2026-10-21; 1 de 144 sin cubrir el 2026-09-25; 91 temas y 35 sin cubrir el 2026-08-01)
++   criterion  python3 etc/check-doc-coverage.py informa de que todas las bibliotecas están cubiertas y termina con 0
+
+@ 0 2 0 1154d170629482bb139ba48e21c12602
++   baseline  la suite DAP guionizada se detiene, avanza paso a paso e inspecciona valores mediante sus instancias de Inspectable; tema doc/work/soundness/modules/debugging.md (2026-10-21; objetos inspeccionados como nombres de clase de la JVM y sin tema el 2026-09-25)
++   criterion  una sesión DAP guionizada (punto de interrupción, paso, inspección con valores representados por Soundness) pasa contra una aplicación en ejecución en la CI
+
+@ 0 2 0 07448ba163d12a581789fe21f1724c6c
++   baseline  existen doc/work/migration.md y 0.65.0.md–0.73.0.md; la directiva de migración de etc/release protege la publicación; ninguna comprobación en las pull requests (2026-10-21; notas hasta 0.68.0 el 2026-09-25)
++   criterion  doc/work/migration.md existe; la publicación (la directiva de migración de etc/release) se niega a etiquetar sin doc/work/migration/<version>.md; una comprobación de la CI hace fallar toda pull request que cambie lib/**/src sin tocar el doc/work/migration/<version>.md no publicado
+
+@ 0 2 0 196b66a1e2f12f001fec8234a42c1ee3
++   baseline  lib/reliquary (7387 líneas) más anthology.lira, degustation.lira, mandible.lira, xenophile.lira y sus pruebas (2026-09-25)
++   criterion  lib/reliquary no existe, no queda ningún directorio lib/*/src/lira, y build.mill, etc/ y doc/work/soundness/modules no mencionan reliquary
+
+@ 0 3 0 1022043b4940d100089e5ec885e64e12
++   status done
++   done  #2530 (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk y Jwt, con los componentes `http` y `server`; 95 pruebas, que toman sus vectores de RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 y RFC 8037; `↯/s.147.1`; doc/work/soundness/modules/jose.md (2026-11-20)
+
+@ 0 1 0 0b21a7d8349a92fd16fa9db438708eef
++   baseline  lib/chatelaine: WebAuthn.registration/register y authentication/authenticate, atestación `none` y `packed`, con un componente `server`; pasan las ceremonias de registro y de autenticación de los vectores de prueba de la especificación del W3C (§16.2–16.11), así como ceremonias guionizadas contra un autenticador software en las fuentes de prueba; no se ha controlado el autenticador virtual de ningún navegador; `↯/s.148.1`; doc/work/soundness/modules/webauthn.md (2026-11-20)

@@ -1,0 +1,449 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 13c6964abcab3e38030c763a9b0d905f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 192402b37623601c003f65f2662a0e55
++ info   検査付き文字列補間子の仕組み：リテラルはコンパイル時にパースされ、穴は型クラスによって型付けされる
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1f9d313478bf56310d542564dc41695e
++     _Contextual_ は、Soundness のあらゆる検査付きリテラル（`url"…"`、`sh"…"`、`json"…"`、`t"…"`、`media"…"`）の背後にある唯一の仕組みであり、新しいリテラルを定義する手段でもある。
++     これで定義した補間子は、コードのコンパイル時にリテラル部分を検証し、誤りの原因となった文字そのものの位置で誤りを報告し、宣言した型の置換だけを受け付け、それぞれをそれが埋める穴に対して検査する。
++     配管のために手書きのマクロは要らない。
++     リテラル部分とソースファイル上のその位置の捕捉は `interpolation` マクロが一度だけ行い、補間子の作者は型クラスのインスタンスを書く。
+
+@ 0 5 0 04d90b9fd33fa98e09a61d936bbae2d9
++     補間子は三つの部品からなる。
++     `interpolation[Target](context)` を呼んでその `Interpolation` を返す、`StringContext` 上の接頭辞メソッド。
++     部分と置換された値から値を組み立てる、対象の型の `Interpolable` インスタンス。
++     そして、どの型が穴を埋めてよいか、それぞれがどのように入るかを示す `Insertion` または `Substitution` のインスタンスである。
++     `Extrapolable` インスタンスがあれば、同じリテラルをパターンとしても使える。
+
+% 2 1 0 0c9428b493c4c10d04d5a39c82d017de
+
+% 3 1 0 0e4e8c190f5ccabe037350052dd16ce8
+
+% 0 1 0 0e6dcf14681ef31d11be62d6896d8cfd
+
+% 0 1 0 09a6623c5e3e30eb186d7589b88820a9
+
+% 0 1 0 0e7818acb6057cbd1f8fa9de4a211b8e
+
+% 0 1 0 11ad5ee1daa9d46419a4e0d57ab20b7d
+
+% 0 1 0 0cb4de2ae88d0ec71dac323078c2ea1e
+
+% 0 1 0 1404bb330acf509f11291fcf93a0fbbc
+
+% 0 1 0 181dce71bcf79a9f174c858c43ca07b9
+
+% 0 1 0 0490ed618a55385d0659b89eeccd69e4
+
+% 2 1 0 1549a2cebfe631cf0ed3c063f817d956
+
+% 0 1 0 1a7623445f18adde16d9ec7776670c6d
+
+% 0 1 0 1e0e58a963f7737f13f6bceae20def45
+
+% 1 1 0 0e6eaf1440e776f41ece7db3f6b55f40
+
+@ 0 8 0 1fe1235554e8df5001faf9194c11cbc2
++     リテラルの部分は、文字列リテラル型のタプルである型パラメーター `parts` として `Interpolable#interpolate` に届き、そのソース上の位置は `origins` として届く。
++     そのため、インスタンスの背後にあるマクロはそれらをパースし、`Interpolation.sourcePosition` で `halt` できる。
++     接頭辞メソッドが `transparent inline` なので、補間子は対象よりも精密な型を返せる。
++     特定のプラットフォーム上のパス、妥当であることが証明された名前、スキーマで型付けされた文書などである。
++     Soundness 全体の慣例として、すべての補間子は同じコードを実行する実行時のパーサーと対にされる（`url"…"` に対する `as[Url]`）。
++     こうしてリテラルと動的なテキストが食い違うことはない。
+
+@ 0 3 0 0b5fc900b1cdb1730776faa0a40e2845
++     このライブラリのソースセットは `contextual.core` の一つだけで、すべてのプラットフォーム向けにコンパイルされ、すべてが `soundness` アンブレラにエクスポートされる。
++     選択パッケージはない。
++     given はコンパニオンにあり、暗黙のスコープを通じて解決される。
+
+% 0 1 0 0587d7db92ab08131d385fb13eafb98d
+
+% 0 1 0 094a322bf7c941eb0692b55c30ea0da9
+
+% 0 1 0 1319a01e2290f60c0e704de9678ae28b
+
+% 0 1 0 1b228ba61b32a98a1a5b152c3d008110
+
+% 0 1 0 1b5cec878649db561a48b27a5164bdb8
+
+% 0 1 0 10526691d5bb1b47090c62b14dda0ee3
+
+@ 0 6 0 02ae0bac7484da1b12665c62d5908176
++ entry .interpolation   すべての補間子の接頭辞メソッドの背後にあるマクロ：リテラルの部分と位置を捕捉する
++     `interpolation[Target](context)` は補間リテラルの `StringContext` を受け取る。これはコンパイラが知っているリテラルでなければならない。
++     そして、`Topic` が `Target` であり、型メンバー `Transport` と `Origins` がリテラルの部分とそのソース上の位置を表す `Interpolation` を返す。
++     リテラルがマクロまで残るように、接頭辞メソッドは `inline` な `StringContext` 上の `transparent inline` 拡張として書く。
+
+% 2 1 0 1a718ac094a67da31faf476bb0a1ec1f
+
+% 3 1 0 1dccbc306f5aff2d0ace1b7fb58f561c
+
+% 2 1 0 1c5b6fbbb8438da51995499519736640
+
+% 0 1 0 16810c01f18d71690a707f3c9581c514
+
+% 1 1 0 045e62765b370ad1169af775536afaa2
+
+@ 0 3 0 1d18b6f3b06e796f0fe49a56daed5141
++     すると `media"text/plain"` は `Interpolation#apply` を呼び、これが表現された部分を `MediaType is Interpolable` インスタンスに渡す。
++     `case media"text/plain" =>` は `Interpolation#unapply` を呼び、これがそれらを `MediaType is Extrapolable` インスタンスに渡す。
+
+@ 0 1 0 19a1a681f7ef8ef20a95bc76018206e4
++ entry .Interpolation   一つの補間リテラル。その対象、部分、位置を型として持つ
+
+% 1 1 0 13def7941716c74f0fb2578a5079fa7f
+
+@ 0 5 0 1ec09104b1b6407f030ab60b254222e0
++       `Interpolation` は接頭辞メソッドが返すものであり、補間子の対象（`#Topic`）、リテラル部分（`#Transport`）、そのソース上の位置（`#Origins`）を型メンバーとして運ぶ純粋な値である。
++       これを呼ぶ（`#apply`）と対象の型の値が構築され、パターンとして使う（`#unapply`）と値が分解される。
++       値は `interpolation` マクロによってのみ作られる。
+
+@ 0 4 0 0bdacb3a8ed8ad0b00fda31e0df4cc40
++       どちらの型タプルも内側から先に組み立てられるので、部分は**逆順**に入っている。
++       `slug"a${x}b${y}c"` では、`constValueTuple[parts].toList` は `List("c", "b", "a")` である。
++       空のものも含めてすべての部分が存在するので、穴が `n` 個のリテラルは常に `n + 1` 個の部分を持つ。
++       `slug"$x"` には空の部分が二つある。
+
+@ 0 2 0 06dc19dce473778c0db0f55a7eb5bedd
++       コンパニオンは、補間子自身のマクロが型レベルの部分と位置を値に戻し、正しい文字の位置で誤りを報告するために使うヘルパーを持つ。
+
+% 2 1 0 01777d6c91d853c00c39a90119ce4bb0
+
+% 3 1 0 0ccf061a8b9b3dec14aa4aa074417d68
+
+% 4 1 0 177e5226b99a421617a7dd9f52ea1d52
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 19cc96edc586318316b31ec0030d2a58
+
+% 0 1 0 00080427682c796d137c57e2a691bddd
+
+% 0 1 0 0393af642a05c002165d2ff732ff3120
+
+% 0 1 0 178139b8aa40ae351032e0e0c4d9e3d7
+
+% 0 1 0 0eafc5b98446697a151de9573505a3c3
+
+% 0 1 0 10adb5b26f87cbe504bd2dd73d731495
+
+% 0 1 0 037df2f49453b590050566fddef3681f
+
+% 1 1 0 00f95a1eb6d780e71e1a28cb2c204e7f
+
+% 0 1 0 0a7144b78e8b961518d4217e0e8cee6f
+
+% 1 1 0 076e59f720f1725f05d58b5f06d1a0dc
+
+@ 0 28 0 1d115cb61e2e3e3a08610969cead0e68
++   entry .apply   `interpolation` のマクロ実装：リテラルに対する `Interpolation` を組み立てる
++       直接は呼ばない。`interpolation[topic](context)` がこれをスプライスする。
++       `StringContext` の部分を読み、ソースファイル上の各部分の始まりと終わりを見つけ、その両方を新しい `Interpolation` 上のタプル型として表現する。
++   entry .decodeParts   `Transport` 型が表すリテラル部分をソース順で得る（マクロ内で使う）
++       `Interpolation.decodeParts[parts]` は `Quotes` と `Type[parts]` を必要とし、型レベルのタプルを反転してソース順に戻す。
++       文字列リテラル型でないタプル要素があると展開は中止される。
++   entry .decodeOrigins   `Origins` 型が表す各リテラル部分のソース上の `(start, end)` を得る（マクロ内で使う）
++       `Interpolation.decodeOrigins[origins]` は組をソース順で返す。
++       読めない要素は、位置が不明であることを示す `(0, 0)` にデコードされる。
++   entry .literalOrigins   `StringContext` の木にある各文字列リテラルのソース上の `(start, end)`
++       `StringContext.apply(…)` の木を `Inlined`、`Typed`、`Block`、`Apply` のラッパーを通って辿り、すべての文字列リテラルの位置を集める。
++       見つかった数が期待した数と異なれば、すべての部分が `(0, 0)` になり、エラーは誤った文字ではなく式全体に付く。
++   entry .sourcePosition   リテラルを組み立てたテキスト内のパーサーのオフセットに対応する、ソースファイル上の位置
++       `Interpolation.sourcePosition(parts, origins, substitutionWidth, offset, length)` は、補間子のパーサーが「組み立てた」入力の中で報告したオフセットを受け取る。この入力は、各穴の代わりに `substitutionWidth` 文字を置いて部分をつなげたものである。
++       そして、誤りのある文字のソースファイル上の `Position` を、少なくとも一文字の長さで、`halt` が報告に使えるように返す。
++       ソース上で値よりも長いエスケープ（`$$` と `\uHHHH`）は補正される。
++       オフセットが穴の中、または位置が不明な部分の中にあれば、式全体の位置が返る。
++   entry .buildMapping   リテラル部分の値の各文字の添字を、ソーステキスト内の添字に対応づける
++       `Interpolation.buildMapping(source, value)` は `$$`（一つの `$` に対してソース上の二文字）と `\uHHHH`（一文字に対して六文字）を考慮する。
++       ゼロ未満の添字は `0` に、末尾を超える添字は最後の位置に対応づけられる。
+
+% 2 1 0 1a11f4d0214de4580b576cd2d07ab16a
+
+% 3 1 0 059b9479b72ad3be003288e76d1f7c88
+
+% 0 1 0 0445d963169a20dd1f92344b1bbf9190
+
+% 0 1 0 005ff8a9de45f0cb1817f36f6d4d8f5e
+
+% 1 1 0 1ff58a27dff366e71a292bcec11cdbcf
+
+@ 0 11 0 1f413967cbfc80881e341a0efcb656ca
++   entry #Topic   補間子の対象の型。`Interpolable` インスタンスを探す対象となる型
++   entry #Transport   リテラル部分。ソースと逆順の文字列リテラル型のタプル
++   entry #Origins   各リテラル部分のソース上の `(start, end)`。逆順の整数リテラルの組のタプル
++   entry #apply   リテラルとその置換された値から対象の値を構築する
++       `slug"hello $name"` のような補間リテラルから呼ばれ、置換された値を `insertions` として受け取る。
++       スコープに `Topic is Interpolable`（通常は対象のコンパニオンにある）が必要で、そのインスタンスの `interpolate` が返すものを返す。`transparent inline` なので、精密な型が保たれる。
++   entry #unapply   リテラルがパターンとして使われたとき、値をリテラルに照らして分解する
++       `case slug"hello" =>` のようなパターンから呼ばれる。
++       スコープに `Topic is Extrapolable` が必要で、そのインスタンスの `Extrapolation` を返す。
+
+@ 0 1 0 070904ea43899b8419bc6fad3bf3a2bd
++ entry .Interpolable   補間リテラルの部分と穴から、自身の型の値を組み立てる型クラス
+
+% 1 1 0 0bcf6f1fd2fa3593163c74f83af9a243
+
+@ 0 6 0 1277370119c85cd817d0b5dd687c2f32
++       `T is Interpolable` は `Interpolation#apply` が探すものである。
++       唯一のメソッド `#interpolate` は `inline` であり、リテラルの部分と位置を型パラメーター `parts` と `origins` として、置換された値を `insertions` として受け取る。
++       単純なインスタンスは `compiletime.constValueTuple` で部分を読む。
++       検査を行うインスタンスはマクロをスプライスし、そのマクロが `Interpolation.decodeParts` で部分をデコードしてパースし、誤りがあれば `Interpolation.sourcePosition` で停止する。そのため、不正なリテラルは決してコンパイルされない。
+
+% 2 1 0 159c06eb6c67a4970c7b8985cb5f49b4
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 141e3d6b3c742dde01b7a304c87275c2
++         label 対象の型
+
+% 1 1 0 0fbeb7b8ae4fb82110331fd13c67aead
+
+% 2 1 0 09caa5c3556c71cb1e1cd5096fb637f2
+
+% 2 1 0 094d631368bf08a50f06bb9dcf01a8ab
+
+% 1 1 0 115c6a374e31477513561f29187428a2
+
+@ 0 1 0 0d3515a3346925f11d6baa0c11edbc0a
++         label コンパニオンにある `Interpolable` インスタンス：部分は逆順で届く
+
+% 1 1 0 1bc350639008d7a51e51b650226d0749
+
+% 2 1 0 05ab56d30dcfdec7060940181ab6e16e
+
+% 3 1 0 0ad5b0dd00df53340a9121ab2dadc6a3
+
+% 5 1 0 0167fa53dbe742f60b98ecf3193dc762
+
+% 7 1 0 1c2b01cec9b0b07d10d0d403326bcf56
+
+% 8 1 0 1efb9a7db8125f6f0621f03fcc2512bb
+
+% 9 1 0 061505cc35ff5fcc039f535788c0a162
+
+% 10 1 0 17d1976cf3a01d6205a16a5f3b7dbe0a
+
+% 11 1 0 140b057b3cc6b9a80f5c0d252c671e8a
+
+% 12 1 0 0cb8ff20c25fcd2c11df772bd4f1c17f
+
+% 1 1 0 09f3270af4d7f2370e2c3fbd234efaf8
+
+@ 0 1 0 184667ef882e5ed2086769f611256c5e
++         label 接頭辞メソッドを加えれば、補間子は完成する
+
+% 1 1 0 0b5a887f8dab9a7919900ae31b537778
+
+% 2 1 0 08e64f52a41d247a19e9e4c892dc2010
+
+% 3 1 0 17d6758a5b93151a1b4363d47d950ef7
+
+% 5 1 0 12b0d1df99eb934113be2781c7959e76
+
+% 7 1 0 0acb98d9dcdacfef1786baf450f3f672
+
+% 8 1 0 179c47117dfc978e004cf619be1a6f67
+
+% 9 1 0 1daf2826fcbc00380a2c8101795a6f16
+
+% 10 1 0 04c1857567a0dd17104078dae196e1e8
+
+% 11 1 0 165ec38e381021560ff2335e5effe4f6
+
+% 12 1 0 1c04dd591b503d521e75fcb57859a35d
+
+% 0 1 0 0945211460bc1f54181ed18f1d46a60a
+
+% 0 1 0 00681e9801bf03d015f08f2d3aafd8d8
+
+% 0 1 0 02827dc973bf7bb11cc6706472ba4042
+
+% 1 1 0 0cfbcaa1ca2bee311a312623bc2867f6
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 06c8f36d29787ed90ba7352621a8c68c
++       本番用の補間子はパースをマクロに置くので、同じパーサーがコンパイル時のリテラルと実行時の動的なテキストの両方に使われる。
+
+% 2 1 0 05e9cd5cc2fceee00046fd2389101a13
+
+% 3 1 0 0685817040bea8250db46bb67d66c3cc
+
+% 4 1 0 0ac2afbfd06767a3023dc8388530653b
+
+% 0 1 0 10a764d547cbe2261cb7a037335eb718
+
+% 0 1 0 08c18fcacbe0e7dd0fe7e86e6ce53261
+
+% 0 1 0 14373b8073fbf3c31fed36cfbaf4caed
+
+% 0 1 0 1bde45994d9904e5154875346e84504a
+
+% 1 1 0 1aa864a4d24bc20d119b97912baf740e
+
+% 0 1 0 06aeea67296d5c3d0f79cbd31c529a54
+
+% 1 1 0 0be35365d022e97502df6c4e2ef61e1b
+
+@ 0 7 0 03b104b2d78905121f491a93a23191aa
++   entry #Self   補間子の対象の型
++   entry #interpolate   リテラルの部分（型レベル、逆順）と置換された値から対象の値を組み立てる
++       `parts` はリテラルの部分をソースと逆順で保持する文字列リテラル型のタプルであり、`origins` は同様にそのソース上の位置、`insertions` はソース順の置換された値である。
++       `inline` であり、`insertions` も `inline` で渡されるので、背後のマクロは置換された各式とその型を見ることができ、それぞれに対して `Insertion` または `Substitution` を解決できる。
+
+@ 0 1 0 0846ea3caa57768b07be6cf190288c2b
++ entry .Extrapolable   自身の型の値を補間リテラルにパターンとして照合する型クラス
+
+% 1 1 0 064b10de5a397e4b1d225bf6dbcaa6a4
+
+@ 0 3 0 0ee54d8484a911b105f32367b70b45d0
++       `T is Extrapolable` は `Interpolation#unapply` が探すものであり、これによって補間リテラルを `case` パターンにできる。`json"…"` や `html"…"` のパターンはこの仕組みで動く。
++       一つの接頭辞メソッドが構築と照合の両方に使われる。
+
+% 2 1 0 1a54f146573f9cfe0f99ca7b0159fd91
+
+% 3 1 0 0ac7d5745e5240651a92801875028515
+
+% 0 1 0 0fb60ccc3ad9fbe302e2a3204c6e9185
+
+% 2 1 0 032fb820512bc0ae1bcf82c08e05d81b
+
+% 0 1 0 0e557f1d6ca308ba004234f34813dce9
+
+% 0 1 0 198ac6e5e00085f2030f62e3a291099c
+
+% 0 1 0 0a40a3c110f46fc119a91cd1d33fabcc
+
+% 0 1 0 0deb5c0568f292f21859f51239f25edf
+
+% 0 1 0 075e46fe5cf6da6119b38a9f565df8be
+
+% 0 1 0 10781ed7e3fffbf409a3de7aa67aff52
+
+% 0 1 0 03fbb93e38caf9d404adeb3237d5d987
+
+% 0 1 0 1641f627ca1d0e0513ae6365fd4c626c
+
+% 0 1 0 0d13d395d610af870c86e711bf20f384
+
+% 0 1 0 094198c599ba95cd0fc2d1234a9d997b
+
+% 1 1 0 08f328c2234011841f6fb9268210a58e
+
+% 0 1 0 18712d2469f95dec0ac79adf88019a9e
+
+% 1 1 0 1a377ebdbdd362b402479047e4bea1a7
+
+@ 0 5 0 095f52a60cc772fc0e3a5587f2af6fcc
++   entry #Self   パターンが分解する型
++   entry #extrapolate   検査対象をリテラルの部分に照合し、`Extrapolation` を返す
++       `Interpolable#interpolate` とまったく同じように部分と位置を型パラメーターとして受け取り、照合される値も受け取る。
++       穴のないパターンでは `Boolean` を返し、穴のあるパターンでは束縛された値（またはそのタプル）の `Option` を返す。
+
+@ 0 4 0 0b5a823c31319cc309646343a8ffa033
++ entry .Extrapolation   `Extrapolable` の照合が返すもの：`Boolean`、または束縛された値の `Option`
++     `Extrapolation[result]` は `Boolean | Option[Tuple | result]` であり、Scala のパターンマッチが `unapply` から受け付ける三つの形である。
++     何も束縛しないパターンには `Boolean`、穴が一つのパターンには `Option[result]`、複数のパターンにはタプルの `Option` を使う。
+
+@ 0 1 0 0c008df3242301fe032a63af0c4062c0
++ entry .Insertion   型クラス：ある型の置換された値が、補間子の入力型にどのように入るか
+
+% 1 1 0 045a35adffda2a621d72504cb68f112a
+
+@ 0 5 0 1e4b2d36c36ddac01e105a39436413d3
++       `Insertion[input, value]` は穴に置換された `value` を補間子自身の `input` 型に変換する。そのため、外部の値がどのように入るかを決めるのは `toString` ではなく補間子である。
++       インスタンスのない型はまったく置換できない。補間子は、安全にできないものをこうして禁じる。
++       新しい型は、補間子に手を触れずに、インスタンスを一つ加えるだけで置換可能になる。
+
+% 2 1 0 0cf89c97171d8aa0111f523880162a76
+
+% 3 1 0 0df616145bc908101b2ee00ba54a92f8
+
+% 4 1 0 057faf9242199794198081ce43551d53
+
+% 0 1 0 09087eb5eb59919f0390219a413c237a
+
+% 0 1 0 02403bcc0e34a3c71ae4010347985b25
+
+% 1 1 0 0ee21940a67a349b1d42b973aed5b27a
+
+@ 0 2 0 0282dbfa9c5191f61f91de040741dfe7
++       `value` は反変なので、上位型に対するインスタンスはその部分型にも使われる。
++       `Substitution` は、穴が何を表すかをパーサーにも伝える挿入である。
+
+% 0 1 0 133593b5134bc7ef1426b7271fd300de
+
+% 0 1 0 062655dc7609d1f403fe7776bf515f18
+
+@ 0 5 0 0c6ec05848f995eb0f8eb9b8aad267c9
++   entry .embeddable   任意の `Embeddable` 型に対する、ラベル `"x"` の `Substitution`。暗黙のスコープにある
++       `Embeddable` である `value` に対して、`Embeddable#embed` を通じて埋め込む `Substitution[value.Operand, value, "x"]` を与える。
++       そのため、置換を求める補間子は、独自のインスタンスがなくても、埋め込み可能なすべての型に対して置換を見つける。
++   entry #embed   置換された値を補間子の入力型に変換する
+
+@ 0 8 0 141e77f482a5f27215f9db82a5b3e5ef
++ entry .Substitution   穴の代わりとなるラベルをパーサーにも与える `Insertion`
++     `Substitution[input, value, label]` は、実行時には `Insertion[input, value]` とまったく同じように振る舞う。
++     コンパイル時には、シングルトンの `Label` が穴に何が入っていたかを補間子のパーサーに伝える。そのため、パーサーは置換された型の代表的なトークン（数値なら `"0"`、文字列なら `""""`）がそこに書かれているかのように処理を進め、最初の穴で諦めずに、穴のあるリテラルの*形*を検査できる。
++     穴によって受け付けるものが異なる場合（URL のポートは数値を、パスはテキストを受け付ける）、それらを区別するのがラベルである。
+
+% 2 1 0 1e4c688d2b01982e02675979a6807104
+
+% 3 1 0 0b827b88ded5223a116746c9542cb76e
+
+% 0 1 0 1cf4d0147af92fdb117a3719d699a9d7
+
+% 0 1 0 0b8047f887e8ad7e178247d1006b41e8
+
+% 0 1 0 0575e7bbe23af63c1a10122f76c449a9
+
+% 0 1 0 0c7ffd9ba6f1ae8a0aeabd357e921f1d
+
+% 0 1 0 009b5fd324d01c3c145987215dfb720e
+
+% 1 1 0 02d2de82138bed7506c99d01926c5f5a
+
+@ 0 1 0 0ef53b6f4bc4eaeb077dbe101427585a
++ entry .Embeddable   値を、対象が `Form` である補間子の `Operand` として埋め込む型クラス
+
+% 1 1 0 15fab12b7878f67d04c95812391b4102
+
+@ 0 4 0 1ec38557dd9ad1931c2a55aaf13aba9c
++       `T is Embeddable by Operand in Form` は、`T` を `Form` を対象とする補間子に置換でき、`Operand` として入ることを示す。
++       これは `Insertion` の型クラス風の形である。
++       置換される型のコンパニオンにインスタンスを一つ置けば、`Insertion.embeddable` がそこから対応する `Substitution` を導出する。
+
+% 2 1 0 122be92254b53b4b046b896a78811155
+
+% 3 1 0 0409f978291bc31c1d0a32b3f66913e9
+
+% 2 1 0 0c80c91d5021e0561612a71972879efd
+
+% 0 1 0 00dbec56e062e8820eb78dabd887ff92
+
+% 0 1 0 17c509f2a1d5cfca1919d8710744c228
+
+% 0 1 0 0999f7ae768f63c51346c7e906883f4f
+
+% 0 1 0 0974b593a86d57550489505036832057
+
+% 0 1 0 132c0030149584be19727c2736c950e1
+
+% 1 1 0 1f138b4a0dc92288155ecbf7c29981d5
+
+% 1 1 0 01a7798f960b19f101569c320280be23
+
+@ 0 5 0 1e05cef6979b5be80dcb0d3fa04c8832
++   entry #embed   値を補間子のオペランド型に変換する
++   entry #contramap   関数を通じてこの型へ変換することによる、別の型のための埋め込み
++       `embeddable.contramap[Int](count => Tag(count.show))` は `Int is Embeddable by Text in Slug` であり、`Int` をまず `Tag` にしてから埋め込む。
++       結果はこのインスタンスと関数の両方を捕捉する。

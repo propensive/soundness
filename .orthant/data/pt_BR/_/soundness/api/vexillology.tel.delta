@@ -1,0 +1,129 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1c6eb85f7715f09e0792c007bb737bcf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ef7c4cc2e63dd810c6206205ed7ba3c
++ info   conjuntos de casos de uma enumeração compactados nos bits de um único `Long`, testados e ligados por caso
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1b1fcf8214caf5a702984d9496d7b683
++     _Vexillology_ dá às flags de bits uma superfície tipada. `Flags[Color]` é um conjunto de
++     flags ligadas ou desligadas sobre os casos da enumeração `Color`, guardadas nos bits de um
++     único `Long`, e cada caso é dono do bit de seu ordinal. Uma flag é testada e ligada
++     nomeando-se o caso, e não por um número de bit mágico, então um bit que significa outra
++     coisa, ou nada, não pode ser alcançado; e o valor continua sendo uma única palavra de
++     máquina — de cópia gratuita, barato de armazenar, natural em um formato binário — onde um
++     `Set[Color]` faria uma alocação.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0af2a59cff40b5c9019c56f5eb1885de
+
+% 0 1 0 1d10a572fae04e8d116974175da28781
+
+% 0 1 0 0f95d5f3aa2e937907b24d60a5df4719
+
+% 0 1 0 1ea3958aaf72c5d1030cf913cd96d8af
+
+% 0 1 0 05864085c650310810828bfe91691b4f
+
+% 0 1 0 1d74062d421567f01384f1f939695848
+
+% 0 1 0 14d13d1f18f362680275d3558af476f8
+
+% 0 1 0 04750537132403ad175598283296cd59
+
+% 0 1 0 0b63a119e100ded215b7b51dc46bb03a
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 13d852fb4e6865270cd75ac7683e2cee
++     Um valor `Flags` é imutável: cada atribuição cria um novo, então a variável é reatribuída
++     com a sintaxe de atualização, `flags = flags(Orange) = true`. As operações precisam que a
++     enumeração seja `Enumerable`, o que todo `enum` do Scala 3 com casos singleton é.
+
+@ 0 2 0 11aa7e266e6b3a240797cec39786981c
++     A biblioteca tem um único source set, `vexillology.core`, e tudo é exportado para o
++     guarda-chuva `soundness`.
+
+% 0 1 0 019efc2e4f73acb506f6381eb98952b6
+
+@ 0 1 0 07886f05135c25460305f18b26b45578
++ entry .Flags   um conjunto de casos de uma enumeração, compactados como bits em um único `Long`
+
+% 1 1 0 108f60404f206b9f1823848ae630da0a
+
+@ 0 4 0 14ae1779cab1ce7c0411612a59a20745
++       `Flags[Enumeration]` é o tipo opaco `vexillology.internal.Flags`, exportado aqui: um
++       `Long` em que o bit *n* está ligado quando o caso da enumeração de ordinal *n* está no
++       conjunto. `Flags[Color]()` é o conjunto vazio, e três métodos de extensão, no escopo
++       implícito sem nenhuma importação, o usam:
+
+@ 0 4 0 035a5a79821fbfc11012114c1a3b43ab
++       - `flags(case)` testa se um caso está ligado;
++       - `flags(case) = enabled` (isto é, `flags.update(case, enabled)`) cria um novo valor com o
++         caso ligado ou desligado;
++       - `flags.set` lê as flags como um `Set` comum dos casos.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 1089ca35127374810e7f548d669d576d
+
+% 0 1 0 1ab3b3d18b9086f913e0e0c49c4017ed
+
+% 0 1 0 1357cfbd063de8db0a6312f5733e37c2
+
+% 0 1 0 0ac63c7898504d7716ef4bfa572027f7
+
+% 0 1 0 10bf6b93c183bf69142d0a47a493c686
+
+% 0 1 0 0f7fab3690ef35161d5744336c2b581a
+
+% 0 1 0 1728e0adebfc754c06dddcd449b8c88b
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 4 0 112c8c89532d487617e1b1876bb21caf
++       Um `Long` tem 64 bits, então cabe uma enumeração de até 64 casos. Além disso, a posição
++       de bit de um caso dá a volta, e ele compartilha um bit com um caso inferior: não há
++       verificação. Cada método recebe um caso de um tipo singleton, então um caso de enum com
++       parâmetros não pode ser uma flag.
+
+% 0 1 0 03c3be223d45fc1602f45e1db973199e
+
+@ 0 1 0 061e5d2caf21abe6084796807bee42af
++ entry .internal   a sede do tipo opaco `Flags` e de suas operações
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 17e7a57fc22507730b884c4c68297440
++       Não é para uso direto: o objeto existe para guardar o tipo opaco `Flags` e os métodos de
++       extensão sobre ele, que estão no escopo implícito onde quer que haja um `Flags`, já que
++       compartilham seu objeto envolvente. `Flags` é exportado daqui para o pacote
++       `vexillology`, cuja página tem a descrição completa.
++   entry .Flags   um conjunto de casos de uma enumeração compactados em um `Long`; veja `vexillology.Flags`
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 10 0 1ac5189c5f90b6850ebef677d5050144
++         O tipo opaco sobre `Long`. Sua página sob o pacote `vexillology` tem a descrição
++         completa.
++     entry .apply   o conjunto vazio de flags sobre uma enumeração, sem nenhum bit ligado, `Flags[Color]()`
++   entry .apply   se um caso está ligado em algumas flags, `flags(case)`
++       Precisa que a enumeração seja `Enumerable`, para encontrar o ordinal do caso.
++   entry .update   uma cópia de algumas flags com um caso ligado ou desligado, `flags(case) = enabled`
++       Devolve o novo `Flags` em vez de alterar o receptor, então uma variável que guarda as
++       flags é reatribuída: `flags = flags(Orange) = true`.
++   entry .set   os casos ligados em algumas flags, como um `Set` da enumeração
++       Visita apenas os bits ligados, do mais baixo para o mais alto.

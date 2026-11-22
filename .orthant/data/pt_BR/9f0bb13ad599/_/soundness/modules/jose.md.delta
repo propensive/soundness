@@ -1,0 +1,492 @@
+orthant 2 language
+
+@ 0 1 0 1b449a794c9abe5b03efbdf02f6ee19c
++ ## JOSE: tokens assinados e cifrados
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 4 0 00e81ce02ba9fd7e0cb523f1a9099f24
++ [JOSE](https://www.rfc-editor.org/rfc/rfc7515) é a família de padrões por trás dos tokens com
++ que as APIs web autenticam. Um *JWS* é um conteúdo com uma assinatura sobre ele. Um *JWE* é um
++ conteúdo que foi cifrado. Um *JWK* é uma chave, escrita como JSON. Um *JWT* é um conjunto de
++ claims, como quem emitiu um token e quando ele expira, transportado dentro de um JWS ou de um
++ JWE.
+
+@ 0 3 0 0ea9368b64d4c7cd0377f5767814c650
++ Os quatro são fornecidos aqui, sobre as chaves e as cifras de [criptografia](cryptography.md) e
++ os valores de [JSON](json.md). Um servidor que só precisa aceitar tokens bearer pode fazê-lo
++ com uma única chamada, como middleware para um [servidor HTTP](http-server.md).
+
+@ 0 1 0 0b90ae358b84bc0b064abb6c89feca6f
++ ### Sobre a escolha do algoritmo
+
+@ 0 5 0 13702bd1cfeea1210f4b18933f86bc57
++ Um objeto JOSE começa com um cabeçalho que diz como ele foi feito, e o cabeçalho é escrito por
++ quem fez o objeto. Ler o algoritmo do cabeçalho e depois fazer o que ele manda com a chave que
++ se tem em mãos é a origem dos ataques mais conhecidos a esses padrões: um token cujo cabeçalho
++ é alterado para `none` e cuja assinatura é removida, ou uma chave pública RSA reaproveitada
++ como se fosse um segredo HMAC.
+
+@ 0 4 0 0fd31da7fdf1a2060b4e56fbd88f3416
++ Aqui, o tipo da chave escolhe o algoritmo. Uma `PublicKey[Ecdsa[256]]` verifica `ES256` e nada
++ mais. O `alg` do cabeçalho é comparado com o algoritmo que o tipo da chave representa, e uma
++ diferença é um erro. Ele nunca é usado para decidir o que fazer com a chave, de modo que
++ nenhum dos dois ataques pode ser expresso.
+
+@ 0 3 0 1a3902c671e72ba61ed480c2c9710dee
++ Tudo vem do pacote `soundness`. Um provedor de algoritmos e um lugar para guardar chaves estão
++ no escopo, como estão para qualquer criptografia, e o último import permite que os exemplos
++ imprimam os seus resultados:
+
+% 2 1 0 0f97771b69c464bb15189966989d8119
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0290bb9f4cf1a2c50caef4d05d7d4943
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 0e420dc0f15b9ffe1bcc5f9461b53f86
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0190f8e9a4d6a7e80657f8973ed184d5
++ ### Assinatura
+
+@ 0 2 0 06d40c1f6a9d3f511c940476cdf8eab2
++ `Jws` assina um payload com uma chave privada. A serialização compacta, que é a conhecida
++ sequência de três partes unidas por pontos, é a forma `Text` do objeto:
+
+% 2 1 0 00e83b310dbc5367183b7db854a591e5
+
+% 0 1 0 05c78fa34f552fcf0ef2a97c72d1b2e2
+
+% 0 1 0 1887429e1169c8ff05e724814719c671
+
+% 0 1 0 1009baeb62f31da508a3cfa480d9088b
+
+% 1 1 0 1a0920bc418dc375000303fdc9e341b2
+
+@ 0 1 0 04021712fb8029e818c7a1b4c76c459b
++ O cabeçalho nomeia o algoritmo da chave:
+
+% 2 1 0 1f308da9cd7a84940f036926e722e35b
+
+% 3 1 0 0e014f189212fd980efa933e8dcc325d
+
+% 4 1 0 03e1d88a857f39c2048d6cf2183c181e
+
+% 0 1 0 19bf0a966b638ec81ebdaa121f107f40
+
+% 1 1 0 1050fce6f4275f3b1448a40ce068339a
+
+@ 0 2 0 0e92004988c0296d16066a7dc2cf4935
++ Um `Jws` que foi lido de um texto é uma alegação, e nada mais. O seu payload só é alcançado
++ por meio de `verify`, que verifica a assinatura contra uma chave pública:
+
+% 2 1 0 01293922afcf9d6f01b4078f00dd0210
+
+% 0 1 0 142907f910c94eb6019d04e83b70763b
+
+% 1 1 0 0cd9f5f04092f810095a883d0ed01de1
+
+% 3 1 0 1c65118e5796715b131c0b7730aa5e0f
+
+% 4 1 0 1d213444a43241d1008b6a91cf0a50ef
+
+% 5 1 0 18ec9ee1a8a24c9412b2acd30f7b6a79
+
+% 0 1 0 156ccd68f66eca4f027f646c013e4068
+
+% 1 1 0 0889a6aa400eabd01d3b1938d3d4eccb
+
+@ 0 2 0 0f9b26963c0821471b1cfac08788ff23
++ Uma assinatura que não se verifica lança um `Jose.Error`, assim como uma chave do tipo errado.
++ Este é o segundo dos dois ataques, tentado com uma chave HMAC:
+
+% 2 1 0 045cbbf5d830c42c07681960fa5a1d54
+
+% 0 1 0 1c3a8ef5046465641f0e52c6e4f0c95f
+
+% 0 1 0 0c316a55b4ab20fe042aba750d805252
+
+% 1 1 0 09cafec02d3da8de0d7909b1ea706b06
+
+% 3 1 0 154ccc86ac8955ad1aa3c22aef855dde
+
+% 4 1 0 123b7eb6acd28fbb08ed1477ecef1618
+
+% 5 1 0 00eda5e3c951fcd70a3181e43ffa01a6
+
+% 0 1 0 0c74bd7da4da71bd010e10c7d0872750
+
+% 1 1 0 0160f4a69a6c1ab01175a58433573700
+
+@ 0 1 0 12550b44ec9c48260058c05fa26a7572
++ Cada cifra de assinatura representa um algoritmo:
+
+% 2 1 0 18ff527e42bc57de122a440753b775b3
+
+@ 0 3 0 19c17ff505023207053a18978d2f1b38
++ column  Chave
++ column  Algoritmo
++ row  `SymmetricKey[HmacCipher[Sha2[256]]]`  `HS256`, e da mesma forma `HS384` e `HS512`
+
+% 0 1 0 0ff9c7940dc3b04609b7339be4688aac
+
+% 0 1 0 0283fc15a98e5e300a401f21ba35a54d
+
+@ 0 1 0 04b44d8f8f4291a6167d7fff86e8ca75
++ row  `PrivateKey[Ecdsa[256]]`  `ES256`, e `ES384` e `ES512` para P-384 e P-521
+
+% 0 1 0 0da69f47891eab2c00bc8a39e753b927
+
+% 1 1 0 16c13e0ae2c9cf380b48024c00c0097e
+
+@ 0 3 0 18408ac914999106135f1d25cacdca2e
++ Uma chave RSA assina com SHA-256, a menos que `signatureDigests.sha384Signature` ou
++ `signatureDigests.sha512Signature` seja importado, o que a torna `RS384` ou `RS512`. A curva de
++ uma chave ECDSA fixa o seu digest, como o padrão exige.
+
+@ 0 1 0 16a74d225fa90b6c085d7f852fd031fa
++ Outros parâmetros de cabeçalho são passados como um `Jose.Header`, cujo `alg` é sempre o da
++ chave:
+
+% 2 1 0 009a3f3d5abcc9381938647ef372eeb4
+
+% 0 1 0 13f79361db559a3c092be206c6fb46b4
+
+% 1 1 0 02b7aa0e9934aa390bb8fe9d199f1e2e
+
+@ 0 2 0 0d5f7e5314871a2704882a0213487c58
++ Um objeto não protegido, cujo algoritmo é `none`, nunca se verifica. O seu payload só pode ser
++ lido declarando-se isso explicitamente, com o token `Jose.Unsecured`:
+
+% 2 1 0 0f618042b2f1725c1300e174c0ee7f91
+
+% 0 1 0 15c861c90845c0d811545d5c915c3dfe
+
+% 0 1 0 161fb1e83ab535d203c632ae4c6cc2fa
+
+% 1 1 0 112ad897f06547eb1654e8fd668910c2
+
+@ 0 1 0 1792364ad339bd671e9e37dadf18dd60
++ ### Chaves como JSON
+
+@ 0 2 0 0888e76e90546962074ac3c1df56b319
++ Um `Jwk` é uma chave como um objeto JSON. Uma chave pública é escrita diretamente. Uma chave
++ privada ou simétrica precisa do token `Divulgence`, o mesmo que deixa uma chave privada sair
++ como PEM:
+
+% 2 1 0 148d79c4afbdc09f167de523dce7d851
+
+% 0 1 0 105a0ac5780b0fbf1875d94c6d08bffb
+
+% 0 1 0 1255af0531169f93191a17b01349e894
+
+% 1 1 0 0e4e97889afb8ef20fdcad30890cf74b
+
+% 3 1 0 0b43b91d0104d96b1a94b915b27717c7
+
+% 4 1 0 08adc87df293114b0f3893618f1c7007
+
+% 5 1 0 079d21324dd9857f06231f85a3febc59
+
+% 0 1 0 1d464af8af771acb1c2c2330973b8693
+
+% 1 1 0 153db2034bcf83391485d82a9bad7011
+
+@ 0 2 0 0a0878279b22cc5507f81dbd986fd831
++ Um `Jwk` é lido de volta como uma chave de uma cifra nomeada. O tipo da chave e o seu tamanho
++ ou a sua curva devem concordar com a cifra, ou um `Jose.Error` é lançado:
+
+% 2 1 0 019e25f0df0d05ca060731a526e92e12
+
+% 0 1 0 0e21e68b99610a380fba31681bfc6855
+
+% 1 1 0 1286b2eb8edc60e30981e0424e2d9458
+
+@ 0 3 0 15ecbc3c096ebeef1063829a4b2f3c0c
++ O mesmo objeto JSON pode representar mais de uma cifra. Uma chave `RSA` é uma chave
++ `Rsa[2048]` para `RS256`, uma chave `RsaPss[2048]` para `PS256` e uma chave
++ `RsaOaep[2048, Sha1]` para cifragem, e a cifra pedida decide qual.
+
+@ 0 2 0 09538f39e2aa9f8d06c2a4596aa3bf06
++ O *thumbprint* de uma chave é um digest dos seus membros essenciais, de modo que duas
++ descrições de uma mesma chave têm um mesmo thumbprint. Ele é um identificador natural de
++ chave:
+
+% 2 1 0 10011ac6bc88aef302f9874249e7a032
+
+% 0 1 0 0324a6466b6619d40ef49c9528ffd1bf
+
+% 1 1 0 074fddbc33cd1f400486ecbd94e34330
+
+@ 0 2 0 1700835bd3aadb98056805c0a80d55b2
++ Um `Jwks` é um conjunto de chaves, como o que um provedor de identidade publica, no qual uma
++ chave é encontrada pelo seu identificador:
+
+% 2 1 0 162c4a67a40a55ae1f157a0457b6d64c
+
+% 0 1 0 1307aa02475b2de1098bf001024a4bd4
+
+% 0 1 0 0f3228f33d4043b90bf68da0e9c05d0b
+
+% 1 1 0 05f5373806dbd51704c7212bc73adc77
+
+@ 0 3 0 0235064693f9eba1064fb1e9c0fe0e3a
++ `Jwks.retrieve` busca um conjunto na URL em que o seu proprietário o publica. Isso é uma
++ [requisição HTTP](http-client.md#what-a-request-needs-in-scope), e por isso precisa do que uma
++ requisição precisa no escopo.
+
+@ 0 1 0 18f5be472b2e56d112c41d2e6491bbf7
++ ### Cifragem
+
+@ 0 3 0 115fc8449eda6e451b464ddba5d2c5d4
++ `Jwe` cifra um payload para um destinatário. Duas escolhas são feitas: como o conteúdo é
++ cifrado, que é o argumento de tipo, e como a chave do conteúdo chega ao destinatário, o que a
++ chave do destinatário decide:
+
+% 2 1 0 09f781cfc19261980722545fbf4dd970
+
+% 0 1 0 1c1a39acd0d4fd6a1f79cf425b8089aa
+
+% 0 1 0 12da9783902517841fc9bb1911d14fb7
+
+% 0 1 0 0b01a3e042e944440aa03777754d1786
+
+% 1 1 0 0d1b3fc46418fc430cab138eebdf301a
+
+% 3 1 0 06e84957f7d97cdb0a586a77c98a264e
+
+% 4 1 0 0e87236eea35e6d1068c087999cc71a2
+
+% 5 1 0 12ba8d4511ab8fdb0814e459e27c9cfa
+
+% 0 1 0 0efeaad02af113d00fef6603ec9aafae
+
+% 0 1 0 0c73391cc5dcfc161c66e046326404af
+
+% 0 1 0 013ff534048fe697048128dc62ea0e90
+
+% 1 1 0 05ab03fab8b75864145da21523cb7f6e
+
+@ 0 1 0 1b9446431a3d6a13145d3db6d9d8dfca
++ As cifras de conteúdo são AES-GCM e AES-CBC com HMAC:
+
+% 2 1 0 0329747956df03f7067b38437bd47eea
+
+@ 0 1 0 1bfbc91348e9e7aa0c0046b0c12c6609
++ column  Cifra de conteúdo
+
+% 0 1 0 09594b7afdbafa720fc86ad83db13625
+
+% 0 1 0 004cbb66bd0a1db100dc7fe2e7e4319b
+
+% 0 1 0 1f2f9160c6a47e84004e970ab09def5c
+
+% 1 1 0 1733e98477677f31117084c9fd9f6574
+
+@ 0 1 0 0b5f523188d996641337392239d7b4f8
++ O tamanho de um `AesCbcHmac` é o da sua chave inteira, metade da qual é para AES e metade para
+
+% 0 1 0 1504eb43224a2fb8197dcd23d7426d54
+
+@ 0 3 0 1c0527bf04f9f81705ec90a2d9e1c6f9
++ A chave de um destinatário representa uma família de algoritmos de gerenciamento de chaves.
++ Onde a família tem mais de um membro, o primeiro é usado, a menos que o cabeçalho passado a
++ `Jwe` nomeie outro, e a decifragem aceita qualquer membro da família, mas nada fora dela:
+
+% 2 1 0 1f0de6c8070a3edd0e00dc5185b7c473
+
+@ 0 1 0 01a2594b137c34a21b4c6111b2c502d6
++ column  Chave do destinatário
+
+% 0 1 0 1532017fea0eeb650071f007ff336737
+
+% 0 1 0 1ea1d0c4818241cb15cb6d2b346aeea4
+
+% 0 1 0 068cd3ee2272b341033315607161ac3a
+
+% 0 1 0 0bfa9a58b26380e917bfa4d794286929
+
+@ 0 3 0 15930bf8703bec57130a151837b0a4ca
++ row  `PublicKey[Ecdh[256]]`, `PublicKey[X25519]`  `ECDH-ES`, ou `ECDH-ES+A128KW`, `ECDH-ES+A192KW`, `ECDH-ES+A256KW`
++ row  `SymmetricKey[AesKeyWrap[128]]`  `A128KW`, e da mesma forma `A192KW` e `A256KW`
++ row  `SymmetricKey[AesGcm[128]]`  `dir`, ou `A128GCMKW`
+
+% 0 1 0 06a9cf8a53bcb17902d684f2fa021104
+
+@ 0 1 0 18f1d1d2b786a82e1fa2c2e93e62f29a
++ row  `Password`  `PBES2-HS256+A128KW`, ou `PBES2-HS384+A192KW`, `PBES2-HS512+A256KW`
+
+% 1 1 0 0f0e1ea938ee9cc91fca35d51f91f551
+
+@ 0 1 0 0921b562302341f11a2273780a66d618
++ Um membro que não seja o primeiro é escolhido no cabeçalho:
+
+% 2 1 0 1c284a782f9eb78e0aa1d408dcbe644f
+
+% 0 1 0 08503a4e214409520e83d1ed99843446
+
+% 0 1 0 03b845ee77c5fc3d0ffca17dfbd9128c
+
+% 0 1 0 0ae8cde6f6bb5c491062370f1e8c7f61
+
+% 0 1 0 0f7a7c0ae977a8511d67eb9c162b01b3
+
+% 0 1 0 162c77a2d8a4987a0bb2a05d767ed6b6
+
+% 1 1 0 0ee11da39b0337a008190a244a967c16
+
+@ 0 1 0 19bd34e48ecd1a441a9e9b91a1d10d30
++ `RSA1_5` é fornecido porque ainda é encontrado, mas não deve ser escolhido para nada novo.
+
+@ 0 3 0 09d0b2d05da2fdbd1e6c6d6c5e096197
++ Uma senha deriva a sua chave lentamente, de propósito. O número de iterações é
++ `Jwe.DefaultIterations`, a menos que o `iterations` do cabeçalho diga o contrário, e um objeto
++ que pede ao seu destinatário mais do que `Jwe.MaximumIterations` é recusado antes que qualquer
++ trabalho seja feito.
+
+@ 0 3 0 1a7ca55052a9278a0530131f1e7afaed
++ Toda falha de decifragem é o mesmo `Jose.Error`, cujo motivo é `Undecryptable`. Ele não diz se
++ a culpa foi da chave ou do conteúdo, já que é exatamente isso que um atacante gostaria de
++ saber.
+
+% 0 1 0 0d614811364e947714a7c99db09adf59
+
+@ 0 2 0 128e028181b4ed8a1c28e61717985c69
++ Um `Jwt` é um conjunto de claims. As sete que o padrão registra são um `Jwt.Claims`, e as
++ próprias de uma aplicação são um valor de um tipo dela, escrito no mesmo objeto JSON:
+
+% 2 1 0 062b5161b757dde5093022552f43f806
+
+% 0 1 0 0342b29066f54b760e0875a6d8daeb8b
+
+% 0 1 0 0681b8c4d175f73e05a179f0096f422b
+
+% 0 1 0 0bdfe8e745a0805a0ad07d697cf334d3
+
+% 0 1 0 00a70dd967f0c8451491f83664762bea
+
+% 0 1 0 130f926afb5bf88e1d4edc27f2599b83
+
+% 0 1 0 1326b48e1f0256dc020f228a922a887d
+
+% 0 1 0 0d19d3f329cfc8231cc188544d368989
+
+% 0 1 0 124b5e23eca76e59187958b6c75f0e8b
+
+% 1 1 0 0ffdebacdababe57052e501d6c22d8ba
+
+@ 0 3 0 003a03d2a9c00d6a156ac73a5836bd79
++ `Jwt.verify` é tudo o que um servidor faz com um token que lhe foi enviado. Ele verifica a
++ assinatura contra a chave, lê as claims e verifica que o token não expirou e não é apresentado
++ antes da hora, pelo `Clock` no escopo:
+
+% 2 1 0 026658634134bb5c1f14e8cc24e6c10f
+
+% 0 1 0 01697bf0054c35f1116cd5120fc82e83
+
+% 0 1 0 1991b89da7ca34f51225bb94eda36d5c
+
+% 1 1 0 0383ec6272107157143bd6747fd4de9d
+
+% 3 1 0 0e7ba08ad960aaca02cb6a2e28048e67
+
+% 4 1 0 19036ea0a7c7741d0587552416da1df0
+
+% 5 1 0 1a992ad7f527c70c08475c1a38b4dac0
+
+% 0 1 0 057508655f461892150cf3f1d01c4298
+
+% 0 1 0 1b17acb8ee21fd7215fdf47fa598affe
+
+% 1 1 0 0b62621a0d5b52721ad8ef2c2b0fc875
+
+@ 0 2 0 0d2503505b2c978910bc00397cf3f730
++ `validate` verifica quem emitiu o token e para quem ele é, e concede alguns segundos de
++ `leeway` para a diferença entre os relógios de duas máquinas:
+
+% 2 1 0 1caf993f953a6c77135f01f026e97463
+
+% 0 1 0 1b1750baad61d8e708f66a1a210586d6
+
+% 1 1 0 07ccaddf6bf0a4ca1c3078e9386c7b05
+
+@ 0 1 0 0975a9481e9bfbb5194ea12432bbdb6d
++ Não há como ler as claims de um token sem verificá-lo.
+
+@ 0 1 0 1b40d020c5f10af5017f020d5d12ee4c
++ ### Autenticação bearer
+
+@ 0 3 0 0e710e8b6010ae7f14d4b3990c330600
++ Para um [servidor HTTP](http-server.md), `bearerAuth` é a contrapartida de `basicAuth`. O seu
++ handler só é executado para uma requisição cujo cabeçalho `Authorization: Bearer` traz um token
++ que se verifica e que nomeia o emissor e o público esperados dele. O token está no escopo como
+
+% 0 1 0 0fba66ba12254ea303667ec587ae633b
+
+% 2 1 0 1d1e2a2f6407ec0a17930a25e48dee2f
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 038974b7242f54aa0f51faa92a3ae956
+
+% 0 1 0 1ef9ae6ab99f65ca140f63664fb0c8bd
+
+% 0 1 0 0ff8516ea636b32401c856bdfa7bc6a2
+
+% 1 1 0 0d2195d83b17e2be08178b00d68b8ee4
+
+@ 0 2 0 0b60c9a8fdf928820c10c18d2694dd81
++ Uma requisição sem token é respondida com `401`, com um desafio. Uma cujo token não passa na
++ verificação é respondida da mesma forma, com `error="invalid_token"`, e nunca fica sabendo por
++ quê.
+
+@ 0 2 0 16623185740015bb068bbd3f6e57f18c
++ Onde as chaves são um conjunto, o `kid` do token escolhe entre elas, e o argumento de tipo é a
++ cifra como a qual cada chave do conjunto é lida: `bearerAuth[Ecdsa[256]](keys, …)`.
+
+@ 0 1 0 1002434472be02a3060f83958e90fe2d
++ ### Outras serializações
+
+@ 0 4 0 0be15851f6ab66191b8c7d47392c7d67
++ A serialização compacta traz uma assinatura, ou um destinatário. As serializações JSON trazem
++ várias, e além disso cabeçalhos não protegidos. `Jws.read` e `Jwe.read` aceitam qualquer uma
++ das formas JSON e dão um objeto para cada assinatura ou destinatário. `flattened` escreve uma,
++ e `Jws.general` e `Jwe.general` escrevem várias:
+
+% 2 1 0 16774a4da91a416a0ea3fe83a6f16226
+
+% 0 1 0 1b62911f19468a61083ebd3666caf0ff
+
+% 0 1 0 168eaf2713d2a76802091ddd1529dbd5
+
+% 1 1 0 01b6193f53b571a01620cba654c57a2f
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 4 0 0c5c19cfe7732004080c2798d2c5ed72
++ - [Criptografia](cryptography.md) fornece as chaves, as cifras e os arquivos dos quais as
++   chaves são lidas.
++ - [OAuth 2](oauth.md) é como um cliente obtém um token.
++ - [JSON](json.md) é de onde as claims de um token são lidas e para onde são escritas.

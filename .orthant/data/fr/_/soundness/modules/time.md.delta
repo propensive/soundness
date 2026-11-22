@@ -1,0 +1,1745 @@
+orthant 2 language
+
+@ 0 1 0 1c8bfb5ab130f9dd0def5b3659827e06
++ ## Temps
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 3 0 0ca827e51521065812caaf91e19cc19c
++ Le temps est représenté et manipulé sous toutes ses formes : les dates d'un calendrier, les
++ heures d'une horloge, les instants absolus sur une ligne de temps physique, les intervalles qui
++ les séparent, les fuseaux horaires qui relient le temps humain au temps physique, et les règles
++ selon lesquelles les événements se répètent.
+
+@ 0 4 0 1d9737bf64ddfb5712e7c590ce86a603
++ Partout où une valeur peut être connue au moment où le code est écrit, elle est vérifiée
++ [à la compilation][compilation]. Une date qui ne peut pas exister, ou un fuseau horaire qui n'a
++ jamais été défini, est une erreur de compilation, et non une surprise
++ [à l'exécution][exécution]. C'est la
++ [sûreté par construction](../../philosophy/safety-by-construction.md), appliquée à un domaine
++ dans lequel presque chaque valeur obéit à une règle.
+
+@ 0 1 0 13d4f92f39e7ea241ce95c8a81a12606
++ ### Sur le temps
+
+@ 0 1 0 01248ef231b26a7c02e4f60489455113
++ Le temps a l'air simple, et ne l'est pas.
+
+@ 0 5 0 188a20ef50721edb12213809df00fbba
++ Un instant physique, comme le tintement d'une cloche ou l'arrivée d'un photon, peut être placé
++ avant ou après un autre, et mesuré par rapport à une référence régulière. Cela du moins est
++ sans ambiguïté, *pourvu que les deux se produisent au même endroit*. Des événements distants ne
++ sont que [partiellement ordonnés](https://en.wikipedia.org/wiki/Special_relativity), liés les
++ uns aux autres par la vitesse de la lumière, et non par une horloge universelle.
+
+@ 0 8 0 009c72b2e29b3ad11904be4a593154b3
++ Tout ce que l'on construit par-dessus est encore moins certain. Les calendriers divisent
++ l'année en mois de longueurs inégales, en semaines qui ignorent complètement les mois, et en
++ jours eux-mêmes divisés de façons qui ne sont
++ [pas décimales](https://en.wikipedia.org/wiki/12-hour_clock), et qui ont été
++ [négociées au fil de l'histoire](https://en.wikipedia.org/wiki/Thirty_Days_Hath_September).
++ Les douze et les soixante sont des
++ [nombres hautement composés](https://en.wikipedia.org/wiki/Highly_composite_number), choisis
++ parce qu'ils se divisent bien, bien avant qu'il faille diviser quoi que ce soit par dix.
+
+@ 0 1 0 10ef59efa3db49fc076c321ae3f80056
++ La relation entre temps physique et temps civil est pire encore :
+
+@ 0 8 0 0eb7350f125a480f0092dd99f9f221e4
++ - La durée d'un jour dérive à mesure que la rotation de la Terre change, si bien que le temps
++   civil est corrigé par des
++   [secondes intercalaires](https://en.wikipedia.org/wiki/Leap_second), qu'on ne peut pas
++   prévoir des années à l'avance.
++ - Une même lecture d'une horloge murale peut désigner deux instants distincts, ou aucun,
++   lorsque l'[heure d'été](https://en.wikipedia.org/wiki/Daylight_saving_time) décale les
++   horloges.
++ - Le même moment porte des étiquettes différentes en des lieux différents, et les étiquettes
++   qui s'appliquent ont parfois dépendu de l'issue de guerres.
+
+@ 0 5 0 05ee592ec7e5dbbf02239844c88679dd
++ Tout ce qui peut en être rendu systématique l'est, en encodant les distinctions dans les types.
++ Une date sait à quel calendrier elle appartient. Un instant sait sur quelle ligne de temps il est
++ mesuré. Un moment connaît son fuseau. Et les cas délicats sont résolus par des politiques
++ choisies selon le contexte, et non laissés au hasard : un 31 que certains mois n'ont pas, un
++ 29 février que la plupart des années n'ont pas, et une lecture d'horloge qui tombe dans le
++ trou d'un passage à l'heure d'été.
+
+@ 0 1 0 0b841d7ce675c910154a8cb917bf106d
++ Les sections ci-dessous commencent par les types de tous les jours, puis progressent vers les
++ types rares :
+
+% 2 1 0 1930e164d320aa630e785622c4338696
+
+@ 0 17 0 08b5b1cc83af0d8315f3b3e44ec74b8e
++ column  Type
++ column  Représente
++ row  `Date`  un jour d'un calendrier
++ row  `Clockface`  une heure de la journée
++ row  `Timestamp`  une date avec une heure de la journée
++ row  `Month`  un mois de l'année, de `Jan` à `Dec`
++ row  `Year`  une année civile
++ row  `Monthstamp`  un mois d'une année donnée
++ row  `Anniversary`  un mois et un jour, qui reviennent chaque année
++ row  `Duration`  une quantité physique de secondes
++ row  `Timespan`  une quantité calendaire : années, mois, semaines, jours, heures, minutes
++ row  `Period`  un intervalle semi-ouvert entre deux points
++ row  `Instant`  un moment du temps physique, sur une ligne de temps
++ row  `Timezone`  les règles d'un lieu pour le temps civil
++ row  `Moment`  un horodatage ancré dans un fuseau
++ row  `Recurrence`  un événement qui se répète à intervalle fixe
++ row  `Rrule`  un événement qui se répète selon un motif calendaire
+
+% 1 1 0 1e76a72867e560730e1a26b5f3a23835
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Tout provient du package `soundness` :
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 1 1 0 09a8f67b183dcdd50adab2731fead1e5
+
+@ 0 1 0 18b304405a99fa4c101c5c7edb07406b
++ Plusieurs autres choix se font par import :
+
+% 2 1 0 0506b72d74937f0017cb994d8ac82bc8
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 066af33ea28da16407b361b7f58d7b83
+
+% 0 1 0 18acb8450ef6a155107e40545110807d
+
+% 0 1 0 06108a96325804ab158eccf4c2d37db0
+
+% 0 1 0 1ffc216c123501de05bfcc61dc208228
+
+% 0 1 0 09f0a7c99de013c0106fe5090dd75582
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 7 0 04c01eb3bfe650390127647d0926969b
++ column  Import
++ column  Décide
++ row  `strategies.throwUnsafely`  qu'une erreur, comme un texte qui n'est pas une date, est levée comme exception ; [Erreurs](errors.md#choosing-a-strategy) présente les autres stratégies
++ row  `chronometries.unixChronometry`  que l'heure courante est lue sur l'horloge Unix
++ row  `calendars.gregorianCalendar`  le calendrier dans lequel sont lus un littéral de date et l'arithmétique sur les dates ; [Calendriers](#calendars) présente les autres
++ row  `dateFormats`, `timeFormats`  comment une date et une heure sont écrites ; [Formater les dates et les heures](#formatting-dates-and-times) présente les autres
++ row  `stdios`, `termcapDefinitions`  où les exemples affichent leurs résultats
+
+% 1 1 0 010f87bdd4bca34e06c2ce38bdb9b9dd
+
+% 0 1 0 06152b59493aae2f111de544172e9177
+
+@ 0 1 0 08a2ab5465c692010ac5481b1351671a
++ Une date s'écrit sous la forme d'une année, d'un mois abrégé et d'un jour, reliés par des
++ tirets :
+
+% 2 1 0 131ab7d3405bc7dc1aaba90f68f97460
+
+% 0 1 0 019c4bddb751cba5111a959d73e592ab
+
+% 1 1 0 0bb41e7b251acc771740fb6beb952cf8
+
+@ 0 4 0 0703705fcbfb1b971af2a468ccb90c19
++ Ce n'est pas une chaîne à analyser à l'exécution. C'est un littéral que le compilateur
++ comprend, et une date impossible ne compile pas. Le trente février, le trente et un avril, et
++ le vingt-neuf février d'une année non bissextile sont tous rejetés avant que le programme ne
++ s'exécute :
+
+% 2 1 0 1855fbbb65f81acb09f6b67d45452ac2
+
+% 3 1 0 0360d04ba6b8c6f10628a326092d59e5
+
+% 4 1 0 19921bc97906f4f10cdf5d3e15ca7592
+
+% 5 1 0 19ab490a2d10ce770e04edda146f7645
+
+% 0 1 0 05263efbed99cbd307a596d266dafc14
+
+% 1 1 0 197207abda1f8da51b5d399c2418de90
+
+% 3 1 0 13fa9934ea9b5f090fcf09652c29884e
+
+% 4 1 0 123a7f52e38503e80102a3119efeb967
+
+% 5 1 0 1630cae05196d0c40f05f995d5b461cc
+
+% 6 1 0 032bad382e2f33a20cd972b084c7e734
+
+% 0 1 0 030614b1f367d1821a2de654e9a3c61c
+
+% 1 1 0 1fb083b9dc44dfbb00e0d6c22f068f2b
+
+% 3 1 0 0ad24b5cf4c59dec1faf26c6c531d7aa
+
+% 4 1 0 134553217370dd2a1a2e1f0269d3dd63
+
+% 5 1 0 042c87a65b6684040f58755bf14818dc
+
+% 6 1 0 0d2f6701a450dcae026d40a583c4f04f
+
+% 0 1 0 1d29630b0a9b105507bfe195e410766e
+
+% 1 1 0 1baf490a318ea8311d666add32cf36c6
+
+@ 0 2 0 1a9a04f33cd9085b097eaa1f921c479f
++ Intercepter ces erreurs à la compilation, au lieu de tenir une date pour valide parce qu'elle
++ a été analysée, est l'habitude récurrente qui façonne toute la conception.
+
+@ 0 3 0 0a6d370d7988a6cb1e0d23cd547e902d
++ Une date se lit à partir d'un texte avec [`as`](decoding.md#decoding-a-value). L'[interpolateur]
++ `ts` fait de même pour un littéral connu à la compilation, et valide ses chiffres exactement
++ comme le fait la forme à tirets :
+
+% 2 1 0 1012a886cc5d407317bf5ed14429833b
+
+% 0 1 0 040371aef605b51a0b8c4a2582b569b6
+
+% 0 1 0 0864bf3376ed90ce1a5f34e4ae9cddc0
+
+% 1 1 0 03b45c49d9935ffa164cfbe313934be6
+
+% 3 1 0 03cd269aa3d35b970936f488bd2996ca
+
+% 4 1 0 14e8eceeae36014e102623c9b7fcb9f9
+
+% 5 1 0 0780666364b7de7f0ab78d91ca5d3912
+
+% 0 1 0 09fd4860026ce29b116951de52b177c8
+
+% 0 1 0 06695e8260fc2f230137ec83bd2afb87
+
+% 1 1 0 0cc43eab6a205f621a691182f74f1d81
+
+@ 0 1 0 0d946700a48123591a047977adbe7419
++ Un texte qui n'est pas une date lève une erreur :
+
+% 2 1 0 082996e60c381c7d0b2a153b6b87a8aa
+
+% 3 1 0 0c4750e2dc821f69184ce00d174611e8
+
+% 4 1 0 166e8f9dd3daf4d60ae8652d0120c35f
+
+% 5 1 0 152f2401b974209c017fff4f6b8d7bc9
+
+% 0 1 0 1737ef3f69f380110876a7bd7ef49305
+
+% 1 1 0 072fadd3304bfcf41457d4c95224422d
+
+@ 0 2 0 16ccb8b32a4adb9c1281647654741e30
++ Les champs d'une date se relisent sous forme d'année, de mois et de jour. Une date connaît
++ aussi son jour de la semaine, et sa position dans l'année. Les dates se comparent, et se
++ décalent de jours entiers :
+
+% 2 1 0 0130f4baa1f4bb6d08203647402d267b
+
+% 3 1 0 199df95330b75d350980c7df899cc6f3
+
+% 4 1 0 064d34802ca413051c44bc1e9dd10a09
+
+% 0 1 0 0d393b04985895a70a008380ef005081
+
+% 0 1 0 1db3a26cab1705e9003c56c27160ad1a
+
+% 0 1 0 165d3a3f80e4b85f0721b9fbd92e1478
+
+% 0 1 0 194b94af2e0258f80aa3c2bd709b1005
+
+% 0 1 0 1a9b1a0496cce6130c1c9cf2f46a95b8
+
+% 0 1 0 168c618e1d0d56e601660902b4fdb745
+
+% 1 1 0 11127ba8401df3301ee878eca9a27a6e
+
+@ 0 2 0 028a9f148569d34f0219993b66e79b37
++ Une `Date` est un `Timestamp` d'une précision d'un jour. Les deux se distinguent par un
++ paramètre de type, et non par une classe distincte, si bien qu'une date peut être utilisée
++ partout où un horodatage est attendu.
+
+@ 0 1 0 1fd09be02271096b0a4677db4463cbfe
++ ### Heures de la journée
+
+@ 0 1 0 0c3eb73d8406ccc71a638b7226f5f8ce
++ Une heure de la journée est une `Clockface`, donnée en heures, minutes et secondes :
+
+% 2 1 0 10a1c857265334b41b1a7b7a9016c51e
+
+% 0 1 0 059a0a38abdb0f5f1610318f844e2a90
+
+% 1 1 0 120c9b272d2ec0221e377ba36d12326f
+
+@ 0 2 0 03b53f4006c32aad11460b2291512c52
++ Pour le cas courant d'une minute exacte, une heure peut s'écrire comme un nombre, suivi de `am`
++ ou `pm`. Les minutes prennent toujours deux chiffres :
+
+% 2 1 0 094bdc6cc23345e019c3e01da6b3c785
+
+% 3 1 0 06479b42ef2e71640916aa2424fe31c9
+
+% 4 1 0 08f9a1368227ac81159a3266194c59c3
+
+% 0 1 0 13b690df9b6079c91b155f14a69b8b63
+
+% 0 1 0 12c58a57629e4bda1b10efec29b3ae32
+
+% 0 1 0 1e2b85820b1cbb700265d6f04458f2e5
+
+% 0 1 0 02223c1891f5e4b70aa18c514f080e5a
+
+% 0 1 0 0a0896fb19966c380aab0677d8c0fa1e
+
+% 1 1 0 1c873ea6b3ea80e61efee4ca81119e9f
+
+@ 0 1 0 1d98c2367a5122d70178262426ffc3e5
++ Ces littéraux sont vérifiés eux aussi. Une heure supérieure à douze ne compile pas :
+
+% 2 1 0 00456d3520a76d4010774491da3195cf
+
+% 3 1 0 008ce1e24ee24052135e9eaade4b02f1
+
+% 4 1 0 1a5c5b18d8855b0c000a432cdad3b928
+
+% 5 1 0 14e0726f340bd26d108bc89a5873f60d
+
+% 0 1 0 143cfd58fd3625be1ff518d638c2e7be
+
+% 1 1 0 1742c9a70760d964180aae3d0552c9fe
+
+@ 0 1 0 068bc6f928290a111ee21fa104220ed0
++ ### Horodatages
+
+@ 0 2 0 03afb895c69616500da85dc132fd9b98
++ Un `Timestamp` associe une date à une heure de la journée. L'opérateur `on` relie les deux, et
++ se lit naturellement, de l'horloge au calendrier :
+
+% 2 1 0 14c3d9695ba1a49d126d77d739ec2598
+
+% 0 1 0 173927cf2c6d43431347d0d9a8073c36
+
+% 1 1 0 071174cdc4ac55d805f0e897cabf86df
+
+@ 0 1 0 1b1ed1c8ade80c0c01dc4a485273414c
++ Un horodatage peut aussi être construit directement, analysé à partir d'un texte, ou écrit
++ comme littéral `ts` :
+
+% 2 1 0 02397691fa880d5706a45a2d070dbb35
+
+% 0 1 0 13ed5b71b41f8beb09696750ccf1d06e
+
+% 0 1 0 045c73051896dadd10b804c077bbb363
+
+% 0 1 0 1af195435ff1d334116ae78249f9fdd4
+
+% 1 1 0 1c52d18d0712edf404159af17a509256
+
+% 3 1 0 0968c3026f9218d50e546be84da4316a
+
+% 4 1 0 18feba6d77eae0220171520a836ac8b9
+
+% 5 1 0 1655c02d68f74f261d3b8baa56d86346
+
+% 0 1 0 18c7528f6ef1f8eb0524cf871742f40a
+
+% 0 1 0 0a6d0f9ccbb7fb9305f97e15456a4723
+
+% 1 1 0 1145d609da40831d0005d7610db3b71d
+
+@ 0 1 0 16b91e599dbc10631a2ea02bd8749590
++ Ses champs se relisent individuellement :
+
+% 2 1 0 10d3c2f61c75c3ae0e89331a9abf5f60
+
+% 3 1 0 0421d830ffc5af701768b67c4354b3ac
+
+% 4 1 0 1048c182ea1c3d9e0c314e68e1ba2040
+
+% 0 1 0 1d35ac1de08f502004e2ad4389d512b2
+
+% 0 1 0 12e7323e6a97d63f00fac5150d2fa827
+
+% 0 1 0 1e627912d35434b61a013c05f5951d76
+
+% 0 1 0 0a3b3e56b089789a14cdd22865502294
+
+% 1 1 0 033ce76da1362454053a04de73162bcf
+
+@ 0 2 0 0dbfa5690352cecc079eb72ddbbaba6e
++ Soustraire un horodatage d'un autre donne l'intervalle qui les sépare, décomposé en jours,
++ heures, minutes et secondes :
+
+% 2 1 0 01620f00fae998ce0c1b48199e06cb46
+
+% 0 1 0 0f21e1d8e0b7346414f8ab71218bb416
+
+% 0 1 0 1cdf14f15c1c95740c2258a2634c20a6
+
+% 0 1 0 0fed44f4f8e960ae0ee430aecd1790c1
+
+% 1 1 0 1df9fb2a68af554d12470d1d2939ace8
+
+% 3 1 0 1884d1030ed884b91fb5a112bcae306b
+
+% 4 1 0 163d7ddd2071daed11c5ec724bd8576b
+
+% 5 1 0 06a7f85e454ef7ee1a99b47b4bf48cdb
+
+% 0 1 0 17e85255db95821d1ae7879d42e6834c
+
+% 0 1 0 18632783dc216cab0d66b1291017daac
+
+% 0 1 0 0127763429bff7df00c3ebf451a1f91d
+
+% 1 1 0 162f9b77bb1617380464940b11e38370
+
+@ 0 1 0 078f240d9f11f6061901512b5f09cfd2
++ ### Mois, années et anniversaires
+
+@ 0 2 0 01a50fc506659dcf125786883797e037
++ Les mois forment une énumération, de `Jan` à `Dec`. Un mois se convertit vers et depuis son
++ texte et son numéro, et l'ensemble complet est disponible sous forme de liste :
+
+% 2 1 0 1bf4eff58d3b497a1587265a2e8babc0
+
+% 3 1 0 197db900bafb8e0a107aee2347bfc129
+
+% 4 1 0 0aecf81909c855dc10ce0bc3b822bc98
+
+% 0 1 0 1833ce12c638240f1cdfb2c0f5fa594c
+
+% 0 1 0 0c98891a67c1256c02432369e480b7ec
+
+% 0 1 0 101358b63560ef2e049f70b658da2dd3
+
+% 1 1 0 0ff77342eeba3e9c193011a941bfc818
+
+@ 0 2 0 1096c1e13c918cf818d74708856ca5a3
++ Une `Year` enveloppe une année civile. Les années s'additionnent et se soustraient avec des
++ nombres entiers, se comparent entre elles, et s'analysent à partir d'un texte :
+
+% 2 1 0 05d39d6fbcc0e2b315fb7b17c03eb4f2
+
+% 3 1 0 1b983ff454f6615006f1bbbce4918d5f
+
+% 4 1 0 0086586fa95731f813bfc0dfaf2f2e7b
+
+% 0 1 0 126e058c1e2b36a91c5fdcf797067732
+
+% 0 1 0 1c510b3abaea6ee102ea0ff24d61b266
+
+% 0 1 0 061662943a964747090ddc9fa9b1618d
+
+% 1 1 0 0f0769c7470ef7240a43bbbad54b84c4
+
+@ 0 3 0 04c2ac513046063a1f6b3e543dd6f293
++ Une année et un mois forment ensemble un `Monthstamp`, écrit avec `-`. Lui soustraire un jour
++ donne une date. Ajouter des mois et des années le déplace dans le calendrier, en franchissant
++ au besoin les limites des années :
+
+% 2 1 0 0dc8fd3344d891581a81ae5f6d3cdb97
+
+% 0 1 0 00fb3863227661120d878a63d419d27b
+
+% 1 1 0 096c9bae1bff0df815c2263e3c81b6e5
+
+% 3 1 0 142a14f31182b32c0e888bfb3a144f1a
+
+% 4 1 0 13464520ceb0ea2307d6b27cad8df1d9
+
+% 5 1 0 161939a8b5fe34971039fa1781a99dcb
+
+% 0 1 0 092bd6f60d00523f0cd93a7a94bb0955
+
+% 0 1 0 07fa8cd8a622c4980e102f5de7375dcd
+
+% 0 1 0 192d054aad486a2a192746b5973c372d
+
+% 1 1 0 09edec8925bc6a451034330b94c59f43
+
+@ 0 2 0 12552363a953362113bfb5ce62ec457d
++ Un mois et un jour, sans année, forment un `Anniversary` : un anniversaire, ou un jour férié,
++ qui revient chaque année. L'appliquer à une année donne la date de cette année-là :
+
+% 2 1 0 189ee0baec967f4908fc17e98a53cb62
+
+% 0 1 0 0f7088d83609f4dc1733db866dbcaab2
+
+% 1 1 0 13d8d41f67475b39079277e97894704f
+
+@ 0 4 0 09e0d05ac096135911d61aa354f42bbf
++ Le vingt-neuf février n'a pas d'équivalent la plupart des années, si bien qu'appliquer un tel
++ anniversaire nécessite une politique pour le jour manquant. La politique est un [given],
++ sélectionné par ce qui est dans la portée, et n'est pas passée à chaque appel. Arrondir vers le
++ bas tombe sur le vingt-huit, et arrondir vers le haut tombe sur le premier mars :
+
+% 2 1 0 1f5a134a9c86fdf506eb0e3fc49bb87c
+
+% 3 1 0 04fed51ea0f95f0f1f1416bdfee5c321
+
+% 4 1 0 16a31f11d101305218a9f71c5a96197b
+
+% 5 1 0 14b1c7590f7669a1007412dee9de8ae2
+
+% 0 1 0 0c3ffc2b35f128b00826e24583dcee55
+
+% 0 1 0 1550d9662703ff870b1a3c490624e041
+
+% 0 1 0 1b35cf3f8bb442160c9cd858bc34e27b
+
+% 1 1 0 0f8b49415f588a58191956281748322e
+
+@ 0 1 0 08473677323793a41b019fdf2a7c36ec
++ Une année bissextile n'est pas concernée.
+
+@ 0 1 0 00a1cb7245b4987b1c5197a9b617b762
++ ### Durées et durées calendaires
+
+@ 0 1 0 0b4e0f6501042d1815c686a5ce5d927f
++ Une ligne ferme sépare deux sortes de temps écoulé, et la distinction est délibérée.
+
+@ 0 5 0 0f86e4be0a3ddee00baf9096d5e12185
++ Une `Duration` est une quantité physique de secondes, la même partout et toujours. Un
++ `Timespan` est une quantité sur le calendrier, en années, mois, semaines, jours, heures et
++ minutes. Son sens dépend de l'endroit où il est ancré, car un mois n'est pas un nombre fixe de
++ secondes, et un jour calendaire ne dure pas toujours vingt-quatre heures. Séparer les deux dans
++ les types empêche qu'un nombre de mois soit jamais pris pour un nombre de secondes :
+
+% 2 1 0 1bbd502958ed67b408dd5f1233d669dc
+
+@ 0 7 0 140df0a37bfd407f10d9b771e6841077
++ column  Aspect
++ column  `Duration`
++ column  `Timespan`
++ row  Mesure  des secondes  des années, mois, semaines, jours, heures et minutes
++ row  Signifie  la même chose partout et toujours  ce qu'en fait son ancrage
++ row  S'écrit  `Duration(1000L)`, à partir de millisecondes  `2*Year + 3*Month`
++ row  En texte  une forme compacte telle que `1h 0m 5s`, avec `compactDurationFormat`  une durée ISO 8601 telle que `P1Y2M3DT4H5M6S`
+
+% 1 1 0 03ee6feed5b73bda14f9af0dc8d667d1
+
+@ 0 2 0 19a182f64b8958fb15878876c3ed2f93
++ Une durée est une [quantité](quantities.md) de secondes. Une durée construite à partir de
++ millisecondes indique sa longueur en secondes :
+
+% 2 1 0 17ff84d8829ff842005d746da604019d
+
+% 3 1 0 1cfcd11b819cae7605c591d91a32571b
+
+% 4 1 0 0cf9ad5ff91c0edb0b6e6a0b32e0920f
+
+% 0 1 0 0cf99eac78d03f981b2bbcb089655d23
+
+% 1 1 0 0ceae66c1427a8be0a49c5cdb4d7e03f
+
+@ 0 2 0 16a946c008fb336d0e871236ee1fc873
++ Une durée calendaire se construit en multipliant un nombre par une unité, et plusieurs
++ unités se combinent en une seule durée. Ses composantes se relisent par leur nom :
+
+% 2 1 0 0e1b91b63afdfa5e06338c1d86e7ebd1
+
+% 0 1 0 1631537ffb3b697a0cedcd4c24077099
+
+% 1 1 0 088c16f5630585870ee93b496477bea5
+
+% 3 1 0 120200781e87b1531699e656b449af97
+
+% 4 1 0 1adea317de6f29671838a1251ce1f2e9
+
+% 5 1 0 194e9ea8299308991b3fe8022991e492
+
+% 0 1 0 0a1931aa010ad3a716fa01dc0a5abd8a
+
+% 0 1 0 10409708a133382516d0ee980140841d
+
+% 0 1 0 167ec521a7df492801326462867c96b8
+
+% 1 1 0 0e225e97d5a2ffb60e4c5b8a4704b05c
+
+@ 0 3 0 08803c897b0e880a16fb74d48fee21df
++ Une durée calendaire est encodée comme une
++ [durée ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations), et se relit à partir d'une
++ telle durée. L'interpolateur `dur` écrit une telle durée comme un littéral vérifié :
+
+% 2 1 0 0826a2805061b82b1171e246cacb617e
+
+% 0 1 0 09b0f861c2c160600dbad3153fcc24f3
+
+% 0 1 0 081d40cca7f78a751598d2d305cee8fa
+
+% 0 1 0 039bb3da7689b0af019829c84824e5bd
+
+% 0 1 0 0235df3b414d60450ba19096765e6ac5
+
+% 1 1 0 0582dbdde1bc757b1f93e91e7161221b
+
+% 3 1 0 1f7a972021851f3f148d848490bbbbf1
+
+% 4 1 0 0136d3e7a8e2c7170af30df7416b3b9f
+
+% 5 1 0 109662938e8217b20876840f8e0e6d10
+
+% 0 1 0 051332a114960ee514ef5d7e2ab09af8
+
+% 1 1 0 0b38a9191b781ab60ce68edf12784552
+
+@ 0 1 0 05afd00c6c6b574e17cdff108991bc14
++ #### Durées compactes
+
+@ 0 3 0 0d1037bbc41214171e4ac203d392d906
++ Un outil lit une durée à partir d'une [option](cli.md), et en affiche une dans un rapport, et
++ les deux ont une forme compacte. Avec `durationDecodables.compactDurationDecodable` dans la
++ portée, un nombre suivi d'une unité est décodé en une `Duration` :
+
+% 2 1 0 03260b02d6eb309207de11e1ba95690e
+
+@ 0 9 0 0590e014d18ad9c01e0b043fe061e3bc
++ column  Suffixe
++ column  Unité
++ column  Exemple
++ row  `ms`  millisecondes  `250ms`
++ row  `s`  secondes  `30s`
++ row  `m`  minutes  `30m`
++ row  `h`  heures  `1.5h`
++ row  `d`  jours  `2d`
++ row  aucun  secondes  `90`
+
+% 1 1 0 0b21ea747f7a153f1f4464743f744729
+
+@ 0 4 0 0c02ef86ea92fecd0166b753d80a390e
++ Tout le reste, comme un nombre négatif ou un mot, lève une `Duration.Error`. Avec
++ `durationFormats.compactDurationFormat`, une durée s'affiche dans son unité la plus grossière,
++ suivie de chaque unité jusqu'aux secondes, de sorte qu'une colonne de durées s'aligne. En
++ dessous d'une seconde, elle s'affiche en millisecondes seules :
+
+% 2 1 0 043a5940666935c20aa673652e0a8a9f
+
+% 0 1 0 0c699bbb5241019b02c974f9e2ba3f64
+
+% 0 1 0 14d0cc0ddd6dfca509c0bad05f6717fc
+
+% 1 1 0 1cca46bb63c91f5e1240880cf86a6cfb
+
+% 3 1 0 0c8b144c569ef90610cb94828ad5da6f
+
+% 4 1 0 10362c6b412f42ff03d2310ff4416b02
+
+% 5 1 0 1f6ec6ff4338ad0a047ccb29248001d1
+
+% 0 1 0 1401c3328f50191412895c7487e7efd8
+
+% 0 1 0 1ce7e10b80fa87d70a17a0cf246286e4
+
+% 0 1 0 187482fb73edbd3814d1d2f8f262f8c6
+
+% 1 1 0 13358f95ce2f071e0ea7d0f5e85221c4
+
+% 3 1 0 07f13a92ed20d14e18222e73ef55fdba
+
+% 4 1 0 12fcf9deb1ff84df0a35c831f8ec3a40
+
+% 4 1 0 1a9f83f12eec02ae09166b7e3f404843
+
+% 5 1 0 057f515273fa81610fd007f7e6cca82c
+
+% 0 1 0 18800d271b6cc07a175ac1d14c0e1676
+
+% 1 1 0 0de0e0e25c5480d016256efab597ca68
+
+@ 0 1 0 06a4962b3b26d3900840b6a05f9881d9
++ ### Arithmétique sur les dates
+
+@ 0 2 0 19f27513047c41a51194ee5cc3d57a39
++ Ajouter un intervalle à une date la fait avancer. Les jours et les semaines sont réguliers. Ils
++ n'ont besoin d'aucune politique, car une semaine compte toujours sept jours :
+
+% 2 1 0 14d9390dc43310b91ddd0e6e46ea61a5
+
+% 3 1 0 089e4d3e277919a01018b0786ca5c56c
+
+% 4 1 0 17a6391e4e98772802d9170bddcea14f
+
+% 0 1 0 08b85ab2895f27b01c008621e5b734f6
+
+% 0 1 0 165e798a538d46cf1d8af2067723a609
+
+% 1 1 0 1961a09d1669f12d17329999c1e7e216
+
+@ 0 3 0 1367351d4d2bc2a711fb862aa15f08ee
++ Les mois et les années sont irréguliers. Ajouter un mois au trente et un janvier demande un
++ trente et un février, qui n'existe pas, si bien que le résultat dépend d'une politique. Aucune
++ politique n'est choisie en silence. Sans politique dans la portée, l'addition ne compile pas :
+
+% 2 1 0 0b70aca5990bb18d0c081665315c5489
+
+% 3 1 0 0d57536f946d145c03109cbccd4e7be4
+
+% 4 1 0 1e3f6c45befd59d00cf480247444173a
+
+% 5 1 0 1080923802d93e9811a228955d59adf6
+
+% 0 1 0 0d4bc78a843c834515df007d037ee886
+
+% 1 1 0 038a3bdb31a15e3811688bf151fdbff6
+
+@ 0 2 0 06ce0a2beea47d5e04c9e221805a9e2b
++ La politique est un given, que le code appelant doit fournir. *Borner* tombe sur le dernier
++ jour valide, et *déborder* déverse le surplus dans le mois suivant :
+
+% 2 1 0 130f069979008cd110ce1bb67d7da719
+
+% 3 1 0 1d7531bbd285f72c13c9447bd1e3282d
+
+% 4 1 0 172723960d6bae050ba9d7a3b8a9ad1c
+
+% 5 1 0 09a0d6ffa6cf0883177ad0cd6f55e690
+
+% 1 1 0 18c4023c17be411918c84881a5c72e10
+
+% 2 1 0 15bc4c1fcf14e01107d87e21adc04400
+
+% 3 1 0 0ebd9f05e9017f4104f014e3152aa83f
+
+% 1 1 0 123e132970abea3302dded92da3277af
+
+% 0 1 0 1ed820bbf8435ae20f936361da4ebb83
+
+% 2 1 0 1880b4656195bda805bdb3cd08eaa59a
+
+% 3 1 0 1a33194d1c8bb4fd071b7ecd168e6a87
+
+% 1 1 0 1997003a5c6dc49404026424d56211e8
+
+@ 0 1 0 01bccc412ce69def043c60960f85a0ab
++ Soustraire une date d'une autre compte les jours qui les séparent :
+
+% 2 1 0 1f66d98f6048cec51b18f622be674555
+
+% 0 1 0 05bbf81fc118a916066e5d51894a18fc
+
+% 1 1 0 0055eaab5183a4aa1c9c2524ff4453c1
+
+@ 0 2 0 0096a7d5aa26a52c0f298026018ad9e7
++ Les jours de la semaine peuvent se compter sur un intervalle, ce qui répond à des questions
++ comme le nombre de samedis que compte un mois :
+
+% 2 1 0 0faa9035d75da35d0174dedad41bd622
+
+% 3 1 0 043188dc8ddd85100bd31eae9e57420c
+
+% 4 1 0 0aaf8ef7e3acb861032e4712dc78fba0
+
+% 0 1 0 02348848d8d399ff18fdd2c2a1d1ef08
+
+% 1 1 0 1b7b9bf9398b051d0e9653c946a11092
+
+@ 0 2 0 19a85f65d142c6ed166c14ffddb3ebca
++ L'arithmétique en jours ouvrés saute les week-ends et les jours fériés. Elle doit savoir quels
++ jours forment la semaine, ce qu'est un `Hebdomad`, et quelles dates sont fériées. Les deux sont
++ fournis par le contexte :
+
+% 2 1 0 16b8d0b938e715851e0272ac28fb2b59
+
+% 3 1 0 1fdd6ab075985d391efae6d944de8c4f
+
+% 4 1 0 065296b817b463650e3770da2fc78849
+
+% 5 1 0 07579aaba7d7990102cdd4ea56fbb06b
+
+% 0 1 0 1bf003dd4eb1d0910520877a52b2e07a
+
+% 0 1 0 03ad4fb4350cc29d1a913c7da538937a
+
+% 0 1 0 0f9f67a22cb926350c9d46acf9c3212d
+
+% 0 1 0 12341d7f77f03b440f418f0795bf4edf
+
+% 0 1 0 09ba28ad39bbecf308812ec556fd53d1
+
+% 0 1 0 12704fa7c1f433960e882fc297600235
+
+% 1 1 0 00c85bd25693a1ba03b870479b570a8b
+
+@ 0 2 0 0765ecda704de7a3073a3dd7a7fc8774
++ Le premier saute un week-end, et le second saute les deux jours fériés et le week-end qui les
++ suit.
+
+% 0 1 0 1bf28340c64fb0e603b3d5ca0782ead8
+
+@ 0 4 0 1d326577036328f3164145c907f04b23
++ Un instant est un moment du temps physique, sans référence à aucun calendrier ni aucune
++ horloge. Un `Instant` est mesuré le long d'une ligne de temps, et la ligne de temps fait partie de
++ son type. La ligne de temps `Unix`, qui est le temps POSIX, compte les millisecondes depuis
++ l'[époque Unix](https://en.wikipedia.org/wiki/Unix_time), le début de 1970 :
+
+% 2 1 0 05fa79c43e7bae530303a67057c86893
+
+% 0 1 0 0c7d9e60b88cefe806551776524451d9
+
+% 1 1 0 0ba63e5e3aa992a415e24eee091863ac
+
+@ 0 1 0 174c86f137c4dac91906dd8391f8e65a
++ L'instant courant provient d'une horloge dans la portée :
+
+% 2 1 0 1b10d1c5f3de1b43031de9b1f0922c35
+
+@ 0 6 0 1853746b9aab233e036bbf78920d09fc
++ column  Appel
++ column  Lit
++ column  Nécessite
++ row  `now()`  l'horloge murale, sous forme d'`Instant over Unix`  une `Clock`
++ row  `today()`  la date du jour  une `Clock`, un calendrier et un `Timezone`
++ row  `monotonic()`  un compteur de temps écoulé à haute résolution, sous forme d'`Instant over Monotonic`  une `MonotonicClock`
+
+% 1 1 0 13db9353e8a519ba00f5389b0e802849
+
+@ 0 2 0 0dbd1655932b1b61159507524ea84bc1
++ L'horloge est elle-même un given. En fournir une fixe rend le temps déterministe, ce que
++ veulent les [tests](testing.md) :
+
+% 2 1 0 1a0921f1dd57dfe707c2a1370bf35590
+
+% 3 1 0 1e4cc239111cb81f06c87dc5b6cf982d
+
+% 4 1 0 14a57f4cf2cd7d1a04679b6db9c1a0f6
+
+% 5 1 0 08e4aad0d590fd2a0ddcb0cb307ccf90
+
+% 0 1 0 097f5e1ce2f51cc014680ae2dc7cf33f
+
+% 0 1 0 04c6a99750d413830cef8da879ce1640
+
+% 1 1 0 0c2751c214228dd30fef47f0d7e7d3a7
+
+@ 0 2 0 018a0e95e1cc95250193bdff7a36a85f
++ Les instants se déplacent de quantités physiques, et la soustraction de deux instants donne une
++ durée, en secondes :
+
+% 2 1 0 13c234028271a71f039d3d1aac1b70da
+
+% 3 1 0 051654002e602d55183cc038f13e8c2d
+
+% 4 1 0 13ff5835cdbae47309416ee92a95fdf4
+
+% 0 1 0 172969d36f6da22f0abfec4a953eda64
+
+% 0 1 0 09ebe7428c5da1561ac3c4d186b6f3f1
+
+% 1 1 0 1d7656a912e09add18488feb494d9c60
+
+@ 0 1 0 1ed085c1439209d216d66d0f5fff7b08
++ ### Périodes
+
+@ 0 3 0 1add639f98b3d38e1eb722f5cc4889f8
++ Deux points de même sorte délimitent une `Period`, écrite avec `~`. Une période est un
++ intervalle semi-ouvert : son début est inclus, et sa fin ne l'est pas. Des périodes
++ consécutives pavent donc une ligne de temps, sans se chevaucher là où elles se rejoignent.
+
+@ 0 1 0 18893980609dd82203cdd52f6960e424
++ Une période indique sa durée, et teste si un point s'y trouve :
+
+% 2 1 0 0b0a11c2cda86ef8159eaeeb305a286b
+
+% 0 1 0 043579d69d127ca1086b211b2f568263
+
+% 1 1 0 17d73290dd5d241c1b4f4e133e0a5df1
+
+% 3 1 0 15c29c254fce3a2813a7c063b85f700c
+
+% 4 1 0 0fe21978020eb8fb137cc6b4d0a8fa8b
+
+% 5 1 0 1e9c97d72aa8c7ee079bb5e6b35d9472
+
+% 0 1 0 07edc29dcbed83410ce279fa75dd8b87
+
+% 0 1 0 0a602672e06c980f14c1911f594a7d73
+
+% 0 1 0 0795386bf7919c6b149d1a0d0c4daa5c
+
+% 1 1 0 0dbb8cc83f274c30121e084d8043b5c2
+
+@ 0 1 0 023dfe9eef0596761fd6b4abec0b0aef
++ Les périodes se croisent et s'unissent également.
+
+@ 0 4 0 1629a56957088776066fcf444048d1ef
++ `by` parcourt une période selon un pas, et donne chaque point. `segments` la divise plutôt en
++ sous-périodes qu'en points, ce dont a besoin une vue de calendrier, ou un rapport découpé en
++ tranches. Un pas qui ne divise pas exactement la période abandonne le reste par défaut, ou le
++ garde, sur demande, comme un segment final plus court :
+
+% 2 1 0 131c0f8bd10d08bc0d507c949f24d20b
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 1 1 0 1218c1987ab70ea81c56d0bc64fe9601
+
+% 3 1 0 0d2f300f319dcc9614cc95c530244c4a
+
+% 4 1 0 163a26af771f1c5e17ba43798d4fdbc8
+
+% 5 1 0 0512f81883a6ec811c18b4441862470e
+
+% 0 1 0 037dfbabc5630b6c0ad53fb3444bb3ca
+
+% 0 1 0 1a77a01806822c4d17b6254f663cefaf
+
+% 0 1 0 1eb8b525cc92624e1c608e5d7f99b914
+
+% 0 1 0 19b1eb89555bcef015d17ce761226433
+
+% 1 1 0 0375f22a7033080e0e502a2d2d178eb4
+
+@ 0 2 0 0391d69b41c37c680f1f09ba846ed7fa
++ L'échantillonnage est paresseux, si bien qu'un intervalle qui s'étend sur des années ne coûte
++ rien tant que ses valeurs ne sont pas demandées :
+
+% 2 1 0 0c41ab47a20fa17c033e8041bb96f6ec
+
+% 3 1 0 1a8cc561be34b8e01f73b6482c4e9075
+
+% 4 1 0 0ae970f68d0fa02a15097c93973e5b7a
+
+% 0 1 0 160d1995096a8d7b194e6a51a4d0d5b9
+
+% 1 1 0 1c87da48408009dd0e821a379fcf8b5a
+
+@ 0 2 0 0afe126079974ecd172c2876ef3609d4
++ Une période est générique dans le type de ses points. Les mêmes opérations servent pour les
++ instants, les dates et les horodatages, le pas étant donné dans les unités dont se déplace
++ cette sorte de point.
+
+@ 0 1 0 1727dd00bc5ee98c0a0c3f75136eee0e
++ ### Fuseaux horaires et moments
+
+@ 0 4 0 179eec2e95d6006b0ee4b4e1438c4ee5
++ Un fuseau horaire désigne les règles d'un lieu pour le temps civil. L'interpolateur `tz`
++ vérifie, à la compilation, que le nom existe dans la
++ [base de données des fuseaux horaires](https://en.wikipedia.org/wiki/Tz_database). Un fuseau
++ mal orthographié n'atteint donc jamais un programme en cours d'exécution :
+
+% 2 1 0 13c7be53ada2a4fe1c49cd7483ae7b9a
+
+% 0 1 0 019758499963b06e0b6b28bf79a4a78e
+
+% 1 1 0 12c1ddfbd55387f0174bdb6591622313
+
+% 3 1 0 159f6382f5bbd6490a761083b62eaf57
+
+% 4 1 0 1ef3d42540132ee6135f018b10e13b39
+
+% 5 1 0 064e557a2db92d5511ff7c3008248c00
+
+% 6 1 0 006d188f48f2b8080adebf0f6e316cc4
+
+% 0 1 0 1db01eee8a88ef5c1049db91370c14cc
+
+% 1 1 0 0e99300fef7bec4404e7538c985e335d
+
+@ 0 2 0 1305212ebcafc53a11763f8d3f690d6f
++ Un `Moment` est un horodatage ancré dans un fuseau : la lecture d'une horloge murale, quelque
++ part en particulier. `instant` le ramène au temps physique, et `in` place n'importe quel
++ instant dans un fuseau :
+
+% 2 1 0 0c80332f6a7ab41117d4a4c617a6e4ff
+
+% 0 1 0 1e34e3137482f6a70bdfd64ab2b0a5b1
+
+% 1 1 0 12eb1b071d3af3ea1faad05dda788966
+
+% 3 1 0 11b983ef9b7970111e658e58cc838179
+
+% 4 1 0 10d6659250465f0e0ff4c9951dcb5d92
+
+% 5 1 0 150afac3ca9ff4740ff987fc08d7732f
+
+% 0 1 0 02bad485cc37126d061c22e8a3b77cbd
+
+% 0 1 0 19c992e606538cd107d2d92c85e9b569
+
+% 1 1 0 0bfcae3fc2e7e9901eb769c82509b387
+
+@ 0 2 0 07f81c1c72122090166e149fe510f0fb
++ Le décalage d'un fuseau change avec la saison. Le même instant se lit une heure plus tard à
++ Londres en été qu'en hiver, car l'heure d'été britannique est en vigueur :
+
+% 2 1 0 12e25e72ac99269319e9ee0e4d273e00
+
+% 0 1 0 137780ff789f64e41cc41a8aefc62e9f
+
+% 0 1 0 0b360960aef96b10017c2530949868ec
+
+% 1 1 0 0b0163ea908ab3ad181bdd5fcae79e67
+
+% 3 1 0 16659453ad3d7b960626f7224221a087
+
+% 4 1 0 1b98c72ff250ed531301547e48171cf4
+
+% 5 1 0 11d32f1bb23accfa0c95e6f0d10f5ab7
+
+% 0 1 0 080245a3690a2e2714864080561b8d21
+
+% 0 1 0 0922c7e6fd77d0f206c2c61a37a214aa
+
+% 1 1 0 1392dba977f416da0d3a0e58539ce836
+
+@ 0 1 0 079225f985e9ea460ff813387b99ccea
++ #### Passages à l'heure d'été
+
+@ 0 2 0 1cb3423e8706e83f0e6c2acbb77f22e0
++ Les passages à l'heure d'été et à l'heure d'hiver rendent certaines lectures d'une horloge
++ murale ambiguës, et d'autres impossibles. Aucun de ces cas n'est passé sous silence :
+
+% 2 1 0 1e68d7387fbd8e250217de704ed6e757
+
+@ 0 6 0 02ff3a825e6f619a0d2029397b3b2294
++ column  Passage
++ column  Une lecture qui y tombe
++ column  Par défaut
++ column  Sinon
++ row  les horloges avancent  tombe dans un *trou*, et n'a jamais lieu  est repoussée en avant  `gapPolicies.pushBackwardGapPolicy` la repousse en arrière ; `gapPolicies.rejectGapPolicy` lève une `Moment.Error`
++ row  les horloges reculent  tombe dans un *chevauchement*, et désigne deux instants  est la première occurrence  `Occurrence.Second` désigne la plus tardive
+
+% 1 1 0 1a2d7855b1a095241c1dc25127e4e4dc
+
+@ 0 2 0 0d8739b15f8ce40e17ff3f5369ed33d9
++ Un moment situé dans le trou est repoussé en avant par défaut. Le 31 mars 2024, les horloges
++ de Londres sont passées directement de 01:00 à 02:00, si bien que 01:30 n'a jamais eu lieu :
+
+% 2 1 0 0525e99d28fb34741200157e1d77d5aa
+
+% 0 1 0 1ce5a82d369280800d745203445aa876
+
+% 1 1 0 0c07b1b4bc8f7aa0004b77a98ce99458
+
+% 3 1 0 1e954d11b6a2ffe503ca255b46955b9b
+
+% 4 1 0 0a8086ffce769a8612b51a1c2ee4ac09
+
+% 5 1 0 11b8c936c2515a6c0785104f9a1c5401
+
+% 0 1 0 061055b4fa721e6d06ecd4eeb0c3f493
+
+% 1 1 0 1c4fb7cdd0ab40b20b1501b042c1989d
+
+@ 0 1 0 0d20accb5914a56b14aa72010914b1d8
++ Avec la politique de rejet, la même lecture est une erreur :
+
+% 2 1 0 0f13de29484a55ab157b77b5a02a0310
+
+% 3 1 0 1c113f86dadf81c21acc9d6e9053b9cc
+
+% 4 1 0 1dcf1b709075edc61621484266de7f3d
+
+% 5 1 0 1ae3cce62dca7ea013ef7feca65b3941
+
+% 2 1 0 07a2552c473aa440045e998b9cc54ad2
+
+% 0 1 0 12ca98ad60490a170623d5a3fdb77f70
+
+% 0 1 0 1d54690f213421a8130bbd26e8734594
+
+% 1 1 0 030263b394399d7b04882d5ae152218e
+
+@ 0 2 0 1508180447a93adc02c3454e8e138c23
++ Quand les horloges reculent, une heure se répète. Les deux instants que désigne une lecture
++ dans le chevauchement sont séparés d'une heure :
+
+% 2 1 0 1dfa82c67bf0348f0fddadd54366cdd4
+
+% 0 1 0 121d50cc7371b5db00bb85500e522fca
+
+% 0 1 0 06edd96c8ec6e9611cca43f7df144def
+
+% 0 1 0 0f31865f8be1429a1519c3d285bd298a
+
+% 1 1 0 083b7675c44d3342195c4c335aea61bf
+
+% 3 1 0 1e53010c06e1a79c1d73bdfa2073228c
+
+% 4 1 0 01d07d3715bf57f709ed2c03d630122e
+
+% 5 1 0 048bb6532cdb9e1b15cec346e805c601
+
+% 0 1 0 0ab8ba870195d60611f263cd8e7ee906
+
+% 1 1 0 1de43bdc423bc7c906d9691d79be2f80
+
+@ 0 1 0 18129faa714b71ea1a251406ddac75b6
++ ### La base de données des fuseaux
+
+@ 0 6 0 0284c64188d8fe6903360e8cbdf9c341
++ Les règles derrière tout cela proviennent de la [base tz](https://www.iana.org/time-zones). Ses
++ fichiers source sont analysés directement, et non atteints par l'API d'une plateforme.
++ L'analyseur comprend le vocabulaire propre au format : les lignes `Rule`, avec des
++ spécifications de jour telles que `Sun>=8`, les lignes `Zone`, avec leurs décalages et leurs
++ formats, et les alias `Link`. On peut donc charger une base plus récente que celle de la
++ plateforme, ce qui compte lorsqu'un gouvernement change ses règles à bref délai :
+
+% 2 1 0 0716097ae41b63c90e4a84bf5ca64b5b
+
+% 0 1 0 07ebf03693c6fae50afce41e71b206ac
+
+% 0 1 0 06d3cfcef508d3131c4cbf2a613bb1ca
+
+% 1 1 0 163da20989ca91940a521b79aeb95a6a
+
+@ 0 2 0 1de66352106c1502073a913a67ab0ef0
++ Un fichier qui n'existe pas, ou une ligne que le format ne permet pas, lève une `Tzdb.Error`
++ qui nomme le défaut. Cela ne produit jamais en silence un fuseau aux règles erronées.
+
+@ 0 1 0 0ddb2b802ac7953d12861e1a4d95cd38
++ ### Calendriers
+
+@ 0 4 0 1e449574af8eba1f111d5b0d3fd9f32d
++ Les dates vues jusqu'ici étaient grégoriennes, ce qui est le choix civil moderne par défaut.
++ Beaucoup d'autres calendriers sont pris en charge, et un littéral de date est interprété par le
++ calendrier qui se trouve dans la portée. La même date écrite peut désigner un jour différent
++ dans un autre calendrier, ce que montre son
++ [jour julien](https://en.wikipedia.org/wiki/Julian_day) :
+
+% 2 1 0 1a71b7ab84e7f379130cb2c175d4eb5f
+
+% 0 1 0 174211422ffd72fa1ffd60193c17122d
+
+% 0 1 0 0321de8a475488c904b21aaaee5aa513
+
+% 1 1 0 05be55991e01bf7b0b784396693d8cbf
+
+% 3 1 0 0004fb770b173854015a109d6e6602c9
+
+% 4 1 0 18e99e0e06caa5b107a0faec4cb8b03f
+
+% 5 1 0 0d4edcf6fd3cb937085ea755206377b0
+
+% 0 1 0 09118707643a0f700e4f44649b0a4c39
+
+% 1 1 0 0b9bf7f6ac017ef90cc23a9e10e998da
+
+@ 0 3 0 1dacecff381e94550ef7b5713c37acb6
++ Un calendrier lit l'année, le mois et le jour d'une date dans ses propres termes. Convertir une
++ date grégorienne dans le calendrier [copte](https://en.wikipedia.org/wiki/Coptic_calendar) fait
++ apparaître une année et un mois entièrement différents :
+
+% 2 1 0 1e225047fbb5369a110f395a37dc4890
+
+% 0 1 0 05a596bac8134e79142ee3d17678cfe0
+
+% 0 1 0 078c269f49022e400a4109490c566ed0
+
+% 1 1 0 193556ca269aa14203562a6a24a4c3a1
+
+% 3 1 0 101e33190a39f8341fc0d41618eaae69
+
+% 4 1 0 1e0520dc3c6b85b21ff33abe98b5e707
+
+% 5 1 0 116890bfcded9d76137037fccd22fca4
+
+% 0 1 0 0be97d567a5b8eb8093e40b6c80a78da
+
+% 0 1 0 0d0b333f4a9376551522ffced4dc6835
+
+% 0 1 0 18927c74b0de6f3c14cbe0f424de020b
+
+% 1 1 0 1670291c7e99e08810f1717499a182fb
+
+@ 0 1 0 052e45ec3ae7f3501411ffeff17599e8
++ Les autres calendriers suivent la même forme. Chacun est un given du package `calendars` :
+
+% 2 1 0 056ff3085df67407145b0a0e6b7fe0ba
+
+@ 0 15 0 08d282b54f88e75117b4f7172c415267
++ column  Calendrier
++ column  Given
++ column  Mois
++ row  grégorien  `gregorianCalendar`  de `Jan` à `Dec`
++ row  julien  `julianCalendar`  de `Jan` à `Dec`
++ row  copte  `copticCalendar`  `CopticMonth`
++ row  éthiopien  `ethiopianCalendar`  `EthiopianMonth`
++ row  musulman  `islamicCalendar`  `IslamicMonth`
++ row  persan  `persianCalendar`  `PersianMonth`
++ row  hébraïque  `hebrewCalendar`  `HebrewMonth`
++ row  national indien  `indianCalendar`  `IndianMonth`
++ row  républicain français  `frenchRepublicanCalendar`  `FrenchRepublicanMonth`
++ row  bouddhiste  `buddhistCalendar`  grégoriens, avec des années décalées de 543
++ row  Minguo  `minguoCalendar`  grégoriens, avec des années décalées de -1911
++ row  ordinal  `ordinalCalendar`  aucun : une année et un jour de l'année
+
+% 1 1 0 16b6f92d904ad8631f860632b8373251
+
+@ 0 1 0 1b5e29efa7597a8a062d550bf37c3a72
++ Un calendrier formate une date avec ses propres noms de mois :
+
+% 2 1 0 0d1a52b09e6e9b4100bf16413c37f812
+
+% 3 1 0 14886f7ce8df9d6105e1a9bd742c2b45
+
+% 4 1 0 0c1d038fbcff212d142b6f118b89915d
+
+% 5 1 0 1841df98288218e61a45b9876d4172e5
+
+% 0 1 0 035163d4054f9fea1367507a8d4d118c
+
+% 0 1 0 0e9e097c3a17083207fe664de0a4e8da
+
+% 1 1 0 14d82f3c6a0d382e0b1a43aecaafafce
+
+@ 0 6 0 02336044f19ae82d19d78e233476c5cd
++ Quand un calendrier en a remplacé un autre, le changement a laissé un trou de dates qui n'ont
++ jamais existé. Un `Regime` modélise un tel changement. Il applique l'ancien calendrier avant
++ le basculement, et le nouveau après, et rejette les dates qui tombent dans le trou, à la
++ compilation lorsque la date est un littéral. Le package `calendars` fournit les passages
++ papal et britannique du calendrier julien au grégorien, sous les noms `papalCutover` et
++ `britishCutover`. Selon le passage papal, le 4 octobre 1582 fut directement suivi du
++ 15 octobre, et les jours intermédiaires n'existent pas :
+
+% 2 1 0 0340df94201ca25e0663b258e66e4f6f
+
+% 0 1 0 0a9d860899ead5ce0b5f7bd822536bd9
+
+% 1 1 0 0ae2e73be80dfbd8020c0b20b39622b3
+
+@ 0 4 0 1148e66956c5c2511dc1b2e8140cefd8
++ Les dates ont aussi une forme ordinale, qui est le numéro du jour dans son année, et une forme
++ [date de semaine ISO](https://en.wikipedia.org/wiki/ISO_week_date), dans laquelle une date
++ appartient à une année numérotée par semaines, qui ne coïncide pas nécessairement avec son
++ année civile. Le premier jour de 2000 tombe dans la dernière semaine de 1999 :
+
+% 2 1 0 189891b385f7cd4911e326336fd2fda2
+
+% 3 1 0 15f373feef0106e718031e0c09dfbed5
+
+% 4 1 0 1c13d5fa6e57eb3e105435adf899f015
+
+% 5 1 0 1059a2b7f84d72811a62cf0000236cc8
+
+% 0 1 0 17b9bd5a2d8cf9ac1cfa8c119873b170
+
+% 0 1 0 0866b7aa7cc692680c4179bb4e770852
+
+% 0 1 0 1b91d148a09de7d3011a2dee2279cfdf
+
+% 1 1 0 19a80c29664031ea0bdae8e5f6138165
+
+@ 0 1 0 19f4aba8d4be07cd1d5bb20e0a00765b
++ ### Récurrences
+
+@ 0 4 0 1350c41173a2c1931415c7c733376562
++ Une récurrence décrit un événement qui se répète à intervalle fixe. Dans sa forme
++ [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Repeating_intervals), c'est un début, une
++ période, et un nombre optionnel de répétitions. Ses occurrences forment une
++ [chaîne](collections.md#lazy-chains) paresseuse :
+
+% 2 1 0 0d69b6c74595e93b0c23f8695bf73bd6
+
+% 0 1 0 0fe9002cbf5553da1d2205312b97b1e9
+
+% 1 1 0 13d6ae7881d49af20b24cda3f216ff99
+
+% 3 1 0 06642476df70657e01b2d8a7fae76189
+
+% 4 1 0 01fbfbd33f9e2340023504f565cfef58
+
+% 5 1 0 16769d353748c4481e41ddbcfaf7e8f6
+
+% 0 1 0 00993c98823a614c033bccf1b1beebf8
+
+% 1 1 0 042d7925d70e347d1d9a80d2b8339f41
+
+@ 0 2 0 01f309eaf3636de31091d2f3dd9826ce
++ Une récurrence sans nombre de répétitions se poursuit indéfiniment, si bien qu'on la consomme
++ avec une borne : toutes les occurrences jusqu'à une date, ou celles qui tombent dans une
++ fenêtre :
+
+% 2 1 0 1abd10d95d4adb5a087727fc8a11f815
+
+% 3 1 0 1ee7cef7e35e637119ab25841953d1c8
+
+% 4 1 0 1269baf74fa9dffc12bd90f264ec8d02
+
+% 0 1 0 164c24d8ba73572b0fcff6097ebfcdc7
+
+% 0 1 0 0966370ce5b6bdb503d2c7d910cf0f34
+
+% 1 1 0 086a5a22c8b41c2c074e5a26510ac87f
+
+@ 0 2 0 116ee714f7197add17d6819bfad414c0
++ Une récurrence est encodée dans sa forme ISO 8601, et décodée à partir de celle-ci, et
++ l'interpolateur `rec` en écrit une comme littéral vérifié :
+
+% 2 1 0 115259a0931fad1a181350a0ce968c27
+
+% 0 1 0 01b4eb1b0da8fbe61657afd39d69b015
+
+% 1 1 0 148944af0b5328f50a53fc19e0a6ee78
+
+% 0 1 0 07eb617adff1a706054a1b4b1e466852
+
+% 0 1 0 0b81773812970a681db25c8d20280dc6
+
+% 1 1 0 1ff7e78ddd8b7a9519ff38a9610a4ccf
+
+% 3 1 0 0ec0e088be70248714110f2db817ea7b
+
+% 4 1 0 054503ebd1ff475d078529f890f31035
+
+% 5 1 0 1d4a95797a617d501483b4eb26632c58
+
+% 0 1 0 0a3abb9a56c0da070071a2a95899f5d2
+
+% 0 1 0 16df41e8213d2c9114bf985f79a4b47e
+
+% 1 1 0 08137f28a2052401198000cf7c081f83
+
+@ 0 1 0 0fcb2516103df0c606636a959e4e9058
++ ### Règles de récurrence
+
+@ 0 5 0 14fc4d2ffe5cb58302b839177ae828c4
++ Les motifs calendaires dont a besoin la plupart des logiciels ne correspondent pas à un
++ intervalle fixe : « le troisième lundi de chaque mois », « le dernier vendredi », « le
++ quatrième jeudi de novembre ». Ils sont décrits par une règle de récurrence, calquée sur la
++ `RRULE` de la [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10),
++ issue d'iCalendar. Une règle a un début, une fréquence, et des champs optionnels qui
++ sélectionnent à l'intérieur de chaque période :
+
+% 2 1 0 05f253c490da989c1f8c533f4c2a87e1
+
+@ 0 17 0 067b7abdae633d2a16f1e731fa87c60e
++ column  Champ
++ column  Type
++ column  Défaut
++ column  Donne
++ row  `start`  le type de point  aucun  le premier point, dont les occurrences reprennent les champs par défaut
++ row  `frequency`  `Frequency`  aucun  `Secondly`, `Minutely`, `Hourly`, `Daily`, `Weekly`, `Monthly` ou `Yearly`
++ row  `interval`  `Int`  `1`  combien de périodes de la fréquence couvre chaque pas
++ row  `count`  `Optional[Int]`  `Unset`  combien il y a d'occurrences
++ row  `until`  point `Optional`  `Unset`  le point auquel les occurrences s'arrêtent
++ row  `byMonth`  `List[Month]`  `Nil`  les mois sélectionnés
++ row  `byMonthDay`  `List[Int]`  `Nil`  les jours du mois sélectionnés
++ row  `byDay`  `List[WeekdayOrdinal]`  `Nil`  les jours de la semaine sélectionnés, éventuellement par rang
++ row  `byYearDay`  `List[Int]`  `Nil`  les jours de l'année sélectionnés
++ row  `byWeekNo`  `List[Int]`  `Nil`  les semaines de l'année sélectionnées
++ row  `byHour`, `byMinute`, `bySecond`  `List[Int]`  `Nil`  les heures, minutes et secondes sélectionnées
++ row  `bySetPos`  `List[Int]`  `Nil`  des positions dans le développement de chaque période
++ row  `weekStart`  `Weekday`  `Mon`  le premier jour de la semaine
+
+% 1 1 0 0b6f1406a51b1266054adbb99abdb560
+
+@ 0 1 0 0f0d813313f6bac70676e43d2e9b1701
++ La règle la plus simple se répète à sa fréquence, et reprend le jour de son début :
+
+% 2 1 0 0a5cd4a44e59133705ef258be82d798c
+
+% 3 1 0 09a7becf192c0fa901c9b761e0bda87b
+
+% 4 1 0 07d42491e2c903941e9c629d06c78544
+
+% 0 1 0 13115428c0588fc2167c60d5dd9cbb19
+
+% 1 1 0 1572f53660f2fe451e575f21749e6a79
+
+@ 0 3 0 0acd3c9f060ddfcf0701cdf647c75abf
++ Le champ `byDay` sélectionne des jours de la semaine, éventuellement par leur position dans la
++ période. Le troisième lundi d'un mois est `WeekdayOrdinal(Mon, 3)`. Le dernier vendredi se
++ compte à rebours depuis la fin, avec `-1` :
+
+% 2 1 0 15571fb6e4fceaba02e1b42be8c28bb0
+
+% 3 1 0 11f3d474db8eae6816f73b33352685de
+
+% 4 1 0 0975c028b35c645616d73a4cc4e26a08
+
+% 0 1 0 189c9db99b10db5103fb4afcabd1cfcd
+
+% 0 1 0 00364a166b8701821e11bd0848458f0a
+
+% 1 1 0 080151b52e11e3091450c82ac2b2f89e
+
+@ 0 2 0 0136c9b7aab22d860ac3b8359147c8e0
++ Les champs se combinent. Le quatrième jeudi de novembre est une règle annuelle, restreinte à un
++ mois et à un jour de la semaine :
+
+% 2 1 0 1862fd90f55362180bc356554294e7d6
+
+% 3 1 0 0865987a8c39c04213850544c74eb5d4
+
+% 4 1 0 1f53c265b85726920814753c76165bef
+
+% 0 1 0 091253814e42575a1cce73a9ea336ac1
+
+% 0 1 0 06025f9bc92fd36b0a56a45fc1a5786a
+
+% 1 1 0 0c0991ab57630f501c6376eb39c3e420
+
+@ 0 2 0 0476e0f00d0ab2040fd2c65cfe317e79
++ Une fréquence peut avoir un intervalle, comme une semaine sur deux, ou un jour sur trois. Une
++ règle peut aussi être hebdomadaire et porter sur plusieurs jours de la semaine :
+
+% 2 1 0 08b4c44adc2b508f0831ed976fe477dd
+
+% 3 1 0 065c02271aa070841cafccd1d8e71d47
+
+% 4 1 0 0100999174edb63e0de28068da679004
+
+% 0 1 0 16b92328655fa4ad108c33df9d0800b1
+
+% 0 1 0 1bafb80fa9f4c5191f09f62860c6ba89
+
+% 0 1 0 1cc8fab972e713cc177a8108d93c3aa0
+
+% 1 1 0 136731770a801040172c5c03d8160f1f
+
+@ 0 2 0 1c600c6ff42fd35f051580a6c143ad71
++ Le champ `bySetPos` choisit par position parmi les dates en lesquelles se développe chaque
++ période. « Le dernier jour ouvré du mois » est le dernier des candidats du lundi au vendredi :
+
+% 2 1 0 161030bb00a79d0e0bee6485cebebdd0
+
+% 3 1 0 07485d452884c0371f519194cf94420b
+
+% 4 1 0 098a21789ad601ac0cdf5e2dc7421295
+
+% 0 1 0 1d08d2c3ff2564971659cb069216dbd5
+
+% 0 1 0 08587b9ccbb6705102247772dae9f4dd
+
+% 0 1 0 1f5f72c124cafc16160cba2725651466
+
+% 1 1 0 10e9c53620ca24740719b169f0fcbafb
+
+@ 0 2 0 063662f63edc52bf07ab7fafc772676c
++ Les fréquences inférieures à un jour s'appliquent aux horodatages, dans lesquels `byHour` et
++ `byMinute` se développent à l'intérieur de chaque jour. Cette règle donne neuf heures et
++ cinq heures chaque jour :
+
+% 2 1 0 1c658e312a09d5b1034742d85808c1ad
+
+% 0 1 0 06e0ed91831a6acb02ff42985c41d815
+
+% 0 1 0 05b422ee2ac1ce991c55a240b8b67336
+
+% 1 1 0 058f9228ec4c92760b8576fe667fb422
+
+@ 0 1 0 09603f2e6529d6a41cdd1779b7b0ccfb
++ Une règle s'écrit sous forme de chaîne RFC 5545, et s'analyse à partir d'une telle chaîne :
+
+% 2 1 0 1caa28e03e5ac4fc1b01a0bfda5f845f
+
+% 0 1 0 1c94b5e66066c87a1cbb2820fbaf1027
+
+% 1 1 0 07474d211bfe714706aed04cab5f7252
+
+% 3 1 0 00c17c1777f4f83700b9ebdf73c2073b
+
+% 4 1 0 1e43e13b5abeef0514c8a50c03788aaa
+
+% 5 1 0 043753a930988150184e074f47b9c7ad
+
+% 0 1 0 0c4711813e9a305d0406f7297ccd60e3
+
+% 0 1 0 09338d6b30b3bdae1f57a5cae3e7d13d
+
+% 0 1 0 0d7a9c8d84ebe73c1040fe153e9fc6b9
+
+% 1 1 0 1d349c4b67607a0519f5c8c2daa82f26
+
+@ 0 2 0 12d4b01c5cfba9b505631689e939bf23
++ Plusieurs règles, et des dates individuelles, se combinent en un `RecurrenceSet`. Celui-ci
++ fusionne ses sources en une seule suite croissante, ajoute des dates explicites, et retire des
++ exceptions :
+
+% 2 1 0 1f7e0be0bf90ffea1f4eecf04c382f74
+
+% 0 1 0 1899497867a2ec0a0de1491fbd73026d
+
+% 1 1 0 136ced152a01d9110df98fbf68a4f9d1
+
+% 3 1 0 05971a95e896bc041c8200a18b9276cb
+
+% 4 1 0 0edea9f3a63e94050064b72fb1a1f941
+
+% 5 1 0 0f0ed92c5eda4410026c4150b7de58db
+
+% 0 1 0 17d430ef52eddb301c6ed19c35572a4c
+
+% 0 1 0 073dc8151f7244c7152be8e2479498a9
+
+% 1 1 0 077ddb561dabedc1063955ccb8e591d6
+
+@ 0 1 0 1c8f634fc99e901e0af8eaf0b96ef325
++ ### Décrire les récurrences
+
+@ 0 3 0 1de6d7f9c432c7dd07ea20279ae95317
++ Une règle, une récurrence ou une durée calendaire se décrit en mots. La description est
++ localisée, et la langue est imposée par les types. Elle nécessite une `Locale` dans la portée,
++ ainsi que les noms des mois et des jours de la semaine dans cette langue, faute de quoi elle
++ ne compile pas :
+
+% 2 1 0 16506ff1063f5db200e21f14050e5f9e
+
+% 0 1 0 1a06452eb829a4ee1e2bcc86bcaf7134
+
+% 0 1 0 1264929fa2cd569e0b2ec29f2f042b76
+
+% 0 1 0 095eb669bfc8ca50123212d0144f482b
+
+% 1 1 0 12beaefc944dd4c402fd8cc751037959
+
+% 0 1 0 0f0ae6922e39a63b13fc9c1bac1a7066
+
+% 0 1 0 13bea6fd240c12e00c25fc7e89d90118
+
+% 1 1 0 1bac6ba0deb7e00b1944af210d02c535
+
+@ 0 1 0 09d695816e6c2c5a18c4d27c5337f4ff
++ Une autre langue découle d'une autre locale, et de ses noms :
+
+% 2 1 0 1535745e5199286f045ad35475b4c210
+
+% 0 1 0 1178e5ed3df0277e0c4105d4d9d97f1a
+
+% 0 1 0 0d42f88ad3cf670706fff2ff9d05545c
+
+% 0 1 0 1f8b308c6cb4738311c301e80d78cb4a
+
+% 0 1 0 1099dd2a4952566805c4f38f9084e618
+
+% 0 1 0 10b3a3f91b9d14060c19927bb956beff
+
+% 1 1 0 1dc16537b33b537c066e517704175776
+
+% 3 1 0 11ff3ecc37ac2f340aa3fdb4168abb9c
+
+% 4 1 0 031c6cf0b4d9f2b712b56a1f053ca5a0
+
+% 5 1 0 1e3284004d53770f07033944d8bd3d8f
+
+% 0 1 0 10b138171fc9d91b18167e1e99917996
+
+% 0 1 0 1f3cc0ff7a6e8627085997a2bd5d6976
+
+% 1 1 0 09a255fa6cc632450f50d4d405947773
+
+@ 0 2 0 0729f68a1f660b1b126e79f4a6cfe06f
++ Une durée calendaire se décrit par rapport à maintenant, et se lit vers l'avant ou vers
++ l'arrière selon son signe :
+
+% 2 1 0 0b20cc5288e57e1f0a5db4ffa9b35270
+
+% 3 1 0 0829da244cca4cd70887419343ba8d58
+
+% 4 1 0 0ec91541e92e3f2119bc75db25776041
+
+% 5 1 0 04e9f993faf8d0941eb576ae21908b19
+
+% 0 1 0 1110cb7626b1e1270bc6c811075867e6
+
+% 1 1 0 0b21f2f5c20123ee0a3d9ef12e635a25
+
+% 0 1 0 07251d01fe76bd620abdef34a16d868b
+
+% 0 1 0 0f91459c6bb5b32504b37ef5c92d7da3
+
+% 0 1 0 00c62d9cda9c7cba19b29d2c5f9342b3
+
+% 1 1 0 08991c9b3f5dce8d13483403b940b682
+
+@ 0 1 0 0b0d441b91685e0b1af38c6a215e4782
++ [Internationalisation](internationalization.md) décrit les locales.
+
+@ 0 1 0 08c96880567a9d921953f323225fe3e3
++ ### Formater les dates et les heures
+
+@ 0 2 0 1e44a43fbcbd31ad0fb9806693aa36f6
++ Une date ou une heure s'affiche selon un format choisi. Importer l'un des formats nommés fixe
++ la convention pour toute une portée :
+
+% 2 1 0 1e05a653a6165efe125cf8ccb5d46be4
+
+% 0 1 0 09c0b9221c63b6b201806df2e308412f
+
+% 0 1 0 0ead51aedbc45ee003b9ddb10a8bfb16
+
+% 1 1 0 0987376619a948671254cc2d2a01abfc
+
+% 3 1 0 1ddf99d5360e633c140534681dd7ad37
+
+% 4 1 0 105af6a3d10893f51a45b09fd79550f6
+
+% 5 1 0 057042f9e620dc1c057c053b2869a166
+
+% 0 1 0 06206907b696cf4e0732a0e91848d69e
+
+% 0 1 0 055d15d407f14b7117439bc2b3a65823
+
+% 0 1 0 01387232a77081e2152ebabae1647721
+
+% 1 1 0 1f2987d752366946024b81e106451b85
+
+@ 0 1 0 044ec845c7b2af1510f9ba36d92f5a29
++ Les heures offrent le même éventail, de la forme sur vingt-quatre heures à la forme sur douze
++ heures :
+
+% 2 1 0 13d8b6574de583c41c34722dc29e52ee
+
+% 3 1 0 01099bd3de9de1aa047d644e6a4bb37b
+
+% 4 1 0 103c5abb81a84a461a5dfd524139b7d7
+
+% 0 1 0 106b738a9d9bbd8f0ee00746a1138022
+
+% 0 1 0 1d76f34bcf1662a3009d78b5d5710315
+
+% 0 1 0 101b72b11e17b5e414a2364e2ac32644
+
+% 1 1 0 0dc69ec4721410291524a656e87abcf3
+
+@ 0 4 0 002f2cde808d35d10ba73346924f2f7d
++ Pour un contrôle plus fin, un format se compose de choix indépendants, chacun introduit
++ séparément : l'ordre des champs, le séparateur entre eux, la largeur de chaque nombre, et la
++ longueur de l'année. Assembler un format à partir de pièces indépendantes, au lieu de choisir
++ dans un menu fixe, permet d'exprimer une convention inhabituelle sans écrire de formateur
++ dédié :
+
+% 2 1 0 159eaf0b3eba3a241e0fdc4e99b7d3ea
+
+% 0 1 0 11a788489e81147613aeb0f2f4dcb7fe
+
+% 0 1 0 1e70f6a4b5f77d181186da471ba7edf9
+
+% 0 1 0 0390460e18cb88f218103b1fc7335d0b
+
+% 0 1 0 07dfed4a53ce242d13282dc514a8d92c
+
+% 1 1 0 1585f056e027b6de0b7f613262bbdcc6
+
+@ 0 3 0 072e096ad2c1bba61522ab1d3404fcba
++ Ensemble, ces quatre choix donnent une date avec l'année en premier, des tirets entre les
++ champs, des nombres sans zéros de tête, et les quatre chiffres de l'année. Un format nommé dans
++ la portée, comme `iso8601DateFormat`, a précédence sur un format composé.
+
+@ 0 1 0 0d13cf8ec528be9a03f0bda3ceac894f
++ ### Secondes intercalaires et temps atomique
+
+@ 0 5 0 03aab40be66f85201674b40ab48dd01d
++ Le temps civil et le temps physique diffèrent d'un nombre entier de secondes, et ce nombre
++ croît. Depuis 1972, des [secondes intercalaires](https://en.wikipedia.org/wiki/Leap_second)
++ sont insérées dans l'[UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time), pour
++ maintenir les horloges alignées sur la rotation de la Terre, qui ralentit. Un instant `Unix`
++ les ignore, si bien que les secondes écoulées entre deux instants `Unix` peuvent être en deçà
++ du nombre de secondes intercalaires survenues entre eux.
+
+@ 0 5 0 0770e17e8dd3413817bd21adcbc82c28
++ Chaque insertion est une correction. Elle est décidée d'après les observations des petites
++ variations de la rotation de la Terre au cours des mois précédents, et sert à préserver un
++ invariant : que le midi solaire au méridien de Greenwich, lorsque le soleil est au plus haut,
++ reste à moins d'une seconde du moment où une horloge indique 12:00:00. C'est l'unique raison
++ d'être de ces discontinuités, et la raison pour laquelle on ne peut pas les prévoir des années
++ à l'avance.
+
+@ 0 4 0 1c0d80d0f901959d01b5b7762a0cb042
++ Le [temps atomique international](https://en.wikipedia.org/wiki/International_Atomic_Time)
++ (TAI) n'a pas de telles discontinuités. `over[Tai]` convertit un instant `Unix` vers la
++ ligne de temps TAI, en tenant compte des secondes intercalaires accumulées jusqu'à cet instant. La
++ conversion inverse redonne exactement l'instant d'origine :
+
+% 2 1 0 0ddb174ba739dcf31bbdea49ffa03eb6
+
+% 0 1 0 09728e6f12930ed504cc4fb1161b25d0
+
+% 1 1 0 0f779f0c696e02731e6485ef596eede0
+
+% 3 1 0 0fd055a967ae94e6040f1e49fd53b1ea
+
+% 4 1 0 03fc7e187f5bda90156634e90e772dfc
+
+% 5 1 0 19642c6d4ec3df3b1c60b55ae747046b
+
+% 0 1 0 08a44fefd3c6af061c25bfeb9265da69
+
+% 1 1 0 155cbba35747fe9b1730473db9684e04
+
+@ 0 3 0 1b2fc6cd74d7c55606c2315e94c8164f
++ Les lignes de temps sont des types distincts, si bien que soustraire un instant de l'une d'un
++ instant de l'autre est une erreur de compilation. Toute une catégorie de bogues, faux du nombre
++ de secondes intercalaires, ne peut tout simplement pas s'écrire :
+
+% 2 1 0 0b1590cfe641b2c10226f4f0678b019a
+
+% 3 1 0 1bd8747f5d676d1903168c998e6ff3e7
+
+% 4 1 0 179ead431340cce90c3e660dbea267e6
+
+% 5 1 0 1a59c11c704f20211c51852bd827d032
+
+% 0 1 0 048aac36562b3bc519380e84b974c590
+
+% 1 1 0 113561600e9556381c929731d2c82917
+
+@ 0 3 0 0e8fd1735f74e8d00ef36aa703ca63c2
++ Par défaut, l'arithmétique sur les moments est tolérante. Elle travaille en temps civil, et
++ enjambe les secondes intercalaires comme si elles n'existaient pas. Choisir le mode exact les
++ compte. Ajouter deux heures en traversant la seconde intercalaire de la fin de 2016 tombe
++ alors une seconde avant la réponse tolérante :
+
+% 2 1 0 0a8b4e92bdc3cb5704dfdb268a61f30b
+
+% 3 1 0 1d4a0f8428fbba711a38b8161befdf73
+
+% 4 1 0 1797d4c8ed8eb65a1a1a92594e7b231d
+
+% 0 1 0 0ab9dc8922788a141760fe83d489753e
+
+% 0 1 0 12acf87dcacf248a15b0a8c6504ad743
+
+% 0 1 0 110a6e2e94bac9e7056f1eda3dde23fb
+
+% 0 1 0 1cdb65facd951f4d1ce5097a97a06f60
+
+% 0 1 0 1b024e25e010a8fe0d5b3c0401b88e3e
+
+% 0 1 0 02cd66621858fa15090b17906abdf1d4
+
+% 1 1 0 0ca2909957e0d58e0e1489ac1519bc91
+
+@ 0 2 0 10bfb8c7d8912dec18e4968ddc636337
++ Une seconde intercalaire est elle-même la lecture rare `23:59:60`. Un littéral `ts` avec un
++ fuseau l'accepte, marque le moment comme ayant une seconde insérée, et le résout vers la
++ seconde qui suit :
+
+% 2 1 0 111dab1443b21cfc0fc5ccb6ba38b142
+
+% 0 1 0 0d292284215224df084edd133019614c
+
+% 1 1 0 0f9dbce503d873f31cfa10d36d7b6972
+
+% 3 1 0 17f1311298cedf160d4fcdc5c9c2fb0a
+
+% 4 1 0 1b1c623464c8eaaf00d5a60af83cf6cd
+
+% 5 1 0 070d627db56525f7066d200bc70cf677
+
+% 0 1 0 18fdf7bf8ea1bb9d166e49ad68d97596
+
+% 1 1 0 117d992d9b6e191f0faf8362e5462b97
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 7 0 0483ecf504cd29a8178b78b6376d7a87
++ - [Quantités](quantities.md) décrit les unités physiques dans lesquelles se mesure une
++   `Duration`.
++ - [JSON](json.md#dates-and-times) encode les instants et les durées.
++ - [Décodage](decoding.md) lit une date à partir d'un argument de ligne de commande ou d'un
++   fichier de configuration.
++ - [Concurrence](concurrency.md) attend pendant une durée, et fixe des délais d'expiration.
++ - [Internationalisation](internationalization.md) couvre les locales utilisées pour décrire
++   les récurrences.
++ - La [mise en cache](caching.md), les [graphiques](charts.md), la
++   [cryptographie](cryptography.md), les [jauges](gauges.md), les [nombres](numbers.md) et
++   l'[interopérabilité étrangère](foreign-interop.md) mesurent, tracent, horodatent et
++   convertissent des heures.

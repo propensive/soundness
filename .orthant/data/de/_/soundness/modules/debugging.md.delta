@@ -1,0 +1,331 @@
+orthant 2 language
+
+% 0 1 0 157898be62f31c91079f6ba6eafb1764
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 6 0 1790a3af1399be6a19f8ff7bc4c693d4
++ Eine JVM lässt sich von einer anderen JVM aus über das
++ [Java Debug Wire Protocol](https://docs.oracle.com/en/java/javase/21/docs/specs/jdwp/jdwp-spec.html)
++ debuggen, und diese Typen sprechen es direkt über einen Socket. Ein Debuggee wird unter dem
++ Debug-Agenten gestartet, oder man hängt sich dort an, wo er bereits läuft. Die [Sitzung], die
++ daraus entsteht, setzt Breakpoints, führt Threads schrittweise aus, liest Frames und Variablen,
++ wertet Ausdrücke im angehaltenen Programm aus und empfängt die Ereignisse der VM als typisierte
++ Werte. Nichts hängt von `com.sun.jdi` ab.
+
+@ 0 1 0 0ed301e3b475215c07aa31a659b07b8f
++ Dieselbe Sitzung bedient einen Editor über das
+
+% 0 1 0 07cbdfc863907ff1179d58bb1d0ce5ba
+
+@ 0 1 0 0be81a2dcfc17b521c3befeef36fb533
++ ### Über das Debuggen von außen
+
+@ 0 4 0 03f3c9161f41075307949907bee59b86
++ Die eigene Debugging-Schnittstelle der JVM ist eine Java-API, die ein Übertragungsprotokoll
++ umhüllt, und das merkt man. Die Typen sind veränderlich, die Fehler ungeprüft, und die Gestalt
++ einer Sitzung — verbinden, anhalten, anfragen, fortsetzen und trennen — bleibt dem Aufrufer
++ überlassen. Alles, was darauf aufbaut, erbt all das, weshalb Debugger große Programme sind und
++ keine kleinen.
+
+@ 0 5 0 078789de6ecfabd503ab0e766240ce78
++ Das darunterliegende Protokoll ist einfach: Pakete mit Längenpräfix, Big-Endian, wobei die
++ Breiten der Bezeichner einmal zu Beginn der Verbindung ausgehandelt werden. Es direkt zu
++ modellieren ergibt typisierte Bezeichner, die sich nicht miteinander verwechseln lassen, eine
++ Sitzung, die durch [Capture-Checking](../../philosophy/capture-checking.md) auf einen
++ Geltungsbereich beschränkt ist, und Ereignisse als Stream, den man konsumiert, statt Callbacks,
++ die man registriert.
+
+@ 0 2 0 1129589e8aff8e110c1cc9a7785eeb2c
++ Alles kommt aus dem Paket `soundness`. Eine Sitzung führt ihren Reader als Aufgabe aus, braucht
++ daher ein [Thread-Modell](concurrency.md) im Geltungsbereich und lebt innerhalb von `supervise`:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 2 0 0e11f8939b4ddea40467964571f70f12
++ Die Beispiele auf dieser Seite starten andere Prozesse und verbinden sich mit ihnen; sie werden
++ daher kompiliert, aber nicht ausgeführt.
+
+@ 0 1 0 0ec2b64902f37b46093ea8a8967a89df
++ ### Eine Sitzung öffnen
+
+@ 0 4 0 0f4b0d5b15869b6301fdaeabf4048ece
++ Ein `Debuggee` beschreibt ein Programm, das unter dem Debug-Agenten laufen soll: einen Befehl,
++ den Port, auf dem gelauscht wird, und ob die VM vor dem Ausführen von `main` anhalten soll, was
++ ein Breakpoint in der Initialisierung braucht. Seine Methode `session` verleiht einem Block eine
++ `Debug`-[Capability], die über `debug` erreicht wird:
+
+% 2 1 0 05968f4f57f77a28096e1a3f8d88824e
+
+% 0 1 0 0571ca7ed22c077715312c7cc14010ef
+
+% 0 1 0 1004fc1cd39c91140f40e1d56b094b7a
+
+% 0 1 0 023064638668549b0f52e2c30b2bf873
+
+% 0 1 0 033e9bf3177d35620cb69ca34440fced
+
+% 1 1 0 0b561bc885c3f31b13590e17bd75f8e3
+
+@ 0 3 0 09d51ffc1ef28ddb10e194769327df5d
++ Der Befehl wird mit eingefügter Agent-Option gestartet, und die Verbindung wartet, bis die VM
++ zu lauschen beginnt. Endet der Block, ob er zurückkehrt oder fehlschlägt, wird alles abgebaut:
++ Der Socket wird geschlossen und der Prozess beendet.
+
+@ 0 2 0 0d35f4426372f87f0992043325ff2128
++ Ein `Debugger` öffnet dieselbe Art von Sitzung gegen einen Endpunkt, an dem eine angehaltene VM
++ bereits lauscht, um sich an etwas anzuhängen, das schon läuft.
+
+@ 0 2 0 068a610c5e307a2b1182f27d85647151
++ Das Handle der Sitzung ist eine auf ihren Block beschränkte Capability. Es kann nicht
++ entkommen und daher nicht mehr verwendet werden, nachdem der Debuggee verschwunden ist.
+
+@ 0 1 0 151ebb23ca2ac6e21112920895a07b75
++ ### Threads und Frames
+
+@ 0 2 0 0b373768e5a6c5ff0390837050d95f93
++ Die Threads der VM werden aufgelistet, benannt, angehalten und fortgesetzt, einzeln oder
++ gemeinsam. Der Aufrufstack eines angehaltenen Threads liest sich als Frames, gepaart mit ihren
++ Positionen:
+
+% 2 1 0 08cb2a599c4a6f671a559d16ea3dacf6
+
+% 0 1 0 0ea206d6336af5fe19d06697f3c0beb3
+
+% 0 1 0 1ecdf15dcd7e09c00dde3e4058338491
+
+% 0 1 0 107d49d5f9493f16085b943fa2eca6e4
+
+% 0 1 0 03e6c4723f839690169b8371caaa6f6c
+
+% 0 1 0 021634f44197c43a1bba713dfdd71ccd
+
+% 0 1 0 1f13839c3911715800e43868f813023d
+
+% 1 1 0 1b0cb5a1690e16a404b88d121cef6bc3
+
+% 0 1 0 0e673cd6c58747591ea6586558568d90
+
+@ 0 2 0 012c2c7e8a59f98302907ca80e8a1393
++ Ein Breakpoint wird auf eine Quelldatei und Zeile gesetzt oder auf eine Klasse und Methode. Er
++ nimmt einen *Handler*, der läuft, wann immer ein Thread dort anhält.
+
+@ 0 5 0 05aafb4da850b02e1ca3c46c2ed899d0
++ Dem Handler wird ein `Halt` verliehen: eine Sicht auf den angehaltenen Thread, mit seinen
++ `frames()`, seinen `variables()` und der gerade geworfenen Exception, falls er deshalb
++ angehalten hat. Ein `Halt` kann den Halt nicht überdauern, denn sobald der Thread fortgesetzt
++ wird, kann jeder Bezeichner, den er ausgegeben hat, veraltet sein. Ein Handler, der den Thread
++ angehalten lassen will, sagt das mit `remain()`. Andernfalls wird der Thread fortgesetzt, wenn
++ der Handler zurückkehrt:
+
+% 2 1 0 1a773831fe68e7e00d6327b4891f6418
+
+% 0 1 0 07abe88d4c16eef50438e6286123bb8c
+
+% 0 1 0 0bf43b3a6244d02909d2de72eead928a
+
+% 0 1 0 0882d847e1d432c90c8cd855b2a843ce
+
+% 0 1 0 14ad7420f730eb430d871cc1471bd5eb
+
+% 0 1 0 080de214a79dfd2a16c04fee038c1672
+
+% 0 1 0 19e6da23edf27b5e12c034090def4d77
+
+% 1 1 0 0637f1dd4090d7b015c802dcd572acfd
+
+@ 0 2 0 027dce16e3742f550fddbfdc28a031a1
++ Breakpoints auf geinlintem Code funktionieren nach Position. Datei und Zeile sind die Stelle, an
++ der der Code geschrieben wurde, nicht die, an die der Compiler ihn gesetzt hat, wiedergewonnen
++ aus den Source-Maps, die der Compiler aufzeichnet.
+
+@ 0 1 0 172d13da1eddb0fe109e2fa1904c36ba
++ Jede Art von Anfrage führt ihren Handler bei einem anderen Ereignis aus:
+
+% 2 1 0 0f5a9f0396b818fd00dd8d22848fc956
+
+@ 0 8 0 18a407217dd93ca00af4ef3125ae75f0
++ column  Anfrage
++ column  Läuft, wenn
++ column  Ereignisart
++ row  `breakpoint`  ein Thread eine Quellzeile, den Eintritt in eine Methode oder eine Position erreicht  `Breakpoint`
++ row  `logpoint`  ein Thread eine Position erreicht, wobei eine Meldung ausgegeben und sofort fortgesetzt wird  `Breakpoint`
++ row  `watch`  ein Feld geschrieben oder, mit `access = true`, gelesen wird  `FieldModified`, `FieldAccess`
++ row  `exceptions`  eine Exception geworfen wird  `Exception`
++ row  `step`  ein schrittweise ausgeführter Thread ankommt  `SingleStep`
+
+% 1 1 0 0ae723cadf4c6d1a0a5f6d54fe3d4f9e
+
+@ 0 2 0 035998538a1e5ae604c2a7ebeefa0f10
++ Ein Breakpoint liefert den Bezeichner seiner Anfrage zurück, mit dem er später gelöscht wird.
++ Die *Suspend-Richtlinie* entscheidet, wie viel der VM anhält, wenn der Breakpoint erreicht wird:
+
+% 2 1 0 1557cb833cebc1e916df55e9a0ff0bdd
+
+@ 0 5 0 125644865294ba0804f27229a4db88f2
++ column  Suspend-Richtlinie
++ column  Hält an
++ row  `Jdwp.SuspendPolicy.All`  die ganze VM
++ row  `Jdwp.SuspendPolicy.EventThread`  nur den Thread, der ihn erreicht hat
++ row  `Jdwp.SuspendPolicy.None`  gar nichts
+
+% 1 1 0 0bca717f90bf6b52072a4e88012aede2
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 058f0264436dda6615a615512e130515
+
+% 0 1 0 1279df74f6343b901709ac7a185279c5
+
+% 0 1 0 0e3536dedcc2bf791d318ca4915e3164
+
+% 1 1 0 0405206bdf576e390e0cc1068e52a5e6
+
+@ 0 1 0 0f8e7da9303a8abc04196170e78218c5
++ ### Schrittweise Ausführung
+
+@ 0 4 0 0f5ec12b0180d33512fd531d5918ea98
++ Ein Schritt ist eine Anfrage gegen einen angehaltenen Thread, mit einem Handler für die Stelle,
++ an der er ankommt. Die *Tiefe* gibt an, ob in einen Aufruf hinein (`Jdwp.StepDepth.Into`), über
++ ihn hinweg (`Over`) oder aus dem aktuellen Frame heraus (`Out`) geschritten wird. Ein geinlinter
++ Aufruf wird so durchschritten, wie der Quelltext sich liest, Zeile für Zeile in den geinlinten
++ Rumpf hinein, und nicht so, wie der Bytecode angeordnet wurde:
+
+% 2 1 0 07929dae8f49899f137ba49cb3129f60
+
+% 0 1 0 0e029580e49fa8bf0d1f1b49d8872eb5
+
+% 0 1 0 1bb8c8695f27c85715340e1249ac7f83
+
+% 0 1 0 159daf4d5ecf3f310d66036d45cff1ce
+
+% 0 1 0 0243c90657fc59a305aa80357ff801fc
+
+% 1 1 0 1c6f3c8c48f6387a05faba2bac946c51
+
+@ 0 1 0 04e58de82e57b5dd1c1a8a40b6794a92
++ ### Ausdrücke auswerten
+
+@ 0 4 0 1511d3352c2db6c81462dd0e7788c384
++ Mit dem `Evaluator` im Geltungsbereich wird ein Ausdruck gegen die lokalen Variablen des
++ angehaltenen Frames kompiliert und in den laufenden Debuggee eingeschleust. So bedeutet
++ `total + 1` in einem Handler das, was es an dieser Zeile des Quelltexts bedeuten würde. Die
++ Konsole und die Hover-Anzeige eines Debuggers nutzen dies, und so zeigt auch ein Editor den Typ,
++ den der Compiler für einen Namen inferiert hat.
+
+@ 0 1 0 1371d9ff712f24e21f0779e0ef739e63
++ ### Ereignisse
+
+@ 0 2 0 00ecdcfba0f6a3da023b865fc9cf9e2f
++ Unterhalb der Handler meldet die VM, was geschehen ist, als zusammengesetzte Ereignisse.
++ `events` ist der [Stream](streams.md) dieser Ereignisse, sodass die Hauptschleife eines
++ Debuggers eine gewöhnliche Traversierung sein kann:
+
+% 2 1 0 1e0dc951c01aefda0760f3734e66b785
+
+% 0 1 0 18d66383bca38c610338862626568739
+
+% 0 1 0 1371a3a84c53c0cb0d355f3edef04382
+
+% 0 1 0 170ed5d0c1722d0f1e750a0934613841
+
+% 0 1 0 05f711d5bd8a6f600834f6818aac67a0
+
+% 0 1 0 0fdccbba6e5fb05f1d990b0444c01f5c
+
+% 0 1 0 169c4e6d4d895c3805f71503caf3dead
+
+% 1 1 0 11434a3f463114100ca9e51dac34f717
+
+@ 0 2 0 1a80b2aa5b7e56d10ae5c2b585b2c7bf
++ Anfragen und Antworten werden asynchron einander zugeordnet. Viele Befehle können gleichzeitig
++ unterwegs sein, und ein Ereignis, das während eines davon eintrifft, stört ihn nicht.
+
+@ 0 1 0 004bdc9321e719691f249ea08c309678
++ ### Einen Editor bedienen
+
+@ 0 4 0 03ab9e0bcef7742105740692ea7b460f
++ `Dap.listen` bedient die Sitzung über das Debug Adapter Protocol auf einem TCP-Port. Jeder
++ Editor, der es spricht — VS Code und die meisten anderen —, kann über diese Implementierung
++ starten, anhalten, schrittweise ausführen, Variablen untersuchen und auswerten.
++ Vervollständigungen, Hover-Typen und Inline-bewusste schrittweise Ausführung werden alle an den
++ Editor durchgereicht.
+
+@ 0 1 0 145138a4d134b4b10538ce09f6babc7e
++ ### Das Vokabular des Protokolls
+
+@ 0 3 0 07ad9f76f655921b00071515e9ef8938
++ `Jdwp` enthält das Modell des Protokolls selbst, für Arbeit unterhalb der Ebene, die die Sitzung
++ offenlegt. Die Bezeichnertypen sind getaggte Sichten auf einen [opaken Typ][opaker Typ]. Sie
++ kosten zur [Laufzeit] nichts und sind zur [Kompilierzeit] nicht gegeneinander austauschbar:
+
+% 2 1 0 18f8a8107b348df802a9277c7b7bafec
+
+@ 0 11 0 14d1edce076f5a5f0a1f82000a803301
++ column  Typ
++ column  Bezeichnet
++ row  `ObjectId`  ein Objekt
++ row  `ThreadId`  einen Thread
++ row  `ThreadGroupId`  eine Thread-Gruppe
++ row  `StringId`  ein String-Objekt
++ row  `ClassLoaderId`  einen Classloader
++ row  `ReferenceTypeId`  eine Klasse, ein Interface oder einen Array-Typ
++ row  `MethodId`  eine Methode
++ row  `FieldId`  ein Feld
++ row  `FrameId`  einen Stackframe
+
+% 1 1 0 1e2a05dab28216de1871ff59f463b23c
+
+@ 0 2 0 1d35b4954b53123415ebbbffc074a7b7
++ Daneben stehen `Jdwp.Location`, die getaggten `Jdwp.Value`s, die `Jdwp.Modifier`s, die eine
++ Ereignisanfrage einschränken, und die `Jdwp.Event`s, die eine angehaltene VM zurücksendet.
+
+@ 0 3 0 1e9cd40b8a5a012e1ba7c5476f6466a9
++ `Jdwp.Reader` und `Jdwp.Writer` sind die handgeschriebenen Big-Endian-Codecs. Sie kennen die
++ Größen der Bezeichner, die beim Öffnen der Sitzung mit der VM ausgehandelt wurden, und werden
++ deshalb mit diesen Größen konstruiert, statt sie anzunehmen.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 9 0 07aab45479f415f518aa01f0366a5a30
++ - [Prozesse](processes.md) beschreibt die `sh"…"`-Befehle, mit denen ein Debuggee gestartet wird.
++ - [Nebenläufigkeit](concurrency.md) beschreibt `supervise` und die Thread-Modelle, unter denen
++   eine Sitzung läuft.
++ - [Sockets](sockets.md) beschreibt die TCP-Verbindungen, über die die Protokolle laufen.
++ - [LSP](lsp.md) bedient einen Editor über das verwandte Language Server Protocol.
++ - [Stacktraces](stack-traces.md) beschreibt die Frames eines angehaltenen Programms als Werte.
++ - [Capture-Checking](../../philosophy/capture-checking.md) erklärt, wie ein Sitzungs-Handle auf
++   seinen Block beschränkt wird.
++ - [Dateisystem](filesystem.md) beschreibt die Handles, deren Gestalt eine Debugging-Sitzung teilt.

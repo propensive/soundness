@@ -1,0 +1,572 @@
+orthant 2 language
+
+@ 0 1 0 1efcb8c25d685ce8066dccc4dd9aacb8
++ ## Tablas
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 2 0 151f31645f90a553043e046d4cd88394
++ Los datos tabulares se dibujan en un terminal mediante un motor de disposición que se toma en
++ serio la parte difícil: encajar columnas de contenido desigual en una anchura fija.
+
+@ 0 4 0 0e2717de7427d3321ceccc8aef16f378
++ Una tabla se define de una de dos maneras. Implícitamente, una secuencia de case classes se
++ convierte en una tabla con una columna por cada campo. Explícitamente, se nombra cada columna, con
++ su alineación y su *estrategia de dimensionado*: ajustarse como un párrafo, truncarse con puntos
++ suspensivos o desaparecer por completo cuando falta espacio. El resultado se dibuja con caracteres
++ de caja, en un estilo elegido en el ámbito.
+
+@ 0 1 0 0aa353a82a544fe010055152c2fd908f
++ ### Sobre las tablas
+
+@ 0 5 0 0cf63191e805fa41090267c2fa0c5d40
++ La mayoría de las tablas de un terminal son cadenas de formato: anchuras fijas, adivinadas cuando
++ se escribió el programa, que truncan o desbordan cuando los datos no están de acuerdo. Una
++ disposición de verdad es una negociación. Unas columnas importan más que otras. Una columna de
++ prosa puede ajustarse donde una columna de identificadores no puede. Por debajo de cierta anchura,
++ es mejor eliminar una columna que destrozarla. Un motor de disposición puede llevar esa
++ negociación, y una cadena de formato no.
+
+@ 0 5 0 1217a8cb59c9d5930bfbf076f0401627
++ Aquí la disposición se calcula cada vez que se dibuja una tabla. Cada columna declara cómo puede
++ encogerse, y el motor reparte la anchura disponible, ajustando con
++ [separación silábica](hyphenation.md) donde se permite ajustar. Separar las columnas de una tabla
++ de sus datos, y de su anchura, es [desacoplamiento](../../philosophy/decoupling.md), y es lo que
++ permite dibujar una misma definición a cualquier anchura.
+
+@ 0 2 0 0433e34e2989aefa1fe2beb00529fea5
++ Todo procede del paquete `soundness`. Un estilo, una métrica para la anchura del texto y una
++ política para una tabla que no cabe están en el ámbito:
+
+% 2 1 0 1ac1503016433319041cb8148bd50cb6
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18516baef5bcebbb0e4e2e613028b8ed
+
+% 0 1 0 0113ecd3cd2f810810d22a6b0e5b8695
+
+% 0 1 0 0b86b4cb5c97f155146e7d82930392cf
+
+% 0 1 0 08f070a70bdb87031db2223cc0bdebe1
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 1eb1851c82436a8b0ac5318dba1ffaf3
++ ### Una tabla a partir de una case class
+
+@ 0 2 0 19589ac8be0052781cedbf08bf7d63a7
++ Una secuencia de case classes se tabula directamente, con una columna por cada campo, titulada a
++ partir de los nombres de los campos:
+
+% 2 1 0 0d9d9e53a2bfec240c797fd13d5091e1
+
+% 0 1 0 0267226d76a2c65c1c2082375964d938
+
+% 0 1 0 051a001ae638d2b61e61d347eb8fc27d
+
+% 0 1 0 0b5201dc2d0d4c091ba391aba53e6c40
+
+% 0 1 0 011f15df886dfc70024ca18dac8bc75f
+
+% 0 1 0 153a71c1bd14c889192bdf0281f1f240
+
+% 0 1 0 058c5e3adca6e5fd1a928ba30b5166b9
+
+% 0 1 0 1e3016f55834016606d1d0b78c43e5c5
+
+% 0 1 0 0b8b9f2e3144b7bd0ccd27ea3eb1a300
+
+% 0 1 0 0e2986c77eb808b51c4a7803ffea31de
+
+% 1 1 0 0ef1d5198ef46ff307f40cdcf7fd6f10
+
+@ 0 1 0 02ed4e29e560e42216a009c6a3ea05d8
++ `grid` dispone la tabla a una anchura, y `render` da sus líneas:
+
+% 2 1 0 1bd3e48938c5df5213c9582fa4b8b166
+
+% 3 1 0 17686da1932085511c8a9eb118173d49
+
+% 4 1 0 10f2cb151a43ff621ef410c7e7eed908
+
+% 0 1 0 0694de922953a8101bf8c526e4ce1ba8
+
+% 1 1 0 06ef258d4b9288841c431558dfb878d8
+
+@ 0 2 0 1b7c41e64eaf58da1c63611827b11a70
++ Las columnas numéricas se alinean a la derecha por defecto, y el texto a la izquierda. La tabla
++ entera es `Printable`, así que imprimirla a la anchura del propio terminal no requiere más que
+
+% 0 1 0 1476b60c2bf2673319c64b88ea533bb5
+
+@ 0 1 0 08d4caedf44861481878bfa6cdca6dea
++ Intervienen tres tipos, y saber cuál es cuál explica dónde se toma cada decisión:
+
+% 2 1 0 0e30f414a8d5523a170e3e72174a233a
+
+@ 0 6 0 0c294b3d8347eb2000916d17d2f7c33d
++ column  Tipo
++ column  Contiene
++ column  Se crea con
++ row  `Scaffold`  cómo se reparte un tipo en columnas —su contenido, orden y parámetros—, pero ningún dato  `Scaffold[Row](columns…)`
++ row  `Tabulation`  datos organizados por un scaffold: valores textuales, uno por fila y columna, que ya no remiten al tipo de la fila  `scaffold.tabulate(rows)`
++ row  `Grid`  una tabulación ajustada a una anchura concreta, donde una columna puede encogerse o desaparecer  `tabulation.grid(width)`
+
+% 1 1 0 19e022b82f7c414e0b5d475bb6cfad33
+
+@ 0 3 0 19087ccacabb71281049f2f25cfeae03
++ `tabulation`, arriba, derivó un scaffold para `Codebase` y lo aplicó, en un solo paso. Las
++ secciones siguientes tratan las etapas por separado, que es lo que da control tanto sobre la
++ disposición como sobre la anchura.
+
+@ 0 1 0 094a22528fc12d991ad20e33e66057fa
++ ### Columnas explícitas
+
+@ 0 2 0 07140bd20e0e9e4012366e06eef17186
++ Las columnas definidas a mano eligen sus títulos, contenido, alineación y dimensionado. Los
++ dimensionados están en el paquete `columnar`:
+
+% 2 1 0 047f71e8287e242805d1afc52f0564a2
+
+@ 0 6 0 03b8268011175da013ebebb9b8247e6c
++ column  Dimensionado
++ column  La columna
++ row  `Paragraph`  se ajusta, con separación silábica, pero nunca más estrecha que su palabra más larga
++ row  `Collapsible(threshold)`  conserva su anchura natural, y desaparece cuando la holgura cae por debajo de `threshold`
++ row  `Fixed(width)`  tiene siempre `width` de ancho, y trunca su contenido con puntos suspensivos
++ row  `Shortened(width)`  se encoge desde su anchura natural, y trunca su contenido con puntos suspensivos
+
+% 1 1 0 031f8d0e14c6e7931b3132f4eb977fe3
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 0543e4732d8417c614660a128654e123
+
+% 0 1 0 155b7f40ee9c936911356f5393bff550
+
+% 0 1 0 030f9d885c7d947d150b1fc80aa8b237
+
+% 0 1 0 05d44727456fea29097b31a6e19d86a8
+
+% 0 1 0 10d0a8ab8aef0e7c1efca644d2d0b57e
+
+% 0 1 0 0d7ee3c3c0ddbc231e98a12d0caf63c6
+
+% 0 1 0 1d590a8d20fe7d141b6d9f560cea04dd
+
+% 1 1 0 08945939832ee90712e254bac49a8212
+
+@ 0 5 0 008c5e7bf1c91edb0a088bdd2dfe891e
++ Cada columna es un título y una función del tipo de una fila al valor de una celda. Las funciones
++ de aquí devuelven una mezcla de `Text` e `Int`, sin ninguna anotación de tipo entre ellas. Funciona
++ porque es el *título* el que fija el tipo textual. Se encuentra una instancia de `Textual` para el
++ tipo del título. Esa instancia nombra la [clase de tipos], normalmente `Showable`, que convierte
++ otros valores en él, y el resultado de cada función se muestra a través de ella.
+
+@ 0 4 0 0c6753e0304745851f55415842957d88
++ El tipo de celda de la propia tabla es entonces la cota superior mínima de los de sus columnas.
++ Así, `table`, arriba, es un `Scaffold[Codebase, Text]`. Escribir los títulos como `e"Name"` en
++ lugar de `t"Name"` lo habría convertido en un `Scaffold[Codebase, Teletype]`, con color y estilo
++ disponibles en cada celda, como describe [Terminal](terminal.md#styled-text).
+
+@ 0 3 0 0df174ea900feec11c0e46b2d5e6d347
++ Los umbrales de las columnas `Collapsible` solo tienen sentido unos respecto de otros. Se comparan
++ con la *holgura* con la que trabaja la disposición, que es el número que busca el
++ [algoritmo de disposición](#the-layout-algorithm):
+
+% 2 1 0 0644119fcc8bf57e167fa21593a9b31a
+
+@ 0 1 0 1f2016b426a52db01ffd0c7dc0d1ed95
++ column  Holgura
+
+% 0 1 0 04663cddef916eaf1a6c20565d37bea1
+
+% 0 1 0 07fd1497e1f243631d6159a4047aea3b
+
+% 0 1 0 0998ee5d09067ee201657071b89e4b8f
+
+@ 0 3 0 17c58056927132fc102264a4a1a730aa
++ row  `0.6`  oculta  visible  visible
++ row  `0.4`  oculta  oculta  visible
++ row  `0.2`  oculta  oculta  oculta
+
+% 1 1 0 042c55f578b0b931081857ed2e9580d8
+
+@ 0 1 0 007e5e123848ca3f00fbc09e98b6cf57
++ ### Representaciones a distintas anchuras
+
+@ 0 3 0 1faa49174f114e7a0435ec5e2c65a0bd
++ He aquí la misma tabla, con los mismos datos, dispuesta a cuatro anchuras. A 100 caracteres,
++ *Identifier* ya ha desaparecido. Es la columna plegable cuyo umbral está más cerca de `1`, así
++ que es la primera en irse:
+
+% 2 1 0 0f7156ed3d1ba76e1b5623f3a684b33a
+
+% 3 1 0 09a1c2a0458d18a9152b5f86144b4e19
+
+% 4 1 0 0c92d37ad4044305128c6d94cf1e8a61
+
+% 0 1 0 0726135290f97e1f17765c0f4d87c0d8
+
+% 1 1 0 098fcb6c3501d4e11081ac3277dec194
+
+@ 0 1 0 0f7eea2128bdf6ca0fa121a6650a5609
++ A 80, no hace falta eliminar ninguna columna más. En su lugar, la descripción se ajusta:
+
+% 2 1 0 0092b154409f46a91ebbdbed53f8b479
+
+% 3 1 0 021721ae76544a87027aa20918ede13c
+
+% 4 1 0 17f9a832f89f955415f17fce3c719978
+
+% 0 1 0 0c1a13ce4050eebd1bcd9922eead4941
+
+% 1 1 0 183c372e8bfc0ce606f90de2e69993d5
+
+@ 0 2 0 1b13b08f5f75f16f041de88ecd28af06
++ A 60, se va *Year*, ya que tiene el siguiente umbral más alto, y la justificación de la
++ descripción se hace visible, porque las líneas se estiran hasta la anchura completa:
+
+% 2 1 0 1243cf56613ee0b61944f78bfb4996c0
+
+% 3 1 0 02df48c7d3f49fa00e72d52190e41e31
+
+% 4 1 0 06b81fcfdba626fe042fca7e934541a2
+
+% 0 1 0 043299991b9d9e4906eec518d5a0f297
+
+% 1 1 0 1564f7125238fe6f1c427e8f40bfce13
+
+@ 0 1 0 0f3722f3da88c2e717817401022602f2
++ Y a 40 solo quedan dos columnas, y una descripción puede ocupar hasta cuatro líneas:
+
+% 2 1 0 05affd2e4d58d8690005b4b31d209f2e
+
+% 3 1 0 16cd9d12e9b0659813baa8962d9435b3
+
+% 4 1 0 0616a1c694a287161d07d7fb38000bb6
+
+% 0 1 0 1c4b1f63f6ea4dd4120ff10ebc949bec
+
+% 1 1 0 128db6f61875eff8118bef3b9ae60852
+
+@ 0 1 0 10834c524ed9d4620b9a5b0029fffe74
++ ### El algoritmo de disposición
+
+@ 0 6 0 0a02d6032274f22001d75d903cbbcdb7
++ El scaffold no decide las anchuras. Delega en cada columna, pasándole un `Double` entre `0` y
++ `1`. Ese número es la *holgura* de la columna, que es sencillamente lo contrario de la presión.
++ Dada una holgura, una columna informa de la anchura que ocuparía, y una columna sometida a
++ suficiente presión puede informar de que no se dibujará en absoluto. Una columna de prosa se
++ encoge de forma gradual a medida que su texto se recoloca. Una columna de identificadores no puede
++ encogerse más allá de su contenido, y o bien mantiene su anchura o bien desaparece.
+
+@ 0 3 0 1121ee576f68b02c08c9eb0bba25028d
++ Sumar esas anchuras da la anchura de la tabla a esa holgura, y a partir de ahí es una búsqueda. La
++ holgura se sube donde la tabla cabe, y se baja donde no cabe, en busca de la holgura más alta a la
++ que la tabla todavía cabe en el espacio disponible.
+
+@ 0 5 0 18ab0ae084b28e460af9d89c35d4064d
++ Ese máximo suele estar *justo después* de que se haya ocultado una columna, lo que tiende a dejar
++ espacio sin usar: la columna que desapareció liberó más sitio del que necesitaban las restantes.
++ Por eso, una segunda pasada sube la holgura de las columnas que quedan, sin recuperar las ya
++ eliminadas, y deja que se extiendan por lo que sobra. En la práctica, esto da resultados
++ notablemente mejores que detenerse en el primer ajuste.
+
+@ 0 5 0 08d49f3a0836d782086aea67dfddaa8f
++ La búsqueda descansa sobre un único requisito, que todo `Columnar` personalizado debe respetar:
++ una columna debe responder a la holgura de forma *monótona*. Reducir la holgura puede dejar una
++ columna con la misma anchura, pero nunca debe hacerla más ancha. `Paragraph`, `Collapsible`,
++ `Fixed` y `Shortened` son sencillamente las estrategias que se proporcionan. El concepto es
++ abierto, y una estrategia de dimensionado que responda a la holgura de otra manera es una
++ implementación corriente de la misma interfaz.
+
+@ 0 1 0 018eac97daff3b0009cf17108019446c
++ ### Estilos
+
+@ 0 3 0 0f3420853508da1d054edac9b72b7737
++ El dibujo de cajas es un given `Table.Style`. El estilo es un cambio de importación, no del código
++ que define la tabla. `thinRoundedTableStyle` dibuja filetes finos en toda la tabla, con esquinas
++ redondeadas:
+
+% 2 1 0 1697fcf5729dd81f1fe71d8af20b91d0
+
+% 0 1 0 0ddee35fa0d591ae0517845b629c1a05
+
+% 1 1 0 1b9459a9033b355b0febbacf30642bfc
+
+% 3 1 0 07ea34605c246ae90339571848addcd2
+
+% 4 1 0 1cfe35a86ce773af1031163b7813b819
+
+% 5 1 0 05a34c796b81fd19162df270e593b8a6
+
+% 5 1 0 0878aa023d7892ac0b4217f1d5b2c1c7
+
+% 0 1 0 0966aab01cf7d9d101ac0e7105e4b698
+
+% 1 1 0 0199b8701cdadbb81f0c12fc75f78363
+
+% 2 1 0 00f755eb387662fd1b97c871cf650167
+
+@ 0 1 0 00cce23a51811d4e001090bdcfdb8320
++ `horizontalTableStyle` conserva los filetes horizontales y elimina los verticales:
+
+% 2 1 0 16194ba483f76f5000954f2cd107544c
+
+% 3 1 0 1cd0c723048436401210ba20b09d166f
+
+% 4 1 0 147310fa38b114460b95e0f92d4a546c
+
+% 5 1 0 056e6511494fc1fe136bdc73cbc98a1f
+
+% 0 1 0 1828332b32d172080fa79687430e1337
+
+% 1 1 0 1ce847d511f530190461ba2e8916e2ba
+
+% 2 1 0 0402ba87ee3645870465f78520d4ca8d
+
+@ 0 1 0 151ba5c17fc0e5020a3c295b112adcef
++ `verticalTableStyle` hace lo contrario:
+
+% 2 1 0 1955c17cdc6eeca500d984748e609338
+
+% 3 1 0 07b7bfd6abf782b61e5ebe2e147f0ee7
+
+% 4 1 0 1ea4c090cff2e98002babaf4c3ec6150
+
+% 5 1 0 02e086eb8c3a58b51b227663b75eb395
+
+% 0 1 0 016af4dd8eb0419111e41560796f4720
+
+% 1 1 0 06a6de4085c60fc6136e315e36b59246
+
+% 2 1 0 0ce2dbe625ab23b41597362716e47bc5
+
+@ 0 1 0 1ebe108c1659d5b915960cc7f4c2cde0
++ Y `minimalTableStyle` deja un único filete bajo los títulos, y nada más:
+
+% 2 1 0 1db6508ac69f068914c62dbaa5b7212f
+
+% 3 1 0 1f5271fd606ee73711cfb8fd07484419
+
+% 4 1 0 06bad21f3c96980b080ff0eccad0d1e1
+
+% 5 1 0 0cd132f6a5a9fcdd11693e3e8750b17d
+
+% 0 1 0 1e7f782cfc75d1cb188fed94ac3f7eda
+
+% 1 1 0 04dc5d803265626b1a87d54ff4ad6efb
+
+% 2 1 0 13b768971c1999b60d4cf290c6d4d82f
+
+@ 0 2 0 064e6996ef5472af0a0a4f13ef56f576
++ `midOnlyTableStyle` es igual, pero reserva líneas en blanco arriba y abajo, donde irían los
++ filetes exteriores, de modo que la tabla conserva su espaciado vertical sin dibujarlos.
+
+@ 0 2 0 189e461f8687726b01d79e8e3cae1e8a
++ El texto de terminal con estilo funciona como contenido de una celda en todos los estilos. Una
++ tabla de valores resaltados o coloreados se dispone según su anchura visible, no según la longitud
++ de sus códigos de escape.
+
+@ 0 1 0 00ba71a802080d96098fb5130802555e
++ ### Alineación
+
+@ 0 1 0 1cf2bfa560d085f20320ab6e1c608b43
++ Cada columna indica cómo se sitúa su contenido dentro de la anchura que se le da, como un
+
+% 0 1 0 18ee3dda32fbf56c144a883db11ea82c
+
+% 2 1 0 1fc3201508a3df831061eae492ded052
+
+@ 0 6 0 1b9545adc530bfa11006ff7f14cedb49
++ column  Alineación
++ column  Rellena
++ row  `Left`  por la derecha
++ row  `Right`  por la izquierda
++ row  `Center`  por ambos lados, poniendo la columna sobrante a la derecha cuando no se puede repartir por igual
++ row  `Justify`  entre palabras, de modo que todas las líneas salvo la última alcanzan la anchura completa
+
+% 1 1 0 0a14d880c9d8f4b8068821d5c3b074ff
+
+@ 0 1 0 0127a8c0320e2ef41b3bbb104853a475
++ `Justify` es la composición de un periódico, que conviene a una columna de prosa y a nada más.
+
+@ 0 3 0 0746d93ce70489a7160fdb211d697318
++ La alineación vertical importa en cuanto una celda se ajusta. Una celda ajustada hace más alta
++ toda su fila, y las demás celdas de esa fila se sitúan arriba, en medio o abajo de la altura
++ adicional, según su `VerticalAlignment`: `Top`, `Middle` o `Bottom`.
+
+@ 0 1 0 0c79c0a5cdbc716f0c1ee79143c8a899
++ ### Títulos
+
+@ 0 4 0 1cb68920b15311d10f2183834fb2059b
++ Una tabla derivada titula sus columnas a partir de los nombres de los campos, con mayúscula
++ inicial, así que `linesOfCode` se convierte en `Lines of code`. Donde ese no es el título deseado,
++ un `Table.Relabelling` lo sustituye por nombre. El campo de Scala conserva su nombre, y la tabla
++ recibe el suyo propio:
+
+% 2 1 0 0a876387c831829a0ca7a38cd5ac3cc8
+
+% 0 1 0 16c2ab31e22e26bd01b4b886970fef43
+
+% 0 1 0 06e213b80e30a473027c811501b5807b
+
+% 1 1 0 091b08db469ebe9e027cab7841a1d918
+
+@ 0 3 0 079a13f3f40bc8351cf00887a70422b3
++ Una columna definida explícitamente se nombra a sí misma. `retitle` renombra una a posteriori, lo
++ que resulta útil donde la definición de una tabla es compartida y un llamador quiere un
++ encabezado distinto.
+
+@ 0 1 0 14af8eb68f97c69b11c89a088da096e9
++ ### Reutilizar la definición de una columna
+
+@ 0 4 0 053143fc68ad076a0824710f95053a91
++ Una `Column` tiene un parámetro de tipo para el tipo de fila del que lee, lo que haría inútil para
++ otro tipo una columna definida para uno. `contramap` la adapta. Una columna definida una sola vez,
++ con su alineación, dimensionado y título, sirve entonces a todo tipo que pueda producir el valor
++ que muestra:
+
+% 2 1 0 1159670cb5e23d0c1a7633af70394562
+
+% 0 1 0 09e53a6c16c54bc1102763b6232584be
+
+% 0 1 0 139189f70e50ebae163501613bb78518
+
+% 1 1 0 17fe5ebdfab7c9c50e02288d6ee8673c
+
+@ 0 1 0 03a0dd13d2122621000f8303f3bbf1c9
++ ### Tabular algo que no es una case class
+
+@ 0 4 0 140b1c74bd9865c61ce5a497a8c3fadb
++ Se tabula una secuencia de cualquier cosa que tenga una instancia de `Tabulable`, así que una
++ lista de enteros simples, o de texto, se dibuja como una tabla de una columna, sin un tipo
++ envoltorio. Esa instancia es también donde participa un tipo cuyas columnas no son sus campos,
++ como un [registro](records.md) leído de un esquema, o un valor cuyas columnas de presentación se
++ calculan.
+
+@ 0 1 0 0795f4a96320e2ce004a8db5562cbc1a
++ ### Listas en columnas
+
+@ 0 4 0 01af48a0bc95d90102a671a42e986fde
++ No toda organización de texto en columnas es una tabla. Una lista de elementos cortos, como
++ nombres de ficheros o las entradas de una leyenda, se lee mejor cuando se dispone como `ls`
++ dispone un directorio: en tantas columnas como permita la anchura, sin títulos ni filetes.
++ `columnate` hace esto para una lista de valores textuales, y da una línea por cada fila:
+
+% 2 1 0 15caa0c745d760391809c62d37b22de6
+
+% 3 1 0 186ced14a44f07981ffa81991d1f9ae9
+
+% 4 1 0 1c842e066fbcb0fd0cea7b68dffdd251
+
+% 0 1 0 1b6159d53e44b9e319484bf06419b8b6
+
+% 1 1 0 10a4d4126a693f3a1f8691f93c19abae
+
+@ 0 6 0 1f3593dfb1dc7b5e15c73e48a2ef90d4
++ El número de columnas es el mayor con el que cabe el contenido de cada columna, con `gap` celdas
++ entre columnas vecinas. Se prefieren las columnas de igual anchura, cada una tan ancha como el
++ elemento más ancho. Se admite una disposición con una columna más cuando los elementos que caen en
++ alguna columna resultan ser más estrechos y esa columna puede encogerse. La anchura que sobre
++ entonces se reparte de nuevo entre las columnas encogidas, tendiendo a la igualdad, sin que
++ ninguna columna crezca más allá del elemento más ancho. Los parámetros de `columnate` son:
+
+% 2 1 0 149766aa27c73ced0e743821737ea666
+
+@ 0 8 0 001d82329a60793a00c494922db97714
++ column  Parámetro
++ column  Valor por defecto
++ column  Efecto
++ row  `width`  ninguno  la anchura que se debe llenar
++ row  `gap`  `2`  las celdas entre columnas vecinas
++ row  `uniform`  `false`  cuando es `true`, solo considera disposiciones de igual anchura
++ row  `downward`  `false`  cuando es `true`, lee los elementos bajando por cada columna en lugar de recorrer cada fila
++ row  `align`  `TextAlignment.Left`  cómo se rellena cada celda dentro de su columna
+
+% 1 1 0 1a1d94c0f7f580ce14163f599c81f6fb
+
+@ 0 1 0 02b96d2b7a512204078013d5fd1ddf3c
++ Una fila alineada a la izquierda no tiene relleno final después de su último elemento.
+
+@ 0 1 0 1b04adad405faa911a74903ee9cbae9f
++ ### Cuando la tabla no cabe
+
+@ 0 2 0 14c2f4ee5120278f114dc33b4f5e3bd5
++ Por debajo de cierta anchura, ninguna organización de las columnas es satisfactoria, y lo que
++ deba ocurrir entonces es una política, no un comportamiento fijo. Lo decide el given
++ `columnAttenuation`:
+
+% 2 1 0 06e96c0ecf42d7751bca8086f4165db9
+
+@ 0 4 0 1100f11a5a6cc6310d127e75a44c6217
++ column  Importación
++ column  Una tabla que no cabe
++ row  `columnAttenuation.ignoreAttenuation`  se dibuja de todos modos, lo mejor que permite la anchura
++ row  `columnAttenuation.failAttenuation`  lanza un `Table.Error`, en lugar de producir algo engañoso
+
+% 1 1 0 17a4d16ae27d558c0ddabbe87612d83f
+
+@ 0 3 0 017c18be945608da17904bd0f43b094b
++ El límite no es abstracto. En la tabla anterior, la columna *Description* nunca puede ser más
++ estrecha que la palabra individual más larga que contiene, `Statically-checked`. Por debajo de 37
++ caracteres, ninguna holgura la hará caber, por mucho que se pliegue el resto.
+
+@ 0 3 0 179752d9608d78641270125ae80a9be2
++ `Table.Error` es un [error](errors.md#recovering) comprobado como cualquier otro. Lleva la anchura
++ mínima que necesitaba la tabla y la anchura que se le dio, de modo que un manejador puede decir
++ algo útil, y no tiene por qué limitarse a fallar:
+
+% 2 1 0 0a6d8d50c9147f690fc75b37d0a6ea35
+
+% 0 1 0 1408297531494e580370635bee386861
+
+% 0 1 0 1457e4d128700298037798f55e84de9e
+
+% 0 1 0 13d5befb2d1178cb1ef63455361dd122
+
+% 0 1 0 0629bf6d15990ec10b21350185a9911b
+
+% 0 1 0 09405336e5e42cad066e80b36ea78251
+
+% 0 1 0 04b68f13292630100c24d6460f2a1679
+
+% 0 1 0 1c8093f6ab1162b31bbb1d1f6475b881
+
+% 1 1 0 10e3f4d8859040300d65af2b7a76507b
+
+% 3 1 0 0d73835f3662942e1fe6ba2626955299
+
+% 4 1 0 035303159a74bc2e1919a61bb1e467ad
+
+% 5 1 0 12d0a3a143aaf4681131893026af8da8
+
+% 0 1 0 05c588ede96667f60b36e9a72ad6996c
+
+% 1 1 0 03481259a5fbbb15105ae9aae38a02a6
+
+@ 0 4 0 0ddd4378a59929d501ba143da7469e11
++ Un informe que se escribe en un fichero, donde nadie verá que las columnas se destrozaron, quiere
++ el fallo. Una presentación interactiva, donde el usuario puede ensanchar la ventana, quiere la
++ tabla dibujada. Y como `ignoreAttenuation` no puede fallar, elegirlo no requiere ningún manejo de
++ errores.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 6 0 1954ecda59c02d2f02f58b3a85f39927
++ - [Terminal](terminal.md) da estilo al texto de una celda y dibuja interfaces en vivo.
++ - [CSV](csv.md) lee las filas que muestra una tabla.
++ - [Separación silábica](hyphenation.md) parte las palabras de una columna ajustada.
++ - [Texto](text.md#padding-and-fitting) rellena y ajusta valores individuales.
++ - [Gráficos](charts.md) dibuja los mismos datos como una imagen.
++ - [Catálogos](catalogs.md), [demonios](daemons.md), [presentación](display.md) y [árboles](trees.md) disponen valores como texto con el mismo espíritu.

@@ -1,0 +1,50 @@
+orthant 2 language
+
+% 0 1 0 0115a31ca43d05821326cc35d72968a7
+
+@ 0 1 0 14ef401502b40ce418c5cff44229edb4
++ Se lanza cuando un demonio no puede preparar una actualización para su lanzador.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 6 0 1c6f0624269bdecd0217fa4d28fd8fb3
++ Una aplicación de Ethereal puede sustituir su propio binario dejando preparado el nuevo como
++ `<data>/<name>/.pending`, que el lanzador verifica e instala al inicio de su siguiente invocación.
++ Este error abarca un origen que no se pudo leer, un nombre de aplicación que no está disponible
++ (el demonio no lo arrancó un lanzador) y un fichero `<name>/.pending` que no se pudo escribir. Un
++ candidato que el lanzador rechaza no es un error aquí: lo notifica después `Upgrade.outcome`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+% 0 1 0 09fd44d0bfa124ec0ca1617d3f59643f
+
+% 0 1 0 0c9a8d777bb7fa940a5f445a0723f612
+
+% 0 1 0 176574de4f6880b01b50e5d8779a4d1f
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 4 0 0d6a5466e8d42b7e11e9f11427be2ce5
++ Ejecuta la aplicación a través de su lanzador XEK, que pasa su nombre al demonio, y asegúrate de
++ que se puede escribir en el directorio de datos (`$XDG_DATA_HOME`, `~/.local/share` o
++ `%LOCALAPPDATA%`). Comprueba `Upgrade.enabled` antes de ofrecer una actualización: un ejecutable
++ compilado sin una clave de publicación y un identificador de aplicación rechaza a todos los
++ candidatos.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 1910f0aaa51329071c6159525711cd00
++ - Fuente: `lib/ethereal/src/core/ethereal.Upgrade.scala`

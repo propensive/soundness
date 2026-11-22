@@ -1,0 +1,187 @@
+orthant 2 language
+
+@ 0 1 0 06243999aacdebca1046ca79b2e9d7b9
++ # Signatures honnêtes
+
+@ 0 6 0 05a48d9403baa413163dbe62a380a680
++ Une signature, dans Soundness, dit la vérité, toute la vérité et rien que la vérité sur ce dont
++ une opération a besoin. La partie la plus importante est le *rien que* : une signature ne déclare
++ aucune exigence qui ne soit toujours nécessaire. Une classe de types décrit l'unique capacité
++ qu'elle abstrait, sans élargir ses méthodes pour accueillir ce que pourrait vouloir une
++ implémentation quelconque — aucun paramètre contextuel « au cas où », aucune erreur déclarée
++ parce qu'une implémentation peut échouer.
+
+@ 0 8 0 050776059537a5f21ebabb954ea5dcc4
++ Les exigences que seules certaines implémentations ont appartiennent à ces implémentations. Un
++ `given` déclare dans sa propre signature les capacités dont dépend son implémentation
++ particulière — une instance adossée au réseau exige `Online`, une instance faillible une
++ `Tactic` — et l'exigence est satisfaite là où l'instance est choisie, et non imposée à la classe
++ de types et à toutes ses autres implémentations. Les exigences effectives d'une méthode sont donc
++ déterminées par les instances qu'elle utilise réellement : le même code générique est pur avec
++ une instance pure et réseau avec une instance réseau, et sa propre signature ne revendique ni
++ l'un ni l'autre.
+
+@ 0 5 0 19082702522ce140151b159258ce26f0
++ Il en résulte des signatures auxquelles on peut se fier dans les deux sens. Rien de ce qu'exige
++ une opération n'est caché, si bien qu'un appelant voit le coût réel ; et rien de ce qu'elle
++ déclare n'est inutilisé, si bien qu'une exigence dans une signature a toujours un sens. Une
++ classe de types minimale est aussi plus facile à implémenter — l'écart entre ce qu'exige une
++ interface et ce dont la plupart des implémentations ont besoin est exactement là d'où viennent
++ les signatures malhonnêtes.
+
+@ 0 1 0 0d28bfa57dc178a50304b9d5357bae5a
++ ## L'exigence voyage avec l'instance
+
+@ 0 1 0 0e41017bf66db072143a9a63e7e34aa4
++ Une classe de types ne dit que ce qu'elle abstrait :
+
+% 2 1 0 08511f38946741341bbbf25a2dfb526d
+
+% 3 1 0 190757efa6c1350e0d2c538315b96a61
+
+% 4 1 0 182f0d26b73fd2bf1a4948b33c9a9dd4
+
+% 0 1 0 02c7a26df30c501401305c4e011932e8
+
+% 0 1 0 179e46bbddd58b5718c8476807347cb6
+
+% 1 1 0 09f07a0a8270411015169f9365ad7e85
+
+@ 0 3 0 03b85a07d3ca79261d859371b061b0c8
++ Ni erreur, ni contexte, ni capacité — parce qu'afficher une valeur, en général, n'en demande
++ aucune. Une instance qui a *effectivement* besoin de quelque chose le déclare dans sa propre
++ signature, là où c'est vrai :
+
+% 2 1 0 17b9f3afad580fd100610b38255e08fd
+
+% 3 1 0 0e7a270e06526271137ac9dcd3d8f10f
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 0576420aca7e7e5e1922ada5e9e10712
+
+% 1 1 0 0301648f5402448b0e9aaf57d6d004cc
+
+@ 0 3 0 1eb4fbfd17b3a20901a1a04d5eddc357
++ Il en découle que les exigences effectives du code générique sont décidées par les instances
++ qu'il résout. La même fonction est pure lorsqu'on lui donne une instance pure et faillible
++ lorsqu'on lui en donne une faillible, et sa propre signature — honnêtement — ne revendique ni
++ l'un ni l'autre.
+
+@ 0 1 0 14c93dff3f1441dc0bcc6b31b8049d15
++ ## À quoi ressemble une signature malhonnête
+
+@ 0 2 0 12cc30a02acc2dec17ef1bd8aee97fe3
++ Le mode d'échec est facile à reconnaître une fois nommé. Une interface est élargie pour que
++ l'implémentation la plus exigeante y trouve sa place :
+
+% 2 1 0 1e7efb761f35b79d1c3c5271c7c51c76
+
+% 3 1 0 14b629fbe10a291d183c2a96bb44aaa5
+
+% 4 1 0 1a6b3e7bf3fe96fe0f953f448acc836a
+
+% 0 1 0 0727f4fb3a23969f0fc305662732b161
+
+% 0 1 0 16e69ac9995d45220388ca90409a8294
+
+% 1 1 0 011286b2edac3720076089c0a7c14268
+
+@ 0 3 0 16d30ec94ef4c4461cc98c4bbf2d793b
++ Une implémentation récupère un schéma par le réseau ; une autre peut échouer ; l'*interface*
++ exige donc les deux, et désormais chaque appelant de chaque codec doit fournir une capacité
++ `Online` et une stratégie d'erreur, que l'instance qu'il utilise ait besoin de l'une ou de
++ l'autre ou non.
+
+@ 0 5 0 0ccd8660e14c807304867b93771297c6
++ C'est pire qu'un désagrément. La signature a cessé de porter de l'information : un lecteur qui
++ voit `Online` ne peut plus en conclure que l'opération touche au réseau, parce que l'exigence est
++ là pour une raison qui peut ne pas s'appliquer. Dès que quelques exigences sont connues pour être
++ factices, on ne peut plus se fier à aucune, et la discipline s'effondre.
+
+@ 0 1 0 1bbf1444ff9ae7e813bfb30914acccaa
++ ## Ce que portent les signatures
+
+@ 0 1 0 09b0b4f11ecac9060fcc8dd1df39d4d2
++ Parce qu'elles sont minimales, les clauses qui *sont* présentes signifient quelque chose :
+
+% 2 1 0 1b9c0c2072582f3313ab390678fd32bb
+
+% 3 1 0 0e43f4f614af615d05cbbf7dbbae4860
+
+% 4 1 0 1ed4edba580ed74604a1f8e82e2785d2
+
+% 0 1 0 018857ea871317110933c6faf344c891
+
+% 0 1 0 1ecb71c330c5f881087473b1f8518e17
+
+% 0 1 0 0e153cc65cba77c11a3d496a51bad7a4
+
+% 0 1 0 1969367c3b0bd78c082ca5e93302bda7
+
+% 1 1 0 12174855fc549fbe0659ccd5b8f2054e
+
+@ 0 1 0 1e03a2962898606107cba51ed2c04eaf
++ Chaque clause fait une seule affirmation :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 18b13a096a2a41fe11e9935b14e8c8fd
+
+@ 0 5 0 1fb41d92d1a6eeff05b2f4aaf4fd3b1f
++ column  Signifie que la méthode
++ row  `using Online`  atteint le réseau
++ row  `raises`  peut échouer, et dit comment
++ row  `logs`  émet des événements de ce type, si bien qu'un appelant sait quoi acheminer où
++ row  `using Monitor`  peut suspendre le brin appelant
+
+% 1 1 0 125abc22c916799009e53ae83ab12207
+
+@ 0 2 0 1c21f921c834a2a917fef31061bc918a
++ Une méthode qui n'a aucune de ces clauses ne fait aucune de ces choses, ce qui est une
++ affirmation qu'il vaut la peine de pouvoir faire.
+
+@ 0 1 0 1e7d385d16e6fa0f13a6c2a7d4909e82
++ ## L'honnêteté sur la capture
+
+@ 0 4 0 02148923c21d21470b2aebc16f24e140
++ Il existe une malhonnêteté plus subtile qu'une signature peut commettre : renvoyer une valeur qui
++ dépend secrètement de quelque chose de limité à une portée. Un flux qui tient encore un fichier
++ ouvert, une fermeture qui tient encore un gestionnaire d'erreurs — le type dit `Stream[Text]` et
++ la vérité est « un flux, mais seulement tant que ce fichier est ouvert ».
+
+@ 0 6 0 0a6594ecb32835f4187e2b96e8e5c0a4
++ Le [contrôle des captures](capture-checking.md) fait de cela aussi une partie de la signature. Le
++ type d'une valeur consigne les capacités qu'elle capture, si bien qu'une opération ne peut pas
++ renvoyer en silence quelque chose dont la validité est plus étroite que ne le suggère son type.
++ C'est pourquoi le principe d'honnêteté et le contrôle des captures vont ensemble : l'un porte sur
++ ce dont une opération *a besoin*, l'autre sur ce dont ses résultats *dépendent*, et tous deux
++ sont des cas où une signature énonce toute la vérité.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ce que cela coûte
+
+@ 0 3 0 074cbc2bef00b976167e30cdcc717a22
++ **Les instances en portent davantage.** Reporter les exigences sur les instances signifie que
++ les instances les déclarent, et la signature d'une instance faillible est plus longue que celle
++ de la version naïve. Le lecteur qui en bénéficie est celui qui appelle le code générique, non
++ celui qui écrit l'instance.
+
+@ 0 4 0 16b1d044219973741b5eed38ca038ac2
++ **Les exigences se propagent.** Une méthode qui appelle quelque chose qui a besoin de `Online`
++ doit soit le fournir, soit le déclarer. C'est le mécanisme qui fonctionne — le prix d'une
++ signature qui a un sens est qu'il faut l'entretenir — mais cela signifie bien qu'un changement
++ au fond d'une chaîne d'appels peut remonter jusqu'en haut.
+
+@ 0 5 0 1c9e03e016d626df186b6663a8c70eca
++ **Les échecs de résolution sont indirects.** Lorsqu'une instance nécessaire manque, le
++ compilateur signale l'échec d'une recherche implicite plutôt que « cette opération a besoin de
++ `Online` ». Importer `explainMissingContext` transforme cela en un diagnostic qui nomme l'import
++ qui le satisferait, ce qui répare un coût qui retomberait sinon précisément sur ceux que
++ l'honnêteté est censée servir.
+
+@ 0 2 0 07287f51d3dceaae098c1fe31ad3aff3
++ Voir [contexte déclaratif](declarative-context.md) pour la façon dont les exigences sont
++ fournies, et [gestion des erreurs](error-handling.md) pour la plus courante d'entre elles.

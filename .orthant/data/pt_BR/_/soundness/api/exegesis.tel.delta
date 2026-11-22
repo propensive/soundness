@@ -1,0 +1,2708 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0cc810470cd6afba122df81c9322cbb6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c321ee2df17494216b450ab82f76241
++ info   o Language Server Protocol como valores tipados: servidores a partir de handlers, clientes como sessões, proxies entre eles
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 03d5e98a24a431a61c2abf0900a4d7f4
++     _Exegesis_ implementa o [Language Server
++     Protocol](https://microsoft.github.io/language-server-protocol/) nos três sentidos. Um
++     **servidor** é uma única chamada a `Lsp.listen`, cujo bloco registra um handler tipado para
++     cada recurso que a linguagem oferece e que, em seguida, serve JSON-RPC enquadrado por
++     `Content-Length` pela entrada e saída padrão até que o editor feche o pipe. Um **cliente** é
++     uma sessão com um `Lsp.Server` — um comando a executar, ou um par de streams já conectados a
++     um servidor — que empresta um `Lsp.Connection` durante um bloco, com um método tipado para
++     cada requisição e notificação que um editor envia. Um **proxy**, `Lsp.proxy`, é as duas
++     coisas ao mesmo tempo: serve um editor enquanto mantém uma sessão com um servidor real,
++     encaminhando tudo e alterando o que os combinadores `rewrite` registram.
+
+@ 0 8 0 07ae692186b83c0e19a11db4020b6e16
++     O vocabulário do protocolo é modelado como case classes e enums comuns dentro de
++     `object Lsp` — `Lsp.Position`, `Lsp.Range`, `Lsp.Diagnostic`, `Lsp.Hover`,
++     `Lsp.CompletionList`, `Lsp.ServerCapabilities` e os demais —, cada um com um codec JSON
++     derivado, de modo que um handler recebe valores tipados, devolve valores tipados e nunca
++     monta JSON à mão. A própria superfície de transmissão são sete traits `@rpc`
++     (`LspLifecycle`, `LspLanguage`, `LspNavigation`, `LspEditing`, `LspAdvanced`,
++     `LspWorkspace`, `LspResolve`), unidas na trait `Lsp`; `Lsp.Dispatch` transforma qualquer
++     implementação dela em um despachante JSON-RPC, e `Lsp.Connection` guarda o proxy de cliente
++     gerado para cada uma.
+
+% 2 1 0 0e0e6e69189fd5b70116b3734886599c
+
+% 3 1 0 112bfad9b91ada8406410077eb445581
+
+% 0 1 0 1aa05f11c17f63e30d5bb160adc03709
+
+% 0 1 0 0eef447a7950324718eb36afb77fd276
+
+% 0 1 0 08c7f00dd9208f390009f73a3cdf697e
+
+% 0 1 0 02a57c8420bac1e31d073b19d12e24b0
+
+% 0 1 0 09447586849c1c59027fa70d4e1aff8c
+
+% 0 1 0 1547a6ee2d14948e1c2a9eb14ce23f10
+
+% 0 1 0 048fd973c07dd78d1d3ecec1f719e927
+
+% 0 1 0 106b16fdbfa0b94c1bc7565e42dc7e91
+
+% 0 1 0 1c8d001c6c78a47b129da179c8f8ae3e
+
+% 0 1 0 0ddf53bbec95052918c9e306f1cfc33e
+
+% 0 1 0 1008c452dd585fee1703b1010b6772c2
+
+% 0 1 0 135581dff005d63d069f9a04fb8f49c0
+
+% 1 1 0 1b49628c0e22547713c550d4ff6c7fdc
+
+@ 0 8 0 189bc276752a87a209f4b784c826d076
++     A forma de um servidor é o **registro**: o bloco passado a `Lsp.listen` recebe emprestado
++     um `Lsp.Registry`, e cada combinador — `hover`, `complete`, `opened`, `command`, … — anota
++     ali o seu handler. As `ServerCapabilities` do servidor são derivadas do que foi registrado,
++     então as capacidades anunciadas ao editor nunca podem divergir dos handlers que existem; as
++     opções de que uma capacidade precisa além da mera presença (caracteres de disparo de
++     conclusão, uma legenda de tokens semânticos, opções de diagnóstico) são parâmetros do
++     registro. Quando o bloco retorna, o registro é consumido: nada pode ser registrado depois que
++     o servidor começa a servir.
+
+@ 0 10 0 034c05f96525a37115e059110df862f6
++     Um **handler** é uma função de contexto. Um handler com escopo de documento (`Focused`)
++     recebe emprestados o `Document` atual, o `Workspace` e um `Emit[Lsp.Error]`; um handler com
++     escopo de workspace (`Ambient`) recebe apenas o workspace e o emissor; e o payload de cada
++     requisição chega como um parâmetro de contexto marcado com tag, lido por um acessor de mesmo
++     nome (`position`, `range`, `options`, `arguments`, `item`, …). Os handles são capabilities
++     confinadas a um único despacho, então um handler não pode guardar `document` ou `client`
++     para depois (a verificação de capturas rejeita isso), enquanto os valores puros que ele lê
++     deles — `document.text`, um `Hover` — podem sair livremente. Um handler que não consegue
++     responder lança um `Lsp.Error`, que se torna uma resposta de erro com o código de
++     transmissão do motivo, no caso de uma requisição, ou um `window/logMessage`, no caso de uma
++     notificação.
+
+@ 0 5 0 0fa2caec5032850217c57d1ee08932e2
++     Os acessores `document`, `workspace`, `client`, `position`, `context`, `arguments`,
++     `query` e o tipo `Document` compartilham seus nomes com membros de outras bibliotecas do
++     Soundness, por isso o módulo guarda-chuva `soundness` não achata os membros de `Lsp`:
++     escreva `import Lsp.*` **dentro** do próprio objeto do servidor, como `DemoServer` faz
++     acima, onde o curinga aninhado sombreia legitimamente o do módulo guarda-chuva.
+
+@ 0 7 0 14d1f486ae823df80bbe5cacc8c9dcbb
++     O mesmo vocabulário funciona no sentido inverso. `Lsp.Server(command)` ou
++     `Lsp.Server.streams(in, out)` descreve um servidor, e `session` (a extensão `Sessional` de
++     aperture, fornecida por `Lsp.Server.sessional`) abre o canal e empresta um
++     `Lsp.Connection`; as requisições devolvem `Optional[Hover]`, `CompletionList` e
++     `List[Location]` exatamente como os handlers, e uma resposta de erro é lançada como um
++     `Lsp.Error`. O que o servidor diz sem ser solicitado chega a um `Lsp.Listener`, fornecido
++     contextualmente, e um `Lsp.Observer` vê o tráfego bruto nos dois sentidos.
+
+% 2 1 0 18098fc29d09e07206cb265601460b82
+
+% 3 1 0 01ab08a6ec5c5d870604dd80bde2d461
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 18d9b46ca13dd19e1944675028f38782
+
+% 0 1 0 1741688c07b6d9150acfce3feacfba0e
+
+% 0 1 0 175b24fcc0a4b7dd0fab3c6ba8dac660
+
+% 0 1 0 0f981e368c1deb17145d1a1f7813f6d6
+
+% 0 1 0 0d229f22cb4036921387f711dea7678a
+
+% 0 1 0 0e031022ef04df2316b8d371659d5a0e
+
+% 1 1 0 0636ac6bd80f77f41cb3dae835455500
+
+@ 0 1 0 1f464efe1917bf091a914ec7f5969566
++     A biblioteca tem dois componentes:
+
+@ 0 6 0 18e3533597adb3ae146e534505d84444
++     - `exegesis.core` — tudo o que foi descrito acima: `Lsp`, as sete traits de transmissão,
++       `LspSessional`, `rewrite` e `upstream`. Apenas JVM (depende de `obligatory.json`, que não
++       tem build para Scala.js).
++     - `exegesis.demo` — `DemoLspServer` e `DemoLspProxy`, dois programas completos no idioma de
++       daemon residente (`cli`/`execute` de ethereal), um deles um servidor de linguagem mínimo e
++       o outro um proxy que executa o servidor indicado por seus argumentos.
+
+@ 0 5 0 00ed8b6e5fb5ddbf190b28417d9e1bd9
++     `Lsp`, `LspSessional`, `rewrite` e `upstream` são exportados para o módulo guarda-chuva
++     `soundness`. As traits de transmissão e as demos não são, e são acessadas com
++     `import exegesis.*`. Os givens de que uma sessão precisa — `Lsp.Listener.quiet`,
++     `Lsp.Observer.silent` e `Lsp.Server.sessional` — ficam nos objetos companheiros de seus sujeitos,
++     então nenhum é importado por nome; um listener ou observer próprio é vinculado como um
++     `given` local e tem precedência sobre eles.
+
+% 0 1 0 09f4f14b56f236a20f082955fe2d71a4
+
+% 0 1 0 011c5c9a13697ccd1a1abffadd0f53e1
+
+% 0 1 0 0777938784819126077a50b6de7635e6
+
+% 0 1 0 1952fe1b1b3fdd9d1258b07e91749ca2
+
+% 0 1 0 15ffbe15dc74649f0d00d300c0a79e13
+
+% 0 1 0 11a21a92fed618c101ee666bd4a88091
+
+% 0 1 0 1586f40001c12b700f776b33c37b88ec
+
+@ 0 1 0 083cbe68ee8b31dd0d27d3044b2fd91c
++ entry .Lsp   o protocolo: seus tipos, o registro de handlers, `listen`, `proxy` e a metade cliente
+
+% 1 1 0 07c81b808275b48401e2ee8c5852ef88
+
+@ 0 6 0 17da59a998cf97010aeece197c6524fc
++       `Lsp` são duas coisas que compartilham um nome. Como **trait**, é a superfície de
++       transmissão completa do Language Server Protocol — a união de `LspLifecycle`,
++       `LspLanguage`, `LspNavigation`, `LspEditing`, `LspAdvanced`, `LspWorkspace` e
++       `LspResolve`, combinada com o `JsonRpc` de obligatory e fixando `#Origin` em `Lsp.Client`
++       —, que a sessão de `Lsp.listen` implementa e `Lsp.Dispatch` serve. Uma implementação
++       própria é possível (`dispatcher` a roteia), mas a API de registro é a forma prevista de
++       construir um servidor.
+
+@ 0 1 0 1a81df26a0faa92316d9e51f4b88a3aa
++       Como **objeto**, é o vocabulário. Três grupos de membros ficam aqui:
+
+@ 0 2 0 1d116f45571444a919727c2aa105b5fd
++       - os **tipos do protocolo**, uma case class ou enum por estrutura do LSP, cada um com um
++         codec JSON — `Position`, `Range`, `Location`, `Diagnostic`, `Hover`, `CompletionItem`,
+
+% 0 1 0 0f0264bbe2d3a24c1d254e6f76798afc
+
+@ 0 9 0 1328192333ac269816f5c873733a166d
++         `DiagnosticSeverity` e os demais;
++       - o **lado servidor**: os tipos de handler (`Focused`, `Ambient`, `HoverHandler`, …), os
++         acessores ambientes que um handler lê (`document`, `workspace`, `client`, `position`,
++         …), os combinadores de registro (`hover`, `complete`, `opened`, `command`, …), o
++         `Registry` em que eles escrevem, `listen`, que serve, e `Error`, que um handler lança;
++       - o **lado cliente**: `Server`, que descreve um servidor com o qual conversar,
++         `Connection`, o handle que uma sessão empresta, `Listener` e `Observer`, e `Client`,
++         as notificações que um servidor envia ao seu editor; e `Proxy` e `proxy`, que colocam
++         um processo entre um editor e um servidor.
+
+% 2 1 0 0aafc00fae589bab1cd66aa79b7a0acc
+
+% 3 1 0 1347fef257597af51b339ad52d72e4f5
+
+% 5 1 0 11853d9cf286480d012ac485cbc36000
+
+% 6 1 0 12fa3238bd1ded7c088d1f3d996a81c2
+
+% 8 1 0 080c321809c8600d06b45a559f9a04ba
+
+% 9 1 0 0660c98f4003de03116c07af10a91ea3
+
+% 10 1 0 096700d9cb0c9f7808cc9ece64df64a1
+
+% 0 1 0 133cd2f10de3e46c0a070192c753dcb8
+
+% 0 1 0 040442f9949fc651076d26dc6bd14193
+
+% 1 1 0 1c8c74f70fa3f3840881bf5db3311459
+
+% 2 1 0 1e741c340c21475b1082a29a88add546
+
+% 3 1 0 0ec45109e01ac4911fc1782c57150825
+
+% 4 1 0 1857f130283f07fe018711786f0a4023
+
+% 5 1 0 1d3b25797407f8450dee834d72e374d8
+
+@ 0 3 0 0165d58b991d3eb615c4f1f9a6e52e3b
++       O registro é possível onde quer que um `Lsp.Registry^` esteja em escopo — o bloco de
++       `listen`, ou um auxiliar como `register` acima, que recebe um —, de modo que um servidor
++       grande divide seus recursos entre métodos.
+
+@ 0 3 0 13a5c5728e3076de0009a78e19856b13
++       Importe `Lsp.*` dentro do objeto que o usa: vários de seus membros (`document`,
++       `context`, `arguments`, `query`, `Document`) colidem com nomes de outras bibliotecas no
++       módulo guarda-chuva `soundness`, e é por isso que o módulo guarda-chuva exporta `Lsp` e
++       não o seu conteúdo.
+
+% 0 1 0 033ece319d80b85e01daa275b853f81c
+
+% 1 1 0 1e21d980519065cc170782cdc9b18a4c
+
+% 1 1 0 1f9d4847cf3942010711c04fdfe5dba4
+
+% 1 1 0 0e01538b0859f32617d45472977f6054
+
+% 1 1 0 0fd74705f93b0dda1e2eafeccc17cac5
+
+@ 0 4 0 086eec1efc86891b1073c9473f40b0bc
++   entry #Origin   a outra ponta do protocolo do ponto de vista de um servidor: `Lsp.Client`
++       O tipo de origem de `JsonRpc`: a interface cujos métodos uma implementação de `Lsp` pode
++       chamar de volta no par que lhe enviou uma mensagem. O handle `client` de um servidor é
++       um deles.
++   entry .Position   uma linha e um caractere, ambos a partir de zero, em unidades de código UTF-16
+
+% 1 1 0 0deaae0e87cf915c146e7d62ae87194f
+
+@ 0 12 0 1f55f4699b14aa2f0e8db21cd13e2b26
++         A posição do protocolo: `line` e `character` contam a partir de zero, e `character` é
++         um deslocamento em unidades de código UTF-16, a codificação padrão do protocolo e a
++         unidade dos caracteres subjacentes de `Text`, então nenhuma transcodificação acontece
++         em parte alguma da biblioteca. `Document#offset` e `Document#position` convertem entre
++         uma posição e um deslocamento no texto de um documento, limitando os valores como o
++         protocolo exige. `#span` e `.from` convertem de e para o `Span` de zephyrine, que
++         também começa em zero.
++     entry .from   uma posição a partir do início de um `Span`, ou `Unset` se o span não tiver linha
++         Usa a linha e a coluna iniciais do span (zero quando ausentes).
++     entry #line   a linha, a partir de zero
++     entry #character   o deslocamento dentro da linha, a partir de zero, em unidades de código UTF-16
++     entry #span   a posição como um `Span` de largura zero em sua linha
++   entry .Range   duas posições, o início inclusivo e o fim exclusivo
+
+% 1 1 0 11974fcd911257f710a3899af908aa34
+
+@ 0 12 0 0ea4ac1f16ea66091d7d272fe2f90c2b
++         O intervalo do protocolo. `Document#apply(range)` lê o texto dentro de um, e
++         `Document#fullRange` é o intervalo de um documento inteiro. `.from` converte um `Span`,
++         usando a linha e a coluna iniciais quando falta o fim, e `#span` converte de volta. O
++         `encodable` e o `decodable` do objeto companheiro são o codec JSON, derivado uma única vez aqui
++         para que todo uso o compartilhe.
++     entry .from   um intervalo a partir de um `Span`, ou `Unset` se o span não tiver linha inicial
++     entry .encodable   o encoder JSON derivado para um intervalo
++     entry .decodable   o decoder JSON derivado para um intervalo; um intervalo malformado lança `Json.Error`
++     entry #start   onde o intervalo começa
++     entry #end   onde o intervalo termina, exclusivo
++     entry #span   o intervalo como um `Span` sobre sua área
++   entry .Location   um intervalo dentro de um documento identificado por URI
+
+% 1 1 0 0765b6ce320403631fb9d22e8e261afa
+
+@ 0 7 0 1422d7841ff9b63800e8cbf820577a50
++         O que `definition`, `declaration`, `references`, `typeDefinition` e `implementation`
++         devolvem em forma de lista. O objeto companheiro guarda o codec JSON derivado.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; uma localização malformada lança `Json.Error`
++     entry #uri   o URI do documento, escrito como o editor o escreve (`file:///…`)
++     entry #range   o intervalo dentro desse documento
++   entry .Envelope   os dois membros de qualquer mensagem JSON-RPC que decidem como ela é tratada
+
+% 1 1 0 094453f1eb948e921e6465e9678dfe6e
+
+@ 0 11 0 0990bb33e899c2941215f65808347d47
++         Uma mensagem lida apenas por seu `method`, que falta a uma resposta, e por seu `id`,
++         que falta a uma notificação. Ambos são opcionais, então toda mensagem é decodificada, e
++         um proxy usa um envelope para classificar uma mensagem sem conhecer sua forma: sem
++         método, é uma resposta; sem id, é uma notificação.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado
++     entry #method   o método que a mensagem indica, ou `Unset` para uma resposta
++     entry #id   o id pelo qual a mensagem é correlacionada, como JSON bruto, ou `Unset` para uma notificação
++   entry .TextDocumentIdentifier   um documento identificado por seu URI
++     entry #uri   o URI do documento
++   entry .VersionedTextDocumentIdentifier   um documento identificado por seu URI e sua versão
+
+% 1 1 0 0eb4bf58ca53684e16f050aa01c46289
+
+@ 0 5 0 1cdbdfcb2e68078718442b84a1aab941
++         O que `textDocument/didChange` carrega: a versão é a contagem de edições do editor, que
++         a sessão registra como `Document#version`.
++     entry #uri   o URI do documento
++     entry #version   o número de versão do documento no editor
++   entry .TextDocumentItem   um documento aberto por completo: URI, linguagem, versão e texto
+
+% 1 1 0 1a4cda347f26513008a6e369857dd811
+
+@ 0 7 0 032162b68103606b1ba32bb85ce67be1
++         O que `textDocument/didOpen` carrega, e o que `Workspace#document` devolve como um
++         instantâneo de um documento que a sessão mantém.
++     entry #uri   o URI do documento
++     entry #languageId   o identificador de linguagem do editor, como `scala` ou `rust`
++     entry #version   o número de versão do documento no editor
++     entry #text   o texto inteiro do documento
++   entry .TextDocumentContentChangeEvent   uma edição: um intervalo substituído por texto, ou o texto inteiro substituído
+
+% 1 1 0 1d3f786d8670f25a1781167e126e6beb
+
+@ 0 10 0 033be843badda27a1922ed8c9a7fefc4
++         Um evento com `range` insere o texto nos deslocamentos UTF-16 do intervalo; um evento
++         sem ele substitui o documento inteiro, que é como um editor que usa sincronização
++         completa informa cada alteração. `Connection#edit` envia uma lista deles, e
++         `Connection#replace` envia a forma sem intervalo.
++     entry #range   o intervalo substituído, ou `Unset` para substituir o documento inteiro
++     entry #text   o texto de substituição
++   entry .ClientInfo   o nome e a versão do editor, informados na inicialização
++     entry #name   o nome do editor
++     entry #version   a versão do editor, se ele a informou
++   entry .ServerInfo   o nome e a versão do servidor, anunciados no resultado de `initialize`
+
+% 1 1 0 0605eb6c8c0742231331f7c457fe497b
+
+@ 0 8 0 02b0e836544bedab07250ec70e074524
++         `Lsp.listen(name, version)` os envia; `Connection#initialize` os devolve dentro do
++         `InitializeResult`.
++     entry #name   o nome do servidor
++     entry #version   a versão do servidor, se ele a informou
++   entry .Folder   uma pasta do workspace: seu URI e seu nome de exibição
++     entry #uri   o URI da pasta
++     entry #name   o nome de exibição da pasta
++   entry .CompletionOptions   como um servidor faz conclusão: caracteres de disparo e se os itens são resolvidos
+
+% 1 1 0 1ac3c60071f3ad0213d815046b4d1a03
+
+@ 0 11 0 1a281ec47fae715a1aa47a6945e66145
++         Derivado por `Registry#capabilities` a partir de um registro `complete(triggers*)`, com
++         `resolveProvider` definido quando `resolveCompletion` também foi registrado.
++     entry #triggerCharacters   caracteres cuja digitação pede conclusão, se houver
++     entry #resolveProvider   se `completionItem/resolve` é servido
++   entry .SignatureHelpOptions   os caracteres que disparam a ajuda de assinatura
++     entry #triggerCharacters   os caracteres de disparo, se houver
++   entry .DocumentLinkOptions   se os links de documento são resolvidos sob demanda
++     entry #resolveProvider   se `documentLink/resolve` é servido
++   entry .CodeLensOptions   se as code lenses são resolvidas sob demanda
++     entry #resolveProvider   se `codeLens/resolve` é servido
++   entry .DocumentOnTypeFormattingOptions   os caracteres cuja digitação dispara a formatação
+
+% 1 1 0 1ac9e032554279db0d9a0b609ec769cc
+
+@ 0 5 0 1382f48c85468d771cfcf9d80e9c7d04
++         Derivado de `formatOnType(first, more*)`: o protocolo exige um caractere de disparo e
++         permite outros.
++     entry #firstTriggerCharacter   o caractere que deve disparar a formatação
++     entry #moreTriggerCharacter   outros caracteres de disparo, se houver
++   entry .SemanticTokensOptions   a legenda que os tokens semânticos de um servidor usam, e quais requisições ele serve
+
+% 1 1 0 10841ac69d37e1e7002c91403c24a467
+
+@ 0 6 0 1e81ba4ba33dec4412afbf3fa739403e
++         Derivado de `semanticTokens(legend)`, com `full` definido quando esse handler existe e
++         `range` quando `semanticTokensRange` foi registrado.
++     entry #legend   os tipos e modificadores de token que os dados de token do servidor indexam
++     entry #range   se `textDocument/semanticTokens/range` é servido
++     entry #full   se `textDocument/semanticTokens/full` é servido
++   entry .DiagnosticOptions   como se comportam os diagnósticos por pull de um servidor
+
+% 1 1 0 12e1d0b84943a6910462f7decb01fc68
+
+@ 0 7 0 08db8dbc8aa23d12029254b6ebbcf6f2
++         As opções que `diagnostics(options)` recebe no registro: o protocolo exige que um
++         servidor diga se os diagnósticos de um documento dependem de outros arquivos e se ele
++         consegue relatar para o workspace inteiro.
++     entry #identifier   um identificador sob o qual o cliente guarda os resultados, se houver
++     entry #interFileDependencies   se uma alteração em um arquivo pode alterar os diagnósticos de outro
++     entry #workspaceDiagnostics   se o servidor relata diagnósticos para o workspace inteiro
++   entry .ExecuteCommandOptions   os comandos que um servidor executa
+
+% 1 1 0 0b318d732622af281e7c0e8689d29f48
+
+@ 0 3 0 0a22787d85ed650d125a8a61864a2a88
++         Derivado de cada registro `command(name)`; ausente quando não há nenhum.
++     entry #commands   os nomes dos comandos registrados
++   entry .ServerCapabilities   o que um servidor diz ao seu editor que é capaz de fazer
+
+% 1 1 0 17b8db6a248ad58506523bc659836471
+
+@ 0 6 0 01586a9c75c8717801a4cfae2251a2a4
++         O registro enviado no resultado de `initialize`. Um servidor construído com
++         `Lsp.listen` nunca escreve um: `Registry#capabilities` o deriva dos handlers
++         registrados, com cada flag de provedor definida exatamente quando seu handler existe,
++         com `textDocumentSync` sempre `Incremental`, e a chamada `capabilities(adjust)` altera
++         o registro derivado por último. Um proxy altera o registro do servidor upstream com
++         `rewrite.capabilities`, e um cliente lê um de `Connection#initialize`.
+
+% 2 1 0 0a9b7b28d74ca6bf005bf64723c32d6d
+
+% 3 1 0 0b116db7fe0ebb4405e1ab16ad884ee1
+
+% 0 1 0 05f3f18729d91c431d1da6b341e36773
+
+% 0 1 0 18e06184449b199013aa1af8d1767c64
+
+% 0 1 0 0cdd36f399563c62133e203508d9c721
+
+% 1 1 0 15e979bcbf392c3509c401b07a387086
+
+@ 0 3 0 162feb40514bef540714541f0e4b4948
++         Todo campo é opcional e tem `Unset` como padrão, que o codec omite.
++     entry #textDocumentSync   como o servidor quer que as alterações nos documentos sejam informadas
++     entry #completionProvider   conclusão, com suas opções
+
+% 0 1 0 05abcd617d77f4611c27139a7f49f78b
+
+@ 0 21 0 17c9e9c6c7397c0509e18b3652a95ddf
++     entry #definitionProvider   ir para a definição
++     entry #referencesProvider   encontrar referências
++     entry #documentSymbolProvider   símbolos do documento
++     entry #documentFormattingProvider   formatação do documento inteiro
++     entry #renameProvider   renomeação
++     entry #codeActionProvider   ações de código
++     entry #signatureHelpProvider   ajuda de assinatura, com seus caracteres de disparo
++     entry #declarationProvider   ir para a declaração
++     entry #typeDefinitionProvider   ir para a definição de tipo
++     entry #implementationProvider   ir para a implementação
++     entry #documentHighlightProvider   destaques no documento
++     entry #foldingRangeProvider   intervalos de dobra
++     entry #selectionRangeProvider   intervalos de seleção
++     entry #colorProvider   cores do documento e apresentações de cor
++     entry #documentRangeFormattingProvider   formatação de intervalo
++     entry #documentLinkProvider   links de documento, com suas opções
++     entry #codeLensProvider   code lenses, com suas opções
++     entry #documentOnTypeFormattingProvider   formatação durante a digitação, com seus caracteres de disparo
++     entry #callHierarchyProvider   hierarquia de chamadas
++     entry #typeHierarchyProvider   hierarquia de tipos
++     entry #semanticTokensProvider   tokens semânticos, com sua legenda
+
+% 0 1 0 1ee93aaa71d8f19e0d5047f11e0763b6
+
+@ 0 2 0 07e3509e9e6e074a0a012f673c17c60f
++     entry #inlineValueProvider   valores inline
++     entry #linkedEditingRangeProvider   intervalos de edição vinculada
+
+% 0 1 0 00789a7bddfa72161fb56ae5a4df2574
+
+@ 0 4 0 1e7ab103a606bcdf1f6dd3e24615cc05
++     entry #diagnosticProvider   diagnósticos por pull, com suas opções
++     entry #workspaceSymbolProvider   símbolos do workspace
++     entry #executeCommandProvider   comandos, com seus nomes
++   entry .InitializeResult   a resposta do servidor a `initialize`: suas capacidades e sua identidade
+
+% 1 1 0 10d51af5abb576220ebd73ae2e19ed1a
+
+@ 0 7 0 0b98865e07cfa9a902d2b30b478cec00
++         Devolvido por `Connection#initialize`, e o payload que `rewrite.capabilities` altera
++         em um proxy. O objeto companheiro guarda o codec JSON derivado.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um resultado malformado lança `Json.Error`
++     entry #capabilities   o que o servidor é capaz de fazer
++     entry #serverInfo   o nome e a versão do servidor, se ele os informou
++   entry .MarkupContent   texto para exibição, em Markdown a menos que seu tipo diga o contrário
+
+% 1 1 0 051a3345236cdb990206b0f9f4447b1b
+
+@ 0 5 0 0cd7de541061bd0c0ea78f90cbc4e66f
++         O que um `Hover` e a documentação de um `CompletionItem` carregam. O `kind` tem
++         `markdown` como padrão; `plaintext` é o outro valor que o protocolo conhece.
++     entry #kind   `markdown` (o padrão) ou `plaintext`
++     entry #value   o texto
++   entry .CompletionContext   por que o editor pediu conclusão
+
+% 1 1 0 16b6bad6f068596d0954a6396445a870
+
+@ 0 6 0 0909a51e203048c8078a6b68d41ce522
++         O `triggerKind` é o número do protocolo: 1 para uma requisição explícita, 2 para um
++         caractere de disparo (então informado em `triggerCharacter`), 3 para um novo pedido de
++         uma lista incompleta. Um handler `complete` o lê como `context`, que é `Unset` quando
++         o editor não enviou nenhum.
++     entry #triggerKind   o número do protocolo para o tipo de disparo
++     entry #triggerCharacter   o caractere digitado, quando um caractere de disparo pediu conclusão
++   entry .CompletionItem   uma conclusão: seu rótulo, tipo, detalhe, documentação e texto de inserção
+
+% 1 1 0 1de14105d72edd77070e69c137a9b709
+
+@ 0 3 0 1f7235018a9c082813434e0f8c9a6132
++         O que um `CompletionList` contém, e o que `resolveCompletion` preenche sob demanda: um
++         servidor que calcula a documentação sob demanda devolve um item vazio em `complete` e
++         o completa em `resolveCompletion`, levando em `data` o que for preciso.
+
+% 2 1 0 1ac53f4df635e7c508f9e44cc5c13dc0
+
+% 3 1 0 1501487f40b4d9670dc6e0319c9ce682
+
+% 0 1 0 0e460df07746c85506a1fc77fb0c44c8
+
+% 1 1 0 03202d9800b2296e04459beee3edbe1e
+
+@ 0 9 0 185027609091ad9c000f1b17d1efe518
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um item malformado lança `Json.Error`
++     entry #label   o texto mostrado na lista, e inserido a menos que `insertText` diga o contrário
++     entry #kind   o tipo do item, que o editor exibe como um ícone
++     entry #detail   um tipo ou assinatura curta, mostrado ao lado do rótulo
++     entry #documentation   documentação mais longa, como markup
++     entry #insertText   o texto inserido, quando difere do rótulo
++     entry #data   qualquer coisa que o servidor queira receber de volta em `completionItem/resolve`, como JSON bruto
++   entry .CompletionList   os itens que uma requisição de conclusão devolve, e se há mais
+
+% 1 1 0 0dad51dc7ffd7605029ccf1433732e1c
+
+@ 0 7 0 0454fce04485c4c012c3ce2844e240f3
++         O que um handler `complete` devolve. `isIncomplete` diz ao editor que pergunte de novo
++         à medida que o usuário digita, em vez de filtrar a lista que já tem.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; uma lista malformada lança `Json.Error`
++     entry #isIncomplete   se mais digitação deve consultar o servidor novamente
++     entry #items   as conclusões
++   entry .Hover   o que um hover mostra: markup, e o intervalo a que se aplica
+
+% 1 1 0 089e54ec651ca1d40547f2349c53d041
+
+@ 0 9 0 0e327d7a59929ae61c342c577c4bbb03
++         O que um handler `hover` devolve dentro de um `Optional`: `Unset` significa nada a
++         mostrar, e é transmitido como `null`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um hover malformado lança `Json.Error`
++     entry #contents   o markup mostrado
++     entry #range   o intervalo que o hover descreve, que o editor pode destacar, se informado
++   entry .ReferenceContext   se uma requisição de referências quer incluir a declaração
++     entry #includeDeclaration   se a própria declaração do símbolo conta como referência
++   entry .DocumentSymbol   um símbolo em um documento, com seu tipo, intervalos e filhos
+
+% 1 1 0 08b62d9d325271fa10566d15c6a4c527
+
+@ 0 16 0 1bccd600e985fd13110635eabed24612
++         O que um handler `documentSymbols` devolve em forma de lista, e a forma hierárquica do
++         símbolo do protocolo (em oposição ao `WorkspaceSymbol` plano): um símbolo aninha seus
++         `children`, e seu `range` abrange a definição inteira, enquanto `selectionRange`
++         destaca o seu nome.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um símbolo malformado lança `Json.Error`
++     entry #name   o nome do símbolo
++     entry #kind   o tipo de símbolo
++     entry #range   a definição inteira
++     entry #selectionRange   o nome do símbolo dentro da definição
++     entry #detail   um tipo ou assinatura, se houver
++     entry #children   símbolos aninhados, se houver
++   entry .FormattingOptions   as preferências de formatação do editor: tamanho da tabulação e espaços ou tabulações
++     entry #tabSize   a largura de uma tabulação
++     entry #insertSpaces   se a indentação usa espaços em vez de tabulações
++   entry .TextEdit   um intervalo de um documento substituído por um novo texto
+
+% 1 1 0 0efcd25d5f179d980e549cab24f703b3
+
+@ 0 7 0 19e552dfe419f7631e32a7750463bcab
++         O que `format`, `formatRange`, `formatOnType` e `savingEdits` devolvem em forma de
++         lista, e o que um `WorkspaceEdit` guarda por documento.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; uma edição malformada lança `Json.Error`
++     entry #range   o intervalo substituído
++     entry #newText   o texto de substituição
++   entry .WorkspaceEdit   edições em vários documentos, indexadas por URI
+
+% 1 1 0 0b5502bde7997e671494a548beea0f65
+
+@ 0 8 0 0ca30f4c757104ad013e09ba931c14ec
++         O que `rename` devolve, e o que os handlers `creatingFiles`, `renamingFiles` e
++         `deletingFiles` podem devolver para alterar uma operação de arquivo antes que ela
++         aconteça. Apenas a forma `changes` da edição do protocolo é modelada, não as alterações
++         de documento com versões.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; uma edição malformada lança `Json.Error`
++     entry #changes   as edições de cada documento, por URI, se houver
++   entry .CodeActionContext   os diagnósticos no intervalo para o qual uma ação de código foi solicitada
+
+% 1 1 0 1731ef674e3bf0da109e145fdee067fe
+
+@ 0 4 0 1e56933b8c88b1e103fe5efdfcbdbf21
++         Um handler `codeActions` o lê como `context`; uma correção rápida costuma ser calculada
++         a partir desses diagnósticos.
++     entry #diagnostics   os diagnósticos que o editor mostra no intervalo
++   entry .CodeAction   uma ação com título que o editor pode oferecer: uma edição, sob um tipo
+
+% 1 1 0 1b3131017c331b9417900155c8b8f239
+
+@ 0 16 0 16bcda28eb75d90d18f75a4581c71071
++         O que um handler `codeActions` devolve em forma de lista. O `kind` é uma string do
++         protocolo separada por pontos, como `quickfix` ou `refactor.extract`; `edit` pode ficar
++         `Unset` e ser preenchido por `resolveCodeAction`, levando em `data` o que for preciso.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; uma ação malformada lança `Json.Error`
++     entry #title   o título mostrado ao usuário
++     entry #kind   o tipo da ação, como `quickfix`
++     entry #edit   a edição que a ação aplica, se já calculada
++     entry #data   qualquer coisa que o servidor queira receber de volta em `codeAction/resolve`, como JSON bruto
++   entry .ParameterInformation   um parâmetro de uma assinatura, por seu rótulo
++     entry #label   o rótulo do parâmetro, como aparece na assinatura
++   entry .SignatureInformation   uma assinatura: seu rótulo, documentação e parâmetros
++     entry #label   a assinatura, como texto
++     entry #documentation   documentação, como markup, se houver
++     entry #parameters   os parâmetros, se listados
++   entry .SignatureHelp   as assinaturas em um ponto de chamada, e qual delas está ativa
+
+% 1 1 0 189021e05e73e1fc0f19b030e24812d6
+
+@ 0 7 0 0ae5dad27a9fd59106ea5667f1dca553
++         O que um handler `signatureHelp` devolve dentro de um `Optional`: `Unset` significa
++         nada a mostrar.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #signatures   as assinaturas candidatas
++     entry #activeSignature   o índice da assinatura a mostrar primeiro, se houver
++   entry .DocumentHighlight   um intervalo a destacar, como leitura, escrita ou texto simples
+
+% 1 1 0 19b46a408b59ccbb0417cc1b0130d024
+
+@ 0 7 0 08533b117d3e88bb0daf5ba94bc2e471
++         O que um handler `documentHighlights` devolve em forma de lista: cada ocorrência do
++         símbolo sob o cursor.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um destaque malformado lança `Json.Error`
++     entry #range   o intervalo a destacar
++     entry #kind   se a ocorrência lê, escreve ou é texto simples
++   entry .FoldingRange   uma região de linhas que pode ser dobrada, opcionalmente de um tipo
+
+% 1 1 0 01bc93c2a2783b7a0465dd42e53ee52a
+
+@ 0 11 0 0b2ead50dcc4bc391dba05b1666bc0cb
++         O que um handler `foldingRanges` devolve em forma de lista. O `kind` é uma string do
++         protocolo, como `comment`, `imports` ou `region`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um intervalo malformado lança `Json.Error`
++     entry #startLine   a primeira linha dobrada
++     entry #startCharacter   o caractere da primeira linha em que a dobra começa, se não for o fim
++     entry #endLine   a última linha dobrada
++     entry #endCharacter   o caractere da última linha em que a dobra termina, se não for o fim
++     entry #kind   `comment`, `imports`, `region` ou um tipo próprio do servidor
++     entry #collapsedText   texto mostrado no lugar das linhas dobradas, se houver
++   entry .SelectionRange   um intervalo e o intervalo que o contém, para o qual ele se expande
+
+% 1 1 0 1943a7bba71096cd0cfe5b2598d9639e
+
+@ 0 8 0 049ae03ab403a0941fd406395ab9dbb5
++         O que um handler `selectionRanges` devolve, um por posição pedida: uma cadeia de
++         intervalos cada vez mais largos, cada um o `parent` do anterior, que o comando de
++         expandir seleção do editor percorre.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um intervalo malformado lança `Json.Error`
++     entry #range   este intervalo
++     entry #parent   o próximo intervalo mais largo, se houver
++   entry .Command   um comando com título e argumentos arbitrários, como os que uma code lens ou uma ação carrega
+
+% 1 1 0 16b90d01cc1f2ad914fa854346a17651
+
+@ 0 7 0 1a9f8c7a10036d511044cfa8aad76c7c
++         Os `arguments` são o `LSPAny[]` do protocolo, mantidos como `Json` bruto. O editor
++         executa o comando enviando `workspace/executeCommand`, ao qual um registro
++         `command(name)` responde.
++     entry #title   o título mostrado ao usuário
++     entry #command   o nome do comando
++     entry #arguments   os argumentos, como um array JSON bruto, se houver
++   entry .CodeLens   um comando mostrado inline em um intervalo
+
+% 1 1 0 174ded89327152dd1e43009a47e1d83b
+
+@ 0 8 0 0d0f48672b28c64204363723364227e6
++         O que um handler `codeLenses` devolve em forma de lista. O `command` pode ficar `Unset`
++         e ser preenchido por `resolveCodeLens`, levando em `data` o que for preciso.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; uma code lens malformada lança `Json.Error`
++     entry #range   onde a code lens é mostrada
++     entry #command   o comando que a code lens executa, se já calculado
++     entry #data   qualquer coisa que o servidor queira receber de volta em `codeLens/resolve`, como JSON bruto
++   entry .DocumentLink   um intervalo que aponta para um destino
+
+% 1 1 0 0136c50863e60ea508c6e9bab311cc9c
+
+@ 0 14 0 0cc8551087d1498519094f7cdadc76f7
++         O que um handler `documentLinks` devolve em forma de lista. O `target` pode ficar
++         `Unset` e ser preenchido por `resolveDocumentLink`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um link malformado lança `Json.Error`
++     entry #range   o intervalo com o link
++     entry #target   o URI para o qual o intervalo aponta, se já calculado
++     entry #tooltip   texto mostrado ao passar o mouse sobre o link, se houver
++     entry #data   qualquer coisa que o servidor queira receber de volta em `documentLink/resolve`, como JSON bruto
++   entry .Color   uma cor como vermelho, verde, azul e alfa, cada um de 0 a 1
++     entry #red   o componente vermelho
++     entry #green   o componente verde
++     entry #blue   o componente azul
++     entry #alpha   o componente alfa
++   entry .ColorInformation   um literal de cor em um documento: seu intervalo e seu valor
+
+% 1 1 0 1d0d302ad3ee16621f413064badab3b4
+
+@ 0 7 0 116dc11e594c537c174b2eaa0b6938bc
++         O que um handler `documentColors` devolve em forma de lista; o editor mostra uma
++         amostra de cor em cada um.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #range   onde está o literal de cor
++     entry #color   a cor que ele denota
++   entry .ColorPresentation   uma forma de escrever uma cor, como uma edição com rótulo
+
+% 1 1 0 00144ee3e08302ce04e449d1c478e276
+
+@ 0 8 0 18a8dc698b4b3309177fea124c3dc122
++         O que um handler `colorPresentations` devolve em forma de lista: cada uma é uma grafia
++         da cor que o usuário escolheu (`#ff0000`, `rgb(255, 0, 0)`, …) com a edição que a
++         escreve.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #label   a grafia mostrada ao usuário
++     entry #textEdit   a edição que a escreve, se diferir de inserir o rótulo
++     entry #additionalTextEdits   outras edições, como um import, se houver
++   entry .CallHierarchyItem   um chamável na hierarquia de chamadas: um símbolo com sua localização
+
+% 1 1 0 1becdebe912e47ae1f038dbf590d3d25
+
+@ 0 24 0 121ca0023ebc2bd90b6b2dabe7c9cb8e
++         O que o handler de preparação de `callHierarchy` devolve em forma de lista, e o que
++         seus handlers de entrada e de saída recebem como `item`. `data` leva o que o servidor
++         precisar para reencontrar o chamável quando o editor pedir quem o chama ou quem ele
++         chama.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um item malformado lança `Json.Error`
++     entry #name   o nome do chamável
++     entry #kind   o tipo de símbolo
++     entry #tags   as tags do símbolo, como depreciado, se houver
++     entry #detail   uma assinatura ou tipo, se houver
++     entry #uri   o documento em que o chamável é definido
++     entry #range   a definição inteira
++     entry #selectionRange   o nome do chamável dentro da definição
++     entry #data   qualquer coisa que o servidor queira receber de volta com o item, como JSON bruto
++   entry .CallHierarchyIncomingCall   quem chama um item, e onde, no chamador, estão as chamadas
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #from   o item que chama
++     entry #fromRanges   os intervalos dentro do chamador onde as chamadas acontecem
++   entry .CallHierarchyOutgoingCall   quem um item chama, e onde, no item, estão as chamadas
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #to   o item chamado
++     entry #fromRanges   os intervalos dentro do chamador onde as chamadas acontecem
++   entry .TypeHierarchyItem   um tipo na hierarquia de tipos: um símbolo com sua localização
+
+% 1 1 0 1cd6f2debc0cff801772c6f513a1e055
+
+@ 0 13 0 06d2b3152f6236881bffb0f7188ea50e
++         O que o handler de preparação de `typeHierarchy` devolve em forma de lista, e o que
++         seus handlers de supertipos e de subtipos recebem como `item`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um item malformado lança `Json.Error`
++     entry #name   o nome do tipo
++     entry #kind   o tipo de símbolo
++     entry #tags   as tags do símbolo, se houver
++     entry #detail   mais detalhes, se houver
++     entry #uri   o documento em que o tipo é definido
++     entry #range   a definição inteira
++     entry #selectionRange   o nome do tipo dentro da definição
++     entry #data   qualquer coisa que o servidor queira receber de volta com o item, como JSON bruto
++   entry .SemanticTokensLegend   os tipos e modificadores de token que os dados de token de um servidor indexam
+
+% 1 1 0 11f3ed5241f24dc6088f9a256f421982
+
+@ 0 6 0 06d9ecd997751ace1b65a340fcbce21e
++         Informada no registro, `semanticTokens(legend)`, e anunciada nas capacidades: cada
++         token em `SemanticTokens#data` indica seu tipo e seus modificadores por índice nessas
++         listas.
++     entry #tokenTypes   os tipos de token, na ordem dos índices
++     entry #tokenModifiers   os modificadores de token, na ordem dos bits
++   entry .SemanticTokens   os tokens semânticos de um documento, como o array plano de inteiros do protocolo
+
+% 1 1 0 17de607efb6edc251b41b43ebac6406e
+
+@ 0 12 0 07033fd9efedacf91b9e69b1fb6fb51e
++         O que os handlers `semanticTokens` e `semanticTokensRange` devolvem. `data` é a
++         codificação do protocolo: cinco inteiros por token — delta de linha, delta do caractere
++         inicial, comprimento, índice do tipo de token, conjunto de bits dos modificadores —,
++         relativos ao token anterior.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #resultId   um identificador para este resultado, que uma requisição de delta posterior indica
++     entry #data   os tokens, cinco inteiros cada, relativos ao token anterior
++   entry .SemanticTokensEdit   uma inserção em um array de tokens anterior
++     entry #start   o índice nos dados anteriores em que a edição começa
++     entry #deleteCount   quantos inteiros são removidos
++     entry #data   os inteiros inseridos, se houver
++   entry .SemanticTokensDelta   as edições que transformam um array de tokens anterior no atual
+
+% 1 1 0 1124e2b60d5eed4d084813f6c6c0dc7e
+
+@ 0 6 0 18705961d4a78d551b51442ac47ae834
++         O que um handler `semanticTokensDelta` devolve, dado `previousResultId`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #resultId   um identificador para o resultado após as edições
++     entry #edits   as inserções a aplicar
++   entry .InlayHint   um rótulo mostrado inline em uma posição, como um tipo inferido
+
+% 1 1 0 1fa9bf6b9e0147971a64a5e89da18595
+
+@ 0 17 0 05a822aaf455def9130e8c5f22aea3c3
++         O que um handler `inlayHints` devolve em forma de lista. `tooltip` pode ficar `Unset` e
++         ser preenchido por `resolveInlayHint`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; uma dica malformada lança `Json.Error`
++     entry #position   onde a dica é mostrada
++     entry #label   o texto da dica
++     entry #kind   se a dica é um tipo ou um nome de parâmetro
++     entry #tooltip   texto mostrado ao passar o mouse sobre a dica, se houver
++     entry #paddingLeft   se deve haver preenchimento antes da dica
++     entry #paddingRight   se deve haver preenchimento depois da dica
++     entry #data   qualquer coisa que o servidor queira receber de volta em `inlayHint/resolve`, como JSON bruto
++   entry .InlineValueContext   o estado do depurador sob o qual uma requisição de valores inline é feita
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #frameId   o stack frame em que o depurador está parado
++     entry #stoppedLocation   o intervalo da instrução em que o depurador está parado
++   entry .InlineValueText   um valor mostrado inline em um intervalo durante a depuração
+
+% 1 1 0 16b938231d1db4410f2757135b7d1af5
+
+@ 0 19 0 1a28203a9717d146114b5d054350fa9e
++         O que um handler `inlineValues` devolve em forma de lista. Apenas a forma de texto
++         literal do valor inline do protocolo é modelada.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #range   onde o valor é mostrado
++     entry #text   o texto mostrado
++   entry .LinkedEditingRanges   intervalos editados em conjunto, como os dois nomes de uma tag
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #ranges   os intervalos que mudam em conjunto
++     entry #wordPattern   uma expressão regular que o texto vinculado deve satisfazer, se houver
++   entry .Moniker   uma identidade estável para um símbolo entre projetos
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um moniker malformado lança `Json.Error`
++     entry #scheme   o esquema do moniker, como `tsc` ou `.NET`
++     entry #identifier   o identificador dentro do esquema
++     entry #unique   quão único o moniker é: `document`, `project`, `group`, `scheme` ou `global`
++     entry #kind   `import`, `export` ou `local`, se informado
++   entry .DocumentDiagnosticReport   a resposta de diagnósticos por pull para um documento
+
+% 1 1 0 0b3054613efa892a0d0d4074479026e3
+
+@ 0 9 0 1fa4f7d7fcd980b119aa0c336fcd2d94
++         O que um handler `diagnostics` devolve, e o que `Connection#diagnostics` pede. Apenas o
++         tipo `full` é modelado: `kind` o tem como padrão, e um relatório inalterado é expresso
++         devolvendo o mesmo `resultId`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um relatório malformado lança `Json.Error`
++     entry #kind   `full`, o padrão
++     entry #resultId   um identificador para este resultado, que uma requisição posterior indica
++     entry #items   os diagnósticos
++   entry .WorkspaceSymbol   um símbolo em qualquer lugar do workspace, com sua localização
+
+% 1 1 0 0bd94553b78ea57a1af74fcebe1f7115
+
+@ 0 12 0 005830f09d1d1ca51227d71ba0470069
++         O que um handler `workspaceSymbols` devolve em forma de lista, em resposta a uma
++         `query`; a contraparte plana de `DocumentSymbol`. `resolveWorkspaceSymbol` pode
++         preencher a localização sob demanda.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um símbolo malformado lança `Json.Error`
++     entry #name   o nome do símbolo
++     entry #kind   o tipo de símbolo
++     entry #tags   as tags do símbolo, se houver
++     entry #location   onde o símbolo está
++     entry #containerName   o nome do contêiner do símbolo, se houver
++     entry #data   qualquer coisa que o servidor queira receber de volta em `workspaceSymbol/resolve`, como JSON bruto
++   entry .FileEvent   um arquivo observado que foi criado, alterado ou excluído
+
+% 1 1 0 1446d0dee6f1b3c714975da753cc4221
+
+@ 0 7 0 15dcdce70243c45e151e67275f7bc9c0
++         O que um handler `watchedFiles` recebe em forma de lista como `changes`. O campo é
++         escrito `` `type` `` em Scala, como no protocolo.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um evento malformado lança `Json.Error`
++     entry #uri   o URI do arquivo
++     entry #type   se ele foi criado, alterado ou excluído
++   entry .WorkspaceFoldersChangeEvent   pastas adicionadas ao workspace e removidas dele
+
+% 1 1 0 181ac064d8e05c721db513b81ffa1e18
+
+@ 0 6 0 140c6504347d29e5071b7ce9cba018f3
++         O que um handler `foldersChanged` recebe como `event`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um evento malformado lança `Json.Error`
++     entry #added   as pastas adicionadas
++     entry #removed   as pastas removidas
++   entry .FileCreate   um arquivo prestes a ser criado, ou recém-criado
+
+% 1 1 0 1c483b7fe62ce8ac1fdc8dcd0afca7a1
+
+@ 0 5 0 1685e1b9eb9515a713e9b7d69ee6ebae
++         O que os handlers `creatingFiles` e `createdFiles` recebem em forma de lista como
++         `files`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #uri   o URI do arquivo
++   entry .FileRename   um arquivo prestes a ser renomeado, ou recém-renomeado
+
+% 1 1 0 043123ae2f4fa02302c5511d2021b565
+
+@ 0 6 0 0bc6901a1b32149b149e6fa5571a772a
++         O que os handlers `renamingFiles` e `renamedFiles` recebem em forma de lista como
++         `files`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #oldUri   o URI antes da renomeação
++     entry #newUri   o URI depois dela
++   entry .FileDelete   um arquivo prestes a ser excluído, ou recém-excluído
+
+% 1 1 0 17878dd0477c936e0e18c63b6d9bf37f
+
+@ 0 5 0 17a90903bd9a093007e0a8b3d2dac6b2
++         O que os handlers `deletingFiles` e `deletedFiles` recebem em forma de lista como
++         `files`.
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um valor malformado lança `Json.Error`
++     entry #uri   o URI do arquivo
++   entry .Diagnostic   um problema em um intervalo: sua severidade, código, origem e mensagem
+
+% 1 1 0 0ff878951b3c017b036e6c070d5aaccd
+
+@ 0 2 0 1a2416e32e80803e0ff4f09faa243eab
++         O que um servidor publica com `client.publishDiagnostics`, devolve de um handler
++         `diagnostics`, e o que chega ao `Listener#diagnostics` de um cliente.
+
+% 2 1 0 11e7dbcdaf2aca7a00b21a02da98cc16
+
+% 3 1 0 166474dd48a55cbf1107e4c4a6a418bd
+
+% 0 1 0 1380e6796f1b26ad19ed9f56ef85fd06
+
+% 0 1 0 12cbd396243af70611d1b5d969d4904e
+
+% 0 1 0 00ac009b165f3756151ebe651e016b0c
+
+% 0 1 0 037ab3350a98f5bf09005031deb28e60
+
+% 1 1 0 1ceeef6e45cf698b1d18b0497f0f7ed1
+
+@ 0 10 0 05df4f0468ec0cca1bab3357ed235448
++     entry .encodable   o encoder JSON derivado
++     entry .decodable   o decoder JSON derivado; um diagnóstico malformado lança `Json.Error`
++     entry #range   onde está o problema
++     entry #severity   erro, aviso, informação ou dica, se informado
++     entry #code   o código do problema, como texto, se houver
++     entry #source   o que o relatou, como o nome de um compilador, se informado
++     entry #message   a mensagem mostrada ao usuário
++   entry .MessageActionItem   um botão de um `window/showMessageRequest`, por seu título
++     entry #title   o título do botão
++   entry .DiagnosticSeverity   a gravidade de um diagnóstico: `Error`, `Warning`, `Information` ou `Hint`
+
+% 1 1 0 0924c7e0a7fa222f09123c223c63fdd5
+
+@ 0 7 0 190bcb73411267bc06ef763aa7d3b758
++         Um enum do protocolo com valores inteiros, numerado a partir de 1 na transmissão, de
++         modo que `Error` é codificado como `1` e `Warning` como `2`. O `encodable` e o
++         `decodable` do objeto companheiro são o codec; o decoder recebe a `Tactic[Json.Error]`
++         de quem chama e a captura, então decodificar uma severidade exige uma tática em escopo,
++         e um inteiro transmitido fora do intervalo é lançado por meio dela.
++     entry .encodable   codifica a severidade como seu número no protocolo, a partir de 1
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .MessageType   o nível de uma mensagem de janela ou de log: `Error`, `Warning`, `Info` ou `Log`
+
+% 1 1 0 1bec23ffcc77b52b05d6d5cab4bca272
+
+@ 0 6 0 04b0f2c123f910de14fbdc7097bcb3f0
++         Numerado a partir de 1 na transmissão. `Client#showMessage` envia `Info` e
++         `Client#logMessage` envia `Log`; os métodos de transmissão aceitam qualquer nível. O
++         decoder captura a `Tactic[Json.Error]` de quem chama.
++     entry .encodable   codifica o nível como seu número no protocolo, a partir de 1
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .TextDocumentSyncKind   como as alterações nos documentos são informadas: `None`, `Full` ou `Incremental`
+
+% 1 1 0 1d757bf6570eab760f4f82bc2ce7c9e9
+
+@ 0 7 0 1877b98f6b42da8e0345298e7b9aea6f
++         O único enum numerado a partir de 0 na transmissão, de modo que `None` é `0`, `Full` é
++         `1` e `Incremental` é `2`. Um servidor construído com `Lsp.listen` sempre anuncia
++         `Incremental`; o estado de um documento é mantido correto sob qualquer das duas formas
++         de evento de alteração. O decoder captura a `Tactic[Json.Error]` de quem chama.
++     entry .encodable   codifica o tipo como seu número no protocolo, a partir de 0
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .CompletionItemKind   o tipo de uma conclusão: `Text`, `Method`, `Function`, …, `TypeParameter`
+
+% 1 1 0 12b31ab84b30dda00d2a2bb04cf511ed
+
+@ 0 10 0 1b308f53ffba5c051abbc6decce86255
++         Os vinte e cinco tipos do protocolo, na ordem de transmissão a partir de 1: `Text`,
++         `Method`, `Function`, `Constructor`, `Field`, `Variable`, `Class`, `Interface`,
++         `Module`, `Property`, `Unit`, `Value`, `Enum`, `Keyword`, `Snippet`, `Color`, `File`,
++         `Reference`, `Folder`, `EnumMember`, `Constant`, `Struct`, `Event`, `Operator`,
++         `TypeParameter`. Alguns compartilham o nome com tipos Scala (`Text`, `Unit`), o que é
++         inofensivo para casos de enum, mas significa que `CompletionItemKind.Unit` precisa ser
++         qualificado. O decoder captura a `Tactic[Json.Error]` de quem chama.
++     entry .encodable   codifica o tipo como seu número no protocolo, a partir de 1
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .SymbolKind   o tipo de um símbolo: `File`, `Module`, `Namespace`, `Package`, `Class`, …, `TypeParameter`
+
+% 1 1 0 13a117883daf552d0e85c1c6a5e651c2
+
+@ 0 9 0 1513cc3f252e8d58105a2a183578fdd4
++         Os vinte e seis tipos do protocolo, na ordem de transmissão a partir de 1: `File`,
++         `Module`, `Namespace`, `Package`, `Class`, `Method`, `Property`, `Field`,
++         `Constructor`, `Enum`, `Interface`, `Function`, `Variable`, `Constant`, `String`,
++         `Number`, `Boolean`, `Array`, `Object`, `Key`, `Null`, `EnumMember`, `Struct`, `Event`,
++         `Operator`, `TypeParameter`. Os casos que nomeiam tipos Scala são escritos entre
++         crases no código-fonte e precisam ser qualificados (`SymbolKind.String`). O decoder
++         captura a `Tactic[Json.Error]` de quem chama.
++     entry .encodable   codifica o tipo como seu número no protocolo, a partir de 1
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .DocumentHighlightKind   o que uma ocorrência faz: `Text`, `Read` ou `Write`
+
+% 1 1 0 09dc00ce562eae700c566de512429aa6
+
+@ 0 4 0 1f52e916d4fc15e51d67d1171b933019
++         Numerado a partir de 1 na transmissão. O decoder captura a `Tactic[Json.Error]` de quem
++         chama.
++     entry .encodable   codifica o tipo como seu número no protocolo, a partir de 1
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .TextDocumentSaveReason   por que um documento está sendo salvo: `Manual`, `AfterDelay` ou `FocusOut`
+
+% 1 1 0 0ea8e8b5f500858a1419535881d66e61
+
+@ 0 5 0 0531de880e6acaa10fc3d7c27b143a7a
++         O que os handlers `saving` e `savingEdits` leem como `reason`. Numerado a partir de 1
++         na transmissão. O decoder captura a `Tactic[Json.Error]` de quem chama.
++     entry .encodable   codifica o motivo como seu número no protocolo, a partir de 1
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .SymbolTag   uma tag em um símbolo; apenas `Deprecated` está definida
+
+% 1 1 0 12c9611bcd9299ae07ac1b6e181e79f8
+
+@ 0 4 0 1d182ef0181866a5062fef8309aabe22
++         Numerado a partir de 1 na transmissão. O decoder captura a `Tactic[Json.Error]` de quem
++         chama.
++     entry .encodable   codifica a tag como seu número no protocolo, a partir de 1
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .InlayHintKind   o que uma inlay hint mostra: um `Type` ou o nome de um `Parameter`
+
+% 1 1 0 1f31d9a93d3c3f2603193f5e1dccec9b
+
+@ 0 4 0 19be0012e11f10f71adf537ed8b8daf6
++         Numerado a partir de 1 na transmissão. O decoder captura a `Tactic[Json.Error]` de quem
++         chama.
++     entry .encodable   codifica o tipo como seu número no protocolo, a partir de 1
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .FileChangeType   o que aconteceu com um arquivo observado: `Created`, `Changed` ou `Deleted`
+
+% 1 1 0 080e0759c0cfb14a1455a96d5e947a6f
+
+@ 0 5 0 0a8f8283f5b0550115c675ecd7934678
++         O `type` de um `FileEvent`. Numerado a partir de 1 na transmissão. O decoder captura a
++         `Tactic[Json.Error]` de quem chama.
++     entry .encodable   codifica a alteração como seu número no protocolo, a partir de 1
++     entry .decodable   decodifica um número do protocolo, lançando `Json.Error` pela tática de quem chama
++   entry .Document   uma visão viva do documento aberto de que um handler trata, emprestada por um despacho
+
+% 1 1 0 10321c547fdd0aa802b5c70ebae0b033
+
+@ 0 7 0 0d58cf5967bf46d710b182c41ea51bca
++         O handle que um handler com escopo de documento lê como `document`: o texto que o
++         editor informou até agora para o documento indicado pela requisição, com as alterações
++         incrementais aplicadas nos deslocamentos UTF-16, além de acesso por linha, conversão
++         entre posições do protocolo e deslocamentos, e a palavra sob uma posição. É uma
++         capability exclusiva, emprestada durante um handler e confinada a ele — atribuir
++         `document` a uma variável externa, ou capturá-lo em uma tarefa, é um erro de
++         compilação —, enquanto todo valor que ele devolve (`Text`, `Position`, `Range`) é um
++         instantâneo puro que pode sair.
+
+% 2 1 0 0d34d435439ca74507908d39a06a730b
+
+% 3 1 0 0d8c8aeed391078a0b0a4a29b89529d2
+
+% 5 1 0 04401f72a07823b2068be4a302f803df
+
+% 6 1 0 0fa06b4a8ba87b160d84294f9d4ebe64
+
+% 8 1 0 0356dbea7d58d15d0c937980af2731dd
+
+% 0 1 0 19274639e54b221b19121d8b739c63b3
+
+% 0 1 0 1792055b29582ae70770bd06d1debc0b
+
+% 0 1 0 02e6b160d5ac3a3c041033911b1223f3
+
+% 0 1 0 075e9cd26be316de17a6b63ade28da36
+
+% 1 1 0 1cd3f5836c19e20211ef19536d1737af
+
+@ 0 4 0 16ca23a044b2e614065f8c6dbaa2d38a
++         As posições e os deslocamentos são em unidades de código UTF-16, que são ao mesmo tempo
++         a codificação de posição padrão do protocolo e a unidade dos caracteres de `Text`. Uma
++         posição além do fim do texto ou de sua linha é limitada, como o protocolo exige. As
++         linhas são delimitadas por `\n`, `\r\n` ou `\r`.
+
+@ 0 3 0 1f517b9420a46c49064c5c6aba0c03fa
++         Uma requisição que indica um documento que o editor nunca abriu não chega a nenhum
++         handler: a sessão registra um `Lsp.Error` com o motivo `InvalidParams`, _the document
++         `uri` is not open_, e responde com ele.
+
+% 1 1 0 1af829cb09a2019f10571ff1f3fc14df
+
+% 0 1 0 01d5e0fe46cab8d111e3f32839b9d622
+
+@ 0 17 0 196c03cb22a5fcbd063f35f3167fde9e
++     entry #uri   o URI do documento
++     entry #language   o identificador de linguagem do editor para o documento
++     entry #version   a última versão que o editor informou
++     entry #text   o texto inteiro, como o editor o informou até agora
++     entry #lineCount   o número de linhas, contando uma linha final sem terminador
++     entry #line   o texto de uma linha pelo seu número a partir de zero, sem o terminador, ou `Unset`
++     entry #apply   o texto dentro de um intervalo: `document(range)`
++         O fim é limitado para não ficar antes do início, de modo que um intervalo invertido dá
++         um texto vazio.
++     entry #offset   o deslocamento ordinal de uma posição no texto, limitado ao documento
++     entry #position   a posição de um deslocamento ordinal no texto
++     entry #word   a sequência de letras, dígitos e sublinhados sob uma posição, ou `Unset`
++         A palavra é encontrada estendendo-se para a esquerda e para a direita a partir da
++         posição; uma posição sobre espaço em branco ou pontuação dá `Unset`.
++     entry #fullRange   o intervalo da primeira posição até o fim do texto
++         O que usa um diagnóstico que cobre o documento inteiro.
++   entry .Workspace   o estado da sessão como um handler o vê: documentos abertos, os detalhes do editor, o cliente
+
+% 1 1 0 124c5be15b0dec5d0215ffc3964d4f2b
+
+@ 0 5 0 132c9a22d95e8ff50d21937eff8fdcc1
++         O handle que todo handler lê como `workspace`: os URIs dos documentos abertos, um
++         instantâneo de qualquer um deles, o que o editor informou em `initialize` (o id do
++         processo, nome e versão, raiz, pastas, capacidades e configuração de trace) e
++         `#client`, o canal de volta para o editor. Uma capability exclusiva, confinada a um
++         único despacho como `Document`; os valores que devolve são instantâneos puros.
+
+% 2 1 0 0cd36334fe1a86350911582b4b524e5f
+
+% 3 1 0 01527bf79a0702581d1953f3c94628c3
+
+% 5 1 0 1ca6cfc824b8a36a1ad135f3552c8757
+
+% 6 1 0 0f289bc42dcdb324137c5b23d3a9ab1f
+
+% 8 1 0 077be7f4564b628619763e7c1a269755
+
+% 0 1 0 1854822f7b2231d515f304075de2582d
+
+% 0 1 0 123cf29cffe533e31924003498bd33bb
+
+% 0 1 0 1a10c88bcd1ce3d700e16510e1011367
+
+% 1 1 0 0a4bf5e9e561d0b91524327f3cb60e06
+
+% 0 1 0 0a27b3f29b54626d185e91584e7788d5
+
+% 0 1 0 1451039b6f096e8f1d36f4e0ba7011d3
+
+@ 0 128 0 11c41ec771930edc0d2fc045e545ba26
++     entry #documents   os URIs de todos os documentos que o editor abriu e não fechou
++     entry #document   um instantâneo de um documento aberto por URI, como `TextDocumentItem`, ou `Unset`
++     entry #processId   o id do processo do editor, se ele o informou
++     entry #clientInfo   o nome e a versão do editor, se ele os informou
++     entry #root   o URI raiz do workspace informado pelo editor, se houver
++     entry #folders   as pastas do workspace informadas pelo editor
++     entry #clientCapabilities   as capacidades do editor, como o JSON bruto que ele enviou
++         Não são modeladas, pois o registro de capacidades do cliente é grande e um servidor lê
++         apenas os cantos que lhe interessam; um import de `dynamicAccess.dynamicJson` alcança o
++         seu interior.
++     entry #trace   o nível de trace que o editor definiu por último com `$/setTrace`, se houver
++     entry #client   as notificações que o servidor pode enviar ao seu editor, como um `Lsp.Client`
++         Confinado junto com o workspace: captura o handle do qual foi lido.
++   entry .Focused   a forma de um handler com escopo de documento sem payload
++       `(document: Document^, workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result`. O
++       handler recebe emprestados o documento indicado pela requisição, o workspace e um
++       emissor por meio do qual `raise(Lsp.Error(…))` informa; o resultado é puro, então nada
++       do que foi emprestado pode sair por valor de retorno, closure ou tarefa.
++       `OpenedHandler`, `ClosedHandler`, `DocumentSymbolsHandler`, `FoldingRangesHandler`,
++       `DocumentLinksHandler`, `CodeLensesHandler`, `DocumentColorsHandler` e
++       `SemanticTokensHandler` são instâncias.
++   entry .Focused1   um handler com escopo de documento com um payload com tag
++       Como `Focused`, com um primeiro parâmetro de contexto `payload: payload` que carrega uma
++       tag (`Position aka "position"`, `Range aka "range"`, …) e é lido pelo acessor desse
++       nome. `HoverHandler` é `Focused1[Position aka "position", Optional[Hover]]`.
++   entry .Focused2   um handler com escopo de documento com dois payloads com tag
++       Como `Focused1`, com dois payloads; `CompleteHandler` recebe uma `position` e um
++       `context` opcional, `RenameHandler` uma `position` e um `newName`.
++   entry .Focused3   um handler com escopo de documento com três payloads com tag
++       Como `Focused1`, com três payloads; `FormatOnTypeHandler` recebe uma `position`, o
++       `character` digitado e as `options` de formatação.
++   entry .Ambient   a forma de um handler com escopo de workspace sem payload
++       `(workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result`: nenhum documento isolado é
++       o assunto, então apenas o workspace e o emissor são emprestados. `ReadyHandler` e
++       `TerminatingHandler` são instâncias.
++   entry .Ambient1   um handler com escopo de workspace com um payload com tag
++       Como `Ambient`, com um payload com tag; `WorkspaceSymbolsHandler` lê uma `query`,
++       `CommandHandler` seus `arguments`, `ResolveHandler` seu `item`.
++   entry .ReadyHandler   o handler de `initialized`: `Ambient[Unit]`
++   entry .TerminatingHandler   o handler de `shutdown`: `Ambient[Unit]`
++   entry .OpenedHandler   o handler de `textDocument/didOpen`: `Focused[Unit]`
++   entry .ChangedHandler   o handler de `textDocument/didChange`, com as `changes` aplicadas
++       `Focused1[List[TextDocumentContentChangeEvent] aka "changes", Unit]`; quando ele executa,
++       a sessão já aplicou as alterações, então `document.text` está atualizado.
++   entry .SavedHandler   o handler de `textDocument/didSave`, com o `savedText` se o editor o enviou
++   entry .ClosedHandler   o handler de `textDocument/didClose`: `Focused[Unit]`
++       O documento ainda pode ser lido durante o handler e é removido depois.
++   entry .SavingHandler   o handler de `textDocument/willSave`, com o `reason`
++   entry .SavingEditsHandler   o handler de `textDocument/willSaveWaitUntil`: edições a aplicar antes de salvar
++   entry .HoverHandler   o handler de `textDocument/hover`: de uma `position` a um `Hover` opcional
++   entry .CompleteHandler   o handler de `textDocument/completion`: de `position` e `context` a uma lista
++   entry .DefinitionHandler   o handler de `textDocument/definition`: de uma `position` a localizações
++   entry .ReferencesHandler   o handler de `textDocument/references`, com `includeDeclaration`
++   entry .DocumentSymbolsHandler   o handler de `textDocument/documentSymbol`
++   entry .FormatHandler   o handler de `textDocument/formatting`, com as `options` do editor
++   entry .RenameHandler   o handler de `textDocument/rename`: de `position` e `newName` a um `WorkspaceEdit`
++   entry .CodeActionsHandler   o handler de `textDocument/codeAction`: um `range` e seu `context`
++   entry .SignatureHelpHandler   o handler de `textDocument/signatureHelp`
++   entry .DeclarationHandler   o handler de `textDocument/declaration`
++   entry .TypeDefinitionHandler   o handler de `textDocument/typeDefinition`
++   entry .ImplementationHandler   o handler de `textDocument/implementation`
++   entry .DocumentHighlightsHandler   o handler de `textDocument/documentHighlight`
++   entry .FoldingRangesHandler   o handler de `textDocument/foldingRange`
++   entry .SelectionRangesHandler   o handler de `textDocument/selectionRange`: de `positions` a intervalos
++   entry .DocumentLinksHandler   o handler de `textDocument/documentLink`
++   entry .CodeLensesHandler   o handler de `textDocument/codeLens`
++   entry .DocumentColorsHandler   o handler de `textDocument/documentColor`
++   entry .ColorPresentationsHandler   o handler de `textDocument/colorPresentation`: uma `color` e seu `range`
++   entry .FormatRangeHandler   o handler de `textDocument/rangeFormatting`: um `range` e `options`
++   entry .FormatOnTypeHandler   o handler de `textDocument/onTypeFormatting`: `position`, `character`, `options`
++   entry .PrepareRenameHandler   o handler de `textDocument/prepareRename`: o intervalo a renomear, ou `Unset`
++   entry .CallHierarchyHandler   o handler de preparação de `callHierarchy`: de uma `position` a itens da hierarquia
++   entry .IncomingCallsHandler   o handler de entrada de `callHierarchy`: de um `item` a quem o chama
++   entry .OutgoingCallsHandler   o handler de saída de `callHierarchy`: de um `item` a quem ele chama
++   entry .TypeHierarchyHandler   o handler de preparação de `typeHierarchy`: de uma `position` a itens da hierarquia
++   entry .SupertypesHandler   o handler de supertipos de `typeHierarchy`: de um `item` a seus supertipos
++   entry .SubtypesHandler   o handler de subtipos de `typeHierarchy`: de um `item` a seus subtipos
++   entry .SemanticTokensHandler   o handler de `textDocument/semanticTokens/full`
++   entry .SemanticTokensDeltaHandler   o handler de `textDocument/semanticTokens/full/delta`, com `previousResultId`
++   entry .SemanticTokensRangeHandler   o handler de `textDocument/semanticTokens/range`, com o `range`
++   entry .InlayHintsHandler   o handler de `textDocument/inlayHint`, com o `range`
++   entry .InlineValuesHandler   o handler de `textDocument/inlineValue`: um `range` e seu `context`
++   entry .LinkedEditingRangeHandler   o handler de `textDocument/linkedEditingRange`
++   entry .MonikersHandler   o handler de `textDocument/moniker`
++   entry .DiagnosticsHandler   o handler de `textDocument/diagnostic`: `identifier` e `previousResultId`
++   entry .WorkspaceSymbolsHandler   o handler de `workspace/symbol`: de uma `query` a símbolos
++   entry .CommandHandler   o handler de um nome de `workspace/executeCommand`: de `arguments` a um resultado opcional
++   entry .ConfigurationHandler   o handler de `workspace/didChangeConfiguration`, com as `settings`
++   entry .WatchedFilesHandler   o handler de `workspace/didChangeWatchedFiles`, com as `changes`
++   entry .FoldersChangedHandler   o handler de `workspace/didChangeWorkspaceFolders`, com o `event`
++   entry .CreatingFilesHandler   o handler de `workspace/willCreateFiles`: de `files` a uma edição opcional
++   entry .CreatedFilesHandler   o handler de `workspace/didCreateFiles`
++   entry .RenamingFilesHandler   o handler de `workspace/willRenameFiles`: de `files` a uma edição opcional
++   entry .RenamedFilesHandler   o handler de `workspace/didRenameFiles`
++   entry .DeletingFilesHandler   o handler de `workspace/willDeleteFiles`: de `files` a uma edição opcional
++   entry .DeletedFilesHandler   o handler de `workspace/didDeleteFiles`
++   entry .ResolveHandler   o handler de uma requisição `*/resolve`: um `item` devolvido preenchido
++       `ResolveHandler[item] = Ambient1[item aka "item", item]`: o editor devolve um item que
++       recebeu antes, e o handler o retorna com seus campos calculados sob demanda já
++       definidos. Leia o item como `item[CompletionItem]` (ou o tipo que for), já que o
++       acessor é genérico.
++   entry .document   o documento atual, dentro de um handler com escopo de documento
++       Um acessor transparent inline para o parâmetro de contexto `Document^`: `document.text`,
++       `document.word(position)`, `document.uri`. Disponível apenas onde os parâmetros de um
++       handler `Focused` estão em escopo.
++   entry .workspace   o handle do workspace, dentro de qualquer handler
++       Um acessor transparent inline para o parâmetro de contexto `Workspace^`.
++   entry .client   o editor, como um `Lsp.Client`, dentro de qualquer handler
++       `workspace.client`: o canal para `publishDiagnostics`, `showMessage`, `logMessage` e as
++       demais notificações que um servidor envia sem ser solicitado. Captura o handle do
++       workspace e é confinado junto com ele.
++   entry .position   o payload `position` de uma requisição de hover, definição, renomeação ou similar
++       Um acessor inline para o parâmetro de contexto `Position aka "position"`.
++   entry .range   o payload `range` de uma requisição de ação de código, inlay hint, formatação de intervalo ou similar
++   entry .options   o payload `FormattingOptions` de uma requisição de formatação
++   entry .newName   o novo nome que uma requisição de renomeação pede
++   entry .character   o caractere digitado, em uma requisição de formatação durante a digitação
++   entry .savedText   o texto que o editor enviou com `didSave`, se o incluiu
++   entry .reason   por que um documento está sendo salvo, em um handler `saving` ou `savingEdits`
++   entry .color   a `Color` de que trata uma requisição de apresentação de cor
++   entry .positions   as posições sobre as quais uma requisição de intervalo de seleção pergunta
++   entry .previousResultId   o id de resultado sobre o qual uma requisição de delta de tokens semânticos se baseia
++   entry .identifier   o identificador de diagnóstico que uma requisição de diagnósticos por pull indica, se houver
++   entry .query   o texto de consulta de uma requisição de símbolos do workspace
++   entry .arguments   os argumentos de um comando, como uma lista de valores JSON brutos, se houver
++   entry .settings   as configurações que uma alteração de configuração entrega, como JSON bruto
++   entry .event   o evento de alteração de pastas
++   entry .includeDeclaration   se uma requisição de referências quer incluir a declaração
++   entry .item   o item de que trata uma requisição de resolve, de hierarquia de chamadas ou de hierarquia de tipos
++       Genérico sobre o tipo do item, então o handler o nomeia: `item[CompletionItem]`,
+
+% 0 1 0 1e656f32b694ec6f1778fa9284e3c9e5
+
+@ 0 3 0 1fe7257b8dc086881f85529623aa7113
++   entry .context   o contexto de uma requisição de conclusão, ação de código ou valor inline
++       Genérico: `Optional[CompletionContext]` em um handler `complete`, `CodeActionContext` em
++       `codeActions`, `InlineValueContext` em `inlineValues`; o tipo é inferido a partir do
+
+% 0 1 0 0ddc215f0e128dca01a828cf757d181e
+
+@ 0 15 0 19454ae65160bc52078d60637f54d4ed
++   entry .changes   as alterações de conteúdo de um handler `changed`, ou os eventos de arquivo de `watchedFiles`
++   entry .files   os arquivos de que trata um handler de operação de arquivo
++   entry .ready   registra o que executa assim que o editor envia `initialized`
++       Todo combinador de registro recebe um handler e precisa de um `Lsp.Registry^` em escopo
++       — o bloco de `listen`, ou um método que recebe `(using Lsp.Registry^)` — e registra o
++       handler nele; os combinadores são métodos comuns, não inline, então a função de
++       contexto de um handler é tipada uma única vez, na definição. Um segundo registro do
++       mesmo recurso substitui o primeiro. `ready` é um `ReadyHandler`, executado após o
++       handshake, onde um servidor começa a indexar ou pede a configuração ao editor.
++   entry .terminating   registra o que executa quando o editor envia `shutdown`
++       Um `TerminatingHandler`; a notificação `exit` que vem a seguir encerra a entrada do
++       processo e, com isso, o laço de `listen`.
++   entry .opened   registra o que executa quando o editor abre um documento
++       Um `OpenedHandler`: o documento já está no armazenamento antes que ele execute, então
++       publicar diagnósticos para ele é o corpo habitual.
+
+% 2 1 0 03334fa33a154d8f09222a73609a61ae
+
+% 3 1 0 00b8b15c0f979ed2161562b6682d885f
+
+% 5 1 0 1e755b8f9bb8d190095fe9dae3e72ddb
+
+% 6 1 0 0ca5d18d0b9f1fd70ea9caae9937e863
+
+% 8 1 0 1be5e71c0ed67b8004205da3917041f7
+
+% 0 1 0 1a19e4e4e35d73340bd4dea71f776009
+
+% 0 1 0 0366afb6f78ecf10163f5e8a12f54486
+
+% 0 1 0 051514f4ba2a401c14190170f167c8d7
+
+% 0 1 0 10742f2393ecd0941ad69c3264589e1f
+
+% 0 1 0 0493c741dca554f40ee6ec6b760236cb
+
+% 0 1 0 07db2162dd91a09d12826cc4c2addb35
+
+% 0 1 0 05954c76bfdb18dd03ba79e0fd6b9711
+
+% 0 1 0 1c3aecafd66fd99d08fc303e2aac9a9d
+
+% 1 1 0 0a690ca90c9aa0fd0665540bb310a6fb
+
+@ 0 14 0 18dc6a13dbc1d55a1723400ba5be1983
++   entry .changed   registra o que executa depois que as alterações do editor em um documento são aplicadas
++       Um `ChangedHandler`; `changes` é o lote que o editor enviou, e `document.text` já o
++       reflete.
++   entry .saved   registra o que executa quando o editor salva um documento
++       Um `SavedHandler`; `savedText` é o conteúdo salvo, se o editor o incluir.
++   entry .closed   registra o que executa quando o editor fecha um documento
++       Um `ClosedHandler`; o documento é removido do armazenamento depois que ele executa.
++   entry .saving   registra o que executa antes que um documento seja salvo
++       Um `SavingHandler`, que recebe o `reason`.
++   entry .savingEdits   registra as edições aplicadas antes que um documento seja salvo
++       Um `SavingEditsHandler`: `textDocument/willSaveWaitUntil`, que o editor aguarda.
++   entry .hover   registra o handler de hover e anuncia `hoverProvider`
++       Um `HoverHandler`: da `position` a um `Optional[Hover]`, em que `Unset` significa nada
++       a mostrar.
+
+% 2 1 0 18cb8cef23f7622511a055bf4b61b4e8
+
+% 3 1 0 03484bcd60158f661da7effb77baf037
+
+% 5 1 0 1fc195a9340a86dc1d19b98f01c260e3
+
+% 6 1 0 0b57385b8a81ac330f98a0c17ed3c3f7
+
+% 8 1 0 06e8710f411773e7147af394665adfbf
+
+% 9 1 0 1425cf1264a036900885ab718005243d
+
+% 10 1 0 1fae8fae79f4b0ed06031b94472e9b53
+
+% 0 1 0 0f9083c9ad9a7754164f12794914bb6e
+
+% 1 1 0 0a61419d48220f881c1276a0c26a82c1
+
+@ 0 4 0 08d67569fb7ba5ad0dd20f43b771fa2f
++   entry .complete   registra o handler de conclusão, com seus caracteres de disparo
++       `complete(triggers*)(handler)`: os caracteres de disparo se tornam as
++       `CompletionOptions` anunciadas, e `resolveProvider` é definido se `resolveCompletion`
++       estiver registrado. O handler é um `CompleteHandler`, que lê `position` e o `context`
++       opcional.
+
+% 2 1 0 1321bfea5707b43b03186be3bb5337be
+
+% 3 1 0 0274fc900930e7311677445614d566fb
+
+% 5 1 0 10a37d7ad91f6dbe03cdc5f291c5dc6e
+
+% 6 1 0 123a9042ddb0fc28177f5217417ff3b5
+
+% 8 1 0 027cc9b6ce79912c0eeac1dd90d1137a
+
+% 0 1 0 16e2c933fd9a24810f5509c9a0961c88
+
+% 0 1 0 1ff8e315236d62950e3db754cb86ce02
+
+% 1 1 0 13fd52d64fdbcead1ddf93f9807b2483
+
+@ 0 61 0 12fbc3530e1c09a8083cb55d44d8d82d
++   entry .definition   registra o handler de ir para a definição
++       Um `DefinitionHandler`: da `position` a uma lista de `Location`s, vazia se não houver.
++   entry .references   registra o handler de encontrar referências
++       Um `ReferencesHandler`, que lê `position` e `includeDeclaration`.
++   entry .documentSymbols   registra o handler de símbolos do documento
++   entry .format   registra o handler de formatação do documento inteiro
++       Um `FormatHandler`, que lê as `options` do editor e devolve as edições a aplicar.
++   entry .rename   registra o handler de renomeação
++       Um `RenameHandler`, que lê `position` e `newName` e devolve um `WorkspaceEdit`.
++   entry .codeActions   registra o handler de ações de código
++       Um `CodeActionsHandler`, que lê o `range` e o `context` que guarda seus diagnósticos.
++   entry .signatureHelp   registra o handler de ajuda de assinatura, com seus caracteres de disparo
++       `signatureHelp(triggers*)(handler)`: os caracteres de disparo se tornam as
++       `SignatureHelpOptions` anunciadas.
++   entry .declaration   registra o handler de ir para a declaração
++   entry .typeDefinition   registra o handler de ir para a definição de tipo
++   entry .implementation   registra o handler de ir para a implementação
++   entry .documentHighlights   registra o handler de destaques no documento
++   entry .foldingRanges   registra o handler de intervalos de dobra
++   entry .selectionRanges   registra o handler de intervalos de seleção
++       Um `SelectionRangesHandler`: uma cadeia de `SelectionRange` por posição em `positions`.
++   entry .documentLinks   registra o handler de links de documento
++   entry .codeLenses   registra o handler de code lenses
++       `resolveProvider` nas `CodeLensOptions` anunciadas é definido se `resolveCodeLens`
++       estiver registrado.
++   entry .documentColors   registra o handler de cores do documento e anuncia `colorProvider`
++   entry .colorPresentations   registra o handler de apresentações de cor
++   entry .formatRange   registra o handler de formatação de intervalo
++   entry .formatOnType   registra o handler de formatação durante a digitação, com seus caracteres de disparo
++       `formatOnType(first, more*)(handler)`: o protocolo exige um caractere de disparo; o
++       handler lê `position`, o `character` digitado e as `options`.
++   entry .prepareRename   registra o handler que diz o que uma renomeação em uma posição abrangeria
++   entry .callHierarchy   registra juntos os três handlers da hierarquia de chamadas
++       `callHierarchy(prepare)(incoming, outgoing)`: a capacidade é atômica, então o handler
++       de preparação (de uma `position` a itens), o handler de chamadas de entrada e o handler
++       de chamadas de saída (cada um de um `item` a chamadas) são registrados de uma só vez.
++   entry .typeHierarchy   registra juntos os três handlers da hierarquia de tipos
++       `typeHierarchy(prepare)(supertypes, subtypes)`, como `callHierarchy`.
++   entry .semanticTokens   registra o handler completo de tokens semânticos, com sua legenda
++       `semanticTokens(legend)(handler)`: a `SemanticTokensLegend` é obrigatória, já que os
++       dados de token a indexam, e é anunciada em `SemanticTokensOptions`.
++   entry .semanticTokensDelta   registra o handler de delta de tokens semânticos
++       Um `SemanticTokensDeltaHandler`, que lê `previousResultId`.
++   entry .semanticTokensRange   registra o handler de tokens semânticos por intervalo
++       Define `range` nas `SemanticTokensOptions` anunciadas, que só existem se
++       `semanticTokens` também tiver sido registrado.
++   entry .inlayHints   registra o handler de inlay hints
++   entry .inlineValues   registra o handler de valores inline
++   entry .linkedEditingRange   registra o handler de intervalos de edição vinculada
++   entry .monikers   registra o handler de monikers
++   entry .diagnostics   registra o handler de diagnósticos por pull, com suas opções
++       `diagnostics(options)(handler)`: as `DiagnosticOptions` são exigidas pelo protocolo e
++       anunciadas como foram informadas.
++   entry .workspaceSymbols   registra o handler de busca de símbolos do workspace
++       Um `WorkspaceSymbolsHandler`, que lê `query`.
++   entry .command   registra um comando por nome
++       `command(name)(handler)`: as requisições `workspace/executeCommand` são multiplexadas
++       entre os nomes registrados, que são anunciados em `ExecuteCommandOptions`. O handler é
++       um `CommandHandler`, que lê `arguments` (uma lista opcional de JSON bruto) e devolve um
++       resultado JSON opcional. Uma requisição para um nome que ninguém registrou é respondida
++       com um erro `InvalidParams`, _the command `name` is not registered_.
+
+% 2 1 0 16241594d97982b803af8a07bf3e523a
+
+% 3 1 0 199a6611c763e30f1886fc5380ffc63f
+
+% 5 1 0 103959c885711af80d9ce0dbcf8b08b4
+
+% 6 1 0 0fb9d77cded6743b101688ae652dbab5
+
+% 8 1 0 162af4bb793453e40753cf66b1eccfeb
+
+% 1 1 0 0cdbec88e639b4340e81e744a9cf623a
+
+% 2 1 0 1a19f0ca1a1c9eaa1929520f71425082
+
+% 3 1 0 18570dcb539b76d40e82918d5369057c
+
+% 4 1 0 1cff1d835d12fd6d123b367d3203571d
+
+% 5 1 0 1f02f59b8c6a074802acb5a3f3e34f0f
+
+@ 0 14 0 07c1320446d98cc90d70b6cbc9f33467
++   entry .configuration   registra o que executa quando a configuração do editor muda
++       Um `ConfigurationHandler`, que lê `settings` como JSON bruto.
++   entry .watchedFiles   registra o que executa quando um arquivo observado muda
++       Um `WatchedFilesHandler`, que lê `changes`, uma lista de `FileEvent`.
++   entry .foldersChanged   registra o que executa quando pastas do workspace são adicionadas ou removidas
++   entry .creatingFiles   registra o que executa antes que arquivos sejam criados, devolvendo uma edição opcional
++   entry .createdFiles   registra o que executa depois que arquivos são criados
++   entry .renamingFiles   registra o que executa antes que arquivos sejam renomeados, devolvendo uma edição opcional
++   entry .renamedFiles   registra o que executa depois que arquivos são renomeados
++   entry .deletingFiles   registra o que executa antes que arquivos sejam excluídos, devolvendo uma edição opcional
++   entry .deletedFiles   registra o que executa depois que arquivos são excluídos
++   entry .resolveCompletion   registra o handler que preenche um item de conclusão sob demanda
++       Um `ResolveHandler[CompletionItem]`, lido como `item[CompletionItem]`; registrá-lo
++       define `resolveProvider` nas `CompletionOptions` anunciadas.
+
+% 2 1 0 1616ca4c2dde8844082bbd65517b44a6
+
+% 3 1 0 0e519a29f9a819cd1777bbc6e23a81fb
+
+% 5 1 0 0f216965ffb54f32028e544aba5886f9
+
+% 6 1 0 0909d9920250f7b61b25916ffca6c434
+
+% 8 1 0 19718545d2b9ad9007b42bc1050f56c2
+
+% 0 1 0 0d608133bcaf7c6610d8a49a75eac6f5
+
+% 1 1 0 036c2b44c4b1f48403fdb2cf0a9e16f2
+
+@ 0 17 0 0bf9dc406ff50aee186bb5789c5e3129
++   entry .resolveCodeAction   registra o handler que preenche uma ação de código sob demanda
++   entry .resolveCodeLens   registra o handler que preenche uma code lens sob demanda
++       Define `resolveProvider` nas `CodeLensOptions` anunciadas.
++   entry .resolveDocumentLink   registra o handler que preenche um link de documento sob demanda
++       Define `resolveProvider` nas `DocumentLinkOptions` anunciadas.
++   entry .resolveInlayHint   registra o handler que preenche uma inlay hint sob demanda
++   entry .resolveWorkspaceSymbol   registra o handler que preenche um símbolo do workspace sob demanda
++   entry .capabilities   registra um ajuste nas capacidades derivadas, aplicado por último
++       `capabilities(adjust)`: uma válvula de escape para um canto que a derivação não cobre.
++       A função é pura (`ServerCapabilities -> ServerCapabilities`) e executa uma única vez,
++       em `initialize`, sobre o registro que `Registry#capabilities` derivou.
++   entry .dispatcher   o despachante JSON-RPC para qualquer implementação da trait `Lsp`
++       `Lsp.Dispatch(server)`: um `Json => Optional[Json]` que encaminha cada mensagem ao
++       método de transmissão de `server` indicado pelo seu método e devolve a resposta, ou
++       `Unset` no caso de uma notificação. A válvula de escape de baixo nível para um servidor
++       escrito como uma classe que implementa `Lsp` à mão; a própria sessão de `listen` é
++       despachada da mesma forma.
++   entry .Observer   um gancho no tráfego bruto: cada mensagem ao atravessar o transporte
+
+% 1 1 0 07e8203d16a2a4a4008158af3c06ed92
+
+@ 0 7 0 1abbffacd2f23ba60b5cc218b1352a09
++         A saída padrão de um servidor é o canal de transmissão, então ele não pode imprimir um
++         log do que troca; em vez disso, um observer vê cada mensagem, como o corpo JSON em que
++         ela foi transportada — na entrada, antes do parsing, de modo que uma mensagem que falha
++         ao decodificar também é observada, e na saída, antes do enquadramento, de modo que os
++         dois sentidos têm a mesma aparência. `listen`, `proxy` e `LspSessional` recebem um.
++         Ambos os métodos são abstratos, e o observer é chamado ao mesmo tempo pela tarefa de
++         escrita e pela tarefa de leitura, então uma implementação precisa ser segura para
++         chamadas a partir de duas threads.
+
+% 2 1 0 0b7520e3d3853914014718034208317d
+
+% 3 1 0 1ec7113406534eb00339196edc4142c1
+
+% 0 1 0 0e7d577587a86efd0cd4d71c3e25ae0c
+
+% 0 1 0 1d0b3b528ae9096c06dc99c6a9f1d14c
+
+% 0 1 0 165b1ebab8a216ec1f603e4ac86a1e61
+
+% 1 1 0 16302dfd130ab2a707735c23ae9fc12a
+
+@ 0 7 0 1a507d40128ec8fe0db021eedbf1553d
++         `Observer.Silent` é o padrão, e `Observer.silent` o fornece contextualmente a uma
++         sessão.
++     entry .Silent   o observer que não faz nada, como valor puro
++     entry .silent   o given que fornece `Silent` a um `LspSessional`; no escopo implícito
++     entry #received   chamado com cada mensagem lida do canal de transmissão, antes do parsing
++     entry #sent   chamado com cada mensagem escrita, como seu corpo codificado, antes do enquadramento
++   entry .Listener   o que um cliente faz com as mensagens que um servidor envia sem ser solicitado
+
+% 1 1 0 1d012cd328c0e1671c53b233f9e01550
+
+@ 0 6 0 19fb56a7097870b91f9f916b96dcb7c3
++         A metade de entrada da troca de um cliente: as notificações que um servidor envia sem
++         que lhe peçam (diagnósticos, mensagens de janela e de log, traces, telemetria,
++         progresso, cancelamentos) e as requisições que ele faz ao seu cliente. Todo método tem
++         um padrão que não faz nada, então um listener implementa só aquilo sobre o que age, e
++         `Listener.Quiet` é o padrão, fornecido pelo given `Listener.quiet`. Um listener é
++         vinculado como given local e encontrado por `Lsp.Server.sessional` quando uma sessão é
++         aberta.
+
+% 2 1 0 052d661673a1c7f00a202da414f6535b
+
+% 3 1 0 17d052471a7b0fca00977bd4baffa3cf
+
+% 0 1 0 1f12497ea2fd8b711ff16574a4e48c25
+
+% 0 1 0 0a6c05271ef6805009e5de1df4c2190c
+
+% 0 1 0 00c81b158b0303d6103fb7a8cf906442
+
+% 0 1 0 037ebeb413dbe2860cb41d807c7f5b29
+
+% 1 1 0 107c8cf0bf6da4b00101df3f371e6f30
+
+@ 0 12 0 1f2eefc9f7ece5df06554a85d0a46263
++         O listener executa na tarefa de leitura da sessão, então um método não deve aguardar
++         uma requisição da mesma conexão: a resposta chegaria na thread que ele está
++         bloqueando.
++     entry .Quiet   o listener que ignora tudo
++     entry .quiet   o given que fornece `Quiet`; no escopo implícito
++     entry #diagnostics   diagnósticos que o servidor publicou para um documento, com sua versão, se informada
++     entry #message   um `window/showMessage`, para mostrar ao usuário, com seu nível
++     entry #log   um `window/logMessage`, para o log do editor, com seu nível
++     entry #trace   uma mensagem `$/logTrace`
++     entry #telemetry   um `telemetry/event`, como JSON bruto
++     entry #progress   uma notificação `$/progress`: seu token e seu valor, como JSON bruto
++     entry #cancel   um `$/cancelRequest`, com o id que o servidor quer cancelar
++     entry #request   uma requisição que o servidor fez ao seu cliente, respondida em forma bruta
+
+% 0 1 0 1cb9f903fa75f16f14e14622f48757d0
+
+@ 0 8 0 0ac6d1a25b8a444f165f381c091e8f63
++         `client/registerCapability` e o que mais um servidor pedir: o conjunto é aberto, então
++         o método e os parâmetros são brutos e a resposta é JSON bruto. `Unset`, o padrão,
++         responde com `null` JSON, que um servidor precisa tolerar para uma capacidade que seu
++         cliente nunca declarou.
++     entry #intercept   vê cada mensagem primeiro; `true` significa que ela foi tratada e não segue adiante
++         O que um proxy usa para retransmitir mensagens, respostas incluídas, em vez de agir
++         sobre elas; um cliente normal deixa o padrão `false`.
++   entry .Transit   o que um proxy faz com uma mensagem que foi mostrada a um gancho
+
+% 1 1 0 0f987421882c95b40d319e80db473630
+
+@ 0 7 0 1b0923b472a0bc951339bd0140503c50
++         O resultado de um gancho `rewrite.outbound` ou `rewrite.inbound`. `Forward` repassa a
++         mensagem sem alteração, que é também o que acontece com tudo o que nenhum gancho vê;
++         `Rewrite(message)` repassa outra mensagem no lugar; `Drop` a engole — uma requisição
++         descartada na ida nunca é respondida, então descarte notificações, ou responda à
++         requisição em vez disso; e `Answer(result)` responde aqui a uma requisição de saída,
++         de modo que o servidor nunca a vê, e é ignorado para uma mensagem que não é uma
++         requisição e para uma mensagem de entrada.
+
+% 2 1 0 17347700a6c111e7193066d9011b9a8e
+
+% 3 1 0 0914a94f4a6e58991f78b16c8242c4ff
+
+% 4 1 0 1f6d71b4c1cd13ac12c36fb1e7b2147b
+
+% 1 1 0 0ee17493e9a2b8cc0e583160014e42c8
+
+% 2 1 0 01033e463435a3051703a6b25cf94dd9
+
+% 1 1 0 0834f02fd5d0356a182b833822d0389c
+
+@ 0 1 0 19f786c9cc563cc7014c8e91960cfb6d
++   entry .Server   um servidor de linguagem com o qual este processo pode falar: um comando, ou um par de streams
+
+% 1 1 0 14b4e5a305afa4980cb26c95a99146ec
+
+@ 0 6 0 1f363ea6c56f0a2e1589b862c9435b46
++         Um valor simples que descreve onde está um servidor, sem nenhum canal próprio:
++         `Server.Process(command)` é um servidor iniciado como subprocesso, cujas entrada e
++         saída padrão carregam o protocolo, e `Server.Streams(input, output)` um que já está em
++         execução por trás de um par de streams `java.io` — neste processo, por trás de um
++         socket, ou uma fixture num teste. `Server(command)` e `Server.streams(input, output)`
++         constroem cada um, alargados para `Server`.
+
+@ 0 5 0 0896ff13674425221a0db24a8f61dcf7
++         Uma sessão com ele é aberta por `session`, a extensão `Sessional` de aperture, através
++         do given `.sessional`: o canal é criado quando a sessão abre, uma `Lsp.Connection` é
++         emprestada durante o bloco, e ambos são descartados depois, então a conexão não pode
++         sobreviver ao servidor. Um subprocesso é encerrado à força quando a sessão termina, em
++         vez de ser aguardado.
+
+% 2 1 0 0fda4c55f05c0c5201fa7142a53dd815
+
+% 3 1 0 09430e86edc01ecc09a981ff1ecf1ec6
+
+% 4 1 0 1f3a5ad13e9beb440d2824c53621051b
+
+% 5 1 0 0fccf37e2f7e7a0d01bed714b7e4fe0b
+
+% 6 1 0 1f2aac086b1a0ea91e2cb7c336aef8a5
+
+% 7 1 0 08c904c9985e628f10c081dae40ba8d4
+
+% 8 1 0 1008b480e0fbcccf013fd8ba98424239
+
+% 9 1 0 1c06717c426d125e1e519dedacfcd73c
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 1 1 0 06d5aff9c8db707b1ff46de5fa393322
+
+% 2 1 0 16e3982b1e0188831a9baadfd6e71959
+
+% 3 1 0 133808a6501b82bd103c1e7b4490535d
+
+% 0 1 0 1e688bf456239579158b966fde385b61
+
+% 0 1 0 19e212d379b14eec0053367c70b3279f
+
+% 1 1 0 0b91ea214f5d86e1000aed7287c6b299
+
+% 0 1 0 08c609db6451cb0f1f7b5e210eabd747
+
+% 0 1 0 1c67198f4eaff9790220baa21dd1e901
+
+@ 0 12 0 135aeea629a59a44048c38d82284bafd
++     entry .apply   um servidor iniciado como subprocesso: `Lsp.Server(command)`
++     entry .streams   um servidor já em execução por trás de um stream de entrada e um de saída
++         Qual stream é qual é do ponto de vista deste processo: `input` é o que o servidor
++         escreve, `output` o que ele lê.
++     entry .sessional   o given que abre uma sessão com um `Server`; no escopo implícito
++         Um `LspSessional`, construído a partir do contexto: precisa de um `Monitor`, de um
++         `Probate`, de `Diagnostics`, de um `WorkingDirectory` e de um `Environment` (para
++         iniciar um subprocesso), de um `Tactic[Lsp.Error]`, e de um `Listener^` e um
++         `Observer^` — os silenciosos, a menos que haja no escopo um given próprio. Um listener
++         ou observer é fornecido vinculando-o como given, nunca passando-o: uma instância que
++         captura o monitor da sessão não poderia ser vinculada a um nome no local de uso.
++   entry .proxy   atende um editor por stdio enquanto encaminha tudo a um servidor upstream
+
+% 1 1 0 118efc54647e9d030ec6d3ba3f805036
+
+@ 0 7 0 1729652e040f379d10deb6215c20da2a
++         `Lsp.proxy(upstream, observer)(register)`: este processo lê um editor da sua entrada
++         padrão e escreve na sua saída padrão, mantém uma sessão com `upstream` e retransmite
++         cada mensagem entre eles, alterando o que o bloco registra no `Lsp.Proxy` emprestado
++         através dos combinadores `rewrite`. A retransmissão é assíncrona nos dois sentidos,
++         então há requisições em andamento em qualquer número, respondidas em qualquer ordem, e
++         os ids de requisição passam sem alteração. Tudo o que não está registrado — métodos que
++         esta biblioteca não modela, capacidades que ela não conhece — atravessa byte a byte.
+
+% 2 1 0 04c0e151decffc911f9fa44863fcc4be
+
+% 3 1 0 10e762dec02663d5152c71667de3368b
+
+% 4 1 0 051c790f759decfe11c12b0e74f507b8
+
+% 0 1 0 1f371d1a8b4fa01e13f9eb97373920e1
+
+% 0 1 0 0ba9e7e9094042730f4394ec10336976
+
+% 0 1 0 0b354b055b5a380b07433702b914be12
+
+% 0 1 0 14f1fe3111aaef9f146a11f2c1ca7bc5
+
+% 0 1 0 071ac86c8523db690178f84eeb48d5d3
+
+% 1 1 0 0743e4a03610271404c91f97fe7ac9f9
+
+@ 0 6 0 04eed49bdc5a99080446596aed8ade11
++         Ele precisa de um `Stdio^`, de um `Monitor^`, de um `Probate`, de um `WorkingDirectory`,
++         de um `Environment`, de `Diagnostics` e de táticas para `Lsp.Error` (um servidor que
++         não consegue iniciar é `Reason.Unstarted`), `Framing.Error` (um quadro malformado) e
++         `Truncation.Error` (um stream interrompido). O bloco de registro executa uma vez, de
++         forma síncrona, antes que a sessão abra, e pode capturar o monitor. `Lsp.Proxy.run` é
++         a mesma chamada com um observer explícito.
+
+% 1 1 0 0d02c67c9275f88a1234b2b6a46613cb
+
+% 0 1 0 189a7320130ac64d142135fed43fe992
+
+% 1 1 0 0b733a69f665541b12a304d1001f2c1d
+
+@ 0 1 0 0dc3e29e3a8795971bad8b458c63b80d
++   entry .listen   atende um servidor de linguagem pela entrada e saída padrão, a partir de handlers registrados
+
+% 1 1 0 02aad66074733b311e55d14e1451bd4a
+
+@ 0 9 0 1ac352f74de99dd40f33e757a5d9f6dc
++         `Lsp.listen(name, version, observer)(register)`: o bloco registra os handlers do
++         servidor num `Lsp.Registry` emprestado; quando ele retorna, o registro é consumido, as
++         `ServerCapabilities` são derivadas dele, e o laço lê JSON-RPC enquadrado por
++         `Content-Length` da entrada padrão até esgotá-la, despachando cada mensagem ao seu
++         handler na thread de leitura. Uma única tarefa de escrita esgota o canal de saída —
++         respostas e notificações que os handlers enviam por `client`, igualmente — e enquadra
++         cada uma na saída padrão, então as escritas nunca se intercalam. `name` e `version`
++         são o que o resultado de `initialize` informa como `ServerInfo`; o observer, se
++         fornecido, vê cada mensagem nos dois sentidos.
+
+@ 0 1 0 01964d6d8ef88cb215a07d412f04afc3
++         Um servidor cresce por registro, e suas capacidades crescem com ele:
+
+% 2 1 0 0cbf2aeca1005f621d9c4c1986b3a79c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 0454df2350dae15901103323ce368467
++           label Um servidor sem recursos responde a initialize e acompanha os documentos
+
+% 1 1 0 14850d9483d8e108122e21d0eaf93a51
+
+% 2 1 0 1526481ae2a43a83162247ee1dd46337
+
+% 4 1 0 1e298e6b50b98d891e06d427c9d8f27f
+
+% 5 1 0 15ba92caf11f4516040af6eb57ce267e
+
+% 0 1 0 127dfd1783380b721436ceac4554ba69
+
+% 1 1 0 1972fe720b5a76b01b2e8319e6c73f30
+
+@ 0 1 0 0a496198195670ff1cc9d805c51052e1
++           label Registrar hover anuncia hoverProvider
+
+% 1 1 0 00376128669414de1c798d3ba30b1aba
+
+% 2 1 0 085d6fa3cad68cf703481a40d6f2451f
+
+% 4 1 0 1db68548bf2e86fd1f8e1f3e4859651f
+
+% 5 1 0 14dbde92e83f04000bf0f85b802ae34b
+
+% 7 1 0 05dd4bf02c2262941554544c870e1043
+
+% 8 1 0 0be4dcc0584b641c16988a82bece1c47
+
+% 9 1 0 0f9bdfa18e6a4e540bf43db154af0e6d
+
+% 10 1 0 11a1ef430704a82e0de6eebbd548fbaa
+
+% 1 1 0 18e79dbcf2177a361b17cd0043d57163
+
+@ 0 1 0 1b1a944bec37f3250b8a850cc8ab33c1
++           label Registrar a conclusão anuncia completionProvider, com seu gatilho
+
+% 1 1 0 033bae419d20dc2201721a2a42a73e2b
+
+% 2 1 0 171214164bebf7d1124e9d7bf9dbdfdb
+
+% 4 1 0 0820dd1e707bb96e0a5726cc301723f1
+
+% 5 1 0 03bb1d31a3b24d7d18e6e635cc5e486f
+
+% 7 1 0 1ebcbe0a04cdaceb1cae19012b7f11f1
+
+% 8 1 0 033e85cf2f86490e192373a1b53bba75
+
+% 9 1 0 1dd33e72bb55fb320fb97fa24c11acf1
+
+% 10 1 0 0e9831b9722c2a0b13cd0b2df05f8ee8
+
+% 12 1 0 1cd10ce50f6c11261b59323ade1c4903
+
+% 13 1 0 157bfc9f6aaede371103cdf5474ee91e
+
+% 1 1 0 19c38b68fb5048db1b93e3bf5249ed21
+
+@ 0 1 0 0f446e4fabd4df391a5cd6fd57bcc302
++           label Um handler opened publica diagnósticos à medida que cada documento chega
+
+% 1 1 0 0bad3a2a8dd6f230078c1727af7c649e
+
+% 2 1 0 0fe6a024dadad07e0ad22a1417ade748
+
+% 4 1 0 01d95c4c1445bba516993971efc6ece6
+
+% 5 1 0 0702d78635251748051e59b3a51a7f7e
+
+% 7 1 0 14f27edcb196dddf0bb86dc2b6405535
+
+% 8 1 0 161ed44ebf943b2010a0ee3d90a67490
+
+% 9 1 0 0e37b57f63504e1e0326da1c30e35516
+
+% 10 1 0 1c7c77045b58f56401b1bb27f4a337f0
+
+% 12 1 0 1d6271df54c153031de12b0b8e54cb32
+
+% 13 1 0 0d10149a19cf36ed0890b09aa3431912
+
+% 0 1 0 1c2a962998584aba06b895d882d19062
+
+% 0 1 0 09b795548343e5740c0b35ad091df0ad
+
+% 0 1 0 0cecb9d671b793991268cdfba8302b14
+
+% 0 1 0 00022712d7b3a48e144e0db63bc5252f
+
+% 0 1 0 00ffa211450fbedb0cb973a7969144eb
+
+% 0 1 0 0410d44f398231dc014071be633dd149
+
+% 0 1 0 16740b2abc85031c0a4d0abff979a5fd
+
+% 0 1 0 022ce80379162f8f0812d2f3eef56708
+
+% 1 1 0 039a23ebea1f92c61ecb7ce27d8624ab
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 2 0 0471e39fd6207f561a6b400969e1138c
++         O servidor inteiro é então um `main` no idioma de daemon residente, para que um editor
++         que reinicia seu servidor de linguagem com frequência se reconecte a uma JVM já em
++         execução:
+
+% 2 1 0 0c3ed027f65958271357831c610511c0
+
+% 3 1 0 002ce9a4631d59da01c87c24d1f39d72
+
+% 4 1 0 1aee365729636589000f2c8a1c15c146
+
+% 0 1 0 0853818f349b023003bb3bad9860badb
+
+% 0 1 0 0c332fad946d7e811c4c167bc5bf460b
+
+% 0 1 0 0deb762eb28b035101e67765529e6b7f
+
+% 0 1 0 05f3106ad4f8d4410c9c647c1794144f
+
+% 0 1 0 1d9724ee372a96b90c32bcca99559b44
+
+% 0 1 0 174a8f123f7a85c2153eefb4572f83a8
+
+% 0 1 0 08770c8d2d48ab3c1cecaf6dd69ac37e
+
+% 1 1 0 136c825de807cea601cfbb1cb9f7eea9
+
+@ 0 9 0 0849ee8d890988fe046901d02967d902
++         Ele precisa de um `Stdio`, de um `Monitor` e de um `Probate` (o escritor é uma tarefa),
++         e de táticas para `Framing.Error` e `Truncation.Error`. Falhas são respondidas, não
++         lançadas: uma mensagem que não é JSON recebe um erro de parsing `-32700`, um payload
++         que não decodifica um erro de parâmetros inválidos `-32602`, qualquer outra exceção num
++         handler um erro interno `-32603`, e um `Lsp.Error` que um handler lança uma resposta de
++         erro com o código de transmissão do motivo e o id da requisição — ou, no caso de uma
++         notificação, um `window/logMessage`. O registro, a sessão e o dispatcher são todos
++         locais da chamada: nada que contenha uma capability é guardado num objeto que vive
++         tanto quanto a aplicação, e a verificação de capturas rejeita um handler que tente isso
++         (veja `Document` e `Workspace`).
+
+% 1 1 0 0b788b8e3f79b82209d62678660a63be
+
+% 0 1 0 074486cf5dc3b5c50d443ce27c7e96da
+
+% 0 1 0 1244cd5c4a3610fe040c475b4db11e36
+
+% 0 1 0 10540b2f5fab4d2e15a7f9e83212a3ba
+
+% 1 1 0 1491c7ee695919fb0e724076c84237e9
+
+@ 0 1 0 19fd781253d050a213a1e7a1975e43d1
++   entry .Client   as notificações que um servidor envia ao seu editor
+
+% 1 1 0 07b8cf75389e133411a6101b52ffe0c0
+
+@ 0 7 0 07fdc07bbd2b32e21824b627b71004dc
++         A metade do protocolo que vai do servidor ao cliente, tal como o servidor a chama: um
++         handler a alcança como `client` e envia `publishDiagnostics`, `showMessage`,
++         `logMessage`, `telemetry`, `logTrace`, `progress` ou `cancelRequest`. Só notificações
++         são expostas, nunca requisições: um handler executa na thread que lê as mensagens do
++         editor, então uma ida e volta aguardada de dentro de um esperaria por uma resposta que
++         essa thread precisa ler, e entraria em deadlock. Um cliente que precisa da resposta do
++         editor a algo pergunta em `ready` e lê o resultado quando a notificação do editor
++         chega.
+
+@ 0 6 0 118d2560ed96b831070be8b6148a1036
++         Os métodos de transmissão — `` `textDocument/publishDiagnostics` ``,
++         `` `window/showMessage` ``, `` `window/logMessage` ``, `` `telemetry/event` ``,
++         `` `$/logTrace` ``, `` `$/progress` `` e `` `$/cancelRequest` `` — são a superfície `@rpc`
++         que o proxy gerado implementa; os métodos nomeados os envolvem com os padrões habituais
++         (sem versão, níveis `Info` e `Log`, sem trace detalhado). Um cliente que *recebe* essas
++         mensagens — o leitor de `LspSessional` — despacha a mesma trait a um `Lsp.Listener`.
+
+@ 0 4 0 167d958bf21dfaf4024da3665b843789
++         Um `Client` é uma capability compartilhada: publicar a partir de uma tarefa criada num
++         handler é legítimo, já que o canal de saída aceita vários produtores, mas o handle fica
++         confinado ao escopo de atendimento que o criou e não pode ser guardado para uso depois
++         que a sessão termina.
+
+% 2 1 0 01053b29009ef078024b1499c65ed403
+
+% 3 1 0 1ccf052b950807f10744ce6e013e427b
+
+% 5 1 0 06804e1591bb55f30ffc43622ab1fef8
+
+% 6 1 0 0307ac1b42f723941808847edfc593ea
+
+% 8 1 0 08deb739b73d3da61565151292cd5ecf
+
+% 0 1 0 1be769be29548ae40a09ff67f8cec2b2
+
+% 0 1 0 031c084d92574c041dc4beffc3452d46
+
+% 0 1 0 1a1f83abc872849102db4b6e752255fe
+
+% 1 1 0 0b46d44493d958e0048c208b5d82d1d6
+
+% 1 1 0 085873e8b01f19ca1e80eb57afaec4cc
+
+% 1 1 0 1fbf7a2122f3cec806061bd0ebeee091
+
+@ 0 11 0 1383dcbfba0eb46718c37d789a4ea998
++     entry #publishDiagnostics   envia os diagnósticos de um documento, substituindo os que estão sendo mostrados
++         Uma lista vazia os apaga. A versão do documento não é enviada.
++     entry #showMessage   mostra ao usuário uma mensagem no nível `Info`
++     entry #logMessage   escreve uma linha no log do editor no nível `Log`
++     entry #telemetry   envia um `telemetry/event` com um payload de JSON bruto
++     entry #logTrace   envia uma mensagem `$/logTrace`, sem a parte detalhada
++     entry #progress   envia uma notificação `$/progress`: um token e um valor, ambos JSON bruto
++         Um token de progresso é uma string ou um inteiro, e um valor é específico do protocolo,
++         então ambos são brutos.
++     entry #cancelRequest   pede ao editor que cancele uma requisição que fez, pelo id
++   entry .Connection   o handle do cliente sobre um servidor em execução, emprestado durante uma sessão
+
+% 1 1 0 1a5c5ff60ca0c42e0eaacc88adaa5bb5
+
+@ 0 8 0 14f13545e49e86d015d76cee64cd762e
++         O espelho da sessão de um servidor: o que `session` empresta a um editor, ou a um
++         proxy, enquanto está aberta. Toda requisição que o protocolo define tem um método —
++         `#hover`, `#complete`, `#definition`, `#rename`, … — que recebe a URI do documento e os
++         parâmetros da requisição e retorna os mesmos tipos que os handlers de um servidor
++         retornam, e toda notificação (`#open`, `#edit`, `#save`, `#close`, `#initialized`,
++         `#exit`, `#configure`) não retorna nada. Uma requisição bloqueia quem chama até que sua
++         resposta chegue, mas nunca bloqueia a tarefa de leitura, então várias podem estar em
++         andamento ao mesmo tempo a partir de tarefas diferentes e podem ser respondidas fora de
++         ordem.
+
+% 2 1 0 08ae80dd6d601da419003671ac74b7d9
+
+% 3 1 0 0836aa669619b00014202a784e9ea79d
+
+% 4 1 0 063986b6adab519f02e58d76beae5513
+
+% 5 1 0 194c2b9a65f1eb720c3099d302010dfc
+
+% 6 1 0 1c66c31b70ca806d05b74135ecd8f8c0
+
+% 7 1 0 149ce61b1cee07a71065d5fcb67a4c1f
+
+% 8 1 0 10b3c975708323d20d0f424d1c69bc24
+
+% 9 1 0 1b1ee3f6dff265b81512a8141402cdda
+
+% 0 1 0 0dc3f8ebd3b4942c123f887505d415e0
+
+% 1 1 0 03a6525eefc2989801cc3b504dabe259
+
+% 2 1 0 17a2eb098e8b8a6b14740682acd4ba1a
+
+% 3 1 0 19b5133c3b99898e11b113ca3911af86
+
+% 0 1 0 03bb6ccd9e747a2d07e2047ea83afff9
+
+% 0 1 0 0f009b303b07ea0805cc4c54c5f0b4ec
+
+% 1 1 0 1b18d2658efd4fc11f52ff4bc55000f2
+
+@ 0 6 0 13332a385b3d6a68106b51d84e20b5fa
++         Toda requisição precisa de um `Tactic[Lsp.Error]`: uma resposta de erro do servidor é
++         lançada como um `Lsp.Error` cujo motivo é aquele que o código de transmissão nomeia
++         (`Lsp.Error.reason`), ou `Internal`, com a mensagem do próprio servidor como detalhes,
++         para um código fora do conjunto padrão, em vez de ser aguardada para sempre. A conexão
++         é uma capability compartilhada, conduzida ao mesmo tempo pelo seu escritor, pelo seu
++         leitor e por quem chama, e um `JsonRpc`, então `#send` coloca uma mensagem bruta no seu
++         canal.
+
+@ 0 5 0 060efc87ad2e06a10c4eb724ffab0946
++         Os proxies gerados por trás dos métodos são os `vals` públicos `#lifecycle`,
++         `#language`, `#navigation`, `#editing`, `#advanced`, `#workspace` e `#resolve`, um por
++         trait de transmissão, para uma requisição que os métodos nomeados não cobrem
++         (intervalos de seleção, cores, as hierarquias, resoluções, operações de arquivo): cada
++         método de transmissão recebe os parâmetros próprios do protocolo e convoca o
++         decodificador do seu resultado sob a tática da chamada.
+
+% 0 1 0 11d44f593765ad63128f4769f78bacdb
+
+% 0 1 0 1f3ad2b097f1bd00027a72d8cef2d90d
+
+% 1 1 0 14beec1ed1f342940cb7a15172e3f932
+
+@ 0 15 0 1de1bdb02b6081000944a71b9d20217c
++     entry #Origin   a outra ponta da conexão: `Lsp`
++     entry #lifecycle   o cliente gerado para `LspLifecycle`: initialize, shutdown e sincronização de documentos
++     entry #language   o cliente gerado para `LspLanguage`: conclusão, hover, definição e o resto
++     entry #navigation   o cliente gerado para `LspNavigation`: declaração, dobramento, links, cores
++     entry #editing   o cliente gerado para `LspEditing`: formatação de intervalo e durante a digitação, hierarquias
++     entry #advanced   o cliente gerado para `LspAdvanced`: tokens semânticos, inlay hints, diagnósticos
++     entry #workspace   o cliente gerado para `LspWorkspace`: símbolos, comandos, operações de arquivo
++     entry #resolve   o cliente gerado para `LspResolve`: as requisições `*/resolve`
++     entry #send   envia uma mensagem exatamente como foi dada, sem criar id nem aguardar resposta
++         A costura bruta pela qual um proxy encaminha, de modo que os ids do próprio editor e os
++         métodos que esta biblioteca não modela atravessam sem alteração.
++     entry #initialize   o handshake: envia `initialize` e retorna as capacidades do servidor
++         `initialize(root, name, version, folders, capabilities)`: tudo opcional; o cliente se
++         apresenta como `soundness`, sem versão e sem capacidades, a menos que se diga o
++         contrário, e a resposta do servidor é um `InitializeResult`. Siga-o com
+
+% 0 1 0 0ae1cb845f0d75351d97ad32265c19d8
+
+@ 0 4 0 07c5dcb4b1bc09831565cd06210a8c83
++     entry #initialized   informa ao servidor que o handshake está completo
++     entry #shutdown   pede ao servidor que se desligue e aguarda sua confirmação
++     entry #exit   manda o servidor sair; a notificação que encerra um servidor bem-comportado
++     entry #open   informa ao servidor que um documento está aberto, com sua linguagem, texto e versão
+
+% 0 1 0 1dbec817ca679e721996e254bb97957f
+
+@ 0 27 0 1c59cd009604a07e03b4a376d9a53661
++     entry #edit   envia um lote de alterações a um documento aberto, com sua nova versão
++     entry #replace   a forma de documento inteiro de `#edit`: substitui o texto sob uma nova versão
++     entry #save   informa ao servidor que um documento foi salvo, com seu texto se o servidor o quiser
++     entry #close   informa ao servidor que um documento foi fechado
++     entry #hover   o hover numa posição, ou `Unset`
++     entry #complete   as sugestões de conclusão numa posição, com um `CompletionContext` opcional
++     entry #definition   as localizações da definição do símbolo numa posição
++     entry #references   as referências ao símbolo numa posição, incluindo sua declaração por padrão
++     entry #symbols   os símbolos do documento
++     entry #format   as edições que formatam um documento sob as opções dadas
++     entry #rename   a edição de workspace que renomeia o símbolo numa posição
++     entry #codeActions   as ações de código num intervalo, dado seu contexto
++     entry #signatureHelp   a ajuda de assinatura numa posição, ou `Unset`
++     entry #declaration   as localizações da declaração do símbolo numa posição
++     entry #typeDefinition   as localizações da definição de tipo do símbolo numa posição
++     entry #implementation   as localizações da implementação do símbolo numa posição
++     entry #highlights   os destaques do documento para o símbolo numa posição
++     entry #foldingRanges   os intervalos de dobramento do documento
++     entry #documentLinks   os links do documento
++     entry #codeLenses   as code lenses do documento
++     entry #semanticTokens   os tokens semânticos completos do documento
++     entry #inlayHints   as inlay hints dentro de um intervalo
++     entry #diagnostics   os diagnósticos por pull do documento, como relatório completo
++     entry #search   os símbolos do workspace que correspondem a uma consulta
++     entry #execute   executa um comando pelo nome com argumentos de JSON bruto, retornando seu resultado bruto
++     entry #configure   informa ao servidor que a configuração mudou, com os ajustes como JSON bruto
++   entry .Dispatch   constrói o dispatcher JSON-RPC para uma implementação de `Lsp`
+
+% 1 1 0 16e046c099394b061eaa192e52160ad3
+
+@ 0 10 0 170cc971c87e25dc19ba5f2cf9ae3934
++         `Lsp.Dispatch(server)` é um `Json => Optional[Json]`: lê o método que uma mensagem
++         nomeia e encaminha a mensagem ao dispatcher gerado da trait de transmissão que o
++         declara, retornando a resposta, ou `Unset` no caso de uma notificação; uma mensagem sem
++         método é uma resposta e é tratada pelo dispatcher do ciclo de vida; um método
++         desconhecido dá `Unset`. O despacho é gerado por sub-trait em vez de uma única vez para
++         o protocolo inteiro porque o `JsonRpc.serve` de obligatory expande inline um codec para
++         cada método, e uma classe para todo o LSP excederia o limite do constant pool da JVM —
++         e é também por isso que a trait é dividida em sete. `Lsp.dispatcher` é a mesma chamada.
++     entry .apply   o dispatcher de um servidor, que encaminha cada mensagem pela trait que declara seu método
++   entry .Error   a falha que um handler lança, e a resposta de erro com que um servidor responde
+
+% 1 1 0 1edd8b3be46c791d1d05cc7b874ce431
+
+@ 0 7 0 19eb896038bc768d1a195f7ca79b6235
++         Erro `↯/s.114.1`: _the LSP operation failed because `reason`_, numerado por motivo (147.1
++         para `Parse` até 147.11 para `Unstarted`). Cada `Reason` carrega o código de
++         transmissão JSON-RPC que o protocolo lhe atribui: `Parse` −32700, `InvalidRequest`
++         −32600, `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603,
++         `ServerNotInitialized` −32002, `RequestCancelled` −32800, `ContentModified` −32801,
++         `ServerCancelled` −32802, `RequestFailed` −32803 e `Unstarted` −32000, próprio desta
++         biblioteca, para um subprocesso servidor que não conseguiu iniciar.
+
+@ 0 5 0 0982444fdab0ed4b08320118abb2ce15
++         Um handler lança um através do `Emit[Lsp.Error]` que lhe é emprestado, e `Lsp.listen`
++         responde à requisição com uma resposta de erro que carrega o código do motivo e
++         `#response` como mensagem — ou, no caso de uma notificação, um `window/logMessage`. A
++         própria sessão lança `InvalidParams` para uma requisição sobre um documento que não está
++         aberto e para um comando que ninguém registrou.
+
+% 2 1 0 0644a382edb9fa3516e481d69153d89c
+
+% 3 1 0 0e27b027e0fdc6bc03d05e7fbf5d1990
+
+% 1 1 0 108d7f683c90f3a204a6a908c9094992
+
+% 2 1 0 036c1c815340d144036e8063510f203e
+
+% 3 1 0 1c3745d5829aa7d818c77010d6bed788
+
+% 5 1 0 0b27f7a1c487fe470c1cfb4656f40099
+
+% 0 1 0 0e15f59c924c39861d75cf2d7d05b65b
+
+% 0 1 0 1c8109307b1404881b930e8eff3906e6
+
+% 0 1 0 10d77b885f3fbc410652ab48f8eeb12c
+
+% 1 1 0 1cce2f8e7a9a440c077b266de4e6e748
+
+@ 0 6 0 0f99d109c2a18de71171ab92cfb85245
++         Do lado do cliente, as requisições de `Connection` lançam um para uma resposta de erro,
++         com o motivo que `.reason` recupera do código de transmissão, e `LspSessional` lança
++         `Unstarted` quando não é possível fazer fork do comando do servidor. Construir um exige
++         `Diagnostics` no escopo, como todo erro de fulminate.
++     entry .Reason   por que a operação falhou, cada um com seu `code` de transmissão JSON-RPC e seu `number`
++         Os onze motivos acima. `code` é o código de transmissão, `number` o subnúmero do erro
+
+% 0 1 0 1ecd4b5721e5d59e118220722713be15
+
+@ 0 8 0 0ce887ff5df906181c0b54dbf8160843
++     entry .reason   o motivo que um código de transmissão nomeia, ou `Unset` para um código fora do conjunto padrão
++         O inverso de `Reason#code`, para um cliente que lê uma resposta de erro; um servidor
++         pode responder com um código definido pela implementação, que `Connection` informa
++         como `Internal`.
++     entry .communicable   renderiza um motivo como sua mensagem, _the request failed_ e afins
++     entry #reason   por que a operação falhou
++     entry #details   a mensagem dada quando o erro foi lançado, se houver
++     entry #response   a mensagem enviada na resposta de erro: os detalhes, ou a descrição do motivo
++   entry .Registry   onde os handlers de um servidor são registrados, emprestado ao bloco dado a `listen`
+
+% 1 1 0 016ccb68a090ae5700635ae4a99aa78b
+
+@ 0 6 0 1f9deeb56b2bda8417e619465f6fe636
++         O alvo dos combinadores de registro: `Lsp.listen` cria um, empresta-o ao bloco de
++         registro como parâmetro de contexto e o consome quando o bloco retorna, de modo que
++         registrar depois que o atendimento começou é impossível por construção. É uma
++         capability compartilhada que não pode escapar do bloco — a verificação de capturas
++         rejeita um bloco `listen` que atribui `summon[Lsp.Registry]` a uma variável externa —,
++         e `#capabilities` deriva do que foi registrado as `ServerCapabilities` que o servidor
++         anuncia.
+
+% 2 1 0 0ffe0314e61fefa91ea6a9f99f3a7694
+
+% 3 1 0 0a0bd57c27d1e4cb1ae362289ef554f9
+
+% 5 1 0 079bc46bd6b0657519a449c257baa143
+
+% 6 1 0 1344a8cff4610c321005f87d41757908
+
+% 0 1 0 19e14c4110fb36931aff3dbd16aa0eb7
+
+% 0 1 0 0626b4911eb701e20f2d09574715e5cd
+
+% 0 1 0 010e9010fb5dca7a1bc71b6c899e531f
+
+% 2 1 0 1ed35fe2b3844cf70b435d77565c605e
+
+% 0 1 0 1bc805b7f681605f1c7517f93e00aadb
+
+% 0 1 0 0587dc15d27f3e2615c2f1b3cbe886ec
+
+% 1 1 0 0460980a0c23d3a902d7a5ad2f07f0a2
+
+@ 0 7 0 10e9d534e7f843601c18c469ef05336f
++         Seus slots — uma `var` pública por recurso, com o nome do combinador seguido de `0`,
++         mais as opções registradas ao lado de um handler — são públicos só porque os
++         combinadores os atribuem, e cada slot de handler tem o tipo `AnyRef | Null`: uma união
++         que mencionasse um tipo de função de contexto renovaria seus conjuntos de captura a
++         cada adaptação, então a fronteira tipada é o parâmetro do combinador, onde um handler
++         que se fecha sobre o registro é rejeitado, e a sessão restaura o tipo ao despachar.
++         Leia um slot pelo seu combinador, não diretamente.
+
+% 0 1 0 073bc69dacded9bf09699d6e40b16635
+
+% 0 1 0 054515abb6b0eab110f6c8eb4a8e439f
+
+@ 0 1 0 08141d298360e799074715f67b9efc01
++     entry .Slot   a caixa em que um handler registrado é guardado
+
+% 1 1 0 0ab9dab1c683023501c59a63f933ef5c
+
+@ 0 80 0 1ac1fc778d9a4f1a14e27472af2d161e
++           Um valor de função de contexto se adapta a qualquer tipo esperado que não seja uma
++           função de contexto sendo aplicado, então um handler não pode ocupar diretamente um
++           slot `Optional` ou `AnyRef`: `Slot[handler](value)` o mantém intacto, e a sessão o
++           desembrulha.
++       entry #value   o handler
++     entry #capabilities   as `ServerCapabilities` que os registros implicam, com o ajuste aplicado por último
++         Cada flag de provedor é ativada exatamente quando seu handler foi registrado; as opções
++         dadas no registro (gatilhos de conclusão e de ajuda de assinatura, caracteres de
++         disparo durante a digitação, a legenda dos tokens semânticos, opções de diagnóstico,
++         nomes de comandos) preenchem os provedores estruturados; `textDocumentSync` é sempre
++         `Incremental`; e `capabilities(adjust)`, se registrado, executa sobre o resultado.
++     entry #ready0   o handler `ready`, em caixa, ou `null`
++     entry #terminating0   o handler `terminating`, em caixa, ou `null`
++     entry #opened0   o handler `opened`, em caixa, ou `null`
++     entry #changed0   o handler `changed`, em caixa, ou `null`
++     entry #saved0   o handler `saved`, em caixa, ou `null`
++     entry #closed0   o handler `closed`, em caixa, ou `null`
++     entry #saving0   o handler `saving`, em caixa, ou `null`
++     entry #savingEdits0   o handler `savingEdits`, em caixa, ou `null`
++     entry #hover0   o handler `hover`, em caixa, ou `null`
++     entry #complete0   o handler `complete`, em caixa, ou `null`
++     entry #completeTriggers0   os caracteres de disparo com que `complete` foi registrado
++     entry #definition0   o handler `definition`, em caixa, ou `null`
++     entry #references0   o handler `references`, em caixa, ou `null`
++     entry #documentSymbols0   o handler `documentSymbols`, em caixa, ou `null`
++     entry #format0   o handler `format`, em caixa, ou `null`
++     entry #rename0   o handler `rename`, em caixa, ou `null`
++     entry #codeActions0   o handler `codeActions`, em caixa, ou `null`
++     entry #signatureHelp0   o handler `signatureHelp`, em caixa, ou `null`
++     entry #signatureHelpTriggers0   os caracteres de disparo com que `signatureHelp` foi registrado
++     entry #declaration0   o handler `declaration`, em caixa, ou `null`
++     entry #typeDefinition0   o handler `typeDefinition`, em caixa, ou `null`
++     entry #implementation0   o handler `implementation`, em caixa, ou `null`
++     entry #documentHighlights0   o handler `documentHighlights`, em caixa, ou `null`
++     entry #foldingRanges0   o handler `foldingRanges`, em caixa, ou `null`
++     entry #selectionRanges0   o handler `selectionRanges`, em caixa, ou `null`
++     entry #documentLinks0   o handler `documentLinks`, em caixa, ou `null`
++     entry #codeLenses0   o handler `codeLenses`, em caixa, ou `null`
++     entry #documentColors0   o handler `documentColors`, em caixa, ou `null`
++     entry #colorPresentations0   o handler `colorPresentations`, em caixa, ou `null`
++     entry #formatRange0   o handler `formatRange`, em caixa, ou `null`
++     entry #formatOnType0   o handler `formatOnType`, em caixa, ou `null`
++     entry #formatOnTypeFirst0   o primeiro caractere de disparo com que `formatOnType` foi registrado
++     entry #formatOnTypeMore0   os demais caracteres de disparo com que `formatOnType` foi registrado
++     entry #prepareRename0   o handler `prepareRename`, em caixa, ou `null`
++     entry #prepareCallHierarchy0   o handler de preparação de `callHierarchy`, em caixa, ou `null`
++     entry #incomingCalls0   o handler de chamadas recebidas de `callHierarchy`, em caixa, ou `null`
++     entry #outgoingCalls0   o handler de chamadas feitas de `callHierarchy`, em caixa, ou `null`
++     entry #prepareTypeHierarchy0   o handler de preparação de `typeHierarchy`, em caixa, ou `null`
++     entry #supertypes0   o handler de supertipos de `typeHierarchy`, em caixa, ou `null`
++     entry #subtypes0   o handler de subtipos de `typeHierarchy`, em caixa, ou `null`
++     entry #semanticTokens0   o handler `semanticTokens`, em caixa, ou `null`
++     entry #semanticTokensLegend0   a legenda com que `semanticTokens` foi registrado
++     entry #semanticTokensDelta0   o handler `semanticTokensDelta`, em caixa, ou `null`
++     entry #semanticTokensRange0   o handler `semanticTokensRange`, em caixa, ou `null`
++     entry #inlayHints0   o handler `inlayHints`, em caixa, ou `null`
++     entry #inlineValues0   o handler `inlineValues`, em caixa, ou `null`
++     entry #linkedEditingRange0   o handler `linkedEditingRange`, em caixa, ou `null`
++     entry #monikers0   o handler `monikers`, em caixa, ou `null`
++     entry #diagnostics0   o handler `diagnostics`, em caixa, ou `null`
++     entry #diagnosticOptions0   as opções com que `diagnostics` foi registrado
++     entry #workspaceSymbols0   o handler `workspaceSymbols`, em caixa, ou `null`
++     entry #commands0   os comandos registrados: cada nome com seu handler em caixa
++     entry #commandNames0   os nomes dos comandos registrados, mantidos à parte para as capacidades
++     entry #configuration0   o handler `configuration`, em caixa, ou `null`
++     entry #watchedFiles0   o handler `watchedFiles`, em caixa, ou `null`
++     entry #foldersChanged0   o handler `foldersChanged`, em caixa, ou `null`
++     entry #creatingFiles0   o handler `creatingFiles`, em caixa, ou `null`
++     entry #createdFiles0   o handler `createdFiles`, em caixa, ou `null`
++     entry #renamingFiles0   o handler `renamingFiles`, em caixa, ou `null`
++     entry #renamedFiles0   o handler `renamedFiles`, em caixa, ou `null`
++     entry #deletingFiles0   o handler `deletingFiles`, em caixa, ou `null`
++     entry #deletedFiles0   o handler `deletedFiles`, em caixa, ou `null`
++     entry #resolveCompletion0   o handler `resolveCompletion`, em caixa, ou `null`
++     entry #resolveCodeAction0   o handler `resolveCodeAction`, em caixa, ou `null`
++     entry #resolveCodeLens0   o handler `resolveCodeLens`, em caixa, ou `null`
++     entry #resolveDocumentLink0   o handler `resolveDocumentLink`, em caixa, ou `null`
++     entry #resolveInlayHint0   o handler `resolveInlayHint`, em caixa, ou `null`
++     entry #resolveWorkspaceSymbol0   o handler `resolveWorkspaceSymbol`, em caixa, ou `null`
++     entry #adjust0   o ajuste puro de capacidades que `capabilities(adjust)` registrou, se houver
++   entry .Proxy   onde os reescritores e ganchos de um proxy são registrados, emprestado ao bloco dado a `Lsp.proxy`
+
+% 1 1 0 060409b47c49974a0641ad51c1c756d0
+
+@ 0 8 0 0b02770e318932040f3bc003d9bec1c4
++         O alvo dos combinadores `rewrite`, como `Lsp.Registry` é o dos combinadores do
++         servidor. Duas camadas de interceptação vivem aqui: os reescritores tipados
++         (`rewrite.hover`, `rewrite.capabilities`, `rewrite.diagnostics`, …) são indexados por
++         método e agem sobre um payload decodificado, e os ganchos brutos (`rewrite.outbound`,
++         `rewrite.inbound`) agem sobre mensagens inteiras, incluindo métodos que esta biblioteca
++         não modela. O que nenhum dos dois cobre é encaminhado byte a byte. É uma capability
++         exclusiva, confinada ao bloco de registro; seus slots públicos são atribuídos pelos
++         combinadores e lidos uma única vez, por `Proxy.run`, quando o registro termina.
+
+@ 0 3 0 09de8f4ed59b77951161414e081dab99
++         A sessão com o servidor upstream chega junto com o proxy e é alcançada por `upstream`:
++         um reescritor ou gancho é registrado antes que a sessão exista, mas executa enquanto
++         ela existe, então um proxy pode perguntar ao servidor algo que o editor nunca
++         perguntou.
+
+% 0 1 0 1f553d1071f1b70d184df0b8bf490462
+
+% 0 1 0 0977dda287fa43aa1518cc04908b8adc
+
+% 0 1 0 18fa3e638764a8d71a104bda16f48886
+
+@ 0 1 0 09973a0048af76470d6d9351c69e7105
++     entry .Rewriter   um reescritor de um payload, indexado por método nas tabelas do proxy
+
+% 1 1 0 0cb85bd8a0878dc30c7396cd561285b8
+
+@ 0 22 0 0b8b0f31335aff1b116fa32fd7424d5b
++           O que `rewrite.hover` e os outros combinadores tipados constroem: `rewrite(json)`
++           recebe um `Tactic[Json.Error]` a cada chamada, do laço que o aplica, então a
++           instância que o proxy guarda não tem tática própria, e um payload que ele não
++           consegue decodificar passa sem alteração — um hover `null`, por exemplo, é
++           encaminhado como o `null` que é.
++       entry #rewrite   o payload alterado, ou um `Json.Error` lançado pela tática dada
++     entry .run   executa um proxy com um observer explícito: o que `Lsp.proxy` chama
++         `Proxy.run(upstream, observer)(register)`, com os mesmos requisitos contextuais de
++         `Lsp.proxy`. O bloco executa uma vez; depois as regras são lidas do proxy, a sessão
++         com `upstream` abre, o bloco de `rewrite.connected` começa numa tarefa própria, e o
++         laço lê o editor da entrada padrão até esgotá-la. As mensagens do editor são
++         classificadas por método e encaminhadas com seus próprios ids; as do servidor são
++         interceptadas por um listener que retipa cada resposta pelo método da requisição a
++         que ela responde, aplica o reescritor correspondente e escreve o resultado na saída
++         padrão. Uma resposta a uma requisição que o próprio proxy fez (cujo id é uma string
++         criada por obligatory) é encaminhada a quem a aguarda, então nunca chega ao editor.
++     entry #results   os reescritores de respostas, pelo método da requisição a que respondem
++     entry #notices   os reescritores de notificações e de requisições do servidor ao cliente, por método
++     entry #outbound0   o gancho `rewrite.outbound`, em caixa, ou `null`
++     entry #inbound0   o gancho `rewrite.inbound`, em caixa, ou `null`
++     entry #connected0   o bloco `rewrite.connected`, em caixa, ou `null`
+
+@ 0 10 0 0201fc521e3235c80c47ee5deb063068
++ entry .LspLifecycle   a trait de transmissão para os métodos de ciclo de vida e de sincronização de documentos
++     Uma das sete traits `@rpc` que, unidas em `Lsp`, compõem a superfície de transmissão;
++     separada para que o `JsonRpc.serve` e o `JsonRpc.proxy` de obligatory gerem uma classe de
++     tamanho administrável por trait. Ela declara `initialize`, `initialized`, `shutdown`,
++     `exit`, `textDocument/didOpen`, `textDocument/didChange`, `textDocument/didSave` e
++     `textDocument/didClose`, cada um com os nomes e tipos de parâmetros próprios do protocolo
++     (`textDocument: Lsp.TextDocumentIdentifier`, e assim por diante). `Lsp.Connection#lifecycle`
++     é o cliente gerado para ela, e a sessão de `Lsp.listen` a implementa. Não é exportada para
++     o guarda-chuva `soundness`: é acessada com `import exegesis.*` e só é necessária para um
++     servidor escrito à mão como um `Lsp` ou para um cliente que chama diretamente um método de
++     transmissão.
+
+@ 0 1 0 0e42d4e6e9d412c30b52c6f801cda11c
++ entry .LspLanguage   a trait de transmissão para os recursos centrais da linguagem
+
+% 0 1 0 02d6b40fdb2209bf0bc9e887b720ead8
+
+% 0 1 0 11352fc695fe45a5094ffc326b1e12f5
+
+@ 0 2 0 193333b6689912e90f08ee2b68558c45
++     `textDocument/rename`, `textDocument/codeAction` e `textDocument/signatureHelp`. Veja
++     `LspLifecycle` para saber por que a superfície é dividida; `Lsp.Connection#language` é seu
++     cliente.
+
+@ 0 1 0 00463cdaa0b8bf1b14ce68d4d8813029
++ entry .LspNavigation   a trait de transmissão para navegação, dobramento, links, lenses e cores
+
+% 0 1 0 15b0a80a94a4f65f0d621fce9080e08b
+
+% 0 1 0 04f208053d8559e407dfb47ee65512ed
+
+% 0 1 0 04c461db4bd725b20de8fbd57cbbb89b
+
+@ 0 2 0 054e43c1840bff410ae0a02988b723c8
++     `textDocument/codeLens`, `textDocument/documentColor` e
++     `textDocument/colorPresentation`. `Lsp.Connection#navigation` é seu cliente.
+
+@ 0 1 0 0ec8e241b2eeb7381718f55ca51d3a59
++ entry .LspEditing   a trait de transmissão para formatação de intervalo e durante a digitação, preparação de renomeação, salvamentos e hierarquias
+
+% 0 1 0 155067010d95f0540eba3ba0c7c937fb
+
+% 0 1 0 108f42fadefa36000685294024726b68
+
+% 0 1 0 1fdb322fbf2f609606c9a92a6fa3950d
+
+% 0 1 0 13b0e2ac3684a7d7024d4fcd63585db6
+
+@ 0 2 0 040a42f6f786eca41b690dcb25b9a2c3
++     `typeHierarchy/supertypes` e `typeHierarchy/subtypes`. `Lsp.Connection#editing` é seu
++     cliente.
+
+@ 0 1 0 1c28ae2c8b17aba018e18ca605126b78
++ entry .LspAdvanced   a trait de transmissão para tokens semânticos, inlay hints, valores inline, monikers e diagnósticos por pull
+
+% 0 1 0 081f373edb916d8f18d055a9117be843
+
+% 0 1 0 0f511e33b8b8eed0194cf6cb90b0f05d
+
+% 0 1 0 06b58ff976d9ac7d084fb2595947ccf6
+
+@ 0 1 0 152a5cb1d95277511091413de5a1fdc5
++     e `textDocument/diagnostic`. `Lsp.Connection#advanced` é seu cliente.
+
+@ 0 1 0 1dcb2c53e5aac051185dfbfe75822fc5
++ entry .LspWorkspace   a trait de transmissão para símbolos do workspace, comandos, configuração e operações de arquivo
+
+% 0 1 0 1f3b3b9781a7f4b0122250b82d571c8f
+
+@ 0 3 0 09df94e6886a58a315814b0b062b2ef9
++     `workspace/didChangeWatchedFiles`, `workspace/didChangeWorkspaceFolders`, os seis métodos
++     de `workspace/willCreateFiles` a `workspace/didDeleteFiles`, e `$/setTrace`.
++     `Lsp.Connection#workspace` é seu cliente.
+
+@ 0 1 0 1d25357cc6dc003e0d2701761495dcf4
++ entry .LspResolve   a trait de transmissão para as requisições `*/resolve`
+
+% 0 1 0 15e434a40c05baf417b8ca78046f600b
+
+@ 0 3 0 00f580525397abf616c62ca8485efd0c
++     `documentLink/resolve`, `inlayHint/resolve` e `workspaceSymbol/resolve`. Cada um recebe o
++     próprio item como seus `params`, não um objeto com campos nomeados, então o parâmetro é
++     marcado com `@bare`. `Lsp.Connection#resolve` é seu cliente.
+
+@ 0 1 0 1a271315a2f1c15213cc209bd00bf55c
++ entry .LspSessional   a instância de `Sessional` que abre uma sessão com um `Lsp.Server`
+
+% 1 1 0 16ea887c297fc7431eabdf63b03b6230
+
+@ 0 6 0 1afee598f39eae08037318bdc28fcdea
++       O que `session` executa sobre um `Lsp.Server`: cria o canal para o servidor — os pipes
++       de um subprocesso com fork para `Server.Process`, os streams dados para
++       `Server.Streams` —, inicia uma tarefa de escrita que esgota nele as mensagens de saída
++       da conexão e uma tarefa de leitura que encaminha o que volta, empresta uma
++       `Lsp.Connection^` ao bloco e cancela as duas tarefas depois, abortando um subprocesso em
++       vez de esperar por ele. Seu `Self` é `Lsp.Server` e seu `Result` é `Lsp.Connection^`.
+
+@ 0 5 0 1860c86f7429158808a64f072859fd8b
++       O leitor despacha o que o servidor envia ao `Lsp.Listener` com que a instância foi
++       construída: uma notificação que a trait `Lsp.Client` modela chega ao método nomeado do
++       listener; qualquer outro método é uma requisição que o servidor faz ao seu cliente,
++       respondida por `Listener#request`; uma resposta é associada à requisição que a aguarda.
++       O observer vê cada mensagem nos dois sentidos.
+
+@ 0 3 0 145e3592cae0fcf21929915300711562
++       A instância ambiente é o given `Lsp.Server.sessional`, construído a partir dos givens de
++       listener e de observer no escopo; construa uma explicitamente só para passar um listener
++       ou observer como valor, e vincule-a como given local:
+
+% 2 1 0 1da39dd0f34a0899014da3237505c4a7
+
+% 3 1 0 1c991fbaddfbaf2f01e3c6b40d070c1f
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 11738106f6d88b28149224b62d875beb
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 0d7f1e4b8b541f5918a614304decdd48
+
+% 0 1 0 1127b14c14fb4ec81dbeb7f7a40648e7
+
+% 0 1 0 0a6f46602ce0cfc21eb2242da9e90df1
+
+% 0 1 0 0c60ac168c84c0b21d277c50f1b7a7cb
+
+% 0 1 0 0f12f01fd76c24ca122a442b6e8e8309
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 13cc264b0e9e75430f7e78525d9f0449
+
+% 0 1 0 03477018f7d3c1f3172accaec474d532
+
+% 0 1 0 190748b913b6447a073e2abd9ea0ebc5
+
+% 1 1 0 12b7177654d2a81c042be60082fca283
+
+@ 0 5 0 10874093d6c2343d113e2ca192a3bd4c
++       Ela precisa de um `Monitor`, de um `Probate`, de `Diagnostics`, de um `WorkingDirectory`,
++       de um `Environment` e de um `Tactic[Lsp.Error]`: um subprocesso que não pode ser iniciado
++       é informado como `Lsp.Error(Reason.Unstarted, details)` pela tática. Um quadro malformado
++       ou um stream truncado é falha do leitor ou do escritor, informada à sucessão.
+
+% 1 1 0 18ebe41efc92d071032d030b5874455d
+
+% 1 1 0 18f732ae4e9d067004553b63837cd7d3
+
+% 0 1 0 13553857db4f71f017ab9f948adab767
+
+% 0 1 0 0ded34ea2a61e6c701e5d26195452abd
+
+@ 0 3 0 021683acfb84110a0d86ad7a0f76d19d
++   entry #Self   o sujeito: `Lsp.Server`
++   entry #Result   o que a sessão empresta: `Lsp.Connection^`
++   entry #session   abre o canal para um servidor, empresta uma conexão ao bloco e o fecha depois
+
+@ 0 1 0 05af13e05968858b0c1a94787abe1ceb
++ entry .rewrite   os combinadores de registro do proxy: alteram o que um servidor upstream diz
+
+% 1 1 0 10d0f551dd0b4c1e1a44aba3f0b8d50c
+
+@ 0 7 0 0b7870cd0c948ad403be468ee34d94d8
++       Um espaço de nomes próprio, para que `rewrite.hover` (alterar um hover que o servidor
++       retornou) e `Lsp.hover` (servir um hover) nunca colidam. Cada combinador tipado é
++       indexado por método, decodifica o payload no mesmo tipo `Lsp` que o lado do servidor
++       usa, aplica a função e recodifica; um método sem reescritor é encaminhado intacto, e um
++       payload que não decodifica — o `null` que um servidor envia para um hover que não tem —
++       passa como está, então um reescritor nunca precisa escrever o caso vazio. Cada um precisa
++       de um `Lsp.Proxy^` no escopo: o bloco de `Lsp.proxy`.
+
+% 2 1 0 1b87c04aca99c9e20becb6b63ba35a79
+
+% 3 1 0 03f2cac45f504f3414a1272fa6f71626
+
+% 4 1 0 09d3118c559d2882034f12530e6636d2
+
+% 0 1 0 14e653c0ce7803660ea4420dc55a6095
+
+% 0 1 0 0b20bfe3ef89853e0ea8baaa9c4fa618
+
+% 0 1 0 1ea56c684fd8f741053addd60dd67568
+
+% 0 1 0 1c26f3f967864300092b381e39a6e320
+
+% 0 1 0 0df7c86d58e81ebd0d0165e40c453d31
+
+% 1 1 0 1f03ec98160a34bf0df8854fc8f798a7
+
+% 2 1 0 1e21488fd04d885916b8f5f0c5eb2a73
+
+% 1 1 0 1e45d784727937141ffe9eb362eb8766
+
+@ 0 4 0 11290b8a85880bf50ee27d7f6f373f75
++       `.result` e `.notification` são as válvulas de escape para um método sem combinador, e
++       `.outbound`, `.inbound` e `.connected` são os ganchos de mensagem inteira. Um gancho
++       executa na thread que entregou a mensagem que ele altera, o que decide como ele pode usar
++       `upstream`: veja `exegesis.upstream`.
+
+% 1 1 0 010054bc9edbe6e71476a951f0196f3c
+
+% 0 1 0 0cd5ab48f2e17d860ee2527ef40a310a
+
+% 1 1 0 04aae8c5d4b16dbd0877af345d6a0009
+
+% 0 1 0 1935ccc92138372a1e9d61bc29e69b69
+
+@ 0 37 0 1b7c3dab38632ab51845b1cc66061190
++   entry .capabilities   altera as capacidades que o servidor upstream anunciou
++       Reescreve o resultado de `initialize`: um proxy que acrescenta um recurso precisa
++       declará-lo, e um que remove um recurso precisa deixar de declará-lo.
++   entry .hover   altera cada hover que o servidor retorna
++   entry .completions   altera cada lista de sugestões de conclusão que o servidor retorna
++   entry .definitions   altera cada lista de localizações de definição que o servidor retorna
++   entry .symbols   altera cada lista de símbolos de documento que o servidor retorna
++   entry .codeActions   altera cada lista de ações de código que o servidor retorna
++   entry .codeLenses   altera cada lista de code lenses que o servidor retorna
++   entry .inlayHints   altera cada lista de inlay hints que o servidor retorna
++   entry .signatureHelp   altera cada ajuda de assinatura que o servidor retorna
++   entry .diagnostics   altera os diagnósticos que o servidor publica
++       A única notificação entre os reescritores tipados: a `uri` e a `version` que o servidor
++       informou são mantidas, e só a lista de relatórios cabe ao proxy alterar.
++   entry .result   altera o resultado de qualquer requisição, por método, como JSON bruto
++       `rewrite.result(method)(lambda)`: para um método que esta biblioteca não modela, ou um
++       payload que um proxy prefere tratar como JSON. A lambda recebe um `Tactic[Json.Error]`
++       do proxy a cada chamada, então um payload que ela não consegue ler passa sem alteração.
++       Uma resposta que carrega um `error` é deixada como está.
++   entry .notification   altera os parâmetros de qualquer notificação que o servidor envia, por método
++       `rewrite.notification(method)(lambda)`, como `.result`, para os `params` de uma
++       notificação ou de uma requisição que o servidor faz ao seu cliente; a mensagem é
++       reconstruída com seu id, se tinha um.
++   entry .outbound   vê cada mensagem que o editor envia, antes de ser encaminhada
++       `rewrite.outbound { (method, message) => … }`, que retorna um `Transit`: encaminhar,
++       reescrever, descartar, ou responder aqui à requisição para que o servidor nunca a veja.
++       Executa no laço que lê o editor, então uma requisição a `upstream` pode ser aguardada,
++       embora o editor espere junto.
++   entry .inbound   vê cada mensagem que o servidor envia, depois de qualquer reescritor, antes de ser encaminhada
++       `rewrite.inbound { (method, message) => … }`: o método é o de uma notificação, ou o da
++       requisição a que uma resposta responde, ou `Unset`. Retorna um `Transit`; `Answer` é
++       ignorado aqui. Executa na tarefa que lê o servidor, que é a tarefa que entregaria a
++       resposta a qualquer requisição feita a `upstream`, então uma requisição assim precisa ser
++       feita num bloco `async`, nunca aguardada inline.
++   entry .connected   executa um bloco uma vez, numa tarefa própria, assim que a sessão upstream abre
++       O lugar para o que um proxy precisa perguntar ao servidor antes de poder alterar
++       qualquer coisa, e o único gancho livre para aguardar uma resposta. O laço que lê o
++       editor não espera por ele, já que a primeira requisição de um editor pode chegar antes
++       que um servidor termine de iniciar.
+
+% 2 1 0 1035467aa47cb9ba15e6e2e7de40366c
+
+% 3 1 0 0b022f1db3ed7d270b54fbfef9017369
+
+% 4 1 0 03eea4d67ce43ded0b0415b2c25aebe1
+
+% 0 1 0 0eb82e49ce6346bc0350c060e8a9a3cc
+
+% 0 1 0 070d5f043497d3d8176480697ea23d19
+
+% 0 1 0 0c642a30c01d343d047e1965f25812f6
+
+% 0 1 0 0c50126a661234090e58732bbafae7d2
+
+% 1 1 0 0ad251233b1defec05340de559f6c8af
+
+@ 0 7 0 1bab954bc1004bf202a78c5ead97cf13
++ entry .upstream   a sessão do proxy com o servidor upstream, para perguntas próprias
++     `upstream` (que precisa de um `Lsp.Proxy^` no escopo) é a `Lsp.Connection` que um proxy
++     mantém com o servidor ao qual encaminha: o meio pelo qual um gancho pergunta ao servidor
++     algo que o editor nunca perguntou, tipicamente sobre um estado do projeto que só o
++     servidor conhece. As respostas voltam para quem perguntou e nunca chegam ao editor. É um
++     método, não um valor, porque o registro executa antes que o proxy tenha um servidor com
++     quem falar: chamá-lo dentro do bloco de registro, mas fora de um gancho, antes que a
++     sessão exista, faz o programa entrar em pânico.
+
+@ 0 5 0 01016f36a8651cc30faa3ab2b4a52e1a
++     Qual gancho o chama decide se ele pode aguardar a resposta. `rewrite.connected` tem uma
++     tarefa própria e pode aguardar livremente; `rewrite.outbound` executa no laço que lê o
++     editor, então aguardar é seguro, mas segura o editor; `rewrite.inbound` executa na tarefa
++     que lê o servidor — a tarefa que entregaria a resposta —, então uma requisição aguardada
++     ali espera para sempre, e precisa ser feita num bloco `async`.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 00e0c08cbea4883f020550fe3638cae1
+
+% 0 1 0 1fa4ecd06c010031191be1c127209223
+
+% 0 1 0 114717083af5ecb108497712f7b97f45
+
+% 0 1 0 1a97cb6095ab2ac50cc43b4dc1b28b87
+
+% 0 1 0 18a7f376eca22d400ee057786049022b
+
+% 1 1 0 0cd28fbb870536b5120f93437cd1a43b

@@ -1,0 +1,295 @@
+orthant 2 language
+
+@ 0 1 0 1d143e919d57047115dbef2b115f5242
++ ## Encodage en base
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 12fcee1183d020e3026936582562ab48
++ Les données binaires doivent souvent passer par un canal qui ne transporte que du texte : une
++ URL, une chaîne JSON, un en-tête d'email. Un
++ [encodage en base](https://en.wikipedia.org/wiki/Binary-to-text_encoding) fait correspondre les
++ octets à un ensemble sûr de caractères, afin qu'ils survivent au voyage.
+
+@ 0 3 0 063696cad69e2cd91f0816d99d92a793
++ Les octets se sérialisent en texte, et inversement, en Base64, en Base32, en hexadécimal et dans
++ les bases plus petites. L'encodage est désigné par un type, et son ensemble de caractères,
++ appelé son *alphabet*, est choisi dans la portée.
+
+@ 0 1 0 09e76515746de7641cf678f4df5f8080
++ ### L'encodage en base
+
+@ 0 5 0 16a0e512ac8e33d01b231299f0e4110a
++ « Base64 » n'est pas une chose unique. L'alphabet standard, l'alphabet sûr pour les URL, et les
++ variantes utilisées par MIME, par bcrypt et par IMAP encodent tous les mêmes octets en
++ caractères différents, et les mélanger corrompt le résultat. Le décodage soulève une autre
++ question : que faire d'un caractère qui ne fait pas du tout partie de l'alphabet. La plupart des
++ API enfouissent ces choix dans des indicateurs, ou les figent sans rien dire.
+
+@ 0 1 0 0423f9127da4e9d41bb7ba02abd7d851
++ Ici, l'encodage est un type, et l'alphabet est une valeur explicite :
+
+@ 0 5 0 1addbfd2093b122118d92ddcc75fc6a1
++ - La base, c'est-à-dire le nombre de bits que porte chaque caractère, est un paramètre de type.
++ - L'alphabet est un [given], amené dans la portée par un import : les formes standard et sûre
++   pour les URL de Base64 diffèrent donc d'une ligne.
++ - Le décodage valide chaque caractère, et signale un caractère hors de l'alphabet par une
++   erreur typée.
+
+@ 0 2 0 1e92bbe01a610f6f0d6a3469fd0198ff
++ Nommer l'alphabet par un import, au lieu de passer un indicateur, c'est le style du
++ [contexte déclaratif](../../philosophy/declarative-context.md) employé partout.
+
+@ 0 6 0 0d83c56e1eb3ea611a93f68990123b43
++ Le mot « encodage » sert à deux tâches différentes, et il vaut la peine de préciser de laquelle
++ il s'agit ici. Ce qui se passe ici est une *sérialisation*. Des octets deviennent du texte, et
++ rien du sens de ces octets n'est consulté ni préservé : les mêmes octets se sérialisent à
++ l'identique, qu'ils aient été une image ou une signature. Transformer une *valeur* en JSON ou en
++ XML est l'autre tâche. C'est l'[encodage](json.md), et il a besoin de savoir ce qu'est la
++ valeur. Les opérations sont nommées en conséquence : `serialize` et `deserialize`.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Tout provient du package `soundness`. Le dernier import permet aux exemples d'afficher leurs
++ résultats :
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0a42bec28543a29a1272a565021a68bf
++ ### Sérialiser des octets
+
+@ 0 2 0 165c043848ab7121026a63d39c5d712a
++ `serialize` écrit des octets sous forme de texte dans un encodage nommé. Les caractères
++ proviennent de l'alphabet dans la portée :
+
+% 2 1 0 0d919a20bffba2cf15cc2b949d276bf3
+
+% 0 1 0 1921fb6b9141e2261014d1e74d1c48f0
+
+% 0 1 0 03c3d5f384c61d251fab7a59dc745ba3
+
+% 1 1 0 17c11bfa83fd16d00a697beb7820127e
+
+% 3 1 0 12cf486fa04b835b1cb2e75891c56841
+
+% 4 1 0 1746fa7dcaa2ecbe02ad5b6637838229
+
+% 5 1 0 0d281da3536257be047d350336aea041
+
+% 0 1 0 0686837be74895480ad4f5489ab297c3
+
+% 1 1 0 1dd107db3c84a13413af0e823cdcbd79
+
+@ 0 2 0 1eb8235562bcc7be10cb928ea2e57bf8
++ `serialize` fonctionne sur toute valeur qui s'encode en octets, pas seulement sur des octets
++ bruts. Une valeur dotée d'une instance `Encodable in Data`, comme un [condensé](hashing.md), se
++ sérialise directement.
+
+@ 0 1 0 07c314cfd56dc0941cea46136cc69cd3
++ Sans alphabet pour la base dans la portée, il n'y a rien avec quoi sérialiser :
+
+% 2 1 0 0e63aee57abb9e480054fc9b4def4916
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 17042211b66dd8a816680bb5b4b60884
+
+% 1 1 0 169994fda9c950d017e05f24d5c1c688
+
+@ 0 1 0 11056ce85ea6d02d09ae1c8a011aba0e
++ ### Désérialiser
+
+@ 0 2 0 1049c1279791cac104c7d01414e65000
++ `deserialize` relit du texte en octets, dans le même encodage. Un caractère hors de l'alphabet
++ lève une `Serialization.Error` : désérialiser exige donc une [stratégie] dans la portée :
+
+% 2 1 0 19d39811b5931b0a06c79a90fbb1e95b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 3 1 0 042e73bdc0550b5d19298413dd7d0b7b
+
+% 4 1 0 19c9b9965081e8b50118a06e4b3ee733
+
+% 5 1 0 025e7ee7206dd45e16ff93ea93595efb
+
+% 0 1 0 0dd062ae6276e45e0808f944c4eb3713
+
+% 1 1 0 01c89d42f81aed9010d03fc0c95852d6
+
+% 3 1 0 0c5a9711940bdd4d02c4942285101dc3
+
+% 4 1 0 0d0e806e88af423b193018ed1e2f2eee
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0a87743c9a8dea4b17c5aecd30c5f88e
+
+% 1 1 0 147931322a1d829b1756c133b063db44
+
+@ 0 1 0 0ee7a62c0f742ae60ae06e3e852f9287
++ ### Choisir un alphabet
+
+@ 0 3 0 00a46f646055eb140bb4992945eb0fa3
++ L'alphabet dans la portée décide des caractères exacts. `base64Standard` et `base64Url` sont les
++ choix courants. La forme sûre pour les URL est sans remplissage, et évite `+` et `/`, qui ont
++ un sens dans une URL :
+
+% 2 1 0 1f87b918ccaa3ea512cee0a63ad83242
+
+% 3 1 0 08a2685e5535eee7006cc2e92984c13b
+
+% 4 1 0 01b872764d9049071d934cc72d65f167
+
+% 1 1 0 0aec10e0e6434631069d840d20311d4e
+
+% 0 1 0 068968989e5227490fd0ab43d0543684
+
+% 0 1 0 0900b58e7b42f2b10af9a396ab1362cd
+
+% 1 1 0 123e132970abea3302dded92da3277af
+
+% 0 1 0 0e050b7bce38fa3510acc39b2a36a0bf
+
+% 0 1 0 1c24a70cd02a3c6905c81e8ef0fa93ed
+
+% 1 1 0 10d3db50ab97fbdb05729532cf6cee9f
+
+@ 0 4 0 121a13fd2ff15dfd07e54e93ebcd354e
++ Un alphabet *strict* n'accepte au décodage que ses propres caractères. Un alphabet tolérant
++ accepte aussi des équivalents reconnus, comme l'hexadécimal dans l'une ou l'autre casse. La
++ rigueur d'un décodage est donc un choix entre imports : `hexLowerCase` lit les deux casses, et
++ `hexStrictLowerCase` seulement la sienne.
+
+@ 0 1 0 1e588572ec612396020807a8ff37a582
++ L'ensemble complet se trouve dans le package `alphabets` :
+
+% 2 1 0 1c78fb5d3df47eac1cc7f0c37d30faad
+
+@ 0 35 0 16c1d0ba98b758bb0852903542029c75
++ column  Base
++ column  Given
++ column  Variante
++ column  Remplissage
++ column  Accepte aussi
++ row  `Base64`  `base64Standard`  standard  oui
++ row  `Base64`  `base64Unpadded`  standard, sans remplissage  non
++ row  `Base64`  `base64Url`  sûr pour les URL, avec `-` et `_`  non
++ row  `Base64`  `base64Xml`  XML, avec `+` et `-`, rempli avec `.`  oui
++ row  `Base64`  `base64Imap`  IMAP, avec `+` et `,`  non
++ row  `Base64`  `base64Yui`  YUI, avec `.` et `_`  non
++ row  `Base64`  `base64Radix64`  Radix-64  oui
++ row  `Base64`  `base64Bcrypt`  bcrypt, avec `.` et `/` en premier  non
++ row  `Base64`  `base64Sasl`  SASL, avec `+` et `,`  non
++ row  `Base64`  `base64Uuencoding`  uuencoding  non
++ row  `Base32`  `base32StrictUpperCase`  standard, majuscules  oui
++ row  `Base32`  `base32StrictLowerCase`  standard, minuscules  oui
++ row  `Base32`  `base32UpperCase`  standard, majuscules  oui  minuscules
++ row  `Base32`  `base32LowerCase`  standard, minuscules  oui  majuscules
++ row  `Base32`  `base32ExtendedHexUpperCase`  hexadécimal étendu, majuscules  oui  minuscules
++ row  `Base32`  `base32ExtendedHexLowerCase`  hexadécimal étendu, minuscules  oui  majuscules
++ row  `Base32`  `base32ZBase32`  z-base-32  oui
++ row  `Base32`  `base32ZBase32Unpadded`  z-base-32, sans remplissage  non
++ row  `Base32`  `base32Geohash`  Geohash  non
++ row  `Base32`  `base32WordSafe`  sans mots  non
++ row  `Base32`  `base32Crockford`  Crockford  non  minuscules ; `o` et `O` comme `0` ; `i`, `I`, `l` et `L` comme `1`
++ row  `Hex`  `hexStrictUpperCase`  majuscules  non
++ row  `Hex`  `hexStrictLowerCase`  minuscules  non
++ row  `Hex`  `hexUpperCase`  majuscules  non  minuscules
++ row  `Hex`  `hexLowerCase`  minuscules  non  majuscules
++ row  `Hex`  `hexBioctal`  bioctal  non
++ row  `Octal`  `octalStandard`  standard  non
++ row  `Quaternary`  `quaternaryStandard`  `0123`  non
++ row  `Quaternary`  `quaternaryDnaNucleotide`  nucléotides de l'ADN, `ATCG`  non
++ row  `Binary`  `binaryStandard`  `01`  non
+
+% 1 1 0 0bc6cb7489d20bb81aa2f868b1f3642f
+
+@ 0 1 0 1c06c44e232d760a0f1f735162752e13
++ ### Autres bases
+
+@ 0 2 0 191a6b41bfc6eacb01fa643302b81b17
++ Les mêmes `serialize` et `deserialize` gèrent toutes les bases, chacune avec ses propres
++ alphabets. La base est le nombre de bits que porte chaque caractère :
+
+% 2 1 0 1aa40a76328d955f00c11a941f7f7c89
+
+@ 0 8 0 03d5fa7a266aa5c20ffab718b59a84fb
++ column  Encodage
++ column  Bits par caractère
++ row  `Base64`  6
++ row  `Base32`  5
++ row  `Hex`  4
++ row  `Octal`  3
++ row  `Quaternary`  2
++ row  `Binary`  1
+
+% 1 1 0 03603ab54ccf5dea1e4b952d8af5a6fe
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 175587a7f960cb7209bf0fbbdbcd86e0
+
+% 1 1 0 10bf12a5d86b358605b1ba259c8f2c99
+
+% 3 1 0 1fa55c843d35ca2e1ae5296a148f765a
+
+% 4 1 0 06a33d62794cd3d70f1eebfd2aa4fc20
+
+% 5 1 0 1bd3d4da63c9f4971ef07e80970319e3
+
+% 0 1 0 13423416dcdf23d6180ec02a126fafb0
+
+% 0 1 0 168ded439e6f2e19111a8a44510a87ca
+
+% 0 1 0 02352bd34e90060f103449014d4a4e57
+
+% 1 1 0 026239180dcb727c1447b624d2df5f01
+
+@ 0 2 0 00381214a04edfb51f73e23de5acc380
++ Un littéral hexadécimal d'octets s'écrit avec l'interpolateur `hex"…"`, comme le montre
++ [données binaires](binary-data.md#reading).
+
+@ 0 1 0 1c12cb6a3eb5951802149028c1042a35
++ ### Encoder un flux
+
+@ 0 3 0 09c269883b41bdc417a3da892936884b
++ Un alphabet est aussi une étape d'un [flux](streams.md#composing-a-pipeline). Les octets sont
++ encodés au fil de leur passage, sans être d'abord rassemblés, ce qu'exige un corps encodé en
++ base écrit sur un socket, ou un gros fichier préparé pour être transporté sous forme de texte :
+
+% 2 1 0 1f4acc7b6d62e2930fa649986a117bac
+
+% 0 1 0 004f3a2e35d34d3a062a60ef6d77d50d
+
+% 1 1 0 089343e7e4993a700a034166a3a33e4d
+
+@ 0 4 0 03524f69fb472243051667a9e5d62766
++ La forme en flux et la forme sur valeur entière concordent octet pour octet. Cela vaut aussi aux
++ frontières où un groupe Base64 de trois octets, ou un groupe Base32 de cinq, chevauche deux
++ morceaux. Le décodage fonctionne de la même façon : un flux peut donc être encodé d'un côté et
++ décodé de l'autre, sans qu'aucun des deux côtés n'en détienne la totalité.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 1 0 0125843c5adce93e1aaec3c194677576
++ - [CBOR](cbor.md), la [cryptographie](cryptography.md), [SSH](ssh.md), la
++   [géographie](geography.md) et le [texte](text.md) encodent des octets et des coordonnées dans
++   ces alphabets.

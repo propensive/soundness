@@ -1,0 +1,12 @@
+orthant 2 language
+
+% 0 1 0 04edaa4762b37e2b0e385af5f0551258
+
+@ 0 1 0 1ac5cb23e93a044c173a5d922a49a802
++ Jedes Charset verwendet den Sanitizer im Geltungsbereich.
+
+@ 0 4 0 02e014dd225711831e5e0dc01eba7d8d
++ Beim Kodieren besteht das umgekehrte Problem: ein Zeichen, für das die Kodierung keine Bytes hat,
++ etwa `é` in ASCII. Standardmäßig schreibt ein `Codepage` an seiner Stelle das Ersatzzeichen der
++ Kodierung, `?`. Mit importiertem `encodingSanitizers.strictEncodingSanitizer` löst es stattdessen
++ einen `Codepage.Error` aus, der das Zeichen nennt.

@@ -1,0 +1,28 @@
+orthant 2 language
+
+% 0 1 0 0f1fc0986cbdbd7c0e9ffb1209c4c120
+
+@ 0 1 0 18b727aa733ee7710eda9ac95b1d1d52
++ Levée lorsqu'un outil natif dont l'éditeur de liens a besoin n'est pas dans le `PATH`.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 09fffb1ab7d0a0b11f5c7079248322ca
++ L'édition des liens d'un binaire natif ou d'un paquet Android fait appel à des outils externes que
++ la JVM ne fournit pas : `clang` pour l'édition des liens native, et R8 et les outils de signature
++ pour un APK. Cette erreur nomme l'outil introuvable.
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 1 0 181c427c5ae66d56030a5179d4e9ed65
++ Installez l'outil nommé, ou ajoutez-le au `PATH` du processus qui exécute le build.
+
+@ 0 1 0 0b71e6280b1370aa1e108b1a528a55e4
++ > Cette erreur utilisait auparavant le code `↯/s.137.3`, qui entrait en collision avec `CompilerError`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 14ebaa7ce423e2b41522f803fe786b5d
++ - Source : `lib/anthology/src/core/anthology.Toolchain.scala`

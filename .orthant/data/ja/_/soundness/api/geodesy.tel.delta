@@ -1,0 +1,731 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 13682742deb4a48416b253e3be12b424
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 083f92d1a261a4760f587b7a57c5070f
++ info   型付きの値としての角度、地球上の位置、コンパスの方位角、ジオハッシュ、`geo:` URI
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 0f0dab6d6cbd93f61d5b85c16cd21f44
++     _Geodesy_ は、そうでなければ素の倍精度浮動小数点数で保持されるものに、地理的なコードのための型を与える。
++     `Angle` は本物の角度の量であり（度、ラジアン、回転数で構築され、剰余で加算・拡大縮小され、主値または標準値に正規化される）、単位を記憶に頼る角度を `Double` が表すことは決してない。
++     `Location` は一つのマシンワードに詰め込まれた緯度と経度であり、そこから別の位置への初期方位角、それらの間の大円距離、位置のジオハッシュが計算される。
++     方位角は、型引数で選ばれる 4、8、16 方位のコンパスローズの一点に解決されるか、北または東から測った `Angle` のままである。そして `Geolocation` は高度、不確かさ、パラメーターを持つ位置であり、RFC 5870 の `geo:` URI から読まれ、それとして書かれる。
+
+% 2 1 0 07a2f3a97693cb2218b47021b797dc4e
+
+% 3 1 0 1d69b555e63e3b3f1edc150aad3e98ff
+
+% 4 1 0 0b5650d138970e9a10acc960a9a819f7
+
+% 0 1 0 0ec0cbc75df83b33073d505d275d0234
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0de1f5a1ddf7d741136f8635834234dc
+
+% 0 1 0 13a11911d49a7ed51ffeec7a0152d060
+
+% 0 1 0 09441b34ed9451330fc6714567f287ab
+
+% 0 1 0 0db450ec1a2f4eca03479621396433aa
+
+% 0 1 0 1817b20c714129c70e98899035b79c62
+
+% 0 1 0 0a310acf281f74c41e6190ab2e87f2c6
+
+% 0 1 0 0049fa0a5d85a506062f1c9458935e5c
+
+% 0 1 0 1b526a560ec8e9990e86a166662501da
+
+% 1 1 0 0ef1d41668752ec018d5eb89e738f6cf
+
+@ 0 8 0 02b15288b8cf50020c8a5a597fdcdd28
++     `import soundness.*` は given を持ち込まないので、二つの given を名前でインポートする。
++     角度のテキストの形、すなわち `°` を付けて小数点以下一桁にした度は `angleShowable` である。これはトップレベルの given である。`Angle` はテキストのスタックより下のコンポーネントにあり、そのコンパニオンはそれを持てないからである。
++     方位角をどのコンパスで解決するかは、`compassBearings` 選択パッケージからの given である：`fourPointCompassBearing`、`eightPointCompassBearing`、`sixteenPointCompassBearing`、あるいは方位角を角度として得るための `fromNorthBearing` と `fromEastBearing`。
++     その他のすべて（角度に対する算術、その検査用の表示、`Location` と `Geolocation` のコーデック）はコンパニオンにあり、インポートは必要ない。
+
+@ 0 1 0 1a27b2eabeb00d7d136b91b85df2e1f0
++     ライブラリには二つのソースセットがある。
+
+@ 0 6 0 1f9a8f93cc542e041bad768744ce8823
++     - `geodesy.angle`：`Angle`、その算術、`Degree`、`ArcMinute`、`ArcSecond`、そして `deg` と `rad` の拡張。hypotenuse と symbolism 以外に依存しないので、テキストのスタックより下のライブラリ（色の色相、回転）は、残りなしに角度を使える。
++     - `geodesy.core`：`Location`、`Compass` と方位、`Directional`、`Locatable`、`Geolocation`、`angleShowable`、そして `compassBearings` パッケージ。
+
+@ 0 2 0 112870a50a8d28720fc11ba8376218a0
++     どちらも JVM、Scala.js、Scala Native 向けにコンパイルされ、すべてが `soundness` のアンブレラにエクスポートされる。そこでは `compassBearings` パッケージがアンブレラ自身のものと統合される。
+
+% 0 1 0 12485a04c3b429d81f432f10e0012dab
+
+% 0 1 0 1278ebb6db3985e0029a1a82ab68a179
+
+% 0 1 0 1e42c142ba85aeb41c7059085d10131a
+
+% 0 1 0 11217f2b5e7cd8d614801e20b5d6bd2d
+
+% 0 1 0 0fc7cb957f0daaa30ad9e38d436fa050
+
+@ 0 1 0 0f18e5675870b2f1149717be76280673
++ entry .Angle   量としての角度：度、ラジアン、回転数で組み立てられ、一回りする算術を持つ
+
+% 1 1 0 1461072e35ecbb9a1cedbeba357d6e78
+
+@ 0 5 0 11ff8b8058652544087139bf1b0d53b5
++       `Angle` はラジアンの `Double` の上の不透明型なので、角度が素の数や長さと混同されることはなく、その単位が慣習の問題になることもない。
++       角度はその単位を通じて作られ（`Angle.degrees(45)`、`45.deg`、`Angle.turns(0.25)`、`Angle(math.Pi/4)`、`0.785.rad`）、どの単位でも読み戻せる：`degrees`、`radians`、`turns`。
+
+% 2 1 0 0427135d5d00dba616299d00d8500175
+
+% 3 1 0 14bd69165ff07edc07d17916b63bad45
+
+% 0 1 0 13066e3833ea86f51e3015dee6381087
+
+% 0 1 0 05856861695a6d22063175267d6531e8
+
+% 0 1 0 09dd4ef1122203b60fcbc298b2c3fb19
+
+% 0 1 0 15cb204a5874b0a8068eeea7d30e91cb
+
+% 0 1 0 0f33fe87519cb37310110fc4b8539138
+
+% 0 1 0 1eca6605ab206ee61bd80871393eda73
+
+% 0 1 0 1621b4b1dc6f2b541c9e816b05e1ad05
+
+% 0 1 0 0b27620cf65e1f7d07fdd8ecc75ca2c6
+
+% 0 1 0 143d60889c21e643040e5ac542dcbc9a
+
+% 1 1 0 0d1df770a36a5dfc0c7d60e8d0a1b4ef
+
+@ 0 5 0 1c4dcd3fa87a100c00297055f413c34a
++       算術は角度がするように一回りする。角度どうしの `+` と `-`、そしてどちらの側からでも `Double` による `*` と `/` は、すべて一回転を法として簡約されるので、どの演算の後でも 370° と 10° は同じ角度である。
++       二つの正規形が使える：`[0°, 360°)` の `principal` と、`[−180°, 180°)` の `canonical` である。
++       リテラル `45.deg` は整数リテラルに対しても使える。拡張が取る `Double` に拡大されるからである。
+
+@ 0 5 0 03c1037bdde2f06219c8675424098f69
++       描画は二か所にある。
++       `inspect` はコンパニオンにあって完全な精度（`7.25°`）なので、デバッグ用の描画がインポートを覚えていることに依存することはない。表示のために小数点以下一桁に丸める `show` はトップレベルの given `angleShowable` であり、名前でインポートしなければならない。`geodesy.angle` コンポーネントはテキストのスタックより下にあり、それをここに置けないからである。
+
+@ 0 2 0 1e6c93b15fb800e80f03a201a191ea83
++       `Compass[n](angle)` は角度をコンパスの一点に解決し、`Location#bearing` は北から時計回りに測った方位角を生み出す。
+
+% 0 1 0 02737bb414ca7d2f14498738c280c888
+
+% 0 1 0 02514f35f86603d70c1de3112f486994
+
+% 1 1 0 00f4ef6b447dbff4089c84cddc18c7b0
+
+@ 0 3 0 17e1f300d5e4ab3605e16a463a3e2d7f
++ entry .Degree   `Angle` としての一度：π/180 ラジアン
++     掛けるための定数である：`45.0*Degree` は 45° であり、`Degree/60.0` は `ArcMinute` である。
++     `deg` 拡張は、この角度にそのレシーバを掛けたものと同じである。
+
+@ 0 1 0 1f02357804745b31179c4a65aff6c459
++ entry .ArcMinute   `Angle` としての一分角、一度の六十分の一
+
+@ 0 1 0 0ed471e0fcabed1e1d3d9b12a5614e75
++ entry .ArcSecond   `Angle` としての一秒角、一分角の六十分の一
+
+@ 0 4 0 0cef1f88fcabdbe113208f0a585ab6c1
++ entry .deg   この数の度の角度。`45.0.deg` のように
++     `Double` に対する拡張である：`51.5074.deg`。
++     整数リテラルは拡大されるので、`45.deg` も使える。
++     負の値は、括弧で囲んで `(-0.1278).deg` とするか、`Angle.degrees(-0.1278)` とするのが最もわかりやすい。`Angle` には独自の単項の符号反転がない。
+
+@ 0 2 0 106c73f815fb7e210bd0dbcd269e7e3a
++ entry .rad   この数のラジアンの角度。`math.Pi.rad` のように
++     `Double` に対する拡張で、`Angle(value)` と同じである。
+
+@ 0 6 0 035dbe758c45dc610cc4495811e3d19a
++ entry .angleShowable   角度を `°` を付けて小数点以下一桁の度として描画する：`45.0°`
++     `Angle` に対する `Showable` given である。
++     これはトップレベルの given なので、名前でインポートしなければならない（`import soundness.angleShowable`）。`Angle` はテキストのスタックより下の `geodesy.angle` コンポーネントで宣言されており、そのコンパニオンは `Showable` を持てないからである。
++     丸めは表示のためのものである。`inspect` が `7.25°` を与えるところで、`Angle.degrees(7.25).show` は `7.3°` である。
+
+% 2 1 0 18488e9b62ee4c0a058deda3ebf804eb
+
+% 3 1 0 0c3590f3e0e42744163979d2fa2257dc
+
+% 4 1 0 1df13546ebff6dd715336b6519c31f17
+
+% 0 1 0 057894a7d67fce681b07becfa79a7fac
+
+% 0 1 0 0fe4c0739d04c007046a236f54d75674
+
+% 1 1 0 1bbdeb5106d9cdb906ce0f26ddad753c
+
+@ 0 1 0 0bb21496fce29eb719a5fa33ec6f3ae8
++ entry .angleInternal   不透明型 `Angle` とその拡張を宣言するオブジェクト
+
+% 1 1 0 05bb3bc6dc003d9000a2959d00defc77
+
+% 2 1 0 15fff976769a0fe7025c79f943924085
+
+@ 0 37 0 19b426233c36e31302dd8c3cd689c9cd
++       直接使うものではない。`Angle` はここから `geodesy` パッケージにエクスポートされ、以下の拡張は不透明型の暗黙のスコープを通じて見つかる。
++       完全な説明は `geodesy` パッケージの下のそのページにある。
++   entry .Angle   不透明な角度の型。`geodesy.Angle` を参照
++     entry .apply   与えられたラジアンの角度
++         `Angle(math.Pi)` は半回転である。`Double` に対する `.rad` も同じである。
++     entry .degrees   与えられた度の角度。`Angle.degrees(45)` のように
++         コンパニオンのコンストラクターである。角度に対する拡張 `degrees` がそれを読み戻す。
++         `45.deg` と `45.0*Degree` は同じ角度である。
++     entry .turns   一回転に対する与えられた割合の角度。`Angle.turns(0.5)` のように
++     entry .addable   `angle + angle`。一回転を法として簡約される
++         `350.deg + 20.deg` は 10° である。コンパニオンにある `Addable` given である。
++     entry .subtractable   `angle - angle`。一回転を法として、負でない結果に簡約される
++         `10.deg - 20.deg` は 350° である。結果は主値である。
++     entry .multiplicable   `angle * double`。一回転を法として簡約される
++         `Angle.degrees(100)*4.0` は 40° である。`ArcMinute*60.0` は一度である。
++     entry .divisible   `angle / double`。一回転を法として簡約される
++         `Angle.degrees(90)/2.0` は 45° である。`Degree/60.0` は `ArcMinute` である。
++     entry .multiplicable2   `double * angle`：左から角度に掛けるスカラー
++         `Angle.degrees(90)*2.0` と同じく、`2.0*Angle.degrees(90)` は 180° である。
++     entry .inspectable   完全な精度の度によるデバッグ用の描画：`7.25°`
++         表示のために小数点以下一桁に丸める `angleShowable` とは異なり、検査用の表示は度の `Double` 自身の描画を書く。丸める描画は、それが示すために存在する状態を隠してしまうからである。
++         コンパニオンにあるので、インポートは必要ない。
++   entry .degrees   度による角度。`Double` として
++       `45.deg.degrees` は `45.0` である。
++       簡約はされない。`Angle.degrees(375)` として組み立てた角度は、`principal` または `canonical` を取るまで 375 として読み戻される。
++   entry .radians   ラジアンによる角度。`Double` として
++       表現そのものである：`90.deg.radians` は π/2 である。
++       `Location#surfaceDistance` からの大円距離は角度であり、そのラジアンに球の半径を掛けると、その表面に沿った長さになる。
++   entry .turns   一回転に対する割合としての角度
++       `Angle.degrees(90).turns` は `0.25` である。
++   entry .principal   `[0, 2π)` の中の等価な角度：375° は 15° に、−30° は 330° になる
++       コンパスの方位角が `Directional` に届く前に正規化される形である。
++   entry .canonical   `[−π, π)` の中の等価な角度：355° は −5° に、190° は −170° になる
++       経度が格納される形で、西経がその符号を保つようにするものである。
+
+@ 0 1 0 0351aa31d826c471050505e4551570b8
++ entry .Location   一つのマシンワードに詰め込まれた緯度と経度。方位角、距離、ジオハッシュを持つ
+
+% 1 1 0 0e6b2ff1a000bb8514700ff0e249de3d
+
+@ 0 4 0 1102c1d5262946e713e62e173f177852
++       `Location` は `Long` の上の不透明型である。緯度と経度はそれぞれ半回転に対する 32 ビットの固定小数点の割合として格納されるので、一つの位置は一つのマシンワードで済み、その集まりはボックス化されず、等しい二つの位置は等しい値である。
++       これは二つの角度から、緯度を先にして組み立てられ、角度として読み戻される。
+
+% 2 1 0 0d9e8a77d5202fb700481e00aa5e73b4
+
+% 3 1 0 029f6adbe22dc84302069c7c3ebba609
+
+% 0 1 0 12e094f9142410a215282952a9c2cc90
+
+% 0 1 0 01281b6e728d279d1e5dd81c7f858acc
+
+% 0 1 0 17141e7c44aec6cf14761148aa4835b5
+
+% 0 1 0 0223d0f368a3763619022b912d147ebf
+
+% 0 1 0 08b6c9895d9d274d1e3948e9b32bde68
+
+% 0 1 0 151ffbc0724683a205c0bbb7c335c686
+
+% 0 1 0 02e0a8d4b86a8bab0140e08209c47ba3
+
+% 1 1 0 1eb89a9ef80f8ade08e391064930683d
+
+@ 0 4 0 103dc7d46f13308705e69a39e1f6e541
++       固定小数点の形は、地球の表面上でおよそ一センチメートルまで座標を保持するので、座標は与えられたものと正確に同じではなく、およそ一千万分の一度以内で読み戻される。読み戻した角度は許容誤差をもって比較すること。
++       経度はその標準の範囲 `[−180°, 180°)` で格納されるので、西経は負として読み戻される。
+
+@ 0 2 0 1d6aae481159c46715645414e3fd8198
++       地理的な問いは `Location` に対する拡張メソッドであり、不透明型の暗黙のスコープを通じて見つかる。
+
+@ 0 9 0 1d399035f6a6d18f1470439257b65045
++       - `latitude` と `longitude`。それぞれ `Angle` である。そして `pair`。その二つのタプルである。
++       - `surfaceDistance(other)`。`Angle` としての大円上の隔たり（ハヴァーサインの公式による）で、そのラジアンに球の半径を掛けるとその表面に沿った距離になるので、同じコードが地球にも火星にも使える。
++       - `bearing[Compass[8]](other)`。別の位置へ向かう初期方位角で、`compassBearings` からの `Directional` given が提供するコンパスローズまたは角度の慣習で解決される。
++       - `geohash(n)`。位置の `n` 文字の base-32 ジオハッシュで、短いハッシュは常に長いハッシュの接頭辞である。
+
+@ 0 4 0 1fb88470eec54fc31547d80a557c9cd3
++       `Location` は、小数点以下六桁の度による `latitude,longitude` としてエンコードされ（`.encodable`）、これは `geo:` URI が使う形である。また完全な精度で `⌖51.4999999718275°,0.12599995365645733°` として検査用に表示される。
++       高度、不確かさ、座標参照系を伴うと、それは `Geolocation` になる。
+
+% 0 1 0 092f4767693240360b721f197ca1af46
+
+% 0 1 0 1343f0c2e89414671c40009b911b6167
+
+% 1 1 0 19705984c247585312bd8528b4d01705
+
+% 0 1 0 10862db0219cfb7a1296fddf61871ba7
+
+@ 0 1 0 1e179cecab394a1a07b123a233d67ae7
++ entry .Compass   型としての 4、8、16 方位のコンパスローズと、角度をその一点に解決すること
+
+% 1 1 0 109167795c7303db0bfcce6a9c7b2786
+
+@ 0 5 0 0692685ef60291ca1d08700e06e8aa5c
++       `Compass[4]`、`Compass[8]`、`Compass[16]` は、各コンパスローズの方位を名付けるマッチ型である。四方位には `CardinalWind`、八方位には `CardinalWind | IntercardinalWind`、十六方位にはそれらと `HalfWind` である。
++       方位の数は型引数なので、解決された方位角の型はそれがどのコンパスローズから来たかを示し、四方位の方位角に対するマッチは十六ではなく四つのケースにわたって網羅的である。
+
+@ 0 4 0 02736dd7dd54cdab1f37db82a0ed8681
++       `Compass[n](angle)` は、北から時計回りに測った角度を、コンパスローズの最も近い点に解決する。各点はそれを中心とする扇形を受け持つので、八方位のコンパスローズでは `Northeast` は 22.5° から 67.5° を受け持つ。
++       角度はまず正規化されるので、負の角度は反時計回りに測られ、一回転を超えるものは一回りする。
+
+% 2 1 0 0b1287b1ce0417620cc049caaa8960de
+
+% 3 1 0 0dd648c5bb63ad36065711a74bf8357a
+
+% 0 1 0 080442b0a8f3536a09be2dd0946a08e4
+
+% 0 1 0 005057d857e86fd50815ccb2d2176092
+
+% 0 1 0 17fda4ee9cb9b6c4169f768fa2415baa
+
+% 0 1 0 0d6711fe356bffc6161228b184b3efa5
+
+% 0 1 0 1933dad4c8b3028b0e7999a9ebed06d2
+
+% 1 1 0 13da946545cd88dd16d1e4b79f65c668
+
+@ 0 3 0 026776674c15d8f602fbc2d63dbc590c
++       `Location#bearing` は、`compassBearings` から名前でインポートした `Directional` given を通じて、コンパスローズの上で解決する。そこにある四方位、八方位、十六方位の given は `Compass[n]` を呼ぶ。
+
+@ 0 2 0 0a7fa3d9447712d514f88f9c864d516a
++       `CardinalWind` と `IntercardinalWind` は矢印（`↑`、`↗`）として表示される。`HalfWind` は `Showable` を持たないので、十六方位の方位角はそれに対するマッチで表示する。
+
+% 0 1 0 079219ecd1abb199056f60e033d9ecfa
+
+% 0 1 0 03bf164ac3d2a0f51431a588941e46cf
+
+% 0 1 0 180a7439330635040c871787fbc5c132
+
+% 1 1 0 06b32f7abf86e34315fbe63a4d6e90d6
+
+@ 0 12 0 04c18b14c12465be1dd271aaea1594ca
++   entry .apply   北から時計回りに測った角度に最も近い、4、8、16 方位のコンパスローズの点
++       `Compass[8](Angle.degrees(315))` は `Northwest` である。
++       インラインのメソッドである。方位の数はリテラルの型引数 `4`、`8`、`16` であり、結果は `Compass[n]` と型付けされる。
++   entry .points4   北から時計回りの四つの主方位
++       `North`、`East`、`South`、`West` の不変の配列である。点 *i* は *i* × 90° を中心とする。
++   entry .points8   北から時計回りの八つの方位
++       各組の間に中間方位を挟んだ主方位である：`North`、`Northeast`、`East`、… `Northwest`。
++       点 *i* は *i* × 45° を中心とする。
++   entry .points16   北から時計回りの十六の方位
++       各組の間に副中間方位を挟んだ八方位である：`North`、`NorthNortheast`、`Northeast`、… `NorthNorthwest`。
++       四つごとの点が主方位であり、点 *i* は *i* × 22.5° を中心とする。
+
+@ 0 1 0 14ebefe68ed313ec00435ca37f63853a
++ entry .CardinalWind   四つの主方位：`North`、`East`、`South`、`West`
+
+% 1 1 0 0d6b48ce0e114fcb1b2bbc065667a34b
+
+@ 0 3 0 055ee7293df0a623129bdb3926d488b4
++       `Compass[4]` のコンパスローズの点であり、それより大きいすべてのコンパスローズの主方位である。
++       ケースは `geodesy` パッケージ（とアンブレラ）にエクスポートされるので、`CardinalWind.North` ではなく `North` と、そのまま書く。
+
+% 2 1 0 18cc731ea34d91f51b0aacccbdd0a935
+
+% 3 1 0 152f449c9882ab510c94018e36504908
+
+% 0 1 0 0c5cae2bbc6c87e000189f877d9eebc4
+
+% 0 1 0 03f47f7ccc777070140615ffb8e03ab7
+
+% 0 1 0 142546fd7ad7a1011aebb32ebe986178
+
+% 0 1 0 091cea1d04d9a5d01dcb6cfcd8fb6f72
+
+% 0 1 0 0b54b17b702062251bce7e795077b8f6
+
+% 1 1 0 060be14724e7395d1bda0d9e1c475dcd
+
+% 1 1 0 04563b95ca529f3c00150d22dafa7e56
+
+@ 0 2 0 0402ba764199db2f1aafdad11f33ba0c
++   entry .showable   主方位を矢印として描画する：`↑`、`→`、`↓`、`←`
++       コンパニオンにあるので、インポートは必要ない：`North.show` は `t"↑"` である。
+
+@ 0 1 0 1a4b24ee998af6af030e992a29a359e0
++ entry .IntercardinalWind   四つの中間方位：`Northeast`、`Southeast`、`Southwest`、`Northwest`
+
+% 1 1 0 09323da54c8b01f71f8def2001dc7206
+
+@ 0 3 0 1820d278e5f47aec1abea7ae6336c78c
++       主方位の間の点で、`Compass[8]` のコンパスローズが `CardinalWind` に加えるものである。
++       ケースは `geodesy` パッケージとアンブレラにエクスポートされるので、そのまま書く：`Northeast`。
+
+% 1 1 0 17f6c4cebb7b9c66192475b520e8f6f2
+
+@ 0 2 0 03565992e2c70cf01312882c487827a1
++   entry .showable   中間方位を斜めの矢印として描画する：`↗`、`↘`、`↙`、`↖`
++       コンパニオンにあるので、インポートは必要ない：`Northeast.show` は `t"↗"` である。
+
+@ 0 6 0 0e431b44259dad5d047a6e3b9d58a8fc
++ entry .HalfWind   16 方位のコンパスローズの八つの副中間方位。`NorthNortheast` から `NorthNorthwest` まで
++     各主方位と中間方位の間の点で、`Compass[16]` のコンパスローズが八方位に加えるものである：`NorthNortheast`、`EastNortheast`、`EastSoutheast`、`SouthSoutheast`、`SouthSouthwest`、`WestSouthwest`、`WestNorthwest`、`NorthNorthwest`。
++     ケースは `geodesy` パッケージとアンブレラにエクスポートされるので、そのまま書く。
++     `CardinalWind` や `IntercardinalWind` とは異なり、副中間方位は `Showable` の矢印を持たない。
+
+@ 0 16 0 1f5a2d5cec590a791cef72fa76b66d93
++ entry .North   主方位の北、0°：`CardinalWind.North`、エクスポートされている
++ entry .East   主方位の東、90°：`CardinalWind.East`、エクスポートされている
++ entry .South   主方位の南、180°：`CardinalWind.South`、エクスポートされている
++ entry .West   主方位の西、270°：`CardinalWind.West`、エクスポートされている
++ entry .Northeast   中間方位の北東、45°：`IntercardinalWind.Northeast`、エクスポートされている
++ entry .Southeast   中間方位の南東、135°：`IntercardinalWind.Southeast`、エクスポートされている
++ entry .Southwest   中間方位の南西、225°：`IntercardinalWind.Southwest`、エクスポートされている
++ entry .Northwest   中間方位の北西、315°：`IntercardinalWind.Northwest`、エクスポートされている
++ entry .NorthNortheast   副中間方位の北北東、22.5°：`HalfWind.NorthNortheast`、エクスポートされている
++ entry .EastNortheast   副中間方位の東北東、67.5°：`HalfWind.EastNortheast`、エクスポートされている
++ entry .EastSoutheast   副中間方位の東南東、112.5°：`HalfWind.EastSoutheast`、エクスポートされている
++ entry .SouthSoutheast   副中間方位の南南東、157.5°：`HalfWind.SouthSoutheast`、エクスポートされている
++ entry .SouthSouthwest   副中間方位の南南西、202.5°：`HalfWind.SouthSouthwest`、エクスポートされている
++ entry .WestSouthwest   副中間方位の西南西、247.5°：`HalfWind.WestSouthwest`、エクスポートされている
++ entry .WestNorthwest   副中間方位の西北西、292.5°：`HalfWind.WestNorthwest`、エクスポートされている
++ entry .NorthNorthwest   副中間方位の北北西、337.5°：`HalfWind.NorthNorthwest`、エクスポートされている
+
+@ 0 1 0 044df08b9d5e95f70fd28069a2843d20
++ entry .Directional   方位角（北から時計回りの角度）を方向の値に変える型クラス
+
+% 1 1 0 1447eb20af0609f50ef0c27e98796b7c
+
+@ 0 5 0 0a6a64baa3ff97380ade11f7839524ce
++       `Directional` は、`Location#bearing[T]` がその結果型 `T` に求めるものである。それは単一のメソッド `direction` で、方位角の主値の角度（`[0°, 360°)` の中で、北から時計回り）から `T` への関数である。
++       `compassBearings` パッケージが標準のインスタンスを提供し、それぞれ名前でインポートする：4、8、16 方位のコンパスローズと、北または東からの `Angle` としての方位角である。
+
+@ 0 1 0 1727e9dcac7da0f3007b260d98c5bb8e
++       独自の扇形を持つドメインは、それを実装する。
+
+% 2 1 0 14728406025973571701ae0d148a3083
+
+% 3 1 0 100d19786b7dc0a5151e9cee59de030f
+
+% 0 1 0 11056cb5d7c0a33a016c9940724da134
+
+% 0 1 0 1ea293228a2aa5730fdfdf91285c4d2e
+
+% 0 1 0 01838468c44aa1321285b6c33eb0a176
+
+% 0 1 0 14af5ae2c0fd98e8086519edb55233c1
+
+% 1 1 0 18a5e7d8a259ed3b0d9ecb1939e935bc
+
+% 1 1 0 0cd0f2a637dc6a9411d4285fa39a3b39
+
+% 1 1 0 0fc5f61145c226f21040b3b4bfdabf2c
+
+@ 0 1 0 16c8c17edd4661191bb0f2fea2384c9e
++   entry #direction   方位角に対する方向。方位角は `[0°, 360°)` の中の北から時計回りの角度として与えられる
+
+@ 0 1 0 011fbfbc04fef1870fe7e46977834c80
++ entry .Locatable   地球上に位置を持つ値のための型クラス
+
+% 1 1 0 060e8a0199360748009b958d972ebd82
+
+@ 0 3 0 1d8eb277a897b5180732a466498b7e47
++       `Locatable` な型は、その任意の値に対して `Location` を与えられる：都市、駅、写真。
++       その一つのメソッド `location` がそれを取り出すので、位置を持つものについて汎用的なコードは `T is Locatable` を求め、それぞれから位置を読める。
+
+% 2 1 0 136f77199cf068ba0ef000fd7a3e672e
+
+% 3 1 0 1f1d1df294440f481ab4b975c5e296f7
+
+% 0 1 0 1c2e7dd40d2d210e0b0b510ef759846e
+
+% 0 1 0 09087ddea37d4f2e0cfc5a4e3e4cfca9
+
+% 0 1 0 1c641e02684d52400f2c0f48a50e6c7a
+
+% 0 1 0 00b4744854e1cf901a0b9a24125a7d8f
+
+% 1 1 0 1b14470dc3827e4218aadbefef8857a9
+
+@ 0 3 0 1c63bf4cb97117a0186089d184f396d9
++       Geodesy 自身はインスタンスも、それを取る操作も定義しないので、`Location` の拡張は引き続き `Location` を必要とする。`Locatable` は、その上に作られるライブラリのための継ぎ目である。
+
+% 1 1 0 0c5574e8fb256001063bbed1a016dcf9
+
+@ 0 1 0 015bf80004b3eeef0430f7fd82d786b9
++   entry #location   値の位置。`Location` として
+
+@ 0 1 0 1dae529f02d5c8a71fe241384cad3dd6
++ entry .Geolocation   省略可能な高度、不確かさ、参照系、パラメーターを持つ位置：RFC 5870 の `geo:` URI
+
+% 1 1 0 02f804b761123b0f186572b79b8861dd
+
+@ 0 4 0 0639c702a790a8800fc0e4fb936c3c39
++       `Geolocation` は、RFC 5870 の `geo:` URI の内容をケースクラスにしたものである：`Location`、メートル単位の省略可能な高度、省略可能な座標参照系（`crs`）、メートル単位の省略可能な不確かさ（`u`）、そしてその他のパラメーター。
++       これは `geo:` のテキストからデコードされ、それへとエンコードし戻される。
+
+% 2 1 0 142a37add1e69850033e357673a0d900
+
+% 3 1 0 15b6f6d39840fc4d0fcd9ef9ccdfa735
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0e589a84e1d8e7cd1c0162f025842027
+
+% 0 1 0 0b21de40911578a6191209f637f1b72f
+
+% 0 1 0 11a0b7fd77cc583801e5cb943a8d5405
+
+% 0 1 0 0bfc5330b8f204f70e538a048b25c948
+
+% 0 1 0 08e4032c600a6769009f4c97a4b7c97e
+
+% 0 1 0 0f70e667ce1835e50d31bbb9bbc97b69
+
+% 0 1 0 007b314eb43698e009377a4efa3332ac
+
+% 1 1 0 0c0ae222cefd4b310cf8763eacd54b2f
+
+@ 0 6 0 0954fd126766d8371d19f0da2a27045c
++       デコードには `Tactic[Geolocation.Error]` が必要であり、その `Reason` が誤りを名付けるエラーを発生させる。回復する戦術のもとでは、パースできた部分を持つ部分的な `Geolocation` が返される。
++       座標と高度は `-?[0-9]+(.[0-9]+)?` の形の数である（指数も先頭の `+` もない）。
++       RFC が順序を定めるとおり、`crs` は最初のパラメーターとしてのみ、`u` はその後の最初のものとしてのみ認識される。その他のパラメーターは、場所を外れた `crs` や `u` も含めて、`#parameters` に保持される。
+
+@ 0 2 0 121a369ea88c14090c6cb74fed0af043
++       エンコードはすべての数を小数点以下六桁で書くので、デコードして再びエンコードした URI は、値としては等しいが、テキストとして常に等しいとは限らない。
+
+% 1 1 0 15051c11848586951c6dbb4aa5d97431
+
+% 0 1 0 1dbaec3479e296710564c3cec93236f2
+
+@ 0 10 0 1290252e185d2c4f0bd7452e2b07a0f7
++   entry .decoder   `geo:` URI を `Geolocation` として読む。不正であれば `Geolocation.Error` を発生させる
++       コンパニオンにある `Decodable in Text` given なので、`text.as[Geolocation]` はスコープに `Tactic[Geolocation.Error]` だけを必要とする。
++       別のスキームのテキストは `BadScheme` を発生させ、二つの座標を持たない `geo:` のテキストは `ExpectedCoordinates` を発生させる。どちらの場合も、回復された値は 0°、0° の `Geolocation` である。
++   entry .encodable   `Geolocation` を `geo:` URI として書く。数は小数点以下六桁
++       `geo:`、位置の `latitude,longitude`、そして `,altitude`、`;crs=…`、`;u=…`、残りのパラメーターを、それぞれ存在する場合にのみ書く。
++       コンパニオンにあるので、インポートは必要ない。
++   entry .Error   テキストが整形式の `geo:` URI でないときに発生する
+
+% 1 1 0 13b47fb03cff9de0014429237a0235fd
+
+@ 0 3 0 109e6346b986c56314351e64b3af813c
++         エラー `↯/s.46.1`：_the geo URI is not in the correct format because …_ に `Reason` のメッセージが続く。
++         スコープにある `Tactic[Geolocation.Error]` を通じて、`Geolocation.decoder` が発生させる。
+
+% 2 1 0 1259794ee1a19daf1837d5df396d0624
+
+% 3 1 0 09148195721b613c0aa70b9de0105caa
+
+% 0 1 0 1931ca3a183060d60c58d942d49fbc0e
+
+% 0 1 0 1df9d3f652c477490e9a7fb7793c6420
+
+% 1 1 0 196840b5ede78ea31457d26c8934d965
+
+@ 0 3 0 1165979f66f1bc94047fde52acc38546
++         各 `Reason` は 420 の枝番として番号付けされている。ケースとそのメッセージは `Geolocation.Error.Reason` の下に表にしてある。
++     entry .Reason   `geo:` URI がデコードに失敗した理由。エラー `↯/s.46.1` の枝番として番号付けされる
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 1d64f31da311da7e0540cb63ee4d1c88
++           `Clarification` の列挙型で、エラー `↯/s.46.1` の枝番として番号付けされている。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注
+
+% 0 1 0 08a9034792677fa00fa9a68effdfd579
+
+% 0 1 0 0e0fdd7a4a93756007b841bca5fa9ccc
+
+% 0 1 0 02a7b878e680a6a71b1524366b8be929
+
+% 0 1 0 0980095373267c3700589c6e1b91de3c
+
+@ 0 1 0 18ac533af8d5981b1c75ec9c665ff21d
++           row  `UnexpectedSuffix`  5  _a `,` or `;` was expected_  経度の後のゴミ、または数でない高度
+
+% 0 1 0 11a7c0f84bee2742178bb541c9b2f556
+
+% 0 1 0 1760b2decbc04b851b26402063ed52c7
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 8 0 19d607e0b0e98feb1abaac2184bc5194
++       entry #number   理由の枝番。1 から 7
++     entry .communicable   各 `Geolocation.Error.Reason` をそのメッセージとして描画する
++     entry #reason   URI がデコードに失敗した理由。`Geolocation.Error.Reason`
++   entry #location   緯度と経度。`Location` として
++   entry #altitude   メートル単位の高度、または `Unset`
++   entry #crs   `crs` パラメーターが名付ける座標参照系、または `Unset`（WGS-84 を意味する）
++   entry #uncertainty   `u` パラメーターからの、メートル単位の不確かさ、または `Unset`
++   entry #parameters   `crs` と `u` の後のすべてのパラメーター。名前による `Map[Text, Text]` として
+
+@ 0 1 0 0cc85fc40bc87cc612f4b8b99ffc7b0f
++ entry .compassBearings   方位角を解決できる慣習。それぞれ名前でインポートする `Directional` given
+
+% 1 1 0 13ae4e8dd13c750217ac0bae6ec0463f
+
+@ 0 5 0 13ad300584b81d890bfff10ddf2f17d3
++       `Location#bearing[T]` は `T is Directional` を必要とし、どれを使うかは選択（コンパスローズの方位の数、または角度とその零点）なので、暗黙のスコープには何もなく、`import soundness.*` も何も持ち込まない。ワイルドカードのインポートは given をインポートしないので、一つを名前でインポートする。
++       このパッケージはアンブレラ自身の `compassBearings` と統合される。
+
+@ 0 1 0 1f5b81396a2670b91f45166d4fc40aa9
++       ロンドンからパリへの同じ方位角を、それぞれのもとで示す。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 07ed05f754f4f3f30b6948203e2fb068
+
+% 1 1 0 10b68e92662b345400c3f6065c335605
+
+% 2 1 0 0b3024186dfee8cc03b2285676eb61d8
+
+% 0 1 0 128cd2382e1dd91e1fdffd39725218ec
+
+% 2 1 0 1b7f9cdc72a177f40a2ef287b6e71a0d
+
+% 3 1 0 0150909cda548287059c71aeb7edc6c4
+
+% 0 1 0 17afe9c7ab3e56ef187f15fd8007f6a7
+
+% 0 1 0 0857b52f3f2fc0cf04f14f587482671f
+
+% 1 1 0 17954f05d953c5c505960d02f075e4d0
+
+% 2 1 0 15337c31e63e43761c222c0115e2e3db
+
+% 0 1 0 0ff5b778b8302a040d6275b8a2cf0c7f
+
+% 2 1 0 05d5ac6473f7d721064173a66ab79fce
+
+% 3 1 0 0a09e161a388a0ea15364486ac7b6aeb
+
+% 0 1 0 0175adad82ad62bb195a849cd0302fa7
+
+% 0 1 0 1798df88921672e00cbc96626b53143f
+
+% 1 1 0 138128e815158d811a9f26a845108f99
+
+% 2 1 0 0123ed2ca65ddd54134ddb4fc3af7f69
+
+% 0 1 0 120021db0fec257f02c18ec8ff178b75
+
+% 2 1 0 10509dc09c30c5171dc982efdca49754
+
+% 3 1 0 0364873b26b5dd480f64fc875116ef42
+
+% 0 1 0 0289e6b538b7d7e51e9f8e114396fa51
+
+% 0 1 0 1dccb270d38b864801b8ffaeeb517069
+
+% 1 1 0 16f2f9990c3d100f0f2feee8b2198c8f
+
+% 2 1 0 1349d0b685eff4f2170f8c6e32c7e80f
+
+% 3 1 0 14fda9975ad9ffb21ff517e1755622c1
+
+% 0 1 0 0ff801a7e673185a106f20254b8d5612
+
+% 2 1 0 08058eb2eb7b3af41fb9e67899377aaa
+
+% 3 1 0 071e13384636289617b4b74751495596
+
+% 0 1 0 0a600f2e392e2dca0853f09e4a098da4
+
+% 0 1 0 111a39a3a038f3860b91f90d97b4b445
+
+% 1 1 0 04a88cecd0e4a5b41e8732169f9ec2ce
+
+% 2 1 0 1f06edc7e352297d055f1e96372c52cc
+
+% 3 1 0 0fdabcdbbfa8cede03bcf8c2257ec531
+
+% 0 1 0 1ba0ed0ce37ed6d600d7d0a0b31c1f7f
+
+% 2 1 0 1f2f6702a1c1ad2d04189d1ffc18bc7d
+
+% 3 1 0 027d1eeeb00d1eca0e7b1e9b28112393
+
+% 0 1 0 1e6bcdbd9f9632a40db753409584d74b
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 1ff178f7eb83fda51f9ec83c94ab0750
++       各コンパスローズは、異なる型で、より粗い、またはより細かい答えを与える。角度の given は方位角を正確に保つ。
++       `fromNorthBearing` と `fromEastBearing` は同じ型を与えるので、一度にスコープに置く `Angle is Directional` は一つだけにすべきである。
+
+% 0 1 0 1e4eac66239a8ab60c33a936798e45b7
+
+% 1 1 0 0d568bac681ee86e1c74c69a1741e5f2
+
+@ 0 15 0 0d75f6d50ad5ce9a0bb83ffda0cf1c6c
++   entry .fourPointCompassBearing   方位角を最も近い主方位に解決する。`Compass[4]` として
++       `Compass[4](angle)` による `Compass[4] is Directional`：`North`、`East`、`South`、`West` のいずれか。
++   entry .eightPointCompassBearing   方位角を八つの方位のうち最も近いものに解決する。`Compass[8]` として
++       `Compass[8](angle)` による `Compass[8] is Directional`：`CardinalWind` または `IntercardinalWind`。
++   entry .sixteenPointCompassBearing   方位角を十六の方位のうち最も近いものに解決する。`Compass[16]` として
++       `Compass[16](angle)` による `Compass[16] is Directional`：`CardinalWind`、`IntercardinalWind`、`HalfWind` のいずれか。
++   entry .fromNorthBearing   方位角を、`[0°, 360°)` の中の北から時計回りの `Angle` として与える
++       恒等関数としての `Angle is Directional` である：90° が東である、航海者の慣習である。
++   entry .fromEastBearing   方位角を東からの `Angle` として与える：コンパスの方位角から 90° を引いたもの
++       方位角から四分の一回転を引く `Angle is Directional` なので、真東は 0° で、真北は 270° である。
++       角度の減算は負でない結果へと一回りするので、角度は `[0°, 360°)` の中にあり、引き続き時計回りに増える。これは数学の慣習の反時計回りの角度ではない。
+
+@ 0 1 0 0cf146d3c7aa92100141eb3afe88ecba
++ entry .internal   不透明型 `Location` とその拡張を宣言するオブジェクト
+
+% 1 1 0 1000b434f071f54d060497e447f29931
+
+% 2 1 0 0a60319565fe31a019829a9c4f2e5b3e
+
+@ 0 4 0 0ec54826b3bd7bcb106e208c067b91d4
++       直接使うものではない。`Location` はここから `geodesy` パッケージにエクスポートされ、以下の拡張は不透明型の暗黙のスコープを通じて見つかる。
++       完全な説明は `geodesy` パッケージの下のそのページにある。
++   entry .Location   不透明な位置の型。`geodesy.Location` を参照
+
+% 1 1 0 10757121382a052715d98a6bf5d8d019
+
+@ 0 6 0 100a6760281724430df6f98e6acc27d1
++         コンストラクターとコーデックを持つ不透明型 `Location = Long` である。
++         完全な説明は `geodesy` パッケージの下のそのページにある。
++     entry .apply   緯度と経度からの位置。二つの角度、または二つのマイクロ度の整数として
++         `Location(51.5.deg, Angle.degrees(-0.13))` は緯度を先に取る。
++         どの角度も受け入れられる。経度は `[−180°, 180°)` に簡約され、緯度は範囲を検査されないので、±90° を超える緯度はエラーではなく意味のない位置を与える。
+
+@ 0 2 0 0d0a2afabb2fd7c204bb94e443b04082
++         二つの `Int` を取る `Location(north, east)` は百万分の一度を単位とし、座標の表のための簡潔な形である：`Location(51500000, -130000)` は北緯 51.5°、西経 0.13° である。
+
+% 2 1 0 18023eebbf200361054701c01fdf36ca
+
+% 3 1 0 18f012f5da220afd018aded88a2d2aca
+
+% 0 1 0 0af49f4aa37c49171f16f90f7aa1722f
+
+% 0 1 0 07235120a241ad290b315560710970d7
+
+% 1 1 0 147e3bb38853c99d014cf0c5b46653a5
+
+@ 0 30 0 024e10d87555848e1452ab2fc685e238
++     entry .encodable   位置を、小数点以下六桁の度による `latitude,longitude` として書く
++         `Location(51.5.deg, 0.25.deg).encode` は `t"51.500000,0.250000"` である。これは `geo:` URI の座標の組であり、`Geolocation` のエンコーダーがそれを再利用する。
++         コンパニオンにあるので、インポートは必要ない。
++     entry .inspectable   位置として印を付けた、完全な精度のデバッグ用の描画：`⌖51.5°,0.126°`
++         各座標は、格納された値の完全な精度で、`Angle` 自身の検査用の表示によって描画される。その前の `⌖` は、その組がばらばらの二つの角度ではなく位置であることを示す。
++         コンパニオンにあるので、インポートは必要ない。
++   entry .latitude   緯度。`[−90°, 90°]` の中の `Angle` として
++       固定小数点の形から読み戻されるので、位置を組み立てた角度からおよそ一千万分の一度以内である。
++   entry .longitude   経度。`[−180°, 180°)` の中の `Angle` として
++       西経は負である：`Location(0.deg, Angle.degrees(-74.006)).longitude.degrees` はおよそ `-74.006` である。
++   entry .pair   緯度と経度。角度のタプルとして
++   entry .geohash   位置の、与えられた文字数の base-32 ジオハッシュ
++       `Location(57.64911.deg, 10.40744.deg).geohash(11)` は、標準的な例である `t"u4pruydqqvj"` である。
++       短いハッシュは長いハッシュの接頭辞であり、近くの位置は通常接頭辞を共有するが、セルの境界の両側にある二つの位置はまったく共有しないこともある。したがって接頭辞の一致は近さの最初のふるいであって、答えではない。
++   entry .surfaceDistance   二つの位置の大円上の隔たり。`Angle` として
++       ハヴァーサインの公式による。
++       角度のラジアンに球の半径を掛けると、その表面に沿った距離になる：地球では `london.surfaceDistance(paris).radians*6371` はおよそ 344 km である。
++       対称であり、ある位置からそれ自身へはゼロである。両極は半回転離れている。
++   entry .bearing   別の位置へ向かう初期方位角。`Directional` given によって解決される
++       `here.bearing[Compass[8]](there)` は、`here` での大円の方位角を北から時計回りに取って `[0°, 360°)` に正規化し、それをスコープにある `T is Directional` に渡す。これは `compassBearings` から名前でインポートしたコンパスローズまたは角度の慣習である。
++       大円に沿っては進むにつれて方位角が変わるので、これは出発時の方位角である。

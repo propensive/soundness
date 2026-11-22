@@ -1,0 +1,377 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1b6bde0239bc4951097da3e3730ac427
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 010f293732436540014ce82cfad94cc5
++ info   型クラスの型メンバーを細分化し、型を句として読めるようにする前置詞
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 0e1c4fc317507b6d0092cc2d2074138c
++     _Prepositional_ は、Soundness の型を、位置による引数に適用した型コンストラクターとしてではなく、句（`Path on Linux`、`Text is Decodable in Json`、`Quantity is Multiplicable by Duration`）として書けるようにする語彙を提供する。
++     各前置詞は中置の型の別名であり、その左にある型の抽象型メンバーをちょうど一つ細分化する：`in` は `Form` を、`on` は `Plane` を、`by` は `Operand` を、`to` は `Result` を設定する、という具合である。
++     それぞれが*異なる*メンバーを細分化するので、前置詞は入れ子にすることなく、任意の順序で続けて適用でき、シグネチャが関心を持つメンバーだけを書けばよい：`Text is Decodable` はそれだけで完全な型であり、`in Json` はそれを絞り込む。
+
+@ 0 10 0 059821c19b3f73ca0a124103764cc0da
++     このライブラリには二つの半分がある。
++     メンバーが一つの十二の**トレイト**が、前置詞が細分化するメンバーを宣言する：`Formal`（`Form`）、`Planar`（`Plane`）、`Operable`（`Operand`）、`Resultant`（`Result`）、`Topical`（`Topic`）、`Original`（`Origin`）、`Domainal`（`Domain`）、`Transportive`（`Transport`）、`Targetable`（`Target`）、`Contrastive`（`Contrast`）、`Limited`（`Limit`）、`Locative`（`Locus`）。
++     型クラスは必要なものをミックスインする。
++     そして十二の**前置詞**がそれらを細分化する：`in`、`on`、`by`、`to`、`of`、`from`、`across`、`over`、`onto`、`against`、`under`、`at`。
++     それぞれには上限があり、そのメンバーを宣言する型にだけ適用できるので、前置詞をそれの置き場所のない型に付けることはできない。例外は二つで、形式が任意のカインドの型コンストラクターでよい `in` と、`over` であり、これらは上限を持たず、任意の型に付く。
+
+@ 0 4 0 1ba4a00f5459723c1510d34f678b38a4
++     三つ目の部品は、すべての Soundness の型クラスの基底である `Typeclass` である。
++     これは、インスタンスが*対象とする*型である `Self` を宣言し、プレリュードの `is` がそれを細分化する：`Text is Decodable` は `Decodable { type Self = Text }` である。
++     `Typeclass.Pure` は、インスタンスがケイパビリティを保持しないことをコンパイラが検証した部分集合である。
+
+% 2 1 0 12e111a7995e727012dff9e23a8dfc47
+
+% 3 1 0 06b61271454d5603124549fe4fbbaae3
+
+% 0 1 0 12741c6c8b2002b71f03569e1086213c
+
+% 0 1 0 09ebefb62083b2fa17915bbde0bfe0c4
+
+% 0 1 0 0b6136de51c8879a160cfd0d84ce7e12
+
+% 0 1 0 0529aaba4f77957702cce82b9e25f91c
+
+% 0 1 0 189f1f6bfc8e4414001094222353b888
+
+% 0 1 0 1f9a1276a4ff7e840667624fe65b787d
+
+% 1 1 0 114514f45c21fe45123ed309aa8559cc
+
+@ 0 5 0 027ddb21761224ac0a3339f2a8bf37e9
++     型クラスの利用者に見えるのは、`is`、`Self`、そして前置詞の名前だけである。トレイトが重要なのは、どのメンバーを宣言するかを選ぶ型クラスの作者にとってである。
++     型クラスの*定義*はトレイトをミックスインし、その*使用*は散文として読める。
++     しかしコンパイラは脱糖した形を報告する（不一致は `in Json` ではなく `{ type Form = Json }` と記述される）。ここが、変換が逆向きに行われる唯一の場所である。
+
+@ 0 3 0 0865eb73f6c365e11d3596b213683a4b
++     型は一度に一つの節ずつ組み立てられ、各節は前の型がすでに認める細分化である。
++     どの段階でも同じ given が見つかる。変わるのは、呼び出し側がそれについてどれだけ知っているかである：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 18f5fae12e4c842d017a6bb9474b7c9a
++       label むき出しの型クラス：すべてのメンバーがまだ抽象的なインスタンス
+
+% 1 1 0 10f32c74842e95fd17356aa69115c386
+
+% 0 1 0 0db032160c4d309d0b4881fa8a57aa61
+
+% 1 1 0 1044b435f8b46e7c01903e52c2952406
+
+@ 0 1 0 117b7b9483787ee604f08d5dea8728ae
++       label `is` は対象を固定する：`Int` のためのインスタンス
+
+% 1 1 0 15535005bf3c95330c37f0a4edb4981e
+
+% 0 1 0 13c176a64ef02e4a0dda846634710447
+
+% 1 1 0 1dadf51596446294112a6b7c48e1e1cc
+
+@ 0 1 0 1235e8506348aaaf1f41041d0bfaa4dc
++       label `in` は形式を固定する：JSON での `Int` のためのインスタンス
+
+% 1 1 0 0c8643cfe9b863921f482d71a6419422
+
+% 0 1 0 05f56f2e4fadf5ed12ea3e9076d1d9e8
+
+% 1 1 0 0aee77b3bb75bd551d87cced67b89558
+
+@ 0 1 0 146bf1b15b81c0a31e314ecb914b7b33
++       label `to` は結果を固定し、句が完成する
+
+% 1 1 0 157270bceadac5fe0621a6bdcca691e0
+
+% 0 1 0 11356368476315fd18493dfa638e897e
+
+% 0 1 0 00064eef15ae4f6d1d9a867767870d4b
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 2 0 129e8cbf07d8a4d90392c0fcaa18f353
++     `serialise` の結果が `Text` であると分かるのは、最後のフレームだけである：`anySerialiser` を通じては、それは抽象的な `Result` である。
+
+@ 0 5 0 1a82ede6380cf909020beacac67a9cf9
++     このライブラリは単一のソースセット `prepositional.core` であり、`beneficence`（`Findable` のため）以外の依存を持たず、プラットフォーム固有の部分もない。JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     すべては `soundness` アンブレラにエクスポートされ、すべての Soundness のモジュールは `-Yimports:java.lang,proscenium` でコンパイルされるので、対象をその型クラスに結び付ける `is` は、インポートなしで常にスコープにある。
+
+% 0 1 0 0d4692314cf8d55d0c2d50e831c56de5
+
+% 0 1 0 11f8511efb713a5c1b01341ea3c0f63e
+
+% 0 1 0 0b74d0521d436f4f0d9a7132b863a9da
+
+% 0 1 0 143c676353fbfca1154e6cdc8badcf69
+
+% 0 1 0 00b1e4fcb9729b700d1a2418c995ea32
+
+@ 0 1 0 0e5ce4a49d46c5291d1ed48524f24401
++ entry .Typeclass   すべての Soundness の型クラスの基底：ある `Self` 型のためのインスタンス
+
+% 1 1 0 12da22310dec40e408c4f696fad0f6e1
+
+@ 0 6 0 025b14facb2bf6f415d00ca2f56c3b52
++       `Typeclass` は抽象型メンバーを一つ、`#Self` を宣言する。これはそのインスタンスが*対象とする*型である。
++       プレリュードの中置の `is` がそれを細分化するので、`Text is Decodable` は型 `Decodable { type Self = Text }` であり、コンテキスト境界 `[value: Decodable in Json]` は、`Self` が `value` で `Form` が `Json` であるインスタンスを求める。
++       すべての Soundness の型クラス（`Showable`、`Encodable`、`Comparable`、`Traversable`）は、それが必要とする他のメンバーのための前置詞のトレイトとともに、これを継承する。
+
+% 2 1 0 077a2281d64e40610fea7310319f362c
+
+% 3 1 0 0e830e0ffabdcc77191fc829ea31d46b
+
+% 0 1 0 1f93daea9fdf15580b76a4d67ec9862b
+
+% 0 1 0 060ecd15f4861d0e0a115ee4451e8ce3
+
+% 0 1 0 14f10a94036b9a6c033e3a9c8600f921
+
+% 0 1 0 08cc9cdb38fbc82a05e90ee3b2eefdf7
+
+% 0 1 0 11bab719318291b118e3e3100f3af2d4
+
+% 0 1 0 187e56c23294864b13bb83cc68448e52
+
+% 1 1 0 06f0326c2a995a131fa4f7aba6287a13
+
+@ 0 6 0 09e1b789091659ea1d200dbe13352a8f
++       `Typeclass` は純粋な型*ではない*：多くのインスタンスはケイパビリティ（エラーを発生させるための `Tactic`、エンコーダー、バックエンド）から構築され、それらを保持するので、そのキャプチャは無いものと仮定されるのではなく追跡される。
++       データとロジックだけを保持するインスタンスは、代わりに `.Pure` を継承すべきであり、コンパイラがそれを検証する。
++       また、これはケイパビリティのクラスでもないので、コンパニオンや `given` でインスタンスを保持しても、保持するものがケイパビリティになることはない。
+
+@ 0 4 0 0634f28f45e4001f1a1faaf270532724
++       `Typeclass` は、値がコンテキスト値として供給される型に対する beneficence のマーカートレイトである `Findable` を継承する（`System`、`Environment`、`Calendar` もこれを持つ）。そのため、型クラスのインスタンスは、構築するものではなく見つけるものとして認識される。
+
+% 0 1 0 1460ee10f8b4d41914ff0d7de9307554
+
+@ 0 10 0 04df7ad56a2a205503b64998d28ee042
++   entry .Pure   インスタンスがケイパビリティを保持しないことをコンパイラが検証した型クラス
++       `Typeclass.Pure` は `Typeclass` と `scala.caps.Pure` を継承するので、本体がケイパビリティを参照するインスタンスは、定義された場所で拒否される：ここでの純粋性は表明ではなく、検査された事実である。
++       比較、算術、ハッシュ、コレクションの走査の型クラス（引数を使って計算し、それ以外に何もしないもの）はこれを継承する。インスタンスが正当に `Tactic`、ファイルシステム、エンコーダーを保持しうる型クラスは、ただの `Typeclass` のままである。
++       それでも解決にスコープを持つケイパビリティを一つ保持しなければならない純粋なインスタンスは、それを `@caps.unsafe.untrackedCaptures` を付けた一つのフィールドで名指す。これは、インスタンス全体で純粋性をあきらめるよりも範囲が狭く、grep で見つけやすい。
+
+% 2 1 0 0d8f5a5f1ec3d56d0ce9932ee5653d1a
+
+% 3 1 0 18e575d6d9c5524e04a229b9d84a7f11
+
+% 0 1 0 0c04ab70c8041c9d1752e02edc13afe8
+
+% 0 1 0 1a89ef00fdda4f3d06e688b8595a8c82
+
+% 0 1 0 04931ba785cdcc71017bb643e7645ebd
+
+% 1 1 0 18096b0b86ca39960d5ff298feb6dcb8
+
+@ 0 1 0 0555fa31860099da1be2079f5f9fba46
++   entry #Self   型クラスのインスタンスが対象とする型。`is` によって細分化される
+
+@ 0 1 0 0301bbc19cf1fbf513a5b47d7e0a8e1f
++ entry .Formal   `in` が細分化する `Form` メンバーを宣言する
+
+% 1 1 0 0a61ea3abc2924dd0b023f4fa0f6fe7e
+
+@ 0 6 0 16223df6cb8ba0e30e9f849c2d7ff54e
++       型クラスは、そのインスタンスが `in` で選ばれる*形式*（フォーマット、表現、または形）に固有であるとき、`Formal` を継承する：`Text is Decodable in Json`、`Int is Encodable in Tel`、`Ordinal in xs.type`。
++       メンバーは `<: AnyKind` と宣言してもよく、その場合 `in` は適用されていない型コンストラクターを適用できる（`self is Convertible in Map`）。
++   entry #Form   インスタンスが固有である形式、フォーマット、または表現
+
+@ 0 1 0 013b8ae48e009d311822735f49f5cb32
++ entry .Planar   `on` が細分化する `Plane` メンバーを宣言する
+
+% 1 1 0 1b6837ad0abcbaba02f53d9dfbea5bc7
+
+@ 0 6 0 0a2b1c739ee465cb1acfd9eb0fec7f9d
++       *プレーン*とは、値が存在する空間である：パスにとってのファイルシステム（`Path on Linux`、`Path on Classpath`）、クラスローダーの探索空間、あるいはグラフが描かれるノード。
++       型クラスや値の型は、`on` でプレーンを名指せるように `Planar` を継承する。galilei のファイルシステムのポリシー（`CreateNonexistentParents`、`DeleteRecursively`）は、ファイルシステムごとに一つのポリシーが選ばれるように `Planar` である。
++   entry #Plane   ファイルシステムやクラスパスなど、値が位置する空間
+
+@ 0 1 0 1f328689769672fa065f200ee842ea53
++ entry .Operable   `by` が細分化する `Operand` メンバーを宣言する
+
+% 1 1 0 056e90a944768668074cdf756a8aff34
+
+@ 0 5 0 00914b316193eacc1f5ef3a595feb29d
++       *オペランド*とは、操作が受け取るもう一つの型である：二項演算子の右辺（`Quantity is Multiplicable by Duration`）、コレクションの要素の型（`List[Int] is Traversable by Int`）、あるいは検索の引数。
++       メンバーの中で最も広く使われており、四十を超える型クラスが継承している。
++   entry #Operand   操作が受け取るもう一つの型：右オペランド、要素、引数
+
+@ 0 1 0 095d16d66c7d80f90e341a70e7f1fff0
++ entry .Resultant   `to` が細分化する `Result` メンバーを宣言する
+
+% 1 1 0 0bc6f19533fca9d00ac06a582c95f49b
+
+@ 0 5 0 0590aaad3e4090ee17e3e8dbcd25d80b
++       *結果*とは、操作が生成するものである：`Quantity is Multiplicable by Duration to Quantity`、`self is Mandatable to result`、`Text is Decodable in Json to Record`。
++       操作がインスタンスに依存する型を返す型クラスは `Result` を宣言し、呼び出し側は `to` でそれを選ぶか読み取る。
++   entry #Result   操作がもたらす型
+
+@ 0 1 0 1aa564916058a7a20f6f53481ddca0d5
++ entry .Topical   `of` が細分化する `Topic` メンバーを宣言する
+
+% 1 1 0 1b418f4692cdc5bb1c992107361befdc
+
+@ 0 5 0 00b8c9f466aefb2b1af5754941362c82
++       *トピック*とは、値が*何について*のものか、*何の*ものかである：HTML 要素のタグ（`Html of "br"`）、`ambience.Property` インスタンスが読むプロパティ、`Recurrent` が記述するイベント、`Annotated` インスタンスが見つかったフィールド。
++       値の中に含まれることなく値を分類するリテラル型や幻の型のためのメンバーである。
++   entry #Topic   値が何についてのものか：タグ、名前、分類
+
+@ 0 1 0 181ced6e330af6f608f837ad8b6381fe
++ entry .Original   `from` が細分化する `Origin` メンバーを宣言する
+
+% 1 1 0 032391ea31b342be1ac451c660cbea9c
+
+@ 0 4 0 177072582ecc4a9817c2ea41bd4a4106
++       *起源*とは、値や証明がどこから来るかである：`self is Distinct from (Int | String)`（vacuous）、`Specification` から構築される polyvinyl の `Record`、フィールドが別の型から導かれる `Intensional` なレコード。
++   entry #Origin   値や証明が導かれる元の型
+
+@ 0 1 0 08cfa2d3f007e9341451e8ad0dd567d2
++ entry .Domainal   `across` が細分化する `Domain` メンバーを宣言する
+
+% 1 1 0 0759fbfaafc057eb1b9b280ff7db8980
+
+@ 0 5 0 1ebc77250215505d109a4a5d52eec4a9
++       *ドメイン*とは、値が範囲とする空間全体である：`Abstractable across Paths to Text` は、任意のパスの型を、パスの族全体にわたって抽象的にする。cacophony の `Pcm` と `Recording` は、信号のドメインにおいて `Domainal` である。
++       この前置詞は「〜のドメインにわたって」と読む。
++   entry #Domain   値が範囲とする族または空間
+
+@ 0 1 0 1978a4eeada5c0c615770fd6b8930f8b
++ entry .Transportive   `over` が細分化する `Transport` メンバーを宣言する
+
+% 1 1 0 15675af8b815f4831f0ac5ce71f38d2a
+
+@ 0 6 0 155f619366d18d110b6efb64760589d7
++       *運搬*とは、値がそれによって運ばれる、またはそれに対して測られるものである：ストリームのクレジット（`Streamable by Data over Credit`）、時刻系（`Instant over Unix`）、`Parsable` が読む対象のフォーマット、superlunary の `Stageable` な値が越えるステージ。
++       `over` は、`in` とともに、細分化する型に上限を持たない二つの前置詞の一つなので、任意の型に付く。これとともに使うことを意図した型は `Transportive` を継承する。
++   entry #Transport   値が運ばれる媒体：クレジット、時刻系、フォーマット
+
+@ 0 1 0 0b6128cd8104327c084d3b9f5b1ed134
++ entry .Targetable   `onto` が細分化する `Target` メンバーを宣言する
+
+% 1 1 0 0bd979ad1b354c250a3573f09926c521
+
+@ 0 5 0 079b8d155728fc2b044cecdf21c424fa
++       *ターゲット*とは、操作が行き着く先である：telekinesis の `Fetchable` な URL が解決されるホストとパスのターゲット、parasite の `Interceptable` なシグナルが送られるレジストリ、obligatory の `Associable` なセッションが関連付けられるレスポンス。
++       生成物ではなく行き先である点で、`Result` とは異なる。
++   entry #Target   操作が行き着く行き先
+
+@ 0 1 0 047babc0896f0ed41f8c6c511f563db3
++ entry .Contrastive   `against` が細分化する `Contrast` メンバーを宣言する
+
+% 1 1 0 025d92d396a0fef8183ec139541e6d37
+
+@ 0 4 0 0fe388e9418bf1c00d4eb7c1fd6f77c0
++       *対照*とは、値が比較される相手である：hypotenuse の `Commensurable` には、異なる二つの数値型を比較する型クラスである `Int is Commensurable against Double` がある。
++   entry #Contrast   値が比較される相手の型
+
+@ 0 1 0 14a5c395e1b4a0fb076d62471dc9f26b
++ entry .Limited   `under` が細分化する `Limit` メンバーを宣言する
+
+% 1 1 0 1e649a08efd8c17e15002c4b4d94940f
+
+@ 0 4 0 1d61f86c77339e65152f89f27943b59a
++       *制限*とは、値がその下に置かれる限界である：nomenclature の `Nominative` は規則の集合の下で値に名前を付け（`plane is Nominative under Rules`）、adversaria の `Annotated` なフィールドは、それを囲む型の下で見つかる。
++   entry #Limit   値がその下に置かれる限界、規則の集合、または囲み
+
+@ 0 1 0 17483894e95a034b1b45fe9feac63d27
++ entry .Locative   `at` が細分化する `Locus` メンバーを宣言する
+
+% 1 1 0 040555bc9330a2dc1f8b999195382ba2
+
+@ 0 4 0 1d81c1bcb732379501dfb2ba3ef25eea
++       *所在*とは、値がある場所である：apoplexy の `Api` が提供されるパス（`Api at "/"`）、distillate の `Decodable` インスタンスがデコードする場所、phoenicia の `Typesettable` なテキストが組まれる位置。
++   entry #Locus   値がある場所、位置、またはアドレス
+
+@ 0 8 0 06d9641288c1928a1e620795db886955
++ entry .in   `refined in form`：`Form` メンバーを細分化する
++     `refined in form` は `refined { type Form = form }` であり、フォーマットや表現のための前置詞である：`Text is Decodable in Json`、`value is Encodable in Tel`、`Ordinal in xs.type`（denominative の限定されたインデックス）。
++     意図的に上限を持たず、その `form` パラメーターは任意のカインドを認めるので、`<: AnyKind` と宣言された `Form` は、適用されていない型コンストラクターで細分化できる：`self is Convertible in Map`。
++     上限を持たないので、`Form` メンバーのない型にも付き、誰も読まない細分化を生む：`in` とともに使うことを意図した型クラスは `Formal` を継承する。
+
+% 2 1 0 013db7d6f0d3c4911bf482b6bf61d04c
+
+% 3 1 0 06b0e4f10b690642113b278f9c581439
+
+% 0 1 0 07887918dfb308061e8fcc6deefb9046
+
+% 1 1 0 0b3c4d754ba337431c527a9b9a35418d
+
+@ 0 5 0 1c0ac36284bc5ba4028dc068d48d9fc3
++ entry .on   `refined on plane`：`Plane` メンバーを細分化する
++     `refined on plane` は `refined { type Plane = plane }` であり、`Planar` を継承する型のためのものである：`Path on Linux`、`Path on Classpath`、`Findable on Classpath` としての `Classloader`。
++     上限が強制されるので、`Plane` のない型に `on` を付けることはできない。
+
+% 2 1 0 0402ac012ff307371afccb1712ebfe67
+
+% 3 1 0 0cb72841df98175e113bc169c1f5d3b8
+
+% 0 1 0 17682f4fbd49c80a1acba083740efbea
+
+% 1 1 0 129c89e7a3b460ba1c340051a876ba32
+
+@ 0 4 0 1f713589632111b40de9ef93c4b38151
++ entry .by   `refined by operand`：`Operand` メンバーを細分化する
++     `refined by operand` は `refined { type Operand = operand }` であり、`Operable` を継承する型のためのものである：`Quantity is Multiplicable by Duration`、`List[Int] is Traversable by Int`、`Data is Streamable by Data`。
++     オペランドは、操作が受け取る*もう一つの*型である。
+
+@ 0 4 0 087e9ccb1076c46103981c6e07e96f78
++ entry .to   `refined to result`：`Result` メンバーを細分化する
++     `refined to result` は `refined { type Result = result }` であり、`Resultant` を継承する型のためのものである：`Int is Addable by Int to Int`、`Optional[Text] is Mandatable to Text`。
++     出てくるものを名指すので、慣例として句の最後に書く。
+
+% 2 1 0 0ca2fa888e1357b214b582ea6aefacfd
+
+% 3 1 0 0574a096f9752c9202329c1914482f19
+
+% 0 1 0 01aa86944a0fec90009b99e85349847b
+
+% 1 1 0 119cecb016b796af0fb73b887846d297
+
+@ 0 4 0 1617dd0a5dd9aa9a0e0414e76d190175
++ entry .of   `refined of topic`：`Topic` メンバーを細分化する
++     `refined of topic` は `refined { type Topic = topic }` であり、`Topical` を継承する型のためのものである：`Html of "br"`、`Property of "java.home"`、`Typeface of "sans-serif"`。
++     トピックは通常、値を分類するリテラル型である。
+
+@ 0 4 0 01183b3e7603df9e15dee311d46b74fa
++ entry .from   `refined from origin`：`Origin` メンバーを細分化する
++     `refined from origin` は `refined { type Origin = origin }` であり、`Original` を継承する型のためのものである：`Int is Distinct from String`（型がユニオンのメンバーでないことを示す vacuous の証明）、`Record from Specification`（polyvinyl）。
+
+@ 0 4 0 02f705e9b5c0d38008cafacbac0b28f6
++ entry .across   `refined across domain`：`Domain` メンバーを細分化する
++     `refined across domain` は `refined { type Domain = domain }` であり、`Domainal` を継承する型のためのものである：`Abstractable across Paths to Text`、`Instantiable across Urls from Text`。
++     ドメインは、インスタンスが全体として扱う型の族である。
+
+@ 0 5 0 12c6f39c80e7cde90e3126e6aec4a4e6
++ entry .over   `refined over transport`：`Transport` メンバーを細分化する
++     `refined over transport` は `refined { type Transport = transport }` である：`Streamable by Data over Credit`、`Instant over Unix`、`Html.Element of "ul" over "li"`。
++     `in` と同じく上限を持たないので、任意の型に付く。これとともに使うことを意図した型は `Transportive` を継承する。
+
+@ 0 4 0 0ff9c8512828831d0efa2f64f301f4eb
++ entry .onto   `refined onto target`：`Target` メンバーを細分化する
++     `refined onto target` は `refined { type Target = target }` であり、`Targetable` を継承する型のためのものである：そのターゲット `onto` の telekinesis の `Fetchable` な URL、そのレジストリ `onto` の parasite の `Interceptable` なシグナル。
+
+@ 0 3 0 07d16f342d4760f90395faf38d35cdd9
++ entry .against   `refined against contrast`：`Contrast` メンバーを細分化する
++     `refined against contrast` は `refined { type Contrast = contrast }` であり、`Contrastive` を継承する型のためのものである：`Int is Commensurable against Double`。
+
+@ 0 5 0 07e13338b53e917d0b3dc6bebd551cf3
++ entry .under   `refined under limit`：`Limit` メンバーを細分化する
++     `refined under limit` は `refined { type Limit = limit }` であり、`Limited` を継承する型のためのものである：`plane is Nominative under Rules`（nomenclature）、`Dot.Id is Nominative under Dot.Identifier["a valid DOT identifier"]`（acyclicity）、それを囲む型の下にある adversaria の `Annotated` なフィールド。
+
+@ 0 4 0 0c28950cf6ae1e7d1340f726a33d7cae
++ entry .at   `refined at locus`：`Locus` メンバーを細分化する
++     `refined at locus` は `refined { type Locus = locus }` であり、`Locative` を継承する型のためのものである：`Api at "/"`（apoplexy）、デコードする場所 `at` の distillate の `Decodable` インスタンス。
+
+@ 0 3 0 1bd7d7c97c4e74c70b23f8382ef31c83
++ entry .Prepositional   このライブラリのマーカーオブジェクト。メンバーはない
++     `prepositional` パッケージが参照すべき安定した名前付きの項を持つために存在する空のオブジェクトである。
++     コードの中では使われない。

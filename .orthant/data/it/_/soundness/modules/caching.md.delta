@@ -1,0 +1,217 @@
+orthant 2 language
+
+% 0 1 0 0ff0ceffec2f26ef09470fb57b12e512
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 2 0 1e2beedd03a3a9511b452ddfe72d23f3
++ Una [cache](https://en.wikipedia.org/wiki/Cache_(computing)) scambia memoria con tempo, e
++ vengono fornite le due forme che questo scambio assume di solito.
+
+@ 0 4 0 0985b5381b5e93b10dc31778ae9e3ded
++ Una `LruCache` conserva le voci usate più di recente di una ricerca per chiave, ed espelle la
++ meno recente quando supera la propria capacità. Una `Cache` ricorda un singolo valore, con una
++ durata di vita opzionale, e lo ricalcola quando scade. È la forma di una configurazione che
++ viene ricaricata ogni minuto, o di un token che viene rinnovato a intervalli prestabiliti.
+
+@ 0 1 0 1b29fba47c6166840f25fc820e494e36
++ ### Sul caching
+
+@ 0 4 0 1ed58db568f1cbc00697d907efccf659
++ Ogni cache scritta a mano è una mappa mutabile, insieme a tre decisioni prese implicitamente:
++ quando espellere, cosa fare quando due thread vogliono lo stesso valore mancante, e quando un
++ valore in cache è troppo vecchio per fidarsene. La mappa è facile. I bug stanno nelle
++ decisioni:
+
+@ 0 3 0 12362288d8b0c439179e1c29acc38ffc
++ - Senza espulsione, la cache cresce senza limiti.
++ - Senza coordinamento, un valore mancante viene calcolato molte volte contemporaneamente.
++ - Senza scadenza, si servono dati stantii.
+
+@ 0 4 0 11b69799f00f5b1a02782aaecb9dfe3e
++ Qui le decisioni sono il tipo. Una `LruCache` è il tipo limitato, che espelle. Una `Cache` è
++ il tipo che scade ed è coordinato, il cui calcolo è protetto in modo che i chiamanti
++ concorrenti condividano un unico risultato. La politica è dichiarata dove si trova la cache,
++ e non a ogni lettura, il che è [contesto dichiarativo](../../philosophy/declarative-context.md).
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 07ac815ea191e3cc115a610b5ee1b959
++ column  Aspetto
+
+% 0 1 0 015453692dfb07200fcdf89b725aa7c1
+
+% 0 1 0 027afffc63e8fd160b847eb1f40add2c
+
+@ 0 5 0 1751185573de20951245587964eca4a1
++ row  Contiene  voci con chiave, fino a una capacità  un valore
++ row  Si crea con  `LruCache[Key, Value](capacity)`  `Cache(lifetime)`, oppure `Cache[Value]()`
++ row  Si legge con  `cache(key)(computation)`  `cache.establish(computation)`
++ row  Scarta  la voce usata meno di recente  il valore, una volta trascorsa la sua durata di vita
++ row  Mancanze concorrenti  ogni chiamante calcola  un chiamante calcola, gli altri ne condividono il risultato
+
+% 1 1 0 0413a50b352840fc1b9d711fd6bc3158
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Tutto proviene dal package `soundness`. Il secondo import permette agli esempi di stampare i
++ loro risultati:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1cefe767a73cb12013f08b8715bedb21
++ ### Una cache LRU
+
+@ 0 4 0 006feb1499bc22c61ae4cdae5a565232
++ Una `LruCache` contiene voci con chiave, fino alla propria capacità. Applicarla a una chiave
++ e a un calcolo restituisce il valore in cache, quando la chiave è presente. Altrimenti esegue
++ il calcolo, memorizza il risultato, ed espelle la voce usata meno di recente se la cache è
++ ora troppo grande.
+
+@ 0 1 0 0befb68f58bcc42b1bdbbe8941ba0cc7
++ Qui il calcolo è una ricerca che conta quante volte viene eseguita:
+
+% 2 1 0 16ae694c033c94d01ca2d1702b6c0e48
+
+% 0 1 0 14b819298a4f1bf901849581869f224c
+
+% 0 1 0 13a8d906435dbb780a5ac292e6c93292
+
+% 0 1 0 06fb5a3bc7335fa0060db1702b207471
+
+% 0 1 0 1da3fdafc64ed1c60efec409a136f104
+
+% 0 1 0 0df562b11bf62caa0282348465248f03
+
+% 1 1 0 1ba8a25e5f0933be036a433d8db15661
+
+@ 0 2 0 1ce43a935078f4d00116a96dc5663dd5
++ Il primo uso di una chiave calcola e memorizza il suo valore. Il secondo restituisce il valore
++ memorizzato, senza alcun calcolo:
+
+% 2 1 0 1225b8b9d7c3b8bb139fa50fe1585647
+
+% 3 1 0 03e9d38dd070ef7c010ef6808e7387eb
+
+% 4 1 0 0318d95bf83b4eb41ae8fad1f3aeec2a
+
+% 1 1 0 0b103d602291c10d1ed05fd0ffe71af5
+
+% 1 1 0 090dee53aa1214a00a07c1f87aa3c121
+
+% 0 1 0 138206ffa4fa4aae15948c72e64c8ea0
+
+% 1 1 0 020df720d80339191985d71ea3d80a9f
+
+@ 0 3 0 0734b4efcbf5b2a311139a1f03521204
++ Il calcolo è passato per nome, quindi nulla viene valutato quando la chiave è presente. È
++ proprio questo il senso della forma: una cache il cui valore deve essere calcolato prima di
++ poter essere offerto non fa risparmiare nulla.
+
+@ 0 3 0 10a5c204e485833707c060c2147df382
++ Usare una voce, in lettura o in scrittura, la segna come recente, quindi le voci che
++ sopravvivono sono quelle a cui il programma continua a tornare. Dopo altre quattro chiavi, la
++ chiave `1` è stata espulsa, e richiederla la ricalcola:
+
+% 2 1 0 1dd6dd9f347a3c8a1cbe1f0ca3693d7e
+
+% 3 1 0 0f08d18fa09e42150dcb9750eac8e411
+
+% 4 1 0 053ba65a5e550213050f71e644d15e4c
+
+% 0 1 0 0ff796dfe009da691c2fd3e988b23a3e
+
+% 0 1 0 1b2d8ea532e5190706d3f0f113f0feee
+
+% 1 1 0 01dfd842538cbe9c1284faff589c555f
+
+% 2 1 0 0ba9bd78618ae35301fec4b9e028465a
+
+@ 0 3 0 1f16f63cacd50d4c097dc1ead80bc6e3
++ `contains` chiede se una chiave è presente, senza calcolare nulla e senza segnare la voce come
++ recente. `remove` elimina una voce. È ciò che serve all'invalidazione, quando i dati
++ sottostanti sono cambiati e si sa che il valore in cache è stantio:
+
+% 2 1 0 128a6d97f2b0d19d079812b76fe9232c
+
+% 3 1 0 1d8b6f0d031376be03e2fe9d5a8980fa
+
+% 4 1 0 0c01009f9b6fc6d21267988106ea9480
+
+% 0 1 0 0128f765de8f195707924e07773f4eb6
+
+% 1 1 0 0488271615aaff7d0e920ec664168f25
+
+% 2 1 0 1d915e983d573dde0c1fa1f833bb86ed
+
+@ 0 1 0 1fe11ed25724c04903cf9feacfefcc0d
++ ### Un valore che scade
+
+@ 0 4 0 10b2f5afad4ca3531d4a16b8e0b3a2e5
++ Una `Cache` ricorda un valore, con una durata di vita trascorsa la quale viene ricalcolato. La
++ durata di vita è una qualsiasi [durata](time.md#durations-and-timespans), qui una
++ [grandezza](quantities.md) in secondi, con l'import che permette a una `Cache` di leggerla. Il
++ tipo del valore in cache è indicato nel tipo atteso:
+
+% 2 1 0 15e6ba5677de14881f166c67d238f447
+
+% 0 1 0 02cc50caac06e1f715bf762bfb41f1a9
+
+% 0 1 0 0b916bb6f6e0b8ba09a85ac4f01d9caf
+
+% 0 1 0 0f06081825ca25790571076f925446e6
+
+% 0 1 0 18011f584d0ba6ff0b5d92588f0a0d85
+
+% 0 1 0 055cc23e6b8fd67609b98883ba3bd6f5
+
+% 0 1 0 1689baa9c7f4b5ae04c8a3eac45116ab
+
+% 0 1 0 1cfed517056615321e404fa05f13b943
+
+% 1 1 0 0c5224ff29929c8010610bc8d25e5fe6
+
+@ 0 3 0 04a7b996fb56cd7117c73a86ac08bff0
++ `establish` restituisce il valore corrente. Calcola il valore solo quando non ne è presente
++ nessuno, o quando quello presente è scaduto. Qui la seconda chiamata restituisce lo stesso
++ valore, e continuerà a farlo finché non saranno passati cinque minuti:
+
+% 2 1 0 00ded6ce31c3b5dc07a2f35b10f0a194
+
+% 3 1 0 157c0ebff43509810f5f9ccf170317a8
+
+% 4 1 0 193d0dec1b0a63d10348288acfd6262e
+
+% 1 1 0 13d362441aeca65c04ce6410d5f21e4a
+
+% 1 1 0 01ea25849fb162b805f0a81e2ae06356
+
+% 0 1 0 0e290a591189acdd0da9668db0b93be2
+
+% 1 1 0 1fd1d998af92e1b01106a35dbcd66fab
+
+@ 0 4 0 03dd85ec293abfe9166be8f4ea92f7c6
++ Il calcolo viene eseguito sotto un lock. Quando il valore manca o è scaduto, e diversi thread
++ lo chiedono contemporaneamente, uno lo calcola e gli altri ricevono il suo risultato. Questo
++ impedisce lo [stampede](https://en.wikipedia.org/wiki/Cache_stampede) che un semplice valore
++ lazy non può impedire. [Concorrenza](concurrency.md) descrive i task che potrebbero chiederlo.
+
+@ 0 2 0 0e003940c9057d051bfd5a7cbeba5b5a
++ Una `Cache` creata senza durata di vita, come `Cache[Configuration]()`, calcola il proprio
++ valore una volta sola, e lo conserva.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 5 0 19866789ab7e9be80fe4a5ba96e1a746
++ - I [filtri di Bloom](bloom-filters.md) ricordano soltanto se qualcosa è già stato visto.
++ - [Filesystem](filesystem.md#content-addressed-storage) descrive una cache su disco, con chiave
++   il digest del suo contenuto.
++ - [Tempo](time.md) descrive le durate in cui si esprime una durata di vita.
++ - [Stack trace](stack-traces.md) descrive il codepoint che lega un valore in cache al suo punto di chiamata.

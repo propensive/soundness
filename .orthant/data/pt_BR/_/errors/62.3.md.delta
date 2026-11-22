@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 04359faf7fe8e46716b45b3795aad584
++ # `↯/s.62.3` — Sem diretório de trabalho
+
+@ 0 1 0 0403eaa84e4496971f485eb56e96422f
++ Lançado quando o Ambience não consegue determinar o diretório de trabalho atual.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0e592c7a495156a71adb257dd7df45d4
++ O Ambience lê o diretório de trabalho da propriedade `user.dir` da JVM.
++ Quando essa consulta falha ou não retorna nada, este erro é
++ lançado como exceção.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0d43ec0e40afb71b0116c601b3208a41
+
+% 1 1 0 084e5189c82ff66d1c1dd238abe64658
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 1791c1612b30932a001ea9f40755dc7c
++ Execute a JVM em um contexto em que `user.dir` esteja definida, ou use um
++ acessor `Optional`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 18976f284f58d65a0b792e645aac842d
++ - Código-fonte: `lib/ambience/src/core/ambience.WorkingDirectory.scala`

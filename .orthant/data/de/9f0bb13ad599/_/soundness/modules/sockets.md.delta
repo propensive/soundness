@@ -1,0 +1,13 @@
+orthant 2 language
+
+% 3 1 0 08cfb9d9899920c81e4776fba7b333f0
+
+% 0 1 0 1f6e86581af2c7cd0c786bfc1d9eb136
+
+@ 0 4 0 1c9f23c11fd628390d7a0780d59576bd
++ Ein Nameserver ist ein `Endpoint` eines UDP-Ports. `ask` sendet eine
++ [`Dns.Message`](network-addresses.md#dns-names-and-messages) und gibt die Antwort zurück, die sie
++ beantwortet. Mit einem Namen und einem Record-Typ, standardmäßig `A`, stellt es die gängige Frage
++ direkt und gibt die Records zurück, die sie beantworten:
+
+% 0 1 0 0cb89299bf76228b078fa22a59ef8ccf

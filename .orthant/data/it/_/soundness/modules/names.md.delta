@@ -1,0 +1,269 @@
+orthant 2 language
+
+@ 0 1 0 13f63b56ad605d9d0429a1811b26d58b
++ ## Nomi
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 3 0 1f8647345b89bb1505848f7e4a06d020
++ Un nome di file, un id DOM, una classe CSS, un branch Git: ognuno è testo, ma non un testo
++ qualsiasi. Ognuno vive in uno spazio dei nomi, con regole proprie su come appare un nome valido.
++ Un nome del genere è rappresentato come un `Name`, le cui regole fanno parte del suo tipo.
+
+@ 0 5 0 0f1eccd7f06021950ad577b3e51de7ab
++ Di un `Name[DomId]` si sa che soddisfa le regole degli id DOM. Un letterale che le viola non
++ compila. Un testo che arriva a [runtime] diventa un `Name` solo superando la stessa convalida, e
++ un fallimento è un errore tipizzato che indica la regola esatta che è stata violata. Possedere un
++ `Name` significa quindi avere la prova che è valido, il che è
++ [sicurezza per costruzione](../../philosophy/safety-by-construction.md).
+
+@ 0 3 0 1ef27a98fb78dd36186aa07b96fa6d9e
++ Le regole stesse sono tipi, come `MustNotContain["/"]`, `MustNotEqual[".."]` e `MustMatch[…]`,
++ combinati per intersezione. I vincoli di uno spazio dei nomi si scrivono una volta, si possono
++ leggere direttamente dal codice, e vengono imposti ovunque sia richiesto un nome di quello spazio
++ dei nomi.
+
+@ 0 1 0 1366133bda056ad80b774809b90de853
++ ### Sui nomi
+
+@ 0 5 0 1cb7f21a2ee17bf20ee213866020e40d
++ Gli spazi dei nomi non concordano sulla validità. Un nome di file POSIX non può contenere una
++ barra. Un id DOM non può contenere spazi. Un'etichetta DNS ha una lunghezza limitata e un alfabeto
++ ristretto. Il codice che porta tutti questi come semplici stringhe non ne impone nessuno. Un nome
++ non valido nel suo spazio dei nomi viaggia finché qualcosa di esterno non lo rifiuta, come un
++ filesystem, un browser o un server, a distanza dall'errore.
+
+@ 0 5 0 052140d690cba8d5021db6240219e0d8
++ Qui lo spazio dei nomi è legato al nome. Ogni spazio dei nomi, chiamato *piano*, dichiara le sue
++ regole come tipo. Un `Name` per quel piano esiste solo se il suo testo le soddisfa, il che viene
++ verificato in [tempo di compilazione] per un letterale, e tramite convalida a runtime. È il
++ meccanismo che sta sotto i nomi degli elementi dei [percorsi](paths.md), ed è aperto a qualsiasi
++ spazio dei nomi definito da un programma.
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ Tutto proviene dal package `soundness`. Gli esempi lanciano ogni errore come eccezione, e l'ultimo
++ import permette loro di stampare i risultati:
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 03e4a4be35a484b91c080541b92b1ed4
++ ### Definire un piano
+
+@ 0 1 0 0710963b89169c0a1521812c9f8e2bd2
++ Un piano è un tipo marcatore, con un given `Nominative` che enuncia le sue regole come
++ intersezione:
+
+% 2 1 0 1111d3c27f0b356b0844f2ee761b5620
+
+% 0 1 0 1aab3335eeb8e5ab129d1f5815b0ef88
+
+% 0 1 0 102c2e32ac46b16b1c424572620f4194
+
+% 0 1 0 00a41b2e13d2b2801fc8e1610b85a96e
+
+% 1 1 0 07a74e026b0b80b20ff0e50ff490f62e
+
+@ 0 2 0 11da42b27a9ad1f91c0cee24ee1390ca
++ Un `Name[Tag]` significa ora un testo che non comincia con `0`, non contiene `.`, e non è vuoto.
++ Questi fatti sono portati dal tipo, e non devono essere verificati di nuovo da ogni consumatore.
+
+@ 0 1 0 0cf7c6c1e696f2211e360d059894f2e7
++ ### Scrivere un nome
+
+@ 0 3 0 1fcee695ef60a43e00fcde108dd9dea8
++ L'[interpolatore] `n"…"` scrive un nome, e lo verifica in tempo di compilazione rispetto ai piani
++ nell'ambito. Il nome prende il tipo di ogni piano le cui regole soddisfa, così un solo letterale
++ serve ovunque sia richiesto uno qualsiasi di essi:
+
+% 2 1 0 05c6c154585e9d310ed9b5817430c338
+
+% 0 1 0 1a0019435148066f0b3f371c10fa9215
+
+% 1 1 0 1a9c023464e88d990fd1c4685f91b3cc
+
+@ 0 1 0 1838a2e0916b69420ef648d452fa9e08
++ Un letterale che viola una regola del piano per cui serve non compila:
+
+% 2 1 0 077ad9899564c5ce12eeb2c6bc25256d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1e1a946d5e92e19d1eb4419b698d0cdb
+
+% 1 1 0 0df809a9a3c0552319c2368accec7e94
+
+@ 0 1 0 0e0a958c2e56d84102206982bcf886d7
++ ### Convalidare a runtime
+
+@ 0 2 0 024e20dfc18f6b3c0e68e1ce7326592d
++ Un testo proveniente dall'esterno diventa un nome tramite le stesse regole. Un fallimento solleva
++ un `Name.Error`, che indica la regola violata:
+
+% 2 1 0 1d38c88fd423670204f204284a9970f1
+
+% 3 1 0 157af9422dbce21f0a37218f608c07b9
+
+% 4 1 0 165233cb070f7197107b6a32be1d5ade
+
+% 0 1 0 08cb510588404d7416941860bd5f751d
+
+% 1 1 0 0f575cb5b5f19a5011134abe025be892
+
+% 3 1 0 0ec4ac5cd5bec2541208b2cc373599a4
+
+% 4 1 0 1dff919b24b7c6ef1913a74013640cfa
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 149257c0596e27c20f0af5420a41fd08
+
+% 1 1 0 08f12dd0a3ae244c0eeda6ac38326cf3
+
+@ 0 4 0 0f9729af290ffc690d332751f34bc48c
++ La precisione dell'errore conta. Un utente a cui si dice *quale* regola il suo input ha violato
++ può correggerlo, mentre «nome non valido» invita a tirare a indovinare. L'errore si gestisce come
++ qualsiasi altro, quindi [`safely`](errors.md#choosing-a-strategy) trasforma un nome non valido in
++ `Unset`, e `capture` fornisce l'errore stesso:
+
+% 2 1 0 149ce49b15e4f04b1f02b7aa398ddb1f
+
+% 3 1 0 00ecfc6fe73c05031e808b93b0e3ad3b
+
+% 4 1 0 1b9cf2b073a8b6bc0a179bc6f5859a9a
+
+% 0 1 0 08960fa7ee4060011b2f5cc1e6f20e84
+
+% 1 1 0 06c24a69334ed694137aefe26bba2279
+
+@ 0 1 0 0635f8371358481c17242c89efa2da4e
++ ### Piani integrati
+
+@ 0 1 0 02ba9f995c8a9b4513867c66277e6d58
++ Alcuni spazi dei nomi sono già definiti:
+
+% 2 1 0 01780133011308ea05ae04804cb9904f
+
+@ 0 5 0 02d4b3e550ddf22c1fba4bf465e39cc9
++ column  Piano
++ column  Un nome deve essere
++ row  `DomId`  un id [HTML](html.md) valido
++ row  `CssClass`  un identificatore [CSS](css.md) valido
++ row  `Required`  non vuoto, per il caso comune in cui questa è l'intera regola
+
+% 1 1 0 1df8ea8bab839d340bf0019a67a63286
+
+% 3 1 0 1fa9583e42957e8a0e9b41303bef5519
+
+% 4 1 0 1dda9eb6f37ca17113e5e11237bc2830
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 1fb68ef40df20f0e14f4fcd9c91dcbf8
+
+% 0 1 0 183ea03728bd1b5e1fad14a890e3d8e6
+
+% 1 1 0 168245c12051075207403c510a7b4c60
+
+@ 0 2 0 0c27c112163d82c21eb13300d7b71028
++ I [percorsi](paths.md) del filesystem di ogni piattaforma definiscono allo stesso modo le regole
++ per i loro elementi, ed è così che un elemento di percorso che contiene una barra fallisce dove
++ viene scritto.
+
+@ 0 1 0 0bdfd48c06fea0b617ed2a4cc9d85ca0
++ ### Le regole
+
+@ 0 2 0 14f383440fd7089e1512b408091dc779
++ Queste regole coprono la maggior parte degli spazi dei nomi. Ognuna sa descrivere sé stessa, ed è
++ da lì che i messaggi di errore, e gli errori di compilazione, prendono le loro parole:
+
+% 2 1 0 03a772420658c545096f6c613213044e
+
+@ 0 13 0 0346ce8e9d9c0c60113a0140ee3f20a3
++ column  Regola
++ column  Parametro
++ column  Descrizione
++ row  `MustContain`  testo  deve contenerlo
++ row  `MustNotContain`  testo  non deve contenerlo
++ row  `MustStart`  testo  deve cominciare con esso
++ row  `MustNotStart`  testo  non deve cominciare con esso
++ row  `MustEnd`  testo  deve finire con esso
++ row  `MustNotEnd`  testo  non deve finire con esso
++ row  `MustNotEqual`  testo  non deve essere uguale a esso; `MustNotEqual[""]` si legge "must not be empty"
++ row  `MustMatch`  un'espressione regolare  deve corrispondervi
++ row  `MustNotMatch`  un'espressione regolare  non deve corrispondervi
++ row  `JavaIdentifier`  una descrizione  deve essere *la descrizione*; verifica un identificatore Java
+
+% 1 1 0 0f896f2c1f89ce4010e148854829f281
+
+@ 0 2 0 0c6717861135bc11027a017b9d8c5867
++ Una regola è due cose: una verifica, e una frase che descrive ciò che richiede. Scrivere una regola
++ significa fornire entrambe:
+
+% 2 1 0 156589b5f1d9bad710f13a73bf2c1f1d
+
+% 0 1 0 0d37aa75683bd3d105125345c5b6888f
+
+% 1 1 0 0e79d8fba8a3a5160fa4fa0da7a44654
+
+@ 0 3 0 060ad20ab4a4c28b1f53f2be0ab8a2ae
++ La descrizione fa parte della regola, e non si scrive a ogni uso. L'errore di compilazione per un
++ letterale non valido e l'errore di runtime per un input non valido dicono quindi la stessa cosa,
++ con le stesse parole.
+
+@ 0 4 0 07cf68c35d13a9990002b0e5abe2db19
++ `JavaIdentifier` mostra l'altra forma che una regola può assumere. Non prende un testo con cui
++ confrontare. Il suo parametro è la *descrizione*, e verifica rispetto a un predicato proprio. Uno
++ spazio dei nomi con una regola che nessuna delle altre può esprimere ne definisce una in questo
++ modo, come fa `DomId`.
+
+@ 0 1 0 0fb8eb58380a0ff607d3236ac1f99beb
++ ### Combinare le regole
+
+@ 0 4 0 087c31b0d4c677f704a10e364e0cea1a
++ Le regole di un piano sono tutte obbligatorie: un nome deve soddisfarle tutte. La prima regola
++ violata è quella riportata, così un errore indica un unico difetto concreto, non un elenco di
++ tutto ciò che non va. Scrivere un piano significa quindi enunciare le sue regole nell'ordine in
++ cui dovrebbero essere riportate.
+
+@ 0 3 0 12fcb418ac26b41c1ca2bf256cc5c344
++ Un piano è un tipo, quindi i nomi di un piano non sono quelli di un altro. Un `Name[Tag]` non può
++ essere passato dove ci si aspetta un `Name[Branch]`, anche se i due hanno per caso regole
++ identiche. È proprio questo il punto: le regole potrebbero divergere in seguito, e i due spazi
++ dei nomi non sono mai stati la stessa cosa.
+
+@ 0 1 0 167bcebef2063d9f1fe590499ee5ff3b
++ ### Limiti di lunghezza
+
+@ 0 4 0 0275ee3e02672a42183b4ef20f291ac7
++ Un `Nominative` porta un `Limit` accanto al suo `Self`, ed è così che un piano enuncia una
++ lunghezza massima: un filesystem i cui nomi non possono superare i 255 byte, un campo di
++ protocollo a larghezza fissa, una colonna di database. Il limite fa parte del tipo del piano,
++ quindi viene verificato dove un nome viene costruito, non dove viene infine scritto.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 6 0 133657859f37e712083e0704c3c1d6c7
++ - [Percorsi](paths.md) costruisce percorsi del filesystem a partire da nomi validi su una
++   particolare piattaforma.
++ - [HTML](html.md) e [CSS](css.md) usano `Name[DomId]` e `Name[CssClass]` per id e classi.
++ - [Interpolazione](interpolation.md#returning-a-precise-type) spiega come `n"…"` dà a un
++   letterale il tipo dei piani che soddisfa.
++ - [Moduli](forms.md) nomina i suoi campi, e la [concorrenza](concurrency.md) i suoi task, con nomi convalidati.

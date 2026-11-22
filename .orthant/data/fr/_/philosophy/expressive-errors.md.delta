@@ -1,0 +1,200 @@
+orthant 2 language
+
+@ 0 1 0 169cd510ee09703b15d1c4f90928351e
++ # Erreurs expressives
+
+@ 0 6 0 19a7a5431612c1bb0e753bc4a3cc1af6
++ Lorsqu'une erreur se produit, Soundness la rend aussi informative que possible. Une erreur est
++ une valeur immuable qui porte tout le détail de ce qui a mal tourné — ce qui était attendu, ce
++ qui a été trouvé, et où — plutôt qu'un simple message ou un code opaque. Ce détail étant une
++ donnée structurée, on peut l'inspecter, le rendre lisiblement pour une personne, ou le filtrer
++ dans le code de traitement, et la même richesse qui aide un développeur à diagnostiquer une faute
++ permet à un programme d'y répondre avec précision.
+
+@ 0 4 0 0405ba67b19020b51d3c067b4d5ebb4d
++ Avant tout, les erreurs sont conçues pour le filtrage par motif. Une erreur est une case class,
++ ses causes distinctes sont les cas d'une énumération `Reason`, et les valeurs qui expliquent
++ l'échec sont des champs — de sorte que le code de traitement déconstruit l'erreur au lieu
++ d'analyser son message :
+
+% 2 1 0 121588916a79ff6804078769f3caa2ce
+
+% 3 1 0 1264e7a4842de378109faf8abdc51fde
+
+% 4 1 0 0cfb7fa36795c19512a07ea594f628c4
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 0723c5f5e6b55281040a4ff3f33bbbe6
+
+% 0 1 0 1df5d7cbfa0afef50d673bad5ec46c2b
+
+% 0 1 0 0723ad02e085c6a71d589624a353a1d0
+
+% 1 1 0 108d5e3a93436b6a1d7cce5ee85e7efd
+
+@ 0 5 0 0ac6f86b7e700e870400ec6f53d29e02
++ Un gestionnaire qui filtre sur la structure est vérifié par le compilateur — une raison renommée
++ casse le filtrage, et non le comportement en production — et peut être exactement aussi
++ discriminant que la situation l'exige, alors que la comparaison de chaînes sur les messages est
++ fragile à tous égards. Le message que lit une personne et la structure que filtre un programme
++ sont deux rendus d'une même valeur, si bien qu'ils ne peuvent jamais diverger.
+
+@ 0 1 0 129772d86d021f5d06f63163b43d5d86
++ ## L'anatomie d'une erreur
+
+@ 0 3 0 0336d452d60408740943277dc57adbf1
++ La forme est assez régulière pour mériter d'être énoncée. Une erreur est une case class qui
++ porte les valeurs qui l'expliquent, ses causes distinctes forment une énumération `Reason`, et
++ son message est construit avec l'interpolateur `m"…"` à partir de ces mêmes valeurs :
+
+% 2 1 0 1f464a32260b764c0dd83abba2dbbd4c
+
+% 3 1 0 1af258dd12322a64086a9442716a88b1
+
+% 4 1 0 0ee76511066a11300eac959f8bf7ab3e
+
+% 0 1 0 00bc0f8e10ad6e9602574ca366bde050
+
+% 0 1 0 1d45a2ac01f56f730cdcdb560ea2a569
+
+% 0 1 0 04c819b7188a9c8f036df6dcaab41e03
+
+% 0 1 0 1bf4796fbec18ceb13ca1d7a588caade
+
+% 0 1 0 11a0fde00aef89461fac730ce9785bd3
+
+% 0 1 0 0d3a7f77454937db1ca095299502ae6b
+
+% 0 1 0 0cd4825d971afbf8161143c26caaff9b
+
+% 0 1 0 066a44a274bc871a16d46c35cffd6135
+
+% 0 1 0 0b5f5539c3b001d1034687765fb2b333
+
+% 0 1 0 07099a67fe27b0aa180aaaf3556584e7
+
+% 0 1 0 1145b289f21ffb821d839ad6ac827d8f
+
+% 0 1 0 05021db064eda89a059093fe24c98c70
+
+% 1 1 0 1b535c71aaf383af05f83552fec7d74d
+
+@ 0 2 0 13f1b2f300616e140d001523eab217d8
++ On notera qu'une raison peut porter ses propres données — l'octet qui était hors limites, le
++ nombre de groupes effectivement trouvés — de sorte que le diagnostic est précis plutôt que
++ catégoriel.
+
+@ 0 4 0 049745cb252b8efc0c6cd6881bcc6507
++ Les numéros sont l'identité de l'erreur. Un type d'erreur a un code bolt — le numéro de son
++ module et son propre numéro dans le module — et chaque raison un numéro en son sein, et chaque code a une page dans `doc/errors` qui explique
++ la cause et les remèdes habituels — de sorte qu'un `↯/s.100.2` dans le rapport d'un utilisateur
++ peut être consulté plutôt que deviné.
+
+@ 0 1 0 0d5d2770b1c631a11f455ebd47ef5759
++ Trois autres propriétés découlent de cette forme, et chacune vaut la peine.
+
+@ 0 5 0 0c2015700d6940ed1b53af73d30f0009
++ Le message est *dérivé* des champs, de sorte qu'il ne peut pas décrire un état dans lequel la
++ valeur ne se trouve pas. Une `Reason` est un ensemble fermé, de sorte qu'un gestionnaire qui la
++ filtre est vérifié pour l'exhaustivité, et qu'une nouvelle raison est signalée sur chaque site
++ qui ne l'a pas prise en compte. Enfin, les valeurs qui expliquent l'échec sont à la disposition
++ du gestionnaire, et ne sont pas seulement rendues dans une phrase.
+
+@ 0 1 0 0e17c4b5d18d17440291e6cc47c380cc
++ ## Les messages sont aussi des valeurs
+
+@ 0 3 0 1296ac9e53c01805009d1ff92e30958f
++ Un `Message` n'est pas un `Text`. C'est une valeur structurée, construite à partir de parties
++ interpolées, de sorte que tout ce qui est `Communicable` peut y être intégré et rendu de façon
++ cohérente partout où le message est affiché :
+
+% 2 1 0 177904f9cae24eba0b55e4cde1cbdf11
+
+% 3 1 0 0c13024419e04d11104f015a21373b31
+
+% 4 1 0 1801a934a4bc6f271618e7d468684eae
+
+% 0 1 0 18f79a633b15b25b141c107163b044a2
+
+% 1 1 0 18c74871a34ce55e05cab4da28d175c0
+
+@ 0 5 0 0062b4f9b26e69ce01e503354e26595a
++ La raison est rendue par sa propre instance de `Communicable` plutôt que par `toString`, de
++ sorte que la formulation vit avec le type qu'elle décrit et qu'une même formulation sert à chaque
++ message qui l'intègre. C'est aussi la jonction par laquelle les messages pourraient être
++ localisés : la structure survit jusqu'au moment du rendu au lieu d'être aplatie en une chaîne au
++ moment de la construction.
+
+@ 0 1 0 0e6eff517519477d0c70fcb89509fe08
++ ## Les erreurs sont pures
+
+@ 0 2 0 125dd632cfba242a0f4b769e10d9afab
++ Une erreur ne peut jamais détenir une capacité vivante, et le compilateur l'impose : `Error`
++ étend `caps.Pure`.
+
+@ 0 5 0 1cb137791fdb3dfc1ce81118c56ea9b9
++ La raison est précise. `throw` est le seul canal que le [contrôle des captures](capture-checking.md)
++ ne voit pas — une exception attrapée hors d'une portée arrive avec ses captures effacées — de
++ sorte qu'une erreur portant une capacité serait une brèche dans la garantie que ce qui est
++ confiné à une portée n'en sort pas. La pureté la referme : aucune erreur, quelle que soit la
++ façon dont elle voyage, ne peut faire sortir clandestinement une poignée de fichier ou un
++ gestionnaire d'erreurs de la portée qui le confinait.
+
+@ 0 3 0 05730397d9b5b4e101c7e908e955a4d9
++ Cela a une conséquence de conception qu'il vaut la peine de connaître. Une erreur peut porter le
++ *chemin* qui n'a pas pu être ouvert, mais pas la poignée ouverte ; l'*URL* qui a échoué, mais pas
++ la connexion. En pratique, c'est de toute façon ce que veut un diagnostic.
+
+@ 0 1 0 12b5dc3baea8749a1fbb2aa1942197c4
++ ## Les traces de pile sont facultatives
+
+@ 0 3 0 09c88b069907145b0a7e00fac00cf1aa
++ La capture d'une trace de pile est la partie coûteuse de la construction d'une exception, et
++ elle est souvent inutile : une erreur attendue et traitée deux cadres plus loin n'en a que faire.
+
+@ 0 1 0 089dadd7f0fc971e1f3ae9c6c15be813
++ Le fait qu'une erreur capture une trace est donc un choix contextuel :
+
+% 2 1 0 1483cb9d97568aa914accf48c22168ae
+
+% 3 1 0 1be817b1031391b612c40098614b9eac
+
+% 4 1 0 0dda5f766e47ebe4186a1f5d423c41ed
+
+% 0 1 0 071ff21beab99b861550e39ebcfdc692
+
+% 0 1 0 1376db95fa3260100b9941ed4944ab13
+
+% 1 1 0 11413f36c893c2d71e57317184ca827e
+
+@ 0 3 0 1fd41bf63afbd3571252f2dc51916e4d
++ C'est pour cette raison que le paramètre `Diagnostics` figure dans le constructeur de chaque
++ erreur. C'est la seule part de cérémonial que la conception impose à la définition d'une erreur,
++ et elle permet d'utiliser des erreurs typées dans les chemins critiques sans payer pour des
++ traces que personne ne lira.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ce que cela coûte
+
+@ 0 3 0 0d09f9b28b6b81b306fc99faa9d9425a
++ **Définir une erreur demande plus de travail que lancer une chaîne.** Une case class, une
++ énumération `Reason`, une instance de `Communicable` et un paramètre `Diagnostics` constituent un
++ vrai cérémonial face à `throw new RuntimeException("bad port")`.
+
+@ 0 4 0 0a88002cf3cdb8531b68ce2591335cba
++ Pour sa défense, ce cérémonial est proportionnel à l'importance de l'erreur et se paie une fois
++ par type d'erreur, tandis que le bénéfice se récolte dans chaque gestionnaire — et l'alternative
++ se dégrade de façon prévisible : on filtre sur les messages de type chaîne, puis on améliore les
++ messages, et le filtrage casse sans bruit.
+
+@ 0 3 0 10ae0efcceb28cd507ac3a07c19fd47c
++ **Les énumérations de raisons sont un engagement.** Ajouter un cas est un changement qui casse
++ les sources pour les gestionnaires exhaustifs, ce qui est le contrôle d'exhaustivité fonctionnant
++ comme prévu, mais cela signifie que l'ensemble des raisons mérite réflexion lors de la conception
++ de l'erreur.
+
+@ 0 2 0 011facc043475de205eef161507ceab3
++ Voir [la gestion des erreurs](error-handling.md) pour la façon dont ces valeurs sont levées et
++ traitées, et [les transitions totales](total-transitions.md) pour savoir pourquoi l'exhaustivité
++ compte.

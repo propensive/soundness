@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 1606a11a7b2526e307ffb707e426a29d
+
+@ 0 1 0 14a61fc190d3e2e70e7d9df38c9a00cc
++ Wird ausgelöst, wenn ein YAML-Dokument nicht geparst oder nicht als der angeforderte Typ gelesen
++ werden kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 0e17ce7f62342fba0c886a3d23c58796
++ Ypsiloid meldet über diesen Fehler sowohl Parse- als auch Konvertierungsfehler. Ein Parsefehler
++ bedeutet, dass der Text kein wohlgeformtes YAML ist; ein Konvertierungsfehler bedeutet, dass das
++ Dokument gültig ist, aber nicht die Gestalt hat, die der Zieltyp verlangt.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 0f9ecc91dab2a31d02bed0df10eed7ba
+
+% 0 1 0 0ba8c4367974cc6f19b4701858fca3c1
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 4 0 112ccf4652acdf9a09cdf28bd245aed3
++ Prüfen Sie bei einem Parsefehler das Dokument gegen die YAML-Spezifikation — Einrückung und
++ Indikatoren für Blockskalare sind die üblichen Verursacher. Vergleichen Sie bei einem
++ Konvertierungsfehler die Gestalt des Dokuments mit den Feldern des Typs; unter einer sammelnden
++ Strategie wird jede Abweichung auf einmal gemeldet, jede mit einem Pfad zum betreffenden Knoten.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1ca73333d9c677d8198f09e68a25c46d
++ - Quelle: `lib/ypsiloid/src/core/ypsiloid.Yaml.scala`

@@ -1,0 +1,346 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1eebd5e84de404e50bf83eeb929f00fa
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 06b0dab40edba76c12bb9cd8d0dc6411
++ info   numeri limitati: un `Double` il cui intervallo ammesso sta nel suo tipo, scritto `min ~ max`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0e3aff3283afdcc21c1118799c81c617
++     _Cardinality_ permette a un numero di portare nel proprio tipo l'intervallo ammesso.
++     `0.0 ~ 1.0` è un `Double` di cui si sa che sta tra 0 e 1 inclusi; un letterale fuori
++     dall'intervallo è un errore di compilazione nel punto in cui è scritto, e l'aritmetica sui
++     numeri limitati calcola l'intervallo del risultato dagli intervalli degli operandi, quindi un
++     limite accompagna un valore lungo tutto un calcolo e un passo che potrebbe violarlo non compila.
+
+% 2 1 0 1a47dd7314bd484c12500123398deea1
+
+% 3 1 0 186ced204511e9aa1fd534a4c633f323
+
+% 4 1 0 1b007540ae17e0911bb64c52f5f92ecc
+
+% 0 1 0 000ef8e30e1fba5a084fa2649a0ba24d
+
+% 0 1 0 17cf6a98e464d93f15eda5dbfd665038
+
+% 0 1 0 1bf1494b7bacc48e0ab7fbd6dad0a0a0
+
+% 1 1 0 166ccb1acc171d9c10c6e6e72611e132
+
+@ 0 6 0 08c883d8fcb9c4f2157be123c15f4e7d
++     I limiti sono tipi singleton `Double` e l'aritmetica su di essi è svolta da
++     `scala.compiletime.ops.double` del compilatore, quindi l'intervallo inferito è esatto per
++     l'operazione: l'addizione somma i limiti, la moltiplicazione prende gli estremi dei quattro
++     prodotti degli angoli (così gli intervalli a cavallo dello zero sono gestiti), e la divisione
++     per un intervallo che include lo zero si allarga fino agli infiniti. Un operando che è un
++     semplice `Double`, di cui staticamente non si sa nulla, restituisce un semplice `Double`.
+
+@ 0 4 0 1dddec118e561e470bfbd96084e657dd
++     Un letterale viene verificato dal given `FromDigits` `~.cardinality`, che richiede la
++     funzionalità del linguaggio `scala.language.experimental.genericNumberLiterals`. Un `Double`
++     proveniente dall'esterno — letto dall'input, o calcolato — entra in un intervallo o tramite un
++     pattern match, che lo verifica a runtime (`case x: (0.0 ~ 1.0) => …`), o tramite `force`, che
++     asserisce il limite senza verificarlo.
+
+@ 0 3 0 1ae98b732c902fee0e8c3cfb99087aaa
++     `~` è un tipo opaco su `Double` dichiarato in `NumericRange` ed esportato nel pacchetto
++     `cardinality`. La libreria ha un unico insieme di sorgenti, `cardinality.core`, che si compila
++     per ogni piattaforma; tutto è esportato nel modulo ombrello `soundness`.
+
+% 0 1 0 1f13042d39b467fd1e6d3477f4232897
+
+% 0 1 0 13c5bdc4414e2eb516be311b2b926c5b
+
+% 0 1 0 1bdd440745cb9e5f1accb105fee001c6
+
+@ 0 4 0 0029fa36a9be15fa09f540da4cca6c79
++ entry .~   un `Double` limitato a un intervallo inclusivo nel suo tipo, come `min ~ max`; vedi `NumericRange.~`
++     Il tipo dei numeri limitati, esportato da `NumericRange`: `-1.0 ~ 1.0` è un `Double` di cui si
++     sa che sta in `[-1, 1]`. La sua aritmetica, il suo parser di letterali e il suo test di tipo a
++     runtime sono membri di `NumericRange.~`.
+
+% 2 1 0 1aa28452a3ca8cff05554c33f1dac926
+
+% 3 1 0 0be8fd2445bd531415f054e86de58f2c
+
+% 4 1 0 166f31ff3c2724fa07f7a028679e8feb
+
+% 0 1 0 1bbd7dc6637044510367a662a2f3b9d1
+
+% 0 1 0 0474eec735585fa014ad1b5e54b2049a
+
+% 0 1 0 063b048e219b58131d5f631034ebc54f
+
+% 1 1 0 05099d8b0e10f9e4149bbb2207b75801
+
+@ 0 5 0 0c99ac62a1e55b8a0f4b0d590283c576
++ entry .force   asserisce che un `Double` sta in un intervallo, senza verificarlo
++     `value.force[min, max]` riassegna a un `Double` il tipo `min ~ max` senza alcun costo e senza
++     alcun test. È l'unico modo di entrare in un intervallo che può essere sbagliato, quindi è
++     pensato per un valore il cui limite il compilatore non vede ma il programmatore conosce — il
++     risultato di `math.sin` come `-1.0 ~ 1.0`, per esempio. Dove il limite non è certo, si esegue
++     invece un match sul tipo dell'intervallo, che lo verifica:
+
+% 2 1 0 04ab450d97f860ee0bfd88723176311e
+
+% 3 1 0 06368ef2ca178dd5150f3a88a5cca1d6
+
+% 0 1 0 10a5c03357a6519a131a6aca82f2e16a
+
+% 0 1 0 1f2609d360b6da18067f50ae41a4f7b1
+
+% 0 1 0 17b3756264c6e55d0d0d10bc04c00f89
+
+% 0 1 0 0b61a0219de08a891fb58f46b8801c03
+
+% 1 1 0 1ab7573bc33aa6e41af9770af4c51031
+
+@ 0 1 0 04549b6d8fcf16451c464addfdba769e
++ entry .NumericRange   la sede del tipo dei numeri limitati `~` e delle sue operazioni
+
+% 1 1 0 1c528c2d61731b760a05622832d72f19
+
+@ 0 4 0 111f57c1299b5840191f91b855beb83e
++       Un oggetto che dichiara il tipo opaco `min ~ max`, un `Double` in un intervallo inclusivo,
++       il cui oggetto compagno contiene l'aritmetica, il parser di letterali e il test di tipo. Il
++       tipo è esportato nel pacchetto `cardinality` e nel modulo ombrello `soundness`, quindi si
++       scrive `0.0 ~ 1.0` senza prefisso.
+
+% 0 1 0 15f9f18fdf327e5b0a9c248090c3aa32
+
+@ 0 4 0 0aa0850f393e7d031b684e98de4f9d47
++   entry .apply   avvolge un `Double` come numero limitato, senza verificare il limite
++       `NumericRange[min, max](value)` è il costruttore non verificato, come lo è `force`. È ciò su
++       cui ripiega un letterale le cui cifre non sono note staticamente.
++   entry .~   un `Double` limitato a un intervallo inclusivo nel suo tipo, come `min ~ max`
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 3 0 114e7620678e388519b67eb63f6d9f45
++         `min ~ max` è un tipo opaco su `Double`, con tipi singleton `Double` come limiti: di un
++         valore di tipo `0.0 ~ 1.0` si sa che è almeno 0 e al massimo 1. A runtime è un `Double`
++         non inscatolato; `.double` lo rilegge.
+
+@ 0 4 0 1dd9d34a2da8f97a185f033a1ba2a571
++         Un letterale del tipo viene verificato durante la compilazione (`.cardinality`),
++         l'aritmetica calcola l'intervallo del risultato da quelli degli operandi (`.+`, `.-`,
++         `.*`, `./`), e un semplice `Double` viene ristretto da un pattern match, che verifica il
++         limite a runtime (`.comparable`).
+
+@ 0 1 0 18f91ae35903175a1c3a27ebac0f956c
++         L'intervallo inferito si compone lungo un'intera espressione:
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 1e738dfd0e1f664717447d9d4e5e68cb
++           label Due valori limitati e una scala
+
+% 1 1 0 0d4e667b103e5001131e00a72c05e0a4
+
+% 0 1 0 19300448114fc7e810c6bf10a88a596e
+
+% 0 1 0 0dbdc3e8e241ee7d1565f00e18436f24
+
+% 0 1 0 0038f299bce7b1060efb6e98ac7efed7
+
+% 0 1 0 043b5cf67e923e0018aafbc66126859c
+
+% 0 1 0 07162359a50644ea1f3dbb03bced2ed2
+
+% 1 1 0 0c9f6071020afe0e0c6273dde0d5eabe
+
+@ 0 1 0 033e853dcfca34450c9ef3164c4133d8
++           label Moltiplicare per un letterale scala l'intervallo
+
+% 1 1 0 0405c83d8295d8d11990958b8439f850
+
+% 0 1 0 168e0fda97e41ff31aa40e04e3b99303
+
+% 1 1 0 1ff619314cdc4523061bc566994fb661
+
+@ 0 1 0 180fe5124534aadb107afe9733bd2d02
++           label Sommare due intervalli ne somma i limiti
+
+% 1 1 0 153904c21a9eb0300f519302a43dc759
+
+% 0 1 0 074eeeeeb46009810c5f02106a255882
+
+% 1 1 0 1d098898772332301d929e98546d37ad
+
+@ 0 1 0 133f3785ce23220112e31a73348871b5
++           label Moltiplicare due intervalli prende gli angoli estremi
+
+% 1 1 0 129b073f65b28eb01d1c1518aaefd31f
+
+% 0 1 0 03407467735bea300185df5bd0cd2cbc
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 2 0 0c0695b1c3e9b061123c97544ab9d3a1
++         Gli operandi che sono semplici `Double`, anziché valori limitati o letterali, danno un
++         risultato `Double` semplice, perché del loro intervallo non si sa nulla.
+
+% 0 1 0 1f015bd0b30bff391f5e718b72ba9a4d
+
+@ 0 4 0 0f63db835f4d7af91d7cfe1b34e3c8a6
++     entry .comparable   un test di tipo a runtime, così che un `Double` possa essere confrontato con un tipo intervallo
++         Un `TypeTest[Double, min ~ max]` per limiti letterali, che richiede un `ValueOf` di
++         ciascuno: corrisponde quando `min <= value <= max`. Si trova nell'ambito implicito, quindi
++         un pattern come `case x: (0.0 ~ 1.0)` restringe un `Double` in modo sicuro.
+
+% 2 1 0 0402b315bf1ba3871650b99ed3816e5c
+
+% 3 1 0 10e3a9a0eb66e7350ff18383f76bf1bd
+
+% 0 1 0 0e68b0b507899ddb0a840f325e8b814c
+
+% 0 1 0 18c4e96cc5c24ec9059bfee8c3f07391
+
+% 0 1 0 1d3066f7cef68886130849da8ba18342
+
+% 1 1 0 142a5cfe17ef3aa605b441b11b3b476f
+
+@ 0 1 0 008c9e7eef5983820882b2673422356d
++     entry .RangeParser   la classe `FromDigits.Decimal` dietro i letterali dei numeri limitati
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 10 0 1a17ecaba0dbfd1b168fb18ee42d8bde
++           La classe del given `.cardinality`; il suo `fromDigits` converte senza verificare, e il
++           given lo sovrascrive con la verifica in fase di compilazione.
++       entry #fromDigits   analizza delle cifre come numero limitato
++     entry .cardinality   verifica un letterale numerico rispetto al suo tipo limitato durante la compilazione
++         Il given `FromDigits` che fa superare il controllo dei tipi a `val x: 0.0 ~ 1.0 = 0.2`;
++         richiede `scala.language.experimental.genericNumberLiterals`. Un letterale sotto il
++         limite inferiore è l'errore `↯/s.16.4`, _the value `v` is less than the lower bound for
++         this value, `min`_, e uno sopra il limite superiore l'errore `↯/s.16.3`, _the value `v`
++         is greater than the upper bound for this value, `max`_; limiti che non sono tipi
++         letterali `Double` sono gli errori `↯/s.16.1` e `↯/s.16.2`. Entrambi i limiti sono
++         inclusivi.
+
+% 2 1 0 05479583a48b5ac6172d4f4f869cc4d9
+
+% 3 1 0 1a7f28d6f20dd05b1377c62dba00aeb6
+
+% 4 1 0 011e07a5baea61c40c5d116f9d042f93
+
+% 0 1 0 080863568d72493f076f91200f6340f3
+
+% 0 1 0 1b61f572d1687da41a8f9d28dc6cbddf
+
+% 1 1 0 01133c012e9f38ab1aa7da2d368cd938
+
+@ 0 5 0 19867eff16fcb86906cbb1e6b97ba0cc
++         Le cifre non note come letterale vengono convertite senza verifica.
++     entry .double   il numero limitato come semplice `Double`
++     entry .+   somma, con l'intervallo della somma: limiti sommati ai limiti, oppure traslati di un letterale
++         `(a ~ b) + (c ~ d)` è `(a + c) ~ (b + d)`, e `(a ~ b) + k` per un letterale `k` è
++         `(a + k) ~ (b + k)`. Sommare un semplice `Double` dà un semplice `Double`.
+
+% 2 1 0 09cecd65b976b4e616397381e9e48758
+
+% 3 1 0 037eb35a88f543271c3bf2a466d4ccbd
+
+% 4 1 0 1746bd83a882823d165bb61747114b80
+
+% 6 1 0 052604976d4982cb131678537297d2fd
+
+% 7 1 0 169661160c9316c30101aefc9524059e
+
+% 0 1 0 068135139de79885065483bc19dd0856
+
+% 0 1 0 149c4686eeeb749f142369f6756cade2
+
+% 1 1 0 09964fe2f795fb6e1416b523c220cf8a
+
+@ 0 3 0 0f6026162915a2601578844237b81f80
++     entry .-   sottrae, con l'intervallo della differenza
++         `(a ~ b) - (c ~ d)` è `(a - d) ~ (b - c)`, e `(a ~ b) - k` per un letterale `k` è
++         `(a - k) ~ (b - k)`. Sottrarre un semplice `Double` dà un semplice `Double`.
+
+% 2 1 0 193ab9c629b355d518d8a60af7e294a7
+
+% 3 1 0 06e739516e00d37f101cfa7c1e582a81
+
+% 4 1 0 03816c10cf2fc67d1fae79507e463d43
+
+% 6 1 0 1bc78c1bb7fc254701a1022f0af57984
+
+% 7 1 0 08613a61329738ce18b292e1ca8ce0b9
+
+% 0 1 0 08bece2d0d90657d0f183eb89d495a99
+
+% 1 1 0 1198391544c77755060f1e9c88c9a04c
+
+@ 0 5 0 1f3e81bfbc51bdca053054ddbe1141b1
++     entry .*   moltiplica, con l'intervallo del prodotto: gli estremi dei prodotti degli angoli
++         `(a ~ b) * (c ~ d)` va dal minimo al massimo tra `a*c`, `a*d`, `b*c` e `b*d`, il che è
++         corretto comunque gli operandi stiano a cavallo dello zero; `(a ~ b) * k` per un
++         letterale `k` viene scalato, con i limiti che si scambiano se `k` è negativo.
++         Moltiplicare per un semplice `Double` dà un semplice `Double`.
+
+% 2 1 0 1a2dc02a939740e804a2a469860883f5
+
+% 3 1 0 1963efb7cb18589d1f715d37cc4f190e
+
+% 4 1 0 00dcf54582967def1fe2120ccdb055bd
+
+% 0 1 0 01aa823d0a98dfe713834a4f2f6f74d2
+
+% 0 1 0 0f0f8492e719f9f804e200dd02d1d1eb
+
+% 0 1 0 1b5269af4c0330291bdc7196082f367b
+
+% 0 1 0 0c615c3cf526065e12779c0a869fd7df
+
+% 0 1 0 15e5aa335f527e49015944d2135011bc
+
+% 1 1 0 1e55a1fca35df8060d994509096b7d57
+
+@ 0 5 0 0995532322a665150077c392320889cc
++     entry ./   divide, con l'intervallo del quoziente, illimitato se l'intervallo del divisore comprende lo zero
++         `(a ~ b) / k` per un letterale `k` scala i limiti. `(a ~ b) / (c ~ d)` prende gli estremi
++         dei quattro quozienti degli angoli quando `c*d` è positivo, ed è `-∞ ~ ∞` altrimenti — un
++         divisore il cui intervallo include lo zero, o lo tocca, lascia il quoziente illimitato,
++         quindi nessun intervallo finito lo accetta. Dividere per un semplice `Double` dà un
++         semplice `Double`.
+
+% 2 1 0 0a5c0b053a693e5216684a35cd035e5e
+
+% 3 1 0 03e7ec0468017d07037be0596971b01b
+
+% 4 1 0 0c0dbe3ccacc01cb032a27c7ea6bac5b
+
+% 0 1 0 1a2fb3b334e0b0e50ef4fddabaf60fbc
+
+% 0 1 0 0727df2c8a94a47211118da2499a11a4
+
+% 0 1 0 17459b457aecb0ef03b9e9f6b018a97a
+
+% 0 1 0 00abfcc3b94faa561f71284d11b6b6a5
+
+% 1 1 0 0e62276353050d5009e7a3b3b834c081
+
+@ 0 1 0 085596bda50da65b04bfa59dcbbd146b
++ entry .internal   l'aritmetica a livello di tipi e la macro dietro i numeri limitati
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 6 0 0103e883c4371809186e9e1ce323f89c
++       Non sono per l'uso diretto: i match type che calcolano i limiti di un prodotto o di un
++       quoziente, e la macro che verifica un letterale di numero limitato.
++   entry .Asym   un match type che sceglie tra due limiti in base al segno di un valore
++   entry .Min4   il minimo di quattro tipi singleton `Double`
++   entry .Max4   il massimo di quattro tipi singleton `Double`
++   entry .apply   la macro dietro `NumericRange.~.cardinality`: verifica le cifre letterali rispetto ai limiti

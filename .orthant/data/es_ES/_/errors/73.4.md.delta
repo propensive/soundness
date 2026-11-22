@@ -1,0 +1,34 @@
+orthant 2 language
+
+% 0 1 0 10845fed894833bb0b53594a21d2dd5a
+
+@ 0 1 0 0d59322883cb12ad1de53e66420d2464
++ Se lanza cuando un valor de texto no se analiza como una duración ISO-8601.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 1567acc00a4f000c1f2bdefe8d184361
++ La instancia `Decodable` de `Timespan` y el interpolador `dur"…"` comparten un mismo analizador.
++ Cuando este rechaza la entrada —una `P` sola, un designador ausente o componentes desordenados—,
++ este error lleva el texto problemático. El mensaje es `$text is not a recognized duration`.
+
+@ 0 3 0 142ffd6f5ba293110eb256932824db97
++ Era una variante de `↯/s.73.3` hasta que las duraciones se separaron de los momentos: una
++ duración no tiene fecha, ni hora de reloj, ni zona horaria, así que no lograr leer una no es no
++ lograr determinar un momento.
+
+@ 0 1 0 1262b2985f54c3b214f87a1be9286940
++ **Ejemplo.** `[↯/s.73.4] P is not a recognized duration`
+
+@ 0 3 0 1818c7d9be5c5a4a04ab11516b196e84
++ **Solución.** Proporciona una duración ISO-8601 completa, como `P1Y2M3DT4H5M6S` para un año, dos
++ meses, tres días, cuatro horas, cinco minutos y seis segundos. Un literal `dur"…"` se comprueba
++ en tiempo de compilación y no puede lanzar este error.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 2 0 1ab10b974bc931010f83b0218eb959ec
++ - Fuente: `lib/aviation/src/core/aviation.Timespan.scala`
++ - Relacionado: `↯/s.73.3` (`Moment.Error`)

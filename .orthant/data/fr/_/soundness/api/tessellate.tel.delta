@@ -1,0 +1,749 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1ca5af01992a4c2d137dccab4a4ebebb
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d8650d7eef9da69129a3e0202faee96
++ info
++     mise en page de texte en cellules de largeur fixe : retour à la ligne, ajustement, alignement,
++     taille des pistes et tracé de boîtes
+
+@ 0 6 0 0da001c0ebb5837c0e9c2fadf1b65513
++ detail
++     _Tessellate_ est la couche de mise en page que partagent les bibliothèques de terminal et de
++     tableaux de Soundness. Elle dispose un contenu textuel — `Text`, `Teletype`, ou tout
++     `Textual` dont les éléments sont des `Char` — dans une grille de cellules de largeur fixe, en
++     mesurant chaque ligne selon sa largeur d'affichage plutôt que sa longueur ; les caractères
++     larges d'Asie orientale, les marques combinantes et les emoji liés par un joiner occupent
++     ainsi les cellules qu'ils occupent réellement.
+
+@ 0 1 0 0a0061a28bdd1c91188ac4e02ea5f3d9
++     Ses pièces sont petites et indépendantes :
+
+@ 0 9 0 170b02b443c7b01b0b4b4dbb8d94f451
++     - `Flow` fait couler un paragraphe en lignes (`Flow.wrap`, en coupant aux points de césure,
++       puis aux espaces), confine une ligne à une largeur (`Flow.fit`, en tronquant par des points
++       de suspension ou en complétant), et mesure les largeurs intrinsèques d'un contenu
++       (`Flow.metrics`) ;
++     - `Alignment` complète une ligne jusqu'à une largeur : `Left`, `Right`, `Center` ou
++       `Justify` ;
++     - `Metrics` et `Flex` décrivent des pistes — colonnes, lignes, volets — qui se disputent
++       l'espace le long d'un axe, et `Flex.solve` répartit l'espace entre elles ;
++     - `Reflowable` est la classe de types des contenus qui négocient avec une mise en page
++       rectangulaire ;
++     - `BoxLine`, `LineCharset` et `BoxDrawing` choisissent le caractère de tracé de boîte pour
++       une jonction de lignes.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 104c16ecb0d1ed140875e1c01ba98db4
+
+% 0 1 0 16990c5d60220e4f07a921cdd4274937
+
+% 0 1 0 162ed997c30df88d06e21009a8cde95e
+
+% 0 1 0 102b30fdce829a2b11a35b4a8fddc3ed
+
+% 0 1 0 0631b048ef4629471bece27cc7916e50
+
+% 0 1 0 0ce018af7c7737600a5a8c1687e69f34
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 6 0 14dc5db4a3b3ce1611921a8838dfc85d
++     Toute méthode de mesure a besoin d'un `Text is Measurable` dans la portée, qui provient d'un
++     `Char is Measurable` choisi par son nom dans le package `textMetrics` (`uniformMetric`,
++     `eastAsianScriptsMetric` ou `wideCharacterWidthMetric`). Le retour à la ligne a aussi besoin
++     d'une `Hyphenation` : si aucune n'est importée, le repli du compagnon ne coupe rien, et
++     importer `hyphenations.englishHyphenation` active la césure de l'anglais américain. Les deux
++     s'importent par leur nom, puisque `import soundness.*` n'importe pas les givens.
+
+@ 0 3 0 0192d3e4f439909912c31fe9e39ed296
++     Les positions dans un contenu sont des positions de caractères dans son texte brut ;
++     l'indexation propre au contenu doit donc concorder avec les caractères de son texte brut, ce
++     qui est le cas de `Text`, `Ascii` et `Teletype`.
+
+@ 0 3 0 180b02a11b7aafb00dfd7afda448b931
++     La bibliothèque a un seul ensemble de sources, `tessellate.core`, qui compile pour toutes les
++     plateformes et est exporté en entier vers le package parapluie `soundness`. C'est le moteur
++     de mise en page sous les tableaux d'escritoire et les cadres et bordures d'ultimatum.
+
+% 0 1 0 1b948a3a50eede060c1b3aa064c82351
+
+% 0 1 0 0c451c21fba860d3067162392aee79c5
+
+% 0 1 0 111a60e5189085c80d1bd4d44263a2a4
+
+% 0 1 0 1079f33864b3b39c15229e0e2a220f75
+
+@ 0 1 0 16e78e363ba7e50d091cad38664f40bf
++ entry .Flow
++   info
++       fait passer à la ligne, ajuste, tronque, découpe et mesure un contenu textuel dans une
++       largeur de cellules
+
+@ 0 7 0 0423b864870bfb310192a6460f074857
++   detail
++       Les méthodes de `Flow` fonctionnent sur tout `textual` dont l'instance `Textual` a des
++       éléments `Char` — `Text`, `Teletype` — et renvoient le même type ; un texte stylé conserve
++       donc ses styles dans les lignes en lesquelles il est coupé. Chaque largeur est mesurée par
++       grappe de graphèmes, selon le `Text is Measurable` dans la portée : une grappe est aussi
++       large que son point de code le plus large ; une marque combinante accompagne donc son
++       caractère de base, et un drapeau ou une famille d'emoji ZWJ compte une seule fois.
+
+% 2 1 0 088e4a5ada757ff80f11df5227c4ea84
+
+% 3 1 0 078924574db1bfdf1201ee68ae65f2c4
+
+% 4 1 0 19b1572970852b1c0386ad1eb812bdd5
+
+% 1 1 0 16368aa5557f87450bded1d92ef5a5f2
+
+% 0 1 0 016fa8c4b5a419d6039f8c6a5bf50f21
+
+% 0 1 0 1dfa1a5cf83ee41308a94dff5d14c7e6
+
+% 0 1 0 14e0a6a16d6e7c571fc65469829ce606
+
+% 0 1 0 1c58d849d7374f33102bf8799a7fb47c
+
+% 1 1 0 121795a4e9fdc75d0126dea165a48ec2
+
+% 0 1 0 1869af3c902b8c24119f5b944dd8d141
+
+% 1 1 0 1379d456e128239413570fcd3cbe23aa
+
+@ 0 1 0 1a172d77d5ded1211d07c13f8902b639
++   entry .wrap
++     info
++         fait couler un contenu en lignes pas plus larges qu'une largeur donnée, avec césure et
++         coupure aux espaces
+
+@ 0 8 0 028b8d12e9b4b75a0704a71b5bfb621a
++     detail
++         `Flow.wrap(content, width)` renvoie une `Sequence` de lignes. Un saut forcé (`\n` ou
++         `\r\n`) commence toujours une nouvelle ligne, et des sauts forcés consécutifs conservent
++         la ligne vide qui les sépare. Lorsqu'une coupure souple est nécessaire, on préfère le
++         dernier point de césure du mot qui déborde qui tient encore avec `hyphen` (par défaut
++         `t"-"`) ajouté ; à défaut, la ligne est coupée à sa dernière espace ; à défaut encore, le
++         mot trop long déborde au-delà de la largeur. Une largeur inférieure à 1 renvoie le contenu
++         en une seule ligne. Sans césure dans la portée, le repli du compagnon est utilisé ; la
++         césure anglaise s'importe par son nom :
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 14f0710e7497af3e1d47c135b8335adf
+
+% 1 1 0 02e0b940a7be211c115af07758bfd99d
+
+% 2 1 0 1618fc70526034f215246d6a095d66db
+
+% 1 1 0 120a35d616c62913102224e6e2a4655b
+
+% 0 1 0 07afb3147dfac8931c3b4f308374dfae
+
+% 0 1 0 0671c221e7549fc813671f6c083c77c4
+
+% 1 1 0 01a7f74b9b3f9fc10c782ff8cdc33586
+
+% 2 1 0 1734f0383a82a59b0c4506d0ae43b284
+
+% 0 1 0 07438e6a510006150be3e5f03f16393e
+
+% 1 1 0 0b2829929598cdfe07c937df946cc00e
+
+% 0 1 0 18f036a300c7d4b10ddc0ca65f89eb3e
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 1a3a5c948694f14113dbf0fab56114d5
++         Les espaces que consomme une coupure souple sont supprimées, mais les espaces finales
++         avant un saut forcé ou à la fin du contenu font partie du contenu — un badge stylé comme
++         `e"$Bg(green)( ✓ )"` a besoin de ses trois cellules — et ne sont rognées qu'à concurrence
++         de la largeur, puisque le remplissage ne tronque jamais.
+
+@ 0 6 0 18e9e92c8264b5af1588d8c1f1ad3c16
++         `unbreakable` nomme des plages du contenu (sous forme d'`Interval` de positions de
++         caractères dans son texte brut) qui doivent rester intactes, comme un exemple de code
++         verbatim au milieu de la prose. Les espaces d'une plage ne sont pas des occasions de
++         coupure et ses points de césure sont ignorés ; elle passe donc à la ligne comme un seul
++         mot, en se déplaçant d'un bloc à la ligne suivante ou en débordant au-delà de la largeur ;
++         une espace au bord d'une plage reste une occasion de coupure, et un saut forcé à
++         l'intérieur termine toujours la ligne.
+
+% 2 1 0 0484702bdbd828b7057b1bf3c7c70db4
+
+% 3 1 0 07c11ee74a194d5b1aa304110121ff11
+
+% 0 1 0 189b94ecbae7ef3f187dffd9681ce9e7
+
+% 0 1 0 07b3802820aae40f00aa10b1dc7eaad8
+
+% 0 1 0 17b6e6a49ef992ed1c5a5e7e254a88b0
+
+% 0 1 0 0ab4c8c75110030a15411ccdaa5d17c0
+
+% 1 1 0 18a8ce824b7a8ada031caf71aa2fe25a
+
+@ 0 1 0 074c6a293901271a07857a929dbda666
++         Elle a besoin d'un `Text is Measurable` et d'une `Hyphenation` dans la portée.
+
+@ 0 1 0 0d718145eddd840a14b004f3115d326f
++   entry .fit
++     info
++         confine une ligne à une largeur exacte : tronquée par des points de suspension, ou
++         complétée selon l'alignement
+
+@ 0 4 0 12907feec88a688d0e50fbfdc48f5078
++     detail
++         `Flow.fit(content, width, alignment, ellipsis, last)` raccourcit un contenu plus large que
++         la largeur avec `.shorten`, et complète tout contenu plus étroit selon `alignment`
++         (`Alignment.Left` par défaut). `last` est transmis à l'alignement, et indique à
++         `Alignment.Justify` si la ligne termine son paragraphe.
+
+@ 2 1 0 016ad0de0b8bc6e50d8ba48d22a6d172
++         ```scala
+
+@ 3 1 0 14b55f50fd05ded317a7cc4252c000fe
++         import soundness.*
+
+@ 1 1 0 11ca38aa54a01ad013a39af2d7954b01
++         import textMetrics.uniformMetric
+
+@ 0 1 0 190a9c4d9901e9cd09faddabac6803e4
++         Flow.fit(t"abc", 6)                       // t"abc   "
+
+@ 0 1 0 1bc700a6847d559e11a89f1f23e501ca
++         Flow.fit(t"ab", 6, Alignment.Center)      // t"  ab  "
+
+@ 0 1 0 1c53a6018c88d82b05f647d2cd3255fb
++         Flow.fit(t"hello world", 8)               // t"hello w…"
+
+@ 1 1 0 1be45a585647072311ca962b4a72e057
++         ```
+
+@ 0 1 0 03aa16ef7c304ee51a26e56c68f0aa71
++   entry .shorten
++     info
++         tronque un contenu plus large qu'une largeur donnée, en marquant la coupure par des points
++         de suspension
+
+@ 0 4 0 1aec8f9c53f550880e4bca4b7945aba2
++     detail
++         Un contenu qui tient déjà est renvoyé inchangé. Sinon, on conserve autant de grappes de
++         graphèmes entières que possible avec `ellipsis` (par défaut `t"…"`) ajouté ; un caractère
++         large ne chevauche donc jamais la coupure. Le résultat peut être plus étroit que la
++         largeur ; `.fit` le complète.
+
+@ 0 1 0 1f8fd378ac925425005666fd8991efdc
++   entry .chop
++     info
++         découpe un contenu en lignes d'au plus une largeur donnée, sans tenir compte des limites
++         de mots
+
+@ 0 2 0 1d6a99a555845f330f90812f2368a796
++     detail
++         Écoulement caractère par caractère, par grappe de graphèmes, comme un terminal fait
++         lui-même passer à la ligne une ligne longue. Une largeur inférieure à 1, ou un contenu
++         vide, donne le contenu en une seule ligne.
+
+@ 0 1 0 1e00aaa2c8e6448b1e178ffd86b6a9ea
++   entry .minContent
++     info
++         la largeur la plus étroite dans laquelle un contenu peut passer à la ligne sans
++         débordement : son mot le plus large
+
+@ 0 2 0 0b9ed03a5b2027ce0b72802c05016b1b
++     detail
++         La largeur d'affichage de son mot le plus large, les mots étant délimités par des espaces
++         et des sauts forcés.
+
+@ 0 1 0 03829deefde88d681bda5a3818613f16
++   entry .natural
++     info
++         la largeur qu'occupe un contenu sans retour à la ligne : sa ligne forcée la plus large
+
+@ 0 1 0 1b6054fe0eacdda9028c9288c073dc38
++   entry .metrics
++     info
++         les deux largeurs intrinsèques d'un contenu, `.minContent` et `.natural`, sous forme de
++         `Metrics`
+
+@ 1 1 0 16b728a9de1780b2127099a429baa09e
++     detail
++         ```scala
+
+@ 2 1 0 11f310cb8a8a7ee61c5b7e71587c32b4
++         import soundness.*
+
+@ 1 1 0 165b5949d2c22f13043f20c4cc53a096
++         import textMetrics.wideCharacterWidthMetric
+
+@ 0 1 0 0a010453ee75c4351007f67165598acb
++         Flow.metrics(t"the quick brown\nfox")   // Metrics(5, 15)
+
+@ 0 1 0 1350e98830cf8a17025688d9465b73da
++         Flow.metrics(t"👨‍👩‍👧 ab")              // Metrics(2, 5)
+
+@ 1 1 0 1cffa8cc0f4bd67211213075ea0cd275
++         ```
+
+@ 0 1 0 195a343848f820930fe6d8ebd0d915ec
++ entry .Alignment
++   info
++       le placement horizontal d'une ligne dans une étendue plus large : à gauche, à droite,
++       centrée ou justifiée
+
+@ 0 3 0 0dd2dfc3a20e436d05edc0dfe2dcae9b
++   detail
++       Un `Alignment` complète un contenu jusqu'à une largeur exacte avec `#pad` ; il ne tronque
++       jamais, si bien qu'un contenu plus large que la largeur est renvoyé tel quel (`Flow.fit`
++       tronque d'abord).
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0d49790b89b726bd1fc213c44f998a34
+
+% 1 1 0 0288d474bc01005e03a3a63975104178
+
+% 2 1 0 0a53483835a0af831eba7ced157bc23b
+
+% 3 1 0 1f4fe68639ce00d00caba9db2d2a061e
+
+% 0 1 0 151e0d3923c98ee8142265a29c1a6d9e
+
+% 0 1 0 0c15b04651ddef301ef90c9e35f08ed9
+
+% 1 1 0 1f7c7038abed3d13176da1dbe026192e
+
+% 2 1 0 15dca49994c934b91392cbd40052a74e
+
+% 3 1 0 0b312ff188a9578e0a6d3bc092c2b253
+
+% 0 1 0 08122b6fda88c135130a9d4008e4a194
+
+% 0 1 0 145e47c6d2f943f41fc16c99df502282
+
+% 1 1 0 191049cf64676cc7017cd6beaf9e7e7f
+
+% 2 1 0 09f9c5523af501b20dc2d62c0a76ecf2
+
+% 3 1 0 19543f4faf96d7f216336be620b1cbbb
+
+% 0 1 0 0f010bc88be9c56a174601f53251a783
+
+% 0 1 0 014a061d2aa9ea421ef16df5c2566f32
+
+% 1 1 0 1be25715be34af570c1586cb89741348
+
+% 2 1 0 178014a003fff1bd116a1903259d8e17
+
+% 3 1 0 1833291a7c56a5731b5dd0853548d741
+
+% 0 1 0 16024ff58627edb50f28e8ae5c56d624
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 1 1 0 01a8048d60bbce8e0fbfeebae2b28e8c
+
+@ 0 1 0 194ad40dfb8bcc5810cc898161ba88ed
++   entry .Left
++     info
++         complète le contenu à droite
+
+@ 0 1 0 1b1b085872e916a416d0c560cded4a91
++   entry .Right
++     info
++         complète le contenu à gauche
+
+@ 0 1 0 0bce80507cbb462f0dc63aba172fc1a2
++   entry .Center
++     info
++         centre le contenu, en plaçant à droite une éventuelle cellule d'espace libre impaire
+
+@ 0 1 0 15454f7ba8b2ca84118656826b5e75aa
++     detail
++         Contrairement au `center` de gossamer, qui place la cellule impaire à gauche.
+
+@ 0 1 0 1494871198784a2912a921c21e50d38a
++   entry .Justify
++     info
++         étire les espaces entre les mots pour remplir la largeur, sauf sur la dernière ligne d'un
++         paragraphe
+
+@ 0 3 0 17dd97794c836dc916e58cbc3ea77958
++     detail
++         Lorsque `last` est vrai, la ligne est complétée à droite, comme le fait `Left` : la
++         dernière ligne d'un paragraphe n'est pas étirée. Sinon, l'espace libre est réparti entre
++         les intervalles entre mots, le reste éventuel allant aux derniers intervalles.
+
+@ 0 1 0 0f201913be11883400ea55b29d8b91d3
++   entry .Vertical
++     info
++         le placement vertical d'un contenu dans une étendue plus haute : `Top`, `Middle` ou
++         `Bottom`
+
+@ 0 2 0 1ddbf2f90632df6c047e1d3dd65e350f
++     detail
++         Une énumération de trois cas, utilisée lorsqu'une cellule est moins haute que la rangée
++         dans laquelle elle se trouve — quand une autre cellule de la rangée passe à la ligne sur
++         davantage de lignes.
+
+@ 0 1 0 0d3c44a654aa272f06cbb6f93bcb01d1
++   entry #pad
++     info
++         complète un contenu jusqu'à une largeur exacte, selon qu'il s'agit ou non de la dernière
++         ligne d'un paragraphe
+
+@ 0 2 0 0b07f5a5e7dab4a90c1a17f4b400064b
++     detail
++         `pad(content, width, last)`, avec `last` vrai par défaut ; seul `Justify` en tient compte.
++         Elle a besoin d'un `Text is Measurable` dans la portée.
+
+@ 0 1 0 08a30f37ea3cedd41a66c398ed1da10b
++ entry .Metrics
++   info
++       les largeurs intrinsèques d'un contenu le long d'un axe : minimale et naturelle
+
+@ 0 5 0 132cafb9e0a4e92c1d50cb06848be8c0
++   detail
++       `Metrics(min, natural)` : `min` est l'étendue la plus étroite dans laquelle le contenu peut
++       être disposé sans déborder (son mot le plus large, pour du texte), et `natural` l'étendue
++       qu'il occupe avec un espace illimité (sa ligne la plus large). `Flow.metrics` mesure du
++       texte, et `Reflowable#metrics` tout contenu réagençable.
+
+% 2 1 0 1c51165431ef41e41c5ece43760dfd65
+
+% 3 1 0 021ad9a57302441d0e548451fcdcef96
+
+% 0 1 0 0a56aced4b09a87a03b5e100cbe6471b
+
+% 0 1 0 0e512f9072c662dd1cb80d26fde63fe5
+
+% 1 1 0 04da57861f3d9d5d1668a8418a00a4de
+
+% 0 1 0 1d07e14aad1f630614e09892321c64f1
+
+@ 0 1 0 05715627197dda0c00546f1fb6fd9d61
++   entry .apply
++     info
++         les mesures d'une largeur fixe, dont les largeurs minimale et naturelle sont égales
+
+@ 0 1 0 01e14acff2b28b2d11835764d3e54dda
++   entry #min
++     info
++         l'étendue la plus étroite dans laquelle le contenu tient sans déborder
+
+@ 0 1 0 07cc0060da39f6a711d5eb97a179be2c
++   entry #natural
++     info
++         l'étendue qu'occupe le contenu avec un espace illimité
+
+@ 0 1 0 193e937161b36bfa1184fb51974fee4d
++   entry #max
++     info
++         la plus grande de deux mesures, minimum à minimum et naturelle à naturelle
+
+@ 0 1 0 067d1f830dc88eee13b8eecbe17e19c4
++     detail
++         Les mesures d'une colonne contenant les deux contenus.
+
+@ 0 1 0 1b457b847fa627ca087da638fd766e5b
++ entry .Flex
++   info
++       une piste qui se dispute l'espace le long d'un axe : ses mesures, son poids, sa borne et son
++       comportement de repli
+
+@ 0 5 0 07f68adba2c2a3d503177c09e6e0ed30
++   detail
++       Un `Flex` décrit une piste — une colonne, une rangée, un volet — à `Flex.solve` : les
++       `#metrics` de son contenu, le `#weight` avec lequel elle revendique l'espace libre (`1.0`
++       par défaut), une borne supérieure optionnelle `#max`, et si elle est `#collapsible` :
++       supprimée entièrement, le plus petit `#rank` d'abord, lorsque l'axe ne peut contenir le
++       minimum de chaque piste.
+
+% 2 1 0 0bb6c889319585e717711a430aa90175
+
+% 3 1 0 08acd0f3b329944c1fac91f86f35cf5b
+
+% 0 1 0 01c637cfa68edd571ea46eeabaaf2007
+
+% 0 1 0 1f26e9c2b1f3ba551d52acfbe7e2ec80
+
+% 1 1 0 10f82d775235713909c1a302b6705b42
+
+% 1 1 0 06b995bd37126f8f0c13656b10a03498
+
+@ 0 1 0 08d7d0775dcffd1b068a1bfdfd316647
++   entry .content
++     info
++         une piste dont les bornes dérivent de son seul contenu
+
+@ 0 2 0 0ff3774427b6fd1103111878d47eebe8
++     detail
++         Elle rétrécit jusqu'à son minimum, ne dépasse jamais sa largeur naturelle, et revendique
++         l'espace libre en proportion de ce qu'elle peut utilement absorber, la différence entre
++         les deux.
+
+@ 2 1 0 1869bbfbc18db4bb1defe41d51e75b92
++         ```scala
+
+@ 3 1 0 0824556dba5952b81cc2ecb75d335a30
++         import soundness.*
+
+@ 0 1 0 0765f327bccf246611b68bac79371708
++         Flex.solve(Sequence(Flex.content(Metrics(3, 9)), Flex.content(Metrics(2, 4))), 20)   // 9, 4
+
+@ 1 1 0 056ce065f7a3c1a311e628bb566bbe21
++         ```
+
+@ 0 1 0 02af86c8f465f58c0bc76a4cc79e9dd0
++   entry .solve
++     info
++         répartit les cellules d'un axe entre des pistes, en donnant la taille de chaque piste ou
++         `Unset` si elle a été repliée
+
+@ 0 2 0 0ca41da59f5cd1b601e5c76f95412d0f
++     detail
++         `Flex.solve(tracks, available, gap)` procède en deux étapes.
+
+@ 0 4 0 0ba155ebefeba2000e1a81e362c8ff1b
++         **Repli.** Tant que les minima des pistes, plus un `gap` entre chaque paire, ne tiennent
++         pas dans `available`, la piste repliable de rang le plus bas (la plus à gauche, en cas
++         d'égalité) est supprimée, et sa taille vaut `Unset`. Si plus rien ne peut être replié, les
++         minima sont conservés et débordent de l'espace, et c'est à l'appelant de décider quoi
++         faire.
+
+@ 0 6 0 003d2b9144e275400438f064a9f38c68
++         **Répartition.** La part équitable de chaque piste restante dans l'espace qui reste après
++         les intervalles est proportionnelle à son poids. Une piste dont la part tomberait sous son
++         minimum est fixée au minimum, et une piste dont la part dépasserait son `max` est fixée au
++         maximum, le reste étant redistribué entre les autres jusqu'à ce que plus rien ne change.
++         Les pistes libres prennent ensuite leurs parts avec un arrondi au plus fort reste, de
++         sorte que la somme des tailles soit exactement égale à l'espace disponible.
+
+% 2 1 0 05b974d362b9c16000537add85b9c62f
+
+% 3 1 0 06d31775439adf8413da3abc4a066412
+
+% 0 1 0 06062be3c2f177dd1edf4e84d34d07bf
+
+% 0 1 0 0513626a7f4556ce0c7c616b3e5b49cf
+
+% 0 1 0 1585a6a49f82e28307f266f16dc5cb15
+
+% 0 1 0 1de6386e6dd2490e130c0088e5c7d0c7
+
+% 0 1 0 17ffff953f2167c7152d610281b05c96
+
+% 1 1 0 1cf55ac1dd11cef31d06a88900576daa
+
+@ 0 1 0 1b2fdcfc22473fd806210d695cf0c902
++   entry #metrics
++     info
++         les largeurs intrinsèques du contenu de la piste ; son minimum est une borne inférieure
+
+@ 0 1 0 13fcc3e2173dfa6d148d29d073d343a8
++   entry #weight
++     info
++         la proportion de l'espace libre que revendique la piste, relativement aux autres
+
+@ 0 1 0 03e66e3a1b2381ed1bf3dc083486d62f
++   entry #max
++     info
++         une borne supérieure stricte de la taille de la piste, ou `Unset` s'il n'y en a pas
+
+@ 0 1 0 067e2bbe8ef141f510b1cd26b241b93a
++   entry #rank
++     info
++         l'ordre de repli de la piste : parmi les pistes repliables, le rang le plus bas est
++         supprimé en premier
+
+@ 0 1 0 1afe335abfd0911b0a6253e772893788
++   entry #collapsible
++     info
++         si la piste peut être supprimée entièrement lorsque tous les minima ne peuvent pas tenir
+
+@ 0 1 0 0be4724cc2a81c1b1389ffc219669d7b
++ entry .Reflowable
++   info
++       un contenu qui négocie avec une mise en page rectangulaire : ses largeurs, sa hauteur, ses
++       lignes
+
+@ 0 5 0 108a22622d2590a506f90038e5c44b7c
++   detail
++       Un `Reflowable` indique les largeurs intrinsèques que souhaite son contenu (`#metrics`), le
++       nombre de lignes qu'il occupe à une largeur candidate (`#height`), et finalement se dispose
++       en lignes de la largeur exacte retenue (`#flow`). Son `#Line` est le type d'une ligne
++       rendue : pour un contenu qui se rend lui-même, comme `Text` ou `Teletype`, le type du
++       contenu lui-même.
+
+@ 0 2 0 1b0fea701b2bdb7609b7b34160cf0812
++       Tout `Textual` à éléments `Char` est réagençable au moyen de `.textual`, dans la portée
++       implicite, en passant à la ligne avec `Flow.wrap` et en complétant chaque ligne selon
++       l'alignement.
+
+% 2 1 0 132a297b804c5a551b89038adcb78d00
+
+% 3 1 0 14a2fab7a09e29f20958b4604e48475e
+
+% 4 1 0 06bf92b086d17c340bc80ce185930a33
+
+% 1 1 0 11a56a05d75d73021b434c073a37505d
+
+% 0 1 0 1c885e733ae0d352062f77143572401e
+
+% 0 1 0 1ac0b8931052a1c71d0552772fe2c90b
+
+% 0 1 0 085d37a1302da7281cc9ee6876785430
+
+% 1 1 0 1d718a5d44564cf804271778351a7a18
+
+@ 0 2 0 0b24457ef16bd5c0027fd485a2f0694d
++       Les cellules de tableau d'escritoire et les volets d'ultimatum reçoivent leur contenu au
++       moyen de cette classe de types.
+
+% 1 1 0 00847ba67a7d86f919acc91e7e20f02f
+
+% 1 1 0 055ee6f92fdf0f0d0d44c32de523a587
+
+@ 0 1 0 1ec927e051cb8f6b1734604e636718ed
++   entry .textual
++     info
++         rend réagençable tout `Textual` à éléments `Char`, ses lignes étant de son propre type
+
+@ 0 2 0 15eba76741c4c30217e7e9e577de960a
++     detail
++         Les mesures proviennent de `Flow.metrics` ; les lignes proviennent de `Flow.wrap`, chacune
++         complétée jusqu'à la largeur selon l'alignement, la dernière étant traitée comme la
++         dernière de son paragraphe.
+
+@ 0 1 0 1b272e91511528f517679370b901fbd0
++   entry #Line
++     info
++         le type d'une ligne rendue du contenu
+
+@ 0 1 0 1501e97b30ca5b121df6b5753702e607
++   entry #metrics
++     info
++         les largeurs intrinsèques du contenu, selon le `Text is Measurable` dans la portée
+
+@ 0 1 0 033da0747381fbf508dc460f87604d1b
++   entry #height
++     info
++         le nombre de lignes qu'occupe le contenu à une largeur donnée
+
+@ 0 1 0 1696d14b2e7364920b368c5257675d21
++     detail
++         Par défaut, le nombre de lignes que produit `#flow` à cette largeur, aligné à gauche.
+
+@ 0 1 0 044d9649e0fa31cb1c2ccf4b81b572d3
++   entry #flow
++     info
++         le contenu disposé en lignes d'une largeur exacte, aligné comme indiqué
+
+@ 0 1 0 138eb25ca134ef4b05f4101cd67050e4
++     detail
++         A besoin d'un `Text is Measurable` et d'une `Hyphenation` dans la portée.
+
+@ 0 1 0 050c43e8dea9ab9902b8c55b1a40ea0e
++ entry .BoxLine
++   info
++       le poids d'une branche d'une jonction de tracé de boîte : `Blank`, `Thin`, `Thick` ou
++       `Double`
+
+@ 0 3 0 038f9c587554e87d173bd5240df48409
++   detail
++       Une énumération de quatre cas. Un caractère de tracé de boîte est choisi selon les poids de
++       ses quatre branches — haut, droite, bas et gauche — au moyen de `LineCharset#apply` ;
++       `Blank` sur chaque branche donne donc une espace, et `Thin` en haut et en bas avec `Blank`
++       de chaque côté une ligne verticale.
+
+@ 0 1 0 1d98b3393d96414b129fb5e9c804efa6
++ entry .LineCharset
++   info
++       une famille de caractères de tracé de boîte : `Default`, `Rounded` ou `Ascii`
+
+@ 0 5 0 1220a685aa292b1f07a83092a86c1e7e
++   detail
++       `Default` est le jeu Unicode de tracé de boîtes, avec des lignes fines, épaisses et doubles
++       et les jonctions entre elles ; `Rounded` est le même avec des coins arrondis pour les quatre
++       coins fins ; et `Ascii` donne une approximation de chaque caractère avec `-`, `|` et `+`,
++       pour un terminal sans Unicode.
+
+% 2 1 0 0eecd8bfec0383c915a58010e75212c6
+
+% 3 1 0 1b0cb5f58c2e8b641432d68361bd9d42
+
+% 0 1 0 0b956adc86b2c9d30ca386eb0046ca69
+
+% 0 1 0 05cdef24b9108ce805d460f3dd547965
+
+% 0 1 0 0ac8984ec326d0db0083cbd7358d5c2c
+
+% 1 1 0 04595142528d037e0244b6dd087c7945
+
+% 0 1 0 134519eb4c1e37410559deb29396e130
+
+% 0 1 0 1205638319d019dc0c3e6f4dcf60b938
+
+@ 0 1 0 15f9663ae2a711171fcbf8136eeaf951
++   entry #apply
++     info
++         le caractère de jonction pour quatre branches, ou la table entière des caractères
+
+@ 0 3 0 167c3987fe7c890e08ec23f45e3b73ed
++     detail
++         `charset(top, right, bottom, left)` donne le caractère dont les branches ont ces poids
++         `BoxLine`, chacun valant `Blank` par défaut. `charset()` donne la table entière du jeu,
++         sous forme de tableau gelé de 256 caractères indexé par les quatre poids.
+
+@ 0 1 0 1476229d3cd7c2031fa072d1b4e454de
++ entry .BoxDrawing
++   info
++       les tables de caractères de tracé de boîtes derrière `LineCharset`
+
+@ 0 4 0 1edd7d3c879723b409d77f9fc32e4fd8
++   detail
++       Chaque table est un tableau gelé de 256 caractères, indexé par les poids des quatre branches
++       d'une jonction : `left + 4*bottom + 16*right + 64*top`, chacun étant l'`ordinal` d'un
++       `BoxLine`. Une combinaison sans caractère propre reçoit le plus proche disponible.
+
+% 0 1 0 0e6a7879f149473d174c3dc8b0202509
+
+@ 0 1 0 0ec1824aa525b6d00895f42ae99bc109
++   entry .asciiChars
++     info
++         la table de `LineCharset.Ascii` : chaque jonction sous forme de `-`, `|`, `+` ou d'une
++         espace
+
+@ 0 1 0 0b1d897178feb4da1c8d03b52b2ebfa0
++   entry .defaultChars
++     info
++         la table de `LineCharset.Default` : les caractères Unicode de tracé de boîtes
+
+@ 0 1 0 0a3afb018015b8a50cc4cf48529af826
++   entry .roundedChars
++     info
++         la table de `LineCharset.Rounded` : comme celle par défaut, avec des coins fins arrondis
+
+@ 0 1 0 00d923dc00b36dbd0d488d9cade15d6c
++   entry .simple
++     info
++         le caractère d'une ligne droite ou d'un croisement, à partir d'un poids vertical et d'un
++         poids horizontal
+
+@ 0 3 0 08bab1e6b332b5ae1cb952be5710d270
++     detail
++         `BoxDrawing.simple(vertical, horizontal, charset)` vaut
++         `charset(vertical, horizontal, vertical, horizontal)` : le poids vertical en haut et en
++         bas, et le poids horizontal de chaque côté.

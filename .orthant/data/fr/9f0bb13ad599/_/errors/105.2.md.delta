@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 4 0 0129e0129ab5b46d1d2bf8b64b5f4687
++ La primitive cryptographique (algorithme de chiffrement, signature ou MAC) a rejeté l'entrée.
++ Le constructeur prend une `reason: Reason` qui indique pourquoi l'opération a échoué ; le
++ message est `could not decode the encrypted data because $reason`.
+
+@ 0 3 0 18d6ff2039ddebc11ab7da7730df6f92
++ **Résolution.** Vérifiez que la clé et l'IV sont ceux utilisés lors du chiffrement ; vérifiez
++ que le texte chiffré n'a été ni tronqué ni modifié en transit.
+
+@ 0 2 0 0b0ab3f02879e1040067b20d58e980e5
++ L'algorithme de chiffrement a rejeté les octets de la clé : mauvaise taille, format invalide ou
++ paramètres non pris en charge.
+
+@ 0 2 0 0bc734f8dee0286d18fec3497ebb67d8
++ **Résolution.** Installez ou activez un fournisseur JCA qui prend en charge l'algorithme ;
++ vérifiez la politique `java.security`.
+
+% 0 1 0 0e43190bab175e980c27f719e12f19cb
+
+@ 0 2 0 11dacab92aad8e891c53c037ffc151c0
++ L'étiquette d'un algorithme de chiffrement authentifié ne s'est pas vérifiée : le texte
++ chiffré, les données associées ou le nonce ne sont pas ceux qui ont été scellés, ou la clé
++ n'est pas celle avec laquelle ils l'ont été.
+
+@ 0 1 0 19cdb20592782188093ffb6a7d9cb5a7
++ **Exemple.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
+
+@ 0 2 0 0675a479b730d28c0058667a1b24cf0f
++ **Résolution.** Considérez les données comme falsifiées ou corrompues, et n'en utilisez
++ aucune partie. Vérifiez que le nonce et les données associées sont exactement ceux donnés à
++ `seal`.
+
+% 0 1 0 153ed8c0c255acbb0cb6a1d1954d7c01
+
+@ 0 2 0 00ea0454ec6b67bd0fdfd23339a52e81
++ Le matériel de clé enveloppé n'a pas passé le contrôle d'intégrité qu'intègre l'enveloppement
++ de clé : il a été enveloppé sous une autre clé, ou a été modifié, ou n'est pas un nombre entier
++ de blocs de 64 bits.
+
+@ 0 1 0 17b17d9d86f73a5a064b0259a988d01f
++ **Exemple.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
+
+@ 0 2 0 03acd4f006818d770927f160ff7bac33
++ **Résolution.** Vérifiez que la clé de chiffrement de clé est celle sous laquelle le matériel
++ a été enveloppé, et que le matériel enveloppé est arrivé complet.
+
+@ 0 2 0 0388722c1a8ac94308aa18340e8189b1
++ - Source : `lib/enigmatic/src/core/enigmatic.Crypto.scala`
++ - `↯/s.105.1` — `PemError`, levée lorsque des clés encodées en PEM ne peuvent pas être analysées

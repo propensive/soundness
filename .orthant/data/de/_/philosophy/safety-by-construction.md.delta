@@ -1,0 +1,152 @@
+orthant 2 language
+
+@ 0 1 0 0764d003b2d73399122ce3a270fcbfa4
++ # Sicherheit durch Konstruktion
+
+@ 0 5 0 12aadd03548ddd7a097194cf02e95c45
++ Soundness macht ungültige Werte von vornherein unkonstruierbar, indem es sie beim Kompilieren des
++ Codes prüft. Eine leitende Überzeugung lautet: Jede statische Analyse, die ein Programmierer
++ leisten kann, kann der Compiler besser leisten — und jede Analyse, die der Compiler leisten kann,
++ sollte er leisten. Von einem Wert, der existiert, ist daher bekannt, dass er wohlgeformt ist, und
++ der Code, der ihn empfängt, muss ihn nicht erneut prüfen.
+
+@ 0 5 0 050ba2c0784f05cf10341c2c3b696a0a
++ Interpolatoren drücken das am deutlichsten aus. Jede kleine Sprache, die in ein Programm
++ eingebettet ist — URLs, Pfade, reguläre Ausdrücke, Daten, Medientypen, JSON —, hat eine
++ Grammatik, und ihre Literale werden zur Kompilierzeit gegen diese Grammatik geparst, von
++ demselben Parser, der Eingaben zur Laufzeit verarbeiten wird. Ein fehlerhaftes Literal ist ein
++ Kompilierfehler, der auf das fehlerhafte Zeichen zeigt:
+
+% 2 1 0 0bbec91b09000cd81ea0f69c75b4df45
+
+% 3 1 0 0a0239a309474f48171c8acf80f08a8c
+
+% 4 1 0 101ca460ec05283f0fb456c616de83cc
+
+% 0 1 0 1bb57990592a2cd601d4fcc1c8376afc
+
+% 0 1 0 1d56685db19c0b940cc591a734567bf6
+
+% 0 1 0 03b60f1eb8e5e7de025c577b0cc1df4c
+
+% 0 1 0 1354ba3c0bd04d301ed774709e8718ea
+
+% 1 1 0 080f5bd43c4309a716cfd395297700d5
+
+@ 0 7 0 09f886996a0fa8860f134f33e11b3f97
++ Dasselbe Prinzip reicht über Literale hinaus. Ein Datum, das nicht existieren kann — der 31. eines
++ Monats mit 30 Tagen —, wird dort abgelehnt, wo es geschrieben steht; ein `Money in "EUR"` lässt
++ sich nicht zu einem `Money in "GBP"` addieren; eine Datenbankrelation, die das Schema nicht
++ deklariert, kompiliert nicht; und ein HTML-`<br>` mit Kindern ist ein Kompilierfehler, weil die
++ Spezifikation es so sagt. In jedem Fall ist die Prüfung keine vorgezogene Laufzeitvalidierung,
++ sondern eine Konstruktion, die nur gültige Werte zulässt — der ungültige Zustand hat also
++ überhaupt keine Darstellung, und nachgelagerter Code erbt die Garantie umsonst.
+
+@ 0 1 0 009da7f2e145b0bc178e41b0b27b76bb
++ ## Ein Parser, zwei Zeitpunkte
+
+@ 0 4 0 1361fb180d65287b1d92cd54283e7703
++ Die Eigenschaft, die dies vertrauenswürdig macht, ist, dass der Pfad zur Kompilierzeit und der
++ zur Laufzeit *derselbe Code* sind. Die Parselogik eines Interpolators ist gewöhnliches Scala; sie
++ läuft zur Kompilierzeit gegen ein Literal und ergibt einen Kompilierfehler, und zur Laufzeit gegen
++ dynamische Eingaben und ergibt einen typisierten Fehler:
+
+% 2 1 0 0a7c7d676b83db220b0d4ae7caeabb93
+
+% 3 1 0 1df291f82e0f4d7604485e60a19c2fa7
+
+% 4 1 0 105e313eb329d0e71cefb0330164f720
+
+% 0 1 0 06d43944fce464700b9c4ed728e2836a
+
+% 0 1 0 16c6c267601bf76d03cd63a6600b55ad
+
+% 1 1 0 1b8df6aaa8def2c11618aea93d46bd96
+
+@ 0 3 0 0aeae3130e9fe6121b9133a0bcab7a23
++ Die beiden können nicht auseinanderdriften, weil es nichts gibt, was im Gleichschritt gehalten
++ werden müsste. Ein handgeschriebenes Makro plus ein separater Laufzeitparser ist die Anordnung,
++ die dies vermeidet: zwei Implementierungen einer Grammatik, die sich genau in den Randfällen
++ unterscheiden, die niemand getestet hat.
+
+@ 0 3 0 024cd703bb1958460b438daae9d71864
++ Die Konvention lautet daher, dass jedes geprüfte Literal ein Gegenstück zur Laufzeit hat und ein
++ Wert zwischen beiden wechseln kann — eine aus einer Datei gelesene Konfiguration und eine im
++ Quelltext geschriebene Vorgabe ergeben denselben Typ, mit denselben Garantien.
+
+@ 0 1 0 0db4f7a360e4e5a406d0815ddaface26
++ ## Präzision im Rückgabetyp
+
+@ 0 3 0 1cc38bc23600d848161e5dcdc186f858
++ Die Präfixmethode eines Interpolators ist `transparent inline`, darf also etwas Spezifischeres
++ zurückgeben als ihren deklarierten Typ. Das erlaubt es einem Literal, das, was es *ist*, ins
++ Typsystem zu tragen, statt sich bloß selbst zu validieren:
+
+% 2 1 0 07a358831606ac57130169022ac844c9
+
+% 3 1 0 13972933396c919f1c4df3b806db7c8f
+
+% 4 1 0 1af7f9b5938a440a0b69921924fc901b
+
+% 0 1 0 0e0e33ffd0034f4819ba4ea80e3177a6
+
+% 0 1 0 0d703fc43ae9608f0b5e0a2fb0cf04ab
+
+% 0 1 0 1698b4f0fc04b3bb1e159d5af11d02c4
+
+% 1 1 0 07d1bc6ef5ec6dd3083a1c2c3992e164
+
+@ 0 4 0 050ad6494fcaf1041d27097ddb74da24
++ Das Letzte ist die stärkste Form: Die Elementnamen des Pfads stehen in seinem Typ, sodass Code,
++ der ihn empfängt, genau weiß, wohin er zeigt. Diese Präzision gibt es nur für Literale, und das
++ ist die ehrliche Grenze der Technik — zur Laufzeit gewonnener Text ergibt den allgemeinen Typ,
++ weil nichts weiter über ihn bekannt ist.
+
+@ 0 1 0 078c4179ff580cd81fb18bf30fb78d54
++ ## Was sich so prüfen lässt und was nicht
+
+@ 0 3 0 12ef372b18b956a0095042ab71e587ea
++ Die Technik greift dort, wo Gültigkeit eine Eigenschaft des *Werts* ist, allein aus dem Wert
++ entscheidbar. Die Syntax einer URL, die Existenz eines Datums, die Registrierung eines Medientyps,
++ die Ausgewogenheit eines regulären Ausdrucks, die Gestalt eines Schemas: alles entscheidbar,
++ alles geprüft.
+
+@ 0 5 0 1e7304ed291048970a0af9879189cfa0
++ Sie greift nicht dort, wo Gültigkeit von der Welt abhängt. Ob `example.com` aufgelöst wird, ob
++ eine Datei existiert, ob ein Port frei ist, ob ein Zertifikat noch gültig ist — nichts davon ist
++ beim Kompilieren des Codes wissbar, und ein Typ, der anderes behauptete, würde lügen. Das wird
++ zu typisierten Fehlern an der Stelle der Verwendung, und dann leisten [totale
++ Übergänge](total-transitions.md) die Arbeit.
+
+@ 0 3 0 07e15608a1ea73aa16a0eb4b49fee918
++ Die Grenze zwischen beiden sollte sorgfältig gezogen werden, denn die Versuchung ist, zu viel zu
++ behaupten. Ein `Hostname` verspricht syntaktische Gültigkeit und nichts weiter, und die
++ Dokumentation sagt das, statt einen Leser schließen zu lassen, ein wohltypisierter Hostname sei ein
++ erreichbarer.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 3 0 10c64cbaf3bea6db08a3bf43cf1cce5d
++ **Kompilierzeit.** Jedes Literal wird vom Compiler geparst, und eine Datei, die dicht mit ihnen
++ besetzt ist, kompiliert messbar langsamer. Makroexpansion ist der größte einzelne Faktor in den
++ Buildzeiten von Soundness selbst.
+
+@ 0 5 0 14e4d8fa704a752b096eefc5f044ae31
++ **Fehlermeldungen liegen in der Verantwortung des Makros.** Ein Kompilierfehler aus einem
++ gescheiterten Literal ist nur so gut wie die Meldung, die der Interpolator erzeugt. Eine
++ Einfügemarke auf das fehlerhafte Zeichen zu setzen — statt den ganzen Ausdruck zu unterstreichen —,
++ erfordert bewusste Arbeit mit den Quellpositionen, die der Interpolator erhält, und ein
++ Interpolator, der daran spart, erzeugt schlechtere Diagnosen, als es ein Laufzeitparser getan
++ hätte.
+
+@ 0 5 0 0ea35d68ceb20fa1065d2c9acf34fb34
++ **Literale müssen Literale sein.** Eine zur Kompilierzeit aus Teilen zusammengesetzte URL kann die
++ Prüfung des Interpolators nicht nutzen, es sei denn, die Teile sind selbst Literale. Der
++ Laufzeitpfad steht immer zur Verfügung, aber die Garantie ist schwächer, und die Gestalt des Codes
++ unterscheidet sich — was einen Entwurf gelegentlich dazu drängt, etwas literal zu halten, das
++ sonst berechnet worden wäre.
+
+@ 0 2 0 08deaea14db629dc0fffffd511663b39
++ Siehe [unmögliche Zustände](impossible-states.md) für die Regel, der dies dient, und
++ [Interpolation](../en/modules/interpolation.md) dafür, wie ein solches Literal gebaut wird.

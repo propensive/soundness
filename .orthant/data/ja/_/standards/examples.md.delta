@@ -1,0 +1,124 @@
+orthant 2 language
+
+@ 0 1 0 00ad22d7271203d206f2ed84ead7da78
++ # 例のデータ
+
+@ 0 4 0 0dfb2caf35152be70cba6baa32843441
++ Soundness は例をシェイクスピアから取る。
++ 名前、場所、レコード、任意の文字列を必要とするすべてのチュートリアル、API オーバーレイ、テスト、ベンチマーク、ソースコメントは、それを戯曲から、なるべくよく知られたものから取る。
++ そうすると例は一つのまとまった作品として読める。あるチュートリアルで `Person(t"Hamlet", 30)` に出会った読者は、次のチュートリアルでも同じ登場人物に出会う。
+
+@ 0 2 0 16e7fda2ca3598810b79d58e66e50a48
++ `make build` が実行する `etc/check-example-data.py` がこの線を守る。どのファイルも、`etc/example-data-baseline.tsv` が記録する以上に、廃止された語彙の例を増やしてはならない。
+
+@ 0 1 0 00fc3e5b335d65ac1d02aa34fde5cdf1
++ ## 廃止されたもの
+
+@ 0 6 0 197a9c8fa2e8b8cb1bbb4edf84b59082
++ - **実在または架空の人物。** Alice と Bob も、Ada Lovelace も、Jon も使わない。ペット（Rex）、他のフィクション（Gondor、*Dune*）、ブランド（Acme、the Beatles）も含む。
++ - **会社の組織。** `Company(ceo, cto)`、`Org`、`Firm`、`Employee`、`Department`、`salary`、`boss` を使わず、その代わりとなる `Role`、`Worker`、`Team`、`Crew` も使わない。
++ - **メタ構文的なプレースホルダー。** `foo`、`bar`、`baz`、`qux`、`quux`、`bippy` を値としても型としても使わず、"lorem ipsum" も使わない。
+
+@ 0 1 0 0bbd24c296df1f73154999451a5b135f
++ ## 原則
+
+@ 0 17 0 1fbf36b3f4fd355d0694cdc43d0871e7
++ - **古い例ではなく機能を例示する。** 置き換えは、置き換えられるものに似ている必要はない。`Employee` は廷臣にはならない。古い例は捨てられ、サンプルやテストが示すべきもの（入れ子のレコード、同じ型の二つのフィールド、更新するリスト、`Text` が期待されるところの `Int`）のために新しい例が選ばれる。例が保たなければならないのは、その構造上の性質だけである。
++ - **一つの例には一つの戯曲。** Hamlet が決闘するのは Laertes であって、Tybalt ではない。一つの戯曲から取ったデータは、リストではなく一つの場面として読める。
++ - **よく知られた戯曲を優先する：** *Hamlet*、*Romeo and Juliet*、*Macbeth*、*Othello*、*King Lear*、*A Midsummer Night's Dream*、*The Tempest*、*Twelfth Night*、*Much Ado About Nothing*、*The Merchant of Venice*、*Julius Caesar*、そして *Henry IV* と *Henry V* の各戯曲。
++ - **パレットを再利用する。** 以下の形はどこにでも繰り返し現れる。別の形を考え出す前にこれらのいずれかを使い、どれもその機能を示さないときには別の形を考え出す。
++ - **廃止された名前と同じ名前の登場人物を避ける。** Peter Quince、John of Gaunt、Paulina は、それらが置き換える任意の人物のように読め、検査はそれらを数える。
++ - **エクスポートに注意する。** `soundness.*` をインポートするサンプルはその名前空間を共有する。`History`、`Hero`、`Setting` はそこですでに型なので、フィールド名としてだけ使う。
++ - **シェイクスピアは唯一の実在の人物である。** サンプルの本は彼を著者として名指してよい。
+
+@ 0 1 0 1b6bb2c7d460631708ec9493d135b961
++ ## パレット
+
+% 2 1 0 19400e55f541b63d1c784f9270a7bcb4
+
+@ 0 22 0 1cdd7adae55599570fa20beed70483a0
++ column  示すもの
++ column  形
++ column  データ
++ row  `Text` と `Int` の平坦なレコード  `Person(name: Text, age: Int)`  Hamlet 30、Juliet 13、Lear 80。本文が年齢を与えない場合はもっともらしい年齢
++ row  レコードの中のレコード、同じ型の二つのフィールド、フィールドのパス  `Play(title: Text, hero: Person, villain: Person)`, `Duel(challenger: Person, opponent: Person)`  Othello と Iago、Hamlet と Laertes、`hero.name`、`villain.age`
++ row  リストのフィールド、深いオプティクス、コレクションの中の更新  `Play(title: Text, acts: List[Act])`, `Act(number: Int, scenes: List[Scene])`, `Scene(number: Int, place: Text)`  *Macbeth*："A heath"、"Dunsinane"
++ row  レコードのリスト  `Troupe(name: Text, players: List[Person])`  Quince、Bottom、Flute、Snug、Snout、Starveling
++ row  直和型  `enum Genre { case Comedy, Tragedy, Romance }`、`Sonnet(number: Int)` と `Song(title: Text)` を持つ `Verse`
++ row  複数のスカラー型  `Speech(speaker: Text, act: Int, scene: Int, aside: Boolean)`, `Sonnet(number: Int, firstLine: Text)`  Sonnet 18、"Shall I compare thee to a summer's day?"
++ row  オプショナルなフィールド、デフォルト値のあるフィールド  `Person(name: Text, age: Optional[Int])`, `aside: Boolean = false`  the Fool、the Porter
++ row  マップのフィールド  `Play(title: Text, cast: Map[Text, Person])`
++ row  再帰的な型  `Lineage(name: Text, heirs: List[Lineage])`  Lear。Goneril、Regan、Cordelia
++ row  要素に並ぶ属性、キー付きのレコード  `Play(title: Text, @attribute year: Int)`  *Hamlet* 1603、*Macbeth* 1606
++ row  部分に分かれた名前  `FullName(first: Text, last: Text)`  Nick Bottom、Francis Flute、Toby Belch。Caius Martius Coriolanus
++ row  意図的に ASCII でないテキスト    Cæsar、Æmilia（Folio の綴り）
++ row  二人の当事者と盗み聞きする者    Romeo、Juliet と Tybalt
++ row  ホスト、ユーザー、パス、アドレス    `elsinore.local`、ユーザー `hamlet`、`/home/hamlet`、`juliet@example.com`、"Hamlet's Printer"
++ row  場所と機関    Elsinore、Verona、Venice、Dunsinane、the Globe
++ row  動物    Crab、Tray、Blanch、Sweetheart、Graymalkin
++ row  任意の文字列、キー、パスのセグメント、識別子    一つの戯曲の名前または場所：`/verona/capulet/juliet`
++ row  型についての規則の中の任意の型名  `Play`, `Act`, `Scene`, `Sonnet`  `PlayScene` ではなく `Play.Scene`、`read[Play in Json]`
++ row  埋め草の散文    独白
+
+% 1 1 0 0d60d75bdac0c7a70a9416ff94da4605
+
+@ 0 2 0 16ed00497350bcc51236ed4da459fce9
++ アドレスは、`juliet@example.com` や `elsinore.local` のように、予約された例示用ドメインを保つ。
++ シェイクスピアのものになるのは、ローカル部とホストのラベルだけである。
+
+@ 0 1 0 1ec809304fa7b2230fd50dd47c32fdd5
++ ## 文字列の長さが問題になる場合
+
+@ 0 5 0 18b1d5b5fd12bc160598ac14849bbb97
++ 結果によっては、サンプルの文字列の長さに依存する。描画された表の列幅、パディングや揃えを施したテキスト、バイトオフセット、エンコードされた長さ、ベンチマークのペイロードの大きさなどである。
++ そうした結果がおかしくなればテストはそう告げるが、`doc/api/*.tel` の `// result` コメントは告げない。何もそれを検査しないからである。
++ したがって長さが重要な場合は必要な長さの名前を選び、示された結果が実際に変わる場合は、結果を手で書き換えるのではなく、サンプルを評価し直す。
+
+% 2 1 0 0d5b0364aff67ccd047b6a53b6f6af30
+
+@ 0 2 0 0450793c3d276d650b87381f98d0f7db
++ column  長さ
++ column  名前
+
+% 0 1 0 05838b547c185a0b1d71533d94b5b7cc
+
+% 0 1 0 106f9094cb45f4b5054a72b41969bacf
+
+% 0 1 0 146bc6a46d115e0f0a559e6c01800de5
+
+% 0 1 0 044c8bab42fcffce0d75b6c9be50c5f9
+
+% 0 1 0 13ebe2d7f8a079e61e16184884e482ad
+
+% 0 1 0 18518201f294800c082b74f848c2de74
+
+% 0 1 0 1e64ea931e2adf070f1d86705728f8c0
+
+% 1 1 0 145ed1411e44af450f292420d0cd7e53
+
+@ 0 2 0 075e53839c4735311ebc169d51603f52
++ 欠陥を示すために存在する例は、その欠陥を保つ。`verona..capulet` は依然として空のセグメントを持つパスであり、考え出した Unicode の名前は依然として存在してはならない。
+
+@ 0 1 0 09a4c025eb1262a2140c07e1c4a75d40
++ ## 例でないもの
+
+@ 0 1 0 10f221a6a9657ba610b506bf1728a0b9
++ 検査が数えるのは例であって、語彙ではない。
++ 以下はそのまま残る。
+
+@ 0 9 0 14f3412636e7f3a00c7e9435d140dcf6
++ - API やプロトコルそのものである名前：`Newton` や `Henry` のような単位、harlequin、sibylline、synesthesia、bitumen の `Role`、`Bar` とチャートの棒、parasite の `Worker`、X.509 の `Organization`、リアクターの boss スレッド。
++ - 取り込んだデータや採取したデータ：IANA レジストリ、CommonMark 仕様、サードパーティーの OpenAPI ドキュメントとスキーマ、W3C のサンプル、Unicode のデータ、*War and Peace*。
++ - 規格が公開するテストベクター。そのバイト列は固定されている（その変数名は固定されていない）。
++ - リリース済みの移行ノート。これは書かれたものの記録である。
++ - 人物や会社を含意しない、一般的で中立なデータ：図形、色、果物、"Hello world"、パングラム、そして地理や時刻が主題である場合の実在の都市。
+
+@ 0 2 0 17ef14cf36f08a6519bcc4709273fc00
++ 検査がこれらのいずれかを数えた場合は、書き直すのではなく、スクリプトの `GENUINE` テーブルにそのファイルを挙げる。
+
+@ 0 1 0 016d3e30a66cc40012b74d6986c89b92
++ ## 残りの処理
+
+@ 0 3 0 098dfa450c90f2f50f88eb639191aaec
++ `python3 etc/check-example-data.py --list '<glob>'` は、パスの下で数えられたすべての行をキューとして出力し、`--totals` はゲージを出力する。
++ 変更によってファイルの例が取り除かれたら、`--update` でそのファイルの行を下げる。

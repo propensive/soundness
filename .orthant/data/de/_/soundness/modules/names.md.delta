@@ -1,0 +1,276 @@
+orthant 2 language
+
+@ 0 1 0 13f63b56ad605d9d0429a1811b26d58b
++ ## Namen
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 3 0 1f8647345b89bb1505848f7e4a06d020
++ Ein Dateiname, eine DOM-Id, eine CSS-Klasse, ein Git-Branch: Jedes davon ist Text, aber nicht
++ irgendein Text. Jedes lebt in einem Namensraum mit eigenen Regeln dafür, wie ein gültiger Name
++ aussieht. Ein solcher Name wird als `Name` dargestellt, dessen Regeln Teil seines Typs sind.
+
+@ 0 5 0 0f1eccd7f06021950ad577b3e51de7ab
++ Von einem `Name[DomId]` ist bekannt, dass er die Regeln für DOM-Ids erfüllt. Ein Literal, das
++ sie verletzt, kompiliert nicht. Text, der zur [Laufzeit] eintrifft, wird nur zu einem `Name`,
++ indem er dieselbe Validierung durchläuft, und ein Fehlschlag ist ein typisierter Fehler, der
++ genau die verletzte Regel benennt. Einen `Name` zu besitzen heißt daher, den Beweis seiner
++ Gültigkeit zu haben, und das ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md).
+
+@ 0 3 0 1ef27a98fb78dd36186aa07b96fa6d9e
++ Die Regeln selbst sind Typen, etwa `MustNotContain["/"]`, `MustNotEqual[".."]` und
++ `MustMatch[…]`, die durch Schnitt kombiniert werden. Die Einschränkungen eines Namensraums
++ werden einmal geschrieben, lassen sich direkt im Code lesen und werden überall durchgesetzt, wo
++ ein Name dieses Namensraums verlangt wird.
+
+@ 0 1 0 1366133bda056ad80b774809b90de853
++ ### Über Namen
+
+@ 0 5 0 1cb7f21a2ee17bf20ee213866020e40d
++ Namensräume sind sich über Gültigkeit uneins. Ein POSIX-Dateiname darf keinen Schrägstrich
++ enthalten. Eine DOM-Id darf keinen Leerraum enthalten. Ein DNS-Label hat eine begrenzte Länge
++ und ein eingeschränktes Alphabet. Code, der all dies als einfache Strings transportiert, setzt
++ nichts davon durch. Ein Name, der in seinem Namensraum ungültig ist, wandert weiter, bis etwas
++ Externes ihn ablehnt, etwa ein Dateisystem, ein Browser oder ein Server, weit entfernt vom
++ Fehler.
+
+@ 0 5 0 052140d690cba8d5021db6240219e0d8
++ Hier ist der Namensraum an den Namen geheftet. Jeder Namensraum, *Ebene* genannt, deklariert
++ seine Regeln als Typ. Ein `Name` für diese Ebene existiert nur, wenn sein Text sie erfüllt, was
++ bei einem Literal zur [Kompilierzeit] geprüft wird und zur Laufzeit durch Validierung. Dies ist
++ der Mechanismus unter den Elementnamen von [Pfaden](paths.md), und er steht jedem Namensraum
++ offen, den ein Programm definiert.
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ Alles stammt aus dem Paket `soundness`. Die Beispiele werfen jeden Fehler als Exception, und der
++ letzte Import lässt sie ihre Ergebnisse ausgeben:
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 03e4a4be35a484b91c080541b92b1ed4
++ ### Eine Ebene definieren
+
+@ 0 1 0 0710963b89169c0a1521812c9f8e2bd2
++ Eine Ebene ist ein Markertyp mit einem `Nominative`-Given, das ihre Regeln als Schnitt angibt:
+
+% 2 1 0 1111d3c27f0b356b0844f2ee761b5620
+
+% 0 1 0 1aab3335eeb8e5ab129d1f5815b0ef88
+
+% 0 1 0 102c2e32ac46b16b1c424572620f4194
+
+% 0 1 0 00a41b2e13d2b2801fc8e1610b85a96e
+
+% 1 1 0 07a74e026b0b80b20ff0e50ff490f62e
+
+@ 0 2 0 11da42b27a9ad1f91c0cee24ee1390ca
++ Ein `Name[Tag]` bedeutet nun Text, der nicht mit `0` beginnt, keinen `.` enthält und nicht leer
++ ist. Diese Tatsachen trägt der Typ, und sie müssen nicht von jedem Verwender erneut geprüft
++ werden.
+
+@ 0 1 0 0cf7c6c1e696f2211e360d059894f2e7
++ ### Einen Namen schreiben
+
+@ 0 3 0 1fcee695ef60a43e00fcde108dd9dea8
++ Der [Interpolator] `n"…"` schreibt einen Namen und prüft ihn zur Kompilierzeit gegen die Ebenen
++ im Geltungsbereich. Der Name erhält den Typ jeder Ebene, deren Regeln er erfüllt, sodass ein
++ einziges Literal überall dient, wo eine davon verlangt wird:
+
+% 2 1 0 05c6c154585e9d310ed9b5817430c338
+
+% 0 1 0 1a0019435148066f0b3f371c10fa9215
+
+% 1 1 0 1a9c023464e88d990fd1c4685f91b3cc
+
+@ 0 1 0 1838a2e0916b69420ef648d452fa9e08
++ Ein Literal, das eine Regel der Ebene verletzt, für die es benötigt wird, kompiliert nicht:
+
+% 2 1 0 077ad9899564c5ce12eeb2c6bc25256d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1e1a946d5e92e19d1eb4419b698d0cdb
+
+% 1 1 0 0df809a9a3c0552319c2368accec7e94
+
+@ 0 1 0 0e0a958c2e56d84102206982bcf886d7
++ ### Zur Laufzeit validieren
+
+@ 0 2 0 024e20dfc18f6b3c0e68e1ce7326592d
++ Text von außen wird über dieselben Regeln zu einem Namen. Ein Fehlschlag löst einen
++ `Name.Error` aus, der die verletzte Regel benennt:
+
+% 2 1 0 1d38c88fd423670204f204284a9970f1
+
+% 3 1 0 157af9422dbce21f0a37218f608c07b9
+
+% 4 1 0 165233cb070f7197107b6a32be1d5ade
+
+% 0 1 0 08cb510588404d7416941860bd5f751d
+
+% 1 1 0 0f575cb5b5f19a5011134abe025be892
+
+% 3 1 0 0ec4ac5cd5bec2541208b2cc373599a4
+
+% 4 1 0 1dff919b24b7c6ef1913a74013640cfa
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 149257c0596e27c20f0af5420a41fd08
+
+% 1 1 0 08f12dd0a3ae244c0eeda6ac38326cf3
+
+@ 0 4 0 0f9729af290ffc690d332751f34bc48c
++ Die Genauigkeit des Fehlers zählt. Ein Benutzer, dem gesagt wird, *welche* Regel seine Eingabe
++ verletzt hat, kann sie beheben, während „ungültiger Name“ zum Raten einlädt. Der Fehler wird wie
++ jeder andere behandelt, sodass [`safely`](errors.md#choosing-a-strategy) einen ungültigen Namen
++ in `Unset` verwandelt und `capture` den Fehler selbst liefert:
+
+% 2 1 0 149ce49b15e4f04b1f02b7aa398ddb1f
+
+% 3 1 0 00ecfc6fe73c05031e808b93b0e3ad3b
+
+% 4 1 0 1b9cf2b073a8b6bc0a179bc6f5859a9a
+
+% 0 1 0 08960fa7ee4060011b2f5cc1e6f20e84
+
+% 1 1 0 06c24a69334ed694137aefe26bba2279
+
+@ 0 1 0 0635f8371358481c17242c89efa2da4e
++ ### Eingebaute Ebenen
+
+@ 0 1 0 02ba9f995c8a9b4513867c66277e6d58
++ Einige Namensräume sind bereits definiert:
+
+% 2 1 0 01780133011308ea05ae04804cb9904f
+
+@ 0 5 0 02d4b3e550ddf22c1fba4bf465e39cc9
++ column  Ebene
++ column  Ein Name muss sein
++ row  `DomId`  eine gültige [HTML](html.md)-Id
++ row  `CssClass`  ein gültiger [CSS](css.md)-Bezeichner
++ row  `Required`  nicht leer, für den häufigen Fall, dass dies die ganze Regel ist
+
+% 1 1 0 1df8ea8bab839d340bf0019a67a63286
+
+% 3 1 0 1fa9583e42957e8a0e9b41303bef5519
+
+% 4 1 0 1dda9eb6f37ca17113e5e11237bc2830
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 1fb68ef40df20f0e14f4fcd9c91dcbf8
+
+% 0 1 0 183ea03728bd1b5e1fad14a890e3d8e6
+
+% 1 1 0 168245c12051075207403c510a7b4c60
+
+@ 0 2 0 0c27c112163d82c21eb13300d7b71028
++ Die Dateisystem-[Pfade](paths.md) jeder Plattform definieren die Regeln für ihre Elemente auf
++ dieselbe Weise, und deshalb schlägt ein Pfadelement, das einen Schrägstrich enthält, dort fehl,
++ wo es geschrieben wird.
+
+@ 0 1 0 0bdfd48c06fea0b617ed2a4cc9d85ca0
++ ### Die Regeln
+
+@ 0 2 0 14f383440fd7089e1512b408091dc779
++ Diese Regeln decken die meisten Namensräume ab. Jede weiß sich selbst zu beschreiben, und daraus
++ beziehen die Fehlermeldungen und die Kompilierfehler ihren Wortlaut:
+
+% 2 1 0 03a772420658c545096f6c613213044e
+
+@ 0 1 0 1e6c099402bdedec1995caf874dfe781
++ column  Regel
+
+% 0 1 0 0e135d4b9e9b8a7407f82db8f076a4f9
+
+@ 0 11 0 1a4aaa9f83ee493809ce11ae300b19f7
++ column  Beschreibung
++ row  `MustContain`  Text  muss ihn enthalten
++ row  `MustNotContain`  Text  darf ihn nicht enthalten
++ row  `MustStart`  Text  muss mit ihm beginnen
++ row  `MustNotStart`  Text  darf nicht mit ihm beginnen
++ row  `MustEnd`  Text  muss mit ihm enden
++ row  `MustNotEnd`  Text  darf nicht mit ihm enden
++ row  `MustNotEqual`  Text  darf ihm nicht gleichen; `MustNotEqual[""]` lautet „must not be empty“
++ row  `MustMatch`  ein regulärer Ausdruck  muss auf ihn passen
++ row  `MustNotMatch`  ein regulärer Ausdruck  darf nicht auf ihn passen
++ row  `JavaIdentifier`  eine Beschreibung  muss *die Beschreibung* sein; prüft auf einen Java-Bezeichner
+
+% 1 1 0 0f896f2c1f89ce4010e148854829f281
+
+@ 0 2 0 0c6717861135bc11027a017b9d8c5867
++ Eine Regel besteht aus zwei Dingen: einer Prüfung und einer Formulierung, die beschreibt, was
++ sie verlangt. Eine Regel zu schreiben heißt, beides anzugeben:
+
+% 2 1 0 156589b5f1d9bad710f13a73bf2c1f1d
+
+% 0 1 0 0d37aa75683bd3d105125345c5b6888f
+
+% 1 1 0 0e79d8fba8a3a5160fa4fa0da7a44654
+
+@ 0 3 0 060ad20ab4a4c28b1f53f2be0ab8a2ae
++ Die Beschreibung ist Teil der Regel und wird nicht bei jeder Verwendung geschrieben. Der
++ Kompilierfehler für ein fehlerhaftes Literal und der Laufzeitfehler für eine fehlerhafte Eingabe
++ sagen daher dasselbe, mit denselben Worten.
+
+@ 0 4 0 07cf68c35d13a9990002b0e5abe2db19
++ `JavaIdentifier` zeigt die andere Gestalt, die eine Regel annehmen kann. Sie nimmt keinen Text
++ entgegen, mit dem verglichen wird. Ihr Parameter ist die *Beschreibung*, und sie prüft gegen ein
++ eigenes Prädikat. Ein Namensraum mit einer Regel, die keine der anderen ausdrücken kann,
++ definiert auf diese Weise eine, wie es `DomId` tut.
+
+@ 0 1 0 0fb8eb58380a0ff607d3236ac1f99beb
++ ### Regeln kombinieren
+
+@ 0 4 0 087c31b0d4c677f704a10e364e0cea1a
++ Die Regeln einer Ebene sind alle erforderlich: Ein Name muss jede davon erfüllen. Die erste
++ verletzte Regel ist diejenige, die gemeldet wird, sodass ein Fehler einen einzigen konkreten
++ Mangel benennt statt einer Liste von allem, was falsch ist. Eine Ebene zu schreiben heißt daher,
++ ihre Regeln in der Reihenfolge anzugeben, in der sie gemeldet werden sollen.
+
+@ 0 3 0 12fcb418ac26b41c1ca2bf256cc5c344
++ Eine Ebene ist ein Typ, daher sind die Namen einer Ebene nicht die einer anderen. Ein
++ `Name[Tag]` kann nicht übergeben werden, wo ein `Name[Branch]` erwartet wird, selbst wenn beide
++ zufällig identische Regeln haben. Genau darum geht es: Die Regeln können später auseinandergehen,
++ und die beiden Namensräume waren nie dasselbe.
+
+@ 0 1 0 167bcebef2063d9f1fe590499ee5ff3b
++ ### Längenbeschränkungen
+
+@ 0 4 0 0275ee3e02672a42183b4ef20f291ac7
++ Ein `Nominative` trägt neben seinem `Self` ein `Limit`, und so gibt eine Ebene eine maximale
++ Länge an: ein Dateisystem, dessen Namen 255 Bytes nicht überschreiten dürfen, ein Protokollfeld
++ fester Breite, eine Datenbankspalte. Die Beschränkung ist Teil des Typs der Ebene und wird daher
++ dort geprüft, wo ein Name gebildet wird, nicht erst dort, wo er schließlich ausgeschrieben wird.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 6 0 133657859f37e712083e0704c3c1d6c7
++ - [Pfade](paths.md) bildet Dateisystempfade aus Namen, die auf einer bestimmten Plattform gültig
++   sind.
++ - [HTML](html.md) und [CSS](css.md) verwenden `Name[DomId]` und `Name[CssClass]` für Ids und
++   Klassen.
++ - [Interpolation](interpolation.md#returning-a-precise-type) erklärt, wie `n"…"` einem Literal
++   den Typ der Ebenen gibt, die es erfüllt.
++ - [Formulare](forms.md) benennt seine Felder und [Nebenläufigkeit](concurrency.md) seine
++   Aufgaben mit validierten Namen.

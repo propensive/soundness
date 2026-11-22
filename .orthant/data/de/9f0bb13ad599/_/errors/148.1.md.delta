@@ -1,0 +1,88 @@
+orthant 2 language
+
+% 0 1 0 1d701c3696644d4002f5d67ef8a6e73d
+
+@ 0 1 0 1e516b665c87fb4e1d9ae32472fc0156
++ Wird ausgelöst, wenn die Antwort auf eine WebAuthn-Zeremonie nicht akzeptiert wird.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 5 0 0029c0fadad4fc761eeb3d0415bfc938
++ Eine Relying Party sendet eine Challenge und prüft, was ein Authenticator über einen Browser
++ zurücksendet: ein neues Credential in einer Registrierungszeremonie oder eine Signatur durch ein
++ vorhandenes in einer Authentifizierungszeremonie. Dieser Fehler umfasst eine Antwort, die nicht
++ wohlgeformt ist, eine, die zu einer anderen Challenge, einem anderen Origin, einer anderen
++ Relying Party oder einer anderen Art von Zeremonie gehört, eine, an der der Benutzer nicht
++ beteiligt war, eine Attestierung, die nicht gilt, und eine Signatur, die nicht die des
++ Credentials ist.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 1c8bbc501e9cb58318ee0a4b4f1a96d5
+
+% 0 1 0 077d29c2b6fae27f075f57a58fc56542
+
+% 0 1 0 11efc0310eaa4f9f11d22668a4074e78
+
+% 0 1 0 152addace3465f620f6b0df5ba4389f7
+
+% 0 1 0 1d92ef5a7c156e3814f15600ec966d44
+
+% 0 1 0 120611c421b71f3f0d40352de80c728d
+
+% 0 1 0 1735b28b5597b67918480a6c6080ddea
+
+% 0 1 0 054588132b65243202a7652c59d3e771
+
+% 0 1 0 1a88f51cc05a8cef0d18f12c23758614
+
+% 0 1 0 16425ea5df094df81edf6b877d045b4e
+
+% 0 1 0 0753ab62d06ec427105d8fad6c9086e1
+
+% 0 1 0 1a960bbdaef0405d1ca2c96c9fe0a701
+
+% 0 1 0 1ce4d1b78c58397204932c27fd26a02d
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 1e5845090386f5801227f9860c9f2627
++ Von keinem dieser Fehler wird innerhalb der Zeremonie wiederhergestellt: Der Benutzer ist nicht
++ registriert oder nicht angemeldet, und eine neue Zeremonie beginnt mit einer neuen Challenge.
+
+@ 0 4 0 0381da65d1082a0e17ce0ea4cf43d8ed
++ `Challenge` bedeutet meist, dass die Challenge zwischen dem Senden der Optionen und dem Prüfen
++ der Antwort nicht aufbewahrt wurde oder dass eine Antwort zweimal vorgelegt wurde. `Origin` und
++ `RelyingParty` bedeuten, dass die Seite von einem Ort ausgeliefert wurde, den die `RelyingParty`
++ nicht aufführt, oder ein Credential unter einer anderen RP-ID angefordert hat; ein Origin besteht
++ aus Schema, Host und Port, ohne Pfad.
+
+@ 0 3 0 1fa7dc6197ca6b991a3e0e127e75d237
++ `Counter` bedeutet, dass der Signaturzähler des Authenticators nicht vor dem gespeicherten liegt,
++ und so sieht ein geklontes Credential aus. Behandeln Sie das Credential als kompromittiert, sofern
++ nicht bekannt ist, dass der gespeicherte Zähler falsch ist.
+
+@ 0 2 0 04b6513c7dcdab5905af0fccf399bfc4
++ `Format` wird für ein anderes Attestierungsformat als `none` und `packed` ausgelöst. Eine Relying
++ Party, die die Attestierung nicht untersucht, sollte `none` anfordern, was die Vorgabe ist.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 3 0 07a5aec997a003610d5b40308e529d2e
++ - Quelle: `lib/chatelaine/src/core/chatelaine.WebAuthn.scala`
++ - `↯/s.105.9` — `Certificate.Path.Error`, für die Zertifikatskette einer Attestierung
++ - `↯/s.147.1` — `Jose.Error`, für Tokens

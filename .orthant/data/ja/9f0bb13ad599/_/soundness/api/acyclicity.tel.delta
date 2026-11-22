@@ -1,0 +1,23 @@
+orthant 2 language
+
+% 0 4 0 00c2b0b4755587fb158510c7379f9947
+
+@ 3 0 0 126e45750d1d96470753b7a416f37c42
++       層とリンクは `Ordinal` で読む `Sequence` であり、`rank` と `position` は `Map` である。
++       そのため、どの読み取りも `Optional` を返す。
++       存在しない層や、グラフにないノードに対しては `Unset` である。
+
+@ 0 4 0 00e8b1f2d88a57b91a87591af6b117e0
++       `dendrology` の `LayeredDagDiagram` は、層構造に列を割り当てて描画する。別の描画方法では、`layers` と `links` を直接使う。
+
+@ 0 11 0 13b2ff4a59f011121d17e855e3ec1fcf
++   entry .Vertex   層の中の位置：グラフのノード、またはより長いエッジが通過する点
++       列挙型である：`Real(value)` はグラフのノードであり、`Virtual(source, target)` は、いくつもの層にまたがる `source` から `target` へのエッジがこの層を通過する場所である。
++       描画は仮想の頂点に列を与え、エッジがそこを通るように描く。
++   entry #layers   上から順の層。それぞれは描画順の `Layering.Vertex` の `Sequence` である
++   entry #links   `links(i)` は層 `i` と層 `i + 1` を結ぶ。それぞれの層の中での位置の組として表す
++       最後の層を除く各層に、リンクの `List` を一つずつ持つ `Sequence` である。
++       すべてのリンクは隣接する層を結ぶ：それより多くの層にまたがるエッジは、その仮想の頂点で分割される。
++   entry #rank   各ノードの層。`Map` として返す
++   entry #position   各ノードの、その層の中での位置。`Map` として返す
++   entry #crossings   層構造全体で、交差するリンクの組がいくつあるか

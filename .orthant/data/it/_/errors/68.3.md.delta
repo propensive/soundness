@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 16780c09f9ce2f4c0dd82e7c657d4e25
++ # `↯/s.68.3` — Istanza di `Nominative` mancante
+
+@ 0 2 0 1e474a6c331d2e75078f986f4db4a606
++ Sollevato in fase di compilazione dalla macro `parse` di Nomenclature quando nell'ambito non c'è
++ alcuna istanza di `Nominative` per il sistema richiesto.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 1354b83361a6901b0bb40505533024a9
++ La macro espande il parsing del nome rispetto a un sistema specificato tramite un tipo; senza un
++ `given Nominative`, non può procedere.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Messaggio di esempio
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1d67a7ca073e41d311f77b6070232446
+
+% 1 1 0 187abc200df5b38c072a1ff10d2f667e
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 2 0 0ceb394158dc68850490e148e52bf1ec
++ Porta nell'ambito un `given Nominative` per il sistema, o forniscine uno.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 0e50947c1477812413044192b1714eb2
++ - Sorgente: `lib/nomenclature/src/core/nomenclature.protointernal.scala`

@@ -1,0 +1,430 @@
+orthant 2 language
+
+@ 0 1 0 196871f51407b50a0fd9ef561730abb3
++ ## Fuentes
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 4 0 1c7d09a75befebc9117f416470e2a31b
++ Un fichero de fuente [TrueType u OpenType](https://en.wikipedia.org/wiki/TrueType) son datos
++ binarios con una estructura interna bien definida: tablas de glifos, de correspondencias y de
++ métricas. Aquí se lee directamente. Un `Sfnt` se carga desde cualquier fuente de bytes, resuelve
++ los caracteres en glifos y responde a la pregunta que el código tipográfico hace con más
++ frecuencia: ¿qué anchura tiene este texto en esta fuente?
+
+@ 0 3 0 0bf1ab2597d2fa86020b9adf8d700a42
++ Por encima del fichero, un `Typeface` nombra una familia de fuentes. Un `Face` elige de ella un
++ peso, una inclinación y unas características. Una provisión `Typesettable` garantiza que un
++ documento que nombra el tipo de letra lleva lo que su medio necesita para mostrarlo.
+
+@ 0 1 0 01ad52292ddeaf761bbf349bc0bb68d0
++ ### Sobre las métricas de las fuentes
+
+@ 0 4 0 0acdceb5d8d6cbbf0a1515514cfbc2a7
++ El texto no tiene anchura. La tiene el texto *en una fuente*. Disponer un encabezado, dimensionar
++ un botón y partir una línea para que quepa en una medida necesitan, cada uno, las anchuras de
++ avance que residen dentro del fichero de fuente, en tablas indexadas a través de una
++ correspondencia de caracteres a glifos. Llegar a ellas suele significar recurrir a un kit de
++ herramientas de representación, incorporado para lo que en el fondo es una búsqueda en tablas de
++ un formato binario documentado.
+
+@ 0 4 0 1db3d07d92174573130a0aa6990e5f43
++ Aquí el formato se analiza directamente. La fuente es un valor, sus tablas se leen de forma
++ diferida, y sus métricas son llamadas a métodos ordinarias. Una fuente analizada a partir de sus
++ tablas, con todos sus valores tipados, sigue la
++ [seguridad por construcción](../../philosophy/safety-by-construction.md): una fuente inválida se
++ rechaza cuando se carga, y no en su primer uso.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Todo procede del paquete `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1c12ab31bcd37e111a8d347c926cdc5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 1f7a557352339ef9106bd192f0db9b81
++ Los ejemplos de esta página leen ficheros de fuente que no se distribuyen con la documentación,
++ así que se compilan pero no se ejecutan.
+
+@ 0 1 0 184bebeda3a1278a1e94e2cdf9cd45cc
++ ### Cargar una fuente
+
+@ 0 4 0 1d447e8afa7172e415e6293805f248b5
++ `Sfnt` lee una fuente de cualquier fuente de bytes que se pueda leer como flujo: un fichero, un
++ recurso del classpath, una URL. El nombre es el del propio formato. Un *sfnt* es el contenedor
++ de tablas que comparten TrueType y OpenType. Las dos especializaciones se distinguen por sus
++ tablas. Una tabla `CFF ` significa contornos PostScript, así que la fuente es un `Opentype`. En
++ otro caso es un `Truetype`:
+
+% 2 1 0 14fcdf6e41a644610c80dcff1bb4eb69
+
+% 3 1 0 06dded3e3f2ce79d1b962f4f0ed2cb94
+
+% 4 1 0 096fe8d1ec905e071e4a658fbba52dc8
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 064ac20a457139d007dfe72d72eb75b1
+
+% 0 1 0 0d79efca8497f91c00657e452fec8cf6
+
+% 0 1 0 0a2bdff8d0b9d9c20cb179eff936cf2a
+
+% 0 1 0 0d55aa34b09aefd21380c9b578ecaced
+
+% 1 1 0 0a01288dae5353f4163630af4585cde3
+
+@ 0 3 0 0e1202442ae777d5142aa3cbc72466bc
++ Construir una fuente a partir de bytes no puede fallar. Las tablas se analizan de forma
++ diferida, así que un fichero que no es una fuente, o al que le falta una tabla que necesita una
++ operación, lanza un `Font.Error` que nombra el problema cuando esa tabla se lee por primera vez.
+
+@ 0 1 0 170b6f5a2f39a0b3107a054817024305
++ ### Medir texto
+
+@ 0 2 0 1921db5e070a2da11a71b12fb828d022
++ `width` mide un texto en la fuente. Devuelve una [magnitud](quantities.md) en `em`, la unidad
++ relativa a la fuente que, multiplicada por el tamaño en puntos, da una anchura física:
+
+% 2 1 0 1b0107e7d9d7dac30bbb0727e69e66b4
+
+% 0 1 0 033d21904ea611cc1a5f7d5c7562497a
+
+% 1 1 0 178ed71cac591daf109a88465cb99225
+
+@ 0 2 0 16bfd56ca35cc33209f0e38dcd108c76
++ Como el resultado es una magnitud tipada, una anchura en em no puede confundirse con una medida
++ en píxeles o en puntos. Escalarla por un tamaño de fuente es aritmética explícita.
+
+@ 0 1 0 13b9ea5cb448bc6b094a8fee3bd30e77
++ ### Glifos
+
+@ 0 2 0 06945081ca7edf3601d9938f306b1613
++ Las preguntas sobre caracteres pasan por la maquinaria de glifos. Un carácter se resuelve en su
++ glifo, y cada glifo lleva su anchura de avance y su margen lateral izquierdo, en las unidades de
++ diseño de la fuente:
+
+% 2 1 0 04ce6a901eb6a984115dedf6a05b2244
+
+% 0 1 0 083fe5ee2fb372721b2bef84e86fbef0
+
+% 1 1 0 00213769db73c92310ab69977237f8f3
+
+@ 0 1 0 0b8ed80a318b5c51083c75179d2eef82
++ Cada tabla que lee la fuente es un método con el mismo nombre, que se analiza en su primer uso:
+
+% 2 1 0 09da1ee7c45ed4d30aeb03d5f58fa2d9
+
+@ 0 12 0 083eb089b91ffa6712e178056dfbc2dd
++ column  Tabla
++ column  Método
++ column  Da
++ row  `head`  `head`  las unidades por em, que relacionan las unidades de diseño con los em; la caja delimitadora de los glifos
++ row  `hhea`  `hhea`  las alturas del ascendente y del descendente que necesita la disposición vertical
++ row  `hmtx`  `hmtx`  la anchura de avance y el margen lateral izquierdo de cada glifo
++ row  `cmap`  `cmap`  la correspondencia de caracteres a glifos
++ row  `maxp`  `maxp`  el número de glifos
++ row  `name`  `name`  nombres y descripciones, como `fontName` y `familyName`
++ row  `post`  `post`  el ángulo de la cursiva, la posición y el grosor del subrayado, el monoespaciado
++ row  `OS/2`  `os2`  las clases de peso y de anchura, las métricas tipográficas, los derechos de incrustación
++ row  `fvar`  `fvar`  los ejes de una fuente variable, o `Unset`
+
+% 1 1 0 097657c6cda2ce4c1ea79a59b9c4e404
+
+@ 0 4 0 0858defb23198510128d5191edf0d918
++ La correspondencia de caracteres a glifos cubre los formatos de subtabla `cmap` que las fuentes
++ usan de verdad, y la mejor subtabla se elige por preferencia de Unicode, no tomando la primera
++ que haya. Un carácter que la fuente no hace corresponder da el glifo ausente, y no un error ni un
++ glifo equivocado.
+
+@ 0 1 0 0ea57ce7cfe5057409beccf90225baf5
++ ### Nombres y metadatos
+
+@ 0 3 0 19b307d0db07a28510cb2d6681911a33
++ Una fuente se describe a sí misma en sus tablas `name`, `post` y `OS/2`, y esas descripciones se
++ leen directamente en lugar de adivinarse. Los nombres son valores [opcionales][opcional], ya que
++ una fuente no tiene por qué registrarlos:
+
+% 2 1 0 1cdf499e775738301064073102c77ad8
+
+% 0 1 0 1d600548f39d108e047f0fc30f5df4ff
+
+% 0 1 0 0aaccda59c7502cc149f9f4041d7fbca
+
+% 1 1 0 011050679ccddfbe1e0928d1bcd29ede
+
+@ 0 3 0 0100e449390a55851597acc60b99ca1e
++ Los registros se decodifican tanto de UTF-16BE como de las codificaciones de Macintosh, con
++ preferencia por Windows-inglés cuando hay varios. El peso, las métricas tipográficas, la altura x
++ y los derechos de incrustación proceden de `OS/2`, que es exactamente lo que necesita la
++ construcción de un descriptor de fuente de [PDF](pdf.md).
+
+@ 0 1 0 13be68ab1d9be39206559812d056a8e2
++ ### Tipos de letra y estilos tipográficos
+
+@ 0 5 0 170cdb13a80c86df0c6ab5f9c6a40c0e
++ Un fichero de fuente es una cosa. El tipo de letra que un documento *nombra* es otra.
++ `Typeface["Inter"]` es un tipo de letra por su nombre de familia, que es también su tipo,
++ `Typeface of "Inter"`, así que un tipo de letra se distingue de otro mientras se compila el
++ código. Un `Face` dice cómo debe componerse el tipo de letra: su peso, su inclinación y su
++ anchura, sus posiciones en cualquier otro eje de una fuente variable, y las características de
++ disposición que se activan o desactivan. No dice nada de dónde procede la fuente:
+
+% 2 1 0 16eee1665012387a16fdd5c898b973f5
+
+% 0 1 0 0781f4d0e601de1e1bcc03a6fa7309ba
+
+% 0 1 0 00754da6a1d62e9c1a444c8588884403
+
+% 0 1 0 19c490d72ab4977a11f16daead909587
+
+% 0 1 0 07d2ba9e5b268bf8072b62ba4889754c
+
+% 1 1 0 030b195fd7b810331a9a2fa42b711b88
+
+@ 0 1 0 04b627a91f0bea4506d575bd83e435ff
++ Un estilo tipográfico tiene estos atributos:
+
+% 2 1 0 15c7829aae99e3c8100f40990e5a13a1
+
+@ 0 8 0 15df2ecb1aa949a4036d08063704a643
++ column  Atributo
++ column  Valores
++ column  Se establece con
++ row  peso  1–1000, la escala que comparten CSS y OpenType, de `Weight.Thin` a `Weight.Black`  `thin` … `black`, `weighing(weight)`
++ row  inclinación  `Upright`, `Italic`, u `Oblique` con un ángulo  `upright`, `italic`, `oblique(angle)`, `slanted(slant)`
++ row  anchura  un porcentaje de la anchura normal  `condensed`, `expanded`, `stretched(stretch)`
++ row  variación  una posición en un eje de una fuente variable  `varying(axis, value)`
++ row  características  características de disposición de OpenType, activadas o desactivadas  `enabling`, `disabling`, `featuring`
+
+% 1 1 0 1ca8eef12fe1d5ad12f6975c4432414b
+
+@ 0 5 0 14ba444919346e500cc07e5139d36236
++ Los ejes registrados de peso, anchura y cursiva de una fuente variable se establecen mediante los
++ tres primeros, así que una fuente estática y una variable se piden igual. Una `Variation` es para
++ el tamaño óptico y para los ejes propios de una fuente. Las características se nombran por sus
++ etiquetas de OpenType. Los conjuntos estilísticos, `Face.Feature.stylisticSet(n)`, y las
++ variantes de carácter, `Face.Feature.characterVariant(n)`, van numerados:
+
+% 2 1 0 1a09f17bbfb130e3091ebf5039cf72ca
+
+@ 0 2 0 1ee229e3f7c021a601907de879cb162a
++ column  Característica
++ column  Etiqueta
+
+% 0 1 0 039a272f51f0dfa001944e1897169e20
+
+% 0 1 0 18e036ef8aad25d00531e97fb1614936
+
+% 0 1 0 1be5850371188bda1eaf1f5b7e9d625c
+
+% 0 1 0 04d520a3c3d3ab0105061ca63593ff2d
+
+% 0 1 0 07a4ae450499a23f1c9d147a42ad0b5c
+
+% 0 1 0 1660490d5db095930aff49f112a82405
+
+% 0 1 0 11f034b65c64ebd208f417d214151506
+
+% 0 1 0 1c6e3a4bd217da4707bd6585e6e9f85d
+
+% 0 1 0 1df64e3e08cdab8a081697aa958779de
+
+% 0 1 0 03c0e4af295ce0100b8ade4c8c0648e9
+
+% 0 1 0 17b19dff9877af3e1da091f9685139a6
+
+% 0 1 0 0436f68d8837ca2e08f68491f9b76396
+
+% 0 1 0 1fe9b32ee11eca6618fe3efa53cfb469
+
+% 0 1 0 00e4b269adf1f8d11d99ec9a5ad3c648
+
+% 0 1 0 034a8631cc285c810a0f2a6bac4a0b7b
+
+% 0 1 0 1c87e76bb51c86711dee45dde264b620
+
+% 0 1 0 0dd5bf0910e1baf70cd222ac57cc4d8c
+
+% 1 1 0 07961875a2a9c6530f742e499a16f22a
+
+@ 0 1 0 063aadf845bfda501f9d231bed212a13
++ ### Proporcionar un tipo de letra
+
+@ 0 4 0 05f751115e67bd770666cd634a3399cb
++ Nombrar un tipo de letra no hace que esté disponible allí donde se muestra el documento. Un
++ navegador sin la fuente recurre a otra, y un visor de PDF la sustituye. Una provisión cierra ese
++ hueco. Es una instancia de `Typesettable` para el tipo de letra *en un medio*. Dice cómo obtiene
++ ese medio la fuente, y qué estilos tipográficos puede componer después. Se declara una vez, como
++ [given]:
+
+% 2 1 0 13cf1c35ba1d64dd1844d273e72af06e
+
+% 3 1 0 04a3c4b0a590f556090abb6510b1fa46
+
+% 4 1 0 1662daf228b3bf87148c6e31fd322d04
+
+% 0 1 0 0d22a197a63cd0b7167652635f1b106b
+
+% 0 1 0 0e1275326cb60c280165229d583bf6ea
+
+% 0 1 0 1312d3f61315f1391b512e957a956203
+
+% 0 1 0 0ea4f736d80a946402c79fff150d45cc
+
+% 1 1 0 0ef4992aca79be9500513da5ab5aa803
+
+@ 0 6 0 1136259f8a78123301b64c6e9fa590dd
++ Un fichero de fuente puede ir dentro de cualquier documento, así que una provisión incrustada es
++ `in Medium`, el medio de todos los medios. Su cobertura, que son los pesos, las inclinaciones y
++ las anchuras que ofrece, los ejes de una fuente variable y las características que implementan
++ sus tablas `GSUB` y `GPOS`, se lee del fichero. Varios ficheros, como el normal, el negrita y el
++ cursiva, forman una provisión cuya cobertura es su unión. Las otras clases de provisión
++ pertenecen a un medio y se declaran a través de él, cada una con la cobertura que se declara que
++ tiene, ya que no hay ningún fichero que leer:
+
+% 2 1 0 1e722494e29bd55d0e9850e80d704b19
+
+@ 0 10 0 1895fd161442933e04fec62152ac92dd
++ column  Provisión
++ column  Medio
++ column  La fuente procede de
++ column  Cobertura
++ row  `Typesettable.embedded(files)`  `Medium`  los ficheros, que van dentro del documento  leída de los ficheros
++ row  `Web.linked(url, coverage)`  `Web`  un fichero de fuente en una URL  declarada
++ row  `Web.imported(url, coverage)`  `Web`  una hoja de estilo que declara el tipo de letra  declarada
++ row  `Web.local(coverage)`  `Web`  una fuente que el lector tiene instalada  declarada, o desconocida
++ row  las familias genéricas de CSS  `Web`  el navegador, sin ninguna declaración  todo estilo tipográfico
++ row  las catorce estándar de PDF  `Print`  el visor, sin ninguna declaración  los estilos tipográficos que define el estándar
+
+% 1 1 0 14b02fabf539539c0729e5ac52de9a60
+
+@ 0 1 0 0d9b04873cd1112d0637e18bb170fbdd
++ ### Fuentes
+
+@ 0 6 0 166c7375d39c73b100cbc41eb494fc8a
++ Un `Font` es un estilo tipográfico emparejado con la provisión que está en el ámbito para su tipo
++ de letra, en un medio: un `Font in Web` para un navegador, o un `Font in Print` para un PDF. Es
++ la única forma en la que un representador acepta una fuente. Solo puede crearse donde hay una
++ provisión en el ámbito, así que un documento no puede nombrar un tipo de letra que no lleva. Y
++ solo puede crearse para un estilo tipográfico que la provisión cubre. Pedir cursivas a un fichero
++ solo vertical, o numerales de estilo antiguo a una fuente sin `onum`, es un `Font.Error` en el
++ emparejamiento, y no una representación sintetizada o ignorada en silencio:
+
+% 2 1 0 07c0ae2491c31f3e12eae3a0619e37a3
+
+% 3 1 0 0e663ab9a6a3e2b811bbf7336a98fa5c
+
+% 4 1 0 07dc43d2d5ebec4001cb70df98f215f7
+
+% 0 1 0 11420e2d9610430e0b974703e2a09910
+
+% 0 1 0 19fc43e3d8184df012a078602dd4b0b0
+
+% 1 1 0 09c8b09b327284f514e2fca5f7e8f650
+
+@ 0 2 0 1ab724ce3b4f53c00fe14904bc055d65
++ Donde el tipo esperado ya nombra el medio, como hace el campo `font` de una figura, basta con
++ `Font(face)`. El documento hace después el resto:
+
+% 2 1 0 00caa8a6a785628a01ad2c3671f97544
+
+@ 0 5 0 1e44f105d9a4d1e51b75f995afba61a7
++ column  Documento
++ column  Qué hace con sus fuentes
++ row  SVG  escribe reglas `@font-face` para su rotulación en sus definiciones
++ row  hoja de estilo  gana las reglas mediante `Css.fontFace`
++ row  PDF  incrusta el fichero, o nombra una de sus catorce fuentes estándar
+
+% 1 1 0 18be5e42853a462506d6e74fdd620acc
+
+@ 0 1 0 1c0755760617a13b1cba487a8c502042
++ ### Comprobación mientras se compila el código
+
+@ 0 2 0 02dfa0ef019f355207489b72704f01aa
++ Un fichero de fuente del classpath puede comprobarse antes de que se ejecute nada. Una provisión
++ creada a partir de un recurso del classpath conserva la ruta del recurso como su `Locus`:
+
+% 2 1 0 1b5dcc4eea9aed971bbc9f224523dfa9
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 050fdae1e4ca202e108898a80eabc864
+
+% 0 1 0 0d6947ede1c4862615f0a5bb3a0870d0
+
+% 1 1 0 1365c3dc533fc1291ddd53f18bfceed5
+
+@ 0 8 0 03212bdebf43229711e5c8e302b63721
++ Un estilo tipográfico, por su parte, registra en su tipo lo que pidió el código.
++ `inter.bold.italic` tiene el peso `700` y la inclinación `"italic"` como miembros de tipo, y
++ `.enabling(Face.Feature.OldstyleNumerals)` añade `"onum"` a las características que necesita.
++ Cuando se crea un `Font` a partir de un estilo tipográfico así y de una provisión así, el
++ compilador lee el fichero, deriva su cobertura exactamente igual que lo haría el tiempo de
++ ejecución, y rechaza el emparejamiento con el mismo mensaje si el fichero no puede componer el
++ estilo tipográfico: un peso que no tiene, una cursiva de la que carece, una característica que
++ sus tablas no implementan. El error es entonces un error de compilación, con el fichero y la
++ petición nombrados, y no una alternativa en el navegador.
+
+@ 0 2 0 03676d3a8be6b6180eeabb22aed45d58
++ Solo se comprueba estáticamente lo que se conoce estáticamente. Todo lo demás deja la
++ comprobación al emparejamiento en tiempo de ejecución, que siempre se ejecuta:
+
+% 2 1 0 119aa96ccd8073031312939b3f997fc3
+
+@ 0 6 0 16a25886faf29ad607e9bbf50ccffc09
++ column  Se comprueba mientras se compila el código
++ column  Se comprueba solo en tiempo de ejecución
++ row  un peso con nombre, `inter.bold`  un peso calculado, `inter.weighing(weight)`
++ row  una característica con nombre, `Face.Feature.OldstyleNumerals`  una característica a partir de una etiqueta, `Face.Feature(t"ss03")`
++ row  un estilo tipográfico cuyo tipo registra su petición  un estilo tipográfico anotado simplemente como `Face of "Inter"`
++ row  una provisión a partir de un fichero del classpath  cualquier otra provisión
+
+% 1 1 0 05d7bda3cc4501c2089cf797e1801ec4
+
+@ 0 1 0 06542912d221f15b07ee5d9b67b05042
++ ### Creación de subconjuntos
+
+@ 0 2 0 18cba5cb55b35ae51cac789842ec6517
++ Incrustar una fuente entera para representar una página de texto es un derroche, y a menudo no
++ está permitido. `subset` construye una fuente TrueType nueva que contiene solo los glifos que
++ necesita un conjunto dado de caracteres:
+
+% 2 1 0 151a6cab32dd27fc16aa9ea93470bd62
+
+% 0 1 0 0c030e5fd7e8f69e0e6cf05bf6dd27f5
+
+% 1 1 0 1e0288c008943af31acb9fb8d48da7cc
+
+@ 0 4 0 0cf204982328682a0d64ba4d7cb47438
++ Crear un subconjunto no consiste simplemente en conservar los glifos a los que corresponde un
++ texto. Un glifo compuesto se monta a partir de otros, así que el conjunto conservado es el cierre
++ transitivo respecto de la composición. Se calcula a partir de los propios contornos de los
++ glifos, así que un carácter acentuado conserva los componentes con los que se dibuja.
+
+@ 0 5 0 1efba5096bc0255c0e04f220aaad98d4
++ Tampoco se renumeran los glifos. Los glifos descartados conservan sus números, y se quedan con
++ contornos vacíos en lugar de eliminarse, de modo que la correspondencia de caracteres, las
++ métricas y cada referencia que un glifo hace a otro siguen siendo válidas sin reescribirlas. Las
++ demás tablas se trasladan sin cambios. El resultado es un fichero de fuente completo y válido,
++ con sus sumas de verificación incluidas, listo para incrustarse en un [PDF](pdf.md).
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 6 0 1314f48040956fac1182a96b96409f90
++ - [PDF](pdf.md) incrusta fuentes y sus subconjuntos en documentos.
++ - [SVG](svg.md) y [CSS](css.md) llevan reglas `@font-face` para una provisión.
++ - [Magnitudes](quantities.md) describe el `em` en el que se mide el texto.
++ - [Classpath](classpath.md) describe los recursos desde los que se carga una fuente.
++ - [Texto](text.md) describe el texto cuya anchura se mide.
++ - [Gráficos](charts.md) miden sus rótulos con las métricas de una fuente.

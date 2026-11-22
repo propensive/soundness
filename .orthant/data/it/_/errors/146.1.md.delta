@@ -1,0 +1,52 @@
+orthant 2 language
+
+% 0 1 0 001f90608b7dd22610ab692a46e148e2
+
+@ 0 1 0 0e6a3581b82c83fb0193d29a278f43cb
++ Sollevato quando un classpath non può essere ridotto al mondo chiuso che i suoi punti di
++ ingresso raggiungono.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 146fc008d5517a990b24a43854e6709c
++ La riduzione ricompila le classi di un classpath a partire dal loro TASTy, senza i membri che
++ nulla raggiunge, e poi segue i riferimenti del bytecode risultante per decidere quali altre
++ classi vanno con esse. Questo errore copre un mondo chiuso che non sarebbe corretto, e la
++ terminazione anomala del riduttore.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0445185a914a06611a6ed8aa9e7b31b8
+
+@ 0 1 0 1ea7e942cbda33c20db5d8f6cad70bd9
++ **Esempio.** `[↯/s.146.1.1] the classpath could not be shrunk because a problem was found: example.Main refers to render()Ljava/lang/String; of example.Page, which was removed`
+
+@ 0 5 0 0a6beb09f5addefd16e83673c5aa63bf
++ Qualcosa che è stato mantenuto fa riferimento a qualcosa che non lo è stato. Il motivo porta
++ ognuno di questi riferimenti, come `problems`: ciascuno è stato trovato o negli alberi del
++ compilatore, prima che venisse generato qualsiasi bytecode, o nel bytecode in seguito. Copre
++ anche un'unità che non è stato possibile ricompilare né fissare al suo posto, con gli errori del
++ compilatore stesso come problemi.
+
+@ 0 4 0 054f9ecd59a5c94216c88c08bbb08648
++ **Soluzione.** Un riferimento che solo la reflection compie non è uno che l'analisi possa
++ trovare: si mantenga la classe che raggiunge, con il `keep` di `Shrink` o con
++ `shrinkOptions.keep`. Un riferimento che l'analisi avrebbe dovuto trovare è un suo difetto;
++ fissare l'unità che compie il riferimento, con `pin` o `shrinkOptions.pin`, copia quell'unità
++ così com'era, e mantiene tutto ciò a cui fa riferimento.
+
+% 0 1 0 1b762c079bc654b5142014f9af7b1a17
+
+@ 0 1 0 03df6e2c0d24a7d11d98571df5e1a5ff
++ **Esempio.** `[↯/s.146.1.2] the classpath could not be shrunk because the shrinker terminated abnormally`
+
+@ 0 1 0 184f587cfad810a00a1733b948aecece
++ Il motivo porta lo stack trace.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 02e06909ce28d85e05bef9ddc48783d3
++ - Sorgente: `lib/abscission/src/core/abscission.Shrink.scala`

@@ -1,0 +1,219 @@
+orthant 2 language
+
+@ 0 1 0 0ff0ceffec2f26ef09470fb57b12e512
++ ## Caché
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 2 0 1e2beedd03a3a9511b452ddfe72d23f3
++ Una [caché](https://en.wikipedia.org/wiki/Cache_(computing)) cambia memoria por tiempo, y se
++ proporcionan las dos formas que suele adoptar ese intercambio.
+
+@ 0 4 0 0985b5381b5e93b10dc31778ae9e3ded
++ Una `LruCache` conserva las entradas usadas más recientemente de una búsqueda por clave, y
++ expulsa la menos reciente cuando supera su capacidad. Una `Cache` recuerda un único valor, con
++ una vida útil opcional, y lo vuelve a calcular cuando caduca. Esa es la forma de una
++ configuración que se recarga cada minuto, o de un token que se renueva según un calendario.
+
+@ 0 1 0 1b29fba47c6166840f25fc820e494e36
++ ### Sobre la caché
+
+@ 0 4 0 1ed58db568f1cbc00697d907efccf659
++ Toda caché escrita a mano es un mapa mutable, junto con tres decisiones que se toman de forma
++ implícita: cuándo expulsar, qué hacer cuando dos hilos quieren el mismo valor ausente, y cuándo
++ un valor en caché es demasiado antiguo para fiarse de él. El mapa es fácil. Las decisiones son
++ donde están los errores:
+
+@ 0 3 0 12362288d8b0c439179e1c29acc38ffc
++ - Sin expulsión, la caché crece sin límite.
++ - Sin coordinación, un valor ausente se calcula muchas veces a la vez.
++ - Sin caducidad, se sirven datos obsoletos.
+
+@ 0 4 0 11b69799f00f5b1a02782aaecb9dfe3e
++ Aquí las decisiones son el tipo. Una `LruCache` es la clase acotada, que expulsa. Una `Cache`
++ es la clase que caduca y se coordina, cuyo cálculo está protegido para que los llamantes
++ concurrentes compartan un solo resultado. La política se declara donde está la caché, y no en
++ cada lectura, lo cual es [contexto declarativo](../../philosophy/declarative-context.md).
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 07ac815ea191e3cc115a610b5ee1b959
++ column  Aspecto
+
+% 0 1 0 015453692dfb07200fcdf89b725aa7c1
+
+% 0 1 0 027afffc63e8fd160b847eb1f40add2c
+
+@ 0 5 0 1751185573de20951245587964eca4a1
++ row  Contiene  entradas con clave, hasta una capacidad  un valor
++ row  Se crea con  `LruCache[Key, Value](capacity)`  `Cache(lifetime)`, o `Cache[Value]()`
++ row  Se lee con  `cache(key)(computation)`  `cache.establish(computation)`
++ row  Descarta  la entrada usada menos recientemente  el valor, una vez transcurrida su vida útil
++ row  Fallos concurrentes  cada llamante calcula  un llamante calcula, los demás comparten su resultado
+
+% 1 1 0 0413a50b352840fc1b9d711fd6bc3158
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Todo procede del paquete `soundness`. La segunda importación permite que los ejemplos impriman
++ sus resultados:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1cefe767a73cb12013f08b8715bedb21
++ ### Una caché LRU
+
+@ 0 4 0 006feb1499bc22c61ae4cdae5a565232
++ Una `LruCache` contiene entradas con clave, hasta su capacidad. Aplicarla a una clave y a un
++ cálculo da el valor en caché, cuando la clave está presente. En caso contrario ejecuta el
++ cálculo, almacena el resultado y expulsa la entrada usada menos recientemente si la caché ha
++ quedado demasiado grande.
+
+@ 0 1 0 0befb68f58bcc42b1bdbbe8941ba0cc7
++ Aquí el cálculo es una búsqueda que cuenta cuántas veces se ejecuta:
+
+% 2 1 0 16ae694c033c94d01ca2d1702b6c0e48
+
+% 0 1 0 14b819298a4f1bf901849581869f224c
+
+% 0 1 0 13a8d906435dbb780a5ac292e6c93292
+
+% 0 1 0 06fb5a3bc7335fa0060db1702b207471
+
+% 0 1 0 1da3fdafc64ed1c60efec409a136f104
+
+% 0 1 0 0df562b11bf62caa0282348465248f03
+
+% 1 1 0 1ba8a25e5f0933be036a433d8db15661
+
+@ 0 2 0 1ce43a935078f4d00116a96dc5663dd5
++ El primer uso de una clave calcula y almacena su valor. El segundo da el valor almacenado, sin
++ ningún cálculo:
+
+% 2 1 0 1225b8b9d7c3b8bb139fa50fe1585647
+
+% 3 1 0 03e9d38dd070ef7c010ef6808e7387eb
+
+% 4 1 0 0318d95bf83b4eb41ae8fad1f3aeec2a
+
+% 1 1 0 0b103d602291c10d1ed05fd0ffe71af5
+
+% 1 1 0 090dee53aa1214a00a07c1f87aa3c121
+
+% 0 1 0 138206ffa4fa4aae15948c72e64c8ea0
+
+% 1 1 0 020df720d80339191985d71ea3d80a9f
+
+@ 0 3 0 0734b4efcbf5b2a311139a1f03521204
++ El cálculo se pasa por nombre, así que no se evalúa nada cuando la clave está presente. Esa es
++ toda la razón de ser de esta forma: una caché cuyo valor debe calcularse antes de poder
++ ofrecerse no ahorra nada.
+
+@ 0 3 0 10a5c204e485833707c060c2147df382
++ Usar una entrada, sea leyéndola o escribiéndola, la marca como reciente, de modo que las
++ entradas que sobreviven son aquellas a las que el programa vuelve una y otra vez. Tras otras
++ cuatro claves, la clave `1` ha sido expulsada, y pedirla vuelve a calcularla:
+
+% 2 1 0 1dd6dd9f347a3c8a1cbe1f0ca3693d7e
+
+% 3 1 0 0f08d18fa09e42150dcb9750eac8e411
+
+% 4 1 0 053ba65a5e550213050f71e644d15e4c
+
+% 0 1 0 0ff796dfe009da691c2fd3e988b23a3e
+
+% 0 1 0 1b2d8ea532e5190706d3f0f113f0feee
+
+% 1 1 0 01dfd842538cbe9c1284faff589c555f
+
+% 2 1 0 0ba9bd78618ae35301fec4b9e028465a
+
+@ 0 3 0 1f16f63cacd50d4c097dc1ead80bc6e3
++ `contains` pregunta si una clave está contenida, sin calcular nada y sin marcar la entrada como
++ reciente. `remove` elimina una entrada. Eso es lo que necesita la invalidación, cuando los datos
++ subyacentes han cambiado y se sabe que el valor en caché está obsoleto:
+
+% 2 1 0 128a6d97f2b0d19d079812b76fe9232c
+
+% 3 1 0 1d8b6f0d031376be03e2fe9d5a8980fa
+
+% 4 1 0 0c01009f9b6fc6d21267988106ea9480
+
+% 0 1 0 0128f765de8f195707924e07773f4eb6
+
+% 1 1 0 0488271615aaff7d0e920ec664168f25
+
+% 2 1 0 1d915e983d573dde0c1fa1f833bb86ed
+
+@ 0 1 0 1fe11ed25724c04903cf9feacfefcc0d
++ ### Un valor que caduca
+
+@ 0 4 0 10b2f5afad4ca3531d4a16b8e0b3a2e5
++ Una `Cache` recuerda un valor, con una vida útil tras la cual se vuelve a calcular. La vida útil
++ es cualquier [duración](time.md#durations-and-timespans), aquí una [magnitud](quantities.md) en
++ segundos, con la importación que permite a una `Cache` leerla. El tipo del valor en caché se
++ indica en el tipo esperado:
+
+% 2 1 0 15e6ba5677de14881f166c67d238f447
+
+% 0 1 0 02cc50caac06e1f715bf762bfb41f1a9
+
+% 0 1 0 0b916bb6f6e0b8ba09a85ac4f01d9caf
+
+% 0 1 0 0f06081825ca25790571076f925446e6
+
+% 0 1 0 18011f584d0ba6ff0b5d92588f0a0d85
+
+% 0 1 0 055cc23e6b8fd67609b98883ba3bd6f5
+
+% 0 1 0 1689baa9c7f4b5ae04c8a3eac45116ab
+
+% 0 1 0 1cfed517056615321e404fa05f13b943
+
+% 1 1 0 0c5224ff29929c8010610bc8d25e5fe6
+
+@ 0 3 0 04a7b996fb56cd7117c73a86ac08bff0
++ `establish` da el valor actual. Solo calcula el valor cuando no hay ninguno, o cuando el que hay
++ ha caducado. Aquí la segunda llamada da el mismo valor, y lo seguirá dando hasta que pasen cinco
++ minutos:
+
+% 2 1 0 00ded6ce31c3b5dc07a2f35b10f0a194
+
+% 3 1 0 157c0ebff43509810f5f9ccf170317a8
+
+% 4 1 0 193d0dec1b0a63d10348288acfd6262e
+
+% 1 1 0 13d362441aeca65c04ce6410d5f21e4a
+
+% 1 1 0 01ea25849fb162b805f0a81e2ae06356
+
+% 0 1 0 0e290a591189acdd0da9668db0b93be2
+
+% 1 1 0 1fd1d998af92e1b01106a35dbcd66fab
+
+@ 0 4 0 03dd85ec293abfe9166be8f4ea92f7c6
++ El cálculo se ejecuta bajo un bloqueo. Cuando el valor falta o ha caducado, y varios hilos lo
++ piden a la vez, uno lo calcula y los demás reciben su resultado. Eso evita la
++ [estampida](https://en.wikipedia.org/wiki/Cache_stampede) que un simple valor perezoso no puede
++ evitar. [Concurrencia](concurrency.md) describe las tareas que podrían estar pidiéndolo.
+
+@ 0 2 0 0e003940c9057d051bfd5a7cbeba5b5a
++ Una `Cache` creada sin vida útil, como `Cache[Configuration]()`, calcula su valor una vez y lo
++ conserva.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 5 0 19866789ab7e9be80fe4a5ba96e1a746
++ - [Filtros de Bloom](bloom-filters.md) solo recuerdan si algo se ha visto.
++ - [Sistema de ficheros](filesystem.md#content-addressed-storage) describe una caché en disco,
++   indexada por el resumen de su contenido.
++ - [Tiempo](time.md) describe las duraciones en las que se da una vida útil.
++ - [Trazas de pila](stack-traces.md) describe el punto de código que asocia un valor en caché a
++   su punto de llamada.

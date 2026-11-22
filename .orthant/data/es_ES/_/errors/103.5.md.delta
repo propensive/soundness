@@ -1,0 +1,85 @@
+orthant 2 language
+
+% 0 1 0 16eb7807439918eb0e93df5cdcf01599
+
+@ 0 1 0 1bc17e73757ad821185ab2819e0693e9
++ Se lanza cuando Telekinesis no puede establecer una conexión TCP/TLS.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 1544ca6ffc4a35db09eb932f09dc3660
++ `Connect.Error` notifica un fallo durante el establecimiento de la conexión, antes de que pueda
++ producirse ningún intercambio HTTP. El mensaje es `the TCP connection failed
+
+% 0 1 0 0ec2149d5205921b19b89c2f0c0315c4
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 195eb014e5f6a968082360a4ebaf599b
+
+@ 0 1 0 15fcb2bd8cb9f04a14faebd23104a2c7
++ No se pudo resolver el nombre de host del servidor.
+
+@ 0 1 0 1744e137e508c8a9140df9154c19ebff
++ **Ejemplo.** `[↯/s.103.5.1] the TCP connection failed because the server address could not be resolved by DNS`
+
+@ 0 1 0 1513e4df6d01695211baefa37a13a8e5
++ **Solución.** Verifica que el nombre de host es correcto y que el DNS es alcanzable.
+
+% 0 1 0 0760008c4207c13205ef4e330d6e9ec8
+
+@ 0 2 0 0ce6f1de3ade498a07b794936fa52e22
++ El servidor rechazó activamente la conexión (por ejemplo, porque no hay nada escuchando en el
++ puerto).
+
+@ 0 1 0 075b40a0993d308306676cba4198ec58
++ **Ejemplo.** `[↯/s.103.5.2] the TCP connection failed because the connection was refused`
+
+@ 0 2 0 128ebb63b2441b0a10538c7a1ab6267c
++ **Solución.** Confirma que el servidor se está ejecutando y escucha en el puerto esperado; revisa
++ los cortafuegos.
+
+% 0 1 0 0e78d0f49813296115caa60898973eda
+
+@ 0 2 0 053de12d95c5949904651faafd904281
++ Falló el handshake TLS. El `Ssl.Reason` anidado distingue los fallos `Handshake`, `Key`, `Peer` y
++ `Protocol`.
+
+@ 0 1 0 03cf6eeb763c44170fcc836bdd75a47e
++ **Ejemplo.** `[↯/s.103.5.3] the TCP connection failed because the SSL/TLS layer could not be established because the remote peer's identity could not be verified`
+
+@ 0 3 0 09e43bdcbfc4a88c1bb02723adc2a966
++ **Solución.** Inspecciona el motivo interno: revisa los certificados y la cadena de confianza
++ (`Peer`), el material de claves (`Key`), las versiones de protocolo admitidas (`Protocol`) o la
++ negociación de la suite de cifrado (`Handshake`).
+
+% 0 1 0 1b5ddd0ae49cb2b909aef043e8d4af7a
+
+@ 0 1 0 1dcb661dcfb3750514199e17ef03eb18
++ El servidor no respondió en el tiempo permitido.
+
+@ 0 1 0 149a6622e99353ec1b028d07f9265256
++ **Ejemplo.** `[↯/s.103.5.4] the TCP connection failed because the server did not respond within the time limit`
+
+@ 0 2 0 11ddc6b6043db8c51931a3118530cf82
++ **Solución.** Reintenta con un tiempo de espera más largo, o investiga por qué el servidor es
++ lento.
+
+% 0 1 0 115f811f400a7ae2039df4254b9a4138
+
+@ 0 1 0 0a421aea22ad484805c112a8c14fbe8a
++ La causa no coincide con ninguna de las variantes más específicas.
+
+@ 0 1 0 146f9e23d7e31dc31db8204c2a0b1c9a
++ **Ejemplo.** `[↯/s.103.5.5] the TCP connection failed because an unrecognized error occurred`
+
+@ 0 1 0 13efeb42befe83eb0920f372080aa165
++ **Solución.** Inspecciona los registros y cualquier causa adjunta al error.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 1a64f4547cd1c4f50851e87816b6a570
++ - Fuente: `lib/telekinesis/src/core/telekinesis.Connect.scala`

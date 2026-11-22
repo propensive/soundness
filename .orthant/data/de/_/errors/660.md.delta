@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 1 0 1e31b6c8ad7c9e9614d5038f040041fd
++ # `SN-660` — Erweiterungsmethode eines Interpolators muss `inline` sein (ausgemustert)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Diesen Fehler gibt es nicht mehr. Die Seite bleibt erhalten, damit der Code nicht wiederverwendet
++ wird und damit ein Verweis darauf aus einem älteren Release weiterhin aufgelöst werden kann.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Was daraus wurde
+
+@ 0 3 0 0b492283b067c74e0a1ec9e5a330d239
++ Diese Prüfung gehörte zur `Interpolator`-API von Contextual, die durch die Typklasse
++ `Interpolable` ersetzt wurde. Eine Präfixmethode wird jetzt als Teil des Musters als
++ `transparent inline` deklariert, und die Anforderung wird durch die Signatur durchgesetzt statt
++ durch eine Prüfung.

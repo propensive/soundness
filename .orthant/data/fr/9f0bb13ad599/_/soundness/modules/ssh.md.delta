@@ -1,0 +1,353 @@
+orthant 2 language
+
+% 0 1 0 024d7b3a17ab2c940ae62b05dd4382bc
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 0dc585d1ebe2f4a708ae3adffcfcdc09
++ Il s'agit d'un client SSH-2 natif, construit par étapes. Cette version comprend l'encodage sur
++ le réseau, les deux fichiers que lit tout client, `known_hosts` et `~/.ssh/config`, et la
++ couche de transport : l'échange de clés et les paquets chiffrés sur une connexion. Elle
++ comprend l'authentification par clé publique, et le protocole de connexion qui exécute des
++ commandes.
+
+@ 0 1 0 0df6c2a693f4a039191df3c9924542d6
++ ### SSH
+
+@ 0 4 0 06736fb2c2c0a5bc15be59dcd962717e
++ Les programmes accèdent d'ordinaire à SSH en lançant le binaire `ssh`, et dépendent alors de
++ sa présence, de sa version et de sa configuration sur la machine où ils se trouvent s'exécuter.
++ Un client dans le même processus ne dépend de rien de tout cela. Il vérifie la clé d'hôte selon
++ une politique énoncée dans le code, et prend ses identités dans des clés chargées ou auprès d'un
++ agent.
+
+@ 0 2 0 03db7f1198e5f95617db30f67e794650
++ Tout provient du package `soundness`. Les autres imports choisissent des encodages et une
++ [stratégie] d'erreur, et permettent aux exemples d'afficher leurs résultats :
+
+% 2 1 0 0e4600865fe805130a5bc57b0343e845
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 1921fb6b9141e2261014d1e74d1c48f0
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 2 0 1a6e31f4653b538d1b836c1c530ec904
++ Les exemples qui analysent des fichiers et encodent des messages s'exécutent ici. Ceux qui
++ ouvrent une connexion ont besoin d'un serveur : ils sont donc compilés mais pas exécutés.
+
+@ 0 1 0 121a73a8f40613ab1c5031482d88ab3f
++ ### Clés d'hôte
+
+@ 0 3 0 0ad237ecabd1a25200be6ffa22a73f2f
++ Un fichier `known_hosts` enregistre la clé que chaque hôte a présentée auparavant. Le lire donne
++ un `KnownHosts`. `verify` prend un hôte, et la clé qu'il présente maintenant, sous la forme du
++ blob qu'OpenSSH écrit après le type de clé, et répond par un `KnownHosts.Verdict` :
+
+% 2 1 0 08ca1a047c96f9b61f8f4eedaf0cccd6
+
+% 0 1 0 1769ab8b5e91a37b0770c9b8b46f9081
+
+% 0 1 0 0133aed36074269e1e06b9b3055e566b
+
+% 1 1 0 107a73a98dd0382b0032c7423aab59c0
+
+% 3 1 0 16c6e7374aa280b50f5d3d8f14bf798a
+
+% 4 1 0 05ca5d54cc46e6381a9f7d48f62549fe
+
+% 5 1 0 1210104776a2f9ba19ca91d237c1b76e
+
+% 0 1 0 0ddcc2f3c7238a1c1fb452565ec133ac
+
+% 0 1 0 1c3341280a0fb1b1096a61d1c66b9644
+
+% 1 1 0 1d0a27d95d5d65e302bc3cc810e42f14
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 6 0 1ef8ba1f4292875400d25aa998e00ec4
++ column  Verdict
++ column  Quand
++ row  `Revoked`  une entrée pour l'hôte porte cette clé avec le marqueur `@revoked`
++ row  `Known`  sinon, une entrée pour l'hôte porte cette clé
++ row  `Changed`  l'hôte a des entrées non révoquées du type de cette clé, mais pas cette clé
++ row  `Unknown`  l'hôte n'a aucune entrée non révoquée du type de cette clé
+
+% 1 1 0 107d54707f155e6a0e1a250d7533b523
+
+@ 0 2 0 01539a98ca0cf2be1f47e9df8c3f63b2
++ Une entrée portant le marqueur `@cert-authority` ne prend aucune part au verdict. La syntaxe du
++ fichier est comprise telle qu'OpenSSH l'écrit :
+
+% 2 1 0 0c46a6576898c5b112917c30fb53e9eb
+
+@ 0 8 0 05dd4b9dd724ce59145da94e341c1ba3
++ column  Syntaxe
++ column  Signification
++ row  `*.example.com`, `?`  un motif de nom d'hôte, comparé sans tenir compte de la casse
++ row  `!excluded`  un motif nié
++ row  `[host]:port`  une entrée pour un port autre que celui par défaut
++ row  `|1|salt|hash`  une entrée hachée : un HMAC-SHA1 du nom d'hôte avec le sel
++ row  `@revoked`  un marqueur qui révoque la clé de la ligne
++ row  `@cert-authority`  un marqueur pour la clé d'une autorité de certification
+
+% 1 1 0 0c975d6d792d87f1008afd4152bf055f
+
+@ 0 1 0 0fc584115f7d57321bdb411747c42313
++ Une ligne qui n'est pas une clé est ignorée, comme OpenSSH l'ignore.
+
+@ 0 1 0 0c6a53f079f233521e208eb6577f916d
++ ### Configuration du client
+
+@ 0 3 0 10415e1d3d7dc25813bef2fea1598114
++ `~/.ssh/config` dit comment atteindre un hôte. `SshConfig` lit ses blocs `Host`, et résout le
++ nom d'hôte, l'utilisateur, le port et les fichiers d'identité pour une destination. Comme dans
++ OpenSSH, la première valeur trouvée l'emporte :
+
+% 2 1 0 1b0890b47d9ab4ba155c6677b1402a61
+
+% 0 1 0 04642050c03b7954038a416ee9531353
+
+% 0 1 0 128466eea9b28d9a158d6562c6734f2f
+
+% 0 1 0 1d209bf1c12372180049607478b698d3
+
+% 0 1 0 1c0bfe73e794d36b11505c71f91fc552
+
+% 0 1 0 1b44cf51349d4fa20bcfaada6375807f
+
+% 0 1 0 1f207f1cf5e7a72c1492dfa5bb9a97c8
+
+% 0 1 0 071305ceb5c1200814dd80cde084cad8
+
+% 0 1 0 07114e66baf1ba621e2178e968725f7d
+
+% 1 1 0 15bc84f7aefa7ee8131a8362fc51e794
+
+% 3 1 0 13719fc01c5162fc0bc91f558ac89205
+
+% 4 1 0 0f2eb127c175d4350761c228b57effc6
+
+% 5 1 0 08498ba588f118f9013063bff2a29fcf
+
+% 0 1 0 1b515121ebac80ed1c4a2528e885e8db
+
+% 1 1 0 15035b8467efb56f031f56e9b7f4cac2
+
+@ 0 1 0 0bdbf91292b2b4a21cce87037256f689
++ ### Le transport
+
+@ 0 5 0 1d54b8c560f8486714e3844f19576f26
++ Un `Ssh.Transport` sur un `Duplex` connecté effectue l'échange d'identification et l'échange de
++ clés avec `connect`. Il vérifie la clé d'hôte du serveur selon la politique `Ssh.HostKeys` dans
++ la portée, qui est un fichier `KnownHosts`, ou `Ssh.HostKeys.trustOnFirstUse(known)`. Il
++ transporte ensuite des paquets chiffrés avec `send` et `receive`. Les algorithmes proposés sont
++ `Ssh.Algorithms`, dont la valeur par défaut privilégie Curve25519, Ed25519 et
++ ChaCha20-Poly1305 :
+
+% 2 1 0 0e8c6584f54bcfc41231e0e091d652aa
+
+% 3 1 0 132990322a766072165a8ec2d2ddec6e
+
+% 4 1 0 0e7d89862137be84122c1d80a1279101
+
+% 5 1 0 069d04514ea82b6611238d83523e503d
+
+% 7 1 0 039d2ff10afe2ff11bf5340c0a79d44d
+
+% 2 1 0 09e882d9b4532bbd1aa17c4d321b70b0
+
+% 3 1 0 05c9efbe1b2f57271db49ab16997483b
+
+% 4 1 0 064a2dccb64fad2b08877b2e3ba8f1db
+
+% 0 1 0 1a45ced232a4378a0a7e472fee6925f5
+
+% 0 1 0 1a2b70bbdc8194f60d287932d34c600a
+
+% 1 1 0 1f52c4b85f73cfb309d1059fa496c1ad
+
+@ 0 2 0 0e9e107eadfc80b412b18d58e35f4afc
++ Face à GitHub, `negotiated` vaudrait
++ `Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")`.
+
+@ 0 1 0 0a6163ddd4d87dfd0d405a01d86399b8
++ ### Exécuter des commandes
+
+@ 0 4 0 0e7ec6f3cad9aa1015af76cb6f1633cf
++ Une session sur un `Ssh.Endpoint` assemble tout ce qui précède. Elle se connecte, vérifie la clé
++ d'hôte selon la politique `Ssh.HostKeys` dans la portée, s'authentifie avec les signataires de
++ l'endpoint, et prête une `Ssh.Session` qui exécute des commandes sur des canaux du protocole de
++ connexion. Ici, la clé est lue dans `keyText`, le contenu d'un fichier de clé privée :
+
+% 2 1 0 0549bf382550e7c609a281ef229845fa
+
+% 3 1 0 10fe02797df3d4461669faa82ad7ef46
+
+% 4 1 0 05d3ad4f64603d0e0ef97703614550ed
+
+% 5 1 0 0a2b214d679672f906cfdf7e40a8eacc
+
+% 1 1 0 12cddcef1132cb0802383a9cdd48b575
+
+% 3 1 0 19414ad2ab7a11d20c62d82be85b3105
+
+% 2 1 0 173684feb7b650a31515ce9bb005bc63
+
+% 0 1 0 006c2130064976ea0d8ee1b50209d6aa
+
+% 2 1 0 1426d8f6b84af7ea0490b305425a4e98
+
+% 0 1 0 04f67e28f201d9f410933309e6e8de22
+
+% 0 1 0 05cb733d6a8ba5700e76b8d70d6556f0
+
+% 0 1 0 157f30f8a222419e083ed218989b601f
+
+% 1 1 0 12fce0121482948f15af68514a4e28cf
+
+@ 0 4 0 08b1f7ffd7b2310c06d5c4ee417cc752
++ `exec` écrit l'entrée, recueille les deux flux de sortie, et attend le statut de sortie. La
++ commande peut être un `Text` qu'interprète le shell distant, ou une
++ [`Command`](processes.md), dont les arguments sont mis entre guillemets un par un : une valeur
++ contenant des espaces ou des caractères du shell reste donc un seul argument :
+
+% 2 1 0 09a79ed0c52d3a6c16f96460d1493cca
+
+% 3 1 0 142fc0375f81eb141402761cba70587e
+
+% 4 1 0 151f435590c8e8f10c3eb6e297c57acc
+
+% 5 1 0 0483d6fdd656aab40608afd140969bc6
+
+% 7 1 0 06f4f6338bcbefb20b68c39d8bccae99
+
+% 0 1 0 051ee0653014743002a9affd15e8649a
+
+% 0 1 0 0538543a0877c6711be09c238f688d4c
+
+% 2 1 0 1778a453ab6ed4e416f153d28226b3e9
+
+% 0 1 0 1ee487313eea161b0b033a06dad77596
+
+% 1 1 0 0fb31595677a7d0411053b80f0266d08
+
+@ 0 3 0 092effc22d26012804e800d367d09d32
++ Pour un protocole qui entrelace lecture et écriture, `ssh.channel` prête le canal lui-même. Son
++ `stdout()` est une chaîne paresseuse de morceaux, et ses `write` et `eof` pilotent l'entrée de
++ la commande.
+
+@ 0 1 0 1ecfd9e3377840280590287ed6a81acd
++ ### Git sur SSH
+
+@ 0 4 0 1428f2f9abd3d5531256372e938c95af
++ Le backend [Git](git.md#choosing-a-backend) natif atteint les dépôts distants par ce client,
++ avec le transport `gitTransports.soundnessSsh`. Aucun binaire `ssh` n'est lancé. La clé d'hôte
++ est vérifiée selon la politique `Ssh.HostKeys` dans la portée, et les identités proviennent de
++ `Ssh.Credentials`, qui sont des clés chargées, ou tout ce que détient un `ssh-agent` :
+
+% 2 1 0 1316111cd057d8740b1115a553263f67
+
+% 3 1 0 0a8531e009c543900b01daa7231bb18c
+
+% 4 1 0 13c433b6de4a27fd1ceaf17e4c8bb082
+
+% 0 1 0 0ba95e027ab02fb117fffda9c1a95be4
+
+% 0 1 0 07e285bf52c5351f1c06b5059d54c7c0
+
+% 0 1 0 0bd535045728ec8d142f2b1a89a152d6
+
+% 1 1 0 09b38b3fd1cc336f0290a796e67b9541
+
+% 0 1 0 0a2d0f11fcba268817fbae2344a16bc9
+
+% 0 1 0 1b7e2e406578b7c40241d824b2098108
+
+% 1 1 0 09ec2d54a58ad3701cd910b8e84107d7
+
+@ 0 1 0 1b6911e091cca09119565edb21d17b50
++ ### Authentification
+
+@ 0 3 0 09745d51fcfc01eb05fff41bb6d44a28
++ Un transport connecté s'authentifie par clés publiques, comme le décrit la RFC 4252. Un
++ `Ssh.Signer` est une `PrivateKey` chargée d'un algorithme que connaît OpenSSH, ou une clé
++ détenue par un `ssh-agent`, qui signe sans jamais libérer la clé. Le premier signataire
++ qu'accepte le serveur l'emporte :
+
+% 2 1 0 1d137742c94e1077092d365c0abbbb2f
+
+% 3 1 0 01bc2b3c4e327ec907dd4019f50a42fa
+
+% 4 1 0 10c922e5c6a53a2d104692b48f1c9977
+
+% 5 1 0 1341c6c2c0c16d4d14cbe502a7e44894
+
+% 2 1 0 0628b6c616b6fa41002282954306a358
+
+% 0 1 0 1b6418d7da7dd6990c270cb466c53413
+
+% 2 1 0 106b0b461101288d192cf1aa6c8e4333
+
+% 3 1 0 04a637e357169786010f0d7d9efab20b
+
+% 4 1 0 12c9b40c104f4c051c357cb489b7708d
+
+% 0 1 0 0df09a6399060dcc06680c9492d792b6
+
+% 1 1 0 02df0158e2581a0d06b0da5a97cfa03c
+
+@ 0 1 0 18ae2069493c1dd919c6fee348ada6f2
++ ### L'encodage de transmission
+
+@ 0 2 0 132614c45618316b1506c4cf34b8c82e
++ Chaque message SSH est une suite des types que définit la RFC 4251. Ils se lisent et s'écrivent
++ avec `Wire.Reader` et `Wire.Writer` :
+
+% 2 1 0 1a8edba396a450c30c3e04ce394e8268
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0418e04c4e9f93be05f1d57b0bbb2db1
+
+% 0 1 0 0c8810531d935b661b99d48a05f67766
+
+% 0 1 0 14cf94394f275e1c0e846950de978293
+
+% 0 1 0 0553c31922020ff20ff39bea5f31b78e
+
+% 0 1 0 0e8562cde156e0a518f5c989c8998f92
+
+% 1 1 0 0c45483f76a4d8e110eb4960fac292c0
+
+@ 0 1 0 0dcce94e8e9198d31340e522a12dc57d
++ Le lecteur renvoie `t"ssh-userauth"`, le premier champ qui a été écrit.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 5 0 0d3b9dab54708ad018d9f1a796057414
++ - [Git](git.md) utilise ce client comme transport pour son backend natif.
++ - [Cryptographie](cryptography.md) décrit les clés qui signent une authentification.
++ - [Sockets](sockets.md) décrit la connexion `Duplex` sur laquelle fonctionne un transport.
++ - [Processus](processes.md) décrit les commandes `sh"…"` que `exec` met entre guillemets.
++ - [Encodage en base](base-encoding.md) décrit le Base64 dans lequel s'écrivent les clés.

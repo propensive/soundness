@@ -1,0 +1,31 @@
+orthant 2 language
+
+@ 0 1 0 0342029e64a5f500041732c7664cc685
++ # `SN-529` — Espaciado alrededor de las comas (retirado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este error ya no existe. La página se conserva para que el código no se reutilice, y para que una
++ referencia a él desde una versión anterior pueda seguir resolviéndose.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Qué fue de ello
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ El plugin del compilador Decorum, que lanzaba este error, se extrajo de Soundness y ahora es
++ [Consequent](https://github.com/propensive/consequent), un comprobador independiente del estilo
++ Consequent. La regla sobrevive allí con un identificador nuevo, en el que la letra nombra el
++ principio del que deriva:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Antes
++ column  Ahora
+
+% 0 1 0 0d271f475022d3cf0dfbdc52e6ae3b44
+
+% 0 1 0 0205380ef9111c061b384b5f1e4be8da
+
+% 0 1 0 092433255249555b1734a7fb8693df15
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

@@ -1,0 +1,1318 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c16ea87ef318b710ee30c861541aa4d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c31a9c8bd6149e7132335d0f3930e81
++ info
++     les traces de pile comme valeurs immuables et démanglées ; positions de sites d'appel ; noms
++     de classes validés
+
+@ 0 8 0 10d0e4ca3ebfef401571cab70cb2a3ad
++ detail
++     _Digression_ transforme la vision qu'a la JVM d'un échec en valeurs qu'un programme peut
++     examiner et rendre. Une `StackTrace` se capture à partir de n'importe quel `Throwable` avec
++     `stackTrace` : la classe de son exception, son message, une liste de `StackTrace.Frame` et
++     sa cause sous forme d'une autre `StackTrace`. Les noms de classe et de méthode de chaque
++     trame sont **démanglés**, de l'encodage du compilateur vers le Scala qui les a produits —
++     `$plus` devient `+`, `$anonfun$3` devient `λ₃`, `<init>` devient `ⲛ` — et un
++     `StackTrace.Resolver`, lorsqu'on en importe un, ramène chaque trame à la définition source
++     dont elle provient.
+
+% 2 1 0 16b510f0c8d1186d15a4235716969abd
+
+% 3 1 0 09ca52a168da48c404f62f234e380f68
+
+% 0 1 0 1f2ae059e1f4bd9a1aca20f622222eac
+
+% 0 1 0 1d84d59c97c154941fa68606178bb4a4
+
+% 0 1 0 1359acc6773ce3261f69c6800f6945df
+
+% 0 1 0 18647f0779e2dec71991e6c2780831f0
+
+% 0 1 0 13b48802a4aabb6d08281127041994a9
+
+% 1 1 0 15ec8af62d51001501d3e724c157b0e5
+
+@ 0 6 0 048231e3471c69421606ffb26b450178
++     À ses côtés figurent deux petits outils qui eux aussi décrivent le code plutôt que de
++     l'exécuter : un `Codepoint`, le fichier source et la ligne d'un site d'appel, capturé comme
++     given partout où une méthode en demande un ; et un `Fqcn`, un nom de classe pleinement
++     qualifié validé selon les règles de la JVM, écrit littéralement avec `fqcn"…"`. `Smap`
++     analyse les tables de correspondance source JSR-45 qu'un fichier de classe porte pour le
++     code inliné, ce qui permet à une trame de savoir où ses lignes inlinées ont été écrites.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     La bibliothèque compte deux ensembles de sources :
+
+@ 0 7 0 108fc1535f9a57f306a0a2a40eebd708
++     - `digression.core` — `StackTrace`, `Codepoint`, `Fqcn`, `Smap`, `stackTrace`, `fqcn"…"`
++       et `idempotent`, avec des rendus en texte brut (`Showable` et `Communicable`). Il ne lit
++       aucun fichier, si bien qu'il compile pour toutes les plateformes ; le
++       `StackTrace.Resolver` par défaut ne fait rien, et le résolveur qui lit TASTy pour trouver
++       la source de chaque trame est `stackResolutions.tastyStackResolution`, dans hyperbole.
++     - `digression.ansi` — `StackTracePalette` et le package `teletypeables` : des rendus de
++       terminal colorés et tabulés d'une trace, d'une trame, d'une méthode et d'une exception.
+
+@ 0 3 0 18ab8b9af52dbe7d0a272bb91eafb0cb
++     Tout est exporté vers le package parapluie `soundness`, et le package de choix
++     `teletypeables` fusionne avec celui du package parapluie. Ses givens s'importent par leur
++     nom, puisque `import teletypeables.*` n'importe pas les givens :
+
+% 2 1 0 190b8677a4efa9350efc6b76e8e51f95
+
+% 3 1 0 179ab22dc5a336450caac8591c142fc9
+
+% 0 1 0 19de83050add395b1c3e973740e6e8e4
+
+% 0 1 0 15c3bd29db4cff9e063cc6ce44c7ab7b
+
+% 0 1 0 06c460ffead2c63b1d387a3876843f1f
+
+% 1 1 0 1c2b1005279baa911d1e2844f851dd10
+
+% 0 1 0 0139ef97e07e3e7c007739de9a764db0
+
+% 0 1 0 0ab956b5e26509b10ecfee1ad8375317
+
+% 0 1 0 09f4e53d48363bd4183838ce63c009d7
+
+% 0 1 0 0878906e37bf145b11b3a6293bf7b01f
+
+% 0 1 0 16f60eb84fe8d57f1b02b30629b75bc1
+
+@ 0 1 0 1110f90265997d6001ac3595eba6d21b
++ entry .stackTrace
++   info
++       la trace de pile d'un `Throwable`, sous forme de valeur `StackTrace`, résolue par le
++       résolveur dans la portée
+
+@ 0 6 0 10b1aa2fc4070e2314472a67ebd67534
++   detail
++       Une extension sur `Throwable` : `error.stackTrace` vaut `StackTrace(error)`, chaque trame
++       passant par le `StackTrace.Resolver` présent dans la portée *de l'appelant*. S'il n'y en a
++       aucun d'importé, le `StackTrace.Resolver.none` du compagnon s'applique et les trames ne
++       portent que leurs noms démanglés ; importer `stackResolutions.tastyStackResolution` (de
++       hyperbole) leur fait aussi porter leurs définitions source. Le résolveur est pris ici, et
++       non plus en profondeur, car un résolveur invoqué à l'intérieur de `StackTrace` ne
++       trouverait jamais que celui par défaut.
+
+@ 2 1 0 04ccb9694ee11ded01f75859caf09271
++       ```scala
+
+@ 3 1 0 1328a2590cbf1a270b915b1818c5aade
++       import soundness.*
+
+@ 0 1 0 0107120b4fe1394d0ba352dd7387250c
++       val trace = Exception("boom").stackTrace
+
+@ 0 1 0 1c15d17075ef37a71e006eb85147d3ed
++       trace.frames.map(_.source).to[Set]   // Set(Unset): no resolver imported
+
+@ 1 1 0 031ced9e5692fd6b108f8ebe1cb79748
++       ```
+
+@ 0 1 0 03eac93643888b2d10b5e86a75793022
++ entry .fqcn
++   info
++       l'interpolateur `fqcn"…"` : un nom de classe pleinement qualifié, validé à la compilation du
++       code
+
+@ 0 4 0 1432ce204e61fea1076f9119fe870e82
++   detail
++       `fqcn"com.example.Main"` est un `Fqcn`, vérifié à la compilation selon les mêmes règles que
++       `Fqcn(text)` : chaque segment non vide, composé de lettres ASCII, de chiffres, de `_` et de
++       `$`, ne commençant pas par un chiffre, et n'étant pas un mot-clé Java. Un nom qui enfreint
++       une règle est une erreur de compilation qui en nomme la raison. Le littéral n'accepte pas
++       de substitutions.
+
+@ 2 1 0 040ed4e97a52393909b3abcd1a46fc8a
++       ```scala
+
+@ 3 1 0 0444e83ec5f3b5e21638586a6f9dc144
++       import soundness.*
+
+@ 0 1 0 0e3a43ae954e1b7d0b5203ba51595646
++       fqcn"com.example.Main".className   // t"Main"
+
+@ 0 1 0 0beaf15581bea048091daf223c15ccca
++       fqcn"com.example.class"            // does not compile
+
+@ 1 1 0 09965581b63e6b5508d15e79042c04e2
++       ```
+
+@ 0 1 0 0e239fab21aedf9a1fcd27e58fe1f1b3
++ entry .idempotent
++   info
++       exécute un bloc au plus une fois par site d'appel pendant toute la vie du programme
+
+@ 0 5 0 17b0b80d225f61b5117d167c10bafd2b
++   detail
++       `idempotent { … }` prend le `Codepoint` de son site d'appel, capturé automatiquement, et
++       exécute le bloc la première fois que l'exécution atteint ce site ; chaque passage ultérieur
++       ne fait rien. Il convient à un avertissement à n'afficher qu'une fois, ou à une
++       initialisation unique écrite en ligne. L'enregistrement est global et sûr vis-à-vis des
++       threads, et deux appels sur des lignes différentes sont des sites distincts.
+
+@ 2 1 0 1af7b433408edfbc0634084f079d9f53
++       ```scala
+
+@ 3 1 0 15c2c475daf9195301f4be2175990eb0
++       import soundness.*
+
+@ 0 1 0 0ed797afa8f857c807defbd6bf522be2
++       def check(): Unit = idempotent(println("checked for the first time"))
+
+@ 0 1 0 1d158225ce9f48931c28b9ae72a47c8b
++       check()
+
+@ 0 1 0 1fd2ac2ab040bf0b149d3a836afcae0b
++       check()   // prints nothing
+
+@ 1 1 0 06dc1bb4b6cc96e1036714191da33eba
++       ```
+
+@ 0 1 0 1203c319f4e55f230d9be026bf371627
++ entry .Codepoint
++   info
++       le fichier source et la ligne d'un site d'appel, capturés automatiquement comme given
+
+@ 0 5 0 13bd07c6e00f6f761b63291f8791fc1a
++   detail
++       Une méthode qui prend `(using Codepoint)` reçoit la position du code qui l'a appelée, sans
++       rien passer à la main : le given inline `.default` du compagnon est une macro qui se
++       développe, à chaque site d'appel, en le chemin source et la ligne de ce site. C'est ainsi
++       que les journaux, les tests et les caches savent d'où ils ont été appelés.
+
+% 2 1 0 02cf88a1c6a563670e7f25baf7b82ba7
+
+% 3 1 0 15a1ab23d4617eaa0303c55f17461a9d
+
+% 0 1 0 15ae4f0676383c111cbd967d4e4f7ecc
+
+% 0 1 0 1321ca1035834bd6045f044b6b92e5cb
+
+% 0 1 0 0a3441f26f2eb3c4139779ca6e63241f
+
+% 1 1 0 0b4dfbd2d12612bd0c6cc2eb5876767e
+
+@ 0 3 0 09b3befe0907b0641fef25ef68f7f43e
++       Un `Codepoint` est une case class, si bien que deux codepoints sont égaux lorsqu'ils
++       désignent le même fichier et la même ligne, ce qui permet à `idempotent` de reconnaître un
++       site. Il est `Findable`, si bien qu'il peut être invoqué comme valeur contextuelle.
+
+@ 0 1 0 1c197de5d403bb0f1ebac8cae1293b8b
++   entry .default
++     info
++         la position du site d'appel, telle que la macro la trouve là où le given est invoqué
+
+@ 0 1 0 01cf7b36fbad786a1692d619cd69e87c
++   entry #source
++     info
++         le chemin complet du fichier source, tel que le compilateur l'a vu
+
+@ 0 1 0 0a8a1bad94f02acd0f835f8b2052d64b
++   entry #line
++     info
++         le numéro de ligne, compté à partir de 1
+
+@ 0 1 0 051f86b242a42b551e98f1ede9ac8d5a
++   entry #text
++     info
++         le dernier segment du chemin du fichier et la ligne, sous la forme `app.scala:42`
+
+@ 0 1 0 10ac0893d0638c64144a5ebcb79c9a5c
++ entry .Fqcn
++   info
++       un nom de classe JVM pleinement qualifié : des segments séparés par des points, chacun
++       valide, au moins un
+
+@ 0 6 0 01431c8ee22aeb950ea01ceb98e4e96a
++   detail
++       Un `Fqcn` est un nom de classe qui pourrait au moins nommer une classe : chacune de ses
++       `#parts` est non vide, composée de lettres ASCII, de chiffres, de `_` et de `$`, ne
++       commence pas par un chiffre et n'est pas un mot-clé Java, et il y en a au moins une — le
++       type le dit, ce qui rend `#className` et `#packageName` totales. Il se crée par
++       `Fqcn(text)`, qui lève une `Fqcn.Error`, par `fqcn"…"` à la compilation, ou se décode à
++       partir d'un texte avec `as[Fqcn]`.
+
+% 2 1 0 02ebc3be2d3e80c81238704df04b589c
+
+% 3 1 0 02240f0ffa0d271e10d5d6cf174ebae5
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0489b5ecbd9def56065e591ef4056489
+
+% 0 1 0 05968fa429ab0e571e6e74bddb35d857
+
+% 0 1 0 022a11692ca689971fa107852c2299be
+
+% 0 1 0 086b61a2a3e7538e12839865072dc24d
+
+% 0 1 0 1f447d4f19633b9e1a62cfa5d5b2ad79
+
+% 1 1 0 03aee7f6a0186f6f06d1522d4d637d7b
+
+@ 0 2 0 187ffd5dab2ef98d0a1bdbd1962d2193
++       Partout où circule un nom de classe — le `Main-Class` d'un manifeste, une recherche par
++       réflexion, les arguments d'un lanceur — un `Fqcn` porte la garantie qu'il est bien formé.
+
+% 0 1 0 123979d593f6a6b700cdf6110cca2ae4
+
+@ 0 1 0 0a733e5e7dc4ff3e1e2d4a6962dd074e
++   entry .apply
++     info
++         analyse et valide un nom de classe, en levant une `Fqcn.Error` pour la première règle
++         qu'il enfreint
+
+@ 0 4 0 1d8bc926e43d84360f789ad5ec791c4e
++     detail
++         Découpe le texte sur `.` et vérifie chaque segment, en levant par la `Tactic[Fqcn.Error]`
++         dans la portée : `EmptyName` pour un segment vide (`com..Main`), `JavaKeyword` pour un
++         segment tel que `class`, `InvalidChar` pour un caractère hors de l'ensemble autorisé, et
++         `InvalidStart` pour un chiffre initial.
+
+@ 0 1 0 173c4ed75af02ea61a24be511eeb04b2
++   entry .unsafeFrom
++     info
++         un nom de classe à partir d'un texte dont on sait déjà qu'il est valide, protégé par
++         `Unsafe`
+
+@ 0 3 0 062aafd3b3d6a43e1412cc039ef3d7e7
++     detail
++         Ce en quoi se développe `fqcn"…"` : le nom a été validé à la compilation du code, si bien
++         que la nouvelle analyse ne peut pas échouer, et le jeton effacé `Unsafe` indique que
++         l'appelant s'en porte garant.
+
+@ 0 1 0 120f524291fc354b09a9575ee35aba8d
++   entry .valid
++     info
++         si un caractère peut figurer dans un segment : une lettre ASCII, un chiffre, `_` ou `$`
+
+@ 0 1 0 150671ea7102b3a716ccf85d64c2a0c2
++   entry .decodable
++     info
++         décode un texte en `Fqcn`, en levant une `Fqcn.Error` par la tactique qu'il capture
+
+@ 0 2 0 1c0b62341d6351051ee8a1a11d3105f7
++     detail
++         Nécessite une `Tactic[Fqcn.Error]` là où il est invoqué, et la conserve ; `t"…".as[Fqcn]`
++         équivaut à `Fqcn(text)`.
+
+@ 0 1 0 00a222ba37ba96361087d75a272494e4
++   entry .encodable
++     info
++         encode un `Fqcn` en son texte à points
+
+@ 0 1 0 0ae703618fd215d30ee1ccca15489373
++   entry .Error
++     info
++         levée lorsqu'un texte n'est pas un nom de classe valide : un segment vide, un mot-clé ou
++         un caractère interdit
+
+@ 0 4 0 0253eaffcca6e77104c92943e914fdea
++     detail
++         Erreur `↯/s.63.1` : _the class name `name` is not valid because `reason`_. Levée par
++         `Fqcn.apply` et par le décodage d'un texte avec `as[Fqcn]` ; `fqcn"…"` signale les mêmes
++         raisons sous forme d'erreur de compilation.
+
+% 2 1 0 188427309c9f922a142ac1d9bb68ab99
+
+% 3 1 0 057f4a8eec2809ae0057e2a82f54a383
+
+% 0 1 0 00ad3583ded003390195d673ae7cb290
+
+% 0 1 0 1787b25d11249e750d8eafd6f8eb5683
+
+% 1 1 0 1b9ef6dc2c1a2c7a0abb278a8f949a2c
+
+@ 0 1 0 168421f4d815bb1902eae25bac50c772
++     entry .Reason
++       info
++           pourquoi un nom de classe n'est pas valide : `InvalidChar`, `InvalidStart`, `EmptyName`
++           ou `JavaKeyword`
+
+@ 0 2 0 03f41550b95dcb7712c2ceccfbe0e198
++       detail
++           Une énumération de quatre cas numérotés :
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 8 0 1bec95e473f384001c546ea5d710c40f
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `InvalidChar(char)`  1  _a package name may not contain the character `char`_
++           row  `InvalidStart(char)`  2  _a package name may not start with the character `char`_  un chiffre
++           row  `EmptyName`  3  _a package name cannot be empty_
++           row  `JavaKeyword(keyword)`  4  _a package name cannot be the Java keyword, `keyword`_
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 1 0 0049fad64bde446004fc7b48d53bb27b
++       entry #number
++         info
++             le numéro de la raison, de `1` à `4`
+
+@ 0 1 0 105c130fbc6326360c7a2463febec18a
++     entry .communicable
++       info
++           rend chaque `Fqcn.Error.Reason` sous forme de message
+
+@ 0 1 0 000cc663d5fec1670f63bfac237dfa4e
++     entry #name
++       info
++           le texte qui n'était pas un nom de classe valide
+
+@ 0 1 0 06c3bd566dc98e5d04bc03c63a34c666
++     entry #reason
++       info
++           pourquoi il n'était pas valide
+
+@ 0 1 0 16d25e1c74e337161e0160de7391dc58
++   entry #parts
++     info
++         les segments du nom, dans l'ordre, typés comme non vides
+
+@ 0 1 0 1c607f8b1706c08012107f774ec20692
++   entry #text
++     info
++         le nom sous forme de texte à points : `com.example.Main`
+
+@ 0 1 0 022807540779c078177fc6936d664ebf
++   entry #className
++     info
++         le dernier segment : le nom simple de la classe
+
+@ 0 1 0 0aba4b2f0c478a3d16f53b52264c0c6c
++   entry #packageName
++     info
++         tous les segments sauf le dernier, reliés par des points : le package, ou vide pour le
++         package par défaut
+
+@ 0 1 0 122c95cd18d52e301d4f121703c12148
++ entry .StackTrace
++   info
++       une trace de pile capturée comme valeur : classe d'exception, message, trames et cause
+
+@ 0 6 0 002b913877fc15ff0ebafe60a5065f2c
++   detail
++       Une `StackTrace` contient ce qu'un `Throwable` dit de l'endroit où il a été levé, démanglé
++       et immuable : le package de son exception (`#component`) et le nom simple de sa classe
++       (`#className`), son `#message`, ses `#frames` depuis le sommet de la pile vers le bas, et sa
++       `#cause` sous forme d'une autre `StackTrace`. Le message d'une `Error` Soundness est
++       conservé sous la forme du `Message` structuré avec lequel elle a été levée ; celui de toute
++       autre exception est son texte.
+
+% 2 1 0 1681e6a49d975d0c0a9891bd8fc09c13
+
+% 3 1 0 0ac5123e3b91fd8908569e3bb5a3ba09
+
+% 0 1 0 1ca6bfc98ce20bbd000c00751e889dbe
+
+% 0 1 0 1afa58e367a6766e039ddea930b72a26
+
+% 0 1 0 1e275aa757e5ec42068ac286a2399b68
+
+% 0 1 0 0f7261dfe946138a198c039c7bb12b14
+
+% 0 1 0 17fbecbb1b359fa70914083fd7ea48f8
+
+% 1 1 0 00a605b305cb703c03c4c498199302d4
+
+@ 0 4 0 05c8384c1bddde5b12a217936808a3fd
++       Les noms des trames sont réécrits par `.rewrite`, dont `.legend` explique les glyphes.
++       Chaque trame passe par le `StackTrace.Resolver` que l'appelant a dans la portée, qui par
++       défaut ne fait rien ; un résolveur qui lit le TASTy du compilateur donne à chaque trame une
++       `Frame.Source`, la définition dont elle provient.
+
+@ 0 4 0 0a98373feeec7ff213be51e4dddb0e23
++       Une trace se rend sous forme de texte brut aligné avec `show` (`.showable`), sous forme de
++       message (`.communicable`) et, avec le composant `digression.ansi`, en couleur avec
++       `teletype` par `teletypeables.stackTraceTeletype`. La question de savoir si les erreurs
++       propres à Soundness capturent une trace relève du given `Diagnostics` dans la portée.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 1adcbb25415767e508a823d23857fb5c
+
+% 1 1 0 03dee5457a81b84407306fc43ab6e321
+
+% 2 1 0 1e35b6e28c64e2020aac28497bbfd685
+
+% 2 1 0 0970633f648d363d0247f50d3572c611
+
+% 0 1 0 0c1d061fec3f141d0aa9661d3fa2c53d
+
+% 0 1 0 18a12ef0084d926e1308c71ac3d12fe2
+
+% 1 1 0 165387772e7726fb1549f465b564ca2b
+
+% 0 1 0 1aa0fffdae239a491c478b32a1872ef6
+
+% 1 1 0 03fd9183e95a20a60e8eaec7f2416a81
+
+% 2 1 0 13aa49569ca8d724169d95a5eadabce4
+
+% 0 1 0 1568baf2c53444f81b89d3508eef5586
+
+% 0 1 0 19e5a642d4befcc50f034187f2948dc0
+
+% 0 1 0 1109de1a9f4c73ae071c263fedc28828
+
+% 2 1 0 1bf65ae89eb70d3b18f6b344d6224e47
+
+% 0 1 0 1e1bc03a1230273b16398ab3e0733f89
+
+% 0 1 0 0cc5227c0a2ce97c00e083d833faabd2
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 0 1 0 0eb64f21f1c32b12165ee9136094c130
+
+% 0 1 0 0c2aeae04db353c10ba3b9d36601413d
+
+% 0 1 0 0e76e8365c21c39414c9014550297ae6
+
+% 0 1 0 181d2143e6ab29a90d441f28075a3c88
+
+@ 0 1 0 0f482de17792a11c1a1d26f39003dbb0
++   entry .apply
++     info
++         capture la trace de pile d'un `Throwable`, en résolvant chaque trame avec le `Resolver`
++         donné
+
+@ 0 5 0 0f948172d2218f6f195a3457d348dc0e
++     detail
++         `StackTrace(exception)` lit les `StackTraceElement` du throwable, démangle chaque nom de
++         classe et de méthode avec `.rewrite`, conserve les noms compilés sous `Frame#jvmClass` et
++         `Frame#jvmMethod`, et passe chaque trame par le résolveur. Un nom de fichier manquant vaut
++         `———` et une ligne manquante `Unset`. La cause est capturée à son tour. L'extension
++         `stackTrace` est le point d'entrée habituel.
+
+@ 0 1 0 0d9e211a834bcc9016cbc957abc54632
++   entry .rewrite
++     info
++         démangle un nom de classe ou de méthode JVM vers sa forme Scala, avec des glyphes compacts
++         pour les parties synthétiques
+
+@ 0 9 0 176f6a15bd2c36f01c7e647a50ee5c8d
++     detail
++         Les opérateurs retrouvent leurs symboles (`$plus$plus` devient `++`), les échappements
++         `$uXXXX` deviennent leurs caractères, et les marqueurs synthétiques du compilateur,
++         `.Marker.all`, deviennent des glyphes, listés dans `.legend` : `λ` une lambda, `Λ` une
++         lambda adaptée, `α` une classe anonyme, `ⲛ` un constructeur, `ι` un initialiseur, `ℓ` une
++         valeur paresseuse, `↑` un accesseur super, `⇢` un autre accesseur, `≔` un mutateur de
++         trait, `⊢` une méthode d'extension, `∂` une méthode directe, `δ` un argument par défaut,
++         `⊡` un corps inline conservé, `⊙` une référence externe, `Σ` une méthode spécialisée avec
++         sa signature, tout nombre qui suit étant mis en indice. Une classe de module `globe.Play$`
++         devient `globe.ΞPlay` et la classe d'un objet de package est encadrée par `⁅…⁆`. Avec
++         `method = true`, le résultat se termine par `()` et `$` sert de séparateur comme `.`.
+
+@ 2 1 0 10bcf50cfc36eb841e8198c4696aeeb1
++         ```scala
+
+@ 3 1 0 0c55f84ca5a6311e130c71405dda567d
++         import soundness.*
+
+@ 0 1 0 009a6aa595fcbcbc08f37d62993ae22d
++         StackTrace.rewrite("$plus$plus", method = true)        // t"++()"
+
+@ 0 1 0 1c8e188adc1fc7f603f8b630e4153c3d
++         StackTrace.rewrite("Play$$anonfun$3", method = true)   // t"Play.λ₃()"
+
+@ 0 1 0 12a218b58c4748b71e5038fd9f3660e3
++         StackTrace.rewrite("apply$mcJII$sp", method = true)    // t"applyΣ((Int, Int) -> Long)()"
+
+@ 0 1 0 1408d2541b5a0d47185699557e91ad3a
++         StackTrace.rewrite("globe.Play$")                      // t"globe.ΞPlay"
+
+@ 1 1 0 1511cfdee0294d1910e3a9913eb38cad
++         ```
+
+@ 0 1 0 0941456057550eac161ac5de5bc8f496
++   entry .Marker
++     info
++         un nom que le compilateur forge une fois fixés les noms propres d'un programme, et son
++         glyphe
+
+@ 0 7 0 159f5b8a585c3bc617aab805f8d864a5
++     detail
++         Chaque `Marker` a le texte `jvm` qu'écrit le compilateur (`$anonfun`, `<init>`,
++         `$lzyINIT`), le `glyph` sous lequel il s'affiche, sa `meaning` pour la légende, et le
++         `Frame.Kind` qu'est notoirement un nom de méthode qui le porte, là où le marqueur le
++         détermine. `Marker.all` les liste dans l'ordre où `.rewrite` les essaie, tels que les
++         définissent les `NameKinds` et `StdNames` du compilateur ; `Marker.operators` associe
++         chaque caractère d'opérateur à son encodage. `.rewrite` lit la table, `.legend` en est
++         dérivée, et le `StackResolver.hint` de hyperbole classe les trames d'après elle, si bien
++         que les trois ne peuvent pas diverger.
+
+@ 0 1 0 001ad3f536b221dc0421a9423f69b8c4
++   entry .legend
++     info
++         ce que signifie chaque glyphe d'un nom démanglé, du glyphe vers sa description, pour un
++         rendu à côté d'une trace
+
+@ 0 4 0 1a9e32469e173d2702a49e7ff0bc3325
++     detail
++         Une `Map[Text, Text]` de chaque glyphe que produit `.rewrite` vers une courte description,
++         dérivée de `.Marker.all` : `λ` est _lambda_, `ⲛ` _constructor_, `δ` _default argument_,
++         `⁅⁆` _package file_, et ainsi de suite. Un nombre qui suit un glyphe est la numérotation
++         propre au compilateur, en indice.
+
+@ 0 1 0 1d57141e36e84d3c08cdf288c45a8a9c
++   entry .showable
++     info
++         rend une trace sous forme de texte brut : l'exception, puis une ligne `at` alignée par
++         trame, puis ses causes
+
+@ 0 4 0 041db9f6da2f273d014ab0be84da544c
++     detail
++         Chaque ligne de trame contient la classe et la méthode, complétées pour s'aligner, puis le
++         fichier et la ligne ; la ligne source citée d'une trame résolue la suit, et chaque niveau
++         d'inlining qu'a enregistré le SMAP d'une trame est une ligne `↳ inlined from` placée en
++         dessous, le plus interne en premier. Une cause suit après `caused by:`.
+
+@ 0 1 0 07faae81522938f1043a372f85124f24
++   entry .communicable
++     info
++         rend une trace sous forme de message, comme le fait `.showable`, avec des espaces
++         insécables pour l'alignement
+
+@ 0 1 0 03e26a544611fa250a95de6d4e557721
++   entry .Method
++     info
++         un nom de classe et un nom de méthode démanglés, tels qu'une trame les enregistre
+
+@ 0 3 0 0eea9cc5a20c7b9c0f65bbfc3ca467ae
++     detail
++         Les deux noms sont déjà réécrits par `StackTrace.rewrite` : `className` est dans le style
++         `globe.ΞPlay`, et `method` se termine par `()`.
+
+@ 0 1 0 1a639035ce81403207b4e58776cce7e9
++     entry #className
++       info
++           le nom de classe démanglé, avec son package
+
+@ 0 1 0 0433bd712242c07908cfa048266028e6
++     entry #method
++       info
++           le nom de méthode démanglé
+
+@ 0 1 0 016d386084954f42142b525b4613d344
++     entry #cls
++       info
++           le dernier segment du nom de classe
+
+@ 0 1 0 043997501812be1b1eb8682b1fd863fc
++     entry #prefix
++       info
++           le nom de classe sans son dernier segment : son package et ses classes englobantes
+
+@ 0 1 0 096d1d911d4e751d1dc351407d9bf8b8
++   entry .Frame
++     info
++         une trame d'une trace : sa méthode, son fichier et sa ligne, ses noms compilés, et sa
++         source si elle est résolue
+
+@ 0 5 0 07fccad8999652f709667dee9d13593e
++     detail
++         Une trame enregistre sa `#method` démanglée, le `#file` et la `#line` qu'elle indique, si
++         elle est `#native`, et les noms compilés `#jvmClass` et `#jvmMethod` à partir desquels
++         elle a été construite, dont un résolveur a besoin. Un résolveur peut ajouter la définition
++         `#source` dont elle provient et les origines `#inlined` de sa ligne.
+
+@ 0 3 0 1cfc103db3bd19f810757acf508788ee
++         `#displayClass` et `#displayMethod` sont ce qu'affiche un moteur de rendu : les noms
++         source là où la trame est résolue et les noms démanglés là où elle ne l'est pas, si bien
++         qu'aucun moteur de rendu n'a besoin d'un branchement à lui.
+
+% 2 1 0 1f2235a8cd74e2b10231649e14abcd55
+
+% 3 1 0 1aaf6fbed281d7c502a9ce0ae0be1bb1
+
+% 0 1 0 1efa75521e6af85c1be0e7ddf06e94a5
+
+% 0 1 0 077699c766affba4055a0c2920e5fa4a
+
+% 0 1 0 0d9bc9d6bcda52751731d11bbf71c192
+
+% 0 1 0 0fbb800a6303de6a0d4e5f7ba75b2de3
+
+% 0 1 0 1b3696e05a10e97d0ae2d1a4a5a6f2f2
+
+% 0 1 0 066b45f63d7fcb2006881cd9c0485a18
+
+% 0 1 0 0d579c73cab06d6c03cb5b3ea75d1598
+
+% 0 1 0 1f4d1030481eb4ac1ef05d10d8e5dbef
+
+% 0 1 0 05b758b944ae03861efa822c05e01812
+
+% 1 1 0 0e67c25d8599c0e612854871c74fbe3d
+
+@ 0 1 0 0d09d6182d480ca40c5452b3a547a41a
++     entry .Kind
++       info
++           ce qu'une trame s'est révélée être une fois résolue : une méthode, une lambda, … ou de
++           la tuyauterie du compilateur
+
+@ 0 6 0 11944dec9855296d157effb8f3994883
++       detail
++           Une énumération des sortes de définitions à partir desquelles une trame peut être
++           compilée : `Method`, `Lambda`, `Value`, `Class`, `Constructor`, `Extension` et `Default`
++           (un argument par défaut) s'écrivent dans le code source ; `Bridge`, `Forwarder`,
++           `Initializer`, `Specialized` et `Synthetic` sont synthétisés par le compilateur, ce que
++           `#plumbing` indique, si bien qu'un moteur de rendu peut les atténuer ou les omettre.
+
+@ 0 1 0 1f9a6ad4a69fc74107f51da05e16bb18
++       entry #plumbing
++         info
++             si la sorte est l'une de celles que le compilateur a synthétisées : un pont, un
++             transmetteur, un initialiseur, …
+
+@ 0 1 0 0cd91cb9be38f0d20b62b1384eaa7884
++     entry .Source
++       info
++           la définition source à partir de laquelle une trame a été compilée, telle qu'un
++           résolveur la trouve
+
+@ 0 5 0 15ec01f11aa42c3c0b2da82fae16a7c5
++       detail
++           La définition d'une trame résolue : le `#path` complet de son fichier source (là où une
++           trace de pile n'enregistre que le dernier segment), son `#owner`, la chaîne des
++           définitions englobantes, son propre `#name` source, sa `#kind`, et éventuellement le
++           `#code` de la ligne.
+
+@ 0 1 0 00b195974be82c4a14a435021bebf708
++       entry #path
++         info
++             le chemin complet du fichier source
+
+@ 0 1 0 15f8f3c658a43f0e1cd132122fc8ba5a
++       entry #owner
++         info
++             la chaîne des définitions englobantes, reliées par des points : `globe.Play.stage`
+
+@ 0 1 0 1a806f7b05c9eb6e064df717d360d499
++       entry #name
++         info
++             le nom source propre de la définition
+
+@ 0 1 0 04d8dddb41e251e51a7b0c880c8a8369
++       entry #kind
++         info
++             la sorte de définition dont il s'agit, sous forme de `StackTrace.Frame.Kind`
+
+@ 0 1 0 00f773bef55605a00320bd2f2c0c200b
++       entry #code
++         info
++             la ligne source, si le résolveur l'a lue, ou `Unset`
+
+@ 0 1 0 090d05bf90e508e11d0c28763586f7e4
++       entry #definition
++         info
++             le propriétaire et le nom joints par `.`, ou le nom seul s'il n'y a pas de
++             propriétaire
+
+@ 0 1 0 12577e27f0ca0d241af691fe9672520a
++     entry .Inlined
++       info
++           un niveau d'inlining que représente la ligne d'une trame : le fichier et la ligne où il
++           a été écrit
+
+@ 0 5 0 1852c2022d8c81da07c88bd09c167b2b
++       detail
++           Lorsque le SMAP d'un fichier de classe enregistre que la ligne d'une trame a été inlinée
++           depuis ailleurs, la trame a un `Inlined` par niveau, le plus interne en premier : le nom
++           du `#file`, son `#path` complet et la `#line`, et, là où un résolveur l'a trouvée, la
++           définition `#source` dans laquelle tombe la position — la méthode inline elle-même.
+
+@ 0 1 0 070b1f5b43af6b1f008e1441ffdaa9a1
++       entry #file
++         info
++             le nom du fichier source, le dernier segment de son chemin
+
+@ 0 1 0 0cf626da1fdba4c0165abea62fc815b5
++       entry #path
++         info
++             le chemin complet du fichier source
+
+@ 0 1 0 1c242dfc2c5362e70c42efd7a6911249
++       entry #line
++         info
++             la ligne à laquelle le code inliné a été écrit
+
+@ 0 1 0 14b3c6846e4d59fd072011b88e28fba0
++       entry #source
++         info
++             la définition dans laquelle tombe la position, si un résolveur l'a trouvée
+
+@ 0 1 0 01ed4cf50c835fbc0da27f7d69d5c81f
++     entry #method
++       info
++           les noms de classe et de méthode démanglés de la trame
+
+@ 0 1 0 0e8d912b98e3c2921c85aee164690802
++     entry #file
++       info
++           le nom du fichier source, tel que l'enregistre le fichier de classe, ou `———` s'il n'y
++           en a pas
+
+@ 0 1 0 11cf3e295dd792e717b8ecf71622b482
++     entry #line
++       info
++           le numéro de ligne, ou `Unset` si aucun n'est enregistré
+
+@ 0 1 0 075221c5c6b7305c198d60536454ce13
++     entry #native
++       info
++           si la trame est une méthode native
+
+@ 0 1 0 021f254f8d18454710dfc0730b7ff42b
++     entry #jvmClass
++       info
++           le nom de classe tel que compilé, avant démanglage
+
+@ 0 1 0 0a5200c5fcb1f49c1fff5213b539ad9c
++     entry #jvmMethod
++       info
++           le nom de méthode tel que compilé, avant démanglage
+
+@ 0 1 0 1a15b87ceee69e831b03603743af727f
++     entry #source
++       info
++           la définition source, si un résolveur l'a trouvée
+
+@ 0 1 0 1090a58f8025efb40996ed61fa6bb2d5
++     entry #inlined
++       info
++           les niveaux d'inlining que représente la ligne de la trame, le plus interne en premier
+
+@ 0 1 0 06897f8fa86d8a2708208f859cdac0ca
++     entry #displayClass
++       info
++           ce qu'il faut afficher comme propriétaire de la trame : son propriétaire source si elle
++           est résolue, sinon la classe démanglée
+
+@ 0 1 0 093ffbb5c2887f2e154aabee3ee73b47
++     entry #displayMethod
++       info
++           ce qu'il faut afficher comme méthode de la trame : son nom source si elle est résolue,
++           sinon la méthode démanglée
+
+@ 0 1 0 0828a96b357fca26091b5efd1abcf62c
++     entry #displayPrefix
++       info
++           `#displayClass` sans son dernier segment
+
+@ 0 1 0 0467495ebc08188019cefc86151fbc56
++     entry #displaySegment
++       info
++           le dernier segment de `#displayClass`
+
+@ 0 1 0 114515a1a1ea0e630343f31d2f0c4f35
++   entry .Resolver
++     info
++         associe une trame à sa définition au niveau du code source, choisie par le given dans la
++         portée de l'appelant
+
+@ 0 7 0 13a5ce6d6ba6ec7d173b8eccd735d087
++     detail
++         Résoudre une trame nécessite une capacité dont digression ne dispose pas — au minimum un
++         classpath — si bien que la valeur par défaut, `.none`, renvoie chaque trame inchangée, et
++         qu'une implémentation s'importe depuis un module qui en dispose :
++         `stackResolutions.tastyStackResolution`, dans hyperbole, lit le TASTy de chaque classe de
++         premier niveau (une lecture de fichier par classe nommée dans la trace). Tenir la capacité
++         à l'écart est ce qui permet aux traces de fonctionner sans changement dans un navigateur,
++         un binaire natif ou un composant WebAssembly.
+
+% 2 1 0 17b188807fa8cab60c560be75697515e
+
+% 3 1 0 1e62b4c896b7082a0eeeacd2a7f15086
+
+% 0 1 0 020b6f6dc589b97a1e47673d0f593f8a
+
+% 0 1 0 00da3440539e6d8f074777942a4d1448
+
+% 1 1 0 11d9c42b688ef29f0d330cb4ab15e330
+
+@ 0 1 0 164d0fefd0f5c8311629f164ae0c2da6
++     entry .none
++       info
++           le résolveur par défaut, qui laisse chaque trame telle qu'elle a été capturée
+
+@ 0 1 0 112801e2d53c87791c75ebc4c6a80451
++     entry #resolve
++       info
++           la trame avec tout ce qu'y ajoute sa définition source : `#source`, `#inlined`
+
+@ 0 1 0 129409cfe59b2e4b01437f680ac5b782
++   entry #component
++     info
++         le package de la classe d'exception : `java.lang`
+
+@ 0 1 0 1a4faf13d538e43901950f78c35c79f5
++   entry #className
++     info
++         le nom simple de la classe d'exception, démanglé : `Exception`
+
+@ 0 1 0 15e929587ca0ca34101f837a8e4c2fd1
++   entry #message
++     info
++         le message de l'exception, sous forme de `Message`
+
+@ 0 1 0 059c058284c511840ca17f55d695da78
++   entry #frames
++     info
++         les trames, depuis le sommet de la pile vers le bas
+
+@ 0 1 0 152f4a2951c76cc31b9a067f6b4b4779
++   entry #cause
++     info
++         la trace de la cause de l'exception, ou `Unset`
+
+@ 0 1 0 110d99b0f9b820fa015b214f9221525a
++   entry #crop
++     info
++         cette trace sans les trames d'une méthode, désignée par ses noms de classe et de méthode
++         démanglés
+
+@ 0 3 0 0dca2bf748e9b3b40b439bdfabf419be
++     detail
++         `trace.crop(className, method)` retire chaque trame dont la `Method` a ce nom de classe et
++         ce nom de méthode, une fois démanglés — les trames du point d'entrée d'un exécuteur de
++         tests, par exemple — et conserve les autres dans l'ordre.
+
+@ 0 1 0 18fdb59d45a8c7de02d018e3f37c2be9
++   entry #drop
++     info
++         cette trace sans ses `n` trames du haut
+
+@ 0 1 0 00e0b08de543d2360bc3c3670166fcac
++   entry #dropRight
++     info
++         cette trace sans ses `n` trames du bas
+
+@ 0 1 0 1c4fd428f0d1c12301b258478d63c6b9
++ entry .Smap
++   info
++       une table de correspondance source JSR-45 analysée : où ont été écrits les numéros de ligne
++       synthétiques d'un fichier de classe
+
+@ 0 7 0 1b6a495a735dad5507c582a5c4b23b29
++   detail
++       Lorsque le compilateur inline du code, la table des lignes du fichier de classe ne peut
++       nommer que des lignes de son propre fichier ; il enregistre donc des numéros de ligne
++       synthétiques et un attribut `SourceDebugExtension` — un SMAP — qui les fait correspondre à
++       leur origine. `Smap.parse` en lit un : son nom de fichier `#generated`, sa strate
++       `#default`, et ses `#strata` par nom. `#expand` transforme une ligne synthétique en la
++       chaîne d'origines qu'elle représente, la plus interne en premier, et en la ligne réelle du
++       site d'appel à laquelle elle ramène ; `#sites` est son inverse, les plages générées
++       auxquelles une ligne source a abouti.
+
+% 2 1 0 15550197654c037018c9c88d603c9cff
+
+% 3 1 0 10fb6d89897b33751be09dbf7df01f0d
+
+% 0 1 0 06275b40778ee59d1245495052a70a1e
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 1af91be0d7746a260fd14236fe726710
+
+% 0 1 0 08f2f578ea3ff42c1210b19fda1798b1
+
+% 0 1 0 161a16999d2301080ae2f1387cb991a7
+
+% 0 1 0 0d54731b4e033cc01b754037fb913a9f
+
+% 0 1 0 08d5130224b2f36c14aef348730b1183
+
+% 0 1 0 1190c212a4c9cc7a15f68ef1e08d79cd
+
+% 0 1 0 1e5e4d24419467cd0b2ab53f3cfaf0c7
+
+% 0 1 0 001059c6a0701627154108faa85b09a8
+
+% 0 1 0 1f16c9a7e3a3e8330a0ddc898a4b0d88
+
+% 0 1 0 1f1ea552cb45648115c1d2bce2887c6c
+
+% 0 1 0 09b0d7185f354d761150682c90349958
+
+% 1 1 0 10c556ba3ade481a0a8949072bde7bda
+
+@ 0 3 0 056f03ab5673caa303edd3dc447ff301
++       Une strate `<default>Debug`, telle que l'écrivent les compilateurs Scala et Kotlin, fait
++       correspondre une ligne synthétique à son site d'appel inline, si bien que `#expand` la suit
++       niveau par niveau ; une strate `<default>Class` nomme la classe de premier niveau dans
++       laquelle se trouve chaque origine.
+
+@ 0 1 0 006f21a13f2e2d13048efe808223e57f
++   entry .parse
++     info
++         analyse le texte d'un SMAP, ou `Unset` si son en-tête est illisible
+
+@ 0 2 0 10a7891f4d923aa4132dfd6f99131298
++     detail
++         Un texte qui ne commence pas par `SMAP` et deux lignes d'en-tête vaut `Unset` ; au sein
++         d'une section, tout ce qui est mal formé est ignoré, puisqu'un SMAP n'est jamais qu'une
++         source de détails supplémentaires.
+
+@ 0 1 0 1f9f67a00f1e6d281c2719786aaa8fd6
++   entry .File
++     info
++         un fichier de la table des fichiers d'une strate : le nom qu'enregistre une trace de pile
++         et son chemin complet
+
+@ 0 1 0 1bcdf004bc383ddc050f5a342ae62521
++     entry #name
++       info
++           le nom du fichier, tel que l'enregistre une trace de pile
+
+@ 0 1 0 02715bd3f248b0e7090ccc0910ea75b6
++     entry #path
++       info
++           le chemin complet du fichier, ou à nouveau le nom si le SMAP n'en a pas donné
+
+@ 0 1 0 1063d236a932a32b18850455338a27fe
++   entry .Entry
++     info
++         une entrée de correspondance de lignes : une suite de lignes d'entrée d'un fichier,
++         associée à une suite de lignes de sortie
+
+@ 0 3 0 1d2826485c1d6ee40fb198e2b8689572
++     detail
++         `repeat` lignes d'entrée à partir de `inputLine` du fichier `fileId` correspondent à des
++         lignes de sortie à partir de `outputLine`, chaque ligne d'entrée couvrant `increment`
++         lignes de sortie.
+
+@ 0 1 0 09646aa9808417241590889050a4356e
++     entry #inputLine
++       info
++           la première ligne d'entrée de la suite
+
+@ 0 1 0 100e70fd82eae019197679118db0dd5d
++     entry #fileId
++       info
++           le fichier où se trouvent les lignes d'entrée, par son identifiant dans la table des
++           fichiers
+
+@ 0 1 0 1ffb6dd08d9e7c221b636b2cc51d39e9
++     entry #repeat
++       info
++           combien de lignes d'entrée compte la suite
+
+@ 0 1 0 1573de42bb17d0e303c4f32eb96f8657
++     entry #outputLine
++       info
++           la première ligne de sortie à laquelle correspond la suite
+
+@ 0 1 0 114b7e8f42d431ee1f24264befd4d71d
++     entry #increment
++       info
++           combien de lignes de sortie couvre chaque ligne d'entrée
+
+@ 0 1 0 0a4ce7724d22fbc00c19beaa37446b2e
++     entry #apply
++       info
++           la ligne d'entrée à laquelle tombe une ligne de sortie, ou `Unset` si l'entrée ne la
++           couvre pas
+
+@ 0 1 0 0cda08cced37d5a703969c8d428becb6
++   entry .Stratum
++     info
++         une strate d'un SMAP : sa table des fichiers et ses entrées de lignes
+
+@ 0 1 0 0ecc6546083d95070e6b5b077abe69ce
++     entry #files
++       info
++           la table des fichiers, par identifiant de fichier
+
+@ 0 1 0 02946937d00702351850eda7471eedbe
++     entry #entries
++       info
++           les entrées de correspondance de lignes, dans l'ordre
+
+@ 0 1 0 00a546a1736fae100af7ebf029c945c4
++     entry #apply
++       info
++           l'identifiant de fichier et la ligne d'entrée auxquels correspond une ligne de sortie,
++           d'après la première entrée qui la couvre
+
+@ 0 1 0 14915fcb69891fcf0fc615b614ad0c0f
++     entry #origin
++       info
++           le fichier et la ligne d'entrée auxquels correspond une ligne de sortie, lorsque la
++           table des fichiers connaît le fichier
+
+@ 0 1 0 11bc6b0cb896f1b6155da74b37d8505a
++   entry .Origin
++     info
++         où une ligne de code inliné a été écrite : fichier, chemin, ligne, et la classe dans
++         laquelle elle se trouve
+
+@ 0 1 0 0cdc02d70e81435311390edce839c016
++     entry #file
++       info
++           le nom du fichier source
+
+@ 0 1 0 1b55fb43871fe6e8082bcd9b47919dc5
++     entry #path
++       info
++           le chemin complet du fichier source
+
+@ 0 1 0 1f346c09240cbfdb1ae5c25b13eafba5
++     entry #line
++       info
++           la ligne, comptée à partir de 1
+
+@ 0 1 0 188cc5e9004722b11ce91d9c7374a9db
++     entry #cls
++       info
++           le nom binaire de la classe de premier niveau dont l'unité contient la position, si le
++           SMAP l'indique
+
+@ 0 1 0 153edcffd3d9f24818e743ff451276dc
++   entry .Expansion
++     info
++         ce que représente une ligne synthétique : ses origines inline, la plus interne en premier,
++         et la ligne réelle
+
+@ 0 1 0 028397eaa39cd97b180b0f074c44090e
++     entry #inlined
++       info
++           les origines, la plus interne en premier
+
+@ 0 1 0 075112760deaf42016fd0400749119a2
++     entry #line
++       info
++           la ligne réelle du fichier propre de la trame à laquelle ramène la chaîne, ou `Unset` si
++           elle s'est épuisée
+
+@ 0 1 0 09dbd846a67a38040dcf6c17d8abbb4b
++   entry #generated
++     info
++         le nom du fichier généré auquel appartient le SMAP
+
+@ 0 1 0 0e19578579afb6811967e6ab3d46ec7a
++   entry #default
++     info
++         le nom de la strate par défaut, comme `Scala`
+
+@ 0 1 0 11ad6a01c8a9bd7b02e4891320be2437
++   entry #strata
++     info
++         les strates, par nom
+
+@ 0 1 0 0ba52e08288dea4a13dde53195adcd7e
++   entry #path
++     info
++         le chemin complet du fichier généré, si sa table des fichiers en enregistre un
+
+@ 0 1 0 13b7932633aee21201730c56b4fc7fd3
++   entry #expand
++     info
++         les origines inline d'une ligne synthétique et la ligne réelle du site d'appel, ou `Unset`
++         pour une ligne réelle
+
+@ 0 1 0 0673a970bdc12a5b1b1c8fca710d3e89
++   entry #sites
++     info
++         les plages de lignes générées `[start, end)` auxquelles une ligne d'un fichier source a
++         été inlinée
+
+@ 0 3 0 1b9ae2ef2307e1291fbf60c105df020c
++     detail
++         Une plage par site, en excluant l'occurrence naturelle de la ligne dans le fichier généré
++         lui-même ; vide pour un fichier étranger au SMAP. Une ligne inlinée en plusieurs sites
++         donne plusieurs plages, puisqu'un point d'arrêt placé sur elle a sa place à chacun d'eux.
+
+@ 0 1 0 0b99017ad6454e7a02afb626f8f9bd97
++ entry .StackTracePalette
++   info
++       les couleurs dans lesquelles une trace de pile est dessinée dans le terminal : message,
++       fichier, méthode, ligne et accents
+
+@ 0 6 0 12b93c9023bf8e530827c03a98db05e4
++   detail
++       Une `iridescence.Palette` de couleurs sRGB pour les rendus de `teletypeables`, dans le
++       composant `digression.ansi` : les couleurs `#message`, `#file`, `#method` et `#line`, un
++       `#separator`, et cinq accents qui colorent tour à tour les packages des trames, si bien que
++       les trames d'un même package partagent une couleur. Le `.default` du compagnon se trouve
++       dans la portée implicite ; un given qui vous est propre le remplace.
+
+% 2 1 0 1167b3b13b4c522914b8bd259da35e82
+
+% 3 1 0 1ada2c7dd726a99f076bc5687f946da2
+
+% 4 1 0 17f614d75c5bcc1b1ffed72248664d3b
+
+% 0 1 0 0722a3d2d26a5b4a16acaafb054a49ff
+
+% 0 1 0 100eaa7b505be848036b1a5a7a58ea58
+
+% 0 1 0 17c2119d214fd30218cf0c35ed65fac7
+
+% 1 1 0 1ef1ab099a8b0d38019bd9e03b677006
+
+@ 0 1 0 077949f30ede60e6117c7f06d6246cf8
++   entry .default
++     info
++         texte blanc sur fond noir, avec fichiers et lignes bleu-vert et accents chauds
+
+@ 0 1 0 10e14711651b39620d3b3dbc425975cb
++   entry #Form
++     info
++         l'espace colorimétrique de la palette, `Srgb`
+
+@ 0 1 0 17f6aa4824f1ff5509d60e07f1a70cdd
++   entry #message
++     info
++         la couleur de la ligne d'exception et de `caused by:`
+
+@ 0 1 0 0875a2048cf81e670b54f1ed9cab5e09
++   entry #file
++     info
++         la couleur des noms de fichiers
+
+@ 0 1 0 04069fd263ef02c707b2f462b2fcba63
++   entry #method
++     info
++         la couleur des noms de méthodes
+
+@ 0 1 0 1a095f4fd73deb3b126d6e54594bae68
++   entry #line
++     info
++         la couleur des numéros de ligne
+
+@ 0 1 0 0683eb608d33824d06e3926257610412
++   entry #separator
++     info
++         la couleur des séparateurs : `at`, `.`, `:`
+
+@ 0 1 0 012a14719830cfad0637bc63ae78671d
++   entry #accent1
++     info
++         le premier accent de package
+
+@ 0 1 0 0498fdcad994b4c91c3aeeda58285347
++   entry #accent2
++     info
++         le deuxième accent de package
+
+@ 0 1 0 0f2eea11f1752ebd1db853f560a83118
++   entry #accent3
++     info
++         le troisième accent de package
+
+@ 0 1 0 193f2340c2a05cf8099289a44f1d2d5d
++   entry #accent4
++     info
++         le quatrième accent de package
+
+@ 0 1 0 1e986fdca2d9be6801ad3c5e0d81823e
++   entry #accent5
++     info
++         le cinquième accent de package ; un sixième package reprend le premier
+
+@ 0 1 0 129b4932aaedb02b0b9b4b864cf03895
++ entry .teletypeables
++   info
++       les rendus colorés pour terminal des traces, trames, méthodes et exceptions, importés par
++       leur nom
+
+@ 0 6 0 0afce96cb538aa0f149ca8637ada1737
++   detail
++       Dans le composant `digression.ansi`. Chaque given rend son sujet `Teletypeable`, si bien que
++       `teletype` le rend sous forme de texte stylé pour un terminal ; chacun nécessite un
++       `Text is Measurable` dans la portée (comme `textMetrics.uniformMetric`) pour la largeur des
++       colonnes, et les rendus prennent la `StackTracePalette` dans la portée.
++       `import teletypeables.*` n'importe pas les givens ; chacun s'importe donc par son nom.
+
+% 2 1 0 0852884132dbb1a4057b778cbddb44d8
+
+% 3 1 0 04827b35766cd0090b136fce01dd1ed5
+
+% 4 1 0 12f63c4dcf9e54f217f2dc725ab60416
+
+% 0 1 0 0e3f2c3b9261c8f0037d3c609768a164
+
+% 0 1 0 04f08902b8b598dd084cc0d502445056
+
+% 1 1 0 040506868f7596f71ad395e8b03e87b6
+
+@ 0 1 0 0cf23e33c6c8a35e00abc734d39dc945
++   entry .stackTraceTeletype
++     info
++         une trace sous forme de tableau sans bordure : une ligne par trame, alignée, colorée selon
++         le package
+
+@ 0 5 0 10195901c5a0a590102ca0c9e6228777
++     detail
++         La ligne d'exception, puis une ligne par trame — `at`, la classe et la méthode dans une
++         même colonne alignée, le fichier et la ligne dans une autre, et la source citée d'une
++         trame résolue, qui est la première colonne à disparaître lorsque le terminal est étroit —
++         avec en dessous une ligne `↳` pour chaque niveau d'inlining. Une trame de la même classe
++         que celle du dessus est atténuée, tout comme la tuyauterie du compilateur ; les causes
++         suivent après `caused by:`.
+
+@ 0 1 0 0b4b10f3745d44900c634ff09f713fbd
++   entry .exceptionTeletype
++     info
++         une `Exception` rendue sous forme de sa trace de pile, capturée avec le résolveur dans la
++         portée
+
+@ 0 2 0 1f736ee4a4ccb6b8128d874687f3ed10
++     detail
++         Nécessite un `Text is Measurable` et un `StackTrace.Resolver`, et se rend par
++         `.stackTraceTeletype`.
+
+@ 0 1 0 0696a1273fabef741b3cbc97d527db6e
++   entry .frameTeletype
++     info
++         une trame sur une ligne : classe et méthode ajustées sur quarante colonnes, puis fichier
++         et ligne
+
+@ 0 1 0 11f10747236d96240d2412e44ab08bef
++   entry .methodTeletype
++     info
++         une `StackTrace.Method` sous forme de sa classe et de sa méthode, séparées par `⌗`
+
+@ 0 1 0 024dda655c3104191562fca42fa0bd35
++ entry .internal
++   info
++       les macros derrière `Codepoint.default` et `fqcn"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 2 0 1f0be1f26254d90318990b61c7ec8436
++   detail
++       Pas destiné à un usage direct : l'objet existe pour que les macros aient un emplacement
++       stable.
+
+@ 0 1 0 19a013b9d133c9ed04a76a8e62232a08
++   entry .location
++     info
++         la macro derrière `Codepoint.default` : le chemin source et la ligne du site d'expansion
+
+@ 0 1 0 0b6f0e054ec614c309f249f4a5080e23
++   entry .fqcn
++     info
++         la macro derrière `fqcn"…"` : valide le littéral et insère `Fqcn.unsafeFrom` par un splice
+
+@ 0 1 0 04d4a7ea635e86a403b39a9b2a32a73e
++   entry .javaKeywords
++     info
++         les mots-clés Java que ne peut pas être un segment de nom de classe

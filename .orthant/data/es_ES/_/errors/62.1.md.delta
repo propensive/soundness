@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 19e675e56d33290b1eebddb5c17523bd
++ # `↯/s.62.1` — Propiedad del sistema no definida
+
+@ 0 2 0 0c71f27ab65158d31dd617c17109dbe0
++ Se lanza cuando se pide a Ambience una propiedad del sistema de Java que no está establecida.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0131f35ac41acd511ffe121ea0400f89
++ Ambience lee las propiedades del sistema mediante la clase de tipos `Properties`. Cuando
++ `System.getProperty` no devuelve ningún valor para el nombre solicitado, se lanza este error.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 197409a30271983d0c863bfc2c567f9d
+
+% 1 1 0 10371516b8b927cc1db27aed854464c1
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 2 0 08997c39ef3b1adf16a94182a34dd5c1
++ Define la propiedad (con `-D…=…` en la línea de comandos de la JVM, o en el código antes de la
++ lectura) o usa un accesor `Optional`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 0e61322120b5ad541a7c2e46c9121b99
++ - Código fuente: `lib/ambience/src/core/ambience.Property.scala`

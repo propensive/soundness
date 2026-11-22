@@ -1,0 +1,66 @@
+orthant 2 language
+
+% 0 1 0 1027fc95940d75dc020dd00eca0979a5
+
+@ 0 1 0 021c5dd7aa80bfc209b82d8cab570002
++ Lançado quando um arquivo tar não pode ser lido nem escrito.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 118f5cb2b9a341030d7b1eb8898b43b0
++ O Bitumen analisa as entradas de um tar de forma preguiçosa a partir de um stream de bytes, então
++ uma falha é informada quando a estrutura malformada é alcançada, e não quando o arquivo é aberto.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+% 0 1 0 0ece4884aa1b955d03caed2de87797c4
+
+% 0 1 0 13010e28eb87c2eb18354844d9b3c908
+
+% 0 1 0 0ff65a9c509b1370096b28c20fbe0090
+
+% 0 1 0 12f07a2a7c7051e0005e2c3de8680624
+
+% 0 1 0 1b522b0082286c490c509a9bdf2a6573
+
+% 0 1 0 1b4e86f597dbaf1b0b94e7ae67d49736
+
+% 0 1 0 1d66b0a4f10ca0a904948a18c4f18db0
+
+% 0 1 0 004ab3c7de4f6b381d3b17146e908ac1
+
+% 0 1 0 1cdc6e150bcb03cf08b227720e66073f
+
+% 0 1 0 0fe0bd7569f9b55500f42874634c5231
+
+% 0 1 0 084912b9e75951c8058e1bd58f4d1afb
+
+% 0 1 0 0a286629cc21fc351c3c6486073d03bf
+
+% 0 1 0 08bc7fd78a23c8e61146a3aae910694a
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 3 0 14e92d2baf6011fe015b3ff04a1eee65
++ Um arquivo truncado em geral significa um download incompleto ou um stream que terminou cedo
++ demais; uma falha de checksum significa um cabeçalho corrompido. Erros de escrita em geral
++ refletem um valor que o formato não consegue representar — um nome longo demais para o formato de
++ nomes longos escolhido, por exemplo.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 07689f7cba037c6203c53762a8c78eb5
++ - Código-fonte: `lib/bitumen/src/core/bitumen.Tar.scala`

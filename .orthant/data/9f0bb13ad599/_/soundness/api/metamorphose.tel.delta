@@ -1,0 +1,55 @@
+orthant 2 release
+
+@ 0 1 0 186a3cd5567cfac613f193dfe1da4f60
++ info   permutations as reversible rearrangements, stored compactly as factorial-base inversion tables
+
+@ 0 1 0 19d4cb66d2c917270ece95d588b8f43c
++     Internally a permutation is its
++     [inversion table](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics))
+
+@ 0 1 0 0d76e504eb9e35271dcf863bae516788
++ entry .Permutation   a reversible rearrangement of a sequence, stored as its factoradic inversion table
+
+@ 0 1 0 0e2e25d3d226f080044d5ed0f054ede5
++       Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))   // true
+
+@ 0 2 0 1b677ffb0bf10a4f1b7b79619a5b8158
++       shuffle.inversions   // List(0, 1, 0, 2, 4)
++       shuffle.expansion    // List(3, 1, 4, 2, 0)
++       shuffle.extent       // 5: the sixth index stays in place
+
+@ 0 5 0 1ff0d5afa61889db0acfea69eae42767
++       permutation does not record the length it was built from, only the leading positions it
++       rearranges, its `#extent`: the identity of any size is `Permutation(Factoradic(0))`, and
++       `Permutation(Sequence(0, 2, 1))` equals `Permutation(Sequence(0, 2, 1, 3, 4))`. It is a
++       permutation of the natural numbers which moves finitely many of them. Applied to a
++       longer list, it rearranges the first `#extent` elements and leaves the rest where they
++       are.
+
+@ 0 1 0 10b0ef483930ba090814baa4397da49d
++         row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` was given a list shorter than the permutation's extent
+
+@ 0 8 0 103765afd07d04bb150784c41bc1ed15
++   entry #extent   how many leading positions the permutation rearranges: one more than the last position it moves
++       Zero for the identity. Every position from `#extent` on is fixed.
++   entry #inversions   the inversion table: for each position, how many earlier positions hold a greater index
++       One entry for each of the first `#extent` positions, in order. The entry for position
++       *i* is at most *i*, so it is a digit in base *i* + 1: these are the digits of
++       `#factoradic`, least significant first. A position which stays in place after every
++       moved one has no greater index before it, which is why trailing fixed positions add
++       nothing to the number.
++   entry #expansion   the reordered indexes: the permutation applied to `0` to `extent - 1`
++       The indexes `.apply` was given, up to the last one which moves: for
++       `Permutation(Sequence(3, 1, 4, 2, 0, 5))`, `List(3, 1, 4, 2, 0)`. It is as long as
++       `#extent`, so it omits any trailing indexes the permutation leaves in place.
+
+@ 0 3 0 1d018be78f9b633f137d076a5b955658
++       `permutation(list)` rearranges a list at least as long as `#extent`, raising
++       `Permutation.Error` with `TooShort` otherwise; a longer list has its first `#extent`
++       elements rearranged and keeps the rest in place.
+
+@ 0 1 0 0a260c0214c7f0181c4b9c2a7cc65f5a
++ entry .Factoradic   a non-negative integer in the factorial number system, as an inversion table is written
+
+@ 0 1 0 005e59b72b0f5a4f1839ec7130686889
++       Reversed, this is a permutation's `#inversions`.

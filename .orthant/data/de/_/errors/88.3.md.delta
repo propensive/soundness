@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 08ea410a6337439a014ceccc3fd8ac68
+
+@ 0 1 0 053e3c86e0888b100d5c954568600e10
++ Wird ausgelöst, wenn ein JVM-Classfile nicht gelesen oder sein Bytecode nicht extrahiert werden
++ kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 02d460b37fdc7374130de89c0f3774df
++ Mandible parst Classfiles, um Methoden und ihre Instruktionen offenzulegen. Dieser Fehler umfasst
++ ein Classfile, das nicht auf dem Klassenpfad vorhanden ist, und eines, dessen Struktur sich nicht
++ parsen lässt.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 0f88545b8d549738105535e784528a93
+
+% 0 1 0 08575ae3d8386d270d99d1fa24c10f84
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 3 0 05583725aecb091e143081f14bcfbd97
++ Ein fehlendes Classfile bedeutet meist, dass sich der Klassenpfad, der dem Leser übergeben wird,
++ von dem unterscheidet, gegen den der Code kompiliert wurde. Ein Fehlschlag beim Parsen bedeutet,
++ dass die Datei abgeschnitten ist oder eine Classfile-Version verwendet, die über das hinausgeht,
++ was der Parser modelliert.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 083e73f1292a4d2b181a17157491b496
++ - Quelle: `lib/mandible/src/core/mandible_core.scala`

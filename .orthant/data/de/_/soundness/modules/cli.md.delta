@@ -1,0 +1,828 @@
+orthant 2 language
+
+@ 0 1 0 075bb461108c95771362bfe99e99218f
++ ## Kommandozeilenanwendungen
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 3 0 117bf8e90b6089601943e86837c91878
++ Eine Kommandozeilenanwendung hat drei Teile: einen Einstiegspunkt, der dem Programm seine
++ Argumente übergibt, eine Interpretation dieser Argumente als Unterbefehle, Flags und Operanden,
++ und Tab-Vervollständigungen für jede Shell.
+
+@ 0 4 0 0de7d33d68f5eb11096aa652a2367d8c
++ Das Ungewöhnliche ist, dass die Vervollständigungen aus demselben Code abgeleitet werden, der
++ den Befehl ausführt, sodass sie sich nicht von dem entfernen können, was das Programm
++ tatsächlich tut. Ebenso wenig der Hilfetext, die Manpage oder die Liste der Exit-Status. Sie
++ alle werden aus dem Programm gelesen, nicht daneben geschrieben.
+
+@ 0 1 0 13b4865027f5a84815aff574312f967b
++ ### Auf der Kommandozeile
+
+@ 0 5 0 0dd68484fd9940a3142cf7cf76eabcdf
++ Die Argumente, die eine Shell übergibt, sind eine flache Liste von Text. Jedes
++ Kommandozeilenprogramm muss ihre Struktur wiederherstellen, bevor die eigentliche Arbeit
++ beginnt: welche Wörter Unterbefehle sind, welche Flags, und welche Werte zu welchen gehören.
++ Vervollständigungsskripte implementieren dann dieselbe Interpretation noch einmal, von Hand,
++ für jede Shell, und sie entfernen sich von dem Programm, das sie beschreiben. Das neue Flag
++ existiert, aber die Vervollständigungen haben nie von ihm gehört.
+
+@ 0 6 0 0e5cd4f921c400aa118b64316f503dfe
++ Hier wird die Liste der Argumente in typisierte Werte umgewandelt: ein Unterbefehl, der über
++ seinen Namen abgeglichen wird, ein Flag, das als `Int` gelesen wird, ein Operand, der zu
++ einem Pfad [dekodiert](decoding.md) wird. Über jedes Argument wird genug festgehalten, um es zu
++ vervollständigen. Ein Druck auf `tab` führt den eigenen Code des Programms zur Behandlung der
++ Argumente aus, in einem Modus, der Vorschläge statt Wirkungen erzeugt. Ein Flag, auf das das
++ Programm prüft, wird daher zu einem Flag, das das Programm vorschlagen kann, und die
++ Vervollständigungen stimmen konstruktionsbedingt mit dem Programm überein.
+
+@ 0 3 0 0c397cfcf5a417e21c7bddd983517a40
++ Jeder Parameter, und wie er geparst wird, wird dort deklariert, wo der Befehl definiert ist;
++ das ist der Stil des [deklarativen Kontexts](../../philosophy/declarative-context.md),
++ angewendet auf die Kommandozeile.
+
+@ 0 3 0 0be719ba855bc2d8122aba2ab6ed6431
++ Die folgenden Abschnitte beginnen mit einem minimalen Einstiegspunkt und bauen über
++ Unterbefehle und Flags bis zu Vervollständigungen, Hilfe und Manpages auf. Alles stammt aus
++ dem Paket `soundness`, zusammen mit einigen Auswahlen, die der Einstiegspunkt braucht:
+
+% 2 1 0 02a77dac1f793e61058d47d4a910acb9
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 12776c3c58403dcf0383186c062f4474
+
+% 0 1 0 0e110ee4c374ea9e0a34a6213a7a8ff6
+
+% 0 1 0 17bef8dc1edab8da1623ee0b5deff790
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 6 0 1e22f527b9f9001c002bc59119695fbb
++ column  Entscheidet
++ row  `interpreters.posixInterpreter`  wie die flache Liste der Argumente als Flags und Operanden gelesen wird
++ row  `executives.directExecutive`  was der Rumpf des Einstiegspunkts zurückgibt; [Tab-Vervollständigungen](#tab-completions) verwendet ein anderes
++ row  `backstops.genericErrorMessageBackstop`  was ausgegeben wird, wenn ein Fehler aus dem Programm entkommt
++ row  `systems.javaBaseSystem`  woher [Systemeigenschaften](environment.md#system-properties) kommen
++ row  `strategies.throwUnsafely`  dass ein Fehler als Exception geworfen wird
+
+% 1 1 0 00d220a17931d83c1076bb5625270c62
+
+@ 0 1 0 064417b8467a34330ea4796a3be668c9
++ Die Beispiele auf dieser Seite definieren ganze Programme, daher werden sie kompiliert, aber
++ nicht ausgeführt.
+
+@ 0 1 0 103e9b35ca3475ac1743673039a3eaf2
++ ### Ein Einstiegspunkt
+
+@ 0 2 0 145a01b954c5f1361f82c2de55c2dcce
++ Die Methode `application` umhüllt den Einstiegspunkt eines Programms. Sie gibt ihrem Rumpf
++ den Kontext des Programms und erwartet im Gegenzug einen `Exit`-Status. Sie nimmt die
++ Argumente als eine Liste von Text.
+
+@ 0 3 0 0c1367a820f5ee681db0cfbf920dd63d
++ Dasselbe Programm kann ebenso gut ein Objekt sein, das `Application` erweitert. Diese
++ abstrakte Klasse liefert die Methode `main`, die die Argumente der JVM konvertiert, und
++ verlangt nur ein `invoke`:
+
+% 2 1 0 019fdcf1e21fb20818818f34006c522c
+
+% 0 1 0 14c414b93399500718323b4c237b11b4
+
+% 1 1 0 123d416a894f8e83115647107ea81709
+
+% 0 1 0 1f6b06b3a0288a0d08299e5af4443e6d
+
+% 0 1 0 1c9ee16211be36a006455bd51638ba39
+
+% 0 1 0 0550eda7b20141fd1917f71781eeafe5
+
+% 0 1 0 0693fc9840ad1394109517444289602b
+
+% 1 1 0 14be5909c3f613fc0dd3a8c6f2fa3b85
+
+% 0 1 0 1bba4eb39d03daf01befac22af62d39e
+
+% 0 1 0 183a8b791ed2da9e146ddf6def4b4ea6
+
+% 0 1 0 0a764f1f217cf51e0790cb37c8a99324
+
+% 0 1 0 135581dff005d63d069f9a04fb8f49c0
+
+% 1 1 0 1a006f538ed3d82702b29cb63774ee52
+
+% 2 1 0 1b36cee6b62a418a0b6155003287b5d1
+
+@ 0 4 0 1524118c733aa9280ce9d29956093e30
++ Als ausführbares JAR verpackt, dessen `Main-Class` `mytool` oder `MyTool` ist, läuft dies in
++ einer Shell. `Exit.Ok` meldet Erfolg. `Exit.Fail(1)` oder jeder positive Code meldet einen
++ Fehlschlag. Der Status muss zurückgegeben werden und bleibt nie implizit.
++ [Paketierung](packaging.md) baut das JAR.
+
+@ 0 1 0 0cb7d2c54804a82516abd80db5ddcc8b
++ ### Argumente
+
+@ 0 2 0 17cb1397f467872302f476840fa3f17b
++ Innerhalb des Rumpfs ist `arguments` die Liste der Argumente, die das Programm erhalten hat.
++ Jedes ist ein `Argument`, und es anzuwenden liefert seinen `Text`:
+
+% 2 1 0 1213434f37a47baf1f87b66680952b9d
+
+% 0 1 0 00f33009b4fbfbdd0d6059f89e5bdf42
+
+% 0 1 0 1cce43df410435301584b94528a07855
+
+% 0 1 0 0f475df2eeb176d71f5fdd6e012008c0
+
+% 1 1 0 1b0edf6f01ddbcc104f77c2f35f948b6
+
+% 2 1 0 03be575c139bf7870f6b67cc5f4d7d02
+
+@ 0 4 0 198004afb13e475117e344a2a5199b15
++ Ein `Argument` ist mehr als sein Text. Es merkt sich seine Position auf der Kommandozeile, und
++ dadurch weiß eine Vervollständigung später, welches Argument sie vervollständigt. Positionen
++ werden ab `0` nummeriert, für das erste Argument nach dem Befehl, und nicht ab `1` wie in den
++ meisten Skriptsprachen.
+
+@ 0 5 0 0678130b06b1a4f80301096cafde9408
++ Zwei Wörter werden oft austauschbar verwendet, und es lohnt sich, sie zu trennen. *Argumente*
++ sind die flache Folge textueller Werte, die die Shell übergibt. *Parameter* sind das, was sie
++ bedeuten, sobald sie interpretiert wurden. Die Argumente von `grep -rA4 pattern` sind `-rA4`
++ und `pattern`. Seine Parameter sind „rekursiv suchen“, „vier Zeilen nachfolgenden Kontext
++ zeigen“ und „nach `pattern` suchen“.
+
+@ 0 2 0 12b798dccb86aece0ffad7539eeab94d
++ Der Interpreter im Geltungsbereich macht aus dem Ersten das Zweite, und deshalb wird er per
++ Import gewählt und ist nicht festgelegt. Das Paket `interpreters` hat drei:
+
+% 2 1 0 04c7d4b01cea15ed1b5c35359bd9eb3f
+
+% 0 1 0 0ffb7784bb8a55e01a2ffd92639c4464
+
+@ 0 4 0 10b9100610447b221ffded5f8bdb5f79
++ column  Liest
++ row  `posixInterpreter`  Flags der Form `--long` und `-s`
++ row  `posixClusteringInterpreter`  Flags der Form `--long` und `-s`, und `-rA4` als `-r -A 4`, wobei der letzte Buchstabe eines Clusters den Wert nimmt
++ row  `simpleInterpreter`  jedes Argument als Operanden, und keine Flags
+
+% 1 1 0 0101814926c1a64c13b7edadabd6d2ac
+
+@ 0 1 0 02303c87211351910560854df38228ec
++ ### Unterbefehle
+
+@ 0 3 0 09aa372c589591aa1c3d22cbfaae91f7
++ Ein `Subcommand` benennt einen Modus, in dem das Programm laufen kann, mit einer Beschreibung
++ für Hilfe und Vervollständigungen. Er ist auch ein Extraktor, sodass das erste Argument in
++ einem gewöhnlichen Pattern gegen ihn abgeglichen wird:
+
+% 2 1 0 1cb41fbb58664ae517c8ef29fb5e40d2
+
+% 0 1 0 062559d6b9930f6110fc041711e0bb59
+
+% 0 1 0 0403899955d6084a07b1305165971478
+
+% 0 1 0 0655eb1d1f787cc903cea2c4b242e3b9
+
+% 1 1 0 08e803f5202b7cab1b4b8f6638091a74
+
+% 0 1 0 1f25e203fd10a66518e840e2e77a2cc6
+
+% 0 1 0 02cb1b3821663e091d23708aeeb26062
+
+% 0 1 0 14ea3bf8ce3c46220187d97c546393e6
+
+% 1 1 0 183f1786a8496a1c03dbb10a7a44358e
+
+@ 0 3 0 0b8f8184022e92db1086f680938b8940
++ Die Beschreibung wird mit dem Interpolator `e"…"` geschrieben, der
++ [Gestaltung](terminal.md#styled-text) für Shells trägt, die sie anzeigen. Eine einfache
++ `Text`-Beschreibung funktioniert ebenfalls.
+
+@ 0 4 0 15c018e58695b5f015fe3c02f8aee09f
++ Unterbefehle lassen sich verschachteln. Einen Unterbefehl abzugleichen und dann erneut auf den
++ verbleibenden Argumenten abzugleichen ergibt einen Baum von Befehlen, jeder mit eigenen Flags.
++ Ein Unterbefehl kann `hidden = true` sein, was ihn aus Hilfe und Vervollständigungen
++ heraushält. Mit einer `CommandGroup` werden Unterbefehle in der Hilfe unter Überschriften
++ gesammelt:
+
+% 2 1 0 1498457fc23309db07fdd6939f63af0f
+
+% 0 1 0 13e59cb06f51fede1d019cf15aa394f7
+
+% 0 1 0 1400d22de70e6b0b0a55f25a8a1d70d4
+
+% 1 1 0 0d5ccd52b9852b41070081abdf933a31
+
+% 0 1 0 15625c54289d995e0fe732fdaee827f1
+
+@ 0 4 0 1df3741093005dc50d960f742611ed02
++ Ein `Flag` ist ein Argument, das mit `-` oder `--` beginnt. Es zu deklarieren und anzuwenden
++ liest seinen Wert von der Kommandozeile. Das Ergebnis ist [`Optional`](optional-values.md), da
++ das Flag fehlen kann. Der Typ eines Flags ist der, in den sein Wert dekodiert werden soll, und
++ jeder Typ, der sich aus Text lesen lässt, funktioniert ohne weitere Umstände:
+
+% 2 1 0 0a9d01be5742fbb41fe4a1de4d1294fa
+
+% 0 1 0 1c9713e15f1d0b7e0c44f395fa7e5ace
+
+% 1 1 0 04f9b026bd467f60009924c9e1459b7a
+
+% 0 1 0 19c52d0b9fcac4e00775c142a1915772
+
+% 0 1 0 02501c5eac4b40b8148a279c3218bf15
+
+% 0 1 0 08213eb2e256cc5c09c6d5b3d3d11ef3
+
+% 1 1 0 0bca7c4ed15601b60a5a3c91043901d1
+
+% 0 1 0 0d26ebc378cc279c17830bf92e1a412d
+
+% 0 1 0 12f65cad1eb673450e209c16c98f0c69
+
+% 1 1 0 11535544f248d1180b0af024ff94cf9e
+
+@ 0 1 0 0608bf8a454985990c037e526cf29590
++ Ein Flag wird mit diesen Parametern deklariert:
+
+% 2 1 0 0e154ac4980a8e6613b53c3fbffc51c4
+
+% 0 1 0 0e135d4b9e9b8a7407f82db8f076a4f9
+
+@ 0 7 0 1ba1450c09ee1b141c752002727cf411
++ column  Vorgabe
++ column  Bedeutung
++ row  `name`  erforderlich  die lange Form, als `--name`, oder ein `Char` für eine kurze
++ row  `aliases`  `Nil`  andere Formen, etwa ein kurzes `-j`
++ row  `description`  `Unset`  der Text, der in der Hilfe und neben Vervollständigungen angezeigt wird
++ row  `repeatable`  `false`  ob das Flag mehr als einmal vorkommen darf
++ row  `secret`  `false`  ob das Flag aus Vervollständigungen und Hilfe herausgehalten wird
+
+% 1 1 0 1afe7c086dd1e0df14ef8d649c01719a
+
+@ 0 1 0 19c70760831c2a7105f401f1d11496d5
++ `aliases` liefert kurze Formen, sodass `--jobs 4`, `-j 4` und `--jobs=4` gleich gelesen werden.
+
+@ 0 5 0 1d88607c14cf1f830b155473189de3ca
++ Die Vorkommen eines wiederholbaren Flags werden zusammen gelesen, über einen `List`-Typ. `--tag a
++ --tag b` wird als `List(t"a", t"b")` gelesen, wobei jeder Operand als der Elementtyp
++ interpretiert wird. Ein `Optional`-Typ liest einen Operanden, der fehlerhaft sein kann, als
++ `Unset`, statt einen Fehler auszulösen. Eine `List` zu zählen durchläuft sie, daher verlangt
++ `size` die [`linearSize`-Bestätigung](collections.md#positions-and-access):
+
+% 2 1 0 122c69778b5d92ea03ea1aea7b1be6ad
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 12d83ca59ec19a3414bb446742b9d1e3
+
+% 0 1 0 16d90a4354adc6161dc434fea8ce078b
+
+% 0 1 0 193fb3589e79ca8c09af3786b61b29d0
+
+% 0 1 0 038f8d2677e2f6501902762ff46f40c5
+
+% 1 1 0 02f545710855c5ac17d5ab7376e852b7
+
+% 2 1 0 0de04cb5e5253fc90d9fce54ee13f753
+
+@ 0 1 0 10bf83733f3f3cce0d001f83cb77c6d5
++ Ein Flag, das keinen Wert nimmt und einfach an oder aus ist, ist ein `Switch`:
+
+% 2 1 0 108c172a5eac4c090d2aecec551fd7a8
+
+% 0 1 0 0b57ee3de01a99930d37b5bb38fceb38
+
+% 1 1 0 0ccd9dde2cd0df1a09d5266dca049bfa
+
+@ 0 1 0 0be19ab73c174de518cfc915e1abff1a
++ ### Einstellungen
+
+@ 0 5 0 1a5b3eff3c349f760885fb868b205558
++ Viele Optionen sollten nicht nur auf der Kommandozeile setzbar sein, sondern auch über eine
++ [Umgebungsvariable](environment.md), eine Systemeigenschaft oder eine Konfigurationsdatei,
++ mit einer festen Rangfolge. Ein `Setting` deklariert eine solche Option einmal, über einen
++ kanonischen Namen in Camel Case, und jede Quelle leitet nach Konvention ihren eigenen Namen
++ dafür ab. Die Identität einer Anwendung als `Configurator.Prefix` zu deklarieren aktiviert die
++ Standardkaskade:
+
+% 2 1 0 16b5594af871acbe1ae9e07a764bec99
+
+% 0 1 0 181c1770d819efa91a91871f68b53acd
+
+% 0 1 0 19e7341d8713a3601771bdfa031a7f21
+
+% 0 1 0 0ff2c28d377bf1b706fca78a5f02aaec
+
+% 1 1 0 0f916d93cf69d4760fc8867226b45ec3
+
+@ 0 2 0 0995259171b307e11056bd41640a7e08
++ `LogLevel()` innerhalb des Rumpfs zu lesen befragt seine Quellen der Reihe nach, und die
++ erste, die einen Wert hat, gewinnt:
+
+% 2 1 0 0dad7aabc24b82ae04bc9e7803159d61
+
+@ 0 6 0 01c0ba70676a7fe1037510c5e4df0f8a
++ column  Quelle
++ column  Benannt, für `logLevel`
++ row  die Kommandozeilenoption  `--log-level`
++ row  die als `variable` angegebene Umgebungsvariable, falls vorhanden  wörtlich, als `MYAPP_HOME` für `Home`
++ row  die Systemeigenschaft  `myapp.log.level`
++ row  die Umgebungsvariable  `MYAPP_LOG_LEVEL`
+
+% 1 1 0 0c15190a83a153400a1731dcc95c0039
+
+@ 0 4 0 170f6136e43fc9081d2b5c3ece347fa1
++ Das Ergebnis ist `Optional`, daher wird ein Vorgabewert auf die übliche Weise angegeben, als
++ `LogLevel().or(t"info")`. `variable` ist für eine Einstellung gedacht, deren Umgebungsvariable
++ nicht der Konvention folgt. Eine Einstellung zu lesen registriert ihr Flag für die
++ Tab-Vervollständigung, genau so, wie es das direkte Lesen des Flags täte.
+
+@ 0 5 0 0d3634e1a064b39c16ee9dbd1f332063
++ Jede Quelle ist ein `Configurator`, der eine einzige abstrakte Methode hat, vom kanonischen
++ Namen einer Einstellung auf einen optionalen textuellen Wert. Die Kaskade ist schlicht
++ Komposition mit `++`, bei der die linke Seite Vorrang hat. Kein Format für
++ Konfigurationsdateien ist vorgeschrieben, aber jede Quelle kann der Kaskade als Funktion von
++ einer Zeile beitreten. Ein `Configurator`-Given zu definieren ersetzt die Standardkaskade,
++ wobei die Kommandozeilenoption immer Vorrang hat:
+
+% 2 1 0 0cbb8df4ece1133703cdfef4d4977069
+
+% 0 1 0 111f6c17f1f38c2d06e62e6735e2c81a
+
+% 0 1 0 0d897706358ecf65189d8c3428ea55f6
+
+% 0 1 0 161802418ccd3e680d4d5d68a9f73cc4
+
+% 1 1 0 16440beee084bee70298ea30be11b04c
+
+@ 0 1 0 0cdde65bf92fb31c1e1944eef24fb35d
++ ### Exit-Status und Fehler
+
+@ 0 4 0 0a051e52da1f8c961d5c388f1765c4b9
++ Der Rumpf gibt einen `Exit` zurück: `Exit.Ok` oder `Exit.Fail(code)` für einen Fehlschlag.
++ Ein [Fehler](errors.md), der aus dem Rumpf entkommt, wird vom *Backstop* im Geltungsbereich
++ abgefangen, der ihn statt in einen Stacktrace in einen Exit-Status umwandelt. Ein Backstop
++ wird gewählt, indem man einen aus dem Paket `backstops` importiert:
+
+% 2 1 0 01cc22f7f4980612091dfc13ab2c715c
+
+% 0 1 0 0f164885cf74aa1217a6e45f2855a677
+
+@ 0 5 0 1047d26b555149d90d432c29e4636f54
++ column  Gibt aus
++ row  `genericErrorMessageBackstop`  eine kurze, feste Meldung: `An unexpected error occurred.`
++ row  `exceptionMessageBackstop`  die eigene Meldung der Exception
++ row  `stackTraceBackstop`  den vollständigen Stacktrace
++ row  `silentBackstop`  nichts
+
+% 1 1 0 135dc82f77661d0919a79a4467a762b4
+
+@ 0 1 0 05e8d20353e844101b719bb7430ffe77
++ Jeder endet bei einer Exception mit Status 1 und bei jedem schwerwiegenderen Fehler mit 2.
+
+@ 0 2 0 150d8c2555be4ac703d2b46a92fe9561
++ Ein Exit-Code allein sagt dem Benutzer wenig. Ein Fehlschlag, den das Programm vorhersieht,
++ wird besser als `Status` deklariert, ein Objekt mit dem Code und einer Beschreibung:
+
+% 2 1 0 0e7b493480f22ecd1736a3bf87e3f2e2
+
+% 0 1 0 1102ad3f14aac8ac1149e99721d6ed07
+
+% 0 1 0 0e8f006dd1a7d72103f0005f7cebd1fb
+
+% 1 1 0 0a1d43e65bc06f7e0e7d3934ccbe06a6
+
+@ 0 3 0 0650f1f02191553c1df01002cf106562
++ Ein `Status` wird überall dort zurückgegeben, wo ein `Exit` zurückgegeben wird. Unter dem
++ unten beschriebenen Vervollständigungs-Executive werden die Status, die ein Befehl
++ zurückgeben kann, aus seinem Code ermittelt und erscheinen in seiner Hilfe und seiner Manpage,
++ ohne irgendwo anders aufgeführt zu sein.
+
+@ 0 1 0 1d2295c11724223d17489bc1303359ac
++ ### Tab-Vervollständigungen
+
+@ 0 3 0 0aa1ea788791baa11057875ffc7cccf5
++ Die Tab-Vervollständigung ist eines der nützlichsten Dinge, die ein Kommandozeilenprogramm
++ bietet. Mit ihr entdeckt ein Benutzer Funktionen, sieht, welche Flags und Werte verfügbar sind,
++ und vermeidet Tippfehler ganz.
+
+@ 0 6 0 125491d4b4d4d0c80805ae7993515dfe
++ Herkömmlich wird sie aber auch getrennt vom Programm selbst gepflegt. Für jede Shell gibt es
++ ein anderes Skript, oft von anderen Leuten geschrieben. Jedes bildet das Verhalten des Befehls
++ näherungsweise nach, indem es seine Unterbefehle und Flags aufführt, und geht manchmal weiter,
++ um einander ausschließende Flags miteinander konsistent zu halten. Die Shells sind sich nicht
++ einmal einig, was eine Vervollständigung ist: Bash bietet nur den Text der Vervollständigung,
++ während Zsh und Fish daneben eine Beschreibung anzeigen können. Die Arbeit ist bewundernswert,
++ und es ist unmöglich, sie korrekt zu halten.
+
+@ 0 5 0 02d36ccbf9950cd81a168b8bdadd90c3
++ Hier ist das Programm selbst die einzige Quelle der Wahrheit. Derselbe Code, der die Argumente
++ interpretiert, erzeugt die Vervollständigungen, sodass sie konstruktionsbedingt
++ übereinstimmen. Die Skripte für jede Shell schrumpfen auf nichts von Belang: Sie erfassen die
++ unvollständige Kommandozeile, die Position des Cursors und den Namen der Shell und übergeben
++ sie der Anwendung im Vervollständigungsmodus.
+
+@ 0 3 0 058222c1e47a553f17a798089753d85f
++ Vervollständigungen einzuschalten ersetzt das Standard-Executive durch das
++ Vervollständigungs-Executive. Es wird dort importiert, wo der Einstiegspunkt definiert ist,
++ sodass es und nicht das direkte Executive für dieses Programm im Geltungsbereich ist:
+
+% 2 1 0 1d15f2db5436d1501efc91132259bd83
+
+% 0 1 0 197f1109e7f809191be0a5e6413d8524
+
+% 1 1 0 158b6285908e99d0091b8456ce61643e
+
+@ 0 5 0 14889ac18ea8f67210edf406f025143d
++ Unter diesem Executive gibt der Rumpf eine `Execution` zurück, und der einzige Weg, eine zu
++ bauen, ist ein `execute`-Block. Der Code *vor* `execute` ist der *Vorspann*. Er läuft sowohl,
++ wenn der Befehl aufgerufen wird, als auch, wenn Vervollständigungen angefordert werden. Der
++ `execute`-Block läuft *nur* bei einem echten Aufruf. Der Vorspann behandelt also die
++ Argumente, und die Seiteneffekte leben innerhalb von `execute`:
+
+% 2 1 0 06bac51ce5830a36066a8d687277eac8
+
+% 1 1 0 0d625f7e41cde2400b295dd6c23b3d7b
+
+@ 0 1 0 08ce615116da37af0a3339cc7deb347a
++   label Die Unterbefehle, unter dem direkten Executive
+
+% 1 1 0 1db1758a2c47d7fd1e4143242470f102
+
+% 0 1 0 06ad9756a4ea8ec30c97d603afec1cf1
+
+% 1 1 0 18babe3aa903135912fa7c4ce94b243a
+
+% 2 1 0 12d2f3fd2f3bb055151fb248b81bfa1f
+
+% 3 1 0 11a58e90162eb5031040c81486776098
+
+% 0 1 0 09f97e67067ca680066cc5757413fb87
+
+% 0 1 0 0d9eb79b2ad23e230aa7f51d7b4c2f23
+
+% 0 1 0 005e9ad648615fb30f12414b80890dee
+
+% 1 1 0 0d0ee31695075020158bab8c7c1cbcb3
+
+@ 0 1 0 06b5cf56cc6657f919bd455ebd7c4876
++   label Mit einem im Vorspann gelesenen Flag
+
+% 1 1 0 036bf21fd447ccf50c158c7fb3484a3d
+
+% 0 1 0 1a58044c761fd53b1180bb7ec0ad199b
+
+% 1 1 0 0a6d5f5c6ff0f0f5147fb17f9b6387ff
+
+% 2 1 0 0e63c0bfd75851730f2e749d6c3f78e9
+
+% 3 1 0 00daf7029e16e3851dada24e2fba601a
+
+% 3 1 0 1effcbc511147eb3116f03a7af60362b
+
+% 0 1 0 0b34716f8834fc8c1705fe0b47cdb20a
+
+% 0 1 0 0456f19f3e475d9b1884daad74611506
+
+% 0 1 0 08770c8d2d48ab3c1cecaf6dd69ac37e
+
+% 2 1 0 08ecbab33254968200a65cd30babdb20
+
+% 0 1 0 01c854bba92cd15f0096c576018ec171
+
+% 1 1 0 0c9ee0d7cd03aa1d13a347da1637a15f
+
+@ 0 1 0 18c9954ea07ac59d123bf09a7dec12b8
++   label Unter dem Vervollständigungs-Executive, die Wirkungen innerhalb von `execute`
+
+% 1 1 0 1203571ff9e6c8260d8d467c228fe833
+
+% 0 1 0 18da09856b99d5d212c18114bb6ac2c3
+
+% 0 1 0 092a354f9704715616ac8382e89c832a
+
+% 1 1 0 1bf907fc46b01ff6035bd15d3a8a8415
+
+% 2 1 0 184d4926762d54ab060ccf146211d68f
+
+% 3 1 0 164e9f283b449e650e6900be46f06ecd
+
+% 0 1 0 19d7b3f16223fc120a52186265eb5796
+
+% 0 1 0 03a1b885eeb30dad19d065411c801740
+
+% 0 1 0 07a313accd7fa6de0a6c0f6b5f635f5a
+
+% 0 1 0 14648cf2c1d7887a04b1732bc65385cc
+
+% 2 1 0 1bae3b6f9e52bd741786512b5a304d8c
+
+% 0 1 0 1b2c6a91f82b5aa408e06f2b9ebb5917
+
+% 1 1 0 1396e2013f78438804dce694572f6705
+
+% 2 1 0 137fb66f55aef72d0b685cd613f77200
+
+@ 0 3 0 00a463325f8a9c8a1e7bd9c7f0831dc7
++ Das Abgleichen von `Build` und das Deklarieren des Flags `--jobs` geschehen im Vorspann, sodass
++ sie laufen, wenn der Benutzer `tab` drückt. Nach `mytool ` bietet die Shell `build` an, und
++ nach `mytool build ` bietet sie `--jobs` an.
+
+@ 0 5 0 1cd4660978516ae6156ce2d08b6efe9f
++ Die Struktur garantiert das. Eine `Execution` kann nicht ohne einen `execute`-Block erzeugt
++ werden, und der Vorspann, der eine Vervollständigung registriert, ist genau der Vorspann, der
++ den Wert liest, sodass Vervollständigung und Ausführung nie voneinander abweichen können. Das
++ Vervollständigungs-Executive enthält dem Vorspann außerdem die Standardausgabe vor, da sie
++ während des Vervollständigens nirgendwohin gesendet werden kann. `Out.println` ist nur
++ innerhalb von `execute` verfügbar.
+
+@ 0 1 0 044ecbc2d6baec690a170e9e3244f4e8
++ #### Bedingte Vervollständigungen
+
+@ 0 3 0 1c3b83eb41cf9a040defa9b95c4cf690
++ Ein Flag, das im Vorspann gelesen wird, liefert ein `Prospective`-Handle, nicht den Wert
++ selbst. Seine `present` und `absent` können sofort befragt werden, um zu entscheiden, was sonst
++ noch angeboten wird, aber es anzuwenden, um den Wert zu erhalten, ist nur innerhalb von
++ `execute` möglich.
+
+@ 0 4 0 0c91f1a6360ba15f042b789073ac57ec
++ Die Folgen reichen tiefer als „ein Flag, das gelesen wird, ist ein Flag, das angeboten wird“.
++ Das Lesen kann bedingt sein, und dann ist es auch das Anbieten, unter *genau derselben
++ Bedingung*. Man betrachte einen Befehl mit einem Flag `-v`, das die Ausgabe einschaltet, und
++ einem Flag `--verbosity`, das nur neben ihm sinnvoll ist:
+
+% 2 1 0 0662425162ab589e0c0c63b03fe67a13
+
+% 0 1 0 12c970baa9d590bf0485b135395164fa
+
+% 0 1 0 01af92bec8d2b5af19f53e9d32123a46
+
+% 0 1 0 1a8bfcbf6e0a204a09307f7db7a380f0
+
+% 1 1 0 07d87285ff54ec1500f5ef8f175a893a
+
+% 0 1 0 1be8aec77db3133c08e3dcd95b366126
+
+% 1 1 0 100b8c4d5409ebda0643e3eb4acbca05
+
+% 0 1 0 0c374ebc1fd0122912b748e866ece8bd
+
+% 0 1 0 159f1fa2ea7938e80c944d45bc63cc3d
+
+% 2 1 0 0cea2515635d2e5707376edb9f11a720
+
+% 0 1 0 00a78ba0d2b60b121c2fb4b6008c4295
+
+% 1 1 0 1ebcdb49df5451e8022f4054816953fa
+
+% 2 1 0 1ded8e2a305b8f3618f455e4caf02bda
+
+@ 0 2 0 157a1c597062dd0819371dcf8be18253
++ Ein Flag, dessen Typ eine [Aufzählung] ist, liest seinen Wert über den Namen, in dem Stil, den
++ das importierte Given `enumIdentification` wählt: hier `--verbosity loud`.
+
+@ 0 6 0 0849246dfcba4f461b5f2af0855a78f5
++ Ein Druck auf `tab` nach einem bloßen `-` führt diesen Vorspann aus. Auf `-v` wird geprüft, und
++ so wird es zu einem Kandidaten. Steht es noch nicht auf der Kommandozeile, wird es angeboten.
++ Steht es *bereits* dort, läuft auch der Zweig, der auf `--verbosity` prüft, sodass
++ `--verbosity` ebenfalls zu einem Kandidaten wird, während `-v`, das nur einmal sinnvoll ist,
++ keiner wird. Nirgends wurde eine Tabelle der Abhängigkeiten zwischen Flags geschrieben. Die
++ bedingte Struktur des Codes ist die bedingte Struktur der Vervollständigungen, wie komplex sie
++ auch wird.
+
+@ 0 5 0 01761808a79aa67809b5695967e1707c
++ Für `inline`-Code gilt eine Einschränkung. `Flag#apply()` ist eine `transparent inline`-Methode.
++ Innerhalb einer anderen `inline def` wird sie nicht expandiert, wenn dieser Rumpf typisiert
++ wird, sodass ihr Ergebnis nicht auf ein `Prospective` verengt wird und `.present` darauf für
++ jedes Flag `true` antworten würde. Eine Inline-Methode sollte ein Flag mit `Flag#present`
++ lesen, überall, oder mit `Flag#value`, innerhalb von `execute`. Beide sind einfache Methoden,
++ die das Flag direkt lesen.
+
+@ 0 1 0 0c667bee6da064841f1c6ebdcd869f3d
++ ### Erforderliche und validierte Flags
+
+@ 0 4 0 1af05eeee36076631b8cdb8394e2926a
++ Ein Flag, das vorhanden sein muss, wird mit `require()` statt mit `()` gelesen, und eines, dessen
++ Wert außerdem korrekt dekodiert werden muss, mit `validate()`. Im Vorspann liefert jedes ein
++ `Requisite`-Handle, dessen Wert innerhalb von `execute` bedingungslos verfügbar ist, denn ein
++ Requisit, das fehlt oder fehlerhaft ist, verhindert, dass der Block überhaupt läuft.
+
+@ 0 3 0 1850b092467f263015999363e1bababa
++ Jedes solche Flag wird geprüft, bevor der Block beginnt. Der Benutzer erfährt daher von allen
++ auf einmal, mit Exit-Status 2, nach der Konvention für Bedienungsfehler, und nicht bei jedem
++ Programmlauf von einem:
+
+% 2 1 0 1eda6c0b269e3496007d92a66d3b9600
+
+% 0 1 0 0e3669b53f3f66c30e1964f8c8647d9a
+
+% 1 1 0 198b13a7c642c9b0027b24c1c972ecff
+
+% 2 1 0 18ffbf70c2ecb71214e03147370731be
+
+% 0 1 0 055bd4f21953ebd6142c9648a717fa58
+
+% 0 1 0 1ad7f150c79bd2bd1d8eb66eea2401a2
+
+% 2 1 0 0d8b9a95f043da1d1ce64a195b0eda31
+
+% 0 1 0 048300028baab6901e6f664feba2e624
+
+% 1 1 0 07901049c8aa69920440b708a9ca215e
+
+% 2 1 0 0aa85df7f19430051d0b6a880087b518
+
+@ 0 3 0 073b7dc4dddd86f1032393e1e8e7da76
++ Innerhalb von `execute` liefern dieselben Aufrufe den Wert direkt und lösen sofort einen
++ `Flag.Error` aus (dessen Grund `Missing` oder `Invalid` ist), den der Backstop meldet. Ein
++ erforderliches Flag wird im Hilfetext außerdem als erforderlich markiert.
+
+@ 0 1 0 0fe0ae69246004e408426083efda5089
++ Jede Art, ein Flag zu lesen, liefert im Vorspann und innerhalb von `execute` etwas anderes:
+
+% 2 1 0 048495d83118d08c1e5f15f50a518d4c
+
+@ 0 8 0 0f1f84c8496aaf641809353d1e92f607
++ column  Lesen
++ column  Im Vorspann
++ column  Innerhalb von `execute`
++ row  `flag()`  ein `Prospective`, dessen `present` und `absent` sofort antworten  ein `Optional`-Wert
++ row  `flag.require()`  ein `Requisite`, geprüft, bevor `execute` läuft  der Wert oder ein `Flag.Error`
++ row  `flag.validate()`  ein `Requisite`, geprüft, bevor `execute` läuft  der Wert oder ein `Flag.Error`
++ row  `flag.present`  ein `Boolean`  ein `Boolean`
++ row  `flag.value`  nicht verfügbar  ein `Optional`-Wert
+
+% 1 1 0 0d5c74e738e724321c2df0745ff51563
+
+@ 0 1 0 172d97923af567de1db42030eac6db81
++ ### Das Executive und wirkungsbehaftete Methoden
+
+@ 0 2 0 169d217ee1daa46206f70569af95ad19
++ Das *Executive* bestimmt den Rückgabetyp des Rumpfs eines Einstiegspunkts und die
++ [Kontextwerte][Kontextwert], die darin verfügbar sind:
+
+% 2 1 0 1a21d435332e000b13142a3d3a0887fb
+
+% 0 1 0 092e7f16329050640fdfb28407110096
+
+@ 0 4 0 05e685a437af4bd5107bb1d66b2bcaab
++ column  Rumpf gibt zurück
++ column  `Stdio` und `Effectful`
++ row  `directExecutive`  einen `Exit`  im ganzen Rumpf
++ row  `completionsExecutive`  eine `Execution`  nur innerhalb von `execute`
+
+% 1 1 0 05d6efd6badf81c1184999ab9e0622f9
+
+@ 0 3 0 1552aca509e249b604878716491aabf8
++ `directExecutive` führt den Rumpf nie spekulativ aus, sodass ein Flag, das irgendwo in seinem
++ Rumpf gelesen wird, sein Wert ist. Ein Executive per Import zu wählen ist das, was die API des
++ Einstiegspunkts einheitlich bleiben lässt, während es dem Code darin wirklich unterschiedliche
++ Anforderungen auferlegt.
+
+@ 0 2 0 16ecaa0995f173c00eb4c844586f2af7
++ Ein `execute`-Block liefert außerdem ein gelöschtes `Effectful`. Intern wird es von nichts verbraucht.
++ Sein Zweck ist, dass eine Methode es *verlangen* kann:
+
+% 2 1 0 0687b3c0d328a9db1d7f374705c9d8e4
+
+% 0 1 0 103ce96eea955e3b073f463de7b744d4
+
+% 1 1 0 02ea2b29f4e58c5e1c665255ff72ac7f
+
+@ 0 6 0 0db53d18084beb170df24eb78ae091d8
++ Unter dem Vervollständigungs-Executive ist ein `Effectful` nur innerhalb eines
++ `execute`-Blocks zu bekommen. Eine solche Methode kann daher nicht aus dem Vorspann aufgerufen
++ werden, das heißt, sie kann nicht laufen, während der Benutzer bloß `tab` drückt. Die wirklich
++ unumkehrbaren Operationen auf diese Weise zu markieren macht es schwer, eine davon
++ versehentlich aus Code aufzurufen, den Vervollständigungen ausführen. Die Operation
++ `install`, die Vervollständigungsskripte an ihren Platz schreibt, verlangt es genau aus diesem
++ Grund.
+
+@ 0 1 0 16fc2fc1207397f803d79b3b470aba16
++ ### Werte vervollständigen
+
+@ 0 3 0 0293fc0a052cd260192083277fd553fa
++ Ein Flag vervollständigt seine eigenen Werte, wenn sein Typ sie beschreiben kann. Mit einer
++ `Discoverable`-Instanz wird einem Typ gesagt, wie er Werte vorschlägt, und mit einer
++ `Interpretable`-Instanz, wie er einen gewählten Wert liest:
+
+% 2 1 0 1ee92d407db896690a8abd9bf33020e8
+
+% 0 1 0 1ca3dc21408c148103631a833be9fe99
+
+% 0 1 0 0d3086bf5abaef020695a60125d868d1
+
+% 0 1 0 116b33f9189dc941145a9d0e669f65b2
+
+% 0 1 0 002469b4696ae7850268330307a41fe0
+
+% 0 1 0 017a7f5eb8ba1c9c0378aecaa2f66cb7
+
+% 0 1 0 1848374006f66b37038773d25456752a
+
+% 0 1 0 1aaadd1df7abd62307ef2ee0cdc14b01
+
+% 0 1 0 01e0d6ab1074ad3c13024a73d9257a44
+
+% 1 1 0 0b3db4c98d30a74c040059f47b8b50c4
+
+% 2 1 0 14908c336b0958300eeef39beb2ab088
+
+% 0 1 0 1b3d55208702f6931c7355d8b55bdc76
+
+% 0 1 0 17a3147aa1e4e6870a3bce907c68c406
+
+% 1 1 0 0ac89b2f3586491514a4eac517d16630
+
+@ 0 5 0 1011e339cc0ce6cd1eba2b7ed392ee3d
++ Mit diesen im Geltungsbereich bietet `mytool build --mode ` die Werte `debug` und `release`
++ an. Eine `Suggestion` kann eine Beschreibung haben, die von den Shells angezeigt wird, die
++ eine unterstützen. Sie kann als `incomplete` markiert werden, um einen Wert Segment für Segment
++ zu vervollständigen, wie bei einem Dateipfad. Ein Flag, dessen Typ `Pathname` ist,
++ vervollständigt auf diese Weise [Dateisystempfade](paths.md) ohne weiteren Code und expandiert
++ ein führendes `~`, wie es die Shell täte.
+
+@ 0 1 0 1cdc8712071013801ac958bbea4377e1
++ ### Hilfe und Manpages
+
+@ 0 7 0 129d95c33cfce7451641b2004f15cd37
++ Der Vorspann beschreibt die ganze Schnittstelle: die Unterbefehle, die Flags, ihre
++ Beschreibungen, welche Flags erforderlich sind und welche Status jeder Befehl zurückgeben kann.
++ Die Hilfe braucht daher keine separate Quelle. Das Vervollständigungs-Executive baut die
++ Schnittstelle als `Help`-Baum neu auf, indem es den Vorspann erneut mit synthetisierten
++ Präfixen von Argumenten ausführt, und setzt ihn ausgerichtet im Stil einer Manpage. Derselbe
++ Baum wird mit `roff` als [Manpage](https://en.wikipedia.org/wiki/Man_page) in roff geschrieben,
++ und `Manpages.install` schreibt diese an ihren Platz.
+
+@ 0 4 0 010f39f68aa3c8150988862d65de4554
++ Alles, was ermittelt wird, wird dokumentiert. Ein `Status`, der aus einem `execute`-Block
++ zurückgegeben wird, erscheint unter *Exit status*, und eine Umgebungsvariable, die im Vorspann
++ gelesen wird, erscheint unter *Environment*. Beschreibungen, die die Ermittlung nicht liefern
++ kann, etwa was eine Umgebungsvariable bedeutet, oder ein Beispielaufruf, werden über ein
++ `Manual` hinzugefügt:
+
+% 2 1 0 1056c66933c574581897d78681852fc9
+
+% 0 1 0 0f1ec052ea13b93e1b5c99af51bd09ea
+
+% 0 1 0 0ec323a7a9a611a1100284514062d04f
+
+% 0 1 0 0e746d24dd517f321783c032175a9759
+
+% 1 1 0 0ac4bc5641250102006d8f3b36451ea2
+
+@ 0 2 0 18293475e83180b9195165a24921ac3f
++ Innerhalb eines Befehls hängt `explain` einen Absatz lokaler Hilfe an den Abschnitt des
++ aktuellen Unterbefehls an, sodass sich ein tief verschachtelter Unterbefehl dort
++ dokumentiert, wo er definiert ist.
+
+@ 0 1 0 0de1df58586eb526008a0dd7d52aad97
++ ### Vervollständigungen installieren
+
+@ 0 4 0 1c20fc13d9945b2e117b0b39a211fdc5
++ Eine fertige Anwendung wird mit einem generischen, identischen Vervollständigungsskript für
++ jede Shell ausgeliefert: Bash, Zsh, Fish und PowerShell. Das Skript tut nichts, als die
++ aktuelle Kommandozeile im Vervollständigungsmodus an die Anwendung weiterzuleiten. Der
++ eingebaute Verwaltungsbefehl schreibt diese Skripte an ihren Platz:
+
+% 0 1 0 15a5f1f7e49cceab1ba03bc009fa86b5
+
+% 0 1 0 0a46bbdcefc1f03b1023426554ae0c6a
+
+% 1 1 0 0e70743821943e3d19e8a20a75de0478
+
+@ 0 2 0 143b9dfbcffc10b910e028f306c316a6
++ Nach der Installation vervollständigt jede Shell den Befehl über die Anwendung selbst, sodass
++ neue Unterbefehle und Flags keine Änderung an irgendeinem Skript brauchen.
+
+@ 0 1 0 18606afbbea7f6f7173205d18de53495
++ ### Schneller Start
+
+@ 0 6 0 19dc340b5f3976d016fc1d77e7880eec
++ Ein Befehl, der zur Vervollständigung aufgerufen wird, muss schnell starten, sonst wirkt die
++ Shell träge. Die Anwendung als [Daemon](daemons.md) laufen zu lassen entfernt die Startkosten
++ der JVM aus jedem Aufruf. Das Programm bleibt resident, und jeder Befehl, einschließlich jeder
++ Anfrage nach Vervollständigungen, wird an den laufenden Prozess verteilt. Derselbe Rumpf, den
++ `application` ausführt, wird von `daemon` ausgeführt, sodass eine Anwendung einen schnellen
++ Start gewinnt, indem sie ändert, wie sie gestartet wird, nicht, wie sie geschrieben ist.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 7 0 1d28549d9774ca0711d9ed86d53790f1
++ - [Daemons](daemons.md) hält eine Anwendung resident, für einen schnellen Start.
++ - [Umgebung](environment.md) liest die Variablen und Eigenschaften, auf die Einstellungen
++   zurückfallen.
++ - [Dekodieren](decoding.md) liest den Wert eines Flags als einen Typ.
++ - [Terminal](terminal.md) gestaltet die Ausgabe und liest die Tastatur interaktiv.
++ - [Paketierung](packaging.md) baut das ausführbare Programm.
++ - [Anzeigen](gauges.md), [LSP](lsp.md), [Prozesse](processes.md), [Zeit](time.md) und [UUIDs](uuid.md) beschreiben, was eine Kommandozeilenanwendung anzeigt, ausführt und parst.

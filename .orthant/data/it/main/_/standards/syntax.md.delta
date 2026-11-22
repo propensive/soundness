@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 4 0 11f8eac5354ac26d09f58580eba3a54e
++ La tabella completa è nel
++ [riferimento delle regole](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).
++ Ogni pagina `SN-nnn` ritirata sotto [`doc/work/errors/`](../errors/) nomina anche la sua sostituta, così
++ un riferimento più vecchio si risolve ancora.

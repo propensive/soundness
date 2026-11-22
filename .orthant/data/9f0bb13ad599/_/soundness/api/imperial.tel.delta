@@ -1,0 +1,32 @@
+orthant 2 release
+
+@ 0 3 0 0c2d9219e1f24e1b03a5e3a1418b9f90
++     directories under `/proc`. The five `Home` layouts which the XDG Base Directory
++     specification lets a user move follow its variables: `Home.Config` is `$HOME/.config`
++     unless `XDG_CONFIG_HOME` is set to an absolute path, when it is that path.
+
+@ 0 3 0 081f4103ed3e02d00c33a2859c04feaf
++       Needs an `Environment` and a `System`. A layout which names a `#variable` is that
++       variable's value, if it is an absolute path. Otherwise a layout under `Home` reads
++       the `HOME` environment variable, without a trailing `/`, and raises
++       `Environment.Error` if it is unset.
++   entry #variable   the environment variable which relocates the layout, if there is one
++   entry #relocation   where `#variable` puts the layout: its value, if set to an absolute path
+
+@ 0 3 0 1afb2a39da3f6b5910fe80226e27b0b6
++       `Cache`, `Config`, `Local.Bin`, `Local.Share` and `Local.State` are the directories
++       the XDG Base Directory specification lets a user move, and each is where its variable
++       says when that is set to an absolute path: `Home.Config` is `$XDG_CONFIG_HOME`, and
++       `$HOME/.config` otherwise. A relative or empty value is ignored, as the specification
++       requires. The other layouts are fixed.
+
+@ 0 2 0 07dbf00fa5a7a43208ed36006143405d
++   entry .Cache   the user's cache directory, `$XDG_CACHE_HOME` or `~/.cache`
++   entry .Config   the user's configuration directory, `$XDG_CONFIG_HOME` or `~/.config`
+
+@ 0 1 0 17b3721419f7ef750f1c99f47a5d3f8e
++     entry .Bin   the user's own executables, `$XDG_BIN_HOME` or `~/.local/bin`
+
+@ 0 2 0 14e097a0f1c58e831d42d725f041ef65
++     entry .Share   the user's own application data, `$XDG_DATA_HOME` or `~/.local/share`
++     entry .State   the user's application state, `$XDG_STATE_HOME` or `~/.local/state`

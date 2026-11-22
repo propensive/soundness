@@ -1,0 +1,709 @@
+orthant 2 language
+
+@ 0 1 0 03e95d0c9590738604271567bc555b45
++ ## Pattern
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 5 0 079846c75469072018f8a8bc84ca98fd
++ Il testo si confronta con
++ [espressioni regolari](https://en.wikipedia.org/wiki/Regular_expression) e
++ [glob](https://en.wikipedia.org/wiki/Glob_(programming)), e ogni pattern è verificato durante la
++ compilazione del codice. Un'espressione malformata è un errore di compilazione. Ogni gruppo di
++ cattura lega nella corrispondenza una variabile tipizzata e con nome.
+
+@ 0 1 0 10da91172e696c3e0215effaf064ae69
++ Sia il pattern sia i valori che produce sono quindi verificati prima che il programma venga
++ eseguito.
+
+@ 0 1 0 1d4e14e1a196571f1371457df947ee48
++ ### Sui pattern
+
+@ 0 5 0 1ae56bf1f46769d51e2fcb10661dfbb6
++ Un'espressione regolare è un piccolo programma e, come ogni programma, può essere sbagliata. Le
++ parentesi potrebbero non essere bilanciate. Un conteggio di ripetizioni potrebbe essere `{2,1}`.
++ Un gruppo di cattura, a cui si fa riferimento per numero, potrebbe non esistere. Nella maggior
++ parte dei linguaggi questi errori emergono solo quando l'espressione viene usata per la prima
++ volta a [runtime], spesso nel profondo di un ramo che si percorre di rado. E una cattura si
++ recupera tramite un indice intero che nulla verifica.
+
+@ 0 3 0 05cb1ef7397aba6612380cad8cefa0b6
++ Qui l'espressione viene analizzata mentre si compila il codice circostante. Un pattern che non si
++ può analizzare non raggiunge mai un programma in esecuzione. I gruppi che cattura sono legati a
++ variabili ordinarie, per nome e non per numero.
+
+@ 0 5 0 1ba31a947ab618521019a92781de5f1d
++ Il tipo di ciascun binding discende dal pattern. Un gruppo semplice produce il `Text` trovato.
++ Una singola classe di caratteri produce un `Char`. Un elemento ripetuto produce una `List`, e un
++ elemento facoltativo produce un [`Optional`](optional-values.md). Leggere una cattura è sicuro
++ quanto leggere qualsiasi altro valore locale. È la
++ [sicurezza per costruzione](../../philosophy/safety-by-construction.md) applicata alle
++ espressioni regolari.
+
+@ 0 2 0 11ca25d456b8ce6f13e080a1d1f887af
++ I glob sono i caratteri jolly `*` e `?` della riga di comando. Sono costruiti con lo stesso
++ meccanismo, e si compilano in espressioni regolari.
+
+@ 0 2 0 0d4a86d72c7bf8530bee6e539f01ffee
++ Tutto proviene dal package `soundness`, e il secondo import permette agli esempi di stampare i
++ loro risultati:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1d3a4ef4d7dbeaac04855a46c5d25672
++ ### Corrispondenza
+
+@ 0 2 0 0b77fba5149811a610df2eca4d06c732
++ L'[interpolatore] `r"…"` scrive un'espressione regolare. In un `match`, è un pattern.
++ Un'espressione letterale corrisponde esattamente all'intero testo:
+
+% 2 1 0 01e92a4670519cb5082904650070838a
+
+% 3 1 0 1ca83082c27ffcaf010e7894b6afa123
+
+% 4 1 0 1b42d88233ee2c5d19214b305278a009
+
+% 5 1 0 1d195c3bc1532bb2194b3f978744de16
+
+% 1 1 0 15f9fffb0ba8f877036b43dec9e9f129
+
+% 2 1 0 183065150794359e12dcc6cd7a15ae4d
+
+% 3 1 0 12ac3d7d0c711a3f065f8a45889a8941
+
+@ 0 1 0 02bf15e60bfedfdf0c7c04516e6e78e3
++ Il pattern deve corrispondere a tutto il testo, non solo a una sua parte:
+
+% 2 1 0 0097f1ab40706f020df2c0318723108a
+
+% 3 1 0 1669ef13d7eaa46208ec8c83e18f3a40
+
+% 4 1 0 140caeb8f69198810b4a5a9902c99e44
+
+% 0 1 0 05ca3be2afe0c7dc1727b3cbff6f1976
+
+% 1 1 0 0d6be9b2134f73a906f82b08ecf63f79
+
+% 2 1 0 161ecf4675d1da75190158b9a3e5e2ad
+
+% 3 1 0 0d9c74b14bc268c81b98f32c1166239c
+
+@ 0 3 0 1086047c1f82fcaf0baacf5a39cbbf92
++ A volte ci si aspetta che un pattern corrisponda, e nessun ripiego ha senso. `absolve` dichiara
++ questa aspettativa. Il compilatore allora non dà alcun avviso su un match non esaustivo, e una
++ mancata corrispondenza è un errore lanciato:
+
+% 2 1 0 0c8489fb979d4a8804355c3269190111
+
+% 3 1 0 1cdadf5ab78aaa8709a4fb9e9dc97d87
+
+% 4 1 0 0458e07efc7da30913c499c900db4cc0
+
+% 0 1 0 08f31371f11a74d01d4a845b48d9fd8d
+
+% 1 1 0 0fc19579fd00022412d6bd6bf2c82872
+
+% 1 1 0 0c099c11ab2fa1fa17d49342d2a74f4a
+
+@ 0 1 0 14bed946a0c28147024b2636708df06c
++ ### Catturare
+
+@ 0 2 0 1fa8c8300252f12e0e60bd3a5cce806d
++ Un gruppo di cattura scritto come `$name(…)` lega a `name` il testo a cui corrisponde. Più gruppi
++ legano più variabili:
+
+% 2 1 0 003e28d60020f49407bb9a6c80951997
+
+% 1 1 0 0d625f7e41cde2400b295dd6c23b3d7b
+
+@ 0 1 0 148fa27325f8f5ee1ab7471417bf5de8
++   label Un pattern letterale, con o senza corrispondenza
+
+% 1 1 0 1a26ce26e9e0773c04924ffc925081f1
+
+% 2 1 0 167193af48fe99220365b070da602fba
+
+% 0 1 0 02203ba283ce0167102a1470de8de1b8
+
+% 0 1 0 00aafb026e8cf6dd1167d57d6a3feee6
+
+% 1 1 0 0a6d1027187e244a03f76b9221242cfc
+
+@ 0 1 0 0a09b931351086e015625a7df1456aab
++   label Un gruppo, legato a `first`
+
+% 1 1 0 042e3a2d0b3e965806d328cf9b4b9676
+
+% 2 1 0 05d22c42e60f183c0fbe8a9f46225a53
+
+% 0 1 0 032215a1afec127c1b7776f0233dcd4f
+
+% 0 1 0 13b50ec7b87a5c211638555b7f2c0adb
+
+% 1 1 0 123ee4ff91cacaff0d30a0d08d4d7768
+
+@ 0 1 0 0dedb77b4b6c21641d7d026c21dc0250
++   label Due gruppi, legati a `first` e `second`
+
+% 1 1 0 1fca978ec62c71380e86e1316118d218
+
+% 2 1 0 1a348410b7a80f041804c6d896833bb4
+
+% 0 1 0 116284fd384ebaa10dced4cf7315dd2a
+
+% 0 1 0 1fcd4b90cf7859070e8d1a1b5e60bcbc
+
+% 1 1 0 1e116879627d42d01eb62d55e3127dcc
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 1 0 0a8134d906be51231bc1a881b2d70f13
++ Ogni nome legato è un `Text`:
+
+% 2 1 0 01ed91b736da46c01c00964dba83ce16
+
+% 3 1 0 109c8fea842d2a040de838191893986c
+
+% 4 1 0 1cebf084136f83b0144808a07e3bcbff
+
+% 5 1 0 027320594ffabc15033e1c374e98de15
+
+% 0 1 0 1e60c87a2ced1da609cf09a89b2205b3
+
+% 0 1 0 07110b02a740cddb0aa337135855741a
+
+% 1 1 0 085410b05e48be7302dec7d57b9dc517
+
+@ 0 1 0 03d71dc3ea1e4ec01992c2970849735b
++ I gruppi si annidano:
+
+% 2 1 0 19eef9d4a86f1aed136731afacb5beb5
+
+% 3 1 0 08f3497e540f17c4057db2230a6a01bc
+
+% 4 1 0 0ecd8573e641fe8e011b8d5cb0d44aca
+
+% 5 1 0 13d0b3be522762781e5bcb3f34d8f64f
+
+% 0 1 0 086c23f3b548fea20f46a1a416dd88cf
+
+% 0 1 0 149dfca025317225114e25fcaf3a2c65
+
+% 1 1 0 1d49cff86774377f034b9723d16ee48a
+
+@ 0 2 0 197edbeda6aeb1951e1e12f83ba9e2f0
++ Un gruppo senza `$name` viene confrontato ma non legato. Un pattern può quindi richiedere una
++ struttura che non cattura:
+
+% 2 1 0 1eb4f633322f87a70d891f9114ccd95c
+
+% 3 1 0 10610ee7c4c2d4a216e4e2bce739e609
+
+% 4 1 0 003e64a476d5fa4612f27f27c699ecd7
+
+% 5 1 0 0ae96ea4c02799cc14d68893730cee49
+
+% 0 1 0 1dc2b2c0097ad659153c8cde4b6bfa27
+
+% 0 1 0 148b3a37a2738a9113c07f66a2745160
+
+% 1 1 0 1ee4bca1a4ee5ea30b151a2e3c82859e
+
+@ 0 1 0 17dc0f9bd3c1c4a80933a0fa69248bc1
++ ### Caratteri e quantificatori
+
+@ 0 1 0 0fdf6deea649af191209200f40e8e162
++ Una classe di caratteri lega un singolo `Char`, non un `Text`:
+
+% 2 1 0 19a5ba6ec87934a002d4677ff7d2e756
+
+% 3 1 0 01611ffcde919876080774e1c631a70d
+
+% 4 1 0 09aa8682229a4f9b1965ec9276c5211d
+
+% 0 1 0 1c7e5d47a50f782a1cfbb345e774c144
+
+% 0 1 0 1e7a45996b5f78881da03d24bf1bb7ce
+
+% 1 1 0 171027a93bc6804706c0f4775f76c517
+
+% 2 1 0 05f0b4d0268f44351f131c164d784f88
+
+@ 0 2 0 006fde2621bb46630f52757e1aa43632
++ Sono disponibili le abbreviazioni consuete: `\d` per una cifra, `\w` per un carattere di parola,
++ `\s` per lo spazio bianco e `.` per qualsiasi carattere. Ciascuna lega un `Char`:
+
+% 2 1 0 09eac8ee6d9b94e51644dce17225755e
+
+% 3 1 0 0c0e62e18d9bc50c0b5391ba4c33a3e9
+
+% 4 1 0 1009760505ce206e114c37c2db8969ca
+
+% 0 1 0 14cb21cfe21ed2a30d832931ee2546b1
+
+% 0 1 0 15f24c4f6d5e1f940969ee59b6f8369a
+
+% 1 1 0 1a4ffab3c7806ea71dc2c4a4da01d86a
+
+% 2 1 0 01be549087ac7c9b17f1026ab23f7edc
+
+@ 0 2 0 12e1aa9f7efff24e004428aecb67c699
++ Un quantificatore cambia la forma del binding, e il suo tipo cambia di conseguenza. Uno o più
++ (`+`) e zero o più (`*`) legano una `List`:
+
+% 2 1 0 1ea43fa149d249f91b89f91bc4759595
+
+% 3 1 0 08042d580bb458990523141aef90c330
+
+% 4 1 0 1045e566fae2d64e0168142db77eb620
+
+% 0 1 0 04c0eb1b56fd5be11386f495d255cc81
+
+% 0 1 0 1e208205d478f5ce00d873cbc1da60ae
+
+% 1 1 0 19ba8116d121e00205bcdbaed7c1186b
+
+% 2 1 0 006f6c1f34b893c5098f68d13d38c634
+
+@ 0 1 0 1d6c9f817add2986151996b0087437e7
++ La lista è vuota quando l'elemento non corrisponde a nulla:
+
+% 2 1 0 07112eca7b8ce34203214fca65cd3a7b
+
+% 3 1 0 0ec24da6f168aa5701cc9cfa7a4b38d9
+
+% 4 1 0 0f15ec2232454e0107012dbe7265b804
+
+% 0 1 0 0168abe79e3546420f8b679550c7193f
+
+% 0 1 0 18a405d250151c0011bf3a7286bf96be
+
+% 1 1 0 1ec56178ca93dab20b750cef1803fd48
+
+% 2 1 0 1cd246bd5b253c2b0f1e45c68341ecad
+
+@ 0 1 0 04373bf6637dbaa0140f094649d6f8fb
++ Un elemento facoltativo (`?`) lega un `Optional`, che è `Unset` quando l'elemento è assente:
+
+% 2 1 0 1bb9688f318053f1181fdc13da47407f
+
+% 0 1 0 179e2706ab6eb997080bc1496d97e278
+
+% 0 1 0 139ce2fb4aa20d08130b08d385d05fc2
+
+% 0 1 0 188dcf9d3dc3331a0c1bde75bb8bd2e1
+
+% 1 1 0 0e569f033865f8ab0777263eb239cf6b
+
+% 3 1 0 1935ab37db5125b50b67958127b499ca
+
+% 4 1 0 1f6c044ce4dbbf091c04da182c1e9b03
+
+% 5 1 0 002b6cca4a05dd2a057d50f25c18bff4
+
+% 0 1 0 14f883f7c84997060b7adc0f0ee1b703
+
+% 0 1 0 1ca7d32bcf9c9d550c7f68968a151eae
+
+% 1 1 0 1fc4a79b7d8dc8f20be211077fbe8c7a
+
+@ 0 1 0 17c7dbd76a83714815fa954350e8a9fd
++ Una ripetizione limitata segue la stessa regola, e lega una `List`:
+
+% 2 1 0 014c1d4cdc9213250ca93d1e6956d4f3
+
+% 3 1 0 0a39db76361356f61512df5fc07a7c22
+
+% 4 1 0 098b24d981e9a8d50afd7ddc843a3683
+
+% 0 1 0 184b3a2bc344cac70a2b872f195a968c
+
+% 0 1 0 1ad652f142f19af01feff4c2f9d7d6d9
+
+% 0 1 0 185f624fd9cdc26108917a463a72c46e
+
+% 1 1 0 0bd64fe587653a121e1861699fea65d0
+
+@ 0 2 0 17e4efe9164fd8121dff8872da74e7f5
++ Il tipo di un binding si legge direttamente dal pattern. Il modo in cui si scrive una cattura e il
++ modo in cui la si usa non possono mai divergere:
+
+% 2 1 0 064d24ae219cb0e61a4fd877206814ca
+
+@ 0 8 0 0e5fc364a15be3eb05d9f40b0f5fe781
++ column  Una cattura di
++ column  Come
++ column  Lega
++ row  un gruppo  `$first(hello)`  `Text`
++ row  una classe di caratteri, o `\d`, `\w`, `\s` o `.`  `$vowel[aeiou]`  `Char`
++ row  un elemento ripetuto con `+` o `*`  `$digits\d+`  `List`, vuota quando non corrisponde nulla
++ row  un elemento ripetuto un numero limitato di volte  `$chars.{2,4}`  `List`
++ row  un elemento facoltativo, con `?`  `$digit\d?`  `Optional`, `Unset` quando è assente
+
+% 1 1 0 1b6cc0b20e61d43a0456e34789d6cb68
+
+@ 0 1 0 0f500ac5307107c50b2c86c55ce2ee30
++ ### Pattern che corrispondono sempre
+
+@ 0 2 0 13da4b5b4981106413031a84ef32be7e
++ Un pattern può anche legare a sinistra di una definizione. Lì rappresenta un'estrazione che il
++ codice asserisce andrà a buon fine. In questo modo si estraggono più catture da un'unica
++ espressione in una volta:
+
+% 2 1 0 0f72ba42900452f01a26932242185798
+
+% 0 1 0 1d36c62abc457388137d75000bbcca06
+
+% 0 1 0 120b22f4b9de4e6f0ea28d4f0e04b146
+
+% 1 1 0 1a138498941a9344114b0441a6ee0bc7
+
+% 3 1 0 0e0250ad095d14191d74b120d642eb5c
+
+% 4 1 0 035b47c9066c5dec09452c8c5fbbfe3b
+
+% 5 1 0 005d9afc86d8cb62064b6fd4bb6fec76
+
+% 0 1 0 1fb6c1eef0c79a0806aa460a090cca0c
+
+% 1 1 0 00c5f2da39ba934e0e4a01f6059d6317
+
+@ 0 1 0 036fe2de7cfaf8ed1ae27de220b28e44
++ ### Escape
+
+@ 0 4 0 087f22b8999863ab1933ab7d91cb7248
++ Tra il codice sorgente e un'espressione compilata, l'escape avviene normalmente due volte: una
++ quando il sorgente si legge come stringa, e un'altra quando la stringa si legge come pattern. Per
++ questo in Java, per trovare un singolo backslash, si scrive `Pattern.compile("\\\\")`.
++ L'espressione ha bisogno di due backslash, e il letterale stringa li raddoppia entrambi.
+
+@ 0 4 0 054ba2f08a5977050c05bad047cc473c
++ Qui vale solo il secondo livello. Dentro `r"…"` o `r"""…"""`, un backslash è un backslash, quindi
++ bisogna pensare solo alle regole delle espressioni regolari. Una parentesi aperta si trova con
++ `r"\("`, e nient'altro. L'unica eccezione è `$`, che introduce una sostituzione, e si scrive `$$`
++ per indicare sé stesso.
+
+@ 0 1 0 1f980e437728127311e76a7a1efe07b5
++ ### Espressioni come valori
+
+@ 0 1 0 0da9317ced2d4bab1571204dc55116d7
++ Fuori da un pattern, lo stesso interpolatore è un'espressione ordinaria, e produce una `Regex`:
+
+% 2 1 0 1f80a7caf99470671f4e2f40cd66de49
+
+% 0 1 0 1a1cea24c22a888501a515e0cf66884d
+
+% 1 1 0 026dfcd5435475811ff6c817dc0fc960
+
+@ 0 4 0 11fb55c73dc02799136d719b7a280c2a
++ Un valore `Regex` si può usare come estrattore in un pattern. Corrisponde nel suo insieme, e non
++ può legare i suoi gruppi di cattura. Questi sono disponibili solo dove il pattern è scritto
++ letteralmente, poiché solo lì il compilatore può vederli. Il valore porta il suo sorgente come
++ `pattern`, un `Text`, insieme alla posizione e alla natura di ciascuno dei suoi gruppi.
+
+@ 0 4 0 14c1736fadbbd8c900871f8f994f9d91
++ Una `Regex` si usa ovunque serva un'espressione regolare, e un `Text` non si usa mai a tale scopo.
++ La firma di un metodo dice quindi se il suo argomento si legge come pattern o si prende alla
++ lettera. Le API tipizzate con stringhe lasciano questa distinzione alla loro documentazione. La
++ sostituzione nel [testo](text.md) è sovraccaricata esattamente su questa base:
+
+% 2 1 0 0b8b8b549e3e4db61de7b9f7145b5f1c
+
+% 0 1 0 0ba8204b7e6598bc1b693e02a7e31d01
+
+% 1 1 0 169c307ba4e140f90ae0493e46a27f89
+
+% 3 1 0 034b411d82c7035d1a0e4f2ff3456a59
+
+% 4 1 0 0264395455aa9ea71f9828a2c11e75fb
+
+% 5 1 0 19f60e39f2ff570611445a6cd92299f5
+
+% 0 1 0 1ac6a8072f80c4a80808822de936a4d8
+
+% 0 1 0 09fc56ae4019fee3057e6a49d82ceb96
+
+% 1 1 0 15449fef7ab1f0971dd30cfaadbbb23c
+
+@ 0 2 0 0b6db983d1261e910f4a1071774306d8
++ La prima chiamata comprime ogni sequenza di spazi bianchi. La seconda cerca tre caratteri
++ letterali, non ne trova nessuno e non cambia nulla.
+
+@ 0 2 0 06aa5e776cfce9e403696a1a322a3ba6
++ Un glob si compila in un'espressione regolare, quindi anche un `g"…"` è una `Regex`, e si può
++ usare ovunque si possa usare una `Regex`. Due pattern che si compilano nella stessa espressione
++ sono uguali:
+
+% 2 1 0 11c2d40e072c6d7a0df8818a40ce5a6a
+
+% 3 1 0 04c8ac4cf597812a17df0367b3a00bd7
+
+% 4 1 0 11884f77a623e5921fe4107421230a73
+
+% 0 1 0 11c90413625b286612e22f11b7439f29
+
+% 0 1 0 1f264a9ac573f49601bdc5895bba97ba
+
+% 1 1 0 05f5720b7f26b3a314960f339270384d
+
+@ 0 2 0 005966ba800ce6e719a052ef16d0d949
++ L'uguaglianza confronta le espressioni, non ciò a cui corrispondono. `r"[xy]"` e `r"[yx]"`
++ corrispondono esattamente agli stessi input, eppure non sono uguali.
+
+@ 0 1 0 0c537ef3552ebac0082e04d1929dd0d1
++ ### Verifica in fase di compilazione
+
+@ 0 2 0 17a1ab1efc9bd4aa141ce0ac6be7a5e7
++ Un'espressione regolare che non si può analizzare viene rifiutata dove è scritta. Una parentesi
++ sbilanciata viene intercettata in [fase di compilazione][tempo di compilazione]:
+
+% 2 1 0 008046c9a923c88f17c6e6dc6a452b46
+
+% 3 1 0 076b9d325ce5261b05d57a107d70d4b8
+
+% 4 1 0 11bb583a7f597fdd017ea27905b89f5d
+
+% 5 1 0 1a9d25581d44cc141764ac650273ef53
+
+% 0 1 0 0446171230e00e9b1e1665ce1665d386
+
+% 1 1 0 09243ef6d1bacb5d08a00c9b6951bc89
+
+@ 0 1 0 0eb8beead5453cb7166b9f615e929b07
++ Lo stesso vale per una variabile interpolata che non sta davanti a un gruppo da catturare:
+
+% 2 1 0 15743c42847ba1bd0b27851eaf370c72
+
+% 0 1 0 031cb340662103e11182a9ab7f0f164b
+
+% 1 1 0 123ad8781969921918065472681c1710
+
+% 3 1 0 1f9d9a82c6d6a01f1cbf3d6bbc53ae55
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 1d60da33c4a8fd940e61e12a6b9f5d49
+
+% 1 1 0 03a3f8a15edd916d0d7b11a418ff1ff2
+
+@ 0 2 0 0f3a6c24e4455e5f16a0cb5054e418c3
++ Lo stesso parser è disponibile a runtime, per un pattern costruito da testo dinamico. Solleva una
++ `Regex.Error` che nomina la posizione e il motivo:
+
+% 2 1 0 0daeeb99fab5a98616519ccd397b0ac9
+
+% 3 1 0 184fc4433d9860ce08afd90cebb77a77
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 04f611ddc0ca643f1feb5d628f335ac5
+
+% 1 1 0 185156febd622229008b371da087cabf
+
+@ 0 2 0 07f2308bf80daf78092ff17c9503cab2
++ Questi sono i motivi. Una cattura dentro un gruppo ripetuto non potrebbe legare un insieme fisso
++ di variabili, ed è quindi vietata:
+
+% 2 1 0 06e8946eba030fc51a11103456d9c88d
+
+@ 0 13 0 19207828b17ccd411e68a612614d0682
++ column  Motivo
++ column  Il pattern viene rifiutato perché
++ row  `UnclosedGroup`  un gruppo di cattura non è stato chiuso
++ row  `NotInGroup`  una parentesi chiusa non ha una parentesi aperta
++ row  `ExpectedGroup`  un estrattore non è seguito immediatamente da un gruppo di cattura
++ row  `Uncapturable`  un gruppo di cattura si trova dentro un gruppo ripetuto
++ row  `BadRepetition`  il massimo di una ripetizione è minore del suo minimo, come in `{2,1}`
++ row  `ZeroMaximum`  il massimo di una ripetizione è zero
++ row  `IncompleteRepetition`  un intervallo di ripetizione non è chiuso
++ row  `UnexpectedChar`  un intervallo di ripetizione contiene un carattere inatteso
++ row  `UnclosedEscape`  non segue nulla al carattere di escape
++ row  `EmptyCharClass`  una classe di caratteri è vuota
++ row  `InvalidPattern`  il pattern non è valido per altri motivi
+
+% 1 1 0 08411bacfbffd3d41609b0ad6af8d1a9
+
+@ 0 1 0 137843e6029483ec034c1b0d05873631
++ ### Scegliere un motore
+
+@ 0 6 0 120cb9135eec4450037a4f1f98f9ff30
++ Il motore predefinito è quello della JVM. Il suo backtracking può richiedere un tempo esponenziale
++ su un pattern e un input patologici. È il
++ [backtracking catastrofico](https://en.wikipedia.org/wiki/ReDoS), che trasforma un'espressione
++ regolare applicata a un input non fidato in un denial of service. `re2` è un motore ad automi
++ scritto in Scala, che lo evita. Il prezzo sono i costrutti che un automa non può esprimere:
+
+% 2 1 0 128ac25130ff985b01f46837577f2833
+
+@ 0 1 0 03c9327ff95bd52918102f0c513ae9ad
++ column  Motore
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 4 0 1ee202c45f8984d90bc6a44a1fb01d52
++ column  Tempo
++ column  Costrutti
++ row  quello della JVM  `regexBackends.javaBaseRegex`, il predefinito  esponenziale, nel caso peggiore  ogni costrutto della sua sintassi
++ row  re2  `regexBackends.re2`  lineare nella lunghezza dell'input  tutti tranne i riferimenti all'indietro e il lookaround
+
+% 1 1 0 14a9779854ed21db0b1465eb971830ff
+
+@ 0 1 0 0c09a62655c44dac145b82dd25abf310
++ Il motore è un [given], quindi un programma lo sceglie con un import, e i pattern restano
++ invariati:
+
+% 2 1 0 0b89e2f8464c8d8607864968c16a0214
+
+% 3 1 0 10e2f352688f79ce067911f5cac9cae3
+
+% 4 1 0 1ce3d903c7eb8307102f771447c7d362
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 07fa902538a38b42036088041d4e364c
+
+% 0 1 0 07d3f0c6823ad3c409f832b6df2098e1
+
+% 0 1 0 10edab5afc1615190d87f634e57c3e7d
+
+% 0 1 0 13c0f784f1218f6d04be7918ebd85b55
+
+% 1 1 0 183756f93cd1a7190ba028aa94d6eded
+
+@ 0 2 0 19b07a174ca642771f465291d89c86d8
++ Un pattern letterale che usa un costrutto non supportato dal motore viene rifiutato durante la
++ compilazione del codice, e non alla prima corrispondenza.
+
+@ 0 1 0 048fd1ae3b0060760f12c45330bf75f9
++ ### Glob
+
+@ 0 2 0 13c5066712f4458d02dc8014d5467c5b
++ Un glob è la sintassi a caratteri jolly dei [percorsi](paths.md) dei file, e l'interpolatore
++ `g"…"` ne confronta uno:
+
+% 2 1 0 056f56a742254a761d87b62129773344
+
+% 0 1 0 158a3da2b9570d7018ac40465150a3a2
+
+@ 0 8 0 1ed4a9d5276068b41e4f6391efb70118
++ column  Corrisponde a
++ column  Come espressione regolare
++ row  `$name`  un segmento di percorso, catturato come `name`
++ row  `*`  qualsiasi cosa all'interno di un segmento  `[^/\\]*`
++ row  `**`  qualsiasi cosa, attraverso i segmenti  `.*`
++ row  `?`  un singolo carattere all'interno di un segmento  `[^/\\]`
++ row  `[a-z]`, `[abc]`  un carattere di un intervallo o di un insieme  `[a-z]`, `[abc]`
++ row  `[!a-z]`, `[!abc]`  un carattere fuori da un intervallo o da un insieme  `[^a-z]`, `[^abc]`
+
+% 1 1 0 1d7821e1dc4dd3f81e21b0c14bdad0a8
+
+@ 0 1 0 09ed2bf7c5ceaa8a0a3a10aca90340c0
++ Un `$name` cattura un segmento di un percorso:
+
+% 2 1 0 1f054833e5d0802e0787a1274af0831b
+
+% 3 1 0 0711d5f58ddf1167042b18f02e88631d
+
+% 4 1 0 158ac60ab1d7f45f074d139c5eab68a7
+
+% 5 1 0 102c49534e58fc1907ab9b5e231474cc
+
+% 0 1 0 10f193fed2ab7855114a6f9c15866341
+
+% 1 1 0 05739378695ff16f18df1b6afb432e87
+
+% 2 1 0 19a6fc27a918bea51296c12154ee0934
+
+@ 0 1 0 07e103b68ae509ce01a636160869225b
++ `*` sta per un segmento, e `**` per un numero qualsiasi di segmenti:
+
+% 2 1 0 12ccd941c6edb5c008269a00e7aae215
+
+% 3 1 0 0ed852426e91d00f0980d3e4265aa585
+
+% 4 1 0 0eabca61042627781596a581cdbcfdf3
+
+% 5 1 0 0a336110577e0075026fc23dabfc8660
+
+% 0 1 0 142d13daf1d3637c183cb40dcf998849
+
+% 0 1 0 086bd7214575f76001f7e35108aa7d04
+
+% 1 1 0 1f83e59bc0dc9bd51639593040c04ca9
+
+% 3 1 0 0da55645d24c4db40e688c9a3acf8a4c
+
+% 4 1 0 14bc03b03fb5a3ee1606ba5f40a672b0
+
+% 5 1 0 0305aefc7c6e02be18867c6b0aa1690c
+
+% 5 1 0 10754e1e8e3ffb8408f536fae46fa5dd
+
+% 0 1 0 17dbd6022be4296e141b65ed123ac6f3
+
+% 0 1 0 0cd99f18b728144709c9be9b5147c769
+
+% 1 1 0 008a3dfe2fbbbaaf19ceeac7ebca40e0
+
+@ 0 1 0 195135d55bbcaa860db709d6d3f5ece3
++ Si possono catturare più segmenti in una volta:
+
+% 2 1 0 0e81b2b42ea4e53001e0e2a187d34fcf
+
+% 3 1 0 132cd1d3864a76151265ae25bdd2823b
+
+% 4 1 0 1141b02f381b34bd1370d1c00375535e
+
+% 5 1 0 03926b753e452d6214e09480373c9cf5
+
+% 0 1 0 0049cb38d0be485e0a02ae409b15a91a
+
+% 1 1 0 044209478b124ee41d1dfb1404a084df
+
+% 2 1 0 191750e305051689135dd05f69cc3f4a
+
+@ 0 2 0 02a1328539ab84fd077ab89a7e039619
++ La traduzione di un glob in un'espressione regolare si può vedere direttamente. I caratteri jolly
++ diventano i loro equivalenti, e gli intervalli di caratteri si trasferiscono, con `!` che indica
++ la negazione:
+
+% 2 1 0 020b0634fff2ad9a0ca074a7dddda265
+
+% 3 1 0 1c97283c86e846360e406c3d16a88a9e
+
+% 4 1 0 1f5884930cb82d5410b508f2e0f93018
+
+% 0 1 0 10eedbe83df0805510fd30f29e4a3e90
+
+% 0 1 0 139a543690c9398b16bba206ded1c6ca
+
+% 1 1 0 0cf8f2ac021e8c9000852c0f8934f563
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 8 0 14da92d31f71bab30bb35513616e9472
++ - [Testo](text.md) descrive `sub` e le altre operazioni che accettano una `Regex`.
++ - [Interpolazione](interpolation.md) spiega come un interpolatore come `r"…"` verifica il suo
++   contenuto in fase di compilazione.
++ - [Percorsi](paths.md) e il [filesystem](filesystem.md) descrivono i percorsi a cui corrispondono
++   i glob.
++ - [Valori opzionali](optional-values.md) descrive l'`Optional` che un elemento facoltativo lega.
++ - [Server HTTP](http-server.md) confronta i path delle richieste.
++ - [Decodifica](decoding.md) e [TEL](tel.md) confrontano il testo con dei pattern mentre lo
++   leggono.

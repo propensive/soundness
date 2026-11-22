@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 2 0 07fe400905129e5c09ca3a130de28d35
++ Trinta e seis moedas estão definidas, cada uma como um valor que constrói quantias. Uma quantia é
++ escrita com seu símbolo ou com seu código ISO, conforme decide um estilo no escopo.
+
+@ 0 2 0 0521150f08d80306145fc8161d1d3d86
++ O imposto é arredondado para a unidade menor mais próxima, com a metade arredondada para cima.
++ Vinte por cento de £2,94 são £0,588, que é cobrado como £0,59:

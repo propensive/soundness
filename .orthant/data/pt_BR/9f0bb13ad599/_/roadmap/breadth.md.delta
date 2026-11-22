@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 2 0 1ce2591c7910df8715cb6ee0ece79b7c
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e faz a ida e volta dos vetores de exemplo das RFCs 7515/7516.
+
+@ 0 5 0 185e0933a78085f60dda1fb01867e9b3
++ Concluído: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` e `Jwt`, com todos os algoritmos da
++ RFC 7518 exceto a compressão `zip`, e EdDSA e X25519 da RFC 8037; um handler de bearer token para o
++ scintillate, e conjuntos de chaves obtidos por HTTP. Os exemplos do apêndice A da RFC 7515 e do
++ apêndice A da RFC 7516 são seus testes, lidos do texto das RFCs. O enigmatic ganhou as primitivas
++ que lhe faltavam: derivação de chaves, AES key wrap, AES-CBC com HMAC, RSA-OAEP e RSA-PSS.
+
+@ 0 2 0 19e4d46c5d18ca6c0a3eac1338b276cc
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e passa na suíte padrão de conformidade TOML.
+
+@ 0 4 0 1119703a804af95f1fb4bb604086cc3a
++ Autenticação sem senha para a pilha web, completando a história que OAuth 2 e JOSE começam. O
++ suporte a COSE de que ele depende — chaves COSE e os algoritmos de assinatura assimétrica — chegou
++ com `brd-1`, assim como a leitura e a validação de cadeia dos certificados X.509 que uma atestação
++ carrega.
+
+@ 0 2 0 1c27de11db8327eb199b7672a17cf0fc
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e uma cerimônia roteirizada de registro e asserção passa contra um autenticador de referência.
+
+@ 0 7 0 0f072c1e402a18d91bb22643f0148107
++ Concluído: #2530 (2026-11-20). chatelaine: As duas cerimônias da relying party, com todas as
++ verificações das §7.1 e §7.2 do WebAuthn Level 2, e os formatos de atestação `none` e `packed`. O
++ autenticador de referência é o da própria especificação: as saídas de registro e de autenticação dos
++ seus vetores de teste, para credenciais ES256, ES384, ES512, RS256 e Ed25519, são aceitas, com as
++ atestações packed validadas até a raiz de confiança dos vetores. Um autenticador em software nas
++ fontes de teste roteiriza cerimônias inteiras, e as maneiras como elas são recusadas. O autenticador
++ virtual de um navegador ainda não foi controlado.
+
+@ 0 2 0 17114dda9db220b1111dfa3e427832ac
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e interopera com um servidor e um cliente HTTP/3 de referência.
+
+@ 0 2 0 0c7008ff6c9ff7ce1e83f47b9ad6f3b1
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e uma sessão roteirizada passa contra um servidor IMAP de referência.

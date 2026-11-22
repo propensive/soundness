@@ -1,0 +1,166 @@
+orthant 2 language
+
+@ 0 1 0 112e00a0bd848b011c4e0e445a493659
++ info
++     des graphiques SVG à partir de données typées : barres, lignes, nuages de points, secteurs,
++     histogrammes, boîtes à moustaches et anneaux
+
+@ 0 16 0 067dd5b85b1b7504178320a4b398acdc
++     - La forme est dans les types. Une `Series[x, y]` est une suite nommée de points ; le type
++       de son abscisse détermine l'axe : un `Text`, une énumération ou une `Chart.Category` est
++       `Categorical`, un nombre, une `Duration`, un `Instant` ou toute `Quantity` est
++       `Continuous`. Des `Samples[y]` sont des mesures brutes, une `Chart.Estimate` une valeur
++       avec son intervalle, `Noted` une valeur avec une note, et un `Dag` de nœuds `Weighted`,
++       `Progressive` est un graphe de dépendances.
++     - Un genre est une valeur — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
++       `Histogram()`, `Boxes()` ou `Annulus()` — et `data.chart(kind)` ne compile que là où une
++       instance `Plottable` dit que le genre peut dessiner la forme des données : un diagramme
++       en secteurs de trois séries ou une ligne passant par des étiquettes de catégories est une
++       erreur de compilation.
++     - L'ajustement — la plage, la transformation et les graduations de chaque axe — est choisi
++       par une `Calibration` indexée sur le type de valeur de l'axe, et remplacé par un given de
++       portée, un import depuis `calibrations`, ou un argument du genre. Le résultat est une
++       `Scale` ou des `Bands` : des données simples, ce qui permet à un graphique de savoir si
++       de nouvelles données tiennent encore dans ses axes.
++     - Le style est une valeur `Chart.Style` — `Chart.Standard` par défaut — avec une méthode
++       pour chaque composant dessiné, une `ChartPalette` de couleurs nommées par rôle, et une
++       `FontMetric` qui mesure le texte pour la mise en page.
+
+@ 0 3 0 0a7750f3b1455772047955d94e1ba081
++       Une association incompatible ne compile pas : une série catégorielle ne peut pas être
++       `Lines()`, une collection de séries ne peut pas être `Pie()`, des `Samples` ne peuvent pas
++       être `Bars()`, et un `Dag` dont les nœuds ne sont pas `Weighted` ou `Progressive` ne peut
++       pas être `Annulus()`.
+
+@ 0 7 0 08951451fcb2f1e71ecfb7874ebb02e1
++   detail
++       Un `Chart[data, form, fit, style]` contient ses données `#data`, son genre (`#form`),
++       l'ajustement `#fit` que le genre a calculé à partir des données, et l'instance `Plottable`
++       qui les associe. Il est créé par l'extension `chart` plutôt que directement. Le type de
++       l'ajustement est celui du genre — `Bars.Fit` avec `bands` et `ordinate`, `Lines.Fit` avec
++       deux échelles, `Annulus.Fit[node]` avec ses bandes — et le type de style est le trait de
++       style du genre, de sorte qu'un graphique en barres se rend avec un `Bars.Style` et un
++       diagramme en secteurs avec un `Pie.Style` ; `Chart.Standard` les implémente tous.
+
+@ 0 3 0 1a0633d1a1604f040526783a922efce7
++     detail
++         `Chart.Style#legend` en choisit un. `Right` empile une pastille et un nom par série à
++         côté du tracé, `Bottom` les dispose le long du bas sur une seule ligne, et `Hidden` ne
++         dessine aucune légende et ne lui réserve aucune place. Un anneau n'a pas de légende, quel
++         que soit le réglage.
+
+@ 0 6 0 0752ddda5b421ff31480482d3b154461
++     detail
++         Étend `Chart.Style` avec les composants des axes et les paramètres de leur mise en page.
++         Les positions sont données dans les coordonnées du dessin ; le style décide de la forme,
++         du trait et de l'emplacement d'une étiquette par rapport à sa graduation. `Bars.Style`,
++         `Lines.Style`, `Scatter.Style`, `Boxes.Style` et (via `Bars.Style`) `StackedBars.Style`
++         et `Histogram.Style` l'étendent ; `Pie.Style` et `Annulus.Style` non, puisqu'ils n'ont
++         pas d'axes.
+
+@ 0 9 0 196afa5cecb1bec20a7c81e0224c5738
++     detail
++         Implémente à la fois `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
++         `Scatter.Style`, `Boxes.Style`, `Pie.Style` et `Annulus.Style`, de sorte qu'une seule
++         valeur dans la portée stylise n'importe quel graphique. Chaque paramètre a une valeur par
++         défaut : `width = 640.0`, `height = 400.0`, `inset = 12.0`, `font = Web.sansSerifFont`,
++         `fontSize = 12.0`, `legend = Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`,
++         `grid = true`, `abscissaTitle` et `ordinateTitle` non définis, `strokeWidth = 2.0`,
++         `markerRadius = 3.5`, `markers = false`, `smoothing = 0.0`, `barGap = 0.25`,
++         `boxGap = 0.25`, `hole = 0.0`, `sectorGap = 2.0` et `bandGap = 2.0`. Le rendu de tout
++         composant se redéfinit dans une sous-classe anonyme :
+
+@ 0 6 0 12c51d6ac39076691ded4ec9d3ad86de
++     detail
++         Le résultat de `Chart#drawing` : la taille du canevas, d'éventuelles définitions SVG, et
++         un `Ledger` de `Svg.Id` vers `Figure` contenant `backdrop`, puis (pour un graphique
++         cartésien) `grid`, `abscissa`, `ordinate`, `series-0`, `series-1`, … et `legend` ; un
++         diagramme en secteurs a `wedges` et `legend` ; un anneau `rank-0`, `rank-1`, …. Les
++         identifiants sont ce que nomme une `Chart.Revision.Replace`, et chacun devient l'`id`
++         d'un `<g>` dans le SVG.
+
+@ 0 10 0 0466364edec750d71603da2fb3f4031f
++   detail
++       `data is Plottable in form to fit by style` n'existe que là où le genre peut dessiner les
++       données : un diagramme en secteurs nécessite une série catégorielle, une ligne des axes
++       numériques, un anneau un `Dag` de nœuds pondérés et progressifs. Le genre est la `Form`,
++       l'ajustement le `Result` (de sorte que l'ajustement d'un graphique est celui du genre,
++       avec ses axes visibles), et le style l'`Operand`, borné par `Chart.Style`. Les instances
++       standard résident dans le compagnon de chaque genre — `Bars.series`, `Bars.traversable`,
++       `Lines.series`, `Histogram.samples`, `Annulus.dag`, … — de sorte qu'elles sont trouvées
++       sans import ; une instance `traversable` couvre toute collection de séries ou
++       d'échantillons (une `List`, un `Set` ou une `Sequence`), sa preuve de parcours étant
++       résolue avant les classes de types des types d'éléments.
+
+@ 0 3 0 1cefa9096741cc20124a9a7b78fd3ed1
++     detail
++         Pour un genre cartésien, chaque position et chaque intervalle se trouve dans les échelles
++         et chaque catégorie est une bande connue ; pour un diagramme en secteurs, les catégories
++         sont inchangées ; pour un anneau, la forme et les poids du graphe sont inchangés.
+
+@ 0 4 0 1bdbb9d5ce2db9910b3f17d117999156
++ entry .Weighted
++   info
++       l'étendue d'un nœud d'anneau : sa part de l'angle de son rang et de l'épaisseur de la bande
++   detail
++       `node is Weighted` donne `weight(node): Double`. Dans un `Annulus`, le secteur d'un nœud
++       balaie la part du tour de sa bande que représente son poids dans le total du rang, et une
++       bande est aussi épaisse que la part de son rang dans le poids du graphe entier. Un poids
++       négatif compte pour zéro.
+
+@ 0 1 0 0e276c79ebf8bb730daa1f702b0989f1
++ entry .Progressive
++   info
++       l'avancement d'un nœud d'anneau, de 0 (non commencé) à 1 (terminé)
+
+@ 0 4 0 144550f07a520c3e15a372802d55fe46
++   detail
++       `node is Progressive` donne `completion(node): Double`, ramené à `[0, 1]` au dessin. Un
++       nœud porte son propre avancement, de sorte qu'un anneau se révise comme n'importe quel
++       graphique, avec un nouveau `Dag` de même forme dont les nœuds ont avancé, et seules les
++       bandes dont les secteurs se sont davantage remplis sont remplacées.
+
+% 0 1 0 054d3f904bd128ce022edacb2a896287
+
+@ 0 1 0 12f074268f4e474211e04fa1a4fdb787
++ entry .Annulus
++   info
++       un graphe de dépendances sous forme de bandes concentriques : une par rang, chaque nœud
++       étant un secteur rempli selon son avancement
+
+@ 0 11 0 10558dd9c14195741886bce4954a655f
++   detail
++       Un genre de graphique pour un `Dag[node]` d'acyclicity dont les nœuds sont `Weighted` et
++       `Progressive`, avec un `Ranking` dans la portée (la valeur par défaut du compagnon
++       d'acyclicity ; `import rankings.balancedRanking` dessine chaque nœud aussi près que
++       possible de ses dépendants). Les nœuds qui ne dépendent de rien forment la bande la plus
++       intérieure, chaque bande suivante les nœuds d'un rang plus éloigné, de sorte qu'un build
++       se remplit du centre vers l'extérieur. Le secteur d'un nœud balaie un angle proportionnel
++       à son poids au sein de son rang, ordonné de façon à se placer au-dessus des dépendances
++       vers lesquelles il a été attiré, et une bande est aussi épaisse que la part de son rang
++       dans le poids total. Le secteur se remplit dans le sens horaire selon l'avancement du
++       nœud, le reste étant dans une teinte atténuée ; la couleur est la première couleur de la
++       palette, nuancée selon la position du secteur. Un anneau n'a ni étiquettes, ni axes, ni
++       légende.
+
+% 0 2 0 14e9c2ce8abadbba09354805377d870d
+
+% 0 1 0 192dfaa53893ba201815a4fa9a1268c7
+
+@ 0 1 0 1327ef1035b20e070ee410e860baa193
++   entry .Style
++     info
++         les composants d'un anneau : la partie terminée et le reste de chaque secteur, et les
++         joints
+
+@ 0 3 0 121552a83a12043b158ec044d077d746
++       detail
++           `x` et `y` vont de -1 à gauche ou en bas de l'anneau à 1 à droite ou en haut : la teinte
++           tourne de trente degrés de gauche à droite, et de bas en haut la couleur passe d'un
++           cinquième plus sombre, par la teinte pure, à un cinquième plus clair.
+
+@ 0 1 0 07f6378802d5a8e30639c4b9450869d1
++   entry .dag
++     info
++         un `Dag` de nœuds pondérés et progressifs peut être tracé en anneau, étant donné un
++         `Ranking`

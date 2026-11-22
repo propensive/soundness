@@ -1,0 +1,30 @@
+orthant 2 language
+
+% 0 1 0 0f1fc0986cbdbd7c0e9ffb1209c4c120
+
+@ 0 1 0 18b727aa733ee7710eda9ac95b1d1d52
++ Wird ausgelöst, wenn ein natives Werkzeug, das der Linker braucht, nicht im `PATH` liegt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 09fffb1ab7d0a0b11f5c7079248322ca
++ Das Linken eines nativen Binärprogramms oder eines Android-Pakets ruft Werkzeuge auf, die die
++ JVM nicht bereitstellt – `clang` für das native Linken sowie R8 und die Signierwerkzeuge für eine
++ APK. Dieser Fehler nennt das Werkzeug, das nicht gefunden werden konnte.
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 1 0 181c427c5ae66d56030a5179d4e9ed65
++ Installieren Sie das genannte Werkzeug, oder fügen Sie es dem `PATH` des Prozesses hinzu, der
++ den Build ausführt.
+
+@ 0 1 0 0b71e6280b1370aa1e108b1a528a55e4
++ > Dieser Fehler verwendete früher den Code `↯/s.137.3`, der mit `CompilerError` kollidierte.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 14ebaa7ce423e2b41522f803fe786b5d
++ - Quelle: `lib/anthology/src/core/anthology.Toolchain.scala`

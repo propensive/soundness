@@ -1,0 +1,1092 @@
+orthant 2 language
+
+% 0 1 0 1a5b4d7f5100bcea1559caf970e7cb81
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 5 0 13218cffd6f6cc490126acd80666e17b
++ El texto [XML](https://en.wikipedia.org/wiki/XML) se analiza y da un valor `Xml`. Una case class
++ se convierte a XML, y desde XML, con un codificador y un decodificador [derivados][derivación] de
++ su forma, y los elementos de un documento pueden recorrerse y consultarse. El XML escrito de
++ forma literal, con el [interpolador] `x"…"`, se analiza y se comprueba en
++ [tiempo de compilación], así que un fragmento mal formado no compila.
+
+@ 0 3 0 0de5d4e9b1e7445b0e8a2e8f34c9d408
++ El diseño refleja el de [JSON](json.md). El análisis mantiene juntos la estructura y los tipos.
++ Las conversiones se derivan, no se escriben a mano. Una conversión que no puede hacerse lanza un
++ error tipado que nombra el motivo.
+
+@ 0 1 0 060494ebcd4a3090039193bd25e98b9c
++ ### Sobre XML
+
+@ 0 5 0 016d8070808345f316b4a5f0eda96b9c
++ La API habitual para XML es el [DOM](https://en.wikipedia.org/wiki/Document_Object_Model). Es un
++ árbol sin tipos, cuyos elementos se obtienen por su nombre como cadena, y cuyo texto se extrae y
++ se analiza a mano. Donde el documento no coincide con lo que espera el código, la discrepancia
++ aflora como un `null` o como una conversión de tipo fallida. XML ya es prolijo de por sí, y una
++ interfaz que no comprueba nada lo empeora.
+
+@ 0 5 0 11d7333f361721581dfaadedeba25026
++ Aquí, la conversión entre XML y un tipo de Scala se deriva del tipo. Una case class se convierte
++ en un elemento con un hijo por cada campo, y una enumeración se convierte en un elemento con el
++ nombre de su caso, así que no hay nada que mantener sincronizado a mano. Los literales se
++ comprueban según se escriben, y una conversión fallida es un `Xml.Error` tipado. Un valor `Xml`
++ es [inmutable], y cada edición da un valor nuevo, de acuerdo con la
++ [inmutabilidad](../../philosophy/immutability.md).
+
+@ 0 2 0 15433966f3c4945b06504b98537cb8c4
++ Todo procede del paquete `soundness`. Un esquema y una [estrategia] de errores están en el
++ ámbito, y la última importación permite que los ejemplos impriman sus resultados:
+
+% 2 1 0 0f8dc632a664d4731acc384146b8c787
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d2427c27ad8baeb0c18f94adb6d4425
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 3 0 199df14c714381d313ad544b2eddb151
++ El esquema es una elección, que se importa como se importa un charset o una estrategia.
++ `freeformXmlSchema` admite cualquier elemento y cualquier atributo. Un
++ [XSD](#typed-records-from-an-xml-schema) ocupa su lugar cuando se conoce la forma de un
++ documento.
+
+@ 0 1 0 0be7689b9275055a16fd7074497e2d45
++ ### Análisis
+
+@ 0 1 0 0d85337c92dd788703d200498d317715
++ `read[Xml]` analiza texto y da un valor `Xml`, y `show` lo vuelve a escribir:
+
+% 2 1 0 101cefb7deffc54203d14dc6c2cf333e
+
+% 0 1 0 1d49a5ad6747e10b153f60e72b732adf
+
+% 1 1 0 115b5740f941a151177dc3cd1bd3dd8b
+
+% 3 1 0 1012ae7ed97458e412cf23969febfc93
+
+% 4 1 0 03c9d2783fdba4d4191c55f44a306b76
+
+% 5 1 0 0c416dd08118a6581428b84024459089
+
+% 0 1 0 14357d017465598900fc8e1f9451fa89
+
+% 1 1 0 0c0dadb66265e6e40d20fc13720830df
+
+@ 0 1 0 0e075aadae5e61f815023a221afeff3e
++ Un texto que no es XML bien formado es un error, que dice qué estaba mal y dónde:
+
+% 2 1 0 0616ad8ff679a80314f47706b9072060
+
+% 3 1 0 1afa208229a3187c020be1d8e5b2925b
+
+% 4 1 0 1d22c0bb77026147121ce8d4d3fac91c
+
+% 5 1 0 054df1c14b47f3c504842bd72167549d
+
+% 0 1 0 17887aad19a36e5016e99fd0ac5ea123
+
+% 1 1 0 0b50d5ffe2c4e1bc1a13ebc9f8cdc0e7
+
+@ 0 4 0 024899c2611aec9208213ba12d69f102
++ `load` lee un documento entero y conserva su cabecera `<?xml?>`. Mientras que `read` da el
++ contenido, `load` da un `Document`, que empareja la raíz con su `Header`: la versión y, cuando se
++ dan, las declaraciones de codificación y de standalone. Por tanto, un documento se vuelve a
++ escribir con su declaración intacta:
+
+% 2 1 0 0c4ddca42f3d58230772975f6aebbf68
+
+% 0 1 0 10d199dc1f673997065b6030312b5591
+
+% 0 1 0 06242af158dec53f156a013155dd3d45
+
+% 0 1 0 14a88fe271d504aa113454919318b8a2
+
+% 1 1 0 10f9d5af8a39f6ba009628009cd0afe1
+
+@ 0 3 0 00dd44874357d923013c915b90451393
++ Tanto `read` como `load` aceptan una fuente de bytes con la misma facilidad que un texto: un
++ [fichero](filesystem.md), el cuerpo de una [respuesta HTTP](http-client.md), un recurso del
++ [classpath](classpath.md). Los bytes se analizan directamente, sin ningún `Charset` en el
++ ámbito, ya que el analizador lee UTF-8 por sí mismo:
+
+% 2 1 0 14de5b6708e83cf21530d9e76369cbaf
+
+% 3 1 0 14727a42cfa94c1b068d6388a653d849
+
+% 4 1 0 1abf69806ac007940e01fe7d37c6f8e5
+
+% 0 1 0 02dedf8887e1abdd049f7aabb4c794d7
+
+% 0 1 0 0ab6cf2da46e96690f20f83ab5f6dacf
+
+% 1 1 0 1c36bb08acf7ff2d0fc4d8f640fa8263
+
+@ 0 2 0 07f22b437d0db19b18f04acaf8b5c55c
++ Todo lo que haya en el prólogo, como un comentario, una instrucción de procesamiento o un
++ `<!DOCTYPE>`, se conserva como un nodo anterior a la raíz. Por tanto, una instrucción de hoja de
++ estilo sobrevive a la lectura y a la escritura.
+
+@ 0 1 0 04a6447031aeb5a90198fdecf41f0da5
++ ### Los tipos de nodo
+
+@ 0 3 0 10bd3b26febbb8f2019c9980f6042584
++ Un valor `Xml` es una de las clases de nodo que define la especificación. Cada una es un tipo
++ distinto, en el objeto compañero `Xml`, y no una cadena etiquetada. Además de elementos y texto,
++ contienen lo que otras bibliotecas suelen aplanar y perder:
+
+% 2 1 0 13407574745bf935094448ce0cdcabfd
+
+@ 0 9 0 0e9a3997c7c10490145b50bb2decafdb
++ column  Tipo
++ column  Contiene
++ row  `Xml.Element`  un nombre, atributos e hijos
++ row  `Xml.Text`  datos de caracteres
++ row  `Xml.Cdata`  una sección `<![CDATA[…]]>`, conservada como sección
++ row  `Xml.Comment`  un comentario `<!-- … -->`, dondequiera que aparezca
++ row  `Xml.ProcessingInstruction`  un destino y sus datos, incluido el caso de datos vacíos `<?target?>`
++ row  `Xml.Doctype`  una declaración `<!DOCTYPE>`, que se vuelve a serializar literalmente
++ row  `Xml.Fragment`  una secuencia de nodos sin un único padre, como un prólogo más una raíz
+
+% 1 1 0 03a4618900e62d2f08c649edcee24030
+
+@ 0 2 0 1ff4021aa1b04bcd0c49938d3a996579
++ Una sección CDATA sigue siendo una sección, así que un texto que contiene `<not a tag>`
++ sobrevive a la lectura y a la escritura sin que se escape convirtiéndose en otra cosa.
+
+@ 0 2 0 0c05b091a861c8251fe03e7adb3c646c
++ Las entidades predefinidas se resuelven al leer un documento, y se vuelven a escapar al
++ escribirlo. Lo mismo ocurre con las referencias numéricas de caracteres, tanto decimales como
++ hexadecimales:
+
+% 2 1 0 04a99d33e6036d881733d70765bf3497
+
+@ 0 2 0 14c8fa9796ff491c13328307abee1588
++ column  Entidad
++ column  Carácter
+
+% 0 1 0 001f6f40b97b95f6199109fd65ff61ef
+
+% 0 1 0 0c3c8b51ff98a5c505bbba426ba2949c
+
+% 0 1 0 17429324136d6a9f0461c24fe4337003
+
+% 0 1 0 0f08ed14cfe1cabf02629ab5ffd89e16
+
+% 0 1 0 09dc4fd35dbe0f3206eedc60f1a30e02
+
+@ 0 1 0 0b63f049e128ee76076b3516a041c578
++ row  `&#NNN;`, `&#xHHH;`  el carácter con ese punto de código
+
+% 1 1 0 0308f92efe9b2e251e34408b236aafd5
+
+@ 0 1 0 0bd022f65de6e8f60034860fe3c0f564
++ ### Lectura de valores
+
+@ 0 2 0 0a8c140fe4a58fb0198b39b8be112e07
++ `as` convierte un valor `Xml` en un tipo de Scala. Un contenido que no puede leerse como ese
++ tipo lanza un `Xml.Error`:
+
+% 2 1 0 15627981c9637df50e40306c889f2a93
+
+% 3 1 0 09ddcca47c97e3631ddd699ec6c20b54
+
+% 4 1 0 150ddedcfacd84d71441564ba15e2e6f
+
+% 0 1 0 0defe56d040df6f705f8e2c8845acc9e
+
+% 1 1 0 0d37cda11bb2294b00147982156dd95e
+
+% 3 1 0 09e89aac798ae08d0610e95c9ddb3899
+
+% 4 1 0 0b9d7038de8643000ba5da06ade2fd95
+
+% 4 1 0 1a9f83f12eec02ae09166b7e3f404843
+
+% 5 1 0 057f515273fa81610fd007f7e6cca82c
+
+% 0 1 0 02c4c22c0db12a87013a61fb1951c6e9
+
+% 1 1 0 1539964ed07bc1960ddd37bde9ce16cc
+
+% 0 1 0 122767b78bbcdf991e0b390b940ae9b5
+
+@ 0 3 0 1ff2b9292e0c49310b8a175ea17dbf60
++ Una case class participa en XML tal como es. Su codificador y su decodificador se derivan de sus
++ campos. El valor se convierte en un elemento con el nombre del tipo, con un elemento hijo por
++ cada campo, y se lee de vuelta sea cual sea el orden de los hijos:
+
+% 2 1 0 1f39b4d73748e14f1643779aef125999
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 1512fe8ee27a4a4c0d550c6150eb7916
+
+% 1 1 0 19b54e2b4656af2b18dc556cf4101104
+
+% 3 1 0 1c87714fbf974cef0f76ea0410ec4ab4
+
+% 4 1 0 0888a18bcb8242f305ae0e7f7a635ac6
+
+% 5 1 0 15d5d739b33c77190a30f626c16e7765
+
+% 0 1 0 10350ec34b7e6c450607fa7dfd077b31
+
+% 0 1 0 02d90a7699600a3f1ff9373d77403406
+
+% 1 1 0 09dae05f6d42896913f7b6bfb5bd90a3
+
+@ 0 3 0 14618ffb7a21f3330af4ba612f003dd2
++ `in[Text over Xml]` codifica un valor directamente en su texto XML, como reflejo de
++ `read[Person in Xml]`, e `in[Data over Xml]` escribe el mismo texto como bytes, en el `Codepage`
++ que está en el ámbito.
+
+@ 0 2 0 0e842e03619d3238066100d23caf4459
++ Un campo marcado con `@attribute` se convierte en un atributo en lugar de un elemento hijo, y se
++ lee de vuelta como tal:
+
+% 2 1 0 1cb9806d117e7a5103d1ede3bcdb6754
+
+% 0 1 0 0ebbd88b884a069403d8cd7d8ae8d396
+
+% 1 1 0 139b1189d74c96a510479003195c6ea0
+
+% 3 1 0 16d426cdac3390fe1553e37ba014650d
+
+% 4 1 0 1527725b9082a3440b9cff28f69fe549
+
+% 5 1 0 1bfeaf11baec67dd1707894a25d38e3b
+
+% 0 1 0 14065b1992b5b3a90212788acc50a219
+
+% 1 1 0 139777e24bbab3831007ad3fd5843194
+
+@ 0 3 0 0e14c87919e8097d0b1d7a3e3bcbfe8a
++ `@name` cambia el nombre de un elemento o de un atributo cuando el nombre en Scala y el nombre
++ en XML deben ser distintos. `@name[Xml]` limita el cambio de nombre a XML, y deja los demás
++ formatos con el suyo propio. También cambia el nombre del elemento de una *variante* de una
++ enumeración, de modo que un `Light.Stop` puede escribirse como `<red>`:
+
+% 2 1 0 124305d66e905da107f48bb91f75bbb2
+
+% 0 1 0 1a62de65f428a3821fef2470e29d9f0c
+
+% 0 1 0 1965ca9f15c723e60087c097018fca1b
+
+% 0 1 0 09ac0b9523c391041a4aa3d5d797de99
+
+% 0 1 0 03778125128b6a7c01ec348e9d95fb21
+
+% 0 1 0 0f632127c80b5c2a0c0c070cf5c90f91
+
+% 1 1 0 1c6ecfac39801a6b011cb9bd8995daaa
+
+% 3 1 0 0d70dfa7cc0dd03a191aaa9b1a215649
+
+% 4 1 0 1331890b9954f5be121d058ca917fa34
+
+% 5 1 0 174c500fdddae11206c18ddfb27bceec
+
+% 0 1 0 0cd91ab6af65f6581299f5ad6148c9fa
+
+% 1 1 0 12ebb00f7714553c1423ef0fd7e6f0f5
+
+@ 0 2 0 0283de28921d50cb108d5d268444e9c7
++ Un tipo suma se decodifica por el nombre de su elemento, que selecciona la variante. Un nombre
++ que no coincide con ninguna variante lanza un `Xml.Error`, y nunca recurre a un valor por
++ defecto.
+
+@ 0 4 0 1a52bd05aff995c40872f5caa8cfe713
++ Un campo `Optional` que es `Unset` simplemente está ausente: no hay elemento hijo o, para un
++ campo `@attribute`, no hay atributo. Un documento sin el elemento decodifica el campo como
++ `Unset`. Un campo `Map` se convierte en un elemento hijo por cada entrada, que contiene un
++ `<key>` y un `<value>`, de modo que una clave no necesita ser un nombre de elemento válido, y
++ puede ser de cualquier tipo que pueda codificarse en XML:
+
+% 2 1 0 166627a76e7c91de1bf42c7c07f91a8a
+
+% 0 1 0 1d2972392278035404a5c078465e988b
+
+% 1 1 0 158db5fcc58b19601e2babd3ee1d9208
+
+% 3 1 0 1fb834f9e0b0c98c0c15a625638da881
+
+% 4 1 0 0a23b88525f106e71fb5574b12227fa3
+
+% 5 1 0 18f46406e9cc22ba1a94ff1167bc3523
+
+% 0 1 0 1df91123581eff95093a594356535eed
+
+% 1 1 0 1b77a1fa953438e91c94fc8ebae887bb
+
+@ 0 1 0 154878b7202306cc0991d8a35db4942f
++ En resumen:
+
+% 2 1 0 0a2574fa96d0527e1c294b140e771c53
+
+% 0 1 0 17f75ff859390a221ad2d8b01876bf13
+
+% 0 1 0 1a7803f3d875842b13d2db8c8eff5135
+
+@ 0 8 0 1a664caa3d91aff81986ca87c0eca18d
++ row  una case class  un elemento con el nombre del tipo
++ row  un campo  un elemento hijo con el nombre del campo
++ row  un campo `@attribute`  un atributo
++ row  un rótulo `@name` o `@name[Xml]`  el elemento o atributo con el nombre cambiado
++ row  una variante de un tipo suma  un elemento con el nombre de la variante
++ row  un campo `Optional` que es `Unset`  ningún elemento, o ningún atributo
++ row  un campo de colección  un elemento por cada ítem, con el nombre del campo, en orden
++ row  un campo `Map`  un elemento por cada entrada, que contiene un `<key>` y un `<value>`
+
+% 1 1 0 054d82b2bcbe373812b5ab9ff391daa5
+
+@ 0 1 0 051c71d587cb261403059804f8a948dc
++ [Anotaciones](annotations.md) describe `@name` y `@attribute` y cómo se leen.
+
+@ 0 1 0 0e526d4e0ef4bf5615c6639d48279867
++ ### Lo que tolera la decodificación
+
+@ 0 3 0 15ec19f364d0e19c109dd08717b1b26e
++ El XML real es desordenado, y un decodificador que exige orden sirve de poco. Se ignoran el
++ texto, los comentarios y las instrucciones de procesamiento que hay entre los hijos que espera un
++ tipo. Un documento con prosa entre sus campos se decodifica como si la prosa no estuviera:
+
+% 2 1 0 1265061361d23f5f0d55a116c95cbcd5
+
+% 0 1 0 0ad4c763c14992741babaf43b6a42bd7
+
+% 0 1 0 0fefefd3642a94451f16d5e447e8d973
+
+% 1 1 0 106ca959cc26b7fd0ff9cff85a954d87
+
+% 3 1 0 1bc6a54c7197669c033bdeead38a4300
+
+% 4 1 0 0be8bf091a6cff3717ec52d1ffb939e7
+
+% 5 1 0 1f3742c255748bc101e12f793ac91677
+
+% 0 1 0 0ccc3d5d09e684350e2dee5ec811e582
+
+% 1 1 0 10c90b1614f29f3611a73d053269c62d
+
+@ 0 5 0 09cded0a180770d4067c54785f05e4b1
++ Las entidades del texto se expanden según se leen. Los elementos repetidos se reúnen en un campo
++ de colección, en el orden del documento, y no necesitan estar uno junto a otro: un `<songs>`
++ antes del `<name>` y otro después siguen formando una sola lista, en el orden en que aparecieron.
++ Un tipo recursivo se gestiona a través de su propia derivación, así que un árbol de cualquier
++ profundidad se codifica y se decodifica sin un códec escrito a mano.
+
+@ 0 4 0 0968c5f3dc5dfed2128cc16b979aa99a
++ Donde falta por completo un valor anidado, un `Default` para su tipo convierte lo que sería una
++ cascada de errores sobre sus campos en un único error, en el punto donde debería haber estado el
++ valor. El valor por defecto se usa para continuar, que es lo que quiere una pasada de validación
++ que informa a una persona.
+
+@ 0 1 0 1151c7d6cada787503480bdb36c13930
++ Un campo obligatorio que falta es un error:
+
+% 2 1 0 1d2d20eb04346117107dadd634dcae8d
+
+% 3 1 0 03f3209ef9470873019075f860e65f84
+
+% 4 1 0 18a9f897f36a889208130ac02f330bcb
+
+% 5 1 0 023ab8d2db2e725e14c08f7add168076
+
+% 0 1 0 06f1511ac83bf1ee0f65eccc84a96391
+
+% 1 1 0 04224982c2becb5c114f1839b8d35524
+
+@ 0 2 0 025a2fa334fba4440c85683c42f5ed8b
++ Un campo `Optional` tiene dos políticas más, del paquete `optionalityOptions`, como describe
++ [Decodificación](decoding.md#policies-for-optional-fields):
+
+% 2 1 0 1ff5e61f994af8121ff43395e4a39323
+
+@ 0 5 0 0acdb05a3cc3ad2c150e8383a52ebf32
++ column  Un campo cuyo elemento o atributo está
++ column  Se lee como
++ column  Salvo que
++ row  omitido en el documento  `Unset`  `strictXmlAbsence` lo convierte en un error
++ row  presente pero rechazado por el decodificador interno  un error  `lenientXmlFaults` lo lee como `Unset`
+
+% 1 1 0 123146cac3ebd7f91d30bbb932ad4f1d
+
+@ 0 2 0 171252e34cdb184d1abacdd4128b6e26
++ Con `strictXmlAbsence`, un elemento o un atributo que falta es un `Xml.Error.Reason.Missing`.
++ XML no tiene null. Un elemento vacío es un valor presente, así que no hay ninguna política para
++ los nulos.
+
+% 2 1 0 02e351f73d54053b085ef9028bdd0ffe
+
+% 0 1 0 1528c823dd1f27e7140501dbf09796f6
+
+% 0 1 0 07ff2c9f0b0eaff2022a98b58d693ac6
+
+% 0 1 0 1aab369d319ecf041be6924012ac5dbb
+
+% 0 1 0 0a763b744de804771b7587cfac77a506
+
+% 1 1 0 052978b837fda5971b356200042e1dbe
+
+% 3 1 0 13f6fcf69e9b2da61026c6781e441237
+
+% 4 1 0 1c478652cfe8cb3b132057fa514ffc43
+
+% 5 1 0 127d5ec370bd32fd170400b580d0447f
+
+% 0 1 0 141aa914cc85d2ba18f3063adf07bb9c
+
+% 1 1 0 025a8f2a135c61c505e514d4fa7786b8
+
+@ 0 1 0 1623911c54169aa30c26d0879ab292c7
++ ### Escribir XML de forma literal
+
+@ 0 2 0 05e99ee5058f5c3b12f0fd0397cf76fa
++ El interpolador `x"…"` escribe XML directamente, y lo comprueba en tiempo de compilación. Se le
++ sustituyen valores:
+
+% 2 1 0 05605feb9c39adff17394dfdbd7c290e
+
+% 0 1 0 1a8b5d78ec8ed14c1c6038f705c9cca6
+
+% 0 1 0 0606f04fdc3c49e70681ec491a78a8d5
+
+% 1 1 0 0245df36de56cb281dcb94f9c88ed645
+
+% 3 1 0 0eadef371e1100b10bddeba1217ed608
+
+% 4 1 0 0a4c84077963517211dd8dd0306d6685
+
+% 5 1 0 0ec145773d096c53089a21f891bcfb9a
+
+% 0 1 0 13c5096791909db71d77f2acd710875d
+
+% 1 1 0 0ce04751122f52f50232b326dfc39ed2
+
+@ 0 1 0 14bb7e3585c6bfe419adfb3fa369b633
++ Un fragmento mal formado se rechaza allí donde se escribe:
+
+% 2 1 0 16fc70e5178bb9a5006634b02e1ba6b3
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1ae8a61dc6f9cac405e0e8657525f408
+
+% 1 1 0 12b5d5fa74a119a51b8d1f73e8234847
+
+@ 0 1 0 09a0a67442af0c6d0e4768244b27fadd
++ ### Navegación
+
+@ 0 2 0 08a3caa172629a2f0a2ddb11070a0e66
++ Con el acceso dinámico habilitado, a un elemento hijo se llega como si fuera un miembro, y los
++ pasos se encadenan. Un índice elige entre elementos repetidos:
+
+% 2 1 0 19bcc95b1815d8540493c0bb3ae5bf29
+
+% 0 1 0 097699de8b97547d1e075261e7e093d0
+
+% 0 1 0 063481d4c27394a613195dc1aa372975
+
+% 0 1 0 1346c8bceec4d2cf1db5e1e7ff7a049c
+
+% 1 1 0 0831b42ca06142a50ddff899f25c9152
+
+% 3 1 0 188e637e7250de99070cd613652017d4
+
+% 4 1 0 0325531e1741ca7c01776ebd9db1b720
+
+% 5 1 0 075ad843b7bab3eb1cd98f4ad037a0a0
+
+% 0 1 0 067235cb6c29a7430fcc95e734a689dc
+
+% 0 1 0 13d9a4bfa0dd4a5b03c8251d3b36a8dc
+
+% 1 1 0 1538893383ead53d1c9106303ae6c396
+
+@ 0 3 0 097e4b46ac33dff8040bb83522acce98
++ La importación concede el permiso `Xml is Dynamical` al resto de su ámbito.
++ `dynamically[Xml]:` lo concede, en cambio, a un solo bloque, como describe
++ [JSON](json.md#fields-as-members).
+
+@ 0 1 0 0d2e6eedb43452ee0cdfb9035ea44b00
++ ### Actualización
+
+@ 0 4 0 05ab92758f8c6b6a1d2147ffed6cb9b4
++ Un elemento se actualiza a través de una [lente](optics.md). Una lente llega a través de varios
++ niveles, y puede llevar ópticas como `Each`, para cambiar a la vez todos los elementos que
++ coinciden. Una actualización da un documento nuevo, ya que los valores `Xml` son inmutables. La
++ lente y sus ópticas son givens, que se importan por nombre del paquete `optics`:
+
+% 2 1 0 032a2098f84e8c170b905706cdbd39c3
+
+% 0 1 0 0e8b0f597208a5bb0f7c9a1596fbbed0
+
+% 0 1 0 0e1c25d0bea4b040162d8ae90c160f7e
+
+% 1 1 0 0875652788427e4b191d92853d15df52
+
+% 3 1 0 042b4940dc9e5bbb1be02de5d10219a8
+
+% 4 1 0 0eaa72322f84805e0a94f3222e3c7aba
+
+% 5 1 0 02e03f58df9bf60c0acd1709e4744c98
+
+% 0 1 0 17d639bd154672c4013b00fa7a56341e
+
+% 0 1 0 1323c3d68bcd181219eeebf260f45134
+
+% 1 1 0 0c72eb77f0d7a0980b6bcc53c43694be
+
+@ 0 3 0 1a7e6b3527340a781b37e797420300e4
++ El valor a la derecha del `=` no necesita ser ya XML. Cualquier cosa que pueda codificarse en
++ XML, como una case class, un `Int` o un `Text`, se codifica al asignarse, sin ninguna
++ importación. Los demás formatos piden una, como `conversions.encodableToJson`.
+
+% 2 1 0 158c777d3d52cd591e364ddbe8f75ee4
+
+% 0 1 0 0a80e1960125e7bd142538df7069c82e
+
+% 1 1 0 19a6fb60af3c319708c9d595b94005ff
+
+% 3 1 0 0bd215b83ec01feb092826336bdff705
+
+% 4 1 0 023e64a36a26daa11d180dd3fc75e575
+
+% 5 1 0 174ce1e25de569bf1d2b1837ee5646d1
+
+% 0 1 0 1e56e6e52819f88c0c368c7bf724a7e1
+
+% 1 1 0 0dd4b591bdf0fce304c740529dcc0163
+
+@ 0 1 0 0bb0bf3d6e9d87581c8c726161712ecc
++ ### Rutas y consultas
+
+@ 0 3 0 093db66562c7f474018d14ca0fe40891
++ Un [XPath](https://en.wikipedia.org/wiki/XPath) nombra una ubicación dentro de un documento. El
++ interpolador `xp"…"` escribe uno, y lo comprueba en tiempo de compilación. Un paso sin posición
++ significa la primera coincidencia, y `@` nombra un atributo:
+
+% 2 1 0 0e9bb6bf6b220cd30439e1e530c02192
+
+% 3 1 0 0cca12438760521301274a1118484509
+
+% 4 1 0 103f410518e8c9a102b298e580c9e195
+
+% 0 1 0 044722476a5608491e3c33f997d7e7dd
+
+% 0 1 0 1251cc07d207e17b15d27ef42b558ac0
+
+% 0 1 0 0d6059579c5cd5d207b8df1989d78c36
+
+% 1 1 0 0cb984499013d67602f21ed45c3f3f64
+
+@ 0 2 0 190a29662f6f858505f40772d1e63f39
++ Las posiciones y los errores acumulados se notifican como rutas, así que un error al decodificar
++ un documento grande nombra el elemento que lo causó.
+
+@ 0 2 0 1dc4c61e8e320932003f6cb185b899f0
++ El mismo interpolador escribe una expresión [XPath 1.0](https://www.w3.org/TR/xpath-10/)
++ completa, y un documento la responde:
+
+% 2 1 0 0320bd860b56bc7c01eb5ed3de101f4a
+
+@ 0 5 0 05977264f02aa1b10daf5966e4ab3506
++ column  Método
++ column  Devuelve
++ row  `select`  los nodos que coinciden, como un fragmento
++ row  `selectText`  el texto de la primera coincidencia
++ row  `evaluate`  el valor de cualquier expresión, ya sea un número, un booleano, una cadena o un conjunto de nodos, como un `XPath.Value`
+
+% 1 1 0 13beae88362f7e1613ae41f228bb9d34
+
+@ 0 3 0 0191cae5b4e066f60a8cff761b3e9eb0
++ Se admiten los ejes, los predicados sobre atributos y sobre texto, y la biblioteca de funciones
++ básica. Eso es lo que necesita un localizador para la
++ [automatización de navegadores](web-automation.md), o una búsqueda en un fichero de
++ configuración:
+
+% 2 1 0 1745db8d84deee2b09d498734166eef3
+
+% 0 1 0 003bc0399a2fe18e0d360eb3110c2b13
+
+% 0 1 0 1b1392b920b2014e0d542f680f54b98d
+
+% 1 1 0 0bffe2cad93f2d2903983c01e0a87bf1
+
+% 3 1 0 1a05cbd5d2b8dc9c1b17387976372fcd
+
+% 4 1 0 0383196e5e3bebbf1e61100538156be0
+
+% 5 1 0 09a16275f58cf1f817abb555b71a9326
+
+% 0 1 0 0c12400b725a445803dc4dff8c7d19d5
+
+% 0 1 0 0cff22dae12b1ccc0c847283d5526fae
+
+% 0 1 0 0bebad06564f05041061ebd00a75e0dc
+
+% 1 1 0 1b4f6e8df6e9476219ab699acc0733e5
+
+@ 0 2 0 0cf44c087a32fc3703252bdd53f08067
++ Una expresión que el motor no admite, o una variable que no se le dio, lanza un `XPath.Error`
++ que lo indica.
+
+@ 0 1 0 0bca99a19709fedb1e335ab6089fb04b
++ ### Espacios de nombres
+
+@ 0 4 0 0ebd042a0bfa69ab022ce60e71e596ec
++ El analizador resuelve los espacios de nombres según lee. Una declaración, `xmlns="…"` o
++ `xmlns:p="…"`, se conserva como atributo, así que un documento se vuelve a escribir exactamente
++ como se leyó. La declaración también liga el prefijo para el elemento y sus descendientes. Cada
++ `Xml.Element` lleva las ligaduras vigentes en él, como su `scope`, y resuelve su propio nombre a
++ través de ellas:
+
+% 2 1 0 17c2e43f05cfc0c50828882eb827eb68
+
+% 0 1 0 1d49456734a8749410e7460b2553ecf7
+
+% 0 1 0 0484fe1d80d81b4117bfaf7df9c0db5d
+
+% 0 1 0 19c7aa180339ad09046771dfe1cbb8b3
+
+% 1 1 0 06015025b10e57b805d77f5dcd475a69
+
+% 3 1 0 19a42713ee607586152f0d452c5b7909
+
+% 4 1 0 1f88521f825e4fa6013831456718617e
+
+% 5 1 0 179bd40d15a11c760445bcddcfc57d37
+
+% 0 1 0 18a363621ec7311d1e1d81e41adf7700
+
+% 0 1 0 0ea1c39a4aba20e81bdfd510122beb4a
+
+% 0 1 0 097694ac5612727f01945a74853a8ca3
+
+% 1 1 0 057dac583c7a8217121fee16b024f02a
+
+@ 0 4 0 024ec2c1a2b6691c039150eebfb96166
++ Dos nombres son el mismo nombre cuando coinciden sus URI de espacio de nombres y sus partes
++ locales, sean cuales sean los prefijos que los ligan. Un nombre con prefijo selecciona por el
++ nombre resuelto cuando su prefijo está ligado, ya sea por una declaración en el documento o por
++ un given `Xml.Scope` en el ámbito. Por tanto, el prefijo que usa el código no tiene por qué ser
++ el que usó el documento:
+
+% 2 1 0 1616246c0f2864c008f30bf5b7ab5318
+
+% 0 1 0 012f33218e0a3e200abdf6c8ccc44493
+
+% 0 1 0 1b25857fcf8344420a61d33011b888ea
+
+% 0 1 0 1dfe6b1d1355ef4913542b3ba0fbd486
+
+% 0 1 0 16fc43c3c2ff552e0422cafda20c398f
+
+% 0 1 0 1488e22de93821de1b4700615e98159b
+
+% 1 1 0 1a586d27fcfce97501b501170dfebf19
+
+@ 0 5 0 163f333d6f48c3980b5fdf1c70966b20
++ Un `Namespace` liga un prefijo, su `Self`, a una URI, su `Topic`. Ambos son tipos singleton, así
++ que la ligadura se comprueba allí donde se usa. Un literal `x"…"` que usa un prefijo que no
++ declara toma la ligadura de los givens que están en el ámbito. Una ruta `xp"…"` hace lo mismo
++ con los nombres que prueba, de modo que `xp"//svg:rect"` coincide por espacio de nombres.
++ `XPath#in(scope)` vuelve a ligar los prefijos de una ruta.
+
+@ 0 2 0 0410840a75f19e0b1947c06984a69b32
++ Un prefijo sin ligadura es un error, como exige la recomendación Namespaces. Analizar `<p:a/>`
++ sin una declaración de `p` lanza un `Parse.Error`:
+
+% 2 1 0 070a3dadde5c00a51018177ad9711e68
+
+% 3 1 0 016f25ab68bfe2c20645be2885f0370b
+
+% 4 1 0 113d18a6383a001a1623617ed9d18f59
+
+% 5 1 0 0d555702d6787a47052d0cb140944a1b
+
+% 0 1 0 03bda57bcd72bdb714d9328d23201881
+
+% 1 1 0 13ea151a43a6772717e50674050c8847
+
+@ 0 2 0 1c42a2458dc52eff0be82230f950e676
++ Escribir `x"<p:a/>"` sin un given `Namespace` para `p` no compila. Importar
++ `namespaceOptions.lenientNamespaces` hace que un prefijo sin ligar se resuelva, en cambio, a
++ ningún espacio de nombres.
+
+@ 0 5 0 154a3fd54a2996b300d8877c5f093b24
++ Cuando se escribe un árbol `Xml`, un elemento puede usar un prefijo, o un espacio de nombres por
++ defecto, que su ámbito liga pero que nada por encima de él ha declarado. Entonces se escribe la
++ declaración para él. Por tanto, un subárbol que se construyó en código, o que se recortó de un
++ documento mediante una selección, se escribe con todos los espacios de nombres que necesita. El
++ ámbito no interviene en la igualdad: un elemento analizado es igual al mismo elemento construido
++ a mano.
+
+@ 0 1 0 02aab486137e7eb90232dbb8a98e6967
++ Un códec derivado sitúa una case class en un espacio de nombres mediante una anotación:
+
+% 2 1 0 1538172f168e593c045e3412de9b8b87
+
+% 0 1 0 170f02590120466d12fc92eea5acea48
+
+% 0 1 0 122e829e1c116a4705819e5e8cb1bd33
+
+% 0 1 0 1c432394d7ced4650d325016598cbf6a
+
+% 1 1 0 0e2056b0a59f7306057226ba0afe4aee
+
+% 3 1 0 076cd507ae04fa8916909190f0919028
+
+% 4 1 0 17b7d8f6efd14dfd1cce02dd6a2c4f78
+
+% 5 1 0 145884429b5adb761f3bbc326c1666bf
+
+% 0 1 0 17c58995ef1703d918137097d2083d8b
+
+% 1 1 0 017c216ba8d5cd080b5d17485c39a546
+
+@ 0 2 0 1e9acf29c825c17d173ccc2fa899b04a
++ Los elementos de los campos están en el mismo espacio de nombres que la clase, y `as[Order]` lee
++ un documento cuyos elementos se resuelven a ese espacio de nombres, sea cual sea el prefijo con
++ el que los marque. Las alternativas son:
+
+% 2 1 0 12bebbf7aa97b8481412d213f1023c00
+
+@ 0 7 0 0319cc484062cca1050dd7394bc0dfc1
++ column  Declaración
++ column  Efecto
++ row  `@xmlns("urn:shop")` en la clase  el elemento de la clase y los elementos de sus campos están en el espacio de nombres
++ row  `@xmlns("urn:shop", qualified = false)` en la clase  los elementos de los campos no están en ningún espacio de nombres, como con `elementFormDefault="unqualified"`
++ row  `@unqualified` en un campo  el elemento de ese campo no está en ningún espacio de nombres
++ row  `given Rect is Xml.Namespaced = Xml.Namespaced(t"…")`  un espacio de nombres para un tipo que no puede anotarse
++ row  ninguna  los elementos de los campos se emparejan solo por su nombre, sea cual sea el espacio de nombres en que los ponga el documento
+
+% 1 1 0 0765075bf13053ef0ea093fe5bb78e6a
+
+@ 0 1 0 059b27ef75e5d7c40b69221409d8bf98
++ ### Formato
+
+@ 0 2 0 13a6615be5f32fa204d2641727636291
++ El formato de salida es un given que está en el ámbito. El formato compacto omite los espacios
++ en blanco, y el formato indentado añade saltos de línea y sangría para un lector humano:
+
+% 2 1 0 0899a825b23bb8c00a93bd020866a2e2
+
+% 3 1 0 03d3befc9d71872a0c699c9a6e3936d1
+
+% 4 1 0 183c30760e09e97c0d12fdd91d9120bb
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 10341f685333994f002a4b711d105d7d
+
+% 0 1 0 1a85d81d085608fd0b5da4076ee63b7d
+
+% 1 1 0 17d2f47ea3dcc8ca186d259c39fe0329
+
+@ 0 2 0 0ea8415665eec08913fc6eff2c6806b4
++ `show` representa el nodo entero en un único `Text`. Un documento grande no necesita estar en
++ memoria antes de enviarse:
+
+% 2 1 0 12374c2aefae53d105e385d966a6ae48
+
+@ 0 9 0 043d2a2db1c152ff1f790a2233280c81
++ column  Forma
++ column  Serializa en
++ column  Entrega
++ row  `show`  el hilo del llamante  un único `Text`
++ row  `Xml.emit[Text](document, f)`  el hilo del llamante  cada bloque de texto a `f`, a medida que se llena
++ row  `Xml.emit[Data](document, f)`  el hilo del llamante  cada bloque como bytes UTF-8 a `f`, a medida que se llena
++ row  `Xml.lend(document)`  el hilo del llamante  cada bloque prestado a una función, sin copiarlo
++ row  `Xml.emit(document)`  una fibra  el texto, a través de un iterador
++ row  `Streamable` por `Text`  una fibra  el texto, como un flujo
+
+% 1 1 0 10fc163bf25042ca180f490b21ed1584
+
+@ 0 2 0 19758fc00cad74260bd83c80ea32a16a
++ La forma de inserción de `Xml.emit` serializa un `Document[Xml]`, con su cabecera, y entrega
++ cada bloque a medida que se llena. Eso conviene para escribir en un fichero, en un
++ [socket](sockets.md) o en un `OutputStream`:
+
+% 2 1 0 1b6af2d0a379547c08c6f5d2ee1d4fae
+
+% 3 1 0 0519b9d1b3a7d76f116e266f5484beed
+
+% 4 1 0 0c5e23de690fc8351fe707544cfa755c
+
+% 0 1 0 0448cffdfbb7500a1c705bb34302fcfd
+
+% 1 1 0 1e7d662f8147d13e0e3ab3b8a1f665cb
+
+@ 0 4 0 0aab0283b80f8a47000f1f5ef00c51f0
++ `Xml.lend` evita incluso la copia en cada bloque `Data`. Presta al consumidor el propio búfer
++ del escritor como una `Region`, junto con un intervalo que demuestra que todos sus índices están
++ dentro del rango. Ambos son válidos solo mientras dura la llamada, la misma regla que el `lend`
++ de un [flujo](streams.md):
+
+% 2 1 0 1937483e72ae995e1e3aaafadb7279ff
+
+% 3 1 0 1cabe01e3803c93f1baa6997b5a95bea
+
+% 4 1 0 0b8f83125044e62a0577ba9725b7fc43
+
+% 0 1 0 0d5cdcc77d0ddae01307b192b57384bf
+
+% 0 1 0 0b6c56309af1e6a11860107c4b30ec55
+
+% 1 1 0 0be9eea4aa82623c025a1b98dc57045a
+
+@ 0 2 0 0968fbba3fe776ad0e53f64ddd6d2a62
++ Donde el consumidor extrae, en cambio, `Xml.emit(document)` y la instancia `Streamable` de un
++ `Document[Xml]` serializan en una fibra, dentro de un bloque [`supervise`](concurrency.md):
+
+% 2 1 0 155020b961109acf0a5873221f5b91e4
+
+% 3 1 0 00a2f0f038a370551868bd68f7020cdb
+
+% 4 1 0 190b241218407590009bbf6cca3b147a
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 01d762b569c09bc81d0cc4a88401b97d
+
+% 1 1 0 142349933fbe3dbf0b57e5a4610e01b8
+
+@ 0 1 0 10246ca00ae1b3ed129e48cb651099b9
++ ### Prescindir del árbol
+
+@ 0 4 0 005fe0151751ee8d045f4bcc8cab8bc2
++ Un registro con una instancia de `Xml.Printable` se escribe directamente, sin construir ningún
++ árbol, siempre que el formato sea compacto. El formato indentado sigue representándose a través
++ del árbol. El impresor se deriva en tiempo de compilación, para un registro sin anotaciones
++ `@name` ni `@attribute` y sin espacio de nombres, y escribe el mismo texto:
+
+% 2 1 0 10b030d135fb37d218af10c91c1e00ba
+
+% 0 1 0 0f73f8a8cecef5e80d39c1dbb0d26055
+
+% 1 1 0 0f1b03372b0c2e1309eb16be08495ffa
+
+% 0 1 0 1770c5a1ff31d7ae1b1094c0eed8b973
+
+% 0 1 0 0904924c439801580f6aeeaa1f8c3d0e
+
+% 1 1 0 1f8e1a8966da6e681bd176f02b7bccaf
+
+% 0 1 0 1f5308f945b757961819ef2763d281c7
+
+% 0 1 0 0624dcbdfb176bc904bb09b95986b95b
+
+% 0 1 0 0910f13897ed9586093f85cbd70f3164
+
+% 1 1 0 18741e6348a5f39506fc0001fa57f3d6
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 4 0 099d5ef9b62536800e11ab92d1098a25
++ `Xml.Printable.emit` escribe el texto bloque a bloque, y entrega cada bloque a una función a
++ medida que se llena. Un registro puede generar a la vez un analizador y un impresor, en su objeto
++ compañero, con `derives Xml.Direct`. Una sola importación elige entonces la vía para todos los
++ registros del ámbito, como ocurre con [JSON](json.md#skipping-the-tree):
+
+% 2 1 0 028ad63e854f642a0516e8196d6fdbdc
+
+@ 0 6 0 19960e366efcef181933276e595d45fe
++ column  Importación
++ column  Para un registro
++ column  Para cualquier otro tipo
++ row  `codecs.direct`  un analizador y un impresor generados  los códecs derivados, a través del árbol
++ row  `codecs.derived`  los códecs derivados, incluso donde hay una instancia directa en el ámbito  los códecs derivados, a través del árbol
++ row  `codecs.strict`  un analizador y un impresor generados  un error de compilación que nombra el tipo
+
+% 1 1 0 02f15f3cb71e31ea1a7b4813b733537d
+
+@ 0 2 0 0a9d96162fcbb9d00974c04e8406f89b
++ Con `codecs.strict`, el error surge allí donde `read[Play in Xml]` o `in[Text over Xml]`
++ recurrirían en otro caso al árbol. Los modos son alternativos, así que se importa uno cada vez.
+
+@ 0 1 0 0627f60fe0bb46571dfc1b4b12d1772d
++ ### Registros tipados a partir de un esquema XML
+
+@ 0 3 0 08f4a67e337064ad10f45ab1a1de832f
++ A veces la forma de un documento viene dada como un XML Schema (XSD), y no como un tipo de
++ Scala. Un `Xml.Provider` lee el esquema en tiempo de compilación, y produce registros tipados a
++ partir del XML que se ajusta a él. Un objeto proveedor contiene el esquema:
+
+% 2 1 0 1819f6d04f85dc2e058b7eacfaaaf26f
+
+% 3 1 0 059aa88b7f6a88da013d45a08730cbae
+
+% 4 1 0 1957a25d18ce8c5a1bc1958cb694ecb5
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 086d3d52457db4e61b6dccf9b0faa1ef
+
+% 1 1 0 0ad9398fc0c45e9615d3fabcf0e6b3ee
+
+@ 0 3 0 1b07d4990061aa9d0ec9751f9f7cb1e7
++ Su método `record` convierte un valor `Xml` en un registro. El registro tiene un miembro por cada
++ elemento hijo y atributo del elemento raíz del esquema, y cada uno tiene el tipo que declara el
++ esquema:
+
+% 2 1 0 194de6aaaf6f00921c8a014b96a466ed
+
+% 3 1 0 174bcaf198d0e3550f0f2d1a8d68d072
+
+% 4 1 0 184574bb87fcbc1118527a24fcc3d92c
+
+% 0 1 0 0c4281a2be49860505daf60e3c08fb34
+
+% 0 1 0 1ecd72055ec689e6140c9dace77e0cff
+
+% 0 1 0 1ab3bdad95e25c1a027b87bd296d74bb
+
+% 0 1 0 033dc3bf73b50b5a1069cadb0131d7a7
+
+% 0 1 0 081f35520ab9aee608b242559df295db
+
+% 1 1 0 14fa25ef99a2112d187b427e3d810775
+
+@ 0 2 0 1156676e87d2e1b31bc908ece80beaf5
++ `quantity` es una restricción de `xs:positiveInteger`, `comment` tiene `minOccurs="0"`, y
++ `partNum` se comprueba, al leerse, contra el patrón del esquema para un número de pieza.
+
+@ 0 3 0 1830a1c339e1daba18780463ff7e75c8
++ El esquema puede ser un valor `Xsd`, un documento `Xml`, el texto del esquema o cualquier cosa
++ que pueda leerse como texto, como un recurso del classpath. Donde un esquema declara varios
++ elementos globales, la raíz es el que tiene contenido complejo, o se elige con
++ `root = t"Envelope"`.
+
+@ 0 1 0 02d971b7567fbeec0b653ab0983c1e4e
++ Los elementos hijos y los atributos se convierten en campos, por su nombre local, con la forma
++ que les da el esquema:
+
+% 2 1 0 1141ddacf85255b0001d05e1bc138b2c
+
+@ 0 8 0 013458af6d3e52d11dc1f40901b72024
++ column  El esquema tiene
++ column  El campo es
++ row  un elemento con `minOccurs="0"`, o `nillable`  `Optional`
++ row  un elemento cuyo `maxOccurs` permite más de uno  una `List`
++ row  una alternativa de una `choice`  `Optional`
++ row  un atributo que comparte nombre con un elemento hijo  al que se llega como `` `@name` ``
++ row  un elemento con contenido simple y atributos  su texto, al que se llega como `text`, o `` `#text` `` si un atributo se llama `text`
++ row  una extensión  precedido por los campos de su tipo base
+
+% 1 1 0 04e5c20c21c0ca551b0c9e71d1a324ac
+
+@ 0 1 0 1d6b37617008c72806f601d4970ae345
++ Cada campo tiene el tipo de Scala de su tipo XSD:
+
+% 2 1 0 0548fa07d87dd8451f97b23e3e870f03
+
+@ 0 3 0 01ce1868a36447e10e13aa784537e023
++ column  Tipo XSD
++ column  Tipo de Scala
++ row  `xs:string` y los tipos de token, de nombre y de identificador, `xs:QName`, los tipos binarios, `xs:gYear` y afines  `Text`
+
+% 0 1 0 1bc0d6e79c89a07218de964842525c42
+
+% 0 1 0 0e8168e5fccf571d148fb0a950053ef8
+
+@ 0 1 0 12110b0363750e5b0069d33975a0b19a
++ row  `xs:integer`, `xs:long` y los tipos enteros sin signo, positivos y negativos  `Long`, con las cotas implícitas comprobadas
+
+% 0 1 0 1a675e242e047ee503204a23f05651f1
+
+@ 0 3 0 1ef324d171591f2608b6a6887e25f23a
++ row  `xs:dateTime`, `xs:date`, `xs:time`, `xs:duration`, `xs:anyURI`  el tipo que instancia una interfaz en el ámbito, o si no `Text`
++ row  `xs:NMTOKENS`, `xs:IDREFS` y cualquier `xs:list`  `List[Text]`
++ row  `xs:anyType`, `xs:any`, un tipo recursivo, una referencia sin resolver  `Xml`
+
+% 1 1 0 183323dfad7d8d011cae71c280ae8dd4
+
+@ 0 6 0 10622358396f9c3a17f600a5c3c930f6
++ Las facetas de una restricción se comprueban al leer el campo: `enumeration`, `pattern`, las
++ cotas inclusivas y exclusivas, las facetas de longitud y las facetas de dígitos. Una
++ comprobación fallida lanza un `Xml.Provider.Error` con el motivo, igual que un elemento
++ obligatorio que falta, o un valor que su tipo no puede leer. Todo error se lanza a través de la
++ [táctica] del código que lee el campo, así que `validate`, con una `venture` por cada campo,
++ [recopila todos los problemas](errors.md#ventures-and-guards) de un documento.
+
+@ 0 4 0 07dd6bae876853291b8b7880dd4e2f56
++ El proveedor empareja los elementos de un documento por su nombre resuelto. Se espera que un
++ hijo esté en el espacio de nombres destino del esquema cuando el esquema lo cualifica, mediante
++ `elementFormDefault`, un `form` o un `ref` a un elemento global. En caso contrario, se espera que
++ no esté en ningún espacio de nombres, sean cuales sean los prefijos que use el documento. Un
++ elemento de otro espacio de nombres se trata como ausente.
+
+@ 0 5 0 0a41af2ffcd7c7ff0f0646cd7241e3d3
++ Los grupos de sustitución, `xsi:type`, las restricciones de identidad y el contenido mixto se
++ leen como los declara el esquema sin ellos. Un `import` o un `include` se registra en el `Xsd`,
++ pero no se descarga, así que un tipo de otro esquema se lee como `Xml` en bruto. El proveedor no
++ valida documentos: comprueba lo que lee un programa. [JSON](json.md#typed-records-from-a-schema)
++ tiene la misma funcionalidad para JSON Schema, y [Registros](records.md) describe los propios
++ registros.
+
+@ 0 1 0 14848c7be3aacf191c8277bd3621132f
++ ### Posiciones y errores
+
+@ 0 3 0 0a8574c49001f4ce169c665518f3e416
++ Un documento mal formado lanza un `Parse.Error`. Su posición no es solo un número de línea,
++ sino un rango: el desplazamiento y la longitud del texto erróneo. Por tanto, una herramienta
++ puede subrayar exactamente la etiqueta de cierre que no coincide o el atributo sin terminar, y
++ no la línea entera.
+
+@ 0 1 0 09915712e9fbc4d417b5850bcc102eab
++ Las posiciones del contenido *bien formado* se registran cuando se piden, igual que para
+
+% 0 1 0 04773f539d480ee317c0b5835677d2e5
+
+% 2 1 0 0905e95e09ba68570c7fc6bf10429aeb
+
+% 0 1 0 0486d8c05db7d50203b07ad1a55e9c35
+
+% 0 1 0 038b184b531285f400bfa490ba8e76d1
+
+% 0 1 0 0d1f5cd1608cfb5c10542eae54fddcc8
+
+% 1 1 0 01102fbacc9134af041d945a79ea894b
+
+@ 0 3 0 103b537f8b1f3ea718106dcf9e7148b4
++ Con una estrategia que [acumula fallos](errors.md#accumulating-failures), la decodificación
++ notifica a la vez todos los fallos del documento, cada uno con la ruta al elemento que falló, en
++ lugar de detenerse en el primero.
+
+@ 0 1 0 1f4afa9c022a98981b11bbf69ef14226
++ ### XML sobre HTTP
+
+@ 0 3 0 04c77650b54aae271450bfe01ee79c9a
++ Un valor `Xml` es un cuerpo de petición o un cuerpo de respuesta, con el tipo de medio
++ `application/xml`, y un cuerpo se analiza de vuelta a `Xml` al llegar. Por tanto, una API XML se
++ consume y se ofrece sin ningún pegamento entre las capas de XML y de [HTTP](http-client.md).
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 5 0 068e0550cb37b5a00eccfb4cb7ba6bd3
++ - [HTML](html.md) usa los mismos tipos de nodo y la misma interpolación para páginas web.
++ - [SVG](svg.md) y el [marcado matemático](mathematical-markup.md) son vocabularios XML con
++   constructores tipados.
++ - [JSON](json.md) y [YAML](yaml.md) comparten el vocabulario de `read`, `as` e `in`.
++ - [Derivación](derivation.md), [interpolación](interpolation.md), [OpenAPI](openapi.md) y [TEL](tel.md) describen cómo se crean, se comprueban y se transportan los códecs XML.

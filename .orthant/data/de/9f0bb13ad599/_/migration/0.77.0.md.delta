@@ -1,0 +1,842 @@
+orthant 2 language
+
+@ 0 1 0 13b5d03f782821c801928e6bb8db9789
++ # Änderungen seit 0.76.0
+
+@ 0 3 0 19820ba8dd70bdea0cf9883a0c26ac43
++ Diese Datei wird von einem LLM-Agenten gelesen, um Code, der Soundness-Bibliotheken verwendet,
++ von 0.76.0 auf das nächste Release zu aktualisieren. Jeder Eintrag gibt genau an, was sich
++ geändert hat; das Format ist in `AGENTS.md` beschrieben. Die Einträge sind nach Modul gruppiert,
++ innerhalb eines Moduls der zuletzt hinzugefügte zuletzt.
+
+% 0 1 0 1e04ab5b4397387d110427d6d7cda432
+
+@ 0 7 0 19d6ab245d4c4a45104c1ccf0d01adac
++ - Mit einem `UnitsNames`-Given im Geltungsbereich ordnet das `Showable` eines `Quanta`-Werts jeder
++   Komponente den Namen an der Position ihrer eigenen Einheit zu; zuvor nahm es die Namen vom Ende
++   der Liste, sodass ein Wert mit einer Null in einer anderen als der kleinsten Einheit falsch
++   beschriftet wurde (`(Quanta(5, 0): Height).show` ergab `5"`, jetzt `5'`). (#2520)
++ - Ein `Quanta`-Wert, dessen Komponenten alle null sind, wird als `0` gefolgt vom Namen seiner
++   kleinsten Einheit dargestellt (`0oz`; mit `UnitsNames` der letzte Name); zuvor wurde er als
++   leerer Text dargestellt oder warf mit `UnitsNames` im Geltungsbereich eine
++   `NoSuchElementException`. (#2520)
+
+% 0 1 0 0cf85ff1a957438516d4d35b804c8f50
+
+% 0 1 0 099ca50b5dd13d4117981db28b8a621c
+
+@ 0 7 0 1d0f2e7e657816d10eb440387d3b3aa0
++   ist jetzt `apply[plane <: galilei.Platform: Filesystem](classpath: LocalClasspath, entryPoints:
++   List[Fqcn], out: Path on plane)`. Ein `Path on Linux`-Argument kompiliert weiterhin; einem
++   Argument ohne Plattform (`% / "out"` oder `temporaryDirectory / name` ohne erwarteten Typ) muss
++   eine gegeben werden, etwa mit `.on[Local]`. (#2527)
++ - Der Parameter `out` von `abscission.Shrink#run` ist in beiden Kanten von
++   `abscission_linker.scala` (den `Tool.run`-Implementierungen) `Path on Local`, zuvor `Path on
++   Linux`, entsprechend `anthology.Toolchain.Tool#run`. (#2527)
+
+% 0 1 0 16f13521983facf213aed73653b0ed8a
+
+@ 0 13 0 0e4a27645d6e4352032f5b97d0fdd737
++ - Die Konstruktorparameter von `acyclicity.Layering[node]` haben neue Typen: `layers` von
++   `scala.collection.immutable.List[List[Layering.Vertex[node]]]` zu
++   `proscenium.Sequence[proscenium.Sequence[Layering.Vertex[node]]]` und `links` von
++   `scala.collection.immutable.List[List[(Int, Int)]]` zu
++   `proscenium.Sequence[proscenium.List[(Int, Int)]]`. Inhalt und Reihenfolge sind unverändert.
++   `layering.layers(i)` und `layering.links(i)` mit einem `Int` kompilieren nicht mehr; gelesen wird
++   mit einer `Ordinal` (`layering.layers.at(i.z)`), die ein `Optional` liefert. Ein `List.from(…)`
++   oder `.to(List)` auf einem der beiden, um eine Soundness-Collection zu erhalten, ist nicht mehr
++   nötig. (#2522)
++ - `acyclicity.Layering#rank` und `#position` sind `proscenium.Map[node, Int]`; zuvor waren sie
++   `scala.collection.immutable.Map[node, Int]`. `layering.rank(node)` und
++   `layering.position(node)` kompilieren nicht mehr; `layering.rank.at(node)` liefert
++   `Optional[Int]`, und zwar `Unset` für einen Knoten, der nicht im Graphen liegt, wo das
++   Stdlib-`apply` eine `NoSuchElementException` warf. (#2522)
+
+% 0 1 0 1aab646960980e9a05191d9a19be16ba
+
+@ 0 3 0 019b412c51a2e2040296a9ebb2bece1e
++ - `anamnesis.Database#store`, `#assign` und `#unassign` halten die Sperre der Datenbank während
++   ihres gesamten Lesen-Ändern-Schreiben-Vorgangs, sodass gleichzeitige Aufrufe keine Aktualisierungen
++   mehr verlieren und einem Wert nicht mehr zwei Referenzen geben. Signaturen unverändert. (#2520)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 23 0 140f8879f33bbf590f55ddc6df58a53d
++ - `anthology.Compiler.Notice` hat einen sechsten Parameter erhalten, `code: Optional[fulminate.Bolt]
++   = Unset`, nach `markup`: den Bolt-Code, den Proscala einem Fehler oder einer Warnung unter
++   `-Zbolt-codes` (`anthology.scalacOptions.boltCodes`) gibt, sonst `Unset`. Die Konstruktion ist
++   nicht betroffen; ein positionales Pattern braucht den zusätzlichen Platzhalter: `case
++   Compiler.Notice(importance, file, message, span, markup)` wird zu `case Compiler.Notice(importance,
++   file, message, span, markup, _)`. (#2512)
++ - `anthology.Kotlinc#apply` schreibt seine Quelldateien in ein temporäres Verzeichnis (galileis
++   `Scratch`, unterhalb von `java.io.tmpdir`) auf der asynchronen Aufgabe, die sie kompiliert, und
++   löscht es dort, wenn die Kompilierung endet; zuvor schrieb es sie synchron, vor der Rückkehr. Ein
++   Fehler beim Anlegen oder Beschreiben des Verzeichnisses wird jetzt als `Compiler.Result.Crash` auf
++   dem zurückgegebenen `Compiler.Process` gemeldet, statt von `apply` geworfen zu werden, und
++   `Compiler.Event.Running` wird von der kompilierenden Aufgabe protokolliert statt vor der Rückkehr
++   von `apply`. (#2524)
++ - Jeder Host-Pfad in der API von anthology ist `Path on galilei.Local`, zuvor `Path on
++   galilei.Linux`: der Parameter `out` von `Toolchain.Tool#run` und von jeder seiner Implementierungen
++   (den Kanten apk, dex, link, linker, nir, oci, java, kotlin und scala); der Parameter `out` und das
++   Ergebnis von `Toolchain#produce`; `Deliverable.Emission(out, classpath)`,
++   `Deliverable.Product(file)`, die Ergebnisse von `Deliverable#emission` und `Deliverable#product`;
++   `Compilation(out, classpath)`; `NirPlugin(jar)`; `Wasi.World(directory, world)`; und der Parameter
++   von `dexOptions.platform(jar)`. Ein als `Path on Linux` typisierter Wert wird mit `.on[Local]`
++   umgewandelt; `temporaryDirectory[Path on Linux]`, `workingDirectory[Path on Linux]`, `text.as[Path
++   on Linux]` und `import
++   pathInterfaces.pathOnLinux` werden zu ihren `Local`-Gegenstücken. Operationen auf einem `Path on
++   Local` (`encode`, `/`, `existent`, Lesen und Schreiben) brauchen ein `ambience.System`-Given, etwa
++   `systems.javaBaseSystem`, wo ein `Path on Linux` keines brauchte. (#2527)
+
+% 0 1 0 1d8226ce2a9acba214a9ffe3134efc01
+
+@ 0 3 0 048380b4ba12e5b21dc2369561631a6d
++   Optional[Fqcn]): Path on Linux` ist jetzt `assemble[plane <: galilei.Platform:
++   Filesystem](classpath: LocalClasspath, jarfile: Path on plane, main: Optional[Fqcn]): Path on
++   plane`. Einem `jarfile`-Argument ohne Plattform muss eine gegeben werden. (#2527)
+
+% 0 1 0 1281cf5693caddee047e57c2960f2348
+
+@ 0 3 0 0096fa667c1211ad1599470b5b829ded
++ - `bitumen.Tarfile#extractTo[plane <: Posix: Filesystem](root: Path on plane)` hat jetzt die Schranke
++   `plane <: galilei.Platform`, sodass es einen `Path on Local` oder einen `Path on Windows`
++   annimmt. An bestehenden Aufrufstellen ist keine Änderung nötig. (#2527)
+
+% 0 1 0 0ef4c64348822baf04644f2877e95bc9
+
+% 0 1 0 137921a6c6d1c0f213fa942984a2fa3b
+
+@ 0 6 0 145bc36dbf2f12121ebb7bfb8279dbe5
++   bootstrapClass, progress)` ist jetzt `repackage[plane <: galilei.Platform: Filesystem](inputJar:
++   Path on plane, outputJar: Path on plane, …)`, die übrigen Parameter unverändert. Beide Pfade
++   müssen auf derselben Plattform liegen; einem Argument ohne Plattform muss eine gegeben werden.
++   (#2527)
++ - Der JAR-Cache von `burdock.repackage` ist `<user.home>/.cache/soundness/jars`, dekodiert als `Path
++   on Local` und elementweise abgestiegen; zuvor war es der Text `$home/.cache/soundness/jars`,
++   dekodiert als `Path on Linux`, was bei einem Home-Verzeichnis mit Laufwerkswurzel fehlschlug.
++   (#2527)
+
+% 0 1 0 0a4cdd5273865dd7126f966067eddb4e
+
+@ 0 2 0 13a5760fddec0b3817380eee4826aacc
++ - `caduceus.couriers.resendCourier` sendet die Reply-To-Adressen des Umschlags als JSON-Feld
++   `reply_to`, das Resend liest; zuvor sendete es `replyTo`, das Resend ignorierte. (#2520)
+
+% 0 1 0 0e8186e51a950acf19869503c43d7b4d
+
+@ 0 11 0 1e50cbdebb38d3da15191f0c41d92955
++ - `capricious.toss()` zieht aus dem Kontext-`Random` (`true`, wenn `random.long() < 0L`); zuvor
++   zog es aus `scala.math.random` und war unter einem `Seed` nicht reproduzierbar. (#2520)
++ - `capricious.Random.apply(seed: Seed)(using Randomization): Random` ist jetzt `inline def
++   apply(seed: Seed): Random`: Die `Randomization` wird im Inneren aufgelöst, mit `seed` als `Seed`
++   im Geltungsbereich, sodass der Generator unter `randomization.seededRandomization` bei `seed`
++   beginnt (zuvor wurde es nie gelesen). Ein Aufruf, der eine `Randomization` explizit übergibt,
++   muss sie stattdessen im Geltungsbereich haben. (#2520)
++ - Abgeleitete `Randomizable`-Instanzen (`Randomizable.derived`, `conjunction`, `disjunction`) ziehen
++   jedes Feld und jede Variante aus dem an `randomize` übergebenen `Random`. Zuvor bauten sie einen
++   neuen Generator aus der `Randomization` (und dem `Seed`) im Geltungsbereich der Stelle, an der die
++   Instanz abgeleitet wurde, sodass unter `seededRandomization` jeder abgeleitete Wert wieder bei
++   diesem Seed begann; die Ableitung braucht keine `Randomization` im Geltungsbereich mehr. (#2520)
+
+% 0 1 0 17d39e5779908e921d761fda8f0cce70
+
+@ 0 5 0 1613f305d5adbf691e930ef5b90c365d
++ - `Reaction.Stoichiometric` wird als `=` und `Reaction.Resonance` als `↔` dargestellt; zuvor wurde
++   jedes mit dem Zeichen des anderen dargestellt. (#2520)
++ - `charisma.PeriodicTable.element` lässt in einem systematischen Namen ein `n` weg, wo `enn` vor
++   `nil` steht: Element 190 ist `Unennilium` (zuvor `Unennnilium`), ebenso 290, 390, 490, 590, 690,
++   790, 890, 900–909 und 990. (#2520)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 10 0 04432f75f3b8a04e1952a20e27995bf2
++ - Die DNS-Erweiterungsmethoden `coaxial.query` auf einem `Endpoint[Udp.Port]` (beide Überladungen,
++   in `coaxial.dns`) heißen jetzt `ask`: `resolver.query(dns"example.com")` wird zu
++   `resolver.ask(dns"example.com")`, und `resolver.query(message)` wird zu `resolver.ask(message)`.
++   Der Name kollidierte in `soundness` mit `query` aus telekinesis; löschen Sie jedes `import
++   coaxial.query`, das geschrieben wurde, um das zu umgehen. (#2520)
++ - Die Givens `Multicast.subscribable`, `Multicast.bindable` und `Multicast.showable` gelten jetzt
++   für jedes `multicast <: Multicast`, sodass `Multicast(ip"224.0.0.251", udp"mdns").subscribe(…)`
++   kompiliert, ohne den Wert als `Multicast` zu annotieren (ein Literal-Port verfeinert den Typ).
++   Bestehender Code ist nicht betroffen; eine Typannotation, die hinzugefügt wurde, um das zu
++   umgehen, kann entfernt werden. Ein Aufruf, der das Given mit einem expliziten `Self` benennt, etwa
++   `summon[Multicast is Subscribable]`, wird weiterhin aufgelöst. (#2520)
+
+% 0 1 0 1b6b21af68bfe90d0119e7d6717ec6c0
+
+@ 0 3 0 15e4cb416c0d3fbb01e86426ab1a8b9b
++ - `cosmopolite.Locale.decodable` wandelt seine Eingabe in Kleinbuchstaben um und ignoriert alles ab
++   dem ersten `-` oder `_`, sodass `t"FR"`, `t"fr-CA"` und `t"fr_CA"` als `Locale(fr)` dekodiert
++   werden (ebenso `pl`, `de`, `es`); zuvor wurden sie als `Locale(en)` dekodiert. Unbekannte Codes
++   werden weiterhin als `Locale(en)` dekodiert. (#2520)
+
+% 0 1 0 07f33a1bf4fa2505029751dde4102879
+
+@ 0 6 0 012bea711dfa74c91967e812f483114d
++ - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text])` nimmt `(using
++   backend: FilesystemBackend on Local)`, zuvor `FilesystemBackend on Linux`, und dekodiert jeden
++   Text als `Path on Local`. Ein Aufrufer, der die Plattform des Backends nennt, muss `Local`
++   nennen; `filesystemBackends.javaBaseFilesystem` bedient beide. Der zum Klassenpfad relative Pfad
++   einer TASTy-Datei wird aus den Elementen des Pfads berechnet und ist auf jedem Host durch `/`
++   getrennt; zuvor wurde er durch Suchen nach `/` im kodierten Text berechnet. (#2527)
+
+% 0 1 0 15965c13323b4da117df6152721cd841
+
+@ 0 10 0 00efb7efb1d7eaee1e70938ffe0a0114
++ - Der Konstruktorparameter `rows` von `dendrology.LayeredDagDiagram[node]` ist
++   `proscenium.List[(proscenium.List[DagDiagram.Tile], proscenium.Map[Int, node])]`; zuvor war es
++   dieselbe Gestalt in `scala.collection.immutable.List` und `Map`. `LayeredDagDiagram#tiles` gibt
++   `proscenium.List[proscenium.List[DagDiagram.Tile]]` zurück und `#nodesAt`
++   `proscenium.List[proscenium.Map[Int, node]]`, jeweils zuvor das Stdlib-Gegenstück. Inhalt und
++   Reihenfolge sind unverändert. (#2522)
++ - `dendrology.LaneDagDiagram.Style#serialize(tiles, glyphs, widths, label)` nimmt `glyphs` als
++   `proscenium.Map[Int, line]`; zuvor war es `scala.collection.immutable.Map[Int, line]`. Eine
++   Implementierung von `Style` muss den Parameter neu typisieren, und ein direkter Aufrufer muss
++   eine `proscenium.Map` übergeben. `LaneDagDiagram.TextualStyle#serialize` ändert sich mit. (#2522)
+
+% 0 1 0 1c4d783a18693f681e38c16afefeb132
+
+@ 0 5 0 09fc0021e68311431bd1bd1479080247
++ - `distillate.Irrefutable.intDoule` umbenannt in `distillate.Irrefutable.intDouble`. (#2520)
++ - `distillate.Decodable.int` und `distillate.Decodable.long` lösen für Text, der auf `[+-]?[0-9]+`
++   passt, aber nicht in den Typ passt, `Number.Error` mit `Number.Error.Reason.OutOfRange` aus;
++   zuvor lösten sie ihn mit `Reason.Unparseable` aus. `Decodable.byte` und `Decodable.short` geben
++   für solchen Text jenseits des Bereichs eines `Int` ebenso `OutOfRange`, wo sie `Unparseable`
++   gaben. (#2520)
+
+% 0 1 0 11d5d50734a7e80a1e85faf7259fa0fc
+
+@ 0 3 0 1060d008a000746519bebce918f070d0
++ - `diuretic.JavaLongDuration` legt `type Domain = Durations` fest, sodass
++   `anticipation.durationInterfaces.javaLongDuration` jetzt `Long is Abstractable across
++   Durations to Long` erfüllt. (#2520)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 27 0 04b87a741a98d5a609417c4cb89ed9af
++ - `enigmatic.HmacCipher` ist von der Komponente `enigmatic.cose` nach `enigmatic.core` verschoben
++   worden; Paket und Name sind unverändert, und es wird aus demselben `soundness`-Umbrella
++   exportiert. Ein Build, der nur wegen `HmacCipher` von `enigmatic.cose` abhing, kann von
++   `enigmatic.core` abhängen. (#2530)
++ - `enigmatic.HmacCipher[algorithm]#genKey()`, und damit
++   `SymmetricKey.generate[HmacCipher[algorithm]]()`, gibt einen Schlüssel so lang wie die Ausgabe des
++   Hashverfahrens zurück (32 Bytes für `Sha2[256]`, 48 für `Sha2[384]`, 64 für `Sha2[512]`); zuvor
++   gab es für jedes Hashverfahren 32 Bytes zurück. `HmacCipher#Size` und `#keySize` sind die Breite
++   des Hashverfahrens in Bits; zuvor waren sie das Literal `256`. (#2530)
++ - `enigmatic.SymmetricKey#verify` prüft die Signatur gegen den Schlüssel; zuvor prüfte es gegen
++   einen Schlüssel von null Bytes und gab daher für jeden MAC, den der Schlüssel selbst erzeugt
++   hatte, `false` zurück. Signatur unverändert. (#2530)
++ - Die Schranke von `enigmatic.AesGcm[bits]` ist `128 | 192 | 256`; zuvor war sie `128 | 256`. (#2530)
++ - `enigmatic.Crypto.Error.Reason` hat einen neuen Fall, `BadWrap` (Nummer 7); ein erschöpfender
++   Musterabgleich darauf braucht den Fall. (#2530)
++ - `enigmatic.Cose.Verifier` hat einen neuen abstrakten Member, `algId: Long`, und seine Givens
++   `Cose.Verifier.asymmetric` und `Cose.Verifier.symmetric` nehmen einen weiteren Kontextparameter,
++   `cipher is Cose.Algorithm`. Eine Chiffre ohne `Cose.Algorithm`-Given hat keinen
++   `Cose.Verifier` mehr. (#2530)
++ - `enigmatic.Cose#verifyWith`, und damit `authenticate[Cose]`, löst
++   `Cose.Error(Cose.Error.Reason.AlgorithmMismatch(expected, actual))` aus, wenn der geschützte
++   Header der Nachricht ein anderes `alg` nennt als das der Chiffre des Schlüssels; zuvor ignorierte
++   es den Header. (#2530)
++ - `enigmatic.Cose.Algorithm` hat drei neue Member mit Standardimplementierungen: `scheme`, `wire`
++   und `native`. `Cose.Authenticator.asymmetric` signiert mit `scheme`, wo es gesetzt ist, und
++   schreibt die Signatur über `wire`, sodass ein mit einem `Ecdsa`-Schlüssel erzeugtes COSE_Sign1
++   die Signatur `r ‖ s` mit fester Breite trägt, die RFC 9053 §2.1 vorschreibt. Zuvor konnte kein
++   `Ecdsa`-Schlüssel eines erzeugen, da es dafür kein `Cose.Algorithm` gab. (#2530)
+
+% 0 1 0 154e8c2a4c3287e30895275cffbeafd7
+
+@ 0 4 0 0881d187c4b9e423194476b6037be6b6
++ - `escapade.escapes.foreground.BrightWhite` setzt mit `[39m` (der Vordergrundvorgabe) statt
++   `[49m` zurück. (#2520)
++ - Ein ohne `reset` konstruiertes `Escape` fügt dort, wo seine geklammerte Spanne endet, kein
++   bloßes `\e` mehr ein; dort wird nichts eingefügt. (#2520)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 7 0 016f14572f29bce9178973b0007e19fc
++ - `ethereal.Installer.candidateTargets()` gibt `List[Path on Local]` zurück, zuvor `List[Path on
++   Linux]`, und `ethereal.Installer.install(force: Boolean, target: Optional[Path on Linux])` nimmt
++   `target: Optional[Path on Local]`. (#2527)
++ - Das Datenverzeichnis von `ethereal.Upgrade` (verwendet von `stage`, `pending`, `outcome` und
++   `acknowledge`) wird als `Path on Local` aufgelöst; zuvor war es ein `Path on Linux`, sodass es
++   unter Windows, wo es unterhalb von `%LOCALAPPDATA%` liegt, nicht aufgelöst werden konnte und
++   jede dieser Operationen fehlschlug oder nichts meldete. (#2527)
+
+% 0 1 0 0331d6d0302087a20afc43473d6ee718
+
+@ 0 3 0 06e351542e6adc6f08281e2f6310f7ae
++ - `eucalyptus.dateFormat` ist ein `java.time.format.DateTimeFormatter` (Muster `yyyy-MMM-dd
++   HH:mm:ss.SSS`, die Standardzeitzone des Systems); zuvor war es ein `java.text.SimpleDateFormat`.
++   Ein Aufruf `dateFormat.format(millis: Long)` wird zu
+
+% 0 1 0 1c34524667bc270c100ebade6870a000
+
+@ 0 6 0 12165ef85c89a1cd181f0b3b4ca4b1e5
++ - Von `eucalyptus.logFormats.ansiTimestampedLogFormat` und
++   `eucalyptus.logFormats.googleCloudPlatformLogFormat` formatierte Einträge enden mit `\n`, wie die
++   von `timestampedLogFormat` und `untimestampedLogFormat`; zuvor hatten sie kein Zeilenende. (#2520)
++ - `eucalyptus.Logger.apply` hält einen Spool und einen Schreib-Daemon für jedes Paar aus
++   Aufrufstelle (`Codepoint`) und `destination` (verglichen mit `==`); zuvor hielt es einen für jede
++   Aufrufstelle, sodass Logger, die an einer Quellposition für verschiedene Ziele erzeugt wurden,
++   alle in das erste schrieben. (#2520)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 11 0 121bc6148fe0bcb5091ddf346f4f8c38
++ - `exoskeleton.Enclave.Launcher#sandbox` nimmt einen weiteren Kontextparameter,
++   `Tactic[galilei.Io.Error]`, nach `Tactic[Path.Error]`: Das temporäre Home-Verzeichnis, unter dem
++   es das Werkzeug ausführt, ist ein galilei-`Scratch`-Verzeichnis unterhalb von `java.io.tmpdir`,
++   mit der Maske des Prozesses angelegt (zuvor Modus `0700`) und gelöscht, wenn der Block endet,
++   nachdem der Daemon beendet wurde. (#2524)
++ - `exoskeleton.Enclave.Tool` erhält ein viertes Feld, `runtime: Optional[Path on Linux] = Unset`,
++   und `Enclave.scratch` und `Enclave.environment` einen optionalen Parameter `runtime`: Ist einer
++   angegeben, werden das Werkzeug und die Shells, die seine Tests starten, mit `XDG_RUNTIME_DIR`
++   ausgeführt, das ihn nennt. `sandbox` gibt jedem Werkzeug ein eigenes Laufzeitverzeichnis, ein
++   `Scratch`-Verzeichnis unterhalb von `/tmp`, sodass der Socket-Pfad seines Daemons innerhalb der
++   104 Bytes bleibt, die macOS erlaubt, wie lang das temporäre Verzeichnis auch sei, und kein
++   Werkzeug auf einen Daemon des echten Benutzers trifft. Ein mit drei Argumenten konstruiertes
++   `Tool` kompiliert weiterhin; ein Pattern `Tool(path, pid, home)` braucht eine vierte Bindung.
+
+% 1 1 0 172f7e40ec4fad350e89cd18ab6b29bd
+
+@ 0 11 0 00852c090331fb0c00e30d8f364fc316
++ - Die PowerShell-Installation von `exoskeleton.Completions` dekodiert den Profilpfad, den
++   PowerShell meldet, als `Path on Local`; zuvor wurde er als `Path on Linux` dekodiert, sodass für
++   ein Profil mit Laufwerkswurzel immer
++   `Installation.InstallResult.NoWritableLocation(Shell.Powershell)` gemeldet wurde. Die
++   Verzeichnisse der anderen Shells, `Completions.install` und `Manpages` bleiben auf `Linux`.
++   (#2527)
++ - Jeder Pfad in der API von `exoskeleton.Enclave` ist `Path on galilei.Local`, zuvor `Path on
++   galilei.Linux`, entsprechend `superlunary.Rig#stage`: `Enclave.Error(tool)`; `Enclave.Tool(path,
++   pid, home, runtime)`; die Parameter `home` und `runtime` von `Enclave.scratch` und
++   `Enclave.environment`; der Parameter und beide Ergebnisse von `Enclave.keygen(prefix)`;
++   `Enclave.Launcher(path)`; die Parameter `seed` und `out` und das Ergebnis von
++   `Enclave.Launcher#sign`; die Felder `releaseKey` und `recoveryKey` von `Enclave`;
++   `Enclave#Target`; der Parameter und das Ergebnis von `Enclave#stage(out)`; und der Parameter
++   `Stage[output, Text, Path on Local]` von `Enclave#invoke`. (#2527)
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 14 0 00a2ae73cc980f441f053cbcdd2cc4b0
++ - Das Löschen eines `Scratch`-Verzeichnisses am Ende seines Geltungsbereichs übergeht einen
++   Eintrag, der bereits verschwunden ist, statt mit `Io.Error` fehlzuschlagen: Ein Prozess, der
++   seine Arbeit im Verzeichnis noch abschließt, während der Geltungsbereich endet, kann eine Datei
++   zwischen ihrer Auflistung und ihrer Löschung löschen. (#2524)
++ - Die Erweiterung `published[record]` auf einem `Path on plane` umbenannt in `observe[record]`, und
++   die Capability, die sie verleiht, `galilei.Published[record]`, umbenannt in
++   `galilei.Observer[record]` (ebenso `soundness.Published` in `soundness.Observer` und das
++   exportierte `published` in `observe`). Signaturen und Verhalten sind unverändert:
++   `file.published[Ratel] { reader => … }` wird zu `file.observe[Ratel] { reader => … }`. Die
++   Quelldatei ist `galilei.Observer.scala`; `Edition` und `Owner` sind unverändert. (#2518)
++ - `galilei.FilesystemBackend` hat einen abstrakten Member erhalten, `holding(path: Path on Plane,
++   reserve: Long, mode: Optional[Int])(using Tactic[Io.Error]): FilesystemBackend.Hold^`, den eine
++   Implementierung des Traits definieren muss; eine ohne beschreibbare Speicherabbildung bricht mit
++   `Io.Error(path, Operation.Open, Reason.Unsupported)` ab, wie es das WASI-Backend tut.
+
+% 0 1 0 1d8689c9568ced04018b19cdd59b1a5a
+
+@ 0 30 0 169e167b9e0891311d6e784dd5343c8e
++ - Die Suchpfad-Erweiterung `galilei.search` auf einem `Path on <plane <: Searchpath>` heißt jetzt
++   `discover`: `path.search()` wird zu `path.discover()`. Der Name kollidierte in `soundness` mit
++   `search` aus gossamer; löschen Sie jedes `import galilei.search`, das geschrieben wurde, um das zu
++   umgehen. `locations`, `listing` und `destination` sind unverändert. (#2520)
++ - `create[Directory]`, `create[File]`, `create[Fifo]`, `create[Sock]` und `create[Ram]` beachten
++   jetzt eine `CreateParents`-Richtlinie, die an der Aufrufstelle im Geltungsbereich ist: Mit `import
++   filesystemOptions.createParents` legt `path.create[Directory]()` fehlende übergeordnete
++   Verzeichnisse an, wie es `CreateFlag.Parents` tut, wo es zuvor `Io.Error` mit
++   `Reason.Nonexistent` auslöste. Es ist keine Richtlinie erforderlich, und `CreateFlag.Parents`
++   funktioniert weiterhin. Code, der sich darauf verließ, dass `create` bei fehlendem übergeordnetem
++   Verzeichnis fehlschlägt, während dieser Import im Geltungsbereich war, muss stattdessen in diesem
++   Geltungsbereich `filesystemOptions.requireParents` importieren. Die Klassen
++   `Creation.DirectoryCreatable`, `FileCreatable`, `FifoCreatable`, `Ram.RamCreatable` und
++   `SocketCreation.SocketCreatable` nehmen die Richtlinie als erste Parameterliste, und ihre Givens
++   sind `inline`; Code, der nur `create` aufruft, ist nicht betroffen. (#2520)
++ - Die Dateisystemoption `filesystemOptions.createNonexistentParents` heißt jetzt
++   `filesystemOptions.createParents`, und ihr Richtlinien-Trait `galilei.CreateNonexistentParents`
++   heißt jetzt `galilei.CreateParents`: Ersetzen Sie `import
++   filesystemOptions.createNonexistentParents` durch `import filesystemOptions.createParents` und
++   `CreateNonexistentParents on plane` durch `CreateParents on plane`.
++   `filesystemOptions.requireParents` ist unverändert. Das Verhalten ist unverändert. (#2520)
++ - Ein Given `galilei.Local.submissible: [root] => root is Submissible on Local` lässt
++   `Path#on[Local]` (und die implizite Konversion zu einem erwarteten `Path on Local`) für einen Pfad
++   mit beliebigem Wurzeltyp kompilieren: `(% / "etc").on[Local]`, `(Drive('C') / "x").on[Local]`,
++   `p"/etc/hosts".on[Local]` und ein Wert vom Typ `Path on Linux`, `Path on MacOs`, `Path on Posix`
++   oder `Path on Windows`. Jedes davon kompilierte zuvor nicht, mit `cannot reduce summonFrom`. Der
++   Text der Wurzel wird geprüft, wenn die Konversion läuft: Eine, die weder `/` noch eine
++   Laufwerkswurzel (`C:\`) ist, wirft `Path.Error(Path.Error.Reason.InvalidRoot)`. Jedes Element wird
++   weiterhin gegen `Local.Rules` (`Windows.Rules & MacOs.Rules`) geprüft. (#2527)
++ - Das Dekodieren von Text als `Path on Local` löst für Text von weniger als drei Zeichen, der nicht
++   mit `/` beginnt, `Path.Error(Path.Error.Reason.InvalidRoot)` aus; zuvor warf es eine
+
+% 0 1 0 0c22cb21982ec6291d38fe31531361c1
+
+@ 0 4 0 008d6cca0e58cdf405cf341ca4707634
++ - `path.executable` (und `galilei.FilesystemAttribute.Executable[plane]`) ist für einen `Path on
++   plane` mit `plane <: Platform` verfügbar, zuvor `plane <: Posix`, sodass ein `Path on Local` oder
++   `Path on Windows` es hat. Wo der Host kein Ausführungsbit hat, bleibt das Setzen ohne Wirkung.
++   `hardLinks()` bleibt durch `Posix` beschränkt. (#2527)
+
+% 0 1 0 05a039658357a62915cb363c5761cf36
+
+@ 0 4 0 095ba2769464703316e7fa7f4e576670
++ - `gastronomy.Sha384` und `gastronomy.Sha512` entfernt, mit ihren Givens
++   `gastronomy.Multicodec.sha384` und `gastronomy.Multicodec.sha512`; verwenden Sie `Sha2[384]` und
++   `Sha2[512]` (und `Multicodec.sha2_384`, `Multicodec.sha2_512`, die dieselben Codes haben). Keiner
++   der entfernten Typen hatte eine `Hash`-Instanz. (#2520)
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 4 0 0724f59882f8b32b0dac9b722ebf9646
++ - `gossamer.justify` funktioniert: `text.justify(width)` gibt die Wörter von `text` über `width`
++   Spalten verteilt zurück, wobei der überzählige Platz so gleichmäßig wie teilbar auf die Lücken
++   aufgeteilt wird (`t"a b c d".justify(12)` ist `t"a  b   c   d"`); zuvor gab es nur das erste Wort
++   zurück. Ein Text, der bereits breiter als `width` ist, wird mit einfachen Leerzeichen
++   zurückgegeben, ein einzelnes Wort unverändert. Signatur unverändert. (#2520)
+
+% 0 1 0 0bfdc02cf06b2ef71ab35144a7590d48
+
+@ 0 2 0 1802fb9942d52be317f7a753b519d1ca
++ - Das leere Artefakt `hallucination-ansi` (Komponente `hallucination.ansi`, die keine Quelldateien
++   hatte) wird nicht mehr veröffentlicht; entfernen Sie jede Abhängigkeit davon. Aus ihm wurde
++   nichts exportiert. (#2520)
+
+% 0 1 0 162fdd68f08c465a12122d34e6c4d9a3
+
+@ 0 4 0 00f0edfcc4e6792c09a1882842031413
++ - `hellenism.Classpath.Entry.classify(path)`, `LocalClasspath#+` für einen Pfad und
++   `LocalClasspath.running(classloader)` dekodieren jeden Pfad als `Path on Local`, die ersten beiden
++   mit dem eigenen `ambience.System` der JVM; zuvor dekodierten sie ihn als `Path on Linux`, was einen
++   Eintrag mit Laufwerkswurzel zurückwies. Signaturen sind unverändert. (#2527)
+
+% 0 1 0 1158a6567f5d98ee0a180931c96339da
+
+@ 0 17 0 0351fc304e61712b05af0ac0c11e8de9
++ - Neue Richtlinie `hieroglyph.EncodingSanitizer`, die entscheidet, was ein `Codepage` mit einem
++   Zeichen tut, das seine Kodierung nicht darstellen kann. Die Vorgabe (das Given
++   `EncodingSanitizer.substitute`, das ohne Import gefunden wird) schreibt wie bisher das
++   Ersatzzeichen der Kodierung. `import
++   encodingSanitizers.strictEncodingSanitizer` lässt `Codepage#encoded` und alles, was über ein
++   `codepages`-Given kodiert (`in[Data]`, `write`, …), stattdessen `Codepage.Error(char, encoding)`
++   auslösen und erfordert eine `Tactic[Codepage.Error]`. Um das alte Verhalten zu behalten, ist keine
++   Änderung nötig. (#2520)
++ - Die `codepages`-Givens (`utf8Codepage`, `utf16Codepage`, `utf16LeCodepage`, `utf16BeCodepage`,
++   `asciiCodepage`, `iso88591Codepage`) nehmen jeweils ein `(using EncodingSanitizer)`; `import
++   codepages.utf8Codepage` und `codepages.utf8Codepage.encoded(…)` sind nicht betroffen. `Codepage`
++   hat einen zweiten Konstruktorparameter, `sanitizer: EncodingSanitizer`, mit Vorgabewert, und eine
++   neue Methode `sanitized(sanitizer)`. (#2520)
++ - `charsets.iso88591Charset` nimmt den `TextSanitizer` im Geltungsbereich, wie die anderen
++   `charsets`-Givens; zuvor legte es `textSanitizers.skipSanitizer` fest und brauchte keinen. Code,
++   der es importiert, muss auch einen Sanitizer im Geltungsbereich haben: Fügen Sie `import
++   textSanitizers.skipSanitizer` hinzu, um das alte Verhalten zu behalten. Jedes Byte ist gültiges
++   ISO-8859-1, daher ändert die Wahl des Sanitizers nicht, was dekodiert wird. (#2520)
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 16 0 028afc5055823bbd152883f424ab86a9
++ - `honeycomb.Whatwg#Area.Default`, `Area.Rect`, `Area.Circle` und `Area.Poly` sind `Tag.Void of
++   "area"` und werden als `<area shape="…">` serialisiert; zuvor waren sie `Tag.Void of "input"` und
++   wurden als `<input shape="…">` serialisiert. (#2520)
++ - `honeycomb.Whatwg#Legend` ist ein `Tag.Container of "legend"` und wird als `<legend>`
++   serialisiert; zuvor hatte es die Beschriftung und das Topic `"label"`, wurde daher als `<label>`
++   serialisiert und von `Fieldset` zurückgewiesen. (#2520)
++ - `honeycomb.Whatwg#Iframe` ist `Tag.container["iframe", "", Whatwg]()`, kein `Tag.Void`: Es wird
++   mit einem End-Tag serialisiert (`<iframe …></iframe>`), und der Parser erwartet `</iframe>`.
++   (#2520)
++ - `honeycomb.Whatwg.usemap` ist das Attribut `usemap` (Typ `"usemap" is Attribute on "img" |
++   "input" | "object" of HashName`); zuvor war es als `usemaptype` registriert. (#2520)
++ - `honeycomb.Whatwg.headingreset` ist das Attribut `headingreset` (Typ `"headingreset" is Attribute
++   of Presence`); zuvor war es als zweites `headingoffset` registriert. (#2520)
++ - `honeycomb.Whatwg.acceptCharset` ist das Attribut `accept-charset` (Typ `"accept-charset" is
++   Attribute on "form" of Utf8`), wie es `honeycomb.Html4Transitional.acceptCharset` ist; zuvor war
++   es als `acceptCharset` registriert. (#2520)
++ - `honeycomb.Whatwg#Meta` legt `type Topic = "meta"`, `type Transport = ""` und `type Form =
++   Whatwg` fest, wie es `Area`, `Input`, `Link` und `Track` tun. (#2520)
+
+% 0 1 0 17f94539b937dacb1c8f57fb7f04ec71
+
+@ 0 2 0 019d1a3ac7a12bf30b1bde76b14a3add
++ - `hyperbole.tastySymbolTeletypeable` zeichnet ein gesetztes Flag mit `TastyPalette#flagOn`; zuvor
++   verwendete es `flagOff` für gesetzte wie nicht gesetzte Flags. (#2520)
+
+% 0 1 0 10336422395755bf1e478ba611fcc433
+
+@ 0 20 0 1292913bca84908c08f682cdc514e0fe
++ - `binary` auf `B8`, `B16`, `B32` und `B64` terminiert jetzt und gibt die eigenen Bits der Bitmap
++   zurück, das höchstwertige zuerst, mit Nullen auf die Breite des Typs aufgefüllt (8, 16, 32 oder
++   64 Zeichen); zuvor kehrte es nie zurück. (#2520)
++ - `U8#hex` gibt Hexadezimal zurück (`U8` 255 ergibt `t"ff"`); zuvor gab es die Oktalform zurück,
++   identisch mit `U8#octal`. (#2520)
++ - Ein `U8`-Literal über 255 ist ein Kompilierfehler (`↯/s.27.9`); Werte von 256 bis 65535 wurden
++   zuvor angenommen und auf ihre niedrigen acht Bits abgeschnitten. (#2520)
++ - `Byte#int` gibt `Int` und `Byte#short` gibt `Short` zurück (die Erweiterungen in `hypotenuse`);
++   zuvor gaben beide `Long` zurück. (#2520)
++ - `B8#ones`, `B8#zeros`, `B8#leadingZeros`, `B16#ones`, `B16#zeros` und `B16#leadingZeros` zählen
++   nur die eigenen Bits des Typs; bei gesetztem höchstem Bit zählten sie zuvor die
++   Vorzeichenerweiterung mit (`B8` `0x80` ergab 25 Einsen und -17 Nullen). `B64#zeros` zählt alle
++   64 Bits, wo es nur die niedrigen 32 zählte. (#2520)
++ - `<=` und `>=` auf `U16` vergleichen vorzeichenlos, wie es `<` und `>` bereits taten; Werte von
++   32768 oder mehr wurden zuvor als negativ verglichen. (#2520)
++ - `F32.apply(sign: Boolean, exponent: B16, mantissa: B32)` baut IEEE 754 binary32: das Vorzeichen
++   an Bit 31, die niedrigen 8 Bits von `exponent` an den Bits 23-30 und die niedrigen 23 Bits von
++   `mantissa`. Zuvor ergab `sign = true` unabhängig von den anderen Argumenten `-0.0f`, und der
++   Exponent wurde an Bit 22 mit einer 22-Bit-Mantisse platziert. `F64.apply(sign: Boolean, exponent:
++   B16, mantissa: B64)` verwendet die niedrigen 11 Bits von `exponent`, wo es die niedrigen 8
++   verwendete. (#2520)
+
+% 0 1 0 08aeb0597d80bda715e9265307be8d6a
+
+@ 0 7 0 0db9fd5b1f4e2fad068b059783388911
++ - `Home.Config`, `Home.Cache`, `Home.Local.Share`, `Home.Local.State` und `Home.Local.Bin` folgen
++   jetzt den Variablen der XDG Base Directory (`XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, `XDG_DATA_HOME`,
++   `XDG_STATE_HOME`, `XDG_BIN_HOME`): Ist die Variable auf einen absoluten Pfad gesetzt, wird das
++   Layout zu diesem Pfad aufgelöst statt zu seinem festen Ort unter `$HOME`. Ein relativer oder
++   leerer Wert wird ignoriert. Code, der den festen Ort unabhängig von der Umgebung braucht, sollte
++   ihn aus `Home` bauen, etwa `Home[Path on Linux]() / ".config"`. `BaseLayout` hat einen dritten
++   Parameter erhalten, `variable: Optional[Text] = Unset`, und eine Methode `relocation`. (#2520)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 2 0 1628805a021a91ef11fdccbdb207c47b
++ - `iridescence.Palette#selectDynamic` löst für einen Namen, den die Palette nicht hat, eine Panic
++   mit `field <name> is not defined for this palette` aus; zuvor entkam eine
++   `java.lang.NoSuchMethodException`. (#2520)
+
+% 0 1 0 1b8860e67aa4a1c91891b47a0b5ee058
+
+@ 0 16 0 1e5594ab0970065517040d13478cc468
++ - `mandible.Classfile` wird geparst, wenn es erzeugt wird, und fehlerhafte Bytes lösen
++   `Classfile.Error` aus, statt bei der ersten Verwendung die `IllegalArgumentException` des JDK zu
++   werfen. `Classfile(name)`, `Classfile[type]` und das `Aggregable`-Given hinter `read[Classfile]`
++   brauchen daher eine `Tactic[Classfile.Error]` im Geltungsbereich: Umschließen Sie einen Aufruf mit
++   `safely(…)`, um ein `Optional`-Ergebnis zu behalten, oder fügen Sie der umgebenden Signatur
++   `raises Classfile.Error` hinzu. Der öffentliche Konstruktor `new Classfile(data)` wird durch die
++   Fabrikmethode `Classfile(data)` ersetzt, die denselben Fehler auslöst. (#2520)
++ - `Bytecode.Opcode.Dup.transform` gibt auf einem leeren Stack den Stack unverändert zurück, wie die
++   anderen Fälle `Dup*` und `Swap`; zuvor warf es eine `NoSuchElementException`. (#2520)
++ - Die unerreichbare Makroimplementierung `mandible.internal.disassemble` und das Objekt
++   `mandible.internal` sind entfernt, zusammen mit dem Fehler `↯/s.88.1`, den nur sie auslöste. Das
++   öffentliche `mandible.disassemble` ist unverändert. (#2520)
++ - `Classfile#Method#bytecode` ist `Optional[Bytecode] raises Classfile.Error`: Ein fehlerhaftes
++   Code-Attribut löst `Classfile.Error` aus, statt eine JDK-Ausnahme zu werfen, sodass ein Aufruf eine
++   `Tactic[Classfile.Error]` im Geltungsbereich braucht (umschließen Sie ihn mit `safely(…)` oder
++   fügen Sie der umgebenden Signatur `raises Classfile.Error` hinzu). Eine Methode ohne Code
++   (abstrakt oder nativ) ergibt `Unset`; zuvor warf sie eine `NoSuchElementException`. (#2520)
+
+% 0 1 0 15ea6feaac12c1f31aef1231a48de2e8
+
+@ 0 16 0 08786389cc941d0a09c8a233f6f2e314
++ - Eine `metamorphose.Permutation` wirkt jetzt auf den Anfang einer Sequenz, nicht auf das Ende: Sie
++   ordnet ihre ersten `extent` Positionen um und lässt jede spätere fest, sodass
++   `Permutation(Sequence(0, 2, 1))` gleich `Permutation(Sequence(0, 2, 1, 3, 4))` ist (zuvor war sie
++   gleich `Permutation(Sequence(1, 0))`), und die Anwendung einer Permutation auf eine längere Liste
++   ordnet die vorderen Elemente um und lässt die hinteren unverändert (zuvor ließ sie die vorderen
++   unverändert). `permutation(n)` ist jetzt korrekt für eine Permutation, deren erster Index an
++   seinem Platz bleibt. DIE NUMMERIERUNG HAT SICH GEÄNDERT: Die `Factoradic`-Zahl einer Permutation,
++   und damit `Permutation(Factoradic(n))`, `permutation.factoradic`, die Reihenfolge von
++   `Permutation.bySize(n)` und die `Encodable in Data`-Bytes, weichen für die meisten Permutationen
++   von 0.76.0 ab (`Permutation(Sequence(1, 4, 2, 3, 0))` war `Factoradic(45)` und ist
++   `Factoradic(104)`); die Identität ist weiterhin 0, und eine vollständige Umkehrung ist
++   unverändert. Gespeicherte Zahlen oder kodierte Bytes aus einer früheren Version müssen aus ihren
++   Indexsequenzen neu erzeugt werden. (#2520)
++ - `Permutation#lehmer` ist entfernt. Verwenden Sie `inversions` (die Inversionstabelle, ein Eintrag
++   je Position, niedrigstwertige Ziffer zuerst) oder `extent` (wie viele vordere Positionen die
++   Permutation umordnet, was `lehmer.size` ersetzt). `expansion` hört jetzt beim letzten Index auf,
++   der sich bewegt, und lässt daher nachgestellte feste Indizes weg, wo es früher vordere wegließ.
++   `Permutation.Error.Reason.TooShort(length, min)` meldet `extent` als sein Minimum. (#2520)
+
+% 0 1 0 198a8a0f50e011a109d8b4e58d765f40
+
+@ 0 11 0 015cf0f72eef416a1aef7b4935b3f474
++ - Ein `monotonous.Alphabet` kann nur aus einem String-Literal erzeugt werden und wird zur
++   Kompilierzeit geprüft. Ersetzen Sie `Alphabet(t"0123456789ABCDEF", false)` durch
++   `Alphabet("0123456789ABCDEF", false)` (ein einfaches `"…"`-Literal, nicht `t"…"`); wo kein
++   erwarteter Typ die Kodierung angibt, schreiben Sie `Alphabet[Hex]("…", false)`. Das Literal muss
++   für die Kodierung genau `2^bits` Zeichen haben (2, 4, 8, 16, 32 oder 64), zuzüglich eines
++   Auffüllzeichens, wenn `padding` `true` ist, ohne wiederholtes Zeichen und ausschließlich ASCII;
++   andernfalls kompiliert der Aufruf nicht. Der Konstruktor `new Alphabet(…)` und `copy` sind
++   privat, sodass ein Alphabet nicht mehr aus zur Laufzeit berechnetem Text gebaut werden kann. Das
++   dritte Argument, `tolerance`, ist unverändert. (#2520)
++ - `Alphabet` hat ein neues Feld `bits: Int`, und `Serialization.Bits[scheme]` gibt dieselbe Breite
++   als Typ an (`Serialization.Bits[Base64]` ist `6`). Ein Pattern `case Alphabet(chars, padding,
++   tolerance)` braucht einen vierten Platzhalter. (#2520)
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 30 0 0309c4fed3cb7f8c015db63c0c2ae9a7
++ - `octogenarian.SshUrl#text` stellt die scp-artige Form von git dar, `user@hostname:path`, oder
++   `hostname:path` ohne Benutzer; zuvor stellte es `user:@hostnamepath` dar (und `@hostnamepath`
++   ohne Benutzer). (#2520)
++ - Die Meldung von `octogenarian.Commandline.Event.Exec(event)` ist `git: <event>`; zuvor war sie
++   `the git operation did not execute: <event>`. (#2520)
++ - `octogenarian.SshKeygen.Verifier#verify` und `octogenarian.Gpg.Verifier#verify` schreiben die
++   Signatur in eine galilei-`Scratch.File` (Modus `0600`, unterhalb von `java.io.tmpdir`), die
++   gelöscht wird, wenn die Verifikation endet; ein Fehler beim Anlegen oder Beschreiben wird als
++   `Git.Error(Git.Error.Reason.SigningFailed(_))` ausgelöst, wo es zuvor eine nicht abgefangene
++   `java.io.IOException` war. (#2524)
++ - Jeder Host-Pfad in der API von octogenarian ist `Path on galilei.Local`, zuvor `Path on
++   galilei.Linux`: jeder Parameter `gitDir`, `commonDir`, `worktree`, `target` und `path` und jedes
++   Pfadergebnis der Methoden von `Git.Backend` (und damit von `Commandline` und `Native`);
++   `Git.Backend.Location(gitDir, commonDir, worktree)`; `Git.Backend.WorktreeEntry#path`;
++   `Git.Config.Source.Effective(gitDir)`, `Source.File(path)` und `Source.Repository(gitDir,
++   scope)`; `Git.Repo.Handle#gitDir`, `#commonDir` und `#worktree`; `Git.Worktree.Entry#path`; die
++   Ergebnisse von `addWorktree`, `moveWorktree` und `pruneWorktrees`; `SshKeygen.Signer(key)` und
++   `SshKeygen.Verifier(allowedSigners)`; und das Given `searchpathGitCommand`, jetzt `(Path on
++   Local) is Instantiable across Paths from Text`. Der `type Under` von `Git.Worktree.Handle` ist
++   `Local`, sodass Ergebnisse vom Typ `worktree.Plane` (`Git.PathStatus[worktree.Plane]`) auf `Local`
++   liegen. Die `Openable`-Instanzen für `Git.Repo`, `Git.Worktree` und `Git.Config` gelten für `path
++   <: Path on Local`, zuvor für `path <: Path on Linux`: Ein `Path on Linux`, der als eines davon
++   geöffnet wird, wird mit `.on[Local]` umgewandelt. `Git.init`, `Git.clone`, `Git.cloneCommit`,
++   `addWorktree` und `moveWorktree`, die jedes `Abstractable across Paths to Text` nehmen, sind
++   unverändert. (#2527)
++ - Das native Backend löst einen Pfad, der in einer von gits eigenen Dateien genannt wird
++   (`commondir`, das `gitdir:` einer `.git`-Datei, `objects/info/alternates`, `include.path`, ein
++   Ref- oder Indexpfad), auf, indem es einen `Path on Local` Element für Element absteigt und den
++   Text an `/` aufteilt; zuvor verband es Text mit `/` und dekodierte das Ergebnis als `Path on
++   Linux`. Solcher Text gilt als absolut, wenn er als `Path on Local` dekodiert wird (er beginnt mit
++   `/` oder einer Laufwerkswurzel), zuvor, wenn er mit `/` begann; eine entfernte URL wird nach
++   demselben Test als lokaler Pfad behandelt. Das Verhalten auf einem Host, dessen Trennzeichen `/`
++   ist, ist unverändert. (#2527)
+
+% 0 1 0 12a5154887295d701791e765afcca89e
+
+@ 0 6 0 045e17abcb4f88cd1572bda8cd6d5498
++ - `orthodoxy.Authorization` hat einen fünften Konstruktorparameter,
++   `identityToken: Optional[Text] = Unset`, nach `refresh`: das Member `id_token` der
++   Token-Response, unverifiziert. Konstruktoraufrufe sind nicht betroffen; ein Pattern
++   `Authorization(key, scopes, expiry, refresh)` braucht eine fünfte Position. (#2530)
++ - `orthodoxy.OAuth.Error.Reason` hat einen neuen Fall, `Identity(detail: Text)` (Nummer 8); ein
++   erschöpfender Musterabgleich darauf braucht den Fall. (#2530)
+
+% 0 1 0 1bd70fbb7fb9eb1c1af80784b13c3b46
+
+@ 0 6 0 00e806442779076c031f74708f2f060a
++ - Der Typ für die Schriftabdeckung, `phoenicia.Coverage`, ist als `phoenicia.Font.Coverage`
++   verschachtelt und wird nicht mehr unter seinem bloßen Namen nach `soundness` exportiert, wo er mit
++   dem Test-`Coverage` von probably kollidierte. Ersetzen Sie `Coverage`, `Coverage.Entry`,
++   `Coverage.Unknown`, `Coverage.Entries`, `Coverage.of`, `Coverage.combine` und `Coverage(…)` durch
++   dieselben Namen mit dem Präfix `Font.` (`Font.Coverage.of(file)`); mit `import soundness.*`
++   bedeutet ein bloßes `Coverage` jetzt immer `probably.Coverage`. Member und Verhalten sind
++   unverändert. (#2520)
+
+@ 0 6 0 037a7d048800247d05fdc581600eb3a2
++ - Neuer Fall `phoenicia.Font.Error.Reason.TruncatedTable(tag: Sfnt.Table.Tag)`, mit der Nummer 11:
++   `Sfnt#head` und `Sfnt#hhea` lösen mit ihm einen `Font.Error` aus, wenn die Tabelle kürzer als ihr
++   festes Layout ist; zuvor warfen sie eine `ArrayIndexOutOfBoundsException`. Ein erschöpfender
++   Musterabgleich auf `Font.Error.Reason` braucht den hinzugefügten Fall. (#2521)
++ - `phoenicia.Sfnt#HeadTable` und `#HheaTable` sind `zephyrine.Structural`; zuvor waren sie
++   `polaris.Debufferable`. Ihre Felder sind unverändert. (#2521)
+
+% 0 1 0 0df414010222d74504d15692ff05ea32
+
+@ 0 4 0 162a2ed5e4970c8a1307454b032c268f
++ - `plutocrat.currencies.Cop` hat das Symbol `$` (sein Typ ist `"COP" is Currency of "Colombian
++   Peso" in "$" over 100`); zuvor war es `$$`. (#2520)
++ - `plutocrat.Money.underlying` ist `Underlying[Money in currency, Long]`; zuvor war es mit `Int`
++   deklariert. (#2520)
+
+% 0 1 0 0ec6bf76333b603510f2d73726ea2dd6
+
+@ 0 24 0 1959c277973683141f34c371eb3d47c9
++ - Die Bibliothek ist entfernt, und mit ihr `polaris.Debufferable`, `Bufferable`, `Unpackable`,
++   `Sextant`, `sextant`, `unpack`, `unpackFrom` und `byteWidth` sowie ihre Exporte in `soundness`.
++   Ihr Ersatz ist `zephyrine.Structural` (Komponente `zephyrine.layout`), ebenfalls aus `soundness`
++   exportiert. Zur Migration:
++   - Ersetzen Sie `given T is Debufferable = Debufferable.derived` (und jedes Verlassen auf seine
++     automatische Ableitung) durch `given T is Structural = Structural.derived`, mit einer im
++     Geltungsbereich der Deklaration importierten Byte-Reihenfolge: `import
++     byteOrders.bigEndianByteOrder` reproduziert polaris, das immer Big-Endian war. Ein Feld eines
++     Datensatzes, das selbst eine Case-Klasse ist, braucht jetzt ein eigenes explizites
++     `Structural`-Given.
++   - Ersetzen Sie `data.unpackFrom[T](offset)` durch `data.unpack[T](offset)`. Es `raises
++     Structural.Error`, wenn der Datensatz nicht passt, wo polaris eine
++     `ArrayIndexOutOfBoundsException` warf, sodass die Aufrufstelle eine `Tactic[Structural.Error]`
++     braucht.
++   - Ersetzen Sie `data.unpackFrom[Array[T]^{}](offset)(count)` und `unpack[Array[T]^{}](count)`
++     durch `data.unpack[T](offset, count)`.
++   - Ersetzen Sie `byteWidth[T]` durch `Structural.width[T]` für einen Datensatztyp `T`. Die
++     Ganzzahlen fester Größe (`U16`, `Int`, …) haben keine eigenen Instanzen mehr: Sie sind Felder
++     eines Datensatzes oder werden direkt mit `data.u16be(offset)` und seinen Geschwistern geladen.
++   - Es gibt keinen Lese-Cursor: Ersetzen Sie einen `data.sextant { … }`-Block aufeinanderfolgender
++     `unpack[T]`-Aufrufe durch einen Datensatztyp, der diese Felder enthält, oder durch Aufrufe von
++     `data.unpack[T](offset)` an expliziten Offsets (`Structural.width[T]` gibt jeden Schritt an).
++   - Ersetzen Sie ein handgeschriebenes `Debufferable(width)((bytes, offset) => value)` durch ein
++     `new Structural`, das `type Self`, `width`, `load(data: Data, offset: Int): Self` und
++     `store(value: Self, target: Array[Byte]^, offset: Int): Unit` definiert.
++   - `Bufferable` hatte keine Instanzen und konnte nicht verwendet werden; geschrieben wird mit
++     `value.pack: Data`. (#2521)
+
+% 0 1 0 1fd7cf066d81d4361578e0fb3723c8da
+
+@ 0 3 0 0fbfad96250600251b1742ea6f1bed86
++ - Das gestagte Herbeirufen (Stufe B) löscht das Verzeichnis, in das sein Snippet kompiliert wird,
++   sobald die Instanz geladen ist, und seine `report.info`-Meldung endet nicht mehr mit `; classes
++   in <directory>`. (#2524)
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 10 0 1225d3230d51862d1191e1c20fadf3bc
++ - `probably.Coverage.probes(unit: Int, size: Int)` gibt jetzt `Array[Long]` statt
++   `Array[Boolean]` zurück: einen Zähler für jede Sonde, den instrumentierter Code erhöht, wo er
++   `true` speicherte. Von einem früheren `probably.Instrumenter` instrumentierte Klassen müssen neu
++   kompiliert werden; sein Cache-Schlüssel umfasst den Instrumentierer, sodass `Instrumenter.plan`
++   dies selbst tut. (#2515)
++ - `probably.Coverage.drain()` gibt jetzt `java.util.Map[String, Array[Array[Long]]]` statt
++   `java.util.Map[String, Array[Array[Boolean]]]` zurück: wie oft jede Sonde erreicht wurde, `0` für
++   eine nie erreichte; ein mehr als einmal ausgeführter Test hat die Summe der Zähler seiner Läufe,
++   wo er deren Vereinigung hatte. (#2515)
++ - `probably.Coverage.enter(test: String)` gibt jetzt `probably.Coverage.Tally | Null` statt
++   `probably.Coverage.Collector | Null` zurück, und `probably.Coverage.exit` nimmt
+
+% 0 1 0 104e0efbeb47854e0eb510c623b00959
+
+@ 0 3 0 067e64e647c6c3c215560c860bd5992a
++ - `probably.Instrumenter.Reached#probes` ist jetzt `List[(Int, Int, Long)]` statt
++   `List[(Int, Int)]`: der Einheitenindex, der Sondenindex und die Anzahl der Male, die jede
++   erreichte Sonde erreicht wurde (mindestens 1). (#2515)
+
+% 0 1 0 11e02d8c8ffc6085101e736478178d35
+
+@ 0 3 0 0a1113732b6c853f06f71161a41a304d
++ - Das leere Artefakt `punctuation-html` (Komponente `punctuation.html`, die keine Quelldateien
++   hatte) wird nicht mehr veröffentlicht; entfernen Sie jede Abhängigkeit davon oder hängen Sie von
++   `punctuation-core` ab. Aus ihm wurde nichts exportiert. (#2520)
+
+% 0 1 0 0b62431f4ac242a0138ee9746bc81b2b
+
+@ 0 13 0 003f0c861b28064c0fb7af4d0c1b7bc5
++ - Die Werte von `quantitative.Dyne`, `Erg`, `Maxwell`, `Gauss`, `Stokes`, `Phot` und `Lambert`
++   sowie von `quantitative.constants.MagneticConstant` sind ein Zehntel dessen, was sie waren:
++   10⁻⁵ N, 10⁻⁷ J, 10⁻⁸ Wb, 10⁻⁴ T, 10⁻⁴ m²·s⁻¹, 10⁴ lx, 10⁴/π cd·m⁻² bzw. 4π×10⁻⁷ N·A⁻². (#2520)
++ - `quantitative.constants.BoltzmannConstant` ist 1.380649×10⁻²³ J·K⁻¹; zuvor war sie
++   1.380649×10⁻¹³. (#2520)
++ - `quantitative.constants.GravitationalConstant` hat die Dimension N·m²·kg⁻²
++   (`6.67430e-11*Newton*Metre*Metre/(Kilo(Gram)*Kilo(Gram))`); ihr Typ war zuvor der von N·kg⁻².
++   (#2520)
++ - `quantitative.Poise` ist `MetricUnit(0.1*Pascal*Second)`, eine dynamische Viskosität; zuvor war
++   es `0.1*Pascal`, ein Druck. `quantitative.Kayser` ist `MetricUnit(Quantity[Measure](100)/Metre)`,
++   eine Wellenzahl; zuvor war es `100/Second`, eine Frequenz. Beide ändern ihren Typ. (#2520)
++ - `quantitative.Days.designation` ist eine `Designation[Days[1]]` (zuvor eine
++   `Designation[Hours[1]]`), sodass eine Größe in Tagen mit dem Symbol `d` dargestellt wird. (#2520)
++ - `quantitative.Amount.TempratureGradient` umbenannt in `TemperatureGradient`. (#2520)
+
+% 0 1 0 0297adaaf208f36b050fef6919e7a155
+
+@ 0 8 0 0fea60f3573c9c831e8da613c1b046f9
++ - `sedentary.NetworkDevice#undeploy` und `sedentary.NetworkDevice.Session#undeploy` entfernen
++   `<uuid>.jar` aus dem entfernten Home-Verzeichnis, die Datei, die `deploy` dorthin kopiert hat;
++   zuvor führten sie `rm` auf dem lokalen Pfad des JAR aus. (#2520)
++ - Die Pfade der gestagten JARs der Rigs von sedentary sind `Path on galilei.Local`, zuvor `Path on
++   galilei.Linux`: `type Target` und der Parameter und das Ergebnis von `stage(out)` in `Bench`,
++   `Stress` und `Profile`; der Parameter `Stage[output, Text, Path on Local]` ihres `invoke`; und der
++   Parameter `path` von `BenchmarkDevice#deploy`, `#invoke` und `#undeploy` sowie ihrer
++   Implementierungen in `NetworkDevice`, `NetworkDevice.Session` und `LocalhostDevice`. (#2527)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 63 0 1f9b9a3229ebdc5f06fc4d163a85edc8
++ - Die Bytes eines RaTEL-Images haben sich geändert, zu denen der RaTEL-Spezifikation, wie tel#52
++   sie hinterließ, unter demselben Versionsbyte: ein 200-Byte-Header, dessen Verzeichniseinträge
++   `(offset, length, capacity)` sind; ein 8-Byte-Header auf jeder Zeile (`u32` Elternteil, `u16`
++   Verknüpfung, `u16` Flags) vor ihrer Präsenz-Bitmap; ein wiederholbares Struct-Member, gespeichert
++   als `u32`-Ref auf eine Kindliste anstelle von `(start, count)`; Arrays, Ref-Arrays und
++   Select-Listen, gespeichert als `(capacity, count, elements)`, ein leeres als das Ref
++   `0xFFFFFFFF`; Tabellen- und Indexverzeichniseinträge von 32 Bytes; jeder Index ein B+-Baum aus
++   Seiten von 4096 Bytes; und ein Hashwert-Abschnitt aus zwei Hashwerten (dem Rumpf, dann dem
++   Header) anstelle von sechs. Ein von 0.76.0 geschriebenes Image wird nicht gelesen: Es wird mit
++   demjenigen von `BadDirectory`, `ReservedSet` oder `InvalidState` zurückgewiesen, auf das sein
++   Header zuerst trifft. Es gibt keine Konvertierung: Schreiben Sie ein solches Image aus seinem
++   Dokument neu. Die Signaturen von `Ratel.encode`, `tel.ratel(schema)` und `value.ratel` sind
++   unverändert, und was sie schreiben, ist ein versiegeltes Image (Header-Flag-Bit 2), immer mit dem
++   Werthash. (#2518)
++ - `stratiform.Ratel.Error.Reason` folgt den `↯/t.5`-Codes der Spezifikation, die drei hinzugewonnen
++   haben. Umbenannt: `SectionsOverlap` in `ExtentsOverlap` (6; jetzt auch, wenn sich die Zeilen
++   einer Tabelle oder die Seiten eines Index mit irgendetwas überlappen), `IndexUnsorted` in
++   `BadTree` (24; jetzt jede Verletzung der Invarianten des B+-Baums). Hinzugefügt: `InvalidState`
++   (28), `Dirty` (29), `BadRowHeader` (30). Neu nummeriert, sodass sich die Variante im Bolt-Code
++   eines `Ratel.Error` mit einem dieser Gründe ändert: `NestingLimitExceeded` 28 zu 31,
++   `Unencodable` 29 zu 32, `Oversized` 30 zu 33, `Unindexed` 31 zu 34, `Unknown` 32 zu 35,
++   `Inapplicable` 33 zu 36, `Absent` 34 zu 37, `Unwritable` 35 zu 38, `Mismatched` 36 zu 39.
++   `BadRecordIndex` (15) wird jetzt auch für einen Datensatzindex ausgelöst, der eine freie Zeile
++   nennt, und `DigestMismatch` (7) für einen Hashwert-Abschnitt, der nicht die letzten 64 Bytes der
++   Datei ist. (#2518)
++ - `stratiform.Ratel.Reader` hat `state: Ratel.State` (`Sealed` oder `Unsealed`) erhalten. Ein
++   Reader weist eine Datei zurück, deren Header das Dirty-Flag hat (`Reason.Dirty`).
++   `Reader#verify()` prüft zusätzlich den Header jeder Zeile gegen den Slot, der sie erreicht, dass
++   jede lebende Zeile erreicht wird, jeden Index als B+-Baum und, bei einem versiegelten Image, dass
++   es kompakt ist. (#2518)
++ - `stratiform.Tels.tels[value]` belässt einen Skalar, der eine Kodierung deklariert, nicht mehr
++   innerhalb des Felds, das ihn enthält. Ein Feld, dessen Typ eine `Tel.Encoded[name]`-Instanz hat,
++   wurde mit `Tels.Scalar(Array.empty, name)` deklariert; jetzt wird es mit
++   `Tels.Reference(typeName)` deklariert, und die `scalars` des Schemas enthalten
++   `Tels.ScalarDefinition(typeName, Array.empty, Unset, name)`, wobei `typeName` der Name der
++   Kodierung ist, mit jeder Folge von ASCII-Buchstaben und -Ziffern großgeschrieben und allem anderen
++   weggelassen (`decimal-varint` ergibt `DecimalVarint`), mit angehängtem `Scalar`, falls ein
++   Datensatz, Select oder Skalar des Schemas bereits diesen Namen hat. Ein solches Schema kann jetzt
++   dargestellt werden (`Tels.Renderer.element` löste dafür `InlineScalar` aus), sodass es eine
++   Signatur hat, und `value.ratel` ohne Schema-Argument funktioniert für den Typ. Code, der den
++   `fieldType` des Felds gegen `Tels.Scalar` abgleicht, um seine Kodierung zu lesen, muss die
++   Referenz über `schema.scalars` auflösen. Ein Schema mit einer Skalardefinition, einem Schlüssel
++   oder einem Index wird zusätzlich so geprüft, wie `Tels.Validation.validate` ein zusammengesetztes
++   Schema prüft, sodass `Tels.tels` dafür jene `Tel.Error`-Gründe auslösen kann. Das Schema eines
++   Typs ohne kodierten Skalar ist unverändert. (#2518)
++ - `stratiform.Ratel` hat einen abstrakten Typ-Member erhalten, `Topic`, und die Erweiterung
++   `value.ratel`, die kein Schema nimmt, gibt `Ratel of value` (`Ratel { type Topic = value }`)
++   zurück, wo sie `Ratel` zurückgab. Ein `Ratel of T` ist ein `Ratel`, sodass Code, der das Ergebnis
++   als `Ratel` nimmt, nicht betroffen ist; ein `val`, dessen Typ daraus inferiert wurde, hat jetzt den
++   verfeinerten Typ. `Ratel(data)`, `Ratel.encode` und `tel.ratel(schema)` ergeben weiterhin ein
++   einfaches `Ratel`. (#2518)
++ - Die Givens `stratiform.Ratel.encodable` und `stratiform.Ratel.viewable` sind generisch im Typ
++   des Images: `[ratel <: Ratel] => ratel is Encodable in Data` und `[ratel <: Ratel] => ratel is
++   Viewable`, wo jedes eine Instanz allein für `Ratel` war. Eine Verwendung, die eines der Givens
++   nennt und es als `Ratel is Encodable in Data` oder `Ratel is Viewable` annotiert, kompiliert
++   weiterhin; eine, die es dort übergibt, wo ein nicht generischer Wert erwartet wird, braucht
++   `Ratel.encodable[Ratel]`. (#2518)
++ - Das Öffnen als `Ratel` (oder `Ratel of T`) mit einem Modus, der `aperture.Write` enthält, bricht
++   nicht mehr immer mit `Ratel.Error.Reason.Unwritable` ab. Wo das Ziel seine Bytes zum Ändern
++   verleihen kann -- ein `Path` auf einem Backend, das Dateien zum Schreiben abbildet, oder ein
++   `zephyrine.Holding` --, wird das Image zum Ändern an Ort und Stelle geöffnet (RaTEL §10): Auf
++   einer Datei wird eine exklusive Sperre genommen, ein versiegeltes Image wird entsiegelt
++   (Header-Flag-Bits 0 bis 2 und der Werthash gelöscht, der Hashwert-Abschnitt geleert), das
++   Dirty-Flag wird für die Dauer des Blocks gesetzt und an seinem Ende gelöscht, und der dem Block
++   übergebene Reader nimmt `Rows#insert`, `Rows#move`, `Row#set` (auch als Zuweisung geschrieben,
++   `row.lines = value`, deren Name das Schlüsselwort in Camel Case ist), `Row#unset`, `Row#delete`
++   und `Row#replace` an. Ein Ziel, das dies nicht kann (ein `Ratel`-Wert, ein schreibgeschütztes
++   `Terrain`), bricht weiterhin mit `Unwritable` ab, ebenso jene Operationen über einen Reader, der
++   nicht zum Schreiben geöffnet wurde. Code, der sich darauf verließ, dass `Write` für einen Pfad
++   zurückgewiesen wird, darf es nicht übergeben. (#2518)
+
+% 0 1 0 0dfcf29c1bceffc41205596c976dfcce
+
+@ 0 3 0 062612bbaa1120611cb1e792cf2bdc19
++ - `superlunary.Rig#classpath(out)` und `Rig#stage(path)` sowie ihre Implementierungen
++   `Jvm#stage(out)` und `Isolation#stage(out)` nehmen einen `Path on galilei.Local`, zuvor `Path on
++   galilei.Linux`. Ein Rig, das `stage` überschreibt oder `type Target = Path on Linux` deklariert,
++   muss `Local` nennen. (#2527)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 3 0 07ec6e03136f72a4195814419eb2fc66
++ - Die variadischen `Out.println(lines*)` und `Err.println(lines*)` nehmen `(using Stdio^)`, wie
++   `print`, `write` und das argumentlose `println`; zuvor nahmen sie ein unverfolgtes `Stdio`, sodass
++   ein verfolgtes `Stdio^` im Geltungsbereich ihnen nicht übergeben werden konnte. An bestehenden
++   Aufrufstellen ist keine Änderung nötig. (#2520)
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 15 0 1a27e6da83b33a371b4062e48dded7e2
++ - Neuer Konstruktor `zephyrine.Spring.apply`: `Spring[Data](expression)` erzeugt einen `Spring`,
++   der `expression` bei jedem `apply()` für einen frischen Stream auswertet, und ersetzt die anonyme
++   Klasse `new Spring[Data]: def apply()(using Tactic[Truncation.Error]): (Stream[Data] over
++   Credit)^ = expression`. Die Form mit anonymer Klasse kompiliert weiterhin; es ist keine Änderung
++   erforderlich. Geben Sie das Typargument explizit an, wo der Compiler sonst eine
++   Capture-Abweichung beim Elementtyp meldet. (#2520)
++ - Neue Komponente `zephyrine.layout` (hängt von `hypotenuse.core` ab): `zephyrine.Structural`, die
++   Typklasse eines Typs mit festem Layout in Bytes, mit `Structural.derived` für eine Case-Klasse
++   aus Ganzzahlen fester Größe (`B8`…`B64`, `U8`…`U64`, `S8`…`S64`, `Byte`, `Short`, `Int`, `Long`)
++   und aus anderen `Structural`-Typen; `Structural.width[T]`; `Structural.Error(offset, width,
++   size)`; `zephyrine.ByteOrder` und die Givens `byteOrders.bigEndianByteOrder` und
++   `byteOrders.littleEndianByteOrder`, von denen eines dort importiert werden muss, wo ein Layout
++   abgeleitet wird; `data.unpack[T](offset: Int)`, `data.unpack[T](offset: Int, count: Int)` und
++   `expanse.unpack[T](offset: Long)`, die jeweils `Structural.Error` auslösen; und `value.pack:
++   Data`. Alle werden aus `soundness` exportiert. Sie ersetzt polaris; siehe jenen Abschnitt.
++   (#2521)

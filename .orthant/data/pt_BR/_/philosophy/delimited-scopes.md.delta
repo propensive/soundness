@@ -1,0 +1,156 @@
+orthant 2 language
+
+@ 0 1 0 15d61a42cfc8ebd90ef3e513b9e3d5f7
++ # Escopos delimitados
+
+@ 0 7 0 1e4d5aa9ab013e0c0bee47f1362dd0f9
++ O Soundness usa funções de contexto para delimitar os blocos dentro dos quais uma capability ou
++ um contexto adicional está disponível. Entrar em um bloco desses — para tratar erros, para
++ executar tarefas concorrentes, para manter um recurso aberto — torna os valores contextuais
++ pertinentes disponíveis dentro dele e os retira em sua fronteira. O alcance de uma capability é,
++ portanto, visível na própria estrutura do código: uma capability vale exatamente onde o bloco
++ diz que ela vale, e não além. Esse confinamento estrutural é o que a
++ [verificação de capturas](capture-checking.md) então impõe nos tipos.
+
+@ 0 1 0 182d61a630d365b00cc707c94117bb0b
++ ## Uma só forma, em todo lugar
+
+@ 0 2 0 0949f07ad9e9af50178a6bde4b1b548e
++ O mesmo padrão introduz um recurso, um handler de erros, um contexto de concorrência e um segredo
++ emprestado. Reconhecê-lo uma vez significa reconhecer todos eles:
+
+% 2 1 0 150773a18b0dfa7b0633e6b06935a0ed
+
+% 3 1 0 0bcb8136ec1bc4d904183fae567951fb
+
+% 4 1 0 0eca05afe4986a3000831daa72f4fa55
+
+% 0 1 0 140e5dd57243cd3f10ccaa75527863d8
+
+% 0 1 0 15d5d175bff5f9a30f2b42fb44fda259
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 0c5b48f9a53ae50d15051c342c618152
+
+% 0 1 0 1fb74406d1b64bef06148f6d54815341
+
+% 0 1 0 1548ee3ef66c5283179ab1deae8f1167
+
+% 0 1 0 1ad537c6cf1a386b02c70fe6d7907a6d
+
+% 0 1 0 16fd4b340c492b2b167ef521dbaf2235
+
+% 0 1 0 13ba912b44dc874409c867769842ac5d
+
+% 1 1 0 02be1ae0330118a10cf896b480bbbf7c
+
+@ 0 3 0 17a76be72fc445c40d5f2aa421022517
++ Em cada caso, a capability existe dentro das chaves e em nenhum outro lugar, e a extensão do
++ bloco é a extensão da capability — visível na página, sem ler nenhuma documentação sobre tempos
++ de vida.
+
+@ 0 1 0 0f845d3e6c5d749516fede9047c25c19
++ ## Por que um bloco, e não um construtor
+
+@ 0 1 0 161d0e446dbb946619f933d24b8f0118
++ A alternativa é construir a capability, usá-la e liberá-la:
+
+% 2 1 0 1c6b6963fc68a89f1883c0f620153564
+
+% 3 1 0 0b4ef4af8c3b99651c8a828b04b9fa86
+
+% 4 1 0 1fd7a04c9824b42d1bf4f74b3f6eb7ea
+
+% 0 1 0 1792013304fc896d06c4fac6ebd73604
+
+% 0 1 0 0bc703a8f20071dd057f8aa66d1607cf
+
+% 1 1 0 08055d312a59260e17c767fa58478372
+
+@ 0 4 0 0f4cffbf8500fac8070aa5767aabda12
++ Isso tem três defeitos que a forma de bloco não tem. O `close` pode ser esquecido, ou colocado
++ onde um retorno antecipado o pula. O handle existe como valor *antes* de ser válido e *depois* de
++ deixar de ser, então seu tipo não diz nada sobre quando ele pode ser usado. E aninhar dois deles
++ duplica a cerimônia, com a ordem de liberação declarada à mão.
+
+@ 0 2 0 0bf5c70ab2e60aea1707244877d82982
++ A forma de bloco corrige cada um: não há liberação a escrever, a capability só está no escopo
++ onde é válida, e aninhar dois recursos é aninhar dois blocos.
+
+@ 0 1 0 10cf37bd950e7d9e02d6ef70c530f449
++ ## O escopo é um instrumento preciso
+
+@ 0 4 0 15a1c922632128d6064cbd239e48f435
++ Como o mecanismo é o escopo léxico comum, a granularidade é a que o código precisar. Um given
++ importado no topo de um arquivo configura o arquivo; um declarado em um método configura o
++ método, sobrepondo-se à escolha mais ampla; um bloco `locally` confina uma exceção a poucas
++ linhas:
+
+% 2 1 0 11b350b050bda128113e9a42214b22aa
+
+% 3 1 0 04085bf39e2b3a4a04ee39719f0cd9a8
+
+% 4 1 0 058d9e57e17f74ab0c30811ce28cece8
+
+% 0 1 0 0d2451b6474da3780123f5bcca399f0f
+
+% 0 1 0 1713b723343ad4240a44a0dfaf90cb33
+
+% 0 1 0 1ce56f8149b9021819efd845b2ba91d3
+
+% 0 1 0 02d46d4a051a899110041929ea41bb5e
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 1e37049925fe18571e4e747e84736cf7
+
+% 0 1 0 155ce7bf0c4ba643122956989fd4487c
+
+% 1 1 0 18a60f504236cc0e01b4f68bba4fd17e
+
+@ 0 2 0 032693b2c2b7987e062a0fddd71aa1a7
++ Nada precisa dar suporte especial a essa granularidade. Ela decorre de usar o próprio escopo da
++ linguagem, e não um mecanismo de configuração feito sob medida.
+
+@ 0 1 0 15117289264c368706ba363a9c536dbc
++ ## O que “retirado na fronteira” realmente significa
+
+@ 0 5 0 1bd021c390e95f6803b6e9b8037423a8
++ Estruturalmente, a capability sai do escopo quando o bloco termina. Só isso não impediria que um
++ valor a *levasse* para fora — um stream preguiçoso que ainda mantém um arquivo aberto, uma
++ closure que ainda mantém um handler de erros, uma tarefa que ainda mantém seu supervisor. Essas
++ fugas são exatamente o que o raciocínio a olho nu deixa passar, porque a preguiça, as closures e
++ a concorrência desvinculam o momento em que o código roda do lugar onde ele foi escrito.
+
+@ 0 3 0 046fd529cf1ef20c10c260509085c5be
++ A [verificação de capturas](capture-checking.md) fecha essa lacuna: o escopo da capability viaja
++ no tipo do valor, de modo que uma fuga é um erro de compilação, e não uma surpresa em tempo de
++ execução. Os escopos delimitados declaram a intenção; a verificação de capturas a torna uma
++ garantia.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto custa
+
+@ 0 1 0 17a2511765a941c813f0e8f41d2e6936
++ Dois custos, ambos reais.
+
+@ 0 5 0 0fe7d414c896df000e1c825912012eb3
++ **Deriva para a direita.** Cada capability aninhada indenta o código, e uma função que precisa de
++ quatro delas está quatro níveis para dentro antes de começar. A sintaxe de lambda com dois-pontos
++ do Scala limita isso a um nível por capability, em vez de um nível mais uma chave de fechamento,
++ mas um código com muitas capabilities ainda parece profundamente aninhado — e onde isso se torna
++ ilegível, a resposta é extrair o trabalho interno para um método que declara aquilo de que
++ precisa, e não alargar os escopos.
+
+@ 0 5 0 0dbd12442f91dada19d427499e0db9ab
++ **A capability não pode simplesmente ser armazenada.** Um valor que precisa de um handle de
++ arquivo em algum momento posterior e não relacionado não pode guardar um; ele precisa fazer seu
++ trabalho dentro do escopo ou guardar uma cópia memoizada daquilo de que precisava. É uma
++ restrição genuína, e é a restrição fazendo o trabalho: “guardar este recurso indefinidamente e
++ torcer” é precisamente o padrão que está sendo proibido.
+
+@ 0 3 0 024c8c94b0011b82179ff59cd5b4507b
++ Veja [contexto declarativo](declarative-context.md) para saber o que é colocado nesses escopos, e
++ [concorrência estruturada](structured-concurrency.md) para o caso em que a coisa com escopo é um
++ conjunto de tarefas em execução.

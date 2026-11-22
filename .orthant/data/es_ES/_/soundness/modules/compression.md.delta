@@ -1,0 +1,257 @@
+orthant 2 language
+
+@ 0 1 0 19de227b7f07aa5d086c7bd906014f5a
++ ## Compresión
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 7 0 09e38f2d5bdb161504927a9df2f2d12d
++ Un puñado de formatos transporta la mayor parte de los bytes comprimidos del mundo:
++ [DEFLATE](https://en.wikipedia.org/wiki/Deflate) y sus envoltorios `gzip` y `zlib`,
++ [Brotli](https://en.wikipedia.org/wiki/Brotli), [XZ](https://en.wikipedia.org/wiki/XZ_Utils) y
++ LZMA2 en bruto, y [LZW](https://en.wikipedia.org/wiki/Lempel–Ziv–Welch). Todos comprimen y
++ descomprimen datos mediante un único par de métodos. El formato es un tipo, y `compress` y
++ `decompress` sirven para todos los formatos, sobre un valor entero o como etapa de un
++ [flujo](streams.md).
+
+@ 0 3 0 18de4c758be2f83e006dba5a076111d2
++ Todos los formatos están implementados en Scala puro, así que funcionan en todas las plataformas.
++ En la JVM, DEFLATE y sus envoltorios también los sirve la zlib nativa de la plataforma. Esa
++ elección se hace al construir el código, no en cada uso, así que la JVM no paga nada por la
++ portabilidad.
+
+@ 0 1 0 1563a753ee7b471f0568c2119cd2298c
++ ### Sobre la compresión
+
+@ 0 4 0 085981c466c6c1470d7dee3a9bfcb77c
++ Una biblioteca de compresión suele presentar un códec que hay que construir, alimentar y
++ finalizar: un objeto con un búfer, un `setInput`, un `deflate` y un `finish`, y un bucle a su
++ alrededor en el que es fácil equivocarse. El formato es una cadena o un entero, el entramado es un
++ indicador, y si una llamada concreta ha producido todo lo que va a producir es una pregunta que
++ tiene que responder quien llama.
+
+@ 0 5 0 1de48da3a49b95370a144710fd3a7355
++ Aquí el formato es un tipo, como `Gzip`, `Brotli` o `Xz`, y la operación es un método sobre los
++ datos. La misma instancia describe tanto la forma de valor entero como la forma de flujo, así que
++ ambas coinciden byte a byte, y un valor comprimido de una manera se descomprime de la otra. Un
++ esquema de compresión es una etapa de una canalización, no un envoltorio alrededor de un flujo, lo
++ que es la [componibilidad](../../philosophy/composability.md) en su forma más literal.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Todo procede del paquete `soundness`. La última importación permite que los ejemplos impriman sus
++ resultados:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 16890713b8323e3b0973e66d1f3222b2
++ ### Comprimir un valor
+
+@ 0 1 0 0b672af546cc98291a704ba7e70ee19b
++ Un bloque de bytes se comprime, y se descomprime, nombrando el formato:
+
+% 2 1 0 1660b8ca48acbfd00bcbf091e4643bdf
+
+% 0 1 0 1a4504bd7f6df758079ba66a71070bbe
+
+% 0 1 0 1247b372d87d7d7700817404422a587b
+
+% 0 1 0 1a3098c6eb0a964506bc64b52108f06f
+
+% 1 1 0 12a27ec58f97cfba082c76e7f40b5ccc
+
+% 3 1 0 1352e3463f6f40590d9f96e95902150e
+
+% 4 1 0 0eb6b0cd3a539a6c1ef2dd81b4cfab1b
+
+% 5 1 0 1b89bd67302681b30c61571101b077cc
+
+% 0 1 0 0fe98423cb2f5794196311ad0660d50b
+
+% 0 1 0 0e8f9fd8a44497fc1869f8d5f7890e8a
+
+% 0 1 0 0d52d5bf7cd962770acdd59e29d31901
+
+% 1 1 0 0820ec1bd83bc9850b2c3e2a2a035848
+
+@ 0 1 0 19a03ea96cbef7b91c16287ec7c9454d
++ ### Comprimir un flujo
+
+@ 0 2 0 1b56fcbaf0e7f26610e7b13f059b5e41
++ Los mismos nombres se aplican a un flujo, donde se convierten en etapas de una canalización. Los
++ datos se transforman a medida que fluyen, y no se retiene nada mayor que los búferes de la
++ canalización.
+
+@ 0 3 0 0540c12b3e4b78651b78ac4e19dc039a
++ Escribir un [fichero](filesystem.md) comprimido, y volver a leerlo, es cuestión de colocar el
++ compresor y el descompresor a cada lado del disco. `pump` entrega el flujo comprimido al intake
++ del fichero:
+
+% 2 1 0 02014a0c71a18574151fd444390d4959
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 145ca9036ac1a43609990c2bf5c3072f
+
+% 0 1 0 13a2f81b0658bac80352dd964173bef9
+
+% 0 1 0 01b5504ec94587e508889ab2a808484a
+
+% 0 1 0 145d57756963287c19f15dc5e3b82724
+
+% 1 1 0 0f0bd8aa513b0ead1412591f721568ea
+
+@ 0 2 0 029898b61fbf36fc139400d817c68cce
++ Las formas de valor entero y de flujo interoperan libremente. Un valor que se comprimió entero se
++ descomprime mediante un flujo, y la salida de un flujo se descomprime como un valor.
+
+@ 0 1 0 16111c0ac1876f6509202b458643a3bf
++ ### Los formatos
+
+@ 0 1 0 1dff2d64fa35601a05f4f9bda04a58f6
++ Se proporcionan siete formatos, en cuatro familias:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 11 0 0812378ead6a2b47060e6420c55b7572
++ column  Formato
++ column  Algoritmo
++ column  Entramado
++ column  Lo transportan
++ row  `Deflate`  DEFLATE  ninguno  entradas ZIP
++ row  `Zlib`  DEFLATE  una cabecera de dos bytes y una suma de verificación  fragmentos PNG, codificación `deflate` de HTTP
++ row  `Gzip`  DEFLATE  una cabecera, una marca de tiempo y un CRC  ficheros `*.gz`, codificación de contenido HTTP
++ row  `Brotli`  Brotli  el formato de flujo de Brotli  codificación de contenido HTTP
++ row  `Xz`  LZMA2  el contenedor `*.xz`, con una comprobación CRC-64  ficheros `*.xz`
++ row  `Lzma2`  LZMA2  ninguno
++ row  `Lzw`  LZW  ninguno  flujos TIFF y PDF
+
+% 1 1 0 161d17b1aa5416500607ddf9d9f2bd05
+
+% 0 1 0 1e565ffb9f3c318500965a1da2d880f7
+
+@ 0 3 0 084a6b73c9e604111943a53a912d8c0f
++ `Deflate` es el algoritmo en bruto. `Zlib` añade una cabecera de dos bytes y una suma de
++ verificación. `Gzip` añade la cabecera, la marca de tiempo y el CRC que llevan los ficheros
++ `*.gz`. Son los formatos de la codificación de contenido de HTTP, de las entradas ZIP y de los
++ fragmentos PNG, y son los más rápidos del conjunto.
+
+% 0 1 0 16193c4295c427191b505a1574cc9e5e
+
+@ 0 5 0 1c697806f61cb3511308b91857a9cb0f
++ `Brotli` comprime a un tamaño menor que DEFLATE, a una velocidad comparable, y es la codificación
++ de contenido de la web moderna. Ambas direcciones necesitan el valor entero antes de producir
++ ninguna salida. El decodificador lo necesita porque las referencias hacia atrás pueden abarcar
++ toda la ventana, y el codificador porque elige su entramado a partir de la longitud total. Por eso
++ una etapa Brotli almacena en búfer, mientras que una etapa DEFLATE no.
+
+@ 0 5 0 03c1b8b5c048656c1b7237832e26d931
++ Brotli también puede codificar un valor *respecto a* otro que el receptor ya tiene. Una
++ `continuation` es la cola de un flujo Brotli cuya ventana se ha cargado de antemano con una base.
++ Solo lleva los bloques del nuevo valor, sin cabecera de flujo, y sus referencias hacia atrás
++ llegan hasta la base. Por eso un sucesor que difiere de su predecesor en unas pocas ediciones
++ cuesta unos pocos bytes:
+
+% 2 1 0 0b3359bc4f28079e13480ee47c0270c0
+
+% 0 1 0 0a673c2e4fbcf08a1645d6c96583a61f
+
+% 0 1 0 04d5e069b01b429e1b8033570cba56b9
+
+% 0 1 0 109278265456b8c91a3001a5d6a35aa3
+
+% 1 1 0 0b1fc35f066c1be109b9fbec8aa61e82
+
+@ 0 3 0 175594fc752f5dcc0a43ddeeabc159f8
++ El receptor reconstruye la ventana a partir de su propia copia de la base, con `prefix`, y
++ decodifica el prefijo y la continuación como un único flujo. Lo que sale es la base, seguida del
++ sucesor:
+
+% 2 1 0 1836599219ca0e851489015fe7809a3a
+
+% 0 1 0 1de798bb9044bd68114a9a49df2b0b78
+
+% 1 1 0 1cb5052fa2b91480187326dc49d6b1f0
+
+% 3 1 0 0c58f57f64c327a91eacbebaa82fd617
+
+% 4 1 0 164806e88a7748a11035818f52a23350
+
+% 5 1 0 15917ef2de0d57151baab37f115c34da
+
+% 0 1 0 1970669b1b42641f0232eefcad6d4140
+
+% 0 1 0 191bfac8225dc5e807aa8463d712da90
+
+% 0 1 0 00373caad3e2c1d00fce5b7fc1f26aa4
+
+% 1 1 0 0f170e00e72e921500cb690bc491cf96
+
+@ 0 4 0 158d130cbf1a79de0027c074bf2087ef
++ Los bytes de un `prefix` los fija el RFC 7932, junto con los parámetros de ventana y de bloque.
++ Ambos métodos reciben el tamaño de la ventana como WBITS, de 10 a 24, y `prefix` recibe la
++ longitud máxima de un bloque sin comprimir. Sus valores por defecto son `Brotli.Window` y
++ `Brotli.Block`, los mayores que permite el formato. Ambos lados deben usar los mismos valores.
+
+@ 0 1 0 097ec8db0789a6ea03e09e73e71f43d5
++ #### XZ y LZMA2
+
+@ 0 3 0 0cdad6cdefacff6308884546a26c4d4d
++ `Xz` es el códec con la mayor tasa de compresión. Es LZMA2 dentro del contenedor `*.xz`, con una
++ comprobación CRC-64, y coincide con lo que produce la herramienta de línea de comandos `xz`.
++ `Lzma2` es el mismo códec sin el entramado del contenedor, y es a `Xz` lo que `Deflate` es a
++ `Gzip`.
+
+@ 0 2 0 185198bcb7d2395b1a6ac31f8820d2b1
++ Ambos usan por defecto el preajuste 6. Los preajustes del 0 al 3 favorecen la velocidad, y los del
++ 4 al 9 la tasa de compresión. Un preajuste explícito se selecciona con
++ `Xz.compress(stream, preset)` o `Xz.compressor(preset)`.
+
+% 0 1 0 1efd613d9971cf001db9e157f03766a4
+
+@ 0 5 0 0f1acac01931f94a01ea4543f5ec22a1
++ `Lzw` es la compresión de los flujos TIFF y PDF. El JDK no ofrece ninguna implementación de ella,
++ así que esta está escrita a partir de la especificación. Su parámetro `earlyChange` hace que ambos
++ lados amplíen sus códigos una entrada de tabla antes. Está activado por defecto, que es lo que
++ producen TIFF, PDF y todos los codificadores conocidos. Los `Lzw.compressor` y `Lzw.decompressor`
++ parametrizados sirven a los formatos que lo indican explícitamente.
+
+@ 0 1 0 1f2c2bee72c28670092908578d50e503
++ ### Dónde aparece la compresión
+
+@ 0 1 0 18bc3c2a7bb001221b556541c48a321d
++ La compresión rara vez se usa sola:
+
+@ 0 5 0 0d069861d0b43aaf1fbb6129729a5fad
++ - Los [archivos](archives.md) almacenan sus entradas comprimidas, y los archivos tar viajan
++   comprimidos.
++ - Los cuerpos [HTTP](http-client.md) se codifican con ella en la transmisión.
++ - Las capas de las imágenes de [contenedor](docker.md) están comprimidas, y se direccionan por su
++   [resumen](hashing.md#hashing-a-stream).
++ - Los flujos de contenido [PDF](pdf.md) se almacenan comprimidos.
+
+@ 0 2 0 183088f9737a68c514993cbe99e2b6a3
++ En cada caso, el formato es uno de los tipos nombrados aquí, así que una capa, una entrada o un
++ cuerpo se descomprime con la operación descrita arriba.

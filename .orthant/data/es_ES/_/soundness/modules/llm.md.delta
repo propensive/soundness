@@ -1,0 +1,480 @@
+orthant 2 language
+
+@ 0 1 0 099a27b3435c5ba9184896cf9f837c54
++ ## Modelos de lenguaje
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 5 0 0a4221457f5a9c9f1a80a786376fcc0f
++ Una conversación con un modelo de lenguaje grande tiene tipos en cada paso. El proveedor y el
++ modelo son valores. Una conversación es una [sesión] que acumula su historial y su consumo de
++ tokens. Una respuesta es un valor que dice por qué se detuvo el modelo. La salida en flujo se
++ extrae de la conexión activa. Las herramientas son métodos corrientes de Scala que el modelo
++ puede llamar. Una respuesta estructurada se decodifica a una case class, contra un esquema
++ derivado de ella.
+
+@ 0 2 0 0c556fbabbc11e510382172760e057c1
++ Un mismo vocabulario sirve para la Messages API de Anthropic, las APIs Chat Completions y
++ Responses de OpenAI, cualquier servidor compatible con la primera de ellas, como vLLM, Ollama o
++ Groq, y Gemini de Google.
+
+@ 0 1 0 066815b296d6c4430e5100949029c0ac
++ ### Sobre los modelos de lenguaje
+
+@ 0 5 0 0c98d4ad2ce65a54124315db63d58178
++ La API de cada proveedor es un dialecto de JSON: una petición con el modelo, los mensajes hasta
++ el momento y un puñado de parámetros de ajuste; una respuesta con bloques de contenido, un motivo
++ de parada y recuentos de tokens; una variante en flujo que envía deltas; y un protocolo para las
++ llamadas a herramientas, que devuelve argumentos en JSON para que el programa actúe sobre ellos
++ e informe del resultado. Los dialectos difieren en cada detalle y coinciden en cada concepto, y
++ los conceptos son lo que le importa a un programa.
+
+@ 0 4 0 0496f347f5bdea6f04e2dac4078b4533
++ Aquí los conceptos se modelan una sola vez, como mensajes, respuestas, consumo, herramientas y
++ motivos de parada, y un *dialecto* para cada proveedor los traduce a su protocolo de
++ transmisión. Una conversación es una sesión que vive en un bloque. Los valores puros que produce
++ salen libremente, mientras que la propia sesión, y cualquier flujo en curso, pertenecen al
++ bloque, así que una conexión no queda abierta por accidente.
+
+@ 0 2 0 1e0912a3180b9bef035d618b13008fa8
++ Todo viene del paquete `soundness`, con el backend HTTP, el acceso a la red y el registro que
++ necesita un cliente:
+
+% 2 1 0 06b8a357c051570a02586d4d42f435a3
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 061f46f1715a4dd90ed41003438e268c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 1 1 0 0045ba5e0e884f5015701daeaf81f134
+
+@ 0 1 0 06f59d068edc64e818cec45727f90a65
++ Los ejemplos de esta página llaman a un proveedor a través de la red, así que se compilan pero
++ no se ejecutan.
+
+@ 0 1 0 08e723d0e72c8bbe13470c8bb31ca652
++ ### Proveedores y modelos
+
+@ 0 3 0 1d5d2b0fe186e81512462aa302a0f735
++ Un valor de proveedor nombra el modelo y lleva la clave de la API. Su ajuste se aplica con
++ métodos que devuelven cada uno un valor nuevo, así que un modelo configurado es un simple valor
++ [inmutable] que se puede compartir y reutilizar:
+
+% 2 1 0 0eecf5d7249e6df3166f8d311a7a7be5
+
+% 0 1 0 1ef74efacb78b1c013799128df22164f
+
+% 0 1 0 0a39e5268a8609bb0b0dccdd0a46437e
+
+% 0 1 0 1777593eda1ff38c1b20a10703d7307b
+
+% 0 1 0 052f5b4a54d86e79038370c6e673441e
+
+% 0 1 0 135d552a2200f309079dbbcd7618d84a
+
+% 1 1 0 1f81f6f6c45c1a7d14c81406ada2ec87
+
+@ 0 1 0 06e6a804239a394e0f17efd43383d4ce
++ Cada método fija un parámetro:
+
+% 2 1 0 1111f47760bf8a0813a486a754d2aebf
+
+@ 0 10 0 19decda93a85a81b0e0a21ed7a7e4700
++ column  Método
++ column  Fija
++ row  `prompted`  el prompt de sistema
++ row  `limit`  el máximo de tokens de salida
++ row  `warmth`  la temperatura
++ row  `sampling`  el umbral del muestreo de núcleo
++ row  `stopping`  las secuencias de parada
++ row  `iterating`  el límite del bucle de herramientas
++ row  `primed`  un historial desde el que empezar
++ row  `on`  una URL base alternativa
+
+% 1 1 0 191b56f17de257be0ef9a01f08e1900e
+
+@ 0 3 0 19f6b55e844a49af1a605513115a0355
++ Un parámetro que no se fija se omite de la petición, y no se envía como valor por defecto, así
++ que se aplican los valores por defecto del propio proveedor. Un servidor compatible con OpenAI
++ admite una clave opcional. A la Responses API de OpenAI se llega desde un valor `OpenAI` con
++ `responses`.
+
+@ 0 1 0 1876c9e669faffa10a7c296b38fc1fed
++ ### Una conversación
+
+@ 0 3 0 1c8b40bfa4c6c4dc1e004b30d7ce3d44
++ Una sesión se abre sobre un proveedor con `session`, y dentro del bloque se llega a ella con el
++ accesor `llm`. `ask` envía un mensaje y devuelve la `Reply` del modelo. La sesión registra
++ ambos, así que un segundo `ask` continúa la conversación:
+
+% 2 1 0 192dafd00f81b12d0fd3dd7dae67e33f
+
+% 3 1 0 17c5570a7b35a0e6169c4c788da6d0e0
+
+% 4 1 0 07900500726945b719df31fe01fafe9a
+
+% 0 1 0 017d7c8d54ded9e20491e8b0322c94cb
+
+% 0 1 0 14866ad13c694e0a123cf213b27699bd
+
+% 0 1 0 0c4232df745f59b509d2189dc068d23e
+
+% 0 1 0 0548e8ba215badfa1230ca6aef182106
+
+% 0 1 0 13c821883addd369144fd887f860affc
+
+% 0 1 0 085d15367d71d9b81621308f5d927393
+
+% 1 1 0 139af6745a5a7d1d0789a8d023d58068
+
+@ 0 2 0 0135c79afca492421a228a9168448423
++ `text` es la respuesta del asistente. `stop` es `Llm.Stop.Ended`, o el motivo por el que el
++ modelo se detuvo antes de tiempo. `usage` contiene los tokens que costó el último turno.
+
+@ 0 4 0 0e80e18c3cfc9ee2194844849d0cfa09
++ Una `Reply` son datos puros: su mensaje, su motivo de parada, su consumo, y el modelo y el
++ identificador que comunicó el proveedor. Por tanto, puede salir del bloque, igual que una
++ instantánea de `llm.history` o el `llm.usage` acumulado. La propia sesión pertenece al bloque.
++ La conexión se cierra cuando termina el bloque, así que la sesión no debe conservarse más allá
++ de él.
+
+@ 0 1 0 149fa53478ac7054186e42a6d5f98f07
++ ### Flujos
+
+@ 0 6 0 1ae29c2c28414a0003e63f6830b43d3e
++ `stream` envía un mensaje y devuelve una `Response`. Su `text` es un [iterador](collections.md)
++ de fragmentos, extraídos de forma síncrona de la conexión a medida que llegan, y sus `events`
++ son los deltas de grano más fino. Cuando se ha consumido el flujo, `reply()` monta la respuesta
++ completa y consolida el turno en el historial. Lo hace incluso tras un consumo parcial, ya que
++ el resto se lee bajo demanda. Un flujo abandonado no consolida nada, así que un turno fallido
++ simplemente se reintenta:
+
+% 2 1 0 16e771f277258a8e133e50d273b045b6
+
+% 3 1 0 0642ecd125f79c131a52ec275240f0c9
+
+% 4 1 0 1216b81d9108d7c909f3f5b47db35554
+
+% 5 1 0 1ce6dd883f6169951bec57d5fa8638b0
+
+% 0 1 0 1155e6856e83824e1c862d7a330cd4ed
+
+% 0 1 0 1e18cea81026a07e18a56db14b703c39
+
+% 0 1 0 10e6b865b7e024bf0b3d9e426ca75ca3
+
+% 1 1 0 09beb48b702ddce40e98e7be500ad40b
+
+@ 0 1 0 1994a59f3249f5200e38ee721deded51
++ La respuesta, como la sesión, está confinada al bloque.
+
+@ 0 1 0 1d60d32eb8a509ff0dd39f32fda2b8c2
++ ### Herramientas
+
+@ 0 5 0 1a2428a7fe58eb46001fc166c0b68b52
++ Una herramienta es un método anotado con `@ability` y descrito con `@about`, en un objeto a
++ partir del cual se construye un `Toolkit`. El esquema JSON de los parámetros de cada herramienta
++ se deriva de los tipos de los parámetros del método, así que al modelo se le dice exactamente
++ lo que acepta el método. Un parámetro contextual que el método necesita se convoca donde se
++ construye el kit de herramientas, y no se expone al modelo:
+
+% 2 1 0 1ba5450e93b9de920d15ddbeb5031374
+
+% 0 1 0 14ed6756e2d166a31eee3151fd3254e0
+
+% 0 1 0 1c73cc5e4d3db1071f4899d10b3528b9
+
+% 0 1 0 09c9ae11a47b29f90b402f5cd7ebdf84
+
+% 0 1 0 14d59c7f651f332a006549a1f374df47
+
+% 0 1 0 07b05b19825d7cef02a0ade9af23c5ff
+
+% 0 1 0 171990829ddc30ab189257554e965b6e
+
+% 1 1 0 135d6307bbfc155f09a95adb30ad7961
+
+% 3 1 0 03f1fb7561cd955e0c4ba86ca0078aed
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 15db96793be35ca90dce8ebc20c1dc8b
+
+% 1 1 0 19fb09063a131d9a17b6c1286ef8f5eb
+
+@ 0 5 0 0c23f855d5561e5203c170d918fb6eb6
++ Con un `Toolkit` dado en el ámbito, `ask` ejecuta el bucle completo. Ofrece las herramientas al
++ modelo, ejecuta la herramienta que el modelo llama, comunica el resultado y continúa hasta que
++ el modelo responde con texto o se alcanza el límite de iteraciones. Una herramienta que falla, o
++ una llamada con argumentos mal formados, se comunica al modelo como un resultado de error del
++ que puede recuperarse, y no aborta la conversación:
+
+% 2 1 0 0e9c389eab823c1d10a1dd2947237595
+
+% 3 1 0 10a4bee286065dff1bbb8531ecaf19d8
+
+% 4 1 0 1af0592b33ac05d811a62f807f45d03e
+
+% 5 1 0 1375a152eed8b0ff1b50347909a9354d
+
+% 0 1 0 108cb206a52201b001477a3663d5773e
+
+% 0 1 0 00ab1c97d0f6606c0db28725f1e995c5
+
+% 1 1 0 0eaa7cada53c4c39056f22461239d161
+
+@ 0 5 0 0b9b9eb1c37bc56e0a18aa3cce8087fb
++ Aquí el modelo llamaría dos veces a `price` y luego respondería. Cada turno que da el bucle se
++ consolida en el historial, así que el registro muestra las llamadas que hizo el modelo y lo que
++ se le dijo. Un bucle que no converge lanza `Llm.Error` con el motivo `ToolLoopExceeded`, en el
++ límite fijado por `iterating`. La anotación `@about` se comparte con [MCP](mcp.md), así que una
++ sola descripción sirve para un método expuesto a la vez como herramienta de MCP y como
++ habilidad del modelo.
+
+@ 0 1 0 118993ca0e0775a01f8a37104e5444dd
++ ### Respuestas estructuradas
+
+@ 0 6 0 14f2bb9eaf20f2721393a3e4460dc930
++ `solicit` pide una respuesta de un tipo dado. Se deriva el esquema JSON del tipo, y el documento
++ que proporciona el modelo se decodifica a ese tipo. El resultado es un valor, no un texto que
++ haya que analizar. Cómo llega el esquema al modelo es asunto del dialecto. El protocolo de
++ Anthropic restringe la respuesta a él de forma nativa, y en los demás se presenta como la única
++ herramienta que el modelo debe llamar. Quien llama nombra un tipo y recibe un valor, con
++ cualquier proveedor, incluidos los servidores locales que no tienen un modo de salida
++ estructurada:
+
+% 2 1 0 00be67cc8423cd47185afdd92efb7e5a
+
+% 0 1 0 074fab00ad99951d1777964044fcd264
+
+% 1 1 0 125aa42873a1257f1c8f3e1e32513831
+
+% 3 1 0 198eee25d4fcbbe213a1f56e8b0a2ebc
+
+% 3 1 0 1ba4ca4d3f4f3c581e95b14aed4cf220
+
+% 4 1 0 1ef3f9c56b399d0f1fcb7e5a6eea1603
+
+% 0 1 0 167593c1b24693a017842c773d348fa4
+
+% 0 1 0 0190b1db6ca33909169625b157215d76
+
+% 1 1 0 11ab251b0e6e421f1c1f6c344c666456
+
+@ 0 3 0 156f40621575559b1452194dce65dd7a
++ Una respuesta que ignora la herramienta forzada, o un documento que no se decodifica, lanza
++ `Llm.Error` con el motivo `Malformed`. Una respuesta mal formada es un error que hay que tratar,
++ y no un valor que parece correcto.
+
+@ 0 1 0 0958288bac76be5e0adeebcc8b38f416
++ ### Lotes
+
+@ 0 5 0 0e1893764f0e2b7b07dab4bc61d3a157
++ Muchas preguntas que no necesitan respuesta hoy pasan por la Message Batches API de Anthropic,
++ que las ejecuta de forma asíncrona a mitad de precio. `elicitAll` recibe una lista de
++ peticiones, cada una un prompt con un identificador elegido por quien llama, comprobado por
++ `Llm.Id.request` antes de enviar nada. Devuelve un lote: un registro puro de su identificador,
++ su estado y sus recuentos, cuyas respuestas se decodifican al tipo nombrado una vez que ha
++ terminado:
+
+% 2 1 0 1fbb5805225c85d3145bc2fe74f80a59
+
+% 3 1 0 134a13272f7e88dd000d11c4f5edb8f2
+
+% 4 1 0 01a9250d8276b6780e1098def5aee738
+
+% 0 1 0 0ef428d507d09a6c0cf03961fb3c8dca
+
+% 0 1 0 126c3f1fc00dc6e51e7382fb98ec3cb6
+
+% 0 1 0 11126ee8163ddf840eb1e74a27008b45
+
+% 0 1 0 0df4ec850d3a6125065dae6b43b9c43c
+
+% 0 1 0 023385ffb3b933a401ed975be2290777
+
+% 0 1 0 0ee24ac220f08b2c153efe65ec1160c7
+
+% 0 1 0 1c8b37b27276b2c31b55f8c5b3e734af
+
+% 0 1 0 12640eef8644abc008b77419dc3a36e4
+
+% 1 1 0 18e5ede3e16d776d04e06c7a6dcf56fa
+
+@ 0 6 0 1ba4d381b0c4979a1238107225317e27
++ Los resultados llegan en el orden del proveedor, no en el del envío, por lo que cada uno lleva
++ el identificador de su petición. Un lote sobrevive al proceso que lo envió.
++ `claude.batch[Verdict](id)` lo vuelve a encontrar por su identificador, con su estado actual.
++ Los identificadores tienen el tipo de lo que nombran, como `Llm.Id[Llm.Request]`,
++ `Llm.Id[Llm.Reply]` o `Llm.Id[Anthropic.Batch[?]]`, así que el identificador de una respuesta
++ nunca puede pasarse a un método que espera el de un lote.
+
+@ 0 3 0 130fc839c17482ca1a36af528d27be51
++ Un prompt que comparten todas las peticiones de un lote, o todos los turnos de una sesión larga,
++ merece guardarse en la caché del proveedor. `claude.caching` marca el prompt de sistema como
++ punto de corte de la caché, y `Llm.Usage.cacheRead` informa de cuánto de cada petición se leyó
++ de la caché.
+
+@ 0 1 0 18b9a55a6426664c06f2870154c69e98
++ ### Mensajes y contenido
+
+@ 0 2 0 06027878af62b8ca101cc2cab0e782ac
++ El vocabulario que comparten los dialectos es pequeño. Un `Llm.Message` tiene un `Role`, que es
++ el usuario o el asistente, y una lista de `Llm.Content`, así que nada se pierde en la
++ traducción:
+
+% 2 1 0 0a57a419e15a6a40198c2bfab0419368
+
+@ 0 10 0 010ab6d0b366cf2108b3896972cc0f85
++ column  Contenido
++ column  Contiene
++ row  `Textual`  texto
++ row  `Graphic`  una imagen, a partir de bytes en línea o de una URL
++ row  `Document`  un documento, a partir de bytes en línea o de una URL
++ row  `ToolUse`  una llamada a una herramienta, con sus argumentos
++ row  `ToolResult`  el resultado de una herramienta
++ row  `Thinking`  el razonamiento del modelo, donde el proveedor lo expone
++ row  `Redacted`  razonamiento que el proveedor solo devuelve cifrado
++ row  `Opaque`  cualquier contenido que envíe un proveedor y que no se modele de otro modo, literalmente
+
+% 1 1 0 0c04653beb9ccf4202f12d9467db0e90
+
+@ 0 2 0 17f46b763907d50c1dadb4e621ecc61d
++ Una imagen o un documento viene de un `Llm.Content.Source`: bytes `Inline` con un tipo de
++ medio, o una URL `Remote`:
+
+% 2 1 0 0fbdb876f0a9751414e20169fc409912
+
+% 0 1 0 056baf6426ec501817dd578bd3a97705
+
+% 0 1 0 119e2a9cb4891e20073ee1c3f97beb63
+
+% 0 1 0 160f341210add5fd1a12b1c93025cd7f
+
+% 0 1 0 17b684d5ee5d60b50aa752a74dbfd91c
+
+% 0 1 0 0194d3ec276a89f7162951a63e2e43d3
+
+% 0 1 0 0c68f88e3c197497096f6d51b11dadb7
+
+% 1 1 0 0f4cbb9e46ef0b5306ee8fb0f9a25fd4
+
+@ 0 2 0 165d72e97db5dde601fa0a691d23b456
++ `ask` y `stream` aceptan un mensaje con la misma facilidad que un texto, y así es como se envían
++ imágenes y documentos.
+
+@ 0 1 0 0604efb01e6ee4900840ccca20c73e5a
++ ### Errores y reintentos
+
+@ 0 4 0 0dd3096b4efd999f01714adeae4addc5
++ Todo fallo es un `Llm.Error` cuyo motivo es uno de un conjunto fijo, o `Provider`, que lleva un
++ código comunicado por el proveedor que no corresponde a ninguno de ellos, así que el error del
++ propio protocolo nunca se pierde. Un límite de frecuencia o una sobrecarga se reintentan
++ automáticamente, hasta tres veces y respetando el retardo que pide el proveedor, antes de
++ lanzarse:
+
+% 2 1 0 07cbd34fc230d1631fb3fb16fb61f707
+
+@ 0 13 0 17e176d7e4b9340510d8d63346f17865
++ column  Motivo
++ column  Significado
++ row  `Unreachable`  no se pudo llegar al proveedor
++ row  `Unauthorized`  la clave de la API faltaba, no era válida o había caducado
++ row  `Invalid`  el proveedor rechazó la petición por no ser válida
++ row  `NotFound`  el modelo o el endpoint no existe
++ row  `TooLarge`  la conversación supera la ventana de contexto del modelo
++ row  `RateLimited`  el proveedor impuso un límite de frecuencia; primero se reintenta
++ row  `Overloaded`  el proveedor está sobrecargado temporalmente; primero se reintenta
++ row  `Malformed`  no se pudo interpretar la respuesta del proveedor
++ row  `Interrupted`  el flujo terminó antes de que el mensaje estuviera completo
++ row  `ToolLoopExceeded`  el bucle de uso de herramientas superó su límite de iteraciones
++ row  `Provider`  un código comunicado por el proveedor que no corresponde a ninguno de los demás
+
+% 1 1 0 1db6531cdacf0c720f5136515b90966f
+
+@ 0 1 0 0a3f6361c7a56a541a05683daa584b4a
++ Un manejador hace coincidencia de patrones sobre el motivo:
+
+% 2 1 0 129fd54e7b6d53690807c42ede1c734d
+
+% 3 1 0 0a8fd202bf6574630a153ac4302f3fb1
+
+% 4 1 0 171366183be306570a93aa2a58602f0a
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 177c04a0d1be821d1db015a17cf18db6
+
+% 0 1 0 0b6f709027c5729610b4920df578e08b
+
+% 0 1 0 08ad69ec89033da10a54091e8756fa21
+
+% 0 1 0 13012e3cade9d99c1916c5c60568f865
+
+% 0 1 0 04608a27162d88501f0382027e5c5d83
+
+% 0 1 0 03a659303f86a8630a3ab72d79c9c27b
+
+% 1 1 0 00bd87194b330b8b02b74fd414d0bfeb
+
+@ 0 1 0 03488de5d16c46131f92ca245c1a263a
++ ### Recuento de tokens
+
+@ 0 2 0 05216442a73f89a41cb6bd75070fc591
++ Anthropic informa del recuento de tokens de una conversación prevista sin ejecutarla, y así es
++ como un programa decide si un documento cabe antes de enviarlo:
+
+% 2 1 0 11d6cd442b4eca691a9bdf2eaacadeff
+
+% 3 1 0 04531c7785c2b91c0cd4d343d5b44cdd
+
+% 4 1 0 066f98bd350b5fba0f65f02dbc2f5a99
+
+% 0 1 0 1234eb3151e6c35606ec7834516ed1c2
+
+% 1 1 0 102beaa682e3b9cc0afe5be351ea4cde
+
+@ 0 1 0 0ab2c900aacd599618997f2240f730cf
++ ### Pruebas sin proveedor
+
+@ 0 6 0 1bcb9a6a18003fd21a302f633b7c5826
++ Todo proveedor es un dialecto sobre un backend HTTP, así que un programa que habla con un modelo
++ se prueba sustituyendo un backend que devuelve respuestas guionizadas. Las pruebas de dialecto
++ de la biblioteca hacen exactamente eso. Unas setenta pruebas sin conexión reproducen respuestas
++ grabadas, deltas en flujo y sobres de error a través de cada dialecto, y demuestran con
++ comprobaciones en tiempo de compilación que una sesión o un flujo activo no puede escapar de su
++ bloque. Un programa construido sobre el mismo vocabulario hereda esa facilidad para probarse. El
++ modelo es un valor, y un valor se puede falsificar.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 6 0 09078e3f3dc13bca1e058480abb06729
++ - [MCP](mcp.md) expone los mismos métodos anotados como herramientas para cualquier asistente.
++ - [ACP](acp.md) dirige un agente de programación, en lugar de un modelo directamente.
++ - [Cliente HTTP](http-client.md) describe el backend sobre el que habla cada dialecto.
++ - [JSON](json.md#schemas) describe los esquemas derivados para herramientas y respuestas
++   estructuradas.
++ - [Errores](errors.md) describe `recover` y las demás estrategias que reciben un `Llm.Error`.
++ - [Diffs](diffing.md) describe los redrafts como los que se aplican las ediciones de un modelo.

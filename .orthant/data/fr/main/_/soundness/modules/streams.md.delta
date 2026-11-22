@@ -1,0 +1,582 @@
+orthant 2 language
+
+@ 0 1 0 17a46084cad35d4c1c6c12840715c4f5
++ ## Flux
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 3 0 1964dbd5cf6fd4260d3a0039393614c4
++ Certaines données arrivent ou partent au fil du temps : un fichier trop volumineux pour tenir
++ en mémoire, une connexion réseau, la sortie d'un processus. Elles sont traitées sous forme de
++ flux. Un seul ensemble d'opérations déplace les données entre sources et puits :
+
+% 2 1 0 146c316ab286a1f7125618539d820135
+
+@ 0 5 0 1cf501a53511c9b5082d7b86d092c0d1
++ column  Opération
++ column  Effet
++ row  `read`  fait entrer une source, sous un type choisi
++ row  `writeTo`  envoie une valeur vers une destination
++ row  `stream`  expose une valeur sous forme de flux de morceaux
+
+% 1 1 0 01627cd1e8250d85099e26762665145b
+
+@ 0 5 0 0d808e45ae12399b1f68ad508daa70ac
++ Ce qui peut être lu, et ce qui peut être écrit, est déterminé par des
++ [classes de types][classe de types]. Un type qui décrit comment il devient un flux peut être
++ lu. Un type qui décrit comment il en consomme un peut recevoir des écritures. Une nouvelle
++ source ou un nouveau puits rejoint donc les mêmes `read` et `writeTo` que tout le reste, sans
++ tuyauterie propre. Un verbe par opération, portant sur tous les types qui la prennent en
++ charge, c'est la discipline des [petites API](../../philosophy/small-apis.md).
+
+@ 0 3 0 0caf1a738b90035219bbb8dd1a5dce55
++ Sous ces opérations se trouve un *noyau* de flux, dont le type central est un `Stream`. Ce
++ n'est pas une séquence paresseuse de morceaux. C'est un endpoint dans lequel on
++ puise, sur un tampon dont la fenêtre lisible est remise à exactement un consommateur, sans
++ copie.
+
+@ 0 1 0 1d7110a80a4833c405ea307bb97ab10d
++ ### À propos des flux
+
+@ 0 4 0 0aae7932b534daea048a4482285471fa
++ Les flux de la JVM sont une paire d'objets mutables, un `InputStream` et un `OutputStream`. On
++ les lit et on y écrit par effet de bord, un appel impératif à la fois, et le lecteur est
++ responsable de la mise en tampon, du décodage et de la fermeture. Rien dans le type d'une
++ méthode ne dit si elle produit un flux, quel genre d'élément elle produit, ni comment les
++ octets deviennent du texte.
+
+@ 0 4 0 1b47376583b3cf36053ed447391ceda0
++ La réponse fonctionnelle évidente est une liste paresseuse de morceaux. Elle règle le typage,
++ et perd la performance. Chaque morceau est une allocation, et chaque étape copie. La
++ mémoïsation qui rend une liste paresseuse rejouable est exactement ce qui maintient en mémoire
++ une source volumineuse alors que personne ne voulait la conserver.
+
+@ 0 3 0 12b2b2b0f53eed0609afb7a7518a75ff
++ Ici, une troisième voie est suivie. Un `Stream` est un *endpoint de tirage*. Un
++ consommateur appelle `refill` avec la quantité qu'il est prêt à prendre, et reçoit en retour
++ une fenêtre sur un tampon, qu'il lit puis dépasse. Rien n'est copié, et rien n'est retenu.
+
+@ 0 1 0 02af7d34c023251905a330b97bded9e4
++ Deux propriétés découlent de cette conception :
+
+@ 0 4 0 108514e3cebfbbfb0415bba32950eb81
++ - **La contre-pression ne requiert aucun mécanisme.** Un consommateur qui ne tire pas ne
++   demande rien, si bien que la contre-pression est simplement l'absence d'un appel.
++ - **Les étapes se composent sans files d'attente.** Elles s'exécutent sous forme d'appels
++   imbriqués sur le thread du consommateur, sans synchronisation, jusqu'à ce qu'une étape passe
++   explicitement sur un autre thread.
+
+@ 0 8 0 19d4cf43ebbf886b123cefc661d18f0f
++ La conception a une exigence. Une fenêtre appartient à un seul consommateur, si bien qu'un
++ flux ne doit pas être lu deux fois, ni partagé. Cela est vérifié, et pas seulement documenté.
++ Un flux est une [capacité] exclusive, et les bibliothèques de flux sont compilées avec le
++ [contrôle des captures et de la séparation](../../philosophy/capture-checking.md) activé.
++ Créer un alias d'un flux, ou en laisser un s'échapper de la portée qui possède sa source, est
++ une erreur de compilation. Là où l'on veut réellement rejouer, `memoize` vide le flux une fois
++ dans une valeur [immuable], qui peut ensuite être partagée librement. C'est le remplacement
++ explicite et borné de la mise en cache implicite d'une liste paresseuse.
+
+@ 0 3 0 05f16f5dc3d3544204623ec33f68c688
++ Tout provient du package `soundness`. Un encodage et un décodage de caractères sont dans la
++ portée, pour la frontière entre texte et octets, et les deux derniers imports permettent aux
++ exemples d'afficher leurs résultats :
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1e08e13d7ad73e8b06fccd1c9451ef37
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 022401798934ffd81694ba61e697a094
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 1 1 0 03bb0dfc22cf76b90cac31f160f05ccf
+
+@ 0 1 0 0d392499a2ed8c680c0b0aa85ab9fe7e
++ ### Lire une source
+
+@ 0 3 0 13cbb4f13991601604ec53892885afe7
++ `read` fait entrer une source, sous le type nommé. Une source d'octets se lit aussi bien en
++ `Text`, en `Data` brutes, ou en flux de l'un ou de l'autre, et l'[encodage](characters.md)
++ dans la portée fait le pont entre octets et texte :
+
+% 2 1 0 1f77f6fefa6a885707bf22e845d7f439
+
+% 0 1 0 1ef66cbdb164beec0a8bc9d011c1e94c
+
+% 1 1 0 18519e6fbae32422067bd41eed69a7e4
+
+% 3 1 0 0ae7c8795b1c411a0c6116144025c21b
+
+% 4 1 0 109a1996a3176c1a167f534c70bf2877
+
+% 5 1 0 1977bdc884a7aed50c40ee2e9735f34b
+
+% 0 1 0 197514c4494c3eee034a36949ddbd7d0
+
+% 0 1 0 15d70065f80ccffc07dfe8d678d9e38b
+
+% 1 1 0 1258cf8b4cf3abd41fd5dd352b389542
+
+@ 0 4 0 1273e72ec2b5ccec16ab0bbe8b1ebac4
++ Le même `read` fonctionne sur toute source dotée d'une instance `Readable`, telle qu'un
++ [fichier](filesystem.md#reading-and-writing), un [socket réseau](sockets.md) ou la sortie
++ d'un [processus](processes.md). Lire une [URL](http-client.md) en texte, et lire un fichier en
++ octets, sont une seule et même opération.
+
+@ 0 1 0 18cd9b062b1b23581535f58bb120298f
++ ### Écrire dans un puits
+
+@ 0 2 0 172a7f69ed5be6a61936ce49a895e512
++ `writeTo` envoie une valeur vers une destination qui sait la consommer. La valeur peut être du
++ texte, des octets, ou un flux de l'un ou de l'autre, et l'instance `Writable` de la
++ destination la reçoit :
+
+% 2 1 0 16d013e6b50fbf2b1708de5870481846
+
+% 3 1 0 11029c5e31bf34320db9f587f3bc8edf
+
+% 4 1 0 0e27ad20b7940fb202de84cfeb2fbe7d
+
+% 0 1 0 132b9cdc3729bb6e1c7e4c4768355b52
+
+% 0 1 0 0e18d718c4330cc51ef0a92da7f43295
+
+% 1 1 0 1e256fd81ee793e4156eed59285a32e1
+
+@ 0 1 0 036867ee1340e0150cdbe8ede991b9bf
++ ### Rendre une valeur lisible ou inscriptible
+
+@ 0 2 0 09ba73a37db2c7dd05d0b5d32512110a
++ Un type devient une source en décrivant comment il se transforme en flux, et un puits en
++ décrivant comment il en consomme un. Chacun est une classe de types à méthode unique :
+
+% 2 1 0 08b193c65c4ebb59057d4e5340bd0016
+
+% 0 1 0 022f3e83703d6f1a0a90c94a7cec78a8
+
+% 0 1 0 09942d65e4c307e8059c3bca82337e76
+
+% 0 1 0 02a8199a5ea824b71c7c72b71fbdffa9
+
+% 1 1 0 0d5cb1f30e6889ac0ba2f2fac1e43781
+
+@ 0 2 0 102392befe3b57fc1e34a80fd0fc715d
++ Avec cette instance dans la portée, une `Row` peut être lue avec `read`, envoyée avec
++ `writeTo`, ou exposée avec `stream`, sans aucune autre définition :
+
+% 2 1 0 148cd5000b37171a0d48fc11a3f93e24
+
+% 3 1 0 018d90934394a4d711676c162a333c4b
+
+% 4 1 0 1b747bac6f1757b8086c29d844228de2
+
+% 0 1 0 0ec879c6dc5d4de406ebb9a05aaebca6
+
+% 1 1 0 11054ba5dd22758f1ff19f4236d9c195
+
+@ 0 1 0 0c3d3f6315b8560616d5f117eca34a33
++ ### Produire un flux à partir d'une valeur
+
+@ 0 2 0 1f39ae9096925bcd022f563b91cfc26d
++ `stream` transforme une valeur en endpoint de tirage. `source` fait de même via une
++ instance `Streamable`, et nomme le type d'élément :
+
+% 2 1 0 047893b459e5d0ba08b1454fb29db64a
+
+% 0 1 0 1efff413b2f8c48406faac9cb20ceeb2
+
+% 0 1 0 078b0d59613e7fa40169078c1bd86347
+
+% 1 1 0 1445aeef2e44a3f012c06e42e7f08199
+
+@ 0 1 0 18e263e3392bb10a1121d03190059ae3
++ Le premier est un `Stream[Data]`, et le second un `Stream[Text]`.
+
+@ 0 1 0 03becd1f42883a990191467d6c298ca0
++ ### Composer un pipeline
+
+@ 0 4 0 142d0bf00119a82c15872dfb8c20769a
++ Une étape transforme un flux en un flux d'un autre type. `via` en attache une du côté du
++ tirage. Toute la chaîne s'exécute sur le thread du consommateur, sous forme de remplissages
++ imbriqués, sans threads, sans files d'attente et sans collections intermédiaires. Chaque étape
++ prend ce que la précédente a produit, ce qui est la
++ [composabilité](../../philosophy/composability.md) sous sa forme la plus littérale :
+
+% 2 1 0 1ddd8c18f8ad168f0a4f084b4b4139c5
+
+% 3 1 0 1d6d4855bad70c420a0804c1e0c2f3dc
+
+% 4 1 0 09ffda4eaa6e8f040828572704465942
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 087d410d73b9eb490256179c50b8704d
+
+% 0 1 0 0dcfb5590f78d8130acd3bfaf4964727
+
+% 0 1 0 124b2b192c4b37171e7c4ff66195f43e
+
+% 0 1 0 137c3e1959ebecef099757a4dca73135
+
+% 1 1 0 14b6c690dbdd98ef195d69adb9f16df7
+
+@ 0 4 0 1c1c6dd1815a0df001bb15db85c5b06f
++ Un `Duct` est le type du noyau pour une transformation, et c'est ce que renvoie le
++ `decompressor()` d'un [format de compression](compression.md). Il s'attache avec `viaDuct`.
++ Toute autre valeur qui décrit une transformation, et dotée d'une instance `Ductile`, telle
++ qu'un encodage de caractères ou un [encodage en base](base-encoding.md#encoding-a-stream),
++ s'attache avec `via`.
+
+@ 0 1 0 100259738e9238561b2338622104b982
++ Un pipeline se termine par une opération *terminale*, qui vide l'endpoint et le
++ ferme :
+
+% 2 1 0 0b1a684bd707ef751031db5b0627e2ff
+
+% 3 1 0 0b75e7aa18bad04a04b1a8aac4670217
+
+% 4 1 0 1d15ef92d910d70a05728bfe6da9231e
+
+% 0 1 0 0938ae314ecb877e092f8e60fda1f0cd
+
+% 0 1 0 1627e1fb1e8fb8ff03267e804798d343
+
+% 0 1 0 103355793df66ff71632188b06c84c1c
+
+% 0 1 0 0d2c52c1e483517200e86e023d827756
+
+% 1 1 0 14835797213a56ab1352d1b859246bbe
+
+@ 0 3 0 029e3f0c706acc9e18b64a310d6615a5
++ `memoize` vide le flux dans une seule valeur immuable. `drain` remet chaque fenêtre brute à
++ une fonction, et `gather` en est l'équivalent accumulateur. Tous deux exposent la fenêtre
++ brute, et non des éléments boxés, si bien qu'une réduction sur des octets parcourt le
++ tableau sans coût par élément.
+
+@ 0 3 0 00bbf49e39f164c3130675fca60ad6a1
++ `truncate` et `discard` bornent un flux sans le vider, et libèrent le reste de l'amont sans le
++ lire. Ils comptent des octets ou des enregistrements, et non les éléments d'une collection,
++ et c'est pourquoi ils n'empruntent pas les noms `take` et `drop`.
+
+@ 0 2 0 073944052e8f2b1e1496f59ee62d0d1f
++ Là où un pipeline se termine par une chaîne dans laquelle on *pousse*, au lieu d'une valeur,
++ `pump` est l'unique point où les données passent du côté du tirage au côté de la poussée :
+
+% 2 1 0 18224640a26cf7bc08805c0ca6aaa357
+
+% 3 1 0 1851f9cfe88116370667619e7f4b9951
+
+% 4 1 0 05b6109bafa9a1a3148b65a01b4b6626
+
+% 0 1 0 0d0f21fca53b301713575bfcdc08ae72
+
+% 0 1 0 11c4d6b6b977ffde07de794f66c12fcd
+
+% 1 1 0 0de30cfa24ec23e109d74642cf6c7323
+
+@ 0 1 0 154878b7202306cc0991d8a35db4942f
++ En résumé :
+
+% 2 1 0 0a2574fa96d0527e1c294b140e771c53
+
+@ 0 9 0 1fb5bfa4a9ea2a3312de872271673cf8
++ column  Opération
++ column  Vide le flux
++ column  Donne
++ row  `memoize`  oui  une seule valeur immuable
++ row  `drain`  oui  chaque fenêtre brute, à une fonction
++ row  `gather`  oui  un accumulateur passé à travers chaque fenêtre brute
++ row  `pump`  oui  chaque fenêtre, poussée dans un `Intake`
++ row  `truncate`  non  les premiers enregistrements ou octets, en libérant le reste sans le lire
++ row  `discard`  non  tout ce qui suit les premiers enregistrements ou octets
+
+% 1 1 0 154ad4b455c1d46f162a060b02d8f4c6
+
+@ 0 1 0 0e255914264ed292066de996188dc48f
++ ### Analyser avec un curseur
+
+@ 0 5 0 06e68389198453c012c75bd96130153b
++ Un analyseur ne consomme pas un flux en bloc. Il prend un élément à la fois, et regarde
++ l'élément suivant avant de décider quoi en faire. Un `Cursor` est cette vue : une position sur
++ une séquence de blocs `Text` ou `Data`, construite à partir d'un itérateur, d'une `Chain` ou
++ d'un `Stream`. Il se remplit depuis sa source à mesure que la position avance, si bien que
++ l'analyseur voit une suite continue de caractères ou d'octets, quelle que soit la manière dont
++ la source a été découpée en morceaux :
+
+% 2 1 0 10053e861c4b33790dbe235e4f889701
+
+@ 0 6 0 15563d1d241b58e6077a151457cfabd2
++ column  Méthode
++ column  Effet
++ row  `peek`  montre l'élément courant sans le consommer, sous forme de `Datum`
++ row  `advance()`  dépasse l'élément courant
++ row  `next()`  le dépasse, et indique s'il reste quelque chose
++ row  `position`, `line`, `column`  disent où est arrivé le curseur
+
+% 1 1 0 17210fae422118cc18a60810f69096f2
+
+@ 0 1 0 0b0fc94d29892911050b70a25db61c9b
++ Un `Datum` se compare directement à un `Char`, et vaut `Datum.End` une fois la source épuisée :
+
+% 2 1 0 1ee91f97232cd2d61e47d1a23b81cb81
+
+% 0 1 0 1a8c09abc2e213bc13666ed6d183f4ae
+
+% 1 1 0 1588d236ec21881f1a266c549bc60f55
+
+% 3 1 0 0207aac8c16528701974774c187c856d
+
+% 4 1 0 1cb6581e0c82d35317abe732870e00e2
+
+% 5 1 0 03bf56cbd68760ec01dc7d0a5f826697
+
+% 0 1 0 00268ddc132a8cf70c810f21ed99e7e2
+
+% 0 1 0 0aa5b799556eb0d918a7afb9dd581427
+
+% 0 1 0 17b6ef9d6dae2c880017a2f9abbfcfed
+
+% 1 1 0 073323edc30661660acf5b5f529b225b
+
+@ 0 4 0 1cb530a2cc6ad9bf10c8aaf23271f456
++ Un `mark` enregistre un point auquel revenir, ou à partir duquel copier. `grab` donne tout ce
++ qui se trouve entre deux marques sous forme d'une seule valeur, même lorsque cela chevauche
++ les blocs dans lesquels la source a été fournie. Une marque ne peut être prise qu'à
++ l'intérieur de `hold`, qui conserve la région marquée dans le tampon jusqu'à la fin du bloc.
++ Hors de `hold`, le curseur est libre de jeter ce qu'il a déjà dépassé :
+
+% 2 1 0 007d02399ed7daba0ac2143a8023335c
+
+% 3 1 0 00fefe0deae79020169d3340f23aebc5
+
+% 4 1 0 078659d81ba16ee600d8409286de0ca6
+
+% 0 1 0 080a480f667ceb671de4a7f7a9b12b12
+
+% 0 1 0 05441ba73a93174d073254fa2ff96fe2
+
+% 0 1 0 1b84c57c0cd2025d187f3599a0893e07
+
+% 0 1 0 16fa5c9bd511f41c134e495b7f6dbd5a
+
+% 0 1 0 1df097eef89c825918c88ecfe5978a0f
+
+% 1 1 0 18b8157b1d1f5b9209dca3921b8856f3
+
+@ 0 3 0 0a9b30bf140f526c1bb4c8e630037592
++ Le texte saisi s'étend de la fin du premier bloc jusque dans le second. Les analyseurs de
++ [JSON](json.md), de [XML](xml.md) et des autres formats sont construits sur des curseurs, et
++ c'est ainsi qu'ils lisent un document depuis un flux sans le conserver en entier.
+
+@ 0 1 0 00f0d62dbd3282c50a16f7044d7d7c3c
++ ### Enregistrements
+
+@ 0 4 0 1b195c62e34a4b86142d3785483044aa
++ Entre les fenêtres brutes et les collections entières se situe le flux par enregistrement :
++ des lignes, des événements, des trames, des messages. Un `Records[record]` est un flux dont
++ les fenêtres sont des morceaux d'enregistrements, si bien que son crédit compte des
++ enregistrements, et non des octets. `delineate` découpe une source de caractères en lignes, et
++ `records` itère sur les enregistrements analysés d'un tel flux :
+
+% 2 1 0 122e9cd9e909fff408fe9d93aaafa21c
+
+% 0 1 0 05a619b3954586d01e2026c4c7dbf6fb
+
+% 0 1 0 0add22b128889d401fde270b01533489
+
+% 1 1 0 16b5bf78d486d99f1fdba841b426536c
+
+% 3 1 0 196a9550f326900414b71b3b429029a0
+
+% 4 1 0 080714d395df17161b1e753cccf8cd97
+
+% 5 1 0 098a4aa764eca8ca0e6698f04333c1a5
+
+% 0 1 0 09d93d3278738f7e0a44e6b5acd0a6f7
+
+% 1 1 0 0efa4139d593cca0144578705e3d7669
+
+@ 0 3 0 089236f7340151d51729e6c42f4fd206
++ Les enregistrements sont des valeurs immuables, si bien que, contrairement aux fenêtres, ils
++ passent d'une étape à l'autre et d'un thread à l'autre par référence.
++ [CSV](csv.md#reading-rows) lit des lignes de cette manière, et [JSON](json.md#ndjson) lit des
++ documents délimités par des sauts de ligne.
+
+@ 0 1 0 1f0c5a60d6408bb4198d7de448cf1ad0
++ ### Flux standard
+
+@ 0 3 0 195a37b5adc80b9c11bf47cf1f174f38
++ La sortie standard et l'erreur standard s'atteignent via `Out` et `Err`, qui affichent via la
++ capacité `Stdio` dans la portée. La sortie standard est une capacité, et non une variable
++ globale, si bien qu'un test ou un [démon](daemons.md) peut la rediriger :
+
+% 2 1 0 1f3b2514c41d8d2110894654db7c25a2
+
+% 3 1 0 17036b8b98f384091b0e7406255ec927
+
+% 4 1 0 1aeca4425fcc21bc0c3dbcaa3f59c207
+
+% 0 1 0 08633e5086f46bcf0427535ffa724a7e
+
+% 0 1 0 0a9b5ba6996f59b607c76df4fafba1ba
+
+% 1 1 0 09ada0d5fdf5a40e0a564a49993a93cb
+
+@ 0 1 0 18f2b01ee5169bc508b15d46f6b09eff
++ ### Produire un flux au fil du temps
+
+@ 0 3 0 14c394ba2d8273c20a77b3ebe4cc64d1
++ Parfois, les éléments d'un flux sont produits par une partie d'un programme, et consommés par
++ une autre. Un `Relay` fait le pont entre les deux. Un nombre quelconque de producteurs y
++ déposent des enregistrements avec `put` à mesure qu'ils apparaissent, l'un d'eux appelle
++ finalement `stop`, et un unique lecteur possède le flux résultant :
+
+% 2 1 0 0d6ce82d5384f1a20ce2ad15cf791eb5
+
+% 0 1 0 11162895f28d3dda127a16f9288a8b31
+
+% 0 1 0 14c4d1e629c9c07703e7d7ca275e9a38
+
+% 0 1 0 0113e4ca48caac2c16b8202880ff4bef
+
+% 0 1 0 02ecfaf17db8f3531467d7c08dcf3a9a
+
+% 0 1 0 059fc5b182f69d6e03646e3de25be107
+
+% 1 1 0 0d5bf173bf261a601eab03b88a21a602
+
+@ 0 3 0 0e9b32d3dc3ee35211e7322147f2cf4f
++ Le remplissage d'un relais bloque jusqu'au premier enregistrement. Il vide ensuite tout ce qui
++ est déjà arrivé dans la même fenêtre, si bien que les enregistrements sont regroupés par lots
++ à travers la frontière entre threads, et ne paient pas chacun le coût d'un transfert.
+
+@ 0 5 0 097105df5d06784f0da5843b9f0259b4
++ Pour un trafic d'octets ou de caractères entre deux threads, un `Conduit` est l'équivalent qui
++ a strictement un producteur et un consommateur, et qui est structuré en blocs. Les données
++ passent par blocs, à travers une file d'attente bornée. Un écrivain qui va plus vite que son
++ lecteur se met donc en attente, ce qui est de la contre-pression entre threads, et la capacité
++ libre est exactement le crédit que le lecteur signale comme demande.
+
+@ 0 1 0 048d251fadeef6661f105ca74ef9b566
++ ### Combiner et répliquer des flux
+
+@ 0 4 0 0fe765bf6d5a9acc1cab09fe1e25a796
++ `Confluence` fusionne plusieurs flux en un seul, dans l'ordre d'arrivée, avec une pompe en
++ cours d'exécution pour chaque entrée. Un consommateur lent exerce une contre-pression sur
++ chaque entrée, et le flux fusionné se termine lorsque toutes se sont terminées. Il s'appuie
++ sur la [concurrence](concurrency.md), si bien qu'il s'exécute à l'intérieur d'une portée
++ supervisée :
+
+% 2 1 0 15fe847e4662b162060fc9f17a89dc5d
+
+% 0 1 0 10d199dc1f673997065b6030312b5591
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 0 1 0 0203ca3f81953b33038041478c2f566c
+
+% 0 1 0 0a9764e1eef11d8d151d8d10ffe6af8c
+
+% 0 1 0 0e44b26bbb622d3b16938b8d5ae6f754
+
+% 0 1 0 00705a64ab5340531d10b756a865a272
+
+% 1 1 0 1d5d43efd15b2fad034a035225aeb19c
+
+@ 0 4 0 0a3bde253335e3c0184206b61435ead8
++ `Divergence` est l'inverse. Une source est livrée à plusieurs abonnés, et chaque morceau est
++ matérialisé une fois, et partagé de manière immuable entre eux. Un abonné dont la file
++ d'attente est pleine met la pompe en attente, si bien que l'abonné le plus lent impose le
++ rythme de la source, ce qui est le comportement correct pour une réplication.
+
+@ 0 1 0 14b375ec4355dbdd19b0d41ccaebec27
++ ### Régler la contre-pression
+
+@ 0 2 0 0f639880e0050ee40e9b48b062c9c497
++ Chaque étape qui alloue un tampon consulte la politique `Buffering` dans la portée, si bien
++ qu'un seul given règle tout un pipeline. Ses membres sont :
+
+% 2 1 0 1866830c3ae9fc301ff5c1c803203497
+
+@ 0 7 0 0184dcb0ad0cc5f718220b1157189b8a
++ column  Membre
++ column  Signification
++ column  Valeur par défaut
++ row  `capacity(substrate)`  la taille des blocs de transit  4096 octets, 2048 caractères ou 256 enregistrements
++ row  `transfer(substrate)`  la taille d'un bloc qui franchit une frontière asynchrone  seize blocs de transit
++ row  `depth`  la marge, en blocs de transfert, qu'un `Conduit` maintient entre écrivain et lecteur  16
++ row  `recycle`  si les blocs de transfert vidés retournent à l'écrivain pour être réutilisés  activé
+
+% 1 1 0 144f31fd02ff0e8d040b4b7e23ae213f
+
+@ 0 3 0 152c5f5a7640868d0c96ea2a7ea5edcc
++ Les tailles sont choisies pour deux raisons. Les blocs de transit doivent rester dans le cache
++ du processeur. Et chaque bloc de transfert coûte un transfert synchronisé, si bien que les
++ blocs qui franchissent une frontière doivent être bien plus grands que les blocs de transit.
+
+@ 0 6 0 15276760c43c91aa0d38697dc4248626
++ Les données en vol dans un conduit sont bornées par `(depth + 1)` blocs de transfert. Le débit
++ des transferts s'effondre à des profondeurs très faibles : une profondeur de 2 atteint moins
++ d'un dixième du débit de la valeur par défaut dans les benchmarks. Il se stabilise autour de
++ la valeur par défaut, pour un producteur et un consommateur qui avancent au même pas. Un
++ pipeline qui fonctionne par rafales gagne tout de même à avoir une profondeur qui couvre la
++ taille de ses rafales, en blocs de transfert. Les blocs recyclés vont dans un pool partagé de
++ taille plafonnée, ce qui répartit le coût d'allocation des blocs entre les conduits.
+
+@ 0 1 0 07bf63d3561b5c5b16a9c749ddc9113c
++ La contre-pression s'applique partout où des données passent d'un thread à l'autre :
+
+% 2 1 0 0162a3f4eca1d6220dd9106bf94f933c
+
+@ 0 8 0 181a2723a8b7139b1395c7e42d65eb32
++ column  Structure
++ column  Transporte
++ column  Sous contre-pression
++ row  `Conduit`  des octets ou des caractères, d'un écrivain vers un lecteur  l'écrivain se met en attente sur un anneau plein
++ row  `Divergence`  une source, vers plusieurs abonnés  la pompe se met en attente sur l'anneau de l'abonné le plus lent, jusqu'à la fermeture de ce flux
++ row  `Confluence`  plusieurs flux, fusionnés en un seul  les pompes se mettent uniformément en attente sur la file partagée
++ row  HTTP/2  un corps, dans les deux sens  le pair attend du crédit : la fenêtre de réception, renouvelée seulement à mesure que le corps est vidé
++ row  `Relay`  des enregistrements, de nombreux producteurs vers un lecteur  les producteurs ne bloquent jamais
+
+% 1 1 0 0bdd0aab6e7d031c11c90dbd601602b5
+
+@ 0 3 0 1cb07bb1db558ad71dd3e2ea5f3ca106
++ La fenêtre de réception qu'annonce HTTP/2 est de 1 Mio par défaut, et peut être réglée pour
++ chaque connexion. Elle borne l'avance que peut prendre un pair sur un consommateur qui a cessé
++ de lire. [Serveur HTTP](http-server.md#http2) la décrit.
+
+@ 0 4 0 1963482c782b01a20a6b788fafcc3882
++ Une structure s'en exclut délibérément. `Relay` est le bus des enregistrements issus de
++ nombreux producteurs, et son contrat est que les producteurs ne bloquent jamais. Le
++ multiplexeur de HTTP/2 pour les trames sortantes en dépend, puisqu'un `put` bloquant à cet
++ endroit risquerait un interblocage entre flux. La discipline d'un relais tient donc à son
++ consommateur unique, et non à une borne.
+
+% 0 1 0 17ad7b042f2892c00c805d981342195f
+
+@ 0 2 0 0b8604fc258ea1ac1574872eb8d17818
++ Un flux d'octets se compresse et se décompresse avec un schéma nommé, comme étape d'un
++ pipeline ou sur une valeur entière. [Compression](compression.md) décrit les formats :
+
+% 2 1 0 1cf0e805561b55c71bce7892c39edfd4
+
+% 3 1 0 0cf3323a88dab5ca1b766d4b0130236c
+
+% 4 1 0 0ff37c20f89842c705a0ba2f17b84a0b
+
+% 0 1 0 08e47e38461b45d50168afab295ad46f
+
+% 1 1 0 05352ad7e69f5014048d07ea447e9be7

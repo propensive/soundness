@@ -1,0 +1,7 @@
+orthant 2 release
+
+@ 0 3 0 128203b5e39366800e0ab4db2ff94cc8
++ A `U8` (unsigned 8-bit) is bounded above by `255`.
+
+@ 0 1 0 08057fb8751d2f5509d22def79dfa36b
++ [↯/s.27.9] a U8 may not be greater than 255

@@ -1,0 +1,946 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 00f588f705bbd238134d61de23ad5e31
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09fcd9cd0057d066099fb31a4ed9e368
++ info   Kompressionsformate als Typen: DEFLATE, gzip, zlib, Brotli, XZ, LZMA2 und LZW, über Werte und Streams
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0ce20415902375f012f2165e82a85af7
++     _Pneumatic_ komprimiert und dekomprimiert Bytes über ein einziges Verbpaar, `compress` und
++     `decompress`, für jedes Format, das es kennt. Ein Format ist ein **Typ** — `Gzip`, `Zlib`,
++     `Deflate`, `Brotli`, `Xz`, `Lzma2` oder `Lzw` —, und das Verb nimmt es als Typargument,
++     sodass das Format dort geprüft wird, wo der Code kompiliert, statt zur Laufzeit aus einem
++     String oder einem Flag geparst zu werden. Das Begleitobjekt jedes Formats hält ein
++     `Compression`-given, das die Typklasse hinter den Verben ist, und sonst muss an einem
++     Codec nichts von Hand konstruiert, gefüttert oder abgeschlossen werden.
+
+@ 0 7 0 08acad97f25db7d1137bec3a3f7cfe7c
++     Dieselben Verben funktionieren auf einem ganzen `Data`-Wert, auf einer lazy
++     `Chain[Data]` aus Chunks und auf einem streamenden `Stream[Data] over Credit`, wo sie zu
++     Pipeline-Stufen werden: Die Bytes werden umgewandelt, während sie fließen, und nichts
++     Größeres als die Puffer der Pipeline wird gehalten (außer bei den Formaten, deren
++     Algorithmus den ganzen Wert braucht, wie es bei `Brotli` der Fall ist). Alle drei Formen
++     werden über einen `Duct` je Format angetrieben, sodass sie Byte für Byte übereinstimmen
++     und frei zusammenspielen: Ein als Ganzes komprimierter Wert lässt sich als Stream
++     dekomprimieren, und die Ausgabe eines Streams lässt sich als Wert dekomprimieren.
+
+% 2 1 0 166a1852e7b60743168e1a5e7510d618
+
+% 3 1 0 0c510873c5d4a5b11ed9e72b929b45fc
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 184cbfa2d280e87b1fa895ad2d79299e
+
+% 0 1 0 1f61648ae9c44ac2133db4b18a3b3c7b
+
+% 0 1 0 167dade96aafeb5203205969369327bc
+
+% 0 1 0 0022bbda9fc16f401f525f967eba66ea
+
+% 1 1 0 1e0bc4938db9d7cc1dfd6dcb0d9e6522
+
+@ 0 3 0 160a7663af62800c15b75b635e7e3841
++     Die Pipeline-Form setzt den Kompressor und den Dekompressor zu beiden Seiten einer Datei,
++     eines Sockets oder eines HTTP-Bodys. Hier wächst ein Stream Stufe für Stufe, vom Lesen der
++     Bytes bis zu ihrem komprimierten Schreiben:
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1269ec964bf956291af0305df5113131
++       label Die Bytes, als Stream von Chunks
+
+% 1 1 0 0194f511049e218e11f3d64cc5efe129
+
+% 0 1 0 0b6f3596037eb3490f3ec025c46ca92b
+
+% 1 1 0 0720b539d8ce6b1f03e0b9b86e1e373f
+
+@ 0 1 0 0e073d67e64c81f517a4670c3cc88f58
++       label Komprimiert, während sie fließen
+
+% 1 1 0 1c03c153c065fb5311a9b88f7dfef2a3
+
+% 0 1 0 00db11cf906dddc41e00dc3784fe2bca
+
+% 1 1 0 054779f3cfb1480b1cd5133e0b7f2322
+
+@ 0 1 0 15a2a00b081ac11213a8303adac4c1f8
++       label Wieder dekomprimiert, stromabwärts des Kompressors
+
+% 1 1 0 140e7dc6b7c750901d521632bedda892
+
+% 0 1 0 016a709ddf213f68015823a6c817bf67
+
+% 1 1 0 07ac87a0f2d1cf9706a7fa12de0836e8
+
+@ 0 1 0 10d234dcfd79106803725f6f2abb84a1
++       label Am Ende der Pipeline als Text zurückgelesen
+
+% 1 1 0 0e330193687498f50aeca167c82e0f93
+
+% 0 1 0 1e1a71c43b5cf989121b729389ac40e7
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 3 0 167e4332bdef722f022fc6011074ffa5
++     Jede Pipeline-Stufe nimmt einen `Buffering`-Kontextwert, der die Puffer des Ducts
++     bemisst; `Buffering.standard` liegt im impliziten Geltungsbereich, daher ist kein Import
++     nötig, sofern keine andere Richtlinie gewünscht ist.
+
+@ 0 1 0 082df6668aa4ebce0b8ce2f3a968c463
++     Die Formate und wofür jedes gedacht ist:
+
+@ 0 12 0 034b46bf54173692045040fffb9ad086
++     - `Deflate` ist der rohe DEFLATE-Bitstream, `Zlib` derselbe Stream in seinem
++       Zwei-Byte-Header und Adler-32-Trailer, und `Gzip` derselbe Stream im Header und
++       CRC-32-Trailer einer `.gz`-Datei. Sie sind die Formate der HTTP-Inhaltskodierung, von
++       ZIP-Einträgen und PNG-Chunks und die schnellsten der Reihe. `gzip` und `gunzip` sind
++       einmalige Erweiterungen auf `Data` für das gebräuchlichste davon.
++     - `Brotli` komprimiert kleiner als DEFLATE bei vergleichbarer Geschwindigkeit und ist die
++       Inhaltskodierung des modernen Webs. `Brotli.prefix` und `Brotli.continuation` kodieren
++       einen Wert relativ zu einer Basis, die der Empfänger bereits hält.
++     - `Xz` ist der Codec mit hoher Kompressionsrate, LZMA2 im `.xz`-Container mit einer
++       CRC-64-Prüfung, passend zum Kommandozeilenwerkzeug `xz`; `Lzma2` ist derselbe Codec ohne
++       den Container, so wie `Deflate` zu `Gzip` steht. Beide nehmen eine Voreinstellung von 0
++       (am schnellsten) bis 9 (am kleinsten), standardmäßig 6.
++     - `Lzw` ist die Kompression von TIFF- und PDF-Streams, die das JDK nicht implementiert.
+
+@ 0 5 0 062107b5ccb126151950e6a529ccb609
++     Beschädigte oder abgeschnittene Eingaben melden die Dekodierer als geworfene
++     `IllegalStateException`, deren Meldung mit _the compressed data is corrupt_, _the XZ data
++     is corrupt_, _the LZMA2 data is corrupt_ oder _the Brotli data is corrupt_ beginnt; es
++     gibt keinen `Error`-Typ, der über eine `Tactic` zu behandeln wäre, daher wird ein
++     Dekodierer, der nicht vertrauenswürdige Eingaben liest, an der Aufrufstelle in ein
++     `safely` oder ein `try` gehüllt.
+
+@ 0 2 0 07d9221af8b943240658125845741b87
++     Die Bibliothek ist ein Paket in mehreren Komponenten, sodass ein Verwender eines Formats
++     die anderen nicht kompilieren muss:
+
+@ 0 8 0 19a825c354d4b0a414d108d9163c8017
++     - `pneumatic.core` — `Compression`, `Compressor`, die Erweiterungen
++       `compress`/`decompress` und die aus JZlib portierten DEFLATE-Engines in reinem Scala.
++       Jede Plattform.
++     - `pneumatic.flate` — `Deflate`, `Gzip`, `Zlib`, `gzip` und `gunzip`. Es wird zweimal
++       kompiliert: auf der JVM über `java.util.zip` (natives zlib und seine CRC-32-Intrinsics)
++       und für Scala.js, Scala Native und WASI über die Engines in reinem Scala in `core`. Die
++       Ausgabe beider ist byte-identisch, und die reinen Engines werden ebenfalls von der
++       JVM-Testsuite geprüft.
++     - `pneumatic.brotli` — `Brotli`, mit seinem 122 KB großen statischen Wörterbuch.
++     - `pneumatic.lzma` — `Xz` und `Lzma2`.
+
+% 0 1 0 119fda180cced5cc1042a1ee98f3fd3c
+
+@ 0 3 0 18a6efc5fb2b045a0298a7da12689019
++     Alles wird in das Umbrella `soundness` exportiert, sodass `import soundness.*` die Formate
++     und die Verben hereinbringt, und jedes `Compression`-given wird ohne Import über das
++     Begleitobjekt seines Formats aufgelöst.
+
+% 0 1 0 1d042d0629b69139082d0669e43cda10
+
+% 0 1 0 09af602086110f7d100e4a88a754f66d
+
+% 0 1 0 1e67d72c5db26a880f5422206769d315
+
+% 0 1 0 0109f72dd297b4cc1a1c6ff850083c19
+
+% 0 1 0 103c33a3f778ac3e19467d109d368fcb
+
+% 0 1 0 139411c7e21851ba0a5240fb78c90d47
+
+@ 0 1 0 16831fd9a8c94b3e0e3363b77a53ecec
++ entry .Compression   die Typklasse, die ein Kompressionsformat implementiert: ein Kompressor- und ein Dekompressor-Duct
+
+% 1 1 0 0877f945eadf076f0095e611bad920f8
+
+@ 0 4 0 0a3dcae35e7ad7310fbd44f7168b3a8c
++       `format is Compression` ist das, was `compress[format]` und `decompress[format]`
++       herbeirufen. Ein Format ist ein Typ, der `Compressor` erweitert, und sein Begleitobjekt
++       hält das given: `Gzip.compression`, `Zlib.compression`, `Deflate.compression`,
++       `Brotli.compression`, `Xz.compression`, `Lzma2.compression` und `Lzw.compression`, jedes
++       über das Begleitobjekt im impliziten Geltungsbereich.
+
+@ 0 6 0 111a1bb0cfc0b57f16f9327efe22c933
++       Die Typklasse hat zwei abstrakte Member, `#compressor` und `#decompressor`, jeweils eine
++       Fabrik für eine frische `Duct[Data, Data]`-Stufe; die `Chain`-Formen `#compress` und
++       `#decompress` werden daraus abgeleitet, indem die Chunks durch denselben Duct getrieben
++       werden, und so bleiben die Formen für ganze Werte, Chains und Streams Byte für Byte
++       identisch. Ein Format mit einem günstigeren Chunk-für-Chunk-Treiber (`Xz`, `Lzma2`,
++       `Lzw`, `Brotli`) überschreibt die beiden abgeleiteten Member, aber der Vertrag ist
++       derselbe.
+
+@ 0 1 0 02c6a97d1c7a6fe11a61b32ac0ce75d9
++       Ein neues Format ist ein versiegelter Trait und ein given im Begleitobjekt:
+
+% 2 1 0 1e07a3fd27af68e51ffa71789b635531
+
+% 3 1 0 122568be8b8de5a80812e25cd77117c2
+
+% 0 1 0 0ecc0ef9a166d3fa0584e8f11a7d7e07
+
+% 0 1 0 1a3eb43fb48a2343052390ba2918781a
+
+% 0 1 0 0e781fe7676d2f7718a70941f08ea6b5
+
+% 0 1 0 1419fae97897e24d1cecf641c68b5617
+
+% 1 1 0 15ffb672d690a07419144351255e2c11
+
+% 2 1 0 0682c089a760a4fe12957538d0cbd517
+
+% 0 1 0 0994804f1a7866451612f13420341f89
+
+% 0 1 0 0bb445807c36f5e61eb3b678a6eb9fe5
+
+% 1 1 0 09bee316ce102ce101d0b2b37ea311d7
+
+% 2 1 0 0dce6a2c5bf28356159a036ddf15fef8
+
+% 0 1 0 0fe1ad6998cd960c0f731cfd51d6dfd0
+
+% 1 1 0 0c4d8542c8b26ddd13c1ae95b234e91a
+
+@ 0 3 0 1c536449bc594a740c17071603499ec9
++       Dieselben Bytes, in jedem Format: Rohes DEFLATE ist am schnellsten, gzip fügt das
++       Framing hinzu, das eine `.gz`-Datei trägt, Brotli ist bei ähnlicher Geschwindigkeit
++       kleiner, und XZ ist am kleinsten, zu den höchsten Kosten:
+
+% 2 1 0 1e07dbd43f75d6e7196636003b58200f
+
+% 3 1 0 14e6923a767f2d9d0c1b365e185232d2
+
+% 4 1 0 045237236dd7397d0abf6eca14198479
+
+% 2 1 0 0285c63f56c2dde311af26000f4d002c
+
+% 1 1 0 001f73e66033ba8715f444deb404a10f
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0d2da3992e434bb610f755e0f916f4b7
+
+% 1 1 0 08d5075ef1c262391640267fe1d8fffe
+
+% 0 1 0 1bc1b3aa4250fc9d05d66d5e1eac5b35
+
+% 0 1 0 013d399cb8ae87d71885c187f7e90318
+
+% 1 1 0 05a0738cbabf0cc504cd7609f0f94e2f
+
+% 0 1 0 07801e7cb080d4811d679cd7709a32ee
+
+% 0 1 0 1c7662887a3497201414fe223c1645a0
+
+% 1 1 0 19787a7ee22f58ac01061382aa8b2914
+
+% 0 1 0 1bfa16ebb9edc449139557ae74820788
+
+% 0 1 0 1b64dd58efde01e31345f9cf965681ee
+
+% 1 1 0 07a2b7293fa437241145a5d548cf2f84
+
+% 0 1 0 1211c11aaa1d2488122a5795cffcaa42
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 0 1 0 1df85ec1036dea330048298edf2004b0
+
+% 1 1 0 032ec55dc42f861702e425c1bcca0bc6
+
+% 1 1 0 093a21e99fc7cbcb1859953705a6faba
+
+@ 0 23 0 08b4fd34b6cc53091433ed14da79ca30
++   entry #Self   das Format, dem diese Instanz dient, ein Untertyp von `Compressor`
++   entry #compress   eine lazy Chain aus Chunks, Chunk für Chunk komprimiert
++       `compression.compress(chain)` ist das, was `chain.compress[format]` aufruft. Die
++       Standardimplementierung passt die Chain an einen Stream an, schickt sie durch
++       `#compressor` und liefert einen Ausgabe-Chunk je Nachfüllen des Ducts; das Ergebnis ist
++       eine lazy `Chain[Data]`, sodass nichts komprimiert wird, bevor sie verbraucht wird. Die
++       Chunk-Grenzen der Ausgabe stehen in keiner Beziehung zu denen der Eingabe.
++   entry #decompress   eine lazy Chain aus komprimierten Chunks, Chunk für Chunk dekomprimiert
++       `compression.decompress(chain)` ist das, was `chain.decompress[format]` über
++       `#decompressor` aufruft. Die Eingabe darf an jeder Byte-Grenze geteilt sein: Ein
++       gzip-Header oder ein LZMA2-Chunk-Header, der Byte für Byte zugeführt wird, wird von der
++       Stufe wieder zusammengesetzt. Beschädigte Eingaben werfen `IllegalStateException`, wenn
++       die Chain erzwungen wird, nicht wenn sie gebaut wird.
++   entry #compressor   eine frische komprimierende `Duct[Data, Data]`-Stufe für eine streamende Pipeline
++       Die Fabrik, die `stream.compress[format]` und `data.compress[format]` verwenden. Sie
++       nimmt ein `Buffering` und gibt einen Duct zurück, dessen `Transport` und `Upstream`
++       beide `Credit` sind: Der Bedarf wird unverändert durchgereicht, da sich eine
++       Kompressionsrate nicht im Voraus kennen lässt, und der eigene beschränkte Puffer des
++       Ducts fängt Ausdehnung auf. Jeder Aufruf erzeugt einen neuen Duct mit eigenem Zustand,
++       sodass ein Duct nie von zwei Streams geteilt wird.
++   entry #decompressor   eine frische dekomprimierende `Duct[Data, Data]`-Stufe für eine streamende Pipeline
++       Die Fabrik, die `stream.decompress[format]` und `data.decompress[format]` verwenden, mit
++       einem `Buffering`. Die DEFLATE-Familie hält am Ende ihres Streams an und verbraucht einen
++       gzip-Trailer, ohne ihn zu prüfen; `Xz` prüft die CRC-32-, CRC-64- oder SHA-256-Prüfung
++       jedes Blocks, und ein abgeschnittener Stream ist ein Fehler.
+
+@ 0 5 0 1623187e973cf0bb033ab3d2df39d13f
++ entry .Compressor   der Markertyp, den jedes Kompressionsformat erweitert
++     `Deflate`, `Gzip`, `Zlib`, `Brotli`, `Xz`, `Lzma2` und `Lzw` sind jeweils ein `sealed trait
++     extends Compressor` ohne Instanzen: Ein Format wird nur als Typargument genannt, wie in
++     `compress[Gzip]`, und die Schranke `format <: Compressor` an den Verben hält einen fremden
++     Typ von dieser Stelle fern. Das Verhalten des Formats liegt ganz in seinem
++     `Compression`-given.
+
+@ 0 1 0 1234a0653ecfa3a91d0bf1240e6b6663
++ entry .compress   `value.compress[Format]`: komprimiert einen Wert, eine Chain aus Chunks oder einen Stream
+
+% 1 1 0 0b6b6d26b65e3105077a6a58cd2593ae
+
+@ 0 1 0 04e39e4b21a6fb63184ba981a58f9402
++       Drei Erweiterungsmethoden teilen sich den Namen, gewählt nach dem Empfänger:
+
+@ 0 6 0 01bb0674390317040b2e290e407322c2
++       - auf einem `Data` wird der ganze Wert durch den Duct des Formats komprimiert und als
++         `Data` zurückgegeben;
++       - auf einer `Chain[Data]` wird eine lazy Chain aus Chunks zurückgegeben, die komprimiert
++         wird, während sie erzwungen wird;
++       - auf einem `Stream[Data] over Credit` wird der Kompressor des Formats zu einer Stufe der
++         Pipeline, und das Ergebnis ist ein weiterer `Stream[Data] over Credit`. Der Empfänger
++         wird verbraucht: Nachdem die Stufe angehängt ist, darf er nicht erneut gelesen werden.
+
+@ 0 2 0 0857ed18d5fd2db60cf69d0b49edd373
++       Jede braucht ein `format is Compression`, das sich im Begleitobjekt des Formats findet,
++       und die Formen für `Data` und `Stream` ein `Buffering`, für das `Buffering.standard` im
++       impliziten Geltungsbereich liegt.
+
+% 2 1 0 0cf653df2999e93f00e9e4796b7791a3
+
+% 3 1 0 09a7f913518e8f060a634cd8022420e3
+
+% 4 1 0 0182bd8952417c6018747be633228a03
+
+% 6 1 0 1e6b3c976815ab7f07b58b37efd8c858
+
+% 0 1 0 12ab1110ad9645fb0cf4200d389ffc4a
+
+% 0 1 0 0ffaa28efa8b1eff01a88567cec690f8
+
+% 0 1 0 0764339bd242579006474473851e68a7
+
+% 0 1 0 0a8e89c95299c9741c248d7bbb6e8de1
+
+% 1 1 0 097ea64c2e958a0b0e612a271e899c5c
+
+@ 0 4 0 1e807659a2770629103ec7d5612473e0
++       Eine explizite XZ- oder LZMA2-Voreinstellung oder eine LZW-Einstellung `earlyChange`
++       lässt sich über das Verb nicht ausdrücken: `Xz.compress(chain, preset)`,
++       `Xz.compressor(preset)`, `Lzma2.compress(chain, preset)` und
++       `Lzw.compress(chain, earlyChange)` nehmen den Parameter direkt.
+
+% 1 1 0 04bd6304a652a8380ed1860493ed2fff
+
+% 1 1 0 042e45f701d3750e0e7ee353226c54a1
+
+@ 0 1 0 1e0537f2e799caeb1e97687e6f7e66ce
++ entry .decompress   `value.decompress[Format]`: dekomprimiert einen Wert, eine Chain aus Chunks oder einen Stream
+
+% 1 1 0 112c04807b476d501dce62caa9999978
+
+@ 0 4 0 1c8f12661b33e32e0165153a3f3fcaae
++       Die Umkehrung von `compress`, mit denselben drei Empfängern: Ein `Data` wird zu einem
++       `Data` dekomprimiert, eine `Chain[Data]` zu einer lazy `Chain[Data]`, und ein
++       `Stream[Data] over Credit` erhält den Dekompressor des Formats als Stufe, wobei der
++       Empfänger verbraucht wird. Jede braucht ein `format is Compression` aus dem Begleitobjekt
++       des Formats und die Formen für `Data` und `Stream` ein `Buffering`.
+
+% 2 1 0 0783f02f6f299a600235f984eb6cd3dd
+
+% 3 1 0 11ef6f6ba3e737d60b7f62fc51e86265
+
+% 4 1 0 1454623394b9c0f41c9160f51f22e241
+
+% 6 1 0 16545654bd1d0e6d0becb5f776b48ec7
+
+% 1 1 0 02a794d068b3b0c51fc11989de05b434
+
+% 0 1 0 1806f04389cef83d03d71e988e35ca07
+
+% 1 1 0 01bf39afa5a53c231ae6a8de0ca978c8
+
+@ 0 7 0 034fcfdf2c6f605006fedca6bbf4aaeb
++       Die Formen spielen zusammen: Was `compress` als Ganzes erzeugt hat, lässt sich über einen
++       Stream dekomprimieren, und umgekehrt. Eine Eingabe, die nicht im genannten Format,
++       beschädigt oder abgeschnitten ist, wirft eine `IllegalStateException` — wenn die
++       `Data`-Form zurückkehrt oder wenn die Chain oder der Stream erzwungen wird — mit einer
++       Meldung, die das Format und den Fehler nennt; ein Dekodierer über nicht
++       vertrauenswürdigen Bytes wird in `safely` oder ein `try` gehüllt. Rohes `Lzma2` trägt
++       keine Wörterbuchgröße, daher nimmt `decompress[Lzma2]` das Wörterbuch der
++       Voreinstellung 6 mit 8 MiB an; `Lzma2.decompress(chain, dictSize)` nimmt ein anderes.
+
+% 1 1 0 0a2dd91ee581b6ff1a22512ba243505d
+
+% 1 1 0 1faedd14e6a6e88b0d937b1de7ed1852
+
+@ 0 1 0 1951457244defd5317f7728a990728d7
++ entry .Deflate   der rohe DEFLATE-Stream, ohne Header oder Prüfsumme
+
+% 1 1 0 00def887428871fc170be7662203ed5e
+
+@ 0 4 0 08f60a19a6c0ddb91188d68a875ad4a7
++       `Deflate` bezeichnet den bloßen DEFLATE-Bitstream von RFC 1951: allein die
++       komprimierten Blöcke, ohne das Framing, das `Zlib` und `Gzip` um sie legen. Es ist die
++       Form, die ZIP-Einträge, PNG-Chunks und (in der Praxis) die HTTP-Inhaltskodierung
++       `deflate` tragen, und diejenige, die zu verwenden ist, wenn der Container seine eigene
++       Länge und Prüfsumme liefert.
+
+% 2 1 0 0fbb3c52ee87caf5145bd4aa2c40fb68
+
+% 3 1 0 1d4b9c3195dc8c2c1b860a3884241017
+
+% 4 1 0 13f907180d980b281678be3c36260e09
+
+% 6 1 0 14892f168eb53b331a863c034f1f995a
+
+% 0 1 0 10671b607751858e0104ced7af63c8b7
+
+% 1 1 0 16478730409c64ea05757f98a7809f75
+
+@ 0 4 0 1c02dd423a06649707dca622c6c4e658
++       Der Deflater hat eine einzige Kompressionsstufe, die zlib-Vorgabe 6: Es gibt keinen
++       Parameter, um eine andere zu wählen. Auf der JVM wird der Stream von `java.util.zip`
++       erzeugt, anderswo von der Portierung in reinem Scala in `pneumatic.core`, mit
++       byte-identischer Ausgabe. Ein beschädigter Stream wirft beim Lesen
++       `IllegalStateException`, _the compressed data is corrupt: …_.
+
+% 0 1 0 118c0ef3847628ad13a38af786ca6ab6
+
+% 1 1 0 05c1fca6bfd5b7f710f8a4e619c24fd6
+
+@ 0 3 0 158055f4a909f3040329b34f7753b5cd
++   entry .compression   das given `Deflate is Compression`, über das Begleitobjekt im impliziten Geltungsbereich
++       Sein Kompressor ist ein roher Deflater und sein Dekompressor ein roher Inflater, jeweils
++       ein `Duct[Data, Data]` über `Credit`, für jeden Stream frisch gebaut und mit Bedarf an
++       einem `Buffering`.
+
+@ 0 1 0 1783202ae6ef7da70c38c743f6ea052f
++ entry .Gzip   DEFLATE im Framing einer `.gz`-Datei: Header, CRC-32 und Längen-Trailer
+
+% 1 1 0 13dc73b72a3ed3d70f780bd3bfa04be3
+
+@ 0 5 0 1e9a3ba396c928a707cfa9d6753969eb
++       `Gzip` ist das Format von `.gz`-Dateien, von `tar.gz`-Archiven und der
++       HTTP-Inhaltskodierung `gzip` (RFC 1952): ein Zehn-Byte-Header, ein roher DEFLATE-Stream,
++       dann CRC-32 und Länge der ursprünglichen Bytes. Beim Komprimieren wird der minimale
++       Header geschrieben, ohne Name, Kommentar oder Zeitstempel; beim Dekomprimieren wird
++       jeder Header akzeptiert, einschließlich der optionalen Felder für Extra, Name, Kommentar
++       und Header-Prüfsumme, und der Trailer wird verbraucht, aber nicht geprüft.
+
+% 2 1 0 0eb9f628fdf07f76126d958d88e74a4a
+
+% 3 1 0 120ca83fa349be9c16fadf2f3a4910e5
+
+% 4 1 0 16185647efe7d3ab14553920d75ec8d5
+
+% 0 1 0 0378d4a135a8bfbe1c514ed63cec8806
+
+% 1 1 0 07b73353c7a622b513e6b3b76f37fc18
+
+% 0 1 0 01d2559cac3334710d7c9467eee7f6b8
+
+% 0 1 0 0b61297c0ebc9896197204cffba0f7f5
+
+% 0 1 0 1d850c336c90a5c502014d87ce128b22
+
+% 1 1 0 1705d6bcea87a17311148d2826dfdff1
+
+@ 0 4 0 04da1ab89f61d01b12a275da800b1eea
++       Der Stream-Dekompressor setzt einen Header oder Trailer wieder zusammen, wie auch immer
++       die Eingabe in Chunks geteilt ist, sodass sich ein gzip-Stream dekodieren lässt, der
++       Byte für Byte ankommt. `gzip` und `gunzip` sind die einmaligen Erweiterungen auf `Data`
++       für dieselbe Umwandlung. Auf der JVM stammen DEFLATE-Stream und CRC-32 aus
++       `java.util.zip`, anderswo aus der Portierung in reinem Scala, byte-identisch.
+
+% 0 1 0 1493a286d6687445195be9fdfb03a052
+
+% 0 1 0 148b17236f5764690ef3a5c2b8798080
+
+% 1 1 0 1d597abfc0313f7b0f661d8f0df106a6
+
+@ 0 5 0 0f741168d693f5c90eab65fd9a083d94
++   entry .compression   das given `Gzip is Compression`, über das Begleitobjekt im impliziten Geltungsbereich
++       Sein Kompressor schreibt den Header, den rohen DEFLATE-Stream und den Trailer aus CRC-32
++       und Größe; sein Dekompressor parst den Header mit einem kleinen Zustandsautomaten vor
++       dem Inflater und überspringt nach dessen Ende den Acht-Byte-Trailer. Jeder ist ein
++       `Duct[Data, Data]` über `Credit` mit Bedarf an einem `Buffering`.
+
+@ 0 1 0 01d3ca383309ac7c0d886f9da3ea0ffa
++ entry .Zlib   DEFLATE in der zlib-Hülle: ein Zwei-Byte-Header und ein Adler-32-Trailer
+
+% 1 1 0 11df460ab61ebf5a004e3628ca815b01
+
+@ 0 4 0 0d539a4d22a043321a3240df64ccb4c6
++       `Zlib` ist das Format von RFC 1950, das eigene Framing des Deflaters: zwei Bytes, die
++       Methode und Fenster angeben, der DEFLATE-Stream und eine Adler-32-Prüfsumme der
++       ursprünglichen Bytes. Es ist die Kompression in den `IDAT`-Chunks von PNG, in den losen
++       Objekten und Packfile-Einträgen von git und in den `FlateDecode`-Streams von PDF.
+
+% 2 1 0 05c3f5bf029c33b61508f9882ab1ee90
+
+% 3 1 0 1c5f0b1611118c3317d1ca18b5891a2c
+
+% 4 1 0 14cd91e0362da6540a773273a9fc1103
+
+% 6 1 0 12d578c5e47484261ed6113a80b661c9
+
+% 0 1 0 0381a25d503e92630910a35c7a03248c
+
+% 1 1 0 159b326f2fd4f835155432f839e199ae
+
+@ 0 3 0 165cdc32d23cec651e9c3643bfb60be7
++       Neben dem `Compression`-given dekodiert `.inflate` einen zlib-Stream, der an einem Offset
++       in einem größeren Wert beginnt, und meldet, wie viele Bytes er verbraucht hat, für die
++       Container, die zlib-Streams aneinanderhängen, ohne sie zu rahmen.
+
+% 1 1 0 19581f0a491e8599133ae15633035d97
+
+% 1 1 0 0898bbad598767080c4af37092d0e58f
+
+@ 0 10 0 1e2618414e922e94026012454e3e3fcc
++   entry .compression   das given `Zlib is Compression`, über das Begleitobjekt im impliziten Geltungsbereich
++       Sein Kompressor und sein Dekompressor sind Deflater und Inflater mit aktivierter
++       zlib-Hülle, jeweils ein `Duct[Data, Data]` über `Credit` mit Bedarf an einem
++       `Buffering`.
++   entry .inflate   dekomprimiert den einen zlib-Stream, der an einem Offset beginnt, mit der Anzahl der verbrauchten Bytes
++       `Zlib.inflate(data, offset)` dekodiert den zlib-Stream, der bei `offset` in `data`
++       beginnt, und gibt ein Paar zurück: die dekomprimierten Bytes und die Anzahl der
++       komprimierten Bytes, die der Stream belegte, sodass sich das Nächste in `data` finden
++       lässt. Diese Gestalt haben die Packfiles von git — Objekt nach Objekt, jedes ein
++       zlib-Stream, ohne dazwischen vermerkte Länge —, und das braucht ein Packfile-Leser, wo
++       `decompress[Zlib]` den ersten Stream dekodieren und den Rest verwerfen würde.
+
+% 2 1 0 0f348bc42309d37d06c1173712cf1260
+
+% 3 1 0 18a3288a713fdc351b248044701046c8
+
+% 4 1 0 03b86ef9482d87520e90f7f1c8cbc350
+
+% 0 1 0 1c43b75a58d7d2fb0da96b07d14205ed
+
+% 0 1 0 131c64be889d31840e23d29c0957aa53
+
+% 0 1 0 154c94971216c97e1cd162b6bb3c34db
+
+% 0 1 0 1308cd969af5044f1a50032a8a2d4068
+
+% 0 1 0 0bc7baf052893f4e16fd39fff0b0d78d
+
+% 0 1 0 053e63dc9d7cdf4d11075512bdd85d56
+
+% 1 1 0 10fd3b10a1669e681dc7c6cc626ffd24
+
+@ 0 2 0 02ed19e83c134bff159ae4ad1ae21fed
++       Ein Stream, der endet, bevor seine Daten vollständig sind, wirft
++       `IllegalStateException`, _the compressed data is truncated_.
+
+@ 0 6 0 02c61871eb758ccb03636a0915d11b76
++ entry .gzip   `data.gzip`: ein ganzer Wert als gzip komprimiert, in einem Aufruf
++     Eine Erweiterung auf `Data`, die den ganzen Wert im Format `Gzip` komprimiert und das
++     Ergebnis als ein `Data` zurückgibt; `data.compress[Gzip]` ist dieselbe Umwandlung über den
++     Duct. Sie braucht nichts im Geltungsbereich. Auf der JVM läuft sie über `java.util.zip`,
++     anderswo über den Deflater in reinem Scala, sodass sie auf jeder Plattform verfügbar ist;
++     `bitumen` verwendet sie, um ein ganzes tar-Archiv zu gzippen.
+
+% 2 1 0 0dbf7ef1967b590b0fc16907afd72200
+
+% 3 1 0 1fedb9b1438d3aaf080d94d8696f4e50
+
+% 0 1 0 1dfd3274eb790fd61210b26bb02380e7
+
+% 0 1 0 17f4b8c28c561beb1ea1ecfba4a659a0
+
+% 1 1 0 1589d875e4431e101ea28eee5f0c6b76
+
+@ 0 4 0 1b594ec4a9f028100bfa8a05b8d6fa36
++ entry .gunzip   `data.gunzip`: ein ganzer gzip-Wert dekomprimiert, in einem Aufruf
++     Eine Erweiterung auf `Data`, die einen ganzen `Gzip`-Wert dekomprimiert und die
++     ursprünglichen Bytes als ein `Data` zurückgibt, ohne dass Kontextwerte nötig sind;
++     `data.decompress[Gzip]` ist dieselbe Umwandlung über den Duct. Eine Eingabe, die kein
++     gzip ist, wirft `IllegalStateException`.
+
+@ 0 1 0 00c5f383468ca63a0447db8507054aeb
++ entry .Xz   LZMA2 im `.xz`-Container mit einer CRC-64-Prüfung: das, was das Werkzeug `xz` erzeugt
+
+% 1 1 0 19dbfcc6d5172c330acc7e36abb22836
+
+@ 0 6 0 0cb5d88603d702520d32381b5038a8f6
++       `Xz` ist der Codec mit hoher Kompressionsrate: der LZMA2-Algorithmus im `.xz`-Container
++       von XZ Utils, als Portierung des gemeinfreien Algorithmus in reinem Scala, sodass er auf
++       jeder Plattform läuft. Ein mit der Standardvoreinstellung komprimierter Wert lässt sich
++       mit dem Kommandozeilenwerkzeug `xz` dekodieren, und die Ausgabe des Werkzeugs lässt sich
++       hier dekodieren, einschließlich Streams, die es mit CRC-32, SHA-256 oder ohne Prüfung
++       geschrieben hat; die Prüfung jedes Blocks wird beim Dekodieren verifiziert, sodass
++       beschädigte Nutzdaten erkannt werden. Der Kompressor schreibt eine CRC-64-Prüfung, wie
++       `xz` es standardmäßig tut.
+
+% 2 1 0 1305ffc1b4e57a35184f76d645d89936
+
+% 3 1 0 19766126f2f35c450081945094d2716e
+
+% 4 1 0 1ab3bf5cf66d7853162c3f4baceb1178
+
+% 5 1 0 01ac41f7f4db75a900ce5a7ad723895a
+
+% 7 1 0 0423d624b8318c540b21aaf95d50b63e
+
+% 0 1 0 1f8cc77f2a4e1f841960fdeda37e2492
+
+% 0 1 0 0895d722cacb800302281ce01ab0a15d
+
+% 1 1 0 115e1b5e417a8fc00f12963d1243a49a
+
+@ 0 9 0 1f36ee2265694e880d013ae508905280
++       Die Voreinstellung, 0 bis 9, tauscht Geschwindigkeit gegen Kompressionsrate: 0 bis 3
++       verwenden einen schnellen gierigen Kodierer und 4 bis 9 einen preisbasierten, der jeden
++       Kandidatentreffer abwägt, und eine höhere Voreinstellung bedeutet auch ein größeres
++       Wörterbuch, von 256 KiB bei Voreinstellung 0 bis 64 MiB bei Voreinstellung 9.
++       `compress[Xz]` verwendet `.DefaultPreset`, 6; `.compress` und `.compressor` nehmen eine
++       Voreinstellung nach Wahl des Aufrufers. Der Kodierer streamt und ist im Speicher
++       beschränkt: Er puffert höchstens ein Wörterbuch voll Eingabe, gibt jeden solchen Teil als
++       eigenständigen Block aus und schließt den Stream mit seinem Index und Footer ab, sodass
++       eine lange Eingabe zu einem `.xz`-Stream aus mehreren Blöcken wird. Auch der Dekodierer
++       ist ein streamender Zustandsautomat und dekomprimiert 4 MB Nutzdaten etwa so schnell wie
++       die Java-Referenzimplementierung.
+
+@ 0 6 0 0ee73aac019cd37111242ddc2ec93b49
++       `Lzma2` ist derselbe Codec ohne das Framing des Containers und steht zu `Xz` wie
++       `Deflate` zu `Gzip`. Beschädigte Eingaben werfen `IllegalStateException`: _the data is
++       not in XZ format: bad magic bytes_ für etwas, das überhaupt kein `.xz` ist, _the XZ data
++       is corrupt: integrity check failed_ bei einer nicht übereinstimmenden Prüfung und _the XZ
++       data is corrupt: truncated_ für einen Stream, der zu früh endet. Ein Stream, der einen
++       anderen Filter als LZMA2 verwendet (die BCJ-Branch-Filter, Delta), wirft _this XZ stream
++       uses an unsupported filter_.
+
+% 0 1 0 1ea20692c22876120cc8a9cb276928cf
+
+% 1 1 0 13da586860c78a3f1bbcd74fc81e45e3
+
+@ 0 15 0 019856533c1352241ff3b04be0073432
++   entry .DefaultPreset   die Voreinstellung, die `compress[Xz]` verwendet: 6, die Vorgabe des Werkzeugs `xz`
++       Ein `inline val` mit dem Wert 6: ein Wörterbuch von 8 MiB und der preisbasierte
++       Kodierer, bei Text wenige Prozent an der Kompressionsrate des Werkzeugs `xz` und bei
++       repetitiven Daten davor.
++   entry .compression   das given `Xz is Compression`, über das Begleitobjekt im impliziten Geltungsbereich
++       Sein Kompressor kodiert mit `.DefaultPreset` und einer CRC-64-Prüfung, und sein
++       Dekompressor akzeptiert jede Prüfungsart und verifiziert sie. Die `Chain`-Formen treiben
++       eine Engine Chunk für Chunk an statt über den Duct, mit derselben Ausgabe.
++   entry .compressor   ein komprimierender Duct mit einer expliziten Voreinstellung, 0 bis 9
++       `Xz.compressor(preset)` ist die streamende Stufe, die `compress[Xz]` verwenden würde,
++       mit der gewählten Voreinstellung statt 6, für eine mit `viaDuct` gebaute Pipeline. Sie
++       braucht ein `Buffering`. Eine Voreinstellung außerhalb von 0 bis 9 wird begrenzt.
++   entry .compress   komprimiert eine Chain aus Chunks mit einer expliziten Voreinstellung, 0 bis 9
++       `Xz.compress(chain, preset)` ist `chain.compress[Xz]` mit der gewählten Voreinstellung:
++       eine lazy `Chain[Data]` aus `.xz`-Bytes, die sich mit `decompress[Xz]` dekodieren lässt,
++       da der Container alles vermerkt, was der Dekodierer braucht.
+
+% 2 1 0 1bc53b5e26c98cb501de9893a80227b4
+
+% 3 1 0 0f98e742726b147101433d5c0a18c649
+
+% 4 1 0 0b67dff7eb7c1d100ae6e4294e019cf0
+
+% 5 1 0 1c744a42e36fbf65188a0efd5fcf77af
+
+% 7 1 0 02d961dcdddd03bd0f302f2cd4819fa4
+
+% 0 1 0 0fe4a9e83ca483cc06ed4fbcb62bfc6a
+
+% 1 1 0 1e420c018a3c13ab1a5406adb8ec5130
+
+@ 0 4 0 05a54bf6217a3bb717a4bebc57dc4397
++   entry .decompress   dekomprimiert eine Chain aus `.xz`-Chunks
++       `Xz.decompress(chain)` ist `chain.decompress[Xz]` als Methode auf dem Begleitobjekt, für
++       Code, der das Format als Wert statt als Typargument hält. Prüfungsart und
++       Wörterbuchgröße werden aus dem Stream gelesen.
+
+@ 0 1 0 15517986bc21315c16874d82ebeae541
++ entry .Lzma2   rohes LZMA2 ohne Container: der Codec in `.xz`, so wie `Deflate` zu `Gzip` steht
+
+% 1 1 0 14cda12ee1b0c7610e61498d8ac21c5b
+
+@ 0 5 0 1d89b2060d91a3a91673c3faf9589951
++       `Lzma2` ist der in Chunks geteilte LZMA-Stream, den `.xz` trägt, ohne die magischen
++       Bytes, Block-Header, den Index und die Prüfungen des Containers: Jeder Chunk gibt seine
++       eigene unkomprimierte und komprimierte Größe an und ob Wörterbuch, Zustand und
++       Eigenschaften an seinem Anfang zurückgesetzt werden, und ein Steuerbyte null beendet den
++       Stream. Es ist die Form für einen eigenen Container oder für ein Format (etwa 7z), das
++       LZMA2 selbst rahmt.
+
+% 2 1 0 07e21c00db7954ce0a233a8210fa98da
+
+% 3 1 0 1f89dce70157b59f1aab14b09d788b26
+
+% 4 1 0 0d9cce5c2af1a8e91b43f689a430a687
+
+% 5 1 0 1aa0b4a41fe8f8b117839a43498f604e
+
+% 7 1 0 104151894f3c6ba8155324efe10857db
+
+% 0 1 0 0bf040096ff4b6eb11e8cf502d08ea34
+
+% 1 1 0 12abfa01ba14c9a505bed8a1c71ea78c
+
+@ 0 7 0 1ec62951e2945d780f2e1bac51959986
++       Was der Container vermerkt hätte, muss der Aufrufer wissen: Ein roher LZMA2-Stream sagt
++       nicht, mit welcher Wörterbuchgröße er kodiert wurde, daher nimmt `decompress[Lzma2]` das
++       Wörterbuch von `.DefaultPreset` (8 MiB) an, und ein Stream, der mit `.compress` oder
++       `.compressor` mit einer anderen Voreinstellung kodiert wurde, wird mit `.decompress` oder
++       `.decompressor` dekodiert, denen die Wörterbuchgröße dieser Voreinstellung übergeben
++       wird: 256 KiB, 1 MiB, 2 MiB, 4 MiB, 4 MiB, 8 MiB, 8 MiB, 16 MiB, 32 MiB und 64 MiB für
++       die Voreinstellungen 0 bis 9. Eine Größe, die für die Rückverweise des Streams zu klein
++       ist, scheitert als Beschädigung, _the LZMA data is corrupt: invalid match distance_.
+
+@ 0 4 0 0f378d6580fde7b606cb86c8ad2bf2ed
++       Anders als `Xz` puffert der rohe Kodierer seine ganze Eingabe vor dem Kodieren, da es
++       kein Block-Framing gibt, nach dem er sie unterteilen könnte; der Dekodierer arbeitet
++       inkrementell und hält nicht mehr als die komprimierten Nutzdaten eines Chunks.
++       Beschädigte Eingaben werfen `IllegalStateException` mit einer Meldung, die mit _the
++       LZMA2 data is corrupt_ beginnt.
+
+% 0 1 0 1efca501bd4b072b0e7ef231fc4692bb
+
+@ 0 15 0 16d64fb4af8c6f7f19b5e30ed1c4ef4e
++   entry .UncompressedSizeMax   die meisten unkomprimierten Bytes, die ein LZMA2-Chunk tragen darf: 2 MiB
++   entry .CompressedSizeMax   die meisten komprimierten Bytes, die ein LZMA-Chunk tragen darf: 64 KiB
++   entry .DefaultPreset   die Voreinstellung, die `compress[Lzma2]` verwendet und deren Wörterbuch von 8 MiB `decompress[Lzma2]` annimmt: 6
++   entry .compression   das given `Lzma2 is Compression`, über das Begleitobjekt im impliziten Geltungsbereich
++       Sein Kompressor kodiert mit `.DefaultPreset`, und sein Dekompressor nimmt das
++       Wörterbuch dieser Voreinstellung von 8 MiB an. Die `Chain`-Formen treiben eine Engine
++       Chunk für Chunk an statt über den Duct, mit derselben Ausgabe.
++   entry .compressor   ein komprimierender Duct mit einer expliziten Voreinstellung, 0 bis 9
++       `Lzma2.compressor(preset)` ist die streamende Stufe, die `compress[Lzma2]` verwenden
++       würde, mit der gewählten Voreinstellung, für eine mit `viaDuct` gebaute Pipeline; sie
++       braucht ein `Buffering`. Ihre Ausgabe muss mit der Wörterbuchgröße dieser
++       Voreinstellung dekodiert werden.
++   entry .compress   komprimiert eine Chain aus Chunks mit einer expliziten Voreinstellung, 0 bis 9
++       `Lzma2.compress(chain, preset)`: eine lazy `Chain[Data]` aus rohem LZMA2, zu dekodieren
++       mit `.decompress(chain, dictSize)` unter Angabe der Wörterbuchgröße der Voreinstellung,
++       die der Stream nicht vermerkt.
+
+% 2 1 0 00079dcb10e9eae71e244419b63010d7
+
+% 3 1 0 0eae12b53c654e290346c235c7ac5089
+
+% 4 1 0 0fc6f7c3dffceb010c910b1ba5aa065a
+
+% 5 1 0 17495e26f97bdc8c1016307502c5f56f
+
+% 7 1 0 037e935b1b80b84e072fb7935294ae97
+
+% 0 1 0 115ddba2ec6a42220797c15f940d3bd4
+
+% 0 1 0 039030809149dfd9122022109c05d32e
+
+% 1 1 0 058d93961f74d8c105dee69da22c922b
+
+@ 0 8 0 090934b53ae1597b112aa34f074bfa5f
++   entry .decompressor   ein dekomprimierender Duct für einen Stream, der mit einer bekannten Wörterbuchgröße kodiert wurde
++       `Lzma2.decompressor(dictSize)` ist die streamende Stufe, die `decompress[Lzma2]`
++       verwenden würde, mit der Wörterbuchgröße in Bytes, die der Produzent verwendet hat, statt
++       der angenommenen 8 MiB; sie braucht ein `Buffering`.
++   entry .decompress   dekomprimiert eine Chain aus rohen LZMA2-Chunks mit einer bekannten Wörterbuchgröße
++       `Lzma2.decompress(chain, dictSize)` dekodiert einen Stream, der mit einer anderen
++       Voreinstellung als 6 erzeugt wurde, unter Angabe der Wörterbuchgröße dieser
++       Voreinstellung in Bytes; `chain.decompress[Lzma2]` ist derselbe Aufruf mit 8 MiB.
+
+@ 0 1 0 1e76dde807fd3f13077f0d41e4f94baf
++ entry .Lzw   die LZW-Kompression von TIFF- und PDF-Streams, nach der Spezifikation geschrieben
+
+% 1 1 0 07ca550a0ee81f720624bc4e98cc076f
+
+@ 0 4 0 0869f1c428dcd3fb06975c004e208fc2
++       `Lzw` ist Lempel-Ziv-Welch, wie es das Kompressionsschema 5 von TIFF und der Filter
++       `LZWDecode` von PDF definieren: 8-Bit-Eingabesymbole, MSB-first-Codes, die bei 9 Bit
++       beginnen und auf 12 anwachsen, ein Clear-Code von 256 und ein End-of-Information-Code
++       von 257. Das JDK hat keine Implementierung davon, daher ist diese nach der
++       Spezifikation geschrieben und läuft auf jeder Plattform.
+
+% 2 1 0 12f525993c709e74010a1d5adb6bd1f1
+
+% 3 1 0 0a3351ae55dcd8f91964b841ed2acdbf
+
+% 4 1 0 17e013a03910e3fd0f67e93d805a1ea5
+
+% 5 1 0 17245ebc23f59d1b052fde0de07235af
+
+% 7 1 0 12b4e8fda6263b640ffefcfd23b2cf92
+
+% 0 1 0 01a884ad5e17c9db1f5f78e9b02b2781
+
+% 1 1 0 166cbbd86aac3b5116eeea2ea14a0daa
+
+@ 0 6 0 1c7be04ed3e76ec80fc23a014fbc60bf
++       Der einzige Parameter ist `earlyChange`: ob beide Seiten ihre Codes einen Tabelleneintrag
++       früher verbreitern, als es die Arithmetik streng verlangt. Er ist in `compress[Lzw]`
++       eingeschaltet, da TIFF, PDF und jeder bekannte Kodierer so erzeugen; ein Format, das die
++       andere Einstellung angibt (`EarlyChange 0` von PDF), verwendet `.compress`,
++       `.decompress`, `.compressor` oder `.decompressor` mit ausgeschalteter Einstellung. Beide
++       Seiten müssen übereinstimmen, sonst ist die Ausgabe Unsinn, ohne dass ein Fehler
++       ausgelöst wird.
+
+% 1 1 0 1232fb403e6f9ab20954f1285e452c7e
+
+@ 0 12 0 0f1a0a2ea7163db307fccead8608cf14
++   entry .compression   das given `Lzw is Compression`, mit eingeschaltetem `earlyChange`, über das Begleitobjekt im impliziten Geltungsbereich
++       Die Vorgabe von TIFF und PDF. Sein Kompressor und sein Dekompressor sind
++       `Duct[Data, Data]`-Stufen über `Credit` mit Bedarf an einem `Buffering`; die
++       `Chain`-Formen treiben die Engine Chunk für Chunk an.
++   entry .compressor   ein komprimierender Duct mit explizit gewähltem `earlyChange`
++       `Lzw.compressor(earlyChange)` ist die streamende Stufe für eine mit `viaDuct` gebaute
++       Pipeline; sie braucht ein `Buffering`. `compress[Lzw]` ist dasselbe mit
++       `earlyChange = true`.
++   entry .decompressor   ein dekomprimierender Duct mit explizit gewähltem `earlyChange`
++       `Lzw.decompressor(earlyChange)` ist die streamende Stufe für eine mit `viaDuct` gebaute
++       Pipeline; sie braucht ein `Buffering`. `decompress[Lzw]` ist dasselbe mit
++       `earlyChange = true`.
++   entry .compress   komprimiert eine Chain aus Chunks, mit eingeschaltetem `earlyChange`, sofern nicht als `false` angegeben
++       `Lzw.compress(chain, earlyChange = true)`: eine lazy `Chain[Data]`, wobei die Codes jedes
++       Eingabe-Chunks ausgegeben werden, während er verbraucht wird.
+
+% 2 1 0 19c0b29fc8e9ad3d07484014e96623e1
+
+% 3 1 0 16611feff732e0a01c3c8aeaed50a134
+
+% 4 1 0 00adfcb2a63c7ab90c1dccd99a5cecbc
+
+% 5 1 0 006e4124594e89380e4e82ac7aae5b0f
+
+% 7 1 0 14f34a2a938667d105c58034a95c7fad
+
+% 0 1 0 17909e1e58a738b312bff3d23c69e64c
+
+% 0 1 0 1bf89b2b8449cdbf059c391596cb6dc4
+
+% 1 1 0 1218df1d4b9933b619bacffa8f8a33bd
+
+@ 0 3 0 0938c793ff64aebe0e863ce2cebd36d9
++   entry .decompress   dekomprimiert eine Chain aus Chunks, mit eingeschaltetem `earlyChange`, sofern nicht als `false` angegeben
++       `Lzw.decompress(chain, earlyChange = true)`: die Umkehrung von `.compress` bei derselben
++       Einstellung, als lazy `Chain[Data]`.
+
+@ 0 1 0 0543a22ac03806530a582fa119f17841
++ entry .Brotli   das Brotli-Format von RFC 7932: die Inhaltskodierung des Webs, mit relativer Kodierung gegen eine Basis
+
+% 1 1 0 06233358f996b3d70686ba05fff313ef
+
+@ 0 4 0 1e2c9239dba6ddc01635eeb097958f4c
++       `Brotli` komprimiert kleiner als DEFLATE bei vergleichbarer Geschwindigkeit und ist die
++       HTTP-Inhaltskodierung `br`. Der Dekodierer ist eine getreue Portierung des
++       Referenzdekodierers von Google, mit dem 122 KB großen statischen Wörterbuch des Formats,
++       sodass er alles dekodiert, was ein Browser oder Server ausgibt; der Kodierer ist ein
++       schneller, spezifikationskonformer Weg. Beide sind reines Scala, auf jeder Plattform.
+
+% 2 1 0 0b47b7f69ddd66011b47277f2d49db49
+
+% 3 1 0 0afe807ffa577fa41c5b5e814d5a8409
+
+% 4 1 0 1d55366a083286a00deb6b95ccc3303b
+
+% 5 1 0 01f3c4cdd0bdc6530407a2d27dd73792
+
+% 7 1 0 14c04ea293fb4f2c0346176c7d2eb03d
+
+% 1 1 0 1f1ad20d997546db179c58f7b435d571
+
+% 0 1 0 0853da7ad399bc58157ae77d2a223d48
+
+% 1 1 0 0306750829a6e45118d5d9ae15f337f7
+
+@ 0 5 0 1eddc9d96ec9554015f30eebd12ea945
++       Beide Richtungen brauchen den ganzen Wert, bevor sie irgendeine Ausgabe erzeugen — der
++       Dekodierer, weil ein Rückverweis über das ganze Fenster reichen kann, der Kodierer, weil
++       er sein Framing nach der Gesamtlänge wählt —, daher puffert eine Brotli-Stufe in einer
++       Pipeline alles, was sie erhält, und gibt beim Flush aus, wo eine DEFLATE-Stufe
++       fortlaufend ausgibt. Es ist dennoch dieselbe Stufe und spielt mit der Form für ganze
++       Werte zusammen.
+
+@ 0 7 0 0a39e5cc288c8ab207f84fbbb4811641
++       Brotli kann einen Wert auch *relativ zu* einer Basis kodieren, die der Empfänger bereits
++       hält, und so kostet ein Nachfolger, der sich von seinem Vorgänger um wenige Bearbeitungen
++       unterscheidet, nur wenige Bytes. `.continuation` kodiert den neuen Wert gegen ein
++       Fenster, in das die Basis vorgeladen ist, als headerlosen Schluss eines Streams;
++       `.prefix` ist der Vorbereitungsstream, der die Basis in das Fenster eines Dekodierers
++       legt und dessen Bytes allein durch das Format und zwei Parameter festgelegt sind, sodass
++       beide Seiten ihn bauen, ohne ihn zu übertragen. Präfix und Fortsetzung als ein Stream
++       dekodiert ergeben die Basis, gefolgt vom Nachfolger.
+
+@ 0 2 0 13d30051a91d51251addc8663bbfdc5f
++       Beschädigte Eingaben werfen `IllegalStateException` mit einer Meldung, die mit _the
++       Brotli data is corrupt_ beginnt.
+
+% 1 1 0 1946f552a087c2b30ea8a4b7112230ee
+
+% 1 1 0 1c5457100a5650ba1fcaef03ac151f6e
+
+@ 0 11 0 0575cd241f2fc0360e3cf94611f65c57
++   entry .Window   das größte Fenster, das Brotli erlaubt, als WBITS: 24, die Vorgabe für `.prefix` und `.continuation`
++       Ein Fenster von `2^24 - 16` Bytes. Das Präfix wird nie übertragen, daher kostet das
++       breiteste Fenster nichts und erweitert nur, worauf eine Fortsetzung verweisen darf.
++   entry .Block   der größte Meta-Block, den Brotli erlaubt: `1 << 24` Bytes, die Vorgabe für `.prefix`
++   entry .continuation   kodiert einen Wert gegen ein Fenster, das bereits eine Basis hält
++       `Brotli.continuation(base, next, window = Brotli.Window)` ist der Meta-Block bzw. sind
++       die Meta-Blöcke allein für `next`, ohne Stream-Header, an Bytes ausgerichtet und mit dem
++       Last-Block-Flag endend, deren Rückverweise bis zu `2^window - 16` Bytes zurück in `base`
++       reichen dürfen. Sie ist ein gültiger Schluss jedes Streams, der `base` im Fenster des
++       Dekodierers hinterlässt, insbesondere von `.prefix(base, window, block)`. `window` ist
++       WBITS, 10 bis 24, und muss der Wert sein, den das Präfix des Empfängers angibt. Ein
++       leeres `next` ergibt den leeren letzten Meta-Block.
+
+% 2 1 0 106ed4b916a8d0d2081029ca93fea3d9
+
+% 3 1 0 09c9f9783841523e02b71cb6197ac160
+
+% 4 1 0 074aa99a67036a110fa5129c5bbdee6a
+
+% 5 1 0 08583831a556d87e1a25456c753b1115
+
+% 0 1 0 1609c3f85c920ff813aae47742888071
+
+% 0 1 0 04349f80b252b27d10280b0b61007c95
+
+% 0 1 0 1fcb74c342664d5d02709bfd6942c1a0
+
+% 0 1 0 14bf921873580f84153ad98bcdb020a2
+
+% 0 1 0 13b95627c9d138b41c03ff4c3c128359
+
+% 1 1 0 1d417847f92e894f1faffd2955e1a59f
+
+@ 0 16 0 09fbe15d4f8124c51853691b9e75399e
++       Eine gegen die falsche Basis dekodierte Fortsetzung wird ohne Fehler zu den falschen
++       Bytes dekodiert: Nichts im Format identifiziert die Basis, daher müssen sich Sender und
++       Empfänger auf anderem Weg darauf einigen. Ein Nachfolger, der sich gegen seine Basis
++       nicht komprimieren lässt, fällt auf gespeicherte Meta-Blöcke zurück.
++   entry .prefix   der Vorbereitungsstream, der eine Basis im Fenster eines Dekodierers hinterlässt
++       `Brotli.prefix(base, window = Brotli.Window, block = Brotli.Block)` ist ein
++       Stream-Header, der `window` angibt (WBITS, 10 bis 24), dann `base` als unkomprimierte
++       Meta-Blöcke von höchstens `block` Bytes (1 bis `2^24`), dann der leere
++       Metadaten-Meta-Block, das Byte `0x06`. Seine Bytes sind allein durch RFC 7932 und die
++       drei Argumente bestimmt, sodass ein Empfänger, der `base` hält, das identische Präfix
++       lokal baut. Es ist kein vollständiger Stream — es wartet auf eine `.continuation` —,
++       daher scheitert es, wenn es allein dekodiert wird; eine leere Basis ergibt zwei Bytes und
++       eine Basis von 4.096 Bytes standardmäßig `3 + 4096 + 1`.
++   entry .compression   das given `Brotli is Compression`, über das Begleitobjekt im impliziten Geltungsbereich
++       Sein Kompressor und sein Dekompressor sind puffernde `Duct[Data, Data]`-Stufen über
++       `Credit` mit Bedarf an einem `Buffering`, die die ganze Eingabe sammeln und ihre Ausgabe
++       beim Flush erzeugen. Die `Chain`-Formen füttern die Engine mit jedem Chunk und liefern
++       das Ergebnis als einen Chunk.

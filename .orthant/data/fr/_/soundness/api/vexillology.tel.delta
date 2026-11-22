@@ -1,0 +1,161 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1c6eb85f7715f09e0792c007bb737bcf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ef7c4cc2e63dd810c6206205ed7ba3c
++ info
++     des ensembles de cas d'une énumération regroupés dans les bits d'un seul `Long`, testés et
++     positionnés par cas
+
+@ 0 7 0 04b0464503c1f1b309c5a12c281fefe4
++ detail
++     _Vexillology_ donne une surface typée aux indicateurs binaires. `Flags[Color]` est un ensemble
++     d'indicateurs marche-arrêt sur les cas de l'énumération `Color`, contenus dans les bits d'un
++     seul `Long`, chaque cas possédant le bit de son ordinal. Un indicateur se teste et se
++     positionne en nommant le cas plutôt que par un numéro de bit magique : un bit qui signifie
++     autre chose, ou rien, ne peut donc pas être atteint ; et la valeur reste un seul mot machine —
++     gratuite à copier, peu coûteuse à stocker, naturelle dans un format binaire — là où un
++     `Set[Color]` ferait une allocation.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0af2a59cff40b5c9019c56f5eb1885de
+
+% 0 1 0 1d10a572fae04e8d116974175da28781
+
+% 0 1 0 0f95d5f3aa2e937907b24d60a5df4719
+
+% 0 1 0 1ea3958aaf72c5d1030cf913cd96d8af
+
+% 0 1 0 05864085c650310810828bfe91691b4f
+
+% 0 1 0 1d74062d421567f01384f1f939695848
+
+% 0 1 0 14d13d1f18f362680275d3558af476f8
+
+% 0 1 0 04750537132403ad175598283296cd59
+
+% 0 1 0 0b63a119e100ded215b7b51dc46bb03a
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 13d852fb4e6865270cd75ac7683e2cee
++     Une valeur `Flags` est immuable : chaque affectation en crée une nouvelle, et la variable est
++     donc réaffectée avec la syntaxe de mise à jour, `flags = flags(Orange) = true`. Les opérations
++     exigent que l'énumération soit `Enumerable`, ce qu'est toute `enum` Scala 3 à cas singletons.
+
+@ 0 2 0 11aa7e266e6b3a240797cec39786981c
++     La bibliothèque a un seul ensemble de sources, `vexillology.core`, et tout est exporté vers le
++     package parapluie `soundness`.
+
+% 0 1 0 019efc2e4f73acb506f6381eb98952b6
+
+@ 0 1 0 07886f05135c25460305f18b26b45578
++ entry .Flags
++   info
++       un ensemble de cas d'une énumération, regroupés sous forme de bits dans un seul `Long`
+
+@ 0 5 0 186c1776cf9fa12601c4df947ceb13ca
++   detail
++       `Flags[Enumeration]` est le type opaque `vexillology.internal.Flags`, exporté ici : un
++       `Long` dans lequel le bit *n* est positionné quand le cas d'ordinal *n* de l'énumération est
++       dans l'ensemble. `Flags[Color]()` est l'ensemble vide, et trois méthodes d'extension, dans
++       la portée implicite sans aucun import, l'utilisent :
+
+@ 0 4 0 035a5a79821fbfc11012114c1a3b43ab
++       - `flags(case)` teste si un cas est positionné ;
++       - `flags(case) = enabled` (c'est-à-dire `flags.update(case, enabled)`) crée une nouvelle
++         valeur avec le cas positionné ou effacé ;
++       - `flags.set` lit les indicateurs sous forme d'un `Set` ordinaire des cas.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 1089ca35127374810e7f548d669d576d
+
+% 0 1 0 1ab3b3d18b9086f913e0e0c49c4017ed
+
+% 0 1 0 1357cfbd063de8db0a6312f5733e37c2
+
+% 0 1 0 0ac63c7898504d7716ef4bfa572027f7
+
+% 0 1 0 10bf6b93c183bf69142d0a47a493c686
+
+% 0 1 0 0f7fab3690ef35161d5744336c2b581a
+
+% 0 1 0 1728e0adebfc754c06dddcd449b8c88b
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 4 0 112c8c89532d487617e1b1876bb21caf
++       Un `Long` a 64 bits : une énumération d'au plus 64 cas y tient donc. Au-delà, la position de
++       bit d'un cas reboucle et il partage un bit avec un cas inférieur : il n'y a aucune
++       vérification. Chaque méthode prend un cas de type singleton : un cas d'énumération avec
++       paramètres ne peut donc pas être un indicateur.
+
+% 0 1 0 03c3be223d45fc1602f45e1db973199e
+
+@ 0 1 0 061e5d2caf21abe6084796807bee42af
++ entry .internal
++   info
++       le foyer du type opaque `Flags` et de ses opérations
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 5 0 0aecaaf1a320b8961fed7c89b25e9904
++   detail
++       Non destiné à un usage direct : l'objet existe pour contenir le type opaque `Flags` et les
++       méthodes d'extension qui s'y appliquent, lesquelles sont dans la portée implicite partout où
++       se trouve un `Flags`, puisqu'elles partagent son objet englobant. `Flags` est exporté d'ici
++       vers le package `vexillology`, dont la page en donne une description complète.
+
+@ 0 1 0 0cbd7397e287f1cb1e3256a008f966d4
++   entry .Flags
++     info
++         un ensemble de cas d'une énumération regroupés dans un `Long` ; voir `vexillology.Flags`
+
+@ 0 3 0 0997c8a55236d0330aa0789cbe1cd9ba
++     detail
++         Le type opaque sur `Long`. Sa page sous le package `vexillology` en donne une description
++         complète.
+
+@ 0 1 0 1f346a7ea1b6565319719001e18eec92
++     entry .apply
++       info
++           l'ensemble vide d'indicateurs sur une énumération, sans aucun bit positionné,
++           `Flags[Color]()`
+
+@ 0 1 0 0cf5cd8876d052ca162f556486b43c06
++   entry .apply
++     info
++         si un cas est positionné dans des indicateurs, `flags(case)`
+
+@ 0 1 0 0074c10fb24cd70309253f0fffbac6af
++     detail
++         Exige que l'énumération soit `Enumerable`, pour trouver l'ordinal du cas.
+
+@ 0 1 0 177298df05bab9560629b8188c4e1aed
++   entry .update
++     info
++         une copie d'indicateurs avec un cas positionné ou effacé, `flags(case) = enabled`
+
+@ 0 2 0 0580605a49630f0d174b78871c75490d
++     detail
++         Renvoie le nouveau `Flags` plutôt que de modifier le receveur : une variable qui contient
++         les indicateurs est donc réaffectée : `flags = flags(Orange) = true`.
+
+@ 0 1 0 065a4e2b0c857c01035bf7c423531e38
++   entry .set
++     info
++         les cas positionnés dans des indicateurs, sous forme d'un `Set` de l'énumération
+
+@ 0 1 0 1c312e8271d7cbaf0376949120c8098d
++     detail
++         Ne visite que les bits positionnés, du plus bas au plus haut.

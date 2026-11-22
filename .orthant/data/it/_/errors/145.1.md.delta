@@ -1,0 +1,38 @@
+orthant 2 language
+
+% 0 1 0 0c3ffda4d2c6b04f1d71aad99d548eb0
+
+@ 0 3 0 0aaebac4bd7956031ec15e782aa0a285
++ Sollevato quando non è possibile stabilire una sessione di debug, o quando la VM del processo
++ sottoposto a debug risponde a un comando JDWP con un codice di errore. Il sottocodice è la costante
++ di errore JDWP restituita dalla VM, o un valore negativo per un guasto locale al debugger (un
++ handshake fallito o una connessione persa).
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 04132eb24be763d508ec665ddcb33a7a
++ Vivisection parla il Java Debug Wire Protocol con una JVM sottoposta a debug. Questo errore copre un
++ processo sottoposto a debug che rifiuta o interrompe la connessione, un handshake che non viene
++ ripetuto in eco, e qualsiasi comando che la VM rifiuta: un identificatore non valido, un thread che
++ non è sospeso, una VM già terminata e le altre costanti di errore JDWP.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Messaggio di esempio
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 09c71e213ff0bbcd12abc3e503056076
+
+% 1 1 0 05a58ba55f34f5691bf2e492e7a91257
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 4 0 17f7a8bf64e9403718442c606dcab82c
++ La maggior parte delle costanti di errore JDWP indica che il comando faceva riferimento a uno stato
++ che nel frattempo è cambiato: un frame che è ritornato, un oggetto che è stato raccolto dal garbage
++ collector o un thread che ha ripreso l'esecuzione. Rileggi lo stato pertinente dopo l'ultima
++ sospensione della VM prima di inviare di nuovo il comando. Un motivo `Disconnected` significa che è
++ fallito il trasporto stesso; verifica che il processo sottoposto a debug sia ancora in esecuzione e
++ raggiungibile.

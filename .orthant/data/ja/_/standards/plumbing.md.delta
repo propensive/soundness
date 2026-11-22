@@ -1,0 +1,241 @@
+orthant 2 language
+
+@ 0 1 0 08ce036e0b6bdbaf0d7a0bb393a97a6d
++ # 型合わせのヘルパー
+
+@ 0 8 0 115ab87544bc155f082b776ee699ca2f
++ Soundness は手作業ではなく抽象によって変換する。
++ 値は、型クラス（`Showable`、`Encodable`、`Decodable`、`Convertible`）、越える境界を名指しする橋渡し（`.tt`、`.s`、`List.stdlib`、`Array.unsafeFrozen`）、あるいはその型自身のメソッドを通じて、型や形を変える。
++ *型合わせのヘルパー*とは、小さな `def`（private なもの、またはメソッドにローカルなもの）で、その仕事のすべてが、ある値を次の行が求める型にすることであるものを指す。
++ それは解決策ではない。抽象が欠けているか、不十分であるか、存在するのに使われていないことのしるしであり、単純すぎる変換や誤った変換（`show` を意図したところでの `toString`、エンコーディングを落とす `String` 経由の往復）がレビューされずに紛れ込む場所である。
++ 不一致を取り繕うために書かれた `given Conversion` についても同じことが言える。
+
+@ 0 8 0 0458be4a46395a3e1a4afd399d7e25de
++ `flare assess plumbing` がそれらを見つける。
++ `.pyrocosm/flare/config.tel` の規則 `plumbing` は、モデル、下の基準とその重み、そしてルーブリックとしてのこのファイルを名指しする。flare は構文木から候補となる定義を集め、モデルにバッチで基準に答えさせ、それぞれの判定を BinTEL として `refs/notes/flare-assess/plumbing` の下の git notes に記録する。
++ 定義はその*所在*、すなわちパス、それを囲む定義、シグネチャによって識別され、行によって識別されることはない。そしてその判定は正規化されたテキストのダイジェストをキーとするので、定義は、そのテキスト、このルーブリック、基準、モデルが変わらない限り一度だけ判定される。
++ `make plumbing` がそれを実行し、`flare assess plumbing --show HEAD` はコミットについて記録された順位を印字する。
+
+@ 0 1 0 144361c702019e661cb8fffac7cade8d
++ ## 何が何を置き換えるか
+
+% 2 1 0 07781d3a6a565c640701402a0a79c361
+
+@ 0 9 0 0c3b3c764691220b0b06491e4665a25c
++ column  手作り
++ column  代わりに使うもの
++ row  `x.toString.tt`、`render(x): Text` や `name(x): Text` のヘルパー  `x.show`（`Showable`）、または `x.in[Text]`
++ row  `private inline def kebab(s: String): Text = Text(s)`  呼び出し箇所での `.tt`
++ row  `text.s.replace(…).nn.tt`、あらゆる `.s … .tt` の往復  gossamer の `Text` の操作。なければ追加する
++ row  `Integer.parseInt(hex.s, 16)`  `hex.deserialize[Hex]`、または `text.as[Int]`（`Decodable`）
++ row  `Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)`  スコープに `CharEncoder` を置いた `text.in[Data]`
++ row  コンテナーに手書きされた `toList`/`toMap`  `Convertible` インスタンス、そして `.to[List]`/`.to[Map]`
++ row  ある列挙型の各コンストラクターを別の列挙型のものに対応させる `match`  `Enumerable`/`Extractable`、または元の型のメソッド
+
+% 0 1 0 083fb7c2b8bb492706d54f549de3a982
+
+@ 0 6 0 1f030cfc1bc849810f18e4b77c1a4d2f
++ row  手作業での `Option` から `Optional` への変換  `.optional`
++ row  `try … catch` から `Optional` への変換  `safely`
++ row  標準ライブラリのコレクションに届くための `asInstanceOf`  `List.stdlib` のような、コレクションの `stdlib`
++ row  0 始まりと 1 始まりの添字の間の入れ替え  `.z`、`.u`、`.n0`、`.n1`
++ row  六つのアトマイザーにコピーされた同じ `tag(out, char) = out.append(char.toByte)`  `Scribe[Byte]` に対する一つの拡張メソッド
++ row  `given Conversion[Int, Expression] = int => Number(int.toDouble)`  `Expression.apply(Int)` または `Decodable`
+
+% 1 1 0 0dc2eef590fc25c9087e7f5ce6e69dd0
+
+@ 0 3 0 1b79b445c8bb88b21f7a24589a71e0a3
++ 修正方法は、ヘルパーを残して名前を変えることでは決してない。
++ 抽象が存在して呼び出し箇所がそれを使うか、存在しないなら変換先の型を所有するライブラリがそれを得るかのどちらかである。後者の場合はコンパニオンに置き、インポートなしで解決されるようにする（`.claude/CLAUDE.md` の given の配置規則を参照）。
+
+@ 0 1 0 1291dd24bf9b520315f13d5e2d6421b8
++ ## 残してよいもの
+
+@ 0 2 0 039c4cca884be7b016581a797a5f48b3
++ 小さな関数は、結果の型が引数の型と異なるというだけで型合わせのヘルパーになるわけではない。
++ 正当な形が四つある。
+
+@ 0 10 0 1fc701b7097dc81c03b2d97d55214297
++ 1. **失敗しうるパースとデコード。** エラーを発生させる、緩和する、`Optional` を返す、あるいは `Decodable`/`Parsable` インスタンスである本体は、抽象が存在する目的である仕事をしている。
++ 2. **計算。** `toJulianDay`、`convertBitDepthsToSymbols`、CRC、ビットフィールドの抽出は、値の包み直しではなく値に対する算術である。
++ 3. **一度だけ越える境界。** Soundness が JDK、WASI、Scala.js と出会う場所での、それを必要とする呼び出しにインラインで書かれた一つの `.tt`、`.s`、`.nn`、`List.stdlib`、`Array.unsafeJvm` である。その橋渡しを*名付ける*ためだけに存在するヘルパーは疑わしいが、橋渡しそのものはそうではない。
++ 4. **証明付きの巻き上げ。** コンパイラのクラッシュ（`wildApprox`、`FunProto` のキャッシュ）を避けるためにラムダから取り出されたローカルの `def` は、`stratiform.internal.scala` の `liftText` のように、その上の行にクラッシュを名指しするコメントを持つ。そのコメントがそれを免除する。
+
+% 0 1 0 08a45d97b92961c310443f284f6ec89a
+
+@ 0 1 0 0a100cbaa8664b4b1484226b39753f0e
++ ## ルーブリック
+
+@ 0 6 0 0abfd4652d11e64c14933fc2c5d8f635
++ あなたは Soundness のコードベースの Scala 3 のメソッド定義を採点する。
++ 各候補は小さなメソッド（または `given Conversion`）であり、*型合わせのヘルパー*であるかもしれない。つまり、その仕事のすべてがある値の型や形を変えることであり、本来使われるべきだった抽象の代わりになっている関数である。
++ あなたは、定義をその上の二行の文脈とともに、そしてドライバーが計算した事実（種類、呼び出し箇所の数、重複）を示すヘッダー行とともに見る。
++ 示されたテキストだけから判断すること。
++ 参照をたどったり、見えないコードを推測したり、API を作り出したりしてはならない。
+
+@ 0 4 0 0f7a7982b74296201b5afe436ac4d3cf
++ 各候補について、下のすべての基準に `true` か `false` で答えること。
++ コードだけから答えること。点数は参考のためのものであり、ドライバーがそれを合計するので、合計を計算してはならない。
++ S2 と S3 が参照する**アダプターのリスト**は正確に次のものと、あらゆる素のコンストラクター呼び出し `Name(…)` / `new Name(…)` である。
+
+% 2 1 0 1e23bd8637f098d905186c48eff87b4c
+
+% 0 1 0 069071ae9eb66d8705c4fc2b57073247
+
+% 0 1 0 10abbb31fac470a40f5272f950efa316
+
+% 0 1 0 04214ae8929ab5470786a3eccae258b2
+
+% 1 1 0 033f1c32d80e569b17c30235b8a99879
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+% 0 1 0 1903fd676b8450580bf447e6c5c885a9
+
+@ 0 17 0 0e05fb0bfd343dd401071a56232def83
++ column  基準
++ column  `true` と答える場合
++ column  点数
++ row  S1  単一の式  本体が一つの式である。`val`、`if`、`match`、`{…}` ブロック、ループ、二つ目の文がない  +2
++ row  S2  アダプターのみ  本体のすべての呼び出しがアダプターのリストにあるか、フィールドアクセスであり、算術がなく、文字セットやアルゴリズムの名前（`"UTF-8"`、`"SHA-256"`）以外のリテラルがない  +3
++ row  S3  往復  一つの連鎖が、ある表現を離れて再び入る。`.s … .tt`、`.toString … .tt`、`.stdlib … .to[…]`、`Array.unsafeJvm … Array.unsafeFrozen`、Java の呼び出しを囲む `.s … .nn.tt`  +3
++ row  S4  型合わせの動詞  名前が `to`、`from`、`as`、`make`、`mk`、`convert`、`lift`、`wrap`、`unwrap` の後に大文字が続く形で始まるか、正確に `text`、`string`、`bytes`、`number`、`decimal`、`hex`、`key`、`node` である  +1
++ row  S5  既存の操作の同義語  名前が `toList`、`toMap`、`toSeq`、`toArray`、`text`、`show`、`render`、`str`、`string`、`bytes`、`optional`、`orNull`、または戻り値の型の名前を小文字にしたものである  +2
++ row  S6  純粋なフォワーダー  本体が、パラメーターを変えずに順に渡す、一つのメソッドまたはコンストラクターへの単一の呼び出しであり、そのうち一つにアダプターが一つ適用されていてもよい  +3
++ row  S7  一対一のはしご  本体が `match` であり、そのすべてのケースが `pattern => Constant` または `pattern => Wrap(binding)` で、ガードも他のロジックもない  +2
++ row  S8  形だけの戻り値の型  宣言された戻り値の型が `Text`、`String`、`Data`、`Array[Byte]`、`List[…]`、`Map[…]`、`Seq[…]`、`Unit` のいずれかである  +1
++ row  S9  一つのパラメーター  メソッドがちょうど一つの値パラメーターを取る  +1
++ row  S10  変換の given  宣言が `given … Conversion[A, B]` である（これが `true` のときは S4、S5、S6 を `false` と答える）  +3
++ row  X1  失敗を扱う  本体が `raise`、`abort`、`mitigate`、`safely`、`lest`、`Optional`、`Unset`、`.or(`、`try`、`panic`、またはガード付きのケースを含む  −3
++ row  X2  計算する  本体が値に対する算術を行う、`0`、`1`、基数以外の数値リテラルを使う、三つ以上の部分を連結する、ループする、または再帰する  −3
++ row  X3  コメントによって正当化される  定義またはその上の行のコメントが `compiler`、`crash`、`macro`、`boundary`、`workaround`、`JVM`、`Java` に言及している  −2
++ row  X4  コーデック系の名前  名前が `read`、`write`、`parse`、`decode`、`encode`、`serialize`、`deserialize` で始まる  −2
+
+% 1 1 0 0688c462558e17231c1640ef5af93097
+
+@ 0 3 0 0085533bd01fa70d1cb393ea58d6f6d3
++ 次に、この語彙からだけ `replacement` を一つ選ぶこと。それは呼び出し箇所が代わりに使うべき抽象である。判断できなければ `none` とする。
++ 項目は空白で区切られるが、`inline at call site` だけは一つの項目である。
+
+% 2 1 0 05ed5d9ac9283fd60fb817a0b5db77e4
+
+% 0 1 0 02959b3bf631169e1ab4b50ef030415b
+
+% 0 1 0 1802b44b90f7d04a1e448e7a498bb2e4
+
+% 0 1 0 0f3c3112183c0a771a01186b4f0cc4a8
+
+% 0 1 0 01420cc4e4f017e2187098d048c947f0
+
+% 1 1 0 03fddfc979282cbc05e034c916f3e252
+
+@ 0 1 0 0d2c4b10ee77f65e19eff6a317fccdfd
++ 最後に、判断を決めた本体の断片を引用して、一文の `reason` を与えること。
+
+@ 0 1 0 10bc71774229126d01269e0b4f876055
++ ### 出力
+
+@ 0 1 0 08152ab1013a22aa07df4134192ec7e7
++ 候補ごとに一つのオブジェクトを、与えられた順に並べた JSON 配列を返し、それ以外は何も返さないこと。
+
+% 0 1 0 169dd671eb57630c0371b3518946361b
+
+% 0 1 0 07cc27e2d218795d08cccc85a87f9f76
+
+% 0 1 0 1311a3b6e7e1f68f038c056ba24c8f2c
+
+% 0 1 0 121be430bc8ba18d15e748661d1d066c
+
+% 0 1 0 05671ff61c5741180a2a54dc75048785
+
+% 0 1 0 1c94d4a8994875f10ffcd259c20bcde2
+
+% 0 1 0 17caab2e3d549d9c1773010d5d06dcbd
+
+% 1 1 0 14e2c39b3d50aa541fde636e687d2145
+
+% 0 1 0 04bce149f69e92cb19b2d1170c717336
+
+@ 0 3 0 09c0fda9877124eb16bc1367c1102955
++ flare は真偽値から点数を計算し直し（小さなモデルの算術は信用されない）、独自のシグナルを加え、`replacement` を語彙に照らして検証するので、幻覚された API が集計に入り込むことはない。
++ flare は規則の `signal` 行を加える。
+
+% 2 1 0 09d78df2d57aa5b5170752fec1106faa
+
+@ 0 10 0 0a4c3f45f35134ba1af4a3d9ab07e970
++ column  シグナル
++ column  条件
++ column  点数
++ row  `local`  ローカルの `def`  +2
++ row  `private`  `private` な定義  +1
++ row  `calls 1`  スコープ内の呼び出し箇所が一つ  +2
++ row  `calls 2`  スコープ内の呼び出し箇所が二つ  +1
++ row  `calls 4+`  スコープ内の呼び出し箇所が四つ以上  −1
++ row  `duplicate`  本体が別の定義に（パラメーター名を変えて）そのまま重複している  +3
++ row  `one-liner`  定義全体が一行にある  +1
+
+% 1 1 0 0f2d255e1200720118f88e484804fbdd
+
+@ 0 1 0 07c68ab8a7761a9a13572b6f277fe514
++ 集計は、合計の上位から帯ごとに処理される。
+
+% 2 1 0 113ac38ff5fd24b5045d4220ee58f271
+
+@ 0 6 0 0f58fea31582dfc61b286e3ea4f45bc1
++ column  帯
++ column  合計
++ row  **definite**  10 以上
++ row  **likely**  5 から 9
++ row  **weak**  0 から 4
++ row  **legitimate**  0 未満
+
+% 1 1 0 0388a6626839f4b41dfd4643f44c2474
+
+@ 0 1 0 0deb34ee4e7a892a05669a9350343b70
++ ## 実例
+
+% 2 1 0 008b11b121951aaf08f8790be0bb5fc2
+
+@ 0 10 0 0f0c18a52ae3e2600b6226bab9e113d8
++ column  候補
++ column  兆候
++ column  モデル
++ column  ドライバー
++ column  合計
++ row  ローカルの `def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)`  S1 S2 S3 S5 S8 S9  12  ローカル、呼び出し一つ、一行  17
++ row  六つのファイルにある `private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)`  S1 S2 S6 S8  9  private、重複、一行  14
++ row  `private inline def kebab(s: String): Text = Text(s)`  S1 S2 S6 S8 S9  10  private、呼び出し二つ、一行  13
++ row  `private def normalise(text: Text): Text = text.s.replace("proscenium.", "").nn.tt`  S1 S3 S8 S9  7  private、呼び出し一つ、一行  11
++ row  `def monthName(month: Mensual): Text = month.toString.tt`  S1 S2 S3 S8 S9  10  public、呼び出し一つ  12
+
+% 0 1 0 1e2f8e0769b00a9e052361f4af6a6dc1
+
+@ 0 3 0 02f203b99ca8a34f1c050c4dc0af6e7b
++ row  `private def typeKindToFrame(kind: jlc.TypeKind): Frame = kind match …`  S4 S7 S9  4  private、呼び出し一つ  7
++ row  `def toJulianDay(date: Date): Int = … arithmetic …`  S4 S9 X2  −1  呼び出し三つ  −1
++ row  `def parseHeader(text: Text): Header raises ParseError = …`  採点の前に名前によって除外される  —  —  —
+
+% 1 1 0 1fa8cbfc7c33bd220f2fd53bed3dafca
+
+@ 0 3 0 00ce6f23f0023c3f1b998086ffbe0aac
++ 最初の五つは集計の definite の帯である。純粋な包み直しであり、それぞれにすでに存在する置き換えがある。
++ はしごは likely であり、列挙型がメソッドを得るか `Extractable` を得るかは人間が決める。
++ 最後の二つは、除外と X の基準が締め出すために存在するものである。
+
+@ 0 1 0 160e0bac3849e02e11ce3cc3ed77dc58
++ ## 落とし穴
+
+@ 0 2 0 0537697278df75fa0bd68ab547a71a1e
++ `Convertible` インスタンスを持たない型に手書きされた `toList` は高い点数になり、それは正しい。修正方法はインスタンスを加えることであり、ほかに役立つものがないからといってヘルパーを残すことではない。
+
+@ 0 3 0 140b790b80d018251dd14081cb2e8efb
++ 内部の名前を公開の関数に与えるために存在する private なフォワーダー（`private def number = Css.number`）は、純粋なフォワーダーとして採点される。
++ たいていは実際にそうである。例外はコメントに値し、そのコメントは X3 に引っかかる。
+
+@ 0 3 0 09f7d16f7f9ea7d7044f3ce6b26b824b
++ 抽出器は、公開の定義を `given Conversion`、往復、またはロジックを含まない一行のアダプターの連鎖としてのみ受け入れる。private またはローカルの定義は、それに加えて型合わせの動詞や、短い本体の中のアダプター呼び出しによっても受け入れる。
++ 規則の `gate` 行で範囲を広げたり狭めたりできる。
+
+@ 0 4 0 08073831ad758c7d0052682ceb59fff6
++ モデルは非決定的である。
++ 集計は作業の出発点となる順位であり、守るべき数ではない。驚くような点数をコードに照らして監査できるように真偽値が記録され、判定は定義のダイジェストによって保持されるので、再実行では変更された定義についてだけモデルに尋ねる。ルーブリックが変わった後は、すべての定義について一度だけ尋ねる。

@@ -1,0 +1,4327 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 02b05110f9dc2e960375fafccfa2a68a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f749811918fd3351e3dd3bb1ce7742c
++ info   日付、時刻、時点、期間、タイムゾーン、暦、反復を、コンパイル時に検査して扱う
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 0a1cd9ff1c28500b12d8fd570d9a3cc4
++     _Aviation_ は時間を五つの異なる種類の値で表す。それぞれが独自の型なので、それらを取り違えることから生じる誤りは書くことができない。
++     暦の上の **日付**（`Date`、日単位の精度の `Timestamp`）、時計の上の **時刻**（`Clockface`）、物理的な時刻系の上の **時点**（`Instant over Unix`、`Instant over Tai`、`Instant over Monotonic`）、二種類の **経過時間**（SI 秒の `Duration` と、年・月・週・日・時・分からなる暦の `Timespan`）、そして **モーメント**、すなわち名前の付いた `Timezone` における壁時計の読み（`Moment`）であり、これが市民時と物理時の間の唯一の橋渡しである。
++     コードを書く時点で値がわかっている場合は、その時点で検査される。`2012-Feb-30` はコンパイルされず、`13.00.am`、`tz"Mars/Olympus"`、`ts"2024-13-01"` も同様である。
+
+% 2 1 0 1ba7bf71ad5212d718f34b2fc049bd1f
+
+% 3 1 0 0f4790216de4f2681ffb85ce2d0d5ce9
+
+% 4 1 0 1440aa795ae2191603c2695be2353d11
+
+% 5 1 0 042564cfe191dced02675bd5af3b1db9
+
+% 2 1 0 08df9c8ce46c01f810a55951a01a4286
+
+% 0 1 0 02f855c5ad667c9b0eae63bd49c48c86
+
+% 0 1 0 07bfd23c0be02632180f4ab02c5d621c
+
+% 1 1 0 169d3cf562b95b790e88c199eb968a41
+
+% 0 1 0 0870f2cc53410d190dad687bef41e810
+
+% 0 1 0 040650a31109142e115946c6bf9f328c
+
+% 0 1 0 0417db9cfe75cf0110ee5381766b9bd9
+
+% 1 1 0 065d337ad427696019759c31ce68166a
+
+@ 0 7 0 142d4cd7cc4416441807339cccd32052
++     日付は `year-Mon-day` と書く。`2024 - Jan` は（`Month.monthOfYear` を通じて）`Monthstamp` であり、`Monthstamp - 15` が `Date` である。これは `monthstampSubtraction` 演算子によって、スコープにある `RomanCalendar`（なければグレゴリオ暦）に照らしてコンパイル時に検証される。
++     実行時に計算された値から作る日付は、`Tactic[Moment.Error]` のもとで暦の `jdn`（または `Date(year, month, day)`）を通す。`ts"…"` 補間子は ISO 8601 または RFC 1123 のリテラルを検査し、その精度に応じて `Year`、`Monthstamp`、`Date`、`Timestamp`、`Moment` のいずれかを返す。
+
+@ 0 7 0 0af49429e0b6c6ff0dbd183377663328
++     どの暦のどの日付も、内部では同じもの、すなわちユリウス通日である。
++     `Calendar` はそれに年・月・日のラベルを付ける方法にすぎないので、`calendars` パッケージは、グレゴリオ暦、ユリウス暦、コプト暦、エチオピア暦、イスラム暦、ペルシア暦、インド国定暦、ヘブライ暦、フランス革命暦、仏暦と民国紀元の年のずらし、年間通日の暦、そしてユリウス暦からグレゴリオ暦への教皇庁とイギリスの切り替えを、すべてひとつの `Date` の上に提供する。
++     各暦の月の型はそれぞれ別の `MonthRadix` なので、`3*IslamicMonth` はイスラム暦で読まれた日付にしか加えられない。
+
+@ 0 9 0 1e4bf6e3ddb559ea0e7c4fccda12ef12
++     唯一の正解がない市民時の規則は **ポリシー** であり、黙ってデフォルトにされるのではなく、名前で given をインポートして選ぶ。`2024-Jan-31 + 1*Month` が何を意味するか（`monthEnds`。デフォルトはまったくない）、平年における 2 月 29 日が何か（`nonexistentLeapDays`）、春に時計を進める際の空白に入った壁時計の読みをどう扱うか（`gapPolicies`。デフォルトは `GapPolicy.pushForward`）、1 日未満の算術がうるう秒を数えるか（`leapModes`。デフォルトは `LeapMode.lenient`）、裸の `Instant(…)` がどの時刻系で数えるか（`chronometries`）である。
++     週がどの曜日に始まり、どの曜日が週末かは `Hebdomad`（`hebdomads`）であり、祝日は `Holidays` の値である。これらが揃って `date + WorkingDays(5)` が意味を持つ。
+
+@ 0 9 0 1e2536c656f48c9e0fbf2cfd11da7922
++     描画も同じように組み立てる。
++     `Date` は `dateFormats`（またはその独立した部分である `dateEndianness`、`dateNumerics`、`dateSeparators`、`yearFormats`）を通じて、`Clockface` は `timeFormats`（または `hourFormats`、`timeMeridiems`、`timeNumerics`、`timeSeparators`、`timeSpecificities`）を通じて、`Month` は `monthFormats` を通じて、`Weekday` は `weekdays` を通じて表示される。`Timespan` は `timespanFormats` を通じて相対的に（「18 分後」）、`Duration` は `durationFormats` を通じて簡潔に（`1h 0m 5s`）表示される。`instantDecodables` と `durationDecodables` はテキストから時点と継続時間を読み戻す。
++     ワイルドカードインポートは given をインポートしないので、`import soundness.*` だけではこれらのどれもスコープに入らない。それぞれを `import dateFormats.iso8601DateFormat` のように名前でインポートする。
+
+@ 0 6 0 049de351b924002d04ebba549e2889d4
++     現在時刻は `Clock` を通じて読み（`now()`、`today()`）、そのコンパニオンのデフォルトはシステムの壁時計を読む。経過時間は `MonotonicClock` を通じて読む（`monotonic()`）。テストは `given Clock = Clock.fixed(Instant(0L))` を束縛し、時間は止まる。
++     繰り返すイベントは `Recurrence`（ISO 8601 の反復区間、`rec"R5/2024-01-01/P1D"`）と `Rrule`（RFC 5545 の暦の規則）であり、どちらも `Recurrent` なので、`occurrences`、`until`、`within`、`following` はどちらにも使える。
+
+@ 0 1 0 1f464efe1917bf091a914ec7f5969566
++     このライブラリには二つのコンポーネントがある。
+
+@ 0 7 0 122741830f12ebfe05c15407a28c9387
++     - `aviation.core`：上記のすべて。JVM、Scala.js、Scala Native 向け。given の `Clock.current` と `MonotonicClock.current` は `System.currentTimeMillis` と `System.nanoTime` を読む。タイムゾーンの規則は `java.time` から来る（そして `Tzdb` は、プラットフォームのものより新しい規則のために IANA データベース自身のソースファイルをパースする）。
++     - `aviation.wasi`：`clocks.wasiClock` と `clocks.wasiMonotonicClock`。`wasiApis.wasiClockApi` を通じて WebAssembly コンポーネントの `wasi:clocks` インターフェースを読む。Wasm ターゲットにコンパイルされるコード向け。
+
+@ 0 3 0 0fe77205fe0720d61ac06c87ddef7f20
++     すべては `soundness` アンブレラにエクスポートされ、ここにあるすべての選択パッケージはアンブレラ自身のものと統合されるので、`import soundness.*` に続けて `import calendars.gregorianCalendar` と書くのが普通の書き出しである。
+
+% 0 1 0 176567218226d6c61062e3d4a710393a
+
+% 0 1 0 15ee4e291138df42009991fb56b8d321
+
+% 0 1 0 171f98797a4589741deb5e9b2454f7f8
+
+% 0 1 0 1331e2e90b1565e611c4cda835c6fe01
+
+% 0 1 0 12809efbf92db3f410af792fd824fd01
+
+% 0 1 0 084cbf8d741371a9191eefce896868ca
+
+% 0 1 0 0a9c299427e59fb8098a74426cba84e0
+
+% 0 1 0 00417fe65833833c1146e4133dab86ca
+
+% 0 1 0 1a9d7a86a6272f56060ef17a39ad8a9f
+
+@ 0 6 0 1ae082f1831e349d1be1c31e69994ea2
++ entry .Date   暦の上の一日：ユリウス通日として保持される `Timestamp in Day`
++     `Date` は型エイリアス `Timestamp in Day`、すなわち `Form` が日単位の精度であり、時刻が真夜中に固定された `Timestamp` である。そのため日付はタイムスタンプが使えるところならどこでも使え、`Timestamp` のすべての拡張（`jdn`、`year`、`month`、`day`、`weekday`、`yearDay`、`anniversary`、`monthstamp`、`in`、`addDays`、比較）が日付にも適用される。
++     オブジェクト `Date` は隠された `timestampInternal` で宣言されており、そのメンバーはそこに挙げられている。
+
+@ 0 9 0 18e98b7ce68e84b01307673b5f74b12a
++     リテラルの日付は `2024-Jan-15` と書き、コンパイル時に検査される。スコープにある `RomanCalendar`（なければグレゴリオ暦）において、その月にその日がなければならないので、`2012-Feb-30` と `2011-Feb-29` はコンパイルエラーになり、`2012-Feb-29` はならない。
++     オペランドはリテラルでなければならない（暦については `calendars.gregorianCalendar`、`julianCalendar`、`papalCutover`、`britishCutover` のいずれかで、ローカルな別名を通してもよい）。実行時に計算された年や日は、それを名指すメッセージとともに展開を停止させる。そのような日付は代わりに `Date(year, month, day)` で作る。これは、スコープにある `Calendar` にその日付が存在しないとき、`Tactic[Moment.Error]` のもとで `Moment.Error` を発生させる。
++     `Date.julianDay(n)` は、ユリウス通日から直接、検査なしに日付を作る。
+
+% 2 1 0 1a3c0eb86490646403d5b6a18a30db0e
+
+% 3 1 0 051e1b48a2f875c7034861c71234a813
+
+% 4 1 0 0271712ca9cd2e3606b7e728757f46a1
+
+% 5 1 0 0689988fe32c89860ee522d76d66c339
+
+% 0 1 0 0e22e87235b9730e0d0037c30083418d
+
+% 0 1 0 001c6fc9468de5841fe0d3ff3279d660
+
+% 0 1 0 06edffd58377460b0796319c57660ccd
+
+% 0 1 0 1cd330ef8e133aab0bfc70a912665d5f
+
+% 0 1 0 0b9143074885a0530629f6dd48dfe641
+
+% 0 1 0 14b7cf6d9d7ca2fc044efe9db7a5605d
+
+% 0 1 0 045c524fb824671e06020a64720497ab
+
+% 0 1 0 1cc26bd0460f1a2e093f0dc24d61dcf1
+
+% 0 1 0 0e4ba21bfca44fe81156998d38203a97
+
+% 0 1 0 1bc2174639bdb5eb0c8bba51b42945b2
+
+% 0 1 0 183f1c91cf01c71b16426d5b09c87534
+
+% 1 1 0 0b7621f167081d97159e7f9502e7be64
+
+@ 0 5 0 044d06fde1fa5d930ff85ecc9e064efd
++     日付は `Timespan` によって動く（`date + 3*Day`、`date + 2*Week` は何も必要としない。`date + 1*Month` や `date + 1*Year` は結果が存在しないことがあるので、`monthEnds` からの `Disambiguation` を必要とする）。また `WorkingDays`（`Hebdomad` と `Holidays` を必要とする）によって、さらに `Quanta[Days[1]]` としての日数によって動く。二つの日付の差は `Quanta[Days[1]]` である。
++     これらの given は `Timestamp` のコンパニオンにある。
+
+@ 0 6 0 09a871906b2335451e26f8d05be90610
++     テキスト：`t"2011-12-13".as[Date]` は数字の `year-month-day`（月と日は 1 桁または 2 桁）をデコードし、それ以外には `Moment.Error` を発生させる。`date.encode` は ISO の `2024-01-15` であり、`RomanCalendar` を必要とする。`date.show` は `Endianness`、`Date.Numerics`、`Date.Separation`、`Years`、またはこれら四つをまとめた `dateFormats` の given のいずれかを必要とする。そして日付は、何のコンテキストもなしに、ISO のグレゴリオ暦の形式 `2024-01-15T00:00:00` として検査用に表示される。
+
+@ 0 9 0 0c30f7ec03fd23e712362c722da6f362
++ entry .Timestamp   タイムゾーンを持たない日付と時刻。精度は型に表れる
++     `Timestamp` は不透明型 `timestampInternal.Timestamp` であり、ここでエクスポートされる。ミリ秒の格子上のゾーンを持たない点であり、ユリウス通日に 1 日のミリ秒数を掛け、その日のミリ秒を足したものとして、ひとつの `Long` に詰め込まれている。
++     その精度は幻の型のメンバー `Form` であり、`in` で設定する。`Date` は `Timestamp in Day`、`Monthstamp` は `Timestamp in Month` なので、日付や月はタイムスタンプであり、タイムスタンプのすべての拡張が適用される。
++     `Timestamp` はタイムゾーンを持たず、どの時点も意味しない。それを `Instant` に結び付けるには `Moment` を通す（`timestamp.in(timezone).instant`、またはスコープに `Timezone`、`RomanCalendar`、`GapPolicy` があれば `timestamp.instant`）。
+
+% 2 1 0 01cf57366425979c17b5e3f041626ea9
+
+% 3 1 0 10c22f8671bf0b750abf96a10fc3f747
+
+% 4 1 0 1bd6c17d7effe2ff1dab176121767552
+
+% 5 1 0 0c20d245656e23840f372e88341df9dc
+
+% 0 1 0 02398bebf91427e807ade8d85cf2151e
+
+% 0 1 0 19345ce1e366a69c09d107e3bbdddab1
+
+% 0 1 0 18a81fa35d138fe80a24ca67eca124b1
+
+% 0 1 0 1bb1b31b68d908041d70d4ccf9e43a08
+
+% 0 1 0 19e864ef6f4c66b708149aa4419a2b28
+
+% 0 1 0 0c078fc5f7ef155108c1953784988393
+
+% 0 1 0 050409f8e58a9b4602f039ec547c058b
+
+% 0 1 0 019a2188e0de039f09b94fbba03a4bcf
+
+% 1 1 0 12f3969d2f34b77a0fad489e44bfa392
+
+@ 0 7 0 0098136f2ca05e941ff991abec28b585
++     二つのタイムスタンプの差は、日・時・分・秒の `Timespan` である（`Timestamp.timestampSubtractable`、`Difference` 型）。比較は `<`、`<=`、`>`、`>=`、または `Timestamp.timestampOrderable` を通じて行う。
++     `t"…".as[Timestamp]` は `yyyy-MM-dd HH:mm:ss`（間は空白または `T`）を読み、`Timestamp.Error` を発生させる。`show` は、スコープにある `Clockface is Showable` と `Date is Showable` から「時刻、日付」を描画する。
++     タイムスタンプは ISO のグレゴリオ暦の形式 `2023-05-28T14:30:59` として検査用に表示され、ミリ秒は 0 でないときにだけ付く。
+
+@ 0 3 0 038f43dc33c04dd5015b41e7f371a196
++     コンパニオンの given（デコーダー、Showable、日付と月の算術、営業日の算術、`Orderable` と `Comparable` のインスタンス、`Timestamp.Error`）は、拡張とともに隠された `timestampInternal` の下に挙げられている。
+
+@ 0 8 0 12c565dcee4701a80d0188e6dada9cc3
++ entry .Instant   物理時間の一点。時刻系は型で名指される：`Instant over Unix`
++     `Instant` は不透明型 `protointernal.Instant` であり、ここでエクスポートされる。それは `Long` であり、その意味（どの時刻系で、どの分解能で数えるか）は幻の型のメンバー `Transport` であって、`over` で設定する。
++     `Instant over Unix` は 1970 年からの POSIX 時間のミリ秒を、うるう秒を無視して数える。`Instant over Tai` は国際原子時のミリ秒を数える。`Instant over Monotonic` はシステムの単調クロックのナノ秒を、任意の起点から数える。
++     細分化されていない `Instant` は時刻系について抽象的であり、直接使われることはまれである。
+
+% 2 1 0 1499489654af73581d878ff3e4a97703
+
+% 3 1 0 0a811b3a310a033d02253836f88bf3f1
+
+% 4 1 0 14dd330757fb164110ce8672b35af711
+
+% 1 1 0 1e84099b4c06e79e0fc1a7cf472ba092
+
+% 1 1 0 097fa73babafcfba0802189c25d9a9ea
+
+% 0 1 0 0123e1832d002dff1ec19571a8168c01
+
+% 0 1 0 1d81951e09da58f00c8afe57a9539ab5
+
+% 0 1 0 05803e62a402b3b013736da8ab693403
+
+% 0 1 0 045a7d654faea2100893911d5d13df47
+
+% 0 1 0 0503558b4b4e8f2e0ec2974315dfb7f9
+
+% 0 1 0 1f653256112b7b21148d5e0bf72cc07b
+
+% 1 1 0 0e183291d96c4b421d66ff0e4a685561
+
+@ 0 10 0 11e281f875d0914f0cd42e4da2d34362
++     `Instant(millis)` は時刻系をスコープにある `Chronometry.Ambient` から取る。だからたいていのプログラムは `import chronometries.unixChronometry` で始まる。`Instant.of[Unix](millis)` は時刻系を直接名指す。
++     時点は時間の任意の `Quantity` によって動き（`+ 1*Hour`、`- 30*Second`）、同じ時刻系上の二つの時点の差は `Duration` である。異なる時刻系をまたいだ引き算はコンパイルエラーであり、`over[Tai]` や `over[Unix]` が、それぞれの `Chronometry` を通じて変換する。
++     `in(timezone)` は時点をゾーンに置いて `Moment` にし、`timestamp` はスコープにある `Timezone` で同じことをする。
++     `Instant.Min` と `Instant.Max` は時刻系の両端であり、時点は `⧗0` として検査用に表示される。砂時計が付くのは、消去された先の `Long` と取り違えられないようにするためである。
++     コンパニオンの given と拡張は、隠された `protointernal` の下に挙げられている。
+
+@ 0 7 0 1fcecef976fe3bd01b03bf29231247b3
++ entry .Duration   経過時間の物理量：`Quantity[Seconds[1]]`
++     `Duration` は型エイリアス `protointernal.Duration`、すなわち quantitative の `Quantity[Seconds[1]]` であり、ここでエクスポートされる。
++     これは二つの時点の間の経過時間であり、どこでもいつでも同じである。意図的に `Timespan` ではない。`Timespan` は、その長さがどこに固定されるかに依存する暦の単位を数えるからである。
++     `Duration(millis)` はミリ秒から継続時間を作り、`duration.value` はその秒数である。`duration.from(instant)` は、その時点で始まりその継続時間だけ続く `Period` である。
+
+% 2 1 0 041f28dc2016832e00ece0e9c2a4f198
+
+% 3 1 0 13ba6d9ec910eb160f8e5d6a40b1e2f4
+
+% 4 1 0 147602b3d921882905ced679bc41fd55
+
+% 0 1 0 16758eeae1e9cb3d1e8a178ad390e307
+
+% 0 1 0 189b4d1aa94e0ac514e08c1770770a19
+
+% 0 1 0 1f5f3c72e1b04da31833fa4429023311
+
+% 1 1 0 18bc5aea3fe0e161130dcb07e7bdb1ff
+
+@ 0 4 0 1576603bb742101a0edfea80fff6034d
++     `durationDecodables.compactDurationDecodable` はテキストから `30m`、`1.5h`、`250ms`、または裸の `90` を読み、それ以外には `Duration.Error`（エラー `↯/s.73.5`、_`text` is not a recognized duration_）を発生させる。`durationFormats.compactDurationFormat` は継続時間を `1h 0m 5s` として表示する。
++     エイリアス、コンパニオン、その `Error` は隠された `protointernal` の下にある。
+
+@ 0 9 0 0b3a93fa0dd72f3d11631868b408451e
++ entry .Year   暦の年。不透明な `Int` として
++     `Year` は不透明型 `internal.Year` であり、ここでエクスポートされる。
++     `Year(2024)` で作り、`year()` で数を読み戻す。
++     年は整数の加減算ができ（`Year(2024) + 5`）、順序付けられ（`Year(1999) < Year(2000)`）、テキストからデコードでき（`t"2024".as[Year]`）、数そのものとして表示され、`2024ʸ` として検査用に表示される。接尾辞が付くのは、数が `Int` と取り違えられないようにするためである。
++     `Year` は `Timespan` の不規則な `Radix` でもある。`2*Year` は 2 年の期間であり、`date + 1*Year` は `monthEnds` からの `Disambiguation` を必要とする。2 月 29 日に 1 年を足した結果はポリシーの問題だからである。
++     コンパニオンの given は隠された `internal` の下に挙げられている。
+
+@ 0 7 0 1966e29f5c3ca6a608b19f3aa9fce916
++ entry .Day   月の中の日。不透明な `Int` として
++     `Day` は不透明型 `internal.Day` であり、ここでエクスポートされる。
++     `Day(15)` で作り、`day()` で数を読み戻す。テキストからデコードでき、数として表示され、`15ᵈ` として検査用に表示される。
++     `Day` は `Timespan` の規則的な `Radix` でもある。`3*Day` は 3 日の期間であり、1 日は常に 1 日なので、ポリシーなしにどの日付にも加えられる。
++     これは営業日の数である `WorkingDays` とは別物である。
++     コンパニオンの given は隠された `internal` の下に挙げられている。
+
+@ 0 8 0 002339b54c26ee1816f18a3f76316f34
++ entry .Anniversary   年を持たない月と日：誕生日、祝日
++     `Anniversary` は不透明型 `internal.Anniversary` であり、ここでエクスポートされる。`Mar - 14`（`Month.subtractable` を通じて）または `Anniversary(Mar, Day(14))` と書く。
++     年に適用するとその年の日付になる（`(Mar - 14)(Year(2024))`）。これにはスコープに `RomanCalendar` と、毎年は存在しない唯一の記念日である 2 月 29 日のための `Anniversary.NonexistentLeapDay` ポリシーが必要である。`nonexistentLeapDays.roundDownLeapDay` は 28 日に、`roundUpLeapDay` は 3 月 1 日に落ち、`raiseErrorsLeapDay` は `Moment.Error` を発生させる。
++     このポリシーにデフォルトはない。
+
+% 2 1 0 11a9f143e3e0e9e81af8176d86fa8cf1
+
+% 3 1 0 0940b81bdc240e4a14e30e992f2418f2
+
+% 4 1 0 1b453327a5dcdbd90d8adf88ca348bfc
+
+% 0 1 0 0fa5b1a2656aa1d00d89554ba8272646
+
+% 0 1 0 05992a2a92fc575d19fc67b4e7b56085
+
+% 0 1 0 0332d6a101ba51771a050c3606bd2cc4
+
+% 0 1 0 04ce125f1945e1ef10c3596d6fdf85d2
+
+% 0 1 0 10e97d0a44fae7bc1e769ba83b2f6abb
+
+% 1 1 0 1b077ad9829fe0bc1b66846fdf34ca22
+
+@ 0 3 0 07ca90266958aa5a05f68021b41b2558
++     記念日は、スコープにある `Endianness`、`Months`、`Date.Separation` で表示され（`14 March` や `March 14`）、ISO 8601 の年なしの形式 `--03-14` として検査用に表示される。`date.anniversary` は任意の日付の記念日である。
++     コンパニオンは隠された `internal` の下に挙げられている。
+
+@ 0 6 0 1bb3ab5de5a6949d15ac8109165394b8
++ entry .WorkingDays   日付に加えたり日付から引いたりする営業日の数
++     `WorkingDays` は不透明型 `internal.WorkingDays` であり、ここでエクスポートされる。
++     `WorkingDays(5)` は 5 営業日であり、`date + WorkingDays(5)` や `date - WorkingDays(1)` は、週末（スコープにある `Hebdomad` が定めるもの）でもスコープにある `Holidays` の祝日でもない日をその数だけ越えて日付を動かし、営業日に着地する。どちらの given も必要である。
++     `5ʷᵈ` として検査用に表示される。
+
+% 2 1 0 13548320b90675a20710183d74667610
+
+% 3 1 0 175af1dcb45318140c827f0beb4bbb6e
+
+% 4 1 0 194cab2a07f3c1e71a117381efb1066a
+
+% 0 1 0 0b722a08c9e21e0a089447fdadb923d5
+
+% 0 1 0 0798aab0cee0594a186ddf9a296ed7fa
+
+% 0 1 0 0b435109454d640d002ea6465da6a757
+
+% 0 1 0 12334672fd674179103552c4d544af3b
+
+% 0 1 0 071fc4d9b0eb3a6a05520630a395fd94
+
+% 0 1 0 0e04a75484feae2d012e377964a3c854
+
+% 1 1 0 0e150d6a37d97efd03d6f3047ed6aa73
+
+@ 0 1 0 11d4406951b02c680ccc6bd727447b48
++ entry .Base60   リテラル型のユニオンとしての 0 から 59 までの整数：分または秒
+
+% 1 1 0 1eb2b109014006620b03a22b68741750
+
+@ 0 9 0 10f0adbe3bb8673c0c949cdcceeb2b33
++       `Base60` は型 `0 | 1 | … | 59` であり、`Clockface` の `minute` と `second` の型である。そのため `Clockface(14, 30, 59)` はリテラルから型検査を通り、`Clockface(14, 60, 0)` は通らない。
++       `Base60(int)` は整数を 60 を法として包み（したがって `Base60(61)` は `1`、`Base60(-1)` は `59`）、`Base60.unapply` は範囲内の `Int` にマッチする。パースされたフィールドはこうして `Base60` になる：`(hour, minute, second).absolve match case (Base24(h), Base60(m), Base60(s)) => Clockface(h, m, s)`。
++       given の `base60Extractable` は、同じようにしてテキストから `Base60` を取り出す。
++   entry .apply   60 を法として `Base60` に縮約された整数
++   entry .unapply   0 から 59 の間の `Int` に、`Base60` としてマッチする
+
+@ 0 1 0 04a838c18bb3a5e207c1073f41702197
++ entry .Base24   リテラル型のユニオンとしての 0 から 23 までの整数：時
+
+% 1 1 0 003578318dda25da1e8e9269a2fb0c19
+
+@ 0 5 0 10269a9e244968a1167a0215f83e566f
++       `Base24` は型 `0 | 1 | … | 23` であり、`Clockface` の `hour` の型である。
++       `Base24(int)` は整数を 24 を法として包み（したがって `Base24(25)` は `1`）、`Base24.unapply` は範囲内の `Int` にマッチする。`base24Extractable` はテキストから `Base24` を取り出す。
++   entry .apply   24 を法として `Base24` に縮約された整数
++   entry .unapply   0 から 23 の間の `Int` に、`Base24` としてマッチする
+
+@ 0 4 0 1f58345446fd68490d53e95361b5e19a
++ entry .base60Extractable   範囲内の整数として読めるテキストから `Base60` を取り出す
++     トップレベルの given である。テキストからの `Int` の抽出子がスコープにあれば、`text match case As[Base60](m) => …` は 0 から 59 の整数を持つテキストにマッチし、それ以外では `Unset` となる。
++     トップレベルの given はどれもそうであるように、`import soundness.base60Extractable` と名前でインポートする。
+
+@ 0 3 0 032fa0f59051c8c31b9439fa4cdf023c
++ entry .base24Extractable   範囲内の整数として読めるテキストから `Base24` を取り出す
++     トップレベルの given で、時についての `base60Extractable` の対応物である。`As[Base24](h)` は 0 から 23 の整数を持つテキストにマッチする。
+
+@ 0 8 0 0522de79005c904c056de6192558aeb3
++ entry .MonthRadix   ある暦の月の基数。暦ごとに別のもの
++     `MonthRadix` は不規則な `Radix`（下の単位との比が一定でないもの）であり、ひとつの暦の月を表す。`Month`（グレゴリオ暦）、`IslamicMonth`、`CopticMonth`、`EthiopianMonth`、`HebrewMonth`、`IndianMonth`、`PersianMonth`、`FrenchRepublicanMonth` がそれぞれこれを継承する。
++     `Timespan of IslamicMonth.type` はイスラム暦の月で数えた期間であり、`IslamicCalendar` のもとで読まれた日付にしか加えられない。グレゴリオ暦のもとで加えるとコンパイルエラーになるので、異なる暦の月が混ざることはない。
+
+@ 0 1 0 19c7b5f4339fcffa0a35460a61e6edbf
++ entry .Week   週の基数：`2*Week` は `Timespan of Week.type`
+
+% 1 1 0 0431dea961f6ca7916cc38fc25d81091
+
+@ 0 3 0 14ad878d17c8892c15546fa433d270f4
++       規則的な `Radix`（常に 7 日）なので、`date + 2*Week` にポリシーは要らない。
++       `Int is Multiplicable by Week.type` は、`n*Week` を期間にする given である。
++   entry .multiplicable   `Timespan of Week.type` としての `n*Week`
+
+@ 0 1 0 01d28a08fcd6c8280087f59b77aabdc8
++ entry .Hour   時の基数であり、`Timestamp in Hour` の精度のマーカー
+
+% 1 1 0 1ae86a97852f1ac715f34e91790df198
+
+@ 0 5 0 01646b97156b8f6f02d8ca3bf52a87e0
++       `Hour` は規則的な `Radix` オブジェクトであると同時に、消去されるマーカートレイトでもある。前者により `2*Hour` は `Instant`、`Timestamp`、`Moment` に加えられる `Timespan of Hour.type` になり、後者により `Timestamp in Hour` は時単位の精度のタイムスタンプを名指す。
++       `Multiplicable` の given はそのコンパニオンにある。
++   entry .multiplicable   `Timespan of Hour.type` としての `n*Hour`
+
+@ 0 1 0 0442c871e40348651f3d6bc2a59a0987
++ entry .Minute   分の基数であり、`Timestamp in Minute` の精度のマーカー
+
+% 1 1 0 08a504fffad2635f036a9bef39dac48d
+
+@ 0 2 0 0ce3a250bc1154a71d4d69d239e3218b
++       `Hour` と同様に、規則的な `Radix` オブジェクト（`15*Minute`）であり、消去されるマーカートレイトでもある。
++   entry .multiplicable   `Timespan of Minute.type` としての `n*Minute`
+
+@ 0 4 0 0cdb24e9e730ee931eab00b05c363215
++ entry .Second   `Timestamp in Second` の精度のマーカー
++     メンバーを持たない消去されるマーカートレイトであり、秒単位の精度のタイムスタンプに名指すべき型を与える。
++     期間における秒の基数は quantitative の `Second` 単位なので、`30*Second` は秒の `Quantity` であり、`Duration` として時点やモーメントに加えられる。
+
+@ 0 6 0 1897f33638835180046ae467d16a125e
++ entry .Tai   国際原子時のマーカー：`Instant over Tai`
++     TAI の時刻系を名指す消去されるマーカートレイトである。TAI はすべての SI 秒を途切れなく数える。
++     `Chronometry.tai` はその（恒等の）クロノメトリーであり、`Resolution.tai` はそのミリ秒の分解能である。`chronometries.taiChronometry` は、これを裸の `Instant(…)` の値の時刻系にする。
++     `instant.over[Tai]` は、その時点までに累積したうるう秒を加えることで、Unix の時点を TAI に変換する。
+
+@ 0 6 0 0553bcb587dc39cb1ddcc17932998f2c
++ entry .Unix   POSIX 時間のマーカー：`Instant over Unix`
++     Unix の時刻系を名指す消去されるマーカートレイトである。1970-01-01T00:00:00Z からのミリ秒で、うるう秒は無視され、あらゆるシステムの壁時計が読むのはこれである。
++     `Chronometry.unix` は `LeapSeconds` を通じてこれを TAI と相互に変換し、`Resolution.unix` はそのミリ秒の分解能であり、`Clock` はこの上の時点を生み出し、`chronometries.unixChronometry` はこれを裸の `Instant(…)` の値の時刻系にする。
+
+@ 0 6 0 1318c86386a303c410a362834839f5bd
++ entry .Monotonic   単調なシステムクロックのマーカー：`Instant over Monotonic`
++     `System.nanoTime` の読みの時刻系を名指す消去されるマーカートレイトである。ナノ秒の分解能（`Resolution.monotonic`）、任意の起点を持ち、`Chronometry` は持たない。壁時計の時刻と固定した関係がないからである。
++     `Monotonic` の時点は別の時点と比較したり引いたりでき、`Duration` によって動かせるが、タイムゾーンに置いたり別の時刻系に変換したりすることは決してできない。`monotonic()` がこれを読む。
+
+@ 0 7 0 0c5f65fc5ee727b2196fde8496b79a0f
++ entry .Occurrence   時計を戻す際の重なりで、繰り返される壁時計の時刻のどちらを `Moment` が意味するか
++     時計が戻されると、壁時計の 1 時間が二度起こり、その中の `Moment` は 1 時間離れた二つの時点を名指す。
++     `First` は早いほうで、遷移前のオフセットのもとにある。`Second` は遅いほうで、遷移後にある。
++     `Moment` は、別のものが与えられない限り `Occurrence.First` で作られる。一度しか起こらない時刻については、時点への結び付けは発生を無視する。`instant.in(timezone)` は、重なりの遅い側に入る時点について `Second` を記録するので、モーメントは元の時点に結び付き直る。
+
+% 2 1 0 0970ac7627ff27490afebe55428d009b
+
+% 3 1 0 0a7f6e59956801620ac1341fccb31576
+
+% 4 1 0 1650c4b10e32c1ad0e251124c0eb0984
+
+% 0 1 0 078fa25f723e0f38107d3ce1981b5cb0
+
+% 0 1 0 081ba7c1f30d807c19ebb17f13768c8d
+
+% 0 1 0 19e4e8d309d6509b13990e6b32912ae7
+
+% 0 1 0 0f1d6946e201543d0e58dc9b3f4ead47
+
+% 1 1 0 1b202ea256a75afc0b4f017e502466fe
+
+@ 0 5 0 0a2e910717c78db512c36c83fedb6f70
++ entry .Leap   `Moment` が挿入されたうるう秒、すなわち UTC の日の 61 番目の秒かどうか
++     `Clockface` の秒は `Base60` なので、うるう秒 `23:59:60` は `23:59:59` として保存され、モーメントの `leap` が `Inserted` に設定される。それ以外のすべてのモーメントは `None` である。
++     それを 61 番目の秒として時点に結び付けたり表示したりするのは `Moment` だけである。`ts"2016-12-31T23:59:60Z"` はそのようなモーメントであり、`moment.tai` はうるう秒が占める TAI の秒に着地する。
+
+@ 0 6 0 00f7aa8160d81d0c183b2bac309cdd64
++ entry .am   `7.25.am` のようなリテラルからの時刻。コンパイル時に検査される
++     `Double` リテラルに対するインラインの拡張である。`7.25.am` は `Clockface(7, 25, 0)` であり、`12.00.am` は真夜中で、`0.00.am` も同じである。
++     リテラルは小数点の後にちょうど 2 桁（分）を持ち、時は 12 以下、分は 60 未満でなければならない。`7.8.am`、`7.585.am`、`7.88.am`、`13.00.am` はそれぞれ固有のメッセージを伴うコンパイルエラーになる。
++     時刻は常にちょうどの分である。秒には `Clockface(h, m, s)` を使う。
+
+@ 0 3 0 0077b03ef7a0ed59040f14da992bbed5
++ entry .pm   `7.25.pm` のようなリテラルからの時刻：午後
++     `am` と同様で、12 時間後である。`7.25.pm` は `Clockface(19, 25, 0)` であり、`12.00.pm` は正午である。
++     12 時間制の時計の時は 12 以下なので、`15.30.pm` はコンパイルエラーになる。
+
+@ 0 4 0 013718835c8b105f0d3ca4855be3d4da
++ entry .now   スコープにある `Clock` から読んだ現在の時点
++     `now()` は `Instant over Unix` であり、スコープにある `Clock` の given の読みである。
++     コンパニオンにある `Clock.current` は `System.currentTimeMillis` を読み、インポートを必要としない。テストは `given Clock = Clock.fixed(Instant(99999L))` を束縛し、`now()` が毎回同じになるようにする。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 0123448804e888ea1986af40f304f9c6
+
+% 1 1 0 153c00015a0334290655c59224ef9d88
+
+% 2 1 0 148024589e7946b104b12b61a42946b5
+
+% 3 1 0 1fa4e85e489946e019b59a40bb21fb0d
+
+% 0 1 0 02d02d3025613ec21e461d5f668ca84f
+
+% 0 1 0 0bc7e1ac7bcdc7db07582b19e96d4e13
+
+% 0 1 0 0ce47e750d98b82b027b7216e55f5736
+
+% 1 1 0 0f6f1517824ae9181541a892519368b7
+
+% 2 1 0 0b070b24a0b518800bd5bd1e655bce66
+
+% 3 1 0 016ab9f9637d6d0a1d85b84a7901b973
+
+% 0 1 0 01cd5d92e3eb5cec16655fcfeb04b503
+
+% 0 1 0 0d89d928b8984e191ee2d334eef132c8
+
+% 0 1 0 11aecb423b4b055f14db85ff461af7ef
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 097566ca9261157816f6b54ab65b3b6f
++ entry .monotonic   経過時間を測るための単調クロックの読み
++     `monotonic()` は `Instant over Monotonic` であり、スコープにある `MonotonicClock` の given の読みである。コンパニオンにある `MonotonicClock.current` は `System.nanoTime` を読み、`clocks.wasiMonotonicClock` は Wasm コンポーネントの単調クロックを読む。
++     この読みはナノ秒の分解能と任意の起点を持つので、別の読みと比較したり引いたりして `Duration` を得る以外に使い道はない。タイムゾーンに置くことはできない。
+
+% 2 1 0 17a6ecbad9328f1109056e0538f6d850
+
+% 3 1 0 13467f69a952946d02bdb7e53fc841a0
+
+% 0 1 0 1dd28a4288828e130a7308473393edbf
+
+% 0 1 0 077c77b6100909ae168d6ceb59bb0dbe
+
+% 0 1 0 1600f8ba6f07a9191a66cf76d5696440
+
+% 1 1 0 06d64845729754e710e1f628cb475414
+
+@ 0 3 0 18149bad880eecc909653f0b07d36893
++ entry .today   スコープにある `Timezone` と `RomanCalendar` における現在の日付
++     `today()` はスコープにある `Clock` から `now()` を読み、スコープにある `Timezone` に置き、スコープにある `RomanCalendar` で読んだ日付を取る。三つすべてが必要である。
+
+% 2 1 0 113b878131ee72460a051a9ac9100d52
+
+% 3 1 0 05c0ea8edaa9ca74022220f5b36830c7
+
+% 4 1 0 013ae54dcfb9c4e01558326c92358324
+
+% 2 1 0 1e5ca16d5f7124a81247c4a35a91e06b
+
+% 0 1 0 13d4ed966ae2b71f0ab124ceb1399891
+
+% 0 1 0 0cc1feba85867e490c56a0b4572f9ab0
+
+% 0 1 0 1aa3a39d7aa36e390b6999a6d937a6c3
+
+% 1 1 0 1a1b97c74ffbbb520defd693b0c29235
+
+@ 0 5 0 0a48a0747fba67140b32d0dad6bdc398
++ entry .tz   `tz"…"` 補間子：コンパイル時にデータベースに照らして検査される `Timezone`
++     `tz"Europe/London"` は、`java.time` のデータベースが知るゾーンであることをコンパイラが確かめた名前を持つ `Timezone` である。そのため綴りを誤ったゾーンはコンパイルエラーになる：_`Europe/Lundon` is not a valid timezone identifier_。
++     この補間子は `$` による置換を取らない。実行時にしかわからない名前は `Timezone(name)` または `text.as[Timezone]` であり、`Timezone.Error` を発生させる。
+
+@ 0 7 0 1c7fdd612a3fb8840c105f38a9bb0c0f
++ entry .dur   `dur"…"` 補間子：`Timespan` としての ISO 8601 の継続時間。コンパイル時に検査される
++     `dur"P1Y2M3DT4H5M6S"` は 1 年 2 か月 3 日 4 時間 5 分 6 秒の `Timespan` であり、コンパイル時にパースされる。`P` の後に `nY`、`nM`、`nW`、`nD` のいずれか、`T` の後に `nH`、`nM`、`nS` のいずれか（秒は小数を持ってよい）が続き、少なくともひとつの成分がなければならない。
++     `T` の前の `M` は月、後の `M` は分である。
++     継続時間でないテキストはコンパイルエラーになり、`t"P1Y".as[Timespan]` は実行時に同じパースを行い、`Timespan.Error` を発生させる。
+
+@ 0 3 0 0ed2f8013d97c5c20ee0b3f996fed099
++ entry .ts   `ts"…"` 補間子：精度に応じた年、月、日付、タイムスタンプ、またはモーメントのリテラル
++     `ts"…"` は ISO 8601 または RFC 1123 のリテラルをコンパイル時にパースし、その結果型は、transparent な `tsInterpolator` を通じて、リテラルの精度に従う。
+
+% 2 1 0 1da4106aca6611f511b8e8bae6cbb4db
+
+% 3 1 0 14eedaeeb9acca6613208ff9fe293e25
+
+% 0 1 0 14c34638e1a143ea1c309e2cd5c86a30
+
+% 0 1 0 000c238e9e7f8ac905e88d27d155f3e1
+
+% 0 1 0 1f5236f3b27b638d0832dea28f19867e
+
+% 0 1 0 1865ed58939fa0b61ff09b5c2fb85beb
+
+% 0 1 0 156c1acbc366d15b150eb1354b37cc66
+
+% 0 1 0 05e08c0785e75f2a18c8fc399c5e7ddb
+
+% 0 1 0 139d182481ed9f2a144b8862fac06189
+
+% 1 1 0 1245e7362108b9301d3a02d484c43a86
+
+@ 0 7 0 17c0b6695bfc4e071ec2793087ef98e5
++     日付はグレゴリオ暦に照らして（`ts"2024-02-30"` はコンパイルエラーになる：_2024-2-30 is not a valid date in the Gregorian calendar_）、時刻は時計に照らして（`25:00` は失敗する）、ゾーンは `java.time` に照らして検証される。
++     小数の秒はナノ秒まで保持され、`T` の代わりに空白を使ってもよい。うるう秒 `23:59:60` はゾーンがある場合にだけ受け付けられ（UTC に対してしか存在しないからである）、`leap` が `Leap.Inserted` の `Moment` になる。
++     RFC 1123 のリテラルは常に GMT の `Moment` になる。
++     このリテラルは `$` による置換を取らない。
+
+@ 0 8 0 0d9a942b29483392032b8b5ee5a3549a
++ entry .rec   `rec"…"` 補間子：`Recurrence` としての ISO 8601 の反復区間。コンパイル時に検査される
++     `rec"R5/2024-01-01/P1D"` は `Recurrence(2024-Jan-1, 1*Day, 5)` である。反復回数（無制限なら `R` だけ、`n` 回の発生なら `Rn`）、開始点、周期を `/` で区切る。
++     開始点は `ts"…"` と同じようにパースされ、日付または日時でなければならない（裸の年や月はコンパイルエラーになる）。そのため結果は、リテラルの精度により `Recurrence of Date`、`of Timestamp`、`of Moment` のいずれかになる。周期は `dur"…"` と同じようにパースされる。
++     失敗した区切りはそれだけが下線で示される。
++     周期にはグレゴリオ暦の月の基数のタグが付くので、毎月の反復を反復処理するには `monthEnds` からの `Disambiguation` が必要である。
+
+% 2 1 0 057cfc0d831921710d66831e1a1c9343
+
+% 3 1 0 0f692fc0fb6b55b2047ce470903c32de
+
+% 4 1 0 1f22ecf664c60f74160d384c17145270
+
+% 0 1 0 01d50867a33bd4eb15711f28eca174a5
+
+% 0 1 0 1d1b0c22708dea2915152653befa63ca
+
+% 1 1 0 1c19da370768d6730488bf48bd217ed9
+
+@ 0 4 0 025e4c958d70d5ec1702907c13a9559c
++ entry .tsInterpolator   `ts"…"` の背後にある `Interpolable`。結果型はリテラルによって選ばれる
++     インラインの given であり、その transparent な `interpolate` は、マクロ `internal.tsInterpolator` を通じて、`ts"…"` リテラルを `Year`、`Monthstamp`、`Date`、`Timestamp`、`Moment` のいずれかに展開する。
++     ユニオン型の暗黙のスコープにあるので、`ts"…"` はアンブレラ以外のインポートを必要としない。
+
+@ 0 3 0 031eefe2fc6f9dc61cadede430990677
++ entry .recInterpolator   `rec"…"` の背後にある `Interpolable`。結果型はリテラルによって選ばれる
++     インラインの given であり、その transparent な `interpolate` は、`internal.recInterpolator` を通じて、`rec"…"` リテラルを開始点の精度の `Recurrence.Literal` に展開する。
+
+@ 0 5 0 12d9aec8ff5bf31b09c596e2d77cce37
++ entry .occurrences   任意の `Recurrent` な値の発生を、遅延的な `Chain` として
++     `Recurrent` のインスタンスを持つ任意の値（`Recurrence`、`Rrule`、`RecurrenceSet`）に対する拡張であり、順序付けられた発生点のストリームを返す。
++     このチェーンは遅延的で、無限であることもある（回数のない反復、`until` のない規則）ので、走査する前に `until`、`within`、`following`、`keep(n)` で区切る。
+
+% 2 1 0 1c95cecbf0544dfc15df86712809d1ad
+
+% 3 1 0 0b16439228c91ea30bd2eda9490c89c5
+
+% 4 1 0 0a140e9c98924c0b1097ebccf83f792a
+
+% 0 1 0 1542d07961e7abdd02060b0f7a795178
+
+% 0 1 0 04e04942f3603a8e0f3424757922ba35
+
+% 1 1 0 1f371f323ded96d30249cd6722015a16
+
+@ 0 4 0 07d114eb507865d40399d4071f59a02a
++ entry .until   `Recurrent` な値の発生のうち、限界より厳密に前のもの
++     `sequence.until(limit)` は `limit` より小さいと比較される発生を残す。発生の型の `Comparable` が必要である（`Date`、`Timestamp`、`Instant`、`Moment` はそれぞれ持っている。`Moment` のものは `RomanCalendar` と `GapPolicy` を必要とする）。
+
+% 2 1 0 18207eca59a19954182dd742e40651a8
+
+% 3 1 0 0f9d0b61a4ed2f8a15a0c7ff448ff1b2
+
+% 4 1 0 0dc2ec90b037456e1288d1c2960d807c
+
+% 0 1 0 10a06434735161951c6ef206d4617d10
+
+% 1 1 0 153c6fdf35249c0b1e2c7aff2a4b03c7
+
+@ 0 3 0 07539926418602f80f3d306010fb9e94
++ entry .within   `Recurrent` な値の発生のうち、半開の `Period` の内側にあるもの
++     `sequence.within(period)` は区間の開始より前の発生を飛ばし、終了より前のものを残す。したがって `Period` と同じく、開始は含まれ、終了は除かれる。
+
+% 2 1 0 12b0ae77beda0b321cd5391850132eb8
+
+% 3 1 0 025205649272827110b2838587257437
+
+% 4 1 0 1ecdd400e0e9d19c174b814dc625e4a0
+
+% 0 1 0 122558d84e53849510974c68f86c267c
+
+% 0 1 0 0781d35fec34c6dc0e9b95c3cb9190fb
+
+% 1 1 0 0bbe1e84b3ee93750547a4c7bb9b8cdc
+
+@ 0 4 0 02cca8edd87a3c8b1f12de808eecca81
++ entry .following   `Recurrent` な値の発生のうち、ある点より厳密に後の最初のもの（あれば）
++     `sequence.following(point)` は `point` より大きい最初の発生であり、それより先に列が終われば `Unset` である。
++     それより前の発生は遅延的に飛ばされるので、無制限の反復でも問題ない。
+
+@ 0 15 0 083f35c432d3377c0fa18bf2b7f2885b
++ entry .Jan   1 月。`Month` からエクスポート
++     `Month` enum の最初のケースであり、パッケージにエクスポートされているので、日付を修飾なしに `2024-Jan-15` と書ける。
++     `Jan` から `Dec` まですべてエクスポートされている。`Month(1)` と `Month(t"Jan")` は、数や名前から同じケースに届く。
++ entry .Feb   2 月。`Month` からエクスポート
++ entry .Mar   3 月。`Month` からエクスポート
++ entry .Apr   4 月。`Month` からエクスポート
++ entry .May   5 月。`Month` からエクスポート
++ entry .Jun   6 月。`Month` からエクスポート
++ entry .Jul   7 月。`Month` からエクスポート
++ entry .Aug   8 月。`Month` からエクスポート
++ entry .Sep   9 月。`Month` からエクスポート
++ entry .Oct   10 月。`Month` からエクスポート
++ entry .Nov   11 月。`Month` からエクスポート
++ entry .Dec   12 月。`Month` からエクスポート
+
+@ 0 10 0 0853200ac53168491b0f3b4ba93e8edb
++ entry .Mon   月曜日。`Weekday` からエクスポート
++     `Weekday` enum の最初のケースであり、パッケージにエクスポートされているので、`Weekday.count(start, end, Sat)` や `WeekdayOrdinal(Mon, 3)` に修飾は要らない。
++     `Mon` から `Sun` まですべてエクスポートされている。
++     どの曜日が週の始まりで、どの曜日が週末かは、スコープにある `Hebdomad` が決める。
++ entry .Tue   火曜日。`Weekday` からエクスポート
++ entry .Wed   水曜日。`Weekday` からエクスポート
++ entry .Thu   木曜日。`Weekday` からエクスポート
++ entry .Fri   金曜日。`Weekday` からエクスポート
++ entry .Sat   土曜日。`Weekday` からエクスポート
++ entry .Sun   日曜日。`Weekday` からエクスポート
+
+@ 0 1 0 1de21d27ea687b5c0d9090ef1f12f111
++ entry .calendars   暦。それぞれ名前でインポートする given
+
+% 1 1 0 03e5f7498510ae950d4dd09aaa6ba637
+
+@ 0 5 0 0d24545ffbb35eb903a32f978f28b20d
++       どの日付もユリウス通日であり、暦はそれを年・月・日として読む方法なので、日付のリテラル、`date.year`、`date.month`、`date.day`、月の算術はそれぞれ、スコープにある `Calendar`（または `RomanCalendar`）の given を取る。
++       この選択は決して暗黙ではない。`import soundness.*` はこれらのどれも持ち込まず、ひとつを名前でインポートする。最もよくあるのは `import calendars.gregorianCalendar` である。
+
+% 2 1 0 18c4d93fc0a32a2304b8f5d9a1609131
+
+% 0 1 0 1a980625daed4e501a022bebc6d5df99
+
+% 1 1 0 0969b0f3da21b8de0df817deb262b674
+
+% 2 1 0 1be6f71226500dcd104d2bf607190eca
+
+% 3 1 0 11aef15b839465fe120116f79e8369ac
+
+% 2 1 0 0be6e7f1246b5a561af265f1c61e4f68
+
+% 0 1 0 141c433dceca541b107e439f0b32a259
+
+% 0 1 0 0e95265aebec64c00cecd8bbf52472e1
+
+% 1 1 0 1222165f32fbb4d40ea82b5f378a0e88
+
+% 2 1 0 1cdad98be67c59c311cf8658343dd226
+
+% 3 1 0 09da5efc70dcb2f119f32a45b07e3c0c
+
+% 0 1 0 027cdc202351fcf507d0100c906a3505
+
+% 0 1 0 16bed220c41865240743ce91b8ececb9
+
+% 0 1 0 0241a37ddf59df101fe56b91e1bf8099
+
+% 1 1 0 167aee1afa84593d0a4ddb6941016219
+
+% 2 1 0 07450d085e87845f18ee1b4bf1820830
+
+% 3 1 0 0d18370368db8c8909ca340c6f0f3895
+
+% 0 1 0 020de4199e0cc5a412a326875de3c581
+
+% 0 1 0 1c36b0879da9c8240ffe1bdb8fff8269
+
+% 0 1 0 0c6c2f12a532ce8c1de7cdba516d22a2
+
+% 1 1 0 1ab19ea903e62b4d0eb4362a418db28d
+
+% 2 1 0 1b41a1995cd54efb0526b6e3432672d9
+
+% 3 1 0 1e3172a601a7ea0c142f3c9e00da4f03
+
+% 0 1 0 071fecf0438b5a9115c39b821aad0e5c
+
+% 0 1 0 0d2b48de745d966e06eacf0ae7753514
+
+% 1 1 0 14fa95f3f0b89771142562949ebd3d7b
+
+% 2 1 0 01c40b1af79371af09b09f8244fa2b57
+
+@ 0 7 0 06899818a61419ef0a37ff63a4dd0b91
++       暦は値でもある。`calendars.islamicCalendar.format(date)` は日付をその暦自身の月名で描画し（`24 Ramadan 1420`）、`calendar.jdn(year, month, day)` は部分から日付を作り、その暦にない日付には `Moment.Error` を発生させる。
++       二つのローマ系の暦と切り替えの体制は `RomanCalendar` であり、これが `today()`、`Moment`、日付のリテラルが必要とするものである。他は普通の `Calendar` であり、`calendar.annual(date)`、`mensual`、`diurnal` で、あるいはスコープにある `Calendar` として束縛したときは `date.year` などを通じて読む。
+
+% 1 1 0 1c30775ad541fe1a009ab0bf3e28843b
+
+% 1 1 0 0a01b2176201c5c20fbe29ddc678cf3f
+
+% 1 1 0 1120029a9cfdef7014903916ddc0ec6f
+
+@ 0 45 0 001204115b4a37050f7863204eb3bb89
++   entry .gregorianCalendar   先発グレゴリオ暦：市民生活のデフォルト
++       `Gregorian` という名前の `RomanCalendar` であり、うるう年は 4 で割り切れて 100 で割り切れない年である（ただし 400 で割り切れれば別）。
++       先発的であり、1582 年より前にもこの規則を適用する。実際に使われていた暦での改暦前の日付は、`papalCutover` や `britishCutover` の扱う事柄である。
++       ほかに `RomanCalendar` がスコープにないとき、日付のリテラルと `ts"…"` はこれに照らして検証される。
++   entry .julianCalendar   4 年ごとにうるう年があるユリウス暦
++       `Julian` という名前の `RomanCalendar` である。4 で割り切れるすべての年がうるう年なので、グレゴリオ暦から 4 世紀ごとに 3 日ずれていき、この暦のもとでの `1900-Mar-10` は、グレゴリオ暦のもとでの同じリテラルとは異なるユリウス通日になる。
++   entry .copticCalendar   ユリウス暦 284 年 8 月 29 日に始まるコプト暦
++       `CopticCalendar` である。13 の `CopticMonth` を持ち、12 か月は 30 日で、短い `Nasie` がある。
++   entry .ethiopianCalendar   ユリウス暦 8 年 8 月 29 日に始まるエチオピア暦
++       `EthiopianCalendar` である。コプト暦の構造に、独自の紀元と `EthiopianMonth` を持つ。
++   entry .islamicCalendar   ユリウス暦 622 年 7 月 16 日に始まる表によるイスラム暦（ヒジュラ暦）
++       `IslamicCalendar` である。30 日と 29 日を交互に繰り返す 12 の `IslamicMonth` を持ち、30 年の周期ごとに 11 のうるう年がある。
++       これは算術的な暦であって、観測による暦ではない。
++   entry .persianCalendar   ペルシア暦（太陽ヒジュラ暦）
++       `PersianCalendar` であり、`PersianMonth` を持つ。
++   entry .indianCalendar   1957 年 3 月 22 日からのインド国定暦（サカ暦）
++       `IndianCalendar` である。サカ暦の年はグレゴリオ暦の年から 78 を引いたもので、3 月 22 日（グレゴリオ暦のうるう年では 3 月 21 日）に始まり、`IndianMonth` を持つ。
++   entry .hebrewCalendar   ヘブライ暦。太陰太陽暦で、うるう年には 13 か月ある
++       `HebrewCalendar` である。ティシュリーから始まる `HebrewMonth` を持ち、`AdarSheni` は 19 年ごとの 7 回のうるう年にだけ存在し、1 年は 353 日から 385 日である。
++   entry .frenchRepublicanCalendar   1793 年から 1805 年までのフランス革命暦
++       `FrenchRepublicanCalendar` である。30 日の `FrenchRepublicanMonth` が 12 と `Sansculottides` から成り、1792 年 9 月 22 日に始まり、算術的なうるう規則を持つ。
++   entry .buddhistCalendar   紀元前 543 年から年を数えるグレゴリオ暦
++       `gregorianCalendar` の上の `Buddhist` という名前の `OffsetCalendar` であり、タイでの数え方のとおり、年に 543 を加える。
++   entry .minguoCalendar   1912 年から年を数えるグレゴリオ暦
++       `gregorianCalendar` の上の `Minguo` という名前の `OffsetCalendar` であり、台湾での数え方のとおり、年から 1911 を引く。
++   entry .ordinalCalendar   月を持たない、年と年間通日の暦
++       `OrdinalCalendar` オブジェクトである。日付は年とその中の日（1 から 366）であり、`OrdinalCalendar(year, dayOfYear)` で作る。
++   entry .papalCutover   1582 年 10 月 4 日まではユリウス暦、10 月 15 日からはグレゴリオ暦
++       二つの区分からなる `Papal` という名前の `Regime` である。時の始まりからユリウス暦、ユリウス通日 2299161 からグレゴリオ暦である。
++       その間の 10 日間は日付として存在したことがないので、このもとで `1582-Oct-10` はコンパイルエラーになり、`papalCutover.jdn(Year(1582), Oct, Day(10))` は `Moment.Error` を発生させ、`(1582-Oct-4).jdn + 1 == (1582-Oct-15).jdn` となる。
++   entry .britishCutover   1752 年 9 月 2 日まではユリウス暦、9 月 14 日からはグレゴリオ暦
++       `British` という名前の `Regime` である。ユリウス通日 2361222 まではユリウス暦、そこからはグレゴリオ暦であり、イギリスとその植民地が 11 日を落として改暦を採用したとおりである。
+
+@ 0 1 0 019f2eb2d79117000d554acb3ca7f031
++ entry .nonexistentLeapDays   平年における 2 月 29 日が何か。名前でインポートする given
+
+% 1 1 0 09c8a647ea40b74301a214ea9b1e3a6a
+
+@ 0 9 0 1556c61e0bd07cf609e28242642422b5
++       `Anniversary` を `Year` に適用する（`(Feb - 29)(Year(2023))`）には、平年に欠けている唯一の記念日のために `Anniversary.NonexistentLeapDay` がスコープに必要である。
++       デフォルトはない。これら三つのうちひとつを名前でインポートする。参照されるのは日付が存在しないときだけなので、うるう年はこの選択の影響を受けない。
++   entry .roundUpLeapDay   2 月 29 日は 3 月 1 日になる
++   entry .roundDownLeapDay   2 月 29 日は 28 日になる
++   entry .raiseErrorsLeapDay   平年では 2 月 29 日が `Moment.Error` を発生させる
++       インポートする場所で `Tactic[Moment.Error]` が必要である。given はそれをキャプチャし、それを通じて `Moment.Error(_.Invalid(year, 2, 29, gregorianCalendar))` を発生させる。
+
+@ 0 1 0 10cec447d0e30f9a1bb2d0b577925b8d
++ entry .monthEnds   日があふれるとき、日付に月や年を加えることが何を意味するか。名前でインポートする given
+
+% 1 1 0 1221b4f16c3ab2d61817ad8ee9dabfa5
+
+@ 0 5 0 0390d4726e5680a21f4e5983e646a397
++       `2024-Jan-31 + 1*Month` は 2 月 31 日を、`2024-Feb-29 + 1*Year` は 2025 年 2 月 29 日を求めるが、どちらも存在しない。
++       スコープにある `Disambiguation` が決める。意図的にデフォルトはないので、日付に対する月や年の算術は、これらのひとつを名前でインポートするまでコンパイルエラーになる。
++       日と週の算術はあふれることがないので、何も必要としない。
+
+% 2 1 0 126957b70c33b5bb01bdfaefbc583f43
+
+% 0 1 0 12b3d899cecbed930395dd8319dccd7c
+
+% 1 1 0 162402ce33cb46651b0e962e9e4aef7d
+
+% 2 1 0 15d9510b0869c8020ae9387a58af72aa
+
+% 3 1 0 0efce8979835bb3112a964677427f4f4
+
+% 0 1 0 0a4dc9de610d8cd40b1fc13ac478d77b
+
+% 0 1 0 1e9364252e5b95c319e0bb0b0081d32d
+
+% 0 1 0 11601beb499c5a501daecf5399a8971e
+
+% 0 1 0 01b0ccf23c5fd7bf0e49547c681f7877
+
+% 1 1 0 0d2da8b051ef1a3005caf31bab7c192e
+
+% 2 1 0 18ccfe64ab6568041193c6e3d5411ce1
+
+% 3 1 0 17cb702c6d375b84014b8c588d6b7f39
+
+% 0 1 0 064b581b97e47c971701ec1313b422f5
+
+% 0 1 0 05899a6291c0849e1e0ba0b140d98658
+
+% 0 1 0 1003837c355e29311b27cca1771a48e7
+
+% 1 1 0 0b2b5df5e3e80eac0087582b1163d491
+
+% 2 1 0 1310942988a38fe416a5e9146c990d24
+
+% 1 1 0 012bfda82b9d84e118c62812105d732c
+
+@ 0 5 0 00f926e21e0a1506195b8768d81f9726
++   entry .clampMonthEnd   月末を過ぎた日は、その月の最終日になる
++   entry .overflowMonthEnd   月末を過ぎた日は、超過分だけ翌月にはみ出す
++   entry .raiseMonthEnd   月末を過ぎた日は `Moment.Error` を発生させる
++       インポートする場所で `Tactic[Moment.Error]` が必要であり、given はそれを通じて `Moment.Error(_.Invalid(year, month, day, calendar))` を発生させる。
+
+@ 0 1 0 1c234da6b5eb5f0218a221e78111a900
++ entry .gapPolicies   春に時計を進める際の空白に入った壁時計の時刻が何を意味するか。名前でインポートする given
+
+% 1 1 0 024a31659c0c46eb1f851c1f8f753c2d
+
+@ 0 5 0 1e3c440018b21a6a1fbb8d2a904be062
++       時計が進められると、壁時計の 1 時間は決して起こらず、その中の `Moment`（`Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London")`）は何らかの形で時点に結び付けなければならない。
++       スコープにある `GapPolicy` が決める。コンパニオンのデフォルトである `GapPolicy.pushForward` は古いオフセットを保ち、`java.time` と同様に空白の直後に着地する。次の二つはそれを上書きする。
+
+% 1 1 0 03bc1d4a75d9cc1909376d4f08a69556
+
+@ 0 6 0 06aeacce260bbd101215fb2e1d8501bc
++   entry .pushBackwardGapPolicy   空白の中の時刻を、その直前に結び付ける
++       `backward` の候補を取る。遷移後のオフセットのもとでの時点であり、空白が開く直前に当たる。
++   entry .rejectGapPolicy   空白の中の時刻は `Moment.Error` を発生させる
++       インポートする場所で `Tactic[Moment.Error]` が必要であり、given はそれを通じて `Moment.Error(_.Gap)`（_the wall-clock time does not exist in its timezone_）を発生させる。
+
+@ 0 1 0 1e3776698a27b3a005b2637ef84b8820
++ entry .leapModes   `Moment` に対する 1 日未満の算術がうるう秒を数えるかどうか。名前でインポートする given
+
+% 1 1 0 07cf00bcc62ceee2181dc846eca95d53
+
+@ 0 5 0 13b4e474721cba6802716eea89770d99
++       デフォルトの `LeapMode.lenient` のもとでの `moment + 2*Hour` は、うるう秒のない POSIX の線上で壁時計の 2 時間を加えるので、間にあるうるう秒は見えない。
++       `exactLeapMode` をインポートすると、TAI の時刻系を通じて実際の SI 秒で 2 時間を加えるので、挿入されたうるう秒をまたぐと、結果は壁時計で 1 秒早いところに着地する。
++       二つは、歴史上のうるう秒の時点のひとつをまたぐ場合を除いて一致する。
+
+% 0 1 0 1e3da17669b9edbc1fc72dd510361ca9
+
+@ 0 1 0 16058a17134291191133d3d0910e7f45
++   entry .exactLeapMode   1 日未満の算術は TAI を通じて実際の SI 秒を数える
+
+% 1 1 0 01c75a2b16baf76808cdc7ba334a734c
+
+% 2 1 0 0358f35aca25794d09221da169e9b6f2
+
+% 3 1 0 17d06c2f61618ad70f3897227086e76b
+
+% 0 1 0 15a5fc2c0b42d7a108517646ca2bd1b0
+
+% 0 1 0 021c594b37a4b41b01f18fa2a8e9b89a
+
+% 0 1 0 13bbba35849540c008e4e151ecb26e36
+
+% 1 1 0 1401c804364dd8b7011401357701279c
+
+@ 0 1 0 18072fd6b82c531216b6dafee7a79235
++ entry .chronometries   裸の `Instant(…)` が数える時刻系。名前でインポートする given
+
+% 1 1 0 0bfa2d8c0bde43590c2e141743ca78ff
+
+@ 0 4 0 12c3ed1c0fa8d3600100aa6cf81d5d02
++       `Instant(millis)`、そして `Long` から時点を作るすべてのデコーダーは、スコープにある `Chronometry.Ambient` から時刻系を取り、これが結果の `Transport` を名指す。
++       デフォルトはない。プログラムはひとつをインポートする。あらゆる壁時計が読むのがそれなので、ほとんど常に `unixChronometry` である。`instant.over[Tai]` で後から変換する。
+
+% 1 1 0 1e2f6077fa79da461ef1d347fbfdca10
+
+@ 0 2 0 10888ed25ec360e30d0b346f93a5fed9
++   entry .unixChronometry   裸の時点は `Instant over Unix`：POSIX のミリ秒
++   entry .taiChronometry   裸の時点は `Instant over Tai`：原子時のミリ秒
+
+@ 0 1 0 06feb45d6b0d040415a79ee6a947959f
++ entry .hebdomads   週がどの曜日に始まり、どの曜日が週末かを決める、名前でインポートする given
+
+% 1 1 0 1eab31902199ac930be7606b9e098d35
+
+@ 0 3 0 102ac17a0ea89a450017462c417e220a
++       `Hebdomad` を参照するのは、`date.weekend`、`weekday.weekend`、`weekday.number`、`Weekday(ordinal)`、そして営業日の算術 `date + WorkingDays(n)` である。
++       既定のものはない。
++       これらの一つを名前でインポートするか、`Hebdomad` をローカルに定義する。
+
+% 1 1 0 1c4102d2bb2004591f359ec7836a853d
+
+@ 0 3 0 0c09505d10f8ba64146d80dad8d802f2
++   entry .europeanHebdomad   週は月曜日に始まり、土曜日と日曜日が週末である
++   entry .northAmericanHebdomad   週は日曜日に始まり、土曜日と日曜日が週末である
++   entry .jewishHebdomad   週は日曜日に始まり、金曜日と土曜日が週末である
+
+@ 0 1 0 109afbc0b9ef5c3010d1fe4a1be5f152
++ entry .instantDecodables   `Instant over Unix` をテキストから読む方法、名前でインポートする given
+
+% 1 1 0 1dbb16a198f9e581184a08f5a2692cc6
+
+@ 0 4 0 18914c5cd88d50f61f336b8b2e5fbc78
++       `t"…".as[Instant over Unix]` には時点の `Decodable` が必要であり、標準の形式が二つ用意されている。
++       どちらも `Tactic[Moment.Error]` を必要とし、形式に合わないテキストに対しては、形式、誤りの位置、そこで何が期待されていたかを述べる `Issue` とともに、それを発生させる。
+
+% 1 1 0 04e8c1b0582068c80647a15872142280
+
+% 1 1 0 118440ef762bf0720d5fae5ab6a00852
+
+@ 0 7 0 1e0d256ef6ded3c515e049e7933efaf9
++   entry .iso8601InstantDecodable   ISO 8601 の日時、日付、月、週日付を、`Z` またはオフセットとともに読む
++       `Iso8601.parse` である。
++       `1994-11-06T08:49:37Z`、`2023-05-28T14:30:59.123+02:00`、基本形式 `20230528T143059Z`、`2023-W21-7T14:30:59Z`、日付 `2020-12-31`、月 `2012-11`（UTC の真夜中）、時のみ、または時と分、最後のフィールドの小数部、そして次の秒に着地するうるう秒 `23:59:60` を読む。
++   entry .rfc1123InstantDecodable   RFC 1123 の日時 `Tue, 17 Jun 2024 14:30:45 GMT` を読む
++       `Rfc1123.parse` である。
++       HTTP ヘッダーが使う形式で、日は二桁、そして `GMT` が付く。
+
+@ 0 1 0 0fb66e87d081c11a0939438b55a0da21
++ entry .dateFormats   `Date` を一つの慣習全体としてどう表示するか、名前でインポートする given
+
+% 1 1 0 0ae6ae605c4068810d728df8806857fc
+
+@ 0 6 0 1b23c0aef75fc34f1d110ea7450760e6
++       `date.show` には `Date is Showable` が必要であり、ここにある given はどれもそれで、`Endianness`、`Date.Numerics`、`Date.Separation`、`Years` を一つの慣習にまとめている。
++       ここにない慣習には、代わりに `dateEndianness`、`dateNumerics`、`dateSeparators`、`yearFormats` のそれぞれから given を一つずつインポートすれば、`Timestamp.dateShowable` がそれらから形式を組み立てる。
++       年、月、日は、スコープ内の暦が何であれ、グレゴリオ暦で読まれる。
+
+% 2 1 0 092b3848f5be70100e1447075c3b78a9
+
+% 1 1 0 0e592c474ee3e93d165d17395395ab01
+
+% 2 1 0 166ca1644c4703220f8c246e4e71dc3e
+
+% 2 1 0 148de52e8adbd7a20eb3ace62c21a859
+
+% 3 1 0 16e7d3ee3c22e9cc12eab7403b57ef4f
+
+% 0 1 0 158cb7641088b6cc1cf2778e1cc027c5
+
+% 0 1 0 1b95faa1860be159143977d9daf8967f
+
+% 0 1 0 14e8a921c4048d95118c764b862b166d
+
+% 1 1 0 048dc40f6879d89415fae158ffa34c98
+
+% 2 1 0 0a7188fcaf2ca78f1e58d6655b570cc6
+
+% 3 1 0 1556e01ab8afafe10771841ca55f0621
+
+% 0 1 0 0f64e4b327538f66043c23e4395d6299
+
+% 0 1 0 09f2bf683ce074490b94532c0e1a6c4e
+
+% 0 1 0 012f862624441b4708bba5b99d9ae6bf
+
+% 1 1 0 17c611cdf37838730fb28c99fd09ca3c
+
+% 2 1 0 14b254a34c8bee4012b40b24fce3b60e
+
+% 3 1 0 1c49654584aa2798129d039808332a60
+
+% 0 1 0 0261766d746e2640062b8a237ba8f416
+
+% 0 1 0 1ada7a1dfcf8a22b02c84651e4b5c2b3
+
+% 0 1 0 0f4b37279e3a1dc803a9bb1c4d1fb718
+
+% 1 1 0 07236556d625511c09063dbab06659b8
+
+% 2 1 0 141007a82769d34d162f05becda77c9d
+
+% 3 1 0 1bb40bf46a9ba45203338045c5475551
+
+% 0 1 0 07c0e7a36ad1aeec191c25022a62728d
+
+% 0 1 0 143109eaaff8583d1f4e2460afb74a79
+
+% 0 1 0 18735bedf218559609bb53dd7b7d152d
+
+% 1 1 0 10860bcc538196491d205d54458a0291
+
+% 2 1 0 0347787e009cfdbb17f94018208d95ca
+
+% 3 1 0 07c78bb83974509f046dde6407874cb8
+
+% 0 1 0 1cece5a4a432d1af1cb0002acfd4d466
+
+% 0 1 0 1acad376465fae71037ca3abace34321
+
+% 0 1 0 0ccf6090b7b20f700bdd26d5e73a2fd1
+
+% 0 1 0 136a6ad27a3f930200cf3bf0306b11c1
+
+% 0 1 0 1e7aaf1fda6a9f9c1f94dd5e314a249d
+
+% 1 1 0 0890d9c6c89d202f0be9b888167df006
+
+% 2 1 0 02bf20c79fee03770c3e366823fcd5f0
+
+@ 0 5 0 1c0cbc52fe7e75a619d318dd3f6de702
++   entry .europeanDateFormat   日、月、年をそれぞれ二桁で、ドット区切り：`07.04.2025`
++   entry .americanDateFormat   月、日、年を、スラッシュ区切り：`04/07/2025`
++   entry .unitedKingdomDateFormat   日、月、年を、スラッシュ区切り：`07/04/2025`
++   entry .southEastAsiaDateFormat   日、月、年を、ハイフン区切り：`07-04-2025`
++   entry .iso8601DateFormat   年、月、日を、ハイフン区切り：`2025-04-07`
+
+@ 0 1 0 0d3f85ad8dd679c71d256505f3047b2a
++ entry .dateEndianness   表示する日付のフィールドの順序、名前でインポートする given
+
+% 1 1 0 12e6ab9452206f650c84aef6e14db759
+
+@ 0 6 0 01f5a378ab30c4491f4da311a9e73df0
++       `Endianness` であり、`Timestamp.dateShowable`、`Anniversary.showable`、`Timestamp.monthShowable` が描画を組み立てる四つの部品の一つである。
++       名前でインポートするか、`dateFormats` の given にまとめられたものを使う。
++   entry .bigEndian   年、月、日
++   entry .littleEndian   日、月、年
++   entry .middleEndian   月、日、年
+
+@ 0 1 0 029d3b69ff20103505d94ced93bb1472
++ entry .dateNumerics   表示する日付の月と日を二桁に埋めるかどうか、名前でインポートする given
+
+% 1 1 0 12373d32cef6cea90e72e78f7309a54a
+
+@ 0 4 0 1c097e3c23489fa303e8244cd8082a79
++       `Date.Numerics` であり、組み立てられる日付の描画の四つの部品の一つである。
++       名前でインポートするか、`dateFormats` の given にまとめられたものを使う。
++   entry .fixedWidthDateNumerics   月と日は二桁：`04`、`07`
++   entry .variableWidthDateNumerics   月と日は必要なだけの桁数：`4`、`7`
+
+@ 0 1 0 1b4ec8ce4d0f79430ce29da3c75ea784
++ entry .dateSeparators   表示する日付のフィールドの間の文字、名前でインポートする given
+
+% 1 1 0 05b463ebd471c94615620da178b2d889
+
+@ 0 3 0 08faa0187040612814654bd13cb94583
++       `Date.Separation` であり、組み立てられる日付の描画の四つの部品の一つで、`Anniversary` や `Monthstamp` のフィールドの間にも使われる。
++       名前でインポートするか、`dateFormats` の given にまとめられたものを使う。
+
+% 0 1 0 0093f54bfecc21da09472f7e1cc99902
+
+% 0 1 0 1faa7b40d519c4cc15ee8c3a7e973a6e
+
+% 0 1 0 154ac0489e5889dc1b4c6c5719ddacd6
+
+@ 0 1 0 03d493e86c5ffa6f061dc0bcf4dc05e4
++   entry .spaceDateSeparator   空白
+
+@ 0 1 0 14e0e441c9f6ca690d95b5d743f7a1d9
++ entry .yearFormats   表示する日付の年を四桁にするか二桁にするか、名前でインポートする given
+
+% 1 1 0 1166ec9f0e8885c51cbc2894802bc1e4
+
+@ 0 4 0 04616f686625591e1ea2c7b8962d9995
++       `Years` であり、組み立てられる日付の描画の四つの部品の一つで、`Timestamp.monthShowable` も使う。
++       名前でインポートするか、`dateFormats` の given にまとめられたものを使う。
++   entry .fullYears   年全体：`2025`
++   entry .twoDigitsYears   年を 100 で割った余りを、埋めて：`25`
+
+@ 0 1 0 02e3c7de9dc9031b02e6f38b98e9bd60
++ entry .weekdays   曜日の名前を、ある言語とある長さで、名前でインポートする given
+
+% 1 1 0 1ff4c095975301e71ca823c65e04fd20
+
+@ 0 11 0 13e94c6c4939b09a0587c681d8f11a0e
++       `Weekdays` はそれぞれの `Weekday` をその名前に対応づけるもので、`weekday.show` と、`Rrule` のローカライズされた記述が必要とする。
++       一つを名前でインポートする。
++       `weekdays.englishWeekdays.name(Mon)` は名前を直接読む。
++   entry .englishWeekdays   `Monday` から `Sunday` まで
++   entry .englishShortWeekdays   `Mon` から `Sun` まで
++   entry .oneLetterAmbiguousWeekdays   `M`、`T`、`W`、`T`、`F`、`S`、`S`：カレンダーの列見出し
++   entry .shortestUnambiguousWeekdays   `M`、`Tu`、`W`、`Th`、`F`、`Sa`、`Su`
++   entry .twoLetterWeekdays   `Mo` から `Su` まで
++   entry .frenchWeekdays   `lundi` から `dimanche` まで
++   entry .germanWeekdays   `Montag` から `Sonntag` まで
++   entry .spanishWeekdays   `lunes` から `domingo` まで
+
+@ 0 1 0 073f0832e56a35591f6088ee56ccef18
++ entry .monthFormats   月の名前を、ある言語とある長さで、名前でインポートする given
+
+% 1 1 0 185b5a84bf466b6703ad7325fbed72cc
+
+@ 0 11 0 1fc430bb6c30d4f5031ac2a0401b9006
++       `Months` はそれぞれの `Month` をその名前に対応づけるもので、`month.show`、`Anniversary.showable`、`Timestamp.monthShowable`、そして `Rrule` のローカライズされた記述が必要とする。
++       一つを名前でインポートする。
++       `monthFormats.englishMonths.name(Jan)` は名前を直接読む。
++   entry .englishMonths   `January` から `December` まで
++   entry .englishShortMonths   `Jan` から `Dec` まで
++   entry .numericMonths   月の番号、`1` から `12` まで
++   entry .twoDigitMonths   二桁に埋めた月の番号、`01` から `12` まで
++   entry .oneLetterAmbiguousMonths   `J`、`F`、`M`、`A`、`M`、`J`、`J`、`A`、`S`、`O`、`N`、`D`
++   entry .frenchMonths   `janvier` から `décembre` まで
++   entry .germanMonths   `Januar` から `Dezember` まで
++   entry .spanishMonths   `enero` から `diciembre` まで
+
+@ 0 1 0 1d24d9bc90f3fcee11e135d54956b9b4
++ entry .timeFormats   `Clockface` を一つの慣習全体としてどう表示するか、名前でインポートする given
+
+% 1 1 0 1820b2c7047b84191fb154f283a13fdb
+
+@ 0 5 0 0e518b8e46cdad57039ce0a8891e8100
++       `time.show` には `Clockface is Showable` が必要であり、ここにある given はどれもそれで、`Clockface.Format`（`hourFormats` から）、`Clockface.Numerics`、`Clockface.Separation`、`Clockface.Specificity` を、十二時間制の形式では `Meridiem is Showable` とともにまとめている。
++       ここにない慣習には、代わりにそれらのパッケージのそれぞれから given を一つずつインポートすれば、`Clockface.showable` が形式を組み立てる。
+
+% 2 1 0 1af6c1d1f0eebee1073a582ad2f339d7
+
+% 0 1 0 18784bd06aa6ec4218e312cc6d3ccd13
+
+% 1 1 0 195d45d322dc487c143cbb3fbb17da4a
+
+% 2 1 0 0abdfaae600ae01a00f25c62eaa78071
+
+% 3 1 0 0ab5431aa00df1ab056fe9e41192c3ef
+
+% 0 1 0 18c54bb9b9e461350c96130952a2a777
+
+% 0 1 0 0831d3c27bd6cda8174603106a928841
+
+% 0 1 0 02377232d299821e105ad09aceb139ff
+
+% 1 1 0 05b738163047e8fa1dd5f294e5eb039a
+
+% 2 1 0 0d57af20aff8dc451943aa33f58a6756
+
+% 3 1 0 0b8a5f896d01ee5c1913fe13991d4cef
+
+% 0 1 0 0f30feabd6fd84790e60a6e302b3b6b6
+
+% 0 1 0 19300bc1ed8fa88119ee7a5f7e1d51be
+
+% 0 1 0 138b4b03a119da6f0de5ec1f17bd1f50
+
+% 1 1 0 028014f6ac5db38b0b7721eb36b8f717
+
+% 2 1 0 080479f7f8ecb63a011cdc989aa2ff23
+
+% 3 1 0 06295beea55414d203f0906c98c2c9f9
+
+% 0 1 0 000ed54342a3c89f0a61c2bf0f8dac23
+
+% 0 1 0 08aaebd212572d8e0476f79bf0e645ae
+
+% 1 1 0 0636282c9e7f81621f29f867cc6eb045
+
+% 2 1 0 1b95213aba4624050c38d05cd1ef91bd
+
+% 2 1 0 07aa5e35fa41362a19e7d203ed3d92b0
+
+% 3 1 0 16f628fbad5db7f2107d49cfac18676a
+
+% 0 1 0 1f813dc19c33c8ad07a290354e76fb20
+
+% 0 1 0 049bb6647374e5510544ad9fef14e3a7
+
+% 1 1 0 0c9f1c342d4e1db41ddd28573764ddcb
+
+% 2 1 0 0544a38eb6e45cb6116e1d205e44d787
+
+@ 0 7 0 1e24ad5135717a3904ff58fa942c9ba7
++   entry .militaryTimeFormat   `1430`：二十四時間制、二桁、区切りなし
++   entry .civilianTimeFormat   `02:30 PM`：十二時間制、二桁、コロン、大文字の午前・午後表記
++   entry .associatedPressTimeFormat   `2:30 p.m.`：十二時間制、埋めなし、コロン、句読点付きの午前・午後表記
++   entry .frenchTimeFormat   `14h30`：二十四時間制で、間に `h`
++   entry .iso8601TimeFormat   `14:30:59`：二十四時間制、コロン、秒あり
++   entry .ledgerTimeFormat   `14.30`：二十四時間制で、間にドット
++   entry .railwayTimeFormat   `14:30`：二十四時間制で、間にコロン
+
+@ 0 1 0 01e1805b2a4db3900b18a4fd9c328264
++ entry .hourFormats   表示する時刻を十二時間制にするか二十四時間制にするか、そして秒を出すか、名前でインポートする given
+
+% 1 1 0 1e7c7789e249eb0f0e4b9f4f81db2eed
+
+@ 0 10 0 18630e4add2a3f9a04151821a82eae03
++       `Clockface.Format` であり、時を十二時間制で数えるか、秒を表示するか、時刻の後に何が続くか（十二時間制では午前・午後表記で、スコープ内に `timeMeridiems` からの `Meridiem is Showable` が必要になる）を決める。
++       組み立てられる時刻の描画の四つの部品の一つであり、名前でインポートするか、`timeFormats` の given にまとめられたものを使う。
++   entry .twelveHourClock   1 から 12 の時、空白、午前・午後表記、秒なし
++   entry .twelveHourSecondsClock   1 から 12 の時と午前・午後表記。秒を表示すると宣言されている
++       ただし、宣言されたとおりでは、これも秒を表示しないことに注意する。
++       その `seconds` は `twelveHourClock` と同じく `false` である。
++   entry .twentyFourHourClock   0 から 23 の時、午前・午後表記なし、秒なし
++   entry .twentyFourHourSecondsClock   0 から 23 の時、午前・午後表記なし、秒あり
+
+@ 0 1 0 1ab2943555e6a6df11c640194fd4a1d2
++ entry .timeMeridiems   `AM` と `PM` の書き方、名前でインポートする given
+
+% 1 1 0 1f17cf6b962c56b31d1acb3c1ed90e68
+
+@ 0 6 0 144b52e7ec4c371a1775add84fa660a3
++       `Meridiem is Showable` であり、十二時間制の `hourFormats` が必要とする。
++       コンパニオンにある `Meridiem.showable` は `AM`/`PM` で、インポートは要らない。
++       ここにあるのはその代わりのものである。
++   entry .upperMeridiem   `AM`、`PM`
++   entry .lowerMeridiem   `am`、`pm`
++   entry .upperPunctuatedMeridiem   `A.M.`、`P.M.`
++   entry .lowerPunctuatedMeridiem   `a.m.`、`p.m.`
+
+@ 0 1 0 09abf494e533b97304e03285f189aef8
++ entry .timeSpecificities   表示する時刻を分までにするか秒までにするか、名前でインポートする given
+
+% 1 1 0 07d0dc4f4b882353064e0054ca62ca02
+
+@ 0 4 0 1096acac0a1e721d05590d3bdf4652ea
++       `Clockface.Specificity` であり、`Clockface.showable` が四つの部品の一つとして要求する。
++       秒が実際に書かれるかどうかは、`Clockface.Format` の `seconds` が決める。
++   entry .minutesSpecificity   分まで
++   entry .secondsSpecificity   秒まで
+
+@ 0 1 0 0b2bbc1d3b267995021e881a62c2c7b4
++ entry .timeNumerics   表示する時刻の時を二桁に埋めるかどうか、名前でインポートする given
+
+% 1 1 0 05ecb219bea5096511815fc643ac8a46
+
+@ 0 4 0 0a951d78fb0c69210d415872c548c09f
++       `Clockface.Numerics` であり、組み立てられる時刻の描画の四つの部品の一つである。
++       分と秒は常に二桁で、変わるのは時だけである。
++   entry .fixedWidthTimeNumerics   時は二桁：`02:30`
++   entry .variableWidthTimeNumerics   時は必要なだけの桁数：`2:30`
+
+@ 0 1 0 0683209cf88aae210db23934909719ac
++ entry .timeSeparators   表示する時刻の時と分の間の文字、名前でインポートする given
+
+% 1 1 0 12f9aa5b0f5770cc161eaade422b597b
+
+@ 0 2 0 0e98e872550329600742764333b3292e
++       `Clockface.Separation` であり、時と分の間に、そして上書きされない限り分と秒の間にも使われる。
++       組み立てられる時刻の描画の四つの部品の一つである。
+
+% 0 1 0 0ad47f1b045df15e013a4901c8f8dd98
+
+% 0 1 0 0c540d256de61918057204fa0b0e92ff
+
+@ 0 2 0 1c5848d712f1585814ac7f25e5f5a8b5
++   entry .noneTimeSeparator   なし：`1430`
++   entry .frenchTimeSeparator   `h`：`14h30`
+
+@ 0 1 0 07a47fa87d47ba33147628ca19959246
++ entry .durationDecodables   `Duration` をテキストから読む方法、名前でインポートする given
+
+% 1 1 0 1237da1c40852dfb0e2c365f81c347e1
+
+@ 0 7 0 1084612a2bc37d410dd843a94a5ad831
++       `t"…".as[Duration]` には `Decodable` が必要であり、用意されているものはコマンドラインが使う簡潔な形式を読む。
++   entry .compactDurationDecodable   `30m`、`1.5h`、`250ms`、`2d`、または単位のない秒数を読む
++       十進数の数に `ms`、`s`、`m`、`h`、`d` のいずれかが続くもの、または単位がなければ秒数を読み、前後の空白は無視する。
++       `t"1.5h".as[Duration].value` は `5400.0` で、`t"90".as[Duration]` は九十秒である。
++       負の数、単語、空のテキストは、この given が必要とする `Tactic[Duration.Error]` を通じて `Duration.Error` を発生させる。
+
+@ 0 1 0 0b6fe8d826ad5b1d129ba455c80358d3
++ entry .durationFormats   `Duration` をどう表示するか、名前でインポートする given
+
+% 1 1 0 18c2013e51f1b94303a6d62b23303337
+
+@ 0 6 0 1f6792511f26d977075bc201deee0143
++       `duration.show` には `Duration is Showable` が必要である。
++       それがなければ、`Duration` は `Quantity` なので、quantitative が描画するとおりに表示される（`1.5 s`）。
++   entry .compactDurationFormat   `5s`、`2m 5s`、`1h 0m 5s`、`2d 1h 0m 5s`、または一秒未満なら `420ms`
++       存在する最も粗い単位を先頭に、その後に秒までのすべての単位を続けるので、継続時間の列が揃う。
++       一秒未満では、ミリ秒だけを出す。
++       負の継続時間には先頭に `-` が付く。
+
+% 2 1 0 13964b9a4e58bb901d917a4bce2ddb98
+
+% 3 1 0 093303b36180c37f06307e064ac3feaa
+
+% 0 1 0 1391d3531924eeab12b083079dcf8e84
+
+% 0 1 0 119582efd66f933118401d219ecffa50
+
+% 0 1 0 1fb16f7e9eb222390dc811518790eef4
+
+% 1 1 0 1cd97c4641c603740ac8ca7ac0a6d9b2
+
+@ 0 1 0 0e01139c8b62664d033bd8d7459b6c1a
++ entry .timespanFormats   `Timespan` を現在からの相対で、ある言語でどう表示するか、名前でインポートする given
+
+% 1 1 0 1b80c260cb3dd9931eb849bcd085e981
+
+@ 0 5 0 1ac9785c0fd1d94817a451f0f545ed16
++       これらがなければ、`span.show` は ISO 8601 の継続時間（`PT18M`）である。
++       これらの一つがあれば、`in 18 minutes`、`8 minutes ago`、`12 hours and 38 minutes ago`、`just now` のような相対的な句になり、ゼロでない成分だけを最も粗いものから並べ、符号によって未来か過去の形をとる。
++       どの given も、その言語の `Locale` がスコープ内にあることを必要とする（`given Locale[en] = Locale(en)`）ので、いくつかを一度にインポートして、ロケールでその中から選ばせることができる。
+
+% 2 1 0 0c7eea6324bc61141b136606ca8575f7
+
+% 3 1 0 1bdb79addd39344408f76d219bf4ee5f
+
+% 0 1 0 0283863502ed02940996678bd01382a4
+
+% 2 1 0 19d851110d2884dd11488a9dae557cd7
+
+% 0 1 0 0fd50ba8bcea981d13acf1c1f731e350
+
+% 0 1 0 1356deebbef3c6fb13c2e14bb10b4bc1
+
+% 0 1 0 1d37a09f9ed6fb0f164a85490e37d331
+
+% 1 1 0 015761b082c35df90230596268cd991f
+
+% 0 1 0 07c6472c01f20bdf175d7c74cdf53b72
+
+@ 0 4 0 0a23c6212a26109e00fcfcccaa921d4f
++   entry .englishRelativeTimespan   `in 18 minutes`、`8 minutes ago`、`just now`。`Locale[en]` が必要
++   entry .frenchRelativeTimespan   `dans 18 minutes`、`il y a 8 minutes`。`Locale[fr]` が必要
++   entry .germanRelativeTimespan   `in 18 Minuten`、`vor 8 Minuten`。`Locale[de]` が必要
++   entry .spanishRelativeTimespan   `en 18 minutos`、`hace 8 minutos`。`Locale[es]` が必要
+
+@ 0 1 0 061c85bf8292309f0f252cf086add1ce
++ entry .Calendar   ユリウス通日を年、月、日としてどう読むか
+
+% 1 1 0 1c725537a617c8fb1961b8a854fb2c67
+
+@ 0 7 0 19404a8cc4611b1b037abce2b0d69c95
++       `Calendar` は日付にラベルを付ける。
++       どの `Date` もユリウス通日であり、どの暦でも同じである。暦は、その数と、年（`#Annual`、常に `Year`）、月（`#Mensual`、その暦独自の月の型）、月の日（`#Diurnal`、常に `Day`）との間の算術を与える。
++       `#annual`、`#mensual`、`#diurnal` は日付の部分を読み、`#computeJdn` は信頼できる部分から日付を作り、`#jdn` は部分を検査して日付を作り、その月にない日に対しては `Moment.Error` を発生させる。
++       `Date` の拡張 `year`、`month`、`day` は、スコープ内の `Calendar` を受け取ってそれに委ねる。
+
+% 2 1 0 1cdf95bbe670c3930cc2e70f1c164675
+
+% 3 1 0 12618be23b904825029f0a94512845b2
+
+% 4 1 0 034b5220f2391d4b164de599b620264e
+
+% 5 1 0 16ad122711ac2d7e1076b974b165efaf
+
+% 0 1 0 08b496939ef9abf008c29c73e590c307
+
+% 0 1 0 1655322f7fddf15c105537f83cb80a6c
+
+% 0 1 0 18bb97052cc06779016b9044e805bd2a
+
+% 0 1 0 0c63be084bee67761ee0ced0d307aff3
+
+% 0 1 0 118f578af573451d0e395665a5686d48
+
+% 0 1 0 123fddda2cf023cb11ea55d8517901fe
+
+% 1 1 0 115c075070a314171a797ec167d2e8fc
+
+@ 0 9 0 0d71a9649e1d74be082501c5127408d7
++       型メンバー `#MonthUnit` はその暦の `MonthRadix` であり、`Timespan of IslamicMonth.type` を `IslamicCalendar` に結びつけるので、月の算術は正しい暦へと振り分けられ、ある暦の月の期間を別の暦のもとで加えることはできない。
++       標準の暦は `calendars` パッケージにある given で、名前でインポートする。
++       独自の暦は `Calendar`（あるいは、月が enum なら `Enumerated`、よくある二つの構造には `AlexandrianCalendar` か `RomanCalendar`）を継承し、月の型の `Showable` を与える。
++       月は `#monthOrdinal` と `#monthOfOrdinal` によってゼロから年ごとに番号付けされる。太陰太陽暦では、うるう年に番号がずれるからである。
+
+% 0 1 0 06fc49d6b71a73fc15739ecd28b4a19a
+
+% 1 1 0 121c69e4170db744098bb4abea279cfb
+
+% 0 1 0 0a0ae32e5bf81cc60da3af8cb5969f23
+
+% 0 1 0 0c74da31bcd4876a128b17b55c50da9e
+
+@ 0 32 0 19220813418dedfd17a3c8baa68aca78
++   entry #Annual   暦の年の型：`Year`
++   entry #Diurnal   暦の月の日の型：`Day`
++   entry #Mensual   暦の月の型。`Showable` でなければならない
++       ローマ系の暦では `Month`、ほかの暦では `IslamicMonth`、`CopticMonth`、`HebrewMonth` などである。
++       enum の月は、spectacular の列挙型のインスタンスを通じて `Showable` になり、ケース名を描画する。ただし、`HebrewMonth` や `IslamicMonth` のように、コンパニオンがそれを細分化している場合は別である。
++   entry #MonthUnit   暦の `MonthRadix`、その月の期間の基数
++   entry #name   `Moment.Error` が報告するときの暦の名前：`Gregorian`、`Islamic`
++   entry #monthsInYear   一年に何か月あるか：十二、アレクサンドリア型の暦やヘブライ暦のうるう年では十三
++   entry #daysInYear   一年に何日あるか
++   entry #daysInMonth   ある年のある月に何日あるか
++   entry #monthOrdinal   一年の中での月の位置、ゼロから
++       ヘブライ暦では年に依存し、`Nisan` はうるう年には七番目、平年には六番目の月である。
++       ほかのすべての暦では一定である。
++   entry #monthOfOrdinal   一年の中のある位置の月、ゼロから：`#monthOrdinal` の逆
++   entry #annual   日付が属する年
++   entry #mensual   日付が属する月
++   entry #diurnal   日付が当たる月の日
++   entry #zerothDayOfYear   年の最初の日の前日。`date.jdn - zerothDayOfYear(year).jdn` がその年の何日目かになる
++   entry #computeJdn   有効であると分かっている年、月、日の日付
++       範囲の検査はせず、暦の算術だけで求める。
++       `computeJdn(Year(2024), Feb, Day(31))` は 3 月 2 日である。
++       検査を行う形は `#jdn` である。
++   entry #validDate   年、月、日が実在する日付を指すかどうか
++       既定では日を `#daysInMonth` と照らして検査する。
++       `Regime` はこれを上書きし、切り替えのギャップにある日付を拒む。
++   entry #jdn   検査した年、月、日の日付。そうでなければ `Moment.Error` を発生させる
++       インラインなので、必要な `Tactic[Moment.Error]` は呼び出し箇所で解決される。
++       `Moment.Error(_.Invalid(year, month, day, calendar))`（エラー `↯/s.73.3`、_`2024-2-30` does not exist in the calendar Gregorian_）を発生させ、`#computeJdn` の日付を返す。
++   entry #monthName   月の表示名：その `Showable` による描画
++   entry #format   この暦での `day month-name year` 形式の日付：`15 Ramadan 1445`
+
+@ 0 1 0 0fb667802d0aa07306639faea0cc3a23
++ entry .Enumerated   月が一つの enum のケースであり、どの年でも同じ番号が付く暦
+
+% 1 1 0 0bc60798bc932ce8112f0735c95d4f78
+
+@ 0 7 0 1206aba4e0f3d737066ec82ca1c64cd6
++       `Enumerated[month](fromOrdinal)` は `Mensual` をその enum 型に固定し、`monthOrdinal` をケースの序数として、`monthOfOrdinal` を enum の `fromOrdinal` によって定義し、`Calendar` の残りをサブクラスに任せる。
++       `RomanCalendar`、`IslamicCalendar`、`IndianCalendar`、`PersianCalendar`、そしてアレクサンドリア型の暦はこれを継承する。
++       `HebrewCalendar` は継承しない。うるう年に番号がずれるからである。
++   entry #monthOrdinal   年にかかわらず、enum のケースの序数
++   entry #monthOfOrdinal   年にかかわらず、ある序数の enum のケース
+
+@ 0 1 0 197b9b450c51574a1a1f4957724ba87a
++ entry .AlexandrianCalendar   コプト暦、エチオピア暦、フランス革命暦に共通の形
+
+% 1 1 0 141f8e1f61ac52a204d9b5d9fd4038fb
+
+@ 0 5 0 1db565691d8bb1de0722c7b3c1557b46
++       三十日の月が十二、五日（うるう年には六日）の短い十三番目の月があり、四年ごとにうるう年がある。うるう年は、番号を 4 で割った余りが 3 の年である。
++       この形の暦が与えるのは、最初の日のユリウス通日である `#epoch` と、名前と月の型だけである。
++       `CopticCalendar`、`EthiopianCalendar`、`FrenchRepublicanCalendar` の三つがあり、違うのは紀元と月の名前だけである。
+
+% 0 1 0 107dc7d744cd1fb702f7fc160f58bdc8
+
+% 0 1 0 1986d9410b0867a9149890c214139061
+
+% 0 1 0 13db2f17358217ca00a4078b89f8720a
+
+@ 0 10 0 050c1cf55b0246a91cb03a4a2ca76cff
++   entry #epoch   暦の 1 年 1 月 1 日のユリウス通日
++   entry #monthsInYear   十三
++   entry #leapYear   ある年がうるう年かどうか：番号を 4 で割った余りが 3 の年
++   entry #daysInYear   うるう年なら 366、そうでなければ 365
++   entry #daysInMonth   最初の十二か月は三十、十三番目の月は五か六
++   entry #zerothDayOfYear   年の最初の日の前日。紀元から求める
++   entry #annual   日付が属する年。紀元から求める
++   entry #mensual   日付が属する月：三十日の区切り、または 360 日目より後なら十三番目の月
++   entry #diurnal   日付が当たる月の日
++   entry #computeJdn   年、月、日の日付。三十日の算術で求める
+
+@ 0 1 0 1c944490a1dc57350967d7dd8142e66e
++ entry .CopticCalendar   コプト暦。殉教紀元 1 年 Thout 月 1 日、ユリウス通日 1825030 から
+
+% 1 1 0 018e163799ffd1ee0451b03f7929186d
+
+@ 0 2 0 1faae63ce38a955f118bbc093ac84d56
++       `CopticMonth` の上の `AlexandrianCalendar` で、名前は `Coptic`、紀元はユリウス暦の西暦 284 年 8 月 29 日である。
++       given は `calendars.copticCalendar` である。
+
+% 2 1 0 136edce89bff618c15fd8829258d8ec9
+
+% 3 1 0 11532d8b4e1ba8f40288453b6b24802a
+
+% 0 1 0 1bbcfe7c1257af3f1cd74f6467bb195a
+
+% 0 1 0 147cd9b4d25f5b9d084d1bad16e019bf
+
+% 0 1 0 0881490378aad44c1c89363557210ae7
+
+% 0 1 0 0b7204e92f1db5280d10bf518a065a5e
+
+% 1 1 0 1e843ee97987780b15d551a0910bc64c
+
+% 0 1 0 1d65d50402bc882d00c780841f647a28
+
+% 0 1 0 022931ef8412a7e214aa2e4425079037
+
+% 0 1 0 0c76f1a466094c2b1e79246cbfe5669b
+
+@ 0 1 0 1066f6f98c0fa9d41dfa6e2883570343
++ entry .CopticMonth   コプト暦の十三の月と、その期間の基数
+
+% 1 1 0 048263b6814b34bc0a92e9d789b3ca8e
+
+@ 0 6 0 0c07b548455ccb800af72b24791d62e1
++       `Thout`、`Paopi`、`Hathor`、`Koiak`、`Tobi`、`Meshir`、`Paremhat`、`Parmouti`、`Pashons`、`Paoni`、`Epip`、`Mesori`、そして短い `Nasie` である。
++       コンパニオンは `MonthRadix` なので、`3*CopticMonth` は `Timespan of CopticMonth.type` であり、これは `CopticCalendar` のもとでだけ（スコープ内に `monthEnds` からの `Disambiguation` があるときに）日付に加えられる。
++       月はケース名で表示される。
++   entry .multiplicable   `Timespan of CopticMonth.type` としての `n*CopticMonth`
+
+@ 0 1 0 09d367298df9a073026c75c8ebbeb6ca
++ entry .EthiopianCalendar   エチオピア暦。1 年 Mäskäräm 月 1 日、ユリウス通日 1724221 から
+
+% 1 1 0 01fe95ffc8143c37100a90068e80ae17
+
+@ 0 3 0 0a4464ff4902beea1c6fb6cf145af970
++       `EthiopianMonth` の上の `AlexandrianCalendar` で、名前は `Ethiopian`、紀元はユリウス暦の西暦 8 年 8 月 29 日である。
++       コプト暦と同じ構造で、年数はコプト暦の数え方より七、八年遅れる。
++       given は `calendars.ethiopianCalendar` である。
+
+% 0 1 0 1b13a8a009da0ef604a1360618850935
+
+% 0 1 0 05484286b86fc493067c97ad1af089d5
+
+% 0 1 0 0340d7cbebbd0a2405c212f304f00ed2
+
+@ 0 1 0 0194c1f869969f7c1ce4c97f5c9bd556
++ entry .EthiopianMonth   エチオピア暦の十三の月と、その期間の基数
+
+% 1 1 0 160b23ed134dc4ea066e5c1f1be1d94f
+
+@ 0 5 0 0fd516325bef2a691bdf9b29b6dc4e42
++       `Meskerem`、`Tekemt`、`Hedar`、`Tahsas`、`Ter`、`Yekatit`、`Megabit`、`Miyazya`、`Genbot`、`Sene`、`Hamle`、`Nehase`、そして短い `Pagume` である。
++       コンパニオンは `MonthRadix` なので、`n*EthiopianMonth` はエチオピア暦の月の期間であり、`EthiopianCalendar` のもとでだけ日付に加えられる。
++   entry .multiply   `Timespan of EthiopianMonth.type` としての `n*EthiopianMonth`
+
+@ 0 1 0 044620294e18d0e71320f4e38a78a6fb
++ entry .FrenchRepublicanCalendar   フランス革命暦。共和暦 I 年 Vendémiaire 月 1 日、ユリウス通日 2375840 から
+
+% 1 1 0 0b59b8c25c1b3ba812bbb3779fef5c27
+
+@ 0 4 0 0d1095c0d9abd3f3129552f7f25df59c
++       `FrenchRepublicanMonth` の上の `AlexandrianCalendar` で、名前は `French Republican`、紀元は 1792 年 9 月 22 日である。
++       うるう年の規則は算術的なもの（番号を 4 で割った余りが 3 の年）で、この暦が使われた 1793 年から 1805 年までに実際に置かれた閏年 III、VII、XI と一致する。
++       given は `calendars.frenchRepublicanCalendar` である。
+
+% 0 1 0 16032b387bc1e04d1d970cffcbb79cfa
+
+% 0 1 0 19fe90686e7c2b4101204d796c19024b
+
+% 0 1 0 16d69e62ab6b6d34185afdd9b9eec9d9
+
+@ 0 1 0 0c6717d33009d6e80785fa055b417e54
++ entry .FrenchRepublicanMonth   フランス革命暦の十二の月と補充日
+
+% 1 1 0 139fe05138be17af084f78d2566da1ce
+
+@ 0 5 0 15db866edbbca8b308c83ba25fce600b
++       `Vendemiaire`、`Brumaire`、`Frimaire`、`Nivose`、`Pluviose`、`Ventose`、`Germinal`、`Floreal`、`Prairial`、`Messidor`、`Thermidor`、`Fructidor` はそれぞれ三十日であり、年を満たす五日か六日の補充日である `Sansculottides` が十三番目の月になる。
++       コンパニオンは `MonthRadix` である。
++   entry .multiply   `Timespan of FrenchRepublicanMonth.type` としての `n*FrenchRepublicanMonth`
+
+@ 0 1 0 06cc8b95b99bf1190d1dbb221e0a34b4
++ entry .IslamicCalendar   表形式のイスラム暦（ヒジュラ暦）。ヒジュラ紀元 1 年 Muharram 月 1 日、ユリウス通日 1948440 から
+
+% 1 1 0 0938465482e43ffe164683e46ae4c8bc
+
+@ 0 6 0 19d601bca777781108e885a05b247a2b
++       `IslamicMonth` の上の `Enumerated` な暦で、名前は `Islamic` である。
++       三十日と二十九日が交互に続く十二の月からなり、三十年周期ごとの十一のうるう年には最後の月に三十日目が加わる（「クウェート」規則：`(11*year + 14) % 30 < 11` となる年）。
++       常用の紀元はユリウス暦の西暦 622 年 7 月 16 日である。
++       これは算術的な暦であり、月の観測に依存する実際の暦とは一日ずれることがある。
++       given は `calendars.islamicCalendar` である。
+
+% 2 1 0 1c991021b88e317917277b227f81dfe0
+
+% 3 1 0 1a66b63d1f2be0e80611efa271206645
+
+% 4 1 0 1173515ca50d98e315a199fdd573bfb0
+
+% 5 1 0 0a21b7d38016e060049bd376df65081a
+
+% 0 1 0 1cfb27490f8446780f2932d7f2348e91
+
+% 1 1 0 0d7051fddb0d075a14c22b6d70becc1b
+
+% 0 1 0 103437dca777de1e1fdd54619c69d2b0
+
+% 0 1 0 17cbc6cbb899f816176a0c67bfe5cd2b
+
+@ 0 9 0 14585baa6c61e4fb186ff2b357dde252
++   entry #monthsInYear   十二
++   entry #leapYear   ある年が 355 日あるかどうか：三十年のうち十一
++   entry #daysInYear   うるう年なら 355、そうでなければ 354
++   entry #daysInMonth   奇数番目の月は三十、偶数番目は二十九、うるう年の十二番目は三十
++   entry #zerothDayOfYear   年の最初の日の前日
++   entry #annual   日付が属する年
++   entry #mensual   日付が属する月
++   entry #diurnal   日付が当たる月の日
++   entry #computeJdn   年、月、日の日付。表形式の算術で求める
+
+@ 0 1 0 1595842e557a5d541bd2dece90ec13d8
++ entry .IslamicMonth   イスラム暦の十二の月と、その期間の基数
+
+% 1 1 0 12fe9001e02e5e091ef71c083136a6a1
+
+@ 0 7 0 1f6fd723f11dd4d603e1f86dc2c2d50f
++       `Muharram`、`Safar`、`RabiAlAwwal`、`RabiAlThani`、`JumadaAlAwwal`、`JumadaAlThani`、`Rajab`、`Shaban`、`Ramadan`、`Shawwal`、`DhuAlQadah`、`DhuAlHijjah` である。
++       コンパニオンは `MonthRadix` であり（`n*IslamicMonth` は `IslamicCalendar` のもとでだけ日付に加えられる）、慣例どおりの空白と数字で名前を描画する `Showable` を与える：`Rabi I`、`Jumada II`、`Dhu al-Hijjah`。
++   entry .showable   月の慣例どおりの名前：`Rabi I`、`Dhu al-Qadah`
++   entry .multiply   `Timespan of IslamicMonth.type` としての `n*IslamicMonth`
+
+@ 0 1 0 061d5a93feb42e2801f63c9f29189156
++ entry .IndianCalendar   インド国定暦（サカ暦）。グレゴリオ暦の年に結びついている
+
+% 1 1 0 178137604cf23a5e184e20ae82318c71
+
+@ 0 5 0 106dff14c495e69d1a24b10ff838bfc4
++       `IndianMonth` の上の `Enumerated` な暦で、名前は `Indian National` である。
++       サカ暦の年はグレゴリオ暦の年から 78 を引いたもので、Chaitra 月 1 日に始まる。これは 3 月 22 日、グレゴリオ暦の年がうるう年なら 3 月 21 日である。
++       Chaitra 月は三十日（うるう年には三十一日）、続く五か月は三十一日、最後の六か月は三十日である。
++       インドは 1957 年にこれを採用し、そのとき 1879 年 Chaitra 月 1 日は 3 月 22 日に当たった。
++       given は `calendars.indianCalendar` である。
+
+% 0 1 0 0f97d569e14c71c80f3fd46e67b13537
+
+% 0 1 0 14d997a3dca942e114a86f2112612c5c
+
+@ 0 9 0 04368e9130ea983312de1fc09face593
++   entry #monthsInYear   十二
++   entry #leapYear   サカ暦の年が始まるグレゴリオ暦の年がうるう年かどうか
++   entry #daysInYear   うるう年なら 366、そうでなければ 365
++   entry #daysInMonth   Chaitra は三十か三十一、続く五か月は三十一、残りは三十
++   entry #zerothDayOfYear   Chaitra 月 1 日の前日
++   entry #annual   日付が属するサカ暦の年
++   entry #mensual   日付が属する月
++   entry #diurnal   日付が当たる月の日
++   entry #computeJdn   年、月、日の日付。その年の Chaitra 月 1 日から求める
+
+@ 0 1 0 19b8650dc0c444c60eb619be45b021e3
++ entry .IndianMonth   インド国定暦の十二の月と、その期間の基数
+
+% 1 1 0 054bbc5ad38bd3600bdb3a7a482202c0
+
+@ 0 3 0 02ed48fe263b81e908d73d41094c22a3
++       `Chaitra`、`Vaishakha`、`Jyeshtha`、`Ashadha`、`Shravana`、`Bhadra`、`Ashwin`、`Kartika`、`Agrahayana`、`Pausha`、`Magha`、`Phalguna` である。
++       コンパニオンは `MonthRadix` である。
++   entry .multiply   `Timespan of IndianMonth.type` としての `n*IndianMonth`
+
+@ 0 1 0 0f94cada4a7c35250b471f7551a88f05
++ entry .HebrewCalendar   ヘブライ暦：太陰太陽暦で、十九年のうち七年に十三番目の月がある
+
+% 1 1 0 0904ed2f81e2156b01fe63fba4c06554
+
+@ 0 8 0 1620d30fe34a89e614bf5a6dcd1b7d68
++       `HebrewMonth` の上の `Calendar` で、名前は `Hebrew`、ユリウス通日 347998 の創世紀元 1 年 Tishrei 月 1 日から始まる。
++       年はロシュ・ハシャナに始まる。これは平均朔（*molad*）によって定まり、四つの延期規則で調整されるので、一年は 353、354、355 日（うるう年には 383、384、385 日）となり、その差は Cheshvan と Kislev が吸収する。
++       Adar I を Adar II の前に挿入するうるう年は、十九年のメトン周期に従う。
++       これは `Enumerated` ではない。一年の中での月の位置はその年がうるう年かどうかに依存するので、`#monthOrdinal` と `#monthOfOrdinal` は年を本当に考慮する。
++       given は `calendars.hebrewCalendar` である。
+
+% 2 1 0 0827efffad798fb909d5a9641b5e9f9f
+
+% 3 1 0 1ff7638bdf38a83d1bb5b99283010e97
+
+% 4 1 0 0cd5495f42c870cc11233cb65fae0285
+
+% 0 1 0 17290ddb535e477808592fa0047a907a
+
+% 0 1 0 00953bee09981a221f5668269e179b53
+
+% 0 1 0 00e91d031ef01a760e31273ad24a84b4
+
+% 0 1 0 08a0044a3bad58a509f1e58f811b43a9
+
+% 1 1 0 13f01e142d25cbe71008f3c55e8940bb
+
+% 0 1 0 05437194a05afa4e01a587edc0fa7974
+
+% 0 1 0 197091649c9ce19f03766f7d79a9adad
+
+% 0 1 0 1c6cbd780e114b9b009c32f5d20c89c4
+
+@ 0 11 0 11b6a898dc92a32c1e0da0b408f4170b
++   entry #leapYear   ある年に十三の月があるかどうか：十九年のうち七
++   entry #monthsInYear   うるう年なら十三、そうでなければ十二
++   entry #monthOrdinal   一年の中での月の位置。平年では `Nisan` 以降が一つ小さくなる
++   entry #monthOfOrdinal   ある位置の月。平年では `AdarSheni` を飛ばす
++   entry #daysInYear   あるロシュ・ハシャナから次のロシュ・ハシャナまでの日数：353 から 385
++   entry #daysInMonth   三十か二十九。`Cheshvan` と `Kislev` は年の長さによって、`Adar` はうるう年によって変わる
++   entry #zerothDayOfYear   ロシュ・ハシャナの前日
++   entry #annual   日付が属する年
++   entry #mensual   日付が属する月
++   entry #diurnal   日付が当たる月の日
++   entry #computeJdn   年、月、日の日付。ロシュ・ハシャナから数える
+
+@ 0 1 0 0939fbf81db563ba06a9cd203eb730de
++ entry .HebrewMonth   ヘブライ暦の十三の月と、その期間の基数
+
+% 1 1 0 0c367d10b5cc6c8d0e3d10194a5fb589
+
+@ 0 7 0 19633b8a83ba277a12c4f9d6c0b62256
++       `Tishrei` から始まる政治暦の順に、`Tishrei`、`Cheshvan`、`Kislev`、`Tevet`、`Shevat`、`Adar`、`AdarSheni`、`Nisan`、`Iyar`、`Sivan`、`Tammuz`、`Av`、`Elul` である。
++       平年には `AdarSheni` は現れず、`Adar` が唯一の Adar である。うるう年には `Adar` が Adar I、`AdarSheni` が Adar II である。
++       コンパニオンは `MonthRadix` であり、その `Showable` は `AdarSheni` を `Adar II` と描画する。
++   entry .showable   月の名前。`AdarSheni` は `Adar II` になる
++   entry .multiply   `Timespan of HebrewMonth.type` としての `n*HebrewMonth`
+
+@ 0 1 0 1961a1208e08c6fe09581fbb5dbce43b
++ entry .Clock   現在の `Instant over Unix` の供給源
+
+% 1 1 0 095c35469c5c84f1142e40bdea5c69c0
+
+@ 0 5 0 07513a51aaa2efc5088662cf9049142b
++       `now()` と `today()` は、スコープ内の given の `Clock` を読む。
++       コンパニオンにある `Clock.current` は `System.currentTimeMillis` を読むので、インポートなしで見つかる。
++       `Clock.fixed` と `Clock.offset` は、テストのためや別の時刻を模擬するための時計を作り、ローカルな given として束縛する。`clocks.wasiClock` は Wasm コンポーネントの壁時計を読む。
++       時計は `Findable` な値である。プログラムが手を伸ばすグローバルなものではなく、プログラムが受け取る引数である。
+
+% 2 1 0 00dc2eef44568771016c26ad67581a5b
+
+% 3 1 0 1c840d345bdafe4d001692680c6f9e7f
+
+% 4 1 0 1b52027e79a2aba00184a5bbba7e14de
+
+% 0 1 0 06fb1f3d4e3c38ef0dec90c1309b8b6d
+
+% 0 1 0 108e09281f1ca8f50b15f4b26bdfbcb0
+
+% 0 1 0 0a461cc0da1aa42e1ea8b38be54b62ff
+
+% 0 1 0 0408aef6a42823171751cfd310fa1ea6
+
+% 1 1 0 017beeb461ef27fc0b77cfce3be870fd
+
+% 0 1 0 0097b54b53a31251081e780174226de2
+
+% 0 1 0 06806133fbd54e2a176fea599ff58df9
+
+% 1 1 0 0ccd6969183c141918af79e4b0fbbb6d
+
+@ 0 6 0 02211ae1f8b60abd1e50d4217953f328
++   entry .current   システムの壁時計 `System.currentTimeMillis`。既定のもの
++   entry .fixed   常に一つの時点を示す時計
++   entry .offset   `Duration` だけずらしたシステムの時計
++       `Clock.offset(60*Second)` はシステムの時計より一分先を示し、現在以外の時刻に対してコードを試すのに使う。
++   entry #apply   時計の読み。`Instant over Unix` として
+
+@ 0 1 0 1526d0fd357385951bab654b77e59089
++ entry .Clockface   一日の中の時刻：時、分、秒、ナノ秒
+
+% 1 1 0 0d3d2e803b1c4e69193af00ba298900b
+
+@ 0 6 0 1f14dfdc6f18d316088bf5b8e4b34452
++       `Clockface(hour, minute, second, nanos)` は二十四時間制の時計の時刻であり、時は `Base24`、分と秒は `Base60` なので、`Clockface(14, 30, 59)` はリテラルから型検査を通り、`Clockface(14, 60, 0)` は通らない。
++       秒の既定値は 0 で、ナノ秒も同じである。
++       `7.25.pm` は、ちょうどの分を表すリテラルの形である。
++       文字盤には日付もゾーンもない。`time on date` はそれを日付と結んで `Timestamp` にし（`Calendar` が必要）、`timestamp.time` はそれを読み戻す。
+
+% 2 1 0 021dbc54e5717098005bee2d1ce09a35
+
+% 3 1 0 1dded029fe04e47319a28b749b7e3358
+
+% 4 1 0 1aa2683680ec10341a8841db6e70200a
+
+% 0 1 0 00ded27c7d83251c01a14ca9c73a57ea
+
+% 0 1 0 14f0177084c9f6931e8225bd5fd1b6f3
+
+% 0 1 0 1a4b3653f605483802daaf449e53e362
+
+% 1 1 0 0cfaeb8e7f396bb304dbb1e51c776f9c
+
+@ 0 5 0 08cda5ce7c17fec113e56bcbeeec558a
++       `time.show` は、スコープ内の `Clockface.Format`、`Numerics`、`Separation`、`Specificity` でそれを描画する。
++       この四つの given は、`timeFormats` の各 given にまとめられているか（`1430` には `militaryTimeFormat`、`02:30 PM` には `civilianTimeFormat`）、`hourFormats`、`timeNumerics`、`timeSeparators`、`timeSpecificities` から一つずつインポートする。
++       `Horology` は文字盤に時、分、秒を加え、真夜中で一周する。
+
+% 0 1 0 0a99bce807079ca50793d2e5c3975e1e
+
+% 1 1 0 1461bf24d0a1120c11497d70cf8c85f1
+
+% 0 1 0 1524d8bd6a814d1f1de16797c0933218
+
+@ 0 7 0 1c7fa263007045560a5d067b6b16def6
++   entry .showable   スコープ内の `Format`、`Numerics`、`Separation`、`Specificity` から文字盤を描画する
++       `Format` が `halfDay` なら時は 1 から 12 に直され、`Numerics.FixedWidth` のもとでは二桁に埋められ、その後に `Separation` の区切り文字と二桁の分が続く。そして `Format` が `seconds` と言えば二つ目の区切り文字と二桁の秒が続き、最後に `Format` の午前・午後表記のための後置テキスト（` PM`、または何もなし）が続く。
++       `Specificity` は必須だが、描画を変えることはない。
++   entry .Format   時計が十二時間制か、秒を表示するか、時刻の後に何が続くか
+
+% 1 1 0 08c07e997f001d63170dc6f7beeac134
+
+@ 0 13 0 13132f1b7cf69cd91b9f52cfb0e4c232
++         `Format` は `#halfDay`（十二時間制で 1 から 12 か、二十四時間制で 0 から 23 か）、`#seconds`（秒を表示するかどうか）、`#postfix(meridiem)`（時刻の後に何が続くか。十二時間制の時計では空白と午前・午後表記、二十四時間制では何もなし）に答える。
++         標準の四つは `hourFormats` パッケージにある。
++     entry #halfDay   時が 0 から 23 ではなく、午前・午後表記とともに 1 から 12 で数えられるかどうか
++     entry #seconds   秒を表示するかどうか
++     entry #postfix   午前・午後表記を受け取って、時刻の後に置くテキスト：` PM`、または何もなし
++   entry .Numerics   時を二桁に埋めるかどうか：`FixedWidth` または `VariableWidth`
++       `timeNumerics.fixedWidthTimeNumerics` は `02:30` を、`variableWidthTimeNumerics` は `2:30` を与える。
++       分と秒は常に二桁である。
++   entry .Specificity   時刻を分まで与えるか秒まで与えるか：`Minutes` または `Seconds`
++       `Clockface.showable` が必要とする四つの given の一つで、`timeSpecificities` から来る。
++   entry .Separation   時と分の間、そして分と秒の間のテキスト
+
+% 1 1 0 03cdc803e1dcc7170d6377d7038e64fe
+
+@ 0 12 0 1d22868ee3a0d20d1dfd60ba08a4cf69
++         `#separatorChar()` は区切り文字（`:`、`.`、`h`、または何もなし。`timeSeparators` パッケージにそれぞれがある）、`#separator` は同じものを値として表したもの、`#secondSeparator` は秒の前に置くもので、上書きされない限り同じである。
++     entry #separatorChar   区切り文字。テキストとして
++     entry #separator   区切り文字。テキストとして：`#separatorChar()`
++     entry #secondSeparator   秒の前に置くもの。上書きされない限り区切り文字
++   entry #hour   時、0 から 23
++   entry #minute   分、0 から 59
++   entry #second   秒、0 から 59
++   entry #nanos   その秒の中のナノ秒
++   entry #on   ある日付のこの時刻を、`Timestamp` として：`5.25.pm on 2018-Aug-11`
++       スコープ内に `Calendar` が必要である。
++       結果は `Timestamp(date, this)` である。
+
+@ 0 1 0 02abf2c5647c8f5c093a481c104c410e
++ entry .Chronometry   `Instant over X` の `Long` が原子時とどう関係するか：時刻系の意味
+
+% 1 1 0 1abec102e5a38de20af8c2a345037eec
+
+@ 0 7 0 0a33753f4ac8426e08b82c49d2c0b9f7
++       `Chronometry` は時刻系のマーカー（`Tai`、`Unix`）の上の型クラスであり、時刻系の刻みを、唯一厳密に線形な尺度である TAI（国際原子時）との間で変換する：`#toTai` と `#fromTai`。
++       どの二つの時刻系も TAI を通じて変換でき、`instant.over[Tai]` はそのように働く。
++       `Chronometry.tai` は恒等変換で、`Chronometry.unix` は `LeapSeconds` の表にあるうるう秒を加えたり除いたりする。
++       `Monotonic` にはクロノメトリーがない。単調時計には壁時計の時刻との決まった関係がないからであり、そのため `Monotonic` の時点は変換することもゾーンに置くこともできない。
+
+% 2 1 0 151e10ce51d17e9917656973da5b2c64
+
+% 3 1 0 1454fa9516f5252609d0f91ea563e1f8
+
+% 4 1 0 121f2d431f7120dd1f658a42c8f527c4
+
+% 1 1 0 0e42e7c07e3e10b21e425b5a2f8bd971
+
+% 2 1 0 141836e6211556af00e0cea862db146a
+
+% 0 1 0 1771d26ba1a5af1e0bedb809097587f4
+
+% 0 1 0 194c5cf653e5b575144fd916a7113aa0
+
+% 0 1 0 096630bfbab880b51b1b94b80be5fac0
+
+% 0 1 0 129b1a97b0c948a201b19c7a8bfe79da
+
+% 1 1 0 1070c0bb43223f430cf99f21c7472ef8
+
+% 0 1 0 1bdd5d4ba152ca421c0df4342847047c
+
+% 0 1 0 037d977b1426c8cd12f23454d145c951
+
+% 1 1 0 1298d02cf7c4989b19dc7f79d8c97c68
+
+@ 0 1 0 1d57901704ac96c9183194665ced4cf3
++   entry .Ambient   裸の `Instant(…)` がとる時刻系。`chronometries` から選ぶ
+
+% 1 1 0 0b276c917bc8a6bf1a9fd46352e691c8
+
+@ 0 12 0 0a290937255600aa135582d6c729c42d
++         `Instant(millis)` と時点のデコーダーには、スコープ内に `Chronometry.Ambient` が必要である。その `#Transport` は時点が `over` するマーカー型であり、`#chronometry` はその時刻系の `Chronometry` である。
++         既定のものはない。
++         `chronometries.unixChronometry` か `chronometries.taiChronometry` を名前でインポートする。
++     entry #Transport   選んだ時刻系のマーカー型：`Unix` または `Tai`
++     entry #chronometry   選んだ時刻系の `Chronometry`
++   entry .tai   TAI のクロノメトリー：恒等変換
++   entry .unix   POSIX 時間のクロノメトリー：TAI へはうるう秒を加え、戻るときには除く
++       `toTai` は `LeapSeconds.tai`、`fromTai` は `LeapSeconds.untai` である。
++       挿入されたうるう秒の内側にある TAI の値には Unix での原像がなく、次の秒に対応づけられる。
++   entry #toTai   時刻系の刻みの数を TAI のミリ秒として
++   entry #fromTai   TAI のミリ秒を時刻系の刻みの数として
+
+@ 0 1 0 0ba2ac88f55f7e890e7b7c3213a8bcca
++ entry .LeapSeconds   1972 年以来のうるう秒の表と、POSIX 時間と TAI の間の算術
+
+% 1 1 0 0f9b7c34d7c1f0641384479bfcea1e1f
+
+@ 0 8 0 09c97b8bbcd97b620bccbad812123a33
++       1972 年以来、常用時を地球の自転から一秒以内に保つため、うるう秒が 6 月末か 12 月末に UTC へ挿入されてきた。
++       `Unix` の時点はそれを無視するので、二つの時点の間の POSIX 時間での経過は、その間のうるう秒の分だけ短くなる。
++       このオブジェクトは表を保持し（1972 年から、うるう秒が廃止される予定の 2035 年まで、半年ごとに 1 ビット）、Unix と TAI のミリ秒の時刻系の間を変換する。
++       `Chronometry.unix` はこれの上に作られている。
++       1972 年より前は TAI−UTC のオフセットを一定の十秒とみなし（近似である。当時の本当のオフセットは端数があり、ずれていた）、2035 年より後は最終値の三十七秒にとどまる。
+
+% 2 1 0 0175694cb4717dfc09ec5e6e69cfd6e0
+
+% 3 1 0 04a5c7b6e04ca52b1e9351cda806418b
+
+% 0 1 0 17e71149a241e6ec0cbbec128cb039e2
+
+% 0 1 0 0f755d97711e1eff1ed2f98133e44f0b
+
+% 0 1 0 0a67037cdd924315042d8f9beb5be800
+
+% 0 1 0 1f5d02bac6a131e61bc29c3af5b6172d
+
+% 0 1 0 0b31c747e1960a810c05c8bab156c7bf
+
+% 1 1 0 0cac1e07976bc44206f33cd87784a7ef
+
+% 1 1 0 012b1562cdce364d09c8faa7d4558f4e
+
+% 0 1 0 16b706fbc4502e800c0f9f55728affca
+
+@ 0 16 0 13c180fffa0e244b07d298c1461341be
++   entry .addLeapSecond   新たに発表されたうるう秒を、ある年の 6 月末か 12 月末に記録する
++       その年のビットを立てる（`midYear` なら 6 月、そうでなければ 12 月）。
++       記録できるのは挿入だけである。負のうるう秒は一度も起きたことがなく、表現もない。
++   entry .during   ある年の前半または後半に有効な TAI−UTC のオフセット（秒）
++       `during(year, false)` は年の初めのオフセットであり、`during(year, true)` は 6 月にありうるうるう秒の後のものである。
++   entry .tai   POSIX のミリ秒を TAI のミリ秒として：それまでのうるう秒を加える
++   entry .untai   TAI のミリ秒を POSIX のミリ秒として：`.tai` の逆
++       挿入されたうるう秒の内側にある TAI の値には POSIX での対応がなく、慣例により次の秒に対応づけられる。
++       それ以外では `untai(tai(t)) == t` である。
++   entry .smearTai   POSIX のミリ秒をスミアした TAI として：各うるう秒をその前後の一日に広げる
++       Google の「スミア」である。不連続な段差の代わりに、オフセットはうるう秒の時点を中心とする二十四時間にわたって線形に増えるので、`23:59:60` はなく、時計の遅れは最大でも 86400 分の 1 である。
++       スミアの区間の外では `.tai` と一致する。
++   entry .unsmearTai   スミアした TAI のミリ秒を POSIX のミリ秒として：`.smearTai` の逆
++       正確である：`unsmearTai(smearTai(t)) == t`。
+
+@ 0 1 0 006a4e0eb169da0603634775957d2be3
++ entry .LeapMode   `Moment` に対する一日未満の算術がうるう秒を数えるかどうか：`Lenient` または `Exact`
+
+% 1 1 0 0c44fc32f89dfdde1dd9f8a1ecad0d0a
+
+@ 0 5 0 17222ed6ad0147db11ea12305e7009fd
++       `Lenient` は一日未満の `Timespan` をうるう秒のない POSIX の直線上で加えるので、二時間後は、その間に何が起きても壁時計の時刻で二時間である。
++       `Exact` はそれを TAI を通じて本当の SI 秒として加えるので、その間に挿入されたうるう秒をまたぐと、結果は一秒戻る。
++       コンパニオンにある `LeapMode.lenient` が既定であり、切り替えるには `leapModes.exactLeapMode` を名前でインポートする。
+
+% 0 1 0 0207c881e82e2e1213c57514d83737b5
+
+@ 0 1 0 0c2daf2de9563a721a741eaa7f4c42a6
++   entry .lenient   既定の `LeapMode.Lenient`：うるう秒を飛び越える
+
+@ 0 1 0 07053c6d2340a82f18717b86d911da9a
++ entry .GapPolicy   春に時計が進むギャップの中の `Moment` を何に確定させるか
+
+% 1 1 0 1e91768f38371f6f1d25afba80269e65
+
+@ 0 8 0 0d444f570dc5bab313627e108a438fc8
++       時計が進むとき、壁時計の時刻のある区間は決して起こらず、その中の `Moment` を `Instant` に確定させるには候補が二つある。
++       遷移の前に有効だったオフセットを保って得られ、ギャップのすぐ後に着地する `forward` と、新しいオフセットのもとでの、ギャップのすぐ前の `backward` である。
++       `#resolve` はどちらかを選ぶか、エラーを発生させる。
++       コンパニオンの既定である `GapPolicy.pushForward` は、`java.time` と同じく `forward` を選ぶので、インポートなしで確定は全域的である。
++       代わりのものは `gapPolicies` にある。
++       `Moment#instant`、`Timestamp#instant`、そして `Moment` の順序付けは、どれも `GapPolicy` を受け取る。
+
+% 2 1 0 161fd506ad0fd46d12f602cdbdd80f05
+
+% 3 1 0 1793223ed0884af70942d43af21f8ae9
+
+% 4 1 0 0f3a17eb09819f15197ba2e661a9313c
+
+% 0 1 0 12869435e9dc696a0e78719564b41d56
+
+% 0 1 0 00ef471dc90fefff0531b15108a366d8
+
+% 1 1 0 148ffd9c1373995a017732c75d6d6993
+
+% 0 1 0 1c62edc685a02c8a02e0ec1435e97210
+
+% 1 1 0 1d789b8aaacacb1a11e28b27ff53863e
+
+@ 0 2 0 1e5ff2d5a6b62f5c1a4244e6955c68e0
++   entry .pushForward   既定のもの：ギャップの中の時刻はそのすぐ後に着地する
++   entry #resolve   二つの候補の時点の一方、または捕捉した戦術による中断
+
+@ 0 1 0 1e0b889d4f827729172d0aac713304bf
++ entry .Disambiguation   日付に月や年を加えたとき、月の終わりを過ぎた日を何にするか
+
+% 1 1 0 08fc36146a9fae5306c8436e46e88e14
+
+@ 0 7 0 07fe7d0e7fb90b380ae15f9593d41361
++       `2024-Jan-31 + 1*Month` は 2 月 31 日を求める。
++       `#resolve(year, month, day)` はそのような日を受け取り（渡された `Calendar` での月の長さを超えることがある）、実在する `Date` を返す。
++       それは月の最後の日（`monthEnds.clampMonthEnd`）、超過分が届く次の月の日（`overflowMonthEnd`）、または、エラーを発生させるポリシーがインポートされたときに捕捉した `Tactic[Moment.Error]` による中断（`raiseMonthEnd`）である。
++       既定のものは意図的に置いていない。日付に対する月や年の算術は、一つを名前でインポートするまでコンパイルできない。
+
+% 0 1 0 00cc012dbe1e5d3c0496839dc6234ce3
+
+@ 0 1 0 14b69c9c5d6e0b240fa934e05704aeb0
++   entry #resolve   ある暦での、年、月、そして超過しているかもしれない日に対する実在の日付
+
+@ 0 6 0 16d34f48c41292be0165780f2bac9cd2
++ entry .Endianness   日付のフィールドの順序：`BigEndian`、`LittleEndian`、`MiddleEndian`
++     `BigEndian` は年、月、日（ISO 8601）、`LittleEndian` は日、月、年（ヨーロッパ）、`MiddleEndian` は月、日、年（アメリカ合衆国）である。
++     組み立てられる日付の描画が必要とする四つの given の一つで、`dateEndianness` からインポートするか、`dateFormats` にまとめられたものを使う。
++     `Anniversary` と `Monthstamp` もこれを読み、`LittleEndian` 以外はすべて月が先とみなす。
+
+@ 0 6 0 0d8de3ba41521e071d0379dae83c91f0
++ entry .Frequency   `Rrule` のケイデンス：`Secondly` から `Yearly` まで
++     RFC 5545 の `FREQ` であり、`Secondly`、`Minutely`、`Hourly`、`Daily`、`Weekly`、`Monthly`、`Yearly` のいずれかで、規則の `interval` がこれを何倍かするので、`interval = 2` の `Frequency.Weekly` は隔週である。
++     `Date` の上の規則は `Daily` 以上を使う。一日未満の頻度は `Timestamp` の上の規則に適用され、そこでは `byHour` と `byMinute` が一日の中で展開される。
+
+@ 0 1 0 0c0c0bb6aec1dbfd009eddca0ead4c5b
++ entry .Hebdomad   どの曜日が週の始まりで、どの日が週末か
+
+% 1 1 0 1d2a8a903db3b5251cc1a6611e79fb21
+
+@ 0 6 0 1dcdff4853463271083aeb9ba728757a
++       `Hebdomad`（七日の週）は `#start` と `#weekend(day)` に答え、それらから日に番号を付ける。`#weekday(ordinal)` は週の始まりからある位置にある曜日で、`#ordinal(day)` はある曜日の位置である。
++       これを参照するのは `weekday.weekend`、`weekday.number`、`Weekday(ordinal)`、`date.weekend`、そして営業日の算術 `date + WorkingDays(n)` であり、既定のものはない。
++       `hebdomads.europeanHebdomad`、`northAmericanHebdomad`、`jewishHebdomad` のいずれかを名前でインポートするか、一つを定義する。
+
+% 2 1 0 1ae7d4d5861a38511450ef18af5cfa43
+
+% 3 1 0 111e8e329c64402a1e39f6ca526dc4b3
+
+% 0 1 0 01dc2fa16dee061015a2985da23d275d
+
+% 0 1 0 0e8807b41acafb6a04c7ba943381f488
+
+% 0 1 0 124ad2526d4b4b8c17125626702a4f8a
+
+% 0 1 0 00bc80586a055c5c03013c6abf11b6ef
+
+% 0 1 0 0b0b41532ceba78c195c9a2f1d8b48dd
+
+% 1 1 0 16e75891a5eab0761c111043bae484b1
+
+% 0 1 0 07ede165404eb279024297e234f3e065
+
+% 1 1 0 04aace5ef8cd61a80cef333505831e75
+
+% 1 1 0 1904a0d2cbe80ee205004a8063385363
+
+@ 0 4 0 0e6c81f4bf71055002f360751f580d26
++   entry #start   週が始まる曜日
++   entry #weekend   ある曜日が週末に含まれるかどうか
++   entry #weekday   週の始まりから `Ordinal` の位置にある曜日
++   entry #ordinal   週の始まりからのある曜日の `Ordinal` の位置
+
+@ 0 1 0 02ecc9fc25843a720b014fb85fa010a7
++ entry .Holiday   祝日である日付と、任意の名前
+
+% 1 1 0 14caed1d19a7d79808e44070cf90a5b0
+
+@ 0 5 0 0f46250c242ea2590f33fedc3fc9b582
++       `Holiday(2025-Dec-25, t"Christmas Day")` は、`Date` と `Optional[Text]` の名前からなる。
++       そのリストが `Holidays` になり、祝日は日付で比較される。
++   entry .comparable   祝日を日付で順序付ける
++   entry #date   日付
++   entry #name   祝日の名前、または `Unset`
+
+@ 0 1 0 0f096e24bf70205f10f8cc834e6ee0b7
++ entry .Holidays   営業日の計算が飛ばす祝日の集合
+
+% 1 1 0 13d6e8335fa7383d0358dbcc22e1c103
+
+@ 0 5 0 04a603e8a20040b415a6f3ca75b2caa2
++       `Holidays(List(Holiday(…), …))` は `Traversable by Holiday` な任意のコレクションを受け取り、日付で索引付けする。
++       そのため、`#holiday(date)` はある日付の祝日を見つけ、`#workDay(date)` はある日付に祝日がないかどうかを答え、`#between(start, end)` は `start` から `end` の手前までの祝日を日付の順に列挙する。
++       `Hebdomad` とともに given として束縛すると、`date + WorkingDays(n)` と `date - WorkingDays(n)` が参照するものになる。
+
+% 2 1 0 127858ce3ef47f4b18a7a386d736bf03
+
+% 3 1 0 1f1fe826cf2fb9541a1842017d4880fc
+
+% 4 1 0 1ef60cbf813cd5741524098bec1906ff
+
+% 5 1 0 1e0a0496d0fb674c13641616c43e0809
+
+% 0 1 0 08659ced6b3c6cbf0608fb87e7ad0a37
+
+% 0 1 0 0b905c92824c80c50021e14153d8596a
+
+% 0 1 0 0abf23e3b237336b11857e9959861d72
+
+% 0 1 0 00d31492c08b75fe177f383ae9dd7893
+
+% 0 1 0 0f7dbb2e317e4b3903fa36b584c49cb6
+
+% 0 1 0 19078f5e45a1f54f0676164ad2e67f1f
+
+% 0 1 0 01267c7449c8a3471a3ee6b86932f7a1
+
+% 1 1 0 1b46f0188e41325f04b69f986cbdb296
+
+@ 0 2 0 19c30fed33b63db50da95328ef0709ed
++       週末に当たる祝日は二重に数えられない。
++       営業日の算術は、その日を一度だけ飛ばす。
+
+% 0 1 0 126da464b3fc1bae13c3ba48d4d4a0d0
+
+% 1 1 0 1bc3bee84be2fa130e9f7273652c9e30
+
+@ 0 4 0 0bef7b57b9da7b051ae27e8c5469b68e
++   entry .apply   `Holiday` の任意の走査可能なコレクションからの `Holidays`
++   entry #holiday   ある日付の祝日、または `Unset`
++   entry #workDay   ある日付に祝日がないかどうか（週末は `Hebdomad` が扱う）
++   entry #between   開始日から終了日の手前までの祝日を、順に
+
+@ 0 1 0 0bd8da5149fc7ff100577b7db8eae6ab
++ entry .Horology   時、分、秒を `Clockface` に加える方法
+
+% 1 1 0 01357f0e21111a571e57fe8092a90298
+
+@ 0 14 0 007949778627e90606d5e2f466f96d76
++       `Horology` は時計の三つのフィールドの型（`#Primary`、`#Secondary`、`#Tertiary`）を定め、それぞれの数を繰り上げとともに `Clockface` に加える。
++       `#addTertiary(time, 30)` は 30 秒を加え、分と時に繰り上げ、時は真夜中で一周する。
++       コンパニオンにある `Horology.sexagesimal` は、24 時間、60 分、60 秒（`Base24`、`Base60`、`Base60`）の普通の時計である。
++       ライブラリのほかの部分で `Horology` を使うものはない。
++       これは、別の分け方をした時計のためのフックである。
++   entry .sexagesimal   24 時間、60 分、60 秒の時計
++   entry #Primary   最初のフィールドの型：六十進の時計では `Base24` の時
++   entry #Secondary   二番目のフィールドの型：`Base60` の分
++   entry #Tertiary   三番目のフィールドの型：`Base60` の秒
++   entry #TimeRepr   時刻の表現。六十進の時計では `Time`
++   entry #addPrimary   何時間か後の文字盤。真夜中で一周する
++   entry #addSecondary   何分か後の文字盤。時へ繰り上げる
++   entry #addTertiary   何秒か後の文字盤。分と時へ繰り上げる
+
+@ 0 1 0 093b519da633d0591031a65d2c469971
++ entry .Iso8601   ISO 8601 の日時の形式：`Instant over Unix` へのパーサーと、それが異議を唱えうること
+
+% 1 1 0 198128cfdbfcb8fd11463588acd5276e
+
+@ 0 8 0 1a3d3634dabf7292144d6b98abfb317e
++       `ISO 8601` という名前の `Date.Format` である。
++       `.parse(text)` は日時を `Instant over Unix` へと読み、`Tactic[Moment.Error]` のもとで `Moment.Error` を発生させる。
++       これは `instantDecodables.iso8601InstantDecodable` の背後にある関数である。
++       受け付けるのは、暦日 `2023-05-28`、月 `2012-11`、週日付 `2023-W21-7` であり、それぞれ拡張形式でも基本形式（`20230528`、`2023W217`）でもよい。
++       その後ろに任意で `T` と、時、分、または秒までの時刻を続けることができ、最後のフィールドには小数部（`.` または `,`）を付けられる。
++       さらにその後ろに `Z`、オフセット `+02:00` または `+0200`、あるいは何も付けない（UTC とみなす）。
++       うるう秒 `23:59:60` は受け付けられ、次の秒になる。
++       Unix の時刻系にはそれを置く場所がないからである。
+
+% 2 1 0 03fb26848575170a093c6c97fc8b4a9c
+
+% 3 1 0 06706e5e9f8c8aa50441449fbcb9149f
+
+% 4 1 0 0b0de735d187493f1c4f4f32658d0eae
+
+% 0 1 0 150194ddaad0dc2a0d19cdbd2a0a4bd9
+
+% 0 1 0 105ba4b91053acc202324fa2e7d991ca
+
+% 0 1 0 010e899af46e7e8b0a9701d918a0ab2b
+
+% 0 1 0 03c5c68cdb32d9e108434713c5a86831
+
+% 1 1 0 0e39c6b8141011431db552191a2d9d36
+
+@ 0 5 0 1d9805526cce9d6d02f094a38a6bf658
++       誤りがあると、`Moment.Error(_.Format(text, Iso8601, offset)(issue))`（エラー `↯/s.73.3`）、_`text` does not conform to format ISO 8601 (a digit was expected at 7)_ が発生し、`.Issue` がそのオフセットでパーサーが何を求めていたかを示す。
++       日付の中のエラーは蓄積され、エラーが一つあると時刻はパースされない。
++       フィールドは可変幅なので、カーソルの位置がずれてしまうからである。
+
+% 0 1 0 1bd5d4d724f87d1711badb7ec345616f
+
+% 1 1 0 0c6b5dfe7965f53a1bde4a66931adfaa
+
+% 1 1 0 187c1943c18209f008fc79a768550d09
+
+@ 0 6 0 11046bb287c591e51352ced6e2d1ae32
++   entry .Issue   パーサーが期待し、見つけられなかったもの
++       `Expect(char)`（週番号のあとの `-` のような、特定の文字）、`Digit`、`DigitOrDash`、`DigitOrDashOrW`（年のあと）、`DigitOrColon`、`Timezone`（末尾の `Z` またはオフセット）がある。
++       それぞれ、オブジェクトの中の無名の given を通して _a digit or `-` was expected_ のように `Communicable` であり、`Moment.Error` はこうしてそれを報告する。
++   entry .parse   ISO 8601 の日時、日付、月、または週日付を `Instant over Unix` として
+
+@ 0 1 0 1e94b01a78aac9fc0e76cb9b390db589
++ entry .internal   `Year`、`Day`、`Anniversary`、`WorkingDays`、そしてリテラルのマクロの置き場所
+
+% 1 1 0 18f64d0491b60f4114c17e166f609bc3
+
+% 2 1 0 096343e6f369cf240f2d592ad916048f
+
+@ 0 6 0 0773fe5b5efa5d3d0ae767b677f8475b
++       直接使うためのものではない。
++       このオブジェクトは、その不透明型に安定した置き場所を与え、`tz"…"`、`ts"…"`、`dur"…"`、`rec"…"`、`7.25.am`、`2024-Jan-15` の背後にあるマクロの置き場所となるために存在する。
++       `Year`、`Day`、`Anniversary`、`WorkingDays` はここから `aviation` パッケージへエクスポートされ、そこにあるそれぞれのページに完全な説明がある。
++       コンパニオンのメンバーはここに列挙する。
++   entry .Year   不透明な `Int` としての暦年。`aviation.Year` を参照
+
+% 1 1 0 1d5e70de53db9d870ee29f114bb2294d
+
+@ 0 9 0 077f980d48843c820a867e2dd471498a
++         不透明型 `Year = Int` であり、`Year(2024)` で作り、`year()` で読む。
++         コンパニオンは不規則な `Radix` なので、`2*Year` は `Timespan of Year.type` である。
++     entry .apply   `Year(2024)`：番号からの年
++     entry .multiplicable   `Timespan of Year.type` としての `n*Year`
++     entry .inspectable   `2024ʸ`：`Int` と読まれないように、接尾辞を付けた番号
++     entry .showable   番号そのもの
++     entry .addable   `Year(2024) + 5` は `Year(2029)`
++     entry .subtractable   `Year(2024) - 5` は `Year(2019)`
++     entry .decodable   スコープ内の `Int` デコーダーを通した `t"2024".as[Year]`
+
+% 0 1 0 0e98793b0995f5650979bc8066646781
+
+@ 0 1 0 0e570423309974ec028cc92f248edc51
++   entry .Day   不透明な `Int` としての月の日。`aviation.Day` を参照
+
+% 1 1 0 05e8073e456610fd08337e11d7ca3aaf
+
+@ 0 8 0 13590244eaa1e58c0d5f728db77fc411
++         不透明型 `Day = Int` であり、`Day(15)` で作り、`day()` で読む。
++         コンパニオンは規則的な `Radix` なので、`3*Day` は `Timespan of Day.type` である。
++     entry .apply   `Day(15)`：番号からの日
++     entry .multiplicable   `Timespan of Day.type` としての `n*Day`
++     entry .decodable   スコープ内の `Int` デコーダーを通した `t"15".as[Day]`
++     entry .inspectable   `15ᵈ`：接尾辞を付けた番号
++     entry .showable   番号そのもの
++   entry .WorkingDays   不透明な `Int` としての営業日の数。`aviation.WorkingDays` を参照
+
+% 1 1 0 0fc4cb49989411520f2b74b12d56c8e0
+
+@ 0 5 0 0f6ec3836d1ebbc70d8e9835b49effd0
++         不透明型 `WorkingDays = Int` であり、`WorkingDays(5)` で作り、`days()` で読む。
++     entry .apply   `WorkingDays(5)`：数値からの日数
++     entry .inspectable   `5ʷᵈ`：接尾辞を付けた数値
++   entry .Anniversary   年を持たない月と日。不透明な `Short` として。`aviation.Anniversary` を参照
+
+% 1 1 0 0b2bfac952bcde7601c4676938e3b52c
+
+@ 0 5 0 16e9bcf7b6bcb1d50ad6eb16cbf33097
++         不透明型 `Anniversary = Short` であり、月の序数を日の上位に詰め込む。
++         `Anniversary(Mar, Day(14))` で作ることも、`Mar - 14` で作ることもできる。
++         `anniversary.month` と `anniversary.day` で読み、`anniversary(year)` はその年の日付であって、`RomanCalendar` と `.NonexistentLeapDay` ポリシーを必要とする。
++     entry .NonexistentLeapDay   平年における 2 月 29 日が何であるか
+
+% 1 1 0 1731c2a6f89c4dcd1dfb22bb8291ef79
+
+@ 0 40 0 072af775e65dd9061dfe18e3dbb0e4da
++           メソッドを一つ持つポリシーであり、`#round(year)` は `(Feb - 29)(year)` が存在しないときに使う日付である。
++           三つの標準のポリシーは `nonexistentLeapDays` にあり、既定のものはない。
++       entry #round   2 月 29 日がない年において、2 月 29 日の代わりとなる日付
++     entry .apply   `Anniversary(month, day)`：部分からの記念日
++     entry .inspectable   ISO 8601 の年のない日付 `--03-14`。コンテキストを必要としない
++     entry .showable   スコープ内の `Endianness`、`Months`、`Date.Separation` に従った `14 March` または `March 14`
++   entry .day   `Anniversary` の日
++   entry .month   `Anniversary` の月
++   entry .apply   `year()`、`day()`、`days()` は数値を読み、`anniversary(year)` はその年の日付である
++       同じ名前の拡張が四つある。
++       `Year` と `Day` に対するもの（ターゲット名は `yearValue` と `dayValue`）は基になる `Int` を、`WorkingDays` に対するものは数を、`Anniversary` に対するものは、スコープ内の `RomanCalendar` と `Anniversary.NonexistentLeapDay` を通して、与えられた年の日付を返す。
++   entry .tzInterpolator   `tz"…"` の背後にあるマクロ：`java.time` が名前を知っている `Timezone`
++       置換を含むリテラルと、`ZoneId.of` が拒否する名前を、_`name` is not a valid timezone identifier_ として拒否する。
++   entry .tsInterpolator   `ts"…"` の背後にあるマクロ：リテラルの精度に応じた年、月、日付、タイムスタンプ、またはモーメント
++       正準な ISO 8601（4 桁の年、続いて任意の月、日、時刻、小数部、タイムゾーン）または RFC 1123 をパースし、日付をグレゴリオ暦に照らして、時刻を時計に照らして検証し、精度に合った型の値をスプライスする。
++       うるう秒 `:60` は、`leap = Leap.Inserted` を持つ `:59` の `Moment` としてスプライスされる。
++   entry .durInterpolator   `dur"…"` の背後にあるマクロ：`Timespan` としての ISO 8601 の継続時間
++   entry .recInterpolator   `rec"…"` の背後にあるマクロ：`Recurrence` としての ISO 8601 の繰り返し区間
++       リテラルを `/` で繰り返し回数、開始（`ts"…"` としてパースする）、周期（`dur"…"` としてパースする）に分割し、失敗したセグメントに下線を引き、開始の型がリテラルの精度に従う `Recurrence` をスプライスする。
++   entry .parseDuration   `dur"…"` と `Timespan` のデコーダーが共有する、ISO 8601 の継続時間のパーサー
++       `P[nY][nM][nW][nD][T[nH][nM][nS]]` で、少なくとも一つの成分を持つ。
++       結果は年、月、週、日、時、分、（小数の）秒の組、またはメッセージである。
++   entry .monthstampMinus   `2024-Jan-15` の背後にあるマクロ：コンパイル時に検証される日付
++       インライン化されたオペランドをそのリテラルまでたどり、スコープ内の `RomanCalendar` を（必要ならローカルな別名を通して）標準のもののいずれかとして識別し、日付を検証して `Date.julianDay(n)` をスプライスする。
++       リテラルでない年、月、日、または認識できない暦は、その旨を述べ、暦の `jdn` を示すメッセージとともに停止する。
++   entry .validTime   `7.25.am` と `7.25.pm` の背後にあるマクロ：リテラルからの `Clockface`
++       分がちょうど 2 桁であること、分が 60 未満であること、時が 12 以下であることを要求し、それぞれ独自のエラーを持つ。
++       `pm` には 12 時間を加える（`12.xx.am` にも加え、`12.xx.pm` には加えない。
++       こうして正午と真夜中が正しくなる）。
++   entry .englishOrdinal   `1st`、`2nd`、`3rd`、`4th`、`11th`、`21st`：英語の `Vernacular` が使う接尾辞
+
+@ 0 1 0 13bc03ee7727c77b050ebeb874e7f8a4
++ entry .protointernal   `Instant` と `Duration` の置き場所
+
+% 1 1 0 1c894e955e7a04cf004ac3ebd25545a4
+
+% 2 1 0 080ae573b3bac8851bb44f63963a4b09
+
+@ 0 4 0 0f1569b3db85d3130a32c2119978a591
++       直接使うためのものではない。
++       不透明型 `Instant`、別名 `Duration`、それらのコンパニオンと拡張を保持するオブジェクトであり、それらはここから `aviation` パッケージへエクスポートされる。
++       完全な説明はそこにある `Instant` と `Duration` のページにある。
++   entry .Instant   不透明な `Long` としての、物理的な時間の一点。`aviation.Instant` を参照
+
+% 1 1 0 0fba8045d1ed33d90fad6ba48b6b2104
+
+@ 0 23 0 1d6c54a7b6f7d7801f349d1ca311c0d6
++         不透明型 `Instant = Long` であり、その時刻系は `over` で設定する幻の型の `Transport` である。
++         コンパニオンはコンストラクターと算術の given を保持する。
++         それぞれトランスポートについて総称的で、時刻系の `Resolution` を受け取るので、ティックの長さ（`Unix` と `Tai` ではミリ秒、`Monotonic` ではナノ秒）にかかわらず機能する。
++     entry .inspectable   `⧗784111777000`：砂時計の後ろにあるティック数
++         表示はコンテキストなしで使えなければならず、ティックが何を意味するかは型の中にあるので、示せるのは生の数だけである。
++         砂時計は、それが `Long` と読まれるのを防ぐ。
++     entry .Min   時刻系上の最も早いインスタント、`Long.MinValue`
++     entry .Max   時刻系上の最も遅いインスタント、`Long.MaxValue`
++     entry .of   `Instant.of[Unix](millis)`：名前を指定した時刻系上の、ティックからのインスタント
++     entry .apply   `Instant(millis)`：スコープ内の `Chronometry.Ambient` の時刻系上のインスタント
++         `chronometries` からのアンビエントなクロノメトリーを必要とし、結果は `Instant over ambient.Transport` である。
++     entry .underlying   イレイジャ後の表現 `Long` を宣言する
++     entry .generic   任意の時刻系上のインスタントを、`Instants` の領域を横断するエポックの `Long` として
++         インスタントがほかのライブラリのインスタントの型との間を行き来できるようにする `Abstractable` と `Instantiable` である。
++         `Long` は変換されるのではなく、トランスポートでタグ付けされる。
++     entry .orderable   同じ時刻系上のインスタントの間の `<`、`<=`、`>`、`>=`
++     entry .comparable   一つの時刻系上のインスタントを、そのティックで順序付ける
++     entry .plus   `instant + duration`：時間の任意の `Quantity` を、時刻系のティックに変換して加える
++     entry .minus   同じ時刻系上の `instant - instant`。秒単位の `Duration` として
++         異なる時刻系上の二つのインスタントは引き算できない。
++         `over` で先に一方を変換する。
+
+% 0 1 0 0b3b683f48211e95138fbd669625b857
+
+@ 0 1 0 067e9301ec1c513206a85a77c80ee126
++   entry .Duration   秒の量。`aviation.Duration` を参照
+
+% 1 1 0 1dcc6a2d914ac464172884f72fd6ace1
+
+@ 0 7 0 0661c7097310edbe18943c9cd5dc991e
++         別名 `Duration = Quantity[Seconds[1]]` であり、`Duration(millis)` でミリ秒から作る。
++         `Duration.Error` は、継続時間として読めないテキストに対するものである。
++     entry .apply   `Duration(1000L)`：ミリ秒からの継続時間
++     entry .generic   時間の任意の量を、`Durations` の領域を横断するナノ秒として
++         秒に正規化できるすべての `Quantity[units]` に対する `Abstractable` と `Instantiable` であり、継続時間がほかのライブラリの継続時間の型との間を行き来できるようにする。
++     entry .Error   継続時間でないテキストに対して `durationDecodables.compactDurationDecodable` が発生させる
+
+% 1 1 0 1f6e85f3834ee5081349cdfcace21f47
+
+@ 0 13 0 09dfcec84e84d654089f15314b462060
++           エラー `↯/s.73.5`：_`text` is not a recognized duration_。
++           負の値、単語、未知の単位、または空のテキストである。
++       entry #text   継続時間でなかったテキスト
++   entry .long   インスタントのティック数
++   entry .over   `instant.over[Tai]`：TAI を通した、別の時刻系上の同じインスタント
++       両方の時刻系に対する `Chronometry` を必要とするので、`Monotonic` のインスタントは変換できない。
++   entry .~   `start ~ finish`：インスタントの半開区間の `Period`
++   entry .in   `instant.in(timezone)`：タイムゾーンにおける `Moment` としてのインスタント
++       `RomanCalendar` と時刻系の `Chronometry` を必要とする。
++       日付は `java.time` が数える先発グレゴリオ暦で取られ、夏時間の終わりの重なりの後ろ側にあるモーメントは `Occurrence.Second` と印を付けられるので、このインスタントへ戻って確定する。
++   entry .timestamp   `instant.timestamp`：スコープ内の `Timezone` における、タイムゾーンを持たない `Timestamp` としてのインスタント
++   entry .from   `duration.from(instant)`：あるインスタントに始まり、その継続時間だけ続く `Period`
+
+@ 0 1 0 17496c59b67b21bf032dd057d3ea7f92
++ entry .timestampInternal   `Timestamp`、`Date`、`Monthstamp` の置き場所
+
+% 1 1 0 19d2eb27c264157e140d411e2c5a6af9
+
+% 2 1 0 064a975355238e2807c58762195aa91f
+
+@ 0 8 0 10a62ec19b61becc13d42958aa996aae
++       直接使うためのものではない。
++       不透明型 `Timestamp`、別名 `Date = Timestamp in Day` と `Monthstamp = Timestamp in Month`、それらのコンパニオン、三つすべてに対する given（基になる一つの型の暗黙のスコープに入るように、`Timestamp` のコンパニオンにある）、そして拡張を保持するオブジェクトである。
++       アクセサーがイレイジャ後に `Year` と `Day` のものと衝突しないように、`internal` とは分けてある。
++       `aviation` にある `Timestamp`、`Date`、`Monthstamp` のページに完全な説明がある。
++   entry .Timestamp   不透明な `Long` としての日付と時刻。`aviation.Timestamp` を参照
+
+% 1 1 0 1ec504a753d572020acbf7d4fcecf03d
+
+@ 0 49 0 0e128ad84329ab431852b99636c094a5
++         不透明型 `Timestamp = Long` であり、ユリウス通日に 1 日のミリ秒数を掛け、その日のミリ秒を加えた値として詰め込まれる。
++         `Form` は幻の型の精度である。
++         `Timestamp(date, time)` で作る。
++     entry .apply   `Timestamp(date, time)`：日付と文字盤からのタイムスタンプ
++     entry .inspectable   `2023-05-28T14:30:59`：グレゴリオ暦での ISO 8601。コンテキストを必要としない
++         `Date` と `Monthstamp` も扱い、それらはゼロにした時刻を示す。
++         ミリ秒はゼロでないときだけ現れる。
++     entry .timestampShowable   スコープ内の `Clockface is Showable` と `Date is Showable` による `time, date`
++     entry .timestampSubtractable   `timestamp - timestamp`：日、時、分、秒の `Timespan`
++         切り捨ての除算による、暦に依存しない常用の差であり、その型は `.Difference` である。
++     entry .timestampDecodable   `t"2024-01-15T14:30:59".as[Timestamp]`。`Timestamp.Error` を発生させる
++         グレゴリオ暦で、`yyyy-MM-dd`、続いて空白か `T`、続いて `HH:mm:ss` を読む。
++         ほかの形には理由 `BadFormat`、整数でないフィールドには `BadNumber`、範囲外の日付や時刻には `BadTime` が付く。
++     entry .dateUnderlying   `Date` のイレイジャ後の表現 `Long` を宣言する
++     entry .dateSubtractable   `date - date`：間の日数を `Quanta[Days[1]]` として
++     entry .dateSubtractable2   `date - days`：何 `Quanta[Days[1]]` か前の日付
++     entry .dateAddable   `date + days`：何 `Quanta[Days[1]]` か後の日付
++     entry .dateAddable2   `days + date`：オペランドを逆にした同じもの
++     entry .dateShowable   スコープ内の `Endianness`、`Date.Numerics`、`Date.Separation`、`Years` による `date.show`
++         スコープ内の暦にかかわらずグレゴリオ暦でフィールドを読み、エンディアンネスに従って並べ、`FixedWidth` のもとでは月と日を、`TwoDigitYear` のもとでは年を 2 桁にパディングし、区切りでつなぐ。
++         `dateFormats` の given は、この四つをまとめたものである。
++     entry .dateDecoder   `t"2011-12-13".as[Date]`：数字の `year-month-day`。`Moment.Error` を発生させる
++         `-` で三つの整数に切り分け、グレゴリオ暦で組み立てる。
++         月と日は 1 桁でも 2 桁でもよい。
++         ほかの形のテキストは `Moment.Error(_.Format(…))` を発生させ、範囲外の月や日は `Moment.Error(_.Unknown(…))` または `_.Invalid(…)` を発生させる。
++     entry .dateEncodable   `date.encode`：スコープ内の `RomanCalendar` での `2024-01-15`
++     entry .dateOrderable   日付の間の `<`、`<=`、`>`、`>=`
++     entry .dateComparable   日付をユリウス通日で順序付ける
++     entry .timestampOrderable   タイムスタンプの間の `<`、`<=`、`>`、`>=`
++         `Orderable` の `Self` は非変なので、比較は同じでも、`Date` と `Timestamp` はそれぞれインスタンスを必要とする。
++     entry .timestampComparable   タイムスタンプをミリ秒の格子の上で順序付ける
++     entry .dateWorkingDays   `date + WorkingDays(n)`：`n` 営業日先の営業日
++         `Holidays` と `Hebdomad` を必要とする。
++         週末の日と祝日を越えて先へ進み、`WorkingDays(0)` でも営業日に着地する。
++     entry .dateWorkingDaysSubtractable   `date - WorkingDays(n)`：`n` 営業日前の営業日
++     entry .monthShowable   `monthstamp.show`：スコープ内の `Months`、`Date.Separation`、`Endianness`、`Years` による月と年
++         `LittleEndian` のもとでは `2024/Jan`、それ以外では `Jan/2024` であり、間に区切りが入る。
++     entry .monthstampSubtractable   `monthstamp - day` の結果の型の証人：`Date`
++         演算子の展開は常に `.monthstampSubtraction` のインラインの経路を通り、それがコンパイル時に日付を検査する。
++         この `subtract` に到達するのは直接の呼び出しだけであり、そこでは月にない日は欠陥である。
++     entry .monthstampSubtraction   `2024-Jan-15` の背後にあるインラインの演算子：`Monthstamp.MonthstampSubtraction`
++     entry .monthstampAddable   `monthstamp + span`：`Timespan` の月と年の整数部分を加え、月の精度を保つ
++     entry .monthstampTimespanSubtractable   `monthstamp - span`：`Timespan` の月と年の整数部分を引く
++     entry .Error   タイムスタンプでないテキストに対して `t"…".as[Timestamp]` が発生させる
+
+% 1 1 0 0b4c5fb9a03f43291fcc76fa832c4a00
+
+@ 0 10 0 14d3dd43d7d174591a9759442aff3431
++           エラー `↯/s.73.9`：_the time `value` could not be parsed because `reason`_。
++           理由の番号がエラーの第二の部分になる。
++           `BadFormat`（1）、_the input did not match the expected timestamp format_。
++           `BadNumber`（2）、_a numeric component could not be parsed as an integer_。
++           `BadTime`（3）、_a date or time component was outside the valid range_。
++       entry .Reason   `BadFormat`、`BadNumber`、`BadTime`
++       entry .communicable   各理由をそのメッセージとして描画する
++       entry #value   パースできなかったテキスト
++       entry #reason   その理由
++   entry .Date   `Date` のコンパニオン：`julianDay`、検査付きのコンストラクター、描画の部品
+
+% 1 1 0 1eb0b8e6707307c4168dd2ba7e164564
+
+@ 0 8 0 1412fd750f5e1dd50a292bddc2f31730
++         `Date` 自体は別名 `Timestamp in Day` である。
++         このオブジェクトは日付を作り、日付の描画を構成する型を宣言する。
++     entry .julianDay   `Date.julianDay(2460325)`：ユリウス通日からの、検査されない日付
++     entry .apply   スコープ内の `Calendar` での `Date(year, month, day)`。存在しなければ `Moment.Error` を発生させる
++         `Tactic[Moment.Error]` が呼び出し箇所で解決されるようにインラインである。
++         パラメーターの型は暦自身の `Annual`、`Mensual`、`Diurnal` なので、月は暦の月の型でなければならない。
++     entry .Format   日時をパースできるテキストの形式。エラーメッセージのために名前を持つ
+
+% 1 1 0 1e2c25487c2948f6180995d6555d524c
+
+@ 0 7 0 0d4d9344f97f791f0531be85819ac13d
++           `Iso8601` と `Rfc1123` がこれを拡張し、それぞれパーサーが何を期待したかを示す独自の `#Issue` 型を持つ。
++           `Moment.Error(_.Format(text, format, offset)(issue))` は、これに対する誤りを報告する。
++       entry #name   形式の名前：`ISO 8601`、`RFC 1123`
++       entry #Issue   形式の異議の型。`Communicable` でなければならない
++     entry .Numerics   表示される日付の月と日をパディングするかどうか：`FixedWidth` または `VariableWidth`
++     entry .Separation   表示される日付のフィールドの間のテキスト
+
+% 1 1 0 1ffb95676094783b10d96ff393c0cfde
+
+@ 0 36 0 1ce824ee6bdf46081e168df9df156415
++           `#separatorChar()` が区切りであり、`#separator` は値としての同じものである。
++           `dateSeparators` パッケージには `/`、`-`、`.`、空白がある。
++       entry #separatorChar   テキストとしての区切り
++       entry #separator   テキストとしての区切り：`#separatorChar()`
++   entry .Difference   `timestamp - timestamp` の型：日、時、分、秒の `Timespan`
++   entry .Monthstamp   別名 `Timestamp in Month`：月の精度のタイムスタンプ。`aviation.Monthstamp` を参照
++       型だけが `Date` と並んでここにあり、その given（`Timestamp.monthShowable`、`monthstampSubtractable`、`monthstampSubtraction`、`monthstampAddable`、`monthstampTimespanSubtractable`）が基になる `Timestamp` の暗黙のスコープに入るようになっている。
++       `aviation` パッケージの `Monthstamp` オブジェクトが、ファクトリーとコンパイル時の `-` 演算子を保持する。
++   entry .date   時刻を落とした、タイムスタンプの日付
++   entry .time   `Clockface` としての、タイムスタンプの時刻
++   entry .jdn   タイムスタンプの日付のユリウス通日
++   entry .year   スコープ内の `Calendar` でのタイムスタンプの年。`Monthstamp` については、暦なしでグレゴリオ暦の年
++       この名前の拡張は二つある。
++       `Timestamp`（したがって `Date`）に対しては、スコープ内の `Calendar` での `calendar.annual(date)` である。
++       `Monthstamp` に対しては、マンスタンプはグレゴリオ暦の `Month` でタグ付けされているので、暦を必要とせずにグレゴリオ暦の年を返す。
++   entry .month   スコープ内の `Calendar` でのタイムスタンプの月。`Monthstamp` については、グレゴリオ暦の `Month`
++       `.year` と同じく、`Timestamp` に対しては `calendar.mensual(date)`、`Monthstamp` に対しては暦を必要とせずにグレゴリオ暦の月である。
++   entry .day   スコープ内の `Calendar` での、タイムスタンプの月の日
++   entry .weekday   ユリウス通日から求めた、タイムスタンプの日付の曜日
++   entry .weekend   スコープ内の `Hebdomad` によって、タイムスタンプの日付が週末の日であるかどうか
++   entry .anniversary   `Anniversary` としての、タイムスタンプのグレゴリオ暦の月と日
++   entry .monthstamp   スコープ内の `RomanCalendar` での、`Monthstamp` としてのタイムスタンプの月
++   entry .yearDay   スコープ内の `Calendar` での、1 から数えた年の日
++   entry .hour   タイムスタンプの時刻の時
++   entry .minute   タイムスタンプの時刻の分
++   entry .second   タイムスタンプの時刻の秒
++   entry .in   `timestamp.in(timezone)`：タイムゾーンにおける `Moment` としてのタイムスタンプ
++   entry .stdlib   スコープ内の `RomanCalendar` での、`java.time.LocalDateTime` としてのタイムスタンプ
++   entry .instant   `timestamp.instant`：`Moment` を通して、スコープ内の `Timezone` で確定させたもの
++       裸のタイムスタンプがモーメントと同じギャップのポリシーに従うように、`Timezone`、`RomanCalendar`、`GapPolicy` を必要とする。
++       重なりの選択子がないので、早い方のオフセット `Occurrence.First` で確定する。
+
+% 0 1 0 045eb91b2132719a1dab5eaf823f2536
+
+% 0 1 0 1cb93f4555f5011519fc7dcee58d2a97
+
+% 0 1 0 05c6dc5d6f624fa10a993d743e3a843d
+
+% 0 1 0 068bc30a4e1c81861d351a794391c71a
+
+@ 0 1 0 0c414c7a600964bd06311590569ce9a3
++   entry .addDays   `date.addDays(31)`：何日か後の日付。負の数なら前の日付
+
+@ 0 1 0 15d4269bff917b5f0417d04ed442f695
++ entry .Meridiem   12 時間制の時計の読みが属する一日の半分：`Am` または `Pm`
+
+% 1 1 0 15632aa52ec4921d09ceab70a421bb54
+
+@ 0 5 0 18195b223f5f3e3e0d17e2448546e1e6
++       二つの場合 `Am`（正午より前）と `Pm`（正午以降）からなる列挙型であり、12 時間制の `Clockface.Format` が時刻のあとに書く。
++       コンパニオンの `.showable` は `AM` と `PM` を描画する。
++       `timeMeridiems` パッケージは、代わりに名前でインポートする `upperMeridiem`、`lowerMeridiem`、`upperPunctuatedMeridiem`、`lowerPunctuatedMeridiem`（`a.m.`/`p.m.`）を提供し、`hourFormats.twelveHourClock` はそれをスコープから拾う。
+
+% 2 1 0 0251ae561a6cc98d1586617f21d53e5b
+
+% 3 1 0 131ccb65f95c30d0035c28789543da73
+
+% 0 1 0 1838fa58d90c5c1001f2bd1f4df04a5c
+
+% 0 1 0 007382f27533bf6f1f4528acb2cf6a0e
+
+% 0 1 0 0be69f86fb80352e0453b0fc5aefcaf8
+
+% 0 1 0 014d5df5242fcabf17656f0199a193d5
+
+% 1 1 0 139c634f37d53748159c22eb29b6d7db
+
+@ 0 1 0 07362e64003f76ed128b858ea4674677
++   entry .showable   午前・午後を `AM` または `PM` として描画する。暗黙のスコープにある
+
+@ 0 1 0 18c4ce0fc9b21c3a0a54de85a626d348
++ entry .Moment   タイムゾーンにおける壁時計の読み：日付、時刻、タイムゾーン、そして夏時間の重なりやうるう秒がどう解決されるか
+
+% 1 1 0 04d9594c7d7a9ff60740aeaa4d2068d2
+
+@ 0 5 0 1e926530e15b191e03bfb699a3f36bcc
++       `Moment` は `Timestamp` を `Timezone` に固定したもの、つまり、ある特定の場所での時計の特定の読みである。
++       `Timestamp` がタイムゾーンを持たず、`Instant` が物理的な時刻系上の一点であるのに対し、`Moment` はその間の橋渡しである。
++       `#instant` はタイムゾーンの規則を通してそれを `Unix` の時刻系に確定させ、`Instant#in(timezone)` と `Timestamp#in(timezone)` はモーメントを作る。
+
+% 2 1 0 0f11b0cabb21a78b00a46fb6bcd3e854
+
+% 3 1 0 13e29d379f58220002de28f8a76ec395
+
+% 4 1 0 017dc4a2b0cdc1be1bf55bd3e00e08d3
+
+% 0 1 0 11f39d46a500298519de27fa5c82246b
+
+% 0 1 0 0f34a591e8569fb016e9f3c7b4d48035
+
+% 0 1 0 1d1d43083535d92a1804d3e1133a5a97
+
+% 1 1 0 132b063b9e67708c157b840034de2509
+
+@ 0 10 0 0f523548fae5e30211b87cfef4f10eee
++       壁時計の読みを曖昧にするものは二つあり、`Moment` はそれぞれのためのフィールドを持つ。
++       時計が戻されると一時間が繰り返され、`#occurrence` は、その読みがその時間の `Occurrence.First`（早い方のオフセットで、既定）か `Occurrence.Second` かを示す。
++       `Instant#in` は、重なりの中のインスタントに対してこれを正しく設定する。
++       挿入されたうるう秒によって 1 分が 61 秒になるとき、読み `23:59:60` に対して `#leap` は `Leap.Inserted` であり、それは `:59` として格納され、次の秒に確定する。
++       起こらなかった読み（春に時計が飛ばす時間の中の読み）は、モーメントのフィールドではなく、コンテキストの `GapPolicy` で扱う。
++       `GapPolicy.pushForward` が既定であり、`gapPolicies.pushBackwardGapPolicy` は古いオフセットを保ち、`gapPolicies.rejectGapPolicy` は理由 `Gap` の `Moment.Error` を発生させる。
+
+% 2 1 0 05cde3de68f770361c17d8af2a33f4b4
+
+% 3 1 0 05c5002c1638446801d242d9cdc0ff38
+
+% 4 1 0 006a3dd3b30ddb071785c1780a0df354
+
+% 0 1 0 1711c88aed6e5cb013f0fd64f321a00b
+
+% 0 1 0 178471129d67342a1c42fce7b9c5b0b9
+
+% 0 1 0 0c98f0254f9135750479c6de6192cf33
+
+% 0 1 0 0fa6914bfbb811720ef3b6dcb33270a5
+
+% 1 1 0 14093e88b6e9c3aa0841c38544f7632d
+
+@ 0 8 0 02d509b27e3ab4700cb47d979cd13d06
++       モーメントは、確定させたインスタントによって順序付け、比較し、引き算する（`.orderable`、`.comparable`、`.subtractable`）。
++       したがって、`Second` の出現は `First` のあとに並び、二つのタイムゾーンは絶対時刻で比較される。
++       これらのそれぞれ、そして `#instant` 自体も、スコープ内に `RomanCalendar` と `GapPolicy` を必要とする。
++       モーメントに加えた `Timespan`（`Timespan.momentAdd`）は、その日と月を壁時計に適用し、時、分、秒を物理的に適用する。
++       したがって、`+ 1*Day` は夏時間の切り替えをまたいでも同じ現地時刻を保つが、`+ 24*Hour` は保たない。
++       `Rrule[Moment]` は開始のタイムゾーンで繰り返し規則を展開し、`ts"…"` 補間子はタイムゾーン付きの ISO 8601 リテラルからモーメントを作る。
+
+% 1 1 0 0f2f6c8164115bdf01475c7ef0364219
+
+% 1 1 0 0155dfc64b7a54f20a5529217f6c0337
+
+% 1 1 0 02d058974f5e3c4e00b7cadebe11a643
+
+% 1 1 0 15e325c23dbbbef219adb88b85f0fe00
+
+% 0 1 0 1b2b4f854906b9570465e16bdf60f287
+
+% 0 1 0 07e1549c90fbaa360925d9839ad764ca
+
+@ 0 20 0 02ec7fccf423fe781c9e26cbf7f9cdff
++   entry .generic   モーメントを、`Instants` を横断する、そのインスタントのエポックミリ秒として
++       `Abstractable across Instants to Long` の given であり、総称的なインスタントを受け取る任意の API にモーメントを渡せるようにする。
++       `#instant` でモーメントを確定させるので、スコープ内に `RomanCalendar` を必要とする（そして既定の `GapPolicy` を使う）。
++   entry .orderable   モーメントは確定させたインスタントによって順序付けられる
++       比較は両辺を確定させるので、スコープ内に `RomanCalendar` と `GapPolicy` を必要とする。
++       繰り返された時間の `Second` の出現は `First` より後であり、異なるタイムゾーンにある二つのモーメントは、壁時計のフィールドではなく絶対時刻で比較される。
++   entry .comparable   確定させたインスタントによる、モーメントに対する実行時の `Comparable`
++       `.orderable` の実行時の対応物であり、ソートと `Period[Moment]` が使う。
++       スコープ内に `RomanCalendar` と `GapPolicy` を必要とする。
++   entry .subtractable   `later - earlier`：二つのモーメントの間の物理的な `Duration`
++       確定させた二つのインスタントの差を秒で表したものなので、夏時間に従い（時計が飛ばした時間は数えない）、`Unix` の時刻系の数える解釈のもとではうるう秒にも従う。
++       `RomanCalendar` と `GapPolicy` を必要とする。
++   entry .showable   モーメントを、タイムゾーン付きの ISO 8601 の日時 `2024-01-01T01:00:00Z` として描画する
++       形は `yyyy-MM-ddTHH:mm:ss` に、そのインスタントでのタイムゾーンのオフセット（`Z`、`+01:00`、…）が続くものである。
++       挿入されたうるう秒は 61 番目の秒 `:60` として描画される。
++       オフセットを求めるために、スコープ内に `RomanCalendar` と `GapPolicy` を必要とする。
++   entry .Error   日付、時刻、またはモーメントが妥当でないときに発生する
+
+% 1 1 0 09d4c4db06e628b90ce733f0c13e2c32
+
+@ 0 6 0 17213f00582a33810d9748b03deff4d6
++         エラー `↯/s.73.3`：_the date was not valid because `reason`_。
++         理由の番号がサブコードになる。
++         これは `Moment` だけでなく、日付と時刻の語彙全体のエラーである。
++         `Date(year, month, day)`、`Month(index)`、`Calendar#jdn`、`WeekDate(…)`、`OrdinalCalendar(year, dayOfYear)`、`Rfc1123.parse`、ISO 8601 のインスタントのデコーダーがこれを発生させ、実行時に計算される `Monthstamp - day` は `Calendar#jdn` を通るので、これもまたこれを発生させる。
++         `Moment.Error(_.Gap)` で作り、これは `Diagnostics` も捕捉する。
+
+@ 0 8 0 1bfeabc435c5062a11771c6b884f9840
++         `.Reason` 列挙型には四つの場合がある。
++         `Format(text, format, offset)(issue)`、番号 1：_`text` does not conform to format `name` (`issue` at `offset`)_。
++         `Rfc1123` や `Iso8601` のようなパーサーから発生し、`issue` はその形式自身の `Issue` 型である。
++         `Invalid(year, month, day, calendar)`、番号 2：_`year`-`month`-`day` does not exist in the calendar `name`_。
++         `Unknown(text, kind)`、番号 3：_`text` is not a recognized `kind`_。
++         月の名前やインデックスとして認められないものに対して発生する。
++         `Gap`、番号 4：_the wall-clock time does not exist in its timezone (a spring-forward DST gap)_。
++         `gapPolicies.rejectGapPolicy` のもとでだけ発生する。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 018f95b2667dbd2707e2f9e303c01e4d
+
+% 0 1 0 1ca071059939cd91110c43756903ec4c
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 103a409c8107249e18e42061240a7a37
+
+% 0 1 0 1b9fb9bc92877ac5042f88407a8f9e24
+
+% 0 1 0 06828d4e4fa9f4e9199c47e33f3e3657
+
+% 1 1 0 1abf86f8533e693b09af8d303ba18ccb
+
+@ 0 24 0 10185a091457f0170361220000bdcc3a
++     entry .apply   `Moment.Error(_.Unknown(text, kind))`：`Reason` から選んだ理由でエラーを作る
++     entry .Reason   日付や時刻が拒否された理由：`Format`、`Invalid`、`Unknown`、`Gap`
++         各場合はエラーのサブコードになる `number`（1 から 4）を持ち、列挙型は `Communicable` なので、理由は `Moment.Error` のページで引用されたメッセージとして描画される。
++         `Format` の理由の `issue` は、それを生成した `Date.Format`（たとえば `Rfc1123.Issue`）によって型付けされる依存フィールドである。
++     entry #reason   このエラーが持つ `Moment.Error.Reason`
++   entry #date   読みの暦日
++   entry #time   `Clockface` としての、読みの時刻
++   entry #timezone   その規則が読みを確定させるタイムゾーン
++   entry #occurrence   繰り返された時間のどの出現であるか：`Occurrence.First`（既定）または `Second`
++       同じ壁時計の時間が二度起こる、時計を戻すときの重なりの中でだけ意味を持つ。
++       `Instant#in` は、切り替え後の遅い方のオフセットにあるインスタントに対して、これを `Second` に設定する。
++   entry #leap   読みが挿入されたうるう秒であるかどうか：`Leap.None`（既定）または `Leap.Inserted`
++       `23:59:60` という読みは `Leap.Inserted` を伴う `:59` として格納され、`#instant` はそれを、うるう秒のない `Unix` の線上で 1 秒後に確定させ、`#tai` は次の秒の 1 SI 秒前に確定させる。
++       `ts"…"` 補間子は、`:60` のリテラルに対してこれを設定する。
++   entry #instant   タイムゾーンの規則を通して、読みを `Unix` の時刻系に確定させる
++       スコープ内に `RomanCalendar` と `GapPolicy` を必要とする。
++       時計を戻すときの重なりの中の読みは `#occurrence` によって解決され、時計を進めるときのギャップの中の読みは `GapPolicy` によって解決される。
++       既定では前方へ（同じ壁時計の上で古いオフセットを保つので、ギャップの直後に着地する）、`gapPolicies.pushBackwardGapPolicy` では後方へ解決し、`gapPolicies.rejectGapPolicy` のもとでは理由 `Gap` の `Moment.Error` を発生させる。
++       挿入されたうるう秒は、その次の秒に確定する。
+
+% 2 1 0 14076497eb2227df195545e46a3c4b65
+
+% 3 1 0 012e1fb0716895bb0a2a915d017c05fd
+
+% 4 1 0 0cfc8267425583f81f027af714ced74f
+
+% 5 1 0 0b7fa39dc40be18a0a638580b8525762
+
+% 6 1 0 0d7f49c190e3b56d1b21a141e88a53fe
+
+% 2 1 0 03065990d0a37a6c19b12fe22a5541b3
+
+% 0 1 0 08f3ef620ea39f78102521b4f3897461
+
+% 1 1 0 0f7ca0d1cc8e1e200fe8803e4f76430c
+
+% 2 1 0 10fa93d68870535f0d55a196d24232e5
+
+% 3 1 0 05a8eca1dd35d18f14de5a52909429cf
+
+% 4 1 0 1f1b318cfa5b9a461cca196518f51e50
+
+% 5 1 0 0d182e4be51d3525159ca24fbe3c3c4f
+
+% 2 1 0 06b0515a49edcc371f8a947ce0a4ff5d
+
+% 0 1 0 1f3cc3aad4ab3c6b10e743436caf216b
+
+% 1 1 0 0e0a887a19d77bf715520831738619be
+
+% 2 1 0 1c2c94dc11d5eb250fed2e6dd96bd777
+
+% 3 1 0 1dfe5df65bfde97f19d7fede49fc772d
+
+% 4 1 0 01529b5687f377d112f23243205145fc
+
+% 5 1 0 095d7a7c1188bb650ade611ca8da9f50
+
+% 6 1 0 17aba018460ae0f4025378486137a128
+
+% 2 1 0 08297deaaf11da401966104b7a1624e9
+
+% 0 1 0 155543c38d3bad590ee272dc09a22617
+
+% 1 1 0 032f5a29e857d8661ca1c2e7997fb41e
+
+% 2 1 0 1c19c95b7ffdab361c1e066e5eb76552
+
+@ 0 5 0 150a55a78b953b3e057f7a5f163f16d6
++   entry #tai   うるう秒を数えて、読みを原子時の `Tai` 時刻系に確定させる
++       `#instant` を TAI に変換したものと同じだが、挿入されたうるう秒は、次の秒とインスタントを共有するのではなく、ちょうどその 1 SI 秒前になる。
++       `RomanCalendar` と `GapPolicy` を必要とする。
++   entry #timestamp   タイムゾーンを除いた、`Timestamp` としての読み
+
+@ 0 1 0 1c7a648006125bd4168401df15939226
++ entry .MonotonicClock   `monotonic()` の読みの源：任意の原点からの経過時間
+
+% 1 1 0 0b23e0d936a527cd0154537348f3b1ea
+
+@ 0 7 0 1abf46fff6cea44f15e81aeb4d8ceb94
++       `MonotonicClock` はシステムの単調時計を読み、その読みは `Instant over Monotonic` である。
++       ナノ秒単位で進み（`Resolution.monotonic`）、決して戻らず、何の意味も持たない原点から測られる。
++       したがって、引き算して `Duration` にしたり順序付けたりはできるが、日付に変換したりタイムゾーンに置いたりすることはできない。
++       `monotonic()` はスコープ内で与えられた `MonotonicClock` を読む。
++       `.current`（JVM の `System.nanoTime`）は暗黙のスコープにあり、Wasm のプログラムは代わりに `wasi:clocks/monotonic-clock` を読むために `clocks.wasiMonotonicClock` をインポートする。
+
+% 2 1 0 13123cc29be74ce31cb9b775f840cf9f
+
+% 3 1 0 1817793c72c75ac21cc3dac469e165f5
+
+% 5 1 0 119adf0013ecfa9d0e1e07cfd3500e0d
+
+% 0 1 0 0e96dda6cb20728d118ae7a318809bc2
+
+% 1 1 0 0ce749cc017b980c1f7cbab76da1ebdb
+
+% 2 1 0 00da698d4efbfe6a082b194111211c1a
+
+@ 0 2 0 020fca127c8b6780064e165231ba20bf
++       これは `Findable` なので、時間計測を決定的にするために、独自の `MonotonicClock` をローカルな given として束縛できる。
+
+% 0 1 0 04a589f9e810d3631981ae0e834608d3
+
+% 1 1 0 1a2944be809c72770de0dce9dde236f6
+
+% 0 1 0 040b2106c07d06151f29e5b14ac07e65
+
+@ 0 2 0 110b16847efbc8f60b56fc1a2976d0ae
++   entry .current   JVM の単調時計 `System.nanoTime`。暗黙のスコープにある
++   entry #apply   時計を `Instant over Monotonic` として読む
+
+@ 0 1 0 0f2e5c08977fe7e50e2d5cd13c9e3fc4
++ entry .Month   ローマ式の暦の 12 の月 `Jan` から `Dec`。期間の基数でもある
+
+% 1 1 0 02f6fe9b7eb63d330b3f5f83c0486cb5
+
+@ 0 4 0 0063465391a621070afdd60403cfd9a4
++       `Month` は `Jan`、`Feb`、`Mar`、`Apr`、`May`、`Jun`、`Jul`、`Aug`、`Sep`、`Oct`、`Nov`、`Dec` からなる列挙型であり、パッケージへエクスポートされるので、各場合はそのまま使える。
++       これはすべての `RomanCalendar`（ユリウス暦、グレゴリオ暦、移行期の体制）と `OffsetCalendar` の月の型である。
++       ほかの暦は独自の月の列挙型を持つ。
+
+@ 0 4 0 04f3d38889da4b9313b4982d2fb041ed
++       コンパニオンは `MonthRadix` なので、`n*Month` は `Timespan of Month.type` になる。
++       これは暦の月の数であり、月の日のあふれのための `Disambiguation` がスコープにあるときにだけ `Date` に加えられる。
++       月は日付も作る。
++       `2024 - Jan` は `Monthstamp` であり、`Jan - 15` は `Anniversary` なので、`2024-Jan-15` は左から右へ `Date` として読まれる。
+
+% 2 1 0 0451b1f23b9151681df0b71c8b0308d2
+
+% 3 1 0 0a9d93180a0d68b419c0017ff51d5520
+
+% 4 1 0 08a2454651bfba8e159e20e16f852221
+
+% 5 1 0 04b81136cffe06cc05b00a67bc87034b
+
+% 6 1 0 1ad8562b9b6f03c11f68c9f10537f665
+
+% 0 1 0 0a2934e22c204efd1a74fed3d85afd0e
+
+% 0 1 0 1ddcd2f9f80b81ef06072f596c584c9c
+
+% 0 1 0 163399107dc4720f17638d9ac608526d
+
+% 1 1 0 061c9d3a7174dd0e038e7fc504c49a0f
+
+@ 0 3 0 13c9b9ea5c9f83ca10f0acd744bb6898
++       月をどう*表示*するかは選択である。
++       `.showable` は、`monthFormats` パッケージ（`englishMonths`、`englishShortMonths`、`frenchMonths`、`numericMonths`、…）からインポートした `Months` をスコープに必要とする。
+
+% 0 1 0 177f2fdf8b9ef1b8143c4351fb18ce8c
+
+% 0 1 0 141339c48d3715e71af3a4380ecca783
+
+% 0 1 0 060f3242f70b63ec05504c5a6226a0e7
+
+% 1 1 0 10dcdb0cabe50f3407144f03028eb172
+
+@ 0 31 0 023b1f44b1173876178198571375d4b5
++   entry .all   順に並んだ 12 の月。`Array` として
++   entry .apply   1 から数えたインデックス、または 3 文字の名前による月
++       `Month(3)` は `Mar` であり、`Month(t"Mar")` も列挙型の場合の名前によって同じものになる。
++       1 から 12 の範囲外のインデックスや、場合の名前でない名前は、理由 `Unknown` の `Moment.Error` を発生させる。
++   entry .unapply   1 から数えたインデックスと、大文字小文字を区別しない名前に対する抽出子
++       `case Month(month)` は、1 から 12 の `Int`、または `t"mar"` や `t"MAR"` のような `Text` に一致する（名前は検索の前に小文字にしてから先頭を大文字にする）。
++   entry .multiplicable   `n*Month`：`n` 個の暦の月の期間
++       暗黙のスコープにある `Int is Multiplicable by Month.type` の given であり、`3*Month` を `Timespan of Month.type` にする。
++   entry .monthOfYear   `year - month`：`2024 - Jan` のような `Monthstamp`
++       年と月の間の `-` を型付けする `Int is Subtractable by Month to Monthstamp` の given である。
++       演算子自体は `.monthOfYearOp` を通して展開されるので、`2024 - Jan - 15` はリテラルの年と月を引き続き見ることができる。
++   entry .MonthOfYear   `year - month` のインラインの形。リテラルを `Monthstamp - day` から見えるように保つ
++       通常は名前で指定しない。
++       `.monthOfYearOp` がこれを提供する。
++       インライン化のあと、`2024 - Jan` はリテラルによる構築 `Monthstamp(Year(2024), Jan)` になり、これによって `Monthstamp - day` 演算子はコンパイル時に `2024-Feb-30` を検査できる。
++   entry .monthOfYearOp   `.MonthOfYear` のインラインの given
++   entry .showable   スコープ内の `Months` によって月を描画する
++       `monthFormats` から名前でインポートした `Months` を必要とする。
++       既定のものはないので、どれかを選ばなければ `Month` は表示できない。
++   entry .subtractable   `month - day`：`Mar - 14` のような `Anniversary`
++       `Operand = Int` と `Result = Anniversary` を持つ `Month is Subtractable` の given であり、`2024-Mar-14` の日はこうして月に付く。
++       日はここでは検査されない。
++       `Anniversary` は、日付が存在する前に年に適用される。
++   entry #numerical   1 から数えた月の番号。`Jan` が 1
++   entry #offset   平年またはうるう年で、この月が始まる前の年の日数
++       `Feb.offset(false)` は 31、`Mar.offset(true)` は 60 である。
++       暦はこれを使って、年、月、日からユリウス通日を計算する。
+
+@ 0 1 0 0535dd7f9a9f97651bb524913a38d7f8
++ entry .Months   月の名前の選択：`Month` をどう表示するか
+
+% 1 1 0 141a5a7e60fb039d14b3039e94e04c10
+
+@ 0 6 0 12904c0f73daf2ac010e8ca596fc1d7f
++       `Months` は各 `Month` をその名前に対応付けるもので、`Month.showable` と日付の形式が必要とするコンテキストである。
++       暗黙のスコープには一つもない。
++       `monthFormats` パッケージから名前でインポートするか（`englishMonths`（`January`）、`englishShortMonths`（`Jan`）、`frenchMonths`、`germanMonths`、`spanishMonths`、`oneLetterAmbiguousMonths`、`numericMonths`（`1`）、`twoDigitMonths`（`01`））、このトレイトは単一のメソッド `#name` を持つので、ラムダとして書く。
+
+% 2 1 0 1baa1da37d46a4b702e2f620f3165df1
+
+% 3 1 0 06b6fa6da23b6a4a1e84c7a746616d46
+
+% 0 1 0 06a11e509a3fc4aa1c3076a42d2fdc85
+
+% 0 1 0 1c518996ada748c305c41b1886e54d12
+
+% 1 1 0 12ae30d14b10c2c51825f7f3ddea3fd2
+
+@ 0 1 0 0c2934dfb575a440133ee942b5fcc577
++   entry #name   この選択のもとでの月の名前
+
+@ 0 1 0 0ed5625622d6ad750baa4e30252463ab
++ entry .Monthstamp   年と月 `2024 - Jan`：月の精度のタイムスタンプ
+
+% 1 1 0 171dea1878bc06f80bc98acd7acc28ad
+
+@ 0 5 0 1db3b1cd104a976e1d4818c607c92d70
++       `Monthstamp` は `Timestamp in Month` である。
++       グレゴリオ暦の月の最初のインスタントに月の精度のタグを付けたものなので、同じ月の二つのスタンプは等しい。
++       年から月を引く形 `2024 - Jan` で書き、日付リテラルの中間部分になる。
++       `2024-Jan-15` は `(2024 - Jan) - 15` である。
++       その `year` と `month` はスコープに暦がなくても読み戻すことができ、`Date#monthstamp` は日付からそれを復元する。
+
+% 2 1 0 11809fd9b4bb3347036549afe691ecd4
+
+% 3 1 0 00ed95398c687d661d59be3ef6ebaaf5
+
+% 4 1 0 0865dcc07d1fe24d1de82cb4507e8786
+
+% 0 1 0 032cbcc7b7d7896f120f254a5e4a1e2e
+
+% 0 1 0 1c7eeecf175281a219666a712865727b
+
+% 0 1 0 056825051ca705a70111371913a2906e
+
+% 0 1 0 03f0b3261a7a86f91a225eac8b07cd3b
+
+% 1 1 0 11f3c7b68f3874ce083b3ed166dd3005
+
+@ 0 7 0 0c4d2bb78d367e1a0af5c1b425b3f26d
++       月の日を引くとその日の `Date` が得られ、演算子はそれをコンパイル時に検査する。
++       `2024-Feb-30` は実行時のエラーではなく、コンパイルエラーである。
++       そのためには、年、月、日がすべてリテラル（またはリテラルのローカルな `val` か `given` の別名）でなければならず、スコープ内の `RomanCalendar` は `calendars.gregorianCalendar`、`julianCalendar`、`papalCutover`、`britishCutover` のいずれかでなければならない。
++       それ以外のものは、それ自体がそのオペランドを示すコンパイルエラーになる。
++       実行時に計算される日付は、代わりに `Tactic[Moment.Error]` のもとで、暦の `jdn(year, month, day)` で作る。
+
+@ 0 6 0 0c86db486b86647816301c3176020c4d
++       月と年の整数単位の算術は、結果の月の精度を保つ。
++       `(2024 - Nov) + 3*Month` は `2025 - Feb`、`(2024 - Jun) + 1*Year` は `2025 - Jun` であり、`Timespan` を引くと同じように戻る。
++       期間の日、時、それより細かい成分は無視される。
++       マンスタンプは（スコープに `Months`、`Date.Separation`、`Endianness`、`Years` があれば）エンディアンネスに従って `Mar.2024` または `2024.Mar` として表示される。
++       これらの given は `Timestamp` のものと並んで、基になる型の暗黙のスコープにある。
+
+% 1 1 0 196a4b73e8c34130104e42c5b0199308
+
+% 1 1 0 1577f8d453d52ea302ef5fc38dbe5709
+
+% 0 1 0 1ca8d94d4d92ff600e3a9603f9af0a4a
+
+% 0 1 0 0cff37454a1833cc17209a749e49d7bc
+
+@ 0 11 0 15cbce261a25439113b006d9562c901b
++   entry .apply   `Monthstamp(year, month)`：月の最初の日を、月の精度のスタンプとして
++       その月の 1 日のグレゴリオ暦のユリウス通日を計算する。
++       `2024 - Jan` 演算子は `Month.monthOfYear` を通してここに到達する。
++   entry .MonthstampSubtraction   `monthstamp - day` を `Date` にするインラインの `-`。コンパイル時に検査される
++       通常は名前で指定しない。
++       `monthstampSubtraction` の given がこれを提供する。
++       その `op` はマクロであり、年、月、日がリテラルで、スコープ内の `RomanCalendar` が既知のものであれば、コンパイル時に日付を検証し、`2012-Feb-30` のような不正な日付で停止する。
++       リテラルでないオペランドや、認識できない暦は、それを示すコンパイルエラーになる。
++       単純な `Subtractable` の証人である `Monthstamp.monthstampSubtractable` は、その月にない日でその `subtract` が直接呼び出されると、エラーを発生させるのではなくパニックする。
+
+@ 0 1 0 08370489c6799ed30a5fb49e9cb6e49e
++ entry .OffsetCalendar   ローマ式の暦と月と日を共有するが、年をオフセットで数える暦
+
+% 1 1 0 1dae3bd772aa65350236c66a75b06da6
+
+@ 0 5 0 04fe07d0e485e73b01b3f269cd6f3530
++       `OffsetCalendar(base, offset, name)` は、`RomanCalendar` の月と日を別の年の数え方のもとで使うものである。
++       タイ仏暦はグレゴリオ暦に 543 を加えたもの（`calendars.buddhistCalendar`）であり、中華民国の民国紀元はグレゴリオ暦から 1911 を引いたもの（`calendars.minguoCalendar`）である。
++       どちらも `calendars` パッケージにある given で、名前でインポートする。
++       新しいものは、任意の `RomanCalendar` と `Int` から作る。
+
+% 2 1 0 1aa1d06e2958259c12076f3cdaec2e6f
+
+% 3 1 0 0511972a82966d111b6d4cd89b754164
+
+% 0 1 0 15ce5fb08c3b7a680bdfb067d0bde234
+
+% 1 1 0 12d65891ab686efc1d50498229ac035e
+
+% 0 1 0 19081d86059192f413bf6958014c115c
+
+% 1 1 0 1cbac61805f70a831667d2123e616710
+
+@ 0 5 0 062f9417e03240d518144795ee58171b
++       これは `Enumerated[Month]` なので、その `Mensual` は `Month` であり、その `MonthUnit` は `Month.type` である。
++       `Timespan of Month.type` は、この暦のもとで日付に加えられる。
++       暦のすべての操作（`daysInYear`、`daysInMonth`、`annual`、`mensual`、`diurnal`、`zerothDayOfYear`、`computeJdn`）は、年をオフセットで変換してベースに委譲する。
+
+% 1 1 0 05921618316957f4086f1f4b14e4a20c
+
+% 2 1 0 04fde06de523b2e6197afa144b6edce3
+
+@ 0 2 0 0f240c0204b11c8008cfe31c97a45929
++   entry #name   `Buddhist` のような暦の名前
++   entry #MonthUnit   この暦が受け付ける月の期間の基数：`Month.type`
+
+@ 0 1 0 11ced957d2bd86171a4aec8c36bb19d2
++ entry .OrdinalCalendar   ISO 8601 の年間通算日の暦：年と年内の通算日からなり、月はない
+
+% 1 1 0 12ec66fa7e0732db18ef4b855210f57e
+
+@ 0 5 0 07d33581b8173ed40a7efeb765c5c7a7
++       `OrdinalCalendar` は、年全体にわたる名残の月 `.Annus` を一つだけ持つ `Calendar` オブジェクトである。そのため、この暦の日付は年と 1 から 365 または 366 までの日の番号、たとえば 2024 年の 247 日目となる。
++       年の境界はグレゴリオ暦のものである。
++       これは名前でインポートする given の `calendars.ordinalCalendar` であり、そのもとでは `Date#day` は年内の通算日になり、`format` は `2024-247` と描画する。
+
+% 2 1 0 0e66e8a7d3680d4b06bd505dae6454d8
+
+% 3 1 0 074ca5cd88ec51e11784104fc661a34a
+
+% 4 1 0 0c48738de2caa78601e39e3a0c64f5eb
+
+% 0 1 0 05308bf77570d749114a396d2217cdea
+
+% 1 1 0 03b052b877907b890569d03eb82eb95a
+
+% 0 1 0 1ddc60b1391a3fdd03949cdc38179fff
+
+% 0 1 0 1349058238c0df5c151bf57242c07350
+
+% 1 1 0 0ba24166ff67be311f54af18a5a46df7
+
+@ 0 3 0 084fe65f7c2156d7189a987943ac2955
++       その `Mensual` と `MonthUnit` はどちらも `Annus.type` なので、そのもとでの日付にはどの月の期間も適用されない。
++       `Date#yearDay` は、この暦に切り替えなくても、どの暦のもとでも同じ日の番号を与える。
+
+% 1 1 0 11db1fe708dab9570d8a6c847c74fa4c
+
+% 0 1 0 1ffc87d9e547bf991d61063ffba0cb74
+
+@ 0 5 0 169cb60702aedcbe1743647e475349ac
++   entry .Annus   年全体にわたる、年間通算日の暦の唯一の月
++       `MonthRadix` オブジェクトであり、その `.annusShowable` はこれを `Annus` と描画する。
++   entry .annusShowable   `Annus` をテキスト `Annus` として示す
++   entry .Mensual   月の型：`Annus.type`
++   entry .MonthUnit   月の期間の基数：`Annus.type` なので、どれも適用されない
+
+% 0 1 0 05ad913df2d6c5ad00d8d6fc34b506d8
+
+@ 0 4 0 039c2cd54ab6cce80b4a83958ceffa66
++   entry .apply   `OrdinalCalendar(year, dayOfYear)`：年の `n` 日目の日付
++       日が 1 から年の長さまでの範囲の外にあるとき、理由 `Invalid` で `Moment.Error` を発生させる。
++       `Tactic[Moment.Error]` を必要とする。
++   entry .format   日付を `2024-247` のような `year-dayOfYear` として描画する
+
+@ 0 1 0 176050324b31ff67171f89f0c735dff4
++ entry .Period   同じ種類の二点の間の半開区間：時点、日付、タイムスタンプ、またはモーメント
+
+% 1 1 0 1e5da7790edd326c1aa27fb3728b4268
+
+@ 0 4 0 18e0478822eafab31ea842154b7743a1
++       `Period(start, finish)` は、`start` を含み `finish` を含まない区間であり、任意の点の型、すなわち `Instant over X`、`Date`、`Timestamp`、`Moment` の上に作れる。
++       半開なので、連続する区間は境界を共有せずに時刻系を敷き詰める。これが `has(finish)` が偽である理由である。
++       二つの時点からは `start ~ finish` で区間を作る。
+
+% 2 1 0 1ade0d2bfb4505a21f5343ab31a64001
+
+% 3 1 0 08dc4251fde3511d1777fa4c613856aa
+
+% 4 1 0 14de9a82e4fe279b01baac43804f5f5a
+
+% 0 1 0 1abe82516c5b74cc1459702b1c0d4853
+
+% 0 1 0 19bd9df91311fed9173e2c83756deac1
+
+% 0 1 0 15be0df31d17e70216191542c9d89d27
+
+% 0 1 0 1c361947e1e5445d1ea270646957fd5d
+
+% 0 1 0 17faf75ccc15307f11817cfff8a51081
+
+% 0 1 0 145689655d9edbdb0124cdbc1b3621eb
+
+% 1 1 0 1927a653de0082010a7df7384a1b6e90
+
+@ 0 7 0 0135472d0f924b3111ada943bbfed4a2
++       区間の長さが何であり、何で刻んで進められるかは、点によって決まる。
++       時点は `Duration` だけ異なり、`Duration` または規則的な `Timespan` で進む。日付、タイムスタンプ、モーメントは `Timespan` だけ異なり、それで進む（不規則な期間は、`Date + Timespan` が必要とする `Calendar` と `Disambiguation` を引き込む）。
++       順序に関わる操作（`#intersect`、`#union`、`has`、`by`、`segments`）は、点の実行時の `Comparable` を取る。aviation のすべての点はそれをコンパニオンに持っている。
++       `Recurrent` の `within(period)` は、区間が含む発生を選び出す。
+
+% 1 1 0 1eff69b52a1fa34e0c1912c9c496c794
+
+% 1 1 0 10c6f42e9b0b6fda053a08e0f02c5def
+
+% 1 1 0 1b66783b9c99800502a725d1aa1643a3
+
+@ 0 9 0 0aea1a6c3f80efba12d69ff2b2717142
++   entry .inclusive   `period.has(point)`：開始を含み終了を含まない、所属の判定
++       `Inclusive` の given であり、点の `Comparable` によって `start <= point < finish` のとき、点は区間の中にある。
++   entry .segments   区間を、指定した長さの連続する部分区間に分割する
++       `Period` に対する拡張メソッドである。
++       `period.segments(length)` は、`start` から `length` ずつ進めて `finish` に至るまでの `Period` のリストである。
++       `partial`（既定では真）は、長さが区間をちょうど割り切らないときに短い最後の部分を残し、`partial = false` はそれを落とす。
++       刻みは点が加算できるもの（`point is Addable by step to point`）なら何でもよく、時点に対しては `Duration` または `Timespan`、日付とタイムスタンプに対しては `Timespan` である。
+
+% 2 1 0 10ef5eb80f97248d17b7818edb624f24
+
+% 3 1 0 0779ead5359cf57b07d948c3171570ef
+
+% 0 1 0 10f3d6464bacac020551154d9bcb236d
+
+% 0 1 0 0fe5e5e8e84bd2401c760bc22bf425f2
+
+% 1 1 0 131d49257633bee8056aa18304b8382e
+
+@ 0 5 0 191ddd76f1b6725f109f37f74dbe5664
++   entry .by   区間の点を一定の刻みで並べた、遅延評価の `Chain`
++       `Period` に対する拡張メソッドである。
++       `period.by(step)` は、`finish` より前である間の `start`、`start + step`、`start + 2·step`、… であり、`finish` は含まれない。
++       チェーンは遅延評価なので、日ごとに標本化した何年もの区間も、値が求められるまではコストがかからず、`keep(n)` は安価である。
+
+% 2 1 0 185acdb5ea4212930ffe60a79719a00c
+
+% 3 1 0 1c9d5e21448b1a23140c478d1209f8bd
+
+% 4 1 0 121b7816fe30749115af46c0f29165af
+
+% 0 1 0 0d26c7c16d819dfd1d030fcc59e3245d
+
+% 1 1 0 08e24d5eff6ffcb605c20543411f5932
+
+@ 0 11 0 170316bd660183221ec6242ecf98a1e0
++   entry #start   区間の最初の点。含まれる
++   entry #finish   区間がその手前で終わる点。含まれない
++   entry #duration   `finish - start`。点によって型が決まり、時点なら `Duration`、それ以外は `Timespan`
++       点がそれ自身による `Subtractable by` を持つ必要がある。`Moment` の場合、それはスコープ内に `RomanCalendar` と `GapPolicy` があることを意味する。
++   entry #intersect   二つの区間の重なり。接しているだけか交わらなければ `Unset`
++       共通の点が一方の終了と他方の開始だけになる二つの区間は、終了が含まれないので交わらない。
++       点の `Comparable` を必要とする。
++   entry #union   両方を覆う一つの区間。重ならなければ、二つをそのまま `Set` として
++       点の `Comparable` を必要とする。
++       重なる区間は `Period(min(starts), max(finishes))` にまとめられ、交わらない区間は二つからなる集合として返される。
+
+@ 0 1 0 1b101eb5cf077d1e109199b87bb3f1b1
++ entry .PersianCalendar   ビーラシュクの算術的な 2820 年周期によるペルシア暦（ヒジュラ太陽暦）
+
+% 1 1 0 154975538b814c301f08674841f3c114
+
+@ 0 6 0 06e7d4b7cc9f2d6a14847b6126551709
++       月が `PersianMonth` である `Calendar` である。最初の六か月は 31 日、次の五か月は 30 日、エスファンドは 29 日、閏年には 30 日である。
++       その紀元であるファルヴァルディーン月 1 日の 1 年は、ユリウス通日 1948321（ユリウス暦の 622 年 3 月 22 日）である。
++       閏年は算術的な 2820 年周期に従う。これは公式の観測に基づく暦（東経 52.5° における真の春分）の決定的な近似であり、一部の春分の前後で一日ずれることがある。
++       given は名前でインポートする `calendars.persianCalendar` である。
+
+% 2 1 0 12911f0c3ba0a83f0badefd76ecc4d1e
+
+% 3 1 0 179449b088d79e6708106c34f08d012d
+
+% 4 1 0 1c3f0d38ec2956ba0742df0abda2d2fd
+
+% 1 1 0 1f4436a387b61e6c09df70a6a86f1fd0
+
+% 0 1 0 16973af9c0520bfe1fdba5b0876ad037
+
+% 0 1 0 135538da0abd198b1a66bcd7a33b5ff1
+
+% 1 1 0 176f25195f7db4da18a711072238020c
+
+@ 0 2 0 1f8eb4a0b56cf7050c1a021775452e99
++       その `MonthUnit` は `PersianMonth.type` なので、そのもとでの日付には `n*PersianMonth` を加算でき、`Timespan of Month.type` は加算できない。
+
+% 0 1 0 08a1738acf79f4161a183227ad92b6a5
+
+% 1 1 0 1dce8d04af785ff1045df97a500ca1ed
+
+% 0 1 0 0557974c8133deae1c9f14e5907013f4
+
+@ 0 3 0 082a174e534fd6f008183a670ced5e92
++   entry #MonthUnit   この暦が受け入れる月の期間の基数：`PersianMonth.type`
++   entry #leapYear   2820 年周期によって、年が 366 日あるかどうか
++   entry #daysInMonth   最初の六か月は 31、次の五か月は 30、エスファンドは 29 または 30
+
+@ 0 1 0 056808b07ab8f25a112aef53c2a39cf0
++ entry .PersianMonth   ペルシア暦の十二の月。`Farvardin` から `Esfand` まで
+
+% 1 1 0 14480cce4e0faf3304ebb21d4028e805
+
+@ 0 5 0 0babb5b2914ec5e7091a401c08131a98
++       列挙型であり、`PersianCalendar` の月である `Farvardin`、`Ordibehesht`、`Khordad`、`Tir`、`Mordad`、`Shahrivar`、`Mehr`、`Aban`、`Azar`、`Dey`、`Bahman`、`Esfand` からなる。
++       コンパニオンは `Month` とは別の `MonthRadix` なので、`3*PersianMonth` は `Timespan of PersianMonth.type` であり、これは `MonthUnit` がその基数である暦のもとでのみ日付に加算できる。グレゴリオ暦の月の期間をペルシア暦の日付と混ぜるとコンパイルエラーになる。
+
+% 2 1 0 019ad87f6a956dc715e05cfbe360aedc
+
+% 3 1 0 0465b1267811a28401f9ada78e2243f5
+
+% 4 1 0 0df5198e6ac4f340191d33a2b6176d67
+
+% 1 1 0 001c5923e65e3cd91ea450efc7b41699
+
+% 2 1 0 1167b1564aed9f7305a83980dc381683
+
+% 0 1 0 1c4db2b8d30273820f08bb0db39ff359
+
+% 1 1 0 1bcbec95561b6b32139f868f5148321e
+
+@ 0 1 0 1cc153431ae0297c11ca4c45d9706364
++   entry .multiply   `n*PersianMonth`：`n` か月のペルシア暦の月からなる期間
+
+@ 0 1 0 015eac831cd02bb21017e08dd17b5301
++ entry .Recurrence   ISO 8601 の反復区間 `R5/2024-01-01/P1D`：開始、周期、オプショナルな回数
+
+% 1 1 0 1d076607df8f34f60385069a98e1ff67
+
+@ 0 6 0 18105f509e8396961b27e419c1cffff8
++       `Recurrence` は、開始から一定の間隔で繰り返す出来事である。`repetitions` 回の発生にわたって `start`、`start + period`、`start + 2·period`、… となり、`repetitions` が `Unset`（ISO の裸の `R/`）なら永遠に続く。
++       周期はその型を保つので、発生は正しく加算される。`1*Month` は暦の上の月に従い（そのため生成するにはスコープ内に `Calendar` と `Disambiguation` が必要である）、`8*Hour` は固定の物理的な時間幅である。このため、繰り返しは両方によって型付けされる：`Recurrence of Date by (Timespan of Month.type)`。
+
+% 2 1 0 058e7ae60c138438112a0241575ea239
+
+% 3 1 0 002b131def3fa60a1026affb6d14311d
+
+% 4 1 0 034573db3dd36e6e1accfbdb0dfee69d
+
+% 0 1 0 15e9da5b99dea4ab0fd23b77349f18fb
+
+% 0 1 0 1f3e88119974aa8d16052c1885984611
+
+% 0 1 0 070534f1ccd5846f1b2c583cdd658bb2
+
+% 1 1 0 159a80875a797d7e071185787c773576
+
+@ 0 7 0 1f1d6d3058522f56051fddad24bfd9ca
++       これは `Recurrent`（`.recurrent`）なので、`occurrences`、`until`、`within`、`following` が適用できる。
++       月末の振る舞いに注意すること。各発生は直前の発生に加算されるので、31 日から始まる毎月の繰り返しは `monthEnds.clampMonthEnd` のもとでずれていく（1 月 31 日、2 月 29 日、3 月 29 日、…）。これに対して `Rrule` は開始の日に合わせ直し、その日がない月を飛ばす。
++       テキストの形式は次のとおりである。`#encode` と `.decodable` は ISO のワイヤ形式であり、`rec"…"` 補間子はコードのコンパイル中にリテラルを検査し、`show` はスコープ内の `Locale` が選ぶ言語で繰り返しを説明する。
+
+% 1 1 0 02146e00f7bc74eb1c856275a4f898d9
+
+% 2 1 0 1102202ea8e7aed015a1fd43465e3cdb
+
+% 2 1 0 1b440992f2a783420226839597fceeea
+
+% 1 1 0 059f7d6eb89d45b40207989b051bbc00
+
+@ 0 13 0 1e28fd2be32ac37f00fc3eba31fdc39d
++   entry .apply   `Recurrence(start, period, repetitions = Unset)`：開始と周期によって型付けされた繰り返し
++   entry .encodable   ISO 8601 の反復区間のテキスト `R3/2024-01-01/P1M`
++       `R`、あれば反復回数、開始自身のエンコーディング、そして ISO 8601 の継続時間としての周期を、`/` で区切ったものである。
++       開始の型が `Encodable in Text` である必要がある。
++   entry .inspectable   同じ反復区間の形式を、各部分の検査表示から作ったもの
++       `Inspectable` である任意の開始の型に対して利用でき、`Showable` が必要とする `Locale` のコンテキストは何も必要としない。テストの報告が出力するのはこれである。
++   entry .decodable   `R[n]/<start>/<period>` を、名指した周期の型の繰り返しとしてパースする
++       パースでは周期がどの基数のものだったかが消えるので、呼び出し側が型でそれを名指す：`text.as[Recurrence of Date by (Timespan of Month.type)]`。
++       基数の型が一致しないと継続時間を読み誤るので、データが使うものを名指すこと。
++       `Recurrence.Error`（形式の正しくないテキスト）、`Moment.Error`（開始）、`Timespan.Error`（周期）に対する戦術を必要とする。
+
+% 2 1 0 034e645fab2f075c0e991153a20cb689
+
+% 3 1 0 1720e97900b7e0471c46e2dc6478f2b8
+
+% 4 1 0 13269381c987b14e1ff38dcab7091fff
+
+% 5 1 0 14ebc61c9cccf8ae012d446e59127d97
+
+% 6 1 0 166557f2700e7a4f10fb6d14ce18246f
+
+% 0 1 0 135f8b49a37bf85f0fad71f9124d190a
+
+% 0 1 0 07ba085ab6cefe051b91d54c2fbe90fd
+
+% 1 1 0 04b7656b8560661b085368343dd47f0c
+
+@ 0 11 0 0a977af6bc07b5bd14ccf9cd7bcdc999
++   entry .englishShowable   繰り返しを英語で説明する：_every 2 weeks, 5 times from 2024-01-01_
++       スコープ内に `Locale[en]` があり、開始の型が `Showable` である（`Date` には日付の書式が必要である）ことを必要とする。
++       フランス語、ドイツ語、スペイン語の given は、それぞれのロケールによって選ばれる。
++   entry .frenchShowable   `Locale[fr]` のもとで、繰り返しをフランス語で説明する
++   entry .germanShowable   `Locale[de]` のもとで、繰り返しをドイツ語で説明する
++   entry .spanishShowable   `Locale[es]` のもとで、繰り返しをスペイン語で説明する
++   entry .recurrent   `Recurrent` のインスタンス：発生は `start`、`start + period`、…
++       開始が周期の型による `Addable by` である（`point is Addable by span to point`）ことを必要とし、日付と月の期間の場合、それはスコープ内に `Calendar` と `Disambiguation` があることを意味する。
++       `repetitions` が `Unset` のとき、ストリームは無限である。
++   entry .Error   テキストが有効な ISO 8601 の反復区間でないときに発生する
+
+% 1 1 0 0c498028ff4c139d18d5f7c64fac3d1d
+
+@ 0 8 0 15b48f5a63650ab1010e6d4097382b19
++         _the value `value` is not a valid ISO 8601 repeating interval_ であり、テキストが `/` で区切られた三つの部分を持たないとき、または最初の部分が `R` に数字が続いたものでないときに、`.decodable` が発生させる。
++         開始や周期が不正な場合は、代わりに `Moment.Error` や `Timespan.Error` が発生する。
++     entry #value   パースできなかったテキスト
++   entry #start   最初の発生
++   entry #period   発生の間の刻み。構築されたときの型を持つ（`Timespan of Month.type`、…）
++   entry #repetitions   発生の回数。上限のない繰り返しなら `Unset`
+
+@ 0 5 0 0e91bbb834d3f44c12c7667059a46977
++   entry .Literal   `rec"…"` の結果の型：日付、タイムスタンプ、またはモーメントの繰り返し
++       ユニオン `(Recurrence of Date by (Timespan of Month.type)) | (Recurrence of Timestamp by …) | (Recurrence of Moment by …)` である。
++       周期が `Timespan of Month.type` なので、その暦の構成要素はどの種類の開始にも正しく加算される。transparent な補間子は、ユニオンをリテラルが持つ一つのメンバーに絞り込む。
+
+@ 0 1 0 160fb43da4fe25631be4d5b33a715f26
++ entry .RecurrenceSet   iCalendar の繰り返し集合：マージした発生のストリームに追加の日付を加え、除外を除いたもの
+
+% 1 1 0 0e914bc221a868270d66b65cc0ddb133
+
+@ 0 5 0 1e25ce5eb0fe7a5d1ad6dbda78b810fc
++       `RecurrenceSet(include, rdates, exdates)` は RFC 5545 の繰り返し集合である。
++       一つ以上の昇順の発生のストリーム（`include`。それぞれ典型的には何らかの規則の `occurrences`）の和集合に、明示的な追加の点（`rdates`、`RDATE`）を加え、除外する点（`exdates`、`EXDATE`）を除いたものである。
++       それ自体が `Recurrent` なので、その `occurrences` は昇順で重複のない一つの `Chain` であり、ほかのどの `Recurrent` とも組み合わせられる。
+
+% 2 1 0 1fab61cba5a07f0317dd2cb9f8214208
+
+% 3 1 0 0a0e6c8b0d6425bb156f5e860ba2b434
+
+% 4 1 0 13f58260953a8dc408dac859cf57530d
+
+% 0 1 0 06988d74f6b58c541502b177b0cd6491
+
+% 0 1 0 084ed47ab6d64d3a072dfc3dc42090ac
+
+% 0 1 0 0b8f885b187e24620e53c268148f4a4a
+
+% 0 1 0 0786b7cf5ee9fe3b11170c03c5601669
+
+% 1 1 0 067d6280f7fb634114803d04e0a0dd1b
+
+@ 0 3 0 1434113d3e2317ac1a6ecdeb54ba37c1
++       マージは遅延評価であり、比較するストリームの先頭だけを評価する。そのため、無限の規則を含め、あとから `until` や `within` で範囲を区切ることができる。
++       含めるストリームはどれもすでに昇順でなければならない。
+
+% 1 1 0 162373c4a86803f5188064b759530a85
+
+% 2 1 0 191c4feb4525916a0ac88ee59ce8e049
+
+@ 0 5 0 042a0cb78cc444b61909f412745c190d
++   entry .recurrent   含めたストリームと `rdates` をマージし、重複と `exdates` を落とす
++       点の `Comparable` を必要とする。aviation のすべての点はそれをコンパニオンに持っている。
++   entry #include   マージする発生のストリーム。それぞれ昇順
++   entry #rdates   集合に加える点。順序は任意
++   entry #exdates   集合から除く点
+
+@ 0 1 0 1abb2950f2bdfdbf179ed51a5e40730f
++ entry .Recurrent   順序付きで遅延評価の発生のストリームを生むものすべての型クラス
+
+% 1 1 0 105bc465835cbdad194b4d36c08f17af
+
+@ 0 7 0 02b9f5192b4edf9912015c9f2c72bceb
++       `Recurrent` は、繰り返しのモデルである `Recurrence`（ISO 8601 の固定間隔）、`Rrule`（RFC 5545 の規則）、`RecurrenceSet`（それらの和集合）に共通のインターフェースである。
++       それぞれ発生の生成方法が異なり、そのために必要なコンテキストも異なる。`Recurrence` には `Addable` が、`Rrule` には `RomanCalendar` が必要である。
++       これが基底トレイトではなく given で運ばれる型クラスである理由である。インスタンスは必要なものを捕捉し、`occurrences`、`until`、`within`、`following` のコンビネーターは任意の `Recurrent` に対して一度だけ書かれる。
+
+% 2 1 0 06e02a1ca891be0703da3e36a95c4838
+
+% 3 1 0 10e8d9c7c37cfc4101372ea7b3ed5923
+
+% 4 1 0 08030b3fddb1158e1b270cfaf5f8a392
+
+% 0 1 0 035a0ef9e1056afe04a5999ca70719f0
+
+% 0 1 0 1734fadf96cfed880f69c6ebe9e437fc
+
+% 0 1 0 0d93f9fe45332cf2066ccee975c0eaa1
+
+% 1 1 0 1213858b8bccc64a1645eb3a088e5e89
+
+@ 0 1 0 019131a615dd7f111dcd910f11f530b6
++       その `Topic` はストリームの点の型、すなわち `Date`、`Timestamp`、`Moment` である。
+
+% 1 1 0 1dfc8dfc2d1070b71497b5ea5175e15d
+
+% 1 1 0 10c59f4002201558068c811d2cb68680
+
+% 2 1 0 18c711bc10e3f6dc1d2e69771effc7fc
+
+% 0 1 0 0472b6dbafe8402b0dd3d7c9d4181c0c
+
+@ 0 3 0 0710fb159e58d219168aa79e41077eab
++   entry #occurrences   値の発生の、昇順で遅延評価の `Chain`
++       上限のない繰り返しでは無限なので、そのまま `List` に変換するのではなく、`keep`、`until`、`within` で消費する。
+
+@ 0 1 0 1ca4de783c1b718f07e6b5bfdf8ad270
++ entry .Regime   歴史を通じて変わってきた施行中の暦：ユリウス通日で引き継ぐ区分
+
+% 1 1 0 0a5ea74e24b025e214dc8ce587c7283c
+
+@ 0 7 0 1427d355f0a372511a04f6b56a30a82e
++       `Regime` は順序付きの `.Segment` からなる `RomanCalendar` であり、各区分は暦と、それが適用される最初の日付からなる。
++       日付は、そのユリウス通日を支配する区分に位置づけられるので、レジームは単一の暦とまったく同じように使え、切り替えの前後の日付は自動的に変換される。
++       二つの区分からなる場合が、ユリウス暦からグレゴリオ暦への混合である。`calendars.papalCutover` は 1582 年 10 月 15 日（ユリウス暦の 10 月 4 日の翌日）に、`calendars.britishCutover` は 1752 年 9 月 14 日に切り替わる。どちらも名前でインポートする。
+
+% 2 1 0 11f857dcf67b31d80aafde46cb6da17a
+
+% 3 1 0 0e50ee3938277fe61475e90b065dd7da
+
+% 0 1 0 1b7a77e0318ea815016c0bbf2a94091b
+
+% 0 1 0 03598e235865e3221f5b1b9ed0108f74
+
+% 0 1 0 1c75f29086c3e87014e7bc52b665ada6
+
+% 0 1 0 029c50baaf3335370c385ebe68d2c2fe
+
+% 1 1 0 004ef960b1e385941deeeccf51009b23
+
+@ 0 4 0 05238c427083be900eededde09b8075b
++       空白期間の日付は隣接するどちらの暦にも存在しない。空白期間のリテラルはコンパイルエラーになり、実行時に計算された日付はレジームの `jdn` によって `Moment.Error`（理由 `Invalid`）で拒否される。ここでの `validDate` は月内の日の範囲の検査以上のものだからである。
++       年が閏年かどうかは、その年の中間点を支配する暦によって決まる。
+
+% 1 1 0 1d3e9c7a4b3721540e78b24efb2998a2
+
+% 2 1 0 1cb1f4bcf298f39914582f80fddc8d7f
+
+@ 0 1 0 00f2a2b220f39af11d55ee031d7c2ff7
++   entry .Segment   一つの暦と、それが支配する最初の日付
+
+% 1 1 0 19beac39b9ad282f0ab9a4a0128f3cf2
+
+@ 0 10 0 0e67d4c35e00bd8f13372d8e3e9975de
++         `Regime.Segment(from, calendar)`：レジームは `calendar` を `from`（ユリウス通日で比較される `Date`）から次の区分の `from` まで適用する。
++         ある暦の最後の日と次の暦の最初の日は同じユリウス通日を共有するので、引き継ぎの日はどちらのもとでも有効である。
++     entry #from   区分が支配する最初の日付
++     entry #calendar   その日付から施行される `RomanCalendar`
++   entry .apply   `Regime(name, segments*)`：区分から作るレジーム。開始の順に並べられる
++   entry #leapYear   年の中間点を支配する暦のもとで、その年が閏年かどうか
++   entry #leapYearsSinceEpoch   支配する暦の閏年の数。ユリウス通日の計算に使われる
++   entry #validDate   日付が存在するかどうか：いずれかの区分に位置づけられなければならないので、切り替えの空白期間の日付は有効でない
+
+@ 0 1 0 16dc879aee660b590281890119784e10
++ entry .Resolution   `Instant over X` の一刻みが何ナノ秒か
+
+% 1 1 0 08fe4e114ad9355b073823b0a9061ca0
+
+@ 0 6 0 10954509a54b96400b190b3931492cc6
++       各時刻系はその時点を刻みの数の `Long` として保持し、`Resolution` は一刻みが何であるかを示す。
++       `Unix` と `Tai` の時刻系は 1 ミリ秒ごとに刻み（`nanos` = 1 000 000）、`System.nanoTime` の読み取り値である `Monotonic` は 1 ナノ秒ごとに刻む。
++       時点の算術（`instant + 1*Second`、`instant - duration`）は時刻系の `Resolution` を使って秒を刻みに変換するので、一秒はどの時刻系でも正しい数だけ進む。
++       三つの given は暗黙のスコープにある。新しい時刻系は自身のものを提供する。
+
+% 2 1 0 06030408b27189dd1bfb37f00f96aa01
+
+% 3 1 0 16d90f0b5c2447a80b6406116384f94f
+
+% 5 1 0 0fb80e69d478adbf08609c17391e53b1
+
+% 0 1 0 18552ec2658851dc026d6be28d647c1f
+
+% 1 1 0 02958b4e68935ca008d86fc89c88ac1c
+
+% 2 1 0 0789ba3c12c5be971bc09327daf3b0cd
+
+% 1 1 0 145035639a8826bb1fd78d97c3900ff0
+
+% 0 1 0 0806cecd5208817d092e2c17c145c192
+
+@ 0 4 0 1946279066f191f6027c846e057422e2
++   entry .unix   `Unix` の時刻系はミリ秒単位で刻む
++   entry .tai   `Tai` の時刻系はミリ秒単位で刻む
++   entry .monotonic   `Monotonic` の時刻系はナノ秒単位で刻む
++   entry #nanos   一刻みのナノ秒数
+
+@ 0 1 0 058ea6ae39d8357d04488ca7d3505ff5
++ entry .Rfc1123   HTTP ヘッダーの RFC 1123 の日付形式：`Sun, 06 Nov 1994 08:49:37 GMT`
+
+% 1 1 0 1d32243fc604be6e19c1dd880e137128
+
+@ 0 7 0 1d8a5516f719cfd608af17b234e3b156
++       `Rfc1123` は `RFC 1123` という名前の `Date.Format` であり、HTTP が `Date`、`Expires`、`Last-Modified` ヘッダーに使う固定幅の形式である。三文字の曜日、カンマ、二桁の日、三文字の月、四桁の年、`HH:mm:ss`、そしてリテラルの `GMT` からなる。
++       `.parse` はこれを `Instant over Unix` に読み、`instantDecodables.rfc1123InstantDecodable` は、名前でインポートすると、これを `text.as[Instant over Unix]` の背後にあるデコーダーにする（もう一つの選択肢は ISO 8601 のデコーダーである）。
+
+% 2 1 0 1cf3dfa9af614b0a083c25887484c36b
+
+% 3 1 0 11a80885d5dcc45c0e099035d70f8399
+
+% 0 1 0 00674e06fad2c0f50a939cb3046c91c0
+
+% 1 1 0 07e39e347f45b73617d2474afcfea618
+
+% 0 1 0 1dafe75f296372de02f2965c9bbbe6d8
+
+% 1 1 0 19f670415bcbaa9d066cfc72d206f8ba
+
+@ 0 2 0 01fd29850de9a261014d3e154a3bfe8a
++       一桁の日（`Wed, 3 Jul 2002 …`）は RFC 1123 ではなく、拒否される。形式は固定幅である。
++       曜日は綴りが検査されるが、日付と一致するかどうかは検査されない。
+
+% 1 1 0 1492adb995854a320e2bf06b1bebb556
+
+% 1 1 0 1f3c463331a3236c0905054b78c96283
+
+@ 0 11 0 13777dc7ed3cb9d819faff7cfdb0d6cb
++   entry .Issue   テキストのある位置で何が誤っていたか
++       列挙型である。`DayName(days*)`、_expected a day name (…)_ は、テキストがまだなりえた曜日の名前を列挙する。`MonthName(months*)`、_expected a month name (…)_。`Expect(char)`、_expected `char`_ は、欠けたカンマ、空白、コロン、または `GMT` の文字に対するもの。そして `Digit`、_expected a digit_ である。
++       `Issue` は、それが起きたオフセットとともに `Moment.Error.Reason.Format` の中で運ばれ、`Communicable` である。
++   entry .parse   RFC 1123 のテキストを `Instant over Unix` に読むか、`Moment.Error` を発生させる
++       `Tactic[Moment.Error]` を必要とする。
++       各フィールドはそれぞれ独立した試みとしてパースされるので、不正なタイムスタンプを一回走査するだけで、数字のすべての問題が `Moment.Error(_.Format(text, Rfc1123, offset)(issue))` として報告される。時点は、問題のないパースからのみ、`tz"GMT"` における `Timestamp` として構築される。
+
+@ 0 1 0 1907abef5f80673109aa138c1314b5b5
++ entry .RomanCalendar   十二のローマの月を持つ暦の系統：ユリウス暦、グレゴリオ暦、およびそれらの切り替えのレジーム
+
+% 1 1 0 0904eb92751fb7af06607782bfb375bd
+
+@ 0 9 0 0ed41709d0ab89930f5d60dd2b699922
++       `RomanCalendar` は、誰もが知る月の長さ（31、28 または 29、31、30、…）を持つ `Enumerated[Month]` の暦であり、兄弟の暦とは `#leapYear` と `#leapYearsSinceEpoch` だけが異なる。`Calendar` インターフェースの残り（`annual`、`mensual`、`diurnal`、`computeJdn`、`zerothDayOfYear`、`daysInMonth`、`daysInYear`）はこの二つから導かれる。
++       インスタンスは `calendars.julianCalendar`（四年ごと）、`calendars.gregorianCalendar`（400 で割り切れない世紀を除く）、そして `Regime` の `papalCutover` と `britishCutover` であり、それぞれ名前でインポートする given である。既定でスコープにあるものはないので、グレゴリオ暦の日付のリテラルには `import calendars.gregorianCalendar` が必要である。
+
+% 2 1 0 14e063bb025cf2b90bcab61cb1982245
+
+% 3 1 0 066449be3146ccbe1a0203063e32e0f1
+
+% 4 1 0 1fda201649a58d4e0ad3b969935d58bd
+
+% 0 1 0 05de612f99612dab13c477fda713f641
+
+% 0 1 0 06568fe90409989e048e4e1b58c370d7
+
+% 1 1 0 1c664ad55e040ad8041f949055764e77
+
+@ 0 4 0 10bc1f1cff88407a0a54603cfcd3afaa
++       ライブラリの多くの部分は、任意の `Calendar` ではなく、特に `RomanCalendar` を求める。
++       `Moment#instant`、`Date#monthstamp`、`WeekDate`、`Rrule` の展開、`Instant#in` はいずれも `Month` を持つ暦の中で動作する。
++       新しい暦は、名前と二つの閏年のメソッドを与えてこのクラスを拡張すれば書ける。
+
+% 1 1 0 0ec709fa024563350fdca72f316328f5
+
+% 1 1 0 174940a5a0bf2cb01c0150b805e2d53d
+
+% 0 1 0 0e039afa5dee2f670fc5b3d398e35e7d
+
+@ 0 6 0 00dc3fc7d95cb5341f95a0e8d6e10399
++   entry #name   `Gregorian` のような暦の名前
++   entry #MonthUnit   この暦が受け入れる月の期間の基数：`Month.type`
++   entry #leapYear   年に 2 月 29 日があるかどうか。抽象メソッド
++   entry #leapYearsSinceEpoch   ある年までの閏年の数。`zerothDayOfYear` はここから計算される。抽象メソッド
++   entry #daysInMonth   31、30、または 2 月については `#leapYear` に応じて 28 か 29
++   entry #daysInYear   閏年なら 366、それ以外は 365
+
+@ 0 1 0 0a2bc27c7fa1d85c027047a6fe4ba160
++ entry .WeekdayOrdinal   繰り返し規則の `BYDAY` の一項目：曜日。序数を伴うこともある
+
+% 1 1 0 144a3be569da5c6c1119de06ce4b6a7b
+
+@ 0 6 0 124909b31e5e01e917dcbd05a9887ded
++       `WeekdayOrdinal(weekday, ordinal = Unset)` は `Rrule#byDay` の一つの要素である。
++       裸の曜日（`WeekdayOrdinal(Tue)`、RFC 5545 の `TU`）は周期の中のすべての火曜日を選ぶ。序数を伴うと一つを選ぶ。`WeekdayOrdinal(Mon, 3)` は第三月曜日（`3MO`）であり、`WeekdayOrdinal(Fri, -1)` は末尾から数えて最後の金曜日（`-1FR`）である。
++       序数が意味を持つのは `Frequency.Monthly` と `Frequency.Yearly` のもとでだけである。`Weekly` と `Daily` のもとでは、曜日はフィルターとして働き、序数は無視される。
+
+% 2 1 0 1b05eb005b4b5f7916cc500904c1d5b9
+
+% 3 1 0 1e11cb5b5446780e09234191687b0780
+
+% 4 1 0 1a10f5d9e265a8de154263790463450e
+
+% 0 1 0 1517caebddc2e8a815dee31934a1e594
+
+% 0 1 0 1be22c872079489b1b112d6dc483e5f6
+
+% 1 1 0 0b82bb88cf0c947a02cbb2651a501da8
+
+@ 0 2 0 1e2bf4ea98182d6011252902eb664520
++   entry #weekday   選ばれる曜日
++   entry #ordinal   周期の中の何番目か。正なら先頭から、負なら末尾から数え、`Unset` ならすべて
+
+@ 0 1 0 12be000d70618f5e0c29464d67ee21a9
++ entry .Rrule   開始を伴う iCalendar の繰り返し規則（RFC 5545 の `RRULE`）：「毎月の第三月曜日」
+
+% 1 1 0 1e1eb94035052f0211fc527fac3930e4
+
+@ 0 8 0 016c5ca421449b8110e0bfc6ff2d30c1
++       `Rrule[point]` は、繰り返し規則とその `DTSTART` を一つの値にしたものである。
++       `start`、`Frequency`（`Secondly` から `Yearly` まで）、`interval`、上限（`count` または `until`）、各周期の中で選択を行う `by*` フィールド（`byMonth`、`byWeekNo`、`byYearDay`、`byMonthDay`、`byDay`、`byHour`、`byMinute`、`bySecond`、`bySetPos`）、そして `Weekly` の周期が揃える `weekStart` からなる。
++       `frequency`×`interval` の各周期が展開され、`by*` フィールドがその候補を選び、`bySetPos` が位置によってその中から選ぶ。
++       固定間隔の `Recurrence` では表現できないパターン、すなわち最後の金曜日、11 月の第四木曜日、毎平日などは規則である。
+
+% 2 1 0 041103e5b339444214031fe22856a692
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1348efa5156bd9f20fef944adc2c5284
++         label 毎月の規則は開始から日を取る
+
+% 1 1 0 1f5c591ea3787fe719e58c0da8746fd1
+
+% 2 1 0 1365250cc85544cb156999bfa3911403
+
+% 3 1 0 131f7b777f46503a1f2b72e72b749dbb
+
+% 0 1 0 1b112ec66807a40512854412bc2b30b1
+
+% 0 1 0 01f2ff47357f38be108da71bec9bf09a
+
+% 1 1 0 00fccb4ff7846c981adf5a7ef1ffd3f8
+
+@ 0 1 0 09ee95dc76dddfc41e66a62fe48cae37
++         label 裸の曜日は各月のそのすべての曜日を選ぶ
+
+% 1 1 0 1363815e7521502c134c623f16c710aa
+
+% 2 1 0 1b068471e3d6d29304044ebfbb87cbc9
+
+% 3 1 0 15ea204fc017bc5f0b86b5a054ef6fee
+
+% 0 1 0 030727729c7ca03500e76421e5e266e1
+
+% 0 1 0 0d96c710cbbb29aa17adea8a00f751e9
+
+% 1 1 0 08fe10785e2be44b1731c67d6e0608f5
+
+@ 0 1 0 190564e4f0592e46063c03881c4ea6bc
++         label 序数 -1 は各月の最後のものである
+
+% 1 1 0 0d4a9ab1a7d2a7f81db9a9f2bffabdf8
+
+% 2 1 0 1c985283a91ae58410145dc55be045f4
+
+% 3 1 0 004f4b596ef2e9bc14a3cbb36fd0e0f0
+
+% 0 1 0 1d92e41ee0a52a8e09fcddb522ac76d5
+
+% 0 1 0 193cba513fa0009b03f9bab9b59b40f9
+
+% 1 1 0 12550a18bfb4adfe194a12c92c48cb22
+
+@ 0 1 0 05c1cbed45754cae1b19ec594a5ace1c
++         label 間隔は周期を二か月ごとに広げる
+
+% 1 1 0 0d8210f9e37e541f1b23faee5f995db7
+
+% 2 1 0 139332c3c1bdb2a405cce19b038facff
+
+% 3 1 0 144e25209fbafa3201ce3c73090d8fcd
+
+% 0 1 0 12db38815dbc51cf15b51fda0158b64e
+
+% 0 1 0 03f60a945fde4cb405550152cfdc0a84
+
+% 0 1 0 07cd2483b0348dde0a31866b777bf180
+
+% 1 1 0 092423b867ebe7f6019f01e1d37018dc
+
+@ 0 1 0 1d2f91c1852e9eef11d55b9c37e72df8
++         label 回数が規則の上限を決め、全体は RFC 5545 のテキストとして描画される
+
+% 1 1 0 02714d3beb2684be09e38e6773e507f3
+
+% 2 1 0 1fe471a6e23adc720dae0ebc7c00342f
+
+% 3 1 0 163041ff57b5d19d070cf2437d834465
+
+% 0 1 0 0d4072bb6e698a4907be849aa4201294
+
+% 0 1 0 0776e4ade3ea5353067bc6510187e4d2
+
+% 0 1 0 16d5e4f0d76db7280f1b5f1cbd26387e
+
+% 0 1 0 0ad999cd1a3186b115033b6294a55c66
+
+% 1 1 0 0da6a5ae5e323080029fbcc004f02347
+
+% 2 1 0 1d21fb10aae99f890b73c5881f7b9c81
+
+@ 0 6 0 0ff2548380d903d3021e3ad4ec474bdc
++       点の型が、何が生成されるかを決める。
++       `Rrule[Date]` は日付を生む。`Rrule[Timestamp]` はゾーンのない日時を生み、`byHour`、`byMinute`、`bySecond` が各日を展開し（既定は開始の時刻）、一日未満の頻度は時計を進める。`Rrule[Moment]` は開始のタイムゾーンで展開し、各発生をそこに位置づける。
++       三つとも `RomanCalendar` に依存する given を通して `Recurrent` なので、`occurrences`、`until`、`within`、`following` にはスコープ内の暦が必要である。
+
+@ 0 6 0 189450653a0184d61de2eacfe774c1de
++       月にない日付は飛ばされ、日は開始に合わせ直される。1 月 31 日からの `Monthly` は、RFC 5545 のとおり 1 月 31 日、3 月 31 日、5 月 31 日、… を生む。これは月末のポリシーのもとでずれていく `Recurrence` とは意図的に異なる。
++       `until` は終端を含む。
++       負の値は一貫して末尾から数える。`byMonthDay = List(-1)` は月の最後の日、`byYearDay = List(-1)` は年の最後の日、`byWeekNo = List(-1)` は最後の ISO 週、`bySetPos = List(-1)` は各周期の最後の候補である。
+
+@ 0 5 0 19eb999b38d5349d1fc36ad3623821f4
++       `.parse` は規則の RFC 5545 のテキストを読み、開始を付け直す。`encode` はそれを書き出す（iCalendar は `DTSTART` を別に保持するので、開始は含まない）。`inspect` は開始を含む。`show` は規則を、スコープ内の `Locale` の言語で文章として説明する（_every month on the 3rd Monday_）。これにはその言語の `Months` と `Weekdays` も必要である。
+
+% 1 1 0 08a2dd05c4f45ad500b1483620658559
+
+% 1 1 0 0e00f54598b76c8b1119966838504b3c
+
+% 0 1 0 06185bd15f64a371074e4e2b98f9ea97
+
+% 1 1 0 066471f8651e349e166fb1b1dd890291
+
+% 1 1 0 09518bc84e2c04340deeae7451bfb9aa
+
+@ 0 7 0 1af6ee8660218875068c694b77eb8600
++   entry .dateRecurrent   `Rrule[Date]` は日付を生む `Recurrent` である
++       スコープ内に `RomanCalendar` を必要とする（`Date` の `Comparable` も必要だが、これは暗黙のスコープにある）。
++       ストリームは昇順であり、`count` と終端を含む `until` によって上限が決まる。
++   entry .timestampRecurrent   `Rrule[Timestamp]` はゾーンのない日時を生む `Recurrent` である
++       `RomanCalendar` を必要とする。
++       `Hourly`、`Minutely`、`Secondly` のもとでは、時計は間隔だけ進められ、日全体の繰り上がりは日付に運ばれ、`by*` フィールドはフィルターとして働く。日付の頻度のもとでは、各日付が `byHour`、`byMinute`、`bySecond` によって展開される。
+
+% 2 1 0 15b61557037262481e34aeacb5263095
+
+% 3 1 0 04769ca4acd376351624fa3f64c75b49
+
+% 4 1 0 163d22720a95a9191f466b5ca409ba1f
+
+% 0 1 0 16afd5b5e01cea671412749a8ab10696
+
+% 0 1 0 104ebad845dc8cb51b0ebc074d7997b8
+
+% 0 1 0 15081fa67ae06c7d0f62a50155b9140e
+
+% 1 1 0 1f75e92de114088205943c17d5dafcae
+
+@ 0 21 0 0149680ed0bae8e1020a5ebaa043e3a7
++   entry .momentRecurrent   `Rrule[Moment]` は、各発生を開始のタイムゾーンに位置づける `Recurrent` である
++       `RomanCalendar` と、モーメントを比較するための `GapPolicy` を必要とする（既定の `GapPolicy.pushForward` で足りる）。
++       規則は開始のゾーンのないタイムスタンプの上で展開され、各結果は開始の `Timezone` に `in` で置かれるので、毎日の規則は夏時間の変更をまたいでも壁時計の時刻を保つ。
++   entry .encodable   規則を RFC 5545 のテキスト `FREQ=MONTHLY;INTERVAL=2;COUNT=10;BYDAY=3MO` として描画する
++       既定値と異なるフィールドだけが（`INTERVAL` は 1 でないとき、`WKST` は `MO` でないとき）、RFC の順序で書かれる。`UNTIL` の上限は点自身の `encode` で書かれるので、点の型は `Encodable in Text` でなければならない。
++       iCalendar は `DTSTART` を別に運ぶので、開始はテキストに含まれない。`.parse` はそれを引数として受け取り直す。
++   entry .inspectable   開始を伴う規則：`Rrule(2024-Jan-1 ╱ FREQ=MONTHLY;BYDAY=3MO)`
++       `Inspectable` な点だけを必要とし、`Showable` が必要とする `Locale`、`Months`、`Weekdays` はどれも必要としないので、規則があるところならどこでも利用できる。テストの報告が出力するのはこれである。
++   entry .parse   RFC 5545 の規則のテキストを読み、開始を付ける
++       `Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1)` は `Rrule[Date]` である。開始の型が規則の型を決め、`UNTIL` の値はその型としてデコードされる。
++       キーは大文字と小文字を区別しない。未知の頻度、形式の正しくない数値や曜日のコード、`FREQ` の欠落は `Rrule.Error` を発生させるので、`Tactic[Rrule.Error]` が必要である。
++       未知のキーは無視される。
+
+% 2 1 0 0bae744d084ffcfa0d372be17ea5420a
+
+% 3 1 0 004902a608e00c8e1c4f169b719452b0
+
+% 4 1 0 1075fe7b7860dce20102579a861cbeaf
+
+% 5 1 0 18660a740d06e3ca03019be1a4c59f34
+
+% 0 1 0 1039922941812ebf0b787967ea50ae37
+
+% 0 1 0 0e4b36e78dc19af3014b6440748c65c7
+
+% 1 1 0 183b7a97f718da5e0062197b9fd66f81
+
+@ 0 5 0 1b78fbbf1a5e12160aec4b91faa35512
++   entry .englishShowable   規則を英語で説明する：_every year on the 4th Thursday of November_
++       スコープ内に `Locale[en]`、`Months`、`Weekdays` を必要とする。これらはすべて名前でインポートする（`monthFormats.englishMonths`、`weekdays.englishWeekdays`、そして `given Locale[en] = Locale(en)`）。そのため、名前が利用できない言語で規則を説明することはできない。
++       フランス語、ドイツ語、スペイン語の given は、それぞれのロケールによって選ばれる。
+
+% 2 1 0 098aa954238184721e29c92ace8aea6d
+
+% 3 1 0 11486dd4d8f632d21f6a7155806a252b
+
+% 4 1 0 1ac09c50902be1ef08b083fbada8f07f
+
+% 5 1 0 17503867fbc0ad34110f1cd7fefbaff8
+
+% 6 1 0 1ce3630aa63f6ca71fb5f5913bb56eba
+
+% 2 1 0 0a6883ae0d59b57b17aabceae8415030
+
+% 0 1 0 0cd8c21642ad865d1c0f678354de1533
+
+% 0 1 0 05db7a5f68583dbf06b27f9ee46e92a8
+
+% 1 1 0 1788f9bf98c2c6d411f443784e90326b
+
+@ 0 7 0 168c8def22b04ec00f162195275c2d31
++   entry .frenchShowable   `Locale[fr]` のもとで、規則をフランス語で説明する：_tous les mois le 3e lundi_
++       スコープ内に `monthFormats.frenchMonths` と `weekdays.frenchWeekdays` も必要とする。
++   entry .germanShowable   `Locale[de]` のもとで、規則をドイツ語で説明する
++       スコープ内に `monthFormats.germanMonths` と `weekdays.germanWeekdays` も必要とする。
++   entry .spanishShowable   `Locale[es]` のもとで、規則をスペイン語で説明する
++       スコープ内に `monthFormats.spanishMonths` と `weekdays.spanishWeekdays` も必要とする。
++   entry .Error   テキストが有効な RFC 5545 の繰り返し規則でないときに発生する
+
+% 1 1 0 0a32e16141ba880d024b5f1bf2782b82
+
+@ 0 21 0 181b6c5696ce3d001a683a975690b0d2
++         _the value `value` is not a valid RFC 5545 recurrence rule_ であり、`FREQ` の欠落または未知の `FREQ`、パースできない数値や曜日のコード、形式の正しくない `BYDAY` の項目に対して `.parse` が発生させる。
++     entry #value   パースできなかった規則のテキスト
++   entry #start   最初の候補となる発生。iCalendar の `DTSTART`。規則の点の型はこれの型である
++   entry #frequency   規則が繰り返す周期：`Secondly`、`Minutely`、`Hourly`、`Daily`、`Weekly`、`Monthly`、または `Yearly`
++   entry #interval   発生の間にいくつの周期があるか。既定は 1
++   entry #count   発生の回数。制限がなければ `Unset`
++   entry #until   発生が当たりうる最後の点。含まれる。または `Unset`
++   entry #byMonth   発生する月を `Month` で。空ならすべて
++   entry #byMonthDay   月内の日。正なら 1 日から、負なら末尾から
++   entry #byDay   曜日を `WeekdayOrdinal` で。それぞれ序数を伴うこともある
++   entry #byYearDay   年内の日。1 から 366、または負なら末尾から。`Yearly` のもとで
++   entry #byWeekNo   ISO の週番号。負なら最後の週から。`Yearly` のもとで
++   entry #byHour   発生が当たる一日の中の時。`Rrule[Timestamp]` と `Rrule[Moment]` に対して
++   entry #byMinute   一時間の中の分。同様
++   entry #bySecond   一分の中の秒。同様
++   entry #bySetPos   各周期の候補から残す位置。1 始まり、または負なら末尾から
++       `byDay` が五つの平日を名指すときの `bySetPos = List(-1)` は、月の最後の平日である。
++   entry #weekStart   `Weekly` の周期が始まる曜日。既定は `Mon`（RFC 5545 の `WKST`）
+
+@ 0 1 0 0ac5701ba8a5099d14677dde3c67fff3
++ entry .Timespan   暦の上の時間の量：年、月、週、日、時、分、秒を、それぞれ別々に保持する
+
+% 1 1 0 135de48ba709a5251b9226844996be92
+
+@ 0 6 0 1bf3232ec1df367d1500878f0d2a9092
++       `Timespan` は、各基数での数のベクトル（`years`、`months`、`weeks`、`days`、`hours`、`minutes`）に、物理的な `seconds` の成分（`Quantity[Seconds[1]]`）を加えたものとしての経過時間である。
++       これは秒だけからなる `Duration` とは別物である。一か月は固定の秒数ではなく、一日は常に二十四時間とは限らないので、期間が日付、タイムスタンプ、モーメントに適用され、暦とゾーンがその意味を決めるまで、数が互いに繰り上げられることはない。
+
+% 2 1 0 142693c6d94f71e9014e01847c35e12f
+
+% 3 1 0 0c04e355fb5f2dc11ef59b82139f1b2e
+
+% 4 1 0 06a7a26a1e956c341d5bafab55ba8038
+
+% 5 1 0 0dede9e8a3dbfaf61f062cbed765e9f1
+
+% 0 1 0 00072bd8342c2cf517d63b1d8f53dd75
+
+% 0 1 0 010f3d4c5181690d090fc6b1f62b5b47
+
+% 0 1 0 1f27695e68468d72002c89f6985d1ee6
+
+% 0 1 0 000775bd089082a41f4cfefb742cf449
+
+% 0 1 0 0decfedfa0bec93c063dbf78800a0623
+
+% 1 1 0 1d5802ff448277f80d38c7fca18ea1a9
+
+@ 0 10 0 10cc4b8b8613f6841b69620c90f19cc9
++       期間がどの基数を持つかは、その型に表れる。`n*Month` は `Timespan of Month.type` であり、`3*Month + 2*Week` は `Timespan of (Month.type & Week.type)` であり、`+`、`-`、`*n` はオペランドの基数の集合の共通部分をとる。
++       その型が、期間を何に加算できるかを決める。
++       *規則的な*期間（週、日、時、分、秒からなり、月や年を含まないもの）は確定した物理的な継続時間なので、どの時刻系の `Instant` にも加算でき、`Durations` をまたいで変換できる。
++       月を含む期間には、`MonthUnit` がその月の基数である `Calendar` と、対象の月にない日のための `Disambiguation`（`monthEnds.clampMonthEnd`、`overflowMonthEnd`、または `raiseMonthEnd`）が必要である。年だけなら、`Calendar` と `Disambiguation` が必要だが、月の基数の制約はない。
++       ペルシア暦の月をグレゴリオ暦の日付に加算することや、不規則な期間を `Instant` に加算することは、コンパイルエラーになる。
+
+% 2 1 0 094f5a644a7797f4190ecc824cfea64e
+
+% 3 1 0 0ebf8aaf5254e74011ee669f1bc532f8
+
+% 4 1 0 06c79b0b26587fe41d5cb182e7da35cc
+
+% 5 1 0 030417b63596e7ff063e55e8baf3cd85
+
+% 0 1 0 0d9ec08e8f4c8b110050b7b683e7e952
+
+% 0 1 0 188c949361bceb0608a5ad63f30cef1c
+
+% 0 1 0 1f9fa668c72bd5a717e026424bad1ffc
+
+% 0 1 0 1f8fd64951b1deed138512a017ca436e
+
+% 1 1 0 0b58225cfbe056640a4d671bdf7e243e
+
+@ 0 5 0 1c766dccb2623d1a0ef57d9bc0cd494c
++       `Moment` に加算すると、期間は日のところで分かれる。
++       その年、月、週、日は壁時計を動かすので、`+ 1*Day` は、夜の間に時計がどうなっても翌日の同じ現地時刻になる。一方、その時、分、秒はゾーンを通して物理的に適用されるので、夏時間の開始をまたぐ `+ 24*Hour` は、壁時計の上では一時間あとになる。
++       スコープ内の `LeapMode` は、それらの物理的な秒が閏秒を数えるかどうかを示す。
+
+@ 0 5 0 03ca5d80fed4ab6612b57af3e9669902
++       テキストの形式は次のとおりである。
++       `encode` と `inspect` は ISO 8601 の継続時間（`P1Y2M3DT4H5M6S`。空の期間は `PT0S`）であり、`as[Timespan]` はそれをパースし、`dur"…"` はリテラルを検査する。`show` は、`timespanFormats.englishRelativeTimespan` またはそのフランス語、ドイツ語、スペイン語の兄弟を `Locale` とともにインポートして使うもので、期間を現在からの相対で読む：_in 18 minutes_、_8 minutes ago_、_just now_。
+
+% 0 1 0 1e3a54b50a5c5b190aff6fc43ef3c23e
+
+% 1 1 0 12e499e2a3641fb8009f35da0288212a
+
+% 1 1 0 00e727a78436e6141079df2d9ab12235
+
+% 1 1 0 0b322b685a15f5d710432d5736cf141c
+
+% 0 1 0 16ff918dbf25bcb3009dfb06383728bf
+
+@ 0 18 0 0b465de47e9af3c6119f8b45c56563e2
++   entry .apply   名前付きの数による `Timespan(years = 1, days = 3)`、または単一の基数のための `Timespan(radix, n)`
++       ケースクラスのコンストラクターは、`years`、`months`、`weeks`、`days`、`hours`、`minutes`、`seconds` のどれでも名前で取り、既定はゼロである。
++       `Timespan(Month, 3)` は `3*Month` の背後にある単一の基数のビルダーであり、型は `Timespan of Month.type` である。
++   entry .inspectable   検査表示の形式としての ISO 8601 の継続時間 `P1Y2M3DT4H5M6S`
++       自己記述的で完全であり（書かれていない成分はゼロ）、相対の `Showable` が必要とする `Locale` のコンテキストは何も必要としない。細分化された `Timespan of X` の型も対象とする。
++   entry .encodable   エンコードされた形式としての ISO 8601 の継続時間
++       ゼロの成分は省かれ、すべてゼロの期間は `PT0S` であり、週はほかの日付の成分と並べて `W` と書かれ、小数の秒は小数点を保つ。
++   entry .decodable   ISO 8601 の継続時間をパースし、それ以外には `Timespan.Error` を発生させる
++       `t"P1Y2M3DT4H5M6S".as[Timespan]` は `Tactic[Timespan.Error]` を必要とする。
++       同じパーサーが、コンパイル時に `dur"…"` 補間子を支える。
++   entry .interpolable   コードのコンパイル中に検証される `dur"P1Y2M3DT4H5M6S"` リテラル
++       `StringContext` に対する `dur` 拡張メソッドを通して到達する。形式の正しくない継続時間はコンパイルエラーになる。
++   entry .Error   テキストが ISO 8601 の継続時間でないときに発生する
+
+% 1 1 0 15f492bc5f6f04a20dba40128960c4b7
+
+@ 0 29 0 0821e8da16f2e5421eecda244f1fd04a
++         エラー `↯/s.73.4`：_`text` is not a recognized duration_ であり、`.decodable` が発生させる。
++         継続時間はモーメントではないので、`Moment.Error` の理由ではなく、独自のエラーを持つ。
++     entry #text   パースできなかったテキスト
++   entry .addable   `span + span`：各成分を加算し、型の上では基数の集合の共通部分をとる
++   entry .subtractable   `span - span`：各成分を減算し、型の上では基数の集合の共通部分をとる
++   entry .multiplicable   `span*n`：すべての成分を `Int` 倍する
++   entry .quantityAddable   `span + quantity`：物理的な秒の量を期間に組み込む
++       秒に正規化できる任意の `Quantity`（`3*Second`、`500*Milli(Second)`）を取り、期間の基数の集合に `Seconds[1]` を加える。
++   entry .quantitySubtractable   `span - quantity`：物理的な秒の量を期間から取り除く
++   entry .generic   規則的な期間を、`Durations` をまたいでナノ秒として、双方向に扱う
++       月や年の基数を持たない期間に対する `Abstractable & Instantiable across Durations` の given である。週と日は、86 400 秒の日の 7 日と 1 日として数える。
++       ナノ秒から構築された期間は、秒だけとして戻ってくる。
++   entry .dateRegular   月や年を含まない期間に対する `date + span`：固定の日数
++       週は七日と数える。時、分、秒は日付を動かさない。
++       暦もポリシーも必要としない。
++   entry .dateYear   年を含み月を含まない期間に対する `date + span`。任意の `Calendar` と `Disambiguation` のもとで
++       月を保ったまま年単位で進め、対象の年にない日（2 月 29 日）はスコープ内の `Disambiguation` によって解決し、それから日と週を加算する。
++   entry .dateMonths   月を含む期間に対する `date + span`。`MonthUnit` がその基数である `Calendar` のもとで
++       `MonthUnit` が期間の月の基数である `Calendar` をスコープ内に必要とする。そのため、グレゴリオ暦の月はグレゴリオ暦の日付にだけ、ペルシア暦の月はペルシア暦の日付にだけ加算できる。`Disambiguation` も必要である。
++       まず年が加算され、次に月が一つずつ、各年自身の月数で折り返しながら加算され（そのためヘブライ暦の可変の年も扱える）、それから月内の日が検査される。対象の月にない日や、レジームの切り替えの空白期間にある日は、ポリシーによって解決される。`monthEnds.clampMonthEnd` のもとでは月末に切り詰められ、`overflowMonthEnd` のもとでは翌月に繰り越され、`raiseMonthEnd` のもとでは `Moment.Error` として発生する。
++       最後に日と週が加算される。
+
+% 2 1 0 078fb5ef65722c811b93d1bcbd9b2499
+
+% 3 1 0 09ca8c7ff1bcf5371b509d4c671c0658
+
+% 4 1 0 0d1b845b5fff6c831fdda4afd0a8bc07
+
+% 0 1 0 1c31b4a4833266d814529347e7c5d7c9
+
+% 0 1 0 1905c2996472e66a01cb187b6a8d9cf8
+
+% 1 1 0 13f838efb1fb849a1d0fc7b3ab49586a
+
+@ 0 18 0 045b8947b7b69bf20360f9b40123c01b
++   entry .instantPlus   規則的な期間に対する `instant + span`。`Resolution` を持つ任意の時刻系の上で
++       期間はその物理的な秒（週と日はそれぞれ 86 400 秒の倍数）であり、時刻系の刻みに換算される。
++       月や年を含む期間は時点には加算できない。日付やモーメントに加算すること。
++   entry .instantMinus   規則的な期間に対する `instant - span`。`Resolution` を持つ任意の時刻系の上で
++   entry .timestampAdd   `timestamp + span`：日付の部分は `Date` の加算を通して、時刻の部分は時計を通して繰り上げる
++       その期間に対して `Date is Addable by` が必要とするものを必要とする。規則的な期間なら何も要らず、月や年なら `Calendar` と `Disambiguation` が要る。
++       時、分、秒は一日の時刻に加算され、日全体の繰り上がりは日付に運ばれるので、`23:30 + 1*Hour` は翌日の `00:30` になる。
++   entry .momentAdd   `moment + span`：暦の日は壁時計の上で、一日未満の時間はゾーンを通して
++       その期間に対する `Timestamp` の加算、`RomanCalendar`、`LeapMode` を必要とする（`LeapMode.lenient` は暗黙のスコープにあり、`leapModes.exactLeapMode` は閏秒を数える）。
++       年、月、週、日は壁時計のタイムスタンプに適用されてゾーンに置き直される。そのあと時、分、秒が位置づけられた時点に加算され、結果がゾーンに戻される。
++       そのため、夏時間の変更をまたぐ一日は現地時刻を保つが、二十四時間は保たない。また、夏時間の開始による空白に入った日は、スコープ内の `GapPolicy` によって解決される。
+
+% 2 1 0 10a0d4ada99f140302a1ded9be1df6f6
+
+% 3 1 0 0cff6aef9c186671081d3d2b5d00a2de
+
+% 4 1 0 14a2549f5e4c4ef51931b2018002f84c
+
+% 0 1 0 1d43d8fefe0310581d80f786506685e8
+
+% 0 1 0 1e41f56742ced1d50f5cdb1846c8ec02
+
+% 0 1 0 07bd9a73986f98880b698477d62c968f
+
+% 1 1 0 03e85901fe7cf6430c3ec96d8d99f81c
+
+@ 0 3 0 0e3b5a528ec3b1cc0cc5ad2da1ffe51f
++       空白に入った日は、既定では前へ押し出され、`gapPolicies.pushBackwardGapPolicy` のもとでは遷移前のオフセットで後ろに留められ、`gapPolicies.rejectGapPolicy` のもとでは拒否される。
+
+% 2 1 0 1cb2b9ada302bbce1d9471be18afc571
+
+% 3 1 0 074b6d7ab7f15f40089cb04d9af64396
+
+% 4 1 0 0b4f6dd72f943dd603c23af55e600448
+
+% 5 1 0 1107e1fd0e8ae1f10f309763f74e7617
+
+% 6 1 0 0d8605e1ef58b0fc0b28fde4c5432c82
+
+% 2 1 0 0bf161089a66e8150fac427f9838d1e9
+
+% 0 1 0 15da06ddcf5831e209feccef20b54db3
+
+% 1 1 0 04051d355a5ea17f066c5d5e9fbe1f0b
+
+% 2 1 0 1e8d28da8383684319f1fe6b0399ed64
+
+% 3 1 0 1ecba4106c000ec7081bd17e38562e6f
+
+% 4 1 0 11596e58b1b4664e0a1ce52213efe765
+
+% 5 1 0 1d2954c5a81f952602183c46312532cc
+
+% 2 1 0 0f9b58d213b139e01585a71a4e888f93
+
+% 0 1 0 14269aee1484a7f81a5a7d559dd7929a
+
+% 1 1 0 0b31f28e4f4bd9c116bfd366077831fa
+
+% 2 1 0 185439fcacf9c810065fe587b2aa8a53
+
+% 3 1 0 1fc6780fea07add8199c93d78b553f5a
+
+% 4 1 0 1a1f8f49a049e69b0e686f8a2d89ab48
+
+% 5 1 0 1168d78db0c5a61509bc6d275c390ce5
+
+% 6 1 0 08cbaea11e09f40b0c6a8d46450a3362
+
+% 2 1 0 1114856278d547e90f6122e8e7f9b51f
+
+% 0 1 0 08097c7460009dee1de23d6aa656b234
+
+% 1 1 0 1663f343616d2c0e11f6fe87ee7ed818
+
+% 2 1 0 05d0a4ce9ec3b28819e8d453a03f5acd
+
+@ 0 11 0 0b3666f7bad9b8fb045b5a1f3025ecc7
++   entry #years   年の数
++   entry #months   月の数。型が記録するいずれかの月の基数で
++   entry #weeks   週の数
++   entry #days   日の数
++   entry #hours   時の数
++   entry #minutes   分の数
++   entry #seconds   物理的な秒。`Quantity[Seconds[1]]` として表し、小数でもよい
++   entry #Topic   期間が持つ基数。`Month.type & Week.type` のような型の交差として
++       幻の型である。型が何を示していても数はすべて格納されるが、型はどの加算が利用できるかをゲートする。
++       `Radix.Irregular`（月と年）は、期間を時点の算術から除外する。
+
+@ 0 1 0 12ddc379fbf9fa321a5d87212df33d61
++ entry .Timezone   tz データベースの名前付きのゾーン `Europe/London`。`tz"…"` によってコードのコンパイル時に検査される
+
+% 1 1 0 022ff6ac5adbc782012b76491c332b3c
+
+@ 0 6 0 179813a04b68b1cd1239e54c1c1bc292
++       `Timezone` は、ある場所の常用時の規則であり、IANA の tz データベースが名付けるとおりに `Europe/London`、`America/New_York`、`UTC` のように名付けられる。
++       これは `Moment` が持つものであり、`Instant#in` と `Timestamp#in` が取るものであり、また `today()` と `Timestamp#instant` が読むコンテキストでもある。
++       これを作る方法はどれも名前を検査する。コードのコンパイル中に `tz"…"` 補間子で、または実行時に `Timezone(name)` か `text.as[Timezone]` で作り、データベースにない名前に対しては `Timezone.Error` を発生させる。
+
+% 2 1 0 1a1c043c4897c1a0013f31f0bae3dd08
+
+% 3 1 0 08f373933f506c270a7356447be4540b
+
+% 4 1 0 0ceaed510683c61d0ae3233eb8734484
+
+% 1 1 0 0b696d1641d7f9700c7d2f96f377154f
+
+% 2 1 0 1b2e91a016d1feaa188188f8554962f5
+
+% 0 1 0 0b503b6119bb52c51fef8381819bef49
+
+% 0 1 0 1fcf9b755149b24b13c607493c3009de
+
+% 0 1 0 01ae84d11cb4367a09fcd640f8d79b85
+
+% 0 1 0 1bedcc80c063303008c7aef8ea8210e9
+
+% 1 1 0 05321776cb876926076132bc34ef5dcb
+
+@ 0 2 0 04c5e5668bec0a820e1dbdb95271701e
++       ゾーンの規則は、プラットフォームの `java.time` のゾーンデータベースのものである。より新しいものを必要とするプログラムのために、`Tzdb` はデータベース自身のソースファイルをパースする。
+
+% 1 1 0 0ace3248666ff2d60bd0b0fe646d8e31
+
+% 0 1 0 05d9c0df559af4d808c6a90201ebc03d
+
+% 0 1 0 00f2f7d6790f94da0fe4483846995094
+
+@ 0 11 0 1194c0aa3c24124d04df25a49b9cdca5
++   entry .apply   `Timezone(name)`：名前によるゾーン。なければ `Timezone.Error`
++       `Tactic[Timezone.Error]` を必要とする。`name.as[Timezone]` と同じである。
++   entry .unsafeFrom   名前を検査せずに包む。`tz"…"` と `ts"…"` のマクロのためのもの
++       `Unsafe` ケイパビリティを取る。
++       マクロは展開時にすでに名前を検証しているので、生成されたコードは何も検査し直さない。通常のコードは `.apply` を使う。
++   entry .decodable   `text.as[Timezone]`。未知の名前に対しては `Timezone.Error` を発生させる
++       `ZoneId.of` で名前を検査する。`Tactic[Timezone.Error]` を必要とする。
++   entry .interpolable   コードのコンパイル中にゾーンデータベースに対して検査される `tz"Europe/London"` リテラル
++       `StringContext` に対する `tz` 拡張メソッドを通して到達する。名前は置換を含まないリテラルでなければならず、未知の名前はコンパイルエラーになる。
++   entry .Error   データベースのゾーンでない名前に対して発生する
+
+% 1 1 0 14262323d14595d4153a7694e2e813a8
+
+@ 0 5 0 04b036a7f8b9ce401045ac051d716c36
++         エラー `↯/s.73.10`：_the name `name` does not refer to a known timezone_ であり、`Timezone(name)` と `text.as[Timezone]` が発生させる。
++     entry #name   ゾーンでなかった名前
++   entry #name   ゾーンの tz データベースでの名前。テキストとして
++   entry #stdlib   Java の API に渡すための、`java.time.ZoneId` としてのゾーン
+
+@ 0 1 0 0cdcb376a4fe93d41cfb651490e542d1
++ entry .Tzdb   tz データベース自身のソースファイルのパーサー：`Rule`、`Zone`、`Link`、`Leap` の行
+
+% 1 1 0 14690174bcd8a2b814771771cfec7918
+
+@ 0 8 0 1c8cc02c6a3970871079568524be9159
++       すべての `Timezone` の背後にある規則は IANA tz データベースから来る。`Tzdb` はそのソースファイル（`europe`、`northamerica`、…）をプラットフォームの API を介さずに直接読むので、政府が急に規則を変えたときにも、プラットフォームのものより新しいデータベースを読み込める。
++       `.parse` はファイルの行を受け取り、その `.Entry` を返す。`from`/`to` の年、`MonthDate`（`lastSun`、`Sun>=8`、`15`）、切り替えの時刻、`save` と `letters` を持つ `Rule`、`ZoneInfo` の期間の並びを持つ `Zone`、別名である `Link`、そしてうるう秒である `Leap` である。
++       `.parseFile` はクラスパス上の `aviation/tzdb/` に同梱されたファイルを読む。
+
+% 2 1 0 030fafefc2a009b31ab0ba0261525f65
+
+% 3 1 0 0c70fa8855c50908008f2577318c11e3
+
+% 4 1 0 0fce3ba90a4ab739081075249e28824b
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 15c32af595fcf9a812606a849e70e119
+
+% 0 1 0 143cb3f41235b6621e26d88d765f4e45
+
+% 0 1 0 1b8bbab6982398b41540c8c2d79b3dd1
+
+% 1 1 0 1e1d25cdac2217ad1ed872d987652086
+
+@ 0 3 0 1110e36852589d7e0fe5dda421beec93
++       形式が許さない行は、誤った規則を持つゾーンを返すのではなく、誤りとその行番号を示す `Tzdb.Error` を発生させる。パースは `Tzdb.Event` をログに記録する。
++       エントリーはデータである。これらを `Timezone` の規則に変換するものは、ここにはまだない。
+
+% 1 1 0 188a5c941f2e539f151a2213454627f6
+
+@ 0 1 0 12beeadc4dddf9590209432e29d70e2c
++   entry .Time   tz の行における時刻：時、分、秒と、省略可能な接尾辞
+
+% 1 1 0 0c9ac3486eba75021aa05d2c59a98721
+
+@ 0 8 0 0f00239de41b30ef158ac1fab496d3ee
++         `Tzdb.Time(hours, minutes, seconds, suffix)`：`Rule` の `AT` フィールド、または `Leap` の時刻である。
++         接尾辞がある場合、データベースが `2:00s` や `1:00u` と書くように、地方標準時なら `s`、UT なら `u` である。接尾辞がなければ、その時刻は地方の壁時計の時刻である。
++     entry #hours   時、0 から 23
++     entry #minutes   分
++     entry #seconds   秒
++     entry #suffix   `s`（標準時）、`u`（世界時）、または壁時計の時刻を表す `Unset`
++   entry .Duration   tz の行における符号付きのオフセット：ゾーンの `STDOFF` または規則の `SAVE`
+
+% 1 1 0 1a970ef2348aada31bfab2e8015f1ee1
+
+@ 0 7 0 0d6f902c2786a47c0fc631ab3a4955fd
++         `Tzdb.Duration(hours, minutes, seconds)`。
++         グリニッジより西ではオフセットは負であり、符号はすべての成分に適用されるので、`-0:30` は `Duration(0, -30, 0)` である。
++         `SAVE` は 24 時間を超えることがある。
++     entry #hours   時、符号付き
++     entry #minutes   分、同じ符号を持つ
++     entry #seconds   秒、同じ符号を持つ
++   entry .ZoneInfo   ゾーンの歴史のひとつの期間：標準オフセット、規則、書式、終わり
+
+% 1 1 0 1e8838139706c48605c745e43033462b
+
+@ 0 9 0 0bdf42ffc71c5dd11964192a884e98f4
++         `Zone` の行と、その下の各継続行が `ZoneInfo` である。UT からの標準オフセット、有効な `Rule` の集合の名前（または `-`）、略称の書式、そして次の期間が始まる `UNTIL` のテキスト（現在の期間では `Unset`）を持つ。
++     entry #stdoff   UT からの標準オフセット、`Tzdb.Duration` として
++     entry #rules   有効な規則の名前、なければ `-`
++     entry #format   規則の文字の関数としての略称：`E%sT` を `S` に適用すると `EST` になる
++     entry #until   期間の `UNTIL` のテキスト、最後の期間では `Unset`
++   entry .MonthDate   規則が効力を持つ日：特定の日、最後のある曜日、またはある日以後・以前のある曜日
+
+% 1 1 0 008d8f559660ea010a7c4a40dace93bd
+
+@ 0 5 0 1c8c40178bc4f60610f7d4b88fdc15dd
++         データベースの `ON` フィールドの形式の列挙型である。`15` に対する `Exact(month, day)`、`lastSun` に対する `Last(month, weekday)`、8 日以後の最初の日曜日を表す `Sun>=8` に対する `After(month, weekday, date)`、そして 25 日以前の最後の日曜日を表す `Sun<=25` に対する `Before(month, weekday, date)` である。
++   entry .Entry   tz ソースファイルの一行：`Rule`、`Zone`、`Link`、`Leap` のいずれか
+
+% 1 1 0 115fc90b3e9b5af7136250ce5ee6612b
+
+@ 0 36 0 0307bee064c79bee0349c072dec0df30
++         `.parse` がその `List` を返す列挙型である。
++         `Zone` は継続行をひとつのエントリーにまとめる。その他は一行ずつである。
++     entry .Rule   夏時間の規則：いつ、どれだけ時計を変え、どの年に適用するか
++       entry #name   規則の集合の名前。`ZoneInfo#rules` がこれを参照する
++       entry #from   規則が適用される最初の年
++       entry #end   最後の年。`max` なら `Int.MaxValue`、`only` なら `from` と同じ
++       entry #change   切り替えの日、`Tzdb.MonthDate` として
++       entry #time   切り替えの時刻、`Tzdb.Time` として
++       entry #save   進める量、`Tzdb.Duration` として
++       entry #letters   ゾーンの書式に代入される文字、`-` なら `Unset`
++     entry .Leap   うるう秒：その日付、時刻、挿入か削除か
++       entry #year   年
++       entry #month   月
++       entry #day   日
++       entry #time   時刻
++       entry #addition   挿入された秒（`+`）なら true、削除された秒なら false
++     entry .Zone   ゾーンと、その歴史における期間の並び
++       entry #area   名前の `/` より前の部分、たとえば `America`
++       entry #location   `/` より後の部分、たとえば `New_York`。一部分だけの名前なら `Unset`
++       entry #info   ゾーンの期間を順に並べたもの、`Sequence[Tzdb.ZoneInfo]` として
++     entry .Link   別名：`from` は対象のゾーン、`to` は別の名前
++       entry #from   リンク先のゾーン
++       entry #to   その別名である名前
++   entry .parseFile   クラスパス上の `aviation/tzdb/` に同梱された tz ソースファイルをパースする
++       `Tzdb.parseFile(t"europe")` はリソース `/aviation/tzdb/europe` をそのクラス自身の クラスローダー を通じて読み、`.parse` でパースする。
++       `Tactic[Tzdb.Error]`（リソースがなければ理由 `NoTzdbFile` で発生させる）と `Tzdb.Event is Loggable` が必要である。
++   entry .parse   tz ソースファイルの行をエントリーにパースする
++       `Tzdb.parse(name, lines)` はファイルの名前（ログ用）とその行を `Chain[Text]` として受け取り、`Tzdb.Entry` の `List` を返す。
++       `#` 以降のコメントは捨てられる。`Rule`、`Link`、`Leap` の行はそれぞれひとつのエントリーであり、`Zone` の行はエントリーを開き、インデントされた継続行がそれを延長する。
++       パースできないフィールドに対して発生させる `Tactic[Tzdb.Error]` と、`logging.silentLogging` のような `Tzdb.Event is Loggable` が必要である。
++   entry .Error   データベースの行をパースできないときに発生する
+
+% 1 1 0 16844a5be8d5370107edcdf84a16ac39
+
+@ 0 2 0 068b0b50687c265f0fec924a144e3348
++         エラー `↯/s.73.6`：_the timezone could not be parsed at line `line`: `reason`_。理由の番号が枝番になる。
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 6 0 01eaaee87b5d88401de81cef59454ced
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
++         row  `CouldNotParseTime(time)`  1  _could not parse time `time`_  不正な `AT`、`STDOFF`、`SAVE`
++         row  `UnexpectedRule`  2  _unexpected rule_  フィールドが誤っている `Rule` または `Leap` の行
+
+% 0 1 0 0735c2c7e203b54119f07eea1be6418a
+
+@ 0 5 0 0a23c9ac76f13bb2122de3326f5069cd
++         row  `UnexpectedZoneInfo`  4  _unexpected zone info_  上に `Zone` のない継続行
++         row  `UnparsableDate`  5  _the date could not be parsed_  既知のどの形式でもない `ON` フィールド
++         row  `BadZoneInfo(line)`  6  _bad zone information: `line`_  括弧内は行のフィールド
++         row  `BadName(name)`  7  _the name `name` is not valid_  `/` を二つ以上含むゾーン名
++         row  `NoTzdbFile(name)`  8  _the zonefile `name` could not be found on the classpath_  `.parseFile` から
+
+% 1 1 0 0fc3a0f21c298f2b12d92a1dfc85a462
+
+@ 0 5 0 07648164599d9baa02b12220db50e5c9
++     entry .communicable   各理由をそのメッセージとして描画する
++     entry .Reason   行が失敗した理由、1 から 8 の番号付き
++     entry #reason   `Tzdb.Error.Reason`
++     entry #line   誤りのある行の、1 から数えた行番号
++   entry .Event   パースがログに記録するもの
+
+% 1 1 0 1facb29382211b1408cd471d21883c9e
+
+@ 0 5 0 0a6b20191bfece2e13f952711c4f70bd
++         `ParseTzdb(name)`、_parsing the timezone database file `name`_。`.parse` の開始時に `fine` レベルで記録される。
++         `Log.Time` のタグが付く。
++     entry .communicable   イベントをそのメッセージとして描画する
++     entry .ParseTzdb   データベースファイルをパースしている
++       entry #name   ファイルの名前
+
+@ 0 5 0 0564a5c05af6c8d60e56b3b7d37ab421
++ entry .TimeUnit   継続時間や頻度を数える七つの単位、粗いものから順に
++     列挙型であり、`Years`、`Months`、`Weeks`、`Days`、`Hours`、`Minutes`、`Seconds` からなる。
++     `Vernacular` はそれらをその言語で名付ける。`Vernacular.components(span)` は期間を `(count, unit)` の組として表したものであり、`Vernacular.unitOf(frequency)` は `Rrule` の `Frequency` が繰り返す単位である。
+
+@ 0 1 0 0aa60697d11b5bd617e2187f7ae7f64e
++ entry .Vernacular   期間と反復を文章で述べるための、ひとつの言語の語彙と文法
+
+% 1 1 0 19ee6f281d1ad74703f6d572bb3ec00a
+
+@ 0 9 0 11fff5b47bd4b2e610b0f464ba3f9264
++       `Vernacular` は `Timespan`、`Recurrence`、`Rrule` を文に変える：_in 18 minutes_、_every 2 weeks, 5 times from 2024-01-01_、_every month on the 3rd Monday_。
++       構造、すなわちどの節が適用され、どの順に並ぶかは共通であり、final メソッドの `#relativeTimespan`、`#recurrence`、`#rrule` にある。各言語は語と文法上のフック（`#units`、`#everyUnit`、`#onDays`、…）を提供する。
++       `.english`、`.french`、`.german`、`.spanish` の四つが提供されており、`Rrule`、`Recurrence`、`timespanFormats` の `Showable` の given が `Locale` によって選ぶのはこれらである。
++       これらはネイティブスピーカーによる改善を前提とした最初の版である。
++       新しい言語はトレイトの抽象メソッドを実装する。
+
+% 2 1 0 16d340b34c457efc1cc8db26ad77bddf
+
+% 3 1 0 043ab3c3e00697241b9e304e32c9fc27
+
+% 4 1 0 09eefaff788d331e0a526fba323c0d65
+
+% 5 1 0 1a2d8f0f0de195f219bf4e3d29ece949
+
+% 6 1 0 044e4450515663e0133a78eb70cd076d
+
+% 0 1 0 1409525641fa63f903fa13c8a47b7a16
+
+% 0 1 0 0cc8a6ca0aac6e6a0418b76968b7909d
+
+% 0 1 0 1caa92c78339a4a11d6abbd057537acc
+
+% 1 1 0 01b3164652044a251fd1c55614eca752
+
+% 1 1 0 0e1866c67f887449158147ddbd28de70
+
+% 1 1 0 01bda98b222877b507a0a2be907c74e3
+
+% 1 1 0 0621982655124b4a02dbf7751fbdae15
+
+@ 0 29 0 082a8831a366d3cb081b4ef42ccecfb0
++   entry .components   期間のゼロでない成分を `(count, TimeUnit)` の組として、粗いものから順に
++   entry .unitOf   `Frequency` が繰り返す `TimeUnit`：`Monthly` は `Months`
++   entry .english   英語の言い回し：_every year on the 4th Thursday of November_
++   entry .french   フランス語の言い回し：_tous les mois le 3e lundi_
++   entry .german   ドイツ語の言い回し：_jeden Monat am 3. Montag_
++   entry .spanish   スペイン語の言い回し：_cada mes el tercer lunes_
++   entry #units   数とその単位の単数形または複数形の名前：_1 month_、_3 months_
++   entry #conjunction   リストの最後の二項目をつなぐ語：_and_
++   entry #position   序数による位置。負の値は末尾から：_3rd_、_last_、_2nd-to-last_
++   entry #justNow   空の期間の記述：_just now_
++   entry #future   正の期間を未来の時刻として包む：_in 18 minutes_
++   entry #past   負の期間を過去の時刻として包む：_8 minutes ago_
++   entry #everyDuration   `Recurrence` のケイデンス：_every 2 weeks_
++   entry #everyUnit   `Rrule` のケイデンス：_every month_、_every 3 days_
++   entry #times   繰り返しの回数：_, 5 times_
++   entry #from   反復の開始：_from 2024-01-01_
++   entry #onDays   `(ordinal, weekday name)` の組からなる `byDay` 節：_on the 3rd Monday_
++   entry #onMonthDays   `byMonthDay` 節：_on the 1st and last day_
++   entry #inMonths   `byMonth` 節：_in November_、日の節の後では _of November_
++   entry #takingPositions   `bySetPos` 節：_taking the last_
++   entry #relativeTimespan   現在から見た期間。符号に応じて前方または後方へ。共通の組み立て部分
++       正の期間なら _in 18 minutes_、負の期間なら _8 minutes ago_、空の期間なら `#justNow` である。`timespanFormats.englishRelativeTimespan` が呼ぶのはこれである。
++   entry #recurrence   ISO 8601 の反復の記述：ケイデンス、回数、開始
++       `recurrence(period, repetitions, start)`。開始はすでにテキストとして描画されている：_every 2 weeks, 5 times from 2024-01-01_。
++   entry #rrule   `Rrule` の記述：ケイデンス、日の節、月の節、位置、回数
++       規則の月と曜日を名付けるために、スコープに `Months` と `Weekdays` が必要である。`Rrule` の `Showable` がそれらを求めるのはこのためである。
+
+@ 0 1 0 1d79a0113ac8197715e14592c406d2b8
++ entry .WeekDate   ISO 8601 の週日付：週年、週番号、曜日としての日付
+
+% 1 1 0 0e05f2cb56ff5aa413ee0f8c5d7e0ab8
+
+@ 0 6 0 18005b67903c179a06f54a2622f1b8f3
++       ISO 8601 は日付を月ではなく `(week-year, week, weekday)` で表す。週は月曜日から日曜日までであり、第 1 週は 1 月 4 日を含む週（その年の最初の木曜日）である。年の境目に近い日付は前年または翌年の週年に属することがあり、土曜日である 2000 年 1 月 1 日は 1999 年の第 52 週である。
++       これは `Calendar` ではなく（月を持たない）グレゴリオ暦の日付のラベル付けなので、`RomanCalendar` はコンテキストから与えられる。
+
+% 2 1 0 1f55137dd245218a0f22021257cb47f3
+
+% 3 1 0 09e13b6a41a286ca091e1be039eb1798
+
+% 4 1 0 1fdb39d976e46771024144429e0dcf0a
+
+% 5 1 0 18e72f5204f7b9961494d5decbfeeaf4
+
+% 0 1 0 03e542ccfdbf26ba17ef41b6f49b8a44
+
+% 0 1 0 1fdb1856c6f52665101b3111deffeb8d
+
+% 0 1 0 160b63f4c4ffad4409f9e603d29dbb1e
+
+% 1 1 0 1a21456cfc13504e003e9b9caec65006
+
+@ 0 1 0 1519348bf274ced400011631e205d503
++       `Rrule#byWeekNo` はこれらの週番号によって日付を選ぶ。
+
+% 1 1 0 0b752e20d3a8567f1619acfc3c64842b
+
+% 1 1 0 0bc9968c9701b79012d7548632605e55
+
+@ 0 7 0 0b1d60b730325d210c44f2b0feb6538e
++   entry .weekYear   日付が属する ISO 週年。暦の年とは異なることがある
++       スコープに `RomanCalendar` が必要である。
++   entry .weekOfYear   日付の ISO 週番号、1 から 52 または 53
++       スコープに `RomanCalendar` が必要である。
++   entry .apply   `WeekDate(weekYear, week, weekday)`：その ISO 座標を持つ日付
++       第 1 週の月曜日から数える。
++       `RomanCalendar` と、週年の 1 月 4 日の構築が発生させうる `Tactic[Moment.Error]` が必要である。
+
+@ 0 1 0 0d2bfb7b8f0c0b6f0566ce0144d51a02
++ entry .Weekday   週の七つの曜日、`Mon` から `Sun` まで
+
+% 1 1 0 0e96c73289433be50f89e28c7c05eaa2
+
+@ 0 4 0 09ea79c12f7f7bc802c84ba0987eb25d
++       `Mon`、`Tue`、`Wed`、`Thu`、`Fri`、`Sat`、`Sun` の列挙型であり、パッケージにエクスポートされるので、ケースはそのまま使える。
++       `Date#weekday` は日付の曜日であり、`WeekdayOrdinal` は反復規則のために曜日と序数を組にし、`Tzdb.MonthDate` は tz データベースの `lastSun` の形式でそれらを使う。
+
+% 2 1 0 129acf47c6e1d47e064b96befaab35bc
+
+% 3 1 0 0305ae79ba4bfd690ede757d19f62dd6
+
+% 4 1 0 179bdf7cd6a33f9213402c5f6203a077
+
+% 5 1 0 09523170cc7b50dc0c84b38eef514588
+
+% 1 1 0 0ee2bb23958f1c680c40fd6c28408252
+
+% 0 1 0 093a6405c95f366401f919ba2394cedc
+
+% 0 1 0 1c082f46e68e35201ab668717dfb0184
+
+% 0 1 0 164c88bbf27bd40319753592eaf37499
+
+% 0 1 0 0420955c7b9f7b170c24a7d4f7b22d25
+
+% 1 1 0 01e04398670847eb001b1e92a429ebc3
+
+@ 0 4 0 17700f4bdf826f111694aa21358ed254
++       列挙型の `ordinal` は `Mon` = 0 から始まるが、どの曜日が週の始まりで、どの曜日が週末かは `Hebdomad` が決める。これは `hebdomads.europeanHebdomad`、`northAmericanHebdomad`、`jewishHebdomad` のいずれかを名前でインポートするものであり、`#number`、`#weekend`、`.apply` がこれを参照する。
++       曜日の表示方法は `weekdays` パッケージの `Weekdays` である。
+
+% 0 1 0 130d0586491fa0e50436454fedecc451
+
+% 1 1 0 117d38e0045ff6d119b15bec141eb677
+
+% 1 1 0 0bfe81dfe630baa5175d0147371142b9
+
+@ 0 12 0 033e8f086e0fdb5c1d1e77d042ce3d6c
++   entry .apply   スコープにある `Hebdomad` のもとで、週の序数の位置にある曜日
++       `Weekday(Prim)` は `hebdomads.europeanHebdomad` のもとでは `Mon`、`northAmericanHebdomad` のもとでは `Sun` である。
++   entry .all   七つの曜日を順に、`Array` として
++   entry .showable   スコープにある `Weekdays` によって曜日を描画する
++       `weekdays` パッケージから名前でインポートした `Weekdays` が必要である。デフォルトはない。
++   entry .count   日付の半開区間に、ある曜日がいくつあるか
++       `Weekday.count(start, end, day)` は `start` を含み `end` を含まない範囲の `day` を数える。2025 年 3 月の土曜日は `Weekday.count(2025-Mar-1, 2025-Apr-1, Sat)` であり、5 である。
++   entry #weekend   スコープにある `Hebdomad` のもとで、その曜日が週末に含まれるかどうか
++   entry #number   スコープにある `Hebdomad` のもとでの、週におけるその曜日の 1 から数えた位置、`Ordinal` として
+
+@ 0 1 0 10a2d3996a4d0c2b0d0bacab9567f651
++ entry .Weekdays   曜日の名前の選択：`Weekday` の表示方法
+
+% 1 1 0 0f03c065e0c4fb3c015f3af6bfc09388
+
+@ 0 7 0 081537edb03ee1921b0fba8c8cbdad3e
++       `Weekdays` は各 `Weekday` をその名前に対応させる。これは `Weekday.showable` が必要とするコンテキストであり、`Rrule` の記述が使うものである。
++       暗黙のスコープにはひとつもない。`weekdays` パッケージから名前でインポートするか（`englishWeekdays`（`Monday`）、`englishShortWeekdays`（`Mon`）、`twoLetterWeekdays`（`Mo`）、`oneLetterAmbiguousWeekdays`（`M`、`T`、`W`、`T`、…）、`shortestUnambiguousWeekdays`（`M`、`Tu`、`W`、`Th`、…）、`frenchWeekdays`、`germanWeekdays`、`spanishWeekdays`）、トレイトが単一のメソッド `#name` を持つのでラムダとして書く。
+
+% 2 1 0 10b87497d032b88d17a96fcf31b90e97
+
+% 3 1 0 14dfcabe3202355f112595baa17ca4c9
+
+% 0 1 0 1b72684304b5268c0cde12ec0665eee5
+
+% 0 1 0 127003012ce7d6920a5b92a85308ff56
+
+% 1 1 0 14d4ad6a8316b9490c53953346235e83
+
+@ 0 1 0 16a119270a93e6240d63d876c4455e7b
++   entry #name   この選択のもとでの曜日の名前
+
+@ 0 5 0 0929511722cc586b18cf78524daf91fe
++ entry .Years   日付における年の書き方：二桁か四桁か
++     `TwoDigitYear` と `FullYear` の列挙型であり、`Date` と `Monthstamp` の `Showable` がスコープから取る選択である。
++     `yearFormats.fullYears` と `yearFormats.twoDigitsYears` がその given で、名前でインポートする。`2024 - Mar` は前者のもとでは `Mar.2024`、後者のもとでは `Mar.24` と表示される（`Months`、`Date.Separation`、`Endianness` もスコープにある場合）。
+
+@ 0 4 0 0bffca244c10e1e902d0dc72d5849de7
++ entry .WasiClockApi   WASI の時計インターフェースの型：`Interface in Wit at "/aviation/clocks.wit"`
++     Wasm の時計の given が型検査の対象とする WIT 定義であり、`call` マテリアライザーが各関数のモジュール ID を得るために参照するものである。
++     `wasiApis.wasiClockApi` がその唯一の値である。
++     `aviation.wasi` の一部である。
+
+@ 0 1 0 1d42f7d27c7246d6048f03ff24549da1
++ entry .wasiApis   Wasm の時計がコンパイルの対象とする WASI インターフェース定義
+
+% 1 1 0 06cc312f9ebc7d2308d3c4fec4a3ec40
+
+@ 0 7 0 02999850e9269359037863c6610e0b06
++       `aviation.wasi` にあり、Wasm コンポーネントにコンパイルされるプログラム向けである。
++       ここにある given は、`clocks` の given が展開されるときに召喚する `WasiClockApi` である。そのため Wasm のプログラムは、使いたい時計と並べてこれを名前でインポートし（`import wasiApis.wasiClockApi` と `import clocks.wasiClock`）、モジュールに同梱された `/aviation/clocks.wit` リソースがその場所でクラスパス上になければならない。
++       inline の given はコンポーネントのインポートに展開されるので、召喚する場所は Wasm ターゲット向けにコンパイルされなければならない。
++   entry .wasiClockApi   同梱された `/aviation/clocks.wit` から読み込む `wasi:clocks` WIT インターフェース
+
+@ 0 1 0 07b16bffd7ebd45e0dc53786b9c7c9e1
++ entry .clocks   `wasi:clocks` に基づく時計。Wasm コンポーネントにコンパイルされるプログラム向け
+
+% 1 1 0 04c3b08681dc77e2111c1a6c41c38e1d
+
+@ 0 8 0 1a56c949b22e04fc0e4858deb3dafa9e
++       `aviation.wasi` にある。
++       JVM ではデフォルトの `Clock.current` と `MonotonicClock.current` が暗黙のスコープにあり、何もインポートする必要はない。Wasm コンポーネントには `System.currentTimeMillis` がないので、これらの given のひとつを `wasiApis.wasiClockApi` とともに名前でインポートし、そうすると `now()`、`today()`、`monotonic()` は WASI ホストの時計を読む。
++       どちらの given も `inline` なので、Wasm コンポーネントのインポートはインポートする場所で実体化し、その場所自体が Wasm ターゲット向けにコンパイルされなければならない。匿名クラスが inline の各展開箇所で複製されるというコンパイラの通知は想定どおりであり、WASI にリンクされたアプリケーションはそれぞれを一度だけ召喚する。
+
+% 1 1 0 17735f25c0ad5cc710ebc755ffff65dd
+
+% 1 1 0 123f5d372532f11b1deb777f8d1b7146
+
+@ 0 8 0 10db526692ce38c305bfa055e63bab1b
++   entry .wasiClock   `wasi:clocks/wall-clock` の `now` を読む `Clock`
++       ホストの秒とナノ秒からなる `datetime` レコードは、`Unix` 時刻系のミリ秒の刻みに変換される。
++       召喚する場所のスコープに `wasiApis.wasiClockApi` が必要である。
++   entry .wasiMonotonicClock   `wasi:clocks/monotonic-clock` の `now` を読む `MonotonicClock`
++       ホストのナノ秒のカウンターはそのまま `Instant over Monotonic` になる。その時刻系はナノ秒で刻むからである。
++       召喚する場所のスコープに `wasiApis.wasiClockApi` が必要である。

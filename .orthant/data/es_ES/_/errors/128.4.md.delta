@@ -1,0 +1,45 @@
+orthant 2 language
+
+% 0 1 0 1a128d1a7b1d062518789bd673eab8b8
+
+@ 0 1 0 1c9d39591e9a32441d17c939c19c265f
++ Se lanza cuando un valor XML no se ajusta al XML Schema según el cual lo lee un `Xml.Provider`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 1f88fe5ed239ef871d49a27bb8197394
++ El `Xml.Provider` de Xylophone comprueba un documento frente a su esquema a medida que se leen los
++ campos de un registro, e informa de cada discrepancia mediante la `Tactic` del código que lee el
++ campo, de modo que un lector validador pueda recogerlas todas. El mensaje es
++ `the XML did not conform to its schema because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 1ac6cc0290f10dea052b6a6f1c3eb886
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensaje
++ column  Solución
++ row  `↯/s.128.4.1`  `OutOfRange`  Un número queda fuera de las cotas de su tipo: una faceta `minInclusive`, `maxInclusive`, `minExclusive` o `maxExclusive`, o las cotas que implica un tipo integrado como `xs:positiveInteger`. Una cota ausente es `Unset`.  `[↯/s.128.4.1] the XML did not conform to its schema because the value 200 is outside the range 0 to 150`  Proporciona un valor dentro del rango, o relaja la faceta.
++ row  `↯/s.128.4.2`  `LengthOutOfRange`  La longitud de un valor infringe una faceta `length`, `minLength` o `maxLength`.  `[↯/s.128.4.2] the XML did not conform to its schema because the length of abcd is outside the range 3 to 3`  Proporciona un valor de una longitud permitida.
++ row  `↯/s.128.4.3`  `PatternMismatch`  Un valor no coincide con una faceta `pattern`.  `[↯/s.128.4.3] the XML did not conform to its schema because the value nope does not match the pattern \d{3}-[A-Z]{2}`  Proporciona un valor que coincida con el patrón.
++ row  `↯/s.128.4.4`  `NotPermitted`  Un valor no está entre los valores de una faceta `enumeration`.  `[↯/s.128.4.4] the XML did not conform to its schema because the value urgent is not one of low, normal, high`  Proporciona uno de los valores permitidos.
++ row  `↯/s.128.4.5`  `TooManyDigits`  Un decimal tiene más dígitos de los que permite una faceta `totalDigits` o `fractionDigits`.  `[↯/s.128.4.5] the XML did not conform to its schema because the value 1.234 has more digits than the 5 total or 2 fraction digits permitted`  Redondea o trunca el valor a los dígitos permitidos.
++ row  `↯/s.128.4.6`  `Absent`  Falta un elemento o atributo obligatorio —uno con un `minOccurs` de al menos uno, o con `use="required"`—, o el elemento que nombra está en el espacio de nombres equivocado.  `[↯/s.128.4.6] the XML did not conform to its schema because the element or attribute city is required`  Añade el elemento o atributo, en el espacio de nombres que espera el esquema.
++ row  `↯/s.128.4.7`  `Malformed`  El texto de un valor no se puede leer como su tipo —por ejemplo, un texto `xs:int` que no es un número—, o el elemento no tiene texto que leer.  `[↯/s.128.4.7] the XML did not conform to its schema because the text none is not a valid Double`  Da al elemento o atributo un texto del tipo que declara el esquema.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+% 0 1 0 18ba4ff9268817c10005d362755cc347
+
+% 0 1 0 1f718dc1c824c1411f5f8454e02273b2
+
+% 0 1 0 0d801d2e17abd7ca07dcb80e1676fff9

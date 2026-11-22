@@ -1,0 +1,1215 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 10dd84f1f8f5d1491aefaa9d9ba5db88
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0274ba51d352c2300f5c9d9635c75457
++ info   型付きの値としての数式マークアップ：MathML の木、Ergo 略記法、そして XML、HTML、テキストへの描画
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1420dd02eec0454e07376eea1b2c9d7d
++     _Archimedes_ は、数学の記法を型付きの値からなる不変の木としてモデル化する。
++     [MathML](https://www.w3.org/TR/MathML-Core/) の要素（行、分数、添字、根号、表）はそれぞれ `Mathml` オブジェクトの下のケースクラスであり、ルートの `Math` は XML に描画され（`in[Xml]`）、honeycomb の HTML に埋め込まれ（`html`）、端末向けの等幅テキストとして描かれる（`draw`）。
++     MathML のテキストは `read[Math]` で読み戻せ、往復は情報を失わない：モデルが解釈しない属性も保持される。
+
+@ 0 7 0 178761acd590b3a71e00cde5db0538a3
++     MathML は手で書くには耐えがたいので、このライブラリは **Ergo** を提供する。
++     これは構造上の役割ごとに一つのグリフ（`↗` 上付き、`↘` 下付き、`/` 分数、`√` 根号、`⋱` 行列、…）を持つ一行の略記法で、`Ergo.parse` で同じ木にパースされ、`Ergo.serialize` で直列化して戻される。
++     `ergo"…"` 補間子はコードのコンパイル中にリテラルを検査し、`Encodable in Math` である任意の値を埋め込む。
++     数値、テキスト、有理数、複素数、ベクトル、行列、次元付きの量はすべてエンコーダーを持ち、`value.math`（`<math>` ルート）または `value.mathml`（単一のノード）として得られる。
+
+% 2 1 0 04ab2a7e523686f3102a6fcc890aa664
+
+% 3 1 0 0ea25030dc5d784707460ad254620e36
+
+% 4 1 0 1d6545ac27fe0c9e04d274d7a330929d
+
+% 1 1 0 1a4a554aec0ac9ff064cedb706f3288a
+
+% 0 1 0 0a7dbbab05c7c6e110d82930e8e4606b
+
+% 0 1 0 194b5eab2d53211c1ff7e36f33411538
+
+% 0 1 0 18f615e26eaebd30077ccd28a03f3e87
+
+% 0 1 0 08197ae83355d8531cb86d3f5b55e6c9
+
+% 0 1 0 139ee0e534297c460199a563ed372cc7
+
+% 0 1 0 0ab548ed1a51104c0616a90cff6b42c4
+
+% 1 1 0 03496e0a4f8f01931732716c9fe9c0ef
+
+@ 0 6 0 0ea7597b192014e21708b6109de72d74
++     要素の型はパッケージに平らに置かれるのではなく `Mathml` オブジェクトの中にある（`Mathml.Mi`、`Mathml.Mrow`、…）。
++     これは `Token`、`Layout`、`Ms` のような汎用的な名前が `soundness` 名前空間の他のモジュールと衝突しないようにするためである。
++     MathML を手で書く場所では、`import Mathml.*` で修飾なしの名前を取り込める。
++     MathML を読むには `XmlSchema` が必要であり（`xmlSchemas.freeformXmlSchema` は任意の要素を許す）、パースが発生させる `Mathml.Error` と `Ergo.Error` には `strategies.throwUnsafely` のような戦術が必要である。
+
+@ 0 5 0 1c5a98854fa5140407c92e741717b9e1
++     このライブラリのソースセットは `archimedes.core` 一つで、JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     すべてが `soundness` アンブレラにエクスポートされる：`Math`、`Mathml`、`Mathml.Display`、`Ergo`、`Mathml.Cell`、`mathmlNamespace`、そして拡張 `ergo`、`math`、`mathml`、`cell`、`draw` である。
++     `Math` や `Mathml` ノードを HTML の木に埋め込む `html` 拡張は honeycomb のものであり、`Math.renderable` と `Mathml.renderable` を通じて解決される。
+
+% 0 1 0 076e0626e247ef600bd50879473cf7cd
+
+% 0 1 0 1958ddd510830cf11fb6e5f1f684b7b7
+
+% 0 1 0 02ca3e5da9d0baed0fac2a32ab320943
+
+% 0 1 0 0daeee4fd83c799014542ca91629ca0b
+
+@ 0 1 0 1563dab45565330509c18143ca0215bf
++ entry .Math   `<math>` ルート要素：表示モードと属性を持つ MathML ノードのリスト
+
+% 1 1 0 1f8ce7f5cbe509a21e5d089f633fd0ac
+
+@ 0 5 0 00426e1cfbc5f8ab18da8e886f0f85c8
++       `Math` は MathML 文書のルートである。
++       `#contents` はトップレベルのノード、`#display` はブラウザがそれを独立したブロックとして組むか本文中に組むか、`#attributes` は `<math>` 要素に書くその他の属性である。
++       ノードからは `Math(nodes*)` で、Ergo リテラルからは `ergo"…"` または `Ergo.parse` で、`Encodable in Math` である任意の値からは `value.math` で作られる。
+
+% 2 1 0 1e283f9c1f95abfe164137795562af9a
+
+% 3 1 0 13049e488ddba8740174ddcdb60a4bfb
+
+% 4 1 0 14b16d72efd8c92e03d16e471076d756
+
+% 1 1 0 056eff5473b907ef09cd6b9f7f307cf9
+
+% 2 1 0 020b83a3637be7ea13968d9460c502a2
+
+% 0 1 0 152b8c9f59b951240bb0883f32272625
+
+% 0 1 0 1a4b9153e9aff1501ef04196ae5025c6
+
+% 0 1 0 0f41082d6be5be981a684ad945996a8d
+
+% 0 1 0 03eb72b1e7039b9a191f94db226e6105
+
+% 0 1 0 19d75340033a2ac70eb01ecf7d4716bf
+
+% 1 1 0 0aa3073a524f48890d47274f7c9e4b44
+
+@ 0 7 0 157dd3826edc8ed01e1899a42c274748
++       `Math` は四通りに描画される。
++       `in[Xml]`（`.encodableInXml`）は xylophone の木を作り、`xmlns` 属性を常に書く。
++       `html`（`.renderable`、honeycomb の拡張を通じて）は、`<math>` が許される場所ならどこにでも `Html of "math"` として埋め込む。
++       `draw` と `cell` は等幅テキストとしてレイアウトする。
++       そして `Document[Math]` は XML ヘッダー付きの MathML テキストとして `Showable` である（`.showable`）。
++       XML を得るには `encode` ではなく `in[Xml]` と書く。
++       `Math` は `Encodable in Math` でもある（恒等変換、`.self`）ので、`encode` は曖昧になる。
+
+@ 0 3 0 02a4fe0160b47fe90ff7202b406b8986
++       読み取りはその逆である。
++       `text.read[Math]` と `data.load[Math]` は XML を xylophone でパースしてから、その木を `Mathml.Parser` で対応付け、ルートが `<math>` でないときや要素が未知のときに `Mathml.Error` を発生させる。
++       どちらもスコープに `XmlSchema` を必要とする。
+
+@ 0 2 0 0673db336b608f1e16673d8b99ba6d42
++       `Math` は `Documentary` であり、その `#Metadata` は `Encoding` なので、`Document[Math]` はファイルが宣言したエンコーディングを運ぶ。
+
+% 0 1 0 1a5a8406f3ac323a1c88c3fc8f1aac04
+
+% 1 1 0 001888f035d515c00e06ac9a404d8c41
+
+% 0 1 0 1cf163a8f365d13e1dfcffc7ee78577b
+
+@ 0 5 0 04dbe3f12149e09e0d9983f2813240fc
++   entry .aggregable   MathML テキストから `Math` を読む：`text.read[Math]`
++       テキストを xylophone 自身の `Aggregable` を通じて XML としてパースし、次に `<math>` ルートを `Mathml.Parser.decodeMath` でデコードする。
++       スコープに `XmlSchema` と、`Parse.Error`、`Xml.Error`、`Mathml.Error` に対する戦術が必要である。
++       最初の二つは不正な XML のため、最後の一つはルート要素が `<math>` でないときや要素が MathML でないときのためである。
+
+% 2 1 0 142bfb09852904f61174582f6aa8fcd2
+
+% 3 1 0 13a12f46861417a61cb1c028f2549c00
+
+% 3 1 0 0a6f11bf06d5bcbd0288a88a61a658ca
+
+% 2 1 0 0c21695d3d504c87018dc43f3b45e730
+
+% 0 1 0 08c7e8abc871688912d492dcf5b1e392
+
+% 1 1 0 03bf31ebdd62b3571f44f3d1b0583473
+
+@ 0 25 0 018837f5079acaaa18a0eb2cd6eb5341
++   entry .loadable   MathML テキストから、宣言されたエンコーディングとともに `Document[Math]` を読み込む
++       `.aggregable` と同じだが、xylophone の `Loadable` を通じ、XML ヘッダーを保持する。
++       結果は `Document[Math]` で、そのメタデータは宣言された `Encoding`（宣言がなければ UTF-8）である。
++       `XmlSchema` と同じ三つの戦術が必要である。
++   entry .loadableData   バイト列から `Document[Math]` を読み込む：`data.load[Math]`
++       `.loadable` のバイト版である。
++       XML は `Data` から直接パースされるので、宣言されたエンコーディングが尊重される。
++       `XmlSchema` と、`Parse.Error`、`Xml.Error`、`Mathml.Error` に対する戦術に加えて、スコープに `Buffering` が必要である。
++       ファイルの読み込みはこのインスタンスを通る。
++       `path.load[Math]` は `Document[Math]` を与え、その `root` が `Math` である。
++   entry .showable   `Document[Math]` を XML ヘッダー付きの MathML テキストとして直列化する
++       `Showable` なのは `Document[Math]` だけで、裸の `Math` ではない。
++       描画結果は完全な文書であり、文書のエンコーディングを示す `<?xml version="1.0" …?>` ヘッダーの後に `<math>` 要素が続く。
++       要素だけが欲しいときは `math.in[Xml].show` と書く。
++   entry .encodableInXml   xylophone の `Xml` としての `<math>` 要素：`math.in[Xml]`
++       `math` という名前の `Xml.Element` を作り、`xmlns` 属性、`#display` が設定されていれば `display` 属性、そして `#attributes` を付け、各内容ノード自身の `in[Xml]` を子とする。
++       `encodable` ではなく `encodableInXml` という名前なのは、`Math` が `.self` を通じて `Encodable in Math` でもあるからである。
++       `in[Xml]` はこちらを曖昧さなく選ぶ。
++   entry .renderable   honeycomb の HTML としての `Math`：`math.html`、`<math>` が許される場所で
++       `Form = "math"` の `Renderable` given である。
++       honeycomb の `html` 拡張は、`Math` を `.encodableInXml` が書くのと同じ属性を持つ WHATWG の `<math>` 要素として描画し、各ノードを `Mathml.renderable` を通じて外部コンテンツとして描画する。
++       結果は `Html of "math"` で、honeycomb が埋め込みコンテンツ、フレージングコンテンツ、フローコンテンツを許す場所ならどこでも受け入れられる。
++       `Mathml.Reader.read` はそれをページから再び取り出す。
+
+% 2 1 0 07be18809a1d071b1719579fdc9a595d
+
+% 3 1 0 1fea12d31d7b633611295609690e69f7
+
+% 4 1 0 0c021020ae4e7923105d5ebdc83286a0
+
+% 0 1 0 132a8863e7b64cc7146411c7efb6800c
+
+% 1 1 0 1d61dc00c30d5cd00a8da55d48f4affa
+
+@ 0 69 0 1527e273a30b80d11dc4e7ed8c8804f7
++   entry .inspectable   ノードの木を括弧付きの前置形式で示すデバッグ用の描画
++       `Math(○ ⟨mn t"2"⟩)`：まず表示モード（未設定なら `○`、設定されていれば `｢block｣`）、次に各ノードを、要素名、属性、そしてテキストまたは子として、一行に示す。
++       パースやレイアウトのバグはこの形式から読み取る。
++       `show` は `Document[Math]` 専用である。
++   entry .int   `<mn>` の数値としての `Int`
++       `42.math` は `<math><mn>42</mn></math>` であり、`42.mathml` は裸の `<mn>` である。
++       `Long`、`Short`、`Byte` も `.long`、`.short`、`.byte` を通じて同じようにエンコードされる。
++   entry .long   `<mn>` の数値としての `Long`
++   entry .short   `<mn>` の数値としての `Short`
++   entry .byte   `<mn>` の数値としての `Byte`
++   entry .double   `toString` 形式による `<mn>` の数値としての `Double`
++       `3.14.mathml` は `<mn>3.14</mn>` である。
++       テキストは `Double` 自身の描画なので、`5.0` は `5.0` のままである。
++   entry .float   `toString` 形式による `<mn>` の数値としての `Float`
++   entry .bigInt   `<mn>` の数値としての `BigInt`
++   entry .bigDecimal   `<mn>` の数値としての `BigDecimal`
++   entry .text   `<mtext>` としての `Text`
++       `t"speed".mathml` は `<mtext>speed</mtext>` である。
++       これは式の中に置かれるリテラルのテキストであり、識別子ではない。
++       識別子には `Mathml.Mi` を直接作る。
++   entry .identical   任意の `Mathml` ノードを、そのノード一つを持つ `<math>` ルートとする
++       手元にあるノードを、`Encodable in Math` が求められる場所ならどこでも、特に `ergo"…"` の置換として使えるようにする：`ergo"(x↗$node)"`。
++   entry .self   `Math` をそれ自身とする：恒等エンコーダー
++       `Math` を別の `ergo"…"` リテラルに埋め込めるようにする。
++       そこでは `Mathml.atom` がそれを一つのノード（唯一の内容ノード、または複数あればその `<mrow>`）にまとめる。
++       このインスタンスがあるので、`Math` に対する `encode` は曖昧になる。
++       XML には `in[Xml]` を使う。
++   entry .q64   `Q64` 有理数を `<mfrac>`、整数なら `<mn>` とし、符号を前に出す
++       `Q64(-3, 4).math` は `<mrow><mo>−</mo><mfrac><mn>3</mn><mn>4</mn></mfrac></mrow>` である。
++       符号は符号なしの分数の前のマイナス演算子として書かれ、整数値は単なる `<mn>` にまとめられ、分母がゼロのものはテキスト `NaR` として描画される。
++       `.q32` は `Q32` に対して同じことをする。
++   entry .q32   `Q32` 有理数を `<mfrac>`、整数なら `<mn>` とし、符号を前に出す
++   entry .QuantityEncodable   `.quantity` の背後にあるクラス：一つの `Quantity[units]` に対するエンコーダー
++       公開クラスであるのは、インライン given の `.quantity` がこのクラスへの参照をインライン展開するからにすぎない。
++       `Quantity[units]` から `Math` への純粋な関数を `Encodable in Math` として包む。
++       直接作ることは意図されていない。
++   entry .quantity   次元付きの `Quantity` を、大きさとその後に続く単位として表す
++       `(5*Metre/Second).mathml` は、数値 `<mn>5.0</mn>` の後に `<mi>m</mi>` と `<msup><mi>s</mi><mn>-1</mn></msup>` が続き、不可視の乗算演算子でつながれたものである。
++       各単位は識別子であり、べきが 1 でなければそのべきに上げられ、記号のアルファベット順に並ぶ。
++       インライン given なので、具体的な `units` 型ごとに解決される。
++   entry .complex   `re + im i` としての `Complex` 数
++       `Complex(3, 4).mathml` は `<mrow><mn>3</mn><mo>+</mo><mn>4</mn><mi>i</mi></mrow>` である。
++       成分の型にはそれ自身の `Encodable in Math` が必要である。
++   entry .vector   括弧で囲んだ列としての mosquito の `Vector`
++       各要素は、伸縮する丸括弧の中の `<mtable>` の一行である。
++       `Vector(1, 2, 3).mathml` は、`<mtr><mtd><mn>…</mn></mtd></mtr>` の列を囲む `(` である。
++       要素の型にはそれ自身の `Encodable in Math` が必要である。
++   entry .matrix   括弧で囲んだ表としての mosquito の `Matrix`
++       行列の各行は、伸縮する角括弧の中の `<mtd>` セルからなる `<mtr>` である：`Matrix[2, 2]((1, 2), (3, 4)).mathml`。
++       要素の型にはそれ自身の `Encodable in Math` が必要である。
++   entry .interpolable   コードのコンパイル中に検査される `ergo"…"` 補間子
++       `ergo"…"` を `Math` にする `Interpolable` given である。
++       `Math` のコンパニオンにあるので、`import soundness.*` 以外のインポートは要らない。
++       それに名前を与えるのは `StringContext` に対する `ergo` 拡張である。
++       不正なリテラルは、パースが止まった文字の位置でコンパイルを失敗させ、`$` による置換は `Encodable in Math` でなければならない。
++   entry #contents   式のトップレベルのノード（順序どおり）
++   entry #display   `Display.Block`、`Display.Inline`、または属性を省くための `Unset`
++       ブラウザが式を独立した数式として組むか、本文中に組むかを決める。
++       `Mathml.Parser.decodeMath` によって `display` 属性から読み戻され、認識されない値は `Inline` になる。
++   entry #attributes   `<math>` 要素に書かれるその他の属性（名前と値の組）
++       `xmlns` と `display` 以外の任意の属性であり、この二つは構造として保持される。
++       パーサーはルートの他のすべての属性をここに置くので、往復でそれらが保たれる。
++   entry #attributePairs   `<math>` 要素に書かれるすべての属性
++       まず `xmlns`、設定されていれば次に `display`、そして `#attributes` である。
++       `in[Xml]` と `html` の両方が書くリストである。
+
+% 0 1 0 10a9e1547edcaafb06180e06ea313e6e
+
+@ 0 1 0 06be896f2fa2e7b300d249de383edc84
++   entry #Metadata   `Encoding`：`Document[Math]` が運ぶもの、宣言された文字エンコーディング
+
+@ 0 1 0 15cececa0986d66807553c6c975267b6
++ entry .Mathml   すべての MathML ノードの基底型であり、すべての要素型の置き場所
+
+% 1 1 0 153d7d9ae6f00a0e129542f1a31073cf
+
+@ 0 7 0 06de739e0cc1da4018b12c221bf5cce3
++       Presentation MathML のすべての要素は、`Mathml` オブジェクトに入れ子になった不変のケースクラスであり（`Mathml.Mi`、`Mathml.Mn`、`Mathml.Mrow`、`Mathml.Mfrac`、`Mathml.Msup` など）、`Mathml` はそれらがすべて継承するトレイトである。
++       ノードは自分のタグ（`#label`）、順序付きの `#attributes` の集まり、そして文字データ（`#text`、`<mi>` のようなトークン要素の場合）か子の `#contents`（`<mrow>` のようなレイアウト要素の場合）のどちらかを知っている。
++       属性はそのまま保持されるので、モデルが型付きのアクセサーを与えない属性であっても、パースと直列化の往復は情報を失わない。
+
+@ 0 5 0 1165370e877411120ab4667f7161b7cd
++       要素は MathML のクラスごとに、シールされたトレイト `Token`、`Layout`、`Script`、`Tabular`、`Elementary`、`Semantic` にまとめられる。
++       これらで振り分けるものはなく、コードは具体的な要素に対してマッチする。
++       型が平らにエクスポートされず入れ子になっているのは、`Token`、`Layout`、`Ms` のような名前が `soundness` 名前空間の他のモジュールと衝突しないようにするためである。
++       `import Mathml.*` で修飾なしの名前を取り込める。
+
+% 2 1 0 074b117e05977d080e78924123ec557e
+
+% 3 1 0 030f3fb502648615075e216bc0b0ef07
+
+% 4 1 0 1e8f06eec79119291dfbad1123d8d246
+
+% 0 1 0 107fe0a0037ccefe1f324f108a128f5f
+
+% 0 1 0 1a2c9c98ae27b155182960a9d44c1184
+
+% 0 1 0 1b1444c503dbf24f16c7353532b2b2e1
+
+% 0 1 0 04064c22d5f6ca4303108d9eec65a29b
+
+% 0 1 0 03271d5cff09f4e51f0f1552762bb7f9
+
+% 1 1 0 037c504ae80cde2d13411378f6fe9be2
+
+@ 0 6 0 058d39426fdc1351083b04d181e4655b
++       ノードは二つの文書モデルに描画される。
++       `in[Xml]`（`.encodable`）は xylophone の木を作り、honeycomb の `html` 拡張（`.renderable`）はページに埋め込むための外部要素の木を作る。
++       どちらもすべての部分型について汎用的なので、`Msup(…).in[Xml]` は型の拡大なしに動く。
++       `draw` と `cell` はノードを等幅テキストとしてレイアウトする。
++       一様なコンテナー（`Mrow`、`Msqrt`、`Mtable`、…）はそれぞれ `Container` から可変長引数の `apply` を得る。
++       位置で決まる構造（`Mfrac`、`Msub`、`Mroot`、…）は、代わりに子に名前を付ける。
+
+@ 0 3 0 1819b0ac647e456011c729eeba68b77e
++       `Mathml.Parser` は xylophone の XML をノードにデコードし、`Mathml.Reader` は honeycomb の HTML の中の `<math>` 部分木を見つけてデコードする。
++       どちらも MathML でない要素に対して `Mathml.Error` を発生させる。
+
+% 1 1 0 0af2986071c0eb3f15d0cc79b13bcb4b
+
+% 1 1 0 0f64eb518a70b30915b6e62deeae7a55
+
+% 0 1 0 0ef72c07aaf7825605786cf2d92ace93
+
+@ 0 13 0 0fa3f5053f33ad4f020a2e25189ad3fe
++   entry .encodable   任意のノードを xylophone の `Xml` 要素とする：`node.in[Xml]`
++       すべての `node <: Mathml` について汎用的である。
++       ノードの `label`、その属性、そして単一のテキストの子か、子それぞれの `in[Xml]` を持つ `Xml.Element` を作る。
++       `<math>` ルートは `Math.encodableInXml` である。
++   entry .renderable   任意のノードを honeycomb の外部コンテンツとする：`node.html`
++       `Form = "#foreign"` の `Renderable` given で、すべての `node <: Mathml` について汎用的である。
++       honeycomb の `html` 拡張はノードを、そのラベルと属性を持つ外部要素として描画する。
++       `Math.renderable` は、こうして式の内容を `<math>` の中に描画する。
++   entry .atom   `<math>` ルートを一つのノードにまとめる：唯一の内容、または `<mrow>`
++       `Mathml.atom(math)` は、`math.contents` がちょうど一つのノードならそれであり、そうでなければ内容の `Mrow` である。
++       `mathml` 拡張と `ergo"…"` 補間子は、単一のオペランドが求められる場所にエンコードされた値を埋め込むためにこれを使う。
++   entry .Container   子がリストであるすべての要素が共有する可変長引数のコンストラクター
+
+% 1 1 0 1abb1548eee742e80a90e30ff0e87508
+
+@ 0 7 0 154a2f17851e8110071fa13ea32651d6
++         コンパニオンが `object Mrow extends Container(new Mrow(_))` のように継承するトレイトで、`apply(children: Mathml*)` を与える。
++         `Math` もこれを継承するので、`Math(nodes*)` でルートを作れる。
++     entry #apply   与えられた子を順に持つ要素を作る
++   entry .Token   内容が文字データである葉の要素：`Mi`、`Mn`、`Mo`、`Mtext`、`Ms`、`Mspace`、`Mglyph`
++       `#contents` を持たないシールされたトレイトである。
++       `Mspace` と `Mglyph` はテキストも持たず、完全に属性によって制御される。
++   entry .Mi   `<mi>`：変数や関数名などの識別子
+
+% 1 1 0 1c88a78f124fd6d206c4d9ca29dc241a
+
+@ 0 6 0 1ccab13367e8182c1bb1b45ac01a531e
++         `Mi(t"x")`。
++         Ergo では連続した文字が一つの識別子なので、`sin` は `<mi>sin</mi>` であり、`x y` は二つである。
++         一文字の識別子は MathML 自身の規則でイタリックになる。
++         `mathvariant="normal"` 属性（Ergo の `⦱` ディレクティブ）は立体にする。
++     entry #value   識別子のテキスト
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mn   `<mn>`：数値リテラル
+
+% 1 1 0 18e17f14acb6e1c40daad811705ad04e
+
+@ 0 5 0 07932fc62586119003526d78c1087bd2
++         `Mn(t"2")`。
++         テキストは、その数がどう読まれるべきかを表すものなら何でもよい。
++         数値に対する `Encodable in Math` インスタンスは、ここに `show` または `toString` の形式を書く。
++     entry #value   数値のテキスト
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mo   `<mo>`：演算子、括弧、区切り
+
+% 1 1 0 174ba72887e2feea106131c9a5eca259
+
+@ 0 6 0 12726ca7266667d0171b09f82cf24ef7
++         `Mo(t"+")`。
++         括弧、積分、大型演算子 `∑` と `∏` は演算子であり、描画時に `Cell` がオペランドの高さまで伸ばす。
++         MathML における伸縮する括弧は、`stretchy="true"` を持つ `Mo` である。
++     entry #value   演算子のテキスト
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mtext   `<mtext>`：式の中に置かれるリテラルのテキスト
+
+% 1 1 0 07df8578191f1d7e07b4e1dce633af62
+
+@ 0 8 0 1c3bb68d7e855ac5024764f868d6dfe8
++         `Mtext(t"speed")`：数学ではなく言葉である。
++         `Text` は `Math.text` を通じてこれにエンコードされる。
++         Ergo の形式を持たないので、`Ergo.serialize` はこれを拒否する。
++     entry #value   テキスト
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Ms   `<ms>`：引用符で囲んで示される文字列リテラル
++     entry #value   文字列のテキスト
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mspace   `<mspace>`：指定した幅、高さ、深さの空白
+
+% 1 1 0 13f5d710709eab8f0910ca519f55f5f1
+
+@ 0 8 0 1adab729017b94121da9db68b3df0539
++         `Mspace(List(t"width" -> t"1em"))` は `<mspace width="1em"/>` として描画される。
++         テキストも子も持たず、`Cell` はこれを空白の一列として描く。
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mglyph   `<mglyph>`：属性で指定する、画像からのグリフ
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Layout   一般的なレイアウト構造：`Mrow`、`Mfrac`、`Msqrt`、`Mroot`、`Mstyle`、`Merror`、`Mpadded`、`Mphantom`、`Menclose`、`Mfenced`
++       子を持ちテキストを持たない要素のシールされたトレイトである。
++   entry .Mrow   `<mrow>`：一つの単位としてまとめられたノードの横の並び
+
+% 1 1 0 039de98f4e0df17b0f282eec4f64cf89
+
+@ 0 6 0 029462fdb7fe28d10265a0b3bf238d71
++         `Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))`。
++         グループ化の要素である：Ergo の括弧のグループは `Mrow` であり、`Mathml.atom` は複数のノードを一つの `Mrow` に包む。
++         `Cell` は行を、子のベースラインを揃え、二項演算子の前後に空白を置いて描く。
++     entry #contents   行の子（順序どおり）
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mfrac   `<mfrac>`：分母の上に分子を置いた分数
+
+% 1 1 0 0b9011ea91fe91530c6db268e008c76b
+
+@ 0 6 0 026d71d38f77ee1b0f5aaca27db74da3
++         `Mfrac(Mn(t"1"), Mn(t"2"))`、Ergo では `a/b`。
++         `linethickness="0"`（Ergo の `═(0)`）は二項係数のために横線を消す。
++     entry #numerator   横線の上のノード
++     entry #denominator   横線の下のノード
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Msqrt   `<msqrt>`：子に対する平方根
+
+% 1 1 0 0dd7919aa2eebc800721d559110f2c86
+
+@ 0 4 0 1aaa6fbce09b782103e48b02f8552ce7
++         `Msqrt(Mi(t"x"))`、Ergo では `√x`。
++         `Cell` は被開平数の上に括線を描く。
++     entry #contents   ノードのリストとしての被開平数
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mroot   `<mroot>`：記号の上に指数を描く n 乗根
+
+% 1 1 0 0a214f398b4cc56c085107c36ea867a9
+
+@ 0 16 0 05a3c6c4d6fc17df1c921c30e97310af
++         `Mroot(Mi(t"x"), Mn(t"3"))` は `x` の立方根である：MathML の順序どおり、まず底、次に指数である。
++         Ergo では、`√` の直前に書いた指数のアトムがこれを与える：`3√x`。
++     entry #base   被開平数
++     entry #index   根の次数
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mstyle   `<mstyle>`：子に適用されるスタイルの変更
++     entry #contents   子
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Merror   `<merror>`：誤りとして印を付けた内容
++     entry #contents   子
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mpadded   `<mpadded>`：大きさや位置を調整した子
++     entry #contents   子
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mphantom   `<mphantom>`：場所を占めるが描かれない子
+
+% 1 1 0 02804ff215ae33a808632480613f355f
+
+@ 0 4 0 004a6948fc53e4b8050272788fbfe73f
++         `Cell` はこれを子の大きさの空白のブロックとして描く。
++     entry #contents   子
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Menclose   `<menclose>`：枠や取り消し線などの記法で囲まれた子
+
+% 1 1 0 11eab6da70824ce70bfbfe9741418706
+
+@ 0 4 0 0943f23dcc91b0200c36d091f59022fb
++         MathML 3 専用である：MathML Core はこれを取り除いたので、Ergo のディレクティブはない。
++     entry #contents   子
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mfenced   `<mfenced>`：一対の括弧の間の子
+
+% 1 1 0 179a54e503154c461e9fadcfd6af7821
+
+@ 0 11 0 152c2d881ff990ab116972194d28ccb4
++         `Cell` はこれを、内容の高さまで伸ばした丸括弧で描く。
++         テキスト出力で背の高い式を括弧で囲むのはこの方法による。
++         MathML Core で同等なのは伸縮する `Mo` の括弧からなる `Mrow` であり、`Math.vector` と `Math.matrix` のエンコーダーが書くのはこちらである。
++     entry #contents   子
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Script   添字と極限の構造：`Msub`、`Msup`、`Msubsup`、`Munder`、`Mover`、`Munderover`、`Mmultiscripts`、`Mprescripts`、`Mnone`
++       シールされたトレイトである。
++       隅の添字と中央の極限は位置で決まる。
++       `Mmultiscripts` はコンテナーであり、その子は底、後置添字、`Mprescripts` マーカー、前置添字を交互に並べ、`Mnone` を空の場所埋めとする。
++   entry .Msub   `<msub>`：下付き添字を持つ底
+
+% 1 1 0 0bf007927cab98681438d70793aa944d
+
+@ 0 7 0 00fbf0a281d5eb6613825375dd61ea8b
++         `Msub(Mi(t"x"), Mi(t"i"))`、Ergo では `x↘i`。
++         `Cell` は、すべての文字に Unicode の下付きグリフがあれば下付き添字を底と同じ行にそのグリフで置き（`xᵢ`）、そうでなければ下に積む。
++     entry #base   添字が付くノード
++     entry #subscript   右下に置かれる添字
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Msup   `<msup>`：上付き添字を持つ底
+
+% 1 1 0 12e964bfc91e76d519a47d46f7258399
+
+@ 0 6 0 19c3b3aae3c4e0c01cba78ad20bc85f3
++         `Msup(Mi(t"x"), Mn(t"2"))`、Ergo では `x↗2`。
++         `Cell` は、添字が Unicode の上付きグリフで書けるならこれを `x²` として描き、そうでなければ斜め上に積む。
++     entry #base   添字が付くノード
++     entry #superscript   右上に置かれる添字
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Msubsup   `<msubsup>`：下付き添字と上付き添字の両方を持つ底
+
+% 1 1 0 1cde90ee33829a121df2176b5f316bb1
+
+@ 0 6 0 1ed7bbf41d1cd10a0214bafd19ac172e
++         Ergo では `x↘i↗2`：`↘` と `↗` を一つずつ取る底は、この要素にまとめられる。
++     entry #base   添字が付くノード
++     entry #subscript   下の添字
++     entry #superscript   上の添字
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Munder   `<munder>`：下置き添字または下限を持つ底
+
+% 1 1 0 07d84c6a20b63bf81a44743e4654f91d
+
+@ 0 6 0 02de0e798a35f81e1b7f6fd5a795accb
++         Ergo では `x↓n`。
++         下置き添字が単一の `Mo` のとき、Ergo のパーサーはそれに `accentunder="true"` を付け、横線や矢印を極限ではなく密着したアクセントとして扱う。
++     entry #base   添字が付くノード
++     entry #underscript   中央下に置かれる添字
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mover   `<mover>`：上置き添字または上限を持つ底
+
+% 1 1 0 0ff7429ae50fc3b81f705b383f9bded6
+
+@ 0 6 0 09b01168364369ff1ab9f3e7633cfb03
++         Ergo では `x↑n`、ハットなら `x↑^` である。
++         後者では上置き添字が単独の演算子なので、パーサーはそれに `accent="true"` を付ける。
++     entry #base   添字が付くノード
++     entry #overscript   中央上に置かれる添字
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Munderover   `<munderover>`：下と上の両方に極限を持つ底
+
+% 1 1 0 1cacdb3fe3a713a60058e5d2cb429060
+
+@ 0 7 0 0886791511b1b2b1080385d842b48961
++         Ergo では `∑↓(i = 1)↑n`：大型演算子の極限の自然な形である。
++         `Cell` は極限を底の上下中央に描く。
++     entry #base   添字が付くノード
++     entry #underscript   下限
++     entry #overscript   上限
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mmultiscripts   `<mmultiscripts>`：任意の数の前置添字と後置添字を持つ底
+
+% 1 1 0 1c005134a5f428891171cf1712c47627
+
+@ 0 12 0 1633a7b36802d99112c92a0e3d14791c
++         子は、底、その後の下付きと上付きの組、そして `Mprescripts` マーカーとその前に置かれる組である。
++         `Mnone` は空の位置を埋める。
++     entry #contents   MathML の順序による底、添字、マーカー
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mprescripts   `<mprescripts/>`：`Mmultiscripts` の中で、その後に前置添字が続くマーカー
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mnone   `<mnone/>`：`Mmultiscripts` の中の空の添字位置
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Tabular   表の構造：`Mtable`、`Mtr`、`Mlabeledtr`、`Mtd`、`Maligngroup`、`Malignmark`
++       シールされたトレイトである。
++       MathML Core は表の要素を残しているが、その MathML 3 の属性（`columnalign`、`rowspan`、`frame`、…）は一つも残していないので、それらには Ergo のディレクティブがない。
++   entry .Mtable   `<mtable>`：行からなる表または行列
+
+% 1 1 0 0e65580aa20621581aa2f3979ab19f94
+
+@ 0 46 0 1b6768d11926110c1b343520167b07d5
++         `Mtable(Mtr(Mtd(Mn(t"1")), Mtd(Mn(t"2"))))`。
++         Ergo の導入記号 `⋱`、`⋯`、`⋮` は、それぞれ行列、一行の表、一列の表を作る。
++         `Math.vector` と `Math.matrix` のエンコーダーは、伸縮する括弧の中にこれを一つ書く。
++     entry #contents   行（それぞれ `Mtr` または `Mlabeledtr`）
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mtr   `<mtr>`：セルからなる表の行
++     entry #contents   セル（それぞれ `Mtd`）
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mlabeledtr   `<mlabeledtr>`：最初の子がラベルである表の行
++     entry #contents   ラベル、次にセル
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mtd   `<mtd>`：表の行の一つのセル
++     entry #contents   セルの内容
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Maligngroup   `<maligngroup/>`：セル内の揃えグループのマーカー
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Malignmark   `<malignmark/>`：セル内の揃え位置のマーカー
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Elementary   初等算術の構造：`Mstack`、`Mlongdiv`、`Msgroup`、`Msrow`、`Mscarries`、`Mscarry`、`Msline`
++       筆算と長除法のための MathML 3 要素のシールされたトレイトであり、MathML Core はこれらを取り除いた。
++       パースと直列化はできるが、Ergo の形式は持たない。
++   entry .Mstack   `<mstack>`：初等算術のための、列を揃えた行の積み重ね
++     entry #contents   行
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mlongdiv   `<mlongdiv>`：長除法のレイアウト
++     entry #contents   除数、結果、被除数、そしてその下の行
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Msgroup   `<msgroup>`：積み重ねの中で一緒にずらされる行のグループ
++     entry #contents   行
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Msrow   `<msrow>`：積み重ねの一行
++     entry #contents   行の数字と演算子
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mscarries   `<mscarries>`：後に続く行の上に置かれる繰り上がりの行
++     entry #contents   繰り上がり（それぞれ `Mscarry` または単なるノード）
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Mscarry   `<mscarry>`：`Mscarries` の中の一つの繰り上がり
++     entry #contents   繰り上がりの内容
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Msline   `<msline/>`：積み重ねの中の横線
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Semantic   `<maction>` と意味論への橋渡し：`Maction`、`Semantics`、`Annotation`、`AnnotationXml`
++       シールされたトレイトである。
++       `Semantics` は表示用の部分木と注釈を組にする。
++       `Annotation` は TeX の文字列などの文字データを運び、`AnnotationXml` は入れ子のマークアップの部分木を運ぶ。
++   entry .Maction   `<maction>`：トグルや強調表示などのアクションに結び付けられた子
+
+% 1 1 0 1f45b8433a913dce00c7cf4649c26d42
+
+@ 0 14 0 0c2e33d54c0196ae02733710bb15a8e9
++         `actiontype` 属性（Ergo の `⚙(type)`）がアクションを指定する。
++         これはレガシーであり、MathML Core では定義されていない。
++     entry #contents   子
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Semantics   `<semantics>`：一つ以上の注釈を持つ表示用の部分木
++     entry #contents   表示用のノード、次にその注釈
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Annotation   `<annotation>`：TeX のソースなど、式に注釈を付ける文字データ
++     entry #value   注釈のテキスト
++     entry #attributes   要素の属性（名前と値の組）
++   entry .AnnotationXml   `<annotation-xml>`：式に注釈を付けるマークアップの部分木
++     entry #contents   注釈のノード
++     entry #attributes   要素の属性（名前と値の組）
++   entry .Error   XML や HTML が MathML の木を保持していないときに発生する
+
+% 1 1 0 025c67c71b69cc6307b86e49bb53f32f
+
+@ 0 5 0 01265477c429d7e0114a114121f1fb2f
++         エラー `↯/s.129.1`：_the MathML could not be parsed because reason_。
++         ルート要素が `<math>` でないとき、または要素のラベルが MathML の要素でないときに、`Math.aggregable`、`Math.loadable`、`Math.loadableData`、`Mathml.Parser`、`Mathml.Reader` が発生させる。
++         XML 自体の整形式性は xylophone の `Xml.Error` と `Parse.Error` の担当であり、これより先に発生する。
+
+% 2 1 0 14fb17b3e713c43100daaa1d002476ef
+
+% 3 1 0 1ed0b6e8466498b910e9f7131b314209
+
+% 1 1 0 01e216ffbf7534fe1439bb82c911f4ee
+
+% 0 1 0 1fd97adbaecfd4f0071902df79baad04
+
+% 1 1 0 0f5e35f8cdef81061b3bfff584cc7739
+
+@ 0 11 0 03ca4f0cdf5ceaef0825ef39a8466d57
++         `strategies.throwUnsafely` のもとでは同じ読み取りが例外を投げ、エラーの `#reason` は `Mathml.Error.Reason.NotMathml(t"svg")` である。
++     entry .Reason   木が MathML でない理由：`NotMathml(label)` または `UnknownElement(label)`
++         `NotMathml(label)`（理由 1、_the root element was `<label>` instead of `<math>`_）：文書のルート、または HTML ページに `<math>` 要素がなかった。
++         断片やページにそれが一つもなかったとき、ラベルは `<missing>` である。
++         `UnknownElement(label)`（理由 2、_the element `<label>` is not a known MathML element_）：`<math>` の中の要素で、そのタグを `Mathml.Parser.decodeNode` が認識しないもの。
++     entry .communicable   各理由をそのメッセージとして描画する
++     entry #reason   見つかった誤り
++   entry .Parser   xylophone の `Xml` の木を `Math` と `Mathml` のノードにデコードする
+
+% 1 1 0 1939402f6f3600351972e5d46b495aad
+
+@ 0 5 0 1a1dfa0ab40a152b1f6eafae8c1720e8
++         `read[Math]` の背後にあるデコーダーである。
++         各要素のラベルに応じて対応するケースクラスへ振り分け、すべての属性をノードの `attributes` の集まりにそのまま保持する。
++         例外はルートの `xmlns` と `display` で、これらは `Math` が構造として保持する。
++         位置で決まる要素（`<mfrac>`、`<msup>`、…）に子が欠けていると、その場所には空の `Mrow` が入る。
+
+% 2 1 0 05ec3a109599b4ac1d72ab25ce9338dd
+
+% 3 1 0 12a5de5aee471a0118e8c866aa50b3ce
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 1 1 0 0eff06a39f326980140a29dab5c67489
+
+% 0 1 0 00542ffad24aace01c15e8dae5594e88
+
+% 0 1 0 09f4f5ebcaa730e6058c08637b4c62b4
+
+% 1 1 0 0b52384181664cf10bf4ad3b90319c5d
+
+@ 0 16 0 0671d78ad8c72f1b1bc5d18c7b0448b1
++         デコードするすべてのメソッドは `Tactic[Mathml.Error]` を必要とする。
++     entry .labelOf   `Xml` 値のラベル、要素でなければ `<unknown>`
++     entry .findMath   XML ノードのリストの中の最初の `<math>` 要素
++         一つもなければ `NotMathml(<missing>)` で `Mathml.Error` を発生させる。
++     entry .rootElement   XML 値の `<math>` 要素：値そのもの、または断片の中の最初のもの
++         値が別の名前の要素であるとき、または `<math>` 要素のない断片であるときは、`NotMathml(label)` で `Mathml.Error` を発生させる。
++     entry .decodeMath   `<math>` 要素を `Math` にデコードし、`display` とその他の属性を読む
++         `display` 属性は `#display` になる（`Display.Block`、`Display.Inline`、その他の値なら `Inline`、なければ `Unset`）。
++         `xmlns` は常に書き戻されるので捨てられ、その他の属性はすべて保たれる。
++         子は `.decodeNode` でデコードされる。
++     entry .decodeNode   一つの要素を、そのラベルに対応する `Mathml` のケースクラスにデコードする
++         ラベルが MathML の要素のどれでもなければ、`UnknownElement(label)` で `Mathml.Error` を発生させる。
++   entry .Reader   honeycomb の HTML の木に埋め込まれた MathML を取り出す
+
+% 1 1 0 0f5511797deba7ce049ca0acb942ff89
+
+@ 0 4 0 13b387c9b1f3f82f026c68f06c0c01f7
++         honeycomb は `<math>` を独自のノード型を持つ外部要素としてパースする。
++         そこでリーダーは HTML の木を深さ優先でたどって最初の `<math>` 部分木を探し、それを xylophone の `Xml.Element` に書き写して、`Mathml.Parser` でデコードする。
++         これは `math.html` の逆である。
+
+% 2 1 0 019936af2aef47720ec6ff31424e9bcd
+
+% 3 1 0 05da1d627f67019715ed43806eadc285
+
+% 4 1 0 00c9e477f70e9da10e704461685bf670
+
+% 1 1 0 19c269351317ddb30a1c428ad3226bd9
+
+% 0 1 0 09e529b03572332f134ea16a4fc8c756
+
+% 0 1 0 10fb2cf1186e2c40155af454e7eff04e
+
+% 1 1 0 111cfc31d3522581000c134e75820fdd
+
+@ 0 11 0 0f95ca82018df94e0f0e2dfafbe224d2
++     entry .read   HTML の木の中の最初の `<math>` を `Math` としてデコードしたもの
++         木に `<math>` 要素がなければ `NotMathml(<missing>)` で、その中に MathML でない要素があれば `UnknownElement` で `Mathml.Error` を発生させる。
++         `Tactic[Mathml.Error]` が必要である。
++     entry .findMath   HTML の木の中の最初の `<math>` 要素（honeycomb 自身の要素型として）、または `Unset`
++   entry #label   `mi` や `annotation-xml` などの、要素のタグ名
++   entry #attributes   要素の属性（名前と値の組、順序どおり）
++       そのまま保持される：モデルがアクセサーを持たない属性も往復で保たれる。
++   entry #contents   子ノード（順序どおり）。トークン要素では空
++   entry #text   トークン要素の文字データ、レイアウト要素では `Unset`
++       `Mspace` と `Mglyph` はテキストを持たないトークンなので、これらも `Unset` である。
+
+@ 0 1 0 15a426221504e732017882612388a096
++   entry .Display   `<math>` ルートが独立したブロックか、本文中に組まれるか
+
+% 1 1 0 1ca0c025d03b511904dbe61939726ded
+
+@ 0 4 0 076eeb7c80e6baf01d8d7b3b6f7dd888
++         ルートの `<math>` 要素の `display` 属性の値である。
++         独立した行に置く数式には `Display.Block`、段落の中に組む数式には `Display.Inline` を使う。
++         `Math` はこれを `display` として一つ持ち、属性を省くときは `Unset` を持つ。
++         Ergo のディレクティブ `◻` と `▭` がこれを設定する。
+
+% 2 1 0 1c6c7b09e2e3aee812827089f0f64b4f
+
+% 3 1 0 01051a5cd1907684025ba2bb4ca5473b
+
+% 4 1 0 0f935fc4bf18296b14814591351dff89
+
+% 0 1 0 155ea76cc6f91fb10bd35608da849111
+
+% 0 1 0 12e3a2d18340769219b5e72f0fc3ffa3
+
+% 1 1 0 195a27d8358fdcfb15a0f1a1415db3e9
+
+@ 0 5 0 1a18bbcb82dfb8f01e4c10c005a54cc4
++     entry .encodable   表示モードを属性のテキスト `block` または `inline` として描画する
++     entry .unapply   パターンのために、テキスト `block` または `inline` を `Display` としてマッチする
++         `Text` に対する `case Display(display) =>` である。
++         その他のテキストはマッチせず、`Mathml.Parser.decodeMath` は未知の値に対してこうして `Inline` に戻る。
++   entry .Cell   ベースラインを持つ等幅テキストのブロック：式の端末向けの描画
+
+% 1 1 0 06b2e08fd67e993016a949865c536dc1
+
+@ 0 6 0 009fa720bb87dbe90c4fdd0a683f1902
++         `Cell` は文字セルの長方形で、`#width` 列、`#height` 行であり、`#baseline`（組版が揃える数式の軸の行を上から数えたもの）を持つ。
++         その `#lines` は `Writing` なので、結合アクセントや複数のコードポイントからなるクラスタも一列として数えられ、すべての行はちょうど `width` 列である。
++         `Cell.of` は任意の `Mathml` ノードをレイアウトし、`#render` はブロックを改行で区切った `Text` に平らにする。
++         通常の入口は、`Mathml` や `Math` に対する拡張 `cell` と `draw` である。
+
+% 2 1 0 01723d81673c811501a2a1e1acb48bdf
+
+% 3 1 0 124d1d36026a1db512c7e1572f6be289
+
+% 4 1 0 10bb5cfa3489acf407344885b2097609
+
+% 0 1 0 0643dad035b29da400539c802adb1885
+
+% 0 1 0 0e6780b36044b206080bd33988b82a9a
+
+% 0 1 0 1798b580a0c753130c08b5e06dc75990
+
+% 0 1 0 0d423a0c4759841a07a2984692df6c71
+
+% 1 1 0 176ad58bebd8e0d31ef74676449f566a
+
+@ 0 12 0 1b49fcdb4faba2a31084a8d8dd77d4fb
++         レイアウトの規則は次のとおりである。
++         Unicode の上付きと下付きのグリフ（数字、符号、括弧、そしてラテン文字の多く。ただし上付きの `q` はない）で書ける上付き添字や下付き添字は、`x²` や `xᵢ` のように底と同じ行に置かれる。
++         それ以外のもの（ギリシャ文字、分数、入れ子の添字）は斜めに積まれる。
++         分数はその部分を `─` の横線の上下に中央揃えで置く。
++         平方根は `┌─` の括線を描き、被開平数が一行より高いときは `│` の幹と `╲` の足を付ける。
++         n 乗根は指数を記号の一行上に置く。
++         行の中では二項演算子の前後に空白が置かれ、括弧、積分、大型演算子 `∑` と `∏` は内容の高さまで伸びる。
++         括弧は罫線素片になり、積分は `╭`–`│`–`╯` の線（二重または三重になり、周回積分には `○` が付く）になり、`∑` と `∏` は被加数に合わせた大きさの線画になる。
++         コンパニオンのビルダー（`beside`、`fraction`、`radical`、`bracket`、…）は `of` が組み合わせるプリミティブであり、独自のレイアウトに直接使える。
+
+@ 0 2 0 04e62c42a18fba2a00bf208e283c2f85
++         `soundness` アンブレラでは、`Cell` という名前はこの型を指す。
++         probably の表のセルは `Tally` である。
+
+% 0 1 0 1621b37bb921f7fe11c46eafb0eef6fd
+
+% 0 1 0 1c7cf59e7dc36dcb0448a6776a5f503f
+
+@ 0 64 0 054c1580c160d2bc0db2cad59baa7126
++     entry .inspectable   デバッグ用の描画：寸法、ベースライン、各行のテキストリテラル
++         `Cell(2×1@0 t"xy")`：幅×高さ、`@` の後にベースラインの行、そしてすべての行を引用符で囲んだものなので、末尾のパディングが見える。
++         `#render` はブロックを実際に表示されるとおりに示すが、それは検査用の描画にはできないことである。
++     entry .empty   幅ゼロ列の、空の一行からなるセル
++     entry .line   与えられたテキストからなる一行のセルで、ベースラインは 0
++         幅は全角文字の計量によるテキストの書記素の幅なので、CJK の文字は二列と数えられる。
++     entry .blank   与えられた幅、高さ、ベースラインを持つ、空白からなるセル
++     entry .beside   ベースラインを揃えてセルを左から右へつなぐ
++         `<mrow>` の中心となる処理である。
++         各セルの上下に空白の行を加えてすべてのベースラインが同じ行に来るようにし、それから行を連結する。
++         結果のベースラインは入力のうち最大のものである。
++     entry .fraction   分子、`─` の横線、分母を上から積む
++         どちらの部分も、広い方の幅に両側一列ずつの余白を加えた中で中央に置かれる。
++         ベースラインは横線である。
++     entry .superscript   添字のセルを底のセルの右斜め上に置く
++         `Cell.of` が添字を Unicode のグリフで書けないときに使う、積み重ねの形である。
++         ベースラインは添字の高さの分だけ下がる。
++     entry .subscript   添字のセルを底のセルの右斜め下に置く
++     entry .subsup   下付き添字と上付き添字のセルを、底の右に上下に並べて置く
++         どちらの添字も広い方に合わせてパディングされる。
++         底のベースラインは、上付き添字の高さの分だけずらして保たれる。
++     entry .overscript   セルを底のセルの上に中央揃えで置く
++     entry .underscript   セルを底のセルの下に中央揃えで置く
++     entry .underover   底のセルの上に一つ、下に別のセルを中央揃えで置く
++         `Munderover` はこうして描かれる：総和の極限を `∑` の上下に置く。
++     entry .radical   セルを囲む平方根記号と括線を描く
++         一行の被開平数には `┌─…` の上線を伴う `√` グリフが付き、それより高いものには `╲` の足と角まで伸びる `│` の幹が付く。
++     entry .root   n 乗根を描く：指数を記号の一行上、その左に置く
++         指数が乗る行があるように、記号は常に背の高い形である。
++     entry .fence   セルを、その高さまで伸ばした開き文字と閉じ文字で囲む
++         `fence('(', ')', inner)`：`Mfenced` はこうして描かれる。
++     entry .bracket   ある高さまで伸ばした括弧の文字を、一列のセルとしたもの
++         高さが一行ならその文字そのものになる。
++         それより高ければ、`(`、`[`、`{` はそれぞれの罫線素片の上部、中部、下部になり（波括弧は `⎨` をベースラインの行に置く）、その他の文字は `│` の線になる。
++         `opening` は左側用と右側用のどちらの素片にするかを選ぶ。
++     entry .integral   ある高さまで伸ばした積分記号と、その後の一列のパディング
++         `∫`、`∬`、`∭` は一本、二本、三本の `╭`–`│`–`╯` の線である。
++         `∮`、`∯`、`∰` は最初の線の軸の行に `○` を重ねる。
++         高さが一行なら通常のグリフになる。
++     entry .bigOperator   与えられた高さの線画としての `∑` または `∏`
++         総和は、`▁` と `▔` の横線を、頂点に向かって段々に寄る `╲` と `╱` の斜線でつないだもので、四以上の偶数の高さを必要とする。
++         総乗は、二本の `│` の脚の上に `┬──┬` の横木を渡したもので、どの高さでもよい。
++         ベースラインは縦方向の中央である。
++     entry .row   ノードのリストを横に並べてレイアウトし、括弧、積分、大型演算子を伸ばす
++         まず伸縮しない内容の大きさを測り、次に各伸縮演算子をその高さで描き、すべてを `beside` でつなぐ。
++         一行の行では、すべての演算子が通常のグリフのままである。
++     entry .of   任意の `Mathml` ノードをセルとしてレイアウトする
++         再帰的なレイアウトである。
++         各要素の種類は対応するビルダーに対応し、トークンは `line` に（二項演算子には前後に空白を置き、不可視の演算子は捨てる）、特別なレイアウトを持たない要素はその子の行になる。
++     entry #lines   ブロックの行（上から下へ、それぞれちょうど `width` 列）
++     entry #width   列の数
++     entry #baseline   組版が揃える軸の行を、上から数えたもの
++     entry #height   行の数
++     entry #render   行を改行でつないだ、テキストとしてのブロック
++         出力するための形である：末尾の空白は保たれるので、すべての行は同じ幅である。
++     entry #hpad   各行の左右を空白でパディングし、ブロックを広げる
++     entry #hcenter   ブロックをより広い列数の中で中央に置く。狭めることはない
++     entry #framed   上下に空白の行を加えて、与えられたアセントとディセントにする
++         `Cell.beside` が、行ごとにつなぐ前にセルを共通の高さにするために使う。
+
+@ 0 1 0 0c9cf62d7df969e016bfaf1410d696e9
++ entry .Ergo   Ergo 略記法：MathML にパースされ、直列化して戻される一行の記法
+
+% 1 1 0 0c3c2931b853302601a73a4ece94ca19
+
+@ 0 6 0 1def703c7d0cf5271fce73139f7b04a6
++       Ergo は Presentation MathML のための簡潔な線形の記法で、構造上の役割ごとに一つのグリフを持つ。
++       `.parse` はそれを `Math` に変え、`.serialize` は書き戻す。
++       Ergo が構文を持つ要素については、この二つは正確に逆の関係にある。
++       式は一対の括弧で区切られ、その**最初の文字**によって、`(`、`[`、`{`、`⟨` のどれが全体を通してグループ化に使われるかが決まる。
++       その他の括弧はすべてリテラルの演算子になる。
++       グループ化された並びは一つの `<mrow>` である。
+
+@ 0 3 0 1a2d803e6f24e88c16663f9f0c9c9193
++       トークンは次のとおりである。
++       連続した文字は一つの識別子（`sin` は `<mi>sin</mi>`、`x y` は二つ）、内部に `.` を含む連続した数字は一つの数値であり、空白は区切りであって何も描画せず、その他の文字はすべて演算子である。
++       構造のグリフを、結合の強いものから順に示す：
+
+% 2 1 0 0c4f0d1d859218cf10d90762dfa7e797
+
+@ 0 17 0 062d5cdf377b81971b2001069b47a017
++       column  グリフ
++       column  役割
++       column  要素
++       column  例
++       row  `√`  平方根  `<msqrt>`  `√x`
++       row  指数の後の `√`  n 乗根  `<mroot>`  `3√x`、指数の前に空白を置かない
++       row  `↗`  上付き添字  `<msup>`  `x↗2`
++       row  `↘`  下付き添字  `<msub>`  `x↘i`
++       row  `↘` と `↗`  一つの底に両方  `<msubsup>`  `x↘i↗2`
++       row  `↑`  上置き添字  `<mover>`
++       row  `↓`  下置き添字  `<munder>`
++       row  `↓` と `↑`  一つの底に両方  `<munderover>`  `∑↓(i = 1)↑n`
++       row  `/`  分数、添字より結合が弱い  `<mfrac>`  `a/b`
++       row  並置  行  `<mrow>`  `x+1`
++       row  `⋱`  後に続くグループからなる行列  `<mtable>`  `⋱(((1)(2))((3)(4)))` は 2×2
++       row  `⋯`  行ベクトル  一行の `<mtable>`
++       row  `⋮`  列ベクトル  一列の `<mtable>`
+
+% 1 1 0 1ea6efb2f222fe7804f89339bcfb637a
+
+@ 0 5 0 06e1725ac9f061100041c94573f1304f
++       オペランドが欠けた演算子のグリフはリテラルの演算子に格下げされるので、`(↗)` はエラーではなく `<mo>↗</mo>` になる。
++       MathML Core の表示属性はそれぞれ、左にあるアトムまたはグループに結び付く**後置ディレクティブ**のグリフを持つ。
++       真偽値や列挙の属性は値ごとに裸のグリフを持ち、値が自由な属性（長さ、色、整数）はグループ化の括弧の中に値を取り、それはそのまま読まれる：
+
+% 2 1 0 1d1873bb7348dedd158108a1cb606f06
+
+@ 0 3 0 092c3f9b04cf8d2d11421d27c055557c
++       column  グリフ
++       column  属性
++       column  値
+
+% 0 1 0 133a6aa74a214bb80bbaae67d71a2210
+
+@ 0 1 0 01474e8e4014997801d13350b6a43464
++       row  `⌄(…)`  `scriptlevel`  括弧内の値
+
+% 0 1 0 1f5aff853083fe93071e09b81c784f34
+
+@ 0 3 0 1919a264a2b22a8f16dc6b89778435a0
++       row  `●(…)`  `mathcolor`  括弧内の値
++       row  `▨(…)`  `mathbackground`  括弧内の値
++       row  `⟑(…)`  `mathsize`  括弧内の値
+
+% 0 1 0 0765928fadbb4fa805e4149af7c645c3
+
+% 0 1 0 003d16defd413c35122c025e30b6d850
+
+% 0 1 0 03ab8a4992f4105102559e94cf0a2afd
+
+% 0 1 0 189e7021d2fd7a0a1df585e387f2d8fa
+
+% 0 1 0 08bd3785094bb9be19bb53927c3e0b69
+
+% 0 1 0 1d2cd91ba08156b7117657f30784d59f
+
+% 0 1 0 0399f7ea0ead54b102bb3880fde8837d
+
+% 0 1 0 12c5fb3b226c8f6c0042de5137240f47
+
+% 0 1 0 10ddb73d6ea9518e1ecebb7d3084e5f0
+
+@ 0 9 0 0f9e3f7c2778ebae05964827e8d37e92
++       row  `⧔(…)`  `lspace`  括弧内の値
++       row  `⧕(…)`  `rspace`  括弧内の値
++       row  `⟰(…)`  `maxsize`  括弧内の値
++       row  `⟱(…)`  `minsize`  括弧内の値
++       row  `↔(…)`  `width`  括弧内の値
++       row  `⍏(…)`  `height`  括弧内の値
++       row  `⍖(…)`  `depth`  括弧内の値
++       row  `↕(…)`  `voffset`  括弧内の値
++       row  `═(…)`  `linethickness`  括弧内の値
+
+% 0 1 0 050470488bb0560a155198cec4ec290c
+
+% 0 1 0 12743a88c60a51fc1e0f56b20c19a647
+
+@ 0 1 0 0e7720c34f956a0c0348e0f2bf134b91
++       row  `⚙(…)`  `actiontype`  括弧内の値
+
+% 1 1 0 148a5f2be5870fec13fa1c5c5a65095a
+
+@ 0 2 0 174206294247872a1a53c362ee38ebf8
++       グループ化が適用範囲を決める。
++       `(x↗2)●(red)` はべき全体に色を付け、`x↗2●(red)` は `2` だけに色を付ける。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1c3d264c19dcc62b0b6ebac1c97df630
++         label 識別子
+
+% 1 1 0 137e836ee3217f211a3f32d46619aa6d
+
+% 2 1 0 071bed0fb6f5e7861c97de6c01b810fa
+
+% 3 1 0 1ba254f9e8c7e1a20d27e97ae95c33db
+
+% 0 1 0 1a954feb1c1d2f430836dacdfe44d401
+
+% 1 1 0 1cb970d28232ceca0b7de156c116baea
+
+@ 0 1 0 0a2c6aaeec458436043c3db00e544da1
++         label 上付き添字
+
+% 1 1 0 12a7cd1ab4ef91da0ca4702f6bc61395
+
+% 2 1 0 03efdbbb7021fb1604639c1491905352
+
+% 3 1 0 019edd7418f1c9e219fb716b4be6b61e
+
+% 0 1 0 1beee8ae3d8f261310a1e0126386a117
+
+% 1 1 0 09ebcd5db1921b9008a06eea77d209c2
+
+@ 0 1 0 0bddac9c333eafc915ba49746ea7a336
++         label 添字より結合の弱い分数
+
+% 1 1 0 160a5bcce18b07fa14ff44c9e6119430
+
+% 2 1 0 012c7d416c7498c10ce81f15b83149d7
+
+% 3 1 0 118dd348912bf2990084148b27aded9c
+
+% 0 1 0 1762f5b588300ec40568a109cf106759
+
+% 1 1 0 1f1bb994cf59d34e15533caec399df9a
+
+@ 0 1 0 0dee9681172c61a40b99509c611e7fbe
++         label 分数に対する平方根
+
+% 1 1 0 1fa714384e924b0009d90acba4af5105
+
+% 2 1 0 150a5870ce8154f110b9844850599091
+
+% 3 1 0 14f2de9e441218bd0f55a8ecdbf0a576
+
+% 0 1 0 012cb8f646beaee701cdb846a5fee6aa
+
+% 1 1 0 018bb3ba61d3d33e057a5df105eb2a52
+
+@ 0 1 0 0ab58c9a17ddff701b7160d8762ad0f5
++         label 極限付きの総和
+
+% 1 1 0 1eed386aa0c911181b980dd59f101f6a
+
+% 2 1 0 12bd56f9692f9fb61acede4c1709570b
+
+% 3 1 0 10db8bbabdba3beb1bbe21e49f222353
+
+% 0 1 0 122ed355e4eb193c04bdbe9b01f4f7a3
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 1a3a4e45bc99f1b509daf5e48417227a
++       パースには `Tactic[Ergo.Error]` が必要である。
++       `ergo"…"` 補間子は代わりにコードのコンパイル中にリテラルをパースし、不正なものはパースが止まった文字の位置で報告する。
++       直列化は、Ergo の部分集合の外にある要素（`<mtext>`、`<mspace>`、`<mstyle>`、表の属性、初等算術の要素）を近似せずに `Ergo.Error` で拒否し、ルート自身の属性は捨てる。
+
+% 0 1 0 0c8b27c506084d491ec67a1a7c048407
+
+% 1 1 0 0386de205fa60abb0a784acbfc3ed4b8
+
+@ 0 1 0 052f8cf97f2f4f5312e9ce5bb97bebf4
++   entry .parse   Ergo のテキストを `Math` にパースする
+
+% 1 1 0 015955a53079f291158c325245927364
+
+% 2 1 0 04beac83d30c46650d9b112b805219f8
+
+% 3 1 0 14722fffb714fc0b1d05aa5b853c93ba
+
+% 0 1 0 045d7bc9d1158b0b01dc62545b622390
+
+% 0 1 0 1fe0021ba33757b104aa7a20a0b0ba8d
+
+% 1 1 0 00a107b269ca7b631b4abc69641ca519
+
+@ 0 14 0 014f440b13eb4c6c0a54f62c875667ef
++       空の入力、四つのグループ化の括弧のどれでも始まらない入力、閉じられていないグループ、途中で終わる入力、グループが後に続かない導入記号（`⋱`、`⋯`、`⋮`）に対して `Ergo.Error` を発生させる。
++       エラーの `offset` は、パースが止まった文字である。
++   entry .interpolate   補間されたリテラルの部分をパースし、各穴にノードを埋め込む
++       `ergo"…"` 補間子の実行時の半分である。
++       テキストの部分は各置換の位置に場所埋めを挟んでつながれ、各場所埋めは対応するエンコード済みの `Mathml` アトムとして順にパースされる。
++       `Tactic[Ergo.Error]` が必要である。
++       補間子自身は、コンパイル時にリテラルを検査したうえで `.unsafeInterpolate` を呼ぶ。
++   entry .unsafeInterpolate   戦術なしの `.interpolate`：コンパイル時に検査済みのリテラルのためのもの
++       `(using Unsafe)` を取る。
++       リテラルが整形式であることはコンパイル時に確立されているので、`ergo"…"` マクロが生成するコードがこれを呼ぶ。
++       検査していないテキストをパースするコードは、`.parse` または `.interpolate` を呼び、`Ergo.Error` を処理すべきである。
++   entry .serialize   `Math` を、`(` をグループ化の括弧として Ergo のテキストに書き戻す
+
+% 1 1 0 0d181b4636994dcd0cd033bd7bb8f251
+
+% 2 1 0 0f475d892d2128900958078f45f1f0c7
+
+% 3 1 0 043ae68b2c88e9d91875da9d0550e119
+
+% 0 1 0 1622b6732016785719f1e4d8d95298df
+
+% 0 1 0 16a3645ac0a5a48e0dc3ff5b12ed71ec
+
+% 1 1 0 162a31cf2753857403cbdc1694c035ca
+
+@ 0 8 0 16720d449b57935513b910f78c706c3b
++       意味のない空白は捨てられ、空白が残るのは、そうしなければ二つのトークンが一つにまとまってしまう場所（二つの文字が一つの識別子に、二つの数字が一つの数値に）だけである。
++       属性はディレクティブとして書かれ、値に裸のグリフがあればそれが優先される。
++       単独の演算子の添字が暗示するアクセント属性は、パースで復元されるので省かれる。
++       パースされた式は、直列化して再びパースすると等しい木になる。
++       `<mtext>` のような Ergo の形式を持たない要素に対しては、`Unsupported(label)` で `Ergo.Error` を発生させる。
++       `Tactic[Ergo.Error]` が必要である。
++   entry .Error   Ergo のテキストをパースできないとき、または木を Ergo として書けないときに発生する
+
+% 1 1 0 00d9a09a5ba921da1da429a4bc8dd7a8
+
+@ 0 5 0 15b989f35c86915a16abc4d99c37b5c1
++         エラー `↯/s.129.2`：_the ergo expression could not be parsed because reason_。
++         不正なテキストに対しては `Ergo.parse` と `Ergo.interpolate` が、Ergo の部分集合の外にある要素に対しては `Ergo.serialize` が発生させる。
++         `ergo"…"` 補間子では、同じ誤りはコンパイルエラーとなり、パースが止まった文字の位置（閉じられていないグループなら最後の文字、開き括弧が欠けているなら最初の文字）に置かれる。
+
+% 2 1 0 0899827b650da0ff0328f1ff1427898e
+
+% 3 1 0 04368a33918c091117a20691cd937d2e
+
+% 0 1 0 0979ffdf99edf3580a4d4a0d84fd4f27
+
+% 1 1 0 18d34c13118a8e981fa898f0e39a1233
+
+@ 0 2 0 0508efcbbf05aafa06406713d5d66f38
++     entry .Reason   見つかった誤り
++         ケースは次のとおりで、その `char` フィールドは `Char` である：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
+
+% 0 1 0 1a07ec9fd04dcb9b178999df3a420698
+
+@ 0 1 0 1138282f6e981c43141e87f9fe0c2cf7
++         row  `BadOpener(char)`  2  _the expression must start with a bracket, not `char`_  最初の文字が `(`、`[`、`{`、`⟨` のどれでもない
+
+% 0 1 0 0699e79776cdb18d1675ab6675ca6c3e
+
+% 0 1 0 1c7f03cbb20e21d60ecb75a829085dcd
+
+@ 0 2 0 0a40cf17bdadd21212a9b50dda26fc0f
++         row  `MissingBody(char)`  5  _the `char` introducer must be followed by a group_  後にグループのない `⋱`、`⋯`、`⋮`
++         row  `Unsupported(label)`  6  _the `<label>` element has no ergo representation_  `Ergo.serialize` から
+
+% 1 1 0 09d3ef1672bf04e7134cab42536c06a4
+
+@ 0 3 0 13f90fce196e7aff08da3063f11a4303
++     entry .communicable   各理由をそのメッセージとして描画する
++     entry #reason   見つかった誤り
++     entry #offset   パースが止まった文字の位置、直列化からは `-1`
+
+@ 0 2 0 022dc7661792e1f40c94aa0b73453f8f
++ entry .mathmlNamespace   MathML の名前空間 URI：すべての `<math>` ルートに `xmlns` として書かれる
++     `http://www.w3.org/1998/Math/MathML`：`Math.attributePairs` は常にこれを最初に置く。
+
+@ 0 5 0 1e1bee1ae749bd1f0ec75dd3db5c538a
++ entry .math   任意の `Encodable in Math` 値を `<math>` ルートとする：`value.math`
++     `Encodable in Math` インスタンスを持つすべての型（数値、`Text`、`Q64`/`Q32`、`Complex`、mosquito の `Vector` と `Matrix`、次元付きの `Quantity`、そして任意の `Mathml` ノードや `Math`）に対する拡張で、エンコードされた `Math` を与える。
++     インスタンスは `Math` のコンパニオンにあるので、インポートは要らない。
+
+% 2 1 0 0d1e8840e7cd4a2c11b4585ca932540d
+
+% 3 1 0 01ed0b633eb3e96f15a7907a16eaee6f
+
+% 0 1 0 1a2b01cc7c521ceb00b83c4fbbfa9131
+
+% 0 1 0 04607a11b49e1719119857b324d15bed
+
+% 1 1 0 0d5bdba7b401e8490fe0cef3e6400178
+
+@ 0 3 0 1ca11595ab1ec5191b93c7e96df5e6ef
++ entry .mathml   任意の `Encodable in Math` 値を単一の MathML ノードとする：`value.mathml`
++     `math` と同じだが、その後 `Mathml.atom` で一つのノード（唯一の内容ノード、または複数あればその `<mrow>`）にまとめる。
++     エンコードされた部品から、より大きな木を手で組み立てるためのものである。
+
+% 2 1 0 1d724de473f954b41e0a734939cac173
+
+% 3 1 0 01d75e1bf29a2f971d4a8d0ca25fc81b
+
+% 4 1 0 1819e7da0015abd60ccddf0e62e481b8
+
+% 0 1 0 1e13ef5168574d291d63dc7945feb5d0
+
+% 0 1 0 0d2a78ba0769595d02e6412c38778884
+
+% 0 1 0 1c51399fe31432e41dd627b53704cb9b
+
+% 1 1 0 1f4d927d59531434081e9e66b68149ba
+
+@ 0 7 0 1132bf8017c7a84b11c3219c724d935c
++ entry .ergo   `ergo"…"` 補間子：コードのコンパイル時にパースされる Ergo の式
++     `ergo"(x↗2)"` はコンパイル時にパースされる `Math` なので、不正なリテラルは、パースが止まった文字の位置に置かれるコンパイルエラーになる：_the ergo expression could not be parsed because a group was not closed with )_。
++     `$` による置換は `Encodable in Math` である任意の値（数値、テキスト、`Mathml` ノード、別の `Math`、ベクトル）でよく、単一のアトムとして埋め込まれるので、ディレクティブや添字はその全体に結び付く。
++     エンコードできない値は、その型を示すコンパイルエラーになる。
+
+% 2 1 0 1cc677d9c5c5b2971e76729101fa422a
+
+% 3 1 0 164c66f13acedaf11417fd13619166c9
+
+% 0 1 0 097504ab7fdaf3ef12a03ce43a0f5fbe
+
+% 0 1 0 006855c50bf792ac13704f4c2cf8f524
+
+% 0 1 0 0d67af57aec7ff331a667f189153a24a
+
+% 0 1 0 1d53c31ea5bd4f9d1eb76036ef5bf552
+
+% 0 1 0 1710031303e589e80ea72bb35ca66f05
+
+% 1 1 0 12f3f66c1572c2dd1281f4ac33e1bb47
+
+@ 0 2 0 1cfecfdc6caed9670b8794b1dcf5f8ee
++     記法は `Ergo` の項で説明している。
++     `Interpolable` given はコンパニオンにある `Math.interpolable` なので、`import soundness.*` で足りる。
+
+@ 0 3 0 035a035901e05f3110d72a644ebbca3f
++ entry .cell   `Mathml` ノードや `Math` を `Cell` としてレイアウトしたもの：他のブロックと組み合わせるため
++     `Mathml.Cell.of(node)`、`Math` に対しては内容を一つの行としたレイアウトである。
++     `draw` は同じブロックをテキストにしたものである。
+
+@ 0 1 0 17be4b6edd9514a91940721470581b58
++ entry .draw   `Mathml` ノードや `Math` を、端末向けの罫線を使った等幅テキストとする
+
+% 1 1 0 053f202f5fc43286009de909ba28db7e
+
+% 2 1 0 0b9a89f8e005deb606a1836beaf90f16
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 1694ccca866148630e43879510e1fc89
+
+% 0 1 0 1b824c51f9b12f92168b841f8fc4385d
+
+% 1 1 0 101f8f511c080aa3113e1d3c6a9d3d4c
+
+@ 0 2 0 08ab3ab7d35b9ece0eeead6074c56f18
++     改行でつないだ複数の行で、すべての行は同じ幅である。
++     レイアウトの規則は `Mathml.Cell` で説明している。
+
+@ 0 1 0 1098e68bfad657b31a4a60b77b6c523c
++ entry .internal   `ergo"…"` 補間子の背後にあるマクロの実装
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 6 0 040885e5e02f3a5f10433b8721f7990f
++       直接使うためのものではない：このオブジェクトは、マクロが安定した置き場所を持つために存在する。
++   entry .ergoInterpolator   `ergo"…"` の背後にあるマクロ：コンパイル時にリテラルを検査し、`Ergo.unsafeInterpolate` を埋め込む
++       リテラルの部分を取り出し、各置換をその `Encodable in Math` を通じて `Mathml` アトムに変え（なければコンパイルエラー）、誤りがその位置で報告されるよう場所埋めのアトムを使って全体をパースし、そのうえで実行時に本物のアトムを織り込んで再びパースするコードを出力する。

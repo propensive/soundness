@@ -1,0 +1,38 @@
+orthant 2 language
+
+% 0 1 0 1dcfef79ceef99971079a5cf0b8ada81
+
+@ 0 2 0 1ca9045bb16097b80fc1407984d44756
++ Lançado quando uma ou mais mensagens de validação são coletadas para
++ ponteiros específicos de um documento ou estrutura.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 1b535dd09356d15b0f5b731f9b417820
++ `Validation` carrega uma lista de pares `(Pointer, Message)`, cada um
++ identificando uma posição e o problema nessa posição. É usado
++ em pipelines que percorrem uma estrutura e acumulam falhas em vez
++ de abortar na primeira.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1e72579c8992c66a1adb2d7531a90033
+
+% 1 1 0 191aa4b43cb0a1510bfb8c631d7cd0b9
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 0139a8206df80c671d04cd3276ed4ca7
++ Percorra os pares contidos para expor cada mensagem em seu
++ ponteiro; corrija a estrutura de origem.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 19bda6dece91efda1c061c52aea2126e
++ - Código-fonte: `lib/contingency/src/core/contingency.Validation.scala`

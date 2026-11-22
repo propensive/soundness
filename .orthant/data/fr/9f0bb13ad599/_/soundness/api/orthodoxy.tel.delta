@@ -1,0 +1,156 @@
+orthant 2 language
+
+@ 0 1 0 159d263d8c66bf6f1869ca8a75e07baf
++ info   OAuth 2 pour les clients et les applications web : autorisations, PKCE, jetons à portées et identifiants typés
+
+@ 0 1 0 1c948d45ba03373419b271c209842386
++     La bibliothèque a trois ensembles de sources :
+
+@ 0 2 0 113335bd803b4d9d14ffeb4720037c6d
++     - `orthodoxy.oidc` — OpenID Connect : `Oidc.discover` pour les métadonnées d'un
++       fournisseur, et `Oidc.identify`, qui vérifie avec sigillate le jeton d'identité que porte
++       une `Authorization`.
+
+@ 0 1 0 09f768d499554f1300a170ae5feaf169
++ entry .Issuer   un serveur d'autorisation OAuth 2 tel qu'un client le voit : ses endpoints et l'identité du client
+
+@ 0 1 0 1e564fe434f3ba0808ffe1e7bd6687e2
++   entry .Context   la preuve, dans un gestionnaire de requêtes, qu'il s'exécute à l'intérieur du middleware `oauth` d'un émetteur
+
+@ 0 10 0 1df08cf25bbaae4019eb2c8bb331e111
++     entry .apply   crée le contexte pour le type singleton d'un émetteur, sous la forme `Issuer.Context[issuer.type]()`
++   entry #exchange   l'endpoint de jetons, auquel chaque autorisation envoie sa requête
++   entry #client   l'identifiant du client, envoyé comme `client_id`
++   entry #secret   le secret du client, envoyé comme `client_secret`, ou `Unset` pour un client public
++   entry #init   l'endpoint d'autorisation vers lequel un utilisateur est envoyé, ou `Unset` si le flux par code d'autorisation n'est pas utilisé
++   entry #redirect   l'URI de redirection enregistrée pour le client, ou `Unset` si le flux par code d'autorisation n'est pas utilisé
++   entry #grant   envoie une requête de jeton avec des paramètres d'autorisation arbitraires et lit l'`Authorization`
++       L'étape commune à toutes les autorisations : la `Query` de paramètres donnée est envoyée à
++       `#exchange` avec `client_id`, et `client_secret` s'il y en a un. Pour un type
++       d'autorisation pour lequel cette classe n'a pas de méthode, passez ses paramètres ici.
+
+% 2 8 0 0eb3efbabc89d7561623836e244a175d
+
+@ 0 15 0 1f491bb0bbd7976a0150cfc834dadde6
++       val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
++       issuer.grant(Query(List(t"grant_type" -> t"password", t"username" -> t"ada", t"password" -> t"…")))
++       ```
++   entry #clientCredentials   l'autorisation par identifiants client : l'autorisation propre du client, pour les portées données
++       RFC 6749 §4.4. Les portées sont envoyées séparées par des espaces comme `scope`, et omises
++       lorsqu'aucune n'est donnée, auquel cas le serveur accorde ses portées par défaut.
++   entry #refresh   une nouvelle autorisation à partir d'un jeton de rafraîchissement, ou d'une autorisation qui en porte un
++       RFC 6749 §6. Prend le jeton de rafraîchissement sous forme de `Text`, ou une
++       `Authorization`, dont le jeton `#refresh` est utilisé ; une autorisation sans jeton de
++       rafraîchissement lève `OAuth.Error.Reason.Unauthorized` sans contacter le serveur.
++   entry #exchangeCode   échange un code d'autorisation contre une autorisation, avec le vérificateur PKCE si l'on en a utilisé un
++       RFC 6749 §4.1.3. Envoie le `code` que l'utilisateur a rapporté à `#redirect` avec l'URI de
++       redirection et, lorsqu'un `Pkce` est passé, son vérificateur (RFC 7636), qui doit être le
++       même `Pkce` dont le défi est passé dans `#authorizationUrl`. Lève
++       `OAuth.Error.Reason.Misconfigured` si l'émetteur n'a pas de `#redirect`.
+
+% 2 8 0 187a83bb863700400f5edb5ec0c064c2
+
+% 0 3 0 19a9ad472868bee80c61fa8b7e234f74
+
+@ 0 5 0 048eb8410ec91de3009959393b837e22
++       val pkce = Pkce()
++       val code: Text = t"…"   // from the redirect's `code` parameter
++       flow.exchangeCode(code, pkce)
++       ```
++   entry #authorizationUrl   l'URL vers laquelle un utilisateur est envoyé, pour autoriser le client pour certaines portées
+
+@ 0 1 0 10b4fb47411a50670149245650f8de3c
++ entry .Authorization   un jeton d'accès et ce qu'il accorde : ses portées, son expiration et un jeton de rafraîchissement
+
+@ 0 8 0 0a8c3dbb12064e8d161251eecbb272e7
++   entry .authorization   définit l'en-tête `authorization` d'une requête à partir d'une `Authorization`, sous la forme `Bearer <key>`
++       La `Directive` telekinesis pour l'argument nommé `authorization` de `fetch` et de
++       `submit`, dans l'objet compagnon et donc dans la portée implicite.
++   entry .parse   lit une `Authorization` à partir du JSON d'une réponse de jeton
++       Lit `access_token` (obligatoire), `scope` (découpé sur les espaces ; absent signifie
++       `Nil`), `expires_in` (en secondes, converti en un instant en millisecondes à partir de
++       maintenant) et `refresh_token`. Une réponse sans `access_token` lève
++       `OAuth.Error.Reason.InvalidJsonResponse` via la `Tactic[OAuth.Error]` dans la portée.
+
+% 0 3 0 05289edb060c21cd1a54990b4ca41682
+
+@ 0 12 0 15b30148f6d598bc1ac285ccb276701a
++       val json = t"""{"access_token": "tok", "expires_in": 3600, "scope": "read write"}""".as[Json]
++       Authorization.parse(json).scopes   // List(t"read", t"write")
++       ```
++   entry #key   le jeton d'accès lui-même
++   entry #scopes   les portées accordées, ou `Nil` si la réponse ne les nommait pas
++   entry #expiry   le moment où le jeton expire, en millisecondes depuis l'epoch, ou `Unset` si aucune durée de vie n'était indiquée
++   entry #refresh   le jeton de rafraîchissement, ou `Unset` si aucun n'a été émis
++   entry #bearer   le jeton sous forme d'`Auth.Bearer`, tel que le porte l'en-tête `Authorization`
++   entry #expired   si l'expiration du jeton est passée ; un jeton sans durée de vie indiquée n'expire jamais
++   entry #grants   si le jeton accorde chacune des portées données
++       `true` lorsque `#scopes` les contient toutes, et aussi chaque fois que `#scopes` est vide,
++       puisqu'une réponse qui ne nommait aucune portée accordait celles qui étaient demandées.
+
+@ 0 1 0 1dc94144b34131e50f09be0add210edd
++ entry .Pkce   Proof Key for Code Exchange : un vérificateur que conserve le client et le défi qu'il envoie
+
+@ 0 3 0 0a09eaaade91e62506c44ed2d52a943d
++   entry .apply   un nouveau vérificateur : 32 octets issus d'un `SecureRandom`, sous forme de 43 caractères sûrs pour les URL
++   entry #verifier   le secret que le client conserve et envoie lors de l'échange du code
++   entry #challenge   le défi `S256` envoyé avec la requête d'autorisation : le SHA-256 du vérificateur, en base 64 sûre pour les URL
+
+@ 0 1 0 174e9bf786dcc001046adbc44b487f71
++ entry .Credential   un identifiant pour un schéma de sécurité nommé, sous la forme `("name" is Credential to Result)`
+
+@ 0 1 0 08d15d67279c26511961bff50cb9f7f5
++   entry .Bound   l'identifiant que crée `Credential(value)`, pour un nom de schéma et un type de résultat
+
+@ 0 4 0 05e102924b3a980b07c942b5dcac4095
++     entry #value   la valeur de l'identifiant
++   entry .apply   crée un identifiant à partir de sa valeur, pour le nom de schéma que donne le type attendu
++   entry #Self   le nom du schéma, sous forme de type `Label` littéral
++   entry #value   la valeur que présente le schéma : une clé, une `Auth` ou une `Authorization`
+
+@ 0 1 0 052784827b6f4c750b2deb0aee70f766
++ entry .OAuth   le foyer d'`OAuth.Error`, levée chaque fois qu'un échange OAuth échoue
+
+@ 0 1 0 03fd79d19873eff70ef885314b068c98
++   entry .Error   levée lorsqu'une autorisation, une vérification ou une redirection OAuth 2 échoue
+
+@ 0 1 0 0b492a70d0194528013027793c453a9d
++     entry .Reason   pourquoi un échange OAuth a échoué, numéroté comme seconde partie de l'erreur `↯/s.117.1`
+
+@ 0 2 0 049cc7bd8a0c128400d3c2261099c569
++       entry #number   le numéro de la raison, seconde partie du code de l'erreur
++     entry #reason   pourquoi l'échange a échoué, sous forme d'`OAuth.Error.Reason`
+
+@ 0 1 0 08774685f3804e841230e959bf345bc3
++   entry .Scope   un ensemble nommé de portées OAuth, qui vérifie qu'une autorisation les accorde
+
+@ 0 8 0 065cc3639cc811bb1eedbb1f930d70c9
++     entry #names   les noms des portées, tels que les écrit l'émetteur
++     entry #apply   vérifie que l'autorisation donnée accorde chaque portée, et la renvoie raffinée à cet ensemble de portées
++         Requiert une `Authorization of (? >: this.type)` dans la portée — une autorisation
++         raffinée à cet ensemble de portées ou à une union qui l'inclut, telle que la fournit
++         `Issuer#require` ; une simple `Authorization` n'en est pas une — et lève
++         `OAuth.Error.Reason.InsufficientPrivileges(name)` pour chaque nom qu'elle n'accorde pas.
++         Contrairement à `Authorization#grants`, une autorisation sans portée nommée échoue à la
++         vérification.
++     entry #Check   le type d'une autorisation que cet ensemble de portées peut vérifier : `Authorization of (? >: this.type)`
+
+@ 0 1 0 0249d91231d4eead00bea2754d2bb1f9
++ entry .Authorizations   le stockage, dans une application web, de l'état du flux par code d'autorisation de chaque session
+
+@ 0 1 0 1bb1d63cd56ec86e15ea071a0d6a7ff2
++   entry .State   la position d'une session dans le flux : où allait l'utilisateur, le `state` à vérifier, le jeton
+
+@ 0 6 0 1d53933bba10a86c0c6deab35c423fc0
++     entry #redirect   le chemin qu'a demandé l'utilisateur, vers lequel il est renvoyé une fois autorisé
++     entry #uuid   le `state` aléatoire que la redirection de retour depuis l'émetteur doit renvoyer à l'identique
++     entry #access   l'autorisation de la session une fois accordée, ou `Unset` tant que le flux est en cours
++     entry #expired   si l'autorisation détenue a expiré ; `false` tant qu'il n'y en a aucune
++   entry #update   enregistre l'état d'une session, sous la forme `store(session) = state`
++   entry #apply   l'état enregistré pour une session, ou `Unset`
+
+@ 0 1 0 1b38a5856b595e5514315d126129bc5a
++ entry .oauth   un middleware scintillate qui achève le flux par code d'autorisation lors de la redirection de l'émetteur
+
+@ 0 1 0 05e393a2a864e4ab013f1f028d6b4272
++ entry .require   un middleware scintillate qui envoie vers l'émetteur un utilisateur dépourvu d'autorisation

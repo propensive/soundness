@@ -1,0 +1,220 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06562905e99fab72131bd8cdc5dc656a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 191f5c47ae476c8315ebd94bdf845c5b
++ info   Unix-Manpages als typisierter Dokumentbaum, mit korrekter Maskierung zu roff serialisiert
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1f5000e31f89543b1bd717c6c473d82c
++     _Virility_ baut eine Unix-Manpage als Wert — ein `Roff`-Dokument aus betitelten Abschnitten,
++     Absätzen, Absätzen mit Tag, Beispielen und eingerückten Blöcken, mit fetten und kursiven
++     Folgen — und serialisiert sie in den roff-Quelltext, den `man` darstellt, unter Verwendung des
++     man-Makropakets (`.TH`, `.SH`, `.SS`, `.P`, `.TP`, `.EX`/`.EE`, `.RS`/`.RE`).
+
+@ 0 5 0 14eca3cdcb1c4c7a00e0d43680c364a1
++     Die Maskierung ist der Daseinsgrund der Bibliothek: Text, der von Hand in ein roff-Dokument
++     geschrieben wird, wird leicht als Markup missverstanden. Jedes `-` in Fließtext wird zu `\-`,
++     sodass eine Option wie `--verbose` in der dargestellten Seite durchsuchbar und kopierbar
++     bleibt; jedes `\` wird zu `\[rs]`; eine Zeile, die mit `.` oder `'` beginnt und die roff für
++     eine Steuerzeile halten würde, wird mit `\&` geschützt; und ein Zeilenumbruch innerhalb einer
++     Zeile wird zu einem Leerzeichen.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 06fd7c3732f9b38e0978880242cd4b75
+
+% 0 1 0 1971fb6fdff5c85c0b46d3f40555a9a2
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 0f8bd7b4e74b432904b1c46105a11685
+
+% 0 1 0 17bdfbae78c37db113c8deb4c82feda9
+
+% 0 1 0 009d850715cc550a1520b319b75ee172
+
+% 0 1 0 1dc09c07682b520516f528a29c19fe11
+
+% 0 1 0 10742f2393ecd0941ad69c3264589e1f
+
+% 0 1 0 1e987cb7719ebbb1107899c5ab15a25b
+
+% 0 1 0 09b05a5367acd98e0f7bfced010bc903
+
+% 0 1 0 177c315e378d99e60b2361e1b4a42185
+
+% 0 1 0 1ae0477d94da20240f6cdb53292509d3
+
+% 0 1 0 14f98e6f1ba318e20b1c53802fd5a08a
+
+% 0 1 0 1072917e9c55263a172a24bf6a17feec
+
+% 0 1 0 1e448bf5421592c81299436fad8a5b07
+
+% 0 1 0 0df06f87942f510f1f640b3a246bf2e1
+
+% 0 1 0 0fd4c46719e6757016e0b5c33feaa608
+
+% 0 1 0 0a5413908b6447e605ee4780fc4270ff
+
+% 0 1 0 187ee86dc0a8927c1709d7d2a9c37afc
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 019ae1017e865c7904384a4fee815414
++     Die Manpage-Unterstützung von Exoskeleton erzeugt ihre Seiten über diese Bibliothek, aus
++     den eigenen Kommandozeilendefinitionen des Programms. Virility hat ein einziges Source-Set,
++     `virility.core`, und alles wird in das Umbrella `soundness` exportiert.
+
+% 0 1 0 008c746b5bd31cef04c583614389c524
+
+% 0 1 0 0f00b820f8a0117a1d0cb24afd9a0eb3
+
+% 0 1 0 118e3f9a71c0b01e122f18a574fb4cfa
+
+@ 0 1 0 04ba6ff3899deabc08e9d19eca78aa46
++ entry .Roff   eine Unix-Manpage: ihre `.TH`-Titelzeile und eine Liste von Blöcken, als roff serialisiert
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 4 0 0742a97fd5e788bc0c957e7ef092c923
++       Ein `Roff` ist eine Manpage. Seine Felder werden zu den Argumenten der `.TH`-Zeile, mit
++       der die Seite beginnt: der `#title` (in Großbuchstaben dargestellt), die Nummer der
++       `#section` sowie die optionalen `#date`, `#source` (das Programm und seine Version) und
++       `#manual` (der Titel des Handbuchs, zu dem sie gehört, etwa `User Commands`). Seine
++       `#blocks` sind der Rumpf.
+
+% 2 1 0 1ae52a075d1a6665126844f1e602f345
+
+% 3 1 0 187409dfaaea47510d150875324119da
+
+% 0 1 0 0a635894ded961811991631df9b7b841
+
+% 0 1 0 166a4715d83eb1b901b8035b439e74d2
+
+% 0 1 0 043f0f7e2f3dd65400cbb4cb3176867c
+
+% 1 1 0 18dd2c791d3ec8a905cea710dbc9f513
+
+@ 0 3 0 1236d665aa07a6940973423e29155804
++       Nicht gesetzte Argumente am Ende werden aus der `.TH`-Zeile weggelassen, und nicht
++       gesetzte vor einem gesetzten als leere quotierte Argumente geschrieben. Ein `Roff` wird
++       als sein `#serialize`-Quelltext angezeigt und als `Text` kodiert, sodass es sich mit
++       `write` in eine Datei schreiben lässt.
+
+% 0 1 0 112329b882b74d0b04cc94c5d8deb2ee
+
+% 0 1 0 1db2d2b50643db6f1d5d120097e5a476
+
+@ 0 6 0 0b486e15195d84e603f7dd8fbb49d38b
++   entry .showable   zeigt eine Seite als ihren roff-Quelltext an
++   entry .encodable   kodiert eine Seite als ihren roff-Quelltext
++   entry .escape   maskiert Text für eine roff-Textzeile
++       Jedes `-` wird zu `\-`, `\` wird zu `\[rs]`, und ein Zeilenumbruch wird zu einem
++       Leerzeichen. Ein führendes `.` oder `'` wird nicht geschützt: Das übernehmen die Blöcke
++       für jede Zeile, die sie ausgeben, sodass Text, der allein durch `.escape` gegangen ist und
++       am Anfang einer Zeile geschrieben wird, weiterhin `\&` braucht.
+
+% 2 1 0 04eb90a98edc8269120d8a2a66c51592
+
+% 3 1 0 0b4887d72c23d52b1e27789c8cb1cb29
+
+% 0 1 0 0d17328f2083b1da06fed240c2a9b5fc
+
+% 1 1 0 0979fb72fcb0377b00a1870455407dbb
+
+@ 0 4 0 1e320c064134fbbe0b49689362c1b794
++   entry .quote   maskiert Text und setzt ihn als Makroargument in doppelte Anführungszeichen
++       Für die Argumente von `.TH`, `.SH` und `.SS`. Innerhalb der Anführungszeichen wird `"` zu
++       `\[dq]` und `\` zu `\[rs]`, aber `-` bleibt unangetastet: Ein Bindestrich in einem Titel
++       oder Datum ist Fließtext, und ein maskierter Bindestrich im `.TH`-Datum vereitelt das
++       Datumsparsen von `mandoc`.
+
+% 2 1 0 1b495a85e3e9b6d60a44a6c82e04a6c6
+
+% 3 1 0 1277a10f25335b67165f009f1d4ab0b8
+
+% 0 1 0 017ad8c0894f64df14fcd7038f0fddae
+
+% 1 1 0 07a629f0052c8618045826d1ef2258a9
+
+@ 0 1 0 0a993f9b2159092e0f897bc36c166d87
++   entry .Inline   eine Textfolge innerhalb einer Zeile: normal, fett oder kursiv
+
+% 1 1 0 0de0d7c5d4d4253c1937946f617497ef
+
+@ 0 4 0 083333e70ac657fa0faf47b7688a5c59
++         Ein Enum mit drei Fällen. `Plain(text)` ist maskierter Text; `Bold(inlines)` und
++         `Italic(inlines)` umschließen eine Liste weiterer Folgen mit den Schriftwechseln
++         `\fB…\fP` und `\fI…\fP`, sodass sich Stile verschachteln lassen. `plain`, `bold` und
++         `italic` im Begleitobjekt erzeugen die üblichen Formen aus einer einzelnen Folge.
+
+% 2 1 0 158f842d810dd6b71e30d85ef35f4d15
+
+% 3 1 0 1f684d954814f8461643c413d698aeb3
+
+% 0 1 0 139c11efba42b4130410ae4317caafdc
+
+% 0 1 0 142469118c1d7d2719cf60cf3cc81fb5
+
+% 1 1 0 1d4f51e31f74c7620fe742a7d5096b70
+
+@ 0 5 0 0841fc3682ed3cf81c1b7f940d8364ed
++     entry .plain   eine Liste aus einer normalen Textfolge, die Form, die der Fließtext eines Absatzes annimmt
++     entry .bold   eine fette Folge aus normalem Text
++     entry .italic   eine kursive Folge aus normalem Text
++     entry #serialize   die Folge als roff-Text, maskiert und mit ihren Schriftwechseln
++   entry .Block   ein Block einer Manpage: ein Abschnitt, ein Absatz, ein Absatz mit Tag, ein Beispiel oder eine Einrückung
+
+% 1 1 0 17c75931a837f1fa08f546479ae50a27
+
+@ 0 1 0 00fadf1f4b79a37a10ee9f0a114f7f76
++         Ein Enum der Blockstrukturen der man-Makros:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 2 0 1d627098687a6ab21919efce434a1e52
++         column  Fall
++         column  Makros
+
+% 0 1 0 07035a1ab0ef30e21cb25fd809381d50
+
+@ 0 6 0 0c432cb859d903be0ef284caf313a923
++         row  `Section(title, blocks)`  `.SH`  ein Abschnitt, etwa `Name`, `Synopsis` oder `Options`
++         row  `Subsection(title, blocks)`  `.SS`  ein Unterabschnitt
++         row  `Paragraph(prose)`  `.P`  ein Absatz aus Inline-Folgen; als erster Block eines Abschnitts oder Unterabschnitts wird das überflüssige `.P` weggelassen
++         row  `Tagged(tag, body)`  `.TP`  die Gestalt des Eintrags einer Option: das Tag auf einer Zeile und seine Beschreibung eingerückt darunter; ein leerer Rumpf gibt nur das Tag aus
++         row  `Example(lines)`  `.EX`, `.EE`  wörtliche Zeilen, jede maskiert und geschützt
++         row  `Indented(blocks)`  `.RS`, `.RE`  eingerückte Blöcke
+
+% 1 1 0 06e035ecc20ff5951b483a5308814210
+
+% 2 1 0 08a1aaa27a33b3d600c40a4777139099
+
+% 3 1 0 15ed7097a93bde601582783fd7b9ecca
+
+% 0 1 0 01246ac97dbd57bd0310858cfe204f70
+
+% 0 1 0 0d4156af82670a3402e1e5f4806801e7
+
+% 1 1 0 050f9320d81c09911fa055695197b539
+
+@ 0 10 0 1d5565edffaf45670398c3909f024993
++     entry #serialize   der Block als Zeilen roff-Quelltext
++         Jede Textzeile, die mit `.` oder `'` beginnt, wird mit `\&` geschützt, sodass Fließtext
++         nie für eine Steuerzeile gehalten werden kann.
++   entry #title   der Name der Seite, meist der des Befehls, auf der `.TH`-Zeile in Großbuchstaben dargestellt
++   entry #section   die Abschnittsnummer des Handbuchs: 1 für Benutzerbefehle, 5 für Dateiformate, 8 für Administration
++   entry #date   das Datum der letzten Änderung der Seite, als Text
++   entry #source   die Herkunft des Programms, meist sein Name und seine Version
++   entry #manual   der Titel des Handbuchs, zu dem die Seite gehört, etwa `User Commands`
++   entry #blocks   der Rumpf der Seite
++   entry #serialize   die ganze Seite als roff-Quelltext, mit einem Zeilenumbruch am Ende

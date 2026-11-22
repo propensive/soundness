@@ -1,0 +1,109 @@
+orthant 2 language
+
+@ 0 1 0 078b75ade43b93810be2da42b74a786e
++ # Breite der Standards
+
+@ 0 5 0 1a3d1de9e2c3ec5e0bca786bd0deef13
++ Soundness implementiert Standards, statt Alternativen zu ihnen zu erfinden, und das Regal ist
++ bereits gut gefüllt: HTTP/2, WebSocket, TLS, CBOR, Protocol Buffers, tar, zip, xz, PDF, TrueType,
++ X.509, COSE, iCalendar, OAuth 2, OpenAPI, LSP, MCP und Dutzende mehr, mit RFC-Zitaten im Code.
++ Doch ob die Batterien enthalten sind, bemisst sich daran, wonach ein Produktionsteam greift und
++ es nicht findet. Diese Spur ist eine feste Zielliste, die in der Reihenfolge abgebaut wird, wie
++ oft dieses Greifen vorkommt.
+
+@ 0 8 0 07a8e9a666ba8b5d197fbe8320a51ecb
++ Die Liste ist bewusst abgeschlossen: fünf Standards, gewählt, weil jeder eine Geschichte
++ vervollständigt, die die Plattform bereits erzählt. JOSE/JWT ist die größte Lücke –
++ tokenbasierte Authentifizierung ist allgegenwärtig, und die benachbarten Teile (COSE, OAuth 2,
++ X.509) gibt es bereits. TOML ist Grundvoraussetzung für die Zusammenarbeit mit der weiteren Welt
++ der Werkzeuge. WebAuthn vervollständigt die Web-Authentifizierung. QUIC/HTTP-3 und IMAP runden
++ Transport und Mail ab. Nur die ersten drei liegen innerhalb des Gates der Produktionsreife; der
++ Rest liegt dahinter. Eine Zeile ist vollständig,
++ wenn ihr Modul mit Tests, Fehlerseiten und einem Themenleitfaden ausgeliefert wird – dieselbe
++ Messlatte wie für jedes andere Modul, denn eine Batterie, die undokumentiert oder unvollständig
++ ist, ist nicht enthalten, sondern bloß vorhanden.
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 1c9766d1627faf630369fb490d6f524f
++ column  Punkt
+
+% 0 1 0 1fdedd01bc1e53440fa818e6683581ec
+
+@ 0 7 0 11341fb67a6b12ed006bddcbed8383bd
++ column  Horizont
++ column  Im Gate
++ row  brd-1  JOSE: JWS, JWE, JWK, JWT (RFC 7515–7519)  nah  ja
++ row  brd-2  TOML  nah  ja
++ row  brd-3  WebAuthn  mittel  ja
++ row  brd-4  QUIC und HTTP/3 (RFC 9000, RFC 9114)  fern  nein
++ row  brd-5  IMAP (RFC 9051)  fern  nein
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+% 0 1 0 01c89940c6bd12fe0c415ad7c86823bf
+
+@ 2 1 0 0a6b1d27ff08f3b30494be0fa5c317ec
++ Horizont: nah
+
+@ 0 2 0 132f01b21e81e8fc140e7bdb70d20f23
++ Signierte und verschlüsselte Tokens: JWS, JWE, JWK und JWT, aufbauend auf den Primitiven, die
++ enigmatic bereits bereitstellt, neben seiner COSE-Unterstützung.
+
+@ 0 2 0 1bad04e316c8f2b4074f158c42b79d5b
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/modules/` ausgeliefert
++ wird und die Beispielvektoren aus RFC 7515/7516 auf dem Hin- und Rückweg unverändert wiedergibt.
+
+% 0 1 0 1998f84233791eca0abc020308a1bd92
+
+@ 2 1 0 161197c1544681051edb61c89ef2754f
++ Horizont: nah
+
+@ 0 2 0 02743a8b4510befc047e84e4dd78e560
++ Das Konfigurationsformat, das die weitere Welt der Werkzeuge spricht. Soundness konfiguriert sich
++ selbst mit TEL; es liest trotzdem, was andere schreiben.
+
+@ 0 2 0 18af8032fad0dd991bc252be8e8278aa
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/modules/` ausgeliefert
++ wird und die Standard-Konformitätssuite für TOML besteht.
+
+% 0 1 0 1a8bb91b78e6de911354db5c71cedcc0
+
+@ 0 2 0 0a2a77535bd0c7e613013d40c9b76eba
++ Horizont: mittel
++ Benötigt: brd-1
+
+@ 0 2 0 0babb33bc64a53ff0143b1e3ffc2fcca
++ Passwortlose Authentifizierung für den Web-Stack, die die Geschichte vervollständigt, die OAuth 2
++ und JOSE beginnen. Die COSE-Unterstützung, von der es abhängt, gibt es bereits.
+
+@ 0 2 0 10c5b8e16d190e5d05d62d5e6cf14588
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/modules/` ausgeliefert
++ wird und eine skriptgesteuerte Zeremonie aus Registrierung und Assertion gegen einen
++ Referenz-Authenticator besteht.
+
+@ 0 1 0 0b3017b08d8c1f4018f26169215a2ca8
++ ## brd-4: QUIC und HTTP/3
+
+@ 2 1 0 1799573cdbc5182a090fd2e8eebd63ea
++ Horizont: fern
+
+@ 0 2 0 02000836236b01aa0658f84f67d0bbaa
++ Der Nachfolger beim Transport. HTTP/2 und HPACK sind bereits nativ; QUIC erweitert dieselbe
++ Behandlung auf die Ebene darunter.
+
+@ 0 2 0 15dbf9a13b6a33de02a1a0e99848348b
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/modules/` ausgeliefert
++ wird und mit einem Referenz-Server und -Client für HTTP/3 zusammenarbeitet.
+
+% 0 1 0 01e52ef2626c334f018da700256be54b
+
+@ 2 1 0 1fc5f7954d6b6212198f29931270e73c
++ Horizont: fern
+
+@ 0 1 0 0cf20e7aa955445d068c24caca973255
++ Abruf von Mail, als Vervollständigung dessen, was die SMTP-Unterstützung von caduceus beginnt.
+
+@ 0 2 0 010de3cefe35de400abeab67664b483d
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/modules/` ausgeliefert
++ wird und eine skriptgesteuerte Sitzung gegen einen Referenz-IMAP-Server besteht.

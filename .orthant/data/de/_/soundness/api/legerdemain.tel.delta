@@ -1,0 +1,694 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1816f82651a7183f14e7dc026cc98f4e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09d5bcdaf6c5b0f100ed108c644f2b17
++ info   aus Datentypen abgeleitete HTML-Formulare und die formularkodierte `Query`, aus der ihre Übermittlungen dekodiert werden
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 18173414ba64218813da28adb904e3fe
++     _Legerdemain_ behandelt ein HTML-Formular als Benutzeroberfläche für einen Datentyp. Eine
++     Case-Klasse ergibt ein Formular — ein beschriftetes Widget pro Feld, gewählt nach dem Typ
++     des Felds, mit verschachtelten Case-Klassen als verschachtelten Fieldsets —, und eine
++     Übermittlung, eine `Query` aus Schlüssel-Wert-Paaren, wird zurück in die Case-Klasse
++     dekodiert, wobei jedes Scheitern auf das Feld zeigt, das es verursacht hat. Der Typ ist die
++     einzige Quelle der Wahrheit für beide Hälften; das Formular kann sich also nicht von den
++     Daten entfernen, die es erfasst.
+
+% 2 1 0 05b97a4d2cfe536903470dafd9efe6e9
+
+% 3 1 0 0598b18039e5119003c2d993600ea147
+
+% 4 1 0 14c481c12c396a1f04bafc8515d89bee
+
+% 5 1 0 0f3f6e9b438a253d06ca8feff9e1a7f7
+
+% 0 1 0 099357e06907479a1fc8c3c025a7630c
+
+% 0 1 0 1be073e19c57569a0da176bcb0474da3
+
+% 0 1 0 1f193ff683528bd5130d83fb33cdd69e
+
+% 0 1 0 16b627110ecefc2b1ceb0fbb68afc42c
+
+% 0 1 0 1ba668cb1ff8be4f10f36656f6c1a547
+
+% 1 1 0 02adf972541e2302098b7ef83e527069
+
+@ 0 7 0 0649e728f52f17800aea6c4ec87ab40d
++     Die Teile greifen über drei Typklassen ineinander. `Elicitable` gibt an, mit welchem
++     `Widget` der Typ eines Felds bearbeitet wird — ein `Field` für alles, was sich als Text
++     kodieren lässt, eine `Checkbox` für einen `Boolean`, eine `Combobox` für eine Aufzählung,
++     ein `Dropdown` für eine gespeicherte `Reference`. `Formulaic` wird für einen Produkttyp aus
++     den `Elicitable`s seiner Felder abgeleitet und erzeugt die Zeilen des Formulars.
++     `Formulation` entscheidet, wie das Formular und jede Zeile in HTML eingerahmt werden; die
++     einzige Standardwahl ist `formulations.postFormulation`, namentlich importiert, da `import
++     soundness.*` keine Givens importiert.
+
+@ 0 6 0 0bc30018822ad9ee1442fe1bec1c5eeb
++     Die Bibliothek hat zwei Source-Sets. `legerdemain.query` enthält `Query` und `Parametric`:
++     die formularkodierte Schlüssel-Wert-Struktur, ohne HTML darin, die HTTP-Client und -Server
++     für URL-Query-Strings und Formular-Posts verwenden. `legerdemain.core` fügt die Widgets, die
++     Typklassen, `elicit`, `edit` und das Paket `formulations` hinzu und hängt vom HTML von
++     Honeycomb ab. Alles wird in das Umbrella `soundness` exportiert. Telekinesis baut darauf den
++     Formularzyklus — darstellen, absenden, mit Fehlern erneut darstellen — als `orchestrate`.
+
+% 0 1 0 070e6e8be6a8f9610ec1f5ab60ce86d1
+
+% 0 1 0 1dc3224e54923d0a1218577fb61cf5e6
+
+% 0 1 0 169399e3e1ecc60f01686c3e992b7b35
+
+% 0 1 0 03350034340ac5a2108cf9d4c98d2f7d
+
+% 0 1 0 16a78fc871728de60b1963a5fc0890ea
+
+@ 0 6 0 05edf16bf9127f321c1805a562b0c922
++ entry .elicit   stellt das Formular für einen Typ dar, wahlweise aus einer übermittelten `Query` gefüllt, mit seinen Validierungsmeldungen
++     `elicit[Value](query, validation, submit)` stellt das ganze Formular für `Value` dar, das
++     `Formulaic` sein muss, über die im Geltungsbereich bereitgestellte `Formulation`. `query`
++     ist das Übermittelte, um die Eingaben des Benutzers erneut anzuzeigen (`Unset` für ein
++     leeres Formular); `validation` enthält die Meldungen, die an Felder angehängt werden,
++     geschlüsselt nach dem `Pointer` jedes Felds (`Validation()` für keine); und `submit` ist die
++     Beschriftung der Absenden-Schaltfläche oder `Unset` für die Vorgabe der Formulation.
+
+% 2 1 0 0d13ad250e4390271e55e2b8f7b09475
+
+% 3 1 0 15dd599ba608c15c1abc964d3930585e
+
+% 4 1 0 097f7701f318ac1d1d9df6661eea5b1c
+
+% 5 1 0 0bc5d2bd7794a32418780fcb9ce5cd2e
+
+% 2 1 0 15369c286d01570f1ab9509943fb7583
+
+% 0 1 0 07a95ab6c9d9b4430b2fa306fa272985
+
+% 0 1 0 0a2cbbf91e2154de0f70ab1858e945d3
+
+% 0 1 0 0ae20a52d6fbf87e1d51697ad280eb65
+
+% 1 1 0 055802dc285765ff05482d5f9b4e0850
+
+@ 0 4 0 0f679f9f7bd890e715ff6f8f87ea5afe
++     Jedes Feld wird nach seinem Namen beschriftet, an seinen Großbuchstaben getrennt und
++     großgeschrieben (aus `firstName` wird _First name_), und eine verschachtelte Case-Klasse wird
++     zu einem `<fieldset>` mit der Beschriftung des Felds als Legende. Das Widget eines Felds
++     wird nach seinem gepunkteten Pfad benannt, `speaker.name`, dem Schlüssel, unter dem es
++     übermittelt wird.
+
+@ 0 5 0 0bb9c6010d743f4915b273e6bda72fc9
++ entry .edit   stellt das Formular für einen Wert dar, gefüllt mit den Feldern dieses Werts
++     Eine Erweiterung auf jedem Wert, der sowohl `Formulaic` als auch `Encodable in Query` ist:
++     `value.edit(validation, submit)` ist das Formular, das `elicit` darstellt, gefüllt mit den
++     eigenen Feldern des Werts, kodiert als `Query`, um einen bestehenden Datensatz zu ändern.
++     Es braucht eine `Formulation` im Geltungsbereich.
+
+% 2 1 0 0bc5fde39d0172a705e5b04f2e8c621f
+
+% 3 1 0 08847ded56ac6ac6076a871273c5adaa
+
+% 4 1 0 111e442fab2d0b9a030e84d984b2956d
+
+% 2 1 0 150f0eee9d896de31dea105f150d413d
+
+% 0 1 0 1c27a48ee6ceffbf017c4b15fbfcf9a8
+
+% 1 1 0 15554eb473c2a5e9076f21b85b3e7326
+
+@ 0 1 0 12ca44f0eafb14781e19a3058ab74c8e
++ entry .formulations   die Standardweisen, ein Formular in HTML einzurahmen, jede ein Given, das namentlich importiert wird
+
+% 1 1 0 0c9ee1cf5e56377f0ff933b435b3aa49
+
+@ 0 3 0 02bcf320134ec454173c8a6b76a81916
++       Wie ein Formular und seine Zeilen dargestellt werden, bestimmt eine `Formulation` im
++       Geltungsbereich, und `import
++       soundness.*` bringt keine mit: Eine wird namentlich importiert, oder eine Anwendung definiert
++       ihre eigene, passend zu ihrem Design.
+
+% 2 1 0 165647207bcadcb101799250713e4873
+
+% 3 1 0 08daf9406e36c21a1b7d685235444e3a
+
+% 0 1 0 11e571ee7c39219108c83c7a1daefdd7
+
+% 1 1 0 15abc6b9bab8db7000bbae132f1cf76f
+
+@ 0 7 0 1c6b3d318950b06d0110d7b355ef1863
++   entry .postFormulation   ein schlichtes, ungestaltetes Formular, das an seine eigene URL zurücksendet
++       Das Formular ist ein `<form action="." method="post">`, das die Zeilen und eine
++       Absenden-Schaltfläche enthält, beschriftet mit dem Text `submit` oder _Submit_, wenn er
++       `Unset` ist. Jede Zeile ist ein `<div>` mit einem `<p class="alert">` mit der
++       Validierungsmeldung des Felds, falls vorhanden, einem `<label>` um die Legende und das
++       Widget und einem `<span class="required">*</span>`, sodass ein Stylesheet den Hinweis
++       und den Marker gestalten kann. Der Marker wird derzeit in jeder Zeile angezeigt, ob das
++       Feld erforderlich ist oder nicht.
+
+@ 0 1 0 05c503e6c3a368e40b17779b2132147d
++ entry .Formulation   wie ein Formular und jede seiner beschrifteten Zeilen in HTML eingerahmt wird
+
+% 1 1 0 10460bfeb23b13cc0607c609fb5e57e2
+
+@ 0 5 0 01b2d9f02de036d7160d219e2d89dbea
++       Eine `Formulation` ist die Präsentation eines Formulars, getrennt davon, wie seine Felder
++       abgeleitet werden: `#form` umschließt die Zeilen und die Absenden-Schaltfläche, und
++       `#element` rahmt ein Widget mit seiner Legende und Validierungsmeldung ein. `elicit` und
++       `edit` nehmen eine als Kontextwert; `formulations.postFormulation` ist die Standard-
++       Formulation, und eine Anwendung definiert ihre eigene für ihr eigenes Markup:
+
+% 2 1 0 0ad6a71e0796600e0f568897f53e5695
+
+% 3 1 0 03fb70bd85af054f019ad547f16c16ea
+
+% 0 1 0 1da6d46e0f216dc51283ca7212c8124f
+
+% 0 1 0 0d8e888e819df8f814afe8969b6f167d
+
+% 0 1 0 0b0a8ef604f9f4a40a0ed28dd987a3a7
+
+% 0 1 0 10f2f08127a2b95a06de001a69d8dd56
+
+% 0 1 0 1e81af7ffeb068ce0cb4d44bf5ebc5f8
+
+% 0 1 0 0b6b75ba305165e70c42b455889c228c
+
+% 0 1 0 1fa500fbe95b054100263919a5314f59
+
+% 0 1 0 0e34cc68eb25a2981e153e8dbc7a33d0
+
+% 1 1 0 10b0051310137f7117bd851c31b64056
+
+@ 0 1 0 122d221d1cd604c003120e241aa0dd7b
++       Eine `Formulation` wird beim Capture-Checking verfolgt (`Findable`); eine kann also eine
++       Capability umschließen.
+
+% 0 1 0 15c23bf2061bb1600928dd660875b8de
+
+@ 0 2 0 12569fce9f2b15bb1988e883c44e09f1
++   entry #form      umschließt die Zeilen eines Formulars und seine Absenden-Schaltfläche, beschriftet mit dem Text oder einer Vorgabe
++   entry #element   rahmt ein Widget mit seiner Legende, seiner Validierungsmeldung und der Angabe ein, ob es erforderlich ist
+
+@ 0 1 0 1f1ac04e489e9e31112bb344858906db
++ entry .Formulaic   ein Typ, der sich als Formularzeilen darstellen lässt: für Case-Klassen abgeleitet, Feld für Feld
+
+% 1 1 0 1b83b47346db263600e5935d187a9039
+
+@ 0 5 0 06b6751aa2dca019006ccd94d89caa3e
++       `Formulaic` ist die Typklasse, die `elicit` und `edit` brauchen. Sie wird für einen
++       Produkttyp aus seinen Feldern abgeleitet — jedes Feld muss selbst `Formulaic` sein — und
++       ist für jeden einzelnen Wert bereitgestellt, der `Elicitable` ist und dessen Widget als
++       Phrasing-HTML `Renderable` ist. Ein abgeleitetes Produkt wird als `<fieldset>` mit einer
++       `<legend>` dargestellt; Verschachtelung in den Daten ist also Verschachtelung im
++       Formular.
+
+@ 0 3 0 152ed909f6ff51eb041e5f6869530ee2
++       `#fields` erhält den `Pointer` des Werts innerhalb des ganzen Formulars, seine Legende,
++       den Teil der übermittelten `Query` unter diesem Pointer, die `Validation` und die
++       `Formulation`; ein einzelnes Feld schlägt seine eigene Meldung in der Validierung über
++       seinen Pointer nach.
+
+% 0 1 0 17efcd80442d96ac1c3da3efbf099571
+
+% 1 1 0 115498ebfd5488df1ebbf0a6bb3d3fa9
+
+@ 0 8 0 1fbaf0d4a48e4b5c018d12e089482a13
++   entry .elicitable   die Zeile eines einzelnen Felds: sein `Elicitable`-Widget, dargestellt und mit seiner Meldung eingerahmt
++       Baut das Widget für den Wert mit dem gepunkteten Namen, der Legende und dem übermittelten
++       Wert des Felds, stellt es dar und rahmt es mit `element` der Formulation ein.
++   entry .conjunction   leitet die Zeilen einer Case-Klasse ab: ein Fieldset aus den Zeilen jedes Felds
++       Die Ableitung, die `Formulaic` für Produkte verwendet. Die Legende jedes Felds ist sein
++       Name, an den Großbuchstaben getrennt und großgeschrieben, und sein Pointer erweitert den
++       des Elternteils um den Namen des Felds.
++   entry #fields   die Formularzeilen für einen Wert, gegeben seinen Pointer, seine Legende, die übermittelte Query, die Validierung und die Formulation
+
+@ 0 1 0 18f839fa05ebcad70a3f9527a36f7502
++ entry .Elicitable   welches Widget einen Typ bearbeitet und wie ein Wert davon als Text eingegeben wird
+
+% 1 1 0 05d08716e46f26ec0c391c46912b892d
+
+@ 0 3 0 03d36f91579674910a06fb32853b7aec
++       `value is Elicitable` gibt an, wie ein Formularfeld vom Typ `value` aussieht: Sein
++       `Operand` ist ein `Widget`-Typ, `#widget` baut eines mit dem Namen, der Legende und dem
++       aktuellen Wert eines Felds, und `#input` liefert den Text, als den ein Wert übermittelt
++       wird. Die Givens im Begleitobjekt wählen:
+
+@ 0 6 0 049737dcc05651f41bb7d86fc5c734b1
++       - jeder `Encodable in Text`-Wert — `Text`, Zahlen, validierte Typen wie
++         `EmailAddress` — ist ein Text-`Field` (`decodable`, in `Elicitable2`, mit niedrigerer
++         Priorität);
++       - ein `Boolean` ist eine `Checkbox`, übermittelt als `on`, wenn angehakt (`boolean`);
++       - ein `Enumerable`-Typ ist eine `Combobox`, die den Namen jedes Werts anbietet
++         (`enumerable`);
++       - eine `Reference[Entity]` auf eine gespeicherte Entität ist ein `Dropdown` aller
++         gespeicherten Entitäten, angezeigt in ihrer `Showable`-Darstellung (`reference`).
+
+@ 0 1 0 01dbf0b07d7acde516b1aa85eb1ca2ef
++       Ein eigener Typ erhält mit einem eigenen Given ein anderes Widget.
+
+% 0 1 0 138d9437b8bcaa5719360097d57a553a
+
+% 0 1 0 1a90924ff14ae77008f767372188e94e
+
+@ 0 10 0 0f5348b04ba32a8d03f489a857380a3c
++   entry .boolean      bearbeitet einen `Boolean` mit einer `Checkbox`, eingegeben als `on`, wenn wahr, und leer, wenn falsch
++   entry .enumerable   bearbeitet einen `Enumerable`-Typ mit einer `Combobox` der Namen seiner Werte
++       Jeder Wert wird mit seinem Namen eingegeben, wie `Enumerable` ihn benennt, und die Liste
++       der Combobox bietet alle an.
++   entry .reference    bearbeitet eine `Reference` auf eine gespeicherte Entität mit einem `Dropdown` aller solchen Entitäten
++       Verlangt, dass die Entität `Listable`, `Showable` und `Referenceable` ist und der Operand
++       ihrer Referenz `Encodable in Text`: Jede gespeicherte Entität wird aufgezählt, jede
++       Option nach ihrer kodierten Referenz geschlüsselt und mit dem `show` der Entität
++       beschriftet.
++   entry #input    der Text, als den ein Wert dieses Typs eingegeben oder übermittelt wird
++   entry #widget   das Widget für ein Feld, aus seinem Namen, seiner Legende und seinem aktuellen Text
+
+@ 0 1 0 1a0e0576f25699e71928579331e08e0a
++ entry .Elicitable2   das `Elicitable`-Given mit niedrigerer Priorität, für jeden als Text kodierbaren Typ
+
+% 1 1 0 031ac0efbd25710205bcf22a8f8742c8
+
+@ 0 4 0 1f13fc7dd808d50803e168aae9d16288
++       In das Begleitobjekt von `Elicitable` eingemischt, damit die spezifischeren Givens dort
++       gewinnen.
++   entry #decodable   bearbeitet jeden `Encodable in Text`-Wert mit einem Text-`Field`, eingegeben als seine Kodierung
++       Trotz seines Namens verlangt es nur, dass der Typ `Encodable in Text` ist: Das Feld zeigt
++       die Kodierung des Werts, und die Übermittlung wird getrennt dekodiert, über `Query`.
+
+@ 0 1 0 02f61cb5f53f7a33047b5a6fddd9d3bf
++ entry .Widget   ein Formularsteuerelement, mit dem Namen, unter dem es übermittelt wird, und seinem aktuellen Wert
+
+% 1 1 0 177b940413d19b5e1b75509edaac9574
+
+@ 0 5 0 0a85aa46a5d8d26514cbab90f3ea160c
++       Die gemeinsame Gestalt von `Field`, `Checkbox`, `Combobox`, `Dropdown` und `RadioGroup`:
++       Jedes ist eine Case-Klasse mit einem `#name`, dem gepunkteten Pfad des Felds im Formular,
++       und einem `#value`, dem Text, den es enthält, und jedes Begleitobjekt hat ein
++       `Renderable`-Given, das es als Phrasing-HTML darstellt.
++   entry #name    der Name, unter dem das Steuerelement übermittelt wird: der gepunktete Pfad des Felds im Formular
++   entry #value   der Text, den das Steuerelement enthält, aus der übermittelten Query oder dem bearbeiteten Wert
+
+@ 0 1 0 0e7c195511e6b9631aad2f1dcb1f023c
++ entry .Field   ein Texteingabefeld, das Widget für jeden als Text kodierbaren Wert
+
+% 1 1 0 1a49d4a00561f3dc1e304a8ffde27e7f
+
+@ 0 6 0 1d68747965062124112443416ed2689a
++       Wird als `<input type="text">` mit dem Namen und Wert des Widgets dargestellt; die
++       Beschriftung stellt die `Formulation` darum herum dar.
++   entry .renderable   stellt ein Feld als `<input type="text">` dar
++   entry #label   die Legende des Felds
++   entry #name    der Name, unter dem das Feld übermittelt wird: sein gepunkteter Pfad im Formular
++   entry #value   der Text im Feld
+
+@ 0 1 0 1a35a8e65b9cc31c07449c79fd1325bd
++ entry .Checkbox   eine Checkbox, das Widget für einen `Boolean`
+
+% 1 1 0 0edd8eac35c79f2705596ab5fd2bb45b
+
+@ 0 6 0 0f99e2b4f5d770570b866cc3e04274f2
++       Wird als `<input type="checkbox">` dargestellt, angehakt, wenn ihr Wert nicht leer ist.
++       Eine angehakte Box wird als `on` übermittelt und eine nicht angehakte gar nicht; deshalb
++       wird ein `Boolean` aus einer `Query` danach dekodiert, ob sein Schlüssel vorhanden ist.
++   entry .renderable   stellt eine Checkbox dar, angehakt, wenn ihr Wert nicht leer ist
++   entry #name    der Name, unter dem die Box übermittelt wird: ihr gepunkteter Pfad im Formular
++   entry #value   `on`, wenn angehakt, und sonst leer
+
+@ 0 1 0 1bf23067b5c39c551fe5af29d7b0ca58
++ entry .Combobox   ein Texteingabefeld mit einer Liste von Vorschlägen, das Widget für eine Aufzählung
+
+% 1 1 0 0ea90385ffadc4d2090c11f2709cc047
+
+@ 0 9 0 1a3f909613d2e7ba156b8faafc1116a5
++       Wird als `<input>` dargestellt, das über sein Attribut `list` an eine `<datalist>` der
++       Optionen gebunden ist; ein Browser schlägt also die Werte vor und akzeptiert trotzdem
++       getippten Text, der dann dekodierbar sein muss. Die id der Datalist ist der Name des
++       Widgets, der Name muss also eine gültige DOM-id sein: Ein Feld, dessen Name Leerraum
++       enthält, oder eine einzelne Aufzählung an der Wurzel eines Formulars (deren Name leer
++       ist) lässt sich nicht darstellen.
++   entry .renderable   stellt eine Combobox als `<input>` und ihre `<datalist>` dar
++   entry #name      der Name, unter dem die Eingabe übermittelt wird, und die id ihrer Datalist
++   entry #options   die vorgeschlagenen Werte
++   entry #value     der Text in der Eingabe
+
+@ 0 1 0 064a473e89d5fabc117448668aacebaf
++ entry .Dropdown   eine Auswahl aus einer festen Liste beschrifteter Optionen, das Widget für eine gespeicherte Referenz
+
+% 1 1 0 03fa308343f8791a0cb3da576ff7f9f8
+
+@ 0 5 0 1ef8e03dc7bda702002e2c0cecc5b9cd
++       Wird als `<select>` aus `<option>`s dargestellt, von denen jede ihren `key` übermittelt
++       und ihren `value` anzeigt.
++   entry .renderable   stellt ein Dropdown als `<select>` seiner Optionen dar
++   entry #name      der Name, unter dem die Auswahl übermittelt wird
++   entry #options   die Optionen, jede ein übermittelter Schlüssel und eine angezeigte Beschriftung
++   entry #value     der aktuell ausgewählte Schlüssel
+
+@ 0 1 0 10bbf692c1710aac101133d3b4ede78c
++ entry .RadioGroup   eine Gruppe von Radiobuttons mit einem gemeinsamen Namen, von denen einer gewählt wird
+
+% 1 1 0 03f3f88765e8aa44161d3c5bf637fe51
+
+@ 0 7 0 139b2c6549d06e400fc510eeb9cb2d7f
++       Wird als ein `<label>` pro Option um einen `<input type="radio">` dargestellt. Kein
++       Standard-`Elicitable` erzeugt eine; ein Typ, der über Radiobuttons gewählt werden soll,
++       braucht ein `Elicitable`-Given, dessen `Operand` `RadioGroup` ist.
++   entry .renderable   stellt eine Radiogruppe als einen beschrifteten Radiobutton pro Option dar
++   entry #name      der Name, unter dem jeder Button der Gruppe übermittelt wird
++   entry #options   die Optionen, jede mit einem Schlüssel, einem übermittelten Wert und einer Beschriftung
++   entry #value     der aktuell gewählte Wert
+
+@ 0 1 0 0c22e949889dde441aa8281e2a2f1259
++ entry .Query   formularkodierte Schlüssel-Wert-Paare: ein URL-Query-String oder eine Formularübermittlung, und ihre Codecs
+
+% 1 1 0 137af14deeb112ec00c613b3f2b68da5
+
+@ 0 5 0 0f51853c59e73535067d2117d14dfb23
++       Eine `Query` ist eine geordnete Liste von `(key, value)`-Paaren aus `Text`, wie sie ein
++       Query-String `a=1&b=2` oder ein `application/x-www-form-urlencoded`-Body enthält.
++       Verschachtelte Daten werden zu gepunkteten Schlüsseln abgeflacht — `speaker.name` —, eine
++       Case-Klasse wird also Feld für Feld zu einer `Query` kodiert und aus einer dekodiert; so
++       werden Formularübermittlungen und Query-Parameter zu typisierten Werten.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1b09dd2943dee7711572a7bfadc804cc
++         label Eine leere Query
+
+% 1 1 0 16c9d472591ea8dd02f8aafdc192b6df
+
+% 2 1 0 12a2456f9b36a6011006ff90bbaa3d83
+
+% 3 1 0 08dcf1ae0320a69e16e79e656dc6d046
+
+% 0 1 0 0f6604aca456157c076ffbd6576104a6
+
+% 0 1 0 06905ce725fd03b80b21ad458f2bd17d
+
+% 1 1 0 0419a33130f082510faea32938bf8826
+
+@ 0 1 0 1528526bb45882680d954d07c66c22b9
++         label Ein Parameter
+
+% 1 1 0 143fe1041fa84df80b2aaad07bc9bdcb
+
+% 2 1 0 165199b7c45c17540e84612d7c0c3ec4
+
+% 3 1 0 0e00f8ecc5cdab511d014cdddcfd3933
+
+% 0 1 0 17ce139a6ee8b48a1716c7e365bbfe1a
+
+% 0 1 0 1835039ffdbda110081cb4a34823baf3
+
+% 1 1 0 1978244a25d24cce0dd2323876784140
+
+@ 0 1 0 12c5315c9eb94bed047d8758b71b5ec3
++         label Ein zweiter Parameter angehängt
+
+% 1 1 0 0ddbfb79563f1af508bd058b9dfea02a
+
+% 2 1 0 1fb7d47f45e5b99601954302a67039fd
+
+% 3 1 0 0540e3a41eb11a7f19f93b2ad3dd83be
+
+% 0 1 0 16e6c69df601f7f208549ccc75d9df9f
+
+% 0 1 0 03ca07f99a6c8fef0d1db700890b7b36
+
+% 1 1 0 08e169406b5acbae1948685ed2832135
+
+@ 0 1 0 019f83119e5d231c1dff88b42fd02f91
++         label Beide unter ein Präfix geschachtelt, dann dekodiert
+
+% 1 1 0 1a903d77f0414b921fd6e74b67c65d73
+
+% 2 1 0 10a72e118fe3b0dc0e97a905edc3763e
+
+% 3 1 0 10f60762e5b3dd350f509f57c39d445c
+
+% 0 1 0 1b053025a27ea06517187934ed192b18
+
+% 0 1 0 028cbf1bc02f01461e50fd4b7924dcb1
+
+% 0 1 0 0284c59024acf3610df830e8efe4ff56
+
+% 0 1 0 0928d04a94c6473509a82e8d8f61b8a6
+
+% 0 1 0 0af8ff365f39d1e7101a708b64c80cf3
+
+% 0 1 0 181c7dd74e919bda06473d8ad93d2483
+
+% 0 1 0 0b4df2833d5769ca08c6dad0b50d4848
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 0cdf9675725c8adc164a3ed13d28823a
++       Text wird mit `as[Query]` zu einer `Query` dekodiert, und eine `Query` wird als
++       URL-kodierter String kodiert oder mit `show` angezeigt. Jeder Typ, der `Encodable in Text`
++       ist, wird zu einer `Query` mit einem unbenannten Wert kodiert, und jede Case-Klasse, deren
++       Felder sich kodieren lassen, Feld für Feld; das Dekodieren spiegelt beides und löst
++       `Query.Error` für einen fehlenden Parameter aus. Unter einer sammelnden Strategie
++       (`validate`) wird jedes fehlende oder ungültige Feld einer Case-Klasse gemeldet, jedes mit
++       seinem gepunkteten `Pointer`, und der Konstruktor der Case-Klasse läuft nur, wenn jedes
++       Feld dekodiert wurde.
+
+@ 0 2 0 0bcbe581d6c3478f1289be879fddac1d
++       Benannte Parameter werden dynamisch gelesen und geschrieben — `query.name`,
++       `query.name = value`, `Query.make(name = value)` —, wenn ein `Parametric`-Given den Namen
++       typisiert.
+
+% 0 1 0 0d44f2f2eef4167a1888e88c0fedc130
+
+% 1 1 0 01776fce97be213013ba7803b719b32c
+
+@ 0 9 0 1522f651ee9bfaa11a104873b45328e0
++   entry .apply   eine leere Query, eine Query mit einem unbenannten Wert oder eine aus den gegebenen Paaren, in Reihenfolge
++       `Query()` ist leer, `Query(text)` enthält den einzelnen Wert `text` mit leerem Schlüssel —
++       die Gestalt, zu der ein `Encodable in Text`-Wert kodiert wird —, und `Query(pairs)`
++       enthält eine Liste von `(key,
++       value)`-Paaren unverändert.
++   entry .encodable   kodiert eine `Query` als URL-kodierten Text und jeden kodierbaren Wert oder jede Case-Klasse als `Query`
++       Zwei Givens teilen sich den Namen. Eines stellt eine `Query` als durch `&` verbundene
++       `key=value`-Paare dar, Schlüssel und Wert jeweils URL-kodiert. Das andere, ein
++       Inline-Given, macht jeden Typ `Encodable in
++       Query`: Ein `Encodable in Text`-Typ wird zu einer Query mit einem unbenannten Wert, und
++       eine Case-Klasse kodiert jedes Feld unter seinem Namen, verschachtelte Felder unter
++       gepunkteten Schlüsseln.
+
+% 2 1 0 05a97a552f8f10420569d682a98ae57b
+
+% 3 1 0 051ce768152bc62e1e53c5145e59b13c
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 08659b3d3fcf27d70c388bc3af27a2a8
+
+% 1 1 0 0583592f11ffca320ad3c6ce0a4eb204
+
+@ 0 6 0 094a3ae0062884f005612a030911b750
++   entry .decodable   dekodiert URL-kodierten Text als `Query` und eine `Query` als jeden dekodierbaren Wert oder jede Case-Klasse
++       Zwei Givens teilen sich den Namen. Eines trennt Text an `&` und jeden Teil an seinem
++       ersten `=`, wobei beide Seiten URL-dekodiert werden; ein Teil ohne `=` ist ein Schlüssel
++       mit leerem Wert. Das andere, ein Inline-Given, macht jeden Typ `Decodable in Query`: Ein
++       `Decodable in Text`-Typ wird aus dem unbenannten Wert der Query dekodiert und eine
++       Case-Klasse Feld für Feld aus den Parametern unter den Namen ihrer Felder.
+
+@ 0 5 0 02f19e1f145824811722ae4d1388e55e
++       Ein fehlender Wert löst `Query.Error` mit dem Grund `Missing` aus, außer der Typ hat ein
++       `Default`, das verwendet wird, nachdem der Fehler ausgelöst wurde. Unter einer sammelnden
++       Strategie wird jedes fehlende Feld einer Case-Klasse ausgelöst, jedes auf seinen
++       gepunkteten `Pointer` fokussiert, und der Konstruktor läuft nicht auf Rückfallwerten — so
++       meldet der Konstruktor eines verfeinerten Typs nie Phantomfehler für Felder, die der
++       Benutzer nicht ausgefüllt hat.
+
+% 2 1 0 1244ea5d9101d6f21fb0973f792b728c
+
+% 3 1 0 1b25642fd9ea393b094c76707529bf5b
+
+% 4 1 0 0cf38464b4c02c1218a4411950e73613
+
+% 0 1 0 0a65634d34e41fa013d1a661b1826922
+
+% 0 1 0 01b2b051011e6cec09418ebf69486153
+
+% 1 1 0 1af07ce2b7769e0c11cd91cda6fa9a01
+
+@ 0 1 0 0fd106d2d9e88a0707bd22a6179b3c89
++   entry .EncodableDerivation   die Produktableitung von `Encodable in Query`: jedes Feld unter seinem Namen kodiert
+
+% 1 1 0 14070ab33649d1b70fd2897cf1bd5d93
+
+@ 0 3 0 107d3c6632e80c4d1eca8d3eb92737ba
++         Wird vom Inline-Given `encodable` für Case-Klassen verwendet; normalerweise nicht direkt
++         benannt.
++     entry .conjunction   kodiert ein Produkt als Vereinigung der Queries seiner Felder, jede mit dem Namen des Felds als Präfix
++   entry .DecodableDerivation   die Produktableitung von `Decodable in Query`: jedes Feld aus seinen Parametern dekodiert
+
+% 1 1 0 03f8eb496f34821a1e62aeae1b67816f
+
+@ 0 17 0 19ce6a1c6fc478de102d535c563e4ab8
++         Wird vom Inline-Given `decodable` für Case-Klassen verwendet; normalerweise nicht direkt
++         benannt. Sie dekodiert die Felder in einem einzigen Durchlauf, fokussiert die Fehler
++         jedes Felds auf seinen `Pointer` (der Fehler eines verschachtelten Datensatzes landet
++         bei `outer.inner`) und konstruiert das Produkt nur, wenn jedes Feld sauber dekodiert
++         wurde.
++     entry .conjunction   dekodiert ein Produkt Feld für Feld und konstruiert es nur, wenn jedes Feld dekodiert wurde
++   entry .booleanEncodable   kodiert einen `Boolean` wie eine Checkbox: `on`, wenn wahr, und nichts, wenn falsch
++   entry .booleanDecodable   dekodiert einen `Boolean` als Übermittlung einer Checkbox: wahr, wenn der Wert überhaupt vorhanden ist
++       Eine nicht angehakte Checkbox wird nicht übermittelt; ein `Boolean`-Feld fehlt also nie:
++       Sein Fehlen ist `false`.
++   entry .showable   zeigt eine `Query` als ihren URL-kodierten Query-String an, wie `#queryString` ihn liefert
++   entry .inspectable   eine Debug-Darstellung einer `Query`: `key = "value"`-Paare, durch Kommas getrennt, nicht URL-kodiert
++   entry .applyDynamicNamed   `Query.make(name = value, …)`: eine Query aus benannten, typisierten Parametern
++       Für jeden Parameternamen muss ein `Parametric`-Given im Geltungsbereich sein, das angibt,
++       welchen Typ sein Wert hat, und jeder Wert muss `Encodable in Query` sein; beides wird
++       beim Kompilieren geprüft. Ein Wert des falschen Typs ist ein Kompilierfehler, _the
++       parameter `name` takes values of `T` but the provided value had type `U`_; ein Name ohne
++       `Parametric` ist ein weiterer (Fehler `↯/s.87.4`) und ein Wert ohne Kodierung ein dritter
++       (Fehler `↯/s.87.3`).
+
+% 2 1 0 0826fa908f9a8284081e876f583ab2e4
+
+% 3 1 0 0708f5e69e07063a1d5b3ddf7b78ade8
+
+% 0 1 0 07ed1395cacb9602103c25c3f2b48e17
+
+% 0 1 0 0f58a88339cd075f1d52467860846253
+
+% 0 1 0 1990392abd9337a20f2b72c048e42865
+
+% 1 1 0 13cf69521ce6c47e0a359fcdc9e5631e
+
+@ 0 4 0 1ab0ebbbe60e3ba310a59ad5d358e9b8
++       `queryParameters.arbitraryQueryParameter` aus Telekinesis, namentlich importiert,
++       akzeptiert jeden Namen mit jedem Wert.
++   entry .addable   `query + query`: die Paare beider, die des linken zuerst
++   entry .Error   ausgelöst, wenn ein Parameter, den ein Wert braucht, in einer Query fehlt
+
+% 1 1 0 0b1419ee9c644788159abf8beb09406c
+
+@ 0 4 0 0adf787ba22ec3951e3f155e297ec3c8
++         Fehler `↯/s.87.2`: _the query parameter could not be read because the parameter was not
++         present in the query string_. Ausgelöst von den `Decodable in Query`-Givens, wenn ein
++         erforderlicher Wert keinen Parameter hat, und beim Dekodieren einer Case-Klasse auf den
++         `Pointer` dieses Felds fokussiert, sodass eine sammelnde Strategie jedes fehlende Feld
++         eines Formulars meldet.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 109b642e3654197f1a7d7f072c241117
+
+% 0 1 0 189f17deb544cc2610dffbeffc3157b9
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 1f4fe7028e1915fc06bec5182b9af9ce
++     entry .Reason   warum ein Query-Parameter nicht gelesen werden konnte: `Missing`, der einzige Grund
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 26 0 09bdf08dd217babb135e62d253816837
++           `Missing` (1): Der Parameter war im Query-String nicht vorhanden.
++       entry #number   die Nummer des Grunds, der zweite Teil des Fehlercodes
++     entry .communicable   stellt einen Grund als Meldung dar: _the parameter was not present in the query string_
++     entry #reason   der `Query.Error.Reason`
++   entry #values   die `(key, value)`-Paare der Query, in Reihenfolge, mit gepunkteten Schlüsseln für verschachtelte Felder
++   entry #append   eine Query mit den Paaren einer anderen nach den eigenen
++   entry #nil      ob die Query keine Paare enthält
++   entry #++       eine Query mit den Paaren einer anderen nach den eigenen, wie `#append`
++   entry #selectDynamic   `query.name`: der Parameter `name`, dekodiert zu dem Typ, den sein `Parametric` nennt
++       Verlangt `"name" is Parametric to Result` und `Result is Decodable in Query`; der Teil der
++       Query unter `name` (sein eigener Wert und alle gepunkteten Kinder) wird dekodiert, und
++       `Query.Error` wird ausgelöst, wenn er fehlt.
++   entry #updateDynamic   `query.name = value`: eine Query, der der Parameter `name` hinzugefügt ist, kodiert aus einem typisierten Wert
++       Verlangt `"name" is Parametric to Result` und dass der Wert `Encodable in Query` ist. Ein
++       Wert, der zu einem unbenannten Wert kodiert wird, wird unter `name` hinzugefügt; ein
++       strukturierter unter `name.` und jedem seiner eigenen Schlüssel. Der Empfänger bleibt
++       unverändert.
++   entry #at      der Wert unter einem Schlüssel, aus Text dekodiert, oder `Unset`, wenn es keinen gibt
++       `query.at[Int](t"page")` ist der Wert des Parameters `page` als `Int` oder `Unset`, wenn
++       kein Parameter `page` einen eigenen Wert hat. Es braucht ein `Tactic` für das Dekodieren.
++   entry #as      die ganze Query als Wert dekodiert, mit auf ihre `Pointer`s fokussierten Fehlern
++       `query.as[Person]` dekodiert über `Person is Decodable in Query`; ein fehlendes Feld löst
++       also `Query.Error` aus, fokussiert auf den gepunkteten Pointer dieses Felds.
++   entry #apply   der unbenannte Wert der Query oder `Unset`; oder der Teil der Query unter einem Schlüssel
++       `query()` ist der Wert einer Query, die genau ein Paar mit leerem Schlüssel enthält, und
++       sonst `Unset`. `query(t"speaker")` ist die Teil-Query unter `speaker`: Das Paar mit dem
++       Schlüssel `speaker` wird zum unbenannten Wert, und jeder Schlüssel, der mit `speaker.`
++       beginnt, verliert dieses Präfix.
+
+% 2 1 0 0543e539d56086811457cf05068a8073
+
+% 3 1 0 1f74ba6ae2c54ec71774573220d0575a
+
+% 4 1 0 0c471cd2b6595fc00ad723d08c0df6c5
+
+% 0 1 0 1a27cfe8169c39d60dbe764489b9c0c4
+
+% 0 1 0 1c27f2f20d8314d01b25b94ed8a06ff4
+
+% 0 1 0 0987d6ed079bf941164d877fb0a0e14b
+
+% 1 1 0 13cefe27880b8eda11ec728e4fb4679e
+
+@ 0 6 0 1e8426939dd1d7791ccc29a5deca0794
++   entry #prefix   die Query mit jedem Schlüssel unter einem Präfix: aus `name` wird `prefix.name`
++       Der Schlüssel eines unbenannten Werts wird zum Präfix selbst; ein für sich kodierter und
++       dann mit Präfix versehener Wert ist also ein benannter Parameter.
++   entry #queryString   die Query als URL-kodierter Text, mit einem unbenannten Wert für sich geschrieben, ohne `=`
++       Jedes Paar ist `key=value`, URL-kodiert, verbunden mit `&`; ein Paar mit leerem
++       Schlüssel wird als sein Wert allein geschrieben.
+
+@ 0 1 0 1accb5ab4afe0dea06f3fbc6a1169948
++ entry .Parametric   der Typ, den ein benannter Query-Parameter hat, für `query.name` und `Query.make(name = …)`
+
+% 1 1 0 184aef61f501fd3502bca1794e81d639
+
+@ 0 5 0 1edbb27fd21efa20031667f4ac36bb05
++       `"name" is Parametric to Result` deklariert, dass der Query-Parameter `name` Werte vom Typ
++       `Result` enthält. Es ist der Nachweis, den die dynamischen Accessoren von `Query`
++       brauchen — `query.name`, `query.name = value` und `Query.make(name = value)` —, sodass
++       ein Parameter mit einem festen Typ gelesen und geschrieben wird, geprüft beim Kompilieren.
++       Es trägt kein Verhalten; ein Given wird daher als gelöschter Platzhalter geschrieben:
+
+% 2 1 0 0c7793b1a9d1f74319b636dd65e852f6
+
+% 3 1 0 12c07bb37ddf1b0a12d3265e38fce1f5
+
+% 0 1 0 1b7378daaa5d8a721f6f4802d08e4df0
+
+% 1 1 0 155dc05194c3d7bb1ca3e0d29e1a8dac
+
+@ 0 2 0 0466e96d12a2535b00317b1422b8ddca
++       `queryParameters.arbitraryQueryParameter` aus Telekinesis gibt jedem Namen jeden Typ,
++       für Code, der dynamischen Zugriff will, ohne jeden Parameter zu deklarieren.
+
+% 0 1 0 081014bdc9d21eaa0b93d3b5f9647b1e
+
+@ 0 1 0 0695963a36d8411219de4a069f83369a
++   entry #Self   der Name des Parameters, als literaler `Label`-Typ
+
+@ 0 1 0 0a9a8278e381b2ae17a0188c9c9e0b1e
++ entry .internal   das Makro hinter `Query.make`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 2 0 1ea659d4152ea6c313b6977fa3317271
++       Nicht zur direkten Verwendung: Das Objekt existiert, damit das Makro ein stabiles Zuhause
++       hat.
++   entry .query   das Makro hinter `Query.make(name = value, …)`: prüft das `Parametric` jedes Namens und kodiert jeden Wert

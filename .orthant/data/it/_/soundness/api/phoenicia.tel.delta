@@ -1,0 +1,1781 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1866150ecbc5dda91e755367aeb0d04c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1cd8dc1c0400040d07ec64e45739db0b
++ info   font TrueType e OpenType come valori, e caratteri tipografici, stili tipografici e forniture tipizzati per comporre il testo
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 2 0 14bfe67a88d84b3400f8977d0802f9c7
++     _Phoenicia_ legge i file di font e dà un tipo al modo in cui un documento nomina e usa un font.
++     Ha due strati che si incontrano a metà.
+
+@ 0 9 0 1742c8e63e946a03011664ee56254400
++     Lo strato inferiore è il **file di font**. Uno `Sfnt` è il contenitore di tabelle che TrueType
++     e OpenType condividono, letto da qualsiasi sorgente di byte; un `Truetype` è uno i cui contorni
++     sono quadratici (`glyf` e `loca`), un `Opentype` uno i cui contorni sono PostScript (`CFF `), e
++     `Sfnt(data)` li distingue in base alle tabelle presenti. Le tabelle si analizzano in modo
++     pigro, ciascuna come un valore: `cmap` associa un carattere al suo `Glyph`, `hmtx` dà la
++     larghezza di avanzamento e lo spazio laterale, `head` le unità per em e il riquadro di
++     delimitazione, `name` i nomi della famiglia e PostScript, `OS/2` il peso, la larghezza e i
++     diritti di incorporamento, `fvar` gli assi di un font variabile, e `GSUB`/`GPOS` le funzionalità
++     di layout che implementa. `Sfnt#width` misura un testo in em, e `Truetype#subset` costruisce un
++     nuovo font con i soli glifi che servono a un certo testo.
+
+@ 0 9 0 1970f43a040cecbd022bec103d031176
++     Lo strato superiore è la **richiesta tipografica**. Un `Typeface` è una famiglia identificata
++     dal suo nome, che è anche il suo tipo (`Typeface["Inter"]` è un `Typeface of "Inter"`); un
++     `Face` dice come va composto — un `Weight`, uno `Slant`, uno `Stretch`, posizioni su eventuali
++     ulteriori assi `Variation`, e le `Face.Feature` da abilitare o disabilitare — e nulla su da dove
++     provenga il font. Una fornitura `Typesettable` dice come un `Medium` (il web, la stampa, o
++     qualsiasi mezzo definito da un renderer) ottiene il carattere tipografico e quali stili
++     tipografici può poi comporre, come `Coverage`. Un `Font` associa uno stile tipografico alla
++     fornitura nell'ambito per il suo carattere tipografico in un mezzo, ed è l'unica forma in cui
++     un renderer accetta un font, quindi un documento non può nominare un carattere tipografico che
++     non porta con sé, né chiedere a una fornitura uno stile tipografico che non sa comporre.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 14aa36c394dcafe60d01e835074ba4f2
+
+% 0 1 0 10891421cbed82481ae8fac7a21e8b9e
+
+% 1 1 0 1e2995190281206e1fe9d76dbddc58fd
+
+% 2 1 0 04c585ec192223b016fd40b1dd3724e2
+
+% 0 1 0 0d350c7e5e66a51f113866595e1f5456
+
+% 0 1 0 16f500912f13cb8f08eeb14977aa4460
+
+% 0 1 0 0c402fde44414bad06248bef18d0d589
+
+% 0 1 0 13ab6dde57221b8e0ddfd7a0c7b91d14
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 8 0 12ae2323372107d50640764eeefc1216
++     La richiesta viene verificata due volte. Sempre a runtime, quando il font viene creato: un peso
++     che manca alla fornitura, un corsivo che non ha, una funzionalità che le sue tabelle non
++     implementano, o un valore d'asse fuori dall'intervallo del font sollevano `Font.Error`,
++     nominando il carattere tipografico e il problema. E, dove la fornitura è stata creata da un file
++     del classpath (`Typesettable.embedded (cp"/fonts/Inter.ttf")`, il cui path diventa il `Locus`
++     della fornitura) e la richiesta dello stile tipografico è registrata nel suo tipo
++     (`inter.bold.italic` ha `Weights = 700` e `Slanting = "italic"`), il compilatore legge il file e
++     rifiuta l'abbinamento mentre il codice compila, con lo stesso messaggio.
+
+@ 0 7 0 03b29709a6290b771a7b1635b1608754
++     La libreria è un solo insieme di sorgenti, `phoenicia.core`, che compila per la JVM, Scala.js e
++     Scala Native e non dipende da nulla di specifico di una piattaforma; `Sfnt(source)` legge da
++     qualsiasi cosa sia `Streamable by Data`. I mezzi e le loro forniture stanno con i renderer:
++     `Web` di cataclysm contiene le famiglie generiche CSS e le factory `Web.linked`, `Web.imported` e
++     `Web.local`, e `Print` di facsimile contiene i quattordici font standard del PDF. Questi given
++     stanno nel compagno del mezzo, quindi non richiedono alcun import. Le forniture proprie di un
++     progetto sono given che il progetto dichiara e importa per nome, poiché `import pkg.*` non
++     importa i given.
+
+@ 0 1 0 0c179482d8194a6c09efd6d124e0684e
++     Tutto è esportato nel modulo ombrello `soundness`: `Coverage`, `Face`, `Font`, `Glyph`,
+
+% 0 1 0 0f0656b700a2d25a0f4370e5e9b02a5f
+
+@ 0 1 0 12c18a300624311518eec14cb5b2e39f
++     `Variation` e `Weight`.
+
+% 0 1 0 109fa47ff5f3bd6d0571fce426a43e07
+
+% 0 1 0 0f0b1d6064528d4c10db460412c24385
+
+% 0 1 0 15104d77b892450111a9fd20a13773cc
+
+% 0 1 0 0b3ddc8123ae0d7208516ef15515dab8
+
+% 0 1 0 17e121497a8530891227fd00ebb19157
+
+% 0 1 0 0e23135c50c6b3041b84a24f166220ba
+
+% 0 1 0 028d54a33b69a0541369b63c2b9a0532
+
+@ 0 1 0 0001bfb9f303302f0c82f773be6bf1c9
++ entry .Sfnt   un file di font come valore: il contenitore di tabelle sfnt che TrueType e OpenType condividono
+
+% 1 1 0 078ca577aad2f05307ec65aa94722b04
+
+@ 0 6 0 11e925aa775bb68a14d1d7b26a7e6ee5
++       Uno `Sfnt` è un file di font, conservato come i suoi `#data` e letto in modo pigro tabella per
++       tabella. Il nome è quello del formato stesso: uno _sfnt_ è il contenitore — un'intestazione, una
++       directory di tabelle con tag, e le tabelle — che TrueType e OpenType usano entrambi,
++       differendo solo nel modo in cui memorizzano i contorni. Tutto ciò che i due condividono è
++       definito qui: la mappa dei caratteri, le metriche orizzontali, l'intestazione, la tabella dei
++       nomi, le metriche OS/2, i metadati PostScript, gli assi di un font variabile e le funzionalità
++       di layout.
+
+@ 0 4 0 116690128ed80f251b3d5f1099aaf80f
++       `Sfnt(source)` legge un font da qualsiasi cosa sia `Streamable by Data` — un path di galilei,
++       una risorsa del classpath, un URL — e `Sfnt(data)` avvolge byte già disponibili. Entrambi
++       restituiscono un `Opentype` se la directory ha una tabella `CFF ` e altrimenti un `Truetype`,
++       così che un pattern matching possa accedere alle operazioni solo TrueType dove si applicano:
+
+% 2 1 0 0458cfbdd150f22b1eeaa197f93ea748
+
+% 3 1 0 0b015a9bc7599c141f3e57e33903e4de
+
+% 4 1 0 01e824b796eff2cb0d05fce3b09fc212
+
+% 0 1 0 01d582a488c5c4e40e69712408c1d2b1
+
+% 0 1 0 02c7ff65c19d25490413248f952c3c41
+
+% 0 1 0 0c02291d1d8f9ce9044d9909f8d08ccf
+
+% 0 1 0 0b1f30df551bfc2414ad1a957135dfc5
+
+% 1 1 0 14b781944cb7957905c51c4b02739cc6
+
+@ 0 9 0 18fb08e1af16ad3516a3336e3df6fa73
++       La costruzione è totale: avvolgere dei byte non fallisce mai, e una directory illeggibile
++       produce un `Truetype`. Ogni tabella si analizza la prima volta che viene richiesta, quindi un
++       file che non è un font, o a cui manca una tabella che serve a un'operazione, solleva
++       `Font.Error` a quella lettura, con `Font.Error.Reason.MissingTable` che nomina la tabella,
++       `MagicNumber` per una tabella `head` la cui costante di controllo è errata, `UnknownFormat` per
++       un formato di sottotabella `cmap` che la libreria non legge, e `MissingEncoding` per un font
++       senza una mappa dei caratteri utilizzabile. Gli accessor `#head`, `#cmap`, `#hhea`, `#hmtx`,
++       `#maxp`, `#post`, `#os2` e `#name` prendono tutti un `Tactic[Font.Error]`; `#fontName`,
++       `#familyName`, `#fvar` e `#features` assorbono l'errore e rispondono `Unset` o `Nil`.
+
+@ 0 4 0 013338be52c1b7bb1e6138e37bd4648d
++       Alle domande che il codice tipografico pone più spesso si risponde direttamente: `#glyph`
++       risolve un carattere tramite la mappa dei caratteri preferita, `#advanceWidth` e
++       `#leftSideBearing` danno le metriche di un carattere in unità di progetto, e `#width` misura un
++       testo in em, una grandezza tipizzata che moltiplicata per un corpo in punti dà una larghezza
++       fisica.
+
+% 2 1 0 13e7f947d5185997005d214326523a8d
+
+% 3 1 0 11778af9a091cadf1f1d4173eaa3cc04
+
+% 4 1 0 08eb928478cb23820b277272794d517f
+
+% 0 1 0 1a335216f558fc410addc81ce8e31847
+
+% 0 1 0 0f591fdb6abba76918920f53298cd19b
+
+% 1 1 0 0f313be179f64f2b0b87f8e4e15ad751
+
+@ 0 4 0 139f3bbe5d90c86a18835bce616f7318
++       Le tabelle di un font si leggono tramite `#tables`, una `Map` da `Sfnt.Table.Tag` al
++       `TableOffset` della tabella; i tag che la libreria non nomina ne vengono esclusi.
++       `Sfnt.assemble` è l'inverso: serializza un insieme di tabelle come file di font, ed è così che
++       `Truetype#subset` scrive il suo risultato.
+
+% 1 1 0 184de4136bd9bd84034cea2723fbfe38
+
+% 1 1 0 1eadeb55b32c6dbf0417cfc30bec68ab
+
+% 1 1 0 0f766614488e070f0f031dc9a8c8fbd2
+
+% 0 1 0 08f5437fa29f893b030c74eca9fc87ff
+
+@ 0 24 0 1f47efafc0cdd4640e25b6bbffbed509
++   entry .apply   legge un font da byte o da qualsiasi sorgente in streaming, come `Truetype` o `Opentype`
++       `Sfnt(data)` avvolge un valore `Data`; `Sfnt(source)` legge per intero qualsiasi sorgente
++       `Streamable by Data over Credit` e ne avvolge il risultato. Entrambi sondano la directory delle
++       tabelle alla ricerca di una tabella `CFF ` — contorni PostScript — e restituiscono un
++       `Opentype` se è presente, altrimenti un `Truetype`. Il sondaggio è avvolto in `safely`, quindi
++       dei byte con una directory illeggibile diventano un `Truetype` anziché fallire: la costruzione
++       è sempre totale, e il difetto emerge come `Font.Error` quando una tabella viene letta per la
++       prima volta.
++   entry .PlatformId   la piattaforma di un record `cmap` o `name`: Unicode, Macintosh, Windows o personalizzata
++       Un enum i cui ordinali sono gli identificatori di piattaforma OpenType da 0 a 3. La libreria
++       legge gli identificatori di piattaforma come semplici `Int` in `CmapTable.GlyphEncoding` e
++       `NameTable.Record`, classificando i record Windows e Unicode sopra quelli Macintosh; l'enum dà
++       un nome ai valori.
++   entry .EncodingId   gli identificatori di codifica Unicode di un record `cmap`
++       `Unicode1`, `Unicode1_1`, `IsoIec10646`, `Unicode2Bmp`, `Unicode2Full`, `UnicodeVariation` e
++       `UnicodeFull`, i cui ordinali sono gli identificatori di codifica da 0 a 6 della piattaforma
++       Unicode. `CmapTable#best` preferisce le codifiche Unicode complete (4 e 6) a quelle solo BMP.
++   entry .NameId   gli identificatori delle stringhe della tabella dei nomi; l'ordinale di ogni caso è il suo name id
++       `Copyright`, `Family`, `Subfamily`, `UniqueId`, `FullName`, `Version`, `PostScriptName`,
++       `Trademark`, `Manufacturer`, `Designer`, `Description`, `VendorUrl`, `DesignerUrl`, `License`,
++       `LicenseUrl`, `Reserved`, `TypographicFamily`, `TypographicSubfamily`, `CompatibleFullName`,
++       `SampleText`, `PostScriptCidName`, `WwsFamily`, `WwsSubfamily`, `LightBackgroundPalette`,
++       `DarkBackgroundPalette` e `VariationsPostScriptNamePrefix`, nell'ordine degli id da 0 a 25
++       della tabella `name` di OpenType. `NameTable#apply` ne prende uno e dà il record migliore per
++       esso.
+
+% 2 1 0 0de3995b31de4a100ca7cd2d234cfafc
+
+% 3 1 0 13d2c235fd4698d50e0194aec7f96766
+
+% 4 1 0 14f4c9f3f21e2804123d1ae31deb93f7
+
+% 0 1 0 157aa9d18c6cf6e60b0a1a0e831174ee
+
+% 1 1 0 14389f33fc5b3ef7099c7a757357e55c
+
+@ 0 1 0 0646bfdbf9cdc8c11f65cf95da95f936
++   entry .Table   i tag delle tabelle che un font può portare, come enum `Ttf` (TrueType) e `Otf` (OpenType)
+
+% 1 1 0 1c5fa3dac41df3d4111caa166a9ed6b4
+
+@ 0 12 0 1328713b5ea681db15f3c00cda3bcd5a
++         Il tag di quattro caratteri di una tabella la identifica nella directory. I tag sono divisi
++         nell'insieme TrueType (`Sfnt.Table.Ttf`: `cmap`, `head`, `hhea`, `hmtx`, `maxp`, `name`,
++         `post`, `glyf`, `loca`, `fvar`, …) e nell'insieme OpenType (`Sfnt.Table.Otf`: `CFF `, `OS/2`,
++         `GSUB`, `GPOS`, `GDEF`, `STAT`, …), entrambi `Sfnt.Table.Tag` e chiavi di `Sfnt#tables`.
++         Ogni compagno è un estrattore dal testo del tag, quindi una voce della directory si
++         classifica confrontandola con `Sfnt.Table.Otf(tag)` e `Sfnt.Table.Ttf (tag)`; un tag che
++         nessuno dei due nomina viene escluso dalla mappa delle tabelle.
++     entry .Tag   il tipo comune dei tag `Ttf` e `Otf`
++       entry #text   il tag come è scritto nel file: `cmap`, `OS/2`, `CFF `, `cvt `
++           Quattro caratteri, compreso lo spazio finale di `CFF ` e `cvt `. Un tag TrueType è in
++           minuscolo e un tag OpenType in maiuscolo, con `OS/2` e `CFF ` come eccezioni.
++     entry .Ttf   le tabelle TrueType: `avar`, `cmap`, `cvar`, `cvt `, `fpgm`, `fvar`, `gasp`, `glyf`, …
+
+% 1 1 0 01fcbbf4cd79c79702882760a3ed10fb
+
+% 0 1 0 04084330bd08b5d40f42d2128de3368d
+
+@ 0 5 0 19822a736b603574149397700cf8bf03
++           `Hhea`, `Hmtx`, `Kern`, `Loca`, `Maxp`, `Meta`, `Name`, `Post`, `Prep`, `Sbix`, `Vhea` e
++           `Vmtx`. Il compagno estrae un caso dal suo testo (`Sfnt.Table.Ttf(t"cmap")`), con `cvt `
++           scritto con il suo spazio finale.
++       entry .extract   il tag `Ttf` per un testo di quattro caratteri, o `Unset`
++     entry .Otf   le tabelle OpenType: `BASE`, `CFF `, `CFF2`, `COLR`, `GDEF`, `GPOS`, `GSUB`, `OS/2`, …
+
+% 1 1 0 1cafae1a72627da906a3b22aad2f218d
+
+% 0 1 0 195bd23271ac3356126d6c8e790c19ca
+
+% 0 1 0 17239c2bce2f2a1113cf2b06ad35568d
+
+@ 0 13 0 094de8236bd3ab9b07f6cf83111a74c2
++           `Stat`, `Svg`, `Vdmx`, `Vorg` e `Vvar`. Il compagno estrae un caso dal suo testo
++           (`Sfnt.Table.Otf(t"OS/2")`), con `OS/2` e `CFF ` scritti come li scrive il file.
++       entry .extract   il tag `Otf` per un testo di quattro caratteri, o `Unset`
++   entry .assemble   serializza tabelle con tag come file sfnt completo, con i checksum
++       `Sfnt.assemble(version, tables)` prende la versione di quattro byte (i primi quattro byte di un
++       font: `0x00010000` per TrueType) e una lista di coppie `(tag, bytes)`, e scrive l'intestazione,
++       una directory ordinata per tag con i campi di ricerca richiesti dal formato, e le tabelle
++       allineate a quattro byte e riempite di zeri. Ogni voce della directory porta il checksum della
++       sua tabella, e se tra esse c'è una tabella `head` il suo aggiustamento del checksum viene
++       impostato così che l'intero file sommi alla costante del formato. La tabella `head` va fornita
++       con l'aggiustamento azzerato. `Truetype#subset` costruisce il suo risultato in questo modo.
++   entry #data   i byte del file di font
++   entry #TableOffset   una voce della directory: il tag, il checksum, l'offset e la lunghezza di una tabella
+
+% 1 1 0 107201dc06eb1e6f1edcf48d2e5a7e6d
+
+@ 0 20 0 1a4b769cdd4b1bf016f8c4a94b36a283
++         I valori di `#tables`. L'offset e la lunghezza individuano la tabella all'interno di
++         `#data`; il checksum è quello del file, che la libreria registra ma non verifica.
++     entry #id   lo `Sfnt.Table.Tag` della tabella
++     entry #checksum   il checksum registrato dalla directory, come `B32`
++     entry #offset   l'offset della tabella dall'inizio del file
++     entry #length   la lunghezza della tabella in byte
++   entry #numTables   il numero di tabelle che la directory dichiara
++   entry #searchRange   il campo `searchRange` della directory: la più grande potenza di due non superiore al conteggio, per 16
++   entry #entrySelector   il campo `entrySelector` della directory: il logaritmo di `searchRange` diviso 16
++   entry #rangeShift   il campo `rangeShift` della directory: il conteggio per 16, meno `searchRange`
++   entry #tables   ogni tabella che la libreria nomina, per tag, con il suo offset e la sua lunghezza
++       Una `Map[Sfnt.Table.Tag, TableOffset]` letta dalla directory. I tag che non sono né un caso
++       `Ttf` né un caso `Otf` vengono esclusi, quindi le tabelle private di un font non sono
++       rappresentate. La lettura della mappa è totale; una directory malformata la rende vuota, e ogni
++       accessor di tabella solleva allora `Font.Error` con `MissingTable`.
++   entry #glyph   il glifo per un carattere, tramite la mappa dei caratteri preferita del font
++       `cmap.glyph(char)`: il glifo è `Glyph[this.type]`, tipizzato su questo font, quindi un glifo di
++       un font non può essere usato con un altro. Un carattere che il font non mappa dà il glifo 0,
++       il glifo mancante, anziché un errore. Solleva `Font.Error` con `MissingEncoding` se il font non
++       ha una sottotabella `cmap` utilizzabile, o con `MissingTable` se non ha `cmap`.
+
+% 2 1 0 01589e61a9a43eec1b77923bdba4c157
+
+% 3 1 0 1111d550203a46b20ab7a8e3b96581f0
+
+% 4 1 0 1a8292b8723b295f14f4af7248ee7121
+
+% 0 1 0 12322af46b5987e801e328e66d6e8761
+
+% 1 1 0 0f31409e14edba8d1979ce961e592b60
+
+@ 0 9 0 105b0c978c0885e118f08a40d070d393
++   entry #advanceWidth   la larghezza di avanzamento di un carattere nelle unità di progetto del font
++       L'avanzamento orizzontale del glifo del carattere da `hmtx`, in unità di cui `head.unitsPerEm`
++       fanno un em. Un glifo oltre il numero di metriche della tabella ripete l'ultimo avanzamento,
++       come il formato prescrive per una coda a spaziatura fissa. Solleva `Font.Error` se manca
++       `cmap`, `hhea` o `hmtx`.
++   entry #width   la larghezza di un testo in questo font, come grandezza in em
++       La somma delle larghezze di avanzamento dei caratteri, divisa per le unità per em, come
++       `Quantity[Ems[1]]`. Una larghezza in em è una grandezza tipizzata, quindi non può essere
++       scambiata per una misura in pixel o in punti; scalarla per una dimensione del font è
++       un'operazione aritmetica esplicita.
+
+% 2 1 0 1b8562d593ca5ac817abd5e390e20023
+
+% 3 1 0 18bb21b93b6fcb741ac84c181afdbede
+
+% 4 1 0 0c43af336724a6f71b688c0b2a045484
+
+% 0 1 0 080d990923bb95ff1e2cdabed7295ca8
+
+% 1 1 0 0b954aa3d20c99cf128da7a0a2d4456d
+
+@ 0 35 0 13de57935fd2f2e20c85dd3a665fe9f0
++   entry #leftSideBearing   lo spazio laterale sinistro di un carattere nelle unità di progetto del font
++       Lo spazio laterale del glifo del carattere da `hmtx`, che prosegue in un array proprio per i
++       glifi oltre il numero di metriche. Solleva `Font.Error` se manca una tabella necessaria.
++   entry #head   la tabella `head`: unità per em, riquadro di delimitazione, date di creazione e formato di `loca`
++       Spacchettata come `HeadTable`; solleva `Font.Error` con `MissingTable` se è assente e con
++       `MagicNumber` se la costante di controllo della tabella non è `0x5f0f3cf5` del formato.
++   entry #cmap   la tabella `cmap`: le associazioni da carattere a glifo
++       Come `CmapTable`, la cui sottotabella `best` è scelta secondo la preferenza Unicode e il cui
++       `glyph` risolve un carattere. Solleva `Font.Error` con `MissingTable` se è assente.
++   entry #hhea   la tabella `hhea`: ascendente, discendente, interlinea e numero di metriche
++       Spacchettata come `HheaTable`; solleva `Font.Error` con `MissingTable` se è assente.
++   entry #hmtx   la tabella `hmtx`: larghezze di avanzamento e spazi laterali sinistri per glifo
++       Come `HmtxTable` dimensionata da `hhea.numberOfHMetrics`; solleva `Font.Error` se una delle
++       due tabelle è assente.
++   entry #maxp   la tabella `maxp`: il numero di glifi
++       Come `MaxpTable`; solleva `Font.Error` con `MissingTable` se è assente.
++   entry #post   la tabella `post`: angolo del corsivo, metriche della sottolineatura e se il font è a spaziatura fissa
++       Come `PostTable`; solleva `Font.Error` con `MissingTable` se è assente.
++   entry #os2   la tabella `OS/2`: classi di peso e di larghezza, metriche tipografiche, diritti di incorporamento
++       Come `Os2Table`; solleva `Font.Error` con `MissingTable` se è assente.
++   entry #name   la tabella `name`: i nomi localizzati del font, per `Sfnt.NameId`
++       Come `NameTable`; solleva `Font.Error` con `MissingTable` se è assente.
++   entry #fontName   il nome PostScript del font, o `Unset`
++       `name(Sfnt.NameId.PostScriptName)`, con qualsiasi `Font.Error` assorbito: il nome con cui i
++       documenti PDF e PostScript fanno riferimento a un font. `Unset` per un font che non ne registra
++       uno o non ha una tabella `name`.
++   entry #familyName   il nome della famiglia del font, o `Unset`
++       `name(Sfnt.NameId.Family)`, con qualsiasi `Font.Error` assorbito.
++   entry #fvar   la tabella `fvar` di un font variabile, o `Unset` per un font statico
++       Gli assi lungo cui si muovono i contorni di un font variabile, ciascuno con il suo intervallo.
++       `Coverage.of` legge da qui gli intervalli di peso e di larghezza quando la tabella è presente.
++   entry #features   le funzionalità di layout che il font implementa, per tag, da `GSUB` e `GPOS`
++       Le liste di funzionalità delle due tabelle di layout, come `Face.Feature`, senza duplicati. Un
++       font senza nessuna delle due tabelle non ne implementa alcuna. Sono ciò che `Coverage.of`
++       registra, quindi uno stile tipografico che abilita una funzionalità che manca al font viene
++       rifiutato.
+
+% 2 1 0 193d7615390939c91c14cf3b7557fde9
+
+% 3 1 0 0dd9d82342add75d0a21f3be962c06f7
+
+% 0 1 0 023e88caee675ae30c25145143d93c9a
+
+% 1 1 0 1d390aee43c25ddb1d7c5e94c8854bdc
+
+@ 0 1 0 195baa6fd3d260a41f10e2833dcc78e7
++   entry #FvarTable   la tabella delle variazioni di un font variabile
+
+% 1 1 0 193c9eb7e84c685a06375c7310a770d7
+
+@ 0 13 0 1cec7e728098abc10359e7f5cc9beff4
++         Gli assi di un font variabile — `wght`, `wdth`, `ital`, `slnt`, `opsz`, o assi propri del
++         font — ciascuno con i valori minimo, predefinito e massimo che ammette, come record `Axis`.
++         Si raggiunge tramite `Sfnt#fvar`.
++     entry #axisCount   il numero di assi
++     entry #axisSize   la dimensione in byte di ciascun record di asse
++     entry #axes   gli assi, ciascuno con il suo tag, il suo intervallo e il suo name id
++     entry #Axis   un asse: il suo tag di quattro caratteri, il suo minimo, predefinito e massimo, e il suo id `name`
++       entry #tag   il tag dell'asse, come `wght`
++       entry #minimum   il valore più piccolo che l'asse ammette
++       entry #default   il valore predefinito dell'asse
++       entry #maximum   il valore più grande che l'asse ammette
++       entry #nameId   l'id nella tabella `name` del nome visualizzato dell'asse
++   entry #HeadTable   l'intestazione del font: versioni, costanti di controllo, unità per em, riquadro di delimitazione, flag
+
+% 1 1 0 058934154e9eb90e16d06afbd0c00de6
+
+@ 0 5 0 0f9bc475c4f5e1900f083d2b341898a6
++         La tabella `head`, spacchettata campo per campo nei tipi a larghezza fissa del formato stesso
++         (`U16`, `S16`, `B16`, `B32`, `S64`), così che ogni campo si legga come l'intero o il pattern di
++         bit che il formato definisce. `unitsPerEm` è la scala che collega le unità di progetto agli
++         em; `xMin`, `yMin`, `xMax` e `yMax` sono il riquadro di delimitazione di tutti i glifi;
++         `indexToLocFormat` dice se `loca` usa offset corti o lunghi.
+
+% 2 1 0 19ef62565b2fbbd91c8080ba024d0dda
+
+% 3 1 0 0680a632c9ae5d021dcf479880fd454e
+
+% 4 1 0 00113718cebb877a0e98c5151b7e892a
+
+% 0 1 0 128237ade6865a061c6406d0ecfac66b
+
+% 0 1 0 0d4ac6149dae80b7144afc32d0ad1439
+
+% 1 1 0 143d68e7cb1492be1b527236566bed52
+
+@ 0 20 0 067b8f3359954acc1fbc2d2cdfac26e8
++     entry #majorVersion   la versione principale della tabella, 1
++     entry #minorVersion   la versione secondaria della tabella, 0
++     entry #fontRevisionHigh   la parte intera del numero di revisione del font
++     entry #fontRevisionLow   la parte frazionaria del numero di revisione del font
++     entry #checksumAdjustment   il valore che fa sommare l'intero file alla costante del formato
++     entry #magicNumber   la costante di controllo `0x5f0f3cf5`; `Sfnt#head` solleva `MagicNumber` se è diversa
++     entry #flags   i bit di flag dell'intestazione
++     entry #unitsPerEm   le unità di progetto in un em, per cui si dividono gli avanzamenti per ottenere larghezze in em
++     entry #created   la data di creazione, in secondi dal 1904
++     entry #modified   la data di modifica, in secondi dal 1904
++     entry #xMin   il bordo sinistro del riquadro di delimitazione di tutti i glifi
++     entry #yMin   il bordo inferiore del riquadro di delimitazione di tutti i glifi
++     entry #xMax   il bordo destro del riquadro di delimitazione di tutti i glifi
++     entry #yMax   il bordo superiore del riquadro di delimitazione di tutti i glifi
++     entry #macStyle   i bit di stile Macintosh: grassetto, corsivo, sottolineato, …
++     entry #lowestRecPpem   la dimensione leggibile più piccola in pixel per em
++     entry #fontDirectionHint   l'indicazione di direzione deprecata
++     entry #indexToLocFormat   0 per offset `loca` corti (dimezzati, a 16 bit), 1 per offset lunghi (a 32 bit)
++     entry #glyphDataFormat   il formato dei dati dei glifi, 0
++   entry #HheaTable   l'intestazione orizzontale: ascendente, discendente, interlinea, inclinazione del cursore e numero di metriche
+
+% 1 1 0 0812011019a2943e0fc02883d7f1f15f
+
+@ 0 22 0 15978ae2ea5331de124a4f86fe5cb256
++         La tabella `hhea`, spacchettata campo per campo. `ascender`, `descender` e `lineGap` sono le
++         metriche verticali che servono al layout di una riga, in unità di progetto;
++         `numberOfHMetrics` è quante coppie complete (avanzamento, spazio laterale) contiene `hmtx`
++         prima della sua coda a spaziatura fissa.
++     entry #majorVersion   la versione principale della tabella
++     entry #minorVersion   la versione secondaria della tabella
++     entry #ascender   l'ascendente tipografica, in unità di progetto
++     entry #descender   la discendente tipografica, in unità di progetto, negativa sotto la linea di base
++     entry #lineGap   l'interlinea tipografica
++     entry #advanceWidthMax   la larghezza di avanzamento più grande in `hmtx`
++     entry #minLeftSideBearing   lo spazio laterale sinistro più piccolo
++     entry #minRightSideBearing   lo spazio laterale destro più piccolo
++     entry #xMaxExtent   la massima estensione orizzontale di un glifo
++     entry #caretSlopeRise   l'innalzamento dell'inclinazione del cursore; 1 per un cursore verticale
++     entry #caretSlopeRun   lo spostamento dell'inclinazione del cursore; 0 per un cursore verticale
++     entry #caretOffset   l'offset orizzontale del cursore
++     entry #reserved0   un campo riservato
++     entry #reserved1   un campo riservato
++     entry #reserved2   un campo riservato
++     entry #reserved4   un campo riservato
++     entry #metricDataFormat   il formato dei dati delle metriche, 0
++     entry #numberOfHMetrics   il numero di coppie di metriche complete in `hmtx`
++   entry #HmtxTable   le metriche orizzontali: una larghezza di avanzamento e uno spazio laterale sinistro per glifo
+
+% 1 1 0 169e15ebf15bef1011b21e0c483050f3
+
+@ 0 12 0 010a1181545e1c16093a9184b8a4e237
++         Una coppia `HMetrics` per glifo fino al numero che `hhea` dichiara, dopo di che l'ultimo
++         avanzamento si ripete — una coda a spaziatura fissa — e gli spazi laterali proseguono in un
++         array proprio. `Sfnt#advanceWidth` e `Sfnt#leftSideBearing` cercano qui il glifo di un
++         carattere.
++     entry #offset   l'offset della tabella nel file
++     entry #count   il numero di coppie di metriche complete, da `hhea`
++     entry #metrics   le coppie di metriche complete, lette una volta
++     entry #advanceWidth   la larghezza di avanzamento di un glifo per id, ripetendo l'ultima per la coda
++     entry #leftSideBearing   lo spazio laterale sinistro di un glifo per id, dalle coppie o dalla coda degli spazi laterali
++     entry #HMetrics   la larghezza di avanzamento e lo spazio laterale sinistro di un glifo
++       entry #advanceWidth   l'avanzamento orizzontale, in unità di progetto
++       entry #leftSideBearing   lo spazio laterale sinistro, in unità di progetto
++   entry #MaxpTable   il profilo dei massimi; viene letto solo il numero di glifi
+
+% 1 1 0 1de1a7a9f010e8211f95070062b6bf56
+
+@ 0 4 0 177eae10948580a4178b06534de28ea8
++         La tabella `maxp`. `glyphCount` dimensiona la tabella `loca` e limita ogni id di glifo.
++     entry #offset   l'offset della tabella nel file
++     entry #glyphCount   il numero di glifi nel font
++   entry #PostTable   metadati PostScript: angolo del corsivo, posizione e spessore della sottolineatura, passo fisso
+
+% 1 1 0 0819608ec2d75535020ea0466c14e933
+
+@ 0 3 0 1655c1ee0592f93209aa21d44bcc7f3f
++         La tabella `post`. L'angolo del corsivo è un numero di gradi in virgola fissa, negativo per
++         un'inclinazione verso destra, ed è uno degli indizi che `Coverage.of` legge per stabilire che
++         un file è corsivo.
+
+% 2 1 0 0d8007feb17c29d80633110110991d13
+
+% 3 1 0 1bb832052ec26fed1ca18ace09d9b8d0
+
+% 4 1 0 12910f6aa4bb4a0612b49f226e185336
+
+% 0 1 0 182cc677406fb3f9005bca4610f62a92
+
+% 1 1 0 0ed542def9e6811d027eeeea8067746e
+
+@ 0 6 0 02506cc09eb384340182fef0f64db8a6
++     entry #offset   l'offset della tabella nel file
++     entry #italicAngle   l'angolo del corsivo in gradi, 0 per il tondo, decodificato dalla virgola fissa 16.16
++     entry #underlinePosition   la posizione della sottolineatura rispetto alla linea di base
++     entry #underlineThickness   lo spessore della sottolineatura
++     entry #monospaced   se il font è a passo fisso
++   entry #Os2Table   metriche OS/2 e Windows: classi di peso e di larghezza, diritti di incorporamento, metriche tipografiche
+
+% 1 1 0 0a9dfe56abbc4d430b4744ccb143107f
+
+@ 0 6 0 0af574572a7fa3f51b6d8c1be46edc09
++         La tabella `OS/2`, letta campo per campo agli offset definiti dalla sua versione. La classe di
++         peso (1–1000, la scala che usa `Weight`) e la classe di larghezza (1–9, a cui
++         `Stretch.widthClass` dà un nome) sono ciò che `Coverage.of` registra per un font statico; i
++         bit di selezione dicono se lo stile tipografico è corsivo; l'ascendente, la discendente e
++         l'interlinea tipografiche, l'ascent e il descent di Windows, l'altezza della x e l'altezza
++         delle maiuscole sono ciò che serve al descrittore di font di un PDF. I campi precedenti alla
++         versione di una tabella sono `Unset`.
+
+% 2 1 0 1f3c26e404c5056811b71529abc83609
+
+% 3 1 0 0b41dfb5ba5754301cf4906be14f8b2d
+
+% 4 1 0 1faaf41055f072b810686fd5f69f36dc
+
+% 0 1 0 0d9556c6db19f57c0f556392467fc482
+
+% 1 1 0 19d674a81db981d4004d720453dc7c2b
+
+@ 0 20 0 1407cbc0b9127c3113b64c62ab6e40bd
++     entry #offset   l'offset della tabella nel file
++     entry #version   la versione della tabella, che decide quali campi successivi sono presenti
++     entry #weightClass   il peso sulla scala 1–1000; `Weight(weightClass)` è il `Weight`
++     entry #widthClass   la classe di larghezza, da 1 a 9; `Stretch.widthClass` le dà un nome
++     entry #fsType   i bit dei diritti di incorporamento
++     entry #familyClass   la classe e sottoclasse di font IBM
++     entry #selection   i bit `fsSelection`: corsivo, sottolineato, negativo, contornato, barrato, grassetto, …
++     entry #typoAscender   l'ascendente tipografica
++     entry #typoDescender   la discendente tipografica
++     entry #typoLineGap   l'interlinea tipografica
++     entry #winAscent   l'ascent di Windows: il limite superiore della regione di ritaglio
++     entry #winDescent   il descent di Windows: il limite inferiore della regione di ritaglio
++     entry #xHeight   l'altezza della x, dalla versione 2 della tabella; `Unset` prima
++     entry #capHeight   l'altezza delle maiuscole, dalla versione 2 della tabella; `Unset` prima
++     entry #embeddable   se il font può essere incorporato in un documento
++         L'incorporamento installabile è 0, e tra i bit di restrizione solo `0x0002` vieta
++         l'incorporamento del tutto, quindi i font di anteprima e stampa e quelli modificabili contano
++         come incorporabili.
++     entry #italic   se i bit di selezione marcano lo stile tipografico come corsivo od obliquo
++         Il bit 0 di `fsSelection` marca uno stile corsivo e il bit 9 uno obliquo; entrambi sono
++         inclinati.
++   entry #NameTable   la tabella dei nomi: stringhe localizzate per piattaforma come i nomi della famiglia e PostScript
+
+% 1 1 0 13e7def6a423940d08436c3fb8de6172
+
+@ 0 9 0 1e995057357f21b71e5c520cfc59d7a3
++         I record della tabella `name`, ciascuno una stringa per un name id su una piattaforma, una
++         codifica e una lingua. `apply` sceglie il record migliore per un `Sfnt.NameId`: prima Windows
++         inglese americano, poi gli altri record Windows e Unicode, poi i Macintosh legacy. Le stringhe
++         Windows e Unicode si decodificano da UTF-16BE, quelle Macintosh da MacRoman con ISO-8859-1
++         come ripiego.
++     entry #offset   l'offset della tabella nel file
++     entry #count   il numero di record di nome
++     entry #records   ogni record, con la sua piattaforma, codifica, lingua, name id ed estensione
++     entry #apply   la stringa migliore per un name id, o `Unset` se il font non ne registra nessuna
+
+% 1 1 0 09199ca52fc79c1f06aff5a8509d8145
+
+% 2 1 0 128d011e463d04bf0778473a555495e8
+
+% 3 1 0 118501d041d753f11774bc8293c2de4c
+
+% 0 1 0 17fe423f4b6b726e1936f006fdbeb132
+
+% 1 1 0 19ec48fa56284abc0067fe5fb53d3124
+
+@ 0 9 0 038cb873360cfb9b1701bcf053a6c547
++     entry #Record   un record di nome: piattaforma, codifica, lingua, name id, e dove si trova la sua stringa
++       entry #platformId   la piattaforma: 0 Unicode, 1 Macintosh, 3 Windows
++       entry #encodingId   la codifica all'interno della piattaforma
++       entry #languageId   la lingua; `0x409` è Windows inglese americano
++       entry #nameId   il name id, confrontato con `Sfnt.NameId#ordinal`
++       entry #length   la lunghezza della stringa in byte
++       entry #start   l'offset della stringa nel file
++       entry #decode   la stringa, decodificata secondo la codifica della sua piattaforma
++   entry #CmapTable   le associazioni da carattere a glifo, come sottotabelle di codifica in diversi formati
+
+% 1 1 0 01b72f255071c2a511efcddc775cace6
+
+@ 0 20 0 117d6773ea55655908939344d0b24f49
++         La tabella `cmap` contiene una o più sottotabelle `GlyphEncoding`, ciascuna per una
++         piattaforma e una codifica, e ciascuna in uno dei formati che la libreria legge: 0 (un array
++         indicizzato per byte), 4 (intervalli segmentati sul Basic Multilingual Plane), 6 (una sequenza
++         densa) e 12 (gruppi che coprono tutto Unicode). `best` sceglie la sottotabella preferita —
++         Unicode completo prima del BMP, Unicode prima del simbolo Windows e di Macintosh — e `glyph`
++         risolve un carattere tramite essa. Una sottotabella in qualsiasi altro formato solleva
++         `Font.Error` con `UnknownFormat` la prima volta che il suo `format` viene letto.
++     entry #offset   l'offset della tabella nel file
++     entry #version   la versione della tabella
++     entry #numTables   il numero di sottotabelle di codifica
++     entry #glyphEncodings   ogni sottotabella di codifica, con la sua piattaforma, codifica e offset
++     entry #best   la sottotabella preferita, o `Unset` se non ce ne sono
++         Classificate per (piattaforma, codifica): per prima Windows Unicode completo (3, 10), poi
++         Unicode completo (0, 4) e (0, 6), Windows BMP (3, 1), Unicode BMP (0, 3), gli altri Unicode, il
++         simbolo Windows (3, 0) e per ultima Macintosh Roman (1, 0).
++     entry #glyph   il glifo per un carattere tramite la sottotabella migliore
++         Solleva `Font.Error` con `MissingEncoding` se non c'è alcuna sottotabella, e con
++         `UnknownFormat` se la migliore è in un formato che la libreria non legge. Un carattere non
++         mappato è il glifo 0.
++     entry #GlyphEncoding   una sottotabella di codifica: la sua piattaforma, codifica, offset e formato analizzato
+
+% 1 1 0 0d8f14ce80a70db50682924a774aff90
+
+@ 0 30 0 1ab351025f728ec2004e474f1fc98f35
++           Il `format` della sottotabella viene analizzato una volta, al primo uso, in un `Format` il
++           cui `glyph` esegue la ricerca; il risultato viene memorizzato sotto un mutex, così le
++           letture concorrenti lo condividono.
++       entry #platformId   la piattaforma della sottotabella
++       entry #encodingId   la codifica della sottotabella
++       entry #offset   l'offset della sottotabella nel file
++       entry #formatId   il numero di formato della sottotabella, letto subito
++       entry #format   la sottotabella analizzata, che solleva `Font.Error` con `UnknownFormat` per un formato non letto
++       entry #Segment   un segmento del formato 4: un intervallo di caratteri con il suo delta e il suo offset di intervallo
++         entry #start   il primo carattere del segmento
++         entry #end   l'ultimo carattere del segmento
++         entry #delta   sommato a un carattere per dare il suo glifo, quando l'offset di intervallo è zero
++         entry #rangeOffset   diverso da zero quando il segmento passa indirettamente per l'array degli id di glifo
++       entry #Format   ciò che ogni sottotabella analizzata sa fare: associare un carattere a un glifo di questo font
++         entry #glyph   il glifo per un carattere, o il glifo 0 se non è mappato
++       entry #Format0   un array di id di glifo indicizzato per byte, solo per i primi 256 codici di carattere
++         entry #start   l'offset dell'array
++         entry #glyph   il glifo per un carattere sotto 256, altrimenti il glifo 0
++       entry #Format4   intervalli segmentati sul Basic Multilingual Plane, per delta o per indirezione
++         entry #idRangeOffsetsStart   l'offset dell'array degli offset di intervallo, rispetto a cui sono relative le indirezioni
++         entry #segments   i segmenti, nell'ordine dei loro caratteri finali
++         entry #glyph   il glifo per un carattere: trovato per segmento, poi per delta o tramite l'array degli id di glifo
++       entry #Format6   una sequenza densa di id di glifo per un intervallo contiguo di codici di carattere
++         entry #first   il primo codice di carattere della sequenza
++         entry #count   il numero di codici nella sequenza
++         entry #start   l'offset dell'array degli id di glifo
++         entry #glyph   il glifo per un carattere all'interno della sequenza, altrimenti il glifo 0
++       entry #Format12   gruppi di associazioni sequenziali che coprono tutto Unicode, con ricerca binaria
++         entry #groupCount   il numero di gruppi
++         entry #start   l'offset dell'array dei gruppi
++         entry #glyph   il glifo per un carattere, per ricerca binaria sui gruppi
+
+@ 0 1 0 0cdf83def44c05a011e576661ed7a75c
++ entry .Truetype   un font TrueType: uno sfnt i cui contorni sono quadratici, in `glyf` e `loca`, di cui si può fare un sottoinsieme
+
+% 1 1 0 0f6d0daaef38c31b1efd2708c5640e10
+
+@ 0 5 0 1f7bfbe93ca6fbe41c407a88cb99acaf
++       Un `Truetype` è uno `Sfnt` con le due tabelle dei contorni — `loca`, l'indice di dove si
++       trovano i dati di ciascun glifo, e `glyf`, i dati stessi — e le operazioni che ne hanno
++       bisogno. `Truetype(source)` ne legge uno da qualsiasi sorgente in streaming senza sondare il
++       formato; `Sfnt(source)` è il consueto punto d'accesso, poiché restituisce un `Truetype` per un
++       font senza una tabella `CFF `.
+
+@ 0 2 0 0b3dbde7ac8f3f2f191501b4e258ddf1
++       L'operazione che conta è `#subset`: un nuovo font che contiene solo i contorni che servono a
++       certi caratteri, da incorporare in un documento.
+
+% 2 1 0 01e34357d1b1ace312bda73e1eccb3bd
+
+% 3 1 0 082f214d778838a10b376348fbbcb81e
+
+% 4 1 0 04bf0752aa0731c81b0a8592033ab19f
+
+% 0 1 0 085ef5989bf2586711352803bcfe1585
+
+% 1 1 0 1f43393010905c2c00b0d29c9ed4bca2
+
+@ 0 7 0 13e15d547801325a1014f3b5778f991d
++       Il sottoinsieme mantiene la numerazione originale dei glifi — i glifi inutilizzati conservano
++       il loro numero con contorni vuoti — così la mappa dei caratteri, le metriche e ogni riferimento
++       tra glifi restano validi senza essere riscritti, e ogni altra tabella viene riportata senza
++       modifiche. I glifi composti vengono seguiti: l'insieme mantenuto è la chiusura transitiva
++       rispetto alla composizione (`#glyphClosure`), quindi un carattere accentato conserva i
++       componenti con cui è disegnato. Il risultato è un file completo, checksum compresi, con `head`
++       passato agli offset `loca` lunghi.
+
+% 1 1 0 0d0668d2963a5cac1d77311fe281e317
+
+% 1 1 0 03b9109a5c4a70e80bd1193965612465
+
+@ 0 17 0 13d55e93ad58c91418e67185942eebf9
++   entry .apply   legge un font TrueType da qualsiasi sorgente in streaming
++       `Truetype(source)` legge per intero una sorgente `Streamable by Data over Credit`;
++       `Truetype(data)` è il costruttore della case class sui byte. Nessuno dei due verifica il
++       formato dei contorni: lo fa `Sfnt(…)`, che è quello da usare quando il file potrebbe essere
++       OpenType.
++   entry #data   i byte del file di font
++   entry #loca   la tabella `loca`: l'offset di ciascun glifo all'interno di `glyf`
++       Dimensionata da `maxp.glyphCount` e letta nel formato indicato da `head.indexToLocFormat`.
++       Solleva `Font.Error` con `MissingTable` se manca `loca`, `maxp` o `head`.
++   entry #glyf   la tabella `glyf`: i contorni dei glifi, indicizzati tramite `loca`
++       Solleva `Font.Error` con `MissingTable` se manca `glyf` o `loca`.
++   entry #subset   un nuovo font con i soli glifi che servono a certi caratteri, mantenendo la numerazione
++       `subset(chars: Set[Char])` o `subset(text: Text)`. I glifi mantenuti sono quelli a cui i
++       caratteri sono associati, il glifo 0, e la chiusura transitiva rispetto ai componenti
++       composti. Ogni altro glifo conserva il suo numero e perde il suo contorno; `glyf` e `loca`
++       vengono ricostruite (quest'ultima sempre nel formato lungo, con `head` modificato per
++       indicarlo), e ogni altra tabella viene copiata byte per byte. L'intero file viene riassemblato
++       con `Sfnt.assemble`, quindi i suoi checksum sono validi. Solleva `Font.Error` se manca una
++       tabella necessaria alla ricostruzione.
+
+% 2 1 0 1491c2eb7077bb6f113ebac8c10128e5
+
+% 3 1 0 1c43205d7c84a62d0aabcf5c7ffebea0
+
+% 4 1 0 128150f0a8e57f601696e138a75cc2b1
+
+% 0 1 0 1e54c0e3d5f664e215a06352159ec437
+
+% 1 1 0 094218539787af3605ca9832dcd856d7
+
+@ 0 5 0 1e05bac3a07e98391176986ca47d9db8
++   entry #glyphClosure   i glifi necessari per rendere un insieme di glifi, seguendo i componenti composti
++       La chiusura transitiva di un insieme di id di glifo rispetto a `GlyphRecord#components`: un
++       glifo composto è disegnato a partire da altri, che possono essere a loro volta composti.
++       `#subset` la usa per decidere cosa mantenere. Solleva `Font.Error` se manca `glyf` o `loca`.
++   entry #LocaTable   l'indice delle posizioni dei glifi: per ogni glifo, dove iniziano i suoi dati all'interno di `glyf`
+
+% 1 1 0 0be39871a176076307e815a4cf7c3890
+
+@ 0 8 0 1dad3bbcb148a6791533d1c867acfae6
++         Un offset per glifo più uno, quindi l'estensione di un glifo è la differenza tra il suo offset
++         e il successivo. Nel formato corto gli offset sono memorizzati dimezzati in sedici bit; nel
++         formato lungo sono memorizzati così come sono.
++     entry #offset   l'offset della tabella nel file
++     entry #glyphCount   il numero di glifi, da `maxp`
++     entry #longFormat   se gli offset sono a 32 bit (`true`) o dimezzati a 16 bit (`false`)
++     entry #offsets   gli offset, non dimezzati, letti una volta
++   entry #GlyfTable   i contorni dei glifi, ciascuno raggiunto per id come `GlyphRecord`
+
+% 1 1 0 16647e7ae6ed233e183495ec885cdeda
+
+@ 0 7 0 1ae66e92beb693900dc31769f9409964
++         `glyf(id)` individua i dati di un glifo tramite `loca`. Il record espone i byte grezzi, il
++         numero di contorni, se il glifo è composto e, in tal caso, i componenti da cui è disegnato; i
++         contorni stessi non vengono decodificati oltre questo.
++     entry #offset   l'offset della tabella nel file
++     entry #loca   la tabella `loca` tramite cui sono indicizzati i contorni
++     entry #apply   il record per un id di glifo
++     entry #GlyphRecord   i dati grezzi di un glifo: la sua estensione, il numero di contorni e i componenti composti
+
+% 1 1 0 0e216b8083a71b041f7fc195c58820d0
+
+@ 0 12 0 0a069cfa24b5049c0797d2d3d93fbc72
++           Un glifo senza contorno — uno spazio, o un glifo scartato da `#subset` — ha estensione
++           zero; un glifo composto ha un numero di contorni negativo ed elenca i glifi da cui è
++           assemblato.
++       entry #start   l'offset dei dati del glifo nel file
++       entry #length   la lunghezza dei dati del glifo; 0 per un glifo senza contorno
++       entry #empty   se il glifo non ha contorno
++       entry #bytes   i dati grezzi del glifo
++       entry #contourCount   il numero di contorni, o un valore negativo per un glifo composto
++       entry #composite   se il glifo è assemblato da altri glifi
++       entry #components   gli id dei glifi da cui è disegnato un composto; `Nil` per un glifo semplice
++           Letti una volta, percorrendo i record dei componenti secondo i loro flag: argomenti word o
++           byte, e una scala unica, scale x e y separate, o una trasformazione 2×2.
+
+@ 0 1 0 182d0e6aa3d51277062e20b4752d43d4
++ entry .Opentype   un font OpenType: uno sfnt i cui contorni sono PostScript, in una tabella `CFF `
+
+% 1 1 0 1dd00472635714ef1561a03d7f211472
+
+@ 0 5 0 121ca1c72fd327a202a59853e1987736
++       Uno `Sfnt` i cui contorni dei glifi sono memorizzati in `CFF `. Ogni tabella condivisa funziona
++       — mappatura dei caratteri, metriche, nomi, `OS/2`, `fvar`, funzionalità di layout — ma i dati
++       dei contorni non vengono ancora analizzati, quindi non c'è un equivalente di `Truetype#glyf`
++       né il sottoinsieme. `Sfnt(source)` restituisce un `Opentype` quando trova la tabella `CFF `;
++       `Opentype(source)` ne legge uno senza verificare.
+
+% 1 1 0 0c4c215b71ade75b0b6d56ebb8f467cc
+
+% 1 1 0 09b149d3fc254bef09ba8abba6758304
+
+@ 0 2 0 0c91981056ea5ecc1f041c6f3a788ea9
++   entry .apply   legge un font OpenType da qualsiasi sorgente in streaming
++   entry #data   i byte del file di font
+
+@ 0 1 0 0c5db2110664c2570b4ab363baa721e7
++ entry .Glyph   un glifo di un font specifico, identificato dal suo id
+
+% 1 1 0 11b918146ab2279108f4a4429996976c
+
+@ 0 5 0 18e1d59210ffb7b8181885211bffd32d
++       `Glyph[font.type]` è un involucro opaco su un id di glifo, tipizzato sul font in cui è stato
++       risolto, quindi un glifo di un font non può essere usato per indicizzarne un altro.
++       `Sfnt#glyph(char)` è il modo di ottenerne uno; `glyph.id`, un'estensione dichiarata in
++       `internal`, rilegge l'id (0 è il glifo mancante). `Glyph(font, id)` avvolge un id già noto. Il
++       tipo è `phoenicia.internal.Glyph`, esportato qui.
+
+% 2 1 0 052a7e1e06e94e0f056f2e0594b80f82
+
+% 3 1 0 0b8aa9def61b663a1feb47bce5956c14
+
+% 4 1 0 0437f580ddb9394b0e7e2814ea5147d5
+
+% 0 1 0 1ea461913e74a44f1c6eba2654932309
+
+% 1 1 0 06a9444b0df9015216b804848f2c4e9c
+
+@ 0 2 0 07dd1ebec1967310045a30e568b0ac77
++       I membri del suo compagno sono dichiarati in `internal.Glyph`, da cui il tipo è esportato, e
++       documentati lì.
+
+% 1 1 0 12674fa921ae801c1856518f6b62ffa3
+
+@ 0 1 0 0d00cde479db274807a554a0b3bcdf7a
++ entry .Typeface   una famiglia di font identificata dal suo nome, che è anche il suo tipo: `Typeface["Inter"]` è un `Typeface of "Inter"`
+
+% 1 1 0 00c18c298fa0541d0f3401adfe263f02
+
+@ 0 5 0 1857563d580f4d3d1b4c12f772e2d551
++       Un `Typeface` nomina una famiglia — il nome che un documento scrive dove fa riferimento al
++       carattere tipografico, un `font-family` CSS o un `/BaseFont` PDF — e porta quel nome come suo
++       `Topic`, quindi `Typeface["Inter"]` ha il tipo `Typeface of "Inter"` e una fornitura per un
++       carattere tipografico si distingue da una fornitura per un altro mentre il codice compila. Non
++       dice nulla su da dove provenga il font: quello è compito di una fornitura `Typesettable`.
+
+@ 0 3 0 02b07e962b0b2fe902a1e75a96489591
++       Gli stili tipografici di un carattere tipografico si raggiungono in modo fluente. `#face` (o
++       `#regular`) è il suo stile tipografico regolare tondo, e `#bold`, `#light`, `#italic` e gli
++       altri scelgono a partire da lì; ognuno è un `Face of "Inter"`, che porta la sua richiesta nel
++       suo tipo per la verifica in fase di compilazione.
+
+% 2 1 0 0e3de47e2ccd08a110fee7d5c02ccfdc
+
+% 3 1 0 0f0502210be118600c016a683d7b3c63
+
+% 0 1 0 1fd77387225ee42216a80fae5635289c
+
+% 0 1 0 0569c5651bd2d5710d79c49a6d57b445
+
+% 0 1 0 0591e0ad8475396a07feb7f5d602e53f
+
+% 0 1 0 042ea1d71f2fedc109f39a620eaa62dc
+
+% 1 1 0 044bc9cfdfb4316c007f6287f5b8305e
+
+@ 0 4 0 07a8f6deb7d9484b0ff0751aa6c41618
++       Le famiglie generiche CSS — `.SansSerif`, `.Serif`, `.Monospace`, `.Cursive`, `.Fantasy` e
++       `.SystemUi` — sono anch'esse caratteri tipografici; un browser compone ciascuna con ciò che ha,
++       quindi il compagno `Web` di cataclysm le fornisce senza che nulla venga dichiarato. Due
++       caratteri tipografici sono uguali quando lo sono i loro nomi, e un carattere tipografico si
++       mostra come il suo nome.
+
+% 1 1 0 029191e12616d51d011f5bcee30664ad
+
+% 2 1 0 0c8cd626203e4d7f1cfb92633fa45ddf
+
+% 2 1 0 16b416dfa30cbdec108782ef3340319b
+
+@ 0 25 0 0af5d7232768e72d03175cc37e6dcdc8
++   entry .apply   `Typeface["Inter"]`: il carattere tipografico di una famiglia, dal suo nome come tipo letterale
++       Un metodo inline il cui argomento di tipo è il nome della famiglia, come `Label`: il nome viene
++       letto dal tipo con `constValue`, quindi deve essere un letterale. Il risultato è `Typeface of
++       family`, con il nome sia come valore sia come tipo.
++   entry .SansSerif   la famiglia generica CSS `sans-serif`, un `Typeface of "sans-serif"`
++   entry .Serif   la famiglia generica CSS `serif`, un `Typeface of "serif"`
++   entry .Monospace   la famiglia generica CSS `monospace`, un `Typeface of "monospace"`
++   entry .Cursive   la famiglia generica CSS `cursive`, un `Typeface of "cursive"`
++   entry .Fantasy   la famiglia generica CSS `fantasy`, un `Typeface of "fantasy"`
++   entry .SystemUi   la famiglia generica CSS `system-ui`, un `Typeface of "system-ui"`
++   entry .showable   mostra un carattere tipografico come il nome della sua famiglia
++   entry .inspectable   ispeziona un carattere tipografico come `Typeface["Inter"]`
++   entry #name   il nome della famiglia, come testo
++   entry #Topic   il nome della famiglia come tipo letterale: `"Inter"` per `Typeface["Inter"]`
++   entry #face   lo stile tipografico regolare e tondo del carattere tipografico, da cui si scelgono gli altri
++       Un `Face of Topic` con `Weight.Regular`, `Slant.Upright` e `Stretch.Normal`, senza variazioni
++       né funzionalità, il cui tipo registra `Weights = 400`, `Slanting = "upright"` e
++       `Enabled = Nothing`. `#regular` è lo stesso stile tipografico.
++   entry #regular   lo stile tipografico regolare tondo; lo stesso di `#face`
++   entry #light   lo stile tipografico tondo light (300)
++   entry #medium   lo stile tipografico tondo medium (500)
++   entry #semibold   lo stile tipografico tondo semibold (600)
++   entry #bold   lo stile tipografico tondo bold (700)
++   entry #black   lo stile tipografico tondo black (900)
++   entry #italic   lo stile tipografico corsivo regolare
+
+@ 0 1 0 0772c9b9f4dc08981eb17598a0b450d6
++ entry .Face   come va composto un carattere tipografico: peso, inclinazione, larghezza, assi di variazione e funzionalità di layout
+
+% 1 1 0 1b60a2357a29fbf918a49303d16ead1b
+
+@ 0 5 0 017d643ec3b2880b0eaf3c19bd9c3756
++       Un `Face` descrive una richiesta: un `#typeface` con un `#weight`, uno `#slant` e uno
++       `#stretch`, con `#variations` su eventuali ulteriori assi di un font variabile e le
++       `#features` da abilitare o disabilitare. Non dice nulla su da dove provenga il font;
++       abbinarlo a una fornitura `Typesettable` produce un `Font`. La famiglia del carattere
++       tipografico è il `Topic` dello stile tipografico, quindi `Typeface["Inter"].bold` è un
++       `Face of "Inter"`.
+
+@ 0 2 0 07ba8bacd63b51dd049fe305f1f7e347
++       Gli stili tipografici si costruiscono in modo fluente a partire dal `face` di un carattere
++       tipografico, e ogni metodo restituisce un nuovo stile tipografico con una parte cambiata e il
++       tipo aggiornato di conseguenza:
+
+% 2 1 0 150083330a06980c148330eaf92b6044
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 04554ff5aa7fbff011575f4fe320ecd7
++         label Lo stile tipografico regolare
+
+% 1 1 0 04c62758f4f83ac1153f9fb7ce33b9af
+
+% 0 1 0 0184f8be8bf7a3db003c5c0054d7f08e
+
+% 0 1 0 02de0783f879a54910f30064330e8f62
+
+% 1 1 0 1f7fca2031e3261912e5430dd89e41fb
+
+@ 0 1 0 121c3c927674ac221315e5bd29a3a62c
++         label Grassetto
+
+% 1 1 0 1d6e75103b2ce451138ae63de30a7210
+
+% 0 1 0 0d71b14ffd26e3501840c43492c7d6de
+
+% 0 1 0 1be8535929107ef8169e964b530d3074
+
+% 1 1 0 08893dbd810f73c5080ae887ef94bdb8
+
+@ 0 1 0 1effa55a791cc2561b59e3931df954f0
++         label Grassetto corsivo
+
+% 1 1 0 128ae89ae0a17a080c53be56ca133ec4
+
+% 0 1 0 1d1d0436b816aece0cf422f0fd200839
+
+% 0 1 0 030cb1b67323f5581aeefb5daa8d3223
+
+% 1 1 0 17abffee9f19b9b51227bb572eb61f84
+
+@ 0 1 0 19c61af23a6d01220888c182f086757a
++         label Con cifre in stile antico
+
+% 1 1 0 066baf3fbf40be5e0ec41ef05a4d2ae9
+
+% 0 1 0 0338895b0ad0be5110a2fb002bedd872
+
+% 0 1 0 18a5affb21db0d8306e71d1bbc44b9da
+
+% 1 1 0 03208a2d69f8707a1db07b7af8ea612d
+
+@ 0 1 0 0cf795cd3ff681c00ca1e60da84e84aa
++         label Un peso deciso a runtime
+
+% 1 1 0 0565070e99edbd38189dd18933ec865d
+
+% 0 1 0 0b2fdbff1fe44bc207c1115b13aa6ce6
+
+% 0 1 0 0c0aa6b929b0c0130b682ec920d3f242
+
+% 0 1 0 054a0417a0857ac20b9419f2045bb890
+
+% 1 1 0 0d91bb94e3a6bdc806259c1d088a6784
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 9 0 07345358dec714fe1c5b999b31194c92
++       Tre membri di tipo registrano ciò che il codice ha chiesto, dove è noto mentre il codice
++       compila: `#Weights` è il peso come letterale (`700`), `#Slanting` è `"upright"` o `"italic"`, e
++       `#Enabled` è l'unione dei tag delle funzionalità abilitate (`"onum" | "tnum"`, o `Nothing` se
++       non ce ne sono). Una parte decisa a runtime — `#weighing` con un peso calcolato, `#slanted`,
++       `#featuring` con una funzionalità indicata dal suo tag — viene registrata come `Face.Runtime`.
++       Quando un `Font` viene creato da una fornitura il cui file è nel classpath, la richiesta
++       registrata viene verificata rispetto al file mentre il codice compila; il resto viene
++       verificato quando il font viene creato. Uno stile tipografico annotato come semplice
++       `Face of "Inter"` perde la registrazione, e viene verificato solo a runtime.
+
+@ 0 2 0 135a63b7af107b8a18c5ad4a75c104f0
++       `Face(typeface, weight, slant, …)` costruisce uno stile tipografico da valori a runtime, con
++       ogni membro di tipo `Runtime`. Uno stile tipografico si mostra come `Inter 700 italic`.
+
+% 1 1 0 15b5badb1ec0839e10188b1b40403207
+
+% 2 1 0 0daf18bbbf36f6ac13c4eb7e509d7b5c
+
+% 0 1 0 011566bfdd640c841186f1c1dc58fad3
+
+% 0 1 0 0d8247cc4d067a2e1e25d2357ce87338
+
+% 0 1 0 1d813bd53f13f3d308064c2d493b6b86
+
+% 0 1 0 0c8caa14dfa91dfb1ad3ca2bd89b8599
+
+@ 0 14 0 0678009e746a07e804e795f88c2bae3b
++   entry .Runtime   il tipo marcatore per una parte di una richiesta decisa a runtime
++       Un trait sealed usato solo come tipo: `Weights = Face.Runtime` dice che il peso è stato
++       calcolato anziché scelto per nome, quindi la verifica in fase di compilazione lo lascia alla
++       verifica a runtime.
++   entry .Shape   `Face.Shape[family, weights, slanting, enabled]`: uno stile tipografico con l'intera richiesta nel suo tipo
++       Il raffinamento `Face { type Topic = family; type Weights = weights; type Slanting =
++       slanting; type Enabled = enabled }`, che ogni metodo fluente restituisce.
++   entry .apply   uno stile tipografico da valori a runtime: `Face(typeface, weight, slant, stretch, variations, features)`
++       Ogni parametro dopo il carattere tipografico ha un valore predefinito — regolare, tondo,
++       normale, nessuna, nessuna — e il risultato è `Face.Shape[family, Runtime, Runtime, Runtime]`,
++       quindi un font creato da esso viene verificato solo a runtime.
++   entry .showable   mostra uno stile tipografico come il suo carattere tipografico, peso e inclinazione: `Inter 700 italic`
++       L'inclinazione è omessa quando è tondo: `Inter 400`.
++   entry .inspectable   ispeziona uno stile tipografico come `Face("Inter", Weight(700), Slant.Italic)`
++   entry .Feature   una funzionalità di layout OpenType identificata dal suo tag di quattro caratteri, che è anche il suo tipo
+
+% 1 1 0 1d47b1870b7424bf15c82c46d7213a4f
+
+@ 0 5 0 07689c5ef1a1d5751aee5512b31599d2
++         `Face.Feature.OldstyleNumerals` è un `Feature of "onum"`: il tag è il `Topic` della
++         funzionalità, quindi uno stile tipografico che la abilita registra `"onum"` nel suo tipo
++         `Enabled`. Le funzionalità registrate comuni hanno un nome; gli insiemi stilistici e le
++         varianti di carattere sono numerati (`.stylisticSet(3)` è `ss03`); e `Face.Feature(t"…")`
++         ammette qualsiasi altro tag, noto solo a runtime come `Feature of Runtime`.
+
+@ 0 3 0 1c22c6c81c286f7c1af81b9bf9082b2b
++         Una funzionalità diventa un `Setting` con `#enabled`, `#disabled` o `#set(value)`, e uno
++         stile tipografico riceve le impostazioni tramite `Face#enabling`, `Face#disabling` e
++         `Face#featuring`. Due funzionalità sono uguali quando lo sono i loro tag; una funzionalità si
++         mostra come il suo tag.
+
+% 2 1 0 0889b0e1d22969a71d0e9aefaa7b6c96
+
+% 3 1 0 08d077412ca15afc1a461d852a13b098
+
+% 0 1 0 1769430724898de31be42a7827eae01f
+
+% 0 1 0 10b86447a4f855c910404542c7ca3e48
+
+% 0 1 0 065936e7b4611481136f34010d2ff993
+
+% 0 1 0 119715f7bd03c72a0612a8019b4c38ec
+
+% 1 1 0 02f032f2bd8bcc581c50b694c13481d9
+
+@ 0 25 0 013630e430d8277c0bcd6e5b1b59aa92
++     entry .apply   `Face.Feature(tag)`: una funzionalità con un tag qualsiasi, nota solo a runtime
++         Il risultato è un `Feature of Runtime`, quindi abilitarla aggiunge `Face.Runtime` al tipo
++         `Enabled` di uno stile tipografico anziché il tag, e la verifica in fase di compilazione la
++         salta.
++     entry .Ligatures   legature standard, `liga`
++     entry .DiscretionaryLigatures   legature discrezionali, `dlig`
++     entry .HistoricalLigatures   legature storiche, `hlig`
++     entry .ContextualAlternates   alternative contestuali, `calt`
++     entry .Kerning   crenatura, `kern`
++     entry .OldstyleNumerals   cifre in stile antico, `onum`
++     entry .LiningNumerals   cifre allineate, `lnum`
++     entry .TabularNumerals   cifre tabulari, `tnum`
++     entry .ProportionalNumerals   cifre proporzionali, `pnum`
++     entry .SlashedZero   uno zero barrato, `zero`
++     entry .Fractions   frazioni, `frac`
++     entry .Ordinals   indicatori ordinali, `ordn`
++     entry .SmallCapitals   maiuscoletto dalle minuscole, `smcp`
++     entry .CapitalSmallCapitals   maiuscoletto dalle maiuscole, `c2sc`
++     entry .Swashes   forme ornate, `swsh`
++     entry .Superscript   forme in apice, `sups`
++     entry .Subscript   forme in pedice, `subs`
++     entry .stylisticSet   insieme stilistico _n_, da `ss01` a `ss20`, come funzionalità a runtime
++         Il numero è completato con zeri a due cifre. Il risultato è un `Feature of Runtime`, poiché
++         il tag viene creato a runtime.
++     entry .characterVariant   variante di carattere _n_, da `cv01` a `cv99`, come funzionalità a runtime
++     entry .Setting   una funzionalità con il valore a cui è impostata: 0 disabilita, 1 abilita, valori maggiori scelgono un'alternativa
+
+% 1 1 0 023ef310e079b2031585c9aa0cdb1ac0
+
+@ 0 58 0 0021f1bbcce04e6b187ed3366d466d0c
++           Ciò che uno stile tipografico contiene nella sua lista `features`. La maggior parte delle
++           funzionalità è attiva o disattiva; le varianti di carattere e alcune altre scelgono tra
++           alternative con valori maggiori.
++       entry #feature   la funzionalità
++       entry #value   il valore: 0 disattiva, 1 attiva, o il numero di un'alternativa
++     entry .showable   mostra una funzionalità come il suo tag
++     entry .inspectable   ispeziona una funzionalità come `Face.Feature("onum")`
++     entry #tag   il tag di quattro caratteri
++     entry #enabled   l'impostazione che attiva la funzionalità, valore 1
++     entry #disabled   l'impostazione che disattiva la funzionalità, valore 0
++     entry #set   l'impostazione con un valore scelto, per le funzionalità che scelgono tra alternative
++   entry #typeface   il carattere tipografico di cui è lo stile tipografico
++   entry #weight   il peso, sulla scala 1–1000
++   entry #slant   tondo, corsivo, o obliquo con un angolo
++   entry #stretch   la larghezza come percentuale di quella normale
++   entry #variations   posizioni su ulteriori assi di un font variabile
++   entry #features   le impostazioni delle funzionalità di layout, nell'ordine in cui sono state aggiunte
++   entry #Topic   il nome della famiglia come tipo letterale
++   entry #Weights   il peso richiesto come tipo letterale (`700`), o `Face.Runtime`
++   entry #Slanting   l'inclinazione richiesta come `"upright"` o `"italic"`, o `Face.Runtime`
++   entry #Enabled   i tag delle funzionalità abilitate come tipo unione, `Nothing` se non ce ne sono, o con `Face.Runtime`
++   entry #weighing   lo stile tipografico con un peso qualsiasi, deciso a runtime
++       `Weights` diventa `Face.Runtime`, quindi il peso viene verificato solo quando il font viene
++       creato. I pesi con nome (`#bold`, `#light`, …) registrano invece il loro letterale.
++   entry #thin   lo stile tipografico con peso 100
++   entry #light   lo stile tipografico con peso 300
++   entry #regular   lo stile tipografico con peso 400
++   entry #medium   lo stile tipografico con peso 500
++   entry #semibold   lo stile tipografico con peso 600
++   entry #bold   lo stile tipografico con peso 700
++   entry #black   lo stile tipografico con peso 900
++   entry #slanted   lo stile tipografico con un'inclinazione qualsiasi, decisa a runtime
++       `Slanting` diventa `Face.Runtime`. `#italic`, `#upright` e `#oblique` registrano invece
++       l'inclinazione.
++   entry #italic   lo stile tipografico corsivo; `Slanting` diventa `"italic"`
++   entry #upright   lo stile tipografico tondo; `Slanting` diventa `"upright"`
++   entry #oblique   lo stile tipografico inclinato di un angolo in gradi, verso destra quando è positivo
++       Un obliquo è un tondo inclinato anziché un corsivo disegnato a parte, ma viene registrato come
++       `"italic"` per la verifica di copertura, poiché è una fornitura che offre uno stile tipografico
++       corsivo a comporlo.
++   entry #stretched   lo stile tipografico con una larghezza qualsiasi
++       La larghezza non viene registrata nel tipo, quindi viene verificata solo quando il font viene
++       creato.
++   entry #condensed   lo stile tipografico al 75% della larghezza normale
++   entry #expanded   lo stile tipografico al 125% della larghezza normale
++   entry #varying   lo stile tipografico con una posizione su un ulteriore asse di un font variabile
++       `varying(Variation.Axis.OpticalSize, 24.0)` aggiunge una `Variation`. Gli assi registrati di
++       peso, larghezza, corsivo e inclinazione si impostano invece tramite il peso, la larghezza e
++       l'inclinazione, così un font statico e uno variabile si richiedono allo stesso modo; `varying`
++       serve per la dimensione ottica e per gli assi propri di un font. Un asse che manca al font, o
++       un valore fuori dal suo intervallo, viene rifiutato quando il font viene creato.
++   entry #featuring   lo stile tipografico con un'impostazione di funzionalità creata a runtime
++       Aggiunge un `Face.Feature.Setting`. L'impostazione può abilitare qualsiasi cosa, quindi
++       `Enabled` acquisisce `Face.Runtime`, e la verifica in fase di compilazione salta ciò che non
++       può vedere.
++   entry #enabling   lo stile tipografico con una funzionalità abilitata, il cui tag viene registrato nel tipo
++       `enabling(Face.Feature.OldstyleNumerals)` aggiunge `"onum"` a `Enabled`, quindi una fornitura
++       il cui file non ha la funzionalità rifiuta il font mentre il codice compila.
++   entry #disabling   lo stile tipografico con una funzionalità disabilitata
++       Disabilitare una funzionalità che manca al font non cambia nulla, quindi non aggiunge alcun
++       requisito e il tipo resta invariato.
+
+@ 0 1 0 0d049b2356a65e1b1ccc5e0e48ecf6f3
++ entry .Weight   un peso sulla scala 1–1000 condivisa da CSS e OpenType, con i nomi consueti
+
+% 1 1 0 09eff044f2ccc99f0e9efc84d3c2f83d
+
+@ 0 6 0 1d9f6627f944869015753bd166fddcbd
++       Un `Int` opaco (`phoenicia.internal.Weight`, esportato qui). `Weight(value)` porta un
++       valore fuori scala all'estremo più vicino invece di rifiutarlo. I nove pesi con nome
++       sono `.Thin` (100), `.ExtraLight` (200), `.Light` (300), `.Regular` (400),
++       `.Medium` (500), `.Semibold` (600), `.Bold` (700), `.ExtraBold` (800) e `.Black`
++       (900). Un `.Range` è un intervallo inclusivo, come quello offerto dall'asse `wght` di un
++       font variabile o da una dichiarazione `@font-face`, creato con `lower to upper` o
++       `weight.range`.
+
+% 2 1 0 1ecd1e6b0efe3c8f11f6db5270a8fb8b
+
+% 3 1 0 132e69f2d79997410c2fcf7ca434e4e7
+
+% 0 1 0 042644f2a8dfa05b0810f3ab0e6b7700
+
+% 0 1 0 0eb743b5eedaf65a09612bc077dd7dd1
+
+% 1 1 0 043e0da8ea1c9ec11dc0fdb1ba05b93b
+
+@ 0 2 0 08188797f03da00117d84e37e501b492
++       I membri del suo oggetto compagno sono dichiarati in `internal.Weight`, da cui il tipo
++       viene esportato, e lì sono documentati.
+
+% 2 1 0 1bec525c99cc39040bd1063941c247cc
+
+% 2 1 0 067d5b52c2dc79e0025d4cb595104d4e
+
+@ 0 1 0 1c9672acf789b333099c1f2a3a5b6499
++ entry .Slant   se uno stile tipografico è inclinato: diritto, un vero corsivo, o un obliquo di un certo angolo
+
+% 1 1 0 1c8d022b8beb5c8617eb7646050514a3
+
+@ 0 6 0 094430f8c55a14c504f606c7b5255625
++       `Upright` e `Italic` sono i due stili disegnati; `Oblique(angle)` è un diritto inclinato
++       di un angolo in gradi, verso destra se positivo. Ai fini della copertura, un obliquo
++       conta come corsivo. Un'inclinazione si mostra come `upright`, `italic` o `oblique 11.5°`.
++   entry .showable   mostra un'inclinazione come `upright`, `italic` o `oblique 11.5°`
++   entry .inspectable   ispeziona un'inclinazione come `Slant.Upright`, `Slant.Italic` o `Slant.Oblique(11.5)`
++   entry #upright   se l'inclinazione è `Upright`
+
+@ 0 1 0 1d6f08e8fab9fee5172a95132721e8b0
++ entry .Stretch   la larghezza di uno stile tipografico come percentuale della sua larghezza normale, dal 50% al 200%
+
+% 1 1 0 1b67957a969d3982049c622769fb225a
+
+@ 0 5 0 16e4978ed37437800d16a707a051e10e
++       Un `Double` opaco (`phoenicia.internal.Stretch`, esportato qui), come lo misura il
++       `font-stretch` di CSS. `Stretch(percentage)` limita il valore a 50–200. Le nove larghezze
++       con nome da `.UltraCondensed` (50%) attraverso `.Normal` (100%) fino a `.UltraExpanded`
++       (200%) sono quelle che l'`usWidthClass` della tabella OS/2 numera da 1 a 9, e che
++       `.widthClass` mappa. Un `.Range` è un intervallo inclusivo, come quello offerto dall'asse
++       `wdth` di un font variabile.
+
+@ 0 2 0 05b6503d0bee3df803580d5fba17aa62
++       I membri del suo oggetto compagno sono dichiarati in `internal.Stretch`, da cui il tipo
++       viene esportato, e lì sono documentati.
+
+% 2 1 0 08e77ae33884235d0b9f361cfeed72b0
+
+@ 0 1 0 0ff5cf9aad030ea61eff1bfb01e2cdc0
++ entry .Variation   una posizione su un asse di un font variabile
+
+% 1 1 0 0c18be9fb183f9ea03ab208313f9e44f
+
+@ 0 5 0 0cb7e82dcfbd31091b26cbc372a23707
++       `Variation(axis, value)` è ciò che `Face#varying` aggiunge a uno stile tipografico. Gli
++       assi registrati di peso, larghezza, corsivo e inclinazione si impostano tramite `Weight`,
++       `Stretch` e `Slant` di uno stile tipografico, quindi una `Variation` serve per la
++       dimensione ottica e per gli assi propri di un font. Una fornitura verifica ogni
++       variazione rispetto agli intervalli `fvar` del font: un asse che il font non ha viene
++       rifiutato con `Font.Error.Reason.UnknownAxis`, un valore fuori intervallo con
++       `AxisOutOfRange`.
+
+% 2 1 0 0f3c1498ec3ec97c070d06e66ac5f1dd
+
+% 3 1 0 1125ea5ffc3d4f091ac851150b05e94f
+
+% 0 1 0 18d424417af5566f138a0ee981ac6578
+
+% 1 1 0 09545358c386809e14b15dac95bc09ee
+
+% 1 1 0 1b1a18c5db142b161c1b4d29ad292f67
+
+% 2 1 0 017f05980cf9c1380185dd5d7a5482ec
+
+@ 0 1 0 067ae38ffb01d2d40f8525953387402a
++   entry .Axis   un asse di variazione indicato dal suo tag di quattro caratteri
+
+% 1 1 0 145f4148020c60a70e49df43c0c48061
+
+@ 0 19 0 04f3aeea0a009413154872e0e0e354eb
++         Un `Text` opaco. I cinque assi registrati hanno un nome — `.Weight` (`wght`), `.Width`
++         (`wdth`), `.Italic` (`ital`), `.Slant` (`slnt`) e `.OpticalSize` (`opsz`) — e gli assi
++         propri di un font si creano dai loro tag con `Variation.Axis(tag)`.
++     entry .apply   un asse dal suo tag
++     entry .Weight   l'asse `wght`
++     entry .Width   l'asse `wdth`
++     entry .Italic   l'asse `ital`
++     entry .Slant   l'asse `slnt`
++     entry .OpticalSize   l'asse `opsz`
++     entry .showable   mostra un asse come il suo tag
++     entry .inspectable   ispeziona un asse come `Variation.Axis("opsz")`
++     entry .tag   il tag di quattro caratteri
++   entry .Range   i valori che un font ammette su un asse, dalla sua tabella `fvar`
++     entry #axis   l'asse
++     entry #lower   il valore ammesso più piccolo
++     entry #upper   il valore ammesso più grande
++     entry #contains   se un valore cade nell'intervallo
++   entry #axis   l'asse
++   entry #value   la posizione su di esso
+
+@ 0 1 0 17d8a4db9386a541179f33b124c20c1a
++ entry .Medium   un mezzo in cui si compone il testo: il web, la stampa, o qualsiasi mezzo definito da un renderer
+
+% 1 1 0 164f3733010e4fa016b730f0fcf058a4
+
+@ 0 5 0 061927d782f5affe0023df31f3f4caab
++       Un trait aperto. Una fornitura `Typesettable` nomina come suo `Form` il
++       mezzo che serve, e un `Font in Web` è un font per un browser, un `Font in Print` uno per
++       un PDF. Una fornitura `in Medium` stessa — un file di font incorporato — serve ogni
++       mezzo, poiché un file si può portare ovunque, ed è per questo che chi la richiede chiede
++       una fornitura `in (? >: medium)` invece che `in medium`.
+
+@ 0 4 0 1236a77117f0bec41a71e19796f1eb59
++       Ogni renderer dichiara il proprio mezzo come trait con un oggetto compagno, e l'oggetto
++       compagno è il luogo in cui vivono, nell'ambito implicito, le forniture che quel mezzo può
++       sempre onorare: l'`object Web` di cataclysm contiene le famiglie generiche CSS,
++       l'`object Print` di facsimile contiene i quattordici font standard di PDF. Un test o un renderer
++       proprio ne dichiara uno in una riga:
+
+% 2 1 0 0fd58c4c51e6fcda11c18ba0aaf2cddf
+
+% 3 1 0 136953f30898647d05e0420401af0f1e
+
+% 2 1 0 0c1bd193120172b21ae02cb9f3afbb62
+
+% 1 1 0 12b201685371fa2914380c76084cfdbc
+
+% 2 1 0 1d2357269924b1ac19facc48518da793
+
+% 3 1 0 1df29d565a498ccd057f13efef4f36f5
+
+@ 0 1 0 1afdf3ca45c6c1801cf558ff1403188c
++ entry .Typesettable   la fornitura di un carattere tipografico in un mezzo: da dove viene il font, e quali stili tipografici compone
+
+% 1 1 0 16d61dd86bf58055027cfc83fa9ec0d5
+
+@ 0 8 0 0677e2c93a40a4ed01c605619d4df30b
++       Un `Typeface of "Inter" is Typesettable in Web` dice come il web ottiene Inter — come
++       suoi `#sources`: il file del font stesso, un URL, un font che il lettore ha installato,
++       un foglio di stile, o nulla per una famiglia generica — e quali stili tipografici può
++       poi comporre, come sua `#coverage`. Il mezzo servito è il suo `Form`, un membro di tipo
++       ereditato da `Formal`: `Medium` per ogni mezzo, o un singolo mezzo come `Web`.
++       Si dichiara una volta, come given, e un `Font` si può creare solo dove nell'ambito ce
++       n'è uno per il carattere tipografico nel mezzo: è questo che garantisce che un documento
++       porti ciò di cui il suo mezzo ha bisogno per ogni carattere tipografico che nomina.
+
+% 2 1 0 0e69cfb0089c1e8f0a228523858934ad
+
+% 3 1 0 0694d98170217235132d82443eb6c934
+
+% 4 1 0 09b0dc000b8165860246e3300eceb64d
+
+% 0 1 0 0ec3b16c63b240e905072027e08983c3
+
+% 0 1 0 1d71b97489d920e306751232a49a3683
+
+% 0 1 0 1d66122d61624ee41d9b9d5338d43fdd
+
+% 0 1 0 187acf8f10fb57de0db00dd08059b2a8
+
+% 1 1 0 1fb8b47aa69b73b9092133b6ce155499
+
+@ 0 7 0 04590d238ceedadb161bfee666e5abdd
++       `.embedded` crea una fornitura da file di font, che ogni mezzo può portare, quindi è
++       `in Medium`; la sua copertura viene letta dai file, e più file — regular, bold, italic —
++       formano un'unica fornitura la cui copertura è la loro unione. Le forniture che
++       appartengono a un solo mezzo si dichiarano tramite quel mezzo: `Web.linked` per un file a
++       un URL, `Web.imported` per un foglio di stile, `Web.local` per un font installato,
++       ciascuna con la copertura che le si dichiara, poiché non c'è alcun file da leggere; i
++       quattordici font standard di `Print` non richiedono dichiarazione, né la richiedono le
++       famiglie generiche sul web.
+
+@ 0 4 0 17b876113cfb0ebe01ddce3f02b2a577
++       Chi la richiede chiede una fornitura `in (? >: medium)`: un'istanza `in Medium` serve
++       ogni mezzo, mentre una `in Web` serve solo il web, e `Font.of[Print](face)` con solo una
++       fornitura `Web` nell'ambito è un errore di compilazione. Il messaggio di
++       `@missingContext` lo dice, e nomina i due modi per dichiararne una.
+
+@ 0 5 0 0825728665a9f59503055d809b0fd5c6
++       Una fornitura è `Locative`: creata da una risorsa del classpath
++       (`Typesettable.embedded (cp"/fonts/Inter.ttf")`) mantiene il percorso come suo `Locus`,
++       e un `Font` creato da essa viene verificato rispetto al file mentre il codice viene
++       compilato. L'intero tipo va allora racchiuso tra parentesi in un given con nome, poiché
++       altrimenti una catena infissa con un tipo letterale non è ammessa nel tipo del given:
+
+% 2 1 0 1c6a5435bb0d273f0f3029ff3131fcb7
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 18d07e8a352d11ed1ecd461c9345d31b
+
+% 0 1 0 088e390e17f4c8ae01c149c44fd1bbad
+
+% 1 1 0 17cf565af6301afc1f1e0ae3951de9b6
+
+@ 0 3 0 0fc6ab032dd5443917bc0b01cf86eed3
++       Le forniture sono dati puri e vivono dove vive il mezzo: nell'oggetto compagno di `Web` o
++       di `Print` per quelle che un mezzo ha sempre, e in un oggetto che un progetto importa
++       per nome per le proprie — `import fonts.inter`, poiché `import fonts.*` non importa i
++       given.
+
+% 1 1 0 1616cca3f7c6e3c30048ed2e32dd91ba
+
+% 2 1 0 14afe8ec5325a26e037ce8b0dee74556
+
+% 1 1 0 1c15c96efd7af7af0f0d4109eed1e62e
+
+% 1 1 0 020f1537fe2ce5260d5314a53ad64b86
+
+@ 0 1 0 0a8830c6adfc80e306051fc6c45d10d1
++   entry .Source   come un mezzo ottiene un carattere tipografico: incorporato, collegato, locale, importato o generico
+
+% 1 1 0 1901000c13a44ec3033defaa75ef7923
+
+@ 0 10 0 1fd60cdfa8c2e8fb029380c0deb87318
++         `Embedded(sfnt)` porta il file del font stesso dentro il documento;
++         `Linked(url, format)` nomina un file da scaricare, con il suo `Format` se noto;
++         `Local(name)` nomina un font che il lettore ha già installato; `Imported(url)` nomina
++         un foglio di stile che dichiara il carattere tipografico; e `Generic` è una famiglia
++         che ogni mezzo sa comporre. Un documento raccoglie le sorgenti dei suoi font ed emette
++         ciò di cui il suo mezzo ha bisogno — regole `@font-face`, un programma incorporato.
++     entry .Format   il formato di un file di font collegato: `Ttf`, `Otf`, `Woff` o `Woff2`
++         Ciò che un `src` di `@font-face` dichiara con `format(…)`, così un browser può saltare
++         un file che non sa leggere.
++   entry .Embedding   la fornitura restituita da `.embedded`: file portati dentro il documento
+
+% 1 1 0 181b1776bf92744e1720a756da1949e9
+
+@ 0 15 0 074ef594c183338e0acb30d11a181a46
++         Una classe con nome, così la fornitura ha un tipo stabile. È `in Medium`, le sue
++         sorgenti sono un `Source.Embedded` per file, e la sua copertura è `Coverage.combine`
++         sui `Coverage.of` dei file.
++     entry #Self   il carattere tipografico fornito
++     entry #Form   `Medium`: un file incorporato serve ogni mezzo
++     entry #sources   un `Typesettable.Source.Embedded` per file di font
++     entry #coverage   l'unione delle coperture dei file, letta dalle loro tabelle
++   entry .embedded   una fornitura da file di font, `in Medium`, con la copertura letta dai file
++       Due overload. `Typesettable.embedded[family](sfnts*)` prende un numero qualsiasi di
++       `Sfnt` già disponibili e crea un `Typeface of family is Typesettable in Medium`; la
++       famiglia è data esplicitamente o inferita dal tipo dichiarato del given.
++       `Typesettable.embedded (source)` prende una sorgente streamable `Locative` — una risorsa
++       `cp"…"` — la legge, e ne mantiene il percorso come `Locus` della fornitura, così un
++       `Font` creato dalla fornitura viene verificato, mentre il codice viene compilato,
++       rispetto al file a quel percorso sul classpath del compilatore. Dove il file non è sul
++       classpath del compilatore, la verifica è lasciata al runtime.
+
+% 2 1 0 0ed84d5ccb4d89541ac59b9d374e518d
+
+% 3 1 0 1fca932335e3697a10a2d869321f9a3c
+
+% 4 1 0 1c7a7410d73bf6090737e55738130c5e
+
+% 2 1 0 03264539c79d32080a9a95ea147082e5
+
+% 0 1 0 0f44654b5b4588f20d270017fe412b5f
+
+% 1 1 0 0224dd887c2f602d1dea1aeb2dbc4396
+
+@ 0 3 0 0b351250db6feb9e0f4bff0eb75ee79a
++   entry #Self   il carattere tipografico fornito, un `Typeface of family`
++   entry #sources   come il mezzo ottiene il carattere tipografico, un `Typesettable.Source` per parte
++   entry #coverage   gli stili tipografici che la fornitura sa comporre
+
+@ 0 1 0 0741e81772fb52580e0e4c00487490cf
++ entry .Coverage   quali stili tipografici una fornitura sa comporre: pesi, inclinazioni, larghezze, assi e funzionalità
+
+% 1 1 0 1dc12cc4f9f755c5191d516aa4454bba
+
+@ 0 5 0 17d692121e37018d0d2447b7c54e5053
++       Una `Coverage` è o `Unknown` — non si sa nulla degli stili che una sorgente offre, quindi
++       ogni stile è ammesso — o `Entries(entries)`, una lista di `Coverage.Entry`, ciascuna uno
++       stile tipografico che una fornitura offre o l'intervallo di stili che offre un font
++       variabile. Un `Font` si crea solo per uno stile tipografico che la copertura ammette;
++       `#complaint` dà il `Font.Error.Reason` per cui non lo ammette, o `Unset` se lo ammette.
+
+@ 0 5 0 00e0279350c4ccb00988c4cac78247ed
++       La copertura si confronta come un browser confronta una dichiarazione `@font-face`: si
++       trovano prima le voci che coprono il peso, poi tra queste quelle con l'inclinazione, poi
++       la larghezza, e le variazioni e le funzionalità dello stile si verificano rispetto a ciò
++       che rimane. Il primo passaggio che fallisce dà il nome al rifiuto: `UncoveredWeight`,
++       `UncoveredSlant`, `UncoveredStretch`, `UnknownAxis`, `AxisOutOfRange` o
++       `MissingFeature`.
+
+@ 0 7 0 1d1206267dd7c32a1e979523926d98c2
++       `.of(sfnt)` legge la copertura di un file di font dalle sue tabelle — gli assi `fvar` di
++       un font variabile, altrimenti il singolo peso e la singola larghezza registrati nella
++       tabella `OS/2`, i bit di corsivo di `OS/2` e di `post`, e le funzionalità di `GSUB` e
++       `GPOS` — e `.combine` unisce quelle di più file. `Coverage(weights = …, italic = …)`
++       dichiara la copertura di una sorgente il cui file non è disponibile, un URL o un font
++       installato; si ammette solo ciò che è dichiarato, quindi un font collegato dichiarato a un
++       solo peso rifiuta una richiesta per un altro invece di lasciare che il browser lo
++       sintetizzi.
+
+% 2 1 0 16c1a2cb7e038d260c2fbcb205da06a5
+
+% 3 1 0 197e3704e71f89490385220e29001fd9
+
+% 4 1 0 19caa94135d6b4d31be3128fcca52010
+
+% 0 1 0 041f7ba406b014f41225266f45670872
+
+% 0 1 0 08f91640e7fe16f40c5fec30f9807291
+
+% 0 1 0 18e643efdc9e3b621ee9ab0dc2340cc6
+
+% 0 1 0 0d339d4c183b840704c68660060df84c
+
+% 1 1 0 140583bcad764f6d1a3d3c13f772dde3
+
+% 2 1 0 188700662bb987f0195d0088bf2f59b2
+
+% 3 1 0 1db9a2eef0be519f09285df32996ebaf
+
+% 1 1 0 13c1c9b3c3007e6917b22ce0f7264ca5
+
+@ 0 1 0 0d272a16e1e60a9000c19a3fe7cd534c
++   entry .Entry   uno stile tipografico offerto da una fornitura, o l'intervallo offerto da un font variabile
+
+% 1 1 0 1f9051b251db0cb107afda4d1ac13807
+
+@ 0 3 0 044eb7edef18a5b212155c15f5e8b920
++         I pesi e le larghezze coperti, se la voce è diritta, corsiva o entrambe, gli ulteriori
++         assi con i loro intervalli, e le funzionalità di layout implementate — o `Unset` per
++         le funzionalità di uno stile dichiarato senza file, che allora ammette qualsiasi
++         funzionalità.
+
+% 2 1 0 18ecba61dae7a5fd17bc504d0149b329
+
+% 3 1 0 159383fb6c6da50318a93ba85fa293e3
+
+% 0 1 0 07fae3b532d799d9037ccf21f667ddde
+
+% 1 1 0 0e1cb3e9d8454f7c0ccb8da1d26aec57
+
+@ 0 29 0 0b3adea0af96d1871ca133ea626f3092
++     entry #weights   l'intervallo di pesi
++     entry #upright   se è offerto uno stile diritto
++     entry #italic   se è offerto uno stile corsivo
++     entry #stretches   l'intervallo di larghezze
++     entry #axes   gli ulteriori assi di variazione, ciascuno con il suo intervallo
++     entry #features   le funzionalità implementate, o `Unset` se sconosciute
++     entry #sets   se il peso, l'inclinazione e la larghezza della voce ammettono uno stile tipografico
++     entry #complaint   la prima variazione o impostazione di funzionalità che la voce non sa dare, o `Unset`
++         `complaint(name, variations, settings)` verifica l'asse e il valore di ogni variazione
++         rispetto ad `axes` (`UnknownAxis`, `AxisOutOfRange`) e la funzionalità di ogni
++         impostazione rispetto a `features` (`MissingFeature`), nominando il carattere
++         tipografico nel motivo. Funzionalità sconosciute ammettono qualsiasi cosa.
++   entry .apply   una copertura dichiarata, per una sorgente il cui file non è disponibile
++       `Coverage(weights, upright, italic, stretches, axes)`, ciascuno con un valore predefinito
++       — regular, solo diritto, larghezza normale, nessun asse — che forma un'unica `Entry` con
++       funzionalità sconosciute. Per un URL o un font installato, i cui stili sono ciò che dice
++       la dichiarazione e niente di più.
++   entry .of   la copertura di un file di font, letta dalle sue tabelle
++       Dall'`fvar` di un font variabile: l'asse `wght` come intervallo di pesi, `wdth` come
++       intervallo di larghezze, un asse `ital` o `slnt` come offerta di entrambe le posture, e
++       ogni asse come `Variation.Range`. Da un font statico: le classi di peso e di larghezza di
++       `OS/2` come pesi e larghezze singoli. I bit di corsivo di `OS/2` e un angolo di corsivo
++       `post` diverso da zero rendono corsiva la voce. Le funzionalità sono `Sfnt#features`. Un
++       file le cui tabelle non si possono leggere ha copertura `Unknown`, che ammette tutto,
++       invece di rifiutare stili che potrebbe benissimo avere.
++   entry .combine   l'unione di più coperture; un qualsiasi `Unknown` rende `Unknown` l'intera unione
++   entry #complaint   perché uno stile tipografico non si può comporre da questa copertura, o `Unset` se si può
++       Due overload. `complaint(face)` verifica uno stile tipografico intero.
++       `complaint(name, weight, slant, stretch, variations, features)` verifica solo ciò che è
++       dato: una parte passata come `Unset` non viene verificata, che è la forma usata dalla
++       verifica a tempo di compilazione quando il peso o l'inclinazione di uno stile sono
++       decisi a runtime. Una copertura `Unknown` non si lamenta mai.
+
+@ 0 1 0 0c2244085e8284e712a00e43ffb4b3fe
++ entry .Font   uno stile tipografico abbinato alla fornitura del suo carattere tipografico in un mezzo: ciò che un renderer accetta
+
+% 1 1 0 14a85fce5520f1a102b1beb993b35da8
+
+@ 0 6 0 05e009981d69a23c0e13cf49b47f7482
++       Un `Font in Web` è uno stile tipografico insieme alla fornitura `Typesettable` che rende
++       disponibile il suo carattere tipografico sul web; un `Font in Print` lo stesso per un
++       PDF. Il mezzo è il `Form` del font, un membro di tipo che eredita da `Formal`: `Web`,
++       `Print`, o qualunque mezzo in cui il font sia stato creato. Un renderer accetta font solo
++       in questa forma, quindi un documento non può nominare un carattere tipografico per cui
++       non porta una fornitura; il documento raccoglie poi le forniture dei suoi font ed emette
++       ciò di cui il suo mezzo ha bisogno.
+
+@ 0 6 0 1f7fe236ec8c62b5160fd2efcc19b6eb
++       Un font si crea in uno di due modi. `Font(face)` inferisce il mezzo dal tipo atteso, il
++       che funziona per `Optional[Font in Web]` così come per `Font in Web`, quindi un campo come
++       `Lettering(…, font = Font(inter.bold))` non richiede annotazioni. `Font.of[Web](face)`
++       nomina il mezzo, per i casi in cui non c'è un tipo atteso da cui inferirlo. Entrambi
++       richiedono un `Typeface of family is Typesettable in (? >: medium)` nell'ambito — una
++       fornitura per il carattere tipografico in quel mezzo, o in ogni mezzo — e una
++       `Tactic[Font.Error]`.
+
+% 2 1 0 125b0bfe28a0eede002b202ace4c0f87
+
+% 3 1 0 1c42b24180ede9de1085b38050d7843d
+
+% 4 1 0 006abfe38fd8410709484402f4cdebf4
+
+% 2 1 0 125872f2f7be30ac107700393afdc178
+
+% 2 1 0 1e3a5fdd1f8219d51307ddf394a88d12
+
+% 2 1 0 101eac0fbc3bb91801c2f7ac6ba22696
+
+% 0 1 0 17dd2c034102d2ee03de10456ee197f4
+
+% 0 1 0 0f155b072f013bfc0a04ba245c6cf25e
+
+% 1 1 0 10f3136a5247606614fcf2298db18f20
+
+@ 0 8 0 0e1f9edb6d01993d0012d3c2e1a7df29
++       Uno stile tipografico che la fornitura non sa comporre — un peso che le manca, un corsivo
++       che non ha, una funzionalità che il suo file non implementa, un valore di asse fuori dal
++       suo intervallo — viene rifiutato invece di essere sintetizzato o ignorato in silenzio. Il
++       rifiuto è un `Font.Error` al momento della creazione del font, che nomina il carattere
++       tipografico e il problema. E dove il file della fornitura è sul classpath (il suo
++       `Locus`, da `Typesettable.embedded(cp"…")`) e la richiesta dello stile è nel suo tipo, il
++       rifiuto è un errore di compilazione con lo stesso messaggio, _phoenicia: the font at
++       /fonts/Inter.ttf cannot set this face: Inter is not provided at weight 300_. Solo ciò che
++       è noto staticamente viene verificato staticamente; la verifica a runtime viene sempre
++       eseguita.
+
+@ 0 1 0 004b61c62a504e291c549425b71844d4
++       Un font si mostra come il suo stile tipografico: `Inter 700 italic`.
+
+% 1 1 0 16037dbbbd1d1b5b0f3d596d4cee9c6f
+
+% 2 1 0 0709d8ac5eba537702ba4141abd86bbc
+
+% 1 1 0 022c7470f76563fe1d1b1998f8a8a4ab
+
+% 1 1 0 00c6d790ce27ec4507d47e05e616c43a
+
+@ 0 1 0 1aa7a474aec88e3b11877786d7fa877c
++   entry .Error   sollevato quando un font non si può leggere o uno stile tipografico non si può comporre
+
+% 1 1 0 070c11b9b382a52f10ac0012a60c942e
+
+@ 0 4 0 019da1316175b04302682a8c61d77367
++         Errore `↯/s.89.1`, _the font could not be used because …_, con un `Reason` il cui
++         numero è il sottocodice dell'errore. I motivi legati alla lettura delle tabelle sono
++         sollevati dagli accessor di `Sfnt`; i motivi di copertura da `Font(…)`,
++         `Font.of[…](…)` e `Font.paired` quando la `Coverage` della fornitura rifiuta lo stile
++         tipografico.
+
+% 2 1 0 1e93e1320fd6713e034c6a69dc493bab
+
+% 3 1 0 0dc8c28f47c5da4f07a3b401b1624d6a
+
+% 0 1 0 0d375dffa5cb104510e1e4be880d77cc
+
+% 0 1 0 107914071670bd261df9fbb8862d6e87
+
+% 0 1 0 0e179f043036efa40dfa965b9dec8eda
+
+% 0 1 0 035922082b4c447c1dcc12eb85a072db
+
+% 1 1 0 03e7fc7e0387bcef0889a2a6c9912504
+
+@ 0 1 0 07b4985405fcfd22113ad33f4438b4cc
++     entry .Reason   perché: una tabella mancante o illeggibile, o uno stile tipografico che la fornitura non sa comporre
+
+% 1 1 0 0638f6b27c63fd7616ecf253b017f3ec
+
+@ 0 2 0 0e564163af85634f02392d43a498ec5f
++           I casi da 1 a 4 sono difetti del font; da 5 a 10 sono motivi di copertura, ciascuno
++           dei quali nomina il carattere tipografico:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  Caso
++           column  Codice
++           column  Messaggio
++           column  Nota
+
+% 0 1 0 1c4ad983f4b5fa30181d9ad19cc706a5
+
+@ 0 2 0 0054814f03f3d5fb1a93dd1bb214f017
++           row  `UnknownFormat(format)`  2  _the table contains data in unknown format `format`_  un formato di sottotabella `cmap` che la libreria non legge
++           row  `MagicNumber`  3  _the font did not contain expected check data_  una tabella `head` con la costante sbagliata
+
+% 0 1 0 1ddf15d6fbb89b70090a67d9323b6f17
+
+% 0 1 0 13f42d1e7aee81791c845d0381cda9a9
+
+% 0 1 0 1a5ab34546c5197f1220c337f331eb81
+
+% 0 1 0 00ab2183a62de84f0a289632e92f0b2d
+
+% 0 1 0 18b39f7e79dfe7e41b5ae69629822f24
+
+% 0 1 0 0c065683cdd6b3ef11b4bc4dbed67f87
+
+% 0 1 0 1e923beff40363a4089e955ee33b00c7
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 14 0 1fff80839d9997da13f14f30e649ef04
++       entry #number   il numero del motivo, da 1 a 10, che è il sottocodice dell'errore
++     entry .communicable   rende ogni motivo come il suo messaggio
++     entry #reason   il motivo
++   entry .apply   `Font(face)`: abbina uno stile tipografico alla fornitura nell'ambito, nel mezzo nominato dal tipo atteso
++       Un metodo inline il cui mezzo è inferito dal tipo atteso: `Font in Web`, o
++       `Optional[Font in Web]`, poiché `Form` è un membro di tipo e il tipo atteso lo fissa.
++       Richiede un `Typeface of family is Typesettable in (? >: medium)` e una
++       `Tactic[Font.Error]`. Dove la fornitura porta un `Locus`, la richiesta registrata dello
++       stile viene verificata a tempo di compilazione; la verifica a runtime viene poi eseguita
++       comunque. Dove non c'è un tipo atteso, si usa `.of`.
++   entry .of   `Font.of[Web](face)`: lo stesso abbinamento con il mezzo nominato
++       Restituisce un `.Of[medium]` il cui `apply` prende lo stile tipografico, così va scritto
++       solo il mezzo e la famiglia viene inferita dallo stile. Il `Web.font(face)` di cataclysm
++       è `Font.of[Web](face)`.
++   entry .Of   l'helper restituito da `.of`, il cui `apply` prende lo stile tipografico
+
+% 1 1 0 0af5c9210c2d09dd1d95629e46ab13fb
+
+@ 0 14 0 16a55c120b9a73f40a6110c65d862239
++         `Font.of[medium]` è un `Of[medium]`; `Font.of[medium](face)` è il suo `apply`. Le due
++         clausole sono separate perché il mezzo si possa nominare senza la famiglia.
++     entry #apply   abbina uno stile tipografico alla fornitura nell'ambito per il suo carattere tipografico, nel mezzo nominato
++   entry .paired   l'abbinamento a runtime in cui si espandono le forme inline: la verifica di copertura, poi il font
++       `Font.paired[family, medium](face)` verifica `provision.coverage.complaint(face)`,
++       solleva `Font.Error` con il motivo se ce n'è uno, e altrimenti crea il
++       `Font in medium`. Le forme inline `.apply` e `.of` vi antepongono la verifica a tempo di
++       compilazione; il codice che non ha bisogno di una verifica statica, o che ha uno stile la
++       cui richiesta non è nel suo tipo, può chiamarlo direttamente.
++   entry .showable   mostra un font come il suo stile tipografico: `Inter 700 italic`
++   entry .inspectable   ispeziona un font come `Font(Face("Inter", Weight(700), Slant.Italic))`
++   entry #face   lo stile tipografico
++   entry #provision   la fornitura che rende disponibile il carattere tipografico nel mezzo
++   entry #typeface   il carattere tipografico dello stile
+
+@ 0 1 0 0cf5baab85f731440b64b372aa49e5a7
++ entry .internal   i tipi opachi `Glyph`, `Weight` e `Stretch`, e la macro dietro `Font(…)`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 086e18a9ada832a01cf705c32199716d
++       Non è destinato all'uso diretto. `Glyph`, `Weight` e `Stretch` sono dichiarati qui come
++       tipi opachi, con i loro oggetti compagni, ed esportati nel package `phoenicia`, dove si
++       trovano le loro pagine; l'oggetto esiste perché i tipi opachi e la macro di `Font`
++       abbiano una sede stabile.
++   entry .Glyph   un glifo di un font; vedi `phoenicia.Glyph`
+
+% 1 1 0 1d627a11a94314041be65e496f9e5129
+
+@ 0 3 0 14da46e639e336d4174ab61b53f0904b
++         L'oggetto compagno del tipo opaco `Glyph`, esportato con esso nel package `phoenicia`.
++     entry .apply   `Glyph(font, id)`: avvolge un id di glifo come glifo di quel font
++   entry .Weight   un peso sulla scala 1–1000; vedi `phoenicia.Weight`
+
+% 1 1 0 0ef8f8b9044d280e0bf5f1b0c09c9cc4
+
+@ 0 22 0 0b5ebd34e20d2eb2165fc00ac6091f2b
++         L'oggetto compagno del tipo opaco `Weight`, esportato con esso nel package
++         `phoenicia`.
++     entry .apply   un peso da un intero, limitato a 1–1000
++     entry .Thin   peso 100
++     entry .ExtraLight   peso 200
++     entry .Light   peso 300
++     entry .Regular   peso 400
++     entry .Medium   peso 500
++     entry .Semibold   peso 600
++     entry .Bold   peso 700
++     entry .ExtraBold   peso 800
++     entry .Black   peso 900
++     entry .Range   un intervallo inclusivo di pesi
++       entry #lower   il peso più leggero dell'intervallo
++       entry #upper   il peso più pesante dell'intervallo
++       entry #contains   se un peso cade nell'intervallo
++     entry .showable   mostra un peso come il suo numero: `700`
++     entry .inspectable   ispeziona un peso come `Weight(700)`
++     entry .value   il peso come intero
++     entry .to   `lower to upper`: l'intervallo inclusivo tra due pesi
++     entry .range   l'intervallo di questo solo peso
++   entry .Stretch   una larghezza come percentuale; vedi `phoenicia.Stretch`
+
+% 1 1 0 0428f2bee5250dd801e6371b89b5e1a5
+
+@ 0 3 0 1710d841929ea8b410f97e4d2dbec662
++         L'oggetto compagno del tipo opaco `Stretch`, esportato con esso nel package
++         `phoenicia`.
++     entry .apply   una larghezza da una percentuale, limitata a 50–200
+
+% 0 1 0 1dc6dc90d21fdf010aa6f9dc5f69d397
+
+@ 0 1 0 08d469758f6dd4f91daffd39af248e4f
++     entry .ExtraCondensed   62,5%
+
+% 0 1 0 0699a8c2c79ef89f0c27fd14b400230c
+
+@ 0 1 0 080b3c0ef8d044b20869433ee9bca0cd
++     entry .SemiCondensed   87,5%
+
+% 0 1 0 147375e30489178d02b8d2e2cd24749d
+
+@ 0 1 0 1f20daa655ed25b60a1ec7cecf62ff6f
++     entry .SemiExpanded   112,5%
+
+% 0 1 0 13b3369dc384fd1c1229c72b91260d22
+
+% 0 1 0 167d2d2478be0668074a24f23cee198b
+
+% 0 1 0 08cf05b3dc43292807e370548b988b71
+
+@ 0 17 0 1cd9f63e8eb7f66103b9ab3bcc973586
++     entry .widthClass   la larghezza indicata da una classe di larghezza OS/2 da 1 a 9; `Normal` per 5 o per un valore sconosciuto
++     entry .Range   un intervallo inclusivo di larghezze
++       entry #lower   la larghezza più stretta dell'intervallo
++       entry #upper   la larghezza più ampia dell'intervallo
++       entry #contains   se una larghezza cade nell'intervallo
++     entry .showable   mostra una larghezza come percentuale: `100.0%`
++     entry .inspectable   ispeziona una larghezza come `Stretch(100.0)`
++     entry .percentage   la larghezza come percentuale della larghezza normale
++     entry .to   `lower to upper`: l'intervallo inclusivo tra due larghezze
++     entry .range   l'intervallo di questa sola larghezza
++   entry .id   l'id del glifo all'interno del suo font; 0 è il glifo mancante
++   entry .font   la macro dietro `Font(face)` e `Font.of[medium](face)`
++       Legge il `Locus` della fornitura dal suo tipo; se è un letterale stringa che nomina una
++       risorsa sul classpath del compilatore, legge il font (una volta per percorso), ne ricava
++       la `Coverage` e verifica rispetto a essa i membri di tipo `Weights`, `Slanting` ed
++       `Enabled` dello stile tipografico, fermandosi con _phoenicia: the font at `path` cannot
++       set this face: …_ in caso di rifiuto. Poi si espande in `Font.paired`.

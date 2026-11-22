@@ -1,0 +1,539 @@
+orthant 2 language
+
+% 0 1 0 00d5ebf732ccc10a1086b863b99df40b
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 3 0 1424aa269bfd3d2409dd083b6a9c8ddc
++ Uma ferramenta de linha de comando na JVM paga o custo de inicialização da JVM a cada
++ invocação e perde a otimização que o compilador just-in-time tinha acumulado. Isso faz até um
++ programa rápido parecer lento no shell.
+
+@ 0 4 0 13fc7d4db1ca6df30e0cdbb8fe0329c0
++ Tornar a aplicação residente elimina o custo. A primeira invocação inicia um daemon. Cada
++ invocação seguinte é despachada para o processo em execução por um pequeno launcher nativo,
++ com seus argumentos, ambiente, diretório de trabalho, streams padrão e sinais, todos
++ encaminhados fielmente.
+
+@ 0 5 0 160bedbe27605f9f003ef0bc70cbeb2c
++ A mudança custa uma palavra. O corpo de uma
++ [aplicação de linha de comando](cli.md) envolvido em `cli`, em vez de `application`, se torna
++ um daemon. O empacotamento produz um único executável autocontido, que é o launcher nativo com
++ a aplicação dentro, e o launcher pode verificar e aplicar upgrades assinados de si mesmo.
+
+@ 0 1 0 07cc650b5e4d48be04178ee94e1511f4
++ ### Sobre aplicações em daemon
+
+@ 0 5 0 120979d5002c115719d40b6deed0bb95
++ A ideia é antiga. O Nailgun mantinha uma JVM aquecida exatamente por esse motivo. Mas são os
++ detalhes que decidem se é possível confiar nela. Cada invocação deve se comportar *exatamente*
++ como um processo novo se comportaria: com seu próprio ambiente e diretório de trabalho, sua
++ própria entrada padrão e código de saída, e com o Ctrl-C chegando à invocação certa, e não ao
++ daemon. E o daemon deve gerenciar a si mesmo: iniciar sob demanda, encerrar quando estiver
++ ocioso e sobreviver a upgrades.
+
+@ 0 6 0 020835083f5bfa531835a3e2888f529d
++ Aqui esses detalhes são tratados em um launcher nativo para cada plataforma e em um protocolo
++ sobre um [socket](sockets.md) de domínio Unix. A aplicação Scala simplesmente executa, com
++ muitas invocações ao mesmo tempo, cada uma com seu próprio contexto fiel. Um daemon que atende
++ cada invocação com o próprio ambiente dessa invocação é o
++ [contexto declarativo](../../philosophy/declarative-context.md) levado a sério: nada sobre quem
++ chama é global.
+
+@ 0 6 0 103055221a929ab21b7a4f80e1a77b03
++ O protocolo é um schema [TEL](tel.md#bintel), `ethereal-launcher`, cujo texto é
++ `Launcher.schemaText`. Toda conexão que o launcher abre começa com um documento BinTEL desse
++ schema: uma invocação com seus argumentos e ambiente, um sinal ou uma requisição de status de
++ saída. O daemon responde da mesma forma. Os dois lados verificam a assinatura do schema antes
++ de ler qualquer campo, então um launcher e um daemon construídos com contratos diferentes se
++ recusam mutuamente, em vez de se interpretarem errado.
+
+@ 0 2 0 1141991f69b3e9030b2ddac84ef2886f
++ Tudo vem do pacote `soundness`, além dos imports de que uma aplicação de linha de comando
++ precisa:
+
+% 2 1 0 1c2dad6c98610b3e07dbdad6b48078aa
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 15108db9c092389807062bc8690bee00
+
+% 0 1 0 197f1109e7f809191be0a5e6413d8524
+
+% 0 1 0 17bef8dc1edab8da1623ee0b5deff790
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 1 1 0 1226ce93b56a9ac519a2410ef2e24599
+
+@ 0 1 0 064417b8467a34330ea4796a3be668c9
++ Os exemplos desta página definem programas inteiros, então são compilados, mas não executados.
+
+@ 0 1 0 0d4d638dfa035798171d50cd654a2bd8
++ ### Uma aplicação daemon
+
+@ 0 2 0 1714a9605dc326620630835a74dd617f
++ `cli` é a contraparte em daemon de `application`. Tem o mesmo corpo e a mesma estrutura para
++ [sugestões de conclusão](cli.md#tab-completions), e executa como residente:
+
+% 2 1 0 12bf5e50d0e9a2a01cbb28d7353b0904
+
+% 0 1 0 16e3cb87267665ba0c4fcb222abd3350
+
+% 0 1 0 177455db41ec14d00d74d6ef4179e8b2
+
+% 1 1 0 1e5bea3024eb985715dc05d3303f01ca
+
+% 0 1 0 1bc2f1f9e9b0230219be99110aaa0962
+
+% 1 1 0 05d6926efcb633f403b1b2cb816abbbe
+
+% 2 1 0 105d13fbaf28a3450a16efff5146e443
+
+@ 0 3 0 1600648669beffb202b74e607609cb19
++ `cli` não recebe argumentos. O launcher os encaminha, com o ambiente, o diretório de trabalho
++ e os streams padrão do shell que o invocou, e o corpo os vê pelos mesmos `arguments`, `Out` e
++ `Exit` de uma aplicação comum.
+
+@ 0 3 0 02d1d04ccd11eaed0943e0622ee6b405
++ A primeira execução inicia o daemon. As execuções seguintes se conectam a ele e retornam na
++ velocidade de uma ferramenta nativa. A conclusão com tab é a que mais ganha: cada requisição de
++ sugestões é uma invocação, e um processo residente responde em milissegundos.
+
+@ 0 1 0 1429385f03aa262e1533cc9289f06fef
++ #### Saída
+
+@ 0 4 0 1927eac06d1d76e70a4985d411d6c1cd
++ A saída deve passar por `Out` e `Err`. O próprio `println` do Scala escreve no `System.out`
++ global da JVM, que pertence ao processo do *daemon*, não a algum cliente, então o que ele
++ imprime não chega a nenhum usuário e normalmente se perde. `Out` e `Err` resolvem o
++ [`Stdio`](streams.md#standard-streams) da invocação atual, que é o do cliente.
+
+@ 0 4 0 0d41bdf3f7a12c46009048fc979c181a
++ Quando o leitor desse stream vai embora, como em `mytool | head -1` depois que `head` termina,
++ o launcher avisa. A próxima escrita da invocação no stream lança um `Egress.Error`, que encerra
++ a invocação com status 141, como `SIGPIPE` encerraria um processo que escreve em um pipe.
+
+@ 0 5 0 192c6b38ebe43f7c1198d30cfd0cee65
++ Código que não pode ser alterado, como uma biblioteca que imprime em `System.out`, é
++ redirecionado com `Stdio.divert`. O desvio pertence a uma *thread*, não à JVM. Ele acompanha a
++ thread em que é feito, as threads iniciadas sob ela e toda tarefa criada dentro dele, então um
++ daemon pode desviar a saída de vários clientes ao mesmo tempo, sem que ela se cruze.
+
+@ 0 4 0 179fa80b7171a82d161358302c345c1a
++ Os argumentos e os valores das variáveis de ambiente chegam como texto. Uma sequência de bytes
++ em qualquer um deles que não seja UTF-8 válido é entregue com U+FFFD em seu lugar. Essa é a
++ substituição que a própria JVM faz para seus argumentos, então uma aplicação vê o que teria
++ visto se fosse executada diretamente.
+
+@ 0 1 0 051ba9aa00d326cf1a43ca0d2d19c8a7
++ ### O que a invocação sabe sobre seu cliente
+
+@ 0 3 0 020395c80771926b07069434138bebe9
++ O daemon mantém um socket, não o processo do cliente, então tudo o que ele sabe sobre a
++ invocação é o que o launcher lhe contou. O `resident` da invocação, um `Resident`, é seu handle
++ sobre o daemon, e é onde esse conhecimento é lido:
+
+% 2 1 0 1163e7a1d9266f800381a6d9f019ef95
+
+@ 0 7 0 1e98569599565cda109c8f254e2dfe7a
++ column  Membro
++ column  É
++ row  `resident.cliInput`, `cliOutput`, `cliError`  se cada stream padrão é um `Terminus.Terminal` ou um `Terminus.Pipe`
++ row  `resident.invokedAs`  o nome pelo qual o executável foi invocado: `argv[0]` tal como quem chama o forneceu
++ row  `resident.umask`  a máscara de criação de arquivos da invocação
++ row  `resident.windowSize`  o tamanho do terminal do cliente, medido quando a invocação começou e a cada redimensionamento
++ row  `resident.buildId`  o identificador do build em execução
+
+% 1 1 0 04d4f60b46e3af231a13c045af4cb5a8
+
+@ 0 2 0 0f3a3a5e0d5834bc022c1eae2711092f
++ Um único executável instalado sob vários nomes, por links simbólicos, pode portanto despachar
++ por `invokedAs`, enquanto todos os aliases compartilham um único daemon aquecido:
+
+% 2 1 0 1592cca5f895a50800f56996af41a96b
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 09891fe778e9239819654084fbcc0878
+
+% 1 1 0 086f666d58746d9315de06eb3ebf7cc6
+
+% 0 1 0 16d76a08224e23f00710293ff7648662
+
+% 0 1 0 09d3262899755b8205703953d588e195
+
+% 0 1 0 110bc44b9c158b8503f8e7481dd9480e
+
+% 1 1 0 0f28b00d993e789814f3fb8607bda9f7
+
+% 2 1 0 1b637d5fa8417a5a1270f1d4d1ba1369
+
+@ 0 3 0 17a40d490a4e6cb11406eb6d51cc8fa0
++ O [sistema de arquivos](filesystem.md#creation-masks) aplica `umask` a tudo o que a invocação
++ cria. O `Termcap` da invocação lê a mesma medida que `windowSize`, então
++ [tabelas](tables.md) e texto com quebra de linha se ajustam ao terminal como ele está agora.
+
+@ 0 1 0 1a9aaebefdb82b150d52b981ae0ba644
++ ### Sinais e encerramento
+
+@ 0 5 0 071aaa4546bc5ff9161ce28c97de55ec
++ Uma invocação faz trap dos sinais que lhe interessam, e a resposta chega ao código dessa
++ invocação, não ao processo compartilhado. Um trap vê um `Signal`: a própria interrupção e o que
++ quer que o launcher tenha anexado a ela. Isso é o novo tamanho do terminal, com `WINCH` e
++ `CONT`. No Windows, é o tempo que o sistema concede após um evento de fechamento, logoff ou
++ desligamento, antes de encerrar o cliente de qualquer forma:
+
+% 2 1 0 0cd7ac797d1f4909050ad519d6c6f6f5
+
+% 0 1 0 09c819007bf9c03a0f973fd7483a4333
+
+% 0 1 0 1a52bfa7829b28661278f2ec7ea8ef5f
+
+% 1 1 0 1db63a21f8ce6341193d218be87e3ff9
+
+% 0 1 0 0b84238fd1f8ec1a0099250c74469b3c
+
+% 0 1 0 108d3493474efe4f0a6ac6465f7bca65
+
+% 0 1 0 1c061aa14c1d5fd0132a4f32aa04a294
+
+% 1 1 0 0266af18b09fa2e41561a8621949455c
+
+% 0 1 0 1888ce4d20d9af9314cc5c093a44b968
+
+% 1 1 0 19a76d285daed8501fbb9374a466afff
+
+% 0 1 0 1345a6681eaa2c0f1d33564dc7ffea1f
+
+% 1 1 0 047bf575af39cb2113b7e4ee9245e555
+
+% 0 1 0 1b87eb0f8d915ff414f9eefdc58295dc
+
+% 1 1 0 02d1275a2baad30610355401f580d883
+
+@ 0 2 0 1f350e29348228981c3db7576780aa22
++ O daemon se aposenta após seis horas ocioso, ou quando seus arquivos de estado são removidos,
++ ou sob demanda, pelo subcomando embutido `'{admin}'`:
+
+% 2 1 0 1e93a13447fea62b0e3299b65e37695d
+
+@ 0 5 0 13843f045c81746f13df52935b641bde
++ column  Subcomando
++ column  Efeito
++ row  `pid`  informa o pid do daemon
++ row  `kill`  encerra o daemon imediatamente
++ row  `shutdown`  não atende mais nenhuma invocação, deixa as que estão em andamento terminarem e então sai
+
+% 1 1 0 0c259aea7fecf0d00d6fe56be45ab5a8
+
+@ 0 3 0 102cc096e72a7f661991870a4edb6acd
++ Uma JVM aquecida mantida para um comando raramente executado pode portanto ser recuperada, sem
++ precisar descobrir seu pid. Um executável que foi reconstruído desloca seu daemon da mesma
++ forma que `shutdown`.
+
+@ 0 1 0 0fd22315f46694590b710113f15e805a
++ ### Pedindo um terminal em modo canônico
+
+@ 0 5 0 01f7f3e8033c5e121f53001530a86ba2
++ O launcher coloca o terminal em modo raw antes de se conectar, para que os pressionamentos de
++ tecla possam ser encaminhados a uma [sessão de terminal](terminal.md#keyboard-input)
++ interativa. Isso é errado para um comando que só quer uma linha de entrada. Sem a ajuda do
++ driver do terminal, não há eco, e o Backspace chega como um byte literal dentro da linha.
++ `cooked` pede ao launcher o modo canônico durante um bloco, e o modo raw é restaurado depois:
+
+% 2 1 0 1f2082da833754c21851d25ff3029a98
+
+% 0 1 0 12b0f684179125e00e19f87dfe926dd6
+
+% 1 1 0 0210de6ac9ce62d70d69db6393455e17
+
+% 0 1 0 100b18fc2341beb610cd538f0a57ba1f
+
+% 0 1 0 077c01e6d1c45f7c10cacc754e6adf93
+
+% 0 1 0 06355b4bd8ee407517fc9e4bf6eea3a3
+
+% 0 1 0 14bde17e88dddbe4132b864cc4e016d0
+
+% 1 1 0 060216e1ae7553d01c3964e1fc2c37f3
+
+% 2 1 0 02e27f50a1e78ede1bd3f06c4f61f6f9
+
+@ 0 2 0 1f43f32033b6c16b09e8ef2ed6fc7d10
++ O eco e a edição de linha passam então a vir do próprio driver do terminal. Um launcher sem
++ esse canal, como um pipe ou um launcher mais antigo, deixa a requisição expirar sem causar dano.
+
+@ 0 1 0 1d6423ce57fc1c25045ba3303961c849
++ ### O barramento de mensagens
+
+@ 0 4 0 1a3b7c22ac020d41136cc03c51756755
++ Invocações concorrentes de um mesmo daemon compartilham um *barramento* tipado. Uma invocação
++ transmite uma mensagem, e as outras observam o stream. É assim que se expressa “o comando de
++ observação em execução percebe que outra invocação acabou de mudar a configuração”. O tipo da
++ mensagem é o argumento de tipo de `cli`, então todas as invocações do daemon concordam sobre o
++ que pode ser enviado:
+
+% 2 1 0 0904e4049803bf7b0f0f45a2b9f8c11b
+
+% 0 1 0 1a7b46b8dbf8deaf1b5464092ffd571d
+
+% 0 1 0 1d67a6ae22ffb73017ff431124bc44f7
+
+% 0 1 0 1c6e213df81464421f86ff9c27f0ebe4
+
+% 1 1 0 1118cc907504e1640b447643b8280ebf
+
+% 0 1 0 0cc631478eb28fd81a42d94da78079c3
+
+% 0 1 0 004f9bdfca7b30c01b6d28223fcca7b1
+
+% 0 1 0 0568bca44fa769b91eb25f9c8687b302
+
+% 1 1 0 1a6c7e5cf73c062915e10f73ee7644ee
+
+% 2 1 0 087a88e1563b65c40e774e46cf79023e
+
+@ 0 1 0 1f484fdbfb10ecc90199bfab6a825d4a
++ ### Empacotamento
+
+@ 0 4 0 103faa5979e94c2e0db9ed2ca61ea662
++ O distribuível é montado pelo builder `xek`. Ele é publicado, com os launchers, a partir de
++ [propensive/xek](https://github.com/propensive/xek), e é instalado com
++ `curl -fsSL https://propensive.dev/xek | sh`. Ele junta o launcher nativo da plataforma, um
++ pequeno registro de configuração e o JAR da aplicação em um único arquivo executável:
+
+% 2 1 0 0d4aa2192a74d0891af19c09ee284db6
+
+% 0 1 0 1e8c8ac910712b97155a9481f20159e2
+
+% 1 1 0 0eb4b6f3599b8d5010eb0cac55f26ff0
+
+@ 0 5 0 1fe3e98fafda8e1d116e5cfe47a2d21a
++ Isso escreve `mytool`, para a plataforma em que `xek` executa.
++ `xek build -p linux-x64 -p windows-x64 mytool.jar` constrói para outras plataformas.
++ `xek build --polyglot mytool.jar` constrói um único arquivo para todas elas, que executa em
++ `sh`, e no PowerShell e no `cmd.exe` depois de renomeado, e descompacta o launcher certo onde
++ executa. As flags que esta página usa são:
+
+% 2 1 0 04b5ca65b5fcea270555657256405d02
+
+@ 0 1 0 1ac339ac65b65f410da295c54b18b83c
++ column  Comando
+
+% 0 1 0 1c23cee35c2f4c40160c0560d2218823
+
+@ 0 12 0 00f47ae4cec5c0c21a118215a959960c
++ column  Efeito
++ row  `xek build`  `-p` *plataforma*  constrói para essa plataforma; pode ser repetida
++ row  `xek build`  `--polyglot`  constrói um único arquivo para todas as plataformas
++ row  `xek build`  `--build-id` *n*  embute o identificador de build, que deve aumentar de uma versão para a seguinte
++ row  `xek build`  `--public-key` *arquivo*  embute a chave de release
++ row  `xek build`  `--recovery-key` *arquivo*  embute a chave de recuperação
++ row  `xek build`  `--app-id` *id*  embute o identificador da aplicação
++ row  `xek keygen`  `--out` *prefixo*  escreve `<prefix>.seed` e `<prefix>.pub`
++ row  `xek sign`  `--key` *semente*  assina com essa chave
++ row  `xek sign`  `--in` *arquivo*, `--out` *arquivo*  nomeia o binário a assinar e o resultado assinado
++ row  `xek sign`  `--allow-downgrade`  permite que o candidato substitua um build mais recente
++ row  `xek sign`  `--foreign-key`  permite assinar com uma chave que o binário não contém
+
+% 1 1 0 1b25b4d814fde1c50164e98e5c2397cd
+
+@ 0 1 0 1d0b84be89601ddd15e93db913cc4e43
++ `xek --help` lista o resto.
+
+@ 0 4 0 12693035dd53f7b70ec743694d27358d
++ O launcher encontra ou baixa uma JVM adequada e inicia o daemon quando nenhum está em execução.
++ Quando uma chave pública foi embutida, ele aceita apenas binários assinados quando a aplicação
++ [faz upgrade de si mesma](https://en.wikipedia.org/wiki/Digital_signature) no lugar.
++ [Empacotamento](packaging.md) cobre as outras formas de distribuível.
+
+@ 0 1 0 1525a84a63be13ca172a5beacb9690f1
++ ### Assinando uma release
+
+@ 0 4 0 054c5455d70cb253008ddde5fd7c5e77
++ Uma aplicação pode ser distribuída com uma chave pública e um identificador de aplicação
++ embutidos. O launcher os usa para verificar qualquer candidato a upgrade, antes de colocá-lo
++ no lugar. A verificação acontece no launcher, antes de a JVM iniciar, então nenhum código Scala
++ da aplicação em execução fica na fronteira de confiança.
+
+@ 0 2 0 16c9b93c2805579b16ab644e4fd11ec4
++ `xek` também assina releases. Seus subcomandos de assinatura precisam do Java 24 ou posterior.
++ Ele gera um par de chaves:
+
+% 2 1 0 1296a2ae9d314cc40d5e3098ca5d80bc
+
+% 0 1 0 18d0e6ad5e23f7f50c33002f7139d099
+
+% 0 1 0 145856911563db8f01664f856770055c
+
+% 1 1 0 0d79ab27e641a0110963fca7916d1831
+
+@ 0 6 0 0bfadc9e40e9fce00c97078f59a73864
++ Cada comando escreve uma semente para uma chave de assinatura, de 32 bytes, como
++ `<prefix>.seed`, e uma chave pública ML-DSA-44, de 1312 bytes, como `<prefix>.pub`. **As
++ sementes devem ficar offline**, e a semente de recuperação mais do que todas. Qualquer um que
++ tenha a semente de release pode distribuir um binário que os launchers dos usuários vão aceitar.
++ A chave de recuperação existe para que perder ou vazar a semente de release não deixe todas as
++ instalações desamparadas. [Criptografia](cryptography.md#signing) descreve as assinaturas
++ ML-DSA.
+
+@ 0 2 0 1ef21b79b630921f1ee162111c9b8209
++ Cada release é então construída e assinada, em dois passos. O build embute um identificador de
++ build, as duas chaves públicas e o identificador da aplicação:
+
+% 2 1 0 112635e9b8ea8c970a219494fd84f04a
+
+% 0 1 0 19c05dfd23bc776418d9e16d61939324
+
+% 0 1 0 168b0d9ee202cb9102262d7e674b94ea
+
+% 0 1 0 10283c7f3785962f04b5592ab902da6e
+
+% 1 1 0 1c2c3c2068d244b30baad0542ba310bc
+
+@ 0 5 0 03ac6f801004055e075bfd888909c9c9
++ `--build-id` é um número de 64 bits que deve aumentar de uma release para a seguinte. O
++ launcher rejeita um candidato que não seja mais novo que ele mesmo. Um candidato construído
++ para outro identificador de aplicação é rejeitado, mesmo quando assinado com a mesma chave.
++ Omitir `--public-key` e `--app-id` produz um binário cujo launcher rejeita *todo* upgrade, que
++ é o padrão certo para um build local, onde o caminho de upgrade nunca é exercitado.
+
+@ 0 1 0 08e4693a3647c4ce12bf13d8113df9dd
++ A assinatura então produz o arquivo a distribuir:
+
+% 2 1 0 17fe5832a96c533f166350b73fda4cf5
+
+% 0 1 0 0772bfecb4c1ca0a0892604265c06727
+
+% 1 1 0 00defff2b7f8759f169a1df45bd9518d
+
+@ 0 1 0 077e714f478e77180ca91dbf98e96e8d
++ Essa saída é ao mesmo tempo um executável válido e um candidato válido a upgrade.
+
+@ 0 1 0 121ead2e26eb6d9d14db13398ecd1a95
++ #### Preparando um upgrade
+
+@ 0 5 0 199eada87845f8210aab72ab2f428d17
++ A aplicação prepara um candidato passando a `Upgrade.stage` qualquer origem de bytes: um
++ arquivo, uma [resposta HTTP](http-client.md), um [stream](streams.md). Ela escreve o candidato
++ como `<name>/.pending`, no diretório de dados da aplicação, e retorna. O launcher o verifica no
++ início da próxima invocação, coloca-o no lugar e inicia um novo daemon no lugar do antigo, então
++ nada é interrompido:
+
+% 2 1 0 0196e90a99f48e3208c8869ce90b0ca7
+
+% 3 1 0 0faf882b7a735ba409295d61e0481f68
+
+% 4 1 0 1007e65334c6b1bd1a82a04f94d5cd4a
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 16ad754e62114ed9009b72f25c43cc63
+
+% 0 1 0 070272e2a8f2243b08d36ae331c5156a
+
+% 0 1 0 10d8484cf76983e11a5ca703b33a2332
+
+% 0 1 0 07636102ae11429a055d4f94241d6cd3
+
+% 0 1 0 11872135f816a230160443d2c5ceec47
+
+% 0 1 0 16588fc9a68eeeb01b715e83f58bbc79
+
+% 1 1 0 164f69d3f371ba1207594ae5e1c8d98f
+
+@ 0 3 0 0b6ebd4232f8a3820e02ddf9f20fe775
++ `Upgrade.enabled` é falso em um build sem chave, ou sem identificador de aplicação, cujo
++ launcher recusaria qualquer candidato. `resident.buildId` é o identificador do build em
++ execução, para comparar com o de uma release oferecida.
+
+@ 0 3 0 13e7f30284322acf0ab20e4c246a29d7
++ O launcher registra o que fez com um candidato, e `Upgrade.outcome` lê esse registro de volta:
++ o `result`, os identificadores de build `candidate` e `previous`, e `when` aconteceu. O
++ resultado é um destes:
+
+% 2 1 0 15009abff53e603d0ec25bef84047131
+
+@ 0 9 0 173efff5783f50f710016581ddd99150
++ column  Resultado
++ column  Significado
++ row  `Applied`  o upgrade foi aplicado
++ row  `Disabled`  o executável em execução não aceita upgrades
++ row  `NoRecord`  o candidato não é um executável XEK
++ row  `WrongApplication`  o candidato foi construído para outra aplicação
++ row  `BadSignature`  a assinatura do candidato não é verificada
++ row  `NotNewer`  o candidato não é mais novo que o executável em execução
++ row  `SwapFailed`  o candidato não pôde ser colocado no lugar
+
+% 1 1 0 124e63446d835c6111fe8717a67fba1a
+
+@ 0 1 0 128807ab0bdedc7d1ab461b5dfceffee
++ `Upgrade.acknowledge()` limpa o registro, para que cada resultado seja informado uma única vez:
+
+% 2 1 0 1971aced541562b70444d4ce1855ad52
+
+% 3 1 0 01167bf606b4ce3a050a00ec859e3dce
+
+% 4 1 0 12cc097c5994e82d197a2b9abab8e739
+
+% 0 1 0 07b8413604e17c9d11718112cd2ffb53
+
+% 0 1 0 02e243825bd43c9e0665d0e4f2d2e23c
+
+% 0 1 0 1e2f81c51831fa9c033ca6ae08c8e5a0
+
+% 0 1 0 1252b81c58c7682c03acfefe80d57dff
+
+% 1 1 0 181d1c7909426a031f7c15639d29c334
+
+@ 0 1 0 1c64121c353a8dd118b7b5c6a08dd382
++ #### O que a assinatura cobre
+
+@ 0 1 0 0647a0e73e45efb8090d3351c6a3df7e
++ O que a assinatura cobre é escolhido para que cada uma de suas partes impeça um ataque
++ específico:
+
+% 2 1 0 0e34f32b37ebd58b137103bb48a63c88
+
+@ 0 8 0 083be6f8b9c380791c52e10b31e5bde6
++ column  Parte assinada
++ column  Impede
++ row  o próprio código do launcher  adulterar o launcher
++ row  o JAR incluído  adulterar a aplicação
++ row  o identificador de build  reaplicar uma release mais antiga, assinada legitimamente
++ row  o identificador da aplicação  instalar a release de outra aplicação em seu lugar
++ row  o byte de flag que permite um downgrade  ativá-lo depois do fato
++ row  as próprias chaves  substituir a chave de release por outra em um binário de resto legítimo
+
+% 1 1 0 0d012ddb7386cd290f7928533e30d9b9
+
+@ 0 2 0 1c192c2c9b8c494b183345dc82e3c3a1
++ Um rollback deliberado, como distribuir a 42 por cima de uma 43 defeituosa, é assinado com
++ `--allow-downgrade`, que define essa flag dentro do payload assinado.
+
+@ 0 6 0 15d6875064138f01090d461a2faa4ac5
++ As chaves contra as quais um candidato é verificado são sempre as do binário *em execução*,
++ então a rotação de chaves funciona como uma cadeia. Uma release assinada com a chave antiga pode
++ levar uma nova chave como sua `--public-key`, e a partir daí as releases são assinadas com a
++ nova. `xek sign` exige `--foreign-key` para assinar com uma chave que o binário não contém, já
++ que, fora isso, quase sempre é um engano. Uma release assinada com a chave de recuperação também
++ é aceita e pode substituir qualquer uma das chaves.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 6 0 0fa2a2d1a81ca1a402377b31497d51b9
++ - [Aplicações de linha de comando](cli.md) descreve o corpo que `cli` executa.
++ - [Ambiente](environment.md#overriding-for-a-block) explica como cada invocação vê seu próprio
++   ambiente.
++ - [Concorrência](concurrency.md) executa as invocações lado a lado.
++ - [Empacotamento](packaging.md) constrói outros tipos de distribuível.
++ - [Servidor HTTP](http-server.md), [LSP](lsp.md), [processos](processes.md) e [descoberta de serviços](service-discovery.md) descrevem o que um daemon serve, inicia e anuncia.

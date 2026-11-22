@@ -1,0 +1,15 @@
+orthant 2 release
+
+@ 0 1 0 0714f8c1327883a41ca25402ff7727d3
++   entry .TemperatureGradient   distance⁻¹·temperature
++   entry .temperatureGradient   `temperature gradient`
+
+@ 0 1 0 193a53aee3af59401d86f02648042948
++ entry .Kayser   the kayser, a wavenumber of one per centimetre, a `MetricUnit`
+
+@ 0 3 0 167321f51918dc03176580a2fd109273
++       86400 seconds. Its unit value is `SolarDay`.
++   entry .designation   the symbol `d`
+
+@ 0 1 0 131a5c19754141041540d7dd554d9705
++   entry .GravitationalConstant   G, 6.674×10⁻¹¹ N·m²·kg⁻²

@@ -1,0 +1,622 @@
+orthant 2 language
+
+% 0 1 0 16f943528d924ef614569aed5c605b3a
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 5 0 090cf2523ccfa5401692495e227ee3fc
++ [CSV](https://en.wikipedia.org/wiki/Comma-separated_values), su primo separado por
++ tabuladores TSV y otros formatos delimitados se leen y se escriben de una única manera. El texto
++ se analiza en un `Sheet`, que es una serie de filas. Cada fila, un `Dsv`, se decodifica en una
++ case class cuyos campos toman las columnas por turno. Una case class se codifica de vuelta en
++ una fila de la misma manera. El codificador y el decodificador se [derivan][derivación] del
++ tipo, así que no hay nada que escribir a mano.
+
+@ 0 4 0 06269dbdafd365b60df63a7e7de472c2
++ El delimitador, el entrecomillado y la presencia de una fila de cabecera los fija un formato,
++ elegido en el ámbito, de modo que los mismos datos se leen como CSV o como TSV cambiando una
++ importación. Las case classes anidadas se extienden por varias columnas, se admiten campos
++ opcionales, y una columna puede direccionarse por su cabecera en lugar de por su posición.
+
+@ 0 1 0 19a95ca82805771c1edeb1f6a2076039
++ ### Sobre los datos delimitados
+
+@ 0 1 0 1d18a8b03908081b01386e6cb65d5b9d
++ CSV parece trivial, y no lo es:
+
+@ 0 4 0 0e149e8fc78170d30be19aecb4f9519e
++ - Un campo puede contener el delimitador, si está entrecomillado.
++ - Unas comillas dentro de un campo entrecomillado se duplican.
++ - Un fichero puede empezar o no con una fila de cabecera.
++ - Un fichero «CSV» tiene tantas probabilidades de estar separado por tabuladores o por punto y
++   coma como por comas.
+
+@ 0 2 0 03934205491ab33f0e25631518835d50
++ El código que parte por las comas no resuelve nada de esto. Y la correspondencia entre las
++ columnas y los tipos propios de un programa suele escribirse a mano, y mantenerse sincronizada a
++ base de disciplina.
+
+@ 0 5 0 0e378b1a0724bfdf17ad85e0a0921e24
++ Aquí esa correspondencia se deriva de la case class en la que deben convertirse los datos. El
++ análisis respeta el entrecomillado y el escapado. El formato es un valor explícito, no una
++ suposición. Decodificar una fila en un tipo, o un tipo en una fila, es una única operación
++ derivada, mediante la misma derivación que todos los demás formatos, de modo que la forma de los
++ datos se comprueba una sola vez, como prefiere la
++ [corrección](../../philosophy/correctness.md).
+
+@ 0 2 0 1c75a5a8816e40eb00b3f31238b50dac
++ Todo procede del paquete `soundness`. Hay en el ámbito un formato y una [estrategia] de errores,
++ y la última importación permite que los ejemplos impriman sus resultados:
+
+% 2 1 0 0f8dc632a664d4731acc384146b8c787
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 191938421d588de210e90bb5d023d320
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0187392ffc103acc14c597749a2c60b7
++ ### Lectura de filas
+
+@ 0 2 0 04dbd4f4f2eddea212744c0db241d12d
++ `read[Sheet]` analiza texto en un `Sheet`. Sus `rows` son valores `Dsv`, uno por cada línea,
++ partidos en celdas según el formato:
+
+% 2 1 0 151bf2467938cc2e067fdeda91f6cbd3
+
+% 3 1 0 1a68e776b9a0410602b0983f98ac87e0
+
+% 4 1 0 02f965b359c5f3d11284d4b9216f07e6
+
+% 0 1 0 1794f0b61af2d47707268eb6293b34d7
+
+% 1 1 0 171aa9c4059e049b0a058b674a85c0b6
+
+@ 0 1 0 083c741623b90f2619ca2d1580ea631a
++ El delimitador dentro de una celda entrecomillada forma parte de la celda, así que esta fila
++ tiene tres celdas, no cuatro:
+
+% 2 1 0 0b31e140849946a3197e0b8fe6ca75d5
+
+% 3 1 0 168f31867f7cacd903f050c509044f71
+
+% 4 1 0 1189efdac30157e30d11e1da2827687c
+
+% 0 1 0 0a8f559917582d8003bbf73b0e1a8d36
+
+% 1 1 0 07df6a1844a4308e12a9c126e58b2d70
+
+@ 0 5 0 002aec2bbf3ba9860dee207619f42f41
++ Un `Sheet` guarda todas sus filas en memoria, en un array, para que puedan reproducirse,
++ indexarse y compararse a bajo coste. Un fichero demasiado grande para guardarlo no necesita
++ ninguna hoja. `rows` sobre un [flujo](streams.md) de caracteres da las filas de una en una,
++ analizadas por el mismo lector, de modo que una celda entrecomillada que abarca la frontera
++ entre fragmentos, o entre líneas, se trata exactamente igual que en una hoja:
+
+% 2 1 0 1a0125917c0a28f31e84b38024f8f3f8
+
+% 0 1 0 1f68a9968f590330194d55712fefaeff
+
+% 0 1 0 0a6a401cf5c3b1af1e3cdd6f09ad3e4a
+
+% 1 1 0 07fbb8a1943149d60aea915065e9da72
+
+@ 0 1 0 1a736aaff562091a067accd98cc981cc
++ ### Decodificación en una case class
+
+@ 0 2 0 1bae19cbd6a8676712cf27383dabf501
++ `as` decodifica una fila en una case class, tomando las celdas en orden. Una case class anidada
++ simplemente consume tantas columnas como campos tiene:
+
+% 2 1 0 1365686368a8551c0e8fcce92fa89442
+
+% 0 1 0 143215878e338d1506428a80c7ded090
+
+% 0 1 0 08a9e2697ed575071afa517a48dcddb2
+
+% 0 1 0 0fc3d74f45cc42450ae6d2bda9f2ae67
+
+% 1 1 0 0c7f08b560e326e9000bd9f409465d3c
+
+% 3 1 0 13680a34428eec210a96b57dc78d75b3
+
+% 4 1 0 1a811f7d5b32b0c30b3cdc3867c3b231
+
+% 5 1 0 14eb3af1657d4b9800cc77f7e1366d0c
+
+% 0 1 0 09b7c76c0813865513b9fea18be1216d
+
+% 1 1 0 18c8ff9044a4f94d02870a1d216caadb
+
+@ 0 2 0 07f0c7a3274a4cee0b8f0a7cdd6c8b32
++ `rows(Prim)` da una fila [opcional](optional-values.md), ya que la hoja puede estar vacía, así que
++ `let` decodifica la fila si la hay.
+
+@ 0 1 0 0d6416b20fab507d1881481f737e6fde
++ Leer directamente en un tipo combina los dos pasos, y decodifica un único registro a partir de
++ texto:
+
+% 2 1 0 16a140895e3ad6ed1f48ec929a6e928a
+
+% 3 1 0 06742af2bafbc9f90058ec30d03da14a
+
+% 4 1 0 086b785ed6706c9d1927757161cd69e2
+
+% 0 1 0 06c46a7452df822c131a926e4a4954cc
+
+% 1 1 0 18c161f4c9b286a0166d176d668e56bb
+
+@ 0 1 0 188f0bb1d996be3413f1af4494020c0c
++ Una celda que no puede decodificarse como el tipo de su campo es un error:
+
+% 2 1 0 18b6995bdac43db10d4d75045d5ddf9c
+
+% 3 1 0 145bc5654e9f716810b001c33947bed0
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 03ebc4f59728c8a300bb56e1356046e9
+
+% 1 1 0 0a3f4c0b90048fa502a6c7dab78362a2
+
+@ 0 1 0 196677f70196bdf61933b52d135abadd
++ ### Codificación
+
+@ 0 2 0 1c71fc2de9cd4f9013b487f3755fc0bd
++ `dsv` codifica una case class como una fila, y una secuencia de ellas como un `Sheet`. `show`
++ escribe el resultado como texto delimitado:
+
+% 2 1 0 046fad25e9bced340435e52747129d60
+
+% 3 1 0 06e2e95b1f3d4d0217ff6a6372667a5c
+
+% 4 1 0 147941f486ac08fc02ee3a49f17559a3
+
+% 0 1 0 179e23ef6607370e06bc7028a78406a4
+
+% 0 1 0 1988603298ae7a8a0179c123db0dad6b
+
+% 1 1 0 15db6c794cb054551f089c0c31832659
+
+@ 0 2 0 16e74e9ec287bbf51400cd0f9eb1a05a
++ `in[Text over Dsv]` codifica un valor como un único registro en un solo paso, e
++ `in[Data over Dsv]` escribe el mismo texto como bytes, en la `Codepage` del ámbito:
+
+% 2 1 0 09b5d447f3f8658c06ad84022928c96f
+
+% 0 1 0 1f5baa85984b2d43128af2fce696cae1
+
+% 1 1 0 1e63d949dd8d57b508c7d9e6c84da37b
+
+% 3 1 0 1427f3baf2a2f6b117b6a145a0ca3ffa
+
+% 4 1 0 131d525f0a624de609b1449564703bcc
+
+% 5 1 0 18cb1f8f07c1443b04ab7f1c0686b74e
+
+% 0 1 0 120ddd7744c70050033420e57cb2ceed
+
+% 1 1 0 000bc63f0e587d180cc100a3c784e7a0
+
+@ 0 2 0 1e26a2789dc51ed81119aca83b939b54
++ Una celda solo se entrecomilla cuando contiene el delimitador, unas comillas o un salto de línea,
++ y las comillas dentro de una celda se duplican:
+
+% 2 1 0 0cc03f8136cdf556176781e8622a799b
+
+% 0 1 0 0baed302752a5b6517ab3c30b37e9ff9
+
+% 1 1 0 1e13dc78a82d8b800ffe9741346062af
+
+% 3 1 0 0fe058c3a238098f0f706fe9416dd1f1
+
+% 4 1 0 17fae31d218da80e1b2dccef920949a1
+
+% 5 1 0 08cb440ff57aa4a40a7a8680991c42cd
+
+% 0 1 0 0a68e19b00c8f80514149bbbf76631b8
+
+% 1 1 0 0ff0bae7c655094b14f3c702f69da48b
+
+@ 0 1 0 0325d804222f183917eb978379da2555
++ ### Cabeceras
+
+@ 0 2 0 1c49979a1f7980201fb0055755ef7e14
++ Los datos suelen empezar con una fila de cabecera. Un formato que la espera hace corresponder
++ cada columna con el campo del mismo nombre, así que el orden de las columnas no tiene por qué
++ coincidir con el orden de los campos:
+
+% 2 1 0 04e04bcb708401360fa1074ad02f9048
+
+% 3 1 0 0b1763095853726306f879b56d548e7d
+
+% 4 1 0 06cf6d68385e1fe61593643926fa9aae
+
+% 5 1 0 1add3892ce8d8e880ed2e22a029b5cc4
+
+% 1 1 0 030b8f802cdc77db016db602a4f3b219
+
+% 0 1 0 07569edf6486822207edf74c263708c7
+
+% 1 1 0 17cc6c64104da69f0f983be72eb32809
+
+@ 0 1 0 11f24a6ad67b7fd71071c354be7e252f
++ ### Formatos
+
+@ 0 2 0 0c33e3c729a74dd804a6760a4ee6f7d2
++ El formato del ámbito decide el delimitador y el entrecomillado. Cada delimitador tiene un
++ formato simple y una variante con cabecera, en el paquete `dsvFormats`, y todos entrecomillan
++ con `"`:
+
+% 2 1 0 137e61f7223724c11b543cd81262326e
+
+@ 0 6 0 12f72545c40f35ac051d9a360c12783a
++ column  Formato
++ column  Con cabecera
++ column  Delimitador
++ row  `csvFormat`  `csvWithHeaderFormat`  coma
++ row  `tsvFormat`  `tsvWithHeaderFormat`  tabulador
++ row  `ssvFormat`  `ssvWithHeaderFormat`  espacio
+
+% 1 1 0 03e078133b1a50f0033e058a46b24dc6
+
+@ 0 1 0 1a8070e0280a0da21da65d8b144fe1b5
++ Importar otro formato en un ámbito interior cambia el delimitador:
+
+% 2 1 0 11e4a20974cafb91058d1e3b9d4b20e0
+
+% 3 1 0 055bcd57f7dfd44502c0c33e780d7c4a
+
+% 4 1 0 1368c42f0bdc0335083593a3e71eb59c
+
+% 5 1 0 0a3b91c29fefdf9a0a5c74cfb969fca0
+
+% 0 1 0 014a841ddc6b1ac6122463b96f916714
+
+% 0 1 0 090cb315c3b779731c11d0c9486a42cd
+
+% 1 1 0 094a094e4dfb6bbe0d7ee6958cfe22a3
+
+@ 0 1 0 03d12966e37c78c90699277b5331c655
++ ### Extensión en columnas
+
+@ 0 4 0 1a88e2393953788e1f0c0a1dc903f5f5
++ Una case class anidada ocupa tantas columnas como campos tiene. Ese número se calcula a partir
++ del tipo, no se descubre durante el análisis. La *extensión* de cada campo dice cuántas columnas
++ consume, de modo que un decodificador sabe dónde termina un campo y empieza el siguiente, incluso
++ cuando hay varios anidados. `Person` se extiende por cuatro columnas en total:
+
+% 2 1 0 0b694c98bb4b28b1045507443be27762
+
+% 3 1 0 0346d4990fa52731144272e4805508bd
+
+% 4 1 0 195fe728ae9e4d6e13b6ebfa29fbf959
+
+% 0 1 0 0ef2753895caca4603e6729752cb8245
+
+% 1 1 0 19ce510101c6e5df13ffc673e2c626ed
+
+@ 0 4 0 1c82aef9ed858e06119217029f3db17f
++ Decodificar por posición es frágil por naturaleza. Añadir un campo a una case class anidada
++ desplaza todas las columnas que van detrás, y nada en el fichero lo indica. Así se comportan los
++ datos posicionales, y ningún decodificador puede cambiarlo. Por eso merece la pena usar un
++ formato con cabeceras donde se pueda elegir, y por eso las celdas pueden
++ [direccionarse por nombre](#addressing-cells-by-name).
+
+@ 0 1 0 05034cb934a33abb1941be82816becd0
++ ### Columnas opcionales
+
+@ 0 2 0 05ac43b954809ab51061812cc48a4c78
++ Un campo `Optional` se extiende por una columna. Una fila que se queda corta antes de llegar a
++ él lo decodifica como `Unset`, que es lo que significa una columna opcional final en una hoja de
++ cálculo real:
+
+% 2 1 0 1793212bf577f6ac03f72620309f6a28
+
+% 0 1 0 1456d8921f953395104d84c618ba59ce
+
+% 1 1 0 02718b50556755e905a277a2e235dc63
+
+% 3 1 0 0886041a48330a170b87081cc4e4c86a
+
+% 4 1 0 171662713c7b8aff14711f2b3ff9690f
+
+% 5 1 0 1ba7aebd69c8bb97020a17d7d92263c9
+
+% 0 1 0 026ebcc43e4f8fd41020e23031a09efb
+
+% 0 1 0 04f540d505af91af0ffff514765bfbc2
+
+% 1 1 0 1691c1376d5312b30397c4b5192c66b5
+
+@ 0 3 0 14d728eef30f6b5e005995be0e983a78
++ La lectura de un campo `Optional` sigue las políticas que se describen en
++ [Decodificación](decoding.md#policies-for-optional-fields), cada una modificable mediante un
++ given del paquete `optionalityOptions`. El texto delimitado no tiene null:
+
+% 2 1 0 077135260271c81e08360c5f6b949018
+
+@ 0 5 0 01dec2081e59dcad06ef0cc71d5d0396
++ column  Un campo que está
++ column  Se lee como
++ column  Salvo que
++ row  en una columna que le falta a la fila  `Unset`  `strictDsvAbsence` lo convierte en un error
++ row  presente pero rechazado por el decodificador interior  un error  `lenientDsvFaults` lo lee como `Unset`
+
+% 1 1 0 06c49ab09406a831189d6ed8bd04877c
+
+@ 0 3 0 1dd5a5ace5b595580513f2a45df0f03e
++ Una columna que le falta a la fila es una que queda más allá del final de una fila corta, o una
++ columna de cabecera que la fila no tiene. El error que se lanza por ella con `strictDsvAbsence`
++ tiene el motivo `Dsv.Error.Reason.Absent`. Una celda vacía es un valor presente, no un null.
+
+% 2 1 0 06091d345fd766b21e84bf69746feedc
+
+% 0 1 0 1528c823dd1f27e7140501dbf09796f6
+
+% 0 1 0 07ff2c9f0b0eaff2022a98b58d693ac6
+
+% 0 1 0 1704affb859f1d3f0256f7d346b34548
+
+% 0 1 0 0c8ea8c4dbc9703d08e249584714582d
+
+% 1 1 0 1b6d371a171f07e80a7686a4a5ecedd6
+
+% 3 1 0 061dea348523f433045adc99da006969
+
+% 4 1 0 097e4f88005d6b1d10a18cb6b3c097a6
+
+% 5 1 0 1f59e9eab05f2b7b0d5014c4b381e07d
+
+% 0 1 0 141aa914cc85d2ba18f3063adf07bb9c
+
+% 1 1 0 025a8f2a135c61c505e514d4fa7786b8
+
+@ 0 1 0 05dc60ec41354b140fd2bfd91786fcc7
++ ### Direccionamiento de celdas por nombre
+
+@ 0 3 0 0fbbee0ed1b7dbe10a86f930f1e2cf49
++ Con el acceso dinámico habilitado, una celda de una fila que tiene cabecera se lee como un
++ miembro con nombre, y se decodifica en el tipo que se pida. Una *redesignación* en el ámbito
++ dice cómo el nombre de un miembro se convierte en una cabecera. `unchangedRedesignation` usa el
++ nombre tal cual:
+
+% 2 1 0 0deac79546734d8f0e60fc5bbd3b2e50
+
+% 0 1 0 1cc9d33040ca74631c6d1b575b675602
+
+% 0 1 0 13280a4d3f6fa08d17c3b0fe2186374f
+
+% 1 1 0 17f15212be063e6f1cca8b912a970a1c
+
+% 0 1 0 01a9d11531a355801aea02e2245f3cd8
+
+% 0 1 0 1a4b1af0cfcc365708c75c7c3b009aca
+
+% 1 1 0 0e1ee6ca2231f24d07770ba888d37bbb
+
+@ 0 2 0 1c778b687f095be7113d3b7dabcffa7f
++ Los nombres de columna de un fichero rara vez se parecen a los nombres de Scala. Otra
++ redesignación hace corresponder ambas convenciones, de modo que el miembro `targetPerson` lee la
++ columna con la cabecera `Target Person`:
+
+% 2 1 0 01f21e64c5fc94620b6a56857807d6f4
+
+% 0 1 0 08829e589763b2fa03a4555fdd5a8dda
+
+% 1 1 0 16f10a73063690160eb6788e5c38dca7
+
+% 0 1 0 1c3ae67c4375d3120b992eea5601743b
+
+% 0 1 0 08bd95f71d0e0a3111fb196a1a1d06bb
+
+% 1 1 0 0181ab3ffd27db720bf592033770a72a
+
+% 3 1 0 130076c48e0b91ee010a7186f5399724
+
+% 4 1 0 0fd1991b3cf699590220155ff84af85c
+
+% 5 1 0 1a9f8b602c686d871c0a921bffdab794
+
+% 0 1 0 1f7ae5af0e4335d00927553ae86ec3d8
+
+% 0 1 0 1f404ba1fdd32d24092293c052e19147
+
+% 1 1 0 06d1c761332d23de0130c2e559d0c6c3
+
+@ 0 2 0 1dc88d36729addd90ec2365cd358be88
++ Cada redesignación del paquete `dsvRedesignations` da al miembro `targetPerson` esta cabecera:
+
+% 2 1 0 1323c6e426bcc6890bd559acbd167766
+
+@ 0 2 0 0ec413af15aff00919c0e905344e25c8
++ column  Redesignación
++ column  Cabecera
+
+% 0 1 0 03748be03d5e81591e650b306710113c
+
+% 0 1 0 02da12893b8df09d067ea010d545aab8
+
+% 0 1 0 126a7eb8b8c0b17d08165a52e7fb115d
+
+% 0 1 0 1951601e7857fb5015d136cb759713d4
+
+% 0 1 0 04a4b50357ec812713e5d579e2c2ef18
+
+% 1 1 0 09f5c00c08d6188f04533c8b6dd19dad
+
+@ 0 1 0 0a6e888821ec6d8311a17ed49f54c531
++ Sin una redesignación en el ámbito, una celda no puede leerse por nombre:
+
+% 2 1 0 18e368a62a713b941990343d3d1c6ab8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1a7943dd627c3c3518a2025aebdffb13
+
+% 1 1 0 015fe53f42fcfd0d182ff88c1f13f196
+
+@ 0 4 0 0df7b898ea2170c1195f43dc4e03047c
++ La importación de `dynamicDsv` concede el permiso `Dsv is Dynamical` al resto de su ámbito.
++ `dynamically[Dsv]:` lo concede en cambio a un único bloque, como se describe en
++ [JSON](json.md#fields-as-members). Un campo de una case class cuyo nombre difiere de su cabecera
++ se renombra con [`@name`](json.md#renaming-fields).
+
+@ 0 1 0 1ef7b8023aacb1780627fa021478ab84
++ ### Informar de todas las celdas incorrectas
+
+@ 0 5 0 1f150d871f4446551ec81fdf1cc9132a
++ Una hoja de cálculo exportada desde otro lugar rara vez está mal en un solo sitio, y un
++ decodificador que se detiene en la primera celda incorrecta convierte su corrección en una
++ serie de conjeturas. Con una estrategia que
++ [acumula fallos](errors.md#accumulating-failures), se informa de cada celda que falla, las que
++ faltan y las que no se pueden analizar juntas. Cada una se identifica por su columna, así que una
++ sola pasada sobre un fichero da la lista completa de lo que hay que corregir.
+
+@ 0 3 0 0211b09b88636cf8130cff7fc9f8fa72
++ La acumulación es un valor que elige quien llama, aquí un error que recoge cada fallo con la
++ columna en la que se encontró. `Validate` dice cómo se incorpora cada fallo, y se centra en la
++ `CellRef` que estaba leyendo el decodificador:
+
+% 2 1 0 154c8e75825f779114ddabb26339efa3
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 163375f111fa9a6812c559a4dfa968e3
+
+% 0 1 0 01f8e8ff0b2ce07d1e598d2b9bdfb45c
+
+% 0 1 0 1d3a59e65fcbdf140fa0a72dc1f0c9fd
+
+% 0 1 0 0965f99efea16faf1f803bfe3ab3fdd8
+
+% 0 1 0 033c48d8fe3380f21cf0cf4cb9eca2b6
+
+% 1 1 0 075a94b94442c6e602b102440c7c1150
+
+% 0 1 0 0dfe854eaee6ff300ce52bc585f547f1
+
+% 0 1 0 1274ef776a68ec3e09ff6526edf9bdb9
+
+% 0 1 0 1b7856209f71157f0292ee57c80137ba
+
+% 0 1 0 1c9d6fd014872435089b50dfe962343a
+
+% 0 1 0 02a42cb4274e0f040dfa9e47606ae606
+
+% 0 1 0 19515b4e6e73adb11045115917c906a8
+
+% 0 1 0 01a60fd9533fe87e022fd5e71a9c9a65
+
+% 1 1 0 0af70766c985a44018b4a04cbe0d202d
+
+% 3 1 0 1b2c594c88b742ab15b41ef0a08a3a21
+
+% 4 1 0 1893869b0af0de75140199519c5c9d55
+
+% 5 1 0 0a760e76562031111f2a20236d30dc73
+
+% 0 1 0 1c1a7f182eec9327094a0c8b889127ac
+
+% 0 1 0 08e5a6c24ba00b5c173cf82f0d0c05ac
+
+% 1 1 0 1c1b2078c9d7e8ce11ac20631a43382b
+
+@ 0 1 0 1e17a01edd469f4d1c982026e3272de9
++ ### Análisis directo en un tipo
+
+@ 0 3 0 0f60cae25f1399ba00b64de2f9254ea9
++ Construir un `Dsv` por cada fila, solo para decodificarlo y tirarlo, es trabajo desperdiciado. Un
++ tipo con una instancia de `Dsv.Parsable` se analiza directamente a partir de la fuente. Sus
++ celdas se leen en su sitio, desde el búfer del analizador, y no se construye ningún valor de
++ fila:
+
+% 2 1 0 0b9a7d158553954804b1551e7eaa4f5b
+
+% 0 1 0 059786a217ad99d3090f5e656be728f4
+
+% 0 1 0 1e7afeeb7c69e8a40e6a06a2cf5a5d82
+
+% 1 1 0 03304c8a5fa5e97f0fc4917ebb31169f
+
+% 3 1 0 1a7d859251ba9753174bf12288b868f0
+
+% 4 1 0 07522de2fcc887631ee9b15fc8be34d2
+
+% 5 1 0 0096d91469d60ca80fe2851d37cd46b0
+
+% 0 1 0 01a486e2f3c3c32a112a1e760546064c
+
+% 0 1 0 0652a3d4cb9cc4b60f812260c3f14574
+
+% 1 1 0 1a09716028166b970c119d852a4b87cf
+
+@ 0 1 0 1bb93b9496107af70b1504dd6b4507e6
++ Un flujo da registros de la misma manera, mediante `rowsOf`:
+
+% 2 1 0 0125f5a2820e99ad077ee75dde3f58da
+
+% 3 1 0 050f8db97618e54419677581b836439a
+
+% 4 1 0 0b45b1ab76521b360b47e1f08bde9664
+
+% 0 1 0 116ce2b3acbf019714ded8f41209e97d
+
+% 1 1 0 110e482bcd7b3fae12ee77bfafd5e000
+
+@ 0 2 0 1a6b07b9a011928a1891c14812bc4cb0
++ Los campos se emparejan por nombre de cabecera donde el formato tiene cabecera, y por posición
++ donde no la tiene. Un campo `Optional` al que la fila no llega es `Unset`, no un error.
+
+@ 0 2 0 03ea0f1e002e86e30a6f3168a54cdb5a
++ La importación de `codecs` que selecciona la vía para todos los demás formatos la selecciona
++ también para el texto delimitado:
+
+% 2 1 0 126717d0af8fede31b43148594b04c9d
+
+@ 0 6 0 0fce7378365ba53215251eeca86ab2d7
++ column  Importación
++ column  Para un producto
++ column  Para cualquier otro tipo
++ row  `codecs.direct`  se analiza directamente, sin declarar ninguna instancia  el decodificador de filas, salvo que tenga un `Dsv.Parsable`
++ row  `codecs.derived`  el decodificador de filas, incluso donde hay un `Dsv.Parsable` en el ámbito  el decodificador de filas
++ row  `codecs.strict`  se analiza directamente, sin declarar ninguna instancia  un error de compilación que nombra el tipo, salvo que tenga un `Dsv.Parsable`
+
+% 1 1 0 13d199c84d68d92007fe730848f98c36
+
+@ 0 2 0 107a98555161205d03b365cd18fb8db6
++ Los modos son alternativas, así que se importa uno cada vez. Leer una `List[Play] in Dsv` es
++ directo en todos los modos, ya que el decodificador de filas no tiene equivalente para una hoja
++ completa.
+
+@ 0 4 0 1fcfc44ce8b2102b1f057d6dbe6c71b4
++ Cada campo de un producto analizado directamente lee una celda mediante su instancia de
++ `Decodable in Text`, o es a su vez un producto de tales campos. Un campo que solo tiene una
++ instancia de `Decodable in Dsv` mantiene su tipo en el decodificador de filas: no se declara
++ ningún `Dsv.Parsable` para el tipo, ni se importa ningún modo.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 5 0 18774b3c18ad653212b11d2266efe7d1
++ - [Tablas](tables.md) dispone filas de datos para mostrarlas en un terminal.
++ - [Decodificación](decoding.md) describe las instancias de `Decodable in Text` que leen cada
++   celda.
++ - [JSON](json.md) y [YAML](yaml.md) decodifican documentos anidados con la misma derivación.
++ - [Flujos](streams.md) trata las fuentes de las que leen `rows` y `rowsOf`.
++ - [Derivación](derivation.md) explica cómo se decodifica una fila en una case class sin una
++   instancia escrita a mano.

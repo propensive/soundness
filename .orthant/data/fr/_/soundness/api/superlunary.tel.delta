@@ -1,0 +1,743 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 125ae7665200e2a914e74bc72a026102
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 19bd1eba853dc933140a1c8ccc0bfa14
++ info
++     du code Scala quoté compilé à l'exécution et exécuté ailleurs : dans une JVM neuve, ou un
++     chargeur de classes isolé
+
+@ 0 7 0 09c4704b6e6b579907a864f1633a2649
++ detail
++     _Superlunary_ généralise la mise en étapes (staging) de Scala, afin que du code quoté —
++     `'{…}` — s'exécute dans un *environnement* différent plutôt que dans la phase suivante du même
++     programme. Un `Rig` indique comment le code compilé est déployé et invoqué ; sa méthode
++     `dispatch` prend un bloc quoté, y insère par splice des valeurs de la portée englobante,
++     compile le bloc à l'exécution (une fois par site d'appel et par arbre), l'expédie, l'exécute,
++     et en rapporte la réponse. Les valeurs qui franchissent la frontière sont encodées par un
++     `Stageable` : en JSON pour le rig `Jvm`, en arbres `Pojo` pour `Isolation`.
+
+@ 0 4 0 1c9cd72aad2f58500197974053e8f717
++     Comme les deux côtés sont compilés ensemble et délimités par des quotes et des splices, le
++     contrat entre eux est vérifié par le compilateur : une référence à un objet local du tas ne
++     peut pas être écrite dans la quote, et une valeur insérée par splice sans forme
++     transportable est rejetée lors de la compilation du bloc.
+
+% 2 1 0 1913e625ebd53a2f1d102a8246667744
+
+% 3 1 0 0ff65ad39b01043b1773b11b319e14f0
+
+% 4 1 0 1464cac3a345ee091a7e01358cccaae1
+
+% 5 1 0 194600c3334a259f1c9ba1b579bcc5b9
+
+% 6 1 0 023d84276c4c28670c95be47f7536faf
+
+% 7 1 0 18d3e8ee9f44fae70648771c6533c3b8
+
+% 8 1 0 11ea57d6e53cf5c21c27c0f70493a8f8
+
+% 9 1 0 0c6820158125e44c069dfeb9a4724fdf
+
+% 10 1 0 1dc3c4cb44c83a4e0661b50241fe15c6
+
+% 0 1 0 136d50fc521554bf050295dc2bf1207c
+
+% 0 1 0 19b4303499d6d81403007fa6014b71c3
+
+% 1 1 0 0cdf2688d6f8db8806a476ff16550453
+
+% 0 1 0 07d5757425de94a81d22699652c85a0e
+
+% 0 1 0 0aacfa1522acc28e10baaffb7a6614a4
+
+% 1 1 0 0ee6c6e9a406b648185051b09b5d1d56
+
+% 2 1 0 0357517b82309d5602c0b6692d2b14e9
+
+@ 0 1 0 02f7326984c26cff173274037ccb5bb3
++     Déplacer un calcul ailleurs change l'endroit où il s'exécute, et non la manière de
++     l'appeler :
+
+% 2 1 0 06f87dd4b6c72fcd00af539ce073e543
+
+% 0 1 0 1429c53f065a172715abc2fb1a8fe7cf
+
+% 1 1 0 08ca38ad23f20c410d3fb806e0b26784
+
+% 0 1 0 071bd5a78d7864ab1529cdac2455dbfa
+
+% 0 1 0 002ab7643f35c462052f5ca1ea68f2be
+
+% 0 1 0 1fa81f55d6c0988d1a44ce6c01e5e918
+
+% 0 1 0 0ba4f458a1b963d306bdfe10934076d3
+
+% 1 1 0 0814e81fb6bb2ea81021658399b884a3
+
+% 0 1 0 13e415a11a2dcf490b9c189a1faf3d15
+
+% 1 1 0 05a55bc5ab65f0c30c2a1c016789c1e2
+
+% 2 1 0 1c0459c96e34f0900dc7d8d03fa045da
+
+% 3 1 0 05590843598303260a951f4dd7c4a9a6
+
+% 4 1 0 1a8b0418ac4e523b0f4b472a3fbd8480
+
+% 0 1 0 015178b95712df0b0fadac82b208a90e
+
+% 1 1 0 1b34251ce332c39119f2500abd1a522d
+
+% 0 1 0 1b366cd3d3bfd07618de59c1bda7514b
+
+% 1 1 0 189df5411b454a6d1bef487e145c91be
+
+% 2 1 0 1c9c9288e488b30d0418f4fab82d9a2d
+
+% 3 1 0 00e5113240e30e1104a550c6b1447a72
+
+% 4 1 0 04502acb2621179a0b175c4db70eef0c
+
+% 1 1 0 0df187667d535dbf000c6f5ae5734546
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 5 0 1fd38d6064e36b85177151cd25d587db
++     Une valeur insérée avec `${…}` est convertie en `Expr` par
++     `embeddings.automaticEmbedding`, qui s'importe par son nom : `import soundness.*` n'importe
++     pas les givens. Un envoi a aussi besoin d'un `System` et d'un `TemporaryDirectory` dans la
++     portée, et lève `Compiler.Error` (le code mis en étape n'a pas compilé) et `Rig.Error` (il
++     n'a pas pu être sérialisé, mis en étape ou invoqué).
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     La bibliothèque a deux ensembles de sources :
+
+@ 0 4 0 1d522d731028692b141ad0c926ccd325
++     - `superlunary.core` — `Rig`, `Stage`, `Stageable`, `References` et le package `embeddings` :
++       la mécanique à partir de laquelle tout rig est construit.
++     - `superlunary.jvm` — les deux rigs fournis, `Jvm` et `Isolation`, et `Executor`, le point
++       d'entrée qu'exécute un sous-processus `Jvm`.
+
+@ 0 3 0 037ec3ef33f416d808852c7117881aca
++     Tout est exporté vers le package parapluie `soundness`, et le package de choix `embeddings`
++     fusionne avec celui du package parapluie. `apoplexy.Executor` n'est délibérément pas exporté,
++     puisqu'il y entrerait en conflit avec `superlunary.Executor` ; l'`Executor` du package
++     parapluie est celui-ci.
+
+% 0 1 0 1a1be6ac033dcd7b0624cab3102429d4
+
+% 0 1 0 1baa33a70778d164032906fcfc68708e
+
+% 0 1 0 02128ec949f9b7be0f354d34e7651c11
+
+% 0 1 0 1a11f24e31e6bda30ff320361a2feaf7
+
+% 0 1 0 1833065ab0e64951054da38ca6bd7e02
+
+@ 0 1 0 1f249867105a2b921d174b47e27cd26c
++ entry .Rig
++   info
++       un environnement pour lequel du code quoté peut être compilé et dans lequel il peut
++       s'exécuter, avec `dispatch` pour y exécuter un bloc
+
+@ 0 6 0 096e20dea74e81850b7938ec22f43937
++   detail
++       Un rig est le *lieu* d'un calcul mis en étape, sous forme de valeur. `dispatch` se charge
++       des parties difficiles avant que le rig ne voie quoi que ce soit — compiler le bloc quoté
++       s'il ne l'est pas déjà, capturer ses entrées insérées par splice et les encoder en une seule
++       `Form` transportable — et laisse au rig une tâche étroite : rendre la sortie compilée
++       disponible dans son environnement (`#stage`), et l'y exécuter avec l'entrée encodée, en
++       rapportant la sortie encodée (`#invoke`).
+
+@ 0 7 0 043c16b3fad40bf91dbdcd6561889d92
++       Une implémentation déclare son type `#Result` (la sortie nue, ou un `Optional`, ou une
++       `Task`, selon ce qui convient à l'environnement), son `#Transport` et sa `Form`, sa `Target`
++       (ce que produit `#stage`, comme un `LocalClasspath` ou un `Classloader`), le `scalac` avec
++       lequel compiler, et les deux méthodes. Elle est construite avec le `Classloader` sur le
++       classpath duquel le code mis en étape est compilé et lié — normalement celui du rig
++       lui-même, `Classloader[MyRig.type]`, car sous un hôte qui exécute des tests, le chargeur de
++       contexte du thread peut être celui de l'hôte.
+
+% 2 1 0 0f9236785be5a5111ec808a4bac4833e
+
+% 3 1 0 12ce2dcc1470f49604270588a8aa2e4a
+
+% 0 1 0 07b750cd940b39ca13b1331c684c2c28
+
+% 1 1 0 0c350a5776ffba69126c55b22df55c94
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 1c10ae8ea0d413f20cfb67313bfbbbad
+
+% 0 1 0 13ddf368f52a986116efc3ff52f323bf
+
+% 0 1 0 0a3debdd4cc4e6020d1451ce690219e7
+
+% 0 1 0 0e013a6e59e2b96201a7e91544db7d84
+
+% 0 1 0 0bafaa11c49c79f401de2e36d8b245ab
+
+% 0 1 0 159c65501156777809a8452c9d07c5aa
+
+% 0 1 0 1651fbdfe04be88f0b8494344c0ae8b7
+
+% 0 1 0 13ff6a086bea7b8213651543f0eeddfd
+
+% 0 1 0 0986994199ee963f01c67683b01391a2
+
+% 0 1 0 0ea6833ee74b6bdf13f7c9b256042b06
+
+% 0 1 0 05f514d4043c49a714d5ba091b16d8bb
+
+% 0 1 0 14836629a989b53501b6ac6b0ab6a80f
+
+% 1 1 0 02dc927f3c4079d012837fe4e9986ff3
+
+@ 0 1 0 1d2ba59ee7af444a00bc4c01cc5cbd2c
++       `Jvm` et `Isolation` sont les deux rigs fournis.
+
+% 0 1 0 0ac42fdbdcee73cc1df57ee22a5a4e4e
+
+% 0 1 0 1e0eeaba4144df0417821b2ea28d5910
+
+% 0 1 0 0797b40c9c07aea30aedcabaec2132db
+
+% 0 1 0 060f87355957d91f16c4482d6fc28a2a
+
+@ 0 1 0 1d682752bb3c17990c8ef0b96ba9c301
++   entry #dispatch
++     info
++         compile un bloc quoté, l'exécute dans l'environnement de ce rig, et renvoie son résultat
+
+@ 0 6 0 149ba882490cd9be0ea499d638b32220
++     detail
++         `rig.dispatch('{ … })` prend un bloc qui, à partir des `References` dans lesquelles les
++         splices allouent et d'un `Quotes`, construit une `Expr[output]`. Il a besoin d'un
++         `Codepoint` (fourni automatiquement pour le site d'appel), d'un `System`, d'un
++         `TemporaryDirectory` (où les classes de chaque compilation sont écrites, et supprimées à
++         l'arrêt) et d'un `Stageable` correspondant au `Transport` et à la `Form` du rig (trouvé
++         dans le compagnon de `Stageable`), et lève `Compiler.Error` et `Rig.Error`.
+
+@ 0 6 0 0365a9214c5dfe890795ce5c9a7e26a9
++         Les compilations sont mises en cache selon le site d'appel *et* une empreinte de la
++         structure de l'arbre mis en étape : un même site d'appel inline peut s'expanser en un
++         arbre différent à chaque utilisation, et chaque arbre distinct est compilé une fois,
++         tandis que des appels qui ne diffèrent que par les données qu'ils insèrent partagent une
++         même compilation. Une valeur insérée avec `${…}` est évaluée une fois par envoi et
++         désérialisée une fois par emplacement, quel que soit le nombre de fois où le code mis en
++         étape la lit — même dans une boucle critique — si bien que l'instance extraite est
++         partagée entre les évaluations.
+
+@ 2 1 0 1b2823796027b4f41baf2210edb8d70d
++         ```scala fuel
+
+@ 3 1 0 0cfd0246ee1617c319cf2cd99f95848e
++         typecheck
+
+@ 1 1 0 10f090fe19e7ee750458b0e6da583f6b
++         ##
+
+@ 0 1 0 19cc96edc586318316b31ec0030d2a58
++         import scala.quoted.*
+
+@ 1 1 0 18d2e44f5ae6e0a902f514d7402244b5
++         import soundness.*
+
+@ 2 1 0 11a49945cdcaa667008a1719ef796cf1
++         import embeddings.automaticEmbedding
+
+@ 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
++         import strategies.throwUnsafely
+
+@ 0 1 0 1cf4664307464f100bbb951c649b1048
++         import systems.javaBaseSystem
+
+@ 0 1 0 1f3918a79623b6a81645e18b9fd2c5e4
++         import temporaryDirectories.systemTemporaryDirectory
+
+@ 0 1 0 120063d0c1700d1100425aa1b548a6d8
++         val count = 100
+
+@ 0 1 0 00c0cd05c50528e917c7a3eb2930eb29
++         Isolation.dispatch('{ "hello message"+(${count} + 1) })   // "hello message101"
+
+@ 1 1 0 1f16d72baf61f1521193ddef082f7594
++         ```
+
+@ 0 2 0 14dc80bfa98d80950d258c2826d0564f
++         Les noms utilisés dans la quote se résolvent par rapport aux imports situés à l'extérieur,
++         mais seuls les préfixes statiques le font : tout le reste doit passer par un splice.
+
+@ 0 1 0 0182a8263fe211f41996e4bd13bcdad9
++   entry #stage
++     info
++         rend les classes compilées d'un répertoire disponibles dans l'environnement, sous forme de
++         `Target`
+
+@ 0 3 0 13e445c576abdd43047b7d8c19032fc7
++     detail
++         Appelée une fois par nouvelle compilation, avec le répertoire dans lequel ses classes ont
++         été écrites. Un rig local peut se contenter de nommer le répertoire (`#classpath`) ; un
++         rig réellement distant doit le déployer. Un échec est une `Rig.Error`.
+
+@ 0 1 0 10d5c2933370dcef1f40752d00fc4427
++   entry #classpath
++     info
++         le classpath du répertoire de sortie compilée et des entrées du chargeur de classes du rig
+
+@ 0 3 0 0a81ce94fe74731b0438f49fc5e20500
++     detail
++         `classpath(out)` place le répertoire en premier, suivi des entrées du chargeur de classes
++         qui a chargé `Rig` lui-même ; le code mis en étape est ainsi lié aux mêmes bibliothèques
++         que le code qui l'a envoyé.
+
+@ 0 1 0 03a3c9e61735e3370286e1ae83fa5797
++   entry #Result
++     info
++         ce que renvoie `dispatch` pour un type de sortie : la sortie elle-même, ou une enveloppe
++         de celle-ci
+
+@ 0 1 0 0a84f6e911cae24c183d9a38bf587c99
++   entry #Transport
++     info
++         le type sous lequel chaque valeur insérée et le résultat sont encodés : `Json`, `Pojo`, …
+
+@ 0 1 0 158039cafcba00ea063892f1b931c295
++   entry #settings2
++     info
++         les réglages du compilateur de mise en étape, issus des arguments de ligne de commande de
++         `scalac`
+
+@ 0 2 0 1dd7f46096c4e6461d20c7966a555006
++     detail
++         Utilisés pour la compilation de sondage qui calcule l'empreinte d'un arbre mis en étape ;
++         normalement inutiles à un appelant.
+
+@ 0 1 0 0671173d8da9deee07da0db1bf1b3bcf
++   entry #compiler2
++     info
++         le compilateur de mise en étape utilisé pour calculer l'empreinte des arbres, sur le
++         chargeur de classes du rig
+
+@ 0 1 0 0c5bc0dedf8f80971cd82298f52db25e
++     detail
++         Normalement inutile à un appelant.
+
+@ 0 1 0 07f4aee85e4ee0041ba7b158b3ad47c3
++   entry .Error
++     info
++         levée lorsqu'une valeur ne peut pas franchir la frontière d'un rig, ou que le code mis en
++         étape ne peut pas s'exécuter
+
+@ 0 5 0 19cae8f637e435880fab2f75b56e166f
++     detail
++         Erreur `↯/s.121.1` : _failed to perform a remote operation because `reason`_. C'est un
++         échec de la sérialisation et du déploiement qui entourent le code mis en étape, et non du
++         code lui-même ; un bloc mis en étape qui ne compile pas lève plutôt `Compiler.Error`. La
++         raison est l'un des cas de `Rig.Error.Reason`.
+
+@ 0 1 0 07586423561fb3cd0af7eb522bcc48f5
++     entry #reason
++       info
++           pourquoi l'opération distante a échoué
+
+@ 0 1 0 01880c62ada129c801a370f43b34f31d
++     entry .Reason
++       info
++           pourquoi une opération distante a échoué : sérialisation, désérialisation, mise en étape
++           ou invocation
+
+@ 0 1 0 0c5363e9c9b9639110454131962b3ba9
++       detail
++           Une énumération, dont chaque cas a un numéro qui complète le code d'erreur :
+
+@ 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
++           ```tabular
+
+@ 0 9 0 08e2f1bc53ef84d2151b74d343a5c50f
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `Serialization`  1  _the output could not be serialized_
++           row  `Deserialization`  2  _the input could not be deserialized_
++           row  `Unknown`  3  _of an unknown reason_  levée lorsqu'un résultat ne se décode pas
++           row  `Staging`  4  _the staged code could not be built or deployed_
++           row  `Invocation`  5  _the staged code could not be invoked_  si le sous-processus du rig `Jvm` échoue
+
+@ 0 1 0 02125690b11d560710feb200e65921bd
++           ```
+
+@ 0 1 0 1a16828cd4d733c51f9cea1c7a1c6104
++ entry .Jvm
++   info
++       le rig qui exécute le code envoyé dans un sous-processus JVM neuf
+
+@ 0 6 0 1d36f3505e9fb4361e13572fc63ecd3b
++   detail
++       Un `Rig` dont la `Target` est un `LocalClasspath` et dont les valeurs transitent sous forme
++       de texte JSON : les classes mises en étape sont compilées dans un répertoire temporaire, et
++       chaque envoi lance `java -classpath … superlunary.Executor` avec l'entrée encodée comme
++       argument et lit le résultat encodé sur sa sortie standard. Il offre une isolation complète,
++       au prix du temps de démarrage d'une JVM à chaque appel. Un sous-processus qui échoue lève
++       une `Rig.Error` de raison `Invocation`.
+
+@ 2 1 0 10d9656e8d58a3241cf1dfebcbf5cca9
++       ```scala fuel
+
+@ 3 1 0 13c1e2be20887dc713aab62b35b99fb9
++       typecheck
+
+@ 4 1 0 0dce0bf6bf41734805c600e7fc533183
++       ##
+
+@ 5 1 0 196f28c3d08492be005a77b5ede5eb50
++       import scala.quoted.*
+
+@ 6 1 0 11a39c7c9dad62760843caefc49dbf4b
++       import soundness.*
+
+@ 7 1 0 04576b0c69ea6c0f12efddb3ef53f4be
++       import embeddings.automaticEmbedding
+
+@ 8 1 0 012d70567ca831790bd4be47a2c7d635
++       import strategies.throwUnsafely
+
+@ 9 1 0 15bc32c6d79170df0d69959819a79539
++       import systems.javaBaseSystem
+
+@ 10 1 0 0c03d29a6f39a86e1e140eb30f28ad2b
++       import temporaryDirectories.systemTemporaryDirectory
+
+@ 0 1 0 18de35fb2c79ea020b03e2a41b8e5a43
++       case class Example(name: Text, count: Long)
+
+@ 0 1 0 1b67abe90669cd140d01b93503a50586
++       def fn(message: Example): Example = Jvm.dispatch:
+
+@ 1 1 0 1227a1599bfb6e250c670d4fcb8f5874
++         '{
+
+@ 0 1 0 0a97428dfa31e4281abc2ed688b6b30a
++             val name = ${message.name}
+
+@ 0 1 0 1793afec63ff31bb10d4ed032a08912b
++             Example(t"Processed: $name", ${message.count}*2)
+
+@ 1 1 0 10caa98a5112035b14ba0323ac218158
++           }
+
+@ 2 1 0 1ea6eac6d2ee4fbe1867dd7cc08b2cff
++       ```
+
+@ 0 3 0 1830bd394d6ce56e04bf8f92570beb8f
++       Les valeurs insérées et le résultat ont besoin d'instances `Encodable in Json` et
++       `Decodable in Json` (dérivées pour les case classes). Il met en étape avec Scala 3.6 et
++       `-experimental`, sur le classpath du chargeur de classes qui l'a chargé.
+
+@ 0 1 0 0334a5cd399d7bd41d5b0db19d8d659a
++ entry .Isolation
++   info
++       le rig qui exécute le code envoyé dans ce processus, sous un chargeur de classes isolé
+
+@ 0 4 0 1f11a934b740882319b70085dacdb070
++   detail
++       Un `Rig` dont la `Target` est un `Classloader` et dont les valeurs transitent sous forme
++       d'arbres `Pojo` : les classes mises en étape sont chargées par un chargeur de classes qui
++       privilégie l'enfant (`Classloader.Delegation.Preferential`), sur le répertoire de sortie et
++       le classpath propre au rig, et invoquées directement. Peu coûteux et cloisonné, sans
++       démarrage de processus, mais le code mis en étape partage la JVM, son tas et ses threads.
+
+@ 2 1 0 156343929089fa99094a2d6193c9ffd5
++       ```scala fuel
+
+@ 3 1 0 038ae74f50b147370a8ceed58dff0890
++       typecheck
+
+@ 4 1 0 1644b347a2da04e41fea74ba7c1343b6
++       ##
+
+@ 5 1 0 19391cfb355247f3064b58eab87e6ae3
++       import scala.quoted.*
+
+@ 6 1 0 10d10991bb46f2531b19241a1ad899cc
++       import soundness.*
+
+@ 7 1 0 1583f59b8a3618381771ac29f3cfdf49
++       import embeddings.automaticEmbedding
+
+@ 8 1 0 0245f0ccd8fda8c1173db157dc017d50
++       import strategies.throwUnsafely
+
+@ 9 1 0 0fa53c3ccfa841b41c01aa0cc18f5690
++       import systems.javaBaseSystem
+
+@ 10 1 0 149a88e2e974830e1a343a7c3be30b24
++       import temporaryDirectories.systemTemporaryDirectory
+
+@ 0 1 0 1372ea20a082415f11748ee9d7f9baa1
++       Isolation.dispatch:
+
+@ 0 1 0 115c35964ad1b73705fe7fe17d7ebf55
++         '{ t"computed in an isolated classloader" }
+
+@ 1 1 0 14c32fd694ced42f1f1dd16eacf2d127
++       ```
+
+@ 0 1 0 017cde8f3f0c4c2e183677bfed526976
++       Les valeurs insérées et le résultat ont besoin d'instances `Encodable in Pojo` et
++       `Decodable in Pojo`.
+
+@ 0 1 0 0e36c1ce1f42426516f4e13a764bdb1e
++ entry .Stage
++   info
++       un calcul mis en étape, compilé et déployé, tel que le reçoit l'`invoke` d'un rig
+
+@ 0 4 0 1beab4b4887988c3157c3c27c44c2136
++   detail
++       Une case class composée de la `#target` produite par `stage` et de `#remote`, que le rig
++       appelle avec une fonction de l'entrée encodée vers la sortie encodée — la partie qui exécute
++       réellement le code dans l'environnement — et qui effectue l'encodage et le décodage de part
++       et d'autre.
+
+@ 0 1 0 160cd240fb692be6134368527d59ec14
++   entry #target
++     info
++         l'endroit où le code compilé a été mis en étape : un classpath, un chargeur de classes, un
++         déploiement
+
+@ 0 1 0 085453ddc715d74211540b3242d35c8f
++   entry #remote
++     info
++         exécute le calcul, à partir de la fonction qui transforme l'entrée encodée en sortie
++         encodée
+
+@ 0 1 0 0f69250917c6126e0dce387e4a7a91bd
++ entry .Stageable
++   info
++       la manière dont les valeurs franchissent la frontière d'un rig : leur `Transport` et la
++       `Form` envoyée
+
+@ 0 6 0 0d671c0d0779ec7d0697e4db3f0b42b4
++   detail
++       Une classe de types de quatre opérations inline : `#embed` encode une valeur insérée sous
++       forme de valeur `Transport`, `#serialize` transforme un tableau de celles-ci en l'unique
++       `Form` envoyée, `#deserialize` en relit une, et `#extract` décode une valeur `Transport`
++       vers son type. `dispatch` a besoin de l'instance dont le `Transport` et la `Form`
++       correspondent à ceux de son rig ; les deux instances fournies sont dans le compagnon, et
++       n'exigent donc aucun import.
+
+% 0 1 0 0609671197ccaaba0de98e70ffdcec21
+
+% 0 1 0 197b441283a152171671e3d669be8289
+
+@ 0 1 0 1fe30fd121f2b9ce1709838a478adbf7
++   entry #Transport
++     info
++         la forme encodée d'une valeur : `Json` ou `Pojo`
+
+@ 0 1 0 07e6de4588a6222d1916c659b38668c1
++   entry #embed
++     info
++         encode une valeur en `Transport`, au moyen de son instance `Encodable`
+
+@ 0 1 0 0cbe7ec962d0dbec087af855d0baadb8
++   entry #serialize
++     info
++         joint un tableau de valeurs transportées en l'unique `Form` envoyée
+
+@ 0 1 0 0ff45859841feb881b7cea5da717577c
++   entry #deserialize
++     info
++         redécoupe une `Form` reçue en un tableau de valeurs transportées
+
+@ 0 1 0 10edaed9cf82902704de008459bac9e3
++   entry #extract
++     info
++         décode une valeur transportée vers son type, au moyen de son instance `Decodable`
+
+@ 0 1 0 0ca3f1b9165811f4038f76acb6e03d5f
++   entry .json
++     info
++         transporte les valeurs en JSON, envoyées sous forme d'un seul tableau JSON dans un
++         `Text` : la forme du rig `Jvm`
+
+@ 0 3 0 05c5046e89a08e3117863f0b8add2175
++     detail
++         Un tableau mal formé lève une `Rig.Error` de raison `Deserialization`, et une valeur qui
++         ne se décode pas, de raison `Unknown`. Chaque valeur a besoin d'un `Encodable in Json` et
++         d'un `Decodable in Json`.
+
+@ 0 1 0 17bc6c5054ebd81106aada55d9ade774
++   entry .pojo
++     info
++         transporte les valeurs sous forme d'arbres `Pojo`, envoyés sous forme de tableau : la
++         forme du rig `Isolation`
+
+@ 0 2 0 1cefc508ad86365b17b73651f404665e
++     detail
++         Chaque valeur a besoin d'un `Encodable in Pojo` et d'un `Decodable in Pojo` ; le tableau
++         est transmis tel quel, sans texte intermédiaire.
+
+@ 0 1 0 114d33d8313527e7180b72578b9fbe37
++ entry .References
++   info
++       les valeurs insérées d'un bloc mis en étape, allouées dans un tableau à mesure qu'elles sont
++       intégrées
+
+@ 0 4 0 07e936b33e6cdbc819f6bee6061b168a
++   detail
++       Dans le corps d'un `dispatch`, chaque valeur insérée est intégrée par
++       `embeddings.automaticEmbedding` dans les `References` de la portée, qui lui attribuent un
++       emplacement ; le code mis en étape lit l'emplacement dans le tableau que le rig lie sous le
++       nom `#array`. Mécanique interne d'un rig, normalement pas utilisée directement.
+
+@ 0 1 0 0163685aecbf5a7a17bcbcf3d3adf3dc
++   entry .apply
++     info
++         un nouvel ensemble vide de références sur un type de transport
+
+@ 0 1 0 084082e2fd02d85c00cb8ea95662741c
++   entry .Boxed
++     info
++         une valeur transportée déjà extraite, mémoïsée dans son emplacement du tableau
+
+@ 0 3 0 084f643bb92ec1951cd3053f8c4bc5c2
++     detail
++         À la première utilisation, la valeur transportée brute d'un emplacement est remplacée par
++         un `Boxed` de sa valeur décodée ; un splice lu dans une boucle est ainsi décodé une fois
++         par JVM plutôt qu'à chaque itération.
+
+@ 0 1 0 13cf00365c4ff145163e8fb15db37f8b
++     entry #value
++       info
++           la valeur décodée
+
+@ 0 1 0 17e3bdfade5e564b01c7028a928a8062
++   entry #Transport
++     info
++         le type de transport des valeurs contenues
+
+@ 0 1 0 1c8f6cd6d3479157148b2b614b0c6077
++   entry #update
++     info
++         lie le tableau quoté dans lequel le code mis en étape lit ses valeurs
+
+@ 0 1 0 1d839fc4edbfdc601f8cdc9d621cf086
++   entry #array
++     info
++         le tableau quoté de valeurs transportées, lié avant qu'aucune valeur ne soit insérée
+
+@ 0 1 0 0e46ff88644d8f7c10022af6c81ddc9a
++     detail
++         Échoue par une panique s'il est lu avant que le rig ne l'ait lié ; le rig le lie toujours
++         en premier.
+
+@ 0 1 0 1e48800a9ac5789608472ffebba521db
++   entry #current
++     info
++         le nombre de valeurs allouées jusqu'ici
+
+@ 0 1 0 0335f45e5c08de5f177318615554b1dd
++   entry #allocate
++     info
++         ajoute une valeur transportée, et renvoie son numéro d'emplacement
+
+@ 0 1 0 02ed2b53719ee6ac1667ea9d724cc47f
++   entry #apply
++     info
++         les valeurs allouées, sous forme de tableau dans l'ordre des emplacements
+
+@ 0 1 0 11878462eece726310ffffdec8338dc1
++ entry .embeddings
++   info
++       la conversion qui fait passer une valeur insérée dans le code mis en étape, un given à
++       importer par son nom
+
+@ 0 4 0 173c1294a39f3b5f0dd984a59612b69c
++   detail
++       Un splice `${value}` à l'intérieur d'un bloc `dispatch` exige que `value` devienne une
++       `Expr`, et cette conversion est `automaticEmbedding`. `import soundness.*` n'importe pas les
++       givens ; elle s'importe donc par son nom.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 1 1 0 06e1f9e27e2e381a09e64b718299b319
+
+% 2 1 0 1760ad5d3beaa6f203656ffc6c6791f0
+
+% 1 1 0 108291f25d73a97603917c9afdae70ca
+
+@ 0 1 0 111af4d04b69c4341a3c620b95183098
++   entry .automaticEmbedding
++     info
++         convertit une valeur insérée en une `Expr` qui lit son emplacement transporté
+
+@ 0 4 0 0aac224c89cbb77f00d5179bc8d8752b
++     detail
++         Une `Conversion[value, Expr[value]]` inline, qui a besoin des `References` et du
++         `Stageable` que fournit le corps d'un `dispatch`, ainsi que d'un `Quotes`. Elle intègre la
++         valeur au moyen du `Stageable`, lui alloue un emplacement, et renvoie du code qui lit
++         l'emplacement et le décode à la première utilisation, en mémoïsant la valeur décodée sous
++         forme de `References.Boxed`.
+
+@ 0 1 0 170b08a0217b0d30101a733e7dfb1855
++ entry .deleteOnShutdown
++   info
++       programme la suppression d'un répertoire, avec son contenu, à la sortie de la JVM
+
+@ 0 3 0 18c7f9a05f0348a502722c9e1d0f78dd
++   detail
++       Les rigs l'utilisent pour le répertoire de sortie de chaque compilation. Un seul point
++       d'accroche d'arrêt vide la file séquentiellement, plutôt qu'un point d'accroche par
++       répertoire ; une exécution comportant de nombreux envois ne peut donc pas épuiser la limite
++       de descripteurs de fichiers pendant son nettoyage. Les erreurs de suppression sont ignorées.
+
+@ 0 1 0 1ac364c161fc46d0090d20622783815c
++ entry .Executor
++   info
++       le point d'entrée qu'exécute le sous-processus d'un rig `Jvm` : invoque le code mis en étape
++       sur son argument
+
+% 1 1 0 019faf128d64c14408eebf208eb2352b
+
+@ 0 6 0 1ec771e9d9ba3d160102d5c6be19c89f
++   detail
++       Dans `superlunary.jvm` ; pas destiné à un usage direct. `main` charge la classe compilée
++       `Generated$Code$From$Quoted`, l'applique à son premier argument, et affiche le résultat,
++       toute autre sortie standard étant supprimée afin que seul le résultat parvienne au parent.
++       C'est l'`Executor` du package parapluie `soundness` ; `apoplexy.Executor` n'est pas exporté,
++       pour éviter le conflit.
+
+@ 0 1 0 052564c5e707ff911f87b5a5711c42be
++   entry .run
++     info
++         applique le code mis en étape à une entrée encodée, et renvoie la sortie encodée
+
+@ 0 1 0 16cc2f6debdf94441959eafd61d089c1
++   entry .main
++     info
++         exécute le code mis en étape sur le premier argument, en n'affichant que son résultat
+
+@ 0 1 0 1b2c27cd69f1f0b619546602fd424093
++ entry .Executor2
++   info
++       un autre point d'entrée de sous-processus, qui lit son entrée dans `INPUT_PARAMETERS`
+
+% 1 1 0 12c0d74587eb52421488cac3488f77e6
+
+@ 0 3 0 1f4d92e66bc9d1f8057d24e1475ea829
++   detail
++       Pas destiné à un usage direct. Comme `Executor`, mais prend l'entrée encodée dans la
++       variable d'environnement `INPUT_PARAMETERS` plutôt que dans un argument, et n'affiche rien.
+
+@ 0 1 0 122387637250fd2b1c8882188132eb9c
++   entry .main
++     info
++         exécute le code mis en étape sur l'entrée contenue dans `INPUT_PARAMETERS`

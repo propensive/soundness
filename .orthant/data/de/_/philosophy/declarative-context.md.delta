@@ -1,0 +1,123 @@
+orthant 2 language
+
+@ 0 1 0 1bfc33e2edf2fc8f121308653215d922
++ # Deklarativer Kontext
+
+@ 0 7 0 1d92e83ec686989c182a8572fbb330ee
++ Soundness konfiguriert Verhalten deklarativ, durch Kontextwerte im Geltungsbereich statt durch
++ Argumente, die von Hand durchgereicht werden, oder Flags, die zur Laufzeit abgefragt werden. Ein
++ Ausgabeformat, eine Fehlerstrategie, eine Zeichenkodierung oder eine bestimmte Implementierung zu
++ wählen heißt, das richtige `given` in den Geltungsbereich zu bringen; danach gilt die Wahl
++ automatisch für alles in diesem Geltungsbereich. Weil die Konfiguration deklarativ ist, ist sie
++ unabhängig vom Kontrollfluss und leicht zu durchschauen: Was im Geltungsbereich ist, bestimmt, was
++ geschieht, wo immer der betroffene Code läuft.
+
+@ 0 5 0 0ccd789078bba8931f8edef54dab7236
++ Die Stärke des Ansatzes liegt darin, dass der Geltungsbereich ein präzises Instrument ist. Ein
++ Given, das am Anfang einer Datei importiert wird, konfiguriert die Datei; eines, das in einem Block
++ deklariert wird, konfiguriert nur diesen Block und überschreibt jede weitere Wahl; und ein
++ `locally`-Block beschränkt eine Ausnahme auf wenige Zeilen.
++ [Begrenzte Geltungsbereiche](delimited-scopes.md#scope-is-a-precise-instrument) zeigt alle drei in
++ einem Beispiel.
+
+@ 0 4 0 1df4daca083094a405998d73f5729c9a
++ Konfiguration lässt sich zusammensetzen wie der Code, den sie konfiguriert. Ein Projekt legt seine
++ hauseigenen Entscheidungen einmal fest und teilt sie mit `export`, sodass
++ `import myproject.conventions.*` jede Datei mit der Fehlerstrategie, den Kodierungen und den
++ Formaten des Teams ausstattet – Konfiguration als Bibliothek, versioniert und geprüft wie eine
++ solche.
+
+@ 0 8 0 15130699107ff7ce07eb333f08b1a870
++ Zwei Werkzeuge halten den Ansatz ehrlich. Kontextwerte, die Capabilities oder Konfiguration
++ darstellen, erweitern den Marker `Findable`, mit dem das Compiler-Plugin von Soundness *auffindbaren*
++ Kontext – Dinge, die ein Benutzer bereitstellen oder importieren soll – von interner Mechanik
++ unterscheidet. Und wenn ein benötigtes Given fehlt, macht ein Import von `explainMissingContext`
++ aus dem knappen „no implicit found“ des Compilers eine Diagnose: Es durchsucht den Klassenpfad nach
++ den Instanzen, die die Suche erfüllen *würden*, und nennt die Importe, die sie bereitstellen. Die
++ Antwort auf fehlenden Kontext ist so ein einzeiliger Import, keine archäologische Grabung.
+
+@ 0 1 0 1f2cfe28048ef52a014414f319348b48
++ ## Was in den Geltungsbereich gehört
+
+@ 0 3 0 08ab6e64349664401a049f51916e12fc
++ Es lohnt sich, die Bandbreite auf einen Blick zu sehen, denn gerade die Einheitlichkeit ist der
++ Punkt. Ein einziger Mechanismus trägt Entscheidungen, die andere Entwürfe auf
++ Konstruktorargumente, globale Einstellungen, Builder-Methoden und Laufzeit-Flags verteilen würden:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 0d44811bd8d018c410e4192246a748b7
++ column  Entscheidung
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 10 0 02cd44ba0a872ef0186f15a0a71e663f
++ row  was ein Fehlschlag bewirkt  `strategies.throwUnsafely`
++ row  wie Text zu Bytes wird  `codepages.utf8Codepage`
++ row  wie JSON dargestellt wird  `formatting.compactJsonFormatting`
++ row  wie Datumsangaben angezeigt werden  `dateFormats.iso8601DateFormat`
++ row  wie ein Boolean angezeigt wird  `affirmations.yesNoAffirmation`
++ row  worauf eine Aufgabe läuft  `threads.virtualThreads`
++ row  was mit unfertigen Aufgaben geschieht  `probates.cancelProbate`
++ row  welcher HTTP-Transport verwendet wird  `httpBackends.soundnessHttp`
++ row  welche Dateisystem-Implementierung  `filesystemBackends.javaBaseFilesystem`
++ row  welchen Kalender ein Datumsliteral meint  `calendars.gregorianCalendar`
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0f4325e2e28fd8fe0eb6619c2d9e23bf
++ Ein Idiom ist zu lernen, und dieselbe Überlegung – „was im Geltungsbereich ist, bestimmt, was
++ geschieht“ – gilt für alle.
+
+@ 0 1 0 051ff2ba1d0a5e911e96d25d468d9ce8
++ ## Benennung macht die Wahl lesbar
+
+@ 0 3 0 0338cae7de17808a12f362eb0e0255c4
++ Ein Given wird nach dem benannt, was es *auswählt*, nicht nach seinem Typ, denn die Importzeile ist
++ das, was ein Leser sieht. `import strategies.throwUnsafely` sagt etwas über den Code darunter aus;
++ `import strategies.given` täte das nicht.
+
+@ 0 4 0 1f2308d40559540504acf589b86bbe3d
++ Deshalb ist die Konvention hier wichtiger als anderswo: Ein Kontextwert wird verwendet, ohne an der
++ Aufrufstelle geschrieben zu werden, also ist der Import der einzige Ort, an dem seine Wahl sichtbar
++ ist. Ein schlecht benanntes Given macht kontextuelle Konfiguration genau so undurchsichtig, wie
++ ihre Kritiker behaupten.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 2 0 021c580bb192a4c90d3cf4ac02f1998f
++ Der ehrliche Einwand gegen kontextuelle Konfiguration ist die Fernwirkung, und er ist nicht falsch.
+
+@ 0 5 0 08a8364f101114b81d9f5e65f3c4db5c
++ **Die Wirkung ist nicht lokal zur Aufrufstelle.** Ein `json.show` wird je nach einem Import, der
++ womöglich hundert Zeilen weiter oben steht, anders dargestellt, und nichts an der Aufrufstelle
++ verrät das. Ein Leser muss wissen, wo er nachsehen muss. Die Abmilderung ist die Präzision des
++ Geltungsbereichs – je enger der Geltungsbereich, desto näher steht das Given an dem, was es
++ beeinflusst –, doch die Spannung ist echt, und ein dateiweit importiertes Given ist tatsächlich
++ Fernwirkung.
+
+@ 0 4 0 0bf53ac56528f89c034b002070df71e2
++ **Mehrdeutigkeit ist ein Kompilierfehler, und ein verwirrender.** Zwei Givens desselben Typs im
++ Geltungsbereich machen den Code mehrdeutig. Das ist sicher, wird aber in Begriffen der impliziten
++ Auflösung gemeldet statt als „Sie haben zwei JSON-Formate gewählt“. Wer zwei Bündel von
++ Konventionen importiert, die sich widersprechen, erzeugt genau das.
+
+@ 0 4 0 12e85f801961fb31108ba097de7fe655
++ **Refactoring kann Verhalten stillschweigend ändern.** Wird eine Funktion in eine andere Datei
++ verschoben, verlässt sie eine Menge von Importen und gelangt in eine andere. Die Typen stimmen
++ weiterhin; das Verhalten kann abweichen. Das ist die schärfste Kante des Ansatzes und der Grund,
++ warum die Konventionen eines Projekts besser in einem gemeinsamen Objekt gesammelt als pro Datei ad
++ hoc zusammengestellt werden.
+
+@ 0 5 0 1e2bd1a98a0147f819f7a3476225b5bf
++ **Es gibt keine Überschreibung zur Laufzeit.** Weil die Konfiguration beim Kompilieren aufgelöst
++ wird, lässt sie sich nicht durch eine Kommandozeilenoption oder eine Konfigurationsdatei ändern,
++ ohne die Entscheidung explizit durchzureichen. Wo Konfigurierbarkeit zur Laufzeit wirklich gewollt
++ ist, muss der Wert ein gewöhnlicher Parameter sein – und zu erkennen, welche der beiden Formen eine
++ Entscheidung braucht, ist eine Entwurfsentscheidung, keine automatische.
+
+@ 0 3 0 1f04c87e82ebf96301e4edea8825ca01
++ Siehe [begrenzte Geltungsbereiche](delimited-scopes.md) dafür, wie der Geltungsbereich festgelegt
++ wird, und [ehrliche Signaturen](honest-signatures.md) dafür, warum gerade die Anforderungen in der
++ Signatur dies überhaupt lesbar machen.

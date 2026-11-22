@@ -1,0 +1,78 @@
+orthant 2 language
+
+% 0 1 0 1a81f3e3f59aced3026bcb5f80e98a13
+
+@ 0 1 0 08111229421f98810e0e453ea6046f90
++ Sollevato quando Obligatory non riesce a estrarre dal framing un messaggio in arrivo.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 1e054c991ce78917187e563bf70ad309
++ I parser di framing di Obligatory (`ContentLength`, `LengthPrefix`,
++ `CrLf`) leggono uno stream di byte suddividendolo in frame distinti. Quando
++ i byte non corrispondono al framing atteso, viene sollevato questo errore. Il
++ costruttore accetta un `reason: Reason`; il messaggio reso è
+
+% 0 1 0 05faa89d015f41621d8709d549f1e372
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0b0c7d4858e26aa41b097bb455560614
+
+@ 0 1 0 19bc5ef0e23eadd61a7d2f241e848304
++ L'input è terminato prima che fosse letto un frame completo.
+
+@ 0 1 0 0bd2030ca60c97ae0ecac2c8afd657ae
++ **Esempio.** `[↯/s.112.2.1] could not deframe the message because the input ended before a complete frame could be read`
+
+@ 0 2 0 0c2db92b1ed520f90f87d98caa8856d2
++ **Soluzione.** Verificare che il producer abbia scritto un frame completo;
++ controllare se la connessione è stata chiusa a metà messaggio.
+
+% 0 1 0 1fa83631eabbef6414bbff68cd70cc1a
+
+@ 0 2 0 165bb3b13a4df8100efad2800c6c73f8
++ Un ritorno a capo (`\r`) non era seguito da un avanzamento di riga (`\n`)
++ dove il framing richiedeva CR-LF.
+
+@ 0 1 0 1685d38f67cb281c120f8d57957870f5
++ **Esempio.** `[↯/s.112.2.2] could not deframe the message because a carriage return was not followed by a line feed`
+
+@ 0 2 0 1eda4b9838fe3be50483c82794cf5a0a
++ **Soluzione.** Verificare che il producer usi terminazioni di riga CR-LF;
++ gli input con solo LF o solo CR fanno fallire questo parser.
+
+% 0 1 0 09dd34b04086092900b3c264234e1584
+
+@ 0 2 0 04fd9f5c5e1e6e8d0acf6c6ea3d88b8b
++ Il valore dell'intestazione `Content-Length` non ha potuto essere analizzato
++ come intero.
+
+@ 0 1 0 1383eb28e26587a300536838c5238cfe
++ **Esempio.** `[↯/s.112.2.3] could not deframe the message because the content-length header value could not be parsed`
+
+@ 0 2 0 196ecbfa17758fdb075e3fceb94db35d
++ **Soluzione.** Ispezionare i byte dell'intestazione; il valore dev'essere un
++ semplice intero decimale.
+
+% 0 1 0 1d1d57245c2eba441d4c65fa7a9a954d
+
+@ 0 3 0 121246c11f14a76601a5c262d340f0bc
++ È stata incontrata un'intestazione che il parser di framing non
++ riconosce (sono ammesse solo `Content-Type` e `Content-Length`).
+
+@ 0 1 0 102c6e42affdf75c04abda25241bb6d9
++ **Esempio.** `[↯/s.112.2.4] could not deframe the message because an unrecognized header was encountered`
+
+@ 0 3 0 14609cb0551f929f1dabc7284aaff823
++ **Soluzione.** Togliere dal messaggio le intestazioni estranee al framing prima
++ di passarlo al parser; oppure estendere il parser perché accetti
++ l'intestazione.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 0a77515cdedf6f190c821317fd832271
++ - Sorgente: `lib/obligatory/src/core/obligatory.Framing.scala`

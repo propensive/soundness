@@ -1,0 +1,15 @@
+orthant 2 release
+
+@ 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
++ typecheck
+
+@ 0 1 0 05b36c2afd29b91f1f11b92d68dfe7b5
++   val group = Multicast(ip"224.0.0.251", udp"mdns")
+
+@ 0 1 0 1cd7e30e49402d900d9ad01ca6fcecc0
++ A nameserver is an `Endpoint` of a UDP port. `ask` sends a
+
+@ 0 2 0 11b80342322fb04f063241c906c77964
+
+@ 0 1 0 1fb1205d037bcd391cb4de2f521cefae
++ val addresses = resolver.ask(dns"example.com").map(_.rdata)

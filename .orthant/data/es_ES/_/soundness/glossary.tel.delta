@@ -1,0 +1,1195 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0df839e50c6f66941cf87bfe8f61548e
+
+% 0 1 0 1bc86656c3d9a2bf114b2bb68c999dee
+
+% 0 1 0 0b24f6d2c3b87ddd0d6b8fe0f4779b90
+
+% 0 1 0 09c4a17da68108ad06051afdc4612f5b
+
+@ 0 1 0 0f41a64e951278e802d223dde19c9cf3
++   term acumulativo
+
+% 1 1 0 12691df2eb855d7217da59f8fd33de0e
+
+@ 0 2 0 140849f293dd6cdc1c07ca6d4736dc4a
++       Describe una [estrategia], como `validate`, que registra cada error y deja que el trabajo
++       continúe, y después reúne todos los errores registrados en uno solo, en lugar de detenerse
++       en el primero.
+
+% 0 1 0 1c0c6cceec82bfed0ba5671fba350f1a
+
+@ 0 1 0 1f019de7fdab87d7020a975233a5fbaa
++   term  con armadura ASCII
+
+% 1 1 0 1acaee615326a52e1f94c290c0069b00
+
+@ 0 3 0 081b6dfe75ae48d11980de36f717b152
++       Describe datos binarios, como una clave, un certificado o una firma, escritos como texto
++       ASCII, en Base64 entre las líneas `-----BEGIN …-----` y `-----END …-----`, como hace PEM,
++       de modo que se pueden copiar como texto.
+
+% 0 1 0 0306d7d13b29e80e01dcde5578c73a2c
+
+@ 1 0 0 0306d7d13b29e80e01dcde5578c73a2c
++   term boxing
+
+% 1 1 0 1c12767dc332a47b11e43a0c7f10cd43
+
+@ 0 3 0 16b35b8458d847520fe009fb2cfee0c0
++       Envolver un valor primitivo, como un `Int` o un `Double`, en un objeto del heap, para que
++       pueda usarse donde se espera un objeto, a costa de una asignación de memoria. Un valor sin
++       boxing se almacena como el propio primitivo.
+
+% 0 1 0 07bfe291bad851b90276426a44edc524
+
+@ 1 0 0 07bfe291bad851b90276426a44edc524
++   term marca
+
+% 1 1 0 1f5f35f7db01d135180d389f45bb7ddd
+
+@ 0 3 0 118ccc1bf470320b0b9d467fb0fc052f
++       Un marcador en el tipo de un valor que registra de dónde procede el valor, o un hecho sobre
++       él, como en `Ratel.Row of brand`, de modo que una fila solo puede leerse a través del
++       lector del que procede.
+
+% 0 1 0 0fe6888dbcb3af9e04fb7d7cdca2ce46
+
+@ 1 1 0 0f6ee9500310be4b0b706d398345247c
++   term capacidad
+
+% 2 1 0 10f773c4549dfa1903b35f375a0f84cb
+
+@ 0 3 0 10fd870f731fa2d01daef8deb3cc7100
++       Un valor que debe estar en el ámbito para que una operación esté permitida, como `Online`
++       para una petición de red. Un método que necesita una lo dice en su signatura, así que lo
++       que un método puede hacer es visible en su tipo.
+
+% 0 1 0 00597d89e5b3d64f1cf62bfae255ddd5
+
+@ 1 1 0 11a77683ba361c8703328aa40dd8afaf
++   term  comprobación de capturas
+
+% 2 1 0 0d5c298ff0cc3df403cd2f1b3e1418d3
+
+@ 0 3 0 0814da828eb883830c00c3eec03f0fed
++       Una comprobación experimental del compilador de Scala 3 que rastrea las
++       [capacidades][capacidad] que captura cada valor, de modo que una capacidad prestada a un
++       ámbito no puede escapar de él, por ejemplo al ser almacenada o devuelta.
+
+% 0 1 0 0bfe3d978d2be1ad1d7ac821c3c9655e
+
+@ 0 1 0 0f1c8b265941765a1d322e3cf6c8d162
++   term portador
+
+% 1 1 0 112aa4a43a15a22612417ab34fc34736
+
+@ 0 3 0 1d242ad7e99c24ec1714df6816f9bf68
++       Algo que porta lo que otra cosa describe: el tipo de Scala que contiene un cuerpo de un
++       tipo de medio dado, como `Json` para `application/json`; o un hilo que ejecuta, por turno,
++       las tareas que se le entregan, como en un pool.
+
+% 0 1 0 1ac1d59c594a02a60c9c8e9b5a4eeaab
+
+@ 0 2 0 0bf50468f76203b70eedfa5e61af4161
++   term  paquete de elección
++   keyword  importación de política
+
+% 1 1 0 19bdf2767db47c6a0a87797e6b3395d9
+
+@ 0 3 0 033fac65ee1516281c163ab7c9014df3
++       Un paquete de [givens][given] alternativos para una decisión, como `strategies`,
++       `alphabets` o `httpBackends`. Importar un miembro por su nombre toma esa elección para todo
++       lo que está en el ámbito.
+
+% 0 1 0 0917f0bcaecedf7e154ca0e1f1f478ba
+
+@ 1 0 0 0917f0bcaecedf7e154ca0e1f1f478ba
++   term fragmento
+
+% 1 1 0 053b4575c17fdfae19b9859d30761b02
+
+@ 0 3 0 05aa406d0a453b311fc16bae5da78845
++       Uno de los trozos en los que un flujo entrega sus datos, como un bloque de bytes. El código
++       que lee un flujo debe prever que un límite, como el final de una línea, caiga entre dos
++       fragmentos.
+
+% 0 1 0 17ba553e447f668c15d213d153a7effc
+
+@ 0 1 0 03b6fe048f3bb387029d1ff28b254dda
++   term cifrado
+
+% 1 1 0 0f101985629a85261fc8b3a0987b2e31
+
+@ 0 2 0 0547f4b41f41bb51112c816f827f0ae7
++       Un algoritmo que cifra y descifra datos con una clave, como AES o RSA. El tipo de una clave
++       nombra su cifrado, así que una clave no puede usarse con otro.
+
+% 0 1 0 0f6b958eddbe984b1df0a44e54491352
+
+@ 0 1 0 1c0df53294a3706902c113f5e3ad344c
++   term  cargador de clases
+
+% 1 1 0 17981eb296a7689d0cdb4e16c645896b
+
+@ 0 2 0 0c88a839e914ee09096ce8cfb72e446a
++       El objeto de la JVM que encuentra y carga las clases compiladas y los recursos, desde un
++       classpath o desde otro lugar. Los recursos y los servicios se buscan a través del
++       `Classloader` que está en el ámbito.
+
+% 0 1 0 10c9d5f376498e2500a2c31400d2ec4c
+
+@ 1 0 0 10c9d5f376498e2500a2c31400d2ec4c
++   term  tic de reloj
+
+% 1 1 0 0af4b7ae61d1cb921218f03aa41ea2ce
+
+@ 0 2 0 087b861aa529864012e69dbf81ce665c
++       Un paso de un reloj que impulsa un trabajo repetido, como un fotograma de una animación o
++       un evento que informa del progreso. No es lo mismo que una [marca de graduación] en el eje
++       de un gráfico.
+
+% 0 1 0 025af9f587e406e9154e8232423c3eeb
+
+@ 0 1 0 13a942f2c18f42ba1ef87100354cd8a8
++   term  opción de línea de comandos
+
+% 1 1 0 0654640588a50d0f0b2b2fa4638890c0
+
+@ 0 2 0 02a9f9d9d95688bb1862485821fa159f
++       Un argumento con nombre de un programa de línea de comandos, escrito con `--` delante, como
++       `--verbose` o `--log-level`, que puede llevar un valor.
+
+% 0 1 0 1a39645a09ef3b8c1213ac81de705026
+
+@ 1 0 0 1a39645a09ef3b8c1213ac81de705026
++   term  tiempo de compilación
++   keyword compiletime
+
+% 1 1 0 1ef4835d6be75155005ed63686058ad4
+
+@ 0 2 0 017f1863a624e3e61e14c93c00774b7b
++       Mientras el programa se está compilando. Una comprobación hecha en tiempo de compilación
++       rechaza el código incorrecto antes de que pueda ejecutarse; un error en tiempo de
++       compilación lo notifica el compilador.
+
+% 0 1 0 1388853d84e2e5621a50337e84f8f361
+
+@ 0 2 0 03d43ad1e0e1be6d0c9e0e3e972e7b21
++   term  valor contextual
++   keyword implícito
+
+% 1 1 0 0c40e32021c39fcb179eb3067f6625ca
+
+@ 0 2 0 0f70c3c2a61452fe0d525263f0fda351
++       Un valor que el compilador encuentra en el ámbito y pasa a un método sin que se escriba
++       como argumento. Se declara con `given` y se solicita con `using`.
+
+% 0 1 0 1e7f6b22919ec94103493f4bd32e692b
+
+@ 0 1 0 100c49900235943713aa6d893cc69197
++   term  modo cocinado
+
+% 1 1 0 1eee28747b6947af1886bc11303f9119
+
+@ 0 3 0 11e673702654ea940af21d166f796421
++       El modo ordinario de un terminal, en el que la entrada se entrega línea a línea, con eco y
++       con la edición de línea, como la tecla Retroceso, a cargo del controlador del terminal. Su
++       opuesto, el modo crudo, entrega cada pulsación de tecla según se teclea.
+
+% 0 1 0 1e94cbb7b687ac4a1d970f506e9661dd
+
+@ 0 1 0 18aee109b57f492e06dae81d44453e32
++   term demonio
+
+% 1 1 0 1d7a9007c90d6d2e018b0234db10a1b8
+
+@ 0 3 0 1b6556d7b382abea1874252dca283ba4
++       Un programa que sigue ejecutándose en segundo plano y atiende cada invocación de un
++       comando, recibida de un pequeño lanzador, de modo que el comando arranca al instante. En
++       concurrencia, un `daemon` es una tarea que se inicia y se deja en ejecución hasta que
++       termina su ámbito.
+
+% 0 1 0 1c1af090876abc101b455be906132175
+
+@ 0 1 0 04aa4be4401ae2650c6861aa2b2dbd3b
++   term desdecorar
+
+% 1 1 0 05bb429022d765861a78ec8f46b79cdf
+
+@ 0 2 0 165998474456a7d9130df41afd906a93
++       Convertir un nombre tal como lo ve la JVM, codificado por el compilador de Scala, como
++       `Foo$` o `$anonfun$1`, de nuevo en el nombre que se escribió en el código fuente.
+
+% 0 1 0 1c95718957d2d8600aa534d779303ff8
+
+@ 0 1 0 054b1cbc80536a011bbe23a05e3bf214
++   term derivación
+
+% 1 1 0 02b3b28b36a112e4083b7c9a60532e78
+
+@ 0 2 0 0f14f504289c94b60cf44ac1feadb347
++       Hacer que el compilador construya una instancia de una [clase de tipos] para una case class
++       o una enumeración a partir de las instancias de sus campos o de sus casos, en lugar de
++       escribirla a mano.
+
+% 0 1 0 09cc5946d26376231497f9efec0e94bf
+
+@ 0 1 0 0c7513ceeeeed8a2051e8e64278e6aea
++   term resumen
+
+% 1 1 0 1ea8c89535617d9e12c23605926e7e3e
+
+@ 0 2 0 1ae77d25cdd8eaa102c2143f520cdd02
++       El valor de longitud fija que un algoritmo de hash, como SHA-256, calcula a partir de
++       cualquier dato o de cualquier valor. Su tipo nombra el algoritmo, y entradas iguales dan
++       siempre resúmenes iguales.
+
+% 0 1 0 1d1b436b545b0e8b1881ca0673541f6e
+
+@ 0 1 0 128b0ca918ae8e6a169b8e9036e81cd4
++   term  estilo directo
+
+% 1 1 0 055ac289f77ccb1c17d2550af533b05e
+
+@ 0 2 0 0e00f3ad7f1e3835078c390ea2697095
++       Código escrito como sentencias y expresiones ordinarias cuyos valores se usan directamente,
++       sin envolver los resultados en una mónada como `Either`, `Try` o `Future`.
+
+% 0 1 0 0205551bc5d658ef034a7f971a78229f
+
+@ 1 0 0 0205551bc5d658ef034a7f971a78229f
++   term endpoint
+
+% 1 1 0 01b602226c4d9c3e19b763f305b71b84
+
+@ 0 2 0 04e1a2096eb621b50d9e6bf3e1072d5f
++       La dirección en la que se alcanza un servicio, y a la que se conecta un cliente, como un
++       host y un puerto, una URL o un comando que hay que iniciar.
+
+% 0 1 0 15a3ad57b135b59f08ca39adc7e2bb84
+
+@ 1 0 0 15a3ad57b135b59f08ca39adc7e2bb84
++   term enumeración
++   keyword enum
+
+% 1 1 0 0ac4e24c0647cf941b8311d5cf1e0672
+
+@ 0 2 0 0e5e73f95908c541112c55ee44a9d8cc
++       Un tipo declarado con `enum` cuyos casos son una lista fija de valores, conocida por el
++       compilador, cada uno con un ordinal que da su posición en la declaración.
+
+% 0 1 0 03e372b69e2e69130671c4d5c63585da
+
+@ 1 0 0 03e372b69e2e69130671c4d5c63585da
++   term evidencia
+
+% 1 1 0 1a657edd3a21c7e0131fc99c87ba33a5
+
+@ 0 3 0 1c21d9b8a8237c34023c636b549db1a0
++       Un [valor contextual] cuya presencia demuestra algo que el compilador no puede saber de
++       otro modo, como que un tipo es subtipo de otro, o que una herramienta está disponible, y
++       que un método exige antes de poder ser llamado.
+
+% 0 1 0 1e06fa4b58e245a900f5167c9c0b474f
+
+@ 1 1 0 1363188e9983d0701b2e019b2269c1ad
++   term  estilo tipográfico
+
+% 2 1 0 016ddb39723dc18f0948e4a40bfc70c1
+
+@ 0 2 0 05ca485803fd611c16b4f7af7e72106b
++       Un estilo de un [tipo de letra], un `Face`, elegido por su peso, su inclinación y sus
++       características, como Inter en negrita cursiva.
+
+% 0 1 0 1ed1a46e8e2dced1075dab8f1047ef01
+
+@ 1 0 0 1ed1a46e8e2dced1075dab8f1047ef01
++   term fan-out
+
+% 1 1 0 1760abda4bf91d61064ed1ba4c8f8cce
+
+@ 0 2 0 03b42145ea58af63061cac041797ac2d
++       Distribuir trabajo o datos desde un origen a muchos destinatarios, como un lote de tareas
++       pequeñas repartido entre hilos, o un flujo entregado a varios consumidores.
+
+% 0 1 0 1fa780cc23e5a4c8031d86aafb7e6f76
+
+@ 1 0 0 1fa780cc23e5a4c8031d86aafb7e6f76
++   term  huella digital
+
+% 1 1 0 0a6e7bf567b167390d8104adad38cd41
+
+@ 0 3 0 1526b321f03fe2391c52becc114ee570
++       Un valor corto calculado a partir de algún contenido, como un esquema o una clave, que lo
++       identifica: comparar huellas digitales confirma que dos partes tienen el mismo contenido
++       sin comparar el contenido en sí.
+
+% 0 1 0 0025a34f00e2aa9215e7bf184b91c42d
+
+@ 1 0 0 0025a34f00e2aa9215e7bf184b91c42d
++   term  de disparar y olvidar
+
+% 1 1 0 0530ff027fb418e9048cb38c485bbdc6
+
+@ 0 2 0 051071f5d051859405ae3ccfac31a799
++       Describe un trabajo que se inicia sin esperar a que termine ni a ninguna respuesta, como
++       una notificación en RPC, un datagrama o una tarea lanzada con `daemon`.
+
+% 0 1 0 0f520ba97c8d4c6b1444b5316dc68bfa
+
+@ 0 1 0 16248f251b5f74fc1d463b34c25a52f5
++   term indicador
+
+% 1 1 0 0d074dcd496132510cfcbcef3e50349f
+
+@ 0 3 0 0d553d0276831416110458164e71e9b8
++       Un ajuste de sí o no con nombre, a menudo almacenado como un bit de un entero, como en el
++       campo de indicadores de una cabecera binaria. Un conjunto de indicadores está tipado por
++       una [enumeración], así que un indicador de otro conjunto se rechaza.
+
+% 0 1 0 131de5da7fc99f4d1d018f24090e16be
+
+@ 0 1 0 198b0e32fa7e33251111f4fd2ad41644
++   term foco
+
+% 1 1 0 0086b57298aea79b10ddeb0b4f266740
+
+@ 0 3 0 0d3467a904283edb12ec67db99736bcc
++       La posición dentro de una estructura sobre la que el código está trabajando en ese momento,
++       como un puntero JSON, mantenida por `track` a medida que un recorrido desciende. Un error
++       registrado bajo `validate` se empareja con el foco en el que se produjo.
+
+% 0 1 0 0ec13a0700e41dba03a064cae04815b2
+
+@ 1 0 0 0ec13a0700e41dba03a064cae04815b2
++   term reenviador
+
+% 1 1 0 1f5e9c63f996a8a600dbb63c45560896
+
+@ 0 3 0 1bbfc956ffa645e3019016baae098224
++       Un método que no hace más que llamar a otra definición con los mismos argumentos, como el
++       que el compilador genera para una cláusula `export`, de modo que se pueda llegar a un
++       miembro desde otro lugar.
+
+% 0 1 0 1d83dc718c260deb0b1350d4ca8880e5
+
+@ 1 0 0 1d83dc718c260deb0b1350d4ca8880e5
++   term trama
+
+% 1 1 0 11f5387a232b6d1903ea17a4b25435a4
+
+@ 0 3 0 19fbf194b5fd68f618169898511c7de0
++       Una unidad autocontenida de una secuencia: un mensaje extraído de un flujo mediante el
++       [entramado], un documento BinTEL que viaja por sí solo, o una imagen de una animación. Una
++       entrada de una pila de llamadas es un [marco de pila].
+
+% 0 1 0 09e66b544112e0e8072f295f100b807b
+
+@ 0 1 0 143ca37cf0f4fb4f039ad1a6a51399a0
++   term entramado
+
+% 1 1 0 082ab46cf83cad70049d96d7d15aab05
+
+@ 0 2 0 1b429b65fa0b63e30e44353b2315e2a9
++       Dividir un flujo continuo de bytes o de texto en mensajes separados, mediante un prefijo de
++       longitud, una cabecera `Content-Length` o un final de línea, de modo que cada mensaje pueda
++       leerse entero.
+
+% 0 1 0 056a6c84f04ce7271a55b70321265768
+
+@ 1 0 0 056a6c84f04ce7271a55b70321265768
++   term congelado
+
+% 1 1 0 12b345df2e4ff87d042a8519e5d7b641
+
+@ 0 3 0 1079d736de088c5b12122b38fbd3ac5a
++       Hecho [inmutable] una vez que se ha construido: una estructura que se rellena por mutación
++       y después se congela, como un filtro de Bloom o una `Topology`, puede compartirse y
++       consultarse, pero ya no modificarse.
+
+% 0 1 0 06664a38722d20911a9f20fb8652fee6
+
+@ 1 1 0 12f2ca245f69c4f0039fb53e2c23c46f
++   term getter
+
+% 2 1 0 1e5bdc9e461e071304882f491f261326
+
+@ 0 2 0 164438e675f9172a147601da867ffd72
++       Una función o un método que lee una parte de un valor, como un campo. Emparejado con un
++       [setter], forma una lente.
+
+% 0 1 0 1184751ed9e3289d1bc1033f33229a95
+
+@ 1 1 0 181c0ea6f37f092800ec9d3704d1a693
++   term given
+
+% 1 1 0 1012980d9433a33218149e5beadba14c
+
+@ 0 2 0 0eb4eb25ef22206e0f9f159e6626120f
++       Una definición marcada con `given`, que pone un [valor contextual] a disposición de
++       cualquier código que la tenga en su ámbito.
+
+% 0 1 0 084420142785480f051a8128f03bbffa
+
+@ 0 1 0 12342b3e5daf05d41b440dfe44dc4861
++   term concesión
+
+% 1 1 0 033f33501eef489d0c2ed1a40834c2ca
+
+@ 0 3 0 025502ff1adb6d1d19fc9af47f52d0df
++       Uno de los tipos de acceso con los que se abre un [descriptor], como `Read`, `Write` o
++       `Exclusive`. Las concesiones se llevan en el tipo del descriptor, así que una operación que
++       no se concedió no compila.
+
+% 0 1 0 00f3411913d91bb113a3637f96b8de18
+
+@ 0 1 0 14f0e7fb003d4bfd15cd065da12fe28d
++   term  grupo de grafemas
+
+% 1 1 0 1df21237722eb8790723e58a1637fc66
+
+@ 0 3 0 01655e54b8c887c9010aed01f0e54504
++       Una secuencia de uno o más caracteres Unicode que un lector percibe como un único carácter,
++       como una letra con acentos combinables, o un emoji construido a partir de varios puntos de
++       código.
+
+% 0 1 0 135064890c2eca2d0557074f81fd26dc
+
+@ 0 1 0 01cafce4528323071dd6d60eb5c2dc9c
++   term descriptor
+
+% 1 1 0 117b7f0b119ae9950725e32c03307cfe
+
+@ 0 3 0 1cdec3ef2d87970e03b9dcfa30462f74
++       Un valor que da acceso a un recurso abierto, como un fichero, un lienzo o un repositorio,
++       mientras dura un ámbito. Su tipo dice para qué operaciones se abrió, y el recurso se cierra
++       cuando termina el ámbito.
+
+% 0 1 0 10f428add9959f9706b77776b902dfdc
+
+@ 1 0 0 10f428add9959f9706b77776b902dfdc
++   term manejador
+
+% 1 1 0 1bcb0ed7858f5a1f1ce8c9e332e12a01
+
+@ 0 3 0 0b331c7842bd62e30d5f43d0e9c40506
++       Una función que se proporciona para que se ejecute cuando algo llega o sucede, como una
++       petición que llega a un servidor o un mensaje de un par. Decide qué se hace con ello y, en
++       el caso de una petición, qué respuesta se devuelve.
+
+% 0 1 0 12cc98e8c16ab7c71a3f8b55d02904f8
+
+@ 1 0 0 12cc98e8c16ab7c71a3f8b55d02904f8
++   term arnés
+
+% 1 1 0 0e5befd10c74da781f57d40894ce5f1e
+
+@ 0 2 0 1d7464b50b2880801920a4469b07cda3
++       El código que ejecuta otro código en condiciones controladas y lo observa, como el
++       `Harness` que ejecuta una prueba y registra lo que captura, o un arnés de benchmarks.
+
+% 0 1 0 0fa90a87ae9e65011ed0a322038e6a3b
+
+@ 0 1 0 116c3a43a83f31640567d6333c20a029
++   term  signatura honesta
+
+% 1 1 0 0189e2cd927d64491487ef186e5bbdf8
+
+@ 0 2 0 1f9318377a190b3a0fe4041e4b8a6b57
++       Una signatura de método que declara todo lo que el método necesita y todas las maneras en
++       que puede fallar, de modo que nada de lo relativo a llamarlo queda en manos de la
++       documentación.
+
+% 0 1 0 19dd8489827a9ff51cea2c298f10875e
+
+@ 0 1 0 17546d609edc4e600b76a10164733150
++   term inmutable
+
+% 1 1 0 1747fe4a08060f9e0952b3f69b825961
+
+@ 0 2 0 13cd85a2cbee515401af18dba5e21728
++       Que nunca cambia después de su construcción. Una operación que parece alterar un valor
++       inmutable devuelve un valor nuevo y deja el original como estaba.
+
+% 0 1 0 06e8589868e200690db692509e379f30
+
+@ 0 1 0 14747dcf078f96671ce84ee760202f16
++   term  estado imposible
+
+% 1 1 0 0b457ee1bd0c3c2a013003ee155e9ddb
+
+@ 0 2 0 15a2b51af9e5a2ac1cefab8bc8fad952
++       Un valor que carecería de sentido o sería inválido, y que los tipos están diseñados para
++       hacer irrepresentable, de modo que ningún código necesita comprobarlo.
+
+% 0 1 0 052f685635f31ca41eb2a9b6c696f28f
+
+@ 0 1 0 07c466338a479fd31fa0a2f58dcfe8d5
++   term interning
+
+% 1 1 0 18bd6cfd8a2767721c79c842c71952d1
+
+@ 0 2 0 09659c9b603dde9512104ba0ca7b8d83
++       Almacenar cada valor distinto una sola vez, de modo que almacenar o crear de nuevo un valor
++       igual da la misma instancia o referencia, y los valores iguales pueden compararse por
++       identidad.
+
+% 0 1 0 147797ae2a412f6f1e1c9831eb9fe592
+
+@ 0 1 0 090a9fa7f0bb8cf4095e017f90e49ff2
++   term interpolador
+
+% 1 1 0 181671b47f96c0ff183b57492a247bd5
+
+@ 0 2 0 01389f1708c9755c06f2bc571601d5de
++       Un prefijo en un literal de cadena, como `t"…"`, `url"…"` o `media"…"`, que comprueba el
++       contenido del literal en [tiempo de compilación] y da un valor de un tipo preciso.
+
+% 0 1 0 0142d9cf365f00fa009aa4d024478759
+
+@ 0 1 0 05fe0c5252cda01109b213b6c59371e4
++   term  pulsación de tecla
+
+% 1 1 0 176a95bfc0f605af18b01387889b0452
+
+@ 0 2 0 174ba415978c38450260a79365c6c01f
++       Una tecla, o una combinación de teclas, pulsada en un terminal, que se recibe como un valor
++       `Keypress`, como un carácter, Intro o una tecla de flecha.
+
+% 0 1 0 1c6a927f6806dc83105c6ad4c50e35c8
+
+@ 0 1 0 0bec5d1036e768e3148926c7813af358
++   term rótulo
+
+% 1 1 0 1d75714935ebb4690369c2baaac5e3b4
+
+@ 0 3 0 0a02c7db828502160f272e7694dd1746
++       Un texto colocado junto a aquello que nombra, como un punto en un gráfico o una población
++       en un mapa; de forma más general, el nombre corto con el que se muestra un valor, como el
++       rótulo de un bloque PEM.
+
+% 0 1 0 1d0b78322e93f27514f24657fdd6e024
+
+@ 1 0 0 1d0b78322e93f27514f24657fdd6e024
++   term disposición
+
+% 1 1 0 08fd7b0ce36ef441147904c61416ce74
+
+@ 0 2 0 1a4bd160fd82f4c215840aac9681eca8
++       La colocación de las partes en el espacio o en la memoria: cómo una tabla, una interfaz de
++       terminal o un gráfico sitúa sus partes, o cómo se reparten los bits de un píxel entre sus
++       canales.
+
+% 0 1 0 06440f522bd54cf918b5cbe4c3b94908
+
+@ 0 1 0 1be9900c5b72704911ea5927c7974c8d
++   term permisivo
+
+% 1 1 0 1f15a4dc782d45761cae1592a1dc0eab
+
+@ 0 2 0 0c2f751fd473e4110927da647ffe2f43
++       Describe una política de decodificación que lee un valor opcional ausente o mal formado
++       como `Unset` y no notifica nada, en lugar de lanzar un error como hace una política
++       estricta.
+
+% 0 1 0 1406f989044770fd00e9875ac103078a
+
+@ 1 0 0 1406f989044770fd00e9875ac103078a
++   term elevar
+
+% 1 1 0 0d6a0f66fbef18a305e18cb743974d74
+
+@ 0 3 0 00344796c50fede8071b5c527d7f71d6
++       Llevar un valor a un contexto más rico que lo representa, como un valor a un contenedor,
++       una constante a una expresión citada para una macro, o un hecho sobre un valor a su tipo.
+
+% 0 1 0 1207eb032ad66d861d8e8f980d47df91
+
+@ 1 0 0 1207eb032ad66d861d8e8f980d47df91
++   term oyente
+
+% 1 1 0 123d8a6d2cb3d4f71315ef97c4b00d5f
+
+@ 0 3 0 0b38e6f7695753a508014ede829a322a
++       Un valor o una tarea que espera eventos o conexiones y actúa sobre cada uno según llega,
++       como el `Lsp.Listener` que recibe lo que un servidor de lenguaje envía sin que se le pida,
++       o un servidor que espera conexiones en un socket.
+
+% 0 1 0 03afa8123f52c21c06f0d2a9d766c4df
+
+@ 0 1 0 014e544dd0596d5915b300a76d698a04
++   term logger
+
+% 1 1 0 1b2445bdb82883e808b05629e2240bfa
+
+@ 0 3 0 00f1e63a604e408e007e23fa3218fc3c
++       El [valor contextual] que recibe los eventos tipados que un método registra en el log, y
++       los escribe en algún lugar, como un terminal, un fichero o el log del sistema. Sin ningún
++       logger en el ámbito, el logging es silencioso y no cuesta nada.
+
+% 0 1 0 08a21919cd3fc9c61ca7b009b83d5563
+
+@ 0 1 0 149432bfa61bebfa1b8d25798bcc7891
++   term  tipo de medio
+
+% 1 1 0 110c08dfb2bc9b730c879bd2396335df
+
+@ 0 3 0 0cc6676e0d320df8145f03db51e292b9
++       El nombre estándar del formato de unos datos, como `text/html` o `application/json`, que
++       los acompaña en una cabecera HTTP o en un correo electrónico, para que el receptor sepa
++       cómo leerlos.
+
+% 0 1 0 0114f61b2a26b203065846e99bc1295d
+
+@ 1 0 0 0114f61b2a26b203065846e99bc1295d
++   term  de un solo uso
+
+% 1 1 0 19a7c38a638e6b99115e0e799ea86dbe
+
+@ 0 3 0 05f187b34007e5fd1ac069ed038f0e86
++       Que se puede usar, o que se hace, una sola vez: un iterador de un solo uso solo puede
++       recorrerse una vez, y una operación de un solo uso, como `gzip` sobre `Data`, procesa un
++       valor entero en una llamada en lugar de hacerlo de forma incremental.
+
+% 0 1 0 0839065bf9eff6701a3451fa7835d742
+
+@ 1 0 0 0839065bf9eff6701a3451fa7835d742
++   term  tipo opaco
+
+% 1 1 0 0408291d1a21e5f1147cdfef07e5f438
+
+@ 0 2 0 0882b310e1d20ead1b66e6eb3788cff1
++       Un tipo que en tiempo de ejecución está representado por otro tipo, como un `Long`, pero
++       que el compilador trata como distinto de él, así que solo se permiten las operaciones
++       definidas para él.
+
+% 0 1 0 0204601cf5d4667d13cced5f986596ad
+
+@ 0 1 0 1dd4c90a7f7c1e990252c7eae5ff45bf
++   term opcional
+
+% 1 1 0 163322732a3bc8d61cdccb9f2831ad17
+
+@ 0 2 0 04beecf946a9979e0045ba9afff30948
++       Con el tipo `Optional[T]`: o bien un valor de tipo `T`, o bien `Unset`. Un valor presente
++       no está envuelto, así que no cuesta nada más que el propio valor.
+
+% 0 1 0 01dd0d1a4a5e99d615632e24dd527e55
+
+@ 1 0 0 01dd0d1a4a5e99d615632e24dd527e55
++   term relleno
+
+% 1 1 0 01e66d64650a5f120fee33fdcfc8ad43
+
+@ 0 3 0 1369f2827e4bd4a80f760e3dd6100acb
++       Caracteres o bytes añadidos a un valor para llevarlo a una longitud requerida: los espacios
++       que completan un texto hasta la anchura de una columna, o los bytes que un cifrado por
++       bloques añade para llenar su último bloque.
+
+% 0 1 0 18129ef9a5485f551b58c243d83844e6
+
+@ 0 1 0 1b9c37ab287b76071869f247d8f83208
++   term panel
+
+% 1 1 0 1ce3978f19ab7e9d0ac0fdc42bd0cc9b
+
+@ 0 2 0 0e436217f03593770b9fc64c3543b32f
++       Una región rectangular de una interfaz de terminal que muestra un contenido. Los paneles se
++       anidan en un árbol, que se resuelve con respecto al tamaño del terminal.
+
+% 0 1 0 0910491bbbd482a807beeafbe5fa11ff
+
+@ 1 0 0 0910491bbbd482a807beeafbe5fa11ff
++   term aparcar
+
+% 1 1 0 1ef6263bca3c20b51af2b3189328d41b
+
+@ 0 2 0 022841e42c580cda1adc7e4eaa58e403
++       Suspender un hilo o una [hebra], sin consumir tiempo de procesador, hasta que otro lo
++       desaparque, como hace un escritor cuando su lector se queda atrás.
+
+% 0 1 0 178aeff303eca08410dfec7f7c36c6d6
+
+@ 1 0 0 178aeff303eca08410dfec7f7c36c6d6
++   term  coincidencia de patrones
+
+% 1 1 0 0f1a25adb1ddfa9b0474c013722e74fd
+
+@ 0 2 0 0f09dd05ca66b6930a0e53bece575dde
++       Probar un valor, en una expresión `match` o en un patrón en otro lugar, contra la forma de
++       cada caso por turno, y extraer partes del primero que encaja.
+
+% 0 1 0 0aeae2868f3ab1db04e1040328b2f7a4
+
+@ 1 0 0 0aeae2868f3ab1db04e1040328b2f7a4
++   term  carga útil
+
+% 1 1 0 001132339f97b8db1f6fbcf5d8b58656
+
+@ 0 2 0 136b67c427c76c7d027429b5f40c9afc
++       Los datos que transporta un mensaje o una petición, a diferencia del sobre que los rodea,
++       como su nombre de método, su identificador o sus cabeceras.
+
+% 0 1 0 059ada9391070c6614b70447432b4bda
+
+@ 0 1 0 11315050eac46a8403a46eb528088fc8
++   term permiso
+
+% 1 1 0 1911263c3d484c8f0832298bcd0725fb
+
+@ 0 3 0 1a4e13413995d2b802889c2e20f9a1d4
++       Un [valor contextual] que debe importarse antes de que pueda usarse un algoritmo débil u
++       obsoleto, como SHA-1, de modo que la aceptación de este por parte de una base de código es
++       una sola importación, que se puede buscar.
+
+% 0 1 0 1b5007d03320ab8917d5e0c4cfad930b
+
+@ 0 1 0 12ba6e8452dbb1d9096a40b34b9c9b3c
++   term testamentaría
+
+% 1 1 0 15bb8e21b3a615411b4a162c2e7e5e50
+
+@ 0 3 0 02cf449510f6449d0fe753d13f9c2f1d
++       El [valor contextual] que decide qué ocurre con una tarea hija que sigue en ejecución
++       cuando el cuerpo de su tarea madre termina: si se cancela, si se espera a que acabe o si se
++       trata como un error.
+
+% 0 1 0 08d72ee32dfc73b806cc5398237a1676
+
+@ 0 1 0 05b7227d8cb271fc120fb7830a65789d
++   term provisión
+
+% 1 1 0 07b2d13dd97f6915023bd7fba149157d
+
+@ 0 3 0 1777a4bf106bcae214dec6acb03876fc
++       Una instancia [given] de `Typesettable` para un [tipo de letra] en un medio, que dice cómo
++       obtiene ese medio la fuente y qué estilos tipográficos puede componer después. Una fuente
++       del tipo de letra existe solo donde su provisión está en el ámbito.
+
+% 0 1 0 05b0cca1c93765561d56ada9a4d89750
+
+@ 1 1 0 18f820c3ead48a970920ff97ac4760a3
++   term raises
+
+% 2 1 0 11bea7f991d12ce119ec8884e4471993
+
+@ 0 2 0 1c863ce26f1c9ad9047c4b40a41db000
++       El tipo infijo en un tipo de retorno, como en `Text raises ParseError`, que declara que un
++       método puede fallar con ese error. Exige al llamante una [táctica] para el error.
+
+% 0 1 0 1ab9801ee69c554d1e374903d801d8e0
+
+@ 0 1 0 0427a3024dcbf62c0b6e11da19840753
++   term motivo
+
+% 1 1 0 00e1566d5e3abffd10d2042bf23679e4
+
+@ 0 3 0 16361099f1c20a630bb13007ad24980b
++       La parte de un error que dice por qué ocurrió, normalmente un caso de una [enumeración],
++       como `Json.Error.Reason.Absent`, de modo que el código puede distinguir una causa de otra
++       sin leer un mensaje.
+
+% 0 1 0 1a8e251f81f6174f0cc38ccf0e5b74ba
+
+@ 1 0 0 1a8e251f81f6174f0cc38ccf0e5b74ba
++   term receptor
+
+% 1 1 0 0e771da68d0670a601623a4452dabf19
+
+@ 0 2 0 06432bae0d71a4a41843634e82823a67
++       El valor sobre el que se llama a un método, como `x` en `x.f(y)`; también, en un protocolo,
++       la parte que recibe un mensaje.
+
+% 0 1 0 1c50ce304b248de416d32c737d64f477
+
+@ 0 1 0 1e1b53a5df3e63d804b9b8cb31c8142d
++   term remoto
+
+% 1 1 0 0b14f4c966003f811ef9c96ec52f3f39
+
+@ 0 2 0 034513dd039de051031ed1251d7d2eb0
++       Otra copia de un repositorio Git, nombrada en la copia local, como `origin`, de la que se
++       traen los commits y a la que se envían.
+
+% 0 1 0 0be0799b67f5d5741f00298334f58add
+
+@ 1 0 0 0be0799b67f5d5741f00298334f58add
++   term ejecutor
+
+% 1 1 0 1353b1840e04b80504772637fac2d971
+
+@ 0 2 0 1c0f70959af1caaa028cfe4cce062beb
++       Un programa o un valor que ejecuta código suministrado por otro, como un ejecutor de
++       pruebas que ejecuta las pruebas de una suite, o el lanzador que se ejecuta como cliente de
++       un demonio.
+
+% 0 1 0 0bd23886b6aeb3130231a145389eb261
+
+@ 1 0 0 0bd23886b6aeb3130231a145389eb261
++   term  tiempo de ejecución
++   keyword runtime
+
+% 1 1 0 1ca8c5f59e4e9162005396647cd70c60
+
+@ 0 2 0 15982dd16432d44e014f3cba8f35efef
++       Mientras el programa se está ejecutando. Un error en tiempo de ejecución es uno que el
++       compilador no pudo descartar, y que se notifica a través de una [táctica] cuando ocurre.
+
+% 0 1 0 1058b69713692b3017ce1f99cda790bd
+
+@ 0 1 0 0d8a8ade00881eac121ad7c4da52ccec
++   term temporal
+
+% 1 1 0 143b5dc2098a2f4d10fc10427eb24c34
+
+@ 0 3 0 122d9deb0633f8710cdcad9266f57b77
++       Describe un fichero o un directorio que se crea mientras dura un ámbito, y que se elimina
++       cuando el ámbito termina, tanto si tiene éxito como si falla, como en el caso de un índice
++       desechable o de una fixture de prueba.
+
+% 0 1 0 0f86ce5a3e9f7cec0506a84bab9edd30
+
+@ 1 0 0 0f86ce5a3e9f7cec0506a84bab9edd30
++   term  valor examinado
+
+% 1 1 0 1671e890d6bb9d5015193df17ec269d7
+
+@ 0 2 0 16e7755c4a2058851b2575d80e856e14
++       El valor que examina una expresión `match` o un extractor, contra el que se prueba el
++       patrón de cada caso.
+
+% 0 1 0 157b15dce93ef50a0660a717b8d59da2
+
+@ 0 1 0 1d4c6e7d44c4b0c70467f20606391c1c
++   term costura
+
+% 1 1 0 011ff67432a733bb08d95b7375d48764
+
+@ 0 3 0 1ea8f421107c3f59076859c7ba258650
++       El punto estrecho en el que una parte de un sistema se encuentra con otra que puede
++       sustituirse, como las pocas operaciones primitivas a través de las cuales una biblioteca
++       llega a la plataforma que tiene debajo. Para dar soporte a una plataforma distinta basta
++       con implementar la costura.
+
+% 0 1 0 1b0a73e39032f4ea11e24fc45ea664e6
+
+@ 1 0 0 1b0a73e39032f4ea11e24fc45ea664e6
++   term sesión
+
+% 1 1 0 1ba93f35f2a23ef50a1c60d8056ff91a
+
+@ 0 2 0 1338688fa360511e04a6300d37258ebd
++       Un ámbito que abre un recurso, como una conexión, lo presta al código que está dentro del
++       ámbito y lo cierra cuando el ámbito termina.
+
+% 0 1 0 07c791365e7167001aa6f97ce30cfa83
+
+@ 1 1 0 19acf1c258a585d81c6b9313a9bc6c8e
++   term setter
+
+% 2 1 0 145d3b9b062342b00cc86e21010fb991
+
+@ 0 3 0 100508becd8fd7241dc560832c9c952f
++       Una función o un método que sustituye una parte de un valor, como un campo. Para un valor
++       [inmutable] devuelve un valor nuevo con esa parte sustituida. Emparejado con un [getter],
++       forma una lente.
+
+% 0 1 0 00a132abe47f70fd08fa0286eb56b59e
+
+@ 1 0 0 00a132abe47f70fd08fa0286eb56b59e
++   term  tipo singleton
+
+% 1 1 0 073813ed7de3ff220c7afcb21819165a
+
+@ 0 3 0 1d6aa80b82557bbb1ed3ea72184324bb
++       El tipo de exactamente un valor, como el tipo de un caso concreto de una [enumeración]. A
++       un parámetro de tipo singleton hay que darle un valor que el compilador pueda identificar,
++       no uno calculado en [tiempo de ejecución].
+
+% 0 1 0 07888cc5950c9f2c1c508f7405c441ff
+
+@ 0 1 0 1e2f2599cebd21230458227ad5627e30
++   term sumidero
+
+% 1 1 0 1a1f53c622e958a611538f2925289403
+
+@ 0 2 0 14ac2d50578941ad14d006b25bc47ea3
++       Un destino en el que se escribe un flujo de datos, como un fichero, un socket o la entrada
++       de un proceso; la contrapartida de una fuente. Un sumidero de log es donde un logger
++       escribe sus eventos.
+
+% 0 1 0 0f44fc4c18300d711fe35a289171c8d5
+
+@ 1 0 0 0f44fc4c18300d711fe35a289171c8d5
++   term tramo
+
+% 1 1 0 1a45cc1708cf32391b49bda8d3894cce
+
+@ 0 3 0 1a6b444370f803d205b66ef28a5dfa34
++       Un trecho contiguo de algo, dado por dónde empieza y dónde acaba: un fragmento de código en
++       línea en Markdown, una celda que se extiende sobre varias columnas, o un rango de una
++       secuencia.
+
+% 0 1 0 05ff0aa5441872ab0268d5d584ced533
+
+@ 0 1 0 06c490549e5587de0b823f36846dedc4
++   term  marco de pila
+
+% 1 1 0 108fa086951c4fc819b7d17e8b6b1c70
+
+@ 0 2 0 1b6d7163e9fdb30e11a77164f0d997ba
++       Una entrada de una [traza de pila]: un método que se estaba ejecutando, con su clase, y el
++       fichero y la línea a los que había llegado.
+
+% 0 1 0 1690c0bd3c04cbfc0468861f42117916
+
+@ 0 1 0 09e3178afac08c2b06df6edf9419d81f
++   term  traza de pila
+
+% 1 1 0 0b108fb9bcaa574112c1699a64b47d3e
+
+@ 0 2 0 0ebda462f34b247117eff1d2beef8f89
++       La lista de llamadas a métodos que estaban en curso en un momento dado, con la más interna
++       primero, tal como se registra cuando se crea una excepción o un error. Cada entrada es un
++       [marco de pila].
+
+% 0 1 0 144616e23fca899a135cd0f9f202735c
+
+@ 0 1 0 1d6a57a9280f0665049a720c2d1f5fd7
++   term  ejecución por etapas
+
+% 1 1 0 19e3983f1d4eada71a2256ed7eb23f77
+
+@ 0 3 0 1710e76ce53a134d0250b6296f7c795c
++       Ejecutar un programa por etapas, donde el código citado como `'{…}` en una etapa se compila
++       y se ejecuta en otra posterior. Soundness lo generaliza, de modo que el código citado puede
++       ejecutarse en otro entorno, como una JVM nueva, y devolver su resultado.
+
+% 0 1 0 043dcf9746bb86a30b39bd774ccb9daf
+
+@ 0 1 0 14ab160c0680b19406ccaa8e5bc2bc9a
++   term hebra
+
+% 1 1 0 000f291352d2468c0eb198dc05b4432f
+
+@ 0 3 0 069a609db2695a2d08c2d131910ea0b5
++       La unidad de ejecución que hay debajo de una tarea: una abstracción de un hilo con las
++       cuatro operaciones que la suspensión necesita, que son interrumpir, unirse, aparcar y
++       desaparcar. Un supervisor suministra las hebras, así que se puede conectar un planificador
++       que no esté construido sobre hilos.
+
+% 0 1 0 0769d97c9752fb46196c4008c5a32ef6
+
+@ 0 2 0 16a1abfe6aaceb8516c5d0679e30903f
++   term estrategia
++   keyword  gestión de errores
+
+% 1 1 0 0f98347ab9e2e9ba1f33d2533ed45a17
+
+@ 0 3 0 04d875b4230a0e58129582e73b87e3e1
++       Una elección, en el ámbito, de lo que ocurre cuando una operación falla: `throwUnsafely`
++       lanza una excepción, `safely` da `Unset`, `capture` devuelve el error. Una estrategia
++       suministra la [táctica] que pide un método que puede fallar.
+
+% 0 1 0 09d434bf427b0ab50a073bf747fd3598
+
+@ 1 0 0 09d434bf427b0ab50a073bf747fd3598
++   term convocar
+
+% 1 1 0 15cfd4b80b0236151176d3aa615e9f71
+
+@ 0 2 0 1e9b00ad033186fa1ac7bbce0f05b9f3
++       Pedir al compilador el [valor contextual] de un tipo que está en el ámbito, escribiendo
++       `summon[T]`, en lugar de recibirlo como parámetro.
+
+% 0 1 0 1ba279a1cbdaa05b17cec896673721ff
+
+@ 1 0 0 1ba279a1cbdaa05b17cec896673721ff
++   term  muestra de color
+
+% 1 1 0 1dcde450282ba6851b2230a6433f7eef
+
+@ 0 2 0 0ad1fc7a70d2f01f097bf6b08686f716
++       Una pequeña muestra de un color, como el cuadrado que hay junto al nombre de una serie en
++       la leyenda de un gráfico.
+
+% 0 1 0 0a06f7bc5500d58a031c6930efe818d0
+
+@ 1 1 0 06c79c4eeed6627b1b716a7faf1331e4
++   term táctica
+
+% 2 1 0 1425ab9594d67941030f15358414d521
+
+@ 0 2 0 1c04f0014b70240a0cff64dc47fb9efa
++       Un [valor contextual] de tipo `Tactic[E]` que un método necesita para notificar un error de
++       tipo `E`. Quien proporciona la táctica decide cómo se gestiona el fallo.
+
+% 0 1 0 1440b4e607ea95dd080beafdbd4cd209
+
+@ 1 0 0 1440b4e607ea95dd080beafdbd4cd209
++   term etiqueta
+
+% 1 1 0 052ca9b589ce49970dc3da26eb031024
+
+@ 0 3 0 09b268591447218717ca9e6c7494cf50
++       Un marcador corto adjunto a un valor para decir qué clase de valor es o cómo se llama, como
++       el nombre de un elemento HTML, el tipo de un nodo YAML o de un valor ASN.1, o el nombre
++       dado a un commit de Git.
+
+% 0 1 0 0db05990284da8a2064a9df272b4e9ad
+
+@ 1 0 0 0db05990284da8a2064a9df272b4e9ad
++   term  unión etiquetada
+
+% 1 1 0 089da64ef864cdc90a8561a62dbba0bb
+
+@ 0 2 0 057f52b675c48ee611f79a5c2455a85d
++       Un tipo cuyos valores son cada uno uno de varios casos, con una [etiqueta] que dice qué
++       caso es, como un trait sellado o una enumeración, o un objeto JSON con un campo que nombra
++       su caso.
+
+% 0 1 0 107fa201e29d69c7063c442c0ec4c2be
+
+@ 1 0 0 107fa201e29d69c7063c442c0ec4c2be
++   term  ajuste de línea
+
+% 1 1 0 02df3c09d616bd6f02d19dd628d9ef7f
+
+@ 0 2 0 02d0c6ead32a122114cc52288dfeec85
++       Partir un texto en líneas que caben en una anchura dada, por los espacios o por los puntos
++       de división silábica permitidos, como cuando se compone texto en un terminal o en una
++       tabla.
+
+% 0 1 0 16bd942fe54883c201724bdb2ef81bd1
+
+@ 0 1 0 024929468fe4a0351660628688fab803
++   term  marca de graduación
+
+% 1 1 0 0459b337cf0510610b44bf3e3abb6f7c
+
+@ 0 2 0 12edcfa46f01df4619cc6c821b26570e
++       Una marca corta en el eje de un gráfico en un valor regular, normalmente con un rótulo que
++       da ese valor.
+
+% 0 1 0 03ecc68c94cb6ece1d72f4cef7bc361d
+
+@ 0 1 0 1ee54526627afa4f084d6604a7ed41af
++   term  línea temporal
+
+% 1 1 0 1f7779395db4eb4e094c251895383031
+
+@ 0 2 0 118ac51e4111daf50a8376578ddfe355
++       Una escala física de tiempo, como el tiempo Unix o el TAI, en la que se sitúa un instante.
++       El tipo de un instante nombra su línea temporal, como en `Instant over Unix`.
+
+% 0 1 0 1d2f750b7b9bc4b703a0762caca75d54
+
+@ 0 1 0 09b7cf10ed9dfb8f0a34a903c780e796
++   term lapso
+
+% 1 1 0 1b62d42b150013da10d7102030335551
+
+@ 0 3 0 0eb532eb815862ec1b3f4e1f4994dd11
++       Una cantidad de tiempo de calendario, en años, meses, semanas, días, horas y minutos, cuya
++       longitud en segundos depende de cuándo se aplica. Una `Duration`, en cambio, es un número
++       fijo de segundos.
+
+% 0 1 0 0014815a9747dd39073fd46abbc0d477
+
+@ 1 0 0 0014815a9747dd39073fd46abbc0d477
++   term tokenizador
+
+% 1 1 0 1470572d1db115281f9ee676ba42bb5c
+
+@ 0 2 0 0ee0c318e243327a13ca9d2f79def54b
++       La primera etapa del análisis sintáctico, que divide el texto fuente en tokens, como
++       palabras clave, identificadores, literales y signos de puntuación, antes de que se analice
++       su estructura.
+
+% 0 1 0 049fee600887b6ed14c8bc0c28605bc8
+
+@ 0 1 0 02884db99ab836de0aa8cfd6b356f48f
++   term  cadena de herramientas
+
+% 1 1 0 06d8e38023a47f0901ac93be57a1d0d8
+
+@ 0 2 0 051cc009ba3b24200956181d2dbe54d4
++       El conjunto de herramientas que juntas convierten el código fuente en algo que puede
++       ejecutarse, como un compilador, un enlazador y un empaquetador, con las versiones y los
++       ajustes con los que se ejecutan.
+
+% 0 1 0 03c8455ac18c96281799bd7fb85a8818
+
+@ 1 0 0 03c8455ac18c96281799bd7fb85a8818
++   term tráiler
+
+% 1 1 0 045642ff7083d909131e82d8c5719519
+
+@ 0 3 0 06bad87e1839292003574f276184169c
++       Datos que vienen después del contenido principal de un mensaje o de un fichero, en lugar de
++       antes, como los tráileres HTTP enviados después del cuerpo de una respuesta, o la
++       estructura que hay al final de un archivo ZIP o de un fichero PDF.
+
+% 0 1 0 1967ac390071d53206c66c1548d9e759
+
+@ 0 1 0 14156cc643b4b8c51541cbb7dbd91bde
++   term  clase de tipos
++   keyword typeclass
+
+% 1 1 0 19aa6ace76ee9e741a52fb00ee78a778
+
+@ 0 4 0 0b0fd245eeede47006ea08dda07843ca
++       Un trait que describe una habilidad que un tipo puede tener, como ser mostrado, codificado
++       o comparado, con una instancia para cada tipo que la tiene. Una instancia se encuentra como
++       un [valor contextual], así que un tipo adquiere una habilidad sin ser modificado. `Color is
++       Showable` es la instancia que hace que `Color` se pueda mostrar.
+
+% 0 1 0 03f69b0a39f7907f1946afc4f6b396d8
+
+@ 1 1 0 0fe3a420e6e1bc651d9375955327439b
++   term  tipo de letra
+
+% 2 1 0 141b5907d5fb7c7504738286643c69f6
+
+@ 0 2 0 0a99e6ff5bc552f30b15a1516c8bd6f6
++       Una familia de fuentes, como Inter, nombrada por un `Typeface`, con independencia de
++       cualquier peso, inclinación o fichero. Un [estilo tipográfico] elige un estilo de ella.
+
+% 0 1 0 00c8a953fdc869a603f6ccc27ecdaa8c
+
+@ 1 0 0 00c8a953fdc869a603f6ccc27ecdaa8c
++   term variante
+
+% 1 1 0 077f06241ef53042187aa0d4ccca5fa5
+
+@ 0 2 0 00ac966306e300ec1f4ffb760f7bc2c6
++       Una de varias formas alternativas de una misma cosa, como el alfabeto de Base64 seguro para
++       URL, un dialecto de texto delimitado, o una alternativa de un select de TEL.
+
+% 0 1 0 108314c2b1db539f042d198a9b8b8f26
+
+@ 1 0 0 108314c2b1db539f042d198a9b8b8f26
++   term viewport
+
+% 1 1 0 1f8dc04b53f0ef4a031df6ff8bf88a9a
+
+@ 0 2 0 08e2ab96860dbd04099eb40eb073f580
++       El rectángulo en el que se muestra algo, como el área visible de una ventana de navegador,
++       de la que las unidades CSS como `Vw` son fracciones, o el área en la que se dibuja una
++       imagen SVG.
+
+% 0 1 0 13edf8a3c098fb1d0811fc4eed6ab569
+
+@ 1 0 0 13edf8a3c098fb1d0811fc4eed6ab569
++   term  forma de transmisión
+
+% 1 1 0 1dd9a9debe4beb431c75e3dac3343a76
+
+@ 0 3 0 0d0ebdd7349984820ced87947c5a38e3
++       La forma que toma un valor cuando se envía entre programas, en un protocolo o en un formato
++       serializado, a diferencia de su forma en Scala: el nombre con el que se envía un campo, el
++       código con el que se envía un error, o los bytes de su codificación.

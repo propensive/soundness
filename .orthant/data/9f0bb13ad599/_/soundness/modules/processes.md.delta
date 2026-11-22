@@ -1,0 +1,8 @@
+orthant 2 release
+
+@ 0 1 0 192f76a6c5156586131e417dd782493b
++ import pathInterfaces.pathOnLocal
++ import systems.javaBaseSystem
+
+@ 0 1 0 101d38a9f3368d921c60dd1edb09922b
++ val directory: Path on Local = (% / "var" / "log").on[Local]

@@ -1,0 +1,1145 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1120c6bda8c650551a63e48021508ddf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 15f9260676ca79661bdafaa82f669777
++ info   servidores HTTP: um handler servido em uma porta, sobre sockets crus, o servidor do JDK ou um contêiner de servlets
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 16319f7aae12ea7513a0dd4376d26267
++     _Scintillate_ serve HTTP. Um servidor é um **handler** — um bloco de código que lê o `request`
++     do ambiente, casa sobre seu método e seu alvo e devolve um `Http.Response` — vinculado a uma
++     porta por um backend `RequestServable`: `SocketServer`, o backend de TCP cru que fala HTTP/1.1
++     (keep-alive, pipelining, corpos chunked, `100-continue`, TLS e upgrades de protocolo `101`) e
++     HTTP/2 em qualquer conexão TLS cujo handshake o negocie; ou `Httpd`, o mesmo handler sobre o
++     `com.sun.net.httpserver` do JDK. Um terceiro componente adapta um handler a um servlet Jakarta
++     (`JavaServlet`, `@servlet`) para um contêiner como Jetty ou Tomcat.
+
+% 2 1 0 1a108276636581aa035d46831672a73d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 1d5e1a4fa6f0818802d7be243df390a3
+
+% 0 1 0 0888a8dab56b721e1fb1a5943667b9bb
+
+% 0 1 0 0720d9ea1d5184400000e4513ad2860f
+
+% 0 1 0 0c4aef453432a46d1dfb372e1fe0c1fd
+
+% 0 1 0 11b38ff691976ead12e1c3a8defe5f9b
+
+% 0 1 0 109ad80e895584ae0764b96e6fc2a7a3
+
+% 0 1 0 026d73fd002682ba011ed13743307859
+
+% 1 1 0 080d4a1c25acb3c10dc849720ffff805
+
+@ 0 8 0 0eeefd08edcd290000a8c90132e9f5cb
++     `handle` vincula a porta e devolve um `Service`, cujo `cancel()` para o servidor e cujo `port`
++     é a porta vinculada (a escolhida pelo sistema, para uma requisição de `0`). O servidor roda em
++     tarefas do `supervise` que o envolve, de modo que o bloco dura tanto quanto o servidor, e ele
++     precisa de um `Monitor`, de um `Probate`, de um `Httpd.Event is Loggable` (como
++     `logging.silentLogging`), de uma `Tactic[Httpd.Error]` para uma porta que não pode ser
++     vinculada, e de um `WebserverErrorPage` para um handler que lança uma exceção. Dentro de um
++     handler, `request` é a `Http.Connection` sendo servida — seu método, alvo, cabeçalhos, cookies
++     e corpo — e `cookie`, `basicAuth` e `as[Multipart]` leem dela.
+
+@ 0 8 0 1ebd5404d2511c9814031a7dbadb83d6
++     O corpo de uma resposta é um stream: o `Http.Response` de um handler pode capturar a conexão
++     à qual responde (`Http.Response^{connection}`), que é como uma resposta chunked, um stream de
++     server-sent events ou um WebSocket após upgrade lê o stream ativo da requisição, e o servidor
++     o escreve bloco a bloco durante o tempo de vida da conexão. Nada mais com escopo pode ser
++     capturado, e a conexão não pode ser guardada para além do handler: a verificação de capturas
++     rejeita ambos. Do mesmo modo, o corpo de uma requisição chega à medida que é recebido, e um
++     segundo `request.body()` retoma de onde o primeiro parou, em vez de reproduzir, de modo que um
++     handler que precisa de um corpo duas vezes chama `request.body().memoize` uma vez.
+
+@ 0 1 0 03150b228620304a1949202ab83688c5
++     Os três componentes:
+
+% 0 1 0 0ff0ff922ddb2c0704f25ac590735dcf
+
+@ 0 6 0 149adec12cd5d01606fd07164d9202a2
++       `Http2Session`, os wrappers de resposta `Redirect`, `NotFound`, `NoCache` e `Unfulfilled`,
++       `Acceptable`, `WebserverErrorPage`, os auxiliares de handler `request`, `cookie`,
++       `basicAuth` e `as`, e os pacotes de escolhas `frontends`, `httpServers` e
++       `webserverErrorPages`.
++     - `scintillate.servlet` (JVM) — `JavaServlet` e a anotação `@servlet`, para um contêiner de
++       servlets.
+
+@ 0 7 0 099eeab3e7f44d360d7a3e5aaf40bdcd
++     Tudo é exportado para o guarda-chuva `soundness`, exceto a extensão `as` do corpo da
++     requisição, que colide com o `as` do distillate e é acessada como `scintillate.as`. Os
++     pacotes de escolhas são espelhados no guarda-chuva (`soundness.frontends`,
++     `soundness.httpServers`, `soundness.webserverErrorPages`); seus givens são importados pelo
++     nome, já que `import soundness.*` não importa givens. Os givens de `httpServers` no
++     guarda-chuva são encaminhadores escritos à mão, e não um `export`, porque um encaminhador de
++     export sintetizado perde o tipo refinado anotado com capturas de um given.
+
+% 0 1 0 0c8a8ac05a834f2c0198934be908c300
+
+% 0 1 0 09302e1bef244bda001f9227b4fb8760
+
+% 0 1 0 131a8da8945fe8e80ad289cc032346cf
+
+% 0 1 0 1bc47b68ed6f23911a568a93c1e256bf
+
+% 0 1 0 0ec410f82767dd6f0fbcefeee150854f
+
+% 0 1 0 18d5e63c64c0207c17373acba4a73b8e
+
+@ 0 1 0 1b61ab5582d62c0108d947b3edd55308
++ entry .SocketServer   o backend de TCP cru: keep-alive HTTP/1.1, TLS e HTTP/2 negociado por ALPN
+
+% 1 1 0 082d3b19bd7135d51b277aa25814829f
+
+@ 0 7 0 00ff5bde0029853310f9c97167365f10
++       `SocketServer(port, local, ssl)` é um servidor HTTP sobre um `java.net.ServerSocket`,
++       independente do `httpserver` do JDK. `port` é a porta a vincular, ou `0` para uma porta livre
++       escolhida pelo sistema; `local` (padrão `true`) vincula apenas `localhost`, e `false` vincula
++       todas as interfaces; `ssl` é um `Optional[javax.net.ssl.SSLContext]` que, quando presente,
++       serve TLS e oferece `h2` e depois `http/1.1` por ALPN, de modo que um cliente que fala HTTP/2
++       o negocia durante o handshake. Precisa de um given `WebserverErrorPage`, que transforma um
++       handler que lança uma exceção em uma resposta.
+
+% 2 1 0 0d596e5fcd857a8208a8b886d417d1ba
+
+% 3 1 0 02ed662d92408fd216906f4a96796ba0
+
+% 4 1 0 1c27c4717a2f7e2e150fb3dfbf2cae87
+
+% 5 1 0 18eb1181e48e42ea1455c517986f3090
+
+% 6 1 0 14a0f4943836cffe0a752324f27f464c
+
+% 7 1 0 089c20f949760a601af732d673d6e300
+
+% 8 1 0 002d1ab3c5bb7e991388c510f82da66e
+
+% 9 1 0 16876b51be9a60aa184192fdc19d3082
+
+% 10 1 0 07044886811cc3ba0959c7ec312978b6
+
+% 12 1 0 1bfa6083f8735c79097b2ca354dcc99d
+
+% 0 1 0 06cc46d33a891aec0526562d985fea51
+
+% 0 1 0 1938814add94e6670f45ce1298cfc4b9
+
+% 0 1 0 0f89f83a54b07c1e00e697956b2216f6
+
+% 0 1 0 142afd3088d019cb04173bd5e65488a7
+
+% 1 1 0 048b90f9dd9e01c518b335683752f0da
+
+@ 0 10 0 1f6821ce4044c2221d6681cb90a5a536
++       Cada conexão aceita é servida por `#serveConnection`: um laço de keep-alive que analisa um
++       cabeçalho de requisição após o outro a partir do socket, delimita cada corpo por seu
++       `Content-Length` ou por seu chunking (ou como vazio), responde a `Expect: 100-continue` com
++       um `100` provisório antes que o handler leia o corpo, e esgota um corpo não lido de até
++       64 KiB para chegar à próxima requisição em pipeline, fechando a conexão em vez de ler um
++       maior. Uma linha de requisição acima do limite é recusada com `414`, cabeçalhos acima dele
++       com `431`, qualquer outro cabeçalho malformado com `400`, e um timeout de leitura (30 s
++       ocioso) com um `408` dentro do possível. Um `Connection: close` de qualquer dos lados encerra
++       o laço depois da resposta, e um corpo em streaming para um cliente HTTP/1.0 é delimitado
++       fechando a conexão, já que não pode ser chunked.
+
+@ 0 7 0 0ee05caadb0a6ce903ad4a305c23a599
++       Uma requisição com `Connection: Upgrade` e um cabeçalho `Upgrade` (que não seja `h2c`, que o
++       `HttpClient` do Java oferece em toda requisição em texto puro e que este servidor nunca
++       realiza) é um upgrade de protocolo: seu corpo é o restante ilimitado da conexão, e um handler
++       que responde `101 Switching Protocols` com um corpo em streaming assume o socket enquanto
++       esse corpo durar — é assim que um handler de WebSocket funciona. Respostas pequenas não são
++       atrasadas pelo algoritmo de Nagle (`TCP_NODELAY`), e o cabeçalho e o corpo de uma resposta
++       de extensão fixa se juntam em uma única escrita no socket.
+
+@ 0 4 0 09ee26e28c4b1a660ffc6ecac11f3665
++       O socket de escuta tem um backlog de 1024 (o kernel o limita: 128 em um macOS padrão, 4096 no
++       Linux). Uma falha dentro de uma conexão é registrada como `Httpd.Event.ConnectionFailed` e
++       fica confinada a essa conexão; o servidor continua aceitando.
+
+% 1 1 0 0d9df40765c155b905ae41fd72454d2e
+
+% 1 1 0 16b0e397d74ad8fc0643071b00d3ba11
+
+% 1 1 0 06d86ac303951baa0dd3a4ebf236ce92
+
+% 0 1 0 113e430abb623ad80fe19e3cf1b15059
+
+@ 0 20 0 1eb1c69accf779391a94da38f974f5fa
++   entry #port   a porta dada na construção: a que deve ser vinculada, ou `0` para qualquer porta livre
++       O `Service` devolvido por `#handle` informa a porta efetivamente vinculada, assim como toda
++       `Http.Connection` servida, de modo que um servidor construído com `0` ainda é endereçável.
++   entry #local   se apenas `localhost` é vinculado (`true`, o padrão) ou todas as interfaces
++   entry #ssl   o `SSLContext` com que servir TLS, ou `Unset` para texto puro
++       Um servidor TLS oferece `h2` e `http/1.1` por ALPN; uma conexão que negocia `h2` é
++       conduzida pelo motor HTTP/2, com o mesmo handler. O caminho TLS sempre usa uma thread
++       virtual por conexão, qualquer que seja o `Frontend` no escopo, já que um `SSLSocket` não
++       pode ser usado com um seletor.
++   entry #handle   serve cada requisição com um handler, em um `Frontend` escolhido
++       Vincula a porta e devolve um `Service^` que para o servidor quando cancelado. O handler é
++       uma função de contexto da `Http.Connection` para um `Http.Response^{connection}`: ele pode
++       reter a conexão em um corpo em streaming, e nada mais. Precisa de um `Monitor` e de um
++       `Probate` (o laço de aceitação do servidor e cada conexão rodam como daemons sob eles), de um
++       `Httpd.Event is Loggable`, de uma `Tactic[Httpd.Error]` (lançada se a porta não puder ser
++       vinculada) e de um `Frontend`, que o companheiro define por padrão como
++       `Frontend.ThreadPerConnection` e que `import frontends.reactiveFrontend` substitui para um
++       servidor em texto puro: o `Reactor` de laço de seletor passa então a servi-lo, com o handler
++       executado inline no laço. Um servidor TLS ignora o frontend e segue o caminho de um daemon
++       por conexão.
+
+% 2 1 0 0c65c94168a1f4370694f1dfb47b9b0b
+
+% 3 1 0 1df9598dfedfbe9a0bfb9e3f0217a4a4
+
+% 4 1 0 018d2cba942d6d260a8c9e2c8e3240cb
+
+% 5 1 0 02339ab1491940ef1af4d243a9329e84
+
+% 6 1 0 0eb28cb4475d6f0602f6185cfca511dc
+
+% 7 1 0 1fcfd3004b5ba54a010cbac2c5e0e727
+
+% 8 1 0 0871f3bf232276811e6a5329262fed34
+
+% 9 1 0 02221be63f6a31b11d84adcfe3214a60
+
+% 10 1 0 095d381f0c085f4e0b6e6ecce2ff0410
+
+% 11 1 0 0b2f1c80963733461fcf27b9fab48224
+
+% 13 1 0 18b15781059df487116e8aefd318f913
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 0d2a006d03e59bf301db589d4128461f
+
+% 1 1 0 157d8f087fbfe4950f0104742a487907
+
+@ 0 9 0 07970e55b8d65a831dbcb100ec155bdb
++       O `handle` por requisição é o caso degenerado de `#handleSession`: toda conexão é servida
++       sem preparação por conexão.
++   entry #handleSession   serve cada conexão como uma sessão, com estado preparado uma vez por conexão
++       `handleSession(scope)` executa `scope` uma vez para cada conexão aceita — uma conexão HTTP/2,
++       ou um socket HTTP/1.1 com keep-alive — com uma `Http2Session` no escopo. O escopo pode
++       preparar estado por conexão (um principal autenticado, um limitador de taxa, um contador) e
++       então chamar `session.handle(handler)` para servir as requisições ou os streams dessa conexão
++       com o estado no escopo. A verificação de capturas confina o estado à sua conexão, de modo
++       que ele não pode vazar para a de outro cliente.
+
+% 2 1 0 01a0a9ea2fe5cd1b1addf1e47be88cf8
+
+% 3 1 0 10aac1bbee340db70f12f5ac5d168527
+
+% 4 1 0 0b56f452402b49331d0ad61d17e587e8
+
+% 5 1 0 08a4655b081e5b18142ab5ba644dc5cd
+
+% 6 1 0 1cce8f57c07ad6cd114b12d50f567863
+
+% 7 1 0 0d631246e98ec1620763a8a3c2c09562
+
+% 8 1 0 06d866d662cc93cc1023e71ff22ac3e5
+
+% 9 1 0 04797fad987fcb44083e225976af5e65
+
+% 10 1 0 117962d5e6fd886c1327ac809ce76d97
+
+% 0 1 0 1f004b4451701e421901d4b150d0ff16
+
+% 0 1 0 0d27b365991dcc930600e3bc58f651f9
+
+% 0 1 0 1aee6eb36f74b3261eea8b33e44f0d81
+
+% 0 1 0 1f97891eb9d3c7641f637378b1d5aaee
+
+% 0 1 0 08c2a2292004e58c04ddcc87650ec93f
+
+% 1 1 0 1ae08136f52f7bbb1c176816c8b8a8fd
+
+@ 0 11 0 19a1604fd6c68faf132707e46606260d
++       Sobre HTTP/2, os streams multiplexados em uma conexão são servidos concorrentemente, cada um
++       em sua própria thread virtual, compartilhando o estado do escopo. Recebe os mesmos valores
++       contextuais que `#handle`, exceto o `Frontend`: uma sessão é sempre por thread.
++   entry #serveConnection   conduz o laço de keep-alive HTTP/1.1 sobre um stream de entrada e um de saída
++       `serveConnection(handler)(in, out)` serve toda requisição legível a partir de `in`,
++       escrevendo as respostas em `out`, até que a entrada termine ou uma requisição feche a
++       conexão. O servidor o chama uma vez por socket aceito; é também o ponto de entrada em
++       processo para testes e benchmarks, que alimentam um `ByteArrayInputStream` de requisições e
++       leem as respostas de um `ByteArrayOutputStream`, sem socket nem thread envolvidos. Quem chama
++       é dono dos streams: de fechá-los e de qualquer timeout de leitura. Precisa apenas de um
++       `Httpd.Event is Loggable`; um erro de stream que derruba a conexão é registrado como
+
+% 0 1 0 1fbcd971dffaa40315a46a57eec5f93a
+
+% 2 1 0 1a3065639f71a5f81a5c6cee7c36ae27
+
+% 3 1 0 1e70e7c46d69092012e6d37ccb27b821
+
+% 2 1 0 1d9d0450e4d5fe9707699c4e1ae71799
+
+% 3 1 0 1a197d952a6d2f6a1bcb89157bc10113
+
+% 4 1 0 1bc3811d9f767bef1ebb57fb8f303c12
+
+% 0 1 0 0c493cd8705d195b00b1b054ffdd0fc7
+
+% 0 1 0 10cd2222ce89f83f0883b4c9be8a707b
+
+% 0 1 0 1c544fcde6003c6f0f1d06998c3f6a66
+
+% 0 1 0 162deebdd1cfdaef1f2eb6241e5b3cfd
+
+% 1 1 0 1d59a4dac01100330dd09cbd82bb85f6
+
+@ 0 1 0 06915db1788e794606b9e2d6837f9478
++ entry .Httpd   o backend do JDK: o mesmo handler sobre `com.sun.net.httpserver`, e os eventos e o erro do servidor
+
+% 1 1 0 1db8340e9d25593802e2e903b240d699
+
+@ 0 7 0 04fbac69c55bb54d181fe95ac5d5582e
++       `Httpd(port, local)` serve um handler pelo `HttpServer` embutido no JDK, em uma thread
++       virtual por troca. Seu `#handle` tem a assinatura do de `SocketServer`, de modo que os dois
++       backends são intercambiáveis, mas o servidor do JDK tem um único motor: o `Frontend` é
++       aceito e ignorado, não há TLS nem HTTP/2, e não há sessões. `SocketServer` é o backend a
++       preferir; `Httpd` continua existindo para um programa que queira o servidor do JDK, e seu
++       companheiro é onde ficam os eventos e o erro de todos os backends.
+
+% 2 1 0 06eb6e75ef1b52b51493f11057023cce
+
+% 3 1 0 16ded4d96a650f411a471bb9e09ac7c5
+
+% 4 1 0 12fdccfa68a87edb14343c9141f456a8
+
+% 5 1 0 16d6c0d63b32758f11a5a4a8a9416e6a
+
+% 6 1 0 105d584001e2f1431ff18f0c446cd480
+
+% 7 1 0 1ac6a684711b34950cd65aa2717914a4
+
+% 8 1 0 186311410f86fe471b5a9ae2881a68c0
+
+% 9 1 0 0243f3a81bb56a350b5ceb26ec6d660e
+
+% 10 1 0 0fdb25d1f4b76f1117f6bc525b253c73
+
+% 12 1 0 188c7e7b03a43a8f013047cbf47d937b
+
+% 0 1 0 015e73b6cc6f4d520683009146d31d8b
+
+% 0 1 0 153fa445a598f2720f3c74739dbe50dd
+
+% 1 1 0 1d1a9ad9ee4683340985b8fda5d6e002
+
+@ 0 2 0 1822e2ffad4e9a380e3da0f458e9374a
++       Uma requisição cujo host não pode ser analisado é respondida com `400` e registrada como
++       `Httpd.Event.ConnectionFailed`; uma resposta interrompida é registrada como `BrokenStream`.
+
+% 1 1 0 10edddab5bb772aa03fd75370198c776
+
+% 0 1 0 1bfd009e87ab017b188be830e1ae2b0b
+
+@ 0 1 0 1a0f5d3970c66a2a04a3c79cd25b463f
++   entry .Event   o que um servidor registra: requisições recebidas e processadas, streams quebrados e conexões que falharam
+
+% 1 1 0 0e1d489539abf4fa0599745c8ee05db3
+
+@ 0 18 0 18492d3313892c81042b68c41a55271f
++         Todo `Event` é marcado com `Log.Network`, e `Received` também com `Log.Protocol`. Ambos os
++         backends registram `Received` em `fine` quando o cabeçalho de uma requisição foi analisado,
++         e `Processed` em `info` assim que sua resposta foi entregue, com o tempo gasto;
++         `BrokenStream` é um aviso quando a escrita de uma resposta (ou a leitura de uma requisição)
++         é interrompida, e `ConnectionFailed` é registrado em `fail` quando o tratamento de uma
++         conexão lança algo que não foi transformado em resposta. Um `Httpd.Event is Loggable` deve
++         estar no escopo para que se possa servir; `logging.silentLogging` os descarta.
++     entry .communicable   renderiza cada evento como uma mensagem
++     entry .Received   o cabeçalho de uma requisição foi lido: _received the request `request`_
++       entry #request   a requisição
++     entry .Processed   uma resposta foi enviada: _processed the request `request` in `duration`ms_
++       entry #request   a requisição
++       entry #duration   os milissegundos desde a chegada da requisição até a entrega de sua resposta
++     entry .BrokenStream   uma resposta não pôde ser escrita por inteiro: _sending the response was aborted after `length`_
++       entry #length   os bytes escritos antes da falha
++     entry .ConnectionFailed   o handler de uma conexão falhou: _the connection handler failed: `message`_
++       entry #error   a falha, como um `fulminate.Error`
++   entry .Error   lançado quando a porta não pode ser vinculada
+
+% 1 1 0 0ecc1c5c46778de10103f543e7d1719a
+
+@ 0 12 0 1596989e2a376fbd115855a48f04f17f
++         Erro `↯/s.116.1`: _could not start an HTTP server on port `port`_. Lançado por `handle` (de
++         qualquer dos backends) e por `SocketServer#handleSession` quando vincular o socket de escuta
++         lança uma `BindException`, tipicamente porque a porta já está em uso. Uma
++         `Tactic[Httpd.Error]` é necessária para chamar `handle`.
++     entry #port   a porta que não pôde ser vinculada
++   entry #port   a porta a vincular, ou `0` para uma porta livre escolhida pelo sistema
++   entry #local   se apenas `localhost` é vinculado (`true`, o padrão) ou todas as interfaces
++   entry #handle   serve cada requisição com um handler, no servidor do JDK
++       Cria o `HttpServer`, instala o handler no contexto raiz, inicia-o e devolve um `Service^`
++       cujo `cancel()` o para (com um período de tolerância de um segundo) e cujo `port` é a porta
++       vinculada. Recebe os mesmos valores contextuais que `SocketServer#handle`; o `Frontend` é
++       ignorado.
+
+@ 0 1 0 07b46b346869bcee03be90578f59926b
++ entry .RequestServable   o que todo backend de servidor HTTP oferece: `handle(handler)` em uma porta
+
+% 1 1 0 0f7ec73a1dc467f71c29a7a25d414cee
+
+@ 0 6 0 01d9a7327c58f2891659c4460962d07d
++       O trait que `SocketServer` e `Httpd` implementam. Seu único método, `#handle`, recebe o
++       handler que serve cada requisição, e um programa que queira escolher seu backend em tempo de
++       execução pode guardar qualquer um deles como um `RequestServable`. O tipo do handler é o
++       contrato da biblioteca inteira: uma função de contexto da `Http.Connection` ativa para um
++       `Http.Response^{connection}`, que pode reter a conexão em um corpo em streaming, e nada mais.
+
+% 1 1 0 06b0669ce8f68f2d09a32b53f5baa89b
+
+% 2 1 0 176b4099beefa2b80b7468fde7a9bd9f
+
+@ 0 5 0 1a131777cef81baa1bfa0b92e349fe0f
++   entry #handle   serve cada requisição com um handler, devolvendo o `Service` em execução
++       Precisa de um `Monitor` e de um `Probate`, de um `Httpd.Event is Loggable`, de uma
++       `Tactic[Httpd.Error]` e de um `Frontend`. O `Frontend` é um parâmetro, e não convocado dentro
++       da implementação, para que o given encontrado seja um given de `frontends` importado no local
++       da chamada, e não o padrão do companheiro.
+
+@ 0 1 0 0d04cc73aec1071e1494bb6ecc48af29
++ entry .Http2Session   um escopo por conexão: `handle` serve as requisições de uma conexão com estado compartilhado
+
+% 1 1 0 182980a856ca0b5f14b2636e2a2630e2
+
+@ 0 6 0 167a664c368ed2a70a2926c03a932bb5
++       O valor que `SocketServer#handleSession` empresta a seu escopo, para cada conexão aceita.
++       `#handle(handler)` serve cada requisição dessa conexão (cada stream, no HTTP/2,
++       concorrentemente) com o handler, que se fecha sobre qualquer estado que o escopo tenha
++       preparado; o estado fica confinado à conexão pela verificação de capturas. Uma sessão sobre
++       um socket HTTP/1.1 com keep-alive serve suas requisições em ordem; sobre HTTP/2, é o dual,
++       no servidor, do `Http2.Endpoint.session` do cliente.
+
+% 1 1 0 10d8c5892387ad9a025c53aef9fe6b35
+
+@ 0 1 0 1bf8836b334351c1079160a884eacb79
++   entry #handle   serve cada requisição ou stream desta conexão com o handler
+
+@ 0 1 0 106d21c12d7d47740678897959c1e5cb
++ entry .Frontend   em que motor `SocketServer.handle` serve: uma thread por conexão, ou o reactor
+
+% 1 1 0 1837e382f9acd55d00fdd4ba1e890fd7
+
+@ 0 12 0 1836616e88a012e706731dae31195a4f
++       Um `SocketServer` que serve HTTP/1.1 em texto puro pode rodar de duas maneiras, e o given
++       `Frontend` no escopo quando `handle` é chamado escolhe. `ThreadPerConnection`, o padrão
++       (`.default`, no companheiro), cria um daemon em thread virtual por socket aceito: um handler
++       pode bloquear — em um banco de dados, um arquivo, outro serviço — e só sua própria conexão
++       espera; ele serve respostas em streaming, TLS, HTTP/2 e sessões. `Reactive` serve no
++       `Reactor`, um laço de eventos de faixas de seletor que executa o handler inline, sem
++       transição de thread por requisição: cerca de metade a mais de vazão em requisições pequenas,
++       e menos alocação, ao preço de que um handler que bloqueia trava todas as conexões de sua
++       faixa. O reactor passa tudo o que não consegue servir inline — um corpo chunked ou grande
++       demais, `Expect: 100-continue`, um upgrade de protocolo — para o caminho de thread por
++       conexão, de modo que um handler de WebSocket funciona sob qualquer dos dois, e um servidor
++       TLS ignora inteiramente a seleção.
+
+% 2 1 0 1cd9fcc8bb69d6271d7566767fc395e2
+
+% 3 1 0 06fb08abf501674b019bb8e7c1ac9d2b
+
+% 1 1 0 180d33106fd5eff70f5912d49212ad54
+
+% 0 1 0 17c7b49c9f3298151d989d1b217bd95c
+
+% 1 1 0 0c778da6672c30b71cce344cb5b1f0a2
+
+@ 0 2 0 1cbe0568bc58fe840c4b6baddc0f17bc
++       A escolha é feita importando pelo nome um dos givens de `frontends`, que tem precedência
++       sobre o padrão do companheiro.
+
+% 0 1 0 017c107cebbb08641ae3529950fc44c9
+
+% 0 1 0 1f5a0e15112e8dca02b74bec04e676dd
+
+@ 0 3 0 0500863288d33a50143271d98590cb7e
++   entry .default   o padrão do companheiro, `Frontend.ThreadPerConnection`
++       No escopo implícito sem importação, e com um given de `frontends` importado pelo nome tendo
++       precedência sobre ele.
+
+@ 0 1 0 008f53f006f7478b13218d23a60336ee
++ entry .frontends   os dois frontends, cada um um given a importar pelo nome
+
+% 1 1 0 1890fd1aa3fae93f10b747883d319059
+
+@ 0 4 0 0753357f74edb57e00b02da44c8edacd
++       `import frontends.reactiveFrontend` seleciona o `Reactor` de laço de seletor para servidores
++       em texto puro; `import frontends.threadPerConnectionFrontend` declara o padrão
++       explicitamente. `import soundness.*` não traz nenhum dos dois; `Frontend.default` se aplica
++       quando nenhuma importação é feita.
+
+% 2 1 0 0e0ab64cfd41f9d7009b3984506275dc
+
+% 3 1 0 0ba8f0d9fe615c760e3a8b67d1a4b854
+
+% 4 1 0 0478dd8f0d2c79c7173ca38adb789718
+
+% 5 1 0 0c8e24d0e94b75c01882eec50e516fba
+
+% 6 1 0 09df665a9f604b760a5e0cda83cf4152
+
+% 7 1 0 0c409e508b7d1d9d162be02f8639c3aa
+
+% 8 1 0 17564c2265b30162115f692ec766c506
+
+% 9 1 0 1941e9950f16287c0a06dcdf1eccf85a
+
+% 10 1 0 1749246a8802e52b0e5fdc85185829f2
+
+% 11 1 0 0beb4c436dab24dc07e4e59e06182521
+
+% 13 1 0 01bdc45d6b1df7730b995fe0a4902a5d
+
+% 0 1 0 16dd5864c7aeb8000118c1d74d19a83c
+
+% 1 1 0 0cd00c657ddd79031c1bcb66ef4a163f
+
+@ 0 2 0 0d0e61b2a909a9370bfebef7db8e8dc5
++   entry .threadPerConnectionFrontend   uma thread virtual por conexão: os handlers podem bloquear
++   entry .reactiveFrontend   o reactor de laço de seletor: os handlers não devem bloquear
+
+@ 0 1 0 1cf0f8f8cb6db3ff16dc8ca92098e468
++ entry .Reactor   o frontend de laço de eventos: faixas de seletor servindo HTTP/1.1 em texto puro com o handler inline
+
+% 1 1 0 0382e8098f80484a0c6c098cbe3949d1
+
+@ 0 9 0 1accc66825d02ba50c2f810175e7f7b3
++       `Reactor(requested, local, loops)(handler)` vincula um canal de escuta e inicia `loops`
++       threads de plataforma (uma por processador disponível, se `0`), cada uma dona de um
++       `Selector` e de toda conexão registrada nele, mais uma thread chefe que aceita conexões e as
++       distribui em rodízio. Uma faixa atende um lote de conexões prontas a cada despertar: acumula
++       cada requisição até que seu cabeçalho (e qualquer corpo fixo de até 64 KiB) esteja completo,
++       analisa-a sobre um cursor em memória que não pode bloquear, executa o handler inline e
++       escreve uma resposta de extensão conhecida em uma única escrita agregada. Um leitor lento
++       sofre contrapressão: acima de 256 KiB de bytes de resposta enfileirados, o interesse de
++       leitura de uma conexão é retirado até que a fila se esvazie até 64 KiB.
+
+@ 0 3 0 020006c411ef34db0635fcb7fe94dc9a
++       `SocketServer.handle` constrói um quando `frontends.reactiveFrontend` está no escopo; ele
++       também pode ser usado diretamente, como um valor com um `#port` e um `#stop()`, que é como um
++       teste o exercita sem um `Monitor`. Precisa de um `WebserverErrorPage` e de um
+
+% 0 1 0 168067756de2a8440d2db11a1fc24c68
+
+% 2 1 0 11ca47393a077eeb1da0c35cc7d701a9
+
+% 3 1 0 00065ca490d3959d0667aa72b906c187
+
+% 4 1 0 02daeacb592eaf6e0f76c9fa54f26279
+
+% 5 1 0 141372e548c7d67b142a6e321b8e89ef
+
+% 6 1 0 03468c34dbd0e853007a6ca577d2d4cc
+
+% 7 1 0 04bce3c96b7669d91a17af83e0686e71
+
+% 4 1 0 1f359c15cc15df281f539dc0e6bdcdc9
+
+% 0 1 0 005fb60f960bf3890ef7f10ca50959df
+
+% 0 1 0 14535ee01529ce6f0d619005b193f946
+
+% 0 1 0 1349b5a346a53b811c1eddf05323eb39
+
+% 1 1 0 1b724ea3068f05841b4ebbe0a9b42af6
+
+@ 0 9 0 09085bf95cd9abcf04929115cb5275a5
++       O contrato é um handler não bloqueante: um que calcula sua resposta a partir do que já tem,
++       ou repassa o trabalho a outras tarefas e responde a partir da memória. Uma resposta em
++       streaming (`Flowing`) é forçada até o fim na faixa antes de ser escrita. As requisições que a
++       faixa não consegue servir inline — um corpo chunked ou grande demais, `Expect:
++       100-continue`, um upgrade de protocolo — saem do reactor: o canal e todo byte já lido são
++       entregues a uma thread virtual que executa `SocketServer#serveConnection`, que analisa de
++       novo a requisição como se tivesse sido dona do socket desde o início. Um cabeçalho que excede
++       os limites é recusado com `431` (ou `414`, `400`); as threads são daemons, de modo que um
++       reactor nunca prende uma JVM cuja thread principal terminou.
+
+% 1 1 0 0052fca43a8ad441067c74307de9ff33
+
+% 1 1 0 0900333730fa3ba402c902f2022b6c08
+
+@ 0 2 0 1a9516634f910131030c96442f40e47e
++   entry #port   a porta vinculada: a pedida, ou a escolhida pelo sistema para um pedido de `0`
++   entry #stop   fecha o listener, acorda todas as faixas e faz join das threads
+
+@ 0 1 0 1cfd04ae7f7d1c04014a82e311750f30
++ entry .WebserverErrorPage   como a exceção de um handler se torna uma resposta
+
+% 1 1 0 0036edf659ff69c803c424255d362dc3
+
+@ 0 5 0 0cad8f72486c88d70f8be7b1930a2419
++       Um `WebserverErrorPage` é uma função do `Throwable` que um handler lançou e do
++       `Http.Request` que ele estava servindo para o `Http.Response` que o cliente recebe. Todo
++       backend precisa de um como given quando é construído (`SocketServer`, `Httpd`, `Reactor`),
++       e os três de `webserverErrorPages` — mínimo, estilizado e com stack trace — são importados
++       pelo nome; o de um programa é um lambda:
+
+% 2 1 0 16d124b752ef719c1c9d219b327976ca
+
+% 3 1 0 15ff0cde11aa08db0dd944b9148ccba7
+
+% 0 1 0 0065453c3cb6fdd20753cb0cd3902f57
+
+% 0 1 0 0d1181d7243829b7029a105cca1e33d3
+
+% 1 1 0 174dee93b2e85e0d0be44a9a238885a5
+
+@ 0 3 0 18e9ae76a53429061e19611e8276d5fb
++       A exceção de um handler só chega à página de erro quando escapa do handler como exceção
++       lançada; um erro lançado por meio de uma `Tactic` que o handler fornece é assunto do próprio
++       handler.
+
+% 0 1 0 128068b057c31da21d5278f289dda8bb
+
+% 0 1 0 1a9ce93c2649f60a143c6094c5dbcdd4
+
+@ 0 1 0 1713768c274cd8b010051fe5ca2afb1c
++   entry #handle   a resposta para um throwable e a requisição que ele interrompeu
+
+@ 0 1 0 0130d91e2ce8819c0cb1bcc167f57c65
++ entry .webserverErrorPages   as páginas de erro padrão, cada uma um given a importar pelo nome
+
+% 1 1 0 1f73086cfcdf84c4153fce0db0069002
+
+@ 0 6 0 0775a8762d232562086f4ba21b43b13c
++       Um `WebserverErrorPage` é exigido por todo servidor; nenhum é escolhido por padrão.
++       `minimalErrorPage` é uma resposta de texto de uma linha, sem dependências.
++       `styledErrorPage` e `stackTracesErrorPage` são páginas HTML construídas a partir de modelos
++       empacotados no jar do scintillate, lidos por meio do given `Classloader` no escopo (como
++       `classloaders.threadContextClassloader`), e a segunda inclui o stack trace da exceção, o que
++       convém ao desenvolvimento e não à produção.
+
+% 2 1 0 0b68f1448fa7bdba17142d1924fc2f05
+
+% 3 1 0 0eacdf236a55fb7b030e96c920408236
+
+% 1 1 0 1d20673c1990a24c1f6dbd1b361fe801
+
+% 0 1 0 168672ef579d996c18d79bd753101717
+
+% 1 1 0 0d31649fd1d24cf102b7ba0ba4356398
+
+@ 0 3 0 11858f908550597e0b2feb1c76575841
++   entry .minimalErrorPage   um `500` com o texto _An error occurred which prevented the request from completing._
++   entry .styledErrorPage   um `500` com uma página HTML estilizada; precisa de um `Classloader` para o modelo empacotado
++   entry .stackTracesErrorPage   um `500` com uma página HTML estilizada que mostra o stack trace da exceção; precisa de um `Classloader`
+
+@ 0 6 0 0b9cf3ba7d07b7721b6ff1eba08fccc0
++ entry .request   a requisição sendo servida, dentro de um handler
++     `request` é um acessor inline para o `Http.Request` no contexto — dentro de um handler, a
++     `Http.Connection` sendo servida, que é uma requisição com os meios de respondê-la. Ele dá o
++     método, a versão, o host, o alvo, os cabeçalhos, os cookies e o corpo, de modo que o
++     roteamento é um casamento sobre `request.target` e a negociação de conteúdo uma leitura de
++     `request.headers`. Um handler cresce uma preocupação de cada vez:
+
+% 2 1 0 162823a92a642a9c1bb143acf20849cb
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0893083ca0512dd219d458c28dd24429
++       label Uma resposta para toda requisição
+
+% 1 1 0 13a1a0a75fd294380e014988c6c13baa
+
+% 2 1 0 12f64e4ac1872f3b191e256ab29aca34
+
+% 3 1 0 0387166f38dec55619f4d5f2c8437929
+
+% 4 1 0 0010d7a32ed817ca0120cdaccca72a48
+
+% 5 1 0 162ee25a80bfee8702a86b3e3dee992a
+
+% 6 1 0 110d4cc657d0050801090320760afd69
+
+% 7 1 0 0a154dd3930c81f3104dee8a7c9504a3
+
+% 9 1 0 0ddb371482e872991b495bfd26e95290
+
+% 10 1 0 01d2edcaf143174011a80526b1917ec2
+
+% 0 1 0 0308157f658685fc1907402deaab0936
+
+% 1 1 0 1736463c3be7d105173c1721db834e6e
+
+@ 0 1 0 147846e0cb1116041a9093dd275eb900
++       label Roteado pelo alvo da requisição
+
+% 1 1 0 0d3b176a146d90eb0fa5e0d3af9edcfc
+
+% 2 1 0 02961e583fe5a28111cf66f77e109fa4
+
+% 3 1 0 02f9353c2c5623d015969f42f9dc8ddc
+
+% 4 1 0 05b5c535773273c20ff2bb35c3838bee
+
+% 5 1 0 15a706d42d5093a40e5906a0b095b52d
+
+% 6 1 0 1723b5379589510c05e58ff7338929ae
+
+% 7 1 0 1fa5607a49b3b1c80da7e3f2a4aedf33
+
+% 9 1 0 1995199de4bc0485156faa347ab38d27
+
+% 10 1 0 0a018c6d0dbb66070a2e6a3279cf7eb4
+
+% 0 1 0 15dba2f5e028c4af056191491d6fd5db
+
+% 0 1 0 07e2e7dd22e887f00bc68596126daeae
+
+% 0 1 0 1e7212cd8b8b83710ec83fd49c818210
+
+% 0 1 0 129d0e99958dd3ba0e50af74806e0e50
+
+% 1 1 0 1c82ae4c0a93a8ab06c0e221eae75f93
+
+@ 0 1 0 1282f9d08980f31707a65e6932717899
++       label Um corpo enviado por POST, lido à medida que chega
+
+% 1 1 0 1f36da017fa001d10587dd76f869172d
+
+% 2 1 0 0359d28664bf9c670e4d2432d3252d1e
+
+% 3 1 0 18d46ba39ff48f320c9c379c2d0049c1
+
+% 4 1 0 0cbc5acb4e6e388d1018d469ac2ff1ce
+
+% 5 1 0 162de33f0e94e0290dd1373e09d2e2e9
+
+% 6 1 0 19ea5eeb6f347bfb02919104af22d4f3
+
+% 7 1 0 14fbe827aee55559183ea7712c25703f
+
+% 9 1 0 12801c7a7a3945e402169972ddc63fd1
+
+% 10 1 0 07d3cd2d643d55f21ff79dfbc3977345
+
+% 11 1 0 10b0752604ab16d611f100029dd7e7a4
+
+% 0 1 0 1cfba17f3e34588103803f725ef8f8a7
+
+% 1 1 0 03f0e446485e66650a7693e0dfd5e5e0
+
+% 2 1 0 1dd6ff0a40bf224d003f5b7e2350c6a4
+
+% 3 1 0 199b662af5c594de02456010a848ad01
+
+% 1 1 0 1149308149f82a901f29f5ba8223dd6e
+
+@ 0 1 0 1cde1f1cae0d0eb003c1354e87c494cf
++       label Um cookie, e um redirecionamento para um visitante sem ele
+
+% 1 1 0 15e261173956afa21ab0b56262d63798
+
+% 2 1 0 0443e58a9a16cf3c1f2e0d24c7f8d0c3
+
+% 3 1 0 071da3abd1d98ecd1e19f56a91702ba2
+
+% 4 1 0 079304474309c9e419db2d554101532f
+
+% 5 1 0 150ed6bd173c374108a60349cc454569
+
+% 6 1 0 1af01ec922f01a710127836e0b25757a
+
+% 7 1 0 03b8c8a9c5faf5e117e6d8a96482302c
+
+% 9 1 0 047a4c135fa898af0f4fa92251f58275
+
+% 10 1 0 192fb466672dd5c50cad6699c3749a59
+
+% 11 1 0 0d02341a24dbc6881c01b632133607ad
+
+% 0 1 0 04de1477de01ccc6197d0223750d55ee
+
+% 0 1 0 18f9d3756d4d0a071517be5984d14258
+
+% 0 1 0 1de825075c9eac900f83687b0badcfc7
+
+% 0 1 0 0a63e39f788c878c1633c6b80bc96844
+
+% 1 1 0 13b67a5dc685e72c1fe61908d7572027
+
+% 2 1 0 064dffdcee937a8b0d544f046950bd01
+
+% 3 1 0 1adcbe2845f387c20b492e38bbb5b26a
+
+% 1 1 0 12015e597dd7a73c104443d25738b5dc
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 16cd894d86229fc900e364686fcb8b0f
++     O corpo é um stream que pertence à conexão: `request.body()` continua a ler de onde a leitura
++     anterior parou, de modo que um handler que precisa do corpo inteiro mais de uma vez chama
++     `request.body().memoize` uma vez e guarda o resultado. O que o handler deixar sem ler é
++     esgotado pelo servidor (até 64 KiB) para chegar à próxima requisição em pipeline. `request` é
++     `infer[Http.Request]`, de modo que, fora de um handler, é um erro de compilação por falta de um
++     `Http.Request` contextual.
+
+@ 0 4 0 10aa2f911e2b776f06fddebec7fae6cb
++ entry .cookie   o valor de um cookie nomeado da requisição, dentro de um handler
++     `cookie(key)` é `request.textCookies(key)`: o valor do cookie como `Text`, ou `Unset` se a
++     requisição não trouxer nenhum cookie com esse nome. Precisa de um `Http.Request` no contexto,
++     por isso é chamado a partir de um handler.
+
+% 2 1 0 071e1d3a4888c4bd1e16dcbda22f834d
+
+% 3 1 0 128823d4013b31fe1871f3d0ef1cbfbb
+
+% 0 1 0 172ab654f9ff3bff1c6a727964dc55d9
+
+% 1 1 0 188840c1c037e94d12cfad63b78a2b57
+
+@ 0 8 0 0f08b171e55d77050cad48fffd3c9e74
++ entry .basicAuth   protege uma resposta por trás da autenticação HTTP Basic
++     `basicAuth(validate, realm)(response)` verifica o cabeçalho `Authorization` da requisição: se
++     ele trouxer exatamente uma credencial `Basic` e `validate(username, password)` for verdadeiro,
++     a `response` por nome é avaliada e devolvida; uma credencial errada é respondida com `403
++     Forbidden`, e uma ausente com `401 Unauthorized` e um desafio `WWW-Authenticate: Basic
++     realm="…", charset="UTF-8"`, que faz um navegador pedir as credenciais. Precisa da
++     `Http.Connection` no contexto e de uma `Tactic[Auth.Error]`, lançada quando o cabeçalho não
++     pode ser analisado.
+
+% 2 1 0 163aad882e0704531c0f8d4500cdf8b7
+
+% 3 1 0 1a5a3c249746500a16c0dd5fb56b2203
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 1c19eec46bf6fc6d05a36fc4f2028b63
+
+% 0 1 0 05165046fc9ce9971d7b42a7ca9155b5
+
+% 0 1 0 184c1de5bcfe9ae11c5af33d554db44c
+
+% 1 1 0 0b65a8d81486d21908657104bcca2e4d
+
+@ 0 6 0 141b67b6395372271a3e09ca8435571b
++ entry .as   lê o corpo da requisição como um valor tipado, por meio de `Acceptable`: `request.as[Multipart]`
++     Uma extensão sobre `Http.Request`, `request.as[body]` para qualquer `body: Acceptable`, que
++     decodifica a requisição de acordo com seus cabeçalhos e seu corpo. A única instância que o
++     scintillate fornece é `Acceptable.multipart`, para um upload `multipart/form-data`. A extensão
++     não é exportada para o guarda-chuva `soundness`, já que o `as` genérico do distillate
++     (decodificando um `Text` por meio de `Decodable`) tem o mesmo nome: acesse-a como
++     `scintillate.as`.
+
+% 2 1 0 16b6094d25358e760c1a9c82356e5270
+
+% 3 1 0 0fc2092d8eda3af20240f97dc257f20c
+
+% 0 1 0 0320632edf6730aa17a7a4c69681dfd3
+
+% 1 1 0 190d62cc417ea2e315c85fdc99938c09
+
+% 0 1 0 0803952cae2aad0e10e9f43d60f7d5aa
+
+% 0 1 0 09ada703ce6a7faf0e181d389bed77a3
+
+% 0 1 0 059099e796bb0b7805ce5a3bc045fe77
+
+% 1 1 0 1266550d211e8bde148c26e872ce8b59
+
+@ 0 1 0 012b1abacbc013500e998f4d41448eb4
++ entry .Acceptable   uma classe de tipos para ler o corpo de uma requisição como valor: `request.as[T]`
+
+% 1 1 0 06e280c2964d4dbc1b965b40969ddcd8
+
+@ 0 4 0 107f353c26a8ca391e6fe24a02b532a7
++       `T is Acceptable` diz como um `Http.Request` se torna um `T`, a partir de seus cabeçalhos e de
++       seu corpo, e `request.as[T]` (a extensão `scintillate.as`) a aplica. A única instância da
++       biblioteca é `.multipart`, que analisa um corpo `multipart/form-data`; um programa acrescenta
++       as suas próprias fornecendo `MyType is Acceptable`.
+
+% 0 1 0 1b26cd4286fe7b60047ffddec07e5915
+
+@ 0 7 0 1ec58eb3fa9c3b8718da90cec895503a
++   entry .multipart   lê uma requisição `multipart/form-data` como um `Multipart`, parte por parte
++       Verifica se o `Content-Type` é `multipart/form-data` com um parâmetro `boundary`, e analisa o
++       corpo com `Multipart.parse`. As partes são emprestadas do corpo à medida que ele chega, de
++       modo que um handler lê o conteúdo de cada parte antes de passar à próxima. Precisa de uma
++       `Tactic[Multipart.Error]`: lançada com o motivo `MediaType` para um tipo de conteúdo ou
++       boundary ausente ou errado, e `Truncated` para um corpo interrompido.
++   entry #accept   o valor lido de uma requisição
+
+@ 0 1 0 0f1a63e94cd9c3be05aff198b62b3f16
++ entry .Redirect   uma resposta que redireciona: `302 Found`, ou `301 Moved Permanently`
+
+% 1 1 0 1e8094f79dea46211b5804fc0078f5f7
+
+@ 0 4 0 10e8260644469ac302d6dd811533adfa
++       `Redirect(location, permanent)` é um valor `Servable`, de modo que `Http.Response(Redirect(…))`
++       é uma resposta com o status e um cabeçalho `Location`. `location` pode ser de qualquer tipo
++       `Abstractable across Urls to Text` — um `Text`, uma `HttpUrl` — e `permanent` (padrão
++       `false`) escolhe `301` em vez de `302`.
+
+% 2 1 0 0503f82aa192c46d16e203fa7361228b
+
+% 3 1 0 1ce2dd90f52bdfd61f913554cc5bc363
+
+% 0 1 0 1d8a6f9aa03bf97504b79e6c4ebec385
+
+% 0 1 0 10265137131e6e2d11410c867f70d249
+
+% 1 1 0 17d870155242c3250240d28f983d744c
+
+@ 0 4 0 1becbf2a41bf7f98070fb2f6beaf5325
++   entry .apply   `Redirect(location, permanent = false)` a partir de qualquer valor semelhante a uma URL
++   entry .redirect   o `Servable` que renderiza o redirecionamento como uma resposta com um cabeçalho `Location`
++   entry #location   o destino, como texto
++   entry #permanent   se o redirecionamento é `301` em vez de `302`
+
+@ 0 1 0 0cac40ec6001b0e81702cdab0556685a
++ entry .NotFound   envolve um valor servível como uma resposta `404 Not Found`
+
+% 1 1 0 18a640e10faf64111aaa7b8ae5a140f2
+
+@ 0 3 0 09efc24390fa28fd09e9aab4498b0239
++       `NotFound(content)` serve `content` — qualquer valor `Servable`: texto, HTML, JSON —
++       exatamente como seria servido de outro modo, com seus cabeçalhos e seu corpo, mas com status
++       `404`. O último caso habitual de um casamento de rotas.
+
+% 2 1 0 065d1016b14e59d11cb50e0ec58331cb
+
+% 3 1 0 1d448a8108eca64c19c576caea74d419
+
+% 0 1 0 160e8b68a8a7688a19e1a63607d6127a
+
+% 1 1 0 02635977b323b1891612cd01c217c9a4
+
+@ 0 2 0 0ff3cdebb4c80e6b147b1c9e3cdf47b6
++   entry .servable   o `Servable` para `NotFound[content]`, dado `content is Servable`
++   entry #content   o valor servido com o `404`
+
+@ 0 1 0 12ef6b7de88b6a560b7ba0084a806065
++ entry .Unfulfilled   envolve um valor servível como uma resposta `500 Internal Server Error`
+
+% 1 1 0 0a23724d8966d8f3106d789ce0b24364
+
+@ 0 3 0 10281684f2285d841acc946bd50f3481
++       `Unfulfilled(content)` serve `content` com status `500`, mantendo seus cabeçalhos e seu corpo.
++       Os givens de `webserverErrorPages` constroem suas respostas a partir dele, e um handler que
++       detecta sua própria falha pode fazer o mesmo.
+
+% 2 1 0 1c8a3226c40bea710fb0183c389dfe25
+
+% 3 1 0 0dad88273e4637fc12afbb1f13593fd3
+
+% 0 1 0 0d91cc016f88aa5f01762b4ad3140307
+
+% 1 1 0 06def9814d57fb42092d9ec20c38b98a
+
+@ 0 2 0 19c01551aa15adb50fb0c8271ee530ea
++   entry .servable   o `Servable` para `Unfulfilled[content]`, dado `content is Servable`
++   entry #content   o valor servido com o `500`
+
+@ 0 1 0 0f3b497909c695ae1e41df431d6541ba
++ entry .NoCache   envolve um valor servível com cabeçalhos que proíbem o cache
+
+% 1 1 0 058869ac8378c31a038f4dcf6fb9137a
+
+@ 0 3 0 059fc85a9753942f186773004dee22c1
++       `NoCache(content)` serve `content` com seu próprio status e seu próprio corpo, e com os
++       cabeçalhos `Cache-Control: no-store`, `Pragma: no-cache` e `Expires: 0` acrescentados no
++       início, de modo que nem um navegador nem um proxy o guardam.
+
+% 2 1 0 0d3714d677d6ba8c182ba15e1e04e85a
+
+% 3 1 0 19ef3c48a102fee817f95811bd3c7f21
+
+% 0 1 0 1aeccb517d82acda0ccaf0817b8ae755
+
+% 1 1 0 0063eb2c11761e641128b4fb67ae6e87
+
+@ 0 2 0 0a91c74bc857028714b96fa44b673fae
++   entry .servable   o `Servable` para `NoCache[content]`, dado `content is Servable`
++   entry #content   o valor servido sem cache
+
+@ 0 1 0 03e5c28c01ea5bca0bb9999362fd59c5
++ entry .httpServers   HTTP como protocolo `Protocolic` sobre uma porta: `tcp"8080".serve[Http](handler)`
+
+% 1 1 0 1b61be72277737981edf08b903d4560b
+
+@ 0 9 0 18588e3a53e99aae190f5026015b6422
++       O `port.serve[protocol](handler)` do urticose serve um protocolo em uma porta por meio de um
++       given `protocol is Protocolic over port`, e estes quatro givens fazem de `Http` um protocolo
++       desses sobre as `Tcp.Port` `80`, `443`, `8080` e `8000`: `jdkHttpserver` e
++       `jdkHttpserverPublic` servem por meio de `Httpd`, `soundnessHttpd` e `soundnessHttpdPublic`
++       por meio de `SocketServer`, e as variantes `Public` vinculam todas as interfaces, e não
++       apenas `localhost`. Um deles é importado pelo nome, e o handler é a mesma função de contexto
++       que `handle` recebe. Cada given retém a `Tactic[Httpd.Error]`, o `Monitor`, o `Probate`, o
++       `Httpd.Event is Loggable` e o `WebserverErrorPage` a partir dos quais é construído, de modo
++       que são necessários os mesmos valores contextuais que para `SocketServer#handle`.
+
+% 2 1 0 02f6d2a0c432bfce1dd3cb57d7e17ea9
+
+% 3 1 0 0762c29109c5a5ff04b6adeab08182a5
+
+% 4 1 0 1ac929b3999a273d18580e083e7f1ffb
+
+% 5 1 0 0a091b34f651f002093b7350af14c1fe
+
+% 6 1 0 0ec630783f5aa0060665e1d9abceb3b5
+
+% 7 1 0 16e6f3ecb020585a1cfce91801104766
+
+% 8 1 0 1b3ba51135d8ebf4089c83f10ccdb039
+
+% 9 1 0 1d421d6be4099eac0fe8087ee6dbdef4
+
+% 10 1 0 0e4a02cc4e6fa1fe009c8a9f920465df
+
+% 0 1 0 1e5e0a61e64bc2840669a827caf48567
+
+% 2 1 0 11bd70080294d0c71ba4c571835fc6be
+
+% 0 1 0 19daf22a75c9782f04523219ed6ca07f
+
+% 1 1 0 07949cc3ea610e381de03e81525faf4e
+
+@ 0 3 0 11c14fed33ac6b041a49ae10388c7866
++       No guarda-chuva `soundness`, os quatro são givens encaminhadores escritos à mão, e não um
++       `export`, já que um encaminhador de export sintetizado perderia seu tipo refinado anotado com
++       capturas; eles têm os mesmos nomes.
+
+% 0 1 0 1facd88cca386e8f095b56321e1312f3
+
+% 1 1 0 021cd7636ac9454812fa249e6cd2cf0d
+
+% 2 1 0 1f6395ed6771fff81d67650fb909db49
+
+@ 0 8 0 00d1c0916e12553815039796dd5004d4
++   entry .HttpdFor   o tipo destes givens: `Http is Protocolic` sobre um `Tcp.Port of port`, servindo `Http.Connection`s
++       `HttpdFor[port]` refina `Protocolic` com `Transport = Tcp.Port of port`, `Request =
++       Http.Connection^`, `Response = Http.Response` e `Server = Service`. Público para que os
++       encaminhadores do guarda-chuva possam nomeá-lo.
++   entry .jdkHttpserver   `Http` servido por `Httpd` em `localhost`
++   entry .jdkHttpserverPublic   `Http` servido por `Httpd` em todas as interfaces
++   entry .soundnessHttpd   `Http` servido por `SocketServer` em `localhost`
++   entry .soundnessHttpdPublic   `Http` servido por `SocketServer` em todas as interfaces
+
+@ 0 1 0 08df0bad8277b8270f1e3c518097e807
++ entry .Http2Serve   o motor HTTP/2 por trás de um `SocketServer` com TLS: serve os streams de uma conexão negociada
+
+% 1 1 0 193243313c915c1a0104e44c26dc5078
+
+@ 0 11 0 003b316c1a3f4331001c7bb77b299646
++       `SocketServer` despacha para cá assim que um socket TLS negociou `h2` por ALPN. Cada stream
++       iniciado pelo cliente se torna uma `Http.Connection` servida pelo handler em sua própria
++       thread virtual, de modo que as requisições multiplexadas na conexão rodam concorrentemente; o
++       motor aplica controle de fluxo, HPACK e trailers (um cabeçalho `Trailer` da resposta nomeia
++       os cabeçalhos enviados depois do corpo, como o `grpc-status` do gRPC), e tolera os tipos de
++       quadro sobre os quais não age. Ambos os métodos bloqueiam a thread chamadora durante o tempo
++       de vida da conexão, e recebem o handler ou o escopo como um portador `AnyRef` (um
++       `AnyRef => AnyRef` de uma conexão para uma resposta, ou um `AnyRef => Unit` sobre uma
++       `Http2Session`), e é por isso que um programa chega ao HTTP/2 por meio de
++       `SocketServer#handle` ou `#handleSession`, e não por aqui. O corpo de uma resposta é conduzido
++       bloco a bloco a partir de seu stream, nunca memoizado: um corpo transformado por um
++       codificador de texto não termina sob `memoize`.
+
+% 1 1 0 08228c041f25eaed1a3003869f818d8d
+
+% 1 1 0 057ed4328672f7871369a47e7914fefd
+
+@ 0 9 0 06e754c73631da5803eec0979a8a3c70
++   entry .serve   serve cada stream de uma conexão HTTP/2 sobre os streams de um socket, com um handler
++       `serve(handler, in, out, port)`: abre a conexão de servidor sobre `in` e `out`, e executa o
++       handler para cada stream até que o cliente envie `GOAWAY` ou o socket se feche. Precisa de um
++       `Monitor`, de uma `Tactic[Async.Error]` para o início da conexão, e de um
++       `Httpd.Event is Loggable`.
++   entry .serveSession   serve uma conexão HTTP/2 como uma sessão, emprestando uma `Http2Session` ao escopo
++       `serveSession(scope, in, out, port)`: como `.serve`, mas o escopo roda uma vez com uma
++       `Http2Session` cujo `handle` serve cada stream; o estado que o escopo prepara é compartilhado
++       pelos streams dessa conexão e por nenhum outro.
+
+@ 0 1 0 16a56630bd2483c415c486c83d8a1d43
++ entry .Responder   um sink para um status, cabeçalhos e um corpo: `sendBody` e `addHeader`
+
+% 1 1 0 1355301846c16fcf081139c8a1e05044
+
+@ 0 6 0 172b66a9ff0ca7d511b14980c6468b6f
++       Um sink mínimo de respostas: `#addHeader(key, value)` acrescenta um cabeçalho e
++       `#sendBody(status, body)` envia o status com um corpo dado como uma `Chain[Data]`. É declarado
++       e exportado, mas não é implementado por nenhum backend deste componente; os backends
++       respondem por meio de `Http.Connection.Respond`.
++   entry #sendBody   envia um status e um corpo de blocos de dados
++   entry #addHeader   acrescenta um cabeçalho de resposta
+
+@ 0 1 0 014e75eb1c71d98d0c1f1dc72ac8f801
++ entry .JavaServlet   um handler como um `HttpServlet` Jakarta, para um contêiner de servlets
+
+% 1 1 0 0f22904fc793645a153db858572d970e
+
+@ 0 9 0 00bb02e72f919fcf160612a1ed4942aa
++       `JavaServlet(handle)` é um `HttpServlet` que transforma cada requisição de servlet em uma
++       `Http.Connection` — método, versão, host, alvo, cabeçalhos (em minúsculas) e o corpo em
++       streaming a partir da entrada do servlet —, executa `handle` sobre ela e escreve o status, os
++       cabeçalhos e o corpo da resposta de volta pela resposta do servlet, em chunks para um corpo
++       em streaming. No componente `scintillate.servlet`. O handler é uma função simples
++       `Http.Connection => Http.Response`, e não uma função de contexto, porque um parâmetro de
++       classe que é função de contexto não pode ser aplicado a partir do argumento de superclasse de
++       uma subclasse; uma subclasse (ou `.Fn`) o fornece. Um erro de leitura do corpo ou um host que
++       não pode ser analisado é impresso na saída padrão do servlet, e este último é respondido com
++       `400`.
+
+% 2 1 0 0d23fa8bd63185ac0599a6c1e848fdaa
+
+% 3 1 0 02bf4d16b8efa8f119dbbdc570a08949
+
+% 0 1 0 17ef4a4f6693d4111aaade83e07cfd42
+
+% 1 1 0 082ae4a7839bcbe8057ad59936f2840f
+
+@ 0 1 0 0cdb181b1893d4f21281d73fdad62410
++       A anotação `@servlet` gera uma classe dessas a partir de um método.
+
+% 0 1 0 0bce33c49929c39b1981288ed533ebcf
+
+@ 0 7 0 0fd03eca9914f97606a270b4d7a7e1e5
++   entry .Fn   `JavaServlet.Fn(handle)`: um servlet a partir de uma função, para estender ou instanciar
++       Uma classe aberta cujo construtor recebe o handler, de modo que uma subclasse anônima ou
++       gerada (o que `@servlet` produz) não precisa de corpo próprio.
++   entry #handle   serve um par de requisição e resposta de servlet por meio do handler
++       Constrói a `Http.Connection`, aplica o handler e entrega a resposta. O `service` do servlet o
++       chama para cada requisição, e imprime qualquer exceção na saída padrão em vez de deixá-la
++       escapar para o contêiner.
+
+@ 0 6 0 03273e504af14e4c06e8440a531fcd44
++ entry .servlet   a anotação `@servlet`: um método que devolve `Http.Response` se torna uma classe de servlet
++     Uma anotação de macro sobre um método `def name(connection: Http.Connection): Http.Response`,
++     que acrescenta ao lado dele uma classe de mesmo nome que estende `JavaServlet.Fn`, delegando
++     ao método, para que um contêiner de servlets possa instanciá-la pelo nome. O tipo de
++     resultado do método deve ser um subtipo de `Http.Response`, e a anotação deve ser aplicada a
++     um método: qualquer das duas violações é um erro de compilação. No componente
++     `scintillate.servlet`.
+
+% 2 1 0 13072f2d725fb57d16a789561ce9d653
+
+% 3 1 0 1f8737a6735cabb91b2a36f5024089f2
+
+% 0 1 0 185cb4fc1cca0e9604e9b73fd479e4db
+
+% 0 1 0 13229bd9ce4c6765075682cdb905af3d
+
+% 1 1 0 0a334814fa46ed7f1dbc8ec3b356360f

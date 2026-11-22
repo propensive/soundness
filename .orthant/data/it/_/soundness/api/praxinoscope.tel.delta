@@ -1,0 +1,751 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 026dba39094ed9ac08404b0481ba81d6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f86def002901d0d1ddd908b1aa994e9
++ info   un motore di espressioni regolari RE2: matching in tempo lineare e contenimento decidibile tra pattern
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 14b0e81f11cfc39217dabbf013702c04
++     _Praxinoscope_ è un'implementazione in Scala puro della sintassi
++     [RE2](https://github.com/google/re2/wiki/Syntax): un motore di espressioni regolari il cui
++     tempo di matching è lineare nella lunghezza dell'input, qualunque sia il pattern. Ci riesce
++     compilando il pattern in un automa finito e simulandolo senza backtracking, il che è
++     possibile perché il sottoinsieme RE2 esclude i costrutti che un automa non può esprimere —
++     riferimenti all'indietro, lookahead e lookbehind, quantificatori possessivi e gruppi atomici
++     — e li rifiuta durante il parsing del pattern. La stessa restrizione rende decidibili altre
++     due domande: se un pattern corrisponde a tutto ciò a cui corrisponde un altro (`subsumes`) e
++     se esiste un input che corrisponde a entrambi (`intersects`).
+
+@ 0 6 0 1d74a54fb531421111ae1655698cd641
++     Un pattern viene analizzato in un `Motif`, che contiene il suo albero strutturale
++     `Motif.Node`, il numero dei suoi gruppi di cattura e il suo `Motif.Program` compilato, e si
++     confronta con `matches`, `seek`, `search`, `groups` e `spans`. Le classi di caratteri sono
++     insiemi di code point, `Motif.Ranges`; la macchina virtuale `Pike` esegue un programma su
++     qualsiasi input che un `Symbolizer` sappia decodificare in simboli (per ora `Text`, come
++     code point Unicode); e `Subsumption` decide contenimento e intersezione sui programmi
++     compilati.
+
+% 2 1 0 0fc0e01fdc003bb00b1325900c0443d8
+
+% 3 1 0 02cdf2650c3a18c40a5149e1855581de
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 19da03f730fc3f9910c014e2c8138632
+
+% 0 1 0 00692078999f67fd0c877cb213366c27
+
+% 0 1 0 184209af5d76b6771ec523177ad1c485
+
+% 0 1 0 1ca0b9f609e366fe0238f054a2aba244
+
+% 0 1 0 0b7a7093ffb74799144fe2dd404fc8c4
+
+% 0 1 0 110973c05d89ba4f147ac2df3792732c
+
+% 1 1 0 0c781181596d3d3b0262a3fa50b38d81
+
+@ 0 7 0 0b8e9192e2837b490fef55c404ef4ed5
++     Di solito non si raggiunge il motore attraverso `Motif`, ma attraverso i letterali `r"…"`
++     di kaleidoscope, con `import regexBackends.re2`: ogni letterale nell'ambito viene allora
++     analizzato e compilato durante la compilazione del codice, rifiutato lì se esce dal
++     sottoinsieme RE2, e portato in staging nel suo estrattore, così che a runtime non si
++     analizzi nulla; un letterale senza catture viene inoltre compilato in un automa statico,
++     `Fsa`. Il tipo marcatore `Re2` è ciò che etichetta una tale `Regex in Re2`; la sua istanza
++     di `Regex.Engine` risiede in kaleidoscope, che sta sopra questa libreria.
+
+@ 0 12 0 12c5dfe10b0364a30d9e0ec1bd040cef
++     La sintassi accettata è quella di RE2: letterali e `.`; gli escape `\n \t \r \f \a \v \e`,
++     `\xHH`, `\x{…}` e la punteggiatura con escape; le classi ASCII `\d \w \s` e i loro
++     complementi; le classi POSIX dentro le parentesi quadre, `[[:alpha:]]` e `[[:^alpha:]]`; le
++     categorie generali e gli script Unicode, `\pL`, `\p{Lu}`, `\p{Greek}`, `\P{…}` e `\p{^…}`; le
++     classi tra parentesi quadre con intervalli e negazione; le sequenze quotate `\Q…\E`;
++     l'alternanza; i gruppi di cattura, quelli non di cattura `(?:…)` e quelli con nome
++     `(?<name>…)`/`(?P<name>…)` (il nome non conta nulla: il gruppo è numerato per posizione); i
++     quantificatori `* + ? {n} {n,} {n,m}` con un suffisso `?` riluttante e un numero di
++     ripetizioni non superiore a `Motif.maxRepetition` (1000); le flag inline `i` (case folding),
++     `m` (ancore multiriga), `s` (il punto corrisponde al ritorno a capo) e `U` (inverte
++     l'avidità), come `(?i)` fino alla fine del gruppo che la contiene o `(?i:…)` per un solo
++     gruppo, e `(?-i)` per disattivarle; e le ancore `^ $ \A \z \b \B`. Il matching avviene su
++     code point Unicode, quindi un carattere astrale è un solo simbolo.
+
+@ 0 3 0 1f538f8514f5287d186b0280d0f099af
++     La libreria è un unico source set, `praxinoscope.core`, che compila per la JVM, Scala.js e
++     Scala Native, e non è soggetto a capture checking: la VM di Pike è mutabile per
++     costruzione. Tutto viene esportato nell'ombrello `soundness`.
+
+% 0 1 0 0943afc710b4907404c244469294b459
+
+% 0 1 0 1941f0c78b1f80dc0a6c537cac896203
+
+% 0 1 0 084e71060ece581002859e84951a5ad9
+
+% 0 1 0 1c6c5751fd70a988035a851cdd9c25fc
+
+% 0 1 0 06ff01176f41801e04d884f364d24005
+
+% 0 1 0 1d6f5ed891f1ceca1083ed4c7ae25a4e
+
+@ 0 8 0 1e81a7c9afa077421b5019fc9f3d19d6
++ entry .Re2   il marcatore del motore RE2: la `Form` di una `Regex in Re2` di kaleidoscope
++     Un phantom trait sigillato senza membri. Una `Regex in Re2` di kaleidoscope è
++     un'espressione regolare etichettata per essere confrontata da questa libreria: è il tipo di
++     un letterale `r"…"` compilato sotto `import regexBackends.re2`, e di `Regex#re2`, che
++     rietichetta una regex dopo averla verificata rispetto al sottoinsieme RE2. L'istanza di
++     `Regex.Engine` per `Re2` non può risiedere nel compagno di questo trait, perché `Regex` è
++     definito sopra questa libreria, quindi è `Regex.Engine.re2` in kaleidoscope — comunque
++     nell'ambito implicito, per cui non serve alcun import per confrontare una `Regex in Re2`.
+
+% 2 1 0 1d6da639705377d11794e5bd65d09b52
+
+% 3 1 0 1ed5fe9efda107d21f4de1e0f176aab9
+
+% 0 1 0 141f233fcd26b6930e8e815f40388dc8
+
+% 0 1 0 0a93c6c32257479d090e4298cb7036fb
+
+% 0 1 0 06049b0b6773827a19e65c627cd6cd2f
+
+% 1 1 0 00342a8f8c0528211dfe85896da1375d
+
+@ 0 1 0 0f73bdb4725ba503073fc1a0b044c93e
++ entry .Motif   un'espressione regolare RE2 analizzata: il suo pattern, il suo albero di nodi, le sue catture e il suo programma
+
+% 1 1 0 1376cd144cc46cea1dbacca0a07d967d
+
+@ 0 5 0 0453ed98f3c44f9e1b578f4328a5a560
++       Un `Motif` è il risultato dell'analisi di un pattern in sintassi RE2: il sorgente
++       `#pattern`, l'albero strutturale `#node`, il numero di gruppi di cattura `#captures` e il
++       `#program` compilato che il matcher esegue. `.parse` (o `.apply`) ne costruisce uno,
++       sollevando `Motif.Error` con la posizione e il motivo per tutto ciò che la sintassi
++       rifiuta, compreso ogni costrutto che RE2 esclude deliberatamente.
+
+@ 0 5 0 0c05865350344fc30151f14fab57df4f
++       Il matching è sempre lineare nell'input: `#matches` è un test sull'intero input, `#seek`
++       trova la corrispondenza più a sinistra a partire da una posizione, `#search` ogni
++       corrispondenza in successione, e `#groups`, `#spans` e `#slots` riportano ciò a cui ha
++       corrisposto ciascun gruppo di cattura. `#subsumes` e `#intersects` confrontano i linguaggi
++       di due motif, cosa che solo un motore ad automi può decidere.
+
+% 2 1 0 1430da8beadfb5c80254432888ac87fb
+
+% 3 1 0 12fa36b64c8568eb08ba7206d4ae160b
+
+% 4 1 0 07396bcf11563e921f387022b0b1cc46
+
+% 0 1 0 1f09c0d97e67b35b120b4f682f7a78e7
+
+% 0 1 0 0382a60058b2c7940ad2edcffd07bdc4
+
+% 0 1 0 0b88a7684dde5bf70fcd14ad3e116395
+
+% 0 1 0 1b9ade2a74d31cc80a04358e09736d72
+
+% 0 1 0 180c544ccaa9bd87130f5e59ee2c0d3d
+
+% 1 1 0 1b39a9fa59a5c6c40bbbaae0b9e372a5
+
+@ 0 4 0 00ed87580386ce230cb497c89fb36555
++       Si può confrontare qualsiasi tipo di input dotato di un `Symbolizer`; quello fornito è
++       `Text`. Un motif ricavato da un letterale `r"…"` sotto `regexBackends.re2` viene portato
++       in staging nel programma a tempo di compilazione tramite `.staged`, quindi il suo `#node`
++       è `Node.Empty`: al matching partecipa solo il programma.
+
+% 1 1 0 1d9f7410cee67d180258edef4a6ede63
+
+% 0 1 0 1d51df9b8ec3bb160ff753ef0f944313
+
+% 0 1 0 1d9369dd9432fdb2159bf13ebb3f06c2
+
+% 0 1 0 0db9cb07ce2870de09053fad4fdb5ad5
+
+@ 0 6 0 093e0e64246bbbfb09f6bea0cd035fe8
++   entry .parse   analizza la sintassi RE2 in un `Motif`, o solleva `Motif.Error` alla posizione incriminata
++       Un parser a discesa ricorsiva per la sintassi RE2 elencata sul package `praxinoscope`:
++       le classi di caratteri vengono risolte in `Ranges` man mano (così una classe negata e il
++       suo complemento sono lo stesso nodo), i gruppi di cattura sono numerati da 1 in ordine di
++       apertura, le flag inline valgono nell'ambito del gruppo che le contiene, e alla fine
++       l'albero di nodi viene compilato in un `Program`. Richiede una `Tactic[Motif.Error]`.
+
+% 2 1 0 064b3987c4a090080a970f9bcdcdc510
+
+% 3 1 0 0ebc012a72f4a63216d9cb9ce02ee39a
+
+% 4 1 0 17dd813d14b1e48f0ea331fe589271f1
+
+% 0 1 0 16aa1f845545e01816d2761a77c88b19
+
+% 0 1 0 0578aae5f6f1391900c5b615e7832df2
+
+% 0 1 0 12cf823e716946de12864edb7a9fb5ab
+
+% 0 1 0 175de8784fadd61001cd95f93a9e18d0
+
+% 0 1 0 18b1fea2dd5a83760e26c72b962eec33
+
+% 1 1 0 0424ebbedb18c8fa10a24fda15ab3a11
+
+@ 0 19 0 1771f598a5c36d5101c1f2757d5a9c3c
++       Cosa viene rifiutato, e perché: un riferimento all'indietro `\1` o `\k<name>`
++       (`Backreference`), il lookaround `(?=…)`, `(?!…)`, `(?<=…)`, `(?<!…)` (`Lookaround`), un
++       quantificatore possessivo `*+` (`PossessiveQuantifier`), un gruppo atomico `(?>…)`
++       (`AtomicGroup`), una lettera di flag diversa da `i`, `m`, `s`, `U` (`Flag`), un numero di
++       ripetizioni oltre 1000 (`RepetitionTooLarge`), l'escape di una lettera priva di
++       significato (`InvalidEscape`), e i difetti strutturali: un gruppo, una classe o una
++       ripetizione non chiusi, una `)` isolata, una `[]` vuota o una `[z-a]` invertita. Una `{`
++       non seguita da una cifra è un letterale, come la legge RE2, quindi `a{x}` corrisponde a
++       quei quattro caratteri.
++   entry .apply   `Motif(text)`: equivale a `.parse`
++   entry .staged   ricostruisce un motif compilato a tempo di compilazione, al più una volta per pattern
++       `Motif.staged(pattern, captures, program)` è ciò in cui si espande un motif in staging: il
++       programma è by-name e viene materializzato solo alla prima chiamata per un pattern, poi
++       servito da una cache indicizzata dal testo del pattern. Un `case r"…" =>` sotto
++       `regexBackends.re2` costruisce il suo estrattore a ogni match, quindi senza la cache le
++       tabelle in staging verrebbero ricostruite ogni volta. Il `node` di un motif in staging è
++       `Node.Empty`.
++   entry .maxRepetition   il numero massimo che un quantificatore `{n,m}` può indicare: 1000, come lo fissa RE2
++       Le ripetizioni limitate si compilano per espansione, quindi il tetto limita la dimensione
++       del programma; superarlo dà `Motif.Error.Reason.RepetitionTooLarge`.
++   entry .Node   la forma strutturale di un pattern analizzato
+
+% 1 1 0 182f6fb72b1982330f55b18f234b997b
+
+@ 0 8 0 0e594d23be7aeb87109ddcd622d00ac0
++         Un enum di otto casi. `Empty` corrisponde alla stringa vuota; `Literal(codepoint)` a un
++         code point; `Klass(ranges)` a qualsiasi code point in un `Ranges` (ogni forma di classe —
++         `[…]`, `.`, `\d`, `\p{…}`, `[[:…:]]` — ne diventa uno, con la negazione già applicata);
++         `Sequence(nodes)` e `Alternation(options)` concatenano e scelgono; `Repeat(child,
++         minimum, maximum, reluctant)` è un quantificatore qualsiasi, con `maximum` `Unset` se
++         illimitato; `Group(child, index)` è un gruppo il cui `index` è il suo numero di cattura a
++         partire da 1, o `Unset` per un gruppo non di cattura; e `Boundary(anchor)` è un test di
++         ampiezza zero, uno dei `Node.Anchor`.
+
+% 2 1 0 0b3d99911d950a6e1f3822d1d3bd3aea
+
+% 3 1 0 15484e91dd0bb08802fa93b1f92e3905
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 03d4fd48b124361b1f8b57f864a43c93
+
+% 0 1 0 14ec70927ea6fa1a1acf42fda950cc41
+
+% 1 1 0 136fbc53234504480d868f53d15da598
+
+@ 0 1 0 1b8015c17d8057951e7bf560332ea3f8
++     entry .Anchor   i test di ampiezza zero: `Start`, `End`, `WordBoundary`, `NonWordBoundary`, `LineStart`, `LineEnd`
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 9 0 0fd33a6721ea3dc911cfd3d006b5af4f
++         column  Ancora
++         column  Scritta
++         column  Corrisponde a
++         row  `Start`  `^` o `\A`  l'inizio dell'intero input
++         row  `End`  `$` o `\z`  la fine dell'intero input
++         row  `WordBoundary`  `\b`  il punto in cui un carattere di parola (`\w`, ASCII) incontra uno che non lo è
++         row  `NonWordBoundary`  `\B`  dove ciò non accade
++         row  `LineStart`  `^` con la flag `m`  l'inizio dell'input, o subito dopo un ritorno a capo
++         row  `LineEnd`  `$` con la flag `m`  la fine dell'input, o subito prima di un ritorno a capo
+
+% 1 1 0 036d356c4c4bcb5c092418a65d75b056
+
+@ 0 3 0 15115f44849489d315abc8db8a0f1b7b
++         Le analisi di contenimento non sanno modellare le ultime quattro, e sollevano
++         `Unverifiable` per un programma che ne contiene una.
++   entry .Error   sollevato quando un pattern non è sintassi RE2, o un'analisi non sa rispondere
+
+% 1 1 0 0bc741daa135adf5191d363c7060cbb4
+
+@ 0 7 0 0e762ab953a8320b1d6b190e0468ef03
++         Errore `↯/s.33.1`: _the regular expression could not be compiled because `reason` at
++         `index`_, con il numero del motivo come sotto-numero. Sollevato da `Motif.parse`
++         tramite una `Tactic[Motif.Error]` all'offset del carattere incriminato; da
++         `Program.compile` quando un programma supera `Program.maxOps`; da `Subsumption` (e
++         quindi da `Motif#subsumes`, `Motif#intersects` e dalla `Regex#subsumes` di kaleidoscope)
++         per un pattern con un confine di parola o di riga, o per un'esplorazione oltre
++         `Subsumption.maxStates`; e dalla `Regex#re2` di kaleidoscope, che analizza una regex per
++         questo motore mentre la rietichetta.
+
+% 2 1 0 11049fa13392726b0e0784976e02d970
+
+% 3 1 0 0db0405c83d6cc991f760a60b4bb428e
+
+% 0 1 0 0483013d33748f6811bc39a224aadaf7
+
+% 1 1 0 1214283a9bbc83d91470efafaaf610e9
+
+@ 0 1 0 05ab83ddbca06d870644534ed2a5ee20
++     entry .Reason   perché un pattern è stato rifiutato, come uno di ventuno casi numerati
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 2 0 04cfeb5096710fe11cba485d6ba3f0da
++           Il `number` di ciascun caso è il sotto-numero dell'errore. I casi da 11 a 16 sono
++           costrutti che RE2 esclude, e quelli da 17 a 19 sono limiti; gli altri sono difetti
++           strutturali:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  Caso
++           column  Codice
++           column  Messaggio
++           column  Nota
+
+% 0 1 0 0dbd608b927438ed1052771639ddeb10
+
+@ 0 2 0 1ece6f28827fd0bd03a844d891e8a6b8
++           row  `NotInGroup`  2  _a closing parenthesis was found without a corresponding opening parenthesis_  una `)` isolata
++           row  `UnexpectedChar`  3  _an unexpected character was found_  un quantificatore fuori posto o una ripetizione malformata
+
+% 0 1 0 0c6b3bc1475dad3e0129c98fbfaa22e0
+
+% 0 1 0 04db4ba7ac9d7d9d1ad60e57cf750d90
+
+% 0 1 0 05e62773619e333f1af1c40e8fe4d7bf
+
+% 0 1 0 1e00e4df3df3b3a5198a2ff42ca7f983
+
+% 0 1 0 1c3016cd07456abe164ef5cec774022c
+
+@ 0 1 0 0afb260550bef2be10a9ab0c4d8084e1
++           row  `InvalidEscape`  9  _the escape sequence is not valid_  una lettera con escape priva di significato, o una forma `\x` errata
+
+% 0 1 0 1bec5736c562a99d1d699955ae500a3f
+
+% 0 1 0 0661484c219229a8003f2583d887f94b
+
+% 0 1 0 1468ff2e860244300977343cfe963128
+
+% 0 1 0 054d95a8f533ca111b5c4e12b427c55d
+
+% 0 1 0 1129704098cf0bc611cd78d5dc49ef36
+
+@ 0 5 0 1d3195ef487ad50018c57c8733591885
++           row  `UnsupportedGroup`  15  _the group syntax is not supported_  un `(?P` non seguito da `<`
++           row  `Flag`  16  _inline flags are not supported_  una lettera di flag diversa da `i`, `m`, `s` o `U`
++           row  `RepetitionTooLarge`  17  _the number of repetitions exceeds the limit of 1000_  un numero oltre `Motif.maxRepetition`, o un programma oltre `Motif.Program.maxOps`
++           row  `BudgetExceeded`  18  _the analysis exceeded its computation budget_  un'analisi di contenimento oltre `Subsumption.maxStates`
++           row  `Unverifiable`  19  _the pattern contains constructs which the analysis cannot verify_  una domanda di contenimento su un pattern con un confine di parola o di riga
+
+% 0 1 0 1861a6dfe59bf5f30ef06f4d0bdd08b0
+
+% 0 1 0 17acb28af431b1fa038f134c5fca3ffd
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 17 0 1ffc1aa9bfb784d1027f82f622ec5f6f
++       entry .communicable   rende ogni motivo come un messaggio: _backreferences are not part of RE2 syntax_, …
++       entry #number   il numero del motivo, da 1 a 21, che è il sotto-numero del suo `Motif.Error`
++     entry #index   l'offset nel pattern in cui è stato trovato il difetto; 0 per un fallimento di un'analisi
++     entry #reason   il `Motif.Error.Reason`
++   entry #pattern   il pattern così come è stato analizzato
++   entry #node   l'albero strutturale, un `Motif.Node`; `Node.Empty` per un motif portato in staging a tempo di compilazione
++   entry #captures   il numero di gruppi di cattura
++   entry #program   il `Program` compilato che la VM di Pike esegue
++   entry #matches   se l'intero input corrisponde
++       Un test sull'intero input, ancorato a entrambe le estremità:
++       `Motif.parse(t"abc").matches(t"xabcx")` è falso. Accetta qualsiasi input dotato di un
++       `Symbolizer`; `Text` è fornito. Lineare nell'input.
++   entry #seek   l'intervallo della corrispondenza più a sinistra in `start` o dopo, oppure `Unset`
++       Leftmost-first: la corrispondenza che un motore con backtracking troverebbe per prima.
++       `start` è un `Ordinal`, `Prim` per impostazione predefinita, e l'`Interval` parte da zero e
++       conta unità UTF-16. Un pattern che deve cominciare con un letterale viene cercato saltando
++       tra le occorrenze di quel letterale (`Program#prefix`), e uno che deve cominciare con una
++       certa classe di simboli cercandone uno; un pattern annullabile corrisponde a vuoto in
++       `start`.
+
+% 2 1 0 0d4544e0c0e06fa9130912721c0a2e19
+
+% 3 1 0 1dad5799a5d0f3b71eb34e9f4145bb28
+
+% 4 1 0 0d7bc01f85e229940320821c44594079
+
+% 0 1 0 0f700c0c300ab9890b0e98591ae5e899
+
+% 0 1 0 168d546d0780109a0647c8b9d6ec730e
+
+% 1 1 0 00f1ee6ea97f33641b8b3c95b6321a23
+
+@ 0 5 0 1210a9f201e2dfd21fd40c7cbb1cffc5
++   entry #search   ogni corrispondenza in `start` o dopo, come una `Chain` di intervalli costruita in modo lazy
++       Ogni ricerca riprende alla fine della corrispondenza precedente, o una posizione oltre se
++       la corrispondenza era vuota, quindi `a*` su `ab` produce gli intervalli 0–1, 1–1 e 2–2.
++       La `Regex#search` di kaleidoscope su una `Regex in Re2` differisce perché riprende una
++       posizione oltre la fine di ogni corrispondenza, per concordare con `java.util.regex`.
+
+% 2 1 0 14f3e641ca2402240f96beaf7b6e4cca
+
+% 3 1 0 048403be1b8ccdb40e292b5359eafc25
+
+% 4 1 0 09b5af39d5f4e10a1cb84a72404a8c8b
+
+% 0 1 0 1ef322299d71a67408985454260f3fab
+
+% 0 1 0 17890b4b30f5961a10b42fa945c9845a
+
+% 1 1 0 0c8615a002720044169bcd1b2aeb9414
+
+@ 0 8 0 088d9de641ca59230a710ed9b6a921cb
++   entry #subsumes   se questo motif corrisponde a ogni input a cui corrisponde un altro, o a ogni input a cui corrispondono tutti quelli di una lista
++       `motif.subsumes(that)` decide `L(that) ⊆ L(this)`; `motif.subsumes(those)` decide
++       `L(⋂those) ⊆ L(this)`, il contenimento degli input a cui corrispondono *tutti* i motif di
++       una lista contemporaneamente, che nessun singolo pattern RE2 può esprimere (RE2 non ha un
++       operatore di intersezione) e che un controllo a coppie sbaglia. Entrambi sono
++       `Subsumption.subsumes` sui programmi compilati, e sollevano `Motif.Error` per un confine di
++       parola o di riga in qualsiasi pattern (`Unverifiable`) o per una coppia che esaurisce il
++       budget (`BudgetExceeded`). Pattern equivalenti si sussumono a vicenda, quindi due
++       controlli decidono l'equivalenza.
+
+% 2 1 0 137c4a3486a1c0630c5c719ef0f8f437
+
+% 3 1 0 18c2914225019a440f5b20056dbd08f7
+
+% 4 1 0 0204d68a603630f00f7dfaf53bd5e53f
+
+% 0 1 0 00bde870845fdb5e0a3290d7ef9f8ebd
+
+% 0 1 0 0e11b8ab513adf0c1b52e65f7e1daf76
+
+% 0 1 0 142642c374ee9635089915b9d5399804
+
+% 0 1 0 1d37c0486d2b0e2316f287193e1cd396
+
+% 0 1 0 1568f680644b4b9a19a49305e1f53fc9
+
+% 0 1 0 1d9ef17f845f09e80dd2e3f42d3cd2b7
+
+% 1 1 0 1b95c51dfd6ba8931f4180154bac3fec
+
+@ 0 4 0 1708a28c47b05feb0a1104912386b50a
++   entry #intersects   se qualche input corrisponde sia a questo motif sia a un altro
++       `Subsumption.intersects` sui due programmi: una questione di raggiungibilità polinomiale,
++       a differenza di `#subsumes`. Due pattern annullabili si intersecano sull'input vuoto.
++       Solleva `Motif.Error` per un confine di parola o di riga in uno dei due.
+
+% 2 1 0 06cf3d650b6f01c6181bf950491ad8bd
+
+% 3 1 0 1d8ddbb1e44133920bc154eaeab364e2
+
+% 4 1 0 1dcde43e6d8161b610f89fc46154887e
+
+% 0 1 0 0d3d9151e64b0a70022671434fad695b
+
+% 0 1 0 0672453af2523de00db40f08368a5f41
+
+% 1 1 0 1ecccf02ee621dc417aaa85c83d8ea61
+
+@ 0 4 0 1f82eb2a8c03b8c208a0dbed9c0b68ea
++   entry #groups   ciò a cui ha corrisposto ciascun gruppo di cattura in una corrispondenza sull'intero input, nell'ordine dei gruppi
++       `Optional[List[Optional[Interval]]]`: `Unset` se l'input non corrisponde, e nella lista
++       `Unset` per un gruppo che non ha preso parte ad alcuna iterazione. Un gruppo ripetuto
++       registra la sua ultima iterazione; un gruppo avido cattura il massimo e uno riluttante il
++       minimo.
+
+% 2 1 0 1c52d24b97392fbb0fdb39badd3974b1
+
+% 3 1 0 0ec68399e22b4de50b81b0cf82353e23
+
+% 4 1 0 0aa264f9c719c9c205e04cff3789e074
+
+% 0 1 0 11fa89adc119d4b613240df335cceab1
+
+% 0 1 0 01df58a78f05353d033f6fa7f109d7d8
+
+% 1 1 0 1944e17512f90cf21485a4d0cae33d2c
+
+@ 0 9 0 138a991615504caa0fef40da64bb3e3e
++   entry #spans   come `#groups`, con l'intera corrispondenza all'indice 0, e facoltativamente non ancorato a partire da `start`
++       Con `anchored` vero (il valore predefinito) deve corrispondere l'intero input; se è
++       falso, viene riportata la corrispondenza più a sinistra a partire da `start`,
++       come la trova `#seek`.
++   entry #slots   l'array grezzo degli slot di cattura di una corrispondenza: i limiti del gruppo `n` in `2n` e `2n + 1`
++       Gli slot del thread vincente come `Array[Int]`, con l'intera corrispondenza in 0 e 1 e
++       `-1` per uno slot che nessun thread ha raggiunto; `Unset` se non c'è corrispondenza.
++       Esiste accanto a `#spans` perché un `Interval` non può registrare la *posizione* di una
++       corrispondenza vuota, che serve a chi scorre corrispondenze ripetute. Con `anchored`
++       falso cerca a partire da `start` invece di richiedere l'intero input.
+
+@ 0 1 0 0e96103ccb380d5202e533618c6f9478
++   entry .Program   un pattern compilato in un array piatto di istruzioni, per la VM di Pike e le analisi di contenimento
+
+% 1 1 0 1621b2c671ca647507cc709bf33bdf7c
+
+@ 0 6 0 16214606bb41027c10ee8a3f86765107
++         Un `Program` è l'`#ops` di un pattern sotto forma di array di `Program.Op`, in cui il
++         gruppo di cattura `n` registra i propri limiti negli slot `2n` e `2n + 1` e l'intera
++         corrispondenza negli slot 0 e 1, quindi `#slots` vale `2 × (captures + 1)`. `.compile` ne
++         costruisce uno da un `Motif.Node`, e `Motif#program` lo contiene; `Pike.run` lo esegue e
++         `Subsumption` lo analizza. I valori `#nullable`, `#firstBounds` e `#prefix`, calcolati in
++         modo lazy, sono ciò che permette a una ricerca non ancorata di saltare le posizioni in
++         cui nessuna corrispondenza può cominciare.
+
+% 1 1 0 11a36b717fcf0dea10ef716e6d325fbb
+
+% 0 1 0 08c5b9c39794f37d0d37aa799129316a
+
+@ 0 30 0 1b2ad6c35958e53814c63748ebdcf29b
++     entry .compile   compila un albero di nodi in un programma, sollevando `Motif.Error` se cresce oltre `.maxOps`
++         Emette un'op `Symbol` per ogni letterale o classe, degli `Split` per l'alternanza e la
++         ripetizione (prima il ramo preferito, ed è così che si codificano avidità e riluttanza),
++         dei `Jump` per i cicli, dei `Save` attorno a un gruppo di cattura, dei `Test` per le
++         ancore, e un `Accept` finale. Una ripetizione limitata `{n,m}` viene espansa, quindi
++         ripetizioni limitate annidate crescono in modo geometrico; oltre `maxOps` op la
++         compilazione solleva `Motif.Error.Reason.RepetitionTooLarge`.
++     entry .maxOps   il tetto alla lunghezza di un programma: 100000 op
++     entry .Op   un'istruzione: `Symbol`, `Split`, `Jump`, `Save`, `Test` o `Accept`
++         `Symbol(bounds, next)` consuma un simbolo compreso nei limiti interfogliati `lo, hi, lo,
++         hi, …` (un `Ranges` appiattito per una scansione senza allocazioni) e prosegue a `next`;
++         `Split(preferred, alternate)` biforca un thread, preferendo il primo; `Jump(target)`
++         prosegue altrove; `Save(slot, next)` registra la posizione corrente in uno slot di
++         cattura; `Test(anchor, next)` passa solo dove vale il `Motif.Node.Anchor`; `Accept`
++         termina una corrispondenza. Solo `Symbol` consuma input; le altre vengono seguite senza
++         costo nella ε-chiusura della VM.
++     entry #ops   le istruzioni, indicizzate dal program counter
++     entry #slots   il numero di slot di cattura: due per gruppo, più due per l'intera corrispondenza
++     entry #captures   il numero di gruppi di cattura
++     entry #entry   il program counter da cui parte l'esecuzione: 0
++     entry #nullable   se una corrispondenza può non consumare nulla, nel qual caso durante la ricerca non si può saltare alcuna posizione
++     entry #firstBounds   i limiti interfogliati di ogni simbolo con cui una corrispondenza può cominciare, fusi
++         Vuoto quando nessun simbolo può cominciare una corrispondenza. Una ricerca non ancorata su
++         un pattern senza prefisso letterale cerca un simbolo entro questi limiti prima di avviare
++         i thread.
++     entry #prefix   il letterale più lungo con cui ogni corrispondenza deve cominciare, o un testo vuoto
++         Limitato a 32 unità UTF-16, e vuoto quando la prima op che consuma non è un unico simbolo
++         univoco. Una ricerca non ancorata salta tra le sue occorrenze con `Symbolizer#find`, che
++         per `Text` è `String.indexOf`, invece di passare per ogni posizione.
++   entry .Ranges   un insieme di simboli come sequenze ordinate e disgiunte di code point: la forma che prende ogni classe di caratteri
+
+% 1 1 0 0b10706c7b9020781eb9f8df68edd836
+
+@ 0 6 0 18ba5e8e65e80c610796c2a9ca8ae1bd
++         Un `Ranges` contiene i suoi `#spans` come una lista interfogliata di limiti inclusivi,
++         `lo :: hi :: lo :: hi :: …`, ordinati, disgiunti e mai adiacenti, quindi due insiemi sono
++         uguali esattamente quando lo sono i loro span. Il costruttore è privato; `.apply`,
++         `.point`, `.empty` e le classi con nome costruiscono insiemi normalizzati, e `#union`,
++         `#negate`, `#intersect` e `#folded` preservano l'invariante. I simboli sono membri,
++         codificati come `Int`, di un alfabeto ordinato: per ora i code point Unicode fino a
++         `.maxSymbol`.
+
+% 2 1 0 098db9929ceac719015cc7e79c477e85
+
+% 3 1 0 034a68e9e85023190e13839279ae0e5f
+
+% 0 1 0 16664aac82dbcac41fb8be1ecfa86284
+
+% 0 1 0 0b477e35de0aa03c04d6713accc85ec1
+
+% 0 1 0 060a4cbea73abc71086f0e579c4d03e0
+
+% 0 1 0 1a2aadf9b2f82cb51f0ee7ae1b9fa6b1
+
+% 0 1 0 11ccd510f51dec37174dd15c05206f88
+
+% 0 1 0 12ff04ca2fb232e21e2f3561bd64cab0
+
+% 1 1 0 018ba37588e1c941164874dc04749887
+
+@ 0 2 0 1193a59fa51825141b8e9194c6a6e249
++         Il parser risolve ogni forma di classe in un `Ranges`, quindi
++         `Motif.parse(t"[a-cd-f]").node` è `Klass(Ranges('a', 'f'))`, con le sequenze adiacenti
++         fuse.
+
+% 1 1 0 0e1fa9c91bbb895f018f5823215afc8c
+
+@ 0 18 0 0fd1b65c20386ea707f3c817bb619bb8
++     entry .maxSymbol   il simbolo più grande nel dominio dei code point Unicode: `0x10ffff`
++         Il limite superiore rispetto a cui `#negate` calcola il complemento. Qualsiasi altro
++         dominio di simboli è più piccolo, quindi è un limite universale sicuro.
++     entry .empty   l'insieme senza simboli
++     entry .apply   `Ranges(lo, hi)`: la sequenza inclusiva da `lo` a `hi`
++     entry .point   `Ranges.point(symbol)`: l'insieme di un solo simbolo
++     entry .digit   `\d`: le cifre ASCII `0`–`9`
++         Le classi perl di RE2 sono solo ASCII, come lo sono `.word` e `.space`.
++     entry .word   `\w`: lettere ASCII, cifre e `_`
++     entry .space   `\s`: tabulazione, ritorno a capo, tabulazione verticale, form feed, carriage return e spazio
++     entry .any   `.`: ogni code point tranne il ritorno a capo
++         Con la flag `s`, `.` è invece `.anySymbol`.
++     entry .anySymbol   ogni code point: `\p{Any}`, e `.` con la flag `s`
++     entry .where   ogni simbolo ammesso da un predicato, come sequenze fuse
++         Scandisce una volta l'intero dominio dei code point, ed è così che le classi Unicode
++         vengono rese esatte senza una seconda copia del database Unicode: a rispondere al
++         predicato sono le tabelle `Character` della JDK stessa. Una passata per ogni classe
++         distinta, che `.unicode` memoizza.
++     entry .posix   le classi POSIX di `[[:name:]]`, per nome, tutte solo ASCII
+
+% 0 1 0 1d3e69d0ac70cfea011da5218b4bcc4e
+
+@ 0 19 0 1f777df5507e5fad1c43c01c896a8e87
++         `punct`, `space`, `upper`, `word` e `xdigit`, come `Map[String, Ranges]`; un nome
++         assente dà `Motif.Error.Reason.InvalidPosixClass` durante il parsing.
++     entry .unicode   una categoria generale o uno script Unicode per il nome usato da `\p{…}`, o `Unset`
++         `Any` è l'intero dominio; una categoria di due lettere come `Lu` o `Nd` viene confrontata
++         esattamente; un gruppo di una lettera come `L` è l'unione delle sue sottocategorie, come
++         lo definisce RE2; e qualsiasi altro nome viene provato come script, `Greek` o `Han`. Il
++         risultato è memoizzato, poiché ogni classe costa una passata sul dominio. Un nome
++         sconosciuto dà `Motif.Error.Reason.UnknownUnicodeClass` durante il parsing.
++     entry #spans   i limiti inclusivi interfogliati, `lo :: hi :: lo :: hi :: …`
++     entry #vacant   se l'insieme è vuoto
++     entry #contains   se un simbolo appartiene all'insieme
++     entry #union   i simboli presenti in uno dei due insiemi, fusi
++     entry #negate   i simboli non presenti nell'insieme, fino a `max` (`Ranges.maxSymbol` per impostazione predefinita)
++     entry #intersect   i simboli presenti in entrambi gli insiemi
++     entry #folded   la chiusura dell'insieme rispetto al case folding semplice, come lo definisce la flag `i`
++         Un'orbita di folding non è sempre una coppia — `K`, `k` e il simbolo del kelvin si
++         equivalgono tutti — quindi la chiusura si calcola sulle orbite anziché mappando ogni
++         simbolo verso l'alto e verso il basso. Si esaminano solo i code point che variano per
++         maiuscole e minuscole, quindi il costo è proporzionale al loro numero e non alla
++         dimensione dell'insieme.
+
+@ 0 1 0 1708042325488d8d0956d3aaee6e24f1
++ entry .Pike   la macchina virtuale che esegue un `Program` su un input in tempo lineare
+
+% 1 1 0 02f813c8c5a1f44206eaedcb0411da52
+
+@ 0 7 0 10af1e65c95fda2419a91589490fcd63
++       Una VM di Pike simula l'automa in ampiezza: a ogni posizione dell'input mantiene una lista
++       di thread ordinata per priorità, uno per program counter, fa avanzare tutti i thread sul
++       simbolo contemporaneamente, e non fa mai backtracking. Ogni program counter entra nella
++       lista dei thread di una posizione al più una volta, quindi un'esecuzione costa al più la
++       lunghezza dell'input per la lunghezza del programma, qualunque sia il pattern: è la
++       garanzia su cui poggia l'intera libreria. L'ordine dei thread è l'ordine di preferenza,
++       quindi il primo thread ad accettare dà la corrispondenza che un motore con backtracking
++       avrebbe trovato per prima, con gli stessi limiti di cattura.
+
+% 1 1 0 1599e6c900928d0f033abaa1a547e3c4
+
+% 1 1 0 07fc889f22c4dee617b8d635fed7bb23
+
+@ 0 8 0 1c5a3496d2b8be260a135ee4542ea078
++   entry .run   esegue un programma da un offset UTF-16, restituendo gli slot di cattura del thread vincente o `Unset`
++       `Pike.run(program, input, start, anchoredStart, anchoredEnd)`, su qualsiasi input dotato
++       di un `Symbolizer`. Con `anchoredStart` falso, un nuovo thread a priorità minima si
++       aggiunge a ogni posizione finché non si trova una corrispondenza — la semantica
++       leftmost-first di `seek` — e le posizioni in cui nessuna corrispondenza può cominciare
++       vengono saltate grazie a `Motif.Program#prefix` o `Motif.Program#firstBounds`; con
++       `anchoredEnd` vero, la corrispondenza deve arrivare alla fine dell'input. Gli slot sono un
++       `Array[Int]` con `-1` dove nessun thread ha salvato una posizione. `Motif#matches`,
++       `#seek`, `#search` e `#slots` sono i chiamanti abituali.
+
+@ 0 1 0 12ace39a58a502f114e06e6d88842444
++ entry .Subsumption   decide contenimento e intersezione dei linguaggi di programmi compilati
+
+% 1 1 0 05e2fca2c0db1577027411265afe0d3f
+
+@ 0 8 0 1b2603b19ecce2301c8db2b1661c984e
++       Due domande a cui un motore con backtracking non sa rispondere, qui decidibili perché i
++       pattern RE2 sono linguaggi regolari: `.subsumes`, se ogni input a cui corrisponde un
++       programma corrisponde anche a un altro (esponenziale nel caso peggiore: il programma che
++       copre viene determinizzato al volo, quindi l'esplorazione ha un budget dato da
++       `.maxStates`), e `.intersects`, se qualche input corrisponde a entrambi (polinomiale).
++       `Motif#subsumes`, `Motif#intersects` e `Regex#subsumes` e `Regex#intersects` di
++       kaleidoscope sono il modo abituale di porle. I confini di parola e di riga dipendono dal
++       contesto in un modo che le analisi non modellano, quindi un programma che ne contiene uno
++       solleva `Motif.Error.Reason.Unverifiable`.
+
+% 1 1 0 0f5a471778a43182172894f29cb3d647
+
+% 1 1 0 111002e0e861d1011d9ca12132e04e30
+
+@ 0 12 0 04826fadd4692fa803fc43980c380272
++   entry .maxStates   il budget sugli stati esplorati: 100000, oltre il quale `.subsumes` solleva `BudgetExceeded`
++   entry .subsumes   se ogni input a cui corrisponde un programma, o tutti quelli di una lista, corrisponde alla copertura
++       `Subsumption.subsumes(first, second)` decide `L(second) ⊆ L(first)`;
++       `Subsumption.subsumes(cover, candidates)` decide `L(⋂candidates) ⊆ L(cover)`: ogni
++       candidato viene esplorato program counter per program counter mentre la copertura viene
++       determinizzata, e il contenimento fallisce in uno stato raggiungibile che ogni candidato
++       accetta e la copertura no. Una lista di candidati vuota risponde `false`, fallendo in modo
++       chiuso, invece di decidere se la copertura corrisponde a tutto. Solleva `Motif.Error` per
++       `Unverifiable` o `BudgetExceeded`.
++   entry .intersects   se qualche input corrisponde a entrambi i programmi
++       Raggiungibilità, nel prodotto dei due automi, di un punto in cui entrambi accettano.
++       Solleva `Motif.Error` per `Unverifiable` o `BudgetExceeded`.
+
+@ 0 1 0 192e139c74be97fd1f927693a1ba9451
++ entry .Symbolizer   come un input viene letto come successione di simboli codificati come `Int`, perché un programma possa eseguirvi sopra
+
+% 1 1 0 131863d3c37729fe00d5cd7e29b8e6bd
+
+@ 0 7 0 0bd06c363ce6f1760c64da8ef6d8476f
++       Una typeclass, `input is Symbolizer`, che decodifica un input nei simboli consumati da un
++       `Motif.Program`: la sua `#length`, il `#symbol` a un offset UTF-16, l'offset del simbolo
++       `#next`, il simbolo `#before` un offset, se un simbolo è un carattere di parola (`#word`),
++       e `#find`, che individua un letterale per accelerare la ricerca. La rappresentazione del
++       programma non dipende da nient'altro dell'input, quindi si potrebbe aggiungere un dominio
++       di byte UTF-8, per il matching in streaming o nativo, senza modificare `Motif.Program` o
++       `Pike`. `.text` è l'unica istanza fornita, su `Text` come code point Unicode, nell'ambito
++       implicito.
+
+% 0 1 0 06a3482c0d7db7ec0577c7feb5e48d30
+
+@ 0 10 0 0593113c319c728607deda3f77374088
++   entry .text   `Text is Symbolizer`: code point Unicode su testo UTF-16
++       `codePointAt` e `codePointBefore`, quindi un carattere astrale è un solo simbolo; `find` è
++       `String.indexOf`, che la JVM trasforma in un intrinseco con scansione vettorizzata.
++   entry #Self   il tipo dell'input
++   entry #length   la lunghezza dell'input in offset
++   entry #symbol   il simbolo a un offset
++   entry #next   l'offset successivo al simbolo a un offset
++   entry #before   il simbolo che termina a un offset
++   entry #word   se un simbolo è un carattere di parola (`\w`, ASCII), per `\b` e `\B`
++   entry #find   l'offset della prima occorrenza di un letterale in `from` o dopo, o un valore negativo se non ce n'è
+
+@ 0 1 0 0f3fdf6dcf0abbf10bd64ecbcb60cfa5
++ entry .Fsa   un matcher sull'intero input generato durante la compilazione del codice: un automa statico per un pattern
+
+% 1 1 0 005bdaba259950b80c8d635ead3151b1
+
+@ 0 8 0 1400f26c67fbf1db0367d5cbccf294d7
++       Un `Fsa` avvolge un `#test` da `Text` a `Boolean`, generato per costruzione dei
++       sottoinsiemi per un letterale `r"…"` senza catture sotto `regexBackends.re2`: una tabella
++       di transizioni densa sulle classi di simboli del pattern, guidata da un ciclo senza
++       allocazioni che non fa backtracking né tiene traccia di thread. È un contenitore con nome
++       anziché un semplice tipo funzione perché i consumatori soggetti a capture checking possano
++       portarlo attraverso codice quotato. Il generatore rinuncia — e il letterale ripiega sul
++       suo `Motif.Program` in staging — per un pattern con un confine di parola o di riga, o per
++       uno il cui automa supera i 512 stati. Un programma non ne costruisce uno a mano.
+
+% 0 1 0 0490c245d46a921d14849afbd7cd88dd
+
+@ 0 5 0 10c1ed0ec104f8e0197a691349c7b18b
++   entry .of   il matcher per un pattern, costruito al più una volta
++       `Fsa.of(key)(fsa)`: `fsa` è by-name e viene valutato solo la prima volta che si incontra
++       `key` — il letterale stringa del pattern —, poiché un estrattore viene costruito a ogni
++       match.
++   entry #test   il test sull'intero input generato
++   entry #matches   se l'intero testo corrisponde
+
+@ 0 1 0 0d6d73a683c4f693102942fde59bcb8b
++ entry .internal   lo staging di motif e programmi nel codice compilato, e il generatore del matcher statico
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 0fb0b651419061f914bed7b56968a78d
++       Non per uso diretto: i given `ToExpr` che permettono alla macro `r"…"` di kaleidoscope di
++       inserire un `Motif` (come chiamata `Motif.staged`), un `Motif.Program`, ogni
++       `Motif.Program.Op` e ogni `Motif.Node.Anchor` nell'estrattore che emette, e `matcher`, che
++       compila un programma per costruzione dei sottoinsiemi nell'`Fsa` usato da un letterale
++       senza catture.
+
+% 0 1 0 089aac5872cfd9120426d9f1d9567cd2
+
+% 0 1 0 16825a90dfe47cf40aa0c1f291873d09
+
+@ 0 7 0 1b6defa793eba4d90831ffb63f71ab12
++   entry .program   `ToExpr[Program]`: le op come letterale array
++   entry .motif   `ToExpr[Motif]`: una chiamata `Motif.staged(pattern, captures, program)`, in cache per pattern
++   entry .maxStates   il tetto su un automa generato: 512 stati, oltre i quali `.matcher` rinuncia
++   entry .matcher   genera un'espressione `Fsa` per un programma, o `Unset`
++       Costruzione dei sottoinsiemi in una tabella densa sulle classi di equivalenza
++       dell'alfabeto, con una mappa delle classi a indicizzazione diretta per l'ASCII e una
++       ricerca binaria oltre; `Unset` per un programma con un confine di parola o di riga, o per
++       uno il cui numero di stati supera `.maxStates`.

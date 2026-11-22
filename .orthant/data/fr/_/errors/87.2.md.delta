@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 134faaa6e4fc207c05e99ded56dc1638
+
+@ 0 1 0 1c747699f5130d9a192424fe02581c07
++ Levée lorsque Legerdemain ne peut pas lire un paramètre de requête.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 0acec0fe67d4caa61f865789b72e0ced
++ Legerdemain décode les paramètres de requête nommés en valeurs typées. Le constructeur prend une
++ `reason: Reason` ; le message affiché est `the query parameter could not be read because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0251a757dd170689116e576cfc585821
+
+@ 0 4 0 14c8be31c16086b101a3945369f62ac9
++ Le paramètre n'était pas présent dans la chaîne de requête. (Lorsque le type cible a une instance
++ `Default`, la valeur par défaut remplace la valeur manquante, mais l'erreur est tout de même levée
++ pour que la `Tactic` de l'appelant puisse l'observer.)
+
+@ 0 1 0 1070e7e9cace714f1121cbd9d05e8df6
++ **Exemple.** `[↯/s.87.2.1] the query parameter could not be read because the parameter was not present in the query string`
+
+@ 0 3 0 13989b7382383b8a15257851b65cf7d2
++ **Résolution.** Vérifiez que le paramètre figure dans la chaîne de requête ; fournissez une
++ instance `Default[T]` pour disposer d'une valeur de repli lorsqu'il est absent.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 13b1329eeb7591731217af78d070afed
++ - Source : `lib/legerdemain/src/query/legerdemain.Query.scala`

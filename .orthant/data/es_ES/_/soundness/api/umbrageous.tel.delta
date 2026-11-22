@@ -1,0 +1,98 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b32e05725835bca1f985912aa004d7f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 191066454a39ac3c195efbed2f3029ba
++ info   un plugin del compilador que sombrea paquetes, trasladando sus declaraciones bajo un nuevo prefijo mientras compilan
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0551362ea18d00150c8814c990d689f8
++     _Umbrageous_ reubica («sombrea») paquetes en tiempo de compilación. Dada una correspondencia de
++     un paquete a un nuevo prefijo, cada declaración de ese paquete, y de sus subpaquetes, se compila
++     como si se hubiera escrito bajo el prefijo, de modo que dos versiones de una biblioteca, o una
++     biblioteca y una copia incorporada a otra, pueden convivir en un mismo classpath sin que sus
++     clases colisionen. A diferencia de una herramienta de sombreado de bytecode, trabaja sobre el
++     código fuente a medida que se analiza, así que los nombres sombreados son los que ven el typer,
++     el TASTy y todas las fases posteriores.
+
+@ 0 3 0 0b306703bd5128f8051ee7e7f374d665
++     El plugin se activa pasando su jar al compilador como `-Xplugin:<path to the
++     umbrageous plugin jar>` (el `plugin.properties` del jar nombra `umbrageous.ShaderPlugin`), y
++     cada correspondencia como una opción del plugin de la forma `<package>:<new-prefix>`:
+
+% 0 1 0 121f5d49fa83450310393c10f05ce4fa
+
+% 0 1 0 158741edf7b88012099d8f5dd584058f
+
+% 0 1 0 0e36e04daf9f65340e86dc80875c0fe3
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 16b13ae65161bc370eb5dc8c384580fb
++     Con esa correspondencia, un fichero fuente que declara `package testing.globe` se compila como
++     `shaded.v1.testing.globe`. En cada fichero fuente reescribe tres cosas:
+
+@ 0 7 0 0cba03d85b0c4b7410c3d88ae5c5f149
++     - una cláusula `package` cuyo nombre es un paquete con correspondencia, o está dentro de uno,
++       se traslada bajo el prefijo; cuando coinciden varias correspondencias, gana el paquete más
++       largo;
++     - cada cláusula `package` recibe una importación con comodín del prefijo de cada
++       correspondencia (salvo la correspondencia que trasladó esa cláusula), de modo que
++       `import testing.globe.*` en otro paquete sigue resolviéndose, ahora al paquete sombreado;
++     - una referencia totalmente cualificada `_root_.testing.…` a un paquete con correspondencia se
++       redirige a `_root_.shaded.v1.testing.…`.
+
+@ 0 2 0 0303cc69276c0e611760105d3a526cdb
++     Una opción que no tiene la forma `<package>:<new-prefix>` se notifica como advertencia y se
++     ignora. El prefijo puede contener puntos.
+
+@ 0 4 0 141a643a31119ef60b78c9cf4d1e5624
++     La biblioteca es el único conjunto de fuentes, solo para la JVM, `umbrageous.plugin`, que
++     depende del compilador de Scala y de nada de Soundness. Se publica como artefacto independiente
++     y no dentro de una agrupación de Soundness, ya que un jar de `-Xplugin` debe declarar exactamente
++     un plugin. Sus dos clases se exportan al paraguas `soundness`, aunque ningún programa las
++     necesita en tiempo de ejecución.
+
+% 0 1 0 0d68011425c7c64e1e7684730e0547a5
+
+% 0 1 0 1aa1b4d5641af56c029971e938ffc7d8
+
+@ 0 1 0 197de56ff3c2265f0de899e612533e27
++ entry .ShaderPlugin   la clase del plugin del compilador, nombrada en el `plugin.properties` de umbrageous
+
+% 1 1 0 1bea3a3b3d3ea755072ff495c799e9f9
+
+@ 0 4 0 1edce66b60f01cb30e3c3d7f47817878
++       El `StandardPlugin` que el compilador instancia cuando se pasa el jar de umbrageous con
++       `-Xplugin:`. Instala una sola fase, `Shader`, a la que entrega las opciones del plugin, cada
++       una de las cuales es una correspondencia `<package>:<new-prefix>` dada como
++       `-P:umbrageous:<package>:<new-prefix>`. No se usa directamente.
+
+% 0 1 0 1ba35b0747441ab51f6b4ff3d195bc24
+
+@ 0 1 0 0ccd8843369b212b0582c852b8b72235
++   entry #name   el nombre del plugin, `umbrageous`, por el que se dirigen sus opciones
+
+@ 0 1 0 026291eff2343af81039b0f18b3f7cd2
++ entry .Shader   la fase del plugin que traslada los paquetes con correspondencia bajo sus prefijos, tras el análisis
+
+% 1 1 0 181951bf227ecdd91010a27e799d496d
+
+@ 0 7 0 11dacdf90c70d8b3044ecf394092b093
++       Una fase llamada `shade`, que se ejecuta después de `parser` y antes de `typer`, sobre el
++       árbol sin tipar de cada unidad de compilación. La construye `ShaderPlugin` con las opciones
++       del plugin, y analiza cada una como una correspondencia `<package>:<new-prefix>`, advirtiendo
++       de cualquier otra y omitiéndola. Después reescribe cada cláusula `package` de un paquete con
++       correspondencia bajo su prefijo, añade a cada cláusula `package` una importación con comodín
++       del prefijo de cada otra correspondencia, y redirige cada referencia cualificada con `_root_`
++       hacia un paquete con correspondencia. No se usa directamente.
+
+% 0 1 0 104b2e37635872f60990d8e8dffe39a1
+
+@ 0 1 0 128c6c0a5c8bedc50f53676df1495c4e
++   entry #phaseName   el nombre de la fase, `shade`

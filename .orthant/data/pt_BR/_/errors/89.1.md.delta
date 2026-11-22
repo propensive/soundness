@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 00d86367a96ef12003dfc89c82494938
+
+@ 0 2 0 17d1045161d1c26a031bb1df94400dae
++ Lançado quando o Phoenicia não consegue ler um arquivo de fonte, ou quando uma face é solicitada
++ a uma provisão que não consegue compô-la.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 6 0 037e9c87e496846000947f2a0b2c506c
++ O Phoenicia analisa arquivos de fonte (normalmente TrueType/OpenType) e relata este erro quando
++ o arquivo não tem tabelas obrigatórias, usa um formato desconhecido ou falha na verificação do
++ número mágico. Ele também o relata quando uma `Font` é criada a partir de uma `Face` — um peso,
++ uma inclinação, uma largura, uma variação ou um recurso — que a provisão `Typesettable` da
++ família tipográfica não cobre, de modo que o documento não siga para uma renderização sintetizada
++ ou substituída. A mensagem é `the font could not be used because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 15 0 0cb32a6fa27d64c719fbb7d376703295
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensagem
++ column  Resolução
++ row  `↯/s.89.1.1`  `MissingTable`  Uma tabela obrigatória, identificada por `tag`, não foi encontrada no arquivo de fonte.  `[↯/s.89.1.1] the font could not be used because the table cmap was not found`  Use uma fonte que contenha as tabelas obrigatórias; muitas ferramentas de redução de fontes a um subconjunto podem remover tabelas obrigatórias.
++ row  `↯/s.89.1.2`  `UnknownFormat`  Uma tabela foi localizada, mas seu conteúdo não corresponde a nenhuma versão do formato que o Phoenicia sabe ler.  `[↯/s.89.1.2] the font could not be used because the table contains data in an unknown format`  Use uma fonte que siga uma versão suportada da especificação OpenType/TrueType.
++ row  `↯/s.89.1.3`  `MagicNumber`  Os bytes iniciais da fonte não corresponderam ao número mágico esperado, o que indica que o arquivo não é uma fonte que o Phoenicia reconheça.  `[↯/s.89.1.3] the font could not be used because the font did not contain expected check data`  Confirme que o arquivo é uma fonte TrueType ou OpenType e que não está corrompido; verifique se o arquivo foi aberto em modo binário.
++ row  `↯/s.89.1.4`  `MissingEncoding`  A fonte não declara nenhum mapeamento de caracteres para glifos que este leitor consiga usar.  `[↯/s.89.1.4] the font contains no usable character encoding`  Use uma fonte com uma subtabela `cmap` Unicode. Uma fonte que só tem uma codificação Macintosh legada ou de símbolos não consegue mapear caracteres para glifos.
++ row  `↯/s.89.1.5`  `UncoveredWeight`  A provisão não oferece nenhuma face no peso solicitado.  `[↯/s.89.1.5] the font could not be used because Inter is not provided at weight 700`  Incorpore um arquivo nesse peso (ou uma fonte variável cujo eixo `wght` o abranja), declare o peso na cobertura de uma provisão vinculada ou peça um peso que a provisão tenha.
++ row  `↯/s.89.1.6`  `UncoveredSlant`  A provisão não tem nenhuma face itálica (ou nenhuma reta).  `[↯/s.89.1.6] the font could not be used because Inter is not provided in an italic face`  Acrescente o arquivo itálico à provisão, ou componha a face reta.
++ row  `↯/s.89.1.7`  `UncoveredStretch`  A provisão não oferece nenhuma face na largura solicitada.  `[↯/s.89.1.7] the font could not be used because Inter is not provided at a stretch of 75.0%`  Acrescente um arquivo condensado ou expandido, ou use a largura normal.
++ row  `↯/s.89.1.8`  `UnknownAxis`  A face varia um eixo que a fonte não tem.  `[↯/s.89.1.8] the font could not be used because Inter has no variation axis opsz`  Consulte a tabela `fvar` da fonte para ver os eixos que ela define; `Sfnt.fvar` os lista.
++ row  `↯/s.89.1.9`  `AxisOutOfRange`  A face define um eixo com um valor fora do intervalo que a fonte admite.  `[↯/s.89.1.9] the font could not be used because Inter does not admit 950.0 on its wght axis`  Mantenha o valor entre o mínimo e o máximo do eixo.
++ row  `↯/s.89.1.10`  `MissingFeature`  A face habilita um recurso de layout que as tabelas `GSUB` e `GPOS` da fonte não implementam.  `[↯/s.89.1.10] the font could not be used because Inter does not implement the layout feature onum`  Use uma fonte que implemente o recurso, ou remova a configuração; `Sfnt.features` lista o que um arquivo implementa.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 0e86a3df8efdcb251ec31daa5feda606
++ - Código-fonte: `lib/phoenicia/src/core/phoenicia.Font.scala`

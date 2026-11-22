@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 5 0 1bf97d2d5e7a1aa81304c4fbe202e179
++       `Classfile` は一つの `.class` ファイルであり、作られるときに JDK の `java.lang.classfile` API でパースされる。
++       JDK が拒否するバイトは `Classfile.Error` を発生させるので、どの作り方でもスコープに `Tactic[Classfile.Error]` が必要である。
++       クラスパス上で名前または型によって、スコープ内の given の `Classloader` を通じて見つけるか、任意のバイトの供給源（ファイル、リソース、ストリーム）から `read[Classfile]` で読み込む。
++       `Aggregable by Data` だからである。
+
+% 5 1 0 184eec9e339a69a009ad9c121ae982a9
+
+@ 0 2 0 025e575fa3e422da0e0082a616e51e3c
++       `Classfile` はケイパビリティを保持しない。
++       構築時にパースされるので、値は自由に保持し、共有し、受け渡せる。
+
+@ 0 10 0 0c8f4b52251b603d193208e2f9ff02de
++   entry .Error   クラスファイルを読み込めないときに発生する
++       エラー `↯/s.88.2`：_there was an error reading the classfile_。
++       ヘッダー、定数プール、属性、メソッドテーブルがパースできないとき、`Classfile(data)`、`Classfile(name)`、`Classfile[type]`、`read[Classfile]` が発生させる。
++       クラスローダーが持たないクラスは、引き続きエラーではなく `Unset` である。
++       メソッドのコードは `Method#bytecode` だけがデコードし、コードがデコードできなければ同じエラーを発生させる。
++   entry .aggregable   任意のバイトのストリームから `read[Classfile]` として `Classfile` を読み込む
++       ファイル、クラスパスのリソース、その他任意の `Readable` な供給源をクラスファイルとして読めるようにする `Aggregable by Data` の given である。
++       ストリーム全体が一つの `Data` に集められてパースされ、クラスファイルでなければ `Classfile.Error` を発生させる。
+
+@ 0 7 0 07bdfe6f7dc0a0a90d9a107495ae4c92
++   entry .apply   バイト列のクラスファイル、またはリソース名や型のクラスファイルを、スコープ内の `Classloader` を通じて得る
++       `Classfile(data)` はクラスファイルのバイトをパースする。
++       `Classfile(name)` は、`name`（拡張子付きの JVM 内部名、`scala/Option.class`）にあるクラスパスのリソースを、スコープ内の given の `Classloader` を通じて読む。
++       `Classfile[T]` は `T` のクラスをその `ClassTag` で見つけ、そのバイナリ名が示すリソースを読むので、ネストしたクラスは `Outer$Nested.class` に解決される。
++       どちらも、クラスローダーがそのリソースを持たないときは `Unset` を返す。
++       三つとも、パースできないバイトに対しては `Classfile.Error` を発生させる。
+
+@ 0 13 0 04733c65a7566127086a69d8ca19ffd1
++     entry #name   the method's name as the class file spells it
++         The compiled name, not the source name: a constructor is `<init>`, an operator such as
++         `+` is `$plus`, and a lambda body is `$anonfun$…`. `StackTrace.rewrite` in digression
++         turns such a name back toward its source spelling.
++     entry #bytecode   メソッドの `Code` 属性を `Bytecode` にデコードしたもの。抽象メソッドでは `Unset`
++         `Tactic[Classfile.Error]` を必要とし、コード属性が不正であればそれを発生させる。
++         メソッドのすべての命令を `Bytecode.Opcode` にデコードし、分岐先をバイトオフセットに解決し、それらを通してオペランドスタックのシミュレーションを進める。
++         各命令の後のスタックは `Bytecode.Opcode#transform` が計算し、メソッドの `StackMapTable` のフレームによってすべてのラベルでリセットされる。
++         そのため分岐先でのスタックは、フォールスルーの経路が残したものではなく、ベリファイアが記録したものになる。
++         `LineNumberTable` の行番号は、各行の最初の命令に付けられる。
++         コードを持たないメソッド（抽象メソッドやネイティブメソッド）は `Unset` を返す。

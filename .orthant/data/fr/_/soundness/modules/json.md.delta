@@ -1,0 +1,1814 @@
+orthant 2 language
+
+% 0 1 0 1e37a1ac1bcf07a315a107e32ac49bda
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 3 0 1ccfbb235fb092ba00398f9943b15eae
++ Un texte [JSON](https://en.wikipedia.org/wiki/JSON) s'analyse en une valeur `Json`, et une valeur
++ `Json` se convertit vers et depuis les types Scala ordinaires. Une case class n'a besoin
++ d'aucune annotation ni d'aucun codec écrit à la main : son encodeur et son décodeur sont
++ [dérivés][dérivation] de ses champs.
+
+@ 0 3 0 0e7839f0fa5562181366fbf1d0b061c2
++ Chaque conversion est vérifiée. Demander une chaîne à un nombre, ou à un document un champ qu'il
++ n'a pas, lève une erreur typée qui dit ce qui n'allait pas et où. On n'obtient jamais un `null`,
++ une valeur par défaut ou une réponse fausse.
+
+@ 0 2 0 075260f279330a731c1dab9caa454cb0
++ Un document peut aussi être validé par rapport à un schéma dérivé d'un type Scala. Une fois
++ validé, on peut parcourir ses champs, le compilateur vérifiant chaque étape.
+
+@ 0 1 0 17ad367edcdd42cc1d457d0d71c98b63
++ ### À propos de JSON
+
+@ 0 3 0 018ddf3ef529a3b90a41b94946672821
++ La plupart des bibliothèques traitent JSON de manière lâche. Un document analysé est un arbre
++ non typé, dont on extrait les champs par des clés sous forme de chaînes. Lorsque les données ne
++ contiennent pas ce que le code attend, l'incohérence se manifeste par un `null`, un cast raté
++ ou une valeur par défaut silencieuse, souvent loin de son origine.
+
+@ 0 1 0 16ab6d444d14e71f0a5c45daaa15f8fe
++ Ici, la structure et les types restent ensemble :
+
+@ 0 9 0 1f31d8f406abdb841ec70bf75f5ba3a7
++ - L'analyse donne une valeur `Json`, qui est [immuable] : chaque opération sur elle renvoie une
++   nouvelle valeur, conformément à l'[immuabilité](../../philosophy/immutability.md).
++ - La conversion entre `Json` et un type Scala est réalisée par un encodeur ou un décodeur que le
++   compilateur dérive de la forme du type. Une case class devient un objet, et une énumération
++   devient une union étiquetée ; il n'y a donc rien à écrire ni rien à maintenir en phase à la
++   main.
++ - Une conversion impossible lève une `Json.Error`. L'erreur nomme sa raison et, lorsque c'est
++   possible, la position dans le document.
++ - La même dérivation produit un schéma. Un document vérifié par rapport au schéma peut ensuite
++   être lu, le compilateur rejetant tout chemin que le schéma n'autorise pas.
+
+@ 0 2 0 188dc68aa74998d100cb0c736346d588
++ Les sections suivantes commencent par le travail quotidien d'analyse, de décodage et
++ d'encodage. Les schémas, la validation, le streaming et les codecs directs plus rapides
++ viennent ensuite, et chacun peut se lire séparément.
+
+@ 0 2 0 1f8d5438d665873506d57a9bce0aea8d
++ Tout provient du package `soundness`. Travailler avec JSON dépend aussi de quelques choix,
++ chacun fait en important un [given] depuis un [package de choix] :
+
+% 2 1 0 1690a49f690a64cf163794ed8877ffdc
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+% 3 1 0 0f470ce1666f410803ab3857e4e6634a
+
+@ 0 7 0 0c525a1ed533ebfc1368cca713317738
++ column  Import
++ column  Décide
++ row  `codepages.utf8Codepage`  comment le texte JSON s'écrit en octets
++ row  `errorDiagnostics.stackTracesDiagnostics`  qu'une erreur enregistre une trace de pile
++ row  `formatting.compactJsonFormatting`  que JSON s'écrit sans espaces ; [Formatage](#formatting) présente l'alternative
++ row  `strategies.throwUnsafely`  qu'une erreur est levée comme exception ; [erreurs](errors.md#choosing-a-strategy) présente les autres stratégies
++ row  `stdios.javaLangSystemStdio`  où les exemples affichent leurs résultats
+
+% 1 1 0 113ef4b1b5577a1614b6de1f1abc1159
+
+@ 0 1 0 0be7689b9275055a16fd7074497e2d45
++ ### Analyse
+
+@ 0 1 0 095463d0cf4016f51beffefe7019ce07
++ `read[Json]` analyse toute source de texte en une valeur `Json` :
+
+% 2 1 0 113a1c60dd9979f11c3746fefffbec0d
+
+% 0 1 0 12b2a5a377def4310a143e46d2c723aa
+
+% 1 1 0 1566d6408a456ebc10a3c3edcc06804d
+
+@ 0 1 0 0162e69d43d18cd71462d33d5a23cf6f
++ `show` réécrit une valeur `Json` sous forme de texte, dans le formatage présent dans la portée :
+
+% 2 1 0 1d60391946f8778d176c84340ab0f632
+
+% 3 1 0 07a5bdc9d068437118f52c4df6c284c5
+
+% 4 1 0 1c2b8c61e1b88a231ba8afe386b6932c
+
+% 0 1 0 1074a78e24f506810c6a6f04c300a308
+
+% 1 1 0 0157e331939b336b1caa940d27b7d08c
+
+@ 0 2 0 0699f2259339ce79001ddc98783bd56e
++ L'analyse échoue sur une entrée mal formée, et l'échec est confié à la [stratégie] dans la
++ portée. Sous `throwUnsafely`, cela signifie une exception qui dit ce que l'analyseur a trouvé et
++ où :
+
+% 2 1 0 185ada1ea783a93e08a00e187baad87b
+
+% 3 1 0 12da0e5d4f13b4151025edf957a1cdba
+
+% 4 1 0 0a0f0798133b68d402c99532d2b8f6ac
+
+% 5 1 0 05a8cb1b097353331a7d5a5a5eb93038
+
+% 0 1 0 1311a35ae5ec8ba70908929d548a697e
+
+% 1 1 0 08d487ce725adc7e10eafcd5061b7798
+
+@ 0 1 0 0bd022f65de6e8f60034860fe3c0f564
++ ### Lecture des valeurs
+
+@ 0 2 0 1377e7582c2c61b3003d34c3e7776b8b
++ `as` convertit une valeur `Json` en un type Scala. Les types primitifs, les collections et les
++ maps se lisent tous directement :
+
+% 2 1 0 04e3163d24d7ae2f0093c0da79a50970
+
+% 3 1 0 0250d4ca3bd98881108be5bf7add3772
+
+% 4 1 0 1a17b6778d8ef35f1b330c18b3e66e93
+
+% 0 1 0 07de2779297314b500254c7194978629
+
+% 0 1 0 03b85f94f197793b0f683996badd7f6c
+
+% 0 1 0 096c00d5accac6b4074501fcd13a2029
+
+% 0 1 0 07dcb04e18ac024016305ccf8614ae93
+
+% 0 1 0 16ca6bff1a2ee9591d91e7d785b7ea10
+
+% 0 1 0 0223af92ff26230319d543fcb9a88e59
+
+% 1 1 0 0192b159aabacd161b1c56e23dff0c7d
+
+@ 0 1 0 0652c189f6459de613ee259726f0a466
++ Le `null` de JSON se lit comme `Unit`, et comme la valeur absente d'un type [optionnel].
+
+@ 0 2 0 1010c5a13a15620910f4b9a924921fb8
++ Demander le mauvais type est une erreur, pas une conversion. Une chaîne n'est jamais
++ discrètement transformée en nombre :
+
+% 2 1 0 032cde3832b1b0dd1ca21a0f98b256ce
+
+% 3 1 0 1f21091caa0a00ac1430481aa0a8902c
+
+% 4 1 0 0076f19ea42d38ec073ba3e0295c3047
+
+% 5 1 0 1a720f896d198a95088fd0f9c9b3bec2
+
+% 0 1 0 162e9006c12f602d1ee41cb510d1bc39
+
+% 1 1 0 0cf4a7edd541f6d502cbbb46846a283f
+
+@ 0 1 0 0d7296002df8da631aeb27b770ab9477
++ ### Case classes et énumérations
+
+@ 0 2 0 130848e2ef0aba5311d4fc5202756ec3
++ Une case class participe à JSON telle quelle. Son décodeur est dérivé de ses champs, de sorte
++ qu'un objet se lit en une valeur :
+
+% 2 1 0 081f9a3564a2bcd30b67b91cbc4cfce3
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 19f3c2374b0331491c363b68886a6e81
+
+% 1 1 0 1c56e2dd05e9260e0ea5d824644d052a
+
+% 3 1 0 0ff280a742dbdb6c0190306ac15ab774
+
+% 4 1 0 1bea61bc446079541b8d96da84fec741
+
+% 5 1 0 05c52cdd9d94ad5715c6607317f49fbf
+
+% 0 1 0 1a8b049430f69fb817d4bbd64b2d14ff
+
+% 1 1 0 0bee6bda6e440c261952c24c0973a99b
+
+@ 0 1 0 18af26f376b1a5df0c7bc85e4cedbd6b
++ Son encodeur est dérivé de la même manière. `in[Json]` encode une valeur en `Json` :
+
+% 2 1 0 1504c3acfd5081140e556eaf6ed2909a
+
+% 3 1 0 0046eac7d2691c3c11885329c7179fec
+
+% 4 1 0 169053616d135dd117fd3ea119623bf7
+
+% 0 1 0 0acc3cdd27f09652039c9fad700d458b
+
+% 1 1 0 0e239a5e0beb51cd05783223873973f1
+
+@ 0 2 0 05ebef5d747b0fb601a989147bd928e1
++ Les case classes imbriquées, et leurs collections, se dérivent à leur tour, de sorte qu'une
++ structure entière se convertit en une seule étape :
+
+% 2 1 0 1b4b7cc81a3ba0b104dd90f7aa802bc5
+
+% 0 1 0 1c0d7676ab69222a00571dfffae1b883
+
+% 0 1 0 057f8759da8a0b731a5bf602f92795bc
+
+% 0 1 0 0fdef44335006cfe1a362460816be6b2
+
+% 0 1 0 154749f95a0ee004118b20ffd6572ba4
+
+% 1 1 0 10e3c1c195b3385800b49226ff96cbf6
+
+% 3 1 0 0cddfb8227470fe80bc6a66316f3150a
+
+% 4 1 0 1bfbc7f28cd879c00e76b06158d86cab
+
+% 5 1 0 09a0b79314034ce81821e5ad58476f3f
+
+% 0 1 0 178e200d94e27b4f1d503e0668a102a7
+
+% 1 1 0 096789637ad7b17311a9aba846b6a501
+
+@ 0 2 0 033eef64cbb23a5b1ee64fa9eb7d0a8a
++ `read[Troupe in Json]` analyse et décode ensemble. `in`, `as` et `read` forment le même
++ vocabulaire pour chaque format, et à eux trois ils couvrent chaque chemin entre texte, `Json`
++ et type Scala :
+
+% 2 1 0 1806749a6cd8d5040b7362816aa0a801
+
+@ 0 9 0 0c6c1190a58297810fb16e014ae3d393
++ column  Expression
++ column  Fait
++ column  Produit
++ row  `value.in[Json]`  encode une valeur  `Json`
++ row  `json.as[Type]`  décode une valeur `Json`  `Type`
++ row  `text.read[Json]`  analyse du texte  `Json`
++ row  `text.read[Type in Json]`  analyse et décode en une étape  `Type`
++ row  `value.in[Text over Json]`  encode et rend  `Text`
++ row  `value.in[Data over Json]`  encode et rend en octets  `Data`
+
+% 1 1 0 08424d904ea3df020900240d8542e13d
+
+@ 0 2 0 0e96e6963639d55711bb1ede0700e43c
++ `in[Text over Json]` écrit dans le `Json.Formatting` présent dans la portée, exactement comme
++ `show`, et `in[Data over Json]` écrit le même texte en octets dans le `Codepage` présent dans la
++ portée :
+
+% 2 1 0 0b57236203eb09d119f61923f1dcfaf8
+
+% 0 1 0 195e9a931dea3492056df9fa99fbc25e
+
+% 1 1 0 1943d59d04288d9508a5e1e57b895f72
+
+% 3 1 0 12700371a5944d990dcc2f4dba5e9a2c
+
+% 4 1 0 1acea7e849c803eb03cf769672f00d11
+
+% 5 1 0 0c1e35419efa341f00c380780407aa03
+
+% 0 1 0 15038b59d66de68b18bb036032bf4f25
+
+% 1 1 0 15f7a99b1cc66b7c16e71b78124ff4d5
+
+@ 0 4 0 103f13f7d215cba60f13145e211559d4
++ [Dérivation](derivation.md#when-derivation-fails) explique ce qui se passe lorsque le type d'un
++ champ n'a pas de décodeur, et
++ [Décodage](decoding.md) décrit les décodeurs qui transforment une valeur textuelle unique, comme
++ une chaîne JSON, en un type à soi.
+
+@ 0 1 0 014d8ecf7fbc642011c02a7998f5a3a0
++ ### Champs optionnels et valeurs par défaut
+
+@ 0 2 0 1afe47fd7317e104084d64f188f1d5b8
++ Un champ typé `Optional` est omis de la sortie lorsqu'il est absent, et se lit comme `Unset`
++ lorsque le document l'omet. `Option` se comporte de la même manière, avec `None` :
+
+% 2 1 0 01f4327ec81728171801137f0561f209
+
+% 0 1 0 0be125a316a86b610c6805e0b62e7122
+
+% 1 1 0 1a88d40be0dd4b33095a91eb5a243d1c
+
+% 3 1 0 0735fc9df067c8ec034f3c09d685c4f0
+
+% 4 1 0 0e69fa79895fa4b71f237c4ccba1c632
+
+% 5 1 0 1370b3bad0dc007c15b19f1a1b21f11f
+
+% 0 1 0 057c728aa347f2a91edf328036171da1
+
+% 0 1 0 0b3487cf51dc58db1bb1b19d06db2c62
+
+% 1 1 0 0d139a584ba4ee4318cf478a02765837
+
+@ 0 1 0 1089c28ace9753981fb39c2291e8e26e
++ Un champ doté d'une valeur par défaut prend cette valeur lorsque le document l'omet :
+
+% 2 1 0 1daa7089a1efd5db0accda9089565e32
+
+% 0 1 0 1717aeb8cc10b1d213d78468f4aa601f
+
+% 1 1 0 0c43db9ac17682be10d9cf9fa8e299e2
+
+% 3 1 0 14d542957c4ca1bf13d3766e353087a8
+
+% 4 1 0 075488b45b5c88b10937f2c171698a20
+
+% 5 1 0 19c1b0d1bbf017dc001895a2c2199e03
+
+% 0 1 0 084e69d7a7aa04020b24441f255dd947
+
+% 1 1 0 020cbe51bd16c8e61a0cf8ea625ce1e4
+
+@ 0 2 0 12b3d9018b405a0a167340423c2dffae
++ Un champ ni optionnel ni doté d'une valeur par défaut est obligatoire. Un document qui ne le
++ contient pas ne se décode pas :
+
+% 2 1 0 0797ec559598bb4d0e037225955fb0e4
+
+% 3 1 0 185e19965f242f271b3256dc7781e176
+
+% 4 1 0 00f21095db86d5460e3072de0babe675
+
+% 5 1 0 1e253ffca8d03e2a0c2aa400461a1664
+
+% 0 1 0 12a1de539105f25b1da17f17de8f22a6
+
+% 1 1 0 11444be68ca681e1192b1cc3e391ea0d
+
+@ 0 1 0 152eebc72820e8a91d65477168c1b859
++ [Valeurs optionnelles](optional-values.md) décrit `Optional` et `Unset` en détail.
+
+@ 0 1 0 08caacedaf18a9771c74f4f61311cc71
++ #### Contrôler l'optionalité
+
+@ 0 2 0 06ae9406e4ff50bc0fc900012bc15f3a
++ Un champ `Optional` répond à trois questions. Chaque réponse a une valeur par défaut, qu'un given
++ du package `optionalityOptions` remplace :
+
+% 2 1 0 016a72013956c3d40a2494794be68c76
+
+@ 0 6 0 06454eb4fb30f7010250ea78483062b0
++ column  Une clé qui est
++ column  Se lit comme
++ column  Sauf si
++ row  omise du document  `Unset`  `strictJsonAbsence` en fait une erreur
++ row  un null explicite  `Unset`  `strictJsonNulls` la confie au décodeur interne
++ row  présente mais rejetée par le décodeur interne  une erreur  `lenientJsonFaults` la lit comme `Unset`
+
+% 1 1 0 040099b345b9fcae1f4d7f9218190f85
+
+@ 0 3 0 031023f8711a196505fc075d996b52b5
++ Une absence stricte lève la raison `Absent`. Un null strict est rejeté par le décodeur interne,
++ comme il le serait pour tout autre champ. Un défaut toléré se lit comme `Unset` et ne signale
++ rien. Chacun est un given distinct, de sorte qu'on peut en faire varier un seul :
+
+% 2 1 0 175fff4541326bee183152fce1d120db
+
+% 0 1 0 0786e7004c1af1c81d2c1e55a8457ed5
+
+% 0 1 0 19231eabde132bcb12b7bbceef847a76
+
+% 0 1 0 170d3516c665c5cf10443ddf1e173df8
+
+% 0 1 0 13f60a8ec0435aba141e6804e7d7604a
+
+% 0 1 0 1778df3be6311625015cf4c24e16bac3
+
+% 0 1 0 1356a94d923003760c387338dfb4176f
+
+% 1 1 0 1bd78229f98d7bee0ab5e8dc484eab00
+
+% 3 1 0 1de68d562c43dbff060a65051d09aece
+
+% 4 1 0 1f848c70214e65fc1373f8cc10b6ae42
+
+% 5 1 0 1f071c4baef492670aaca37816f804b4
+
+% 0 1 0 1f2a89d1afebd467031e1c016c6ba9ae
+
+% 0 1 0 0a2a18d9628bab3a097ca7ae27aab15d
+
+% 1 1 0 19cbeec97728d25119399416a6ee4b7e
+
+@ 0 2 0 0ddd7f2c5d35bae013697d05e0c46ff3
++ Les champs `Option` suivent les trois mêmes politiques, et donnent `None`. Une valeur par
++ défaut déclarée de `Unset` ne se distingue pas d'une absence de valeur par défaut, elle ne
++ satisfait donc pas une absence stricte.
+
+@ 0 5 0 06ae50a3d9a4f31f1422bc5acf6122cc
++ Les [analyseurs directs](#skipping-the-tree) respectent aussi ces politiques, avec une limite.
++ Ils ne tolèrent un défaut que lorsque la valeur dans le document est de la mauvaise *nature*,
++ par exemple une chaîne là où un nombre était attendu, car l'analyseur voit la nature avant de
++ lire la valeur et peut la sauter en entier. Une valeur de la bonne nature qui échoue en cours
++ de route, comme un nombre trop grand pour un `Int`, a déjà été en partie consommée, et lève donc
++ quand même une erreur.
+
+@ 0 1 0 17d7d455e70c88c31c6a3d8128c6132c
++ ### Renommer des champs
+
+@ 0 2 0 00f95f2068af4f7d1a94fafa662cce7a
++ Le nom d'un champ en Scala n'a pas à correspondre à sa clé en JSON. L'annotation `@name` donne
++ la clé à utiliser. `@name[Json]` limite le renommage à JSON, là où un autre format pourrait
++ vouloir une clé différente :
+
+% 2 1 0 12a64bc7b88a837714ab8f62e6f23280
+
+% 0 1 0 0136154c7ce32de81f00b5e87d14a633
+
+% 1 1 0 0cc2caf674e3201b136076467ba3d3b6
+
+% 3 1 0 1420fe3d29bf096e09f33f30943f69af
+
+% 4 1 0 0ca476911fa3b45710138e7a37842841
+
+% 5 1 0 1349258891f056700c26dae51c9b3bd5
+
+% 0 1 0 0afd967c83a962e01acc0537dcb16282
+
+% 1 1 0 1c5cf1386d39e2e3110a9f7f164e7c95
+
+@ 0 1 0 0cabacd7a47ca619106012e7e5579102
++ ### Unions étiquetées
+
+@ 0 3 0 1f7818cceeea66e50075f467709f2f1b
++ Une énumération ou une hiérarchie scellée s'encode en un objet doté d'un champ supplémentaire,
++ le *discriminant*, qui nomme le cas. La clé qui contient le discriminant se choisit par import,
++ et c'est `kind` ici :
+
+% 2 1 0 17f2b2e0086454561ec8b2dd22db6491
+
+% 0 1 0 027c7dae7d6cdd570f88236cd254caae
+
+% 0 1 0 0f0b53a398a38e831d1961a86917fb93
+
+% 0 1 0 1e75f810ca32a7551f5a0a17ed67f79c
+
+% 0 1 0 1b0aa00f1b1bb7510dd0fa65bd48b05b
+
+% 0 1 0 15122763acb2d815026f801d53db5fee
+
+% 1 1 0 1afb8f2843f2f93800bc420f2600e23e
+
+% 3 1 0 04d8266639444c7c13f83f8672fdcabe
+
+% 4 1 0 1d1064fcc3f00c16037a92870a681bef
+
+% 5 1 0 1ee7653daf799e471babb2946d827b49
+
+% 0 1 0 193b2d4af49e62d3067cb7d45c1ae340
+
+% 1 1 0 18725529304202a70a68a83f6f867bf4
+
+@ 0 1 0 06429d43db7f5ac20b0fa24467594cb8
++ Le décodage lit le discriminant et construit le bon cas :
+
+% 2 1 0 03db9d07ad7a8f871a13bf277bd76dd1
+
+% 3 1 0 189c036287a036400ab65ca189fb9dc9
+
+% 4 1 0 10be48612998158b090671ca48fce4cc
+
+% 0 1 0 1959ffe72d3ae0df0b8f924221954d5f
+
+% 1 1 0 0ab0d51c2d7974690c545347a4e96f55
+
+@ 0 2 0 13bc4221d81333790008d309d7dd170d
++ `@name` renomme la valeur du discriminant d'un cas exactement comme il renomme un champ, de
++ sorte que le nom dans le document et le nom en Scala peuvent différer.
+
+@ 0 4 0 161cf7819de086491c051d3181c455f2
++ Un discriminant à côté des champs propres du cas n'est qu'une des conventions en usage. Les
++ autres se choisissent aussi par un given `Discriminable`, et non en écrivant un codec. Une
++ *enveloppe simple* place toute la variante dans un objet à clé unique, nommée d'après le cas.
++ Une *enveloppe* nomme un champ pour le tag et un autre pour la charge utile :
+
+% 2 1 0 0e592ea48fa578ed0cd366a6f3319057
+
+% 0 1 0 0e6390e177b96f681dea6458c00b1265
+
+% 1 1 0 0b3dc8384defcae013d3b840a8e7e703
+
+% 1 1 0 17f186682138f7f6002b5d99c0dc15a6
+
+% 0 1 0 00c3cb6e9b15f43e0785d87a830d8c53
+
+% 1 1 0 0e1bb54e7c8ce92a16a79e3278cb7cbe
+
+% 0 1 0 1ecb55bf782221e116c760ef8176490b
+
+% 2 1 0 0acfd7fbdb2509a01f7a5199e27723f4
+
+% 0 1 0 122261b13042f9e906d5ceed2c5942d9
+
+% 1 1 0 0d636364ded799d01086790c83697251
+
+% 0 1 0 0d3c703ed9778ef51ea90eff692a016d
+
+% 2 1 0 0c2aecf6f030f2dc1eb3bdd8acd8fc64
+
+% 1 1 0 140f5662f487c04d17803be6f324916b
+
+% 2 1 0 18a9c47eb2e139370bd2624454ec9305
+
+% 3 1 0 15a87a92006ec36d1dd4b152a371339c
+
+@ 0 5 0 0e0b1c64372098fd0e6b908086412b25
++ column  Convention
++ column  `Shape.Circle(1.0)` s'écrit
++ row  Champ discriminant  `{"radius":1.0,"kind":"Circle"}`
++ row  Enveloppe simple  `{"Circle":{"radius":1.0}}`
++ row  Enveloppe  `{"type":"Circle","value":{"radius":1.0}}`
+
+% 1 1 0 112fab082c4d89ff11bc521e0dab05fd
+
+@ 0 4 0 09968712e91af3fd0efa42936d8e580f
++ Chaque convention fonctionne avec l'arbre et avec les [analyseurs directs](#skipping-the-tree).
++ Un analyseur direct n'a pas besoin que le tag vienne en premier : un document dont le champ
++ `type` suit son `value` se lit tout aussi bien. Un objet d'enveloppe simple ayant plus d'une clé
++ n'est pas une variante valide, et lève `Json.Error.Reason.Absent` plutôt que de deviner quelle
++ clé était voulue.
+
+@ 0 3 0 0e21f3487e97c3cf17cd15c40bce0656
++ Tout ce qui est plus inhabituel est un `Discriminable` écrit à la main. Il a trois méthodes, qui
++ disent comment attacher un tag, comment en lire un, et comment atteindre la variante.
++ Les codecs qui en sont dérivés fonctionnent sans changement.
+
+@ 0 1 0 00aafdd0178003b0086ac196f5a41eaf
++ ### Construire du JSON
+
+@ 0 2 0 07b04f6b09b869700241f0d06dc876ef
++ Une valeur `Json` peut aussi être assemblée directement, sans case class. `Json.make` construit
++ un objet à partir d'arguments nommés, chacun étant un `Json` :
+
+% 2 1 0 101ec1df6666aa2514e06667e65caebf
+
+% 3 1 0 1618edf1ba3d4b170a94d8167ac879ca
+
+% 4 1 0 19d78dea85486808176b1a71c05eebe3
+
+% 0 1 0 0302033e284a6b66090aa93d3a6b0e9b
+
+% 1 1 0 035e1c14c79b46df120e93fbb5e0c3ba
+
+@ 0 3 0 1e57212bef6bac63083404ef45c9363b
++ L'[interpolateur] `j"…"` écrit du JSON littéralement, et sa syntaxe est vérifiée
++ [à la compilation][compilation]. Une substitution à la place d'une valeur encode cette valeur.
++ Une substitution suivie de `*` insère une collection dans un tableau, et une substitution à la
++ place d'un champ fusionne une map de champs dans un objet :
+
+% 2 1 0 02ededf7f675ef07134935a5fece96f5
+
+% 0 1 0 1fc437e5c34f271307d9ce773605b068
+
+% 0 1 0 1c39961ece8fa33f1446871bcd865148
+
+% 0 1 0 1c89d4df7b68141f1311aed97819bfb3
+
+% 1 1 0 06ece5447907efa81231656067a3a581
+
+% 3 1 0 05b9a1bb933146191046c6688ccce89d
+
+% 4 1 0 04feadf0419182501e5ca9252bc53eba
+
+% 5 1 0 092266f5a4097a230dc56d7225ad195b
+
+% 0 1 0 1ceba6e5cf67cee11bc356c0d283aa1a
+
+% 0 1 0 1f5002e811dc63fc12319d4579131b9c
+
+% 0 1 0 1e3572e4abecb87514375e4b97613605
+
+% 1 1 0 0a673ad8543f51960dfd473391cd13ce
+
+@ 0 2 0 01a1999ccef57e5a0550eda6a5da850b
++ Un littéral mal formé est rejeté là où il est écrit. L'erreur désigne le caractère fautif, et
++ non l'expression entière :
+
+% 2 1 0 0c46fdcc8d4ae32c11f4760c0367fa6e
+
+% 3 1 0 0342f10a0d53938304f6d629f56920b8
+
+% 4 1 0 14af03e9846c75e104fb4e995bd42b21
+
+% 5 1 0 16d22f660b4ad58e13eabd322a915137
+
+% 0 1 0 15d51d8f5b9d4ce91dbd94113b758ac8
+
+% 1 1 0 1ee59a8e77908fd6174c764348e84740
+
+@ 0 1 0 0d18cce214b34e810b20ea510551149b
++ ### Filtrage de JSON
+
+@ 0 3 0 195b1799861795ca0dba907de77e75bb
++ Le même interpolateur `j"…"` est un motif. Dans un `match`, il décompose un document, en liant
++ chaque substitution au morceau trouvé à sa place. Un document d'une autre forme passe au cas
++ suivant :
+
+% 2 1 0 0019cc0390fab7fc0f383f51545c1e84
+
+% 0 1 0 10a7af5a9ca403e00664991cacccdea8
+
+% 0 1 0 00c475b6b960a0551c6e12059a73c47f
+
+% 0 1 0 14781d9d14ad5d64043a610155f70ee6
+
+% 1 1 0 0965dd8a5daaafa61eec63d9ba5a432b
+
+@ 0 1 0 10cbe758f8e9e0ad07fea44b67a8726d
++ Un motif de tableau filtre selon la longueur, et un `*` final capture les éléments restants :
+
+% 2 1 0 10071fecd9879287152aab802ae8bb9b
+
+% 0 1 0 1029b84c1b93fd880286710e9fbba478
+
+% 0 1 0 16e2e955375f61161f6aa3ef9b9c54dd
+
+% 0 1 0 0694d822d303e1601be6d5ff6790e568
+
+% 1 1 0 0b7655038905748819718d9965672d52
+
+% 3 1 0 09341e8e09509cb41cc606ebea979af7
+
+% 4 1 0 09097c9f52f0db2c020efd8ca4f001f2
+
+% 5 1 0 06565829ac0084071fe637fc477b2fe0
+
+% 0 1 0 088b0510646f44de1ef8da67e2e0e0b9
+
+% 0 1 0 136ba88c670f780503ce5a8362b55e24
+
+% 1 1 0 0616555c799cd3501329137559b22d67
+
+@ 0 1 0 09f046f035dc21f71373928dd73b1f3d
++ Chaque sorte de substitution a un sens en tant qu'expression et en tant que motif :
+
+% 2 1 0 1cd72c01fb1f92111ca8cd515c27ac1a
+
+@ 0 7 0 1df9579b557133b81b6a0277915bf378
++ column  Substitution
++ column  Dans une expression
++ column  Dans un motif
++ row  `$x` à la place d'une valeur  la valeur, encodée en `Json`  lie la valeur à cet endroit, en `Json`
++ row  `$xs*` à la fin d'un tableau  insère les éléments d'une collection  lie les éléments restants, en tableau
++ row  `$rest` à la place d'un champ  fusionne une `Map[Text, Json]` de champs  lie les autres champs, en objet
++ row  `$x` dans une chaîne  la valeur, encodée en `Text`  non pris en charge
+
+% 1 1 0 1092f2d6789bef830afdfc85a5d43fe9
+
+@ 0 1 0 0968e92e317f2d051aa1f6c3caec11cc
++ [Interpolation](interpolation.md) décrit comment sont construits les interpolateurs comme
++ `j"…"`.
+
+@ 0 1 0 09a0a67442af0c6d0e4768244b27fadd
++ ### Navigation
+
+@ 0 2 0 171e4f2eef8b31d2150499b18d106185
++ Appliquer une valeur `Json` à une clé atteint un champ, et l'appliquer à un indice atteint un
++ élément de tableau. Les étapes s'enchaînent :
+
+% 2 1 0 0f371cfe76187a430218cc415d55c482
+
+% 0 1 0 1f035f7ce47fbd3117039453fee190ee
+
+% 1 1 0 16e1024b48230c97159e479825962001
+
+% 3 1 0 0256d28c84d4308108ec997e829b5254
+
+% 4 1 0 1bac0fde5468451d0e3f362b01172180
+
+% 5 1 0 04d68e98ce8bc6a40578d3da9310db98
+
+% 0 1 0 074d14c80d52f3901c79d27b14d624f0
+
+% 0 1 0 039e3dd79ab7ae6516e2feda71ad9b78
+
+% 1 1 0 125c0b73d4615bbd0c1ec697a9c1c50d
+
+@ 0 2 0 045a42486828e0450b83da7ff64095f5
++ Chercher un champ absent n'est pas en soi une erreur. On obtient un `Json` absent, qui se décode
++ en `Unset` lorsqu'on demande un type optionnel, et ne lève une erreur que lorsqu'une valeur est
++ exigée :
+
+% 2 1 0 10023a817155a60a08ac6b3f1df08574
+
+% 0 1 0 18e79b64112f03ff160ce26e2cc89768
+
+% 1 1 0 05c2fd33bd08b9370402fb1f867d9365
+
+% 3 1 0 17cf23ef2995826f1c2270a0db3a3274
+
+% 4 1 0 15558706e581f5c212d9489384480d8a
+
+% 5 1 0 1cd348ee239918df170107b0d38bb690
+
+% 0 1 0 12ef0fcaa9866e211b36412b70c0ad2c
+
+% 1 1 0 107c90b2d83e4d2e1e8a30b040fe0a6a
+
+% 3 1 0 08cd47bb91f399bc07926a0312b576da
+
+% 4 1 0 16c1031bd9ed73c91d1bbeffa89490cc
+
+% 4 1 0 1a9f83f12eec02ae09166b7e3f404843
+
+% 5 1 0 057f515273fa81610fd007f7e6cca82c
+
+% 0 1 0 07f2f7221047f3450643a3ebd5874a01
+
+% 1 1 0 0962f46ced7490e41de2b99ca47de02b
+
+@ 0 1 0 15203ef8078bb7821a5c23d93d178c59
++ #### Les champs comme membres
+
+@ 0 4 0 174bdb55aef3d94f037214a88b908c77
++ Le compilateur ne sait rien des champs que possède une valeur `Json`, ni même si c'est un objet.
++ Souvent le programmeur en sait davantage, et aimerait écrire `person.name`. Cette syntaxe
++ renonce à la vérification, puisqu'un champ mal orthographié n'est découvert
++ qu'[à l'exécution][exécution] ; elle n'est donc pas disponible par défaut :
+
+% 2 1 0 1a566aa46d3f69791ef4262ced97f879
+
+% 3 1 0 1ae89d852a651fe805e8294e2bfead51
+
+% 4 1 0 1300d8f0f12bda190c632f19f84aba2e
+
+% 5 1 0 1836314d8101508a00f795314a5950a9
+
+% 0 1 0 0f4bd682432aaf5414600f0c457f9de2
+
+% 1 1 0 1df44311184bfdd60eca21eddd11298e
+
+@ 0 1 0 0170888836c1bc4f101ad056f789ab4c
++ Importer `dynamicAccess.dynamicJson` l'autorise pour le reste de la portée :
+
+% 2 1 0 0c7cbca0f19d21fd058a21f6c9bd9e53
+
+% 0 1 0 17df6bc4998523f51d396de7b8f9e1cb
+
+% 1 1 0 09bbfaf27dba992a097f91c5726631f8
+
+% 3 1 0 0150121c46293b880aa81bcf8d49bde3
+
+% 4 1 0 026cc66f9848ec7719d91ef0b01b3f0e
+
+% 5 1 0 1be190a31cc2a7270466a494c532c766
+
+% 0 1 0 156f6e4c658eaab81898ebd818428fae
+
+% 1 1 0 088a22472057b6791261695a657d3070
+
+@ 0 2 0 1c32f101bc43051d125c35f0ac7a315d
++ L'import accorde une permission, `Json is Dynamical`. La même permission peut être limitée à un
++ bloc avec `dynamically`, qui nomme les formats qu'elle couvre :
+
+% 2 1 0 104fdfefa1c055761b21e2b6a4229039
+
+@ 0 5 0 14d882c9626bcbd41dc8a825bc2fb52d
++ column  Forme
++ column  Accorde l'accès dynamique à
++ row  `dynamically[Json]`  JSON seul
++ row  `dynamically[Json | Yaml]`  chaque format de l'union
++ row  `dynamically`  chaque format doté d'un accès dynamique
+
+% 1 1 0 1beb372965238bb70bc2cb74f38a53d1
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 1dfecf43f45d91da17f02accfc7d87a2
+
+% 0 1 0 199bcb6ba77ef8e60cc297edea31c46f
+
+% 0 1 0 0cb3538ce5f4cca61c8077619c42e174
+
+% 1 1 0 1376642b38ccb588145f24fc2ff8ab7b
+
+@ 0 2 0 09646148d53921771c6361cbab7d8bd3
++ Un document dont la forme est connue à l'avance gagne à être [validé](#validation) une fois. Ses
++ champs sont alors des membres que le compilateur vérifie bel et bien.
+
+@ 0 1 0 0d2e6eedb43452ee0cdfb9035ea44b00
++ ### Mise à jour
+
+@ 0 3 0 18e3cf54415fc15c18f074051e412478
++ Affecter un champ par accès dynamique donne un nouveau document. L'original est inchangé,
++ puisqu'une valeur `Json` est immuable. Affecter une valeur ajoute ou remplace un champ, et
++ affecter `Unset` en supprime un :
+
+% 2 1 0 050f5198a0df39331812db52150f70bb
+
+% 0 1 0 1e0a181f81466c4612aac4f1a0df5b88
+
+% 1 1 0 1216bfeac670c3ff091138474bc1a188
+
+% 3 1 0 1ee30610c9bea6cc104a10b5998d24fd
+
+% 4 1 0 1ae37501893249fd150d7864d3839f2c
+
+% 5 1 0 1032f5283812db76032eeef461a66cdc
+
+% 0 1 0 060b79629d2c0a2f163bd77c95aef05e
+
+% 0 1 0 15bb7f17fae00c4d06f7951dabf76acb
+
+% 0 1 0 1ba7e085c4f2c33415b79b8c0f7b5507
+
+% 1 1 0 03f86cc69363b6d4025a8e835cebbf1c
+
+@ 0 2 0 0fbb7ec1b1e2f0f9042d11a1159808e0
++ Une mise à jour plus profonde s'écrit avec une [lentille](optics.md). Une lentille traverse
++ plusieurs niveaux, et peut porter des optiques comme `Each` ou `Filter` pour modifier de
++ nombreux éléments à la fois :
+
+% 2 1 0 17ecae10d41c33c406810e70b25f0ef7
+
+% 0 1 0 15bd2075194f210d16fac92cc6508e56
+
+% 0 1 0 0a90b05ed0d563eb0c7901a179d7769e
+
+% 0 1 0 07e808b9c33530bf012cf98e7a9a3c43
+
+% 0 1 0 0598eff1b7137ffa1c764ad961f28063
+
+% 0 1 0 1fbc1fc85f39e0ae143890a70bd1518d
+
+% 0 1 0 0a0b9e54cccdcd0c1ca090657e8edcd5
+
+% 0 1 0 00b498f45866aedf03d48e3a68ae1598
+
+% 0 1 0 1a56b6b59c162cc71a81378b7c97274a
+
+% 1 1 0 0dfd8de30be550d7159564a2601c715a
+
+% 3 1 0 0e63c405feee32a205121f57c479e3dd
+
+% 4 1 0 10031ac7bce097b7079eabc53e95883f
+
+% 5 1 0 1d576f0acee25d1204dec2b3e99bcdc8
+
+% 0 1 0 11bddb7e217c2dc11a047aaa9fad151d
+
+% 1 1 0 1d353e9556159b840e09b7f5cf489994
+
+@ 0 1 0 059b27ef75e5d7c40b69221409d8bf98
++ ### Formatage
+
+@ 0 2 0 061c74d2d9d277d80d0ab6b573874ce9
++ Le format de sortie est un given dans la portée. Le formatage compact omet tous les espaces, et
++ le formatage indenté ajoute des sauts de ligne et une indentation pour un lecteur humain :
+
+% 2 1 0 1e1fd5e16dab7e770a88510b7d0e0680
+
+% 3 1 0 12766aff87960148183933c434ae6bf3
+
+% 4 1 0 05191ac4f8aa61ae0f3b048148f7cf78
+
+% 5 1 0 00a5ae96fde24b501507123304af8f5d
+
+% 0 1 0 0dcb92e65cfa40fb1dc80f2df752f632
+
+% 2 1 0 00e4b2ab87004de005edbe7009957ef0
+
+% 3 1 0 03f2067d3335b93a0a5c81e172f9e56d
+
+@ 0 3 0 0cd5b0b5131240381ccabd6b31db5f40
++ `show` rend le document entier en un seul `Text`. Un grand document n'a pas besoin d'être tenu
++ en mémoire avant d'être envoyé, et les autres formes de sortie le délivrent un bloc à la fois.
++ Elles diffèrent par l'endroit où s'effectue le travail de sérialisation, et par ce qu'elles
++ fournissent :
+
+% 2 1 0 1110d1bbb294ac83186957b83284f5ac
+
+@ 0 9 0 0fe34b7e480248d300926307f6de2035
++ column  Forme
++ column  Sérialise sur
++ column  Fournit
++ row  `json.show`  le thread de l'appelant  un seul `Text` du document entier
++ row  `Json.emit[Text](json, deliver)`  le thread de l'appelant  chaque bloc en `Text`, à une fonction
++ row  `Json.emit[Data](json, deliver)`  le thread de l'appelant  chaque bloc en `Data` UTF-8, à une fonction
++ row  `Json.lend(json)`  le thread de l'appelant  le tampon propre de l'écrivain, prêté bloc par bloc
++ row  `Json.emit(json)`  une fibre  un itérateur de `Text`
++ row  `Json` en tant que `Streamable` par `Text`  une fibre  un flux de `Text`
+
+% 1 1 0 1bbca1ebec07583d19edcecf21990064
+
+@ 0 3 0 0970523a6976b9c30d98f54a76dd0788
++ La forme poussée de `Json.emit` confie chaque bloc à une fonction dès qu'il est rempli. Avec
++ `emit[Data]`, les blocs sont des octets UTF-8, encodés directement par le sérialiseur, ce qui
++ convient à l'écriture dans un fichier, une [socket](sockets.md) ou un `OutputStream` :
+
+% 2 1 0 026dead45ee62d0e1954a08b86dc0b64
+
+% 3 1 0 0221aa6873619b5305d1aad7f3b1af1d
+
+% 4 1 0 065e552e291190f71a8845505b9313e9
+
+% 0 1 0 1c2d7c93b30bc268079fa8d41e6528bb
+
+% 0 1 0 11771e78aae6f5ea1f39932f5e100cda
+
+% 1 1 0 1c8ab34360f4ad7613bdab4f4af933c2
+
+@ 0 4 0 0160c00ac42a1b730af302f618341b7c
++ `Json.lend` évite même la copie dans chaque bloc `Data`. Il prête au consommateur le tampon
++ propre de l'écrivain sous forme de `Region`, avec un intervalle qui prouve que chacun de ses
++ indices est dans les bornes. Tous deux ne sont valides que pendant la durée de l'appel, la même
++ règle que pour le `lend` d'un [flux](streams.md) :
+
+% 2 1 0 1937483e72ae995e1e3aaafadb7279ff
+
+% 3 1 0 1cabe01e3803c93f1baa6997b5a95bea
+
+% 4 1 0 0b8f83125044e62a0577ba9725b7fc43
+
+% 0 1 0 1a711d5a13b7406d1efa82c0484f3a30
+
+% 0 1 0 0b6c56309af1e6a11860107c4b30ec55
+
+% 1 1 0 0be9eea4aa82623c025a1b98dc57045a
+
+@ 0 3 0 0dedad57ce17e12c0566f5b71b07b990
++ Lorsque c'est le consommateur qui tire, `Json.emit(json)` sérialise sur une fibre et fournit le
++ texte par un itérateur. Un `Json` est `Streamable` par `Text` dans les mêmes conditions. Les deux
++ exigent un bloc [`supervise`](concurrency.md) :
+
+% 2 1 0 0b087a150cf22d200dd567defbeafd0f
+
+% 3 1 0 11813499205fc98a18d4c9adb6038965
+
+% 4 1 0 1f1f9f87703ff8121a0b39afc36121a7
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 135770aa2b30b3650c1050bc84632e8c
+
+% 1 1 0 0da1192cfb1c2cc014505c1e17c90e32
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Erreurs
+
+@ 0 1 0 053361f074ae58ce0a8255dfe4d92771
++ Une conversion impossible lève une `Json.Error`, dont la `reason` dit ce qui s'est mal passé :
+
+% 2 1 0 0137aa7dd7216038070b2b0a84a37ef6
+
+@ 0 5 0 146312906cee600a152acb0790715318
++ column  Raison
++ column  Levée pour
++ row  `NotType(found, primitive)`  une valeur du mauvais type
++ row  `Absent`  un champ obligatoire absent
++ row  `OutOfRange`  un nombre hors de l'intervalle de la cible
+
+% 1 1 0 04cfd7acf63a1bbc169895a3de43fbac
+
+@ 0 2 0 12ada3e5ba72caf118e7a81f45be028a
++ `capture` exécute une expression censée échouer, et donne son erreur, afin qu'on puisse en
++ examiner la raison :
+
+% 2 1 0 07615930a8d1282e013a62e5912311a9
+
+% 3 1 0 09333f83b6d33ad21863cc8fea3dd0d7
+
+% 4 1 0 0443fc34c4b477730e9bb0ed063da628
+
+% 0 1 0 15d37137f91faccf07b39bfe0649ccfc
+
+% 0 1 0 0cbfc2c4fc05c5af1be3ddc0b2a4bf0d
+
+% 1 1 0 184687119e4998501f3505f39624282b
+
+@ 0 3 0 03a67c441179736f0a17e5718359d5e2
++ Lever une exception à la première erreur n'est qu'une [stratégie] parmi d'autres. Une méthode
++ qui ne doit pas lever d'exception déclare plutôt `raises Json.Error`, et son appelant choisit ce
++ que fait un échec ; [Erreurs](errors.md) présente les choix possibles.
+
+@ 0 1 0 1f85d54b11f5c12a1bdbf6d19ae5f60f
++ #### Collecter toutes les erreurs
+
+@ 0 4 0 09aa32d5ef038a33047875a72abefb02
++ Sous une stratégie qui [accumule les échecs](errors.md#accumulating-failures), le décodage ne
++ s'arrête pas à la première erreur. Chaque erreur est collectée, et chacune est taguée par un
++ [JSON Pointer](https://en.wikipedia.org/wiki/JSON_Pointer) vers le champ en échec, de sorte que
++ tous les problèmes d'un document sont signalés en une fois.
+
+@ 0 3 0 0d356165adf7255b10d4c804df8261bd
++ Le pointeur provient d'un *focus*, que le décodeur maintient à mesure qu'il descend, et que la
++ stratégie lit par `prior`. Ce contact a une personne et une adresse qui sont chacune erronées à
++ deux endroits :
+
+% 2 1 0 1ac7c1d2995483750204e09405675f75
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 162cd7c8de1ae5071766e57544e88730
+
+% 0 1 0 0dc50b5fbcc14b810ea896fdf422ff58
+
+% 0 1 0 0f502efe82f65dd4155e047c54096072
+
+% 0 1 0 12f3a1c4417de95f0e4992e8f968a66b
+
+% 0 1 0 08d4ab61b111842c127860b8d2341255
+
+% 0 1 0 004e8b30987399e004b1c02dcfe7d33a
+
+% 0 1 0 1274ef776a68ec3e09ff6526edf9bdb9
+
+% 0 1 0 1fb34586a0c3279b0194e6745ae1a2d6
+
+% 0 1 0 1c9d6fd014872435089b50dfe962343a
+
+% 0 1 0 17f8d00bec3f3f6818cc0643ead6f5e3
+
+% 0 1 0 1a809e45c85be00b1ad51475f6c7e041
+
+% 0 1 0 01a60fd9533fe87e022fd5e71a9c9a65
+
+% 1 1 0 0af70766c985a44018b4a04cbe0d202d
+
+@ 0 1 0 023a8e6409dc1e4901ef1b32c5fa06e2
++ Le décodage produit quatre erreurs, une pour chaque défaut :
+
+% 2 1 0 0ca22d4c329a04871b9205f64526b66e
+
+% 3 1 0 1d4ff4166058e89b1a541d74bb7db7f7
+
+% 4 1 0 02c3e74c0b85e0df1edb960e1bbb9281
+
+% 0 1 0 13a6367357c2842a10f5dee8e348b748
+
+% 0 1 0 08de62ff15ebd50f06d8d0ff575380b7
+
+% 1 1 0 0ddd842b663f5b6b17de40cd9ad9af89
+
+@ 0 2 0 178e6087772d2c52188bc4d451934b37
++ Les champs manquants et les champs du mauvais type s'accumulent ensemble. Un champ absent
++ contribue exactement une erreur, quel que soit le nombre de fois où le décodeur tente de le
++ lire.
+
+@ 0 1 0 15624a74a938be20195d2d7b46feec2e
++ ### Égalité et structure
+
+@ 0 2 0 128f5e7633ef1eac1c930337a033d5c7
++ Deux documents sont égaux lorsqu'ils signifient la même chose. L'ordre des clés d'un objet
++ n'importe pas, et un nombre entier est égal à la même valeur écrite avec un point décimal :
+
+% 2 1 0 0bd4912c14c222bf1c2ff235c3386c15
+
+% 3 1 0 1e732cb8f20547e81426658a2ba67112
+
+% 4 1 0 1f1d59cc059605d216f2b1d7e1110011
+
+% 0 1 0 0d8ff94bfc33ebb81cd8430957633aec
+
+% 0 1 0 0588cce962b5c3b417888af7b19996e4
+
+% 1 1 0 1bd2951bd40cfdaf18e13515bfd0514f
+
+@ 0 2 0 0b72cbf44bf937ee150f74688f14eb07
++ `Json.unseal` expose l'arbre sous-jacent là où on en a directement besoin. L'arbre a un prédicat
++ pour chaque nature de valeur, et un `primitive` qui nomme la nature :
+
+% 2 1 0 08525bf31637140c0a19f8e6ee6649f7
+
+% 3 1 0 1ee242c5032687e416e68fbb637c99c2
+
+% 4 1 0 19282c01fa133f9a1746975324e5b730
+
+% 0 1 0 167e3a11521d732e0963a00693a129aa
+
+% 0 1 0 1ac98cbcb2c8925214f260f42b4bfc4d
+
+% 1 1 0 1f25da5a7c9648680912301b09cd85aa
+
+@ 0 2 0 0912f0a42940051b0bf73afb12136278
++ Les prédicats sont plus fins que les primitives. Le code qui se soucie de la représentation d'un
++ nombre peut la demander, et celui qui ne s'en soucie pas n'a pas à le faire :
+
+% 2 1 0 1988f0cd136d8abb1a84e9de31d0f39a
+
+@ 0 11 0 099dcd10b64321c61cf758081b6bd424
++ column  Prédicat
++ column  Primitive
++ column  Vrai pour
++ row  `isLong`  `Number`  un nombre stocké sous forme de `Long`
++ row  `isDouble`  `Number`  un nombre stocké sous forme de `Double`
++ row  `isNumber`  `Number`  tout nombre
++ row  `isString`  `String`  une chaîne
++ row  `isBoolean`  `Boolean`  `true` ou `false`
++ row  `isNull`  `Null`  `null`
++ row  `isObject`  `Object`  un objet
++ row  `isArray`  `Array`  un tableau
+
+% 1 1 0 1ba100e5251cb35a03ea8dbaddc07aa7
+
+@ 0 1 0 0debb877a88a6994170843a35a9a4563
++ ### Nombres et précision
+
+@ 0 3 0 0c16b628e6d71b121202ac40c5ae1d7a
++ Un nombre JSON n'a pas de limite de précision, et la plupart des analyseurs en imposent une en
++ silence. Ici, le *mode numérique* dans la portée décide de ce qu'il advient d'un nombre trop
++ long pour le chemin rapide de l'analyseur, qui contient environ quinze chiffres. Un nombre plus
++ court est décodé de manière identique dans tous les modes :
+
+% 2 1 0 123748fc9f91a75210e42a79d79bc990
+
+% 0 1 0 19dd13bdce4c062107e0bed863a5f8ea
+
+% 1 1 0 19e6bbf360adf8ee18b88e4eabc853a0
+
+% 3 1 0 1714e6d80e76810709a782bc83aa4048
+
+@ 0 5 0 0eb832bbb863aaa613d543f531126efd
++ column  Mode
++ column  Avec un nombre trop long pour le chemin rapide
++ row  `fullNumberMode`  conserve chaque chiffre en décimal codé binaire, au prix d'une allocation
++ row  `doubleNumberMode`  abandonne les chiffres excédentaires et calcule un `Double` à partir des premiers
++ row  `bcdNumberMode`  abandonne les chiffres excédentaires et produit l'accumulateur brut compacté, sans allocation
+
+% 1 1 0 131c30d0f29615450987542763c4f961
+
+@ 0 6 0 1c914dfd2383b36a1e35b6612973444f
++ `fullNumberMode` est le mode par défaut, car perdre des chiffres en silence sans qu'on l'ait
++ demandé n'est pas la bonne chose à faire. `doubleNumberMode` fait ce que font Jawn, Circe,
++ Jsoniter et Jackson. C'est le mode pour une comparaison de vitesse à armes égales, ou pour des
++ données dont on sait qu'elles tiennent dans un `Double`. Le `Long` que produit `bcdNumberMode`
++ contient des chiffres en décimal codé binaire, et non la valeur du nombre ; il achète donc la
++ vitesse au prix de traiter les nombres longs comme opaques. [Nombres](numbers.md) présente les
++ types numériques vers lesquels une valeur peut être décodée.
+
+% 0 1 0 0cdd837a1990256e16af7ebc15459fe6
+
+@ 0 4 0 127dba777c8b741e05a342387b5f06e0
++ Le [JSON délimité par des sauts de ligne](https://en.wikipedia.org/wiki/JSON_streaming) est un
++ flux de documents indépendants, un par ligne. Il n'a pas besoin de type propre. `delineate`
++ découpe une [source](streams.md#records) en enregistrements à ses limites de ligne, et chaque
++ enregistrement se lit comme `Json` :
+
+% 2 1 0 00deb6cd4db4bff3135a7159d68db02c
+
+% 0 1 0 05a619b3954586d01e2026c4c7dbf6fb
+
+% 0 1 0 1f3a39f40b7981db0ef30a156c121a48
+
+% 1 1 0 0ab4c0e1b08f8b2613196186bf1f6de0
+
+% 3 1 0 0548d01c2c9f825f09811e3db10ec5e2
+
+% 4 1 0 0c01e380e13665081ddcc15160286957
+
+% 5 1 0 063bf31470956ae213dc4e2fe2cee0a3
+
+% 0 1 0 09d93d3278738f7e0a44e6b5acd0a6f7
+
+% 1 1 0 0efa4139d593cca0144578705e3d7669
+
+@ 0 2 0 12055d496ea540460745ab888e874754
++ Chaque ligne est lue indépendamment, de sorte que les documents n'ont pas à partager une forme.
++ Un journal d'enregistrements hétérogènes se lit aussi bien qu'un journal uniforme.
+
+% 0 1 0 0f41327623616007028adf1e44ccb0dc
+
+@ 0 3 0 0a5562e649210f3817f684744c575e12
++ Un [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) nomme un emplacement dans un
++ document. L'interpolateur `jp"…"` en écrit un, et le vérifie à la compilation. Un pointeur peut
++ aussi être construit un segment à la fois :
+
+% 2 1 0 145405a85ab0eae30f36850e5c93b349
+
+% 3 1 0 0b851e88f4b71f860dbee308f9bb22dd
+
+% 4 1 0 1a8ec85cadf134691bddbecf0844e3bb
+
+% 0 1 0 0efe92d50f9e86c61ce485b34e166738
+
+% 0 1 0 1e143796b79088ba1de3914f176fc0c6
+
+% 1 1 0 09392702d455d6fe1b1297132be3ce85
+
+@ 0 2 0 14234fb6c5e654e10983283536267767
++ Dans un segment, les caractères spéciaux `~` et `/` sont échappés en `~0` et `~1`. Un pointeur
++ mal formé ne compile pas, et l'erreur désigne le caractère fautif :
+
+% 2 1 0 1efec1186bca088d0f78588ec4b8a589
+
+% 3 1 0 0b8a3e09e58bd22b075cc4cb3e0027d3
+
+% 4 1 0 1b0337a708b772110856fd19220d9d27
+
+% 5 1 0 0da5044a8e6180911ca9cb18da08aadc
+
+% 0 1 0 18baa5098f6b63580e39196377b4f53a
+
+% 1 1 0 1c1009aadcd1a8da145cf332dd777907
+
+@ 0 1 0 17243aa331a168ab0c1df98883a5670a
++ ### Positions dans le code source
+
+@ 0 4 0 08e3788a697c562e069e01e46e875568
++ L'analyse ordinaire ne garde aucune trace de l'endroit où se trouvait chaque valeur dans le
++ texte, puisque la plupart des programmes ne le demandent jamais. Un programme qui le demande,
++ par exemple pour souligner l'origine d'une erreur, met `parsing.trackPositions` dans la portée.
++ `read` enregistre alors les positions, et `locate` donne la ligne et la colonne de la valeur que
++ nomme un pointeur :
+
+% 2 1 0 03b918366aa15455002b0dc29645609d
+
+% 0 1 0 0486d8c05db7d50203b07ad1a55e9c35
+
+% 0 1 0 1459b3f211171bb314d9bd4a5802199a
+
+% 1 1 0 0e1bb495192489b31adec23707c56038
+
+% 3 1 0 00c4939d38aa349f0ea5bccabd88f853
+
+% 4 1 0 1d2878ac8d53daea1f429171fdbd4b8f
+
+% 5 1 0 19a1fc48939938a91e18389d0231050f
+
+% 0 1 0 198c2121be5b865e1ef0152ce8d138d9
+
+% 1 1 0 086d7db812d620a109d2e7f53e1a9ed2
+
+@ 0 4 0 1cf618d1855f83331d75cacdbd7a6fd2
++ Une position couvre l'intégralité de la valeur qu'elle nomme. L'étendue d'un nombre négatif
++ inclut son signe moins, et un objet ou un tableau va de son crochet ouvrant à son crochet
++ fermant. `locateKey` donne la position de la *clé* correspondant au dernier segment du
++ pointeur, et non de sa valeur, ce dont on a besoin pour souligner un nom de champ mal
++ orthographié.
+
+@ 0 4 0 0297955c5e69a76f13551020346d1b0c
++ Un pointeur qui ne se résout pas donne `Unset`, qu'il nomme une clé absente du document ou un
++ indice au-delà de la fin d'un tableau. Sonder un document à la recherche d'une position est
++ donc toujours sûr. Sous l'analyse ordinaire, sans suivi, chaque `locate` donne `Unset`, et un
++ programme qui ne veut pas de positions ne paie rien pour elles.
+
+@ 0 1 0 0d9a5e075d8807bf118982c0deeb065a
++ ### Schémas
+
+@ 0 3 0 075bd46124434f6312719f1bfce0be38
++ Un [JSON Schema](https://en.wikipedia.org/wiki/JSON_Schema) décrit la forme qu'un document a le
++ droit d'avoir. Un schéma se dérive d'un type Scala, et une valeur de schéma se rend sous forme
++ de document JSON Schema standard :
+
+% 2 1 0 1e388fe7baaa9b2602e52e9b95eef97e
+
+% 3 1 0 14b9a8843e62309912c7d8d025fff74d
+
+% 4 1 0 10cfc94fea26492e02956223e61c932d
+
+% 0 1 0 05c9938d4c52a65e19017722d4acb1eb
+
+% 1 1 0 0f1f08d0a8912a010f135e4249ac26af
+
+@ 0 4 0 025964f70608795606b6d4ab7e38216b
++ L'annotation `@memo` sur un champ lui donne une description dans le schéma généré. Les formats
++ de chaîne comme `date-time` et `email` sont représentés par `JsonSchema.Format`. Le schéma
++ dérivé est ce sur quoi repose la [validation](#validation), et [OpenAPI](openapi.md) utilise les
++ mêmes schémas pour décrire un service.
+
+% 0 1 0 1a812af12825bb7914fb7ab00d557873
+
+@ 0 2 0 0b1005a0d0004fa219442ece2fed7d9b
++ `verify` vérifie un document par rapport à la forme qu'attend un type. En cas de succès, il
++ donne le même document, portant désormais ce type :
+
+% 2 1 0 08d2051c1d19e87206e91bc069649c93
+
+% 0 1 0 02c5a5b98a08b1e71f99ff3f0057a677
+
+% 0 1 0 033ced66c19cadba06445be5a6c66b33
+
+% 0 1 0 1d0b923535d74653017601fb0480caf5
+
+% 1 1 0 025325a94b8af4d20a242da1d0f1d0ed
+
+@ 0 1 0 188f80615a360662085bc8964fbcff8b
++ Un document non conforme lève une `Json.Error` :
+
+% 2 1 0 02b5350e8e5c4fb719e177d5fc89d9cf
+
+% 3 1 0 175b9291b06fa7c81c84d1661bfd6d55
+
+% 4 1 0 071aad8f007f0b8f12f37c76a096116d
+
+% 5 1 0 0d0938e48dc634fe0923d7bee63c02f4
+
+% 0 1 0 08db8a40f444891e103c9d628c374155
+
+% 1 1 0 0e4829418d146d4a139bf5127e204e89
+
+@ 0 2 0 1a7f60a0b1e2bbb60c5253b33938f910
++ Le document vérifié porte la structure du schéma dans son type, de sorte qu'on atteint ses
++ champs comme des membres, avec une vérification complète et sans l'import
++ `dynamicAccess.dynamicJson` :
+
+% 2 1 0 157df0c86575a29b197d76e3a6f7f6ff
+
+% 3 1 0 1a23b5e4aadf9f8d1e4a2584d2cf99f0
+
+% 4 1 0 13fe82803fa91966065ff052319abe2e
+
+% 0 1 0 1af6616ea512759e0657c508a2e0bac7
+
+% 0 1 0 15181bbf57d9709f12116fc00312dfe6
+
+% 1 1 0 084953632f6014e30b124948ecb4926b
+
+@ 0 2 0 1ffb00803c1492dc0b8ee6553068a44a
++ Tout ce que le schéma n'autorise pas est une erreur à la compilation. Cela comprend un champ qui
++ n'existe pas, un indice dans quelque chose qui n'est pas un tableau, et un champ d'un scalaire :
+
+% 2 1 0 16a5aca02d9746a80af113714755019d
+
+% 3 1 0 1a57732ff40ac626146e04526ef14fd4
+
+% 4 1 0 17cc3eee77454bc61574790d7d9a41c0
+
+% 5 1 0 12ddb24f14c82c490dad8900abcd7a82
+
+% 0 1 0 05edb704203d3dd51f7c0c1980e43fbd
+
+% 1 1 0 0b817d8918a090ef1650477720bfb7e5
+
+% 3 1 0 04a3215b3caf1bc21836b8a5b84cb046
+
+% 4 1 0 0ca3c5bad4fda4aa1fe7f13883c7f8cb
+
+% 5 1 0 15bc8696941358050abc6b29d5a29baf
+
+% 6 1 0 01d5d5a31390f97a1c19a0ad01dcdcdd
+
+% 0 1 0 046c218d17d14b8a030d58d3d849df57
+
+% 1 1 0 132a87a0cc39d96c0d6300fb87c04ace
+
+% 3 1 0 02fd08eb3d5a121a11ad54ab80724a14
+
+% 4 1 0 13090185e4e73a0c085812a061f44d42
+
+% 5 1 0 100e0acde0f08f2f1f767a8747b5d513
+
+% 6 1 0 093d14938bb589931c846d90ee8f9194
+
+% 0 1 0 0c88bdb2f15869b10f01d1a2188d6a66
+
+% 1 1 0 0e94d6bdc00c099e1dec6566e700bed5
+
+@ 0 1 0 192740c40032806b09dd143b385559bd
++ La navigation va à n'importe quelle profondeur, à travers des objets imbriqués et dans des
++ tableaux, et chaque étape est vérifiée :
+
+% 2 1 0 168c36af7510a97310ade7df5c5c47e8
+
+% 0 1 0 0ee6935d6f9bc6fb1db521ba2a9e6663
+
+% 0 1 0 1b6b54d3157743670b79257d9234994a
+
+% 0 1 0 1c179ec8199f9b641d3ad2dc8434a283
+
+% 0 1 0 0cdd759a47f7be7a13bb04518ecbd985
+
+% 0 1 0 1f17ed6aab7f72d302d800430a061951
+
+% 0 1 0 1e1aa16d6fbf4fe31e2ca709d863ad25
+
+% 1 1 0 1ec65c328d67b55316ef78c732cfa8fc
+
+% 3 1 0 1624392fb0fa5cff089c2e82aac2436a
+
+% 4 1 0 065a12cd2d38035612c9e8b4243d55de
+
+% 5 1 0 025eee2171b72c8b1114636152541218
+
+% 0 1 0 1488f9b33dad9aee01070a85d6d95216
+
+% 0 1 0 0796c9f6395f40fb1145830abfe9a5b3
+
+% 1 1 0 07a59f8f4fa767ed0c4128e54a63b021
+
+@ 0 4 0 1b9bf68ba9e988b91f6669f7013e3519
++ C'est le schéma qui autorise cet accès, et non une permission générale. Atteindre un champ d'un
++ document *non vérifié* exige toujours `dynamicJson`, de sorte que les deux sortes d'accès ne
++ peuvent pas être confondues. Un chemin à travers un document est ainsi vérifié par rapport au
++ type que le document est censé avoir, avant l'exécution du programme.
+
+@ 0 1 0 04989711cb46f712035f070ba537ae7d
++ ### Remplacer l'encodeur d'un seul champ
+
+@ 0 4 0 046633b75b63481108b37ec7c6708a66
++ Un encodeur dérivé utilise, pour chaque champ, l'instance présente dans la portée pour le type
++ de ce champ. Un autre given dans la portée modifierait d'un coup chaque champ de ce type, ce qui
++ est rarement ce qu'exige un unique champ récalcitrant. Un `Specific` nomme plutôt un chemin, et
++ son remplacement s'applique le long de ce chemin et nulle part ailleurs :
+
+% 2 1 0 1272ebf0a8065997125602a8ff64b218
+
+% 0 1 0 01c67de8f908d2f9014ade34cd9cb22e
+
+% 0 1 0 008b82346c0c3b0b0c04a5ca27927b3a
+
+% 0 1 0 17d909b654b1e5ea18f5278ba0d8c9ae
+
+% 1 1 0 07e08c7c485bdd1119793ba089c36b18
+
+@ 0 1 0 1c9eb3192bec1191095cbb59f30a19c1
++ Avec le given `Specific` dans la portée, seul le nom de l'adversaire est modifié :
+
+% 2 1 0 16356a5c7bfb8214068c4b779138ba27
+
+% 3 1 0 0e138e9751ac65bd1f4e3904be822097
+
+% 4 1 0 0bbc7e43e13fff161bce479655d9420b
+
+% 5 1 0 12503933e349611409cd786eb860bdb6
+
+% 0 1 0 1ed11fc377b121220faa81832c2ba9ef
+
+% 1 1 0 175192933113f8c108f49094cd30b533
+
+% 0 1 0 0049a658264acc1207e70e04e5e417f5
+
+% 0 1 0 0f11dc87b0e503cf1655c3789ca261f8
+
+% 1 1 0 0b78001fc123d0d3195234be90bf9fdd
+
+@ 0 3 0 03388f0b842d46fb11562a1f508dedc9
++ Un chemin qui aboutit à une collection prend un encodeur pour la collection. Dériver de nouveau
++ cet encodeur, avec un given local dans la portée, change la manière dont sont écrits les
++ membres de cette seule liste sans changer partout l'encodage de leur type :
+
+% 2 1 0 096fbfb5e0e6e9cb063cc0a83903e209
+
+% 0 1 0 00418ff7d291b3440abf093af8d60094
+
+% 0 1 0 168d1b7acb80aea11bbe6d3de13ce865
+
+% 1 1 0 1f465253a849301f0f4c013bcd838271
+
+% 3 1 0 047df9528244097808e316c99b6762c9
+
+% 4 1 0 01bc24e66fd6a4d30c0137fea47190bd
+
+% 5 1 0 1e14f9243272fe9e06db0f21c64af549
+
+% 5 1 0 0878aa023d7892ac0b4217f1d5b2c1c7
+
+% 0 1 0 15ce8698e31f1e4b0fe4a78d20ed9fd8
+
+% 1 1 0 0ff0fc29c44c113a0a06ec2ee049cdb1
+
+% 0 1 0 1ccecd4e3a45e77707961857f97e016d
+
+% 0 1 0 105f761d2942446b0526bdf188e41445
+
+% 0 1 0 1137a423a85a8dd81ea54ea46c76f772
+
+% 2 1 0 000aa02ac9083ecb198a24cb6f02f462
+
+% 3 1 0 1ebe881cce9669b202c69ae15cf4bf4d
+
+@ 0 1 0 10246ca00ae1b3ed129e48cb651099b9
++ ### Se passer de l'arbre
+
+@ 0 5 0 1500321d2ddbb9730fa4889e12f88fe5
++ `read[Person in Json]` analyse ordinairement le texte en un arbre `Json`, puis décode l'arbre.
++ Un type doté d'une instance `Json.Parsable` est au contraire lu *directement* depuis la source.
++ Son analyseur est composé pour ce type à la compilation, et prend les champs du texte à mesure
++ qu'ils arrivent, si bien qu'aucun arbre n'est construit. L'économie porte sur toute la structure
++ intermédiaire : son allocation, son boxing et un second parcours.
+
+% 2 1 0 1168c89d913ae8181de1c1ba79190a8a
+
+% 0 1 0 175ce301413b076213753ebe4389bd86
+
+% 1 1 0 0bb4597f6b1333a307d1602e1ba81d37
+
+@ 0 2 0 06770321369096b415f22d7fec672615
++ Dans du code ordinaire, l'instance a sa place dans l'objet compagnon du type, où elle est
++ trouvée sans import.
+
+@ 0 3 0 16d993920d3d98a80d40f69698d4ad24
++ L'écriture a une instance correspondante, `Json.Printable`. Un type qui en possède une est écrit
++ directement, sans arbre, partout où le formatage est compact. Le formatage indenté passe
++ toujours par l'arbre. Les deux chemins écrivent le même texte :
+
+% 2 1 0 0df5f78c5a508066059b61677864f14b
+
+% 0 1 0 1eb71a2dc83a33730209678d61d62294
+
+% 1 1 0 1a1e27c3a7b499e514a7776dfe4f8acd
+
+% 0 1 0 1d33bac26e7fb12608ef7c6e42b931e8
+
+% 0 1 0 0904924c439801580f6aeeaa1f8c3d0e
+
+% 1 1 0 1f8e1a8966da6e681bd176f02b7bccaf
+
+% 0 1 0 1f5308f945b757961819ef2763d281c7
+
+% 0 1 0 07e2d5d9de3eb7100d471c432ee65fb4
+
+% 0 1 0 1a68f981285ca68f1e85c30a50f76680
+
+% 1 1 0 07bf771de3cae225030a03173e0aa319
+
+% 2 1 0 17d0b60236f1130f0c401808482c0644
+
+@ 0 2 0 08673ac5cdb09e5d0bdee8959ffa8ad3
++ `Json.Printable.emit` écrit le texte un bloc à la fois, en confiant chaque bloc à une fonction
++ dès qu'il est rempli.
+
+@ 0 2 0 166d8fe92c6b18531948238cef08198e
++ Un enregistrement peut générer les deux instances à la fois, dans son compagnon, avec
++ `derives Json.Direct`. Un seul import sélectionne alors le chemin pour chaque enregistrement
++ dans la portée :
+
+% 2 1 0 021820844be6b6ed07e6f2dd0970aac8
+
+@ 0 6 0 0c289b49eb4857ad137ad074208c996e
++ column  Import
++ column  Pour un enregistrement
++ column  Pour tout autre type
++ row  `codecs.direct`  un analyseur et un afficheur générés  sa propre instance directe, sinon l'arbre
++ row  `codecs.derived`  les codecs dérivés, même en présence d'une instance directe  les codecs dérivés, même en présence d'une instance directe
++ row  `codecs.strict`  un analyseur et un afficheur générés  sa propre instance directe, sinon une erreur de compilation nommant le type
+
+% 1 1 0 191a37f14a8a3e6307a780ce975ce815
+
+@ 0 4 0 1d10ebe0008bab4a1283e985a7fab3b3
++ Sous `codecs.strict`, l'erreur est signalée partout où `read[Play in Json]` ou
++ `in[Text over Json]` se replierait sinon sur l'arbre. Si aucun des trois n'est importé, un type
++ prend le chemin direct exactement lorsqu'il possède sa propre instance directe. Les modes sont
++ des alternatives : importez-en un seul à la fois.
+
+@ 0 2 0 0af4effe1df4d422175237fb6116f4f9
++ L'arbre reste le bon chemin pour un document dont la forme n'est pas connue à l'avance, et
++ partout où c'est l'arbre lui-même que l'on veut.
+
+@ 0 1 0 08e5448c553e5f2d023b016fe75469b6
++ ### Enregistrements typés à partir d'un schéma
+
+@ 0 5 0 0631bb477e5fa02903d6f9c2fb73388d
++ Il arrive que le schéma se présente sous forme de document JSON Schema, et non de type Scala.
++ Un `Json.Provider` lit un tel schéma à la compilation, et produit des enregistrements typés à
++ partir du JSON qui s'y conforme. Un objet fournisseur, ici `Catalogue`, contient le schéma, et
++ sa méthode `record` transforme une valeur `Json` en enregistrement. Chaque champ de
++ l'enregistrement a le type que déclare le schéma, et un champ que le schéma ne décrit pas est
++ une erreur à la compilation :
+
+% 2 1 0 00134cc5ad408fed10e0e6c414ac99d5
+
+% 3 1 0 1dd97aaf26f77e5d128e29e5fc10c4af
+
+% 4 1 0 13acf0230eb09e581e03995dc25588dd
+
+% 0 1 0 0a87af4d0ec5fbda119ab390fdcbe436
+
+% 0 1 0 10ba014d2254dcd3076d9a543f8c2249
+
+% 0 1 0 168ff146ffda150b0e476e586aafc1e1
+
+% 0 1 0 09f81909fffbe8de1292b168fb564187
+
+% 0 1 0 1362070d19456a6d1ff95300d33f9885
+
+% 0 1 0 1546999d8bf18b22174b1fb43fd217df
+
+% 0 1 0 1bc5bcc4ed89e3c3023374c5cfcb26fa
+
+% 0 1 0 0fc9cff73f111a0c12cc06307ef02288
+
+% 0 1 0 0c77b11fd8ee05fc0bb832a353adbbc7
+
+% 0 1 0 149015473f8af5b818332c25647b5a7d
+
+% 0 1 0 1a255adce984755704338ad3cff63d03
+
+% 0 1 0 15b0a682f57e42d110c3ee2a34fe3242
+
+% 0 1 0 1d086cabb9160ecc000956b4641e580d
+
+% 0 1 0 0be86f8d69ffc11606058c9696122812
+
+% 0 1 0 198a6ee6c6d76ce702d2e920fb535def
+
+% 0 1 0 0fc0f10454a7b6240d1b534d7132a368
+
+% 0 1 0 13b304132bf680561a0826cc1dc574d1
+
+% 0 1 0 108651c2c97f7f1d0ee01c648046e110
+
+% 0 1 0 1624c445b5cfbd1714b78624b2dece95
+
+% 0 1 0 05099aaa0b26d7820d459bffbf69c43d
+
+% 1 1 0 070602b8732d57a706b0e1fb5ed9125b
+
+@ 0 4 0 1fc0669c468584cd0df0b7b244569f86
++ Le fournisseur prend son schéma sous la forme de tout ce qui peut se lire comme JSON. Un schéma
++ conservé comme ressource du [classpath](classpath.md) se lie directement, sous la forme
++ `object Catalogue extends Json.Provider(cp"/schemas/catalogue.json")`, avec un `Classloader` tel
++ que `classloaders.threadContextClassloader` dans la portée, et est lu pendant la compilation du
++ code.
+
+@ 0 1 0 0e811c7b08d00b4105b32b36c18f80df
++ Chaque construction du schéma a une lecture en Scala :
+
+% 2 1 0 0c78435e6e0eca6a1432307bf8993c6c
+
+@ 0 16 0 1f4109582a200dd71c1c7dd08457995d
++ column  Construction du schéma
++ column  Se lit comme
++ row  `"type": "string"`  `Text`
++ row  `"type": "integer"`  `Int`, ou `Long` avec `"format": "int64"`
++ row  `"type": "number"`  `Double`
++ row  `"type": "boolean"`  `Boolean`
++ row  une propriété de la liste `required`  son type, avec une `Json.Provider.Error` lorsque le document l'omet
++ row  toute autre propriété, ou une propriété dont le type admet `null`  un `Optional`, `Unset` lorsqu'elle est omise ou `null`
++ row  un `array` avec un schéma `items`  une `List` du type des éléments
++ row  un `object` avec des `properties`  un enregistrement imbriqué
++ row  `additionalProperties`, ou des `patternProperties` toutes d'un même type  une `Map[Text, T]`, vide en cas d'absence
++ row  un `$ref` vers le même document  la définition qu'il nomme
++ row  un `allOf` d'objets  un seul enregistrement avec toutes leurs propriétés
++ row  un `enum` (ou `const`) sans `type`  le type de ses valeurs
++ row  un `oneOf` ou un `anyOf` dont toutes les alternatives sont des chaînes  `Text`, un `enum` de toutes leurs valeurs lorsque chaque alternative en est une
++ row  une propriété admettant plusieurs types  l'union de leurs lectures, choisie selon la nature de la valeur trouvée
+
+% 1 1 0 03b1f7d69a25fb4018526943e891bcb7
+
+@ 0 6 0 1f3a01e387a11373034b12a81ce90680
++ Un `$ref` peut prendre n'importe quel pointeur JSON, `#/definitions/…` comme `#/$defs/…`. Une
++ union naît des alternatives d'un `anyOf` ou d'un `oneOf`, et d'un `type` qui en nomme plusieurs.
++ Ainsi `"exec": string | object` se lit comme `Text | Record { … }`, et
++ `"ignore": string | array` comme `Text | List[Text]`, et chaque alternative conserve ses propres
++ vérifications. Un dictionnaire s'imbrique librement : un dictionnaire de listes, une liste de
++ dictionnaires, un tableau de tableaux. Une propriété dont le nom contient un trait d'union ou
++ est un mot-clé s'atteint par un nom entre backticks, comme ``record.`content-type` ``.
+
+@ 0 1 0 1a517ed98bc4fc350bb6c1990b13b925
++ Les contraintes du schéma sont vérifiées à la lecture de chaque champ, de même que le type JSON
++ de la valeur :
+
+% 2 1 0 1aba1398864bc4a10a3cd4ec894a7de0
+
+@ 0 4 0 0a1d2f8cc08de46104041f9948ed02ed
++ column  S'applique à
++ column  Mots-clés vérifiés
++ row  une chaîne  `enum` (ou `const`), `pattern`, `minLength`, `maxLength`
++ row  un nombre  `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`
+
+% 1 1 0 0c0f4787a2ec20751696864390c9c27a
+
+@ 0 4 0 175f0e37594f2ca31dbd9f88b800492b
++ Les bornes exclusives sont acceptées sous la forme booléenne du draft 4 et sous la forme
++ numérique ultérieure. Une vérification en échec lève une `Json.Provider.Error`. Chaque erreur
++ est levée par la [tactique] du code qui lit le champ, de sorte que `validate`, avec un `venture`
++ pour chaque champ, [collecte tous les problèmes](errors.md#ventures-and-guards) d'un document.
+
+@ 0 1 0 1c6a52719721350f0ca5da0f6df8b72d
++ Certaines constructions ne peuvent pas recevoir de type, et restent du `Json` brut à lire à la
++ main :
+
+@ 0 8 0 0552478db30fcad113516ad84981dd39
++ - des alternatives que la nature de la valeur ne permet pas de distinguer, comme deux formes
++   d'objet dans un `oneOf`, ou une alternative typée comme n'importe quoi ;
++ - un `not` ou un `if` ;
++ - un objet sans `properties` ni schéma de valeur ;
++ - un tableau sans schéma `items`, ou avec une liste `items` sous forme de tuple ;
++ - des `patternProperties` de types différents ;
++ - une référence à un autre document ;
++ - une référence récursive, au point de récursion, puisqu'un type d'enregistrement ne peut pas se
++   contenir lui-même.
+
+@ 0 3 0 0f613d080e0ca65a0613e0c2a28fa5e4
++ La racine du schéma doit être un objet doté de propriétés. Une racine qui est un tableau, une
++ simple chaîne ou une référence à un autre document est une erreur à la compilation. Lorsque la
++ racine propose des alternatives, et que l'une d'elles est un tel objet, le fournisseur lit
++ celle-ci.
+
+@ 0 4 0 0c6aeccf75891a9715fc6a573792f0a4
++ Une propriété dont le nom est une méthode de tout objet JVM, comme `notify`, `wait`, `toString`
++ ou `hashCode`, ne peut pas être sélectionnée par son nom. Elle se lit par
++ `record.selectDynamic("notify")`, dont le résultat est la lecture du champ : convertissez-le en
++ `Record.Field[T, Json.Provider.Error]`, et il s'applique à la `Tactic` dans la portée.
+
+@ 0 2 0 17fdc1fd4427429e1eca482b9517393e
++ Un format qui nomme un type de réseau ou d'identité se lit comme le type qui représente ce
++ domaine là où l'enregistrement est utilisé, choisi en important son interface :
+
+% 2 1 0 01cd9f6d396414c115572208007398d7
+
+@ 0 9 0 04dd1b8c1689fb46096d5becad67607b
++ column  Format
++ column  Interface
++ column  Se lit comme
++ row  `email`, `idn-email`  `emailAddressInterfaces.soundnessEmailAddress`  `EmailAddress`
++ row  `hostname`  `hostnameInterfaces.soundnessHostname`  `Hostname`
++ row  `ipv4`  `ipAddressInterfaces.soundnessIpv4`  `Ipv4`
++ row  `ipv6`  `ipAddressInterfaces.soundnessIpv6`  `Ipv6`
++ row  `uri`, `iri`  `urlInterfaces.soundnessUrl`  `HttpUrl`
++ row  `uuid`  `uuidInterfaces.soundnessUuid`  `Uuid`
+
+% 1 1 0 04169dd79f59b3391b2fbdfe21ac5154
+
+@ 0 3 0 034252882f3767e40c8405a248743b14
++ Ainsi, avec `emailAddressInterfaces.soundnessEmailAddress` importé, `record.email` est une
++ `EmailAddress`. [Adresses réseau](network-addresses.md) et [UUID](uuid.md) décrivent ces types.
+
+@ 0 3 0 0b2c19c3a5ca97980bbee8ddc9ecce10
++ Un fournisseur peut tout aussi bien produire un tuple nommé,
++ `(name: Text, children: List[(weight: Double)])`, dont tous les éléments sont lus à sa
++ construction, en déclarant une méthode `tuple` à côté de `record`. [Enregistrements](records.md)
++ décrit les deux formes et ce qui les distingue.
+
+@ 0 1 0 116be6dcf1ff8f5f0f4a3041ce357f81
++ ### Dates et heures
+
+@ 0 2 0 1deb429ad66c076d1288d998f133294c
++ Les types temporels de [Time](time.md) ne sont pas encodés en JSON tant qu'un import ne dit pas
++ comment. Un `Instant` et une `Duration` voyagent chacun sous forme de nombre entier de
++ millisecondes :
+
+% 2 1 0 13313148008e62a2095ec5b71e394dd1
+
+% 0 1 0 066af33ea28da16407b361b7f58d7b83
+
+% 0 1 0 02fa7970ce542ee00a45e4eae767e9b6
+
+% 0 1 0 06185a5253148f2719efd78d71ae68e5
+
+% 1 1 0 09685225c1b85db11f691b4145e1defb
+
+% 3 1 0 0bad28b9cf6cb74209d83006112da371
+
+% 4 1 0 07171b53b1bfa3450a1902eeaece11e3
+
+% 5 1 0 01dc00e981176e0d0b474dc539e43137
+
+% 0 1 0 0384d4cf2c1b5d08054510f2f157bb07
+
+% 0 1 0 15164b75a7bde5001f636d31e5053620
+
+% 1 1 0 142ea4a9ab569d2019c919d9d17d75b5
+
+@ 0 2 0 0a14d6858460fa3608b75f1eebd3566a
++ `encodables` et `decodables` ont chacun une instance pour les deux types, et `parsables`
++ contient les instances qu'utilisent les [analyseurs directs](#skipping-the-tree).
+
+@ 0 1 0 1d200fdff0f57b750d1972441b4632cd
++ ### JSON sur HTTP
+
+@ 0 3 0 1df0403bb111d9321f91bea20d820f2e
++ Une valeur `Json` est un corps de requête et un corps de réponse, envoyé en
++ `application/json`. Le [client HTTP](http-client.md#posting-a-body) en envoie une par POST une
++ fois `postables.jsonPostable` importé, et le texte de la réponse se relit comme `Json` :
+
+% 2 1 0 048415d25cbd98f40dbabf7ed9818a7c
+
+% 3 1 0 0d576341a49590d7079407738cd5afec
+
+% 4 1 0 1bd66711d4a4bb9b0703202274eb34db
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 04c370b82515acc8175229615827ab1a
+
+% 0 1 0 19cba9ddeeadffe81275bcd7104b12bb
+
+% 0 1 0 1ebac3e5289590fe06ac499de428750a
+
+% 1 1 0 1d2b256110c4f62214f8a74015d7ecf5
+
+@ 0 3 0 1b82fe0c58bc5aac04d101c3fe28e7c2
++ Avec `servables.jsonServable` importé, un [serveur HTTP](http-server.md#responses) répond de la
++ même manière à une requête par une valeur `Json`. Aucune colle n'est nécessaire entre les deux
++ couches : les encodeurs et décodeurs décrits ci-dessus transportent les valeurs.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 7 0 1af7947b54b3e03e151d10ce1d9214af
++ - [YAML](yaml.md), [XML](xml.md), [CBOR](cbor.md), [TEL](tel.md) et [CSV](csv.md) utilisent le
++   même vocabulaire `read`, `as` et `in`, de sorte qu'une case class qui fonctionne avec l'un
++   fonctionne avec les autres.
++ - [Dérivation](derivation.md) explique comment sont générés les codecs d'une case class.
++ - [Décodage](decoding.md) présente la lecture d'une valeur textuelle unique comme un type.
++ - [Erreurs](errors.md) présente les stratégies qui décident de ce que fait une `Json.Error`.
++ - [Optiques](optics.md) présente les lentilles utilisées pour les mises à jour profondes.
++ - [Enregistrements](records.md) présente les enregistrements typés que fournit un schéma.

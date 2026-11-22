@@ -1,0 +1,92 @@
+orthant 2 language
+
+% 0 1 0 1dd3ff184458127015ae1ccf3652f901
+
+@ 0 1 0 124ac3af023a355109edffee6244bdfb
++ Wird ausgelöst, wenn Enigmatic verschlüsselte Daten nicht dekodieren kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 0454a01b9c9dea340ebc739026a4aec4
++ Das kryptografische Primitiv (Chiffre, Signatur oder MAC) hat die Eingabe abgelehnt. Der
++ Konstruktor nimmt einen `reason: Reason`, der angibt, warum die Operation fehlschlug; die
++ dargestellte Meldung lautet `could not decode the
+
+% 0 1 0 07f2a1c1233344b51095cd69581d4afd
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 12f19e8f03c14d4308be60932eed2510
+
+@ 0 3 0 1fbb23f06adec7d61c68f6492c06516f
++ Die Auffüllungsbytes entsprachen nicht den Erwartungen der Chiffre, typischerweise weil der
++ Chiffretext beschädigt war oder der falsche Schlüssel übergeben wurde (nicht übereinstimmendes
++ Authentifizierungs-Tag in AEAD-Modi).
+
+@ 0 1 0 1739d6e19df659901ee93e8aa56a6fe8
++ **Beispiel.** `[↯/s.105.2.1] could not decode the encrypted data because the ciphertext was corrupted or the key was wrong`
+
+@ 0 3 0 18d6ff2039ddebc11ab7da7730df6f92
++ **Behebung.** Stellen Sie sicher, dass Schlüssel und IV mit denen bei der Verschlüsselung
++ übereinstimmen; prüfen Sie, dass der Chiffretext bei der Übertragung nicht gekürzt oder verändert
++ wurde.
+
+% 0 1 0 0d5d3bc275d259271bdf4903a900601c
+
+@ 0 2 0 1ac8b0e57b4d7c25191149a0a958fd31
++ Die Länge der Eingabe war kein Vielfaches der Blockgröße der Chiffre oder auf andere Weise mit
++ dem Framing der Chiffre unvereinbar.
+
+@ 0 1 0 030998a246c79ec119f4b4a064e2d636
++ **Beispiel.** `[↯/s.105.2.2] could not decode the encrypted data because the input length was not valid for the cipher`
+
+@ 0 2 0 0e8bd28c57ce4caa1e9b80596ea98e3c
++ **Behebung.** Prüfen Sie, dass der Chiffretext vollständig ist und mit derselben Chiffre und
++ demselben Modus erzeugt wurde, mit denen er jetzt entschlüsselt wird.
+
+% 0 1 0 169cce07803a4a17033792e518b82d17
+
+@ 0 2 0 0b0ab3f02879e1040067b20d58e980e5
++ Die Schlüsselbytes wurden von der Chiffre abgelehnt: falsche Größe, ungültiges Format oder nicht
++ unterstützte Parameter.
+
+@ 0 1 0 03b840945e05f4b2096b23d229a9cc4b
++ **Beispiel.** `[↯/s.105.2.3] could not decode the encrypted data because the key was not valid for the cipher`
+
+@ 0 2 0 0b7b6a6cc3122a1d1dfc629e8c43fdb6
++ **Behebung.** Stellen Sie sicher, dass der Schlüssel für dieselbe Chiffre und denselben
++ Parametersatz erzeugt wurde.
+
+% 0 1 0 1f2c73535fe27d980bfea5daeed9b614
+
+@ 0 2 0 08d33c41a5ad27c505463e0f89a77113
++ Der angeforderte Algorithmus oder Modus ist bei den konfigurierten Providern der JVM nicht
++ verfügbar.
+
+@ 0 1 0 01e72f0b9cfa5e7a1c0c2ff08284276a
++ **Beispiel.** `[↯/s.105.2.4] could not decode the encrypted data because the algorithm was not available`
+
+@ 0 2 0 0bc734f8dee0286d18fec3497ebb67d8
++ **Behebung.** Installieren oder aktivieren Sie einen JCA-Provider, der den Algorithmus
++ unterstützt; prüfen Sie die `java.security`-Richtlinie.
+
+% 0 1 0 051a0972608a20a409b0c698aa7c2c98
+
+@ 0 2 0 08baa998e193943a0fa1d4eef46d2047
++ Die Implementierung der Chiffre konnte die Datenpuffer nicht lesen oder schreiben, typischerweise
++ wegen eines I/O-Fehlers auf niedriger Ebene.
+
+@ 0 1 0 1a6338eabe0ee4f5026a09eea17d4598
++ **Beispiel.** `[↯/s.105.2.5] could not decode the encrypted data because data could not be read or written`
+
+@ 0 1 0 050f887854411c1313d244ed279d6f20
++ **Behebung.** Untersuchen Sie die Ursachenkette auf den zugrunde liegenden I/O-Fehler.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 2 0 0388722c1a8ac94308aa18340e8189b1
++ - Quelle: `lib/enigmatic/src/core/enigmatic.Crypto.scala`
++ - `↯/s.105.1` — `PemError`, ausgelöst, wenn PEM-kodierte Schlüssel nicht geparst werden können

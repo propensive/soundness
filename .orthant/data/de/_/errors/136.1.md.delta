@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 1f2d50a97e27975513bbd3392115d7f8
+
+@ 0 1 0 0b119d4ee899af6e0e2ca3a32b4ec22c
++ Wird ausgelöst, wenn eine Operation auf einem ZIP-Archiv nicht abgeschlossen werden kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 0043c3c490bb158f1ac51cd786798b86
++ Zeppelin verwaltet ZIP-Einträge über ihren Pfad. Dieser Fehler meldet doppelte oder fehlende
++ Pfade sowie ungültige Eintragsnamen. Die Meldung lautet `the ZIP
+
+% 0 1 0 0a337e3286fa960d1c4fa365be454124
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 15 0 0dc529442ad0b89e02e76e953cff3d1d
++ column  Grund
++ column  Bedeutung
++ column  Meldung
++ column  Behebung
++ row  `↯/s.136.1.1`  `DuplicateEntry`  Ein hinzuzufügender Eintrag hat denselben Pfad wie ein Eintrag, der bereits im Archiv liegt.  `[↯/s.136.1.1] the ZIP operation failed because the path /hamlet/act1.txt is a duplicate entry`  Wählen Sie einen anderen Pfad, oder entfernen Sie zuerst den vorhandenen Eintrag.
++ row  `↯/s.136.1.2`  `NotFound`  Eine Operation verwies auf einen Eintragspfad, den es im Archiv nicht gibt.  `[↯/s.136.1.2] the ZIP operation failed because path /hamlet/act1.txt was not found in the ZIP file`  Listen Sie die Einträge vor dem Lesen auf; prüfen Sie den Pfad auf Tippfehler.
++ row  `↯/s.136.1.3`  `InvalidName`  Ein Eintragsname ist für einen ZIP-Eintrag nicht gültig, enthält etwa Zeichen, die das Format nicht zulässt.  `[↯/s.136.1.3] the ZIP operation failed because the name hamlet\act1 is not valid for a ZIP entry`  Bereinigen Sie den Namen zu einem gültigen Eintragspfad.
++ row  `↯/s.136.1.4`  `UnsupportedMethod`  Der Eintrag ist mit einem anderen Verfahren als *stored* oder *deflate* komprimiert.  `[↯/s.136.1.4] the compression method 12 is not supported`  Komprimieren Sie das Archiv mit Deflate neu, oder speichern Sie den Eintrag unkomprimiert.
++ row  `↯/s.136.1.5`  `MissingEocd`  Es wurde kein End-of-Central-Directory-Datensatz gefunden, daher lässt sich der Index des Archivs nicht finden.  `[↯/s.136.1.5] no end-of-central-directory record could be found`  Die Datei ist kein ZIP-Archiv, oder ihr Ende fehlt. Prüfen Sie, ob sie vollständig heruntergeladen wurde.
++ row  `↯/s.136.1.6`  `TruncatedArchive`  Das Archiv endet, bevor eine von ihm deklarierte Struktur vollständig ist.  `[↯/s.136.1.6] the ZIP archive ended unexpectedly`  Die Datei ist unvollständig. Beschaffen Sie sie erneut.
++ row  `↯/s.136.1.7`  `BadSignature`  Ein Datensatz beginnt nicht mit der vier Byte langen Signatur, die das Format an dieser Stelle verlangt.  `[↯/s.136.1.7] an expected record signature (67324752) was absent`  Das Archiv ist beschädigt, oder der Offset wurde aus einem beschädigten Index berechnet. Die Einträge durch Scannen wiederherzustellen kann gelingen, wo der Index versagt.
++ row  `↯/s.136.1.8`  `Zip64Error`  Die ZIP64-Erweiterungen, die Größen und Offsets tragen, die für das ursprüngliche Format zu groß sind, konnten nicht interpretiert werden.  `[↯/s.136.1.8] the ZIP64 metadata could not be interpreted`  Das Archiv verwendet ZIP64 auf eine Weise, die dieser Reader nicht unterstützt, oder die Metadaten sind beschädigt.
++ row  `↯/s.136.1.9`  `WriteUnsupported`  Das Archiv wurde mit der `Write`-Berechtigung geöffnet, die das Öffnen als `Zip` nicht bietet.  `[↯/s.136.1.9] ZIP archives cannot yet be opened for writing`  Bauen Sie aus den Einträgen ein neues `Zipfile` und schreiben Sie es (`path.write(Zipfile(entries))`), statt ein vorhandenes Archiv zur Änderung zu öffnen.
++ row  `↯/s.136.1.10`  `AlreadyExists`  Beim Anlegen eines Archivs lag unter dem Pfad bereits etwas.  `[↯/s.136.1.10] an archive already exists at this path`  Wählen Sie einen anderen Pfad, oder übergeben Sie `CreateFlag.Replace`, um bewusst zu überschreiben.
++ row  `↯/s.136.1.11`  `CannotWrite`  Das Archiv konnte nicht geschrieben werden, aus einem Grund, den das zugrunde liegende Dateisystem gemeldet hat.  `[↯/s.136.1.11] the archive could not be written: permission denied`  Das Detail enthält die Erklärung des Betriebssystems; handeln Sie danach.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 10dca2f394721a9b023e9944aad3cdec
++ - Quelle: `lib/zeppelin/src/core/zeppelin.Zip.scala`

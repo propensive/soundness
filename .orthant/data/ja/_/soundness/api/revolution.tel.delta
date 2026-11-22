@@ -1,0 +1,463 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 08926ec14e05d6290e7fae9d5c65ea19
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 082da890488dbe48049aba06c6b618ec
++ info   コンパイル時に検査されるセマンティックバージョンと、型付きの属性としての JAR マニフェスト
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0e46a0c24cbc38970540b5295c320fc7
++     _Revolution_ は、二種類のリリースのメタデータに適切な型を与える。
++     **セマンティックバージョン**は `Semver` である。これは `v"…"` 補間子で書かれ、コードのコンパイル中に SemVer 2.0 の文法に照らして検査される。あるいはテキストからパースされ、型付きの `Semver.Error` を伴う。バージョンは辞書順ではなく仕様の優先順位の規則で比較され、二つのバージョンの組は、それらを隔てる `Compatibility` の種類を答えられる。
++     **JAR マニフェスト**は `Manifest` であり、その標準の属性は `manifestAttributes` パッケージの名前付きの値で、それぞれが自身の型を読み書きする。`Main-Class` は文字列ではなく `Fqcn` である。
+
+% 2 1 0 04f1c24f2bb420860f8f66bd788660b3
+
+% 3 1 0 17134af42d13dd731e1cfd4762d1af91
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 10663b515a32dfbe0790c682553d03eb
+
+% 0 1 0 13d20654929717351703ea262da09ce2
+
+% 0 1 0 16ee26686adf087003dd8a5e4acd9633
+
+% 0 1 0 119802e22d0df7471930a064333c529d
+
+% 0 1 0 1c83310f85cc4c941e97e63bf82786a1
+
+% 1 1 0 10f0be7f223aab2b15d1be9e0d2cb586
+
+@ 0 1 0 170af30ee833fd7815f6a7596ccb2832
++     ライブラリは二つのソースセットに分かれている。
+
+@ 0 3 0 06281c0266b856bf19dba42b9c6c2990
++     - `revolution.core` — `Manifest`、その `EncodableManifest` と `DecodableManifest` 型クラス、そして `manifestAttributes` パッケージ。
++     - `revolution.semver` — `Semver`、`Compatibility`、そして `v"…"` 補間子。
+
+@ 0 3 0 1b0fe10e0c673e2718e20d9b3582d32c
++     どちらも `soundness` アンブレラにエクスポートされ、`manifestAttributes` はそこにパッケージとして写される。
++     そのメンバーは given ではなくオブジェクトなので、`import manifestAttributes.*` ですべてを取り込める。
+
+% 0 1 0 14316f0b4ccfa28419c07cc5020f6d35
+
+% 0 1 0 07e39725eb5d0cab1d4088e2638a47fd
+
+% 0 1 0 07aab2a83bd234a4167429e96c4bdb17
+
+% 0 1 0 13b90fade746e9e60b4a1bc8fd7826b7
+
+% 0 1 0 1e568f110f3886511bc57c65a819821b
+
+@ 0 1 0 1dad7596b954acb20331b37101a3e97a
++ entry .Semver   セマンティックバージョン。メジャー、マイナー、パッチの番号と、プレリリースおよびビルドの識別子
+
+% 1 1 0 0b2a18d4a06756421c69d841f08a67fd
+
+@ 0 5 0 1911928398d6ef691190e98b44ce09b6
++       `Semver` は [SemVer 2.0](https://semver.org/) の意味でのバージョンである。三つの番号、任意のプレリリース（`-rc.1`）、任意のビルドメタデータ（`+build.5`）からなり、後の二つはそれぞれ識別子のリストで、識別子は数としてパースできれば数、そうでなければテキストである。
++       `v"…"` で検査済みのリテラルとして書かれ、`as[Semver]` でテキストからデコードされ、書かれたとおりにエンコードし直される。
+
+% 2 1 0 0cf355cf1f4879b615589cf59c764c90
+
+% 3 1 0 17f2ddcf6c58ba5c001449ec06677312
+
+% 4 1 0 0d6ba827a3ee3cb60f01888d83bcd5c4
+
+% 0 1 0 1cbe3dd771c4038408fe499fd76f2a9c
+
+% 0 1 0 082439d3fa4b5b4e1ac374ffd88ff318
+
+% 0 1 0 0b4af58fd5f65821074bac485f759d84
+
+% 0 1 0 0df9fbcd53dba1391bbfde14ee722882
+
+% 1 1 0 129b8be09e27f853082e153c273fb643
+
+@ 0 4 0 145bf4d3461b3ae705a382ba65822944
++       バージョンは仕様の優先順位（`.comparable`）で順序付けられる。メジャー、マイナー、パッチの順に数値で比べ、リリースはそのすべてのプレリリースの後に来て、プレリリースの識別子は一つずつ、数は数値で、かつテキストより前として比べられる。
++       ビルドメタデータは順序にも等価性にも関与しない。`v"1.0.0+a" == v"1.0.0+b"` である。
+
+@ 0 2 0 021aa399dfb40f291e7cd3527fc5082e
++       `#compatibility` は二つのバージョンの間の変更を分類し、`#next` は与えられた種類の変更に対して次に来るバージョンを返す。
+
+% 0 1 0 131345e21704ea151aa0db1fefc9608b
+
+% 0 1 0 090aa9b1821f60d50f81f504412d28c4
+
+% 0 1 0 139e04537d31d8aa1da93d97fe024300
+
+@ 0 9 0 02e68d1890c8fe640597dd56d9ffb348
++   entry .encodable   バージョンを SemVer のテキストとして書く。`1.2.3-rc.1+build.5`
++       コンパニオンにあるので、暗黙のスコープにある。`version.encode` と書く。
++       テキストからデコードされたバージョンは、同じテキストにエンコードされる。
++   entry .showable   `.encodable` が書くとおりに、バージョンを SemVer のテキストとして表示する
++   entry .decodable   SemVer のテキストからバージョンを読む。不正な形式なら `Semver.Error` を発生させる
++       `Tactic[Semver.Error]` を必要とする。
++       テキストは SemVer 2.0 の完全な文法に照らして検査される。先頭にゼロのない三つの番号と、空でなく、`[0-9A-Za-z-]` から成り、（数値のプレリリース識別子については）先頭にゼロのないプレリリースおよびビルドの識別子である。
++       それぞれの失敗は、固有の `Semver.Error.Reason` とともに発生する。
+
+% 2 1 0 00f5d284b5890ed2176b1e300839055c
+
+% 3 1 0 1f5a661348e463441ee90b990d71caec
+
+% 0 1 0 0540ec075cd0a72d0626c069f63372ef
+
+% 0 1 0 0b843dc30d71c81414da56d865c43524
+
+% 1 1 0 03bd206ef20c6ddc0c3f5d3f21efe27b
+
+@ 0 1 0 04a5fc0c69b8592912e0e5af95542d30
++   entry .comparable   SemVer の優先順位でバージョンを順序付けるので、`<` とソートは仕様どおりに働く
+
+% 1 1 0 11f49644a6c52eb109b8735a1348edc0
+
+% 2 1 0 119b663355d72d92181641685030f9a8
+
+% 0 1 0 03ee7a140ff3ced4029754699ab81ae6
+
+% 0 1 0 1ec95724466a0a6802e32e481687c817
+
+% 0 1 0 1f509cebdeb0b40512cb86e218f04bd4
+
+% 0 1 0 0dd49b8bbc2598b513856b0907efaef4
+
+% 1 1 0 0e14aeca3ee0b05c007171467ef21b18
+
+@ 0 1 0 06d26ba4165a424e185bbd3fd57d10e2
++   entry .Error   テキストが有効なセマンティックバージョンでないときに発生する
+
+% 1 1 0 06de591042abab9c0f833812c4aedbcb
+
+@ 0 8 0 18d050a497243d08041c16ce2aa1c492
++         エラー `↯/s.97.1`：_`version` is not a valid semantic version because …_。理由は四つのうちの一つである。`BadFormat`（_the string did not match the SemVer 2.0 grammar_。`1.2` や `1.2.3.4` など）、`EmptyIdentifier`（_a prerelease or build identifier was empty_。`1.2.3-` のように）、`LeadingZero`（_a numeric identifier had a leading zero_。`01.1.1` や `1.2.3-0123` のように）、`InvalidCharacter`（_an identifier contained a character outside `[0-9A-Za-z-]`_）。
++         `Semver.decodable` によって発生する。`v"…"` リテラルは同じ問題を、代わりにコンパイルエラーとして報告する。
++     entry .Reason   テキストがセマンティックバージョンでない理由。不正な形式、空の識別子、先頭のゼロ、または不正な文字
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 1c5ba06f9a1ff6d9030eec78505296c4
++           各ケースのエラー `↯/s.97.1` の枝番は、その `#number` である。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
+
+% 0 1 0 04fb74599b2a732709d1cd4ac612eb1d
+
+% 0 1 0 0737f3cb9ebd1e381b8ab6c333062789
+
+% 0 1 0 0b39f75b57dcb4051baab677789fed54
+
+% 0 1 0 11dd99274a1a3deb0fd02a1758b29a70
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 20 0 1e224615aa60391b0a019a44f6de4acf
++       entry #number   エラー `↯/s.97.1` における、理由の枝番
++     entry .communicable   各理由を、_… is not a valid semantic version because …_ を完成させる句として描画する
++     entry #version   パースに失敗したテキスト
++     entry #reason   有効なセマンティックバージョンでない理由
++   entry #major   メジャーバージョン番号。その変更は互換性を壊す変更を示す
++   entry #minor   マイナーバージョン番号。その増加は追加を示す
++   entry #patch   パッチバージョン番号。その変更は内部の修正を示す
++   entry #prerelease   プレリリースの識別子。数は `Long`、それ以外は `Text` である。リリースでは空
++   entry #build   ビルドメタデータの識別子。数は `Long`、それ以外は `Text` である。順序付けでは無視される
++   entry #development   バージョンがメジャーバージョン 0 の初期開発段階にあるかどうか
++       SemVer のもとでは、`0.x.y` のバージョンは何も約束しない。どんな変更も互換性を壊しうる。
++       `#compatibility` はそのようなバージョンを含むすべての組を `Breaking` として扱い、`#next` は互換性を壊す変更に対してメジャー番号ではなくマイナー番号を上げる。
++   entry #release   このバージョンがプレリリースまたはビルドであるリリース。同じ番号で識別子のないもの
++       `v"2.0.0-rc.1+build.7".release == v"2.0.0"` である。
++   entry #compatibility   このバージョンから別のバージョンへの変更の種類を `Compatibility` として返す
++       `current.compatibility(other)` は、どちらかがプレリリースであるか、どちらかが初期開発段階にあるか、メジャー番号が異なるか、相手のマイナー番号の方が小さい場合は `Breaking` である。相手のマイナー番号の方が大きい場合は `Additions`、パッチ番号だけが異なる場合は `Internal`、それ以外は `Unchanged` である。
+
+% 2 1 0 01094735156184ac1d375feba79d55dd
+
+% 3 1 0 0297f52fb248d36e1de5c513fb862310
+
+% 0 1 0 1f60c548945e306313d641292448d910
+
+% 0 1 0 1bbbe7ff16b3190e0178a5a4a167044f
+
+% 0 1 0 051d0136904315fa134cc113810c2aa2
+
+% 1 1 0 0f14b8826cbb627f1c28ee4df91efeaf
+
+@ 0 6 0 186d8abef568b78802bb29e2763e91f7
++       パッチ番号が*下がる*場合も `Internal` である。このメソッドは比較するだけで、相手のバージョンの方が後であることは検査しない。
++   entry #next   与えられた種類の変更に対して、このバージョンの次に来るバージョン
++       結果はプレリリースやビルドの識別子を持たない。
++       `Breaking` の変更はメジャー番号を上げるが、初期開発段階（メジャーが 0）ではマイナー番号を上げる。`Additions` はマイナーを上げ、`Internal` と `Unchanged` はどちらもパッチを上げる。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 1171cd2f0b2a9c0e107147ce6d5f469b
+
+% 1 1 0 048f6b7df73e8d3d1fdde4361668937c
+
+% 0 1 0 1c9ef8f78e0ea8ce1ddf8a1339bb00ec
+
+% 0 1 0 1fb6e8fe3f401b5000abae181d82a97f
+
+% 1 1 0 0de18e41e7809b580f9ed348ee8c546b
+
+% 0 1 0 104eb669bd236a661114eabd2c9fb587
+
+% 0 1 0 0f99c43cca7b82650ee4c59d0a3768f2
+
+% 1 1 0 0074a6dc1049dc2007645e753f4cda2a
+
+% 0 1 0 0e868744b1de14a90cec3cbc4eeb754b
+
+% 0 1 0 19ae88b641742902134b93114ccb0763
+
+% 1 1 0 08b139607ec2e75119b053822f44118c
+
+% 0 1 0 1a90c94c7b912f1800943cdd8c9f99f0
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 12598eaa1d9966eb153a3fc09608f99e
++ entry .Compatibility   二つのバージョンを隔てる変更の種類。互換性を壊す変更、追加、内部、またはなし
++     `Semver#compatibility` が返し、`Semver#next` が受け取る分類である。
++     `Breaking` は、一方のバージョンに対して書かれたコードがもう一方では動かないかもしれないことを意味する。`Additions` は後のバージョンが前のものに追加するだけであること、`Internal` は実装だけが変わったこと、`Unchanged` はバージョンが同じリリースであることを意味する。
+
+% 2 1 0 0ddaa1e3c52593e70ca1062a4ffb70d1
+
+% 3 1 0 16ca15f541d7cf6d1979c1feb24d54f6
+
+% 0 1 0 1099aabcdd40d8331dd05044b484d31f
+
+% 0 1 0 012942c2004002bd18020b72b513d2f5
+
+% 1 1 0 0fede9602fec45f9086a5f2a81a2bc0d
+
+@ 0 5 0 19f47db3cf91460b0d8b3c358952abe6
++ entry .v   `v"…"` 補間子。コンパイル時に検査されるセマンティックバージョン
++     `v"1.4.2"` は `Semver` である。
++     リテラルはコードのコンパイル中に `Semver.decodable` と同じ文法でパースされ、不正な形式のものは _invalid semantic version_ というコンパイルエラーになる。
++     この補間子は `$` による埋め込みを受け付けない。実行時に計算されるバージョンには、テキストを `as[Semver]` でデコードする。
+
+% 2 1 0 10afd7e0811d19c71cce049fa15e9827
+
+% 3 1 0 06d2f5e44cfb2e39188df79e4748249e
+
+% 0 1 0 07281006ba6ef59f1916bf84893e3c33
+
+% 0 1 0 10cd8c3e3900355511256646c5fe79f4
+
+% 1 1 0 1ea16fa93fb43bf41d55dc6f834ac9d0
+
+@ 0 1 0 1617e35fe993b3fc0783acbf4dc5d244
++ entry .internal   `v"…"` の背後にあるマクロの実装
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 0414a3c8ccf99d6112934d13900f5288
++       直接使うためのものではない。このオブジェクトは、コンパイル時にバージョンのリテラルを検証するマクロを収めている。
++   entry .semver   `v"…"` の背後にあるマクロ。リテラルを検証し、実行時にそれをデコードする
+
+@ 0 1 0 1a3a9168111888f60bc62a302c2d0be0
++ entry .Manifest   型付きの値として読み書きされる、JAR マニフェストのメイン属性
+
+% 1 1 0 1c5e6bca5ee8078c0cf52adb6f39c165
+
+@ 0 5 0 1ba259f8eca894300952b21faa4dfbed
++       `Manifest` は JAR の `META-INF/MANIFEST.MF` のメインセクションであり、属性の名前からそのテキストへのマップとして保持される。
++       属性は `manifestAttributes` パッケージのオブジェクトによって名付けられ、属性の読み書きはその属性自身の型を通じて行われる。`manifest(MainClass)` は `Optional[Fqcn]` であり、`MainClass(fqcn"…")` は `Fqcn` からエントリーを作る。
+
+% 2 1 0 1f9ca33e6522ff310f251e47bb93ec83
+
+% 3 1 0 0786a30e7f8871660ca73a806a87930b
+
+% 4 1 0 0c24c9c312e8d11f1ce85926ecf9825e
+
+% 5 1 0 1bf20e20a557b0e5159d342cb678be4d
+
+% 7 1 0 083c7d9addfe41b816c0ff0da50f2c2f
+
+% 0 1 0 0187d5edf0d62cf31cc9ea79aad2966d
+
+% 0 1 0 1850e55a38b7f13411c3f87fcb482e84
+
+% 0 1 0 11421236e945d1500c894ec4c6bc8b9b
+
+% 1 1 0 1dd225ce0d61038e1409540e863231db
+
+@ 0 4 0 1c7e002f024f6b4b08cd5d72b2002d1c
++       マニフェストは `Data` について `Streamable` かつ `Aggregable` なので、`#serialize` で直列化することも、バイトが期待されるところへどこでもストリームすることもでき、`read[Manifest]` で任意のバイトのソースから読み戻せる。
++       直列化は `java.util.jar.Manifest` を通じて行われるので、この形式の 72 バイトでの行の折り返しと継続行は、呼び出し側に代わって処理される。
+
+% 0 1 0 0dd8b53c8a68d3ca1f393ce9031fc576
+
+% 1 1 0 0115925e294dcba60397b8543bf343da
+
+% 1 1 0 0f64fdbe6322ad11195d9306650eb109
+
+@ 0 9 0 0f7c98a0aa393de8101f62990fc2e3e3
++   entry .apply   与えられたエントリーからなるマニフェスト
++       `Manifest(entries*)` は `Manifest.Entry` の値を受け取る。これは通常、属性をその値に適用して作る。`Manifest(ManifestVersion(()), MainClass(fqcn"com.example.Main"))` のように書く。
++       同じ属性に対する後のエントリーは、前のものを置き換える。
++   entry .streamable   マニフェストを `MANIFEST.MF` のバイトとしてストリームする
++   entry .aggregable   バイトのストリームからマニフェストを読む。`source.read[Manifest]`
++       メインセクションを `java.util.jar.Manifest` を通じてパースし、すべての属性の名前とテキストを保持する。エントリーごとのセクションは保持されない。
++   entry .addable   `manifest + entry`。属性を一つ追加するか置き換える
+
+% 1 1 0 13f5e403476991bd06eaff5a76d3134f
+
+% 2 1 0 1ad8acfde08e86cf08c37ef1fd24fce0
+
+% 1 1 0 12679d811b7ca49300d9751c86c8e3a8
+
+% 0 1 0 19916b9fb1ac3660034a48b336f0c574
+
+% 1 1 0 10e5f346c8f5b9c70af6ef8e9a6b8ff6
+
+@ 0 4 0 00e96d701aa0ca9110fe174f532259be
++   entry .subtractable   `manifest - attribute`。オブジェクトによって属性を取り除く
++       `manifest - MainClass` は `Main-Class` 属性を持たないマニフェストである。存在しない属性を取り除いても、マニフェストは元のままである。
++   entry .Attribute   キーのリテラル型によって名付けられた、マニフェストの属性
+
+% 1 1 0 1d3f9747fa2de5ad0e4c4366a258a29a
+
+@ 0 5 0 0e7c740b56b6d9e21a52e439d3fd4263
++         `manifestAttributes` のオブジェクトは `Manifest.Attribute["Main-Class"]` などを継承する。
++         属性のキーはそのリテラルの型パラメーターであり、そのリテラル型に対する `EncodableManifest` と `DecodableManifest` のインスタンスが、値が何であるかを決める。`"Main-Class"` には `Fqcn`、`"Manifest-Version"` には `Unit`、`"Created-By"` には `Text` である。
+
+@ 0 1 0 1eb588f0a38b5433033dc749ba08f9bd
++         新しい属性は同じ形のオブジェクトであり、そのキーに対するインスタンスを伴う。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 115b736eec875da30479e7773eda7284
+
+% 0 1 0 0fa2c88b87a00cd1134f48463d4e50c5
+
+% 0 1 0 1cb916c035354c9e19d206771b65b998
+
+% 0 1 0 0ca1d71d6db29b64087110e6794d6863
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 10 0 026bb09db3200e0b035cd6c0a79a8147
++     entry #key   マニフェストに現れるとおりの、属性の名前
++     entry #parse   `DecodableManifest` を通じて、テキストをこの属性の値としてデコードする
++         `MainClass.parse(t"com.example.Main")` は `Fqcn` である。
++         キーの `DecodableManifest` インスタンスと、それが必要とするもの（`Main-Class` なら `Tactic[Fqcn.Error]`）を必要とする。
++     entry #apply   この属性の型の値に対するマニフェストのエントリーを作る
++         `MainClass(fqcn"com.example.Main")` は `Manifest.Entry` である。値の型はキーの `EncodableManifest` の `Topic` なので、インスタンスのない属性はそもそも適用できない。
++   entry .Entry   キーとエンコードされたテキストとしての、マニフェストの一つの属性
+
+% 1 1 0 17c9bd4742835b3b02c63b838093290e
+
+@ 0 9 0 1998d6788c72e1ef00baff58c3b8b07a
++         `MainClass(fqcn"com.example.Main")` のように `Manifest.Attribute#apply` によって作られ、`Manifest(entries*)` で集められるか、`+` で追加される。
++     entry #key     属性の名前
++     entry #value   テキストとしてエンコードされた、属性の値
++   entry #entries   すべての属性の名前とテキストのマップ
++   entry #apply   属性の値をその型にデコードしたもの。マニフェストにその属性がなければ `Unset`
++       `manifest(MainClass)` は `Optional[Fqcn]` である。
++       キーの `DecodableManifest` インスタンスを必要とする。
++   entry #serialize   形式が要求するとおりに折り返された、`MANIFEST.MF` ファイルのバイトとしてのマニフェスト
+
+@ 0 1 0 1638bc55b9fa1f89074df56dbbc71d99
++ entry .EncodableManifest   マニフェストの属性の値をテキストとして書くための、属性の名前をキーとする型クラス
+
+% 1 1 0 185094c9203c6ff80e6543854ebf1858
+
+@ 0 3 0 02128c9a2a15fedf0bc2ad32124c9525
++       インスタンスは `"Main-Class" is EncodableManifest of Fqcn` と書く。`Self` はリテラル型としての属性の名前で、`Topic` はその値の型である。
++       これによって、`MainClass(fqcn"…")` は `Fqcn` だけを受け取り、それ以外を受け取らない。
+
+@ 0 4 0 03c4d4cc622a21b31b1d73b96b60eec0
++       コンパニオンにインスタンスがあるキーは三つだけである。`Main-Class`（`Fqcn`）、`Manifest-Version`（`Unit`、常に `1.0` と書かれる）、`Created-By`（`Text`）である。
++       `ClassPath` のように、インスタンスを持たない `manifestAttributes` の属性は、インスタンスが与えられるまで適用できない。
+
+% 1 1 0 1e49721e9e7459be06c0ab5f955b17ba
+
+% 1 1 0 1f74f17c13f3ff3b18b2974b61479ae6
+
+@ 0 4 0 03014f6bc088493e0db0cb49dc0e272e
++   entry .mainClass   `Fqcn` から `Main-Class` を書く
++   entry .manifestVersion   `()` から `Manifest-Version` を書く。常に `1.0` となる
++   entry .createdBy   テキストから `Created-By` を書く
++   entry #encode   値を属性のテキストとして書く
+
+@ 0 1 0 082ed426ccc9c0fc15a02f078bb9f275
++ entry .DecodableManifest   マニフェストの属性のテキストを型付きの値として読むための、属性の名前をキーとする型クラス
+
+% 1 1 0 13db33e95a4f857b00830227c7f43960
+
+@ 0 3 0 1ec56832d9fc3bd2141f71efbbccb6dd
++       インスタンスは `"Main-Class" is DecodableManifest of Fqcn` と書く。`Self` はリテラル型としての属性の名前で、`Topic` はそのテキストのデコード先の型である。
++       これによって、`manifest(MainClass)` は `Optional[Fqcn]` になる。
+
+@ 0 4 0 19d1d79112668e951c3da2135d03bafa
++       コンパニオンには、`Main-Class`（`Fqcn`。`Tactic[Fqcn.Error]` を必要とする）と `Created-By`（`Text`）のインスタンスがある。
++       `Manifest-Version` を含む他の属性にはインスタンスがないので、インスタンスが与えられるまで、`Manifest#apply` を通じてそれらを読むコードはコンパイルされない。それでも `Manifest#entries` はそれらのテキストを保持している。
+
+% 1 1 0 1f153163e430578a04bb89871c5606ca
+
+% 1 1 0 06523eebaa3b151c0577e6b972e2df1b
+
+@ 0 3 0 0fc44e939a76e667061fd9ea2dd6e973
++   entry .mainClass   `Main-Class` を `Fqcn` として読む。有効なクラス名でなければ `Fqcn.Error` を発生させる
++   entry .createdBy   `Created-By` をテキストとして読む
++   entry #decoded   属性のテキストをその値にデコードする
+
+@ 0 1 0 1b88ce97f70362811f1bf6c185c91e65
++ entry .manifestAttributes   標準の JAR マニフェストの属性。`Manifest` を読み書きするためのオブジェクトとして
+
+% 1 1 0 0d0d2bd303cefb280aaadbef97f10172
+
+@ 0 3 0 07e41d69168da77606d9cbff349b4fec
++       各オブジェクトは、JAR の仕様が定める属性の名前の一つをキーとする `Manifest.Attribute` である。
++       これらは普通のオブジェクトなので、`import manifestAttributes.*` ですべてをスコープに取り込める。
+
+% 2 1 0 1afebf64e735ed450a33e57437c0b49c
+
+% 3 1 0 0e17a0cc5f7eb1a406d75cfb0b436468
+
+% 4 1 0 1c14f262d9d4f8361bf3485633b25994
+
+% 5 1 0 0aadd9971fc715ea0058f11b63c6562f
+
+% 7 1 0 10eb8be110ccd8b614a75762d79e72c6
+
+% 0 1 0 1d84d74168f571dd1b69c44690bd7aee
+
+% 1 1 0 06b4bb366101967f067c7c778015e14b
+
+@ 0 18 0 029bf695f49abfd50e6558ddb56baa1c
++       型付きの値は、`EncodableManifest` と `DecodableManifest` のインスタンスを通じて、`MainClass`、`ManifestVersion`、`CreatedBy` にだけ存在する。それ以外のものは、`-` のため、そしてプログラムが提供するインスタンスのために、属性を名付ける。
++   entry .ManifestVersion   `Manifest-Version`。マニフェストの形式のバージョンで、`()` から `1.0` として書かれる
++   entry .MainClass   `Main-Class`。`java -jar` がその `main` メソッドを実行するクラス。`Fqcn` として
++   entry .CreatedBy   `Created-By`。アーカイブを作ったツール。テキストとして
++   entry .ClassPath   `Class-Path`。クラスパスに加える他の JAR。このアーカイブからの相対パス
++   entry .ContentType   `Content-Type`。同梱されたリソースの MIME タイプ
++   entry .ExtensionList   `Extension-List`。アーカイブが必要とするオプションパッケージ
++   entry .ExtensionName   `Extension-Name`。アーカイブが提供するオプションパッケージの名前
++   entry .ImplementationTitle   `Implementation-Title`。実装の名称
++   entry .ImplementationVendor   `Implementation-Vendor`。実装を作った組織
++   entry .ImplementationVersion   `Implementation-Version`。実装のバージョン
++   entry .Sealed   `Sealed`。アーカイブのパッケージが、他所のクラスに対してシールされているかどうか
++   entry .SignatureVersion   `Signature-Version`。署名ファイルの形式のバージョン
++   entry .SpecificationTitle   `Specification-Title`。実装された仕様の名称
++   entry .SpecificationVendor   `Specification-Vendor`。仕様を所有する組織
++   entry .SpecificationVersion   `Specification-Version`。実装された仕様のバージョン

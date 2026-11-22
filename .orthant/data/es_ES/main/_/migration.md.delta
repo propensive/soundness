@@ -1,0 +1,20 @@
+orthant 2 language
+
+@ 0 10 0 07718803880c96c903ec955211037dd5
++ - Los cambios desde la última versión se acumulan en `doc/work/migration/<version>.md`, nombrado desde el
++   principio según la versión de la que formarán parte (por ejemplo, `doc/work/migration/0.71.0.md` tras
++   Soundness 0.70.0). Cada PR que introduce un cambio material en la API pública o en el
++   comportamiento observable le añade una entrada; el primero de esos cambios tras una versión lo
++   crea.
++ - Etiquetar la versión publica el fichero tal como está, así que ningún cambio tiene que integrarse
++   antes. La publicación se niega a ejecutarse mientras falte `<version>.md`, o mientras haya notas de
++   otra versión sin publicar, de modo que las notas no pueden omitirse ni quedar varadas bajo la
++   versión equivocada. Los ficheros publicados no se editan después salvo para corregir errores.
++ - El resultado es un fichero por versión, cada uno de los cuales describe exactamente los cambios
++   entre la versión anterior y esa.
+
+@ 0 4 0 05ef0321cd1f045d1da39699bdbda558
++ Para actualizar un proyecto de la versión `A` a la versión `B`, indica a un agente LLM que lea cada
++ fichero `doc/work/migration/<v>.md` con `A < v <= B`, en orden ascendente de versión, y que aplique al
++ código del proyecto los cambios que describe cada uno. Por ejemplo, pasar de 0.64.0 a 0.67.0
++ significa leer `0.65.0.md`, `0.66.0.md` y `0.67.0.md`, en ese orden.

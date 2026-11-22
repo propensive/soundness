@@ -1,0 +1,1762 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 104f03e30b3d2d45037e3b4668192a05
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0b581bc36db2c77001f3bd5d84c383ee
++ info   die Schnittstellen-Typklassen, auf die sich Bibliotheken einigen, sodass jede die Typen der anderen annehmen kann, ohne von ihnen abzuhängen
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 05c7e78f6d38efd81b7e0f36f2194e11
++     _Anticipation_ enthält die kleinen Typklassen, über die die Bibliotheken von Soundness und
++     Bibliotheken außerhalb davon Werte austauschen, ohne voneinander abzuhängen. Eine
++     Bibliothek, die eine Datei öffnet, braucht *irgendeinen* Pfad, eine Bibliothek, die
++     schläft, braucht *irgendeine* Dauer, und eine Bibliothek, die etwas abruft, braucht
++     *irgendeine* URL; keine von ihnen sollte zwischen galileis `Path`, `java.nio.file.Path`
++     und `java.io.File` wählen müssen oder zwischen aviations `Instant`, `java.time.Instant`
++     und einem `Long`. Jede verlangt stattdessen einen Typ, der
++     `Abstractable across Paths to Text` oder `Instantiable across Instants from Long` ist, und
++     die Bibliothek, der der konkrete Typ gehört, stellt die Instanz bereit.
+
+@ 0 5 0 04bbb62b4daa1e1a062abc2eb7b22929
++     Die Typklassen liegen hier, getrennt von jeder Implementierung, weil die Abhängigkeit von
++     beiden Seiten *in* ein gemeinsames, fast leeres Modul zeigen muss. Definierte `galilei`
++     die Pfad-Typklasse, hinge eine Bibliothek, die Pfade annimmt, von der ganzen
++     Dateisystembibliothek ab; definierte die Bibliothek sie, hinge `galilei` von ihr ab. Hier
++     hängt keine von der anderen ab: Beide hängen von `anticipation` ab, das von fast nichts
++     abhängt.
+
+@ 0 3 0 07ebb4e65a5a7f740aa2ce0d8383f781
++     Zwei Typklassen tragen den größten Teil des Verkehrs, jede parametrisiert durch eine
++     **Domäne**, einen versiegelten Markertyp, der das ausgetauschte Konzept benennt (`Paths`,
++     `Urls`, `Instants`, `Durations`, `Uuids`, `Hostnames`, `EmailAddresses`, `IpAddresses`,
++     `HttpStreams`, …):
+
+@ 0 6 0 0f8c77ec1e1c25810600c2d597cf2127
++     - `Abstractable across Domain to Result`: Ein Wert wird zu seiner **generischen**
++       Darstellung, `value.generic`: Text für einen Pfad oder eine URL, Nanosekunden für eine
++       Dauer, Millisekunden seit der Epoche für einen Zeitpunkt.
++     - `Instantiable across Domain from Origin`: Eine generische Darstellung wird zu einem Wert
++       des vom Aufrufer gewählten Typs, `target(origin)` innerhalb einer Methode mit der
++       Schranke `[target: Instantiable across Paths from Text]`.
+
+@ 0 4 0 10c34431858405da13ea6e5a5159fcee
++     So wird ein Wert vom Typ einer Bibliothek in den einer anderen umgewandelt, indem er
++     abstrahiert und das Ergebnis instanziiert wird, ohne dass eine Bibliothek von der anderen
++     weiß. Die generische Form eines galilei-Pfads ist sein Text, `t"/home/work"`, und dieser
++     Text wird je nach importierter Pfadschnittstelle zu einem `java.nio.file.Path` oder einem
++     `java.io.File`:
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 168cb8cc01f481151bdc0b37a94d265a
+
+% 1 1 0 06034752de0ee1d41799e86e0ed57dcc
+
+% 2 1 0 0cb053cdb6feb551104f421e408050ad
+
+% 3 1 0 0fecd0800b17909f0b1510bbda3ee089
+
+% 0 1 0 04de6bb38568b12d1bf2c620e8f1d2a1
+
+% 2 1 0 09c53fb3c6d9ce7e0022f297a919d409
+
+% 3 1 0 0c84bd04aa7085b911fde78ba3899843
+
+% 4 1 0 1d4ae9b82077320311a485b46aa114fa
+
+% 6 1 0 0408596233c34168082c49c9140192d5
+
+% 0 1 0 1c1dca966ad30baf0cfeabbf3d92cf21
+
+% 0 1 0 03a60220cf0bf7ef0b9bebf0905fcef8
+
+% 1 1 0 14816b2a065e7998096d4e8d45b878c9
+
+% 2 1 0 1b9d637c8b98244f0b582f2682d64888
+
+% 3 1 0 1ba4dfddd23df10e13b2d60fd58bd8c9
+
+% 0 1 0 009347961a491aaa046c7a72f54131ab
+
+% 2 1 0 1a15157d635938cc10debb2f195d7131
+
+% 3 1 0 06907f182e312c4b09d4904f3ca1b164
+
+% 4 1 0 179ed5a321e56ac218230beb1c7565e2
+
+% 6 1 0 09d293e573825b2b16577b2f01399dbb
+
+% 0 1 0 07b5027d1eb81e0200cb1718da6f41ff
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 15 0 1a6cc48960a755ad1d3ff1364b4501e8
++     Die eigenen Instanzen eines Soundness-Typs liegen in seinem Begleitobjekt (`Path.generic`,
++     `Url.abstractable`, `Instant.generic`) und brauchen daher keinen Import. Eine Methode mit
++     der Schranke `[target: Instantiable
++     across Paths from Text]` nennt aber keinen konkreten Typ, dessen Begleitobjekt durchsucht
++     werden könnte, und ein Java-Typ hat kein Begleitobjekt, in das Soundness schreiben könnte;
++     daher werden die Instanzen, die eine Darstellung *wählen*, in **Auswahlpaketen** angeboten,
++     einem je Domäne, und beim Namen importiert: `pathInterfaces`, `urlInterfaces`,
++     `instantInterfaces`, `durationInterfaces`, `uuidInterfaces`, `hostnameInterfaces`,
++     `emailAddressInterfaces` und `ipAddressInterfaces`. Jedes Paket wird in `anticipation` von
++     der Bibliothek deklariert, der der angebotene Typ gehört: diuretic steuert die Java-Typen
++     bei (`javaNioPath`, `javaTimeInstant`, …), aviation sein `Instant` und `Quantity`, galilei
++     und serpentine die Pfad-Repräsentanten, inimitable `Uuid` und urticose seine URL- und
++     Netzwerktypen. Ihre Namen folgen den hauseigenen Herkunftswörtern: Ein Java-Typ behält
++     seinen Typpfad-Namen (`javaNioPath`, `javaUtilDate`), und der eigene Typ von Soundness heißt
++     `soundness…` (`soundnessUrl`, `soundnessUuid`). Die Givens werden beim Namen importiert,
++     denn `import
++     pkg.*` importiert keine Givens: `import pathInterfaces.javaNioPath`.
+
+@ 0 3 0 14a846823285f9e00fc54aea80d67e98
++     Ein bloßer `Long` kann nicht sagen, ob er Nanosekunden oder Millisekunden zählt, und hat
++     daher keine einheitenunabhängige Instanz: `abstractables` und `instantiables` enthalten je
++     Einheit ein Given, nach ihr benannt, und eine Datei importiert genau eine Lesart einer
++     Dauer.
+
+@ 0 7 0 06949f528373a45311b36fb61a8b4a55
++     Der Rest des Moduls ist dieselbe Idee, angewandt auf andere Konzepte: `Text` selbst (der
++     opake String, den alle Bibliotheken teilen), `Data` für Bytes, `Encodable` für das Kodieren
++     in ein benanntes Format, `Loggable`/`LogSink`/`Transcribable` für Logging ohne
++     Logging-Laufzeitsystem, `Printable` und `Termcap` für die Darstellung im Terminal,
++     `Chromatic`, `Chroma` und die Pixel-`Channel`s für Farbe, `Graphical` für Bilder,
++     `Focusable` für Browser-Lokatoren, `Nominable` für Namen, `Textualizable` für die
++     Umwandlung in Text und `Durable` für Capabilities, die sich gefahrlos über Threads hinweg
++     teilen lassen.
+
+@ 0 7 0 1b88ae07a86f64f61eb089a34984e131
++     Die Bibliothek ist in viele kleine, plattformneutrale Komponenten aufgeteilt, sodass eine
++     Bibliothek nur von den Konzepten abhängt, die sie austauscht: `anticipation.generic`
++     (`Abstractable`, `Instantiable`, `Representative`), `text`, `opaque`, `codec`, `color`,
++     `gfx`, `focus`, `http`, `log`, `net`, `path`, `print`, `time`, `url` und `uuid`. Alles wird
++     in das Umbrella `soundness` exportiert, außer `Channel`, das mit dem einer anderen
++     Bibliothek kollidiert und als `anticipation.Channel` erreicht wird; die Auswahlpakete
++     verschmelzen mit den gleichnamigen Blöcken des Umbrella.
+
+% 0 1 0 0ea153813f892a56128abb4510f5b068
+
+% 0 1 0 019b2165bca4bb8e1a80a35be8bdab0f
+
+% 0 1 0 0eae5ae19c2bddf00eeb65a4a54b248e
+
+% 0 1 0 1cb99be0c6364ae90bcaca8d0f0393d0
+
+% 0 1 0 0096fefc9cb1ad13188f4a7db63833ac
+
+% 0 1 0 17ab5b84ea3244ad108c0b15ead1e019
+
+@ 0 1 0 0d0587df130cc7b70d41a238281b7f49
++ entry .Abstractable   eine Typklasse, die einen Wert in die generische Darstellung einer Domäne überführt
+
+% 1 1 0 04f6e6f6dfbc837614e275e80a245190
+
+@ 0 6 0 1beaac013a01fc2b1466bca2698bc342
++       `value is Abstractable across Domain to Result` sagt, dass sich `value` auf ein `Result`
++       zurückführen lässt, die Darstellung, auf die sich alle Bibliotheken für `Domain` einigen:
++       `Text` für `Paths` und `Urls`, ein `Long` aus Nanosekunden für `Durations`, ein `Long` aus
++       Millisekunden seit der Epoche für `Instants`, ein `HttpStreams.Content` für
++       `HttpStreams`. Eine Bibliothek, die Pfade, Dauern oder URLs *verbraucht*, beschränkt ihren
++       Parameter damit und ruft `#generic` auf; so nimmt sie jeden Typ mit einer Instanz an und
++       hängt von keinem davon ab.
+
+% 2 1 0 0aaac7607d66e650032d0620ef2518d3
+
+% 3 1 0 0c04ad7688d57438113251aba7e398c0
+
+% 0 1 0 18e8a255184a4eb50c81631eab224793
+
+% 0 1 0 17137a92cbb1b471104a7b9b8499ef59
+
+% 1 1 0 022dabb688d7f73b01bf6f9857698759
+
+@ 0 5 0 07d40850f52f914017df9eb69f1a807f
++       Instanzen liegen im Begleitobjekt des abstrahierten Typs (`Path.generic`,
++       `Url.abstractable`, `Moment.generic`) und werden daher ohne Import gefunden; die Instanz
++       eines Java-Typs wird in einem Auswahlpaket wie `pathInterfaces` oder `instantInterfaces`
++       angeboten. Eine bloße `Long`-Dauer oder ein bloßer `Long`-Zeitpunkt hat Instanzen nur in
++       `abstractables`, eine je Einheit, beim Namen importiert.
+
+@ 0 1 0 0276ffc7e957b6350a4988f042564497
++       `Abstractable` ist eine reine Typklasse: Eine Instanz fängt nichts ein.
+
+% 0 1 0 0e2b0002c825fc571c88fc8893fbf3b9
+
+% 1 1 0 15d71a9310f7067e1f241b59d86eed9a
+
+@ 0 8 0 110deabe5b1001f705a2544f97e0c3fe
++   entry #genericize   führt einen Wert auf seine generische Darstellung zurück
++       Die Methode, die eine Instanz implementiert; `#generic` ist die Erweiterung, die ein
++       Aufrufer schreibt.
++   entry #generic   die generische Darstellung eines Werts: `value.generic`
++       Eine Erweiterung auf dem abstrahierten Typ. `path.generic` ist der Pfad als Text,
++       `duration.generic` seine Nanosekunden, `instant.generic` seine Millisekunden seit der
++       Epoche.
++   entry #contramap   eine Instanz für einen anderen Typ, indem dieser zuerst auf diesen abgebildet wird
++       `abstractable.contramap[Wrapper](_.inner)` abstrahiert einen `Wrapper` über dieselbe
++       Domäne zum selben Ergebnis. Die Funktion muss rein sein.
+
+@ 0 1 0 1f325206493606650c4d04bc2e7ba9b0
++ entry .Instantiable   eine Typklasse, die einen Wert aus der generischen Darstellung einer Domäne baut
+
+% 1 1 0 17ad1fb41d1c58900269ae4ee4eeaf84
+
+@ 0 4 0 0e6e7bcd6c3ab9ff1139c5c05df6a3a3
++       `target is Instantiable across Domain from Origin` sagt, dass sich ein `target` aus einem
++       `Origin` herstellen lässt, der Darstellung, auf die sich alle Bibliotheken für `Domain`
++       einigen. Eine Bibliothek, die Pfade, Zeitpunkte oder URLs *erzeugt*, beschränkt ihren
++       Ergebnistyp damit, sodass der Aufrufer den Typ wählt, den er erhält:
+
+% 2 1 0 174e3ef59f501d1c1f8d9ea0753a844a
+
+% 3 1 0 0681c5ef441611531dfe27f1418efebb
+
+% 2 1 0 0496f50e3fbf8fe30e289447299b8435
+
+% 1 1 0 1fc71762b371549e1d298e6a1bf8d4da
+
+@ 0 7 0 129c34de89d92b5805478ef7c0ba1db0
++       Der Name der Kontextschranke ist selbst die Instanz, also wendet `path(text)` sie an.
++       Instanzen für einen Soundness-Typ liegen in seinem Begleitobjekt; wo aber die Schranke
++       einer Methode keinen konkreten Typ nennt, wird die Darstellung gewählt, indem eine Instanz
++       beim Namen aus einem Auswahlpaket importiert wird, wie es `import pathInterfaces.javaNioPath`
++       oder `import
++       urlInterfaces.soundnessUrl` tut. Eine Instanz, die parst (eine `Uuid`, ein `Hostname`, eine
++       `HttpUrl`), braucht eine `Tactic` für ihren Fehler und fängt sie ein; deshalb ist
++       `Instantiable` eine verfolgte Typklasse und keine reine.
+
+% 0 1 0 1b31321e4b0a6b1f14931471bc33f912
+
+% 1 1 0 1e65862d9cfccc4e05662bcfb8f148ab
+
+% 1 1 0 03d1d36cc8cd558f15416b01112d29b6
+
+@ 0 6 0 042c94b414c870d91ac99fcc4ecf11ca
++   entry #apply   baut einen Wert aus seiner generischen Darstellung
++   entry #instantiate   baut einen Wert aus seiner generischen Darstellung: `origin.instantiate`
++       Eine Erweiterung auf dem Ursprungstyp, verfügbar, wo genau eine passende Instanz im
++       Geltungsbereich ist; bei mehreren wird stattdessen die Instanz angewendet (`#apply`).
++   entry #map   eine Instanz für einen anderen Typ, indem jeder Wert abgebildet wird, den diese baut
++       Das Ergebnis fängt diese Instanz und die Funktion ein.
+
+@ 0 1 0 182a48c624b34143036274b03cbff48f
++ entry .Representative   Nachweis, dass ein Typ für eine Domäne stehen darf, etwa ein Pfadtyp für `Paths`
+
+% 1 1 0 071e0f8a5888b2bf15155b268c072022
+
+@ 0 6 0 06e65c316a5f1be003c5d2aafbe6c6e1
++       `path is Representative of Paths` kennzeichnet einen Typ als zulässige Darstellung einer
++       Domäne, wo die API den vom Aufrufer gewünschten Typ nennen muss, ohne schon etwas
++       umzuwandeln: `workingDirectory[path: Representative of Paths]` und
++       `temporaryDirectory[path: Representative of Paths]` in ambience nehmen nur einen Typ mit
++       diesem Nachweis an und instanziieren ihn dann über `Paths.Resolver`. Es ist ein
++       versiegelter Marker ohne Member, dessen Instanzen gelöscht sind (`inline given … = !!`)
++       und nichts kosten.
+
+% 2 1 0 1f0528eeddbc98a4056ee41375c49f5e
+
+% 3 1 0 08e4f8d78d14187b01bde6453028ece7
+
+% 4 1 0 1f42b8a6c0c685701ef2178a08957b35
+
+% 0 1 0 1cf4664307464f100bbb951c649b1048
+
+% 0 1 0 10ae369a1d08d6a100b85ddc17d77337
+
+% 0 1 0 104da591fb4564b705450a16d2e3b343
+
+% 1 1 0 0090b244b50385a40c08dc1e378e0812
+
+@ 0 4 0 0998b73a421528ac1df97a8d3e094aff
++       galileis Plattformpfade (`Path on Linux`, `Path on Windows`, `Path on MacOs`, `Path on
++       Local`, `Path on Posix`) tragen ihren Nachweis im Begleitobjekt ihrer Plattform und in
++       `pathInterfaces`; serpentine macht `Text` zu einem Repräsentanten
++       (`pathInterfaces.textPath`), und diuretic `java.nio.file.Path` und `java.io.File`.
+
+% 1 1 0 0757e7d0115a8392054028265d7bd129
+
+% 1 1 0 175820392533a57705f20165e57045b4
+
+@ 0 1 0 0098f007f68ad7b605ae460dd6ec3636
++ entry .Paths   die Domäne der Dateisystempfade, deren generische Darstellung Text ist
+
+% 1 1 0 16239823b8475733079e0dc25825f04a
+
+@ 0 6 0 09d1963f95d8190608a6e77b257688f1
++       Ein versiegelter Marker, der das Konzept eines Pfads benennt und als `Domain` von
++       `Abstractable`, `Instantiable` und `Representative` dient. Die generische Form eines Pfads
++       ist sein Text, so wie das Dateisystem ihn schreibt: `path is Abstractable across Paths to
++       Text` liest einen Pfad beliebigen Typs, und `path is Instantiable across Paths from Text`
++       erzeugt einen. Ein zweiter Ursprung, `Paths.Trusted`, kennzeichnet Text, der vom
++       Betriebssystem stammt und daher keine Validierung braucht.
+
+% 2 1 0 14f9b1103f8a921202e2a4bc55f9b228
+
+% 3 1 0 1a8c9057a51675631f9e1b44d102ac24
+
+% 0 1 0 0a734de4ff3ca96607c69565bb660cdf
+
+% 1 1 0 0edad6a9509119c40e18530ec664554a
+
+@ 0 2 0 1ef2533a937df4811de5f67f79e7b7ce
++       Instanzen: der `Path` von galilei und serpentine in seinem Begleitobjekt;
++       `java.nio.file.Path` und `java.io.File` in `pathInterfaces`, von diuretic.
+
+% 1 1 0 1615285336b60fcf05f769a6da69e922
+
+% 1 1 0 1e9a333349c2b50f059d09c29d2c6152
+
+@ 0 1 0 0f5b7e8ef5f7804f1765a1454da6c0cc
++   entry .Trusted   Pfadtext, der bekanntermaßen gültig ist, etwa ein vom Betriebssystem gemeldetes Verzeichnis
+
+% 1 1 0 1c1cca5062c700e216c99f32cdb44b2e
+
+@ 0 6 0 18ff8253952e088b038eba12f30c48a8
++         Ein `Instantiable`-Ursprung, der sich von bloßem `Text` unterscheidet: Ein Pfadtyp, der
++         `Instantiable across Paths from Paths.Trusted` ist, lässt sich daraus ohne die
++         Validierung (und die `Tactic`) herstellen, die das Instanziieren aus nicht
++         vertrauenswürdigem Text braucht. serpentines `Path` hat eine solche Instanz;
++         `Paths.Resolver` bevorzugt sie.
++     entry #text   der vertrauenswürdige Pfadtext
++   entry .Resolver   löst den Text eines Verzeichnisses in den angeforderten Pfadtyp auf und bevorzugt vertrauenswürdige Instanziierung
+
+% 1 1 0 136b5546990a182005da1feefdde9367
+
+@ 0 10 0 115f0a0432ec1d650ab891e30701f99c
++         Der Kontextwert hinter `workingDirectory` und `temporaryDirectory` von ambience: Mit
++         dem Text eines Verzeichnisses, das das Betriebssystem gemeldet hat, baut
++         `resolver(text)` den vom Aufrufer gewählten Pfadtyp. Die Instanz `.trusted` seines
++         Begleitobjekts, über `Instantiable across Paths from Trusted`, hat Vorrang vor der
++         Rückfall-Instanz `fromText`, die von `Resolver2` geerbt wird und aus bloßem `Text`
++         instanziiert. Die Wahl trifft die gewöhnliche implizite Suche statt eines Inline-
++         `summonFrom`, damit sie auch funktioniert, wenn der aufrufende Code in einem gestagten
++         Quote expandiert wird.
++     entry .trusted   löst über die Instanz `Instantiable across Paths from Trusted` des Pfadtyps auf
++     entry #apply   der Pfad für den Text eines Verzeichnisses
++   entry .Resolver2   der Elterntyp niedrigerer Priorität des Begleitobjekts von `Paths.Resolver`
+
+% 0 1 0 1d67946842fbefea114a1c07674d3027
+
+% 1 1 0 02a2f799681a6c9808fd96975d2255e2
+
+@ 0 3 0 01e97701d2d9b094055942b6c8d3eb8b
++         Enthält den Rückfall-Resolver, sodass der vertrauenswürdige im Begleitobjekt von
++         `Paths.Resolver` bevorzugt wird, wo beide passen.
++     entry #fromText   löst über die Instanz `Instantiable across Paths from Text` des Pfadtyps auf
+
+@ 0 1 0 0a093c6867ce545e060d9ff7c79b10f6
++ entry .Nominable   eine Typklasse, die den Namen eines Werts als Text liefert, etwa das letzte Segment eines Pfads
+
+% 1 1 0 135e540f20d9d57a1bc628e40316936d
+
+@ 0 4 0 03d57b517eba0d430663fe1c70fc104c
++       `value is Nominable` stellt `#name` bereit: für einen serpentine-`Path` das letzte Segment
++       seines Abstiegs oder seine Wurzel, wenn er keines hat. Eine Bibliothek, die nach Namen
++       anzeigt oder sortiert, verlangt ein `Nominable` statt eines bestimmten Pfadtyps. Es ist
++       eine reine Typklasse.
++   entry #name   der Name des Werts
+
+@ 0 1 0 045b44fbf8aa985d0dfec6b8a8e58f5a
++ entry .Urls   die Domäne der URLs, deren generische Darstellung Text ist
+
+% 1 1 0 0ae4386d699a5e29124b3c489435ca71
+
+@ 0 5 0 0935cf876189a63311cee628e9a4bc39
++       Ein versiegelter Marker, der das Konzept einer URL benennt. `url is Abstractable across
++       Urls to Text` liest eine URL beliebigen Typs als Text, und `url is Instantiable across
++       Urls from Text` erzeugt eine. urticoses `HttpUrl` hat beides in seinem Begleitobjekt, und
++       die Instanziierung wird auch beim Namen als `urlInterfaces.soundnessUrl` angeboten;
++       `java.net.URL` ist `urlInterfaces.javaNetUrl`, von diuretic.
+
+% 0 1 0 1239d8c416dc753117c18d4544a7b78a
+
+@ 0 1 0 06bdd0f2310987701d510803b8daafd1
++ entry .Instants   die Domäne der Zeitpunkte, deren generische Darstellung Millisekunden seit der Epoche sind
+
+% 1 1 0 099432710f55b2221cfd3a01963155d3
+
+@ 0 4 0 1c66f8bf0c748fe01d97e864a3360c44
++       Ein versiegelter Marker, der das Konzept eines Zeitpunkts benennt. Die generische Form ist
++       ein `Long` aus **Millisekunden** seit der Unix-Epoche:
++       `instant is Abstractable across Instants to Long`
++       und `instant is Instantiable across Instants from Long`. Eine Bibliothek, die plant oder
++       Zeitstempel setzt, verlangt eines davon statt aviations `Instant` oder `java.time`.
+
+% 2 1 0 10b01e1f14ce62740e73598b1888c854
+
+% 3 1 0 0982032437df38980e2a91f20185406d
+
+% 4 1 0 1147547e7b1009bd08446ea2629d498f
+
+% 0 1 0 1f985c8b19433f7c1c3a0405811ad5d0
+
+% 0 1 0 05e31293d65641a30879e316b7614dc3
+
+% 0 1 0 065fa0d1a5cfb31616ace25295cc2f05
+
+% 1 1 0 02b8abc11f7da46a19ecf214650ae97d
+
+@ 0 5 0 0b5efbcaab79f49618b7fe3201f37df0
++       Instanzen: aviations `Instant` und `Moment` in ihren Begleitobjekten und beim Namen in
++       `instantInterfaces`; `java.time.Instant`, `java.util.Date` und ein roher `Long` in
++       `instantInterfaces`, von diuretic; ein bloßer `Long` in `abstractables` und
++       `instantiables` als `epochMillisecondsAbstractable` und `epochMillisecondsInstantiable`.
++       Zu beachten ist die Asymmetrie zu `Durations`, deren `Long` Nanosekunden zählt.
+
+% 0 1 0 1a258d977e2ca21610b0b963fb32ab23
+
+% 1 1 0 032b996083cdef5307ee12aacede193a
+
+@ 0 1 0 197662021fd5a708199c044862c7b907
++ entry .Durations   die Domäne der Zeitdauern, deren generische Darstellung Nanosekunden sind
+
+% 1 1 0 162c0700e347c1e2039aff0b05383726
+
+@ 0 5 0 13133c295dba1194028cc56deea87e80
++       Ein versiegelter Marker, der das Konzept einer Dauer benennt. Die generische Form ist ein
++       `Long` aus **Nanosekunden**: `duration is Abstractable across Durations to Long` und
++       `duration is
++       Instantiable across Durations from Long`. `sleep` und `snooze` von parasite und jeder
++       Timeout in Soundness nehmen jeden Typ mit einer Instanz an, sodass ein aviation-
++       `Timespan`, eine quantitative `Quantity[Seconds[1]]` und ein bloßer `Long` in einer
++       gewählten Einheit alle dienen.
+
+% 2 1 0 066990e45a8b309b181d8934fb439135
+
+% 3 1 0 1a17b4b6ceae0e4b131ac17285ccbcf8
+
+% 4 1 0 0322828e2c965ce5022bb1f583ed807c
+
+% 0 1 0 0a63c2b8c7a8226f1ad4e7c7dd037945
+
+% 0 1 0 077382325cdd0b590fdd6daa0a96745d
+
+% 0 1 0 029b06ac264e5e27022d134ff61fe296
+
+% 1 1 0 00221f099fadd1070e10bd6ff057f3a1
+
+@ 0 5 0 035c22f359ba8b9e017b66d57ba3d5b5
++       Ein bloßer `Long` hat keine Einheit und daher nur durch Import eine Instanz, eine je
++       Einheit; die drei teilen einen Typ, sodass genau eine in eine Datei importiert werden
++       darf. Instanzen: aviations `Timespan` und `Quantity` in ihren Begleitobjekten und beim
++       Namen als `durationInterfaces.aviationDuration`; ein roher Nanosekunden-`Long` als
++       `durationInterfaces.javaLongDuration`, von diuretic.
+
+% 1 1 0 1b3f9dfe2de9fd5011f051b80a5e9175
+
+% 0 1 0 131f1b58cc929b820db0620c4a068f03
+
+@ 0 6 0 1ba35022842cc5410b34f366c78d1b52
++   entry .ms   wandelt zwischen Nanosekunden und Millisekunden um, inline
++       Zwei Überladungen: `ms(long: Long): Double` skaliert einen `Long` um eine Million hoch,
++       und `ms(double:
++       Double): Long` skaliert einen `Double` um eine Million herunter und schneidet ab. Die
++       Richtung bestimmt also der Typ des Arguments, nicht der Name.
++   entry .ns   wandelt zwischen einer `Long`- und einer `Double`-Anzahl von Nanosekunden um, inline
++       `ns(long: Long): Double` erweitert; `ns(double: Double): Long` schneidet ab.
+
+@ 0 3 0 02c8d91084128666082356872fa45f65
++ entry .Dates   die Domäne der Kalenderdaten, als Marker für `Abstractable` und `Instantiable`
++     Ein versiegelter Marker, der das Konzept eines Datums benennt, ohne eigene feste
++     generische Darstellung: Eine Instanz gibt ihren `Result`- oder `Origin`-Typ an.
+
+@ 0 3 0 07c2498af6fb5f101a2f834bc69dc659
++ entry .Times   die Domäne der Tageszeiten, als Marker für `Abstractable` und `Instantiable`
++     Ein versiegelter Marker, der das Konzept einer Tageszeit benennt, ohne eigene feste
++     generische Darstellung: Eine Instanz gibt ihren `Result`- oder `Origin`-Typ an.
+
+@ 0 5 0 1d14c56fbba9ae5d105fdd2308f335c5
++ entry .Uuids   die Domäne der UUIDs, deren generische Darstellung Text ist
++     Ein versiegelter Marker, der das Konzept einer UUID benennt.
++     `uuid is Instantiable across Uuids from
++     Text` parst eine; inimitables `Uuid` wird beim Namen als
++     `uuidInterfaces.soundnessUuid` angeboten, sodass eine Bibliothek UUIDs annehmen kann, ohne
++     von inimitable abzuhängen.
+
+@ 0 4 0 0900cf469f86047f024dd268bbfd35b8
++ entry .EmailAddresses   die Domäne der E-Mail-Adressen, deren generische Darstellung Text ist
++     Ein versiegelter Marker, der das Konzept einer E-Mail-Adresse benennt. urticoses
++     `EmailAddress` ist `Instantiable across EmailAddresses from Text` durch das Given
++     `emailAddressInterfaces.soundnessEmailAddress`, beim Namen importiert.
+
+@ 0 4 0 16f61d8353bfdb2c0fe95073762dd642
++ entry .Hostnames   die Domäne der Hostnamen, deren generische Darstellung Text ist
++     Ein versiegelter Marker, der das Konzept eines Hostnamens benennt. urticoses `Hostname`
++     ist `Instantiable
++     across Hostnames from Text` durch das Given `hostnameInterfaces.soundnessHostname`, beim
++     Namen importiert.
+
+@ 0 5 0 03f6946566005a23186db21ac7b6dd74
++ entry .IpAddresses   die Domäne der IP-Adressen, deren generische Darstellung Text ist
++     Ein versiegelter Marker, der das Konzept einer IP-Adresse benennt. urticoses `Ipv4` und
++     `Ipv6` sind `Instantiable across IpAddresses from Text` durch die Givens
++     `ipAddressInterfaces.soundnessIpv4` und `ipAddressInterfaces.soundnessIpv6`, beim Namen
++     importiert.
+
+@ 0 5 0 01fc6dfea91fd67b084dcfd4232b0ca2
++ entry .HttpRequests   die Domäne der HTTP-Request-Bodys, als Marker für `Instantiable`
++     Ein versiegelter Marker, der benennt, was ein HTTP-Server empfängt. telekinesis kann den
++     Body eines Requests als beliebigen `content` dekodieren, der
++     `Instantiable across HttpRequests from Text` ist, und Codec-Bibliotheken (jacinta,
++     xylophone, ypsiloid) stellen solche Instanzen für ihre eigenen Typen bereit, sodass keine
++     Seite von der anderen abhängt.
+
+@ 0 1 0 04b7d305966a83491a75afe01f15f268
++ entry .HttpStreams   die Domäne der HTTP-Nachrichtenbodys, mit einem minimalen Pull-Protokoll für ihre Bytes
+
+% 1 1 0 10bcae0587e0e5f6006fc977e8d1fdaf
+
+@ 0 5 0 0bec0eff11ce18aa1acd1ec3d033397c
++       Ein versiegelter Marker, der benennt, was als HTTP-Body gesendet wird. Ein Typ, der
++       `Abstractable
++       across HttpStreams to HttpStreams.Content` ist, kann vom Client von telekinesis gesendet
++       oder von seinem Server ausgeliefert werden: Ein `Content` ist ein Medientyp, gepaart mit
++       einem `Body`. `Json` von jacinta, `Xml` von xylophone und die binären Codecs stellen
++       Instanzen in ihren eigenen Begleitobjekten bereit.
+
+% 2 1 0 04755881df680a5f13ff8f932273f94e
+
+% 3 1 0 0698a40b08bf9a001c67222f84581748
+
+% 0 1 0 0bedc855f17376461c07fc5de8e037f4
+
+% 0 1 0 17b8e6705c33e0fa17e9c86d655a64b5
+
+% 1 1 0 0cea11b6acf7cb2b0ae888133cf46d11
+
+@ 0 2 0 1910e573e995e5031b5e390c71fc7917
++       Das `Body`-Protokoll ist bewusst frei von Abhängigkeiten, damit Bibliotheken unterhalb von
++       turbulence eines erzeugen können; die Streams von turbulence passen sich an es an und von
++       ihm an.
+
+% 0 1 0 0fd32faa29fea94c1c22bc9290168da7
+
+@ 0 1 0 19ccce952aff16e31a8074c8e7f7ea23
++   entry .Body   eine bedarfsgesteuerte Quelle von Body-Bytes, die jeweils einen begrenzten Chunk liefert
+
+% 1 1 0 0b4fb22ee1148f4c1eb8f1facba6884b
+
+@ 0 10 0 1f6072508a0343951611f585ecf47ccc
++         Ein `Body` wird mit `#next(limit)` nach seinen Bytes gefragt; das liefert höchstens
++         `limit` Bytes als einen Chunk oder `null` am Ende des Streams und kann blockieren, bis
++         Eingabe verfügbar ist.
++     entry .empty   der Body ohne Bytes
++     entry .apply   ein Body aus einem ganzen `Data`-Wert, einem Iterator von Chunks oder einer `Chain` von Chunks
++         Aus einem `Data`-Wert werden die Bytes in Stücken von höchstens `limit` Bytes geliefert.
++         Aus einem Stdlib-Iterator oder einer lazy `Chain` von Chunks liefert jeder Aufruf den
++         nächsten Chunk vollständig, sodass `limit` seine Größe nicht begrenzt; ein Body aus einem
++         Iterator fängt diesen ein.
++     entry #next   der nächste Chunk von höchstens `limit` Bytes oder `null` am Ende des Bodys
++   entry .Content   ein Body mit seinem Medientyp: `(Text, HttpStreams.Body)`
+
+@ 0 1 0 1c5f7d9fe5adea3b0d14bbfb507b8ffc
++ entry .abstractables   die Lesarten eines bloßen `Long` als Dauer oder Zeitpunkt, jede ein beim Namen zu importierendes Given
+
+% 1 1 0 1c1e3d09786d63930fdfadd97c784e04
+
+@ 0 4 0 0ea3f084817b8999134692ec43669c6b
++       Ein `Long` kann nicht sagen, ob er Nanosekunden, Mikrosekunden, Millisekunden oder
++       Millisekunden seit der Epoche zählt; daher gibt ihm `import soundness.*` überhaupt keine
++       Lesart, und eine Methode, die ein beliebiges `Abstractable across Durations` oder
++       `across Instants` annimmt, weist einen bloßen `Long` zurück, bis eine Einheit gewählt
++       wird, indem eines davon beim Namen importiert wird:
+
+% 2 1 0 127e790fce70e4cb08d07448f50cdaec
+
+% 3 1 0 0f33f532c18c91911cdb6698dff47bf0
+
+% 4 1 0 1bab402d48e6fd8517e26b83fa4f9b38
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 147c7520afeb9607084d381f41b71a23
+
+% 1 1 0 161792fc554a8857089408a53b0b0b27
+
+@ 0 4 0 0f8fcb77e804a0c90f37a2b202856687
++       Die drei Dauer-Givens teilen einen Typ, sodass genau eines in eine Datei importiert werden
++       darf; wird eine Lesart als Dauer zusammen mit `epochMillisecondsAbstractable` importiert,
++       ist ein `Long` mehrdeutig, wenn er dort übergeben wird, wo beides angenommen wird.
++       `instantiables` spiegelt alle vier in der Gegenrichtung.
+
+% 1 1 0 01e847f219e484980e91b0e518fa1a72
+
+% 1 1 0 190e7ffe181d97341df39c133ba728c5
+
+@ 0 4 0 05d7fae2f712b5cd1829098bdddcef34
++   entry .nanosecondsAbstractable   liest eine `Long`-Dauer als Nanosekunden, die generische Darstellung selbst
++   entry .microsecondsAbstractable   liest eine `Long`-Dauer als Mikrosekunden und multipliziert mit tausend
++   entry .millisecondsAbstractable   liest eine `Long`-Dauer als Millisekunden und multipliziert mit einer Million
++   entry .epochMillisecondsAbstractable   liest einen `Long`-Zeitpunkt als Millisekunden seit der Epoche, die generische Darstellung
+
+@ 0 1 0 0436d2b0a4948edb1c9ab92c1a57729c
++ entry .instantiables   die Wege, eine Dauer oder einen Zeitpunkt als bloßen `Long` zu erhalten, jeder ein beim Namen zu importierendes Given
+
+% 1 1 0 0b8de2dda783b03516f01081f53b41ae
+
+@ 0 3 0 00e3e87fa7dd93aa01c5ae61253fc0b6
++       Die `Instantiable`-Gegenstücke zu `abstractables`: Ist eines importiert, kann eine
++       Methode, die ein beliebiges `Instantiable across Durations from Long` (oder
++       `across Instants`) zurückgibt, einen `Long` in der gewählten Einheit zurückgeben.
++       Umwandlungen in eine gröbere Einheit schneiden ab.
+
+% 2 1 0 1103feede49ba1a615b8caf0e04fd94f
+
+% 3 1 0 1b4d1974d0e31d8c0b16d0263069ef9c
+
+% 0 1 0 081d6c21fcfcb9e314a7906e99ef4149
+
+% 0 1 0 07a7617a416581690ea8cbd99e8a9e90
+
+% 0 1 0 1de7a76c5e450163079bf6076073c04c
+
+% 0 1 0 0d64e3bfe31e78f7083e47cae8e87827
+
+% 1 1 0 0c2386b841a2465c1774321d50ede244
+
+@ 0 2 0 1308c1b1bf67c41102c2a9184f263913
++       Wie bei `abstractables` teilen die drei Dauer-Givens einen Typ, und nur eines darf im
++       Geltungsbereich sein.
+
+% 1 1 0 0c22496b3df8d36f1b43c7d60aac1321
+
+@ 0 4 0 050617bd74d6b1450565d140464a1d24
++   entry .nanosecondsInstantiable   liefert eine Dauer als `Long` aus Nanosekunden, unverändert
++   entry .microsecondsInstantiable   liefert eine Dauer als `Long` aus Mikrosekunden und teilt durch tausend
++   entry .millisecondsInstantiable   liefert eine Dauer als `Long` aus Millisekunden und teilt durch eine Million
++   entry .epochMillisecondsInstantiable   liefert einen Zeitpunkt als `Long` aus Millisekunden seit der Epoche, unverändert
+
+@ 0 1 0 091e19211128e6ff1acc94068f4802ce
++ entry .pathInterfaces   die Pfadtypen, die eine pfaderzeugende API zurückgeben kann, jeder ein beim Namen zu importierendes Given
+
+% 1 1 0 1607bc7a9bd792b10e7c00e822934300
+
+@ 0 4 0 1737971510f7b93d12a330502fab61d0
++       Eine Methode, die `[path: Instantiable across Paths from Text]` zurückgibt oder
++       `[path: Representative of Paths]` verlangt, lässt ihren Aufrufer einen Pfadtyp wählen;
++       für einen Typ ohne Begleitobjekt, das durchsucht werden könnte, wird die Wahl getroffen,
++       indem eines dieser Givens beim Namen importiert wird, denn `import pathInterfaces.*`
++       importiert keine Givens.
+
+% 2 1 0 002317ab85dc6a1c1cd63335569ac61e
+
+% 3 1 0 0d617ca3b30e0a50127c28cad449376f
+
+% 0 1 0 1dc3da7c008fb4f117e2428d65bc9dea
+
+% 2 1 0 1a7191ec1956d476027634f2bfee8794
+
+% 0 1 0 1d273d6594c2847c05407937bf266aea
+
+% 1 1 0 1c8a24414e6a2efd1945ac46ee626cd0
+
+@ 0 2 0 0f932e129d4095410e3dd5eeca23385e
++       Das Paket wird aus drei Bibliotheken zusammengesetzt: diuretic deklariert `javaNioPath`
++       und `javaIoFile`, galilei die Repräsentanten der Plattformpfade und serpentine `textPath`.
+
+% 1 1 0 1064634d2eac59d508931eec7bd96363
+
+% 1 1 0 056f7c1e24add6551c4e1c8cd4833695
+
+@ 0 21 0 0240066c0919be980a3711d5e798a92c
++   entry .javaNioPath   `java.nio.file.Path` als Pfad, zu seinem Text abstrahiert und aus ihm instanziiert (diuretic)
++       Sowohl `Abstractable across Paths to Text` als auch `Instantiable across Paths from Text`,
++       als das Objekt `diuretic.JavaNioPath`. Die Abstraktion liefert die absolute Form des
++       Pfads; ein relativer `java.nio.file.Path` wird gegen das Arbeitsverzeichnis der JVM
++       aufgelöst. Nur JVM.
++   entry .javaIoFile   `java.io.File` als Pfad, zu seinem Text abstrahiert und aus ihm instanziiert (diuretic)
++       Sowohl `Abstractable across Paths to Text` als auch `Instantiable across Paths from Text`,
++       als das Objekt `diuretic.JavaIoFile`; die Abstraktion liefert den absoluten Pfad der
++       Datei.
++   entry .pathOnLinux   `Path on Linux` als `Representative of Paths` (galilei)
++       Gelöschter Nachweis; dasselbe Given liegt im Begleitobjekt von `Linux`, wo es ohne Import
++       gefunden wird.
++   entry .pathOnWindows   `Path on Windows` als `Representative of Paths` (galilei)
++       Gelöschter Nachweis; dasselbe Given liegt im Begleitobjekt von `Windows`.
++   entry .pathOnMacOs   `Path on MacOs` als `Representative of Paths` (galilei)
++       Gelöschter Nachweis; dasselbe Given liegt im Begleitobjekt von `MacOs`.
++   entry .pathOnLocal   `Path on Local`, der Pfad der Host-Plattform, als `Representative of Paths` (galilei)
++       Gelöschter Nachweis; dasselbe Given liegt im Begleitobjekt von `Local`.
++   entry .pathOnPosix   `Path on Posix` als `Representative of Paths` (galilei)
++       Gelöschter Nachweis, für einen Pfad auf einem beliebigen POSIX-Dateisystem.
++   entry .textPath   `Text` als `Representative of Paths`, sodass ein Verzeichnis als bloßer Text angefordert werden kann (serpentine)
++       Ist es importiert, liefert `workingDirectory[Text]` den Text des Arbeitsverzeichnisses,
++       ohne einen Pfadtyp zu wählen.
+
+@ 0 1 0 04a93a94153a4a791bca866fb79152bd
++ entry .urlInterfaces   die URL-Typen, die eine URL-erzeugende API zurückgeben kann, jeder ein beim Namen zu importierendes Given
+
+% 1 1 0 095c3f231234f9b11e9ec187c2fe63a5
+
+@ 0 2 0 155ede94d5da01cb1830a182a5c72f51
++       Eine Methode mit der Schranke `[url: Instantiable across Urls from Text]` nennt keinen
++       konkreten URL-Typ, daher wird die Instanz gewählt, indem eines davon beim Namen importiert
++       wird.
+
+% 2 1 0 1fcf4767e29f7c6f1306ae02e0d50a86
+
+% 3 1 0 02186b8230dcd2640dde513ae1438ebc
+
+% 4 1 0 13e28de9631ddf5608c57fd11b9f8494
+
+% 0 1 0 1ee8b92874a278991a9d3010d3c8cd51
+
+% 0 1 0 071773aef5c8017f1229706341233e7d
+
+% 0 1 0 14e5b809de59029802c7f453d5780425
+
+% 1 1 0 081e58a143e44de405e7450f01b61e90
+
+% 0 1 0 0fe54c60942c801012f97fe4b6157ecd
+
+@ 0 8 0 1a43e2c940d2581500cbb1272a3adf9e
++   entry .javaNetUrl   `java.net.URL` als URL, zu ihrem Text abstrahiert und aus ihm instanziiert (diuretic)
++       Sowohl `Abstractable across Urls to Text` als auch `Instantiable across Urls from Text`,
++       als das Objekt `diuretic.JavaNetUrl`; die Instanziierung geht über `java.net.URI`, sodass
++       fehlerhafter Text eine Ausnahme wirft, wie es die Java-API tut.
++   entry .soundnessUrl   urticoses `HttpUrl`, durch Parsen aus Text instanziiert (urticose)
++       `HttpUrl is Instantiable across Urls from Text`, die Instanz `Url.instantiable` aus dem
++       Begleitobjekt von `HttpUrl`, beim Namen angeboten. Sie braucht eine `Tactic[Url.Error]`,
++       ausgelöst für Text, der keine gültige URL ist, und fängt sie ein.
+
+@ 0 1 0 160b0713db0689111955bae86128e3c4
++ entry .instantInterfaces   die Zeitpunkttypen, die eine zeiterzeugende API zurückgeben kann, jeder ein beim Namen zu importierendes Given
+
+% 1 1 0 035b37704998bf601d9c47ac7f4a2a91
+
+@ 0 2 0 049af7219cecf2f81fb118998f7f2059
++       Eine Methode mit der Schranke `[instant: Instantiable across Instants from Long]` lässt
++       den Aufrufer den Zeitpunkttyp wählen, den er erhält, aus einem `Long` aus Millisekunden
++       seit der Epoche.
+
+% 2 1 0 0998e227d8d018ae0bef01e8ce224724
+
+% 3 1 0 1438ec4345484dfd120bae04d5caf089
+
+% 4 1 0 067cbac6eeeb59b21a633377201d0d77
+
+% 0 1 0 1f334b5b2b9a4e3803ab717d1b9f8c47
+
+% 0 1 0 1bf74095c505f83d1fcf41b6612b5f84
+
+% 1 1 0 08bbfc87e8e181b4147ca2308064378b
+
+@ 0 1 0 141f9fcd623f541a18047efcf00412d7
++       diuretic deklariert die Java-Typen, aviation sein eigenes `Instant`.
+
+% 0 1 0 1325dc7d93eb17630096bac18e675441
+
+@ 0 1 0 16760b875cde94a2001ad2e4344911b6
++   entry .aviationInstant   aviations `Instant`, als Millisekunden seit der Epoche in beide Richtungen (aviation)
+
+% 0 1 0 01c4612d3e10a70a09ace4cff28d5399
+
+@ 0 6 0 047595ce53a26b301d43107c84840477
++       Long`, für jedes `transport`, aus `Instant.generic`.
++   entry .javaTimeInstant   `java.time.Instant`, als Millisekunden seit der Epoche in beide Richtungen (diuretic)
++       Die Abstraktion ist `toEpochMilli`, sodass Genauigkeit unterhalb einer Millisekunde
++       verloren geht.
++   entry .javaLongInstant   ein roher `Long` aus Millisekunden seit der Epoche, in beide Richtungen unverändert (diuretic)
++       Die Identität: Der `Long` ist bereits die generische Darstellung.
++   entry .javaUtilDate   `java.util.Date`, als Millisekunden seit der Epoche in beide Richtungen (diuretic)
+
+@ 0 1 0 0d707945d74000b30f3e5d671bcc5c65
++ entry .durationInterfaces   die Dauertypen, die eine zeitmessende API zurückgeben kann, jeder ein beim Namen zu importierendes Given
+
+% 1 1 0 0c7df4692dd40f99198a76d90589ad2c
+
+@ 0 2 0 191344b6905738791eda634ef5a437c7
++       Eine Methode mit der Schranke `[duration: Instantiable across Durations from Long]` lässt
++       den Aufrufer den Dauertyp wählen, den er erhält, aus einem `Long` aus Nanosekunden.
+
+% 2 1 0 04658ffd5792415f0d63851c97b4bf80
+
+% 3 1 0 10f40fc74290daca11c2c1a9be052fbc
+
+% 0 1 0 08510d896ff9d98b1b5ddae155f38275
+
+% 0 1 0 0b5292b740b900e1005de84e3ffa5488
+
+% 0 1 0 0062b16dbb204cec1bc507e9deb68527
+
+% 0 1 0 0628e7fab893ac540de23eb798447093
+
+% 1 1 0 1b1927b7c4f11a7b0a33a5854483847d
+
+% 1 1 0 06f374565a054b720136e5783c81b0c8
+
+% 1 1 0 1b05c5112a716e0610e757875d14a635
+
+@ 0 8 0 06604edfbd6e214c05429326841568a0
++   entry .aviationDuration   eine quantitative `Quantity` der Zeit, als Nanosekunden in beide Richtungen (aviation)
++       `Quantity[units] is Abstractable & Instantiable across Durations to Long from Long`, für
++       beliebige auf Sekunden normalisierbare Einheiten: Die Abstraktion normalisiert auf
++       Sekunden und skaliert auf Nanosekunden, wobei sie abschneidet; die Instanziierung skaliert
++       zurück in `units`.
++   entry .javaLongDuration   ein roher `Long` aus Nanosekunden, in beide Richtungen unverändert (diuretic)
++       Der `Long` zählt **Nanosekunden**, die generische Darstellung, anders als bei
++       `javaLongInstant`, dessen `Long` Millisekunden seit der Epoche zählt. Für einen `Long` in
++       einer anderen Einheit importieren Sie stattdessen eine Lesart aus `abstractables` oder
++       `instantiables`.
+
+@ 0 1 0 154774a90d96b4d40393c56ce7739d7a
++ entry .uuidInterfaces   die UUID-Typen, die eine UUID-erzeugende API zurückgeben kann, jeder ein beim Namen zu importierendes Given
+
+% 1 1 0 00ac1b24c77d054e044b30b539599875
+
+@ 0 2 0 000ca289fc283bfc1fc5d437f93aff00
++       Eine Methode mit der Schranke `[uuid: Instantiable across Uuids from Text]` nennt keinen
++       konkreten Typ, daher wird ihre Instanz beim Namen importiert.
+
+% 2 1 0 051177afb882b0b912b808e61e5fd8a0
+
+% 3 1 0 07d454dfa168ceb014602fcbb7b04374
+
+% 4 1 0 1d77a4e5c73351d717b9440c41a3bbb6
+
+% 0 1 0 014898f361a7960013f0547ad25d6b20
+
+% 0 1 0 1602bc44a01e7d601a6519d0ea094a21
+
+% 0 1 0 0a86def87391224d0c7dbc8b07089086
+
+% 1 1 0 00084603a59976cb05fcd5f5e3ee375e
+
+% 0 1 0 0f46a053941076950957ab4ffb4ba32d
+
+@ 0 2 0 02eb41ea38e1cd070efadfb9ec9a9138
++   entry .soundnessUuid   inimitables `Uuid`, aus Text geparst (inimitable)
++       Braucht eine `Tactic[Uuid.Error]`, ausgelöst für Text, der keine UUID ist, und fängt sie
++       ein.
+
+@ 0 1 0 01f528ac6176746409db273983f57dc0
++ entry .emailAddressInterfaces   die E-Mail-Adresstypen, die eine API zurückgeben kann, jeder ein beim Namen zu importierendes Given
+
+% 1 1 0 1302052331424f250ab0d95a0d8a7fdc
+
+@ 0 2 0 15212e1940a002c90f76306002d32391
++       Für eine Methode mit der Schranke `[email: Instantiable across EmailAddresses from Text]`,
++       die keinen konkreten Typ nennt, dessen Begleitobjekt die Instanz enthalten könnte.
+
+% 0 1 0 0c9af34597e3bbc7160ce61b61ec1cba
+
+@ 0 3 0 14ed6a7efde0a1e50df8308437edae44
++   entry .soundnessEmailAddress   urticoses `EmailAddress`, aus Text geparst (urticose)
++       Braucht eine `Tactic[EmailAddress.Error]`, ausgelöst für Text, der keine gültige Adresse
++       ist, und fängt sie ein.
+
+@ 0 1 0 0e926f2192ff34a61e74b9afddadf95a
++ entry .hostnameInterfaces   die Hostnamentypen, die eine API zurückgeben kann, jeder ein beim Namen zu importierendes Given
+
+% 1 1 0 1f21a17fc22063d60e9dfad3e0b818d6
+
+@ 0 2 0 1e23d9eee4423a06104d2726c4dd92ae
++       Für eine Methode mit der Schranke `[hostname: Instantiable across Hostnames from Text]`,
++       die keinen konkreten Typ nennt, dessen Begleitobjekt die Instanz enthalten könnte.
+
+% 0 1 0 03fb9b2bb4a5f4920bf98cb226e162be
+
+@ 0 3 0 1721dcf396d033c204201c460a70fee8
++   entry .soundnessHostname   urticoses `Hostname`, aus Text geparst (urticose)
++       Braucht eine `Tactic[Hostname.Error]`, ausgelöst für Text, der kein gültiger Hostname
++       ist, und fängt sie ein.
+
+@ 0 1 0 0687c2155109ea5b062e28669a6bf012
++ entry .ipAddressInterfaces   die IP-Adresstypen, die eine API zurückgeben kann, jeder ein beim Namen zu importierendes Given
+
+% 1 1 0 05ad81f797b275e51fd0d8f356e328c6
+
+@ 0 3 0 1dfa358df028f79e0624f5ae6d56a7c6
++       Für eine Methode mit der Schranke `[ip: Instantiable across IpAddresses from Text]`, die
++       keinen konkreten Typ nennt, dessen Begleitobjekt die Instanz enthalten könnte. Die beiden
++       Givens instanziieren verschiedene Typen, daher dürfen beide importiert werden.
+
+% 0 1 0 1bdefa9b3a5a12411b8535234966565d
+
+@ 0 4 0 14ed8e1a851a802e0150dd886c0d05df
++   entry .soundnessIpv4   urticoses `Ipv4`, aus Text in Punktnotation geparst (urticose)
++       Braucht eine `Tactic[IpAddress.Error]`, ausgelöst für Text, der keine IPv4-Adresse ist.
++   entry .soundnessIpv6   urticoses `Ipv6`, aus Text geparst (urticose)
++       Braucht eine `Tactic[IpAddress.Error]`, ausgelöst für Text, der keine IPv6-Adresse ist.
+
+@ 0 6 0 04fdfe7503fdba361235695841b82881
++ entry .Text   der reine, opake String-Typ, als den alle Soundness-Bibliotheken Text austauschen
++     `Text` ist der opake Typ `anticipation.internal.Text`, hier exportiert: zur Laufzeit ein
++     `String`, auf Typebene ohne `String`-Methoden, und rein, sodass der Capture-Checker einen
++     Wert davon so behandelt, als fange er nichts ein. Jede Soundness-API nimmt und liefert
++     `Text` statt `String`, und seine Operationen stammen aus gossamer und den
++     Collection-Typklassen statt aus `java.lang.String`.
+
+% 2 1 0 0f0a3a67717d48231212856e506cbbd0
+
+% 3 1 0 135ea5c48974869f15c00c3b4fb32932
+
+% 0 1 0 0398c0c7b1eba5f10a3a72dae5de3020
+
+% 0 1 0 12f5c13b2b2abe310b6106d008b265f6
+
+% 0 1 0 1c447dedb946920b031793f23df0d284
+
+% 0 1 0 0256d2fefef324030fc1ab3418efd032
+
+% 1 1 0 1ee96d7a7aa9f6f3111d6744c61e3d49
+
+@ 0 6 0 0db7b24efa06d5ee0c3a23b0f023bd2f
++     Ein `String` wird implizit umgewandelt, wo ein `Text` erwartet wird (`Text.conversion`),
++     und `tt` und `s` wandeln explizit um. Sein Begleitobjekt liefert `+` mit `Text` und mit
++     `String`, `*` mit einem `Int`, den leeren Text als `Zeroic`, die Collection-Typklassen
++     (`Traversable by
++     Char`, `Reshapable`, `Inclusive`, `Reversible`), Gleichheit mit sich selbst und mit
++     `String`, ein `Typeable`, sodass `case text: Text` auf einen `String` passt, sowie `ToExpr`
++     und `FromExpr` für Makros. Alle sind im impliziten Geltungsbereich; keines braucht einen
++     Import.
+
+@ 0 4 0 0664ee9a8b56f2e9034ea1e8eceb60ae
++     Wer Makros schreibt, sollte wissen, dass `Expr(text)` über ein Quote hebt, das im eigenen
++     Geltungsbereich von `Text` typisiert ist, wo der Alias transparent ist; der eingefügte
++     Baum ist daher als `String & caps.Pure` typisiert, und an einer Expansionsstelle, die mit
++     Separation-Checking kompiliert wird, scheitert das als `Text`. Heben Sie stattdessen den
++     `String` und wandeln Sie um: `'{${Expr(text.s)}.tt}`.
+
+@ 0 2 0 0eed214d96c22eaf1c03c2026fb97e5c
++ entry .tt   wandelt einen `String` in `Text` um: `"…".tt`
++     Die explizite Umwandlung, zur Laufzeit wirkungslos. Für konstanten Text ist ein
++     `t"…"`-Literal vorzuziehen.
+
+@ 0 2 0 1adc06d800326cea08b4392dc481efd8
++ entry .ss   wandelt eine Collection von `Text` in eine Collection von `String` um, für Java- und Stdlib-APIs
++     `texts.ss` bildet jedes Element mit `Text.s` ab, als `Iterable[String]`.
+
+@ 0 4 0 124a4624fce80ef0132f3263667e695f
++ entry .subsumes   ob ein `Text` einen anderen als Teilstring enthält
++     `text.subsumes(t"lo")` ist Teilstring-Enthaltensein über `String.indexOf`, ohne
++     Traversierung und ohne Zwischen-Collections; deshalb ist es eine eigene Erweiterung neben
++     dem generischen Collection-`subsumes` (weiterhin importierbar als `murmuration.subsumes`).
+
+% 2 1 0 141ceabb148df9b40c039096271d90ca
+
+% 3 1 0 0129f931e5ff653b04dc379f5caa8233
+
+% 0 1 0 18a43e30661feb3017aa8e23ac1273b3
+
+% 1 1 0 0373a15968c383c9088f92e134aadf9b
+
+@ 0 1 0 0032befe19c2e37e1900238a06d0d050
++ entry .Textualizable   eine Typklasse, die einen Wert in `Text` umwandelt, für APIs, die alles Textuelle annehmen
+
+% 1 1 0 043d238e2000d2e013b106ecaacabdec
+
+@ 0 7 0 1e8306642fb4871a1c41d357f9abc36f
++       `value is Textualizable` stellt die Erweiterung `#textual` bereit, sodass eine API jeden
++       Wert mit einer kanonischen Textform annehmen kann, ohne von der Bibliothek abzuhängen, die
++       ihn definiert. Anders als `Showable`, das für einen Menschen darstellt, *ist* ein
++       `Textualizable`-Wert Text in anderer Gestalt.
++   entry #convert   der Wert als `Text`
++   entry #textual   der Wert als `Text`: `value.textual`
++   entry #contramap   eine Instanz für einen anderen Typ, indem dieser zuerst auf diesen abgebildet wird
+
+@ 0 7 0 0323b7bbfb58ea7b005798a9aa0731cb
++ entry .Durable   der Klassifikator geteilter Capabilities, die über eine Thread-Grenze hinweg behalten werden dürfen
++     Ein Klassifikator des Capture-Checkings (eine `caps.SharedCapability`) für Monitore,
++     laufende Prozesse, Verbindungen, Kanäle, Logger und Log-Senken. Der Rumpf einer Aufgabe
++     läuft auf einem anderen Thread und wird von einem Worker behalten, daher ist er als
++     `->{caps.any.only[Durable]}` typisiert: Er darf `Durable`-Capabilities einfangen, aber
++     nicht etwa eine `Tactic`, die eine `caps.Control`-Capability ist und einen Rücksprungpunkt
++     auf dem Stack ihres Installierers hält. Eine Aufgabe löst Fehler nur über ihre eigene
++     Taktik aus.
+
+@ 0 3 0 03156880bbf2ac3b15ed78ace3c3ebad
++     Eine Bibliothek deklariert ihre eigene langlebige Capability, indem sie `Durable` erweitert;
++     eine, die ambient sein soll, wird durch ein Given bereitgestellt, das ein *Wert* (oder ein
++     Objekt) ist, keine polymorphe Methode, denn ein Wert ist eine statische Capability, die von
++     jeder Ebene aus sichtbar ist.
+
+@ 0 4 0 11789a2a231ea63f0786c61fa7a772ab
++ entry .Bidi   die Leserichtung einer positionalen Operation: vom Anfang oder vom Ende her
++     Eine Aufzählung mit den Fällen `Ltr`, der am Anfang verankert, und `Rtl`, der am Ende
++     verankert. Sie ist das Vokabular der generischen positionalen Operationen (`keep`, `skip`,
++     `snip`) auf Collections und auf Text, sodass beide einen Typ teilen.
+
+% 2 1 0 06fc493f0bdc76ea1eddd3190479c487
+
+% 3 1 0 0f5ec7563bf6145c09b6ff104b735d46
+
+% 0 1 0 1779fb2cede8b54610df664515ca31de
+
+% 1 1 0 14610b35b88dfdaa0f7512fb4d266ca6
+
+@ 0 2 0 1db8bdebdb5a0fcb0c0e6fabb81c0914
++     `Ltr` ist überall der Standard, wo eine Richtung optional ist. Das Umbrella exportiert
++     `Bidi` über gossamer.
+
+@ 0 1 0 16dad94a9a5fc5b30aa28a047be96d33
++ entry .internal   die Heimat des opaken Typs `Text` und der Instanzen seines Begleitobjekts
+
+% 1 1 0 0fb3e7ee60ed28cb1d961a52115cafbd
+
+% 2 1 0 1716059f8af3c52c10b9f8ea257baddf
+
+@ 0 3 0 09f2aae9999f4800064b07aa37c02ea0
++       Nicht zur direkten Verwendung: `Text` wird von hier in das Paket `anticipation`
++       exportiert, und seine Seite dort enthält die vollständige Beschreibung.
++   entry .Text   der opake String-Typ; siehe `anticipation.Text`
+
+% 1 1 0 142732ea1b2c2d0819a16267ab8078b0
+
+@ 0 24 0 083c4b5105c76bac1a73af1ac1c41914
++         Der opake Typ `Text <: Matchable & caps.Pure`, zur Laufzeit ein `String`. Sein
++         Begleitobjekt enthält die Instanzen, die ihn zu einem vollwertigen Texttyp machen.
++     entry .apply   erzeugt `Text` aus einem `String`, einem Array von Zeichen oder einem Array von ASCII-Bytes
++         Bytes werden als US-ASCII dekodiert; für einen anderen Zeichensatz verwenden Sie einen
++         Dekodierer.
++     entry .s   der `Text` als `String`: `text.s`
++     entry .zeroic   der leere Text als Null von `Text`
++     entry .concatenable   `text+text`, verkettet zwei `Text`s
++     entry .addableString   `text+string`, hängt einen `String` an einen `Text` an
++     entry .multiplicable   `text*n`, wiederholt einen `Text` `n`-mal; eine negative Anzahl ergibt den leeren Text
++     entry .fromString   lässt eine `@main`-Methode `Text`-Parameter von der Kommandozeile annehmen
++     entry .traversable   traversiert einen `Text` als seine `Char`s
++     entry .reshapable   baut einen `Text` aus einer Traversierung von `Char`s neu
++     entry .inclusive   ob ein `Text` ein `Char` enthält
++     entry .convertible   sammelt eine beliebige Traversierung von `Char`s in einen `Text`
++     entry .reversible   kehrt einen `Text` um und lässt Surrogatpaare intakt
++     entry .fromExpr   liest einen konstanten `Text` aus dem `Expr` eines Makros
++     entry .toExpr   hebt einen `Text` in das `Expr` eines Makros
++         Der gehobene Baum ist als `String & caps.Pure` typisiert; unter Separation-Checking an
++         der Expansionsstelle heben Sie stattdessen den `String` und wandeln mit `.tt` um.
++     entry .conversion   wandelt einen `String` überall in `Text` um, wo ein `Text` erwartet wird
++     entry .canEqual   erlaubt `==` zwischen zwei `Text`s unter strikter Gleichheit
++     entry .canEqual2   erlaubt `==` zwischen einem `String` und einem `Text` unter strikter Gleichheit
++     entry .canEqual3   erlaubt `==` zwischen einem `Text` und einem `String` unter strikter Gleichheit
++     entry .typeable   lässt ein Pattern `case text: Text` auf einen beliebigen `String` passen
+
+@ 0 1 0 19db0f33f2e09cf1018d2afb4ee12161
++ entry .Data   unveränderliche Bytes: ein `Array[Byte]`, das nichts einfängt
+
+% 1 1 0 105b71ac0cef0b09052a5db43ca1f3f1
+
+@ 0 3 0 177f3ce278bc171106dc5aa01019b550
++       `Data` ist der Typalias `Array[Byte]^{}`, die Bytefolge, die jede Soundness-Bibliothek
++       liest, schreibt, hasht und kodiert. Es wird mit `apply`, `.build` oder `.fill` gebaut,
++       und ein Block, dessen Länge ein Literal ist, wird mit `Sized[n]` markiert.
+
+% 2 1 0 0614d411c79f78d50b54646fdde7d411
+
+% 3 1 0 1b46925a6483b5d20fe8e36b9f22cf0e
+
+% 0 1 0 184579c1345eb1d21562dd93e24c7468
+
+% 0 1 0 0d8a6283a3ddb5ea12d8b2b79894eb4b
+
+% 1 1 0 0c9c501f229f7272194776b2490c26d9
+
+% 0 1 0 0938c754f8aebe5607a202ce9f4b4013
+
+% 0 1 0 069830e97d8178940251f4d7b9343765
+
+@ 0 7 0 15be6c84800e5e530b8a67b5c1f9c0b4
++   entry .apply   `Data` aus den angegebenen Bytes
++   entry .build   `Data` einer gegebenen Länge, gefüllt von einer Funktion, die in ein frisches Array schreibt
++       `Data.build(n)(array => …)` alloziert ein Array aus `n` Bytes, übergibt es der Funktion
++       zum Befüllen und gibt es eingefroren zurück. Mit einer literalen Länge ist das Ergebnis
++       als `Data & Sized[n]` markiert; mit einer nicht literalen ist es bloßes `Data`.
++   entry .fill   `Data` einer gegebenen Länge, jedes Byte aus seinem Index berechnet
++       Mit einer literalen Länge ist das Ergebnis als `Data & Sized[n]` markiert.
+
+@ 0 1 0 03846a35eb724d790f8addc5b31e3f5e
++ entry .Encodable   eine Typklasse, die einen Wert in ein benanntes Format kodiert, `value.in[Format]`
+
+% 1 1 0 1f57697eb056a0fb1a0c27be8642dc96
+
+@ 0 5 0 04f8b1fdff6d5e1215d7d0a2669eb31f
++       `value is Encodable in Form` sagt, dass sich `value` als `Form` kodieren lässt: `Text`,
++       `Data`, `Json`, `Xml`, ein Binärprotokoll oder ein beliebiger Trägertyp, den eine
++       Codec-Bibliothek definiert. Kodieren ist eine Operation auf Wertebene, `value.in[Json]`
++       (`in`), und `#encode`, wo die Instanz zur Hand ist. Codec-Bibliotheken stellen
++       Instanzen, oft abgeleitet, im Begleitobjekt ihres Formats bereit.
+
+% 2 1 0 123b66935d0ca1b8090c7b1367505606
+
+% 3 1 0 13071c3652515a880fe14c726b6a9821
+
+% 0 1 0 1b69ba22b3ef24d8002e5c0b8b4ee701
+
+% 1 1 0 09e96ebdba44754e1f111b188b8236dd
+
+@ 0 3 0 08aa08f0992f6bf711d9e535ef26c9cd
++       Das Begleitobjekt liefert die Primitive als `Text` (ihr `toString`), `Data` als sich
++       selbst und einen `Long` als seine acht Big-Endian-Bytes. `Encodable` ist eine verfolgte
++       Typklasse: Eine Instanz, die aus Codecs abgeleitet ist, die Fehler auslösen, behält deren
++       `Tactic`.
+
+% 0 1 0 1a41471517edeba8076e51f27970b0b7
+
+% 0 1 0 05e218128c0911e81bad02c341a39cf2
+
+@ 0 16 0 10bdf086c4016a0a13c347f16f147df2
++   entry .bytes   `Data` wird in `Data` als es selbst kodiert
++   entry .sizedBytes   `Data & Sized[n]` wird in `Data` als es selbst kodiert
++   entry .longData   ein `Long` wird in `Data` als seine acht Bytes kodiert, Big-Endian
++   entry .int   ein `Int` wird in `Text` in seiner Dezimalform kodiert
++   entry .double   ein `Double` wird in `Text` mit `toString` kodiert
++   entry .byte   ein `Byte` wird in `Text` in seiner Dezimalform kodiert
++   entry .short   ein `Short` wird in `Text` in seiner Dezimalform kodiert
++   entry .long   ein `Long` wird in `Text` in seiner Dezimalform kodiert
++   entry .float   ein `Float` wird in `Text` mit `toString` kodiert
++   entry .text   `Text` wird in `Text` als er selbst kodiert
++   entry .char   ein `Char` wird in `Text` als Text aus einem Zeichen kodiert
++   entry .string   ein `String` wird in `Text` als derselbe Text kodiert
++   entry #encoded   kodiert einen Wert in das Format
++   entry #encode   kodiert einen Wert in das Format: `value.encode`
++   entry #contramap   eine Instanz für einen anderen Typ, indem dieser zuerst auf diesen abgebildet wird
++       Das Ergebnis fängt diese Instanz und die Funktion ein.
+
+@ 0 4 0 01d94a76d71e28b400bf76c793d82c7f
++ entry .in   kodiert einen Wert in das benannte Format: `value.in[Json]`
++     Das Gegenstück auf Wertebene zu `value is Encodable in Format`. Es ersetzt sowohl
++     `.encode`, dessen Format implizit in der gefundenen Instanz liegt, als auch
++     formatspezifische Kurzformen wie `.json`, indem es das Zielformat beim Aufruf nennt.
+
+% 2 1 0 095bee4cf0f17b9c001b214e51b2634e
+
+% 3 1 0 015e649de1970f8c0482d6bc09581937
+
+% 0 1 0 12590d28fb92f6310072091476973cfe
+
+% 0 1 0 08a23d9daefef1c217d895077fbb6665
+
+% 1 1 0 1d6f0256accd9bfe01fd504a18e6dbc9
+
+@ 0 2 0 0f3bb6a6417e24f819c26b679948136d
++ entry .bytestream   ein Wert als Bytes, über seine Instanz `Encodable in Data`
++     `value.bytestream` ist `value.in[Data]`.
+
+@ 0 1 0 0aea6762b6b0451b0309326b98ba8cc9
++ entry .Schematic   eine Typklasse, die das Schema der Kodierung eines Werts liefert, in einer gewählten Schemadarstellung
+
+% 1 1 0 1d110dc39dbf9ce905052cbceb13c286
+
+@ 0 6 0 16a92286ee08477e0f81d21b2a416a61
++       `value is Schematic over JsonSchema` stellt `#schema` bereit, das Schema der Kodierung
++       des Werts in der Darstellung `Transport` (`JsonSchema` in jacinta, `Tels.Type` in
++       stratiform). Es ist das Geschwister von `Encodable`, und beide werden häufig zusammen
++       verlangt, als `Encodable & Schematic in Json over JsonSchema`, sodass die Kodierung eines
++       Werts und sein Schema aus derselben Ableitung stammen. Formatspezifische Instanzen liegen
++       bei ihrem Format.
+
+% 0 1 0 15e855c377376efa1f2c34650fb647cd
+
+@ 0 1 0 0dbebe862e5b54a4078910a48734356c
++   entry #schema   das Schema, in der Darstellung `Transport`
+
+@ 0 1 0 02f358f8d45a33c11361f74884a87e37
++ entry .Schema   eine Typklasse für einen Schematyp, der Text in eine typisierte Form parst
+
+% 1 1 0 092a8bf6e97218650561edb65fb2c90d
+
+@ 0 4 0 075f0cf93fd8acca00479bce9c939135
++       Ein Schema, dessen `Form` einen Typ-Member `Topic` hat: `#parse` liest ein Dokument als
++       Text in eine `Form of Topic`, typisiert durch das Schema.
++   entry #Form   die geparste Form, verfeinert mit einem Typ-Member `Topic`
++   entry #parse   parst eine lazy Kette von Text in die typisierte Form des Schemas
+
+@ 0 1 0 02789e3955d962ce133191f7eeea1e16
++ entry .Morphology   die formatneutrale Gestalt einer Kodierung, die ein Codec neben seinem Schema mitführt
+
+% 1 1 0 001692b7075bf6f01740e7d16e225f3d
+
+@ 0 5 0 09568a19c5afe47f0aac176a0eb4619a
++       Ein Codec (`Json.Encodable` von jacinta, die TEL-Codecs von stratiform) führt die
++       Morphologie der Werte mit, die er kodiert, sodass der Codec und das daraus abgeleitete
++       Schema durch ihre Konstruktion kohärent sind; die Morphologie wird dann stromabwärts in
++       ein formatspezifisches Schema umgesetzt, ein `JsonSchema` oder einen `Tels.Type`. Sie
++       zeichnet nur Struktur auf; Beschreibungen, Formate und Schranken gehören in das eigene
++       Schema jedes Formats.
+
+@ 0 3 0 0a3ef6c778b3a204018667bc157e29e2
++       Die Blattfälle sind `Str` (ein String), `Whole` (eine ganze Zahl), `Real` (eine
++       gebrochene Zahl), `Bool`, `Empty` (null oder Unit) und `Any` (unbeschränkt); die
++       zusammengesetzten folgen.
+
+% 2 1 0 0664accb4f857d8f06e4f06c8bef6ccf
+
+% 3 1 0 06cacd86c582ee15036c4b0c21c1ef5f
+
+% 0 1 0 09c917c1033e97f0103d7f304e9f3f49
+
+% 0 1 0 10709d087d209f771ff49d5a73859b87
+
+% 1 1 0 007a6b7d2a95bad21ccec916bfd383fd
+
+@ 0 14 0 0b864f1b3c3e366e177d711aee270e81
++   entry #optional   ob ein Wert dieser Gestalt fehlen darf: nur für `Opt` wahr
++       Dient dazu, zu berechnen, welche Felder eines Datensatzes erforderlich sind.
++   entry .Opt   ein optionaler Wert einer Gestalt
++     entry #shape   die Gestalt, wenn vorhanden
++   entry .Arr   eine homogene Folge
++     entry #items   die Gestalt jedes Elements
++   entry .Dict   eine Abbildung beliebiger Schlüssel auf Werte
++     entry #key     die Gestalt der Schlüssel
++     entry #value   die Gestalt der Werte
++   entry .Obj   ein Datensatz benannter Felder, mit den erforderlichen darunter
++     entry #fields     die Namen und Gestalten der Felder, der Reihe nach
++     entry #required   die Namen der Felder, die vorhanden sein müssen
++   entry .OneOf   eine getaggte Disjunktion von Gestalten
++     entry #variants   die Gestalt jeder Variante
+
+@ 0 4 0 101073d9b3da272516cb95de45eacaf9
++ entry .Underlying   gelöschter Nachweis, dass ein opaker Typ durch ein Primitiv dargestellt wird
++     `Underlying[Alias, Primitive]` wird, gelöscht, im Begleitobjekt eines opaken Typs
++     deklariert (wie `Chroma` `Underlying[Chroma, Int]` deklariert), um `underlying` zu
++     erlauben, das einen Wert des Alias ohne Kosten als seine Darstellung betrachtet. Er ist
++     versiegelt und hat keinen Laufzeitwert.
+
+@ 0 3 0 1ce1797c145a7b350e268f84d4419ac0
++ entry .underlying   betrachtet einen opaken Wert als seine primitive Darstellung, wo der Alias es erlaubt
++     `value.underlying[Int]` kompiliert nur, wo ein gelöschtes `Underlying[Alias, Int]` im
++     Geltungsbereich ist, und ist ein Cast ohne Laufzeitkosten.
+
+@ 0 1 0 1459d6499791256018a8bfeed25da37d
++ entry .Log   protokolliert ein Ereignis auf einem von vier Levels und benennt die Kategorien, zu denen ein Ereignis gehören kann
+
+% 1 1 0 1dc990e6d908fa90151a11d87df18c7b
+
+@ 0 5 0 109415e072b8533103a19808fe62fa87
++       `Log.fine`, `Log.info`, `Log.warn` und `Log.fail` protokollieren einen Wert über die
++       `Loggable`-Instanz im Geltungsbereich, die `Loggable.fanOut` im impliziten
++       Geltungsbereich aus jeder vorhandenen `LogSink` ableitet. Das Argument wird by-name
++       übergeben, und das Level wird zuerst geprüft, sodass der Wert, wenn keine Senke das Level
++       akzeptiert, auch wenn es überhaupt keine Senke gibt, nie konstruiert wird: Eine
++       deaktivierte Log-Anweisung kostet nichts und braucht keinen Schutz.
+
+% 2 1 0 07ee760d116811d712d1b6f83ab62279
+
+% 3 1 0 1569bab5e40924e317907ddfb0e79933
+
+% 0 1 0 0bd60a5b900f06e80b4328c7ae6f8e61
+
+% 0 1 0 1930c8d5d8359b041e49b420f15808f5
+
+% 0 1 0 18fd51e70409e7670ff0f4ca4f02fbb6
+
+% 1 1 0 16793a94998ca12200e1ce8347f3a91e
+
+@ 0 1 0 1a9b025cc02e0cce1e887b017775d2a7
++       Eine Bibliothek deklariert mit `logs`, dass eine Methode ihren eigenen Ereignistyp
++       protokolliert, wie in `Long logs
+
+% 0 1 0 0199e937ab39ad290c6f27c1ad9b5f08
+
+@ 0 7 0 07e53f4b99ffb7ed1c98c7a36140a503
++       Das Objekt hält außerdem ein erweiterbares Vokabular von **Kategorien**, die die Natur
++       eines Ereignisses beschreiben: Ein Ereignistyp oder einer seiner Enum-Fälle mischt einen oder
++       mehrere der Marker-Traits ein (`Log.Network`, `Log.Filesystem`, …), und eine Senke, die mit
++       einer Menge von `Log.Category`-Werten konfiguriert ist (etwa `Logger(…, categories =
++       Set(Log.Network))` aus Eucalyptus), zeichnet nur Ereignisse auf, deren Laufzeittyp einen
++       davon einmischt. Jeder Trait ist mit einem gleichnamigen Objekt gepaart, dem
++       `Category`-Wert, der seine Laufzeitklasse trägt. Der Filter wirkt über Bibliotheken hinweg,
++       sodass die Netzwerkereignisse jeder Bibliothek auf einmal ausgewählt werden können.
+
+% 2 1 0 1dfe74bcd13224b80923e8a9ad75b66b
+
+% 3 1 0 04b0ddaa4d602a650b9a0778c6858772
+
+% 0 1 0 04c2978d70f59de113c7c3b25a8338d7
+
+% 0 1 0 1c14f15b2fb0ea75096f0df32d491f7b
+
+% 0 1 0 0936ffe62a4c4b001d8f150cdb1035d2
+
+% 1 1 0 1b3c3204af62b497149d6172c670e36e
+
+% 1 1 0 16182c854be8173e1fd30ec842df2be4
+
+% 1 1 0 06dab534789db9061e3e3b25e9afeab9
+
+% 1 1 0 03a5293239afdebe0370c796c2883d2e
+
+@ 0 5 0 023d88c2f9d8312407712c050ec88b99
++   entry .fine   protokolliert einen Wert auf `Log.Level.Fine`: hochfrequente Details, nützlich beim Debuggen
++   entry .info   protokolliert einen Wert auf `Log.Level.Info`: eine Zeile je bedeutsamer Operation
++   entry .warn   protokolliert einen Wert auf `Log.Level.Warn`: ein behebbarer oder unerwarteter, aber behandelter Zustand
++   entry .fail   protokolliert einen Wert auf `Log.Level.Fail`: eine Operation, die unbehebbar fehlgeschlagen ist
++   entry .Category   eine Kategorie von Log-Ereignissen, die die Laufzeitklasse ihres Marker-Traits trägt
+
+% 1 1 0 197fa6e21cc0807f16e4238827146702
+
+@ 0 27 0 0afaa1eac3ac1fc518c2566a8f018818
++         Jede Kategorie ist ein Objekt, das mit einem gleichnamigen Marker-Trait gepaart ist; eine
++         Senke prüft ein Ereignis mit `#reference` zur Laufzeit gegen eine Kategorie, da die
++         Aufrufstelle nur den allgemeinen Typ des Ereignisses kennt.
++     entry #reference   die Laufzeitklasse des Marker-Traits der Kategorie
++   entry .Memory   Ereignisse über Speichernutzung und Allokation, als Marker-Trait und seine `Category`
++   entry .Cpu   Ereignisse über Prozessornutzung, als Marker-Trait und seine `Category`
++   entry .Threading   Ereignisse über Threads, Aufgaben und deren Planung, als Marker-Trait und seine `Category`
++   entry .Process   Ereignisse über Prozesse des Betriebssystems, als Marker-Trait und seine `Category`
++   entry .Filesystem   Ereignisse über Dateien und Verzeichnisse, als Marker-Trait und seine `Category`
++   entry .Disk   Ereignisse über Speichergeräte und Volumes, als Marker-Trait und seine `Category`
++   entry .Network   Ereignisse über Netzwerkverbindungen und -verkehr, als Marker-Trait und seine `Category`
++   entry .Database   Ereignisse über Datenbankzugriffe, als Marker-Trait und seine `Category`
++   entry .Cache   Ereignisse über Caching, Treffer und Verdrängungen, als Marker-Trait und seine `Category`
++   entry .Serialization   Ereignisse über Kodierung und Dekodierung, als Marker-Trait und seine `Category`
++   entry .Crypto   Ereignisse über kryptografische Operationen, als Marker-Trait und seine `Category`
++   entry .Auth   Ereignisse über Authentifizierung und Autorisierung, als Marker-Trait und seine `Category`
++   entry .Configuration   Ereignisse über das Lesen von Konfiguration, als Marker-Trait und seine `Category`
++   entry .Dependency   Ereignisse über das Auflösen von Abhängigkeiten, als Marker-Trait und seine `Category`
++   entry .Scheduler   Ereignisse über geplante und periodische Arbeit, als Marker-Trait und seine `Category`
++   entry .Time   Ereignisse über Uhren und Zeitmessung, als Marker-Trait und seine `Category`
++   entry .Ui   Ereignisse über die Benutzeroberfläche, als Marker-Trait und seine `Category`
++   entry .Protocol   Ereignisse über Protokollnachrichten und Handshakes, als Marker-Trait und seine `Category`
++   entry .Compiler   Ereignisse über Kompilierung, als Marker-Trait und seine `Category`
++   entry .Runtime   Ereignisse über die Laufzeitumgebung, etwa das Laden von Code, als Marker-Trait und seine `Category`
++   entry .Gc   Ereignisse über Garbage Collection, als Marker-Trait und seine `Category`
++   entry .Resource   Ereignisse über das Lesen gebündelter Ressourcen, als Marker-Trait und seine `Category`
++   entry .Security   Ereignisse über sicherheitsrelevante Zustände, als Marker-Trait und seine `Category`
+
+@ 0 1 0 07e9bef55299903e12ebb24f09ad3352
++   entry .Level   der Schweregrad eines Log-Ereignisses: `Fine`, `Info`, `Warn` oder `Fail`
+
+% 1 1 0 19e73b29be78ca3f1d9fe1c2802ac33c
+
+@ 0 6 0 072c91625ca0830a0fe15b0edb4ee71c
++         Ein Enum, vom geringsten zum höchsten Schweregrad geordnet. `Fine` sind hochfrequente
++         Details, normalerweise abgeschaltet; `Info` eine Zeile je bedeutsamer Operation; `Warn`
++         ein behebbarer oder unerwarteter, aber behandelter Zustand; `Fail` eine Operation, die
++         unbehebbar fehlgeschlagen ist, protokolliert neben dem Fehler, der ausgelöst wird. Die
++         Schwelle einer Senke (`LogSink#accepts`) verwirft alles unter einem gewählten Level, wie
++         es `Logger(Out, level = Log.Level.Warn)` aus Eucalyptus tut.
++     entry .comparable   ordnet Levels nach Schweregrad, von `Fine` bis `Fail`
+
+@ 0 1 0 092124a07ee3d223034d34473a0114a7
++ entry .Loggable   eine Typklasse, die Ereignisse eines Typs protokolliert, abgeleitet aus den Senken im Geltungsbereich
+
+% 1 1 0 04f40bdddb01eb35004fd82c30547b43
+
+@ 0 7 0 080a740602fa58e9168eee03e41a62c6
++       `event is Loggable` ist das, was `Log.info` und seine Geschwister brauchen. Es wird selten
++       von Hand geschrieben: `.fanOut` leitet im impliziten Geltungsbereich eines ab, indem es das
++       Ereignis einmal in den Trägertyp jeder Senke überträgt (`Transcribable`) und es an jede
++       `LogSink` im Geltungsbereich auffächert, sodass mehrere Senken im Geltungsbereich jeweils
++       jedes Ereignis erhalten und jede ihre eigene Schwelle anwendet. Ohne Senke im
++       Geltungsbereich ist die abgeleitete Instanz stumm. Eine ausdrücklich importierte Instanz hat
++       Vorrang vor der abgeleiteten: `import logging.silentLogging` aus Eucalyptus unterdrückt alle
++       Protokollierung in einer Datei.
+
+@ 0 3 0 002bc3abe93a0cc30fc1d8341f9c7c47
++       Ein `Loggable` ist eine geteilte Capability (`Durable`): Aus jeder Aufgabe wird
++       gleichzeitig hineingeschrieben, und es erfasst die Senken, an die es auffächert, weshalb
++       `logs` seinen Nachweis zu einem erfassenden macht.
+
+% 1 1 0 04ef2a40688e2dbd1effb63cf18051d5
+
+% 0 1 0 0b8e7e103d78896a03550ddcb4561410
+
+% 1 1 0 1d0ef9b85bf7a41a03cde3f5592ceb06
+
+@ 0 8 0 00be14807644cadb1d08341868b632ab
++   entry .silent   ein Logger für einen Ereignistyp, der nichts aufzeichnet, als reiner Wert
++   entry .fanOut   leitet einen Logger aus jeder `LogSink` im Geltungsbereich ab, über das `Transcribable` des Ereignisses
++       Für jedes protokollierte Ereignis wird, wenn irgendeine Senke sein Level akzeptiert, das
++       by-name übergebene Ereignis einmal erzwungen und, sofern `Transcribable#skip` es nicht
++       ablehnt, lazy in den Träger übertragen und an jede Senke übergeben, deren Schwelle und
++       Kategorien (`LogSink#admits`) es akzeptieren.
++   entry #log   protokolliert ein Ereignis auf einem Level und mit einem Zeitstempel
++   entry #contramap   ein Logger für einen anderen Typ, indem jedes Ereignis zuerst auf diesen abgebildet wird
++       Die Funktion darf nur `Durable`-Capabilities erfassen, da der Logger sie behält.
+
+@ 0 1 0 189d3aeaff46ed0106ac680e83735d5a
++ entry .LogSink   ein Ziel für Log-Ereignisse eines Trägertyps, etwa `Logger` aus Eucalyptus
+
+% 1 1 0 07ac2229a58cd1df16691522022a4f48
+
+@ 0 4 0 08ce0375be15ea840659c26ee416f6d4
++       Eine `LogSink[Event, Carrier]` zeichnet Ereignisse auf, die nach `Carrier` (etwa eine
++       `Message`) übertragen wurden. Sie ist die Abstraktion, die `Loggable.fanOut` aus dem
++       Geltungsbereich einsammelt, sodass dieses Modul keine Logging-Laufzeit braucht; `Logger`
++       aus Eucalyptus implementiert sie. Sie ist kontravariant in ihrem Ereignistyp, sodass eine
++       `LogSink[Any, Message]` jedes Ereignis sammelt.
+
+@ 0 2 0 0b65d4e0fb97f58a06c35afdad44a6d8
++       Eine Senke ist eine `Durable`-Capability: Sie ist geteilt und synchronisiert, da jede
++       Aufgabe in sie schreibt, und ambient, typischerweise ein importiertes Paket-Given.
+
+% 1 1 0 05bbb80b43c4bfc90e6d1ee7f891567b
+
+@ 0 6 0 0163b268cc10e4ca1c0094d6bd8eea02
++   entry #accepts   ob die Senke Ereignisse auf einem Level aufzeichnet
++       Wird befragt, bevor das Ereignis erzwungen wird, sodass ein abgelehntes Ereignis nie
++       konstruiert wird.
++   entry #admits   ob die Senke genau dieses Ereignis aufzeichnet; wahr, sofern nicht überschrieben
++       Nimmt das ursprüngliche Ereignis statt seiner Übertragung, sodass eine auf
++       `Log.Category`s gefilterte Senke den Laufzeittyp des Ereignisses prüfen kann.
++   entry #submit   zeichnet ein bereits übertragenes Ereignis auf einem Level und mit einem Zeitstempel auf
+
+@ 0 1 0 15f82ef9b5ceeae5141dd50b7cad93bc
++ entry .Transcribable   eine Typklasse, die ein Ereignis in den Trägertyp einer Senke überträgt
+
+% 1 1 0 14f098e9038084ac19a4d14926971593
+
+@ 0 3 0 0b89d80f946054aa0c87f665ad1c8eb3
++       `event is Transcribable to Carrier` wandelt ein Ereignis in den Typ um, den eine `LogSink`
++       aufzeichnet, und so werden die Ereignisse einer Bibliothek innerhalb derer einer anderen
++       getragen. `transcribes` liest sich in einem Given natürlicher:
+
+% 2 1 0 1ecc3d7259b286dd074af1ba473f958a
+
+% 3 1 0 08d71d08c981067d19ffa3c01e08a911
+
+% 0 1 0 1bef97d983d63cc60c95deb13e56f493
+
+% 0 1 0 1a48be2a7f6a35cb0380e19fab8a207e
+
+% 0 1 0 0dbdcebf678d5abc18796044b6bc5740
+
+% 0 1 0 0093ad08a81d70551415bba751617868
+
+% 0 1 0 0acb785fc8cde11811db63080c640ff1
+
+% 1 1 0 09efc278eff6f47009bb1843b0767d0a
+
+@ 0 2 0 0506b43a13be23d9061800b29ef4c72f
++       Ein Meldungstyp ist aus jedem `Communicable`-Ereignis übertragbar, weshalb das Protokollieren
++       einer `m"…"`-Meldung keine Deklaration braucht.
+
+% 0 1 0 1665f21d4c6abddd1a38f8effef039f9
+
+@ 0 3 0 01a5414344989aff031dde4fa0a017a8
++   entry #record   überträgt ein Ereignis in den Trägertyp
++   entry #skip   ob ein Ereignis verworfen statt übertragen wird; falsch, sofern nicht überschrieben
++   entry #contramap   eine Instanz für einen anderen Typ, indem jedes Ereignis zuerst auf diesen abgebildet wird
+
+@ 0 4 0 043e6bc252313ff413dfdf1fa59f701c
++ entry .logs   der Typ eines Ergebnisses, das von Code berechnet wird, der Ereignisse eines Typs protokolliert: `Result logs Event`
++     `Long logs Backup.Event` ist eine Kontextfunktion, die ein erfassendes `Backup.Event is
++     Loggable` braucht, sodass ein Aufrufer das Ereignis entweder selbst deklarieren oder eine
++     Senke dafür im Geltungsbereich haben muss. Deklarationen lassen sich verketten:
++     `Unit logs Http.Event logs Exec.Event`.
+
+% 2 1 0 12f0f0846b4622961e9e4c359dbb69de
+
+% 3 1 0 1ead999fc729988406d1f91e57dddb34
+
+% 0 1 0 01b734d1942766d5033ce57ed0addc24
+
+% 0 1 0 0ab39b983443f6231214fdf5d770603e
+
+% 0 1 0 1cc6b98563e321e80d31a8bd7c53586b
+
+% 0 1 0 1d5e5abf2490d5890354b1ee431b3423
+
+% 1 1 0 1346bd782d75bfc600b898dbbe421832
+
+@ 0 3 0 112b2d5952ea7a28090691b91664d765
++ entry .transcribes   der Typ einer `Transcribable`-Instanz, in Richtung der Umhüllung gelesen
++     `Outer transcribes Inner` ist `Inner is Transcribable to Outer`: Ein Given davon erlaubt es,
++     `Inner`-Ereignisse dort zu protokollieren, wo `Outer`-Ereignisse akzeptiert werden, umhüllt
++     als `Outer`.
+
+@ 0 1 0 0dcc56428af0e4f71f367ef347caa380
++ entry .Printable   eine Typklasse, die einen Wert als Text für ein Terminal mit bekannten Fähigkeiten darstellt
+
+% 1 1 0 0c0596ab95cfb43b18196e9c7ff979d5
+
+@ 0 4 0 1286e32e7d6023ac1099ba259f867e8d
++       `value is Printable` stellt einen Wert bei gegebenem `Termcap` als `Text` dar, sodass ein
++       Wert, der Farbe oder Gestaltung tragen kann (ein `Teletype` aus Escapade, eine `Message`),
++       auf einem Terminal ohne ANSI-Unterstützung zu schlichtem Text herabgestuft wird.
++       `Out.println` und `Err.println` aus Turbulence nehmen jeden `Printable`-Wert, mit einem
++       `Termcap` im Geltungsbereich.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 0c181d92ecae05bd19ca7f9254fcbf23
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 0 1 0 11130178611d4045061ce2bf7fde3d82
+
+% 1 1 0 10b46765b9ab41c4011b7198a102b9f3
+
+@ 0 2 0 09deafb0029cbbc6119e379b857e6f3b
++       Das Begleitobjekt macht `Text`, `String` und `Char` als sie selbst druckbar; Escapade stellt
++       Instanzen für seinen gestalteten Text bereit.
+
+% 1 1 0 10d6a477e28b05f7060ad4fbca7ff1e3
+
+@ 0 7 0 1ce67ee82aa6016615f997056228f62c
++   entry .text   `Text` wird auf jedem Terminal als es selbst gedruckt
++   entry .string   ein `String` wird als derselbe Text gedruckt
++   entry .char   ein `Char` wird als Text aus einem Zeichen gedruckt
++   entry #print   stellt einen Wert für ein Terminal mit den gegebenen Fähigkeiten dar
++   entry #contramap   eine Instanz für einen anderen Typ, indem jeder Wert zuerst abgebildet wird, mit dem `Termcap` im Kontext
++       Die Funktion ist eine Kontextfunktion des `Termcap`, sodass die Abbildung selbst davon
++       abhängen kann, was das Terminal unterstützt.
+
+@ 0 1 0 0134cdaf89d3d21505b4dd901dc9adab
++ entry .Termcap   die Fähigkeiten eines Terminals: ANSI-Unterstützung, Farbtiefe und Größe
+
+% 1 1 0 1bc09f23c755fe680f44b8fff0dd981b
+
+@ 0 6 0 1468d884ec9894fe1326dd69240196ff
++       Ein `Termcap` im Geltungsbereich sagt einem `Printable`, wie es darstellen soll: ob
++       ANSI-Escapes verstanden werden, wie viele Farben verfügbar sind sowie Breite und Höhe des
++       Terminals, die standardmäßig unbegrenzt sind (`Int.MaxValue`), sodass nichts umbricht. Ein
++       festes wird namentlich aus `termcapDefinitions` importiert; `termcaps.environmentTermcap`
++       aus Ambience liest die Fähigkeiten des Terminals aus der Umgebung, und der Aufruf eines
++       Daemons trägt die seines Clients.
+
+% 0 1 0 17200be02b9e761f13aaea5e1b969e5d
+
+% 0 1 0 1a6e6b9ab8284f7404fee3fb995d1df5
+
+@ 0 4 0 0196afec4c1c3e1516e3e0b5ca355ea9
++   entry #ansi    ob das Terminal ANSI-Escape-Sequenzen versteht
++   entry #color   wie viele Farben das Terminal zeigen kann
++   entry #width   die Breite des Terminals in Spalten; unbegrenzt, sofern nicht bekannt
++   entry #height   die Höhe des Terminals in Zeilen; unbegrenzt, sofern nicht bekannt
+
+@ 0 1 0 0d1b3ff7a42178d10836232c75eb5f32
++ entry .ColorDepth   wie viele Farben ein Terminal anzeigen kann, von keiner bis zu 24-Bit-True-Color
+
+% 1 1 0 12c18da1d1fe9e7500f815c6ec13464f
+
+@ 0 3 0 01547346f1faf82c109dc2c24eb682da
++       Ein Enum, vom wenigsten zum meisten Fähigen: `NoColor`; `Indexed8` und `Indexed16`, die
++       grundlegenden ANSI-Paletten; `Cube4` und `Cube6`, die Paletten mit 88 und 256 Farben und
++       einem Farbwürfel; und `TrueColor`, 24-Bit-Farbe.
+
+% 2 1 0 12df9d23e571fa3d1cf046844aca01b3
+
+% 3 1 0 0a169dab4ab5424404c74bf4a418e1fe
+
+% 0 1 0 168e706517284d621638c1daf770ccd4
+
+% 1 1 0 1672c4952fe5911f0294c33305a3ebf6
+
+@ 0 3 0 0f1d489d63281a4d01bbc9b4094c2311
++   entry .apply   die Farbtiefe für die Farbanzahl eines Terminals, wie `tput colors` sie meldet
++       8 ist `Indexed8`; 15 oder 16 `Indexed16`; 52, 64 oder 88 `Cube4`; 256 `Cube6`; 65536 oder
++       16777216 `TrueColor`; alles andere `NoColor`.
+
+@ 0 1 0 044b7607d41ffd85142539108aa62fac
++ entry .termcapDefinitions   feste Terminalfähigkeiten, jede ein Given, das namentlich importiert wird
+
+% 1 1 0 1610a311f8e9e92b173dc5be31072e4a
+
+@ 0 3 0 1317d5032be7645b125abf3bc0ec20dc
++       Für ein Programm, das weiß, worauf seine Ausgabe dargestellt wird, oder einen Test oder ein
++       Dokument, dessen Ausgabe nicht vom ausführenden Terminal abhängen darf. Jedes ist ein Given,
++       das namentlich importiert wird, da `import termcapDefinitions.*` keine Givens importiert:
+
+% 2 1 0 15bd2b27e8edd80612079a5564441ef9
+
+% 3 1 0 1ebab7d5fedc6ec403b3426b1e244195
+
+% 2 1 0 0c565b85b2512ff8183fc9d24d189161
+
+% 1 1 0 13f6d1697358f72c0acea5010937235f
+
+@ 0 1 0 0315b74d7c3d057412827aa0c018288a
++       Keines meldet eine Breite oder Höhe, daher bricht Text nie um.
+
+% 1 1 0 0e98ccdf19ba68950ab5ae37a7f00e0a
+
+@ 0 3 0 026d0d2563eb26450b8d65ab5695c8f5
++   entry .basicTermcap   ein Terminal ohne ANSI-Unterstützung und ohne Farbe: schlichter Text
++   entry .xterm256Termcap   ein ANSI-Terminal mit der Palette aus 256 Farben
++   entry .xtermTrueColorTermcap   ein ANSI-Terminal mit 24-Bit-True-Color
+
+@ 0 1 0 03885e3c5e3ab5740b4842249fda9a9a
++ entry .Chromatic   eine Typklasse, die eine Farbe beliebiger Darstellung auf ein gepacktes 24-Bit-RGB-`Chroma` reduziert
+
+% 1 1 0 05d684ce7664315414888b8511c51516
+
+@ 0 3 0 0739f70e09184205067d4513814161b9
++       `color is Chromatic` lässt eine API, die zeichnet oder gestaltet, eine Farbe aus jeder
++       Bibliothek akzeptieren: Das CSS von Cataclysm, das SVG von Savagery und die
++       Terminalgestaltung von Escapade nehmen jeweils einen `Chromatic`-Wert, und die Farbräume und
++       Pixel von Iridescence stellen Instanzen bereit.
+
+% 2 1 0 0b651ce05e605f761b7cda53ef30df71
+
+% 3 1 0 114c36314cf59c811a9523ad73f94282
+
+% 0 1 0 0c3d9837ec3236620afd381b46d54a98
+
+% 0 1 0 06f3c2b2603e1ebf00c9d9202b396ca4
+
+% 1 1 0 153aa33622b7a49b1ff2f592a9ee7c79
+
+% 1 1 0 08e1dc0d3329074f105710aac8249d75
+
+@ 0 6 0 1b7e97080f5a6051063703d1eb0ce738
++   entry #convert   die Farbe als `Chroma`
++   entry #chroma   die Farbe als `Chroma`: `color.chroma`
++   entry #red     der Rotanteil der Farbe, 0 bis 255
++   entry #green   der Grünanteil der Farbe, 0 bis 255
++   entry #blue    der Blauanteil der Farbe, 0 bis 255
++   entry #contramap   eine Instanz für einen anderen Typ, indem er zuerst auf eine Farbe dieses Typs abgebildet wird
+
+@ 0 4 0 1390d81e50f0302e0183bb14e3e3565e
++ entry .Chroma   eine Farbe als 24-Bit-RGB, in ein `Int` gepackt, die gemeinsame Währung von `Chromatic`
++     `Chroma` ist der opake Typ `anticipation.internal2.Chroma`, hier exportiert: ein `Int`,
++     dessen untere 24 Bit Rot, Grün und Blau halten, je acht Bit, das höchstwertige zuerst. Es
++     ist der Typ, in den jede `Chromatic`-Instanz umwandelt, und ist selbst `Chromatic`.
+
+% 2 1 0 13e67704a7afa5c215f1fc3947643769
+
+% 3 1 0 1f9bdc50207072160c17fe7c6a87342b
+
+% 0 1 0 1b23ab95bcf0d2b91d7e3e9a02e375bd
+
+% 0 1 0 0b4328b7a03ab8540b9d72320dc9acdd
+
+% 0 1 0 10f6e01c1d0e507202af9fc68989096b
+
+% 1 1 0 11721bf18c2ae3c803d0914466c4be06
+
+@ 0 2 0 0cb305b353392bdb0313cde4af195ead
++     Die Erweiterungen `red`, `green` und `blue` maskieren den Anteil, sodass die obersten acht Bit
++     des `Int` nie Teil der Farbe sind; `underlying` liefert das gepackte `Int`.
+
+@ 0 1 0 0bf17c1bf9f3b2191592bb995a8aae59
++ entry .internal2   der Ort des opaken Typs `Chroma`
+
+% 1 1 0 032cb83370563ea416a1d3ff656db7d4
+
+% 2 1 0 0341b94ec22f22c11d02c3419a235720
+
+@ 0 3 0 02f355686443aec50f3bb766d34ffd08
++       Nicht zur direkten Verwendung: `Chroma` wird von hier in das Paket `anticipation`
++       exportiert, und seine Seite dort enthält die vollständige Beschreibung.
++   entry .Chroma   eine gepackte 24-Bit-RGB-Farbe; siehe `anticipation.Chroma`
+
+% 1 1 0 0062faec9b64f0f80955eef41109d7dd
+
+@ 0 9 0 03dd23278ac88a33011cf6100385aad2
++         Der opake Typ `Chroma <: Matchable`, zur Laufzeit ein `Int`.
++     entry .apply   ein `Chroma` aus einem gepackten `Int` oder aus Rot-, Grün- und Blauanteil
++         Jeder Anteil wird auf acht Bit maskiert.
++     entry .chromatic   ein `Chroma` ist als es selbst `Chromatic`
++     entry .underlying   gelöschter Nachweis, dass ein `Chroma` durch ein `Int` dargestellt wird
++   entry .underlying   das gepackte `Int` eines `Chroma`
++   entry .red     der Rotanteil eines `Chroma`, 0 bis 255
++   entry .green   der Grünanteil eines `Chroma`, 0 bis 255
++   entry .blue    der Blauanteil eines `Chroma`, 0 bis 255
+
+@ 0 1 0 044a562b054a60f5047ef5b7687bd9e3
++ entry .Channel   ein Phantomkanal eines gepackten Pixel-Layouts, etwa `Red[10]`, mit Match-Typen über Layouts
+
+% 1 1 0 031a5fe5320889890b2aece8cccbfa15
+
+@ 0 6 0 014fb8fbdc93c7521967739b4c339cfd
++       Ein Kanal ist ein Farbanteil mit einer Bittiefe, der nie instanziiert wird: `Red[10]` sind
++       zehn Bit Rot. Ein Pixel-**Layout** ist ein Tupel von Kanälen, der höchstwertige zuerst, etwa
++       `(Red[10], Green[12], Blue[10])`, und die Pixeltypen von Iridescence sind mit einem solchen
++       parametrisiert. Jede Kanalfamilie trägt eine literale Beschriftung (`"red"`, `"cyan"`, …),
++       über die die Match-Typen im Begleitobjekt sie innerhalb eines Layouts finden; die Hierarchie
++       ist offen, sodass eine Bibliothek Kanäle mit eigenen Beschriftungen hinzufügen kann.
+
+% 2 1 0 11abc28b5fa05d62052a403071098ff6
+
+% 3 1 0 00f38fb75f8776ef0f7845184bf55150
+
+% 0 1 0 1abc5330569aef8e0a216ea9f43813b0
+
+% 0 1 0 0314f65fa035323b1b4c8c1ca4aff796
+
+% 0 1 0 0b0716dd0b6dcf4b094d1b022e3b2c16
+
+% 1 1 0 0459d03d9bbd20f912476751c60e569a
+
+@ 0 3 0 0b89adb1ed3b07de146c032892c34eac
++       `Channel` wird nicht in das `soundness`-Umbrella exportiert, wo der Name einem
++       WebSocket-Kanal gehört; erreichen Sie es als `anticipation.Channel`. Die Kanalfamilien `Red`,
++       `Green`, `Blue` und die übrigen werden exportiert.
+
+% 0 1 0 0417d93f766121a303341663266a570b
+
+@ 0 10 0 0fb0be04b4f8c9ec15405b2efd63fe65
++   entry .Label   die literale Beschriftung eines Kanals: `Label[Red[8]]` ist `"red"`
++   entry .Bits   die Bittiefe eines Kanals: `Bits[Red[8]]` ist `8`
++   entry .TotalBits   die gesamte Bitbreite eines Layouts
++   entry .Has   ob ein Layout einen Kanal mit einer Beschriftung hat, als literales `Boolean`
++   entry .Shift   der Bit-Offset eines beschrifteten Kanals innerhalb eines Layouts
++       Die Gesamtbreite der darunter gepackten Kanäle. Er reduziert sich nicht für ein Layout ohne
++       den Kanal, was Accessors wie `.red` oder `.cyan` statisch auf Layouts beschränkt, die ihn
++       haben.
++   entry .Depth   die Bittiefe eines beschrifteten Kanals innerhalb eines Layouts
++   entry .Storage   das schmalste Primitiv, das ein Pixel eines Layouts aufnimmt: `Byte`, `Short`, `Int` oder `Long`
+
+@ 0 9 0 0480a9c6e7f256971eb06068bb8ef028
++   entry .Red   ein Pixelkanal für Rot, mit gegebener Bittiefe, beschriftet `"red"`
++   entry .Green   ein Pixelkanal für Grün, mit gegebener Bittiefe, beschriftet `"green"`
++   entry .Blue   ein Pixelkanal für Blau, mit gegebener Bittiefe, beschriftet `"blue"`
++   entry .Alpha   ein Pixelkanal für Deckkraft, mit gegebener Bittiefe, beschriftet `"alpha"`
++   entry .Cyan   ein Pixelkanal für Cyan, für CMYK-Layouts, beschriftet `"cyan"`
++   entry .Magenta   ein Pixelkanal für Magenta, für CMYK-Layouts, beschriftet `"magenta"`
++   entry .Yellow   ein Pixelkanal für Gelb, für CMYK-Layouts, beschriftet `"yellow"`
++   entry .Key   ein Pixelkanal für Schwarz (das K von CMYK), beschriftet `"key"`
++   entry .Grey   ein Pixelkanal für Grauintensität, für monochrome Layouts, beschriftet `"grey"`
+
+@ 0 1 0 0bd1d187bcc33f2d1b663e1d72cce8ac
++ entry .Graphical   eine Typklasse, die jedes Bild als Raster von `Chroma`-Pixeln liest
+
+% 1 1 0 0758882cce30e3591ea019784041b487
+
+@ 0 3 0 143f7fbad767d09902cd40985c6156c6
++       `image is Graphical` legt die Abmessungen eines Bilds und seine Pixel als gepacktes RGB
++       offen, sodass ein Verwender ein Bild vom Typ jeder Bibliothek zeichnen kann: Escapade stellt
++       jeden `Graphical`-Wert auf einem Terminal dar, und `Raster` aus Hallucination stellt eine
++       Instanz bereit.
+
+% 1 1 0 05fcfc458ae1a80508065449e3c31da9
+
+@ 0 3 0 15e2ff80ded87a871347fe9ce7058c3a
++   entry #width    die Breite des Bilds in Pixeln
++   entry #height   die Höhe des Bilds in Pixeln
++   entry #pixel    die Farbe des Pixels in einer Spalte und Zeile
+
+@ 0 1 0 0c45f6ca5b7023310f770e9b4fa26aa9
++ entry .Focusable   eine Typklasse, die ein Element in einem Dokument lokalisiert, in den Begriffen eines Browser-Treibers
+
+% 1 1 0 09ac9b39a09065bc01a1d1edd9283996
+
+@ 0 6 0 0f08f2c73bf2ad4f1800e6d583bee8ba
++       `value is Focusable` benennt ein Lokalisierungsverfahren von WebDriver (`#strategy`:
++       `css selector`, `xpath`, `link text`, `tag name`) und stellt einen Wert darin dar
++       (`#focus`), sodass `element` und `\` aus Tarantula einen Selektor, einen XPath, ein HTML-Tag
++       oder schlichten Linktext akzeptieren, ohne von den Bibliotheken abzuhängen, die diese
++       definieren. Diese Bibliotheken (Cataclysm, Xylophone, Honeycomb, Nomenclature) stellen
++       Instanzen in ihren eigenen Begleitobjekten bereit; das Begleitobjekt hier lässt `Text` als
++       Linktext fokussieren.
+
+% 2 1 0 068232841995a874102eef8d24ee9559
+
+% 3 1 0 011a6ce3dad953341ce463fc9bd395b5
+
+% 0 1 0 1ddab138e2cb3140073e1b1c059f36af
+
+% 0 1 0 1853c678d7166431185ef35eaf226c7b
+
+% 1 1 0 08604fc0ed6e208b195120c09f5275e6
+
+@ 0 5 0 17370b5d74bd4e4f0ee225ce2d38dd23
++       Es ist eine reine Typklasse: Die Darstellungsfunktion darf nichts erfassen.
++   entry .apply   ein `Focusable` aus dem Namen eines Verfahrens und einer reinen Darstellungsfunktion
++   entry .text   `Text` fokussiert als Linktext: das Element, dessen Link genau diesen Text hat
++   entry #strategy   das Lokalisierungsverfahren von WebDriver, etwa `css selector` oder `xpath`
++   entry #focus   der Wert, dargestellt in der Syntax des Lokalisierungsverfahrens

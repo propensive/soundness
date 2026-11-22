@@ -1,0 +1,348 @@
+orthant 2 language
+
+@ 0 1 0 073723abd79f897a01da61aed36d7cfd
++ ## Dinheiro
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 4 0 1a3422564f9e94431f1fdccc6c64749c
++ Dinheiro é uma quantia em ponto fixo de uma moeda específica, e a moeda faz parte do seu tipo. Um
++ `Money in "EUR"` e um `Money in "GBP"` não podem ser somados, porque somar euros a libras não é
++ uma soma, mas um erro. Fazer da moeda um parâmetro de tipo é a forma de excluir esse
++ [estado impossível](../../philosophy/impossible-states.md).
+
+@ 0 2 0 064350c7771919b0040bfd7ed049ac66
++ Dentro de uma mesma moeda, as quantias se somam, se subtraem, são escaladas, divididas e
++ comparadas. Uma quantia se divide em partes iguais sem perder um centavo, e um preço carrega seu
++ imposto ao lado do seu principal.
+
+@ 0 2 0 17d352e0795472a20216196297cb9d89
++ Trinta e sete moedas estão definidas, cada uma como um valor que constrói quantias. Uma quantia é
++ escrita com seu símbolo ou com seu código ISO, conforme decide um estilo no escopo.
+
+@ 0 1 0 06a6fb91044496b50928083771548fc5
++ ### Sobre dinheiro
+
+@ 0 1 0 172212b7f304197010fbc5eb3a36f876
++ Os dois erros clássicos com dinheiro são de representação e de confusão.
+
+@ 0 2 0 06db9485eb052a671ad66a5b0b83d6e7
++ Representar uma quantia como número de ponto flutuante convida a erros de arredondamento:
++ `0.1 + 0.2` não é `0.3` em ponto flutuante binário. Dinheiro deve ser guardado em números inteiros
++ da menor unidade da moeda.
+
+@ 0 3 0 0c7c71faebbab3430e5193e4ce8fae5a
++ Uma quantia sem sua moeda é um número fingindo ser dinheiro. Um programa que soma um valor em
++ dólares a um valor em euros produz um resultado que parece plausível e não significa nada.
+
+@ 0 4 0 053b56ed668cc82d0a815d1a269aff72
++ Aqui uma quantia é armazenada como um número inteiro de *unidades menores*, como centavos ou
++ pence, e a moeda faz parte do tipo, de modo que uma operação entre moedas não compila. A divisão e
++ a alocação são feitas como a contabilidade exige: uma divisão produz partes que diferem em no
++ máximo uma unidade menor, e que somam exatamente o original.
+
+@ 0 2 0 07c40f7bcd56d9dd127f7c9738922e6b
++ Tudo vem do pacote `soundness`. As moedas em uso são importadas pelo nome, e o último import
++ permite que os exemplos imprimam seus resultados:
+
+% 2 1 0 01ce785686a310d0044d228be12b9f67
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1983cda2abcdd53d0362a0ccc635b790
+
+% 0 1 0 0ef55dc9784483881cc0b3c23e742489
+
+% 0 1 0 01bdd3a165aaad610157edfc9b23e537
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 06f822aad48a43c81c8e6aaff0ab18c8
++ ### Quantias
+
+@ 0 2 0 09adb134ee2237a5153c80fdce6e80a9
++ Uma moeda constrói uma quantia a partir de um número decimal, arredondando para a unidade menor
++ mais próxima. O tipo registra a moeda:
+
+% 2 1 0 010d96d17680a13d05b4bae3f7bf20c0
+
+% 0 1 0 074edfe7679ff192143a7117c5eb3e15
+
+% 1 1 0 071d1de94e09b96e11631a4e0ca2b46b
+
+% 3 1 0 1b9fb21393059593031104ba1985fdfc
+
+% 4 1 0 1950025d3e50007101ea8b8285289c7e
+
+% 5 1 0 132855da7747e14c058e93fd6e078215
+
+% 0 1 0 10cc140867c3094a0a849123ea078474
+
+% 1 1 0 05da47285b4466bc01a946741fa35f60
+
+@ 0 1 0 03da9f58f0c1529414c84b6ea9ff4433
++ ### Aritmética
+
+@ 0 2 0 15ffdd6bfd6ee5771e3a9c3024fde615
++ Quantias de uma mesma moeda se combinam com os operadores usuais. Multiplicar ou dividir por um
++ número escala uma quantia:
+
+% 2 1 0 0f8feea36c258bef1e46d109bbe0b3a9
+
+% 3 1 0 1b101f4e12b8b8471d27c7f572c6f2c2
+
+% 4 1 0 1d4063cedacb17910a57b45691c4e76a
+
+% 0 1 0 1b7203fb977238fb15c3421e385bdf2e
+
+% 0 1 0 16559255acb1934f08687b801d03879f
+
+% 0 1 0 0c8661b4aa38f8060870f3dbcc673ed0
+
+% 0 1 0 19c80925bedfe7b212b649f2c84347a2
+
+% 0 1 0 0cac4d7b172cf1890b015c35e6c933cc
+
+% 1 1 0 1feb4843f87d3ddd18c7109855f9bf4e
+
+@ 0 1 0 1729cfc16a17666211ea08bf6952b8f3
++ Misturar moedas não compila:
+
+% 2 1 0 1113985ec319e26318036ee63e9eb6e0
+
+% 3 1 0 015ff929a48098f91f9a6f3374771f0e
+
+% 4 1 0 0bbe63e547ba5af21210d41ecea4a258
+
+% 5 1 0 1f41a04d75e2a9a504b1bce78bb30f8c
+
+% 0 1 0 1ae202cf05638130117e81ac959e0feb
+
+% 1 1 0 00e0c8d3944ac93705777721958f2de0
+
+@ 0 2 0 1f8da5828ae927340a1070d74a8c0c25
++ Não há taxa de câmbio embutida. Converter entre moedas é uma decisão de negócio, com uma data e
++ uma fonte, e não uma identidade aritmética, então fica a cargo do programa defini-la.
+
+@ 0 3 0 06f2576ebd9d010915ca5a1b1d949e80
++ Por baixo, uma quantia é um `Long` de unidades menores, então seu `toString` é o de um `Long`: a
++ contagem bruta, sem moeda e sem ponto decimal. Uma quantia é escrita com `show` e o
++ [estilo de moeda](#rendering).
+
+@ 0 2 0 111d0c65151badc6105438bd610151c7
++ Os operadores vêm das [classes de tipos](numbers.md#overloading-the-operators) que tornam `+` e
++ `*` disponíveis para qualquer tipo.
+
+@ 0 1 0 09ef0ec7f86b92fa05f80edb9a1a3a30
++ ### Outras moedas
+
+@ 0 2 0 1ed5f306dd41529602a4bfe98b75ddb3
++ Uma moeda que não está entre as fornecidas é definida em uma linha, que dá seu código ISO, seu
++ nome, seu símbolo e o número de unidades menores em uma unidade maior:
+
+% 2 1 0 070524c05ae9b5680a655b855050c7d4
+
+% 0 1 0 1b0451f8414e12b31cec892a3c0e6707
+
+% 1 1 0 01b815f81e5727961df41c4bcec1a679
+
+@ 0 1 0 00c2e8b4028358be0ac5a18038ae5359
++ Cada parte do tipo tem seu lugar:
+
+% 2 1 0 1018984a83f0836500bf45ca2083c9b6
+
+@ 0 7 0 0fb0dad662d21ef60a95c557cfaffc2f
++ column  Posição
++ column  Dá
++ column  Aqui
++ row  antes de `is`  o código ISO  `"NOK"`
++ row  depois de `of`  o nome  `"Norwegian Krone"`
++ row  depois de `in`  o símbolo  `"kr"`
++ row  depois de `over`  as unidades menores em uma maior  `100`
+
+% 1 1 0 18aa40bdb09d804906d019f23a9f92c1
+
+@ 0 1 0 0f552d77a6ffc6670171f768349317b6
++ ### Divisão
+
+@ 0 3 0 1b2b86818d7fe82e026d3a9fb7098737
++ `share` divide uma quantia em um número de partes que somam exatamente o todo. Qualquer resto é
++ distribuído uma unidade menor de cada vez. Esse é o problema de alocação que a divisão ingênua
++ erra: três partes iguais de €3,01 perderiam um centavo.
+
+% 2 1 0 17db037db124d6401394d1d893be1bd5
+
+% 3 1 0 03baf25885be8187129ff9e9d6c4c763
+
+% 4 1 0 157396225b8e3d9a1bfa120ffb1c0753
+
+% 0 1 0 1cdfddbf28ff31d7080ea3c1fe58bf41
+
+% 1 1 0 0255fc2ebdc4c8311329042961d185aa
+
+@ 0 1 0 0aaac50846d5aa950c3e07934ea1f169
++ ### Preços e impostos
+
+@ 0 1 0 02317f0c0938105a00d9a9c669df31ec
++ Três partes olham para o mesmo preço e veem números diferentes:
+
+% 2 1 0 0e08882a4cfbf7f40e5951ba98b8b885
+
+@ 0 6 0 17fcf16dad8c33940783fae02c80b087
++ column  Parte
++ column  Se importa com
++ column  Membro de um `Price`
++ row  o vendedor  a quantia sem imposto  `principal`
++ row  o comprador  a quantia com imposto  `inclusive`
++ row  a autoridade fiscal  a diferença  `tax`
+
+% 1 1 0 18bab11434c3b4831db3b99bba21414b
+
+@ 0 3 0 1df23ca962a4185218faca24e7d86fec
++ Guarde os três em um único tipo, e fica fácil acrescentar imposto a um valor que já o tinha, ou
++ relatar o errado. A aritmética não consegue detectar esse erro, porque cada um desses números é
++ uma quantia válida de dinheiro.
+
+@ 0 3 0 0e11728a8903adb90996c90136abe14a
++ Um `Price` é, portanto, uma quantia principal e o imposto sobre ela, mantidos separados, de modo
++ que qualquer um deles está disponível com exatidão e não precisa ser reconstruído por divisão.
++ `tax` constrói um preço a partir de uma alíquota, e `inclusive` dá o total:
+
+% 2 1 0 10451918c8bfd932001a8cd4101060c8
+
+% 0 1 0 0e4c40cf4058af780cecffb98c4a53fd
+
+% 1 1 0 1e48a41ba487319d06f344a16e209052
+
+% 3 1 0 00a3b433a7c95c5a149adaa5c08b91fc
+
+% 4 1 0 114dc952bb86341911078e2f6d92fad7
+
+% 5 1 0 145a73b9c4a54edb0f4d33876ad6c6f7
+
+% 0 1 0 00434daa526b53630197b9374e7e302f
+
+% 0 1 0 18bde22ac4d07d8002fdf5be13522901
+
+% 0 1 0 0eb190afc636e1f506e43cd5b67bb3d6
+
+% 1 1 0 03c713059130202913e3002db1624eaa
+
+@ 0 3 0 05cb60c0250da1a715ac682b3cbc86b3
++ O imposto é arredondado *para cima* até a unidade menor. É isso que as autoridades fiscais
++ exigem, e é o que o arredondamento ingênuo erra exatamente nos casos que importam. Vinte por cento
++ de £2,94 são £0,588, que é cobrado como £0,59:
+
+% 2 1 0 0ba73ec878eeec470991b81c555100a5
+
+% 3 1 0 1cd35bc3bc6506a304afb1bbbe5ba9e3
+
+% 4 1 0 1b30753b5ac4b0ce159a9b447cdea865
+
+% 0 1 0 0b8c8262d9388b22173e770041d43f07
+
+% 1 1 0 139c9388c41ecf86199f386c7f2c150f
+
+@ 0 2 0 044e6a84993457d713d6efc667abe81c
++ Um `Price` deliberadamente não tem `show`. Exibir a quantia com ou sem imposto é uma decisão que a
++ aplicação deve tomar explicitamente, exibindo o membro a que se refere.
+
+@ 0 1 0 0644d0e91014059201012368fc0e7313
++ ### Renderização
+
+@ 0 2 0 0a1b394eafa1be891c75c87d209c937b
++ Uma quantia é exibida por meio do estilo de moeda no escopo. O estilo local usa o símbolo da
++ moeda, e o estilo genérico, seu código ISO:
+
+% 2 1 0 098142e142cae66514bad1e05e80f075
+
+% 3 1 0 0d2f73457cdaa2e905a259a02e985411
+
+% 4 1 0 0637d644cde81e501c14f8c322dbb797
+
+% 0 1 0 127c605c57e5283d134adb33c923926c
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 112b55830886d18e0193013897be557d
+
+% 0 1 0 0053ce1967a3e6bb14964a967b946b57
+
+% 1 1 0 1f7bff9f53b56f781af8136ce30c7d77
+
+@ 0 2 0 1d0b911e72f63daf07133bd4a754c989
++ [Internacionalização](internationalization.md) trata da questão mais ampla de apresentar valores
++ para uma localidade específica.
+
+@ 0 1 0 05d0b6b548616d8a0dc858a09587bf00
++ ### Identificadores
+
+@ 0 4 0 01a25581e8dc9e8010b3b1905ba0d972
++ Os números de identificação das finanças também são verificados aqui. Um
++ [ISIN](https://en.wikipedia.org/wiki/International_Securities_Identification_Number) é o
++ identificador internacional de um título. O [interpolador] `isin"…"` valida um em
++ [tempo de compilação], incluindo seu dígito verificador, e `Isin(…)` faz o mesmo em tempo de
++ execução:
+
+% 2 1 0 017e6f00dbfb6f330df4f1d34984ca4e
+
+% 0 1 0 1224f7d8da46df2f0d04f458c627e40d
+
+% 1 1 0 080183d5485e23251df78664904aca96
+
+% 3 1 0 198341460fc9b30d14efec57474547c1
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 15213f0a8b359fef08648a7457984321
+
+% 1 1 0 0ccefed21d1bca3009e77af78a354521
+
+@ 0 2 0 068e6a7f75c4f2df18374014e22c11ed
++ Um `Isin.Error` diz qual regra foi violada, de modo que um identificador rejeitado pode ser
++ relatado com precisão, e não apenas como “inválido”:
+
+% 2 1 0 0594f12bcaf4ebb21aec8dacb19082dd
+
+@ 0 6 0 06d5ba27120d1c9b0aaeb570416831c6
++ column  Motivo
++ column  Regra
++ row  `WrongLength`  um ISIN tem 12 caracteres
++ row  `BadCountryCode`  ele começa com um código de país válido
++ row  `InvalidCharacter`  todo caractere é um dígito ou uma letra maiúscula
++ row  `LuhnCheck`  seu último dígito passa na verificação de Luhn
+
+% 1 1 0 01a01fb07e39555e05286c94c7e82c9f
+
+@ 0 2 0 199aa4a2daac6ac91b807325169b8188
++ Um `Isin` é um [tipo opaco] sobre um `Long`. Um identificador validado não custa nada para ser
++ guardado ou comparado, e não pode ser confundido com uma string não validada.
+
+@ 0 2 0 0b7997bd5e4398bd19ac3017f469b232
++ `Luhn` verifica o [dígito de Luhn](https://en.wikipedia.org/wiki/Luhn_algorithm) que os números de
++ cartão usam:
+
+% 2 1 0 10e8bf859879b94a1a9433f390a55a0e
+
+% 3 1 0 1a4090a3d522377a0825d326a359ed9e
+
+% 4 1 0 053b67bcaeb499910931344b872814ce
+
+% 0 1 0 18a274811286550500b3c848c8f4dcca
+
+% 0 1 0 08cac47626efc6cf0da2533e068cdd6f
+
+% 1 1 0 1667545dc235364e0eb0bfdb12774d16
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 1 0 18a61f76e6d458720e64896e3e7be1dc
++ - [Grandezas](quantities.md) trata uma moeda como uma unidade, e [testes](testing.md) verifica que um literal de moeda inválido não compila.

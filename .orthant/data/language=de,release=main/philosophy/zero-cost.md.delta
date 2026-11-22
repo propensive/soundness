@@ -1,8 +1,0 @@
-orthant 1 language
-
-- The [metaprogramming](/doc/soundness/modules/metaprogramming.md) module exists partly to make this
-- possible: if a claim about what the compiler emitted is worth making, it is worth
-- checking on every build.
-+ Das Modul [Metaprogrammierung](/doc/soundness/modules/metaprogramming.md) existiert zum Teil, um das zu
-+ ermöglichen: Wenn eine Behauptung darüber, was der Compiler ausgegeben hat, es wert ist, aufgestellt
-+ zu werden, ist sie es auch wert, bei jedem Build geprüft zu werden.

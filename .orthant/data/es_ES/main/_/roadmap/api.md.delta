@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 2 0 066aaeb51b24ab230523fd39492a5681
++ La superficie ya se ha medido: `etc/api-reduction-candidates.md` inventaría cada identificador que
++ exporta el paquete `soundness` y clasifica los candidatos a reducción:
+
+@ 0 3 0 17e26bb135f0896e0d3cd0368f332847
++ Terminado cuando: la tabla de renombrados de `etc/api-nesting-proposal.md` (que sustituyó a la
++ sección C1) está aplicada por completo, y la sección «Remaining names by prefix family» del
++ inventario no enumera ningún nombre fuera de «Reviewed items which should not be moved».
+
+@ 0 2 0 13bb210f1e21a6561a82bf562dce0f6a
++ Terminado cuando: la sección C2 del inventario está vacía. (C3 y C3b quedaron sustituidas por
++ `etc/api-nesting-proposal.md` y se cerraron con ella.)
+
+@ 0 4 0 07f55ed7fa1d73e7092eee115a72ffa6
++ Las normas de nombres de `doc/work/standards/naming.md` y `doc/work/standards/given-naming.md` obtienen un
++ barrido de conformidad, de modo que una deriva de vuelta a la incoherencia se detecte de forma
++ mecánica y no en la revisión. `etc/check-given-uniqueness.py`, que ejecuta `make build`, cubre la
++ mitad de los nombres de givens; nada comprueba `naming.md`, aunque la regla `S1.1` de flare hace
++ cumplir su única cláusula sobre `unsafe…`.
+
+% 0 1 0 1d3fa0088fed0fe510c1edd92a8d31f0
+
+@ 0 5 0 132121a5579d6de90996f0565b4058f9
++ api-1 anida un nombre cuyo prefijo repite su contexto. Este elemento cubre el caso en que no hay
++ prefijo que quitar: una sola palabra cuya grafía desnuda reclama un concepto general cuando nombra
++ la noción de una biblioteca. El árbol de disposición de ultimatum no es *el* `Frame`. Cada candidato
++ se juzga caso por caso frente a la regla R8 de `etc/api-nesting-proposal.md`. La comodidad solo
++ mantiene un nombre en el nivel superior cuando es el tipo principal de la biblioteca, o un concepto
++ que de verdad es general.
+
+@ 0 4 0 153039203ba264620a4145959946ed5e
++ Terminado cuando: ningún nombre se exporta a `package soundness` desde más de una biblioteca, no
++ existe ningún `@unexported` cuyo único fin sea esquivar un choque, y cada fila de las tablas R8 de
++ `etc/api-nesting-proposal.md` se ha aplicado o se ha movido a su lista «Reviewed and kept
++ top-level».

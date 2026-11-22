@@ -1,0 +1,1379 @@
+orthant 2 language
+
+@ 0 1 0 0e148f9a93d2cee21167af7773698fbe
++ info   Git sous forme d'opérations typées sur un dépôt ouvert pour une portée, avec un backend qui lance `git` ou un autre qui n'a besoin d'aucun `git`
+
+% 0 1 0 0f026212a2b772471c4fb8468bb5c5ff
+
+@ 0 1 0 130285ee21b29e69010dfb3d15ce170d
++ entry .Git   l'espace de noms du modèle de Git et des poignées de dépôt et de worktree
+
+@ 0 1 0 08e662e62dd36c010c14d551073fc34c
++   entry .Ref   un chemin de référence pleinement qualifié, `refs/heads/main`, sous forme de `Path on Git.Refs`
++       `Git.Ref` est l'alias `Path on Git.Refs` : une référence comme `refs/heads/main`,
++       `refs/tags/v1` ou `refs/notes/commits`, modélisée comme un chemin sur le plan `Git.Refs`.
++       Elle se construit donc avec `/` à partir de `Git.Refs`, ou avec `Git.Refs.heads`,
++       `Git.Refs.tags`, `Git.Refs.notes` et `Git.Refs.remotes`, qui vérifient chacun leurs
++       segments comme le ferait `git check-ref-format`, ou s'analyse depuis du texte avec
++       `Git.Refs.parse`. Une `Git.Branch` et un `Git.Tag` connaissent chacun leur propre ref
++       (`branch.ref`, `tag.ref`). Un `Git.Ref` se convertit en `Git.Revision` là où une révision
++       est attendue, puisqu'un chemin de ref validé est déjà une révision.
++   entry .Error   levée quand une opération Git ne peut pas être menée à bien, avec une raison numérotée
+
+@ 0 16 0 1992d0898e2d703c14d9a55e3621a16f
++     detail
++         Erreur `↯/s.123.1` : _the Git operation could not be completed because `reason`_. C'est
++         l'unique erreur que lève toute opération sur un dépôt, via une `Tactic[Git.Error]` dans la
++         portée ; sa `#reason` est une `Git.Error.Reason`, numérotée de sorte que le code complet
++         soit `685.<n>`, et son `#detail` est ce que git lui-même a dit, quand un backend en
++         dispose : la sortie d'erreur standard, tronquée de ses espaces, du processus `git` sous
++         `Commandline`, ou le message propre d'un échec du système de fichiers ou du réseau sous
++         `Native`.
+
+@ 0 3 0 1bbe2f04c79fce2f05878c845bb2a33f
++     entry .Reason   pourquoi une opération a échoué : l'un de trente-quatre cas numérotés
++         Une énumération `Clarification`, de sorte que chaque cas porte son numéro (`685.<n>`) et
++         se rend via `.communicable` sous forme de son message. Les cas, dans l'ordre des
++         numéros :
+
+@ 0 44 0 14d38e19373aa7a915cf5f630283cfa3
++         ```tabular
++         column  Cas
++         column  Code
++         column  Message
++         column  Remarque
++         row  `CannotExecuteGit`  1  _the `git` command could not be executed_
++         row  `NoRepository(path)`  2  _`path` is not a Git repository_  levée à l'ouverture
++         row  `NoWorktree`  3  _the repository has no working tree_  il ne peut donc pas être ouvert comme `Git.Worktree`
++         row  `Moved(ref, expected, actual)`  4  _`ref` was `expected` when read but is now `actual`_  un compare-and-swap a échoué ; chaque hachage peut être `Unset`, rendu _rien_ ; `ref` est nommée comme l'appelant l'a utilisée (`HEAD`), comme le fait git
++         row  `NoSuchRef(ref)`  5  _the reference `ref` does not exist_
++         row  `NoSuchObject(hash)`  6  _the object `hash` does not exist_
++         row  `RefExists(ref)`  7  _the reference `ref` already exists_
++         row  `Unmerged(branch, tip)`  8  _the branch `branch` at `tip` is not fully merged_  `deleteBranch` a refusé sans `force`
++         row  `Conflict(paths)`  9  _there are conflicts in `paths`_
++         row  `NothingToCommit`  10  _there is nothing to commit_  l'arbre est inchangé et `allowEmpty` n'a pas été donné
++         row  `Detached`  11  _HEAD is detached_  là où une branche était nécessaire (`pull`)
++         row  `Dirty(paths)`  12  _local changes would be overwritten in `paths`_
++         row  `NotFastForward`  13  _the update is not a fast-forward_
++         row  `OutsideWorktree(path)`  14  _`path` is outside the working tree_
++         row  `Untracked(path)`  15  _`path` is not tracked_
++         row  `NoOperationInProgress`  16  _no merge, rebase, cherry-pick or revert is in progress_
++         row  `OperationInProgress(operation)`  17  _an operation is already in progress_
++         row  `NoSuchRemote(name)`  18  _the remote `name` does not exist_
++         row  `RemoteExists(name)`  19  _the remote `name` already exists_
++         row  `Unauthorized(remote)`  20  _authentication with `remote` failed_
++         row  `Unreachable(remote)`  21  _the remote `remote` could not be reached_
++         row  `RemoteRejected(ref, reason)`  22  _the remote rejected `ref`: `reason`_
++         row  `LeaseFailed(ref, expected, actual)`  23  _the remote's `ref` was expected to be `expected` but is `actual`_  une attente de `Push.Force.Lease` était fausse
++         row  `NoteNotFound`  24  _no note was attached to the given object_
++         row  `NoSuchConfig(key)`  25  _the configuration key `key` is not set_  le `user.name` ou le `user.email` du committer, lors de la création d'un commit
++         row  `InvalidConfig(key, value)`  26  _`value` is not a valid value for `key`_
++         row  `BadSignature(detail)`  27  _the signature could not be verified: `detail`_
++         row  `SigningFailed(detail)`  28  _the object could not be signed: `detail`_
++         row  `Unsupported(operation)`  29  _`operation` is not supported by this backend_  aussi une ouverture exclusive concurrente qui a été refusée
++         row  `Unexpected`  30  _git reported an unexpected failure_  un échec que la table des raisons ne connaît pas ; le message de git est conservé comme `detail` de l'erreur
++         row  `NoteExists(target)`  31  _a note is already attached to `target`_
++         row  `NoSuchWorktree(path)`  32  _`path` is not a linked working tree_
++         row  `NoSuchStash`  33  _the stash entry does not exist_
++         row  `Locked(ref)`  34  _the lock file for `ref` is held by another process_
++         ```
++     entry .communicable   rend chaque raison sous forme de message
++     entry #reason   pourquoi l'opération a échoué
++     entry #detail   ce que git lui-même a dit, si le backend en dispose : sa sortie d'erreur standard, tronquée
++   entry .RefError   levée quand un texte n'est pas une référence, un hachage ou un refspec Git valide
+
+@ 0 19 0 1d0037648c6c11451d27829afedceeb0
++     entry .Reason   la règle que le texte a enfreinte
++         ```tabular
++         column  Cas
++         column  Code
++         column  Message
++         column  Remarque
++         row  `LeadingOrTrailingDot`  1  _a path segment starts or ends with `.`_
++         row  `ReservedSuffix`  2  _a path segment ends with the reserved suffix `.lock`_
++         row  `ReservedSequence`  3  _the name contains the reserved sequence `@{`_
++         row  `DoubleDot`  4  _the name contains `..`_
++         row  `EmptySegment`  5  _the name contains an empty path segment_
++         row  `InvalidCharacter`  6  _the name contains a character forbidden by Git_  `*`, `[`, `\`, espace, `^`, `~`, `:` ou `?`
++         row  `BadHash`  7  _the value is not a 40-character hexadecimal hash_  hexadécimal en minuscules uniquement
++         row  `BadRefspec`  8  _the value is not a valid refspec_
++         ```
++     entry .communicable   rend chaque raison sous forme de message
++     entry #value   le texte qui a été rejeté
++     entry #reason   la règle enfreinte
++   entry .Refs   le plan des références pleinement qualifiées, enraciné en `refs/`
+
+@ 0 28 0 00c661d1ef05320e04208cd962a5725d
++     entry .Plane   le type de plan des chemins de référence : `Git.Refs` lui-même
++     entry .notes   `refs/notes/<namespace>`, avec l'espace de noms vérifié
++         Lève `Git.RefError` si l'espace de noms enfreint une règle des références.
++     entry .heads   `refs/heads/<branch>`, avec le nom de branche vérifié
++         Lève `Git.RefError` si le nom enfreint une règle des références. `Git.Branch#ref` est le
++         même chemin, non vérifié.
++     entry .tags   `refs/tags/<tag>`, avec le nom de tag vérifié
++     entry .remotes   `refs/remotes/<remote>/<branch>`, avec les deux segments vérifiés
++     entry .defaultNotes   `refs/notes/commits`, l'espace de noms qu'utilise la commande `notes` de git
++         La `ref` par défaut de toute opération sur les notes d'un `Git.Repo.Handle`.
++     entry .stash   `refs/stash`, la ref à laquelle sont rattachées les entrées du stash
++     entry .parse   lit un nom pleinement qualifié, `refs/heads/main`, comme un `Git.Ref`
++         Le texte doit commencer par `refs/`, et chaque segment qui suit doit respecter les
++         règles des références ; sinon `Git.RefError` est levée. Un nom qui n'est pas pleinement
++         qualifié (`HEAD`, `main`) est rejeté.
++     entry .validateSegment   vérifie un segment selon les règles de référence de git, en levant `Git.RefError`
++         Un segment doit être non vide, ne doit ni commencer ni se terminer par `.`, ne doit pas
++         se terminer par `.lock`, ne doit contenir ni `@{` ni `..`, et ne doit contenir aucun de
++         `*`, `[`, `\`, espace, `^`, `~`, `:`, `?` ou `/`.
++     entry .admissible   le given qui admet n'importe quel texte comme segment d'un chemin de référence
++         La vérification est différée : `/` construit le chemin, et ce sont les constructeurs
++         nommés et `.parse` qui valident.
++     entry .filesystem   le plan des références comme `Filesystem` : séparé par `/`, avec `@` et `..` pour le courant et le parent
++     entry .pathIsRevision   un `Git.Ref` comme `Git.Revision`, partout où une révision est attendue
++         Une `Conversion`, dans la portée implicite : un chemin de ref validé respecte toutes les
++         règles qu'impose git, c'est donc une révision tel quel, et
++         `repo.resolve(Git.Refs.heads(t"main"))` n'a besoin d'aucun enrobage.
++   entry .Revision   tout ce que git accepte là où une révision est attendue : un hachage, une branche, un tag ou une expression
+
+@ 0 15 0 1931ae6ae72955de0050a467ea72ab17
++     entry .head   `HEAD`, ou `HEAD~n` pour un `n` positif
++     entry .unsafe   n'importe quel texte comme révision, sans vérification
++         Pour les expressions que les références typées ne peuvent pas exprimer, `v1.0^{commit}`
++         ou `main..feature`. Rien n'est validé ; une expression que git ne peut pas résoudre est
++         signalée à son utilisation, comme `NoSuchRef` ou comme `Unset` de la part de `resolve`.
++     entry .parse   vérifie un *nom* de référence selon les règles de git et le renvoie
++         Valide un nom comme `feature/sonnets` — pas une expression — segment par segment, comme
++         le fait `Git.Refs.validateSegment` mais en autorisant `/`, et lève `Git.RefError` à la
++         première règle enfreinte. `Git.Branch.parse` et `Git.Tag.parse` reposent dessus.
++     entry .encodable   une révision s'encode comme son texte
++     entry .showable   une révision s'affiche comme son texte
++     entry .inspectable   une révision s'inspecte comme `Revision(HEAD~2)`
++         Les branches, les tags et les hachages ont les leurs : `Branch(main)`, `Tag(v1.0)`,
++         `Hash(…)`.
++     entry #text   la révision telle que git la prend
++   entry .Refspec   un refspec de fetch ou de push, `+refs/heads/*:refs/remotes/origin/*`
+
+@ 0 11 0 19c011f362a11e5200ff32cf2d74d448
++     entry .parse   lit un refspec depuis du texte, en levant `Git.RefError(BadRefspec)` pour un refspec à deux deux-points
++     entry .apply   un refspec à partir d'une ref (la même des deux côtés) ou d'une ref source et d'une ref destination
++         `Git.Refspec(ref)` pousse ou récupère `ref` vers elle-même ;
++         `Git.Refspec(source, destination)` fait correspondre l'une à l'autre. Aucun des deux
++         n'est forcé.
++     entry .encodable   un refspec s'encode comme son texte
++     entry .showable   un refspec s'affiche comme son texte
++     entry #source   la ref du côté local d'un push, ou du côté distant d'un fetch, s'il y en a une
++     entry #destination   la ref de l'autre côté, s'il y en a une
++     entry #force   si la mise à jour peut ne pas être une avance rapide : le `+` initial
++     entry #text   le refspec tel que git le prend : `+source:destination`
++   entry .Tag   un tag par son nom, d'un type distinct d'une branche ou d'un hachage
+
+@ 0 2 0 03e795357f236afd0d2a2eef1ce2b667
++     entry .unsafe   un tag par son nom, non vérifié
++     entry .parse   un tag par son nom, vérifié selon les règles de référence de git
++         Lève `Git.RefError` pour un nom que git rejetterait.
++     entry .decoder   lit un tag depuis du texte, via `.parse`
++         Un `Git.Tag is Decodable in Text`, si bien que `t"v1".as[Git.Tag]` fonctionne là où une
++         `Tactic[Git.RefError]` est dans la portée.
++     entry .showable   un tag s'affiche comme son nom
++     entry .inspectable   un tag s'inspecte comme `Tag(v1.0)`
++     entry .Target   ce vers quoi pointe un nom de tag : directement un commit, ou une annotation qui pointe vers un commit
+
+@ 0 12 0 16771e8def1535d90a64645b5cf4a8cc
++       detail
++           `Lightweight(commit)` est une ref de tag qui nomme un commit ;
++           `Annotated(annotation, commit)` nomme un objet tag, dont la cible propre est `commit`.
++           `#peeled` est le commit dans les deux cas. La méthode `tag` de `Git.Repo.Handle` en lit
++           un, et `tags()` liste les tags déjà déréférencés jusqu'à leurs commits.
+
+@ 0 2 0 1c0fd1d646b8b81709dca0ca8ee93b25
++       entry #peeled   le commit que le tag nomme en définitive
++     entry .Annotation   le contenu d'un objet tag annoté
+
+@ 0 9 0 09e8a90676f9e2e41d635fc9224fcfb6
++       entry #target   le hachage de l'objet tagué
++       entry #kind   la sorte de l'objet tagué, généralement `Commit`
++       entry #name   le nom du tag
++       entry #tagger   qui a créé le tag et quand, si c'est enregistré
++       entry #message   le message du tag, sans le saut de ligne final de git
++       entry #signature   le bloc de signature armuré en ASCII, si le tag est signé
++     entry #text   le nom du tag
++     entry #ref   la référence complète du tag, `refs/tags/<name>`
++   entry .Branch   une branche par son nom, d'un type distinct d'un tag ou d'un hachage
+
+@ 0 11 0 0037901b5eec8e1c08163a80a06c6c63
++     entry .unsafe   une branche par son nom, non vérifiée
++     entry .parse   une branche par son nom, vérifiée selon les règles de référence de git
++         Lève `Git.RefError` pour un nom que git rejetterait.
++     entry .decoder   lit une branche depuis du texte, via `.parse`
++         Une `Git.Branch is Decodable in Text`, si bien que `t"main".as[Git.Branch]` fonctionne
++         là où une `Tactic[Git.RefError]` est dans la portée.
++     entry .showable   une branche s'affiche comme son nom
++     entry .inspectable   une branche s'inspecte comme `Branch(main)`
++     entry #text   le nom de la branche
++     entry #ref   la référence complète de la branche, `refs/heads/<name>`
++   entry .Hash   un hachage d'objet de quarante caractères, et la racine d'un chemin de notes
+
+@ 0 13 0 1e39959dfe74ad3606bf95b8942bf33b
++     entry .apply   un hachage à partir de quarante chiffres hexadécimaux en minuscules, levant `Git.RefError(BadHash)` sinon
++     entry .unsafe   un hachage depuis du texte, sans vérification
++     entry .zero   le hachage entièrement nul, que git utilise pour signifier « aucun objet »
++         Ce que donne `Git.Head#commit.or(Git.Hash.zero)` pour une branche pas encore née, et la
++         pointe que le backend en ligne de commande signale dans `Unmerged(branch, tip)` quand
++         git ne précise pas laquelle.
++     entry .decoder   lit un hachage depuis du texte, via `.apply`
++         Un `Git.Hash is Decodable in Text`, qui exige une `Tactic[Git.RefError]`.
++     entry .showable   un hachage s'affiche comme ses quarante chiffres
++     entry .inspectable   un hachage s'inspecte comme `Hash(5c1d…)`, avec ses quarante chiffres
++     entry #text   les quarante chiffres hexadécimaux
++     entry #Plane   le plan dont un hachage est la racine : `Notes`
++     entry #Limit   le type racine d'un chemin de notes : `Git.Hash` lui-même
++   entry .Identity   qui : un nom et une adresse e-mail
+
+@ 0 4 0 12c19431323cbdf1056c3136c0265ec6
++     entry #name   le nom de la personne
++     entry #email   l'adresse e-mail de la personne
++     entry #text   l'identité telle que git l'écrit : `name <email>`
++   entry .Timestamp   l'horodatage propre à git : des secondes depuis l'epoch et un décalage UTC en minutes
+
+@ 0 7 0 191473895d162aa4153ae43c48eb382e
++     entry .now   l'heure courante, avec le décalage UTC local (toujours `+0000` sur Scala Native)
++     entry .parse   un horodatage à partir de ses deux champs sous forme de texte, `Unset` si l'un est mal formé
++     entry #seconds   les secondes depuis l'epoch Unix
++     entry #offsetMinutes   le décalage UTC en minutes, négatif à l'ouest de Greenwich
++     entry #offset   le décalage tel que git l'écrit : `+0130`, `-0500`
++     entry #text   l'horodatage tel que git l'écrit : `1700000000 +0130`
++   entry .Signature   une ligne `author`, `committer` ou `tagger` : qui, et quand
+
+@ 0 5 0 02ef239a1175bf441537b9cc2f95b8ab
++     entry .parse   une signature à partir d'une ligne d'en-tête, `Hamlet <hamlet@example.com> 1700000000 +0100`, ou `Unset`
++     entry #identity   qui
++     entry #timestamp   quand
++     entry #text   la ligne telle que git l'écrit : `name <email> seconds offset`
++   entry .Object   un objet git tel que lu dans la base : un blob, un tree, un commit ou un tag
+
+@ 0 1 0 0278b423a9f7655a1b8bffb173da2816
++     entry .Kind   les quatre sortes d'objets, telles que git les nomme : `blob`, `tree`, `commit`, `tag`
+
+@ 0 3 0 19f055560503372a1f31953342de21e2
++       entry .parse   une sorte à partir de `blob`, `tree`, `commit` ou `tag` ; `Unset` pour tout le reste
++       entry #text   la sorte telle que git la nomme
++     entry .Tree   les modes et entrées d'un objet tree
+
+@ 0 1 0 0eea0f03360568d811175f21d46bef41
++       entry .Mode   le mode d'une entrée de tree : régulier, exécutable, lien symbolique, gitlink ou répertoire
+
+@ 0 3 0 1256b7d0b3cd8f9016f04607c477e614
++         entry .parse   un mode à partir de son texte octal, `Unset` pour un mode que git n'écrit pas
++         entry #octal   le mode tel que git l'écrit dans un tree
++       entry .Entry   une entrée d'un tree : son mode, son nom et le hachage qu'elle nomme
+
+@ 0 6 0 1472236b44cbb1211f03327b348fb88b
++         entry #mode   le mode de l'entrée
++         entry #name   le nom de l'entrée dans le tree
++         entry #hash   le hachage de l'objet que nomme l'entrée
++         entry #kind   la sorte d'objet que nomme l'entrée, déduite de son mode
++     entry #kind   la sorte de cet objet
++   entry .Head   où se trouve HEAD : attachée à une branche, ou détachée sur un commit
+
+@ 0 3 0 1a63991f8b4ac1c60f6129ead1fdd88d
++     entry #commit   le commit où se trouve HEAD, `Unset` sur une branche pas encore née
++     entry #current   la branche extraite, `Unset` quand HEAD est détachée
++   entry .Status   l'état d'un chemin, sous forme d'une lettre de `git status`
+
+@ 0 2 0 1d7574b6b3c1090117320ca05c1f0cce
++     entry .parse   un état à partir de sa lettre de `git status --porcelain`, `Unset` pour une espace ou toute autre chose
++   entry .PathStatus   une ligne de `status` : l'état de l'index et celui du fichier de travail, et le chemin
+
+@ 0 5 0 00a54a57dea3ff6605d3070525567c84
++     entry #index   l'état de l'index par rapport à HEAD, s'il a changé
++     entry #worktree   l'état du fichier de travail par rapport à l'index, s'il a changé
++     entry #path   le chemin, sur le plan de la poignée de worktree
++     entry #origin   la provenance d'un chemin renommé ou copié
++   entry .Activity   la progression d'un clone, d'un fetch, d'un push ou d'un pull, partagée entre le travailleur et un observateur
+
+@ 0 1 0 0e2cb08bfe8784ec01e9d6fe2cf8c2d2
++     entry .Phase   l'étape d'un transfert en cours
+
+@ 0 2 0 0f788e0b144ac95b097ab736646f51bc
++       entry .parse   une phase à partir de l'intitulé de progression de git, `Receiving objects` ; `Unset` pour une phase inconnue
++     entry .Report   une observation d'une activité : de pures données, périmées dès leur lecture
+
+@ 0 20 0 11bdc7ebebbaea8a074f95ef4105af39
++       entry #phase   l'étape en cours
++       entry #remote   si c'est l'autre extrémité du transfert qui signale
++       entry #done   combien d'objets ou de fichiers sont faits dans cette phase
++       entry #total   combien il y en a au total, une fois connu
++       entry #bytes   les octets transférés jusqu'ici
++       entry #complete   `done/total` sous forme de fraction, `1.0` pour une phase vide, `Unset` tant que le total est inconnu
++     entry #report   l'état courant sous forme de `Stale[Git.Activity.Report]`
++         Lit chaque cellule une fois ; le résultat est un instantané cohérent d'un moment, déjà
++         périmé à son retour.
++     entry #complete   si l'opération est terminée
++     entry #updates   un `Relay` de rapports, un par changement, qui se termine quand l'activité se termine
++         Créé à la première demande et alimenté à partir de là ; un appelant qui ne le demande
++         jamais ne paie rien. Videz son flux depuis un autre thread.
++     entry #begin   démarre une phase, en remettant les compteurs à zéro ; c'est un backend qui l'appelle
++     entry #measure   fixe le total de la phase ; c'est un backend qui l'appelle
++     entry #advance   ajoute au compte des éléments faits de la phase ; c'est un backend qui l'appelle
++     entry #progress   fixe ensemble le compte des éléments faits et le total ; c'est un backend qui l'appelle
++     entry #transferred   ajoute aux octets transférés ; c'est un backend qui l'appelle
++     entry #finish   marque l'activité comme terminée et arrête le relais `#updates` ; c'est un backend qui l'appelle
++   entry .Config   la configuration git : clés, portées, sources, et la poignée qui les lit et les écrit
+
+@ 0 2 0 1cac04dabc6e38901430a7a448297a0b
++     entry .Scope   où se trouve un paramètre : `Local`, `Worktree`, `Global` ou `System`
++     entry .Key   une clé de configuration : sa section, sa sous-section optionnelle et son nom
+
+@ 0 7 0 1c1acfaa3bd500f71a6691f4ed892844
++       entry .parse   une clé à partir de `section.name` ou `section.subsection.name`, levant `Git.Error(InvalidConfig)` sinon
++       entry .showable   une clé s'affiche comme son texte pointé
++       entry #section   la section, en minuscules
++       entry #subsection   la sous-section, s'il y en a une
++       entry #name   le nom, en minuscules
++       entry #text   la clé sous forme pointée
++     entry .Source   le fichier de configuration qu'une poignée lit et écrit
+
+@ 0 1 0 0995fa92bb9c133402dc13c413a1ea41
++     entry .Handle   une poignée de configuration prêtée : `get`, `all` et `list` pour lire, `set`, `add` et `unset` pour écrire
+
+@ 0 11 0 117efce53dfb24c003f1f704c6712c23
++       entry .get   la valeur en vigueur pour une clé, décodée, sous forme de `Stale[Optional[value]]`
++           Exige un `value is Decodable in Text`. Git liste les portées du système au local et le
++           dernier paramètre l'emporte, ce que renvoie cette méthode ; une clé non définie donne
++           `Unset`.
++       entry .all   toutes les valeurs définies pour une clé multivaluée, décodées, sous forme de `Stale[List[value]]`
++       entry .list   chaque clé et sa valeur brute, sous forme de `Stale[List[(Git.Config.Key, Text)]]`
++       entry .set   fixe une clé à une valeur, encodée, en remplaçant toute valeur qu'elle avait
++           Exige un `value is Encodable in Text` et `Grant.Write`.
++       entry .add   ajoute une valeur à une clé, en conservant les valeurs qu'elle avait
++       entry .unset   supprime la valeur d'une clé, ou avec `all = true` toutes les valeurs d'une clé multivaluée
++       entry #source   le fichier ou la portée que cette poignée lit et écrit
++     entry .Openable   comment un chemin s'ouvre comme `Git.Config` : une poignée prêtée sur ce fichier
+
+@ 0 9 0 00c39b758804243005a6a42bd7cc6c38
++       entry #open   ouvre le chemin, en prêtant au bloc une poignée dotée des droits du mode
++       entry #Self   le type de chemin ouvert
++       entry #Form   la forme sous laquelle il est ouvert : `Git.Config`
++       entry #Operand   le type des indicateurs : aucun
++       entry #Result   ce qui est prêté : un `Git.Config.Handle`
++     entry .openable   le given qui permet à tout `Path on Linux` de s'ouvrir comme `Git.Config`
++         Dans la portée implicite ; il exige un `Git.Backend^` (issu de `gitBackends`) et une
++         `Tactic[Git.Error]`.
++   entry .Operation   une opération arrêtée en cours de route, en attente de la résolution des conflits
+
+@ 0 2 0 0db4f197ddf6039e143913cc185bb661
++     entry #conflicts   les chemins restés en conflit, qui doivent être résolus avant que l'opération continue
++   entry .Sequence   l'issue d'un cherry-pick, d'un revert, d'un rebase ou de l'application d'un stash, et les verbes qui les pilotent
+
+@ 0 3 0 0acecc73d8737de6119ecadd5b27f5ed
++     entry .Outcome   `Completed(head)`, ou `Stopped(operation)` sur un conflit
++     entry .Verb   `Continue`, `Skip`, `Abort` ou `Quit` : comment une opération en cours est pilotée
++   entry .Merge   l'issue d'une fusion ou d'un pull
+
+@ 0 9 0 15a97a3769a4b85f0f19a3f92ae4cb7b
++     entry .Outcome   `FastForwarded(head)`, `Merged(head)`, `UpToDate` ou `Stopped(operation)`
++   entry .Rebase   les options que prend un rebase
++     entry .Option   `Autosquash`, `KeepEmpty`, `NoRenames`, `Signoff` ou `Autostash`
++   entry .Pull   comment un pull intègre ce qu'il a récupéré
++     entry .Mode   `Merge`, `Rebase` ou `FastForwardOnly`
++         `Merge` fusionne `FETCH_HEAD` comme le ferait `FastForward.Auto` ; `FastForwardOnly`
++         refuse tout ce qui n'est pas une avance rapide ; `Rebase` rebase la branche dessus, en
++         signalant un rebase terminé comme `Merged`.
++   entry .Push   la politique de forçage d'un push, et ce qui est arrivé à chaque ref
+
+@ 0 4 0 0e6be77947929eaa186552c877980065
++     entry .Force   `Never`, `Always`, ou `Lease(expectations)` pour `--force-with-lease`
++     entry .Outcome   `Updated(from, to, forced)`, `Created(to)`, `Deleted(from)`, `UpToDate` ou `Rejected(reason)`
++         Un lease en échec est signalé comme `Rejected`, ref par ref, plutôt que levé.
++   entry .Stash   les entrées du stash
+
+@ 0 5 0 1e9676601a418be31b2f73170075d530
++     entry .Entry   une entrée du stash : son indice, son commit et son message
++       entry #index   la position de l'entrée, `0` pour la plus récente
++       entry #commit   le commit qui contient l'état mis de côté
++       entry #message   le message de l'entrée
++   entry .Signer   produit la signature que porte un commit ou un tag
+
+@ 0 2 0 182fc0fbb3a71a771f2f76b636ca35d8
++     entry #sign   la signature armurée en ASCII d'une charge utile, levant `Git.Error(SigningFailed)` si elle ne peut pas être produite
++   entry .Verifier   vérifie la signature que porte un commit ou un tag
+
+@ 0 2 0 1b20005f058afcdc0cd0c7f462a3e118
++     entry #verify   la `Git.Verification` d'une signature sur une charge utile
++   entry .Verification   `Good(signer)`, `Bad(detail)` ou `Unknown(detail)`
++       Le résultat de la vérification d'un commit ou d'un tag : `Good` nomme le principal ou
++       l'identifiant d'utilisateur qui a fait la signature ; `Bad` signifie que la signature ne
++       correspond pas ; `Unknown` signifie qu'elle n'a pas pu être vérifiée — l'objet n'est pas
++       signé, le tag n'est pas annoté, ou le signataire ne fait pas partie des signataires
++       autorisés.
++   entry .Backend   l'implémentation que pilote une poignée de dépôt : `Commandline` ou `Native`
+
+@ 0 13 0 05c367dfb5b51986005567cd2b8b6474
++     detail
++         Chaque opération sur un `Git.Repo.Handle` ou un `Git.Worktree.Handle` est écrite une seule
++         fois, au-dessus des primitives que déclare ce trait ; les deux backends les implémentent
++         différemment. La plomberie — refs, objets, index, configuration, notes — est assez simple
++         pour que le compare-and-swap, l'assemblage des objets et la signature vivent dans la
++         poignée ; les verbes algorithmiques (`merge`, `rebase`, `cherryPick`, `stash`, les
++         transports) sont propres à chaque backend. Un `Git.Backend^` est une capacité : on le
++         choisit en important par son nom l'un des givens de `gitBackends`, et chaque poignée garde
++         celui avec lequel elle a été ouverte.
+
+@ 0 1 0 05505dde2ebb0d4c1b4ee06923917434
++     entry .Location   où un dépôt a été trouvé : son répertoire git, le répertoire partagé, et son arbre de travail
+
+@ 0 4 0 06314f2d853451ea1af3cfc64c9399c7
++       entry #gitDir   le répertoire git propre du dépôt
++       entry #commonDir   le répertoire git partagé par tous les worktrees, où se trouvent les objets et les refs
++       entry #worktree   la racine de l'arbre de travail, si le dépôt en a un
++     entry .Expectation   ce que doit contenir une ref pour qu'une mise à jour ait lieu : n'importe quoi, rien, ou un hachage
+
+@ 0 80 0 11ebafeddd4f1515116f69a19f6ea3ab
++       entry .apply   `Absent` pour `Unset`, sinon `Exactly(hash)`
++       entry #expected   le hachage exigé, ou `Unset`
++     entry .Target   le contenu d'une ref : `Direct(hash)` ou `Symbolic(ref)`
++     entry .StatusLine   une ligne de status avec ses chemins sous forme de texte, avant qu'ils ne soient typés pour le plan d'une poignée
++       entry #index   l'état de l'index par rapport à HEAD, s'il a changé
++       entry #worktree   l'état du fichier de travail par rapport à l'index, s'il a changé
++       entry #path   le chemin, relatif à l'arbre de travail
++       entry #origin   la provenance d'un chemin renommé ou copié
++     entry .NoteEdit   une modification d'un arbre de notes : `Add`, `Append`, `Remove` ou `Copy`
++         Ce qu'applique `#editNotes` : `Add(target, body, force)`, `Append(target, body)`,
++         `Remove(target, ignoreMissing)` ou `Copy(source, target, force)`.
++     entry .WorktreeEntry   un worktree lié tel qu'un backend le liste ; `Git.Worktree.Entry` en est la forme côté poignée
++       entry #path   la racine du worktree
++       entry #head   le commit extrait, s'il y en a un
++       entry #branch   la branche extraite, si HEAD est attachée
++       entry #bare   si l'entrée est le dépôt nu lui-même
++       entry #locked   la raison du verrou, si le worktree est verrouillé
++       entry #prunable   pourquoi le worktree pourrait être élagué, s'il peut l'être
++     entry #locate   où se trouve le dépôt qui contient un chemin, ou `Unset` s'il n'y en a pas
++     entry #init   crée un dépôt à un chemin, avec une branche initiale, nu ou non
++     entry #clone   clone une source (un chemin ou une URL) vers un chemin, en signalant la progression via une activité
++     entry #head   où se trouve HEAD dans un répertoire git
++     entry #readRef   le contenu d'une ref, direct ou symbolique, ou `Unset` si elle n'existe pas
++     entry #listRefs   chaque ref sous un préfixe avec son hachage
++     entry #peel   le commit que nomme en définitive un objet tag
++     entry #updateRef   déplace ou supprime une ref, sous condition d'une `Expectation`, avec un message de reflog
++         Le compare-and-swap sur lequel repose toute opération qui déplace une ref : lève `Moved`
++         quand la ref ne contient pas ce qui était attendu, et `Locked` quand un autre processus
++         détient son verrou.
++     entry #updateSymbolicRef   fait pointer une ref symbolique comme `HEAD` vers une autre ref
++     entry #resolve   le hachage que nomme une expression de révision, ou `Unset`
++     entry #revList   les commits accessibles depuis une révision, du plus récent au plus ancien, éventuellement bornés, limités ou filtrés par chemin
++     entry #reflog   le reflog d'une ref, ou de `HEAD`
++     entry #mergeBase   le meilleur ancêtre commun de deux commits, s'il y en a un
++     entry #isAncestor   si un commit est accessible depuis un autre
++     entry #readObject   la sorte et le contenu brut d'un objet, ou `Unset`
++     entry #readObjects   les hachages, sortes et contenus de plusieurs objets à la fois
++     entry #writeObject   stocke un contenu brut comme objet d'une sorte donnée, et renvoie son hachage
++     entry #diffTree   les différences de fichiers entre deux trees
++     entry #status   l'état de l'index et des fichiers de travail, sous forme de lignes de status
++     entry #add   indexe des chemins, ou tout avec `all`
++     entry #remove   retire des chemins de l'index, et de l'arbre de travail sauf avec `cached`
++     entry #move   renomme un chemin dans l'index et dans l'arbre de travail
++     entry #restore   restaure des chemins dans l'index ou dans l'arbre de travail à partir d'une source
++     entry #clean   supprime les fichiers non suivis, et renvoie les chemins supprimés
++     entry #writeTree   écrit l'index sous forme d'objet tree, et renvoie son hachage
++     entry #readTree   aligne l'index (et, pour `Hard`, les fichiers de travail) sur HEAD, comme l'indique un `ResetMode`
++     entry #diffWorktree   les fichiers de travail ou l'index par rapport à HEAD ou à une révision
++     entry #tracked   chaque chemin que suit l'index
++     entry #conflicts   chaque chemin en conflit
++     entry #checkout   extrait une révision, en détachant HEAD
++     entry #switch   bascule sur une branche, en la créant d'abord si demandé
++     entry #merge   fusionne une révision dans HEAD selon une politique d'avance rapide
++     entry #cherryPick   applique des commits sur HEAD
++     entry #revert   applique l'inverse de commits sur HEAD
++     entry #rebase   rebase HEAD sur une révision, avec des options
++     entry #sequence   poursuit, saute, abandonne ou quitte l'opération en cours
++     entry #operation   l'opération en cours, s'il y en a une
++     entry #stash   enregistre l'état non commité comme entrée de stash, et renvoie son commit, ou `Unset` s'il n'y avait rien
++     entry #stashes   les entrées du stash, de la plus récente à la plus ancienne
++     entry #applyStash   applique une entrée de stash, en restaurant aussi l'index si demandé, et la supprime si demandé
++     entry #dropStash   supprime une entrée de stash
++     entry #readNote   la note d'une cible dans une ref de notes, s'il y en a une
++     entry #listNotes   chaque note d'une ref de notes, sous forme de paires blob de note et cible
++     entry #editNotes   crée un nouveau commit de notes à partir d'un commit de base et d'une modification, sur aucune ref
++         La poignée y déplace ensuite la ref de notes par compare-and-swap, ce qui empêche deux
++         écrivains d'écraser les notes l'un de l'autre.
++     entry #configRead   chaque clé et valeur d'une source de configuration
++     entry #configWrite   définit une clé, ou lui ajoute une valeur
++     entry #configUnset   supprime la valeur d'une clé, ou toutes ses valeurs
++     entry #remoteRefs   chaque ref qu'annonce un dépôt distant, avec son hachage
++     entry #fetch   récupère des refspecs depuis un dépôt distant, et renvoie les refs mises à jour
++     entry #push   pousse des refspecs vers un dépôt distant selon une politique de forçage, et renvoie l'issue de chaque ref
++     entry #worktrees   chaque worktree lié
++     entry #addWorktree   ajoute un worktree lié à un chemin, extrait à une révision
++     entry #removeWorktree   supprime un worktree lié
++     entry #lockWorktree   verrouille un worktree lié, avec une raison
++     entry #unlockWorktree   déverrouille un worktree lié
++     entry #moveWorktree   déplace un worktree lié vers un autre chemin
++     entry #pruneWorktrees   supprime les enregistrements des worktrees dont les répertoires ont disparu, et renvoie leurs chemins
++   entry .OpenFlag   les indicateurs que peut prendre une ouverture : `Await`
++       `Await` attend la fermeture d'une poignée exclusive concurrente dans cette JVM, plutôt que
++       d'échouer aussitôt. Passé sous la forme
++       `path.open[Git.Repo](Exclusive & Write, Git.OpenFlag.Await)`. L'exclusivité n'est arbitrée
++       qu'entre les poignées de cette JVM, via le même registre que les poignées de répertoire de
++       galilei ; un autre processus n'est jamais attendu.
++   entry .Repo   la forme sous laquelle un chemin s'ouvre comme dépôt : sa base d'objets et ses refs, en prêtant un `Handle`
+
+@ 0 14 0 00ef17fb30c0bd9a0ac61a6444e2a188
++     detail
++         `path.open[Git.Repo](mode) { repo ?=> … }` ouvre un dépôt nu, un répertoire `.git`, un
++         arbre de travail qui en contient un, ou le fichier `.git` d'un worktree lié, et prête un
++         `Git.Repo.Handle` au bloc. Le mode nomme les droits : `Read` (par défaut, avec
++         `open[Git.Repo]()`), `Read & Write`, ou `Exclusive & Write` pour refuser les autres
++         poignées exclusives de cette JVM (avec `Git.OpenFlag.Await` pour les attendre à la place).
++         L'ouverture vérifie qu'un dépôt est bien là — en levant `Git.Error(NoRepository(path))`
++         sinon — si bien qu'une poignée désignait toujours un dépôt au moment où elle a été
++         accordée ; ce qui se passe ensuite est l'affaire d'un autre processus, c'est pourquoi
++         toute lecture qui résout une ref est `Stale`.
+
+@ 0 1 0 1940af628834e91d048e0ebc1227d325
++     entry .Handle   une poignée de dépôt prêtée : chaque opération sur le dépôt est une extension sur elle, conditionnée par un droit
+
+@ 0 20 0 07e1260629e976e814720fd65ad18bb3
++       entry .head   où se trouve HEAD, sous forme de `Stale[Git.Head]`
++           La lecture dont dépend toute écriture qui déplace HEAD sur un worktree.
++       entry .ref   le hachage que contient une ref, en suivant les refs symboliques, sous forme de `Stale[Optional[Git.Hash]]`
++           `Unset` pour une ref qui n'existe pas. Une lecture de `Git.Refs.defaultNotes` est ce
++           dont dépendent les écritures de notes.
++       entry .refs   chaque ref sous un préfixe (ou toutes) avec son hachage, sous forme de map `Stale`
++           Les noms qui ne sont pas des refs pleinement qualifiées (`HEAD`) sont écartés.
++       entry .symbolicRef   ce vers quoi pointe une ref symbolique comme `HEAD`, sous forme de texte, ou `Unset` si elle n'est pas symbolique
++       entry .resolve   le hachage que nomme une révision, ou `Unset` si git ne peut pas la résoudre
++           Prend n'importe quelle `Git.Revision` : une branche, un tag, un hachage, un `Git.Ref`,
++           ou une expression comme `Git.Revision.head(2)`. Une révision inconnue donne `Unset`,
++           et non une erreur.
++       entry .branches   chaque branche avec sa pointe, sous forme de map `Stale`
++       entry .tags   chaque tag avec le commit qu'il nomme, déréférencé, sous forme de map `Stale`
++           Un tag annoté est déréférencé jusqu'au commit vers lequel pointe son objet tag ;
++           `.tag` lit la `Git.Tag.Target` non déréférencée.
++       entry .tag   ce vers quoi pointe un tag, léger ou annoté, ou `Unset` s'il n'y a pas de tel tag
++       entry .log   les commits accessibles depuis une révision, du plus récent au plus ancien, sous forme de `Stale[List[Commit]]`
++           Depuis `HEAD` sauf si `from` est donné ; au plus `limit` commits ; uniquement ceux qui
++           touchent `paths` si des chemins sont nommés. Une branche pas encore née n'a pas
++           d'historique et donne `Nil` ; tout autre point de départ impossible à résoudre lève
++           `NoSuchRef`.
+
+% 2 8 0 0ab1cce25eb28e9b18c03c3c8fff3cd5
+
+% 11 1 0 18df1ce6449a129c0e24167e3a542801
+
+@ 0 71 0 039c2f6d690e4f901730869e680f54ba
++           directory.open[Git.Repo](): repo ?=>
++             repo.log(limit = 10).value.map(_.message)
++           ```
++       entry .revList   les hachages accessibles depuis une révision, du plus récent au plus ancien, en s'arrêtant éventuellement à `until`, sous forme de liste `Stale`
++       entry .reflog   l'historique local de ce vers quoi a pointé une ref, du plus récent au plus ancien, sous forme de `Stale[List[ReflogEntry]]`
++           De `HEAD` sauf si `ref` est donné : l'enregistrement qui permet de récupérer un reset
++           fait par erreur.
++       entry .mergeBase   le meilleur ancêtre commun de deux commits, ou `Unset` s'ils n'en partagent aucun
++       entry .isAncestor   si un commit est accessible depuis un autre
++       entry .exists   si un objet ayant un hachage donné est dans la base
++       entry .show   n'importe quel objet par son hachage, sous forme de `Git.Object` ; lève `NoSuchObject` s'il est absent
++       entry .commitAt   le commit ayant un hachage donné, sous forme de `Commit` ; lève `NoSuchObject` pour tout autre objet
++           Nommée `commitAt`, et non `commit`, puisque `commit` est le verbe d'écriture du
++           worktree et qu'une poignée conditionnée par des droits ne peut pas surcharger.
++       entry .treeAt   les entrées du tree ayant un hachage donné ; lève `NoSuchObject` pour tout autre objet
++       entry .blobAt   le contenu du blob ayant un hachage donné, sous forme de `Data` ; lève `NoSuchObject` pour tout autre objet
++       entry .annotationAt   l'objet tag annoté ayant un hachage donné ; lève `NoSuchObject` pour tout autre objet
++       entry .verifyCommit   vérifie la signature d'un commit avec le `Git.Verifier` de la portée
++           `Unknown("the commit is not signed")` pour un commit non signé ; `Good(signer)` ou
++           `Bad(detail)` sinon. Exige un given `Git.Verifier`, comme
++           `SshKeygen.Verifier(allowedSigners)` ou `Gpg.Verifier()`.
++       entry .verifyTag   vérifie la signature d'un tag avec le `Git.Verifier` de la portée, sous forme de `Stale[Git.Verification]`
++           `Stale`, puisqu'un nom de tag est une ref. `Unknown` pour un tag léger ou une
++           annotation non signée.
++       entry .config   prête la configuration propre du dépôt le temps d'un bloc, en lecture seule
++           `repo.config { config ?=> config.get[Text](key).value }`. Les configurations globale
++           et système s'ouvrent plutôt sur leurs fichiers : avec `gitconfig: Path on Linux` le
++           fichier propre de l'utilisateur, `gitconfig.open[Git.Config](Read) { config ?=> … }`.
++       entry .effectiveConfig   prête toutes les portées que git consulterait pour ce dépôt, en lecture seule
++           Les configurations système, globale, locale et de worktree ensemble, le dernier
++           paramètre l'emportant, telles que git les lit. Ne peut pas être écrite.
++       entry .note   la note attachée à un commit dans une ref de notes, sous forme de `Stale[Optional[Text]]`
++           Dans `Git.Refs.defaultNotes` (`refs/notes/commits`) sauf si `ref` est donné ; `Unset`
++           là où il n'y a pas de note.
++       entry .notes   chaque note d'une ref de notes, sous forme de map `Stale` du commit annoté vers le blob de note
++       entry .remotes   chaque dépôt distant, lu depuis la configuration du dépôt, sous forme de `Stale[List[Remote]]`
++       entry .remote   un dépôt distant par son nom, sous forme de `Stale[Optional[Remote]]`
++       entry .remoteRefs   chaque ref qu'annonce un dépôt distant, avec son hachage, sous forme de map `Stale`
++           Exige un `Internet`. Les lectures sont ce que porte un `Git.Push.Force.Lease`.
++       entry .upstream   le dépôt distant et la branche que suit une branche, si c'est configuré, sous forme de paire `Stale`
++       entry .worktrees   chaque worktree lié, sous forme de `Stale[List[Git.Worktree.Entry]]`
++           Chaque entrée est la lecture que prennent les écritures de worktree
++           (`.removeWorktree`, `.lockWorktree`, `.unlockWorktree`, `.moveWorktree`).
++       entry .operation   la fusion, le rebase, le cherry-pick, le revert ou la bissection en cours, s'il y en a un, sous forme de `Stale`
++       entry .updateRef   déplace ou supprime une ref, sous condition d'une lecture `Stale` de celle-ci
++           `updateRef(ref, to, from, message)` : fixe `ref` à `to` (ou la supprime, pour `Unset`)
++           si elle contient encore `from.value`, et lève `Moved` sinon ; `message` est la ligne
++           de reflog. Exige `Grant.Write`.
++       entry .forceRef   déplace ou supprime une ref sans condition, en écrasant ce qu'elle contient
++       entry .updateSymbolicRef   fait pointer une ref symbolique comme `HEAD` vers un `Git.Ref`
++       entry .writeObject   stocke un contenu brut comme objet d'une sorte donnée, et renvoie son hachage
++       entry .makeBranch   crée une branche sur un commit, sans l'extraire ; lève `Moved` si elle existe
++           La création dépend de l'absence de la branche : aucune lecture n'est donc prise. Pour
++           créer et extraire en une seule étape, `switch(branch, head, create = true)` sur un
++           worktree.
++       entry .deleteBranch   supprime une branche, sous condition d'une lecture de sa pointe ; refuse une branche non fusionnée sauf si c'est forcé
++           Lève `Unmerged(branch, tip)` si la pointe n'est pas un ancêtre de HEAD et que `force`
++           vaut false, et `Moved` si la branche ne contient plus `at.value`.
++       entry .renameBranch   renomme une branche, sous condition d'une lecture de sa pointe ; HEAD suit si elle y était attachée
++       entry .makeTag   crée un tag léger sur un commit ; lève `Moved` s'il existe
++       entry .annotatedTag   écrit un objet tag annoté avec un message, éventuellement signé, et renvoie son hachage
++           `annotatedTag(tag, at, message, tagger, signer)` : le tagger est l'identité configurée
++           sauf s'il est donné, horodaté à l'instant ; un `Git.Signer` ajoute une signature
++           armurée en ASCII, que `git tag -v` accepte. La ref du tag est créée sous condition de
++           son absence.
++       entry .deleteTag   supprime un tag, sous condition d'une lecture de son objet (annoté ou non, tel que `tags()` le signale)
++       entry .configure   prête la configuration propre du dépôt le temps d'un bloc, en lecture et en écriture
++           `repo.configure { config ?=> config.set(key, value) }`. Exige `Grant.Write`.
++       entry .addNote   attache une note à un commit, sous condition d'une lecture de la ref de notes ; renvoie le commit de notes
++           `addNote(target, body, from, ref, force)` : `from` est `repo.ref(ref)`, la lecture de
++           la ref de notes (`Git.Refs.defaultNotes` sauf si `ref` est donné). Lève `NoteExists`
++           si une note est déjà attachée et que `force` vaut false, et `Moved` si la ref de notes
++           a bougé depuis la lecture de `from` — c'est ainsi que les attestations de build et
++           autres métadonnées hors bande voyagent avec un dépôt sans qu'un écrivain écrase un
++           autre.
+
+% 2 8 0 08276a55352e0cf817b8c1137af3d1e8
+
+% 11 1 0 1cdd92de7aaabe7e0d03c56a0ca973eb
+
+@ 0 40 0 0ac08f0e43f87a5e0603eae4d26dfdb2
++           directory.open[Git.Worktree](Read & Write): worktree ?=>
++             val hash = worktree.head().value.commit.or(Git.Hash.zero)
++             val notes = worktree.ref(Git.Refs.defaultNotes)
++             worktree.addNote(hash, t"a note body", notes)
++             worktree.note(hash).value   // t"a note body"
++           ```
++       entry .appendNote   ajoute à la suite de la note d'un commit, sous condition d'une lecture de la ref de notes
++       entry .removeNote   supprime la note d'un commit, sous condition d'une lecture de la ref de notes
++           Lève `NoteNotFound` s'il n'y en a pas, sauf si `ignoreMissing` vaut true.
++       entry .copyNote   copie la note d'un commit vers un autre, sous condition d'une lecture de la ref de notes
++       entry .addRemote   ajoute un dépôt distant par son nom et son URL, avec un refspec de fetch ; lève `RemoteExists`
++           Le refspec vaut par défaut `+refs/heads/*:refs/remotes/<name>/*`. L'URL peut être un
++           chemin local, que les deux backends atteignent sans transport.
++       entry .removeRemote   supprime la configuration d'un dépôt distant et ses refs `refs/remotes/<name>/` ; lève `NoSuchRemote`
++       entry .renameRemote   renomme un dépôt distant, en réécrivant son refspec, ses refs de suivi et les branches qui le suivent
++       entry .setRemoteUrl   définit l'URL de fetch d'un dépôt distant, ou avec `push = true` son URL de push
++       entry .fetch   récupère depuis un dépôt distant, et renvoie les refs mises à jour sous forme de map `Stale`
++           `fetch(remote, refspecs, depth, prune, tags, activity)` : le refspec configuré du
++           dépôt distant sauf si des `refspecs` sont donnés ; superficiel à `depth` commits si
++           c'est donné ; `prune` supprime les refs de suivi que le dépôt distant n'a plus ;
++           `tags` récupère tous les tags. Exige un `Internet` ; la progression va à l'`activity`
++           si on en passe une.
++       entry .push   pousse vers un dépôt distant selon une politique de forçage, et renvoie l'issue de chaque ref sous forme de map `Stale`
++           `push(remote, refspecs, force, tags, setUpstream, activity)` : `force` vaut
++           `Git.Push.Force.Never` sauf s'il est donné, et `Lease(expectations)` fait dépendre le
++           push de lectures des refs du dépôt distant. Une ref rejetée est une issue `Rejected`,
++           et non une erreur. Exige un `Internet`.
++       entry .addWorktree   ajoute un worktree lié à un chemin, extrait à une révision, et renvoie le chemin
++           `addWorktree(target, revision, detach, newBranch)` : ouvrez ensuite le chemin renvoyé
++           comme `Git.Worktree`. La cible peut être de n'importe quel type de chemin.
++       entry .removeWorktree   supprime un worktree lié, sous condition d'une lecture de son entrée
++       entry .lockWorktree   verrouille un worktree lié contre l'élagage, avec une raison
++       entry .unlockWorktree   déverrouille un worktree lié
++       entry .moveWorktree   déplace un worktree lié vers un autre chemin, et renvoie le nouveau chemin
++       entry .pruneWorktrees   supprime les enregistrements des worktrees dont les répertoires ont disparu, et renvoie leurs chemins
++       entry #gitDir   le répertoire git propre du dépôt
++       entry #commonDir   le répertoire git partagé par tous les worktrees, où se trouvent les objets et les refs
++           Identique à `#gitDir` sauf si la poignée a été ouverte sur un worktree lié.
++       entry #worktree   la racine de l'arbre de travail, si le dépôt en a un
++       entry #atoms   les atomes du mode avec lequel la poignée a été ouverte
++     entry .Openable   comment un chemin s'ouvre comme `Git.Repo` : localise le dépôt et prête un `Handle`
+
+@ 0 10 0 0c36223b52b616e8095c778562c6d964
++       entry #open   ouvre le chemin, en prêtant au bloc une poignée dotée des droits du mode
++       entry #Self   le type de chemin ouvert
++       entry #Form   la forme sous laquelle il est ouvert : `Git.Repo`
++       entry #Operand   le type des indicateurs : `Git.OpenFlag`
++       entry #Result   ce qui est prêté : un `Git.Repo.Handle`
++     entry .openable   le given qui permet à tout `Path on Linux` de s'ouvrir comme `Git.Repo`
++         Dans la portée implicite ; il exige un `Git.Backend^` (importez-en un depuis
++         `gitBackends`) et une `Tactic[Git.Error]`. Comme tout `Path on Linux` en dispose, ainsi
++         que de `Git.Worktree.openable`, la forme est toujours nommée : `open[Git.Repo]` ou
++         `open[Git.Worktree]`.
++   entry .Worktree   la forme sous laquelle un chemin s'ouvre comme arborescence extraite : l'index et les fichiers de travail au-dessus d'un dépôt
+
+% 0 1 0 1751e012accd74720c57d65fd8292233
+
+@ 0 1 0 095d76a4710aedb71e6f5dd1c12587e4
++     entry .Entry   un worktree lié : son chemin, ce qui est extrait, et s'il est verrouillé ou élagable
+
+@ 0 7 0 033b74c4aa39b35b004a0a4f99e44c22
++       entry #path   la racine du worktree
++       entry #head   le commit extrait, s'il y en a un
++       entry #branch   la branche extraite, si HEAD est attachée
++       entry #bare   si l'entrée est le dépôt nu lui-même
++       entry #locked   la raison du verrou, si le worktree est verrouillé
++       entry #prunable   pourquoi le worktree pourrait être élagué, s'il peut l'être
++     entry .Handle   une poignée de worktree prêtée : les opérations sur l'index et les fichiers de travail, en plus de toutes les opérations sur le dépôt
+
+@ 0 72 0 0fff00f2e0a80cee17852985870590a4
++       entry .status   l'état de chaque chemin modifié, sous forme de `Stale[List[Git.PathStatus[worktree.Plane]]]`
++           Les fichiers non suivis sont inclus sauf avec `untracked = false` ; les fichiers
++           ignorés seulement avec `ignored = true`.
++       entry .diff   les fichiers de travail par rapport à l'index, sous forme de `Stale[List[Delta]]`
++       entry .diffStaged   l'index par rapport à HEAD, sous forme de `Stale[List[Delta]]`
++       entry .diffAgainst   les fichiers de travail par rapport à une révision, sous forme de `Stale[List[Delta]]`
++       entry .diffBetween   les trees de deux commits l'un par rapport à l'autre, sous forme de simple `List[Delta]`
++           Indexé par des hachages, donc pas `Stale`.
++       entry .tracked   chaque chemin que suit l'index, sur le plan de la poignée, sous forme de liste `Stale`
++       entry .conflicts   chaque chemin en conflit, sur le plan de la poignée, sous forme de liste `Stale`
++       entry .currentBranch   la branche extraite, ou `Unset` quand HEAD est détachée, sous forme de `Stale`
++       entry .stashes   les entrées du stash, de la plus récente à la plus ancienne, sous forme de `Stale[List[Git.Stash.Entry]]`
++       entry .add   indexe des chemins
++           Prend un nombre quelconque de `Path on worktree.Plane`, formés comme
++           `worktree / "name"`.
++       entry .addAll   indexe toutes les modifications, comme `git add --all`
++       entry .rm   retire des chemins de l'index et, sauf avec `cached`, de l'arbre de travail
++           `rm(paths*)(cached, force)` : `force` supprime un chemin qui a des modifications
++           locales.
++       entry .mv   renomme un chemin dans l'index et dans l'arbre de travail
++       entry .unstage   retire des chemins de l'index, en laissant les fichiers de travail tels quels
++       entry .restore   restaure des chemins dans l'arbre de travail (ou, avec `staged`, dans l'index) à partir d'une révision
++           `restore(paths*)(source, staged)` : depuis l'index sauf si `source` est donné.
++       entry .clean   supprime les fichiers non suivis, ainsi que les répertoires ou les fichiers ignorés si demandé, et renvoie les chemins supprimés
++       entry .commit   commite l'index, sous condition d'une lecture de HEAD, et renvoie le hachage du nouveau commit
++           `commit(message, head, author, signer, allowEmpty)` : le tree est écrit, l'objet
++           commit assemblé ici — l'identité configurée comme committer (en levant `NoSuchConfig`
++           si `user.name` ou `user.email` n'est pas défini), et comme auteur aussi sauf si
++           `author` est donné — signé par le `Git.Signer` s'il y en a un, stocké, et HEAD
++           déplacée par compare-and-swap. Un tree inchangé par rapport à celui du parent lève
++           `NothingToCommit` sauf avec `allowEmpty`. L'objet est assemblé plutôt que créé par
++           `git commit` : la signature ne quitte donc jamais le processus et le même code sert
++           aux deux backends ; les hooks ne sont pas exécutés et `commit.gpgsign` n'est pas
++           consulté.
++       entry .amend   réécrit le commit de pointe avec un nouveau message ou une nouvelle signature, en conservant ses parents et son auteur
++           `amend(message, head, signer)` : le tree est l'index tel qu'il est maintenant. Lève
++           `NoSuchRef(HEAD)` sur une branche pas encore née.
++       entry .reset   déplace HEAD vers une révision selon un `ResetMode`, sous condition d'une lecture de HEAD
++           `Soft` déplace HEAD seule ; `Mixed` réinitialise aussi l'index ; `Hard` réinitialise
++           en plus les fichiers de travail ; `Merge` et `Keep` sont les variantes plus sûres de
++           git. Renvoie le commit cible ; lève `NoSuchRef` si la révision ne se résout pas.
++       entry .checkout   extrait une révision, en détachant HEAD, sous condition d'une lecture de HEAD ; renvoie la nouvelle lecture
++       entry .switch   bascule sur une branche, en la créant d'abord sur HEAD avec `create`, sous condition d'une lecture de HEAD
++           Renvoie le nouveau `Stale[Git.Head]`. Lève `Dirty(paths)` si des modifications locales
++           seraient écrasées, et `RefExists` si `create` nomme une branche existante.
++       entry .merge   fusionne une révision dans HEAD, sous condition d'une lecture de HEAD, selon une politique d'avance rapide
++           `merge(revision, head, ff, message, sign)` : `FastForward.Auto` fait une avance rapide
++           quand c'est possible, `Only` refuse toute autre chose (`NotFastForward`), `Never` crée
++           toujours un commit de fusion. L'issue est `FastForwarded`, `Merged`, `UpToDate` ou
++           `Stopped(operation)` sur un conflit.
++       entry .cherryPick   applique des commits sur HEAD, sous condition d'une lecture de HEAD ; avec `noCommit`, seulement à l'index
++       entry .revert   applique l'inverse de commits sur HEAD, sous condition d'une lecture de HEAD
++       entry .rebase   rebase HEAD sur une révision, sous condition d'une lecture de HEAD, avec des options
++           `rebase(onto, head, upstream, options)` : `upstream` borne les commits rejoués, comme
++           le prend `git rebase --onto`. `Stopped(operation)` sur un conflit indique combien de
++           commits sont faits et combien restent.
++       entry .pull   récupère une branche depuis un dépôt distant et la fusionne ou la rebase, sous condition d'une lecture de HEAD
++           `pull(remote, head, branch, mode, activity)` : la branche courante sauf si `branch`
++           est donné (en levant `Detached` si HEAD n'est sur aucune) ; `Git.Pull.Mode.Merge` sauf
++           si `mode` en décide autrement. Exige un `Internet`.
++       entry .continue   termine l'opération en cours une fois ses conflits résolus et ajoutés
++           Lève `NoOperationInProgress` s'il n'y en a pas.
++       entry .skip   passe le commit courant de l'opération en cours
++       entry .abandon   abandonne l'opération en cours, en restaurant HEAD, l'index et les fichiers de travail dans leur état de départ
++           Le `--abort` de git. Renvoie le `Stale[Git.Head]` restauré.
++       entry .quit   quitte l'opération en cours sans rien restaurer, comme le `--quit` de git
++       entry .stash   enregistre l'état non commité comme entrée de stash, et renvoie son commit, ou `Unset` s'il n'y avait rien
++           `stash(message, includeUntracked, keepIndex)`.
++       entry .popStash   applique une entrée de stash puis la supprime, à condition que l'entrée soit toujours telle que listée
++           Lève `NoSuchStash` si l'entrée a disparu ou changé. Avec `index = true`, l'index est
++           restauré aussi. Un conflit est une issue `Stopped`.
++       entry .applyStash   applique une entrée de stash sans la supprimer, à condition que l'entrée soit toujours telle que listée
++       entry .dropStash   supprime une entrée de stash, à condition que l'entrée soit toujours telle que listée
++       entry #Under   la plateforme dont relèvent les chemins du worktree : `Linux`
++     entry .Openable   comment un chemin s'ouvre comme `Git.Worktree` : localise le dépôt et son arbre, et prête un `Handle`
+
+@ 0 12 0 03160cc6751bc2fb1e85d1c02be97420
++       entry #open   ouvre le chemin, en prêtant au bloc une poignée dotée des droits du mode
++       entry #Self   le type de chemin ouvert
++       entry #Form   la forme sous laquelle il est ouvert : `Git.Worktree`
++       entry #Operand   le type des indicateurs : `Git.OpenFlag`
++       entry #Result   ce qui est prêté : un `Git.Worktree.Handle`
++     entry .openable   le given qui permet à tout `Path on Linux` de s'ouvrir comme `Git.Worktree`
++         Dans la portée implicite ; il exige un `Git.Backend^` (importez-en un depuis
++         `gitBackends`) et une `Tactic[Git.Error]`.
++   entry .init   crée un dépôt à un chemin, avec une branche initiale, nu ou non
++       `Git.init(target, initialBranch, bare)` prend n'importe quel type de chemin. La branche
++       initiale est celle par défaut de git (qui dépend de sa configuration) sauf si elle est
++       donnée : un programme qui compte sur `main` doit donc le dire. Exige un `Git.Backend^` et
++       une `Tactic[Git.Error]`.
+
+% 2 8 0 011d295bd3595e61143a86cf27cd62a2
+
+@ 0 12 0 15b83a14b721bdf8045c7f5c03671c49
++       val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
++       Git.init(directory, initialBranch = Git.Branch(t"main"))
++       Git.init(directory / "mirror.git", bare = true)
++       ```
++   entry .clone   clone un dépôt depuis un chemin, une URL ou une `SshUrl` vers un chemin
++       `Git.clone(source, target, branch, depth, bare, recursive, activity)` : la source est un
++       chemin local (de n'importe quel type), une URL (de n'importe quel type, ou du texte), ou
++       une `SshUrl` ; `branch` extrait une autre branche que la HEAD du dépôt distant ; `depth`
++       fait un clone superficiel ; `recursive` clone les sous-modules (backend en ligne de
++       commande uniquement). Exige un `Internet`, un `Git.Backend^` et une `Tactic[Git.Error]` ;
++       la progression est signalée via `activity` si on en passe une. Sous le backend natif, une
++       URL distante exige un `Transport` avec lequel le backend a été construit
++       (`Native(List(SmartHttp()))`), sinon `Unsupported`.
+
+% 0 9 0 1da4291ac9ae8e6503c894f6c6681c87
+
+% 0 3 0 1e9b0b7e051c681016caffcb16df725e
+
+@ 0 8 0 0889ea0cb5aa03071bff9b4b530e336e
++       target.open[Git.Worktree](): cloned ?=>
++         cloned.remotes().value.map(_.name)   // List(t"origin")
++       ```
++   entry .cloneCommit   clone exactement un commit : un fetch superficiel de celui-ci dans un dépôt neuf, puis extrait
++       `Git.cloneCommit(source, target, commit, activity)` initialise un dépôt à `target`,
++       récupère l'unique commit à la profondeur 1 et l'extrait, en mode détaché. Le serveur doit
++       permettre la récupération par hachage (`uploadpack.allowReachableSHA1InWant`, ou la
++       version 2 du protocole). Exige un `Internet`, un `Git.Backend^` et une
++       `Tactic[Git.Error]`.
+
+@ 0 1 0 084418c196b7fcba077b906640037e43
++   entry .Remote   un dépôt distant par son nom, son URL de fetch et son URL de push
+
+@ 0 4 0 0a42c7d8ae1c647f08cca2c62320e888
++     entry #name   le nom du dépôt distant, `origin`
++     entry #fetchUrl   l'URL depuis laquelle on récupère
++     entry #pushUrl   l'URL vers laquelle on pousse, si elle diffère de `#fetchUrl`
++   entry .Patch   lit un texte de patch sous forme de `Delta`, et aplatit les hunks d'un fichier en un seul `Diff`
+
+@ 0 6 0 0bf901f577fd28861a6c418490cb4abe
++     entry .parse   les `Delta` contenus dans des lignes de texte de diff unifié
++     entry .asDiff   les hunks d'un fichier aplatis en un seul `Diff[Text] & Retained` de dissonance
++         Assemblé à partir des modifications `Retained` des hunks : le diff porte donc le texte
++         de chaque ligne et prend en charge `redraft` et les autres opérations qui exigent les
++         valeurs.
++     entry #files   les fichiers du patch, dans l'ordre
++   entry .Hunk   un hunk du diff d'un fichier : ses plages, son intitulé de section et ses modifications
+
+@ 0 7 0 1c73410d8c7dbcc611dba6bf0623d205
++     entry #oldStart   la première ligne du hunk du côté ancien
++     entry #oldLines   le nombre d'anciennes lignes que couvre le hunk
++     entry #newStart   la première ligne du hunk du côté nouveau
++     entry #newLines   le nombre de nouvelles lignes que couvre le hunk
++     entry #section   l'intitulé après le `@@` : la fonction ou la classe englobante, si git en a trouvé une
++     entry #edits   les insertions, les suppressions et les lignes inchangées, dans l'ordre
++   entry .Delta   la part d'un fichier dans un diff : ses chemins des deux côtés, la nature du changement, et ses hunks
+
+@ 0 8 0 1ccff358555aebbd199457cdcee68a18
++     entry #oldPath   le chemin avant le changement, `Unset` pour un fichier ajouté
++     entry #newPath   le chemin après le changement, `Unset` pour un fichier supprimé
++     entry #status   comment le fichier a changé
++     entry #hunks   les hunks, dans l'ordre ; vide pour un changement binaire ou de mode seul
++     entry .Status   comment un fichier a changé : `Added`, `Modified`, `Deleted`, `Renamed`, `Copied` ou `TypeChanged`
++         Porté par chaque `Delta`. `Patch.parse` le déduit des en-têtes du patch : `/dev/null`
++         d'un côté, `rename from`, `copy from`, `new file mode`, `deleted file mode`.
++ entry .Commit   un commit tel que stocké : son hachage, son tree, ses parents, son auteur, son committer, sa signature et son message
+
+@ 0 7 0 14993f7377e8457819860f52b78962f1
++   entry #commit   le hachage propre du commit
++   entry #tree   le hachage du tree dont il est l'instantané
++   entry #parents   ses parents, l'historique le plus ancien en premier : aucun pour un commit racine, deux pour une fusion
++   entry #author   qui l'a écrit et quand
++   entry #committer   qui l'a commité et quand
++   entry #signature   la signature armurée en ASCII issue de son en-tête `gpgsig`, s'il est signé
++   entry #message   le message, sans le saut de ligne final que stocke git
+
+@ 0 4 0 0052efc7c3fe702e07383ce3738a5c53
++ entry .FastForward   si une fusion peut, doit ou ne doit pas faire une avance rapide : `Auto`, `Only` ou `Never`
++     La politique que prend `merge`, afin que la création d'un commit de fusion soit énoncée
++     plutôt qu'héritée de la configuration. `Auto` fait une avance rapide quand c'est possible ;
++     `Only` refuse toute autre chose, en levant `NotFastForward` ; `Never` crée toujours un
++     commit de fusion.
+
+@ 0 1 0 08457d3b814920190fc41a7fc63bf548
++ entry .Notes   le plan des notes git : un chemin enraciné en un hachage de commit, qui descend à travers un espace de noms
+
+@ 0 9 0 11a2919c589cbafc119590922a7d6a91
++   entry .Plane   le type de plan des chemins de notes : `Notes` lui-même
++   entry .filesystem   le plan des notes comme `Filesystem` : séparé par `/`, avec `@` et `..` pour le courant et le parent
++   entry .admissible   le given qui admet n'importe quel texte comme segment d'espace de noms
++       La validation est différée à `namespace`, qui vérifie chaque segment selon les règles de
++       référence de git quand la ref complète est nécessaire.
++   entry .radical   comment un hachage de commit s'encode comme racine d'un chemin de notes : `<hash>/`
++   entry .eradicable   comment un hachage de commit est relu depuis la racine d'un chemin de notes
++       Décode quarante chiffres hexadécimaux suivis de `/`, en levant
++       `Path.Error(InvalidRoot)` pour toute autre chose ; exige une `Tactic[Path.Error]`.
+
+@ 0 5 0 18d1698a0654f2820db61da8b2a1400b
++ entry .NoteRef   l'adresse d'une note : `Path on Notes under Git.Hash`, un hachage de commit sous lequel se trouve un espace de noms
++     Une `NoteRef` se construit comme `hash / t"namespace"` (et peut descendre plus loin :
++     `hash / t"ci" / t"attest"`). Sa racine est le commit auquel la note est attachée
++     (`target`), sa descente est l'espace de noms sous `refs/notes/` (`namespace`), et
++     `content[value]` lit la note via la poignée de dépôt de la portée.
+
+% 0 9 0 11e02f9ee19262681348a8fdf4b79f44
+
+% 0 1 0 106de4016ee2faf810902935c4b0afc3
+
+% 0 6 0 13b4590bf0e0ec4f1e8602ead8760bcb
+
+@ 0 3 0 13da7aacfe9c972b1f73c46382542a8a
++ entry .target   le commit auquel est attachée une `NoteRef` : son hachage racine
++     Une extension sur `NoteRef`, qui relit les quarante chiffres de la racine du chemin sous
++     forme de `Git.Hash`.
+
+@ 0 4 0 12420105dcc185bc19619f83d754ee7d
++ entry .namespace   la ref de notes pleinement qualifiée que nomme une `NoteRef` : `refs/notes/<segments>`
++     Une extension sur `NoteRef`. Chaque segment de la descente est vérifié ici selon les règles
++     de référence de git, en levant `Git.RefError` pour un segment que git rejetterait, puisque
++     `/` admet n'importe quel texte lors de la construction du chemin.
+
+@ 0 8 0 04c754492e925e021b495c2bdabc1756
++ entry .content   la note qu'adresse une `NoteRef`, décodée, lue via la poignée de dépôt de la portée
++     Une extension sur `NoteRef` : `(hash / t"ns").content[Text]` est le corps de la note sous
++     forme de `Stale[Text]`, ou décodé en n'importe quel `value is Decodable in Text`. Elle exige
++     un `Git.Repo.Handle & Granting[Grant.Read]` dans la portée — la poignée que prête un bloc
++     `open` — et lève `Git.Error(NoteNotFound)` si aucune note n'est attachée dans cet espace de
++     noms. Le résultat est `Stale`, puisqu'une note est atteinte via une ref qu'un autre
++     processus peut déplacer. Elle s'appelle `content` plutôt que `read`, puisqu'une `NoteRef`
++     est un chemin et que les chemins sont lisibles ; importez-la par son nom
++     (`import octogenarian.content`) pour qu'elle l'emporte par spécificité.
+
+@ 0 1 0 084a8c7c1485df5801a217f21204ab76
++ entry .ReflogEntry   une ligne d'un reflog : vers où pointait une ref, quand, et pourquoi elle a bougé
+
+@ 0 4 0 027247a69f95313111cc2deb2cbf57b2
++   entry #hash   le hachage que contenait la ref après le déplacement
++   entry #selector   le sélecteur de l'entrée, `HEAD@{0}`
++   entry #timestamp   quand la ref a bougé, en secondes depuis l'epoch
++   entry #message   pourquoi elle a bougé, tel que l'opération l'a enregistré
+
+@ 0 1 0 1ab2e9933803dd00103de1ae560555c1
++ entry .ResetMode   ce que `reset` déplace en plus de HEAD : `Soft`, `Mixed`, `Hard`, `Merge` ou `Keep`
+
+@ 0 1 0 085050f28fa04b2b1b7e0f8bc1e3403b
++   entry #flag   l'option sous laquelle git connaît le mode : `--soft`, `--mixed`, `--hard`, `--merge`, `--keep`
+
+@ 0 1 0 0c768447ff160f1b0556b92894397f6e
++ entry .SshUrl   l'adresse d'un dépôt en SSH : un utilisateur optionnel, un nom d'hôte vérifié et un chemin
+
+@ 0 4 0 195f08a618a2ce2a14232584af504504
++   entry #user   l'utilisateur sous lequel se connecter, s'il y en a un
++   entry #hostname   l'hôte
++   entry #path   le chemin du dépôt sur l'hôte
++   entry #text   l'adresse telle que git la prend
+
+@ 0 1 0 0ea2c3a3049349e40fcad7ecb4b87dd5
++ entry .Commandline   le backend qui lance la commande `git`, sous le nom `gitBackends.commandlineGit`
+
+@ 0 3 0 047ab610a8d7e774029a1cca7c5301f5
++       `.reason` est la table qui lit la sortie d'erreur standard de git comme une
++       `Git.Error.Reason` ; tout ce qui n'est pas reconnu donne `Unexpected`, le message étant
++       conservé comme `detail` de l'erreur, si bien que rien n'est perdu. L'impossibilité même de
++       lancer `git` donne `CannotExecuteGit`.
+
+@ 0 1 0 087858f2881ea6320365e082d2ed3be9
++   entry .Command   l'exécutable `git` à lancer, par son chemin
+
+@ 0 3 0 0423890663dca32215280c0ceecc0219
++     detail
++         `gitCommands.searchpathGitCommand` le trouve dans le chemin de recherche ; un programme
++         qui embarque son propre git le nomme explicitement,
++         `Commandline.Command(t"/opt/git/bin/git")`.
+
+@ 0 2 0 1774d81b87ddc92d00e1d87fe264e6b0
++     entry #path   le chemin de l'exécutable, sous forme de texte
++   entry .Event   ce que journalise le backend : chaque invocation de `git`, sous forme d'`Exec.Event` de guillotine
+
+@ 0 4 0 0f9d4e1689f97f471b5476ba5bbe8594
++     detail
++         `Exec(event)` enveloppe un `guillotine.Exec.Event`, tagué `Log.Process` ; `.execEvent`
++         y transcrit les événements de guillotine, si bien qu'un `Commandline.Event is Loggable`
++         dans la portée est tout ce dont le backend a besoin. `logging.silentLogging` les ignore.
+
+@ 0 15 0 139ddfbef20d8e2c12982927626a0f54
++     entry .execEvent   transcrit un `Exec.Event` de guillotine en `Commandline.Event`
++     entry .communicable   rend un événement sous la forme _git: `event`_
++   entry .Outcome   ce qu'a produit une invocation de `git` : son code de sortie, sa sortie standard et sa sortie d'erreur standard
++     entry #exit   le code de sortie
++     entry #stdout   la sortie standard, sous forme de texte
++     entry #stderr   la sortie d'erreur standard, sous forme de texte
++     entry #ok   si le code de sortie valait zéro
++     entry #lines   la sortie standard sous forme de lignes non vides
++   entry .reason   lit la sortie d'erreur standard de git comme une `Git.Error.Reason`
++       Reconnaît les messages de git — assez stables pour être reconnus — pour `NoRepository`,
++       `Moved`, `RefExists`, `Locked`, `NoSuchRef`, `Unmerged`, `NoSuchObject`,
++       `NothingToCommit`, `Detached`, `Dirty`, `NotFastForward`, `LeaseFailed`,
++       `OutsideWorktree`, `Untracked`, `NoOperationInProgress`, `NoSuchRemote`, `RemoteExists`,
++       `Unauthorized`, `Unreachable`, `RemoteRejected`, `InvalidConfig`, `NoteExists`,
++       `BadSignature`, `SigningFailed`, `NoSuchWorktree` et `Conflict` ; tout le reste donne
++       `Unexpected`.
+
+@ 0 1 0 135aaf586a5a51c61f25de086d5628f9
++ entry .Gpg   la signature et la vérification avec des clés OpenPGP via `gpg`, comme le fait git
+
+@ 0 4 0 042f5045937e2e5116faf46b13697070
++   entry .Signer   signe avec la clé OpenPGP par défaut, ou avec `key`, via `gpg -bsa`
++     entry #sign   la signature armurée en ASCII d'une charge utile ; lève `Git.Error(SigningFailed)` si gpg échoue
++   entry .Verifier   vérifie par rapport au trousseau via `gpg --verify`
++     entry #verify   `Good(userId)` pour une ligne `GOODSIG`, `Bad` pour `BADSIG`, sinon `Unknown`
+
+@ 0 1 0 0568d089d976c302143a080e19e6f36f
++ entry .SmartHttp   les dépôts distants en HTTP(S) via le protocole smart de git, sous le nom `gitTransports.smartHttp`
+
+@ 0 1 0 118de4f9c02b68bc1dfbe7e5c7f7bb26
++   entry .Channel   l'endpoint HTTP d'un dépôt : l'annonce et chaque échange avec un service
+
+@ 0 5 0 1619b13e64beb6dc08c7f9fae4493545
++     entry #advertise   l'annonce des capacités d'un service, sous forme de lecteur de packet-lines
++     entry #exchange   poste une requête à un service et renvoie sa réponse, sous forme de lecteur de packet-lines
++     entry #close   rien à fermer : chaque échange est sa propre requête
++   entry #accepts   si une URL commence par `http://` ou `https://`
++   entry #connect   un `Peer` sur l'URL, levant `Git.Error` pour un serveur qui refuse ou ne peut pas être atteint
+
+@ 0 1 0 1dbb4c104c8dceb51a32056e22030df3
++ entry .SshCommand   les dépôts distants via un `ssh` lancé en processus, sous le nom `gitTransports.sshCommand`
+
+@ 0 1 0 0d3175a2cf84c49e05aa08bd54d3fb24
++   entry .Channel   un dépôt atteint via un `ssh` lancé en processus : un processus par échange
+
+@ 0 5 0 1eef9f3d9eb459bd16b2be0c511d8640
++     entry #advertise   lance un service et renvoie son annonce, sous forme de lecteur de packet-lines
++     entry #exchange   lance un service, lui écrit une requête et renvoie sa réponse, après l'annonce
++     entry #close   rien à fermer : chaque échange est son propre processus
++   entry #accepts   si une URL est une adresse SSH, sous l'une ou l'autre forme
++   entry #connect   un `Peer` sur l'adresse, levant `Git.Error(Unsupported)` pour une URL qui n'en est pas une
+
+@ 0 1 0 0a03560bde9a29ca1dfb1a4587f9ca9c
++ entry .SshKeygen   la signature et la vérification avec des clés OpenSSH via `ssh-keygen -Y`, comme le fait git avec `gpg.format = ssh`
+
+@ 0 4 0 15c0c0b178ad2a0c06e45a2bbaa1d060
++   entry .Signer   signe avec la clé privée située à un chemin, via `ssh-keygen -Y sign -n git`
++     entry #sign   la signature armurée en ASCII d'une charge utile ; lève `Git.Error(SigningFailed)` si ssh-keygen échoue
++   entry .Verifier   vérifie par rapport aux principaux et aux clés d'un fichier allowed-signers
++     entry #verify   `Good(principal)` si la clé est autorisée et que la signature est valide ; `Unknown` si aucun principal ne correspond ; `Bad` sinon
+
+@ 0 1 0 0bf65b1c94381c7f05c0a815a5d205b9
++ entry .SshNative   les dépôts distants via le client SSH natif, sans binaire `ssh`, sous le nom `gitTransports.soundnessSsh`
+
+@ 0 1 0 11a98706c0ec318810e50235d9c1186d
++   entry .Channel   une connexion SSH vers un dépôt, avec un canal par échange
+
+@ 0 5 0 1d31d6c329e586c20e003ea95997d61d
++     entry #advertise   ouvre un canal pour un service et renvoie son annonce, sous forme de lecteur de packet-lines
++     entry #exchange   ouvre un canal pour un service, écrit une requête et renvoie sa réponse, après l'annonce
++     entry #close   ferme le canal courant, la session et le socket
++   entry #accepts   si une URL est une adresse SSH, sous l'une ou l'autre forme
++   entry #connect   se connecte, s'authentifie et renvoie un `Peer` ; lève `Git.Error(Unreachable)` en cas d'échec
+
+@ 0 1 0 0cdb9504e064b5a7078ec8ccbd62973c
++ entry .gitCommands   où se trouve l'exécutable `git`, chacun étant un given à importer par son nom
+
+@ 0 5 0 1f2487603b6be8571567a7d44825723a
++   entry .searchpathGitCommand   le `git` trouvé dans le chemin de recherche, par `which git`
++       Résolu à la première utilisation du given, dans le `WorkingDirectory` et l'`Environment`
++       de la portée, et journalisé comme un `Commandline.Event`. Il exige une
++       `Tactic[Exec.Error]`, une `Tactic[Path.Error]`, une `Tactic[Io.Error]` et une
++       `Tactic[Name.Error]` dans la portée — ce que couvre `strategies.throwUnsafely` — et un
++       `Path on Linux` instanciable depuis du texte.
+
+@ 0 1 0 12a672659170cddc0bf63e5cb0ba27ae
++ entry .gitBackends   les deux implémentations de `Git.Backend`, chacune étant un given à importer par son nom
+
+@ 0 6 0 08f3c5fadfbd8f98029c3dd0f3c9e35a
++   entry .commandlineGit   le backend qui lance la commande `git`
++       Un `Git.Backend^{loggable, caps.any}` construit comme `Commandline(command)` à partir de
++       la `Commandline.Command`, du `WorkingDirectory`, de l'`Environment` et du
++       `Commandline.Event is Loggable` de la portée : importez donc à côté
++       `gitCommands.searchpathGitCommand` (ou liez une commande),
++       `workingDirectories.javaBaseWorkingDirectory`, `environments.javaBaseEnvironment` et une
++       politique de journalisation.
+
+@ 0 7 0 1ff82bb3e74f6cbc01675a44a3b0c946
++   entry .soundnessGit   le backend natif : lit et écrit lui-même les fichiers du dépôt, sans binaire `git`
++       `Native()` sans transports : il atteint donc les dépôts du même système de fichiers par
++       leur chemin et lève `Git.Error(Unsupported(the transport for <url>))` pour toute autre
++       URL ; un programme qui récupère depuis un dépôt distant ou pousse vers lui en HTTP ou en
++       SSH lie plutôt son propre `given Git.Backend = Native(List(SmartHttp(), SshCommand()))`.
++       Importé par son nom, puisque `import soundness.*` n'importe pas les givens ;
++       `gitBackends.commandlineGit` est l'alternative qui lance la commande `git`.
+
+% 2 7 0 1966dc12c9dc69c31054596ad7bf2612
+
+% 0 5 0 0c28ca066bb92b9b0cfde426e54c2426
+
+@ 0 1 0 1b7c0d631ffd90d6177b08dfeb1a6ad3
++ entry .gitTransports   les façons dont le backend natif atteint un dépôt distant, chacune étant un given à importer par son nom
+
+@ 0 10 0 08cbe1b688eb4efe10509f641316d432
++   entry .smartHttp   `SmartHttp()` sur le `Http.Backend` de la portée
++       Exige un `Http.Backend`, comme `httpBackends.javaNetHttp`.
++   entry .sshCommand   `SshCommand()` dans le `WorkingDirectory` et l'`Environment` de la portée
++       Un `Transport^{loggable, caps.any}` : il conserve l'`Exec.Event is Loggable` à partir
++       duquel il a été construit ; une politique de journalisation doit donc être dans la portée.
++   entry .soundnessSsh   `SshNative()` à partir du contexte susurration de la portée
++       Exige un `Socket.Backend`, les `Socket.Option` TCP, un `Ssh.Provider`, des
++       `Ssh.Algorithms`, des `Ssh.HostKeys`, des `Ssh.Credentials`, un `Hash` SHA-256 et
++       `Diagnostics`, ainsi qu'`Online` comme preuve que le réseau peut être utilisé (exigé,
++       comme l'exigent les clients HTTP de telekinesis, mais non conservé : le transport lui-même
++       est pur).
+
+@ 0 1 0 175a2f3044d34fc40607d6ab9dc9ce85
++ entry .Native   le `Git.Backend` qui lit et écrit lui-même les fichiers d'un dépôt, sans binaire `git`
+
+% 7 1 0 07f206a66839aca11ebfcd26c08e27a7
+
+@ 0 176 0 09f0472751d2b6b015a14763b703e6b0
++   entry #locate   trouve le dépôt auquel appartient un chemin : son répertoire git, son répertoire commun et son worktree
++       Un répertoire qui contient un répertoire `.git` est un worktree ; un répertoire dont le
++       `.git` est un fichier nommant un `gitdir:` est un worktree lié, dont le répertoire git
++       propre nomme le répertoire partagé dans `commondir` ; un répertoire qui contient `HEAD`,
++       `objects` et `refs` est lui-même un répertoire git (un dépôt nu, ou un `.git` dont le
++       parent est le worktree). Tout le reste, ou un chemin qui n'existe pas, donne `Unset`.
++       C'est ce que consultent `path.open[Git.Repo]` et `open[Git.Worktree]`.
++   entry #init   crée un dépôt, avec `HEAD` sur la branche initiale
++       Crée `objects/`, `refs/heads/`, `refs/tags/`, `info/` et le reste, écrit `HEAD` comme ref
++       symbolique vers la branche (`main` si aucune n'est nommée), un `config` avec
++       `core.repositoryformatversion`, `core.filemode`, `core.bare` et, pour un dépôt non nu,
++       `core.logallrefupdates`, ainsi que le fichier `description`. Un dépôt nu est créé à la
++       cible elle-même, sinon dans son `.git`. Les fichiers déjà présents sont conservés :
++       réinitialiser est donc sans danger. `Git.init` est la porte d'entrée.
++   entry #clone   récupère un dépôt dans un dépôt neuf et extrait sa branche par défaut
++       Se connecte à la source (un chemin local, ou une URL qu'accepte un transport), demande sa
++       `HEAD` symbolique pour choisir la branche quand aucune n'est nommée, initialise la cible,
++       écrit le dépôt distant `origin` avec le refspec de fetch habituel
++       (`+refs/heads/*:refs/remotes/origin/*`, ou `+refs/heads/*:refs/heads/*` pour un clone nu),
++       récupère, et pour un clone non nu crée la branche locale avec son upstream configuré,
++       extrait l'arbre et écrit l'index. Un `depth` produit un clone superficiel dont git
++       respecte le fichier `shallow`. Il exige une preuve `Internet`, et cloner les sous-modules
++       récursivement donne `Git.Error(Unsupported(cloning submodules recursively))`. La
++       `Git.Activity` qu'on lui donne signale les phases `Receiving` et `Checkout`.
++   entry #head   ce qu'est `HEAD` : attachée à une branche, peut-être pas encore née, ou détachée sur un hachage
++       Une `HEAD` symbolique est `Git.Head.Attached` avec la pointe de la branche, ou `Unset`
++       pour une branche pas encore née ; une HEAD directe est `Git.Head.Detached`. Un dépôt
++       sans `HEAD` lisible donne `Git.Error(NoSuchRef(HEAD))`.
++   entry #readRef   le contenu d'une ref, direct ou symbolique, depuis le fichier libre ou `packed-refs`
++   entry #listRefs   chaque ref sous un préfixe, avec son hachage, dans l'ordre des noms
++       Les refs libres masquent les refs empaquetées de même nom, comme dans git.
++   entry #peel   suit les tags annotés jusqu'à l'objet qu'ils nomment en définitive
++   entry #updateRef   compare-and-swap d'une ref : la déplace ou la supprime si elle contient ce qui était attendu
++       Prend `<ref>.lock` par une création exclusive (`Git.Error(Locked)` si un autre processus
++       le détient), compare la valeur courante de la ref avec la `Git.Backend.Expectation`
++       (`Git.Error(Moved)` si elle diffère), écrit ou supprime, et ajoute une ligne de reflog
++       avec le message quand `core.logallrefupdates` le demande. Une ref empaquetée mise à jour
++       est écrite libre. C'est la primitive sur laquelle repose tout verbe d'une poignée qui
++       déplace une ref.
++   entry #updateSymbolicRef   fait pointer une ref symbolique (comme `HEAD`) vers une autre ref
++   entry #resolve   une expression de révision vers un hachage, ou `Unset` si rien ne correspond
++       Comprend les hachages complets et abrégés non ambigus, `HEAD` et `@`, les noms de ref
++       essayés dans l'ordre de git (`refs/<name>`, `refs/tags/<name>`, `refs/heads/<name>`,
++       `refs/remotes/<name>`, …), les entrées de reflog sous la forme `<ref>@{n}`, et les
++       suffixes `~n`, `^n`, `^{}`, `^{commit}`, `^{tree}` et `^{tag}`, qui s'associent depuis la
++       droite.
++   entry #revList   les commits accessibles depuis une révision et pas depuis une autre, du plus récent au plus ancien
++       Parcourt les parents depuis `from`, en s'arrêtant à `until` et à la frontière `shallow`,
++       par date de commit décroissante ; `limit` plafonne le nombre et `paths` ne garde que les
++       commits qui modifient l'un d'eux. Une révision impossible à résoudre donne
++       `Git.Error(NoSuchRef)`.
++   entry #reflog   le reflog d'une ref (`HEAD` par défaut), du plus récent au plus ancien
++   entry #mergeBase   l'ancêtre commun le plus proche de deux commits, ou `Unset` s'il n'y en a pas
++   entry #isAncestor   si un commit est accessible depuis un autre
++   entry #readObject   la sorte et les octets d'un objet, depuis le magasin libre, un pack ou un alternate
++       `Unset` quand aucun magasin ne l'a. Les packs sont relistés quand un hachage n'est pas
++       trouvé, puisqu'un autre processus peut avoir réempaqueté.
++   entry #readObjects   plusieurs objets à la fois, en sautant ceux qui manquent
++   entry #writeObject   stocke un objet libre et renvoie son hachage
++       Haché comme git le hache, sur l'en-tête `<kind> <size>\0` et les octets ; un objet déjà
++       présent n'est pas réécrit.
++   entry #diffTree   les différences de fichiers entre deux trees, sous forme de `Delta` avec des hunks
++   entry #status   l'état de l'index et de l'arbre de travail de chaque chemin, tel que le signale `git status --porcelain`
++       Compare le tree de `HEAD`, l'index et les fichiers de travail, en respectant `.gitignore`
++       et `info/exclude` ; `ignored` et `untracked` indiquent si ces fichiers sont listés. Les
++       entrées d'index dont les données stat correspondent encore au fichier sont jugées fiables
++       sans le hacher, comme le permettent les règles racy-git de git.
++   entry #add   indexe des chemins, ou avec `all` toutes les modifications sous le worktree
++       Écrit des blobs pour les fichiers et met à jour l'index, en respectant `.gitignore` pour
++       les fichiers pas encore indexés ; un chemin qui ne correspond à aucun fichier et n'est pas
++       indexé donne `Git.Error(Untracked(path))`.
++   entry #remove   retire des chemins de l'index et, sauf avec `cached`, de l'arbre de travail
++       Un chemin que l'index ne suit pas donne `Git.Error(Untracked(path))`, et un fichier dont
++       le contenu indexé ou de travail diffère de `HEAD` donne `Git.Error(Dirty)` sans `force`.
++   entry #move   renomme un chemin suivi dans l'index et sur le disque
++   entry #restore   restaure des chemins depuis l'index ou depuis une révision source, vers l'index, les fichiers de travail, ou les deux
++   entry #clean   supprime les fichiers non suivis, et avec `directories` les répertoires non suivis, et renvoie ce qui a été supprimé
++       Les fichiers ignorés ne sont supprimés que si `ignored` est défini.
++   entry #writeTree   écrit l'index sous forme d'objet tree et renvoie son hachage
++       Un index avec des entrées non fusionnées donne `Git.Error(Conflict(paths))`.
++   entry #readTree   réinitialise l'index, et pour `ResetMode.Hard` les fichiers de travail, sur `HEAD`
++       `Soft` ne change rien ; `Mixed` réécrit l'index depuis `HEAD` en laissant les données stat
++       non vérifiées, si bien que le status suivant hache chaque fichier ; `Hard` réécrit aussi
++       les fichiers de travail, en comparant avec ce qui est sur le disque plutôt qu'avec
++       l'index, si bien qu'un fichier modifié est remplacé. Tout autre mode donne
++       `Git.Error(Unsupported)`.
++   entry #diffWorktree   les différences entre les fichiers de travail (ou l'index, avec `staged`) et `HEAD` ou une révision
++   entry #tracked   chaque chemin de l'index
++   entry #conflicts   les chemins qui ont des entrées d'index non fusionnées
++   entry #checkout   déplace `HEAD` vers une révision, en la détachant, et met à jour l'index et les fichiers
++       Un nom de branche est extrait en mode attaché, tout le reste en mode détaché. Des chemins
++       modifiés dans l'index ou dans l'arbre de travail que l'extraction écraserait la font
++       échouer avec `Git.Error(Dirty)`.
++   entry #switch   déplace `HEAD` vers une branche, en la créant à partir du commit courant avec `create`
++       Sans `create`, une branche qui n'existe pas donne `Git.Error(NoSuchRef)`, et le
++       basculement est une extraction de la branche, en mode attaché. Avec, la branche est créée
++       sur le commit courant par un compare-and-swap qui attend son absence, si bien qu'une
++       branche qui existe déjà donne `Git.Error(Moved)`, et `HEAD` est pointée dessus sans
++       toucher aux fichiers.
++   entry #merge   fusionne une révision dans `HEAD` : avance rapide, commit de fusion, ou arrêt sur des conflits
++       Respecte la politique `FastForward`, écrit des marqueurs de conflit à partir d'une fusion
++       diff3 des deux côtés par rapport à leur base de fusion, et en cas de conflits laisse
++       `MERGE_HEAD` et `MERGE_MSG` pour que `sequence` poursuive ou abandonne. Signer nativement
++       un commit de fusion donne `Git.Error(Unsupported)`.
++   entry #cherryPick   applique des commits un par un sur `HEAD`, en s'arrêtant au premier conflit
++       Écrit `CHERRY_PICK_HEAD` et une liste de tâches `sequencer/` qui conserve l'élément
++       courant, exactement comme git, de sorte que chacun des deux puisse poursuivre. Avec
++       `noCommit`, les modifications sont indexées et aucun commit n'est créé ; sinon, un pick
++       qui ne change rien donne `Git.Error(NothingToCommit)`.
++   entry #revert   applique l'inverse de commits sur `HEAD`, comme le fait `cherryPick` en sens inverse
++   entry #rebase   rejoue les commits depuis `upstream` sur `onto`, en s'arrêtant sur un conflit
++       Conserve son état dans `rebase-merge/`, un pick arrêté figurant déjà dans `done`, comme
++       git l'organise. Les `Git.Rebase.Option` comme le sign-off sont respectées ; `--autosquash`
++       donne `Git.Error(Unsupported)`.
++   entry #sequence   poursuit, saute ou abandonne la fusion, le cherry-pick, le revert ou le rebase en cours
++       Lit les fichiers d'état présents pour savoir de quelle opération il s'agit ;
++       `Git.Error(NoOperationInProgress)` s'il n'y en a aucune. Poursuivre un rebase de style
++       `am` et sauter une fusion donnent `Git.Error(Unsupported)`.
++   entry #operation   l'opération en cours, s'il y en a une, avec ses chemins en conflit
++   entry #stash   enregistre l'index et les modifications de travail comme entrée de stash et réinitialise l'arbre
++       Écrit les trois commits qu'écrit git (l'index, les fichiers non suivis si demandé, et le
++       stash lui-même) sous `refs/stash` avec une entrée de reflog ; `keepIndex` laisse en place
++       les modifications indexées. Un arbre propre ne crée aucune entrée et donne `Unset` ; un
++       index avec des entrées non fusionnées donne `Git.Error(Unmerged)`.
++   entry #stashes   les entrées du stash, de la plus récente à la plus ancienne, depuis le reflog de `refs/stash`
++   entry #applyStash   applique une entrée de stash à l'arbre, en restaurant aussi l'index avec `index`, et la supprime avec `drop`
++       Une entrée manquante donne `Git.Error(NoSuchStash)` ; les conflits l'arrêtent comme ils
++       arrêtent une fusion.
++   entry #dropStash   supprime une entrée de stash du reflog
++   entry #readNote   la note d'un objet sous une ref de notes, s'il y en a une
++   entry #listNotes   chaque note sous une ref de notes, chacune sous forme de l'objet annoté et du blob de note
++       Lit indifféremment les arbres de notes plats et répartis en éventail.
++   entry #editNotes   ajoute, complète, supprime ou copie une note, en écrivant un nouveau commit de notes
++       Prend la pointe courante de la ref de notes comme `base` (ou `Unset` pour la première
++       note) et renvoie le nouveau commit ; c'est l'appelant qui déplace la ref. Une note déjà
++       présente donne `Git.Error(NoteExists)` sauf si la modification la force, et copier depuis
++       un objet qui n'en a pas donne `Git.Error(NoteNotFound)`.
++   entry #configRead   les entrées d'un fichier de configuration, ou toutes les entrées en vigueur
++       `Git.Config.Source.Effective` donne les fichiers système, XDG, global, local et de
++       worktree dans l'ordre de git, avec les fichiers `include.path` insérés (jusqu'à une
++       profondeur de dix) ; toute autre source est lue comme un seul fichier.
++   entry #configWrite   définit une clé dans un fichier de configuration, ou ajoute une valeur supplémentaire avec `add`
++       Écrit sous un `config.lock`, en préservant les commentaires et le reste du fichier ; une
++       clé dans une nouvelle section reçoit l'en-tête de section.
++   entry #configUnset   supprime une clé, ou avec `all` toutes ses valeurs, d'un fichier de configuration
++   entry #remoteRefs   liste les refs d'un dépôt distant comme le fait `ls-remote`, `HEAD` d'abord et les tags avec leurs cibles déréférencées
++       Exige une preuve `Internet`. Le dépôt distant est un nom configuré, dont l'URL est
++       `remote.<name>.url` (`remote.<name>.pushurl` pour un push, quand il est défini), ou une
++       URL ou un chemin utilisés tels quels.
++   entry #fetch   récupère depuis un dépôt distant, déplace les refs locales que nomment les refspecs, et écrit `FETCH_HEAD`
++       Utilise les refspecs configurés du dépôt distant quand aucun n'est donné, négocie avec le
++       `download` du pair, stocke en objets libres ce qui arrive, coupe l'historique à `depth` et
++       enregistre la frontière dans `shallow`, ajoute `refs/tags/*:refs/tags/*` aux refspecs avec
++       `tags`, et avec `prune` supprime les refs locales correspondant à une destination à motif
++       dont l'homologue distant a disparu. Renvoie les refs qu'il a modifiées. Exige une preuve
++       `Internet`.
++   entry #push   envoie les objets qui manquent à un dépôt distant et lui demande de déplacer ses refs
++       Chaque refspec devient un `RefUpdate` dont l'attente est fixée par la politique
++       `Git.Push.Force` : un push simple attend la valeur courante du dépôt distant et refuse
++       localement un déplacement qui n'est pas une avance rapide, `Always` n'attend rien, et
++       `Lease` attend les lectures qu'il porte. Les issues qualifient chaque ref de `Created`,
++       `Updated`, `Deleted`, `UpToDate` ou `Rejected` avec la raison du pair ; `setUpstream`
++       configure les clés remote et merge de la branche. Exige une preuve `Internet`.
++   entry #worktrees   le worktree principal et chaque worktree lié, avec sa head, sa branche et son état de verrouillage
++       Un worktree lié dont le `gitdir` pointe vers un répertoire qui n'existe plus est marqué
++       élagable.
++   entry #addWorktree   extrait une révision dans un nouveau worktree lié, sur une nouvelle branche si demandé
++       L'enregistre sous `worktrees/<name>` avec `gitdir`, `commondir` et sa propre `HEAD`, écrit
++       le fichier `.git` dans le nouvel arbre, extrait les fichiers et écrit l'index. Une
++       révision qui est le nom d'une branche existante y attache `HEAD` sauf si `detach` est
++       défini ; `newBranch` y crée d'abord une branche (`Git.Error(Moved)` si elle existe). Une
++       cible qui existe et n'est pas vide donne `Git.Error(Unexpected)`.
++   entry #removeWorktree   supprime un worktree lié et son entrée de registre
++       Un worktree verrouillé donne `Git.Error(Locked)`, et un worktree avec des modifications
++       donne `Git.Error(Dirty)` sans `force`.
++   entry #lockWorktree   écrit un fichier `locked`, avec une raison optionnelle, de sorte que le worktree ne soit jamais élagué
++       Verrouiller un worktree déjà verrouillé donne `Git.Error(Locked)`.
++   entry #unlockWorktree   supprime le fichier `locked` d'un worktree
++       Un worktree qui n'est pas verrouillé donne `Git.Error(Unexpected)`.
++   entry #moveWorktree   déplace le répertoire d'un worktree lié et réécrit son entrée de registre
++       Un worktree verrouillé donne `Git.Error(Locked)`, et une destination qui existe donne
++       `Git.Error(Unexpected)`.
++   entry #pruneWorktrees   supprime les entrées de registre dont les worktrees ont disparu, et renvoie leurs chemins
++       Une entrée verrouillée est conservée.
+
+@ 0 1 0 10d26e3ce87998900e6331ec2d6f5ecb
++ entry .Transport   un moyen d'atteindre des dépôts distants à un certain type d'URL, pour le backend natif
+
+@ 0 6 0 198797ce8b1334870ffd17b11c9e2e81
++   entry #accepts   si ce transport peut atteindre l'URL
++       Jugé d'après la seule forme de l'URL : `SmartHttp` accepte `http://` et `https://`, et les
++       transports SSH acceptent tout ce que comprend `SshAddress.parse`.
++   entry #connect   ouvre une connexion vers le dépôt situé à l'URL, sous forme de `Peer`
++       Lève `Git.Error` quand la connexion ne peut pas être établie ; l'URL a déjà été acceptée.
++       Le pair est une capacité (`Peer^`), puisqu'il détient la connexion.
+
+@ 0 1 0 1081b1293c6c20e70edf0759f563b33f
++ entry .Peer   l'autre extrémité d'un fetch ou d'un push : liste les refs, envoie des objets, reçoit des objets et des mises à jour de refs
+
+@ 0 24 0 0ffa36cc020da59a173ac148d859dfbc
++   entry .Local   un dépôt de ce système de fichiers, atteint en lisant et en écrivant directement ses fichiers
++       `Peer.Local(location, identity)` prend la `Git.Backend.Location` du dépôt (telle que la
++       trouve `Native#locate`) et l'identité à enregistrer dans ses reflogs. C'est le pair
++       qu'utilise `Native` pour un chemin, ou pour une URL `file://`, `./` ou `../`. Sa méthode
++       `refs` liste `HEAD` d'abord puis chaque ref, un tag annoté étant suivi de sa cible
++       déréférencée sous la forme `<name>^{}`, comme le fait `ls-remote` ; sa méthode `upload`
++       écrit les objets libres et applique chaque `RefUpdate` par compare-and-swap, en signalant
++       `failed to update ref` pour une ref qui a bougé, `failed to lock` pour une ref verrouillée
++       par un autre processus, et `branch is currently checked out` pour la branche qu'un dépôt
++       non nu a extraite, qui n'est jamais mise à jour sous ses pieds.
++   entry #refs   chaque ref avec son hachage, `HEAD` comprise, telles que les listerait `ls-remote`
++       Un tag annoté est suivi de sa cible déréférencée sous la forme `<name>^{}`.
++   entry #symbolicHead   ce vers quoi `HEAD` est une ref symbolique, si le pair le dit
++       La ref qu'extrait `clone` quand aucune branche n'est nommée ; `Unset` pour une `HEAD`
++       détachée ou inconnue.
++   entry #download   envoie vers `store` chaque objet accessible depuis `wants` que `has` ne connaît pas
++       `haves` sont les commits que possède le demandeur, pour un pair auquel on peut seulement
++       dire ce que possède le demandeur au lieu de le lui demander. Avec un `depth`, l'historique
++       des commits est coupé à cette profondeur et les commits situés à la frontière sont
++       renvoyés, pour le fichier `shallow` du demandeur ; sinon le résultat est vide. La
++       `Git.Activity` passe par la phase `Receiving`.
++   entry #upload   reçoit les objets nommés, lus via `read`, puis applique les mises à jour
++       Renvoie la ref de chaque mise à jour associée à la raison de son rejet, ou à `Unset` pour
++       une mise à jour appliquée. La `Git.Activity` passe par la phase `Writing`, mesurée par le
++       nombre d'objets.
+
+@ 0 1 0 1f36130e1f26260a0c84617d272779ae
++ entry .RefUpdate   une ref à modifier chez un pair : ce qu'elle est censée contenir maintenant, et ce qu'elle doit contenir
+
+@ 0 3 0 1ab187cd6850925e1426431dbb480120
++   entry #ref   le nom complet de la ref, comme `refs/heads/main`
++   entry #expected   ce que doit contenir la ref pour que la mise à jour soit appliquée
++   entry #to   le hachage vers lequel déplacer la ref, ou `Unset` pour la supprimer
+
+@ 0 1 0 19a36cb80b28cb7f1092adbffd748b6c
++ entry .Channel   une connexion au `git-upload-pack` ou au `git-receive-pack` d'un dépôt distant, quel que soit son support
+
+@ 0 5 0 0ecafee4489ad68c004ecbc593589ad4
++   entry #advertise   l'annonce d'ouverture du serveur pour un service, sous forme de lecteur pkt-line
++       Le service est `git-upload-pack` ou `git-receive-pack` ; le client du protocole y lit la
++       ligne de version et les capacités.
++   entry #exchange   envoie une requête à un service et renvoie un lecteur sur la réponse
++   entry #close   libère ce que détient le canal : un processus, une connexion
+
+@ 0 1 0 1e5f1929ffe943421db8e4f440c364c4
++ entry .SshAddress   l'adresse d'un dépôt atteint en SSH, sous l'une ou l'autre des formes qu'accepte git
+
+@ 0 8 0 010d06fc248b2ec10024709c0bfa7798
++   entry .parse   lit une adresse SSH depuis du texte, ou `Unset` si le texte n'en est pas une
++       Un texte commençant par `ssh://` doit avoir un `/` après l'autorité, et un port qui n'est
++       pas un nombre rend toute l'adresse `Unset`. Un texte contenant tout autre `://` n'est pas
++       une adresse SSH, pas plus qu'un texte dont le premier `/` précède le premier `:`, ou qui
++       n'a pas de deux-points.
++   entry #user   l'utilisateur sous lequel se connecter, ou `Unset` pour la valeur par défaut du client SSH
++   entry #host   le nom ou l'adresse de l'hôte
++   entry #port   le port, ou `Unset` pour la valeur par défaut du client SSH (22)
++   entry #path   le chemin du dépôt sur le serveur

@@ -1,0 +1,28 @@
+orthant 2 release
+
+@ 0 6 0 0768d448183d55690f0e69f78a0936c8
++       The queue and the writer daemon belong to the **call site** and the destination: every
++       `Logger` built at the same source position for an equal destination shares one, so a
++       given re-evaluated on each summon does not start a new thread each time, and a helper
++       which builds `Logger(path)` for different paths from one line gets a queue for each.
+
+@ 0 4 0 0dc213e35e0399001c398313542b4905
++     A `java.time.format.DateTimeFormatter` for `yyyy-MMM-dd HH:mm:ss.SSS` in the JVM's
++     default time zone, used by `timestampedLogFormat` and `ansiTimestampedLogFormat`. It is
++     immutable, so it is safe to use from several threads.
+
+@ 0 2 0 1c26a422054272f10a9dc13da177dbba
++       `teletypeableLogFormat`, which render a `Log.Level`, are used by the others.
+
+@ 0 2 0 09b58e9fc685479e113b839ae5dc79ac
++       The `Showable` for `Log.Level` the text formats interpolate.
+
+@ 0 2 0 17430efdc5320a6804e51ed64556d822
++       Each record ends with a newline.
+
+@ 0 2 0 014b733587df3e3004db4c947ef5ffaa
++       `eucalyptus.ansi`. It needs a `LogPalette`.
+
+@ 0 1 0 178c2e470fe0ec30124a7f85cfdb6c7c
++       written, as the agent records its own. Each record ends with a newline: one object
++       per line.

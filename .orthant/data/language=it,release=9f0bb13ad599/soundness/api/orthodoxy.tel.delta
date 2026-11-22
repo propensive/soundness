@@ -1,9 +1,0 @@
-orthant 1 language
-
--     The library has three source sets:
-+     La libreria ha tre source set:
-
--     - `orthodoxy.oidc` — OpenID Connect: `Oidc.discover` for a provider's metadata, and
--       `Oidc.identify`, which verifies the ID token an `Authorization` carries with sigillate.
-+     - `orthodoxy.oidc` — OpenID Connect: `Oidc.discover` per i metadati di un provider, e
-+       `Oidc.identify`, che verifica con sigillate l'ID token portato da un `Authorization`.

@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 7 0 17cb03ca646778bc137c5d87fdb5cfe7
++ entry .justify   alarga um texto até uma largura distribuindo espaços extras entre os intervalos entre as palavras
++     Justificação completa: o espaço que sobra em `width` depois de contadas as palavras é
++     repartido entre os intervalos entre elas tão igualmente quanto se divide, com os intervalos
++     mais largos espalhados ao longo da linha, de modo que `t"a b c d".justify(12)` é
++     `t"a  b   c   d"`. Um intervalo nunca é mais estreito que um espaço, então um texto já mais
++     largo que `width` volta com espaços simples, e uma palavra única volta sozinha. Considera-se
++     apenas a contagem simples de caracteres, e não a largura de exibição.

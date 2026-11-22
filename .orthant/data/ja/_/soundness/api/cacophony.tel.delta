@@ -1,0 +1,753 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0fcb99d21a940cb6118d872a3ad61432
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 08e8215a62763f6a0ffdb4232f803df6
++ info   型付きの不変の PCM 値としての音声：WAV、AIFF、AIFC、AU、SND の読み書き、デバイスからの録音とデバイスへの再生
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 14e15a932c0c8546148740d39bf60039
++     _Cacophony_ は音声を型付きの値として読み書きし、マシンの入力から録音し、その出力を通じて再生する。
++     WAV、AIFF、AIFC、AU、SND のファイルを読むと `Audio` が得られる。これは PCM のサンプルの不変のブロックで、そのサンプルレート（ヘルツ単位の本物の量）、チャンネル数、ビット深度、そして保持するすべてのサンプルを知っている。そしてファイル形式は型の中にある。`Audio in Wave` は `Audio in Aiff` とは別物であり、その間の変換は `to[Aiff]` であり、音声の値のエンコードされたバイト列は、他のどのソースとも同じ `read` で、そこから `Data` として読まれる。
+
+% 2 1 0 0e3680c87ea1bd121d192dab07c24fa7
+
+% 3 1 0 12ea840c9ef7c3ac1f700a107ee2824e
+
+% 4 1 0 116671e4be77eb690da3c30c7c521bc5
+
+% 0 1 0 1ed027e852a54088071e3dbc93cd640e
+
+% 1 1 0 07bc271aa800be5216353ae2a362b35e
+
+% 2 1 0 107364b6d342526d135c52b3256ae2ec
+
+% 0 1 0 00a33526333526991eb14ecc5a1e6f9f
+
+% 0 1 0 16b9838ed2ac40ed0250d7676c67d52b
+
+% 0 1 0 18541d770fa4f4dd1595f9978b3953dd
+
+% 0 1 0 17142d159bea29cf07cd8c2d0bf488e8
+
+% 0 1 0 0f9193b8fcc30b1b078ad783597a0a35
+
+% 0 1 0 1fac60acbb3be05507c611da6c6bf141
+
+% 0 1 0 0a62a232130cdd8f09791ba7291c2187
+
+% 0 1 0 146ed6025a96ed7602b72bbb0c4908d0
+
+% 0 1 0 021efc2d44b23dc90400748a2b779c82
+
+% 1 1 0 0f495c99dc0768fd067c2be94417f207
+
+@ 0 7 0 0fd153e22c4533860fe1ea439175a4ad
++     その下では、非圧縮の音声は一定のレートで再生される数の格子であり、形式どうしは中身よりもヘッダーで異なる。Java のサウンドライブラリはそれを可変のオブジェクトと型のない形式を通じて公開し、そこでは誤ったチャンネル数はノイズとして表に出る。
++     ここでは、形式は `Audible` 型クラスのインスタンス（`Wave`、`Aiff`、`Aifc`、`Au`、`Snd`）であり、チャンネルのレイアウトは `across Stereo` や `across Surround[6]` として型の中に持たれる省略可能な `ChannelLayout` である。そして、まだ PCM でない音声は読まれるときに 16 ビット符号付き PCM に変換されるので、どの `Audio` も同じ内部の形を持つ。
+
+@ 0 1 0 0d9fa578cb7220d219b15242df0766f8
++     一つの音声の値がパイプラインを通って進むのを見ると、各部品がどうつながるかがわかる。
+
+% 2 1 0 18eb9110b481d71211f7f3e7b98eab1d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 18562670bae2508f05fc8ae875a9ee5b
++       label 形式を名付けると、バイト列は音声の値になる
+
+% 1 1 0 0b11c62ee06d4686021e5ed98cd5c0d4
+
+% 2 1 0 0e45c721aa1b94a300c58c435a8e592a
+
+% 1 1 0 14d4bc26671c934208af0fe55e6371f8
+
+@ 0 1 0 093dba8d827bd41719f314675595073d
++       label 別の形式で表し直しても、サンプルは変わらない
+
+% 1 1 0 0974ff694f75d97205beda13540584a3
+
+% 2 1 0 1d4adf4ae390996306927216436ae369
+
+% 3 1 0 08a2efaadd5181730050f1a25ea7bd64
+
+% 0 1 0 0c6152412151b98506fb4a55b42e497e
+
+% 1 1 0 010190561c388f340409b374e4a4358c
+
+@ 0 1 0 153d16024695a9a3163e2d14c7bf0001
++       label 音声の値は、そのエンコードされたバイト列として読まれる
+
+% 1 1 0 0ff2f3f4a499e90e1a9026a56d25f44c
+
+% 2 1 0 021eb3cb31cbee8a108dd71270c7df25
+
+% 3 1 0 1e17bc086a841f32007c7a8bd186893c
+
+% 4 1 0 18c82db5c3aacb2713ef888127cb5711
+
+% 1 1 0 1990e87054bfecfd03c74bf58cec36cd
+
+@ 0 1 0 15df879f97324ef00ec8047c428332cc
++       label そしてバイト列は、その形式の音声として読み戻される
+
+% 1 1 0 0b0cd132b1e883411e924384415c3398
+
+% 2 1 0 017fa662013ff9ee0c182d7f1c39d0a1
+
+% 3 1 0 048776f4592b295911c25d886198d3ce
+
+% 4 1 0 08a6ab957e50f9450e32ffed41739854
+
+% 0 1 0 1c9e00c50826eb3c05b1b97965f92ef4
+
+% 1 1 0 1cff3193f46fd0391fdcf406f72701ac
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 8 0 17b3bd77590b1b9a1816390c7a444835
++     デバイスは `Audio.Feed`（入力。`Audio.Feed.list` で一覧される）と `Audio.Outlet`（出力。`Audio.Outlet.list` で一覧される）であり、それぞれが名前、ベンダー、説明、提供する `configurations` を持つ `Audio.Device` である。
++     `Audio.Feed#record` と `Audio.Outlet#play` は、プログラムが望む間デバイスを保持し、`Recording` または `Playback` を返す。ちょうど一つのブロックの間だけ保持するデバイスには、ファイルと同じようにラインを `Pcm` の形式で*開き*（`feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` と `outlet.open[Pcm](Write)`）、ブロックが終わるときに解放する。再生は `Write` の権限で制限されるので、録音用のラインへの再生を拒否するのはドライバーではなくコンパイラである。
+
+@ 0 6 0 19bae215314e585008def4932c1c34a2
++     読み込みはスコープにある `Tactic` を通じて `Audio.Error` を発生させる。録音は `Audio.Feed.Error` を、再生は `Audio.Outlet.Error` を発生させる。
++     ライブラリは JVM 向けの一つのソースセット `cacophony.core` であり、`javax.sound.sampled` の上に作られている。macOS では、JVM がマイクのパーミッションを与えられていなければならず、そうでなければフィードは一覧されない。
++     `Audio.Feed` と `Audio.Outlet` の共通の親である `Audio.Device` を除き、すべてが `soundness` のアンブレラにエクスポートされている。`Audio.Device` には `cacophony.Device` として到達する。
+
+% 0 1 0 06345c2b4e037c1b1cda2e2a0d1e52aa
+
+% 0 1 0 18eeff539dff79ca1d989456cbd700dc
+
+% 0 1 0 18e3d8c484a92dc50fceef6143b9f1e1
+
+% 0 1 0 12ae337614b0fb9f04540ba7e335f755
+
+% 0 1 0 1d9604d0ae9ae2f01769f58413265140
+
+@ 0 1 0 1d33018ec3005f5c15d1399e8652439a
++ entry .Audio   レート、チャンネル、深度、そしてすべてのサンプルを知っている、PCM のサンプルの不変のブロック
+
+% 1 1 0 07de46431be0bb9f1a9efe7fffbf8aa0
+
+@ 0 7 0 1df32558576e5fb21e3679c227c0ad12
++       `Audio` は純粋で不変である。そのサンプルは凍結済みの配列なので、値は自由に共有してよい。
++       その `Form` 型メンバーは、それが読まれた、または変換されたファイル形式（`Audio in Wave`）であり、その `Domain` は、わかっていればチャンネルのレイアウト（`Audio across Stereo`）である。素の `Audio` はどちらも持たない。
++       これはバイト列を読んで作られる（`.aggregable` を通じた `data.read[Audio in Wave]`、または形式を検出させるときは `.aggregable2` を通じた `data.read[Audio]`）か、`Audio[Wave](format, samples)` でサンプルから組み立てられる。
+
+% 2 1 0 16e285bd263f74af0a19a57926e504a7
+
+% 3 1 0 021fcfe487757cf00171195c9066820c
+
+% 4 1 0 118f61cacecd0ac30a076fe5eb87d151
+
+% 4 1 0 1202d6305c9f2d3819a053895dfe589d
+
+% 5 1 0 0af187d59970fd3b0dff321fc81c48e9
+
+% 1 1 0 07776dcb9a46318e12af56213247943a
+
+% 0 1 0 1057617750f807d30d6d0cc4175a710d
+
+% 0 1 0 06381bbfab2d901f1f4d31fb1b60ece9
+
+% 0 1 0 0104e5452296b8cb1408f0cc4bec716c
+
+% 0 1 0 1c8b8206809f985b0f6c11d441cd632d
+
+% 1 1 0 135661f88deef4c50f56c52466ff312b
+
+@ 0 5 0 0a0f642b53bb181200629bcfef237dbc
++       まだ符号付きまたは符号なしの PCM でない音声（たとえば AU ファイルの中の µ-law）は、読まれるときに 16 ビット符号付き PCM に変換されるので、`#apply` は常に素のサンプルを指す。
++       `Audio in form` は `Streamable`（`.streamable`）なので、`Data` として読まれ、ファイルハンドルに直接書かれる。また、形式のメディアタイプを伴う HTTP レスポンスの本文へと `Abstractable`（`.abstractable`）である。
++       `#to` は、それを別の形式で表し直す。
+
+% 0 1 0 19f0a58581289f131a6a7261646cf529
+
+% 1 1 0 0f5e5cd02504e9c7038d6d0543005434
+
+% 0 1 0 0d59affbc0d3bab91ddf6accf995bc6a
+
+@ 0 5 0 01f8681bac8822e11bc64a69c16d8e6b
++   entry .apply   形式を検出して任意のバイトのソースから音声を読む、または形式とサンプルから音声を組み立てる
++       `Audio(source)` は、任意の `Streamable by Data over Credit` のソースに対して、`javax.sound.sampled` にファイル形式を検出させ、エンコーディングが PCM でなければ 16 ビット符号付き PCM に変換し、`Form` を持たない素の `Audio` を返す。バイト列が JVM の知るどの形式の音声でもなければ、`Audio.Error(Unset)` を発生させる。
+
+@ 0 4 0 1b9231942c76f6391986c988ac162485
++       `Audio[form](format: javax.sound.sampled.AudioFormat, data: Array[Byte]^{})` は、プログラムの中で生成された音声のために、生の PCM のサンプルとそれを記述する Java の形式から `Audio in form` を組み立てる。
++       サンプルは凍結済みの配列でなければならない。排他的な配列を `Array.freeze` するか、`Array.tabulate` で組み立てること。
+
+% 2 1 0 16d64694c77469be0fdce4cf03273244
+
+% 3 1 0 06fda8a7f5e7bf060c62024b682c04c4
+
+% 4 1 0 1f638737ce190f900db244e71d9fdcd0
+
+% 0 1 0 1b740aac1b6dda22149e7d1dbe832f69
+
+% 0 1 0 01b69c59475684111eba4f18481ef196
+
+% 0 1 0 09d316738321b71e0c38a32048ef3a52
+
+% 0 1 0 10b522de70a160e718e0850d4e99c8dc
+
+% 0 1 0 1f9a25f68beaf5a80a53c6c0fa6d042b
+
+% 0 1 0 0dfac313459f81860da1639110050ffe
+
+% 0 1 0 198d0efd1f07f2721737097c8585e59c
+
+% 0 1 0 0b86bea59ad8a991084f3b56d78533f9
+
+% 0 1 0 0ab6dc27f773d83c16b90c6784fd52cc
+
+% 0 1 0 0574d3a365e552000d15138b48b3ff5e
+
+% 1 1 0 16748d9b2313ee81014c01668cf5c1e6
+
+@ 0 20 0 1c1bfbb1d5315b641ada0b590f1e7ba7
++   entry .streamable   `Audio in form` はそのエンコードされたバイト列として読まれ、したがって任意の書き込み先に書かれる
++       `Form` が `Audible` を持つ任意の `Audio` に対する `Streamable by Data over Credit` given である。`audio.read[Data]` はヘッダーも含めた完全なファイルであり、`handle.write(audio)` はそれを書く。
++       エンコードは形式の名前に対する JVM のライターが行うので、JVM が書けない形式は、エラーを発生させるのではなく例外を投げる。
++   entry .streamableAcross   `.streamable` と同様だが、`Audio in form across layout` に対するもの
++       両方のメンバーを持つ細分化された型は、`Form` だけを持つものにはマッチしないので、別の given になっている。
++   entry .abstractable   形式のメディアタイプを伴う、HTTP レスポンスの本文としての `Audio in form`
++       `audio/x-wav`、`audio/x-aiff`、`audio/x-aifc`、`audio/basic` のいずれかで、エンコードされたバイト列を本文とするので、音声の値を直接提供できる。
++   entry .aggregable   `data.read[Audio in form]`：名付けた形式の音声として読まれるバイト列
++       `Audible` を持つ任意の `form` に対する、`Audio in form` の `Aggregable by Data` given である。
++       `Tactic[Audio.Error]` を必要とし、バイト列がその型の音声でなければ、形式を伴ってそれを発生させる。WAV を `Audio in Aiff` として読むと失敗する。形式はバイト列についての主張であり、それを変換する要求ではないからである。
++   entry .aggregable2   `data.read[Audio]`：形式を検出して音声として読まれるバイト列
++       `Audio.apply` を通じた、素の `Audio` に対する `Aggregable by Data` given である。エラーは形式を名付けない。
++   entry .Error   バイト列が期待される形式の音声でないときに発生する
+
+% 1 1 0 1b710104c75d7eda04d631a4c172a51a
+
+@ 0 4 0 09ee8e850542c8ff1ae3c3775c25c065
++         _unable to read the audio in `format` format_。形式を検出させるときは `unspecified` になる。
++         JVM がバイト列をパースできないとき、名付けたものとは異なる形式としてパースしたとき、またはそのエンコーディングを PCM に変換できないときに、`.aggregable` と `Audible#read` が発生させる。
+
+% 2 1 0 169b45c88857a96606acf4504cc20b41
+
+% 3 1 0 0ea5aa1dbc41322204a530b69188234e
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 0f588bdc8322926a04812435f747299b
+
+% 0 1 0 0574f563d7594a0118bffb96681bbfa7
+
+% 1 1 0 1b571e7ce03ed52e15a64c6611625d0d
+
+@ 0 16 0 184da1feb022a48c0441764d14271cac
++     entry #audible   期待された形式。形式を検出させるときは `Unset`
++   entry #channels   チャンネルの数：モノラルは 1、ステレオは 2
++   entry #bitsPerSample   各サンプルのビット深度：8、16、24、32 のいずれか
++   entry #frames   フレームの数。各フレームはチャンネルごとに一つのサンプルを持つ
++   entry #sampleRate   周波数としてのサンプルレート：`8000.0*Hertz`
++       `Quantity[Seconds[-1]]` なので、素の数ではなく、他の量との算術に加わる。
++   entry #duration   秒単位の音声の長さ：フレーム数をサンプルレートで割ったもの
++       `Quantity[Seconds[1]]` である。
++   entry #apply   あるチャンネルとフレームのサンプル。符号付き整数として
++       `audio(channel, frame)` は、形式のバイト順と符号の有無に従ってバイト列から一つのサンプルをデコードし、符号拡張するので、16 ビットのサンプルは −32768 から 32767 の範囲にある。
++       インデックスは `#channels` と `#frames` に対して検査されない。
++   entry #to   別の形式で表し直された同じ音声：`audio.to[Aiff]`
++       サンプルはコピーされずに共有され、チャンネルのレイアウトは保たれる。変わるのは `Form` だけで、それとともに値が読まれるバイト列と、提供されるときのメディアタイプが変わる。
+
+@ 0 1 0 105c541a4c1c8cfb077d3d75f4af9fca
++   entry .Configuration   デバイスのラインが提供する形式：チャンネル、レート、ビット深度、エンコーディング、バイト順
+
+% 1 1 0 15de1a95e4fbdebf0ebacd332786412a
+
+@ 0 3 0 17f579938ef2be351cd078fac55b324f
++         `Device#configurations` が返すもので、ミキサーのラインが報告する形式ごとに一つある。
++         ラインが任意のレートを受け入れるとき（JVM は −1 を報告する）、サンプルレートは `Unset` であり、これはよくあることである。
+
+% 2 1 0 1bdaceba0a959bb808f99f819d251ea4
+
+% 3 1 0 1e1e8ba38b15ce50072a2bdff07b1a0b
+
+% 0 1 0 1b34324b3aee9bd2089a01a7db2b6c35
+
+% 1 1 0 0edc69b3979ed670087a56e7f6746dee
+
+% 1 1 0 17f746b3d5a333440dbd60774e0e3294
+
+@ 0 6 0 1d1960437162b39f1c6e232f78f8ce78
++     entry #channels   形式が持つチャンネルの数
++     entry #sampleRate   サンプルレート。ラインが任意のレートを受け入れるときは `Unset`
++     entry #bitsPerSample   ビット深度：8、16、24、32 のいずれか
++     entry #encoding   `Sonation.PcmSigned` または `Sonation.PcmUnsigned`
++     entry #bigEndian   複数バイトのサンプルがビッグエンディアンかどうか
++   entry .Device   `Feed` と `Outlet` が共有するもの：システムが記述するミキサーと、それが提供するライン
+
+% 1 1 0 052b7455efacea740acd9a703cd03cc7
+
+@ 0 5 0 06b414e07469d8851f300b238b3a0864
++         `Device` は `javax.sound.sampled.Mixer.Info` を包み、その `#name`、`#vendor`、`#description`、適切な種類のライン（`Feed` にはターゲットライン、`Outlet` にはソースライン）が報告する `#configurations`、そして決める前に一つの形式について尋ねるための `#supports` を与える。
++         これは `soundness` のアンブレラにはエクスポートされない。プログラムは `Feed` か `Outlet` を、あるいは両方を扱うコードでは `cacophony.Device` を名付ける。
+
+% 2 1 0 0729d027795547771639f466978a5259
+
+% 3 1 0 1d6ba3c5b97854230d80c97e72067005
+
+% 0 1 0 075ca76d45f5549405336426ebf2552c
+
+% 0 1 0 02eaa1faabe7b3fe07c37a142da8410e
+
+% 1 1 0 1a6170f6cc206b250a471fedd71bbc0b
+
+% 0 1 0 0650a996ebe761dd0c21290629a54de5
+
+% 0 1 0 151d83b97e2e588f07b9b81383d9dca3
+
+@ 0 9 0 0366c49bd53008041f48c4a9d7b01930
++     entry #name   システムが報告するデバイスの名前
++     entry #vendor   デバイスのベンダー
++     entry #description   デバイスの説明
++     entry #configurations   デバイスのラインが報告するすべての形式。`Configuration` として
++     entry #supports   デバイスが、あるレイアウト、レート、ビット深度で、符号付きリトルエンディアンの PCM のラインを開けるかどうか
++         `device.supports[Stereo](44100.0*Hertz, 16)` は、ラインを開かずに、そのようなラインがサポートされているかをミキサーに尋ねる。これが `false` のところでは、`record` と `play` は `UnsupportedConfiguration` を発生させる。
++   entry .Feed   入力デバイス：選んだレイアウト、レート、ビット深度で音声を録音する
+
+% 1 1 0 0b781310df0d8afa085d24fd7d353cec
+
+@ 0 6 0 1c6583f9a04e4471020773625cf1a113
++         マシンのフィードは `Feed.list` である。マシンにフィードがないこともあるので、最初のものは `Optional` である。
++         フィードは `Device` であり、名前、ベンダー、説明、`configurations`、そして録音する前に形式について尋ねるための `supports` を持つ。
++         `#record` はラインを開き、止められるまで `Audio` のチャンクを生み出す `stream` を持つ `Recording` を返す。ちょうど一つのブロックの間だけ保持するラインには、代わりに `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` が `Pcm.PcmInput` を貸し出す（`Pcm` を参照）。
+
+% 2 1 0 15e3aebd0a953209144c3bc0f498d56c
+
+% 3 1 0 1d5735d5db8268bd12cea5715676f1ff
+
+% 4 1 0 1339df75b2833fb3017d6e9229bfeeb6
+
+% 5 1 0 182d8023d549123516279b58440b7651
+
+% 6 1 0 190055e95813e819164fe03dfb6a9225
+
+% 0 1 0 17adefb3fe3bef5d1d2de6928c84cb51
+
+% 0 1 0 15a87c0e6606dee10292b4727c9c995a
+
+% 0 1 0 105ad19a26510c7812074c334006750f
+
+% 0 1 0 1ce0330ca9625c420b59f41d8b34b6f2
+
+% 0 1 0 1b1774f597c507000175259b86e8d5ff
+
+% 1 1 0 0079dc64a16c396f01bab1fdb93e97fc
+
+@ 0 3 0 0d99884adfa0562e1ec05110e8b2b0a2
++         利用できない、または構成に応えられないフィードから録音すると、`Feed.Error` を発生させる。
++         macOS では、JVM がマイクのパーミッションを与えられていなければならず、そうでなければ `Feed.list` は空である。
+
+% 0 1 0 1b582573d7b96ff50a67df2a0a246b8b
+
+% 1 1 0 05e21817ea3b09e4138b546edb617b06
+
+% 2 1 0 0c7bee6b0200d47912d63f9d54931af1
+
+@ 0 4 0 020a3b683352defb1b7208f7b21fb020
++     entry .list   録音元のラインを持つすべてのミキサー。`Feed` として
++         JVM のミキサーを列挙し、`TargetDataLine` を提供するものを残す。
++         一覧は呼び出しのたびに新しく作られるので、その後に接続されたデバイスも見える。
++     entry .Error   フィードが録音できないときに発生する
+
+% 1 1 0 12cc78ad76eff0b30a3fc1731db3e5c6
+
+@ 0 16 0 0b80fe036fc2f2370671fd553cf3032e
++           エラー `↯/s.82.2`：_could not record from feed `name` because …_。理由の番号とメッセージが後に付く。
++           `Feed#record` と、フィードを `Pcm` として開くことで発生する。
++       entry .Reason   `Unavailable`、`UnsupportedConfiguration`、`Closed` のいずれか
++           `Unavailable`（1）、_the audio line could not be opened_：別のプログラムがそれを保持しているか、システムが拒否した。`UnsupportedConfiguration`（2）、_the requested configuration is not supported_：これは `Device#supports` が予測する。そして `Closed`（3）、_the recording has already been stopped_。
++       entry #feed   フィードの名前
++       entry #reason   録音できなかった理由
++     entry #record   ラインを開き、あるレイアウト、レート、ビット深度で録音する。チャンクの `Recording` として
++         `feed.record[Stereo](44100.0*Hertz, 16, chunkBytes = 65536)`：レイアウトのチャンネルで符号付きリトルエンディアンの PCM のためのラインが開かれ、開始される。`Recording` の `stream` は、`stop` がラインを閉じるまで、そこから最大 `chunkBytes` のチャンクを読み、それぞれが `Audio across layout` である。
++         `UnsupportedConfiguration` または `Unavailable` を伴う `Feed.Error` を発生させる。
++         ラインは `stop` が呼ばれるまで保持される。
++   entry .Outlet   出力デバイス：音声の値をバックグラウンドで、またはスコープの中で同期的に再生する
+
+% 1 1 0 168f98016e48b61d0b9b33f83950f0a2
+
+@ 0 5 0 02a7423ce79f60dd0ebed887fd7d9cd1
++         マシンのアウトレットは `Outlet.list` である。
++         アウトレットは `Device` であり、名前、ベンダー、説明、`configurations`、`supports` を持つ。
++         `#play` は音声自身の形式のためのラインを開き、自身のスレッドで動き、待つことも止めることもできる `Playback` を返す。ちょうど一つのブロックの間だけ保持するラインには、`outlet.open[Pcm](Write)` が `Pcm.PcmOutput` を貸し出す。その `play` は同期的で、`Write` の権限を必要とする（`Pcm` を参照）。
+
+% 2 1 0 1bd187d13b8f2a9115c84d4bf5c7f9f9
+
+% 3 1 0 119f1a2ac7c39cf10a73177854886cb7
+
+% 4 1 0 035abea604eb3e03101852a6f8be628c
+
+% 5 1 0 1a11bd6bd9e60c6214d2033be96af7bd
+
+% 6 1 0 1e0a1005677eb1331d4ee5d9f0d36ce7
+
+% 0 1 0 180e7ef2edb31136028d971550c4b693
+
+% 0 1 0 0a8574a748560c241d7cc7f2db09d7a4
+
+% 0 1 0 146be646a7240c850616ed85bcdae359
+
+% 2 1 0 0e48eae2a2a28a000b700adc0f796ca9
+
+% 0 1 0 0cbc23b84b7b51600960aea2e2a943cc
+
+% 0 1 0 14336e750f7ed20d176f7682b9f5e216
+
+% 2 1 0 0a34fc55bc70ba5a12f8aa72f32db753
+
+% 0 1 0 0a88a99d198f2b3913764f0632f32621
+
+% 0 1 0 0c77e66cba0976a119a24673ba939944
+
+% 1 1 0 165bfc2ba831cacf01e7bee9e23a5309
+
+@ 0 2 0 0a7a89b8f68f5d8214097ebde2ae643f
++         利用できない、または音声の構成を受け入れられないアウトレットに再生すると、`Outlet.Error` を発生させる。
+
+% 0 1 0 02cae70c6c2ac762080df6dfe574ae97
+
+% 1 1 0 1da1abc21c02742b07b526f07c564d88
+
+% 2 1 0 134ec6886b6908890d2c58c8ea6b3e8f
+
+@ 0 3 0 14be42175a1e6c09102a8254d94dc399
++     entry .list   再生先のラインを持つすべてのミキサー。`Outlet` として
++         JVM のミキサーを列挙し、`SourceDataLine` を提供するものを残す。
++     entry .Error   アウトレットが再生できないときに発生する
+
+% 1 1 0 141aba69a7ee14bb1f729356fc6b4961
+
+@ 0 16 0 04f02f8984f0b5ce1fbb9cf3f5ea8b41
++           エラー `↯/s.82.1`：_could not play to outlet `name` because …_。理由の番号とメッセージが後に付く。
++           `Outlet#play` と、開かれたアウトレットの上の `Pcm.play` で発生する。
++       entry .Reason   `Unavailable`、`UnsupportedConfiguration`、`Closed` のいずれか
++           `Unavailable`（1）、_the audio line could not be opened_。`UnsupportedConfiguration`（2）、_the requested configuration is not supported_：音声のレート、深度、チャンネルがアウトレットの再生できるものではない。これは `Device#supports` が予測する。そして `Closed`（3）、_the playback has already been stopped_。
++       entry #outlet   アウトレットの名前
++       entry #reason   再生できなかった理由
++     entry #play   音声の値を仮想スレッドで再生する。待つか止めるための `Playback` として
++         `outlet.play(audio, chunkBytes = 65536)` は音声の形式のためのラインを開き（できなければ `UnsupportedConfiguration` または `Unavailable`）、それを開始し、バックグラウンドのスレッドからサンプルをチャンクに分けて書き、音声が終わるとラインを排出して閉じる。
++         `Playback#stop` はチャンクの間で観測され、ただちにラインを閉じる。`await` はスレッドに合流する。
++         `Form` が何であれ、どの `Audio` も再生できる。サンプルはすでに PCM だからである。
+
+@ 0 1 0 166ca25857cbfcd00e184439dd378ab1
++ entry .Audible   音声を読み書きできるファイル形式：その名前とメディアタイプ
+
+% 1 1 0 1a3510096296e7311c4423a347c17f39
+
+@ 0 5 0 08d4990b4056e7c915dd2e15d59bf0b0
++       `Audio in form` の背後にある型クラスである。`Wave`、`Aiff`、`Aifc`、`Au`、`Snd` はそれぞれ、そのコンパニオンにインスタンスを持つ。
++       `#name` は `javax.sound.sampled` がその形式を知る型名（`WAVE`、`AIFF`、`AIFC`、`AU`、`SND`）であり、読み込みが成功するには JVM が検出するものと一致しなければならない。`#mediaType` は音声の値が提供されるときのものである。
++       `#read` は読み込みそのもので、`Audio.aggregable` はそれに委ねる。
+
+% 2 1 0 114353bcece870940546bacd0f781ccf
+
+% 3 1 0 08c59f8fba03869d1e6af8951d67eb50
+
+% 4 1 0 105bcc90dc37c0260667ee6859bccedf
+
+% 0 1 0 1dbfe1e9e0003e840b312b656705c9f7
+
+% 0 1 0 02ab94689303877510e5b97525032f51
+
+% 0 1 0 02252b30738579810a0e43c08fe0f3c0
+
+% 1 1 0 1d4f5a7b6087e73b130511ac594701db
+
+% 0 1 0 1221dc90e2925959049ef1e7fcd714f8
+
+% 1 1 0 19d3a78720e4e3251aa8e39512955718
+
+@ 0 5 0 0d19e0f05e19731803dd5e110affecf3
++   entry #name   JVM の音声システムが報告する、形式の型名
++   entry #mediaType   HTTP で音声を提供するための、形式のメディアタイプ
++   entry #read   バイトのソースを `Audio in Self` として読む。この形式でなければ `Audio.Error` を発生させる
++       ファイル形式をパースし、それがこの形式であることを検査し、PCM でないエンコーディングを 16 ビット符号付き PCM に変換し、すべてのサンプルをメモリーに読み込む。
++       `Tactic[Audio.Error]` を必要とする。
+
+@ 0 5 0 0e7c9777ef5c833b1e1666692a113cd0
++ entry .Wave   WAV（RIFF）形式。`Audio in Wave` として
++     値を持たないシールされた型で、型引数として使われる。そのコンパニオンは、名前 `WAVE` とメディアタイプ `audio/x-wav` を持つ `Audible` インスタンス `audibility` を持つ。
++     `Wave()` はそのインスタンスを `Audible` として返す。`Audio.Error` はそうして形式を名付ける。
+
+% 2 1 0 086cd88d8bfc50640a88687c8a47cabf
+
+% 3 1 0 03cdf98dad962a631ff6ccda7a1f819c
+
+% 4 1 0 083bd1d7254444690ac637ed34626d11
+
+% 1 1 0 03be7709bec89e3f0374256e41bde08a
+
+% 2 1 0 0621fc74c7f575c90add07fba7b5f5b2
+
+% 0 1 0 1dd473d0423e6cf4132338b9a0d6499a
+
+% 1 1 0 0669077e0d697f3814f3590bb5453c91
+
+@ 0 4 0 11eb0932d41834c904ea59520873ab29
++ entry .Aiff   AIFF 形式。`Audio in Aiff` として
++     コンパニオンが、名前 `AIFF` とメディアタイプ `audio/x-aiff` を持つ `Audible` インスタンス `audibility` を持つシールされた型である。`Aiff()` はそれを返す。
++     AIFF ファイルはビッグエンディアンであり、`Audio#apply` はサンプルを指すときにそれに従う。
+
+@ 0 3 0 0f2fc911d096a0b8044c7ac8ffd6a0aa
++ entry .Aifc   AIFF-C 形式。`Audio in Aifc` として
++     コンパニオンが、名前 `AIFC` とメディアタイプ `audio/x-aifc` を持つ `Audible` インスタンス `audibility` を持つシールされた型である。`Aifc()` はそれを返す。
+
+@ 0 4 0 1e76c5e2a014e55c0a18fca3cd1c35f6
++ entry .Au   Sun の AU 形式。`Audio in Au` として
++     コンパニオンが、名前 `AU` とメディアタイプ `audio/basic` を持つ `Audible` インスタンス `audibility` を持つシールされた型である。`Au()` はそれを返す。
++     µ-law または A-law の音声を持つ AU ファイルは、読まれるときに 16 ビット符号付き PCM に変換される。
+
+@ 0 3 0 191059e78a5bfd5c0ad59b26cdfd2fcb
++ entry .Snd   NeXT の SND 形式。`Audio in Snd` として
++     コンパニオンが、名前 `SND` とメディアタイプ `audio/basic` を持つ `Audible` インスタンス `audibility` を持つシールされた型である。`Snd()` はそれを返す。
+
+@ 0 1 0 19a774277bca07cc0d4f2f2dc0ed1580
++ entry .ChannelLayout   型の中に持たれるチャンネルのレイアウト：チャンネルがいくつあるかを静的に知る
+
+% 1 1 0 05fc16acb83cc9f20e58a5efdbaf5519
+
+@ 0 4 0 16898796b44fe2e20d8569dc6e0b00cc
++       `Audio across layout`、`Recording across layout`、`Pcm across layout` の背後にある型クラスである。`Monaural` は一つのチャンネル、`Stereo` は二つ、`Surround[n]` はリテラルの `n` 個を持つ。
++       フィードはあるレイアウトで録音する（`feed.record[Stereo](…)`）ので、それが生み出すもののチャンネル数は、検査すべき数ではなく、型の中にある。
+
+% 2 1 0 17f2fd6bfb5716241833092312e1c057
+
+% 3 1 0 15d50e43ad5d775210fa5f35640e54f7
+
+% 0 1 0 00fb6699272b12e4093702877f679579
+
+% 0 1 0 0dcf407256487a5600f5133194a96a7a
+
+% 0 1 0 089eec5da2f281e21281ff99573a4de6
+
+% 1 1 0 1c694af77b73c851041b233202dd4a6d
+
+% 0 1 0 17f6923aac7c56400e36bbef8a255805
+
+% 0 1 0 0e1f2747f628dd4d037ef76a912b8554
+
+@ 0 1 0 1655181ad5715650086d94f2a4247b4c
++   entry #channels   レイアウトのチャンネルの数
+
+@ 0 3 0 0ff5d29f8e59071d12878e06baf22fab
++ entry .Monaural   一チャンネルのレイアウト。`Audio across Monaural` として
++     コンパニオンが、一つのチャンネルを持つ `ChannelLayout` インスタンス `channelLayout` を持つシールされた型である。
+
+@ 0 3 0 12d777027380c713092c7c28b3dd665f
++ entry .Stereo   二チャンネルのレイアウト。`Audio across Stereo` として
++     コンパニオンが、二つのチャンネルを持つ `ChannelLayout` インスタンス `channelLayout` を持つシールされた型である。
+
+@ 0 4 0 0eb1a2ee041cba921fa44316845ed0ec
++ entry .Surround   リテラルの数のチャンネルを持つサラウンドのレイアウト。`Audio across Surround[6]` として
++     `Surround[N]` はリテラルの `Int` を取り、そのコンパニオンの `channelLayout` given は、`ValueOf` を持つ任意の `N` に対してその数のチャンネルを与える。したがって `Surround[6]` と `Surround[8]` は、どちらにもインスタンスを書くことなく、別のレイアウトである。
+
+@ 0 3 0 029c9cc85b125f3300c484d5b93f1ff9
++ entry .Sonation   サンプルがどうエンコードされるか：`PcmSigned` または `PcmUnsigned`
++     デバイスの `Audio.Configuration` が報告するエンコーディングである。
++     どの `Audio` の値も読み込み後は符号付き PCM なので、`PcmUnsigned` はデバイスがサポートすると言うものの中にだけ現れる。
+
+@ 0 1 0 0aed9c9e3b13fa8c1cc93d81f3b53cee
++ entry .Recording   開いている録音：止められるまでの音声のチャンクのストリーム
+
+% 1 1 0 1ef01d09188b3f87183fe54e10add4e6
+
+@ 0 4 0 0465daf2da10f2031c7deb10b9e792aa
++       `Audio.Feed#record` が返すものである。
++       `#stream` は `Audio across Domain` のチャンクの遅延チェーンで、各チャンクは最大で録音を開始したときのチャンクの大きさであり、チェーンが強制されるにつれてラインから読まれる。`#stop` がラインを閉じるか、ラインが何も渡さなくなると終わる。
++       `Domain` 型メンバーは録音されたレイアウトである。
+
+% 2 1 0 0daac62b92f831800e5e3f26602af195
+
+% 3 1 0 193dde3c24b76a871e85a44d1364aa24
+
+% 4 1 0 05d43bfc49100f32000c0ea51c1a5857
+
+% 5 1 0 12257b67a08ff053086d3543003a7db9
+
+% 6 1 0 0cb1f64f70e2bc261e88bccc0f2378be
+
+% 2 1 0 1e1838bd7bff2c8505e7a0ded6408e02
+
+% 0 1 0 16ec1df34977084f1d8febf03d1a3307
+
+% 0 1 0 0bad92424ae632e811892cf8757116c0
+
+% 0 1 0 083817eaa45aeaef121a718678f563b2
+
+% 0 1 0 0b89f729c908c9da1ab626c6a266b385
+
+% 1 1 0 162265011af69ee213e9bcc5cd38980e
+
+% 2 1 0 079028b1741a8b1001deb4086213548c
+
+@ 0 8 0 0bcb5ca746613bea08f6093d94f4eccb
++   entry #active   録音がまだ止められていないかどうか
++   entry #stop   ラインを止めて閉じる。ストリームは終わる
++       冪等である。
++       ラインはこれが呼ばれるまで保持されるので、録音は常に止められるべきである。`Audio.Feed` のスコープ付きの形、`open[Pcm across layout]` は、ブロックの終わりでそれを行う。
++   entry #stream   これまでに録音された、そしてこれから録音されるチャンク。遅延チェーンとして
++       強制するたびにラインから一つのチャンクを、それが満ちるまでブロックして読むので、チェーンはデバイスがサンプルを生み出すレートで消費される。
+
+@ 0 1 0 19d461773f958568179c75e453c3297a
++ entry .Playback   バックグラウンドで再生中の音声：その終わりを待つか、早めに止める
+
+% 1 1 0 0dd1d7ca46ac60940eb30d1b8d977dd0
+
+@ 0 4 0 1276d23b0c6120df0976e7131b39370b
++       `Audio.Outlet#play` が返すものである。
++       サンプルは仮想スレッドから書かれる。`#await` は音声が最後まで再生される（または止められる）までブロックし、`#stop` は、まだ鳴っていないものを捨てて、それを早めに終わらせる。
++       `stop` と音声の終わりのうち先に来たほうが、ちょうど一度だけラインを閉じる。
+
+% 1 1 0 0b3cab0910a7312006f2fd869a7156d1
+
+@ 0 5 0 146ca66e0ecf588110eac897d2a66e09
++   entry #active   音声がまだ再生中かどうか
++   entry #stop   再生をただちに止め、まだ鳴っていないものを捨て、ラインを閉じる
++       冪等であり、再生を開始したスレッドとは別のスレッドから呼んでも安全である。ライターはチャンクの間でそれを観測する。
++   entry #await   再生が、最後に達するか止められることで終わるまでブロックする
+
+@ 0 1 0 0c9c5f3d6819086212a9ff7d8f40fc24
++ entry .Pcm   スコープ付きのオーディオラインへのアクセスのための形式：フィードは `Pcm across layout` として、アウトレットは `Pcm` として開く
+
+% 1 1 0 19b07630c5115ec80a3dabce9a805bf7
+
+@ 0 8 0 160aa57a65dfb97b0a86c3cebb1de96c
++       `Audio.Feed#record` と `Audio.Outlet#play` はプログラムが望む間デバイスを保持するが、代わりにラインを、ファイルと同じように、ちょうど一つのブロックの間だけ*開く*こともできる。OS のラインはスコープとちょうど同じ間だけ続き、スコープがどう終わっても解放される。
++       `Pcm` は `open` で名付ける形式である。`Audio.Feed` は録音のために `Pcm across layout` として開き、その `stream` が `Audio across layout` のチャンクを生み出す `.PcmInput` を貸し出す。`Audio.Outlet` は再生のために素の `Pcm` として開き、その `.play` が各 `Audio` を同期的に再生する `.PcmOutput` を貸し出す。
++       `Openable` インスタンス `.feedOpenable` と `.outletOpenable` はコンパニオンにあるので、インポートは必要ない。
+
+% 2 1 0 00d9726939cf46651bc74ccb1d80eb26
+
+% 3 1 0 1bb6b1c7aa3bf6ce087c1f23fea38698
+
+% 4 1 0 09a0f3e2a86ec7d706f1889c4093769b
+
+% 5 1 0 0a49b3622f56f3820910617560b682e5
+
+% 6 1 0 151cebf919ec9d3c098e23be1cb2f7c9
+
+% 4 1 0 1574f128893e90711a38994eb58bea54
+
+% 5 1 0 1a6a16fb16a14a6d0f2724c8907154e7
+
+% 1 1 0 1af38e5cb5bb05e30560b35776dae0ae
+
+% 2 1 0 0b8f0e08872834f31cb86ecd5fe8a27b
+
+% 0 1 0 111980fcecb024721b36d228724cd028
+
+% 0 1 0 1488370d56a2d7f61cde5b79c67804f7
+
+% 0 1 0 06a76e43cdc347481b1530003cf25b52
+
+% 0 1 0 0e87ce67f66c12720cf95aaf633e7b38
+
+% 0 1 0 0a5574d52ff23b1011e263f8df4ef50a
+
+% 1 1 0 1dfa8d15f57a45021f633c40ea2b2e29
+
+@ 0 6 0 169358ca8cd6c622067569c35139a564
++       構成は `PcmFlag` として与える：`PcmFlag.Rate(hertz)`（既定値は 44100）、`PcmFlag.Bits(bits)`（16）、`PcmFlag.Chunk(bytes)`（65536）。アウトレットは `Chunk` だけを読む。各 `play` は音声自身の形式のためのラインを開くからである。
++       再生には `Write` の権限が必要である。権限なしの `outlet.open[Pcm]()` は、`play` がコンパイルできない `PcmOutput` を貸し出すので、録音のために開いたラインには再生できず、そう告げるのはオーディオドライバーではなくコンパイラである。
+
+% 2 1 0 11a4f9d52a75283c0d811a67aa708940
+
+% 3 1 0 1da2700eae44b5b511c500b38275245c
+
+% 4 1 0 1914c37217f4dafc01e99b72a62af9d5
+
+% 0 1 0 124e4f6452686961064f6c63fbcb45d0
+
+% 0 1 0 0a8d4920c2cb177313ec7fcc79f1d5ec
+
+% 0 1 0 1f5cf575b1e035c81d64714ae9fb189a
+
+% 0 1 0 13e653c085a438d91ccafd3ba7bee35c
+
+% 1 1 0 05abfcfa51e32f73105d6e25ec744deb
+
+% 2 1 0 0d17b6d97abbc425028d41955628bdd1
+
+% 1 1 0 0bdee4d032f44aad0fd4481074c4d25b
+
+% 0 1 0 18d43a086abc8ded077e1c6f93f400f2
+
+@ 0 1 0 06c1059374ae989e1e64451232ef9a46
++   entry .PcmInput   `Feed` を `Pcm across layout` として開くことで貸し出されるハンドル：音声のチャンクのストリーム
+
+% 1 1 0 18dc19aa295401321b4eef787559dd89
+
+@ 0 5 0 14bf40f4b21576f21dcc86f403a8c477
++         開かれて開始されたラインの上の排他的なケイパビリティで、貸し出されたブロックの間だけ有効である。
++         `#stream` は強制されるにつれてチャンクを読み、それぞれが最大 `PcmFlag.Chunk` の大きさの `Audio across layout` である。ブロックが終わるとき、ラインは止められて閉じられる。
++     entry #stream   録音されたチャンク。スコープが続く間の遅延チェーンとして
++   entry .PcmOutput   `Outlet` を `Pcm` として開くことで貸し出されるハンドル：`Write` の権限で音声の値を再生する
+
+% 1 1 0 14ba997ec45f3434011724572e0d8117
+
+@ 0 13 0 18829ffa22345dd106ab2919a04e2cb1
++         アウトレットの上の排他的なケイパビリティで、貸し出されたブロックの間だけ有効である。
++         各 `Pcm.play`（権限で制限された拡張）または `#playAudio` は、音声自身の形式のためのラインを開き、それを最後まで再生して閉じる。次のものは別の形式を持ってよい。
++     entry #playAudio   音声の形式のためのラインを開き、それを最後まで再生し、ラインを閉じる
++         権限で制限された `play` 拡張がそれに到達できるように公開されている。これではなく、`Write` の権限を検査する `play` を使うこと。
++         `UnsupportedConfiguration` または `Unavailable` を伴う `Audio.Outlet.Error` を発生させる。
++   entry .play   `Write` の権限で開かれた `PcmOutput` の上の `out.play(audio)`：同期的な再生
++       `PcmOutput & Granting[Grant.Write]` に対する拡張なので、`outlet.open[Pcm](Write)` の中でだけ使える。
++       音声が鳴り終わるまでブロックし、アウトレットがそれを再生できなければ `Audio.Outlet.Error` を発生させる。
++   entry .FeedOpenable   `Feed` を `Pcm across layout` として開き、`PcmInput` を貸し出す `Openable`
+
+% 1 1 0 15c41e518b9ed56c1e16d03001d7a710
+
+@ 0 9 0 098197bd45e3bb57038b2e62d990dab4
++         型メンバーが安定するように、匿名の given ではなく名前付きのクラスになっている：`Self = Audio.Feed`、`Form = Pcm across layout`、`Operand = PcmFlag`、`Result = PcmInput[layout]`。
++         `.feedOpenable` が、スコープにある `ChannelLayout` と `Tactic[Audio.Feed.Error]` から作る。
++     entry #open   ブロックのために、フラグのレート、ビット数、チャンクの大きさで、レイアウトのチャンネルのラインを開く
++         `PcmFlag.Rate`（既定値は 44100）と `PcmFlag.Bits`（16）での符号付きリトルエンディアンの PCM である。ラインはブロックの前に開始され、その後に止められて閉じられる。
++         `UnsupportedConfiguration` または `Unavailable` を伴う `Audio.Feed.Error` を発生させる。
++   entry .OutletOpenable   `Outlet` を `Pcm` として開き、`PcmOutput` を貸し出す `Openable`
+
+% 1 1 0 0cafc419a852076511d0447aab0561cb
+
+@ 0 10 0 1faa39766e7e8ec41fb4e4f48708acab
++         `Self = Audio.Outlet`、`Form = Pcm`、`Operand = PcmFlag`、`Result = PcmOutput`。
++         `.outletOpenable` が、スコープにある `Tactic[Audio.Outlet.Error]` から作る。
++         開くこと自体はどのラインにも触れない。ブロックの中の各 `play` が、その音声のためにラインを一つ開く。
++     entry #open   フラグのチャンクの大きさを持つ `PcmOutput` をブロックに貸し出す
++   entry .feedOpenable   `feed.open[Pcm across layout](…)` を使えるようにする given
++       レイアウトに対する `ChannelLayout` と `Tactic[Audio.Feed.Error]` を必要とし、後者をキャプチャする。
++       コンパニオンを通じて暗黙のスコープにある。
++   entry .outletOpenable   `outlet.open[Pcm](…)` を使えるようにする given
++       `Tactic[Audio.Outlet.Error]` を必要とし、それをキャプチャする。
++       コンパニオンを通じて暗黙のスコープにある。
+
+@ 0 5 0 0fc4a25c1fee190319e8b52414f556c1
++ entry .PcmFlag   スコープ付きのラインのオプション：`Rate(hertz)`、`Bits(bits)`、`Chunk(bytes)`
++     モードの後に `open[Pcm …]` へ渡す。
++     `Rate(hertz)` はヘルツ単位のサンプルレート（なければ 44100）、`Bits(bits)` はビット深度（16）、`Chunk(bytes)` はフィードから読まれる、またはアウトレットに書かれる各チャンクの大きさ（65536）である。
++     フィードは三つすべてを読む。アウトレットは `Chunk` だけを読む。そのラインは再生される音声の形式を取るからである。
+
+% 2 1 0 1dc95472a7debd3c1a087f47d583c281
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 2 1 0 00c648c4451d3840102b5a9ac5af6427
+
+% 0 1 0 13b9a15ca021416c13688599cdc07957
+
+% 0 1 0 12fb334e8ad0a83d03a97142adbf913b
+
+% 0 1 0 03757c1de6a74e3e05d9a9cb22a3fef2
+
+% 1 1 0 1ae1302a2e6ce2ee0eee24c0131d3877

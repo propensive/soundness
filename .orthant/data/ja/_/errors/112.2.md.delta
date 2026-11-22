@@ -1,0 +1,71 @@
+orthant 2 language
+
+% 0 1 0 1a81f3e3f59aced3026bcb5f80e98a13
+
+@ 0 1 0 08111229421f98810e0e453ea6046f90
++ Obligatory が受信したメッセージのフレームを解除できないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 1501c917a46b95cb0ded5e50ab264d6f
++ Obligatory のフレーミングのパーサー（`ContentLength`、`LengthPrefix`、`CrLf`）は、バイトストリームを個別のフレームに読み込む。
++ バイトが期待されるフレーミングと一致しないとき、このエラーが発生する。
++ コンストラクターは `reason: Reason` を受け取り、描画されるメッセージは `could not deframe the message because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 0b0c7d4858e26aa41b097bb455560614
+
+@ 0 1 0 19bc5ef0e23eadd61a7d2f241e848304
++ 完全なフレームが読み込まれる前に入力が終わった。
+
+@ 0 1 0 0bd2030ca60c97ae0ecac2c8afd657ae
++ **例。** `[↯/s.112.2.1] could not deframe the message because the input ended before a complete frame could be read`
+
+@ 0 2 0 0c2db92b1ed520f90f87d98caa8856d2
++ **解決方法。** 生産者が完全なフレームを書き込んだことを確かめる。
++ メッセージの途中で接続が閉じられていないかを確認する。
+
+% 0 1 0 1fa83631eabbef6414bbff68cd70cc1a
+
+@ 0 2 0 165bb3b13a4df8100efad2800c6c73f8
++ フレーミングが CR-LF を要求する場所で、キャリッジリターン（`\r`）の後にラインフィード（`\n`）が続かなかった。
+
+@ 0 1 0 1685d38f67cb281c120f8d57957870f5
++ **例。** `[↯/s.112.2.2] could not deframe the message because a carriage return was not followed by a line feed`
+
+@ 0 2 0 1eda4b9838fe3be50483c82794cf5a0a
++ **解決方法。** 生産者が CR-LF の行末を使っていることを確かめる。
++ LF のみ、または CR のみの入力は、このパーサーでは失敗する。
+
+% 0 1 0 09dd34b04086092900b3c264234e1584
+
+@ 0 2 0 04fd9f5c5e1e6e8d0acf6c6ea3d88b8b
++ `Content-Length` ヘッダーの値を整数としてパースできなかった。
+
+@ 0 1 0 1383eb28e26587a300536838c5238cfe
++ **例。** `[↯/s.112.2.3] could not deframe the message because the content-length header value could not be parsed`
+
+@ 0 2 0 196ecbfa17758fdb075e3fceb94db35d
++ **解決方法。** ヘッダーのバイトを調べる。
++ 値は単純な十進整数でなければならない。
+
+% 0 1 0 1d1d57245c2eba441d4c65fa7a9a954d
+
+@ 0 3 0 121246c11f14a76601a5c262d340f0bc
++ フレーミングのパーサーが認識しないヘッダーが現れた（許されるのは `Content-Type` と `Content-Length` だけである）。
+
+@ 0 1 0 102c6e42affdf75c04abda25241bb6d9
++ **例。** `[↯/s.112.2.4] could not deframe the message because an unrecognized header was encountered`
+
+@ 0 3 0 14609cb0551f929f1dabc7284aaff823
++ **解決方法。** パーサーに与える前に、フレーミング以外のヘッダーをメッセージから取り除く。
++ あるいは、そのヘッダーを受け付けるようにパーサーを拡張する。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 0a77515cdedf6f190c821317fd832271
++ - ソース：`lib/obligatory/src/core/obligatory.Framing.scala`

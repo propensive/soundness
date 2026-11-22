@@ -1,0 +1,177 @@
+orthant 2 language
+
+@ 0 1 0 142b83973858fed20ac3d5dd48e1d050
++ # Unveränderlichkeit
+
+@ 0 7 0 1a230fbebbefcfc11cb6e74407e2fa77
++ Werte in Soundness sind unveränderlich: Einmal konstruiert, ändert sich ein Wert nie, und jede
++ Operation, die ihn verändern würde, liefert stattdessen einen neuen Wert. Das beseitigt ganze
++ Kategorien von Fehlern — Überraschungen durch Aliasing, Data Races und Änderungen, die sich aus
++ der Ferne bemerkbar machen — und macht einen Wert sicher, ihn ohne defensives Kopieren frei
++ zwischen Threads und Geltungsbereichen zu teilen. Über einen unveränderlichen Wert lässt sich
++ außerdem leichter nachdenken, weil seine Bedeutung im Moment seiner Erzeugung feststeht und
++ nicht durch Code ungültig gemacht werden kann, der anderswo läuft.
+
+@ 0 1 0 1e0bda0e5956cc2a0160c5289eda389e
++ ## Aktualisieren ohne zu verändern
+
+@ 0 5 0 19c178493ef357260f6607f371b646a3
++ Der Einwand gegen Unveränderlichkeit ist immer derselbe: Ein Feld tief in einer Struktur zu
++ ändern heißt, jede Schicht darüber neu aufzubauen. Das stimmt, und es ist ein Problem der Syntax,
++ nicht der Semantik — also löst Soundness es mit Syntax. Eine
++ [Linse](../en/modules/optics.md) nimmt die Aktualisierung, geschrieben als gewöhnliche
++ Zuweisung an einen Pfad, und erledigt den Neuaufbau:
+
+% 2 1 0 039650cfae1264e0142553c689d387d7
+
+% 3 1 0 08ae8ed4d750f6d819fee9b799a0b21f
+
+% 4 1 0 1a33d307a99ae5c200c0d68df273d96a
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 0a826de8ae4effd70e125f0b28f9b284
+
+% 0 1 0 020debf66e114ca6012828b10dd75205
+
+% 0 1 0 1ddf7b1759804b76189e14b087fb4351
+
+% 1 1 0 0a25eed5e86dcbb60fb30cc25599e3dd
+
+@ 0 3 0 132225dace18f3d6065f7ff46994ba04
++ Das Ergebnis ist ein neues `Play`; das Original bleibt unberührt, und jede andere Referenz darauf
++ sieht weiterhin, was sie sah. Mehrere Aktualisierungen werden zusammen angewandt, und solche mit
++ einem gemeinsamen Präfix bauen die gemeinsame Struktur einmal neu auf statt einmal für jede:
+
+% 2 1 0 0006f04d01654bc807968e629c6a0ab2
+
+% 3 1 0 0520a141cac424e6004cf8aeaa19769c
+
+% 4 1 0 0e7cb712fd9893f408c7f49a214796c2
+
+% 0 1 0 0dbc24d0de27c1dc15bed3f95832083e
+
+% 0 1 0 1603281dbfae6bc0117d3db346ca9aa2
+
+% 0 1 0 0dca8f83ab9724a11181ee68ec5b7eb0
+
+% 1 1 0 1381e7b34096df27089233877df9cbe3
+
+@ 0 2 0 075dd8b4becc7c051bd0f99fac49c57e
++ Dieselbe Syntax greift mit `Each` und `Filter` durch Collections hindurch, sodass „gib jedem
++ Spieler ein Alter von dreißig“ ein einziger Ausdruck ist statt eines von Hand geschriebenen
++ Neuaufbaus.
+
+@ 0 1 0 06ded5d5266d0294059bb92bf873e4c7
++ ## Teilen ohne zu kopieren
+
+@ 0 4 0 14eb3a16ab4f1c550ca560f1bb28f55d
++ Ein unveränderlicher Wert braucht keine defensive Kopie, weil es nichts gibt, wogegen man sich
++ verteidigen müsste. Ein `Data`, das drei Threads übergeben wird, wird von drei Threads gelesen;
++ ein geparstes Dokument in einem Cache kann von niemandem verändert werden, der es abgerufen hat;
++ eine Konfiguration, die an ein Subsystem übergeben wird, kann nicht verändert zurückkommen.
+
+@ 0 4 0 12b9ee915926204303c41e2af6287ff8
++ Das macht strukturelles Teilen sicher. Eine Linse baut nur das Rückgrat neu auf, an dem sie
++ hinabsteigt, und jeder Zweig, den sie nicht berührt hat, ist im alten und im neuen Wert
++ *dasselbe Objekt*. Unveränderlichkeit ist also das, was den Neuaufbau billig macht: Ohne sie
++ wäre es ein Fehler, eine Teilstruktur zwischen zwei Werten zu teilen.
+
+@ 0 1 0 141458cbd430e910195f01db8bccd159
++ ## Wo Veränderung überlebt, und warum
+
+@ 0 2 0 1191bb0c606344bc0772e8670b0d3eaa
++ Unveränderlichkeit ist eine Eigenschaft von Werten, kein Verbot für die Maschine. Vier Stellen in
++ Soundness sind bewusst veränderlich:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 7 0 143176bf35715a5c0808a88a03934fbc
++ column  Stelle
++ column  Verändert
++ column  Abgesichert durch
++ row  ein Builder  einen Puffer, den er exklusiv besitzt  dass niemand die Zwischenzustände beobachtet
++ row  der Streaming-Kern  ein Fenster in einen Puffer  Capture- und Separation-Checking
++ row  ein `Canvas`  Pixel, an Ort und Stelle  den Geltungsbereich des `open`-Blocks und die Berechtigung `Write`
++ row  eine atomare Zelle  ein gemeinsames Maschinenwort  unteilbare Operationen
+
+% 1 1 0 0421a2960068d86c01c37043ae4af191
+
+@ 0 1 0 12093d507dade89513a1c9bc9242c9a1
++ Die ersten drei sind eingegrenzt.
+
+@ 0 2 0 1568d9bbf84829b705172c26c0db28cd
++ Ein **Builder** verändert einen Puffer, den er exklusiv besitzt, und liefert am Ende einen
++ unveränderlichen Wert. Niemand beobachtet die Zwischenzustände, also hängt nichts von ihnen ab.
+
+@ 0 6 0 1e7c55cf0a26e2841392056db47c9da9
++ Der **Streaming-Kern** legt ein veränderliches Fenster in einen Puffer offen, und genau das macht
++ ihn kopierfrei. Dieses Fenster gehört genau einem Verwender, und der Compiler erzwingt das: Ein
++ `Stream` ist eine exklusive Capability; ihn zu aliasen oder ihn aus dem Geltungsbereich
++ entkommen zu lassen, dem seine Quelle gehört, kompiliert also nicht. Veränderung ist hier
++ erlaubt, weil [Capture- und Separation-Checking](capture-checking.md) beweisen, dass niemand
++ sonst sie sehen kann.
+
+@ 0 5 0 1a9da3d198e21a4c054df4a851599267
++ Ein **`Canvas`**, das man durch Öffnen eines [Rasters](../en/modules/images.md) zum Schreiben
++ erhält, verändert Pixel an Ort und Stelle — denn ein großes Bild Pixel für Pixel mit einem
++ Funktionsaufruf je Pixel zu erzeugen ist die falsche Gestalt für einen Zeichenalgorithmus. Die
++ Veränderung ist auf den `open`-Block beschränkt und durch die Berechtigung `Write` gesperrt, und
++ `snapshot` nimmt eine unabhängige Kopie für alles, was ihn überdauern muss.
+
+@ 0 2 0 06ebaafe3e53caeb1fa9d496674440a6
++ Das Muster ist in allen dreien dasselbe: Veränderung ist eine lokale Implementierungstechnik mit
++ einem Beweis der Eingrenzung, nie eine Eigenschaft eines Werts, die andere sehen können.
+
+@ 0 7 0 1f1fbcafef1a1df7010542ef28025d98
++ Eine **atomare Zelle** ist die Ausnahme, und es lohnt sich, sie als solche zu benennen, statt sie
++ zu verstecken. Ein `Atomic[Int]` oder `Atomic.Ref[State]` ist bewusst *nicht* eingegrenzt: Sein
++ ganzer Zweck ist, dass zwei Threads einen einzigen Speicherort sehen; keine Aliasing-Analyse
++ kann also helfen, und keine wird versucht. An die Stelle der Eingrenzung tritt eine andere
++ Garantie. Der Speicherort ist ein einzelnes Maschinenwort, und jede Operation darauf ist
++ unteilbar; es gibt also keinen Zwischenzustand, den ein anderer Thread beobachten könnte. Der
++ Typ verspricht nicht, dass die Veränderung unsichtbar ist; er verspricht, dass sie nicht halb
++ erledigt ertappt werden kann.
+
+@ 0 4 0 13b31f2bd144bce214efc4839123d317
++ Deshalb sind die Operationen danach benannt, welchen Wert sie zurückgeben. `count.ere(_ + 1)`
++ liefert den Wert, den sie verdrängt hat, und `count.since(_ + 1)` den Wert, den sie eingesetzt
++ hat; ein Aufrufer kann also erkennen, ob er und nicht jemand anderes den Übergang vollzogen hat —
++ die Frage, die sich erst stellt, wenn Veränderung geteilt wird, und die ein `var` nicht
++ beantworten kann:
+
+% 2 1 0 1b9690b9eb41d622187b205741018c6f
+
+% 3 1 0 12d35964dd654e6a0367a75fd50dc5c4
+
+% 4 1 0 029018b9749c1cd911adc908e177f332
+
+% 0 1 0 1673e2b6ab600dac1654a0c5e24eff3e
+
+% 1 1 0 07ca53e1605b0ff40a810b4aabcb1e78
+
+@ 0 3 0 03551aa5779a10c0154e8e0fe5f1e1ba
++ Gemeinsame Zellen sind ein Werkzeug der unteren Ebene, und die Bibliothekssammlung verwendet sie dort, wo
++ Nebenläufigkeit das Thema ist: beim Überwachen von Aufgaben, beim Sammeln von Fehlern über einen
++ Geltungsbereich hinweg und in den Übergaberingen unter dem Streaming-Kern. Sie sind nicht die
++ Art, wie ein Wert modelliert wird.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 5 0 0a4e170cbb75bf641a8c2e8c0366a897
++ Neuaufbau ist nicht kostenlos. Eine Aktualisierung über eine Linse alloziert ein Objekt pro
++ Ebene, die sie hinabsteigt; eine enge Schleife, die eine tiefe Struktur aktualisiert, alloziert
++ also mehr, als Veränderung an Ort und Stelle es täte. Wo das zählt — und es zählt weit seltener,
++ als die Intuition nahelegt, da die Allokationen jung und kurzlebig sind —, ist die Antwort ein
++ Builder oder ein veränderlicher Bereich mit Geltungsbereich, nicht, den Wert selbst veränderlich
++ zu machen.
+
+@ 0 2 0 082b3c583579f6890b9b7f5c8b3c50db
++ Der Tausch ist bewusst: ein wenig Allokation bezahlen, um eine Klasse von Fehlern zu beseitigen,
++ die man sonst erst in Produktion findet, an einem Dienstag, unter Last.
+
+@ 0 3 0 076397851cf4950004a37b97e0f66075
++ Siehe [unmögliche Zustände](impossible-states.md) für die verwandte Disziplin darüber, was ein
++ Wert sein darf, und [Capture-Checking](capture-checking.md) dafür, wie die eingegrenzten
++ Veränderungen als sicher bewiesen werden.

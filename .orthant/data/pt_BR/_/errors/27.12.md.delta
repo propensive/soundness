@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 028b2bedad2dc3cc0e0580c76e02daf8
++ # `↯/s.27.12` — Valor `U16` abaixo de 0
+
+@ 0 2 0 101fedcc2682fb90027cf490cd032319
++ Lançado em tempo de compilação pela macro `u16` do Hypotenuse quando o valor
++ é menor que 0.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 1 0 03778acae131351b01a2a119bb5a8625
++ Um `U16` (sem sinal, de 16 bits) não pode ser negativo.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0bad9efbf6ca584b0d5337351c58f14f
+
+% 1 1 0 1a863a92f4794c4910a814a256dfc99a
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 08a07e1cce8afeb5041c6ec7e2826c69
++ Forneça um valor no intervalo 0-65535.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 2 0 1670b5a1d401440e1b2b356791d92b91
++ - Os outros erros de literais inteiros: [Famílias](README.md#families)
++ - Código-fonte: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

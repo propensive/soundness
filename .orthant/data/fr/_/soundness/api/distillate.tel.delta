@@ -1,0 +1,1467 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05ea6290cf383b1415d25369611b31e6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f4c16a21204bad9072e5e555bd0e99e
++ info
++     des conversions typées depuis du texte et d'autres formes : `as[T]`, l'extracteur `As` et
++     leurs classes de types
+
+@ 0 5 0 0d9b845460bbf2b40a91f224c9978612
++ detail
++     _Distillate_ transforme des valeurs non typées — arguments de ligne de commande, variables
++     d'environnement, captures d'expressions régulières, champ d'un document analysé — en
++     valeurs typées, et rend visible dans son type la manière dont chaque conversion peut
++     échouer. Il le fait au moyen de trois classes de types, chacune avec son propre mode
++     d'échec :
+
+@ 0 5 0 1f40c8e4af3c372b0131c492189d8432
++     - `Decodable` lit une valeur _depuis_ une forme (`Int is Decodable in Text`) et lève une
++       erreur typée, au moyen d'une `Tactic`, lorsqu'elle n'y parvient pas ;
++     - `Extractable` convertit _vers_ un résultat (`Text is Extractable to Int`) et produit
++       `Unset` lorsqu'elle renonce, ce que souhaite un filtrage par motif ;
++     - `Irrefutable` convertit là où rien ne peut mal tourner (`Byte is Irrefutable to Int`).
+
+@ 0 2 0 03e046b02184756402acc3ed8e36ca2e
++     La surface de tous les jours se résume à deux noms : l'extension `as`, qui décode, et
++     l'extracteur `As`, qui extrait dans un motif.
+
+% 2 1 0 0b5bafb24f15e461180c83d322b978fb
+
+% 3 1 0 0a27c92abba46e151a001ffa0a3c6a77
+
+% 4 1 0 028090d4d24e2d1e0fb1479a17df6561
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 05d3bce67d532d2404eaa96a1aba7f7c
+
+% 0 1 0 0d4fa444f9ea8c421b6dd2ef1fd9559b
+
+% 0 1 0 11d9e8d37bd2051e05fd9b2fd4e3497f
+
+% 0 1 0 0aa9d2abc67dc526112a149d803d0377
+
+% 0 1 0 1e49d9c9e84f2caa0d73fe7c506aa055
+
+% 1 1 0 1d9592f73a83d45301b58585e3ac221f
+
+@ 0 8 0 1e7d2d323cfe691c1fd01ce31c14c789
++     La bibliothèque porte aussi les éléments que partagent tous les formats de données :
++     `Enumerable`, la description dérivée d'une `enum` qu'utilisent les codecs de chaque format
++     pour nommer ses cas ; `Identifiable`, une correspondance bidirectionnelle entre conventions
++     de nommage ; `Parsable`, l'équivalent en flux de `Decodable`, qui lit une valeur
++     directement depuis le lecteur de jetons d'un format ; les trois politiques
++     `Decodable.Absence`, `Decodable.Nullity` et `Decodable.Fault` que consulte un champ
++     `Optional` ; et `Codecs`, le mode contextuel qui choisit entre les codecs dérivés et directs
++     (générés) d'un format. Le sens de l'encodage, `Encodable` et `value.in[Format]`, appartient
++     à `anticipation`, en dessous de cette bibliothèque.
+
+@ 0 4 0 0533d9d3a406aef00a860caf5c6be16d
++     Deux packages de choix contiennent des givens qui doivent être importés par leur nom, car
++     `import pkg.*` n'importe pas les givens : `truths`, dont les graphies de `Truth` sont
++     acceptées par le décodeur de `Boolean` à côté de `true`/`false`, et `codecs`, dont les trois
++     modes choisissent la voie des codecs pour tous les formats à la fois.
+
+@ 0 3 0 0feea3bb2d1ca4ed0670ebde16da78c2
++     La bibliothèque est un unique ensemble de sources, `distillate.core`, pour toutes les
++     plateformes. Tout est exporté vers le package parapluie `soundness`, et les packages
++     `truths` et `codecs` fusionnent avec ceux du package parapluie.
+
+% 0 1 0 18eee1eb80ef1f0010edb99c2b432c96
+
+% 0 1 0 03feafdbc00573331eeff869629b76bc
+
+% 0 1 0 02d222113c027073070fd840449a835f
+
+% 0 1 0 1126c6cb023dff86198187c9e341670e
+
+% 0 1 0 191417dbb69f19ea1cb2cd8a514fcfa1
+
+@ 0 1 0 0727f1d65de97ed31a4893b4f57b50e6
++ entry .as
++   info
++       décode une valeur en `T` avec le `T is Decodable in` de sa forme, ou la convertit avec un
++       `Irrefutable` donné
+
+@ 0 5 0 14d1604975f6ec830a4114f145440418
++   detail
++       `value.as[T]` invoque un `T is Decodable in F`, où `F` est le type statique de `value`, et
++       l'applique. Un décodeur construit à partir d'une `Tactic` (les décodeurs de nombres
++       nécessitent une `Tactic[Number.Error]`, celui de `Boolean` une `Tactic[Truth.Error]`) lève
++       au moyen de celle-ci, de sorte que la stratégie dans la portée décide si un décodage en
++       échec lève une exception, produit `Unset` sous `safely`, ou s'accumule. Rien du décodeur
++       n'est retenu : le résultat est une simple valeur.
+
+@ 2 1 0 034b6010bb70de160a362b03ac9011dc
++       ```scala
+
+@ 3 1 0 0cb66c7984b36d441a4980541933949e
++       import soundness.*
+
+@ 4 1 0 009359c5327bcbef19d8213ed069d134
++       import strategies.throwUnsafely
+
+@ 0 1 0 025b7e36cf092eed07ca38a2243d52b1
++       t"123".as[Int]                          // 123
+
+@ 0 1 0 0e6e7c2a8394e9ae11d720d91eb96799
++       capture[Number.Error](t"300".as[Byte])  // Number.Error(..., Reason.OutOfRange)
+
+@ 1 1 0 050c9814b2e13294106f7dc0fb57db1f
++       ```
+
+@ 0 2 0 1cb95139f4c733000f914945f347f5c2
++       La seconde surcharge, `value.as[T](irrefutable)`, prend explicitement un `Irrefutable`,
++       comme argument ordinaire plutôt que contextuel, et l'applique ; elle ne peut échouer.
+
+@ 0 1 0 186fe446a4d0935816ea357c775720f2
++ entry .As
++   info
++       l'extracteur `As[T]`, qui s'applique à une valeur filtrée produisant un `T` et la lie
+
+@ 0 5 0 0b1056082333ce8416711119916a1731
++   detail
++       `As[T](binding)` dans un motif invoque `scrutinee.type is Extractable to T` et correspond
++       lorsqu'il produit une valeur, en passant au cas suivant lorsqu'il produit `Unset`. Comme
++       c'est un extracteur ordinaire, il s'imbrique dans n'importe quel motif : dans les groupes
++       d'un motif `r"…"`, à l'intérieur d'un motif de liste, ou à côté d'autres extracteurs.
+
+% 2 1 0 011310976d1797cf0936c3f76a72c20c
+
+% 3 1 0 10d279ab671d4d2918abffb9fc51e092
+
+% 0 1 0 171b8ae5b22e903717e5c3d1f02a7c7a
+
+% 0 1 0 1b0d3ef135a04dd0037a2aff2378f36d
+
+% 0 1 0 1de7b6efbc68fd4204be7e0ed4115006
+
+% 0 1 0 15475c2498c297d61636677955f69f57
+
+% 0 1 0 0a10a96b80746a8b0268dbeb5312ba5b
+
+% 0 1 0 13dc03c2da2bfa7b0dcf17072ac36121
+
+% 1 1 0 180b89ece618f0120a493c9d409829e9
+
+@ 0 4 0 16daec072d67ec75111cb4b17eb9dc6f
++       Sous le contrôle des captures, l'argument de type explicite de `As[T]` fait passer la
++       valeur filtrée par un type singleton que le vérificateur ne peut lier au `Self` de
++       l'instance ; les extracteurs à résultat fixe `As.Int` et `As.Boolean` ne prennent pas
++       d'argument de type et sont utilisables depuis du code soumis au contrôle des captures.
+
+% 1 1 0 1074f8deb6f75860080c281d3cb5350d
+
+@ 0 1 0 0ce1e3ae0c2d02140bea9a628e48435f
++   entry .unapply
++     info
++         s'applique à une valeur filtrée dont le type singleton est `Extractable` vers le résultat
+
+@ 0 1 0 039f6da03212a6320598a7b46f18d866
++   entry .Int
++     info
++         un extracteur fixé à `Int`, sans argument de type, pour du code soumis au contrôle des
++         captures
+
+@ 0 4 0 0ae40c9b05ca789a12dbfb4f59ad07fd
++     detail
++         `case As.Int(number) =>` s'applique à toute valeur filtrée pour laquelle un
++         `scrutinee is Extractable to Int` est dans la portée, en inférant le type de la valeur
++         filtrée à partir de la valeur reconnue plutôt que d'un singleton, de sorte que l'instance
++         se résout proprement sous le contrôle des captures.
+
+@ 0 1 0 13e72b198bf740b905e9e846fcf30e1a
++     entry .unapply
++       info
++           s'applique à une valeur filtrée qui est `Extractable to Int`
+
+@ 0 1 0 1c3e292d450e91af1849833403356674
++   entry .Boolean
++     info
++         un extracteur fixé à `Boolean`, sans argument de type, pour du code soumis au contrôle des
++         captures
+
+@ 0 3 0 0bd47a593778aa35045931bd0e71caf5
++     detail
++         `case As.Boolean(flag) =>` s'applique à toute valeur filtrée pour laquelle un
++         `scrutinee is Extractable to Boolean` est dans la portée ; pour du texte, celui qui vaut
++         exactement `true` ou `false`.
+
+@ 0 1 0 106c81ccf8a6475c10b510e9fa5527cc
++     entry .unapply
++       info
++           s'applique à une valeur filtrée qui est `Extractable to Boolean`
+
+@ 0 1 0 0ab14ede12f714211579a1e27fbe1d75
++ entry .Decodable
++   info
++       une classe de types lisant `Self` depuis une `Form`, en levant une erreur typée lorsqu'elle
++       n'y parvient pas
+
+@ 0 6 0 12571fb911bb1f11031ed5f36169669a
++   detail
++       `T is Decodable in F` est une unique fonction `F => T`, `#decoded`. C'est ce qu'applique
++       `value.as[T]`, et ce sur quoi s'appuient les codecs de chaque format de données :
++       `Person is Decodable in Json`, `Int is Decodable in Text`. Une instance qui peut échouer
++       prend une `Tactic` pour son erreur comme paramètre contextuel et lève au moyen de
++       celle-ci, de sorte que l'erreur fait partie de ce dont le given a besoin, et que la
++       stratégie est choisie là où `as` est appelé.
+
+@ 0 2 0 175ddaa29c8da5d41ed57a3a391b146e
++       Écrire une instance revient à écrire la fonction ; dans un objet compagnon, elle est trouvée
++       sans import.
+
+% 2 1 0 03c9f6a886f8d8f815c4238b8f492e94
+
+% 3 1 0 0e2f18436597be350eb291197f62a843
+
+% 4 1 0 0f19f0c84500869504c3b764b50028e1
+
+% 0 1 0 045b2e8f1474650417954b11a8811d54
+
+% 0 1 0 174099191763bace1654c4c598c14280
+
+% 0 1 0 043633eea5fbd1e70e989b5d7f9bc89e
+
+% 0 1 0 11f9d08a09eea6f803cff33f6f4d5e43
+
+% 0 1 0 0f9ef0564f67647a05fdf695e8d72c8f
+
+% 0 1 0 1f1ced82adada7ce1d4ebbe60c0791de
+
+% 0 1 0 0fb1ecd6457bcf8f1ddec4d6cda99cc2
+
+% 0 1 0 16983d2de67932e805b072a1f296454f
+
+% 0 1 0 0088927ebcc57ad4038a7aedd584b6cd
+
+% 1 1 0 1ab5502455d192f70225e10b0da2d2b2
+
+@ 0 4 0 190785f33a6dc33f15e2d98e6e263965
++       L'objet compagnon contient les décodeurs depuis `Text` pour les types primitifs et pour
++       toute `enum`, ainsi que les trois politiques que consulte un champ `Optional`
++       (`.Absence`, `.Nullity`, `.Fault`). Il étend `Decodable2`, dont le `generic` de priorité
++       inférieure décode toute valeur dans sa propre forme comme elle-même.
+
+@ 0 3 0 0043893ce89d7997180ac67c5e6d5743
++       Le given fourre-tout d'un format (`[value] => value is Decodable in Json` et semblables)
++       est à égalité avec tout given de l'objet compagnon portant sur un paramètre de type nu, ce
++       qui est une erreur d'ambiguïté ; un given dont le paramètre de type est borné
++       (`[item <: Item]`) est plus spécifique et l'emporte.
+
+% 1 1 0 1c1e269b6271aad71020835811fd277b
+
+% 1 1 0 1eb427962326df06140cffe5375e596d
+
+% 1 1 0 07c1273d3005620213081d2dfd33bb5a
+
+% 0 1 0 0938c754f8aebe5607a202ce9f4b4013
+
+@ 0 1 0 18cb759e1bee9fe71a930c0160fdd3eb
++   entry .int
++     info
++         décode un `Int` depuis un texte décimal, en levant `Number.Error` s'il ne peut être
++         analysé
+
+@ 0 3 0 0072b934d2e5c914151c230733eee23c
++     detail
++         Nécessite une `Tactic[Number.Error]`. Analyse avec `Integer.parseInt`, de sorte que le
++         texte doit être un entier décimal éventuellement signé, sans espace autour ; tout échec, y
++         compris un dépassement, donne `Number.Error.Reason.Unparseable`.
+
+@ 0 1 0 0b1f093e9865ed440a35051f88e0f42a
++   entry .byte
++     info
++         décode un `Byte` depuis un texte décimal, en distinguant l'impossibilité d'analyse du
++         dépassement d'intervalle
+
+@ 0 2 0 08eaab412778346d1fdfd6d351f54770
++     detail
++         Nécessite une `Tactic[Number.Error]`. Un texte qui n'est pas un entier lève `Number.Error`
++         avec `Reason.Unparseable` ; un entier hors de l'intervalle −128 à 127 la lève avec
++         `Reason.OutOfRange`.
+
+@ 0 1 0 00994a29b47ceab419f22847c8c75983
++   entry .short
++     info
++         décode un `Short` depuis un texte décimal, en distinguant l'impossibilité d'analyse du
++         dépassement d'intervalle
+
+@ 0 3 0 12a4a5a2762fcad41eda73cff534c003
++     detail
++         Nécessite une `Tactic[Number.Error]`. Un texte qui n'est pas un entier lève `Number.Error`
++         avec `Reason.Unparseable` ; un entier hors de l'intervalle d'un `Short` la lève avec
++         `Reason.OutOfRange`.
+
+@ 0 1 0 01af42303902329d08247ec80bb9826e
++   entry .long
++     info
++         décode un `Long` depuis un texte décimal, en levant `Number.Error` s'il ne peut être
++         analysé
+
+@ 0 1 0 02fbb54adac3fc0912b685dd96694713
++     detail
++         Nécessite une `Tactic[Number.Error]` ; analyse avec `java.lang.Long.parseLong`.
+
+@ 0 1 0 1dfe1d8a521627920bd1bc35e779a142
++   entry .double
++     info
++         décode un `Double` depuis du texte, en levant `Number.Error` s'il ne peut être analysé
+
+@ 0 2 0 1fd5dfa30b5b5304103e44337157eb15
++     detail
++         Nécessite une `Tactic[Number.Error]` ; analyse avec `java.lang.Double.parseDouble`, de
++         sorte que les exposants, `NaN` et `Infinity` sont acceptés comme Java les accepte.
+
+@ 0 1 0 076e67ed502561330072ea0592ccb393
++   entry .float
++     info
++         décode un `Float` depuis du texte, en levant `Number.Error` s'il ne peut être analysé
+
+@ 0 1 0 07edd3b698cb85d30189fd33b3d58546
++     detail
++         Nécessite une `Tactic[Number.Error]` ; analyse avec `java.lang.Float.parseFloat`.
+
+@ 0 1 0 110f143c3b31d1ea1c93cd0bb831c582
++   entry .char
++     info
++         décode un `Char` comme le premier caractère du texte
+
+@ 0 2 0 01c20780398038c814b4c17e8aba30e6
++     detail
++         Ne nécessite aucune tactique. Tout texte au-delà du premier caractère est ignoré, et le
++         texte vide n'est pas vérifié : préférez `As[Char]`, qui ne filtre qu'un texte d'exactement
++         un caractère.
+
+@ 0 1 0 1bd1fc1631f55a5b1b3bd8812c58924d
++   entry .boolean
++     info
++         décode un `Boolean` depuis toute graphie de `Truth` dans la portée, quelle que soit la
++         casse, en levant `Truth.Error`
+
+@ 0 5 0 1bf4d69dd03acb681d4b09d8912ff651
++     detail
++         Nécessite une `Tactic[Truth.Error]` et recueille chaque `Truth` dans la portée
++         (`Every[Truth]`). Le texte est débarrassé de ses espaces et mis en minuscules, puis
++         proposé à chaque graphie tour à tour ; un texte qu'aucune ne reconnaît lève `Truth.Error`.
++         `Truth.trueFalse`, dans l'objet compagnon de `Truth`, est toujours dans la portée, et
++         chaque given `truths` importé ajoute une graphie à côté de celle-ci plutôt que de la
++         remplacer.
+
+@ 0 1 0 14116fcaa006993f068c95fd1ec862a2
++         ```scala fuel
+
+@ 1 1 0 08d9458eb73012351c93056f35e51984
++         frame
+
+@ 0 1 0 05ac48424d5a46fa00da1a5f4395d9aa
++           label Only true and false
+
+@ 1 1 0 14ba17509e2a01fd0b208a6db3cdc2cb
++           code
+
+@ 2 1 0 0c9f1f2234209f970a3c86d120e81b8b
++               import soundness.*
+
+@ 3 1 0 17934a0db3514ec511149243c6052024
++               import strategies.throwUnsafely
+
+@ 0 1 0 0991a9e8233d719e041fb7d8a3dee6ee
++               t" FALSE ".as[Boolean]           // false
+
+@ 0 1 0 0cfb68515eb24ad3069d7c3c87e9d167
++               safely(t"yes".as[Boolean])       // Unset: a Truth.Error was raised
+
+@ 1 1 0 0eb413b51ea127b8046e515d1c8bd6b9
++         frame
+
+@ 0 1 0 1da467d1a4b7d15a023368b5f41ed8d7
++           label Adding yes and no
+
+@ 1 1 0 0c7ab6496c8c9b651717e185a36aa190
++           code
+
+@ 2 1 0 0b68b5fdcb1aa0750dade8e0bbd23fa0
++               import soundness.*
+
+@ 3 1 0 0bda3ab1adbd0a23089b0381ee32dc9f
++               import strategies.throwUnsafely
+
+@ 0 1 0 0200d10b8c4c94fe1a27aee6ad721c56
++               import truths.yesNoTruth
+
+@ 0 1 0 00acdf0e21956f74107132a1429f635e
++               t"yes".as[Boolean]               // true
+
+@ 0 1 0 13056ca6d6d006c3135f256a75c9fa98
++               t"true".as[Boolean]              // true, still
+
+@ 1 1 0 1440c68972f55850061dcf3e511c7a0e
++         frame
+
+@ 0 1 0 1964bcd8a38f694f1f144d12fe64dcf3
++           label Adding on/off and 1/0 as well
+
+@ 1 1 0 042289cc336b7679039b6beb3f0bdebb
++           code
+
+@ 2 1 0 1f7fd978ecc659a3031a7d0c3521b46c
++               import soundness.*
+
+@ 3 1 0 14c760ca98ed0269007d0b429d32f8fe
++               import strategies.throwUnsafely
+
+@ 0 1 0 1ec884492935962c0e2f09857b54d72a
++               import truths.{yesNoTruth, onOffTruth, oneZeroTruth}
+
+@ 0 1 0 1edd28f9e631eb331c2b3c6efee88418
++               List(t"on", t"OFF", t"1", t"no").map(_.as[Boolean])   // List(true, false, true, false)
+
+@ 0 1 0 05324ab952d132031fa7821cd90c1137
++         ##
+
+@ 1 1 0 1a277342ea9dfdc5113023e785963c91
++         ```
+
+@ 0 1 0 1aad54b4af27ac11197ead97fabe8b1c
++   entry .enumeration
++     info
++         décode un cas d'`enum` à partir de son nom, en levant `Enumerable.Error` s'il n'en nomme
++         aucun
+
+@ 0 5 0 18a0b312c203f1481b089c656dba1999
++     detail
++         Pour toute `enum` dotée d'un `Enumerable` (dérivé automatiquement) et d'un `Identifiable`
++         dans la portée, et d'une `Tactic[Enumerable.Error]`. Le texte passe d'abord par le
++         `#decode` de l'`Identifiable`, de sorte qu'une convention de nommage (snake case en
++         entrée, camel case en sortie) peut s'intercaler entre le texte et les noms des cas ;
++         l'erreur énumère les noms valides, réencodés au moyen du même `Identifiable`.
+
+@ 0 1 0 1c8f1e6159e5d4e6040fb741fe3bc382
++   entry .Absence
++     info
++         la politique pour une clé que le document omet : la politique tolérante produit `Unset`,
++         la stricte lève une erreur
+
+@ 0 7 0 1f67faaef5bef56515b4e03996c0398d
++     detail
++         Une politique indexée par son format (`Decodable.Absence in Json`), consultée par chaque
++         format qui décode un champ `Optional` ou `Option`. La valeur par défaut, `.default`, est
++         tolérante pour tous les formats : une clé omise se lit comme `Unset` (ou `None`). Le
++         package `optionalityOptions` d'un format propose un given strict nommé d'après le format
++         (`strictJsonAbsence`), importé par son nom, qui l'emporte sur la valeur par défaut ; on
++         peut aussi en déclarer un localement.
+
+% 2 1 0 04d2735b6cf48c831f190b9b1a3bc067
+
+% 3 1 0 1c5834e8f858e43a1cc58f87744ff78e
+
+% 0 1 0 0d40d8693ddf593c1b985c24d3ce91d2
+
+% 0 1 0 1bac8baa5acbe6d305ff0039830c895b
+
+% 0 1 0 0a1762596a0bd6ae1a967f5795bb2523
+
+% 0 1 0 0b6b0e2d39ac03b210fe23f432065057
+
+% 1 1 0 0771fb5474794e571cdf29d26d34ce77
+
+@ 0 1 0 1a97e13a2d88fe8601fdd71ad321b29c
++     entry .apply
++       info
++           une politique d'absence pour une forme, stricte ou tolérante
+
+@ 1 1 0 0456e36737d6d461142d8ae620c690dc
++     entry .default
++       info
++           la valeur par défaut de l'objet compagnon pour toutes les formes : tolérante
+
+@ 0 1 0 1faa8413848db45304bd672115b56016
++     entry #strict
++       info
++           si une clé omise est une erreur plutôt que `Unset`
+
+@ 0 1 0 0236f8989219cb0b1ff1374252d1be68
++   entry .Nullity
++     info
++         la politique pour le null explicite d'un format : la politique tolérante produit `Unset`,
++         la stricte lève une erreur
+
+@ 0 5 0 14823c81b685168708f6b6cc213067ae
++     detail
++         Une politique indexée par son format (`Decodable.Nullity in Json`), consultée uniquement
++         par les formats qui ont un littéral null. La valeur par défaut, `.default`, est
++         tolérante : un null se lit comme `Unset` (ou `None`). Le package `optionalityOptions` d'un
++         format propose un given strict nommé d'après le format (`strictCborNulls`), importé par
++         son nom, qui l'emporte sur la valeur par défaut.
+
+@ 0 1 0 0cc2176defe25ab319bf0a48a9d44bf5
++     entry .apply
++       info
++           une politique de nullité pour une forme, stricte ou tolérante
+
+@ 1 1 0 1b273b468098975905ea782e10afbc90
++     entry .default
++       info
++           la valeur par défaut de l'objet compagnon pour toutes les formes : tolérante
+
+@ 0 1 0 07678e01bf36bc6e133ce3ef8d882601
++     entry #strict
++       info
++           si un null explicite est une erreur plutôt que `Unset`
+
+@ 0 1 0 14b517c8b42233e70e217208ad1da840
++   entry .Fault
++     info
++         la politique pour une valeur présente que rejette le décodeur interne : la politique
++         stricte lève une erreur, la tolérante produit `Unset`
+
+@ 0 6 0 14a1042dfbb4d6821dee4689afda3d74
++     detail
++         Une politique indexée par son format (`Decodable.Fault in Json`). La valeur par défaut,
++         `.default`, est stricte : l'erreur du décodeur interne est transmise. Le package
++         `optionalityOptions` d'un format propose un given tolérant nommé d'après le format
++         (`lenientYamlFaults`), importé par son nom ; sous celui-ci, une valeur rejetée est décodée
++         sous le `tolerate` de la tactique ambiante, de sorte que rien ne s'accumule non plus sous
++         une tactique d'accumulation, et se lit comme `Unset` (ou `None`).
+
+@ 0 1 0 0a69b302ae3dc04309fb522649303b68
++     entry .apply
++       info
++           une politique de défaut pour une forme, stricte ou tolérante
+
+@ 0 1 0 0166dd48ca757fee0830e2855693fd5a
++     entry .default
++       info
++           la valeur par défaut de l'objet compagnon pour toutes les formes : stricte
+
+@ 0 1 0 07909f8dbcab90a91736f29eed773fd7
++     entry #strict
++       info
++           si une valeur rejetée lève son erreur plutôt que de se lire comme `Unset`
+
+@ 0 1 0 145981a3c9176ed70ad2f6473d4c5a44
++   entry #decodable
++     info
++         cette instance, sous forme de référence stable à utiliser dans une lambda
+
+@ 0 1 0 06aa409fed00076105590a416950b4b1
++   entry #decoded
++     info
++         décode une valeur de la forme en `Self`
+
+@ 0 2 0 1a3e419c380dbaae05ff429eb562cafb
++     detail
++         L'unique méthode abstraite : une lambda de type `Form => Self` est une instance. Elle peut
++         lever au moyen d'une tactique que l'instance a capturée lors de sa résolution.
+
+@ 0 1 0 0e06b1dbb58f5c2a10e13b6229bcfe2b
++   entry #position
++     info
++         enrichit un focus positionnel avec ce que l'on sait de la forme décodée
+
+@ 0 3 0 183cbafcbd3ea27e0352e4185f18d68f
++     detail
++         L'identité par défaut. Un format dont les décodeurs suivent l'endroit d'un document où une
++         valeur a été trouvée (le `Json.Decodable` de Jacinta) la redéfinit pour raffiner un focus
++         avec des informations dérivées de la `Form` après décodage.
+
+@ 0 1 0 10d5a5831ea966d20b99b905f2f0426c
++   entry #map
++     info
++         un décodeur dans la même forme pour un nouveau type, appliquant une fonction après le
++         décodage
+
+@ 0 2 0 1a20aa482c87f319027b06b1990005bc
++     detail
++         `summon[Int is Decodable in Text].map(Percent(_))` décode un `Int` et l'enveloppe. Le
++         résultat capture à la fois ce décodeur et la fonction.
+
+@ 0 1 0 00d3a3ff4c35149a0d74487d592a91eb
++ entry .Decodable2
++   info
++       les givens de priorité inférieure de l'objet compagnon de `Decodable`
+
+@ 0 3 0 1705599244917c7b0636dd0f5f2fdce0
++   detail
++       Un trait qu'étend l'objet compagnon de `Decodable`, afin que son given `generic` soit classé
++       en dessous de chaque given déclaré dans l'objet compagnon lui-même.
+
+@ 0 1 0 0aba5334c9015ccf12cb7169a6610413
++   entry #generic
++     info
++         décode toute valeur dans sa propre forme comme elle-même : `T is Decodable in T`
+
+@ 0 2 0 1f92c778ce20e5fe071aa578f82eaa3f
++     detail
++         Le décodeur identité, de sorte que `json.as[Json]` ou `text.as[Text]` n'a besoin d'aucune
++         instance propre. Comme il se trouve dans un parent de l'objet compagnon, il est classé en
++         dessous des givens spécifiques de l'objet compagnon.
+
+@ 0 1 0 194ff3f7d8cf348f106524daec041b51
++ entry .Extractable
++   info
++       une classe de types convertissant `Self` vers un `Result`, produisant `Unset` lorsqu'elle
++       renonce
+
+@ 0 4 0 0e04257685d4d20c0951b7eb33b8d39a
++   detail
++       `Text is Extractable to Int` est une unique fonction `Text => Optional[Int]`, `#extract` ;
++       son `#unapply` est ce qu'appelle l'extracteur `As[T]`, de sorte qu'une instance est un
++       motif. Elle ne lève jamais d'erreur : une entrée qu'elle ne peut convertir produit `Unset`,
++       et le filtrage passe au cas suivant.
+
+@ 0 6 0 1259f3879484518e061d2bead3b72ebe
++       L'objet compagnon contient les conversions du texte vers chaque type primitif, chaque
++       rétrécissement entre les types numériques (chacun renonçant lorsque la valeur ne survit pas
++       à l'aller-retour), la conversion du texte vers un cas d'`enum` par son nom et d'un `Int`
++       vers un cas par son ordinal, une conversion relevée à travers `Optional`, et une passerelle
++       depuis tout `Decodable in Text` qui exécute le décodeur sous `safely`. Cette passerelle est
++       la raison pour laquelle `As[EmailAddress]` ou `As[Uuid]` fonctionnent pour tout type qui
++       peut être décodé depuis du texte.
+
+@ 0 1 0 120ab1b0428fb007010b4c859b8db7b4
++       Une instance peut en emprunter une existante :
+
+% 2 1 0 068f775d4ec116ca1f759d733b8e43bd
+
+% 3 1 0 0b6b0f0b760e57230d07eb2a16d8d2a1
+
+% 0 1 0 035909b90ccd67ea151c13bb1cab9cbe
+
+% 0 1 0 194227e2fc4d24ee142450195dbe27ec
+
+% 0 1 0 0a8722d2bd58a8d2192173456963f921
+
+% 0 1 0 1caa744938283c5e03e994997539ff37
+
+% 0 1 0 0f8a541d978a52780187be28ba9b8b0b
+
+% 0 1 0 1e55cb4ec318aa0818bebd73a2a280df
+
+% 0 1 0 0ebb44c51cf6a89b0660a84a5b7b1e37
+
+% 1 1 0 19784a7d054438bb10a7c8db1397dec4
+
+% 0 1 0 080db42da7bc15e405b077d27fe1e8a9
+
+% 1 1 0 09b7b55571385cbb0d49806872a1b581
+
+% 0 1 0 041a5fc90ebd79391834188a079b87e6
+
+@ 0 1 0 00c11e3c972d12f30656f4325518729d
++   entry .decodable
++     info
++         extrait tout type doté d'un `Decodable in Text`, en produisant `Unset` là où le décodeur
++         lève une erreur
+
+@ 0 3 0 0d32e102d42294a502deda488c06aae2
++     detail
++         La passerelle de `Decodable` vers `Extractable` : le décodeur est appliqué sous `safely`,
++         de sorte que toute erreur qu'il lève devient `Unset`. Elle rend tout type décodable depuis
++         du texte utilisable avec `As[T]`.
+
+@ 0 1 0 024523ce09dc8c85048b3386953db709
++   entry .optional
++     info
++         relève un extracteur à travers `Optional` : `Unset` reste `Unset`
+
+@ 1 1 0 057220e3f5b66f8402a5365c4412f515
++   entry .irrefutable
++     info
++         une `String` se convertit avec l'`Irrefutable` de `Text`, après conversion en `Text`
+
+@ 0 1 0 1fa974c5b613432f10608baf53ba6cb3
++   entry .textChar
++     info
++         extrait un `Char` d'un texte d'exactement un caractère
+
+@ 0 1 0 1a06799890f8af7c1e593d8bfab71623
++   entry .textByte
++     info
++         extrait un `Byte` d'un texte, en refusant un texte impossible à analyser ou hors
++         intervalle
+
+@ 0 1 0 0beff7f901fc56c4090344e299151b49
++   entry .textShort
++     info
++         extrait un `Short` d'un texte, en refusant un texte impossible à analyser ou hors
++         intervalle
+
+@ 0 1 0 0ae940c93e6cc95213f16386bf26813a
++   entry .textInt
++     info
++         extrait un `Int` d'un texte, en refusant un texte qui n'est pas un entier décimal qui
++         tient
+
+@ 0 1 0 0447babffcdc89781f3b30b608da1928
++   entry .textLong
++     info
++         extrait un `Long` d'un texte, en refusant un texte qui n'est pas un entier décimal qui
++         tient
+
+@ 0 1 0 0f1f777c319321170045cbf72f7abe9f
++   entry .textFloat
++     info
++         extrait un `Float` d'un texte, en refusant un texte qui n'est pas un nombre
+
+@ 0 1 0 13861da284be93d201961ce1f24e95b3
++   entry .textDouble
++     info
++         extrait un `Double` d'un texte, en refusant un texte qui n'est pas un nombre
+
+@ 0 1 0 1e98e68108806de8138738d7cfb6d017
++   entry .textBoolean
++     info
++         extrait un `Boolean` d'exactement `true` ou `false`, en respectant la casse
+
+@ 0 2 0 11806c72df05dc4d165fe109ed989ef4
++     detail
++         Contrairement au décodeur de `Boolean`, qui supprime les espaces, met en minuscules et
++         consulte chaque `Truth` dans la portée, `As[Boolean]` ne filtre que les deux mots exacts.
+
+@ 0 1 0 0c61815a2bdc295d1641ab633bf69729
++   entry .shortByte
++     info
++         rétrécit un `Short` en `Byte`, en refusant une valeur qui ne tient pas
+
+@ 0 1 0 1f656281f493272815a7eabab0af671f
++   entry .intByte
++     info
++         rétrécit un `Int` en `Byte`, en refusant une valeur qui ne tient pas
+
+@ 0 1 0 1c9a8ba58acbccc701a62410b8e8b6b0
++   entry .intShort
++     info
++         rétrécit un `Int` en `Short`, en refusant une valeur qui ne tient pas
+
+@ 0 1 0 08dd4e85170dbb520fa8d068d90771df
++   entry .intFloat
++     info
++         convertit un `Int` en `Float`, en refusant une valeur qu'un `Float` ne peut représenter
++         exactement
+
+@ 0 1 0 1a72b0ed1638ed331a8ba5a570054fbb
++   entry .longByte
++     info
++         rétrécit un `Long` en `Byte`, en refusant une valeur qui ne tient pas
+
+@ 0 1 0 0d9dca1459cd8f2b1607427569e88424
++   entry .longShort
++     info
++         rétrécit un `Long` en `Short`, en refusant une valeur qui ne tient pas
+
+@ 0 1 0 11fec68431cd07d6158073a2d3b918f0
++   entry .longInt
++     info
++         rétrécit un `Long` en `Int`, en refusant une valeur qui ne tient pas
+
+@ 0 1 0 07598178e979e49011d81676fe98b7ca
++   entry .longFloat
++     info
++         convertit un `Long` en `Float`, en refusant une valeur qu'un `Float` ne peut représenter
++         exactement
+
+@ 0 1 0 0f9d544ecde7547200b68016c5fe8de5
++   entry .longDouble
++     info
++         convertit un `Long` en `Double`, en refusant une valeur qu'un `Double` ne peut représenter
++         exactement
+
+@ 0 1 0 0b883d571403c5711d984cc6a6364e3c
++   entry .floatByte
++     info
++         convertit un `Float` en `Byte`, en refusant une valeur qui n'est pas un nombre entier qui
++         tient
+
+@ 0 1 0 108a5ebdc27c016507fa94e7dc451462
++   entry .floatShort
++     info
++         convertit un `Float` en `Short`, en refusant une valeur qui n'est pas un nombre entier qui
++         tient
+
+@ 0 1 0 0d5e04bcfc2ca39901a100ee9a2ead58
++   entry .floatInt
++     info
++         convertit un `Float` en `Int`, en refusant une valeur qui n'est pas un nombre entier qui
++         tient
+
+@ 0 1 0 03dda4d539511cda1dac42cad002dfb9
++   entry .floatLong
++     info
++         convertit un `Float` en `Long`, en refusant une valeur qui n'est pas un nombre entier qui
++         tient
+
+@ 0 1 0 126dc74e9ba14e8e093c420135bca6b3
++   entry .doubleByte
++     info
++         convertit un `Double` en `Byte`, en refusant une valeur qui n'est pas un nombre entier qui
++         tient
+
+@ 0 1 0 0567d855e6e5974b1724839baa8e370f
++   entry .doubleShort
++     info
++         convertit un `Double` en `Short`, en refusant une valeur qui n'est pas un nombre entier
++         qui tient
+
+@ 0 1 0 08baaa6326df300f1d4458cc0ebc8b54
++   entry .doubleInt
++     info
++         convertit un `Double` en `Int`, en refusant une valeur qui n'est pas un nombre entier qui
++         tient
+
+@ 0 1 0 0ff48111f8d3859c045bc3ed143e498d
++   entry .doubleLong
++     info
++         convertit un `Double` en `Long`, en refusant une valeur qui n'est pas un nombre entier qui
++         tient
+
+@ 0 1 0 1cda19e295d2f48f1a94ff22b8bacf07
++   entry .doubleFloat
++     info
++         convertit un `Double` en `Float`, en refusant une valeur qu'un `Float` ne peut représenter
++         exactement
+
+@ 0 1 0 0d62f0d1311d11be03fc4b789a92ae3c
++   entry .valueOf
++     info
++         extrait un cas d'`enum` d'un texte qui le nomme exactement, au moyen du `valueOf` de
++         l'énumération
+
+@ 0 3 0 03c1ebd6136cdc3a0a3f3e7253bd3ce2
++     detail
++         Ne nécessite que le `Mirror` de l'énumération, que fournit le compilateur :
++         `As[Direction]` filtre `t"North"` sans qu'aucune instance soit écrite. Le nom doit
++         correspondre exactement au nom du cas ; un cas paramétré, qui n'a pas de `valueOf`, ne
++         correspond jamais.
+
+@ 0 1 0 0d9e7c8b17ac44a2153235621198d11f
++   entry .fromOrdinal
++     info
++         extrait un cas d'`enum` d'un `Int`, par son ordinal
+
+@ 0 1 0 1b500cc6e2567b5d063c38a0b1c8d909
++     detail
++         Refuse un ordinal hors de l'intervalle de l'énumération.
+
+@ 0 1 0 050bc2f085fcfc811e40e94d37d9f4b7
++   entry #extract
++     info
++         convertit une valeur, ou produit `Unset` si elle n'y parvient pas
+
+@ 0 1 0 05df619b1f320fb401498c1183c552bf
++   entry #unapply
++     info
++         convertit une valeur en `Option`, pour une utilisation comme extracteur
+
+@ 0 1 0 0e40f143828bc6250eb2293add9b552e
++ entry .Irrefutable
++   info
++       une classe de types convertissant `Self` en un `Result` d'une manière qui ne peut échouer
+
+@ 0 5 0 17d4d97fcbf56a5406436617a527a264
++   detail
++       `Byte is Irrefutable to Int` est une unique fonction `Byte => Int`, `#unapply` ; comme
++       c'est un `unapply` sans `Option`, une instance est un motif irréfutable. L'objet compagnon
++       contient les conversions entre `String` et `Text`, l'identité, et chaque élargissement
++       entre les types numériques. C'est une `Typeclass.Pure` : une instance ne capture rien.
+
+@ 0 1 0 0d25e491362704190b80662f3cd0f86b
++       `value.as[T](irrefutable)` en applique une explicitement.
+
+% 2 1 0 1f446875b146959c04f918c2c7329a17
+
+% 3 1 0 1079b43257b38de612afa92c3336c37a
+
+% 0 1 0 0ad02bff0579145a0127ee5c57936bd3
+
+% 1 1 0 1c071e94139853821fa7a97dcb29dd4b
+
+% 1 1 0 1f6ce7810dfe8f410bf4290fb3ce2432
+
+% 1 1 0 1758979d56b8b7df087fa2296e159b28
+
+@ 0 1 0 051ac5e75abebbb80b5031118dd94d76
++   entry .stringText
++     info
++         convertit une `String` en `Text`
+
+@ 1 1 0 003e161317c5eb811927a6fbd06e260a
++   entry .irrefutable
++     info
++         une `String` se convertit avec l'`Irrefutable` de `Text`, après conversion en `Text`
+
+@ 0 1 0 1d38069b6d2809dd14c295907ada41cc
++   entry .textString
++     info
++         convertit un `Text` en `String`
+
+@ 0 1 0 156c97485f2b339c0d7369e620064a01
++   entry .ident
++     info
++         convertit toute valeur en elle-même
+
+@ 0 1 0 071e8cf0fb44f3f018cb62f7544969d3
++   entry .byteShort
++     info
++         élargit un `Byte` en `Short`
+
+@ 0 1 0 1ebdba4bd630cc831c128e67ff76c7a1
++   entry .byteInt
++     info
++         élargit un `Byte` en `Int`
+
+@ 0 1 0 0cbac1f1e7d70e3a0221f3f629c7b2a1
++   entry .byteLong
++     info
++         élargit un `Byte` en `Long`
+
+@ 0 1 0 193e6c8fbdf56f7008969d79e45f5a58
++   entry .byteFloat
++     info
++         élargit un `Byte` en `Float`
+
+@ 0 1 0 08e4d7621bd522260b987a7dcede2c5f
++   entry .byteDouble
++     info
++         élargit un `Byte` en `Double`
+
+@ 0 1 0 02777b293655677003b03814a1c44ada
++   entry .shortInt
++     info
++         élargit un `Short` en `Int`
+
+@ 0 1 0 0f8830da4df32d9c07c904330080c6ef
++   entry .shortLong
++     info
++         élargit un `Short` en `Long`
+
+@ 0 1 0 02ac43d8b93596410d3768236e413ec5
++   entry .shortFloat
++     info
++         élargit un `Short` en `Float`
+
+@ 0 1 0 1c259c6c6dd5d2fd16ce82f0c0236bfb
++   entry .shortDouble
++     info
++         élargit un `Short` en `Double`
+
+@ 0 1 0 0b5248750008003d0dbd06b3be9f64ed
++   entry .intLong
++     info
++         élargit un `Int` en `Long`
+
+@ 0 1 0 1e80b094f57bb4e7001878bf68d36213
++   entry .intDoule
++     info
++         élargit un `Int` en `Double` (le nom est mal orthographié dans le code source)
+
+@ 0 1 0 1d7adb15e315f4fa1cc6a02ad7bc1781
++   entry .floatDouble
++     info
++         élargit un `Float` en `Double`
+
+@ 0 1 0 04ae8f2b32d8ead00e03b73717f0e0cb
++   entry #unapply
++     info
++         convertit une valeur ; ne peut échouer
+
+@ 0 1 0 02d5ec233aecf1281a5e5d7b74e0952e
++   entry #contramap
++     info
++         une conversion irréfutable depuis un nouveau type, appliquant d'abord une fonction pure
+
+@ 0 1 0 0cd006d94d9b83fd0cd9dd86c64cb8b2
++ entry .Enumerable
++   info
++       la description dérivée d'une `enum` : son nom, ses cas, et la recherche par nom et par
++       ordinal
+
+@ 0 7 0 09d8387884fde96214102ca01d8a4aa3
++   detail
++       Un `Enumerable` est dérivé pour toute `enum` dont les cas sont tous des singletons, sans
++       instance à écrire : `.derived` lit les cas depuis les `values` de l'objet compagnon. Il
++       donne le `#name` de l'énumération, ses `#values` dans l'ordre de déclaration, et la
++       recherche dans les deux sens, chacune renvoyant un `Optional` plutôt que de lever une
++       erreur, puisque ni un nom ni un ordinal n'est garanti de correspondre à un cas. Les codecs
++       dérivés de chaque format l'utilisent pour nommer les cas d'une énumération, de sorte qu'ils
++       concordent tous.
+
+% 2 1 0 17ac936828b77cef1d99bd9ba7beb2e3
+
+% 3 1 0 139cfc9a8a58bc700da333a2ff7e6387
+
+% 0 1 0 04f7d1f6e7978ec51a6e6e62367a998c
+
+% 0 1 0 07c8340a8c5cf84214e2defb7d537c26
+
+% 0 1 0 0a4d36eba12d4ab2045842ce52f49da7
+
+% 0 1 0 1d5c375f2282ad1516eeea06a3198f98
+
+% 0 1 0 0db73de48733f548179c9810fb6b7754
+
+% 0 1 0 05d3051684910fbb18213351a666c61c
+
+% 0 1 0 1adc3a2c3b4fa27a0346a81225b450c0
+
+% 0 1 0 087c20e3a986fb4815ba4214426d30be
+
+% 1 1 0 045588de78f6723e06e98fc8cc7d8594
+
+@ 0 2 0 1f203ccdf021012411c33918a81cdbd6
++       La dérivation s'arrête avec _enum `T` is not a simple choice_ pour une énumération sans
++       méthode `values`, c'est-à-dire une énumération comportant un cas paramétré.
+
+% 0 1 0 145ca79242ed388e089653ac6f6cdbe5
+
+% 0 1 0 09d985b0912f82fc0c7a8b14633403b9
+
+@ 0 1 0 0743de897c7880f70e1e1c94e36194d7
++   entry .derived
++     info
++         dérive un `Enumerable` pour une `enum` de cas singletons, par macro
+
+@ 0 1 0 046e19db1ea7b4ae1572146668870bd7
++   entry .Error
++     info
++         un texte décodé comme une énumération qui ne nomme aucun de ses cas
+
+@ 0 4 0 1a94a62bb1d17b391c668ee4bafeac2e
++     detail
++         Error `↯/s.25.3`: _the specified variant (`inputLabel`) is not one of the valid variants
++         (`validVariants`) of the enumeration `sum`_. Levée par le décodeur
++         `Decodable.enumeration`.
+
+@ 0 1 0 14cd7420931c68aa08ccaf6659f43d5e
++     entry #inputLabel
++       info
++           le texte qui ne nommait aucun cas
+
+@ 0 1 0 19040d7caf6ac5b610f5107420f40ba1
++     entry #sum
++       info
++           le nom de l'énumération
+
+@ 0 1 0 01d97da508e3c9190b4a70490b28c6d5
++     entry #validVariants
++       info
++           les noms de tous les cas, tels que le décodeur les accepterait
+
+@ 0 1 0 080c2c5153ec66be1a2fec039d3a53ca
++   entry #name
++     info
++         le nom de l'énumération, ou le nom de l'un de ses cas
+
+@ 0 2 0 07ec6cdee2dfb14103784b8cb3dabbbe
++     detail
++         Sans argument, le nom du type de l'énumération tel que l'affiche le compilateur ; appliqué
++         à un cas, le nom de ce cas.
+
+@ 0 1 0 11aa236fb23cd5391e3324853a00e31f
++   entry #values
++     info
++         tous les cas de l'énumération, dans l'ordre de déclaration
+
+@ 0 1 0 1bcbae7d8e8cd7210014c2372f841a56
++   entry #value
++     info
++         le cas portant un nom donné, ou situé à un `Ordinal` donné, s'il existe
+
+@ 0 2 0 027d97ee0b528ccb1543f53b317ec021
++     detail
++         `value(t"North")` recherche un cas par son nom exact, et `value(Prim)` par sa position ;
++         chacune produit `Unset` là où rien ne correspond.
+
+@ 0 1 0 0061215f391f14111dbfdcd6ff17888c
++   entry #index
++     info
++         l'ordinal d'un cas, à partir de zéro, sous forme d'`Int`
+
+@ 0 1 0 0bb07cc37759328313c03564f9f89970
++ entry .Identifiable
++   info
++       une correspondance bidirectionnelle entre une convention de nommage et les noms des membres
++       d'un type
+
+@ 0 5 0 0d797cd66763688316ce86f452291cdb
++   detail
++       Un `Identifiable` est une paire de fonctions de texte : `#encode` convertit un nom Scala
++       dans la convention, et `#decode` effectue la conversion inverse. Le décodeur
++       `Decodable.enumeration` décode au moyen de lui avant de rechercher un cas, et signale les
++       noms valides encodés au moyen de lui, de sorte qu'un format peut lire `first_name` comme
++       `firstName`.
+
+% 2 1 0 10a46ba7773c5e000a89492938cf40e2
+
+% 3 1 0 0bdd6b4e3c30ab0713034ce34c096a7b
+
+% 0 1 0 15eb20b547aad48012e54248c30fd66f
+
+% 0 1 0 04802773760a9ac01f9b8c5d82e6bdeb
+
+% 1 1 0 1702470ab58be9960a3983e279acfedb
+
+@ 0 1 0 0d1bff48403673cc031de2604b755187
++       C'est une `Typeclass.Pure`, de sorte qu'une instance ne capture rien et peut être partagée
++       librement.
+
+@ 0 1 0 125616d46466e8191d25ecb0b9392c48
++   entry .apply
++     info
++         un `Identifiable` à partir d'une fonction d'encodage et d'une fonction de décodage
+
+@ 0 1 0 151f216d2999173008666d246d354f01
++   entry #encode
++     info
++         convertit un nom Scala dans la convention
+
+@ 0 1 0 179179d0523436400335ed1fe1a99e15
++   entry #decode
++     info
++         reconvertit un nom de la convention en nom Scala
+
+@ 0 1 0 1a5bba2902747482096dfe1685ba3da6
++ entry .Parsable
++   info
++       l'équivalent en flux de `Decodable`, qui lit `Self` directement depuis le lecteur de jetons
++       d'un format
+
+@ 0 6 0 16dfd048536cdbee0dae039023f7a901
++   detail
++       Là où un `Decodable` reçoit un arbre syntaxique déjà construit (un `Json`, un `Xml`), un
++       `Parsable` pilote le lecteur de jetons du format sur l'entrée, de sorte qu'une valeur
++       composite est construite sans arbre intermédiaire : sans allocation d'un tel arbre, sans
++       boxing, sans second parcours. `Transport` nomme le format (`Person is Parsable over Json`),
++       et le sous-trait de chaque format fixe le `#Reader` (le `Json.Parsable` de Jacinta le fixe à
++       `Json.Reader`).
+
+@ 0 5 0 021cb96a6971efe9084107d95debea26
++       Le lecteur est une capacité exclusive et à état, prêtée pour la durée de `#parse` ; rien de
++       lui ne peut être retenu dans le résultat. Les erreurs passent par le lecteur, qui porte sa
++       propre tactique, ou par une tactique que l'instance a capturée lors de sa résolution, de
++       sorte que `#parse` lui-même ne déclare aucune erreur. Les utilisateurs en écrivent rarement
++       à la main : chaque format les dérive (`derives Json.Direct`), et le package `codecs` choisit
++       quand ils sont utilisés.
+
+% 1 1 0 12b5f6bf2e8b9349154ab8947fee2c78
+
+% 1 1 0 12c690a5a6f7301f1b365aef66b68fce
+
+@ 0 1 0 064d942769277d040cee202910d850e6
++   entry #Reader
++     info
++         la capacité de lecteur de jetons du format, fixée par le sous-trait de chaque format
+
+@ 0 1 0 0ca99296fb88de5b0bbfdd28e27931d2
++   entry #parse
++     info
++         lit une valeur de `Self` depuis le lecteur
+
+@ 0 1 0 01bce77e02edac1f118067a29999386d
++ entry .Number
++   info
++       l'emplacement de `Number.Error`, levée lorsqu'un texte ne peut être décodé comme un nombre
+
+@ 0 2 0 10d7e08d2ef4fca314417c008b79c351
++   detail
++       Un objet sans autre membre que son type d'erreur.
+
+@ 0 1 0 0c4bb50f8be186051bc44515db29a644
++   entry .Error
++     info
++         un texte qui n'a pu être décodé comme un nombre, ou dont le nombre était hors intervalle
+
+@ 0 3 0 01585c571ee09c9e1a2062bf39186dc1
++     detail
++         Error `↯/s.25.1`, avec un sous-code pour sa `#reason` : _`text` is not a valid
++         `specializable` because `reason`_. Levée par les décodeurs de nombres de l'objet compagnon
++         de `Decodable`.
+
+% 2 1 0 1be13447bc9c4dd419a05c04ab2d4a42
+
+% 3 1 0 101c68c812a8f93f02e279a6cb01198e
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1b9accabb61c6934142725b4d9ded9c3
+
+% 0 1 0 14fb3b0fa5a421b41de75f12b33e47b7
+
+% 1 1 0 1de4c9131267adc8046786eb7cfb49da
+
+@ 0 1 0 08ed73cf67302ea809aa4a1446db26b7
++     entry .Reason
++       info
++           la raison pour laquelle le nombre n'a pu être décodé : `Unparseable` ou `OutOfRange`
+
+@ 0 3 0 0b2ff5ee40d3aa920c53a65a0349714e
++       detail
++           Une énumération de deux cas : `Unparseable` (sous-code 1), pour un texte qui n'est pas
++           du tout un nombre, et `OutOfRange` (sous-code 2), pour un nombre que le type cible ne
++           peut représenter.
+
+@ 0 1 0 1502d0d5237723bd1af618ebbd9d3589
++       entry #number
++         info
++             le sous-code qu'apporte la raison au numéro de l'erreur
+
+@ 0 1 0 14c6caee577f02b91c2daabde8abb162
++     entry .communicable
++       info
++           rend une `Number.Error.Reason` sous forme de proposition du message d'erreur
+
+@ 0 1 0 1f30a4922bb9810814fe12a0d88eb5ec
++     entry #text
++       info
++           le texte qui n'a pu être décodé
+
+@ 0 1 0 14d93b4c5a81e4ff0d473d005da204b9
++     entry #specializable
++       info
++           le type numérique en lequel le texte a été décodé
+
+@ 0 1 0 1c79aace520e65591e6c33510843ec72
++     entry #reason
++       info
++           la raison pour laquelle il n'a pu être décodé, sous forme de `Number.Error.Reason`
+
+@ 0 1 0 18aa1dfa97365d6d0a5f316fad4e77c7
++ entry .Truth
++   info
++       une graphie du vrai et du faux, acceptée par le décodeur de `Boolean` lorsqu'elle est dans
++       la portée
+
+@ 0 6 0 0de33de6164c99de1c4eb971ab5c0ed4
++   detail
++       Une `Truth` est une paire de mots, `#affirmative` et `#negative`. Le décodeur de `Boolean`
++       recueille chaque `Truth` dans la portée et accepte n'importe laquelle de leurs graphies,
++       après avoir supprimé les espaces du texte et l'avoir mis en minuscules, de sorte que
++       plusieurs peuvent être dans la portée ensemble. `.trueFalse`, dans cet objet compagnon, est
++       toujours trouvé ; le package `truths` ajoute `yes`/`no`, `on`/`off` et `1`/`0` par import,
++       à côté de lui plutôt qu'à sa place.
+
+% 2 1 0 1f763295fdc24cdd1a5b676b3097438e
+
+% 3 1 0 04c144829e2fe83f081083c1cba916d3
+
+% 4 1 0 0a3bd6a72c398f481df9c44ad73d643d
+
+% 0 1 0 151794df2d5bf322001700fa158b50fc
+
+% 0 1 0 1124dbb75d2d9be1004a6400f5427f11
+
+% 1 1 0 042d80cb1c98d10b09e8d32c674ca477
+
+% 0 1 0 1a3e6e88a58119be062aab94a1d38efb
+
+% 0 1 0 13ca79f151dac2c114990c791fb342c2
+
+@ 0 1 0 1d25bf9a63adf64015507a08f2505166
++   entry .trueFalse
++     info
++         la graphie `true`/`false`, toujours dans la portée par l'objet compagnon
+
+@ 0 1 0 05c07385b9e61344160130c75725f640
++   entry .Error
++     info
++         un texte qu'aucune `Truth` dans la portée ne reconnaît comme un `Boolean`
+
+@ 0 2 0 024885ff69fc1e4f08e2756706516001
++     detail
++         Error `↯/s.25.2`: _`text` is not a recognized Boolean_. Levée par le décodeur de
++         `Boolean`.
+
+@ 0 1 0 0a6d89089640957516b340308cfd36aa
++     entry #text
++       info
++           le texte, tel qu'il a été donné
+
+@ 0 1 0 06e2a7fd0918a48f0202eb04a83d0419
++   entry #affirmative
++     info
++         le mot pour `true`, en minuscules
+
+@ 0 1 0 06b254b13534937514549e33c16d181c
++   entry #negative
++     info
++         le mot pour `false`, en minuscules
+
+@ 0 1 0 044ab151516008ea138e029683b2d292
++   entry #apply
++     info
++         lit un texte comme `true` ou `false` s'il est l'un des deux mots, ou produit `Unset`
+
+@ 0 1 0 1c4a189f7e0430940aacc4ea52af7dce
++     detail
++         Compare exactement : le décodeur de `Boolean` supprime les espaces et met en minuscules
++         avant de l'appeler.
+
+@ 0 1 0 12ed1f512889a09c0b89a222386fa5ab
++ entry .truths
++   info
++       d'autres graphies d'un `Boolean`, chacune acceptée à côté de `true`/`false` une fois
++       importée
+
+@ 0 4 0 17eeddf68bbca2eb0008a0be912906e8
++   detail
++       Un package de choix dont les givens s'importent par leur nom, puisque `import truths.*`
++       n'importe pas les givens. Contrairement à la plupart des packages de choix, l'import est
++       cumulatif : le décodeur de `Boolean` recueille chaque `Truth` dans la portée, de sorte que
++       chaque import ajoute une graphie.
+
+% 2 1 0 1db39401a4f7118a06b7aef0bfc61db0
+
+% 3 1 0 13ce7595d3bf3b4a003ce8ec45f74bb8
+
+% 4 1 0 0a570789d1f9a7e70957d5fffe424d7c
+
+% 0 1 0 095d08b9debd08d806fef95026a94d05
+
+% 0 1 0 163bc075406b1e9018842272303dbf26
+
+% 1 1 0 1b71a7e84755160a19c1a914cfb6d6f6
+
+% 0 1 0 147f2ca999da4a4209fc6e103cf50ab6
+
+@ 0 1 0 182a11b45f66d39b1c29849d4dbc21ea
++   entry .yesNoTruth
++     info
++         accepte `yes` et `no` comme `Boolean`
+
+@ 0 1 0 1ec96ad793e36052005a85cd4197fedf
++   entry .onOffTruth
++     info
++         accepte `on` et `off` comme `Boolean`
+
+@ 0 1 0 014ff7707da1749c02a862360069f658
++   entry .oneZeroTruth
++     info
++         accepte `1` et `0` comme `Boolean`
+
+@ 0 1 0 1fe5b45965fe7d730ae065b8eb45912a
++ entry .Codecs
++   info
++       le mode contextuel qui choisit entre les codecs dérivés et directs d'un format
+
+@ 0 8 0 0de42ea75f8264731e800bc8becf2613
++   detail
++       Chaque format doté de codecs générés (« directs ») offre deux voies vers une valeur typée :
++       la voie dérivée, qui construit l'arbre syntaxique du format et le décode (ou encode vers
++       lui), et la voie directe, qui pilote le lecteur de jetons ou l'afficheur du format
++       directement vers la valeur ou à partir d'elle. L'objet compagnon d'un format apporte des
++       givens conditionnés à l'un de ces modes, de sorte qu'un seul import depuis le package
++       `codecs` choisit la voie pour tous les formats à la fois. Si aucun n'est dans la portée, un
++       type prend la voie directe exactement lorsqu'il a sa propre instance directe (un given
++       explicite, ou `derives`), et la voie dérivée sinon.
+
+@ 0 2 0 1549b958197863e9145f755aabc1ec71
++       Les résultats sont les mêmes sur l'une ou l'autre voie ; seules diffèrent la vitesse et les
++       positions dans les diagnostics d'erreur.
+
+% 0 1 0 161310760b33b0b5027589f7ae117d2c
+
+% 1 1 0 0fce97824206fe4f059cfd21fe86cf27
+
+@ 0 1 0 070571173f37b34f19efb7a30c2cd42d
++   entry .Direct
++     info
++         le mode qui prend un codec généré partout où un type peut être inliné
+
+@ 0 1 0 1caef432a48da84c0c134bfae5e6b6fe
++   entry .Derived
++     info
++         le mode qui prend le codec dérivé, même face à une instance directe
+
+@ 0 1 0 08d6a79e332799500ce3d39c16cfa8dd
++   entry .Strict
++     info
++         le mode qui prend les codecs générés, avec une erreur de compilation là où un type n'en a
++         pas
+
+@ 0 3 0 15fb710419c925311433052c429de10f
++     detail
++         Un `Strict` est un `Direct`, de sorte que les instances générées d'un format s'appliquent
++         sous les deux ; la rigueur est ajoutée aux points d'entrée (`read[Play in F]`,
++         `in[Text over F]`, `in[Data over F]`), qu'un format conditionne avec `.strictFailure`.
+
+@ 0 1 0 11d195d1ddbb06de15757a29cb085712
++   entry .strictFailure
++     info
++         l'erreur de compilation que signale un format sous `codecs.strict` pour un type sans codec
++         direct
+
+@ 0 4 0 19066fbee19f03071afb892640ca3499
++     detail
++         Une macro qui interrompt la compilation avec _`format`: `T` has no direct codec, and
++         `codecs.strict` does not take the derived one_. Elle est levée depuis un given après que
++         ce given a été sélectionné, de sorte qu'elle est l'issue de la recherche plutôt qu'un
++         candidat en échec que la recherche pourrait ignorer. Pour les auteurs de formats.
+
+@ 0 1 0 0a54052477f669f406532b4a1edc8099
++ entry .codecs
++   info
++       les trois modes de codecs, chacun choisissant par import une voie pour tous les formats à la
++       fois
+
+@ 0 4 0 10f07887c2ff25c005e20e846273cb3f
++   detail
++       Un package de choix dont les givens s'importent par leur nom, puisque `import codecs.*`
++       n'importe pas les givens. Les modes sont des alternatives : en importer deux à la fois rend
++       leurs givens ambigus partout où les deux s'appliqueraient.
+
+% 2 1 0 18caec70af55971d19a1476cbd158081
+
+% 3 1 0 0fa68b6c371e66cc0ae71f8aa4e76a6e
+
+% 0 1 0 0ebe51ab68611d87121007de000a5ab5
+
+% 1 1 0 108b47b7dabf996810445e03678a3a21
+
+@ 0 3 0 0405daf87bd3f69d1d124c8355bf14f3
++       `import codecs.derived` prend les codecs dérivés même face à une instance directe, et
++       `import codecs.strict` prend les codecs générés avec une erreur de compilation, nommant le
++       type, partout où la voie dérivée serait sinon prise silencieusement.
+
+% 1 1 0 0429a1c3d9114fcd15811370b1c226fd
+
+@ 0 1 0 1aea5aef4a36193d08322e66cf880015
++   entry .direct
++     info
++         choisit les codecs générés partout où un type peut être inliné, pour tous les formats
+
+@ 0 1 0 14368544a9d36c871f21405ebcffdafa
++   entry .derived
++     info
++         choisit les codecs dérivés, même là où une instance directe est dans la portée
+
+@ 0 1 0 094c5d87b9f2fec30c1adbca492406d6
++   entry .strict
++     info
++         choisit les codecs générés, et fait d'un type qui n'en a pas une erreur de compilation
+
+@ 0 1 0 0dcea2174f0c852710c1dddb48fdc065
++ entry .internal
++   info
++       les implémentations des macros derrière `Enumerable.derived` et `Codecs.strictFailure`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 2 0 002ac494f94916bc0806ccde16a7cc4b
++   detail
++       Pas destiné à un usage direct.
+
+@ 0 1 0 029187d63c1c688208917f4ade9ce797
++   entry .strictFailure
++     info
++         la macro derrière `Codecs.strictFailure`
+
+@ 0 1 0 16af7580394ea28d17bd2ba2d3f5e133
++   entry .enumerable
++     info
++         la macro derrière `Enumerable.derived`

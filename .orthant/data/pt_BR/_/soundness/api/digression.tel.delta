@@ -1,0 +1,755 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c16ea87ef318b710ee30c861541aa4d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c31a9c8bd6149e7132335d0f3930e81
++ info   stack traces como valores imutáveis com demangle; posições de pontos de chamada; nomes de classe validados
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1bd56b2fb789f82e08a09a8e75b90e52
++     _Digression_ transforma a visão que a JVM tem de uma falha em valores que um programa pode
++     inspecionar e renderizar. Um `StackTrace` é capturado de qualquer `Throwable` com
++     `stackTrace`: sua classe de exceção, sua mensagem, uma lista de `StackTrace.Frame`s e sua
++     causa como outro `StackTrace`. Os nomes de classe e de método de cada frame passam por
++     **demangle**, da codificação do compilador para o Scala que os produziu — `$plus` se torna
++     `+`, `$anonfun$3` se torna `λ₃`, `<init>` se torna `ⲛ` — e um `StackTrace.Resolver`, quando
++     importado, mapeia cada frame de volta para a definição no código-fonte de onde ele veio.
+
+% 2 1 0 16b510f0c8d1186d15a4235716969abd
+
+% 3 1 0 09ca52a168da48c404f62f234e380f68
+
+% 0 1 0 1f2ae059e1f4bd9a1aca20f622222eac
+
+% 0 1 0 1d84d59c97c154941fa68606178bb4a4
+
+% 0 1 0 1359acc6773ce3261f69c6800f6945df
+
+% 0 1 0 18647f0779e2dec71991e6c2780831f0
+
+% 0 1 0 13b48802a4aabb6d08281127041994a9
+
+% 1 1 0 15ec8af62d51001501d3e724c157b0e5
+
+@ 0 6 0 048231e3471c69421606ffb26b450178
++     Ao lado dele há duas pequenas ferramentas que também descrevem código em vez de executá-lo:
++     um `Codepoint`, o arquivo-fonte e a linha de um ponto de chamada, capturado como given onde
++     quer que um método peça um; e um `Fqcn`, um nome de classe totalmente qualificado validado
++     segundo as regras da JVM, escrito literalmente com `fqcn"…"`. `Smap` analisa os mapas de
++     código-fonte JSR-45 que um classfile carrega para código expandido inline, que é como um
++     frame descobre onde suas linhas expandidas inline foram escritas.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     A biblioteca tem dois source sets:
+
+@ 0 7 0 108fc1535f9a57f306a0a2a40eebd708
++     - `digression.core` — `StackTrace`, `Codepoint`, `Fqcn`, `Smap`, `stackTrace`, `fqcn"…"` e
++       `idempotent`, com renderizações em texto puro (`Showable` e `Communicable`). Ele não lê
++       arquivos, então compila para todas as plataformas; o `StackTrace.Resolver` padrão não faz
++       nada, e o resolvedor que lê TASTy para encontrar o código-fonte de cada frame é
++       `stackResolutions.tastyStackResolution`, no hyperbole.
++     - `digression.ansi` — `StackTracePalette` e o pacote `teletypeables`: renderizações
++       coloridas e tabuladas para terminal de um stack trace, um frame, um método e uma exceção.
+
+@ 0 3 0 18ab8b9af52dbe7d0a272bb91eafb0cb
++     Tudo é exportado para o guarda-chuva `soundness`, e o pacote de escolhas `teletypeables` se
++     funde com o do próprio guarda-chuva. Seus givens são importados pelo nome, já que `import
++     teletypeables.*` não importa givens:
+
+% 2 1 0 190b8677a4efa9350efc6b76e8e51f95
+
+% 3 1 0 179ab22dc5a336450caac8591c142fc9
+
+% 0 1 0 19de83050add395b1c3e973740e6e8e4
+
+% 0 1 0 15c3bd29db4cff9e063cc6ce44c7ab7b
+
+% 0 1 0 06c460ffead2c63b1d387a3876843f1f
+
+% 1 1 0 1c2b1005279baa911d1e2844f851dd10
+
+% 0 1 0 0139ef97e07e3e7c007739de9a764db0
+
+% 0 1 0 0ab956b5e26509b10ecfee1ad8375317
+
+% 0 1 0 09f4e53d48363bd4183838ce63c009d7
+
+% 0 1 0 0878906e37bf145b11b3a6293bf7b01f
+
+% 0 1 0 16f60eb84fe8d57f1b02b30629b75bc1
+
+@ 0 7 0 0cb58322323a833e1850be9c09763678
++ entry .stackTrace   o stack trace de um `Throwable`, como um valor `StackTrace`, resolvido pelo resolvedor em escopo
++     Uma extensão em `Throwable`: `error.stackTrace` é `StackTrace(error)`, com cada frame passado
++     pelo `StackTrace.Resolver` no escopo *de quem chama*. Sem nenhum importado, aplica-se o
++     `StackTrace.Resolver.none` do companheiro, e os frames carregam apenas seus nomes após o
++     demangle; importar `stackResolutions.tastyStackResolution` (do hyperbole) faz com que também
++     carreguem suas definições no código-fonte. O resolvedor é obtido aqui, e não mais fundo,
++     porque um resolvedor convocado dentro de `StackTrace` só encontraria o padrão.
+
+% 2 1 0 04ccb9694ee11ded01f75859caf09271
+
+% 3 1 0 1328a2590cbf1a270b915b1818c5aade
+
+% 0 1 0 0107120b4fe1394d0ba352dd7387250c
+
+% 0 1 0 1c15d17075ef37a71e006eb85147d3ed
+
+% 1 1 0 031ced9e5692fd6b108f8ebe1cb79748
+
+@ 0 5 0 0f224f7b29644e6203f9efb04c64ed10
++ entry .fqcn   o interpolador `fqcn"…"`: um nome de classe totalmente qualificado, validado enquanto o código compila
++     `fqcn"com.example.Main"` é um `Fqcn`, verificado em tempo de compilação pelas mesmas regras
++     de `Fqcn(text)`: cada segmento não vazio, feito de letras ASCII, dígitos, `_` e `$`, sem
++     começar com um dígito, e sem ser uma palavra-chave do Java. Um nome que viola uma regra é um
++     erro de compilação que nomeia o motivo. O literal não aceita substituições.
+
+% 2 1 0 040ed4e97a52393909b3abcd1a46fc8a
+
+% 3 1 0 0444e83ec5f3b5e21638586a6f9dc144
+
+% 0 1 0 0e3a43ae954e1b7d0b5203ba51595646
+
+% 0 1 0 0beaf15581bea048091daf223c15ccca
+
+% 1 1 0 09965581b63e6b5508d15e79042c04e2
+
+@ 0 6 0 0ffcf609b5d660be1fa3bb0965916bed
++ entry .idempotent   executa um bloco no máximo uma vez por ponto de chamada durante a vida do programa
++     `idempotent { … }` recebe o `Codepoint` de seu ponto de chamada, capturado automaticamente, e
++     executa o bloco na primeira vez que a execução chega a esse ponto; toda visita posterior não
++     faz nada. Serve para um aviso que deve ser impresso uma vez, ou para uma inicialização única
++     escrita inline. O registro é global e thread-safe, e duas chamadas em linhas diferentes são
++     pontos distintos.
+
+% 2 1 0 1af7b433408edfbc0634084f079d9f53
+
+% 3 1 0 15c2c475daf9195301f4be2175990eb0
+
+% 0 1 0 0ed797afa8f857c807defbd6bf522be2
+
+% 0 1 0 1d158225ce9f48931c28b9ae72a47c8b
+
+% 0 1 0 1fd2ac2ab040bf0b149d3a836afcae0b
+
+% 1 1 0 06dc1bb4b6cc96e1036714191da33eba
+
+@ 0 1 0 1203c319f4e55f230d9be026bf371627
++ entry .Codepoint   o arquivo-fonte e a linha de um ponto de chamada, capturados automaticamente como given
+
+% 1 1 0 17ec35d16dd65bb81eff2f9a8b0a637c
+
+@ 0 4 0 0fff07c9db219ccc1dafaab56448ef95
++       Um método que recebe `(using Codepoint)` recebe a posição do código que o chamou, sem que
++       nada seja passado à mão: o inline given `.default` do companheiro é uma macro que se
++       expande, em cada ponto de chamada, para o caminho do código-fonte e a linha desse ponto. É
++       assim que logs, testes e caches sabem de onde foram chamados.
+
+% 2 1 0 02cf88a1c6a563670e7f25baf7b82ba7
+
+% 3 1 0 15a1ab23d4617eaa0303c55f17461a9d
+
+% 0 1 0 15ae4f0676383c111cbd967d4e4f7ecc
+
+% 0 1 0 1321ca1035834bd6045f044b6b92e5cb
+
+% 0 1 0 0a3441f26f2eb3c4139779ca6e63241f
+
+% 1 1 0 0b4dfbd2d12612bd0c6cc2eb5876767e
+
+@ 0 7 0 12e731cbe420b8d207f84c01da7b8c1d
++       Um `Codepoint` é uma case class, de modo que dois são iguais quando nomeiam o mesmo arquivo
++       e a mesma linha, que é como `idempotent` reconhece um ponto. Ele é `Findable`, de modo que
++       pode ser convocado como valor contextual.
++   entry .default   a posição do ponto de chamada, como a macro a encontra onde o given é convocado
++   entry #source   o caminho completo do arquivo-fonte, como o compilador o viu
++   entry #line   o número da linha, contado a partir de 1
++   entry #text   o último segmento do caminho do arquivo e a linha, como `app.scala:42`
+
+@ 0 1 0 10ac0893d0638c64144a5ebcb79c9a5c
++ entry .Fqcn   um nome de classe da JVM totalmente qualificado: segmentos separados por pontos, cada um válido, pelo menos um
+
+% 1 1 0 1c8d64be3fb90f490d1527bd121d255a
+
+@ 0 5 0 16d58c022b8746e70275c6d7e85e5041
++       Um `Fqcn` é um nome de classe que poderia pelo menos nomear uma classe: cada uma de suas
++       `#parts` é não vazia, feita de letras ASCII, dígitos, `_` e `$`, não começa com um dígito
++       e não é uma palavra-chave do Java, e há pelo menos uma — o tipo o diz, e é isso que torna
++       `#className` e `#packageName` totais. Ele é criado por `Fqcn(text)`, que lança
++       `Fqcn.Error`, por `fqcn"…"` em tempo de compilação, ou decodificado a partir de texto com
++       `as[Fqcn]`.
+
+% 2 1 0 02ebc3be2d3e80c81238704df04b589c
+
+% 3 1 0 02240f0ffa0d271e10d5d6cf174ebae5
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0489b5ecbd9def56065e591ef4056489
+
+% 0 1 0 05968fa429ab0e571e6e74bddb35d857
+
+% 0 1 0 022a11692ca689971fa107852c2299be
+
+% 0 1 0 086b61a2a3e7538e12839865072dc24d
+
+% 0 1 0 1f447d4f19633b9e1a62cfa5d5b2ad79
+
+% 1 1 0 03aee7f6a0186f6f06d1522d4d637d7b
+
+@ 0 2 0 187ffd5dab2ef98d0a1bdbd1962d2193
++       Onde quer que um nome de classe circule — o `Main-Class` de um manifesto, uma busca
++       reflexiva, os argumentos de um launcher — um `Fqcn` carrega a garantia de que ele é bem
++       formado.
+
+% 0 1 0 123979d593f6a6b700cdf6110cca2ae4
+
+@ 0 12 0 123e3f7ddeb9fe151df64e5ac1f8dccd
++   entry .apply   analisa e valida um nome de classe, lançando `Fqcn.Error` para a primeira regra que ele viola
++       Divide o texto em `.` e verifica cada segmento, lançando por meio da `Tactic[Fqcn.Error]`
++       em escopo: `EmptyName` para um segmento vazio (`com..Main`), `JavaKeyword` para um como
++       `class`, `InvalidChar` para um caractere fora do conjunto permitido, e `InvalidStart` para
++       um dígito inicial.
++   entry .unsafeFrom   um nome de classe a partir de texto que já se sabe ser válido, restrito por `Unsafe`
++       Aquilo em que `fqcn"…"` se expande: o nome foi validado enquanto o código compilava, então
++       a nova análise não pode falhar, e o token apagado `Unsafe` marca que quem chama se
++       responsabiliza por ele.
++   entry .valid   se um caractere pode aparecer em um segmento: uma letra ASCII, um dígito, `_` ou `$`
++   entry .decodable   decodifica texto como um `Fqcn`, lançando `Fqcn.Error` por meio da tática que captura
++       Precisa de uma `Tactic[Fqcn.Error]` onde é convocado, e a retém; `t"…".as[Fqcn]` é
+
+% 0 1 0 026b79860084067a14f8b4dd56fab250
+
+@ 0 2 0 137c9484f4eb216d0c4d04e4614770b5
++   entry .encodable   codifica um `Fqcn` como seu texto com pontos
++   entry .Error   lançado quando o texto não é um nome de classe válido: um segmento vazio, uma palavra-chave ou um caractere inválido
+
+% 1 1 0 1c27792451539dc914b7a2d32ec0d8e6
+
+@ 0 3 0 07bfcadb4b27db360b6c900d1146a7f5
++         Erro `↯/s.63.1`: _the class name `name` is not valid because `reason`_. Lançado por
++         `Fqcn.apply` e ao decodificar texto `as[Fqcn]`; `fqcn"…"` relata os mesmos motivos como
++         um erro de compilação.
+
+% 2 1 0 188427309c9f922a142ac1d9bb68ab99
+
+% 3 1 0 057f4a8eec2809ae0057e2a82f54a383
+
+% 0 1 0 00ad3583ded003390195d673ae7cb290
+
+% 0 1 0 1787b25d11249e750d8eafd6f8eb5683
+
+% 1 1 0 1b9ef6dc2c1a2c7a0abb278a8f949a2c
+
+@ 0 1 0 168421f4d815bb1902eae25bac50c772
++     entry .Reason   por que um nome de classe é inválido: `InvalidChar`, `InvalidStart`, `EmptyName` ou `JavaKeyword`
+
+% 1 1 0 011d7dba48610cfd15cf1c5026ecae3c
+
+@ 0 1 0 0da1a2e50d9c6099004d1f0518c3c4f7
++           Um enum de quatro casos numerados:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  Caso
++           column  Código
++           column  Mensagem
++           column  Nota
+
+% 0 1 0 0ab86642202331a21bff6c855e809da0
+
+@ 0 1 0 0c1d52efc93f88830673bf7447b3d5bc
++           row  `InvalidStart(char)`  2  _a package name may not start with the character `char`_  um dígito
+
+% 0 1 0 0781cea665c8e6e91bc5c395c1b6f286
+
+% 0 1 0 01d361fb5c638e3709f0268fb0631515
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 8 0 1663d6649d2891be18173230f6a6021e
++       entry #number   o número do motivo, de `1` a `4`
++     entry .communicable   renderiza cada `Fqcn.Error.Reason` como uma mensagem
++     entry #name   o texto que não era um nome de classe válido
++     entry #reason   por que ele não era válido
++   entry #parts   os segmentos do nome, em ordem, tipados como não vazios
++   entry #text   o nome como texto com pontos: `com.example.Main`
++   entry #className   o último segmento: o nome simples da classe
++   entry #packageName   todos os segmentos exceto o último, com pontos: o pacote, ou vazio para o pacote padrão
+
+@ 0 1 0 122c95cd18d52e301d4f121703c12148
++ entry .StackTrace   um stack trace capturado como valor: classe de exceção, mensagem, frames e causa
+
+% 1 1 0 0e0ee92d78919ee20221190a1d71a470
+
+@ 0 5 0 15be00abc15871510290a84cf47fc603
++       Um `StackTrace` contém o que um `Throwable` diz sobre onde foi lançado, com demangle e
++       imutável: o pacote de sua exceção (`#component`) e o nome simples da classe
++       (`#className`), sua `#message`, seus `#frames` do topo da pilha para baixo, e sua `#cause`
++       como outro `StackTrace`. A mensagem de um `Error` do Soundness é mantida como a `Message`
++       estruturada com que ele foi lançado; a de qualquer outra exceção é seu texto.
+
+% 2 1 0 1681e6a49d975d0c0a9891bd8fc09c13
+
+% 3 1 0 0ac5123e3b91fd8908569e3bb5a3ba09
+
+% 0 1 0 1ca6bfc98ce20bbd000c00751e889dbe
+
+% 0 1 0 1afa58e367a6766e039ddea930b72a26
+
+% 0 1 0 1e275aa757e5ec42068ac286a2399b68
+
+% 0 1 0 0f7261dfe946138a198c039c7bb12b14
+
+% 0 1 0 17fbecbb1b359fa70914083fd7ea48f8
+
+% 1 1 0 00a605b305cb703c03c4c498199302d4
+
+@ 0 4 0 05c8384c1bddde5b12a217936808a3fd
++       Os nomes dos frames são reescritos por `.rewrite`, cujos glifos `.legend` explica. Cada
++       frame passa pelo `StackTrace.Resolver` que quem chama tem em escopo, o qual por padrão não
++       faz nada; um que lê o TASTy do compilador dá a cada frame um `Frame.Source`, a definição de
++       onde ele veio.
+
+@ 0 4 0 0a98373feeec7ff213be51e4dddb0e23
++       Um stack trace é renderizado como texto puro alinhado com `show` (`.showable`), como uma
++       mensagem (`.communicable`) e, com o componente `digression.ansi`, em cores com `teletype`,
++       por meio de `teletypeables.stackTraceTeletype`. Se os próprios erros do Soundness capturam
++       um stack trace é decidido pelo given `Diagnostics` em escopo.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1adcbb25415767e508a823d23857fb5c
++         label Capturado, não resolvido
+
+% 1 1 0 03dee5457a81b84407306fc43ab6e321
+
+% 2 1 0 1e35b6e28c64e2020aac28497bbfd685
+
+% 2 1 0 0970633f648d363d0247f50d3572c611
+
+% 0 1 0 0c1d061fec3f141d0aa9661d3fa2c53d
+
+% 0 1 0 18a12ef0084d926e1308c71ac3d12fe2
+
+% 1 1 0 165387772e7726fb1549f465b564ca2b
+
+@ 0 1 0 1aa0fffdae239a491c478b32a1872ef6
++         label Resolvido por meio do TASTy
+
+% 1 1 0 03fd9183e95a20a60e8eaec7f2416a81
+
+% 2 1 0 13aa49569ca8d724169d95a5eadabce4
+
+% 0 1 0 1568baf2c53444f81b89d3508eef5586
+
+% 0 1 0 19e5a642d4befcc50f034187f2948dc0
+
+% 0 1 0 1109de1a9f4c73ae071c263fedc28828
+
+% 2 1 0 1bf65ae89eb70d3b18f6b344d6224e47
+
+% 0 1 0 1e1bc03a1230273b16398ab3e0733f89
+
+% 0 1 0 0cc5227c0a2ce97c00e083d833faabd2
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 0 1 0 0eb64f21f1c32b12165ee9136094c130
+
+% 0 1 0 0c2aeae04db353c10ba3b9d36601413d
+
+% 0 1 0 0e76e8365c21c39414c9014550297ae6
+
+% 0 1 0 181d2143e6ab29a90d441f28075a3c88
+
+@ 0 16 0 08f06ca1512ceebe05cb818500fc9a11
++   entry .apply   captura o stack trace de um `Throwable`, resolvendo cada frame com o `Resolver` dado
++       `StackTrace(exception)` lê os `StackTraceElement`s do throwable, aplica demangle a cada
++       nome de classe e de método com `.rewrite`, mantém os nomes compilados como
++       `Frame#jvmClass` e `Frame#jvmMethod`, e passa cada frame pelo resolvedor. Um nome de
++       arquivo ausente é `———` e uma linha ausente é `Unset`. A causa é capturada por sua vez. A
++       extensão `stackTrace` é a forma habitual de entrada.
++   entry .rewrite   aplica demangle a um nome de classe ou de método da JVM, em direção à sua forma Scala, com glifos compactos para as partes sintéticas
++       Os operadores recuperam seus símbolos (`$plus$plus` é `++`), os escapes `$uXXXX` se tornam
++       seus caracteres, e os marcadores sintéticos do compilador, `.Marker.all`, se tornam glifos,
++       listados em `.legend`: `λ` uma lambda, `Λ` uma lambda adaptada, `α` uma classe anônima,
++       `ⲛ` um construtor, `ι` um inicializador, `ℓ` um valor lazy, `↑` um acessor super, `⇢`
++       outro acessor, `≔` um setter de trait, `⊢` um método de extensão, `∂` um método direto,
++       `δ` um argumento padrão, `⊡` um corpo inline retido, `⊙` uma referência externa, `Σ` um
++       método especializado com sua assinatura, com qualquer número seguinte em subscrito. Uma
++       module class `globe.Play$` se torna `globe.ΞPlay` e a classe de um package object é
++       delimitada por `⁅…⁆`. Com `method = true`, o resultado termina em `()` e `$` separa como
++       `.`.
+
+% 2 1 0 10bcf50cfc36eb841e8198c4696aeeb1
+
+% 3 1 0 0c55f84ca5a6311e130c71405dda567d
+
+% 0 1 0 009a6aa595fcbcbc08f37d62993ae22d
+
+% 0 1 0 1c8e188adc1fc7f603f8b630e4153c3d
+
+% 0 1 0 12a218b58c4748b71e5038fd9f3660e3
+
+% 0 1 0 1408d2541b5a0d47185699557e91ad3a
+
+% 1 1 0 1511cfdee0294d1910e3a9913eb38cad
+
+@ 0 20 0 0da2170b77f98f380e5f4aa66d4d6f27
++   entry .Marker   um nome que o compilador cria depois que os nomes do próprio programa estão fixados, e seu glifo
++       Cada `Marker` tem o texto `jvm` que o compilador escreve (`$anonfun`, `<init>`,
++       `$lzyINIT`), o `glyph` com que é exibido, seu `meaning` para a legenda, e o `Frame.Kind`
++       que se sabe ser um nome de método que o carrega, onde o marcador decide isso. `Marker.all`
++       os lista na ordem em que `.rewrite` os tenta, conforme o `NameKinds` e o `StdNames` do
++       compilador os definem; `Marker.operators` emparelha cada caractere de operador com sua
++       codificação. `.rewrite` lê a tabela, `.legend` é derivado dela, e o `StackResolver.hint` do
++       hyperbole classifica frames por ela, de modo que os três não podem divergir.
++   entry .legend   o que cada glifo de um nome após o demangle significa, de glifo para descrição, para renderizar ao lado de um stack trace
++       Um `Map[Text, Text]` de cada glifo que `.rewrite` produz para uma descrição curta, derivado
++       de `.Marker.all`: `λ` é _lambda_, `ⲛ` _constructor_, `δ` _default argument_, `⁅⁆`
++       _package file_, e assim por diante. Um número após um glifo é a própria numeração do
++       compilador, em subscrito.
++   entry .showable   renderiza um stack trace como texto puro: a exceção, depois uma linha `at` alinhada por frame, depois suas causas
++       Cada linha de frame tem a classe e o método, preenchidos para que se alinhem, depois o
++       arquivo e a linha; a linha do código-fonte citada de um frame resolvido vem depois dela, e
++       cada nível de expansão inline que o SMAP de um frame registrou é uma linha `↳ inlined from`
++       abaixo dela, a mais interna primeiro. Uma causa vem depois de `caused by:`.
++   entry .communicable   renderiza um stack trace como mensagem, como `.showable` faz, com espaços não separáveis para o alinhamento
++   entry .Method   um nome de classe e um nome de método após o demangle, como um frame os registra
+
+% 1 1 0 137caaa2520f63df060303fc5801c3e7
+
+@ 0 7 0 044cd7753bac76420122cc2350924a7f
++         Ambos os nomes já foram reescritos por `StackTrace.rewrite`: `className` tem o estilo
++         `globe.ΞPlay`, e `method` termina em `()`.
++     entry #className   o nome de classe após o demangle, com seu pacote
++     entry #method   o nome de método após o demangle
++     entry #cls   o último segmento do nome de classe
++     entry #prefix   o nome de classe sem seu último segmento: seu pacote e as classes que o envolvem
++   entry .Frame   um frame de um stack trace: seu método, arquivo e linha, seus nomes compilados, e seu código-fonte se resolvido
+
+% 1 1 0 1618d39887070e801427e1c5a561e296
+
+@ 0 4 0 0f216d86fc56f09e0dc5b1885e254f65
++         Um frame registra seu `#method` após o demangle, o `#file` e a `#line` que relata, se é
++         `#native`, e os nomes compilados `#jvmClass` e `#jvmMethod` a partir dos quais foi
++         construído, de que um resolvedor precisa. Um resolvedor pode acrescentar a definição
++         `#source` de onde ele veio e as origens `#inlined` de sua linha.
+
+@ 0 3 0 1cfc103db3bd19f810757acf508788ee
++         `#displayClass` e `#displayMethod` são o que um renderizador exibe: os nomes do
++         código-fonte onde o frame está resolvido e os nomes após o demangle onde não está, de
++         modo que nenhum renderizador precisa de um desvio próprio.
+
+% 2 1 0 1f2235a8cd74e2b10231649e14abcd55
+
+% 3 1 0 1aaf6fbed281d7c502a9ce0ae0be1bb1
+
+% 0 1 0 1efa75521e6af85c1be0e7ddf06e94a5
+
+% 0 1 0 077699c766affba4055a0c2920e5fa4a
+
+% 0 1 0 0d9bc9d6bcda52751731d11bbf71c192
+
+% 0 1 0 0fbb800a6303de6a0d4e5f7ba75b2de3
+
+% 0 1 0 1b3696e05a10e97d0ae2d1a4a5a6f2f2
+
+% 0 1 0 066b45f63d7fcb2006881cd9c0485a18
+
+% 0 1 0 0d579c73cab06d6c03cb5b3ea75d1598
+
+% 0 1 0 1f4d1030481eb4ac1ef05d10d8e5dbef
+
+% 0 1 0 05b758b944ae03861efa822c05e01812
+
+% 1 1 0 0e67c25d8599c0e612854871c74fbe3d
+
+@ 0 1 0 0d09d6182d480ca40c5452b3a547a41a
++     entry .Kind   o que um frame se revelou ser depois de resolvido: um método, uma lambda, … ou encanamento do compilador
+
+% 1 1 0 0b07cf02fcc38c4b1d9a082ad808d689
+
+@ 0 7 0 0356c63caf939e50192b133c09e298a1
++           Um enum dos tipos de definição a partir dos quais um frame pode ser compilado:
++           `Method`, `Lambda`, `Value`, `Class`, `Constructor`, `Extension` e `Default` (um
++           argumento padrão) são escritos no código-fonte; `Bridge`, `Forwarder`, `Initializer`,
++           `Specialized` e `Synthetic` são sintetizados pelo compilador, e `#plumbing` o diz, de
++           modo que um renderizador pode atenuá-los ou omiti-los.
++       entry #plumbing   se o tipo é um que o compilador sintetizou: uma ponte, um encaminhador, um inicializador, …
++     entry .Source   a definição no código-fonte a partir da qual um frame foi compilado, como um resolvedor a encontra
+
+% 1 1 0 1e05f21689e1095a15a92462689678cd
+
+@ 0 11 0 0aa7a54276a2d2b31aa6dd81a9856977
++           A definição de um frame resolvido: o `#path` completo de seu arquivo-fonte (onde um
++           stack trace registra apenas o último segmento), seu `#owner`, a cadeia de definições
++           que o envolvem, seu próprio `#name` no código-fonte, seu `#kind` e, opcionalmente, o
++           `#code` da linha.
++       entry #path   o caminho completo do arquivo-fonte
++       entry #owner   a cadeia de definições que o envolvem, com pontos: `globe.Play.stage`
++       entry #name   o próprio nome da definição no código-fonte
++       entry #kind   que tipo de definição ela é, como um `StackTrace.Frame.Kind`
++       entry #code   a linha do código-fonte, se o resolvedor a leu, ou `Unset`
++       entry #definition   o proprietário e o nome unidos com `.`, ou apenas o nome se não houver proprietário
++     entry .Inlined   um nível de expansão inline que a linha de um frame representa: o arquivo e a linha em que foi escrito
+
+% 1 1 0 0bf0ed37545fb93f085c0a855d9d14cc
+
+@ 0 21 0 0cf9e13b93dd856d1a371cca70124b6e
++           Quando o SMAP de um classfile registra que a linha de um frame foi expandida inline a
++           partir de outro lugar, o frame tem um `Inlined` por nível, o mais interno primeiro: o
++           nome do `#file`, seu `#path` completo e a `#line` e, onde um resolvedor a encontrou, a
++           definição `#source` em que a posição se encontra — o próprio método inline.
++       entry #file   o nome do arquivo-fonte, o último segmento de seu caminho
++       entry #path   o caminho completo do arquivo-fonte
++       entry #line   a linha em que o código expandido inline foi escrito
++       entry #source   a definição em que a posição se encontra, se um resolvedor a encontrou
++     entry #method   os nomes de classe e de método do frame após o demangle
++     entry #file   o nome do arquivo-fonte, como o classfile o registra, ou `———` se não houver
++     entry #line   o número da linha, ou `Unset` se nenhum for registrado
++     entry #native   se o frame é um método nativo
++     entry #jvmClass   o nome da classe como compilado, antes do demangle
++     entry #jvmMethod   o nome do método como compilado, antes do demangle
++     entry #source   a definição no código-fonte, se um resolvedor a encontrou
++     entry #inlined   os níveis de expansão inline que a linha do frame representa, o mais interno primeiro
++     entry #displayClass   o que exibir como proprietário do frame: seu proprietário no código-fonte se resolvido, senão a classe após o demangle
++     entry #displayMethod   o que exibir como método do frame: seu nome no código-fonte se resolvido, senão o método após o demangle
++     entry #displayPrefix   `#displayClass` sem seu último segmento
++     entry #displaySegment   o último segmento de `#displayClass`
++   entry .Resolver   mapeia um frame para sua definição no nível do código-fonte, escolhida pelo given no escopo de quem chama
+
+% 1 1 0 0631bf649d44f10d09f1e9c7be8eca86
+
+@ 0 6 0 09f1a96be700edc01a74f72f4be07764
++         Resolver um frame exige uma capability que o digression não tem — no mínimo um
++         classpath — então o padrão, `.none`, retorna cada frame inalterado, e uma implementação é
++         importada de um módulo que tem uma: `stackResolutions.tastyStackResolution`, no
++         hyperbole, lê o TASTy de cada classe de nível superior (uma leitura de arquivo por classe
++         nomeada no stack trace). Manter a capability de fora é o que permite que os stack traces
++         funcionem sem mudanças em um navegador, em um binário nativo ou em um componente
++         WebAssembly.
+
+% 2 1 0 17b188807fa8cab60c560be75697515e
+
+% 3 1 0 1e62b4c896b7082a0eeeacd2a7f15086
+
+% 0 1 0 020b6f6dc589b97a1e47673d0f593f8a
+
+% 0 1 0 00da3440539e6d8f074777942a4d1448
+
+% 1 1 0 11d9c42b688ef29f0d330cb4ab15e330
+
+@ 0 13 0 07b8368a59db7628187dac1bd52cd31c
++     entry .none   o resolvedor padrão, que deixa cada frame como foi capturado
++     entry #resolve   o frame com o que quer que sua definição no código-fonte acrescente: `#source`, `#inlined`
++   entry #component   o pacote da classe de exceção: `java.lang`
++   entry #className   o nome simples da classe de exceção, após o demangle: `Exception`
++   entry #message   a mensagem da exceção, como uma `Message`
++   entry #frames   os frames, do topo da pilha para baixo
++   entry #cause   o stack trace da causa da exceção, ou `Unset`
++   entry #crop   este stack trace sem os frames de um método, nomeado por sua classe e seu método após o demangle
++       `trace.crop(className, method)` remove todo frame cujo `Method` tenha esse nome de classe e
++       esse nome de método, após o demangle — os frames do ponto de entrada de um executor de
++       testes, por exemplo — e mantém o restante em ordem.
++   entry #drop   este stack trace sem seus `n` frames do topo
++   entry #dropRight   este stack trace sem seus `n` frames da base
+
+@ 0 1 0 1c4fd428f0d1c12301b258478d63c6b9
++ entry .Smap   um mapa de código-fonte JSR-45 analisado: onde os números de linha sintéticos de um classfile foram escritos
+
+% 1 1 0 01c6c150026d6b1507eae0439fe570e1
+
+@ 0 6 0 0becd8e6a217da331619d97181b6d489
++       Quando o compilador expande código inline, a tabela de linhas do classfile só pode nomear
++       linhas de seu próprio arquivo, então ela registra números de linha sintéticos e um atributo
++       `SourceDebugExtension` — um SMAP — que os mapeia de volta. `Smap.parse` lê um: o nome de
++       seu arquivo `#generated`, seu stratum `#default` e seus `#strata` por nome. `#expand`
++       transforma uma linha sintética na cadeia de origens que ela representa, a mais interna
++       primeiro, e na linha real do ponto de chamada a que ela leva de volta; `#sites` é seu
++       inverso, os intervalos gerados para os quais uma linha do código-fonte foi.
+
+% 2 1 0 15550197654c037018c9c88d603c9cff
+
+% 3 1 0 10fb6d89897b33751be09dbf7df01f0d
+
+% 0 1 0 06275b40778ee59d1245495052a70a1e
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 1af91be0d7746a260fd14236fe726710
+
+% 0 1 0 08f2f578ea3ff42c1210b19fda1798b1
+
+% 0 1 0 161a16999d2301080ae2f1387cb991a7
+
+% 0 1 0 0d54731b4e033cc01b754037fb913a9f
+
+% 0 1 0 08d5130224b2f36c14aef348730b1183
+
+% 0 1 0 1190c212a4c9cc7a15f68ef1e08d79cd
+
+% 0 1 0 1e5e4d24419467cd0b2ab53f3cfaf0c7
+
+% 0 1 0 001059c6a0701627154108faa85b09a8
+
+% 0 1 0 1f16c9a7e3a3e8330a0ddc898a4b0d88
+
+% 0 1 0 1f1ea552cb45648115c1d2bce2887c6c
+
+% 0 1 0 09b0d7185f354d761150682c90349958
+
+% 1 1 0 10c556ba3ade481a0a8949072bde7bda
+
+@ 0 10 0 1211a87078ea56cd17b3ed1849793682
++       Um stratum `<default>Debug`, como os compiladores de Scala e de Kotlin escrevem, mapeia uma
++       linha sintética para seu ponto de chamada inline, de modo que `#expand` o segue nível por
++       nível; um stratum `<default>Class` nomeia a classe de nível superior em que cada origem
++       está.
++   entry .parse   analisa o texto de um SMAP, ou `Unset` se seu cabeçalho for ilegível
++       Um texto que não começa com `SMAP` e duas linhas de cabeçalho é `Unset`; dentro de uma
++       seção, qualquer coisa malformada é ignorada, já que um SMAP é sempre apenas uma fonte de
++       detalhes extras.
++   entry .File   um arquivo na tabela de arquivos de um stratum: o nome que um stack trace registra e seu caminho completo
++     entry #name   o nome do arquivo, como um stack trace o registra
++     entry #path   o caminho completo do arquivo, ou o nome novamente se o SMAP não deu nenhum
++   entry .Entry   uma entrada de mapeamento de linhas: uma sequência de linhas de entrada em um arquivo, mapeada para uma sequência de linhas de saída
+
+% 1 1 0 0318be04614b66a012379e7940cbe80b
+
+@ 0 30 0 1b51f3d81295fb0d1563f24f776a67e1
++         `repeat` linhas de entrada a partir de `inputLine` do arquivo `fileId` são mapeadas para
++         linhas de saída a partir de `outputLine`, cada linha de entrada cobrindo `increment`
++         linhas de saída.
++     entry #inputLine   a primeira linha de entrada da sequência
++     entry #fileId   o arquivo em que as linhas de entrada estão, por seu id na tabela de arquivos
++     entry #repeat   quantas linhas de entrada a sequência tem
++     entry #outputLine   a primeira linha de saída para a qual a sequência é mapeada
++     entry #increment   quantas linhas de saída cada linha de entrada cobre
++     entry #apply   a linha de entrada em que uma linha de saída cai, ou `Unset` se a entrada não a cobre
++   entry .Stratum   um stratum de um SMAP: sua tabela de arquivos e suas entradas de linha
++     entry #files   a tabela de arquivos, por id de arquivo
++     entry #entries   as entradas de mapeamento de linhas, em ordem
++     entry #apply   o id de arquivo e a linha de entrada para os quais uma linha de saída é mapeada, a partir da primeira entrada que a cobre
++     entry #origin   o arquivo e a linha de entrada para os quais uma linha de saída é mapeada, quando a tabela de arquivos conhece o arquivo
++   entry .Origin   onde uma linha de código expandido inline foi escrita: arquivo, caminho, linha e a classe em que está
++     entry #file   o nome do arquivo-fonte
++     entry #path   o caminho completo do arquivo-fonte
++     entry #line   a linha, contada a partir de 1
++     entry #cls   o nome binário da classe de nível superior em cuja unidade a posição está, se o SMAP o disser
++   entry .Expansion   o que uma linha sintética representa: suas origens inline, a mais interna primeiro, e a linha real
++     entry #inlined   as origens, a mais interna primeiro
++     entry #line   a linha real do próprio arquivo do frame à qual a cadeia leva de volta, ou `Unset` se ela se esgotou
++   entry #generated   o nome do arquivo gerado ao qual o SMAP pertence
++   entry #default   o nome do stratum padrão, como `Scala`
++   entry #strata   os strata, por nome
++   entry #path   o caminho completo do arquivo gerado, se sua tabela de arquivos registrar um
++   entry #expand   as origens inline de uma linha sintética e a linha real do ponto de chamada, ou `Unset` para uma linha real
++   entry #sites   os intervalos de linhas `[start, end)` gerados nos quais a linha de um arquivo-fonte foi expandida inline
++       Um intervalo por ponto, excluindo a ocorrência natural da linha no próprio arquivo gerado;
++       vazio para um arquivo estranho ao SMAP. Uma linha expandida inline em vários pontos dá
++       vários intervalos, já que um breakpoint nela pertence a cada um deles.
+
+@ 0 1 0 0b99017ad6454e7a02afb626f8f9bd97
++ entry .StackTracePalette   as cores em que um stack trace de terminal é desenhado: mensagem, arquivo, método, linha e acentos
+
+% 1 1 0 04bc67a8796ff72304a190bc4b2eb9fc
+
+@ 0 5 0 084bac036d1be9a61bfd6a26e8546cba
++       Uma `iridescence.Palette` de cores sRGB para as renderizações de `teletypeables`, no
++       componente `digression.ansi`: as cores de `#message`, `#file`, `#method` e `#line`, um
++       `#separator`, e cinco acentos que colorem, um de cada vez, os pacotes dos frames, de modo
++       que frames de um mesmo pacote compartilham uma cor. O `.default` do companheiro está no
++       escopo implícito; um given próprio o sobrepõe.
+
+% 2 1 0 1167b3b13b4c522914b8bd259da35e82
+
+% 3 1 0 1ada2c7dd726a99f076bc5687f946da2
+
+% 4 1 0 17f614d75c5bcc1b1ffed72248664d3b
+
+% 0 1 0 0722a3d2d26a5b4a16acaafb054a49ff
+
+% 0 1 0 100eaa7b505be848036b1a5a7a58ea58
+
+% 0 1 0 17c2119d214fd30218cf0c35ed65fac7
+
+% 1 1 0 1ef1ab099a8b0d38019bd9e03b677006
+
+@ 0 12 0 01124b5abf0305fa18979aab53163870
++   entry .default   texto branco sobre preto, com arquivos e linhas em azul-petróleo e acentos quentes
++   entry #Form   o espaço de cores da paleta, `Srgb`
++   entry #message   a cor da linha da exceção e de `caused by:`
++   entry #file   a cor dos nomes de arquivo
++   entry #method   a cor dos nomes de método
++   entry #line   a cor dos números de linha
++   entry #separator   a cor dos separadores: `at`, `.`, `:`
++   entry #accent1   o primeiro acento de pacote
++   entry #accent2   o segundo acento de pacote
++   entry #accent3   o terceiro acento de pacote
++   entry #accent4   o quarto acento de pacote
++   entry #accent5   o quinto acento de pacote; um sexto pacote volta a receber o primeiro
+
+@ 0 1 0 129b4932aaedb02b0b9b4b864cf03895
++ entry .teletypeables   as renderizações coloridas para terminal de stack traces, frames, métodos e exceções, importadas pelo nome
+
+% 1 1 0 0a63e85c2235c51e0c8c9751854193db
+
+@ 0 5 0 008f58dffe9505620872524fca537e0e
++       No componente `digression.ansi`. Cada given torna seu sujeito `Teletypeable`, de modo que
++       `teletype` o renderiza como texto com estilo para um terminal; cada um precisa de um `Text
++       is Measurable` em escopo (como `textMetrics.uniformMetric`) para as larguras das colunas, e
++       as renderizações usam a `StackTracePalette` em escopo. `import teletypeables.*` não importa
++       givens, então cada um é importado pelo nome.
+
+% 2 1 0 0852884132dbb1a4057b778cbddb44d8
+
+% 3 1 0 04827b35766cd0090b136fce01dd1ed5
+
+% 4 1 0 12f63c4dcf9e54f217f2dc725ab60416
+
+% 0 1 0 0e3f2c3b9261c8f0037d3c609768a164
+
+% 0 1 0 04f08902b8b598dd084cc0d502445056
+
+% 1 1 0 040506868f7596f71ad395e8b03e87b6
+
+@ 0 8 0 049d1cbf818804570d7d39814862c44f
++   entry .stackTraceTeletype   um stack trace como tabela sem bordas: uma linha por frame, alinhada, colorida por pacote
++       A linha da exceção, depois uma linha por frame — `at`, a classe e o método como uma coluna
++       alinhada, o arquivo e a linha como outra, e o código-fonte citado de um frame resolvido,
++       que é a primeira coluna a sair quando o terminal é estreito — com uma linha `↳` abaixo para
++       cada nível de expansão inline. Um frame da mesma classe que o de cima é atenuado, assim
++       como o encanamento do compilador; as causas vêm depois de `caused by:`.
++   entry .exceptionTeletype   uma `Exception` renderizada como seu stack trace, capturado com o resolvedor em escopo
++       Precisa de um `Text is Measurable` e de um `StackTrace.Resolver`, e renderiza por meio de
+
+% 0 1 0 0fee901053b587ec1db38efd66926967
+
+@ 0 2 0 0edf76f6f2a26cfb0fa79f922bac73bd
++   entry .frameTeletype   um frame em uma linha: classe e método ajustados a quarenta colunas, depois arquivo e linha
++   entry .methodTeletype   um `StackTrace.Method` como sua classe e seu método, separados por `⌗`
+
+@ 0 1 0 024dda655c3104191562fca42fa0bd35
++ entry .internal   as macros por trás de `Codepoint.default` e de `fqcn"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 05215239b24b403800c9826a3663484b
++       Não é para uso direto: o objeto existe para que as macros tenham um lar estável.
++   entry .location   a macro por trás de `Codepoint.default`: o caminho do código-fonte e a linha do ponto de expansão
++   entry .fqcn   a macro por trás de `fqcn"…"`: valida o literal e insere `Fqcn.unsafeFrom` por splice
++   entry .javaKeywords   as palavras-chave do Java que um segmento de nome de classe não pode ser

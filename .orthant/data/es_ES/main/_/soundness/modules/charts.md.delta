@@ -1,0 +1,100 @@
+orthant 2 language
+
+@ 0 13 0 1f804944cbbab0300db1429dc29c7687
++ column  Clase
++ column  Dibuja
++ column  Abscisa
++ column  Ordenada
++ column  Estilo
++ row  `Bars()`  una serie, o una colección de series  categórica  continua  `Bars.Style`
++ row  `StackedBars()`  una colección de series  categórica  continua  `StackedBars.Style`
++ row  `Lines()`  una serie, o una colección de series  continua  continua  `Lines.Style`
++ row  `Scatter()`  una serie, o una colección de series  continua  continua  `Scatter.Style`
++ row  `Pie()`  exactamente una serie  categórica  continua  `Pie.Style`
++ row  `Histogram()`  `Samples`, o una colección de ellas  continua  recuentos  `Histogram.Style`
++ row  `Boxes()`  `Samples`, o una colección de ellas  una caja por conjunto  continua  `Boxes.Style`
++ row  `Annulus()`  un `Dag` de nodos `Weighted` y `Progressive`  ninguna  ninguna  `Annulus.Style`
+
+@ 0 20 0 07a1c9f65a6293bd096dfd926a73c63d
++ column  Gancho
++ column  Dibuja
++ column  Definido en
++ row  `fontStyle`, `lettering`  el tamaño y el color del texto; cada tramo de texto  `Chart.Style`
++ row  `backdrop`  el lienzo que hay detrás del gráfico  `Chart.Style`
++ row  `swatch`, `legendLabel`  una entrada de la leyenda  `Chart.Style`
++ row  `leader`  la línea desde un rótulo desplazado hasta su punto  `Chart.Style`
++ row  `axisLine`  el trazo de cada eje  `Chart.Cartesian`
++ row  `axisBreak`  una marca de interrupción donde un eje lineal no empieza en cero  `Chart.Cartesian`
++ row  `arrowhead`  el extremo de un eje  `Chart.Cartesian`
++ row  `tick`, `gridLine`  una graduación y su línea de cuadrícula  `Chart.Cartesian`
++ row  `tickLabel`  el rótulo de una marca de graduación, dónde se sitúa y si está girado  `Chart.Cartesian`
++ row  `axisTitle`  el título de un eje  `Chart.Cartesian`
++ row  `marker`, `errorBar`  un punto y su intervalo  `Chart.Cartesian`
++ row  `pointLabel`  la nota de un punto `Noted`  `Chart.Cartesian`
++ row  `bar`  una barra  `Bars.Style`
++ row  `line`, `band`  la línea de una serie y la banda de una estimación  `Lines.Style`
++ row  `box`, `whisker`, `median`  las partes de un diagrama de caja  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  una porción y su porcentaje  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  el color de un sector y sus dos partes  `Annulus.Style`
+
+@ 0 10 0 1c600122182c2eb2189e07b099bd189d
++ column  Identificador
++ column  Contiene
++ column  En
++ row  `backdrop`  el lienzo, en el color de fondo de la paleta  todo gráfico
++ row  `grid`  las líneas de la cuadrícula  gráficos cartesianos
++ row  `abscissa`, `ordinate`  cada eje, sus graduaciones y su título  gráficos cartesianos
++ row  `legend`  la leyenda  gráficos con leyenda
++ row  `series-0`, `series-1`, …  cada serie  gráficos cartesianos
++ row  `wedges`  cada porción y su rótulo  `Pie`
++ row  `rank-0`, `rank-1`, …  cada banda  `Annulus`
+
+@ 0 1 0 09524893beb0e5fc110f8d8b22a39a27
++ ### Gráficos de anillo
+
+@ 0 5 0 094a00dfd1bbeae2143c54d55798a5bd
++ Un `Annulus` dibuja un grafo de dependencias, un [`Dag`](graphs.md), como bandas concéntricas.
++ Los nodos que no dependen de nada están en la banda más interna, y cada banda sucesiva contiene
++ los nodos un rango más afuera, así que una compilación se va rellenando desde el centro hacia
++ fuera. Cada nodo es un sector de su banda, que barre un ángulo proporcional a su tamaño dentro
++ del rango, y una banda es tan gruesa como la parte del tamaño total que corresponde a su rango.
+
+@ 0 7 0 11568818c01018f40832037731e60764
++ El tamaño de un nodo y su progreso, de `0.0` a `1.0`, proceden de dos clases de tipos sobre el
++ tipo del nodo, `Weighted` y `Progressive`. El sector se rellena en el sentido de las agujas del
++ reloj hasta donde el nodo está completo, y el resto queda en un tinte apagado del color del
++ sector. Ese color es el primer color de la paleta, matizado según dónde se encuentra el sector:
++ su tono gira treinta grados de izquierda a derecha, y es más oscuro por debajo del centro y más
++ claro por encima. Un gráfico de anillo no tiene rótulos ni leyenda. Cada banda es un grupo
++ `rank-0`, `rank-1`, …, cada sector un trazado `sector-0`, `sector-1`, …, y la parte sin terminar
++ de un sector es `sector-0-rest`.
+
+@ 0 3 0 0fbbeed84c453a461e364d4fa195aed8
++ Un nodo lleva su progreso, así que un gráfico de anillo se revisa como cualquier gráfico, con
++ datos nuevos. El ajuste sobrevive a cualquier grafo de la misma forma y tamaños, y solo se
++ sustituyen las bandas cuyos sectores se han rellenado más:
+
+% 0 1 0 1877856c8ab7469c04f0ffb78800176f
+
+% 0 1 0 14e225babf96351702cd5d73f93e40d6
+
+% 0 1 0 14c1482790cf4ef70542451dfecf4315
+
+@ 0 5 0 0882828f30df7a830a6f292209c4fb9f
++ `Chart.Standard(hole = 0.3)` vacía el centro. `sectorGap` y `bandGap` son las anchuras de la
++ junta entre sectores y entre bandas. `Annulus.Style` tiene `shade` para el color de un sector a
++ partir de su posición, y `sector` y `remainder` para sus dos partes. La asignación de rangos es la
++ que describe [grafos](graphs.md#layering): `import rankings.balancedRanking` dibuja cada nodo tan
++ cerca de sus dependientes como sea posible, en lugar de tan cerca del centro.
+
+@ 0 8 0 16557cb6cd42445b1d8d52e13d86e255
++ - [SVG](svg.md) describe el dibujo en el que se representa un gráfico.
++ - [Colocación de rótulos](label-placement.md) describe cómo los rótulos de un gráfico se evitan
++   entre sí.
++ - [Fuentes](fonts.md) describe los tipos de letra en los que puede componerse un gráfico.
++ - [Magnitudes](quantities.md) describe las unidades que titulan un eje.
++ - [Grafos](graphs.md) describe el `Dag` que dibuja un gráfico de anillo.
++ - [Colores](colors.md) describe los colores de la paleta.
++ - [Tiempo](time.md) describe las duraciones y los instantes que puede contener un eje continuo.
++ - [Medidores](gauges.md) y [tablas](tables.md) presentan valores en el terminal, y
++   [las pruebas](testing.md) representan en gráficos los resultados de los benchmarks.

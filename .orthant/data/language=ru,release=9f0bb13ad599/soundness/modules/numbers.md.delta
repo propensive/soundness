@@ -1,4 +1,0 @@
-orthant 1 language
-
-- val combined: -3.0e8 ~ 4.0e8 = (x + y*3.0)*z
-+ val combined: -3.0e8 ~ 4.0e8 = (x + y*3.0)*z

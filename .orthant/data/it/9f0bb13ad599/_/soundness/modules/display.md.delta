@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 8 0 1431c98063de65a00a71fea57e055f77
++ column  Tentativo
++ column  Resa
++ row  1  l'istanza di `Inspectable` propria del tipo
++ row  2  la sua istanza di `Encodable in Text`, tra `⸤` e `⸥`
++ row  3  la sua istanza di `Showable`, tra `⸢` e `⸣`
++ row  4  per un `Optional`, il valore che contiene, tra `｢` e `｣`, o `○` se non è impostato
++ row  5  una resa strutturale derivata dalla sua forma
++ row  6  una resa di ultima risorsa, il suo `toString` tra `“` e `”`
+
+@ 0 2 0 00ab82423b62806a0907786a980e61f6
++ Le parentesi marcano una resa presa in prestito da un'altra typeclass, o da `toString`, e che
++ non è propria del tipo.

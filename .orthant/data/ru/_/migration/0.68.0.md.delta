@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 0c7c7875e28c69fa09c0db0bf1e0fc3e
++ # Изменения с версии 0.67.0
+
+@ 0 3 0 01c92304f886cba21c1a676845610aa1
++ Этот файл читает агент LLM, чтобы обновить код, использующий библиотеки Soundness, с версии
++ 0.67.0 до следующего выпуска. Каждая запись точно указывает, что изменилось; формат описан в
++ `AGENTS.md`. Записи сгруппированы по модулям, внутри модуля последними идут самые недавно
++ добавленные.
+
+% 0 1 0 1eecc11d4eed23d30cc8cf10b4de468a
+
+@ 0 8 0 0bac8da40c227f45069121c85ef59f92
++ - У `anticipation.Chroma#red` изменилась семантика: теперь это `inline def red: Int = (chroma >> 16)&255`,
++   а раньше было `inline def red: Int = chroma >> 16`. `green` и `blue` уже маскировались и не
++   изменились. Код необходимо проверить там, где `Chroma` создавался через `Chroma(value: Int)`
++   из `Int` с любым установленным битом выше младших двадцати четырёх (включая отрицательный
++   `Int`), поскольку `red` раньше возвращал эти биты, а теперь отбрасывает их. Значения
++   `Chroma`, полученные из `Chroma(red: Int, green: Int, blue: Int)`, интерполятора `rgb"…"`,
++   `iridescence.Pixel#chroma`, `iridescence.Rgb12#chroma` или `iridescence.Rgb32#chroma`, не
++   затронуты, поскольку все они уже маскировали биты. (#2036)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 1 0 01cf847b682a34071180f64c40d4d31f
++ - `iridescence.Channel` и трейты каналов `iridescence.Red`, `iridescence.Green`,
+
+% 0 1 0 1e3f4b509bdeb9fa01d3151cb48d7c36
+
+@ 0 6 0 060530a8657b7d9c0c1ba3c32ac2078d
++   `iridescence.Yellow`, `iridescence.Key` и `iridescence.Grey` перемещены в `anticipation`:
++   `anticipation.Channel`, `anticipation.Red` и так далее. Все определения, параметры типов и
++   match-типы не изменились. Зонтичный модуль `soundness` экспортирует те же имена, теперь из
++   `anticipation`, поэтому код, импортирующий их через зонтичный модуль, не требует изменений;
++   код, импортирующий ради них `iridescence.*`, должен импортировать `anticipation.*`. `Channel`
++   остаётся `@unexported` и доступен как `anticipation.Channel`. (#2037)
+
+% 0 1 0 05ae2e565038e46506b8cc852c20137f
+
+@ 0 4 0 0b379a3e08a6af431507a325338cac8b
++ - Удалён `ultimatum.GaugePalette.hue(chroma: anticipation.Chroma): iridescence.Color in
++   iridescence.Srgb`. Замените `hue(c)` на `c.color` — расширение `extension (chroma:
++   anticipation.Chroma) def color: Color in Srgb`, объявленное в `iridescence` и экспортируемое
++   зонтичным модулем `soundness` как `color`. Результаты идентичны. (#2036)

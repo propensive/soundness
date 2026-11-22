@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 03c32a719a08e4a317f104acd0e3a126
+
+@ 0 2 0 12dd9d496c32540d057d4e81d2f7e502
++ Se lanza cuando Hieroglyph no puede codificar un carácter con la codificación elegida.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 044eecf8fee3c9301152d18a38bd4f7a
++ Hieroglyph lanza este error al codificar un carácter que la codificación de destino no puede
++ representar (por ejemplo, un carácter no latino con ISO-8859-1).
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1bb5d8413b7176b909a5ee802e639167
+
+% 1 1 0 16ed2cde8347a36705c6e86d47905437
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 3 0 1c3f294dfac987a115974c999fc0f9ba
++ Elige una codificación que admita el carácter (UTF-8 es una opción predeterminada segura) o
++ preprocesa la entrada para eliminar los caracteres no representables.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 15093f3704168ca509a8692af8e396ff
++ - Fuente: `lib/hieroglyph/src/core/hieroglyph.Codepage.scala`

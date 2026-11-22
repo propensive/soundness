@@ -1,0 +1,2161 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1dc5e629935d905319a491e5a1a8a06a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0856b83007c342180225e6890cec472c
++ info   すべての Soundness ライブラリの土台。コンビネーター、コレクション操作、証明、ビルダー、アトミック
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1471a1f80e2d67e40e50299c37ce69bd
++     _Rudiments_ は汎用的な定義の層であり、ほかのすべての Soundness ライブラリがそれを使い、Soundness で書かれたプログラムは、どこかのライブラリに属しているとは意識せずに絶えずそれを使う。
++     中心となる型はなく、あるのは語彙である。
++     Soundness を初めて読む人は、おおよそ次の順にその部品に出会う。
+
+@ 0 33 0 0bc2c1ff476dd59e0b0432d3b2ceda14
++     - 任意の値に対する**日常的なコンビネーター**。`pipe`、`tap`、`also`、`when`、`give`、`twin`、`yet`、`upon`、そして畳み込みや反復の操作がラムダに渡すコンテキストのアクセサー `state`、`next`、`prior`、`ordinal`。
++     - **コレクション操作**。型クラス `Traversable`、`Countable`、`Applicable`、`Segmentable` とその仲間に対して一度だけ書かれているので、`head`、`last`、`tail`、`keep`、`skip`、`snip`、`before`、`after`、`sort`、`order`、`fuse`、`each`、`indexed`、`seek`、`where`、`total`、`mean` などは、`List`、`Sequence`、`Set`、`Map`、凍結済みの `Array`、`Text`、そしてインスタンスを持つほかのすべての型で同じ意味を持つ。型クラス自体は `murmuration`（`Traversable`、`Reshapable`、`Mappable`、`Convertible`、…）と `denominative`（`Countable`、`Applicable`、`Definable`、…）にあり、ここで再エクスポートされるので、`import rudiments.*` が一つの面を提示する。
++     - **型の中の証明**。一部の入力でしか安全でない操作は部分関数にはせず、証明を要求する型を与える。`head`、`last`、`lead`、`tail`、`reduce` は `& Populated` と型付けされたレシーバ（空でないリテラル、または `occupied` の結果）では全域的であり、それ以外では `Optional` である。`confine`、`pick`、`iterate`、または `Surveyor` がコレクションに照らして検査した序数は `Ordinal in xs.type` と型付けされ、そのような添字による `xs(i)` は要素をそのまま読むが、ほかの添字では `Optional` を読む。長さがリテラルである凍結済みの配列は `& Sized[n]` と型付けされ、`n` を超えるリテラルの序数はコンパイルできない。連結リストの `size` や位置によるアクセスのコストも、同様に黙った走査ではなく証明、すなわち `dysasymptotics.linearSize` や `linearAccess` のインポートである。
++     - パーサーとコーデックのホットループのための**ビルダーとスキャナー**。`Array.scribe` と `Array.collect` は `Scribe`（すべての添字が範囲内であると証明された書き込み用のハンドル）を貸し出し、`survey` は `Surveyor`（その連続部分がブランド付きの区間として返ってくる、歩調を合わせるカーソル）を貸し出し、`lattice` は二次元の平面を指し示し、`pairs`/`triples`/`quads` はコレクションをグループごとに歩き、`Scroll` はボックス化されない伸長可能な配列である。
++     - **並行処理のプリミティブ**。JDK のアトミックの上の `Atomic` セル（`cell()` で読み、`cell() = v` で書き、`ere` と `since` で遷移させる。後の二つは `_ + 1` のようなラムダリテラルを JDK の組み込み関数にコンパイルする）、`Mutex`、スレッドに結び付いた `Scoped` の値、そしてバックグラウンドのタスクのための停止可能な反復である `Loop`。
++     - **小さな値**。`Exit` と `Termination`（コマンドが返すもの）、`Bytes`（`kib`/`mib`/`gib` のリテラルを持つバイト数）、`Digit`、そしてコンパイル時の補助である `typeName`、`reflectClass`、`probe`、`!!`。
+
+% 2 1 0 1952c9361316573007d1e8185c2a09e6
+
+% 3 1 0 0a3ffc15827748f5156a52681336e96d
+
+% 4 1 0 041867c881835ff00f14cd92a27246e2
+
+% 0 1 0 097e48206aa1712e1e35289c7bc93717
+
+% 0 1 0 0088be0e17ed730304eb277b1216f6bc
+
+% 0 1 0 0e80b59ebc1de7b21d228d4a1aedf3bc
+
+% 0 1 0 18d4b92d0c6c15a70e378af499ec65cf
+
+% 0 1 0 1002d24306e491cd0a8c794885d4a108
+
+% 0 1 0 1bb9fd8c801f83311a72e06befce42f8
+
+% 0 1 0 0c60cc9855bf31d1156c8276d7a6d7a0
+
+% 0 1 0 06dee464bb4276a7071f2471e2082026
+
+% 0 1 0 06c1b67e946d9c1e163eaa0cc839c7bf
+
+% 0 1 0 1f0034626edc9b32128dd1a9b5617d12
+
+% 0 1 0 0078701ccdcba2900a7bfcf7da12358a
+
+% 0 1 0 148035c480be40c905e2bb707e1d4853
+
+% 0 1 0 0451c02ce6d6363b0760275320e85442
+
+% 0 1 0 004ffe1ba55ff23c092e2abfd8981efa
+
+% 1 1 0 135f26b3535af277125fbaec396c0be5
+
+@ 0 11 0 0394e6696b54dcb6112a694e8426cfbe
++     このパッケージは二つのライブラリによって宣言されており、その分割は名前空間ではなくビルドグラフのためである。
++     `rudiments.core` はコンビネーター、コレクション操作、`Atomic`、`Mutex`、`Scoped`、`Loop`、`Exit`、`Bytes`、ソート操作を持ち、`murmuration`、`denominative`、`vacuous`、`symbolism`、`anticipation` に依存する。
++     `concordance` ライブラリは、rudiments より下のライブラリが安全に添字を使えるように `denominative` の直上に位置し、限定された添字の語彙（`apply`、`at`、`defines`、`confine`、`pick`、`unsafeAttested`、`sized`）と、`Populated`、`Segmentable`、`Appendable`、`Prependable`、`Bijection`、`Scribe`、`Scroll`、`Surveyor`、`Lattice`、グループ化のコンビネーターを、すべて `package rudiments` の中で宣言する。そのような項目にはそのことが書かれている。
++     どちらも JVM、Scala.js、Scala Native 向けにコンパイルされ、`Atomic` はプラットフォームが提供する場所では `java.util.concurrent.atomic` の上に置かれる。
+
+@ 0 8 0 1fa4a32196b1b9c90beaed1db2e4aa08
++     ほぼすべてが `soundness` アンブレラにエクスポートされる。
++     例外は `import rudiments.occupied` のような名前によるインポートで使うものであり、`occupied`、`find`、`Scribe`、`appendVarint` と `appendUtf8` を伴う `Array.scribe`/`Array.collect`、`Surveyor` と `survey`、`Lattice` と `lattice`、`Scroll`、そしてグループ化のコンビネーター `pairs`、`triples`、`quads`、`quints`、`octuples`、`adjacent` である。
++     依存型を持つ貸し出し側が除外されているのは、合成されたエクスポートのフォワーダーがその型を運べないからである。
++     `import soundness.*` は given をインポートしないので、ソートのアルゴリズムは `sortingAlgorithms` から名前で選ぶ given である（`import sortingAlgorithms.timsort`）。
+
+% 0 1 0 0b440c0eefac4b7716b9bc5dc1f4fe1f
+
+% 0 1 0 100265f3014fcb951356d2733b6ae83f
+
+% 0 1 0 11125257a7f305a6126c2afaab885805
+
+% 0 1 0 0d54f2283abdb2871d3e51c55d84141b
+
+% 0 1 0 09cebb02f6da96ec174adeab0a89769f
+
+% 0 1 0 1a285f1b9a4e3b5202fb08c6f0de9c2d
+
+% 0 1 0 1e652ce139c6bbfc0d8a31b5d83b32e9
+
+@ 0 4 0 146d3e876d0c8ed40e9b9383280f6f05
++ entry .pipe   `value.pipe(f)`。値に関数を適用する。左から右へ書く
++     `value.pipe(lambda)` は `lambda(value)` であり、計算を内から外へではなく、起きる順に読めるようにする。
++     レシーバは名前渡しでメソッドは inline なので、何もアロケーションされず、値はちょうど一回評価される。
+
+% 2 1 0 1e03be572968264512c465aff38a921c
+
+% 3 1 0 1d9104a50bce7ac214bee7254d686447
+
+% 0 1 0 031dea022f2c94cd0bbbc0cae9b879bc
+
+% 1 1 0 01482a1a2b1fff0919f539d154ecc9a0
+
+@ 0 4 0 1c71aab84ff282681e777ddbe4b2a75c
++ entry .tap   `value.tap(f)`。値に対して副作用を実行し、その値を返す
++     `value.tap(block)` は値を一回評価し、その効果（ログ、アサーション、計測）のために `block` に渡し、値を変えずに返す。
++     そのため、連鎖の途中の段を、名前に束縛せずに観察できる。
+
+% 2 1 0 0b564ab039e3a8520743fd8e951c10d9
+
+% 3 1 0 05692b6d0f4189b3130d4a25d35d140b
+
+% 0 1 0 13d71bd59acee33b0df07fa0c51ddd28
+
+% 0 1 0 1be0b75d6b6a998b0068f5ed5648f0bf
+
+% 1 1 0 0841812adc2d89630b47b6257636e6fb
+
+@ 0 3 0 0ca31e3600668c830098bf5abf7ff6b2
++ entry .also   `value.also(block)`。値の後にブロックを評価し、その値を返す
++     `tap` と同じだが、ブロックは値を受け取らない。
++     `value.also(cleanup())` は値を評価し、次にブロックを評価し、値を返す。
+
+@ 0 5 0 1646cd89ad2f647d02081b0214044eb5
++ entry .when   `value.when(condition)(f)`。条件が成り立つときだけ関数を適用する
++     二つのオーバーロード `value.when(predicate: Boolean)(lambda)` と `value.when(predicate: value => Boolean)(lambda)` がある。
++     どちらも条件が真なら `lambda(value)` を、そうでなければ `value` をそのまま返す。
++     これは、値を繰り返す `if`/`else` を使わずに書く、パイプラインの条件付きの段である。
+
+% 2 1 0 031dd27802a256a408f3150f303a4829
+
+% 3 1 0 040e9d15a0afcde81c9d73de13a0c3af
+
+% 0 1 0 0307b3e53e4772140bb31158290f72a4
+
+% 1 1 0 15c775de96bdf2ca111c8739b8d8a395
+
+@ 0 4 0 1263515e12167832065aa8f8a538150c
++ entry .give   `value.give(block)`。ブロックの中で値をコンテキスト値として使えるようにする
++     `value.give { summon[Type] }` は、`value` をその型の given としてブロックを評価する（`block: value ?=> result`）。
++     外側のスコープで `given` を宣言せずに、コンテキスト値を期待するコードに明示的な値を渡す方法である。
+
+@ 0 3 0 11fba40799afb5d605bf2e014944d2c8
++ entry .unit   値を捨てて `()` を返す
++     `expression.unit` は式をその効果のために評価し、`Unit` を返す。
++     `val _ = expression` や末尾の `()` よりすっきりしている。
+
+@ 0 3 0 1ad5d412846b09db18893706e2a4385f
++ entry .waive   `value.waive`。引数を無視してその値を返す定数関数
++     `value.waive` は `Any => value` と型付けされた `_ => value` である。
++     `optional.lay(fallback.waive)(f)` のように、API が関数をとるのに呼び出し側が値しか持っていない場合のためのものである。
+
+@ 0 2 0 0a3af870957c65ee0ead594ac158e5cf
++ entry .twin   `value.twin`。対 `(value, value)`
++     対をとる API のために、値をそれ自身と対にする。
+
+@ 0 1 0 145f67964174f338022b4221b0dd9d55
++ entry .triple   `value.triple`。三つ組 `(value, value, value)`
+
+@ 0 3 0 13cc66e45e5e216a11f4a5a2bd538f50
++ entry .typed   `value.typed[Subtype]`。値がその静的な型の部分型のインスタンスかどうか
++     `value.typed[T]` は `value.isInstanceOf[T]` であり、`T` の上限は値自身の型なので、無関係な型に対する検査は定数の `false` ではなくコンパイルエラーになる。
+
+@ 0 8 0 0654ee848f807ebc19ed71a0ad67fcd9
++ entry .unsafeMatchable   `Unsafe` トークンのもとで、値を `value & Matchable` にキャストする
++     型が `Matchable` でない値（不透明型、または抽象的な型パラメーター）に対するパターンマッチは、厳格なマッチ可能性のもとでは禁止されている。
++     `value.unsafeMatchable` はキャストによって静的な型に `Matchable` を加え、消去された `Unsafe` のコンテキスト引数をとるので、呼び出し箇所は `unsafely` の中にある（あるいはほかの方法でトークンを持つ）必要がある。
++     不透明型の表現に対するマッチはまさに不透明性が防ぐためのものなので、この名前はコンパイラの保証が脇に置かれたことを示す。
++     transparent なので、結果の型はちょうど `value & Matchable` である。
+
+@ 0 4 0 15e9cd01d02acd601ec98fef880392e1
++ entry .yet   `statement yet block`。文を評価し、次にブロックを評価して、ブロックの結果を返す
++     `Unit` の式に対する中置の順次実行演算子である。
++     `log() yet compute()` は `log()` をその効果のために実行し、`compute()` を返す。
++     最初の動作が効果である一行のメソッドの末尾で読みやすい。
+
+@ 0 3 0 019fe3846d55faf910e80287dea2282d
++ entry .upon   `lambda.upon(value)`。名前渡しの関数を名前渡しの引数に適用する
++     `(=> input) => result` と型付けされた関数のためのものである。
++     `lambda.upon(expression)` は式を評価せずに渡すので、評価するかどうか、いつ評価するかは関数が決める。
+
+@ 0 3 0 097c2bdcab77407d062cd110daca4534
++ entry .and   `lambda and input`。中置の関数適用
++     `lambda and argument` は名前渡しで評価される `lambda(argument)` である。
++     操作の連鎖の中で、関数を文の主語にする（`handler and event`）。
+
+@ 0 4 0 1acdb0c9e872d3bd1c92f84d933ca8b8
++ entry .context   `lambda.context`。関数をコンテキスト関数にする
++     `input => result` を `input ?=> result` に変換するので、コンテキスト関数が期待される場所（引数を `summon` や `state` のようなアクセサーで読むブロック）に普通の関数を渡せる。
+
+@ 0 4 0 01b06757df82c02d17995f3d791ed8a5
++ entry .that   `that(block)`。強調のための、名前渡しのブロックに対する恒等関数
++     `that { … }` はブロックを評価してその結果を返す。
++     これは、構成をそれが主張するものによって名付けるため（`assert(that(x > 0))`）と、必要な場所で inline のブロックに構文上の足場を与えるためにある。
+
+@ 0 5 0 03c3052d266af5e51230b6853ca202e5
++ entry .state   `fuse` のラムダの中のアキュムレーター。コンテキスト値として得る
++     `fuse` のラムダは、タグ付きの二つの値（途中の状態と次の要素）が与えられるコンテキスト関数である。
++     `state` は一つ目を読む（`xs.fuse(0)(state + next)`）。
++     タグは型 `value aka "state"` であり、これを提供するのは `fuse` だけなので、その外での `state` は、その型の given が見つからないというコンパイルエラーになる。
+
+@ 0 3 0 016140fd99be07d408072f3a35e29b05
++ entry .next   `fuse` のラムダの中の次の要素。コンテキスト値として得る
++     `fuse` のラムダが受け取る二つ目のタグ付きの値である（`xs.fuse(t"")(state + next.show)`）。
++     タグ付けについては `state` を参照。
+
+@ 0 3 0 08f6551faf7c90e11f1a8c9d26349ad9
++ entry .prior   前の値を与えられるラムダの中の、その前の値。コンテキスト値として得る
++     コンテキストの `value aka "prior"` を読む。
++     これは、それを渡すほかのライブラリの対ごとの走査のような操作における、二つの要素のうち先のものである。
+
+@ 0 4 0 07871485936f670e1cbcbc10869b9003
++ entry .ordinal   `each` のラムダの中の現在の要素の位置。コンテキスト値として得る
++     `each` のラムダには、要素の `Ordinal` がコンテキストの `Ordinal aka "ordinal"` として与えられ、`ordinal` がそれを読む（`xs.each { x => labels ::= t"$ordinal: $x" }`）。
++     位置は `Prim` から始まる。
+
+@ 0 3 0 143b9e58015f76120033bed9230c7e1d
++ entry .repeat   `repeat(count)(action)`。動作を決まった回数だけ実行する
++     `repeat(3) { step() }` はブロックを三回評価する。添字を必要としないループである。
++     負またはゼロの回数では一度も実行しない。
+
+@ 0 5 0 1ffce46aba42832402989c937b3471c7
++ entry .fixpoint   `fixpoint(initial)(recur ?=> …)`。結び目を結ぶラムダによる再帰的な計算
++     `fixpoint(initial)` は `Fixpoint` を初期値に適用する。
++     ラムダには再帰そのものがコンテキスト関数 `recur: value => value` として与えられ、ラムダはそれを呼んで再帰する。
++     結び目は遅延して結ばれるので、`recur` は適用されたときにだけラムダに再び入り、再帰がいつ止まるかはラムダが決める。
+
+% 2 1 0 1bd2dd2058029f9f03f64d96e033f020
+
+% 3 1 0 191c499d30f0f8f90c2023fdf78156e8
+
+% 0 1 0 17b141d40e0bd94d09ee0404c58f727d
+
+% 0 1 0 151ac6f36045e089008490070e19cbac
+
+% 1 1 0 097e5d910d9fca0d00c510ae3c4b3922
+
+@ 0 1 0 138b17b5a9220a4e1ecbb9629e393d17
++ entry .Fixpoint   `fixpoint` のラムダの形。再帰を与えられ、値に対する関数を返す
+
+% 1 1 0 1fd9e9f366c3502c09e6517619e6326b
+
+@ 0 5 0 0ad9d1ea19be35d30e46e89442a269df
++       `apply` が再帰をコンテキストの `value ->{this} value` としてとり、段 `value ->{recur} value` を返す SAM トレイトである。
++       コンテキスト関数リテラル `recur ?=> …` は `fixpoint` の呼び出しでこれに変換される。
++       このトレイトがあるのは、コンテキスト関数は自身の型の中で関数値に名前を付けられず、再帰がキャプチャ検査を通るには `recur` の保持されたキャプチャを明示しなければならないからである。
+
+% 0 1 0 1c84e199e517a6080565db4f8ede49ba
+
+@ 0 1 0 09c09e4542a9338403a25f0f1c809f7f
++   entry #apply   呼ぶべき再帰を与えられた段
+
+@ 0 5 0 1579a59524022c8d103011bb1e7bd34e
++ entry .probe   `probe[T]`。コンパイルを止め、型 `T` が何であるかを報告する
++     型レベルのコードのためのデバッグの補助である。
++     `probe[SomeMatchType[X]]` は、コンパイラが見るとおりの型をエイリアスを展開し拡大した形で示す _the type is …_ でコンパイルに失敗するので、複雑な型が何に簡約されるかを推測せずに知ることができる。
++     `Nothing` を返し、実行まで残ることはない。
+
+@ 0 4 0 0084682249ed8d370c25f87af0b2aa45
++ entry .typeName   `typeName[T]`。コンパイル時に得る、型の名前のテキスト
++     `typeName[List[Int]]` は `t"List[Int]"` であり、コードのコンパイル時にコンパイラ自身のプリンターで描画され、キャプチャ検査のアノテーションは取り除かれる。
++     メッセージや、インスタンス化された型に名前を付ける汎用のコードに便利である。
+
+@ 0 4 0 0a4495726683f49c01a7840d21292aac
++ entry .reflectClass   `reflectClass[T]`。完全な名前による、型の `Class[T]`
++     コードの実行時に、型のシンボルの名前で `Class.forName` によってクラスを探し、`Class[T]` として型付けする。
++     特定のクラスローダーを通じて読み込まれたクラスや入れ子のクラスについては、`hellenism.ClassRef[T]` がバイナリ名を正しく解決するので、そちらのほうが好ましい。
+
+@ 0 6 0 1a68d262497d45b507d8afc397bfe074
++ entry .!!   `!![T]`。消去された証明や証拠のパラメーターのための、任意の型の消去された値
++     `!![T]` と書き、コンパイラの消去された値の召喚である。
++     コンパイル時にだけ存在し実行時の表現を持たない `T` を返すので、その型の `erased` パラメーターが要求される場所に渡せる（`lambda(using !![data is Dynamical])` は `dynamically` がその許しを与える方法である）が、それ以外の場所には渡せない。
++     値が評価されることのある使い方はコンパイルエラーになる。
+
+@ 0 5 0 050b8a46791e09c10a98d9198930a9ba
++ entry .each   すべての要素を訪れ、ラムダに各要素の位置をコンテキストの `ordinal` として与える
++     二つのオーバーロードがある。一つは任意の `Traversable` のレシーバ（不透明なコレクション、`Text`、凍結済みの配列）に対するもの、もう一つは標準ライブラリの `Iterable` に対するものである。
++     ラムダは、要素の `Ordinal` を `Ordinal aka "ordinal"` として与えられるコンテキスト関数であり、それは `ordinal` で読み、`Prim` から数える。
++     `each` は `foreach` のこのライブラリでの綴りであり、`foreach` は `for` ループの脱糖のためにだけ残っている。
+
+% 2 1 0 02f1ca1a89081b39145e654222ca18dd
+
+% 3 1 0 01e1d89bfc67d345007aa44b0ffa6bb7
+
+% 0 1 0 0bfb2c35de08db64184bb07e4986372e
+
+% 0 1 0 0f40905cb882073b1dc119dc621253f7
+
+% 0 1 0 0fa3bb4e115ff8a20dc4c676d1e8ad4e
+
+% 0 1 0 10ac5a5ee9859a4301ad612d20291283
+
+% 1 1 0 0fd573d5d6c5281201469154b9855daf
+
+@ 0 5 0 08d193c36d47a9841b7ca382f95c843c
++ entry .fuse   左から畳み込む。アキュムレーターと次の要素を `state` と `next` として与える
++     `xs.fuse(base)(lambda)` は左畳み込みであり、そのラムダはコンテキスト関数である。
++     途中のアキュムレーターを `state`、要素を `next` として読むので、`xs.fuse(0)(state + next)` は総和をとる。
++     任意の `Traversable` と標準ライブラリの `Iterable` に対してオーバーロードされている。
++     inline なので、ループはその場に書かれる。
+
+% 2 1 0 05882bfc69cb0bd000fc1e2f907ccc18
+
+% 3 1 0 0d3ef4e339b19fd61125f17febb69b52
+
+% 0 1 0 1227941a64c1b9ee14f247116a5b821b
+
+% 0 1 0 1313c99e15a1b2e818245224ff2b4d01
+
+% 1 1 0 19b1d1218cc8eaa51086969eee464bd6
+
+@ 0 3 0 035bbc4896e17f3e16e72fafedc1ab4a
++ entry .all   すべての要素が述語を満たすかどうか
++     `xs.all(_ > 0)` は標準ライブラリの `forall` である。
++     `Traversable` のレシーバと `Iterable` に対してオーバーロードされている。
++     空のレシーバでは真である。
+
+@ 0 4 0 1c7212dd2c9f9a92105a057ef8de3467
++ entry .find   述語を満たす最初の要素。なければ `Unset`
++     任意の `Traversable` に対する `xs.find(predicate)` であり、`Option` ではなく `Optional[element]` を返す。
++     標準ライブラリの名前で書いた、`seek` と同じ操作である。
++     `soundness` アンブレラにはエクスポートされていない。
++     `import rudiments.find` とするか、`seek` を使う。
+
+@ 0 5 0 094005dab921437b0cc60f69af8d781b
++ entry .seek   述語を満たす最初の要素。なければ `Unset`
++     任意の `Traversable` に対する `xs.seek(_.startsWith(t"x"))` は、要素を `Optional` として返す。
++     値をとるオーバーロード（`seek(value)`）はない。
++     要素の型がパス依存なので、すべてのラムダについて述語の形と曖昧になるからである。
++     特定の要素は `seek(_ == value)` で探し、その位置は `where` で探す。
+
+@ 0 4 0 061675a97387d70c1466c504ac79ed93
++ entry .reap   部分関数が受け入れる最初の要素を、その部分関数で変換したもの。なければ `Unset`
++     `xs.reap { case Some(x) => x }` は標準ライブラリの `collectFirst` の全域的な対応物であり、`sweep` の単一の結果版である。
++     case リテラルのクロージャーは述語の形と部分関数の形の両方に合致するので、`seek` のオーバーロードではなく別の名前になっている。
+
+% 2 1 0 1377fea5dbf50d0f1f1246715adc548e
+
+% 3 1 0 04c6204ce2b7050b1f7af09515759068
+
+% 0 1 0 1c7c17ee257eeb6d17300112c4640e02
+
+% 1 1 0 1d4e66f5cc8f2b1215f303eec38e04c0
+
+@ 0 3 0 1915d5815e2b073518073bdccbe17710
++ entry .where   述語を満たす最初の要素の位置。`Optional[Ordinal]` として返す
++     `xs.where(_ == x)` は `indexOf` に代わるものである。
++     結果は `Int` ではなく `Ordinal` であり、一致がないことは `-1` ではなく `Unset` で表す。
++     要素そのものは `seek` で探す。
+
+% 2 1 0 126e350bcde1570a038ba739ebe4ee9c
+
+% 3 1 0 018e259aa11d3ed1171b8b2c2a4ae6d2
+
+% 0 1 0 18aaf930dd65d6b1098eaa3dc35e9d83
+
+% 1 1 0 19724826174019000abd325de5a69537
+
+@ 0 5 0 0b81f79a45507ac90f8dba3cf8dc583d
++ entry .indexed   各要素をその `Ordinal` と対にしたもの。レシーバ自身の形で返す
++     `xs.indexed` は `zipWithIndex` の全域的な対応物である。
++     `List` は `List[(element, Ordinal)]` を、`Sequence` は対の `Sequence` を返す。
++     `Reshapable.Stable` のインスタンスが必要なので、要素が位置を持たない順序のない `Set` や `Map` は受け入れられない。
++     序数は `Prim` を 0 とする。
++     その算術は `n0` か序数の加算を通じて行う。
+
+@ 0 5 0 0a8ddc0a56ddd83b1b81f1c37d2b5819
++ entry .sift   ある型のインスタンスである要素を、その型のコレクションとして返す
++     `xs.sift[Subtype]` は型検査に合致する要素を残し、結果を狭める。
++     `List(None, Some(1), None).sift[None.type]` は `List[None.type]` であり、シングルトン型やシングルトン型のユニオンも使える（`List.range(0, 10).sift[5 | 7]` は `List(5, 7)`）。
++     `Traversable`（`List` を返す）と `Iterable` に対してオーバーロードされている。
+
+@ 0 3 0 1d1cd45881fe61ea0c3a74884c92523a
++ entry .bi   各要素をそれ自身と対にする。形を保つ
++     `List(1, 2).bi` は `List((1, 1), (2, 2))` であり、`Set` は対の `Set` を返す。
++     `Traversable` では `Reshapable` のインスタンスが必要であり、`Iterable` のオーバーロードは直接写像する。
+
+@ 0 2 0 1f4f8c62d954257315c227bb8b383312
++ entry .tri   各要素をそれ自身と三つ組にする。形を保つ
++     `Set(1, 2).tri` は `Set((1, 1, 1), (2, 2, 2))` である。
++     `bi` を参照。
+
+@ 0 3 0 1849d881385ab37b1a65777fb289b925
++ entry .weave   二つの `Iterable` を要素ごとに交互に並べる
++     `left.weave(right)` は `left(0), right(0), left(1), right(1), …` を返し、どちらかが尽きたところで止まる。
++     標準ライブラリの `Iterable` に対してだけ定義されている。
+
+@ 0 4 0 1bdf0696bfa559eb1d3f344402288c71
++ entry .annex   各要素を計算した値と対にする。タプルの要素は平らにする
++     `xs.annex(f)` は各要素 `x` を `(x, f(x))` に写像する。
++     要素がすでにタプルである場合、`f(x)` は入れ子にされず、さらなる成分としてそれに付け加えられる。
++     標準ライブラリの `Iterable` に対するものであり、呼び出し箇所で正確な型が細分化される `Iterable[Tuple]` を返す。
+
+@ 0 4 0 0f7be42f08d29fea08d63095f14522d0
++ entry .intercalate   入れ子の `Iterable` を、間に区切りを置いて連結する
++     `parts.intercalate(List(0))` は内側のコレクションを、各組の間に区切りを置いて連結する。
++     区切りの既定は空なので、`intercalate()` は平坦化である。
++     標準ライブラリの `Iterable[Iterable[value]]` に対するものである。
+
+@ 0 7 0 17c826334cb83aa711f9b1d77d445014
++ entry .total   要素の総和。その `Addable` のインスタンスによる
++     `xs.total` は要素を足し合わせる。
++     結果の型は適応する。
++     要素の型が `Zeroic` のインスタンスを持つ（すべての数値型が持つ）場合、和はゼロから始まり、結果は素の要素の型である。
++     そうでなければ `Optional` であり、空のレシーバでは `Unset` である。
++     `Traversable` と `Iterable` に対してオーバーロードされており、transparent なので、期待される型を持つ引数の位置では狭めが利用できないことがある。
++     `Int` は `Optional[Int]` に適合するので、そこでは `xs.total.or(0)` が確実な書き方である。
+
+% 2 1 0 0e4ccec85fe0eca11ea9f509158438cc
+
+% 3 1 0 1bcd4c1837a8b387133a6b677abf82eb
+
+% 0 1 0 014c0585dbb75fb31a85a2369acf1df1
+
+% 0 1 0 0772ddcc30bf07de16c9eaab82ad9794
+
+% 1 1 0 1c733524c63c6c011df76364a5af2cb8
+
+@ 0 3 0 167f5446f85a1e90081e167544e4fad4
++ entry .product   要素の総乗。その `Multiplicable` と `Unital` のインスタンスによる
++     `xs.product` は型の `one` から始めて要素を掛け合わせる。
++     `Traversable` と `Iterable` に対してオーバーロードされている。
+
+@ 0 2 0 01f1140792d6c9031b2b5856fc4832d7
++ entry .sumBy   各要素の数値への射影の総和
++     標準ライブラリの `Iterable` に対する `xs.sumBy(_.length)` であり、射影された型の `Numeric` による。
+
+@ 0 4 0 0d256334ccffd4b01fb80ff2ddc6cf5d
++ entry .mean   要素の算術平均。空のレシーバでは `Unset`
++     `xs.mean` は `xs.total` を個数で割ったものであり、それ自身と `Addable` で、`Double` で割ってそれ自身になる `Divisible` である要素の型（`Double` や量）に対するものである。
++     `Traversable` と `Iterable` に対してオーバーロードされている。
+
+@ 0 5 0 0c08d14a22473491017c7dda8f71c504
++ entry .mean2   数値的な安定性のために、任意の基準点のまわりで計算した平均
++     `xs.mean2` はすべての要素から最初の要素を引き、その差を平均し、基準点を足し戻す。
++     値が大きく互いに近いとき、これは `mean` より精度を失いにくい。
++     標準ライブラリの `Iterable` に対するものであり、算術に必要な減算・加算・除算のインスタンスを伴う。
+
+@ 0 3 0 0addf39177e67d3d1bb1dda80f630667
++ entry .variance   要素の母分散。空のレシーバでは `Unset`
++     `mean` からの偏差の二乗の平均である。
++     `Traversable` と `Iterable` に対してオーバーロードされている。
++     結果の型は、要素の二乗を `Double` で割ったものの型である。
+
+@ 0 3 0 1bc8eaefa3381a3003af012c7382717f
++ entry .std   要素の母標準偏差。空のレシーバでは `Unset`
++     最初の要素の単位で計算されるので、次元を持つ量の標準偏差はその量自身の型で返る。
++     `Traversable` と `Iterable` に対してオーバーロードされている。
+
+@ 0 3 0 00bf76bccee6ac4b0c0782addc9bc16b
++ entry .indexBy   計算したキーから各要素への写像
++     `xs.indexBy(_.id)` は `Map[key, element]` を組み立てる。
++     二つの要素がキーを共有する場合は、後のものが勝つ。
++     標準ライブラリの `Iterable` に対するものである。
+
+@ 0 4 0 19f8fd77ad9f07291da4cfdd2101996b
++ entry .longestTrain   述語を満たす要素の最長の連続部分の開始位置と長さ
++     `xs.longestTrain(_ == 0)` は、述語が成り立つ最長の連続部分の `(start, length)` を、0 から始まる `Int` で返す。
++     該当するものがなければ `(0, 0)` である。
++     `Traversable` と `Iterable` に対してオーバーロードされている。
+
+% 2 1 0 1c2a35fd60b799011c043187f15c7561
+
+% 3 1 0 1ad7c380559943261902ca592b7051e2
+
+% 0 1 0 17233a1d697d528907836c195c1ca4de
+
+% 1 1 0 0d8b5e848fa0cd640410ba54e80c7bab
+
+@ 0 4 0 0ea9bf6ba19e3e7d1e0f7e0f1e5b94c1
++ entry .iterator   要素を引き出す消費者のための、`Traversable` のワンショットの走査
++     `xs.iterator` は要素に対する murmuration の `Iterator` であり、その `next()` は終わりで例外を投げるのではなく `Iterator.Exhausted` を返す。
++     `each` で要素を渡されるのではなく、一つずつ引き出さなければならないループのためのものである。
+
+@ 0 8 0 0b6dc291f4a34cea17080a5be739c96f
++ entry .to   コレクションを要求された形に変換する。`xs.to[List]`、`text.to[Set]`、`pairs.to[Map]`
++     `xs.to[Form]` は、レシーバからその形への `Convertible` のインスタンスを通じて行われる。形は適切な型でも、適用されていないコンストラクターでもよい。
++     任意の `Traversable` はコレクションへのインスタンスを持ち、`Text` は `Char` のコレクションに変換される。
++     二つ目のオーバーロードは、`Mirror.ProductOf` を通じてタプルをケースクラスに変換する（`(t"Hamlet", 30).to[Person]`）。
++     transparent なので、結果は呼び出し箇所で完全に適用される。
++     期待される型がそれを固定しない場所では、素のコンストラクターが適用されないまま残ることがあり、そこでは括弧で囲んだファクトリーの形 `xs.to(List)` が代わりになる。
+
+% 2 1 0 0145e9dbad8894040e9421801346f5e3
+
+% 3 1 0 0687585246a75b9b06cceb3888284f52
+
+% 0 1 0 1e5e7764220cbd490a2d76cf00b5f449
+
+% 0 1 0 1d7f4095206501b1089cbb72ee674199
+
+% 1 1 0 087e97e7542417aa037af40f42aa3d2c
+
+@ 0 6 0 0c295279913daa3d0021faf785afdb99
++ entry .occupied   値が空でないことを一度だけ検査し、その証明を `& Populated` として記録する
++     `xs.occupied` は `Optional[xs.type & Populated]` である。
++     空のレシーバでは `Unset` であり、そうでなければ空でないことの証明を伴って型付けされた同じ値であって、その上では `head`、`last`、`lead`、`tail`、`reduce` が全域的である。
++     読むたびに `Optional` を扱うのではなく、一度の検査を型の中で済ませる。
++     `soundness` アンブレラにはエクスポートされていないので、`import rudiments.occupied` とする。
+
+% 2 1 0 17d7fd2df403323a1d5732e586db9046
+
+% 3 1 0 19f0ca6b5e6d5833048f06054434053a
+
+% 0 1 0 0969f05a35c8acae1228f5af4b1e84dd
+
+% 0 1 0 1ea7b92cf800b6e9050c075d7a5aa5a4
+
+% 0 1 0 1b57f3a3e9c3c7f21e5ea56a3ce0ad18
+
+% 1 1 0 0d3d2c42c29627d0161b9ba4646e5d4c
+
+@ 0 10 0 09f80845643d38711203600530eba2f0
++ entry .Populated   コレクションが空でないことの、型の中の証明
++     `Populated` は `proscenium.Populated`（構造的な細分化 `Any { type Occupied = true }`）であり、以前のコードが使っていた名前でここで再宣言され、`concordance` ライブラリに含まれる。
++     `List[Int] & Populated` と型付けされた値は要素を持つことが分かっているので、その上では `head`、`last`、`lead`、`tail`、`reduce` が全域的である。
++     この証明は、コレクションのコンパニオンの空でないリテラルのコンストラクター（`List(1, 2, 3)` は持つが、`List()` と `List(xs*)` は持たない）、`occupied`、そして `Text#cut` のように空でないと分かっているものを返す API によって作られる。
++     構造的なので、消去されると何も残らない。
++     `Text & Populated` も実行時には `String` のままであり、`populatedEquality` によってブランド付きの値を普通の自分自身と比較できる。
+
+@ 0 7 0 0cbb07a61ce38ffb057b1f501a4fec9c
++ entry .head   最初の要素。`Populated` のレシーバではそのまま、それ以外では `Optional`
++     `xs.head` は、レシーバの型が証明するものに適応する。
++     `List[Int] & Populated`（空でないリテラル、または `occupied` の結果）では `Int` であり、普通の `List[Int]` では、空かどうかを一度検査したうえで `Optional[Int]` であって、空なら `Unset` である。
++     例外を投げうる部分的な `head` はない。
++     大きさの分からないコレクションで素の要素を必要とするプログラムは、先に `occupied` で束縛するか、`at(Prim)` を使う。
++     `List` では `head` にコストはかからないが、`at(Sec)` 以降はリストを歩くので `dysasymptotics.linearAccess` が必要である。
+
+% 2 1 0 1cc63d3f1d40a34a1c0c602fb57b99da
+
+% 3 1 0 0bf0536d3a25ef761d52caef9218d1f5
+
+@ 0 1 0 1854497f21db9f7215928b0ce002a9b1
++       label 証明のないリスト。head は Optional
+
+% 1 1 0 0b0ccc11015bf91807a79bb7ed32f795
+
+% 0 1 0 1399b8218c9871a20a67fa53b000b346
+
+% 0 1 0 04d3ad29e33b3d4d14a2c1806baadbd7
+
+% 1 1 0 15dc2f8bf5dd7f6c1976f5e3d5b94497
+
+@ 0 1 0 0300df5b47ad78cc0968ab49572ebd3e
++       label リテラルは自らを証明する。head はそのまま
+
+% 1 1 0 0ca3c7233be52ed8009e4a226cd41ef3
+
+% 0 1 0 167d13c003e1a02f1e7a12cd1a1ddfd6
+
+% 1 1 0 1e82086adf23b57e02b4ac913f14d750
+
+@ 0 1 0 04bc2976d905976f1649b57e3a0595d0
++       label 検査済みの値は証明をブロックの中へ運ぶ
+
+% 1 1 0 13c0499e3873bac70f2c92d69a2c4af2
+
+% 0 1 0 01bf6f107225b2b30d0501b6a6e0a3bf
+
+% 0 1 0 1b604f942fe4295805d9999f7b46ede1
+
+% 1 1 0 17882c064c75821e183f2463d44eec26
+
+% 2 1 0 0d84dc0f1de8b7f90272dfa29912f987
+
+@ 0 2 0 0ba2097a5e4f509a1a76bc695c70a624
++     落とし穴がある。
++     レシーバは名前の付いた値かリテラルにすること。
++     `(if c then xs else ys).head` のような式は、コンパイラがほかの場合なら見て取れる証明を運ばないことがある。
+
+@ 0 5 0 02ef8f738dae7874138843ca1643bfb9
++ entry .last   最後の要素。`Populated` のレシーバではそのまま、それ以外では `Optional`
++     `xs.last` はレシーバの `Terminable` のインスタンスを通じて行われるので、各コンテナーはそれぞれのコストで答える。
++     `Sequence` や配列では O(1)、`List` では走査（そのため `dysasymptotics.linearSize` が必要）、`Chain` では強制（`unboundedSize`）である。
++     `head` と同じように適応し、`Populated` のレシーバでは要素、それ以外では `Optional` である。
+
+@ 0 4 0 0f1aa142cfdc329d0e58b42d133da4f2
++ entry .lead   最後の要素より前のすべて。`Populated` のレシーバではそのまま、それ以外では `Optional`
++     `xs.lead` は `tail` の鏡像であり、レシーバの `Truncable` のインスタンスを通じて行われる。
++     `lead` と `last` を合わせると全体が復元される。
++     結果は普通のコレクション型であり、ブランドは付かない。
++     一要素のリストの `lead` は空だからである。
+
+@ 0 5 0 1d3dd77a468ff431042c6b565874154d
++ entry .tail   最初の要素より後のすべて。`Populated` のレシーバではそのまま、それ以外では `Optional`
++     `xs.tail` は、`Segmentable` かつ `Countable` である任意のレシーバに対する `xs.skip(1)` であり、そこには `Text` も含まれる（`t"hello".tail` は `t"ello"`）。
++     `head` と同じように適応するので、証明のないレシーバでは `Optional` であり、空のものでは `Unset` である。
++     一要素の値の `tail` は空なので、切り出した部分そのものにブランドが付くことはない。
+
+@ 0 4 0 19f012ac990b575017b0d28de43d269d
++ entry .reduce   `Populated` のレシーバに限り、要素を左から対ごとに組み合わせる
++     `xs.reduce(_ + _)` は `& Populated` と型付けされたレシーバに対してだけ定義されており、それによって全域的になる。
++     空の場合が存在しないからである。
++     大きさの分からないコレクションは、先に `occupied` を通すか、基底の値を伴う `fuse` を使う。
+
+@ 0 3 0 1ae6128771d4b1f71d159e7164aafe78
++ entry .populatedEquality   `value & Populated` を普通の `value` と比較できるようにする
++     暗黙のスコープにある `CanEqual` の given である。
++     これがなければ、リテラルの型が証明を運び `xs` が運ばない場合、厳格な等価性は `List(1, 2) == xs` を拒否する。
+
+@ 0 1 0 182ffd10f14cd45402ca35a351a2f569
++ entry .populatedEqualityReversed   逆向きの `value == (value & Populated)` に対する `CanEqual`
+
+@ 0 3 0 1d850d109b58786f101732a5b0c17bee
++ entry .sizedEquality   `value & Sized[n]` を普通の `value` と比較できるようにする
++     暗黙のスコープにある `CanEqual` の given であり、長さがリテラルの配列をブランドのない配列と比較できるようにする。
+
+@ 0 1 0 1f8ee637f4139f6c146ac6aaa526d7d2
++ entry .sizedEqualityReversed   逆向きの `value == (value & Sized[n])` に対する `CanEqual`
+
+@ 0 6 0 092c276755c753de0c3d78277f7c063f
++ entry .segment   `value.segment(interval)`。値のうち区間に含まれる部分
++     `xs.segment(Sec thru Quat)` は、任意の `Segmentable` の値の、序数の `Interval` にわたる部分であり、インスタンスの `Segment` 型で返る。
++     `List` なら `List`、`Text` なら `Text`、凍結済みの配列なら凍結済みの配列である。
++     位置による操作 `before`、`upto`、`from`、`after`、`keep`、`skip`、`snip`、`tail` はすべてこれを使って書かれており、値の範囲を超える区間は切り詰められる。
+
+% 2 1 0 0d30c300738307211c3dd5700096c75a
+
+% 3 1 0 006b4f08964eae33093a62bd7776dfca
+
+% 0 1 0 0d40a1dd3a6d167214b0533784092bf7
+
+% 1 1 0 07895d7f45a9b8b81cd28b45cdc2b39b
+
+@ 0 6 0 1448bfc06c757a840a7da941b25b6e53
++ entry .before   ある位置より前、または述語に合致する最初の要素より前のすべて
++     `xs.before(Ter)` は最初の二つの要素からなる部分である。
++     述語のオーバーロード `xs.before(_ == ' ')` は、合致する最初の要素より厳密に前のすべてであり、何も合致しなければ最後の要素より前のすべてである。
++     `Segmentable` かつ `Countable` である任意の値（序数の形）、またはさらに `Traversable` である任意の値（述語の形）に対するものである。
+
+@ 0 3 0 028fcb13558a40a60083f201f578058c
++ entry .upto   ある位置まで（その位置を含む）のすべて、または述語に合致する最初の要素までのすべて
++     `xs.upto(Ter)` は最初の三つの要素である。
++     `xs.upto(_ == ':')` は合致する要素を含み、何も合致しなければ最後の要素まで達する。
+
+@ 0 3 0 05e882fcc6d18e28157ed5938cb1da86
++ entry .from   ある位置以降のすべて
++     `xs.from(Ter)` は三番目の要素から終わりまでの部分である。
++     ほかのどのライブラリも値に対する `from` をエクスポートしないので、この名前は `soundness` アンブレラで曖昧にならない。
+
+@ 0 2 0 0c11371dd87b19670aa280fc29aee990
++ entry .after   ある位置より後のすべて
++     `xs.after(Ter)` は四番目の要素から終わりまでの部分である。
+
+@ 0 8 0 1b39d4ce164d9e7b13cec9d409d3d7d2
++ entry .keep   最初の（`Rtl` では最後の）`count` 個の要素、または述語に合致する先頭の連続部分
++     `xs.keep(3)` は標準ライブラリの `take` であり、`xs.keep(3, Rtl)` はその `takeRight` である。
++     `xs.keep(_ < 4)` は `takeWhile` であり、`xs.keep(predicate, Rtl)` はその右から左への双子である。
++     どの形も `Segmentable` を通じて形を保ち（`Text` はその型を、スタイル付きのテキストはそのスタイルを保つ）、個数が範囲を超えても失敗せずに切り詰める。
++     `Chain` は、切り出すと強制してしまうので `Segmentable` のインスタンスを持たない。
++     そのコンパニオンは独自の遅延した `keep` と `skip` のオーバーロード（`Bidi` なし）を持ち、`Chain` のレシーバではオーバーロード解決がそちらを優先する。
+
+% 2 1 0 17cee86077059f3706e6e8a97eb21b5f
+
+% 3 1 0 17fcfce205e0f42c194f41329ef22a93
+
+% 0 1 0 1b67ae63a79275ef1253558f2c887fc6
+
+% 0 1 0 09e4677c6ad2b13c1ec42e243423942a
+
+% 0 1 0 08e86adf036fb17a1066f3681d71dccb
+
+% 1 1 0 15a159a0676f2174113569ca157e6920
+
+@ 0 3 0 0fa9e78b259caec204a21e518073935e
++ entry .skip   最初の（`Rtl` では最後の）`count` 個を除くすべての要素、または合致する先頭の連続部分より後のすべて
++     `xs.skip(2)` は標準ライブラリの `drop`、`xs.skip(2, Rtl)` はその `dropRight`、`xs.skip(_ == ' ')` はその `dropWhile` である。
++     `keep` と同じく形を保ち、切り詰め、`Chain` では遅延する。
+
+@ 0 5 0 0d44e5ae9b0e8e5802a384479068ebf8
++ entry .snip   値をある位置、または述語に合致する最初の要素で、二つの部分に分ける
++     `t"Hello".snip(2)` は `(t"He", t"llo")`、すなわち最初の `count` 個の要素と残りである。
++     述語のオーバーロード `xs.snip(predicate, start)` は、`start` 以降で合致する最初の要素を探し、合致した要素が右側の先頭になるように二つの側を `Optional` として返す。
++     何も合致しなければ `Unset` である。
+
+@ 0 5 0 19e52517831565461ae8ca9e0528820d
++ entry .define   一つの位置またはキーを設定したコンテナーの複製。`at` の書き込み側の双子
++     `Sequence` に対する `xs.define(Sec, 9)`、`Map` に対する `map.define(key, value)` であり、レシーバの `Definable` のインスタンスを通じて行われる。
++     全域的である。
++     範囲外の序数ではコンテナーを変えずに返し、存在しないキーでは新しい項目を定義する。
++     `List` では位置による定義はリストを歩くので、`dysasymptotics.linearAccess` が必要である。
+
+@ 0 3 0 12febad58ad231cc1ab75dda132172c8
++ entry .omit   一つのキー、または一つの位置を除いたコンテナーの複製
++     `map.omit(key)` は項目を取り除く（存在しないキーではマップはそのまま）。
++     凍結済みの配列は位置を `omit` する。
++     レシーバの `Omissible` のインスタンスを通じて行われる。
+
+@ 0 10 0 10dac1cfa8da3f3204bbf152d2989a3a
++ entry .sort   要素をそれ自身の順序で並べる。要素の型の `Comparable` とスコープにあるアルゴリズムによる
++     `xs.sort` は、`Reshapable.Stable` のレシーバ（`List`、`Sequence`、`Chain`、凍結済みの配列。`Map` はその対を `Ledger` にソートする）を、要素の型の `Comparable`（数値は持つ。`Text` には `collationComparable` を伴う `collations.codepointCollation` のような照合が必要）と、`sortingAlgorithms` から名前で選んだスコープにある `SortAlgorithm` の given によってソートする。
++     `Set` は安定したインスタンスを持たないのでソートできない。
++     これは順序を黙って捨てることではなく、正直な拒否である。
++     二つ目のオーバーロード `array.sort()` は、可変の `Array^` をその場でソートし、何も返さない。
++     使い捨ての配列は、ファイルがそのためのゲートを開いていれば（`List` では `linearSize`）レシーバの `Countable` のインスタンスから大きさを決め、そうでなければイテレーターから伸長させる。
+
+% 2 1 0 072eb08ac58a71461f23c08156810f1b
+
+% 3 1 0 1bff1f359076e7d40a85775b654b863a
+
+% 4 1 0 130c999c8484a0c60f6a53e8f78bc42c
+
+% 0 1 0 114019d44cbebe68120ef00f2ecc1e7d
+
+% 0 1 0 1601313cbc738e131406efd811c15b47
+
+% 1 1 0 005ea0f9d3ced86e0b95f8b24c0efbd3
+
+@ 0 7 0 06da9ee08f56af9a067350edbcd0c564
++ entry .order   各要素から計算したキーで要素をソートする。`xs.order(_.age)`
++     `xs.order(lambda)` は標準ライブラリの `sortBy` であり、安定なので、等しいキーは順序を保つ。
++     キーは比較のたびに二回ではなく、ソートの前に要素ごとに一回計算される。
++     `sort` と同じく、キーの `Comparable`、`sortingAlgorithms` からの `SortAlgorithm`、`Reshapable.Stable` のレシーバが必要である。
++     比較関数のオーバーロード（`sortWith`）はない。
++     二引数のラムダは、`map.order { (key, value) => key }` のような対を要素とするレシーバでタプルの展開を壊してしまうからである。
+
+% 2 1 0 01d33ff11d31cf64118d939cef48abb7
+
+% 3 1 0 1cf28ef576aa5839137b7de617333144
+
+% 4 1 0 1060110ed4c0a5550cc618dc377b3351
+
+% 0 1 0 1ea6ee3f69ae02c400e7cc8668774b60
+
+% 0 1 0 0ad69b5674847eb50df80876de345b78
+
+% 1 1 0 0eb4a660a264e14d0a94cb8728d033a9
+
+@ 0 5 0 14be4e9bb840593d18a3dcb66dcc9620
++ entry .maximize   キーが最大の要素。空のレシーバでは `Unset`
++     `xs.maximize(_.score)` は、`xs.order(_.score).last` が返す要素を一回の走査で見つける。
++     キーが等しい要素が複数あれば、最初のものが勝つ。
++     hypotenuse の数値の `maximum` と異なり、任意の `Comparable` のキー（`Text`、`Ordinal`、日付）に対して使える。
++     スコープにあるローカルの `def maximize` はこの拡張を隠す。
+
+@ 0 2 0 1512b80a2ebbee401744f54dd567c997
++ entry .minimize   キーが最小の要素。空のレシーバでは `Unset`
++     `maximize` の対応物である（`xs.minimize(_.length)`）。
+
+@ 0 1 0 0156283d47a1076e05a26aca65d5b68c
++ entry .sortingAlgorithms   ソートのアルゴリズム。それぞれ名前でインポートする `SortAlgorithm` の given
+
+% 1 1 0 07afd6615a390ccf07613740d093c415
+
+@ 0 5 0 1ce686b2500646de08d7e67f6c0357b3
++       `sort`、`order`、`array.sort()` がどのアルゴリズムを使うかはスコープにある `SortAlgorithm` の given であり、暗黙に選ばれるものはない。
++       ファイルに `import sortingAlgorithms.timsort`（または別のもの）がなければならない。
++       このパッケージは `murmuration.sortingAlgorithms` を映したものであり、`rudiments` を通じてコレクションを使うコードが `rudiments.sortingAlgorithms.x` として選べるようにする。
++       `soundness` アンブレラは両者を統合する。
+
+% 2 1 0 09565f705cc270030c795101941890fc
+
+% 3 1 0 1f9429ba58d270b818c5f9fb5190542e
+
+% 0 1 0 181bdb6108d3a40a1c0ebcab9db44ebd
+
+% 0 1 0 078817f50e87290a07194cade0bfa3fb
+
+% 1 1 0 1d0f1a1da4b7b96402b79112e674b35b
+
+@ 0 8 0 1308bb8d2906933d0f66686699bd68fc
++       Timsort と Powersort は安定で、部分的に整列したデータに速い。
++       quicksort と heapsort は使うメモリが少ない。
++       bubble sort と insertion sort はごく小さな入力に向く。
++   entry .timsort   Timsort。安定、適応的であり、JDK 自身のオブジェクトのソート
++   entry .powersort   Powersort。安定、適応的であり、Timsort より証明可能な意味で優れたマージ方針を持つ
++   entry .quicksort   クイックソート。その場で行い、安定ではない
++   entry .heapsort   ヒープソート。その場で行い、安定ではなく、保証された上限を持つ
++   entry .bubbleSort   バブルソート。安定、二次の計算量で、ごく小さな入力向け
++   entry .insertionSort   挿入ソート。安定、二次の計算量で、ほぼ整列したごく小さな入力に速い
+
+@ 0 1 0 1f81b95581b00e871b49891f55b7bc62
++ entry .sorting   コレクションと、ソートのアルゴリズムがソートする配列との間の配管
+
+% 1 1 0 1720f3dd8461facb18139d94c8c17e57
+
+% 2 1 0 1b90e2162628cd16148a85b1573ce7cf
+
+@ 0 12 0 038021a3549dd62f13bbea34c9560aaa
++       直接使うものではない。
++       `sort` と `order` は inline であり private なものに手を伸ばせないので、公開されているだけである。
++       `Entry` は `order` のためにキーとその要素を対にする。
++       `extremum` は `maximize` と `minimize` の背後にある一回の走査である。
++       `comparator` は `Comparable` をアルゴリズムがとる `java.util.Comparator` に変える。
++       `sorted` と `ordered` はイテレーターを使い捨ての配列に排出し、ソートし、それを反復して戻す。
++   entry .Entry   ソートのキーと、その元になった要素
++     entry #key   `order` のラムダが計算したキー。型なし
++     entry #element   キーの計算元の要素。型なし
++   entry .extremum   キーが最大または最小の要素。一回の走査で求める
++   entry .comparator   `Comparable` からの `java.util.Comparator`
++   entry .sorted   イテレーターの要素を、それ自身の順序でソートしたもの
++   entry .ordered   イテレーターの要素を、射影によってソートしたもの
+
+@ 0 3 0 0dd005b15e73a14e119afd9d87496d1f
++ entry .upsert   キーが存在してもしなくても、現在の値の関数で一つのキーを設定したマップ
++     `map.upsert(key, _.or(0) + 1)` は現在の値を `Optional` として渡し、結果を格納する。
++     キーが存在しなければ挿入、そうでなければ更新である。
+
+@ 0 3 0 1e1038453eb8dd120536cc468d1a2395
++ entry .collate   二つのマップを統合し、両方にあるキーの値を組み合わせる
++     `left.collate(right)(merge)` はどちらかのマップのすべてのキーを持つ。
++     両方がキーを定義している場合、値は `merge(leftValue, rightValue)` である。
+
+% 2 1 0 0dcef7462ff64fd91d9f923154259f8a
+
+% 3 1 0 19397f9056b7bf1b1302cd4768a3caf3
+
+% 0 1 0 046f54319d3654321599558bb1ecd8c7
+
+% 0 1 0 06758eb9a81a02b81309164456355d9d
+
+% 0 1 0 01cf28d65d19a60f0019442323ceb269
+
+% 1 1 0 17dfd3782006dc74127ed06c612f7658
+
+@ 0 3 0 173255c7d741978c1252a78d344538ab
++ entry .establish   可変のマップのキーの値。存在しなければ計算して格納する
++     `scala.collection.mutable.Map` に対する `map.establish(key)(compute)` は `getOrElseUpdate` である。
++     メモ化の慣用句であり、項目が一度だけ確立されることを示す名前を持つ。
+
+@ 0 3 0 08eb875ecb8e1fe81f88b34fa101aad7
++ entry .plus   `Map[key, List[value]]` のキーのリストに要素を加える
++     `map.plus(key, value)` は `key` のもとのリストの先頭に `value` を加え、キーが存在しなければ新しいリストを始める。
++     マルチマップの挿入である。
+
+@ 0 3 0 140b887e56cc9ef10b900d4797cdc24e
++ entry .unwind   リストを逆順にして別のリストの前に付ける。`reversed.unwind(tail)`
++     `list.unwind(tail)` は `list.reverse + tail` である。
++     先頭への追加で組み立てたアキュムレーターを、その後に付け加える残りがあるときに仕上げる段である。
+
+@ 0 3 0 198c1c8a3fb4dd7014b4f44772384582
++ entry .unique   一要素のリストのただ一つの要素。そうでなければ `Unset`
++     `list.unique` は、リストがちょうど一つの要素を持つときその要素であり、空またはそれより長いリストでは `Unset` である。
++     検索がちょうど一つの答えを見つけたことの検査である。
+
+@ 0 4 0 0ad80351736c701e16201258727db26a
++ entry .unused   `unused(base)(taken)`。`base`、`base2`、`base3`、… のうち、`taken` が拒否しない最初のもの
++     自前のカウンターを持たずに新しい名前（生成されたコードの変数、ほかのファイルの隣に置くファイル）を選ぶためのものである。
++     飾りのない `base` が最初の候補で、接尾辞は 2 から始まるので、`base1` が生成されることはない。
+
+% 2 1 0 0628cefdf216be3e04a51e85f07e0311
+
+% 3 1 0 12c67d13b6e442f107a35cce0002253a
+
+% 0 1 0 1647140c3cf4b568150c67330faf0d4b
+
+% 0 1 0 1e08c1e90a0719d615c9dbeab55931d3
+
+% 1 1 0 17af720a2c5edf1d0c4369df9861d164
+
+@ 0 2 0 0653b737515a90bc03eb8ccd0e11b97f
++ entry .runs   リストを、等しい隣接要素の極大な連続部分に分ける
++     `List(1, 2, 2, 1, 1, 1).runs` は `List(List(1), List(2, 2), List(1, 1, 1))` である。
+
+@ 0 3 0 03b062f9e377dc6209e161e44b573bd8
++ entry .runsBy   リストを、射影が等しい隣接要素の連続部分に分ける
++     `List(1, 2, 2, 1, 1, 1, 4, 4).runsBy(_%3)` は射影でグループ化するので、`1, 1, 1, 4, 4` が一つの連続部分になる。
+
+@ 0 3 0 0dd5cb00cdb32a0d12b237a500037f4a
++ entry .snapshot   可変の `scala.Array` の凍結済みの複製
++     `array.snapshot` は JVM の配列を、その後の元への書き込みが影響しない新しい凍結済みの `Array[element]^{}` に複製する。
++     要素の `ClassTag` が必要である。
+
+@ 0 4 0 10b244155b463f750b1486f13abfd91b
++ entry .place   凍結済みの配列を、可変の `scala.Array` のある位置に複製する
++     `target.place(source, ordinal)` は、凍結済みの配列から可変の配列への、`ordinal`（既定は `Prim`）から始まる `System.arraycopy` である。
++     `Scribe` に対する限定された形は `Scribe#place` である。
+
+@ 0 3 0 0088ff1efa63d9c10d27b25cea25b841
++ entry .javaInputStream   `Data` を `java.io.InputStream` として扱う
++     ストリームを読む Java の API にバイト列を渡すためのものであり、配列を複製せずにその上の `ByteArrayInputStream` を作る。
+
+@ 0 8 0 0d4a7cc443cc7a3b165736414ce663b3
++ entry .Bytes   量としてのバイト数。`4.kib`、`data.bytes`
++     `Bytes` は不透明型 `rudiments.internal.Bytes`（不透明な `Long`）であり、ここでエクスポートされている。
++     算術と比較はこれを量として扱う。
++     二つの `Bytes` は足し引きでき、`Bytes` は `Int` と掛け算と割り算ができ、`Bytes` を別の `Bytes` で割ると `Double` の比になる。
++     これらはすべてそのコンパニオンの given を通じて行われるので、インポートは不要である。
++     `Bytes(long)`、`Int` や `Long` に対するリテラルの拡張 `b`、`kib`、`mib`、`gib`、`tib`（二進の単位。`1.kib` は 1024 バイト）、または `Data` から `bytes` で作る。
++     `long` で読み戻し、`1024 bytes` と表示される。
+
+% 2 1 0 00932d85a6921757064e26a6e56a7308
+
+% 3 1 0 10881c050a9a0b0f1ee397b30e4e37e2
+
+% 0 1 0 1b7d436d0877d6251b50d1013e47f363
+
+% 0 1 0 15a2f032bb2d416f1f9e73c7938145ec
+
+% 0 1 0 1ff93883786571760b6eb8b6071fe709
+
+% 1 1 0 17ec48607ef8899c1bf9c9ede6ea7df6
+
+@ 0 6 0 1e368e7a077d158815f8729945dcc69b
++ entry .b   `n.b`。`n` バイトの `Bytes`。`Int` または `Long` に対して使う
++ entry .kib   `n.kib`。`n` キビバイト（×1024）の `Bytes`
++ entry .mib   `n.mib`。`n` メビバイト（×1024²）の `Bytes`
++ entry .gib   `n.gib`。`n` ギビバイト（×1024³）の `Bytes`
++ entry .tib   `n.tib`。`n` テビバイト（×1024⁴）の `Bytes`
++ entry .bytes   `data.bytes`。`Data` の長さを `Bytes` として返す
+
+@ 0 5 0 1a8da5c6066dea59017d33fe71b7374f
++ entry .Digit   十進数字 `0` から `9` を表す型
++     `Digit` は不透明型 `rudiments.internal.Digit`、すなわちユニオン `0 | 1 | … | 9` であり、ここでエクスポートされている。
++     したがって `Digit` 型の値は一桁の十進数字であることがわかっている。
++     `Digit(char)` と `Digit(int)` はそれを `Optional` として作り、それ以外の値に対しては `Unset` を返す。拡張 `int` と `char` はそれを読み戻す。
+
+% 2 1 0 1e8c88fd32c0312a1c9fcb00d0ff3b14
+
+% 3 1 0 065025eba33198df1e0d175021be2895
+
+% 0 1 0 03f18f19cf7a05ed1157a9bd706c5c11
+
+% 0 1 0 05194f237c40d8c4159f4dd88e1a92ce
+
+% 1 1 0 0c6ae1031bac64f70c6ddaf7180fa10d
+
+@ 0 3 0 1152a441acff1522026ea9825bb991af
++ entry .tuple   ケースクラスを、そのフィールドのタプルとして得る
++     `person.tuple` は `Tuple.fromProductTyped(person)` であり、直積型の `MirroredElemTypes` として型付けされる。
++     タプルの `to[Product]` 変換の逆である。
+
+@ 0 3 0 191bb31f27479ea900e6f829ca46d3d9
++ entry .contains   `tuple.contains[T]`：タプル型がある型の要素を持つかどうかを、コンパイル時に判定する
++     `Tuple` に対するインラインかつ erased な拡張であり、`(erasedValue[(Int, Text)]).contains[Text]` は型から計算されて `true` になる。
++     `soundness` アンブレラにはエクスポートされていない。
+
+@ 0 2 0 09c7c9943c15d49e050b6b1c134a020c
++ entry .indexOf   `tuple.indexOf[T]`：タプル型における要素型の位置、または `-1`
++     型からコンパイル時に計算される。アンブレラにはエクスポートされていない。
+
+@ 0 3 0 0ec357c44eb18e0f00957a40a7a2f848
++ entry .subtypes   `tuple.subtypes[S]`：タプル型の要素のうち、ある型のサブタイプであるものを、タプル型として得る
++     transparent inline な型レベルのフィルターであり、導出のコードで使われる。アンブレラにはエクスポートされていない。
+
+@ 0 5 0 1e68393baf0d8d6108aa458cdb038cd9
++ entry .literal   マクロの中で、`TypeRepr` からリテラル定数を読み取る
++     `repr.literal[Int]`（または任意のプリミティブ型、`String`、`Unit`、`Null`）は、`ConstantType` が保持する定数を `Optional` として返し、それ以外の型や別の種類の定数に対しては `Unset` を返す。
++     マクロの作者向けの `quotes.reflect.TypeRepr` に対する拡張であり、アンブレラにはエクスポートされていない。
+
+@ 0 1 0 00909455c03bd2e4028480e6a7a59465
++ entry .Atomic   JDK のアトミックの上に立つアトミックセル：`Atomic.Int`、`Atomic.Long`、`Atomic.Bool`、`Atomic.Ref` と配列
+
+% 1 1 0 0479f6561d6be84b1d3e3af39f3b236f
+
+@ 0 7 0 1c18bdafa4926e35144a9d0ba1a6f8c7
++       `Atomic` セルは、スレッド間で共有される値であり、その読み取りと書き込みはアトミックで、その遷移はロックフリーである。
++       それぞれは対応する `java.util.concurrent.atomic` のクラスに対する不透明なラッパーである（`Atomic.Int` は `AtomicInteger`、`Atomic.Long` は `AtomicLong`、`Atomic.Bool` は `AtomicBoolean`、`Atomic.Ref[value]` は `AtomicReference`、そして `Atomic.Ints`、`Atomic.Longs`、`Atomic.Refs` はアトミック配列に対するもの）。
++       すべての演算はインラインなので、バイトコードは JDK の呼び出しそのものになる。
++       名前は、セルが何のためのものかではなく、何を保持するかを表す。
+
+@ 0 8 0 17173fdccc6fe3af04db860d9557848f
++       `Atomic[value]` は、型に対して適切なセルを表すマッチ型である。`Atomic[Int]` は `Atomic.Int`、`Atomic[Boolean]` は `Atomic.Bool` であり、それ以外の型は `Atomic.Ref` になる。
++       これにより、ボックス化しないセルが自然な書き方になる（`Atomic.Ref[Int]` も正しいが、書き込みのたびにボックス化する）。
++       `Atomic(initial)` は引数の型によって構築するので、`Atomic(0)` は `Atomic.Int` である。
++       `Atomic[Int](0)` は汎用の `Ref` の分岐を選んで適合しないが、これは黙ってボックス化するのではなく型エラーになる。
++       マッチ型は不透明なコレクション型や抽象的な型パラメーター（`Atomic[List[x]]`）に対しては簡約されないので、そのようなセルは `Atomic.Ref[List[x]]` と書く。
+
+% 2 1 0 0726a11f32de371e19197e85ea790045
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0174fb0f730d18bc1dfd74a1bdc140b3
++         label var による共有カウンターはデータ競合になる
+
+% 1 1 0 0164db097a2aadd11576b4aae39863a4
+
+% 0 1 0 0eafd200297710950885edf6a3ff9c59
+
+% 0 1 0 1143032b3d37d5d4022aff7002270168
+
+% 1 1 0 1b320da8a316663701233a5eacc21830
+
+@ 0 1 0 0aaca3e1c383d7d40ec6271a1236c426
++         label アトミックセルは `cell()` として読み、`cell() = v` として書く
+
+% 1 1 0 120583ca20e79a1405993beb984fb32f
+
+% 2 1 0 0bd93a48f95931ec0a7ada37fe66402a
+
+% 0 1 0 04bf7e296cbcfb21066add83feab85b3
+
+% 1 1 0 0f553a9c13e231bd06529b11abef1b89
+
+@ 0 1 0 0659a6c8879a5de30c4a49abf629e007
++         label 遷移は一つのアトミックな段階であり、JDK の組み込み関数にコンパイルされる
+
+% 1 1 0 192de7b53ddf715601da84a9a9cf617a
+
+% 2 1 0 18af3c7007bdd28312af8e21b073f7da
+
+% 0 1 0 0e7a64ae5bb486130ce15ac32f8ecd63
+
+% 1 1 0 1ab0c57775861165024d6fc4ca6160dd
+
+% 2 1 0 081b3423bf27c01d0aa724a6a044d7b4
+
+@ 0 6 0 1e6647e57e505709140ffb119d125c0a
++       すべてのセルは `apply()` で読み、`update` で書き（したがって `cell() = v`）、`publish` でリリースストアによって公開し、`swap` で交換し、`replace` で compare-and-set を行う。
++       スカラーのセルと `Ref` は `ere` と `since` でも遷移する。どちらも同じ遷移であり、置き換えられた値を返すか、設定した値を返すかが異なる。
++       参照のセルでは `nn` は決して必要ない。`Unset` を保持する `Ref[Optional[x]]` は `Unset` として読める。生の `AtomicReference` に対して `nn` を呼ぶと例外が投げられるところである。
+
+% 0 1 0 066d72055af8f10300952218e05bf5aa
+
+@ 0 5 0 15eb73b0270f0f5a15498f2d61ada392
++   entry .apply   `Atomic(initial)`：引数の型に応じたセル
++       `Int`、`Long`、`Boolean`、その他の任意の型に対してオーバーロードされており、マッチ型の分岐を反映している。
++       `Atomic(0)` は `Atomic.Int`、`Atomic(t"x")` は `Atomic.Ref[Text]` である。
++       選択は引数によって決まるので、型引数は渡さない。
++   entry .Int   `AtomicInteger` の上に立つアトミックな 32 ビット整数
+
+% 1 1 0 131361ee91ad46bc198bcf03df20cccc
+
+@ 0 6 0 06efd485932db7470ad145dab716d208
++         `Atomic.Int(initial)`（または、ゼロから始まる `Atomic.Int()`）で作る。
++         読み取りは `count()`、書き込みは `count() = n` である。
++         遷移 `ere` と `since` はラムダの形をコンパイル時に認識する。`_ + 1` は `getAndIncrement`／`incrementAndGet` に、`_ + n` は `getAndAdd`／`addAndGet` に、`_ - 1` と `_ - n` はそれらの減算版になり、定数は `getAndSet` になる。それ以外の形は、遷移の本体をインライン化した compare-and-set の再試行ループになる。
++         どの場合も何もアロケーションされない。
+
+% 2 1 0 0b22895f2ff0ff970711af4bdf69f8b3
+
+% 3 1 0 1364d684f22b9b0c0974f396dac888a7
+
+% 0 1 0 0bef53516ba92f600337acbc2c0909c8
+
+% 0 1 0 0fe0e501b241e1f61d9ba006f4144f42
+
+% 0 1 0 1b41d073cf0f8e061c5fea1d413556f8
+
+% 0 1 0 011c9491126f4608099c172e161d3c7b
+
+% 0 1 0 1e6f8191e6f9925c1b794ba7aa07e6a8
+
+% 1 1 0 0a513cef12c34bed13cfadaef6aff63c
+
+@ 0 19 0 0bcfd80220f8ed471f79ed94b3cce603
++     entry .apply   `Atomic.Int(initial)` はセルを作り、既定ではゼロから始まる。`count()` はセルを読む
++         名前を共有する二つのオーバーロードである。
++         コンパニオンでは、`Atomic.Int(initial)`（または `Atomic.Int()`）が新しい `AtomicInteger` の上にセルを作る。
++         セルに対する拡張としては、`count()` は volatile な読み取り（`get`）である。
++     entry .update   `count() = n`：volatile なストア
++     entry .publish   `count.publish(n)`：リリースストア。後のストアより前に順序付けられるが、`update` より安価である
++         `lazySet` である。単一生産者のリングは、スロットへの書き込みを公開し、その後に公開されたインデックスを見る読み手はその書き込みも見ることを知ることができる。
++         ストアそのものが公開の時点である場合には、`update` の代わりにはならない。
++     entry .swap   `count.swap(n)`：`n` を格納し、置き換えられた値を返す
++     entry .replace   `count.replace(expected, updated)`：compare-and-set。成功すれば true
++     entry .ere   `count.ere(transition)` または `count.ere(n)`：遷移を適用し、置き換えられた値を返す
++         遷移はラムダリテラルであり、その形がコンパイル時に検査される。値を渡す `ere(n)` は `getAndSet` である。
++         `since(n)` は存在しない。それは自分の引数を返すだけであり、古い値を必要としない設定は `count() = n` である。
++     entry .since   `count.since(transition)`：遷移を適用し、設定した値を返す
++         `_ + 1` は `incrementAndGet` に、`_ + n` は `addAndGet` に、`_ - 1` と `_ - n` はそれらの減算版にコンパイルされ、それ以外の形は compare-and-set のループになる。
++   entry .Long   `AtomicLong` の上に立つアトミックな 64 ビット整数
+
+% 1 1 0 0fe143539f3e5e7c002a620471aea7be
+
+@ 0 13 0 05ec850c25ee5a0f05865cff5bc5ba33
++         `Long` に対する `Atomic.Int` である。`Atomic.Long(initial)` または `Atomic.Long()` で作り、同じ演算と、遷移の形の同じコンパイル時認識を持つ（`AtomicLong` の組み込み関数に到達する）。
++     entry .apply   `Atomic.Long(initial)` はセルを作り、既定ではゼロから始まる。`tally()` はセルを読む
++         名前を共有する二つのオーバーロードである。新しい `AtomicLong` の上に立つコンパニオンのコンストラクターと、volatile な読み取りである拡張 `tally()` である。
++     entry .update   `tally() = n`：`Atomic.Long` への volatile なストア
++     entry .publish   `tally.publish(n)`：`Atomic.Long` へのリリースストア（`lazySet`）
++     entry .swap   `tally.swap(n)`：`Atomic.Long` に値を格納し、置き換えられた値を返す
++     entry .replace   `tally.replace(expected, updated)`：`Atomic.Long` に対する compare-and-set。成功すれば true
++     entry .ere   `Atomic.Long` に遷移を適用し（または値を格納し）、置き換えられた値を返す
++     entry .since   `Atomic.Long` に遷移を適用し、設定した値を返す
++   entry .Bool   `AtomicBoolean` の上に立つアトミックなフラグ
+
+% 1 1 0 0bdcc34ee306918d01163f3a30141214
+
+@ 0 4 0 16df0113ec22e9b70e05953d33b40090
++         `Atomic.Bool()` は `false` から始まる。
++         ワンショットの慣用句は `flag.ere(true)` である。これはフラグを立てた呼び出し元にだけ一度だけ `false` を返し、それ以降のすべての呼び出し元には `true` を返すので、「自分が閉じた呼び出しである」ことが一つの式で表せる。
++         `since(!_)` のような遷移は compare-and-set のループによって否定する。
+
+% 2 1 0 0da895482ad0bd9a1b93ed8442633c08
+
+% 3 1 0 1c2c223ed9a0c2f71c19a364ec7ae342
+
+% 0 1 0 1449b0ea9937b38403da538dc7ec23a8
+
+% 0 1 0 1a4098cbdfc392980c0f6370d3184778
+
+% 1 1 0 0bf62a7edaf768a919046265850c5a9c
+
+@ 0 12 0 1f2145f915323e820cb9719c05f46367
++     entry .apply   `Atomic.Bool(initial)` はフラグを作り、既定では `false` である。`flag()` はフラグを読む
++         名前を共有する二つのオーバーロードである。新しい `AtomicBoolean` の上に立つコンパニオンのコンストラクターと、volatile な読み取りである拡張 `flag()` である。
++     entry .update   `flag() = state`：`Atomic.Bool` への volatile なストア
++     entry .publish   `flag.publish(state)`：`Atomic.Bool` へのリリースストア（`lazySet`）
++     entry .swap   `flag.swap(state)`：`Atomic.Bool` に状態を格納し、置き換えられた状態を返す
++     entry .replace   `flag.replace(expected, updated)`：`Atomic.Bool` に対する compare-and-set。成功すれば true
++     entry .ere   `Atomic.Bool` に遷移を適用し（または状態を格納し）、置き換えられた状態を返す
++         `flag.ere(true)` はワンショットの慣用句であり、フラグを立てた呼び出し元にだけ一度だけ `false` を返す。
++     entry .since   `Atomic.Bool` に遷移を適用し、設定した状態を返す
++   entry .Ref   `AtomicReference` の上に立つアトミックな参照セル
+
+% 1 1 0 09c891f07df23fd31444a7cbc8a18228
+
+@ 0 8 0 14d20cb68a302df515ee98ba06da55e4
++         `Atomic.Ref(initial)` は任意の値を保持する。`Atomic.Ref.vacant[value]` は `Unset` から始まる `Atomic.Ref[Optional[value]]` である。
++         読み取りに `nn` は決して必要なく、空のセルは例外を投げずに `Unset` として読める。
++         遷移 `ere` と `since` はラムダリテラルを取り、そのラムダは値のメソッドを呼んでも、値から構築しても、値にマッチして組み立て直してもよい。リテラルではなく関数*値*である遷移は `revise` を通す。
++         `value` 自体が関数型である場合、`ere` の値のオーバーロードは選択できない（コンパイラは遷移のオーバーロードに決めてしまう）ので、関数は `cell() = f` で格納する。
+
+% 2 1 0 0dd94f17147d8a5903a102f2a8f97db2
+
+% 3 1 0 06bda2d6236ee4981a1d92a01d76e23a
+
+% 0 1 0 022035ece1c06dca0edc8fd2b9bbe1d3
+
+% 0 1 0 145b450f0b53bbd71eceae55c8cb5817
+
+% 0 1 0 0c60cf9924ea869b109add0f445d0e85
+
+% 0 1 0 0348b235305e69f508f8bd169233dae0
+
+% 1 1 0 0cc62cab9aa7a1b2029dd26dceb1d58d
+
+@ 0 17 0 17284737de3bbf741af1fc222d4d05eb
++     entry .apply   `Atomic.Ref(initial)` は `initial` を保持するセルを作る。`cell()` はセルを読む
++         名前を共有する二つのオーバーロードである。新しい `AtomicReference` の上に立つコンパニオンのコンストラクターと、拡張 `cell()` である。後者は volatile な読み取りであり、`nn` を必要とせず、`Unset` を保持するセルに対しても例外を投げない。
++     entry .vacant   `Atomic.Ref.vacant[value]`：初めは値が存在しない `Ref[Optional[value]]`
++     entry .update   `cell() = value`：`Atomic.Ref` への volatile なストア
++     entry .publish   `cell.publish(value)`：`Atomic.Ref` へのリリースストア（`lazySet`）
++     entry .swap   `cell.swap(value)`：`Atomic.Ref` に値を格納し、置き換えられた値を返す
++     entry .replace   `cell.replace(expected, updated)`：参照の同一性による compare-and-set。成功すれば true
++     entry .ere   `Atomic.Ref` に遷移を適用し（または値を格納し）、置き換えられた値を返す
++     entry .since   `Atomic.Ref` に遷移を適用し、設定した値を返す
++     entry .revise   リテラルではなく関数値である遷移を適用し、設定した値を返す
++         形を検査できない遷移（パラメーターとして渡された関数）のための逃げ道である。
++         compare-and-set のループを実行するので、競合があると遷移は再実行されることがあり、純粋でなければならない。
++         同じ参照を返す遷移は、書き込みをせずに確定する。
++   entry .Ints   `AtomicIntegerArray` の上に立つ、`Ordinal` でインデックス付けされる 32 ビット整数のアトミック配列
+
+% 1 1 0 0ca37f84d72ff5520ca6aa627d8d8231
+
+@ 0 13 0 0e05a79dad0fd8e80f23866bbdc83cdf
++         `Atomic.Ints(size)` はすべてゼロであり、スロットは普通の `Int` として読める。新しいゼロは値であって、存在しないことではない。
++         スロットは、Soundness のすべてのインデックスと同じく `Ordinal` で指定する。マスクされたリングのインデックスは構造上範囲内にあるので、序数は限定されていない。
++         スロットごとの `ere`／`since` はない。配列は公開と読み取りを行う。
++     entry .apply   `Atomic.Ints(size)` はゼロで埋めた配列を作る。`ints(ordinal)` はスロットを読む
++         名前を共有する二つのオーバーロードである。新しい `AtomicIntegerArray` の上に立つコンパニオンのコンストラクターと、スロットの volatile な読み取りである拡張 `ints(ordinal)` である。
++     entry .countable   `size` のための、`Atomic.Ints` の大きさ
++     entry .update   `ints(ordinal) = n`：`Atomic.Ints` のスロットへの volatile なストア
++     entry .publish   `ints.publish(ordinal, n)`：`Atomic.Ints` のスロットへのリリースストア
++     entry .swap   `ints.swap(ordinal, n)`：`Atomic.Ints` のスロットに格納し、置き換えられた値を返す
++     entry .replace   `ints.replace(ordinal, expected, updated)`：`Atomic.Ints` のスロットに対する compare-and-set
++   entry .Longs   `AtomicLongArray` の上に立つ、`Ordinal` でインデックス付けされる 64 ビット整数のアトミック配列
+
+% 1 1 0 1c8d716a694f36be158217b508cadc6c
+
+@ 0 10 0 153e8d92ecd046531651a73e684b59e4
++         `Long` のスロットを持つ `Atomic.Ints` である。
++     entry .apply   `Atomic.Longs(size)` はゼロで埋めた配列を作る。`longs(ordinal)` はスロットを読む
++         名前を共有する二つのオーバーロードである。新しい `AtomicLongArray` の上に立つコンパニオンのコンストラクターと、スロットの volatile な読み取りである拡張 `longs(ordinal)` である。
++     entry .countable   `size` のための、`Atomic.Longs` の大きさ
++     entry .update   `longs(ordinal) = n`：`Atomic.Longs` のスロットへの volatile なストア
++     entry .publish   `longs.publish(ordinal, n)`：`Atomic.Longs` のスロットへのリリースストア
++     entry .swap   `longs.swap(ordinal, n)`：`Atomic.Longs` のスロットに格納し、置き換えられた値を返す
++     entry .replace   `longs.replace(ordinal, expected, updated)`：`Atomic.Longs` のスロットに対する compare-and-set
++   entry .Refs   `AtomicReferenceArray` の上に立つ、スロットが `Optional` である参照のアトミック配列
+
+% 1 1 0 179fd5ba3e878c0b050fe0308b0162f0
+
+@ 0 12 0 178e8fb8bfdf4c8c078bec5728b0e217
++         `Atomic.Refs[value](size)` はすべてのスロットが null の状態から始まり、それは値が存在しないことなので、スロットは `Optional[value]` として読める。
++         これが、値を与えて構築する `Atomic.Ref` や、新しいスロットが本物のゼロを保持する `Atomic.Ints` との正直な違いである。
++     entry .apply   `Atomic.Refs[value](size)` は `Unset` のスロットからなる配列を作る。`refs(ordinal)` はスロットを読む
++         名前を共有する二つのオーバーロードである。新しい `AtomicReferenceArray` の上に立つコンパニオンのコンストラクターと、スロットを `Optional` として volatile に読み取る拡張 `refs(ordinal)` である。
++     entry .countable   `size` のための、`Atomic.Refs` の大きさ
++     entry .update   `refs(ordinal) = value`：`Atomic.Refs` のスロットへの volatile なストア
++     entry .publish   `refs.publish(ordinal, value)`：`Atomic.Refs` のスロットへのリリースストア
++     entry .swap   `refs.swap(ordinal, value)`：`Atomic.Refs` のスロットに格納し、置き換えられた値を返す
++     entry .replace   `refs.replace(ordinal, expected, updated)`：`Atomic.Refs` のスロットに対する compare-and-set
+
+@ 0 1 0 04816ad0f54d8e800f8a880c7f47a297
++ entry .atomicMacros   `Atomic` の `ere` と `since` の背後にあるマクロ
+
+% 1 1 0 084d776bf2d1b7bd1fc0dcbf20f20f01
+
+% 2 1 0 00dfd8b54083fa0309b9529b6210510e
+
+@ 0 7 0 19e9353139b0d6d208ca4f6f3dbc60d9
++       直接使うためのものではない。
++       `int`、`long`、`bool`、`ref` のそれぞれは遷移のラムダの木を検査し、認識できる形（`_ + 1`、`_ + n`、`_ - n`、定数）に対しては JDK の組み込み関数を、それ以外に対しては compare-and-set のループを生成する。
++   entry .int   `Atomic.Int` のための遷移マクロ
++   entry .long   `Atomic.Long` のための遷移マクロ
++   entry .bool   `Atomic.Bool` のための遷移マクロ
++   entry .ref   `Atomic.Ref` のための遷移マクロ
+
+@ 0 1 0 0640e67a1a0a4f3d1de13466b8ccbdbd
++ entry .Mutex   ブロックに適用する再入可能なロック：`mutex { … }`
+
+% 1 1 0 16e42be15f35253300d97a6e148fb711
+
+@ 0 4 0 0812debe9f80734a08f86c143f9f4e35
++       `Mutex()` は `ReentrantLock` を包み、`mutex(block)`（または `mutex { … }`）はそれを保持したままブロックを評価し、`finally` の中で解放する。
++       インラインなので、ロックとアンロックは呼び出し元自身のコードの中でブロックを囲む。
++       共有される値が一つだけなら、たいていは `Atomic` セルのほうがよい道具である。ミューテックスは複数の値の複合的な更新を守る。
+
+% 2 1 0 0f4d4ade3289f6591c18ff5aca4c17bf
+
+% 3 1 0 07617115dcc9822103293bc8fd279189
+
+% 0 1 0 1cf25415ae0c32120f588b88a2f5a623
+
+% 0 1 0 0c9cbf5569f970fd11ccbe39a8d822ad
+
+% 0 1 0 195a7b970357a109140e6b1ac076e00f
+
+% 0 1 0 1e39f3ecdfe692b203942c6fa86ef8df
+
+% 0 1 0 15274bd2d2fb60900e28604476a74d4c
+
+% 1 1 0 138cd4ede8903603036194847041de9d
+
+@ 0 1 0 06504564d8f726cd1d55a9cee9cc0224
++   entry #apply   ロックを保持したままブロックを評価する
+
+@ 0 1 0 045859e7a46faa291daba2ab5e17a72d
++ entry .Scoped   ブロックの範囲のあいだ現在のスレッドに束縛される値
+
+% 1 1 0 12a531e7a514acd80a832658adbab568
+
+@ 0 5 0 1cfb5696d96867a30dfe45995e354b85
++       `Scoped[value]()` はスレッドローカルなスロットであり、ブロックが束縛するまでは `Unset` として読める。
++       `scoped(v) { … }` は、そのスレッドで `scoped()` が `v` を読む状態でブロックを評価し、その後で（ブロックが例外を投げた場合でも）以前の束縛を復元する。以前の束縛がなかった場合はエントリーを完全に取り除くので、プールされたスレッドには何も残らない。
++       別のスレッドは自分自身の束縛か `Unset` を見る。
+
+% 2 1 0 09f0cca1c5e7f2c21c9b492666163c84
+
+% 3 1 0 07da46be87f1d6751b21f9a6bea82e86
+
+% 0 1 0 1e58d17b98f6428c06d5097c94b95b2b
+
+% 0 1 0 123b91b84131b0041e051e580f5e8f9a
+
+% 0 1 0 0b5d706242d70f20187b997da26875fa
+
+% 0 1 0 0b914abfa22fdc110ce8045df43b1eeb
+
+% 0 1 0 108ee56ed1634a4d14d452da40a04c76
+
+% 1 1 0 1fc129b90ab4ea641fd9f9fc6bfbb209
+
+@ 0 2 0 137f7505487c237516886b9b5e7a9e26
++   entry .apply   `Scoped[value]()`：束縛されていない新しいスロット
++   entry #apply   `scoped()`：現在の束縛、または `Unset`。`scoped(v)(block)`：ブロックのあいだ束縛する
+
+@ 0 1 0 0372e44ba7bd825e1567730559190f2f
++ entry .Loop   一つのタスクで実行し、別のタスクから停止できる反復
+
+% 1 1 0 0abaab00ea63c1aa0f61e939ece2e53d
+
+@ 0 6 0 19d26cbf037d756a16febb29f9c40c0c
++       `Loop` は状態が `Active` のあいだ反復を繰り返し実行する。どのスレッドからでも `stop()` を呼ぶと状態は `Stopping` に移り、現在の反復は完了し、次の反復は始まらない。その後 `run()` が状態を `Finished` にする。
++       `loop { … }` で作り、タスクに渡す。ソケットサーバーの受け付けループや、ファイルシステム監視のポーリングループがその例である。
++       反復はタスク上で実行され、別の場所から停止されるので、共有されたケイパビリティだけをキャプチャできる。
+
+% 2 1 0 029cb7de0739365d14844bf9d4a61289
+
+% 3 1 0 1b8dc8fdb216293c119a4dd8122894e7
+
+% 0 1 0 12e7a1af61532d821d99b1d4839e2cd2
+
+% 0 1 0 184a57e8ae288e4c15326d3086c7db3a
+
+% 0 1 0 17793854676f27431624b5d409e82b2c
+
+% 0 1 0 111a1327fe7e0a651c0519a6dd33095d
+
+% 1 1 0 1b4f5f311c6f48150e7429acfbc42c61
+
+% 0 1 0 1adc9ff2c6cffdb30ab39540f9dea883
+
+@ 0 6 0 17e9a1e21339c9a90146d4fc6729269f
++   entry .State   ループのライフサイクル：`Active`、`Stopping`、`Finished`
++       ループが順に通過する三つの状態の列挙型である。
++       `stop()` が呼ばれるまでは `Active`、進行中の反復が完了するまでは `Stopping`、`run()` が戻ると `Finished` である。
++   entry #stop   現在の反復の後でループを停止するよう求める
++   entry #run   ループが停止されるまで反復を実行し、その後で完了として記録する
+
+@ 0 4 0 10d463f105a5484c09d8515b004fd044
++ entry .loop   `loop { … }`：ブロックを反復とする `Loop`
++     作用のブロックから `Loop` を構築する。ループ自身の新しいケイパビリティは構築時に吸収されるので、純粋な状態に対するループは純粋な値になる。
++     ブロックが保持できるのは `Durable`（共有された）ケイパビリティだけである。
+
+@ 0 1 0 0313d76eb178a97e09387fc1cb72e77d
++ entry .Exit   プロセスの終了ステータス：`Exit.Ok` または `Exit.Fail(status)`
+
+% 1 1 0 06da261918e6d21c03f1dfb13bfc04dd
+
+@ 0 4 0 1b7568c8bb74ff800c128b99099478d3
++       コマンドラインプログラムが返す結果である。`Exit.Ok` はステータス 0、`Exit.Fail(n)` はゼロでないステータスである。
++       `Exit(n)` は整数を分類し、`exit()` は整数を読み戻す。
++       `Exit` は `Termination` なので、アプリケーションの本体はそれを返してもよく、`Exit` と独自の `Status` オブジェクトのユニオンを返してもよい。
+
+% 2 1 0 1c6b53688db445ad15d077d3fa384d85
+
+% 3 1 0 1e87b49d03bee75313021e9d040c89ea
+
+% 0 1 0 01ef92540632a28b06061b7850d6c257
+
+% 0 1 0 17b1dbdf15c105141e933ff2000f370b
+
+% 0 1 0 0ce71e360264ba7406e51e02a77d60cb
+
+% 1 1 0 14807d7a640e3a500a83b6620a9ae9e7
+
+% 0 1 0 1208ee3fec2e3c3b0b4d18276ec4ab13
+
+@ 0 4 0 0aab3656d3b0b3100ed9fbbd80591ced
++   entry .apply   `Exit(status)`：ゼロなら `Ok`、それ以外なら `Fail(status)`
++   entry #exit   その `Termination` としての、終了そのもの
++   entry #apply   `Int` としてのステータス：`Ok` なら 0
++   entry #terminate   このステータスで JVM を終了し、決して戻らない
+
+@ 0 1 0 1e115e60be7a06cd14c8fcbdcfc2e67a
++ entry .Termination   プロセスの終了ステータスを決められるもの
+
+% 1 1 0 1ddd8f0e3a45a7e81cafb58cf6f6e8f1
+
+@ 0 6 0 12cbb6b14d82859f1ef7cdfd0c991b35
++       アプリケーションの結果が実装するトレイトであり、`exit` はそれがどの `Exit` に対応するかを示す。
++       `Exit` は最も単純な `Termination` である。名前の付いた結果を複数持つプログラムは、それを拡張する `Status` オブジェクトを宣言し、そのユニオンを返す。CLI の仕組みはそれを記録するので、ヘルプの木はコマンドが終わりうるステータスを列挙できる。
++       終了は純粋である（`scala.caps.Pure` を拡張する）ので、生きたケイパビリティを決して保持できない。
++   entry #exit   この結果が対応する `Exit`
+
+@ 0 1 0 1cee08f40865eaf90743017af3aa4ffe
++ entry .Dynamical   型のないデータ値に対する `scala.Dynamic` のフィールドアクセスのための、erased なパーミッション
+
+% 1 1 0 16c538298a15cd98096a84c162267109
+
+@ 0 6 0 19f65bf1dea209de0ef087b6c9c09b02
++       `Json`、`Yaml`、`Cbor`、`Tel` のような形式は、その動的なメンバーアクセス（`json.
++       server.port`）を `(? >: Json) is Dynamical` によってゲートする。したがってパーミッションは、その形式だけ（形式の `dynamicAccess` given が提供する `Json is Dynamical`）、形式のユニオン、またはすべての形式（`Any is Dynamical`）に対して与えられる。
++       これはシールされていて erased であり、その値は決して存在せず、ブロックの中でそれを生み出す唯一の方法が `dynamically` である。
++       `rudiments.core` に含まれる。
+
+% 1 1 0 0b6de20d60f9fb960acd6b67489417c5
+
+% 0 1 0 0658c764e3175f4a06f97efe16a29e92
+
+@ 0 1 0 0cc969d430c446c6194a9fafee395cd9
++ entry .Dynamically   `Dynamical` パーミッションのブロック形式：`Dynamically[data](block)`
+
+% 1 1 0 1507d40b315cc10314d09ff9f8f866b8
+
+@ 0 4 0 037ba256dbf25ccd0dd881ac451aa3fb
++       `Dynamically` はオブジェクト `Dynamically[Any]` であり、`Dynamically[-data]` は反変のクラスで、その `apply` は erased な `(? >: data) is Dynamical` をスコープに置いてブロックを評価する。
++       反変なのは、このオブジェクトがすべての `data` に対して `Dynamically[data]` であるように、また型引数のない `dynamically` が `Any` を推論するようにするためである。
++       `dynamically` を通して使う。
+
+% 1 1 0 0e6d92f61ad7aa1e13251c25c8c305df
+
+@ 0 1 0 117d35886f44fbcf0010892b420fc7b0
++   entry #apply   パーミッションをスコープに置いてブロックを評価する
+
+@ 0 5 0 0cdb9462870f37260365d2b9c72b16b0
++ entry .dynamically   `dynamically[Json] { … }`：ブロックのあいだ動的なメンバーアクセスを許可する
++     `dynamically[Json]` は、ブロックの中で JSON に限って `json.field.subfield` を許可する。
++     ユニオン `dynamically[Json | Yaml]` は複数の形式を対象とし、型引数のない `dynamically` は動的アクセスを持つすべての形式を対象とする。
++     パーミッションは erased なので、ブロックのコストはない。
+
+% 2 1 0 042ecf57b77db2a20ca511bd779ef599
+
+% 3 1 0 1a7d906e53c5afb9149a0a47d4f82030
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1ae140ed179c925e18b873aa83aad471
+
+% 0 1 0 1ed4604c5ef2be1e199ad00fc1ecf803
+
+% 0 1 0 13caeacfdbf3766116109151311a4743
+
+% 1 1 0 0f7b1c99eb2b76e709b79e2d2d3c29fd
+
+@ 0 1 0 1aab3a156b051d250d9469dedcacd0b0
++ entry .Defaulting   何も制約しないとき、型パラメーターがある型を既定とすることの証拠
+
+% 1 1 0 12cd904e032267ed0908b436abc840c4
+
+@ 0 6 0 17e0a4815f7f511801dbecf1f8ff1ac9
++       `topic is Defaulting to Text` は erased な given であり、`topic` が推論されたときには（それ自身として、コンパニオンのインスタンスを通して）解決され、制約されないまま残ったときには優先度の低い `Defaulting2` のインスタンスが既定の型に解決する。
++       `Flag[topic](name)` のようなファクトリーはこれを使い、型引数のない `Flag(t"jobs")` は `Flag of Text` を、`Flag[Int](t"jobs")` は `Flag of Int` を生じる。
++       このトレイトはシールされていて値を持たず、どちらの given も erased である。
+
+% 0 1 0 0ba0ec54b13fc04f0328123cc87aa0a1
+
+@ 0 1 0 0f148883810fa9830431a5150da1d6e8
++ entry .Defaulting2   制約されないパラメーターを既定の型に解決する、代替の `Defaulting` インスタンス
+
+% 1 1 0 18ec57295348eaeb1192d2cf32acd0d8
+
+% 2 1 0 1f98652ff904c5470153143b36cafb47
+
+@ 0 3 0 08cd066e6b42ef3309a05936766f9246
++       直接使うためのものではない。
++       `Defaulting` のコンパニオンの優先度の低い親であり、制約されないパラメーターが行き着く `[value, anything] => value is Defaulting to anything` の given を保持する。
+
+@ 0 1 0 0d55ad1194bea1d414c0f99a9d102337
++ entry .DecimalConverter   `Double` をテキストとして描画する：数値の表示の背後にあるポリシー
+
+% 1 1 0 0ebc3fcfc513244e14bd85861a6f8641
+
+@ 0 5 0 00cba6dcd494807e1ccd878f0498fcc9
++       `DecimalConverter` は `decimalize(double): Text` というメソッドを一つ持ち、`Findable` なコンテキスト値なので、小数の描画はスコープにあるコンバーターによって選ばれる。
++       Gossamer の `Decimalizer(significantFigures, decimalPlaces, …)` が設定可能な実装であり、数値の `Showable` インスタンスはそれを召喚する。
++   entry #decimalize   テキストとしての `Double`
+
+@ 0 5 0 089a2ada8d04d77213aa85ce49f6f59f
++ entry .&   `case A(x) & B(y)`：一つの値を二つの抽出子に同時にマッチさせる
++     `rudiments.internal` からエクスポートされた抽出子オブジェクトであり、その `unapply` は検査対象を二度返す。
++     `value match case AsInt(x) & AsLong(y) => …` は、同じ値に対して一つ目の抽出子から `x` を、二つ目から `y` を束縛する。そうでなければ入れ子のマッチかガードが必要になる。
+
+@ 0 1 0 12fdeff0dd305b5e13d7ea1b051e00a7
++ entry .internal   `Bytes`、`Digit`、抽出子 `&`、そして `probe`、`typeName`、`reflectClass` の背後にあるマクロの置き場所
+
+% 1 1 0 047a97f65e431f090d73fff44cf79a35
+
+% 2 1 0 0ecb8edcede973a11c1f788697dd595f
+
+@ 0 4 0 1738b17d2007985f152fad9e0e258470
++       直接使うためのものではない。
++       `Bytes`、`Digit`、`&` はここから `rudiments` パッケージにエクスポートされており、それらのページはそちらにある。`probe`、`name`、`reflectClass` はマクロの実装である。
++   entry .Bytes   量として扱う `Long` である不透明なバイト数。`rudiments.Bytes` を参照
+
+% 1 1 0 1a9b1e222bfc3e371042c38a07017433
+
+@ 0 7 0 1d7781037ce087c0189942ec13fe92e6
++         不透明型 `Bytes = Long` であり、そのコンストラクター、算術と比較の given、アクセサーを持つ。
++         詳しい説明は `rudiments` パッケージの下にあるそのページにある。ここにあるすべての given は、`Bytes` に対する暗黙のスコープにある。
++     entry .apply   `Bytes(long)`：`Long` から得るバイト数
++     entry .comparable   バイト数を数値として順序付ける
++     entry .zeroic   ゼロバイト。これによりバイト数に対する `total` はゼロから始まり、裸の値になる
++     entry .communicable   メッセージの中でバイト数を `n bytes` として描画する
+
+% 0 1 0 07083782653a076f107485ff40107d5f
+
+% 0 1 0 1a270c8aea0f9abb1dd49c93a3e39aa2
+
+% 0 1 0 025466a3b94dbb861d5cc6bafa37a607
+
+% 0 1 0 0e97f2d9ca1546e80070c4b1831cb087
+
+% 0 1 0 033b7aaa1bbd0cf80ca85a3c69ff0d48
+
+@ 0 4 0 14d8a8d333e7b0f207eab40d8341e365
++     entry .divisible2   `Double` の比としての `Bytes / Bytes`
++     entry .long   `bytes.long`：`Long` としてのバイト数
++     entry .text   `bytes.text`：テキストとしてのバイト数、`1024 bytes`
++   entry .Digit   不透明な十進数字 `0 | 1 | … | 9`。`rudiments.Digit` を参照
+
+% 1 1 0 04c58a93a8eec80e1594dd64f375fe7e
+
+@ 0 6 0 1471aae313909061149c930c86c91933
++         不透明型 `Digit` であり、そのコンストラクターを持つ。
++         アクセサー `int` と `char` は、`internal` の中でその隣に宣言された拡張である。
++     entry .apply   `Digit('7')` または `Digit(7)`：文字または整数から得る数字、または `Unset`
++   entry .int   `digit.int`：`Int` としての `Digit`
++   entry .char   `digit.char`：`'0'` から `'9'` の `Char` としての `Digit`
++   entry .&   二重の抽出子。`rudiments.&` を参照
+
+% 1 1 0 1a35a4c181b1f7dd009fda63efe155f2
+
+@ 0 6 0 18ce72b28632ce640fec4fa8c4608179
++         `unapply` が検査対象を二度返すオブジェクトであり、これにより `case A(x) & B(y)` は一つの値を二つの抽出子にマッチさせる。
++     entry .unapply   検査対象をそれ自身と組にして返し、常にマッチする
++   entry .probe   `probe[T]` の背後にあるマクロ：型の名前を示して停止する
++   entry .name   `typeName[T]` の背後にあるマクロ
++   entry .reflectClass   `reflectClass[T]` の背後にあるマクロ
+
+@ 0 43 0 1de174c2bddd4554146fb9d3f0ab29c1
++ entry .Traversable   `murmuration` から再エクスポート：要素ごとに走査できるものの型クラス
++     `import rudiments.*` はコレクションの型クラスを一つの面として提示する。そのため `Traversable`、`Reshapable`、`Mappable`、`Reversible`、`Inclusive`、`Convertible`、`Keyed`、`Intersectable`、`Iterator`、`SortAlgorithm` と、それらの上に書かれた演算が、`murmuration` からここにエクスポートされている。
++     それぞれの詳しい説明は `murmuration` のページにある。`Ordinal` や `Optional` を必要とする演算（`each`、`seek`、`where`、`head` など）は `rudiments` 自身で宣言されている。
++ entry .Reshapable   `murmuration` から再エクスポート：変換した要素から、コレクションをそれ自身の形で組み立て直す
++ entry .Mappable   `murmuration` から再エクスポート：`map` の背後にある、値を写す型クラス
++ entry .Reversible   `murmuration` から再エクスポート：`reverse` の背後にある型クラス
++ entry .Inclusive   `murmuration` から再エクスポート：`has` の背後にある、所属の型クラス
++ entry .Convertible   `murmuration` から再エクスポート：`to[Form]` の背後にある、要求された形への変換
++ entry .Keyed   `murmuration` から再エクスポート：`keys` と `values` の背後にある、キーと値を持つコンテナー
++ entry .Intersectable   `murmuration` から再エクスポート：`intersect` と `except` の背後にある、集合演算の型クラス
++ entry .SortAlgorithm   `murmuration` から再エクスポート：`sortingAlgorithms` から選ぶソートアルゴリズム
++ entry .Iterator   `murmuration` から再エクスポート：終わりで `next()` が `Iterator.Exhausted` を返す、ワンショットの走査
++ entry .reverse   `murmuration` から再エクスポート：逆順の要素
++ entry .has   `murmuration` から再エクスポート：コレクションが値を（`Map` ならそのキーを）含むかどうか
++ entry .map   `murmuration` から再エクスポート：各要素（`Map` なら値）を、形を保って変換する
++ entry .remap   `murmuration` から再エクスポート：各要素（`Map` なら組）を、新しい形に変換する
++ entry .bind   `murmuration` から再エクスポート：モナドの bind。各要素をコレクションにして平坦化する
++ entry .flatMap   `murmuration` から再エクスポート：`for` 内包表記が脱糖される名前での `bind`
++ entry .filter   `murmuration` から再エクスポート：述語を満たす要素。`filterNot` はない
++ entry .withFilter   `murmuration` から再エクスポート：`for` 内包表記が脱糖されるガード
++ entry .foreach   `murmuration` から再エクスポート：各要素を訪れる。`each` のほうが好ましい書き方である
++ entry .exists   `murmuration` から再エクスポート：述語を満たす要素があるかどうか
++ entry .fold   `murmuration` から再エクスポート：二引数のラムダによる左畳み込み。`fuse` はそのコンテキスト形式である
++ entry .flat   `murmuration` から再エクスポート：入れ子を一段平坦化する
++ entry .trace   `murmuration` から再エクスポート：中間状態をすべて保持する左畳み込み
++ entry .excerpt   `murmuration` から再エクスポート：0 始まりの二つの位置のあいだの要素
++ entry .group   `murmuration` から再エクスポート：キーによって `Map` にまとめた要素
++ entry .distinct   `murmuration` から再エクスポート：重複を取り除いた要素
++ entry .deduplicate   `murmuration` から再エクスポート：キーによる重複を取り除いた要素
++ entry .zip   `murmuration` から再エクスポート：二つのコレクションの要素を組にする
++ entry .batched   `murmuration` から再エクスポート：ある大きさのグループに分けた要素
++ entry .span   `murmuration` から再エクスポート：述語を満たさない最初の要素で分割する
++ entry .partition   `murmuration` から再エクスポート：述語を満たす要素と残りに分割する
++ entry .sweep   `murmuration` から再エクスポート：部分関数が受け入れて変換した要素。標準ライブラリの `collect`
++ entry .keys   `murmuration` から再エクスポート：キーを持つコンテナーのキー
++ entry .values   `murmuration` から再エクスポート：キーを持つコンテナーの値
++ entry .count   `murmuration` から再エクスポート：述語を満たす要素の数。`count(_ == x)` は値の数を数える
++ entry .intersect   `murmuration` から再エクスポート：二つの集合が共有する要素
++ entry .except   `murmuration` から再エクスポート：ある集合の要素のうち、別の集合にないもの
+
+@ 0 8 0 1db8da0a6c1550a31c5bd8e012685cd6
++ entry .apply   `xs(index)`：限定されたインデックスなら要素を裸で、それ以外のインデックスなら `Optional` として読む
++     `concordance` ライブラリに含まれる汎用のインデックス解除の演算であり、`Applicable` インスタンスを持つあらゆる値に対して使える。コレクションは `Ordinal` で、`Map` はキーで、`Text` は `Ordinal` で、`Bijection` はキーで読む。
++     これはインデックスの型によってコンパイル時に振り分けられる。`Operand in xs.type` と型付けされたインデックス、すなわち `confine`、`pick`、`iterate`、`within`、`Surveyor`、`Lattice` が*この*値に対してすでに検査したインデックスは、要素に直接到達し、結果は裸の要素になる。それ以外のインデックスは境界検査され、結果は `Optional` になる。
++     例外を投げうる部分的な読み取りは存在しない。
+
+% 2 1 0 0bbed1313d3f94f40c3136767c4fff5b
+
+% 3 1 0 1e4907700d1960ea0ea7e1ed29420c89
+
+@ 0 1 0 165cce3032208c14078a36fa388354f2
++       label 検査されていないインデックスは Optional を読む
+
+% 1 1 0 0f5001cc97ce698f0f5ccddd076a8807
+
+% 0 1 0 12cc05c723d951d01bf333e3a35bc131
+
+% 0 1 0 1dfe1171c01f57561f68a3d689e24b64
+
+% 0 1 0 107f7ffecd41739112ffb8ca0aae6cd2
+
+% 1 1 0 0b198210f35e050312f221c95b4a9d15
+
+@ 0 1 0 0edb32f1b5639fa10507fa1aae5b864d
++       label confine は一度だけ検査し、インデックスにブランドを付ける
+
+% 1 1 0 17b341a5824ee32c14c90f455e0e94c9
+
+% 0 1 0 0eab6ee4e9c61fca1db8630807488092
+
+% 1 1 0 1413ed0e7f302f1a1d5b86a7b52eeb2a
+
+@ 0 1 0 1c2e6de8db1110b90dae09ea8cf310f6
++       label pick は検査と使用を融合する
+
+% 1 1 0 1b7229d7c2f4bbf612d45228d9cbeed6
+
+% 0 1 0 1f4d3266e3024f14125cf713378f06ba
+
+% 1 1 0 049c9241d174927904f8629326552a40
+
+@ 0 1 0 1a1f468aa1d2b78010da0381d72418e7
++       label iterate はすでに証明されたインデックスを渡す
+
+% 1 1 0 18d8cbf3347d0ebb1c223d3a27135c34
+
+% 0 1 0 0a0e62a455a4b496031624e203295df2
+
+% 1 1 0 00b7dc73c21b93ac062c1aec81b301a2
+
+% 2 1 0 07df9bc68aa19fed13d21e93ee733071
+
+@ 0 7 0 054e39aeb023cc7a16a91acd17428b3e
++     `& Sized[n]` と型付けされた凍結済みの配列（長さがリテラルの `Array.fill`、`Array.tabulate`、`Data.fill`、または `sized[n]`）には、さらにオーバーロードがある。*リテラル*の序数（`Ter`、`7.z`）はコンパイル時に `n` と比較されるので、読み取りは裸になり、範囲外のリテラルはコンパイルエラー _the ordinal 3 is beyond the array's proven length of 3_ になる。変数の序数は `Optional` の経路を通る。
++     `List` では、先頭より後ろの位置はリストを辿るので `dysasymptotics.linearAccess` が必要である。
++     ワイルドカードでインポートした `rudiments.*` は、可変な `Array^` 自身の `apply(Int)` をこれで覆い隠す。
+
+@ 0 4 0 141b705ce1e723dc045b0b064f96343f
++ entry .at   `xs.at(index)`：古い名前での、`xs(index)` と同じ読み取り
++     `apply` と同一であり（限定されたインデックスなら裸、それ以外なら `Optional`）、位置によるアクセスを `xs.at(Sec)`、キーによるアクセスを `map.at(key)` と書くコードのための橋渡しとして残されている。
++     `concordance` ライブラリに含まれる。
+
+@ 0 4 0 0803d5decb6f8d2d1aa5bb7bda85b2e4
++ entry .defines   `xs.defines(index)`：値に対してインデックスやキーが定義されているかどうか
++     `Applicable` インスタンスを通した `map.defines(key)` と `xs.defines(ordinal)`、そして標準ライブラリの `scala.collection.Map` に対する `map.defines(key)` である。
++     `concordance` ライブラリに含まれる。
+
+@ 0 6 0 0ec98f63a85bc4a1198c56543601359f
++ entry .confine   `xs.confine(index)`：インデックスを値に対して検査し、その値のブランドを付けて返す
++     `Optional[Operand in xs.type]` を返す。インデックスが定義されていなければ `Unset` であり、そうでなければ `xs` に対して範囲内であるという証明を伴ったインデックスそのものである。そのため、その後の `xs(i)` は裸になり、二度目の検査をしない。
++     これは denominative の（序数のための）`within` を、マップのキーを含む任意のインデックスの型に一般化したものである。
++     安定したパス上の不変なレシーバに対して健全である。
++     `concordance` ライブラリに含まれる。
+
+% 2 1 0 07d9c7f33edbdbe114fb3daf56ac3d30
+
+% 3 1 0 03792bc28574b97201a38ca982ef66e1
+
+% 0 1 0 15cf56b2bc02120016b6b20e40e2baaf
+
+% 0 1 0 0da9c637cc4e9b64118a0f91df8eab30
+
+% 1 1 0 1c21d1584739288d11a66d75c481722e
+
+@ 0 5 0 06471e8c5ac7790a0c5ea33c7f8094ab
++ entry .pick   `xs.pick(index)(lambda)`：`confine` と `let` を融合した形
++     検査済みのインデックスはすでに限定された状態でラムダに届くので、本体でのそのインデックスによる `xs` の読み取りは裸になり、中間の `Optional[Operand]` は作られない。結果は `Optional[result]` であり、インデックスが定義されていなければ `Unset` である。
++     本体が要素を読むだけなら、`xs(index)` がすでにそれを表している。
++     `concordance` ライブラリに含まれる。
+
+% 2 1 0 1a03d2902deac80906c11fe4cdeaaefd
+
+% 3 1 0 1ec24d7142837f85159868d4d8a287bb
+
+% 0 1 0 0c8ffee8a59f2d47097aa598b759c0af
+
+% 0 1 0 0fde935f94566e1915268c6a871cada3
+
+% 1 1 0 10d16cf69683761f1dd6ca578e403708
+
+@ 0 8 0 1b50183640cfef100ffb23ea3a883160
++ entry .unsafeAttested   呼び出し元の言葉を信じて、インデックスまたは区間に、値に対して有効であるというブランドを付ける
++     `xs.unsafeAttested(index)` は検査のない `confine` である。`Unsafe` トークンのもとで（したがってその箇所は `unsafely` の中にある）`Operand in xs.type` を直接生み出す。これは、証明がプログラムを追えない二つの場所、すなわちマクロのクォートの境界とインデックスの算術のためのものである。
++     ブロック形式 `xs.unsafeAttested(index) { i => … }` は証言の範囲をラムダに限定し、`interval.unsafeAttested(xs)` は `xs.iterate(range)` のような一括の演算のために `Interval` を証言する。
++     すべての呼び出し箇所には、その境界を証明する構成を挙げるコメントを付ける。そのコメントが証明である。
++     `concordance` ライブラリに含まれる。
+
+% 2 1 0 1cd85ead19fdec4703634a9a40e683ad
+
+% 3 1 0 0b0d21502cdd7db105acc32c456e0422
+
+% 0 1 0 11ffb27e0432af721657799d6bedaaa1
+
+% 0 1 0 1ee937620fd36ed00be4b497beef38db
+
+% 0 1 0 04533c7bf32cb0ae13438b2019f825fc
+
+% 0 1 0 1f4851f735ca7cdf1d5f6948c7c02ac4
+
+% 1 1 0 10cd1a69ef614cbe000df8a84294e013
+
+@ 0 7 0 06ee487203d6dc1a042a835f87ce92f3
++ entry .sized   `xs.sized[n]`：値の長さを一度だけ検査し、それを `& Sized[n]` として記録する
++     `Array(1, 2, 3, 4).sized[4]` は `Optional[xs.type & Sized[4]]` である。長さが異なれば `Unset` であり、そうでなければ長さを型に持つ値なので、`n` より小さいリテラルの序数は裸で読め、`n` 以上のものはコンパイルされない。
++     これは長さについての `occupied` の対応物であり、任意の `Countable` な値に使える。リテラルのコンストラクター `Array.fill(n)`、`Array.tabulate
++     (n)`、`Data.fill(n)` は、`n` がリテラルであるとき（`val` の長さではそうならない）結果に同じようにブランドを付ける。
++     `concordance` ライブラリに含まれる。
+
+% 2 1 0 1e391b7e6f981cce0093871ceb6ea71a
+
+% 3 1 0 0487f07a08dcdcc41b5524594e013d44
+
+% 0 1 0 0dd65affd32388491946efc95b0b306d
+
+% 0 1 0 0ddc205161ed88c804ef921137450220
+
+% 1 1 0 02b80e8c963a1f210ec0aca89c7b5db2
+
+@ 0 3 0 19985a3640bac60406e8258bab6061c8
++ entry .bijection   `map.bijection`：標準ライブラリのマップから得る `Bijection`
++     `scala.collection.Map` に対する拡張であり、逆写像も併せて構築する。
++     `concordance` ライブラリに含まれる。
+
+@ 0 1 0 0172e50f04b03f921722ee88cce2826c
++ entry .Bijection   両方向に読める一対一のマップ
+
+% 1 1 0 164e37163e6dabf21d2add349f16b209
+
+@ 0 5 0 165c070d8d6b2d140c127a940534e803
++       `Bijection(map)` は標準ライブラリの不変なマップとその転置を保持するので、`flip` は定数時間でキーと値を入れ替え、`get` はキーで検索し、`-` はキーをその転置されたエントリーとともに取り除く。
++       これは標準ライブラリの `Map` であり、組の `Iterable` であり、キーによって `Applicable` なので、`bijection(key)`、`at`、`defines` が使える。
++       `concordance` ライブラリに含まれる。
+
+% 2 1 0 1c986bffa397b5451b139bfb6a8b4054
+
+% 3 1 0 123461f1e4b56f6d03aa9fe372f3eba4
+
+% 0 1 0 0e9fce4d71e1a7220bb3be962a0240d7
+
+% 0 1 0 0b7732fb2a9be54817d641b15a116686
+
+% 0 1 0 0a07342b0ce5e2e4021027f5f57f8a3a
+
+% 0 1 0 0b54f2a250c3c0d4103bfd073ff0ae43
+
+% 1 1 0 0668d4f465c1d7800c185bb98c34c544
+
+@ 0 8 0 00d9ce1d073cfd9f13e65ea208297780
++   entry .apply   `Bijection(map)`：マップから、その逆を計算して得る全単射
++   entry .indexable   `Applicable` インスタンス：全単射はキーでインデックス付けする
++   entry #map   順方向のマップ
++   entry #transposition   値からキーへの逆のマップ
++   entry #iterator   順方向のマップの順序での組
++   entry #-   キーとその転置されたエントリーを取り除く。複数のキーに対してオーバーロードされている
++   entry #get   標準ライブラリの `Option` としての、キーに対応する値
++   entry #flip   両方のマップを共有する逆の全単射。二度反転すると元に戻る
+
+@ 0 1 0 06a3f49c55061f620e81c07ce33fc59a
++ entry .Segmentable   `Interval` によって連続した部分を取り出せる値の型クラス
+
+% 1 1 0 101c66efb61c2b961782d5232ec0e0e9
+
+@ 0 16 0 1a88a31abcdbbc310e0ef198bc0be915
++       `value is Segmentable` は `segment(value, interval)` というメソッドを一つと、結果のための型メンバー `Segment` を持つ。
++       コレクションに対しては普通のコレクション型であり（空でないリストの部分は空になりうるので、`Populated` ブランドは残らない）、テキストの型に対しては値自身の型である。後者は `Textual` が固定するので、スタイル付きテキストの部分はスタイルを保つ。
++       位置に関するすべての演算（`segment`、`before`、`upto`、`from`、`after`、`keep`、`skip`、`snip`、`tail`）はこの上に書かれている。
++       `List`、`Sequence`、凍結済みの配列、標準ライブラリの `IndexedSeq`、`Text` のインスタンスはコンパニオンにある。`Chain` には意図的にインスタンスがない。部分を取り出すと強制評価してしまうからであり、`Chain` は独自の遅延評価の `keep` と `skip` を持つ。
++       `concordance` ライブラリに含まれる。
++   entry .indexedSeq   `slice` による、標準ライブラリの `IndexedSeq`
++   entry .frozenArray   `slice` を通さず、`ClassTag` を用いてコピーされる凍結済みの配列
++   entry .sequence   `Sequence`（任意のサブタイプなので、ブランド付きのリテラルも該当する）から普通の `Sequence` へ
++   entry .list   `List`（任意のサブタイプ）から普通の `List` へ
++   entry .text   `substring` による `Text`。テキストの長さに収まるように切り詰める
++   entry #Segment   部分の型：普通のコレクション、またはテキストの型そのもの
++   entry #segment   値のうち区間の中にある部分
+
+@ 0 1 0 05330b14bd24730715aae296c3cb41d6
++ entry .Appendable   `xs :+ element` の背後にある型クラス：要素一つ分の増加
+
+% 1 1 0 0012e75db999894a048d28196c1a61cf
+
+@ 0 8 0 07238222d46e03ba1d315551b108bc6c
++       `self is Appendable by element` は要素を一つ追加する。順序のある形（`List`、`Sequence`、`Chain`、凍結済みの配列）では末尾に追加し、端を持たない `Set` では所属への追加になる。
++       コレクションとコレクションの連結は symbolism の `Concatenable`、`xs + ys` である。
++       追加のたびにコレクション全体を組み立て直すインスタンス（`List` と凍結済みの配列で、どちらも O(n)）は `Dysasymptotic.LinearSize` マーカーを要求するので、リストに追加するファイルは `dysasymptotics.linearSize` をインポートしてそれを明示する。`Sequence`、`Chain`、`Set` はゲートなしで追加できる。
++       レシーバについてサブタイプでパラメーター化されているので、ブランド付きの空でないリテラルはブランドを保つ。
++       `concordance` ライブラリに含まれる。
+
+% 2 1 0 0b28ddeffa04e78e1fa8829856e69b15
+
+% 3 1 0 135bce9d30fb33e51b10c93ff860421d
+
+% 0 1 0 0bf87a32fe9bce971e59d6ea8c2a0221
+
+% 0 1 0 11a54c60b13fec2014ffd68bf0f50705
+
+% 0 1 0 11a8e71c5f4441111fd5352b9eddd523
+
+% 0 1 0 0ef2fe39bcbd927401c72a99bdc404e9
+
+% 1 1 0 067ef1e1653b2d940ba9d749d9d9d2b8
+
+@ 0 6 0 16430718bfb4aa9d19f702d706f52d06
++   entry .list   `List` をコピーして追加する：`linearSize` でゲートされる
++   entry .sequence   `Sequence` に追加する
++   entry .chain   `Chain` に遅延評価で追加する
++   entry .set   `Set` に要素を加える
++   entry .frozenArray   凍結済みの配列を組み立て直して追加する：`linearSize` でゲートされる
++   entry #append   要素を一つ加えたコレクション
+
+@ 0 3 0 0dd36966a267d6ce09d42acbf7a73c49
++ entry .:+   `xs :+ element`：`Appendable` を通して要素を一つ追加したコレクション
++     `concordance` ライブラリに含まれる。
++     `List` や凍結済みの配列では追加が線形なので、`dysasymptotics.linearSize` がスコープに必要である。
+
+@ 0 1 0 138732ab51bf5b970e203833abe07b90
++ entry .Prependable   `element +: xs` の背後にある型クラス：先頭での要素一つ分の増加
+
+% 1 1 0 02ab087e25abe6260bb0a01c908f0590
+
+@ 0 8 0 096690c3b3e401bd1c1f0bc9e67dbd6a
++       `Appendable` の、先頭に追加する版である。
++       先頭への追加は `List` と `Chain` では O(1) なので、`Dysasymptotic.LinearSize` でゲートされるのは凍結済みの配列の組み立て直しだけであり、`Sequence` はゲートなしで先頭に追加できる。
++       `concordance` ライブラリに含まれる。
++   entry .list   `::` と同じように `List` の先頭に追加する
++   entry .sequence   `Sequence` の先頭に追加する
++   entry .chain   `Chain` の先頭に遅延評価で追加する
++   entry .frozenArray   凍結済みの配列を組み立て直して先頭に追加する：`linearSize` でゲートされる
++   entry #prepend   先頭に要素を一つ加えたコレクション
+
+@ 0 3 0 00e284b17b7f99c812f2817ce340d8ec
++ entry .+:   `element +: xs`：`Prependable` を通して先頭に要素を一つ追加したコレクション
++     右結合なので、レシーバは要素であり、コレクションは引数である。
++     `concordance` ライブラリに含まれる。
+
+@ 0 1 0 0d573a260a28e23611a6a0683f3bef14
++ entry .Scribe   新しい配列に対する書き込みハンドル。そのすべてのインデックスは範囲内であることが証明されている
+
+% 1 1 0 0426eb4f25923b8d0a2c0c02ba6fd498
+
+@ 0 10 0 1165bd5e815f3d8d1c5a6eb23df53069
++       `Scribe[element]` は限定された読み取りの、書き込み側の対応物である。`Array.scribe` や `Array.collect` がアロケーションしたばかりの配列に対する不透明なハンドルであり、書き込み（と読み戻し）は scribe 自身のブランドが付いた序数を通してのみ許される（`i: Ordinal in scribe.type` による `scribe(i) = v`）。また、自身のカーソルでの順次的な `append` も許され、それは大きさの決まったバッファでは末尾で切り詰められ、大きさの決まっていないバッファでは拡大する。
++       呼び出し元が到達できる位置で範囲外のものは存在しない。また、ラムダが戻るときに貸し手が唯一の書き手を退かせるので、結果を凍結するのにコピーは必要ない。
++       scribe は `Countable` なので、限定された走査の一族全体（`iterate`、`spot`、`lead`、`pare`、`retrace`）と `lattice` がそのまま使える。
++       `concordance` ライブラリに含まれ、`soundness` アンブレラにはエクスポートされていない。`import rudiments.*` または `import rudiments.{Scribe, scribe}` を使う。
+
+% 2 1 0 111c6b769e9b32ed0374c96dbc6b579b
+
+% 0 1 0 1b37cbc63d64b0a31268700657abfadb
+
+% 1 1 0 00cc9ac3f75593f208b44d40daab7ed9
+
+% 0 1 0 099a245f4b461b9f16fea7de35561733
+
+% 0 1 0 0619683095c7ac4f19da1cd620f96cdf
+
+% 0 1 0 0a58d2b91b6ab5220cf3a7042469e024
+
+% 0 1 0 04127fc204e7b6b417b7bd950902f559
+
+% 0 1 0 1931c8d8ad311abd000202e4559841fc
+
+% 1 1 0 0aba5ff1cae5244a0c8c93b7ffc5023f
+
+% 0 1 0 036272047b09ae7515113fb5cb5d34fc
+
+% 0 1 0 03452cd9c32155f319c5a49a3fe63f69
+
+% 0 1 0 1aad5137a790d48a00fa8ec28ca06aec
+
+% 0 1 0 009247110c41171a027d2ad242b06d26
+
+% 0 1 0 1fd9766e21a893991b57463fb451f537
+
+% 0 1 0 0b5b8cbb6010e0ee074cb62d1cd8f488
+
+% 1 1 0 12a82291a6605bab02d1b077bf233034
+
+% 0 1 0 0f6de79b4633b4bf16fd96f8e4f8985f
+
+% 0 1 0 0ed0879315885e1516f3aacb226bf176
+
+% 0 1 0 1185ed626bfeebc61c5da7c09b8e0324
+
+% 1 1 0 177a52d428bd207f1fbdee0eaeffd83c
+
+% 2 1 0 0d53e48d12c1f6500baaa334542001b1
+
+@ 0 2 0 10edd69970ec4019018b3fe52f370d75
++       バイトの scribe にはさらに `appendVarint` と `appendUtf8` があり、容量の検査を一度だけ行って値全体を書き込む。
+
+% 0 1 0 1aa8d125363a8a491af3e35f32479ae3
+
+% 0 1 0 0744d36044a6ee7f0f4841d1c2027f33
+
+% 0 1 0 09b47ccc21ac248800fedddb8dbc00cc
+
+@ 0 1 0 13179e2e30221efe13ed7c8816f2be2a
++   entry .Core   scribe の背後にあるキャリア：バッファとそのカーソル
+
+% 1 1 0 16ea6ef1ce25accf01047d5261b75fb5
+
+% 2 1 0 1f98a4512f835cc2115116ae80eaca90
+
+@ 0 27 0 012d8cde5632554d13075f76b8c65c23
++         直接使うためのものではない。
++         インラインの貸し手とアクセサーが呼び出し元のパッケージで展開され、その名前を挙げなければならないので公開されているにすぎない。
++         型のないバッファ、追加のカーソル `mark`、そして scribe が拡大するかどうかを保持する。
++     entry #mark   追加のカーソル
++     entry #buffer   型のない背後の配列
++     entry #growable   末尾を越える追加がバッファを拡大するかどうか
++   entry .countable   scribe の大きさはそのバッファの長さなので、限定された走査の一族が使える
++   entry .apply   `Scribe(buffer)` は大きさの決まった scribe を生み出す。`scribe(i)` はブランド付きの序数で読み戻す
++       名前を共有する二つのオーバーロードである。
++       コンパニオンでは、`Scribe(buffer)` は可変な JVM 配列を大きさの決まった scribe として包む。これは `Array.scribe` が使う生成であり、拡大せずに切り詰める。
++       scribe に対する拡張としては、`scribe(i)` は `i: Ordinal in scribe.type` の位置の要素を読み戻す。ブランドが範囲を証明するので、境界検査はない。
++   entry .varintLength   `Long` の LEB128 エンコーディングが占めるバイト数。1 から 10
++   entry .varintInto   `Long` を LEB128 として JVM のバイト配列のある位置に書き込み、その後の位置を返す
++   entry .utf8Length   文字列を UTF-8 エンコーディングしたときの長さ。エンコードはしない
++       サロゲートペアは 4 バイトの列一つとして数え、孤立したサロゲートは JDK のエンコーダーが代わりに置く `?` の 1 バイトとして数える。
++   entry .utf8Into   文字列を UTF-8 として JVM のバイト配列のある位置にエンコードし、その後の位置を返す
++   entry .update   `scribe(i) = value`：scribe のブランドが付いた序数の位置に、境界検査なしで書き込む
++   entry .append   scribe のカーソルの位置に書き込み、カーソルを進める：要素一つ、凍結済みの配列全体、またはその一部の窓
++       `append(value)` は要素を一つ書き込み、`append(array)` は凍結済みの配列をコピーし、`append(array,
++       from, count)` はその一部の窓をコピーする。後者は、大きなブロックの一片を追加するフレーミング形式のためのものである。
++       大きさの決まった scribe では、末尾を越える書き込みは捨てられる。大きさの決まっていない scribe は倍々に拡大する。
++   entry .mark   `scribe.mark`：これまでに scribe に追加された要素の数
++   entry .place   `scribe.place(array, at)`：凍結済みの配列をブランド付きの位置にコピーし、収まった数を返す
++       コピーは scribe の末尾で切り詰められ、追加のカーソルは動かさない。
+
+@ 0 3 0 08a90da4569ad68e085eeed55d103a1b
++ entry .appendVarint   `scribe.appendVarint(long)`：バイトのスクライブに LEB128 の varint を追加する
++     一回の容量検査で、1 から 10 バイトを書く。
++     128 未満の値は、その値そのものの一バイトとして追加される。
++     `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない。
+
+@ 0 4 0 0d278120dfdc114c0a18d0795efbf6ed
++ entry .appendUtf8   `scribe.appendUtf8(string)`：バイトのスクライブに文字列の UTF-8 エンコーディングを追加する
++     中間の配列を介さずにバッファーへ直接エンコードし、ASCII には高速な経路がある。
++     対になっていないサロゲートは `?` としてエンコードされる。
++     `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない。
+
+@ 0 8 0 13bbb9591793e5501089c40fe5de3df1
++ entry .scribe   `Array.scribe[element](size)(scribe => extent => …)`：アロケートし、スクライブを貸し出し、凍結する
++     `Array` のコンパニオンに対する拡張で、`concordance` ライブラリに含まれる。
++     ちょうど `size` 個の要素の配列をアロケートし、その上の `Scribe` を、`Interval in scribe.type` としてのその範囲とともに貸し出す。そのため `scribe.iterate(extent)` と `scribe(i) = v` は全域的である。
++     唯一の書き手であるラムダが戻ると、凍結した配列を返す。
++     `append` による末尾を越えた書き込みは捨てられ、配列が伸びることはない。結果の長さは常にちょうど `size` である。
++     要素に対する `ClassTag` が必要である。
++     アンブレラにはエクスポートされない：`import rudiments.scribe`。
+
+% 2 1 0 0028c7f169f53ae91ecddecf0b1bbb86
+
+% 3 1 0 12e4ad49820580fc1adefc3be8980a05
+
+% 0 1 0 131b7078fa788d5914928ff900d90b64
+
+% 0 1 0 1f9fe3a6ba7de5ec033bddc95187970e
+
+% 0 1 0 04f8b52eb7b936ad1da79b3e504ede7e
+
+% 0 1 0 05c71502cccae5ff0e7c3b9d9e770025
+
+% 1 1 0 0e781b5e07af689d018f101451d04c8b
+
+@ 0 9 0 16c709ef2229ed89049b1e5efa369457
++ entry .collect   `Array.collect[element](hint)(scribe => …)`：ブロックが追加したものちょうどの配列
++     `Array` のコンパニオンに対する拡張で、`concordance` ライブラリに含まれる。長さが前もって分からない結果のための、伸長可能な貸し出し手である。
++     これまであらゆる場所で `java.io.ByteArrayOutputStream` が使われていた役割を、その同期も、起こりえない `IOException` も、`toByteArray` が呼ぶたびに行う複製もなしに果たす。
++     スクライブは `hint` 個（少なくとも 16）の要素から始まり、`append` の求めに応じて倍になり、バッファーがちょうど満たされていれば結果は複製なしで凍結される。
++     ブランドを付ける固定の範囲がないので、ラムダはブランド付きの範囲を受け取らない。大きさの決まっていないスクライブには `append` と `place` で書く。
++     アンブレラにはエクスポートされない：`import rudiments.collect`。
+
+% 2 1 0 1d7d94b2ff1df95c171b89d64b0efb68
+
+% 3 1 0 0aebc319b3ab30c019350d6b3a3c4633
+
+% 0 1 0 08288b8fd3de9931063f267df82ded5f
+
+% 0 1 0 070f79ed6730c4b40b079fa09f564956
+
+% 0 1 0 144076bb95e49f0d143b1c88125a4853
+
+% 0 1 0 0a71cccc5744238013517f252c16be85
+
+% 1 1 0 0b6381153a2a17ad0748ffd73065a3b6
+
+@ 0 1 0 1e7720f70f91b9f90a025f5b09de267c
++ entry .Scroll   プリミティブ（または任意のもの）の、ボックス化されない伸長可能な配列。`Int` で添字を付ける
+
+% 1 1 0 0a13d99c00ba95e615c31f75cb20e894
+
+@ 0 9 0 14d7fd7c9955787208c3d78269a76007
++       `Scroll[Int]()` は、標準ライブラリの `ArrayBuffer[Int]` をボックス化なしで置き換えるものである。`ArrayBuffer` の格納領域はボックス化された参照を保持する。
++       具体的な要素の型のスクロールは JVM のプリミティブ配列を直接読み書きするので、`scroll.append(1)` は一つの `iastore` になる。
++       これは、計算した位置に書き込み、パースをまたいで再利用される記述子のビルダーやスタイルのスタックのための、`Scribe` の兄弟である。
++       誰でも構築でき、`clear` でき、ただの `Int` で添字を付け、`length` に照らして検査する（範囲外なら `IndexOutOfBoundsException`）。
++       `freeze` はそれまでの要素をちょうどの大きさの凍結済みの配列として返し、スクロールは引き続き使える。
++       `concordance` ライブラリに含まれ、アンブレラにはエクスポートされないので、`import rudiments.Scroll` とする。
+
+% 2 1 0 1c2f11c2405d91bd1ccdba1ed184833b
+
+% 3 1 0 0bfc9d946f24058813fb39a885db1abb
+
+% 0 1 0 0624148bf54848f9022c856de4aadf66
+
+% 0 1 0 1d1d10126e8c749314788e3bd0d3898b
+
+% 0 1 0 0e3360120345563106df8579c9888a3e
+
+% 0 1 0 062aeb2a0bcb6c3a1c98c4bd2669fa51
+
+% 0 1 0 1d9f3e4dedb9d33201f95ff7bb7ce2ac
+
+% 0 1 0 1918dc4f65d189d116a2fd2fa4b433aa
+
+% 0 1 0 0e143a1317a2e898026eac693ea50cb2
+
+% 0 1 0 1057533327ecb6f213944b7eeb34e82c
+
+% 1 1 0 023533307e7139eb1396d34a052a673f
+
+% 0 1 0 16fabe80158479210589a2063b025141
+
+@ 0 1 0 0d95fdc49f7c80bd01bd411f643a3707
++   entry .Core   スクロールの背後にあるキャリア：型のないバッファーとその長さ
+
+% 1 1 0 1e908079d7899d281702c8b0248ecff6
+
+% 2 1 0 00d21d58328154b8113af06657f90cef
+
+@ 0 16 0 03754967e09f524603e10bfda778b9c3
++         直接使うものではない。インラインのアクセサーが呼び出し側のパッケージで展開されるので公開されている。
++     entry #buffer   型のない格納用の配列
++     entry #length   保持している要素の数
++   entry .apply   `Scroll[element](capacity)` は空のスクロールを作り、`scroll(index)` は要素を読む
++       名前を共有する二つのオーバーロードである。
++       コンパニオンでは、`Scroll[element](capacity)` は少なくとも 16 個のスロットを持つ空のスクロールを作り、要素に対する `ClassTag` を必要とする。
++       スクロールに対する拡張としては、`scroll(index)` はゼロ起点の `Int` の位置の要素であり、長さに照らして検査され、それを超えると `IndexOutOfBoundsException` を投げる。
++   entry .length   `scroll.length`：スクロールが保持する要素の数
++   entry .isEmpty   `scroll.isEmpty`：スクロールが要素を一つも保持していないかどうか
++   entry .update   `scroll(index) = value`：長さ未満の添字の位置にあるスクロールの要素を置き換える
++   entry .last   `scroll.last`：スクロールに最後に追加された要素。空なら例外を投げる
++   entry .append   スクロールに、要素を一つ、別のスクロールのすべての要素、または JVM の配列の一部の範囲を追加する
++   entry .retract   `scroll.retract(count)`：容量を保ったまま、スクロールの最後の `count` 個の要素を忘れる
++   entry .clear   `scroll.clear()`：容量を保ったまま、スクロールのすべての要素を忘れる
++   entry .freeze   `scroll.freeze`：それまでの要素を、ちょうどの大きさの凍結済みの配列として返す。スクロールは変わらない
+
+@ 0 1 0 0b810339d7d741951f314449eb3b5408
++ entry .Surveyor   添字付きのコレクションの上を歩調を合わせて進むカーソル。その連続部分と位置はブランド付きで返る
+
+% 1 1 0 00f5e6a047ae40140f5b90690d500bb4
+
+@ 0 10 0 0c25df8e118cf3d6001f6faec803dfb9
++       `Surveyor` は限定されたパーサーのカーソルである。
++       安定した、添字で読めるコレクションの上の可変の位置であり、`value.survey { surveyor => … }` によって貸し出される。
++       それが生むものはすべてコレクションに対してブランド付けされる。連続部分は `Interval in value.type` として、位置は `Ordinal in value.type` として返るので、境界検査なしで `apply`、`iterate`、`segment` に渡せ、連続部分の長さは添字の算術ではなく区間の大きさから得られる。
++       これは走査を行うパーサーが行き着いた形である。
++       `pace(_ == ' ')` は空白を飛ばしてその量を報告し、`pace(_ != ':')` は区切り文字まで走査し、`peek` は現在の要素によって振り分け、`next` は一つを消費し、`matches` は目印を検査し、`glimpse` は固定の先読みを貸し出す。
++       裸の位置での読み出しは提供されないので、呼べる部分関数は存在しない。
++       `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない（`import rudiments.{Surveyor, survey}`）。
+
+% 2 1 0 05ccf2e65e75d0e60dc007b60dab1d7a
+
+% 3 1 0 1943ac968cf207ae02f00c27792c8495
+
+% 0 1 0 001a59c0422f73f90a787d3de4f2b71a
+
+% 0 1 0 06906807fb58cd08128be32388bf272f
+
+% 0 1 0 0b90ada8824b9cce0f0e37b6aec25796
+
+% 0 1 0 1d25350e9dbbe4db1332cd13924a95fe
+
+% 0 1 0 03a1f923022f5460080f0ece23b7e86f
+
+% 0 1 0 1e0e9b95e8bc065d0d00abccb2962901
+
+% 0 1 0 17f8a9f9b1a84d901e87b4d160e7a9d4
+
+% 0 1 0 0e472172ca4365340200cc2a5c211fb6
+
+% 1 1 0 13bda11534736bfc13113e48c08f6be6
+
+% 0 1 0 03aac2006e934f88094ad5ab8e03d880
+
+@ 0 14 0 1dad381cc79397280ae55bd9aa881f6d
++   entry #passed   コレクションの先頭から数えた位置
++   entry #more   少なくとも一つの要素が残っているかどうか
++   entry #advance   要素を一つ進む。尽きていれば false
++   entry #peek   進まずに、現在の要素が述語を満たすかどうか。尽きていれば false
++   entry #next   `next(otherwise)(lambda)`：現在の要素をラムダに消費させる。尽きていれば `otherwise` を返す
++   entry #take   最大 `count` 個の要素を消費し、実際に通過したブランド付きの連続部分を返す
++   entry #matches   進まずに、ここからの要素がある等価性のもとでパターンに一致するかどうか
++       `surveyor.matches(t"bcd") { (left, right) => left == right }` は、任意の `Countable` かつ `Applicable by Ordinal` なパターンと要素ごとに比較する。
++       残っている要素がパターンより少なければ false である。
++   entry #glimpse   進まずに、次の `count` 個の要素のブランド付きのウィンドウを返す。残りがそれより少なければ `Unset`
++   entry #point   ブランド付きの現在の位置。尽きていれば `Unset`
++   entry #remainder   まだ通過していないすべてを、ブランド付きの（空でありうる）区間として返す
++   entry #pace   述語を満たす要素の連続部分を進み、それをブランド付きの区間として返す
+
+@ 0 8 0 0fce32316058257e1ee2dccb26b07129
++ entry .survey   `value.survey { surveyor => … }`：コレクション、またはブランド付きの部分区間の上の `Surveyor` を貸し出す
++     `Applicable by Ordinal` かつ `Countable` である任意の値（`Text`、`Sequence`、凍結済みの配列、`Scribe`）に対する拡張で、`concordance` ライブラリに含まれる。
++     一引数の形 `value.survey(range)` は、サーベイヤーを `Interval in value.type`（`value.extent.capped(4)` や `value.extent.beyond(2)` など）に限定する。サーベイヤーは区間の始点から始まり、その限界で尽きるので、コレクション自身の長さ以外のもので区切られた走査がそれを越えることはない。
++     アンブレラにはエクスポートされない：`import rudiments.survey`。
+
+@ 0 1 0 061f8c4654ea9b5d026be70646ae095e
++ entry .Lattice   線形のコレクションの二次元のアドレス指定：行と点をブランド付きの区間と序数として扱う
+
+% 1 1 0 185a5df4333be6550f5fcca28975f79b
+
+@ 0 9 0 0f14e961aef2c7e11ae8629be445b61c
++       `Lattice` 自体は何もブランド付けしない。
++       `(x, y)` 座標からコレクションに対する線形のブランド付きの区間と序数を導くので、すべてのアクセスは限定された仕組みを通る。
++       これが置き換える算術は、幅とは異なるストライドを用いた `y*stride + x` である。ピクセルの平面、インターレースされた行、サブサンプリングされた色差などがそうである。
++       `row(y)` は行を `Interval in value.type` として、`point(x, y)` は位置を `Ordinal in value.type` として返し、それぞれ格子の外では `Unset` になる。`rows` はすべての行をその添字とともに訪れる。
++       貸し出し手は高さを収まる完全な行の数に切り詰めるので、`row` と `point` は構成上全域的であり、末尾の不完全な行は格子の外にある。
++       `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない（`import rudiments.lattice`）。
+
+% 2 1 0 0fae1d0c9dd4ae931ad0b2480bbcebc2
+
+% 3 1 0 129a121ece6e4b5709d0e2b98345ab8e
+
+% 0 1 0 0bf68aae6c11b23b0ffdce76ac3c9980
+
+% 0 1 0 1d58359ff74e59e715acc4e49fba74df
+
+% 0 1 0 1be6527587b3db5a148feeaec479f91b
+
+% 0 1 0 139553c7c469e7db158f20b9f0f5374d
+
+% 0 1 0 1bb19472cb5722ab0e707e15e8718ecb
+
+% 0 1 0 13c890324b44d12c0317e4c688c6cd29
+
+% 0 1 0 0f6130ac4cbb0a2c0071228b7c5a74dc
+
+% 1 1 0 0d46ef9d8a8443e2188c933cc9546f9c
+
+% 0 1 0 09ca94c70a1efec307e2a980b31026cd
+
+@ 0 5 0 0bcc97e4dd0927ab1682c074b69edf71
++   entry #width   一行の要素の数
++   entry #height   コレクションに収まる完全な行の数
++   entry #row   ブランド付きの区間としての行 `y`。格子の外では `Unset`
++   entry #point   ブランド付きの序数としての `(x, y)` の線形の位置。格子の外では `Unset`
++   entry #rows   すべての行を、その添字とブランド付きの区間として順に訪れる
+
+@ 0 6 0 08d36a1b7710c94d11318b738773a0c0
++ entry .lattice   `value.lattice(width, stride, offset) { lattice => … }`：`Countable` な値の上の `Lattice` を貸し出す
++     ストライドは少なくとも幅になるように切り上げられ（重なる行は別名を作ってしまう）、退化した形状は高さゼロの格子になり、高さは `offset` から収まる完全な行の数である。
++     `value.lattice(width)` は、先頭から連続する行の格子である。
++     `Scribe` は `Countable` なので、その上の格子は書き込み用のハンドルを指し示す。
++     `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない。
+
+@ 0 7 0 1a42d6c79f045183002f634414894b86
++ entry .pairs   コレクションを互いに素な完全な対ごとに訪れ、末尾の余りをブランド付きの区間として返す
++     任意の `Countable` かつ `Applicable by Ordinal` な値に対する `xs.pairs { (a, b) => … }` は、各対の要素を順に渡し、末尾の 0 個または 1 個の要素を `Interval in xs.type` として返す。それはコーデックの定めに従って `iterate` や `apply` で扱う。
++     `List` には `dysasymptotics.linearSize` と `linearAccess` の両方が必要であり、`Sequence`、`Text`、凍結済みの配列にはどちらも要らない。
++     `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない（`import rudiments.pairs`）。
+
+% 2 1 0 0d183aefa193cc410e18b4596950f1b8
+
+% 3 1 0 1dd5eb5861431bec0a3e9501bbfe22ab
+
+% 0 1 0 045cb050cab877f90dfa50c0e9869be8
+
+% 0 1 0 034140ba1135937a006c27da995bbeeb
+
+% 0 1 0 0de1be3d49af471a07084bc14ad95f41
+
+% 0 1 0 05afac5ddec816bb0fbbabe8d41a707c
+
+% 1 1 0 04bfe202603d706118f24103358bf974
+
+@ 0 3 0 127675960d86a86e0057a762bd958dda
++ entry .triples   コレクションを互いに素な完全な三つ組ごとに訪れる。ブランド付きの余りは 0 から 2 個の要素を持つ
++     `pairs` と同じく、三つずつ訪れる。
++     `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない。
+
+@ 0 3 0 1d0882102b8ee38e0485031817d30342
++ entry .quads   コレクションを互いに素な完全な四つ組ごとに訪れる。ブランド付きの余りは 0 から 3 個の要素を持つ
++     `pairs` と同じく、四つずつ訪れる。
++     `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない。
+
+@ 0 3 0 1e13582bf7b123c41b4bbafa231a4733
++ entry .quints   コレクションを互いに素な完全な五つ組ごとに訪れる。ブランド付きの余りは 0 から 4 個の要素を持つ
++     `pairs` と同じく、五つずつ訪れる。
++     `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない。
+
+@ 0 3 0 03232a0c7b5addf30fe524f2d1eeb4c0
++ entry .octuples   コレクションを互いに素な完全な八つ組ごとに訪れる。ブランド付きの余りは 0 から 7 個の要素を持つ
++     `pairs` と同じく、八つずつ訪れる。
++     `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない。
+
+@ 0 4 0 1386a864c1ded95f0e4731ad6422867d
++ entry .adjacent   重なり合う隣接するすべての対を訪れる：境界のウィンドウの形
++     `xs.adjacent { (left, right) => … }` は `(xs(0), xs(1))`、`(xs(1), xs(2))`、… を順に渡す。
++     四つの要素からは、`pairs` が二つの対を作るところで三つの対ができ、要素が二つ未満なら何も生じない。
++     `concordance` ライブラリに含まれ、アンブレラにはエクスポートされない。
+
+% 2 1 0 09c2510bf4eca1bc1de18793d28fdaf2
+
+% 3 1 0 089adbc33e270abd1438d361bfb3dffd
+
+% 0 1 0 180d763d9e7af827102d3d4e56ddd476
+
+% 0 1 0 1d02fa391a513307171c7574dc40437e
+
+% 0 1 0 120513fab8e73ab90207dfb6f795c456
+
+% 0 1 0 023ac62009eb8ea502df1649555c7b63
+
+% 1 1 0 09eff49e6bb96a0b106b314cc83a7c32
+
+@ 0 1 0 0353f6d909b1f66b0db99f89eb733c26
++ entry .sizedMacros   `Sized` な配列に対するリテラルの序数による読み出しの背後にあるマクロ
+
+% 1 1 0 03a3b8c2824c3eea09e06d995fc2404d
+
+% 2 1 0 1b0a79799c184f060bf23e2cc2e960c0
+
+@ 0 7 0 0a0d03d39efa425c13ba0c195a5e33ad
++       直接使うものではない。
++       `read` は `Array[element] & Sized[n]` に対する `apply` によって展開される。
++       インライン化された木の中のリテラルの序数（`z` を通した `Int` のリテラル、または名前付きの序数 `Prim` から `Sept` のいずれか）を認識し、それを `n` と比較して、裸の読み出しか、コンパイルエラー _the ordinal i is beyond the array's proven length of n_ を出力する。
++       変数の序数は、検査付きの `Optional` の読み出しとして出力される。
++       `concordance` ライブラリに含まれる。
++   entry .read   マクロ：リテラルの序数を、コンパイル時に証明された長さに照らして検査する

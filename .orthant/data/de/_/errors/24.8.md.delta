@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0ac019a046442ea3010373cc42b7d365
++ # `↯/s.24.8` — Fehlerhaftes Pattern
+
+@ 0 2 0 1e211827c99dbd8206304f36841398ce
++ Wird vom Makro zur Pattern-Analyse aus Contingency für ein Pattern ausgelöst, das es überhaupt
++ nicht interpretieren kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 01402ac8af03356e17d670174fa1b50b
++ Der Auffangzweig des Pattern-Durchlaufs. Ausgelöst durch fehlerhafte oder nicht unterstützte
++ Patterns, die zu keinem früheren Fall passten.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 152fc273311d6a4d0b6ec39fd080fc19
+
+% 1 1 0 12af3b11852f7924055ad3b5dab6e695
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 10c300f3ea461dd9000851bde784a682
++ Vereinfachen Sie das Pattern. Ist das Pattern plausibel, melden Sie bitte ein Issue.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 0a577f73475efca20b96d2f17614deed
++ - Quelle: `lib/contingency/src/core/contingency.internal.scala`

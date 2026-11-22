@@ -1,0 +1,1647 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 02c24cf3cbd2ab1013330955e06463ab
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0fcab838a3d347b2092b795eeed69c9f
++ info   型付きのツリーとしての CBOR（RFC 8949）：導出されたコーデックと生成されたコーデック、ストリーミングパーサー、HTTP 本文
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 0adff90548faa2e4076748f2bd3feef1
++     _Breviloquence_ は [CBOR](https://datatracker.ietf.org/doc/html/rfc8949) を読み書きする。
++     CBOR は JSON のバイナリ版の親戚であり、Soundness はテキスト形式の兄弟と同じインターフェースをこれに与える。
++     バイト列は `Cbor` 値へパースされ、ケースクラスはその定義から導出されたコーデックで `Cbor` と相互に変換され、ナビゲーション、更新、レンズは JSON や YAML と同じように働く。
++     デバイスのプロトコル、キャッシュのエントリー、メッセージキューのように、ワイヤ上のデータを人が読まない場所では、CBOR は JSON のデータモデル（マップ、配列、整数、浮動小数点数、テキスト、バイト文字列、真偽値、`null` と `undefined`）をコンパクトなバイナリ形式で保ち、さらに値にその意味を注記する**タグ**を加える。
+
+@ 0 5 0 143f4a48dec0eec91e048ed9cb90acbb
++     `Cbor` は `Cbor.Ast` の上の不変なツリーである。
++     `Cbor.Ast` は不透明なストレージ型であり、そのアクセサー（`isMap`、`entries`、`key`、`value`、`long`、`string`、…）が一つのノードを分類し、読み取る。
++     値は `in[Cbor]` でエンコードされ、ツリーは `as[T]` でデコードされる。
++     バイト列は `Cbor.Ast.encodable` から得られ、`Cbor.Ast.parse` を通って元に戻る。
++     あるいは、それぞれの方向を一段階で行う `in[Data over Cbor]` と `read[T in Cbor]` を使う。
+
+% 2 1 0 16f9d7bb9f391dfc001459c038ad2b4e
+
+% 3 1 0 09222fa0ca691d7c148aae13e7fbc4f1
+
+% 4 1 0 0a3ceaf396bc5a311497b117a33a68d5
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 08c152d49378e447160881afb557962c
+
+% 0 1 0 0cddcd20ae4510510d59c996ec38484a
+
+% 0 1 0 06e677f66cf68c750a59dbf253c2920b
+
+% 0 1 0 0f9519b6891e1cea0790a47a669ec1ef
+
+% 0 1 0 1862989715c9132b09720cdce049177d
+
+% 1 1 0 1e54dd97a5b4f50c056650b06273ba75
+
+@ 0 5 0 04be20b186db4f1a0d92830fb9ebd528
++     読み取りはストリーミングで行われる。
++     `Chain[Data]` や `Stream[Data]` に対する `read[Cbor]`、`read[Cbor.Ast]`、`read[T in Cbor]` は `CborParser` を駆動する。
++     `CborParser` は `zephyrine.Cursor` の上の状態を持つケイパビリティであり、各チャンクを引き出されたときに読み、入力を先に組み立てることはない。
++     複数のチャンクにまたがる値は、一度にまとめて届いた値とまったく同じように読まれ、すべての `Cbor.Error` は絶対的なバイトオフセットを報告する。
+
+@ 0 10 0 1c3b05b0d27866c20419de7ff2f77c41
++     バイト列から値へ至る経路は三つある。
++     **導出**の経路はツリー全体をパースし、それを `Decodable in Cbor` を通じてデコードする。
++     `Decodable in Cbor` は任意のケースクラスやシールされた階層に対して導出される。
++     **直接**の経路である `Cbor.Parsable` と `Cbor.Printable` は、ツリーを作らずに、`Cbor.Reader` を通じてパーサーの縁から項目を直接消費し、あるいはバイトの生産者へ直接書き込む。
++     `Inlinable.parsable[T]` と `Inlinable.printable[T]` はそのようなインスタンスをコンパイル時に生成し、`derives Cbor.Direct` は両方をコンパニオンに生成し、`import codecs.direct` はスコープ内のすべてのレコードに対して生成されたコーデックを選ぶ。
++     三つ目の選択肢である `import codecs.strict` は、直接のコーデックを持たないレコードをコンパイルエラーにする。
++     モードを何もインポートしなければ、型は自身の `Cbor.Parsable` または `Cbor.Printable` を持つときにだけ直接の経路を通り、それ以外では導出の経路を通る。
+
+@ 0 1 0 1af03583aa97792d1ed95982f8b2b936
++     このライブラリには三つのコンポーネントがある。
+
+@ 0 11 0 16da09a4fd54b93913bdf6fcfff58e56
++     - `breviloquence.core` — `Cbor`、`Cbor.Ast`、`CborParser`、`Cbor.Reader`、導出されたコーデックと直接のコーデック、オプティクス、`Inlinable`、そして `optionalityOptions`、`dynamicAccess`、`conversions` パッケージ。JVM、Scala.js、Scala Native 向けにコンパイルできる。
++     - `breviloquence.staged` — マクロ内のステージングコンパイラ（`InlinableStager`）。コードのコンパイル中に、`Inlinable.parsable` が手書きの `Inlinable` インスタンスや、シールされた直和型の `Discriminable in Cbor` を評価できるようにする。Scala コンパイラをマクロのクラスパスに持ち込むので、別個の、明示的に選ぶコンポーネントになっている。これがなければ、型が手書きのインスタンスしか持たないフィールドは実行時の継ぎ目を通り、直和型は生成されない。JVM のみ。
++     - `breviloquence.http` — `postables`、`servables`、`construables` の given。telekinesis で `Cbor` を `application/cbor` のリクエスト本文やレスポンス本文にする。JVM のみ。
+
+@ 0 5 0 1632f61ace5a95e714c14dce4bdfb3ea
++     `Cbor` と `Cbor2` は `parse` 拡張とともに `soundness` アンブレラにエクスポートされ、各選択パッケージはアンブレラ自身の同名のパッケージと統合される。
++     ユーザーは `import soundness.*` と書き、それからポリシーを名前でインポートする。
++     `import soundness.*` は given をインポートしないからである（`import optionalityOptions.strictCborNulls`、`import dynamicAccess.dynamicCbor`、`import codecs.direct`）。
+
+% 0 1 0 063a0ed12c64fddc156d5a4ce74f2b6f
+
+% 0 1 0 104f3eca87bb771a1a6413181fe20d3f
+
+% 0 1 0 1b64f3bf1f2ee61400bf726b7dee47e6
+
+% 0 1 0 1e435648e360435108e156e414c77194
+
+% 0 1 0 052926ec0b94db1d0396cd9bd23caebc
+
+@ 0 1 0 1eb90146bf2d815d1c3ce88650f18476
++ entry .Cbor   CBOR ドキュメント：不変なツリーと、そのコーデック、パーサーのフック、オプティクス
+
+% 1 1 0 090209f3f6cf0efd0e85a1c48694b7ae
+
+@ 0 7 0 0b9ad31eac8aa2d01477eebe9793e604
++       `Cbor` は一つの `Cbor.Ast` ノード（ドキュメントのルート）を包み、すべてのエンコードが生成し、すべてのデコードが消費する型である。
++       `Dynamic` なので、`dynamicAccess.dynamicCbor` がスコープにあれば、マップのフィールドはメンバーとして読め、配列はインデックスで参照でき、代入は更新されたコピーを作る。
++       `==` で構造的に比較され、マップのエントリーは位置ごとに比較される（正準 CBOR はキーを決定的に並べるので、往復したドキュメントは等しくなるが、同じエントリーを異なる順序で持つ二つのマップは等しくない）。
+
+% 2 1 0 0825354a57666aba02f6a273c29abfee
+
+% 3 1 0 0eff69ed7ccaebf2100e7c5dbfdcc625
+
+% 4 1 0 04e625dc3fc62b9019170ea80cb8ad83
+
+% 5 1 0 0c5c35100da37a0d0db8b3d841b7b3bf
+
+% 7 1 0 0e4e97936058e0c5072ae4cc7c332aef
+
+% 2 1 0 1c61a718f9beb3c81b2ef691cfae48e5
+
+% 0 1 0 05f9857e3f22b7e9017a12a8d5741423
+
+% 0 1 0 0c64d7eabf92d3591d8b6f0e29a1185c
+
+% 0 1 0 1b9ea3524b6aaeb209c7a5dad3c1ac76
+
+% 1 1 0 0e9b8b8e554f1a0f1fa2d8081d9a19f7
+
+@ 0 12 0 001fd450aa230730152764e14399317b
++       コンパニオンは `Cbor` ができることのすべてを保持する。
++       プリミティブ、コレクション、`Optional`、`Option`、`Map` に対する `Encodable in Cbor` と `Decodable in Cbor` の given（`Cbor.decodable` と `Cbor.encodable` は任意のケースクラスやシールされた階層に対してそれらを導出する）、チャンクに分かれたバイト列をツリーや値に変える読み取りの経路 `.aggregable`、`Cbor.aggregableIn`、`Cbor.aggregableParsed`、`in[Data over Cbor]` の背後にある書き込みの経路 `Cbor.encodableOver` と `Cbor.encodableOverPrinted`、`.lens` と配列のオプティクス、一ブロックずつ直列化する `.emit`、そして直接のコーデックの面である `.Parsable`、`.Printable`、`.Reader`、`.Direct` である。
++       これらはすべて暗黙のスコープにあり、名前でインポートするのは `optionalityOptions`、`dynamicAccess`、`conversions`、`codecs` のポリシーだけである。
++       ここで `Cbor.…` と書いたものは、宣言されたものではなく継承されたものである。
++       優先度の低いトレイト `Cbor1` と `Cbor2` がそれらを宣言し、文書化している。
+
+@ 0 5 0 137922e17a8cbdae177152c5325c2428
++       デコードにはスコープ内の `Tactic[Cbor.Error]` が必要である（`strategies.throwUnsafely`、`safely` または `unsafely` ブロック、あるいは `raises Cbor.Error` 節）。
++       読み取りに失敗すると、`Cbor.Error.Reason` を持つ `Cbor.Error` が発生する。
++       不正な入力はバイトオフセットを示し、変換の失敗は、どの型が見つかりどの型が期待されたか、あるいはフィールドが存在しなかったことを述べる。
+
+% 1 1 0 0113e06e5eac465b1b04f12ad34217b5
+
+% 2 1 0 0dbd2326a7735c6602dc633bd2e3987b
+
+% 1 1 0 1019ae734818d93e0fe2368caf08a2e4
+
+% 2 1 0 118acb3bf6e0c22216a429d64579f486
+
+% 0 1 0 0126836c20f0effa13fbab59e6c0638f
+
+% 0 1 0 08ee871eef7d3ca8035821ade2a179b7
+
+@ 0 22 0 1ed0ef709c9a4872000d198aaaa08585
++   entry #apply   マップのフィールドを名前で、または配列の要素をインデックスで取り出す
++       `cbor(t"name")` はキー `name` の下にある値を `Cbor` として返す。
++       マップにそのキーがなければ、ルートが `undefined` である `Cbor` を返す（そのため、存在しないフィールドへの参照を連ねても、失敗せずに `undefined` になる）。
++       マップでないものに対してフィールドを参照すると、`NotType(found, Map)` を持つ `Cbor.Error` が発生する。
++       `cbor(2)` は配列の三番目の要素であり、それ以外のものに対しては `NotType` が発生する。
++   entry #selectDynamic   `cbor.field`：`dynamicAccess.dynamicCbor` のもとで、マップのエントリーを名前で取り出す
++       テキストのキーを取る `#apply` の `Dynamic` 形式である。
++       `(? >: Cbor) is Dynamical` がスコープにある場所でだけ使える。
++       スコープ全体には `import dynamicAccess.dynamicCbor`、一つの式には `dynamically[Cbor]:` ブロックを使う。
++       こうして、動的アクセスを意図していない場所で、綴りを誤ったフィールド名がメソッドと取り違えられることはない。
++       レシーバがマップでなければ `Cbor.Error` が発生する。
++   entry #applyDynamic   `cbor.field(index)`：配列を値とするフィールドの要素
++       `dynamicAccess.dynamicCbor` のもとで、`cbor.values(1)` はキー `values` の下にある配列の二番目の要素である。
++       レシーバがマップでないか、フィールドが配列でなければ `Cbor.Error` が発生する。
++   entry #updateDynamic   `cbor.field = value`：エントリーを置き換え、追加し、または削除したコピー
++       `dynamicAccess.dynamicCbor` のもとで、`person.age = 40` は、`age` エントリーが `40` のエンコード（任意の `Encodable in Cbor` の値。`conversions.encodableToCbor` を使えば、レンズの代入でもそれを受け取れる）を持つ新しい `Cbor` である。
++       キーが存在しなければ、新しいエントリーとして末尾に追加される。
++       `person.age = Unset` はエントリーを削除する。
++       レシーバがマップでなければ、どちらも `NotType(found, Map)` を持つ `Cbor.Error` を発生させる。
+
+% 2 1 0 0debbdafa1f6685a18159b9682175ee4
+
+% 3 1 0 023928d166a8de760aaf1187bedb183b
+
+% 4 1 0 12ec4ab81ba41a97139139fbe4b5c64b
+
+% 5 1 0 1df36cc553a628fc1d0adabed8186510
+
+% 7 1 0 1e30defe796c086c17d08ba5f121e682
+
+% 0 1 0 17538327139d1f0e0a29d47cd67e914e
+
+% 2 1 0 0dd14cd9fa6e84c50531db75fe7d5e71
+
+% 0 1 0 17ce32ef177251850c83b8233cbf2c4f
+
+% 0 1 0 124f70c9144a1a210c8f4be8e27ed9b6
+
+% 1 1 0 076fbb4ee92a747f0520e367db7c9b1f
+
+@ 0 13 0 165c6961eca9c1fb0526cb0bc46dc047
++   entry #as   ドキュメントを、型の `Decodable in Cbor` を通じてその型としてデコードする
++       `cbor.as[Person]` は型のデコーダーをツリーに対して実行し、`Tactic[Cbor.Error]` を必要とする。
++       ケースクラスはマップからフィールド名で（`@name[Cbor]` アノテーションで名前を変えられる）、シールされた階層は `Discriminable in Cbor` を通じて、コレクションは配列から、プリミティブは対応する葉からデコードされる。
++       `Optional` または `Option` のフィールドは、存在しないキー、`null`、型の合わない値を `optionalityOptions` の指定どおりに読む。
++       `Validate` スコープのもとでは、型の合わないフィールドや存在しないフィールドがそれぞれ、そのフィールドへの `Pointer` を持つ自身のエラーを蓄積し、ケースクラスはすべてのフィールドに問題がなかったときにだけ構築される。
++   entry .ast   AST ノードを `Cbor` ドキュメントとして包む
++       `Cbor.ast(node)` は `.unseal` の逆である。
++       `Cbor.Ast`（`Cbor.Ast.parse` の結果や、アクセサーを通じてたどり着いたノード）を、デコード、ナビゲーション、更新のできるドキュメントにする。
+
+% 2 1 0 1da374f7ccec1f0a1aabe809094860be
+
+% 3 1 0 190b2e12d7a265651ba2075b65fc4fec
+
+% 4 1 0 033f3f9a4d342bdc041b28c1e6b0636b
+
+% 0 1 0 15dc158b77ccd8c406a4605fb45f17c9
+
+% 1 1 0 1d29210ed99cf8a91c63a170bc0c0b70
+
+@ 0 17 0 0e50fa3c4e7ced4f04a0c03397ee8f3b
++   entry .unseal   ドキュメントのルートにある AST ノード
++       `Cbor.unseal(cbor)` はツリーを `Cbor.Ast` として公開する。
++       アクセサー（`isTag`、`entries`、`key`、…）のため、診断記法での `show` のため、そしてドキュメントのバイト列を与える `Cbor.Ast.encodable.encoded` のためである。
++   entry .applyDynamicNamed   `Cbor.make(key = value, …)`：名前付き引数から構築されるマップ
++       コンパニオンは単一のメソッド名 `make` を持つ `Dynamic` である。
++       そのため、`Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor])` はそれらのエントリーをその順序で持つマップであり、各引数はすでに `Cbor` である。
++       合うケースクラスがない場所では、このようにしてマップを組み立てる。
++   entry .emit   ドキュメントのバイト列を一ブロックずつ、イテレーターとして引き出すか、関数へ押し出す
++       同じ深さ優先の走査に対する二つの形式があり、どちらもブロックの大きさのためにスコープ内の `Buffering` を必要とする。
++       `Cbor.emit(cbor)` は `Iterator[Data]^` であり、ファイバーを使わずに、次のブロックを引き出されたときにだけ直列化する。
++       ブロックはバッファリングの容量を超えた最初のノード境界で終わるので、一つの長い文字列が容量を超えることもある。
++       `Cbor.emit(cbor, deliver)` は呼び出し元のスレッドで直列化し、各ブロックが満ちるたびに `deliver` へ渡す。
++       これはファイル、ソケット、`OutputStream` へ書き込むための形である。
++       バイト列は `Cbor.Ast.encodable` が書くものとまったく同じであり、`.streamable` は引き出す形式を `Stream` として包む。
+
+% 2 1 0 007d3be9bfa1775302490979e46c1694
+
+% 3 1 0 0b7f7090773ad529063aa809c0927341
+
+% 2 1 0 1e835696c9ebfcf4009bc88477d3044c
+
+% 0 1 0 024902c67eb3f2481356eb44773a021e
+
+% 0 1 0 1f7d38aaff0cfd3c0cb7fd0dfa909bf7
+
+% 0 1 0 17b05650567989c60dc6102662e099af
+
+% 0 1 0 1ac0f620c1a3a79606ac085ac7c1e7e9
+
+% 0 1 0 03e3504ec26462471783254e2bd6d5c6
+
+% 0 1 0 152e1583280cafe80cda1d5b89ff6fc5
+
+% 1 1 0 0790b4cb62e650b41689cd0cf3b948c3
+
+@ 0 93 0 0a1f6b206552155e177be1436a5cc353
++   entry .streamable   `.emit` を通じて、`Credit` で計量される `Stream[Data]` としての `Cbor`
++       `Buffering` を必要とする。
++       これにより、エンコード全体をメモリに置くことなく、ドキュメントを `stream.transfer` で書き込んだり、`Streamable by Data` を受け付ける場所へ送ったりできる。
++   entry .aggregable   チャンクに分かれたバイト列を `Cbor` へ読み込む：`read[Cbor]` の背後にある given
++       `Chain(bytes).read[Cbor]` と `stream.read[Cbor]` は、各チャンクを引き出されたときに読みながら一つのデータ項目をパースし、後続のバイトを `Cbor.Error(Trailing(offset))` で拒否する。
++       `Tactic[Cbor.Error]` を必要とする。
++       ツリー全体が構築されるので、保持されるメモリは入力の大きさで決まる。
++   entry .aggregableDerived   `codecs.derived` のもとで、`Cbor.Parsable` がスコープにある場所でもツリーの経路を使う
++       `import codecs.derived` はすべての型に対して導出されたコーデックを選ぶ。
++       この given は `Cbor.aggregableParsed` より優先され、それが適用されるのとまったく同じ場所で適用される。
++       そのため、直接のパーサーがスコープにあっても、`read[T in Cbor]` はツリーをパースし、型の `Decodable in Cbor` を通じてデコードする。
++   entry .readableDerived   `codecs.derived` のもとで、ツリーを通じて `data.read[T in Cbor]` を行う
++       `.aggregableDerived` の、`Data` 全体に対する対応物であり、`Cbor.readableParsed` より優先される。
++   entry .encodableOverDerived   `codecs.derived` のもとで、ツリーを通じて `in[Data over Cbor]` を行う
++       `Cbor.Printable` がスコープにある場所ではどこでも `Cbor.encodableOverPrinted` より優先されるので、値は `Encodable in Cbor` を通じてツリーへエンコードされ、直列化される。
++   entry .aggregableStrict   `codecs.strict` のもとで、`Cbor.Parsable` を持つ型に対する直接の読み取りの経路
++       `import codecs.strict` は、フォールバックのない `codecs.direct` である。
++       直接のパーサーを持つ型はそれを通じて読まれ、持たない型はツリーの経路ではなく `Cbor.aggregableStrictFailure` に行き当たる。
++       これはその型を名指すコンパイルエラーである。
++   entry .encodableOverStrict   `codecs.strict` のもとで、`Cbor.Printable` を通じて `in[Data over Cbor]` を行う
++       strict の組の書き込み側である。
++       `Cbor.Printable` を持たない型は `Cbor.encodableOverStrictFailure` に行き当たる。
++   entry .option   `Option[T]` のフィールドを、`Cbor.optional` と同じ三つの `optionalityOptions` ポリシーでデコードする
++       存在しない値、`null`、誤りのある値は、寛容なポリシーのもとでは `None` になり、厳格なポリシーのもとでは `Cbor.Error` を発生させる。
++       存在する値は `Some` にデコードされる。
++   entry .optionEncodable   `Option[T]` をエンコードする：値のエンコード、または `None` に対しては `undefined`
++   entry .unit   CBOR の `null` を `()` としてデコードする
++       `null` 以外のものはすべて `Cbor.Error` を発生させる。
++       `undefined` に対しては `Absent`、それ以外に対しては `NotType(found, Null)` である。
++   entry .boolean   CBOR の真偽値を `Boolean` としてデコードする
++       それ以外のノードは `Cbor.Error(NotType(found, Boolean))` を発生させる。
++   entry .double   CBOR の浮動小数点数を `Double` として、または整数を拡大してデコードする
++       半精度、単精度、倍精度の浮動小数点数はすべて `Double` にパースされ、整数のノードは変換される。
++       それ以外のノードは `Cbor.Error(NotType(found, Float))` を発生させる。
++   entry .float   CBOR の浮動小数点数または整数を `Float` としてデコードする
++   entry .long   CBOR の整数を `Long` として、または浮動小数点数を切り捨ててデコードする
++       `Long` の範囲外の整数は、パース時に `Overflow(offset)` で失敗する。
++       浮動小数点数のノードは切り捨てられる。
++       それ以外のノードは `Cbor.Error(NotType(found, Integer))` を発生させる。
++   entry .int   CBOR の整数を `Int` としてデコードする
++       `.long` を通じてデコードし、それから `toInt` で縮小する。
++       `Int` の範囲外の値は、失敗せずに桁あふれして巡回する。
++   entry .text   CBOR のテキスト文字列を `Text` としてデコードする
++       それ以外のノードは `Cbor.Error(NotType(found, TextString))` を発生させる。
++   entry .string   CBOR のテキスト文字列を `String` としてデコードする
++   entry .byteString   CBOR のバイト文字列を凍結済みの `Array[Byte]`、すなわち `Data` としてデコードする
++       それ以外のノードは `Cbor.Error(NotType(found, ByteString))` を発生させる。
++   entry .cbor   `Cbor` をそれ自身としてデコードする。これにより、フィールドはその部分木をドキュメントとして保てる
++   entry .integralEncodable   任意の `Integral` な数を、`toLong` を通じて CBOR の整数としてエンコードする
++   entry .textEncodable   `Text` を CBOR のテキスト文字列としてエンコードする
++   entry .stringEncodable   `String` を CBOR のテキスト文字列としてエンコードする
++   entry .doubleEncodable   `Double` を 64 ビットの CBOR 浮動小数点数としてエンコードする
++       浮動小数点数は常に 64 ビットで書かれる。
++       より短いエンコードはパースされるが、生成されることはない。
++   entry .floatEncodable   `Float` を 64 ビットの CBOR 浮動小数点数としてエンコードする
++   entry .intEncodable   `Int` を、最も短いヘッドのエンコードで CBOR の整数としてエンコードする
++   entry .longEncodable   `Long` を、最も短いヘッドのエンコードで CBOR の整数としてエンコードする
++       負の値はメジャータイプ 1 として書かれる。
++       ヘッドは大きさに応じて 1、2、3、5、9 バイトのいずれかを占める。
++   entry .booleanEncodable   `Boolean` を CBOR の `true` または `false` としてエンコードする
++   entry .unitEncodable   `()` を CBOR の `null` としてエンコードする
++   entry .bytesEncodable   凍結済みの `Array[Byte]`（`Data`）を CBOR のバイト文字列としてエンコードする
++   entry .cborEncodable   `Cbor` をそれ自身としてエンコードする
++   entry .listEncodable   `List[T]` を、要素の `Encodable in Cbor` を通じて CBOR の配列としてエンコードする
++       要素のコーデックを捕捉する。
++       コーデックは名前渡しで受け取られるので、再帰的な型（`children: List[Tree]` を持つ `Tree`）も導出できる。
++   entry .setEncodable   `Set[T]` を、その要素の CBOR 配列として、集合の順序でエンコードする
++   entry .seriesEncodable   `Sequence[T]` を CBOR の配列としてエンコードする
++   entry .collectionDecodable   CBOR の配列を、`Factory` を持つ任意の `Iterable` コレクションへデコードする
++       標準ライブラリのコレクション型に対する汎用のインスタンスである。
++       `.listDecodable`、`.setDecodable`、`.seriesDecodable` は、Soundness 自身の `List`、`Set`、`Sequence` に対する対応物である。
++       これらは不透明なので、`Iterable` には一致しない。
++       配列でないノードは `Cbor.Error(NotType(found, Array))` を発生させる。
++       戦術と要素のデコーダーを捕捉する。
++   entry .listDecodable   CBOR の配列を `List[T]` としてデコードする
++       要素のデコーダーは名前渡しで受け取られるので、`List` を通じて再帰する型（`children: List[Tree]` を持つ `Tree`）も手書きのインスタンスなしに導出できる。
++   entry .setDecodable   CBOR の配列を `Set[T]` としてデコードする
++   entry .seriesDecodable   CBOR の配列を `Sequence[T]` としてデコードする
++   entry .mapDecodable   テキストのキーを持つ CBOR のマップを `Map[K, V]` としてデコードする
++       各キーは `K` の `Decodable in Text` を通じて、各値は `V` の `Decodable in Cbor` を通じてデコードされる。
++       テキスト文字列でないキーは `Cbor.Error(NonStringKey)` を発生させる。
++       マップでないノードは空のマップとしてデコードされる。
++   entry .mapEncodable   `Map[K, V]` を、テキストのキーを持つ CBOR のマップとしてエンコードする
++       キーは `K` の `Encodable in Text` を通じて、マップの反復順に書かれる。
++   entry .lens   `cbor.lens(_.field = value)`：ドキュメントからそのマップのエントリーの一つへの `Lens`
++       各名前は `name is Lens from Cbor onto Cbor` になり、これは `#selectDynamic` でエントリーを読み、不変な更新でそれを書く。
++       そのため、`play.lens(_.hero.name = t"Kent")` はルートからパスを組み立て直す。
++       `(? >: Cbor) is Dynamical`（`dynamicAccess.dynamicCbor`）と `Tactic[Cbor.Error]` を必要とする。
++       `conversions.encodableToCbor` をインポートすれば、代入する値は `Cbor` ではなく任意の `Encodable in Cbor` でよい。
+
+% 2 1 0 11ced4a36058486b1359e36ec76fac45
+
+% 3 1 0 041b5dca307c30c40a921467463408b3
+
+% 4 1 0 0abff5d4053bf1fd0751d8e5bc63c7ca
+
+% 5 1 0 034538189c5b902d06b5c3636da09c3f
+
+% 6 1 0 0650882d4893f2a11c8359a1d5c3679c
+
+% 2 1 0 13b6353bc9dd48db0686b02802951178
+
+% 3 1 0 076de571ba6d83f0167a37f3985b5d44
+
+% 0 1 0 130b27c72aad91a716f7851983e1d9be
+
+% 0 1 0 00857ffaaab2c60c1681696147ba0e30
+
+% 0 1 0 1f198abd6d7721bb168ea9ec57f7158e
+
+% 0 1 0 093ab500d79f10c90044f55dadaae518
+
+% 1 1 0 0d910f5b2964e70d1f742ffa456a1da1
+
+@ 0 8 0 14987a389565bee108a04c5925c39d05
++   entry .ordinalOptical   `cbor.lens(_.values(Sec) = x)`：配列の一つの要素を序数で指すオプティクス
++       レンズのパスの中で適用された `Ordinal`（`Prim`、`Sec`、`Ter`、…）は、配列を値とするエントリーの一つの要素を選ぶ。
++       末尾を越えた序数や配列でないものに対しては、ドキュメントは変わらない。
++   entry .eachOptical   `cbor.lens(_.values(Each) = x)`：配列のすべての要素に対するオプティクス
++       更新をすべての要素に適用する。
++       配列でないものは変わらない。
++   entry .filterOptical   `cbor.lens(_.values(Filter[Cbor](p)) = x)`：述語が選ぶ要素に対するオプティクス
++       述語が成り立つ各要素に更新を適用し、残りはそのまま保つ。
+
+% 2 1 0 0174c9b150f7506315207879be49f192
+
+% 3 1 0 129166c86f28bd021f317e2675f587de
+
+% 4 1 0 09eb99f350149cc21198a72c161c275f
+
+% 5 1 0 0e84bc44111a159503fc2f7a18507bbe
+
+% 6 1 0 1f77e874e2bbb64f09dd39b6bef21bfe
+
+% 2 1 0 11a18eca10c3c894018b4baa8decf77b
+
+% 0 1 0 0e91b96fdfc0cf4c050f6e2d009c45ad
+
+% 0 1 0 01bb103938969ccb1c7e46cba9de2c87
+
+% 0 1 0 03fcb8d9ef96b32807975634d70532c7
+
+% 0 1 0 059c0519022bb53404528aaf97f98871
+
+% 1 1 0 18bd140fe38f95be15eac9a644dee5da
+
+@ 0 13 0 1aedf81d8ed717ce13727055a66c59b9
++   entry .abstractable   HTTP 本文としての `Cbor`：`application/cbor` とエンコードされたバイト列
++       telekinesis がリクエスト本文やレスポンス本文を導出する元となる `Abstractable across HttpStreams` の given である。
++       `cbor.generic` はメディアタイプとバイト列の組である。
++       `breviloquence.http` コンポーネントの `postables.cborPostable` と `servables.cborServable` は、クライアントの `post` とサーバーのレスポンスのための名前付きの形式であり、本文は `.aggregable` を通じてパースし直される。
++   entry .discriminatedUnion   シールされた階層に対する、名前付きのマップキーによる `Discriminable in Cbor`
++       `given (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")` は、`Status` がそのバリアントのマップに、バリアントの名前（ケースに付けた `@name[Cbor]` で名前を変えられる）を保持する `kind` エントリーを加えた形でエンコードされ、同じエントリーを読み戻すことでデコードされることを、一度だけ宣言する。
++       結果は `.DiscriminantKey` であり、これは直接のコーデックの生成器が認識できる唯一の形である。
++       そのため、このインスタンスを持つ直和型は、`breviloquence.staged` がコンパイル時のクラスパスにあるとき、`Inlinable.parsable` でも生成できる。
+
+% 2 1 0 1d0c6bb88af9f98d0b043ad7a787c266
+
+% 3 1 0 15e07262289e383315db4cd95bba54fe
+
+% 4 1 0 1c3c5e0a2f8e02aa1286f68fedcbd327
+
+% 0 1 0 0e8b9ce63e8b41fb088398a055553f4a
+
+% 0 1 0 05cac0ee6d70eeec1fafff0c1ee1d089
+
+% 0 1 0 1f000fe81ac728e60a459e11b7e91cc2
+
+% 0 1 0 1fee4682de9f1aa517b5ceb10b935bab
+
+% 0 1 0 1df9463995fa27af0b8518ca5787c3bb
+
+% 1 1 0 08bce1d2e4fd6b0f14264745635d36fa
+
+@ 0 1 0 129ff61a1e517bb5010d2aced7d0b2c6
++   entry .DiscriminantKey   マップのキーで判別する `Discriminable in Cbor` を、生成器が認識できるクラスとして表したもの
+
+% 1 1 0 01753abb31bce7690729e89bd3f60266
+
+@ 0 12 0 1533abe985c4d4cd06a4dec3940d4d02
++         `Cbor.discriminatedUnion` が返すクラスである。
++         `Form = Cbor` を持つ `Discriminable` であり、バリアント名を `#key` の下に書き、同じエントリーからそれを読み戻し、バリアントを直積型としてデコードする前にそのエントリーを取り除く。
++         無名のインスタンスではなく名前付きのクラスであるのは、生成された直接のパーサーが判別子に対して単相的に振り分けを行い、展開時にキーを取り出さなければならないからである。
++     entry #key   バリアントの名前を保持するマップのキー
++     entry #rewrite   バリアントのエンコードされたマップに判別子のエントリーを加える
++     entry #discriminate   ドキュメントがキーの下に持つバリアント名、または `Unset`
++         ドキュメントがマップでないとき、そのキーを持たないとき、またはキーの値がテキストでないときは `Unset` になる。
++         その場合、導出されたデコーダーは `Cbor.Error(Absent)` を発生させる。
++     entry #variant   判別子のエントリーを取り除き、直積型としてデコードできるようにしたドキュメント
++   entry .Ast   一つの CBOR ノード：ドキュメントの背後にある不透明なストレージ型と、そのアクセサーとコーデック
+
+% 1 1 0 0ab1283a6faa9ba71fded67a5b40a331
+
+@ 0 12 0 0cb342b9083119b817b9ee81223e6541
++         `Cbor.Ast` は CBOR のデータ項目の表現である。
++         各メジャータイプを格納する JVM の値に対する不透明なユニオンであり、整数には `Long`、浮動小数点数には `Double`、テキスト文字列には `String`、バイト文字列には凍結済みの `Array[Byte]`、そして `Boolean`、`null` には `.CborNull`、`undefined` には `Unset`、タグ付きの値には `.Tag`、配列やマップには凍結済みの `Array[Any]` を使う（配列の背後にある配列は番兵でパディングされて奇数の長さを持ち、マップのものはキーと値が交互に並んで偶数の長さを持つ。こうして二つを区別する）。
++         ノードがパターンマッチされることはない。
++         コンパニオンにあるアクセサーがノードを分類し（`unset`、`nullary`、`isInteger`、`isFloat`、`isTextString`、`isByteString`、`isBoolean`、`isTag`、`isArray`、`isMap`、`primitive`）、読み取る（`long`、`double`、`string`、`byteString`、`boolean`、`tag`、`array`、`elements`、`element`、`entries`、`key`、`value`、`index`）。
++         それぞれは、`import soundness.*` だけで、`Cbor.Ast` を使うあらゆる場所の暗黙のスコープにある。
+
+% 2 1 0 00f473ce2f5becf70f506297ca0dccd5
+
+% 3 1 0 04e328420a4eb14002be63647b910839
+
+% 4 1 0 1985394b682b1e5c00d287e83752d8a0
+
+% 0 1 0 1d630fbfa6f5d748166349f26e75fc3e
+
+% 0 1 0 15147f46283bdd590d72af05f7cde88d
+
+% 0 1 0 0cbe2f3047ee97f90b69875d7ec99cf8
+
+% 0 1 0 00e42d9bb0c2aba9118564691b883767
+
+% 0 1 0 1d161dfca017c9461cb924326b0c879d
+
+% 0 1 0 0cb6afc89e794acc12ff4700909fcb49
+
+% 1 1 0 046178f6962e0e77146f013c4a647734
+
+@ 0 5 0 0eab1aa427e98a5f0f1a5aba814eca06
++         ノードは `parse`（`breviloquence.parse` から来るコンパニオンへの拡張）でバイト列からパースされ、`.aggregable` を通じて `read[Cbor.Ast]` でチャンクに分かれたバイト列から読まれ、`.encodable` を通じて直列化され、`.showable` を通じて RFC 8949 の診断記法で描画される。
++         `Cbor.ast` はノードをドキュメントとして包み、`Cbor.unseal` はルートのノードを取り出す。
+
+% 0 1 0 19196bdc1fcf19ed04c80e61f5429dbc
+
+% 0 1 0 0f42cc8aa8a26fad0c51a4ca9bf2cbec
+
+% 1 1 0 033d518832110ef1189399948dcddd65
+
+@ 0 38 0 05d174994d6da57f1a9313a7c86f85ea
++     entry .apply   ストレージの値（`Long`、`String`、`Tag`、`Unset`、…）をノードとして包む
++         `Cbor.Ast(42L)`、`Cbor.Ast("text")`、`undefined` に対する `Cbor.Ast(Unset)`、`null` に対する `Cbor.Ast(Cbor.CborNull)`、あるいは `Cbor.Ast(Cbor.Tag(1L, 1363896240L))` のように使う。
++         引数は `.CborTypes` のメンバーのいずれかでなければならない。
++         配列やマップは代わりに `.array` や `.map` で構築する。
++         これらは背後にある配列を正しく配置する。
++     entry .map   キーと値の並行な配列から作るマップのノード
++         `Cbor.Ast.map(keys, values)` は、ノードの二つの凍結済みの `Array[Any]` を交互に並べ、マップのノードの実体である偶数長の背後の配列にする。
++         二つの配列は同じ長さでなければならない。
++     entry .array   ノードの要素を配列として取り出す、または要素の配列から配列のノードを作る
++         コンパニオンのメソッドとしては、`Cbor.Ast.array(elements)` はノードの凍結済みの `Array[Any]` から配列のノードを作り、長さが偶数ならマップと区別できるよう番兵でパディングする。
++         アクセサーとしては、`ast.array` は配列のノードの要素を（パディングを除いて）凍結済みの `Array[Cbor.Ast]` として返し、それ以外のノードに対しては `Cbor.Error(NotType(found, Array))` を発生させる。
++     entry .length   配列のノードが保持する要素の数。パディングは数えない
++         アクセサー `elements` も同じ数である。
++         `.size` はマップのノードのエントリー数である。
++     entry .size   マップのノードが保持するエントリーの数
++         アクセサー `entries` も同じ数である。
++     entry .Sentinel   偶数個の要素を持つ配列の、背後の配列の末尾に置かれるパディング用のオブジェクト
++         ストレージのレイアウトの実装の詳細であり、アクセサーがインラインであるために公開されている。
++         ノードの値になることはなく、`elements` がこれを数えることもない。
++     entry .encodable   ノードを CBOR のバイト列へ直列化する：`Cbor.Ast.encodable.encoded(ast)`
++         `Encodable in Data` の given であり、したがって `ast.encode` でもある。
++         ツリーは深さ優先で書かれる。
++         整数は最も短いヘッドのエンコードで、浮動小数点数は常に 64 ビットで、テキストは UTF-8 で書かれ、配列とマップには長さが前置される（不定長はパースされるが、生成されることはない）。
++         バイト列は、生成された `Cbor.Printable` が書くもの、また `Cbor.emit` が一ブロックずつ生み出すものとまったく同じである。
++     entry .aggregable   チャンクに分かれたバイト列をノードへ読み込む：`read[Cbor.Ast]` の背後にある given
++         `Chain(bytes).read[Cbor.Ast]` と `stream.read[Cbor.Ast]` は、パーサーが必要とするたびに各チャンクを引き出しながら、`CborParser` を通じて一つのデータ項目をパースし、後続のバイトを `Cbor.Error(Trailing(offset))` で拒否する。
++         `Tactic[Cbor.Error]` を必要とする。
++     entry .showable   ノードを RFC 8949 の診断記法で描画する：`ast.show`
++         仕様が定める、人が読める描画であり、この形式における読める 16 進ダンプに相当する。
++         整数と浮動小数点数は数として（`NaN`、`Infinity`、`-Infinity` は文字で綴る）、テキスト文字列は `\"`、`\\`、`\n`、`\r`、`\t`、`\uXXXX` のエスケープを使って引用符で囲み、バイト文字列は `h'0102'` として、真偽値、`null`、`undefined` は名前で、タグは `1(1363896240)` として、配列は `[1, 2, 3]`、マップは `{"a": 1}` として書く。
++         メッセージがあるべき姿になっていないとき、頼りにするのがこれである。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 10bc42a246cc95e81adccaf6e5d90d4c
++           label エンコードしたレコード
+
+% 1 1 0 14006b1dae29689116c3698aa64c21fa
+
+% 0 1 0 19300448114fc7e810c6bf10a88a596e
+
+% 0 1 0 18f6fe48cb7dc1e41de3d51f99255dc2
+
+% 0 1 0 14baa297b21aefd106a438be3cbc0748
+
+% 0 1 0 03a08728a3b5aa6b11fd40d9eea628f6
+
+% 0 1 0 126447142f3b28c302c59e4a60876857
+
+% 1 1 0 16dd2ce4df65e66a18b11de2926e5f80
+
+@ 0 1 0 166a914e6725b6811920e3dbf5f7bd0e
++           label 診断記法で表したバイト列
+
+% 1 1 0 11d5dfe18490d23f12a2dc06646ea68a
+
+% 0 1 0 1d5e83dbfdd8d4150275e9c3dce95887
+
+% 1 1 0 05b084462bc5150112d00bfd9146781b
+
+@ 0 1 0 06bcc9928a1d8c20156687df9a7b3a5a
++           label そしてデコードし直したもの
+
+% 1 1 0 0595f4d8ff8a00a503010ffe13ce1dd4
+
+% 0 1 0 004ab0872bf773eb032901694a3572ce
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 40 0 0b086012ed96c42b0012b2f7ea914083
++     entry .unset   ノードが `undefined`（または存在しない）かどうか：`Unset` であること
++     entry .nullary   ノードが CBOR の `null` かどうか
++         `null` と `undefined` はワイヤ上で区別され（0xF6 と 0xF7）、ここでも区別される。
++         `null` は `.CborNull` という番兵であり、`undefined` と存在しないキーを表す、null を背後に持つ `Unset` と衝突しないようになっている。
++     entry .isInteger   ノードが整数（メジャータイプ 0 と 1）かどうか。`Long` として格納される
++     entry .isFloat   ノードが浮動小数点数かどうか。ワイヤ上の幅にかかわらず `Double` として格納される
++     entry .isTextString   ノードがテキスト文字列（メジャータイプ 3）かどうか。`String` として格納される
++     entry .isByteString   ノードがバイト文字列（メジャータイプ 2）かどうか。凍結済みの `Array[Byte]` として格納される
++     entry .isBoolean   ノードが `true` または `false` かどうか
++     entry .isTag   ノードがタグ付きの値、すなわち `Cbor.Tag` かどうか
++     entry .isArray   ノードが配列（メジャータイプ 4）かどうか
++     entry .isMap   ノードがマップ（メジャータイプ 5）かどうか
++     entry .primitive   このノードの種類を `Cbor.Error.Primitive` として返す
++         エラーが報告する分類であり、`Integer`、`Float`、`TextString`、`ByteString`、`Boolean`、`Map`、`Array`、`Tag`、`Undefined`、`Null` のいずれかである。
++     entry .elements   配列のノードの要素の数
++         配列に対してはコストがかからない。
++         それ以外のノードに対しては結果に意味がないので、先に `isArray` を確かめる。
++     entry .element   配列のノードの要素をインデックスで取り出す。検査は行わない
++         `ast.element(i)` は背後の配列を直接読む。
++         インデックスは `elements` 未満でなければならず、ノードは配列でなければならない。
++     entry .entries   マップのノードのエントリーの数
++     entry .key   マップのノードのキーをエントリーのインデックスで取り出す。検査は行わない
++         `i` が `entries` 未満のとき `ast.key(i)` を使う。
++         キーは任意のノードでよいが、導出されたコーデックはテキストのキーしか使わず、それ以外のキーの下にあるエントリーは無視する。
++     entry .value   マップのノードの値をエントリーのインデックスで取り出す。検査は行わない
++     entry .index   マップのノードにおけるテキストのキーのエントリーのインデックス。存在しなければ `-1`
++         各キーを `String` と比較する線形の走査であり、最初に一致したものが選ばれる。
++         そのため、繰り返されたキーは最初に現れたものとして読まれる。
++     entry .long   整数のノードの値、または浮動小数点数を切り捨てた値。それ以外では `NotType` を発生させる
++         それ以外のノードは `Cbor.Error(NotType(found, Integer))` を、`undefined` に対しては `Absent` を発生させる。
++         蓄積型の `Validate` スコープのもとでは、エラーは登録され、兄弟のフィールドが蓄積を続けられるよう `0L` が返される。
++         導出されたデコーダーがこの値から構築することはない。
++     entry .double   浮動小数点数のノードの値、または整数を拡大した値。それ以外では `NotType` を発生させる
++     entry .string   テキスト文字列のノードの値を `String` として返す。それ以外では `NotType` を発生させる
++     entry .byteString   バイト文字列のノードのバイト列を凍結済みの `Array[Byte]` として返す。それ以外では `NotType` を発生させる
++     entry .boolean   真偽値のノードの値。それ以外では `NotType` を発生させる
++     entry .tag   タグ付きのノードを `Cbor.Tag` として返す。それ以外では `NotType` を発生させる
+
+% 1 1 0 1e03289a2c53cc2801a1e458f38e1240
+
+% 2 1 0 19c87c5498aa050e03e53657ccfa0b2f
+
+% 3 1 0 189b01c93156ac75108512d1a7d0940b
+
+% 0 1 0 134bf453fc3d50200e251b264b4ff614
+
+% 0 1 0 05191e66d77fdd75115fc0a7a2769a7d
+
+% 0 1 0 02d648d214972f1a0dd7f41853a12d6f
+
+% 1 1 0 128c43708b93f33f149a57121577dfa4
+
+@ 0 1 0 013aac4ce6e3f6ba02fe40e2ae25d80b
++   entry .Tag   タグ付きの値：タグ番号と、それが注記するノード
+
+% 1 1 0 1b0bc7802b5cad170df98633e05a11cb
+
+@ 0 25 0 061933420fdaa1cc188f8edfd4dab5fc
++         CBOR のタグ（メジャータイプ 6）は値にその意味を注記する。
++         タグ 1 はエポック時刻、タグ 2 は多倍長整数であり、レジストリは数百に及ぶ。
++         パースされたタグはその番号と内容の両方を保つので、タグを持つドキュメントはそれを失わずに往復する。
++         ライブラリの中でタグの意味を解釈するものはない。
++         二つのタグは、番号と値が等しいときに等しい。
++         導出されたコーデックはタグを生成せず、タグ付きのノードをプリミティブとしてデコードすると `Cbor.Error(NotType(Tag, …))` が発生する。
++         タグは `ast.tag` で読み、その `#value` をデコードする。
++     entry #tag   タグ番号
++     entry #value   タグ付きのノードを `Any` として返す。読むには `Cbor.Ast` にキャストする
++   entry .CborNull   CBOR の `null` を格納する番兵。`Unset` とは区別される
++       オブジェクトであり、そのオブジェクトの型でもある。
++       `undefined`（0xF7）と存在しないキーは、null を背後に持つ `Unset` である。
++       `null`（0xF6）は同じ JVM の `null` になってしまうので、代わりにこの番兵を使い、`nullary` がこれを判定する。
++   entry .CborInteger   整数のノードのストレージ型：`Long`
++   entry .CborFloat   浮動小数点数のノードのストレージ型：`Double`
++   entry .CborText   テキスト文字列のノードのストレージ型：`String`
++   entry .CborBytes   バイト文字列のノードのストレージ型：凍結済みの `Array[Byte]`
++   entry .CborArray   配列のノードのストレージ型：奇数長の凍結済みの `Array[Any]`
++   entry .CborMap   マップのノードのストレージ型：キーと値が交互に並ぶ、偶数長の凍結済みの `Array[Any]`
++   entry .CborBoolean   真偽値のノードのストレージ型：`Boolean`
++   entry .CborUndefined   `undefined` のストレージ型：`Unset`
++   entry .CborTypes   `Cbor.Ast` がとりうるすべてのストレージ型のユニオン
++       `CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean | CborNull | CborUndefined | Tag`：`Cbor.Ast.apply` が受け付けるもの。
++   entry .Error   CBOR をパースできないとき、またはノードを求められた型としてデコードできないときに発生する
+
+% 1 1 0 09cfa78a4db6343611a485e9571b5da9
+
+@ 0 8 0 04f1532060a882461f75e3852b205ee0
++         エラー `↯/s.104.1`：_could not process the CBOR value because `reason`_。
++         エラーの二番目の要素には `.Reason` 自身の番号が入る。
++         不正な入力に対しては `Cbor.Ast.parse` とすべての `read[…]` が、誤りに出会った絶対的なバイトオフセットとともにこれを発生させる。
++         値の途中で止まった入力は続くはずだったバイトのオフセットを示し、後続のバイトは余剰が始まる位置を示し、予約されたヘッドバイトはそのオフセットと値を示す。
++         また、種類の違うノード、欠けたフィールド、テキストでないマップのキーに対しては、すべてのデコーダーがこれを発生させる。
++         すべての `fulminate.Error` と同じく、構築するにはスコープ内に `Diagnostics` が必要である。
+
+% 2 1 0 0419aa60d83fbddb03c5bb5fcae77cfe
+
+% 3 1 0 011220c8497dffca086b3e597c5ca170
+
+% 0 1 0 13f99d288ed84d931e192d804dc36085
+
+% 0 1 0 0ca0e49a18245efd109102bb9532d74e
+
+% 0 1 0 135ed7d83d68a9fe03dfd2deeea87e42
+
+% 0 1 0 141f40e3a639d67411d9678ba872ef90
+
+% 1 1 0 111bb33879f13de0147eba5bcf18fc68
+
+@ 0 4 0 1c23f5a0b4b92f87166c547840687d2b
++         `Validate` スコープのもとでは、デコードは誤りのあるフィールドごとに一つのエラーを蓄積し、それぞれがそのフィールドを示す `Pointer`（入れ子のレコードなら `lead.name`）を持つ。
++     entry #reason   値を処理できなかった理由を `Cbor.Error.Reason` として返す
++     entry .Reason   具体的な誤り：入力が壊れた位置、または何が合わなかったか
+
+% 1 1 0 0b3435f3f19df4380468ee2e9444edd5
+
+@ 0 3 0 14cea7c339bc2e340d3c14f6064a346a
++           ケースごとに番号を持つ `Clarification` の列挙型である。
++           ケース 1 から 7 はパースの誤りであり、チャンクの分かれ方にかかわらず入力の先頭から数えた、入力内の絶対的なバイトオフセットを持つ。
++           ケース 8 から 11 はツリーに関するデコードの誤りである。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 11 0 0c7d439d874685cf03aa3e8e63beb8b6
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
++           row  `Truncated(offset)`  1  _the input was truncated at byte `offset`_  項目が必要とするバイトがそこになかった
++           row  `Reserved(offset, byte)`  2  _a reserved CBOR head byte `byte` was found at byte `offset`_  追加情報 28 から 30
++           row  `BadSimpleValue(offset, value)`  3  _an invalid simple value `value` was found at byte `offset`_  32 未満の 2 バイトの単純値
++           row  `InvalidUtf8(offset)`  4  _invalid UTF-8 was found at byte `offset`_  テキスト文字列の中で
++           row  `Overflow(offset)`  5  _an integer too large for Long was found at byte `offset`_  `Long` を超える 64 ビットの符号なし整数、または負の整数
++           row  `UnexpectedBreak(offset)`  6  _an unexpected break stop code was found at byte `offset`_  不定長の項目の外にある 0xFF
++           row  `Trailing(offset)`  7  _unexpected trailing bytes were found from byte `offset`_  項目は終わったが入力は終わらなかった
+
+% 0 1 0 07b9d16aae1960950db3edc4cfbe1327
+
+@ 0 3 0 1671c71bf976cfe20a1aed075dc21a87
++           row  `NotType(found, expected)`  9  _the CBOR value had type `found` instead of `expected`_  それぞれ `.Primitive`
++           row  `NonStringKey`  10  _the map key was not a string_  `Map` をデコードするとき
++           row  `Absent`  11  _the CBOR value was not present_  必須のフィールドのキーやシールされた階層の判別子が欠けていた、または `optionalityOptions.strictCborAbsence` のもとで `Optional` が存在しなかった
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 3 0 000aa72b3f3e6967118deee0d22022f6
++       entry #number   理由の番号（1 から 11）。エラーはこれを二番目の要素として報告する
++       entry .communicable   各理由をそのメッセージとして描画する
++     entry .Primitive   エラーが名指す CBOR ノードの種類：見つかったものと期待されたもの
+
+% 1 1 0 1b3a9ffa99dd2b2c1d5d26cf1fe9c11d
+
+@ 0 5 0 0d70d2d8e57c374501131421d5be2a40
++           `Integer`、`Float`、`ByteString`、`TextString`、`Array`、`Map`、`Tag`、`Boolean`、`Null`、`Undefined`。
++           `Cbor.Ast` の `primitive` アクセサーが与える分類であり、`Reason.NotType` が使う。
++       entry .communicable   各種類をメッセージとして描画する：`integer`、`byte string`、`text string`、…
++   entry .Reader   `Cbor.Parsable` が読み取りに使う、パーサーの制限された縁：一回の呼び出しで一項目
+
+% 1 1 0 0c1ae3274648ebfb11bcf40d9b0c8ce4
+
+@ 0 8 0 13e8b5d1600593031dff489539a94175
++         `Cbor.Reader` は `CborParser` と、それを作った読み取りの `Tactic[Cbor.Error]` を包み、`Cbor.Parsable` の `parse` に渡される。
++         これにより、インスタンスは `Cbor.Ast` を作らずに、入力からデータ項目を直接消費できる。
++         各メソッドはちょうど一つの項目、または構造上の一段階を消費する。
++         失敗は運ばれてきた戦術を通じて中断するので、`parse` の本体に独自のエラーの語彙は要らない。
++         値と失敗は `Cbor.Ast` のアクセサーと正確に一致する。
++         ノードに対する `long` と `double` と同じく、整数は浮動小数点数に、浮動小数点数は整数に変換されるので、直接の読み取りとツリーの読み取りは等しい値を生む。
+
+@ 0 5 0 0a91ea89ab29b7b20ef5added20d3a79
++         これは排他的で状態を持つケイパビリティ（`caps.ExclusiveCapability, caps.Stateful`）であり、一つの `parse` 呼び出しがその間だけ所有する。
++         読み取りのメソッドはすべて `update def` であり、`Cbor.Reader^` を通じてしか呼び出せず、呼び出しの後にその一部でも保持することはできない。
++         これを構築するのはライブラリの読み取りの経路だけであり、手書きのインスタンスはそれを受け取る。
+
+% 2 1 0 0e9c179f18881ded0ec31413e50a86c6
+
+% 3 1 0 1c7f592ae4d507cc1b7e8c9fef2752f4
+
+% 4 1 0 001537aa3fe5860801decf914f479f46
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 16caed482e36362310778fb8482fab92
+
+% 0 1 0 1ec8133b1f1646f5110f68ad78b1446c
+
+% 0 1 0 0548ec5534d2783717fd0ed39af4102d
+
+% 0 1 0 067f8dd4458373a603c77efbaa4df968
+
+% 0 1 0 17463def8ce5f1451b9250be410a848b
+
+% 0 1 0 0f98fdce4001230118642cbef4af3534
+
+% 0 1 0 12f28584ba75af490b0ebaac59e3fa7a
+
+% 0 1 0 1cad2506ad40bebf120d5bcefc632520
+
+% 0 1 0 11778ce21bdadd9e12804704b65bf5b6
+
+% 0 1 0 15b4e74dfd7f7ea812b19fe2af91d2d0
+
+% 0 1 0 1cae175a287e0d85124c70870e5392f7
+
+% 0 1 0 0c44a19c3abd1c8b09cba141e17fb783
+
+% 0 1 0 152bdd8d0ff90cba04af792424f83d5b
+
+% 1 1 0 045c1dd457f4af6513f5ed647284f528
+
+% 2 1 0 0a66a57f63ea265e1c165cf0f71c12f9
+
+% 1 1 0 1ad2802ab39adb881ac6093292dadf36
+
+@ 0 54 0 1ae6d137a263c9c218785dd4b0763901
++     entry .KeyOpaque   `#keyWord` がパックできないキーに対して返す値：`-2L`
++         パックされたキーのバイトはすべて 7 ビットの ASCII なので、パックされたキーとしてはありえない値である。
++         これを見た呼び出し元は、代わりに `#keyName` の段階をとる。
++     entry .of   `AnyRef` のキャリアとして運ばれてきたリーダーを、生成されたパーサーのために再び表明する
++         `Cbor.Reader.of(carrier)` は中立的な参照を `Cbor.Reader^` へキャストし戻す。
++         これは `Inlinable.parsable` がユーザーのモジュールへ埋め込むパーサーの入り口であり、そこでは生成された本体がキャプチャを消去されたリーダーを受け取る。
++         手書きのコードでこれを使うことはない。
++     entry #long   整数の項目を `Long` として、または浮動小数点数を切り捨てて消費する
++     entry #int   整数の項目を `Int` として消費する
++     entry #double   浮動小数点数の項目を `Double` として、または整数を拡大して消費する
++     entry #boolean   `true` または `false` の項目を消費する
++     entry #text   テキスト文字列の項目を `Text` として消費する
++     entry #string   テキスト文字列の項目を `String` として消費する
++     entry #byteString   バイト文字列の項目を凍結済みの `Array[Byte]` として消費する
++     entry #hasUndefined   次の項目が `undefined` かどうかを、消費せずに確かめる
++         オプショナルなラッパーが、ワイヤ上の `undefined`（0xF7）を存在しない値に対応づけるために行う先読みであり、ツリーの経路の `Cbor.optional` とまったく同じように働く。
++     entry #undefined   `undefined` の項目を消費する
++     entry #openMap   マップを開く：そのエントリー数、または不定長のマップなら `-1`
++         不定長のマップはブレークの停止コードで終わり、それは `#breakEnd` が消費する。
++         それ以外の項目は丸ごと消費され、空のマップ（すべてのフィールドが存在しない）として読まれる。
++         これは、ツリーの経路のレコードのデコーダーがマップでないものに対して行うことと同じである。
++     entry #openArray   配列を開く：その要素数、または不定長の配列なら `-1`
++         配列でない項目は、ツリーのアクセサー `array` と同じく、`Cbor.Error(NotType(found, Array))` で失敗する。
++     entry #breakEnd   次がブレークの停止コードならそれを消費する：不定長の項目の終わり
++         ブレークがあって消費されたときは `true`、次の項目が別の要素やエントリーであるときは（何も消費せずに）`false` を返す。
++     entry #keyWord   次のマップのキーを、リテラルとの比較のために `Long` へパックしたもの
++         生成されたパーサーはフィールド名を即値へコンパイルする。
++         定長で、1 から 16 バイトの、7 ビットに収まるテキストのキーは二つのワードへパックされ、下位のワードが返されて上位のワードは `#keyHigh` に残され、キーは消費される。
++         パックできないキーは `.KeyOpaque` を返して何も消費しないので、呼び出し元は代わりに `#keyName` をとる。
++         チャンクの境界にまたがるキーは先に丸ごとバッファリングされるので、一度に届いたキーと同じようにパックされる。
++     entry #keyHigh   `#keyWord` が最後にパックしたキーの上位ワード
++     entry #keyName   次のマップのキーを消費する：テキストのキーの内容、またはテキストでないキーなら `null`
++         テキストでないキーのエントリーはレコードのデコーダーに無視されるので、`null` を見た呼び出し元は `#skipValue` でエントリーの値を読み飛ばして先へ進む。
++     entry #value   一つの項目を丸ごと `Cbor` ドキュメントとして消費する
++         ツリーの世界へ戻る継ぎ目である。
++         型が `Decodable in Cbor` しか持たないフィールドはこれを通じて読まれてデコードされ、そのフィールドの部分木だけが実体化される。
++     entry #skipValue   一つの項目を丸ごと消費し、何も構築しない
++         未知のキーのためのものである。
++         文字列の内容はバッファリングされずに読み飛ばされるので、読み飛ばしは項目の大きさにかかわらず限られたメモリで行われ、不正な項目はパースしたときとまったく同じように失敗する。
++     entry #discriminant   次に来るマップのキーの下にあるテキストの値。リーダーの位置は変えない
++         シールされた階層のための振り分けの基本操作である。
++         判別子のエントリーはマップのどこに現れてもよいので、マップを先まで走査し、選ばれたバリアントがパースする前にリーダーをその先頭へ巻き戻す。
++         項目がマップでないとき、そのキーがないとき、またはキーの値がテキストでないときは `Unset` になる。
++         走査の間はマップがバッファに保持される。
++         直接の読み取りが一つの項目より多くを保持するのは、ここだけである。
++   entry .Parsable   直接パースの型クラス：`Cbor.Reader` から CBOR の項目を消費する型
+
+% 1 1 0 14ed13171c2791370597bf482d87691f
+
+@ 0 10 0 022c19c2f46bb53f0b9b236dc060daad
++         `Cbor.Parsable` は、`Decodable in Cbor` に対する直接パースの対応物である。
++         デコーダーが実体化されたツリーをたどるのに対し、インスタンスの `parse(reader)` は `Cbor.Reader` を通じて入力からデータ項目を直接消費する。
++         そのため、`read[T in Cbor]` はツリーを作らずに値を生成し、読んでいる項目だけを保持する。
++         これは直接の経路を明示的に選ぶための面である。
++         明示的なインスタンス（`Cbor.Parsable(reader => …)`）、`Inlinable.parsable[T]` がコンパイル時に生成するもの、`derives Cbor.Direct` がコンパニオンに生成するもの、あるいはスコープ内のすべてのレコードに対する `import codecs.direct` がある。
++         これらのいずれもなければ、どの読み取りの振る舞いも変わらない。
++         インスタンスを持たないフィールドの型は `.fromDecodable` を通じて橋渡しされ、それはフィールドの部分木をパースしてデコードする。
+
+% 2 1 0 18e1b442313eb642026f1fede2c1b0be
+
+% 3 1 0 1a26e9af6089fb5c150708ce2101e507
+
+% 4 1 0 1810ed95ac97cfb70e855a75aa3d99a4
+
+% 2 1 0 1920e53fb20042c81fd7bca6efbe1239
+
+% 0 1 0 02ccba7a8e551b5f17b8873ed89af308
+
+% 0 1 0 057cf2a251af79100f23f8e1a0cdd003
+
+% 0 1 0 1bf937536571e09c007fb2f77be5161a
+
+% 0 1 0 037b2a7acaaee92906ba0cb6115e7dc9
+
+% 1 1 0 1b1d969bc8eca3aa1a30122921013828
+
+@ 0 4 0 0ae9ad948dcf10c0089a8b240c413841
++         インスタンスは `Transport = Cbor` と `Reader = Cbor.Reader` を持つ `distillate.Parsable` である。
++         `#absent` は、その型のフィールドのキーがマップにないときに何を返すかを述べる。
++         コンパニオンの `generated` の given（`Cbor.Parsable2` から継承される）は `codecs.direct` のインスタンスであり、`.declared` は `derives Cbor.Direct` のものである。
+
+% 0 1 0 175eec23c8252c07063d30bd0fc84742
+
+% 1 1 0 1d1355b25300a442156f85444190875c
+
+% 1 1 0 13c4584dc22b18881f2d76c3c25a546d
+
+% 0 1 0 0ad4e69a403365f900b0a3da6d681c01
+
+@ 0 24 0 1f12f987d49ac0331590fbffe4232aac
++     entry #Transport   このパーサーが読む形式：`Cbor`
++     entry #Reader   読み取りに使うリーダー：`Cbor.Reader`
++     entry #absent   この型のフィールドのキーがマップに存在しないときに返すもの
++         上書きされなければ `Cbor.Error(Absent)` を発生させる。
++         `.fromDecodable` はこれを上書きし、橋渡しされたデコーダーを通じて `undefined` をデコードする。
++         `Optional` のフィールドはこうして `Unset` へ橋渡しされる。
++     entry .apply   リーダーに対する関数から作るインスタンス：`Cbor.Parsable(reader => …)`
++         関数は `Cbor.Reader^` を受け取り、ちょうど一つの項目を消費しなければならない。
++         インスタンスはその関数を捕捉する。
++     entry .fromDecodable   一つの項目をツリーとしてパースし、`Decodable in Cbor` でデコードするインスタンス
++         ツリーの世界からの汎用の橋渡しであり、独自のデコーダーが生成された直接のパーサーより優先されなければならないときの、一行で書ける逃げ道でもある：`Cbor.Parsable.fromDecodable(decoder)`。
++         その `#absent` はデコーダーを通じて `undefined` をデコードする。
++     entry .declared   型が `derives Cbor.Direct` でコンパニオンに生成したパーサー
++         `Cbor.Direct[T]` を通じて解決される given である。
++         そのため、`derives` 節とともに宣言されたレコードは、インポートなしに直接パースされる。
++     entry .missing   キーがマップになかった必須のフィールドに対して `Cbor.Error(Absent)` を発生させる
++         ユーザーのモジュールへ埋め込まれた、生成されたパーサーがこれを呼ぶので、公開されている。
++     entry .parseField   生成されたパーサーから、リーダーをキャリアとして、名目的な `Cbor.Parsable` を呼ぶ
++         キャプチャを消去された生成コードの、フィールドの位置にある手書きのインスタンスや再帰的なインスタンスを呼ぶ地点である。
++         二つの引数はどちらも `AnyRef` として運ばれ、ケイパビリティはここで再び表明される。
++         手書きのコード向けではない。
++     entry .absentField   生成されたパーサーから、名目的な `Cbor.Parsable` の `absent` を呼ぶ
++     entry .Direct   生成されたパーサーの基底クラス。リーダーをキャリアとして受け取る
+
+% 1 1 0 1bc3e9cbec2169a50d1921325477cb08
+
+@ 0 5 0 0a3aa0a4f151469e1eac621c909078ef
++           抽象的な `Cbor.Parsable` であり、その `parse` はリーダーを `AnyRef` として `#parseCarrier` へ転送する。
++           生成コードはキャプチャを消去されているので、ケイパビリティは生成された本体の中ではなく、この縁で表明される。
++           `Inlinable.parsable` はこれを継承する。
++           手書きのコードは `Cbor.Parsable.apply` を使う。
++   entry .Printable   直接出力の型クラス：自身の CBOR のバイト列を生産者へ直接書き込む型
+
+% 1 1 0 16d880e45abecf4a06d8056866285c4f
+
+@ 0 7 0 1eefc02977afe6710da128289ac8528d
++         `Cbor.Printable` は、`Cbor.Parsable` の書き込み側の対応物であり、`Encodable in Cbor` に対する直接の対応物である。
++         `write(value, out)` はツリーを作らずに値のバイト列を `Producer.Bytes` へ入れ、`in[Data over Cbor]` はインスタンスがある場所ではどこでもそれを使う。
++         バイト列は導出されたエンコードが書くものとまったく同じである。
++         その面は、明示的なインスタンス、`Inlinable.printable[T]`、`derives Cbor.Direct`、`import codecs.direct` である。
++         インスタンスを持たないフィールドの型は `.fromEncodable` を通じて橋渡しされる。
+
+% 2 1 0 0e8c6613deeb27661fa8cd44fd7c675a
+
+% 3 1 0 198945676f735dd917e5e8aadf65653b
+
+% 2 1 0 154bbffdbd406e7e08281b5343c93cce
+
+% 0 1 0 17d211bf184fe7910f34ca9f87ad7d87
+
+% 0 1 0 0c9f7f5af900aaf509adc309b84c9300
+
+% 0 1 0 0332ae4a7a3c20531c2a5e0c826c35e9
+
+% 1 1 0 0ed275ab51f2be910f5b49b77c92c338
+
+@ 0 3 0 1037c48b418a675f0990dcce300e652d
++         `.print` はバイト列を丸ごと与え、`.emit` はそれを一ブロックずつ渡すので、値はエンコード全体を一度も保持することなく送れる。
++         `write…` メソッドは、生成されたプリンターが呼ぶ葉の書き込み関数である。
+
+% 1 1 0 07dc6cc2670ee2d500f3ac44001fed33
+
+% 1 1 0 04db787be7a30ebb19c8817c6c5d3434
+
+@ 0 29 0 1c2c3b4c99ddff7b111ce804918ecf57
++     entry #write   値の CBOR のバイト列をバイトの生産者へ書き込む
++     entry .print   `Cbor.Printable` を通じた、値の CBOR のバイト列全体
++         `Cbor.Printable.print(value)` は `#write` が生み出すものを一つの `Data` に集める。
++     entry .emit   値のバイト列を `Buffering` の容量のブロックに分け、満ちるたびに関数へ渡す
++         `Cbor.Printable.emit(value, deliver)` は呼び出し元のスレッドで直列化し、値全体の配列を作ることはない。
++         大きなレコードをファイルやソケットへ書き込むための形である。
++         型の `Cbor.Printable` と `Buffering` を必要とする。
++     entry .fromEncodable   値をツリーへエンコードし、そのツリーを書き込むインスタンス
++         ツリーの世界からの橋渡しであり、`Encodable in Cbor` しか持たないフィールドの型のため、あるいは生成されたプリンターより独自のエンコーダーを優先させるためのものである。
++     entry .declared   型が `derives Cbor.Direct` でコンパニオンに生成したプリンター
++     entry .present   フィールドのエンコードされたツリーを書くかどうか：`undefined` なら `false`
++         導出されたエンコードは、未設定の `Optional` のように、エンコードが `undefined` になるフィールドを省く。
++         生成されたプリンターは、橋渡しされたフィールドを書く前にこれを尋ねる。
++     entry .writeHead   メジャータイプのヘッドを数とともに書く：配列やマップのヘッドのための葉の書き込み関数
++         `writeHead(out, 5, entries)` はその数のエントリーを持つマップを開き、`4` は配列を開く。
++         すべての `write…` メソッドと同じく、生成コードはキャプチャを消去されているので、生産者は `AnyRef` のキャリアとして運ばれる。
++         手書きのコードは `Cbor.Ast.encodable` か `Cbor.emit` を使う。
++     entry .writeLong   整数を最も短いヘッドのエンコードで書く。負の数はメジャータイプ 1 として書く
++     entry .writeDouble   64 ビットの浮動小数点数を書く
++     entry .writeText   テキスト文字列を、長さのヘッドとともに UTF-8 で書く
++     entry .writeBytes   バイト文字列を長さのヘッドとともに書く
++     entry .writeBoolean   `true` または `false` を書く
++     entry .writeAst   `Cbor.Ast` のノードを丸ごと書く：ドキュメントとして保たれたフィールドのための継ぎ目
++     entry .writeField   生成されたプリンターから、生産者をキャリアとして、名目的な `Cbor.Printable` を呼ぶ
++         フィールドの位置にある手書きのインスタンスや再帰的なインスタンスを呼ぶ地点である。
++         手書きのコード向けではない。
++     entry .Direct   生成されたプリンターの基底クラス。生産者をキャリアとして受け取る
+
+% 1 1 0 10303acb56773a9e0735568b6ced8543
+
+@ 0 4 0 1a6bfeea769976d906fc5a8f749c24a2
++           抽象的な `Cbor.Printable` であり、その `write` は、`Cbor.Parsable.Direct` がパーサーに対して行うのと同じく、生産者を `AnyRef` として `#writeCarrier` へ転送する。
++           `Inlinable.printable` はこれを継承する。
++   entry .Parsable2   `codecs.direct` のパーサーの given を保持するトレイト
+
+% 1 1 0 1d0c3eeb500bbda005cd843a70e19242
+
+% 2 1 0 0600d98314bcc2d30d7a329f2455bf3e
+
+@ 0 9 0 0f4a346f653fb0081a09e3cb8e6def41
++         その一つの given がコンパニオンの `declared` インスタンスより下に位置するよう、`Cbor.Parsable` のコンパニオンに混ぜ込まれる。
++         直接使うものではない。
++     entry #generated   `codecs.direct` のもとで、任意のレコードに対して生成される `Cbor.Parsable`
++         `Codecs.Direct` と `Inlinable.Generates[T]` を条件とするインライン given である。
++         `Inlinable.Generates[T]` は、生成器がその型をレコードとして構造的に構築することの証拠である。
++         レコードでない型（ジェネリックなケースクラスやシールされた階層）はこの証拠を満たさず、自身のインスタンスを持たない限り導出の経路にとどまる。
++         必要な場所で `Inlinable.parsable[T]` を展開する。
++   entry .Printable2   `codecs.direct` のプリンターの given を保持するトレイト
+
+% 1 1 0 1b8c7884f9d538ae0d42436bcf4f5cd7
+
+% 2 1 0 06d2c93378384d3a09694090f9d45996
+
+@ 0 5 0 1fb23c3813493ac61edc4abed7f619d5
++         `Cbor.Printable` のコンパニオンに混ぜ込まれる。
++         直接使うものではない。
++     entry #generated   `codecs.direct` のもとで、任意のレコードに対して生成される `Cbor.Printable`
++         `Cbor.Parsable.generated` の書き込み側の対応物であり、`Inlinable.Generates[T]` の証拠を持つ任意の型に対して `Inlinable.printable[T]` を展開する。
++   entry .Direct   `derives Cbor.Direct`：レコードの生成されたパーサーとプリンターを、一度だけコンパニオンに作る
+
+% 1 1 0 1bebd89cc805d582161b74767ce2018e
+
+@ 0 6 0 1922c22c4e906c01079e5b22c05c9523
++         `Self` 型の型クラスは型パラメーターを持たないので、`Cbor.Parsable` も `Cbor.Printable` も `derives` 節に現れることができない。
++         `Cbor.Direct[T]` は、それができるキャリアである。
++         `case class Play(…) derives Cbor.Direct` は `Play` のパーサーとプリンターを一度だけコンパニオンに生成し、そこで `Cbor.Parsable` と `Cbor.Printable` の `declared` の given がそれらを見つける。
++         そのため、`Play` はインポートなしに、使うたびに展開することもなく、直接読み書きされる。
+
+% 2 1 0 195620877bab2f7d0384b2dd5d6d4501
+
+% 3 1 0 057b6eedb113fdbb0e97b1b0eb206065
+
+% 4 1 0 086cf28352dee8ac0b6edbb3ced08a3a
+
+% 0 1 0 1d2307c2f2ac19990226392804540d59
+
+% 0 1 0 145758cf7cc2344e174d469633148cbd
+
+% 1 1 0 036e96bbb1feb2cd198b015e1c947c17
+
+% 2 1 0 1c46eef67e9ec6bc17807d5571f8f910
+
+% 1 1 0 1bba3f8e79d12227160640984672b31f
+
+% 1 1 0 1400ae07b98a9161141bc5c01c0d4b2a
+
+@ 0 3 0 0aef5cac8c7ea24e183e37439e6ec07d
++     entry .derived   `derives` のフック：対にした `Inlinable.parsable[T]` と `Inlinable.printable[T]`
++     entry #parsable   生成された `Cbor.Parsable`
++     entry #printable   生成された `Cbor.Printable`
+
+@ 0 1 0 03b8124fe44b59c2120a5f799b05b994
++ entry .Cbor1   `object Cbor` の直接の経路の given を保持するトレイト。導出の経路より優先される
+
+% 1 1 0 0645f92d4ca9a6320349385f10f52344
+
+% 2 1 0 1acc6865ce59e92108b78dd703e2d0c0
+
+@ 0 28 0 02316cc0e04f148809dbe0cfcf864c20
++       `object Cbor` に `Cbor2` とそのオブジェクト自身のメンバーの間でミックスインされ、その given が導出の経路より優先され、`codecs.derived` と `codecs.strict` の組には劣後するようにする。
++       直接使うためのものではない。
++       そのメンバー `aggregableParsed`、`readableParsed`、`encodableOverPrinted`、`aggregableStrictFailure`、`encodableOverStrictFailure` はここで説明し、`object Cbor` がそれらを継承する。
++   entry #aggregableParsed   直接の読み取り経路：`Cbor.Parsable` がパーサーを駆動し、ツリーは作らない
++       `(value is Cbor.Parsable)^` を持つ任意の型についてスコープにあり、`Cbor.aggregableIn` より優先される。
++       このとき `Chain[Data]` や `Stream[Data]` に対する `read[T in Cbor]` は、`Cbor.Reader` を通じて `CborParser` から項目を直接消費し、保持するのは読み取り中の一つの項目だけである（直和型の判別子の走査はそのマップを保持する）。
++       そのため大きなドキュメントも有界のメモリーでストリーミングされる。
++       末尾の余分なバイトは、ツリーの経路とまったく同じように拒否される。
++       この given は Parsable とそれが使う `Tactic[Cbor.Error]` をキャプチャする。
++       その型を名指す召喚はこのキャプチャを許さなければならない（`summon[((T in Cbor) is Aggregable by Data)^]`）が、`read` を通じた解決には何も要らない。
++   entry #readableParsed   `Data` 全体に対する `data.read[T in Cbor]`。`Cbor.Parsable` でその場でパースする
++       `#aggregableParsed` のメモリー上の対応物である。
++       内容全体が既に `Data` であるとき、要素一つのチェーンに包むのではなく、それがある場所でパースする。
++       `#aggregableParsed` と同様に、Parsable と戦術をキャプチャする。
++   entry #encodableOverPrinted   `Cbor.Printable` を通じて直接書き出す `in[Data over Cbor]`
++       `(value is Cbor.Printable)^` を持つ任意の型についてスコープにあり、`Cbor.encodableOver` より優先される。
++       値のバイトはツリーを作らずにバイトの生産者へ直接書き込まれ、導出のエンコーディングが書くものとまったく同じである。
++   entry #aggregableStrictFailure   `codecs.strict` のもとで、直接のパーサーを持たない型に対するコンパイルエラー
++       strict の組が受け持たないすべての型について選ばれるインラインの given であり、使用箇所で _breviloquence: `T` has no direct codec_ を報告する。
++       `codecs.strict` のもとで `read[T in Cbor]` が黙ってツリーに後退することがないように存在する。
++   entry #encodableOverStrictFailure   `codecs.strict` のもとで、直接のプリンターを持たない型に対するコンパイルエラー
++       `#aggregableStrictFailure` の書き込み側の対応物で、`in[Data over Cbor]` のためのものである。
+
+@ 0 1 0 0f894a2f928fdc1014de04d5963a710e
++ entry .Cbor2   `object Cbor` の導出の経路の given を保持するトレイト。優先度は最も低い
+
+% 1 1 0 02a1519bd9d9af4b0909cbeecdd4f5a9
+
+% 2 1 0 1a01d9360676232202eb3054c714b2a9
+
+@ 0 14 0 1bcc4c7f114147c806dac869385f47b6
++       `object Cbor` に他のすべての下でミックスインされ、その given がアンブレラでも到達できるように、`Cbor` とともに `soundness` アンブレラにエクスポートされる。
++       直接使うためのものではない。
++       そのメンバー `decodable`、`encodable`、`optional`、`optionalEncodable`、`aggregableIn`、`encodableOver`、`DecodableDerivation`、`EncodableDerivation` はここで説明し、`object Cbor` がそれらを継承する。
++   entry #aggregableIn   チャンク化されたバイト列に対する `read[T in Cbor]`：ツリーをパースしてからデコードする
++       `source.read[Person in Cbor]` は、任意の `Decodable in Cbor` な型について `source.read[Cbor].as[Person]` の略記である。
++       これは導出の読み取り経路である。
++       型が `Cbor.Parsable` を持つときは常に `Cbor.aggregableParsed` がこれより優先されるので、直接のパーサーがスコープに入ったとたん、同じ式がツリーなしで直接読むようになる。
++       `Tactic[Cbor.Error]` を必要とする。
++   entry #encodableOver   `in[Data over Cbor]`：ツリーを経由した値の CBOR のバイト列
++       `read[T in Cbor]` の書き込み側の鏡像である。
++       `person.in[Data over Cbor]` は値を `Cbor` にエンコードし、それを直列化する。
++       型が `Cbor.Printable` を持つときは常に `Cbor.encodableOverPrinted` がこれより優先され、ツリーなしで同じバイト列を書く。
+
+% 2 1 0 1bd9f3fb8a5fab7f1796320a2398a875
+
+% 3 1 0 0441d03e83a811c31c9f756933603f66
+
+% 4 1 0 077e6accc0c89fb31b15ba04b7754e25
+
+% 6 1 0 018122a2fb54b6e50c3ad7d0a31885cf
+
+% 0 1 0 1b775328b78ae6b4150524c9a2296346
+
+% 1 1 0 1e65b05ec1045c811a7e90b219430117
+
+@ 0 22 0 1d4ab9ab8d66aee117b885da63fd5e45
++   entry #decodable   任意のケースクラス、シールされた階層、テキストからデコード可能な型について `Decodable in Cbor` を導出する
++       最も低い優先度のインラインの given で、二つの経路のうち最初に当てはまるものをとる。
++       `Decodable in Text` である型は、そのデコーダーを通じて CBOR のテキスト文字列からデコードされる。
++       `Reflection` を持つ型は導出される。
++       ケースクラスはマップからフィールド名で、シールされた階層はその `Discriminable in Cbor`（`Cbor.discriminatedUnion` で一度だけ宣言する）を通じて導出される。
++       `@name[Cbor]` アノテーション（または単独の `@name`）は、フィールドのキーやバリアントの判別子の名前を変える。
++       デフォルトを持つフィールドは、キーが存在しないときにそのデフォルトをとる。
++       入れ子のレコードのエラーは `outer.inner` を指す。
++       導出は `#DecodableDerivation` である。
++   entry #encodable   任意のケースクラス、シールされた階層、テキストにエンコード可能な型について `Encodable in Cbor` を導出する
++       `#decodable` の書き込み側の対応物である。
++       `Encodable in Text` である型はテキスト文字列としてエンコードされ、`Reflection` を持つ型は導出される。
++       ケースクラスはそのフィールドのマップとして（エンコーディングが `undefined` になるフィールド、たとえば未設定の `Optional` は除かれる）、シールされた階層は、その `Discriminable in Cbor` によって判別子のエントリーを加えたバリアントのマップとしてエンコードされる。
++       導出は `#EncodableDerivation` である。
++   entry #optional   `Optional[T]` のフィールドをデコードし、存在しないキー、`null`、誤りを `optionalityOptions` のポリシーで読む
++       存在しないキーとワイヤ上の `undefined`（0xF7）は `Unset` として読まれる。
++       ただし `strictCborAbsence` がスコープにあれば `Cbor.Error(Absent)` を発生させる。
++       ワイヤ上の `null`（0xF6）は `Unset` として読まれる。
++       ただし `strictCborNulls` がスコープにあれば、それを内側のデコーダーに渡す。
++       内側のデコーダーが拒否する値はエラーになる。
++       ただし `lenientCborFaults` がスコープにあれば、`Unset` として読む。
++       この given は `Tactic[Cbor.Error]` と内側のデコーダーをキャプチャする。
+
+% 2 1 0 0aac66f2c4e5793111121e1fec2e611c
+
+% 3 1 0 198b9c833168660e12b12a202bcc6fe4
+
+% 4 1 0 1d05044bf85812b016d038fc89c7cb3c
+
+% 5 1 0 03864beb60017cc70dab5648dd0bbef0
+
+% 6 1 0 05bd9a060b663b110694ae35aa7e13ab
+
+% 8 1 0 1aa8830d845b978c1fcc9c973114bac1
+
+% 4 1 0 054c174c60863132008d21e77d7f931f
+
+% 5 1 0 155d4439536cb5001e4eb1d131159b20
+
+% 1 1 0 134ad0f88cd72fe416068e2a854682fd
+
+% 2 1 0 0bc1bdbb8cc8c9991cc36bcedd8f5b3c
+
+% 1 1 0 0837e9e131b78ffa1fcd084283cfd403
+
+% 0 1 0 141e0f9184d89fa91e54ff55680333d3
+
+% 1 1 0 061ec2dcaab5dc8e1ff758f23371fc9e
+
+% 2 1 0 1b2d956832fbe0ae02b50fc45e6c56b6
+
+% 3 1 0 02b2b7dc5c33d6350b58b548780476b4
+
+% 4 1 0 1c9262d6171162e70cf14eb9078d2333
+
+% 5 1 0 1a1766bd5581f5f60e9ec8dd3faaf01c
+
+% 7 1 0 15f89e6a6861607d0bd0d403b964ec11
+
+% 4 1 0 0fa114da51b6dcbf02ba2a7f7da4f38d
+
+% 5 1 0 00fd45de8ee917d7012a0cbe66eff381
+
+% 2 1 0 1b7e86fe2490c10a0e027a155c70fe3f
+
+% 3 1 0 0c937b503d3f0a430d53fe080ddbc978
+
+% 4 1 0 0bf6ab205ea1ea9b0c37079dc40fd0f1
+
+% 5 1 0 09403ba083559f0f13dc6045e7d84174
+
+% 6 1 0 15c8a5923ce4b7b50e4759aa805b6f6f
+
+% 7 1 0 03f6b75eab7155061f77f54fa609e15c
+
+% 9 1 0 0c9bc6c32cd816fa0c0c144cb3abf361
+
+% 1 1 0 1ea6b49814da2cdf00eb277a40d3612d
+
+% 2 1 0 13d87050d925466b0cd1127efd88a93a
+
+% 2 1 0 058284b21e6cd63404144327f02bb680
+
+% 3 1 0 1dfa410a1e80af3f18a02f3abce958b8
+
+% 4 1 0 1a828d6a285e098e071118ac0c3161c8
+
+@ 0 4 0 0cd5f600f319469f006b5990504a6cb1
++   entry #optionalEncodable   `Optional[T]` をエンコードする：値のエンコーディング、または未設定なら `undefined`
++       未設定のフィールドは `undefined` としてエンコードされ、導出のレコードのエンコーディングはそれをマップから省く。
++       そのため `Optional` のフィールドは、存在しないときにはワイヤ上で何も費やさない。
++   entry #DecodableDerivation   `Cbor.decodable` の背後にある wisteria の導出
+
+% 1 1 0 18f50daadec1a0ab011ef5776fbba6e4
+
+@ 0 16 0 06635e07f6dbbfa815587fa9718240d3
++         `Derivable[Decodable in Cbor]` である。
++         `.conjunction` はケースクラスをマップからデコードし、`.disjunction` はシールされた階層をその `Discriminable in Cbor` を通じてデコードする。
++         `Cbor.decodable` を通じて到達し、インスタンスを明示的に導出するために名指すこともできる（`given (Person is Decodable in Cbor) = Cbor.DecodableDerivation.derived`）。
++     entry .conjunction   直積型をデコードする：各フィールドを、その（名前を変えた）名前のマップのエントリーから
++         フィールド名は `@name[Cbor]`（または単独の `@name`）による付け替えを通じてキーに対応する。
++         存在しないキーは、フィールドにデフォルトがあればそれをとり、なければ `undefined` をデコードする（`Optional` は `Unset` を読み、必須の型は `Cbor.Error(Absent)` を発生させる）。
++         蓄積型の `Validate` スコープのもとでは、誤りのある各フィールドが自分のエラーを `Pointer` とともに登録し、コンストラクターはすべてのフィールドが問題なかったときにだけ実行される。
++         マップでないものは、エントリーのないマップとしてデコードされる。
++     entry .disjunction   直和型をデコードする：判別子がバリアントを選び、そのバリアントが同じマップをデコードする
++         型について `Cbor.discriminatedUnion(t"kind")` のような `Discriminable in Cbor` を必要とする。
++         判別子がなければ `Cbor.Error(Absent)` を発生させる。
++         ケースに付けた `@name[Cbor]` は、その判別子の値の名前を変える。
++   entry #EncodableDerivation   `Cbor.encodable` の背後にある wisteria の導出
+
+% 1 1 0 15a176e258718e481c831470b3f19aeb
+
+@ 0 8 0 0a25a284f76892091914d47f414af3f7
++         `Derivable[Encodable in Cbor]` である。
++         `.conjunction` はケースクラスをマップとしてエンコードし、`.disjunction` はシールされた階層を、判別子のエントリーを持つバリアントのマップとしてエンコードする。
++     entry .conjunction   直積型をそのフィールドのマップとしてエンコードし、`undefined` にエンコードされるものを省く
++         キーはフィールド名で、`@name[Cbor]` によって付け替えられる。
++         エンコーディングが `undefined` になるフィールド（未設定の `Optional`、`None`）はマップから除かれる。
++     entry .disjunction   直和型を、判別子のエントリーを加えたバリアントのマップとしてエンコードする
++         型の `Discriminable in Cbor` を通じて行い、バリアント名はケースに付けた `@name[Cbor]` で付け替えられる。
+
+@ 0 1 0 09dfcb4c146e0953194762d66fe3ba69
++ entry .CborParser   ストリーミングの CBOR パーサー：バイトの `Cursor` から一度に一つのデータ項目を読む
+
+% 1 1 0 067d32b888d79dfc171337fb4b66184a
+
+@ 0 8 0 00935b67a890f7ff1b350d8a0765af34
++       `CborParser` は `zephyrine.Cursor[Data]` から CBOR のデータ項目を読むので、チャンクに分かれて届くドキュメントは届くそばから読まれる。
++       バッファーが保持するのは読み取り中の項目だけである。
++       結果は一つの配列なので、バイト文字列やテキスト文字列はその全体を保持するが、コンテナーの要素は消費された後は決して保持しない。
++       すべての読み取り経路がこれを使う。
++       `Data` や `Chain[Data]` に対する `Cbor.Ast.parse`、チェーンや `Stream[Data]` に対する `read[Cbor.Ast]`、`read[Cbor]`、`read[T in Cbor]`、そしてこれを包む `Cbor.Reader` を通じた `Cbor.Parsable` である。
++       これが発生させるすべての `Cbor.Error` は誤りの絶対的なバイトオフセットを持ち、チャンクの分け方にかかわらず入力の先頭から数えられる。
+
+@ 0 6 0 1da655183ad67bb101d9b9ef172c722f
++       型としては公開されている。
++       ユーザーのモジュールにスプライスされる生成されたパーサーは、レコードごとに一つを束縛し、その直接の縁を通じて読む。
++       しかし構築できるのはライブラリの読み取り経路だけである。
++       これは状態を持つケイパビリティ（`caps.ExclusiveCapability, caps.Stateful`、`Cursor.Snapshot[Data, Byte]`）である。
++       読み取りのメソッドはすべて `update def` であり、`CborParser^` を通じてのみ呼び出せる。
++       手書きのコードは `Cbor.Reader` を通じて読み、そのメソッドは読み取りの戦術とともにここにある `direct…` メソッドに転送する。
+
+@ 0 8 0 0db01dc8365d11a002e1ada28400a99d
++       メソッドは二つのグループに分かれる。
++       `#value` はツリーの経路で、一つの項目全体を `Cbor.Ast` にパースする。
++       `direct…` メソッドは直接パースのためのバイト単位の縁で、それぞれ一つの完全な項目を消費する。
++       よくあるヘッドの形には高速な経路があり、タグ、型の誤った項目、存在しないものなど風変わりなものには `#value` を通じた代替がある。
++       そのため値も失敗もツリーのアクセサーとまったく一致する。
++       長さ不定の文字列、配列、マップはすべて読まれる。
++       半精度と単精度の浮動小数点数は `Double` に拡大される。
++       `Long` を超える整数は `Overflow` で失敗する。
++       真偽値、`null`、`undefined` 以外の単純値は `BadSimpleValue` で失敗する。
+
+% 0 1 0 0e7c792dd4da13741883d258313d6305
+
+% 1 1 0 1e998905cd13235d1365505e579fb3ce
+
+% 2 1 0 11242652656878c20ae1b18bf6d5196b
+
+@ 0 48 0 10edad4833075cf81dded679ebe64f01
++   entry .of   `AnyRef` のキャリアとして運ばれたパーサーを再表明する。生成されたパーサーのためのもの
++       `CborParser.of(carrier)` は中立の参照を `CborParser^` にキャストし直す。
++       `Inlinable.parsable` がユーザーのモジュールにスプライスするパーサーの、再表明の地点である。
++       手書きのコードには用途がない。
++   entry #directKeyHigh   `#directKeyWord` が最後に詰め込んだキーの上位ワード
++   entry #value   一つのデータ項目全体を `Cbor.Ast` にパースする
++       ツリーの経路である。
++       ヘッド内の小さな整数、短いテキスト文字列、バイト文字列には高速な経路があり、それ以外はメジャータイプによる一般的なデコードを行う。
++       コンテナーの要素は再帰的にパースされ、タグはパースした内容を `Cbor.Tag` で包む。
++       `Tactic[Cbor.Error]` を必要とし、誤りのオフセットとともに `Truncated`、`Reserved`、`BadSimpleValue`、`InvalidUtf8`、`Overflow`、`UnexpectedBreak` を発生させる。
++   entry #directLong   整数の項目を `Long` として、または浮動小数点数を切り捨てたものとして消費する
++   entry #directDouble   浮動小数点数の項目を `Double` として、または整数を拡大したものとして消費する
++   entry #directBoolean   `true` または `false` の項目を消費する
++   entry #directString   テキスト文字列の項目を `String` として、その場で読んで消費する
++       長さの定まった文字列はバッファーから直接デコードされ、長さ不定の文字列はチャンクが連結される。
++       不正な UTF-8 は `InvalidUtf8(offset)` を発生させる。
++   entry #directBytes   バイト文字列の項目を凍結済みの `Array[Byte]` として消費する
++   entry #directIsUndefined   次の項目が `undefined`（0xF7）かどうかを、消費せずに調べる
++   entry #directUndefined   `undefined` の項目を消費する
++   entry #directOpenMap   マップを開く：エントリー数、または長さ不定なら `-1`
++       それ以外の項目は丸ごと消費され、空のマップとして読まれる。
++       ツリーの経路のレコードのデコーダーがマップでないものを扱うのと同じである。
++   entry #directOpenArray   配列を開く：要素数、または長さ不定なら `-1`
++       それ以外の項目は、ツリーのアクセサー `array` と同じく `Cbor.Error(NotType(found, Array))` で失敗する。
++   entry #directBreak   次がブレークの停止コード（0xFF）なら、それを消費する
++       消費したときは `true` であり、長さ不定のマップや配列の終わりの段階である。
++   entry #directKeyWord   `Long` に詰め込んだ次のマップのキー、または `Cbor.Reader.KeyOpaque`
++       長さが定まり、1 から 16 バイトで、7 ビットに収まるテキストのキーは二つのワードに詰め込まれ（下位のワードが返され、上位のワードは `#directKeyHigh` に残る）、消費される。
++       それ以外は `KeyOpaque` を返して何も消費しないので、呼び出し側は `#directKeyName` を使う。
++       チャンクの境界にまたがるキーは、まず丸ごとバッファーに入れられる。
++       ここで不透明になるのは途中で切れたキーだけであり、その場合は一般的な段階が切り詰めを報告する。
++   entry #directKeyName   次のマップのキーを消費する：テキストのキーの内容、またはテキストでないキーなら `null`
++       レコードのデコーダーはテキストでないキーのエントリーを無視するので、呼び出し側は `#directSkipValue` でその値を読み飛ばして続ける。
++   entry #directSkipValue   一つの項目全体を、何も作らずに消費する
++       未知のキーや、マップの形をしていないレコードのためのものである。
++       `#value` が拒否するヘッドの形をまったく同じように拒否するので、読み飛ばした不正な項目はツリーの経路と同じように失敗する。
++       文字列の内容はバッファーに入れずに読み飛ばすので、項目の大きさにかかわらず読み飛ばしは有界のメモリーで行われる。
++   entry #directDiscriminant   次に来るマップのあるキーの下にあるテキスト。パーサーは開始位置に戻る
++       シールされた階層の判別子のエントリーのための振り分けの基本操作である。
++       このエントリーはマップのどこに現れてもよい。
++       マップを走査して位置を巻き戻し、結果はそのキーのテキストの値であり、項目がマップでない、そのキーがない、または値がテキストでないときは `null` である。
++       マップは走査の間バッファーに保持され（バッファーが一つの項目を超えて大きくなる唯一の場所である）、バリアント自身のパースが始まる前に解放される。
+
+@ 0 1 0 04132812775e3c4a0312d2fdc1c48e4e
++ entry .Inlinable   直接のコーデックのためのコンパイル時のコード生成器：`Inlinable.parsable[T]` と `Inlinable.printable[T]`
+
+% 1 1 0 1f0b04deb1b7dc92159cbdf6ed6ddc25
+
+@ 0 9 0 12eaa0b308e5716813129ad846cbdfc4
++       `Inlinable` は `Cbor.Parsable` と `Cbor.Printable` の `Expr` レベルの対応物であり、メソッドがマクロ時のコード生成器である型クラスである。
++       インスタンスはリーダーの `Expr` を受け取り、パースした値の `Expr` を返す（あるいは値と生産者を受け取り、書き込みのコードを返す）。
++       生成するマクロはそれを、一つの平坦で単相的なパーサーまたはプリンターに直接スプライスする。
++       入れ子のレコード、コレクションのループ、バリアントの振り分け、独自のリーフのパーサーはすべてインライン化され、実行時の振り分けもアダプターの経由もない。
++       ユーザー向けの入口は `.parsable` と `.printable` であり、ケースクラス、または `Discriminable in Cbor` が `Cbor.discriminatedUnion` であるシールされた階層について、`Cbor.Parsable` または `Cbor.Printable` を生成する。
+
+% 2 1 0 185e64622047259017fbebba0241ca04
+
+% 3 1 0 00b46f0da421e8ea113d5f9a48e7161b
+
+% 4 1 0 07093079af93a7eb0c8aa242a1f1d351
+
+% 6 1 0 1686318b6f1bfbd50bdfc2158b6eb5ac
+
+% 3 1 0 196d6e506060ded71a6ed2a252c54872
+
+% 0 1 0 1d9f1aa1b2c0474a164bbe1d36750865
+
+% 0 1 0 048c5c61d72583770310ed8ccd67cfd0
+
+% 0 1 0 099867edae2ec05f01cecf5145ec9d62
+
+% 1 1 0 0a37fe805d7e07cb156ffa1f5e0308fb
+
+@ 0 6 0 1c66ceb94245ebe503f24a9044af092e
++       生成されたパーサーは、即値にコンパイルされたフィールド名とマップのキーを比較し（`Cbor.Reader#keyWord`）、キーがなければフィールドに宣言されたデフォルトをとり、`Optional` のフィールドを `Unset` に橋渡しし、未知のキーを丸ごと読み飛ばし、テキストでないキーを無視し、繰り返されたキーは最初のものを採用し、ツリーのアクセサーと同じく浮動小数点数を整数のフィールドに変換する。
++       そのため同じバイト列の直接の読み取りとツリーの読み取りは一致し、生成されたプリンターは導出のエンコーディングとまったく同じバイト列を書く。
+
+@ 0 8 0 183488e3a8e29b130e5c5b74e6c251e0
++       生成器は各フィールドの型を段階的に解決する。
++       まず組み込みのリーフ（given `.int`、`.long`、`.double`、`.float`、`.boolean`、`.text`、`.string`、`.byteString`、`.cbor`）、次にステージングの召喚で見つかる `Inlinable` のインスタンス、次にコレクション（`.iterable`）、ケースクラス（`.derived`）、直和型のための構造的な生成器、そして最後に実行時の継ぎ目である。
++       型が自分の `Cbor.Parsable` を持つフィールドはそれを呼び、それ以外は `Decodable in Cbor` を通じて橋渡しされ、そのフィールドの部分木だけを実体化する。
++       再帰的な出現（`children: List[Tree]` を持つ `Tree`）は、際限なく展開する代わりに継ぎ目をとる。
+
+@ 0 8 0 09af09a0d2b458e51b21707833c3baeb
++       インスタンスは通常の実行時の値なので、手書きのインスタンスや直和型の `Discriminable in Cbor` を参照するには、コードのコンパイル中にそれらを評価するしかない。
++       それにはマクロ内のステージングコンパイラが必要であり、したがってコンパイラの jar が必要になる。
++       それが `breviloquence.staged` である。
++       これがコンパイルのクラスパスにあれば `.Stager` がそれらを評価する。
++       なければ、型が手書きのインスタンスしか持たないフィールドは実行時の継ぎ目をとり、直和型の `Inlinable.parsable` はその直和型がインライン化できないと報告する。
++       いずれにせよ、インスタンス（とその型）は展開より前のコンパイルの実行でコンパイルされていなければならない。
++       同じ実行のインスタンスは継ぎ目に格下げされる。
+
+@ 0 2 0 06cf7ba5415be13f15cc98957ddd80f5
++       導出されたコーデックの代替手段である `derives Cbor.Direct` と `import codecs.direct` は、どちらもこの生成器を通じて展開される。
+
+% 1 1 0 0d55c626bce25dc51b0e4ea2b2908519
+
+% 2 1 0 05380eb9aa9fc7c309542d69456c61ee
+
+% 0 1 0 01f273a44ce84d6612f745758edd37c4
+
+% 0 1 0 0d41467978a67a13021f1221bcce568e
+
+@ 0 15 0 077e93d0ea1564870fc4b0f020f3e005
++   entry .parsable   ケースクラスまたはキーで判別される直和型について、単相的な `Cbor.Parsable` を生成する
++       `Inlinable.parsable[T]` はマクロであり、コンパイル時に `Inlinable` のインスタンスを通じて組み立てられたパーサーで、入れ子のレコード、コレクションのループ、バリアントの振り分け、独自のリーフのパーサーがすべて一つにインライン化される。
++       生成器が作れない型（`breviloquence.staged` のない直和型、読めるフィールドを持たない型）は、その型を名指すコンパイルエラーになる。
++   entry .printable   ケースクラスまたはキーで判別される直和型について、単相的な `Cbor.Printable` を生成する
++       `.parsable` の書き込み側の対応物で、同じインスタンスを通じて組み立てられる。
++       値をバイトの生産者に直接書き込むプリンターであり、導出のエンコーディングとまったく同じバイト列を生み出す。
++       インスタンスが出力しない（`#prints` が `false` である）フィールドは、その `Encodable in Cbor` の継ぎ目を通じて書かれる。
++   entry .derived   ケースクラスのための構造的なインスタンス。コードが生成されるときにリフレクションで作られる
++       `Inlinable.derived[T]` は独自のマクロを必要としない。
++       `Type[T]` は `parse` や `write` の呼び出しとともに届く。
++       `derives Inlinable.ForCbor` がコンパニオンに置くのはこれである。
++   entry .Generates   生成器が型のコーデックをレコードとして構造的に作るという証拠
+
+% 1 1 0 0dceaffab42805571cd2a5fcddd57b3d
+
+@ 0 9 0 0a70aa0d238a4e54171422d9de07bc3c
++         `codecs.direct` の given（`Cbor.Parsable.generated` と `Cbor.Printable.generated`）の条件である。
++         `Inlinable.Generates[T]` は生成器が展開できるケースクラスについて解決され、その given はそれ以外の型（ジェネリックなケースクラス、シールされた階層）では失敗する。
++         そのため生成されたインスタンスの探索も失敗し、代わりに導出の経路が解決される。
++         これは安価な形の検査なので、このモードでの探索も安価なままである。
++         直和型の判別子はステージングコンパイラにしかわからないので、直和型は独自のインスタンスを持たない限り、`codecs.direct` のもとでも導出の経路のままである。
++     entry .generates   証拠を与える、あるいは与えられずに失敗する transparent inline の given
++   entry .Stager   コードのコンパイル中に `breviloquence.staged` がインスタンスを評価するためのフック
+
+% 1 1 0 0e42fffa5a69fa2a1542b4ccd7f0a58c
+
+@ 0 12 0 1992e36eb353ac13091cc58bd6a74abd
++         マクロ時の二つの操作を持つトレイトである。
++         `#summon` はフィールドの型の `Inlinable` のインスタンスを評価し、`#discriminantKey` は直和型の `Discriminable in Cbor` を評価して、それが `Cbor.DiscriminantKey` ならそのキーを返す。
++         コンパニオンは、`breviloquence.staged` がコンパイルのクラスパスにあるときは実装 `InlinableStager.Implementation` をマクロ自身のクラスローダーから名前で読み込み、ないときはすべてに `None` を返す。
++         コアの生成器はコンパニオンを呼ぶが、ユーザーのコードが呼ぶことはない。
++     entry .summon   ステージングコンパイラが評価した型の `Inlinable`、または `None`
++     entry .discriminantKey   `Discriminable in Cbor` が `Cbor.DiscriminantKey` である場合の、直和型の判別子のマップのキー
++     entry #summon   ステージングされた召喚の実装
++     entry #discriminantKey   判別子のキーの評価の実装
++   entry .ForCbor   `derives Inlinable.ForCbor`：コンパニオンに置かれる、ケースクラスの構造的な `Inlinable`
+
+% 1 1 0 1b047e398d93a00d1cfc2a62d3b59860
+
+@ 0 39 0 0a56a63a24ce7e611750384c19e049c7
++         `Self` 型の型クラスは `derives` 節に現れることができない。
++         そのため `case class Play(…) derives Inlinable.ForCbor` は、このパラメーター化されたサブトレイト（これは*まさに* `Play is Inlinable` である）を `Play` のコンパニオンに合成する。
++         `Play` が後のコンパイルの実行で生成される型のフィールドであるとき、ステージングの召喚はそこでそれを見つける。
++         すべての操作を、包んでいる構造的なインスタンスに委譲する。
++     entry .derived   `derives` のフック：`Inlinable.derived[T]` を包む
++     entry #parse   包んだインスタンスの生成器に委譲する
++     entry #absent   包んだインスタンスの、存在しないフィールドの生成器に委譲する
++     entry #prints   包んだインスタンスがプリンターを生成するかどうか
++     entry #write   包んだインスタンスのライターの生成器に委譲する
++   entry #parse   リーダーの式から `Self` の項目を一つパースするコードを生成する
++       `Expr[Cbor.Reader]`、`Quotes`、`Type[Self]` を受け取り、生成するマクロがスプライスする `Expr[Self]` を返す。
++       手書きのインスタンスの本体はリーダーのメソッドに対する通常のクォートされたコード（`'{$reader.int()}`）であり、展開時に参照されるのは `breviloquence.staged` がコンパイルのクラスパスにあるときだけである。
++   entry #prints   このインスタンスがプリンターも生成するかどうか：上書きされない限り `false`
++       パース専用のインスタンスは正直なままである。
++       その型のフィールドは、失敗するのではなく、その `Encodable in Cbor` の継ぎ目を通じて書かれる。
++   entry #write   `Self` の値を生産者の式に書き込むコードを生成する
++       生成されたコードはキャプチャが消去されているので、生産者は `Expr[AnyRef]` として運ばれる。
++       `Cbor.Printable` の `write…` メソッドがそれを再表明する。
++       デフォルトはコンパイルエラー _breviloquence: the Inlinable for `T` generates no printer_ を報告する。
++       これを上書きするインスタンスは `#prints` も上書きする。
++   entry #absent   キーがマップに存在しないとき、`Self` のフィールドが返すものを生成する
++       上書きされない限り `Cbor.Parsable.missing` を通じた `Cbor.Error(Absent)` による中断であり、実行時のインスタンスと同じである。
++   entry .int   `Int` のリーフの生成器：`reader.int()`
++   entry .long   `Long` のリーフの生成器：`reader.long()`
++   entry .double   `Double` のリーフの生成器：`reader.double()`
++   entry .float   `Float` のリーフの生成器：`reader.double().toFloat`
++   entry .boolean   `Boolean` のリーフの生成器：`reader.boolean()`
++   entry .text   `Text` のリーフの生成器：`reader.text()`
++   entry .string   `String` のリーフの生成器：`reader.string()`
++   entry .byteString   `Data` のリーフの生成器：`reader.byteString()`
++   entry .cbor   `Cbor` のフィールドのリーフの生成器：一つの項目全体をドキュメントとして保持する
++   entry .iterable   インライン化可能な要素の任意の `Iterable` コレクションのための生成器
++       要素のインスタンスとコレクションの `Factory` を通じて、長さの定まった配列または長さ不定の配列に対するループを組み立てる。
++       Soundness 自身の `List`、`Set`、`Sequence` はシンボルで認識され、その基底の型で作られる。
+
+@ 0 1 0 08fcd3036c2fd03d17e18c33610a5199
++ entry .InlinableStager   `Inlinable.parsable` の背後にある、`breviloquence.staged` のマクロ内のステージングコンパイラ
+
+% 1 1 0 0489a6ee4ef8757a17089c129a416e23
+
+% 2 1 0 0f69d2139e1211041302e235df7f80b4
+
+@ 0 13 0 1389287b393e8581152508ec6d46eab7
++       直接使うためのものではない。
++       `breviloquence.staged` コンポーネントによる `Inlinable.Stager` の実装である。
++       フィールドの型ごとに、マクロのクラスローダーのクラスパス上で新しいステージングコンパイラを実行し（進行中のコンパイルで定義された型には信頼できるクラスファイルがないので、現在の出力ディレクトリーは除く）、`Inlinable` のインスタンス、または直和型の `Discriminable in Cbor` をその場で召喚し、生成器が参照できるようにする。
++       型はクラスのツリーとして内側のコンパイラに渡されるので、評価はクラスの形をした型に限られる。
++       不透明型や構造的な型は実行時の継ぎ目に格下げされる。
++       各召喚は所要時間をコンパイラの情報メッセージとして報告する。
++       JVM 専用である。
++       このコンポーネントは Scala のコンパイラとステージングの jar に依存するので、`breviloquence.core` からは外されている。
++   entry .evaluate   新しいステージングコンパイラの中で召喚した、フィールドの型の `Inlinable`、または `None`
++   entry .discriminantKey   `Discriminable in Cbor` が `Cbor.DiscriminantKey` に評価される場合の、直和型の判別子のキー
++   entry .Implementation   `Inlinable.Stager` が名前で読み込む `Inlinable.Stager`
+
+% 1 1 0 09211261f363640e0031af5b16f55ce4
+
+@ 0 2 0 1c0f7a5509d69fca16ec51b16014548a
++         このコンポーネントがマクロのクラスパスにあるとき、`Inlinable.Stager` が `Class.forName` で見つけるオブジェクトである。
+
+% 0 1 0 0f572bb7a736555b161a4d9d2c9a3e1d
+
+% 0 1 0 04fe5e628e6f525900cc53370a3357fa
+
+@ 0 1 0 16a38d3835af591e00265c000299a28d
++ entry .inlining   `Inlinable` の背後にある仕組み：解決の段階、構造的な生成器、入口のマクロ
+
+% 1 1 0 1f36cb84cd561b3a08bc32ef2e09d0ea
+
+% 2 1 0 0f9d2dd07df285d202c052c5c422221a
+
+@ 0 14 0 08607e6c8f57a5e20916cf4aa43b5f39
++       直接使うためのものではない。
++       展開時のインスタンスの解決（組み込みのリーフ、ステージングされた召喚、構造的なコレクション、直積型または直和型、実行時の継ぎ目）、レコードのキーによる振り分けのループ、コレクションのループ、直和型の判別子による振り分けを出力する生成器、そして `Inlinable.parsable`、`Inlinable.printable`、`Inlinable.Generates` が展開されるマクロの実装である。
++       公開メンバーがあるのは、生成されたコードがユーザーのモジュールにスプライスされるからである。
++   entry .fieldSeam   `Inlinable` を持たないフィールドのための実行時の継ぎ目：その `Cbor.Parsable`、または橋渡しされた `Decodable in Cbor`
++       生成されたパーサーがスプライスされる場所で展開されるインラインのメソッドである。
++       名目的な `Cbor.Parsable` は直接呼ばれ、それ以外はフィールドの部分木をパースして `Cbor.Parsable.fromDecodable` を通じてデコードする。
++   entry .fieldSeamAbsent   継ぎ目の、存在しない場合の対応物：キーがないとき、橋渡しされたフィールドが返すもの
++   entry .generates   `Inlinable.Generates` の背後にあるマクロ：レコードの証拠、またはコンパイルエラー
++   entry .inlinableParsable   `Inlinable.parsable` の背後にあるマクロ
++   entry .inlinablePrintable   `Inlinable.printable` の背後にあるマクロ
+
+@ 0 7 0 00a23f8589943dae1a3addab50cbdf6d
++ entry .parse   `Cbor.Ast.parse(bytes)`：ちょうど一つのデータ項目をパースし、末尾の余分なバイトを拒否する
++     `Cbor.Ast` のコンパニオンに対する拡張で、アンブレラには `soundness.parse` としてエクスポートされる。
++     `Cbor.Ast.parse(data)` は `Data` からその場で項目を読み、`Cbor.Ast.parse(chain)` は `Chain[Data]` からチャンクが引き出されるにつれて読む。
++     どちらも `Tactic[Cbor.Error]` を必要とし、誤りがあればその絶対的なオフセットとともに `Cbor.Error` を発生させる。
++     項目の後にバイトが続くときの `Trailing(offset)` も含む。
++     ストリームは代わりに `stream.read[Cbor.Ast]` で読み、こちらも同様にストリーミングされる。
+
+% 2 1 0 14b80e74c0bc1f4f1d84b1a982c7d099
+
+% 3 1 0 12d4567134d87c010c63fa3a5e89e2cd
+
+% 4 1 0 0845ff9979a9ec1c1601bcb6b6bbf3dc
+
+% 0 1 0 196aeaeb290c642317211e733b5bb3b6
+
+% 0 1 0 179b903bca1f161c129e860c04e21881
+
+% 1 1 0 16a3637228986c250a545a5acaa438e5
+
+@ 0 1 0 0ce909dd38c8a38b09b0e4b0b9fbfe67
++ entry .optionalityOptions   `Optional` や `Option` のフィールドが、存在しないキー、`null`、誤った値をどう読むか：名前でインポートする六つの given
+
+% 1 1 0 1010aac353629ce60398a801134c50cf
+
+@ 0 8 0 0ec84c065216a9fc1e674918e5087ead
++       三つの独立したポリシーがあり、それぞれ厳格な given と寛容な given を持つ。
++       それらは `Optional[T]` や `Option[T]` のフィールドが、キーがマップに存在しない（またはワイヤ上の値が `undefined` である）とき、ワイヤ上の値が `null` のとき、内側のデコーダーが値を拒否するときに何を返すかを決める。
++       何もインポートしないときのデフォルトは、存在しないキーに寛容、null に寛容、誤りに厳格である。
++       存在しないフィールドや `null` のフィールドは `Unset` または `None` として読まれ、型の誤ったフィールドは `Cbor.Error` になる。
++       各ポリシーは一つの given を名前でインポートすることで個別に変えられ（`import soundness.*` はどれも取り込まない）、その選択はインポートのスコープに限られる。
+
+% 2 1 0 1faa101180bca5ef0892028058586941
+
+% 3 1 0 1ce14ac8f0b5bfa714f53a034f8edc5f
+
+% 4 1 0 009f3506983f380c102b8c7553ab40b4
+
+% 5 1 0 052d1f9106bef7b0094f2e1134dcb72d
+
+% 6 1 0 15d6cd1e62cf007f18a299882670f06f
+
+% 8 1 0 19e96ce045f6dbd509208721958fc267
+
+% 4 1 0 0f4a0fc4ee40f47819682e77f7c662b3
+
+% 1 1 0 0ad1d278df0a1b040bead9d5bd65907c
+
+% 1 1 0 08654eb1912df4b81356fede659fc844
+
+% 0 1 0 027bda8a9b2a1a1e1dfb965a552864ce
+
+% 1 1 0 014121e35f9609b913d2bf8659a39b27
+
+% 0 1 0 1b9f2b9c174a8da01a742b4869ca8d64
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 019a9214c38098661b299f736cf36098
+
+% 2 1 0 145ab1c2059e0c0c12a5b36e9153bcec
+
+% 4 1 0 0fbe6072156a8f940d510eda95fb42d3
+
+% 0 1 0 0ff6584c3445bee51765d319f9f4bf95
+
+% 1 1 0 11ba217ff2b91ea014bb352983fe82c7
+
+% 2 1 0 177574bd912cc54e067b80cf4a2d75a0
+
+% 3 1 0 1e9c20172935178b1cc3b2f2d6f6ef2b
+
+% 4 1 0 068590272cdf4d4507197228e1a0973d
+
+% 5 1 0 0056ff15fb962be209576f5c4bbe78d1
+
+% 7 1 0 0db40bcebe8857c70dd479251b22eb42
+
+% 1 1 0 1fb773f421a3469b07b949d3cd2b3077
+
+% 2 1 0 1cea0d3702671a1611d94985a0f815e1
+
+% 3 1 0 0d06d579479ad4821b8f5bdf13501e64
+
+% 4 1 0 1ccc1ab9e4d156ff042a7e18a9b80cb5
+
+% 5 1 0 0b8507a703a4f2d701b5a2394e85d803
+
+% 6 1 0 1280307ec08fa9371756597b9f12f5d9
+
+% 7 1 0 0b5b871585242d7e160c0067ac4144bd
+
+% 9 1 0 0cc01c1e65fb2bbd12169dfa44f12288
+
+% 1 1 0 0d911de47a8e304516c80bddc93347cd
+
+% 2 1 0 174fd4fb3a40945f08a0517e0bf9a43e
+
+% 3 1 0 15812174477d959d033ce44a23e20fa3
+
+% 4 1 0 1fc4bf17605138e305ff0655a4e6472d
+
+@ 0 13 0 0eca42477074008d0861746973119079
++       given は `distillate.Decodable.Absence in Cbor`、`Nullity in Cbor`、`Fault in Cbor` であり、Soundness のすべての形式が使うのと同じポリシーの型である。
++       そのため複数の形式を読むプログラムは、形式ごとのポリシーを独立に設定する。
++       これらはツリーの経路（`Cbor.optional` と `Cbor.option`）に適用され、継ぎ目を通じて、生成された直接のパーサーの `Optional` のフィールドにも適用される。
++   entry .strictCborAbsence   存在しないキー、またはワイヤ上の `undefined` は `Cbor.Error(Absent)` を発生させる
++   entry .lenientCborAbsence   存在しないキー、またはワイヤ上の `undefined` は `Unset` または `None` として読まれる：デフォルト
++   entry .strictCborNulls   ワイヤ上の `null` は内側のデコーダーに渡され、ほとんどの型ではそれが拒否する
++   entry .lenientCborNulls   ワイヤ上の `null` は `Unset` または `None` として読まれる：デフォルト
++   entry .strictCborFaults   内側のデコーダーが拒否する値は、その `Cbor.Error` を発生させる：デフォルト
++   entry .lenientCborFaults   内側のデコーダーが拒否する値は `Unset` または `None` として読まれる
++       内側のデコーダーは `tolerate` のもとで動くので、蓄積型の `Validate` スコープのもとでは、そのエラーはフィールドに対して記録される。
+
+@ 0 1 0 14466d8d91167e3e0c08f5661a31b771
++ entry .dynamicAccess   `cbor.field`、`cbor.field(i)`、`cbor.field = value` を有効にする given
+
+% 1 1 0 1418babed992f3b01eba0bac6617e1a7
+
+@ 0 5 0 140f8af4ae68429e04848aeaf36844dc
++       `Cbor` への動的なメンバーアクセスは `(? >: Cbor) is Dynamical` によって制限されている。
++       そうすることで、綴りを誤ったメソッド名が、意図しないマップの検索に黙って変わることがない。
++       `import dynamicAccess.dynamicCbor` はスコープの残りでそれを許可し、`dynamically[Cbor]:` ブロックは一つの式でそれを許可する。
++       `Cbor.lens` の given も同じ証拠を必要とする。
+
+% 2 1 0 115e593578041b9f192a633b79be6665
+
+% 3 1 0 156980a30cc718aa158e27f1b12d4f52
+
+% 4 1 0 14d27717555f70ab0d9b71d4c6e3efe4
+
+% 5 1 0 0380b099f86fba6010a9a076ee1c4e7f
+
+% 7 1 0 1865cc2757f7ad8b102ef6778aa78f14
+
+% 1 1 0 041a143e7ed07b5d1eef65243318f594
+
+% 0 1 0 0755fb3786ee2edd14b68e3123ba28f0
+
+% 0 1 0 1be14409bc02f2cf0b7f9d1f7e92d8f7
+
+% 1 1 0 14a559c4eb2023490512eeec51592158
+
+@ 0 1 0 18deab71faaa188d1a304d737b3f7d5b
++   entry .dynamicCbor   `Cbor is Dynamical`：`selectDynamic`、`applyDynamic`、`updateDynamic` を解禁する消去された given
+
+@ 0 1 0 0b496cf61669ea10069692939192ca38
++ entry .conversions   任意の `Encodable in Cbor` な値を、`Cbor` が求められる場所で使えるようにする `Conversion`
+
+% 1 1 0 1e9a77294af115c50511189f0d319ce6
+
+@ 0 4 0 0e433093c2e879c31a70e8a5edf849d7
++       レンズを通じて代入するスコープのために名前でインポートする。
++       `import conversions.encodableToCbor` により `play.lens(_.year = 1608)` は `Int` を直接受け取れる。
++       そうでなければ、代入には `5.in[Cbor]` が必要である。
++   entry .encodableToCbor   `Encodable in Cbor` である任意の `T` についての `Conversion[T, Cbor]`：`_.encode`
+
+@ 0 1 0 1a9b38bc762af62b1a9380dd4ef68627
++ entry .postables   `Cbor` を `application/cbor` のリクエスト本文として送る given
+
+% 1 1 0 1bc78b717e14d4371bd0ef3795ab81b5
+
+@ 0 4 0 0a86820bae4cd8ea0e3649b0b70e03ce
++       `breviloquence.http` にある（JVM 専用）。
++       名前でインポートし（`import postables.cborPostable`）、telekinesis のクライアントが `Cbor` 値を `post` できるようにする。
++       本文はドキュメントのエンコードされたバイト列で、文字セットはなく、メディアタイプは `application/cbor` である。
++   entry .cborPostable   `Cbor is Postable`：`application/cbor`、本文はエンコードされたバイト列
+
+@ 0 1 0 0627eeb5ca7d932b1fb3b9c15e104423
++ entry .servables   `Cbor` を `application/cbor` のレスポンス本文として提供する given
+
+% 1 1 0 090946111647a80804e066edc05ac6d2
+
+@ 0 4 0 197e55d5318dcce50d0ddc6be5772455
++       `breviloquence.http` にある（JVM 専用）。
++       名前でインポートし（`import servables.cborServable`）、scintillate や telekinesis のハンドラが `Cbor` 値で応答できるようにする。
++       本文はドキュメントのエンコードされたバイト列からなる固定の本文で、型は `application/cbor` である。
++   entry .cborServable   `Cbor is Servable`：`application/cbor`、エンコードされたバイト列を固定の本文とする
+
+@ 0 1 0 03f5d2be9ee0440601a97e607b14a163
++ entry .construables   `application/cbor` の本文を `Cbor` に読み戻す given
+
+% 1 1 0 03af7528a954f3a90f0dd2d0762e6d65
+
+@ 0 5 0 006afdfdc1a9f88819f85176cecccf8a
++       `breviloquence.http` にある（JVM 専用）。
++       名前でインポートし（`import construables.cborConstruable`）、メディアタイプが `application/cbor` であるリクエストやレスポンスの本文を、`Cbor.aggregable` を通じて `Cbor` として解釈できるようにする。
++       こうしてバイナリの API は、形式の型が違うだけで、JSON の API と同じコードで利用し、提供できる。
+
+% 0 1 0 1635e134d0d77ef017c026c34e1f6b50

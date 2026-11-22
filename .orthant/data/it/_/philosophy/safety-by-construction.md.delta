@@ -1,0 +1,151 @@
+orthant 2 language
+
+@ 0 1 0 0764d003b2d73399122ce3a270fcbfa4
++ # Sicurezza per costruzione
+
+@ 0 5 0 12aadd03548ddd7a097194cf02e95c45
++ Soundness rende i valori non validi impossibili da costruire fin dall'inizio, verificandoli
++ mentre il codice compila. Una convinzione guida è che qualsiasi analisi statica possa fare un
++ programmatore, il compilatore la può fare meglio — e qualsiasi analisi possa fare il
++ compilatore, la dovrebbe fare. Di un valore che esiste si sa quindi che è ben formato, e il
++ codice che lo riceve non deve verificarlo di nuovo.
+
+@ 0 5 0 050ba2c0784f05cf10341c2c3b696a0a
++ Gli interpolatori lo esprimono con la massima chiarezza. Ogni piccolo linguaggio incorporato in
++ un programma — URL, percorsi, espressioni regolari, date, tipi di media, JSON — ha una
++ grammatica, e i suoi letterali vengono analizzati secondo quella grammatica a tempo di
++ compilazione, dallo stesso parser che gestirà l'input a runtime. Un letterale malformato è un
++ errore di compilazione che punta al carattere incriminato:
+
+% 2 1 0 0bbec91b09000cd81ea0f69c75b4df45
+
+% 3 1 0 0a0239a309474f48171c8acf80f08a8c
+
+% 4 1 0 101ca460ec05283f0fb456c616de83cc
+
+% 0 1 0 1bb57990592a2cd601d4fcc1c8376afc
+
+% 0 1 0 1d56685db19c0b940cc591a734567bf6
+
+% 0 1 0 03b60f1eb8e5e7de025c577b0cc1df4c
+
+% 0 1 0 1354ba3c0bd04d301ed774709e8718ea
+
+% 1 1 0 080f5bd43c4309a716cfd395297700d5
+
+@ 0 7 0 09f886996a0fa8860f134f33e11b3f97
++ Lo stesso principio va oltre i letterali. Una data che non può esistere — il 31 di un mese di
++ 30 giorni — viene rifiutata dove è scritta; un `Money in "EUR"` non si può sommare a un
++ `Money in "GBP"`; una relazione di database che lo schema non dichiara non compila; e un `<br>`
++ HTML a cui si danno figli è un errore di compilazione perché lo dice la specifica. In ciascun
++ caso la verifica non è una validazione a runtime anticipata, ma una costruzione che ammette solo
++ valori validi — quindi lo stato non valido non ha alcuna rappresentazione, e il codice a valle
++ eredita la garanzia gratuitamente.
+
+@ 0 1 0 009da7f2e145b0bc178e41b0b27b76bb
++ ## Un parser, due momenti
+
+@ 0 4 0 1361fb180d65287b1d92cd54283e7703
++ La proprietà che rende tutto ciò affidabile è che i percorsi a tempo di compilazione e a runtime
++ sono *lo stesso codice*. La logica di parsing di un interpolatore è normale Scala; viene
++ eseguita a tempo di compilazione su un letterale, dando un errore di compilazione, e a runtime
++ su un input dinamico, dando un errore tipizzato:
+
+% 2 1 0 0a7c7d676b83db220b0d4ae7caeabb93
+
+% 3 1 0 1df291f82e0f4d7604485e60a19c2fa7
+
+% 4 1 0 105e313eb329d0e71cefb0330164f720
+
+% 0 1 0 06d43944fce464700b9c4ed728e2836a
+
+% 0 1 0 16c6c267601bf76d03cd63a6600b55ad
+
+% 1 1 0 1b8df6aaa8def2c11618aea93d46bd96
+
+@ 0 3 0 0aeae3130e9fe6121b9133a0bcab7a23
++ I due non possono divergere, perché non c'è niente da tenere al passo. Una macro scritta a mano
++ più un parser a runtime separato è proprio la disposizione che questo evita: due
++ implementazioni di un'unica grammatica, che differiscono esattamente nei casi limite che
++ nessuno ha testato.
+
+@ 0 3 0 024cd703bb1958460b438daae9d71864
++ La convenzione è quindi che ogni letterale verificato ha una controparte a runtime, e un valore
++ può passare dall'una all'altra — una configurazione letta da un file e un valore predefinito
++ scritto nel sorgente producono lo stesso tipo, con le stesse garanzie.
+
+@ 0 1 0 0db4f7a360e4e5a406d0815ddaface26
++ ## Precisione nel tipo di ritorno
+
+@ 0 3 0 1cc38bc23600d848161e5dcdc186f858
++ Il metodo prefisso di un interpolatore è `transparent inline`, quindi può restituire qualcosa di
++ più specifico del suo tipo dichiarato. È questo che permette a un letterale di portare ciò che
++ *è* nel sistema dei tipi anziché limitarsi a validare sé stesso:
+
+% 2 1 0 07a358831606ac57130169022ac844c9
+
+% 3 1 0 13972933396c919f1c4df3b806db7c8f
+
+% 4 1 0 1af7f9b5938a440a0b69921924fc901b
+
+% 0 1 0 0e0e33ffd0034f4819ba4ea80e3177a6
+
+% 0 1 0 0d703fc43ae9608f0b5e0a2fb0cf04ab
+
+% 0 1 0 1698b4f0fc04b3bb1e159d5af11d02c4
+
+% 1 1 0 07d1bc6ef5ec6dd3083a1c2c3992e164
+
+@ 0 4 0 050ad6494fcaf1041d27097ddb74da24
++ L'ultimo è la forma più forte: i nomi degli elementi del percorso sono nel suo tipo, quindi il
++ codice che lo riceve sa esattamente dove punta. Questa precisione è disponibile solo per i
++ letterali, ed è il limite onesto della tecnica — il testo ottenuto a runtime produce il tipo
++ generale, perché di esso non si sa niente di più.
+
+@ 0 1 0 078c4179ff580cd81fb18bf30fb78d54
++ ## Che cosa si può verificare in questo modo e che cosa no
+
+@ 0 3 0 12ef372b18b956a0095042ab71e587ea
++ La tecnica si applica dove la validità è una proprietà del *valore*, decidibile dal solo valore.
++ La sintassi di un URL, l'esistenza di una data, la registrazione di un tipo di media, il
++ bilanciamento di un'espressione regolare, la forma di uno schema: tutte decidibili, tutte
++ verificate.
+
+@ 0 5 0 1e7304ed291048970a0af9879189cfa0
++ Non si applica dove la validità dipende dal mondo. Se `example.com` si risolve, se un file
++ esiste, se una porta è libera, se un certificato è ancora valido — niente di tutto ciò è
++ conoscibile quando il codice compila, e un tipo che affermasse il contrario mentirebbe. Questi
++ diventano errori tipizzati nel punto d'uso, ed è allora che il lavoro lo fanno le
++ [transizioni totali](total-transitions.md).
+
+@ 0 3 0 07e15608a1ea73aa16a0eb4b49fee918
++ Vale la pena tracciare con cura la linea tra le due cose, perché la tentazione è di promettere
++ troppo. Un `Hostname` promette la validità sintattica e niente di più, e la documentazione lo
++ dice anziché lasciare che un lettore deduca che un nome host ben tipizzato sia raggiungibile.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto costa
+
+@ 0 3 0 10c64cbaf3bea6db08a3bf43cf1cce5d
++ **Tempo di compilazione.** Ogni letterale viene analizzato dal compilatore, e un file che ne è
++ fitto compila in modo misurabilmente più lento. L'espansione delle macro è il singolo fattore
++ che più contribuisce ai tempi di build di Soundness stesso.
+
+@ 0 5 0 14e4d8fa704a752b096eefc5f044ae31
++ **I messaggi di errore sono responsabilità della macro.** Un errore di compilazione dovuto a un
++ letterale non valido è buono solo quanto il messaggio che l'interpolatore produce. Mettere un
++ cursore sul carattere incriminato — anziché sottolineare l'intera espressione — richiede un
++ lavoro deliberato con le posizioni nel sorgente che l'interpolatore riceve, e un interpolatore
++ che vi risparmia produce diagnostici peggiori di quelli che avrebbe prodotto un parser a
++ runtime.
+
+@ 0 5 0 0ea35d68ceb20fa1065d2c9acf34fb34
++ **I letterali devono essere letterali.** Un URL assemblato da parti a tempo di compilazione non
++ può usare la verifica dell'interpolatore a meno che le parti non siano a loro volta letterali.
++ Il percorso a runtime è sempre disponibile, ma la garanzia è più debole, e la forma del codice
++ cambia — il che talvolta spinge un design a mantenere letterale qualcosa che altrimenti sarebbe
++ stato calcolato.
+
+@ 0 2 0 08deaea14db629dc0fffffd511663b39
++ Vedi [stati impossibili](impossible-states.md) per la regola che questo serve, e
++ [interpolazione](../en/modules/interpolation.md) per come si costruisce un tale letterale.

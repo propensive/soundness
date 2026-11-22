@@ -1,0 +1,687 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14e21a8867c6e7a21db4bf55b994e582
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1447a95b76b921dd031f266e0fadad65
++ info   Scala-Typen, dargestellt als der Quelltext, den ein Verwender schreiben würde, abgekürzt gegenüber den Imports im Geltungsbereich
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 1300579f39ef6b100ce93d78d6e63735
++     _Stenography_ verwandelt einen Scala-Typ in den Text, den ein Programmierer an einer
++     bestimmten Stelle seines Codes dafür geschrieben hätte: `Int | String & Double`,
++     `Addable by Int to Double`, `(e: Enumeration) => e.Value`, `Text^{alpha}`. Die eigene
++     Darstellung eines Typs durch den Compiler ist voll qualifiziert, von Aliassen aufgelöst und
++     voller Kodierungen — `scala.collection.immutable.List`,
++     `Addable { type Operand = Int; type Result = Double }`, `ImpureFunction1` —, und das ist das
++     Falsche für eine Fehlermeldung, eine erzeugte Quelldatei, eine Vervollständigung oder eine
++     Diagnose. Stenography schreibt den Typ in seiner Quellform zurück, qualifiziert jeden Namen
++     nur so weit, wie es die Imports im Geltungsbereich verlangen, und bevorzugt die Infix- und
++     Pfeilnotationen, die die Sprache bietet.
+
+@ 0 2 0 0b95176a0979e6ba007ba998f33ed679
++     Die einfachste Verwendung ist das Makro `Syntax.name`, das einen Typ gegenüber den Imports
++     an der Stelle darstellt, an der es aufgerufen wird:
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1148cd3617ded5031ba322678eba732a
+
+% 0 1 0 1687b3d9b19bc18e0f12bc63f6982c15
+
+% 0 1 0 0bb0505edb40618d0f88611f6df648d0
+
+% 0 1 0 082c09bc7b2014fd0bd8e91364bd8736
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 9 0 1c81e8f679911e3a06155026f38b6c1a
++     Die Darstellung geschieht in zwei Schritten, damit der zweite gegenüber verschiedenen
++     Geltungsbereichen wiederholt werden kann. Zuerst wandelt `Syntax(repr)` eine
++     Compiler-`TypeRepr` in einen `Syntax`-Baum um, der nur vom Typ abhängt: Jede benannte
++     Entität darin ist ein `Designator`, ein Pfad aus Term- und Typselektionen wie
++     `scala.collection.immutable.List`. Danach schreibt `Syntax#text` den Baum als Text gegenüber
++     einem `Imports`, das angibt, welche Geltungsbereiche importiert sind (sodass ihre Member
++     unqualifiziert geschrieben werden), welche Typen über ein `export` mit ihrem Blattnamen
++     erreichbar sind, welche Infix-Typaliasse verwendet werden dürfen und ob reine Funktionen
++     aktiviert sind (also mit welchem Pfeil, `->` oder `=>`, ein nicht annotierter Funktionstyp
++     geschrieben wird). Derselbe Baum, unter `Imports.empty` geschrieben, ist voll qualifiziert;
++     `Syntax#qualified` ist die Kurzform dafür.
+
+@ 0 7 0 02899eb9619e783a0c928094e88e9d8b
++     Die Bibliothek deckt die gesamte Typgrammatik von Scala 3 ab: Unions und Intersections mit
++     minimalen Klammern, angewandte, projizierte, verfeinerte und strukturelle Typen, benannte
++     und unbenannte Tupel, Funktions-, Kontextfunktions-, abhängige und polymorphe
++     Funktionstypen, Typ-Lambdas, Match-Typen, By-Name-Typen, Singleton- und Konstantentypen,
++     Wildcards mit Schranken, `into`-Typen, rekursive Typen (deren Binder von `Bindings` einen
++     Namen erhält), Skoleme und Capture-Sets mit jeder Verfeinerung einer Capability (`*`,
++     `.rd`, `.only[…]`, `.except[…]`).
+
+@ 0 6 0 16ecec08337f58c507902df1286cde62
++     Ein `Syntax`-Baum wird innerhalb eines Makros aufgebaut, da eine `TypeRepr` nur dort
++     existiert, wo es ein `Quotes` gibt; danach kann er aus dem Makro herausgetragen, in mehreren
++     Geltungsbereichen geschrieben oder als gewöhnliches Enum untersucht werden. Bibliotheken,
++     die Fehler anhand von Typen erklären (die Diagnosen von frontier zu fehlenden Givens, der
++     `Showable`-Rückfall von spectacular, der Baumbetrachter von hyperbole), rufen
++     `stenography.internal.name` aus ihren eigenen Makros auf, und eine REPL, die Typen außerhalb
++     jedes Makros darstellt, baut ihr `Imports` mit `Imports.resolve`.
+
+@ 0 4 0 0f466604e65acc7f11821cc059e9dcd2
++     Die Bibliothek hat ein einziges Source-Set, `stenography.core`, das vom Scala-Compiler
++     selbst (`dotty.tools.dotc`) abhängt und daher nur für Makros und Tools gedacht ist, die
++     neben einem Compiler laufen. `Bindings`, `Designator`, `Imports` und `Syntax` werden in das
++     Umbrella `soundness` exportiert.
+
+% 0 1 0 1cfa1a2310d59d131831e179d184934b
+
+% 0 1 0 0c88889fc7d11e111f531a8adece9aee
+
+% 0 1 0 120a19e4b9a9f0a21f91ffa2cca36d1e
+
+% 0 1 0 0baef3a6c8c706b9171aa3cf9ebba10c
+
+@ 0 1 0 1400eb3874d362891c9948d508f5b6f0
++ entry .Syntax   ein Scala-Typ als Baum in seiner Quellform, als Text gegenüber einem `Imports` geschrieben
+
+% 1 1 0 1cea33b59e91a09d00030d78284f61d3
+
+@ 0 6 0 1dd07cc2965744b413728e633ff51b6c
++       Ein `Syntax` ist die Quellform eines Typs, als Enum, dessen Fälle die Gestalten der
++       Typgrammatik von Scala sind. Er wird innerhalb eines Makros durch `Syntax(repr)` aus einer
++       Compiler-`TypeRepr` aufgebaut und hängt nur vom Typ ab; `#text` schreibt ihn gegenüber
++       einem `Imports`, das entscheidet, wie weit jeder Name qualifiziert wird, welche
++       Infix-Aliasse verwendet werden und welcher Funktionspfeil geschrieben wird. Das Makro
++       `Syntax.name[T]` erledigt beide Schritte auf einmal, gegenüber den Imports an der Stelle,
++       an der es aufgerufen wird.
+
+% 2 1 0 1412ac0252058b001636e61c5106cfd4
+
+% 3 1 0 1b39f33a83629c3f029531d9e46169c8
+
+% 0 1 0 089c8ba99d3b004e183c06aed6229d95
+
+% 0 1 0 0ecb0695eabe1c6a1958cbd63f6a00a8
+
+% 0 1 0 19b0d86582df3a801208d9f1230a8076
+
+% 0 1 0 0d4a828c1194bfdb1b444f12709ba13a
+
+% 1 1 0 179364db19e11836006927d6e7a93a13
+
+@ 0 2 0 000c0c9d0f7f6e9e09281bba568ea979
++       Ein Baum lässt sich auch von Hand aufbauen; so schreibt Code außerhalb eines Makros einen
++       Typ, der nur dem Namen nach bekannt ist:
+
+% 2 1 0 0f0cd60e399d70e91d3ea857d8c7da70
+
+% 3 1 0 030ae3249bab2d0403c57af8546b71fc
+
+% 5 1 0 098782f3f390dd310fcfdd24672b3871
+
+% 0 1 0 127d84e02523cad916fe396f8a3b095e
+
+% 0 1 0 161acb50fcc5324e1f7e9b753a8b7090
+
+% 0 1 0 1a02613fcef71a1a036280a10b8de8c9
+
+% 1 1 0 0e2f88e9650d0e7a0d1705fc5108cdbd
+
+@ 0 1 0 18de972073b0b30d0648b9e64ed1368e
++       Derselbe Baum wird weiter abgekürzt, je mehr seiner Geltungsbereiche importiert sind:
+
+% 2 1 0 0507785a76d733af0d6af8323587d18c
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0819cf0e426907b71a480e20527d3bd4
++         label Nichts importiert: Jeder Name ist voll qualifiziert
+
+% 1 1 0 08838cfb32d91b0c11a9671a1b7999d5
+
+% 2 1 0 0e399d7cde3529dc12858604d9543844
+
+% 0 1 0 139075daa21cb9c203cac9a96fc719f5
+
+% 0 1 0 0bd79b32e6a0be4b0dfaf1667643735f
+
+% 1 1 0 0633fbcac5f22dc107377e8bb1ec97ee
+
+@ 0 1 0 1473fe2345915cee14f4f8c58f17a803
++         label Das Paket `scala` importiert, wie es im Quelltext immer ist
+
+% 1 1 0 0ad86d9418ac983c0dd30d510df4bc49
+
+% 2 1 0 1e676385d3ceb1c40bd4913fb6c27faf
+
+% 3 1 0 1ad827e55ee0c7cc18a45858c4162244
+
+% 0 1 0 00fd9abfd657f31207c485e8028c9921
+
+% 0 1 0 012909aac739213118fee808e10d9d8f
+
+% 1 1 0 188c222fd7471fc804feff1ffbb61881
+
+@ 0 1 0 186777d1d5ac3643068e5ba114ad5a81
++         label Auch `anticipation` importiert: `Text` verliert sein Präfix
+
+% 1 1 0 1f0d8a6242c3b67e0ccc808dbc4861ff
+
+% 2 1 0 1d6b040b34be9ca611120bf1514d1858
+
+% 3 1 0 13f28ad23f3fd7c505f787fb5f5c8193
+
+% 4 1 0 00b18298e9d23a4e022421e9ec69e098
+
+% 0 1 0 112d48f4f19f7f3a07fe164977d24576
+
+% 1 1 0 1f32b7480fb8a0a80af16c3190eb868a
+
+% 0 1 0 05b6a15d1e793f36154a31e300191648
+
+% 1 1 0 0d3312db0e1f5dcb1c854c3ff0ae4865
+
+@ 0 1 0 18eff3eaa478e5131e5d221054318ee4
++         label `scala.collection.immutable` importiert: der Typ, wie ein Verwender ihn schreiben würde
+
+% 1 1 0 1d0845b4c56c192804274987fe5b8afd
+
+% 2 1 0 15d52d71b927bb780b715d3ad207192d
+
+% 3 1 0 0f22fe4ddec1232f006bcdcd583fe2b5
+
+% 4 1 0 0a47a6a7a92affeb05cb5475b84dcc44
+
+% 0 1 0 028ac6950383d03109fde4d64e1ff819
+
+% 0 1 0 099edc09fb47b2ec0ac036cd98188a38
+
+% 0 1 0 178c776c95dc90111c169b65293a9bca
+
+% 0 1 0 09b2733af996417615859ba144e2a9ba
+
+% 1 1 0 0daf58a8b515e39e11d818978090b24d
+
+% 0 1 0 15bbc002e0d3830915c52c7b82d0fde4
+
+% 1 1 0 181a77936f06c76c07bb998cd8942752
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 1 0 06482bc69e0a141315c42611719a975e
++       Die Fälle des Enums, jeder ein Knoten des Baums:
+
+@ 0 26 0 179dc4d3c6eb703e0ad056bc09ece5ad
++       - `Simple(designator)`, ein benannter Typ, geschrieben als `designator.text`, und
++         `Value(designator)`, ein Singleton-Typ eines stabilen Pfads, geschrieben mit `.type`.
++       - `Symbolic(text)` und `Primitive(text)`, wörtlich geschriebener Text: ein Typparameter,
++         eine Capture-Wurzel, `?`, ein Konstantentyp wie `42L` oder `"hello"`.
++       - `Application(left, elements, infix)`, ein angewandter Typ, `List[Int]`; wo `infix`
++         gesetzt ist (der Typkonstruktor ist `infix` deklariert) und sein Name unqualifiziert
++         erreichbar ist, wird er stattdessen `A op B` geschrieben.
++       - `Infix(left, middle, right)`, ein binärer Operatortyp: `|`, `&`, `is`, `<:`, `>:`,
++         `=>` und `=>>` zwischen Typparametern und einem Rumpf, und jeder Infix-Alias.
++       - `Prefix(middle, right)` und `Suffix(left, suffix)`: `into T`, die By-Name-Typen
++         `=> T` und `-> T`, `case P => R`, ein wiederholtes `T *`, ein flexibles `T?`, eine
++         Reach-Capability `c*` und ein nur lesbares `c.rd`.
++       - `Projection(base, text)`, eine Typprojektion `A#B`, die eine verfeinerte oder
++         Infix-Basis einklammert; und `Selection(left, right)`, eine Pfadselektion `a.B`.
++       - `Structural(syntax, types, terms)`, eine Verfeinerung `Play { type A = X; def f: Y }`,
++         deren Alias-Member stattdessen mit einem Infix-Alias geschrieben werden können:
++         `Play { type Form = Json }` als `Play in Json`. Ein Member, das seinen Typ nur
++         beschränkt, `type A <: X`, bleibt eine `Declaration` und wird nie mit einem Alias
++         geschrieben.
++       - `Named(isUsing, name, syntax)`, ein benannter Parameter oder ein benanntes
++         Tupelelement, `x: Int`, oder `using x: Int`.
++       - `Sequence(style, syntaxes)`, eine kommagetrennte Liste in `(`-, `[`- oder
++         `{`-Klammern: ein Tupel, Typparameter, ein Capture-Set.
++       - `Declaration(method, syntaxes, result)`, die Signatur eines Members,
++         `(x: Int): String`, wie `Syntax.signature` sie erstellt.
++       - `Compound(syntaxes)`, mehrere nacheinander geschriebene Bäume.
++       - `Match(scrutinee, cases)`, ein Match-Typ, auf einer Zeile geschrieben als
+
+% 0 1 0 1746b4c0a9ef44f7040eb6423f26d26a
+
+@ 0 5 0 160a0fc39296f0090acdac3b8d8de659
++       - `Capturing(base, refs)`, ein Typ mit Capture-Set: `T^{a, b}`, `T^{}` für leere
++         `refs` und `T^` für `Unset`, die universelle Menge.
++       - `Function(parameters, contextual, impure, refs, result)`, ein Funktionstyp, dessen
++         Pfeil festhält, ob es eine Kontextfunktion ist (`?=>`), ob sie unrein ist (`=>` statt
++         `->`), und ihr Capture-Set (`->{a}`).
+
+@ 0 2 0 005a18451eb6610511caeac328057993
++       Die Fälle sind gewöhnliche Enum-Fälle, sodass ein Baum abgeglichen, umgeschrieben und neu
++       aufgebaut werden kann, wie es delicious tut, um Platzhalter in einer dargestellten
++       Diagnose zu ersetzen.
+
+% 1 1 0 15a086eb44eed6280326b9b636d07031
+
+% 1 1 0 06572ad00e7222ae13e1d3ba157fec9f
+
+% 0 1 0 17d386c15d4a320a02489d2ac1a5f889
+
+@ 0 11 0 1575b55dcdd8937d14bfeb1d32881f24
++   entry .name   `Syntax.name[T]`: ein Typ, als Quelltext gegenüber den Imports an der Aufrufstelle dargestellt
++       Ein Makro, das den Typ `T` (beliebiger Art, sodass auch ein Typkonstruktor oder ein
++       Typ-Lambda angegeben werden kann) als den Text darstellt, den ein Verwender an der
++       Aufrufstelle schreiben würde. Die Imports, gegenüber denen es darstellt, sind `scala` und
++       `scala.Predef`, jeder Import im Geltungsbereich des Aufrufs (einschließlich derer, die
++       eine REPL über frühere Zeilen angesammelt hat), das Paket der umschließenden
++       Kompilierungseinheit und deren Imports auf oberster Ebene. Innerhalb dieser
++       Geltungsbereiche sammelt es auch die Ziele von `export`-Aliassen, sodass ein über
++       `soundness` reexportierter Typ unter `import soundness.*` mit seinem Blattnamen
++       geschrieben wird, und die Infix-Typaliasse, die ein einzelnes Typ-Member verfeinern,
++       sodass `Addable { type Operand = Int }` als `Addable by Int` geschrieben wird, wo `by`
++       im Geltungsbereich ist. Ein nicht annotierter Funktionstyp wird mit `->` geschrieben, wo
++       an der Aufrufstelle reine Funktionen aktiviert sind, und mit `=>`, wo nicht.
+
+% 2 1 0 154014bc00f9524f1c52e8534443356d
+
+% 3 1 0 176a0d5526cf9a011f9d0f707a706f7f
+
+% 0 1 0 0bb37d658f84dca915554b803dc6a7cb
+
+% 0 1 0 08321e15dd62435909c5b13ad6d8da46
+
+% 0 1 0 12f8c6032d99171116ee6c29617584b6
+
+% 0 1 0 1f9fc7e17e14c9101327ccd0c51ddada
+
+% 0 1 0 1a4056dfa3d3038f061c1595d012b195
+
+% 1 1 0 0d528995eba1c2d705461fecf14d2616
+
+@ 0 12 0 05e3d8c59beebb1f193af59635909adf
++       Das Ergebnis ist ein literaler `Text`, berechnet, während der Code kompiliert. Innerhalb
++       eines Kompilierungslaufs werden die Bäume bereits dargestellter Typen und die
++       Zusammenfassungen der durchsuchten Geltungsbereiche zwischengespeichert, sodass die Kosten,
++       viele Typen gegenüber einem großen Geltungsbereich darzustellen, einmal anfallen.
++   entry .apply   `Syntax(repr)`: ein Compiler-Typ, innerhalb eines Makros in einen `Syntax`-Baum umgewandelt
++       Nimmt eine `quotes.reflect.TypeRepr`, mit einem `Quotes` und einem `Bindings` im
++       Geltungsbereich (ein frisches `Bindings()` ist die Vorgabe), und gibt ihren Baum zurück.
++       Der Baum hängt nur vom Typ ab, nicht davon, wo er geschrieben wird: Kein Name wird
++       abgekürzt, kein Infix-Alias eingesetzt und kein Pfeil gewählt, bis `#text` kommt.
++       Ergebnisse werden im `Bindings` zwischengespeichert, nach dem Typ indiziert, sodass ein
++       zweimal mit einem `Bindings` umgewandelter Baum einmal aufgebaut wird. Ein Typ einer
++       Gestalt, die die Methode nicht erkennt, wird erneut als Referenz seines Typsymbols
++       versucht und wird andernfalls zu `Primitive("<unknown>")`, sodass die Umwandlung nie
++       scheitert.
+
+% 2 1 0 15c8cc62ebf3272905eb67e4e26ed4a8
+
+% 3 1 0 097ca85afea2127017b35b72c229a830
+
+% 4 1 0 06b1dea1a06c850e16d7caf875d49ed5
+
+% 5 1 0 1af2142bf08d5f5b16ee84be6aab1048
+
+% 6 1 0 0e6607b5a624f4670ef7f72c0928cad4
+
+% 0 1 0 0f74df59b7862a02004c96137f1a6096
+
+% 0 1 0 103c7298589449d91259ffe356e1da39
+
+% 1 1 0 0084c92faaf9e946167101b17569e7ac
+
+@ 0 53 0 17eb79cd2798320a15b8b0a98f49d6a1
++       Ein Skolem, das `?1` des Compilers für das instabile Argument einer abhängigen Methode,
++       wird als der Typ geschrieben, für den es steht, und ein daraus selektiertes Typ-Member als
++       Alias des Members, wo dieser Typ es als Alias definiert, oder als Projektion auf den Typ,
++       wo er es nur beschränkt.
++   entry .term   der `Designator` einer Termreferenz, innerhalb eines Makros
++       Wandelt eine `quotes.reflect.TermRef` mit `Syntax(…)` um und gibt den Designator des
++       `Value` zurück, zu dem sie wird, etwa den Designator eines in einem Import genannten
++       Pakets oder Objekts. Löst eine Panic aus, wenn sich die Referenz nicht in einen `Value`
++       umwandeln lässt.
++   entry .signature   der deklarierte Typ eines Members als `Syntax.Declaration`, zum Schreiben der Signatur eines Members
++       Nimmt den Namen eines Members und seine Info als `TypeRepr`, mit einem `Quotes` und
++       `Bindings` im Geltungsbereich. Ein Methodentyp wird zu seiner Parameterliste und seinem
++       Ergebnis, `(x: Int): String`; ein parameterloses oder By-Name-Member nur zu seinem
++       Ergebnis, `: Int`; ein beschränktes Typ-Member zu seinen Schranken, `? <: Int`; und ein
++       Typ-Lambda zu seinen Typparametern und seinem Rumpf. Das Flag `method` des Ergebnisses
++       gibt an, ob es ein Term-Member (`def`) oder ein Typ-Member (`type`) ist.
++   entry .clause   eine Parameterklausel als Quelltext: `(x: Int, y: Text)`, `(using Play)` oder `[T <: U: Bound]`
++       Stellt eine `quotes.reflect.ParamClause` dar. Bei einer Termklausel wird jeder Parameter
++       mit Name und Typ geschrieben, mit `inline`, wo er so deklariert ist, und mit `using` vor
++       einem kontextuellen Parameter, wenn `showUsing` gesetzt ist; ein anonymer kontextueller
++       Parameter wird allein als sein Typ geschrieben, und ein einzelner unbenannter ohne
++       Klammern. Parameter namens `evidence$…`, die Entzuckerung von Context-Bounds, werden
++       weggelassen, da sie stattdessen als Schranken der Typparameter geschrieben werden. Bei
++       einer Typklausel wird jeder Parameter mit seinen Schranken geschrieben und mit der
++       Context-Bound, die für seinen Namen in `context` angegeben ist, der Map, die
++       `.contextBounds` erstellt.
++   entry .contextBounds   die Context-Bounds einer Methode, aus ihren `evidence$`-Parametern zurückgewonnen
++       Nimmt die Parameterklauseln einer Methode und gibt eine Map vom Namen jedes Typparameters
++       auf die Schranke zurück, mit der er deklariert wurde: `T is Showable` oder `Showable[T]`
++       wird zur Schranke `Showable` auf `T`, und mehrere Schranken auf einem Parameter werden zu
++       einer `{A, B}`-Sequenz. Es ist das, was `.clause` braucht, um `[T: Showable]` statt eines
++       `evidence$1`-Parameters zu schreiben.
++   entry .typeBounds   ein Typ mit seinen Schranken, `T <: U`, `T >: L` oder beiden, ohne die trivialen
++       Nimmt den `Syntax` des beschränkten Namens sowie seine untere und obere Schranke. Eine
++       untere Schranke `Nothing` und eine obere Schranke `Any` werden weggelassen, gleiche
++       Schranken werden als der Typ geschrieben, den sie festlegen, und ein Capture-Set-Parameter,
++       den der Compiler als die Schranken `>: CapSet <: CapSet^` kodiert, wird so geschrieben,
++       wie er deklariert wurde, `cap^`, nur mit seinen nichttrivialen Schranken:
++       `cap^ >: {alpha}`.
++   entry .symbolic   ein Name als `Syntax.Symbolic`, ohne das Präfix `_$` eines vom Compiler synthetisierten Namens
++       Für einen Typparameter oder einen anderen bloßen Namen, der vom Compiler gelesen wird und
++       dessen synthetisierte Form wie `_$1` den Verwender nicht so erreichen soll.
++   entry .Space   das `Syntax.Symbolic` für ein einzelnes Leerzeichen, zum Zusammensetzen von Tokenfolgen
++   entry .Colon   das `Syntax.Symbolic` für `: `, zwischen einem Namen und seinem Typ
++   entry .Comma   das `Syntax.Symbolic` für `, `, zwischen den Elementen einer Liste
++   entry .Open   das `Syntax.Symbolic` für `(`, das eine Parameterliste oder ein Tupel öffnet
++   entry .Close   das `Syntax.Symbolic` für `)`, das eine Parameterliste oder ein Tupel schließt
++   entry .OpenType   das `Syntax.Symbolic` für `[`, das eine Typparameter- oder Argumentliste öffnet
++   entry .CloseType   das `Syntax.Symbolic` für `]`, das eine Typparameter- oder Argumentliste schließt
++   entry .Plus   das `Syntax.Symbolic` für `+`, ein Kovarianzmarker
++   entry .Minus   das `Syntax.Symbolic` für `-`, ein Kontravarianzmarker
++   entry #text   der Baum als Quelltext, qualifiziert und abgekürzt, wie es ein `Imports` vorgibt
++       Braucht ein `Imports` im Geltungsbereich. Jeder `Designator` wird so geschrieben, wie
++       `Designator#text` ihn schreibt, unqualifiziert, wo er oder sein Besitzer importiert ist;
++       ein Infix-Typkonstruktor wird `A op B` geschrieben, wo sein Name unqualifiziert
++       erreichbar ist; ein Verfeinerungs-Member, das ein Infix-Alias in `Imports#aliases`
++       verfeinert, wird mit diesem Alias geschrieben; und ein Funktionstyp ohne Capture-Set wird
++       `->` geschrieben, wo `Imports#pureFuns` gesetzt ist, und `=>`, wo nicht, ebenso wie ein
++       reiner By-Name-Typ.
+
+@ 0 6 0 1baf1837426a41ed1d9b79f1f9bc3aef
++       Klammern werden nur gesetzt, wo der Vorrang sie verlangt, nach `#precedence`: `|` bindet
++       am schwächsten, dann `&`, dann die Pfeile, und ein Funktionstyp links eines Pfeils wird
++       eingeklammert, einer rechts davon nicht, da Funktionstypen rechtsassoziativ sind.
++       Alphabetische Infix-Operatoren wie `is` und `by` haben den niedrigsten Wert von allen,
++       daher wird ein Funktionstyp, dessen Parameter einer ist, `(Addable by Int) => String`
++       geschrieben, mit Klammern, die Scala streng genommen nicht bräuchte.
+
+% 2 1 0 0ea813c0acf48f0f10b1e9562e353e3c
+
+% 3 1 0 15be5ee0b7d50f6607f84b381fb90188
+
+% 0 1 0 0a65363eb26896221944a57fca260c03
+
+% 0 1 0 0418f429eaba032b08538656e06753c3
+
+% 0 1 0 08004fd0c2f24c060faa2d96fb58832c
+
+% 0 1 0 079f451888d40a8f0e2fad9a47197195
+
+% 1 1 0 0cc6c905b6ce412e1b6bb0e6bf450674
+
+% 0 1 0 1ecb8b5aec035adc013c1c12903b6259
+
+% 0 1 0 11aac173b07289ea1f2e09f36000d83c
+
+% 1 1 0 10da702b471cccc70fbc194be8f04554
+
+@ 0 10 0 1acbbe2118c3e4721ef9ac0a8e62a8ba
++   entry #qualified   der Baum voll qualifiziert geschrieben: `#text` gegenüber `Imports.empty`
++       Jeder Name mit seinem vollen Pfad, keine Infix-Aliasse, und reine Funktionen
++       vorausgesetzt, sodass `->` und `=>` unterscheidbar bleiben. Die Form für ein Log, einen
++       Cache-Schlüssel oder einen Vergleich, wo die Imports des Lesers unbekannt sind.
++   entry #precedence   wie stark der Knoten bindet, von 0 (am schwächsten) bis 10; entscheidet, wo `#text` Klammern setzt
++       Benannte Typen, Anwendungen, Sequenzen und andere Atome haben 10; eine Projektion oder ein
++       Capturing-Typ 9; ein Infix-Operatortyp erhält seinen Wert nach dem ersten Zeichen seines
++       Operators, wie es die Operatoren von Scala tun (`|` 1, `^` 2, `&` 3, `=` und `!` 4,
++       `<` und `>` 5, `:` 6, `+` und `-` 7, `*`, `/` und `%` 8, ein Buchstabe 0); ein
++       Funktionstyp 4; und ein Verfeinerungs-, Präfix-, Suffix- oder benannter Knoten 0, sodass er
++       überall eingeklammert wird, wo er umschlossen ist.
+
+@ 0 1 0 0de7ef02bb5713900d89d8e9df9dc7df
++ entry .Designator   ein Pfad zu einem benannten Typ oder Term, etwa `scala.collection.immutable.List`, als Baum von Selektionen
+
+% 1 1 0 00f50c614ea8c2021d30c5cb2cee496e
+
+@ 0 5 0 159f1c1ccf1a6fab185c37425f6097e2
++       Ein `Designator` benennt einen Typ oder einen Term durch den Pfad von Selektionen, der ihn
++       von einem Namen auf oberster Ebene aus erreicht: `Top(name)` für das erste Segment,
++       `Term(parent, name)` für einen aus seinem Elternteil selektierten Term und
++       `Type(parent, name)` für einen daraus selektierten Typ. Ein `Syntax.Simple` oder
++       `Syntax.Value` hält einen, und `#text` schreibt ihn gegenüber einem `Imports` und lässt so
++       viel vom Pfad weg, wie die Imports überflüssig machen.
+
+% 2 1 0 19876269adb392221d912a2689e123c6
+
+% 3 1 0 00674bb27b1ad0150d180b3fcbe58498
+
+% 5 1 0 1b79724abdae8fe210b22eaf3b6b110d
+
+% 0 1 0 14926348caf5dfeb1ec2511ee6fc9ff2
+
+% 0 1 0 1d09e66e4f5ef5f812e81595f083cce9
+
+% 0 1 0 1ce44134b65051d911b73b6661f74cce
+
+% 0 1 0 158263d2e3f160d30392834c6d637b73
+
+% 0 1 0 0e2d6d92cb52198b1e736193be9e0d81
+
+% 1 1 0 09ec5bf824dd31e00478ade30352ec48
+
+@ 0 4 0 02d860a12df47c421be2ed20cae358f8
++       In der Textform, die `Designator(text)` liest, ist ein Segment, dem `.` folgt, ein Term,
++       und eines, dem `#` folgt, ein Typ, so wie Scala eine Projektion schreibt, `List#Value`;
++       das letzte Segment ist immer ein Term, daher wird ein Typ mit `.member` aus seinem
++       Elternteil erstellt. `#text` schreibt dieselben Trennzeichen.
+
+@ 0 6 0 0ca5f75b1d9267ec0789e9683cb8773a
++       Jeder über `.top`, `.term`, `.member`, `.apply`, `#child`, `#companionObject` und
++       `#companionType` erstellte Designator wird internalisiert, sodass auf diese Weise
++       erstellte gleiche Designatoren dieselbe Instanz sind und zuerst per Referenz verglichen
++       werden. Gleichheit bleibt strukturell, und ein mit den Fallkonstruktoren gebauter
++       Designator ist gleich dem internalisierten; der Hash wird einmal berechnet. Die
++       Intern-Tabelle hält ihre Einträge schwach, sodass sie keinen Designator am Leben hält.
+
+% 1 1 0 0c52b8390278fddd195826f380d32644
+
+% 1 1 0 1ec21088465b883101b06845762386a3
+
+@ 0 28 0 0b11e774a20880b209e4879133aad8b2
++   entry .apply   `Designator(text)`: ein Designator, aus seiner gepunkteten, durch `#` getrennten Textform geparst
++       Das erste Segment wird zu einem `Top`, jedes Segment, dem `.` folgt, zu einem `Term`, und
++       jedes, dem `#` folgt, zu einem `Type`; das letzte Segment ist ein `Term`.
++       `Designator(t"scala")` ist der Designator des Pakets `scala`, so wie ein `Imports` einen
++       importierten Geltungsbereich benennt.
++   entry .top   ein Designator auf oberster Ebene, `Top(name)`, internalisiert
++   entry .term   ein aus einem Eltern-Designator selektierter Term, `Term(parent, name)`, internalisiert
++   entry .member   ein aus einem Eltern-Designator selektierter Typ, `Type(parent, name)`, internalisiert
++       Der Weg, den Designator eines Typs wie `List` im Paket `scala.collection.immutable` zu
++       erstellen, da `Designator(text)` sein letztes Segment zu einem Term macht.
++   entry #name   das letzte Segment des Pfads: `List` für `scala.collection.immutable.List`
++   entry #parent   der Designator, aus dem dieser selektiert ist, oder `Unset` für ein `Top`
++   entry #child   ein aus diesem selektierter Designator: ein Typ, wenn `isType`, sonst ein Term
++   entry #companionObject   der gleichnamige Term zu einem Typ-Designator, oder der Designator selbst, wenn er kein Typ ist
++   entry #companionType   der gleichnamige Typ zu einem Term-Designator, oder der Designator selbst, wenn er kein Term ist
++   entry #qualified   der volle Pfad als Text, `scala.collection.immutable.List`: `#text` gegenüber `Imports.empty`
++   entry #text   die kürzeste Form des Pfads, die ein `Imports` zulässt
++       Braucht ein `Imports` im Geltungsbereich. Der Designator wird allein mit seinem Namen
++       geschrieben, wenn `Imports#direct` ihn enthält (er über ein `export` erreichbar ist) oder
++       wenn sein Elternteil importiert ist; andernfalls wird rekursiv sein Elternteil
++       geschrieben, gefolgt von `#`, wenn das Elternteil ein Typ ist, und `.`, wenn es ein Term
++       ist, und dann der Name. Mit importiertem `scala` wird
++       `scala.collection.immutable.List` also `collection.immutable.List` geschrieben.
++   entry #symbol   das Trennzeichen zwischen dem Elternteil dieses Designators und seinem Namen
++       `typeSymbol` (Vorgabe `#`), wenn das Elternteil ein Typ ist, `termSymbol` (Vorgabe `.`),
++       wenn es ein Term oder ein `Top` ist, und leerer Text für ein `Top`, das kein Elternteil
++       hat.
++   entry #render   der volle Pfad mit `⌗` nach einem Typ, zur Anzeige, wo `#` missverstanden würde
++       Wie `#qualified`, aber mit der Selektion eines Members aus einem Typ als `⌗` statt `#`
++       geschrieben, für eine Darstellung, die nicht mit einer Scala-Projektion oder einem
++       URL-Fragment verwechselt werden darf.
+
+@ 0 1 0 131d5c2ea608339b021f591c0d6af00b
++ entry .Imports   welche Namen im Geltungsbereich sind, wo ein Typ geschrieben wird: importierte Geltungsbereiche, Exports, Infix-Aliasse, Pfeile
+
+% 1 1 0 04b42165cfd1429604d211314904053e
+
+@ 0 2 0 128dcbff2c68ed6e12650134d1d98680
++       Ein `Imports` ist das, was `Syntax#text` und `Designator#text` befragen, um zu
++       entscheiden, wie ein Typ an einer bestimmten Stelle im Quellcode geschrieben wird. Es ist
++       eine Case-Klasse mit vier Feldern:
+
+@ 0 11 0 11148fbcef48778608cb9803f3746812
++       - `#designators`, die Geltungsbereiche, deren Member unqualifiziert erreichbar sind: die
++         Designatoren der per Wildcard importierten Pakete und Objekte und des umschließenden
++         Pakets.
++       - `#direct`, Designatoren, die mit ihrem Blattnamen erreichbar sind, obwohl ihr Besitzer
++         nicht importiert ist, wie das Ziel eines `export`-Alias: `jacinta.Json` wird unter
++         `import soundness.*` `Json` geschrieben, weil `soundness` es exportiert.
++       - `#aliases`, eine Map vom Namen eines verfeinerten Typ-Members auf den Infix-Typalias im
++         Geltungsbereich, der es verfeinert, `"Form" -> t"in"`, sodass
++         `Play { type Form = Json }` als `Play in Json` geschrieben werden kann.
++       - `#pureFuns`, ob der Code, für den geschrieben wird, reine Funktionen aktiviert hat, was
++         Capture-Checking impliziert. Es entscheidet, ob ein nicht annotierter Funktionstyp `->`
++         oder `=>` geschrieben wird.
+
+% 2 1 0 1079131f4b0cdbd40fd289413aa13308
+
+% 3 1 0 0ab1fd7463515e91068dc8fb51cc5093
+
+% 0 1 0 11faadc27e365dfb1b309a2be90583a6
+
+% 0 1 0 1a39e656c46c15e11d5849f2b7dbdad2
+
+% 0 1 0 14e441ece2a8d085144554448e1e2cd4
+
+% 0 1 0 18e1598559df8d82015055ed06820bb5
+
+% 1 1 0 00916fd94c3f2d910bdeddfa8497f059
+
+% 0 1 0 187de40e5817f10f1a697d8b17b4dad6
+
+% 0 1 0 048189146b6724221c07432fa82c45ef
+
+% 1 1 0 16df7ae0cd2912c5174ccd88a363370b
+
+@ 0 7 0 00ac6ddc02cfee1c18fe231fb6fa7430
++       Innerhalb eines Makros bauen `Syntax.name` und `stenography.internal.name` das `Imports`
++       der Aufrufstelle selbst. Code, der Typen außerhalb jedes Makros darstellt — eine REPL, die
++       eine Diagnose gegenüber den Imports ihrer Sitzung abkürzt, ein Dokumentationstool —, muss
++       eines von Hand bauen und sollte dazu `.resolve` statt des Konstruktors verwenden, da nur
++       dann die Exports und Infix-Aliasse jedes importierten Geltungsbereichs einbezogen werden.
++       Die Felder sind `Set` und `Map`s der Standardbibliothek, geschrieben
++       `scala.collection.immutable.Set`, da sie mit Compiler-Code geteilt werden.
+
+% 1 1 0 13cb9f88fd3b7cbe16e38c3078ad84c1
+
+% 1 1 0 18664b639d2682d50ad5e0fc700b14c0
+
+@ 0 37 0 117df9373a1783b41507bddaed0adb6b
++   entry .empty   keine Geltungsbereiche, Exports oder Aliasse, mit reinen Funktionen: alles voll qualifiziert
++       Das `Imports`, gegenüber dem `Syntax#qualified` und `Designator#qualified` schreiben.
++   entry .resolve   ein `Imports` importierter Geltungsbereiche, erweitert um die Exports und Infix-Aliasse jedes Geltungsbereichs
++       `Imports.resolve(designators, direct)` ist `Imports(designators, direct)`, wobei `direct`
++       um `.exports` jedes der `designators` erweitert und `aliases` aus `.infixAliases` jedes
++       davon gefüllt wird, sodass ein Typ, der über einen per Wildcard importierten Vorspann wie
++       `soundness` erreicht wird, so dargestellt wird, wie der Verwender ihn schreiben würde. Es
++       braucht den `dotty.tools.dotc.core.Contexts.Context` des Compilers, und in diesem Kontext
++       muss der Quote-Cache installiert sein, wie es beim Kontext eines Makros der Fall ist und
++       wie `delicious.Reifier` ihn auf einem eigenständigen installiert. Wo zwei
++       Geltungsbereiche einen Infix-Alias für dasselbe Member anbieten, wird der dem Namen nach
++       erste gewählt, sodass das Ergebnis nicht von der Reihenfolge der Geltungsbereiche abhängt.
++   entry .exports   die Designatoren, die über die `export`-Aliasse eines Geltungsbereichs mit ihrem Blattnamen erreichbar sind
++       Nimmt den Designator eines Pakets oder Objekts, etwa `Designator(t"soundness")`, und
++       einen Compiler-`Context` und gibt das Ziel jedes darin deklarierten exportierten
++       Typalias zurück, zusammen mit dem Begleitobjekt dieses Ziels: Unter `import soundness.*`
++       werden `Textual` und `Textual.text` beide unqualifiziert geschrieben. Nur ein Alias, der
++       sein Ziel umbenennt oder es auf genau seine eigenen Typparameter in Reihenfolge anwendet,
++       zählt; ein Alias, der seine Parameter umgestaltet (ein Tupeltyp, `Some`, `<:<`), macht
++       sein Ziel nicht per Name erreichbar. Ein Geltungsbereich, der sich nicht auflösen lässt
++       oder dessen Deklarationen nicht gelesen werden können, trägt nichts bei, da die
++       Darstellung nie werfen darf.
++   entry .infixAliases   die in einem Geltungsbereich deklarierten Infix-Typaliasse, die jeweils ein einzelnes Typ-Member verfeinern
++       Nimmt den Designator eines Geltungsbereichs und einen Compiler-`Context` und gibt eine Map
++       vom Namen des verfeinerten Members auf den Alias zurück: für `infix type in[refined, form]
++       = refined { type Form = form }` das Paar `"Form" -> t"in"`. Der Alias muss genau zwei
++       Typparameter nehmen, den ersten als Elternteil der Verfeinerung und den zweiten als Alias
++       des Members; jeder andere Infix-Alias hat keine Form mit zwei Operanden und wird
++       übersprungen. Wo zwei Aliasse im Geltungsbereich dasselbe Member verfeinern, gewinnt der
++       dem Namen nach erste. Wirft nie.
++   entry #designators   die Geltungsbereiche, deren Member unqualifiziert geschrieben werden
++   entry #direct   die Designatoren, die mit ihrem Blattnamen geschrieben werden, wie die Ziele von `export`-Aliassen
++   entry #aliases   der Infix-Typalias, der für jeden verfeinerten Member-Namen zu schreiben ist, etwa `"Form" -> t"in"`
++   entry #pureFuns   ob reine Funktionen aktiviert sind, wo der Typ geschrieben wird, sodass sich `->` von `=>` unterscheidet
++       Ist es gesetzt (die Vorgabe, und der Fall überall, wo Capture-Checking aktiv ist), wird
++       ein Funktionstyp ohne Capture-Set `A -> B` geschrieben und ein unreiner `A => B`. Ist es
++       nicht gesetzt, wird jeder Funktionspfeil `=>` geschrieben, da `A => B` dann die nicht
++       annotierte `FunctionN` bedeutet.
++   entry #has   ob ein Designator einer der importierten Geltungsbereiche in `#designators` ist
++   entry #hasDirect   ob ein Designator in `#direct` ist, also mit seinem Blattnamen erreichbar
+
+@ 0 1 0 19405b1566cdd57b0ed4690247f74fcc
++ entry .Bindings   die Namen für die Binder rekursiver Typen und der Cache der Bäume, geteilt, während Typen umgewandelt werden
+
+% 1 1 0 016d6dad02bd98f6035533809f0699f2
+
+@ 0 7 0 1a038558e02c45b210bc0a8a3b208f5d
++       `Syntax(repr)` nimmt ein `Bindings` als kontextuellen Parameter. Es hält zwei Dinge, die
++       von nichts als den umgewandelten Typen abhängen: den Namen, der dem Binder jedes
++       rekursiven Typs gegeben wird, sodass eine Selbstreferenz in einer Verfeinerung einheitlich
++       geschrieben wird, und einen Cache der bereits aufgebauten Bäume. Nichts darin hängt davon
++       ab, wo ein Baum geschrieben wird, sodass ein `Bindings` von jeder Umwandlung in einem
++       Kompilierungslauf geteilt werden kann, wie `stenography.internal.name` eines teilt;
++       `Bindings()` erstellt ein frisches und ist die Vorgabe, wenn keines angegeben ist.
+
+@ 0 2 0 01151e270ecc28c205703cedb2dadc26
++       Da die Namen geteilt werden, kann der Binder eines rekursiven Typs nummeriert sein,
++       `self2`, wo ein früher mit demselben `Bindings` umgewandelter Typ denselben Kandidatennamen
++       verwendet hat.
+
+% 1 1 0 0d764bf990e449d101eed75ecdfda28e
+
+@ 0 5 0 012064abb0e4c6b008dd6c5509dbcb14
++   entry #nameFor   der Name für einen Binder, der Kandidat oder eine nummerierte Variante, bei jeder Anfrage derselbe
++       Nimmt den Binder, per Referenz verglichen, und einen By-Name-Kandidaten, abgeleitet vom
++       Basistyp des rekursiven Typs mit kleingeschriebenem erstem Buchstaben. Der erste Binder,
++       der nach einem Kandidaten fragt, erhält ihn unverändert, spätere den Kandidaten gefolgt
++       von `2`, `3`, …. Eine erneute Anfrage für denselben Binder liefert den Namen, den er
++       zuerst erhalten hat.
+
+@ 0 1 0 1cfb93edc6f80c3d1142fbf203397885
++ entry .internal   die makroseitigen Einstiegspunkte: ein Typ, gegenüber den Imports an der Expansionsstelle eines Makros dargestellt
+
+% 1 1 0 0c17b4f2f6250a640115131155887558
+
+@ 0 5 0 1ef7d71237f8ba6c1c0f196787086250
++       `internal.name` ist das, was das eigene Makro einer Bibliothek aufruft, um einen Typ für
++       ihre Verwender darzustellen: So schreibt frontier die Typen in einer Diagnose zu einem
++       fehlenden Given, so benennt das `Showable` von spectacular einen Typ, den es nicht
++       anzeigen kann, und so beschriftet hyperbole einen Baum. Es tut alles, was `Syntax.name`
++       tut, nimmt den Typ aber als `TypeRepr` oder `Type` innerhalb eines bestehenden Makros
++       statt als Typargument an der Aufrufstelle.
+
+% 2 1 0 083f6d6cf7a996741352e0bd41121ccf
+
+% 3 1 0 0a51089a434a49770c1224827722f1d7
+
+% 4 1 0 18b1639d6d841f270efc692dc22840db
+
+% 5 1 0 073d8bbc0ed3dd0914d3b489b9389d15
+
+% 6 1 0 06725d3956a69aea0efcbdaeab26629a
+
+% 0 1 0 09dfdaaa771a79d20e9bc403c61159ba
+
+% 1 1 0 019db1a78837e85b13b2f0d2b8561c9b
+
+@ 0 7 0 1a7473f3ecd59ec10e8dfb5dfc19503a
++       Die Imports sind die an der Expansionsstelle des Makros, gesammelt, wie `Syntax.name` sie
++       sammelt, mit den Exports und Infix-Aliassen jedes per Wildcard importierten
++       Geltungsbereichs und des eigenen Pakets der Einheit. Innerhalb eines Kompilierungslaufs
++       werden die umgewandelten Bäume, die Zusammenfassung jedes Geltungsbereichs und die
++       Vereinigung der Zusammenfassungen für jede Liste von Geltungsbereichen zwischengespeichert,
++       ein Cache pro Compiler, der nur den letzten Lauf hält und weich gehalten wird, sodass ein
++       verworfener Compiler nicht am Leben gehalten wird. Außerhalb eines vom Compiler gestützten
++       `Quotes` greift `name` auf die Imports allein zurück.
+
+% 1 1 0 072bb948a500b3f1018bbe5643439df8
+
+@ 0 4 0 005f789f7c602d2a0d8d1f880bc38d7c
++   entry .name   ein Typ, als Quelltext gegenüber den Imports an der aktuellen Makroexpansion dargestellt
++       Nimmt eine `quotes.reflect.TypeRepr` oder ein Typargument mit einem `Quotes` im
++       Geltungsbereich und gibt den Text zurück, den `Syntax.name` an der Expansionsstelle
++       erzeugt hätte.
++   entry .designator   das Makro hinter `Syntax.name`: der dargestellte Typ als `Text`-Literal

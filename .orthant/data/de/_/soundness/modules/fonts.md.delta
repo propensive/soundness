@@ -1,0 +1,441 @@
+orthant 2 language
+
+@ 0 1 0 196871f51407b50a0fd9ef561730abb3
++ ## Schriften
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 1c7d09a75befebc9117f416470e2a31b
++ Eine [TrueType- oder OpenType](https://en.wikipedia.org/wiki/TrueType)-Schriftdatei besteht aus
++ Binärdaten mit einer wohldefinierten inneren Struktur: Tabellen von Glyphen, Abbildungen und
++ Metriken. Sie wird hier direkt gelesen. Ein `Sfnt` lädt aus jeder Bytequelle, löst Zeichen zu
++ Glyphen auf und beantwortet die Frage, die Typografie-Code am häufigsten stellt: Wie breit ist
++ dieser Text in dieser Schrift?
+
+@ 0 3 0 0bf1ab2597d2fa86020b9adf8d700a42
++ Oberhalb der Datei benennt eine `Typeface` eine Schriftfamilie. Ein `Face` wählt daraus Stärke,
++ Neigung und Merkmale. Eine `Typesettable`-Bereitstellung garantiert, dass ein Dokument, das die
++ Schriftart nennt, mitführt, was sein Medium braucht, um sie darzustellen.
+
+@ 0 1 0 01ad52292ddeaf761bbf349bc0bb68d0
++ ### Über Schriftmetriken
+
+@ 0 4 0 0acdceb5d8d6cbbf0a1515514cfbc2a7
++ Text hat keine Breite. Text *in einer Schrift* hat eine. Das Setzen einer Überschrift, das
++ Bemessen einer Schaltfläche und das Umbrechen einer Zeile auf eine Satzbreite brauchen jeweils
++ die Vorschubbreiten, die in der Schriftdatei liegen, in Tabellen, die über eine Abbildung von
++ Zeichen auf Glyphen indiziert sind. Sie zu erreichen bedeutet meist ein Rendering-Toolkit,
++ herangezogen für etwas, das im Kern ein Nachschlagen in Tabellen eines dokumentierten
++ Binärformats ist.
+
+@ 0 4 0 1db3d07d92174573130a0aa6990e5f43
++ Hier wird das Format direkt geparst. Die Schrift ist ein Wert, ihre Tabellen werden lazy
++ gelesen, und ihre Metriken sind gewöhnliche Methodenaufrufe. Eine aus ihren Tabellen geparste
++ Schrift, bei der jeder Wert typisiert ist, folgt der
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md): Eine ungültige
++ Schrift wird beim Laden abgelehnt, nicht erst bei der ersten Verwendung.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Alles stammt aus dem Paket `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1c12ab31bcd37e111a8d347c926cdc5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 1f7a557352339ef9106bd192f0db9b81
++ Die Beispiele auf dieser Seite lesen Schriftdateien, die nicht mit der Dokumentation
++ ausgeliefert werden, daher werden sie kompiliert, aber nicht ausgeführt.
+
+@ 0 1 0 184bebeda3a1278a1e94e2cdf9cd45cc
++ ### Eine Schrift laden
+
+@ 0 4 0 1d447e8afa7172e415e6293805f248b5
++ `Sfnt` liest eine Schrift aus jeder streambaren Bytequelle: einer Datei, einer
++ Klassenpfad-Ressource, einer URL. Der Name ist der des Formats selbst. Ein *sfnt* ist der
++ Tabellencontainer, den TrueType und OpenType gemeinsam haben. Die beiden Spezialisierungen
++ werden an ihren Tabellen unterschieden. Eine `CFF `-Tabelle bedeutet PostScript-Umrisse, daher
++ ist die Schrift ein `Opentype`. Andernfalls ist sie ein `Truetype`:
+
+% 2 1 0 14fcdf6e41a644610c80dcff1bb4eb69
+
+% 3 1 0 06dded3e3f2ce79d1b962f4f0ed2cb94
+
+% 4 1 0 096fe8d1ec905e071e4a658fbba52dc8
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 064ac20a457139d007dfe72d72eb75b1
+
+% 0 1 0 0d79efca8497f91c00657e452fec8cf6
+
+% 0 1 0 0a2bdff8d0b9d9c20cb179eff936cf2a
+
+% 0 1 0 0d55aa34b09aefd21380c9b578ecaced
+
+% 1 1 0 0a01288dae5353f4163630af4585cde3
+
+@ 0 3 0 0e1202442ae777d5142aa3cbc72466bc
++ Das Konstruieren einer Schrift aus Bytes kann nicht fehlschlagen. Die Tabellen werden lazy
++ geparst, daher löst eine Datei, die keine Schrift ist oder der eine Tabelle fehlt, die eine
++ Operation braucht, beim ersten Lesen dieser Tabelle einen `Font.Error` aus, der das Problem
++ benennt.
+
+@ 0 1 0 170b6f5a2f39a0b3107a054817024305
++ ### Text messen
+
+@ 0 2 0 1921db5e070a2da11a71b12fb828d022
++ `width` misst einen Text in der Schrift. Es gibt eine [Größe](quantities.md) in `em`s zurück,
++ der schriftbezogenen Einheit, die mit der Punktgröße multipliziert eine physische Breite
++ ergibt:
+
+% 2 1 0 1b0107e7d9d7dac30bbb0727e69e66b4
+
+% 0 1 0 033d21904ea611cc1a5f7d5c7562497a
+
+% 1 1 0 178ed71cac591daf109a88465cb99225
+
+@ 0 2 0 16bfd56ca35cc33209f0e38dcd108c76
++ Da das Ergebnis eine typisierte Größe ist, kann eine Breite in Geviert nicht mit einer Messung
++ in Pixeln oder Punkten verwechselt werden. Sie mit einer Schriftgröße zu skalieren, ist
++ ausdrückliche Arithmetik.
+
+@ 0 1 0 13b9ea5cb448bc6b094a8fee3bd30e77
++ ### Glyphen
+
+@ 0 2 0 06945081ca7edf3601d9938f306b1613
++ Fragen zu Zeichen laufen über die Glyphen-Mechanik. Ein Zeichen wird zu seiner Glyphe
++ aufgelöst, und jede Glyphe trägt ihre Vorschubbreite und ihren linken Seitenabstand, in den
++ Designeinheiten der Schrift:
+
+% 2 1 0 04ce6a901eb6a984115dedf6a05b2244
+
+% 0 1 0 083fe5ee2fb372721b2bef84e86fbef0
+
+% 1 1 0 00213769db73c92310ab69977237f8f3
+
+@ 0 1 0 0b8ed80a318b5c51083c75179d2eef82
++ Jede Tabelle, die die Schrift liest, ist eine gleichnamige Methode, die bei der ersten
++ Verwendung geparst wird:
+
+% 2 1 0 09da1ee7c45ed4d30aeb03d5f58fa2d9
+
+@ 0 12 0 083eb089b91ffa6712e178056dfbc2dd
++ column  Tabelle
++ column  Methode
++ column  Liefert
++ row  `head`  `head`  Einheiten pro Geviert, die Designeinheiten mit Geviert in Beziehung setzen; den Begrenzungsrahmen der Glyphen
++ row  `hhea`  `hhea`  die Ober- und Unterlängen, die das vertikale Layout braucht
++ row  `hmtx`  `hmtx`  die Vorschubbreite und den linken Seitenabstand jeder Glyphe
++ row  `cmap`  `cmap`  die Abbildung von Zeichen auf Glyphen
++ row  `maxp`  `maxp`  die Anzahl der Glyphen
++ row  `name`  `name`  Namen und Beschreibungen, als `fontName` und `familyName`
++ row  `post`  `post`  Kursivwinkel, Position und Stärke der Unterstreichung, Dicktengleichheit
++ row  `OS/2`  `os2`  Stärke- und Breitenklassen, typografische Metriken, Einbettungsrechte
++ row  `fvar`  `fvar`  die Achsen einer variablen Schrift, oder `Unset`
+
+% 1 1 0 097657c6cda2ce4c1ea79a59b9c4e404
+
+@ 0 4 0 0858defb23198510128d5191edf0d918
++ Die Abbildung von Zeichen auf Glyphen deckt die `cmap`-Untertabellenformate ab, die Schriften
++ tatsächlich verwenden, und die beste Untertabelle wird nach Unicode-Präferenz gewählt, nicht
++ indem die erste vorhandene genommen wird. Ein Zeichen, das die Schrift nicht abbildet, liefert
++ die fehlende Glyphe, keinen Fehler und keine falsche Glyphe.
+
+@ 0 1 0 0ea57ce7cfe5057409beccf90225baf5
++ ### Namen und Metadaten
+
+@ 0 3 0 19b307d0db07a28510cb2d6681911a33
++ Eine Schrift beschreibt sich selbst in ihren Tabellen `name`, `post` und `OS/2`, und diese
++ Beschreibungen werden direkt gelesen statt erraten. Die Namen sind [optionale][optional] Werte,
++ da eine Schrift sie nicht verzeichnen muss:
+
+% 2 1 0 1cdf499e775738301064073102c77ad8
+
+% 0 1 0 1d600548f39d108e047f0fc30f5df4ff
+
+% 0 1 0 0aaccda59c7502cc149f9f4041d7fbca
+
+% 1 1 0 011050679ccddfbe1e0928d1bcd29ede
+
+@ 0 3 0 0100e449390a55851597acc60b99ca1e
++ Einträge werden sowohl aus UTF-16BE- als auch aus Macintosh-Kodierungen dekodiert, wobei
++ Windows-Englisch bevorzugt wird, wenn mehrere vorhanden sind. Stärke, typografische Metriken,
++ x-Höhe und Einbettungsrechte stammen aus `OS/2`, was genau das ist, was der Bau eines
++ [PDF](pdf.md)-Schriftdeskriptors braucht.
+
+@ 0 1 0 13be68ab1d9be39206559812d056a8e2
++ ### Schriftarten und Schriftschnitte
+
+@ 0 5 0 170cdb13a80c86df0c6ab5f9c6a40c0e
++ Eine Schriftdatei ist das eine. Die Schriftart, die ein Dokument *nennt*, ist etwas anderes.
++ `Typeface["Inter"]` ist eine Schriftart nach ihrem Familiennamen, der zugleich ihr Typ ist,
++ `Typeface of "Inter"`, sodass eine Schriftart beim Kompilieren von einer anderen
++ unterscheidbar ist. Ein `Face` gibt an, wie die Schriftart gesetzt werden soll: ihre Stärke,
++ Neigung und Laufweite, ihre Positionen auf weiteren Achsen einer variablen Schrift und die
++ Layout-Merkmale, die ein- oder auszuschalten sind. Es sagt nichts darüber, woher die Schrift
++ kommt:
+
+% 2 1 0 16eee1665012387a16fdd5c898b973f5
+
+% 0 1 0 0781f4d0e601de1e1bcc03a6fa7309ba
+
+% 0 1 0 00754da6a1d62e9c1a444c8588884403
+
+% 0 1 0 19c490d72ab4977a11f16daead909587
+
+% 0 1 0 07d2ba9e5b268bf8072b62ba4889754c
+
+% 1 1 0 030b195fd7b810331a9a2fa42b711b88
+
+@ 0 1 0 04b627a91f0bea4506d575bd83e435ff
++ Ein Schriftschnitt hat diese Attribute:
+
+% 2 1 0 15c7829aae99e3c8100f40990e5a13a1
+
+@ 0 8 0 15df2ecb1aa949a4036d08063704a643
++ column  Attribut
++ column  Werte
++ column  Gesetzt mit
++ row  Stärke  1–1000, die Skala, die CSS und OpenType gemeinsam haben, `Weight.Thin` bis `Weight.Black`  `thin` … `black`, `weighing(weight)`
++ row  Neigung  `Upright`, `Italic` oder `Oblique` in einem Winkel  `upright`, `italic`, `oblique(angle)`, `slanted(slant)`
++ row  Laufweite  ein Prozentsatz der normalen Breite  `condensed`, `expanded`, `stretched(stretch)`
++ row  Variation  eine Position auf der Achse einer variablen Schrift  `varying(axis, value)`
++ row  Merkmale  OpenType-Layout-Merkmale, ein oder aus  `enabling`, `disabling`, `featuring`
+
+% 1 1 0 1ca8eef12fe1d5ad12f6975c4432414b
+
+@ 0 5 0 14ba444919346e500cc07e5139d36236
++ Die registrierten Achsen für Stärke, Breite und Kursive einer variablen Schrift werden über
++ die ersten drei gesetzt, sodass eine statische und eine variable Schrift gleich angefordert
++ werden. Eine `Variation` ist für die optische Größe und die eigenen Achsen einer Schrift
++ gedacht. Merkmale werden mit ihren OpenType-Tags benannt. Stilsätze,
++ `Face.Feature.stylisticSet(n)`, und Zeichenvarianten, `Face.Feature.characterVariant(n)`, sind
++ nummeriert:
+
+% 2 1 0 1a09f17bbfb130e3091ebf5039cf72ca
+
+@ 0 1 0 16303dc7adffe3361d5d64667659ae52
++ column  Merkmal
+
+% 0 1 0 149748a466abfd5a142dc31eb38f88c8
+
+% 0 1 0 039a272f51f0dfa001944e1897169e20
+
+% 0 1 0 18e036ef8aad25d00531e97fb1614936
+
+% 0 1 0 1be5850371188bda1eaf1f5b7e9d625c
+
+% 0 1 0 04d520a3c3d3ab0105061ca63593ff2d
+
+% 0 1 0 07a4ae450499a23f1c9d147a42ad0b5c
+
+% 0 1 0 1660490d5db095930aff49f112a82405
+
+% 0 1 0 11f034b65c64ebd208f417d214151506
+
+% 0 1 0 1c6e3a4bd217da4707bd6585e6e9f85d
+
+% 0 1 0 1df64e3e08cdab8a081697aa958779de
+
+% 0 1 0 03c0e4af295ce0100b8ade4c8c0648e9
+
+% 0 1 0 17b19dff9877af3e1da091f9685139a6
+
+% 0 1 0 0436f68d8837ca2e08f68491f9b76396
+
+% 0 1 0 1fe9b32ee11eca6618fe3efa53cfb469
+
+% 0 1 0 00e4b269adf1f8d11d99ec9a5ad3c648
+
+% 0 1 0 034a8631cc285c810a0f2a6bac4a0b7b
+
+% 0 1 0 1c87e76bb51c86711dee45dde264b620
+
+% 0 1 0 0dd5bf0910e1baf70cd222ac57cc4d8c
+
+% 1 1 0 07961875a2a9c6530f742e499a16f22a
+
+@ 0 1 0 063aadf845bfda501f9d231bed212a13
++ ### Eine Schriftart bereitstellen
+
+@ 0 4 0 05f751115e67bd770666cd634a3399cb
++ Eine Schriftart zu nennen, macht sie dort, wo das Dokument angezeigt wird, nicht verfügbar. Ein
++ Browser ohne die Schrift weicht auf eine andere aus, und ein PDF-Betrachter ersetzt sie. Eine
++ Bereitstellung schließt diese Lücke. Sie ist eine Instanz von `Typesettable` für die Schriftart
++ *in einem Medium*. Sie gibt an, wie dieses Medium die Schrift erhält und welche
++ Schriftschnitte es dann setzen kann. Sie wird einmal deklariert, als [given]:
+
+% 2 1 0 13cf1c35ba1d64dd1844d273e72af06e
+
+% 3 1 0 04a3c4b0a590f556090abb6510b1fa46
+
+% 4 1 0 1662daf228b3bf87148c6e31fd322d04
+
+% 0 1 0 0d22a197a63cd0b7167652635f1b106b
+
+% 0 1 0 0e1275326cb60c280165229d583bf6ea
+
+% 0 1 0 1312d3f61315f1391b512e957a956203
+
+% 0 1 0 0ea4f736d80a946402c79fff150d45cc
+
+% 1 1 0 0ef4992aca79be9500513da5ab5aa803
+
+@ 0 6 0 1136259f8a78123301b64c6e9fa590dd
++ Eine Schriftdatei kann in jedem Dokument mitgeführt werden, daher ist eine eingebettete
++ Bereitstellung `in Medium`, dem Medium aller Medien. Ihre Abdeckung, also die angebotenen
++ Stärken, Neigungen und Breiten, die Achsen einer variablen Schrift und die Merkmale, die ihre
++ Tabellen `GSUB` und `GPOS` implementieren, wird aus der Datei gelesen. Mehrere Dateien, etwa
++ Regular, Bold und Italic, ergeben eine Bereitstellung, deren Abdeckung ihre Vereinigung ist.
++ Andere Arten der Bereitstellung gehören zu einem Medium und werden über dieses deklariert,
++ jede mit der Abdeckung, die für sie deklariert ist, da es keine Datei zu lesen gibt:
+
+% 2 1 0 1e722494e29bd55d0e9850e80d704b19
+
+@ 0 1 0 1fdb15b8a883954b0e34d2b01f62f23c
++ column  Bereitstellung
+
+% 0 1 0 0e1d2d21faa90afb0f12aa2985abcfe8
+
+@ 0 8 0 0afb133a660a5cfb03bba8582e9e2900
++ column  Die Schrift stammt aus
++ column  Abdeckung
++ row  `Typesettable.embedded(files)`  `Medium`  den Dateien, im Dokument mitgeführt  aus den Dateien gelesen
++ row  `Web.linked(url, coverage)`  `Web`  einer Schriftdatei unter einer URL  deklariert
++ row  `Web.imported(url, coverage)`  `Web`  einem Stylesheet, das die Schriftart deklariert  deklariert
++ row  `Web.local(coverage)`  `Web`  einer Schrift, die der Leser installiert hat  deklariert oder unbekannt
++ row  den generischen CSS-Familien  `Web`  dem Browser, ohne Deklaration  jeder Schriftschnitt
++ row  den vierzehn Standardschriften von PDF  `Print`  dem Betrachter, ohne Deklaration  die Schriftschnitte, die der Standard definiert
+
+% 1 1 0 14b02fabf539539c0729e5ac52de9a60
+
+@ 0 1 0 0d9b04873cd1112d0637e18bb170fbdd
++ ### Schriften
+
+@ 0 6 0 166c7375d39c73b100cbc41eb494fc8a
++ Ein `Font` ist ein Schriftschnitt, gepaart mit der im Geltungsbereich befindlichen
++ Bereitstellung für seine Schriftart, in einem Medium: ein `Font in Web` für einen Browser oder
++ ein `Font in Print` für ein PDF. Es ist die einzige Form, in der ein Renderer eine Schrift
++ akzeptiert. Es kann nur dort erzeugt werden, wo eine Bereitstellung im Geltungsbereich ist,
++ sodass ein Dokument keine Schriftart nennen kann, die es nicht mitführt. Und es kann nur für
++ einen Schriftschnitt erzeugt werden, den die Bereitstellung abdeckt. Eine nur aufrechte Datei
++ nach Kursiven zu fragen oder eine Schrift ohne `onum` nach Mediävalziffern, ist ein
++ `Font.Error` bei der Paarung, keine synthetisierte oder stillschweigend ignorierte Darstellung:
+
+% 2 1 0 07c0ae2491c31f3e12eae3a0619e37a3
+
+% 3 1 0 0e663ab9a6a3e2b811bbf7336a98fa5c
+
+% 4 1 0 07dc43d2d5ebec4001cb70df98f215f7
+
+% 0 1 0 11420e2d9610430e0b974703e2a09910
+
+% 0 1 0 19fc43e3d8184df012a078602dd4b0b0
+
+% 1 1 0 09c8b09b327284f514e2fca5f7e8f650
+
+@ 0 2 0 1ab724ce3b4f53c00fe14904bc055d65
++ Wo der erwartete Typ das Medium bereits nennt, wie es das Feld `font` einer Figur tut, genügt
++ `Font(face)`. Den Rest erledigt dann das Dokument:
+
+% 2 1 0 00caa8a6a785628a01ad2c3671f97544
+
+@ 0 5 0 1e44f105d9a4d1e51b75f995afba61a7
++ column  Dokument
++ column  Was es mit seinen Schriften macht
++ row  SVG  schreibt `@font-face`-Regeln für seine Beschriftungen in seine Definitionen
++ row  Stylesheet  erhält die Regeln über `Css.fontFace`
++ row  PDF  bettet die Datei ein oder nennt eine seiner vierzehn Standardschriften
+
+% 1 1 0 18be5e42853a462506d6e74fdd620acc
+
+@ 0 1 0 1c0755760617a13b1cba487a8c502042
++ ### Prüfen beim Kompilieren
+
+@ 0 2 0 02dfa0ef019f355207489b72704f01aa
++ Eine Schriftdatei im Klassenpfad lässt sich prüfen, bevor irgendetwas läuft. Eine aus einer
++ Klassenpfad-Ressource erzeugte Bereitstellung behält den Pfad der Ressource als ihren `Locus`:
+
+% 2 1 0 1b5dcc4eea9aed971bbc9f224523dfa9
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 050fdae1e4ca202e108898a80eabc864
+
+% 0 1 0 0d6947ede1c4862615f0a5bb3a0870d0
+
+% 1 1 0 1365c3dc533fc1291ddd53f18bfceed5
+
+@ 0 8 0 03212bdebf43229711e5c8e302b63721
++ Ein Schriftschnitt wiederum hält in seinem Typ fest, was der Code angefordert hat.
++ `inter.bold.italic` hat die Stärke `700` und die Neigung `"italic"` als Typ-Member, und
++ `.enabling(Face.Feature.OldstyleNumerals)` fügt den benötigten Merkmalen `"onum"` hinzu. Wenn
++ aus einem solchen Schriftschnitt und einer solchen Bereitstellung ein `Font` erzeugt wird,
++ liest der Compiler die Datei, leitet ihre Abdeckung genau so ab, wie es die Laufzeit täte, und
++ lehnt die Paarung mit derselben Meldung ab, wenn die Datei den Schriftschnitt nicht setzen
++ kann: eine Stärke, die sie nicht hat, eine Kursive, die ihr fehlt, ein Merkmal, das ihre
++ Tabellen nicht implementieren. Der Fehler ist dann ein Kompilierfehler, mit Nennung der Datei
++ und der Anforderung, und kein Rückfall im Browser.
+
+@ 0 2 0 03676d3a8be6b6180eeabb22aed45d58
++ Nur was statisch bekannt ist, wird statisch geprüft. Alles andere überlässt die Prüfung der
++ Paarung zur Laufzeit, die immer stattfindet:
+
+% 2 1 0 119aa96ccd8073031312939b3f997fc3
+
+@ 0 6 0 16a25886faf29ad607e9bbf50ccffc09
++ column  Beim Kompilieren geprüft
++ column  Nur zur Laufzeit geprüft
++ row  eine benannte Stärke, `inter.bold`  eine berechnete Stärke, `inter.weighing(weight)`
++ row  ein benanntes Merkmal, `Face.Feature.OldstyleNumerals`  ein Merkmal aus einem Tag, `Face.Feature(t"ss03")`
++ row  ein Schriftschnitt, dessen Typ seine Anforderung festhält  ein als bloßes `Face of "Inter"` annotierter Schriftschnitt
++ row  eine Bereitstellung aus einer Klassenpfad-Datei  jede andere Bereitstellung
+
+% 1 1 0 05d7bda3cc4501c2089cf797e1801ec4
+
+@ 0 1 0 06542912d221f15b07ee5d9b67b05042
++ ### Teilmengenbildung
+
+@ 0 2 0 18cba5cb55b35ae51cac789842ec6517
++ Eine ganze Schrift einzubetten, um eine Seite Text darzustellen, ist verschwenderisch und oft
++ nicht erlaubt. `subset` baut eine neue TrueType-Schrift, die nur die Glyphen enthält, die eine
++ gegebene Menge von Zeichen braucht:
+
+% 2 1 0 151a6cab32dd27fc16aa9ea93470bd62
+
+% 0 1 0 0c030e5fd7e8f69e0e6cf05bf6dd27f5
+
+% 1 1 0 1e0288c008943af31acb9fb8d48da7cc
+
+@ 0 4 0 0cf204982328682a0d64ba4d7cb47438
++ Teilmengenbildung bedeutet nicht einfach, die Glyphen zu behalten, auf die ein Text abgebildet
++ wird. Eine zusammengesetzte Glyphe wird aus anderen zusammengefügt, daher ist die behaltene
++ Menge der transitive Abschluss unter Komposition. Er wird aus den Glyphenumrissen selbst
++ berechnet, sodass ein Zeichen mit Akzent die Komponenten behält, aus denen es gezeichnet wird.
+
+@ 0 5 0 1efba5096bc0255c0e04f220aaad98d4
++ Auch werden die Glyphen nicht neu nummeriert. Verworfene Glyphen behalten ihre Nummern und
++ werden mit leeren Umrissen zurückgelassen statt entfernt, sodass die Zeichenabbildung, die
++ Metriken und jeder Verweis einer Glyphe auf eine andere ohne Umschreiben gültig bleiben. Jede
++ andere Tabelle wird unverändert übernommen. Das Ergebnis ist eine vollständige und gültige
++ Schriftdatei, Prüfsummen eingeschlossen, bereit zur Einbettung in ein [PDF](pdf.md).
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 6 0 1314f48040956fac1182a96b96409f90
++ - [PDF](pdf.md) bettet Schriften und ihre Teilmengen in Dokumente ein.
++ - [SVG](svg.md) und [CSS](css.md) führen `@font-face`-Regeln für eine Bereitstellung mit.
++ - [Größen](quantities.md) beschreibt das `em`, in dem Text gemessen wird.
++ - [Klassenpfad](classpath.md) beschreibt die Ressourcen, aus denen eine Schrift geladen wird.
++ - [Text](text.md) beschreibt den Text, dessen Breite gemessen wird.
++ - [Diagramme](charts.md) messen ihre Beschriftungen mit den Metriken einer Schrift.

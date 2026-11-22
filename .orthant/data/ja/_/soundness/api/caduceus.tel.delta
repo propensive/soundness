@@ -1,0 +1,444 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 07e53f3de3fd2d2c0bd6471728e693c3
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 02038a9ec49aa55d1a80d0aef80afd20
++ info   型付きの部品から組み立て、スコープにあるものによって選ばれるクーリエを通じて送る電子メール
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0ba0d551b9e81bf8068af2d174e23bcf
++     _Caduceus_ は型付きの部品（テキスト、HTML、またはその両方の本文、インラインのコンテンツ、添付ファイル）から電子メールを組み立て、配送サービスである `Courier` を通じて送る。`Courier` はコンテキスト値である。
++     MIME の構造はコンテンツから決まり（HTML 付きのテキストなら `multipart/alternative`、インラインがあれば `multipart/related`、添付ファイルがあれば `multipart/mixed`）、アドレスは urticose の `EmailAddress` であり、`email"…"` リテラルとして書けばコードのコンパイル時に検査される。
+
+@ 0 3 0 1e452a5de5abce540cb4270080aed1b0
++     `Sendable` であるもの（`Text`、HTML ページのようなメディアタイプを持つ文書、組み立てた `Email`）は何でも `send` で送れる。`send` は件名と受信者を取り、スコープ内に `Courier` と `Sender` を必要とする。
+
+% 2 1 0 19131b85c88bf3dc11aba0e458545462
+
+% 3 1 0 0d63d29b8b9158f206a4e322f6fa6a7b
+
+% 4 1 0 17c82306264d1bb6124677c13495db0e
+
+% 5 1 0 03e120a31c951a44097d81d54d5f86fc
+
+% 6 1 0 08c73028ce0bdd321fc8a6d8829a39ab
+
+% 7 1 0 0b9e1d765ba1f3f805b0bd9605b5cafa
+
+% 8 1 0 016ef003097081eb08952e01981ce485
+
+% 9 1 0 126b5c62da9f38900b02fa192014f014
+
+% 0 1 0 055bee1611938ddc0e54e567c7ffef73
+
+% 1 1 0 0fe7a29ee0f5170700e823f985719b0c
+
+% 0 1 0 0b4ee182bacbc5d915f88aa97ff9e12f
+
+% 0 1 0 0ae1e022b087dbfd0cce418b43b2112f
+
+% 1 1 0 0ce1033e2711eaa301c335d7c91a7db3
+
+@ 0 2 0 1bd9ce2956662af50950766cfb01c3cc
++     `send` の結果はクーリエ自身の `Result` 型である。Resend のクーリエは `Resend.Receipt` を返し、別のクーリエは別のもの、あるいは `Unit` を返すことがある。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     ライブラリには二つのソースセットがある。
+
+@ 0 5 0 1a160b5a2c63e2171b0c06a7ed7c3a0b
++     - `caduceus.core`：`Email`、`Envelope`、`Sender`、`Courier`、`Sendable` と `Attachable` の型クラス、そして `send` 拡張。何かをするにはクーリエが必要である。
++     - `caduceus.resend`：`Resend` と、[Resend](https://resend.com/) の HTTP API を通じて配送する `couriers.resendCourier` の given。HTTP クライアントを必要とするので JVM 専用である。
+
+@ 0 3 0 03432ec8e08b97bb097df4449282112d
++     すべては `soundness` アンブレラにエクスポートされる。
++     `import couriers.*` は given をインポートしないので、クーリエは `couriers` 選択パッケージから名前でインポートして選ぶ。このパッケージはアンブレラ自身のものと統合される。
+
+% 0 1 0 14796e252ed6e26c1b77dad1df6a7eea
+
+% 0 1 0 067bb704e114285301e73353f6c80976
+
+% 0 1 0 19e47db073b361d11d987303c5cbed6f
+
+% 0 1 0 1edaa5787b66fe1911389bf194dc2f8a
+
+% 0 1 0 0293a070f9126adc157138b1dc4d75b4
+
+@ 0 5 0 06bb7a67316da708050cb1f1a478748b
++ entry .send   任意の `Sendable` な値を、件名と受信者を付けて、スコープ内の `Courier` を通じて電子メールとして送る
++     `value.send(subject, to, cc, bcc, replyTo)` は、値をその `Sendable` で `Email` に変え、スコープ内の `Sender` と引数から `Envelope` を作り、その両方をスコープ内の `Courier` に渡す。
++     `to`、`cc`、`bcc`、`replyTo` はそれぞれ、一つの `EmailAddress` かその `List` を取る。`to` 以外はすべて既定で空である。
+
+% 2 1 0 10681245943b095602255db22008ecab
+
+% 3 1 0 008b3a593bebdf0c1f566ce4757d2d62
+
+% 4 1 0 195d7c9259c4b7f01cc7db60d4d20949
+
+% 5 1 0 1bfc6763e8024ade13484d041710d26d
+
+% 6 1 0 1164e8994e8521a712f83da14b5dc6d3
+
+% 7 1 0 02cc9acf5b300c750de48af358571c8a
+
+% 8 1 0 0dea2a4a6c79972804f563b0ea941c5a
+
+% 9 1 0 067781534e8ff7e21f3e97513e9f6596
+
+% 0 1 0 0e3f0fcc8256783d0bb95f5dfc1002e6
+
+% 1 1 0 09f67f9a2ab97bb912ad1a4f7d0ecb4d
+
+% 0 1 0 017fe614f93018621488e05762be9243
+
+% 0 1 0 15f4ae15d0abb29d16ab954696802106
+
+% 0 1 0 0624eed76b04e9cb07a173998d870840
+
+% 0 1 0 03949c3479c5054b141c22a2b5faa942
+
+% 1 1 0 025acb249ecd472104cb589f3090f11b
+
+@ 0 2 0 098e389bc6970c4810d31f1903aa2597
++     結果の型はクーリエの `Result` であり、失敗を報告するのはクーリエの役目である。Resend のクーリエは `Courier.Error` を発生させる。
+
+@ 0 1 0 0537c7925b3332e709cdc14f7b43bb0f
++ entry .Sender   電子メールの送信元のアドレス。コンテキスト値として
+
+% 1 1 0 1324b5400a6fde8e09b62d8dfb8446e5
+
+@ 0 4 0 0ac070b473cdd4c11ce01f0f53b14626
++       `given Sender = Sender(email"noreply@example.com")`：`send` はエンベロープの `from` のアドレスをスコープ内の `Sender` から取るので、送信のたびに繰り返すのではなく、プログラムまたはスコープに対して一度だけ選ぶ。
++   entry #email   送信者のアドレス
+
+@ 0 1 0 09e12d46a7e1dc150efc367d783aadb7
++ entry .Envelope   電子メールの送信者と受信者、そして件名：メッセージのほかにクーリエが必要とするもの
+
+% 1 1 0 03eb80a3c8a059391954613b00fb9832
+
+@ 0 12 0 03bd18b7cc5b69121ce4c347ff93a804
++       `Document[Email]` のメタデータ。送信者、`to`、`cc`、`bcc`、`replyTo` の受信者、そして件名である。
++       `send` は引数とスコープ内の `Sender` からそれを作り、`Courier` は文書の `metadata` からそれを読む。
++   entry .many   一つの値またはそのリストを、リストとしたもの
++       `Envelope.many(address)` は `List(address)` であり、`Envelope.many(addresses)` はリストそのものである。
++       これによって、`send` は受信者の各フィールドでどちらの形も受け入れる。
++   entry #from   送信者のアドレス
++   entry #to   主な受信者
++   entry #cc   写しの受信者
++   entry #bcc   他の受信者には示されない、ブラインドの写しの受信者
++   entry #replyTo   送信者でない場合に、返信が送られるべきアドレス
++   entry #subject   件名の行
+
+@ 0 1 0 18a1633c8c316d040bac363387f5cdc0
++ entry .Email   電子メールのメッセージ：ヘッダー、テキストか HTML かその両方の本文、インラインのコンテンツ、添付ファイル
+
+% 1 1 0 003dc32dd6fe4edb1087472caf4dc956
+
+@ 0 5 0 15e388d77eedd2ed081b6512bf250870
++       `Email` は追加のヘッダーのマップと `Email.Message` からなり、`Email.Message` は `Email.Content`（`Email.Body` と任意の数の `Email.Inline`）を、それぞれが `Asset` である添付ファイルのリストの中に入れ子にする。
++       各階層は、保持するものから導いた自身の MIME のコンテンツタイプを報告する。
++       電子メールは `Envelope` をメタデータとする `Documentary` なので、クーリエは `Document[Email]` を受け取る。
+
+% 2 1 0 1670be706feada051e138bd40b621e7a
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 188bcd9e354a606f0f55a6c0819e8f10
++         label テキストだけ
+
+% 1 1 0 0e0ae5c3e10b232b17a2153169e2645c
+
+% 2 1 0 080629a45b31ad8d0adf208962eac9e3
+
+% 0 1 0 0d6ec7600c40e0b203ad68d7f5aab751
+
+% 0 1 0 0aba77f389a48d4b127444835f4b4d3e
+
+% 1 1 0 032e9a7981207afb1b7b71319b7397c2
+
+@ 0 1 0 1f2c9d645d5f2ff21e36ac6b3d1412c4
++         label HTML 付きのテキスト
+
+% 1 1 0 199018d2fedd3ca419d1ac254b796dcb
+
+% 2 1 0 1b5e8853a5c4dc9217b0e01c3d08634f
+
+% 4 1 0 0b4d23b2270dbd3e1198a9d536751188
+
+% 0 1 0 169554eba9f06c7b1862b182b25d1e33
+
+% 0 1 0 059eaf49bbed3f670ac7ac1a49bd884b
+
+% 1 1 0 1ebec5aba4e068ea03cba084cdcda264
+
+@ 0 1 0 0261c7ad1f0c7a06045a9cc46bf8ef60
++         label 添付ファイル付き
+
+% 1 1 0 1459fce406f884a613988a9ff5f1ffdc
+
+% 2 1 0 1fb93c9b849c50650332afeaea196f22
+
+% 4 1 0 0531a84d5cdf432c1e4843edd019a6f8
+
+% 0 1 0 105342b7b9425f541a306be932dfebe6
+
+% 0 1 0 17ccd87eb66850940df22c7d406f9979
+
+% 0 1 0 162ccfe9a01cb0ac13eb35974412ebf2
+
+% 1 1 0 1d730ea3f4cbc3e70a35a73edbecd25e
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 0655973d78a05cc2042d9c85fcdb72b5
++       電子メールは `#text`、`#html`、`#inlines`、`#attachments` で部品を報告し返すので、組み立てたメッセージを送る前に確かめられる。
+
+% 0 1 0 074e17cc3a2215cf0b1455194bd451bb
+
+% 0 1 0 110fdbcbdad69e970b9ee010fc5d89c4
+
+% 0 1 0 11a23e0551e024510784d2c9437d0488
+
+@ 0 5 0 08fbcce876853c100ccd61221f82ec5f
++   entry .apply   任意の `Sendable` な値から作った電子メール：`Email(t"hello")`
++       値の `Sendable` を使う。テキストはプレーンテキストの本文に、HTML 文書は HTML だけの本文になり、`Email` はそれ自身である。
++       結果にはヘッダーも、インラインも、添付ファイルもない。
++   entry .Body   電子メールの本文：テキスト、HTML、またはその両方を代替としたもの
+
+% 1 1 0 06c7e9063d3ce7f3170eead1998f7922
+
+@ 0 4 0 0e867e91161d1acf0f8f742d434bfca9
++         三つのケースの列挙型である：`TextOnly(content)`、`HtmlOnly(content)`、`Alternatives(textContent, htmlContent)`。
++         最後のものは `multipart/alternative` として送られるので、HTML を表示できるクライアントはそれを示し、それ以外はテキストを示す。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 15027c01b2f1e1f41c0d709fa1c6b4c1
+
+% 0 1 0 010b11b3d8c3c96317e7fecfffac221d
+
+% 0 1 0 196b9977168da0fb18655f347d1bdd70
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 5 0 1e83626dddf89c8713716c5daa61d067
++     entry .apply   テキストの本文、またはテキストと HTML の代替：`Email.Body(text, html)`
++     entry #html   HTML 版。テキストだけの本文なら `Unset`
++     entry #text   テキスト版。HTML だけの本文なら `Unset`
++     entry #contentType   本文が持つ版によって、`text/plain`、`text/html`、または `multipart/alternative`
++   entry .Inline   埋め込み画像のように、HTML の本文からコンテンツ ID で参照されるコンテンツ
+
+% 1 1 0 16afa03eeaa0102c00536c9431cac31a
+
+@ 0 7 0 078e7bec05acec550aaec46a9d3c48ed
++         インラインの部品は、HTML が `cid:…` として参照するコンテンツ ID `cid`、メディアタイプ、本体を持つ。
++         それがあるとコンテンツは `multipart/related` になる。
++         Resend のクーリエはインラインの部品を送らない。
++     entry #cid   HTML が参照するコンテンツ ID
++     entry #contentType   インラインのコンテンツのメディアタイプ
++     entry #body   インラインのコンテンツ
++   entry .Content   本文と、それが参照するインラインのコンテンツ
+
+% 1 1 0 1dc1cf2f24e157b406d5a05d514196c6
+
+@ 0 19 0 149bd41b54f8df7e198f3734dac0bae1
++         `Email.Content(body, inlines*)`。
++     entry #body   テキストまたは HTML の本文
++     entry #inlines   本文が参照するインラインの部品
++     entry #contentType   インラインがあれば `multipart/related`、なければ本文の型
++   entry .Message   電子メールのコンテンツと、その添付ファイル
++     entry #content   本文とそのインラインの部品
++     entry #attachments   添付したファイル。順に並ぶ
++     entry #contentType   添付ファイルがあれば `multipart/mixed`、なければコンテンツの型
++   entry #headers   追加のヘッダー。名前ごと
++   entry #message   本文、インラインのコンテンツ、添付ファイル
++   entry #Self   文書の型。`Email` そのもの
++   entry #Metadata   電子メールの文書のメタデータ：`Envelope`
++   entry #html   本文の HTML 版。なければ `Unset`
++   entry #text   本文のテキスト版。なければ `Unset`
++   entry #inlines   コンテンツのインラインの部品
++   entry #attachments   添付したファイル。添付した順に並ぶ
++   entry #attach   末尾に添付ファイルを加えた電子メール
++       任意の `Attachable` な値を取る：`Asset`、または名前とメディアタイプとバイトストリームを持つ何かである。
++       電子メールは不変なので、`attach` は新しい電子メールを返す。
+
+% 2 1 0 0ff9829287cc373a08b1e3f5ec011c83
+
+% 3 1 0 019d56ed747f519e0c2823efb12164e1
+
+% 0 1 0 1ef7996c4e3931960b260a7edfb87b14
+
+% 0 1 0 0d0083e3e5984721030f99dd3363160c
+
+% 1 1 0 1fb37cccd2ac5af01b26ab0b39087c38
+
+@ 0 1 0 0e6868dee12c87381c751ec1a5aec3ad
++ entry .Sendable   電子メールとして送れる値のための型クラス
+
+% 1 1 0 1b143225cda10c640fb795f1ac121987
+
+@ 0 4 0 01dd1738ffb9b28e08912bb790549e21
++       `value.send(…)` と `Email(value)` は、値を `Email` に変える `Sendable` を持つ任意の値を受け入れる。
++       インスタンスは、`Text`、`Email` そのもの、そして honeycomb の HTML ページのように、テキストとしてストリームされるメディアタイプを持つ任意の文書に対して与えられている。
++       新しい型は、すでに送れる型に写すことで送れるようにする。
+
+% 2 1 0 01caba7933f461751b035902f67370d9
+
+% 3 1 0 1e00d9cc3eedf0971d1d2dc6f01bebd3
+
+% 0 1 0 1ccc7f7c4179ab711cb96aa5a2a978a5
+
+% 0 1 0 0d7598ec7a95c78c0307734bbee43cb6
+
+% 1 1 0 05a095e0aa856b7e05c91e613ac6f712
+
+@ 0 8 0 013318d286cfad2d1f87d83fe413eec2
++   entry .text   テキストはプレーンテキストの本文として送られる
++   entry .document   メディアタイプを持つ文書はそのテキストとして送られ、`text/html` なら HTML だけになる
++       `Media` と `Streamable by Text` を持つ任意の型について、メディアタイプが `text/html` である文書は `HtmlOnly` の本文に、それ以外はテキストの本文になる。
++       文書は電子メールを作るときに全体が読まれる。
++   entry .email   電子メールはそれ自身として送られる
++   entry #email   電子メールとしての値
++   entry #contramap   別の型に対する `Sendable`。まずその型をこの型に変換する
+
+@ 0 1 0 00befc19f7e1e0f61d1995b69a40c75a
++ entry .Attachable   電子メールに添付できる値のための型クラス
+
+% 1 1 0 099ca588d97d2f0e198ce5fef30a6289
+
+@ 0 10 0 1ee3c0d599a9ba1b03ccfdd8a084063d
++       `Email#attach` は、値を `Asset`（名前、メディアタイプ、バイト）に変える `Attachable` を持つ任意の値を取る。
++       `Asset` はそれ自身として添付でき、名前（`Nominable`）、メディアタイプ（`Media`）、バイトストリームを持つ値は、それ以上の手間なしに添付できる。
++   entry .generic   名前、メディアタイプ、バイトストリームを持つ任意の値を添付する
++       `Nominable`、`Media`、`Streamable by Data` を持つ型について、アセットは値の名前をファイル名とし、そのメディアタイプを取り、そのバイトをストリームとして取る。
++   entry .asset   `Asset` はそれ自身として添付される
++   entry #attachment   添付するアセットとしての値
++   entry #contramap   別の型に対する `Attachable`。まずその型をこの型に変換する
+
+@ 0 1 0 158da013069726a21334ee785ebdf672
++ entry .Courier   電子メールの配送サービス。コンテキスト値として選ぶ
+
+% 1 1 0 1aec6a696664da1501e8206ac9214d42
+
+@ 0 3 0 03b068df2dff101d10c4252100b87054
++       `Courier` は `Document[Email]`（電子メールとその `Envelope`）を送り、自身が選ぶ `Result` を返す。
++       提供されているのは `couriers.resendCourier` である。別のサービスは、一つのメソッドを実装することで差し込める。
+
+% 2 1 0 1dbe9805e9072660039cfcca6150d699
+
+% 3 1 0 084c5b80683655e2110a96644de8fc63
+
+% 0 1 0 1fe4bfb356b3bce90f1149b1baac6357
+
+% 0 1 0 19f448fc1bd758f0103f0ad6892c4995
+
+% 0 1 0 061863b080fbea9c03c375486deb7d32
+
+% 0 1 0 0390482d9817f18f1c5a1993b023e38a
+
+% 1 1 0 075b5674b15cd15814c490682f32dfe1
+
+@ 0 2 0 08eb07dc3a004749160b821967bb2a13
++       クーリエはケイパビリティである。他のケイパビリティ（HTTP クライアント、`Tactic`）から作られ、それらを保持する。
+
+% 0 1 0 1fdc4baa5e9023620e0a79fc2d7223d7
+
+@ 0 1 0 0b0a3722d1061f2f12ef76e2e3b1d8ba
++   entry .Error   クーリエが電子メールを配送できないときに発生する
+
+% 1 1 0 1d58274a4431a5371d95e72f74ee607a
+
+@ 0 7 0 129d9df656656c550b75f19a468d0b78
++         エラー `↯/s.107.1`：_unable to send email from `from` to `to` with subject `subject`_。
++         Resend のクーリエは、接続の失敗、HTTP のエラーステータス、読めないレスポンスのいずれに対してもこれを発生させる。
++         `to` はエンベロープの主な受信者の最初の一人である。
++     entry #from   送信者のアドレス
++     entry #to   最初の主な受信者のアドレス
++     entry #subject   電子メールの件名
++   entry #send   電子メールをそのエンベロープとともに配送し、クーリエの `Result` を返す
+
+@ 0 1 0 1b7dc90d177140b903ffae4b777fa6a3
++ entry .Resend   Resend のクーリエの設定と結果
+
+% 1 1 0 0024329820ebda9a1a74c3ad6d11a366
+
+@ 0 3 0 00d7bc9a87f0848515fcaae80cb613fb
++       [Resend](https://resend.com/) は HTTP API を持つ電子メールの配送サービスである。
++       そのクーリエ `couriers.resendCourier` は API キーを `Resend.ApiKey` の given から取り、送った電子メールごとに `Resend.Receipt` を返す。
+
+% 0 1 0 08cb027500f1a5ee0802a6fba8af4b2a
+
+@ 0 1 0 1a49cd5ae364e9e905c3b69c268221da
++   entry .ApiKey   Resend の API キー。コンテキスト値として
+
+% 1 1 0 0bed7bd1d9e20a38038eed4908c638ea
+
+@ 0 5 0 108b360478ac5d4f0e648b5b0bc4be9a
++         `given Resend.ApiKey = Resend.ApiKey(t"re_…")`。
++         すべてのリクエストでベアラートークンとして送られる。
++         ソースに書き込むのではなく、環境や秘密の保管庫から読む。
++     entry #key   キー。テキストとして
++   entry .Receipt   Resend が受け付けた電子メールに対する承認
+
+% 1 1 0 0b857952bce497800550b3236d09ced9
+
+@ 0 3 0 1597fd2ab7ff54b10a323383e379dde3
++         送信に対する JSON のレスポンスからデコードされる。
++         ID は Resend の API とダッシュボードで電子メールを識別する。
++     entry #id   Resend での電子メールの ID
+
+@ 0 1 0 014d67d3b3ef54f71c829509d6f082d1
++ entry .couriers   提供されている電子メールのクーリエ。それぞれ名前でインポートする given
+
+% 1 1 0 0ab14400c58df02108680c4eb25d1325
+
+@ 0 3 0 06940dc59a891aa811429ff934332f6d
++       アンブレラの `couriers` と統合される選択パッケージ。
++       どのサービスが電子メールを配送するかはスコープ内の `Courier` の given で決まり、`import soundness.*` は何も持ち込まないので、一つを名前でインポートする。
+
+% 2 1 0 001d2d2d6ac8b83516bd1bbfd3e82d17
+
+% 3 1 0 0b5ff29358ffac9a0291a46f30ee5d98
+
+% 2 1 0 1ab22b42e16385d1083cf8240e6bd996
+
+% 1 1 0 120479115a50a4761f5d05ddf97e909f
+
+@ 0 6 0 1e0446e3457a356d01769df6fd95842a
++   entry .resendCourier   Resend の HTTP API を通じて電子メールを配送し、`Resend.Receipt` を返す
++       各電子メールを、そのテキストと HTML の本文、追加のヘッダー、添付ファイル（Base64 でエンコードしたもの）とともに、スコープ内の `Resend.ApiKey` で認可して `https://api.resend.com/emails` に POST する。
++       `Tactic[Courier.Error]`、`Online`（`internetAccess` から）、`Http.Client`（`httpBackends.javaNetHttp` など）、API キーを必要とし、HTTP リクエストを `Http.Event` としてログに記録する。
+
+% 2 1 0 1f18be80eaf84f1015f33f92007d3379
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 1a73ed501bc05b9609c7ade416500758
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 01d1437f6d67cab0197176d451a04963
+
+% 0 1 0 1687bf0756babc9e1c45ad2e22eaf34f
+
+% 0 1 0 003d1a042ee935141a0456949a47f253
+
+% 1 1 0 1c30cc213fa31402001a60513fcddf7c
+
+@ 0 3 0 171fac63a3e3461601065f5db5ae0e24
++       接続の失敗、エラーステータス、読めないレスポンスは `Courier.Error` を発生させる。その前に、根本の理由が標準出力に印字される。
++       インラインの部品は送られず、`to` の受信者がいない電子メールは、エラーを発生させずに失敗する。

@@ -1,0 +1,824 @@
+orthant 2 language
+
+@ 0 1 0 19e6ff72d3cf85af0892cd0f01fd6130
++ # Änderungen seit 0.69.0
+
+@ 0 3 0 01e76fd394b779170df325bddff480bb
++ Diese Datei wird von einem LLM-Agenten gelesen, um Code, der Soundness-Bibliotheken verwendet, von
++ 0.69.0 auf das nächste Release zu aktualisieren. Jeder Eintrag gibt genau an, was sich geändert
++ hat; das Format beschreibt `AGENTS.md`. Die Einträge sind nach Modul gruppiert, innerhalb eines
++ Moduls der zuletzt hinzugefügte zuletzt.
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 2 0 0644d746ae51ad1a12fb5c9bc9ccf157
++ - `probably.Test#aspire(predicate: test => Boolean): Unit` und `probably.Test#aspire(): Unit`
++   (Erweiterungen auf `Test[test]^`) entfernt. Ersatz: das neue Toplevel-
+
+% 0 1 0 1c5cebb5ab742ac11024f01b660a7b82
+
+@ 0 7 0 00f71ac84929454a10cbae9c428fd494
++   (auch als `soundness.aspirationally` exportiert); jede Zusicherung (`assert`, `check`,
++   `matches`, Spreads), die innerhalb von `block` ausgewertet wird, verzeichnet
++   `Verdict.AspirePass`/`Verdict.AspireFail` anstelle ihres üblichen Urteils.
++   `test(name)(body).aspire(p)` wird zu `aspirationally(test(name)(body).assert(p))`, oder der
++   Test (oder ein umschließendes `suite(…)`) wird unter `aspirationally:` eingerückt. `assert`
++   verlangt in einer Capture-gecheckten Kompilierungseinheit einen reinen Rumpf, was `aspire`
++   nicht tat; eine Aspiration, deren Rumpf in einer solchen Einheit eine Capability erfasst,
++   verwendet stattdessen `check`. (#2101)
+
+% 0 1 0 1db467a2bf4b5e8f14022c2b1abc7ba7
+
+@ 0 4 0 05f3eb8228dd2f7c090c2c6f7427bd11
++   und `probably.Spread2#aspire[report](predicate: (left, right, result) => Boolean)(using …): Unit`
++   entfernt; stattdessen `assert` innerhalb von `aspirationally` aufrufen. (#2101)
++ - `probably.Runner` wurde von einer Klasse zu einem Trait, `trait Runner[report] extends Findable`,
++   mit dem neuen Member `def aspirational: Boolean` (Standard `false`). Erzeugt wird einer mit
+
+% 0 1 0 1d031cd56accadfa0b33aa85c75e66f4
+
+@ 0 7 0 1b7176cfbf862dc4131245be30ab4472
++   das einen `probably.Runner.Root[report]` zurückgibt; `new Runner(…)` kompiliert nicht mehr,
++   und `Runner(…)` ohne `new` ist unverändert. `probably.Runner.Aspirational[report](base: Runner[report])`
++   ist die Sicht, die `aspirationally` bereitstellt: Sie delegiert an `base` und hat
++   `aspirational = true`. (#2101)
++ - Eine Zusicherung mit gesetztem `Runner#aspirational` wird jetzt (unter `--workers=<n>`) zu
++   denselben Bedingungen wie jedes andere `assert` für einen Worker in die Warteschlange
++   gestellt — ein reiner Rumpf in einer Capture-gecheckten Einheit —, wo ein `aspire` immer
++   inline lief. (#2101)
+
+% 0 1 0 16f13521983facf213aed73653b0ed8a
+
+@ 0 8 0 1d3a41d88db69a2707c9142a3ccc837a
++ - `acyclicity.Dag.apply[node](edges: (node, node)*): Dag[node]` (und
++   `acyclicity.Dag#add(key: node, value: node): Dag[node]`, das darauf aufbaut) macht jetzt das
++   Ziel jeder Kante zu einem Schlüssel des Graphen, mit einer leeren Abhängigkeitsmenge, sofern
++   es keine eigenen Kanten hat; bisher waren nur Quellen Schlüssel. Daher ist `Dag(a -> b).keys`
++   `Set(a, b)`, wo es `Set(a)` war; `sources` enthält solche Ziele; `has(target)` ist `true`; und
++   `sorted`, `reachable`, `descendants`, `ancestors`, `lineage`, `closure` und `traversal` lösen
++   `Dag.Error(Cyclic)` nicht mehr für einen Graphen aus, dessen Kanten einen Knoten erreichen,
++   der selbst keine Quelle ist. `edges` und `dot` sind unverändert. (#2114)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 8 0 1a4e4bcf745c343113366fef52adb9aa
++ - `anthology.Link.Error.Reason.CompilationFailed(errors: Int)` ist jetzt
++   `CompilationFailed(notices: List[anthology.Notice])` und trägt jede Diagnose, die der Compiler
++   gemeldet hat; die frühere Anzahl ist `notices.filter(_.importance == anthology.Importance.Error).length`.
++   Die Meldung `compilation failed with N errors` ist unverändert. (#2114)
++ - Komponente `anthology.lira` (Artefakt `anthology-lira`) entfernt; sie ist mit Reliquary in das
++   Repository propensive/lira umgezogen (siehe den Reliquary-Eintrag). Ihre Typen — `LiraBundle` —
++   ziehen aus dem Paket `anthology` in das Paket `lira`, unverändert in Name und Signatur, und
++   werden nicht mehr in `soundness` exportiert. Stattdessen von `dev.propensive:lira` abhängen.
++   (#2111)
+
+% 0 1 0 166710858963dd2d0d21952966ed3b25
+
+@ 0 14 0 1e62607c272c7f771c3fe0320c56ae95
++ - `breviloquence.DynamicCborEnabler` (und sein `soundness`-Export) entfernt. Sein Ersatz ist
++   `breviloquence.Cbor is rudiments.Dynamical`. `breviloquence.dynamicAccess.dynamicCbor` bleibt
++   erhalten, umtypisiert von `DynamicCborEnabler` zu `Cbor is Dynamical`. Der gelöschte Parameter
++   `(using erased dynamicCborEnabler: DynamicCborEnabler)` von `Cbor#selectDynamic`,
++   `Cbor#applyDynamic` und beiden Überladungen von `Cbor#updateDynamic` sowie der gelöschte
++   Kontextparameter des Givens `Cbor.lens` sind jetzt `(? >: Cbor) is Dynamical`. `dynamicCbor`
++   erfüllt ihn, ebenso ein `rudiments.dynamically[Cbor]`- oder `dynamically`-Block. (#2102)
++ - Neu sind `breviloquence.postables.cborPostable: Cbor is telekinesis.Postable` und
++   `breviloquence.servables.cborServable: Cbor is telekinesis.Servable` (Medientyp
++   `application/cbor`, die kodierten Bytes als Rumpf), auch exportiert als
++   `soundness.postables.cborPostable` und `soundness.servables.cborServable`. Das Modul `breviloquence.http`
++   hängt jetzt von `telekinesis.core` ab und ist, wie `jacinta.http`, nur für die JVM verfügbar,
++   daher ist `breviloquence.construables.cborConstruable` unter Scala.js nicht mehr verfügbar.
++   (#2104)
++ - `breviloquence.Cbor.optional` und `Cbor.option` erhalten eine vorangestellte `using`-Klausel
+
+% 0 1 0 0b3c8602a82998e50cd53b633440a40a
+
+@ 0 6 0 0e25ced5e9ebeba51ebca4deed493ce1
++   fault: distillate.Decodable.Fault in Cbor, tactic: contingency.Tactic[Cbor.Error])` (bisher
++   nahm `optional` `(tactic: Tactic[Cbor.Error])` und `option` eine anonyme `Tactic[Cbor.Error]`);
++   der Ergebnistyp von `Cbor.option` ist jetzt `(Option[value] is Decodable in Cbor)^{tactic}`. Ein
++   CBOR-`null` (0xF6) in einem `Optional[T]`-Feld wird jetzt als `Unset` gelesen und in einem
++   `Option[T]`-Feld als `None`, wo es bisher an den inneren Dekodierer weitergereicht wurde
++   (`Cbor.Error(Reason.NotType(Null,
++   …))`); `undefined` (0xF7) ist unverändert. Neue Givens `breviloquence.optionalityOptions.{strictCborAbsence,
+
+% 0 1 0 133102d6d24ff944140af754b5010e68
+
+@ 0 4 0 1fc1e6f94ae906ae07a2ab6f00c15a02
++   (exportiert nach `soundness.optionalityOptions`). (#2130)
++ - Die Erweiterungsmethoden auf `breviloquence.Cbor.Ast` sind von der obersten Ebene des Pakets
++   `breviloquence` (wo sie `@unexported` waren) in das Begleitobjekt `breviloquence.Cbor.Ast`
++   umgezogen: `unset`, `isInteger`, `isFloat`, `isTextString`, `isBoolean`, `nullary`, `isTag`,
+
+% 0 1 0 0f70675db3d41ff901af56af59a99307
+
+@ 0 5 0 02a61e046acab66c0abee39fab673e12
++   `value`, `index`, `long`, `double`, `string`, `byteString`, `boolean`, `tag` und `array`.
++   Signaturen und Verhalten sind unverändert; sie werden jetzt über den impliziten
++   Geltungsbereich aufgelöst, wo immer ein `Cbor.Ast` verwendet wird, auch allein mit
++   `import soundness.*`. Jeden namentlichen Import davon aus `breviloquence` entfernen
++   (`import breviloquence.isTag`) und einen Präfixaufruf wie `breviloquence.long(ast)` als
++   `ast.long` umschreiben. (#2153)
+
+% 0 1 0 0709addc77995521151ea74263edf6fe
+
+@ 0 8 0 06cbd1d320be524200e354207b38034f
++ - `caesura.DynamicDsvEnabler` (und sein `soundness`-Export) entfernt. Sein Ersatz ist
++   `caesura.Dsv is rudiments.Dynamical`. `caesura.dynamicAccess.dynamicDsv` bleibt erhalten,
++   umtypisiert von `DynamicDsvEnabler` zu `Dsv is Dynamical`. Der gelöschte Parameter
++   `(using erased dynamicDsvEnabler: DynamicDsvEnabler)` von `Dsv#selectDynamic` und der
++   gelöschte Kontextparameter des Givens `caesura.dsvCellLens` sind jetzt
++   `(? >: Dsv) is Dynamical`. `dynamicDsv` erfüllt ihn, ebenso ein
++   `rudiments.dynamically[Dsv]`- oder `dynamically`-Block. (#2102)
++ - `caesura.Dsv.optionalDecodable` erhält eine vorangestellte `using`-Klausel
+
+% 0 1 0 01a3beea10dd57de17a2313f7378e755
+
+@ 0 6 0 007a034700fbed6519763d050157f8f1
++   format: Dsv.Format, tactic: contingency.Tactic[Dsv.Error])` und nimmt seinen inneren
++   Dekodierer als Wert, `(decodable: (inner is Decodable in Dsv)^)`, wo er by-name übergeben
++   wurde; `Dsv.Field.optional` erhält `(absence: distillate.Decodable.Absence in Dsv, fault:
++   distillate.Decodable.Fault in Dsv)`. Das Verhalten unter den Standards des Begleitobjekts ist
++   unverändert. Neue Givens `caesura.optionalityOptions.{strictDsvAbsence, lenientDsvAbsence, strictDsvFaults,
++   lenientDsvFaults}` (exportiert nach `soundness.optionalityOptions`). (#2130)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 1 0 1cbab5f64decec7218cbe3f2eb797fda
++ - `coaxial.Tls` (die JVM-Komponente) erhält ein fünftes Feld, `mutual: Boolean = false`, nach
+
+% 0 1 0 153b51ebdc9252b011b3de65a8ad1d5e
+
+@ 0 13 0 18193b7b3625179e0c6e5bc6867ebebc
++   protocols: List[Text] = Nil, versions: List[Text] = Nil, mutual: Boolean = false)`.
++   Positionale Konstruktion oder Extraktion über vier Felder muss es ergänzen; benannte
++   Konstruktion und `copy` sind nicht betroffen. Ein `coaxial.SecurePort`, der mit einem `Tls`
++   gebunden ist, dessen `mutual` `true` ist, ruft `SSLParameters.setNeedClientAuth(true)` auf
++   seinem `SSLServerSocket` auf. (#2120)
++ - `coaxial.Tls.keyed(keystore: Data, password: Text): Tls` ist jetzt als
++   `TlsAcceptance().keyed(keystore, password)` definiert; sein Kontext wird weiterhin mit den
++   Key-Managern des Keystores und `null`-Trust-Managern initialisiert, daher ist das Verhalten
++   unverändert. (#2120)
++ - Der Trust-Manager, den eine nicht strikte `coaxial.TlsAcceptance` materialisiert, wendet
++   jetzt `Trust.pinned` in seinen drei Überladungen von `checkClientTrusted` an, wie er es in
++   `checkServerTrusted` tat (eine Kette, deren SHA-256-Fingerabdruck des Blatts nicht der Pin
++   ist, wird mit einer `CertificateException` abgelehnt), und sein `getAcceptedIssuers` gibt
++   bei gesetztem Pin ein leeres Array zurück. Nur von einem Listener aus beobachtbar, der
++   Client-Zertifikate verlangt, was bisher nicht möglich war. (#2120)
+
+% 0 1 0 07cbf3671591ab0617673a498a92a7dd
+
+@ 0 8 0 1934676fecdb4c8d0f10441c4cee883d
++ - `contingency.Foci[focus]` erhält einen abstrakten Member `def truncate(length: Int): Unit`
++   (verwirft jeden registrierten Fehler nach den ersten `length`); `contingency.TrackFoci`
++   implementiert ihn, und das Given `Foci.default` hat ihn als No-op. Jede andere
++   Implementierung von `Foci` muss ihn definieren. `contingency.Tactic[error]` erhält
++   `def tolerate[result](block: => result): Optional[result]` mit einer
++   Standardimplementierung (`try block catch case _: Exception => Unset`), die von
++   `Accrual.AccrueTactic`, `TrackTactic`, `VentureTactic` und der von `Tactic#contramap`
++   gebauten Taktik überschrieben wird, um zurückzunehmen, was der Block verzeichnet hat. Eine
++   Unterklasse von `Tactic`, die bereits einen Member namens `tolerate` definiert, muss
++   `override` ergänzen. (#2130)
+
+% 0 1 0 07f33a1bf4fa2505029751dde4102879
+
+@ 0 5 0 128a34938123c5151dbfa5d6755b6c95
++ - Komponente `degustation.lira` (Artefakt `degustation-lira`) entfernt; sie ist mit Reliquary
++   in das Repository propensive/lira umgezogen (siehe den Reliquary-Eintrag). Ihre Typen —
++   `TastyDiscipline` — ziehen aus dem Paket `degustation` in das Paket `lira`, unverändert in
++   Name und Signatur, und werden nicht mehr in `soundness` exportiert. Stattdessen von
++   `dev.propensive:lira` abhängen. (#2111)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 5 0 1fb4a3e433f594f41251757813a7bb7f
++ - Die Meldung, die `ethereal.cli` ausgibt, wenn das JAR einer Anwendung ohne XEK-Launcher
++   ausgeführt wird (`ethereal.name` nicht gesetzt), lautet jetzt `This application must be invoked through its XEK
++   launcher.`, gibt den Befehl als `xek <jar> <name>` statt `xeq build --jar <jar> --out
++   <name>` an und verweist auf `https://propensive.dev/xek` und `https://github.com/propensive/xek`
++   statt auf `https://github.com/propensive/xeq`. Exit-Status unverändert (1). (#2113)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 26 0 0b520f1712871f7211847390ce64f083
++ - `exoskeleton.Enclave` (`exoskeleton-rig`) verpackt sein bereitgestelltes JAR, indem es den
++   durch `$XEQ` benannten Builder (Standard `dist/xeq`) als `<builder> [--build-id <id>] <jar> <target>`
++   ausführt, die Kommandozeile von `xek` 0.10 und später, statt als `<builder> build --jar <jar> --out <target>
++   [--build-id <id>]`. `$XEQ` bzw. `dist/xeq` muss daher ein `xek` aus dem Release `xek-0.10`
++   oder später sein; das `xeq`-Skript von 0.9 und früher scheitert beim Verpacken. (#2113)
++ - Neuer Case `exoskeleton.Completions.Installation.InstallResult.Unconfirmed(shell: Shell, path:
++   Text)`: Das Skript wurde nach `path` geschrieben, aber es ließ sich nicht nachweisen, dass die
++   Shell es von dort lädt. Ein erschöpfendes `match` über `InstallResult` muss ihn behandeln.
++   `InstallResult#pathname` liefert sein `path`, daher enthält `Installation#paths` (und die
++   Ausgabe von `{admin} install` und `Completions.ensure(force = true)`) ihn. (#2148)
++ - `exoskeleton.Completions.install(force: Boolean)` wählt das Verzeichnis jeder Shell, indem es
++   die Shell befragt, mit geschlossener Standardeingabe, verworfener Standardfehlerausgabe, den
++   Werten `HOME`, `ZDOTDIR`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_DATA_DIRS` und
++   `BASH_COMPLETION_USER_DIR` des Aufrufs und fünf Sekunden für alle Shells zusammen. zsh:
++   `zsh -i -c` meldet `$fpath` (bisher wurde `zsh -c 'source ~/.zshrc; …'` ausgeführt); das erste
++   existierende beschreibbare `fpath`-Verzeichnis unter `$HOME` wird verwendet, sonst das erste
++   existierende beschreibbare, sonst `$XDG_DATA_HOME/zsh/site-functions` (angelegt) mit dem
++   Ergebnis `Unconfirmed`. bash: immer `${BASH_COMPLETION_USER_DIR:-$XDG_DATA_HOME/bash-completion}/completions`
++   (angelegt), mit dem Ergebnis `Unconfirmed`, sofern nicht eine interaktive bash den Loader von
++   bash-completion definiert (`_comp_load`, `__load_completion` oder `_completion_loader`);
++   bisher `bash-completion/completions` des letzten `XDG_DATA_DIRS`-Eintrags, sonst das von
++   `$XDG_DATA_HOME`, und nur, wenn es bereits existierte. fish: `$__fish_config_dir/completions`,
++   wie fish es meldet (angelegt, Standard `$XDG_CONFIG_HOME/fish/completions`), mit dem Ergebnis
++   `Unconfirmed`, sofern es nicht in `$fish_complete_path` liegt; bisher
++   `fish/vendor_completions.d` des letzten `XDG_DATA_DIRS`-Eintrags, sonst
++   `$XDG_CONFIG_HOME/fish/completions`, nur wenn es bereits existierte. PowerShell: unverändert
++   bis auf das Zeitlimit. Eine Shell, die nicht innerhalb des Limits antwortet, wird beendet, und
++   ihr Skript wird dennoch mit dem Ergebnis `Unconfirmed` in das Standardverzeichnis geschrieben.
++   (#2148)
+
+% 0 1 0 0fa8f427fcee06bf094db708d8d4518a
+
+@ 0 10 0 1625c0d229bd49310f9cce9e751420de
++ - Die Registry hinter der Kompilierzeitprüfung des Interpolators `media"…"` (`gesticulate/data/media.types`)
++   wird aus der aktuellen Medientyp-Registry der IANA aufgefrischt: 409 Typen kommen hinzu,
++   darunter `application/protobuf`, `application/yaml`, `application/toml`, `image/jxl` und
++   `audio/flac`, und keiner wird entfernt. Ein Literal eines neu registrierten Typs, bisher ein
++   Kompilierfehler („… is not a registered media type“), kompiliert jetzt; kein Literal, das
++   zuvor kompilierte, wird abgelehnt. (#2105)
++ - Neuer Enum-Case `gesticulate.Media.Group.Haptics` für den Top-Level-Typ `haptics` der IANA
++   (RFC 9695). `haptics/…`-Medientypen, bisher sowohl beim Parsen als auch als
++   `media"…"`-Literale mit `MediaType.Error.Reason.InvalidGroup` abgelehnt, werden jetzt
++   akzeptiert. Ein `match` über `Media.Group`, das erschöpfend war, braucht einen
++   `Haptics`-Case. (#2107)
+
+% 0 1 0 1566b19ab23a3dd01b479ed03ce8f585
+
+@ 0 9 0 0bc564d48051676306bc53723e6b998e
++ - `graffiti.hdir` (`given hdir: HDir is Attributive to Whatwg.Dir`, auch exportiert als
++   `soundness.hdir`) entfernt. Sein Ersatz ist `honeycomb.HDir.attributive`, mit demselben Typ
++   und Verhalten, im Begleitobjekt von `honeycomb.HDir`, sodass es ohne Import über den
++   impliziten Geltungsbereich gefunden wird. Jeden Import von `graffiti.hdir` oder
++   `soundness.hdir` löschen. (#2139)
++ - Neuer Member `graffiti.Archetype#stylesheetUrl: Optional[Text]`, Standard `Unset`; wenn eine
++   Seite ihn mit einer URL überschreibt, schreibt `Archetype#html` (und damit `document`) `<link rel="stylesheet"
++   href="…">` anstelle des eingebetteten `<style>`. Eine Seite oder ein Feature-Trait, die bzw.
++   der bereits einen Member namens `stylesheetUrl` definiert, muss ihn umbenennen oder diesen
++   überschreiben, wenn er dessen Typ hat. (#2150)
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 2 0 1d45b5a5296b677a1e534be3985f4a10
++ - `honeycomb.Whatwg#Template` wurde von einem leeren Tag,
++   `Tag.Void of "template" in Whatwg`, zu einem Container,
+
+% 0 1 0 121e5233fc1fcc920d8df5ad76ae911e
+
+@ 0 13 0 19b7a8351dbd96261520f6f4dc6a5804
++   `Template(children*)` und `Template(attribute = value)(children*)` kompilieren jetzt. Ein
++   leeres Template wird als `<template></template>` serialisiert, wo es `<template>` war. Das
++   Parsen von `<template>` liest jetzt Kindknoten bis zu einem erforderlichen `</template>`:
++   Eingabe mit einem nicht geschlossenen `<template>`, die als leeres Element geparst wurde, ist
++   jetzt `Html.Issue.Incomplete("template")` (oder `InadmissibleTag`/`MismatchedTag`, wie bei
++   jedem nicht geschlossenen Container), und `<template>…</template>`, dessen schließendes Tag
++   bisher `UnopenedTag`/`MismatchedTag` war, wird jetzt geparst. (#2139)
++ - Das Serialisieren (`Html is Showable`, `Html is Inspectable`, `Document is Streamable`) eines
++   `Element`, das Kinder hat und dessen Beschriftung ein leeres Tag im DOM benennt, schreibt jetzt
++   die Kinder und ein schließendes Tag (`<br>x</br>`); bisher wurden die Kinder verworfen und kein
++   schließendes Tag geschrieben. Ein solches Element entsteht nur aus einem `Tag`, das mit der
++   Beschriftung eines der leeren Tags des DOM definiert ist, oder durch direktes Konstruieren
++   eines `Element`. Elemente ohne Kinder sind nicht betroffen. (#2139)
+
+% 0 1 0 0ebdf0610af542a6057f03e6ca503d1a
+
+@ 0 4 0 1bab89c86a3bfcc81c4b3e15e8286bec
++   `honeycomb.Attributive.classList` (`ClassList is Attributive to Whatwg.CssClassList`) und
++   `honeycomb.Attributive.domIds` (`List[Name[DomId]] is Attributive to Whatwg.Ids`) liefern
++   jetzt `Unset` für einen leeren Wert und lassen das Attribut weg; bisher lieferten sie das
++   Attribut mit einem leeren Wert, z. B. `class=""`. (#2139)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 27 0 06e0dd783e42b32e17ec74467905605b
++ - `jacinta.DynamicJsonEnabler` (und sein `soundness`-Export) entfernt. Sein Ersatz ist
++   `jacinta.Json is rudiments.Dynamical`. `jacinta.dynamicAccess.dynamicJson` bleibt erhalten,
++   umtypisiert von `DynamicJsonEnabler` zu `Json is Dynamical`. Der gelöschte Parameter
++   `(using erased dynamicJsonEnabler: DynamicJsonEnabler)` von `Json#update` und beiden
++   Überladungen von `Json#updateDynamic` sowie der gelöschte Kontextparameter des Givens
++   `jacinta.optics.jsonLens` sind jetzt `(? >: Json) is Dynamical`. `Json#selectDynamic` und
++   `Json#applyDynamic` auf einem nicht verifizierten `Json` rufen jetzt
++   `(? >: Json) is Dynamical` anstelle von `DynamicJsonEnabler` herbei. `dynamicJson` erfüllt
++   jeden davon, ebenso ein `rudiments.dynamically[Json]`- oder `dynamically`-Block. (#2102)
++ - Neu ist `jacinta.Json.emit(json: Json)(using Json.Formatting, parasite.Monitor, parasite.Probate): Iterator[Text]`,
++   das auf einer Fiber serialisiert und den Text herausgibt, während er erzeugt wird, sowie ein
++   neues Given `jacinta.Json.streamable: (Json.Formatting, Monitor, Probate) => Json is turbulence.Streamable by Text over Credit`,
++   das darauf aufbaut. `show` ist unverändert und stellt identisch dar. `jacinta.core` hängt jetzt
++   von `parasite.core` ab. (#2109)
++ - Neue Push-Form `jacinta.Json.emit[medium: Json.Emitter](json: Json, deliver: medium => Unit)(using Json.Formatting, zephyrine.Buffering): Unit`,
++   die auf dem Thread des Aufrufers ohne Fiber serialisiert und jeden Block an `deliver`
++   übergibt, sobald er voll ist: `emit[Text]` liefert Textblöcke über einen `Producer[Text]`,
++   und `emit[Data]` liefert UTF-8-Bytes, die direkt von einem Serialisierer auf Byte-Ebene
++   geschrieben werden, der jeden String in einem Durchgang escapet und kodiert.
++   `trait Json.Emitter[medium]` mit den Givens `Json.Emitter.text` und `Json.Emitter.data`
++   wählt zwischen ihnen. Das Typargument ist erforderlich, wenn `deliver` ein untypisiertes
++   Lambda ist. (#2109)
++ - Neu ist `jacinta.Json.lend(json: Json)(lending: zephyrine.Producer.Lending[Data])(using Json.Formatting, zephyrine.Buffering): Unit`,
++   die entleihende Form des Push-`emit`: Jeder volle UTF-8-Block wird als
++   `zephyrine.Region[Data]` mit seinem markierten `Interval in region.type` verliehen, nur für
++   die Dauer des Aufrufs gültig (die Disziplin von `Stream.lend`), sodass nichts kopiert wird;
++   `emit[Data]` ist jetzt darüber definiert und materialisiert jeden Block. Als BCD geparste
++   Zahlen werden vom Writer auf Byte-Ebene direkt aus ihren Nibbles dargestellt, ohne
++   Hin- und Rückweg über `String`; der Text jeder Form ist unverändert. (#2109)
+
+% 0 1 0 0e6fe31e74f89e3d069517f27527bfda
+
+@ 0 1 0 16a5b3f14b515e460d0a935629ef7e70
++   `Json.optionalParsable` und `Json.optionParsable` erhalten eine vorangestellte
++   `using`-Klausel
+
+% 0 1 0 12829c73b033eda2017963fcde584406
+
+% 0 1 0 1b2968305e7523e317048812abec811b
+
+@ 0 9 0 0ac1192e2747d33b0009795c202264a0
++   `Json.option` hat die Kontextschranke `[value: Json.Decodable]` nicht mehr, sondern nimmt
++   `(decodable: => (value is Json.Decodable)^)` by-name. `Json.Parsable.optionality` und
++   `Json.Parsable.boxed` nehmen dieselben vier Givens in ihrer `using`-Klausel (bisher nahm
++   `optionality` nur `tactic` und `boxed` keines). Die Semantik unter den Standards des
++   Begleitobjekts ist für `Optional` unverändert; `Option[T]` liest jetzt ein explizites
++   JSON-`null` als `None`, wo es es bisher an den inneren Dekodierer weitergab
++   (`Json.Error(Reason.NotType(Null, …))` für ein Primitiv). Neue Givens `jacinta.optionalityOptions.{strictJsonAbsence, lenientJsonAbsence,
++   strictJsonNulls, lenientJsonNulls, strictJsonFaults, lenientJsonFaults}` (exportiert nach
++   `soundness.optionalityOptions`) variieren jede Richtlinie. (#2130)
+
+% 0 1 0 14282acc9e8c73b21f41ce8351cf5486
+
+@ 0 6 0 14d5c544b61784b00f8d7cdf6f5bcc91
++ - Neu sind `locomotion.postables.protobufPostable: Protobuf is telekinesis.Postable` und
++   `locomotion.servables.protobufServable: Protobuf is telekinesis.Servable` (Medientyp
++   `application/protobuf`, die Bytes der Übertragungsform als Rumpf), auch exportiert als
++   `soundness.postables.protobufPostable` und `soundness.servables.protobufServable`. Das Modul
++   `locomotion.http` hängt jetzt von `telekinesis.core` ab und ist, wie `jacinta.http`, nur für
++   die JVM verfügbar, daher ist `locomotion.construables.protobufConstruable` unter Scala.js
++   nicht mehr verfügbar. (#2104)
+
+% 0 1 0 1b8860e67aa4a1c91891b47a0b5ee058
+
+@ 0 6 0 147736a2331d1d6c009038c8b0a8f1eb
++ - Komponente `mandible.lira` (Artefakt `mandible-lira`) entfernt; sie ist mit Reliquary in das
++   Repository propensive/lira umgezogen (siehe den Reliquary-Eintrag). Ihre Typen —
++   `ClassfileAtomizer`, `ClassfileDiscipline`, `CtSym`, `HostArchive`, `HostContracts`,
++   `HostRelease`, `HostTree`, `JsigDiscipline`, `JvmProfile` und `UsedSets` — ziehen aus dem
++   Paket `mandible` in das Paket `lira`, unverändert in Name und Signatur, und werden nicht mehr
++   in `soundness` exportiert. Stattdessen von `dev.propensive:lira` abhängen. (#2111)
+
+% 0 1 0 0e751e64d74c65e7052e35ae687cc595
+
+@ 0 5 0 02eede9c8caa784a16c43a1d79095f6a
++ - Neuer konkreter Member `obligatory.JsonRpc#stop(): Unit`, der den ausgehenden Kanal der
++   Instanz stoppt, sodass `outgoing` und `stream` enden, sobald sie geleert sind. Eine
++   Unterklasse von `JsonRpc` (einschließlich der Schnittstellen `synesthesia.Mcp.Api`,
++   `exegesis` und `espionage`), die bereits einen Member namens `stop` mit leerer Parameterliste
++   definiert, muss ihn umbenennen oder `override` ergänzen, wenn er diese Signatur hat. (#2144)
+
+% 0 1 0 13897a5b469c56bc058ae094048dac5d
+
+@ 0 9 0 1e7c28ce5f0188c518862b13d8add24e
++ - Die Erweiterungen `apply(index: Int): element` und `update(index: Int, value:
++   element): Unit` von `proscenium.Array` auf einem exklusiven `Array[element]^` sind jetzt
++   `inline def`s in einer Erweiterung mit `inline`-Empfänger,
++   `extension [element](inline buffer: Array[element]^)`, wo sie gewöhnliche Methoden von
++   `extension [element](buffer: Array[element]^)` waren. Mit einem konkreten Elementtyp
++   kompilieren sie zu den Array-Instruktionen der JVM, statt per Boxing über `ScalaRunTime`
++   zuzugreifen. Der Empfängerausdruck wird jetzt nach dem Index (und bei `update` nach dem Wert)
++   ausgewertet statt davor: Code, dessen Empfängerausdruck und Argumente wechselwirkende
++   Seiteneffekte haben, zum Beispiel `buffer(index) = grow()`, wobei `grow()` die `var` namens
++   `buffer` neu zuweist, schreibt jetzt in das Array, das der Empfänger nach Auswertung der
++   Argumente bezeichnet. (#2147)
+
+% 0 1 0 1e700bdc822d8d6600877dea2cb39769
+
+@ 0 11 0 0b168e49843cd06c14ecaf2db2950f78
++ - Bibliothek `reliquary` entfernt, mit ihren Komponenten `reliquary.core` (Artefakt
++   `reliquary-core`) und `reliquary.derive` (`reliquary-derive`); sie lebt jetzt im Repository
++   propensive/lira. Ihre Typen ziehen aus dem Paket `reliquary` in das Paket `lira`, unverändert
++   in Name und Signatur (`reliquary.Lira` → `lira.Lira`, `reliquary.Verification` →
++   `lira.Verification` und so weiter für jeden Typ, den die Komponente exportierte), und sie
++   werden nicht mehr in `soundness` exportiert: Eine Datei, die sie über `import soundness.*`
++   erreichte, braucht zusätzlich `import lira.*` (oder liegt selbst im Paket `lira`). Die
++   Abhängigkeiten `reliquary-core` und `reliquary-derive` durch das eine Artefakt
++   `dev.propensive:lira` ersetzen, das beide und jede mit ihnen umgezogene Disziplin enthält; es
++   wird als GitHub-Release-Asset von propensive/lira veröffentlicht und mit Lira versioniert
++   (erstmals als 0.1.0 veröffentlicht), nicht mit Soundness. Das Bündel `soundness-tool` enthält
++   sie nicht mehr. (#2111)
+
+% 0 1 0 0cc2d1f372946d701781f2258ebc29ab
+
+@ 0 9 0 0880aa9f71d81d6214f81868519b7a31
++ - Der erste Konstruktorparameter von `scintillate.Reactor` ist jetzt `requested: Int` (ein
++   einfacher Parameter), wo er `val port: Int` war; `Reactor#port: Int` bleibt, ist aber jetzt
++   der Port, an den der Listener gebunden ist, der sich vom Argument unterscheidet, wenn dieses
++   `0` ist (das System wählt dann einen freien Port). Ein Aufruf, der den Port benannt übergibt,
++   `Reactor(port = …)`, muss `requested = …` verwenden. (#2151)
++ - `scintillate.SocketServer(0, …).handle(…)` und `scintillate.Httpd(0, …).handle(…)` binden einen
++   vom System gewählten freien Port, gemeldet als der zurückgegebene `urticose.Service#port`;
++   eine `Http.Connection`, die von einem solchen `SocketServer` bedient wird, meldet diesen
++   gebundenen Port, wo sie bisher `0` meldete. (#2151)
+
+% 0 1 0 101a8988acb4345d0341a393aab67281
+
+@ 0 7 0 18db88b5994305420c5f26472eba6a5f
++ - `sibylline.Anthropic` sendet ein Schema für strukturierte Ausgabe (`elicit`, `elicitAll`)
++   jetzt als die Teilmenge von JSON Schema, die die Messages-API akzeptiert: `type`,
++   `properties`, `required`, `additionalProperties`, `items`, `enum`, `const`, `description`,
++   `oneOf`/`allOf`/`anyOf`/`not`, `$ref` sowie `pattern` und `format` eines Strings. Der
++   `optional`-Marker von Jacinta (von der API als unbekanntes Schlüsselwort abgelehnt) und die
++   numerischen und Längenschranken werden nicht mehr gesendet; die Optionalität eines Felds ist
++   bereits durch `required` ausgedrückt. Bisher scheiterte jedes `elicit` bei Anthropic mit
++   `Invalid` (`property 'optional' is not supported`). (#2105)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 32 0 1ff681c2b35047b20b617f2b48d07d5a
++ - `stratiform.DynamicTelEnabler` (und sein `soundness`-Export) entfernt. Sein Ersatz ist
++   `stratiform.Tel is rudiments.Dynamical`. `stratiform.dynamicAccess.dynamicTel` bleibt
++   erhalten, umtypisiert von `DynamicTelEnabler` zu `Tel is Dynamical`. Der gelöschte Parameter
++   `(using erased dynamicTelEnabler: DynamicTelEnabler)` von `Tel#modify` und der gelöschte
++   Kontextparameter des Givens `stratiform.optics.telLens` sind jetzt `(? >: Tel) is Dynamical`.
++   `Tel#selectDynamic` und `Tel#applyDynamic` auf einem nicht verifizierten `Tel` rufen jetzt
++   `(? >: Tel) is Dynamical` anstelle von `DynamicTelEnabler` herbei. `dynamicTel` erfüllt jeden
++   davon, ebenso ein `rudiments.dynamically[Tel]`- oder `dynamically`-Block. (#2102)
++ - Neuer String-Interpolator `telp`, `extension (inline context: StringContext) transparent inline def telp: contextual.Interpolation`
++   (auch exportiert als `soundness.telp`), der ein beim Kompilieren des Codes geprüftes
++   `stratiform.Telp` erzeugt: Ein Literal, das `Telp.parse` ablehnen würde, ist ein
++   Kompilierfehler, positioniert an der fehlerhaften Komponente, und eine Substitution wird
++   abgelehnt. Gestützt auf das neue Given
++   `stratiform.Telp.interpolable: Telp is contextual.Interpolable`. `Telp.parse(text)` ist für
++   Laufzeitpfade unverändert. (#2104)
++ - Neu ist `stratiform.Tel.emit(tel: Tel)(using parasite.Monitor, parasite.Probate): Iterator[Text]`,
++   das auf einer Fiber serialisiert und den Text Zeile für Zeile herausgibt, während er erzeugt
++   wird (ein `Tel` mit einem Compound als Wurzel wird zuerst in ein Document gehüllt, wie `show`
++   es tut), sowie ein neues Given
++   `stratiform.Tel.streamable: (Monitor, Probate) => Tel is turbulence.Streamable by Text over Credit`,
++   das darauf aufbaut. `show` ist unverändert und stellt identisch dar. `stratiform.core` hängt
++   jetzt von `parasite.core` ab. (#2109)
++ - Neue Push-Form `stratiform.Tel.emit[medium: Tel.Emitter](tel: Tel, deliver: medium => Unit)(using zephyrine.Buffering): Unit`,
++   die auf dem Thread des Aufrufers ohne Fiber serialisiert und jeden Block an `deliver`
++   übergibt, sobald er voll ist: `emit[Text]` liefert Textblöcke über einen `Producer[Text]`,
++   und `emit[Data]` liefert UTF-8-Bytes, die direkt von einem Serialisierer auf Byte-Ebene
++   geschrieben werden, der die Bytes eines geparsten Atoms kopiert, ohne sie zu dekodieren.
++   `trait Tel.Emitter[medium]` mit den Givens `Tel.Emitter.text` und `Tel.Emitter.data` wählt
++   zwischen ihnen. Das Typargument ist erforderlich, wenn `deliver` ein untypisiertes Lambda
++   ist. (#2109)
++ - Neu ist `stratiform.Tel.lend(tel: Tel)(lending: zephyrine.Producer.Lending[Data])(using zephyrine.Buffering): Unit`,
++   die entleihende Form des Push-`emit`: Jeder volle UTF-8-Block wird als
++   `zephyrine.Region[Data]` mit seiner markierten Ausdehnung verliehen, nur für die Dauer des
++   Aufrufs gültig; `emit[Data]` ist darüber definiert und materialisiert jeden Block. (#2109)
++ - `stratiform.Tel.optionalDecodable` und `Tel.fieldOptional` erhalten eine vorangestellte
++   `using`-Klausel
+
+% 0 1 0 0da5439db26207261e136e0db88d7bb7
+
+@ 0 5 0 120a38b2b034ff2e07deaf0177af4c55
++   tactic: contingency.Tactic[Tel.Error])` (bisher eine anonyme `Tactic[Tel.Error]` bzw.
++   `(tactic: Tactic[Tel.Error])`); die `using`-Klausel von `Tel.Parsable.optionality` ist
++   ebenso `(absence, fault, tactic)` statt `(tactic)`. Das Verhalten unter den Standards des
++   Begleitobjekts ist unverändert. Neue Givens `stratiform.optionalityOptions.{strictTelAbsence,
++   lenientTelAbsence, strictTelFaults, lenientTelFaults}` (exportiert nach
+
+% 1 1 0 1f1c3b7b61bba12002cd9717e15caad8
+
+% 0 1 0 0edeca1688ed1712094917bf1cb39981
+
+@ 0 14 0 0a17557f2a39feb81ee5d0454e8c2c76
++ - `synesthesia.Mcp.Server#serve` behandelt einen `DELETE`-Request selbst, bevor ein
++   `synesthesia.Mcp.Interface` erzeugt wird. Mit einem `Mcp-Session-Id`-Header, der eine
++   existierende Sitzung benennt (in der Tabelle hinter `Mcp.Server#session` oder als
++   zwischengespeichertes `Mcp.Interface`), entfernt es beide, beendet den ausgehenden
++   Ereignis-Stream der Schnittstelle und antwortet mit `204 No Content`; eine unbekannte ID wird
++   mit `404 Not Found` beantwortet, ein Request ohne `Mcp-Session-Id` mit `400 Bad Request`.
++   Keine dieser Responses trägt die Header `Mcp-Protocol-Version` oder `Mcp-Session-Id`. Bisher
++   antwortete jedes `DELETE` mit `202 Accepted` samt beiden Headern und behielt Sitzung und
++   Schnittstelle. (#2144)
++ - `synesthesia.Mcp.send` behandelt `DELETE` nicht mehr. Jede Methode außer `OPTIONS`, `GET` und
++   `POST` (einschließlich `DELETE`) wird mit `405 Method Not Allowed` samt den Headern
++   `Mcp-Protocol-Version` und `Mcp-Session-Id` beantwortet. Bisher antwortete `DELETE` mit
++   `202 Accepted`, und jede andere Methode warf `scala.NotImplementedError`, beantwortet als
++   `200 OK` mit einem JSON-RPC-Fehlerrumpf `-32603`. (#2144)
++ - Neuer Member `synesthesia.Mcp.Server#terminate(id: Text): Boolean`. Eine Unterklasse von
++   `Mcp.Server`, die bereits einen Member namens `terminate` mit einem `Text`-Parameter
++   definiert, muss ihn umbenennen oder `override` ergänzen, wenn er diese Signatur hat. (#2144)
+
+% 0 1 0 1308c4aae25b50821be43aace8323e07
+
+% 0 1 0 1d64fa5bceb40a750166a042c97e1b7d
+
+@ 0 4 0 0239773de1e8ec9b070dad357859b97b
++   erhält in seiner ersten Klausel einen vierten Parameter mit Standardwert,
++   `unbreakable: List[denominative.Interval] = Nil`. Jedes Intervall ist eine Spanne von
++   Zeichen-Offsets in `content.plain`, innerhalb derer kein weicher Umbruch (Leerzeichen oder
++   Trennstelle) genommen wird; harte Umbrüche darin brechen die Zeile weiterhin um. Mit dem
++   Standard ist das Verhalten unverändert. (#2121)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 15 0 1fcaf81752c0546103ea5683b0981b86
++ - `turbulence.load` (die Erweiterung `value.load[result <: Documentary]`) nimmt keine
++   Kontextparameter mehr. Es war `def load[result <: Documentary](using streamable: (value is Streamable by
++   Text over Credit)^, loadable: (result is Loadable by Text)^): Document[result]`; es ist jetzt
++   `inline def load[result <: Documentary]: Document[result]` und löst seine Instanzen mit
++   `summonFrom` in dieser Reihenfolge auf: `value is Streamable by Data over Credit` mit `result is Loadable
++   by Data`, sonst mit `result is Loadable by Text` über ein `hieroglyph.Charset` und ein
++   `zephyrine.Buffering`; dann `value is Streamable by Text over Credit` mit `Loadable by Text`,
++   sonst mit `Loadable by Data` über eine `hieroglyph.Codepage` und ein `Buffering`; dann `value is
++   Readable to Data` (eine Quelle als ganzer Wert, etwa ein `galilei.Path`) mit denselben beiden
++   `Loadable`-Alternativen. Eine Textquelle, für die eine `Streamable by Data`-Instanz greift
++   (ein `Text` mit einer `Codepage` im Geltungsbereich), nimmt daher jetzt den Weg über Bytes, wie
++   `read` es tut. Code, der die Kontextargumente explizit übergab, muss sie weglassen; Code, der
++   die Instanzen von `load` von Hand herbeirief, ist nicht betroffen (`Loadable` ist
++   unverändert). Die neuen Hilfsfunktionen `turbulence.Loadable.fromData[result](consume stream: (Stream[Data] over Credit)^): Document[result]`
++   und `Loadable.fromText[result](consume stream: (Stream[Text] over Credit)^): Document[result]`
++   sind die Hälften dieser Verteilung je Operand. (#2118)
+
+% 0 1 0 095dfb6b35ecc7f404130a62cea037b4
+
+% 0 1 0 028075a8a859dbd207790f9d2226de77
+
+@ 0 20 0 1d470c39771f440b0b9fee451c4d2c2d
++   dimensioniert den Filter anders. Alt: `bitSize = (-1.44·approximateSize·ln targetErrorRate).toInt`,
++   `hashCount = (bitSize/approximateSize·ln 2 + 0.5).toInt`. Neu: mit `n = max(1, approximateSize)`
++   und `p = max(targetErrorRate, 2⁻⁵³)` gilt `bitSize = max(1, ceil(-n·ln p/(ln 2)²))` und
++   `hashCount = max(1, round(bitSize/n·ln 2))`. Daher ist `BloomFilter[Text](100, 0.01).bitSize`
++   959, wo es 663 war, `(1000, 0.01)` ergibt 9586, wo es 6631 war, `(100, 0.001)` ergibt 1438, wo
++   es 994 war, und `hashCount` für `(10_000, 0.01)` ist 7, wo es 5 war. Die alte Dimensionierung
++   lieferte etwa das Vierfache der verlangten Falsch-Positiv-Rate; die neue liefert die
++   verlangte Rate. (#2126)
++ - `ulysses.BloomFilter#+`, `#++` und `ulysses.BloomFilter#hits` leiten die Bitpositionen eines
++   Elements anders ab. Alt: Die Hashwerte von `(0, value)`, `(1, value)`, … (als
++   `Digestible`-Tupel) wurden zu einem `BigInt` verkettet, dessen aufeinanderfolgende Reste
++   modulo `bitSize` die Positionen waren. Neu: `h₁` und `h₂` sind das erste und zweite
++   Big-Endian-64-Bit-Wort des Hashwerts des Elements (des Elements allein; ein Algorithmus, der
++   weniger als 16 Bytes liefert, wird mit einem Big-Endian-`Int`-Präfix 1, 2, … erneut gehasht,
++   bis 16 Bytes gesammelt sind), und die Position `i` für `i` in `0 until hashCount` ist
++   `((h₁ + i·h₂) & Long.MaxValue) % bitSize`. Für dieselben Elemente unterscheidet sich `bits`
++   daher von dem der vorigen Version; ein Filter, dessen `bits` persistiert oder mit Code
++   ausgetauscht wurden, der gegen die alte Version gebaut ist, muss neu aufgebaut werden. (#2126)
++ - `ulysses.BloomFilter[element, algorithm]` ist keine `case class` mehr; es ist
++   `class BloomFilter[element: Digestible, algorithm <: Algorithm] extends caps.Mutable` mit
++   einem privaten Konstruktor. Mit der Case-Klasse entfernt: der öffentliche Konstruktor
+
+% 0 1 0 0daf7ba35c32f48c172096330ba74f14
+
+@ 0 4 0 138e849c4461cb5311be284d9ea54f2c
++   `unapply`, das Feld `bits: scala.collection.immutable.BitSet` und `productElement`/
++   `productArity`. `bitSize: Int` und `hashCount: Int` bleiben als `val`s. `equals`/`hashCode`
++   vergleichen `bitSize`, `hashCount` und die Bits. Neu: `def population: Int`, die Anzahl der
++   gesetzten Bits. (#2126)
+
+% 0 1 0 1f9e25d8240f2d800f5f3f7aa4c6d860
+
+@ 0 2 0 0493baa04f881f6206e5de01dca9b3c2
++   gibt jetzt `BloomFilter[element, algorithm]^` zurück (einen exklusiven, veränderlichen
++   Filter), wo es `BloomFilter[element, algorithm]` zurückgab. Neu: `update def add(value: element): Unit` und
+
+% 0 1 0 1172f95b24e3934f05a5caebeafe6439
+
+@ 0 1 0 191d631659ac36bd09f770ac14f2c6a4
++   die Bits an Ort und Stelle setzen und nur auf einem exklusiven Filter aufrufbar sind, sowie
+
+% 0 1 0 0d9301a67c61243b19e25522269f73ce
+
+@ 0 7 0 0781d1f29b4e888703f8b08979496d4c
++   das den exklusiven Filter verbraucht und ohne Kopieren die eingefrorene (teilbare, nur
++   lesbare) Form liefert. `+` und `++` geben jetzt `BloomFilter[element, algorithm]^{}` zurück und
++   kopieren die Bits einmal; `hits` ist unverändert. Unter Capture-Checking muss Code, der einen
++   `BloomFilter[…]`-Wert aus `apply` an mehreren Stellen verwendete (als geteilten
++   unveränderlichen Wert), ihn zuerst mit `freeze` einfrieren, da ein exklusiver Wert keinen
++   Alias haben darf; Code, der nur `apply(…) + x ++ xs` verkettet, ist unverändert. Außerhalb von
++   Capture-gechecktem Code ändern sich nur die Ergebnistypen. (#2126)
++ - `ulysses.BloomFilter#++(elements: Iterable[element]): BloomFilter[element, algorithm]` ist jetzt
+
+% 0 1 0 1b005262cf41fbe507b8e672f94cfc32
+
+@ 0 14 0 0ba7ead17c5aee9506cccc6306d3ec4c
++   Ein `scala.Iterable`-Argument wird weiterhin akzeptiert (über `Traversable.iterable`); die
++   opaken `proscenium.List`, `Sequence`, `Set`, `Chain` und ein eingefrorenes `Array` werden
++   jetzt direkt akzeptiert, wo sie bisher über `xs.stdlib` hinüberwechseln mussten. (#2126)
++ - `ulysses.BloomFilter.apply` mit `approximateSize <= 0` oder einer `targetErrorRate` von `0.0`
++   oder `1.0` liefert jetzt einen funktionierenden Filter (`bitSize >= 1`, `hashCount >= 1`;
++   siehe den Eintrag zur Dimensionierung). Alt: `approximateSize = 0` ergab `hashCount = 0`,
++   sodass `hits` für jedes Element `true` war; `targetErrorRate = 1.0` ergab `bitSize = 0`,
++   sodass `+`, `++` und `hits` `java.lang.ArithmeticException` warfen; `targetErrorRate = 0.0`
++   ergab `bitSize = Int.MaxValue`. (#2126)
++ - `ulysses.Bibliography#lookup(prefix: Data): Iterator[Data]` liefert die passenden Hashes in
++   aufsteigender vorzeichenloser lexikografischer Byte-Reihenfolge, wo es sie bisher in der
++   Reihenfolge von `Bibliography#hashes` lieferte (der an `Bibliography.apply(data: List[Data])`
++   übergebenen Reihenfolge). Die gelieferte Menge ist unverändert. `ulysses.Palimpsest#resolve`
++   probiert Kandidaten in dieser Reihenfolge, daher kann eine Signatur, die gegenüber einer
++   Bibliothek mehrdeutig dekodiert, jetzt zu einer anderen Folge von Hashes aufgelöst werden.
++   (#2141)
+
+% 0 1 0 01a924463d4d2ade199e4991ad39d095
+
+@ 0 4 0 15d571f265ac092215f9376876588618
++ - `urticose.Service` ist jetzt `case class Service(cancel: () => Unit, port: Int)`, wo es
++   `case class Service(cancel: () => Unit)` war; `port` ist der Port, an den der Server gebunden
++   ist. Die Konstruktion muss ihn angeben (die Form `Service: () => …` kompiliert nicht mehr),
++   und ein Extraktor-Pattern `Service(cancel)` muss zu `Service(cancel, _)` werden. (#2151)
+
+% 0 1 0 0daabac2e02218c20d4f9d914c51325b
+
+@ 0 6 0 0e93ee3360a8bdea0a6b9dad328ec411
++ - `vivisection.Debuggee(command, port = 0)` startet den Debuggee mit
++   `-agentlib:jdwp=…,address=*:0`, sodass der Agent einen freien Port seiner eigenen Wahl
++   bindet, den die Sitzung vor dem Anhängen aus der Zeile `Listening for transport dt_socket at address: N`
++   des Agenten auf der Standardausgabe des Debuggees liest; bisher hängte sich ein `port` von
++   `0` an Port 0 an und scheiterte. Der `launch`-Request des DAP-Adapters verwendet dies jetzt,
++   statt einen Port durch Binden und Freigeben eines Test-Sockets zu wählen. (#2151)
+
+% 0 1 0 0f02ee39a925cf311ef3874ea292cb7e
+
+@ 0 7 0 1c7e1313cc0cd6660c4925a43d8f7874
++ - Komponente `xenophile.lira` (Artefakt `xenophile-lira`) entfernt; sie ist mit Reliquary in
++   das Repository propensive/lira umgezogen (siehe den Reliquary-Eintrag). Ihre Typen —
++   `CHeaderAtomizer`, `CHeaderDiscipline`, `DtsAtomizer`, `DtsDiscipline`,
++   `KotlinMetadataAtomizer`, `KotlinMetadataDiscipline`, `WebIdlAtomizer`, `WebIdlDiscipline`,
++   `WitAtomizer` und `WitDiscipline` — ziehen aus dem Paket `xenophile` in das Paket `lira`,
++   unverändert in Name und Signatur, und werden nicht mehr in `soundness` exportiert.
++   Stattdessen von `dev.propensive:lira` abhängen. (#2111)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 38 0 04ff7e1fbfccc5961a7d7bb3701714f1
++ - `xylophone.DynamicXmlEnabler` (und sein `soundness`-Export) entfernt. Sein Ersatz ist
++   `xylophone.Xml is rudiments.Dynamical`. `xylophone.dynamicAccess.dynamicXml` bleibt erhalten,
++   umtypisiert von `DynamicXmlEnabler` zu `Xml is Dynamical`. Der gelöschte Parameter
++   `erased dynamicXmlEnabler: DynamicXmlEnabler` von `Xml#selectDynamic(name: String)` und
++   `Xml#applyDynamic(name: String)` sowie der gelöschte Kontextparameter des Givens
++   `xylophone.xmlLens` sind jetzt `(? >: Xml) is Dynamical`. `dynamicXml` erfüllt ihn, ebenso
++   ein `rudiments.dynamically[Xml]`- oder `dynamically`-Block. (#2102)
++ - Neue Codec-Givens in `object Xml`: `optionalDecodable`/`optionalEncodable` für jedes
++   `value >: Unset.type` mit einem `vacuous.Mandatable to inner` (d. h. `Optional[inner]`) und
++   `mapDecodable`/`mapEncodable` für `Map[key, value]`. Eine abgeleitete Case-Klasse darf jetzt
++   `Optional`- und `Map`-Felder haben. Ein `Unset`-Feld wird zu keinem Kindelement kodiert (ein
++   `@Xml.attribute`-Feld zu keinem Attribut), und ein fehlendes Element oder Attribut wird zu
++   `Unset` dekodiert; ein `Map`-Feld wird zu einem Kindelement je Eintrag kodiert, das
++   `<key>`- und `<value>`-Kinder enthält, und sammelt alle gleichnamigen Kinder wieder ein.
++   Bisher ließ sich ein solches Feld nicht ableiten oder löste (für `Optional[Text]`, über die
++   Brücke `Decodable in Text`) bei Fehlen `Xml.Error(Reason.Missing)` aus.
++   `Optional[List[element]]` bleibt nicht unterstützt; `List[element]` verwenden. (#2104)
++ - Neu ist `xylophone.servables.xmlServable: (Codepage) => Xml is telekinesis.Servable`
++   (Medientyp `application/xml; charset=UTF-8`), auch exportiert als
++   `soundness.servables.xmlServable`, neben dem bestehenden `xmlPostable`. (#2104)
++ - Neue Push-Form `xylophone.Xml.emit[medium: Xml.Emitter](document: turbulence.Document[Xml], deliver: medium => Unit)(using Xml.Formatting, zephyrine.Buffering): Unit`,
++   die auf dem Thread des Aufrufers ohne Fiber serialisiert und jeden Block an `deliver`
++   übergibt, sobald er voll ist: `emit[Text]` liefert Textblöcke über einen `Producer[Text]`,
++   und `emit[Data]` liefert UTF-8-Bytes, die direkt von einem Serialisierer auf Byte-Ebene
++   geschrieben werden, der jeden String in einem Durchgang escapet und kodiert.
++   `trait Xml.Emitter[medium]` mit den Givens `Xml.Emitter.text` und `Xml.Emitter.data` wählt
++   zwischen ihnen. Das Typargument ist erforderlich, wenn `deliver` ein untypisiertes Lambda
++   ist.
++ - Neu ist `xylophone.Xml.lend(document: turbulence.Document[Xml])(lending: zephyrine.Producer.Lending[Data])(using Xml.Formatting, zephyrine.Buffering): Unit`,
++   die entleihende Form des Push-`emit`: Jeder volle UTF-8-Block wird als
++   `zephyrine.Region[Data]` mit seinem markierten `Interval in region.type` verliehen, nur für
++   die Dauer des Aufrufs gültig, sodass nichts kopiert wird; `emit[Data]` ist darüber definiert
++   und materialisiert jeden Block. Der Text von `show` und der Fiber-Form von `emit` ist
++   unverändert.
++ - Die Annotationen `xylophone.Xml.attribute`, `xylophone.Xml.xmlns` und `xylophone.Xml.unqualified`
++   sind jetzt unter `import soundness.*` als `@attribute`, `@xmlns(…)` und `@unqualified`
++   erreichbar, wie sie es unter `import xylophone.*` bereits waren. `xmlns` und `unqualified`
++   werden exportiert; `attribute` ist der Typalias `soundness.attribute = xylophone.Xml.attribute`,
++   sodass nur die Annotation (der Typ) aufgelöst wird und der Term `attribute` weiterhin die
++   Methoden von `galilei` und `tarantula` benennt. `@Xml.attribute` funktioniert weiterhin. (#1953)
++ - `xylophone.Xml` wird aus UTF-8-Bytes geparst. Die `Aggregable`-Givens in `object Xml`, die
++   `by Text` waren, sind jetzt unter ihren bestehenden Namen `by Data` — `Xml.aggregable`
+
+% 0 1 0 124d9f87f7b89507102d7f10303317f4
+
+@ 0 22 0 1044e90fd954f64d0c52cae2016dad93
++   und `Xml.aggregableParsed` (`(value in Xml) is Aggregable by Data`) sowie
++   `xylophone.Xml2.aggregableIn` (`(value in Xml) is Aggregable by Data`) —, und
++   `Xml.readableParsed` ist jetzt `Data is Readable to (value in Xml)`. Die `by Text`-Formen
++   bleiben unter neuen Namen erhalten, `Xml.aggregableText`, `Xml.aggregable2Text`,
++   `Xml.aggregableParsedText`, `Xml2.aggregableInText` und `Xml.readableParsedText`
++   (`Text is Readable to (value in Xml)`), mit denselben Parametern wie zuvor; sie kodieren den
++   Text als UTF-8 und parsen die Bytes. Eine Byte-Quelle (`path.read[Xml]`, ein HTTP-Rumpf) wird
++   daher ohne `hieroglyph.Charset`-Given und ohne Dekodieren geparst, und eine Byte-Eingabe, die
++   nicht UTF-8 ist, muss vom Aufrufer zuerst zu `Text` dekodiert werden. Nur Code, der ein Given
++   benennt, ändert sich. (#2116)
++ - `xylophone.Xml.Issue` hat einen neuen Case, `BadEncoding` (beschrieben als „the input is not valid
++   UTF-8“), der in einem `Parse.Error` ausgelöst wird, wenn ein Ausschnitt der Eingabe, den der
++   Parser behält — ein Name, ein Attributwert, Zeichendaten, ein Kommentar, CDATA oder eine
++   Verarbeitungsanweisung —, kein wohlgeformtes UTF-8 ist (eine überlange Form, ein Surrogat,
++   ein Wert über U+10FFFF, ein fehlerhaftes Start- oder Folgebyte). Solche Eingabe wurde bisher
++   vor dem Parsen vom `TextSanitizer` des `Charset` ersetzt. Erschöpfende Matches über `Issue`
++   brauchen den Case. (#2116)
++ - `xylophone.Xml.Position` zählt bei einer Byte-Quelle Bytes: `offset` und `length` sind
++   Byte-Offsets in die Eingabe, und die verfolgten Längen von `Xml.PositionIndex`
++   (`Document[Xml]#locate`) sind Byte-Längen. `column` zählt Codepoints (bisher UTF-16-Zeichen:
++   Ein astrales Zeichen erhöht sie jetzt um eins, nicht um zwei). Bei einer `Text`-Quelle
++   bleiben `offset` und `length` Zeichen-Offsets in den Text. Bei ASCII-Eingabe ist alles
++   unverändert. (#2116)
++ - `xylophone.Xml.optionalDecodable` erhält eine vorangestellte `using`-Klausel
+
+% 0 1 0 1dfaed6bb9acf55b1877b60a0226fc28
+
+@ 0 3 0 0118965ad170f122157b1789545df38b
++   tactic: contingency.Tactic[Xml.Error])`. Das Verhalten unter den Standards des Begleitobjekts
++   ist unverändert. Neue Givens `xylophone.optionalityOptions.{strictXmlAbsence, lenientXmlAbsence, strictXmlFaults,
++   lenientXmlFaults}` (exportiert nach `soundness.optionalityOptions`). (#2130)
+
+% 0 1 0 1f752abdd12c4f920aa1fc7c0aca23a0
+
+@ 0 15 0 19ad7dd8662a7aac1aa7502e0fc70187
++ - `ypsiloid.DynamicYamlEnabler` (und sein `soundness`-Export) entfernt. Sein Ersatz ist
++   `ypsiloid.Yaml is rudiments.Dynamical`. `ypsiloid.dynamicAccess.dynamicYaml` bleibt erhalten,
++   umtypisiert von `DynamicYamlEnabler` zu `Yaml is Dynamical`. Der gelöschte Parameter
++   `(using erased dynamicYamlEnabler: DynamicYamlEnabler)` von `Yaml#selectDynamic`,
++   `Yaml#applyDynamic`, `Yaml#update` und beiden Überladungen von `Yaml#updateDynamic` sowie der
++   gelöschte Kontextparameter des Givens `Yaml.lens` sind jetzt `(? >: Yaml) is Dynamical`.
++   `dynamicYaml` erfüllt ihn, ebenso ein `rudiments.dynamically[Yaml]`- oder
++   `dynamically`-Block. (#2102)
++ - Neu sind `ypsiloid.postables.yamlPostable: (Codepage, Yaml.Formatting) => Yaml is telekinesis.Postable`
++   und `ypsiloid.servables.yamlServable: (Codepage, Yaml.Formatting) => Yaml is telekinesis.Servable`
++   (Medientyp `application/yaml; charset=UTF-8`), auch exportiert als
++   `soundness.postables.yamlPostable` und `soundness.servables.yamlServable`. Das Modul
++   `ypsiloid.http` hängt jetzt von `telekinesis.core` ab und ist, wie `jacinta.http`, nur für die
++   JVM verfügbar, daher ist `ypsiloid.construables.yamlConstruable` unter Scala.js nicht mehr
++   verfügbar. (#2104)
++ - `ypsiloid.Yaml.optional` und `Yaml.option` erhalten eine vorangestellte `using`-Klausel
+
+% 0 1 0 0fbf18dfdfc58c6817f0f82711b6b513
+
+@ 0 5 0 163c7eb39f62f02917a7fcdc0cdcff61
++   fault: distillate.Decodable.Fault in Yaml, tactic: contingency.Tactic[Yaml.Error])` (bisher
++   nahm `optional` `(tactic: Tactic[Yaml.Error])` und `option` nichts); der Ergebnistyp von
++   `Yaml.option` ist jetzt `(Option[value] is Decodable in Yaml)^{tactic}`. Ein YAML-`null` in
++   einem `Optional[T]`-Feld wird jetzt als `Unset` gelesen, wo es bisher an den inneren
++   Dekodierer weitergereicht wurde (`Yaml.Error(Reason.NotType(Null, …))`); `Option[T]` las es
++   bereits als `None`. Neue Givens
+
+% 0 1 0 1de1375cf01148881a47b4df20859f33
+
+@ 0 1 0 0b3c53685a5c93200f455149250ca5ff
++   lenientYamlNulls, strictYamlFaults, lenientYamlFaults}` (exportiert nach
+
+% 1 1 0 090abf192b797c4315ab9ecf71ee7bda
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 28 0 0da38e7afd02cb5114e1f18af1262cd8
++ - `zephyrine.Producer.Channel[medium]` (der streamende Produzent, den `Producer[medium](…)`
++   zurückgibt) hat einen zweiten Typparameter erhalten: Er ist jetzt
++   `Producer.Channel[medium, operand]` und erweitert die neue
++   `abstract class Producer.Staged[medium, operand](block: Int)(using medium is Addressable { type Operand = operand })`,
++   die das mit dem neuen `Producer.Sink` geteilte Staging der Blöcke enthält.
++   `Producer[medium](…)` gibt jetzt `Producer.Channel[medium, addr.Operand]^` anstelle von
++   `Producer.Channel[medium] { type Operand = addr.Operand }^` zurück; Code, der die Klasse
++   benannte, schreibt `Channel[Text, Char]` (oder das Äquivalent der Verfeinerung). `put`,
++   `push`, `finish` und `iterator` sind unverändert. (#2109)
++ - Neu ist `zephyrine.Producer.sink[medium](deliver: medium => Unit, block: Optional[Int] = Unset)(using medium is Addressable, Buffering)(body: Producer[medium] { type Operand = … }^ => Unit): Unit`
++   (die Klasse `Producer.Sink[medium, operand]`): das synchrone streamende Gegenstück zu
++   `Producer.collect`, das jeden vollen Block auf dem aufrufenden Thread an `deliver` übergibt
++   und den unvollständigen letzten Block ausgibt, nachdem `body` zurückgekehrt ist. (#2109)
++ - Neu ist `zephyrine.Producer.utf8(deliver: Data => Unit, block: Optional[Int] = Unset)(using Buffering)(body: Producer[Text] { type Operand = Char }^ => Unit): Unit`
++   (die Klasse `Producer.Utf8Sink`): ein `Producer[Text]`, dessen Blöcke als UTF-8-`Data`
++   geliefert werden, kodiert, während die Zeichen eintreffen; ein einzelnes Surrogat wird als
++   U+FFFD kodiert. Es ist die besitzende Form des neuen
++   `zephyrine.Producer.lendUtf8(lending: Producer.Lending[Data], block: Optional[Int] = Unset)(using Buffering)(body: …): Unit`,
++   das jeden vollen Block als `Region[Data]` mit seiner markierten Ausdehnung verleiht, statt ihn
++   zu kopieren, unter dem neuen Alias `type Producer.Lending[medium] = (region: Region[medium]) => (Interval in region.type) => Unit`.
++   Beide leihen ihren Byte-Block und ihren temporären Zeichenpuffer aus dem gemeinsamen
++   `zephyrine.Blockpool` und bieten sie zurück an, wenn der Rumpf zurückkehrt, wie es der Writer
++   von `Json.lend` tut, sodass ein warmer Writer nichts Eigenes alloziert. (#2109)
++ - Neu ist `trait zephyrine.Producer.Emission[medium]` mit den Givens `Producer.Emission.text`
++   und `Producer.Emission.data`, die `sink` oder `utf8` für die gegen `Producer[Text]`
++   geschriebene Push-Form eines Text-Serialisierers auswählen. (#2109)
++ - Neu ist `final class zephyrine.Producer.Utf8Writer(lending: Producer.Lending[Data], block: Int)`,
++   der Writer auf Byte-Ebene hinter `Xml.lend` und `Tel.lend`, gemeinsam genutzt, sodass die
++   Push-Form eines Textformats nur ihre Escapes liefert: `ascii(text: String)`,
++   `name(text: String)` (über einen Cache kodierter Namen, abgeglichen nach Identität oder
++   Gleichheit), `text(text: String)`,
+
+% 0 1 0 11a8fc69e2018cc4038c2f7e23389ef6
+
+% 0 1 0 10605fb74f6cc59a0ab17f9d33395a5b
+
+@ 0 5 0 1907960e230967ec1d75f17f19f72af1
++   `long(value: Long)` und `finish(): Unit`, alles `update`-Methoden. Er kodiert UTF-8 direkt in
++   einen aus dem `Blockpool` geliehenen Block, mit einem einzelnen Surrogat als U+FFFD (als `?`
++   in einem `name`), und verleiht jeden vollen Block an `lending`.
++   `Producer.Utf8Writer.escapes(entities: (Char, String)*): Utf8Writer.Escapes` baut eine
++   Escape-Tabelle für ASCII-Zeichen, und
+
+% 0 1 0 1ac2a19e3a7726f610830e4d249f7aff
+
+@ 0 1 0 11197b95a1005e5514ea64c91c871cc9
++   schreibt mit `body` und gibt den Puffer aus.
+
+@ 0 1 0 18c20a93c615d9ef129078b639b6bc9d
++ ## Alle Module (Build)
+
+@ 0 7 0 183db6a6cc7127b017ece62611dd87e3
++ - Jedes Artefakt wird jetzt mit `-sourceroot <repository root>` kompiliert, sodass der
++   Quellpfad, den TASTy für jede Einheit verzeichnet, relativ zum Soundness-Repository ist
++   (`lib/ethereal/src/core/ethereal.Client.scala`), wo er der absolute Pfad der Build-Maschine
++   war (`/home/runner/work/soundness/soundness/lib/…`). Code, der die Quelldatei eines Symbols
++   oder einer aus einer Soundness-Bibliothek eingebetteten Position liest (das
++   `Position.sourceFile.path` eines Makros, eine JSR-45-Source-Map, ein Werkzeug, das
++   TASTy-Quellen auflöst), sieht den relativen Pfad; er ist gegen einen Soundness-Checkout
++   aufzulösen, wenn eine Datei benötigt wird. Keine Quelländerung ist erforderlich. (#2117)

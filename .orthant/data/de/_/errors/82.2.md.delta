@@ -1,0 +1,60 @@
+orthant 2 language
+
+% 0 1 0 1b20ccfadbfed0500d96cfd162acb9cd
+
+@ 0 1 0 1ed6ee8637ae50810a4aaf966372439e
++ Wird ausgelöst, wenn Cacophony nicht von einem Audio-Feed aufnehmen kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 4 0 1260e6a6efd9e5de114814780cb4eebf
++ Cacophony öffnet eine Leitung zur Audioaufnahme und liest Samples daraus. Dieser Fehler meldet
++ ein Problem mit der Leitung selbst, mit der angeforderten Konfiguration oder mit Operationen, die
++ nach dem Ende der Aufnahme ausgeführt werden.
++ Die Meldung lautet `could not record from feed $feed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 1ec234f5d6b936cb078edc535e66f43a
+
+@ 0 3 0 119987e16bd6e26c01ba47eb0cd8160f
++ Die angeforderte Audioleitung konnte nicht geöffnet werden, typischerweise weil kein
++ Eingabegerät angeschlossen ist oder ein anderer Prozess es exklusiv nutzt.
+
+@ 0 1 0 1ae3a649be3e11c117d2dc71becb6cf1
++ **Beispiel.** `[↯/s.82.2.1] could not record from feed default because the audio line could not be opened`
+
+@ 0 2 0 0a10bcc644f2110819ae012c0fef4a2e
++ **Behebung.** Stellen Sie sicher, dass ein Eingabegerät angeschlossen ist und der Prozess es
++ verwenden darf.
+
+% 0 1 0 17a89aeecb2adaf11df666e3e6d95a15
+
+@ 0 2 0 10a144670334fe270f186c4d12c25b3b
++ Die Kombination aus Abtastrate, Kanalanzahl und Samplegröße wurde vom Gerät nicht unterstützt.
+
+@ 0 1 0 169ac148e6a2000e14290360dcc9e904
++ **Beispiel.** `[↯/s.82.2.2] could not record from feed default because the requested configuration is not supported`
+
+@ 0 2 0 07c3168e3c7dad8208346ff928cd990c
++ **Behebung.** Wählen Sie eine Konfiguration, die das Gerät unterstützt; fragen Sie seine
++ Fähigkeiten ab und wählen Sie ein kompatibles Format.
+
+% 0 1 0 00984a0c1c2dde020c24e67e75e3eb12
+
+@ 0 1 0 101e052d0bb1c9c711ed493b2a965ade
++ Eine Operation wurde versucht, nachdem die Aufnahme beendet war.
+
+@ 0 1 0 1980b764b112e78a171f0eee0f986cd9
++ **Beispiel.** `[↯/s.82.2.3] could not record from feed default because the recording has already been stopped`
+
+@ 0 2 0 008b1787c228ffcf12a5df7e017ff113
++ **Behebung.** Öffnen Sie eine neue Aufnahme, statt eine beendete wiederzuverwenden.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 06e02ba3712ad3c4132026a245feb3ae
++ - Quelle: `lib/cacophony/src/core/cacophony.Feed.scala`

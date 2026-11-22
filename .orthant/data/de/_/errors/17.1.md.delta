@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 1e6c6be5264608610772c8a44f56e9ef
++ # `↯/s.17.1` — Typ hat keine `flatMap`-Methode
+
+@ 0 2 0 05932b47a20d019c19c2f5305d2dec2d
++ Wird zur Kompilierzeit vom Makro `monad` von Mercator ausgelöst, wenn der Zieltyp
++ keine `flatMap`-Methode hat.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 1 0 1614f2d5c7172ab40f79a10c945d510e
++ Die `Monad`-Ableitung von Mercator setzt ein `flatMap` auf dem Typ voraus.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1593100f80ed607312904be12531109a
+
+% 1 1 0 18f09d4ab3a45a7b0f556fa7e06a709b
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 1f36aa8653c53abc19c4aa9039d38fc5
++ Definieren Sie ein `flatMap` auf dem Typ, oder stellen Sie eine `Monad`-Instanz
++ von Hand bereit.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1cb104d057b8971f1427e232956fe585
++ - Quelle: `lib/mercator/src/core/mercator.internal.scala`

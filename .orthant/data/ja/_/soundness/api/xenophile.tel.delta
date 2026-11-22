@@ -1,0 +1,2501 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b91f38cf531c1be0270d331a0076085
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1782437c7239863a0216a55b5ba6a864
++ info   コンパイル時に読まれる外部の型システム：C、WIT、TypeScript、WebIDL、Kotlin の型付きナビゲーションと、それが生成する呼び出し
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1cc926106dabdba318e72ea4afe2ce1d
++     _Xenophile_ は、Scala のコードがコンパイルされる間に別の言語自身の定義を読み、すべての*外部*の式をそれに照らして検査する。定義とは、C のヘッダー、WebAssembly の WIT の記述、TypeScript の宣言ファイル、WebIDL のインターフェース、あるいは Kotlin コンパイラがクラスファイルに残す `@Metadata` である。
++     外部の型のメンバーを選択する、外部の関数を適用する、外部の配列にインデックスでアクセスする。どの一歩も外部の宣言に照らして解決され、存在しないメンバーや外部の型の誤った引数は、実行時の驚きではなく Scala のコンパイルエラーになる。
+
+@ 0 7 0 1d4718a0cca3ff89070d8f2f366b32ba
++     これを担う抽象は三つある。
++     `Ecosystem` は外部の世界（C の `Native`、Component Model の `Wit`、`Typescript`、`WebIdl`、`Kotlin`）と、その定義をパースする `Dialect` を指す。
++     `Interface` は、エコシステムをコンパイラのクラスパス上の定義ファイルに given として結びつける。
++     `Foreign` の値は外部の型の値であり、その細分化された型 `Foreign of "Point" from Native` は外部の型（`Topic`）とエコシステム（`Origin`）の両方を記録する。そのメンバーは、外部の宣言が Scala であるかのようにナビゲートでき、各段階で `Foreign.Expression` を組み立てて型を細分化する。
+
+% 2 1 0 1be9173591db88230242bfd83f9624eb
+
+% 3 1 0 01b4883010ce4bbc017b3f29c930f825
+
+% 4 1 0 1387c4aa9e803fc80ba512f69abddf3f
+
+% 5 1 0 0cb33ed9af73ff890e015e8830c5304c
+
+% 7 1 0 10ee9458fd13a37d04052fc74a01a690
+
+% 8 1 0 0eb26c46a4c0bff91db0a4fb636084d1
+
+% 10 1 0 1279d9d8849ea9c20803f2f69d604d25
+
+% 0 1 0 086f4d3d82d4c40505b0f925586533ea
+
+% 0 1 0 086f566f39c9230e005c8faeb0a60830
+
+% 0 1 0 1f7bfa05379596251e699c47a217124a
+
+% 0 1 0 08a7c23efd304350055f3713397085e6
+
+% 0 1 0 0c3e058f493e9ed808ddf418a73f17c0
+
+% 1 1 0 1696057e1ead95e20d8964fb0f1360ba
+
+@ 0 5 0 005e4bcd8f3c49ed0c931416492a8b2f
++     `Interoperable` のインスタンスが Scala の値を外部の型に写す場合には、Scala の値を引数として渡せる。`Text` は C の `string` や WIT の `string` に、`Int` は C の `int` に、大きさの決まった `hypotenuse` の数（`U8`、`S32`、`U64` など）はそれぞれの WIT の幅に写る。これは `Foreign.converter` の変換を通じて行われ、値はインスタンスの `Topic` で型付けされた `Foreign.Expression.Literal` に包まれる。
+
+@ 0 10 0 0c61ca43808ca6791207808bab0bfce5
++     ナビゲーションだけでは*何も実行しない*。式を組み立てるだけである。
++     式を実行するのはエコシステムの役目であり、Scala のプログラムの内部で実行されるエコシステムでは、ただ一つの `call` 拡張が終端である。
++     `library.abs(-5).call[Int]()` は、完全に適用されたナビゲーションを、ビルドがクラスパスに置いた `Materializer` に渡す。JVM では Panama のダウンコール（`PanamaInvoke`）、Scala Native では `dlsym`/`CFuncPtr` の呼び出し（`NativeInvoke`）、Wasm コンポーネントでは Component Model のインポート（`WasmInvoke`）、Scala.js では `js.Dynamic` の呼び出し（`JsInvoke`）、Kotlin へは JVM の直接の呼び出し（`KotlinInvoke`）である。
++     どれを使うかはエコシステムの `Emission` メンバーから読まれる。そのため `call` はすべての言語とすべてのプラットフォームに対して一つのメソッドであり、一度書いた C のバインディングは JVM でも Scala Native でも変更なしにコンパイルできる。
+
+@ 0 1 0 128ee1d47a9be1bc017b1746d60a0bd2
++     ライブラリは、それぞれが提供するものによってコンポーネントに分かれている。
+
+@ 0 26 0 1c2c3b6ceffc015c0e873bf6ce87fcc9
++     - `xenophile.core`：`Foreign`、`Interface`、`Ecosystem`、`Dialect`、`Prototype`、`Interoperable`、`Materializer`、`call`。プラットフォーム中立であり、JVM、Scala.js、Scala Native 向けにコンパイルでき、どのエコシステムにもどのバックエンドにも依存しない（どちらも、`Ecosystem` が記録する名前によって、コンパイル時にリフレクションで到達される）。
++     - `xenophile.cffi`：C のフロントエンド。`Interoperable` のマーカーを持つ `Native` エコシステム、`CHeader` のパーサーと方言、そして不透明な生のポインターである `Address`。プラットフォーム中立である。
++     - `xenophile.native`：C のための JVM バックエンド。`PanamaInvoke` と、Panama に裏付けられた `ForeignLibrary`（ライブラリの読み込みとシンボルの解決）と `ForeignBuffer`（手動で管理する外部のメモリー）。
++     - `xenophile.scalanative`：C のための Scala Native バックエンドである `NativeInvoke` と、`dlopen`/`dlsym` と `malloc` の上に同じ表面を提示する `ForeignLibrary` と `ForeignBuffer` の Scala Native 版。ビルドは `xenophile.native` *または* `xenophile.scalanative` に依存し、両方に依存することはない。C のエコシステムは両方を指し、`call` は見つかった方を使う。
++     - `xenophile.wit` と `xenophile.wasm`：`Wit` エコシステムと `WitDialect`、そして Wasm バックエンド。`WasmInvoke`、コーデックを持つ `Wasm` のマーシャリング形式、そして WIT のリソース、バリアント、結果のための `Wasm.Handle`、`Wasm.Case`、`Wasm.Variant`、`Wasm.Error` である。
++     - `xenophile.typescript`、`xenophile.webidl`、`xenophile.js`：方言を持つ `Typescript` と `WebIdl` のエコシステム、そして両者が共有する Scala.js バックエンドである、`Js` 形式を伴う `JsInvoke`。
++     - `xenophile.kotlin`：`Kotlin` エコシステム。その `KotlinDialect` はファイルからではなくコンパイルのクラスパス上のクラスファイルから宣言を読む。そして `KotlinInvoke` と、生きた Kotlin や Java の値を包む `Facade`。これによって `make[kotlin.text.Regex](t"[0-9]+")` は静的に型付けされた JVM の直接の呼び出しでナビゲートされる。`companion`、`singleton`、`enumEntry` は Kotlin の他の種類の宣言に到達する。
+
+@ 0 4 0 0a76c890b0d1b9750747876b89a0f5f4
++     すべてが `soundness` アンブレラにエクスポートされる。
++     このライブラリには選択パッケージがない。`Interoperable` とコーデックの given は `Native`、`Js`、`Wasm` のコンパニオンにあって暗黙のスコープを通じて解決され、プログラムが自分で書く given はその `Interface` だけである。これはローカルに、またはパッケージ水準の given として束縛する。
+
+% 0 1 0 083fa6571cc46dd9034a13c47821d99e
+
+% 0 1 0 1028219a3d00cdf21807c700d45ce1cf
+
+% 0 1 0 0dbd39c03554902f18200af34a0bb685
+
+% 0 1 0 18bf3190878abca20c1da240d08b6f16
+
+% 0 1 0 11fc09598d3329e711597a2196f5b2b1
+
+% 0 1 0 0f4bd3eb8420b67e1b1054f33434f0ca
+
+@ 0 1 0 1d574c97efe6b9ad14d38027295a45da
++ entry .Foreign   外部の型の値。その言語自身の宣言に照らしてナビゲートされる
+
+% 1 1 0 15d31170a9e3078602b8640ee730f808
+
+@ 0 8 0 147100b7be219dee18686a858392bf43
++       `Foreign` は外部の型の値を表す。
++       その静的な型は、外部の型を文字列リテラルの `Topic` として、元の言語を `Origin` として細分化され（`Foreign of "Play" from Typescript` と書く）、ナビゲーションが始まった場所で `Interface` がスコープにあった場合は、定義のパスを `Locus` として細分化される。
++       ルートは `Foreign["Play", Typescript]` で作る。そこから、メンバーの選択（`play.scene`）、関数の適用（`play.greet(t"hello")`）、配列のインデックスアクセス（`play.tags(0)`）は、どれもパースされた定義の中でメンバーを探し、宣言の内容に従って結果の型を細分化するマクロである。
+
+% 2 1 0 0b96b3c7acab3dd500d1061f05852be5
+
+% 3 1 0 1caf90dd903fe4ca0382207b4400cd57
+
+% 4 1 0 1d8a035082b19d2815c6ea9e3c9432af
+
+% 5 1 0 02af723ff57bcf3d170473b89d31211c
+
+% 3 1 0 057a9dfdfd0b621500f04524e3d22936
+
+% 4 1 0 096a910d8a4556c102fc247bd988e2a7
+
+% 6 1 0 08b15ce552ad66461f080f21ca33d9f6
+
+% 7 1 0 1c169dd72d6c212a1df08c8cdb20cd54
+
+% 8 1 0 0e46113a0601124c02378dcdc4917935
+
+% 9 1 0 1a78697f58b6463500651c079a3dbf61
+
+% 10 1 0 00692577e9729c820948cd8aa37620b4
+
+% 11 1 0 1a8678c416eb942318cc8b0ecf35d455
+
+% 12 1 0 043da4bdc002048a1d69d970e7edc1e4
+
+@ 0 4 0 1248335ea6ff95d11382e7f2e8c14779
++       宣言がユニオンとして綴る外部の型はリテラル型のユニオン（`"string" | "undefined"`）であり、`Array<string>` や `Map<number, string>` のようなジェネリックの適用は前置詞的な `over` である。`"Array" over "string"`、`"Map" over ("number", "string")` となる。
++       複合的なトピックには選択できるメンバーがない。
+
+@ 0 4 0 1d040b8cd9c8d22619da375376db77d3
++       どのナビゲーションも `Foreign.Expression`（`#expr`）を組み立て、何も実行しない。
++       式はエコシステムの実行時が消費するものである。ブラウザのエコシステムはそれを JavaScript に描画し、`call` は完全に適用された式をクラスパス上のバックエンドに渡して、実際の C、Wasm、JavaScript、Kotlin の呼び出しとして実行させる。
+
+@ 0 7 0 1965852d528d0fc01308527488bd32e2
++       引数は `Foreign from Origin` と型付けされる。同じエコシステムの外部の値か、それに対する `Interoperable` のインスタンスを持つ Scala の値であり、後者は `.converter` が呼び出し箇所で `Foreign.Expression.Literal` に変える。
++       マクロはそれから、各引数の `Topic` を宣言されたパラメーターの型に照らして包含関係で検査する。`string` は `option<string>`（`"string" | "none"`）のパラメーターを満たし、`ok` の側の型は WIT の `result<ok, err>` のパラメーターを満たし、C の `Address`（トピック `pointer`）はどの `ptr<T>` のパラメーターも満たす。
+
+@ 0 4 0 061d88bbf6fd5b8414c7e7e995098e42
++       コンパイルエラーは問題を正確に名指しする。_xenophile: the foreign type Play has no member nonexistent_、_xenophile: greet expects 1 arguments, not 2_、_xenophile: greet expects an argument of foreign type string_、そして何もエコシステムをファイルに結びつけていないときは _xenophile: no `Interface` with a definitions path is in scope_ である。
+
+@ 0 3 0 1e9479663ec9f3ba1694e6c13c3f6b6a
++       `Foreign` は `Completable` である。補完エンジンは、レシーバの外部の型のメンバーを `.completions` に尋ね、それは型の `Locus` が記録する定義から読まれる。そのため外部の型は、エディターの中で Scala の型と同じように補完される。
+
+% 1 1 0 087af66e7c14926a10bb8318a1314fa7
+
+% 0 1 0 0ec8b5043f9e436c059c3356edeb7780
+
+% 1 1 0 1a7020fb61ad5fbb030a833855c3a8c3
+
+@ 0 7 0 1435cf1b4a3309901400fec7852cbf2b
++   entry .apply   `Foreign["Play", Typescript]`：名前を指定した外部の型への参照。ルートとなる
++       外部の型の名前を文字列リテラル型として、それが属する `Ecosystem` とともに取る transparent inline マクロである。
++       結果は `Foreign of "Play" from Typescript` であり、ここでそのエコシステムの `Interface` がスコープにあれば、定義のパスが `Locus` として記録される。`Interface` なしで作ったルートもナビゲートはできる（各段階で `Interface` を改めて召喚する）が、補完は提供しない。
++       名前はリテラルでなければならず、そうでなければ _xenophile: the foreign type name must be a string literal type_ となる。
+
+@ 0 30 0 0288e65b1e970453173782d63d1a5e6a
++       別の `inline` 定義の内側では、遅延された展開によって細分化が暗黙のままになることがある。`Foreign["tcp-create-socket", Wit].asInstanceOf[Foreign of "tcp-create-socket" from Wit]` のように、明示的な型注釈を付けた `val` にルートを束縛すると、それが固定され、引数の変換がそのエコシステムを解決できるようになる。
++   entry .make   `Expression` を、細分化なしで `Foreign` として包む
++       `Foreign.make(expression)` はマクロが埋め込むただのコンストラクターである。結果の型は素の `Foreign` なので、ナビゲートするのではなく自分で式を組み立てるコードのためのものである。
++   entry .completions   補完エンジンのための、レシーバの外部の型のメンバー
++       `prophesy.Completable` を通じてリフレクションで呼び出される。
++       レシーバの `TypeRepr` とそれまでに入力された接頭辞を与えられると、細分化から `Topic`、`Origin`、`Locus` を読み、その場所の定義をパースし、各メンバーを項またはメソッドとして、記号的に描画したシグネチャ（`(string): Play`）とともに列挙する。
++       トピックが複合的なレシーバや、ルートが `Locus` を記録しなかったレシーバは、何も提供しない。
++   entry .converter   `Interoperable` のインスタンスを持つ Scala の値は `Foreign` のリテラルに変換される
++       `Conversion[value, Foreign of Topic from Ecosystem]` である。これによって、トピックが `string` の `Foreign from Typescript` が期待される場所に `t"hello"` を渡したり、`Wasm.Handle of "tcp-socket"` を `Foreign of "tcp-socket" from Wit` として束縛してからナビゲートしたりできる。
++       値は `Foreign.Expression.Literal` の中にそのまま運ばれ、外部の型はインスタンスの `Topic` である。
++       `#applyDynamic` でエコシステムをレシーバの `Origin` に固定することで、変換はその型パラメーターを推論できる。そのため、`Text` なら変換できる場所でも、素の `"…"` の `String` リテラルは変換できない。C と WIT のインスタンスは `Text` に対するものである。
++   entry .Expression   ナビゲーションが組み立てる AST：参照、選択、適用、インデックス、リテラル
++       五つのケースを持つ `enum` である。
++       `Reference(name)` はルートであり、名前を指定した外部の型または値である。
++       `Select(target, member, owner)` はメンバーの選択であり、選択元の外部の型 `owner` を記録する。型のレイアウトを必要とするバックエンド（C の評価器）はそれを使い、自己記述的なバックエンドは無視する。
++       `Apply(target, arguments)` は関数の適用、`Index(target, index)` は配列型の値へのインデックスアクセス、`Literal(value)` はそのまま運ばれる Scala のオペランドであり、`.converter` が作るものである。
+
+% 2 1 0 0ca306cfa6abf029101b20eadbae9fc0
+
+% 3 1 0 0fb68f296c59065508d0c2c1d3c9ade6
+
+% 0 1 0 0ed0d507c74e8c6104e7e6f731ab892c
+
+% 0 1 0 17cfdaf07c52ad8315e2e94086f1f429
+
+% 0 1 0 04e9886da843dd2a138f107da0ca4b9f
+
+% 0 1 0 17aa01922b501ef1118ebe3143404d62
+
+% 1 1 0 042820322229d194094d3f92fd8ffb4f
+
+@ 0 2 0 024fd2b73a7fd9be084606bcad238c50
++       `Apply` のケースの引数リストは、Soundness のものではなく標準ライブラリの `List` である。
++   entry .Type   方言が報告する外部の型：名前付き、ユニオン、またはジェネリックの適用
+
+% 1 1 0 030d94dbcaec305902ac6aecef2a5fc5
+
+@ 0 35 0 19b9eedd84f445c203ce0ca9545089f0
++         `Dialect` がメンバーの型を記述するのに使う `enum` である。
++         `Named(name)` は普通の型（`int`、`string`、`Play`）である。`Union(members)` は選択肢のユニオンである（オプショナルな WIT の値は `Union(List(Named("string"), Named("none")))`）。`Applied(constructor, arguments)` はジェネリックの適用であり、TypeScript の `Map<number, string>`、WebIDL の `sequence<T>`、WIT の `list<T>`、`option<T>`、`result<ok, err>`、`tuple<…>`、C の方言の `ptr<T>`、`const<T>`、`array<T, n>`、`fn<result, params…>` などがある。
++         マクロはこれらを型に写す。`Named` はそのリテラル型に、`Union` はリテラル型のユニオンに、`Applied` は `constructor over arguments` に写る。
++     entry #text   ソースとして描画した型：`Map<number, string>`、`string|undefined`
++   entry #expr   このナビゲーションが組み立てた式
++       `Foreign.Expression` の木である。ルートには `Reference`、メンバーには `Select`、適用には `Apply`、要素には `Index` がある。
++       テストが調べるのはこれであり、エコシステムの実行時が描画または実行するのもこれである。
++   entry #selectDynamic   `foreign.member`：宣言されたフィールドまたは引数のないメソッドを選択する
++       `Dynamic` を通じて到達する transparent inline マクロである。
++       メンバーはレシーバの外部の型の中で探され、結果はメンバーの宣言された型の `Foreign` であり、`Origin` と `Locus` が引き継がれる。
++       フィールドと引数のないメソッドはどちらもそのまま選択できる。`` `get-random-u64` `` のような引数のない WIT の関数は、選択してから空の引数リストなしで `call` する。しかし、パラメーターを持つメソッドは適用しなければならない。_xenophile: greet is a method of Play and must be called with arguments_ となる。
++       未知の名前は _xenophile: the foreign type Play has no member nonexistent_ である。
++   entry #applyDynamic   `foreign.method(args…)`：宣言されたメソッドを外部の型の引数に適用する
++       `Dynamic` を通じて到達する transparent inline マクロである。
++       各引数は `Foreign from Origin`、すなわち同じエコシステムからのナビゲーションか、`.converter` で変換された Scala の値であり、その `Topic` は宣言されたパラメーターの型に照らして包含関係で検査される。
++       引数の数は一致しなければならず（_xenophile: greet expects 1 arguments, not 2_）、引数はシーケンスから展開するのではなく直接書かなければならず、結果はメソッドの宣言された結果で型付けされる。
++       フィールドをメソッドであるかのように選択すると _xenophile: scene is not a method of Play_ となる。
++   entry #apply   `foreign(index)`：配列型の外部の値の要素
++       本物の `apply` であり、`Dynamic` より優先されるので、`tags(0)` はここで解決される。
++       レシーバのトピックは、配列のコンストラクター（WebIDL の `sequence` と `FrozenArray`、TypeScript の `Array` と `ReadonlyArray`、WIT の `list`）のいずれかを一つの要素型に適用したものでなければならず、結果はその要素型の `Foreign` である。
++       それ以外のレシーバは _xenophile: this foreign type is not an indexable array type_ となる。
+
+@ 0 1 0 1e98beb5beefd8cb1ceb6c9388b4ba26
++ entry .Interface   エコシステムをコンパイラのクラスパス上の定義ファイルに、given として結びつける
+
+% 1 1 0 16bec7cb7305efb01b31350e1ee6e4e8
+
+@ 0 5 0 1ad6c4273b777df5123d67614b3d47ee
++       `Interface in Typescript at "/xenophile/definitions.ts"` は、エコシステム（`Form`）とその定義のクラスパス上のパス（文字列リテラル型の `Locus`）を型が記録する値である。
++       ナビゲーションのマクロは、レシーバの `Origin` に対する `Interface` を召喚し、その `Locus` から定義を読む。ファイルはコンパイル時に読まれてパースされるので、プログラムのクラスパスだけでなく、コンパイラのクラスパス上になければならない。
+
+% 2 1 0 03b4cdcf779a339e1ae582c67ba7aac5
+
+% 3 1 0 030a9f689721a919004ac542f0430c9c
+
+% 4 1 0 0e3a383055933b4b0901480f347ddd4a
+
+% 5 1 0 119ea1e22bf2f8301d9191823dbd2a19
+
+% 0 1 0 0f1bc84c3d453cb51ce10a5343f17112
+
+% 0 1 0 0fe31f6448b01fab0a9ce390f84dd017
+
+% 1 1 0 01f1e021eb5a26591c1ef38c3ed179e9
+
+@ 0 5 0 1f5216ffca7f337c1f8f6a98dcbda2f4
++       召喚される `Interface` はエコシステムごとに一つなので、同じ文法の定義ファイルが二つあれば、エコシステムが二つ必要である。二つ目の `trait Dom extends Ecosystem { type Grammar = WebIdlDialect.type }` によって、本物の DOM の IDL と合成したサンプルが共存できる。
++       方言がクラスファイルを読む `Kotlin` のような自己解決型のエコシステムには、`Interface` はまったく要らない。
+
+@ 0 2 0 124ee8a446468f2513cb8717cadced5a
++       パースされた定義は、コンパイルの実行の間、パスごとにキャッシュされるので、`play.scene.play` のような連鎖でもファイルは一度しかパースされない。
+
+% 1 1 0 136bcf1372d883d71e877bd104574af0
+
+% 1 1 0 1f12ec92ff296adf19117e26cc408c46
+
+@ 0 9 0 05f637b72efe8bf11f76010636c4d7b8
++   entry .apply   `Interface[Native](cp"/lib.h")` または `Interface[Native]("/lib.h")`：定義のパスに対するインターフェース
++       transparent inline のオーバーロードが二つある。
++       一つ目は任意の `Locative` を取る。これは `Locus` のシングルトンのパスの型を運ぶもののことであり、特に `cp"…"` からの hellenism の `Resource` は、コンパイル時にファイルの存在を検査する。
++       二つ目はクラスパス上のパスを `String` リテラルとして取る。`cp"…"` が使えない Scala Native 向けにクロスコンパイルするコードのためのものである。これはナビゲーションが最初にそれを読むときに検査され、存在しなければ _xenophile: could not read foreign definitions at /lib.h on the classpath_ となる。
++       結果の型は `Interface { type Form = Native; type Locus = "/lib.h" }` であり、前置詞 `in`/`at` を使うと `Interface in Native at "/lib.h"` と綴れる。
+
+@ 0 1 0 069699ba16022554034afea7d663c00f
++ entry .Ecosystem   外部のソース言語：どの `Dialect` がそれをパースし、どのバックエンドがそれを呼び出せるか
+
+% 1 1 0 08868576ee823c4a0cc549075f9f4e63
+
+@ 0 6 0 0eabd287225619231e7621f1093f286f
++       二つの型メンバーを持つマーカーのトレイトである。
++       `#Grammar` は言語の定義をパースする `Dialect` オブジェクトのシングルトン型である。ナビゲーションのマクロはそれをリフレクションで読み込むので、`xenophile.core` はどのエコシステムにも依存しない。
++       `#Emission` は、その言語で呼び出しを実行できる `Materializer` オブジェクト（一つまたは複数）を、リテラル型の完全修飾クラス名として指す。そのため `call` は、エコシステムがバックエンドに依存することなく、ビルドが選んだバックエンドを見つけられる。
+
+@ 0 2 0 00544e23e593664e15ff9e01e832a846
++       提供されるエコシステムは `Native`（C のヘッダー）、`Wit`、`Typescript`、`WebIdl`、`Kotlin` である。
++       新しいエコシステムは方言を指すトレイトである。
+
+% 2 1 0 0e2206165197048703014bc04e066d92
+
+% 3 1 0 0331e04c777c13fb1e051b61e03220a0
+
+% 0 1 0 0c04e980d27e21ad1eee0f911114fbca
+
+% 0 1 0 144cbb4c2e3545181cd12df292ebb537
+
+% 1 1 0 08a41993f41759741dabb1aac09a6d9e
+
+@ 0 2 0 1abdd804a8b6bf5510c2efe1e047b727
++       `Emission` のないエコシステムはナビゲートできるが `call` できない。_xenophile: the source language names no materializer (it defines no `Emission`)_ となる。
+
+% 1 1 0 0067eb4e66fe93b104e7474b745edd5b
+
+% 0 1 0 00216f529c9d954d13bba428f58d583d
+
+@ 0 12 0 106c9e6d8380ec880bcba1db493520ce
++   entry #Grammar   この言語の定義をパースする `Dialect` オブジェクトのシングルトン型
++       `Dialect` を上限とする。
++       コンパイル時に、マクロ自身のクラスローダーを通じてオブジェクトの `MODULE$` フィールドを読み込んで解決される。読み込めない文法は _xenophile: could not load the grammar for the foreign source language_ となる。
++   entry #Emission   呼び出しを生成できる `Materializer` オブジェクトの完全修飾名。リテラル型として
++       一つの名前、または言語に複数のバックエンドがある場合は名前のユニオンである。C のエコシステムのものは `"xenophile.PanamaInvoke" | "xenophile.NativeInvoke"` であり、対象プラットフォームごとに一つある。
++       `call` はクラスパス上にある最初の候補を読み込む。実際のクラスパスが両方の C のバックエンドを持つことはないので、ビルドの依存関係が決め、同じソースがどちらに対してもコンパイルできる。
++       リテラルの名前でないメンバーは _xenophile: the source language's `Emission` is not a materializer's name_ となり、どれも読み込めなければ _xenophile: no materializer for this foreign source language is on the classpath_ となる。
+
+@ 0 1 0 0a28c0c9d35b7ae31c6f060a8588f8c4
++ entry .Dialect   外部の型システムの文法：定義をパースして各型のメンバーのプロトタイプにする
+
+% 1 1 0 1fe91fed73ab9d2e0420e455d9bf7791
+
+@ 0 6 0 0a0bd1ddf9a936d71e182b33d9f763ff
++       `Dialect` は定義のソースを、外部の型の名前からそのメンバー（それぞれ `Prototype`）への `Map` に変える。
++       ナビゲーションのマクロは `Interface` のファイルのテキストに対して `#parse` を呼ぶか、自己解決型の方言では型の名前ごとに `#resolve` を呼ぶ。
++       提供される方言は `CHeader.Dialect`（C のヘッダー）、`WitDialect`、`TypescriptDialect`、`WebIdlDialect`、`KotlinDialect` である。`Ecosystem` はシングルトン型で方言を指すので、どれもオブジェクトである。
+
+% 2 1 0 12873ac8ea9ef2be100e1d8b01b0e49f
+
+% 3 1 0 1598c7d80883427700ec8722f72ada97
+
+% 0 1 0 07265e42135444b01e5b29344b294e20
+
+% 0 1 0 00ea39fa663f8dd6114763f56eed85ed
+
+% 0 1 0 0a0bda21d5e78ade04555925276df699
+
+% 1 1 0 16fe45164502e8d71a7b1997c011e4d5
+
+@ 0 3 0 03dd235b959a916a07990140f9588025
++       提供されるどの方言でも `parse` は全域的である。パースできないソースは何も定義せず、マクロは空の結果から _xenophile: the foreign type Play is not defined_ を報告する。
+
+% 0 1 0 0e1756fb0270505c143675e4fc8a7a46
+
+% 1 1 0 1d48a9c199711c720ab67a0a49a31b47
+
+@ 0 8 0 0579192d09ead6ab1c26df68f9319fdc
++   entry #parse   ソースの中の定義。型の名前からメンバーのプロトタイプへのマップとして
++   entry #resolves   この方言が、ファイルをパースする代わりに型ごとに `resolve` に答えるかどうか
++       デフォルトでは `false` である。
++       定義がクラスパス上のコンパイル済みの成果物にある方言（クラスファイルから `@Metadata` を読む `KotlinDialect`）は `true` を返し、`Interface` を必要とせず（`Locus` がない）、生成する型に `Locus` を記録しない。
++   entry #resolve   自己解決型の方言のための、名前を指定した一つの型のメンバー。未知なら `Unset`
++       デフォルトでは `Unset` であり、自己解決型の方言でも型がコンパイルのクラスパス上にないときは `Unset` である。_xenophile: the foreign type Play is not defined on the compile classpath_ となる。
+
+@ 0 1 0 1352558b2aec667e1e068e4dbb50af6e
++ entry .Prototype   外部の型の一つのメンバーのシグネチャ：パラメーター、結果、アドレス指定
+
+% 1 1 0 0caaa0780c86b6751fae5b8864a0f465
+
+@ 0 7 0 07cefc98fb9dcb941c4935714e7a4d1e
++       `Dialect` が各メンバーについて生成するケースクラスである。
++       フィールドには `#parameters` がなく（`Unset`）、メソッドはパラメーターの型を順に記録する。
++       `#result` はメンバーが生成する外部の型である。
++       残りのフィールドは、呼び出しの時点でメンバーをアドレス指定しなければならないエコシステムのためのものである。`#module` はメンバーのインポート元である WIT のモジュール id（`wasi:random/random@0.2.0`）、`#resource` はメンバーがそのメソッドである WIT のリソース、`#static` はそれがそのリソースのレシーバを取らない `static` 関数または `constructor` であるかどうかである。
+
+% 2 1 0 10b06693ffdcbd940bbe3281d800795c
+
+% 3 1 0 01d5b10729383fd703231dd1a8d32f48
+
+% 0 1 0 0cff1882001f099b1e66ab26f54bd2a3
+
+% 0 1 0 06b42f633f68953d145d975615118c07
+
+% 1 1 0 1bee7dfd84226d2f1e07f9e38453834d
+
+% 1 1 0 1de624507dd1ba8d1d2e46692857731a
+
+@ 0 12 0 0874b08bf2a2059b1dfc36851acb40e5
++   entry #parameters   パラメーターの型を順に。フィールドなら `Unset`
++   entry #result   メンバーが生成する外部の型
++   entry #module   エコシステムが必要とする場合の、メンバーのアドレス指定に使うモジュール
++       モジュールの修飾子のない文法では `Unset` である。
++       WIT では完全修飾されたインターフェースの id であり、`WasmInvoke` はそれを Component Model のインポートに渡す。それを持たない WIT のメンバーは _xenophile: api.f is not addressable as a WIT import (it has no module id)_ となる。
++   entry #resource   メンバーがそのメソッドである、状態を持つ外部の型（WIT の `resource`）。あれば
++       設定されていると、`WasmInvoke` はメンバーを `[method]resource.name` としてインポートし、レシーバの `Wasm.Handle` を最初のパラメーターとして渡す。
++   entry #static   リソースのメンバーがレシーバを取らないかどうか：WIT の `static` 関数または `constructor`
++       `constructor` は `[constructor]resource` として、それ以外の static は `[static]resource.name` としてインポートされる。
+
+@ 0 1 0 05dd048050dcaeba0153b5b3ecaaf7b4
++ entry .Interoperable   ある Scala の型が、あるエコシステムの外部の型を表すことを記録する
+
+% 1 1 0 084becf4848f3afa04a63fc13f5ce1fc
+
+@ 0 6 0 1381cb23580b63c6069e052f5f5c796a
++       `Int is Interoperable in Native of "int"` は、C の宣言が `int` を期待する場所に `Int` を渡してよいことを述べる。
++       これは純粋に型の水準のマーカーである。ナビゲーションのマクロはこれを使って引数を型検査し、`Foreign.converter` はこれを使って変換された Scala の値に `Foreign of Topic from Form` の型を与える。
++       実行時の表現は何も持たない。値を境界を越えてマーシャリングするのはバックエンドの仕事であり、JVM では `ForeignLibrary`、Scala Native の呼び出し、あるいは `Encodable in Wasm`/`Decodable in Js` のコーデックを通じて行われる。
+
+@ 0 5 0 1313a78ce97226481a7c3b18bf313669
++       インスタンスはエコシステムのコンパニオンにあり、暗黙のスコープを通じて解決される。
++       `Native` には `int`、`long`、`short`、`char`、`double`、`float`、`boolean`、`string`、`pointer` がある。`Wasm.Handle`、`Wasm.Case`、`Wasm.Variant` は、運ぶリソースやバリアントをトピックとして `Wit` で相互運用できる。そして `Wit`、`Typescript`、`WebIdl`、`Kotlin` のコンパニオンはそれぞれ自分のものを持つ。
++       新しいインスタンスは一行である。
+
+% 2 1 0 0de78be3f4614802146ce9e74225d94a
+
+% 3 1 0 1500f22ed10b7c21119ea60150ef1a35
+
+% 0 1 0 163703dc46bd78b609dfdbc9a47944aa
+
+% 1 1 0 0a7cf184c7c36cab0b88a50a686f21d4
+
+% 1 1 0 036746767b2ba66b1bfbe22b9ee976d8
+
+@ 0 2 0 03d99b58ad3434de0a06d5f3bacce0eb
++   entry .apply   `Interoperable[Int, Native, "int"]()`：Scala の型、エコシステム、外部の型に対するインスタンス
++   entry #Self   インスタンスが対象とする Scala の型
+
+@ 0 1 0 1aed00f142bab51514f8603276973eda
++ entry .Materializer   完全に適用された外部のナビゲーションを、それを実行する木に変えるバックエンド
+
+% 1 1 0 0e394004a1d7ba15190612f67dfd4ebb
+
+@ 0 8 0 077b2783a162824d0134469fed996be5
++       `call` の最後の一歩である。
++       その前の段階、すなわちナビゲーションを外部の型、メンバー、オペランドの木に分解し、呼び出しをエコシステムの定義に照らして検査することは共通である。`Materializer` はナビゲーションを `Expr[Foreign]` として、要求された結果の型とともに受け取り、呼び出しを生成する。
++       バックエンドごとに一つあり、`PanamaInvoke`（JVM の Panama のダウンコール）、`NativeInvoke`（Scala Native の `dlsym`/`CFuncPtr` の呼び出し）、`WasmInvoke`（Component Model のインポート）、`JsInvoke`（Scala.js の動的な呼び出し）、`KotlinInvoke`（JVM の直接の呼び出し）である。
++       `Ecosystem` は自分に仕えるものを `Emission` で指し、`call` はビルドがクラスパスに置いた方を読み込む。
+
+@ 0 1 0 00df9d61daef554e0d8f5e2415ffc392
++       新しいバックエンドは `Materializer` を継承する `object` であり、エコシステムの `Emission` がその名前を指す。
+
+% 1 1 0 0368f615aff6d38b014b196dab45958c
+
+% 1 1 0 17ce38a2ca9aa29b10a26e94c61dc123
+
+@ 0 1 0 05043cdf1b40ef9f097f0b63a8191637
++   entry #materialize   ナビゲートされた呼び出しを実行する、型 `result` の式を生成する
+
+@ 0 7 0 15542a042902263202ad24bd7d1c4246
++ entry .call   `navigation.call[Result]()`：完全に適用された外部の呼び出しを、クラスパス上のバックエンドを通じて実行する
++     すべてのエコシステムとすべての対象プラットフォームに対するただ一つの終端である。
++     `Foreign` に対する inline の拡張であり、レシーバの `Origin` を読み、エコシステムの `Emission` が指してクラスパスが持つ `Materializer` を見つけ、そのバックエンドが生成する呼び出しを `Result` と型付けして埋め込む。
++     それがどのバックエンドかはビルドから決まる。C のナビゲーションは、`xenophile.native` がクラスパス上にあれば Panama のダウンコールになり、`xenophile.scalanative` があれば `dlsym`/`CFuncPtr` の呼び出しになるので、一つのソースが両方に対してコンパイルできる。
+
+% 2 1 0 18c3a2ecb98ca7471bf6005a82f9a6cc
+
+% 3 1 0 10558cc99c201ec4145b600358193623
+
+% 4 1 0 0f12a64ab71a53590460ac9debac9bfd
+
+% 5 1 0 15618f2b4b277d7e0929c5f17ca72135
+
+% 7 1 0 09699c67ad67f09f12d5ff65f04705df
+
+% 8 1 0 13e1b19bc7578d101ae4fd07c1b224a5
+
+% 10 1 0 11af318dbe8caf4f012da3c799f2122e
+
+% 0 1 0 0627919273935dfb04b1e780c06ffc86
+
+% 0 1 0 0e0bbca71c46ee1a188c23d14170efae
+
+% 0 1 0 14045ac490fa3ac511c64e20cbf58474
+
+% 1 1 0 13f5a28e1f0fd4960547dbc3ff1c9085
+
+@ 0 5 0 151d7704394459e41bdaafecf5105ca4
++     `call` は inline のナビゲーションの連鎖、すなわち `interface.function(…)` か引数のない関数の素の選択 `interface.function` に直接適用しなければならず、`val` に束縛したナビゲーションには適用できない。そうでなければ _xenophile: `call` expects a foreign function invocation, `interface.function(…)`_ となる。
++     WIT のリソースのハンドルは `val` に束縛してからナビゲートしてもよい。そのハンドルは実行時に式から取り戻されるからである。
+
+@ 0 5 0 1b73ea724dc7de4c0c60f7c2c8b740f6
++     結果の型は呼び出し側が選び、各バックエンドがそれを宣言に照らして検査する。C の `string` の結果は `Text` として、ポインターの結果は `Address` として、`void` は `Unit` として受け取る。WIT の結果はその `Decodable in Wasm` のコーデックを通じて、リソースは `Wasm.Handle of "name"` として、`result<…>` は取り出して（その `err` の側は `Wasm.Error` として発生させる）、`option<T>` は `Optional` として、`tuple<…>` は Scala のタプルとして、`list<T>` は `List` として受け取る。
+
+@ 0 4 0 063683571c80dffc04016864e8c05092
++     `call` は `transparent` ではなく普通の `inline` である。そのため、別の `inline` 定義の内側、たとえば inline の given を公開するライブラリの中では、展開は下流の呼び出し箇所まで遅延され、そこではプラットフォームの実行時（Scala.js、scala-wasm、Scala Native の実行時）がクラスパス上にある。
+
+@ 0 1 0 19f14677fddf9c090789d6fd9ebf74ff
++ entry .Xenophile   `Foreign`、`Interface`、`call` の背後にあるマクロの実装
+
+% 1 1 0 00398b5f825741e3026c735b9d5ac20e
+
+% 2 1 0 1f0a0be7e1be45a80b503624aac02b0f
+
+@ 0 16 0 030f3e1b7755bcfd05902fd90adb2c82
++       直接使うためのものではない。
++       このオブジェクトは、ナビゲーションのマクロと、すべてのバックエンドが使う共通の仕組みを収めている。ナビゲーションの外部の型、メンバー、オペランドの木を取り戻すこと、エコシステムの方言とマテリアライザーをリフレクションで見つけること、そしてパースされた定義のコンパイルごとのキャッシュである。
++   entry .invoke   `call` の背後にあるマクロ：レシーバのマテリアライザーを見つけ、それに呼び出しを生成させる
++   entry .definitions   クラスパス上のパスにある、エコシステムに対するパースされた定義。コンパイルの実行ごとにキャッシュされる
++       マクロのクラスローダーを通じてリソースを読み、エコシステムの `Grammar` でパースする。リソースがなければ _xenophile: could not read foreign definitions at path on the classpath_ となる。
++       バックエンドはこれを使って、呼び出されるメンバーのプロトタイプを読む。
++   entry .select   `Foreign#selectDynamic` の背後にあるマクロ
++   entry .index   `Foreign#apply` の背後にあるマクロ
++   entry .applied   `Foreign#applyDynamic` の背後にあるマクロ
++   entry .interface   `Interface[form](locative)` の背後にあるマクロ
++   entry .interfaceFromPath   `Interface[form]("/path")` の背後にあるマクロ
++   entry .root   `Foreign["name", Ecosystem]` の背後にあるマクロ
+
+@ 0 1 0 1410944d2902b2e0092eb6fc87084985
++ entry .Address   不透明な C のポインター：`char*` 以外のすべての `T*` が境界を越えるときの生のアドレス
+
+% 1 1 0 14a4b5798561658416b0975756c4ca34
+
+@ 0 6 0 0510f7c5eb66e91e09fc2ef2effc2e42
++       `Address` は生のメモリーアドレスを保持する不透明な `Long` である。C のヘッダーが宣言するポインターのうち、`char*`↔`Text` という特別な場合以外のすべてに対するプラットフォーム中立の通貨である。バッファー（`ForeignBuffer#pointer`）、ある呼び出しが返して次の呼び出しに渡す OpenSSL の `EVP_MD*` のような不透明なハンドル、あるいは出力パラメーターなどがある。
++       JVM では `pointer` の引数は `MemorySegment.ofAddress` として渡り、Scala Native では `Ptr[Byte]` にキャストされる。ポインター型の結果は `Address` として戻ってくる。
+
+% 2 1 0 06a334d2e8332f3618715df39811d798
+
+% 3 1 0 12b2b952b36c78e202a4a9f75abe62a1
+
+% 4 1 0 1e22ba3d54ac55b30176d0306f637b6b
+
+% 5 1 0 092026755fdb2df20b137d6667fb5235
+
+% 7 1 0 17b220c4c0ad8dd11f6fef98a42dd125
+
+% 8 1 0 0619dad1dd23003d063d1f2d8c4dc69f
+
+% 0 1 0 1f7b36c73255b9dc0a7f40ab06f6d773
+
+% 0 1 0 1bf88122c664325e14ca7de72206b511
+
+% 0 1 0 1d512ae7b0d818d61414847481dc2778
+
+% 0 1 0 0f85feb60123054c0a1f84facc8ab6d8
+
+% 1 1 0 056ce570d814efa00f1636e572ac6867
+
+@ 0 5 0 124b50ef289fa631040af3d18b7fa86f
++       `Address` は*どの*ポインター型のパラメーターも満たす。C の方言は `T*` を `ptr<T>` として読み、ナビゲーションのマクロはすべての `ptr<T>` に対して `pointer` のトピックを受け付けるので、検査は C 自身のものとちょうど同じ強さである。つまり、引数の数とポインターであることを検査し、指す先の同一性は検査しない。
++       `Address` を通じて到達できるメモリーは手動で管理される。プログラムが自分で割り当てるブロックは `ForeignBuffer` が所有する。
+
+% 1 1 0 115e8401873c3452020b2a91d6bd1938
+
+% 1 1 0 14b0aa0530bcbfbb0a92b93ca727aaac
+
+@ 0 8 0 09ed8c549c5df5d11ff5f3ed13d3ab7d
++   entry .Null   オプショナルなポインターのパラメーターのための、C のヌルポインター
++       `Address(0L)` である。
++       `EVP_EncryptInit_ex` の使わない `impl` のように C の API が `NULL` を受け付ける場所に、あるいは存在しないバッファーの代替として渡す。`iv.lay(Address.Null)(_.pointer)` である。
++   entry .apply   生のアドレスを `Address` として包む
++   entry .address   生のアドレスを `Long` として
++       `Address` に対する拡張であり、`isNull` とともに `soundness` にエクスポートされる。
++   entry .isNull   アドレスがゼロかどうか
++       `Address` に対する拡張である。
+
+@ 0 1 0 0cd1ce2efe4257001f2510d554b87acd
++ entry .Native   C のエコシステム：ヘッダーの宣言を外部の型とし、JVM や Scala Native でネイティブに呼び出す
+
+% 1 1 0 0eb377b6f2b90a0a1466a396102479ae
+
+@ 0 5 0 0c5a104c0e97b70a1ad0302f51020e88
++       `Native` は、定義が `CHeader.Dialect` でパースされる C のヘッダーであり、呼び出しが JVM では `PanamaInvoke`、Scala Native では `NativeInvoke` で実行される `Ecosystem` である。その `Emission` は両方を指し、`call` はビルドが依存する方のバックエンドを使う。
++       コンパニオンには、各 C の型をどの Scala の型が表すかを述べる `Interoperable` のマーカーがあるので、インポートなしで解決される。
+
+@ 0 5 0 1b99e9c55ba6aebb099207e2db101a0b
++       ヘッダーのトップレベルのプロトタイプはすべて、合成された外部の型 `library` のメンバーである。`struct` や `union` はフィールドをメンバーとする外部の型であり、`enum` は `int` であり、`typedef` はそれが指すものに解決される。
++       ヘッダーがコンパイルのクラスパス上にあれば、一つのソースが両方のプラットフォームに使える。
++       コンパイルのクラスパス上に `/xenophile/library.h` として置いたヘッダーは次のとおりである。
+
+% 0 1 0 10e2a4d5d2b5b1911d4868fe023412d3
+
+% 0 1 0 0bb93a401629baf31fb5d9a522eaaf99
+
+% 1 1 0 03a7da1c6837bdaa04b954987bc2407d
+
+% 0 1 0 01dfa24e67581b9f1c64f9138477770e
+
+% 0 1 0 001bcc15cba820931e2fa4801639d947
+
+% 0 1 0 0f67de2e9ec824bb01ef73f33db1f6b8
+
+% 0 1 0 0bc690f3b4dccbba011cad6de93ef1a7
+
+% 1 1 0 1f76509d21cc6e810e7f721a3f9feed2
+
+@ 0 1 0 08ea76fcb2b715a712137c33e2caa980
++       一度だけ書く Scala のソースは次のとおりである。
+
+% 2 1 0 041e2060f7d64a6b0e4e9e03b623de6a
+
+% 3 1 0 197eb32aca7fecbd19014ad9b5b6f9d4
+
+% 0 1 0 1ec6ad87ff3f2c57067f801ec8403c22
+
+% 0 1 0 1365db57500d51050eff73d63646a179
+
+% 0 1 0 124060cd8b3b88e41cfe1f369455a920
+
+% 0 1 0 10785aec306afab30a07910a324ebcd2
+
+% 0 1 0 18a66fc388dd4ee900377c1618bfd1f2
+
+% 1 1 0 1a144805a5ff05ee1ade13e7c9f130b1
+
+@ 0 2 0 02717857718b0410123539d2333f0152
++       `xenophile.native` がクラスパス上にある JVM と、`xenophile.scalanative` がある Scala Native で、`call` がそれぞれ何になるかを示す。
+
+% 2 1 0 1d435c69ad3a29ac16e7bfc3d8e9da00
+
+% 0 1 0 0d5e679772ecd37c1b7aa70bd2e8d7cc
+
+% 1 1 0 0c173bfdab9cbdc91d781f7916ee8453
+
+% 2 1 0 065b7e60214390d71a6909ac538b8837
+
+% 0 1 0 039e6bedc748749d127b548ffb6e78b2
+
+% 2 1 0 15efbf7e63169a77013571e6dd2df4af
+
+% 0 1 0 1219d3e70f197184035c6de46a63f150
+
+% 0 1 0 1320d0957f377b9c0dbae6b11c74d4cf
+
+% 2 1 0 006b25a4d823d4b00c1ea85e9a4cb984
+
+% 0 1 0 0efe6ef6e0f7f1ad1910948a3799855c
+
+% 0 1 0 092a485032c2924010d597b542c4e55e
+
+% 0 1 0 02590ce8d376dbbc005bc5e2f5b800be
+
+% 0 1 0 0982b86cb3961ceb180cd56f48f585b8
+
+% 0 1 0 07b4aa71f08e639b03593f81248af8f3
+
+% 0 1 0 1bf6d9356aff737f09c3a15f150210f4
+
+% 1 1 0 06f70318b775842e13e1d6cc886e9919
+
+% 2 1 0 1b13754729b79e281bd80dab721837c2
+
+% 0 1 0 0adbbedee3f0b2211254ed1a5bc5d7dc
+
+% 2 1 0 188cb032678f14b11511b8ccc80b2434
+
+% 0 1 0 04b82ec8e520a6d4134b17ca212da6fc
+
+% 2 1 0 0368488bc1ba066601f4e44633cdfb90
+
+% 0 1 0 02e9767044417e4a0708a86cec5539b3
+
+% 0 1 0 1dc71cda140e0fc0194712ed14b2ce60
+
+% 0 1 0 1a426d76cd8ca9b81d643881716ef768
+
+% 1 1 0 026ad3020e46a96b01d5e13da477fb00
+
+% 2 1 0 1f653830ea5802bf108742f12975852c
+
+@ 0 7 0 1e760ca6e5b4aeed0342c95ebf805a5d
++       二つの変換は同じようにマーシャリングする。
++       C のプリミティブはそのまま渡る。`string` の引数（`Text`）は、呼び出しの間だけ限定されたアリーナまたは `Zone` にコピーされる。それ以外のポインターは生の `Address` として渡る。`string` の結果はネイティブのメモリーから読み戻され、ポインターの結果は `Address` になり、`void` は `Unit` を返す。
++       どちらのプラットフォームでも、シンボルは実行時に、`ForeignLibrary.register` が読み込んだライブラリとプロセスのデフォルトの探索から解決されるので、宣言されたパスにないライブラリは、リンク時ではなく登録時にはっきりと失敗する。
+
+@ 0 5 0 160c09789f8fb33e0d16cf664927aa7f
++       プログラムが引数として表現できる C の型は、スカラーの `int`、`long`、`short`、`char`（`Byte`）、`double`、`float`、`bool`、C の文字列、そしてポインターである。
++       値渡しの構造体はマーシャリングの語彙の外にある。構造体の*フィールド*はナビゲートでき型付けもされるが、構造体を値で取ったり返したりする関数は `call` できず、Scala Native では _xenophile: library.f uses a struct type, unsupported on native_ となる。
+
+% 0 1 0 148623a705a1a800036ae5fb3f1f1e25
+
+% 1 1 0 113a6c038bce90201d95783f13adfac0
+
+% 1 1 0 047e62a64f17fa221781da3e697cdccf
+
+% 1 1 0 1009aef2b524476b126251a280952480
+
+% 1 1 0 1efe1e6e702004290ad81b6a027fb41a
+
+@ 0 18 0 0ab60da78043b25209a82fbe4d44617a
++   entry .int   `Int` は C の `int` を表す
++       `unsigned int`、`int32_t`、`uint32_t`、そしてすべての `enum` も、正規化するとこれになる。
++   entry .long   `Long` は C の `long` を表す
++       `long long`、符号なしの long、`int64_t`、`uint64_t`、`intptr_t`、`uintptr_t`、`size_t`、`ssize_t` もこれである。`CHeader.Dialect` はこれらを `long` にまとめるので、レイアウトは 8 バイト幅のままである。
++   entry .short   `Short` は、符号付きか符号なしかにかかわらず C の `short` を表す
++   entry .char   `Byte` はスカラーとしての C の `char` を表す。`char*` ではない。それは `string` である
++   entry .double   `Double` は C の `double` を表す
++   entry .float   `Float` は C の `float` を表す
++   entry .boolean   `Boolean` は C の `bool` を表す
++   entry .string   `Text` は C の文字列を表す：素の `char*` または `const char*`
++       文字列型であるのは*素の* `char*` だけである。`unsigned char*` と `signed char*` は慣習的にバイトのバッファーを意味し、ポインターのままである。
++       `Text` の引数は呼び出しごとのネイティブのメモリーにコピーされ、`char*` の結果は NUL 終端のテキストとして読み戻される。
++   entry .pointer   `Address` はそれ以外の C のポインターを表す：`T*`、`void*`、不透明なハンドル、出力パラメーター
++       ナビゲーションのマクロはすべての `ptr<T>` のパラメーターに対して `pointer` のトピックを受け付けるので、一つの `Address` 型がどの指す先にも使える。
+
+% 0 1 0 1db3c1dd2d7bcd35147497582257dff1
+
+@ 0 4 0 11f8adbc1a56e94e1e583ec8642a3eb8
++   entry #Emission   `"xenophile.PanamaInvoke" | "xenophile.NativeInvoke"`：JVM と Scala Native のバックエンド
++       言語ではなく対象プラットフォームによって異なる二つのバックエンドである。
++       ビルドは `xenophile.native` か `xenophile.scalanative` に依存し、両方に依存することはなく、`call` は読み込める最初のものを取る。
+
+@ 0 1 0 117541144a1d2b75165edf7e352a8b57
++ entry .CHeader   C のヘッダーのフロントエンド：宣言のモデル、パーサー、それを射影する `Dialect`、そしてそのエラー
+
+% 1 1 0 104b727c1f9795251a512ca38966828a
+
+@ 0 7 0 07ff9cf1876f2fd70d18171fd0471305
++       `CHeader` は C のヘッダーを二つの見方に読み込む。ヘッダーとは、`cbindgen` が Rust のクレートの `extern "C"` の API に対して生成するようなもの、あるいはシステムライブラリのヘッダーを手で書いた部分集合である。
++       `.Parser` は宣言された表面を `.Declaration` として忠実に保持する。正確な算術型の綴りとポインターの構造を持つプロトタイプ、typedef、フィールドを持つ構造体と共用体、列挙子の値を持つ列挙型である。
++       `.Dialect` は `Native` エコシステムが指す `Dialect` であり、そのモデルを FFI のバックエンドがマーシャリングの基準とする平らな形へと*射影*したものである。
+
+% 2 1 0 19e7be8483365ed91172d0905d3c4fd5
+
+% 3 1 0 07d232f8bd83b9af0ce69f6c4642bcce
+
+% 4 1 0 0849650c6c667acb02d9c9ad748befd9
+
+% 0 1 0 1c811ecd7f4a602b1f8e119ced194bd3
+
+% 0 1 0 1b0ecda694246a6911f5ed843277c573
+
+% 0 1 0 045bbce4d9954edc08e64cb8644e1c31
+
+% 0 1 0 0dcd22b3fbe6f8dd0429bcd17430395c
+
+% 0 1 0 09f84652c3fefe0618967d383f8c3beb
+
+% 0 1 0 1689419be140e80d05f021a29a9d2547
+
+% 0 1 0 10e11833b929d9591d3607f85dc84c5f
+
+% 0 1 0 1878e55c2a5732f20d08fafcacf8dd6b
+
+% 0 1 0 0fc680437387d2431f527ba68482f469
+
+% 0 1 0 060b9cd2cef2bbfc11dd5a5a07208025
+
+% 0 1 0 0a4d27162bf035b70c3a8b1fcc1ca5cf
+
+% 1 1 0 117fc8136e63d3921bf374cd90d60ed1
+
+@ 0 4 0 1c6f9a1f41f7964e0e960313b903b620
++       プリプロセッサーの行（`#include`、`#define`、インクルードガード）とコメントは読み飛ばされる。マクロはパースされる語彙に含まれない。
++       文法が受け付けないそれ以外の構文はすべて厳格な `CHeader.Error` になる。部分的に読んだヘッダーでは契約を過小に述べることになるからである。
+
+% 1 1 0 1161354bb2210ab40597a24eed99bfce
+
+@ 0 1 0 1f8acac41023c2e00e85b4b083a430d8
++   entry .Declaration   パーサーが保持する、ヘッダーの一つの宣言
+
+% 1 1 0 0be15a18cf69c0890d5e9173b767ec47
+
+@ 0 7 0 018165da82a340a90d45cacb2e6d2ef1
++         四つのケースを持つ `enum` である。
++         `Function(name, result, parameters, variadic)` はプロトタイプであり、末尾に `...` があれば `variadic` が設定される。
++         `Alias(name, target)` は `typedef` であり、関数ポインターの typedef も含む。その場合ターゲットは `fn<result, params…>` である（可変長なら `variadic<…>` で包まれる）。
++         `Structure(name, union, fields, opaque)` は `struct` または `union` であり、フィールドを順に持ち、本体のない前方宣言（`struct tag;`）では `opaque` が設定される。
++         `Enumeration(name, cases)` は `enum` であり、各列挙子の名前と値を持つ。値はゼロから、または最後の明示的な `=` から数える。
+
+@ 0 5 0 0673d2ac4334f9e5180d5ab35fd37614
++         型は綴りを保つ。`unsigned long long` は `Named("unsigned-long-long")`、`const char*` は `ptr<const<char>>`、フィールドの `int values[4]` は `array<int, 4>` であり、配列のパラメーターはポインターに格下げされる。呼び出し側が渡すのはポインターだからである。
++     entry #named   どのケースであれ、宣言された名前
++   entry .Parser   ヘッダーを忠実にその `Declaration` にパースする
+
+% 1 1 0 0239b18b4b503396107f6cfc32046461
+
+@ 0 8 0 109478536301392a1daf186875ba18e7
++         `CHeader.Parser.parse(source)` はヘッダーを（コメントとプリプロセッサーの行を読み飛ばして）トークンに分け、各宣言を読む。
++         `extern` と `static` は落とされ、パラメーターの名前は無視され（C の呼び出しは位置による）、`(void)` は空のパラメーターリストであり、値渡しの型の `const` は消えるがポインターを通じた `const` は保たれ、`volatile` は無視される。
++         構文エラーや未対応の構文に対しては `CHeader.Error` を発生させる。
++     entry .parse   ヘッダーの宣言を順に。`CHeader.Error` を発生させる
++   entry .Dialect   C のための `Dialect`：ダウンコールがマーシャリングできるものへ射影したヘッダー
+
+% 1 1 0 18ec7b3f277297f910c0a949ab32737f
+
+@ 0 9 0 1b55ea343ecc1af510c3e0a1a55f25b5
++         `Native` が指す文法である。
++         `.Parser` でパースしてから、ダウンコールが使えないものを消し去る。トップレベルのプロトタイプはすべて合成された型 `.library` のメンバーになる。各 `struct` と `union` は、配列でないフィールドをメンバーとする外部の型になる。各 `enum` は `int` である。各 `typedef` のエイリアスは推移的に解決される。幅が正確な綴りと符号で修飾された綴りは、同じ大きさのプリミティブにまとめられる（`int32_t`、`unsigned int` は `int` に、`size_t`、`long long`、`int64_t` は `long` に、`unsigned char` は `char` に）。素の `char*` は `string` になる。それ以外のポインターは深さ一の `ptr<T>` になる。
++         配列のフィールド、関数ポインターの typedef、不透明なタグはナビゲートできない。
+
+@ 0 7 0 1b5ed47c792f293e06a0189d54571625
++         `parse` は全域的である。パースできないヘッダーは何も定義せず、ナビゲーションのマクロはパースのエラーを表に出すのではなく、空の結果から _xenophile: the foreign type library is not defined_ を報告する。
++         それを見るには `CHeader.Parser.parse` を実行する。
++     entry .library   `t"library"`：ヘッダーのトップレベルの関数を保持する合成された外部の型
++         `Foreign["library", Native]` は、すべての C の関数の呼び出しが通るルートである。
++     entry .parse   ヘッダーの射影された定義：`library` と、構造体と共用体ごとに一つの型
++   entry .Error   C のヘッダーを宣言として読めなかったときに発生する
+
+% 1 1 0 050a20b038dfe8431a0f8a8d631b0583
+
+@ 0 6 0 14b600a1be1dde1e1644cbeea37353f3
++         エラー `↯/s.59.4`：_the C header could not be read because `reason`_。理由は `Syntax` の失敗（_`detail`, near `tokens`_。続く数個のトークン、または _the end_ を引用する）か、`Unsupported` な構文（_the construct `x` is outside the grammar this parser accepts_）である。
++         `CHeader.Parser.parse` が発生させる。`CHeader.Dialect.parse` はそれを握りつぶし、何も定義しない。
++     entry .Reason   ヘッダーを読めなかった理由：構文エラー、または文法が拒否する構文
+
+% 1 1 0 00c93b16cebc53e61655867e66c1f802
+
+@ 0 5 0 1294d86183aa75fa1a62deabe190f205
++           `Syntax(detail, near)`（番号 1）と `Unsupported(construct)`（番号 2）を持つ `Clarification` の列挙型である。
++       entry #number   エラー `↯/s.59.4` における理由の番号：`Syntax` は 1、`Unsupported` は 2
++     entry .communicable   各理由をメッセージとして描画する
++     entry #reason   `CHeader.Error.Reason` としての理由
+
+@ 0 1 0 0c2782be3620621216f772f28bb90d42
++ entry .ForeignBuffer   手動で管理する外部のメモリーのブロック。JVM でも Scala Native でも同じ
+
+% 1 1 0 0a41c65a8edeec9717488ffe1a133cde
+
+@ 0 7 0 1a28c860e7b594551566c96006fd7a9b
++       ポインター型の C のパラメーターのための、移植可能な作業領域である。`Data` からコピーした入力バッファー、呼び出し先が満たして `#data` が読み戻す出力バッファー、あるいは `#int` で読む出力パラメーターなどに使う。
++       二つの実装が一つの表面を提示する。JVM（`xenophile.native`）では `Arena` に裏付けられた `MemorySegment`、Scala Native（`xenophile.scalanative`）では `malloc` した `Ptr[Byte]` である。そのため、`call` の周りでバッファーを割り当てるコードは変更なしにクロスコンパイルできる。
++       どちらもコピーする。`Data` はヒープのメモリーであり、C の呼び出し先が保持してはならない。
+
+% 2 1 0 087981d7b05bd8071f08e4477de75eba
+
+% 3 1 0 1d7e80b0aecfedf01262d0ab4f4cf903
+
+% 4 1 0 012af54485e35a3d03fd0c3c0aa93024
+
+% 5 1 0 02f556d3caadbd500aaf528b81c1c562
+
+% 7 1 0 1b8c7171b8fac644155eac5bafc664c7
+
+% 8 1 0 0741266757f2a9e0040d60c2943c5d82
+
+% 0 1 0 105cbec6434e16d703a115a7fe93fb3e
+
+% 0 1 0 16fd0fa672bf7c6c1877d1ac0dc9fb2b
+
+% 0 1 0 14b11a0b83330a0e1cfddd5bc55d2e1c
+
+% 0 1 0 1a5d7890a562f6d31818f5c79b41fdbc
+
+% 0 1 0 061aaf44f8b8986c04dcaafb7254e9b4
+
+% 0 1 0 140b88206e614ede0092e8e492d6e023
+
+% 1 1 0 06e47259124801d5139a8688577ccab5
+
+@ 0 2 0 1e7005ea38be598f118dca30403d7486
++       寿命はどちらのプラットフォームでも明示的である。バッファーは `#free` まで生き、その後で読むことは未定義である。
++       よくある形は `try … finally buffer.free()` である。
+
+% 1 1 0 1bcced493d69da501028aef3c490c282
+
+% 1 1 0 097d0c6d4dd5149f0a5cd501fe9fb4f5
+
+@ 0 9 0 08306e2806d0a50d04bbc12e1eb35aac
++   entry .apply   `ForeignBuffer(size)`：初期化されていないブロック。`ForeignBuffer(data)`：バイトのコピーを保持するブロック
++       JVM ではブロックは新しい共有の `Arena` から、Scala Native では `malloc` から得られる。
++   entry #size   ブロックのバイト単位の長さ
++   entry #pointer   C のパラメーターがポインターである場所に渡す、ブロックのアドレス
++   entry #data   ブロックの最初の `length` バイトを `Data` としてコピーしたもの
++       出力バッファーの場合は、それに書き込んだ呼び出しの後に `output.data(outputLength.int)` とする。
++   entry #int   `int*` の出力パラメーターのための、ブロックの先頭にある 32 ビット整数
++       `ForeignBuffer(4)` を割り当て、その `#pointer` を渡し、呼び出し先が書き込んだ値を読む。
++   entry #free   メモリーを解放する：アリーナを閉じるか、割り当てを `free` する
+
+@ 0 1 0 1f28004c24a3c35c18e520900a3e6047
++ entry .ForeignLibrary   ネイティブライブラリを読み込み C のシンボルを解決する。JVM では Panama を通して、Scala Native では `dlopen` を通して
+
+% 1 1 0 09c4c77ff8e394e900f8ccf1fb94adca
+
+@ 0 6 0 0538f0b1d62397e4147bc09adc25fb35
++       `ForeignLibrary` は C エコシステムの実行時側を担い、JVM 向けの実装が `xenophile.native` に、Scala Native 向けの実装が `xenophile.scalanative` にある。
++       どちらもライブラリを*実行時*にパスで読み込み、読み込まれた集合からシンボルを解決するので、プログラムは外部ライブラリにリンク時の依存を持たない。
++       宣言されたどのパスにもないライブラリは、リンク時の未定義シンボルや最初の呼び出しでのヌルポインターによるクラッシュとしてではなく、試したパスを示して `.register` ではっきりと失敗する。
+
+% 2 1 0 1691ea74af829815063dda3838876858
+
+% 3 1 0 1326e970bf248ccd1d573c2047bbcb4e
+
+% 4 1 0 1e690a1d322aa1ff103b0cce8d2fe412
+
+% 5 1 0 183a51bddbc5e25a10aa1d62c2e45ee6
+
+% 0 1 0 0529b9288ac097ff16067bc0dd50c609
+
+% 0 1 0 03b3e6dd0808ed7a01e82e8363eb8c68
+
+% 0 1 0 006a38e336a46f261d975c8e914a1f6e
+
+% 0 1 0 148627337e864c7318918db2cae5ccae
+
+% 1 1 0 18140883da15985605e3a2d7625d0cb3
+
+@ 0 4 0 1ecda635996929f4107cb53f6db3b9fa
++       登録は、呼び出しを行うオブジェクトの初期化子の中で、どのタスクも呼び出しに到達しうる前に行う。
++       シンボルはまず登録されたライブラリの中で探され、次にプロセスのデフォルトの検索（C 標準ライブラリと、すでに読み込まれているもの）で探されるので、`strlen`、`getpid`、`getenv` は何も登録しなくても解決される。
+
+@ 0 5 0 02f4c15607a203410d0f1cbc7881c12a
++       JVM のオブジェクトは、プログラムがヘッダーに沿って Panama を手で操作するのに必要な部品も持っている。
++       `.apply` と `.system` は `ForeignLibrary` のインスタンスを与え、その `#handle` は名前付きの関数に束縛された `MethodHandle` である。レイアウトと、内外へのコピーのために `.layout`、`.descriptor`、`.segment`、`.bytes`、`.text` がある。
++       これらは JVM 専用である。`PanamaInvoke` を通した型付きの `call` には、これらのどれも必要ない。
+
+% 2 1 0 01d2f18431028ae80fb3427fd2be69f4
+
+% 3 1 0 1f8fd01dfd9cf81b009fafb45a4633d7
+
+% 0 1 0 113a6317b262e24408b1fb20b9a72910
+
+% 0 1 0 04827da43aef321f10eeb18a502e9ced
+
+% 0 1 0 1d5c8bfd5f0706eb175a6dbab38b9342
+
+% 0 1 0 13709101d03089fd18729ebbd1125692
+
+% 1 1 0 1eccd3f3b9f1aec71b011e2f2d9e0722
+
+% 1 1 0 131a5bd41ca5eabc1f6c3a1124bec4a0
+
+% 1 1 0 1a45b53ebe18aa341f461c397f848dc9
+
+% 1 1 0 16346032347fadd50adf30ea4a4770c5
+
+@ 0 37 0 1ecde117a5935f5c1101a6e91b5d51f3
++   entry .register   複数の候補となるライブラリパスのうち最初のものを、プロセスの存続期間中読み込む
++       各パスを順に試し（JVM ではグローバルアリーナに束縛された `SymbolLookup.libraryLookup`、Scala Native では `RTLD_NOW` 付きの `dlopen`）、最初に読み込めたものを残して、`call` がシンボルを解決する検索パスに加える。
++       どれも読み込めなければ、パスを示して `IllegalArgumentException` を投げる（JVM）か、パニックする（Scala Native）。
++       登録されたライブラリが読み込み解除されることはない。
++       最初の呼び出しの前に、プロバイダーのオブジェクトの初期化子から登録する。そうすれば並行する呼び出しが登録と競合することはない。
++   entry .downcall   シンボルに対するキャッシュされた Panama の `MethodHandle`。シンボルがどこにあっても見つける
++       JVM 専用。`PanamaInvoke` が生成する呼び出しは、これで束縛する。
++       シンボルはデフォルトの検索と登録されたすべてのライブラリの中で探され、与えられた `FunctionDescriptor` に束縛され、名前でキャッシュされる。
++       どこにもないシンボルは _no such foreign symbol: name (is its library `ForeignLibrary.register`ed?)_ でパニックする。
++   entry .apply   `paths` のうち最初のものを、`header` からパースしたプロトタイプの上の `ForeignLibrary` に読み込む
++       JVM 専用。
++       検索はスコープ内の `Arena` に束縛される。ヘッダーのトップレベルの関数が、`#handle` が記述子を構築する元のシグネチャになる。
++       どのパスも読み込めなければ `IllegalArgumentException` を投げる。
++   entry .system   プロセス全体のデフォルトの検索の上の `ForeignLibrary`。libc のシンボルのため
++       JVM 専用。`Linker.nativeLinker.defaultLookup` をヘッダーのプロトタイプと組み合わせたもので、ライブラリファイルを指定せずに C 標準ライブラリを呼び出すためのものである。
++   entry .layout   C の型の Panama `MemoryLayout`。`CHeader.Dialect` が正規化したとおりの
++       JVM 専用。
++       `int`、`long`、`short`、`char`、`double`、`float`、`bool` は同じ幅の `ValueLayout` に対応し、それ以外のすべて（`string`、すべてのポインター、あらゆる不透明な名前）は `ADDRESS` である。
++   entry .descriptor   プロトタイプの `FunctionDescriptor`：その結果とパラメーターのレイアウト
++       JVM 専用。`void` の結果は `FunctionDescriptor.ofVoid` である。
++   entry .segment   バイトを、スコープ内の `Arena` に新たに確保したネイティブメモリにコピーする
++       JVM 専用。
++   entry .bytes   `MemorySegment` から `length` バイトを `Data` として読み戻す
++       JVM 専用。
++   entry .text   ダウンコールの `ADDRESS` の結果から NUL 終端の C 文字列を `Text` として読む
++       JVM 専用。
++       ダウンコールのアドレスの結果は長さ 0 のセグメントなので、文字列を読む前に無制限のセグメントとして再解釈される。
++   entry #handle   このライブラリの名前付きの関数に束縛された `MethodHandle`。パースしたプロトタイプから
++       JVM 専用。
++       `invokeWithArguments` で呼び出し、ポインターと文字列のパラメーターには `MemorySegment` を、それ以外にはボックス化されたプリミティブを渡す。
++       ヘッダーが宣言していない関数は _no such foreign function: name_ でパニックし、ライブラリがエクスポートしていない関数はシンボルの検索から例外を投げる。
+
+@ 0 1 0 0a8c1364309cb5041b4b87b2694f4d97
++ entry .PanamaInvoke   JVM 向けの C バックエンド：たどられた C の呼び出しが Panama のダウンコールになる
+
+% 1 1 0 10d19e57d9f3a1c3182f37a8652dd597
+
+@ 0 6 0 1afa7d80c0935846004099b85aea6d15
++       `Native` エコシステムの `Emission` が最初に挙げる `Materializer` であり、`xenophile.native` にある。
++       `library.abs(-5)` のような完全に適用されたナビゲーションが与えられると、スコープ内の `Interface` が示すヘッダーから関数のプロトタイプを読み、ヘッダー自身の型からコンパイル時に `FunctionDescriptor` を構築し、`ForeignLibrary.downcall` を通した呼び出しを生成する。
++       `ForeignLibrary.downcall` は、実行時に登録されたライブラリとデフォルトの検索からシンボルを解決し、束縛された `MethodHandle` をキャッシュする。
+
+@ 0 6 0 10a694c06f250d771178b85079741a7f
++       マーシャリング：C のプリミティブは `invokeWithArguments` のためにボックス化される。`string` の引数（`Text`）は、呼び出しのために開かれ `finally` で閉じられる限定された `Arena` にコピーされる。その他のポインターは、その `Address` の `MemorySegment.ofAddress` として渡される。
++       `string` の結果は `ForeignLibrary.text` で `Text` として読み戻され、ポインターの結果は `Address` になり、プリミティブはアンボックス化され、`void` は `Unit` を返す。
++       引数の個数はプロトタイプと照合される：_xenophile: wrong number of arguments for library.abs_。
+
+@ 0 2 0 104111a3a323bdc710ec12ff8748badc
++       直接使うためのものではない。`call` が名前でこれに到達する。
++       `xenophile.scalanative` が代わりにクラスパスにあるときは、同じナビゲーションが `NativeInvoke` を通して変換される。
+
+% 1 1 0 0b1a7b955564d7cc07bdadf2e3866add
+
+% 1 1 0 1d69d1351b4627b0101f57cbdf0115cc
+
+@ 0 1 0 06abe9c941100bc7068c280880553443
++   entry .materialize   たどられた C の関数に対する Panama のダウンコールを生成する
+
+@ 0 1 0 15a0f4384e385e9a1dd3a6a0e8a735bd
++ entry .NativeInvoke   Scala Native 向けの C バックエンド：たどられた C の呼び出しが `dlsym`/`CFuncPtr` の呼び出しになる
+
+% 1 1 0 18be59882b74e0da0684eb9b06566a91
+
+@ 0 7 0 067ef5deee54c2330497b7fa4f83cf05
++       `Native` エコシステムの `Emission` が二番目に挙げる `Materializer` であり、`xenophile.scalanative` にある。
++       完全に適用されたナビゲーションが与えられると、ヘッダーから関数のプロトタイプを読み、各 C の型を同一の ABI を持つ Scala の型に対応付け（`int` は `Int`、`char` は `Byte`、`string` は `CString`、あらゆる `ptr<T>` は `Ptr[Byte]`）、`CFuncPtr.fromPtr[CFuncPtrN[…]](ForeignLibrary.resolve(c"name"))(args…)` を生成する。
++       シンボルは実行時に登録されたライブラリと `dlopen(null)` から解決され、束縛されていなければ null を返すのではなくパニックする。
+
+@ 0 5 0 1cb0b45c474314cd0ff4554ba57db324
++       マーシャリングは `PanamaInvoke` と同じである。`Text` の引数は、いずれかのパラメーターが必要とするときにだけ開かれる `Zone.acquire` の中で `toCString` によって変換される。`Address` は `Ptr[Byte]` になる。`string` の結果は `fromCString` で読まれる。ポインターの結果は、その生のアドレスに落とされて `Address` になる。
++       値渡しの構造体は _xenophile: library.f uses a struct type, unsupported on native_ となる。
+
+@ 0 4 0 1abffe8dab8f7c9d165011903d541fc6
++       マクロ自体は JVM 上で実行され、Scala Native のすべてのエントリーポイントを参照するのではなく名前で指すので、モジュールは Native ランタイムなしでコンパイルできる。生成された呼び出しは、下流の `.native` の呼び出し箇所でリンクされる。
++       直接使うためのものではない。`call` が名前でこれに到達する。
+
+% 1 1 0 04c53970b11c9ad2099f9552338800bc
+
+% 1 1 0 1434b48a9d0598b00d6e55dd6e5aeaa0
+
+@ 0 1 0 156bb03063f6914910c30116f2401ae9
++   entry .materialize   たどられた C の関数に対する Scala Native の呼び出しを生成する
+
+@ 0 1 0 094c3e8233c9b33f06428bfc24ca31fd
++ entry .Js   JavaScript の境界を越える値がとる統一的な形式と、越えられる型のコーデック
+
+% 1 1 0 0adce8143ba956b71c72203315bbeb3b
+
+@ 0 7 0 0891699ffe4516971e3e491366773eb1
++       `Js` は、JavaScript の呼び出しを越える際のキャリア型にマーシャリングされた値を包む。`Text` には `String`、`Boolean`、そしてサイズ付きの整数には `Byte`/`Short`/`Int` であり、これらはすべて Scala.js が JavaScript の値として表現するものである。
++       単一の形式があるので、`JsInvoke` は JavaScript のキャリアを前もって知らなくても、任意の Scala の型に対するコーデックを召喚できる。
++       コンパニオンには `Encodable in Js` と `Decodable in Js` の given があり、その `Carrier` 型メンバーがキャリアを示す。コーデックのない値は越えることができず、それはコードのコンパイル時に報告される：_xenophile: no way to read a T from a JavaScript boundary_。
+
+@ 0 4 0 0a40cac5412f52f706c9684bf49ea47c
++       コーデックは `Text`、`Boolean`、そして 32 ビットまでの `hypotenuse` の整数（`S8`、`S16`、`S32`、`U8`、`U16`、`U32`）を扱い、これらは `Byte`、`Short`、`Int` に正規化される。
++       JavaScript の唯一の数値型は IEEE-754 の倍精度浮動小数点数なので、`S64` と `U64` には `BigInt` なしでは忠実なキャリアがなく、提供されていない。浮動小数点型もまだ提供されていない。
+
+% 2 1 0 1269a6162d3f50dd065c2996f831f638
+
+% 3 1 0 11b85e0e3b563087077f41347658f43e
+
+% 0 1 0 0a5e463ba173659b0dd7cbdf179b4e2b
+
+% 0 1 0 0878263787bdbf97028a912a85aeed4f
+
+% 0 1 0 035929cf6c7ac45e1b968fb2e361e1c6
+
+% 1 1 0 14c6b48d41a60d2e145f3e11d6f34320
+
+@ 0 1 0 053f99df6b75eb1f05d54a2d7aca8b43
++       given はコンパニオンにあり、インポートなしで解決される。
+
+% 0 1 0 059e67525cdcbc8813fd7556c5f4fe19
+
+% 1 1 0 049009a1e3627f371142d3b8cb7e7952
+
+@ 0 20 0 1677a3bfc870ba8a141cb48a2678a13f
++   entry .apply   キャリアの値を `Js` として包む
++   entry .as   包まれた値をそのキャリア型で：`js.as[String]`
++       `Js` に対する拡張であり、検査されないキャストなので、キャリアはコーデックが示すものでなければならない。
++   entry .s8Encodable   `S8` は `Byte` として越える
++   entry .s8Decodable   `Byte` から読まれる `S8`
++   entry .s16Encodable   `S16` は `Short` として越える
++   entry .s16Decodable   `Short` から読まれる `S16`
++   entry .s32Encodable   `S32` は `Int` として越える
++   entry .s32Decodable   `Int` から読まれる `S32`
++   entry .u8Encodable   `U8` はそのビットによって `Byte` として越える
++   entry .u8Decodable   `Byte` のビットから読まれる `U8`
++   entry .u16Encodable   `U16` はそのビットによって `Short` として越える
++   entry .u16Decodable   `Short` のビットから読まれる `U16`
++   entry .u32Encodable   `U32` はそのビットによって `Int` として越える
++   entry .u32Decodable   `Int` のビットから読まれる `U32`
++   entry .boolEncodable   `Boolean` はそのまま越える
++   entry .boolDecodable   そのまま読まれる `Boolean`
++   entry .textEncodable   `Text` は `String` として越える
++   entry .textDecodable   `String` から読まれる `Text`
++   entry #value   包まれたキャリアの値。型なし
+
+@ 0 1 0 18df650c94fc091b097f1cd1a3acd15b
++ entry .JsInvoke   JavaScript のバックエンド：たどられた WebIDL または TypeScript の呼び出しが Scala.js の動的呼び出しになる
+
+% 1 1 0 187a8bdfadc0f84110e39861049c6a4d
+
+@ 0 6 0 002218ed99b9d5a303b5e6d864a14bbb
++       JavaScript エコシステムのための `Materializer` であり、`xenophile.js` にある。
++       `call[…]()` を伴う完全に適用されたナビゲーション `Foreign["Math", WebIdl].random()` は `js.Dynamic.global.Math.random()` になる。ナビゲーションの `Select` に記録された所有者が読み取るグローバルプロパティであり、メンバーはその上で適用される。
++       結果は要求された型の `Decodable in Js` コーデックを通してデコードされ、それが `js.Dynamic` の値をその `Carrier` 型で読む。
+
+@ 0 4 0 1a0462b0ee6eda4d1d4056356a12864a
++       `js.Dynamic` のエントリーポイントは下流のクラスパスで名前によって探されるので、モジュールは Scala.js ライブラリへの依存を必要とせず、マクロは JVM 上で実行される。
++       呼び出しはリンク時に Scala.js によって変換されるので、JavaScript のナビゲーションに対する `call` は `.js` のコンパイルの中でのみ実体化する。
+
+@ 0 3 0 11dac153870e0d8f0e297b147b61bb30
++       このバックエンドが実体化するのは引数のない呼び出し `receiver.method()` である。`Encodable in Js` を通した引数のマーシャリングはまだ提供されていない。
++       直接使うためのものではない。`call` が名前でこれに到達する。
+
+% 0 1 0 036a0ecbe95988e4194a1b123aca816b
+
+% 1 1 0 0ec412baeecbe6cd082d538cd9262884
+
+@ 0 1 0 04de03231401fbf1058ed8d194e299c0
++   entry .materialize   たどられた JavaScript のメソッドに対する `js.Dynamic` の呼び出しを生成する
+
+@ 0 1 0 0e5497d4b3a6ac14030b59fd3c6816f3
++ entry .Wasm   WIT の境界を越える値がとる統一的な形式と、コーデック、ハンドル、ケース、バリアント、エラーの型
+
+% 1 1 0 115d364f7f09e1350ba53ef7b3bcc2a0
+
+@ 0 8 0 19939840dd962be2145ecfff6b1b7642
++       `Wasm` は、WIT の関数を越える際のキャリア型にマーシャリングされた値を包む。`Text` には `String`、`U64` には `Long`、`Data` には `Array[Byte]`、といった具合である。
++       単一の形式があるので、`WasmInvoke` はキャリアを前もって知らなくても、任意の Scala の型に対するコーデックを召喚できる。
++       コンパニオンには `Encodable in Wasm` と `Decodable in Wasm` の given があり、その `Carrier` 型メンバーは、scala-wasm コンパイラが WIT のシグネチャで受け付ける型を示す。コーデックのない値は越えることができず、それはコードのコンパイル時に報告される：_xenophile: no way to pass a T across a WIT boundary_、または _no way to read a T from a WIT boundary_。
+
+@ 0 9 0 0198b258d1d2aa220fc7a190e99d9fe1
++       末端のコーデックは `Text`、`Boolean`、`Char`、`Data`、そして八つの `hypotenuse` の整数 `S8`…`S64` と `U8`…`U64` を扱う。
++       構造化された WIT の形は、WIT の宣言に従って `WasmInvoke` がそれらから導出する。`tuple<…>` やレコードは Scala のタプルとして、`list<T>` は `List` として、`option<T>` は `Optional` として、`result<ok, err>` は `err` を `.Error` として発生させてアンラップし、`resource` は `.Handle` として扱う。
++       コンパニオンには、WIT の状態を持つ型と直和型に対する Scala 側の値もある。リソースには `.Handle`、ペイロードのないバリアントや列挙型のケースには `.Case`、ペイロードを運ぶケースには `.Variant` があり、それぞれ WIT の型をトピックとする `Interoperable in Wit` なので、引数として渡すことができ、ハンドルであればナビゲートできる。
+
+% 2 1 0 0bf0130956cec282149c91815b906045
+
+% 3 1 0 0a6ea0b97bcc77190fa28b903c2acc77
+
+% 4 1 0 14472404254a214a0c6608dc62bbbb3a
+
+% 5 1 0 0568c5c382c9d2e4166ec060c20246d5
+
+% 0 1 0 12d95911c58a576c15c50a1257019cb8
+
+% 0 1 0 15214261642c6f0a0bc9ebcfdc69791e
+
+% 0 1 0 1ff3ff34c3091ce0192f875cac9a4f76
+
+% 0 1 0 1e12da9ef8b85a4c01f877411bd7df1f
+
+% 0 1 0 1dfb8c2a1095e0e7174e5f545a4b5779
+
+% 0 1 0 1ef2dc3fd705fd0c152a1758b8c60ae5
+
+% 0 1 0 1f5a66b8db336260156c577c84bce93c
+
+% 0 1 0 1dadc1de3d7217f814140fbde85ba224
+
+% 1 1 0 12277007bcc501e3069d88eb887de882
+
+@ 0 2 0 0aa6712aa08fc2c00514374c58cddab8
++       `F32` と `F64` のコーデックはまだ提供されていない。
++       given はコンパニオンにあり、インポートなしで解決される。
+
+% 0 1 0 06d0f66d3ce476d309d1b4701f21a7c9
+
+% 1 1 0 0e9f03cc7c9707cb1eb3b0fa88b386b7
+
+@ 0 31 0 1792d12b6024641e1570c8f6eae47374
++   entry .apply   キャリアの値を `Wasm` として包む
++   entry .as   包まれた値をそのキャリア型で：`wasm.as[String]`
++       `Wasm` に対する拡張であり、検査されないキャストなので、キャリアはコーデックが示すものでなければならない。
++   entry .s8Encodable   `S8` は `Byte` として越える
++   entry .s8Decodable   `Byte` から読まれる `S8`
++   entry .s16Encodable   `S16` は `Short` として越える
++   entry .s16Decodable   `Short` から読まれる `S16`
++   entry .s32Encodable   `S32` は `Int` として越える
++   entry .s32Decodable   `Int` から読まれる `S32`
++   entry .s64Encodable   `S64` は `Long` として越える
++   entry .s64Decodable   `Long` から読まれる `S64`
++   entry .u8Encodable   `U8` はそのビットによって `Byte` として越える
++   entry .u8Decodable   `Byte` のビットから読まれる `U8`
++   entry .u16Encodable   `U16` はそのビットによって `Short` として越える
++   entry .u16Decodable   `Short` のビットから読まれる `U16`
++   entry .u32Encodable   `U32` はそのビットによって `Int` として越える
++   entry .u32Decodable   `Int` のビットから読まれる `U32`
++   entry .u64Encodable   `U64` はそのビットによって `Long` として越える
++   entry .u64Decodable   `Long` のビットから読まれる `U64`
++   entry .boolEncodable   `Boolean` はそのまま越える
++   entry .boolDecodable   そのまま読まれる `Boolean`
++   entry .charEncodable   `Char` はそのまま越える
++   entry .charDecodable   そのまま読まれる `Char`
++   entry .textEncodable   `Text` は `String` として越える
++   entry .textDecodable   `String` から読まれる `Text`
++   entry .dataEncodable   `Data` は凍結済みの `Array[Byte]` として越える。それはすでにそうである
++       キャリアは `Array[Byte]^{}` である。WIT のブリッジが `list<u8>` に対して渡すのと同じ `byte[]` であり、キャプチャ検査の下で純粋なので、コーデックは純粋な値のままである。
++   entry .dataDecodable   凍結済みの `Array[Byte]` から読まれる `Data`
++   entry .Error   WIT の `result<…>` の `err` 側。`call` がそれを返したときに発生する
+
+% 1 1 0 0746df38bc5c869f1c23aaaf245cd57b
+
+@ 0 7 0 00fd56388291dbd217a30ecc3a16abac
++         _the WIT import returned the error `name`_。名前は失敗したケースの小文字のケバブケースの名前（`not-permitted`、`dns-timeout`）で、`Wasm.Case` が綴るのと同じである。
++         インポートが `err` 側を返したときに、`result<ok, err>` の結果に対して `WasmInvoke` が生成するデコーダーが投げる（生成されたコードから来るので、戦術を通して発生させるのではない）。
++         エラーの値（たとえば `wasi:filesystem` の `error-code` のケース）は `#value` に型なしで保持される。`#name` はそれがどのケースであるかを復元するので、WASI のバックエンドは失敗を自身の語彙に翻訳できる：
+
+% 2 1 0 13d5788d75f4ca5008c9aca9211ebde4
+
+% 3 1 0 154f768b17dd99751c80b53e76938ae6
+
+% 4 1 0 14c5aaf7a44a77090cd5b18f63ad1654
+
+% 5 1 0 0bece07b529ad3f70dff1a5b67ae23b9
+
+% 0 1 0 0a20bf716729110e169170159e3a90bf
+
+% 0 1 0 1f9757bd95dbb672095b892521d79240
+
+% 0 1 0 1ed0d6a7c542dcf70b0ff8fa1cf0a53f
+
+% 0 1 0 129cde3dc77afda01c3485e8ba83b907
+
+% 1 1 0 082bfbc01414563609d208f4ea23e3f8
+
+@ 0 3 0 0f7b044124fa3f420e14baed318f6ff9
++     entry #value   WIT のエラーの値。型なし
++     entry #name   失敗したケースの小文字のケバブケースの名前
++   entry .Case   WIT の `variant` または `enum` のペイロードのないケースを名前で。引数として渡すため
+
+% 1 1 0 1e15e1e8c74e145f091593950568db1b
+
+@ 0 8 0 04ed9d244e7ebec21a89096982b88de1
++         `Wasm.Case["ip-address-family"]("ipv4")` は、ケースが `ipv4` である WIT の型 `ip-address-family` の値である。型引数はバリアントの名前で、引数はケースの小文字のケバブケースの名前である。
++         幻の型 `Topic` がバリアントを記録するので、その値は `Interoperable in Wit of "ip-address-family"` であり、その外部の型の引数に変換される。
++         Wasm のリンク箇所で、`call` は実行時に名前によって対応するファサードのケースオブジェクトを選び、バリアントのケースでない名前はその時点で例外を投げる。
++         バリアントや列挙型の*結果*は、`Wasm.Case of "name"` として要求されたときにはそれとして読み戻される。ペイロードを運ぶケースは、その場合ペイロードを失う。
+
+% 2 1 0 1fa63375548b6d6417d6aa2100e24a83
+
+% 3 1 0 0c369babb628ef58160b7c52df5299d8
+
+% 4 1 0 07ebcb27af9f0ffb00bd4e0a504d4013
+
+% 5 1 0 004c201187f85f0d07a4e7ffbc655db5
+
+% 0 1 0 19921ce178355377099d4483c7a6e405
+
+% 0 1 0 1846b843f461e65616c11263262eed26
+
+% 0 1 0 15a5b0d78f92db390a73483cc937b221
+
+% 1 1 0 189d81c27e0c35e200cecdd0652863f0
+
+% 0 1 0 025434edd2de442b02fe97c335164393
+
+@ 0 7 0 18b1d685fc1d1d791580a7396e4c7728
++     entry .apply   `Wasm.Case["variant"]("case")`：名前付きのバリアントの名前付きのケース
++     entry .caseName   ファサードのケースオブジェクトの小文字のケバブケースの名前。そのクラスから復元する
++         `DnsTimeout` は `dns-timeout` を与える。`apply` が受け付けるのと同じ綴りであり、バリアントの結果が `Wasm.Case` として読まれるときにデコーダーが使う。
++     entry .interoperable   `Wasm.Case of topic` は、WIT の型 `topic` が期待される場所に渡せる
++     entry #name   ケースの小文字のケバブケースの名前
++   entry .Handle   WIT のリソースへの不透明なハンドル：状態を持つ外部の値で、ナビゲートでき破棄できる
+
+% 1 1 0 06a1befbea74de380e7c65de19ac56b7
+
+@ 0 9 0 176a593483d5c2820957974d1c4254eb
++         `Wasm.Handle of "tcp-socket"` は、結果がリソース `tcp-socket` である WIT の関数に対して `call[Wasm.Handle of "tcp-socket"]()` が返すものであり、コンストラクター（`Foreign["fields", Wit].constructor.call[Wasm.Handle of "fields"]()`）が返すものである。
++         基になる値は型なしで保持される。幻の型 `Topic` がリソースの型を記録し、それによってハンドルは `Interoperable in Wit of "tcp-socket"` になるので、引数として渡すことができ、`Foreign of "tcp-socket" from Wit` として束縛すれば、リソースのメソッドへナビゲートできる。各メソッドは `[method]tcp-socket.name` としてインポートされ、ハンドルがレシーバとして渡される。
++         ハンドルのレシーバは、他のナビゲーションと違って `val` でもよい。そのハンドルは実行時に式から復元されるからである。
+
+% 2 1 0 09acc391e93d846d1b4e792acfa45aea
+
+% 3 1 0 0dee90297e11ae410ebcb058fd74b49f
+
+% 4 1 0 1366c501cae5390e0f7327c43aff3f96
+
+% 5 1 0 124a5822ac39a6da0c55281c82b21e1c
+
+% 0 1 0 0fda246e11cc4be405f1a44859c2a48f
+
+% 0 1 0 11d4937ea0d2494e13f56b2b63ae52d1
+
+% 0 1 0 0dada7757eb27ab915ac13e8604f3fac
+
+% 0 1 0 0dbcae82c91bd48606cbbe2c7d348f5d
+
+% 0 1 0 0050388eac40cda60cacebad5f50d252
+
+% 0 1 0 02df06dc7f2d60d7026975f5a456e0b8
+
+% 0 1 0 0fb1bd19f1c8752f0937d9cedf39c670
+
+% 1 1 0 1567ce980b50bac803297fd9a6482cab
+
+@ 0 4 0 00603de2fddcb3c51fe3adbdbe53dcca
++         リソースは所有される。`handle.dispose()`（`soundness` アンブレラが `xenophile.wasm` からエクスポートするインラインの拡張で、`WasmInvoke.dispose` に支えられている）は、リソースの `[resource-drop]` インポートを生成する。
++         プログラムが得たすべてのハンドルは、使い終わったときに、通常は `finally` の中で破棄すべきである。
+
+% 0 1 0 081934250f9f7f991af5f4b9e222ac50
+
+@ 0 3 0 02ba547f2e38bf40040c04517730bb7f
++     entry .interoperable   `Wasm.Handle of topic` は、WIT のリソース `topic` が期待される場所に渡せる
++     entry #value   リソースのファサードのインスタンス。型なし。Wasm 向けにコンパイルされたコードでのみ意味を持つ
++   entry .Variant   WIT の `variant` のペイロードを運ぶケース。引数として渡すため
+
+% 1 1 0 152b74e759d29d040ad22580da489e51
+
+@ 0 10 0 06c9a1eff2794da601b6a5ad51abde3e
++         `Wasm.Variant["ip-socket-address", "ipv4"](payload)` は、`ipv4` のケースにある WIT のバリアント `ip-socket-address` の値で、`payload` を運ぶ。
++         バリアントとケースはリテラルの型引数（どちらも小文字のケバブケース）である。ペイロードの型はケースごとに異なり、ファサードのケースは実行時のディスパッチなしに構築されるからである。ペイロードの Scala の型は、`.Applier` を通した二回目の適用によって推論される。
++         幻の型 `Topic` がバリアントを記録するので、その値は `Interoperable in Wit of "ip-socket-address"` であり、Wasm のリンク箇所で `call` はペイロードを包む名前付きのファサードのケースを構築する。レコードやタプルのペイロードは Scala のタプルから要素ごとに構築され、各末端はその `Encodable in Wasm` コーデックを通る。
++         バリアントが宣言していないケースはコンパイルエラーになる：_xenophile: the variant ip-socket-address has no case ipv7_。
+
+% 2 1 0 135e4f69d15f5f7d1652b104a604697a
+
+% 3 1 0 17159d860e04504f1ad9a7c589c97d83
+
+% 0 1 0 0b38dc547ab7a5b61f61f0914cd26677
+
+% 0 1 0 1ec85b9bbe9abfee1dd6066f54efbd4e
+
+% 0 1 0 0d02faa827c2bd8d0174ee87b2cc37d3
+
+% 1 1 0 043434d5343300830b6ee82690f133b9
+
+@ 0 1 0 19aecf92ecc1a77804fc06e054407876
++         `Wasm.Case` はペイロードのない対応物である。
+
+% 0 1 0 053cb53a8448a993102154e903ae25c3
+
+@ 0 2 0 07c731d965d9751c0eb6de71266ec33a
++     entry .apply   `Wasm.Variant["variant", "case"]`：その後ペイロードを受け取る `Applier`
++     entry .Applier   `Wasm.Variant[…, …](payload)` の二番目の段階。ペイロードの型を推論する
+
+% 1 1 0 1df938ca5519259500c7f574eaa5ba02
+
+@ 0 6 0 19a2e378b64607de1be0f008b57b4814
++           型引数で固定されたバリアントとケースを保持する。その `apply` はペイロードを受け取り、`(Variant[payload] of topic) { type Case = name }` の値を与える。
++       entry #apply   ペイロードを適用し、その Scala の型を推論する
++     entry .interoperable   トピックの `Wasm.Variant` は、その WIT のバリアントが期待される場所に渡せる
++     entry #payload   ペイロード。その Scala の型で
++   entry #value   包まれたキャリアの値。型なし
+
+@ 0 1 0 09c3f4d628433c0c005a7aad4dcbe144
++ entry .WasmInvoke   Wasm のバックエンド：たどられた WIT の呼び出しが Component Model のインポートになる
+
+% 1 1 0 17a888fcb2f707bf0b265e61c0f9eb00
+
+@ 0 8 0 09ac1b495893edc91d1d850a2ae877eb
++       `Wit` エコシステムのための `Materializer` であり、`xenophile.wasm` にある。
++       `call[U64]()` を伴う完全に適用されたナビゲーション（`get-random-u64` を選ぶ `Foreign["random", Wit]`）は、関数のモジュール ID（プロトタイプの `module` である `wasi:random/random@0.2.0`）と、その Component Model での名前（`name`、`[method]resource.name`、`[static]resource.name`、または `[constructor]resource`）の `witImportCall` になり、scala-wasm コンパイラがそれをインポートに変換する。
++       インポートのシグネチャは `.wit` の宣言から構造的に記述されるので、`list<tuple<string, string>>` のような入れ子の形も正確な型を保つ。
+
+@ 0 8 0 050df3c47d26c18506064128bf0653f8
++       要求された結果の型がデコードを決め、WIT の結果に従って再帰的に行われる。
++       `result<…>` は検査され、その `err` は `Wasm.Error` として投げられる。`option<T>` は `Optional` になる。`Wasm.Handle of "name"` として要求されたリソースは包まれる。Scala のタプルとして要求された `tuple<…>` やレコードは要素ごとにデコードされる。`List[T]` として要求された `list<T>` も同様である。`Wasm.Case of "name"` として要求されたバリアントはケースの名前を与える。`Unit` として要求された `unit` の関数は何もデコードしない。そして末端はその型の `Decodable in Wasm` を使う。
++       `result` または void の関数以外に対して `Unit` を要求すると _xenophile: `call[Unit]` requires a WIT `result<…>` or void function_ となる。
+
+@ 0 6 0 192c4c93f2c3f6d21c1f2ec0400b9065
++       各引数はその `Encodable in Wasm` コーデックを通して越える。
++       `option<T>` に対する `Optional[T]`（または素の `Unset`）は `java.util.Optional` として、`Wasm.Handle` はその生のハンドルとして、`Wasm.Case` は名前で選ばれたファサードのケースオブジェクトとして、`Wasm.Variant` はそのペイロードを包んで構築された名前付きのファサードのケースとして、`tuple<…>` やレコードに対する Scala のタプルは要素ごとに、`option<T>` に対する素の値は存在するオプショナルとして、`result<…>` に対する素の値はその `Ok` として越える。
+
+@ 0 3 0 0be887b46751c59312c158cfab953948
++       scala-wasm のすべてのシンボルは下流のクラスパスで名前によって探されるので、モジュールはマクロが実行される JVM 上でコンパイルでき、呼び出しは Wasm でリンクされる呼び出し箇所でのみ実体化する。
++       直接使うためのものではない。`call` が名前でこれに到達する。
+
+% 1 1 0 0a39f343c0295914011ce9eef3535e15
+
+% 1 1 0 0ed06620379e6ccb05c2ff7a851f80c7
+
+@ 0 6 0 17a073f990b150dc0265abdb018949ae
++   entry .materialize   たどられた WIT の関数に対する Component Model のインポート呼び出しを生成する
++   entry .dispose   `handle.dispose()` の背後にあるマクロ：リソースの `[resource-drop]` インポートを生成する
++       `Wasm.Handle` の `Topic` からリソースの型を読み、スコープ内の `Interface in Wit` が示す WIT の定義の中からそのモジュールを見つけ、ハンドルを唯一のパラメーターとして `[resource-drop]name` を生成する。
++       それを呼び出す `Wasm.Handle` 上の拡張 `dispose()` は `soundness` パッケージで宣言されているので、`import soundness.*` の後で使える。
+
+@ 0 1 0 1b3718a4db59a3f40d8dc8b7f25348d3
++ entry .Facade   動作中の Kotlin または Java の値に対するゼロコストで静的に型付けされたビュー。Scala であるかのようにナビゲートする
+
+% 1 1 0 002ffb0c385e21b41a0bebc10e019861
+
+@ 0 8 0 017832e740c7bf6c14bf8f1c46633c6d
++       `Facade over T` は Scala の型 `T` の JVM の値を包み（型引数も含む。そのため `Facade over kotlin.Pair[Text, Text]` は二つの構成要素がどちらも `Text` であることを知っている）、Kotlin の宣言が Scala のものであるかのようにそのメンバーに到達できるようにする。
++       すべてのメンバーアクセスは、Kotlin コンパイラがクラスファイルに書き込んだ `@Metadata` に照らして（`KotlinDialect` を通して）コードのコンパイル時に解決され、ただちに直接的で静的に型付けされた JVM の呼び出しとして実体化する。リフレクションもラッパーオブジェクトもなく、値そのものがそのまま渡される。
++       これが `Foreign` の値との違いである。`Foreign` は別のランタイムが実行するための遅延された式であるが、ファサードは即時的である。Kotlin の世界は同じ JVM だからである。
+
+@ 0 4 0 003c689631d084a71c81dbfbbf1d3a7b
++       ファサードは `make[T](arguments)`（コンストラクターの呼び出し）、`companion[T]`（クラスのコンパニオンオブジェクト）、`singleton[T]`（Kotlin の `object`）、または `enumEntry[T](name)` で作られるか、別のファサードのメンバーの結果として得られる。
++       メタデータを読むには、Kotlin 標準ライブラリがコンパイルのクラスパスになければならない：
+
+% 2 1 0 04e78b6a802e06b70ea262f31b9173f8
+
+% 3 1 0 080143291a192a981c137f8aa61570f8
+
+% 0 1 0 04a096d99f96b046007b7413f274312f
+
+% 0 1 0 1a01e95b2a634dd71c0846175eb0c0a5
+
+% 1 1 0 12e9fba820684ac70eba44757c9eb5f7
+
+% 0 1 0 05bd861325b8b2b908775f952da654ef
+
+% 0 1 0 0ab4bbf7da2224501432e5910c4611d4
+
+% 1 1 0 0c7a5ac800070f6f1ab02dae920d12a7
+
+@ 0 8 0 0b19f2294bcaec3606108a524e19337b
++       メタデータが提供するのは、まさに Java のシグネチャでは表せないものである。
++       Kotlin の `String` の結果は `Text` として読まれる。null 許容の結果 `T?` は `Optional` であり、Kotlin が null を返すところでは存在せず、null 許容のプリミティブは `Optional` の中でその Scala のプリミティブにアンボックス化される。プリミティブ、`Unit`、あるいは置換された型パラメーターの結果はそのまま渡される。そしてその他の Kotlin で型付けされた結果はさらなるファサードとして包まれるので、ナビゲーションが続けられる。
++       プロパティはメンバーとして読まれ（`regex.pattern`）、`var` プロパティはそのセッターを通して代入を受け付け（`parameter.name = t"y"`）、`val` への代入はコンパイルエラーになる。
++       `const` または `@JvmField` のプロパティは、それがコンパイルされた先の素のフィールドとして読まれる。
+
+@ 0 9 0 1efd99764997a9d00669fb29e138598c
++       引数は Kotlin が宣言するパラメーターに合わせて適合される。
++       `Text` は `String` や `CharSequence` のパラメーターを満たす。ファサードは基になる値にアンラップされる。`Int` は `Long` のパラメーターに拡大され、スコープ内の `Conversion` がその他の隔たりを埋める。Soundness の `List`、`Set`、`Map`（あるいは stdlib の `Seq`）は、定数時間の `asJava` ビューを通して `java.util.Collection`、`Set`、`Map` のパラメーターを満たす。Scala の配列は、要素型が代入可能な Java の配列のパラメーターを満たす。
++       Kotlin のデフォルト値を宣言している末尾のパラメーターは、省略するとそのデフォルト値になり（`regex.find(t"a7b")`）、引数には名前を付けることができ（`regex.find(startIndex = 2, input = t"1a2b")`）、順序は任意で、欠けている位置はやはりデフォルト値をとる。
++       余分な引数は `vararg` の末尾に集められる。
+
+@ 0 9 0 029ce23f7cd8b502122b13668736e6fb
++       Scala のラムダは Kotlin の関数型のパラメーターを満たし、その周りに `kotlin.jvm.functions.FunctionN` インターフェースが実装される（引数の数は 0 から 2）。
++       ラムダ自身のパラメーターをファサードとして宣言することもでき、そうすれば中の値もナビゲートでき、ファサードの結果は Kotlin のためにアンラップされる。
++       同様にラムダは、動的プロキシを通して Java の関数型インターフェース（`Runnable`、`Predicate`、`Comparator`、リスナー）を満たす。
++       メソッドの唯一の関数型パラメーターが素の結果を持つ場合、ファサードの型が細分化されるので、*型注釈のない*ラムダもパラメーターの型が推論される（`list.removeIf(text => text.length > 1)`）。
++       それ以外の場合は、ラムダのパラメーターを書かなければならない（`(m: Facade over MatchResult) => …`）。`Dynamic` は引数に期待される型を与えないからである。
+
+% 2 1 0 1579a6ec367d585206447ba5a7b84f48
+
+% 3 1 0 0eab27f73fa22fe9135325672698e961
+
+% 1 1 0 1843d193ecbd713b109b583e29a0e503
+
+% 0 1 0 00e8b5dd5f9f48211816aed906b2c6f5
+
+% 0 1 0 0139ca2937d12df900879046a7a48b6b
+
+% 0 1 0 0aad7820ddd8f6490899075a34ab249f
+
+% 0 1 0 0637cdcc55d5fe880053c5ccebc2136c
+
+% 0 1 0 0967b43e724b8e820a33635b7e7ef73b
+
+% 1 1 0 09f3c4b8fbe10d9b1ac2650a0b79f2e3
+
+@ 0 7 0 1320e4544d191da21e81dbc8af1a2085
++       素の Java のクラス（JDK、`android.jar`、Kotlin のメタデータを持たないあらゆるライブラリ）は、その公開された面に対するリフレクションに基づく代替を通して、同じモデルで解決される。
++       `getX()` または `isX()` メソッドは短いプロパティ `x` として読まれ、`setX(v)` メソッドは代入 `x = v` を通して書き込み、`setX(SamInterface)` の組は、パラメーターが推論されるラムダを代入できる `var` のようなプロパティになる（`handler.filter = record => …`）。
++       Java は null 許容性を宣言しないので、Java のクラスの参照の結果はすべて確定したものとして読まれる。
+
+@ 0 7 0 03f970549e4e35931d80093473a584b8
++       クラスが宣言していないメンバー、誤った引数の数、満たせない引数、曖昧なオーバーロード、Kotlin の値クラスのメンバー（その JVM 上の名前はマングルされている）、サスペンド関数（モデルから除外されている）、あるいは引数の数が 2 を超える関数型インターフェースはコンパイルエラーであり、Kotlin がそのメンバーを宣言するとおりの言い方で示される：_xenophile: kotlin.text.Regex has no member matchez; did you mean: fun matches(CharSequence): Boolean_。
++       ファサードのメンバーは、`Completable` を理解する補完エンジンによって、Kotlin の構文で描画されたタブ補完の候補としても提示される。
+
+@ 0 5 0 1ed785f0ff8750330813e159bf902de8
++       `toString`、`equals`、`hashCode` はファサードのラッパー自身の実際のメンバーなので、`Dynamic` はそれらを横取りできない。基になる値のものには `#k` で到達する（`pair.k.toString`）。
++       ファサードの型は `Facade over T` であり、`T` がその `Transport`、すなわち prepositional の `Transportive` から継承する型メンバーである。これは基になる値の Scala の型で、型引数も含む。
+
+% 0 1 0 15881a2fcc7476bd1938c1bbad54b131
+
+% 0 1 0 083abf3a29921c84183bb630278baaaa
+
+% 0 1 0 00fb118971462bd30908822e4f93d778
+
+% 0 1 0 1835ba137b16ee151d8d3621d4e477c8
+
+% 1 1 0 1568a6b3c7c680e20b25bfb4000ef991
+
+@ 0 57 0 056bbff2c1ab808a08c95804084e4217
++   entry .apply   JVM の値を `Facade over T` として包む
++       `Facade[T](value)` は唯一のコンストラクターであり、`T` をファサードの `Transport` として記録し、値をそのまま保持する。
++       `make`、`companion`、`singleton`、`enumEntry` がファサードを構築し、たどられた結果はすべて包まれて届くので、ユーザーのコードがこれを必要とすることはまれである。
++       これはラムダのファサードのパラメーターが作られる方法であり、素の Java との相互運用で得た値をファサードのナビゲーションに持ち込む方法である。
++   entry .completions   ファサードのメンバーをタブ補完の候補として、Kotlin の構文で描画して
++       補完エンジンがリフレクションで呼び出す `Completable` のフックである。基になるクラスのメンバーを、それぞれ Kotlin 自身の綴りで `fun name(Type): Result` または `val name: Type` として、null 許容性は `?` として示す。
++       直接使うためのものではない。
++   entry #raw   基になる値を、消去された実行時の型 `Any` で
++       生成されたコードが読むアクセサーである。ユーザーのコードは、正確な静的な型を復元する `#k` を使うほうがよい。
++   entry #k   基になる値を、記録された完全な Scala の型で
++       素の Java レベルの相互運用へ戻る逃げ道である（`k` は Kotlin の k）。
++       `pair.k` はキャストなしで `kotlin.Pair[Text, Text]` であり、それを受け取る Java の API のため、あるいはファサードのラッパーが横取りできない `toString`、`equals`、`hashCode` のために使う。
++   entry #selectDynamic   プロパティ、`const`/`@JvmField` のフィールド、または Java ビーンのゲッターを読む
++       `facade.name` は、Kotlin のプロパティをそのゲッターを通して、`const` または `@JvmField` のプロパティをそのフィールドとして、あるいは Kotlin のメタデータを持たないクラスでは、ビーンのゲッター `getName()` または `isName()` を読む。
++       `String` の結果は `Text` として、null 許容のものは `Optional` として、Kotlin で型付けされたものはさらなるファサードとして読まれる。
++       未知のメンバーはコンパイルエラーであり、Kotlin の構文で近い候補を示す。
++   entry #applyDynamic   関数またはメソッドを、宣言されたパラメーターに合わせて適合させた引数で呼び出す
++       `facade.name(arguments)` は、Kotlin のメタデータとクラスの Scala でのビューに照らしてメンバーを解決し、すべての引数が満たすオーバーロードを選び（正確な適合は適合化に優先するので、`Text` が二つの `String` 系のオーバーロードを曖昧にすることはない）、引数を適合させ（`String` に対する `Text`、アンラップされるファサード、関数型と関数型インターフェースへのラムダ、橋渡しされるコレクションと配列、拡大される数値）、直接の呼び出しを生成する。
++       Kotlin のデフォルト値を持つ末尾のパラメーターは省略できる。引数リストが続くプロパティは、そのプロパティの値の Kotlin の `operator fun get` に到達する。
++       存在しないメンバー、満たせない引数リスト、または曖昧なオーバーロードはコンパイルエラーであり、Kotlin が宣言するとおりにメンバーを引用する。
++   entry #applyDynamicNamed   名前付きの（あるいは混在した）引数で関数を呼び出す
++       `regex.find(startIndex = 2, input = t"1a2b")`：名前付きの各値は宣言されたパラメーターの位置に割り当てられ、位置による値はまだ割り当てられていない最も前の位置を埋める。埋められずに残った位置は、Kotlin のデフォルト値を宣言していなければならない。
++       未知のパラメーター名は宣言された名前を列挙するコンパイルエラーであり、デフォルト値のない欠けたパラメーターはその名前を示すコンパイルエラーである。
++   entry #updateDynamic   `var` プロパティまたは Java ビーンのセッターに代入する
++       `facade.name = value` は Kotlin のセッターを、メタデータを持たないクラスでは `setName(value)` を生成する。
++       セッターがオーバーロードされている場合（`setColor(int)` と `setColor(long)`）、値が正確に合うオーバーロードが、変換によって到達するものに優先する。
++       `val` への代入や、セッターのない名前への代入はコンパイルエラーである。
++   entry #tuple   データクラスの構成要素を Scala のタプルとして
++       `make[kotlin.Pair[Text, Text]](t"a", t"b").tuple` は `(t"a", t"b")` である。`componentN` 関数を順に、それぞれファサードで細分化された型で並べたものである。
++       構成要素を宣言していないクラスではコンパイルエラーになる。
++   entry #scala   Kotlin または Java のコレクションを Soundness の同等物へ明示的にコピーする
++       `java.util.List` は `List` に、`java.util.Set` は `Set` に、`java.util.Map` は `Map` にコピーされ、`String` の要素は `Text` として読まれる（`regex.split(t"a1b2").scala` は `List[Text]` である）。
++       コピーが明示的であるのは、それ以外の場合ファサードはゼロコストのビューだからである。その他の型に対するファサードではコンパイルエラーになる。
++   entry #apply   `facade(key)`：Kotlin の `operator fun get`
++       Kotlin のインデックス構文と同じように、与えられた引数でクラスの `get` メソッドに到達するので、`MatchResult` のファサードに対する `groups(0)` は `groups.get(0)` である。
++   entry #update   `facade(key) = value`：Kotlin の `operator fun set`
++       クラスの `set` メソッドに到達し、その結果を捨てる。
+
+@ 0 7 0 1de87a936a8868ed17f81824ebbf7e6f
++ entry .make   ファサードを通して Kotlin または Java のクラスを構築する：`make[T](arguments)`
++     `make[kotlin.Pair[Text, Text]](t"a", t"b")` はコンパイルのクラスパス上でクラスを解決し、すべての引数が満たすコンストラクターを、メソッド呼び出しと同じ適合化（`String` に対する `Text`、関数型と関数型インターフェースに対するラムダ、`asJava` ビューを通したコレクション、数値の拡大、スコープ内の `Conversion`）を行って選び、`Facade over T` を返す。
++     ジェネリックなクラスのコンストラクターはファサード自身の型引数で型付けされるので、`make[java.util.ArrayList[Text]](…)` は要素が `Text` であることを知っている。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 08fddf93e85317de114896cfef3905b1
+
+% 0 1 0 11444c066bd65bb501d322d3e5696152
+
+% 0 1 0 1a7b3e190f5a5e5c0f6e7a4f13287770
+
+% 1 1 0 1d76e20df1e318bf06e0a829ababef3c
+
+@ 0 5 0 1a1d7c791da8e1be0bb06e0b0ca65209
++     コンパイルのクラスパス上にないクラスや、引数を受け付けるコンストラクターがないことはコンパイルエラーである。
++     素の Java のクラス（Kotlin のメタデータを持たないもの）はリフレクションに基づく代替のモデルを通して構築されるので、JDK のクラスも Kotlin のクラスと同様に機能する。
++     ファサードの型は、関数型インターフェースを受け取るクラスのメソッドで細分化されるので、そのいずれかに渡された型注釈のないラムダは、パラメーターの型が推論される。
+
+@ 0 7 0 0083175227b4c04e0845e6db236b6f16
++ entry .companion   Kotlin のクラスのコンパニオンオブジェクトのファサード：`companion[T]`
++     `companion[kotlin.text.Regex].escape(t"a.b")` は、静的フィールドを通して `Regex.Companion` のメンバーに到達する。
++     クラスはコンパニオンオブジェクトを宣言していなければならず、宣言していないクラスはコンパイルエラーである（_xenophile: kotlin.Pair has no companion object_）。
++     コンパニオンのメンバーはそれ自身のメタデータから解決されるので、値クラスのメンバー（`kotlin.time.Duration.parse` のように JVM 上の名前がマングルされている）は、その値クラスを示す診断と共に拒否される。
+
+@ 0 5 0 15744ea6be109c240d88eae40b6957f0
++ entry .singleton   Kotlin の `object` のファサード：`singleton[T]`
++     `singleton[kotlin.text.Typography].quote` は、静的な `INSTANCE` フィールドを通して `object` のメンバーに到達する。`const` プロパティは、それがコンパイルされた先のフィールドとして読まれる。
++     オブジェクトではなくクラスである型はコンパイルエラーであり（_xenophile: kotlin.Pair is not a Kotlin object_）、コンパイルのクラスパス上にない型も同様である。
+
+@ 0 8 0 1530b374472d432101837a2b56714a99
++ entry .enumEntry   `enum class` のエントリーを名前で得たファサード：`enumEntry[T]("NAME")`
++     `enumEntry[kotlin.text.RegexOption]("IGNORE_CASE")` はそのエントリーに対する `Facade over RegexOption` であり、列挙型が期待される場所ならどこでも（たとえばコンストラクターやメソッドの引数として）使える。
++     名前はリテラルであり、メタデータが宣言するエントリーと照合される。未知の名前は実際のエントリーを列挙するコンパイルエラーである：_xenophile: kotlin.text.RegexOption has no entry IGNORE_CAES; its entries are: IGNORE_CASE, MULTILINE, …_。
++     メソッドが `entry` ではなく `enumEntry` であるのは、`entry` がすでに別のライブラリによって `soundness` にエクスポートされており、そうでなければワイルドカードインポートがクラスパスの順序によって衝突を解決してしまうからである。
+
+@ 0 1 0 1a430bf92c4d4da00f4ef26f7751c8c6
++ entry .Kotlin   Kotlin/JVM エコシステム：Kotlin の型に対応付けられた Scala の型を、クラスファイルのメタデータから解決する
+
+% 1 1 0 1a3581826ec3cc1a02b5f2b0e9ac2a70
+
+@ 0 8 0 1a76a18296ab4d1517ef4d171941b609
++       `Kotlin` は、定義がテキストファイルではなく、Kotlin コンパイラがすべてのクラスファイルに書き込む `@Metadata` アノテーションである `Ecosystem` である。
++       その `#Grammar` は `KotlinDialect` であり、型を名前によってコンパイルのクラスパスから必要に応じて解決するので、`Interface` は必要ない。`Foreign` の値は Kotlin のクラスを直接指し（`Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]`）、`invoke` はナビゲーションを `KotlinInvoke` を通して直接の JVM の呼び出しとして実体化する。
++       Kotlin のコードに入るには即時的な `Facade` のほうが普通の方法である。`Foreign` の経路は、Kotlin の世界を他のすべてのエコシステムと同じように扱えるようにするために存在する。
+
+% 2 1 0 188c84e78fcd39121e8d86592d039d9a
+
+% 3 1 0 07cffbd5982bd4c51ca62365ab326482
+
+% 0 1 0 1abf8b4381ed48bd07144fb4a363c886
+
+% 0 1 0 1e10f7c45032d9651ad379b1682e2d88
+
+% 0 1 0 04b55860b075726115fd834663d61557
+
+% 0 1 0 13f0595dedc21f5a15b83ec3214bfa81
+
+% 1 1 0 08433b024c3ba4fc1d868f447bcf640b
+
+@ 0 6 0 10d467950e94378c14e69907e085891a
++       コンパニオンには、どの Scala の型がどの Kotlin の型を表すかを示す `Interoperable` の given（プリミティブ、`kotlin.String` に対する `Text`、`Unit`、そして方言がユニオン `T | null` として読む null 許容の `T?` に対する `Optional`）と、エコシステムの唯一のリフレクション的な端である `Runtime` がある。
++       given はコンパニオンにあるので、インポートなしで暗黙のスコープにある。
++       クラスパスにないクラス、未知のメンバー、誤った引数の数、または誤った型の引数はコンパイルエラーである。
+
+% 1 1 0 1086a7e069a14d4e0444b6cdcb1ce4dd
+
+% 1 1 0 07de4846cb5a93b712317e01c055def5
+
+% 0 1 0 1b0a7ba20cb6203e19da3c65cd5d51ae
+
+@ 0 19 0 0bd8a0243111b0211306eac4e361ff5e
++   entry .int   `Int` は `kotlin.Int` を表す
++   entry .long   `Long` は `kotlin.Long` を表す
++   entry .short   `Short` は `kotlin.Short` を表す
++   entry .byte   `Byte` は `kotlin.Byte` を表す
++   entry .boolean   `Boolean` は `kotlin.Boolean` を表す
++   entry .double   `Double` は `kotlin.Double` を表す
++   entry .float   `Float` は `kotlin.Float` を表す
++   entry .char   `Char` は `kotlin.Char` を表す
++   entry .text   `Text` は `kotlin.String` を表す
++   entry .unit   `Unit` は `kotlin.Unit` を表す
++   entry .none   `Unset` は Kotlin の `null` を表す
++       null 許容の Kotlin の型 `T?` はユニオン `T | null` として読まれるので、存在しない `Optional` の値は `null` の選択肢に対応する。`Unset` が WIT の `none` や TypeScript の `undefined` に対応するのと同じである。
++   entry .optional   `Optional[T]` は null 許容の `T?` を表す
++       `T` 自身のインスタンスから導出される。`Optional[Text]` は `kotlin.String?` である。
++       `Mandatable` 制約が必須の型を特定するので、このインスタンスは本当のオプショナルにのみ適用され、`T` 自身に対するインスタンスと競合することはない。
++   entry .Runtime   唯一のリフレクション的な端：キャッシュされたメソッドハンドルを通して呼び出される Kotlin の `$default` ブリッジ
+
+% 1 1 0 01aadde6b6264d160fb68e937488e877
+
+@ 0 17 0 141edcf5692773650b23d02eb72c814b
++         Kotlin はデフォルト引数の値を合成された `name$default` ブリッジメソッドに持たせており、それらは ACC_SYNTHETIC と印付けされているのでコンパイラのシンボルテーブルからは見えず、直接の呼び出しを生成することはできない。
++         そのため、デフォルト値を持つパラメーターを省略する呼び出しは、呼び出しの形ごとに一度ブリッジをキャッシュされた `java.lang.invoke.MethodHandle` に解決し、それを通して呼び出す。これは Panama のバックエンドが `dlsym` に対して行うのと同じ、リンク時のトレードオフである。
++         `Runtime` には、Java の関数型インターフェースへプロキシされたラムダが必要とする支援もある。
++         どれもユーザーのコードから呼ばれるものではない。ファサードのマクロが呼び出しを生成する。
++     entry .dispatch   適合されたラムダから返されたファサードをアンラップし、Kotlin または Java が生の値を受け取るようにする
++     entry .forwarder   関数型インターフェースのプロキシの背後にある呼び出しハンドラ
++         `equals`、`hashCode`、`toString` にはその場で答え、単一の抽象メソッドをラムダに転送する。
++     entry .invokeDefault   キャッシュされた `MethodHandle` を通して、クラスの `name$default` ブリッジを呼び出す
++         所有者のクラス、ブリッジの名前、そして完全な引数の配列（レシーバ、存在しないものをゼロで埋めた宣言されたすべてのパラメーター、存在しない位置のビットマスク、そして null のマーカー）を受け取る。
++         クラスにそのようなブリッジがなければ `IllegalStateException` を投げる。
++   entry #Grammar   `KotlinDialect`。クラスファイルのメタデータに対する自己解決型の文法
++   entry #Emission   マテリアライザーの名前、`xenophile.KotlinInvoke`
+
+@ 0 1 0 1c155f11830b4e0f06582e166f6c0368
++ entry .KotlinDialect   Kotlin の文法：型のメンバーを、コンパイルのクラスパス上の `@Metadata` から必要に応じて読む
+
+% 1 1 0 0e792371c01bf6cb190f3feebf8b02ef
+
+@ 0 11 0 1449b4cef4a67ab00482c53a43d20a20
++       `KotlinDialect` は、`Kotlin` エコシステムに定義を与える `Dialect` である。
++       これは自己解決型である（`#resolves` が真である）。テキストのリソースをパースする代わりに、`#resolve` は名前付きのクラスをマクロのクラスローダーを通して（その静的初期化子を実行せずに）読み込み、その `kotlin.Metadata` アノテーションを kotlin-metadata-jvm で読み、メンバーをエコシステムに中立な `Prototype` として返す。関数、`val` と `var` のプロパティ（ゲッターを通して、あるいは `const` と `@JvmField` では素のフィールドとして）、そしてコンストラクター（`<init>` という名前で）である。
++       マルチファイルのファサードのメンバーはその部分クラスから集められる。入れ子のクラスはドットで名指すことができ（`Regex.Companion`）、`$` で区切られたバイナリ名が導出される。
++       サスペンド関数は除外される。その JVM 上の形は隠れた継続のパラメーターを取るからであり、そのためサスペンド関数に対する診断は `no member` となる。
++       解決の結果は、コンパイルの存続期間中、型の名前ごとにキャッシュされる。
+
+@ 0 8 0 0453e24f8fadcc8e0eb33a8e69788f0b
++       型は、Kotlin が名付けるとおりに外部のモデルへ対応付けられる。クラスはその完全修飾名で、ジェネリックな適用は `Applied` を通して、null 許容の `T?` は `"null"` とのユニオンとして、型パラメーターへの参照は `#<id>` として表され、`Facade` はそれをレシーバの型引数に照らして解決する。
++       Kotlin のメタデータを持たないクラス（JDK、`android.jar`、あらゆる素の Java ライブラリ）は、その公開されたメソッド、フィールド、コンストラクターに対するリフレクションによって構築された同じモデルにフォールバックし、Java のプリミティブと `String` は Kotlin での名前で読まれる。Java は null 許容性を宣言しないので、すべての参照型は確定したものとして読まれる。
+
+@ 0 3 0 156a9aa077ad90de15bf842a84d44e9a
++       中立なプロトタイプと並んで、方言は各メンバーの JVM 上の同一性（`JvmMember`）の補助テーブルを保持しており、マテリアライザー `KotlinInvoke` と `KotlinFacade` はそこから直接の呼び出しを生成する。これらの検索はライブラリの内部のものである。
+
+% 1 1 0 16883919157bd6601e8c419aa68559cd
+
+% 2 1 0 1341505e8ea0ea3a0f1c3a0406c7c663
+
+@ 0 9 0 0102e306e86ed66902a7cb8ae6a5d130
++   entry .parse   常に空：この方言がテキストのリソースをパースすることはない
++       `Dialect` の契約が要求するものである。Kotlin の定義はクラスファイルの中にあるので、`parse` は空の `Map` を返し、`#resolve` が仕事をする。
++   entry .resolves   `true`：方言は型の名前ごとに、必要に応じて `resolve` に答える
++   entry .resolve   完全修飾名による Kotlin または Java のクラスのメンバー。読み込めるものがなければ `Unset`
++       `KotlinDialect.resolve(t"kotlin.text.Regex")` はメンバーの名前から `Prototype` への `Map` であり（名前がオーバーロードされている場合は最初の宣言が優先される）、その名前のクラスがコンパイルのクラスパスになければ `Unset` である。
++   entry .JvmMember   メンバーの JVM レベルの同一性：所有者、名前、記述子、種類、デフォルト値
+
+% 1 1 0 04d6254ae094f0e6153520bd446a590d
+
+@ 0 17 0 0ce02c1a2424e8e10c3e79c6544079e7
++         マテリアライザーが生成の元にする補助テーブルのエントリーである。
++         宣言しているクラス（`#owner`。マルチファイルのファサードでは部分クラス）、JVM の `#jvmName` と `#descriptor`、メンバーが `#static` か、`#property` か、`#field` として直接到達されるか、その `#arity`、どのパラメーターが `#defaults` を宣言しているか、パラメーター名（`#parameters`。名前付き引数のため）、そして `#vararg` かどうかを記録する。
++         値クラスのメンバーは `-` を含むマングルされた名前を持ち、ファサードはそれによってそれらを認識して拒否する。
++     entry #owner   宣言しているクラスの名前
++     entry #jvmName   クラスファイルにおけるメンバーの名前
++     entry #descriptor   メンバーの JVM 記述子、`(Ljava/lang/String;)Z`
++     entry #static   メンバーが静的（トップレベルまたは `@JvmStatic` の関数）かどうか
++     entry #property   メンバーが関数ではなくプロパティかどうか
++     entry #field   プロパティがフィールドとして直接読まれるか（`const`、`@JvmField`）どうか
++     entry #arity   宣言されたパラメーターの数
++     entry #defaults   各パラメーターについて、デフォルト値を宣言しているかどうか
++     entry #parameters   宣言されたパラメーター名。順に
++     entry #vararg   最後のパラメーターが `vararg` かどうか
+
+@ 0 1 0 076df285618c45491f08594903357b26
++ entry .KotlinInvoke   Kotlin の `Foreign` のナビゲーションを直接の JVM 呼び出しに変えるマテリアライザー
+
+% 1 1 0 17e89daff8edd0780439644f830321b8
+
+@ 0 11 0 19f159cc4fb36ea114b2265916bad680
++       `Kotlin` エコシステムの終端の `Materializer` であり、`Kotlin` の `Emission` がこれを名指す。
++       完全に適用された `Foreign … from Kotlin` のナビゲーションに対する `invoke`（または `call[T]()`）は、`KotlinDialect` を通して JVM のオーナー、メソッド、記述子を解決し、引数の Scala の型が満たす記述子を持つオーバーロードを選び（プリミティブは厳密に一致しなければならないので、`Int` の引数は `(JJJ)J` ではなく `(III)I` を選ぶ）、実行時のリフレクションなしに静的な呼び出しを生成する。
++       実体化するのはトップレベル（静的）の関数の呼び出しである。インスタンスメンバーやオーバーロードされた名前はコンパイルエラー（_xenophile: kotlin.text.StringsKt.trim is an instance member, which is not yet supported_）になり、それらには eager な `Facade` を使う。
++       マルチファイルファサードのパートクラスは kotlin-stdlib の中でパッケージプライベートなので、そのクラスに解決された呼び出しは、JVM が公開のファサードを通してなら到達できるとしても、アクセスできないことがある。
+
+% 1 1 0 0f05998450acd4d50c2ff1067544ebb1
+
+% 2 1 0 00feafafb88b343507a56d894b5fcf01
+
+@ 0 1 0 13ae2babc5a289251a82e0f0d3888292
++   entry .materialize   ナビゲーションに対する静的な JVM 呼び出しを生成し、要求された結果の型にキャストする
+
+@ 0 1 0 0e610baf037b73131657f352ee40a0b7
++ entry .KotlinFacade   `Facade` の背後にあるマクロエンジン
+
+% 1 1 0 187d2483a75975090233d0c5a634c80f
+
+% 2 1 0 1a8746ae041812930651ae63680ceb74
+
+@ 0 7 0 18ee4d3b004fef3b1b5d9be48adf7885
++       直接使うためのものではない。
++       `Facade` の `selectDynamic`、`applyDynamic`、`applyDynamicNamed`、`updateDynamic`、`tuple`、`scala`、`apply`、`update`、`k`、およびトップレベルの `make`、`companion`、`singleton`、`enumEntry` の実装であり、各アクセスを `KotlinDialect` のメタデータに照らして解決し、直接の JVM 呼び出しとして実体化する。
++       公開メンバーの `select`、`applied`、`appliedNamed`、`update`、`discarded`、`construct`、`companion`、`singleton`、`enumEntry`、`tuple`、`scalaCollection`、`unwrapped` は、それらのインラインメソッドが埋め込むマクロのエントリーポイントである。
+
+@ 0 1 0 0f510c5b575d9fc31907a41b6094ca92
++ entry .Typescript   TypeScript エコシステム。コンパイル時に読み込む `.d.ts` ファイルと、その型に対応づけた Scala の型
+
+% 1 1 0 1183213d5cca1316039b2157620731cf
+
+@ 0 6 0 145d532f740202f116dfe2e863730ae2
++       `Typescript` は、定義が TypeScript の宣言ファイルである `Ecosystem` である。
++       `Interface in Typescript at "/path.d.ts"` の given がクラスパスから宣言ファイルを読み込み、`Foreign["Name", Typescript]` の値が宣言された型をナビゲートする。
++       メンバーの選択、適用、インデックスはそれぞれ `#Grammar` である `TypescriptDialect` によって宣言に照らして検査され、ナビゲーションは `#Emission` が名指す JS バックエンド（`xenophile.js` コンポーネントの `xenophile.JsInvoke`）を通して実体化する。
+
+% 2 1 0 187d1fd64c2bbf341a603821a4d7f40a
+
+% 3 1 0 107d017fe7267ef8067f59b8bb6f803c
+
+% 3 1 0 165baab06e2f990313d3ac3f4e191f67
+
+% 4 1 0 05f876155da5f3880263deb681fb50f0
+
+% 6 1 0 07feac87f7afbafc0607b35e41775810
+
+% 7 1 0 18bdd63bbb8950f209e6fa3a78df2a52
+
+% 8 1 0 09161bae47224870080a7f8c848064aa
+
+% 9 1 0 1301813804d8ec161da308afbde541a4
+
+% 10 1 0 057676dc2a041834138bdaa5990c4c98
+
+% 11 1 0 05ceae2bdac79cfa1671bdb59b5e99ca
+
+% 12 1 0 190d0bd029e9b92e0aad74734086b900
+
+@ 0 2 0 06d03b0ef28870ac173881385b96d419
++       コンパニオンは二つのものを持つ。
++       一つ目は、Scala の値を引数として渡すための `Interoperable` の given で、インポートなしに暗黙のスコープにある。
+
+% 2 1 0 07eeaea1c62342f50c9da020f29a3ca3
+
+@ 0 2 0 1e7c44fb59b8fad817713cb753587375
++       column  Scala の型
++       column  TypeScript の型
+
+% 1 1 0 15851d6051e7bf511f068ccc13b59c2e
+
+% 0 1 0 011868b1f9dbc7940429533c76110a8e
+
+% 0 1 0 10dee50b1859058a19d436c13efde5de
+
+% 0 1 0 181eef5c6a8a7af80062f6e5630f473e
+
+% 0 1 0 077a5a5a80e1eb8d167f470890315caf
+
+@ 0 1 0 0cc3faf74adfe1f705eafb44870f5d8f
++       row  `Optional[T]`  `T?`。ユニオン `T | undefined` として読む
+
+% 1 1 0 0f731014fc4647921ca920eba5e23622
+
+@ 0 5 0 05039512770db229158c615693542a25
++       二つ目は、宣言のモデルとそのパーサーである。
++       `Typescript.Parser.parse` は `.d.ts` のソースを `Typescript.Declaration` 群に読み込む。インターフェース、クラス、エイリアス、列挙型、関数、変数を、そのメンバーと `Typescript.Type` とともに、互換性の規律がハッシュできるほど忠実に読み、文法の外にあるものは近似せずに `Typescript.Error` を発生させる。
+
+@ 0 5 0 0378ba157b5aa377109ba671a5ebe7f7
++       ファイルが宣言していないメンバーはコンパイルエラー（_xenophile: the foreign type Play has no member nonexistent_）になる。
++       引数の数が違えば _xenophile: greet expects 1 arguments, not 2_、引数の型が違えば _xenophile: greet expects an argument of foreign type string_ になる。
++       型のメンバーは、`Completable` を理解する補完エンジンによってタブ補完としても提示される。
+
+% 0 1 0 18dc3140d7e55f8f16bd0567105b6add
+
+% 1 1 0 0ff836ff681b956010307b969a46335d
+
+% 2 1 0 1d86b1249d5060240aaa437eb1a46dbe
+
+@ 0 18 0 144b448481ab1f0f1fc19db75b5c6d75
++   entry .text   `Text` は `string` を表す
++   entry .int   `Int` は `number` を表す
++   entry .boolean   `Boolean` は `boolean` を表す
++   entry .list   `List[T]` は `T[]`、すなわち `Array<T>` を表す
++       要素自身のインスタンスから導出される。
++       `List[Text]` は `Array<string>` であり、外部の型 `"Array" over "string"` として書く。
++   entry .map   `Map[K, V]` は `Map<K, V>` を表す
++       キーと値のインスタンスから導出される。
++       外部の型は `"Map" over (keyTopic, valueTopic)` である。
++   entry .undefined   `Unset` は `undefined` を表す
++       オプショナルなプロパティやパラメーター `x?: T` はユニオン `T | undefined` として読まれるので、存在しない `Optional` の値は `undefined` の選択肢に対応する。
++       TypeScript の `null` も `undefined` として読まれる。
++   entry .optional   `Optional[T]` は `T | undefined` を表す
++       `T` 自身のインスタンスから導出される。
++       `Optional[Text]` は `string | undefined` と宣言された箇所に渡せる。
++       `Mandatable` 制約が必須の型を特定するので、このインスタンスは本物のオプショナルにのみ適用され、`T` そのもののインスタンスと競合することはない。
++   entry .Declared   すべての宣言に共通するもの。名前、名前空間のスコープ、エクスポートされているかどうか
+
+% 1 1 0 18e950d89f9c408c03d71831defb3c60
+
+@ 0 6 0 08095ce4f8129a8a0368548d3122aa5e
++         `Typescript.Declaration` のすべてのケースが自身のパラメーターを通して実装するシールされたトレイトで、`#name`、`#scope`、`#exported` を持つ。
++     entry #name   宣言された名前
++     entry #scope   宣言を囲む名前空間のパス。外側から順に並ぶ
++     entry #exported   モジュールの利用者が宣言に到達できるかどうか
++   entry .Declaration   `.d.ts` ファイルのトップレベルの宣言。インターフェース、クラス、エイリアス、列挙型、関数、変数のいずれか
+
+% 1 1 0 1d3a24e08fdeda9409a2affe992910ab
+
+@ 0 10 0 01863be79ad6c0741a31712103db01fe
++         宣言ファイルが含みうる六つの宣言の形の列挙型で、どれもその `name`、名前空間の `scope`、`exported` かどうかを持つ。
++         `Interface` は型パラメーター、`extends` 節、メンバーを記録する。
++         `Class` は型パラメーター、基底クラス、`implements` 節、メンバー、抽象かどうかを記録する。
++         `Alias` は型パラメーターと対象の型を記録する。
++         `Enumeration` はメンバー（名前と、オプショナルな値）と、`const enum` かどうかを記録する。`const enum` は利用者のコンパイル時にインライン化されるので、保証が実質的に異なる。
++         `Function` はシグネチャを記録する（オーバーロードされていれば複数で、宣言順に並ぶ）。
++         `Variable` は型と、`const` かどうかを記録する。
++         共通の三つのメンバーは `Typescript.Declared` から継承され、そちらで説明している。
+
+@ 0 3 0 1bbfc3b8180c409a11fe676258bf8830
++         `exported` は、宣言を読んだ時点で文字どおりの意味を持つ。
++         モジュール（トップレベルに `import` か `export` を一つでも持つファイル）ではエクスポートされた宣言だけに到達でき、グローバルスクリプトではすべてに到達でき、アンビエントな名前空間は含むものすべてをエクスポートする。
+
+% 2 1 0 105ae66670af2a3800e2ad7d2cbbe4df
+
+% 3 1 0 02c4e8c37d71c20e03713af33fccde5f
+
+% 4 1 0 07f0712e399cbfc91b8910c0da4175c3
+
+% 0 1 0 091e9fefa56650cd0e781f57fbb42164
+
+% 0 1 0 0fcd44e34c195c5e0cb9476dc2e49cce
+
+% 0 1 0 1dd7438c8ddaad2b0469c3b283209bc9
+
+% 1 1 0 1f1e298361a57f49182b7444e902f687
+
+@ 0 11 0 16d9dc1869c9894a13d1daa8ae4c25a0
++     entry .Scope   宣言の名前空間のパス。外側から順に並ぶ `List[Text]`
++         `declare namespace a { namespace b { interface X {} } }` は `X` にスコープ `List(t"a", t"b")` を与える。
++         異なる名前空間にある同じ名前の二つの宣言は別の契約なので、スコープはすべての `key` の一部である。
++     entry .qualify   `Scope` に対する拡張メソッド。スコープで修飾した名前 `a.b.X`
++         空のスコープは名前をそのままにする。
++     entry #declaredMembers   インターフェースやクラスが提示するメンバー。それ以外の形では空
++         二つのケースが持つ `members` パラメーターとは別の名前にしてある。同じ名前のメソッドはそれと衝突するからである。
++     entry #key   宣言のスコープで修飾された名前 `a.b.X`
++   entry .Member   インターフェース、クラス、インラインのオブジェクト型のメンバー一つ
+
+% 1 1 0 1985ada5455d828311a118789a0a37b1
+
+@ 0 25 0 17ee1c0bf81407bb183651434a036be2
++         メンバーは `#name`、`#kind`（プロパティ、メソッド、ゲッター、セッター、呼び出しシグネチャ、コンストラクトシグネチャ、インデックスシグネチャ）、`#signatures`（メソッドがオーバーロードされていれば複数で、宣言順に並ぶ。TypeScript は呼び出しをその順に照らして解決するからである）、そして修飾子 `#visibility`、`#static`、`#readonly`、`#optional`、`#isAbstract` を持つ。
++         同じ名前のプロパティとメソッドは、型が一致していても別の契約であり、それゆえ種類がメンバーの一部になっている。
++     entry .Kind   メンバーが何であるか。`Property`、`Method`、`Getter`、`Setter`、`Call`、`Construct`、`Index` のいずれか
++         種類は、利用者がメンバーをどう指せるかを決める。
++         呼び出しシグネチャには囲む型を呼び出すことでのみ到達でき、インデックスシグネチャにはそれをインデックスすることでのみ到達できる。
++     entry .Visibility   `Public`、`Protected`、`Private` のいずれか
++     entry #name   メンバーの名前。呼び出し、コンストラクト、インデックスのシグネチャでは空
++     entry #kind   メンバーの `Typescript.Member.Kind`
++     entry #signatures   メンバーの型。オーバーロードされていれば複数の型で、宣言順に並ぶ
++     entry #visibility   メンバーの `Typescript.Member.Visibility`
++     entry #static   メンバーが `static` かどうか
++     entry #readonly   メンバーが `readonly` かどうか
++     entry #optional   メンバーが `x?: T` かどうか
++     entry #isAbstract   メンバーが `abstract` かどうか
++     entry #selector   宣言の中でメンバーを指すキー
++         プロパティやメソッドでは素の名前、アクセサーでは `get x` と `set x`、呼び出しシグネチャでは `()`、コンストラクトシグネチャでは `new()`、インデックスシグネチャでは `[]` なので、同じ名前のゲッター、セッター、プロパティは区別されたままになる。
++     entry #visible   メンバーが利用者の契約の一部かどうか。`private` 以外のすべてがそうである
++         `protected` のメンバーは契約の一部である。サブクラスが到達しうるからである。
++   entry .Type   TypeScript の型式
+
+% 1 1 0 077dc506053a6efb1c3e09cc69afbe10
+
+@ 0 18 0 1f51a00399d54ea612e5b10aa96f7b03
++         閉じた語彙である。
++         `Named`（型引数付き）、`Literal`（文字列、数値、真偽値のリテラル型）、`Union`、`Intersection`、`Tuple`（オプショナルなラベル付き）、`Array`、`Object`（インラインのオブジェクト型のメンバー）、`Keyof`、`Typeof`、`Indexed`（`T[K]`）、`Predicate`（`x is T`）、`Function`（パラメーター、結果、型パラメーター、そして `new (…) => T` のコンストラクトシグネチャかどうか）からなる。
++         語彙は意図して閉じている。
++         `Typescript.Parser` は条件型、マップ型、テンプレートリテラル型、`infer` 束縛子に出会うと、推測せずにエラーを発生させるので、それらを使うファイルは、宣言しているより小さなインターフェースとして読まれるのではなく、はっきりと拒否される。
++         コンパニオンは `LiteralKind`、`Parameter`（型パラメーター）、`Argument`（値パラメーター）を持つ。
++     entry .LiteralKind   `String`、`Number`、`Boolean` のいずれか。`Literal` がどの種類のリテラルか
++         リテラルのテキストとは別に持つ。`"1"` と `1` は異なる型だが、ソース上の形は引用符の有無でしか違わず、引用符はレキサーがすでに取り除いているからである。
++     entry .Parameter   型パラメーター。その名前、`extends` の境界、デフォルト
++       entry #name   パラメーターの名前
++       entry #bound   `T extends U` の境界。あれば
++       entry #default   `T = U` のデフォルト。あれば
++     entry .Argument   関数、メソッド、コンストラクターの値パラメーター
+
+% 1 1 0 044f8f45504175c81a9e7e25defd9962
+
+@ 0 11 0 09823c070ce8c2150484b950f375869a
++           `rest` は引数の数に上限のない `...args: T[]` を示し、`optional` は呼び出し側が省略できる `a?: T`（またはデフォルト値を持つパラメーター）を示す。
++           どちらも、どの呼び出し箇所が正当かを変えるので、どちらも契約の一部である。
++       entry #name   パラメーターの名前
++       entry #typed   パラメーターの宣言された型。書かれていなければ `Unset`
++       entry #optional   パラメーターを省略できるかどうか
++       entry #rest   パラメーターが `...rest` パラメーターかどうか
++     entry #text   型の安定した表現。ソースに書くとおりの形
++         `string[][]`、`A & B`、`(event: string) => void`、`x is Play`。
++         診断のためのものである。規律がハッシュする正準のエンコーディングは構造的なもので、規律の側にある。
++   entry .Error   `.d.ts` のソースを読めないときに発生する
+
+% 1 1 0 06eed16a5d6802f2133c70dd30808406
+
+@ 0 9 0 031fda3a46c686111ee6061aa4158cfb
++         エラー `↯/s.59.1`：_the TypeScript declarations could not be read because `reason`_。`Typescript.Parser.parse`（および `lex`）が発生させる。
++         `#reason` は `Typescript.Error.Reason` であり、次のいずれかである。
++         詳細と、近くにあったトークンを持つ `Syntax` エラー。
++         `Unsupported` な構文（条件型、マップ型、テンプレートリテラル型、`infer` 束縛子、デコレーター、アサーションシグネチャ、`unique symbol`、計算されたプロパティ名）。これは黙って読み飛ばすのではなく意図してエラーにしている。部分的に読まれた宣言ファイルは、宣言しているより小さな契約になるからである。
++         あるいは `Duplicate` な名前で、一つのスコープでクラス、エイリアス、列挙型が二度宣言された場合である（インターフェースと関数はマージされるので、繰り返されたインターフェースは受け入れられる）。
+
+% 2 1 0 14574e9321804379125e2da85288de0e
+
+% 3 1 0 0cf2af781fe2b4920c8fe48ba0752f4f
+
+% 0 1 0 0dcf5a94cfe7395a020c0d3e19b56ac6
+
+% 0 1 0 1248dab7c4a2680a1b4c7aaa660f1613
+
+% 0 1 0 18d425a1d8e69d6516e5363d7bcc38b2
+
+% 1 1 0 15a5365c9388ee220fdd0da925b41c56
+
+@ 0 2 0 13a879bcfd2940ad1dd2f40727c76fad
++     entry .Reason   ソースを読めなかった理由。`Syntax`、`Unsupported`、`Duplicate` のいずれか
++         各ケースはエラーのサブ番号を持つ。
+
+% 3 1 0 1403d7c9e8e2e85b085c732e12bf8146
+
+@ 4 4 0 0ecd4b9c8bc125250507d957f0b77a73
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
+
+% 8 1 0 11df32c18c61db350cfc689a139c52f3
+
+% 9 1 0 194831842c69a72b14857303a890307e
+
+% 0 1 0 19a59d41ddbbd17312d513cc43c1245d
+
+% 1 1 0 19319437f8ff7fca0dca7d37a4cff717
+
+@ 0 3 0 17845cf703cba86305c1aee2a2fbc59f
++     entry .communicable   理由を、`Reason` の表に示したメッセージとして描画する
++     entry #reason   `Typescript.Error.Reason`
++   entry .Parser   TypeScript の宣言ファイルのパーサー
+
+% 1 1 0 096cb6ff61c7feba0cb89bdc592e2276
+
+@ 0 11 0 16b88958527604e10cc3b7bf0f657b36
++         TypeScript のコンパイラではなく、*宣言*のパーサーである。`.d.ts` ファイルが含みうる形を読み、式や文については何も読まない。
++         その範囲の中では、どの構文も理解されるか `Typescript.Error` で拒否されるかのどちらかで、読み飛ばされることはない。これが、規律が読んだものをハッシュできるようにする性質である。
++         ジェネリックなインターフェースとクラス、`extends` 節と `implements` 節、名前空間（入れ子のもの、および `declare module`/`global`）、オーバーロード（複数のシグネチャを順に持つ一つのメンバーにまとめる）、ゲッターとセッター、呼び出し・コンストラクト・インデックスのシグネチャ、インラインのオブジェクト型、関数型、タプル、リテラル型、`keyof`、`typeof`、インデックスアクセス、型述語を扱う。`import` 文と再エクスポートの形は契約を束縛しないので読み飛ばす。
++         コメントは読み飛ばし、文字列リテラルの値はそのトークンなので、`"a"` と `'a'` は同じように字句解析される。
+
+% 2 1 0 11059c00ed34f7491e7276046bd60d87
+
+% 3 1 0 0b6f49343408b81e1e597d78f73ab915
+
+% 4 1 0 0f9bee2d7ce514e71c216612f37aedf2
+
+% 0 1 0 09f163b2b4ab0d7f0863d277b5218edb
+
+% 0 1 0 192b0f63b35d1c2216ab5c2d722d46b7
+
+% 1 1 0 128b0bf02e25fe060d4f8b094d8adab3
+
+@ 0 13 0 1f3c75a3a526dd331d1ac97f0d22a0b9
++         パーサーにはスコープ内の `Tactic[Typescript.Error]` が必要である。`strategies.throwUnsafely`、または読めないファイルを `Unset` として読むための `safely` を使う。
++     entry .Token   字句トークン。`Word`、`Str` リテラル、`Num` リテラル、`Punct`（句読記号）のいずれか
++       entry #show   トークンをテキストとして示したもの。文字列リテラルは一重引用符で囲む
++     entry .lex   ソースのトークン。閉じていない文字列や迷い込んだ文字には `Typescript.Error` を発生させる
++         テンプレートリテラル（バッククォート）は、この段階で `Unsupported` として拒否される。
++     entry .parse   `.d.ts` のソースの宣言。読めなければ `Typescript.Error` を発生させる
++         ファイルがモジュール（トップレベルに `import` か `export` を一つでも持つ）かグローバルスクリプトかは、パースの前にトークンストリーム全体を一度走査して決める。ファイルの末尾にある `export` が、先頭にある宣言の扱いを遡って決めるからである。
++         一つのスコープで繰り返されたクラス、エイリアス、列挙型の名前は `Duplicate` エラーになる。
++   entry #Grammar   `TypescriptDialect`。宣言を外部のモデルに射影する文法
++   entry #Emission   マテリアライザーの名前 `xenophile.JsInvoke`
+
+@ 0 1 0 150490256cf7e07c15c63db1ff19562d
++ entry .TypescriptDialect   外部ナビゲーションのための TypeScript の文法。宣言を外部のモデルに射影する
+
+% 1 1 0 0f6f2845d4ba7816107a7bd380724150
+
+@ 0 9 0 1c86c28fb872cbac05b403dce3e19a89
++       `Typescript.Parser` の上の `Dialect` アダプターであり、`Typescript` エコシステムの `Grammar` である。
++       `#parse` は `.d.ts` のソースを読み、そのインターフェースとクラスを、`Foreign` のナビゲーションが読む平坦な形、すなわち各型のスコープで修飾された名前からそのメンバーの `Prototype` への `Map` に射影する。
++       この射影は設計上情報を落とす。プロトタイプは呼び出し箇所がマーシャリングに必要とするものしか記述しない。
++       しかしその下のパースは情報を落とさない。ジェネリックなインターフェースも読まれ、`extends`（あるいはクラスの `extends` と `implements`）を通して継承されたメンバーは同じファイルの宣言に照らして解決されるので、`B extends A` は `A` のメンバーも提示する。
++       ファイルが宣言していない基底は何も加えないが、何も取り除きもしない。
+
+@ 0 7 0 13a2c6c29a12488c1416061c96404aba
++       インデックス、呼び出し、コンストラクトのシグネチャには選択に使える名前がなく、`private` のメンバーは利用者が呼び出すものではないので、どちらも射影されない。
++       プロパティやゲッターはフィールドとして射影される。
++       メソッドやセッターは関数として射影され、オーバーロードされていれば*最初に*宣言されたシグネチャを取る（プロトタイプは一つの引数の数しか記録せず、TypeScript はシグネチャを順に照らして解決する）。
++       オプショナルなメンバーやパラメーターは `undefined` とのユニオンになり、`T[]` は `T` に適用された `Array` になり、リテラル型はその値を名前とする型になり、`null` は `undefined` として読まれる。
+
+% 2 1 0 17adf4802164f7c90e877968896984d2
+
+% 3 1 0 109ce096bc6ccfa11c14b9a2935bb410
+
+% 0 1 0 0542db03a5bd8535074c960250fe344e
+
+% 0 1 0 1737ddc75d324a6f1779d1612ad8b77f
+
+% 1 1 0 11855fc782372d2117249475a8b399e9
+
+@ 0 4 0 0c847c6dbc1555bf0af1c40eb7af8733
++       `parse` は全域的である。パースできないソースはエラーを発生させるのではなく何も定義せず（空の `Map`）、ナビゲーションのマクロがそこで _the foreign type is not defined_ を報告する。
++       互換性の主張を計算するコードはその経路を取ってはならず、`Typescript.Parser.parse` を直接呼び出す。そこでは読めない宣言はエラーになる。
+
+% 0 1 0 1be388b81f275341150ebdbf090d7940
+
+% 1 1 0 135fe45864cd29d70216be8463cd23fb
+
+@ 0 2 0 0d1894c47caab79f138e1e240552d0f7
++   entry .parse   `.d.ts` のソースのすべてのインターフェースとクラス。修飾された名前ごとに、メンバーのプロトタイプとともに
++       全域的である。読めないソースは空の `Map` を与える。
+
+@ 0 1 0 106d6560b605d9e50cd98485a19a068d
++ entry .WebIdl   WebIDL エコシステム。コンパイル時に読み込む `.idl` のインターフェースと、WebIDL の型に対応づけた Scala の型
+
+% 1 1 0 1e793e1486694b49119501f8aad107a7
+
+@ 0 7 0 14a34f5c8f1cbb570eb86f10b3fc9495
++       `WebIdl` は、定義が WebIDL の断片である `Ecosystem` である。WebIDL は、webref が公開しているとおり、ウェブプラットフォーム自身の仕様が DOM を宣言するのに使う言語である。
++       `Interface in WebIdl at "/path.idl"` の given がクラスパスから断片を読み込み、`Foreign["Node", WebIdl]` の値が宣言されたインターフェースをナビゲートする。
++       属性はフィールドとして読まれ、操作は引数を検査されたうえで適用され、継承、ミックスイン、partial は `#Grammar` である `WebIdlDialect` によって解決される。
++       ナビゲーションは `#Emission` が名指す JS バックエンド（`xenophile.JsInvoke`）を通して実体化する。
+
+% 2 1 0 0d5a27fbf44a547208f79f1a992424b8
+
+% 3 1 0 046ef40de44c142d159e4678bfc92f92
+
+% 0 1 0 1c982deaa36de0be1328657b51b2ae31
+
+% 0 1 0 0302bbf4a81e49bf133106d9806df993
+
+% 0 1 0 11abf3fd6d64ef38004a48774fc4b63b
+
+% 0 1 0 0ff8769f1e643e89023f8c214e02828f
+
+% 0 1 0 196cdebefe2e3bfd1c199ee75e24c6d3
+
+% 1 1 0 18ed4cb7a3ffa86c0ff3cd68db128e30
+
+@ 0 8 0 17a5a3a66c3f6075185dd25b1de777a5
++       WebIDL の数値型は幅を明示した名前で読まれ、Hypotenuse の固定幅の数値に対応する。`byte` は `s8`、`octet` は `u8`、`short` は `s16`、`unsigned short` は `u16`、`long` は `s32`、`unsigned long` は `u32`、`long long` は `s64`、`unsigned long long` は `u64`、`float` は `f32`、`double` は `f64` である。
++       `DOMString`、`USVString`、`ByteString`、`CSSOMString` はどれも `string` であり、`Text` がこれを表す。
++       null 許容の `T?` はユニオン `T | null` であり、`Optional` がこれを表す。
++       `sequence<T>` と `FrozenArray<T>` は `List` を、`record<K, V>` は `Map` を取る。
++       `Interoperable` の given はコンパニオンにあるので、インポートなしに暗黙のスコープにある。
+
+@ 0 6 0 11321e1a0e83c0960a5fcf04810f6cab
++       コンパニオンは宣言のモデルとそのパーサーも持つ。
++       `WebIdl.Parser.parse` は断片を `WebIdl.Definition` 群に読み込み、partial かどうか、ミックスインの同一性、`[Exposed]` のスコープ、辞書メンバーが必須かオプショナルか、列挙型の値を保持する。これらは互換性の規律には必要だが、外部ナビゲーションには必要ないものである。文法の外にあるものには `WebIdl.Error` を発生させる。
++       引数の型が違えばコンパイルエラー（_xenophile: appendChild expects an argument of foreign type Node_）になる。
+
+% 0 1 0 1d310b4f7744b4f11d605ac7bfb610fc
+
+% 1 1 0 079612012432fea9020c71988c00a94d
+
+% 2 1 0 028dceb81ce7ff1a0ffde981e4dc2cf0
+
+@ 0 26 0 1df7209c379a2650012caecd4d642e0d
++   entry .s8   `S8` は WebIDL の `byte` である `s8` を表す
++   entry .s16   `S16` は WebIDL の `short` である `s16` を表す
++   entry .s32   `S32` は WebIDL の `long` である `s32` を表す
++   entry .s64   `S64` は WebIDL の `long long` である `s64` を表す
++   entry .u8   `U8` は WebIDL の `octet` である `u8` を表す
++   entry .u16   `U16` は WebIDL の `unsigned short` である `u16` を表す
++   entry .u32   `U32` は WebIDL の `unsigned long` である `u32` を表す
++   entry .u64   `U64` は WebIDL の `unsigned long long` である `u64` を表す
++   entry .f32   `F32` は WebIDL の `float` である `f32` を表す
++   entry .f64   `F64` は WebIDL の `double` である `f64` を表す
++   entry .boolean   `Boolean` は `boolean` を表す
++   entry .string   `Text` は `string`、すなわち `DOMString`、`USVString`、`ByteString`、`CSSOMString` を表す
++   entry .sequence   `List[T]` は `sequence<T>` を表す
++       要素自身のインスタンスから導出される。外部の型は `"sequence" over topic` である。
++   entry .frozenArray   `List[T]` は `FrozenArray<T>` を表す
++       要素自身のインスタンスから導出される。外部の型は `"FrozenArray" over topic` である。
++   entry .record   `Map[K, V]` は `record<K, V>` を表す
++       キーと値のインスタンスから導出される。
++   entry .nullable   `Unset` は `null` を表す
++       null 許容の `T?` はユニオン `T | null` として読まれるので、存在しない `Optional` の値は `null` の選択肢に対応する。
++   entry .optional   `Optional[T]` は null 許容の `T?` を表す
++       `T` 自身のインスタンスから導出される。
++       `Mandatable` 制約が必須の型を特定するので、このインスタンスは本物のオプショナルにのみ適用され、`T` そのもののインスタンスと競合することはない。
++   entry .Argument   操作、コンストラクター、コールバックの引数一つ
+
+% 1 1 0 1860cef5f6670d1217389b5343f61146
+
+@ 0 9 0 1459b5ee6a28970d074f4bc540fe8a40
++         `#name`、外部の型 `#typed`、そして `#optional` か、`#variadic`（`T... args`）か、`#default` 値を持つかを記録する。
++         値そのものは契約ではなく振る舞いなので、その有無だけを保持する。
++     entry #name   引数の名前
++     entry #typed   引数の型。方言が正規化するとおりに正規化したもの
++     entry #optional   引数が `optional` かどうか
++     entry #variadic   引数が可変長かどうか
++     entry #default   引数がデフォルト値を宣言しているかどうか
++   entry .Member   インターフェース、ミックスイン、名前空間のメンバー一つ。属性、操作、定数、コンストラクターのいずれか
+
+% 1 1 0 1a8337424af0b2470e26c26407bcbc7c
+
+@ 0 18 0 1c14ad5f30e4365e10c14982bd1ec702
++         メンバーの `#kind`、`#name`、型 `#typed`（属性や定数の型、または操作の結果）、`#arguments`、そして `#readonly` か `#static` かを記録する。
++         特殊操作（`getter`、`setter`、`deleter`）はそのキーワードを `#special` として記録し、匿名であってもよい。
++         コンパニオンは `Kind` を持つ。
++     entry .Kind   `Attribute`、`Operation`、`Constant`、`Constructor` のいずれか
++     entry #kind   メンバーの `WebIdl.Member.Kind`
++     entry #name   メンバーの名前。コンストラクターや匿名の特殊操作では空
++     entry #typed   属性や定数の型、または操作の結果の型
++     entry #arguments   操作やコンストラクターの引数
++     entry #readonly   属性が `readonly` かどうか（定数は常にそうである）
++     entry #static   メンバーが `static` かどうか
++     entry #special   特殊操作のキーワード `getter`、`setter`、`deleter`。あれば
++     entry #selector   コンテナーの中でのメンバーのキー
++         属性や定数では素の名前、操作では名前と引数の型（なのでオーバーロードは別々のセレクターを持つ。`describe(string)`）、コンストラクターでは `new(…)`、匿名のゲッター、セッター、デリーターでは括弧に入れた特殊キーワードである。
++   entry .Field   辞書のメンバー一つ。名前、型、そして `required` か、デフォルトを持つか
+
+% 1 1 0 130e1c3253a87c34042e2c90cdc2aff4
+
+@ 0 7 0 0a8b395d1e5345d01689505928bba970
++         必須のメンバーは辞書自身の同一性に組み込まれる（一つ加えると、その辞書を構築するすべての呼び出し側が壊れる）が、オプショナルなメンバーは単独で扱われる。
++     entry #name   フィールドの名前
++     entry #typed   フィールドの型
++     entry #required   フィールドが `required` かどうか
++     entry #default   フィールドがデフォルト値を宣言しているかどうか
++   entry .Definition   WebIDL の断片のトップレベルの定義
+
+% 1 1 0 0b88f065c3845d191c87a19b301b049d
+
+@ 0 11 0 1f5a279791a10ad80a3a3eeec7eff1c7
++         定義の形の列挙型である。
++         `Interface`（親、`[Exposed]` のスコープ、メンバー、`iterable<…>`、`maplike<…>`、`setlike<…>`、`stringifier` のような組み込み宣言、そして `partial` か、`mixin` か、`callback interface` か）、`Dictionary`（親、フィールド、partial）、`Namespace`、`Enumeration`（文字列の値）、`Alias`（`typedef`）、`CallbackFunction`、`Includes`（`Target includes Mixin;`）からなる。
++         partial、ミックスイン、typedef は、ここでは意図して解決*しない*。解決はモデルを利用する者の最初の手順であり、それをパースに組み込むと、決定的なマージに必要な構造が消えてしまう。`WebIdlDialect` は、ナビゲーションのためにそれらを平坦化する利用者である。
++     entry #named   定義自身の名前。`includes` 文では、取り込む側の対象
++   entry .Error   WebIDL の断片を読めないときに発生する
+
+% 1 1 0 146bae0d4f748df411b86da060e9c245
+
+@ 0 7 0 15f7ee6e8ee155821e81fcbb27b264c9
++         エラー `↯/s.59.2`：_the WebIDL could not be read because `reason`_。`WebIdl.Parser.parse` が発生させる。
++         `#reason` は `WebIdl.Error.Reason` であり、詳細と近くにあったトークンを持つ `Syntax` エラー、`Unsupported` な構文（読み飛ばすのではなく意図してエラーにしている。部分的に読まれたケイパビリティの契約は、ファイルが宣言しているものを過小に述べるからである）、または `Duplicate` な定義のいずれかである。
++     entry .Reason   断片を読めなかった理由。`Syntax`、`Unsupported`、`Duplicate` のいずれか
++         各ケースはエラーのサブ番号を持つ。
+
+% 3 1 0 11c76e5b3e4321211fa18be103ea6810
+
+@ 4 4 0 13d66a20067adb0e0603a7ecb7e283bf
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
+
+% 8 1 0 00b8d7b575c33b341c5f385fcfa48028
+
+% 9 1 0 1c4b3ed558a9ea62041ac744f79b3e83
+
+% 10 1 0 1a1fa227a026aeeb1bf9e8dc96d45e94
+
+% 1 1 0 0a80452766080a9e03e39265a976d65a
+
+@ 0 3 0 130a897d46406c4f17e05a74b3efc3f7
++     entry .communicable   理由を、`Reason` の表に示したメッセージとして描画する
++     entry #reason   `WebIdl.Error.Reason`
++   entry .Parser   WebIDL の断片の宣言パーサー
+
+% 1 1 0 16251c4cc6e03ced06c34b10acd0d6fa
+
+@ 0 11 0 1f166251a2615c47143263360c351891
++         仕様と webref が公開しているとおりの断片を `WebIdl.Definition` 群に読み込む。インターフェース、ミックスイン、partial、コールバックインターフェース、辞書、名前空間、列挙型、typedef、コールバック関数、`includes` 文を、その属性、定数、操作（特殊な `getter`/`setter`/`deleter` 操作と `static` メンバーを含む）、コンストラクター、組み込み宣言、`[Exposed]` のスコープとともに読む。
++         それ以外の拡張属性は、構造として認識したうえで捨てる。
++         型は `WebIdlDialect` が正規化するのとまったく同じように正規化される。数値は幅を明示した名前に、文字列型は `string` に、`T?` は `null` とのユニオンに、`void` は `undefined` になるので、一つのファイルを読む二つの読み手は型の名前について一致する。
++         語彙の外にある構文は、読み飛ばされるのではなく `WebIdl.Error` を発生させる。定義は `};` で終わらなければならない。
+
+% 2 1 0 06e5824e5017a6370225963e1d6e7193
+
+% 3 1 0 10cc4e6c29652c33033506fbc49a3762
+
+% 4 1 0 065343a1f9a0518c13bf005e685ebcfe
+
+% 0 1 0 17aecb4e1930c1cd1673d5cce04024b8
+
+% 0 1 0 086dcca6c472657010a2924e8634814d
+
+% 1 1 0 1fe0ff15b143a3bf02e6721ac8f704eb
+
+@ 0 5 0 17138455458a588b098f7c0867eb4383
++         パーサーにはスコープ内の `Tactic[WebIdl.Error]` が必要である。`strategies.throwUnsafely`、または読めない断片を `Unset` として読むための `safely` を使う。
++     entry .parse   WebIDL の断片の定義を順に返す。読めなければ `WebIdl.Error` を発生させる
++   entry #Grammar   `WebIdlDialect`。ナビゲーションのために宣言を平坦化する文法
++   entry #Emission   マテリアライザーの名前 `xenophile.JsInvoke`
+
+@ 0 1 0 0d89a3618949f4360194c499d5dddb98
++ entry .WebIdlDialect   外部ナビゲーションのための WebIDL の文法。インターフェースを平坦化し、エイリアスを解決する
+
+% 1 1 0 16ebd015697c3e681294c960834c5862
+
+@ 0 7 0 12182d6bf79c187801460967e5f3b333
++       `WebIdl.Parser` の上の `Dialect` であり、`WebIdl` エコシステムの `Grammar` である。
++       `#parse` は断片を読み、`Foreign` のナビゲーションが読む平坦な形、すなわち各型の名前からそのメンバーの `Prototype` への `Map` に射影する。
++       `interface`（または `namespace`）は、属性、定数、名前付きの操作をメンバーとするナビゲート可能な型になり、`dictionary` はフィールドをメンバーとする型になり、`enum` は `string` に解決される。
++       コンストラクター、匿名の特殊操作、組み込み宣言はナビゲートできない。
+
+@ 0 7 0 1f83a2310f21035200ca284caa4be11b
++       パーサーが別々に保持したものを、方言はマージする。これが実際の DOM をナビゲート可能にする。
++       継承は平坦化されるので、各型のメンバーには基底の連鎖全体のメンバー（`HTMLElement` は `Node` の `nodeName` を提示する）と、`includes` で適用されたすべてのミックスインのメンバーが含まれ、型自身のメンバーが同じ名前の継承されたメンバーを上書きする。
++       `partial interface` の本体は、それが拡張する型にマージされる。
++       `typedef` と `enum` のエイリアスは推移的に解決されるので、`typedef (DOMString or long) Identifier` の属性はユニオン `string | s32` として読まれる。
+
+% 2 1 0 1aa43a537f037c451abb0f31ebc2acdf
+
+% 3 1 0 091cf5927c74afad046848dafd586deb
+
+% 0 1 0 0575e3419ecb9bab0d43e1ce293af011
+
+% 0 1 0 1ae46780453295401511d63b20ae4f1f
+
+% 1 1 0 01491687b7b38351039baf91a3b9218a
+
+@ 0 3 0 0c3c7c23bdde03bd159c55a4530b06ed
++       `parse` は全域的である。パースできない断片はエラーを発生させるのではなく何も定義せず（空の `Map`）、その中へのナビゲーションは _the foreign type is not defined_ を報告する。理由を報告するのは `WebIdl.Parser.parse` の呼び出しである。
+
+% 0 1 0 1e1be313ef949142103dce6956d6e5bf
+
+% 1 1 0 043ff7ca32d0efa9160b09605782ea8f
+
+@ 0 2 0 1074fa249e95e6ff1315554d442733ad
++   entry .parse   断片のすべてのインターフェース、名前空間、辞書。名前ごとに、継承したメンバーとミックスインのメンバーとともに
++       全域的である。読めない断片は空の `Map` を与える。
+
+@ 0 1 0 112f2b50cdb52af413d4eb8bce3cd6b9
++ entry .Wit   WIT エコシステム。コンパイル時に読み込む WebAssembly コンポーネントのインターフェースと、WIT の型に対応づけた Scala の型
+
+% 1 1 0 0b5a4c1eaa6f1c0f1c451c9251ceab9c
+
+@ 0 11 0 03e0830aee37d20e04b910fa8e097805
++       `Wit` は、定義が WIT（WebAssembly Interface Types）ファイルである `Ecosystem` である。WIT は Component Model のインターフェース言語である。
++       `Interface in Wit at "/path.wit"` の given がクラスパスからファイルを読み込み、`Foreign["api", Wit]` の値がそれをナビゲートする。
++       インターフェースの関数はそのインターフェースにちなんだ名前の型のメンバーであり、`record` のフィールドはそのレコードにちなんだ名前の型のメンバーであり、`resource` のメソッドはそのリソースのメンバーである。
++       各適用は `#Grammar` である `WitDialect` によって宣言に照らして検査され、`invoke` はそれを `#Emission` が名指す Wasm バックエンド（`xenophile.wasm` コンポーネントの `xenophile.WasmInvoke`）を通して、インターフェースの Component Model のモジュール ID（`wasi:random/random@0.2.0`）で指定されるコンポーネントのインポートへの呼び出しとして実体化する。
++       ファイルシステム、クロック、乱数、環境、標準入出力、HTTP の各ライブラリの WASI バックエンドは、このようにしてホストに到達する。
+
+@ 0 2 0 185f80a2bd950ca600f440eda934be3c
++       方言は WIT の宣言を、バックエンドがマーシャリングする語彙に読み込み、各ナビゲーションの外部の型はそれに従う。
+
+% 2 1 0 15a0c3252b5bda351b431f8f49b008aa
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 168dbfab0a44f4fd0dfeb7e894fd6933
++         label 文字列を扱う関数
+
+% 1 1 0 1d8ce48cda9074a00ab4836ba3ff9fc1
+
+% 2 1 0 0798a7dc508de997174544741db22693
+
+% 3 1 0 180c46b16f34f3b71cb46047891d4cde
+
+% 0 1 0 03b74ab4f1480fa815e6745849a6fdfe
+
+% 0 1 0 01282088aa6e7ad3014e18c8428a7e8d
+
+% 1 1 0 0fc6128fd83ff1c115924d71ed61b310
+
+@ 0 1 0 040f31028b50ac2f00be86d7e24b81d7
++         label レコードのフィールドは大きさ付きの型を保つ
+
+% 1 1 0 107ce0bc54c507d91b580bac20653f4e
+
+% 2 1 0 007538bc20cce99a0455b6a740441111
+
+% 3 1 0 11ec6d8d45d5ab8d0d90b3932323f1bb
+
+% 0 1 0 13935e295743610e072c52d834816b89
+
+% 0 1 0 1c41a29868ed01c909ea96901bbbed12
+
+% 1 1 0 181312a82ddf51bf06e0f0c6cf268751
+
+@ 0 1 0 1dc9607675bf45c71438b466e7540649
++         label 列挙型は、そのケースを収める判別子である
+
+% 1 1 0 024345b1d7ab7d071d074143b3842033
+
+% 2 1 0 127dc7bed46de35a190e11fd727b459d
+
+% 3 1 0 19bbec86b0b6571805dc9062863dc825
+
+% 0 1 0 11d1541f0b6bfcbd07a09dc0f5d46d39
+
+% 0 1 0 07d62e07983aacf7171c1be4f3f91f2b
+
+% 1 1 0 17e3f2336ec6ae3904f34beb76fac058
+
+@ 0 1 0 00a58e1f12478fcb1a1e7ea234e1e7c7
++         label フラグは、メンバー数に合わせた大きさのビットベクトルである
+
+% 1 1 0 17728633d7fc2c17107af6b3df96f81d
+
+% 2 1 0 1244f43885ae56040e3582c35ba861a3
+
+% 3 1 0 1ba3037c86284173014279c34c1cec06
+
+% 0 1 0 096422f9eba2e8c5117a1fedd37fe878
+
+% 0 1 0 11868c03237c3e7616dda47880207e90
+
+% 1 1 0 12ef6379b264cbd301ebee5a48b0e3ce
+
+@ 0 1 0 1c52e038afaefe4a0bfa2772187f3831
++         label リストは適用であり、オプションは none とのユニオンである
+
+% 1 1 0 02f78e81a6c2455104c9cc326a89913d
+
+% 2 1 0 17ac83536775664c0d73d750c485ac68
+
+% 3 1 0 1d3cf4d852024ff81aa895d066a55422
+
+% 0 1 0 164308f46ba2389016a1ede042f1da70
+
+% 0 1 0 0165c6e9e9f59fda161912a401615117
+
+% 0 1 0 02bdbafca7dbefa6153f90a4a69dbd35
+
+% 1 1 0 16c3b4b55ce8ef7710d8be684ca3e22a
+
+% 2 1 0 0aa2a66e733051801b985a1988f46102
+
+@ 0 3 0 05633b970d69d2760e6eb478ab994248
++       コンパニオンは、Scala の値を引数として渡し、結果を読むための `Interoperable` の given を持つ。
++       それらはコンパニオンにあるので、インポートなしに暗黙のスコープにある。
+
+% 2 1 0 1311a0561e7af19b1dacff9f04c2d103
+
+@ 0 2 0 1b6d27e7dfffafb5082689747436aba0
++       column  Scala の型
++       column  WIT の型
+
+% 0 1 0 1ff178f51e40806f01e08960664b0f34
+
+% 0 1 0 05102abf08aa17b213af29c53e58e9be
+
+% 0 1 0 0a6847b62d2f84b2021be93f60fd090a
+
+@ 0 1 0 0d12c04b4c0a9a1c10a186651a589652
++       row  `B8`, `B16`, `B32`, `B64`  `flags`。メンバーを収める大きさのもの
+
+% 0 1 0 063fea20113525b902e4e93f6bcc0765
+
+% 0 1 0 0730546b4be69e1a1a7521169acd4b1f
+
+% 1 1 0 146cbae6305908a113331c2813f6c80a
+
+% 0 1 0 0869d1cfb4040cf716e850f540f53019
+
+% 0 1 0 00b1f9dca6d60cd01e4131babd4ad60f
+
+@ 0 1 0 064089fd7455778401efdba8aebe2964
++       row  `Optional[T]`  `option<T>`。`T | none` として読む
+
+% 1 1 0 1cf66e37aa17120207211ad3c4086c61
+
+@ 0 3 0 067c3fd38cedcce9072fdcc89fc0ba6a
++       数値は Hypotenuse の固定幅の型である。
++       引数の型が違えばコンパイルエラー（_xenophile: add expects an argument of foreign type s32_）になる。
+
+@ 0 7 0 1fdb973b98ee338e0bb9376ac0f42d57
++       コンパニオンは宣言のモデルとそのパーサーも持つ。
++       `Wit.Parser.parse` はソースを `package` セクションごとに一つの `Wit.Document` に読み込む。各ドキュメントは `Wit.Interface` 群（レコード、バリアント、列挙型、フラグ、リソース、エイリアス、関数、`use` 節を `Wit.Item` として持つ）と `Wit.WorldModel` 群を持ち、文法の外にあるものには `Wit.Error` を発生させる。
++       `WitDialect.worlds` はワールドのインポートとエクスポートを Component Model の ID として読む。パッケージャーがコンポーネントを、それがリンクされたワールドから記述するのに必要なのはこれである。
+
+% 0 1 0 034c35e94d76782b1aa34fcd03444644
+
+% 1 1 0 00c0af6a59cca5bc1ad6232bda06484d
+
+% 2 1 0 00ff71d996ada2031a9a42fdbe9a5e55
+
+@ 0 37 0 055767c3c551d6af1348a969b022af29
++   entry .s8   `S8` は `s8` を表す
++   entry .s16   `S16` は `s16` を表す
++   entry .s32   `S32` は `s32` を表す
++   entry .s64   `S64` は `s64` を表す
++   entry .u8   `U8` は `u8` を表す
++   entry .u16   `U16` は `u16` を表す
++   entry .u32   `U32` は `u32` を表す
++   entry .u64   `U64` は `u64` を表す
++   entry .f32   `F32` は `f32` を表す
++   entry .f64   `F64` は `f64` を表す
++   entry .b8   `B8` は `b8`、すなわちメンバーが 8 個までの `flags` 型を表す
++       `WitDialect` は `flags` 型を、そのメンバーを収める大きさの Hypotenuse のビットベクトルに解決する。8 個までなら `b8`、16 個までなら `b16`、32 個までなら `b32`、それを超えれば `b64` である。
++   entry .b16   `B16` は `b16`、すなわちメンバーが 9 個から 16 個の `flags` 型を表す
++   entry .b32   `B32` は `b32`、すなわちメンバーが 17 個から 32 個の `flags` 型を表す
++   entry .b64   `B64` は `b64`、すなわちメンバーが 32 個を超える `flags` 型を表す
++   entry .boolean   `Boolean` は `bool` を表す
++   entry .char   `Char` は `char` を表す
++   entry .string   `Text` は `string` を表す
++   entry .data   `Data` は `list<u8>` を表す。不変のバイト配列としてのバイナリデータ
++   entry .list   `List[T]` は `list<T>` を表す
++       要素自身のインスタンスから導出される。外部の型は `"list" over topic` である。
++       この `List` は Soundness 自身のもので、Wasm バックエンドが WIT の境界を越えてマーシャリングする。
++   entry .none   `Unset` は `none` を表す
++       `option<T>` はユニオン `T | none` として読まれるので、存在しない `Optional` の値は `none` の選択肢に対応する。
++   entry .optional   `Optional[T]` は `option<T>` を表す
++       `T` 自身のインスタンスから導出される。
++       `Mandatable` 制約が必須の型を特定するので、このインスタンスは本物のオプショナルにのみ適用され、`T` そのもののインスタンスと競合することはない。
++   entry .Function   WIT の関数。名前、名前付きパラメーター、オプショナルな結果、そして `static` か `constructor` か
++     entry #name   関数の名前。リソースのコンストラクターでは `constructor`
++     entry #parameters   パラメーター。それぞれ名前と外部の型で、順に並ぶ
++     entry #result   結果の型。何も返さない関数では `Unset`
++     entry #static   関数がリソースの `static` 関数かどうか
++     entry #constructor   関数がリソースの `constructor` かどうか
++   entry .Item   WIT のインターフェースの項目一つ
+
+% 1 1 0 05bca8589c25bf8e10a256fa2c5cfeb5
+
+@ 0 12 0 19d79babe103b6560cb656a464acdc55
++         項目の語彙の列挙型である。
++         `Alias`（`type` 宣言）、`Record`（名前付きのフィールド）、`Variant`（ケース。それぞれオプショナルなペイロードの型を持つ）、`Enumeration`（ケースの名前）、`Flags`（メンバーの名前）、`Resource`（メソッド、コンストラクター、静的関数を `Wit.Function` として持つ。本体のない `resource name;` では空）、`Function`（自由関数）、`Use`（`use` 節。取り込む元のインターフェースと、導入する（元の名前、ローカルの名前）の組を持つ。参照は完全修飾でエンコードされるが、修飾にはこれが欠かせない）からなる。
++     entry #named   項目の名前。`use` 節では、取り込む元のインターフェース
++   entry .Interface   WIT のインターフェース。名前と項目を順に持つ
++     entry #name   インターフェースの名前
++     entry #items   インターフェースの `Wit.Item` 群。宣言順に並ぶ
++   entry .WorldModel   `world` の宣言。参照するインポートとエクスポート、そしてインラインの項目
+
+% 1 1 0 0f0f96f99bc68734005fe882ab6bd2f4
+
+@ 0 12 0 0aa309e7232e4dcd1dc36ce461ac3b20
++         ワールドの `#imports` と `#exports` は、それが参照するインターフェースの ID である（書かれたとおりの `wasi:io/streams@0.2.0`、または同じパッケージの素の名前）。
++         インラインの項目（`import name: func(…)`、`export name: interface { … }`）は参照ではなく定義を行うもので、`#inlineImports` と `#inlineExports` として別に持つ。それぞれ名前とその関数の組で、インラインのインターフェースでは関数は存在しない。
++         修飾された形は `WitDialect.worlds` が与える。
++     entry #name   ワールドの名前
++     entry #imports   参照するインポートのインターフェース。書かれたとおりに、順に並ぶ
++     entry #exports   参照するエクスポートのインターフェース。書かれたとおりに、順に並ぶ
++     entry #inlineImports   インラインのインポート。それぞれ名前とその関数で、インラインのインターフェースでは `Unset`
++     entry #inlineExports   インラインのエクスポート。それぞれ名前とその関数で、インラインのインターフェースでは `Unset`
++   entry .Document   WIT のソースの `package` セクション一つ。パッケージ ID、バージョン、インターフェース、ワールド
+
+% 1 1 0 0edf2a8b7087b304102973f303920ca1
+
+@ 0 9 0 106e85ebcfa3eed907bdbaffec2bf8fe
++         整備された `.wit` ファイルは複数のパッケージを持ちうる（バックエンドが持つ WASI のサブセットがそうである）ので、`Wit.Parser.parse` は `package` 宣言ごとに一つのドキュメントを与える。どのインターフェースとワールドも、その上で宣言されたパッケージに属する。
++         `package` のないソースでは `#packageName` が存在しない。
++     entry #packageName   バージョンを除いたパッケージ ID `wasi:random`、または `Unset`
++     entry #version   パッケージのバージョン `0.2.0`、または `Unset`
++     entry #interfaces   パッケージのインターフェース。順に並ぶ
++     entry #worlds   パッケージのワールド。順に並ぶ
++   entry .Error   WIT のソースを読めないときに発生する
+
+% 1 1 0 0251040db93f14b218bc0128c22c36f7
+
+@ 0 10 0 055347a992bbeebd034312436e963f85
++         エラー `↯/s.59.3`：_the WIT could not be read because `reason`_。`Wit.Parser.parse` と `WitDialect.worlds` が発生させる。
++         `#reason` は `Wit.Error.Reason` であり、次のいずれかである。
++         詳細と近くにあったトークンを持つ `Syntax` エラー。
++         `Unsupported` な構文（`@unstable` の項目、`async` 関数、`stream` 型や `future` 型、ワールドの `include`、あるいは語彙の外にある任意のキーワード）。これは読み飛ばすのではなく意図してエラーにしている。部分的に読まれた契約はファイルが宣言しているより小さな契約になり、公開された契約の中の不安定な項目は、不安定な表面についての安定した主張になってしまうからである。
++         `Duplicate` な定義。
++         あるいは `Unresolved` な型の名前である。
++     entry .Reason   ソースを読めなかった理由。`Syntax`、`Unsupported`、`Duplicate`、`Unresolved` のいずれか
++         各ケースはエラーのサブ番号を持つ。
+
+% 3 1 0 0248c7e675eda422085d233d4276bee1
+
+@ 4 4 0 17923fe1a7c872af0b067787352c015a
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
+
+% 8 1 0 01f41add59f384cc1a756c4dfbd8a8b4
+
+% 9 1 0 02a1b11bf1393ccd167222b08dbf09d3
+
+% 10 1 0 001a77b930360175175992ad2ceeac0b
+
+% 0 1 0 170af8fadf8ecfaf13cb18933ffe8e68
+
+% 1 1 0 00b84005df70908404df157e37e04fbd
+
+@ 0 3 0 10bb796c61aa9a880fda78fbb1c189a2
++     entry .communicable   理由を、`Reason` の表に示したメッセージとして描画する
++     entry #reason   `Wit.Error.Reason`
++   entry .Parser   WIT のソースの宣言パーサー
+
+% 1 1 0 04c3591eb972cd52179ce7a3f62d23d8
+
+@ 0 8 0 1e83a2626d2ffa131d1be90d306e950f
++         WIT のソースを `Wit.Document` 群に読み込み、宣言された表面を丸ごと保持する。
++         バージョン付きのパッケージ、レコード、バリアント、列挙型、フラグ、リソース（メソッド、`static` 関数、コンストラクター付き）、`type` エイリアス、関数、`use` 節を持つインターフェース、そして参照またはインラインのインポートとエクスポートを持つワールドである。
++         識別子はケバブケースである。`%` はキーワードをエスケープし、取り除かれる。`wasi:io/streams@0.2.0` のようなパッケージ参照は一つのトークンである。
++         `@since(…)` のゲートは消費される。項目がいつ加わったかは系譜がすでに記録しているからである。一方、`@unstable` は拒否される。
++         語彙の外にある構文は、読み飛ばされるのではなく `Wit.Error` を発生させる。
+
+% 2 1 0 118c486aefb5f01e1f6fa2091f2e1e2e
+
+% 3 1 0 0f378069915f5d7505fb93ac349f49c3
+
+% 4 1 0 1127f51925ea8b1d057ae2744cc496fc
+
+% 0 1 0 00cd849a1854beab0d690b8324582082
+
+% 0 1 0 09881f7004cd7b1b1c0f27518369b05e
+
+% 1 1 0 1d673b5bf18cd30b1eba180495579bfe
+
+@ 0 5 0 06d7a0aa6f954a671ba80f60663dd1bd
++         パーサーにはスコープ内の `Tactic[Wit.Error]` が必要である。`strategies.throwUnsafely`、または読めないソースを `Unset` として読むための `safely` を使う。
++     entry .parse   WIT のソースのドキュメント。`package` セクションごとに一つ。読めなければ `Wit.Error` を発生させる
++   entry #Grammar   `WitDialect`。宣言をマーシャリングの語彙に射影する文法
++   entry #Emission   マテリアライザーの名前 `xenophile.WasmInvoke`
+
+@ 0 1 0 1d27b650fee8588417829c606d476e59
++ entry .WitDialect   外部ナビゲーションのための WIT の文法。宣言をマーシャリングの語彙に射影し、ワールドを読む
+
+% 1 1 0 0b3c182da546f3210445c4277c479dce
+
+@ 0 15 0 169e1013b3df3488053d103181c9605f
++       `Wit.Parser` の上の `Dialect` であり、`Wit` エコシステムの `Grammar` である。
++       `#parse` はソースを読み、Wasm バックエンドがマーシャリングの拠り所とする平坦な形、すなわち各型の名前からそのメンバーの `Prototype` への `Map` に射影する。
++       インターフェースの関数は、そのインターフェースにちなんだ名前の型のメンバーになり、それぞれインターフェースの Component Model のモジュール ID で修飾される（パッケージ `wasi:random@0.2.0` とインターフェース `random` からは `wasi:random/random@0.2.0` が得られる）。バックエンドはこれでコンポーネントのインポートを指定する。
++       `record` のフィールドは、そのレコードにちなんだ名前の型のメンバーになる。
++       `resource` のメソッドはそのメンバーになり、リソースと、各メソッドが `static` かコンストラクターかを記録するので、呼び出しはレシーバのハンドルを引き渡せる。
++       `enum` はそのケースを収める符号なしの判別子に縮められ（256 までなら `u8`、65536 までなら `u16`、それを超えれば `u32`）、`flags` はそのメンバーを収めるビットベクトル（`b8`、`b16`、`b32`、`b64`）に、`option<T>` はユニオン `T | none` に縮められる。`result` は常にちょうど二つの枝を持ち（欠けた枝は `_` で埋める）、`type` エイリアスは推移的に解決される。
++       バリアントや本体のないリソースはナビゲート可能なメンバーを持たないが、それを定義するモジュールは記録するので、それに言及する別の場所の関数は解決される。
+
+% 2 1 0 1cc39431b44bde86143093528501f3f3
+
+% 3 1 0 0bfdfe6a3ff111b11426485eb59af323
+
+% 0 1 0 0283f6c39ef1579d00a4dd3cc039ea27
+
+% 0 1 0 04fa71cd170652970e8d86d187fcfb06
+
+% 0 1 0 003b45744ee1018306ac1068b31a008c
+
+% 1 1 0 104f4ba46ca362121dab2652184efc92
+
+@ 0 5 0 130e5f2c3b5f119d16069a3f134697f1
++       `parse` は全域的である。パースできないソースはエラーを発生させるのではなく何も定義しない（空の `Map`）。理由を報告するのは `Wit.Parser.parse` の呼び出しである。
++       `#worlds` はもう一つの読み手である。ソースのすべての `world` を、そのインポートとエクスポートを完全修飾された Component Model の ID として読む。これは Wasm OCI Artifact の構成がコンポーネントについて記録するものである。
+
+% 0 1 0 003baa2fa114eb1114704cdd23c491df
+
+% 1 1 0 14026b47182d98b800a556f67d838d54
+
+@ 0 9 0 04581e3fcde4642f1fcee9a19c5d9382
++   entry .parse   ソースのすべてのインターフェース、レコード、リソース、バリアント。名前ごとに、メンバーのプロトタイプとともに
++       全域的である。読めないソースは空の `Map` を与える。
++   entry .worlds   ソースのすべての `world`。名前ごとに、インポートとエクスポートを Component Model の ID として
++       素のインターフェース名（同じパッケージのインターフェースを名指す `import monotonic-clock;`）はパッケージ ID で修飾されるので、結果のどの ID も完全な `namespace:package/interface@version` である。
++       インラインの `import name: func(…)` や `export name: interface { … }` はインターフェースを参照しないので、結果に現れない。
++       ソースを読めなければ `Wit.Error` を発生させるので、パースできないファイルを許容する呼び出し側は `safely(WitDialect.worlds(source))` と書く。
+
+% 2 1 0 169c1dc16b1e2aa906f48f6b63b106f7
+
+% 3 1 0 13d68feef630d104021ab1fbb6aa6698
+
+% 4 1 0 1939ad69189450bd1fc54ada0e1cdf19
+
+% 0 1 0 19a0a63727f7fb4f06cad7d51ff61d3e
+
+% 0 1 0 17725a7e0377255003658b1277c48c9b
+
+% 0 1 0 1ec19bcee46785b6198f00feeb84b0a3
+
+% 0 1 0 1b58c7d1aedd31ab120c1ba37edce14a
+
+% 0 1 0 100e2678cfc2b30810fe6bae03b5c2d8
+
+% 0 1 0 0fb0e8a3ea5ad10710737573c477d302
+
+% 0 1 0 14aa798c66f2f5eb1a05d93f71ea7931
+
+% 0 1 0 093ca65c8e4e753908420f707056a9cc
+
+% 1 1 0 0fc45b773cc4b7fc188c4b9a7db9b85a
+
+@ 0 1 0 0b9724b714ddfa5a160d1f4f2a999245
++   entry .World   ワールドの名前、インポート、エクスポート。Component Model のインターフェース ID として
+
+% 1 1 0 12778feb47a13502026bd65d9aa17499
+
+@ 0 6 0 0506fdfc9a1efafd1c58a106bf4dd17c
++         ワールドが述べるものである。コンポーネントが必要とするホストのケイパビリティ（`#imports`）と、それが提供するインターフェース（`#exports`）で、どの ID も修飾されている。
++         パッケージャーは、コンポーネントを逆アセンブルすることなく、それがリンクされたワールドから記述できる。
++     entry #name   ワールドの名前
++     entry #imports   インポートするインターフェースの ID。宣言順に並ぶ
++     entry #exports   エクスポートするインターフェースの ID。宣言順に並ぶ

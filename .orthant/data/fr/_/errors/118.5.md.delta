@@ -1,0 +1,82 @@
+orthant 2 language
+
+% 0 1 0 0b0a288402995088004ff3a55751979b
+
+@ 0 1 0 10bbfa8632d70e441a3cdeafc6547a85
++ Levée lorsqu'un document BinTEL ne peut pas être décodé.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 6 0 0fce9e5dcd3ed1c2069f43b83391b0c1
++ BinTEL est l'encodage binaire de TEL, guidé par un schéma. Cette erreur couvre un tramage mal
++ formé, une signature de schéma qui ne correspond pas au schéma du lecteur, et un contenu qui n'est
++ pas conforme au schéma dont il se réclame. Les variantes 1 à 16 sont les codes B01 à B16 du §10 de
++ la spécification BinTEL ; la variante 17 est une limite de ressources du décodeur (§11), que la
++ spécification place hors de cette taxonomie, car un décodeur doté d'une limite plus grande
++ accepterait les mêmes octets.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 0e6b04401288da6d1c4fd1374e597b67
+
+% 0 1 0 0e378f2e9f362bbd1bf25aea80f62c69
+
+% 0 1 0 0b4fcf15f2f485b014f5f58745a14daa
+
+% 0 1 0 1a5e9c9c9da0926104ef2a55fa000484
+
+% 0 1 0 0c485d04a7a846690301f39b49714ef4
+
+% 0 1 0 0e74a1aa88de479512a1f31a43ea010e
+
+% 0 1 0 0f643b66b7b8d77a1096b257a944586b
+
+% 0 1 0 103d3813a77b25181fd6d15fa76fcc73
+
+% 0 1 0 19dfe139f3fddeac0a18a108cfe04dcf
+
+% 0 1 0 0948f32e085e1fa311aeffd170b6ad89
+
+% 0 1 0 024ba1bb3ddddb361ed4f263dc80e6e4
+
+% 0 1 0 09c63542c6d46c8c092c7143f2e0d3f7
+
+% 0 1 0 1f6ed47fccc6f48108715e8a96967ef5
+
+% 0 1 0 1af4d6fe55d1d706081726a8d1aef1d7
+
+% 0 1 0 02bd25b533b80d161023d815af6a2b5f
+
+% 0 1 0 11b3454211639ddc067f46bd016cde50
+
+% 0 1 0 07ccf74d7fbd7f0f0977f776c4378da7
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 7 0 045c0cd7a41e84a708bde49484b804e8
++ Une discordance de signature signifie que le lecteur détient un schéma différent de celui de
++ l'auteur ; vérifiez la signature avant le décodage plutôt qu'après. Une trame autonome porte son
++ schéma ; elle se décode donc sans qu'un schéma soit détenu localement. `TrailingBytes` est une
++ propriété du contrat du lecteur, et non des octets : la même entrée est un flux bien formé pour
++ `Bintel.decodeStream` et un document unique suivi d'une continuation pour `Bintel.decodeDocument`.
++ Un document tramé avant l'ajout du champ de longueur (avant le commit 8380ef7 de TEL) échoue sur
++ `BadSignatureLength`, car la longueur de sa signature est lue comme la longueur du document.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 12d2fe2fe588e98d114d159592cb2883
++ - Source : `lib/stratiform/src/core/stratiform.Bintel.scala`

@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 2 0 07fe400905129e5c09ca3a130de28d35
++ Sono definite trentasei valute, ciascuna come un valore che costruisce importi. Un importo si
++ scrive con il suo simbolo o con il suo codice ISO, secondo lo stile presente nell'ambito.
+
+@ 0 2 0 0521150f08d80306145fc8161d1d3d86
++ L'imposta è arrotondata all'unità minore più vicina, con la metà arrotondata per eccesso. Il
++ venti per cento di 2,94 £ è 0,588 £, che viene addebitato come 0,59 £:

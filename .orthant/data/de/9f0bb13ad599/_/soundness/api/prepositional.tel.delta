@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 6 0 1889c953ce024d7f0440aab3316da853
++       Eine *Ebene* ist der Raum, in dem ein Wert lebt: ein Dateisystem für einen Pfad (`Path
++       on Linux`, `Path on Classpath`), der Suchraum eines Classloaders oder die Knoten, über
++       denen ein Graph gezeichnet wird. Eine Typklasse oder ein Werttyp erweitert `Planar`,
++       damit `on` die Ebene benennen kann, und die Dateisystem-Richtlinien von galilei
++       (`CreateParents`, `DeleteRecursively`) sind `Planar`, damit je Dateisystem
++       eine Richtlinie gewählt wird.
++   entry #Plane   der Raum, etwa ein Dateisystem oder ein Klassenpfad, in dem sich ein Wert befindet

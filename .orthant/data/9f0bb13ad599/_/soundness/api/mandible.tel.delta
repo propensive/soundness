@@ -1,0 +1,36 @@
+orthant 2 release
+
+@ 0 2 0 1bec78d7e69ef2401c0a6f92842b1c30
++       A `Classfile` is one `.class` file, parsed when it is made through the JDK's
++       `java.lang.classfile` API; bytes the JDK rejects raise `Classfile.Error`, so each way
++       of making one needs a `Tactic[Classfile.Error]` in scope. It is found on the classpath by name or by type, through
+
+@ 5 0 0 1eb184e992b475c20e1ba886d5cd6079
++       import strategies.throwUnsafely
+
+@ 0 2 0 01bd82d2e693b76007d085202a970f31
++       A `Classfile` holds no capability: it is parsed at construction, so the value may be
++       kept, shared and passed freely.
+
+@ 0 4 0 13cdcafe62cb84b01fd3c1cda4f3c6c2
++       Error `↯/s.88.2`: _there was an error reading the classfile_. Raised by `Classfile(data)`,
++       `Classfile(name)`, `Classfile[type]` and `read[Classfile]` when the header, constant
++       pool, attributes or method table do not parse. A class the classloader does not have
++       is still `Unset`, not an error. A method's code is decoded only by `Method#bytecode`,
++       which raises the same error if the code does not decode.
+
+@ 0 1 0 0fc3328e1ea60dc6046dd35bd9087778
++       and parsed, raising `Classfile.Error` if it is not a class file.
+
+@ 0 2 0 142476080fe01edc023a6651e7c36576
++   entry .apply   the class file of some bytes, or of a resource name or a type through the `Classloader` in scope
++       `Classfile(data)` parses the bytes of a class file. `Classfile(name)` reads the classpath resource at `name` — a JVM internal name with its
+
+@ 0 1 0 0d26241214f227e10145fb0c4bc4299a
++       `Unset` when the classloader has no such resource. All three raise `Classfile.Error`
++       for bytes which do not parse.
+
+@ 1 0 0 056b9601a34ead2006f38e0f576f3ee0
++         Needs a `Tactic[Classfile.Error]`, raised if the code attribute is malformed.
+
+@ 0 11 0 1625ed5b944caf450b2e70465eaf3191

@@ -1,0 +1,421 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14c573472161d1591a0ab821784a0dbd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c512d48a8f747e81db84ebb3f7b85c8
++ info   valori indicizzati dai percorsi dei campi di un tipo, indirizzati tramite un proxy verificato in fase di compilazione
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 155d14c6d575c2930cb9a653992f2865
++     _Vicarious_ tratta la struttura di una case class — ogni campo raggiungibile da essa, a
++     qualunque profondità, e il valore intero stesso — come un insieme fisso di **percorsi**,
++     `opponent.name` anziché `name`, e permette al codice di nominare questi percorsi tramite un
++     **proxy**: un valore sostitutivo del tipo, privo di campi propri, su cui ogni selezione viene
++     risolta, durante la compilazione, nell'indice del percorso che nomina. Un percorso che il tipo
++     non possiede è un errore di compilazione, quindi nessun percorso viene mai scritto come testo.
+
+@ 0 6 0 0d0f3feabc53640b06c3f7f07eb53459
++     Sul proxy si costruiscono due strutture. Un `Catalog[Key, Value]` contiene un `Value` per ogni
++     percorso di `Key`, calcolato da un'unica funzione a partire da un valore di `Key`, letto per
++     percorso, trasformato con `map` e combinato voce per voce con `braid`. Uno `Specific` associa
++     alcuni percorsi di un tipo a istanze di typeclass, perché una derivazione
++     (quella di `wisteria`, e quindi quelle di `jacinta`, di `stratiform` e degli altri codec) le
++     usi esattamente in quei percorsi al posto dell'istanza per il tipo del campo.
+
+% 2 1 0 1630ecd701d1902615b8979173abf571
+
+% 3 1 0 0c533d0ca0adb7e81427ebb98cb3c6db
+
+% 5 1 0 047ba6561d06fc3210c636a9856fb595
+
+% 6 1 0 0a449e935ff23efa0cb0634c4c83f0c4
+
+% 8 1 0 10b102ee5e4686091d0fa183f8334a41
+
+% 9 1 0 02ec097a1894293103015980210e56e7
+
+% 0 1 0 1f98fc376d93d26407b211694cd470ef
+
+% 0 1 0 1cde67ede7001b021ed1a5446cab1794
+
+% 1 1 0 1a308ac5173f5d601eb177d3087611bf
+
+@ 0 4 0 1f597724a09d4f661173e2eee129a9cb
++     I percorsi vengono appiattiti in profondità, con la radice per prima: per `Duel` sono l'intero
++     `Duel`, `challenger`, `challenger.name`, `challenger.age`, `opponent`, `opponent.name` e
++     `opponent.age`, quindi un catalogo su `Duel` ha sette voci, e due cataloghi sulla stessa chiave
++     si allineano posizione per posizione.
+
+@ 0 3 0 0a68eb7b1e05921207e39ce3a09baf88
++     La libreria ha un unico insieme di sorgenti, `vicarious.core`. `Catalog`, `catalog`, `Proxy`,
++     `Specific`, `root` e `specifically` sono esportati nel modulo ombrello `soundness`; il
++     given `Proxy` si trova nel suo oggetto compagno, nell'ambito implicito, quindi nulla viene
++     importato per nome.
+
+% 0 1 0 16736c53b26096c207f0082614094673
+
+% 0 1 0 15cd18d3b7919aa80115166de491bebc
+
+% 0 1 0 16ef5f905f86975c0f40c8ed9c1f6402
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+% 0 1 0 0f8b59d3fb7a104900a03684ad28f8bf
+
+@ 0 7 0 155cd0e998cd35dd142a8e70fd93f635
++ entry .catalog   costruisce un `Catalog` applicando un'unica funzione polimorfa a un valore e a ogni campo al suo interno
++     `catalog(value)(lambda)` è una macro che percorre, durante la compilazione, la struttura di
++     case class del tipo di `value` e applica `lambda` — una funzione polimorfa pura `[field] =>
++     (field: field) -> result` — prima al valore intero e poi a ciascun campo, in profondità,
++     nell'ordine di dichiarazione. La funzione deve accettare un campo di qualunque tipo, quindi con
++     esso può fare soltanto ciò che ogni valore supporta. Serve un `ClassTag` per il tipo del
++     risultato, perché le voci sono conservate in un array.
+
+% 2 1 0 1d6f55d230d8ef4d0009f57724ac1919
+
+% 3 1 0 00bf0f847813c1a10603df9f8863a003
+
+% 5 1 0 1b28e8913075260f04967776bf2ec2ac
+
+% 6 1 0 16f08b8f114259901d79c58d31358e24
+
+% 8 1 0 11459718a47ea6f618f5b7020f8ca339
+
+% 9 1 0 0e911233e342b37205980a5266957913
+
+% 0 1 0 045154aee157ecd10e8e88020155681d
+
+% 0 1 0 0bda1787e6dfd4d40d817764375dee42
+
+% 1 1 0 08859f5cc6e75c9f1aa6e1c0a30529b7
+
+@ 0 1 0 01331c7d4920278d0e058a0e42ff0e24
++ entry .Catalog   un valore per ogni percorso di campo di un tipo chiave, letto tramite un percorso verificato in fase di compilazione
+
+% 1 1 0 08f07553092055fd1bb89d74ced64c91
+
+@ 0 6 0 0c24dfecd599c58f18625d55183256df
++       Un `Catalog[Key, Value]` contiene un `Value` in ogni posizione della struttura appiattita di
++       `Key` — prima il valore intero, poi ogni campo in profondità — in `#values`. Si costruisce
++       con `catalog`, si legge con `#apply` e un percorso scritto tramite un proxy, si trasforma con
++       `#map`, si sovrascrive in percorsi nominati con `.brush` e si combina con un altro catalogo
++       sulla stessa chiave con `#braid`. È il tipo chiave a rendere combinabili due cataloghi e a
++       verificare ogni percorso usato per leggerne uno.
+
+% 2 1 0 02514956fb2369b305f17caf77c73c29
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 01f65e0e42f642a612e72164231a5895
++         label Un catalogo dell'etichetta di ogni campo
+
+% 1 1 0 19749c2033ff89da1a0e3513dfc0fade
+
+% 2 1 0 0af6169059bf084006f7be94d1b94a84
+
+% 4 1 0 1d9c2f63627e4ed6023b2aa8c8463ba4
+
+% 5 1 0 149a8328f5268ee102d4a7f0c2c1f621
+
+% 7 1 0 19364089144447960bf7a51143444db7
+
+% 8 1 0 13d82c5ae2ef7a8f0d9fe21623024396
+
+% 0 1 0 16087901fc7780a11caff7f97772c4dc
+
+% 1 1 0 05d27781c35ce76e04a550841a2a475d
+
+@ 0 1 0 1d2255833216fb750fb13b636f50456c
++         label Mappato su un catalogo di larghezze, indirizzato dagli stessi percorsi
+
+% 1 1 0 0cf1f647db68b9df1a5727278b75182d
+
+% 2 1 0 18944a177445cae10c3f27f59a925efe
+
+% 4 1 0 1dde0ab126d2c8db0e4d5c942a74a121
+
+% 5 1 0 1af3a7fc27c031c41c0ff56878f590a6
+
+% 7 1 0 14eb899416168e8e1e399b40eedb113f
+
+% 8 1 0 06e08923ff95329f1f103645e783a646
+
+% 9 1 0 13ae7673a36f262017eff493aafa53ab
+
+% 0 1 0 042c74f71a7d57df151dadb04e7d860d
+
+% 1 1 0 101f2f084c6fbf2517e300659acc48ba
+
+@ 0 1 0 1b080daada2ad15d1f06a552a3772b6a
++         label Intrecciato con le etichette, voce per voce
+
+% 1 1 0 18b50400be569d0d1df5fa33c0257fa5
+
+% 2 1 0 0240e032b4884c3111d79186ebde3f29
+
+% 4 1 0 12b37d55f6738bbd070ee18cbda3c900
+
+% 5 1 0 1b74d67c513c71801c4c7ec166a46725
+
+% 7 1 0 1b50283bd7682527055d079cae4a5092
+
+% 8 1 0 191d93e739f1476f1b9dcd00bb0459fd
+
+% 9 1 0 0a55b7e6a509d2ab091f478dae893b65
+
+% 0 1 0 1edf6d73f92a6077057be7b0d93a3c6f
+
+% 0 1 0 1a4eeee82407baca06928eeea9720351
+
+% 1 1 0 0750e4fddf46d29d1e7ac716d5ec8b60
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 09b6a9da700cbea610e83d01e07a0ea2
++       È così che si assembla una tabella di impostazioni per campo: cataloghi di etichette, di
++       larghezze e di qualunque altra cosa conti, costruiti separatamente e intrecciati tra loro,
++       ciascuno indirizzato dagli stessi percorsi. Un `Catalog` è `Findable`.
+
+% 0 1 0 16cebf059ababff11de6f4787d27b308
+
+% 0 1 0 02dcdff5f415749b17058cab8bd8264f
+
+@ 0 5 0 059a52a2593b13420fff1cdd3e18a343
++   entry .brush   una copia di un catalogo con le voci di alcuni percorsi sostituite, tramite una funzione parziale di percorsi
++       Un'estensione su qualunque `Catalog`, che richiede il `Proxy` derivato per il tipo chiave.
++       L'argomento è una funzione contestuale dal proxy a una funzione parziale sui proxy: ogni
++       `case` nomina un percorso, come pattern sul proxy, e ne fornisce il nuovo valore; ogni
++       percorso non corrispondente conserva la propria voce.
+
+% 2 1 0 1816e5301ac89296087e83d67698707c
+
+% 3 1 0 16889a812e3598660ad60b7a765bb229
+
+% 5 1 0 0198c7b370a12e201da6faa80e5c7f45
+
+% 6 1 0 0886091d12e30edc09bdb937e0f6a3f1
+
+% 8 1 0 1cc36380dc457f95125461057d939016
+
+% 9 1 0 1d65bcffa7b00c400a72088e4b7f3c22
+
+% 0 1 0 194a622562029f0c1f041e159addef5f
+
+% 1 1 0 1506c446973f9402169a4369348fcadf
+
+@ 0 17 0 12561df964cea0530ea160f92272e480
++   entry #values   le voci, una per percorso, prima il valore intero e poi ogni campo in profondità
++   entry #size   il numero di voci: una per il valore intero e una per ogni campo a qualunque profondità
++   entry #apply   la voce in un percorso, scritto come selezioni su un proxy del tipo chiave
++       `catalog(proxy ?=> proxy.opponent.name)` risolve il percorso, durante la compilazione,
++       nell'indice della sua voce; `proxy ?=> proxy` è la voce per il valore intero, e un campo che
++       il tipo non possiede è un errore di compilazione. `challenger.name` e `opponent.name` sono
++       voci diverse, perché un percorso è una posizione, non un nome.
++   entry #map   un catalogo sulla stessa chiave con una funzione applicata a ogni voce
++       I percorsi restano invariati, quindi ogni percorso valido su questo catalogo è valido sul
++       risultato. Serve un `ClassTag` per il nuovo tipo di valore.
++   entry #braid   combina due cataloghi sulla stessa chiave, voce per voce, con una funzione di entrambi i valori
++       `left.braid(right)(lambda)` non richiede alcuna corrispondenza di nomi: i cataloghi sulla
++       stessa chiave si allineano posizione per posizione. Serve un `ClassTag` per il tipo del
++       risultato.
++   entry #tie   valuta un blocco con questo catalogo e il proxy della sua chiave nel contesto, così che un percorso legga la propria voce
++       All'interno del blocco il catalogo è un valore contestuale, quindi
++       `proxy.opponent.name()` — un percorso seguito da `()`, cioè `Proxy#apply` — legge
++       direttamente la voce di quel percorso; in un'unica espressione si possono leggere più
++       percorsi.
+
+% 2 1 0 1f8a808e7079e1371b9a995e6d45c567
+
+% 3 1 0 13ddc6a91efaeb301fbcdd56c863a75e
+
+% 5 1 0 13b0a936b9b1eadb1ee3282321dec80a
+
+% 6 1 0 13b29fdec15dcd3613c07b9c407db629
+
+% 8 1 0 0cf513a96ce8d84f018942a901d89466
+
+% 9 1 0 067ec14707ea069d0bf6f24860b9c952
+
+% 0 1 0 1f78210f9cdbb88b01dd795ff6dadf70
+
+% 1 1 0 034bb435c26063d3111d607891a707a6
+
+@ 0 1 0 1b3dcb699e0f413815fca62bb9aa6c8b
++ entry .Proxy   un sostituto di un valore di un tipo chiave, le cui selezioni di campo vengono risolte in indici di percorso durante la compilazione
+
+% 1 1 0 0727847a5ff05fdc19af564fb8046362
+
+@ 0 5 0 02a3fbfaf35c7e571598a607e928bf5c
++       Un `Proxy[Key, Value, Ordinal]` sta in un percorso di `Key`: `Ordinal` è l'indice di quel
++       percorso come tipo letterale (`0` per la radice), e `#id` lo stesso indice a runtime.
++       Selezionare un campo su un proxy (`proxy.opponent.name`) è una macro `selectDynamic` che
++       cerca il percorso esteso nella struttura appiattita di `Key` e fornisce il proxy
++       corrispondente, quindi un campo che il tipo non possiede è un errore di compilazione,
++       _vicarious: `opponent.title` is not a valid field path_.
+
+@ 0 5 0 084a9c54e63322d30d71a65562252595
++       Il proxy radice per un tipo chiave è `.derived`, nell'ambito implicito; `Catalog#apply` e
++       `Catalog#tie` lo forniscono, e `specifically` ne fornisce uno come `root`. Un proxy si usa in
++       tre modi: come indirizzo (`Catalog#apply`), per leggere una voce da un catalogo nel contesto
++       (`#apply`) e come estrattore in un pattern (`#unapply`), che è il modo in cui `specifically`
++       e `.brush` nominano i percorsi nei loro `case`. Un `Proxy` è `Findable`.
+
+% 0 1 0 177512859589bc0b04c1e630ac9f3ac0
+
+% 1 1 0 172eeb380c8468d01a3e69e3884cb7d5
+
+@ 0 12 0 00110f3b46649c7615ebc69edf18a92d
++   entry .derived   il proxy radice per un tipo chiave, raffinato con i proxy dei suoi campi perché le selezioni superino il controllo dei tipi
++       Una macro `transparent inline given`, nell'ambito implicito: il suo tipo è
++       `Proxy[Key, Value, 0]` raffinato con un membro per ogni campo, ricorsivamente, ciascuno un
++       proxy il cui `Ordinal` è l'indice di percorso di quel campo.
++   entry #selectDynamic   il proxy per un campo del percorso di questo proxy, oppure un errore di compilazione se non esiste
++       Viene chiamato da una selezione come `proxy.opponent`; non si scrive direttamente.
++   entry #id   l'indice del percorso di questo proxy nella struttura appiattita del suo tipo chiave, dove la radice è `0`
++   entry #apply   la voce nel percorso di questo proxy nel `Catalog` presente nel contesto
++       `proxy.opponent.name()` richiede un `Catalog[Key, Value]` come valore contestuale, come quello
++       fornito da `Catalog#tie`.
++   entry #unapply   corrisponde a un proxy per lo stesso percorso, così che un percorso possa essere un pattern di `case`
++       `case root.opponent.name() =>` corrisponde esattamente al proxy il cui `#id` è quello di
+
+% 0 1 0 0243ae7f465791a608a9ad6bfdda5963
+
+@ 0 1 0 175d0a7a3cc3ba8e0f595aababa4588e
++ entry .Specific   istanze di typeclass per percorsi di campo nominati di un tipo, da usare lì in una derivazione
+
+% 1 1 0 1a66212c5b3e7312163686c65125a813
+
+@ 0 6 0 047f1e13fb4c1a1f0fb5aa212d71697a
++       `Key is Specific over Typeclass` registra eccezioni a una derivazione generica: per alcuni
++       percorsi di campo di `Key`, l'istanza da usare esattamente in quel percorso anziché quella in
++       cui si risolverebbe il tipo del campo. Un given nell'ambito cambia tutti i campi di un tipo in
++       una volta; uno `Specific` cambia un solo percorso e nient'altro. Si costruisce con
++       `specifically`, che verifica ogni percorso e il tipo di ogni istanza durante la compilazione,
++       e viene consultato dalle derivazioni di `wisteria`, e quindi dai codec derivati tramite esse.
+
+% 2 1 0 16dcfe704a624d5d1539c37572924830
+
+% 3 1 0 18ed564fa589e9ea0b349e7d4aed2b1b
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 1b57ab72b70c598c0e3d02af8b5ce210
+
+% 3 1 0 1911432e92d095001c2d66a70d44489c
+
+% 0 1 0 0fe48aac32b3e04c02475eea17911527
+
+% 0 1 0 1043da8253ec428f0d7a20fdf4e6c4ad
+
+% 0 1 0 180753d80529814408db5e20955928be
+
+% 0 1 0 094437e7d319e44611be777f4c838517
+
+% 0 1 0 0e9de0781ffa769b0ba933873ba65e95
+
+% 0 1 0 17cff6e98f731a190567f40115fa37b6
+
+% 1 1 0 0f48e23c19780e950c09f1c4395a96a7
+
+@ 0 1 0 167532bb7f68b6950969d96373770082
++       Uno `Specific` il cui `#Transport` è per una typeclass diversa viene ignorato da una
++       derivazione.
+
+% 1 1 0 1e89910a68f3cbdd1cca2de0b92519ac
+
+% 0 1 0 1bdfa24802e8a5be0630be87c36ed944
+
+@ 0 7 0 122be1d5a0ac3ff402b643bce7cebcf4
++   entry .Cases   la funzione parziale di casi di percorso di campo letta da `specifically`: pattern di proxy verso istanze
++       `Specific.Cases[Key]` è `PartialFunction[Proxy[Key, Any, Nat], Any]`. `specifically` legge
++       i suoi `case` dall'albero durante la compilazione; la funzione stessa non viene mai eseguita.
++   entry #Self   il tipo chiave i cui percorsi di campo vengono sovrascritti
++   entry #Transport   la typeclass a cui appartengono le istanze sostitutive, come `Json.Encodable`
++   entry #instances   ogni percorso a punti sovrascritto (`"opponent.name"`), con la sua istanza, a tipo cancellato
++       La derivazione legge un'istanza da questa mappa e le riassegna il tipo nel campo che visita.
+
+% 2 1 0 001562dbab8c3b4a05f31745c3ba28c1
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 0d3e1e96a9a341711c002cb5d6088f65
+
+% 1 1 0 0fd96e306876e4020cea7891021a7aba
+
+@ 0 6 0 15d733745934215c1ae396fd8826623d
++ entry .specifically   costruisce uno `Specific` da pattern `case` che nominano percorsi di campo tramite `root`
++     `specifically { case root.opponent.name() => instance; … }` è una macro i cui `Key` e
++     `Typeclass` provengono dal tipo atteso (`Duel is Specific over Json.Encodable`). Per ogni
++     `case`, il pattern del proxy fornisce il percorso, e l'istanza deve essere una `Typeclass` per
++     il tipo in quel percorso, altrimenti la definizione non compila, _vicarious: the instance for
++     this path is not a …_; anche un percorso sconosciuto è un errore di compilazione.
+
+% 2 1 0 189fd1d56a5e0e070306a294b77561b5
+
+% 3 1 0 0612b0405f94b9170c4cded9eb39c851
+
+% 4 1 0 07789afcd770f35a076f31477f8e0362
+
+% 0 1 0 04f32810549cd2d3141ed7609699624c
+
+% 1 1 0 120ab930fd90d071122b8e8a23a38e0d
+
+% 0 1 0 1ef1291d32a376d00522b4014c5dbb9b
+
+% 0 1 0 13e889e5f84f0847194bec61163fc3d4
+
+% 1 1 0 11734e336822b41409c5941a4864298c
+
+@ 0 2 0 1a1c2044b410b8350e56c81d5cef7488
++     Un percorso che termina in una collezione accetta un'istanza per la collezione, quindi
++     derivarla di nuovo lì con un given locale ricodifica i suoi elementi in quell'unico punto:
+
+% 2 1 0 0ed6d9df7cec1804016fef740e2e904f
+
+% 3 1 0 0c4326b9bd003c8713ce6bed06a6532e
+
+% 4 1 0 079d2279ce330baf1211d8a891d35512
+
+% 0 1 0 010b4076bdea45d907086e626f0712a1
+
+% 1 1 0 00ed6eda6f6c4d7a063819533c09ab94
+
+% 0 1 0 1e170b060d00f03d18ba58a1bc7f05f4
+
+% 0 1 0 0f93724d09df2c631d72c766449826e4
+
+% 0 1 0 0e6ce2e262378341143b95407ab52c0b
+
+% 1 1 0 099fea93b547e29212041b9bc67e602f
+
+@ 0 4 0 0ee7642deadbc6cd01a26b21b6a99f1c
++ entry .root   il proxy radice all'interno dei casi di `specifically`, da cui si seleziona ogni percorso
++     Si risolve nel proxy che `specifically` fornisce come valore contestuale con tag `"root"`,
++     quindi `case root.opponent.name() =>` non richiede alcun binder. Fuori da un blocco
++     `specifically` non esiste un tale valore, e `root` non compila.
+
+@ 0 1 0 1b76f4823a87212019fe7505839e6ab9
++ entry .internal   le macro dietro `catalog`, `Proxy` e `specifically`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 1056004685957b511296ec90e8619e33
++       Non sono per l'uso diretto: `catalog`, `Proxy.derived`, `Proxy#selectDynamic` e
++       `specifically` le inseriscono. Gli helper di percorso appiattiscono i campi di una case class
++       in profondità, con la radice, `""`, all'indice 0.
++   entry .catalog   costruisce un `Catalog` da un valore e una funzione polimorfa
++   entry .fieldNames   i percorsi a punti dei campi di un prodotto, in profondità, sotto un prefisso
++   entry .paths   ogni percorso appiattito di un prodotto, con il percorso radice `""` per primo
++   entry .fieldReprs   il tipo in ogni percorso appiattito di un prodotto, allineato con `.paths`
++   entry .dereference   risolve una selezione di campo su un proxy nel proxy per il percorso esteso
++   entry .specific   costruisce uno `Specific` dai `case` di una funzione parziale di percorsi
++   entry .proxy   costruisce il proxy radice raffinato per un tipo chiave

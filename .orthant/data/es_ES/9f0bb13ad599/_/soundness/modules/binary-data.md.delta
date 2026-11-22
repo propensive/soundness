@@ -1,0 +1,116 @@
+orthant 2 language
+
+@ 0 4 0 05eb45037408fb11057e10c2d258b133
++ Una case class de [tipos numéricos con tamaño](numbers.md#numeric-types) describe una
++ disposición binaria. Cada campo declara su anchura exacta y cómo deben leerse sus bytes, de modo
++ que la forma del registro es su definición, y leer un valor consiste en nombrar su tipo en un
++ desplazamiento. Escribir uno es la misma definición, usada en la otra dirección.
+
+@ 0 2 0 01975e84328eeafd011bff4658ef7c51
++ Todo procede del paquete `soundness`. La segunda importación permite que los ejemplos impriman
++ sus resultados, y la tercera, que lean bytes sin tratar el error que lanza un registro demasiado
++ corto:
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+@ 0 3 0 0978ea4ebe0c10cf13b30da5abfcb4c0
++ Un registro binario es una case class de campos de anchura fija, a la que se da una instancia de
++ `Structural` por derivación. El orden de los bytes dentro de un campo pertenece al formato, así
++ que se elige donde se declara la disposición, importándolo de `byteOrders`:
+
+% 0 1 0 0a8651b622749bd0166cad14fbf97d34
+
+% 0 1 0 0f679049a59664ee16c7b65094aa5a6d
+
+@ 0 2 0 121fdababb84873516a123afa2a5743c
++ La anchura de cada campo se deduce de su tipo. Aquí las anchuras son cuatro, dos, dos y cuatro
++ bytes, así que el registro ocupa doce bytes. `Structural.width` lo indica, sin necesidad de tener
++ un valor:
+
+% 0 1 0 192f2ea9c942ba560b5d0f33c3e229eb
+
+@ 0 4 0 1123519ccc868c4a14358701bdc3d455
++ Los registros se anidan. Un campo cuyo tipo es a su vez `Structural` aporta toda su anchura, de
++ modo que una disposición se compone a partir de disposiciones más pequeñas y no hay que
++ aplanarla a mano. Un registro anidado conserva el orden de bytes con el que se declaró, y así se
++ describe un formato que mezcla los dos.
+
+@ 0 2 0 133fd897f6b30b1e161e10884120d899
++ Una derivación sin un orden de bytes en el ámbito no compila, ni tampoco una con un campo cuyo
++ tipo no tiene una disposición fija.
+
+@ 0 1 0 1a2d3814d3f219c800a048918d540232
++ `unpack` lee un valor de un tipo elegido a partir de unos bytes, en un desplazamiento:
+
+% 0 1 0 1fb77bda4754774f0d717049ab6cf6de
+
+@ 0 3 0 1921303bc0c82e35039c589101dc7766
++ El registro entero se comprueba una sola vez contra la longitud de los datos, antes de leer
++ ningún campo. Un registro que se saldría del final lanza un `Structural.Error`, que indica el
++ desplazamiento, la anchura del registro y el número de bytes que había:
+
+% 0 4 0 1c275054af78b2b5039fad57cd82dc6a
+
+@ 0 2 0 1d31d1c6fb4ef67f1452fef38d6ebebe
++ Los formatos binarios suelen tener secciones repetidas, y una sección de registros se
++ desempaqueta según su desplazamiento y su número de elementos, como un único array:
+
+% 0 1 0 0183ba2bae654924132d91e7c239d9ee
+
+% 0 1 0 12d7d14b458cc4a4087e7805f3b62a4d
+
+% 0 1 0 03526977cd93fab21559afc1f77220cd
+
+@ 0 2 0 1be62d39b4f2f82201a781a907eadb7e
++ La misma llamada lee un registro de un `Expanse`, como un `Terrain` de bytes proyectados en
++ memoria, en un desplazamiento `Long`. De él solo se leen los bytes del propio registro.
+
+@ 0 1 0 031e799c979801b01abdd3555d287aac
++ ### Escritura
+
+@ 0 2 0 12625a32c9350e1318f814a1dda0e14a
++ `pack` es la operación inversa: dispone un valor en exactamente tantos bytes como mide su
++ disposición, con la misma instancia, de modo que lo que se empaqueta es lo que `unpack` vuelve a
++ leer:
+
+% 0 2 0 038b7938c9a79fa30bdf117f54902562
+
+% 0 5 0 0588620aca8349f90a757086ce8bc2ef
+
+@ 0 1 0 1d40e167098578ad11be08eac45bb0a2
++ ### La clase de tipos
+
+@ 0 4 0 07ca347fd28d05670b8bd3d8c0b63482
++ `Structural` describe un tipo con una disposición fija, en ambas direcciones. Una instancia
++ declara tres cosas: `width`, el número de bytes que ocupa el valor; `load`, que lee un valor de
++ esos bytes en un desplazamiento; y `store`, que escribe uno en un array de bytes. `unpack` y
++ `pack` comprueban que los bytes están ahí, y después las llaman.
+
+@ 0 4 0 0eff5f1f96c99fb10fd0f2fbaf624011
++ La derivación calcula cada desplazamiento en [tiempo de compilación], cuando se declara la
++ disposición, y se expande a una carga por cada campo en su desplazamiento, en el orden de bytes
++ elegido. Leer un registro es, por tanto, una única comprobación de límites y tantas cargas como
++ campos haya, sin asignar nada más que el registro.
+
+@ 0 3 0 03612a23538f3392152fbb45e12d10da
++ Los tipos con tamaño fijan cómo se *interpretan* los bytes, no solo cuántos hay. Un `B32` son
++ cuatro bytes en bruto, un `U32` los lee como un entero sin signo y un `S32` como uno con signo.
++ También pueden usarse los tipos simples de Scala, para las disposiciones que resultan más
++ fáciles de expresar con ellos:
+
+@ 0 3 0 00129bea2dcd95f91e5ab6d723a0a3ff
++ Un campo de cualquier otro tipo necesita una instancia de `Structural` propia, que la derivación
++ compone después como un registro anidado. Así se da a un campo una representación que no
++ ofrecen los tipos con tamaño, como tres bytes de color:
+
+% 0 1 0 12dfed929269776716973385c9f2f8ad
+
+% 0 4 0 03375ecb7bafac6b0fdbc4bf0dd7a337
+
+% 0 2 0 06d72899db3cc813045940dd54be4864
+
+% 0 4 0 0312126fd12062990f08b39b6798ee97
+
+@ 0 2 0 02da14b1c70e3aa012b5f78d99666356
++ `load` y `store` no se comprueban: solo se llaman una vez que quien llama ha establecido que hay
++ `width` bytes.

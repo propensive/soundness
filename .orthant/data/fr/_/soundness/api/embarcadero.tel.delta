@@ -1,0 +1,2980 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 043e9aa0ea1971851bf1f7bcafcc6cb5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 085c9b7e29e3409f18a6b51c5002fc6d
++ info
++     des images de conteneurs OCI et des artefacts Wasm sous forme de valeurs, et un client gRPC
++     typé pour containerd
+
+@ 0 7 0 0091fd6fa93ebce50dbfbd71cc8565d6
++ detail
++     _Embarcadero_ couvre les deux moitiés de l'exécution de logiciels dans des conteneurs. La
++     première est l'**image** : une pile de couches de système de fichiers et une configuration,
++     chaque élément étant adressé par le condensé de ses octets, dans le format que normalise
++     l'Open Container Initiative (OCI) et que comprennent Docker, containerd, podman et tous les
++     registres. La seconde est le **démon** : containerd, l'environnement d'exécution sous-jacent
++     à Docker et à Kubernetes, piloté en gRPC sur un socket local pour enregistrer des
++     conteneurs, y exécuter des tâches, et gérer images et espaces de noms.
+
+@ 0 13 0 09fd60e5ff9b7361025533ef44712f2a
++     Une `Oci.Image` est assemblée en mémoire à partir d'`Oci.Layer` (chacune un `Tarfile`,
++     compressé avec gzip et haché deux fois, une fois non compressé pour son `diffId` et une
++     fois tel que stocké pour son `digest`) et d'une `Oci.Image.Config` dont la
++     `Oci.ContainerConfig` indique quoi exécuter. La bibliothèque calcule le blob de
++     configuration, l'`Oci.Manifest` qui relie configuration et couches par condensé, et
++     l'`Oci.Index` à entrée unique ; `Oci.Image#archive` rend le tout sous la forme d'un tar au
++     format image-layout OCI (une « oci-archive ») qu'accepteront `docker load`,
++     `ctr images import`, `podman load` ou `skopeo`. `Oci.Image.wasm` construit la même
++     structure sous la forme d'un artefact OCI Wasm, dont l'unique couche est un composant
++     `application/wasm` et dont la configuration est une `Oci.WasmConfig` nommant la génération
++     de WASI et les interfaces du Component Model que le composant importe et exporte. Une
++     archive existante se lit en l'ouvrant, `data.open[Oci.Image]()` ou
++     `path.open[Oci.Image]()`, ce qui donne un `Oci.Image.Handle` pour la portée d'un bloc :
++     son `index`, son `manifest`, sa `config` et chaque `layer`, vérifiés par rapport aux
++     condensés que déclare le manifeste, avec une `Oci.Error` pour tout élément manquant,
++     corrompu ou non pris en charge.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 1 1 0 16cc6d8804722b8a0f7317e8512d864e
+
+% 0 1 0 14588f17e082136b0f9cdeee8cf947c0
+
+% 0 1 0 1cc238c51b278d900931eba201d3f83d
+
+% 0 1 0 13a41fc02ca648a80f8fd38063f8679f
+
+% 0 1 0 02d960bebaba9df10cf233804e381968
+
+% 0 1 0 1230139693e0b3d00f0e2bad9e77aacc
+
+% 0 1 0 17f5f33cc1decdd0055061a90d905530
+
+% 0 1 0 0986221147163c6f112d0432d13030fe
+
+% 0 1 0 1182c1110991ab5e020ba8135303bbea
+
+% 0 1 0 1bd781d71c6e902a1b991c615c434737
+
+% 0 1 0 1fbaafac42a2acec1c4a422381b74e69
+
+% 0 1 0 139c014edaeb99471781785470ff863e
+
+% 0 1 0 1829919f1742aead08ef086c932d8121
+
+% 0 1 0 0dc0c456024a1a2d0a790c7ca242245e
+
+% 0 1 0 025a03fb0a35e26c05906a70d50154be
+
+% 1 1 0 166fd05b5cfa8dfa0bb4f5f4d9369c0d
+
+@ 0 12 0 1308f48e4fa9cb0e125de86f2ac1a300
++     Un client `Containerd` se connecte à un démon à travers un `Http2.Endpoint`
++     (normalement un socket Unix transportant du HTTP/2 en clair) à l'intérieur d'une portée
++     `supervise`, lié à un espace de noms containerd, et chacune de ses méthodes est un appel
++     gRPC échangeant des enregistrements typés : un `Containerd.Container` est enregistré avec
++     `createContainer`, reçoit un système de fichiers racine fait de `Containerd.Mount` et une
++     tâche avec `createTask`, est démarré, signalé, attendu et supprimé avec les méthodes
++     `…Task`, et inspecté sous la forme d'un `Workload` dont l'`state` est un
++     `Containerd.ProcessStatus`. L'ouvrable `Workload` lie tout ce cycle de vie à une portée,
++     `container.open[Workload](Read & Launch & Signalling)`, si bien qu'une tâche est créée,
++     éventuellement démarrée, et toujours tuée, récupérée et supprimée à la fin du bloc. Les
++     messages en transmission — chaque `…Request` et `…Response`,
++     `Containerd.AnyMessage`, `Containerd.Timestamp`, `Containerd.Empty` — sont des case
++     classes ordinaires dotées de numéros de champs protobuf, si bien qu'ils font l'aller-retour
++     avec le démon et peuvent être encodés et décodés directement à travers le `Protobuf` de
++     locomotion.
+
+% 2 1 0 0ffab6790af95b8918f4e9455cb9ce2f
+
+% 3 1 0 0a19010e24e2e41c16e7f854dd0cd5d2
+
+% 4 1 0 0bf276fb6e2e30de05f847d2bfcc6f5e
+
+% 5 1 0 13a16cd2dad51a94019490109bd30275
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 1 1 0 062360b94dd462cb18e2d0c3dddc770e
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1cafa3eb26255ce818f922681a0eba16
+
+% 0 1 0 02ad3b79beeee9251139290757a93b36
+
+% 0 1 0 052e0e03775ac6510a5dd8f18896626c
+
+% 0 1 0 0006ec91f9ffa945004b84531182b7f4
+
+% 1 1 0 0b39c08175e88e6c0587a6aa23242f26
+
+@ 0 1 0 1c948d45ba03373419b271c209842386
++     La bibliothèque a trois ensembles de sources :
+
+@ 0 12 0 1c6887135cbb405012c3bcdd2ce8493c
++     - `embarcadero.oci` — `Oci.Image`, `Oci.Layer`, `Oci`, `Oci.Descriptor`, `Oci.Index`,
++       `Oci.RootFs`, `Oci.History`, `Oci.ContainerConfig`, `Oci.WasmConfig` et
++       `Oci.WasmComponent`, ainsi que `Oci.Image.dataOpenable` pour ouvrir des `Data` en
++       mémoire comme une image. Il compile pour la JVM, Scala.js et Scala Native, si bien
++       qu'une image peut être assemblée dans un navigateur ou dans un invité Wasm ; il s'appuie
++       sur bitumen pour ses couches tar, pneumatic pour gzip, gastronomy pour SHA-256 et
++       jacinta pour les documents JSON.
++     - `embarcadero.oci` sur la JVM possède en plus `ImageOpenable` et le given
++       `imagePathOpenable`, qui ouvrent un *chemin* du système de fichiers comme une image à
++       travers le lecteur tar sur disque de bitumen.
++     - `embarcadero.containerd` — JVM uniquement : `Containerd`, `Workload`, les modes
++       `Launch` et `Signalling`, `Containerd.ProcessStatus`, `Containerd.Event`, et les types
++       de messages protobuf, sur le gRPC d'obligatory et le HTTP/2 de telekinesis.
+
+@ 0 12 0 19892a76141cc3a01296aabab0d80257
++     Les enregistrements protobuf de containerd — `Containerd.Container`, `Containerd.Mount`,
++     `Containerd.Timestamp` et les requêtes et réponses des services — sont imbriqués dans
++     `Containerd`, si bien qu'ils n'entrent pas en concurrence avec les noms d'autres
++     bibliothèques dans le package parapluie `soundness`. Les givens dont la bibliothèque
++     elle-même a besoin (`providers.javaBaseProvider`, `alphabets.hexLowerCase`,
++     `formatting.compactJsonFormatting`, `codepages.utf8Codepage`) sont importés à
++     l'intérieur de celle-ci, si bien qu'un programme n'importe que ce qu'utilise son propre
++     code ; les ouvrables (`Oci.Image.dataOpenable`, `Workload.openable`) résident dans leurs
++     compagnons et se résolvent sans import, tandis qu'`imagePathOpenable` est un given de
++     premier niveau atteint par `import soundness.*`. Un appel à containerd exige un `Monitor`
++     (issu de `supervise`) et des tactiques pour `Grpc.Error`, `Http2.Error`, `Async.Error` et
++     `Protobuf.Error`, et journalise un `Containerd.Event` pour chaque modification qu'il
++     effectue, si bien qu'un `Containerd.Event is Loggable` tel que `logging.silentLogging`
++     doit être dans la portée.
+
+% 0 1 0 0490cf8d2727c7050094a7ba6c30936b
+
+% 0 1 0 09639245015c51c50a41c965d903265d
+
+% 0 1 0 00d8eac03c61b681139a65d99dd3477f
+
+% 0 1 0 0a4da9bc24c8f3fc0f176dbac56f7945
+
+% 0 1 0 0192febf0ce3d3af1fac730802ea7421
+
+@ 0 1 0 0176759bc7b54e431673be2bbd679610
++ entry .Oci
++   info
++       l'espace de noms des types de documents OCI aux noms génériques : `Oci.Manifest`,
++       `Oci.Config`, `Oci.Error`
+
+@ 0 5 0 15744da4109c438b01aed2bad2da41fe
++   detail
++       Un objet contenant les types OCI dont les noms naturels sont trop génériques pour le
++       package parapluie `soundness` : `Manifest` entrerait en conflit avec le `Manifest` de JAR
++       de revolution, et `Config` et `Error` sont à tout le monde. `.Manifest` est le document
++       manifeste de l'image, `.Config` l'union des deux formes du blob de configuration, et
++       `.Error` ce que lève la lecture d'une archive.
+
+% 0 1 0 088dc7f93685e8660823a2b2f48e0184
+
+@ 0 1 0 0695f02fe2ba8080133777ba3e234495
++   entry .Config
++     info
++         les deux formes que peut prendre le blob de configuration d'une image :
++         `Image.Config | WasmConfig`
+
+@ 0 5 0 0a635fc440e31b3b0844be6236a395b6
++     detail
++         Un alias de type. Les deux se distinguent en transmission par le type de média du
++         descripteur de configuration (`application/vnd.oci.image.config.v1+json` ou
++         `application/vnd.wasm.config.v0+json`) ; tout ce qui se trouve au-dessus du blob de
++         configuration — manifeste, index, structure de l'image — est partagé. `Image#config` et
++         `Image.Handle#config` ont ce type, et un `match` sur `Image.Config` et `WasmConfig` les
++         sépare.
+
+@ 0 1 0 1b45023e0bef001c02697372083fb2a6
++   entry .Manifest
++     info
++         un manifeste d'image OCI : un descripteur du blob de configuration et les descripteurs
++         ordonnés des couches
+
+@ 0 7 0 16e787223940abfa07a472a121a74daa
++     detail
++         Le document (type de média `application/vnd.oci.image.manifest.v1+json`) qui relie les
++         éléments d'une image : `#config` est le `Descriptor` du blob de configuration et `#layers`
++         le `Descriptor` de chaque couche, la plus basse en premier, si bien qu'un lecteur peut
++         récupérer et vérifier chaque blob par son condensé. `#schemaVersion` vaut toujours `2`.
++         `Image.apply` et `Image.wasm` en construisent un ; `Image.Handle#manifest` en relit un,
++         condensé vérifié. Il s'encode et se décode en JSON à travers jacinta.
+
+@ 0 1 0 1d8abdeb94ba9a330df1a5c539516b6f
++     entry #schemaVersion
++       info
++           la version du schéma du manifeste : toujours `2`
+
+@ 0 1 0 1ab5baa7cd742250176929cf005aad2f
++     entry #mediaType
++       info
++           le type de média propre au manifeste, `application/vnd.oci.image.manifest.v1+json`
+
+@ 0 1 0 001b3027b8a8070b05b6792caee14602
++     entry #config
++       info
++           le descripteur du blob de configuration, dont le type de média indique de quelle forme
++           d'`Oci.Config` il s'agit
+
+@ 0 1 0 1dfbe66c6a5a39151b25ed51edf68aad
++     entry #layers
++       info
++           les descripteurs des couches, dans l'ordre
+
+@ 1 1 0 07a3882ead0bca850e54006cbdddb997
++     entry #annotations
++       info
++           des annotations libres `Map[Text, Text]`, ou `Unset`
+
+@ 0 1 0 00e2e830ee72ddcd1059b7b4d9fc883f
++   entry .Error
++     info
++         levée lorsqu'une archive OCI ne peut pas être lue : un document manquant, un condensé
++         erroné, une forme non prise en charge
+
+@ 0 10 0 09a8ff88a1be44510559977a838e5a2a
++     detail
++         Erreur `↯/s.113.1` : _the OCI image archive could not be read because `reason`_. Levée par
++         les méthodes d'`Image.Handle` et par les ouvrables, avec une `.Reason` indiquant ce qui
++         n'a pas fonctionné. Les raisons : `MissingLayout` (pas de marqueur `oci-layout`),
++         `UnsupportedLayout (version)` (une version de structure ne commençant pas par `1.`),
++         `MissingIndex` (pas d'`index.json`), `MissingBlob(digest)`,
++         `DigestMismatch(expected, actual)` (un blob dont les octets, hachés, ne donnent pas le
++         condensé par lequel il est adressé), `InvalidBlob(digest, detail)` (un document qui ne
++         s'analyse pas, ou un blob dont la taille ne correspond pas à son descripteur),
++         `UnsupportedDigest(algorithm)` (un condensé sans préfixe `sha256:`), `NoManifest` (un
++         index ne listant aucun manifeste) et `WriteUnsupported` (une archive ouverte avec
++         `Write`).
+
+% 2 1 0 0866dd9c3d2ccb04111558883c0090f9
+
+% 3 1 0 190060cdedad3e111fd169c5b05b49ba
+
+% 4 1 0 1f6d828dbc18198e00ada24e2cb6a09f
+
+% 0 1 0 1dd298955d4e2ceb027bdd5a9b966933
+
+% 0 1 0 061b55ca23689ab11295341426055949
+
+% 1 1 0 06a4eaf4a90b3b940a3d77225c65675a
+
+@ 0 2 0 0e51c11cef5f0b8f1503e60573e277f1
++         Sous `safely`, tout échec donne `Unset` ; `capture[Oci.Error]` conserve l'erreur pour que
++         sa `#reason` puisse être filtrée.
+
+@ 0 1 0 1e750b6912be5b4518d2f95cafb8295b
++     entry .Reason
++       info
++           pourquoi une archive n'a pas pu être lue, sous forme d'énumération avec un numéro par
++           cas
+
+@ 0 1 0 0ed0c43711380d7c154d21dfa0f68e39
++       detail
++           Le numéro est le sous-code de l'erreur :
+
+@ 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
++           ```tabular
+
+@ 0 13 0 13094be28ed6c55a19b136dd3c6d2c42
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `MissingLayout`  1  _the archive does not contain an oci-layout marker_
++           row  `UnsupportedLayout(version)`  2  _the image layout version `version` is not supported_
++           row  `MissingIndex`  3  _the archive does not contain an index.json document_
++           row  `MissingBlob(digest)`  4  _the blob `digest` is not present in the archive_
++           row  `DigestMismatch(expected, actual)`  5  _the blob addressed as `expected` has the digest `actual`_
++           row  `InvalidBlob(digest, detail)`  6  _the blob `digest` could not be interpreted: `detail`_
++           row  `UnsupportedDigest(algorithm)`  7  _the digest algorithm `algorithm` is not supported_
++           row  `NoManifest`  8  _the image index lists no manifests_
++           row  `WriteUnsupported`  9  _OCI image archives cannot be opened for writing_
+
+@ 1 1 0 0e138df173eee27b1d2f4dfca51b642e
++           ```
+
+@ 0 1 0 00d5f7a89dac2ca10212f877390a2d49
++     entry .communicable
++       info
++           rend chaque raison sous forme de message, comme _the blob `digest` is not present in the
++           archive_
+
+@ 0 1 0 0220ffa20a56e3830c111789efa1d7a7
++     entry #reason
++       info
++           l'`Oci.Error.Reason` qui a causé l'échec
+
+@ 0 1 0 05cfe3e86c3eba9d066e11e9edecab94
++   entry .Image
++     info
++         une image OCI ou un artefact Wasm assemblé en mémoire : couches, configuration, manifeste
++         et index
+
+@ 0 11 0 1568923b3e4f2992026e2f8bfae51bed
++     detail
++         Une `Image` est le contenu complet et cohérent en condensés d'une image OCI : ses
++         `#layers`, le document `#config` et ses `#configBytes` rendus, le `#manifest` qui nomme
++         la configuration et chaque couche par `Descriptor`, et l'`#index` à entrée unique qui
++         nomme le manifeste. Tout cela est calculé lors de la construction de l'image, si bien que
++         les condensés et les tailles sont justes par construction, et `#archive` la rend sous la
++         forme du tar au format image-layout OCI qu'importe un environnement d'exécution. Le
++         compagnon construit une image de deux manières : `.apply` à partir de couches de système
++         de fichiers et d'une `ContainerConfig`, et `.wasm` à partir d'un composant Wasm compilé.
++         Relire une image est une *ouverture* délimitée par une portée : `.Handle` est ce que
++         `data.open[Image]()` (à travers `.dataOpenable`) ou `path.open[Image]()` (à travers
++         `imagePathOpenable`, JVM uniquement) fournit pour la durée d'un bloc.
+
+@ 0 2 0 04c8603c07611a4a123c9ea5751e4611
++         Les éléments s'assemblent dans un ordre fixe, chacun étant adressé par le condensé du
++         précédent :
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+% 0 1 0 16cede69352400150dd4304837c21f23
+
+% 1 1 0 06d91dfff17af1f4194c069feadc91c4
+
+% 2 1 0 01acacccda5361690f7ec0bbd8134f44
+
+% 3 1 0 031765814b1749130b6623f4f0377f0e
+
+% 4 1 0 05de4216a57643ea0b4223fa8d1f0cc1
+
+% 6 1 0 0549678df5e4f3e61b729b02222dbc61
+
+% 7 1 0 1d1f898118f930da0d4191a1e570415e
+
+% 8 1 0 0dae90998ee66bf109ccb2fba7f64a22
+
+% 9 1 0 1ab7ce1050f59a32115e6446ae9e4518
+
+% 10 1 0 0852fb6a3c9aa7e311afa485f0b096ef
+
+% 11 1 0 066677b32b2b24d8051bcce807186efc
+
+% 12 1 0 11c245eb141af90701d1ebdea00301b8
+
+% 13 1 0 1ab7d2428d8db61f16849144097da383
+
+% 15 1 0 1bbf075266a96f1418ebb6a5618bc783
+
+% 0 1 0 1572256d505c08381a328428965906bd
+
+% 0 1 0 1e2d51b2d7cccea41fe2d63579dd5a2e
+
+% 1 1 0 00cef885ff728260132fc627d5e49096
+
+% 0 1 0 1bedba59b3d35799012225d2c8eda2b4
+
+% 1 1 0 09657241527f6dc818c7cdb1b7296bf9
+
+% 2 1 0 056bb7bb90b7d2d308986525196d8f63
+
+% 3 1 0 1c3a8caa5e2b598617cf44cd1cf6db92
+
+% 4 1 0 02f7fa5c1fda190d095a4d08fc520699
+
+% 6 1 0 0ad57ffb4051234f1bc7991f696087d4
+
+% 7 1 0 188e3a77280491e9081744f4a1d01b7d
+
+% 8 1 0 1a6b4d3f017987d812d9f3ff40a56398
+
+% 9 1 0 1ca6f7f18462415b0d1698b0f614c7ba
+
+% 10 1 0 137313d3bc0703ef019716a5e3147ed2
+
+% 11 1 0 126f0f09a12ca3ba1fbee6701a2dd9b2
+
+% 12 1 0 14b925767fa9aca10d5e862466372e39
+
+% 13 1 0 08f00c8cf68ac1e016658ede75befe38
+
+% 15 1 0 1fcd8e897d9c253e1225e4caa45890f9
+
+% 16 1 0 0013b5d1010e74c711aa0d54d3ee1227
+
+% 0 1 0 0bbdd87d1a959aa50b62d925631570a6
+
+% 0 1 0 0b5265514ea735e40df67e467c18cfd2
+
+% 1 1 0 069bf483d40a3d140cebfe0de85a0514
+
+% 0 1 0 0733bd22e94e351f11c8a5506e3449e0
+
+% 1 1 0 0738a13daa8821731baed3077bae9c78
+
+% 2 1 0 1b064df4be23a9f90dc7edcd24be2df3
+
+% 3 1 0 00d177739d91e6120b7254d8d5fa1e11
+
+% 4 1 0 0681528403206202190c54a88d870cd6
+
+% 6 1 0 014035661c18efd51e8cdd8ed8477d56
+
+% 7 1 0 1353a3e159a5fc6e03acb7a3b0a2c61e
+
+% 8 1 0 17a75d887f1d6f1e0cba51ee8d0257ab
+
+% 9 1 0 02cf4aeac0658033167d5aa2620dd4ae
+
+% 10 1 0 00042ef735e2207b1344aeeb7de90da0
+
+% 11 1 0 03e4a18dfc387321010731c808738d88
+
+% 12 1 0 09ce8c8906f295cd04e58902afbd5fc4
+
+% 13 1 0 0b172ab9cfc7d9201f3c7461a2e092ac
+
+% 15 1 0 026c207416de29f805a345794aa0c06a
+
+% 16 1 0 08bb9a8661e1d7a31f592e33441fe61f
+
+% 0 1 0 00f92eb709314ebd11e508cabc02fd95
+
+% 0 1 0 1d2695ba78cc68a1108b8d917aad2c9e
+
+% 0 1 0 0cd06872569d72f80867158f6afc9de6
+
+% 1 1 0 1956deb3b0cfb7b31c206441d58538d6
+
+% 0 1 0 1e0ecb2a8fb804830f2b30205a8124e8
+
+% 1 1 0 141c2efa9a4977b7177855f45cda31c9
+
+% 2 1 0 0959fe9c7aa9470610c7a9ffcc782d11
+
+% 3 1 0 1a54aa4e3b1641a3157d1889e936fcbb
+
+% 4 1 0 15c5256de301023013c16453c051bbe8
+
+% 6 1 0 03ffdbb5df882404054c62fbc07efabf
+
+% 7 1 0 09e630466e4ac3cd158ac8aafd7a0f20
+
+% 8 1 0 0554dbbb5e4eef7706dd70be2b20fbef
+
+% 9 1 0 19bd0a85720507541ea2f7de38b064a1
+
+% 10 1 0 0e2fd4cc0a4f1bc008ac782f96918053
+
+% 11 1 0 0ff580184f243f880d70bb82ccb77b9f
+
+% 12 1 0 16795e6443f6542b1577e3f2a210b2d0
+
+% 13 1 0 1307fb544726a96c1564f0fd23acc529
+
+% 15 1 0 11d7a44a20d54dc21a50887fca1715ee
+
+% 16 1 0 1c8e4829cf7163bb129c11758945c6ae
+
+% 0 1 0 1b8130be71fce41508cec7f6d6c087cb
+
+% 0 1 0 13a3f82e06b9a23e1f9e6cd5c5bf73f6
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 3 0 1c7fb4e15e2668a51adbb2f4fbab2f23
++         Une `Image` est une simple case class sans capacité propre, si bien qu'elle peut être
++         construite n'importe où — sur la JVM, en Scala.js ou sur Scala Native — et transmise à du
++         code qui écrit l'archive dans un fichier, la pousse vers un registre, ou l'importe dans un
++         démon.
+
+% 1 1 0 0ce7db8819895a5017db61f8fcc6f803
+
+% 0 1 0 0dc81157b419b908183107a22621fe19
+
+% 0 1 0 1be3d6d953a591401f0057c746d80200
+
+% 1 1 0 05b7e3b8dac598f80b3de452e76d7515
+
+@ 0 1 0 1ed948a07433ff091fee3c3c0245e38d
++     entry .apply
++       info
++           assemble une image à partir de couches de système de fichiers et d'une configuration
++           d'exécution optionnelle
+
+@ 0 8 0 03084b2c5fa0880417d7c82f3825a258
++       detail
++           `Image(layers, config, architecture, os, annotations)` construit l'`Image.Config`
++           (`architecture` vaut `amd64` par défaut et `os` `linux` ; `rootfs` est la suite des
++           `diffId` des couches, dans l'ordre ; `config` est la `ContainerConfig`, s'il y en a
++           une), la rend en JSON compact pour son blob de configuration, lui crée un descripteur
++           avec le type de média `application/vnd.oci.image.config.v1+json`, l'enveloppe avec les
++           descripteurs des couches dans un `Oci.Manifest` (portant `annotations`, s'il y en a), et
++           nomme ce manifeste depuis un `Index` à entrée unique. Rien n'est levé : chaque condensé
++           est calculé à partir d'octets déjà en mémoire.
+
+@ 2 1 0 192ac50c6545a40f0f738925e946637c
++           ```scala
+
+@ 3 1 0 1ed552b2abc4a97c04ab2f2524962c16
++           import soundness.*
+
+@ 4 1 0 105d9e1c0663684804530e712ded28e7
++           import codepages.utf8Codepage
+
+@ 5 1 0 0cdb42351a1a8ba8121f834efa712552
++           import strategies.throwUnsafely
+
+@ 7 1 0 1be820c8aab9f77d15286dfd2cff1bab
++           val layer: Oci.Layer = Oci.Layer(Tarfile(Nil))
+
+@ 0 1 0 19309df07c9a48760ecc65633f4a7810
++           val image: Oci.Image =
+
+@ 0 1 0 0a5d541a119db55113eab837060e8d70
++             Oci.Image
+
+@ 0 1 0 12c1d3db893d9cb4066508ccc67eb6b4
++               ( List(layer),
+
+@ 0 1 0 0fa6f6f6412d42a40be2fe473479b004
++                 config       = Oci.ContainerConfig(Cmd = List(t"/bin/sh"), WorkingDir = t"/app"),
+
+@ 0 1 0 12c95f5fd6602a42160189f4887568d6
++                 architecture = t"arm64",
+
+@ 0 1 0 1d157ecce996767204ad3ee210c98f62
++                 annotations  = Map(t"org.opencontainers.image.title" -> t"hello") )
+
+@ 0 1 0 132cbf8741492b0f180bbbd053f62f85
++           image.imageConfig.let(_.architecture)   // t"arm64"
+
+@ 1 1 0 14a23a7370fb9eb80602f5d36cba0e7b
++           ```
+
+@ 0 1 0 0e7b5259755d56c51e0edaa11b5aa49c
++     entry .wasm
++       info
++           assemble un artefact OCI Wasm : une couche `application/wasm` non compressée sous une
++           configuration Wasm
+
+@ 0 11 0 0d1ee0180c4dedcf0c8c87a7c077bdf0
++       detail
++           `Image.wasm(component, exports, imports, target, architecture, os, annotations)` est la
++           forme que prescrit la structure des artefacts OCI Wasm pour une charge de travail
++           WebAssembly. L'unique couche est `Layer.blob(component, media"application/wasm")` :
++           stockée telle quelle, si bien que son `diffId` et son `digest` coïncident. Le blob de
++           configuration est une `WasmConfig` (type de média `application/vnd.wasm.config.v0+json`)
++           dont l'`architecture` est `wasm` et dont l'`os` nomme la génération de WASI (`wasip2`
++           par défaut), avec `layerDigests` nommant le blob du composant et `component`
++           enregistrant les `exports`, les `imports` et le monde `target` optionnel sous forme de
++           `WasmComponent`. Le manifeste, l'index et l'archive sont les éléments OCI ordinaires, si
++           bien que les mêmes registres et outils le transportent ; un environnement d'exécution
++           répartit selon les deux types de média pour confier le composant à un moteur Wasm (à
++           travers un shim tel que `io.containerd.wasmtime.v1`) plutôt qu'un rootfs à `runc`.
+
+@ 2 1 0 041d187d468ff0b61b01e5fbac042d44
++           ```scala
+
+@ 3 1 0 04bc7cca778c7f0a184f04a49b042306
++           import soundness.*
+
+@ 0 1 0 1103fc419464cd6b076dbb435b43b567
++           val component: Data = hex"0061736d01000000"   // a compiled component's bytes
+
+@ 0 1 0 0ac92672543b8caf09d740404614594a
++           val artifact: Oci.Image =
+
+@ 0 1 0 0b87afa74cd6ae9b1313c54e402189fa
++             Oci.Image.wasm
+
+@ 0 1 0 0fb9fd561c633b97132d583ab89bec1e
++               ( component,
+
+@ 0 1 0 1adfe4776f2a19801f1623c5e6004c0b
++                 exports = List(t"wasi:http/incoming-handler@0.2.0"),
+
+@ 0 1 0 10f9b70d8a2bb66c1bedff40bfa8dade
++                 imports = List(t"wasi:io/streams@0.2.0"),
+
+@ 0 1 0 12202a87c27879ce1e2ee4b0210de2d0
++                 target  = t"wasi:http/proxy@0.2.0" )
+
+@ 0 1 0 1c7c6f307fb801ff07f1ca4aec16dd1f
++           artifact.wasmConfig.let(_.os)                   // t"wasip2"
+
+@ 0 1 0 07ac5aa7e88381de1d22ca5ec33770f0
++           artifact.manifest.layers.map(_.mediaType)       // List(media"application/wasm")
+
+@ 1 1 0 1da22cb94abf57671a9c775a0e3de176
++           ```
+
+@ 0 6 0 1a96e3e82bf99b120d045a3a6a509c7c
++           Les interfaces ne sont généralement pas saisies à la main, mais lues depuis le monde WIT
++           avec lequel le composant a été lié : `WitDialect.worlds(wit)(name)` de xenophile donne
++           un monde dont les `exports` et les `imports` passent directement, et c'est ainsi que la
++           bordure OCI d'anthology et l'empaqueteur Wasm de bout en bout du dépôt lui-même
++           (`tests/wasm/packager`) construisent les artefacts qu'ils exécutent sous wasmtime et
++           `wasmtime serve`. Les octets ne sont jamais analysés : une charge utile arbitraire est
++           empaquetée exactement comme un vrai composant.
+
+@ 0 1 0 1dd06ff0ffd6503e1c1ced59d6e5c2cf
++     entry .dataOpenable
++       info
++           le given derrière `data.open[Image]()` : ouvre des octets en mémoire comme une archive
++           OCI
+
+@ 0 4 0 0494e576f0cc002118528c962b3dbca1
++       detail
++           Un given dans le compagnon, qui se résout donc sans import. Il fournit un
++           `Image.DataOpenable` et exige une `Tactic[Oci.Error]`, une `Tactic[Tar.Error]` et une
++           `Tactic[Truncation.Error]` dans la portée, qu'il capture. Ouvrir un *chemin* du système
++           de fichiers relève d'`imagePathOpenable`, dans l'ensemble de sources JVM.
+
+@ 0 1 0 0723ff1570cff5b31ef373000eb89f6c
++     entry .Config
++       info
++           un document de configuration d'image OCI : plateforme, chaîne de diff_id du rootfs,
++           configuration d'exécution et historique
+
+@ 0 11 0 1204adf36b8a06681ee7100be629099b
++       detail
++           Le blob de configuration d'une image de système de fichiers (type de média
++           `application/vnd.oci.image.config.v1+json`), tel qu'`Image.apply` l'écrit et
++           qu'`Image.Handle#imageConfig` le relit. Il enregistre l'`#architecture` et l'`#os`
++           cibles, le `#rootfs` dont les `diff_ids` sont les condensés des couches non compressées
++           dans l'ordre, la `#config` optionnelle (une `ContainerConfig` décrivant quoi exécuter),
++           l'`#history` du build ainsi que la date `#created` et l'`#author`. Son encodage et son
++           décodage JSON sont dérivés à travers jacinta, et les noms des membres sont les noms
++           de transmission, si bien que `created` se rend `created`. Avec `WasmConfig`, il
++           forme `Oci.Config`, l'union qu'obtient un lecteur depuis `Image.Handle#config` lorsqu'il
++           ne sait pas quel type d'artefact il a ouvert.
+
+@ 0 1 0 13bd541ab1ccd5ef0d05dc7de0de4890
++       entry #architecture
++         info
++             l'architecture de processeur que cible l'image, comme `amd64` ou `arm64`
+
+@ 0 1 0 123de402f8eb9deb10f086a68280b345
++       entry #os
++         info
++             le système d'exploitation que cible l'image, comme `linux`
+
+@ 0 1 0 03e8060e821c695e10d177115c5ec87c
++       entry #rootfs
++         info
++             le `RootFs` : les `diff_id` ordonnés des couches non compressées
+
+@ 0 1 0 109c01c8084a5e7c18c4f5f28afc95b2
++       entry #config
++         info
++             la `ContainerConfig` indiquant comment exécuter l'image, ou `Unset`
+
+@ 0 1 0 0182b699902baeb213999108c62c3f41
++       entry #history
++         info
++             comment chaque couche est apparue, un `History` par couche ou par changement vide, ou
++             `Unset`
+
+@ 0 1 0 0082bc9203bcc0d015c5c19addeb946c
++       entry #created
++         info
++             la date de construction de l'image, sous forme de texte RFC 3339, ou `Unset`
+
+@ 0 1 0 07cd62e5dc012a550f7b2be1881a6e23
++       entry #author
++         info
++             qui a construit l'image, ou `Unset`
+
+@ 0 1 0 1723a90ce001b9ad0e5556369342fb30
++     entry .Handle
++       info
++           la vue, délimitée par une portée, d'une archive OCI ouverte : son index, son manifeste,
++           sa configuration et ses blobs
+
+@ 0 8 0 004b202cdf0bea5416d26e3bcabf08e3
++       detail
++           La capacité que `data.open[Image]()` ou `path.open[Image]()` fournit pour la durée de
++           son bloc, et seulement alors : c'est une capacité exclusive, qui ne peut donc être ni
++           stockée ni renvoyée. Les entrées de l'archive sont lues une fois et conservées pendant
++           la durée de vie de la poignée, indexées par nom, si bien que chaque recherche après la
++           première est un accès à une map ; les archives qu'écrit `Image#archive` placent
++           `index.json` avant les blobs, si bien que l'accès aux métadonnées est peu coûteux.
++           Chaque méthode prend une `Tactic[Oci.Error]` et lève `Oci.Error` pour un document ou un
++           blob manquant ou illisible.
+
+% 2 1 0 1b5dd8e537de2c9203e097b2f27a4be5
+
+% 3 1 0 17ac8efbbde007c4037ee80a9597482f
+
+% 0 1 0 03214a9eeeaf913115b5b1a17c3cf419
+
+% 1 1 0 0811e1d0a2536a3f09623ed6f34491d1
+
+% 0 1 0 114bf96af995acef184dba6d57783a0c
+
+% 0 1 0 0600cc5e1978ad7110528ed2bfec5b8e
+
+% 2 1 0 09ded996cfb39ee4099c258583d78fef
+
+% 0 1 0 0bfa1edbae4e14310220ed2d7793cc6e
+
+% 0 1 0 1ef464b856c54c240fb7beeaa56fb57d
+
+% 0 1 0 0fca7052a4b9f10301093f21ed9727d2
+
+% 0 1 0 0ae155623cb882270df1c96d7f8b00eb
+
+% 1 1 0 0d07a17d353e001a07ecb7397885ae55
+
+@ 0 5 0 149cc10445d965c70a81b5b3bd68ab49
++           On atteint une couche de trois manières, ce qui rend le coût explicite : `#compressed`
++           diffuse les octets stockés sans les toucher, `#layer` les décompresse sous forme de
++           flux, et `#verified` les rassemble et vérifie le condensé et la taille par rapport au
++           descripteur. Un lecteur qui ne sait pas s'il a une image de système de fichiers ou un
++           artefact Wasm demande `#config`, qui répartit selon le type de média du descripteur de
++           configuration.
+
+@ 0 2 0 0943256377c91763054b4eaed3ca010e
++           L'ouverture en écriture est refusée : `archive.open[Image](Write)` lève `Oci.Error` avec
++           `WriteUnsupported`.
+
+% 0 1 0 0fea82ef3e30f4991ff0ea1d0166a253
+
+@ 0 1 0 00cc6f8677bb36690ade9b18cbc43500
++       entry #blob
++         info
++             un blob par son condensé `sha256:…`, sous forme de flux de ses morceaux stockés, non
++             vérifié
+
+@ 0 5 0 1db65ade001e4c4a1d5646ec5ecf0035
++         detail
++             Les octets bruts stockés (pour une couche, le tar compressé avec gzip) sous
++             `blobs/sha256/<hex>`, sous forme de `Stream[Data] over Credit`. Lève `Oci.Error` avec
++             `UnsupportedDigest` pour un condensé dont l'algorithme n'est pas `sha256`, et
++             `MissingBlob` lorsque l'archive n'a pas un tel blob. Rien n'est vérifié : `#verified`
++             est la lecture vérifiée.
+
+@ 0 1 0 0b232d053d9476c405b1898c3f7adbdf
++       entry #index
++         info
++             l'`index.json` de premier niveau décodé, après vérification du marqueur `oci-layout`
+
+@ 0 4 0 1db098875e6e72dc05844683f888470b
++         detail
++             Lit le document `oci-layout` et exige que son `imageLayoutVersion` commence par `1.`,
++             puis décode `index.json` sous forme d'`Index`. Lève `Oci.Error` avec `MissingLayout`,
++             `UnsupportedLayout`, `MissingIndex` ou, pour un document qui ne s'analyse pas,
++             `InvalidBlob`.
+
+@ 0 1 0 082ea6d074dc27c516b2c6091ade2cd5
++       entry #manifest
++         info
++             le premier manifeste de l'index, ou celui que sélectionne un descripteur, empreinte
++             vérifiée
+
+@ 0 4 0 199f5f84d8ea320205002afc7971b38d
++         detail
++             `handle.manifest` prend le premier descripteur de `#index` (en levant `Oci.Error` avec
++             `NoManifest` s'il n'y en a aucun) ; `handle.manifest(descriptor)` prend celui qui est
++             choisi. Le blob du manifeste est lu à travers `#verified`, si bien qu'un manifeste
++             corrompu est signalé comme `DigestMismatch` plutôt que décodé, puis il est décodé sous
++             forme d'`Oci.Manifest`.
+
+@ 0 1 0 02f07e9522df4d5b034ddf9815a33fa8
++       entry #imageConfig
++         info
++             l'`Image.Config` décodée d'un manifeste, par défaut le premier
+
+@ 0 4 0 1edd04ec6729bb7d075e24f0f39ac978
++         detail
++             `handle.imageConfig` ou `handle.imageConfig(manifest)` : le blob de configuration du
++             manifeste, vérifié et décodé sous forme d'`Image.Config`. Pour un artefact Wasm, le
++             blob est une `WasmConfig`, et le décoder ici échoue avec `InvalidBlob` ; utilisez
++             `#config` lorsque le type n'est pas connu.
+
+@ 0 1 0 040927a8127ed7f91c1187c86909e7c2
++       entry #wasmConfig
++         info
++             la `WasmConfig` décodée d'un manifeste, par défaut le premier
+
+@ 0 2 0 1ad64ebfd98a0f740ecc736322a23dfd
++         detail
++             `handle.wasmConfig` ou `handle.wasmConfig(manifest)` : le blob de configuration du
++             manifeste, vérifié et décodé sous forme de `WasmConfig`.
+
+@ 0 1 0 1162b662ce803b4e0b61b896b06f0a88
++       entry #config
++         info
++             le blob de configuration sous la forme qu'indique son type de média : `Image.Config`
++             ou `WasmConfig`
+
+@ 0 5 0 02d69fba74c9c61212a63c8b297af081
++         detail
++             `handle.config` ou `handle.config(manifest)` renvoie une `Oci.Config`, en décodant le
++             blob sous forme de `WasmConfig` lorsque le type de média du descripteur de
++             configuration est `application/vnd.wasm.config.v0+json`, et sous forme
++             d'`Image.Config` sinon. C'est le point d'entrée d'un environnement d'exécution qui
++             décide s'il doit décompresser un rootfs ou instancier un composant :
+
+@ 2 1 0 1700ce0c8b0208ac1c342f93cb505f9a
++             ```scala
+
+@ 3 1 0 1403afa5683a14c601ce8859aa4d9123
++             import soundness.*
+
+@ 1 1 0 1a5597492304bdb01fa6efdb17963222
++             import strategies.throwUnsafely
+
+@ 0 1 0 093f435666a93d4c0f09869f5c3fc014
++             val archive: Data = Oci.Image.wasm(hex"0061736d01000000").archive.source[Data].memoize
+
+@ 2 1 0 15e9901cce3340611b3d687d26c1bec1
++             archive.open[Oci.Image](): handle ?=>
+
+@ 0 1 0 13c5224ee9a2385e05655f06f0de8f21
++               handle.config match
+
+@ 0 1 0 181909ec6ed6069219ccba7040b3d62e
++                 case config: Oci.WasmConfig   => config.component.let(_.exports)
+
+@ 0 1 0 14096428eb9b445f11ccb6f74207614b
++                 case config: Oci.Image.Config => config.rootfs.diff_ids
+
+@ 1 1 0 118a4af32b82530715c33c0595c904ed
++             ```
+
+@ 0 1 0 16f74fe5c80d63cb1c1ee3eee2091a76
++       entry #compressed
++         info
++             le blob stocké d'une couche, tel quel : pour une couche OCI, le tar compressé avec
++             gzip
+
+@ 0 2 0 14bceb6cd5423a83081cf4843acb0522
++         detail
++             `#blob` par le condensé du descripteur, sous forme de `Stream[Data] over Credit` ; la
++             manière la moins coûteuse de copier une couche d'une archive à une autre.
+
+@ 0 1 0 1744446ef721f0520df2995902d2c527
++       entry #layer
++         info
++             le contenu d'une couche sous forme de flux d'octets du tar non compressé
+
+@ 0 4 0 0f78d99df9e45c49182fa041616b4333
++         detail
++             Fait passer `#compressed` par un décodeur gzip lorsque le type de média du descripteur
++             porte le suffixe `+gzip`, et le transmet tel quel sinon — si bien que la couche
++             `application/wasm` d'un artefact Wasm revient sous la forme des octets propres au
++             composant. Le flux n'est pas vérifié par rapport au condensé, puisque le vérifier
++             exigerait de l'épuiser d'abord.
+
+@ 0 1 0 155ffcd7e24bc3541a784726ac74a387
++       entry #verified
++         info
++             un blob rassemblé de manière stricte et vérifié par rapport au condensé et à la
++             taille de son descripteur
+
+@ 0 5 0 135c0cbd44e1b548093095ac8260b059
++         detail
++             Lit le blob entier dans une `Data`, calcule son SHA-256 et le compare au `digest` du
++             descripteur, en levant `Oci.Error` avec `DigestMismatch(expected, actual)` s'ils
++             diffèrent, puis compare sa longueur au `size` du descripteur, en levant `InvalidBlob`
++             s'ils diffèrent. Le chemin vérifié, à activer explicitement, qu'utilisent `#manifest`,
++             `#imageConfig` et `#wasmConfig` pour les documents qu'ils décodent.
+
+@ 0 1 0 12530cbd026a2e22020f5b979d356dba
++     entry .DataOpenable
++       info
++           l'`Openable` qui ouvre des `Data` en mémoire comme une archive OCI, en lecture seule
+
+@ 0 7 0 136d129f7e43edd6031275ae30e3a070
++       detail
++           La classe que fournit `Image.dataOpenable`, nommée plutôt qu'anonyme pour que son type
++           de résultat soit énoncé exactement. Elle ouvre une `Data` (`Self`) comme une `Image`
++           (`Form`) sans options (`Operand = Nothing`), et donne un `Image.Handle` (`Result`) pour
++           le bloc. Elle exige une `Tactic[Oci.Error]`, une `Tactic[Tar.Error]` et une
++           `Tactic[Truncation.Error]`. Un mode incluant `Write` est refusé avec `Oci.Error`
++           (`WriteUnsupported`) : les archives sont lues, et écrites uniquement par
++           `Image#archive`.
+
+@ 0 1 0 08d205187598786e147e72e134e1a973
++       entry #Self
++         info
++             `Data` : ce qui est ouvert
+
+@ 0 1 0 100de96dfb3d08bd1c6878feca5fe876
++       entry #Form
++         info
++             `Image` : la forme sous laquelle on l'ouvre
+
+@ 0 1 0 0d263ad1637639f817c9915ce68391d8
++       entry #Operand
++         info
++             `Nothing` : il n'y a pas d'options d'ouverture
+
+@ 0 1 0 0f939e4fb788539d0b309547583be04b
++       entry #Result
++         info
++             `Image.Handle` : ce que reçoit le bloc
+
+@ 0 1 0 178827e18f5af6ee0bc13509fbc54753
++       entry #open
++         info
++             lit les octets comme un tar, construit un `Image.Handle` sur ses entrées et exécute le
++             bloc
+
+@ 0 1 0 0fa031827d69dd110d9f7535f20329ee
++     entry #layers
++       info
++           les couches de l'image, dans l'ordre, la plus basse en premier
+
+@ 0 1 0 0a0f711fb8e22b0c03fca02247eb8e7c
++     entry #config
++       info
++           le document de configuration : une `Image.Config` pour une image de système de fichiers,
++           une `WasmConfig` pour un artefact Wasm
+
+@ 0 1 0 1ecd47e1c5e249870dbf66e81beae6de
++       detail
++           L'union `Oci.Config` ; `#imageConfig` et `#wasmConfig` la restreignent sans filtrage.
+
+@ 0 1 0 1df754da0843917a0e407bb102603ea4
++     entry #configBytes
++       info
++           le blob de configuration tel que rendu : du JSON compact, les octets sur lesquels est
++           calculé le condensé de configuration
+
+@ 0 1 0 00cbe9dbaf8587f70727d02ed3320935
++     entry #configDescriptor
++       info
++           le descripteur du blob de configuration, tel que le manifeste y fait référence
+
+@ 0 1 0 0e38c0d18f4edf271bf566fd4d1d16e7
++     entry #manifest
++       info
++           l'`Oci.Manifest` nommant la configuration et chaque couche par descripteur
+
+@ 0 1 0 19cd54b643a3928308d767070c31bf89
++     entry #manifestBytes
++       info
++           le blob du manifeste tel que rendu : du JSON compact
+
+@ 0 1 0 0db2ce50006b8c891ab6df0b6c8799f4
++     entry #manifestDescriptor
++       info
++           le descripteur du blob du manifeste, tel que l'index y fait référence
+
+@ 0 1 0 1923db9e25fc51ff1555ef9c65271656
++     entry #index
++       info
++           l'`Index` à entrée unique nommant le manifeste
+
+@ 0 1 0 065526c4c7cac29616f63f14a7fcba71
++     entry #indexBytes
++       info
++           le document `index.json` tel que rendu : du JSON compact
+
+@ 0 1 0 1ad8e159234dce5f048f9d8d4edcd4d9
++     entry #imageConfig
++       info
++           la configuration sous forme d'`Image.Config`, ou `Unset` pour un artefact Wasm
+
+@ 0 1 0 046adb6add8b7c8e01b646181182b365
++     entry #wasmConfig
++       info
++           la configuration sous forme de `WasmConfig`, ou `Unset` pour une image de système de
++           fichiers
+
+@ 0 1 0 0962cd5692c820a2048c7bc92bd8315b
++     entry #blobs
++       info
++           chaque blob sous forme de paire `(digest, bytes)` : la configuration, chaque couche,
++           puis le manifeste
+
+@ 0 2 0 0f01db1f778ddc6c1f6a7efe406ecfe7
++       detail
++           Le contenu qu'écrit `#archive` sous `blobs/sha256/`, indexé par le condensé canonique
++           `sha256:<hex>` de chacun.
+
+@ 0 1 0 0e71b53dc2ae8143048ae2388f78b93b
++     entry #archive
++       info
++           l'image sous forme de tar au format image-layout OCI : `oci-layout`, `index.json` et
++           `blobs/sha256/…`
+
+@ 0 6 0 050d5c41c4c0eca9150324b55ff019e3
++       detail
++           Un `Tarfile` contenant le marqueur `oci-layout` (`{"imageLayoutVersion":"1.0.0"}`),
++           l'`index.json`, et un fichier par entrée de `#blobs` nommé d'après son condensé
++           hexadécimal, chacun avec le mode `UnixMode()`, le propriétaire et le groupe `0` et la
++           date de modification `0`, si bien que l'archive est reproductible. Lisez-le sous forme
++           d'octets avec `image.archive.source[Data]` et écrivez-le dans un fichier : le résultat
++           est ce qu'acceptent `docker load`, `ctr images import`, `podman load` et
++           `skopeo copy oci-archive:…`, et ce que relit `data.open[Image]()`.
+
+@ 0 1 0 00f9a5ca2d3c10a01e9bb675bd739a63
++   entry .Index
++     info
++         un index d'image OCI : l'`index.json` de premier niveau listant un ou plusieurs
++         descripteurs de manifestes
+
+@ 0 6 0 14de66f315a361c61772cdb5ed12ca8d
++     detail
++         Le document (type de média `application/vnd.oci.image.index.v1+json`) à la racine d'une
++         structure d'image, dont les `#manifests` sont les `Descriptor` des manifestes que contient
++         l'archive. `Image.apply` et `Image.wasm` écrivent un index à entrée unique ;
++         `Image.Handle#index` en relit un, et `Image.Handle#manifest` prend sa première entrée par
++         défaut. Il s'encode et se décode en JSON à travers jacinta.
+
+@ 0 1 0 1e192635edf20d381b8b943de8e36a30
++     entry #schemaVersion
++       info
++           la version du schéma de l'index : toujours `2`
+
+@ 0 1 0 134eb1c596fefb060e3edeaf64fa33ef
++     entry #mediaType
++       info
++           le type de média propre à l'index, `application/vnd.oci.image.index.v1+json`
+
+@ 0 1 0 0f81696c51f0ec5a1ace0e99dff902dd
++     entry #manifests
++       info
++           les descripteurs des manifestes, dans l'ordre
+
+@ 1 1 0 040d586f19daae3f17bdf164de88136a
++     entry #annotations
++       info
++           des annotations libres `Map[Text, Text]`, ou `Unset`
+
+@ 0 1 0 0ed1dc19e9f2b1cd1053d2e6b646a8b0
++   entry .Layer
++     info
++         une couche d'image, avec ses deux condensés : `diffId` du contenu brut et `digest` du
++         blob stocké
+
+@ 0 7 0 0b0e6da8e276eda904264e1b9cec8b68
++     detail
++         Une couche porte deux condensés distincts, et le format OCI dépend de la justesse des
++         deux. Le `#diffId` est le SHA-256 du contenu *non compressé*, enregistré dans le
++         `rootfs.diff_ids` de la configuration de l'image ; le `#digest` est le SHA-256 du blob
++         *tel que stocké*, enregistré dans le descripteur de couche du manifeste avec sa `size`.
++         Pour une couche de système de fichiers, les deux diffèrent, car le stockage compresse le
++         tar avec gzip ; pour une couche blob, ils coïncident. Les deux sont calculés
++         paresseusement à partir du contenu, une seule fois.
+
+% 2 1 0 1630598e3efd3a7908a0ab6914efeaf7
+
+% 3 1 0 11f277f9b03cb4620e504519be165e34
+
+% 4 1 0 05cb30c4d8d5ac1409e26e80deb5b5df
+
+% 5 1 0 125c052e8ebc35900adb2e41781f5e03
+
+% 7 1 0 17677bb426e838ed17dd4dc5aa4aa23e
+
+% 0 1 0 0bad94727ac0f0de0cbe0a1e2391a3dd
+
+% 0 1 0 15aa8e0b5107e26b1bf6200a3afce4a5
+
+% 0 1 0 047328e2ab763d5c1e849e57d3ba753e
+
+% 0 1 0 1b3587c8824887d803bc3cba97070693
+
+% 1 1 0 045465aa5fc4de400e6468149ace1fba
+
+@ 0 3 0 00408627fe85cfc30eb9567cd85904df
++         Une `Layer` n'a pas de constructeur public : `.apply` crée une couche de système de
++         fichiers à partir d'un `Tarfile`, et `.blob` crée une couche à blob unique de n'importe
++         quel type de média. Le contenu est conservé par nom jusqu'à sa première utilisation, puis
++         mémoïsé.
+
+% 1 1 0 03af95f5f003c25804451759318b8d9b
+
+% 1 1 0 07db32f81c7a6d5b1fbd9cd20d3ecfd4
+
+@ 0 1 0 123832f8d1b3744b1da778705de6579d
++     entry .apply
++       info
++           une couche de système de fichiers issue d'un `Tarfile`, stockée compressée avec gzip
+
+@ 0 3 0 16d92e75afd9cea70c8f8da71148c4a3
++       detail
++           `Layer(tar)` lit les octets du tar comme contenu brut, les compresse avec gzip pour le
++           blob stocké, et type le descripteur `application/vnd.oci.image.layer.v1.tar+gzip`. Rien
++           n'est lu tant qu'un condensé ou le blob n'est pas demandé pour la première fois.
+
+@ 0 1 0 1d0107fe2908cb821de416763c900760
++     entry .blob
++       info
++           une couche dont le contenu est un blob opaque unique, stocké tel quel sous son propre
++           type de média
+
+@ 0 3 0 037bb93dcbd366c40ebb29666ddeec60
++       detail
++           `Layer.blob(data, mediaType)` est la forme qu'utilise un artefact OCI Wasm pour son
++           composant `application/wasm` : pas de compression, si bien que `#diffId` et `#digest`
++           ont la même valeur et que la `size` du descripteur est la longueur des données.
+
+@ 0 1 0 101662f871340dbf1ff2664ea1f6d26f
++     entry #raw
++       info
++           le contenu non compressé : les octets du tar, ou le blob lui-même
+
+@ 0 1 0 16cfaa9ad75a530404a2b85e614a35ac
++     entry #blob
++       info
++           le contenu tel que stocké : le tar compressé avec gzip, ou le blob lui-même
+
+@ 0 1 0 1240071f455789e608e08d40b87bfdcd
++     entry #diffId
++       info
++           `sha256:<hex>` de `#raw`, tel que l'enregistre le `rootfs.diff_ids` de la configuration
++           de l'image
+
+@ 0 1 0 057af2e9c98f66f50e5ba31cd9c482e0
++     entry #digest
++       info
++           `sha256:<hex>` de `#blob`, tel que l'enregistre le descripteur de couche du manifeste
+
+@ 0 1 0 1fa073ca3bfe1e260cde0b58df32d840
++     entry #descriptor
++       info
++           le `Descriptor` de la couche : type de média, `#digest` et taille du blob stocké
+
+@ 0 1 0 05e137e0af018ddd1e3399d9c5b5de24
++   entry .Descriptor
++     info
++         un descripteur de contenu OCI : un type de média, un condensé `sha256:…` et une taille,
++         pointant vers un blob
+
+@ 0 9 0 1ef7bbc921379a060bd01e2cb8076744
++     detail
++         Le pointeur typé, adressé par empreinte, qu'utilise chaque document OCI pour nommer un
++         blob : la `config` et les `layers` d'un manifeste, les `manifests` d'un index. `#digest`
++         est le `sha256:<lowercase hex>` du blob tel que stocké (pour une couche, compressé) et
++         `#size` sa longueur en octets, si bien qu'un lecteur peut récupérer le blob et vérifier
++         les deux. `Layer#descriptor` en crée un pour une couche, et `Image#configDescriptor` et
++         `Image#manifestDescriptor` pour les documents. Le membre `platform` de la spécification,
++         destiné aux index multi-architectures, n'est pas encore modélisé. C'est le descripteur
++         JSON d'OCI ; celui, en protobuf, de containerd est `Containerd.ContentDescriptor`.
+
+% 1 1 0 01b180c71cddf2ac19ddbb5d8e1159e3
+
+% 0 1 0 0c119ea8191f5d1b09cd8daba1917dea
+
+@ 0 1 0 1a34a5abff6c24b01327cb293a05ff76
++     entry #mediaType
++       info
++           le type de média du blob, comme `application/vnd.oci.image.layer.v1.tar+gzip`
+
+@ 0 1 0 1b8c96c1c8406aa01119a8ab982446ee
++     entry #digest
++       info
++           le condensé `sha256:<hex>` du blob stocké
+
+@ 0 1 0 13b9520cf84fb5f40499c7a178e60deb
++     entry #size
++       info
++           la longueur du blob stocké, en octets
+
+@ 1 1 0 0f10489f2612857c197edaed56ba4619
++     entry #annotations
++       info
++           des annotations libres `Map[Text, Text]`, ou `Unset`
+
+@ 0 1 0 104901e653b88651045f65f8791496bc
++     entry #urls
++       info
++           des URL depuis lesquelles le blob peut être récupéré, ou `Unset`
+
+@ 0 1 0 1939f4b67b4674c314d531ee49b23e31
++   entry .History
++     info
++         une entrée de l'`history` d'une configuration d'image : comment une couche, ou un
++         changement vide, a été produit
+
+@ 0 4 0 06acac53b0e521cf125b8efd98f38c3b
++     detail
++         Un enregistrement de `Image.Config#history`, un par couche ou par changement vide, dans
++         l'ordre. Chaque champ est optionnel et omis du JSON lorsqu'il n'est pas défini ; les noms
++         des membres sont les noms de transmission, si bien que `created_by` et
++         `empty_layer` conservent leurs tirets bas.
+
+@ 0 1 0 03c45f1793406a48168e78f5a9d8069e
++     entry #created
++       info
++           la date du changement, sous forme de texte RFC 3339, ou `Unset`
+
+@ 0 1 0 096848b01b94c3991d0dcbab4bf35f68
++     entry #created_by
++       info
++           la commande qui a produit la couche, ou `Unset`
+
+@ 0 1 0 1fee97981f94168f03a6f0903b6cad44
++     entry #author
++       info
++           l'auteur du changement, ou `Unset`
+
+@ 0 1 0 0c2eb39f741656ad19138ecb297856af
++     entry #comment
++       info
++           une remarque libre, ou `Unset`
+
+@ 0 1 0 1c24f5a406c516000d9a3b10536e210b
++     entry #empty_layer
++       info
++           `true` lorsque l'entrée n'a produit aucune couche de système de fichiers, ou `Unset`
+
+@ 0 1 0 1ee167fc6f9fb05d085f5d5063b32a82
++   entry .RootFs
++     info
++         le `rootfs` d'une configuration d'image : les `diff_id` ordonnés des couches non
++         compressées
+
+@ 0 5 0 13829893a85a30d902a19c050ac021e8
++     detail
++         `RootFs(type, diff_ids)`, où `type` vaut toujours `layers` et où `diff_ids` liste le
++         `Layer#diffId` de chaque couche, la plus basse en premier. `Image.apply` le construit à
++         partir des couches ; un lecteur vérifie le tar non compressé d'une couche décompressée
++         par rapport à l'entrée correspondante. Les noms des membres sont les noms utilisés sur le
++         réseau.
+
+@ 0 1 0 1d0857aeff82d6e8110762a116a2acb3
++     entry #type
++       info
++           le type du rootfs : toujours `layers`
+
+@ 0 1 0 19d5e1fbe0634ca318e0ff15fa669b5d
++     entry #diff_ids
++       info
++           les `diffId` des couches, dans l'ordre
+
+@ 0 1 0 08cb48668fa10bb70ba8f426b184669e
++   entry .ContainerConfig
++     info
++         les paramètres d'exécution d'une image : utilisateur, environnement, point d'entrée,
++         commande, répertoire de travail, labels
+
+@ 0 5 0 011025f77817bf331c441003fa852793
++     detail
++         Le membre `config` d'une `Image.Config` : ce qu'un environnement d'exécution fait du
++         système de fichiers de l'image. Les noms des membres commencent par une majuscule pour
++         correspondre au format hérité de la spécification d'image Docker (`Cmd`, `Env`,
++         `WorkingDir`), et chaque champ est optionnel et omis du JSON lorsqu'il n'est pas défini.
+
+% 2 1 0 1716216ef57683b21c17f2abf72d5923
+
+% 3 1 0 04efd04b264e14430d19f776e899df1d
+
+% 0 1 0 0b0d179b32f442f415e4ec4742325adb
+
+% 0 1 0 0829d7b3d875e5821ce60cfe09db7ed4
+
+% 0 1 0 0d844c8e50e015c51944074f5c8891b6
+
+% 0 1 0 1e9d5134b21dda901276bdb20262ceaa
+
+% 0 1 0 0b94fd899ee332a00c1d1e0305d3615b
+
+% 0 1 0 0f94875a6fd9a1711bc1aeecf39b9749
+
+% 0 1 0 0e1c4cce7a92d59b1dfc80fcf3d15b5a
+
+% 1 1 0 0018ca18e1ccc9d71abd01b926786783
+
+% 1 1 0 005d891d433d49b01b712f034ae1b94f
+
+@ 0 1 0 070839fec26cd50710bfcdbc53799a4b
++     entry #User
++       info
++           l'utilisateur (et éventuellement le groupe) sous lequel s'exécuter, ou `Unset`
+
+@ 0 1 0 10af0a4c0a2fa4e41e02638dd93db667
++     entry #Env
++       info
++           les variables d'environnement sous forme d'entrées `NAME=value`, ou `Unset`
+
+@ 0 1 0 0f9931ca847da17514d90e99f972a664
++     entry #Entrypoint
++       info
++           l'exécutable et ses arguments fixes, ou `Unset`
+
+@ 0 1 0 07b3c84485254e8d02146b4b2eda6c6b
++     entry #Cmd
++       info
++           les arguments par défaut, ajoutés à `Entrypoint` ou exécutés seuls, ou `Unset`
+
+@ 0 1 0 0c7499aa14c6a05e060ee88340e134eb
++     entry #WorkingDir
++       info
++           le répertoire de travail dans lequel démarre le processus, ou `Unset`
+
+@ 0 1 0 19b32996a1c3f381049f50da8cb779ce
++     entry #Labels
++       info
++           des labels libres `Map[Text, Text]`, ou `Unset`
+
+@ 0 1 0 1bca790e5d2ebb69103a5bf7ddf7a91b
++     entry #StopSignal
++       info
++           le signal qui arrête le conteneur, comme `SIGTERM`, ou `Unset`
+
+@ 0 1 0 1b6cb7ba5af68f84052744b65222cc27
++   entry .WasmConfig
++     info
++         un document de configuration d'artefact Wasm : la génération de WASI, le condensé du blob
++         du composant et ses interfaces
+
+@ 0 11 0 1b3bde7a5a5b70c40d7bb3c24dbff8b7
++     detail
++         Le blob de configuration d'un artefact OCI Wasm (type de média
++         `application/vnd.wasm.config.v0+json`). Il tient la place d'une `Image.Config`, mais
++         décrit un composant plutôt qu'un système de fichiers : il n'y a pas de `rootfs`, car il
++         n'y a pas de couches à empiler ; `#layerDigests` nomme directement l'unique blob
++         `application/wasm`, et `#component` énonce les interfaces dont il a besoin.
++         `#architecture` vaut `wasm` et `#os` nomme la génération de WASI (`wasip1`, `wasip2` ou
++         `wasip3`) : c'est sur ces deux champs que se fonde un environnement d'exécution pour
++         reconnaître tout simplement une charge de travail Wasm. `Image.wasm` en construit une,
++         `Image#wasmConfig` et `Image.Handle#wasmConfig` la restituent, et elle est l'une des
++         branches d'`Oci.Config`. Le JSON utilise la clé en camelCase `layerDigests` de la
++         spécification, et omet `created` et `author` lorsqu'ils ne sont pas définis.
+
+% 1 1 0 1647ad586a77d11000e2affe75c5f112
+
+% 0 1 0 03b40c42b2e7d85504ceae990c01c960
+
+@ 0 1 0 1ff84e65adcf2a600b0d4e312d15a4ab
++     entry #created
++       info
++           la date de construction de l'artefact, sous forme de texte RFC 3339, ou `Unset`
+
+@ 0 1 0 11e91bc49409507f0de03a309732fb31
++     entry #author
++       info
++           qui a construit l'artefact, ou `Unset`
+
+@ 0 1 0 05be0915e0ec171c0f6f9606030e4d25
++     entry #architecture
++       info
++           toujours `wasm`
+
+@ 0 1 0 028d8c0a01adab280b996de739f8720d
++     entry #os
++       info
++           la génération de WASI : `wasip1`, `wasip2` (par défaut) ou `wasip3`
+
+@ 0 1 0 1b3f842d4bc005430549d489234c75cf
++     entry #layerDigests
++       info
++           les condensés des couches de l'artefact : l'unique blob `application/wasm`
+
+@ 0 1 0 130cf6bd0146b04313a92dd6b3bad39f
++     entry #component
++       info
++           le `WasmComponent` nommant les exports, les imports et le monde cible, ou `Unset`
+
+@ 0 1 0 09a2d36ee7b0be951000ea8f3f02d366
++   entry .WasmComponent
++     info
++         le membre `component` d'une configuration d'artefact Wasm : les interfaces qu'il exporte
++         et importe, et son monde cible
+
+@ 0 9 0 0b9f36b0e9f314551ea908b2c57ff80a
++     detail
++         Ce que dit un artefact OCI Wasm du contrat du Component Model pour lequel son composant a
++         été construit : `#exports`, les interfaces qu'il offre
++         (`wasi:http/incoming-handler@0.2.0`), `#imports`, les capacités dont il a besoin
++         (`wasi:io/streams@0.2.0`), et `#target`, le monde standard auquel il se conforme
++         (`wasi:http/proxy@0.2.0`), s'il y en a un. La structure des artefacts OCI Wasm exige ce
++         membre pour les artefacts `wasip2`, et c'est lui qui permet à un hôte de décider, avant de
++         récupérer le composant, s'il peut satisfaire la charge de travail. `Image.wasm` le
++         construit à partir de ses paramètres `exports`, `imports` et `target`, généralement lus
++         depuis le monde WIT avec lequel le composant a été lié.
+
+% 1 1 0 1d845ace6791ff4710a7ca81e1a9975a
+
+@ 0 1 0 15f9daf26d171f271f396dfe4cab9370
++     entry #exports
++       info
++           les interfaces qu'exporte le composant, sous forme de noms
++           `namespace:package/interface@version`
+
+@ 0 1 0 1f4969c8f70d86801c759dd4856819e9
++     entry #imports
++       info
++           les interfaces qu'importe le composant
+
+@ 0 1 0 04bc4c78dc75b4c910b3ce3eb5cca886
++     entry #target
++       info
++           le monde standard que cible le composant, ou `Unset`
+
+@ 0 1 0 080d19a92cacc1f90e73c2d681343003
++ entry .ImageOpenable
++   info
++       l'`Openable` qui ouvre un chemin du système de fichiers comme une archive OCI, en lecture
++       seule
+
+@ 0 8 0 05ac8ee10ab05cfa0985ca710a082267
++   detail
++       Dans l'ensemble de sources JVM, puisqu'il lit le tar depuis le disque à travers le
++       `TarOpenable` de bitumen. `ImageOpenable[path]` ouvre tout `path` qui est
++       `Abstractable across
++       Paths to Text` (`Self`) comme une `Image` (`Form`), sans options (`Operand = Nothing`), et
++       donne un `Oci.Image.Handle` (`Result`) pour le bloc. Il exige une `Tactic[Oci.Error]`,
++       une `Tactic[Tar.Error]` et une `Tactic[Truncation.Error]`, et refuse un mode incluant
++       `Write` avec `Oci.Error` (`WriteUnsupported`). Le given `imagePathOpenable` le fournit,
++       si bien qu'un programme écrit `path.open[Oci.Image]()` plutôt que de nommer la classe.
+
+% 0 1 0 02a89a74042fd71e1543c2c219686117
+
+@ 0 1 0 034e8e6722437c0707eaa06648ae7d1c
++   entry #Self
++     info
++         le type de chemin ouvert
+
+@ 0 1 0 0191b08b3b58821613432f73c573020a
++   entry #Form
++     info
++         `Image` : la forme sous laquelle on l'ouvre
+
+@ 0 1 0 04aadddb1785144700520181833e1cc4
++   entry #Operand
++     info
++         `Nothing` : il n'y a pas d'options d'ouverture
+
+@ 0 1 0 12b12ca6944953190a684c69d10e937c
++   entry #Result
++     info
++         `Image.Handle` : ce que reçoit le bloc
+
+@ 0 1 0 11dffc8d33b192c307a567e6b9bfc426
++   entry #open
++     info
++         ouvre le chemin comme un tar, construit un `Image.Handle` sur ses entrées et exécute le
++         bloc
+
+@ 0 1 0 15451ff211c412b9118b6cddd505a9a6
++ entry .imagePathOpenable
++   info
++       le given derrière `path.open[Image]()` sur la JVM : ouvre un fichier d'archive comme une
++       image
+
+@ 0 5 0 1e4f657e18c0971d0a48caf8857e7b57
++   detail
++       Un given de premier niveau dans l'ensemble de sources JVM, exporté à travers
++       `soundness.*` pour qu'il soit dans la portée avec l'import du package parapluie. Il
++       fournit un `ImageOpenable[path]` pour tout type de chemin
++       `Abstractable across Paths to Text`, en capturant la `Tactic[Oci.Error]`, la
++       `Tactic[Tar.Error]` et la `Tactic[Truncation.Error]` dont il a besoin. La poignée ne vit
++       que le temps du bloc.
+
+@ 2 1 0 0d4461fea2846f7c1e2bff67488f91ac
++       ```scala fuel
+
+@ 3 1 0 091090db2b0e8ae314179d1aa1ced2a6
++       typecheck
+
+@ 4 1 0 1516b2c974f19c0615149a5e6d29b93d
++       ##
+
+@ 5 1 0 1f84181074cd251000676290e2fd624e
++       import soundness.*
+
+@ 1 1 0 0e3bcc542e4df8490371466e2b036867
++       import strategies.throwUnsafely
+
+@ 0 1 0 0808cee7fdc1c9c400d9b60d971a1c63
++       val file: Path on Linux = % / "tmp" / "image.tar"
+
+@ 0 1 0 1e70cc9ee6135a6816289077923f9521
++       file.open[Oci.Image](): handle ?=>
+
+@ 0 1 0 1f646a2facc3ea2a13b24279e9f9f73a
++         handle.manifest.layers.map(_.digest)
+
+@ 1 1 0 1f12e59163ac2f7d0d41c82a8bcb891c
++       ```
+
+@ 0 1 0 1e9fdf3c14c23f601758a7f04cd4b728
++ entry .Containerd
++   info
++       un client containerd connecté : un appel gRPC par méthode, lié à un espace de noms
+
+@ 0 8 0 088b392bbd45927b0cac7986a459c2a9
++   detail
++       `Containerd(endpoint, namespace)` se connecte à un démon containerd sur un
++       `Http2.Endpoint` — normalement un socket Unix tel que `/run/containerd/containerd.sock`
++       transportant du HTTP/2 en clair — et lie chaque appel à un espace de noms containerd,
++       envoyé dans l'en-tête obligatoire `containerd-namespace`. La connexion exécute des démons
++       en arrière-plan, si bien que le client doit être créé à l'intérieur d'une portée
++       `supervise`, et il conserve son `#channel`, qui détient le `Monitor` ambiant : un
++       `Containerd` est lui-même une capacité, notée `Containerd^` là où son type est énoncé.
+
+@ 0 10 0 05d63d8e2dd535f20ac65abb5c12b26b
++       Chaque méthode est un appel gRPC unaire sur le canal partagé, échangeant les
++       enregistrements de messages typés du composant `containerd` : `#version` ; `#containers`,
++       `#container`, `#createContainer` et `#deleteContainer` sur le service des conteneurs ;
++       `#namespaces`, `#createNamespace` et `#deleteNamespace` ; `#images`, `#image` et
++       `#deleteImage` ; et, pour les tâches qui s'exécutent dans les conteneurs, `#createTask`,
++       `#startTask`, `#killTask`, `#waitTask`, `#deleteTask`, `#task` et `#tasks`. Chaque appel
++       exige un `Monitor` et des tactiques pour `Grpc.Error` (un statut gRPC non nul renvoyé par
++       le démon), `Http2.Error`, `Async.Error` et `Protobuf.Error`, et chaque appel qui modifie
++       le démon journalise un `Containerd.Event` au niveau `info`, si bien qu'un
++       `Containerd.Event is Loggable` doit être dans la portée.
+
+% 2 1 0 0339880d2191775f1f455a4392dbb8cd
+
+% 3 1 0 026f94dddac7d13e03297270ac26b25d
+
+% 4 1 0 10fa98f8afb6144600d3236cf8a12914
+
+% 5 1 0 1896beaee7a7a2d305fa8a719a2ee636
+
+% 6 1 0 0a375629e4fc79110b4e113fff948eba
+
+% 7 1 0 1a7fd89b78fcb69a1da3b2204de01f41
+
+% 8 1 0 052e2943fd5964fe189623fefecda702
+
+% 9 1 0 1c678c10074b838a0a10cc1e725047c4
+
+% 10 1 0 024ef867edddbd0902ce70fa52c95498
+
+% 12 1 0 03f656f1810b9acb14d934ca7278d9f7
+
+% 13 1 0 079bb36d3d0652171e453c26df587910
+
+% 0 1 0 0a9baafc5ea05ff2050c3fa85f509ff1
+
+% 0 1 0 0655208f0e1d1a7b1c9f451366394332
+
+% 0 1 0 1332df82a8308784196ea35b0ef6aadf
+
+% 0 1 0 1da1aef7ce6e7d540cd0a4f15c97a93a
+
+% 0 1 0 1029b8c568f79cf60166729a8529298a
+
+% 0 1 0 0e5fedcbb84bf2fd1f8eb895030b3377
+
+% 0 1 0 0d35e0450e9cccc805e5a7055fdfa48e
+
+% 0 1 0 1564062b72cfc73d033567d138137b71
+
+% 0 1 0 1bbdde5f787cdc950bb27133df043e15
+
+% 0 1 0 10969cabe1c296441f5ee39dc66fb5d3
+
+% 0 1 0 05ae4a686152df6b0dc98799c27c3c62
+
+% 1 1 0 15c3e61530a3604508e234181662267b
+
+@ 0 4 0 186e57c458f297f812e64422e7549380
++       Un conteneur est une définition ; une *tâche* en est une instance en cours d'exécution,
++       créée à partir du conteneur avec les `Mount` de son système de fichiers racine, démarrée,
++       signalée, attendue et supprimée dans cet ordre (containerd refuse de supprimer une tâche
++       qu'il n'a pas récupérée). L'ouvrable `Workload` effectue cette séquence pour une portée,
++       avec un démontage sur chaque chemin de sortie.
+
+% 0 1 0 0db791d9a166ff000ada6c6325d4cb9e
+
+% 0 1 0 1c03c192532fd14002374cd82b8e7bb9
+
+% 0 1 0 0a8e15508c22531c14beaf52327a4588
+
+@ 0 1 0 18326f38dd775a6c176dd609c5e1f858
++   entry .apply
++     info
++         se connecte à un endpoint containerd, en liant chaque appel à un espace de noms
+
+@ 0 6 0 0a6381ded9e468f4016622faedf7bdf7
++     detail
++         `Containerd(endpoint, namespace)` prend un `Http2.Endpoint` sur tout type d'endpoint
++         `Connectable` et `Showable` ainsi que le nom de l'espace de noms, ouvre un `Grpc.Channel`
++         dont les métadonnées par défaut portent `containerd-namespace: <namespace>`, et renvoie le
++         client. Il exige un `Monitor` et un `Probate` (issus de `supervise`, avec un given
++         `probates`) et des tactiques pour `Async.Error` et `Socket.Error`, cette dernière étant
++         levée si le socket ne peut pas être connecté. Le résultat capture le moniteur.
+
+@ 0 1 0 11678550b6c6be0c119cb6bd70524016
++   entry #channel
++     info
++         le `Grpc.Channel` sur lequel est effectué chaque appel, portant l'espace de noms dans ses
++         métadonnées par défaut
+
+@ 0 1 0 12385aeee9ff2a801d25fc33e227e1de
++   entry #version
++     info
++         la version du démon et sa révision de build, sous forme de `VersionResponse`
+
+@ 0 1 0 0b31bae546b3963c00d2ac3028aea847
++     detail
++         L'appel `containerd.services.version.v1.Version`, avec une requête `Empty`.
+
+@ 0 1 0 0f8efd50a0c896e3090ee0c3366dcb06
++   entry #containers
++     info
++         les conteneurs de l'espace de noms lié, éventuellement restreints par des filtres
++         containerd
+
+@ 0 3 0 09995d305586909a1bbfdb4fd9d5020b
++     detail
++         `client.containers()` ou `client.containers(filters)`, l'appel `List` du service des
++         conteneurs. Les filtres sont des expressions de filtre containerd, comme
++         `labels."tier"==db` ; une liste vide renvoie tout.
+
+@ 0 1 0 19ed94c2a04db4660028b21341ce96df
++   entry #createContainer
++     info
++         enregistre un conteneur, et le renvoie tel que le démon l'a stocké
+
+@ 0 3 0 0e13da5b119127550b2bb768a4c44f59
++     detail
++         L'appel `Create` du service des conteneurs. Le `spec` du `Container` porte la
++         spécification d'exécution OCI sous forme d'`AnyMessage`, transmise telle quelle, et son
++         `runtime` nomme le plugin d'exécution (`io.containerd.runc.v2`). Journalise
++         `Containerd.Event.ContainerCreated`.
+
+@ 0 1 0 011140a2b48a1bae0a2b66af3f6177ff
++   entry #container
++     info
++         un seul conteneur par identifiant, sous forme de `Container`
+
+@ 0 2 0 04735d684051ef581b4c57d37fa8b274
++     detail
++         L'appel `Get` du service des conteneurs ; un conteneur que le démon n'a pas est une
++         `Grpc.Error`.
+
+@ 0 1 0 1f71449a17ec74c4126806d6d772a69b
++   entry #deleteContainer
++     info
++         supprime un conteneur par identifiant
+
+@ 0 2 0 092006ee929824ed057580a253cddafa
++     detail
++         L'appel `Delete` du service des conteneurs. Journalise
++         `Containerd.Event.ContainerDeleted`. Un conteneur doté d'une tâche active ne peut pas être
++         supprimé : supprimez d'abord la tâche.
+
+@ 0 1 0 1dfa9048831d3b0c04b87613584c6d3f
++   entry #namespaces
++     info
++         les espaces de noms du démon, éventuellement filtrés
+
+@ 0 2 0 0059cc6e152299380697540496590a4a
++     detail
++         `client.namespaces()` ou `client.namespaces(filter)`, l'appel `List` du service des
++         espaces de noms, qui n'est pas lui-même restreint à l'espace de noms lié.
+
+@ 0 1 0 1606c9fb5caf67a80fdc3a4c59f92942
++   entry #createNamespace
++     info
++         crée un espace de noms, et le renvoie tel que stocké
+
+@ 0 1 0 17865e051aa2167706a4706e251c14fa
++     detail
++         L'appel `Create` du service des espaces de noms, avec un `Namespace` composé d'un nom et
++         de labels.
+
+@ 0 1 0 184de21604e88da00c49b5834de2e703
++   entry #deleteNamespace
++     info
++         supprime un espace de noms par son nom
+
+@ 0 1 0 1cc53c37d5cdca3f1486ae86a5dde97d
++     detail
++         L'appel `Delete` du service des espaces de noms.
+
+@ 0 1 0 0b75d04114d6d8ff09acacaaa6a0eb33
++   entry #images
++     info
++         les images de l'espace de noms lié, éventuellement filtrées, sous forme d'`ImageRecord`
+
+@ 0 4 0 0621029e7d04c971177221b165a70399
++     detail
++         `client.images()` ou `client.images(filters)`, l'appel `List` du service des images. Un
++         `ImageRecord` correspond aux métadonnées du démon — nom, labels et un
++         `ContentDescriptor` du manifeste — et non au contenu de l'image ; une image se charge à
++         partir d'une `Oci.Image#archive` avec `ctr images import`, puisque le magasin de contenu
++         ne fait pas partie de ce client.
+
+@ 0 1 0 0e37f781ef4b3c7917b4603c3c1bcdaf
++   entry #image
++     info
++         une seule image par référence, sous forme d'`ImageRecord`
+
+@ 0 2 0 0b0a2a8e6755154115236ed6b1437a97
++     detail
++         L'appel `Get` du service des images, par une référence telle que
++         `docker.io/library/alpine:latest`.
+
+@ 0 1 0 1c33cfa070b7617415a00567b2a07b17
++   entry #deleteImage
++     info
++         supprime une image par référence, en attendant éventuellement que son contenu soit
++         collecté
+
+@ 0 3 0 04815b0ba2489b5d058e8cdf6243e133
++     detail
++         `client.deleteImage(name)` ou `client.deleteImage(name, sync = true)`, l'appel `Delete`
++         du service des images ; `sync` fait que l'appel ne revient qu'après le ramasse-miettes.
++         Journalise `Containerd.Event.ImageDeleted`.
+
+@ 0 1 0 00f0b9478380ae750fa3d08803ce8415
++   entry #createTask
++     info
++         crée une tâche pour un conteneur, avec les montages de son système de fichiers racine, et
++         renvoie le pid de la tâche
+
+@ 0 5 0 159e250debb32818149217420f802319
++     detail
++         `client.createTask(containerId, rootfs, options)`, l'appel `Create` du service des
++         tâches. Le `rootfs` correspond aux `Mount` du système de fichiers racine (typiquement un
++         overlay d'un snapshot décompressé) et `options` est un `AnyMessage` d'options
++         d'exécution, vide par défaut. Le résultat est une `CreateTaskResponse` composée de
++         l'identifiant du conteneur et du pid hôte de la nouvelle tâche, pas encore démarrée.
++         Journalise `Containerd.Event.TaskCreated`.
+
+@ 0 1 0 0d7308941e3cd8771dec9ab3addbea55
++   entry #startTask
++     info
++         démarre une tâche créée, et renvoie son pid hôte
+
+@ 0 2 0 1409360f3046dc67138d057e0737deca
++     detail
++         `client.startTask(containerId)`, ou `client.startTask(containerId, execId)` pour un
++         processus exec, l'appel `Start` du service des tâches. Journalise
++         `Containerd.Event.TaskStarted`.
+
+@ 0 1 0 05db5698dde8d6911414a8a4b623c56c
++   entry #killTask
++     info
++         envoie un signal à une tâche, ou à chaque processus de son conteneur
+
+@ 0 3 0 175e6c91dbbf3e060a1570426c4f481b
++     detail
++         `client.killTask(containerId, signal, execId, all)`, l'appel `Kill` du service des
++         tâches, avec le signal sous forme de nombre (`15` pour `SIGTERM`, `9` pour `SIGKILL`) ;
++         `all` cible chaque processus du conteneur. Journalise `Containerd.Event.TaskKilled`.
+
+@ 0 1 0 1b19c989ff9957b21ed0439e2532bfff
++   entry #waitTask
++     info
++         attend qu'une tâche se termine, et renvoie son statut de sortie et l'heure
+
+@ 0 3 0 0a9051c05850d04d107a4224355dbf0f
++     detail
++         `client.waitTask(containerId)` ou `client.waitTask(containerId, execId)`, l'appel `Wait`
++         du service des tâches, qui bloque jusqu'à ce que le processus se soit terminé et renvoie
++         une `WaitResponse`. Une tâche démarrée doit être attendue avant de pouvoir être supprimée.
+
+@ 0 1 0 15d6218181e7843b01ed1c06f4b4c5df
++   entry #deleteTask
++     info
++         supprime une tâche, et renvoie son statut de sortie final
+
+@ 0 3 0 14c8d7ee406469bb1dbb019c4d9f1808
++     detail
++         `client.deleteTask(containerId)` ou `client.deleteTask(containerId, execId)`, l'appel
++         `Delete` du service des tâches, qui renvoie une `DeleteTaskResponse`. Journalise
++         `Containerd.Event.TaskDeleted`.
+
+@ 0 1 0 1abd22da7f0312510850e1ab3ceb762b
++   entry #task
++     info
++         l'état d'une seule tâche, sous forme de `Workload`
+
+@ 0 2 0 0ec85390b5b4701d1b20964bcc990a01
++     detail
++         `client.task(containerId)` ou `client.task(containerId, execId)`, l'appel `Get` du
++         service des tâches ; `Workload#state` est le `ProcessStatus`.
+
+@ 0 1 0 104df60421a91b6a1bdf457946e54425
++   entry #tasks
++     info
++         toutes les tâches connues du démon, éventuellement filtrées
+
+@ 0 1 0 1431550789acfec3095ecb7b0dc665ec
++     detail
++         `client.tasks()` ou `client.tasks(filter)`, l'appel `List` du service des tâches.
+
+@ 0 1 0 1c4ff770151d60da038c87513fafe988
++   entry .ProcessStatus
++     info
++         le statut du processus d'une tâche : `Unknown`, `Created`, `Running`, `Stopped`, `Paused`
++         ou `Pausing`
+
+@ 0 6 0 05487a79ad84a2291feb4467dd72b14f
++     detail
++         Le statut de processus de containerd, une énumération protobuf portée dans un `Workload`
++         sous forme de son `#code` numérique : `Unknown` (0), `Created` (1), `Running` (2),
++         `Stopped` (3), `Paused` (4) et `Pausing` (5). `Workload#state` et le `state()` de
++         `Workload.Handle` décodent un code en l'un de ces cas, et
++         `Workload(…, status = ProcessStatus.Running.code)` fait le chemin inverse.
+
+% 1 1 0 0c8ad4471fe4e6980a3177b6e5e19594
+
+@ 0 1 0 015f12a262eebb9a191a54c8cc4bd42e
++     entry .of
++       info
++           le statut correspondant à un code, ou `Unset` pour un nombre que l'énumération ne
++           connaît pas
+
+@ 0 1 0 0491aa3b5534c7bf1faadb6909badb83
++     entry #code
++       info
++           la valeur numérique que containerd envoie en transmission
+
+@ 0 1 0 01a50289fecf2542143e396308227ed3
++   entry .Event
++     info
++         ce que journalise le client containerd lorsqu'il modifie le démon
+
+@ 0 8 0 196d6dd16fe093ed02977756bd0feabf
++     detail
++         Chaque modification que `Containerd` apporte au démon est journalisée au niveau `info` :
++         `ContainerCreated(id)`, `ContainerDeleted(id)`, `ImageDeleted(name)`,
++         `TaskCreated(container)`, `TaskStarted(container, pid)`, `TaskKilled(container, signal)`
++         et `TaskDeleted(container)`. Tous sauf `ImageDeleted` sont tagués `Log.Process` ;
++         `ImageDeleted` est tagué `Log.Resource`. Les lectures (`containers`, `version`,
++         `task`, …) ne journalisent rien. Un `Containerd.Event is Loggable` doit être dans la
++         portée pour chaque méthode du client ; `logging.silentLogging` les ignore.
+
+@ 0 1 0 00d7df37b54819b61ef79a8653c0e4ba
++     entry .communicable
++       info
++           rend chaque événement sous forme de message, comme _started the task for container `web`
++           as PID `4321`_
+
+@ 0 1 0 0c1b1b2d4ed36eef1bd8ff82aa1f1796
++   entry .AnyMessage
++     info
++         le `google.protobuf.Any` de protobuf : un message sérialisé avec son URL de type, transmis
++         tel quel
+
+@ 0 6 0 041e86aae7aec488164d92b8062fd1c0
++     detail
++         containerd transporte des charges utiles opaques — la spécification d'exécution OCI d'un
++         conteneur, les options d'un environnement d'exécution, les options d'une tâche — sous
++         forme de messages `Any`, que ce client ne construit ni n'interprète : `#typeUrl` nomme le
++         type du message et `#value` contient ses octets sérialisés sous forme
++         d'`AnyMessage.Payload`. Nommé `AnyMessage` pour se tenir à l'écart de `scala.Any`. Un
++         `AnyMessage()` vide est la valeur par défaut partout où un message en prend un.
+
+% 2 1 0 1a11343bec7a0a2411aa9b832ccd6725
+
+% 3 1 0 16a85729c0c63afb053aa180b33eb046
+
+% 4 1 0 02777697cae4dddf1aa8be82c6b5223b
+
+% 0 1 0 11511f39fac0521310279696b1356e4b
+
+% 0 1 0 1ac43f34df33d78312e1dc9d867319d6
+
+% 0 1 0 18a0dac7e1966489196c2f09cf40502c
+
+% 1 1 0 1fce13a474dd5a401aab61adae00d45b
+
+@ 0 1 0 08b4eff539a493a509b785fec508f90d
++     entry .Payload
++       info
++           les octets sérialisés d'un `AnyMessage`, sous forme de tableau d'octets opaque et
++           immuable
+
+@ 0 5 0 102736d6f287a59b026ff0a47011d954
++       detail
++           Un type opaque sur un tableau d'octets gelé plutôt qu'un simple champ `Data`, afin que
++           la dérivation protobuf puisse le voir comme une valeur simple, sans capture.
++           `Payload(data)` enveloppe une `Data`, `.empty` est la charge utile de longueur nulle, et
++           l'extension `data` sur `AnyMessage` la relit. Elle s'encode en transmission comme un
++           champ délimité par sa longueur.
+
+@ 0 1 0 0613eb2a03bdba8b0bba6b605ce1239b
++       entry .empty
++         info
++             la charge utile de longueur nulle, la `value` par défaut d'un `AnyMessage`
+
+@ 0 1 0 048bcebb673cbbc911650a3d62b79225
++       entry .apply
++         info
++             enveloppe une `Data` sous forme de charge utile
+
+@ 0 1 0 10caef12ba07ace90f98f9376ee0f07d
++       entry .encodable
++         info
++             encode une charge utile comme un champ protobuf délimité par sa longueur
+
+@ 0 1 0 09d7ef412a357f28107363d5d5aa98da
++       entry .decodable
++         info
++             décode un champ protobuf délimité par sa longueur comme une charge utile
+
+@ 0 1 0 167a3a6ef98262d3092644d9eb858f7a
++     entry .data
++       info
++           `payload.data` : les octets de la charge utile sous forme de `Data`
+
+@ 0 1 0 0e6e2e88a5550bbc0821699175cf430a
++     entry #typeUrl
++       info
++           l'URL de type nommant le type du message sérialisé
+
+@ 0 1 0 1489ee1a749e1ae30f687926e2eb96a3
++     entry #value
++       info
++           le message sérialisé, sous forme d'`AnyMessage.Payload`
+
+@ 0 1 0 1d6cf7d3f508bdf11d1aa3ea490e3599
++   entry .Timestamp
++     info
++         le `google.protobuf.Timestamp` de protobuf : secondes et nanosecondes depuis l'epoch Unix
+
+@ 0 9 0 042653b722216e8c06ea479e8ed45391
++     detail
++         L'horodatage que portent les enregistrements de containerd (`Container#createdAt`,
++         `Workload#exitedAt`, …) : des `#seconds` entières et une fraction `#nanos`. Il n'est
++         **pas** exporté vers le package parapluie `soundness`, puisque le `Timestamp` d'aviation
++         garde ce nom : écrivez `embarcadero.Timestamp`. Il se convertit depuis et vers n'importe
++         quel type d'instant à travers l'abstraction générique du temps d'anticipation, si bien
++         qu'un `Instant` d'aviation fonctionne sans dépendance entre les deux bibliothèques, à la
++         milliseconde près : la représentation générique est en millisecondes depuis l'epoch, si
++         bien que les nanosecondes inférieures à la milliseconde de protobuf ne sont pas
++         transportées.
+
+% 2 1 0 1dd1374dc63b6afb10bc718d3dcf4e03
+
+% 3 1 0 041d717b6477a7080b0e5326b30e6913
+
+% 0 1 0 19940f9abf69810d1d45cc6b4014a99b
+
+% 0 1 0 1d3a81f1652a644b15f644acf7c4aa98
+
+% 0 1 0 0715040fc65625100180849da4cd6710
+
+% 0 1 0 0a34c47ac2bb4fee164d9ee14787ec59
+
+% 0 1 0 0d2ececd57f471aa01e3d03ff7930bf5
+
+% 0 1 0 0b6b79c1106a89db125b6a1205c3b53a
+
+% 1 1 0 08af6a62c48cefd013c448e61e029a69
+
+@ 0 1 0 00e8fa6dfafde55a14d11a798ff1497c
++     entry .of
++       info
++           un horodatage issu de tout type d'instant `Abstractable across Instants to Long`, à la
++           milliseconde près
+
+@ 0 1 0 1afc9e943314afbb1b4155874577b3d7
++     entry #seconds
++       info
++           les secondes entières depuis l'epoch Unix
+
+@ 0 1 0 17bd3aa8816f30270877464116fe3fbc
++     entry #nanos
++       info
++           la fraction en nanosecondes, de `0` à `999999999` ; un multiple d'un million lorsqu'elle
++           est créée par `.of`
+
+@ 0 1 0 145b3aa63c7e9a571420fb11112b9543
++     entry #instant
++       info
++           l'horodatage sous forme de tout type d'instant `Instantiable across Instants from Long`,
++           à la milliseconde près
+
+@ 0 1 0 0807f16dbee0f1e01153d2bcb1e098de
++   entry .Container
++     info
++         un enregistrement de conteneur containerd : identifiant, labels, image, runtime,
++         spécification OCI, snapshot et horodatages
+
+@ 0 7 0 04f9a0952b3e55561ac65a3c742eccbd
++     detail
++         L'enregistrement de métadonnées du service des conteneurs, avec ses numéros de champs
++         protobuf préservés afin qu'il fasse l'aller-retour avec le démon ; les champs que le
++         client ne modélise pas (la map `extensions`) sont ignorés au décodage. Seul `#id` est
++         requis : `Container(t"web",
++         image = t"docker.io/library/alpine:latest")` est une définition complète à enregistrer
++         avec `Containerd#createContainer` ou à ouvrir comme un `Workload`. Un conteneur est une
++         définition, non un processus ; c'est la tâche créée pour lui qui s'exécute.
+
+% 0 1 0 0cbcf9ff8e4650ec127d1a2666135e93
+
+% 1 1 0 18d9242921d8190a06c6f3d0f1ab28aa
+
+@ 0 1 0 0e17190c0ae65fb91d2734a975350396
++     entry #id
++       info
++           l'identifiant du conteneur, unique dans son espace de noms
+
+@ 0 1 0 1c6baee04c40269d19cbc5fbe3e85aa0
++     entry #labels
++       info
++           des labels libres `Map[Text, Text]` ; les filtres containerd peuvent sélectionner selon
++           eux
+
+@ 0 1 0 1aaa9fc4491358b903d3a496b110ea3f
++     entry #image
++       info
++           la référence de l'image à partir de laquelle le conteneur a été créé
+
+@ 0 1 0 0a8b47264a2d70200bdc2d1f4dd4fd20
++     entry #runtime
++       info
++           la liaison `Runtime` : le nom et les options du plugin d'exécution
+
+@ 0 1 0 1375a9f5b0bafb5a110b6b8fa50e2fbe
++     entry #spec
++       info
++           la spécification d'exécution OCI, sous forme d'`AnyMessage` opaque
+
+@ 0 1 0 09f0daeb858e4f271b4d49d18c50a064
++     entry #snapshotter
++       info
++           le snapshotter qui détient le système de fichiers racine du conteneur
+
+@ 0 1 0 06c18a8daf1545ed11e6c9883ee2fcaa
++     entry #snapshotKey
++       info
++           la clé du snapshot du conteneur
+
+@ 1 1 0 17a697108c475e85190fcbbfba7e2d9d
++     entry #createdAt
++       info
++           la date à laquelle le démon a stocké l'enregistrement, sous forme de `Timestamp`
+
+@ 2 1 0 1ea15359363fa212102b986d715e2e5e
++     entry #updatedAt
++       info
++           la date de la dernière modification de l'enregistrement, sous forme de `Timestamp`
+
+@ 0 1 0 1cc2464d11d4b1ab0603a1c634aa429b
++     entry #sandbox
++       info
++           la sandbox à laquelle appartient le conteneur, s'il y en a une
+
+@ 0 1 0 0af3390bd59d641f1daa045ff7e1f5d0
++   entry .ContentDescriptor
++     info
++         le descripteur protobuf d'un blob selon containerd : type de média, condensé, taille et
++         annotations
+
+@ 0 5 0 1f4a977060927cc810d2dfb74c353aa7
++     detail
++         Le message `containerd.types.Descriptor`, tel que le `ImageRecord#target` pointe vers son
++         manifeste. Nommé `ContentDescriptor` pour se tenir à l'écart de l'`Oci.Descriptor` JSON
++         d'OCI, qui a la même signification de l'autre côté de la bibliothèque. Le membre
++         `platform` n'est pas modélisé.
+
+% 1 1 0 00f5e17205f5403611c0b5609f83c3dd
+
+@ 0 1 0 164ff9c9d77b5b0a023c38b476c3b524
++     entry #mediaType
++       info
++           le type de média du blob, sous forme de texte
+
+@ 0 1 0 1a0e9f1e6356dc750dc3633472340d91
++     entry #digest
++       info
++           le condensé `sha256:<hex>` du blob
+
+@ 0 1 0 16bdf4bde6defafa1d0ea28070490274
++     entry #size
++       info
++           la longueur du blob, en octets
+
+@ 0 1 0 0ade888cfa69c7b319fe9114aec42393
++     entry #annotations
++       info
++           des annotations libres `Map[Text, Text]`
+
+@ 0 1 0 1d9df66d310f2f14031693558edade22
++   entry .ImageRecord
++     info
++         un enregistrement d'image containerd : un nom de référence pointant vers un contenu, avec
++         des labels et des horodatages
+
+@ 0 6 0 04dec8274cdea48118035e83c72644b0
++     detail
++         L'enregistrement de métadonnées du service des images, que renvoient `Containerd#images`
++         et `Containerd#image` : `#name` est la référence (`docker.io/library/alpine:latest`) et
++         `#target` le `ContentDescriptor` du manifeste dans le magasin de contenu. Nommé
++         `ImageRecord` pour se tenir à l'écart de l'`Oci.Image` d'OCI que construit cette
++         bibliothèque ; l'enregistrement est l'entrée d'index du démon, non le contenu.
+
+% 1 1 0 1abd2390c85b7bb104e5034141dea95d
+
+@ 0 1 0 05e47642126b1b051260506497018aed
++     entry #name
++       info
++           la référence de l'image
+
+@ 1 1 0 0120a9e78711e6da0368b32af2330d32
++     entry #labels
++       info
++           des labels libres `Map[Text, Text]`
+
+@ 0 1 0 0ae303f376dbef9f1de42caf2a2c56a5
++     entry #target
++       info
++           le `ContentDescriptor` du manifeste de l'image
+
+@ 1 1 0 0b94740aa6b5e0471bd914188ab4ed76
++     entry #createdAt
++       info
++           la date à laquelle le démon a stocké l'enregistrement, sous forme de `Timestamp`
+
+@ 2 1 0 0a1ec82549bf9f351cfaed6e81522e54
++     entry #updatedAt
++       info
++           la date de la dernière modification de l'enregistrement, sous forme de `Timestamp`
+
+@ 0 1 0 18ed60be08dc821c13bb2711875ec7d7
++   entry .Mount
++     info
++         un montage dans le système de fichiers racine d'une tâche : une source montée sur une
++         cible avec un type et des options
+
+@ 0 4 0 172c165362460be704ae7e347421b4c5
++     detail
++         Le message `containerd.types.Mount`, donné à `Containerd#createTask` comme `rootfs` de
++         la tâche et à `container.open[Workload](…)` comme ses options ; `#mountType` est le
++         `type` du proto. Un overlay d'un snapshot décompressé est le cas courant :
+
+% 2 1 0 15e8e983a98bbde804ec0d34c37cd78a
+
+% 3 1 0 117f247dce220a5e0d0e0ed7eb41ca2d
+
+% 0 1 0 1b58183dfed5ab2e0fda5096d8b274f0
+
+% 0 1 0 05b5616e5cd8c35d02014891ea63d7c2
+
+% 1 1 0 00059d7b8fae86ac10305f2c721e636d
+
+@ 0 1 0 0c47090581816d3c1a46934f65329450
++     entry #mountType
++       info
++           le type de système de fichiers, comme `overlay` ou `bind`
+
+@ 0 1 0 14e9c81a8cbceed80832851eb53255bd
++     entry #source
++       info
++           ce qui est monté
+
+@ 0 1 0 1a12773ad2953881040adbc664dc1b8a
++     entry #target
++       info
++           où il est monté, dans la racine de la tâche
+
+@ 0 1 0 106aaa7a5ae944f21a20f6d6dd740315
++     entry #options
++       info
++           les options de montage, sous forme d'entrées `key=value`
+
+@ 0 1 0 073cba3c365693020cf279967c17c58a
++   entry .Namespace
++     info
++         un espace de noms containerd : une portée d'isolation pour les conteneurs, les images et
++         les tâches, avec des labels
+
+@ 0 4 0 19a36cf441ff52d615c7afae75c30f9b
++     detail
++         L'enregistrement du service des espaces de noms : un `#name` (`default`, `k8s.io`,
++         `moby`) et des `#labels` libres. Un client `Containerd` est lié à un espace de noms à la
++         connexion ; `Containerd#namespaces`, `#createNamespace` et `#deleteNamespace` les gèrent.
+
+@ 0 1 0 0c06d634c54145451406f0ed72affa45
++     entry #name
++       info
++           le nom de l'espace de noms
+
+@ 1 1 0 1e83200857f0c67a101037b7cbd5d3e8
++     entry #labels
++       info
++           des labels libres `Map[Text, Text]`
+
+@ 0 1 0 09262ca65113399a1b124a8c15169443
++   entry .Runtime
++     info
++         la liaison d'exécution d'un conteneur : le nom du plugin d'exécution et ses options
++         opaques
+
+@ 0 5 0 08b3dfec4a49324d196dc8483f0bd524
++     detail
++         Le message `Container.Runtime` : `#name` est le plugin (`io.containerd.runc.v2` pour une
++         image de système de fichiers, `io.containerd.wasmtime.v1` pour un artefact Wasm sous un
++         shim wasmtime) et `#options` un `AnyMessage` de ses options. Le nom est exporté vers le
++         package parapluie `soundness` sous la forme `Runtime`, si bien qu'aucune autre
++         bibliothèque ne peut en exporter un.
+
+@ 0 1 0 14fdcaa27671c8310512cfc7d0d927e5
++     entry #name
++       info
++           le nom du plugin d'exécution
+
+@ 0 1 0 0e4dd5e5089696a50e0fedba722da4e2
++     entry #options
++       info
++           les options du plugin, sous forme d'`AnyMessage` opaque
+
+@ 0 1 0 1826c8fc30cc0e841910a70847a3120c
++   entry .Empty
++     info
++         le `google.protobuf.Empty` de protobuf : un message sans champs
+
+@ 0 2 0 00e91dadfc26093d0733cc841c201bc7
++     detail
++         La requête des appels sans paramètre tels que `Containerd#version`, et la réponse des
++         appels de suppression. `Empty()` est sa seule valeur.
+
+@ 0 1 0 0093fed7e167eae619086c20469649be
++   entry .VersionResponse
++     info
++         la réponse de l'appel `Version` de containerd : la version du démon et sa révision git
+
+@ 0 3 0 05d596138122c3910d776ab7ca7be124
++     detail
++         Ce que renvoie `Containerd#version` : `#version` est la version sémantique (`1.7.0`) et
++         `#revision` la révision git à partir de laquelle le démon a été construit.
+
+@ 0 1 0 01f84c9226fb9c311d3df480eaa5d181
++     entry #version
++       info
++           la version sémantique du démon
+
+@ 0 1 0 176cf19e6ded817b176789e7439b0119
++     entry #revision
++       info
++           la révision git à partir de laquelle il a été construit
+
+@ 0 1 0 11508425372bf5301839741cba432d40
++   entry .CreateContainerRequest
++     info
++         la requête du `Create` du service des conteneurs : le conteneur à enregistrer
+
+@ 0 9 0 1df72b7560a2ff52132a8577996ac4bd
++     detail
++         Les types `…Request` et `…Response` reproduisent champ par champ le protocole gRPC de
++         containerd, chacun étant une case class dotée de numéros de champs protobuf que les
++         méthodes de `Containerd` construisent et décodent, exportée pour qu'un programme puisse
++         dialoguer directement avec le démon à travers un `Grpc.Channel` ou les encoder avec
++         `in[Protobuf]`. Pour le service des conteneurs : `CreateContainerRequest(container)` et
++         `CreateContainerResponse(container)`, `GetContainerRequest(id)` et
++         `GetContainerResponse(container)`, `ListContainersRequest(filters)` et
++         `ListContainersResponse(containers)`, et `DeleteContainerRequest(id)`, dont la réponse
++         est `Empty`.
+
+@ 0 1 0 1b93f063e5b899cf12858f8eaed952af
++     entry #container
++       info
++           le `Container` à enregistrer
+
+@ 0 1 0 197f73a5d5fe7c8904fef5e6d65b12c2
++   entry .CreateContainerResponse
++     info
++         la réponse du `Create` du service des conteneurs : le conteneur tel que stocké
+
+@ 0 1 0 0275080fb6aa681607bfbcd6829ab9f6
++     entry #container
++       info
++           le `Container` stocké
+
+@ 0 1 0 16ad850d706de59e052bfa93aef6b95a
++   entry .GetContainerRequest
++     info
++         la requête du `Get` du service des conteneurs : un identifiant de conteneur
+
+@ 0 1 0 135154d411696e050f78fb2dd4dee502
++     entry #id
++       info
++           l'identifiant du conteneur à récupérer
+
+@ 0 1 0 1f2c0fd8e240b6b1142c7a3286772549
++   entry .GetContainerResponse
++     info
++         la réponse du `Get` du service des conteneurs : le conteneur
+
+@ 0 1 0 1ed956b0f36e629d0377e2032100dd96
++     entry #container
++       info
++           le `Container` demandé
+
+@ 0 1 0 1d5c89ed33bbeebc157cf7d4503cd59c
++   entry .ListContainersRequest
++     info
++         la requête du `List` du service des conteneurs : des expressions de filtre optionnelles
+
+@ 0 1 0 065989aa75100e6b1fcdb7ab6a51c443
++     entry #filters
++       info
++           des expressions de filtre containerd, comme `labels."tier"==db` ; vide pour tout
+
+@ 0 1 0 10eae704c35ba543095e412818cd0fed
++   entry .ListContainersResponse
++     info
++         la réponse du `List` du service des conteneurs : les conteneurs correspondants
+
+@ 0 1 0 0d621e1423ef78fd0b0f6ed773f95f14
++     entry #containers
++       info
++           les `Container` correspondants, dans l'ordre de containerd
+
+@ 0 1 0 1430e65aa9d5b12919577492ba4dc1cc
++   entry .DeleteContainerRequest
++     info
++         la requête du `Delete` du service des conteneurs : un identifiant de conteneur ; la
++         réponse est `Empty`
+
+@ 0 1 0 0fb0fa329bf936c50517481410cc6310
++     entry #id
++       info
++           l'identifiant du conteneur à supprimer
+
+@ 0 1 0 076276cf4ba4a4c2173d9839d5ca4ddd
++   entry .CreateNamespaceRequest
++     info
++         la requête du `Create` du service des espaces de noms : l'espace de noms à créer
+
+@ 0 5 0 0870be9b8d69d4d5034dbfd7a4aa3340
++     detail
++         Les messages du service des espaces de noms : `CreateNamespaceRequest(namespace)` et
++         `CreateNamespaceResponse(namespace)`, `ListNamespacesRequest(filter)` et
++         `ListNamespacesResponse(namespaces)`, et `DeleteNamespaceRequest(name)`, dont la réponse
++         est `Empty`.
+
+@ 0 1 0 16d7d48eb0e9f9e61610b6f7a688acb1
++     entry #namespace
++       info
++           le `Namespace` à créer
+
+@ 0 1 0 05e4bf93bd04c0881cd994c2cfb55506
++   entry .CreateNamespaceResponse
++     info
++         la réponse du `Create` du service des espaces de noms : l'espace de noms tel que stocké
+
+@ 0 1 0 1096bfd3bdba571c121f80a064d57e25
++     entry #namespace
++       info
++           le `Namespace` stocké
+
+@ 0 1 0 030832905c6f69581cc78a217066b976
++   entry .ListNamespacesRequest
++     info
++         la requête du `List` du service des espaces de noms : une expression de filtre optionnelle
+
+@ 1 1 0 08c3e64323d8a383106d765796467feb
++     entry #filter
++       info
++           une expression de filtre containerd ; vide pour tout
+
+@ 0 1 0 1779d439afc89bd60c050063c0588a03
++   entry .ListNamespacesResponse
++     info
++         la réponse du `List` du service des espaces de noms : les espaces de noms correspondants
+
+@ 0 1 0 06a34c608d8affc81d8526d2f19afdb6
++     entry #namespaces
++       info
++           les `Namespace` correspondants
+
+@ 0 1 0 0f877cb1c16ac93a1f3aa203f19a5f9a
++   entry .DeleteNamespaceRequest
++     info
++         la requête du `Delete` du service des espaces de noms : un nom d'espace de noms ; la
++         réponse est `Empty`
+
+@ 0 1 0 101d2e4d14c326401c791213e95b41f0
++     entry #name
++       info
++           le nom de l'espace de noms à supprimer
+
+@ 0 1 0 18645feaa6e72ad01572b4685ed74072
++   entry .GetImageRequest
++     info
++         la requête du `Get` du service des images : une référence d'image
+
+@ 0 4 0 19c290e7f7a7893311bd023860a09f2b
++     detail
++         Les messages du service des images : `GetImageRequest(name)` et
++         `GetImageResponse(image)`, `ListImagesRequest(filters)` et `ListImagesResponse(images)`,
++         et `DeleteImageRequest(name, sync)`, dont la réponse est `Empty`.
+
+@ 0 1 0 0fbc2e30ba75c3511b025ea22fe881a1
++     entry #name
++       info
++           la référence de l'image à récupérer
+
+@ 0 1 0 166e61e9a22ffc401f6c8b6e1844a35a
++   entry .GetImageResponse
++     info
++         la réponse du `Get` du service des images : l'enregistrement de l'image
+
+@ 0 1 0 002a0dc7fac368e11d9b5b4026d6fc69
++     entry #image
++       info
++           l'`ImageRecord` demandé
+
+@ 0 1 0 17f62411e75461f5083bcfbbf1ee957b
++   entry .ListImagesRequest
++     info
++         la requête du `List` du service des images : des expressions de filtre optionnelles
+
+@ 0 1 0 0666ce966f11de68081f098fd8b06a79
++     entry #filters
++       info
++           des expressions de filtre containerd ; vide pour tout
+
+@ 0 1 0 19f94e217bd5ca9e1f5575403fa72356
++   entry .ListImagesResponse
++     info
++         la réponse du `List` du service des images : les enregistrements d'images correspondants
+
+@ 0 1 0 1a8e82bd089a1969159403e3713d572c
++     entry #images
++       info
++           les `ImageRecord` correspondants
+
+@ 0 1 0 0b7a39a9ace8cd1b022859e9c1839411
++   entry .DeleteImageRequest
++     info
++         la requête du `Delete` du service des images : une référence d'image et s'il faut
++         attendre ; la réponse est `Empty`
+
+@ 0 1 0 13791bff49e8cfd116cd8bb1cfdc6a66
++     entry #name
++       info
++           la référence de l'image à supprimer
+
+@ 0 1 0 0b3f02f90cab5463183bba692449415c
++     entry #sync
++       info
++           s'il faut ne revenir qu'une fois le contenu collecté par le ramasse-miettes
+
+@ 0 1 0 01c1511e6c7032aa1d6db77f0efea639
++   entry .CreateTaskRequest
++     info
++         la requête du `Create` du service des tâches : le conteneur, les montages de son rootfs,
++         les entrées-sorties standard et les options
+
+@ 0 9 0 153b6476ccede382029dba9c2775934f
++     detail
++         Les messages du service des tâches : `CreateTaskRequest` et
++         `CreateTaskResponse(containerId, pid)`, `StartRequest(containerId, execId)` et
++         `StartResponse(pid)`, `KillRequest(containerId, execId, signal, all)` avec une réponse
++         `Empty`, `WaitRequest(containerId, execId)` et `WaitResponse(exitStatus, exitedAt)`,
++         `DeleteTaskRequest(containerId, execId)` et
++         `DeleteTaskResponse(id, pid, exitStatus, exitedAt)`, `GetTaskRequest(containerId, execId)`
++         et `GetTaskResponse(process)`, et `ListTasksRequest(filter)` et
++         `ListTasksResponse(tasks)`. Un `execId` vide désigne la tâche principale du conteneur ; un
++         identifiant non vide nomme un processus exec en son sein.
+
+@ 0 1 0 12240ec4ad7a38851cc38f1e02fcdaad
++     entry #containerId
++       info
++           le conteneur pour lequel créer la tâche
+
+@ 0 1 0 0d4236213088a580041c5e285520fb38
++     entry #rootfs
++       info
++           les `Mount` du système de fichiers racine de la tâche
+
+@ 0 1 0 17e8763d13e53e8811c28e89635de133
++     entry #stdin
++       info
++           le chemin depuis lequel est lue l'entrée standard de la tâche ; vide pour aucune
+
+@ 0 1 0 0c0c40c82b68011f1b588128323746d2
++     entry #stdout
++       info
++           le chemin dans lequel est écrite la sortie standard de la tâche ; vide pour aucune
+
+@ 0 1 0 1dbaed4a65045e2f1ab9513190094920
++     entry #stderr
++       info
++           le chemin dans lequel est écrite la sortie d'erreur standard de la tâche ; vide pour
++           aucune
+
+@ 0 1 0 1745e2087240b5ea0181f55f7eac73b2
++     entry #terminal
++       info
++           si la tâche obtient un pseudo-terminal
+
+@ 0 1 0 18c18f58262041d01d4ec48b53274575
++     entry #options
++       info
++           les options d'exécution, sous forme d'`AnyMessage` opaque
+
+@ 0 1 0 1ee7b0313d74c498112eacb915322918
++   entry .CreateTaskResponse
++     info
++         la réponse du `Create` du service des tâches : l'identifiant du conteneur et le pid hôte
++         de la nouvelle tâche
+
+@ 0 1 0 18275a818a76b8311f0825709099d882
++     entry #containerId
++       info
++           le conteneur pour lequel la tâche a été créée
+
+@ 0 1 0 02bfa82cc97720241512f8a55fb57599
++     entry #pid
++       info
++           le pid hôte de la tâche créée
+
+@ 0 1 0 00194646cf8167b41fa1112c3fce5cd7
++   entry .StartRequest
++     info
++         la requête du `Start` du service des tâches : la tâche, ou le processus exec, à démarrer
+
+@ 0 1 0 152d054508452a5d0d66fa4db3413879
++     entry #containerId
++       info
++           le conteneur dont il faut démarrer la tâche
+
+@ 0 1 0 0e3518222c8ab6970cdf3d69c7514105
++     entry #execId
++       info
++           le processus exec à démarrer ; vide pour la tâche principale
+
+@ 0 1 0 0c7c19fd317893ea1c4d65a9f576c54e
++   entry .StartResponse
++     info
++         la réponse du `Start` du service des tâches : le pid hôte du processus démarré
+
+@ 0 1 0 190ce06fcf60a41810bcf597bb0b94cb
++     entry #pid
++       info
++           le pid hôte du processus démarré
+
+@ 0 1 0 01b26ca55f5571f5064a1935494f7f46
++   entry .KillRequest
++     info
++         la requête du `Kill` du service des tâches : un signal pour une tâche, un processus exec
++         ou tous les processus ; la réponse est `Empty`
+
+@ 0 1 0 1cc63d53d1cd6ea30565021112000afc
++     entry #containerId
++       info
++           le conteneur dont il faut signaler la tâche
+
+@ 0 1 0 02aa92b8848e2553065d4481f5545835
++     entry #execId
++       info
++           le processus exec à signaler ; vide pour la tâche principale
+
+@ 0 1 0 1dd46e4fc0218c051898fefad139d49e
++     entry #signal
++       info
++           le numéro du signal, comme `15` pour `SIGTERM`
+
+@ 0 1 0 0bbae9509470a3ef1574b01a1d7b49cc
++     entry #all
++       info
++           s'il faut signaler chaque processus du conteneur
+
+@ 0 1 0 00b1643ec4ba999a0a8d33ed17fdc011
++   entry .WaitRequest
++     info
++         la requête du `Wait` du service des tâches : la tâche, ou le processus exec, à attendre
+
+@ 0 1 0 1cf5af9eed1dee7401d1d49c84e7902b
++     entry #containerId
++       info
++           le conteneur dont il faut attendre la tâche
+
+@ 0 1 0 11a577fbccbd33e8198b0b10ade8000b
++     entry #execId
++       info
++           le processus exec à attendre ; vide pour la tâche principale
+
+@ 0 1 0 0fd9489824915dde16aef52e414dfdfb
++   entry .WaitResponse
++     info
++         la réponse du `Wait` du service des tâches : le statut de sortie et l'heure de sortie
+
+@ 0 1 0 166141a8d056f01e1e4790ea13601ba5
++     entry #exitStatus
++       info
++           le statut de sortie du processus
+
+@ 1 1 0 016b28291b5871561328ed09c482133a
++     entry #exitedAt
++       info
++           la date de sa sortie, sous forme de `Timestamp`
+
+@ 0 1 0 1ba2576adc336bad1e062498ccb3fba1
++   entry .DeleteTaskRequest
++     info
++         la requête du `Delete` du service des tâches : la tâche, ou le processus exec, à supprimer
+
+@ 0 1 0 0307d146082558d505fe7919d9112e15
++     entry #containerId
++       info
++           le conteneur dont il faut supprimer la tâche
+
+@ 0 1 0 0f238878bfe61be11ef49f1da0d11da5
++     entry #execId
++       info
++           le processus exec à supprimer ; vide pour la tâche principale
+
+@ 0 1 0 105b9316112dd13208e2fb9235da797c
++   entry .DeleteTaskResponse
++     info
++         la réponse du `Delete` du service des tâches : l'identifiant, le pid, le statut de sortie
++         et l'heure de sortie du processus supprimé
+
+@ 0 1 0 0c9b4d94a7eeaf631a96f095b0d26cb9
++     entry #id
++       info
++           l'identifiant exec du processus supprimé
+
+@ 0 1 0 14e2bf92ae82a16212e6fbd2ad51fe99
++     entry #pid
++       info
++           son pid hôte
+
+@ 0 1 0 0d48eb4f8093485a1a01fa30b75b18fa
++     entry #exitStatus
++       info
++           le statut de sortie avec lequel il s'est arrêté
+
+@ 1 1 0 0a26355082a441e305a02a55df843ac9
++     entry #exitedAt
++       info
++           la date de sa sortie, sous forme de `Timestamp`
+
+@ 0 1 0 0b49974ee5be9fbf0f8de529be5ffb5e
++   entry .GetTaskRequest
++     info
++         la requête du `Get` du service des tâches : la tâche, ou le processus exec, à rechercher
+
+@ 0 1 0 0f63aa1c378f97f80d30d31539cfcf1b
++     entry #containerId
++       info
++           le conteneur dont il faut récupérer la tâche
+
+@ 0 1 0 00502453d47ffcae1136ddaa22bf2f3b
++     entry #execId
++       info
++           le processus exec à récupérer ; vide pour la tâche principale
+
+@ 0 1 0 059843ebb9f68fa11c05a9fc948335e3
++   entry .GetTaskResponse
++     info
++         la réponse du `Get` du service des tâches : l'état du processus
+
+@ 0 1 0 0fcbd0a195867c3a1746d1f02f0b80ec
++     entry #process
++       info
++           le `Workload` demandé
+
+@ 0 1 0 050a89206a870c2f1833d8aa855b5d0f
++   entry .ListTasksRequest
++     info
++         la requête du `List` du service des tâches : une expression de filtre optionnelle
+
+@ 1 1 0 1388df52469d139300f2243957576be5
++     entry #filter
++       info
++           une expression de filtre containerd ; vide pour tout
+
+@ 0 1 0 151dcc4b4e516b580926ee6983600d05
++   entry .ListTasksResponse
++     info
++         la réponse du `List` du service des tâches : les processus de tâches correspondants
+
+@ 0 1 0 1dbbd993be6c1fce1cbc604ead5d79e0
++     entry #tasks
++       info
++           les `Workload` correspondants
+
+@ 0 1 0 1c34d5192115518403a5a712d1a34918
++ entry .Workload
++   info
++       l'état du processus d'une tâche, et l'ouvrable qui limite tout le cycle de vie d'un
++       conteneur à un bloc
+
+@ 0 6 0 0c759d81877be9761b75eb3a28165fb0
++   detail
++       `Workload` a deux rôles. En tant qu'**enregistrement**, c'est l'état du processus d'une
++       tâche tel que le rapporte containerd (`containerd.v1.types.Process`, en partie) : le
++       `#containerId` et l'`#id` exec auxquels il appartient, son `#pid` hôte, le code brut
++       `#status` (décodé par `#state` en un `Containerd.ProcessStatus`), ainsi que
++       l'`#exitStatus` et l'`#exitedAt` une fois qu'il s'est arrêté. C'est ce que renvoient
++       `Containerd#task` et `Containerd#tasks`.
+
+@ 0 8 0 07a10e8378321d120af0bd14372f9176
++       En tant que **forme**, c'est ce sous quoi s'ouvre un `Containerd.Container` :
++       `container.open[Workload]()` enregistre le conteneur, crée pour lui une tâche avec les
++       `Containerd.Mount` donnés comme options, exécute le bloc avec un `Workload.Handle`, et, sur
++       chaque chemin de sortie — normal, exception ou erreur — tue la tâche si elle a été
++       démarrée, la récupère, la supprime, et supprime le conteneur. La durée de vie de la charge
++       de travail *est* la portée. Le mode indique ce que le bloc peut faire : le `Read` par
++       défaut crée le conteneur et la tâche sans la démarrer, une portée d'inspection ; `Launch`
++       démarre la tâche et confère `await` ; `Signalling` confère `kill`.
+
+% 2 1 0 0cf1eb0392ade8810ffcdfcb90255ecd
+
+% 3 1 0 045147549ad9a2e50e925a0d8b7bc0c8
+
+% 4 1 0 0b5e9b212102997e0a15c163a932aeb0
+
+% 5 1 0 1716b116016252b1187d05db739eff45
+
+% 6 1 0 089b621caf9fe07b1e5bae29d4dfb7ae
+
+% 7 1 0 132c0499ac1d341b195590c7ff6ca038
+
+% 8 1 0 00f0d111fc2a3ba1082098a24eb02e17
+
+% 9 1 0 01514d39850cf8f00bc07287ce03931b
+
+% 10 1 0 16a944110d6dc9f104be411713491cbc
+
+% 12 1 0 00e2ff7fbb81c8b40c47133e9ea83c16
+
+% 13 1 0 0a65e01c3e4757e01b60dab13217f4a5
+
+% 0 1 0 128476e8b8f5ac5b05da569eff45fb83
+
+% 0 1 0 0dc6bb230f7d907f17fcb2d271135c50
+
+% 0 1 0 0a3c8c550e2a4f4f1f30f24c281565e9
+
+% 0 1 0 1a1b798d0eda559916a5d0f15467c0ed
+
+% 0 1 0 0b519b821511ccb91328b58eeaf93879
+
+% 0 1 0 06819374b9a6c79f0e3b2d77894acc7b
+
+% 0 1 0 12db663a6abd5e14028dc32d3c447230
+
+% 1 1 0 1d27d5b10b60104c15cba950eb05ca7f
+
+@ 0 5 0 150cc336fc5aba1e0e7a6e103fa6f48b
++       Le `Containerd^` doit être un given dans la portée, puisque `.openable` se résout à
++       travers lui, et le `Monitor` vient de `supervise`. Le démontage se fait au mieux et ne
++       masque jamais le résultat ou l'erreur propres au bloc : un bloc qui lève une exception
++       voit quand même sa tâche tuée et supprimée, et l'exception s'échappe. Un `createContainer`
++       échoué n'effectue aucun autre appel.
+
+% 0 1 0 0b95e773f783fcc2003bae0488707dcd
+
+% 0 1 0 136f42661dc67873161721b463b1d499
+
+% 0 1 0 0065a64dfe8edbf4179d94af4b8ea03e
+
+% 0 1 0 0ba604e63918950e18d5b8c3fb10cd72
+
+@ 0 1 0 0d4a2c598c36bcd80e84e63c21ef72ae
++   entry .openable
++     info
++         le given derrière `container.open[Workload](…)` : un `Workload.Openable` sur le
++         `Containerd^` dans la portée
+
+@ 0 3 0 0835c16ac2535abc1071df5a150103c5
++     detail
++         Un given dans le compagnon, qui se résout donc sans import. Il exige un given
++         `Containerd^` et un `Monitor^`, ainsi que des tactiques pour `Grpc.Error`,
++         `Http2.Error`, `Async.Error` et `Protobuf.Error`, qu'il capture tous.
+
+@ 0 1 0 008da83932ad781a032068c284f1b61d
++   entry .Grant
++     info
++         les droits propres aux charges de travail : `Launch` (la tâche est démarrée) et `Signal`
++         (elle peut recevoir des signaux)
+
+@ 0 4 0 03dd158fc728740e19d2a20c1f062cc8
++     detail
++         Deux traits de la hiérarchie ouverte `Grant` d'aperture, sélectionnés par les modes
++         `Launch` et `Signalling` et raffinant le `Workload.Handle` que reçoit un bloc, de sorte
++         que `await` ne soit disponible que sur une tâche démarrée et `kill` que lorsque l'envoi de
++         signaux a été demandé.
+
+@ 0 1 0 03fb86fae652bbd7093119fb4b04ab5d
++     entry .Launch
++       info
++           le droit selon lequel la tâche est démarrée à l'ouverture, qui confère `await`
+
+@ 0 1 0 092bf8f7a5f00c8d11e63194041cd407
++     entry .Signal
++       info
++           le droit qui confère `kill`
+
+@ 0 2 0 1b8e287a671f128e1a8a774d12dd52be
++       detail
++           Le droit garde le nom `Signal` ; son mode est `Signalling`, puisque l'interruption de
++           profanity détient `Signal` dans le package parapluie `soundness`.
+
+@ 0 1 0 0cb29c33526bc9cc0e435b47038804c7
++   entry .Handle
++     info
++         la poignée, délimitée par une portée, d'une tâche en cours d'exécution ou créée : son pid,
++         son état, sa sortie et ses signaux
+
+@ 0 7 0 1aa9416e5f8de7b407fe343a0d4de7e5
++     detail
++         Ce que reçoit le bloc de `container.open[Workload](…)` : une capacité exclusive détenant
++         le `#containerId` et le `#pid` de la tâche créée pour la portée. Ses opérations sont des
++         extensions dans le compagnon, conditionnées par les droits que le mode a conférés, plutôt
++         que des méthodes : `.state` sur toute poignée, `.await` sur une poignée `Launch`,
++         `.kill` sur une poignée `Signalling`. Chacune est un appel au démon et exige le même
++         `Monitor` et les mêmes tactiques que les méthodes de `Containerd`. La poignée ne peut pas
++         s'échapper de son bloc.
+
+@ 0 1 0 16c673bdf8901a3805f57f270c6b1d38
++     entry .state
++       info
++           le `ProcessStatus` actuel de la tâche, obtenu en interrogeant le démon
+
+@ 0 3 0 0786657f29a6aac31d39e07f55211ba5
++       detail
++           `workload.state()`, disponible sur toute poignée : `Containerd#task` pour le conteneur
++           de la poignée, décodé en `Created`, `Running`, `Stopped`, `Paused`, `Pausing` ou
++           `Unknown`.
+
+@ 0 1 0 0c23108b5342c24b1c8c5480afcfb347
++     entry .await
++       info
++           attend qu'une tâche lancée se termine, et renvoie sa `WaitResponse`
+
+@ 0 2 0 0f9dfaf28b61e74501344c304e8533a9
++       detail
++           `workload.await()`, disponible lorsque le mode incluait `Launch`. Nommé `await` plutôt
++           que `wait`, que détient `Object#wait`.
+
+@ 0 1 0 1014e0e4f247402b13d1f869c722fb83
++     entry .kill
++       info
++           envoie un signal à la tâche, ou à chaque processus de son conteneur
+
+@ 0 2 0 128a76b712367558116c459cf60fa97b
++       detail
++           `workload.kill(signal)` ou `workload.kill(signal, all = true)`, disponible lorsque le
++           mode incluait `Signalling`.
+
+@ 0 1 0 05fafdd332e647190a951e7ee42af6a4
++     entry #containerId
++       info
++           l'identifiant du conteneur qu'a enregistré la portée
+
+@ 0 1 0 007cd5f7079aa81f107d0dfd10ec61ba
++     entry #pid
++       info
++           le pid hôte de la tâche : celui du processus démarré sous `Launch`, sinon celui de la
++           tâche créée
+
+@ 0 1 0 0e85c1c8f753399e17f7f51f9fc5242c
++   entry .Openable
++     info
++         l'`Openable` qui ouvre un `Container` comme un `Workload`, avec des `Mount` comme options
+
+@ 0 6 0 1d1d03ccaf4e11f004563198a7e1c227
++     detail
++         La classe que fournit `Workload.openable`, nommée pour que son type de résultat soit
++         énoncé exactement. Elle ouvre un `Containerd.Container` (`Self`) comme un `Workload`
++         (`Form`), en prenant les `Containerd.Mount` du système de fichiers racine comme options
++         (`Operand`), et donne un `Workload.Handle` (`Result`). Elle est construite sur un
++         `Containerd^` et un `Monitor^` ainsi que sur les quatre tactiques dont a besoin un appel à
++         containerd.
+
+@ 0 1 0 1657052fe0bebd7714cad4ba36573d8f
++     entry #Self
++       info
++           `Container` : ce qui est ouvert
+
+@ 0 1 0 191236199d37ae2c06ace5a93c71ea31
++     entry #Form
++       info
++           `Workload` : la forme sous laquelle on l'ouvre
+
+@ 0 1 0 192683d1f38f122d1e17b9b79feebe76
++     entry #Operand
++       info
++           `Mount` : les options sont les montages du système de fichiers racine
+
+@ 0 1 0 041d1b3d6b3d57020563be97c2a0f4a1
++     entry #Result
++       info
++           `Workload.Handle` : ce que reçoit le bloc
+
+@ 0 1 0 0610c08d00a852d31321ea120a3cec02
++     entry #open
++       info
++           crée le conteneur et sa tâche, la démarre sous `Launch`, exécute le bloc, et démonte le
++           tout
+
+@ 0 5 0 17a16236499143d60726f19c9d4c4a13
++       detail
++           La séquence est `createContainer`, `createTask` avec les options comme `rootfs`,
++           `startTask` si le mode inclut `Launch`, le bloc, puis — dans un `finally` —
++           `killTask(9, all = true)` et `waitTask` si elle a été démarrée, `deleteTask`, et
++           `deleteContainer`. Chaque étape de démontage est enveloppée dans `safely`, si bien qu'un
++           échec à ce niveau ne peut pas masquer le résultat du bloc.
+
+@ 0 1 0 18c2388ed797eb3206958a9417f0b430
++   entry #containerId
++     info
++         le conteneur auquel appartient la tâche
+
+@ 0 1 0 0b4c6337e9ce45be0eb3370c3c80a73c
++   entry #id
++     info
++         l'identifiant exec au sein du conteneur ; vide pour la tâche principale du conteneur
+
+@ 0 1 0 0d64d7053716d20d152d425d1a5c41f5
++   entry #pid
++     info
++         le pid hôte de la tâche
+
+@ 0 1 0 159f2e2a9b48ae6201812e6f2bafeeef
++   entry #status
++     info
++         le code de statut brut de containerd ; `#state` le décode
+
+@ 0 1 0 02f88a24b03ff78f129090a2e067ce55
++   entry #exitStatus
++     info
++         le statut de sortie, une fois la tâche arrêtée
+
+@ 0 1 0 0eabf9430e9ca1cd19239819f4e07744
++   entry #exitedAt
++     info
++         la date de sortie de la tâche, sous forme de `Timestamp`
+
+@ 0 1 0 0a0ceb7c190d80fc0a534be17d615ae9
++   entry #state
++     info
++         le code `#status` sous forme de `ProcessStatus`, `Unknown` pour un code que l'énumération
++         ne connaît pas
+
+@ 0 1 0 1e19cba6672c5a9a1716b1b0653aaa34
++ entry .Launch
++   info
++       le mode d'ouverture qui démarre la tâche : `container.open[Workload](Read & Launch)`
+
+@ 0 5 0 194691e64a3092210e878ba7737525f0
++   detail
++       Un `Mode granting Workload.Grant.Launch`, que l'on compose avec le `Read` d'aperture et
++       avec `Signalling` par `&`. Avec lui, `Workload.Openable` appelle `startTask` après avoir
++       créé la tâche, le `pid` de la poignée est celui du processus démarré, `await` devient
++       disponible, et le démontage tue et récupère la tâche avant de la supprimer. Sans lui, la
++       tâche est créée mais jamais démarrée.
+
+@ 0 1 0 0f541de18254038208c9b9d27cf28595
++ entry .Signalling
++   info
++       le mode d'ouverture qui permet au bloc d'envoyer des signaux à la tâche :
++       `container.open[Workload](Read & Launch & Signalling)`
+
+@ 0 4 0 15e7c3766b587eb703702a637507aac2
++   detail
++       Un `Mode granting Workload.Grant.Signal`, que l'on compose avec `Read` et `Launch` par
++       `&`. Avec lui, `kill` est disponible sur le `Workload.Handle`. Le nom est `Signalling`,
++       et non `Signal`, car l'interruption de profanity détient `Signal` dans le package
++       parapluie `soundness` ; le droit lui-même reste `Workload.Grant.Signal`.

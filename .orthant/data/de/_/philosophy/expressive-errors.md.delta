@@ -1,0 +1,199 @@
+orthant 2 language
+
+@ 0 1 0 169cd510ee09703b15d1c4f90928351e
++ # Aussagekräftige Fehler
+
+@ 0 6 0 19a7a5431612c1bb0e753bc4a3cc1af6
++ Wenn ein Fehler auftritt, macht Soundness ihn so aufschlussreich wie möglich. Ein Fehler ist ein
++ unveränderlicher Wert, der alle Einzelheiten dessen trägt, was schiefging — was erwartet wurde,
++ was gefunden wurde und wo —, statt einer bloßen Meldung oder eines undurchsichtigen Codes. Weil
++ diese Einzelheiten strukturierte Daten sind, lassen sie sich untersuchen, für einen Menschen
++ lesbar darstellen oder von behandelndem Code abgleichen, und derselbe Reichtum, der einem
++ Entwickler bei der Diagnose eines Fehlers hilft, lässt ein Programm präzise darauf reagieren.
+
+@ 0 4 0 0405ba67b19020b51d3c067b4d5ebb4d
++ Vor allem sind Fehler für den Musterabgleich entworfen. Ein Fehler ist eine Case-Klasse, seine
++ verschiedenen Ursachen sind die Fälle einer `Reason`-Aufzählung, und die Werte, die den
++ Fehlschlag erklären, sind Felder — sodass behandelnder Code den Fehler zerlegt, statt seine
++ Meldung zu parsen:
+
+% 2 1 0 121588916a79ff6804078769f3caa2ce
+
+% 3 1 0 1264e7a4842de378109faf8abdc51fde
+
+% 4 1 0 0cfb7fa36795c19512a07ea594f628c4
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 0723c5f5e6b55281040a4ff3f33bbbe6
+
+% 0 1 0 1df5d7cbfa0afef50d673bad5ec46c2b
+
+% 0 1 0 0723ad02e085c6a71d589624a353a1d0
+
+% 1 1 0 108d5e3a93436b6a1d7cce5ee85e7efd
+
+@ 0 5 0 0ac6f86b7e700e870400ec6f53d29e02
++ Ein Handler, der auf Struktur abgleicht, wird vom Compiler geprüft — ein umbenannter Grund bricht
++ den Abgleich, nicht das Verhalten in der Produktion — und kann genau so unterscheidend sein, wie es
++ die Situation verlangt, während der Abgleich von Meldungen als Strings in jeder Hinsicht
++ zerbrechlich ist. Die Meldung, die ein Mensch liest, und die Struktur, die ein Programm abgleicht,
++ sind zwei Darstellungen eines Werts, sodass sie einander nie widersprechen können.
+
+@ 0 1 0 129772d86d021f5d06f63163b43d5d86
++ ## Die Anatomie eines Fehlers
+
+@ 0 3 0 0336d452d60408740943277dc57adbf1
++ Die Gestalt ist einheitlich genug, um sie festzuhalten. Ein Fehler ist eine Case-Klasse, die die
++ Werte trägt, die ihn erklären, seine verschiedenen Ursachen sind eine `Reason`-Aufzählung, und
++ seine Meldung wird mit dem Interpolator `m"…"` aus genau diesen Werten gebaut:
+
+% 2 1 0 1f464a32260b764c0dd83abba2dbbd4c
+
+% 3 1 0 1af258dd12322a64086a9442716a88b1
+
+% 4 1 0 0ee76511066a11300eac959f8bf7ab3e
+
+% 0 1 0 00bc0f8e10ad6e9602574ca366bde050
+
+% 0 1 0 1d45a2ac01f56f730cdcdb560ea2a569
+
+% 0 1 0 04c819b7188a9c8f036df6dcaab41e03
+
+% 0 1 0 1bf4796fbec18ceb13ca1d7a588caade
+
+% 0 1 0 11a0fde00aef89461fac730ce9785bd3
+
+% 0 1 0 0d3a7f77454937db1ca095299502ae6b
+
+% 0 1 0 0cd4825d971afbf8161143c26caaff9b
+
+% 0 1 0 066a44a274bc871a16d46c35cffd6135
+
+% 0 1 0 0b5f5539c3b001d1034687765fb2b333
+
+% 0 1 0 07099a67fe27b0aa180aaaf3556584e7
+
+% 0 1 0 1145b289f21ffb821d839ad6ac827d8f
+
+% 0 1 0 05021db064eda89a059093fe24c98c70
+
+% 1 1 0 1b535c71aaf383af05f83552fec7d74d
+
+@ 0 2 0 13f1b2f300616e140d001523eab217d8
++ Ein Grund kann eigene Daten tragen — das Byte, das außerhalb des Bereichs lag, die tatsächlich
++ gefundene Anzahl von Gruppen —, sodass die Diagnose konkret ist statt bloß eine Kategorie.
+
+@ 0 4 0 049745cb252b8efc0c6cd6881bcc6507
++ Die Nummern sind die Identität des Fehlers. Ein Fehlertyp hat einen Bolt-Code — die Nummer seines
++ Moduls und seine eigene innerhalb des Moduls —, jeder Grund eine Nummer darin, und jeder Code hat
++ eine Seite in `doc/errors`, die die Ursache und die üblichen Abhilfen erklärt — sodass sich
++ `↯/s.100.2` in der Meldung eines Benutzers nachschlagen lässt, statt geraten zu werden.
+
+@ 0 1 0 0d5d2770b1c631a11f455ebd47ef5759
++ Drei weitere Eigenschaften folgen aus der Gestalt, und jede ist es wert.
+
+@ 0 5 0 0c2015700d6940ed1b53af73d30f0009
++ Die Meldung wird aus den Feldern *abgeleitet*, sodass sie keinen Zustand beschreiben kann, in dem
++ der Wert nicht ist. Ein `Reason` ist eine geschlossene Menge, sodass ein Handler, der darauf
++ abgleicht, auf Vollständigkeit geprüft wird und ein neuer Grund an jeder Stelle gemeldet wird, die
++ ihn noch nicht berücksichtigt hat. Und die Werte, die den Fehlschlag erklären, stehen dem Handler
++ zur Verfügung, statt bloß in einen Satz dargestellt zu werden.
+
+@ 0 1 0 0e17c4b5d18d17440291e6cc47c380cc
++ ## Auch Meldungen sind Werte
+
+@ 0 3 0 1296ac9e53c01805009d1ff92e30958f
++ Eine `Message` ist kein `Text`. Sie ist ein strukturierter Wert, der aus interpolierten Teilen
++ gebaut wird, sodass alles, was `Communicable` ist, eingebettet und überall einheitlich dargestellt
++ werden kann, wo die Meldung angezeigt wird:
+
+% 2 1 0 177904f9cae24eba0b55e4cde1cbdf11
+
+% 3 1 0 0c13024419e04d11104f015a21373b31
+
+% 4 1 0 1801a934a4bc6f271618e7d468684eae
+
+% 0 1 0 18f79a633b15b25b141c107163b044a2
+
+% 1 1 0 18c74871a34ce55e05cab4da28d175c0
+
+@ 0 5 0 0062b4f9b26e69ce01e503354e26595a
++ Der Grund wird über seine eigene `Communicable`-Instanz dargestellt statt über `toString`, sodass
++ die Formulierung beim Typ lebt, den sie beschreibt, und eine Formulierung jeder Meldung dient, die
++ ihn einbettet. Das ist auch die Nahtstelle, über die sich Meldungen lokalisieren ließen: Die
++ Struktur überlebt bis zum Zeitpunkt der Darstellung, statt schon bei der Konstruktion zu einem
++ String plattgedrückt zu werden.
+
+@ 0 1 0 0e6eff517519477d0c70fcb89509fe08
++ ## Fehler sind rein
+
+@ 0 1 0 136b5a9eb0062a5218db7bc4334edcff
++ Ein Fehler darf nie eine aktive Capability halten, und der Compiler erzwingt das: `Error` erweitert
+
+% 0 1 0 0aa2f27d4525a41e05b984b274d20db7
+
+@ 0 5 0 1cb137791fdb3dfc1ce81118c56ea9b9
++ Der Grund ist präzise. `throw` ist der eine Kanal, den [Capture-Checking](capture-checking.md)
++ nicht sehen kann — eine außerhalb eines Geltungsbereichs gefangene Exception kommt mit gelöschten
++ Captures an —, sodass ein Fehler, der eine Capability trägt, ein Loch in der Garantie wäre, dass
++ Dinge mit Geltungsbereich nicht entkommen. Reinheit schließt es: Kein Fehler, wie auch immer er
++ reist, kann ein Datei-Handle oder einen Fehler-Handler aus dem Geltungsbereich schmuggeln, der ihn
++ eingeschlossen hat.
+
+@ 0 3 0 05730397d9b5b4e101c7e908e955a4d9
++ Das hat eine Folge für das Design, die man kennen sollte. Ein Fehler darf den *Pfad* tragen, der
++ nicht geöffnet werden konnte, aber nicht das offene Handle; die *URL*, die fehlschlug, aber nicht
++ die Verbindung. In der Praxis ist das ohnehin, was eine Diagnose will.
+
+@ 0 1 0 12b5dc3baea8749a1fbb2aa1942197c4
++ ## Stacktraces sind optional
+
+@ 0 3 0 09c88b069907145b0a7e00fac00cf1aa
++ Einen Stacktrace zu erfassen, ist der teure Teil beim Konstruieren einer Exception, und oft ist er
++ verschwendet: Ein Fehler, der erwartet und zwei Frames weiter behandelt wird, braucht keinen.
+
+@ 0 1 0 089dadd7f0fc971e1f3ae9c6c15be813
++ Ob ein Fehler einen Stacktrace erfasst, ist daher eine kontextuelle Wahl:
+
+% 2 1 0 1483cb9d97568aa914accf48c22168ae
+
+% 3 1 0 1be817b1031391b612c40098614b9eac
+
+% 4 1 0 0dda5f766e47ebe4186a1f5d423c41ed
+
+% 0 1 0 071ff21beab99b861550e39ebcfdc692
+
+% 0 1 0 1376db95fa3260100b9941ed4944ab13
+
+% 1 1 0 11413f36c893c2d71e57317184ca827e
+
+@ 0 3 0 1fd41bf63afbd3571252f2dc51916e4d
++ Aus diesem Grund erscheint der Parameter `Diagnostics` im Konstruktor jedes Fehlers. Er ist das
++ eine Stück Zeremonie, das das Design der Definition eines Fehlers auferlegt, und er erkauft die
++ Möglichkeit, typisierte Fehler in heißen Pfaden zu verwenden, ohne für Stacktraces zu bezahlen,
++ die niemand lesen wird.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 3 0 0d09f9b28b6b81b306fc99faa9d9425a
++ **Einen Fehler zu definieren, ist mehr Arbeit, als einen String zu werfen.** Eine Case-Klasse,
++ eine `Reason`-Aufzählung, eine `Communicable`-Instanz und ein `Diagnostics`-Parameter sind echte
++ Zeremonie gegenüber `throw new RuntimeException("bad port")`.
+
+@ 0 4 0 0a88002cf3cdb8531b68ce2591335cba
++ Zur Verteidigung: Die Zeremonie steht im Verhältnis zur Bedeutung des Fehlers und wird einmal pro
++ Fehlertyp bezahlt, während sich der Nutzen bei jedem Handler auszahlt — und die Alternative
++ verschlechtert sich vorhersehbar: Auf String-Meldungen wird abgeglichen, dann werden die Meldungen
++ verbessert, und der Abgleich bricht stillschweigend.
+
+@ 0 3 0 10ae0efcceb28cd507ac3a07c19fd47c
++ **Reason-Aufzählungen sind eine Verpflichtung.** Einen Fall hinzuzufügen, ist für erschöpfende
++ Handler eine Änderung, die den Quellcode bricht; das ist die Vollständigkeitsprüfung, die wie
++ beabsichtigt arbeitet, aber es bedeutet, dass die Menge der Gründe beim Entwurf des Fehlers
++ Nachdenken verdient.
+
+@ 0 2 0 011facc043475de205eef161507ceab3
++ Siehe [Fehlerbehandlung](error-handling.md) dazu, wie diese Werte ausgelöst und behandelt werden,
++ und [totale Übergänge](total-transitions.md) dazu, warum die Vollständigkeit zählt.

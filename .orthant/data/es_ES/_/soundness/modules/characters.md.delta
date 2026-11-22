@@ -1,0 +1,426 @@
+orthant 2 language
+
+@ 0 1 0 0ead78806e5c6df90c8e1e9ad755a3b9
++ ## Caracteres
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 6 0 164f2de68e8eeb0904c11cc288eb0b22
++ La frontera entre texto y bytes es una
++ [codificación de caracteres](https://en.wikipedia.org/wiki/Character_encoding), y aquí la
++ elección de la codificación es explícita y tipada. Un `Codepage` convierte texto en bytes, y un
++ `Charset` convierte bytes de nuevo en texto. Cada uno es un [valor contextual], elegido mediante
++ una importación, de modo que nunca se produce una conversión bajo un valor predeterminado
++ supuesto. Qué hacer con los bytes que no pueden decodificarse es una elección aparte, hecha de
++ forma igual de explícita.
+
+@ 0 1 0 01a4db05b1711eb708890b50434e97d5
++ A veces un programa también necesita datos sobre caracteres sueltos:
+
+@ 0 6 0 069abf2867076bed1fa00684e25aff20
++ - cuántas columnas ocupa un carácter en un terminal, donde un carácter «ancho de Asia oriental»
++   ocupa dos;
++ - el nombre y las propiedades Unicode de un carácter;
++ - sus formas de superíndice y subíndice;
++ - las fronteras de los [grupos de grafemas](https://unicode.org/reports/tr29/), que indican dónde
++   termina un carácter, tal como lo percibe un lector, y dónde empieza el siguiente.
+
+@ 0 1 0 1afad3df47785dc4197bb8fb40bcd5cc
++ ### Sobre los caracteres
+
+@ 0 3 0 1fc6beb6d73cdfc218c20aada3697a41
++ Las codificaciones fallan, y la mayoría de las API ocultan el fallo. Decodificar bytes con el
++ charset predeterminado de la plataforma sustituye en silencio todo lo que esté mal formado. La
++ entrada corrupta se convierte en signos de interrogación en algún punto posterior, y nada en el
++ código deja constancia de qué codificación se supuso.
+
+@ 0 3 0 1eb88acbce6eafab1dd511f5dacbf7f5
++ Por otra parte, «un carácter» es una idea escurridiza. Un emoji de bandera son dos puntos de
++ código. Una letra acentuada puede ser uno o dos. Un ideograma ancho ocupa dos columnas de un
++ terminal. Estos detalles importan en cuanto el texto se mide o se divide.
+
+@ 0 1 0 17ce8d85510bdc7a0964cb50c27e9371
++ Aquí las elecciones están separadas, y cada una se declara:
+
+% 2 1 0 147186596598c211068e8b4fb73f2c8b
+
+@ 0 5 0 19b1cdf5ecd19e3004378ed356c0fc65
++ column  Elección
++ column  Quién la hace
++ row  la codificación  un given `Codepage` o `Charset`, importado donde se usa
++ row  qué ocurre con los bytes no decodificables  un given `TextSanitizer`
++ row  cuánto ocupa de ancho un carácter  una métrica, elegida para la pantalla
+
+% 1 1 0 0a56dc9854da29121da9ad6d5d830044
+
+@ 0 4 0 1dccd3477c42e0eb0cd7853226f9d3b9
++ Nombrar cada una como un [given], en lugar de recurrir en silencio a un valor predeterminado, es
++ [contexto declarativo](../../philosophy/declarative-context.md) en la frontera entre bytes y
++ texto. Todo procede del paquete `soundness`, y la segunda importación permite que los ejemplos
++ impriman sus resultados:
+
+% 2 1 0 0f97771b69c464bb15189966989d8119
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 174e339ee5ceabff091d520aa1b0e1c7
++ ### Codificar y decodificar
+
+@ 0 2 0 1131eaff42dc878b181526af180d70d4
++ El texto no puede convertirse en bytes hasta que se ha elegido una codificación. No hay ningún
++ valor predeterminado al que recurrir, así que sin un `Codepage` en el ámbito la conversión no
++ compila:
+
+% 2 1 0 0c19cf77f4acee2a11648d736720a3ad
+
+% 3 1 0 0e0857ac76aa6bbe1f5aced66481fd49
+
+% 4 1 0 03ba3aae9838b2481b4f334be58599c5
+
+% 5 1 0 11cf7bc5cb60d0c61f3492e31c4f9458
+
+% 0 1 0 1c15639119888586004000cf32b556da
+
+% 1 1 0 02f325212a314ea105a500361bcdb171
+
+@ 0 2 0 12cc63692afc986616463bc940c2f643
++ Una codificación se pone en el ámbito mediante una importación. La conversión ocurre entonces
++ donde el texto se encuentra con los bytes, ya sea explícitamente, como aquí, o allí donde un
++ [flujo](streams.md) cruza la frontera:
+
+% 2 1 0 006ae92ba61faa780f1c0fe00156d40c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 185507d5c88995961b13dd553740b513
+
+% 0 1 0 0e0095cd476a27a814342e0fc9a1374d
+
+% 1 1 0 1a3d6d27fcd2a3491239cf16f91080a3
+
+% 3 1 0 106fb0c41895c8c01689a32ba1583024
+
+% 4 1 0 0e9a32cc19b624a1120ff91491b6f789
+
+% 5 1 0 088406a951442d4b0b6cbfebac179445
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 0 1 0 1774b6669db1f63512b29b52dc52259f
+
+% 1 1 0 13c1ddfb5aea7c441dc85b6d2b6171ec
+
+@ 0 1 0 120d03d389ebdf0f0bb21d9ff86302bc
++ Los cuatro caracteres son cinco bytes, pues `é` ocupa dos bytes en UTF-8.
+
+@ 0 4 0 1a83b7f5d94f9d0f149e33adda23d5b4
++ Se proporcionan UTF-8, UTF-16 en ambos órdenes de bytes, ASCII e ISO-8859-1. Cualquier
++ codificación que conozca la JVM puede nombrarse con el [interpolador] `enc"…"`, que comprueba en
++ [tiempo de compilación] que la codificación existe. Cuando se pide un codificador, comprueba
++ además que la codificación puede codificar además de decodificar:
+
+% 2 1 0 08734b9484efc9140580584f663e45ca
+
+% 0 1 0 185593015c2cf3e60b9b0eb746f2b233
+
+% 1 1 0 0476810e68c91a701724aafe57fa16a0
+
+% 3 1 0 1b6c3cd183c31dcf0eb6f6ed3be19894
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 1f0a9c0e435670ea1def75f3eb9d296d
+
+% 1 1 0 0b2a95eb965828c81ce642e2bc533b4c
+
+@ 0 1 0 145b79a37a5aa95408a6d4403c66a3ea
++ ### Entrada incorrecta
+
+@ 0 2 0 070a8933311e996016d24e27883fc1f3
++ Cuando un decodificador encuentra bytes que no son válidos en su codificación, consulta el
++ `TextSanitizer` del ámbito. Tres saneadores deciden entre fallar, descartar y sustituir:
+
+% 2 1 0 0ccac25f70a81e3003b067d70f409066
+
+@ 0 5 0 028449e8c962e8d901c8842dd2fef077
++ column  Saneador
++ column  Ante bytes incorrectos
++ row  `strictSanitizer`  lanza un `Charset.Error` que indica la posición del fallo
++ row  `skipSanitizer`  los descarta
++ row  `substituteSanitizer`  los sustituye por `?`
+
+% 1 1 0 1be19673932ffaa21718a7eb1658c99c
+
+@ 0 2 0 06b818087f8a5c3904e118cb812f2a03
++ Estos cuatro bytes son un guion, el primer byte de una secuencia de dos bytes a la que le falta
++ el segundo, y los dígitos `1` y `0`:
+
+% 2 1 0 0e32ff890e6db7f604297d49a8497533
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0f625d66450c18e51678333273b2b348
+
+% 1 1 0 15215a33832ddbb00d462dd8cf7efec3
+
+% 3 1 0 0edc534a6a7fa2600f73aa5ec1d071c5
+
+% 4 1 0 159c5110228df33a1e767299b5faf800
+
+% 5 1 0 1dd1e2bfd5c095190eea00126d18b19f
+
+% 1 1 0 0aec10e0e6434631069d840d20311d4e
+
+% 0 1 0 1f848649d78e11cc128beddd7e28360c
+
+% 1 1 0 00f60f3f25f394b500477ca2d9d82ecc
+
+% 3 1 0 0af03f89983c59910f87551c7467dd71
+
+% 0 1 0 008dadf64b5a2bba08180e8c9e04eb47
+
+% 1 1 0 1fe3a446336ceab806bef0e52edc45dd
+
+% 3 1 0 09167125042efc0c0b374a9283ef5148
+
+% 0 1 0 062c7592d84854141c5f4cb7e9b18dfe
+
+% 0 1 0 06b2e6406598de9f0d68c7d0a6abf57a
+
+% 1 1 0 17d791fbeb1af7d21338beb4ef220bcc
+
+@ 0 3 0 02ca21782d96fc5012dab04028907dd4
++ Qué comportamiento es el correcto depende de los datos. El rigor conviene a una entrada en la que
++ debería poder confiarse por completo, y la tolerancia, a un texto recuperado de una fuente con
++ pérdidas. En cualquier caso, la elección es visible en la importación.
+
+@ 0 3 0 16a61ec4dff2e414169a7f2c30ec6f2f
++ Un cuarto saneador conserva ambas cosas. `accrueSanitizer` sigue decodificando, como el que
++ descarta, pero registra cada fallo. Se recupera la totalidad de una entrada dañada, *y* se
++ informa de cada secuencia incorrecta, con la posición en la que apareció.
+
+@ 0 3 0 017410b36dfd8a3e18bfcf579ac504ae
++ Los fallos se [acumulan](errors.md#accumulating-failures) en un valor que elige quien llama, aquí
++ un error que reúne posiciones y fallos. `validate` se encarga de reunirlos: su primer bloque dice
++ cómo se incorpora cada fallo a la acumulación, y su bloque `protect` hace la decodificación.
+
+% 2 1 0 0b7b7e8e65be6d3e18351589b1491e11
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 1c00773df835539103a7f253318b2916
+
+% 0 1 0 01f8e8ff0b2ce07d1e598d2b9bdfb45c
+
+% 0 1 0 10f562803b7218e000264fea7972fd8d
+
+% 0 1 0 05249cc2ff564a75031e4bf9dce3795e
+
+% 0 1 0 17753c68780d6bb81944c2e7e91ba355
+
+% 0 1 0 064c718192d79604077f1b9b7ae17093
+
+% 0 1 0 071cb829d18b172c0e01ffa74a78787d
+
+% 0 1 0 04b68f13292630100c24d6460f2a1679
+
+% 0 1 0 08c391e09a079b7a1917c82b89a4f527
+
+% 0 1 0 06b8e2850169c418018121869354f8e3
+
+% 1 1 0 06c19a606e8a652419349817824f7070
+
+@ 0 1 0 1c7459945beadceb0de89a52c986e0f8
++ El resultado de `validate` es la acumulación, con una entrada para la única secuencia incorrecta:
+
+% 2 1 0 14d07b6686dfb8bc0391030ba8759e1d
+
+% 3 1 0 154ea0f0a0d9f92201088b2aa080f804
+
+% 4 1 0 0d271be713847f1f1a9681786f89326c
+
+% 0 1 0 1298d4ebe9209a15068aefcead5c3d35
+
+% 0 1 0 15108be09c59b2941001b8c10e8eca57
+
+% 1 1 0 154f49210673628900aa202e88342d6c
+
+@ 0 2 0 15aa388b51a326d81722fc5e27e275cc
++ Esto es lo que quiere una herramienta cuando importa un fichero de origen incierto: el texto, y
++ una lista de dónde estaba mal, no tener que elegir entre ambos.
+
+@ 0 1 0 12b46dc11a9e8c811ca0e3e0c35bb1ba
++ ### Codificaciones
+
+@ 0 2 0 1ca56111348ab7c617fc0da7130e4d02
++ Los paquetes `codepages` y `charsets` proporcionan las codificaciones que probablemente necesite
++ un programa, cada una como un given con nombre:
+
+% 2 1 0 075206b32d6f742f152c0a11bb560402
+
+@ 0 3 0 1245c08273ca42930de1ff38134eb2ca
++ column  Codificación
++ column  Codepage, para codificar
++ column  Charset, para decodificar
+
+% 0 1 0 1a1bad521527b9df08b484aff5cb5f57
+
+% 0 1 0 10e1cf60705f473401e5c72c70d11502
+
+% 0 1 0 048eeed9c062ef9d163c2901536b865e
+
+% 0 1 0 0fc0c479ed276389134b86240b14afb9
+
+% 0 1 0 0f53c196ca9c3ee50da74e2e9f95fc93
+
+@ 0 1 0 055f9b25d879100c10e3318ab6002254
++ row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`, que siempre descarta los bytes incorrectos
+
+% 1 1 0 09f355e5b3a8bf491eff51d0c0f43621
+
+@ 0 1 0 05cb83fe09c9402d06b87bac709680c5
++ Todos los demás charsets usan el saneador del ámbito.
+
+@ 0 4 0 082449aebc52c8e11a55221fa6e49f66
++ Codificar y decodificar también funcionan como etapas de un
++ [flujo](streams.md#composing-a-pipeline). Un carácter multibyte que queda dividido entre dos
++ fragmentos se traslada a través de la frontera, no se corrompe. Eso incluye un par subrogado
++ dividido entre fragmentos, que es donde una implementación ingenua pierde un carácter.
+
+@ 0 1 0 0ab485b6a6d037cd1879082c2f6cb948
++ ### Anchuras de los caracteres
+
+@ 0 2 0 18a099b15c00bd070778e6b98c031c01
++ Un carácter no siempre ocupa una columna en una pantalla monoespaciada. La extensión `metrics`
++ mide un carácter, o un texto, mediante la métrica del ámbito. Hay tres, en el paquete
+
+% 0 1 0 0c0af53f4ea286b418299d312884182b
+
+% 2 1 0 0b1553ed0d547aee0068d00c72d71a06
+
+@ 0 7 0 1770636f7f892fd110884fc819e11bc1
++ column  Métrica
++ column  Dos columnas
++ column  Ninguna columna
++ column  Una columna
++ row  `uniformMetric`  ninguno  ninguno  todos los caracteres
++ row  `eastAsianScriptsMetric`  caracteres anchos y de anchura completa  ninguno  todos los demás caracteres
++ row  `wideCharacterWidthMetric`  caracteres anchos y de anchura completa  caracteres de control, marcas combinantes y envolventes, caracteres de formato  todos los demás caracteres
+
+% 1 1 0 0db929c24cb339970b41910cc09731f0
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 08a0891502dbc209062f7e0983977a13
+
+% 1 1 0 1fed9a730338c4ad0065e5d00ad8992b
+
+% 3 1 0 049eeff74884b3d705c49a96fb61e75a
+
+% 4 1 0 1308231eb6ef62821ccfb2ba7eb45c1d
+
+% 5 1 0 03f05ff48663b4ed1564ddb10d6f4d71
+
+% 0 1 0 10f5397ae5e2051405789a7d6b3f4556
+
+% 0 1 0 0bca1d6d00921ab701bec85de9e7bef7
+
+% 1 1 0 0d85b4dadcc6e17f0a3e514605c71e68
+
+@ 0 2 0 0afede87fa7b5fbd03a344ae32bd5c8c
++ El [relleno y el ajuste](text.md#padding-and-fitting) de texto miden con la misma métrica, de modo
++ que una columna de texto japonés se alinea correctamente donde contar caracteres no lo haría.
+
+@ 0 5 0 0ea403bd3ef1addd15d156c85bfce8d0
++ La elección afecta a la velocidad además de a la corrección, y por eso la métrica más minuciosa no
++ es sin más la predeterminada. Medir un texto con `uniformMetric` es leer su longitud, en tiempo
++ constante. Medirlo con `eastAsianScriptsMetric` supone inspeccionar cada carácter y sumar las
++ anchuras. Cuando se sabe que un texto no contiene nada ancho, la métrica uniforme da la misma
++ respuesta sin coste alguno.
+
+@ 0 1 0 155ec7e1cdd7685814090b970e9dd149
++ ### Propiedades Unicode
+
+@ 0 2 0 092c33dae8591ee5017b2b0f744642d5
++ Un carácter responde a preguntas sobre sí mismo. Informa de su nombre Unicode, y da sus formas de
++ superíndice y subíndice cuando Unicode las define:
+
+% 2 1 0 01ac5d210fdccb560510507e6fcb6574
+
+@ 0 10 0 0eeaea46c2f8861d030675b09e2990f1
++ column  Miembro
++ column  Devuelve
++ row  `whitespace`  si es un espacio en blanco
++ row  `control`  si es un carácter de control ISO
++ row  `printable`  si no es ni un espacio en blanco ni un carácter de control
++ row  `letter`, `digit`, `alphanumeric`  si es una letra, un dígito, o cualquiera de los dos
++ row  `majuscular`, `minuscular`  si está en mayúscula o en minúscula
++ row  `majuscule`, `minuscule`  su forma en mayúscula o en minúscula
++ row  `description`, `designation`  su nombre Unicode, un `Optional[Text]`
++ row  `superscript`, `subscript`  su forma de superíndice o de subíndice, un `Optional[Char]`
+
+% 1 1 0 0bfa03beaea5cef913ef70d9cb45eb3b
+
+% 3 1 0 101d1fa108bf4c151a1c45644676a2ce
+
+% 4 1 0 079cff745264e51a0ef7104b702249ec
+
+% 5 1 0 1a3511bbc4ad28fd0bd2d94a0718a062
+
+% 0 1 0 1f46df1623f2be930f214f268510f249
+
+% 0 1 0 0de65fbcd55eaed4188ebb97fc9f3866
+
+% 0 1 0 1c97ea1bb78b583a137f920eaa3f5aeb
+
+% 0 1 0 0c00c84a4e74b2280329c8a5bb2d464c
+
+% 1 1 0 01ca48ad4967b7491c81d1650573a06f
+
+@ 0 2 0 0b626d3663905b5016cb765d3695398b
++ Los tres últimos son valores [opcionales](optional-values.md). `inspect` muestra uno presente
++ entre corchetes de esquina, y uno ausente, como el superíndice de `é`, como `○`.
+
+@ 0 1 0 1e507141160a0344040f6cf56a8ad5a8
++ ### Grupos de grafemas
+
+@ 0 4 0 03d946e8089716851047b01b94ca6992
++ Lo que un lector percibe como un carácter pueden ser varios puntos de código: una bandera, una
++ secuencia de emojis, una letra con un acento combinante. `GraphemeBreak.boundaries` encuentra las
++ posiciones donde termina uno de esos caracteres y empieza el siguiente, siguiendo las reglas de
++ segmentación de Unicode. Dos banderas son cuatro puntos de código, y ocho `Char`s, pero dos
++ grafemas:
+
+% 2 1 0 1ae794e90504d6a607613f40ea493c6e
+
+% 3 1 0 07ad6d66b1a58bc80f912235f6e388ed
+
+% 4 1 0 06909453f7331a331c1e5edeb876ddf3
+
+% 0 1 0 0d61de059d81b28e04b2698bbddfd99a
+
+% 1 1 0 0866df1f7bef8d9a095c72c81f928131
+
+@ 0 2 0 1677e48eb622d8f506e878d7e52fca3d
++ El código que trunca o invierte texto en estas fronteras nunca parte un carácter por la mitad.
++ [Texto](text.md#graphemes-and-width) cuenta y mide grafemas con `Writing`.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 1 0 007f8c90f5af7a6507dd8feec9e71a02
++ - [Sistema de ficheros](filesystem.md) describe las codificaciones en las que se leen los nombres y los
++   contenidos de los ficheros.

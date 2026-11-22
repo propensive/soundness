@@ -1,0 +1,33 @@
+orthant 2 language
+
+@ 0 1 0 0ef7c4cc2e63dd810c6206205ed7ba3c
++ info   des ensembles de cas d'une énumération regroupés dans les bits d'un seul `Long`, testés et positionnés par cas
+
+@ 0 1 0 07886f05135c25460305f18b26b45578
++ entry .Flags   un ensemble de cas d'une énumération, regroupés sous forme de bits dans un seul `Long`
+
+@ 0 1 0 061e5d2caf21abe6084796807bee42af
++ entry .internal   le foyer du type opaque `Flags` et de ses opérations
+
+@ 0 6 0 0255360c78c8ac2117b2a26018b00d69
++   detail
++       Pas destiné à un usage direct : l'objet existe pour contenir le type opaque `Flags` et
++       ses méthodes d'extension, qui sont dans la portée implicite partout où se trouve un
++       `Flags`, puisqu'elles partagent son objet englobant. `Flags` est exporté d'ici vers le
++       package `vexillology`, dont la page en donne une description complète.
++   entry .Flags   un ensemble de cas d'une énumération condensé dans un `Long` ; voir `vexillology.Flags`
+
+@ 0 13 0 1a236165487507ce10f4c6bb921af7a8
++     detail
++         Le type opaque sur `Long`. Sa page sous le package `vexillology` en donne une
++         description complète.
++     entry .apply   l'ensemble vide d'indicateurs sur une énumération, sans aucun bit positionné, `Flags[Color]()`
++   entry .apply   si un cas est positionné dans des indicateurs, `flags(case)`
++       Nécessite que l'énumération soit `Enumerable`, pour trouver l'ordinal du cas.
++   entry .update   une copie d'indicateurs avec un cas positionné ou effacé, `flags(case) = enabled`
++       Renvoie le nouveau `Flags` plutôt que de modifier le receveur ; une variable contenant
++       les indicateurs est donc réaffectée : `flags = flags(Orange) = true`.
++   entry .bits   les indicateurs sous forme de leurs bits sous-jacents, un `B64` : le cas d'indice `n` possède le bit `n`
++       Ne nécessite pas d'`Enumerable`. Un `B64` se convertit en `Long` avec `.long`.
++   entry .set   les cas positionnés dans des indicateurs, sous forme de `Set` de l'énumération
++       Ne parcourt que les bits positionnés, du plus bas au plus haut.

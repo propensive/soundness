@@ -1,0 +1,32 @@
+orthant 2 language
+
+@ 0 1 0 08a75dd5f46ceef21888820fdb82c5ed
++ # Normas de organización de los módulos de Soundness
+
+@ 0 1 0 168477d6c167de2a1bc6797dbe55c63f
++ _(Esbozo: alcance pendiente de revisión; el contenido completo llegará más adelante.)_
+
+@ 0 2 0 0c7e2be44269cbf71f98b7eb09b62714
++ Esta norma definirá cómo se organiza en disco un módulo de Soundness y cómo se estructura su
++ espacio de nombres. Abarcará estas convenciones:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 8 0 1d59784e3f5cd4b806cdeba1eac75758
++ column  Lugar
++ column  Contiene
++ row  `src/core`  la biblioteca
++ row  `src/test`  las pruebas
++ row  `src/bench`  los benchmarks
++ row  `src/<variant>`  integraciones opcionales
++ row  `<module>.<Type>.scala`  un tipo de nivel superior, que le da nombre
++ row  `<module>_core.scala`  givens y extensiones de nivel de paquete, empezando por el objeto compañero
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 5 0 08afcf11b77ae23d083b2a4f0e8e5f49
++ También describirá la reexportación `soundness_<module>_core.scala` que eleva la superficie pública
++ de un módulo al paquete paraguas `soundness`, y las reglas sobre qué se exporta y qué se mantiene
++ interno. Parte de esto ya se trata en las reglas de localizabilidad del estilo Consequent
++ (`L1`–`L5`, véase [`syntax.md`](syntax.md)); esta norma reunirá las convenciones estructurales en
++ un solo lugar.

@@ -1,0 +1,41 @@
+orthant 2 language
+
+% 0 1 0 12a8e7c89d2e651614ec9bb179024033
+
+@ 0 1 0 0f1b3438a45e7b96144bfba3a840b96d
++ Lançado quando vários erros precisam ser relatados juntos, indexados por nome.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 0c6ae8d835068e7816878b662738dff9
++ `Errors` agrega várias instâncias de `Error` em uma única
++ exceção, cada uma marcada com uma chave `Text`. É usado em lugares
++ onde a validação coleta todos os problemas antes de falhar — por
++ exemplo, a validação de formulários com vários campos.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+@ 0 2 0 0252b2245c3753a2116643da078427c7
++ A mensagem é composta a partir do conteúdo formatado do
++ mapa de erros subjacente, por exemplo:
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0fb9cb6a8bad4bff180b2813bb4177d4
+
+% 1 1 0 14bcbee47ffb7697091a27353cfea2b5
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 0cee5ae88b8364491ea82efe6074e051
++ Inspecione o mapa subjacente (`Errors.errorMap`) para tratar cada erro
++ individualmente.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 0b5798f9ffbfa5411d8c34ab28eaab0b
++ - Código-fonte: `lib/contingency/src/core/contingency.Errors.scala`

@@ -1,0 +1,4659 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1208af8d1653fba710318febdee5968f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 16a25bf9650735761297d2899bee08bd
++ info
++     un débogueur JVM par le réseau : lancer ou attacher, arrêter, avancer, inspecter et évaluer,
++     avec le protocole en valeurs typées
+
+@ 0 9 0 127a7425d45339cd06c74186ffda0cc6
++ detail
++     _Vivisection_ débogue une JVM depuis une autre via le Java Debug Wire Protocol (JDWP), parlé
++     directement sur un socket sans aucune dépendance à `com.sun.jdi`. Un **programme débogué**
++     est soit lancé sous l'agent JDWP (`Debuggee`), soit rejoint là où il écoute déjà
++     (`Debugger`) ; la `session` de l'un comme de l'autre prête une capacité `Debug` à un bloc, et
++     dans ce bloc le programme est suspendu et repris, ses threads listés et nommés, des points
++     d'arrêt posés par ligne de source ou par classe et méthode, les threads avancés pas à pas,
++     les trames et leurs variables lues, et des expressions évaluées dans le programme arrêté.
++     Les notifications de la VM elle-même arrivent sous forme de `Jdwp.Event` typés dans un flux
++     plutôt que de callbacks.
+
+@ 0 7 0 0d9138b4b2288a2c15590c749b3f1b3f
++     Le protocole sous-jacent est modélisé par des valeurs. Chaque identifiant que la VM distribue
++     est un `Jdwp.Ref` tagué par sa nature — `ThreadId`, `FrameId`, `MethodId`, `ObjectId` et
++     les autres — de sorte qu'on ne peut jamais passer l'un là où l'autre est attendu, alors
++     qu'aucun ne coûte quoi que ce soit à l'exécution. Un arrêt est un `Halt` : une capacité prêtée
++     à un gestionnaire de point d'arrêt ou de pas exactement aussi longtemps que le thread reste
++     suspendu, seul moment où les identifiants qu'il fournit sont valides. La session elle-même,
++     `Debug`, est confinée à son bloc par le contrôle des captures : elle ne peut donc pas être
++     utilisée après la disparition du programme débogué.
+
+% 2 1 0 18ee6c832be6fc2505d2be7ad96ab0b7
+
+% 3 1 0 16d3db9ea2b624440a9b60631ae2a3f5
+
+% 4 1 0 1a98fb7677e396cc179e491517115cb5
+
+% 5 1 0 1edc55579330315c0976a5fe8e373720
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 1 1 0 0429402ebfafdf9c0640a2a85f24ef9d
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 1 1 0 0fbe9253a0d08ac81dab3c45e4a672d4
+
+% 2 1 0 1cafaad9ccdbde2900cda49735274454
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 1b4b14ae61aa04f61efe9d9f0741bb63
+
+% 1 1 0 0b46b2f02960fa350b00b6491814ae1e
+
+% 0 1 0 1751ef10c3ab2999059ff82be6377232
+
+% 0 1 0 0a9a4238bc739b73177a5c269f2c9ebf
+
+% 1 1 0 0b5f4bd27d6f886d185f368bf9a6abdf
+
+@ 0 4 0 03cedb5131ec81ef1ef82335e41a2210
++     La commande est lancée avec l'option de l'agent insérée après l'exécutable ; la session
++     attend que l'agent écoute, s'attache, et démonte tout — socket fermé, processus tué — à la
++     fin du bloc, qu'il se termine normalement ou échoue. L'accesseur `debug` désigne la session
++     prêtée depuis le contexte, comme `monitor` le fait pour une portée de supervision.
+
+@ 0 7 0 014b765464b550a816125ed99067d1d0
++     Un point d'arrêt prend un *gestionnaire*, exécuté sur la tâche de répartition de la session
++     avec un `Halt` prêté pour la durée de l'arrêt ; le thread reprend quand le gestionnaire se
++     termine, sauf si celui-ci appelle `remain()`. Les variables sont restituées sous la forme où
++     le programmeur les a écrites — valeurs capturées reconstituées à partir de leurs champs
++     synthétiques, `var` extraites de leurs cellules de référence, lazy vals lues mais jamais
++     forcées — et le pas à pas est *logique* : un pas par-dessus une ligne contenant un appel
++     inliné franchit toute la ligne, un pas dans cet appel s'arrête à la première ligne du corps
++     inliné, et les ponts, les méthodes de transfert, les accesseurs et les trames propres au JDK
++     ne sont jamais montrés.
+
+@ 0 1 0 048a70211e65e7bf0f21d31d1ccc758f
++     La bibliothèque se compose de trois composants, chacun exporté dans le package parapluie
++     `soundness` :
+
+@ 0 11 0 1385fc6c724cbf5f1b8242984a535108
++     - `vivisection.core` — `Debuggee`, `Debugger`, `Debug`, `Halt`, `Variable`, `Breakpoint`,
++       `SourceBreakpoint`, les alias d'identifiants et le modèle de protocole `Jdwp`. JVM
++       uniquement : il débogue des JVM sur TCP et les lance au moyen de guillotine.
++     - `vivisection.eval` — `Evaluator`, `Purview`, `Namer` et l'extension `evaluator` sur
++       `Halt`, qui compilent une expression contre le classpath du programme débogué dans cette
++       JVM, injectent les fichiers de classe par le réseau et les exécutent dans le programme
++       débogué. Tenu à l'écart de `core` pour qu'un appelant qui ne fait qu'inspecter des
++       variables ne dépende pas du compilateur Scala.
++     - `vivisection.dap` — `Dap`, l'adaptateur pour le Debug Adapter Protocol : `Dap.listen` sert
++       une session à un éditeur en JSON délimité par `Content-Length` sur les flux standard, et
++       l'objet `Dap` contient les types de messages du protocole. Le `DapServer` du composant
++       `demo` est une classe principale exécutable vers laquelle pointer un éditeur.
+
+@ 0 3 0 11f3996c0124a7eb05744fc05432a4e6
++     Un nom n'est délibérément *pas* exporté : `Variable`, puisque ambience publie déjà une
++     `Variable` (une variable d'environnement) dans `soundness`. Une variable du débogueur
++     s'atteint par `vivisection.Variable`, ou en excluant l'autre avec
++     `import soundness.{Variable as _, *}`.
+
+@ 0 5 0 0c1e603dac731ad90967c5ea6130fcf9
++     Une session a besoin d'un `Monitor` (elle exécute son écrivain, son lecteur et son
++     répartiteur comme des tâches, et vit donc à l'intérieur de `supervise`), d'un `Probate`,
++     d'une `Tactic[Debugger.Error]`, de `Diagnostics`, ainsi que des givens de socket et de
++     journalisation montrés dans l'exemple. Un lancement exige en plus un `Online`, un
++     `Socket.Backend`, un `WorkingDirectory` et un `Environment` pour le processus forké. Aucun
++     d'eux n'est un package de choix de cette bibliothèque ; on les importe par leur nom depuis
++     leur propre bibliothèque.
+
+@ 0 5 0 19fe3dc775afab781ab1d1f7119a84e1
++     Lorsque le programme débogué est constitué des propres classes du programme sous un hôte
++     tel qu'un exécuteur de tests, prenez le classpath depuis le chargeur de classes de l'une de
++     ces classes (`LocalClasspath.of(Classloader[Main.type])`) plutôt que depuis la propriété
++     `java.class.path`, qui désigne les jars de l'hôte : un programme débogué lancé avec le
++     mauvais classpath ne charge jamais la classe qu'attend un point d'arrêt, et la session
++     attend indéfiniment.
+
+% 0 1 0 0fecfefbc5ff04441648d405f8a7fba3
+
+% 0 1 0 0fecfefbc5ff04511648d405f8a7fbb0
+
+% 0 1 0 0972e146988c84350c64b4112cc76920
+
+% 0 1 0 11dd35f4baab5cdc1a3833b18fbd1989
+
+% 0 1 0 07ba936ed83204700e5670176904a7c5
+
+% 0 1 0 0093caddff0bf2cd19016772ebce406a
+
+% 0 1 0 0f55dbfd70e43ab61f18c9bdd4ed8ca8
+
+% 0 1 0 06c83f4240dc472d0d157943cd60b1be
+
+@ 0 1 0 0e8c5b74e4b436ce03c3fad74776e62a
++ entry .Debuggee
++   info
++       une JVM à lancer sous l'agent JDWP et à déboguer : une commande, un port et le choix de
++       suspendre au démarrage
+
+@ 0 7 0 0d23568454b237f702ea9d3968f3bdbc
++   detail
++       Un `Debuggee` décrit un programme à exécuter sous l'agent de débogage.
++       `target.session { … }` forke `command` avec `-agentlib:jdwp=transport=dt_socket,server=y,…`
++       inséré juste après l'exécutable, vide la sortie standard et la sortie d'erreur de l'enfant
++       dès le fork (de sorte qu'un programme débogué bavard ne puisse jamais se bloquer sur un tube
++       plein), attend que l'agent écoute, s'attache, négocie la taille des identifiants et prête un
++       `Debug` au bloc. À la fin du bloc, le processus est tué, ses vidanges et son observateur de
++       sortie sont attendus, et le socket est fermé.
+
+% 2 1 0 109fae1f7bfac22303be992918063985
+
+% 3 1 0 05847a7a5c6cc65c1c3cb4c33183deb9
+
+% 4 1 0 02d8aba0a48b03ab1fc8c8643cfeee56
+
+% 5 1 0 1089cb043b46ebf0037bda05b275e3a9
+
+% 6 1 0 069465d499013d9812f5d33e71f57547
+
+% 2 1 0 1067f61db35bb58d023062b12928726b
+
+% 3 1 0 0b305d6df39e3b931ecde271fdfeaf0f
+
+% 4 1 0 053770587ea8af461c84bd18acdc91c0
+
+% 5 1 0 191c6e187af146961558d8d472a9cfba
+
+% 6 1 0 1ca259ec62b40c291b5f0d0b5fd053c4
+
+% 7 1 0 1305abf98ccb585506f91acffe5ced36
+
+% 8 1 0 0ebd6c299db3b3080087f02ec5a836d5
+
+% 9 1 0 06e3b83aac81b3990be06bc3ae715f91
+
+% 10 1 0 0c9cb8c9987e86111d61dacb279c2323
+
+% 0 1 0 1052afb3ae0108f914ef2a28bc4cf3e4
+
+% 0 1 0 10a72703e9b5d9c11b8d78197647afc6
+
+% 0 1 0 041a94a571339c780ccae5702968c599
+
+% 1 1 0 09e3cb4af194aa110c7b5a1be1cc41c0
+
+@ 0 7 0 12815ca43b723c77165d899ffd3399a7
++       `port` est le port TCP sur lequel écoute l'agent, `5005` par défaut. Un `port` de `0`
++       laisse l'agent se lier à un port libre de son choix, que la session lit dans la ligne
++       `Listening for transport dt_socket at address: N` de l'agent sur la sortie standard du
++       programme débogué avant de s'attacher, si bien qu'aucun autre processus ne peut prendre le
++       port entre-temps ; c'est ce qu'utilise le `launch` de l'adaptateur DAP. `suspended` (`true`
++       par défaut) fait attendre la VM avant d'exécuter `main`, ce dont a besoin un point d'arrêt
++       dans l'initialisation — ou tout point d'arrêt placé avant que le programme ne s'exécute :
++       posez les points d'arrêt, puis appelez `debug.resume()`.
+
+@ 0 4 0 1b9125aa5a0e99dc0d054fce503b50e4
++       Le lancement se dégrade en une `Debugger.Error` de raison `Disconnected` avec un détail
++       _could not launch_, _the port was invalid_ ou _never listened_ (après une dizaine de
++       secondes sans réponse de l'agent). Une session lancée possède un `Debug.Console` en
++       `debug.console`, sur la sortie de l'enfant et son code de sortie ; une session attachée n'en
++       a pas.
+
+% 1 1 0 1dfaa010a4554a660cff583f08a79534
+
+% 1 1 0 1e049d6610a695ff0801ec46bb9b0987
+
+@ 0 1 0 0487c0f2fb21d11f042efe6714f92ea7
++   entry #command
++     info
++         la commande à lancer, sans l'option de l'agent, qui est insérée au lancement
+
+@ 0 1 0 176122c525a90ad514bce1e71598730c
++   entry #port
++     info
++         le port TCP sur lequel écoute l'agent, ou `0` pour laisser l'agent en choisir un libre
+
+@ 0 1 0 0cd302bba12e2d1910b72842940e5e5a
++   entry #suspended
++     info
++         si la VM attend au démarrage que la session la reprenne ; `true` par défaut
+
+@ 0 1 0 13913749277fccea0802e02a9b4b506f
++   entry .Sessional
++     info
++         le `aperture.Sessional` qui lance un programme débogué et prête un `Debug`
+
+@ 0 8 0 1220138a5649b3ec1f23256e2b338658
++     detail
++         L'instance derrière `debuggee.session { … }`, avec `Debuggee` pour `Self` et `Debug^` pour
++         `Result`. Elle reçoit ses valeurs contextuelles — `Online`, `Monitor`, `Probate`,
++         `Socket.Backend`, `Every[Socket.Option.Tcp]`, `Tactic[Async.Error]`, `WorkingDirectory`,
++         `Environment`, les journaux `Socket.Event` et `Exec.Event`, `Tactic[Debugger.Error]` et
++         `Diagnostics` — à la construction, et `.sessional` en construit une depuis la portée. Le
++         processus est lancé avec l'`Environment` fourni : celui de l'invocation dans un outil, ou
++         `environments.javaBaseEnvironment` pour celui de la JVM.
+
+@ 0 1 0 1393c717cf9a92361d0196745e6e9d6b
++     entry #session
++       info
++           forke le programme débogué, s'attache et exécute le bloc en lui prêtant un `Debug`
+
+@ 0 3 0 14db8dcef34d16171c87452c85776a8c
++       detail
++           Convertit un échec de lancement (`Exec.Error`), un port invalide (`Port.Error`) ou un
++           échec de socket en une `Debugger.Error` de raison `Disconnected`. Le programme débogué
++           est tué dans un `finally`, si bien qu'il ne survit jamais au bloc.
+
+@ 0 1 0 0b0bd669712cd4530d1f4ba4ff0ad4f0
++   entry .sessional
++     info
++         le given qui permet de résoudre `debuggee.session { … }`, à partir des givens de lancement
++         dans la portée
+
+@ 0 2 0 1880d679acbc9abb129a172361ec6467
++     detail
++         Dans l'objet compagnon, donc trouvé sans import ; il exige que les mêmes valeurs
++         contextuelles que `Debuggee.Sessional` soient dans la portée lors de l'appel.
+
+@ 0 1 0 0188aa91cbd7a31300f623067b4e7f4b
++ entry .Debugger
++   info
++       une cible d'attachement : une JVM qui écoute déjà une connexion JDWP, désignée par son
++       endpoint
+
+@ 0 7 0 0a6e0f30b7857218176703bfabe97626
++   detail
++       `Debugger(endpoint)` enveloppe tout ce qui est `Connectable` et `Showable` — typiquement un
++       `Endpoint[Tcp.Port]` — et `target.session { … }` s'y connecte, échange la poignée de main,
++       négocie la taille des identifiants et prête un `Debug` au bloc, en fermant la connexion
++       ensuite. La VM doit déjà écouter (démarrée avec `-agentlib:jdwp=…,server=y`), et celui qui
++       l'a démarrée possède ses flux standard : une session attachée n'a pas de `Debug.Console`.
+
+% 2 1 0 0473a8d3f73b3ccf08c3ac375a649e28
+
+% 3 1 0 0a7b81da9f6b5a92086abb140d4922f9
+
+% 4 1 0 183e46cc3693efca068685ed02a141cc
+
+% 5 1 0 04de5859f3d1a2fb077afc6270fd4456
+
+% 6 1 0 118165b582bfc47d0dcb30fd60b61a8b
+
+% 2 1 0 17c5373d90e1ef6d12426e4b49a02249
+
+% 3 1 0 12917919fb3a49fb126ae866c357789e
+
+% 4 1 0 064a823c199d89e01e0bb3c906608f9d
+
+% 5 1 0 1f4a224b96153021070ffb92059ffaf0
+
+% 5 1 0 05c7f09332902fb316df27541139b7b7
+
+% 1 1 0 1e472e31fe8a76a30e4e5324804b21c8
+
+% 0 1 0 17320cbc9fa058661e62e8e357ec6dc1
+
+% 0 1 0 1e9001ec6793c0811961c235c7046d0e
+
+% 0 1 0 062fb192923ac4eb10e5f58d7ff86f17
+
+% 1 1 0 03411cafa325d8881502a43f2926dd6b
+
+@ 0 2 0 15add8189904861505b5228fb2a428f7
++       L'objet compagnon contient aussi `Debugger.Error`, l'unique type d'erreur que lève toute
++       opération de session.
+
+% 1 1 0 12fa11f2b9b936871ecb8a1f28824c3c
+
+% 1 1 0 098cc3a9f3910e6e1d9f3282bb9f868e
+
+@ 0 1 0 1f9ab40cce9b59f51dd0a8346ab2ea9a
++   entry #endpoint
++     info
++         l'endpoint connectable que la session appelle
+
+@ 0 1 0 05193aea9b7e65040803d145299fb273
++   entry .apply
++     info
++         `Debugger(endpoint)` : une cible d'attachement sur tout endpoint `Connectable`
+
+@ 0 1 0 16d8fc98846411b90b6f60e5f50cbc67
++   entry .Sessional
++     info
++         le `aperture.Sessional` qui s'attache à un endpoint et prête un `Debug`
+
+@ 0 5 0 1607fa68966d3a4b1868ce711e8fc1cb
++     detail
++         Générique sur le type d'endpoint, le `Connectable` du socket étant résolu au site d'appel
++         par la borne de contexte. Il reçoit un `Monitor`, un `Probate`, une `Tactic[Async.Error]`,
++         une `Tactic[Socket.Error]` (levée quand la connexion ne peut être établie), un
++         `Socket.Event is Loggable`, une `Tactic[Debugger.Error]` et `Diagnostics`.
+
+@ 0 1 0 056b575b2b7ea80f0b5d454ee0d7dca7
++     entry #session
++       info
++           appelle l'endpoint, effectue la poignée de main et exécute le bloc en lui prêtant un
++           `Debug`
+
+@ 0 1 0 138dbe2bbbbbd59316f90c2290a2e99f
++   entry .sessional
++     info
++         le given qui permet de résoudre `debugger.session { … }`, pour tout endpoint connectable
+
+@ 0 1 0 1cc5704dd0742af31b716a5fab9cdf8e
++     detail
++         Dans l'objet compagnon ; exige les mêmes valeurs contextuelles que `Debugger.Sessional`
++         lors de l'appel.
+
+@ 0 1 0 02d0a33373e74fc71d736e40ae09c06b
++   entry .Error
++     info
++         levée quand une commande JDWP échoue, que la connexion est perdue ou qu'un lancement
++         n'aboutit pas
+
+@ 0 6 0 0849cc033c106d521cf54fca39a6b2ac
++     detail
++         Erreur `↯/s.145.1`, avec pour sous-numéro le propre numéro d'erreur JDWP de la raison :
++         _the JDWP action failed because `reason`: `detail`_. Toute opération sur `Debug`, `Halt`
++         et `Jdwp.Connection` prend une `Tactic[Debugger.Error]` ; le code d'erreur de la VM dans
++         une réponse est décodé en une `Debugger.Error.Reason` et levé avec le jeu et le numéro de
++         la commande comme détail, et une connexion perdue fait échouer chaque requête en cours
++         avec `Disconnected`.
+
+% 2 1 0 16ee6756ea4a5b560fc92221c0605941
+
+% 3 1 0 1b5e80cdc9538ae118f3f805e739c806
+
+% 0 1 0 1c9ab88d291079d017c7329619ebfa20
+
+% 0 1 0 1a617cecc5b2dd6d050c1e165171b5be
+
+% 0 1 0 0dfebc7fd686f7f316072e5b83f534c1
+
+% 0 1 0 0daa2d6153638715156fbf75db475323
+
+% 1 1 0 030f505915ad8f4a11ef641d18614cd4
+
+@ 0 3 0 002f85872c8c917f0d2b8e99880f7fbc
++         Un gestionnaire s'exécute sur la tâche de répartition, et le `Halt` qui lui est prêté
++         porte la tactique fournie par le répartiteur : un gestionnaire n'a donc besoin d'aucune
++         capacité d'erreur propre ; un échec à l'intérieur d'un gestionnaire est absorbé par le
++         répartiteur plutôt que propagé au thread de la session.
+
+@ 0 1 0 0d8a1b0d782b4b0f09ee7737c46b4537
++     entry #reason
++       info
++           pourquoi l'action a échoué, sous forme de `Debugger.Error.Reason`
+
+@ 0 1 0 063cf491aea726f11b341ff85d141c4d
++     entry #detail
++       info
++           quelle commande ou quel pas a échoué, sous forme de texte
+
+@ 0 1 0 0bf5ab3aec0153d001589111cd17b50d
++     entry .Reason
++       info
++           les codes d'erreur JDWP, sous leurs noms publiés, plus `Disconnected` et `Other`
+
+@ 0 2 0 03fb6d9136dda22e037d9b1a53a56be1
++       detail
++           Chaque cas porte son code d'erreur JDWP comme `number` :
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 30 0 1a1107d77ff159ec0cc940c8d301478a
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `InvalidThread`  10  _the thread identifier was invalid_
++           row  `InvalidThreadGroup`  11  _the thread-group identifier was invalid_
++           row  `ThreadNotSuspended`  13  _the thread was not suspended_
++           row  `ThreadSuspended`  14  _the thread was already suspended_
++           row  `InvalidObject`  20  _the object identifier was invalid_
++           row  `InvalidClass`  21  _the class identifier was invalid_
++           row  `ClassNotPrepared`  22  _the class had not been prepared_
++           row  `InvalidMethod`  23  _the method identifier was invalid_
++           row  `InvalidLocation`  24  _the location was invalid_
++           row  `InvalidField`  25  _the field identifier was invalid_
++           row  `InvalidFrame`  30  _the frame identifier was invalid_
++           row  `NoMoreFrames`  31  _there were no more frames on the stack_
++           row  `OpaqueFrame`  32  _the frame was opaque (native)_
++           row  `TypeMismatch`  34  _the value did not match the expected type_
++           row  `InvalidSlot`  35  _the local-variable slot was invalid_
++           row  `NotFound`  41  _the requested item was not found_
++           row  `NotImplemented`  99  _the VM does not implement this command_
++           row  `NullPointer`  100  _a null pointer was encountered_
++           row  `AbsentInformation`  101  _the debug information was absent_
++           row  `InvalidEventType`  102  _the event type was invalid_
++           row  `IllegalArgument`  103  _an argument was illegal_
++           row  `VmDead`  112  _the virtual machine had died_
++           row  `Internal`  113  _the virtual machine reported an internal error_
++           row  `AlreadyInvoking`  502  _a method was already being invoked on the thread_
++           row  `Disconnected`  −1  _the connection to the debuggee was lost_  levée par cette bibliothèque, non par la VM : une connexion perdue, ou un lancement qui n'a jamais abouti
++           row  `Other(code)`  `code`  _the VM reported error code `code`_  tout numéro envoyé par la VM qui n'est pas nommé ici, pour que le décodage ne le perde jamais
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 1 0 19ff3b5de76fcd0b05d46d63456dd7ef
++       entry #number
++         info
++             le code d'erreur JDWP, ou −1 pour `Disconnected`
+
+@ 0 1 0 01380a881507d14705e25d140ffaf8e9
++       entry .apply
++         info
++             `Reason(code)` : la raison correspondant à un code d'erreur JDWP, `Other(code)` pour
++             un code non reconnu
+
+@ 0 1 0 00a2fb1c83f20a2a07f986663d1ec12b
++     entry .communicable
++       info
++           rend chaque raison sous forme de message, _the thread was not suspended_ et autres
+
+@ 0 1 0 0d64ebc27f6dbee01e2e99c16c55493c
++ entry .Debug
++   info
++       une session de débogage active : la capacité prêtée à l'intérieur de `target.session { … }`
+
+@ 0 6 0 1c107c2f398aee02067d3377a0fcaed6
++   detail
++       `Debug` est la surface destinée au programmeur au-dessus d'une `Jdwp.Connection` : elle
++       liste, nomme, suspend et reprend les threads, lit leurs trames, pose des points d'arrêt et
++       des points d'observation, demande des pas, et expose les événements de la VM sous forme de
++       flux. C'est une `ExclusiveCapability`, prêtée au bloc de session et confinée à celui-ci par
++       le contrôle des captures, que l'on atteint depuis le contexte avec l'accesseur `debug`
++       plutôt qu'en la nommant.
+
+@ 0 5 0 0a51220ade9639780ed767d4383f2e45
++       Toute opération prend une `Tactic[Debugger.Error]`. La session exécute son lecteur, son
++       écrivain et son répartiteur comme des tâches, et vit donc à l'intérieur de `supervise` ; le
++       gestionnaire fourni à un point d'arrêt, un pas, une requête d'exception ou un point
++       d'observation s'exécute sur la tâche de répartition avec un `Halt` prêté pour la durée de
++       l'arrêt, et le thread arrêté reprend quand le gestionnaire se termine, sauf si celui-ci
++       appelle `remain()`.
+
+% 2 1 0 1ed3b7ca5ae1811c1e0d05d62f3298ab
+
+% 3 1 0 1570ddb46eb6c3201af9aee13c668eb9
+
+% 4 1 0 11eb3298e3e96f8009c57eaebad4d0ea
+
+% 5 1 0 1a2b7a32fb75ca7800a0ee0a6b2f42f3
+
+% 1 1 0 0792e2becc00c8d8135b3caf6fa88a66
+
+% 2 1 0 0da9bda61419ff7b06109c5e15352f9e
+
+% 3 1 0 177d77055d27262216e9413ec60a0789
+
+% 4 1 0 1ec64da0371892e0090333c58629741f
+
+% 5 1 0 05e98ebe469159c21ae0863a4fdb93b2
+
+% 6 1 0 04b70009cef4770111fbaca33562dc3b
+
+% 7 1 0 10b5f405c9137235108555cc84b82a53
+
+% 8 1 0 10d518d928b6e3a60fc4c4759f20bc28
+
+% 9 1 0 17590f21e85c5ce01d9f122cf3904495
+
+% 10 1 0 1d6e3534d95507d60ba875d36e4be029
+
+% 0 1 0 03cbaee80e82a6871cc5bdcb88e2cec6
+
+% 1 1 0 1f0993cb302c5deb08fe676804ce11bd
+
+% 1 1 0 183a2dfadc16599716675085861c0eb9
+
+@ 0 1 0 15ada5ee05680e3517b9dbac6079e6a2
++       Une session, observée étape par étape :
+
+% 2 1 0 0e70d792b2de035513d4741a0ae0802c
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 179b57f1be0278701f56b59f3e81a96e
+
+% 1 1 0 188ac122cec7b0c1180b21f6cdf941ee
+
+% 2 1 0 097cd2e95db0d0b80f1311b45ec2471f
+
+% 3 1 0 19eb5902f625678502bd67f64cc2f903
+
+% 0 1 0 1654ffd881d68ce603c49981747fd781
+
+% 1 1 0 082d8465f876af8e16cb0f141efca915
+
+% 0 1 0 01f8ef3447ab663209e0667010037786
+
+% 1 1 0 06726c9746f6465e1e3f11f4202a6e65
+
+% 2 1 0 0d467d23e220d9c51aa872cf1236fb91
+
+% 3 1 0 1fb4674edd16ffb0132cb8464a0aaf44
+
+% 4 1 0 1f4e9b5c59e656ae11c234fc0e73d6ca
+
+% 6 1 0 0ffe45416849790f1dd5fb78d18d5379
+
+% 7 1 0 038d9e1fc0441cd0136c5656eaca15f8
+
+% 8 1 0 01ee108800c3de3f095aa734ec12a9af
+
+% 1 1 0 16cd245a9cbe59800ee21a99f531f136
+
+% 0 1 0 197da4f81a21c7921fc45c7f01aedb6a
+
+% 1 1 0 12c29026bd799b1a1644c8396331b65e
+
+% 2 1 0 196b6d145f6034cb1ed0f5de51df300b
+
+% 3 1 0 0522d71665f1c8530f9447eb5b3e6ca3
+
+% 4 1 0 0d9b1cc56becaad301bc7af30326c66d
+
+% 6 1 0 11d39740ac5c10141a6e4f3627fb66b5
+
+% 7 1 0 03edb36a7437842d17afef43467f7c09
+
+% 8 1 0 1f8b9a18c46b03bf0c20bca2b25e8d46
+
+% 3 1 0 152740a0d2127287044b1c358d7b73d3
+
+% 4 1 0 14210863a597e5880c3ccb2110e7b44b
+
+% 1 1 0 017db791587655910d8b1e6bc270db57
+
+% 0 1 0 0afa48da5666c2dd03c02bb097bdf910
+
+% 1 1 0 0080aea2ffb73e640378c5f0bf121808
+
+% 2 1 0 08b75f3c9580fbe81995580e88ce59db
+
+% 3 1 0 01a8a08c2b844e10084dbfae9490e278
+
+% 4 1 0 049458831ff5a7a914491266e6bec333
+
+% 5 1 0 1a19c639fa4318c608e0499995b315d7
+
+% 2 1 0 15ddd27b995bad5702061d85c660dde7
+
+% 3 1 0 135939de9697fb880ca273d815042de6
+
+% 4 1 0 003125564beb1cb809fcdca194b803e6
+
+% 5 1 0 1dd00f18f753449602bb1b6fdb131876
+
+% 7 1 0 06ebdb0e81a361a2182b53b38bb15fd9
+
+% 8 1 0 1860e4a4df4ff57b0c0c0a363f2aabb5
+
+% 0 1 0 15a786f4b6483030194445efe8846c2c
+
+% 1 1 0 0e5675d2d3bec1e90199401cc05e8732
+
+% 0 1 0 1bfe3449dc8d391d1d3fce8b60667161
+
+% 1 1 0 0fdfe5a23bcb18dc07b98de45833d526
+
+% 2 1 0 0b55fffd83ae661d1d30e6dfc07ad718
+
+% 3 1 0 1ebea7738ef71c32047988eead43c4cc
+
+% 4 1 0 13a45876d6a326cb0e44fc6b15d7c743
+
+% 5 1 0 00aa4ac28c90d89b1e43e2181ae25ab5
+
+% 0 1 0 1860a3db571e1a101da2ca994ac27cdc
+
+% 2 1 0 0084c46a0acf52b213978bb8ac75de25
+
+% 3 1 0 199a017663f623cd0be833c491642767
+
+% 4 1 0 00bb5837649965511fa1330e07078c3e
+
+% 5 1 0 01124414d7d2ff0e0a470131e80b2b7e
+
+% 7 1 0 0c4cea3c230586121f1ec2d89153b75f
+
+% 8 1 0 16f3eee7eb47c1a0036767450562422d
+
+% 0 1 0 15e2335d4af8c3820f48f593a11af6c6
+
+% 0 1 0 19c69243ae39721507c96759eb3344f0
+
+% 0 1 0 1d2a7a56c459f4bc1cf8f2752234f1dc
+
+% 0 1 0 095beb4f1988653b027b3ae1a4e3c4e6
+
+% 2 1 0 142e1d89c8b594bc1d7d78e11a2ff994
+
+% 0 1 0 0718f214f684e027160041e62d580375
+
+% 1 1 0 133fda4674fee4ef13cf820894ff8f0f
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 001112f5db84dfa2161e13a9d2548320
++       La VM suspend une fois par *composite* d'événements, et le répartiteur la reprend exactement
++       une fois selon la politique de suspension du composite, après que chaque gestionnaire
++       concerné s'est exécuté — sauf si l'un d'eux a demandé `remain()`, ou si aucun gestionnaire
++       n'a revendiqué l'un de ses événements, auquel cas le composite est remis à `#events` et
++       c'est son consommateur qui se charge de la reprise. Un thread retenu par `remain()` est
++       libéré avec `#resume`.
+
+% 1 1 0 035b7c6de75713e405d8729c03a337a5
+
+% 1 1 0 136f8e38fc167ab410f24a0e9926ca1e
+
+% 1 1 0 1b29ce47d25d949215df6dc811d47c4e
+
+% 0 1 0 1a8faabb333bd1a406eb56e00db6d594
+
+@ 0 1 0 046cd53d17c57f19136e2d511943d084
++   entry #console
++     info
++         la sortie et le code de sortie du programme débogué lancé, ou `Unset` pour un programme
++         attaché
+
+@ 0 2 0 12361e4fba80493e1b6300609c7b6d30
++     detail
++         Un `Debug.Console` n'existe que dans une session `Debuggee` : les flux d'une VM attachée
++         appartiennent à celui qui l'a démarrée.
+
+@ 0 1 0 10e325bf5f85fc4612f861a0d67acdb8
++   entry #capabilities
++     info
++         les capacités annoncées par la VM, récupérées une seule fois et mémoïsées
+
+@ 0 4 0 1c1ab0a0384317eb0b526be2a60eb0af
++     detail
++         `VirtualMachine.CapabilitiesNew`, sous forme de `Jdwp.Capabilities`. Un frontend en
++         transmet plusieurs indicateurs lorsqu'il annonce ce qu'il prend en charge, et la session
++         elle-même consulte `canUseSourceNameFilters`, `canPopFrames`, `canWatchFieldAccess`,
++         `canWatchFieldModification`, `canGetBytecodes` et `canGetConstantPool`.
+
+@ 0 1 0 1fffbf9c1b031387154655f3565440b8
++   entry #version
++     info
++         la version de la VM, sous forme de `Jdwp.Version`
+
+@ 0 1 0 02db0648ca4a16d41c9b4d07b46fa7f9
++   entry #threads
++     info
++         tous les threads de la VM, sous forme de `ThreadId`
+
+@ 0 1 0 1dcc200909b90b1c1c5eceac74902f8b
++   entry #suspend
++     info
++         suspend tous les threads, ou un seul avec `suspend(thread)`
+
+@ 0 2 0 073e03c174fa00a5195638f73647bb90
++     detail
++         JDWP compte les suspensions : un thread suspendu deux fois doit être repris deux fois. Les
++         arrêts propres à la session sont réglés par le répartiteur ; `suspend` sert aux pauses de
++         l'appelant.
+
+@ 0 1 0 02c226ac5ba2a72518be69ca686c53d4
++   entry #resume
++     info
++         reprend tous les threads, ou un seul avec `resume(thread)`
+
+@ 0 2 0 0fedfb682ff5f0c80f7693ed9f3f944f
++     detail
++         Après qu'un gestionnaire a appelé `remain()`, c'est ce qui permet au programme de
++         continuer ; le `continue` de l'adaptateur DAP est exactement `debug.resume()`.
+
+@ 0 1 0 092abeac6703fb0e1c2fa598136a8cc7
++   entry #name
++     info
++         le nom d'un thread, tel que le rapporte la VM
+
+@ 0 1 0 16b43fb3806bbbb400c8fea5cd3660b0
++   entry #frames
++     info
++         la pile d'appels d'un thread, la plus interne en premier, sous forme de paires
++         `(FrameId, Jdwp.Location)`
+
+@ 0 2 0 19a59f889bb1c25d1cc6e377edbe52d4
++     detail
++         Le thread doit être suspendu : les trames d'un thread en cours d'exécution donnent
++         `InvalidThread` ou `ThreadNotSuspended`. Un identifiant de trame n'est valide que jusqu'à
++         la reprise du thread.
+
+@ 0 1 0 0e678d6808e1e8d50dce00a59010fddb
++   entry #events
++     info
++         le flux des événements composites qu'aucun gestionnaire enregistré n'a revendiqués
+
+@ 0 5 0 1f2256ae0999c13b04ce4eb9e12ef179
++     detail
++         La primitive sous-jacente aux gestionnaires : chaque `Jdwp.Event.Composite` envoyé par la
++         VM qu'aucun gestionnaire de point d'arrêt, de pas, d'exception, d'observation ou de
++         préparation n'a revendiqué. Un appelant le vide et réagit, ou attend un événement
++         particulier, et se charge de toute reprise qu'exige la politique de suspension du
++         composite. La lecture consomme les événements à mesure qu'ils arrivent, et le flux se
++         termine quand la connexion se ferme.
+
+@ 2 1 0 00843b55bfe8a9f60c2a682900d7d0a0
++         ```scala fuel
+
+@ 3 1 0 1485c42922e810b000dfffcc2d3077ac
++         typecheck
+
+@ 4 1 0 17d0be26f7e929160c164b756e8e0e35
++         ##
+
+@ 5 1 0 0484d6a8e0dbeea214527277073d514e
++         import soundness.*
+
+@ 0 1 0 1ce1f3e2b7b180ad0095781cd45d5a03
++         def trace()(using Debug^, Tactic[Debugger.Error]): Unit =
+
+@ 0 1 0 19adaa86ca8de5541faded89caf24404
++           debug.events.each: composite =>
+
+@ 0 1 0 05a2b92ebf72b5510d08afcff7ef750c
++             composite.events.each:
+
+@ 0 1 0 1bf186cdbb90ec0f02f9c316a8861718
++               case Jdwp.Event.Breakpoint(request, thread, location) => debug.resume()
+
+@ 0 1 0 08a86fc7d8f2fc2212482f8d5acd70e6
++               case Jdwp.Event.VmDeath(_)                            => ()
+
+@ 0 1 0 0c9f483dd66bcc0713af0bb2cc58aecc
++               case other                                            => ()
+
+@ 1 1 0 14ea63b5430814c81c562c5d5e239857
++         ```
+
+@ 0 1 0 1ea3172b6491712f072e2d3e95fc3056
++   entry #breakpoint
++     info
++         pose un point d'arrêt : par emplacement résolu, par fichier source et ligne, ou par classe
++         et méthode
+
+@ 0 2 0 07c7e14cbd5bad7b11a8c5798f3e9194
++     detail
++         Quatre formes, chacune renvoyant ce qui révoque le point d'arrêt — un identifiant de
++         requête ou une poignée :
+
+@ 0 20 0 0cc2d0434f0c5fc00878da987d41a7c1
++         - `breakpoint(location, policy)` pose un point d'arrêt brut à une `Jdwp.Location` avec
++           une `Jdwp.SuspendPolicy` (`All` par défaut) et renvoie l'identifiant de requête, utilisé
++           avec `Debug#clear`. Chaque déclenchement arrive sur `Debug#events` sous forme de
++           `Jdwp.Event.Breakpoint`, en suspendant selon la politique, et l'appelant reprend.
++         - `breakpoint(location)(handler)` en pose un à un emplacement résolu dont les
++           déclenchements exécutent `handler` sur le répartiteur, et renvoie un `Breakpoint`.
++         - `breakpoint(source, line)(handler)` et `breakpoint(source, line, bound)(handler)` en
++           posent un par nom de fichier source et ligne : il se lie immédiatement dans chaque
++           classe chargée où la position se résout, puis dans chaque classe correspondante au
++           moment de sa préparation, si bien qu'on peut le placer avant le chargement de la classe
++           — l'ordre de lancement qu'utilise un frontend. La liaison à la préparation a lieu
++           pendant que le thread de chargement est suspendu, strictement avant que l'exécution
++           puisse atteindre la ligne, et les copies inlinées de la position sont trouvées grâce au
++           SMAP de la classe, si bien qu'un point d'arrêt sur du code inliné se déclenche là où le
++           code a été écrit. `bound` est appelé à chaque liaison réussie, ce qui permet à un
++           frontend d'apprendre qu'un point d'arrêt non vérifié est devenu réel. Renvoie un
++           `SourceBreakpoint`.
++         - `breakpoint(className, method)(handler)` et la forme avec `bound` en posent un à
++           l'entrée de chaque méthode de ce nom sur la classe *d'exécution* nommée (les méthodes
++           d'un `object` vivent sur sa classe suffixée par `$`), toutes surcharges comprises, en se
++           liant immédiatement ou à la préparation comme la forme par source. Les méthodes sans
++           information de ligne exécutable (abstraites, natives) sont ignorées.
+
+% 2 1 0 10e5ec3ec38b79680a861657baa5b9e9
+
+% 3 1 0 05287035ed67cacc1b404fbcce72cff3
+
+% 4 1 0 175308d4353c69cd081107e638b1914f
+
+% 0 1 0 0ac37b378433a90203af993d54e568d2
+
+% 0 1 0 0a5c89d53738561617240b02c0afcd56
+
+% 0 1 0 1a81ea39136d39e71aeaee0524e75ea1
+
+% 0 1 0 182dfc8d90e09b050758b5f25a0741d4
+
+% 0 1 0 0efb467349273cc01c16fd8e78fa2d3a
+
+% 0 1 0 1e8bdc927a7960b71c24fe6e9ff4fdc1
+
+% 0 1 0 1bf78b68a2ed52e40da3eb3a71497dd0
+
+% 0 1 0 1e46862a3884efad09e7756788ef2274
+
+% 1 1 0 0d500954607d1c26042e854fc10df368
+
+@ 0 3 0 074b6acc21aca28e043737968e3447ad
++         Un point d'arrêt conditionnel est simplement un gestionnaire qui teste sa condition et ne
++         fait rien sinon. Le gestionnaire s'exécute avec le thread suspendu sous la politique
++         `All`, et le répartiteur reprend ensuite, sauf si le gestionnaire appelle `remain()`.
+
+@ 0 1 0 0493c3f0040cce1b0ae29b4dabd59042
++   entry #classPrepare
++     info
++         demande à être averti quand une classe correspondant à un motif est préparée
+
+@ 0 6 0 100acea27f3dc04403df408fbb8c7ca5
++     detail
++         Pose une requête `ClassPrepare` pour le motif de correspondance de classes JDWP `pattern`
++         (un nom exact, ou un nom borné par un unique `*`), et renvoie son identifiant de requête.
++         Chaque correspondance arrive sur `Debug#events` sous forme de `Jdwp.Event.ClassPrepared`,
++         en suspendant le thread de chargement, si bien qu'un appelant peut résoudre un point
++         d'arrêt dans une classe pas encore chargée au début de la session — avec `Debug#locateIn`
++         contre le type rapporté, jamais `Debug#locate`, car un parcours de toute la VM peut entrer
++         en interblocage avec le verrou que détient le thread suspendu.
+
+@ 0 1 0 064e5d4b6d6e1b4517a1234a78bcd2b4
++   entry #step
++     info
++         demande un pas sur un thread suspendu : un pas logique avec un gestionnaire, ou un pas
++         brut
+
+@ 0 6 0 124eeebe0fc5b8b11c416ff32fe9e4cb
++     detail
++         `step(thread, depth)(handler)` demande un pas *logique* dont l'achèvement exécute
++         `handler` sur le répartiteur exactement comme le déclenchement d'un point d'arrêt, en ne
++         suspendant que le thread avancé. Le thread doit être suspendu au moment où le pas est
++         demandé — c'est typiquement le thread qui vient d'être prêté à un gestionnaire, retenu
++         avec `remain()` — et la requête est consommée par la reprise qui suit :
+
+% 2 1 0 06e0de3111bee6de1a05718b356c51a7
+
+% 3 1 0 100a0970fc5b84660df48e87af38ef5c
+
+% 4 1 0 1ac8d4ebd6ebb3cc17d215a412574a37
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 0 1 0 13b629b8c93b9b2c1b26e9840188931e
+
+% 0 1 0 1cedb41ab95fb7281b59336dc51e89ce
+
+% 0 1 0 0dfc5bdc882257740be4f8e945e0759e
+
+% 0 1 0 0708182b1b3e6aaf0fe0322342fc5dce
+
+% 1 1 0 1213a187eb8271b61625aff4fd0b9c1e
+
+@ 0 11 0 1d3d206d0787275016dbb2b0b8e7ee6d
++         Un pas logique s'achève quand la *position dans le source* change, lue grâce au SMAP de la
++         classe : un pas par-dessus une ligne contenant un appel inline franchit toute la ligne,
++         corps compris, là où le bytecode descendrait dans le corps inliné ; un pas dans un tel
++         appel s'arrête à la première ligne du corps inliné, comme s'il s'agissait d'un appel ; et
++         un atterrissage dans la plomberie — un pont, un redirecteur de mixin ou
++         statique, un accesseur de champ ou de lazy val, une méthode synthétique autre qu'un corps
++         de lambda, ou toute classe sous `java.*`, `javax.*`, `jdk.*`, `sun.*`, `com.sun.*` ou
++         `scala.runtime.*` — n'est jamais montré : le pas continue vers l'intérieur pour `Into` et
++         vers l'extérieur sinon, jusqu'à s'arrêter dans du code écrit par le programmeur. Les
++         accesseurs et les redirecteurs ne portent aucun indicateur ; ils sont donc
++         reconnus à la forme de leur bytecode, ce qui exige `canGetBytecodes` et
++         `canGetConstantPool` de la VM. Un atterrissage que le SMAP ne peut lire, ou la limite de
++         sécurité de 64 itérations, rapporte l'arrêt tel quel.
+
+@ 0 5 0 1890f9645c35596510ee85ee076e026c
++         `step(thread, depth, size, excluding)` est la requête brute : elle pose une requête de pas
++         unique avec un `Jdwp.StepSize` (`Line` par défaut) et des modificateurs `ClassExclude`
++         pour chaque motif de `excluding`, et renvoie l'identifiant de requête. La VM rapporte
++         l'atterrissage sous forme de `Jdwp.Event.SingleStep` sur `Debug#events`, où qu'il soit —
++         dans le JDK, un redirecteur ou un corps inliné — et l'appelant reprend.
+
+@ 0 1 0 073eb95c57b832d61bbf885a9d66bee1
++   entry #pause
++     info
++         suspend un thread à l'initiative de l'appelant et renvoie un `Halt` sur sa trame
++         supérieure
+
+@ 0 4 0 05097076d01731c60ccce945a9d1763a
++     detail
++         Aucun événement ne marque l'arrêt, mais le halt offre la même vue du thread — trames,
++         variables, affectation — qu'un point d'arrêt, ce qui permet de servir une pause demandée
++         par le client. L'appelant possède la suspension : abandonner le halt ne reprend pas le
++         thread ; `Debug#resume` le fait.
+
+@ 0 1 0 04efce04c99b0a0a05936237f881b2cf
++   entry #clear
++     info
++         annule une requête d'événement par sa nature et son identifiant de requête
+
+@ 0 3 0 0236a3f47a8e816205ed3986ab0c9abe
++     detail
++         `clear(Jdwp.EventKind.Breakpoint, request)` supprime la requête qu'ont renvoyée un
++         `Debug#breakpoint` brut, `Debug#classPrepare` ou un `Debug#step` brut. Une requête portant
++         un gestionnaire se révoque plutôt par sa poignée `Breakpoint` ou `SourceBreakpoint`, ce
++         qui désinscrit aussi le gestionnaire.
+
+@ 0 1 0 1dd14f8e8fc3b6ea1fbddd2d704987dc
++   entry #exceptions
++     info
++         s'arrête quand une exception est levée — non interceptée, interceptée, ou les deux — dans
++         des classes correspondantes
+
+@ 0 7 0 14b6740e5284cc6d13c7d9f9edf64335
++     detail
++         `exceptions(uncaught = true, caught = false, within = Unset)(handler)` pose une requête
++         d'exception et exécute `handler` à chaque levée avec un `Halt` dont la `cause` est
++         `Halt.Cause.Thrown`, de sorte que `exceptionInfo()` décrit l'exception en cours. `within`
++         restreint la requête aux exceptions levées depuis des classes correspondant à un motif de
++         classes : une requête d'exceptions interceptées qui n'en a pas s'arrête dans le flot de
++         contrôle propre à la plateforme, piloté par les exceptions, qui commence bien avant qu'une
++         classe de l'application ne s'exécute. Renvoie un `Breakpoint` qui révoque la requête.
+
+@ 2 1 0 1bad41d57acf06b110b9226ad4af9a55
++         ```scala fuel
+
+@ 3 1 0 073ea579368bad3f01f9d0fcf03f06dd
++         typecheck
+
+@ 4 1 0 165de58720110ff203659c689e9b191a
++         ##
+
+@ 5 1 0 143f9487542ba7741d9f3310f72f2abb
++         import soundness.*
+
+@ 0 1 0 06d76bc0f799a08e178b5dcda0927329
++         def uncaught()(using Debug^, Tactic[Debugger.Error]): Breakpoint^ =
+
+@ 0 1 0 1411a1dcdc722ea61b46df3a281fb230
++           debug.exceptions(uncaught = true, caught = true, within = t"com.example.*"): stop ?=>
+
+@ 0 1 0 0956412eac8e7bfe011fda9e660e7bb1
++             stop.exceptionInfo().let: info =>
+
+@ 0 1 0 00abb2782d2bd35a052a8dfd68e540d1
++               Out.println(t"${info.className}: ${info.message.or(t"")}")
+
+@ 1 1 0 04fabcfb7acdbb2108b2cf2d083f1dc0
++         ```
+
+@ 0 1 0 0f6fd835003f3a4d038d6dc4c579f180
++   entry #watch
++     info
++         s'arrête quand un champ d'une classe chargée est écrit, ou, avec `access`, lu
+
+@ 0 6 0 1d1ae4b5ed8ad1b518cc2ab4aa791bb0
++     detail
++         `watch(className, field, access = false)(handler)` trouve le champ sur la classe
++         d'exécution nommée — qui doit déjà être chargée, comme c'est toujours le cas lorsque
++         l'observation est posée depuis une vue de variables active — et exécute `handler` à chaque
++         écriture avec un `Halt` dont la `cause` est `Halt.Cause.Modification`, portant la valeur
++         entrante observée *avant* que l'écriture n'ait lieu (ou `Halt.Cause.Access` pour une
++         lecture). Le résultat est `Unset` quand la classe ou le champ est introuvable, ou que la
++         VM n'a pas `canWatchFieldModification` (ou `canWatchFieldAccess`).
+
+@ 2 1 0 1d1580ca94d45fcb19a0df08cda3aed6
++         ```scala fuel
+
+@ 3 1 0 05afb04d290c6bcc099a6c6ef03a4952
++         typecheck
+
+@ 4 1 0 064e54c56eabaa3d05b39529dd3ff8a1
++         ##
+
+@ 5 1 0 1813cc3f517f321b05f35bafab1502a0
++         import soundness.*
+
+@ 0 1 0 1be5da5a5592016e01bf3aadb29187d8
++         def balance()(using Debug^, Tactic[Debugger.Error]): Optional[Breakpoint^] =
+
+@ 0 1 0 1937719f0404f4eb089273bbdb1cc3ed
++           debug.watch(t"com.example.Ledger$$Account", t"balance"): stop ?=>
+
+@ 0 1 0 055e61d85e95d5101ccb6dd9093733f4
++             stop.cause match
+
+@ 0 1 0 16ef475daabb66bc0a022d351f7a9848
++               case Halt.Cause.Modification(_, _, _, incoming) => Out.println(incoming.inspect)
+
+@ 0 1 0 0a04b39ab598cffc13feeb7f76697e81
++               case _                                          => ()
+
+@ 1 1 0 036c446469ce2cab160f1bec00c59b5d
++         ```
+
+@ 0 1 0 19e0fa5d05c0d6eb1d8b28de0840ca77
++   entry #logpoint
++     info
++         un point d'arrêt qui journalise un message et reprend immédiatement
+
+@ 0 5 0 0dc122e1c914b81c1bcef2bc032d2b1e
++     detail
++         `logpoint(location)(message)` installe un point d'arrêt dont le gestionnaire journalise
++         `Debug.Event.Logpoint(message)` au niveau `info` et se termine, si bien que le programme
++         n'est jamais mis en pause au-delà du gestionnaire lui-même. `message` est évalué avec le
++         `Halt` dans la portée, et peut donc lire les variables de la trame arrêtée. Exige un
++         `Debug.Event is Loggable` dans la portée en plus de la tactique.
+
+@ 0 1 0 1e7516fe20ecc0621dff5d97246e51f3
++   entry #locate
++     info
++         les emplacements exécutables auxquels une ligne de source se résout actuellement, dans les
++         classes chargées
+
+@ 0 6 0 1ccef5420e009a9011f704cbeca688a2
++     detail
++         Chaque méthode de chaque classe chargée compilée depuis `source` dont la table des lignes
++         couvre `line`, copies inlinées trouvées grâce au SMAP de chaque classe comprises. Les
++         classes nommées d'après le fichier sont essayées en premier, si bien que le cas courant ne
++         coûte qu'une poignée d'allers-retours ; un balayage des autres classes chargées — en
++         ignorant les types tableau et ceux de la plateforme — sert de filet de sécurité. Les
++         classes pas encore chargées ne sont pas trouvées : la forme par source de
++         `Debug#breakpoint` s'en remet à leur préparation. Non sûr tant qu'un thread est suspendu
++         sur un événement `ClassPrepare` : utilisez `Debug#locateIn`.
+
+@ 0 1 0 0bd184fbee0dcebc02149aebba74e6ea
++   entry #locateIn
++     info
++         les emplacements exécutables auxquels une ligne de source se résout dans un type référence
++         donné
+
+@ 0 5 0 0d86e9e430df8a7d1aacdba811d8831b
++     detail
++         Comme `Debug#locate`, pour la seule classe `cls` (avec son `Jdwp.TypeTag`) : chaque
++         méthode compilée depuis `source` dont la table des lignes couvre `line`, plus toutes les
++         copies inlinées de la position que son SMAP enregistre, dédupliquées par méthode et indice
++         de bytecode. Elle n'énumère jamais les classes de la VM : on peut donc l'appeler depuis le
++         gestionnaire d'un événement `ClassPrepared`, où un parcours de toute la VM peut entrer en
++         interblocage avec le verrou de chargement de classes que détient le thread suspendu.
+
+@ 0 1 0 035af48f0fba3e6f19496f60d1ca64a1
++   entry .Handler
++     info
++         le type d'un gestionnaire de point d'arrêt ou de pas : `(halt: Halt^) ?=> Unit`
+
+@ 0 4 0 16e6646e54d927e7026ea5b8c8c1fde6
++     detail
++         Une fonction contextuelle sur un `Halt` prêté, exécutée sur la tâche de répartition quand
++         un déclenchement est revendiqué. Le halt porte la tactique fournie par le répartiteur : un
++         gestionnaire n'a donc besoin d'aucune capacité d'erreur propre ; on l'écrit `stop ?=> …`,
++         car le nom naturel `halt` appartient à fulminate.
+
+@ 0 1 0 1697b6389f2b86e509a82a9207244471
++   entry .Console
++     info
++         la sortie standard, la sortie d'erreur et le code de sortie d'un programme débogué lancé
+
+@ 0 5 0 03461a604e98c5e70f92340d7d6b0b05
++     detail
++         Présent en `Debug#console` uniquement dans une session `Debuggee`. Les tubes de sortie et
++         d'erreur de l'enfant sont vidés dès le fork dans deux fenêtres qu'un lecteur consomme sous
++         forme de flux, et son code de sortie règle une promesse. L'adaptateur DAP relaie les flux
++         sous forme d'événements `output` et la sortie sous forme de `exited` et `terminated`.
+
+@ 0 1 0 0010c4b9ea80e16211b1a969c9cf7e3d
++     entry #stdout
++       info
++           la sortie standard du programme débogué, sous forme de flux de morceaux
+
+@ 0 1 0 063f78726c9e5dcc09fcfbc4f49607e0
++     entry #stderr
++       info
++           la sortie d'erreur du programme débogué, sous forme de flux de morceaux
+
+@ 0 1 0 0b2984780dfa777e1f7fe7582fab0b63
++     entry #exited
++       info
++           une promesse du code de sortie du programme débogué, réglée à la fin du processus
+
+@ 0 1 0 196d1e06690fd5c816741e264012413b
++   entry .Event
++     info
++         ce qu'une session journalise de sa propre initiative : le message d'un logpoint
+
+@ 0 4 0 002e5ac7964b9f431c64b441063f3ac5
++     detail
++         Un seul cas, `Logpoint(message)`, tagué `Log.Runtime` et journalisé au niveau `info`
++         par `Debug#logpoint`. Un `Debug.Event is Loggable` doit être dans la portée pour installer
++         un logpoint ; `logging.silentLogging` les ignore.
+
+@ 0 1 0 159db4c18e83fe7b045c4f807a847edd
++     entry .communicable
++       info
++           rend un événement de logpoint sous forme de son message
+
+@ 0 1 0 0344a1d263857154038f397d1f1acd44
++ entry .debug
++   info
++       la session de débogage ambiante, invoquée depuis le contexte à l'intérieur d'un bloc de
++       session
+
+@ 0 6 0 08552b881a92995004e6b8ba001ea52f
++   detail
++       `debug` désigne la capacité `Debug` prêtée à un bloc `session`, sans nommer le paramètre :
++       `target.session { debug.threads() }`, à la manière de `monitor` pour une portée de
++       supervision. C'est un `transparent inline def` qui se résout en le `Debug^` contextuel, et
++       qui porte donc l'ensemble de captures exact de cette capacité. Il n'existe pas d'accesseur
++       équivalent pour `Halt` — son nom naturel est pris par `fulminate.halt` — si bien que les
++       gestionnaires nomment leur paramètre, par convention `stop ?=>`.
+
+@ 0 1 0 15cf6acff42a9dfd19e346721bde650f
++ entry .Breakpoint
++   info
++       une poignée révocable sur un point d'arrêt, une requête d'exception ou un point
++       d'observation installé
+
+@ 0 5 0 001381f2287243b81ebc3c51fa151b3f
++   detail
++       Renvoyée par `Debug#breakpoint(location)(handler)`, `Debug#exceptions` et `Debug#watch`.
++       Elle capture la session à laquelle elle appartient, et ne peut donc pas survivre au bloc
++       de session. `#clear` retire la requête de la VM et désinscrit son gestionnaire, après quoi
++       les déclenchements déjà en cours sont traités comme non revendiqués et parviennent à
++       `Debug#events`.
+
+% 0 1 0 1e481d44619855a208e01b1d1b86f437
+
+@ 0 1 0 1bda96c0f0d47e4f1ba3090c57529382
++   entry #request
++     info
++         l'identifiant de requête JDWP de la requête d'événement installée
+
+@ 0 1 0 1a43c6ebf721d3e51d60bb1088931606
++   entry #clear
++     info
++         retire la requête de la VM et désinscrit son gestionnaire
+
+@ 0 1 0 08bd2f6b7880bf3d1ee4577f7ff045d3
++ entry .SourceBreakpoint
++   info
++       une poignée révocable sur un point d'arrêt posé par position dans le source ou par classe et
++       méthode
+
+@ 0 8 0 0ae5eb52d2231a66134f3d7188d42583
++   detail
++       Renvoyée par les formes par ligne de source et par classe et méthode de `Debug#breakpoint`.
++       Un point d'arrêt par source se lie à un emplacement exécutable dans chaque classe
++       correspondante à mesure qu'elle est chargée, si bien que ses `#locations` s'étoffent au fil
++       de la session ; un frontend interprète une liste vide comme un point d'arrêt non vérifié et
++       une liaison ultérieure comme sa vérification (le callback `bound` les signale chacune).
++       `#clear` retire chaque point d'arrêt lié et révoque la requête de préparation de classes
++       qui en lierait d'autres. La poignée capture la session, et ne peut donc pas s'échapper du
++       bloc de session.
+
+% 0 1 0 0b4b652a94a5c2f91da93cb5b12193bf
+
+@ 0 1 0 16c65c91e4be702f16e5940d1380f9da
++   entry #locations
++     info
++         les emplacements exécutables auxquels ce point d'arrêt s'est lié jusqu'ici
+
+@ 0 1 0 1278bed254a0b1e301dcb75600972b1a
++     detail
++         Vide tant que toutes les classes où la position se résout restent non chargées.
+
+@ 0 1 0 1146877a7b841dbc1fd7e4d94e257749
++   entry #bound
++     info
++         si au moins un emplacement a été lié
+
+@ 0 1 0 1b7bc6cd37bf0c5e09f90addae66c518
++   entry #clear
++     info
++         retire chaque point d'arrêt lié et la requête de préparation qui en lie d'autres
+
+@ 0 1 0 1f45afdaa50bb41d13e4a2bfe7087549
++ entry .Halt
++   info
++       un thread arrêté, sous forme de la capacité prêtée à un gestionnaire tant que le thread
++       reste suspendu
+
+@ 0 7 0 0ff99d9f249640e913562a444cf41bf1
++   detail
++       Un `Halt` est la vue prêtée à un gestionnaire de point d'arrêt, de pas, d'exception ou
++       d'observation : le thread qui s'est arrêté, l'emplacement où il s'est arrêté, la raison
++       (`#cause`), ses trames et leurs variables logiques, l'exception en cours si c'est la raison
++       de l'arrêt, et les moyens d'affecter une variable, de dépiler une trame ou de maintenir le
++       thread suspendu. C'est une `ExclusiveCapability` : il ne peut donc pas survivre à l'arrêt
++       qu'il décrit ; une fois que le répartiteur a repris le thread, chaque identifiant fourni par
++       le halt — trames, objets, slots — peut être périmé.
+
+% 2 1 0 04dc2133260d35050cefb4059bd94658
+
+% 3 1 0 182730a1acdf1f8a1fa9471480160c87
+
+% 4 1 0 09e1169a6f17b7c51f3c9f980df12a8e
+
+% 5 1 0 1836ff21e865a82d084e1c3144d15660
+
+% 0 1 0 08280e358338b4ac0cfd21ce1bb0fcde
+
+% 1 1 0 1abd28b26d435c3803f7144c36286da9
+
+% 0 1 0 1a14e5c8a23d4fff1842ab6d2e8d790b
+
+% 0 1 0 0830cf999706826319a9ad609cd3156b
+
+% 0 1 0 185798feae5bcadc095abda55083813c
+
+% 0 1 0 1cd834e8107698471aab0cfca47ea7d9
+
+% 0 1 0 12b42f8ca24bdf5e071d5685405c32fb
+
+% 0 1 0 1af5e536bfc42d9b10d20d2fd8b38983
+
+% 1 1 0 1e65f2ec38fe0cb507df5dbbda657aa7
+
+@ 0 4 0 1a317eb21d57b6e20ea7ef4a3f589a5e
++       Le halt porte la `Tactic[Debugger.Error]` fournie par le répartiteur lorsqu'il l'a créé :
++       ses opérations n'en prennent donc aucune ; un gestionnaire s'exécute sur la tâche de
++       répartition, et le canal d'erreur doit dérouler cette pile-là, non celle du site
++       d'inscription. Les gestionnaires s'écrivent `stop ?=> …` : le nom d'accesseur `halt`
++       appartient à fulminate.
+
+% 1 1 0 155fdcb5e315725009473f86aaf9cbcc
+
+% 0 1 0 13df26896cb52fc1198469728beeff41
+
+% 1 1 0 0431e44d6823da121c9c974528870779
+
+@ 0 1 0 1b2036800bf895710c2f378e13343210
++   entry #thread
++     info
++         le thread qui s'est arrêté
+
+@ 0 1 0 0bb78725ff6745b31f71052fee4716a8
++   entry #location
++     info
++         où il s'est arrêté : la classe, la méthode et l'indice de bytecode
+
+@ 0 1 0 1059de3864cb739a0d78c69288a214c5
++   entry #cause
++     info
++         pourquoi il s'est arrêté, sous forme de `Halt.Cause`
+
+@ 0 1 0 127675c59dd06b68094e163c10e23a68
++   entry #remain
++     info
++         demande au répartiteur de ne pas reprendre le thread quand les gestionnaires de cet arrêt
++         se terminent
+
+@ 0 3 0 1f8998eed1dd3fda004a756f0b657487
++     detail
++         L'appelant possède alors la suspension et la reprend — ou non — au moyen de
++         `Debug#resume`. Partagé par tous les gestionnaires exécutés pour un même composite,
++         puisque JDWP suspend une fois par composite et que le répartiteur règle cette suspension
++         une fois.
+
+@ 0 1 0 05f3ffb1875ea80d0ebb3c30e6201e28
++   entry #frames
++     info
++         la pile d'appels du thread arrêté, la plus interne en premier, sous forme de paires
++         `(FrameId, Jdwp.Location)`
+
+@ 0 1 0 0a206fd0ee6e41901406033db1551321
++   entry #positions
++     info
++         les positions logiques dans le source que représente une trame, la plus interne en premier
+
+@ 0 5 0 03eca5548873ce5706f224cf4893c1dd
++     detail
++         Une `Halt.Position` par origine inline retrouvée dans le SMAP de la classe — le fichier et
++         la ligne où le code inliné a été écrit, marqués `inlined` — suivie de la trame physique
++         elle-même à sa vraie ligne, celle du site d'appel. Une trame sans SMAP, une trame arrêtée
++         à une vraie ligne ou une VM sans `canGetSourceDebugExtension` donne exactement l'unique
++         position que rapporte `Halt#describe`. C'est ainsi qu'une trace de pile montre un corps
++         inliné comme une trame à part entière.
+
+@ 0 1 0 177e88f45a2bdf050f0805194e7c3e25
++   entry #describe
++     info
++         un nom lisible et une ligne pour un emplacement : `pkg.Cls.method` et sa ligne de source
+
+@ 0 3 0 15d0b5bb132ede720962a7c7a8fac500
++     detail
++         Résolus à partir des tables de méthodes et de lignes de la classe ; la ligne vaut `0` en
++         l'absence d'information de ligne. Le nom est démanglé comme le rend une trace de pile : le
++         `$` final d'une classe de module supprimé, les `$` des classes internes lus comme des
++         points.
+
+@ 0 1 0 149eed2b4fe7695108a192983c319777
++   entry #exceptionInfo
++     info
++         l'exception en cours lors d'un arrêt sur exception, ou `Unset` lors de tout autre arrêt
+
+@ 0 5 0 10c95bfd140afae206d87bb913a41d01
++     detail
++         Une `Halt.ExceptionInfo` quand `Halt#cause` vaut `Thrown` : le nom de classe de
++         l'exception, le message de détail avec lequel elle a été construite (`Unset` s'il est
++         null), et si la levée sera interceptée. Le message est lu directement dans le champ
++         `detailMessage` de `Throwable`, en remontant la hiérarchie jusqu'à la classe qui le
++         déclare, plutôt qu'en invoquant `getMessage`, si bien qu'aucun code du programme débogué
++         ne s'exécute.
+
+@ 0 1 0 1dd626f6803ab09514b7cd53e603aea9
++   entry #thisObject
++     info
++         le `this` d'une trame, ou `Unset` dans une trame statique ou native
+
+@ 0 1 0 1b72ac6df02b8d84060a286ab031c351
++   entry #variables
++     info
++         les variables logiques visibles dans la trame supérieure, ou dans une trame donnée
+
+@ 0 9 0 1f80b92712560c581c86f2dfa8e92925
++     detail
++         `variables()` lit la trame où le thread s'est arrêté ; `variables(frame, location)` toute
++         trame de sa pile. Le résultat est l'ensemble des slots locaux vivants à l'emplacement — un
++         slot n'est vivant que dans sa plage de bytecode — suivis de l'état capturé sur `this` et
++         sa chaîne de `$outer`, chacun restitué sous la forme où le programmeur l'a écrit : un
++         champ de capture synthétique `name$3` apparaît comme `name`, le `pkg$Owner$$seed` d'un
++         accesseur externe comme `seed`, la cellule de référence d'une `var` capturée est déballée
++         jusqu'à son `elem` (et la variable marquée mutable), et le champ support d'une lazy val
++         est lu mais jamais forcé, si bien qu'une lazy val non évaluée est rapportée `Unforced`
++         sans valeur. Les champs membres ordinaires apparaissent sous leur propriétaire. Une
++         méthode compilée sans table de variables se replie sur le seul état capturé et les champs.
+
+@ 0 1 0 1a3596f8a37824b612ff701ee35aaae2
++   entry #children
++     info
++         déploie un instantané d'un niveau : les champs d'instance d'un objet, ou les éléments d'un
++         tableau
+
+@ 0 3 0 17a5b96d2732ebb11ff78ee9aad84f5d
++     detail
++         Pour un `Variable.Snapshot.Obj`, les champs non statiques de l'objet sous forme de
++         variables ; pour un `Arr`, ses 256 premiers éléments, nommés par leur indice à partir de
++         zéro. Tout le reste ne se déploie en rien. C'est la requête `variables` derrière la vue
++         arborescente d'un frontend.
+
+@ 0 1 0 0c7745b3ee3c223d11c2b5b7cd4b07e5
++   entry #pop
++     info
++         abandonne une trame et toutes les trames au-dessus, si bien que la reprise réexécute
++         l'appel qui l'a créée
+
+@ 0 2 0 1ebe97644ec29eac089e2a5ccebd37b1
++     detail
++         Le redémarrage de trame d'un frontend. Exige la capacité `canPopFrames` de la VM et
++         qu'aucune trame native ne figure parmi celles dépilées.
+
+@ 0 1 0 163b22d3cdbdbcbd0090a68c57dd594b
++   entry #assign
++     info
++         écrit une valeur dans une variable de la trame arrêtée, en suivant sa provenance
+
+@ 0 8 0 0570f0aeb7e518d614c74b9112061ffb
++     detail
++         `assign(variable, value)` écrit dans la trame supérieure ;
++         `assign(frame, variable, value)` dans une trame donnée. L'écriture va là où la
++         `Variable.Provenance` de la variable indique que se trouve son stockage : un slot local de
++         la trame, un champ capturé ou membre sur son détenteur, un élément de tableau, ou — à
++         travers une cellule de référence — le `elem` de la cellule, si bien qu'affecter une `var`
++         capturée se comporte comme le code source le laisse attendre. La valeur doit être du type
++         effacé de la variable (un `Jdwp.Value.OfInt` pour un `Int`) ; les identifiants que porte
++         une provenance ne sont valides que tant que le thread reste suspendu, ce qui est
++         précisément le moment où l'affectation a un sens. `Evaluator#assign` évalue une expression
++         au type déclaré de la variable et affecte le résultat.
+
+@ 0 1 0 11e487799af8d0b01de9d9f745c8aabb
++   entry .Cause
++     info
++         pourquoi un thread s'est arrêté : un arrêt simple, une exception levée, ou un accès ou une
++         modification de champ
+
+@ 0 7 0 11bff637ecb8823017526f315dafbd51
++     detail
++         `Stopped` couvre les points d'arrêt, les pas, les pauses et l'entrée et la sortie de
++         méthode, où le gestionnaire sait déjà quelle requête il a inscrite.
++         `Thrown(exception, catchLocation)` porte l'objet exception et l'endroit où il sera
++         intercepté, `Unset` pour une exception non interceptée. `Access(cls, field, target)` et
++         `Modification(cls, field, target, incoming)` portent la classe et le champ touchés ainsi
++         que l'objet touché (`Unset` pour un champ statique) ; une modification porte aussi la
++         valeur entrante `incoming`, observée avant que l'écriture n'ait lieu.
+
+@ 0 1 0 05f65d2bd2db052813c24b1a42243cd2
++   entry .ExceptionInfo
++     info
++         un résumé d'une exception en cours : sa classe, son message, et si elle est interceptée
+
+@ 0 1 0 00b60ccf31181b6d150773c076f70704
++     entry #className
++       info
++           la classe de l'exception, démanglée comme la rend une trace de pile
+
+@ 0 1 0 1114d6006aa696ec14703f34b5e2edec
++     entry #message
++       info
++           le message de détail avec lequel elle a été construite, ou `Unset` s'il est null
+
+@ 0 1 0 06c1b2477ce47ec31d21ec6735a42b97
++     entry #caught
++       info
++           si la levée sera interceptée
+
+@ 0 1 0 01c3aab0576aafe01dd90ca8cabf3890
++   entry .Position
++     info
++         une position logique dans le source que représente une trame physique
+
+@ 0 7 0 1850a23ff60a86b211774ac98da59761
++     detail
++         Pour du code inliné, le fichier et la ligne où le code a été écrit ; pour la trame
++         elle-même, son propre fichier source et sa vraie ligne. `name` est le nom d'affichage (la
++         classe ou la méthode) ; `source` le nom de base enregistré du fichier et `path` son chemin
++         plus complet, s'il est connu ; `inlined` indique s'il s'agit d'une origine inline plutôt
++         que de la trame ; et `cls` est le nom de classe brut de la strate `ScalaClass`, pour qu'un
++         appelant disposant du classpath résolve la définition au moyen de TASTy, comme le fait
++         `Namer`.
+
+@ 0 1 0 0639d123306c3108040530244f52c4cc
++     entry #name
++       info
++           le nom d'affichage : une classe et une méthode, ou la classe de l'origine inline
+
+@ 0 1 0 1d3dfb3d650fa5a7093dbaf12dfcaf96
++     entry #source
++       info
++           le nom de base du fichier source, s'il est connu
+
+@ 0 1 0 019ef8eb9ee6db870ea9d10917829e25
++     entry #path
++       info
++           le chemin plus complet du fichier source, si le SMAP en enregistre un
+
+@ 1 1 0 0d33e9907eeeb3321ecd2646fe92c56a
++     entry #line
++       info
++           la ligne de source
+
+@ 0 1 0 1bb6e194b7c49fb113f581d8d2d9fb6e
++     entry #inlined
++       info
++           si cette position est une origine inline plutôt que la trame physique
+
+@ 0 1 0 189a60585ecfc96c073c7dc206cd41e2
++     entry #cls
++       info
++           le nom de classe brut que le SMAP enregistre pour une origine inline, le cas échéant
+
+@ 0 1 0 04dc35951d91ae5516cc82d225884f95
++ entry .Variable
++   info
++       une variable logique dans une trame suspendue, sous la forme où le programmeur l'a écrite
+
+@ 0 8 0 1f960312397220f819f43ff3c99a87ee
++   detail
++       Une `Variable` est ce que restitue `Halt#variables` : son nom `name` tel qu'écrit (les
++       captures reconstituées à partir de leurs champs synthétiques), son type effacé `erased` issu
++       de la signature JVM, son type `static` lorsque `Evaluator#variables` a retrouvé le type
++       déclaré dans TASTy, sa valeur `value` sous forme de `Variable.Snapshot` (absente pour une
++       lazy val non forcée), la `provenance` qui indique où se trouve son stockage pour qu'une
++       écriture sache où aller, si elle est `mutable` (une `var`, boxée dans une cellule de
++       référence), et son état `state` — `Forced` ou, pour une lazy val pas encore évaluée,
++       `Unforced`.
+
+% 2 1 0 166a512d252afd7a07dac5b3b577f276
+
+% 1 1 0 1cc66d83177c856d13f8f42166aa5e6f
+
+% 0 1 0 18bc4487287c4c921f89ef0169da785a
+
+% 0 1 0 1aaceeab194a34f5082982303c37a0b1
+
+% 0 1 0 089077cb3b456a4a06c3336e7c3935e7
+
+% 0 1 0 06d5760cd6fad768007ea9e6f10521dd
+
+% 0 1 0 1d31b2f47baa820902131de297633ddf
+
+% 1 1 0 14836ab0a7f5b6110834567e55c9540f
+
+@ 0 3 0 1d7e1559875e5a6d034feb705dc5bce9
++       `Variable` n'est pas exportée dans `soundness`, qui a déjà la `Variable` d'ambience (une
++       variable d'environnement) : écrivez `vivisection.Variable`, ou
++       `import soundness.{Variable as _, *}` puis `import vivisection.Variable`.
+
+% 1 1 0 12dd32f7d1eed3b61aa9bd54c2b820d1
+
+% 1 1 0 0ab0d08c21d6a73616234163dadf71c0
+
+@ 0 1 0 0f810a269c316b720f205f7422b9a996
++   entry #name
++     info
++         le nom tel qu'écrit dans le code source
+
+@ 0 1 0 113ae6786861d72905e262bf78bc9928
++   entry #static
++     info
++         le type Scala déclaré, lorsqu'un `Evaluator` l'a retrouvé dans TASTy ; `Unset` sinon
+
+@ 0 1 0 1b617a152b8bc2bf04d5c081ce47222b
++   entry #erased
++     info
++         le type JVM, démanglé : `Int`, `Array[Int]`, `scala.collection.List`
+
+@ 0 1 0 1364be9e481f9e5619db264320d32c43
++   entry #value
++     info
++         la valeur, sous forme de `Variable.Snapshot` ; `Unset` pour une lazy val non forcée
+
+@ 0 1 0 05e2fd7d6723bb070895c41222229867
++   entry #provenance
++     info
++         où se trouve le stockage, pour qu'une affectation sache où écrire
+
+@ 0 1 0 00b8f51a32b5fcd61fe2bc0233fd8a5d
++   entry #mutable
++     info
++         si la variable est une `var` : son stockage est une cellule `scala.runtime.*Ref`
+
+@ 0 1 0 15ea03cf7abe28661d74b1a633ca5eb0
++   entry #state
++     info
++         si une liaison paresseuse a été évaluée : `Forced`, ou `Unforced`
+
+@ 0 1 0 1ccfff3a2f0872c20e5a924471a11e61
++   entry .inspectable
++     info
++         rend une variable sous la forme `name:value`, avec `∿∿∿` pour une lazy val non forcée et
++         `○` en l'absence de valeur
+
+@ 0 1 0 0ad0958debfd095a08667fada849d307
++   entry .Snapshot
++     info
++         la vue côté débogueur d'une valeur distante : une primitive, une chaîne, un préfixe de
++         tableau, un objet ou null
+
+@ 0 6 0 1e83663bbb38baa51f8ac2bf817ec5b6
++     detail
++         `Primitive(value)` contient une `Jdwp.Value` décodée ; `Str(id, text)` une chaîne,
++         récupérée immédiatement ; `Arr(id, component, length, prefix)` l'identité d'un tableau, le
++         `Jdwp.Tag` de ses composants, sa longueur et ses dix premiers éléments, récupérés
++         immédiatement ; `Obj(id, cls)` tout autre objet sous forme de résumé — son identité et sa
++         classe démanglée — que `Halt#children` peut déployer ; et `Null` la référence nulle.
+
+@ 0 1 0 133c738a4de505b606c041aa6a278be3
++     entry .inspectable
++       info
++           rend un instantané : les littéraux tels quels, les tableaux comme `⦋🅸₀1∣₁2∣…⦌＠id`, les
++           objets comme `Cls＠id`
+
+@ 0 4 0 0e02f7b21f13426012b68b811cf729b4
++       detail
++           Une identité distante se rend sous la forme du nom de classe (ou de la lettre du
++           composant du tableau) suivi d'un `＠` pleine chasse et de l'identifiant d'objet JDWP —
++           assez proche du `Play@1a2b` de Java pour se lire comme une identité, et distinct de tout
++           rendu de littéral. Le given est paramétré par les types des cas de l'énumération,
++           puisque `Inspectable` est invariant.
+
+@ 0 1 0 0223c7065a5dcef3043b6469519b645c
++   entry .Provenance
++     info
++         où le stockage d'une variable a été trouvé, avec l'identité dont une écriture a besoin
+
+@ 0 6 0 06cb0d85aef1791a196c1c53334cedce
++     detail
++         `Local(slot)` est un slot de la trame ; `Captured(fieldPath, holder, field)` un champ
++         de capture sur `this` ou sur un `$outer` le long de `fieldPath` ;
++         `Field(owner, target, field)` un champ membre sur `target`, avec sa classe propriétaire
++         démanglée `owner` ; `Element(array, index)` un élément de tableau ; et
++         `Cell(cell, elem, inner)` le champ `elem` d'une cellule `scala.runtime.*Ref` trouvée en
++         `inner`. Les identifiants ne sont stables que tant que le thread du halt reste suspendu.
+
+@ 0 1 0 0daba3af439768e407d83d61f53314e5
++   entry .State
++     info
++         si une liaison paresseuse a été évaluée : `Forced` ou `Unforced`
+
+@ 0 2 0 17c580312a3eb8c516feb92d3221e842
++     detail
++         Une lazy val non forcée n'est *jamais* forcée par le débogueur — la forcer modifierait le
++         programme observé — si bien que sa valeur est absente et qu'elle se rend comme `∿∿∿`.
+
+@ 0 1 0 0fa64031555d163c148cf0dc517a93a9
++ entry .ObjectId
++   info
++       un identifiant d'objet JDWP : `Jdwp.Ref[Jdwp.Ref.Object]`
+
+@ 0 5 0 11fab7de7b9b6d5f1a6b9f5c326098f8
++   detail
++       Chaque identifiant que distribue la VM est un `Jdwp.Ref` tagué par une nature fantôme, si
++       bien que les neuf alias sont distincts à la compilation et gratuits à l'exécution.
++       `ThreadId`, `ThreadGroupId`, `StringId` et `ClassLoaderId` s'élargissent en `ObjectId`,
++       puisqu'en JDWP un thread, un groupe de threads, une chaîne et un chargeur de classes *sont*
++       tous des objets ; `ReferenceTypeId`, `MethodId`, `FieldId` et `FrameId` non. L'objet nul est
++       `Jdwp.Ref.empty`, testé avec l'extension `empty`.
+
+@ 0 1 0 01db264840c6ec790225f50947b99445
++ entry .ThreadId
++   info
++       l'identifiant d'un thread : `Jdwp.Ref[Jdwp.Ref.Thread]`, qui s'élargit en `ObjectId`
+
+@ 0 1 0 080ce4c4248301da1d967929633bee19
++ entry .ThreadGroupId
++   info
++       l'identifiant d'un groupe de threads : `Jdwp.Ref[Jdwp.Ref.Group]`, qui s'élargit en
++       `ObjectId`
+
+@ 0 1 0 15d5c0584d878ff119c8b6941b389032
++ entry .StringId
++   info
++       l'identifiant d'un objet chaîne : `Jdwp.Ref[Jdwp.Ref.Str]`, qui s'élargit en `ObjectId`
+
+@ 0 1 0 00dc73d9b99731760b580ef051ce83dc
++ entry .ClassLoaderId
++   info
++       l'identifiant d'un chargeur de classes : `Jdwp.Ref[Jdwp.Ref.Loader]`, qui s'élargit en
++       `ObjectId`
+
+@ 0 1 0 1918e0a61e056bef0791b70482f634a6
++ entry .ReferenceTypeId
++   info
++       l'identifiant d'un type classe, interface ou tableau : `Jdwp.Ref[Jdwp.Ref.Type]`
+
+@ 0 1 0 17a9c05a75fb19ca12b4194f074f6897
++ entry .MethodId
++   info
++       l'identifiant d'une méthode, relatif à son type référence : `Jdwp.Ref[Jdwp.Ref.Method]`
+
+@ 0 1 0 0cd2cdcf5ccb9c2115961763171b5bd6
++ entry .FieldId
++   info
++       l'identifiant d'un champ, relatif à son type référence : `Jdwp.Ref[Jdwp.Ref.Field]`
+
+@ 0 1 0 052e28929b837d501a2f82c5bb83308f
++ entry .FrameId
++   info
++       l'identifiant d'un cadre de pile, valide tant que son thread est suspendu :
++       `Jdwp.Ref[Jdwp.Ref.Frame]`
+
+@ 0 1 0 1d3baf7630fe0c85084bdf92371256e6
++ entry .Jdwp
++   info
++       le Java Debug Wire Protocol sous forme de valeurs : identifiants, emplacements, valeurs,
++       événements, codecs et une connexion
+
+@ 0 6 0 1c854b00859e48a80017b90e8454e2ab
++   detail
++       `Jdwp` modélise le protocole de sorte que cette bibliothèque puisse se lire en regard de la
++       spécification : les jeux de commandes et les commandes gardent leurs numéros publiés, les
++       natures d'événements et d'erreurs leurs noms publiés, et les identifiants les largeurs que
++       négocie la VM. C'est la couche sous `Debug`, pour ce que la session n'expose pas : une
++       requête d'événement brute avec ses propres `Jdwp.Modifier`, une méthode invoquée dans le
++       programme débogué, une chaîne internée là-bas.
+
+@ 0 9 0 183e003566497940189b5d0c7f7d46ff
++       Ses composantes sont le `Ref` opaque (avec les alias d'identifiants `ThreadId`, `FrameId` et
++       les autres, construits dessus), les énumérations que porte une requête ou une réponse
++       (`TypeTag`, `SuspendPolicy`, `EventKind`, `StepDepth`, `StepSize`, `Tag`), `Location`, la
++       `Value` taguée, les `Modifier` qui contraignent une requête d'événement, les structures
++       de réponse décodées (`Version`, `ClassInfo`, `MethodInfo`, `FieldInfo`, `LineTable`,
++       `VariableTable`, `Capabilities`, …), les `Event` que renvoie une VM, les codecs big-endian
++       écrits à la main `Reader` et `Writer`, le tramage `Packet`, et `Connection`, le client au
++       niveau du réseau qui trame et met en correspondance les paquets sur un canal bidirectionnel.
++       Rien d'autre que `Connection` ne touche à un socket.
+
+% 2 1 0 16bcb4a2fae451601421511412b77aa9
+
+% 1 1 0 06e1f9e27e2e381a09e64b718299b319
+
+% 0 1 0 19cec55ae206e0e10c7e12f427aeaa76
+
+% 0 1 0 1fbe5553719731f61f56df00032c533c
+
+% 0 1 0 01fa4fe952a842df0c888d38e1e2133e
+
+% 0 1 0 1dfe2c89869aea8303b37f3cad16aca4
+
+% 0 1 0 026d2322ad6068751c036d15df47aa70
+
+% 1 1 0 12ea5bbf09cb574005750f6af877bc3c
+
+@ 0 2 0 0edc459562585ea4018925621ae9d1e8
++       Requêtes et réponses sont mises en correspondance par identifiant de paquet, si bien que de
++       nombreuses commandes peuvent être en cours à la fois et qu'un événement arrivant pendant
++       l'une d'elles ne la perturbe pas.
+
+% 1 1 0 1bfa637417d2d8c203c361b0543f4fc5
+
+% 1 1 0 0f0a44d5cb02786b0f4835cedae68f15
+
+@ 0 1 0 035d291feba04ac21b01c1261d140fad
++   entry .Handshake
++     info
++         les quatorze octets ASCII `JDWP-Handshake` que chaque extrémité envoie, et attend en
++         retour, avant tout paquet
+
+@ 0 1 0 0cc297ed2166110b1a9e4381a03f0805
++   entry .Ref
++     info
++         un `Long` opaque tagué par une nature fantôme : le type sous-jacent à tout identifiant
++         JDWP
+
+@ 0 7 0 1cd63ca1bcefff5f00da41b228ec73ab
++     detail
++         `Ref[kind]` est un `Long` à l'exécution et un type distinct pour chaque `Ref.Kind` à la
++         compilation, si bien qu'un `ThreadId` ne peut jamais être passé là où un `FieldId` est
++         attendu, tandis que la covariance sur la nature permet à un `ThreadId` de s'élargir en
++         `ObjectId`. `Ref(long)` en crée un et `Ref.empty` est l'objet nul (identifiant zéro) ; les
++         extensions `long` et `empty` en relisent un. La largeur de transmission de chaque nature
++         est négociée pour chaque connexion (`IdSizes`), ce qui explique pourquoi `Reader` et
++         `Writer` sont construits avec les tailles.
+
+@ 0 1 0 09b814502f2a930304d7513abc95d8f9
++     entry .Kind
++       info
++           la racine des natures fantômes qu'une référence peut porter
+
+@ 0 1 0 0a1c9b26ab25760c04318fb76f71b223
++     entry .Object
++       info
++           la nature de toute référence d'objet ; `Thread`, `Group`, `Str` et `Loader` l'étendent
+
+@ 0 1 0 1bd935d6a0a959df0d0f055c6dc48c13
++     entry .Thread
++       info
++           la nature d'une référence de thread
+
+@ 0 1 0 0443ecb5471974cc1aebbaf8ec1d2b3c
++     entry .Group
++       info
++           la nature d'une référence de groupe de threads
+
+@ 0 1 0 1770f6e69d1e15db1f8df4369a15fb01
++     entry .Str
++       info
++           la nature d'une référence de chaîne
+
+@ 0 1 0 09c5e561afe828c80316e71bfd3c1b1c
++     entry .Loader
++       info
++           la nature d'une référence de chargeur de classes
+
+@ 0 1 0 1947e8211bec9d3b0e7867766bf4982f
++     entry .Type
++       info
++           la nature d'un identifiant de type référence (type classe, interface ou tableau)
+
+@ 0 1 0 0968b879ec306a2d1b12f12a8aa2a4a0
++     entry .Method
++       info
++           la nature d'un identifiant de méthode
+
+@ 0 1 0 07383d048bc7df520082064be44a58e5
++     entry .Field
++       info
++           la nature d'un identifiant de champ
+
+@ 0 1 0 12c835b7446a8ddc084a592f9968b4f5
++     entry .Frame
++       info
++           la nature d'un identifiant de trame
+
+@ 0 1 0 0bde37e29a0a4f6e04ac4c117923b2da
++     entry .apply
++       info
++           `Ref[kind](long)` : enveloppe un identifiant envoyé par la VM
+
+@ 0 1 0 0e70acbcea914117114e5db0bd5ed6eb
++     entry .empty
++       info
++           l'objet nul, identifiant zéro, pour toute nature
+
+@ 0 1 0 0b17be864e44efb11fcc68b1bc30ca84
++     entry .showable
++       info
++           rend une référence sous forme de son identifiant décimal
+
+@ 0 1 0 0e18d8a23a727e9b0dda999b8291f834
++     entry .equality
++       info
++           `CanEqual` entre références de même nature
+
+@ 0 1 0 1cfc70292ffc95810abcc797e069ecf6
++   entry .long
++     info
++         l'identifiant qu'enveloppe une référence, sous forme de `Long` ; une extension sur tout
++         `Ref`
+
+@ 0 1 0 03252da9afe0200b07f72d74dd1d4a9e
++   entry .empty
++     info
++         si une référence est l'objet nul (identifiant zéro) ; une extension sur tout `Ref`
+
+@ 0 1 0 0cebcebcbbd18fc20ad1ff30e2cdf751
++   entry .IdSizes
++     info
++         les cinq largeurs d'identifiants négociées, en octets, chacune de 1 à 8
+
+@ 0 6 0 12647b0bfab55d8710b5a0ca0cfd97c3
++     detail
++         `VirtualMachine.IDSizes` : `field`, `method`, `objectId` (qui fixe aussi la taille des
++         chaînes, threads, groupes de threads, chargeurs de classes, objets classe et tableaux),
++         `referenceType` et `frame`. Un `Reader` ou un `Writer` est construit avec les tailles que
++         la connexion a négociées (`Connection#sizes`) ; `IdSizes.bootstrap` vaut huit partout, et
++         ne sert qu'à décoder la réponse IDSizes elle-même, de structure fixe, et à tramer les
++         paquets, qui ne portent aucun identifiant.
+
+@ 0 1 0 13a49e01951aa1340df08974fe38853f
++     entry #field
++       info
++           la largeur d'un identifiant de champ
+
+@ 0 1 0 11c82a7fb603c2740cfd8ed6ca1b9ee9
++     entry #method
++       info
++           la largeur d'un identifiant de méthode
+
+@ 0 1 0 19e70a22b0e3ddde1736f52537ef40fc
++     entry #objectId
++       info
++           la largeur d'un identifiant d'objet, et de toute nature qui s'élargit en celui-ci
+
+@ 0 1 0 1524c91bdc4bc75a1adf92fa5648b19f
++     entry #referenceType
++       info
++           la largeur d'un identifiant de type référence
+
+@ 0 1 0 07ee1cd2a99bf18b044177a38f991ce2
++     entry #frame
++       info
++           la largeur d'un identifiant de trame
+
+@ 0 1 0 0c507d55e2678cd41e0f1d25be6d2677
++     entry .bootstrap
++       info
++           huit partout : les tailles utilisées avant la négociation, pour la réponse IDSizes et
++           les en-têtes de paquets
+
+@ 0 1 0 00432556b2eb73021e7e40ca6ba71e85
++   entry .TypeTag
++     info
++         si un type référence est une classe (1), une interface (2) ou un tableau (3)
+
+@ 0 1 0 0bccf852a8945e1119f73a3756556b8c
++     entry .apply
++       info
++           `TypeTag(byte)` : le tag correspondant à un octet du réseau, `Class` pour un octet
++           non reconnu
+
+@ 1 1 0 1572e889543a4be20dfb21fb570fc599
++     entry #id
++       info
++           l'octet de transmission
+
+@ 0 1 0 01fc43b7075c447a04589e6f1c846a1c
++   entry .SuspendPolicy
++     info
++         quelle part de la VM suspendre quand un événement survient : `None`, `EventThread` ou
++         `All`
+
+@ 0 5 0 017554d68477dcbb149ea1dd4745d449
++     detail
++         `None` (0) ne suspend rien, `EventThread` (1) seulement le thread qui a déclenché
++         l'événement, `All` (2) tous les threads. JDWP suspend une fois par composite, et le
++         répartiteur reprend selon la politique du composite ; un point d'arrêt portant un
++         gestionnaire utilise `All`, une requête de pas ou de préparation de classe `EventThread`.
+
+@ 0 1 0 06e25381fab6b45d081a0b31918c7645
++     entry .apply
++       info
++           `SuspendPolicy(byte)` : la politique correspondant à un octet du réseau, `None` pour un
++           octet non reconnu
+
+@ 1 1 0 0749e7ba174af362036ed3c5a904011b
++     entry #id
++       info
++           l'octet de transmission
+
+@ 0 1 0 19dac2042d4d9363138b06e6fe18dcb1
++   entry .EventKind
++     info
++         les natures d'événements qu'une requête peut demander et qu'un composite peut rapporter,
++         par leurs numéros JDWP
+
+@ 0 6 0 1ba8cdb118d2d78b0f4f99404a2acfcf
++     detail
++         `SingleStep` (1), `Breakpoint` (2), `FramePop` (3), `Exception` (4), `UserDefined` (5),
++         `ThreadStart` (6), `ThreadDeath` (7), `ClassPrepare` (8), `ClassUnload` (9),
++         `ClassLoad` (10), `FieldAccess` (20), `FieldModified` (21), `MethodEntry` (40),
++         `MethodExit` (41), `VmStart` (90), `VmDeath` (99), et `Other(id)` pour tout numéro non
++         nommé ici. `Debug#clear` prend la nature de la requête à annuler.
+
+@ 0 1 0 17634ffe5ee315b607af9b7c46c42ad9
++     entry .apply
++       info
++           `EventKind(int)` : la nature correspondant à un numéro du réseau, `Other(id)` pour un
++           numéro non reconnu
+
+@ 1 1 0 1e20ad2ffdd911651fb44540ca2200a1
++     entry #id
++       info
++           le numéro de transmission
+
+@ 0 1 0 05cb8f38f554522a0ba96b8f78ef5250
++   entry .StepDepth
++     info
++         la direction d'un pas : `Into` (0), `Over` (1) ou `Out` (2)
+
+@ 1 1 0 1c89345dc8489c2d1ad5b92323d3ab4b
++     entry #id
++       info
++           le numéro de transmission
+
+@ 0 1 0 13632735f0ca754e0abbcd14659a6b0e
++   entry .StepSize
++     info
++         la granularité d'un pas : `Min` (0), une instruction de bytecode, ou `Line` (1), une ligne
++         de source
+
+@ 1 1 0 018da04e77aa99061b254c67404a0655
++     entry #id
++       info
++           le numéro de transmission
+
+@ 0 1 0 1ccf24d2f2c8456706c91a7b71cbd330
++   entry .Tag
++     info
++         l'octet de tag qui identifie le type d'exécution d'une valeur en transmission
+
+@ 0 7 0 0b6eb49cdbd8e87d16f2b5ab030bb846
++     detail
++         `ArrayTag` (`[`), `ByteTag` (`B`), `CharTag` (`C`), `ObjectTag` (`L`), `FloatTag` (`F`),
++         `DoubleTag` (`D`), `IntTag` (`I`), `LongTag` (`J`), `ShortTag` (`S`), `VoidTag` (`V`),
++         `BooleanTag` (`Z`), `StringTag` (`s`), `ThreadTag` (`t`), `GroupTag` (`g`), `LoaderTag`
++         (`l`) et `ClassTag0` (`c`, ainsi nommé pour ne pas masquer `scala.reflect.ClassTag`). Une
++         valeur est demandée avec le tag de son type déclaré — le premier caractère d'une
++         signature JVM — et la réponse porte le tag précis.
+
+@ 0 1 0 1b0fb68382c0876b09683fcfd524e26e
++     entry .apply
++       info
++           `Tag(char)` : le tag correspondant à un caractère de signature ou du réseau,
++           `ObjectTag` pour un caractère non reconnu
+
+@ 0 1 0 1271b68343ba6964044d01d2f6be8b7d
++     entry .isObject
++       info
++           si la charge utile de transmission d'un tag est un identifiant d'objet plutôt
++           qu'une primitive en ligne
+
+@ 0 1 0 09293b871294ead30f17988e255c5f63
++     entry #id
++       info
++           le caractère de transmission
+
+@ 0 1 0 143aa2d0147eba7308a9639140a3e5b3
++   entry .Location
++     info
++         un emplacement exécutable : un type référence, l'une de ses méthodes, et un indice de
++         bytecode dans celle-ci
+
+@ 0 1 0 1b050b7a52e0327201a553683507c1f8
++     entry #tag
++       info
++           si le type est une classe, une interface ou un tableau
+
+@ 1 1 0 12a1dd4cff0bd77b061ea336f2b479dc
++     entry #cls
++       info
++           le type référence
+
+@ 1 1 0 180bf11f02f4c4e21a202ce237254cdc
++     entry #method
++       info
++           la méthode
+
+@ 0 1 0 10b6039863fb49ba0d50029674ab71e2
++     entry #index
++       info
++           l'indice de bytecode dans la méthode ; une table des lignes le fait correspondre à une
++           ligne de source
+
+@ 0 1 0 1215df608d0b4dce14ae6752dc20ef6b
++   entry .Value
++     info
++         une valeur taguée lue depuis ou écrite dans un slot, un champ ou un élément de tableau
+
+@ 0 5 0 0f069a788663e5a815631fbd09f22f1c
++     detail
++         Les primitives sont décodées immédiatement en `OfByte`, `OfChar`, `OfDouble`, `OfFloat`,
++         `OfInt`, `OfLong`, `OfShort` et `OfBoolean` ; `Void` est un résultat void ; et
++         `Reference(tag, id)` reste un identifiant avec son tag d'exécution, que `Halt` et
++         `Variable.Snapshot` interprètent. `Halt#assign` prend une `Value` du type effacé de la
++         variable.
+
+@ 0 1 0 0311b3f41df876540e091fe9c1a001fa
++     entry .inspectable
++       info
++           rend une primitive dans sa propre notation, une référence comme `tag＠id`, et null comme
++           `null`
+
+@ 0 2 0 0f6be18677ea4ebf05b9a7bed7db259f
++       detail
++           Paramétré par les types des cas de l'énumération, puisque `Inspectable` est invariant :
++           une instance pour `Value` seule ne couvrirait pas `OfInt` ni `Reference`.
+
+@ 0 1 0 1283b9b3dbc75b3315a5c4e8dcd1fce7
++   entry .Modifier
++     info
++         les contraintes d'une requête d'événement, chacune avec son modkind JDWP
+
+@ 0 10 0 10bdfbe1d7426dc906e3910b54337eb3
++     detail
++         `Count(count)` (1) déclenche la requête ce nombre de fois puis la fait expirer ;
++         `ThreadOnly` (3), `ClassOnly` (4), `ClassMatch(pattern)` (5) et `ClassExclude(pattern)`
++         (6) restreignent par thread ou par classe, les motifs étant un nom exact ou un nom borné
++         par un unique `*` ; `LocationOnly(location)` (7) place un point d'arrêt ;
++         `ExceptionOnly(cls, caught, uncaught)` (8) sélectionne des exceptions, la référence vide
++         signifiant n'importe quelle classe ; `FieldOnly(cls, field)` (9) nomme un champ observé ;
++         `Step(thread, size, depth)` (10) décrit un pas ; et `SourceNameMatch(pattern)` (12)
++         restreint les événements de préparation de classe par fichier source, quand la VM le prend
++         en charge. JDWP n'applique un `Count` qu'aux événements qui passent les modificateurs qui
++         le précèdent ; il vient donc en dernier.
+
+@ 0 1 0 1118a44b71d3c4e40bae725334fdd2c1
++   entry .Version
++     info
++         la réponse de version de la VM : une description, les versions majeure et mineure de JDWP,
++         et la version et le nom de la VM
+
+@ 0 1 0 1ebc7adfa2fd28a0196bd7b34e4ee928
++     entry #description
++       info
++           le texte de description propre à la VM
+
+@ 0 1 0 066117ad4ca9fd6d00ea01cccd660ccd
++     entry #major
++       info
++           la version majeure de JDWP
+
+@ 0 1 0 07a1c9bb05b689070c49dcdeb149cb75
++     entry #minor
++       info
++           la version mineure de JDWP
+
+@ 0 1 0 01cb9368ade7364208bfdc5f7c33a83a
++     entry #vmVersion
++       info
++           la chaîne de version de la VM
+
+@ 0 1 0 04ebc3017fd990b80a429c689ebda9b2
++     entry #vmName
++       info
++           le nom de la VM
+
+@ 0 1 0 165c89c957623fc208c70160ac75661a
++   entry .ClassInfo
++     info
++         un type référence chargé : son tag, son identifiant, sa signature JNI et son statut
+
+@ 0 1 0 1b49dc8c09c1808514914b595de885f3
++     entry #tag
++       info
++           classe, interface ou tableau
+
+@ 1 1 0 048eff9efa08282108f1fa1262a8a012
++     entry #cls
++       info
++           le type référence
+
+@ 0 1 0 1f82ef027e9ebd83072295d2fa0e33f5
++     entry #signature
++       info
++           la signature JNI, `Lcom/example/Main;`
+
+@ 0 1 0 09ee35c74167664b03a6821793f264fe
++     entry #status
++       info
++           les bits de statut de la classe : vérifiée, préparée, initialisée, erreur
+
+@ 0 1 0 15df2bba86b7a0c41298b2fd5c4df526
++   entry .MethodInfo
++     info
++         une méthode d'un type référence : son identifiant, son nom, sa signature JNI et ses
++         modificateurs
+
+@ 1 1 0 0c098bedb12c8ebb09a7b50596269bda
++     entry #method
++       info
++           la méthode
+
+@ 0 1 0 133d12415dc176fe125b029218add9cf
++     entry #name
++       info
++           le nom de la méthode, `<init>` pour un constructeur
+
+@ 0 1 0 0bcf3a8ec0a991f812dc3d14060162a8
++     entry #signature
++       info
++           la signature JNI, `(I)Ljava/lang/String;`
+
+@ 0 1 0 0d55ddb2098978eb01e1f69df7820366
++     entry #modifiers
++       info
++           les indicateurs d'accès ; le bit 0x40 marque un pont, 0x1000 une méthode synthétique
+
+@ 0 1 0 13b3e99af6b81d7d0d2d0ff77f6de9fc
++   entry .FieldInfo
++     info
++         un champ d'un type référence : son identifiant, son nom, sa signature JNI et ses
++         modificateurs
+
+@ 0 1 0 0fa3999bc59413270e73822858ab73a8
++     entry #field
++       info
++           le champ
+
+@ 0 1 0 104d7cece888f737188d4db69b015e74
++     entry #name
++       info
++           le nom du champ
+
+@ 1 1 0 1a437b1459546f68073e9ccde02e5487
++     entry #signature
++       info
++           la signature JNI
+
+@ 0 1 0 0d57f75e66ab79cf037196b9ca7957d3
++     entry #modifiers
++       info
++           les indicateurs d'accès ; le bit 0x8 marque un champ statique
+
+@ 0 1 0 046861a9aa2eb64001054dc466541293
++   entry .LineEntry
++     info
++         une ligne de la table des lignes : un indice de bytecode et la ligne de source qui y
++         commence
+
+@ 0 1 0 19308551e7d63f4b10cf9a2f85cb4bbe
++     entry #index
++       info
++           l'indice de bytecode
+
+@ 1 1 0 0706502713269e541bfbb2d0d6f68f2d
++     entry #line
++       info
++           la ligne de source
+
+@ 0 1 0 1482590deb0cf3781e8d23b71647aa1f
++   entry .LineTable
++     info
++         la table des lignes d'une méthode : ses premier et dernier indices de bytecode et ses
++         lignes
+
+@ 0 3 0 1b6a3fd5562727b4107b32a4628299b3
++     detail
++         `start` vaut −1 pour une méthode sans code exécutable (abstraite, native). La ligne de
++         source d'un emplacement est la `line` de la dernière entrée dont l'`index` est au plus
++         celui de l'emplacement.
+
+@ 0 1 0 02aa23f1319ebb1901a76857e20658a3
++     entry #start
++       info
++           le plus petit indice de bytecode, ou −1 pour une méthode sans code
+
+@ 0 1 0 0c695517b7e794661cc598a571982dd7
++     entry #end
++       info
++           le plus grand indice de bytecode
+
+@ 0 1 0 19a83329d3b4f99a1f7e27814a81f5fc
++     entry #lines
++       info
++           les lignes, dans l'ordre du bytecode
+
+@ 0 1 0 15768e6720be43fe1ffd61a2f566cb70
++   entry .SlotInfo
++     info
++         une ligne de la table des variables locales : la plage de bytecode du slot, son nom, sa
++         signature JNI et son numéro de slot
+
+@ 0 3 0 0c5d69af780e29410bab07d71d92c9f1
++     detail
++         Un slot est vivant à un indice de bytecode compris dans `[index, index + length)` ;
++         `Halt#variables` filtre en fonction de cela.
+
+@ 0 1 0 1137b723ec31df2f04248927e69181fd
++     entry #index
++       info
++           l'indice de bytecode auquel le slot devient vivant
+
+@ 1 1 0 0124d20d9c887b071657f93a802e482e
++     entry #name
++       info
++           le nom de la variable
+
+@ 1 1 0 10e64c6d804ee1d006e97eb4006e3955
++     entry #signature
++       info
++           la signature JNI
+
+@ 0 1 0 0df2c5bc956dc67212124176edd9fa7a
++     entry #length
++       info
++           le nombre d'indices de bytecode sur lesquels le slot est vivant
+
+@ 0 1 0 0566fb4cecfdeb5c0afefabf48e9e259
++     entry #slot
++       info
++           le numéro de slot, tel que le prend `Connection#slotValues`
+
+@ 0 1 0 12ed4769149b4e1e10ef388c1df40678
++   entry .VariableTable
++     info
++         la table des variables locales d'une méthode : son nombre d'arguments et ses slots
+
+@ 0 1 0 1583a4c3fe5e41c5014b78d9e1024d18
++     entry #argCount
++       info
++           le nombre de slots qu'occupent les paramètres de la méthode
+
+@ 0 1 0 0598943cd665614500d760c1fd97e842
++     entry #slots
++       info
++           les slots, sous forme de `SlotInfo`
+
+@ 0 1 0 0a7cbea009b1882d032f52481576af0c
++   entry .ThreadStatus
++     info
++         le statut d'un thread : son état d'exécution et s'il est suspendu
+
+@ 0 1 0 0fccdadcd77dea7a0b432b9b4d386fce
++     entry #threadStatus
++       info
++           zombie (0), en cours d'exécution (1), endormi (2), moniteur (3) ou en attente (4)
+
+@ 0 1 0 0144c262cce5ac3b175bdb026e97b9e4
++     entry #suspendStatus
++       info
++           1 quand le thread est suspendu
+
+@ 0 1 0 123ef4fe04f7444701f78ba8b6cfb626
++   entry .Invocation
++     info
++         le résultat d'une méthode invoquée dans le programme débogué : sa valeur de retour et
++         l'exception qu'elle a levée
+
+@ 0 1 0 0b5b9fc3c82535341637a6ba10fa3698
++     entry #result
++       info
++           la valeur de retour, `Void` pour une méthode void
+
+@ 0 1 0 1e46bab81f598e770ce1115e4e8585e6
++     entry #exception
++       info
++           l'exception levée, ou la référence nulle si la méthode s'est terminée normalement
+
+@ 0 1 0 1638cf2f56b1caff0253715eb2b00a03
++   entry .Capabilities
++     info
++         les indicateurs que cette bibliothèque consulte dans `VirtualMachine.CapabilitiesNew`
+
+@ 0 6 0 06e1aca19059d15600318b88ef5fc977
++     detail
++         Décodés par `Connection#capabilitiesNew` et mémoïsés par `Debug#capabilities` ; une
++         réponse tronquée d'une ancienne VM laisse les indicateurs manquants à faux. L'ordre du
++         constructeur est `canWatchFieldModification`, `canWatchFieldAccess`, `canGetBytecodes`,
++         `canGetSyntheticAttribute`, `canPopFrames`, `canGetSourceDebugExtension`,
++         `canUseSourceNameFilters`, `canGetConstantPool`.
+
+@ 0 1 0 1e0ad3f15d11e9310f589616a644199a
++     entry #canWatchFieldModification
++       info
++           si `Debug#watch` sur une écriture est possible
+
+@ 0 1 0 1715bb177896167115b5d4de14a093aa
++     entry #canWatchFieldAccess
++       info
++           si `Debug#watch` sur une lecture est possible
+
+@ 0 1 0 08f7b39b576f2d101b4acc4788f7f085
++     entry #canGetBytecodes
++       info
++           si le bytecode d'une méthode peut être lu, ce dont se sert le filtre de pas pour
++           reconnaître les méthodes de transfert
+
+@ 0 1 0 02c24c2d23205f8109be620fb4021137
++     entry #canGetSyntheticAttribute
++       info
++           si la VM rapporte les membres synthétiques
+
+@ 0 1 0 07bb9eda17a88ef614d46380bf8a46cd
++     entry #canPopFrames
++       info
++           si `Halt#pop` est possible
+
+@ 0 1 0 14228e15d4a5f4b50df217da8cb4cdcf
++     entry #canGetSourceDebugExtension
++       info
++           si les SMAP peuvent être lus, ce dont ont besoin les positions et les pas tenant compte
++           de l'inline
+
+@ 0 1 0 1a134fda213f03db0faf7c776297f298
++     entry #canUseSourceNameFilters
++       info
++           si une requête de préparation de classe peut être restreinte par fichier source
+
+@ 0 1 0 1aa615d1a61191c10ea5bf4d5f2f1d0e
++     entry #canGetConstantPool
++       info
++           si le pool de constantes d'une classe peut être lu, ce dont a besoin le filtre de pas
+
+@ 0 1 0 08a8d51e2599dce906fafda8cd6737eb
++   entry .Reader
++     info
++         décode la charge utile d'un paquet : big-endian, avec des lectures d'identifiants aux
++         largeurs négociées
+
+@ 0 5 0 1bebd5b0998c781c11f17526f915a94e
++     detail
++         Un `Reader(data, sizes)` parcourt une charge utile `Data` matérialisée depuis le début ;
++         chaque lecture fait avancer sa position : c'est donc une classe `caps.Mutable` tenue en
++         tant que `Reader^` et utilisée par un seul décodeur à la fois, dans l'ordre.
++         `Connection#request` en renvoie un sur la charge utile d'une réponse, et `Event.composite`
++         décode un composite depuis l'un d'eux.
+
+% 2 1 0 0ad78a51b33247b602e6268e81d04e09
+
+% 3 1 0 04c8e768de7a121914f85a4046474ca9
+
+% 5 1 0 1c4eff9d5dcdcbae1e74e39719211eb7
+
+% 0 1 0 1dd43a7a73155798170a7db07d334291
+
+% 0 1 0 183b6e4ee9454acc178a4df7ba0d692d
+
+% 0 1 0 036178325f313de111948d9a007a414b
+
+% 0 1 0 09f3f49c8c108c710dac5a266b64e129
+
+% 1 1 0 17ea6cfee661798c039dc1e45ed57ed6
+
+@ 0 1 0 111bcf4fe7126a12188c39c0c325009e
++     entry #remaining
++       info
++           les octets pas encore lus
+
+@ 0 1 0 0861ec934dbe0e6a04a0afb65a51ee05
++     entry #byte
++       info
++           lit un octet
+
+@ 0 1 0 0e552143412abc4d14b9636de567c898
++     entry #boolean
++       info
++           lit un octet sous forme de booléen
+
+@ 0 1 0 019f93f28de7a32d189a20d277e41c52
++     entry #short
++       info
++           lit un entier big-endian de 16 bits
+
+@ 0 1 0 10ee1e6416cc822f11567f017e6a7b7c
++     entry #char
++       info
++           lit un caractère big-endian de 16 bits
+
+@ 0 1 0 074d59de7d267e9f1e30cb0eea730ba0
++     entry #int
++       info
++           lit un entier big-endian de 32 bits
+
+@ 0 1 0 049355385c42f9b6046ee8e9d8e5ffe3
++     entry #long
++       info
++           lit un entier big-endian de 64 bits
+
+@ 0 1 0 1d850a3f0957e45f054de7bf0015ab89
++     entry #float
++       info
++           lit un flottant IEEE de 32 bits
+
+@ 0 1 0 09f15d81ea18e86f0951005d61ecad04
++     entry #double
++       info
++           lit un double IEEE de 64 bits
+
+@ 0 1 0 095b6978471c45ff125b76819f64dc7f
++     entry #id
++       info
++           lit un identifiant de la largeur donnée en octets
+
+@ 0 1 0 197fe9660a1cb5950652b753fa3afcea
++     entry #objectId
++       info
++           lit un `ObjectId` à la largeur d'objet négociée
+
+@ 0 1 0 1a842fd39e6cd1ad15a8183336023eec
++     entry #threadId
++       info
++           lit un `ThreadId` à la largeur d'objet négociée
+
+@ 0 1 0 15edaa85ce36ba77187de4ccf32df0d5
++     entry #threadGroupId
++       info
++           lit un `ThreadGroupId` à la largeur d'objet négociée
+
+@ 0 1 0 1d23a957b7c099671369677264766402
++     entry #stringId
++       info
++           lit un `StringId` à la largeur d'objet négociée
+
+@ 0 1 0 1b3ac5d2bfe6882f18cb9c83bc8cc00c
++     entry #classLoaderId
++       info
++           lit un `ClassLoaderId` à la largeur d'objet négociée
+
+@ 0 1 0 0ff3f8e3e422b43a17848af2b54ff7a9
++     entry #referenceTypeId
++       info
++           lit un `ReferenceTypeId` à la largeur de type référence négociée
+
+@ 0 1 0 103f1656f01174c8101661ed349f6a85
++     entry #methodId
++       info
++           lit un `MethodId` à la largeur de méthode négociée
+
+@ 0 1 0 12515f4b7a0ef0401db4307027c91eee
++     entry #fieldId
++       info
++           lit un `FieldId` à la largeur de champ négociée
+
+@ 0 1 0 17e6c31ff9a94f7503bad515fb093fd6
++     entry #frameId
++       info
++           lit un `FrameId` à la largeur de trame négociée
+
+@ 0 1 0 0fbda9955a001806192706105ace8f74
++     entry #string
++       info
++           lit une chaîne JDWP préfixée par sa longueur, en UTF-8 modifié de JNI
+
+@ 0 3 0 06fe0a63b0234bae16c43f0420b1068f
++       detail
++           Le caractère nul arrive sous la forme `C0 80` et un caractère hors du plan multilingue
++           de base sous la forme de deux séquences de trois octets, qui passent telles quelles en
++           tant que la paire de substitution qu'elles encodent ; un décodeur UTF-8 strict
++           rejetterait les deux.
+
+@ 0 1 0 09770e5fb9ded57d01bcbe6e73eb8055
++     entry #modifiedUtf8
++       info
++           lit une suite en UTF-8 modifié d'une longueur déjà lue, telle qu'un pool de constantes
++           de fichier de classe la stocke
+
+@ 0 1 0 176c1da125da4fce124f00a78fa71f7b
++     entry #skip
++       info
++           avance d'un certain nombre d'octets
+
+@ 0 1 0 123615c19a3c578d1c3a2078c85b484d
++     entry #location
++       info
++           lit une `Location` : un tag de type, un type référence, une méthode et un indice
+
+@ 0 1 0 1c48fb4aaa1f3dc215c9daded3077037
++     entry #value
++       info
++           lit une `Value` taguée
+
+@ 0 1 0 0b838544aeee64b80d6fdf27bcd08cce
++     entry #untaggedValue
++       info
++           lit une `Value` dont l'appelant connaît déjà le tag
+
+@ 0 1 0 1db4514c0e142fc0130f0bdda96f17ff
++     entry #arrayRegion
++       info
++           lit une région de tableau : un tag pour la région, un nombre, puis les éléments
+
+@ 0 2 0 0ca1b91322f4b3241e7393b954d002ea
++       detail
++           Une région primitive regroupe des valeurs non taguées de son unique type ; une région
++           d'objets porte des valeurs taguées de manière ordinaire, puisque les types
++           d'exécution des éléments peuvent différer.
+
+@ 0 1 0 117052db3e0622e608f2eb1f4ffe14c6
++   entry .Writer
++     info
++         sérialise la charge utile d'un paquet : fluide, big-endian, identifiants aux largeurs
++         négociées
+
+@ 0 4 0 179f65b243f5c6cf0e9b460e12f3889f
++     detail
++         Un `Writer(sizes)` accumule des octets ; chaque écriture renvoie l'écrivain, et `#data`
++         capture ce qui a été écrit. `Connection#request` en prête un à la fonction `write` de
++         l'appelant.
+
+% 2 1 0 1fac1c7f550efad40e2b1d3dca90fc42
+
+% 3 1 0 07eb35cfbb8a9c9b0b1700f83070b84d
+
+% 5 1 0 0d5189651bf7a46804c8373ac0afc67d
+
+% 0 1 0 0f69f5b813ae986d14b44de9e0cbf3f3
+
+% 1 1 0 08fc2dc73bb80f150723311ea0e3146d
+
+@ 0 1 0 028319e6cef4de6418bd0cbf4baf7ae0
++     entry #byte
++       info
++           écrit un octet
+
+@ 0 1 0 16c5b74a9344d6f409cdea0357884135
++     entry #boolean
++       info
++           écrit un booléen sur un octet
+
+@ 0 1 0 16b661910de0769913d0c2117d4cc2a0
++     entry #short
++       info
++           écrit un entier big-endian de 16 bits
+
+@ 0 1 0 11b91c5d17c5939605e9df5a937f3be0
++     entry #char
++       info
++           écrit un caractère big-endian de 16 bits
+
+@ 0 1 0 1516b64ee96fd3f510e2deecf9b8a486
++     entry #int
++       info
++           écrit un entier big-endian de 32 bits
+
+@ 0 1 0 1690864c7fb176881e26f61713b23d47
++     entry #long
++       info
++           écrit un entier big-endian de 64 bits
+
+@ 0 1 0 0e6741cecd400ec61c4c6cafab613fb3
++     entry #float
++       info
++           écrit un flottant IEEE de 32 bits
+
+@ 0 1 0 03d0eb75cefaff2c015cb671c662f3eb
++     entry #double
++       info
++           écrit un double IEEE de 64 bits
+
+@ 0 1 0 0280160e7f78becc087c73ab5b431401
++     entry #id
++       info
++           écrit un identifiant à la largeur donnée en octets
+
+@ 0 1 0 07d5a99036c37339086058bfdc3df766
++     entry #objectId
++       info
++           écrit un `ObjectId` à la largeur d'objet négociée
+
+@ 0 1 0 1c2272b156a103b3014c92281e98e854
++     entry #threadId
++       info
++           écrit un `ThreadId` à la largeur d'objet négociée
+
+@ 0 1 0 089678f1d88213a01c0d74ee7ba47458
++     entry #threadGroupId
++       info
++           écrit un `ThreadGroupId` à la largeur d'objet négociée
+
+@ 0 1 0 1876e36bdc2c68fd1628c7ca4a52f32a
++     entry #stringId
++       info
++           écrit un `StringId` à la largeur d'objet négociée
+
+@ 0 1 0 16b78870e9f80e4c0655bc0b47134627
++     entry #classLoaderId
++       info
++           écrit un `ClassLoaderId` à la largeur d'objet négociée
+
+@ 0 1 0 043fbc6433e002220457d7f00b446da9
++     entry #referenceTypeId
++       info
++           écrit un `ReferenceTypeId` à la largeur de type référence négociée
+
+@ 0 1 0 1065bf440ba5b6641422e6fa8747577f
++     entry #methodId
++       info
++           écrit un `MethodId` à la largeur de méthode négociée
+
+@ 0 1 0 0438f704c9916e03173bd2872541deb1
++     entry #fieldId
++       info
++           écrit un `FieldId` à la largeur de champ négociée
+
+@ 0 1 0 0411a36ea4fdb0e00beaa7d410c93bd2
++     entry #frameId
++       info
++           écrit un `FrameId` à la largeur de trame négociée
+
+@ 0 1 0 08a16127979a63701294b59c81b08edd
++     entry #string
++       info
++           écrit une chaîne JDWP préfixée par sa longueur, en UTF-8 modifié de JNI
+
+@ 0 1 0 1209d30ff769eeec1645e5f245f4932f
++     entry #location
++       info
++           écrit une `Location`
+
+@ 0 1 0 1e63aec0f94a42691e964845b51d20e3
++     entry #value
++       info
++           écrit une `Value` avec son octet de tag
+
+@ 0 1 0 083a4766e354964e10b59a47fa037732
++     entry #untaggedValue
++       info
++           écrit une `Value` sans tag, pour une écriture de champ ou une région de tableau
++           primitive
+
+@ 0 1 0 098cff0c7430fcca1b447931e9fed67e
++     entry #modifier
++       info
++           écrit un `Modifier` : son octet de modkind puis sa charge utile
+
+@ 0 1 0 034f23d4af902c4d192d83cdb77bc7e5
++     entry #bytes
++       info
++           ajoute des octets bruts
+
+@ 0 1 0 10df438d6d810db00c64fa18985962b1
++     entry #data
++       info
++           les octets écrits jusqu'ici, sous forme de `Data`
+
+@ 0 1 0 12c324433ed5aa9d0fa655d9876d44ec
++   entry .Event
++     info
++         les événements que renvoie une VM, décodés depuis une commande Composite
+
+@ 0 11 0 0cf1c12d93c2af56074c7e974ee9586b
++     detail
++         `VmStart(request, thread)`, `VmDeath(request)`, `ThreadStart` et `ThreadDeath`
++         (`request, thread`), `Breakpoint`, `SingleStep`, `MethodEntry` et `MethodExit`
++         (`request, thread, location`), `Thrown(request, thread, location, exception,
++         catchLocation)`, `FieldAccess(request, thread, location, tag, cls, field, obj)`,
++         `FieldModified(…, obj, incoming)`, `ClassPrepared(request, thread, tag, cls, signature,
++         status)` et `Unknown(kind, request)`. Seules les natures que ce débogueur demande sont
++         modélisées entièrement : une nature non reconnue se décode en `Unknown` et termine le
++         composite, puisque la longueur de sa charge utile est inconnue et que le flux ne peut pas
++         être resynchronisé au sein du paquet (le paquet suivant n'est pas affecté, étant délimité
++         par sa longueur). `request` est l'identifiant de la requête d'événement qui a causé
++         l'événement, `0` pour un événement automatique comme `VmStart`.
+
+@ 0 1 0 0df9d3799e3a61ba0bf17027692c6c08
++     entry .Composite
++       info
++           une commande Composite : une politique de suspension et les événements qu'elle porte
+
+@ 0 3 0 0df2eb22a2d6aa1b0b05453f81194451
++       detail
++           JDWP suspend une fois par composite, selon sa `policy`, et le répartiteur le reprend une
++           fois ; un composite qu'aucun gestionnaire ne revendique est remis entier à
++           `Debug#events`.
+
+@ 0 1 0 0b923e412e2ba0da0a9cfbb03fefe632
++       entry #policy
++         info
++             quelle part de la VM le composite a suspendue
+
+@ 0 1 0 1dda656a9844c4981ecfd86b123b970b
++       entry #events
++         info
++             les événements, dans l'ordre où la VM les a envoyés
+
+@ 0 1 0 0cec3180166e52ee0110fe9dcf0cd327
++     entry .composite
++       info
++           décode un composite depuis un lecteur positionné sur la charge utile d'une commande
++           Composite
+
+@ 0 1 0 0c79153410f230d91b4dd692bef75bd6
++   entry .Packet
++     info
++         un paquet JDWP complet : identifiant, indicateurs, code d'erreur, jeu de commandes,
++         commande et corps
+
+@ 0 5 0 168ee6fd50e9799e0fc0bc67dcb3419d
++     detail
++         Le préfixe de longueur de 4 octets compte tout le paquet, en-tête compris ; le bit de
++         poids fort de `flags` marque une réponse, qui porte un code d'erreur de 2 octets là où une
++         commande porte un jeu de commandes de 1 octet et une commande de 1 octet. `Packet.command`
++         trame une commande, `Packet.reply` une réponse (comme le fait une fausse VM dans un test),
++         et `Packet.decode` en relit un.
+
+@ 0 1 0 0d57759cc83e71db0f7cd0319c548fe6
++     entry #id
++       info
++           l'identifiant du paquet, qui met en correspondance une réponse et sa commande
+
+@ 0 1 0 0f54fc9dc7e10607128850d2c2f63469
++     entry #flags
++       info
++           l'octet d'indicateurs ; le bit de poids fort marque une réponse
+
+@ 0 1 0 16b37eb4e2fae68215b53b165e552904
++     entry #code
++       info
++           le code d'erreur d'une réponse, zéro en cas de succès ; zéro pour une commande
+
+@ 0 1 0 050360ba46c435c41f47536071515e7b
++     entry #commandSet
++       info
++           le numéro de jeu d'une commande ; zéro pour une réponse
+
+@ 0 1 0 0e0f6a1e8ff523c2089c7af10954b0f2
++     entry #command
++       info
++           le numéro d'une commande dans son jeu ; zéro pour une réponse
+
+@ 0 1 0 1fba221270f326e40e7d70c8f3f02fb3
++     entry #body
++       info
++           la charge utile après l'en-tête de onze octets
+
+@ 0 1 0 117dae9d1d1b530d0cf131faffc1c986
++     entry #reply
++       info
++           si le paquet est une réponse
+
+@ 0 1 0 0b45280e8866664710b9c631e05e496c
++     entry .headerLength
++       info
++           onze : les octets qui précèdent la charge utile
+
+@ 0 1 0 0908ce76e3b9fb560fac9aa6b8e761d0
++     entry .command
++       info
++           trame un paquet de commande à partir d'un identifiant, d'un jeu, d'un numéro de commande
++           et d'un corps
+
+@ 0 1 0 172cbcedc138768b0288de5fc38a961c
++     entry .reply
++       info
++           trame un paquet de réponse à partir d'un identifiant, d'un code d'erreur (non nul en cas
++           d'échec) et d'un corps
+
+@ 0 1 0 130eebbad470fb9f02ce1cc307006c7c
++     entry .decode
++       info
++           décode un paquet complet, exactement sa propre longueur en octets
+
+@ 0 1 0 1cb5a86f26b49b88057415f01ec1e6f3
++   entry .Connection
++     info
++         le client au niveau du réseau : trame et met en correspondance les paquets sur un canal
++         bidirectionnel
+
+@ 0 9 0 14951229c06ea3330cad373db8ead14c
++     detail
++         Une `Connection` possède les pompes dont une session a besoin : une unique tâche
++         d'écriture vide les paquets sortants pour que les écritures ne s'entrelacent jamais, une
++         tâche de lecture réassemble les paquets délimités par leur longueur et tient la promesse
++         que règle chaque réponse ou met en file chaque composite, et une tâche de répartition
++         exécute les gestionnaires inscrits — jamais la tâche de lecture, de sorte que la propre
++         commande d'un gestionnaire ne puisse pas attendre la tâche qui doit lui livrer sa réponse.
++         Un gestionnaire qui émet une commande pompe la file des composites de manière réentrante
++         pendant qu'il attend, car une méthode invoquée peut déclencher un événement (une
++         préparation de classe pendant l'édition de liens) qui suspend le thread même qui exécute
++         l'invocation, et seul le répartiteur peut le régler.
+
+@ 0 6 0 1a5dd26e071802871785aed6b7d7218b
++         C'est une `SharedCapability`, pilotée à la fois par ses trois tâches et par le thread de
++         la session, dont chaque élément d'état est synchronisé. `Debug` en enveloppe une ; on
++         l'atteint directement pour les commandes que la session n'expose pas, comme le fait
++         l'`Evaluator` pour allouer un tableau, interner une chaîne et invoquer `defineClass` dans
++         le programme débogué. Les méthodes de commande portent le nom de celles de la
++         spécification, groupées par jeu de commandes, et chacune prend une
++         `Tactic[Debugger.Error]` par laquelle le code d'erreur d'une réponse est levé.
+
+% 0 1 0 0c96f91005cce50f10f67496a0a201a7
+
+@ 0 1 0 1d16a9e89f12465f0ddd81b0fb1ed0d0
++     entry #sizes
++       info
++           les largeurs d'identifiants négociées au début de la session
+
+@ 0 1 0 0e83d187b5d061511ee5f72d275dc5b3
++     entry #request
++       info
++           trame et émet une commande, et renvoie un lecteur sur la charge utile de la réponse
+
+@ 0 4 0 185d595c588e334005d9dec41fe0f387
++       detail
++           `request(set, command)(write)` prête un `Writer` à `write`, envoie le paquet, attend la
++           réponse et renvoie un `Reader^` positionné sur sa charge utile. Une réponse en échec
++           lève une `Debugger.Error` avec la raison de la VM et le détail `command (set, command)`,
++           et un lecteur vide est renvoyé pour que le décodage se dégrade plutôt que de planter.
+
+@ 0 1 0 18e79cf28f8e9e190c19858a62310662
++     entry #version
++       info
++           `VirtualMachine.Version` (1, 1) : la version de la VM
+
+@ 0 1 0 015427f957a67d3d1286115707cf0f8f
++     entry #allClasses
++       info
++           `VirtualMachine.AllClasses` (1, 3) : tous les types référence chargés
+
+@ 0 2 0 1f23615ab3c4c64c1af979fd28db3e76
++       detail
++           Énumère toute la VM : il ne faut donc pas l'appeler pendant qu'un thread est suspendu en
++           détenant un verrou de chargement de classes (lors d'un événement `ClassPrepare`) :
++           utilisez `Connection#classesBySignature`.
+
+@ 0 1 0 1ee58ac92087f47c12fcfccc4f2913c6
++     entry #classesBySignature
++       info
++           `VirtualMachine.ClassesBySignature` (1, 2) : les classes chargées ayant exactement une
++           signature JNI donnée
+
+@ 0 1 0 188d58305eb8a649015fe80337e6cd9a
++       detail
++           Une par chargeur définissant. Sûr lors d'un événement `ClassPrepare`, contrairement à
++           `Connection#allClasses`.
+
+@ 0 1 0 197e9dbc9ef7024b19b849afef6e8ecb
++     entry #allThreads
++       info
++           `VirtualMachine.AllThreads` (1, 4) : tous les threads
+
+@ 0 1 0 08e771790c94b9c805ddb0f60f92056d
++     entry #suspendAll
++       info
++           `VirtualMachine.Suspend` (1, 8) : suspend tous les threads
+
+@ 0 1 0 0024e2c04c461ed714a38c56878805fd
++     entry #resumeAll
++       info
++           `VirtualMachine.Resume` (1, 9) : reprend tous les threads
+
+@ 0 1 0 012946d3e1ceea6802adc843ec523a96
++     entry #dispose
++       info
++           `VirtualMachine.Dispose` (1, 6) : termine la session de débogage, en effaçant chaque
++           requête
+
+@ 0 1 0 180390aa0f06bf7411eac8c4a63ae55e
++     entry #createString
++       info
++           `VirtualMachine.CreateString` (1, 11) : interne une chaîne dans le programme débogué,
++           pour une invocation
+
+@ 0 1 0 14c824996a6d79011b9c49cf9ae38768
++     entry #capabilitiesNew
++       info
++           `VirtualMachine.CapabilitiesNew` (1, 17) : les indicateurs nommés dans `Capabilities`
+
+@ 0 1 0 094d374d1f5fca991c42ba8afbfc6bbe
++     entry #signature
++       info
++           `ReferenceType.Signature` (2, 1) : la signature JNI d'un type
+
+@ 0 1 0 10876b8ac5de6c0e1cb95e223ad3d7c2
++     entry #sourceFile
++       info
++           `ReferenceType.SourceFile` (2, 7) : le fichier source depuis lequel un type a été
++           compilé, par nom de base
+
+@ 0 1 0 00ce93a4dd8a1949171c81bf169027bf
++     entry #classLoader
++       info
++           `ReferenceType.ClassLoader` (2, 2) : le chargeur qui a défini un type, ou la référence
++           nulle pour une classe d'amorçage
+
+@ 0 1 0 06a5ed339041c3c302e7bdc32cf394c3
++     entry #smap
++       info
++           le SMAP analysé d'une classe, mémoïsé pour la session, ou `Unset` si elle n'en a pas
+
+@ 0 3 0 11b38e04a266cb460df286dbc9e98551
++       detail
++           Analysé par digression depuis `Connection#sourceDebugExtension` ; l'absence est mémoïsée
++           elle aussi, si bien qu'une classe sans extension de débogage (ou une VM sans
++           `canGetSourceDebugExtension`) ne coûte qu'un aller-retour, une fois pour toutes. C'est
++           ce qui permet aux positions et aux pas de tenir compte de l'inline.
+
+@ 0 1 0 1fdd1cdf522fa43c16e7e20e3b978ad6
++     entry #sourceDebugExtension
++       info
++           `ReferenceType.SourceDebugExtension` (2, 12) : le texte SMAP brut
+
+@ 0 1 0 06a1584172d85c071bf8040597475811
++     entry #methods
++       info
++           `ReferenceType.Methods` (2, 5) : les méthodes d'un type
+
+@ 0 1 0 051ac3bfed63be3d1042c3a2f4ab4c27
++     entry #fields
++       info
++           `ReferenceType.Fields` (2, 4) : les champs propres d'un type, hors champs hérités
+
+@ 0 1 0 1acb62f417c489ac00a9b4f90523c32d
++     entry #constantPool
++       info
++           `ReferenceType.ConstantPool` (2, 18) : les noms que portent les références de méthodes
++           d'une classe, mémoïsés
+
+@ 0 3 0 162ccf306f48e402046e3935faabb50f
++       detail
++           Renvoie le pool analysé propre à la bibliothèque, que consulte le filtre de pas pour
++           reconnaître un redirecteur au nom de la méthode qu'il appelle ; il est privé
++           au package, si bien qu'un appelant extérieur à la bibliothèque ne peut que le
++           transmettre. Exige `canGetConstantPool` ; sans cela, le pool est vide.
+
+@ 0 1 0 12d5c9749130de610775cdb296ee2b0e
++     entry #bytecodes
++       info
++           `Method.Bytecodes` (6, 3) : le bytecode d'une méthode, sous forme de lecteur sur son
++           premier opcode
+
+@ 0 1 0 0acd2e2cfba5c2dd12ec5ed2fb2ae9e9
++       detail
++           Exige `canGetBytecodes`.
+
+@ 0 1 0 0dc3dff24dcf40e70a3a66476094ab6c
++     entry #superclass
++       info
++           `ClassType.Superclass` (3, 1) : la superclasse immédiate, ou la référence vide pour
++           `Object`
+
+@ 0 2 0 0c2cc47bca239269003a73ada5bc597f
++       detail
++           La parcourir permet d'atteindre les champs hérités, que `Connection#fields` omet ;
++           `Halt#exceptionInfo` la parcourt pour trouver le `detailMessage` de `Throwable`.
+
+@ 0 1 0 02fe50f55510634f134b3d2d04610e9e
++     entry #invokeStatic
++       info
++           `ClassType.InvokeMethod` (3, 3) : invoque une méthode statique sur un thread suspendu
+
+@ 0 3 0 00ffc7ce22a0ebbb1a27fdfa4b4bc9d7
++       detail
++           Monothread : tous les autres threads restent suspendus pendant toute la durée, si bien
++           qu'une méthode qui a besoin d'un autre thread entrerait en interblocage. Renvoie
++           l'`Invocation` avec son résultat et l'éventuelle exception.
+
+@ 0 1 0 067c640f70df9f50075dd4397f7f9739
++     entry #newInstance
++       info
++           `ClassType.NewInstance` (3, 4) : construit un objet sur un thread suspendu
+
+@ 0 1 0 0a8cca1a16f6c82a1b46d878f1a8d636
++     entry #newArray
++       info
++           `ArrayType.NewInstance` (4, 1) : alloue un tableau d'une longueur donnée dans le
++           programme débogué
+
+@ 0 1 0 0ddc62efa1322a5319bea605a6f4c920
++     entry #lineTable
++       info
++           `Method.LineTable` (6, 1) : la correspondance entre bytecode et lignes d'une méthode
+
+@ 0 1 0 1f5899735dbf31910e74cad78d432beb
++     entry #variableTable
++       info
++           `Method.VariableTable` (6, 2) : la table des variables locales d'une méthode, ou `Unset`
++           sans information de débogage
+
+@ 0 3 0 0e815beee1b94719076ffc1e3deee23d
++       detail
++           Une classe compilée sans information de débogage sur les variables locales fait répondre
++           `AbsentInformation` (101) à la VM, décodé en `Unset` plutôt que levé, puisque les
++           appelants se replient sur l'état capturé et les champs.
+
+@ 0 1 0 09e8beff1505e0ac152585c1aaa9788e
++     entry #referenceType
++       info
++           `ObjectReference.ReferenceType` (9, 1) : le type d'exécution d'un objet, avec son
++           tag
+
+@ 0 1 0 12d9829d87ce2bbc1a18046bb4ce0ccc
++     entry #fieldValues
++       info
++           `ObjectReference.GetValues` (9, 2) : les valeurs des champs d'un objet
+
+@ 0 1 0 039f092872cc0f691b68913e451304ca
++     entry #setFieldValues
++       info
++           `ObjectReference.SetValues` (9, 3) : écrit les champs d'un objet, sans étiquette
+
+@ 0 1 0 0cefe77accca6afd0399d4a0d4b4f598
++     entry #invokeMethod
++       info
++           `ObjectReference.InvokeMethod` (9, 6) : invoque une méthode d'instance sur un thread
++           suspendu
+
+@ 0 2 0 0ce65ab6560e15d715d90c7a5b12ce4c
++       detail
++           Monothread, comme `Connection#invokeStatic`. L'invocation JDWP ignore le contrôle
++           d'accès, ce qui permet à l'`Evaluator` d'appeler le `defineClass` protégé d'un chargeur
++           de classes.
+
+@ 0 1 0 0e04f6f8d1d54c2f0876b579654dd593
++     entry #reflectedType
++       info
++           `ClassObjectReference.ReflectedType` (17, 1) : le type référence que représente un objet
++           `java.lang.Class`
+
+@ 0 1 0 1a29c40175470a9014dfd27d3f0e4815
++     entry #stringValue
++       info
++           `StringReference.Value` (10, 1) : le texte d'un objet chaîne
+
+@ 0 1 0 1ad4245a190ee6c01439f47232c217fa
++     entry #threadName
++       info
++           `ThreadReference.Name` (11, 1) : le nom d'un thread
+
+@ 0 1 0 0c48e2ed05a326821538ac1723000579
++     entry #suspendThread
++       info
++           `ThreadReference.Suspend` (11, 2) : suspend un thread
+
+@ 0 1 0 0ab3562c89762fe0017b08f8167ca419
++     entry #resumeThread
++       info
++           `ThreadReference.Resume` (11, 3) : reprend un thread
+
+@ 0 1 0 0178339d166a957c00ac8a55449bb84f
++     entry #threadStatus
++       info
++           `ThreadReference.Status` (11, 4) : l'état d'exécution et de suspension d'un thread
+
+@ 0 1 0 0dcde00e30278bad15f0f2a365445636
++     entry #frameCount
++       info
++           `ThreadReference.FrameCount` (11, 7) : la profondeur de la pile d'un thread suspendu
+
+@ 0 1 0 1a90e5398c8b96e4034696f6b6fc5d80
++     entry #frames
++       info
++           `ThreadReference.Frames` (11, 6) : une plage des trames d'un thread suspendu, avec leurs
++           emplacements
+
+@ 0 1 0 0901a85ab2b3e3631f096734c51397ee
++     entry #arrayLength
++       info
++           `ArrayReference.Length` (13, 1) : la longueur d'un tableau
+
+@ 0 1 0 115e8354f436839d0d095d8d546dfc19
++     entry #arrayValues
++       info
++           `ArrayReference.GetValues` (13, 2) : une plage des éléments d'un tableau
+
+@ 0 1 0 0df7db29ba726a3508cfd863b6e6edb1
++     entry #setArrayValues
++       info
++           `ArrayReference.SetValues` (13, 3) : écrit une plage des éléments d'un tableau, sans
++           étiquette
+
+@ 0 1 0 16ccd0ccbecaa097197d33a05c42a3a4
++     entry #eventRequestSet
++       info
++           `EventRequest.Set` (15, 1) : installe une requête d'événement et renvoie son identifiant
+
+@ 0 2 0 04996ef3883cc2df181006aac0642dc9
++       detail
++           Prend l'`EventKind`, la `SuspendPolicy` et les `Modifier` ; l'identifiant est ce que
++           prennent `Connection#eventRequestClear` et `Debug#clear`.
+
+@ 0 1 0 0cfabad60fc643a312902f267e360c79
++     entry #eventRequestClear
++       info
++           `EventRequest.Clear` (15, 2) : annule une requête d'événement par nature et identifiant
+
+@ 0 1 0 107348be56d949f8140f3a7783f4b823
++     entry #slotValues
++       info
++           `StackFrame.GetValues` (16, 1) : les valeurs des slots d'un cadre de pile, chacun
++           demandé avec le tag de son type
+
+@ 0 1 0 0749e1583d5b6df206ba9f83c31caf44
++     entry #setSlotValues
++       info
++           `StackFrame.SetValues` (16, 2) : écrit les slots d'une trame
+
+@ 0 1 0 1f2ae8ee3f9af2b212f90ec5a05ea2da
++     entry #thisObject
++       info
++           `StackFrame.ThisObject` (16, 3) : le `this` d'une trame, l'objet nul dans une trame
++           statique ou native
+
+@ 0 1 0 1e278e49ed4c93e702ee908b171084f4
++     entry #popFrames
++       info
++           `StackFrame.PopFrames` (16, 4) : abandonne les trames jusqu'à une trame donnée incluse,
++           si bien que la reprise réexécute l'appel
+
+@ 0 1 0 1ac1b9df6638f1d811572816ca3051b1
++       detail
++           Exige `canPopFrames` et un thread suspendu par un événement.
+
+@ 0 1 0 1123948d8449b25709aa2a1f3c8db02b
++     entry .Reply
++       info
++           le résultat d'une commande : `Ok(data)` avec la charge utile, ou `Failed(code)` avec le
++           code d'erreur de la VM
+
+@ 0 2 0 04e92a188ef9af6d0b3745665eac7def
++       detail
++           Un type dédié plutôt qu'un `Either`, pour que le canal de réponse ne porte aucune charge
++           utile typée `Nothing`. `Failed(-1)` est une connexion perdue.
+
+@ 0 1 0 1c283bfe342993bd011da57419f320c6
++     entry .Slot
++       info
++           contient un gestionnaire de point d'arrêt, sous forme de `Halt => Unit`, dans le
++           registre de la connexion
+
+% 1 1 0 1a3029a5d2c6e660149bdef1c06b633e
+
+@ 0 4 0 126280bc7863a1a2100bc6c9c7750bc6
++       detail
++           Pas destiné à un usage direct : un conteneur qui tient un gestionnaire capturant la
++           session à l'écart du monde suivi par le contrôle des captures, puisque le gestionnaire
++           vit et meurt avec la session. Son `run` est le gestionnaire.
+
+@ 0 1 0 19fe714d5c436c6508b6b9b853d0d4ca
++     entry .PrepareSlot
++       info
++           contient un gestionnaire de préparation de classe, sous forme de
++           `Event.ClassPrepared => Unit`, dans le registre
+
+% 1 1 0 1a7b59d143f074ca044eba5d3755e19b
+
+@ 0 3 0 12c142b89ff220291ca4c7b241bc4b03
++       detail
++           Pas destiné à un usage direct : le pendant de `Slot` pour la préparation de classe, qui
++           reçoit l'événement brut puisqu'une classe préparée n'a pas de trame arrêtée à inspecter.
++           Son `run` est le gestionnaire.
+
+@ 0 1 0 01b91bc3ace624801fbc301c3499d4f7
++ entry .evaluator
++   info
++       ouvre une session de compilateur sur le classpath du programme débogué et prête un
++       `Evaluator` lors d'un arrêt
+
+@ 0 7 0 0f1a9126983fa14f1dba979a2f91e362
++   detail
++       Une extension sur `Halt`, dans `vivisection.eval`.
++       `stop.evaluator(classpath) { eval ?=> … }` démarre une session `Scalac[3.9]` chaude (avec
++       `-experimental`, puisque les propres types du programme débogué et `Inspectable` utilisent
++       des fonctionnalités expérimentales) sur le `LocalClasspath` avec lequel le programme débogué
++       a été lancé, construit un `Purview` dessus, et prête un `Evaluator` au bloc. La session et
++       l'évaluateur meurent tous deux avec le bloc, et aucun ne peut survivre à l'arrêt qui a prêté
++       le halt. Il exige un `Monitor`, un `System`, un `Compiler.Event is Loggable`, et des
++       tactiques pour `Async.Error`, `Compiler.Error` et `Debugger.Error`.
+
+@ 2 1 0 0af40051e441ee5c106f6d665a518944
++       ```scala fuel
+
+@ 3 1 0 14cd74f953b81967056d728d90ad4f06
++       typecheck
+
+@ 4 1 0 1b4905f89fb4dd141e59bb0093dea94b
++       ##
+
+@ 5 1 0 08e8518b324e58b70ffff289c9e2fb22
++       import soundness.*
+
+@ 1 1 0 0f10f48845cf5f3a0ff95c84f7617e49
++       import logging.silentLogging
+
+@ 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
++       import strategies.throwUnsafely
+
+@ 2 1 0 186c628c923e452b0be1a299e2f3b006
++       import systems.javaBaseSystem
+
+@ 0 1 0 0e508544d36b2e2901457020b9a164b0
++       def total(classpath: LocalClasspath)(using Debug^, Monitor, Tactic[Debugger.Error]): Unit =
+
+@ 0 1 0 18315cf186f7e3a8128d46162e3c2352
++         debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
+
+@ 0 1 0 099f8df1222599c211bbe69b85e34415
++           stop.evaluator(classpath): eval ?=>
+
+@ 0 1 0 172827ffe058009f044d337a1f0a8a29
++             Out.println(eval.inspect(t"total"))
+
+@ 0 1 0 115586cb220576921f2eaf4fbdd29681
++             eval(t"total + 1")
+
+@ 1 1 0 1b16b50f7bbcc72407105afb2800b0f4
++       ```
+
+@ 0 4 0 1a8a4b998ce6a9f316ed66abe973e7bc
++       Le classpath doit être celui sur lequel les classes du programme débogué ont été compilées,
++       TASTy compris : l'évaluateur compile contre lui, et `Purview` lit les types déclarés dans
++       son TASTy. Sous un hôte de test, c'est `LocalClasspath.of(Classloader[Main.type])`, et non
++       la propriété `java.class.path`.
+
+@ 0 1 0 023954f2c0e600ba1871137b9d0a9248
++ entry .Evaluator
++   info
++       évalue des expressions Scala dans une trame suspendue, en compilant et en injectant une
++       classe
+
+@ 0 9 0 1d9f38205bbd227b1ad9e4aacba2b74e
++   detail
++       Un `Evaluator` reproduit les variables locales visibles de la trame arrêtée sous forme de
++       paramètres de constructeur d'une classe synthétique au nom inédit dans le propre package de
++       la trame, la compile contre le classpath du programme débogué dans la session de
++       compilateur chaude prêtée par `evaluator`, envoie chaque fichier de classe dans le
++       programme débogué sous forme de `byte[]` remis au `defineClass` du chargeur de classes de
++       la trame (JDWP n'a pas de commande de définition de classe, et son invocation ignore le
++       contrôle d'accès), instancie la classe avec les valeurs vivantes des variables locales, et
++       invoque son `run` sur le thread arrêté. Ainsi, `total + 1` dans un gestionnaire signifie ce
++       qu'il signifierait à cette ligne du code source.
+
+% 2 1 0 198c183da293f7b903cc31367b3a164d
+
+% 3 1 0 024b086f3822d825038aa3d52f4430d1
+
+% 4 1 0 0d57b82fce3e2d7f0b1d55004fb83767
+
+% 5 1 0 1e6147cae7edc9ec1512e4dc9e352e50
+
+% 1 1 0 1196bdae74362ebb08a9d6fce7b2fa8b
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 2 1 0 09a36bf305d4867c0601b615bb06c2d5
+
+% 0 1 0 01229336118353b507a643434b90d1ad
+
+% 1 1 0 1f020a29eda9fb3f12fb4d2c238c1ef3
+
+% 0 1 0 1afe749a1942f56d022bcac84665e29a
+
+% 0 1 0 13323c994ad2e80d1fbccb6f70ca2724
+
+% 0 1 0 1b651311ac3a95351e13439e186a5fbc
+
+% 0 1 0 17c1b8088bcb1c050e7c86f256ec6be8
+
+% 0 1 0 166cfc647720a6441d176dc8a26cb363
+
+% 1 1 0 0866cccdb62937f0087da698e349e101
+
+@ 0 7 0 1241bc91e2f399c709da4ef395cadbfb
++       Chaque variable locale est typée selon son type *déclaré* lorsque `Purview` peut le
++       retrouver dans TASTy — un `Port` opaque plutôt que l'`Int` en lequel il s'efface — si bien
++       que `inspect` sélectionne l'instance `Inspectable` que choisirait le propre code du
++       programmeur, et `assign` laisse le compilateur imposer l'affectabilité. Seuls les
++       paramètres valeur d'une méthode et les `val` de son corps sont résolus ainsi ; tout le
++       reste garde son type effacé. Un `Evaluator` est une `ExclusiveCapability`, confinée au bloc
++       `evaluator`. Chaque classe synthétique reçoit un nom distinct, puisque la table des
++       symboles conservée par une session de compilateur interdit de redéfinir un nom.
+
+% 1 1 0 18dc6863bc8a902d05a93b372d75e916
+
+% 0 1 0 1a70f691279ba3a413d9e3735b1d1f0e
+
+% 1 1 0 19e08ca8163241c91054bbc9e4677a4f
+
+@ 0 1 0 00a7b6ade87d298112d5935b036f8f56
++   entry #apply
++     info
++         évalue une expression et renvoie sa forme `String.valueOf` sous forme d'instantané
+
+@ 0 3 0 1a6831f97245101e00361256dfa1708b
++     detail
++         `eval(expression)` compile `String.valueOf((expression): Any)`, l'exécute, et renvoie un
++         `Variable.Snapshot.Str` contenant le texte — un seul chemin de décodage pour tout type de
++         résultat — ou une `Primitive` si l'invocation n'a produit aucune chaîne (une exécution
++         void ou en échec).
+
+@ 0 1 0 13083d0c56e46d12073d45ed80b44bd1
++   entry #assign
++     info
++         évalue une expression au type déclaré d'une variable et y écrit le résultat
+
+@ 0 4 0 0e927ff561463e9104ec6ab97a904c7d
++     detail
++         `assign(binding, expression)` trouve la variable visible nommée `binding`, type le `run`
++         synthétique selon son type déclaré (ou, à défaut, effacé) pour que le compilateur impose
++         l'affectabilité et renvoie une primitive en tant que primitive, et écrit le résultat au
++         moyen de `Halt#assign`, en suivant la provenance de la variable. La modification de
++         variable d'un frontend.
+
+@ 0 1 0 15adf25e52db0dd900a909e60419a5ef
++   entry #completion
++     info
++         le code source synthétique qu'un hôte de complétion doit vérifier, et le décalage du
++         fragment dans celui-ci
+
+@ 0 7 0 0d69c8af2e1bd7e70c84c4e8412ce3e7
++     detail
++         `completion(fragment)` prépare — sans la compiler — la même classe que préparerait
++         `apply`, avec le fragment de console comme corps de `run` au type `Any`, et renvoie le
++         code source avec le décalage auquel commence le fragment. Aucun compilateur ne s'exécute
++         ici : l'hôte vérifie les types du code source à un curseur situé après le décalage avec un
++         `Highlight` de vérification de types sur le classpath du programme débogué, et décale la
++         plage de remplacement du même décalage, si bien que la complétion sur une variable locale
++         se résout selon son type déclaré, méthodes d'extension et givens compris. `Unset` en
++         l'absence de trame supérieure.
+
+@ 0 1 0 0859c56edb3662ab0bd9a7693ee7d3ad
++   entry #elaborations
++     info
++         les sites d'appel de la méthode de la trame que le compilateur a élaborés, d'après le
++         TASTy du programme débogué
+
+@ 0 3 0 1df1a37b0b7340230a42823fbfe36e74
++     detail
++         Chaque `prophesy.Elaboration` enregistre ce que le typer a inséré à un appel — arguments
++         de type inférés et arguments `using` synthétisés — lus dans l'arbre désérialisé, si bien
++         qu'elle reflète ce qui s'exécute réellement. La matière première d'un survol.
+
+@ 0 1 0 0e71d315985d0e510db490a66c22c0f6
++   entry #variables
++     info
++         les variables visibles de la trame, chacune avec son type statique déclaré lorsque TASTy
++         le fournit
+
+@ 0 4 0 18919d78e762eed8004da9ec0cbbdd00
++     detail
++         `Halt#variables` avec `Variable#static` renseigné au moyen de `Purview#rendered` : le
++         rendu par stenography du type déclaré de chaque paramètre et variable locale du corps,
++         ensembles de captures compris. Une liaison dont le type ne peut être retrouvé y garde
++         `Unset`, et son type effacé dans `erased`.
+
+@ 0 1 0 172c992b17bcb4e10c144b314a493efb
++   entry #inspect
++     info
++         rend une liaison visible au moyen de son instance `Inspectable`, résolue et exécutée dans
++         le programme débogué
+
+@ 0 5 0 09240e254d5740c60c71b567c8860661
++     detail
++         `inspect(binding)` évalue `(binding).inspect` avec `spectacular` importé. Comme la classe
++         synthétique type la liaison selon son type déclaré, l'invocation est statique — l'instance
++         que choisirait le propre code du programmeur — si bien qu'un type opaque se rend dans sa
++         propre notation plutôt que dans celle de sa représentation, et un tableau comme `⦋…⦌`
++         plutôt que par son `toString`.
+
+@ 0 1 0 0cdf278f5c1e36c208cbe65b2f151ce4
++   entry .Injector
++     info
++         définit des fichiers de classe dans un programme débogué en cours d'exécution, via JDWP
+
+@ 0 5 0 002884360d4490960ffbf17b3831cfaa
++     detail
++         Construit par l'évaluateur pour une évaluation, sur la connexion, le thread arrêté et le
++         chargeur de classes cible. Chaque fichier de classe est envoyé sous forme de `byte[]`
++         alloué et rempli par le réseau, puis passé au `defineClass` protégé du chargeur ;
++         l'édition de liens est paresseuse, si bien que l'ordre n'importe pas. Ne se construit pas
++         directement.
+
+@ 0 1 0 10489d001d8dbd6806ac7a7debf84067
++     entry #define
++       info
++           définit un fichier de classe par son nom binaire, et renvoie le type référence de la
++           classe chargée
+
+@ 0 3 0 0ae85305a58bf917132f07b99c9e50cb
++       detail
++           Retrouvé à partir de l'objet `java.lang.Class` que renvoie `defineClass`, si bien
++           qu'aucune recherche par nom n'est nécessaire (la classe tout juste définie peut ne pas
++           encore apparaître dans `allClasses`). `Unset` quand la définition n'a rien renvoyé.
+
+@ 0 1 0 1231dca3fb8b7de6090eda410de816a7
++ entry .Purview
++   info
++       retrouve les types Scala déclarés des liaisons d'une trame à partir du TASTy compilé du
++       programme débogué
+
+@ 0 8 0 1b1027c0c830d24b1704bb16326346ed
++   detail
++       Un `Purview(classpath)` détient un contexte de compilateur autonome sur le `LocalClasspath`
++       du programme débogué, chauffé une fois : le propre chargeur de symboles du compilateur lit
++       le TASTy des classes sur le classpath, et le type déclaré d'une liaison est alors lu
++       directement dans son symbole — les paramètres valeur d'une méthode — ou dans son arbre
++       désérialisé, pour les `val` de son corps (une liaison ultérieure d'un nom masque une
++       liaison antérieure, comme lors d'un arrêt). C'est ce qui permet à une valeur de se rendre
++       au moyen de l'instance que sélectionne son type *déclaré* : un type opaque au moyen de son
++       propre `Inspectable` plutôt que de celui de sa représentation sous-jacente.
+
+@ 0 4 0 0e95f3b359e07e190be9408c76b32604
++       Chaque méthode se dégrade en un résultat vide en cas d'échec quelconque — une classe absente
++       du classpath, du TASTy que le compilateur ne sait pas lire — puisqu'un débogueur lit les
++       types de manière opportuniste et ne doit jamais faire échouer la trame. Les types affichés
++       sous la forme `proscenium.Int` sont normalisés en les noms simples sous lesquels se compile
++       la classe d'évaluation synthétique.
+
+% 1 1 0 139cdd0c991274c00898e45642f8c5d4
+
+@ 0 1 0 10420a9957f5666601ed5255f240ba20
++   entry #parameters
++     info
++         le type source utilisable par le compilateur de chaque liaison d'une méthode, indexé par
++         nom
+
+@ 0 3 0 0f61b833a0c6d44c058c85975f81195f
++     detail
++         La forme affichée par le compilateur lui-même, du Scala valide et résoluble, dont se sert
++         l'`Evaluator` pour typer les paramètres de la classe synthétique. `className` est la
++         classe d'exécution démanglée (`com.example.Main`) et `methodName` la méthode.
+
+@ 0 1 0 01dfff9bfa59580004fdda33c6b39e91
++   entry #elaborations
++     info
++         les sites d'appel du corps d'une méthode que le typer a élaborés, sous forme de
++         `prophesy.Elaboration`
+
+@ 0 2 0 1516152a1635f4ac03f55d13be23be02
++     detail
++         Arguments de type inférés et arguments `using` synthétisés, lus dans l'arbre désérialisé
++         avec ses positions dans le source, si bien que les arguments écrits se distinguent des
++         arguments inférés.
+
+@ 0 1 0 0c488d852f08033a0731bf1a34717cd6
++   entry #rendered
++     info
++         le rendu destiné aux humains du type déclaré de chaque liaison, au moyen de stenography
+
+@ 0 2 0 1792dbf7e788e01d19fd81218e459c11
++     detail
++         Tenant compte des ensembles de captures et fidèle au code source, indexé par nom : ce
++         qu'un débogueur affiche comme `Variable#static`.
+
+@ 0 1 0 1ebd1678cc55dbc01e9f8c3790e80e19
++ entry .Namer
++   info
++       nomme une position inline à partir du TASTy situé à côté des fichiers de classe du programme
++       débogué
+
+@ 0 9 0 1935c32995f1e6b51a8e8a7dc0cbf3ec
++   detail
++       Un `Namer(classpath)` fournit, pour un nom de classe de la strate `ScalaClass` et une
++       position d'origine enregistrée dans le SMAP d'une classe, la définition que le programmeur
++       a écrite à cet endroit — propriétaire et nom, démanglés comme les rend une trace de pile —
++       si bien qu'une trame inline peut être nommée d'après la méthode dont elle provient plutôt
++       que d'après sa classe. Un chargeur de classes sur le classpath de lancement récupère
++       uniquement les ressources `.tasty` ; il ne définit jamais de classes du programme débogué
++       dans la JVM du débogueur. Les recherches sont mémoïsées par classe, absences comprises ; un
++       échec remonte vers l'extérieur à travers les classes englobantes jointes par `$`, puisque
++       les classes imbriquées et les classes de module sont sérialisées sous leur classe de plus
++       haut niveau. L'adaptateur DAP en construit un lors du `launch`.
+
+@ 0 1 0 159e5740c8c585f20e77222482100f6e
++   entry #define
++     info
++         la définition à une ligne du code source d'une classe, sous la forme `owner.name`, ou
++         `Unset`
+
+@ 0 4 0 1d860eb12c1e56bb0bcad5f764013cb9
++     detail
++         `define(cls, path, line)` prend le nom de classe brut qu'une `Halt.Position` porte dans
++         `cls`, le chemin du code source et la ligne. `Unset` quand la classe n'a pas de TASTy sur
++         le classpath, quand son TASTy a été compilé depuis un autre chemin que celui qu'enregistre
++         le SMAP, ou quand aucune définition ne couvre la ligne.
+
+@ 0 1 0 1daafbd04f3378281c4ce4bae7ccd3c3
++ entry .Dap
++   info
++       le Debug Adapter Protocol : un serveur stdio sur une session, et les types de messages du
++       protocole
+
+@ 0 12 0 0717ae933573b12f032e54e6dd2a584c
++   detail
++       `Dap.listen` sert une session de débogage à un éditeur — VS Code, ou tout autre qui parle le
++       protocole — en JSON délimité par `Content-Length` sur les flux standard. Le `launch` de
++       l'éditeur (par classe principale et classpath) ou son `attach` (par port) ouvre la session ;
++       `setBreakpoints`, `setFunctionBreakpoints`, `setExceptionBreakpoints` et
++       `setDataBreakpoints` placent des points d'arrêt avant que le programme ne s'exécute ;
++       `configurationDone` le reprend ; `threads`, `stackTrace`, `scopes` et `variables`
++       inspectent un arrêt ; `continue`, `next`, `stepIn`, `stepOut` et `pause` pilotent les
++       threads ; `evaluate`, `setVariable`, `setExpression`, `completions` et `exceptionInfo`
++       passent par l'`Evaluator` ; et `restartFrame` dépile une trame. Les positions tenant compte
++       de l'inline apparaissent comme des trames `subtle` nommées d'après la définition écrite par
++       le programmeur, lorsque le TASTy du classpath de lancement permet de les nommer.
+
+% 2 1 0 0792884b5beafc1103818f2932c0b719
+
+% 3 1 0 198334c68fe81f2915ebf27284672060
+
+% 4 1 0 149497751ba06f931fdc1efad19d20ce
+
+% 5 1 0 1f3d2546f1818d96160bef5187793838
+
+% 1 1 0 069934decac3d2d414ff0d652a53dffa
+
+% 1 1 0 01b1a6b5b9a07614193f5109118311b1
+
+% 2 1 0 176cec9b52eac1aa15275f2410b9a6d2
+
+% 3 1 0 191dd5e78547659f0a1367af9980e904
+
+% 4 1 0 023f1292a08990c40b1a39a11876d220
+
+% 5 1 0 0155c4224329e27d1dac09b37962e58e
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 1 1 0 1ca4051cbfa31eb90edc8424bc1d7df0
+
+% 2 1 0 0d3f821d4f1a581d0b866620120be636
+
+% 3 1 0 05d92be10bf39cb50c731f22da98d7f1
+
+% 4 1 0 02c585b2f79ab3f017a69390170444c3
+
+% 0 1 0 1df36e9f80c69ca1074e720cb8d6a3ae
+
+% 0 1 0 07c0075935e5f893046456bfa9ecdb7c
+
+% 1 1 0 00ac0062964dde9d0a8a2830b359e26e
+
+@ 0 6 0 0ea4660b140711170082f347c44ab097
++       Le reste de l'objet est le modèle de messages du protocole, le sous-ensemble que parle cet
++       adaptateur : les types d'arguments sont `Json.Decodable` (ils arrivent), les types de
++       corps `Json.Encodable` (ils partent), chacun avec son given dans son objet compagnon, et
++       un membre `Unset` est simplement absent en transmission. Les noms de champs reproduisent
++       exactement ceux de la spécification, `camelCase` et le mot réservé `type` compris. Ils
++       servent à un programme qui pilote ou simule un client DAP, comme le font les tests de la
++       bibliothèque ; un programme qui débogue une JVM utilise directement `Debug`.
+
+% 1 1 0 0503d2894f8fc83a1ddec47e7a296d27
+
+% 1 1 0 1246486a56a49d980453ffeb67245faa
+
+@ 0 1 0 1e9051dc4c3cfa520788b01dee15148f
++   entry .listen
++     info
++         sert le protocole sur les flux standard ambiants jusqu'à épuisement de l'entrée
+
+@ 0 9 0 0638d3dc407897621b6116fa0cff4511
++     detail
++         Le transport stdio canonique que lance un frontend. Tout le trafic sortant passe par une
++         seule tâche d'écriture, si bien que réponses et événements ne s'entrelacent jamais, et
++         chaque requête est traitée dans l'ordre d'arrivée sur le thread appelant. `observer` voit
++         le texte brut de chaque message dans les deux sens (il s'exécute sur la tâche d'écriture,
++         et ne peut donc capturer que des capacités partagées). Le `Stdio` est consommé : la tâche
++         d'écriture possède les flux standard, et l'appelant ne peut plus les utiliser après avoir
++         appelé `listen`. Exige les givens de lancement de `Debuggee.Sessional`, un `System`, un
++         `Compiler.Event is Loggable`, et des tactiques pour `Async.Error`, `Framing.Error` (une
++         trame malformée) et `Truncation.Error`. Un client qui abandonne la connexion sans
++         `disconnect` libère tout de même le programme débogué quand l'entrée se termine.
+
+@ 0 1 0 19f1fd3c2b6c4fa01a5919a8f6fd8d94
++   entry .Envelope
++     info
++         n'importe quel message DAP, lu uniquement pour les membres qui décident de son traitement
+
+@ 0 3 0 1964db4dfcde6aa713d3cc1994fd69ca
++     detail
++         `seq`, `type`, `command` et `event`, tous optionnels, si bien que tout message se décode ;
++         `Dap.envelope` en lit une depuis n'importe quel JSON, avec une enveloppe vide par défaut.
+
+@ 0 1 0 02febb8e8d057b5b04e729303aa03283
++     entry #seq
++       info
++           le numéro de séquence du message
+
+@ 0 1 0 1b72e44528eaf066015993edbf38eb3e
++     entry #type
++       info
++           `request`, `response` ou `event`
+
+@ 0 1 0 110ac001e528403d191fccdcc2a21c50
++     entry #command
++       info
++           le nom de commande d'une requête
+
+@ 0 1 0 095dfbf187813422129aea9b854ecf94
++     entry #event
++       info
++           le nom d'un événement
+
+@ 0 1 0 05d5734ab7b9b5eb00e9e1a829724b93
++     entry .decodable
++       info
++           lit une enveloppe depuis du JSON
+
+@ 0 1 0 192f7d54754e2dae0168ebd6c7804a76
++   entry .envelope
++     info
++         l'enveloppe de n'importe quel message JSON ; une enveloppe vide s'il ne se décode pas
+
+@ 0 1 0 1b768bdf8eb7ecf91b4b872ad7b1e8b0
++   entry .response
++     info
++         construit une réponse réussie à une requête, avec un numéro de séquence et un corps
++         optionnel
+
+@ 0 1 0 04b660060ecc4a9d1bfaef3e7a6d88fb
++   entry .failure
++     info
++         construit une réponse en échec à une requête, avec un numéro de séquence et un message
+
+@ 0 1 0 0be80f03d47fa916086de9abc334e2c2
++   entry .event
++     info
++         construit un message d'événement par son nom, avec un numéro de séquence et un corps
++         optionnel
+
+@ 0 1 0 01d2ea5b6b3094350ac207f2b1ab1264
++   entry .ExceptionFilter
++     info
++         un filtre de points d'arrêt d'exception qu'annonce l'adaptateur : son identifiant, son
++         étiquette et sa valeur par défaut
+
+@ 0 1 0 01f373d99e3de5ee1aa26ab20a04e684
++     entry #filter
++       info
++           l'identifiant du filtre : `uncaught` ou `caught`
+
+@ 0 1 0 0d3b34ee3f005e8e15ca9ea33839b0f8
++     entry #label
++       info
++           l'étiquette montrée à l'utilisateur
+
+@ 0 1 0 16055acd5df574c515c886e7d19b31d6
++     entry #default
++       info
++           si le filtre est activé au départ
+
+@ 0 1 0 1dc4bf5060babd561243992aedc6a60b
++     entry .encodable
++       info
++           écrit un filtre en JSON
+
+@ 0 1 0 02b964571f75dcb90e9fbd214c5267e3
++   entry .exceptionFilters
++     info
++         les deux filtres annoncés : `uncaught` (activé par défaut) et `caught`
+
+@ 0 1 0 0835d27c2e1401f005526661918728b6
++   entry .Capabilities
++     info
++         ce qu'annonce l'adaptateur dans sa réponse `initialize`
+
+@ 0 4 0 039b83a642a4db191b5341b4848b5fe1
++     detail
++         Configuration terminée, points d'arrêt de fonction, de données et d'exception,
++         `setVariable`, `setExpression`, `exceptionInfo`, `restartFrame`, complétions (déclenchées
++         par `.`) et évaluation pour les survols, tous à `true` par défaut ; un indicateur absent
++         se lit comme faux.
+
+@ 0 1 0 12c25e8a33f617ca1b2504199270a152
++     entry #supportsConfigurationDoneRequest
++       info
++           le client doit envoyer `configurationDone` après ses points d'arrêt
+
+@ 0 1 0 0e6d03f7aa282a2216d880203922a9c7
++     entry #supportsFunctionBreakpoints
++       info
++           `setFunctionBreakpoints` est traité
+
+@ 0 1 0 1933050fb73000b013138ad4a58d3804
++     entry #supportsDataBreakpoints
++       info
++           `dataBreakpointInfo` et `setDataBreakpoints` sont traités
+
+@ 0 1 0 0d8c195571a7c1291eb78419accac560
++     entry #supportsSetVariable
++       info
++           `setVariable` est traité
+
+@ 0 1 0 0c7c363248bd336c0b0b5a04cd3b46b7
++     entry #supportsSetExpression
++       info
++           `setExpression` est traité
+
+@ 0 1 0 11ac93d80d08bd56131a0d5f2f106ed7
++     entry #supportsExceptionInfoRequest
++       info
++           `exceptionInfo` est traité
+
+@ 0 1 0 0b8056f4063876c604aea9a17d2dde46
++     entry #supportsRestartFrame
++       info
++           `restartFrame` est traité
+
+@ 0 1 0 0acd5fa69360c9e00e922ef35b6648f9
++     entry #supportsCompletionsRequest
++       info
++           `completions` est traité
+
+@ 0 1 0 07ba9acb0c3d93c117c12c7799420318
++     entry #supportsEvaluateForHovers
++       info
++           `evaluate` avec un contexte `hover` est traité
+
+@ 0 1 0 0d8fd4941ad35b7c0b83f033bdb20477
++     entry #completionTriggerCharacters
++       info
++           les caractères qui déclenchent la complétion : `.`
+
+@ 0 1 0 0ab61f8f81ede1d9071c0ff7b1cc9897
++     entry #exceptionBreakpointFilters
++       info
++           les filtres proposés : `Dap.exceptionFilters`
+
+@ 0 1 0 0000e50e0b79256b1a7bdfa510c5bf2b
++     entry .encodable
++       info
++           écrit les capacités en JSON
+
+@ 0 1 0 01d9161e76bb69e801354d8ca02d5067
++   entry .LaunchArguments
++     info
++         les arguments d'une requête `launch` : une classe principale et un classpath, à l'image de
++         `Debuggee`
+
+@ 0 3 0 02da7699abed50eb044929a8ec554cc7
++     detail
++         Définis par l'adaptateur selon la spécification. L'adaptateur lance `java -classpath
++         <classpath> <mainClass>` avec l'agent sur un port libre, suspendu au démarrage.
+
+@ 0 1 0 18216d75d392fbd01d893e3b3535309f
++     entry #mainClass
++       info
++           la classe dont il faut exécuter le `main`
+
+@ 0 1 0 134fb7c592b8c54b0a75de9bdf43970c
++     entry #classpath
++       info
++           le classpath, sous forme de texte `java.class.path`
+
+@ 1 1 0 1e5d9ab34a59994e1ca9ea2889b7663c
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 1b99aa02e1d40e771d407b50d8bd5f84
++   entry .AttachArguments
++     info
++         les arguments d'une requête `attach` : un port, et éventuellement un nom d'hôte
+
+@ 0 1 0 1e987bdbbe47b4700d08ad27edba699d
++     entry #port
++       info
++           le port sur lequel écoute l'agent de la VM
+
+@ 0 1 0 07d6d5c63c5c142919f843d74d92a7ec
++     entry #hostName
++       info
++           l'hôte, `localhost` par défaut
+
+@ 1 1 0 03c53ee1a58d60fd0f97cc5ac731191a
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 1de84ce3516dae390e1d7ac28eb5f037
++   entry .Source
++     info
++         une référence de source : un nom et un chemin, tous deux optionnels
+
+@ 0 1 0 0617a3ae91fe41d000cbd8515ac92bf1
++     entry #name
++       info
++           le nom de base du fichier
+
+@ 0 1 0 06a995e4c09e87030b04fd35aa8760b2
++     entry #path
++       info
++           le chemin du fichier
+
+@ 0 1 0 0065e79c285fc1b401581d0298f83c13
++     entry .decodable
++       info
++           lit une source depuis du JSON
+
+@ 0 1 0 095eed0290b19a870939cbdb9e881eea
++     entry .encodable
++       info
++           écrit une source en JSON
+
+@ 0 1 0 126899a75943db041163b2509830cd54
++   entry .SourceBreakpointSpec
++     info
++         un point d'arrêt de source demandé : sa ligne
+
+@ 0 1 0 14ffc473b3f27411085765d28cea4156
++     entry #line
++       info
++           la ligne, numérotée à partir de un
+
+@ 1 1 0 1ee3195a8bf7fbd4174a2a63ca73fb47
++     entry .decodable
++       info
++           lit une spécification depuis du JSON
+
+@ 0 1 0 18695e113995f9320d561fb37233b8e3
++   entry .SetBreakpointsArguments
++     info
++         une requête `setBreakpoints` : la source et chaque point d'arrêt voulu dans celle-ci
+
+@ 0 3 0 179fe70cdaecb9d711454536fe357108
++     detail
++         La sémantique de remplacement du protocole : les points d'arrêt de la requête remplacent
++         chaque point d'arrêt précédemment posé dans cette source.
+
+@ 0 1 0 1d3ecef7aff237d218fd71fc9c836441
++     entry #source
++       info
++           le fichier source
+
+@ 0 1 0 13e2d39f497935db140e1d040f402a18
++     entry #breakpoints
++       info
++           les points d'arrêt voulus, sous forme de `SourceBreakpointSpec`
+
+@ 1 1 0 1c073c1caf8e01291d9fe763a6e7fd2b
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 04075dba464a83860973818d7cb34df0
++   entry .SetExceptionBreakpointsArguments
++     info
++         une requête `setExceptionBreakpoints` : les identifiants des filtres activés
+
+@ 0 1 0 0b0ea784b73c847a1b9f243163711a52
++     entry #filters
++       info
++           `uncaught`, `caught`, les deux ou aucun
+
+@ 1 1 0 18e2ecdf1831797a16b3467fdb269fc5
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 07eb684572bb5acc11c0c0602b62d300
++   entry .FunctionBreakpointSpec
++     info
++         un point d'arrêt de fonction demandé : un nom `Class.method`
+
+@ 0 1 0 12624a72620fa4001da3d7e76477a1c9
++     entry #name
++       info
++           la classe d'exécution et la méthode, `com.example.Ledger.deposit`
+
+@ 1 1 0 0b15be06cb7693aa14a1f7f468590317
++     entry .decodable
++       info
++           lit une spécification depuis du JSON
+
+@ 0 1 0 042bf592d73388de0b2639f83c582c7c
++   entry .SetFunctionBreakpointsArguments
++     info
++         une requête `setFunctionBreakpoints` : chaque point d'arrêt de fonction voulu
+
+@ 0 1 0 06c3aeeb9c8eb9d9041c5e380d51e524
++     entry #breakpoints
++       info
++           les points d'arrêt voulus, sous forme de `FunctionBreakpointSpec`
+
+@ 1 1 0 026a7de6ad86506308176c4a0c95c443
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 01296b5f8efd18970a4355847599bc5b
++   entry .DataBreakpointInfoArguments
++     info
++         une requête `dataBreakpointInfo` : un nom de variable et la référence de sa portée
+
+@ 0 3 0 0bf8f45bcd7800770f6b2609946a7029
++     detail
++         On y répond avec un `DataBreakpointInfoBody` dont le `dataId` vaut `owner:field` pour un
++         champ membre, seule sorte de variable qu'accepte un point d'arrêt de données.
+
+@ 1 1 0 0c139ecddaa7d9a4089f6f425d3c2497
++     entry #name
++       info
++           le nom de la variable
+
+@ 1 1 0 1fd2d9e901a06cb31ada05300bb5c7b4
++     entry #variablesReference
++       info
++           la portée dans laquelle se trouve la variable
+
+@ 1 1 0 0715204eb40f411a1765bae0a85dcc9b
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 03c16e66b6e0d89a0b3063f0c1519c61
++   entry .DataBreakpointSpec
++     info
++         un point d'arrêt de données demandé : un `dataId` de la forme `class:field`
+
+@ 0 1 0 0f4cb711b19d6ca7064536a7dc77d5dc
++     entry #dataId
++       info
++           l'identifiant qu'a fourni une réponse `dataBreakpointInfo`
+
+@ 1 1 0 013d342b5ab1e2f714a521937112032c
++     entry .decodable
++       info
++           lit une spécification depuis du JSON
+
+@ 0 1 0 04141c5fc793be0303a64cb4b282a8b0
++   entry .SetDataBreakpointsArguments
++     info
++         une requête `setDataBreakpoints` : chaque point d'arrêt de données voulu
+
+@ 0 1 0 04ae78af708bbbe8050b302e03a4549f
++     entry #breakpoints
++       info
++           les points d'arrêt voulus, sous forme de `DataBreakpointSpec`
+
+@ 1 1 0 1db265a6e838a3e802a5fada8df67deb
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 13349267bdc1b80c0a57fe6022db7fed
++   entry .ThreadArguments
++     info
++         une requête qui désigne un thread : `next`, `stepIn`, `stepOut`, `pause`, `exceptionInfo`
+
+@ 1 1 0 1799c2cc7a49e15c18951ae56f91a417
++     entry #threadId
++       info
++           la poignée de l'adaptateur pour le thread
+
+@ 1 1 0 1e521964d3a5214b10c72babaa77b9f3
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 06cb6a75b150fd0d1f2da4f9d6aef403
++   entry .StackTraceArguments
++     info
++         une requête `stackTrace` : le thread, et éventuellement une plage de trames
+
+@ 1 1 0 0dc7db950c1e0c270c023d7427924bf2
++     entry #threadId
++       info
++           la poignée de l'adaptateur pour le thread
+
+@ 0 1 0 0d010f91e6f0bd1c042dc352f06d15c8
++     entry #startFrame
++       info
++           la première trame voulue
+
+@ 0 1 0 0da50f038752f4d31d94499c4470b92b
++     entry #levels
++       info
++           combien de trames sont voulues
+
+@ 1 1 0 17000f436c2b95fd090dfbdd9e30feae
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 15d63b01c09747ef06a2bc5af2e69964
++   entry .FrameArguments
++     info
++         une requête qui désigne une trame : `scopes` et `restartFrame`
+
+@ 0 1 0 1af1d6661b602a81153f409392f0b4b9
++     entry #frameId
++       info
++           la poignée de l'adaptateur pour la trame
+
+@ 1 1 0 01c69e746947b148087ceccadb2cfa5d
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 08b330976eb72c2901b5e45eec294541
++   entry .VariablesArguments
++     info
++         une requête `variables` : la portée ou la structure à déployer
+
+@ 0 1 0 19e71298532527710f26758ceafecaa6
++     entry #variablesReference
++       info
++           la poignée qu'a fournie une réponse `scopes` ou `variables`
+
+@ 1 1 0 0b78c6553874504511849875bdb0a1cf
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 05db70252cb803df1401780f878c4963
++   entry .SetVariableArguments
++     info
++         une requête `setVariable` : la portée, le nom de la variable et sa nouvelle valeur sous
++         forme de texte
+
+@ 0 3 0 0783befba228037010c31d90c6ebbb46
++     detail
++         La valeur est analysée selon le type effacé de la variable : les primitives, plus une
++         nouvelle chaîne distante. Tout ce qui est plus riche relève de `setExpression`.
+
+@ 1 1 0 14861739a9a686251e30650dc39efa56
++     entry #variablesReference
++       info
++           la portée dans laquelle se trouve la variable
+
+@ 1 1 0 050e1ebc2ce4e2c809de2643870f8c88
++     entry #name
++       info
++           le nom de la variable
+
+@ 1 1 0 05581f3d974f86f709de08ea92f3bfbb
++     entry #value
++       info
++           la nouvelle valeur, sous forme de texte
+
+@ 1 1 0 09320d6011944e801f8cec23640555b4
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 05bc0703837c646219e9b376efa4011f
++   entry .EvaluateArguments
++     info
++         une requête `evaluate` : l'expression, la trame, et le contexte dans lequel elle est
++         demandée
+
+@ 0 5 0 1167f0a7e19f1c351966adc6078032eb
++     detail
++         Un contexte `hover` n'exécute jamais de code du programme débogué, puisqu'il se déclenche
++         aux mouvements du curseur : il ne répond qu'avec la valeur et le type statique d'une
++         variable locale visible, ou l'élaboration d'un appel nommé dans la méthode arrêtée. Tout
++         autre contexte (`repl`, `watch`, absent) évalue au moyen de l'`Evaluator`.
+
+@ 0 1 0 082c19651a10b80e00eda6cedc669874
++     entry #expression
++       info
++           l'expression
+
+@ 0 1 0 11c846614cee7f1b0d80d84b5bd2ed5e
++     entry #frameId
++       info
++           la trame contre laquelle évaluer
+
+@ 0 1 0 1634f9aac688d2840ead1f3bd040d4a3
++     entry #context
++       info
++           `hover`, `repl`, `watch`, ou absent
+
+@ 1 1 0 1ccc3b8c06ef170b1f1be39bffdb1f82
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 16a704626862fa40133104745a07c931
++   entry .CompletionsArguments
++     info
++         une requête `completions` : le texte de la console, la colonne du curseur et la trame
+
+@ 0 3 0 0ee0d9e47e1aedbe02430fcda72a9a86
++     detail
++         `column` est une position de caractère dans `text`, numérotée à partir de un ; `line` est
++         acceptée mais inutilisée, puisque l'adaptateur complète une saisie de console sur une
++         seule ligne.
+
+@ 0 1 0 1ffb919ee5e360e50cef15d4def83673
++     entry #text
++       info
++           le texte de la console jusqu'ici
+
+@ 0 1 0 09a0f97b76a9076b0ebe92e6af1fafc9
++     entry #column
++       info
++           la position du curseur dans `text`, numérotée à partir de un
+
+@ 0 1 0 029236a9f3edd4cc14869fb429dca236
++     entry #frameId
++       info
++           la trame dont les variables locales sont dans la portée
+
+@ 0 1 0 0b5dae866a38a2d51f8e8f5f4b601098
++     entry #line
++       info
++           accepté et inutilisé
+
+@ 1 1 0 028564b103d99e4610d02d182ade31b8
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 0239ba0a5e4f3ce51173f06ee6033ce3
++   entry .SetExpressionArguments
++     info
++         une requête `setExpression` : une liaison, une expression pour sa nouvelle valeur, et la
++         trame
+
+@ 0 1 0 1b5a232c5ec0b1611782a55b5ae0307e
++     entry #expression
++       info
++           la liaison à laquelle affecter
+
+@ 0 1 0 07503afd83c01e6a122afbdc5efd2a6a
++     entry #value
++       info
++           l'expression dont la valeur est à affecter
+
+@ 0 1 0 0d94b1baa20ba60105a455215ea23b9b
++     entry #frameId
++       info
++           la trame
+
+@ 1 1 0 10c004f8d7d5fbd605fb9d774f2b5426
++     entry .decodable
++       info
++           lit les arguments depuis du JSON
+
+@ 0 1 0 1686e4281617b1ad1748fc764410a87c
++   entry .Breakpoint
++     info
++         un point d'arrêt tel que rapporté au client : vérifié ou non, avec son identifiant, sa
++         ligne et son message
+
+@ 0 1 0 1cce239bee8079be124a3c8d255708bd
++     entry #verified
++       info
++           si le point d'arrêt s'est lié à un emplacement
+
+@ 0 1 0 138e058002f4915616ed4033b3320644
++     entry #id
++       info
++           l'identifiant que lui donne l'adaptateur
+
+@ 0 1 0 1df07ded0ab292230db071c1edb9c0bd
++     entry #line
++       info
++           sa ligne
+
+@ 0 1 0 1f5f64c18aff14e510cc3d7204e2b724
++     entry #message
++       info
++           pourquoi il n'est pas vérifié, si c'est indiqué
+
+@ 0 1 0 1be10faed226c7b01b45cf474ad1725d
++     entry .encodable
++       info
++           écrit un point d'arrêt en JSON
+
+@ 0 1 0 1b2c3d6d687d2a320010e56f0bb464ff
++   entry .BreakpointsBody
++     info
++         le corps d'une réponse de la famille `setBreakpoints` : un `Breakpoint` par requête
+
+@ 0 1 0 09e3e5f10c19e3320b2b45b0277ec9b3
++     entry #breakpoints
++       info
++           les points d'arrêt, dans l'ordre demandé
+
+@ 1 1 0 06ab2123fd876ce10365690d0d61a674
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 1e091c49cfadb83b0f7ec6f125971235
++   entry .DataBreakpointInfoBody
++     info
++         le corps d'une réponse `dataBreakpointInfo` : l'identifiant de données, une description et
++         les types d'accès
+
+@ 0 1 0 0ff4c113a43b98ba151b2f260c46931f
++     entry #dataId
++       info
++           `owner:field`, ou `Unset` quand la variable n'accepte aucun point d'arrêt de données
+
+@ 0 1 0 17b0efcd1c31dba71df418d03a2d4ccc
++     entry #description
++       info
++           une description destinée à l'utilisateur, ou la raison pour laquelle aucun n'est accepté
+
+@ 0 1 0 1edff1047a737c53140f4e95d6d9102e
++     entry #accessTypes
++       info
++           `write`, le seul type d'accès pris en charge
+
+@ 1 1 0 1984d7b036dd7dfc179fbf1b103e1e38
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 04590f4b66495c5e0ec5fbf090fa0835
++   entry .ThreadInfo
++     info
++         un thread tel que rapporté au client : sa poignée et son nom
+
+@ 1 1 0 107508cfbf426a9602274ad2d67aaf97
++     entry #id
++       info
++           la poignée de l'adaptateur
+
+@ 0 1 0 1433f82c593f4fa11ad9fbd3f6166707
++     entry #name
++       info
++           le nom du thread
+
+@ 0 1 0 010299a4de5653a80ed512802aaf56ca
++     entry .encodable
++       info
++           écrit le thread en JSON
+
+@ 0 1 0 1e515edbef05b07f04f88cbbd785fde0
++   entry .ThreadsBody
++     info
++         le corps d'une réponse `threads`
+
+@ 0 1 0 062373bcca2415f10a6003346b610a4b
++     entry #threads
++       info
++           tous les threads
+
+@ 1 1 0 141f62e70500e8f11ffab32e5f610754
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 1f01e0c625119da7020023aba9c8c8f4
++   entry .StackFrame
++     info
++         une trame telle que rapportée au client : poignée, nom, ligne, colonne, source et
++         indication de présentation
+
+@ 0 3 0 0f33d167552ed8ce1c0224302779db70
++     detail
++         Une par position *logique* : une trame physique dans du code inliné se déploie en ses
++         origines inline, avec l'indication `subtle`, suivies de la trame elle-même à sa vraie
++         ligne.
+
+@ 1 1 0 04bb91825dd46b45192adcb245e1a20b
++     entry #id
++       info
++           la poignée de l'adaptateur
+
+@ 0 1 0 094fd6be4bd3bd96094ac9e51b00e537
++     entry #name
++       info
++           la méthode, ou la définition inlinée qu'a écrite le programmeur
+
+@ 1 1 0 0351701f97f7bab7066ec1b90cedef30
++     entry #line
++       info
++           la ligne de source
+
+@ 0 1 0 031edb0fccd199f7000d6656559c2e3a
++     entry #column
++       info
++           la colonne, toujours `0`
+
+@ 0 1 0 1c015f693d6fa7510057c2dbdb33f1cc
++     entry #source
++       info
++           le fichier source, s'il est connu
+
+@ 0 1 0 14f81682d85298d50e004325a61ebd77
++     entry #presentationHint
++       info
++           `subtle` pour une origine inline
+
+@ 0 1 0 1e8ab6963b3cc5fe1da38c4914c6f6db
++     entry .encodable
++       info
++           écrit la trame en JSON
+
+@ 0 1 0 163ea00ecdfc26f8055132b4e27048bb
++   entry .StackTraceBody
++     info
++         le corps d'une réponse `stackTrace` : les trames et leur nombre total
+
+@ 0 1 0 0b2a6da2661b747318b03571f3c8b07a
++     entry #stackFrames
++       info
++           les trames, la plus interne en premier
+
+@ 0 1 0 1ea7bd7dd158b89809a33b04639f1a05
++     entry #totalFrames
++       info
++           le nombre de trames
+
+@ 1 1 0 1a4ce5784454426f1426dada80ca1339
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 081be5f6961418b2017970e0b3f7acac
++   entry .Scope
++     info
++         une portée de variables : son nom, sa poignée et si son déploiement est coûteux
+
+@ 0 1 0 0c53cd994ff50d810a5f72101c0922f6
++     entry #name
++       info
++           `Locals`, la seule portée proposée
+
+@ 0 1 0 0dbea338a51046b90e66eb8c6c4dd796
++     entry #variablesReference
++       info
++           la poignée que prend une requête `variables`
+
+@ 0 1 0 1b00b25f6c0a107f189b5884bef0fbb5
++     entry #expensive
++       info
++           toujours `false`
+
+@ 0 1 0 0c433aefa2e6c64f1c9aa86060ab5a5a
++     entry .encodable
++       info
++           écrit la portée en JSON
+
+@ 0 1 0 042d0c3667cda692180fdf13ce6cbf28
++   entry .ScopesBody
++     info
++         le corps d'une réponse `scopes`
+
+@ 0 1 0 1088995c02f6ae6a190ea69f6a9c5722
++     entry #scopes
++       info
++           les portées de la trame
+
+@ 1 1 0 1f62ced22a292e1d14e8868dc84fa9c3
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 1f27d17cfb955aeb18058d2d59c32aa7
++   entry .VariableInfo
++     info
++         une variable telle que rapportée au client : nom, valeur rendue, poignée de déploiement et
++         type
+
+@ 1 1 0 03b25a34b821953f0f23e6704861281b
++     entry #name
++       info
++           le nom de la variable
+
+@ 0 1 0 0807e193d1df4d0a17a0fade2d5cbef7
++     entry #value
++       info
++           sa valeur rendue
+
+@ 0 1 0 161252b16ae1d41907e36718ecf9f8aa
++     entry #variablesReference
++       info
++           une poignée pour la déployer, ou `0` pour une feuille
+
+@ 0 1 0 10492f3a06d06ca9189beeafe87d3b16
++     entry #type
++       info
++           son type statique s'il a été retrouvé, sinon son type effacé
+
+@ 0 1 0 010c7626d4f8e9130f14272646460c13
++     entry .encodable
++       info
++           écrit la variable en JSON
+
+@ 0 1 0 028ea1e90427f8f4098b8766101ebd68
++   entry .VariablesBody
++     info
++         le corps d'une réponse `variables`
+
+@ 0 1 0 07bdd6cc7e14cb650a955566615497c6
++     entry #variables
++       info
++           les variables de la portée ou de la structure
+
+@ 1 1 0 18096cb048bec1ae1a13fc2c7426934e
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 11558d40574b969f100d6f349fbde075
++   entry .SetVariableBody
++     info
++         le corps d'une réponse `setVariable` ou `setExpression` : la valeur telle qu'écrite
+
+@ 1 1 0 1472ba38945bccca158d2f5518958707
++     entry #value
++       info
++           la nouvelle valeur, sous forme de texte
+
+@ 1 1 0 13737d8d504538f71e2590bb0c56bb5c
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 18e5ffd2f340114f0df253569510ae2f
++   entry .EvaluateBody
++     info
++         le corps d'une réponse `evaluate` : le résultat et une poignée de déploiement
+
+@ 0 1 0 1139e2bd33477795054a8f8d694e996e
++     entry #result
++       info
++           le résultat, sous forme de texte
+
+@ 0 1 0 11c4419a43931c06118b205e60351100
++     entry #variablesReference
++       info
++           une poignée pour le déployer, ou `0`
+
+@ 1 1 0 1977192b7b2117ad01a31b943de9c529
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 1af5ac6cd19fc07a0023f5dd50ef20d5
++   entry .CompletionItem
++     info
++         une complétion : son étiquette, sa nature, et la plage du texte qu'elle remplace
+
+@ 0 4 0 0bc2061284cf23cc052cb781c0b19438
++     detail
++         `start` et `length` délimitent la région du `text` de la requête que remplace la
++         complétion, dans les mêmes unités numérotées à partir de un que la `column` de la
++         requête ; en leur absence, le client insère `label` à la colonne demandée.
+
+@ 0 1 0 1488e7abd77456b811dbef35452e59db
++     entry #label
++       info
++           le texte de la complétion
+
+@ 0 1 0 15fd0afcf8acf294181d6f474edd9f68
++     entry #type
++       info
++           `method`, `class`, `module`, `keyword` ou `variable`
+
+@ 0 1 0 0278b1895b9306961fa3fecbe76fcb06
++     entry #start
++       info
++           l'endroit où commence la région remplacée, numéroté à partir de un
+
+@ 0 1 0 02a1d95fb3e5339507a59129ad8e517a
++     entry #length
++       info
++           la quantité remplacée
+
+@ 0 1 0 052bce09de21f6b00d1e4de756ae4ef6
++     entry .encodable
++       info
++           écrit l'élément en JSON
+
+@ 0 1 0 17e6433b991aa9820b9da36b20e0d688
++   entry .CompletionsBody
++     info
++         le corps d'une réponse `completions`
+
+@ 0 1 0 14982ef882be243213002034e5b41567
++     entry #targets
++       info
++           les complétions
+
+@ 1 1 0 032623f398a208c70c34e12bfb1ddad1
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 094378eb4fca853a0a3b1b77c05133e3
++   entry .ExceptionInfoBody
++     info
++         le corps d'une réponse `exceptionInfo` : la classe de l'exception, le mode d'arrêt et le
++         message
+
+@ 0 1 0 16763193470b83a70fe26d2bdd436b72
++     entry #exceptionId
++       info
++           le nom de classe de l'exception
+
+@ 0 1 0 0d6053e0a7618157005482984911e8b2
++     entry #breakMode
++       info
++           `always` pour une exception interceptée, `unhandled` pour une exception non interceptée
+
+@ 0 1 0 19cb0faad9b413c3068cc450a95e4699
++     entry #description
++       info
++           le message de l'exception
+
+@ 1 1 0 0202a2636a6f8528156fd92aae363aeb
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 13df0509124c891710e5d1f58b581d4c
++   entry .ContinueBody
++     info
++         le corps d'une réponse `continue` : si tous les threads ont continué
+
+@ 0 1 0 08476cb9a26d13a907c10c5bb79ea01f
++     entry #allThreadsContinued
++       info
++           toujours `true`
+
+@ 1 1 0 149f2b23a508feeb01559563cac45935
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 1774a9c22a1974780555718e306e09b0
++   entry .StoppedBody
++     info
++         le corps d'un événement `stopped` : la raison, le thread, et les points d'arrêt déclenchés
+
+@ 0 3 0 1a5053c7166c8b2c0c59d40a48cd4d62
++     detail
++         Les raisons envoyées sont `breakpoint`, `function breakpoint`, `data breakpoint`,
++         `exception`, `step`, `pause` et `restart`.
+
+@ 0 1 0 13d01ca80191885c0d9aade1a5df4cbd
++     entry #reason
++       info
++           pourquoi le thread s'est arrêté
+
+@ 1 1 0 0e4593254e3d28b80607473789488ac4
++     entry #threadId
++       info
++           la poignée de l'adaptateur pour le thread
+
+@ 0 1 0 180d113c638f03b310946474e0d60900
++     entry #allThreadsStopped
++       info
++           si tous les threads se sont arrêtés ; `false` pour un pas ou une pause
+
+@ 0 1 0 152f50d70998ad2b039a25636378cc55
++     entry #hitBreakpointIds
++       info
++           les identifiants des points d'arrêt déclenchés
+
+@ 1 1 0 040cbb14661f365b0b31de1c2fb81d81
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 15b0acd326cd60801368e95506c3aaac
++   entry .ContinuedBody
++     info
++         le corps d'un événement `continued` : le thread et si tous les threads ont continué
+
+@ 1 1 0 16d0df5df3b75c4102b511b4eaf4fd47
++     entry #threadId
++       info
++           la poignée de l'adaptateur pour le thread
+
+@ 0 1 0 05fa2ce4ddeba0fe1a292209bdcabb5d
++     entry #allThreadsContinued
++       info
++           si tous les threads ont continué
+
+@ 1 1 0 1570d86f68860f170388e8acf4284276
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 1fdfd02405ce454200a134f3d39e2614
++   entry .OutputBody
++     info
++         le corps d'un événement `output` : la sortie du programme débogué et sa catégorie
+
+@ 0 1 0 0cc680d157cf27de1491f57bfaedff3b
++     entry #output
++       info
++           le texte
+
+@ 0 1 0 0d5e437859f393720d66d1e2d9402e38
++     entry #category
++       info
++           `stdout` ou `stderr`
+
+@ 1 1 0 10a6f11db2e23962072effdd18c10cf4
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 0ac5cf82dc65f9c01d5f6973453df55c
++   entry .ExitedBody
++     info
++         le corps d'un événement `exited` : le code de sortie du programme débogué
+
+@ 0 1 0 0f6bde91ba790c3d059e5cafa7eba1e3
++     entry #exitCode
++       info
++           le code de sortie
+
+@ 1 1 0 0b28e23b0048e75b07e1d6a65e35f2ec
++     entry .encodable
++       info
++           écrit le corps en JSON
+
+@ 0 1 0 1ab8816976c7f0f801b3c191803c1641
++   entry .BreakpointEventBody
++     info
++         le corps d'un événement `breakpoint` : une raison et le nouvel état du point d'arrêt
+
+@ 0 3 0 1ca595d319f0ff8901fa0f47fb9f02d2
++     detail
++         Envoyé avec la raison `changed` quand un point d'arrêt de source différé se lie, pour que
++         le client le marque comme vérifié.
+
+@ 0 1 0 0f1127942578fd310c165c8d7efa16fb
++     entry #reason
++       info
++           `changed`
+
+@ 0 1 0 017d99a847c541511b276883ef29bcf2
++     entry #breakpoint
++       info
++           le nouvel état du point d'arrêt
+
+@ 1 1 0 09b0cd0627e9c907191246b06dcecd3a
++     entry .encodable
++       info
++           écrit le corps en JSON

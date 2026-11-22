@@ -1,0 +1,37 @@
+orthant 2 language
+
+% 0 1 0 1c937c06d79cc9dc089b7bd51583a676
+
+@ 0 2 0 11291216c7fc90c712cfa2b04679c01f
++ Levée par Fulminate lorsqu'une séquence d'échappement d'une interpolation de chaîne n'est pas
++ valide.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 0a2800a3287a41ab11cba1d845b01e9f
++ L'interpolateur `m"…"` et les interpolateurs semblables prennent en charge des séquences
++ d'échappement (`\n`, `\t`, `\u…`, etc.). Lorsqu'un échappement est malformé, l'interpolateur
++ lance cette erreur avec un message décrivant le problème précis.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1fe18452a0d19ef118c150baee3a4c23
+
+% 1 1 0 0872ed1dae6588d10b1f2838c2ff9269
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 1 0 0c85e0ba1bc3d6ac095e88833cd789b3
++ Utilisez une séquence d'échappement documentée ; pour une barre oblique inverse littérale, écrivez
+
+% 0 1 0 12618ebbde07d8b7162c64ca6c45f771
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1667d80f2c0103a30b5eb20d31b738fd
++ - Source : `lib/fulminate/src/core/fulminate.TextEscapes.scala`

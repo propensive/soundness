@@ -1,0 +1,424 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14c573472161d1591a0ab821784a0dbd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c512d48a8f747e81db84ebb3f7b85c8
++ info   Werte, indiziert über die Feldpfade eines Typs, angesprochen über einen zur Kompilierzeit geprüften Proxy
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 155d14c6d575c2930cb9a653992f2865
++     _Vicarious_ behandelt die Struktur einer Case-Klasse — jedes von ihr aus erreichbare Feld,
++     in beliebiger Tiefe, und den ganzen Wert selbst — als feste Menge von **Pfaden**,
++     `opponent.name` statt `name`, und lässt Code diese Pfade über einen **Proxy** benennen: einen
++     Stellvertreterwert des Typs ohne eigene Felder, auf dem jede Selektion beim Kompilieren des
++     Codes in den Index des Pfads aufgelöst wird, den sie benennt. Ein Pfad, den der Typ nicht hat,
++     ist ein Kompilierfehler, sodass nie ein Pfad als Text geschrieben wird.
+
+@ 0 6 0 0d0f3feabc53640b06c3f7f07eb53459
++     Auf dem Proxy bauen zwei Strukturen auf. Ein `Catalog[Key, Value]` hält einen `Value` für
++     jeden Pfad von `Key`, berechnet von einer einzigen Funktion aus einem Wert von `Key`, gelesen
++     über einen Pfad, transformiert mit `map` und Eintrag für Eintrag kombiniert mit `braid`. Ein
++     `Specific` ordnet einigen Pfaden eines Typs Typklasseninstanzen zu, damit eine Ableitung (die
++     von `wisteria` und damit die von `jacinta`, `stratiform` und den anderen Codecs) sie genau an
++     diesen Pfaden anstelle der Instanz für den Typ des Felds verwendet.
+
+% 2 1 0 1630ecd701d1902615b8979173abf571
+
+% 3 1 0 0c533d0ca0adb7e81427ebb98cb3c6db
+
+% 5 1 0 047ba6561d06fc3210c636a9856fb595
+
+% 6 1 0 0a449e935ff23efa0cb0634c4c83f0c4
+
+% 8 1 0 10b102ee5e4686091d0fa183f8334a41
+
+% 9 1 0 02ec097a1894293103015980210e56e7
+
+% 0 1 0 1f98fc376d93d26407b211694cd470ef
+
+% 0 1 0 1cde67ede7001b021ed1a5446cab1794
+
+% 1 1 0 1a308ac5173f5d601eb177d3087611bf
+
+@ 0 4 0 1f597724a09d4f661173e2eee129a9cb
++     Pfade werden in Tiefensuche abgeflacht, die Wurzel zuerst: Für `Duel` sind es das ganze
++     `Duel`, `challenger`, `challenger.name`, `challenger.age`, `opponent`, `opponent.name` und
++     `opponent.age`, sodass ein Katalog über `Duel` sieben Einträge hat und zwei Kataloge über
++     demselben Schlüssel Position für Position übereinstimmen.
+
+@ 0 3 0 0a68eb7b1e05921207e39ce3a09baf88
++     Die Bibliothek hat ein einziges Source-Set, `vicarious.core`. `Catalog`, `catalog`, `Proxy`,
++     `Specific`, `root` und `specifically` werden in den `soundness`-Umbrella exportiert; das
++     `Proxy`-Given liegt in seinem Begleitobjekt, im impliziten Geltungsbereich, sodass nichts
++     namentlich importiert wird.
+
+% 0 1 0 16736c53b26096c207f0082614094673
+
+% 0 1 0 15cd18d3b7919aa80115166de491bebc
+
+% 0 1 0 16ef5f905f86975c0f40c8ed9c1f6402
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+% 0 1 0 0f8b59d3fb7a104900a03684ad28f8bf
+
+@ 0 7 0 155cd0e998cd35dd142a8e70fd93f635
++ entry .catalog   baut einen `Catalog`, indem eine polymorphe Funktion auf einen Wert und auf jedes Feld darin angewandt wird
++     `catalog(value)(lambda)` ist ein Makro, das beim Kompilieren des Codes die
++     Case-Klassen-Struktur des Typs von `value` durchläuft und `lambda` — eine reine polymorphe
++     Funktion `[field] => (field: field) -> result` — auf den ganzen Wert und dann auf jedes Feld
++     anwendet, in Tiefensuche, in Deklarationsreihenfolge. Die Funktion muss ein Feld beliebigen
++     Typs akzeptieren und darf mit ihm daher nur tun, was jeder Wert unterstützt. Ein `ClassTag`
++     für den Ergebnistyp wird benötigt, da die Einträge in einem Array gehalten werden.
+
+% 2 1 0 1d6f55d230d8ef4d0009f57724ac1919
+
+% 3 1 0 00bf0f847813c1a10603df9f8863a003
+
+% 5 1 0 1b28e8913075260f04967776bf2ec2ac
+
+% 6 1 0 16f08b8f114259901d79c58d31358e24
+
+% 8 1 0 11459718a47ea6f618f5b7020f8ca339
+
+% 9 1 0 0e911233e342b37205980a5266957913
+
+% 0 1 0 045154aee157ecd10e8e88020155681d
+
+% 0 1 0 0bda1787e6dfd4d40d817764375dee42
+
+% 1 1 0 08859f5cc6e75c9f1aa6e1c0a30529b7
+
+@ 0 1 0 01331c7d4920278d0e058a0e42ff0e24
++ entry .Catalog   ein Wert für jeden Feldpfad eines Schlüsseltyps, gelesen über einen beim Kompilieren geprüften Pfad
+
+% 1 1 0 08f07553092055fd1bb89d74ced64c91
+
+@ 0 6 0 0c24dfecd599c58f18625d55183256df
++       Ein `Catalog[Key, Value]` hält in `#values` einen `Value` an jeder Position der
++       abgeflachten Struktur von `Key` — zuerst den ganzen Wert, dann jedes Feld in Tiefensuche.
++       Er wird mit `catalog` gebaut, mit `#apply` und einem über einen Proxy geschriebenen Pfad
++       gelesen, mit `#map` transformiert, an benannten Pfaden mit `.brush` überschrieben und mit
++       `#braid` mit einem anderen Katalog über demselben Schlüssel kombiniert. Der Schlüsseltyp
++       macht zwei Kataloge kombinierbar und prüft jeden Pfad, mit dem einer gelesen wird.
+
+% 2 1 0 02514956fb2369b305f17caf77c73c29
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 01f65e0e42f642a612e72164231a5895
++         label Ein Katalog der Beschriftung jedes Felds
+
+% 1 1 0 19749c2033ff89da1a0e3513dfc0fade
+
+% 2 1 0 0af6169059bf084006f7be94d1b94a84
+
+% 4 1 0 1d9c2f63627e4ed6023b2aa8c8463ba4
+
+% 5 1 0 149a8328f5268ee102d4a7f0c2c1f621
+
+% 7 1 0 19364089144447960bf7a51143444db7
+
+% 8 1 0 13d82c5ae2ef7a8f0d9fe21623024396
+
+% 0 1 0 16087901fc7780a11caff7f97772c4dc
+
+% 1 1 0 05d27781c35ce76e04a550841a2a475d
+
+@ 0 1 0 1d2255833216fb750fb13b636f50456c
++         label Abgebildet auf einen Katalog von Breiten, angesprochen über dieselben Pfade
+
+% 1 1 0 0cf1f647db68b9df1a5727278b75182d
+
+% 2 1 0 18944a177445cae10c3f27f59a925efe
+
+% 4 1 0 1dde0ab126d2c8db0e4d5c942a74a121
+
+% 5 1 0 1af3a7fc27c031c41c0ff56878f590a6
+
+% 7 1 0 14eb899416168e8e1e399b40eedb113f
+
+% 8 1 0 06e08923ff95329f1f103645e783a646
+
+% 9 1 0 13ae7673a36f262017eff493aafa53ab
+
+% 0 1 0 042c74f71a7d57df151dadb04e7d860d
+
+% 1 1 0 101f2f084c6fbf2517e300659acc48ba
+
+@ 0 1 0 1b080daada2ad15d1f06a552a3772b6a
++         label Mit den Beschriftungen verflochten, Eintrag für Eintrag
+
+% 1 1 0 18b50400be569d0d1df5fa33c0257fa5
+
+% 2 1 0 0240e032b4884c3111d79186ebde3f29
+
+% 4 1 0 12b37d55f6738bbd070ee18cbda3c900
+
+% 5 1 0 1b74d67c513c71801c4c7ec166a46725
+
+% 7 1 0 1b50283bd7682527055d079cae4a5092
+
+% 8 1 0 191d93e739f1476f1b9dcd00bb0459fd
+
+% 9 1 0 0a55b7e6a509d2ab091f478dae893b65
+
+% 0 1 0 1edf6d73f92a6077057be7b0d93a3c6f
+
+% 0 1 0 1a4eeee82407baca06928eeea9720351
+
+% 1 1 0 0750e4fddf46d29d1e7ac716d5ec8b60
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 09b6a9da700cbea610e83d01e07a0ea2
++       So wird eine Tabelle von Einstellungen je Feld zusammengesetzt: Kataloge von
++       Beschriftungen, Breiten und was sonst noch wichtig ist, getrennt gebaut und miteinander
++       verflochten, jeder über dieselben Pfade angesprochen. Ein `Catalog` ist `Findable`.
+
+% 0 1 0 16cebf059ababff11de6f4787d27b308
+
+% 0 1 0 02dcdff5f415749b17058cab8bd8264f
+
+@ 0 5 0 059a52a2593b13420fff1cdd3e18a343
++   entry .brush   eine Kopie eines Katalogs, deren Einträge an einigen Pfaden ersetzt sind, über eine partielle Funktion von Pfaden
++       Eine Erweiterung auf jedem `Catalog`, die den abgeleiteten `Proxy` für den Schlüsseltyp
++       benötigt. Das Argument ist eine Kontextfunktion vom Proxy zu einer partiellen Funktion über
++       Proxys: Jeder `case` benennt einen Pfad, als Pattern auf dem Proxy, und gibt seinen neuen
++       Wert an; jeder nicht erfasste Pfad behält seinen Eintrag.
+
+% 2 1 0 1816e5301ac89296087e83d67698707c
+
+% 3 1 0 16889a812e3598660ad60b7a765bb229
+
+% 5 1 0 0198c7b370a12e201da6faa80e5c7f45
+
+% 6 1 0 0886091d12e30edc09bdb937e0f6a3f1
+
+% 8 1 0 1cc36380dc457f95125461057d939016
+
+% 9 1 0 1d65bcffa7b00c400a72088e4b7f3c22
+
+% 0 1 0 194a622562029f0c1f041e159addef5f
+
+% 1 1 0 1506c446973f9402169a4369348fcadf
+
+@ 0 17 0 12561df964cea0530ea160f92272e480
++   entry #values   die Einträge, einer je Pfad, zuerst der ganze Wert und dann jedes Feld in Tiefensuche
++   entry #size   die Anzahl der Einträge: einer für den ganzen Wert und einer für jedes Feld in beliebiger Tiefe
++   entry #apply   der Eintrag an einem Pfad, geschrieben als Selektionen auf einem Proxy des Schlüsseltyps
++       `catalog(proxy ?=> proxy.opponent.name)` löst den Pfad beim Kompilieren des Codes in den
++       Index seines Eintrags auf; `proxy ?=> proxy` ist der Eintrag für den ganzen Wert, und ein
++       Feld, das der Typ nicht hat, ist ein Kompilierfehler. `challenger.name` und
++       `opponent.name` sind verschiedene Einträge, da ein Pfad eine Position ist, kein Name.
++   entry #map   ein Katalog über demselben Schlüssel, bei dem eine Funktion auf jeden Eintrag angewandt ist
++       Die Pfade bleiben unverändert, sodass jeder auf diesem Katalog gültige Pfad auch auf dem
++       Ergebnis gültig ist. Ein `ClassTag` für den neuen Werttyp wird benötigt.
++   entry #braid   kombiniert zwei Kataloge über demselben Schlüssel, Eintrag für Eintrag, mit einer Funktion beider Werte
++       `left.braid(right)(lambda)` braucht keinen Abgleich von Namen: Kataloge über demselben
++       Schlüssel stimmen Position für Position überein. Ein `ClassTag` für den Ergebnistyp wird
++       benötigt.
++   entry #tie   wertet einen Block mit diesem Katalog und dem Proxy seines Schlüssels im Kontext aus, sodass ein Pfad seinen Eintrag liest
++       Innerhalb des Blocks ist der Katalog ein Kontextwert, sodass `proxy.opponent.name()` — ein
++       Pfad, gefolgt von `()`, also `Proxy#apply` — den Eintrag dieses Pfads direkt liest; in einem
++       Ausdruck können mehrere Pfade gelesen werden.
+
+% 2 1 0 1f8a808e7079e1371b9a995e6d45c567
+
+% 3 1 0 13ddc6a91efaeb301fbcdd56c863a75e
+
+% 5 1 0 13b0a936b9b1eadb1ee3282321dec80a
+
+% 6 1 0 13b29fdec15dcd3613c07b9c407db629
+
+% 8 1 0 0cf513a96ce8d84f018942a901d89466
+
+% 9 1 0 067ec14707ea069d0bf6f24860b9c952
+
+% 0 1 0 1f78210f9cdbb88b01dd795ff6dadf70
+
+% 1 1 0 034bb435c26063d3111d607891a707a6
+
+@ 0 1 0 1b3dcb699e0f413815fca62bb9aa6c8b
++ entry .Proxy   ein Stellvertreter für einen Wert eines Schlüsseltyps, dessen Feldselektionen beim Kompilieren in Pfadindizes aufgelöst werden
+
+% 1 1 0 0727847a5ff05fdc19af564fb8046362
+
+@ 0 5 0 02a3fbfaf35c7e571598a607e928bf5c
++       Ein `Proxy[Key, Value, Ordinal]` steht an einem Pfad von `Key`: `Ordinal` ist der Index
++       dieses Pfads als Literaltyp (`0` für die Wurzel) und `#id` derselbe Index zur Laufzeit.
++       Die Selektion eines Felds auf einem Proxy (`proxy.opponent.name`) ist ein
++       `selectDynamic`-Makro, das den verlängerten Pfad in der abgeflachten Struktur von `Key`
++       nachschlägt und den Proxy dafür liefert, sodass ein Feld, das der Typ nicht hat, ein
++       Kompilierfehler ist, _vicarious: `opponent.title` is not a valid field path_.
+
+@ 0 5 0 084a9c54e63322d30d71a65562252595
++       Der Wurzel-Proxy für einen Schlüsseltyp ist `.derived`, im impliziten Geltungsbereich;
++       `Catalog#apply` und `Catalog#tie` stellen ihn bereit, und `specifically` stellt einen als
++       `root` bereit. Ein Proxy wird auf drei Arten verwendet: als Adresse (`Catalog#apply`), um
++       einen Eintrag aus einem Katalog im Kontext zu lesen (`#apply`), und als Extraktor in einem
++       Pattern (`#unapply`), womit `specifically` und `.brush` Pfade in ihren `case`s benennen.
++       Ein `Proxy` ist `Findable`.
+
+% 0 1 0 177512859589bc0b04c1e630ac9f3ac0
+
+% 1 1 0 172eeb380c8468d01a3e69e3884cb7d5
+
+@ 0 13 0 1bdffb2b6ba9c1ed15403900ced1efac
++   entry .derived   der Wurzel-Proxy für einen Schlüsseltyp, verfeinert mit den Proxys seiner Felder, sodass Selektionen die Typprüfung bestehen
++       Ein `transparent inline given`-Makro im impliziten Geltungsbereich: Sein Typ ist
++       `Proxy[Key, Value, 0]`, rekursiv verfeinert mit einem Member für jedes Feld, jeweils einem
++       Proxy, dessen `Ordinal` der Pfadindex dieses Felds ist.
++   entry #selectDynamic   der Proxy für ein Feld des Pfads dieses Proxys, oder ein Kompilierfehler, wenn es keines gibt
++       Aufgerufen von einer Selektion wie `proxy.opponent`; wird nicht direkt geschrieben.
++   entry #id   der Index des Pfads dieses Proxys in der abgeflachten Struktur seines Schlüsseltyps, wobei die Wurzel `0` ist
++   entry #apply   der Eintrag am Pfad dieses Proxys im `Catalog` im Kontext
++       `proxy.opponent.name()` benötigt einen `Catalog[Key, Value]` als Kontextwert, wie
++       `Catalog#tie` ihn bereitstellt.
++   entry #unapply   passt auf einen Proxy für denselben Pfad, sodass ein Pfad ein `case`-Pattern sein kann
++       `case root.opponent.name() =>` passt genau auf den Proxy, dessen `#id` der von
++       `opponent.name` ist.
+
+@ 0 1 0 175d0a7a3cc3ba8e0f595aababa4588e
++ entry .Specific   Typklasseninstanzen für benannte Feldpfade eines Typs, damit eine Ableitung sie dort verwendet
+
+% 1 1 0 1a66212c5b3e7312163686c65125a813
+
+@ 0 6 0 047f1e13fb4c1a1f0fb5aa212d71697a
++       `Key is Specific over Typeclass` hält Ausnahmen von einer generischen Ableitung fest: für
++       einige Feldpfade von `Key` die Instanz, die genau an diesem Pfad zu verwenden ist, statt
++       derjenigen, zu der der Typ des Felds aufgelöst würde. Ein Given im Geltungsbereich ändert
++       jedes Feld eines Typs auf einmal; ein `Specific` ändert einen Pfad und sonst nichts. Er wird
++       mit `specifically` gebaut, das jeden Pfad und den Typ jeder Instanz beim Kompilieren des
++       Codes prüft, und wird von den Ableitungen von `wisteria` befragt und damit von den Codecs,
++       die über sie abgeleitet werden.
+
+% 2 1 0 16dcfe704a624d5d1539c37572924830
+
+% 3 1 0 18ed564fa589e9ea0b349e7d4aed2b1b
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 1b57ab72b70c598c0e3d02af8b5ce210
+
+% 3 1 0 1911432e92d095001c2d66a70d44489c
+
+% 0 1 0 0fe48aac32b3e04c02475eea17911527
+
+% 0 1 0 1043da8253ec428f0d7a20fdf4e6c4ad
+
+% 0 1 0 180753d80529814408db5e20955928be
+
+% 0 1 0 094437e7d319e44611be777f4c838517
+
+% 0 1 0 0e9de0781ffa769b0ba933873ba65e95
+
+% 0 1 0 17cff6e98f731a190567f40115fa37b6
+
+% 1 1 0 0f48e23c19780e950c09f1c4395a96a7
+
+@ 0 1 0 167532bb7f68b6950969d96373770082
++       Ein `Specific`, dessen `#Transport` für eine andere Typklasse ist, wird von einer Ableitung
++       ignoriert.
+
+% 1 1 0 1e89910a68f3cbdd1cca2de0b92519ac
+
+% 0 1 0 1bdfa24802e8a5be0630be87c36ed944
+
+@ 0 7 0 122be1d5a0ac3ff402b643bce7cebcf4
++   entry .Cases   die partielle Funktion von Feldpfad-Fällen, die `specifically` liest: Proxy-Patterns zu Instanzen
++       `Specific.Cases[Key]` ist `PartialFunction[Proxy[Key, Any, Nat], Any]`. `specifically`
++       liest seine `case`s beim Kompilieren des Codes aus dem Baum; die Funktion selbst wird nie
++       ausgeführt.
++   entry #Self   der Schlüsseltyp, dessen Feldpfade überschrieben werden
++   entry #Transport   die Typklasse, für die die überschreibenden Instanzen sind, etwa `Json.Encodable`
++   entry #instances   jeder überschriebene gepunktete Pfad (`"opponent.name"`) mit seiner Instanz, typgelöscht
++       Die Ableitung liest eine Instanz aus dieser Map und typisiert sie an dem Feld neu, das sie
++       besucht.
+
+% 2 1 0 001562dbab8c3b4a05f31745c3ba28c1
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 0d3e1e96a9a341711c002cb5d6088f65
+
+% 1 1 0 0fd96e306876e4020cea7891021a7aba
+
+@ 0 6 0 15d733745934215c1ae396fd8826623d
++ entry .specifically   baut einen `Specific` aus `case`-Patterns, die Feldpfade über `root` benennen
++     `specifically { case root.opponent.name() => instance; … }` ist ein Makro, dessen `Key` und
++     `Typeclass` aus dem erwarteten Typ stammen (`Duel is Specific over Json.Encodable`). Für
++     jeden `case` liefert das Proxy-Pattern den Pfad, und die Instanz muss eine `Typeclass` für
++     den Typ an diesem Pfad sein, sonst kompiliert die Definition nicht, _vicarious: the instance
++     for this path is not a …_; ein unbekannter Pfad ist ebenso ein Kompilierfehler.
+
+% 2 1 0 189fd1d56a5e0e070306a294b77561b5
+
+% 3 1 0 0612b0405f94b9170c4cded9eb39c851
+
+% 4 1 0 07789afcd770f35a076f31477f8e0362
+
+% 0 1 0 04f32810549cd2d3141ed7609699624c
+
+% 1 1 0 120ab930fd90d071122b8e8a23a38e0d
+
+% 0 1 0 1ef1291d32a376d00522b4014c5dbb9b
+
+% 0 1 0 13e889e5f84f0847194bec61163fc3d4
+
+% 1 1 0 11734e336822b41409c5941a4864298c
+
+@ 0 2 0 1a1c2044b410b8350e56c81d5cef7488
++     Ein Pfad, der an einer Collection endet, nimmt eine Instanz für die Collection, sodass ihre
++     erneute Ableitung dort unter einem lokalen Given ihre Elemente an genau dieser einen Stelle
++     neu kodiert:
+
+% 2 1 0 0ed6d9df7cec1804016fef740e2e904f
+
+% 3 1 0 0c4326b9bd003c8713ce6bed06a6532e
+
+% 4 1 0 079d2279ce330baf1211d8a891d35512
+
+% 0 1 0 010b4076bdea45d907086e626f0712a1
+
+% 1 1 0 00ed6eda6f6c4d7a063819533c09ab94
+
+% 0 1 0 1e170b060d00f03d18ba58a1bc7f05f4
+
+% 0 1 0 0f93724d09df2c631d72c766449826e4
+
+% 0 1 0 0e6ce2e262378341143b95407ab52c0b
+
+% 1 1 0 099fea93b547e29212041b9bc67e602f
+
+@ 0 4 0 0ee7642deadbc6cd01a26b21b6a99f1c
++ entry .root   der Wurzel-Proxy innerhalb der Fälle von `specifically`, von dem aus jeder Pfad selektiert wird
++     Wird zu dem Proxy aufgelöst, den `specifically` als mit `"root"` getaggten Kontextwert
++     bereitstellt, sodass `case root.opponent.name() =>` keinen Binder braucht. Außerhalb eines
++     `specifically`-Blocks gibt es keinen solchen Wert, und `root` kompiliert nicht.
+
+@ 0 1 0 1b76f4823a87212019fe7505839e6ab9
++ entry .internal   die Makros hinter `catalog`, `Proxy` und `specifically`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 1056004685957b511296ec90e8619e33
++       Nicht zur direkten Verwendung: `catalog`, `Proxy.derived`, `Proxy#selectDynamic` und
++       `specifically` spleißen diese ein. Die Pfad-Helfer flachen die Felder einer Case-Klasse in
++       Tiefensuche ab, mit der Wurzel `""` am Index 0.
++   entry .catalog   baut einen `Catalog` aus einem Wert und einer polymorphen Funktion
++   entry .fieldNames   die gepunkteten Pfade der Felder eines Produkts, in Tiefensuche, unter einem Präfix
++   entry .paths   jeder abgeflachte Pfad eines Produkts, mit dem Wurzelpfad `""` zuerst
++   entry .fieldReprs   der Typ an jedem abgeflachten Pfad eines Produkts, ausgerichtet an `.paths`
++   entry .dereference   löst eine Feldselektion auf einem Proxy in den Proxy für den verlängerten Pfad auf
++   entry .specific   baut einen `Specific` aus den `case`s einer partiellen Funktion von Pfaden
++   entry .proxy   baut den verfeinerten Wurzel-Proxy für einen Schlüsseltyp

@@ -1,0 +1,177 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12c51ec2a255dfe307ae1a2f6c8a8e5f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c0b1b5741d01c6f05e4b0c520bc2c4d
++ info   Hilfsmittel für Metaprogrammierung: jede gegebene Instanz im Geltungsbereich, Ergebnistypen von Makros, Importe an einer Aufrufstelle
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 3 0 1291c08b85811cb200c43dac6bf0ae4e
++     _Gigantism_ ist ein kleiner Werkzeugkasten für die eigenen Makros der Soundness-Bibliotheken
++     und für jede Bibliothek, die wie sie etwas mehr vom Compiler braucht, als Scalas öffentliche
++     Reflection-API bietet.
+
+@ 0 5 0 019c1c4f82f00505127179dc87dd9c68
++     Sein zentrales Merkmal ist `every[T]`, das *jede* gegebene Instanz von `T`, die dort sichtbar
++     ist, wo es aufgerufen wird — einschließlich Instanzen, die untereinander mehrdeutig sind und
++     die ein gewöhnliches `summon` zurückweist —, in einem `Every[T]` sammelt. So lässt eine
++     Bibliothek einen Benutzer mehrere Optionen auf einmal aktivieren, indem er mehrere Givens
++     importiert: Der `Boolean`-Dekodierer sammelt `Every[Truth]`, und die Sockets von coaxial
++     sammeln `Every` Socket-Option im Geltungsbereich.
+
+% 2 1 0 1aa7a7da55f13e3e07cd70c0b3e49155
+
+% 3 1 0 0fd3a53392543d5511cbd4b4dd3647bc
+
+% 0 1 0 1a12b930d81785af0cdb0afe65193532
+
+% 0 1 0 0c3293b2b2b128301d71855ae329f96b
+
+% 0 1 0 0fec5d581218f4890945106668d0ba3e
+
+% 0 1 0 0168540847d4a6341ab85d30168fd7c2
+
+% 0 1 0 041d27ca0f62882504744b38f137bde8
+
+% 0 1 0 1d702f3a53eeae5915bddd80620bdc6f
+
+% 0 1 0 0a79be357cd823be1aa8834531d4fb2b
+
+% 1 1 0 16446a5e2430100219877d6eda977191
+
+@ 0 3 0 048a9b46899a268e19297e88800ee581
++     Daneben gibt es `Macro[T]`, den Typ des Ergebnisses einer Makro-Implementierung; `Lifts`, das
++     Soundness-`List`s von Ausdrücken in zitierte Listen und Varargs hebt; und
++     `metaprogramming.imports`, das die Importe auflistet, die an der Aufrufstelle eines Makros im
++     Geltungsbereich sind.
+
+@ 0 4 0 1f8ebae719f41ea811625dc1f00dc2f4
++     `every` und `metaprogramming` greifen in die interne API des Compilers
++     (`dotty.tools.dotc`) und sind daher an die Compiler-Version gebunden, mit der Soundness
++     gebaut wird. Die Bibliothek hat ein einziges Source-Set, `gigantism.core`, und alles wird in
++     das Umbrella `soundness` exportiert.
+
+% 0 1 0 09c4d1410d2ef3811f0fe94795bccf97
+
+% 0 1 0 19dff483c4b51ba71cc4ae0bde1647be
+
+% 0 1 0 1bce562b9ec6aaef0fdb047a1bfde797
+
+@ 0 1 0 1a54cd97dfdde41e04a33a6c83a7d91f
++ entry .Every   jede gegebene Instanz eines Typs, die an einer Aufrufstelle sichtbar ist, gesammelt in einer Liste
+
+% 1 1 0 1795abc8182d4f3905fc5a0a0c880462
+
+@ 0 4 0 102dcbb844481f271da70b843046c4c8
++       Ein `Every[T]` enthält in `#values` alle gegebenen `T`, die dort im Geltungsbereich sind, wo
++       es herbeigerufen wurde. Es wird mit `every[T]` erzeugt oder als Kontextparameter über das
++       Given `.default` des Begleitobjekts herbeigerufen, das keinen Import braucht: Eine Methode,
++       die `(using Every[Option])` nimmt, sieht jedes `Option`-Given, das ihr Aufrufer im
++       Geltungsbereich hat.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 04b0044dd6433a0b04e8a680bdf25784
+
+% 0 1 0 04ea60bb96ff950e0c3026d4e670f2d0
+
+% 0 1 0 1abc9a1ab52eb50a1e4420c99214b47a
+
+% 0 1 0 0caf0dfd4031115204f8421a7d8a8426
+
+% 0 1 0 02b0368c71fde08a14bbe10217cecb65
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 3 0 160d3aff2c561ac202f298e0a72f6de8
++       Instanzen werden gefunden, ob sie lokal, namentlich importiert oder im impliziten
++       Geltungsbereich sind, und untereinander mehrdeutige werden alle aufgenommen; eine Instanz
++       außerhalb des Geltungsbereichs nicht. Die Reihenfolge der Werte ist nicht festgelegt. Ist
++       keine Instanz im Geltungsbereich, ist `#values` leer.
+
+% 0 1 0 05cd74e95943f8e6048971c9cdcf0a0c
+
+@ 0 11 0 00de7323de3b023410731949273dd4ec
++   entry .default   ruft ein `Every[T]` aller `T`-Instanzen im Geltungsbereich als Kontextparameter herbei
++       Ein transparentes Inline-Given: Es wird an jeder Verwendungsstelle expandiert und sieht
++       daher die Instanzen, die dort im Geltungsbereich sind.
++   entry .summonAll   das Makro, das jede Instanz eines Typs sammelt, die an seiner Expansionsstelle im Geltungsbereich ist
++       Die Implementierung hinter `every` und `.default`. Es sucht wiederholt nach einer Instanz
++       und ignoriert dabei die bereits gefundenen, und es gewinnt beide Alternativen aus einer
++       mehrdeutigen Suche über das interne `AmbiguousImplicits` des Compilers zurück.
++   entry #values   die gefundenen Instanzen, als `List` der Standardbibliothek
++       Die Liste ist die der Scala-Standardbibliothek, nicht die von Soundness, weil die
++       gesammelten Instanzen Capabilities tragen können, die Soundness' `List` nicht aufnimmt.
++       `List.from(every[T].values)` wandelt sie um.
+
+@ 0 4 0 0ef33791380a46530907b2dfef9476ec
++ entry .every   sammelt jede gegebene Instanz eines Typs, die an der Aufrufstelle sichtbar ist, als `Every`
++     `every[T]` expandiert zu einem `Every[T]`, das jedes gegebene `T` enthält, das beim Aufruf im
++     Geltungsbereich ist, einschließlich Instanzen, die untereinander mehrdeutig sind. Es
++     scheitert nicht, wenn keine im Geltungsbereich ist: Das Ergebnis ist dann leer.
+
+% 2 1 0 1e6e0e9590e8cdb7097f7202cabe589d
+
+% 3 1 0 116aa2aee29b49a30f13bd01285ad581
+
+% 0 1 0 1d8ea0e093ca76b800e7f8d1610728f5
+
+% 0 1 0 0fd9f35046b3f6270f71df2216711b29
+
+% 0 1 0 145fad91442647bb15e9e560a201c5e3
+
+% 0 1 0 0757b072cb32fe1901cb1cbc36971cb4
+
+% 1 1 0 0c39eede3e04bc570eb616eca85395a6
+
+@ 0 3 0 0fa294985018e9120a922eba13d1898b
++ entry .Macro   der Typ des Ergebnisses einer Makro-Implementierung: `Quotes ?=> Expr[T]`
++     Eine Makro-Implementierung, die als Rückgabe `Macro[T]` deklariert, erhält die `Quotes` als
++     Kontextparameter, sodass `def impl(x: Expr[Int]): Macro[Text] = '{…}` kein
++     `(using Quotes)` braucht.
+
+@ 0 1 0 1f44a5ffd935e92c01ab85a71b6b3f42
++ entry .Lifts   hebt Soundness-`List`s von Ausdrücken in zitierte Listen und Varargs
+
+% 1 1 0 174d807dc6bbf97f1e363e627d3a7076
+
+@ 0 5 0 135c00abe6204d6b0cab5da6d047ac72
++       Die Gegenstücke zu `Expr.ofList` und `Varargs` für Makrocode, der seine gehobenen
++       Ausdrücke in einer Soundness-`List` statt in einer `Seq` der Standardbibliothek hält.
++   entry .list   hebt eine `List` von Ausdrücken in einen Ausdruck einer `List`
++   entry .varargs   hebt eine `List` von Ausdrücken in ein Varargs-Argument, `Expr[Seq[T]]`
++   entry .Varargs   passt auf ein Varargs-Argument und liefert dessen Elementausdrücke als `List`
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 3 0 1c33f3fb42989d8f0344c2764de6a915
++         Das Extraktor-Gegenstück zu `Lifts.varargs`: `case Lifts.Varargs(elements) =>` passt auf
++         ein `Expr[Seq[T]]`, das als literale Argumente geschrieben ist.
++     entry .unapply   die Elementausdrücke eines Varargs-Arguments, falls es als literale Argumente geschrieben wurde
+
+@ 0 4 0 0461b64f53e3287918ee46b8d45b7571
++ entry .metaprogramming   Compiler-Funktionen jenseits der öffentlichen Reflection-API, für die `Quotes` im Geltungsbereich
++     Innerhalb einer Makro-Implementierung umhüllt `metaprogramming` die `Quotes` im
++     Geltungsbereich als `Metaprogramming`, sodass `metaprogramming.imports` die Importe
++     auflistet, die an der Aufrufstelle des Makros sichtbar sind.
+
+@ 0 1 0 1262f1a883756bac0b4c1ac6357fd4f0
++ entry .Metaprogramming   Compiler-Funktionen jenseits der öffentlichen Reflection-API, für ein `Quotes`
+
+% 1 1 0 034793d8705e9c3b0db32a1cd681c8ec
+
+@ 0 7 0 090f5c53810cc41b01c01e7c880cb99a
++       Wird mit `metaprogramming` innerhalb einer Makro-Implementierung erzeugt. Es greift in den
++       internen Kontext des Compilers und hängt daher von der Version des Compilers ab.
++   entry #Import   ein Import, der an der Aufrufstelle eines Makros sichtbar ist
++     entry #wildcard   ob der Import ein Wildcard-Import ist, `import p.*`
++     entry #term   der Term, aus dem importiert wird, als `TermRef`
++   entry #quotes   die `Quotes`, die dies umhüllt
++   entry #imports   jeder Import, der an der Aufrufstelle des Makros im Geltungsbereich ist, der äußerste zuerst

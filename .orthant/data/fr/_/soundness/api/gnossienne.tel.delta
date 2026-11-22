@@ -1,0 +1,362 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 082c183b14f8412400c6cf416a9e480d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 050c561742c60e5d1da6d9f2706fd530
++ info
++     des références typées vers des entités, qui ne contiennent que leurs clés et se résolvent
++     au travers d'un stockage
+
+@ 0 5 0 05e88696209297d216469b11ac23351c
++ detail
++     _Gnossienne_ représente une référence à une entité — une personne, un produit, une ligne —
++     sous forme de valeur qui ne contient rien d'autre que la clé de l'entité, typée par ce à
++     quoi elle fait référence. Une `Reference to Person` construite à partir de
++     `t"juliet@example.com"` n'est pas un `Text`, et ne peut pas être confondue avec une
++     référence à quoi que ce soit d'autre.
+
+@ 0 5 0 0d3e22cb5db93ca40e1253ea49bd2d13
++     La manière dont une clé retrouve son entité est une instance de la classe de types
++     `Resolvable`. L'instance habituelle se construit à partir d'un ensemble de valeurs avec
++     `Resolvable(store)`, et les parcourt selon le champ marqué de l'annotation `@primary`. Avec
++     cette instance dans la portée, l'extension `ref` prend la référence de n'importe quelle
++     valeur, et appliquer une référence la résout, en levant une `Reference.Error` si rien dans
++     le stockage n'a cette clé.
+
+% 2 1 0 1126c05c50a3369e022aa000ddbe7877
+
+% 3 1 0 08cec7ff608e3d5e057e46fbfd8b182f
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 2 1 0 1c7dc61d53a29d8b061b2bba1dd82fd6
+
+% 0 1 0 1ac908a88e2af4bd14442782478975c3
+
+% 1 1 0 0337c74c2cf22f661b88e950e0d8e899
+
+% 0 1 0 14d9782da58e6c961428ff598f24584c
+
+% 0 1 0 0676d78f6a5371bf02c1c6f77fd476cb
+
+% 0 1 0 1b6d075363438ad4083e12421b9d076a
+
+% 0 1 0 0b237a8b4919e02b1c4e18e03809e12a
+
+% 0 1 0 0a16332cc20701de19baca19d5ab591c
+
+% 1 1 0 1753336499458167141afa111752b4f9
+
+@ 0 2 0 16166f0ae511d9010d0aed3952a25478
++     Une référence s'encode sous forme de sa clé et se décode à partir d'elle ; elle peut donc
++     être stockée ou envoyée sous forme de texte et résolue plus tard. Elle n'est validée que
++     lorsqu'elle est appliquée, jamais lorsqu'elle est construite.
+
+@ 0 3 0 09190bc14448707a16b1e72dd19ba4e7
++     La bibliothèque a un seul ensemble de sources, `gnossienne.core`, pour toutes les
++     plateformes, et tout est exporté vers le package parapluie `soundness`. Le tutoriel sur les
++     bases de données montre des références utilisées conjointement avec des relations.
+
+% 0 1 0 0e36480fb14dca771324f8eb427889d4
+
+% 0 1 0 125fe216bebe48d10ca1f6c0c08fa479
+
+% 0 1 0 18cf172329b85318071977aff881b740
+
+% 0 1 0 00e3da3dfa54be6812bd8334fb98cde5
+
+@ 0 1 0 19e0e115124f7efb10d472bcb1d9bd78
++ entry .Reference
++   info
++       une référence typée vers une entité, qui contient sa clé et se résout au travers d'un
++       `Resolvable`
+
+@ 0 5 0 011f9a92b459a7f80d50b8b41453a82e
++   detail
++       Une `Reference` contient la clé d'une entité et, comme membre de type `#Result`, le type de
++       l'entité à laquelle elle fait référence : `Reference to Person` est une référence à une
++       `Person`. Elle se construit à partir d'une valeur avec l'extension `ref`, ou à partir d'une
++       clé avec `Reference[Person](key)` ; dans les deux cas, sa `#key` est typée comme
++       l'`Operand` de l'instance de `Resolvable` dans la portée.
+
+@ 0 4 0 12a047f3a84551450b9fdc1db1bc09c5
++       Appliquer une référence, `reference()`, recherche la clé au moyen de
++       `Person is Resolvable` et renvoie l'entité, en levant `Reference.Error` s'il n'y en a pas.
++       Une référence construite à partir d'une clé qui ne correspond à rien reste une référence
++       valide : l'échec ne survient que lorsqu'elle est appliquée.
+
+% 2 1 0 1b2bd7e6836fc16c16413a9c7f5db92f
+
+% 3 1 0 066d0923965235f61762cbecc2701a26
+
+% 4 1 0 1b5952cfb9b2cf99144942aeebae835d
+
+% 0 1 0 03192bf9c781dae10151efc5bfe7d029
+
+% 0 1 0 0764f101609dc5c408f7899bc196c085
+
+% 0 1 0 085b66bfd9ef18e4117ffa58a3be9bd6
+
+% 0 1 0 0474fe082ebd5cb91ba19501c625ecc7
+
+% 0 1 0 1d5fdd59d4acd1ca1a7fbfacf05158f8
+
+% 1 1 0 05e68c83701539ef04ce678c3fb81a3e
+
+@ 0 2 0 0aeb4d982fa5d2b900a3d506b0b3aed0
++       Une référence s'encode en texte au moyen de `.encodable` et se décode au moyen de
++       `.decodable`, chacun en passant par le codec propre à la clé ; `t"1001".as[Reference to
++       Product]` en lit donc une.
+
+% 0 1 0 165cda82ce1c6a321430f1b948ed1292
+
+% 0 1 0 169a1c95367cc8c30aa77110c57a79a7
+
+@ 0 1 0 0e64a194027243101367ecc658abf411
++   entry .apply
++     info
++         construit une référence à partir d'une clé, sous la forme `Reference[Entity](key)`
+
+@ 0 3 0 0afcf13e28d2ab3d1a92e6125616c5d3
++     detail
++         Le type de la clé est l'`Operand` de l'instance de `Resolvable` pour l'entité, qui doit
++         être dans la portée. Rien n'est recherché : une clé qui ne correspond à aucune entité
++         construit une référence qui lève `Reference.Error` lorsqu'elle est appliquée.
+
+@ 0 1 0 0988193141d800590ff461fdb534f32f
++   entry .encodable
++     info
++         encode une référence en texte : l'encodage de sa clé
+
+@ 0 2 0 0e6e975e9c95f0bb1fd48c9e63626986
++     detail
++         Disponible pour `Reference to Entity` dès lors que `Entity is Resolvable` et que son type
++         de clé est `Encodable in Text`. Il est dans la portée implicite.
+
+@ 0 1 0 064d4c599ddadb9a0905bbe49d332989
++   entry .decodable
++     info
++         décode une référence à partir de texte, en décodant sa clé
+
+@ 0 3 0 17f59e9f35302b03182bae0199aad29d
++     detail
++         Disponible pour `Reference to Entity` dès lors que `Entity is Resolvable` et que son type
++         de clé est `Decodable in Text`. La référence décodée n'est vérifiée par rapport au
++         stockage que lorsqu'elle est appliquée.
+
+@ 2 1 0 09479b5c768963c410b170eefb118ade
++         ```scala
+
+@ 3 1 0 0f57a4f823b9303e1d156994d3464936
++         import soundness.*
+
+@ 4 1 0 1189d248c90512e31393b3aab10755d9
++         import strategies.throwUnsafely
+
+@ 6 1 0 11268607142430ff0a681d94b4d948cb
++         case class Person(@primary email: Text, name: Text)
+
+@ 0 1 0 104bcb25460eb5470c472c1a2064a69e
++         given Person is Resolvable by Text = Resolvable(Set(Person(t"juliet@example.com", t"Juliet")))
+
+@ 0 1 0 0fac05e1d49696a814722a83c89d2f8e
++         t"juliet@example.com".as[Reference to Person]().name   // t"Juliet"
+
+@ 1 1 0 0e2e2da6fcd958060375a58be8ea0fcf
++         ```
+
+@ 0 1 0 030f5fd136f6306810cb2a2b6898e703
++   entry .Error
++     info
++         levée lorsque la clé d'une référence ne correspond à aucune entité du stockage
+
+@ 0 4 0 1f33f17ba4345fab08475285338da51b
++     detail
++         Error `↯/s.31.1` : _the reference `reference` could not be resolved because `reason`_.
++         Levée par `Reference#apply` (et `Resolvable#resolve`) lorsque le stockage n'a aucune
++         entité dont le champ `@primary` est égal à la clé. `#reference` est la clé, encodée en
++         texte.
+
+@ 0 1 0 1eaf03bb3476cc6a1e7975b5bf46ff6c
++     entry #reference
++       info
++           la clé qui n'a pas pu être résolue, encodée en texte
+
+@ 0 1 0 0f6260ba2893e266035678db57bd9661
++     entry #reason
++       info
++           pourquoi la référence n'a pas pu être résolue, une `Reference.Error.Reason`
+
+@ 0 1 0 14db8a742e6cb36f15f6ba1376160a92
++     entry .Reason
++       info
++           pourquoi une référence n'a pas pu être résolue
+
+@ 0 2 0 1f881f7b804f93a7198ba29ad9c7240d
++       detail
++           Le seul cas est `NotFound` : _no target with that reference was found in the
++           store_.
+
+@ 0 1 0 0b5e03c8c77958d40d3947478ba35d82
++     entry .communicable
++       info
++           rend une `Reference.Error.Reason` sous forme de message
+
+@ 0 1 0 0d5f6a2d2b14ddc80ee2d87b844ad0e0
++   entry #Result
++     info
++         le type de l'entité à laquelle la référence fait référence
+
+@ 0 1 0 15c71df45d6f5d49082ec5ed6554737d
++   entry #key
++     info
++         la clé de la référence, typée comme l'`Operand` de l'instance de `Resolvable`
+
+@ 0 1 0 1bfd86db000b72020914187c1079544d
++     detail
++         Nécessite `Result is Resolvable` dans la portée, ce qui fixe le type de la clé.
+
+@ 0 1 0 173f5c13c17fc9701935522c0921ef07
++   entry #apply
++     info
++         résout la référence en son entité, en levant `Reference.Error` s'il n'y en a pas
+
+@ 0 3 0 04d970b0981c26f3075b4b30d64e652b
++     detail
++         Nécessite `Result is Resolvable` dans la portée et une `Tactic[Reference.Error]`. Chaque
++         application recherche la clé à nouveau ; une référence construite avant que son entité ne
++         soit ajoutée au stockage se résout donc une fois l'entité présente.
+
+@ 0 1 0 1a99baa4ad8060030b831ba3275213ad
++ entry .Resolvable
++   info
++       une classe de types indiquant comment une clé de type `Operand` se résout en une entité de
++       type `Self`
+
+@ 0 4 0 04a820db2f5e916c108eeeedc2e8c849
++   detail
++       `Person is Resolvable by Text` indique qu'une clé `Text` identifie une `Person`, quel champ
++       de `Person` est cette clé (`#field`), et comment une clé est résolue (`#resolve`).
++       L'extension `ref` et `Reference#apply` en nécessitent toutes deux une dans la portée.
+
+@ 0 1 0 0f513113d3242a1102a034bc6ac6f7e6
++       L'instance habituelle se construit à partir d'un stockage de valeurs avec
++       `Resolvable(store)` :
+
+% 2 1 0 0373e8a323ce26431f057f8493563f5b
+
+% 3 1 0 1e2f0f2e18f56a751359581a0e66b136
+
+% 4 1 0 00385efef82382d013f8e2b511c710dc
+
+% 6 1 0 1168c682dabb32701e4e79dd5bf3488a
+
+% 0 1 0 014ab5048463d0b9187cedf65314118f
+
+% 0 1 0 0668617fa0ee633c04f88dab7eb15377
+
+% 0 1 0 0fbfc0bb4ff805f70727e3401459cada
+
+% 0 1 0 1b794459f9c4c1c4027801ef50b6c3da
+
+% 1 1 0 178252eba82f44150ac3ae9c0ee2e25e
+
+@ 0 2 0 0ddbb4b9f9c6eaf304aed5a01e94241b
++       Un stockage d'un autre genre — une table de base de données, un service distant — peut
++       implémenter le trait directement.
+
+% 0 1 0 1f89e113889f43d80b463269e38ad210
+
+% 0 1 0 1a5adb2a45d0f5c81e52f2466562e150
+
+@ 0 1 0 13d791ec6228959e09278f483b222c96
++   entry .apply
++     info
++         un `Resolvable` qui parcourt un ensemble de valeurs selon leur champ `@primary`
+
+@ 0 4 0 1884895ca9686d0d1e0fc1fc0b880a43
++     detail
++         `Resolvable(store)` exige que le type d'entité ait exactement un champ annoté `@primary`
++         (afin qu'il soit `Annotated by primary`), que ce champ puisse être sélectionné en tant que
++         `Dereferenceable to Operand`, et que le type du champ soit `Encodable in Text` (pour le
++         message d'erreur). Le type de la clé et le champ sont tous deux inférés à partir de
++         l'annotation.
+
+@ 0 3 0 1586cbc4300a743d17cb3ea0b465c5e4
++         Le stockage est pris par nom et évalué à chaque résolution ; un stockage qui change est
++         donc parcouru tel qu'il est au moment où une référence est appliquée. La recherche est un
++         parcours linéaire de l'ensemble.
+
+@ 0 3 0 1b400e1dbf69a29d1462387c0f113f28
++         Son type de résultat est `raises Reference.Error` ; construire l'instance nécessite donc
++         une `Tactic[Reference.Error]` dans la portée (ou `unsafely(Resolvable(store))`), bien que
++         rien ne puisse échouer tant qu'aucune clé n'est résolue.
+
+@ 0 1 0 19d244999bd1d9421688b762ca340e17
++   entry #Self
++     info
++         le type de l'entité en laquelle une clé se résout
+
+@ 0 1 0 0fee8e1e731ac2261cdd8e6b26a9e967
++   entry #Operand
++     info
++         le type de la clé
+
+@ 0 1 0 0349f11eaca012ad184ca199fb614207
++   entry #resolve
++     info
++         trouve l'entité ayant une clé donnée, en levant `Reference.Error` s'il n'y en a pas
+
+@ 0 1 0 1b0c2315193008ca1e13d10d4286490b
++   entry #field
++     info
++         le nom du champ clé de l'entité, sous forme de texte
+
+@ 0 1 0 1d690dd2c4180a5e0dd957590797dad4
++ entry .primary
++   info
++       marque le champ d'une case class qui en est la clé, pour `Resolvable(store)`
+
+@ 0 3 0 0be11dfbd8e3a82401ed7464d1018d4e
++   detail
++       Une annotation sur un paramètre d'une case class : `case class Person(@primary email:
++       Text, name: Text)`. `Resolvable(store)` trouve le champ annoté au moyen de
++       `Annotated by primary`, et utilise son type comme type de clé de chaque `Reference` vers la
++       classe.
+
+@ 0 1 0 0450a62a48d8bdeb003cf9a686870bf1
++ entry .ref
++   info
++       la référence à une valeur : sa clé, typée comme une `Reference` vers le type de la valeur
+
+@ 0 3 0 172714a9c9d3aeef0bab717162a830c5
++   detail
++       Une extension sur toute valeur dont le type est `Resolvable`. Elle lit le champ clé de la
++       valeur (celui marqué `@primary`) et l'enveloppe en une `Reference to Entity`. Rien n'est
++       recherché ; elle n'a donc besoin d'aucune tactique ; appliquer la référence plus tard la
++       résout.
+
+@ 2 1 0 0c495ed8c153c68413285640a3834eae
++       ```scala
+
+@ 3 1 0 1001fcf1764c42d01832b3fd168d1c40
++       import soundness.*
+
+@ 2 1 0 11facafdcea7c03c07bd970bd84fcdbb
++       case class Person(@primary email: Text, name: Text)
+
+@ 1 1 0 1088d3ae6bab006a0a18203b364810ca
++       val juliet = Person(t"juliet@example.com", t"Juliet")
+
+@ 0 1 0 1c511eb281f3e0a71350970840d6d2cb
++       given Person is Resolvable by Text = unsafely(Resolvable(Set(juliet)))
+
+@ 0 1 0 114e2f84450ce25500dab855159892f0
++       juliet.ref.key   // t"juliet@example.com"
+
+@ 1 1 0 1b6d37ee3e6225cd0ebd76dd4a944e2d
++       ```

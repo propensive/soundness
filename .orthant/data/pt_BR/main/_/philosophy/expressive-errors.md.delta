@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 4 0 037cfceaa03558c210fcc809b1438d8d
++ Os números são a identidade do erro. Um tipo de erro tem um código bolt — o número de seu módulo
++ e o seu próprio dentro do módulo —, e cada motivo tem um número dentro dele, e cada código tem
++ uma página em `doc/work/errors` que explica a causa e as soluções habituais — de modo que um
++ `↯/s.100.2` no relato de um usuário pode ser consultado, em vez de adivinhado.

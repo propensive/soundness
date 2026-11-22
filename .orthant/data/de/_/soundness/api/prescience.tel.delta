@@ -1,0 +1,310 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0974b95d2450cfe20d1272f99940498e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f4f0c4707ac858807a73212a5ad6c39
++ info   ein Proof of Concept: Typklasseninstanzen, die bei der Makroexpansion Code erzeugen und vom ableitenden Makro live ausgewertet werden
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0fb427f410ef764401d67e37e0431de3
++     _Prescience_ demonstriert eine Technik: eine Typklasse, `Inlinable`, deren Hauptmethode ein
++     Codegenerator ist — sie nimmt einen `Expr` ihrer Eingabe und liefert einen `Expr` des
++     dekodierten Werts —, sodass ein ableitendes Makro den Code einer handgeschriebenen Instanz
++     direkt in den Code einspleißen kann, den es erzeugt, statt eines Aufrufs der Instanz zur
++     Laufzeit. Es ist der Mechanismus hinter den `Inlinable`-Typklassen der gestagten Reader und
++     Writer der Formatbibliotheken (`jacinta`, `breviloquence`, `locomotion`, BinTEL von
++     `stratiform`), hier isoliert über einem Spielzeug-Übertragungsformat erprobt.
+
+@ 0 3 0 0840d1651b162d6f0023bc9a8e169ab3
++     Die Schwierigkeit besteht darin, dass ein Makro nur einen `Expr` einer Instanz hält, die es
++     herbeiruft, während es die lebende Instanz braucht, um `read` auf ihr aufzurufen. Das
++     ableitende Makro, `Prescience.read`, beschafft sie pro Feld in bis zu drei Stufen:
+
+@ 0 9 0 17c37cf21a2cabf810d6a16e843326de
++     - **Stufe A**: Eine Instanz, die eine Referenz auf ein vorkompiliertes statisches Objekt
++       oder ein parameterloses Member eines solchen ist, wird über den Makro-Classloader geladen
++       und direkt verwendet, so wie der eigene Splice-Interpreter des Compilers eine
++       Makroimplementierung lädt.
++     - **Stufe B** (nur `Prescience.readStaging`): Eine Instanz, die die implizite Suche aus dem
++       globalen Geltungsbereich finden kann (Begleitobjekte und Givens auf Paketebene im
++       Klassenpfad), einschließlich eines bedingten Givens, wird in einem frischen
++       `staging.Compiler` innerhalb des Makros herbeigerufen und ausgeführt, zum Preis eines
++       vollständigen Compilerlaufs pro Instanz, der als Info-Diagnose gemeldet wird.
++     - **Laufzeit**: Alles andere — ein lexikalisch gültiges Given oder eines, das im selben Lauf
++       wie die Verwendungsstelle kompiliert wird — erhält stattdessen einen eingespleißten Aufruf
++       seiner `Inlinable#readRuntime`.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 04c2e69897d904dd1e83ea747e99b812
+
+% 0 1 0 173b371c6ae83ec10827dc674c30b6dd
+
+% 0 1 0 19493503eabc5b741ddccd1715fc9fa2
+
+% 0 1 0 0e83a5c1e90a1cd00119a8ec3b21cd7c
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 4 0 15eb71e4790c5b350c94fe3b296017aa
++     Eine Instanz, die im Kompilierungslauf definiert ist, der das Makro expandiert, wird in
++     keiner der beiden Stufen je ausgewertet: Ihr Classfile existiert entweder noch nicht oder
++     ist von einer früheren inkrementellen Kompilierung veraltet; sie nimmt also immer die
++     Laufzeitstufe, und saubere und inkrementelle Builds stimmen überein. Die Ausgabe ist in jeder
++     Stufe dieselbe; nur der Ort, an dem der Code erzeugt wurde, unterscheidet sich.
+
+@ 0 6 0 0929e69c0aae64211391a169d440ee42
++     Die Bibliothek hat zwei Source-Sets, beide nur für die JVM, da die Technik den
++     Makro-Classloader und die Artefakte `scala3-compiler` und `scala3-staging` braucht:
++     `prescience.core` (`Inlinable`, `Prescience` und das Makro) und `prescience.leaves`
++     (Beispielinstanzen, eine Stufe früher kompiliert als jede Verwendungsstelle, damit Stufe A
++     sie laden kann). Nichts wird in das `soundness`-Umbrella exportiert: Importieren Sie
++     `prescience.*` und die Beispiel-Givens namentlich aus `prescience.inlinables`, da
++     `import pkg.*` keine Givens importiert.
+
+% 0 1 0 1a67559e9e07e67f0dce9c0c6a32e912
+
+% 0 1 0 1fd7359c9fa719e70b2b9f02d1be5899
+
+% 0 1 0 0196848d0eed20fb08b086fca09c82dc
+
+@ 0 1 0 1b1071fafecc5d561cac547c9bada258
++ entry .Inlinable   eine Typklasse, deren Instanzen den Code erzeugen, der ihren Typ liest, damit ein ableitendes Makro ihn inlinen kann
+
+% 1 1 0 1d46a0cfe8aa3680013b71b8a95e4a8e
+
+@ 0 4 0 1f2ce2afa473adc606ddc0ed61ba4c51
++       `T is Inlinable` hat zwei Methoden, die übereinstimmen müssen: `#read`, das bei der
++       Makroexpansion ausgeführt wird und den *Code* liefert, der ein `T` aus einem
++       `String`-Ausdruck liest, und `#readRuntime`, dasselbe Lesen zur Laufzeit, das das
++       ableitende Makro aufruft, wenn es die lebende Instanz zur Expansionszeit nicht beschaffen
++       kann.
+
+% 2 1 0 095203c8dbba59d4082c63972749e0b8
+
+% 3 1 0 1a366b674b86ef980489b8aa0fb62dff
+
+% 4 1 0 18c688412a460c48074f83210d8c92bf
+
+% 0 1 0 19cc96edc586318316b31ec0030d2a58
+
+% 0 1 0 08d384165f98242111e3f7eab610dd74
+
+% 0 1 0 109ccb9784661b880a56804c15cea582
+
+% 0 1 0 088eb31ef854748302ff33db79a2bbcd
+
+% 0 1 0 112fe295da9c383a104581ff7c6d97d0
+
+% 0 1 0 1054f55a7d8350bc18d85b66a33a2ede
+
+% 0 1 0 071fd481869f08ab18f9fa835cc4666c
+
+% 0 1 0 0f84a150133923bc0cfecd719b1ae86c
+
+% 0 1 0 190e6f83abb95de411dfd519a16995e3
+
+% 1 1 0 0bd3c325f98acad7048b0c6fdb98e0df
+
+@ 0 4 0 14dda2abd6bb683c169a2c18a5beecc6
++       Ob `#read` verwendet wird, hängt davon ab, wo die Instanz liegt: Ein statisches Objekt oder
++       ein Member eines solchen, früher kompiliert als die Verwendungsstelle, wird von
++       `Prescience.read` ausgewertet; ein bedingtes Given in einem Begleitobjekt nur von
++       `Prescience.readStaging`; alles, was im selben Lauf kompiliert wird oder lexikalisch
++       gültig ist, immer nur über `#readRuntime`.
+
+% 0 1 0 03d42e08af053b4912ba99fb5a1bc6b2
+
+@ 0 6 0 14709989c86454200c59e4cdd44bc744
++   entry #read   der Code, der einen Wert dieses Typs aus einem `String`-Ausdruck liest, erzeugt bei der Makroexpansion
++       Wird vom ableitenden Makro mit einem `Expr[String]` des Feldtexts und einem `Quotes`
++       aufgerufen; der gelieferte `Expr[Self]` wird anstelle eines Aufrufs in den erzeugten
++       Reader eingespleißt.
++   entry #readRuntime   liest einen Wert dieses Typs zur Laufzeit aus Text, wenn die Instanz bei der Expansion nicht ausgewertet werden kann
++       Muss dasselbe Ergebnis liefern wie der Code, den `#read` erzeugt, da es vom Ort der
++       Definition der Instanz und von der Art der Kompilierung des Programms abhängt, welche der
++       beiden verwendet wird.
+
+@ 0 1 0 19a15888f844ee301facf0396a9c154b
++ entry .Prescience   die ableitenden Makros: ein Case-Klassen-Reader, zusammengesetzt aus den `Inlinable`-Instanzen seiner Felder
+
+% 1 1 0 1f740202326cce341ad16d49366a0fd3
+
+@ 0 4 0 064adca98bd5345205b72e572e8555eb
++       Jede Methode leitet für eine nicht generische Case-Klasse einen Reader aus einer Zeile
++       kommagetrennter Felder ab (ein Spielzeugformat: Es geht um den Mechanismus): Die Eingabe
++       wird einmal aufgeteilt, und der Code jedes Felds stammt aus der `Inlinable`-Instanz seines
++       Typs, geinlint, wenn die Instanz zur Expansionszeit ausgewertet werden kann, und
++       andernfalls als Aufruf von `Inlinable#readRuntime`.
+
+% 2 1 0 00f9092c8379ecfb14a280a8da0046f4
+
+% 3 1 0 0fa94a383f99adcc0e42769ea304acac
+
+% 4 1 0 00381d6811bca08b0f8435c30a740e9a
+
+% 0 1 0 01bb0085309bc0240b6190f59a428dc9
+
+% 0 1 0 1ce8fc6aa42b16f91fa2d5b2f0cdba65
+
+% 0 1 0 14e1a5006e7d33bb06cc0c4040ef0c24
+
+% 1 1 0 1d2c0ffec023f335189efa46ea33e9bb
+
+@ 0 2 0 16e1c8af2c191bc71f00126424353192
++       Ein Typ, der keine Case-Klasse ist, eine generische Case-Klasse oder ein Feldtyp ohne
++       `Inlinable` im Geltungsbereich ist ein Kompilierfehler.
+
+% 0 1 0 068be8b9328b11d118fc95678d1d408e
+
+@ 0 12 0 06a698862589c95c15ac7a85cfbfde5c
++   entry .read   liest eine Case-Klasse aus kommagetrenntem Text und inlint jede statisch auswertbare Feldinstanz
++       Nur Stufe A: Eine Instanz, die zu einem vorkompilierten statischen Objekt oder einem
++       parameterlosen Member eines solchen auflöst, steuert ihren `Inlinable#read`-Code bei; jede
++       andere Instanz wird zur Laufzeit über `Inlinable#readRuntime` aufgerufen.
++   entry .readStaging   wie `Prescience.read`, wertet aber auch bedingte und abgeleitete Givens unter einem Compiler im Makro aus
++       Führt für jedes Feld, dessen Instanz Stufe A nicht auswerten kann, die implizite Suche in
++       einem frischen `scala.quoted.staging.Compiler` über dem Makro-Klassenpfad (ohne das
++       aktuelle Ausgabeverzeichnis) aus und verwendet die Instanz, die sie liefert. Das sieht nur
++       Givens, die aus dem globalen Geltungsbereich erreichbar sind (Begleitobjekte und Givens
++       auf Paketebene im Klassenpfad), keine lexikalisch gültigen, funktioniert nur für nicht
++       generische Klassentypen und kostet pro Instanz einen vollständigen Compilerlauf im
++       Speicher, der jeweils als Info-Diagnose mit seiner Dauer gemeldet wird. Ein Feld, das es
++       nicht bedienen kann, nimmt die Laufzeitstufe.
+
+@ 0 1 0 1db33178c1de050d1ab135d485d02139
++ entry .internal   die Makroimplementierung hinter `Prescience.read` und `Prescience.readStaging`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 1e83d31bcaaeb99b1e5b79f73fe7d67f
++       Nicht zur direkten Verwendung. Sein öffentliches `readStaged` ist das Makro, das
++       `Prescience.read` und `Prescience.readStaging` einspleißen, mit einem Flag, das wählt, ob
++       Stufe B läuft.
++   entry .readStaged   das ableitende Makro: ein Reader für eine Case-Klasse, mit oder ohne die Staging-Stufe
++       Nicht zur direkten Verwendung; aufgerufen aus den Splices von `Prescience.read` und `Prescience.readStaging`.
+
+@ 0 1 0 1984419fa3436385010e3783f3a46b4b
++ entry .inlinables   Beispiel-Givens für `Inlinable` zu `Int`, `String` und `Boolean`, als Member eines statischen Objekts
+
+% 1 1 0 10553208af05cbc11e17e3ad0a7a7af3
+
+@ 0 4 0 14fad333ce2813af10f6402d8856423d
++       Given-Aliase, definiert in `prescience.leaves`, sodass sie vor jeder Verwendungsstelle
++       kompiliert werden und Stufe A sie über den Member-Zugriffspfad auswerten kann (das Objekt
++       laden, den parameterlosen Accessor aufrufen). Importieren Sie sie namentlich, da
++       `import prescience.inlinables.*` keine Givens importiert:
+
+% 2 1 0 04b06c9f3d7f9a4d0cbd40c58130c01c
+
+% 3 1 0 05c472be778e1d890ebf1558ede12891
+
+% 4 1 0 1aab5c5520c365cf0e1ee109a49955d8
+
+% 0 1 0 03413ea95b05279f1482dad625d5d201
+
+% 0 1 0 18b340a875490bb917eb6b6e3ac05d4a
+
+% 0 1 0 1ff745f3fd6952b21e59823b60b34687
+
+% 1 1 0 11ee144e41c131030e3cecc0d988f535
+
+@ 0 3 0 147cdde9185d09fc19638f3fadff793c
++       Die `Inlinable#readRuntime`-Methoden der Instanzen werfen absichtlich einen
++       `AssertionError`, sodass ein Reader, der stillschweigend auf die Laufzeitstufe
++       zurückgefallen ist, laut scheitert: Sie sind Demonstrationen von Stufe A, keine
++       Instanzen für allgemeine Zwecke.
+
+% 0 1 0 1b8b991cf49716ff1f5b1930d8dcce3f
+
+@ 0 3 0 16a680dbfd8873c100152631e8bd7600
++   entry .int   `Int is Inlinable`, als `IntInlinable`
++   entry .string   `String is Inlinable`, als `StringInlinable`
++   entry .boolean   `Boolean is Inlinable`, als `BooleanInlinable`
+
+@ 0 1 0 0436df64d9fba49f11371fd1508549c1
++ entry .IntInlinable   ein statisches `Int is Inlinable`, das den getrimmten Feldtext als Ganzzahl parst
+
+% 1 1 0 06d926a6ded0b89f0b47b759438e2bcd
+
+@ 0 2 0 03bf066ac27bf3fa111dc2eaff54cf3c
++       Der erzeugte Code ist `Integer.parseInt` des getrimmten Texts. Sein `#readRuntime` wirft
++       einen `AssertionError`, da es existiert, um zu beweisen, dass Stufe A es zur Expansionszeit
++       ausgewertet hat.
+
+% 0 1 0 056396b5d54db03e09df2c666f917b86
+
+@ 0 2 0 00f581e7d6816a0a006e97a9bf714003
++   entry .read   der Code, der einen getrimmten `String`-Ausdruck als `Int` parst
++   entry .readRuntime   wirft immer: Diese Instanz ist nur zum Inlinen gedacht
+
+@ 0 1 0 085a69a1aeba5bc713f9869e4c866c79
++ entry .StringInlinable   ein statisches `String is Inlinable`, dessen erzeugter Code der Feldtext selbst ist
+
+% 1 1 0 155c806e7d6f52bd0dcdfdb9c7742269
+
+@ 0 2 0 1e2ce5d8c1df3ad80e3bde8c372197b9
++       Sein `#readRuntime` wirft einen `AssertionError`, da es existiert, um zu beweisen, dass
++       Stufe A es zur Expansionszeit ausgewertet hat.
+
+% 0 1 0 0980e4945ae84d3a02904437166c3952
+
+@ 0 2 0 09b87004474815041b716e7409999fc7
++   entry .read   der `String`-Ausdruck des Felds, unverändert
++   entry .readRuntime   wirft immer: Diese Instanz ist nur zum Inlinen gedacht
+
+@ 0 1 0 03dfb86fb32a8262134fcd8106c906b8
++ entry .BooleanInlinable   ein statisches `Boolean is Inlinable`, das den getrimmten Feldtext als Boolean parst
+
+% 1 1 0 0ca61694c96f671306ff6e1614905760
+
+@ 0 2 0 16b68372d3b61753195471c2d0259d6b
++       Der erzeugte Code ist `java.lang.Boolean.parseBoolean` des getrimmten Texts, sodass alles
++       außer `true` (in beliebiger Groß-/Kleinschreibung) `false` ist. Sein `#readRuntime` wirft
++       einen `AssertionError`.
+
+% 0 1 0 1f42a50a957a27551b469bbf09a9c776
+
+@ 0 2 0 102635ead65d96c212d263aba7c234ba
++   entry .read   der Code, der einen getrimmten `String`-Ausdruck als `Boolean` parst
++   entry .readRuntime   wirft immer: Diese Instanz ist nur zum Inlinen gedacht
+
+@ 0 1 0 0090d3e87faf2de8151ec30ce47c1a63
++ entry .Celsius   ein Beispieltyp, dessen bedingtes Given im Begleitobjekt nur die Staging-Stufe auswerten kann
+
+% 1 1 0 1a0614fc93c69102140f8abe5b05461e
+
+@ 0 5 0 1aa73955d00fc62901e4244301d8fc33
++       `Celsius(degrees)` hat im Begleitobjekt ein `Inlinable`-Given mit einem
++       `DummyImplicit`-Parameter, sodass eine herbeigerufene Instanz eine Applikation und kein
++       statischer Pfad ist und Stufe A sie nicht laden kann; `Prescience.readStaging` löst sie
++       unter dem Compiler im Makro auf, führt sie aus und inlint ihren Code. Ihr
++       `Inlinable#readRuntime` wirft, sodass ein erfolgreiches Lesen beweist, dass die
++       Staging-Stufe die Arbeit getan hat.
+
+% 2 1 0 0b6c8a7b25d710f90b81de52b92a6366
+
+% 3 1 0 1e97f48484f0d46915baba71209a4bf4
+
+% 4 1 0 04a1b66b4097f02210a16be5a8ea7aaa
+
+% 0 1 0 1f685b1abac5b42908124fb30dedce35
+
+% 0 1 0 102c382bc17710831630c57a5fe79c16
+
+% 0 1 0 0b0cdafbd9a04d5d18948d997894d858
+
+% 1 1 0 06a69edb1de1191905b9e5f778574c78
+
+@ 0 2 0 00d3766b0f1c713018184e07bfa1c6f3
++   entry .inlinable   das bedingte Given `Celsius is Inlinable`, nur von `Prescience.readStaging` auswertbar
++   entry #degrees   die Temperatur, in ganzen Grad Celsius

@@ -1,0 +1,384 @@
+orthant 2 language
+
+@ 0 1 0 12050c056b319e610cb5c93540a2dd65
++ ## Platzierung von Beschriftungen
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 3 0 14e038eebb736829030ab9e5d0f1ed56
++ Text auf einem Bild steht neben dem, was er benennt: eine Beschriftung bei einem Punkt, ein
++ Name bei einer Stadt, ein Prozentwert in einem Segment. Liegen zwei Dinge nah beieinander,
++ stoßen ihre Beschriftungen zusammen, und das Bild ist schlechter, als es wäre, wenn eine von
++ ihnen ein wenig verschoben wäre.
+
+@ 0 4 0 1f39268c0d9dbf6d02167c543da87392
++ Cartouche entscheidet, wohin jedes Stück Text kommt. Es nimmt jede Beschriftung mit ihrer
++ gemessenen Größe, dem Punkt, den sie beschreibt, und den Seiten, auf denen sie liegen darf,
++ zusammen mit allem anderen auf der Seite, was Text nicht verdecken darf, und findet für jede eine
++ Position. [Diagramme](charts.md) verwenden es für ihre Beschriftungen. Eine Karte würde es für
++ ihre Ortsnamen verwenden.
+
+@ 0 1 0 1722757910f6f9001e6164bf4f0fa7b8
++ ### Über Platzierung
+
+@ 0 4 0 1a43ed296accd76916470b7341226d5d
++ Der Code, der ein Bild aufbaut, weiß, was jede Beschriftung sagt und was sie beschreibt, aber
++ nicht, wo die anderen Beschriftungen landen werden, und kann ihnen daher nicht ausweichen.
++ Cartouche löst das, indem es den Code, der das Bild aufbaut, zweimal ausführt. Der erste
++ Durchlauf beschreibt die Beschriftungen. Die Engine ordnet sie an. Der zweite Durchlauf baut
++ das Bild mit den Antworten.
+
+@ 0 3 0 0a26370da7f991cb164e26286fcfb044
++ Der Rumpf von `arrange` ist dieser Code, und mit `position` fragt er nach dem Platz einer
++ Beschriftung. Alles stammt aus dem Paket `soundness`. Der zweite Import lässt die Beispiele
++ ihre Ergebnisse ausgeben, und der `Decimalizer` legt fest, mit wie vielen signifikanten
++ Stellen eine Koordinate ausgegeben wird:
+
+% 2 1 0 0c1c49ffa969c799142d3d7303a5a7d7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 087343bec3b60c63166f3222dfc8af3d
+
+% 1 1 0 12975a0462e4724b0005cb109f83d401
+
+@ 0 1 0 1738e8b9ea90294c10955ff5ae72a5a0
++ Hier fragen zwei Beschriftungen gleicher Größe nach demselben Punkt:
+
+% 2 1 0 1514f53a73097cf11ba3c2bef5ad324d
+
+% 3 1 0 1e12d5b0baaf8cab06406e23b5ed0eba
+
+% 4 1 0 1dad9a8f16d1c7640d4913af4c0cfd3c
+
+% 0 1 0 01dfeac7ca3ff17a03c5de8bc798c9a3
+
+% 0 1 0 0384cb6d086cacb91051ff90460a0696
+
+% 0 1 0 08e9932726bc9297070c26c15bde4122
+
+% 0 1 0 11b8bfd00592d0b60552fa45b98f1022
+
+% 0 1 0 04c051ce92fccc4b0e626052d6aed471
+
+% 1 1 0 14f8acf78439d9561922fc43e163f7c6
+
+@ 0 2 0 1584832e92272e56031cb1bffb0ba864
++ Die erste wird östlich des Punkts gesetzt, wo Beschriftungen bevorzugt stehen. Die zweite
++ würde sie verdecken und wird daher westlich gesetzt.
+
+@ 0 5 0 105103eb1577ce3218d266262a9bf9f5
++ Im ersten Durchlauf des Rumpfs antwortet jedes `position` vorläufig, mit der Beschriftung dort,
++ wo nach ihr gefragt wurde, und das Ergebnis dieses Durchlaufs wird verworfen. Die Engine löst
++ dann die gesamte Anordnung, und im zweiten Durchlauf antwortet jeder Aufruf mit seiner gelösten
++ Position. Der Wert von `arrange` ist der Wert des zweiten Durchlaufs des Rumpfs, sodass ein
++ innerhalb von `arrange` gebautes Diagramm das ist, was dabei herauskommt.
+
+@ 0 3 0 105ba7738a5438c60712715e1a69f595
++ Der Rumpf wird zweimal ausgeführt, muss also wiederholbar sein: jedes Mal dieselben
++ `position`-Aufrufe in derselben Reihenfolge, und nichts, was nicht zweimal geschehen sollte. Ein
++ Zähler, der die Beschriftungen durchnummeriert, gehört in den Rumpf, wo er mit dem zweiten
++ Durchlauf von vorn beginnt.
+
+@ 0 1 0 14394582ff5b069a08bd4985ec11d309
++ ### Captions und Ziele
+
+@ 0 3 0 1f0e581a6ff94ccd0e8150ba3e0aeb35
++ Eine Beschriftung ist eine *Caption*: eine Breite und Höhe, der Punkt, den sie beschreibt, und
++ die Art, wie sie relativ zu diesem Punkt gesetzt werden darf. Die Engine sieht nur Geometrie.
++ Wer den Text zeichnet, misst ihn. `position` nimmt die Teile der Caption direkt oder eine vorab
++ gebaute `Caption`:
+
+% 2 1 0 0e2642d0af7e960d1d86cb21c24c9420
+
+% 0 1 0 01cb328feffc330c1f3b9bc428cf0d0c
+
+% 0 1 0 0afb4f34b7ba0fa1114162d5d2b1ea13
+
+% 1 1 0 0c672af11bda932714933b7052f0e82e
+
+@ 0 2 0 1c1f9a0b228012291f09100e2239d819
++ Die Antwort ist eine `Caption.Position`: der Punkt, an dem der Text gesetzt wird, die Seite des
++ Ziels, auf der er liegt, der Kasten, den er einnimmt, eine Führungslinie, falls er eine
++ brauchte, und ob er überhaupt gezeichnet werden soll:
+
+% 2 1 0 1b5af54f25c216c91261bac249ed4740
+
+% 3 1 0 01ffab663a1d6fc20d07f32a788850e3
+
+% 4 1 0 1aaf6f2aaaf0bb191589b232f4f603c4
+
+% 0 1 0 1bf6bbeea686c38613af85aeb1df6efc
+
+% 0 1 0 0a43b2a758b9640602153c5fab9c55e1
+
+% 0 1 0 103e800b58e2ec250ade64d1ea2099a3
+
+% 0 1 0 129b221cd2d4c3c4098cfff33b9093a4
+
+% 1 1 0 1345d27ce44092e10ad7d04fd60a1123
+
+@ 0 6 0 17c1c213a5dabeaa1ada70b0db67b369
++ Die Seite ist ein `Attachment`, also `East`, `West`, `North`, `South`, eine der vier
++ Diagonalen oder `Center`. Der Punkt ist der Anker der Beschriftung auf dieser Seite. Für `East`
++ ist er die Mitte der linken Kante der Beschriftung, sodass Text, der dort mit seinem Anfang am
++ Punkt gesetzt wird, östlich des Ziels liegt. Hier setzt der `standoff` von `4.0` den Punkt vier
++ Einheiten östlich des Ziels. Ein Renderer verwandelt das Attachment in seine eigene
++ Ausrichtung. Ein SVG-`text`-Element verwendet `text-anchor` und `dominant-baseline`.
+
+@ 0 4 0 1e9d314aede2b03910942c6e26c25c9f
++ `attachments` listet die Seiten auf, auf denen die Beschriftung liegen darf, die beste zuerst.
++ Die Vorgabe probiert Osten, dann Westen, dann die Diagonalen, dann Norden und Süden. Eine
++ Beschriftung, die nur auf einer Seite liegen darf, erhält nur diese Seite. `standoff` ist der
++ Abstand zwischen dem Ziel und der nahen Kante der Beschriftung, für eine Beschriftung, die neben
++ einer Markierung statt auf ihrer Mitte sitzt.
+
+@ 0 2 0 0ce8df90810ed8e2063e6d1c1e0d36fa
++ Die übrigen Parameter einer Caption werden in den folgenden Abschnitten beschrieben. Alle
++ zusammen sind:
+
+% 2 1 0 0b0e022c030d654b0285a5ea76385eb9
+
+% 3 1 0 10aa63bf0449008501c4e3c2b13915ee
+
+@ 0 10 0 19e4bceaa9a7c8d505ae6a31e2fc7910
++ column  Vorgabe
++ column  Bedeutung
++ row  `width`, `height`  erforderlich  die gemessene Größe der Beschriftung
++ row  `x`, `y`  erforderlich  der Zielpunkt
++ row  `attachments`  Osten, Westen, die Diagonalen, Norden, Süden  die Seiten, auf denen sie liegen darf, die beste zuerst
++ row  `standoff`  `0.0`  der Abstand zwischen dem Ziel und der nahen Kante der Beschriftung
++ row  `reach`  `0.0`  wie weit sie vom Ziel weggerückt werden darf
++ row  `padding`  `0.0`  geforderter Freiraum über den eigenen Kasten hinaus
++ row  `priority`  `0`  höher wird zuerst platziert
++ row  `fallback`  `Caption.Fallback.Overlap`  was zu tun ist, wenn keine Position frei ist
+
+% 1 1 0 1cca9366d04028f9167b142618db5158
+
+@ 0 1 0 0c013577e5bc574006e616105eaf7953
++ ### Hindernisse
+
+@ 0 1 0 0ac9713ae07214ae0741e2ac436b34e4
++ Beschriftungen weichen einander aus, und sie weichen allem aus, was der Rumpf mit `avoid`
++ deklariert:
+
+% 2 1 0 16110293cb5faded018fba45666cc37c
+
+@ 0 6 0 0d889977a72fbf4707c588dd9b4298a9
++ column  Hindernis
++ column  Parameter
++ column  Deckt ab
++ row  `Obstacle.Box`  `left`, `top`, `width`, `height`  einen Balken
++ row  `Obstacle.Line`  `x1`, `y1`, `x2`, `y2` und eine `width` mit der Vorgabe `1.0`  eine gezeichnete Linie
++ row  `Obstacle.Disc`  `x`, `y`, `radius`  eine Markierung
+
+% 1 1 0 17698424d65e6a880b9ea9e28ee56eea
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 1e3d0b763c82f9c2148d8bb324699e54
+
+% 0 1 0 003b36beb7a5e67b0e7eac3201031184
+
+% 0 1 0 120a42d2683430a30a1b156b2a891782
+
+% 0 1 0 0adb0cb33b54c74603a325ab31541eee
+
+% 0 1 0 1f2eb86c794c214a04dfd8f4d60234bb
+
+% 1 1 0 03b2825679c9b4730a5062d4f5163ec5
+
+@ 0 3 0 1cb524052b10fb340a166461731227a7
++ Der Kasten liegt östlich des Punkts, und die Linie verläuft durch ihn, sodass eine westlich
++ gesetzte Beschriftung die Linie berühren würde. Die Beschriftung wird stattdessen nordwestlich
++ gesetzt. Eine Polylinie besteht aus ihren Segmenten, jedes ein `Obstacle.Line`. Die `width`
++ einer Linie ist ihre Strichstärke, und eine Beschriftung darf sie nicht berühren.
+
+@ 0 2 0 03ef9001e2e6b7a007e11df0df89dd3a
++ `canvas` deklariert die Fläche, innerhalb derer Beschriftungen bleiben müssen und die sonst
++ unbegrenzt ist. Hier würde die Beschriftung über den rechten Rand hinauslaufen und wird daher
++ westlich gesetzt:
+
+% 2 1 0 1d426b1d759ca96b1db0c61d0642c6f2
+
+% 3 1 0 0c93df3af8f59c1b04bb84a8e9965318
+
+% 4 1 0 0b985a74b8f7620804a309d8e0e6793a
+
+% 0 1 0 0da4d5b78a8647fd196c2bd363ee2076
+
+% 0 1 0 0bc2e7b6bdec1064044131bff6e1d607
+
+% 0 1 0 1b035ca84fbe390f1091b0a06eec1f93
+
+% 0 1 0 07b0feab2414ba5910bb194b4eb1ecbe
+
+% 1 1 0 11f3e7409726656000ff77162bc799b5
+
+@ 0 1 0 1a6a945cf5cb9e8a14fd2405481c097d
++ ### Verschiebung und Führungslinien
+
+@ 0 3 0 1a9331efd380c9d31d4d0a3a6a1d16e4
++ Wenn jede Seite des Ziels blockiert ist, darf eine Beschriftung von ihm weggerückt werden, bis
++ zu ihrer `reach`, die null ist, sofern nicht angegeben. Eine Beschriftung, die weiter als eine
++ kurze Schwelle verschoben wird, erhält eine *Führungslinie*: eine Linie von ihrer Kante zurück
++ zum Ziel, sodass klar bleibt, was sie benennt:
+
+% 2 1 0 1e576de4a4ff07af0f4ad1adac6ab464
+
+% 3 1 0 03b1c58457b2ab0108afd97d93131efa
+
+% 4 1 0 020b182bc0f8fb7b100b7cb98a25c466
+
+% 0 1 0 13a9131078426a9b06f83669bce5ae1f
+
+% 0 1 0 01d38447ecd6a35a1462781f5e30b392
+
+% 0 1 0 139b9f2995ae94d0007877d2a74a2a3a
+
+% 0 1 0 1c5849184caeb1f30ea96de9441d1473
+
+% 0 1 0 12423dd7f30c1cca054d54721aaba64d
+
+% 1 1 0 14baf7fb2c4658f506537473975c645d
+
+@ 0 4 0 0992a7638b20026d1529c10a169fd872
++ Die Beschriftung wird unter den Kasten gesetzt, und ihre Führungslinie läuft hinauf zum Punkt.
++ Eine Führungslinie ist Teil der Anordnung. Spätere Beschriftungen weichen ihr aus, so wie sie
++ der Beschriftung ausweichen, zu der sie gehört, und die Führungslinie einer Beschriftung darf
++ keine andere Beschriftung kreuzen. Sie darf ein festes Hindernis kreuzen, denn an einem Balken
++ oder einer Markierung vorbei auf das Ziel zu zeigen, ist genau der Zweck einer Führungslinie.
+
+@ 0 2 0 14850d3a6b4bde7314c6f9c11445946a
++ `padding` ist der Freiraum, der um eine Beschriftung über ihren eigenen Kasten hinaus gefordert
++ wird, sodass benachbarte Beschriftungen nicht aneinanderstoßend gesetzt werden.
+
+@ 0 1 0 08a78b8187cc9fa90abd6458978227f9
++ ### Priorität und Ausblenden
+
+@ 0 5 0 14717afc79fb6c731cd9e5531f870b52
++ Beschriftungen werden in der Reihenfolge ihrer `priority` platziert, die höchste zuerst, und
++ ansonsten in der Reihenfolge, in der der Rumpf nach ihnen gefragt hat. Eine früher platzierte
++ Beschriftung behält ihr Ziel, und die nach ihr rücken. Eine Beschriftung mit einer einzigen
++ Seite und ohne Reichweite wird genau dort platziert, wo nach ihr gefragt wurde, gleich was dort
++ ist, und alles nach ihr steuert um sie herum. So bleiben die Teilstrich-Beschriftungen und die
++ Legende eines Diagramms stehen, während sich seine Punktbeschriftungen bewegen.
+
+@ 0 3 0 151129b1a11441ad0d07a35179345917
++ Eine Beschriftung, die kollidiert, wo immer sie hingesetzt wird, wird an der Position
++ gezeichnet, an der sie am wenigsten überlappt. Eine Caption, deren `fallback`
++ `Caption.Fallback.Hide` ist, wird stattdessen nicht gezeichnet. Ihre Position meldet `visible`
++ als falsch, und der Rumpf zeichnet nichts für sie. Eine ausgeblendete Beschriftung blockiert
++ nichts:
+
+% 2 1 0 1b7e4213f93c97830d8ec3b6228c2b1b
+
+% 3 1 0 0579ebf85ba2589d0ee06cbe5b55a482
+
+% 4 1 0 193b16cc1f392808126f4a1bc79014d2
+
+% 0 1 0 037d09ec95c579ce005470f0f1e4574e
+
+% 0 1 0 0ffede12045445e50d529ec44c4d3109
+
+% 0 1 0 073a7dc07912ad7f1522236c1f145fa6
+
+% 0 1 0 0ff219823c71dbd60203492583b1bb57
+
+% 1 1 0 199d3ca2364970381d879eef696c3271
+
+@ 0 1 0 0c259c18de97b2c31f7617ef47a35ab1
++ ### Einen Arranger wählen
+
+@ 0 6 0 0af513d2d8a088da1e77d0ff91642e88
++ Der Algorithmus, der die Anordnung vornimmt, ist der `Arranger` im Geltungsbereich. Die Vorgabe
++ ist gierig. Jede Beschriftung nimmt in Prioritätsreihenfolge die am wenigsten verschobene
++ Position, die von allem frei ist, was vor ihr platziert wurde, oder die mit der geringsten
++ Kollision, wenn nichts frei ist. Er ist deterministisch, und seine Arbeit ist durch die Anzahl
++ der Positionen begrenzt, die eine Beschriftung einnehmen kann. Eine früh platzierte
++ Beschriftung wird nie verschoben, um einer später platzierten Platz zu machen, was auf einem
++ dichten Bild Kollisionen hinterlässt, die eine andere Reihenfolge vermieden hätte.
+
+@ 0 3 0 0ce4d52ef13dd6a01958db8870364ca8
++ Simulated Annealing beginnt mit der gierigen Anordnung und verschiebt Beschriftungen dann
++ zufällig zwischen ihren Positionen. Es behält einen Zug, der die Gesamtsumme aus Kollision und
++ Verschiebung senkt, und manchmal einen, der sie erhöht, seltener, je weiter es abkühlt. Es wird
++ durch Import gewählt:
+
+% 2 1 0 1ca4a66513a3fe9d143a9edbac0438b3
+
+% 3 1 0 01d16c76917bdf2b110a5d42c09ea8d6
+
+% 4 1 0 13c9bf6af6374d741b494b2a60ee175e
+
+% 0 1 0 07df0a12b6dc6fcf13fcb991bfad5d23
+
+% 0 1 0 02aa826502d6d8ee1baf73c9ba36326b
+
+% 0 1 0 0c1f11f0029718041a0e51d499a68b00
+
+% 0 1 0 0bd02db5d1aba6811f119339ac5b793e
+
+% 0 1 0 0314a04041916dfa1085932dac30c200
+
+% 0 1 0 1073a777a760b6131e421d7ae81ec301
+
+% 0 1 0 1d6b763e95221a7c06149fbfcf9ee204
+
+% 1 1 0 0ccda18be565c0a1050e0899521ff470
+
+@ 0 4 0 052d424408101e3213a3fa0310a62391
++ Seine zufälligen Züge werden aus einem festen Seed gezogen, sodass dieselbe Eingabe jedes Mal
++ gleich angeordnet wird, und es hört nach einer festgelegten Anzahl von Zügen auf. Beide
++ Arranger sind Case-Klassen, `Arranger.Greedy` und `Arranger.Annealing`, deren Parameter anstelle
++ der Vorgaben angegeben werden können:
+
+% 2 1 0 0ff36337ac38f43b01ef11935a329b62
+
+% 3 1 0 1d0e15a7696fddc3144373ae507dff83
+
+@ 4 1 0 1de422b1a4591ec71dc0aa7c37f5cdbc
++ column  Vorgabe
+
+% 0 1 0 0259f9506311844b177e514496c78348
+
+@ 0 10 0 0fbfd757139d84ce1a7bfc7cf4916e68
++ column  Bedeutung
++ row  `step`  `4.0`  beide  der Schritt zwischen Kandidatenpositionen
++ row  `rings`  `8`  beide  wie viele Schritte weit nach außen gesucht wird
++ row  `leaderThreshold`  `6.0`  beide  die Verschiebung, ab der eine Führungslinie gezeichnet wird
++ row  `leaderWidth`  `1.0`  beide  die Strichstärke einer Führungslinie
++ row  `seed`  `Seed(0L)`  Annealing  der Seed, aus dem seine zufälligen Züge gezogen werden
++ row  `iterations`  `4000`  Annealing  die Anzahl der Züge
++ row  `temperature`  `1.0`  Annealing  die Anfangstemperatur
++ row  `cooling`  `0.995`  Annealing  der Faktor, mit dem die Temperatur bei jedem Zug multipliziert wird
++ row  `displacementWeight`  `0.05`  Annealing  die Kosten der Verschiebung gegenüber denen der Kollision
+
+% 1 1 0 0abdbf341fa6def81fb1faf05803c1be
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 0b76e33ac919bb901235e1cf7da6208d
+
+% 1 1 0 04796a00c4c97e070f05beec89d37d49
+
+@ 0 2 0 014c776d0bc867371bc359997deee174
++ Jeder andere Algorithmus ist ebenfalls ein `Arranger`: ein Wert mit einer Methode, die die
++ Captions, die Hindernisse und die Zeichenfläche nimmt und der Reihe nach für jede Caption mit
++ einer Position antwortet.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 3 0 10522b8683eff5b71bfc4ef6e6476735
++ - [Diagramme](charts.md) platzieren ihre Beschriftungen über `arrange`.
++ - [SVG](svg.md) beschreibt die `text`-Elemente, die ein Renderer an den gelieferten Positionen
++   setzt.
++ - [Zufall](randomness.md) beschreibt den `Seed`, aus dem der Annealing-Arranger zieht.

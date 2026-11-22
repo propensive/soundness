@@ -1,0 +1,221 @@
+orthant 2 language
+
+% 0 1 0 0ff0ceffec2f26ef09470fb57b12e512
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 2 0 1e2beedd03a3a9511b452ddfe72d23f3
++ Ein [Cache](https://en.wikipedia.org/wiki/Cache_(computing)) tauscht Speicher gegen Zeit, und
++ die zwei Gestalten, die dieser Tausch gewöhnlich annimmt, werden bereitgestellt.
+
+@ 0 4 0 0985b5381b5e93b10dc31778ae9e3ded
++ Ein `LruCache` behält die zuletzt verwendeten Einträge einer Suche nach Schlüssel und verdrängt
++ den am längsten nicht verwendeten, wenn er seine Kapazität überschreitet. Ein `Cache` merkt sich
++ einen einzelnen Wert, mit einer optionalen Lebensdauer, und berechnet ihn erneut, wenn sie
++ abläuft. Das ist die Gestalt einer Konfiguration, die jede Minute neu geladen wird, oder eines
++ Tokens, das nach einem Zeitplan erneuert wird.
+
+@ 0 1 0 1b29fba47c6166840f25fc820e494e36
++ ### Über Caching
+
+@ 0 4 0 1ed58db568f1cbc00697d907efccf659
++ Jeder von Hand geschriebene Cache ist eine veränderliche Map, zusammen mit drei Entscheidungen,
++ die implizit getroffen werden: wann verdrängt wird, was geschieht, wenn zwei Threads denselben
++ fehlenden Wert wollen, und wann ein gecachter Wert zu alt ist, um ihm zu trauen. Die Map ist
++ einfach. In den Entscheidungen stecken die Fehler:
+
+@ 0 3 0 12362288d8b0c439179e1c29acc38ffc
++ - Ohne Verdrängung wächst der Cache unbegrenzt.
++ - Ohne Koordination wird ein fehlender Wert viele Male gleichzeitig berechnet.
++ - Ohne Ablauf werden veraltete Daten ausgeliefert.
+
+@ 0 4 0 11b69799f00f5b1a02782aaecb9dfe3e
++ Hier sind die Entscheidungen der Typ. Ein `LruCache` ist die begrenzte, verdrängende Art. Ein
++ `Cache` ist die ablaufende, koordinierte Art, deren Berechnung so geschützt ist, dass gleichzeitige
++ Aufrufer sich ein Ergebnis teilen. Die Richtlinie wird dort angegeben, wo der Cache ist, und nicht
++ bei jedem Lesen, und das ist [deklarativer Kontext](../../philosophy/declarative-context.md).
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 07ac815ea191e3cc115a610b5ee1b959
++ column  Aspekt
+
+% 0 1 0 015453692dfb07200fcdf89b725aa7c1
+
+% 0 1 0 027afffc63e8fd160b847eb1f40add2c
+
+@ 0 5 0 1751185573de20951245587964eca4a1
++ row  Hält  geschlüsselte Einträge, bis zu einer Kapazität  einen Wert
++ row  Erzeugt mit  `LruCache[Key, Value](capacity)`  `Cache(lifetime)` oder `Cache[Value]()`
++ row  Gelesen mit  `cache(key)(computation)`  `cache.establish(computation)`
++ row  Verwirft  den am längsten nicht verwendeten Eintrag  den Wert, sobald seine Lebensdauer abgelaufen ist
++ row  Gleichzeitige Fehltreffer  jeder Aufrufer berechnet  ein Aufrufer berechnet, die übrigen teilen sein Ergebnis
+
+% 1 1 0 0413a50b352840fc1b9d711fd6bc3158
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Alles stammt aus dem Paket `soundness`. Der zweite Import erlaubt den Beispielen, ihre Ergebnisse
++ auszugeben:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1cefe767a73cb12013f08b8715bedb21
++ ### Ein LRU-Cache
+
+@ 0 4 0 006feb1499bc22c61ae4cdae5a565232
++ Ein `LruCache` hält geschlüsselte Einträge, bis zu seiner Kapazität. Wendet man ihn auf einen
++ Schlüssel und eine Berechnung an, liefert er den gecachten Wert, wenn der Schlüssel vorhanden ist.
++ Andernfalls führt er die Berechnung aus, speichert das Ergebnis und verdrängt den am längsten nicht
++ verwendeten Eintrag, wenn der Cache nun zu groß ist.
+
+@ 0 1 0 0befb68f58bcc42b1bdbbe8941ba0cc7
++ Hier ist die Berechnung eine Suche, die zählt, wie oft sie läuft:
+
+% 2 1 0 16ae694c033c94d01ca2d1702b6c0e48
+
+% 0 1 0 14b819298a4f1bf901849581869f224c
+
+% 0 1 0 13a8d906435dbb780a5ac292e6c93292
+
+% 0 1 0 06fb5a3bc7335fa0060db1702b207471
+
+% 0 1 0 1da3fdafc64ed1c60efec409a136f104
+
+% 0 1 0 0df562b11bf62caa0282348465248f03
+
+% 1 1 0 1ba8a25e5f0933be036a433d8db15661
+
+@ 0 2 0 1ce43a935078f4d00116a96dc5663dd5
++ Die erste Verwendung eines Schlüssels berechnet und speichert seinen Wert. Die zweite liefert den
++ gespeicherten Wert, ohne Berechnung:
+
+% 2 1 0 1225b8b9d7c3b8bb139fa50fe1585647
+
+% 3 1 0 03e9d38dd070ef7c010ef6808e7387eb
+
+% 4 1 0 0318d95bf83b4eb41ae8fad1f3aeec2a
+
+% 1 1 0 0b103d602291c10d1ed05fd0ffe71af5
+
+% 1 1 0 090dee53aa1214a00a07c1f87aa3c121
+
+% 0 1 0 138206ffa4fa4aae15948c72e64c8ea0
+
+% 1 1 0 020df720d80339191985d71ea3d80a9f
+
+@ 0 3 0 0734b4efcbf5b2a311139a1f03521204
++ Die Berechnung wird als By-Name-Parameter übergeben, sodass nichts ausgewertet wird, wenn der
++ Schlüssel vorhanden ist. Das ist der ganze Sinn dieser Gestalt: Ein Cache, dessen Wert berechnet
++ werden muss, bevor er angeboten werden kann, spart nichts.
+
+@ 0 3 0 10a5c204e485833707c060c2147df382
++ Die Verwendung eines Eintrags, ob lesend oder schreibend, markiert ihn als kürzlich verwendet,
++ sodass die Einträge überleben, auf die das Programm immer wieder zurückkommt. Nach vier weiteren
++ Schlüsseln ist der Schlüssel `1` verdrängt worden, und eine Anfrage danach berechnet erneut:
+
+% 2 1 0 1dd6dd9f347a3c8a1cbe1f0ca3693d7e
+
+% 3 1 0 0f08d18fa09e42150dcb9750eac8e411
+
+% 4 1 0 053ba65a5e550213050f71e644d15e4c
+
+% 0 1 0 0ff796dfe009da691c2fd3e988b23a3e
+
+% 0 1 0 1b2d8ea532e5190706d3f0f113f0feee
+
+% 1 1 0 01dfd842538cbe9c1284faff589c555f
+
+% 2 1 0 0ba9bd78618ae35301fec4b9e028465a
+
+@ 0 3 0 1f16f63cacd50d4c097dc1ead80bc6e3
++ `contains` fragt, ob ein Schlüssel gehalten wird, ohne etwas zu berechnen und ohne den Eintrag als
++ kürzlich verwendet zu markieren. `remove` entfernt einen Eintrag. Das braucht die Invalidierung,
++ wenn sich die zugrunde liegenden Daten geändert haben und der gecachte Wert bekanntermaßen veraltet
++ ist:
+
+% 2 1 0 128a6d97f2b0d19d079812b76fe9232c
+
+% 3 1 0 1d8b6f0d031376be03e2fe9d5a8980fa
+
+% 4 1 0 0c01009f9b6fc6d21267988106ea9480
+
+% 0 1 0 0128f765de8f195707924e07773f4eb6
+
+% 1 1 0 0488271615aaff7d0e920ec664168f25
+
+% 2 1 0 1d915e983d573dde0c1fa1f833bb86ed
+
+@ 0 1 0 1fe11ed25724c04903cf9feacfefcc0d
++ ### Ein ablaufender Wert
+
+@ 0 4 0 10b2f5afad4ca3531d4a16b8e0b3a2e5
++ Ein `Cache` merkt sich einen Wert, mit einer Lebensdauer, nach der er erneut berechnet wird. Die
++ Lebensdauer ist eine beliebige [Zeitdauer](time.md#durations-and-timespans), hier eine
++ [Größe](quantities.md) in Sekunden, mit dem Import, der einen `Cache` sie lesen lässt. Der Typ des
++ gecachten Wertes wird im erwarteten Typ angegeben:
+
+% 2 1 0 15e6ba5677de14881f166c67d238f447
+
+% 0 1 0 02cc50caac06e1f715bf762bfb41f1a9
+
+% 0 1 0 0b916bb6f6e0b8ba09a85ac4f01d9caf
+
+% 0 1 0 0f06081825ca25790571076f925446e6
+
+% 0 1 0 18011f584d0ba6ff0b5d92588f0a0d85
+
+% 0 1 0 055cc23e6b8fd67609b98883ba3bd6f5
+
+% 0 1 0 1689baa9c7f4b5ae04c8a3eac45116ab
+
+% 0 1 0 1cfed517056615321e404fa05f13b943
+
+% 1 1 0 0c5224ff29929c8010610bc8d25e5fe6
+
+@ 0 3 0 04a7b996fb56cd7117c73a86ac08bff0
++ `establish` liefert den aktuellen Wert. Es berechnet den Wert nur, wenn keiner gehalten wird oder
++ wenn der gehaltene abgelaufen ist. Hier liefert der zweite Aufruf denselben Wert, und wird es tun,
++ bis fünf Minuten vergangen sind:
+
+% 2 1 0 00ded6ce31c3b5dc07a2f35b10f0a194
+
+% 3 1 0 157c0ebff43509810f5f9ccf170317a8
+
+% 4 1 0 193d0dec1b0a63d10348288acfd6262e
+
+% 1 1 0 13d362441aeca65c04ce6410d5f21e4a
+
+% 1 1 0 01ea25849fb162b805f0a81e2ae06356
+
+% 0 1 0 0e290a591189acdd0da9668db0b93be2
+
+% 1 1 0 1fd1d998af92e1b01106a35dbcd66fab
+
+@ 0 4 0 03dd85ec293abfe9166be8f4ea92f7c6
++ Die Berechnung läuft unter einer Sperre. Wenn der Wert fehlt oder abgelaufen ist und mehrere
++ Threads gleichzeitig fragen, berechnet einer, und die übrigen erhalten sein Ergebnis. Das
++ verhindert den [Ansturm](https://en.wikipedia.org/wiki/Cache_stampede), den ein bloßer lazy Wert
++ nicht verhindern kann. [Nebenläufigkeit](concurrency.md) beschreibt die Aufgaben, die fragen
++ könnten.
+
+@ 0 2 0 0e003940c9057d051bfd5a7cbeba5b5a
++ Ein `Cache`, der ohne Lebensdauer erzeugt wird, als `Cache[Configuration]()`, berechnet seinen
++ Wert einmal und behält ihn.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 5 0 19866789ab7e9be80fe4a5ba96e1a746
++ - [Bloom-Filter](bloom-filters.md) merken sich nur, ob etwas gesehen wurde.
++ - [Dateisystem](filesystem.md#content-addressed-storage) beschreibt einen Cache auf dem
++   Datenträger, geschlüsselt nach dem Hashwert seines Inhalts.
++ - [Zeit](time.md) beschreibt die Zeitdauern, in denen eine Lebensdauer angegeben wird.
++ - [Stacktraces](stack-traces.md) beschreibt den Codepoint, der einen gecachten Wert an seine
++   Aufrufstelle bindet.

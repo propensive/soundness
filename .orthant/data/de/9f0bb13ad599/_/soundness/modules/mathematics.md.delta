@@ -1,0 +1,18 @@
+orthant 2 language
+
+@ 0 6 0 028183159a36bc8510d256d502a7fd76
++ Intern wird eine Permutation als ihre
++ [Inversionstafel](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
++ Fakultätsbasis gespeichert, also als eine einzige Ganzzahl, die sie eindeutig bezeichnet. Das
++ macht Permutationen kompakt zu speichern und aufzuzählen: `Permutation.bySize(n)` liefert alle
++ `n!` davon, als lazy [Chain](collections.md#lazy-chains). Eine Permutation von *n* Elementen
++ belegt O(*n* log *n*) Speicher, das kleinstmögliche Maß, da *n*! von ihnen zu unterscheiden sind.
+
+% 0 2 0 1509aa9fc2d59aab049a65e78d949d44
+
+@ 0 4 0 0f8b86e915c7fa4d015a05b8e723c808
++ Eine Permutation lässt jede Position nach der letzten, die sie bewegt, unberührt, sodass
++ `shuffle`, dessen sechster Index an seinem Platz bleibt, eine Permutation von fünf ist. Sie auf
++ eine längere Folge anzuwenden ist daher kein Fehler: Sie ordnet die führenden Positionen um, die
++ sie abdeckt, und lässt den Rest, wo er war. Ein einzelner Index wird auf dieselbe Weise
++ abgebildet, mit `shuffle(3)`.

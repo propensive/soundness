@@ -1,0 +1,1815 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1861fb3ffe250f090b0aa3a7d3bbee3c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0adc043bef3ff3a40219512bf50337e4
++ info
++     les opérateurs arithmétiques comme classes de types, chacune nommant ses types d'opérande et
++     de résultat, et une comparaison totale
+
+@ 0 8 0 1516fd6eb49c859f15e93a6cb645db88
++ detail
++     _Symbolism_ définit les opérateurs arithmétiques `+`, `-`, `*`, `/` et le `-` préfixe, les
++     racines `sqrt` et `cbrt`, et les éléments neutres `zero` et `one`, non comme méthodes d'un
++     type quelconque mais comme extensions résolues par des classes de types. Chaque classe de
++     types binaire nomme son opérande gauche (`Self`), son opérande droit (`Operand`) et son
++     résultat (`Result`), si bien que l'arithmétique peut avoir un sens pour des types dont les
++     opérandes et les résultats diffèrent : une longueur multipliée par une longueur est une aire,
++     un instant plus une durée est un instant, et une quantité divisée par une autre a un type
++     qu'aucun des deux opérandes n'aurait pu anticiper.
+
+% 2 1 0 06d3b9172c5afd120a63ddb63ad54368
+
+% 3 1 0 14cbead5e68dfd381a5c6b8cf87d35e8
+
+% 0 1 0 0e16b1647b03e4900f19da2be178677f
+
+% 0 1 0 0a86a05adaba2a0313a09db73cbe289c
+
+% 0 1 0 0dc7c045468bfc75153f12ccdd1b7994
+
+% 0 1 0 1c4e6d6936b9abec1c7c632a2cbdb611
+
+% 0 1 0 05962f2826310a920cadc29354dfb6fa
+
+% 0 1 0 1a789eba38bc0b530a3409d0b8e528f1
+
+% 0 1 0 16730851737b8e3c04c5026f48616e9c
+
+% 0 1 0 0b32d95916ee02200f4603770be1d06b
+
+% 1 1 0 02bccdb920c57ab406902be6bead479f
+
+@ 0 7 0 1304fdc7a498e4171a98ade7c2dcc31d
++     Lire à voix haute le type d'une instance en donne la totalité :
++     `Money is Addable by Money to Money` — un `Money` _est additionnable par_ un `Money` _en_ un
++     `Money`. Les classes de types sont `Addable`, `Subtractable`, `Multiplicable`, `Divisible`,
++     `Negatable` et `Rootable` pour les opérations ; `Zeroic` et `Unital` pour les éléments neutres
++     de l'addition et de la multiplication ; `Concatenable`, qui rend `Addable` tout type
++     concaténable, de sorte que les collections et le texte se joignent avec `+` ; `Quotient` pour
++     décomposer une fraction avec l'extracteur `/:` ; et `Comparable`, une comparaison totale à
++     trois issues renvoyant une `Comparison`, par laquelle les collections se trient et trouvent
++     leurs extrema.
+
+@ 0 4 0 06fd0409a45e2f3604643f5268089531
++     Les instances pour les types numériques primitifs sont des objets singletons aux méthodes
++     `inline`, si bien que `a + b` sur deux `Double` se compile en une seule instruction machine,
++     sans instance allouée et sans rien de boxé. Les classes de types `AddOp`, `SubOp`, `MulOp` et
++     `DivOp` sont une voie plus ancienne et optionnelle vers le même inlining, que les opérateurs
++     consultent encore en premier.
+
+@ 0 5 0 03b235cda1773ea80d28345f2d419e4d
++     Symbolism est la mécanique sous-jacente à l'arithmétique dimensionnelle de quantitative, aux
++     vecteurs et matrices de mosquito, aux nombres à largeur fixe de hypotenuse et aux instants et
++     durées d'aviation. Il a un seul ensemble de sources, `symbolism.core`, qui compile pour toutes
++     les plateformes, et tout est exporté vers le package parapluie `soundness`. Chaque instance se
++     trouve dans le compagnon de son type sujet ou de sa classe de types, si bien qu'aucune ne
++     nécessite d'import.
+
+% 0 1 0 18badcd7039d9c39129c5998a01d86df
+
+% 0 1 0 0137e19ffb39a5f91f53e450d96038d1
+
+% 0 1 0 1bc12d1c772357b51e8e7bd3fe28c449
+
+% 0 1 0 0ae57ce3c3193ca21a5f2acac50cd4d6
+
+@ 0 1 0 06b19f4f51467d310fc64f2fc5765d3c
++ entry .+
++   info
++       additionne deux valeurs par l'instance `Addable` de leurs types
+
+@ 0 5 0 04f38e8c9dd691740fa72a8c25b93232
++   detail
++       `left + right` est une extension sur tout type, qui nécessite un `left is Addable by right`
++       dans la portée ; son type est le `Result` de l'instance. Elle cherche d'abord, pendant que
++       l'appel est inliné, un `AddOp` pour les deux types, et sinon appelle la méthode `add` de
++       l'instance `Addable`. Comme l'opérande droit est un paramètre de type, un littéral nu à
++       droite ne prend pas le type de l'opérande gauche : un littéral entier ajouté à un `U64`
++       s'écrit `count + (1: U64)`.
+
+@ 2 1 0 0fcdf602c22056460e96f0fa54f8627c
++       ```scala
+
+@ 3 1 0 1ac4396c2d6a7dee1489b85f7f0e2a60
++       import soundness.*
+
+@ 0 1 0 01ff953220b689400919171295187cf4
++       1 + 2          // 3
+
+@ 0 1 0 15bb3993525ac8331e45585e8d406dd2
++       1 + 2.5        // 3.5, through `Addable.int2`
+
+@ 0 1 0 034b888e64fa8c1f0b08d55c456b666b
++       List(1, 2) + List(3)
+
+@ 1 1 0 1cc1c3b5310fadb810591d611661e3b4
++       ```
+
+@ 0 2 0 02c902eeb94ebc091975fe87598fc650
++       Additionner des valeurs pour lesquelles il n'existe pas d'instance est une erreur de
++       compilation, et non un repli sur la concaténation par `toString`.
+
+@ 0 1 0 1b8765e174c30d6a007936e94310a7b7
++ entry .-
++   info
++       soustrait une valeur d'une autre par l'instance `Subtractable` de leurs types
+
+@ 0 3 0 17cbbc85643eaacc1405be0b3e749c23
++   detail
++       `left - right` est une extension sur tout type, qui nécessite un
++       `left is Subtractable by right` dans la portée, et renvoie le `Result` de l'instance. Comme
++       pour `+`, un `SubOp` est préféré lorsqu'il en existe un.
+
+@ 3 1 0 003634b81f983696178c4bb0becf942c
++       ```scala
+
+@ 4 1 0 05eaf87b495956ff1d78b80bf4c3621c
++       import soundness.*
+
+@ 0 1 0 0eea05f8d99cca701679a5039fb41c2f
++       10L - 3L   // 7L
+
+@ 1 1 0 06d39eab07a051721c5db5cb7f77a10d
++       ```
+
+@ 0 1 0 182b2fb2920514991aab7c0265ff564d
++ entry .*
++   info
++       multiplie deux valeurs par l'instance `Multiplicable` de leurs types
+
+@ 0 5 0 1bdfbc18e98597e90c7751297a53192a
++   detail
++       `left*right` est une extension sur tout type, qui nécessite un
++       `left is Multiplicable by right` dans la portée, et renvoie le `Result` de l'instance ;
++       c'est ainsi qu'une longueur multipliée par une longueur peut être une aire, tandis qu'une
++       longueur multipliée par un nombre est une longueur. Un `MulOp` est préféré lorsqu'il en
++       existe un. Tout type `Concatenable` avec lui-même et `Zeroic` se multiplie par un `Int` par
++       répétition, si bien que `t"ab"*3` vaut `t"ababab"`.
+
+@ 2 1 0 18e2dfe922aa50e403548eed9fb784f9
++       ```scala
+
+@ 3 1 0 11ec7ff3dcd869e5166e493e53eb6721
++       import soundness.*
+
+@ 0 1 0 0ab5e0fbf2b703cf1d5806cbc8ab6948
++       6*7          // 42
+
+@ 0 1 0 1a13fd007aff231610d27a05474e455d
++       t"ab"*3      // t"ababab"
+
+@ 1 1 0 117d53596954edfd0158dd4fc6f4881a
++       ```
+
+@ 0 1 0 0ada055b6dc958ce0de735cc1070db53
++ entry ./
++   info
++       divise une valeur par une autre par l'instance `Divisible` de leurs types
+
+@ 0 4 0 02fbd827fa16abd71d0f4b11f9e2aedb
++   detail
++       `left/right` est une extension sur tout type, qui nécessite un `left is Divisible by right`
++       dans la portée, et renvoie le `Result` de l'instance. La division entière tronque, comme le
++       fait l'opérateur primitif, et un `Int` divisé par un `Double` est un `Double`. Un `DivOp`
++       est préféré lorsqu'il en existe un.
+
+@ 3 1 0 013d822fa0c63d6a191036d4bc758a37
++       ```scala
+
+@ 4 1 0 09c7e1aeda257739023f0d84afb78384
++       import soundness.*
+
+@ 0 1 0 1dc0d4719231858e1785fa7735a6eaed
++       7/2      // 3
+
+@ 0 1 0 0356a2c08ce5f03a03811a3253f0561a
++       7/2.0    // 3.5
+
+@ 1 1 0 0f73be644b09e1520cdf748d60bfe8db
++       ```
+
+@ 0 1 0 0997eccb81a5347606709fd8aef0ff75
++ entry .unary_-
++   info
++       calcule l'opposé d'une valeur par l'instance `Negatable` de son type, sous la forme du `-`
++       préfixe
+
+@ 0 3 0 1f35ecce08e93fc805537ee2c1fa302e
++   detail
++       `-value` est une extension sur tout type, qui nécessite un `value is Negatable` dans la
++       portée, et renvoie le `Result` de l'instance. L'opposé d'un `Byte` ou d'un `Short` est de
++       son propre type, en rebouclant comme le font les types primitifs.
+
+@ 2 1 0 138eb749007778e60a23214f7e725145
++       ```scala
+
+@ 3 1 0 063b274c1aad97b915b322cee6b1be88
++       import soundness.*
+
+@ 0 1 0 0cb6847491cd419705c3648504b5d29d
++       case class Offset(x: Int)
+
+@ 0 1 0 19cb0afc4e7140ce1a37694ee62dd5a3
++       object Offset:
+
+@ 0 1 0 0ef44c411610aee61fc45ddfc3026e45
++         given negatable: Offset is Negatable to Offset = Negatable(offset => Offset(-offset.x))
+
+@ 0 1 0 12c7e154ec8e9dd71211f7dce1fa0cf8
++       -Offset(3)   // Offset(-3)
+
+@ 1 1 0 14c36c7016710afa1cc93dd484dc7e73
++       ```
+
+@ 0 1 0 10b24644b9132d45179164943fe13b21
++ entry .sqrt
++   info
++       la racine carrée d'une valeur, par son instance `Rootable[2]`
+
+@ 0 3 0 0adea79d173397c80375efe1bf751fa4
++   detail
++       Une extension sur tout type doté d'un `Rootable[2]`, qui renvoie le `Result` de l'instance.
++       Sur un `Double` ou un `Float`, elle est inlinée en `Math.sqrt`, sans aucune allocation. Il
++       n'existe pas d'instance pour `Int`, puisque sa racine carrée n'est en général pas un `Int` :
++       `16.sqrt` est une erreur de compilation.
+
+@ 2 1 0 1cbf542b31721eb1034450ee9de4fd4c
++       ```scala
+
+@ 3 1 0 0cf0a10ba408c9c7039b3bb8a54fe472
++       import soundness.*
+
+@ 0 1 0 10807e93ab26a6fc178aa57c71b388c6
++       16.0.sqrt    // 4.0
+
+@ 0 1 0 1eec60b42573e24b1f640aff321f90a3
++       16.0f.sqrt   // 4.0f
+
+@ 0 1 0 1bdb3c427c1522451a2c0fad5fbeae0e
++       16.sqrt      // does not compile
+
+@ 1 1 0 0c46250625a72b1e005913d910b82dc3
++       ```
+
+@ 0 1 0 11156bb1a68f2b2f1d9f6d4524f6d324
++ entry .cbrt
++   info
++       la racine cubique d'une valeur, par son instance `Rootable[3]`
+
+@ 0 2 0 1951f1b06200ab6800841fcea61e1832
++   detail
++       Une extension sur tout type doté d'un `Rootable[3]`, qui renvoie le `Result` de l'instance ;
++       sur un `Double` ou un `Float`, elle est inlinée en `Math.cbrt`.
+
+@ 2 1 0 123026e4f53d01e115434a79ca7e472c
++       ```scala
+
+@ 3 1 0 10ad3bc700cf006503dd2baab18e8892
++       import soundness.*
+
+@ 0 1 0 135a5c580c71aa5b047c66084c45d1f2
++       27.0.cbrt   // 3.0
+
+@ 1 1 0 03fa26364ed08519023c832ca5983cea
++       ```
+
+@ 0 1 0 0a7f0a640a0d1e8c03ce7e80d4c77f0c
++ entry .zero
++   info
++       l'élément neutre de l'addition pour un type, sous la forme `zero[Int]`
+
+@ 0 2 0 1ff8c75ea2ff16170c94a203d4514cec
++   detail
++       `zero[T]` nécessite un `T is Zeroic` dans la portée. C'est le point de départ d'une somme ou
++       d'une concaténation répétée, et la valeur initiale dont un algorithme générique a besoin.
+
+@ 2 1 0 05b66885e2b190651168f573ea957abd
++       ```scala
+
+@ 3 1 0 03067fcf1afcb8870726567b37b6d5eb
++       import soundness.*
+
+@ 0 1 0 0fef75edd79509a61cff098683676fa9
++       zero[Int]      // 0
+
+@ 0 1 0 0de6bf3677170b700bad10bed8e48653
++       zero[Double]   // 0.0
+
+@ 0 1 0 0a12d213abde7c6b072e4a640c3bf087
++       zero[String]   // ""
+
+@ 1 1 0 103ef2d82a064e3d0427e6d2bf6cfe80
++       ```
+
+@ 0 1 0 115a1f8a152c69c019a24b6b863e0270
++ entry ./:
++   info
++       l'extracteur qui décompose une fraction, `numerator /: denominator`, par `Quotient`
+
+@ 0 3 0 11947ce2638ea051182c3644f757f364
++   detail
++       Un motif qui correspond à toute valeur dotée d'une instance `Quotient`, en liant son
++       numérateur et son dénominateur ; une valeur que l'instance ne peut pas décomposer ne
++       correspond pas.
+
+% 2 1 0 000d31cd86646f331c4090433f3d43fa
+
+% 3 1 0 14c549ad32d0847e1b21cf1f736c164b
+
+% 0 1 0 0e5826d3da3d30c103535e26ed9850a5
+
+% 0 1 0 0b791519c46f44a7041f2214a0a8a295
+
+% 0 1 0 1315cf185bf45b84146a9f6a0601e2f0
+
+% 0 1 0 0404d4411a8179ee049adc364679bd72
+
+% 0 1 0 191d4a3c4e30e0c21ed3853ba93fbfc2
+
+% 0 1 0 0d389405fb62a66a0f7e2b5c09cf42de
+
+% 0 1 0 0b72e296f6608ae114abd9958390779c
+
+% 0 1 0 07ef0ac74f1876850a87a43e50b1025c
+
+% 0 1 0 1750964329dda9ef0e9d8028c88fe459
+
+% 0 1 0 183240fcffa65318024e7901a38190f0
+
+% 0 1 0 1692623ea65e7d5914447e02156122a7
+
+% 1 1 0 14617045670db1510baeb6feb0b9121f
+
+@ 0 1 0 0a8687ab07008c001d753338d8ebc1e8
++   entry .unapply
++     info
++         décompose une valeur en son numérateur et son dénominateur, si son `Quotient` le peut
+
+@ 0 1 0 0daba5718467923004af18eddd6d6271
++ entry .Addable
++   info
++       une classe de types pour `+` : un `Self` est additionnable par un `Operand` en un `Result`
+
+@ 0 6 0 101c2b9e68ead2ea1249b921f472fa32
++   detail
++       La classe de types derrière l'extension `+`. Ses trois membres de type disent tout :
++       l'instance `Money is Addable by Money to Money` additionne deux `Money` pour faire un
++       `Money`, tandis que `Instant is Addable by Duration to Instant` ajoute une durée à un
++       instant. Le résultat est un membre de l'instance plutôt qu'un paramètre de l'opérateur, si
++       bien qu'un seul `+` sert à toutes les combinaisons.
+
+% 2 1 0 1f8529da4736245b17948c2d39a39790
+
+% 3 1 0 15617c77d2e4f07f0b9f3563ca981bef
+
+% 5 1 0 106f1d97b0f46b7710d0cd17d48eb298
+
+% 7 1 0 0a529f9e895b110115aecbb2520d748d
+
+% 0 1 0 0d578706d94c3e8e0173ca9459b0a3f8
+
+% 0 1 0 1b834b1787c2b18f08fb727e99586bd7
+
+% 0 1 0 0578de8800a3155b0e78a738fb1818d9
+
+% 1 1 0 1abb05b9d33034fd1a0a2092b2070248
+
+@ 0 2 0 1d0e5489653c0d0f0f77781bf274db46
++       Un type acquiert son arithmétique une instance à la fois, et chaque opérateur est disponible
++       dès que son instance l'est :
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 17f1e21452daca120e8f42702861ec61
+
+% 1 1 0 01efe4ddc63cc62711e12fdb40e2d008
+
+% 2 1 0 0fd006c6720bb9b41c2057c5d9479bf1
+
+% 0 1 0 0300295f4abdaf0805ddb097916ce520
+
+% 1 1 0 0e01a652835172d10e85cd93181778e6
+
+% 0 1 0 0f27b586f383b2f51761a60ecc6f45c9
+
+% 1 1 0 1f51414240273dd50a3fe9a07b4482df
+
+% 2 1 0 17ad311edf5fc5f714717219ef90862a
+
+% 4 1 0 0ab73e52aa4cb7e50fc2606737274190
+
+% 5 1 0 109a883e4e2e62de06652a996b99d25a
+
+% 6 1 0 1b9f8e6646f96bff1368023df484205d
+
+% 0 1 0 024485cfd206f65503280ddb76e45145
+
+% 1 1 0 0fbeb44cfd56692e115d52c366b8ea86
+
+% 0 1 0 15d4fc05e6d4641a1cdbb361f7d0e015
+
+% 1 1 0 1b0614a364e110191f35b636997184bd
+
+% 2 1 0 09cc44f2383419df01a6130a641386ff
+
+% 4 1 0 09b0091e23f138fd1a3a3b2cda8366b2
+
+% 5 1 0 1239586768c8d8410567ecbda8a6b36a
+
+% 6 1 0 102b614c8e712e1c092a290c581d80f5
+
+% 0 1 0 1d3bf118b9b8910a12cf3e6a1ff450c9
+
+% 0 1 0 031e923452f92003085533f39c728578
+
+% 0 1 0 0742d9df8973350f097d3efea7165e13
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 1233005096be334b0bd1b09e7fc72743
++       Les instances ont leur place dans le compagnon du type sujet, où elles sont trouvées sans
++       import. Les instances primitives (`Int`, `Long`, `Double`, `Float`, `Short`, `Byte`, et
++       `Int` avec `Double` dans les deux sens) sont les objets singletons du compagnon, dont la
++       méthode `inline def add` fait de `a + b` une seule instruction. Un `Short` ou un `Byte`
++       s'additionne en son propre type, en rebouclant en cas de dépassement. Tout type
++       `Concatenable` est `Addable` par `.concatenable`.
+
+% 0 1 0 09201a2e5addfb43047d502b0377ccfb
+
+% 0 1 0 16710fc88531dae71c6010f7250374cd
+
+% 0 1 0 189486f3e13c4f7114ad6f7dc2f965e9
+
+@ 0 1 0 1c82fc083b168ccc12fe99fd8912b7c2
++   entry .apply
++     info
++         une instance `Addable` à partir d'une fonction des deux opérandes
+
+@ 0 2 0 16419bb7876ccbb2105396ca90f6039b
++     detail
++         `Addable((left, right) => …)` crée un `augend is Addable by addend to result`, les trois
++         types étant inférés à partir du type attendu, tel que le fournit le type déclaré d'un
++         given.
+
+@ 0 1 0 03b41b3bb1fa72f60a83a81f521ebda8
++   entry .DoubleAddition
++     info
++         l'instance `Double + Double`, inlinée en une seule instruction
+
+@ 0 1 0 18d625c1d9f7bcb21a5b43e952117a37
++   entry .FloatAddition
++     info
++         l'instance `Float + Float`, inlinée en une seule instruction
+
+@ 0 1 0 11eccbba02e5ec7109db5655fb293a74
++   entry .LongAddition
++     info
++         l'instance `Long + Long`, inlinée en une seule instruction
+
+@ 0 1 0 003ba80817b8a4d51c5a55a1366bd0f7
++   entry .IntAddition
++     info
++         l'instance `Int + Int`, inlinée en une seule instruction
+
+@ 0 1 0 1ad0aceb6329b70c07d9d3bd56888ecd
++   entry .IntDoubleAddition
++     info
++         l'instance `Int + Double`, dont le résultat est un `Double`
+
+@ 0 1 0 09b007e9453d7ac00987aa447d245e40
++   entry .DoubleIntAddition
++     info
++         l'instance `Double + Int`, dont le résultat est un `Double`
+
+@ 0 1 0 0fb42e7070700e7b1bedb5deedb638ae
++   entry .ShortAddition
++     info
++         l'instance `Short + Short`, qui reboucle en un `Short`
+
+@ 0 1 0 17340ef9f153e8b00bbc87657a0ec671
++   entry .ByteAddition
++     info
++         l'instance `Byte + Byte`, qui reboucle en un `Byte`
+
+@ 0 1 0 14e4c27f6e2193fe02da7d850ac2e87f
++   entry .double
++     info
++         le given pour `Double + Double`, typé `DoubleAddition` pour être inliné
+
+@ 0 2 0 188f530145a4160e1960f9c774f65d4b
++     detail
++         Déclaré au type singleton de l'objet, ce qui permet à l'inlineur de résoudre `add` vers la
++         méthode `inline def` de l'objet ; un given typé comme le trait passerait plutôt par
++         celui-ci.
+
+@ 0 1 0 05bbb2e10f258e540950b01997996705
++   entry .float
++     info
++         le given pour `Float + Float`, typé `FloatAddition` pour être inliné
+
+@ 0 1 0 03a73a42b2ccec680dc001db16ca6e03
++   entry .long
++     info
++         le given pour `Long + Long`, typé `LongAddition` pour être inliné
+
+@ 0 1 0 056763cfe5783ff31fc1813d39b9dc10
++   entry .int
++     info
++         le given pour `Int + Int`, typé `IntAddition` pour être inliné
+
+@ 0 1 0 1bc5cbe0bfd70e3f082b4760640a4b8f
++   entry .int2
++     info
++         le given pour `Int + Double`, typé `IntDoubleAddition` pour être inliné
+
+@ 0 1 0 119745fc8a72590c1efb79a44dbf948b
++   entry .int3
++     info
++         le given pour `Double + Int`, typé `DoubleIntAddition` pour être inliné
+
+@ 0 1 0 1af8a259df4882cb06bd4a8b4737a02f
++   entry .short
++     info
++         le given pour `Short + Short`, typé `ShortAddition` pour être inliné
+
+@ 0 1 0 13c2b44b417b22d215926bb27ffd5bf4
++   entry .byte
++     info
++         le given pour `Byte + Byte`, typé `ByteAddition` pour être inliné
+
+@ 0 1 0 18495b3900705f87071d547e92a8c8aa
++   entry .concatenable
++     info
++         rend `Addable` tout type `Concatenable`, si bien que `+` joint listes, ensembles, maps et
++         texte
+
+@ 0 3 0 12a738d230dfdeaf19d461ade01f7930
++     detail
++         Pour tout `left is Concatenable by right`, un `Addable` de mêmes opérande et résultat, qui
++         appelle `concat`. C'est ainsi que `List(1) + List(2)`, `set + other` et `text + more`
++         fonctionnent par l'unique `+`.
+
+@ 0 1 0 073e4cf2379d963505bb8983fa2eb56e
++   entry #Augend
++     info
++         le type de l'opérande gauche : un alias de `Self`
+
+@ 0 1 0 0fa7af20a43f8e8f0123bb1742215158
++   entry #Addend
++     info
++         le type de l'opérande droit : un alias de `Operand`
+
+@ 0 1 0 1f0185e938385b690884c275ad3bb93f
++   entry #add
++     info
++         ajoute un second terme à un premier terme, donnant le `Result` de l'instance
+
+@ 0 1 0 1f26df8d88a1089e0d649f1656cab2c2
++ entry .Subtractable
++   info
++       une classe de types pour `-` : un `Self` est soustrayable par un `Operand` en un `Result`
+
+@ 0 4 0 0a4f6784fbbff0e001f9774e45587f78
++   detail
++       La classe de types derrière l'extension `-` binaire, dont le type de résultat est un membre
++       de l'instance : `Instant is Subtractable by Instant to Duration`, par exemple, tandis qu'un
++       instant moins une durée est un instant.
+
+% 2 1 0 0b2af35dae3694cd182ed5848389ca9b
+
+% 3 1 0 1bdc247c31bc5f6e188284d8a3e97f75
+
+% 5 1 0 1388f6b1c0ad7add1ad6a023b1109b91
+
+% 7 1 0 1106f41356606a7803dfaf35561c877b
+
+% 0 1 0 04b0755bae945ab216f3d64f18e41ad2
+
+% 0 1 0 0a9a6b1a8305d66d179e8d5a12475211
+
+% 0 1 0 0b435b44129212280b0a47723999db16
+
+% 1 1 0 09c92dd01c2ca9840d71f4eb3e0bd93c
+
+@ 0 2 0 0f1a9e92ab4e9263059cdaa828ade88f
++       Les instances primitives sont des objets singletons dotés d'une méthode
++       `inline def subtract` ; un `Short` ou un `Byte` se soustrait en son propre type.
+
+% 0 1 0 09201a2e5addfb45047d502b0377ccfd
+
+@ 0 1 0 02cbd0481016426611cc4725bb4ac926
++   entry .apply
++     info
++         une instance `Subtractable` à partir d'une fonction des deux opérandes
+
+@ 0 1 0 0bc4d4d37be27f100713310fadec2422
++   entry .DoubleSubtraction
++     info
++         l'instance `Double - Double`, inlinée en une seule instruction
+
+@ 0 1 0 17342c7ba53942e217d69913c9ab08e0
++   entry .FloatSubtraction
++     info
++         l'instance `Float - Float`, inlinée en une seule instruction
+
+@ 0 1 0 0d1e0a4ccf717ff31ea743a84e3ecc82
++   entry .LongSubtraction
++     info
++         l'instance `Long - Long`, inlinée en une seule instruction
+
+@ 0 1 0 1777001b193e8c0a0ecc6b224bd21928
++   entry .IntSubtraction
++     info
++         l'instance `Int - Int`, inlinée en une seule instruction
+
+@ 0 1 0 044de704e883edc90362fd6bb7d82d0e
++   entry .ShortSubtraction
++     info
++         l'instance `Short - Short`, qui reboucle en un `Short`
+
+@ 0 1 0 0a9d0cf361d02ca41bdc7fc809806efb
++   entry .ByteSubtraction
++     info
++         l'instance `Byte - Byte`, qui reboucle en un `Byte`
+
+@ 0 1 0 174d02da0e5d54331046e58262e148ec
++   entry .double
++     info
++         le given pour `Double - Double`, typé `DoubleSubtraction` pour être inliné
+
+@ 0 1 0 0b8565bd76ad0a701bd7a87efdddbc16
++   entry .float
++     info
++         le given pour `Float - Float`, typé `FloatSubtraction` pour être inliné
+
+@ 0 1 0 0771944b1868c98e1829aa310cd30dd8
++   entry .long
++     info
++         le given pour `Long - Long`, typé `LongSubtraction` pour être inliné
+
+@ 0 1 0 1646a82d4e6cb93007d9b30b5031b12c
++   entry .int
++     info
++         le given pour `Int - Int`, typé `IntSubtraction` pour être inliné
+
+@ 0 1 0 1c920293c587903416fede32c3bc9160
++   entry .short
++     info
++         le given pour `Short - Short`, typé `ShortSubtraction` pour être inliné
+
+@ 0 1 0 10c3fbc72fb305541dd5716f31c3d75a
++   entry .byte
++     info
++         le given pour `Byte - Byte`, typé `ByteSubtraction` pour être inliné
+
+@ 0 1 0 03f062dd72eb5f7909b017b2ea33a5ba
++   entry #Minuend
++     info
++         le type de l'opérande gauche : un alias de `Self`
+
+@ 0 1 0 0a35d09938b41ec4024f6068ea8eef64
++   entry #Subtrahend
++     info
++         le type de l'opérande droit : un alias de `Operand`
+
+@ 0 1 0 09a0295ba05e0a1a1c823d0ac39649d9
++   entry #subtract
++     info
++         soustrait un second terme d'un premier terme, donnant le `Result` de l'instance
+
+@ 0 1 0 0b73b35ca0ada8700761792216a2515d
++ entry .Multiplicable
++   info
++       une classe de types pour `*` : un `Self` est multipliable par un `Operand` en un `Result`
+
+@ 0 4 0 1af27d2a22809f5a1a788e9e8f760dbf
++   detail
++       La classe de types derrière l'extension `*`. L'opérande et le résultat peuvent différer de
++       l'opérande gauche : un vecteur multiplié par un `Int` est un vecteur, et dans quantitative
++       une longueur multipliée par une longueur est une aire.
+
+% 2 1 0 12f7157a6370663505cd6ef459a795aa
+
+% 3 1 0 023a7f1cf6d870260e90659c3cb9e7ed
+
+% 5 1 0 0a706183bcca45b00ed57ddf375b56a9
+
+% 7 1 0 0df878b4427bf50e09c3cff6aa18b8f2
+
+% 0 1 0 1ddd3201b781212b1e2766b5cbae2aed
+
+% 0 1 0 0bf7e8a092a4ec5b16ca621c39f96257
+
+% 0 1 0 0e19eb81436eb88f017033629fd7769b
+
+% 1 1 0 043e0a9c9fad44ec00ec311d94c7876c
+
+@ 0 3 0 0117d6b72670ed6b0c3327f7a8c0dd1d
++       Les instances primitives sont des objets singletons dotés d'une méthode
++       `inline def multiply`. Tout type `Concatenable` avec lui-même et `Zeroic` se multiplie par
++       un `Int` par répétition, par `.concatenable`.
+
+% 0 1 0 09201a2e5addfb42047d502b0377ccfa
+
+@ 0 1 0 062084b146881d8e0f69806942778ebf
++   entry .apply
++     info
++         une instance `Multiplicable` à partir d'une fonction des deux opérandes
+
+@ 0 1 0 0569006765b7aca41147548e1fa11ef8
++   entry .DoubleMultiplication
++     info
++         l'instance `Double*Double`, inlinée en une seule instruction
+
+@ 0 1 0 1b86a5cadde82aa119abdd31632bb066
++   entry .LongMultiplication
++     info
++         l'instance `Long*Long`, inlinée en une seule instruction
+
+@ 0 1 0 0c52aa5cd68142471499073cf0cf528a
++   entry .IntMultiplication
++     info
++         l'instance `Int*Int`, inlinée en une seule instruction
+
+@ 0 1 0 0f0dfb41388206281daac27435acca4d
++   entry .FloatMultiplication
++     info
++         l'instance `Float*Float`, inlinée en une seule instruction
+
+@ 0 1 0 1a653a75ae78e90d06b113ddb7d45d16
++   entry .ShortMultiplication
++     info
++         l'instance `Short*Short`, qui reboucle en un `Short`
+
+@ 0 1 0 0da1fdc76c0192af0faaf973d7ef4340
++   entry .ByteMultiplication
++     info
++         l'instance `Byte*Byte`, qui reboucle en un `Byte`
+
+@ 0 1 0 1a9338f65b19c9d0135541eee1c0fa93
++   entry .double
++     info
++         le given pour `Double*Double`, typé `DoubleMultiplication` pour être inliné
+
+@ 0 1 0 0551ca993f1a540111c97837892a24b0
++   entry .long
++     info
++         le given pour `Long*Long`, typé `LongMultiplication` pour être inliné
+
+@ 0 1 0 166d05d063d7dbf30b424f6a90f47587
++   entry .int
++     info
++         le given pour `Int*Int`, typé `IntMultiplication` pour être inliné
+
+@ 0 1 0 1542c1f6b12eed9009066d7dc9be9b23
++   entry .float
++     info
++         le given pour `Float*Float`, typé `FloatMultiplication` pour être inliné
+
+@ 0 1 0 04825b6bffebbc410b6def64ed5955f4
++   entry .short
++     info
++         le given pour `Short*Short`, typé `ShortMultiplication` pour être inliné
+
+@ 0 1 0 1fb90da726eb663c07f68677d59d4c4b
++   entry .byte
++     info
++         le given pour `Byte*Byte`, typé `ByteMultiplication` pour être inliné
+
+@ 0 1 0 13f3fe7c0933426f181b10be44c67228
++   entry .concatenable
++     info
++         la répétition : une valeur concaténable avec elle-même et `Zeroic`, multipliée par un
++         `Int`
+
+@ 0 3 0 1d0f46faf322a8950569175c5bdc616f
++     detail
++         Pour tout type `Concatenable` par lui-même en lui-même et `Zeroic`, `value*n` est la
++         concaténation de `n` copies de la valeur, en partant de `zero`, si bien qu'un nombre de
++         zéro (ou moins) donne la valeur zéro.
+
+@ 2 1 0 10f33ed5263e6cce085b76de71d3e570
++         ```scala
+
+@ 3 1 0 0b86be096314745915f796d86e522690
++         import soundness.*
+
+@ 0 1 0 19487392ae3367d602eb46bf1ad4d6ca
++         t"ab"*3   // t"ababab"
+
+@ 0 1 0 076d56d11172fa6807996f14801df631
++         t"ab"*0   // t""
+
+@ 1 1 0 1ce0dd107e7622931e1b18875b8582a5
++         ```
+
+@ 0 1 0 02e95388c1fadecd0c2122fe718a0ae6
++   entry #Multiplicand
++     info
++         le type de l'opérande gauche : un alias de `Self`
+
+@ 0 1 0 0347216ef76a6aea072db98fffc6e3a4
++   entry #Multiplier
++     info
++         le type de l'opérande droit : un alias de `Operand`
+
+@ 0 1 0 127aff0e684d51b612c3f02771fd3be0
++   entry #multiply
++     info
++         multiplie un multiplicande par un multiplicateur, donnant le `Result` de l'instance
+
+@ 0 1 0 19abfe59cc307ebe1349e8ec18fd0c67
++ entry .Divisible
++   info
++       une classe de types pour `/` : un `Self` est divisible par un `Operand` en un `Result`
+
+@ 0 3 0 04ab6e772ef044a600ea8114ed239ac3
++   detail
++       La classe de types derrière l'extension `/`, dont le type de résultat est un membre de
++       l'instance : dans quantitative, une distance divisée par un temps est une vitesse.
+
+% 2 1 0 071d1763dd89f99919b9525d972b5eff
+
+% 3 1 0 08b375183530399c1dbe7f0ebffac65e
+
+% 5 1 0 0d5723e1f0146a451e4d3a7356bb1378
+
+% 7 1 0 07165ef010d0b525014430159b84ddeb
+
+% 0 1 0 12598c4154016f090eea6b98aa9f1cc5
+
+% 0 1 0 1fe2e345b33a893213fb4eeb2dc905b4
+
+% 0 1 0 1f7e5d1aa4b851c90ea4a72200ac7df0
+
+% 1 1 0 10f783c4ae44c2d208b29f43fc06e7cc
+
+@ 0 3 0 075bc8ab29271555186a902da2d60196
++       Les instances primitives sont des objets singletons dotés d'une méthode `inline def divide`.
++       Chaque type entier se divise par lui-même en lui-même, en tronquant, et par un `Double` en
++       un `Double` ; un `Double` ou un `Float` se divise par un `Int`, et un `Float` par un
++       `Double` en un `Double`.
+
+% 0 1 0 09201a2e5addfb47047d502b0377ccff
+
+@ 0 1 0 089979bad40dc3fe0dd201a1470490ff
++   entry .apply
++     info
++         une instance `Divisible` à partir d'une fonction des deux opérandes
+
+@ 0 1 0 124fc084851f63a4004957da3fc04d54
++   entry .DoubleDivision
++     info
++         l'instance `Double/Double`, inlinée en une seule instruction
+
+@ 0 1 0 06b191adb619fb430011020b2c4028e3
++   entry .DoubleIntDivision
++     info
++         l'instance `Double/Int`, dont le résultat est un `Double`
+
+@ 0 1 0 0a01afb043aaf8d5096d703cb8dc533c
++   entry .FloatDivision
++     info
++         l'instance `Float/Float`, inlinée en une seule instruction
+
+@ 0 1 0 18b186cc1dc8bb5502939db33f326edf
++   entry .FloatIntDivision
++     info
++         l'instance `Float/Int`, dont le résultat est un `Float`
+
+@ 0 1 0 044f4ed5c64bfa71180ee54e609b8d92
++   entry .FloatDoubleDivision
++     info
++         l'instance `Float/Double`, dont le résultat est un `Double`
+
+@ 0 1 0 13aa45b2b8e22095064d2de7d2ce2e73
++   entry .LongDivision
++     info
++         l'instance `Long/Long`, qui tronque
+
+@ 0 1 0 07264396283063f31d2d02171ef8748c
++   entry .LongDoubleDivision
++     info
++         l'instance `Long/Double`, dont le résultat est un `Double`
+
+@ 0 1 0 0f9e0b2904f9868a0b10c390472a3d5a
++   entry .IntDivision
++     info
++         l'instance `Int/Int`, qui tronque
+
+@ 0 1 0 14d69b7162dae6690566f5d53762014b
++   entry .IntDoubleDivision
++     info
++         l'instance `Int/Double`, dont le résultat est un `Double`
+
+@ 0 1 0 10cbc715a09e86001af7038f97433989
++   entry .ShortDivision
++     info
++         l'instance `Short/Short`, qui tronque en un `Short`
+
+@ 0 1 0 13a1cc988d9eac361f1eda1b6eb36747
++   entry .ShortDoubleDivision
++     info
++         l'instance `Short/Double`, dont le résultat est un `Double`
+
+@ 0 1 0 077152b9c0de0a6308bec466db492426
++   entry .ByteDivision
++     info
++         l'instance `Byte/Byte`, qui tronque en un `Byte`
+
+@ 0 1 0 0520b527768f53b10fb5ee7b3dedf9c7
++   entry .ByteDoubleDivision
++     info
++         l'instance `Byte/Double`, dont le résultat est un `Double`
+
+@ 0 1 0 0c281427f5214aa70378df15eea659c5
++   entry .double
++     info
++         le given pour `Double/Double`, typé `DoubleDivision` pour être inliné
+
+@ 0 1 0 19bfb53df49e40e90114d489737e79df
++   entry .double2
++     info
++         le given pour `Double/Int`, typé `DoubleIntDivision` pour être inliné
+
+@ 0 1 0 19af189bd6b628621268fe97c8fee87f
++   entry .float
++     info
++         le given pour `Float/Float`, typé `FloatDivision` pour être inliné
+
+@ 0 1 0 0c31089e7c72d9d41de747138800faea
++   entry .float2
++     info
++         le given pour `Float/Int`, typé `FloatIntDivision` pour être inliné
+
+@ 0 1 0 0840706b58f110d705a9c9f4bb0cadbd
++   entry .float3
++     info
++         le given pour `Float/Double`, typé `FloatDoubleDivision` pour être inliné
+
+@ 0 1 0 112c3f57c693b986155452d09152d163
++   entry .long
++     info
++         le given pour `Long/Long`, typé `LongDivision` pour être inliné
+
+@ 0 1 0 15785c6b3fe29d3b03d99de77f0da03d
++   entry .long2
++     info
++         le given pour `Long/Double`, typé `LongDoubleDivision` pour être inliné
+
+@ 0 1 0 00c286360d1c6a8503fe84f4065533fb
++   entry .int
++     info
++         le given pour `Int/Int`, typé `IntDivision` pour être inliné
+
+@ 0 1 0 19627206ed73dbd808383f12ca008fe2
++   entry .int2
++     info
++         le given pour `Int/Double`, typé `IntDoubleDivision` pour être inliné
+
+@ 0 1 0 1a2fdbae978aaf9d0a98d961de45f57f
++   entry .short
++     info
++         le given pour `Short/Short`, typé `ShortDivision` pour être inliné
+
+@ 0 1 0 154bd432f3e2c2301649137b52b76c25
++   entry .short2
++     info
++         le given pour `Short/Double`, typé `ShortDoubleDivision` pour être inliné
+
+@ 0 1 0 0b7e2542f93c577515eb1129b3088644
++   entry .byte
++     info
++         le given pour `Byte/Byte`, typé `ByteDivision` pour être inliné
+
+@ 0 1 0 04f252cc9ac1d4831bc21b6fc5b904fb
++   entry .byte2
++     info
++         le given pour `Byte/Double`, typé `ByteDoubleDivision` pour être inliné
+
+@ 0 1 0 1d2c5c938469ca231abba573fff679f2
++   entry #Dividend
++     info
++         le type de l'opérande gauche : un alias de `Self`
+
+@ 0 1 0 05c8beec0df139b81c5df489a74371a7
++   entry #Divisor
++     info
++         le type de l'opérande droit : un alias de `Operand`
+
+@ 0 1 0 15714c4d0ddeb5db03fbaa773b23b0e3
++   entry #divide
++     info
++         divise un dividende par un diviseur, donnant le `Result` de l'instance
+
+@ 0 1 0 1d2b09d9a4d03fa412b423306cd2fc24
++ entry .Negatable
++   info
++       une classe de types pour le `-` préfixe : l'opposé d'un `Self` est un `Result`
+
+@ 0 3 0 1760f16ade573fd81fcd22b74735961d
++   detail
++       La classe de types derrière l'extension `unary_-`. Le résultat est un membre de l'instance,
++       si bien que l'opposé d'un type peut être d'un autre type, comme celui d'un nombre non signé
++       pourrait être signé.
+
+% 2 1 0 1aa453b2d4e42cbd10eb34a1a5dfd6d8
+
+% 3 1 0 17add86c51613302081ec3513a5f7d7a
+
+% 5 1 0 1a9317f56cf13d261f94c35fcae7483d
+
+% 7 1 0 1d946a085293b4af0a98db75cbd33566
+
+% 0 1 0 123e380402734dc815c93c0dc8b6a151
+
+% 0 1 0 1ba358446f44fe8f14d32ffc8e731064
+
+% 0 1 0 0746cebb1a0ddeb4038608a27106ffad
+
+% 1 1 0 106c539c7cd2ce1914b54713f9adb30d
+
+@ 0 5 0 02fa7ff1abffca811600fe76648a5633
++       Les instances primitives sont des objets singletons dotés d'une méthode `inline def negate`,
++       si bien que `-a` sur un `Double` est une seule instruction ; l'opposé d'un `Short` ou d'un
++       `Byte` est de son propre type. Le code générique qui calcule un opposé par une instance
++       devrait la lier dans un motif `summonFrom` plutôt qu'appeler `summonInline[…].negate`, qui
++       type l'instance comme le trait et boxe par la méthode effacée, même pour un primitif.
+
+% 0 1 0 1e3b0d154788a55e033a7e149e34da8c
+
+@ 0 1 0 1e70057d05402e3112780630f373b8e1
++   entry .apply
++     info
++         une instance `Negatable` à partir d'une fonction de l'opérande
+
+@ 0 1 0 117add358ccc3984052b52745f6e7940
++   entry .DoubleNegation
++     info
++         l'instance `-Double`, inlinée en une seule instruction
+
+@ 0 1 0 05731ac0f41bf9db17fd028cb131c015
++   entry .FloatNegation
++     info
++         l'instance `-Float`, inlinée en une seule instruction
+
+@ 0 1 0 1d9d97172db4a60d01cd2ca1ae19730d
++   entry .LongNegation
++     info
++         l'instance `-Long`, inlinée en une seule instruction
+
+@ 0 1 0 05e0527aa7f3f7740a7e3cc157285b4d
++   entry .IntNegation
++     info
++         l'instance `-Int`, inlinée en une seule instruction
+
+@ 0 1 0 0aa7c24a4dd25a3312fec583b47d2853
++   entry .ShortNegation
++     info
++         l'instance `-Short`, qui reboucle en un `Short`
+
+@ 0 1 0 19441544fac16c0d1112bda4881d48d1
++   entry .ByteNegation
++     info
++         l'instance `-Byte`, qui reboucle en un `Byte`
+
+@ 0 1 0 1d3e2708fb1ca6a910e96dd95e2a72fa
++   entry .double
++     info
++         le given pour `-Double`, typé `DoubleNegation` pour être inliné
+
+@ 0 1 0 1d4cc520eac1f9fd17bd382ad5e4cf1c
++   entry .float
++     info
++         le given pour `-Float`, typé `FloatNegation` pour être inliné
+
+@ 0 1 0 0b425e68402e0e8c11b4360408c30122
++   entry .long
++     info
++         le given pour `-Long`, typé `LongNegation` pour être inliné
+
+@ 0 1 0 070de3b88145adf11f4a9957a6770abe
++   entry .int
++     info
++         le given pour `-Int`, typé `IntNegation` pour être inliné
+
+@ 0 1 0 1485ead98e51c3ab1afa7fdb9a4a9cad
++   entry .short
++     info
++         le given pour `-Short`, typé `ShortNegation` pour être inliné
+
+@ 0 1 0 0bd2c2927fbc984e1a469847bae0ce7a
++   entry .byte
++     info
++         le given pour `-Byte`, typé `ByteNegation` pour être inliné
+
+@ 0 1 0 148ffc80d9ebe5610c468fb8ba8c9db3
++   entry #negate
++     info
++         calcule l'opposé d'une valeur, donnant le `Result` de l'instance
+
+@ 0 1 0 1b19e9b82d0d083a081097fc4ad62ee7
++ entry .Rootable
++   info
++       une classe de types pour la racine d'un degré littéral : `Rootable[2]` est derrière `sqrt`,
++       `Rootable[3]` derrière `cbrt`
+
+@ 0 4 0 1f35465cb349461506711d74006022d8
++   detail
++       `Rootable[degree]` calcule la racine du degré que nomme son paramètre de type, un `Int`
++       littéral : `Rootable[2]` est derrière `sqrt` et `Rootable[3]` derrière `cbrt`. Une racine de
++       tout autre degré peut être fournie, puis invoquée ou utilisée directement.
+
+% 2 1 0 162e31646f9a6fb01c943a3b08a7ae1f
+
+% 3 1 0 0f0c3e32762434a6085c53430ba9a4b4
+
+% 0 1 0 0a02ba1e7f5f923011b87672119d7146
+
+% 0 1 0 0dc1d4cfbb04899f0628afb9ba0c0cb1
+
+% 1 1 0 1a5d0bb2c69e2f881dc1977b2b47337a
+
+@ 0 2 0 17c1db7a6636e8880599dfc2fd9fad2f
++       Les instances pour `Double` et `Float` sont des objets singletons dont la méthode
++       `inline def root` appelle directement `Math.sqrt` ou `Math.cbrt`. Il n'y en a aucune pour
++       les types entiers.
+
+% 0 1 0 09e8d0ca78c15b2a1dcbf6ebebd2a93a
+
+% 0 1 0 166027e08375b0ca12fa99c00270d7e8
+
+@ 0 1 0 13579c55975efcc81655d80b5e3efb5f
++   entry .apply
++     info
++         une instance `Rootable` d'un degré littéral à partir d'une fonction de l'opérande
+
+@ 0 1 0 076d6b30629fdaac144f3a8aac658f8a
++   entry .DoubleSquareRoot
++     info
++         la racine carrée d'un `Double`, inlinée en `Math.sqrt`
+
+@ 0 1 0 167cf0f2dcc94e08158758d9675faf87
++   entry .DoubleCubeRoot
++     info
++         la racine cubique d'un `Double`, inlinée en `Math.cbrt`
+
+@ 0 1 0 0b4c783ec9ce54e109ed8da6f2e45bbf
++   entry .FloatSquareRoot
++     info
++         la racine carrée d'un `Float`, par `Math.sqrt`
+
+@ 0 1 0 08f43629c295e8f801fd2de27f5eea53
++   entry .FloatCubeRoot
++     info
++         la racine cubique d'un `Float`, par `Math.cbrt`
+
+@ 0 1 0 1e04acfc1f96b9731d3282b69ba103df
++   entry .sqrt
++     info
++         le given pour la racine carrée d'un `Double`, typé `DoubleSquareRoot` pour être inliné
+
+@ 0 1 0 0aedaa996763e0c006a5399250fcc20e
++   entry .cbrt
++     info
++         le given pour la racine cubique d'un `Double`, typé `DoubleCubeRoot` pour être inliné
+
+@ 0 1 0 1db84cd33d0b61451cf4714c93e49a6b
++   entry .sqrtFloat
++     info
++         le given pour la racine carrée d'un `Float`, typé `FloatSquareRoot` pour être inliné
+
+@ 0 1 0 07b4ceb06d3c222d1afb4db3bd56fa04
++   entry .cbrtFloat
++     info
++         le given pour la racine cubique d'un `Float`, typé `FloatCubeRoot` pour être inliné
+
+@ 0 1 0 1424de1dcadcc16f0b510edf00cc0bdf
++   entry #root
++     info
++         la racine d'une valeur, donnant le `Result` de l'instance
+
+@ 0 1 0 1ef889ed7c9385a11ecffb6a4caf45d4
++ entry .Zeroic
++   info
++       une classe de types pour l'élément neutre de l'addition d'un type, sous la forme `zero[T]`
+
+@ 0 5 0 158a37289f3ff4611f1ff5bd8dfd8c7a
++   detail
++       Une instance `Zeroic` fournit la valeur dont l'addition ne change rien : `0` pour les types
++       numériques, la `String` vide, et ce qu'un type défini par l'utilisateur appelle zéro. Les
++       sommes et répétitions génériques en partent, et `Multiplicable.concatenable` en a besoin
++       pour répéter une valeur concaténable.
+
+% 2 1 0 1c485740d5d4da5904cf1c6fdc8b5740
+
+% 3 1 0 159a33707cba0dba0eec92d94037ca67
+
+% 5 1 0 018feac95a950e4b1d45c88fae5bc532
+
+% 7 1 0 0a21db7cf1d1134610088bd3f904e0fb
+
+% 0 1 0 10fd872dcaa286890b079990fc4ab073
+
+% 0 1 0 0da75b470227f574017f087edbfa667c
+
+% 0 1 0 0893566d65d7d2a3194384a16d23e70a
+
+% 1 1 0 0833bdfd452204ca0ae725d78bf82a19
+
+% 0 1 0 0aefe5d534db9c83077b0182b465ebe4
+
+% 0 1 0 1a2b45b14481f50813b158b985ac0dd4
+
+@ 0 1 0 1902ec6bc8522d48091e61ceda888e37
++   entry .long
++     info
++         zéro en tant que `Long`, inliné
+
+@ 0 1 0 17aa7ec67c5d7f12195418f48c6c0f69
++   entry .int
++     info
++         zéro en tant que `Int`, inliné
+
+@ 0 1 0 1e24af32e9ec71f90cd1aeebe6a90cf7
++   entry .short
++     info
++         zéro en tant que `Short`, inliné
+
+@ 0 1 0 11ef597834f9245417a00b2f741ec413
++   entry .byte
++     info
++         zéro en tant que `Byte`, inliné
+
+@ 0 1 0 00e3343d472585a71ed8c4ba61bf932f
++   entry .double
++     info
++         zéro en tant que `Double`, inliné
+
+@ 0 1 0 17933548e664a3c605b6ff181ea1001b
++   entry .float
++     info
++         zéro en tant que `Float`, inliné
+
+@ 0 1 0 07c0cd988ac1e00411ebca09c92ad8ea
++   entry .string
++     info
++         la `String` vide, inlinée
+
+@ 0 1 0 143070d0ede1e0f309f32e0213dff7ae
++   entry #zero
++     info
++         l'élément neutre de l'addition pour le type
+
+@ 0 1 0 17d0c4d86fd2df641f3afc6aca8b129e
++ entry .Unital
++   info
++       une classe de types pour l'élément neutre de la multiplication d'un type, son `one`
+
+@ 0 3 0 0d5089ba0d6c9c760d2b695a03b4e421
++   detail
++       Une instance `Unital` fournit la valeur dont la multiplication ne change rien, `1` pour les
++       types numériques. Une instance implémente la méthode protégée `makeOne`, et les appelants
++       lisent `#one`.
+
+% 2 1 0 09b01ab20abea3a30ca4567e3249e68d
+
+% 3 1 0 1f7181cff3b514af06dd92f27b635cce
+
+% 0 1 0 04a30710583a6ea717f57244166c0575
+
+% 0 1 0 104a570d866063b50a84280ffe8c7e83
+
+% 0 1 0 1c6e571a4db1518c00e290dce3eaea0a
+
+% 0 1 0 1c898526aed9e6861f1530c835d8e0d8
+
+% 0 1 0 1f46cc18732e8f5c1036f2bfd26be020
+
+% 0 1 0 0bb891b03dedfb9204feb8f85de41781
+
+% 1 1 0 129db91e5194dc510e3d654a95233992
+
+% 0 1 0 060b4f04a018a0a70f7e9f6c7281912b
+
+@ 0 1 0 1ee23e4d9d2ff8871a5e79fbea245655
++   entry .long
++     info
++         un en tant que `Long`
+
+@ 0 1 0 1480e535f13dce561c58f2896a5ae9f7
++   entry .int
++     info
++         un en tant que `Int`
+
+@ 0 1 0 02d7ed8b9488992a0a34120a08ca7b20
++   entry .short
++     info
++         un en tant que `Short`
+
+@ 0 1 0 199f2dbb216781431f14f7ec35c89c52
++   entry .byte
++     info
++         un en tant que `Byte`
+
+@ 0 1 0 0b76e317c9ca794f0724452ad65a373e
++   entry .double
++     info
++         un en tant que `Double`
+
+@ 0 1 0 171d42da27953379048c2aab590fed6a
++   entry .float
++     info
++         un en tant que `Float`
+
+@ 0 1 0 12f0008865df8e78148bf77b1d365076
++   entry #one
++     info
++         l'élément neutre de la multiplication pour le type
+
+@ 0 1 0 1d13a1705a4d6924007107235ba627de
++ entry .Concatenable
++   info
++       une classe de types pour joindre deux valeurs, qui leur donne aussi `+`
+
+@ 0 6 0 1d4a820799074b9e11f18d2add8d5edd
++   detail
++       Un `Self is Concatenable by Operand to Result` joint deux valeurs bout à bout. Tout type
++       concaténable est `Addable` par `Addable.concatenable`, si bien que ce sont les instances qui
++       font que `+` joint les collections, et qui rendent obsolètes les graphies `++` et `:::` de
++       la bibliothèque standard ; un type concaténable avec lui-même qui est aussi `Zeroic` se
++       multiplie par un `Int` par répétition.
+
+% 2 1 0 1ebb40dbb5b4bbce172452e1d5ec4bd6
+
+% 3 1 0 0d3428a3c7153b5d022e14cd81ab1844
+
+% 0 1 0 1b88aed01bcba1211f58dd7e7d4b7d85
+
+% 0 1 0 05b4ad2ce8d8ef8c02b5e3fdd0641590
+
+% 0 1 0 1650a2559e1d02a41cd5c5b90f7d027e
+
+% 1 1 0 153c1c0f85569c7a1ff8f3cb7ac1a766
+
+@ 0 2 0 1d257d5a659b920b159b0b6f0e31f6af
++       Les instances des collections se trouvent dans ce compagnon, puisque les collections sont
++       définies en dessous de symbolism et que leurs propres compagnons ne peuvent pas les
++       accueillir.
+
+% 1 1 0 18a1aee744ffd67816f30c39d585ce01
+
+@ 0 1 0 0a33c5fe4f923a990a26a9d8fe884024
++   entry .list
++     info
++         joint deux `List`, marquées non vides ou non, en une `List` simple
+
+@ 0 2 0 0eececd615b330c41c284c31155db8f5
++     detail
++         Les deux opérandes peuvent être n'importe quel sous-type de `List[element]`, si bien
++         qu'une liste marquée non vide convient de chaque côté ; le résultat est une
++         `List[element]` simple, si bien qu'aucune marque n'y fuit.
+
+@ 0 1 0 0e8fc500cbf0c63905617ac0a1f87149
++   entry .sequence
++     info
++         joint deux `Sequence` en une `Sequence` simple
+
+@ 0 1 0 00e51d0a5ab05aff00a4befb0c534f6b
++   entry .chain
++     info
++         joint paresseusement deux `Chain`, sans forcer ni l'une ni l'autre
+
+@ 0 1 0 04bac4181e2300eb01100ae145eb6191
++   entry .set
++     info
++         l'union de deux `Set`
+
+@ 0 1 0 0ef968c009bb81720651797ffce0e139
++   entry .map
++     info
++         joint deux `Map`, les valeurs de l'opérande droit l'emportant pour une clé commune
+
+@ 0 2 0 05a8631d6f2e726c1d193849485b0701
++     detail
++         Avec priorité à droite, comme l'est le `concat` de la bibliothèque standard, et comme pour
++         `Set`, où l'union est la concaténation.
+
+@ 0 1 0 0051be479fe7f7ce0d8b26e2386f6fa0
++   entry .ledger
++     info
++         joint deux `Ledger`, l'opérande droit l'emportant pour une clé commune
+
+@ 0 1 0 183f2c7c1c4652b9101d6094715dd2bc
++   entry .frozenArray
++     info
++         joint deux tableaux gelés en un nouveau tableau gelé
+
+@ 0 2 0 121a1e2a3406204a0ded0193336cb728
++     detail
++         Nécessite un `ClassTag` pour le type des éléments. Le résultat est une nouvelle allocation
++         de la longueur combinée, gelée une fois les deux opérandes copiés dedans.
+
+@ 0 1 0 04e59a97d2d45cfd0cfe7fb5ff69458c
++   entry #concat
++     info
++         joint l'opérande à la fin de la valeur, donnant le `Result` de l'instance
+
+@ 0 1 0 071b144af96ad28e0806f00dd6ac1e07
++ entry .Quotient
++   info
++       une classe de types pour les valeurs qui sont des fractions : un numérateur sur un
++       dénominateur
+
+@ 0 5 0 02e658d48908f08500b1a93158e469e2
++   detail
++       Une instance `Quotient` décompose une valeur en son `Topic` (le numérateur) et son
++       `Transport` (le dénominateur), sur lesquels porte la correspondance de l'extracteur `/:`. La
++       décomposition est optionnelle, si bien qu'une valeur qui n'est pas une fraction propre,
++       comme une valeur de dénominateur nul, peut ne pas correspondre.
+
+% 2 1 0 0c9319faaf3d0cc306932dfc5ff9f005
+
+% 3 1 0 0d7a68bc6c173fe500eff20efb30b096
+
+% 0 1 0 025e53d24c25f59c04d37c83a19074c7
+
+% 0 1 0 1a3b19770ee82ae2141ccfb95a2deb7d
+
+% 0 1 0 10b17c320ba0e0570b8c366edeb8c035
+
+% 0 1 0 0cfb2ebc50d7b72906e8778cb66aa65d
+
+% 0 1 0 0b5b9542b67e71a90ab06d3b251395fe
+
+% 0 1 0 0255cbf8babb22de0bb87d7f1ea3d1f3
+
+% 0 1 0 0a04ed26fd30e5a51acd601cccee7ceb
+
+% 0 1 0 04d89369db732d480601d57067d94693
+
+% 1 1 0 0e8f41192e5581491db520085c671360
+
+% 0 1 0 0668c7f8cc45ac3905ac4853700aa815
+
+@ 0 1 0 068377688d4a9eee0cd55c9ffae6e996
++   entry #Numerator
++     info
++         le type du numérateur : un alias de `Topic`
+
+@ 0 1 0 0c875b17c07c03c01b438c8a9d676f81
++   entry #Denominator
++     info
++         le type du dénominateur : un alias de `Transport`
+
+@ 0 1 0 1efbbaea433a49d70851b216e46f87c6
++   entry #decompose
++     info
++         le numérateur et le dénominateur de la valeur, si elle en a
+
+@ 0 1 0 1f3cf5b3bef1224404049a2d139d15e4
++ entry .Comparable
++   info
++       une comparaison totale à trois issues de deux valeurs d'un type, donnant une `Comparison`
+
+@ 0 5 0 123202eeeaffbfb503fcfeff7305e5a4
++   detail
++       Une instance `Comparable` compare deux valeurs de son type, en renvoyant `Comparison.Less`,
++       `Same` ou `More`. C'est par elle que les collections se trient (`sorted`, `order`), trouvent
++       leurs extrema et bornent des intervalles, à travers un type d'élément qui leur est abstrait,
++       et elle est répartie à l'exécution, contrairement au `Commensurable` de hypotenuse, qui est
++       résolu statiquement à chaque `<` ou `>`.
+
+% 2 1 0 19a2851ddd763d410e62b8d318a8a270
+
+% 3 1 0 1f0bc0d3ada10ae50870ee5687913aa6
+
+% 0 1 0 03acb1aa915ee0e0132e7efa19323fb7
+
+% 0 1 0 1884c74ce07dff421c2be55f5bf0e339
+
+% 0 1 0 02c9e5d767e069ae0cd20ead366d378e
+
+% 0 1 0 04ea0984f63a6c7415403cb34c4fde50
+
+% 0 1 0 06f1b593f518bac11cfa11665e7183ac
+
+% 0 1 0 12f2c81b1e1080670071b4e43fe6ba01
+
+% 1 1 0 12a5b9b5e6e74cb30d5e911cd4640d64
+
+@ 0 5 0 015520fb72aa094d0a5abd5e0eccecff
++       Les instances primitives comparent par les méthodes des types boxés de `java.lang`, si bien
++       que `Double` et `Float` suivent l'ordre *total* du JDK — `NaN` après toute autre valeur, et
++       `-0.0` avant `0.0` — plutôt que l'ordre partiel de l'opérateur `<`. Les listes se comparent
++       selon l'ordre lexicographique, un préfixe propre en premier, et les paires sur leur premier
++       élément, puis sur leur second.
+
+@ 0 4 0 02b1dc3316857d0f047bc9f13a2fcb3e
++       Tout type doté d'un `Ordering` de la bibliothèque standard dans la portée est `Comparable`
++       par un pont de basse priorité (`Comparable2#ordering`), si bien que les types tiers se
++       trient sans cérémonie ; une instance native l'emporte toujours sur lui. Dans l'autre sens,
++       `#ordering` crée un `Ordering` pour les quelques API de la bibliothèque standard qui en
++       exigent un.
+
+% 0 1 0 06b588a7651e523f0a28d8501581a2fd
+
+@ 0 1 0 03d75f42a07d7281045b676780220785
++   entry .apply
++     info
++         une instance `Comparable` à partir d'une fonction renvoyant une `Comparison`
+
+@ 1 1 0 133ab6d6f58f357f1680b91c98a289c7
++     detail
++         ```scala
+
+@ 2 1 0 0e08421cc566621c14ff337e18bfe8fe
++         import soundness.*
+
+@ 4 1 0 1a67193cadaa56ef1aba53c34b3bfebd
++         case class Card(rank: Int)
+
+@ 0 1 0 0704441b557c34331925c202616af78a
++         given Card is Comparable =
+
+@ 0 1 0 1e754cc6e3f47fba06fad0aa215a7a2a
++           Comparable((left, right) => Comparison(java.lang.Integer.compare(left.rank, right.rank)))
+
+@ 1 1 0 00f88528ae70d8691e0351197237443c
++         ```
+
+@ 0 1 0 132f382b2f5376061bf53edd641f7187
++   entry .less
++     info
++         une instance `Comparable` à partir d'un prédicat « strictement inférieur », comme
++         `Ordering.fromLessThan`
+
+@ 0 3 0 1d2565f7d005cfd719976bd6ddf8226e
++     detail
++         Pour les comparaisons qui s'écrivent naturellement avec `<`. Le prédicat est appliqué une
++         seconde fois, opérandes inversés, pour les valeurs qui ne sont pas inférieures dans le
++         premier ordre : c'est le prix à payer pour retrouver un résultat à trois issues à partir
++         d'un résultat `Boolean`.
+
+@ 2 1 0 058041f3fb07de2116dcaf5fc1434e24
++         ```scala
+
+@ 3 1 0 15f12311caa86d921409d65f300e58ed
++         import soundness.*
+
+@ 4 1 0 0ad0d2a902f585ce02452c840de80f69
++         case class Card(rank: Int)
+
+@ 0 1 0 17d08e1995267ffc0309b96de28634ce
++         given Card is Comparable = Comparable.less(_.rank < _.rank)
+
+@ 1 1 0 0589734d4425c2dc1c9a8cdd8133361d
++         ```
+
+@ 0 1 0 07819271edb4e01611bb3a714b8cf14e
++   entry .int
++     info
++         compare des `Int` numériquement
+
+@ 0 1 0 0c9ec7b9f5f625aa1cdba4f3b1c8ace8
++   entry .long
++     info
++         compare des `Long` numériquement
+
+@ 0 1 0 0913594ca8a99a9d1cb7febfc8f9753d
++   entry .double
++     info
++         compare des `Double` selon l'ordre total du JDK : `NaN` en dernier, et `-0.0` avant `0.0`
+
+@ 0 1 0 0ad3141351510fba0c6278b9c85d517e
++   entry .float
++     info
++         compare des `Float` selon l'ordre total du JDK : `NaN` en dernier, et `-0.0` avant `0.0`
+
+@ 0 1 0 0f98fb89ece443080387feda7fcd4289
++   entry .char
++     info
++         compare des `Char` selon leurs unités de code UTF-16
+
+@ 0 1 0 1ccd7931a4f830ce0292009041894fd5
++   entry .byte
++     info
++         compare des `Byte` numériquement, en tant que valeurs signées
+
+@ 0 1 0 0385373344b4557614f8be44320a33ab
++   entry .short
++     info
++         compare des `Short` numériquement
+
+@ 0 1 0 0cb53cf8813e3e3507c38c3f15bb4cf0
++   entry .boolean
++     info
++         compare des `Boolean`, `false` avant `true`
+
+@ 0 1 0 084ee3f5486845d505594c4a815d2a12
++   entry .list
++     info
++         compare des `List` selon l'ordre lexicographique, un préfixe propre en premier
+
+@ 0 2 0 0238e2f7092dc5710e6b23826d464ce8
++     detail
++         Nécessite un `Comparable` pour le type des éléments. La première position à laquelle les
++         éléments diffèrent décide ; si une liste s'épuise la première, elle précède l'autre.
+
+@ 0 1 0 0fac3fd5a87c92621eec28b18e338f84
++   entry .pair
++     info
++         compare des paires sur leur premier élément, puis sur leur second
+
+@ 0 1 0 0ed8629be02728650e0f0ad37bfa67f3
++     detail
++         Nécessite un `Comparable` pour chaque type d'élément.
+
+@ 0 1 0 0597dd7053e85ef11c5887108c635b75
++   entry #compare
++     info
++         compare deux valeurs, donnant `Comparison.Less`, `Same` ou `More`
+
+@ 0 1 0 194430d1fd072d930134810ac6f24a62
++   entry #less
++     info
++         si la valeur de gauche précède celle de droite
+
+@ 0 1 0 0b730f0ed984b919049e05319660a9a1
++   entry #atMost
++     info
++         si la valeur de gauche précède celle de droite ou lui est égale
+
+@ 0 1 0 0cad44d4f2c9570719dcd8bd2a6f7f54
++   entry #greater
++     info
++         si la valeur de gauche suit celle de droite
+
+@ 0 1 0 1968ff8378d048b2022098f380d8a21b
++   entry #atLeast
++     info
++         si la valeur de gauche suit celle de droite ou lui est égale
+
+@ 0 1 0 1547491f467d23051d1ebb947f969ec7
++   entry #same
++     info
++         si les deux valeurs se comparent comme égales
+
+@ 0 1 0 07915f0fbc9820c208657520f6a853b1
++   entry #min
++     info
++         la plus petite de deux valeurs, ou celle de gauche si elles se comparent comme égales
+
+@ 0 1 0 0b1502938973292a010cd84908c91f28
++   entry #max
++     info
++         la plus grande de deux valeurs, ou celle de gauche si elles se comparent comme égales
+
+@ 0 1 0 1cfe224cf40309b908b46e6a3654f872
++   entry #ordering
++     info
++         un `Ordering` de la bibliothèque standard qui concorde avec cette comparaison
+
+@ 0 3 0 0087aafee786b520021c0c5d9ba5a5fa
++     detail
++         Pour les jonctions où une API de la bibliothèque standard exige un `Ordering`, comme
++         l'ordre des clés d'une `TreeMap`. C'est une méthode plutôt qu'un given, puisqu'un given
++         formerait un cycle avec le pont `Ordering`, `Comparable2#ordering`.
+
+@ 0 1 0 0740b15ba9bdeee4156026315d2d63e9
++   entry #on
++     info
++         compare un autre type en le projetant sur celui-ci, comme `Ordering.by`
+
+@ 1 1 0 033b9bf11a75d739011a7e322559c4d7
++     detail
++         ```scala
+
+@ 2 1 0 0549ef18534e55c11e9845e634db7825
++         import soundness.*
+
+@ 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
++         case class Person(name: Text, age: Int)
+
+@ 0 1 0 1bc4ba25a78ffc4c0a2345b5806020e4
++         given Person is Comparable = Comparable.int.on[Person](_.age)
+
+@ 1 1 0 07518cccdbb0e1ef1b824c483540e07b
++         ```
+
+@ 0 1 0 156784d6740a70f2115f611f63fe1605
++ entry .Comparable2
++   info
++       la moitié de basse priorité du compagnon de `Comparable` : le pont depuis `Ordering`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 3 0 0e26456f9998630b010b9e532774806a
++   detail
++       Pas destiné à un usage direct : `object Comparable` l'étend, si bien que son given est
++       trouvé dans la portée implicite de `Comparable` mais qu'une instance native l'emporte
++       toujours sur lui.
+
+@ 0 1 0 17690516f6b1982f03019a2cf8165f1c
++   entry #ordering
++     info
++         rend `Comparable` tout type doté d'un `Ordering` de la bibliothèque standard dans la
++         portée
+
+@ 1 1 0 03bfe56a351ca355090409451552ecd0
++     detail
++         ```scala
+
+@ 2 1 0 0e2bfee5047bf07c1bfb65547d6a7b11
++         import soundness.*
+
+@ 4 1 0 0fba172fa1da0f3f1e08fbff3b96d3a1
++         case class Card(rank: Int)
+
+@ 0 1 0 087236d2e5250e32196e9c1f811de45d
++         given scala.math.Ordering[Card] = scala.math.Ordering.by(_.rank)
+
+@ 0 1 0 111c8b81fb8db947044276b1eebc79c5
++         summon[Card is Comparable].compare(Card(2), Card(9))   // Comparison.Less
+
+@ 1 1 0 180f0b43f83654f016126ea5d8a38677
++         ```
+
+@ 0 1 0 13921c48f4d70c4d1279c1f6958e5d90
++ entry .AddOp
++   info
++       un équivalent de `Addable` adapté à l'inlining, que `+` consulte en premier
+
+@ 0 5 0 0879b32b8d764c871941ab3f62cb3ac2
++   detail
++       Une classe de types dont la méthode `op` est une `inline def`, si bien qu'une instance
++       fournie à son type concret (par un `transparent inline given`) voit son corps inliné dans
++       `+` sans répartition. L'extension `+` en cherche une, pendant qu'elle est inlinée, avant de
++       se replier sur l'instance `Addable` ; quantitative emprunte cette voie.
+
+@ 0 3 0 0d2b8ced41d99b6815d223957bfa7cb3
++       Une instance `Addable` qui est un objet singleton doté d'une méthode `inline def add`,
++       fournie au type singleton propre de l'objet, est inlinée tout aussi bien ; c'est ainsi que
++       fonctionnent les instances primitives, et c'est le modèle le plus simple pour de nouvelles
++       instances.
+
+% 1 1 0 0057f41bb086e7981de6e7457978e07f
+
+@ 0 1 0 1810333234913f6c12cbecb657eb331e
++   entry #op
++     info
++         ajoute l'opérande droit à l'opérande gauche, inliné au site d'appel
+
+@ 0 1 0 058f2daa93bc5b331fdd53976440a096
++ entry .SubOp
++   info
++       un équivalent de `Subtractable` adapté à l'inlining, que `-` consulte en premier
+
+@ 0 3 0 0496dbcaf2ecb7a41e8dafc5a8c3ab62
++   detail
++       Comme `AddOp`, pour la soustraction : une instance fournie à son type concret voit sa
++       méthode `inline def op` inlinée dans `-`, avant l'instance `Subtractable`.
+
+@ 0 1 0 1a8b5d79422e6e3a01f0ed81568a72b8
++   entry #op
++     info
++         soustrait l'opérande droit de l'opérande gauche, inliné au site d'appel
+
+@ 0 1 0 137bead5265fd8cc031cc3ba8454ea47
++ entry .MulOp
++   info
++       un équivalent de `Multiplicable` adapté à l'inlining, que `*` consulte en premier
+
+@ 0 3 0 0b14b3fa4e98046a036e531667592f89
++   detail
++       Comme `AddOp`, pour la multiplication : une instance fournie à son type concret voit sa
++       méthode `inline def op` inlinée dans `*`, avant l'instance `Multiplicable`.
+
+@ 0 1 0 18068f89e477bc8a09e786318c08818a
++   entry #op
++     info
++         multiplie l'opérande gauche par l'opérande droit, inliné au site d'appel
+
+@ 0 1 0 0b8c341ded567cac0c8181bb10b2bce2
++ entry .DivOp
++   info
++       un équivalent de `Divisible` adapté à l'inlining, que `/` consulte en premier
+
+@ 0 3 0 1e0dd856b68c9f161564f146f45e9de7
++   detail
++       Comme `AddOp`, pour la division : une instance fournie à son type concret voit sa méthode
++       `inline def op` inlinée dans `/`, avant l'instance `Divisible`.
+
+@ 0 1 0 0658bb7b4761fe631878c991124a0e63
++   entry #op
++     info
++         divise l'opérande gauche par l'opérande droit, inliné au site d'appel

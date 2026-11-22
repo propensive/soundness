@@ -1,0 +1,52 @@
+orthant 2 language
+
+% 0 1 0 1dd2bb7feeed61801477839a742c257c
+
+@ 0 1 0 02607d2ebeb108410436155d8eca4869
++ Levée lorsqu'une valeur ne peut pas être analysée comme une adresse électronique valide.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 06ab7e2ae05b68f3049067472b425cd6
++ Urticose valide les adresses électroniques d'après les règles de syntaxe des
++ RFC 5321 / 5322 (avec des assouplissements pratiques). Le message est `the
+
+% 0 1 0 133d1d2b0b31f15001dc30a1bf0eddf5
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 0663ad2cc1085314025eed7bb8567a24
++ column  Raison
++ column  Signification
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+@ 0 13 0 00c93e0df5a33b7c13601efbb24aa893
++ column  Résolution
++ row  `↯/s.100.4.1`  `Empty`  La valeur est vide.  `[↯/s.100.4.1] the email address is not valid because it is empty`  Fournissez une adresse non vide.
++ row  `↯/s.100.4.2`  `InvalidDomain`  La partie domaine n'est ni un nom d'hôte valide ni un littéral IP valide.  `[↯/s.100.4.2] the email address is not valid because the domain is not a valid hostname: the character _ is not allowed in a hostname`  Corrigez la syntaxe du domaine ; consultez la variante interne `HostnameError`/`IpAddress.Error` pour les détails.
++ row  `↯/s.100.4.3`  `LongLocalPart`  La partie locale dépasse 64 caractères.  `[↯/s.100.4.3] the email address is not valid because the local part is more than 64 characters long`  Raccourcissez la partie locale à 64 caractères au plus.
++ row  `↯/s.100.4.4`  `TerminalPeriod`  La partie locale se termine par un point.  `[↯/s.100.4.4] the email address is not valid because the local part ends in a period, which is not allowed`  Supprimez le point final.
++ row  `↯/s.100.4.5`  `SuccessivePeriods`  La partie locale contient deux points adjacents.  `[↯/s.100.4.5] the email address is not valid because the local part contains two adjacent periods`  Supprimez l'un des points, ou mettez la partie locale entre guillemets si des points successifs sont nécessaires.
++ row  `↯/s.100.4.6`  `InitialPeriod`  La partie locale commence par un point.  `[↯/s.100.4.6] the email address is not valid because the local part starts with a period, which is not allowed`  Supprimez le point initial.
++ row  `↯/s.100.4.7`  `UnescapedQuote`  Un guillemet double dans la partie locale n'a pas été échappé.  `[↯/s.100.4.7] the email address is not valid because the local part contains a quote character which is not escaped`  Échappez le guillemet avec une barre oblique inverse, ou utilisez une partie locale correctement mise entre guillemets.
++ row  `↯/s.100.4.8`  `UnclosedQuote`  La partie locale entre guillemets n'a pas de guillemet fermant.  `[↯/s.100.4.8] the email address is not valid because the quoted local part has no closing quote`  Ajoutez le `"` manquant.
++ row  `↯/s.100.4.9`  `MissingDomain`  L'adresse n'a pas de partie domaine.  `[↯/s.100.4.9] the email address is not valid because the domain is missing`  Ajoutez `@` suivi du domaine.
++ row  `↯/s.100.4.10`  `MissingAtSymbol`  L'adresse ne contient pas de `@`.  `[↯/s.100.4.10] the email address is not valid because the at-symbol is missing`  Insérez `@` entre la partie locale et le domaine.
++ row  `↯/s.100.4.11`  `UnclosedIpAddress`  Le domaine commence par `[` mais ne se termine pas par `]`.  `[↯/s.100.4.11] the email address is not valid because the domain begins with [ but does not end with ]`  Fermez le littéral IP avec `]`.
++ row  `↯/s.100.4.12`  `InvalidChar`  La partie locale contient un caractère qui n'est pas autorisé.  `[↯/s.100.4.12] the email address is not valid because the local part contains the character > which is not allowed`  Supprimez le caractère fautif, ou mettez la partie locale entre guillemets pour l'autoriser.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 3 0 080ee2477f0e9ce21a2538138076467e
++ - Source : `lib/urticose/src/core/urticose.EmailAddress.scala`
++ - `↯/s.100.10` — validation des noms d'hôte
++ - `↯/s.100.2` — validation des adresses IP

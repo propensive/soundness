@@ -1,0 +1,425 @@
+orthant 2 language
+
+@ 0 1 0 0ead78806e5c6df90c8e1e9ad755a3b9
++ ## Caractères
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 6 0 164f2de68e8eeb0904c11cc288eb0b22
++ La frontière entre texte et octets est un
++ [encodage de caractères](https://en.wikipedia.org/wiki/Character_encoding), et ici le choix
++ de l'encodage est explicite et typé. Un `Codepage` transforme du texte en octets, et un
++ `Charset` retransforme des octets en texte. Chacun est une [valeur contextuelle], choisie
++ par import ; aucune conversion n'a donc jamais lieu sous un défaut supposé. Ce qu'il faut
++ faire des octets qui ne peuvent pas être décodés est un choix distinct, fait tout aussi
++ explicitement.
+
+@ 0 1 0 01a4db05b1711eb708890b50434e97d5
++ Un programme a parfois aussi besoin d'informations sur des caractères isolés :
+
+@ 0 6 0 069abf2867076bed1fa00684e25aff20
++ - combien de colonnes un caractère occupe dans un terminal, où un caractère « large
++   d'Asie de l'Est » en prend deux ;
++ - le nom et les propriétés Unicode d'un caractère ;
++ - ses formes en exposant et en indice ;
++ - les frontières des [grappes de graphèmes](https://unicode.org/reports/tr29/), qui
++   indiquent où un caractère, tel que le perçoit un lecteur, se termine et où le suivant
++   commence.
+
+@ 0 1 0 1afad3df47785dc4197bb8fb40bcd5cc
++ ### À propos des caractères
+
+@ 0 3 0 1fc6beb6d73cdfc218c20aada3697a41
++ Les encodages échouent, et la plupart des API masquent l'échec. Décoder des octets avec le
++ jeu de caractères par défaut de la plateforme remplace silencieusement tout ce qui est mal
++ formé. Une entrée corrompue se transforme en points d'interrogation quelque part en aval,
++ et rien dans le code n'enregistre quel encodage a été supposé.
+
+@ 0 3 0 1eb88acbce6eafab1dd511f5dacbf7f5
++ Par ailleurs, « un caractère » est une idée glissante. Un émoji de drapeau est formé de deux
++ points de code. Une lettre accentuée peut en compter un ou deux. Un idéogramme large occupe
++ deux colonnes d'un terminal. Ces détails comptent dès que le texte est mesuré ou découpé.
+
+@ 0 1 0 17ce8d85510bdc7a0964cb50c27e9371
++ Ici, les choix sont distincts, et chacun est énoncé :
+
+% 2 1 0 147186596598c211068e8b4fb73f2c8b
+
+@ 0 5 0 19b1cdf5ecd19e3004378ed356c0fc65
++ column  Choix
++ column  Fait par
++ row  l'encodage  un given `Codepage` ou `Charset`, importé là où il est utilisé
++ row  ce qu'il advient des octets indécodables  un given `TextSanitizer`
++ row  la largeur d'un caractère  une métrique, choisie pour l'affichage
+
+% 1 1 0 0a56dc9854da29121da9ad6d5d830044
+
+@ 0 4 0 1dccd3477c42e0eb0cd7853226f9d3b9
++ Nommer chacun comme un [given], au lieu de recourir silencieusement à un défaut, relève du
++ [contexte déclaratif](../../philosophy/declarative-context.md) à la frontière entre octets
++ et texte. Tout provient du package `soundness`, et le second import permet aux exemples
++ d'afficher leurs résultats :
+
+% 2 1 0 0f97771b69c464bb15189966989d8119
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 174e339ee5ceabff091d520aa1b0e1c7
++ ### Encodage et décodage
+
+@ 0 2 0 1131eaff42dc878b181526af180d70d4
++ Un texte ne peut pas devenir des octets tant qu'un encodage n'a pas été choisi. Il n'y a
++ aucun défaut sur lequel se replier ; sans `Codepage` dans la portée, la conversion ne
++ compile donc pas :
+
+% 2 1 0 0c19cf77f4acee2a11648d736720a3ad
+
+% 3 1 0 0e0857ac76aa6bbe1f5aced66481fd49
+
+% 4 1 0 03ba3aae9838b2481b4f334be58599c5
+
+% 5 1 0 11cf7bc5cb60d0c61f3492e31c4f9458
+
+% 0 1 0 1c15639119888586004000cf32b556da
+
+% 1 1 0 02f325212a314ea105a500361bcdb171
+
+@ 0 2 0 12cc63692afc986616463bc940c2f643
++ Un encodage est introduit dans la portée par un import. La conversion a alors lieu là où le
++ texte rencontre les octets, soit explicitement, comme ici, soit partout où un
++ [flux](streams.md) franchit la frontière :
+
+% 2 1 0 006ae92ba61faa780f1c0fe00156d40c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 185507d5c88995961b13dd553740b513
+
+% 0 1 0 0e0095cd476a27a814342e0fc9a1374d
+
+% 1 1 0 1a3d6d27fcd2a3491239cf16f91080a3
+
+% 3 1 0 106fb0c41895c8c01689a32ba1583024
+
+% 4 1 0 0e9a32cc19b624a1120ff91491b6f789
+
+% 5 1 0 088406a951442d4b0b6cbfebac179445
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 0 1 0 1774b6669db1f63512b29b52dc52259f
+
+% 1 1 0 13c1ddfb5aea7c441dc85b6d2b6171ec
+
+@ 0 1 0 120d03d389ebdf0f0bb21d9ff86302bc
++ Les quatre caractères font cinq octets, puisque `é` occupe deux octets en UTF-8.
+
+@ 0 4 0 1a83b7f5d94f9d0f149e33adda23d5b4
++ UTF-8, UTF-16 dans les deux ordres d'octets, ASCII et ISO-8859-1 sont fournis. Tout encodage
++ que connaît la JVM peut être nommé avec l'[interpolateur] `enc"…"`, qui vérifie
++ [à la compilation][compilation] que l'encodage existe. Lorsqu'on demande un encodeur, il
++ vérifie aussi que l'encodage permet d'encoder aussi bien que de décoder :
+
+% 2 1 0 08734b9484efc9140580584f663e45ca
+
+% 0 1 0 185593015c2cf3e60b9b0eb746f2b233
+
+% 1 1 0 0476810e68c91a701724aafe57fa16a0
+
+% 3 1 0 1b6c3cd183c31dcf0eb6f6ed3be19894
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 1f0a9c0e435670ea1def75f3eb9d296d
+
+% 1 1 0 0b2a95eb965828c81ce642e2bc533b4c
+
+@ 0 1 0 145b79a37a5aa95408a6d4403c66a3ea
++ ### Entrées invalides
+
+@ 0 2 0 070a8933311e996016d24e27883fc1f3
++ Lorsqu'un décodeur rencontre des octets qui ne sont pas valides dans son encodage, il
++ consulte le `TextSanitizer` dans la portée. Trois assainisseurs choisissent entre échouer,
++ ignorer et remplacer :
+
+% 2 1 0 0ccac25f70a81e3003b067d70f409066
+
+@ 0 5 0 028449e8c962e8d901c8842dd2fef077
++ column  Assainisseur
++ column  Face à des octets invalides
++ row  `strictSanitizer`  lève une `Charset.Error` qui indique la position de la faute
++ row  `skipSanitizer`  les ignore
++ row  `substituteSanitizer`  les remplace par `?`
+
+% 1 1 0 1be19673932ffaa21718a7eb1658c99c
+
+@ 0 2 0 06b818087f8a5c3904e118cb812f2a03
++ Ces quatre octets sont un tiret, le premier octet d'une séquence de deux octets dont le
++ second octet manque, et les chiffres `1` et `0` :
+
+% 2 1 0 0e32ff890e6db7f604297d49a8497533
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0f625d66450c18e51678333273b2b348
+
+% 1 1 0 15215a33832ddbb00d462dd8cf7efec3
+
+% 3 1 0 0edc534a6a7fa2600f73aa5ec1d071c5
+
+% 4 1 0 159c5110228df33a1e767299b5faf800
+
+% 5 1 0 1dd1e2bfd5c095190eea00126d18b19f
+
+% 1 1 0 0aec10e0e6434631069d840d20311d4e
+
+% 0 1 0 1f848649d78e11cc128beddd7e28360c
+
+% 1 1 0 00f60f3f25f394b500477ca2d9d82ecc
+
+% 3 1 0 0af03f89983c59910f87551c7467dd71
+
+% 0 1 0 008dadf64b5a2bba08180e8c9e04eb47
+
+% 1 1 0 1fe3a446336ceab806bef0e52edc45dd
+
+% 3 1 0 09167125042efc0c0b374a9283ef5148
+
+% 0 1 0 062c7592d84854141c5f4cb7e9b18dfe
+
+% 0 1 0 06b2e6406598de9f0d68c7d0a6abf57a
+
+% 1 1 0 17d791fbeb1af7d21338beb4ef220bcc
+
+@ 0 3 0 02ca21782d96fc5012dab04028907dd4
++ Le bon comportement dépend des données. La rigueur convient aux entrées auxquelles on doit
++ pouvoir se fier absolument, et la tolérance au texte récupéré d'une source avec pertes. Dans
++ les deux cas, le choix est visible à l'import.
+
+@ 0 3 0 16a61ec4dff2e414169a7f2c30ec6f2f
++ Un quatrième assainisseur conserve les deux. `accrueSanitizer` poursuit le décodage, comme
++ celui qui ignore, mais enregistre chaque faute. L'intégralité d'une entrée endommagée est
++ récupérée, *et* chaque séquence invalide est signalée, avec la position où elle s'est
++ produite.
+
+@ 0 3 0 017410b36dfd8a3e18bfcf579ac504ae
++ Les fautes s'[accumulent](errors.md#accumulating-failures) dans une valeur choisie par
++ l'appelant, ici une erreur qui rassemble des positions et des fautes. `validate` effectue le
++ rassemblement : son premier bloc indique comment chaque faute rejoint l'accumulation, et son
++ bloc `protect` effectue le décodage.
+
+% 2 1 0 0b7b7e8e65be6d3e18351589b1491e11
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 1c00773df835539103a7f253318b2916
+
+% 0 1 0 01f8e8ff0b2ce07d1e598d2b9bdfb45c
+
+% 0 1 0 10f562803b7218e000264fea7972fd8d
+
+% 0 1 0 05249cc2ff564a75031e4bf9dce3795e
+
+% 0 1 0 17753c68780d6bb81944c2e7e91ba355
+
+% 0 1 0 064c718192d79604077f1b9b7ae17093
+
+% 0 1 0 071cb829d18b172c0e01ffa74a78787d
+
+% 0 1 0 04b68f13292630100c24d6460f2a1679
+
+% 0 1 0 08c391e09a079b7a1917c82b89a4f527
+
+% 0 1 0 06b8e2850169c418018121869354f8e3
+
+% 1 1 0 06c19a606e8a652419349817824f7070
+
+@ 0 1 0 1c7459945beadceb0de89a52c986e0f8
++ Le résultat de `validate` est l'accumulation, avec une entrée pour l'unique séquence
++ invalide :
+
+% 2 1 0 14d07b6686dfb8bc0391030ba8759e1d
+
+% 3 1 0 154ea0f0a0d9f92201088b2aa080f804
+
+% 4 1 0 0d271be713847f1f1a9681786f89326c
+
+% 0 1 0 1298d4ebe9209a15068aefcead5c3d35
+
+% 0 1 0 15108be09c59b2941001b8c10e8eca57
+
+% 1 1 0 154f49210673628900aa202e88342d6c
+
+@ 0 2 0 15aa388b51a326d81722fc5e27e275cc
++ C'est ce que souhaite un outil lorsqu'il importe un fichier d'origine incertaine : le texte,
++ et une liste des endroits où il était erroné, et non un choix entre les deux.
+
+@ 0 1 0 12b46dc11a9e8c811ca0e3e0c35bb1ba
++ ### Encodages
+
+@ 0 2 0 1ca56111348ab7c617fc0da7130e4d02
++ Les packages `codepages` et `charsets` fournissent les encodages dont un programme est
++ susceptible d'avoir besoin, chacun sous forme de given nommé :
+
+% 2 1 0 075206b32d6f742f152c0a11bb560402
+
+@ 0 9 0 1bc401be2a3def110d33aa27789e7701
++ column  Encodage
++ column  Codepage, pour encoder
++ column  Charset, pour décoder
++ row  UTF-8  `utf8Codepage`  `utf8Charset`
++ row  UTF-16  `utf16Codepage`  `utf16Charset`
++ row  UTF-16, petit-boutiste  `utf16LeCodepage`  `utf16LeCharset`
++ row  UTF-16, gros-boutiste  `utf16BeCodepage`  `utf16BeCharset`
++ row  ASCII  `asciiCodepage`  `asciiCharset`
++ row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`, qui ignore toujours les octets invalides
+
+% 1 1 0 09f355e5b3a8bf491eff51d0c0f43621
+
+@ 0 1 0 05cb83fe09c9402d06b87bac709680c5
++ Tous les autres jeux de caractères utilisent l'assainisseur dans la portée.
+
+@ 0 4 0 082449aebc52c8e11a55221fa6e49f66
++ L'encodage et le décodage fonctionnent aussi comme étapes d'un
++ [flux](streams.md#composing-a-pipeline). Un caractère multi-octets coupé entre deux morceaux
++ est reporté par-delà la frontière, et non corrompu. Cela inclut une paire de substitution
++ coupée entre deux morceaux, là où une implémentation naïve perd un caractère.
+
+@ 0 1 0 0ab485b6a6d037cd1879082c2f6cb948
++ ### Largeur des caractères
+
+@ 0 3 0 0ea3d93476c761ea1017b0e828060901
++ Un caractère n'occupe pas toujours une seule colonne dans un affichage à chasse fixe.
++ L'extension `metrics` mesure un caractère, ou un texte, au moyen de la métrique dans la
++ portée. Il y en a trois, dans le package `textMetrics` :
+
+% 2 1 0 0b1553ed0d547aee0068d00c72d71a06
+
+@ 0 7 0 1770636f7f892fd110884fc819e11bc1
++ column  Métrique
++ column  Deux colonnes
++ column  Aucune colonne
++ column  Une colonne
++ row  `uniformMetric`  aucun  aucun  tous les caractères
++ row  `eastAsianScriptsMetric`  les caractères larges et pleine chasse  aucun  tous les autres caractères
++ row  `wideCharacterWidthMetric`  les caractères larges et pleine chasse  les caractères de contrôle, les marques combinantes et englobantes, les caractères de formatage  tous les autres caractères
+
+% 1 1 0 0db929c24cb339970b41910cc09731f0
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 08a0891502dbc209062f7e0983977a13
+
+% 1 1 0 1fed9a730338c4ad0065e5d00ad8992b
+
+% 3 1 0 049eeff74884b3d705c49a96fb61e75a
+
+% 4 1 0 1308231eb6ef62821ccfb2ba7eb45c1d
+
+% 5 1 0 03f05ff48663b4ed1564ddb10d6f4d71
+
+% 0 1 0 10f5397ae5e2051405789a7d6b3f4556
+
+% 0 1 0 0bca1d6d00921ab701bec85de9e7bef7
+
+% 1 1 0 0d85b4dadcc6e17f0a3e514605c71e68
+
+@ 0 2 0 0afede87fa7b5fbd03a344ae32bd5c8c
++ Le [remplissage et l'ajustement](text.md#padding-and-fitting) du texte mesurent avec la même
++ métrique ; une colonne de texte japonais s'aligne donc correctement là où compter les
++ caractères échouerait.
+
+@ 0 5 0 0ea403bd3ef1addd15d156c85bfce8d0
++ Le choix affecte la vitesse autant que la justesse, c'est pourquoi la métrique la plus
++ complète n'est pas simplement le défaut. Mesurer un texte avec `uniformMetric` revient à
++ lire sa longueur, en temps constant. Le mesurer avec `eastAsianScriptsMetric` implique
++ d'inspecter chaque caractère et d'additionner les largeurs. Lorsqu'on sait qu'un texte ne
++ contient rien de large, la métrique uniforme donne la même réponse pour rien.
+
+@ 0 1 0 155ec7e1cdd7685814090b970e9dd149
++ ### Propriétés Unicode
+
+@ 0 2 0 092c33dae8591ee5017b2b0f744642d5
++ Un caractère répond à des questions sur lui-même. Il indique son nom Unicode, et donne ses
++ formes en exposant et en indice lorsqu'Unicode les définit :
+
+% 2 1 0 01ac5d210fdccb560510507e6fcb6574
+
+@ 0 10 0 0eeaea46c2f8861d030675b09e2990f1
++ column  Membre
++ column  Renvoie
++ row  `whitespace`  s'il s'agit d'un espace
++ row  `control`  s'il s'agit d'un caractère de contrôle ISO
++ row  `printable`  s'il n'est ni un espace ni un caractère de contrôle
++ row  `letter`, `digit`, `alphanumeric`  s'il s'agit d'une lettre, d'un chiffre, ou de l'un ou l'autre
++ row  `majuscular`, `minuscular`  s'il est en majuscule ou en minuscule
++ row  `majuscule`, `minuscule`  sa forme majuscule ou minuscule
++ row  `description`, `designation`  son nom Unicode, un `Optional[Text]`
++ row  `superscript`, `subscript`  sa forme en exposant ou en indice, un `Optional[Char]`
+
+% 1 1 0 0bfa03beaea5cef913ef70d9cb45eb3b
+
+% 3 1 0 101d1fa108bf4c151a1c45644676a2ce
+
+% 4 1 0 079cff745264e51a0ef7104b702249ec
+
+% 5 1 0 1a3511bbc4ad28fd0bd2d94a0718a062
+
+% 0 1 0 1f46df1623f2be930f214f268510f249
+
+% 0 1 0 0de65fbcd55eaed4188ebb97fc9f3866
+
+% 0 1 0 1c97ea1bb78b583a137f920eaa3f5aeb
+
+% 0 1 0 0c00c84a4e74b2280329c8a5bb2d464c
+
+% 1 1 0 01ca48ad4967b7491c81d1650573a06f
+
+@ 0 2 0 0b626d3663905b5016cb765d3695398b
++ Les trois derniers sont des valeurs [optionnelles](optional-values.md). `inspect` affiche une
++ valeur présente entre crochets d'angle, et une valeur absente, comme l'exposant de `é`, sous
++ la forme `○`.
+
+@ 0 1 0 1e507141160a0344040f6cf56a8ad5a8
++ ### Grappes de graphèmes
+
+@ 0 4 0 03d946e8089716851047b01b94ca6992
++ Ce qu'un lecteur perçoit comme un seul caractère peut être formé de plusieurs points de
++ code : un drapeau, une séquence d'émojis, une lettre avec un accent combinant.
++ `GraphemeBreak.boundaries` trouve les positions où un tel caractère se termine et où le
++ suivant commence, en suivant les règles de segmentation d'Unicode. Deux drapeaux font quatre
++ points de code, et huit `Char`, mais deux graphèmes :
+
+% 2 1 0 1ae794e90504d6a607613f40ea493c6e
+
+% 3 1 0 07ad6d66b1a58bc80f912235f6e388ed
+
+% 4 1 0 06909453f7331a331c1e5edeb876ddf3
+
+% 0 1 0 0d61de059d81b28e04b2698bbddfd99a
+
+% 1 1 0 0866df1f7bef8d9a095c72c81f928131
+
+@ 0 2 0 1677e48eb622d8f506e878d7e52fca3d
++ Un code qui tronque ou inverse du texte à ces frontières ne coupe jamais un caractère en
++ deux. [Texte](text.md#graphemes-and-width) compte et mesure les graphèmes avec `Writing`.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 1 0 007f8c90f5af7a6507dd8feec9e71a02
++ - [Système de fichiers](filesystem.md) décrit les encodages dans lesquels sont lus les noms
++   et le contenu des fichiers.

@@ -1,0 +1,299 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1839d307a452d6e40b6426e09bb0c989
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d5d77e097f4a573135aea5c8b4ecee4
++ info
++     explique un given manquant sous forme d'arbre des candidats essayés et des givens du
++     classpath qui conviendraient
+
+@ 0 5 0 050489e10e6b49db1f9b00210793d66d
++ detail
++     _Frontier_ remplace le laconique _no given instance of type `T` was found_ du compilateur
++     par une explication de la recherche : quels candidats ont été essayés, lesquels de leurs
++     propres paramètres contextuels n'ont pas pu être trouvés, et quels givens ailleurs dans le
++     classpath — non importés, ou dans un package de choix — fourniraient la valeur manquante,
++     avec l'import qui nomme chacun.
+
+% 0 1 0 121f5d49fa83450310393c10f05ce4fa
+
+% 0 1 0 1b9261087ab5c65c00494e8c15158853
+
+% 0 1 0 003b0f83b764717304597eb74f0aacc5
+
+% 0 1 0 1a1aad2b12e3225a03151ad4b70d251e
+
+% 1 1 0 10f0167f8011fb52161242df18c834d2
+
+@ 0 6 0 0e4302b1c58e79600cb440ac0084a4ac
++     Elle fonctionne au moyen d'un unique given fourre-tout, `explainMissingContext`, de type
++     `[any] => any`, qui est candidat pour toute recherche. Lorsqu'il est essayé, il relance
++     lui-même la recherche et, soit constate que la recherche réussit sans lui, auquel cas il
++     échoue et laisse le compilateur choisir l'instance avec son inférence de types intacte, soit
++     construit un arbre `Diagnostic` de ce qui manquait et abandonne avec cet arbre rendu comme
++     message. Le fourre-tout n'apporte jamais de terme à un programme : il est purement
++     diagnostique.
+
+@ 0 7 0 078b94650e82336d0a4c194a77e1e2f2
++     Elle repose sur l'annotation `@scala.annotation.internal.diagnostic`, qui existe dans le
++     compilateur Proscala avec lequel Soundness est construit. Un given qui la porte et qui
++     abandonne pendant une recherche implicite échoue comme le ferait un candidat ordinaire ;
++     `summonFrom`, les arguments `using` par défaut et `NotGiven` se comportent donc comme sans
++     lui ; mais le compilateur conserve ses erreurs sous forme de `DiagnosticFailure`, et si la
++     recherche entière échoue, ce message est signalé tel quel à la place de celui du compilateur
++     (et de tout `@implicitNotFound`). Avec un compilateur dépourvu de l'annotation, le
++     fourre-tout n'est pas utilisable.
+
+@ 0 1 0 063ed4f4d045da3e04b5beaf4ec2366a
++     Le fourre-tout est introduit dans la portée de l'une de deux manières :
+
+@ 0 4 0 17473136a501065a08e47c2ac175fac4
++     - `import soundness.*` introduit `soundness.explainMissingContext`, un `implicit
++       def` à l'ancienne plutôt qu'un `given`, précisément pour qu'un import joker l'inclue ;
++     - `import frontier.context.explainMissingContext` introduit le `given` par son nom, pour le
++       code qui n'importe pas le package parapluie.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 12921236bce385d40855562298c83f0e
+
+% 1 1 0 1ce8b8e2cc9e49dd052da87a9b8e52e8
+
+@ 0 5 0 0ad980165e6bd28b173fb26df2620255
++     Dans une chaîne de clauses `using`, l'explication affichée est celle de la valeur manquante
++     la plus profonde — la cause la plus intérieure — puisque le fourre-tout s'y expanse en
++     premier. Une explication est bornée : une chaîne de candidats de plus de six niveaux, ou plus
++     de 256 recherches implicites dans une même explication, est signalée comme manquante plutôt
++     que suivie, et l'arbre rendu est coupé à 100 lignes.
+
+@ 0 3 0 1995f22dc81cceef0ca99943218a7b68
++     La bibliothèque est l'unique ensemble de sources `frontier.core`. `Diagnostic` n'est
++     délibérément pas exporté vers le package parapluie `soundness`, où il entrerait en conflit
++     avec `harlequin.Diagnostic` : on y accède par `frontier.Diagnostic`.
+
+% 0 1 0 194151561e25ce5919101cdcc2b88ded
+
+% 0 1 0 0f221ed2717ac3a9100b15b50965dad6
+
+@ 0 1 0 143f892d26c7f152076ee372cd452cfa
++ entry .context
++   info
++       le package de choix contenant le given fourre-tout `explainMissingContext`, importé par son
++       nom
+
+@ 0 4 0 1531d62fc03c4fb3051a76405984b919
++   detail
++       Un package dont l'unique given est importé par son nom, puisque `import frontier.context.*`
++       n'importe pas les givens. Le code qui importe le package parapluie `soundness` n'en a pas
++       besoin : `import soundness.*` introduit l'équivalent `soundness.explainMissingContext`.
+
+% 0 1 0 0d9fb0b7a1b2e2741a9a29ca5ceafd0b
+
+@ 0 1 0 108f93fb0e9e97030ab7e3c6e4b28aba
++   entry .explainMissingContext
++     info
++         explique une recherche implicite échouée sous forme d'arbre de candidats et de
++         propositions du classpath
+
+@ 0 9 0 1bdf97f6fd2c3c84037fb1c02382dfbc
++     detail
++         Un `transparent inline given` de type `[any] => any`, marqué
++         `@scala.annotation.internal.diagnostic`, de sorte qu'il est candidat dans toute recherche
++         implicite. Lorsqu'il est essayé, il répète la recherche sans lui-même : si la recherche
++         réussit, le fourre-tout échoue, afin que le compilateur sélectionne lui-même l'instance
++         avec ses variables de type encore ouvertes ; si la recherche échoue, le fourre-tout
++         abandonne avec un arbre `Diagnostic` rendu, que le compilateur signale comme erreur si
++         aucun autre candidat ne réussit. Pour une cible `NotGiven[X]`, il réussit trivialement,
++         afin que la négation par candidat du compilateur le transforme en échec et que les propres
++         instances de `NotGiven` décident ; `NotGiven[X]` est alors vrai exactement lorsqu'il n'y a
++         pas de `X`.
+
+@ 2 1 0 06cf5b78f266969317260c70d1be036e
++         ```scala
+
+@ 0 1 0 00973241d22ea8a4012caaf81aeec69a
++         import frontier.context.explainMissingContext
+
+@ 0 1 0 08ee91ce048da1c30d2890f29f3caf49
++         trait A
+
+@ 0 1 0 08ee91ce048da1c40d2890f29f3caf4a
++         trait B
+
+@ 0 1 0 12689b8f01a131a817529a2fc39db27f
++         given mkA(using B): A = new A {}
+
+@ 0 1 0 001296c3f114510b1dcb0810a6100700
++         summon[A]   // does not compile
+
+@ 1 1 0 173abe80ab8de7320a022afa3ad9a82f
++         ```
+
+@ 0 3 0 040e488b9dfa1b2209cd459f85f02a20
++         Le message signale le `B` manquant, la cause la plus intérieure. Une proposition pour un
++         given polymorphe nomme les liaisons de ses paramètres de type (`textual = Char`), et une
++         exigence `NotGiven[X]` d'un candidat est affichée sous la forme _prohibits X_, avec le
++         given qui l'enfreint.
+
+@ 0 1 0 112679f98c94cf5e029814da099941fd
++ entry .Diagnostic
++   info
++       un arbre pré-rendu décrivant une recherche implicite échouée, et son moteur de rendu
+
+@ 0 6 0 056349a38f71426a136e5f21e940598e
++   detail
++       Un modèle d'explication neutre vis-à-vis du format : chaque nœud a un genre, un `#name` déjà
++       rendu en `Text`, un `#label` optionnel et ses `#children`. Comme les noms sont déjà rendus,
++       le moteur de rendu ne dépend pas du compilateur, et le même modèle peut être construit par
++       toute macro qui doit expliquer un échec — la dérivation générique de Wisteria attache à
++       chaque nœud un nom de champ ou de variante comme étiquette.
+
+@ 0 2 0 0583359f1acf43ba1ad88239ce325dfc
++       Les six cas de l'énumération sont ses genres de nœuds, chacun prenant un nom, une étiquette
++       optionnelle et une liste d'enfants :
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 9 0 10a5462555db93a905f090192d9fd9a6
++       column  Cas
++       column  Rendu
++       column  Nœud
++       row  `Resolving`  _■ resolving T_  la racine : le type en cours de résolution
++       row  `Candidate`  _▪ candidate g_  un given dans la portée qui a été essayé
++       row  `Requires`  _✗ requires T_  un paramètre contextuel d'un candidat qui n'a pas pu être trouvé
++       row  `Propose`  _▸ propose pkg.g_  un given du classpath, hors de la portée, qui fournirait la valeur
++       row  `Prohibits`  _⊘ prohibits X_  une exigence `NotGiven[X]`, déballée en `X` ; son enfant est le `Found` qui l'enfreint, ou bien il n'a pas d'enfant et a l'étiquette `absent` lorsqu'elle est satisfaite
++       row  `Found`  _✓ found T_  une valeur qui a été trouvée
+
+% 1 1 0 085a396440b94d5306c5eeced83a5004
+
+% 2 1 0 0673280dafa8be1405a02105a60e7489
+
+% 3 1 0 1b4080545ef535db03e59e50845d3623
+
+% 0 1 0 159b8d4e6cbaeaa113aac703fafd78db
+
+% 0 1 0 0c010ed7b57d2432034695f2df013319
+
+% 0 1 0 074caed5ee138b4b1f3de4bb9a5c300f
+
+% 0 1 0 0144d3b883890cf6199de2eb989393b7
+
+% 0 1 0 1ac6c91edfd6628f153d3499d8dd5942
+
+% 1 1 0 189bdac6354e2b190f71ebae5e8f5b8a
+
+@ 0 2 0 090a9e23fefe70e41403e95bb193df9c
++       `Diagnostic` n'est pas exporté vers le package parapluie `soundness`, où il entrerait en
++       conflit avec `harlequin.Diagnostic`.
+
+% 0 1 0 149718fb9e8fd11705bdc5d2784127e8
+
+@ 0 1 0 068885fafc17772f00330f1b461e67b0
++   entry .render
++     info
++         rend un arbre de diagnostic en texte coloré ANSI, sous un titre, dans une limite de lignes
+
+@ 0 6 0 076673857f9c35f600a16083f654e178
++     detail
++         La racine doit être un nœud `Resolving`, qui fournit la ligne _■ resolving T_ ; tout autre
++         nœud est enveloppé dans l'un d'eux. `headline` vaut par défaut _contextual value not
++         found_, et `limit` 100 : au plus ce nombre de lignes de l'arbre est écrit, suivi de _… n
++         more_ lorsque des lignes ont été omises. Un sous-arbre non terminal identique à un
++         sous-arbre déjà écrit est écrit sous la forme de sa seule première ligne, étiquetée _as
++         above_, puisqu'une explication dans une grande portée pourrait sinon atteindre des
++         milliers de lignes.
+
+@ 2 1 0 019e19c47039c5bf1abf90decbf575e6
++         ```scala
+
+@ 3 1 0 09191a818f4814431c9d16f104a5c608
++         import soundness.*
+
+@ 0 1 0 03d6c89fab88062410e2e91683f1cc17
++         val shared = frontier.Diagnostic.Requires(t"Shared", Unset, Nil)
+
+@ 0 1 0 0496797d163b904a1aee7903434fe546
++         val first = frontier.Diagnostic.Candidate(t"First", Unset, List(shared))
+
+@ 0 1 0 172dc24bf11f412d152e2648b4ff9f32
++         frontier.Diagnostic.render(frontier.Diagnostic.Resolving(t"Root", Unset, List(first)))
+
+@ 1 1 0 04344e64d8e0e93c0151bedc6c1ff3a0
++         ```
+
+@ 0 1 0 04d022c122a7d313165e2f050a1c61a4
++   entry .treeStyle
++     info
++         le style de tracé de boîtes dans lequel est dessiné un arbre de diagnostic
+
+@ 0 1 0 0ab763d2b84f89860d4c067771c1abcc
++   entry .expandable
++     info
++         rend un `Diagnostic` développable en ses enfants, pour le dessiner sous forme d'arbre
+
+@ 0 1 0 0f677d6e209b75070fae97077ceca6ef
++   entry #name
++     info
++         le nom rendu du type ou du given du nœud
+
+@ 0 1 0 0ff65c125588091103a21a9809dae556
++   entry #label
++     info
++         une annotation optionnelle affichée après le nom, comme un nom de champ ou `absent`
+
+@ 0 1 0 180bbd199c8422e0127815c97f960daf
++   entry #children
++     info
++         les nœuds enfants du nœud
+
+@ 0 1 0 0dd55ced481a415b00b83a930dc0be79
++   entry #rebuild
++     info
++         le même genre de nœud avec le même nom, mais une nouvelle étiquette et de nouveaux enfants
+
+@ 0 1 0 121f77e66ff8a44e0911ee9a30e423e0
++ entry .internal
++   info
++       la macro derrière `explainMissingContext`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 5 0 110e81c2c1126e200795adaa8839dc00
++   detail
++       Non destiné à un usage direct. Chaque étape entre le fourre-tout et sa macro doit être
++       `transparent
++       inline` : seuls les appels transparent inline sont expansés pendant le typage ; une étape
++       non transparente laisserait donc la macro non expansée pendant l'essai du fourre-tout, et la
++       recherche réussirait à tort.
+
+@ 0 1 0 0409abf0acafbcd90cf2bda3906daab7
++   entry .explanation
++     info
++         le point d'entrée transparent inline de la macro d'explication
+
+@ 0 1 0 17f7e000b33508f3006d3babffab9e25
++   entry .explain
++     info
++         la macro qui relance une recherche, puis construit et rend son `Diagnostic`
+
+@ 0 1 0 073314a1a8c4e0a00cdef745c1bc2d49
++   entry .NoCandidates
++     info
++         filtre un échec de recherche implicite qui n'avait aucun candidat, en donnant son
++         explication
+
+@ 0 2 0 0e72f9d11d1d1cee0b9322adcc29e8f2
++     detail
++         Un extracteur sur `quotes.reflect.ImplicitSearchFailure`, utilisé par la macro.
+
+@ 0 1 0 04e8431040a061380e6096011cbed00f
++     entry .unapply
++       info
++           l'explication d'un échec de recherche sans candidats, s'il en est un

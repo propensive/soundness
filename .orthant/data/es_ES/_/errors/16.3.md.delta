@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 1bb6547a3fba858915ef3a9ccfcbb71c
++ # `↯/s.16.3` — El valor supera su cota superior
+
+@ 0 1 0 183f440abb6e2dfe0380a9d49cccbceb
++ Se lanza en tiempo de compilación cuando un literal es mayor que el máximo que permite su tipo
++ acotado.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 1607a4c68683baa80a5cfa48b680b24b
++ Un tipo numérico acotado lleva su rango en su tipo, así que un literal fuera del rango se rechaza
++ allí donde se escribe.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0cfc8856f0de5b0b04b9831d165be627
+
+% 1 1 0 17096062ed45e1ac0b0ebacb4ef24dbf
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 1 0 08b6e696d832cfc91546add82b94adac
++ Usa un valor dentro del rango, o amplía las cotas del tipo.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 182b99dddf81d5651ccd9f6afc52f756
++ - Código fuente: `lib/cardinality/src/core/cardinality.internal.scala`

@@ -1,0 +1,176 @@
+orthant 2 language
+
+@ 0 5 0 1a582b8342d1637412fbd9b93d6b5c06
++ BinTEL se lit du début à la fin. *RaTEL*, l'encodage à accès aléatoire, se lit sur place : il
++ dispose un document en tables de lignes à largeur fixe, une table par type d'enregistrement,
++ avec des index à côté. Un programme qui [mappe le fichier](filesystem.md#positional-access)
++ trouve un enregistrement en touchant cet enregistrement et rien d'autre, et plusieurs programmes
++ qui le mappent en partagent une seule copie. C'est la forme d'un grand document qu'un programme
++ écrit et que d'autres consultent.
+
+@ 0 1 0 01dd7c24cbb7b0e00d55af55a8f7e3ff
++ Les exemples qui suivent publient dans un fichier qui leur est propre :
+
+% 2 1 0 0271001b277be315063e7bd145367ea2
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 07a6bbccfdc10c36118bf8c330ca242d
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 022401798934ffd81694ba61e697a094
+
+% 0 1 0 1e08e13d7ad73e8b06fccd1c9451ef37
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 06bff7199f9a96e104c31e5992f84b78
+
+% 0 1 0 11f56cf165e04c230bdd38941de6c40d
+
+% 1 1 0 0f287a956cf1560e1b3f24b846fa5ecd
+
+@ 0 6 0 0b3a9646f47a64ca0b03d0949e4208b5
++ Un fichier s'ouvre comme `Ratel`, comme un fichier sous toute autre forme. Il est mappé pendant
++ la durée du bloc, et le bloc reçoit un lecteur, `ratel`. L'ouverture ne vérifie que ce qui
++ détermine la lecture du reste : l'en-tête, le schéma et sa signature, et les répertoires des
++ tables et des index. Les enregistrements sont ensuite lus à mesure qu'ils sont demandés. `/`
++ donne les enregistrements d'un champ répétable, `find` en cherche un par sa clé, par une
++ descente dans l'index primaire, et `where` donne ceux qui ont une valeur à un chemin indexé :
+
+@ 0 3 0 0a691b16ae07a4b50b41ce5e0236c048
++ Une image en mémoire, et une vue `Terrain` déjà en main, comme celle que prête un
++ [observateur](filesystem.md#publishing-versions), s'ouvrent de la même façon, par
++ `image.open[Ratel]()` et `view.open[Ratel]()`.
+
+@ 0 3 0 18bffe92d4c1605312a5635648a2b329
++ Un schéma n'a pas besoin d'être écrit. Le schéma [dérivé](#schemas) d'une case class indique
++ comment ses enregistrements sont trouvés, et comment ses scalaires sont stockés, si ses champs
++ le disent, par des annotations nommées comme le sont les mots du schéma lui-même :
+
+% 2 1 0 1a6edf2f7a652b4315eca3a5a4e9e529
+
+@ 0 7 0 14463e97909007d90c6ecb1328998921
++ column  Annotation
++ column  Déclare
++ row  `@key`  le champ comme clé de son enregistrement, ce qui donne un index primaire à une collection de ces enregistrements
++ row  `@index(paths)`  un index sur une collection, par un ou plusieurs chemins dans chacun de ses enregistrements
++ row  `@encoding(name)`  l'encodage d'un scalaire, comme `u32`, par lequel il est stocké sous la forme des octets de son codec
++ row  `@width(bytes)`  la largeur qu'a chaque valeur d'un scalaire encodé, si bien qu'elle est stockée dans sa ligne
++ row  `@intern`  que chaque valeur distincte d'un scalaire est stockée une seule fois
+
+% 1 1 0 06ee04d881596e371fd06ebc6fde6e56
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 1d1202ff06bd59080e16f81fcb98ac06
+
+% 0 1 0 130ef2125d54a8e41a8f5e72ec74f39b
+
+% 0 1 0 103cf77d590e8ae905c3ed0204e81def
+
+% 0 1 0 190364c71f05ff470f591d7f4e8e84e5
+
+% 1 1 0 12b03ad77f33e5500b44dedc68d29f1c
+
+@ 0 6 0 0afbdd93666474c31a2b6edef5c4d830
++ Le `ratel` d'une valeur, sans schéma donné, est son image selon le schéma de son type, et le
++ type même de l'image le dit : c'est un `Ratel of Playbill`. La case class est alors l'unique
++ déclaration qu'ont en commun le programme qui publie et les programmes qui lisent. Un nom
++ revendiqué pour `Ratel of Playbill` n'accepte aucune autre image, et un programme qui
++ [observe](filesystem.md#publishing-versions) le nom ouvre sa version courante en un seul bloc,
++ lequel est refusé, avec `Mismatched`, si l'image a été écrite selon un autre schéma :
+
+% 2 1 0 03d13f72c175a29b01144e862d50e3f6
+
+% 3 1 0 0a32b22dc17a04c51ab4cdf48bba99f7
+
+% 4 1 0 1814388a4c5491120cec7345f46a0124
+
+% 5 1 0 0265568846e5f3391438eb91e03b12a1
+
+% 0 1 0 0237f963a165feeb1165714c4d2b107a
+
+% 0 1 0 1be2960ebbca4e39086e3be94b192a74
+
+% 0 1 0 168079462c019eac0867144fba5d799a
+
+% 0 1 0 18b373b1ba27b26e141f6def0c0d7673
+
+% 0 1 0 09d5a1e3e24032e218fec23f595e26aa
+
+% 1 1 0 0ee3a1b8a1b6cc931e05c467b820e89e
+
+@ 0 5 0 0841ce70ed256a6010ee8beb9c18517d
++ Une image publiée est *scellée* : elle est compacte, elle porte son hachage de valeur et ses
++ condensés, et elle n'est jamais modifiée. Le programme qui possède un document en garde une
++ copie de travail, qu'il modifie là où elle se trouve. Un fichier s'ouvre pour cela avec `Read &
++ Write`, ce qui tient un verrou exclusif sur lui, et le lecteur du bloc modifie alors des
++ enregistrements aussi bien qu'il les lit :
+
+% 2 1 0 095cfb1de1cc9c0219374e140f53a116
+
+% 3 1 0 158baa89b41fd4e4131289a260307ed9
+
+% 4 1 0 00f1b0199240ce2f074377eb8705d109
+
+% 5 1 0 1c40a5575008c60b0797150c5f99232a
+
+% 0 1 0 0e700e424c183e500bc4c07f1c5e5da0
+
+% 0 1 0 14b8f8ef9f229c8f14271d37c9715c94
+
+% 0 1 0 18880cb01be9a1b7089e53430c58a566
+
+% 0 1 0 12a6402821b140540a34c7b757314b60
+
+% 0 1 0 12e7c17efa712338150d673e8efbf2d8
+
+% 0 1 0 1d2d736e41bb9f9909b05fac51361a13
+
+% 0 1 0 0542756c547b57470171385d78a48ec0
+
+% 0 1 0 14390e4f6fbfa60509f62e877036f135
+
+% 0 1 0 1e55e5b89d7cdbcf012f8ddd8f6d3253
+
+% 1 1 0 0120b020446b56251ead07260841a44e
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 9 0 15c262445010eec21814d5b5c8885234
++ column  Méthode
++ column  Modifie
++ row  `insert`  un `Ratel.Rows`, par une valeur qui devient un nouvel enregistrement, après les autres ou avant une position
++ row  `move`  un `Ratel.Rows`, par le déplacement de l'enregistrement d'une position à une autre
++ row  `row.lines = …`  la valeur d'un membre scalaire, ou les valeurs d'un scalaire répétable, par affectation à son nom
++ row  `set`  la valeur d'un membre scalaire, les valeurs d'un scalaire répétable, ou un indicateur, qui est rendu présent
++ row  `unset`  un membre scalaire qui peut être absent, ou un indicateur
++ row  `delete`  la collection dont un enregistrement fait partie, qui le perd avec tout enregistrement qu'il contient
++ row  `replace`  un enregistrement, par une valeur qui prend sa place dans sa collection
+
+% 1 1 0 1e2dcb6a92e265621a39f52891d0f975
+
+@ 0 3 0 0d26e2957853091f17f1b9fe6e5cecbc
++ Une affectation nomme un membre comme le nomme un champ d'une classe de cas, si bien que
++ `row.firstLine = …` modifie le membre dont le mot-clé est `first-line` ; `set` prend le mot-clé
++ lui-même, et c'est par lui qu'on atteint un membre dont une méthode de `Ratel.Row` porte déjà le
++ nom.
+
+@ 0 9 0 1f0012904431d67d10abceb7f4ed2fde
++ Une modification est vérifiée avant que rien n'en soit écrit. Une valeur que son scalaire
++ n'admet pas, une clé qu'un autre enregistrement possède, et un membre qui ne peut pas être
++ absent sont chacun refusés, avec une `Tel.Error`, et laissent l'image telle qu'elle était ; les
++ index sont tenus à jour de ce qui est accepté. Tant que le bloc s'exécute, le fichier est marqué
++ comme en cours de modification, et un lecteur ne l'ouvrira pas. `seal` donne le document sous
++ forme d'image scellée, dont les octets sont ceux du document, quoi qu'on ait fait pour y
++ parvenir, et `sealAs` le donne comme image d'un type ; `repack` donne à neuf une image de
++ travail, avec de la place pour grandir. Une image ouverte en écriture alors qu'elle est scellée
++ est d'abord descellée, si bien qu'elle doit être une copie propre au propriétaire, et jamais un
++ fichier que d'autres programmes ont mappé. `ratel.state` indique ce qu'est une image, `Sealed`
++ ou `Unsealed`.

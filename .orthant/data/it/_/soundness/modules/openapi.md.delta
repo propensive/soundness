@@ -1,0 +1,510 @@
+orthant 2 language
+
+% 0 1 0 0644568f5405b1e00e9500a4928391bb
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 6 0 0a23682563811afb07731f3dad54f4aa
++ Un documento [OpenAPI](https://www.openapis.org/) descrive un'API REST: i suoi path, i
++ parametri e gli schemi di richiesta e di risposta. Qui quella descrizione diventa un *client
++ tipizzato* durante la compilazione del codice. Puntare `Api` su una specifica produce un valore la
++ cui navigazione rispecchia i path dell'API. Ogni segmento, ogni parametro di path, ogni parametro
++ di query o di intestazione e ogni tipo di risposta viene verificato rispetto alla specifica. Una
++ chiamata che l'API non offre, o un parametro del tipo sbagliato, non compila.
+
+@ 0 1 0 1df74c705133fb781e9128941b78cf0f
++ ### Sulle specifiche delle API
+
+@ 0 4 0 08c7043d2f0510ee199443ed842c3fd1
++ Un documento OpenAPI è un contratto leggibile da una macchina. Il modo consueto di onorarlo è la
++ generazione di codice: un passo della build emette un client, che viene compilato, versionato e
++ mantenuto allineato dagli strumenti. Il contratto viene fatto rispettare, al prezzo di sorgenti
++ generati e di una pipeline di build. Quando si salta il generatore, le chiamate si fanno verso URL
++ ricordati a memoria e schemi sperati.
+
+@ 0 4 0 0422141fedde81c40a716618351dc306
++ Qui invece la specifica si legge durante la compilazione. Non c'è codice generato da mantenere.
++ Il client *è* la specifica, interpretata dal compilatore, e uno scostamento tra codice e contratto
++ è un errore di compilazione nel codice. È
++ [correttezza](../../philosophy/correctness.md) per costruzione, e non per revisione.
+
+@ 0 1 0 1481fbf4af732f4e15ee7bb06e2a39ac
++ Tutto proviene dal package `soundness`, con alcune scelte deliberate importate per nome:
+
+% 2 1 0 07516880e8d1f7b80c40b81f87a4c6f5
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 0f8f39f974ac0234141ba83612357fac
+
+% 0 1 0 04c370b82515acc8175229615827ab1a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 1 1 0 0ae73885e623b9501acf5cf6512aaf4e
+
+@ 0 1 0 06a553890939a7f01eb452c4239bf098
++ Gli esempi di questa pagina chiamano API in rete, quindi vengono compilati ma non eseguiti.
+
+@ 0 1 0 1c6fde30451710861521811ced5b13e9
++ ### Un client tipizzato
+
+@ 0 3 0 1c1b0b3fefc7ae540669e398d4a15511
++ `Api` legge una specifica dal [classpath](classpath.md) durante la compilazione del codice. La
++ specifica può essere JSON o YAML, e OpenAPI 3.0 o 3.1. Il valore risultante si naviga per path:
+
+% 2 1 0 1cab025b1d0d88b115e399a5c3591c80
+
+% 3 1 0 1bba0033e30343c1144bf6c14908124d
+
+% 4 1 0 10340d4b806ec10c0c40919a06e797a9
+
+% 0 1 0 13b5ee570e3b2db41cda5add7a406e3a
+
+% 0 1 0 174d7eaa319f322e0b38247dab7d0b07
+
+% 0 1 0 0940d1dffaa66c4a1d08976b7c652b41
+
+% 1 1 0 065d00d74c6894b703c52ee19cf7f9c7
+
+@ 0 2 0 0c76a2a7641cff5c06cb0452f5f04572
++ `api.pets` è il path `/pets`, e `api.pets(42)` è `/pets/{petId}`, con il parametro tipizzato
++ dalla specifica. Un path che la specifica non ha non compila:
+
+% 2 1 0 1fc81c7bda6582ad164c3d42930822ca
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 18ea679918f5c0fe11c19c4c51f33e26
+
+% 1 1 0 0701f3ae4a4c886f1f4a3cd77e01c45a
+
+@ 0 5 0 13e55d41662c65b11be18a03e54237f7
++ Anche un parametro di path del tipo sbagliato, come del testo dove la specifica dice intero, è un
++ errore di compilazione, intercettato dove si scrive la chiamata. Un parametro di `type: integer`
++ con `format: int64` è un `Long`, e si accetta anche un `Int`. Un segmento che la specifica scrive
++ con caratteri che Scala non ammette in un identificatore si scrive tra backtick, come in
++ `` api.`museum-hours` `` o `` api.users.`@me` ``.
+
+@ 0 4 0 0d90e6ec3fab90a61d5e68dd946a563d
++ L'URL di base proviene dal primo server della specifica, con le sue `{variables}` ai valori
++ predefiniti, ed è verificato come URL durante la compilazione del codice. Una specifica il cui
++ server è relativo, come `/api/v3`, o che non ne dichiara alcuno, deve ricevere la sua base dal
++ chiamante. Un URL di server relativo estende allora quella base:
+
+% 2 1 0 1ed1fade12ad4b351da8e719f802ad84
+
+% 3 1 0 1c505354bfab7ca100848bb9d4105f5b
+
+% 4 1 0 0fbc63455de848e204e9b0d41fb2d79d
+
+% 0 1 0 172d73a2e5505804039a62d23ca9b71f
+
+% 1 1 0 1aa94a5183e1618d00d51ce643dfd073
+
+@ 0 2 0 095bc71d8254a88e010ab32b8bcd4a92
++ Anche ciò che sta per essere inviato è un valore. `request` su qualsiasi `Api` o `Api.Response`
++ navigato è un `Api.Request`, i cui campi sono:
+
+% 2 1 0 1dac6cef8913b50104868f85df0cde62
+
+@ 0 10 0 15fdc30c1856712a0cc2e2c89ffd5100
++ column  Campo
++ column  Contiene
++ row  `method`  l'`Http.Method`
++ row  `base`  l'`HttpUrl` di base
++ row  `path`  il modello del path
++ row  `substitutions`  i valori per le variabili del modello
++ row  `query`  la `Query`
++ row  `headers`  gli `Http.Header`
++ row  `body`  il corpo, con il suo `MediaType`
++ row  `accept`  il tipo di media richiesto
+
+% 1 1 0 0ae6695ef28e25670a653878281b46c0
+
+@ 0 1 0 059fa4f2aa430c9f1899c71925f85586
++ ### Chiamare
+
+@ 0 3 0 0383effd24f3df7d0d2d9e235002e54b
++ Un endpoint si invoca con il suo metodo, con i suoi parametri di query e di intestazione come
++ argomenti con nome, e con un corpo di richiesta come valore. `call` esegue la richiesta e legge la
++ risposta come il tipo richiesto, che deve essere conforme allo schema di risposta dichiarato dalla
++ specifica:
+
+% 2 1 0 1ceb05d89234e95e00bfe58c62f46ecf
+
+% 0 1 0 0907612f06fa588f11e2be0c177dab1d
+
+% 0 1 0 140a1e52810a2ac91f8b8821f2018d0a
+
+% 1 1 0 1ef2d508d77e26920c83bf5a3aebf40c
+
+% 3 1 0 1b065437443ffbd5148d6a1eba967e96
+
+% 4 1 0 148d2f2b445d1c2a17bfb1bdde19fddb
+
+% 5 1 0 06137503110dff361186aaba9e88c881
+
+% 0 1 0 08f0f7200d7efd931582dadd26704fd1
+
+% 0 1 0 0fa9be43f0b030f702b13e7516db7548
+
+% 0 1 0 1c1ca6edae5048bd1e087dcebeced9b1
+
+% 0 1 0 1d810ed057c034660c4382c192dcdc73
+
+% 1 1 0 1b280af1de865ed31354c72432f8f4ad
+
+@ 0 2 0 10be5dce6c6b9e0904e6e840ef595fba
++ La prima è `GET /pets/42`, decodificata secondo lo schema. La terza invia un corpo di richiesta
++ tipizzato. L'ultima risponde `204` senza corpo, quindi il suo risultato è `Unit`.
+
+@ 0 5 0 172b525010ce2d7e021b5618ace9d610
++ Un parametro dichiarato sul path item si applica a ogni operazione su di esso. Un parametro
++ scritto come `$ref` verso i componenti del documento viene seguito, e così le risposte e i corpi
++ di richiesta `$ref`. Dove un'operazione dichiara più risposte di successo, si preferisce `200`,
++ poi `201`, poi la più bassa. Chiedere un tipo che lo schema di risposta non supporta è un errore
++ di compilazione.
+
+@ 0 1 0 1b7f86e886b9e6721eac333f0c5015c3
++ ### Sicurezza
+
+@ 0 6 0 1263aea226c8426b14bfcbe15540f9b7
++ La specifica di un'API nomina i suoi schemi di sicurezza, che possono essere una chiave API in
++ un'intestazione, in un parametro di query o in un cookie, l'autenticazione HTTP, OAuth 2 o OpenID
++ Connect, e dice quali di essi richiede ciascuna operazione. Le credenziali provengono da
++ [OAuth](oauth.md). Una `Credential` è un [valore contestuale] che prende il nome dallo schema, e
++ che contiene il valore richiesto dal tipo di schema. Un'operazione che richiede credenziali che
++ nessuno ha fornito non compila, e l'errore nomina i given che soddisferebbero ciascuna
++ alternativa:
+
+% 2 1 0 120e0ab2d0d2dd750143b3fead5f98eb
+
+% 0 1 0 1e980b6a0a3dbd71080a01901e24976e
+
+% 0 1 0 11f132c0a80de09f006d96282b02317a
+
+% 0 1 0 0720aaeac5a9afb61537b9a4ee4360f9
+
+% 0 1 0 1fd06584c21e6e4a0fe252f58555f157
+
+% 1 1 0 00ca532c0bd8bc8d0eb3b174e70711ec
+
+% 3 1 0 0a84df6952e5e1ff1a05c7076c58aaff
+
+% 4 1 0 16395928d6c887f40e0dc6cb72a67374
+
+% 5 1 0 0b18c27a78a11e850686ef4c985d1c72
+
+% 0 1 0 194e7ef66c0ffd8c0b48856fc6b0c109
+
+% 0 1 0 0f489ec4d893cce600d1aeb79d94a360
+
+% 1 1 0 1183cf485c773c831dd9162b4a113bca
+
+@ 0 3 0 136a60ac200e3a2e083830fffcd394ec
++ La prima chiamata invia `api_key` come prescrive la specifica. Nella seconda, `api_key` è un
++ parametro di intestazione, e viene inviato come intestazione. Ogni tipo di schema accetta la
++ propria credenziale, e la invia a modo suo:
+
+% 2 1 0 0e7006fa5d4a851a18238d530b6471f2
+
+@ 0 7 0 06864b78321b171b0ed4c1dd4ff1503e
++ column  Schema
++ column  Credenziale
++ column  Inviata
++ row  chiave API  `Credential to Text`  nell'intestazione, nel parametro di query o nel cookie che lo schema nomina
++ row  autenticazione HTTP  `Credential to Auth`  nell'intestazione `Authorization`
++ row  OAuth 2, OpenID Connect  `Credential to Authorization`, o `Credential to Auth` per un token ottenuto altrove  come autorizzazione `Bearer`
++ row  TLS mutuo  non supportato
+
+% 1 1 0 0284adf5e07bbf3e1735efbff2f4312d
+
+@ 0 4 0 0c71800e5a7a17cc1d7a5de0e871d5de
++ Un token OAuth 2 o OpenID Connect viene verificato, prima che la richiesta parta, rispetto agli
++ scope che il requisito nomina. Un token a cui ne manca uno solleva `OAuth.Error`. Dove
++ un'operazione offre requisiti alternativi, si usa il primo per il quale ogni schema ha una
++ credenziale nell'ambito. Un'operazione la cui `security` è vuota non ne richiede alcuna.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Errori
+
+@ 0 2 0 0945625acabbde4b1258c20f3da6fbb4
++ Ogni risposta che un'operazione dichiara fuori dall'intervallo di successo ha un proprio tipo di
++ errore, che prende il nome dal suo stato:
+
+% 2 1 0 1800d77836f4e58419b38e7cabc4f3cc
+
+@ 0 5 0 0e7fdcfd5dd08abe0a3823420bd022e7
++ column  Risposta dichiarata
++ column  Tipo di errore
++ row  uno stato che telekinesis nomina, come `404`, `400` o `429`  uno che prende il nome da esso: `Api.NotFound`, `Api.BadRequest`, `Api.TooManyRequests`
++ row  l'intervallo `4XX`  `Api.ClientError`
++ row  l'intervallo `5XX`  `Api.ServerError`
+
+% 0 1 0 0824bba54ec3aa6b068fcaf32657fce8
+
+% 1 1 0 0fd047243061e39d120affd8b1964f1b
+
+@ 0 2 0 1d147d3f1bfdadd203eeba9caf16fb69
++ Ciascuno porta il corpo dell'errore, interpretato come il tipo che la specifica dichiara per
++ esso, secondo la prima di queste regole che si applica:
+
+% 2 1 0 03c7258ebf73b6c513806cc93da12bc5
+
+@ 0 6 0 146bde0590f146b905c959dc3f7b7631
++ column  Il corpo dell'errore è
++ column  Interpretato come
++ row  un oggetto JSON  un record tipizzato dallo schema dell'errore
++ row  di un tipo di media con un portatore  il portatore del tipo di media
++ row  qualsiasi altra cosa  `Text`
++ row  non dichiarato  `Unit`
+
+% 1 1 0 1b5eb0a69de13a27125fbde20826821d
+
+@ 0 3 0 0f1cb4a5d5c578201f4d5b5c0fa60003
++ L'`Api.Response` dell'operazione registra la loro unione come suo `Failure`. Così `attempt`
++ produce un `Attempt` esattamente sugli errori dichiarati, e il compilatore verifica l'esaustività
++ di un `match` su di esso:
+
+% 2 1 0 0752ad4507ec75e11805c8bcb793c553
+
+% 3 1 0 030f081d54fbad8500c14f7b600184ab
+
+% 4 1 0 17f52dac9b41791a040cddf682cda8aa
+
+% 0 1 0 1e22c35285e34f1e178a602dec629435
+
+% 0 1 0 18463426bc787b3e1c1537a5ae9763fe
+
+% 0 1 0 0fe56e0114e93240132ffd5b663bae27
+
+% 0 1 0 142a7b7e333251cb0cda5403842e9c83
+
+% 0 1 0 03d0ea359f9335161989e23711282840
+
+% 0 1 0 127c6939262fabdc1ce07085da150749
+
+% 0 1 0 00179837798ebc3a03ee03e89fbb381b
+
+% 0 1 0 0f743abe0d62b05b04144348430dad66
+
+% 0 1 0 09e619aa0d53bf6e1136fff451d4446f
+
+% 1 1 0 047221f06ec1d2b70ef46cd157f54ac8
+
+@ 0 4 0 0185fda21525408f0631483934e0cf99
++ Un caso per uno stato che la specifica non dichiara, come `Api.Conflict` per queste operazioni,
++ non compila. `call()` stesso solleva gli errori dichiarati attraverso
++ [contingency](errors.md), con una [tattica] per ogni tipo dichiarato, che un `recover` o un
++ `mitigate` fornisce caso per caso. Un handler che ne manca uno è un errore di compilazione che lo
++ nomina.
+
+@ 0 4 0 10372d0225a706ce0ba89376daaf1cb3
++ I server non rispettano sempre le loro specifiche. Una risposta con uno stato non dichiarato
++ solleva `Api.Violation`, che porta lo stato e i byte del corpo. Ogni chiamata può incontrarlo, e
++ lo si gestisce separatamente dagli errori dichiarati. È la violazione del contratto, non uno dei
++ suoi casi.
+
+@ 0 1 0 03b2b0f7daf019ba05264bc8050f6a19
++ ### Tipi di media e i loro portatori
+
+@ 0 5 0 073d63dd5c6144e307c51bb4d4ecd22a
++ La specifica nomina il tipo di media di ogni corpo, e un `Construable` nomina il tipo che porta
++ quel tipo di media: `("application/json" is Construable to Json)`, o
++ `("image/png" is Construable to (Raster in Png))`. La [typeclass] non porta alcuna operazione. Il
++ lavoro lo fanno il reader e il writer del portatore. Ogni corrispondenza è un valore contestuale
++ della famiglia `construables`, importato per nome, quindi nulla viene interpretato senza una
++ scelta deliberata:
+
+% 2 1 0 0229610353aae7f7155c83fd92a86447
+
+% 3 1 0 199a5b81442b1905098713f4f2aedda2
+
+% 4 1 0 0ea7667a1f27aad80b77267fc0edbc7a
+
+% 0 1 0 11fa83b9ad8352e10f08dbb27105ef09
+
+% 0 1 0 0fdedd74c4b44edb1270fedb5da98917
+
+% 0 1 0 00d857b4e6d1aedf0b9ee7722370611c
+
+% 0 1 0 0f615e10857173b01f2d7da845a3f97b
+
+% 0 1 0 027f52309808a22702f31bbe9ffe4992
+
+% 0 1 0 15fe1026a959dc3811e3b0f2fb441343
+
+% 1 1 0 1636a10c59c9594c0c7746f81d1d7498
+
+@ 0 1 0 1a05da482a183afd176b303cc48b3ef7
++ Questi sono i `Construable` forniti:
+
+% 2 1 0 094354f1f0a1a8320b2f33c7f0f83e72
+
+@ 0 2 0 0863c33d0ae2f44b128cc9131ef40d49
++ column  Tipo di media
++ column  Portatore
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+% 0 1 0 12f608666249c5701bcb9c145ace9d00
+
+% 0 1 0 12185ceb671289d11edce3c892266a89
+
+% 0 1 0 161e36a0c39e0d59075bcc56c2a5b94d
+
+% 0 1 0 040c80190262677c024db0d6ed4025f5
+
+% 0 1 0 1ad4b7632ab2fb12042a443430fede5f
+
+% 0 1 0 0b824b85770b62381e82dea125676cc0
+
+% 0 1 0 1ef625bd694e345e0f41a0f9314ec02f
+
+% 0 1 0 1192d6b9bfb71fb803392fe8e59dbe51
+
+% 0 1 0 16bce76044fcb64e0787051b734de19c
+
+% 0 1 0 0aa00e289fbf1a7c115563158fde6333
+
+% 0 1 0 158fdca274341df91ab4826383af791f
+
+% 0 1 0 02597b2d32cd04d502555fa722562562
+
+% 0 1 0 03699934f42523ce185c71a8340a5b55
+
+% 0 1 0 0072a5710472e2cd0ad4b52577216674
+
+% 0 1 0 11e285cf51cda5c71280c18254fa054a
+
+% 0 1 0 139880ac6f4ffd070b9e83740b423484
+
+% 0 1 0 1797ecc2c1ba2f651c2cff53a80d2c03
+
+% 0 1 0 094e0b8c8470fa781d4ad4e50442b20f
+
+% 0 1 0 08d06da0a0a23535151a3dfeb1335f27
+
+% 0 1 0 11028f4c1625e7de1f40f737ed615fed
+
+% 0 1 0 1b197bc924daed720b57faa12b17d0ea
+
+% 1 1 0 02626f74693f8fc019351e3174547c6f
+
+@ 0 3 0 1ed65689e0c8c2500b117600eea7c147
++ Un suffisso di sintassi strutturata ripiega sul tipo che nomina, quindi
++ `application/problem+json` viene interpretato dalla corrispondenza JSON. Dove un'operazione offre
++ più tipi di media, si sceglie il primo con una corrispondenza nell'ambito, con `application/json`
++ per primo.
+
+@ 0 4 0 0cf3d5b020c6132e0feb6b729a5ed95a
++ Un corpo di richiesta viene codificato nel portatore del tipo di media, e scritto dal `Postable`
++ di quel portatore, anch'esso importato per nome, come `postables.jsonPostable` o
++ `postables.xmlPostable`. Un valore che *è* già il portatore, come una `Query` per
++ `application/x-www-form-urlencoded` o `Data` per `application/octet-stream`, viene inviato così
++ com'è.
+
+@ 0 1 0 101c62e946dfcef219672f0b763e58f0
++ ### Record da una risposta
+
+@ 0 1 0 06cc9264d1ea0d340b538351543c0d14
++ Una risposta si legge in uno di quattro modi:
+
+% 2 1 0 13b32556be23a19606ecc2fd62a66878
+
+@ 0 6 0 1002d04234df22f803957e6498747ada
++ column  Metodo
++ column  Legge la risposta come
++ row  `call[T]()`  un `T`, sollevando gli errori dichiarati
++ row  `attempt[T]()`  un `Attempt` su un `T` e gli errori dichiarati
++ row  `record()`  un record tipizzato dallo schema di risposta
++ row  `tuple()`  una tupla con nome tipizzata dallo schema di risposta, letta in modo eager
+
+% 1 1 0 0269751da2298bc61e243e90894667e4
+
+@ 0 4 0 15c69d98d45751d3008c19cbdf9706f2
++ Una risposta JSON si può leggere senza alcuna classe speculare. `record()` produce un
++ [record](records.md) tipizzato dallo schema di risposta, con un membro per ogni proprietà, al
++ tipo che lo schema dichiara. Gli oggetti annidati e i riferimenti agli schemi dei componenti sono
++ record annidati, e un array di oggetti è una `List` di essi:
+
+% 2 1 0 01f475359b5980690eee6c33305bd1ca
+
+% 3 1 0 00b26259fff5614713aa6a068c077724
+
+% 4 1 0 0206576a57e08cb10de1da03727915ac
+
+% 0 1 0 08e78fb869afc2c7065fcf4a92d1c46f
+
+% 0 1 0 02f6354c8330c000116816375a683e78
+
+% 0 1 0 1507280dd54b63ef107e87532d7ce072
+
+% 0 1 0 10b60cd9b6e7d67f15bf7ef071d92ff8
+
+% 1 1 0 06e29fe3260a24e71c9f74b03a091165
+
+@ 0 3 0 0f2d19d800492b4c09aabc55ab3ad4b9
++ `tuple()` legge lo stesso schema come tupla con nome, in modo eager. Entrambi richiedono una
++ risposta JSON il cui schema descrive un oggetto o un array di oggetti. Qualsiasi altra cosa è un
++ errore di compilazione che suggerisce `call[T]()`.
+
+@ 0 1 0 1babaab688d4db2c0b366b251df96662
++ ### Il modello del documento
+
+@ 0 5 0 11f5b7f82efc16880886ef4e6c6943b2
++ Anche la specifica stessa è un valore. `OpenApi` decodifica un documento OpenAPI 3.x da JSON o
++ YAML in parti tipizzate: info, server con le loro variabili, path, operazioni, parametri, corpi
++ di richiesta, risposte, e schemi, parametri, risposte e corpi di richiesta dei componenti. Questo
++ serve agli strumenti che ispezionano le API anziché chiamarle. Un documento YAML viene tradotto in
++ JSON e letto dallo stesso decodificatore, quindi le due forme non possono divergere.
+
+@ 0 4 0 1fbe6da9377234cb0d25e6b22cac3af5
++ Un parametro, una risposta o un corpo di richiesta scritto come `$ref` viene conservato come
++ `OpenApi.Ref`, e risolto su richiesta da `apply()`, dato il documento. Un riferimento a uno
++ schema si risolve allo stesso modo, un salto alla volta, quindi gli schemi ciclici restano
++ finiti. Un documento di una versione non supportata, o uno che non si riesce ad analizzare,
++ solleva un `OpenApi.Error` che nomina il difetto.
+
+@ 0 3 0 0dd467b580ca8da7139f35b3fb59097b
++ Il modello e il client sono messi alla prova su un corpus di descrizioni reali: gli esempi della
++ OpenAPI Initiative, il Petstore di Swagger, il Museum di Redocly, Twilio, Kubernetes, Discord, Box
++ e Stripe. Sono registrati in `lib/apoplexy/res/test/openapi` con la loro provenienza.
+
+@ 0 1 0 11417ab92365bfc40a2218f6b1c1075c
++ ### Limitazioni
+
+@ 0 3 0 00740b72e6630fa6068947feafd418a7
++ I parametri cookie, `callbacks`, `links`, i requisiti `security`, `webhooks` e i riferimenti ad
++ altri documenti vengono letti nel modello dove il modello ha un posto per essi, ma il client non
++ agisce su di essi. Un corpo `multipart/form-data` non viene ancora interpretato.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 7 0 06c1313ae2246e99184f8d5438eeebac
++ - [Client HTTP](http-client.md) trasporta le richieste e descrive i backend.
++ - [OAuth](oauth.md) descrive i valori `Credential` e i flussi dei token.
++ - [Record](records.md) descrive i record tipizzati che `record()` produce.
++ - [JSON](json.md), [XML](xml.md) e [YAML](yaml.md) descrivono i portatori dei tipi di media
++   comuni.
++ - [Errori](errors.md) descrive `attempt`, `recover` e `mitigate`.
++ - [Tipi di media](media-types.md) descrive i valori `MediaType` che nominano ogni corpo.

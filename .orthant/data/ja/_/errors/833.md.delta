@@ -1,0 +1,33 @@
+orthant 2 language
+
+@ 0 1 0 1903cb3a5083a5430f9cb4cd00bed8df
++ # `SN-833` — アンカーの揃え（廃止）
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ このエラーはもう存在しない。
++ このページは、コードが再利用されないように、そして古いリリースからの参照がなお解決できるように残されている。
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## その後
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ このエラーを発生させていた Decorum コンパイラプラグインは Soundness から切り出され、現在は Consequent Style のための独立した検査器である [Consequent](https://github.com/propensive/consequent) になっている。
++ 規則はそこで新しい識別子の下に残っており、その文字は規則の由来となる原則を示す：
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  旧
++ column  新
+
+% 0 1 0 11383a1898adc623156f67b60d78d4e6
+
+% 0 1 0 05a164a96d7ce06a0dc5c51849695d65
+
+% 0 1 0 0cc05fbfc6b519bf09c221b4b1b153a0
+
+% 0 1 0 1e245235046efd6a1e4bd5b607741bf9
+
+% 0 1 0 09a2f36affb6b3db112da8ae65cf7b0a
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

@@ -1,0 +1,70 @@
+orthant 2 language
+
+% 0 1 0 0f9b8e16d80f9aa112829dcd02a024b4
+
+@ 0 1 0 0fc4d38365ca5a2f08937ad8a4304b92
++ Levée lorsque Enigmatic ne parvient pas à analyser un contenu encodé en PEM.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 00d4cb6357bddfb41de012174eebf939
++ Un contenu PEM a la forme `-----BEGIN <label>-----` / corps en Base64 /
++ `-----END <label>-----`. Cette erreur signale les problèmes de structure avant
++ que le corps ne soit décodé. Le message est `could not parse PEM content
+
+% 0 1 0 0ec2149d5205921b19b89c2f0c0315c4
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 09a674ed40d1b4a01afb465572597d79
+
+@ 0 1 0 002d17e99b40a32e0bf6ff99e8e39255
++ La ligne d'ouverture `-----BEGIN <label>-----` est introuvable.
+
+@ 0 1 0 186a35d35484d3e606ea72437be96355
++ **Exemple.** `[↯/s.105.1.1] could not parse PEM content because the BEGIN line could not be found`
+
+@ 0 2 0 029ceca4d9cc5431021568d058a8d66f
++ **Résolution.** Vérifiez que l'entrée est encodée en PEM ; certaines sources
++ suppriment les lignes BEGIN/END et exigent de les remettre.
+
+% 0 1 0 13fec6f2cf49c5a81a5f3af99423ff6d
+
+@ 0 1 0 111a5ecb3386232f0f150c4b30f5ed8a
++ La ligne de fermeture `-----END <label>-----` est introuvable.
+
+@ 0 1 0 09eb641ca7d2fcbc0852e68ce5a22883
++ **Exemple.** `[↯/s.105.1.2] could not parse PEM content because the END line could not be found`
+
+@ 0 1 0 00b61b3b3dc2774d1ffbecc7eba9e7e4
++ **Résolution.** Vérifiez que l'entrée est complète et non tronquée.
+
+% 0 1 0 1715e06f3cf25e39063822a8b46b743e
+
+@ 0 1 0 1a14073c09175300096e6966e7fdf6e4
++ Le corps entre BEGIN et END n'a pas pu être décodé en Base64.
+
+@ 0 1 0 07709bf6592162b8073eaf331417ac18
++ **Exemple.** `[↯/s.105.1.3] could not parse PEM content because could not parse the BASE-64 PEM message`
+
+@ 0 2 0 043dc2d86ce83fe70e90d93d1bfeaafc
++ **Résolution.** Examinez le corps à la recherche de caractères ou de fins de ligne
++ invalides ; certaines chaînes de traitement altèrent le contenu Base64.
+
+% 0 1 0 0b02b61cde0f0ffd0e2de4a69967999a
+
+@ 0 1 0 08b9a9f19c3d111906c30703d65b3232
++ L'entrée était vide.
+
+@ 0 1 0 1f806947dbc17aad1d8ac07c1ac4aaca
++ **Exemple.** `[↯/s.105.1.4] could not parse PEM content because the file was empty`
+
+@ 0 1 0 170757ae11b8745913c5af7c49a4d54f
++ **Résolution.** Fournissez un fichier PEM non vide.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 019387d13e74d0bd1f3e3a7a1058f429
++ - Source : `lib/enigmatic/src/core/enigmatic.Pem.scala`

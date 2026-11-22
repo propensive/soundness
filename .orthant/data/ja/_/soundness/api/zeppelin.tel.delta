@@ -1,0 +1,725 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1e8bbf48ecb8ae4b17d80e9572aae0cc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0d1a657f9da0f8ab1bb0692d104ddbe3
++ info   不変の値としての ZIP アーカイブと JAR。型付きのエントリーのパス、ストリームされる内容、スコープを持つ読み込み
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 0b0a295f7248a9ca1543ebb169ddfae1
++     _Zeppelin_ は、`java.util.zip` の可変なランダムアクセスのオブジェクトを使わずに、ZIP アーカイブと、マニフェストを持つ ZIP アーカイブである JAR ファイルを読み書きする。
++     `Zipfile` は `Zip.Entry` の不変のリストであり、各エントリーは検証済みのアーカイブ相対パスと、読まれるときにストリームとして生み出される内容を持つ。
++     そのパスは `Path on Zip` であり、絶対パスにもなれず、アーカイブのルートより上にも上がれないので、`../../etc/passwd` のようなエントリー名は展開されるのではなく拒否される。
++     アーカイブはバイトのストリームとして直列化されるので、それを書くことは他のどんな値を書くこととも同じであり、それを読むときは、各エントリーが読まれるときにだけ、そのエントリーを有界のチャンクで少しずつ展開する。
+
+% 2 1 0 1a448366d47d40d70434e60dc1e4bb1a
+
+% 3 1 0 0c514026b44fe92912664c42ba7f454e
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 1 1 0 09c267d03fbd154c133e88f6b7f1fda4
+
+% 0 1 0 1d2af722c8e4b261066c45ab5c60c654
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
+
+% 0 1 0 12c5c459f0fc46b61a922ccc93d29672
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 0 1 0 1bea4071f15eeb820f218f7a33ce6017
+
+% 0 1 0 07d57cd5146c8b3616aa98ff287388ae
+
+% 0 1 0 02bacfd70fe85ef60f817389619d9d23
+
+% 0 1 0 1d9f9d44d85c577f051a097907178a9d
+
+% 1 1 0 1001f2843aa2f9b811ddbf46a0cc52c3
+
+@ 0 6 0 0656958534e0338108c6f61897b02023
++     アーカイブは二つの方法のどちらかで使われる。
++     `Zipfile.read` は切り離された `Zipfile` を与え、そのエントリーは読むたびにファイルを開き直すので、どこででも使えるままである。
++     `path.open[Zip]()`（あるいは `data.open[Zip]()`）は、代わりにスコープを開き、その中で `zipfile` は、ブロックの間開かれたままのファイルの一つのビューを通じて読む `Zip.Handle` になるので、エントリーはその中で消費しなければならない。
++     `path.open[Jar]()` は、パースされたマニフェストを伴う同じハンドルである `Jar.JarHandle` を与える。
++     `directory.archive[Zip]()` は、ディレクトリのツリー全体を決定的にアーカイブする。
+
+@ 0 6 0 1e8df00c17681147197e6078ec97cad7
++     アーカイブから読んだエントリーは、その内容のまわりにあるすべてのヘッダーフィールドを保持するので、それを書き戻すと、作り直される ZIP64 レコードを除いて、元のものをバイト単位で再現する。
++     エントリーは、Android の `zipalign` がするように、メモリーマッピングのために整列できる。
++     アーカイブは先頭のバイトの `prefix` を持てる。
++     これが、自己展開型の、あるいは直接実行できるアーカイブの作り方である。
++     元の形式の 4 GiB と 65,535 エントリーという制限を超えるアーカイブは、ZIP64 レコードを使って書かれ、読まれる。
+
+@ 0 4 0 1d860c69c21c0dcf17bed53b4c0d90c1
++     圧縮は、コンテキストの `Zip.Compression` ポリシーである。
++     既定は、pneumatic の純粋な Scala による deflate 圧縮器を通じた deflate であり、deflate してもエントリーが小さくならないときは常に格納に切り替わる。
++     すべての失敗は `Zip.Error` であり、その `Zip.Error.Reason` が何が誤っていたかを述べる。
+
+@ 0 4 0 0d810cea298ed0b3016139afafeb01cf
++     このライブラリには一つのソースセット `zeppelin.core` があり、すべてのファイルはスコープ内のバックエンドを通じて読まれるので、galilei の `FilesystemBackend` がコンパイルされるところならどこでもコンパイルされる。
++     アーカイブは今のところ読み込み専用で開かれる。
++     `Write` モードは拒否される。
++     すべては `soundness` アンブレラにエクスポートされる。
+
+% 0 1 0 18aabcbb4496be941e25c71009534a0e
+
+% 0 1 0 012a33d9804eb76f1c243a7d444b58d5
+
+% 0 1 0 13daa7adc91d932c0cc858f4a7e49723
+
+% 0 1 0 1804693b49c7c27a174ad557d9dbc257
+
+@ 0 1 0 09a4cee687f134831e159c172205cb22
++ entry .Zip   ZIP の形式とプレーン。エントリー、圧縮、エラー、スコープを持つアーカイブのハンドル
+
+% 1 1 0 13353c89dab52cb2128c08c932ebbc9f
+
+@ 0 6 0 0a96c1a227dd97121b50d34c6d25af3e
++       `Zip` は、名前を共有する二つのものである。
++       **型**としては、`path.open[Zip]()` と `directory.archive[Zip]()` で名指されるアーカイブの _形式_ であり、アーカイブ内のパスの**プレーン**である。
++       エントリーのパスは `Path on Zip` であり、`/` で区切られ、アーカイブのルートからの相対パスで、各セグメントは `.Rules` に従う。
++       **オブジェクト**としては、すべてのアーカイブが使う型、すなわち `Entry`、`Compression`、`Method`、`Error`、`Event`、`Handle` と、インポートなしで形式とプレーンを機能させる given を保持する。
+
+% 2 1 0 1ac6c56b08ffcf431d0b13f203c703a8
+
+% 3 1 0 13228830c744fdef0bf066c875f0616b
+
+% 4 1 0 008aa55b73960d2c09d9b27515fdf029
+
+% 5 1 0 035977da03a6b64e1909beebaae088b4
+
+% 1 1 0 032851a103b17b3b10f22217df890ee2
+
+% 0 1 0 07669de67c0de995108800a72ecdeaba
+
+% 0 1 0 1962f3b4d9401952177858ac5562ac2a
+
+% 0 1 0 00c483949672a8770beaf3bf2c44f07a
+
+% 0 1 0 03cf93040e3573620320233fd4821b27
+
+% 0 1 0 001a3686c3052a84139808bc642561cc
+
+% 1 1 0 1b721ea274c782721df4fd666ed3b79a
+
+@ 0 3 0 050b64c25121dd580618e430aa51797b
++       ZIP のエントリー名は相対的であり、`java -jar` は絶対的なものを拒否するので、`Zip` プレーン上のパスは先頭の `/` なしでエンコードされる。
++       絶対パスを名指すテキスト、`..` で上がるテキスト、Windows またはこの形式が禁じる文字を含むテキストは、デコードされない。
+
+% 1 1 0 10b43204e6a55c57093a6b12f542bf0a
+
+% 1 1 0 11706be789f004c60c219e20a1fb6d7b
+
+% 2 1 0 19a16cf2a8500ccc04e10250a65e7aa9
+
+@ 0 33 0 14c78ca3aea3b356174b9d1e2247dba5
++   entry .Rules   ZIP アーカイブ内のパスのセグメントとして許されるもの
++       セグメントは `\`、`"`、`/`、`:`、`*`、`?`、`<`、`>`、`|` を含んではならず、`.` や `..` であってはならない。
++       この規則は、アーカイブを読むときのすべてのエントリー名に適用されるので、ディレクトリをたどる（Zip Slip の）名前は、アーカイブの外に逃げるパスを生み出すのではなく、理由が `InvalidName` である `Zip.Error` を発生させる。
++   entry .compliant   Linux のパスのセグメントが、有効な ZIP エントリーのセグメントであることを述べる
++       `Linux is Compliant on Zip` の given であり、Linux のファイルシステム上のパスを、アーカイブ内のパスとして解釈し直せるようにする。
++   entry .compliant2   macOS のパスのセグメントが、有効な ZIP エントリーのセグメントであることを述べる
++       `MacOs is Compliant on Zip` の given であり、`.compliant` が Linux に対してそうであるのと同じである。
++   entry .nominative   ZIP のパスのセグメントを `.Rules` に従わせる given
++   entry .submissible   `path.on[Zip]` で ZIP プレーンに移された任意のパスのルート `%` を受け入れる
++       パスのルートは、パスが別のプレーンに移されるときに検査される。
++       アーカイブのルートは暗黙的なので、検査は常に通る。
++   entry .filesystem   `Filesystem` としての ZIP プレーン。`/` で区切られ、一意のルートを持たない
++       名前は `ZIP` であり、区切り文字は `/`、自身と親のセグメントは `.` と `..` である。
++   entry .radical   アーカイブのルートを空のテキストとして書くので、パスは `a/b.txt` とエンコードされる
++   entry .eradicable   テキストからアーカイブのルートを読む。これは失敗しない
++       アーカイブのルートはすべてのエントリーの名前の中で暗黙的なので、文字を占めず、どんなテキストもルート `%` にデコードされる。
++   entry .openable   パスにあるアーカイブを `Zip` として開く：`path.open[Zip]()`
++       `FilesystemBackend` がスコープにあるプレーン上の、任意のパスの型に対する `Openable` の given である。
++       これにはそのバックエンド、`Tactic[Zip.Error]`、`Tactic[Io.Error]` が必要であり、`Zip` のコンパニオンにあるのでインポートは要らない。
++       その結果は `Zip.Handle` であり、ブロックの中では `zipfile` として到達する。
++   entry .dataOpenable   メモリー上のアーカイブを `Zip` として開く：`data.open[Zip]()`
++       `Data` に対する `Openable` の given であり、`Tactic[Zip.Error]` が必要である。
++       チャンネルは関わらないが、パスから開いたアーカイブとの一貫性のために、アクセスはやはりスコープを持つ。
++   entry .archivable   ディレクトリのツリーを `Zipfile` としてアーカイブする：`directory.archive[Zip]()`
++       `Zip` のコンパニオンにあるので、インポートは要らない。
++       これには `FilesystemBackend`、`Tactic[Io.Error]`、`Tactic[Zip.Error]`、`Zip.Compression`（既定の deflate は暗黙のスコープにある）が必要である。
++       何がアーカイブされるかは `Zip.Archivable` を参照。
++   entry .Archivable   `directory.archive[Zip]()` の背後にあるアーカイバー。すべての子孫を、決まった順序で
+
+% 1 1 0 07bce91f7192965f0ecfb47021733a90
+
+@ 0 5 0 1746e3ad45796ff0140a51da7ffa8529
++         ディレクトリのすべての子孫がエントリーになる。
++         ディレクトリはディレクトリのエントリーとして、ファイルはその内容と更新時刻とともに、前順で、各ディレクトリの子はコードポイント順に並べられるので、同じツリーは常にバイト単位で同じアーカイブを生む。
++         zeppelin が書く ZIP にはシンボリックリンクがないので、リンクはたどられる。
++         フラグとして渡されないかぎり、コンテキストの `Zip.Compression` が適用される。
+
+% 2 1 0 1a2e5668e97a9b1f13a2aea256138ddc
+
+% 3 1 0 0ef5c8b703113b7a1971dd1ea7462194
+
+% 4 1 0 024d0cb38cfcf8210c8b7a66eb624cc7
+
+% 5 1 0 10f2c2cffd437c2a0c54e5faec466292
+
+% 0 1 0 1fc240acafda73dd16e0bbcd13b68942
+
+% 0 1 0 134eb99f061417b01184bb4cedcc9aba
+
+% 0 1 0 034a7bf5dcaa67e2007122258741e1f3
+
+% 0 1 0 0bac0e053e933caa0a2f8aca728e1848
+
+% 1 1 0 091a4b29c6c3c14105e6d7e825932934
+
+@ 0 4 0 0ac60586bb6559740a0fac6da36eaf5b
++         `Path on Zip` になれない名前は、理由が `InvalidName` である `Zip.Error` を発生させ、読めないファイルは `Io.Error` を発生させる。
++     entry #archive   パスの下のツリーをアーカイブする。任意の `Zip.Compression` フラグを取る
++   entry .Method   エントリーに記録された圧縮方式：`Stored` または `Deflate`
+
+% 1 1 0 1abce7a9b40c70f807b0bec7b123c5db
+
+@ 0 6 0 03ff912a447de2130bf0cc3c101cc531
++         求められた `Zip.Compression` ポリシーではなく、エントリーのバイトがアーカイブの中で実際にどうなっているかである。
++         deflate した形が内容より小さくならないエントリーは、ポリシーにかかわらず `Stored` である。
++         他の方式を使うアーカイブは、読まれるときに、理由が `UnsupportedMethod` である `Zip.Error` を発生させる。
++     entry #id   ZIP ヘッダーにおける方式の番号。`Stored` は `0`、`Deflate` は `8`
++   entry .Compression   新しいエントリーを圧縮するポリシー。格納するか、deflate するか
+
+% 1 1 0 0020eec6def441a6081909b1f388391f
+
+@ 0 5 0 1be7479db49a124b1d83bcc51c5b0ac5
++         生の内容から `Zip.Entry` が作られるときにコンテキスト値として参照され、`directory.archive[Zip]` にはフラグとして渡される。
++         `Stored` はすべてのエントリーのバイトをそのまま保つ。
++         `Deflate(level)` は deflate し、deflate しても小さくならないエントリーは格納に切り替える。
++         deflate は pneumatic のものであり、圧縮レベルは一つしかないので、`Deflate(0)` は zlib のレベル 0 と同じように格納し、他のすべてのレベルは同じように deflate する。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1a6fba7ec3b71bd81f5deb1485204af9
+
+% 1 1 0 0cd1aba26319078c140ac2cb1c113554
+
+% 2 1 0 147a87a87b21c5c4040d47e3c180225c
+
+% 0 1 0 1c78a6f7f43d5ba11f3f8d0ead58c5dd
+
+% 0 1 0 03277e74cabbf3650feacd7afde9a504
+
+% 0 1 0 0f00e7dc253c4a000ef8be9a86d23b3a
+
+% 1 1 0 01d3090a793502d41149cf9101647381
+
+% 2 1 0 1a7baf6b5554e22c1f69cc3447bcd5cc
+
+% 4 1 0 04383e9f3746d6410a35fc2250c3fca4
+
+% 0 1 0 0802c79896e2e59107d65f54d69c8e34
+
+% 1 1 0 0ed9573c86708cb1118a9e13e9ff9c2d
+
+% 2 1 0 0dde70f3a15f360316e4a275ff04d616
+
+% 0 1 0 1f4d6e8610fe8c731e1e0379d9d4d31d
+
+% 1 1 0 1281c1be559e2d791a62fb1771bd5123
+
+% 2 1 0 1d02534c76211bbb116a687110487a27
+
+% 4 1 0 0fdf24510c43849f13fd6bd0aca2eb95
+
+% 0 1 0 050869e88ce8b8311dedc5aad66b4347
+
+% 1 1 0 0fa8148b4d43057a1fe3836eb1289b70
+
+% 2 1 0 0f649d006a58f34d19d06d22de61a7a9
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 0a6eba7c67b3e4751189320a82837c66
++     entry .default   既定のポリシー `Deflate(-1)`。インポートなしで暗黙のスコープから見つかる
++     entry .Deflate   deflate しても小さくならないのでないかぎり、各エントリーを deflate する
++       entry #level   要求されたレベル。`0` は格納し、他のすべてのレベルは同じように deflate する
++   entry .Entry   ZIP アーカイブの一つのエントリー。そのパス、圧縮された内容、ヘッダーフィールド
+
+% 1 1 0 060056013e5b2b6e170b588431b19a92
+
+@ 0 5 0 1ea0fd054bc474e30a9e771752efbf70
++         不変の値であり、アーカイブ相対の `#ref`、バイトの格納に使われる `#method`、その CRC-32 とサイズ、格納されたバイトの生産者、DOS のタイムスタンプ、そしてアーカイブが持ちうる他のすべてのヘッダーフィールドからなる。
++         エントリーは `Streamable by Data` である任意の内容から作られ、コンテキストの `Zip.Compression` のもとで一度だけ圧縮される。
++         そして `.streamable` の given を通じて、少しずつ展開しながら、任意の型として読まれる。
+
+% 2 1 0 1b8b0377d0b08924065604fb7bfe2b4e
+
+% 3 1 0 1a3f2b71ffbbd23f1a1aa45feada48ba
+
+% 4 1 0 196da67c7a875d5904ad04af9abd89ca
+
+% 0 1 0 15c01b294fb63eeb12f214421a322d6b
+
+% 0 1 0 09a207a70e7ba39814ab584185d9547d
+
+% 0 1 0 0cdde7fb0901bfc502360e39466648ea
+
+% 0 1 0 051aed030c7067db0c583232446896a7
+
+% 0 1 0 03c84cd7fcd484cb0bc3348cce4bfdc9
+
+% 1 1 0 060d5a3ef4d9d5dc1fcb2cb3f9f06ac6
+
+@ 0 8 0 0c2cac832d51aeb4199cd625f07fdf71
++         `#alignment` より後のヘッダーフィールドは、切り離して読んだアーカイブをバイト単位で書き戻せるようにするために存在する。
++         `Unset` は zeppelin が自分で導く値を意味し（UTF-8 フラグは名前がそれを必要とするときにちょうど立つ。バージョンは 20、ZIP64 エントリーなら 45。外部属性はディレクトリなら `0x10`、それ以外は 0。拡張フィールドはなし）、値があればそのまま書かれる。
++         それらは `#withHeaders` で、整列は `#aligned` で、ディレクトリのフラグは `#asDirectory` で変更する。
++         ケースクラス自身の `copy` は、`#storedBytes` の生産者を純粋なパラメーターを通じて渡すことになるので、キャプチャ検査されたコードからは呼べない。
+
+% 0 1 0 171463546db9ece10cc4ddf84f6d2fb6
+
+% 0 1 0 065ddf38b7b25ce11485515cf3f3cde0
+
+@ 0 10 0 0ec81c24b319b3f30ac42b8b2ec58c76
++     entry .apply   任意のストリーム可能な内容から作られ、スコープ内のポリシーのもとで圧縮されるエントリー
++         `Zip.Entry(ref, content)` は内容を一度読み、その CRC-32 を計算し、コンテキストの `Zip.Compression` のとおりにそれを格納または deflate し、DOS のエポック（1980 年 1 月 1 日）をタイムスタンプとする。
++         すべてのフィールドを明示的に受け取るケースクラスの完全なコンストラクターも、同じ名前である。
++     entry .at   内容から作られ、更新時刻を任意の時点の型で与えるエントリー
++         `.apply` と同じだが、時刻をエントリーの DOS の日付と時刻のフィールドに UTC で記録する。
++         ZIP のタイムスタンプはタイムゾーンを記録しないからである。
++         時点は `Abstractable across Instants to Long` である任意の型でよい。
++         DOS が表せない 1980 年より前の時点は 1980 年の最初の 1 秒として記録され、DOS の時刻は 2 秒の精度で格納される。
+
+% 2 1 0 0830a6e334adf5a40076ce1e8c68dd77
+
+% 3 1 0 0d45bbae3a69ca710185d596c5ddf0c8
+
+% 0 1 0 0c67f2a717400322177809ffaa236967
+
+% 1 1 0 116c96e182f70ef809aa058f34cf18aa
+
+@ 0 43 0 1af734adab5eeb4717fe597d53d200dc
++     entry .streamable   エントリーの展開された内容を、バイトとして、または任意のデコード可能な型として読む
++         `Streamable by Data over Credit` の given であり、エントリーは `read[Text]`、`read[Data]`、あるいはストリームからデコード可能な任意のものとして読める。
++         読み込みのたびに `#contents` の新しいストリームになる。
++     entry #ref   アーカイブ内でのエントリーのパス
++     entry #method   バイトの格納に使われる圧縮方式。`Zip.Method` として
++     entry #crc32   展開された内容の CRC-32
++     entry #uncompressedSize   内容のサイズ。バイト単位
++     entry #compressedSize   アーカイブに格納されたバイトのサイズ
++     entry #storedBytes   格納された（圧縮されている可能性のある）バイトの生産者。読み込みごとに一度呼ばれる
++         読み込みのたびに新たに呼ばれるので、切り離された `Zipfile` から読んだエントリーは毎回そのソースを開き直し、再利用できるままである。
++         `#contents` は展開された形である。
++     entry #dosTime   更新時刻。パックされた DOS の時刻形式で
++     entry #dosDate   更新日付。パックされた DOS の日付形式で
++     entry #directory   エントリーがディレクトリかどうか。名前の末尾に `/` を付けて書かれる
++     entry #comment   エントリーのコメント、または `Unset`
++     entry #alignment   エントリーのデータが始まらなければならないバイトの倍数。なければ `1`
++     entry #flags   汎用ビットフラグ。zeppelin が導くものについては `Unset`
++         ビット 3 は、エントリーをストリームされたもの（`#streamed`）として示す。
++         その CRC とサイズはペイロードの後のデータ記述子に書かれ、これがシークできないシンクにアーカイブを書く方法である。
++         名前が UTF-8 であることを示すビット 11 は、既定では名前がそれを必要とするときにちょうど立つ。
++     entry #versionMadeBy   セントラルヘッダーの "version made by"。zeppelin 自身のものなら `Unset`
++     entry #localVersion   ローカルヘッダーの "version needed to extract"。zeppelin 自身のものなら `Unset`
++     entry #centralVersion   セントラルヘッダーの "version needed to extract"。zeppelin 自身のものなら `Unset`
++     entry #internalAttributes   内部ファイル属性。なければ `Unset`
++     entry #externalAttributes   Unix のモードが置かれる外部ファイル属性。既定なら `Unset`
++         既定は、ディレクトリなら DOS のディレクトリ属性である `0x10`、それ以外は 0 である。
++         Unix のモードは上位 16 ビットに保持される。
++     entry #localExtra   ZIP64 レコードを除いた、ローカルヘッダーの拡張フィールド、または `Unset`
++     entry #centralExtra   ZIP64 レコードを除いた、セントラルヘッダーの拡張フィールド、または `Unset`
++         書き手がエントリーのサイズとオフセットから ZIP64 レコードを再構築するので、両方の拡張フィールドからそれは除かれる。
++     entry #localSizes   ストリームされたエントリーのローカルヘッダーが、その CRC とサイズを繰り返すかどうか
++         書き手によって異なる。
++         繰り返すものもあれば、データ記述子だけに任せてゼロのままにするものもある。
++         ストリームされないエントリーでは無視される。
++     entry #streamed   `#flags` のビット 3 により、エントリーのペイロードの後にデータ記述子が続くかどうか
++     entry #contents   エントリーの展開された内容。呼び出しごとに新しいストリームとして
++         `Deflate` のエントリーは少しずつ展開されるので、2 GiB を超えるものを含め、どんなサイズのペイロードも、有界のチャンクで読まれ、展開され、消費される。
++     entry #aligned   同じエントリー。そのデータはあるバイトオフセットの倍数から始まらなければならない
++         `zipalign` がするように、ローカルヘッダーの拡張フィールドをゼロのバイトでパディングすることで実現する。
++         これは、読み手がそのバイトを直接メモリーマップできる、格納されたエントリーにのみ意味がある。
++         整列された `classes.dex` や `resources.arsc`、あるいはページ境界（`4096`）に整列されたネイティブライブラリは、コピーを必要としない。
+
+% 2 1 0 1b910724c891c639093b71f62918262e
+
+% 3 1 0 0cfbc21604f5c37e1839b97802068a81
+
+% 4 1 0 14358a597b70e2d106b3bbe05ecc19c7
+
+% 0 1 0 0bcd14ac3af2545219185a5b360c9820
+
+% 0 1 0 1ff27b9257ecc4e217ec9f07a585be08
+
+% 1 1 0 013461966d21e51b012dacdda0f16c01
+
+@ 0 7 0 1365bc334ebe1b420c19c5a60d07a42e
++     entry #asDirectory   同じエントリー。ディレクトリとして記録される
++         その名前は末尾の `/` を付けて直列化され、DOS のディレクトリ属性が設定される。
++     entry #withHeaders   ヘッダーフィールドの一部を置き換えた同じエントリー
++         各パラメーター、すなわち `flags`、`versionMadeBy`、`localVersion`、`centralVersion`、`internalAttributes`、`externalAttributes`、`localExtra`、`centralExtra`、`localSizes` の既定はエントリーの現在の値なので、呼び出しでは設定するフィールドだけを名指す。
+
+% 2 1 0 14ecc634ccbd903f1202918070364eed
+
+% 3 1 0 06185d486e293e941c0ccb7eca2ada6e
+
+% 4 1 0 12fb9f6a70d9a07b0e02fb46819a4403
+
+% 0 1 0 1414bc1c113341ec1d7137992d78882d
+
+% 0 1 0 1401e9bea5172c7a078d35a08d979aee
+
+% 1 1 0 10d597a2b4981ed50fa5d485c205dde6
+
+@ 0 1 0 086dcc165fe69fb000d5727ffdcec60f
++   entry .Error   ZIP アーカイブの読み込み、書き込み、オープンの失敗と、その理由
+
+% 1 1 0 110d78b99dc114a01b574d1883464cf6
+
+@ 0 4 0 1859a4047b9eaf381569c1b9b9332fd9
++         エラー `↯/s.136.1`：_the ZIP operation failed because `reason`_。`Zip.Error.Reason` の番号をサブコードとする。
++         `Zipfile.read`、`Zipfile#entry`、`Zipfile` の直列化、アーカイブを `Zip` または `Jar` として開くこと、そして `Zipfile.rebase` が発生させる。
+
+% 2 1 0 1fd4dfd08a6b8e341db528bf0ac6b558
+
+% 3 1 0 0c5622044e6cf7c50df77b4a7a2c5e31
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 0192ef8f5c8f67f2163d849f2e5ab4c4
+
+% 0 1 0 19f616cedf5fd96c1eb49b733b60b39d
+
+% 1 1 0 1b024bb482f12f020ff5eeedee48e2bb
+
+@ 0 1 0 19aa2ea90119289003f3c5f9ccca9d39
++     entry .Reason   ZIP アーカイブまたは操作の何が誤っていたか。それぞれに安定した番号がある
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 1dc99bc41c9997701b7c6ca7547e3b49
++           各ケースには安定した番号がある。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 5 0 045dad35057d87ef163dd9869d22cadf
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
++           row  `DuplicateEntry(path)`  1  _the path `path` is a duplicate entry_  バイトが一つも直列化される前に拒否される
+
+% 0 1 0 133d54a35e467a211464d3a9124c88c5
+
+@ 0 3 0 0e3a229cb87bcbe102ecf874290a3aba
++           row  `InvalidName(name)`  3  _the name `name` is not valid for a ZIP entry_  有効な `Path on Zip` ではない
++           row  `UnsupportedMethod(method)`  4  _the compression method `method` is not supported_  格納と deflate 以外のすべて
++           row  `MissingEocd`  5  _no end-of-central-directory record could be found_  したがってそのバイトは ZIP アーカイブではない
+
+% 0 1 0 10cc00bda4dbac7a1e1d21b6ec1f7fe1
+
+% 0 1 0 1910ab939c0cc6181c26bfec0309caae
+
+% 0 1 0 17ab75001486a54a110a31afb0a967d2
+
+@ 0 1 0 1b29a216d3ec3e580b8b8a97deda3bf5
++           row  `WriteUnsupported`  9  _ZIP archives cannot yet be opened for writing_  `Write` を含むモードで開かれたアーカイブ
+
+% 0 1 0 1e1142f93520fd4f15bfab13e688393a
+
+% 0 1 0 06eefce5ebc9bdf9143d81cdaad67e8c
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 16 0 1d4a16a2c3cf626b1a534384cd0e5ee3
++       entry .DuplicateEntry   一つのアーカイブの二つのエントリーがパスを共有する
++         entry #path   重複したパス
++       entry .NotFound   求められたパスにアーカイブのエントリーがない
++         entry #path   求められたパス
++       entry .InvalidName   エントリー名がアーカイブ内の有効なパスではない
++         entry #name   アーカイブが綴ったとおりの名前
++       entry .UnsupportedMethod   エントリーが格納と deflate 以外の圧縮方式を使っている
++         entry #method   エントリーのヘッダーにある方式の番号
++       entry .BadSignature   レコードのシグネチャが、その位置で期待されたものではない
++         entry #expected   期待されたシグネチャ
++       entry .CannotWrite   アーカイブを書けなかった
++         entry #detail   何が誤ったか
++       entry #number   理由のサブコード。1 から 11
++     entry .communicable   各 `Zip.Error.Reason` を、_the ZIP archive ended unexpectedly_ のような文として描画する
++     entry #reason   何が誤っていたか。`Zip.Error.Reason` として
++   entry .Event   ZIP アーカイブの読み込みが記録するログ
+
+% 1 1 0 078b72eed5bccc321c02bc337c0d88ca
+
+@ 0 8 0 0d370e517fb84fbd15ef8174de2aa148
++         パスからの `Zipfile.read` は、`Read` を `info` レベルで、`Log.Serialization` のタグを付けて記録する。
++         その読み込みには `Zip.Event is Loggable` がスコープに必要である。
++         `logging.silentLogging` はそれを捨てる。
++     entry .communicable   各イベントをメッセージとして描画する
++     entry .Read   アーカイブが読まれた：_read `entries` entries from the zip archive `path`_
++       entry #path   アーカイブのパス。テキストとして
++       entry #entries   それが持っていたエントリーの数
++   entry .Handle   ブロックの間開かれ、`zipfile` として到達するアーカイブ
+
+% 1 1 0 12c958ba9ea3ee8000258b12e0172abd
+
+@ 0 5 0 15ea76fa7f4921ad01b7a5787c0e9c46
++         `path.open[Zip]()` と `data.open[Zip]()` が提供するスコープを持つハンドルであり、ブロックの中では `zipfile` がそれを名指す。
++         エントリーが読み込みのたびにファイルを開き直す、切り離された `Zipfile` とは違い、`Zip.Handle` は、ブロックの間ファイルシステムのバックエンドが開いたままにしているファイルの一つのビューを通じて読む。
++         そのため、エントリーは読み込みごとの open と close なしに読まれ、それに対応して、ブロックの中で消費しなければならない。
+
+% 2 1 0 0c08b6e60940bc8d0448fa40f0be5578
+
+% 3 1 0 075f5224f7690df801afb4aa4864e425
+
+% 4 1 0 09f61b59ca1fb8991de5e3a86e5b7307
+
+% 5 1 0 1d0e2bbf007d91cf080bbea4ba128071
+
+% 1 1 0 1df72dbc1dce8f6407bf7b8e5628418d
+
+% 0 1 0 0ce457194c18199d0a664f021fe2a429
+
+% 0 1 0 0ff4261ea2b89eb30e4e1c9af76c72a3
+
+% 0 1 0 167de41d58746bc719076025ec9d0fa8
+
+% 0 1 0 12d9f97331248bd71fb79675402ce514
+
+% 1 1 0 1bb7b8c50a4e2fe010aca076dd6a0642
+
+@ 0 2 0 0d3fc781ab6f5a2319f185aa126d4680
++         これはケイパビリティなので、キャプチャ検査を有効にしてコンパイルされた呼び出し側では、ハンドルとそれが生み出すエントリーはブロックに限定される。
+
+% 0 1 0 05b78bb8bce360c70daa5fa4c47c4629
+
+% 0 1 0 02598879ef218ece01db3985c3f0735a
+
+@ 0 4 0 13ba76083714c01e07326f507f0dfe40
++     entry #entries   アーカイブのエントリー。セントラルディレクトリの順に並ぶ
++     entry #entry   あるパスのエントリー。なければ理由が `NotFound` である `Zip.Error` を発生させる
++     entry #comment   アーカイブのコメント、または `Unset`
++   entry .Openable   ファイルシステムのバックエンドを持つ任意のプレーン上のパスに対する、`path.open[Zip]()` の背後にあるオープナー
+
+% 1 1 0 1986abdca09a669d083309930d9fdfa8
+
+@ 0 4 0 1c8158d0d386abc10188cfe4a8135c07
++         `Zip.openable` の given が構築する。
++         呼び出し側がこのクラスを名指すことはない。
++         アーカイブは今のところ読み込み専用で開かれるので、`Write` を含むモードは、理由が `WriteUnsupported` である `Zip.Error` を発生させる。
++     entry #open   バックエンドのファイルのビューを通じてアーカイブをパースし、ブロックを実行する
++   entry .DataOpenable   すでにメモリー上にあるアーカイブに対する、`data.open[Zip]()` の背後にあるオープナー
+
+% 1 1 0 0c6d618b6bee5be5054451f1a3f1e335
+
+@ 0 3 0 0957840be91c536b07c05fba15506441
++         `Zip.dataOpenable` の given が構築する。
++         `Write` を含むモードは、理由が `WriteUnsupported` である `Zip.Error` を発生させる。
++     entry #open   バイトからアーカイブをパースし、そのハンドルを伴ってブロックを実行する
+
+@ 0 1 0 05f315dc490d349f078e29dc482b0793
++ entry .Zipfile   不変の値としての ZIP アーカイブ。そのエントリー、コメント、先頭のバイト
+
+% 1 1 0 133736b562abd07f12c853da278e6731
+
+@ 0 5 0 0cb81c70b78e75890be3a4dc88b55dff
++       `Zipfile` は、手の中にあるアーカイブ全体である。
++       `Zip.Entry` の `List`、任意のアーカイブのコメント、そしてアーカイブ本体の前に置く生のバイトの任意の `prefix` からなる。
++       エントリーから直接作るか、`.read` でパスやバイトから読むか、`directory.archive[Zip]()` で生み出す。
++       ストリームとして直列化されるので、`write` で任意の宛先に書かれる。
+
+% 2 1 0 128d018e3eced88b14642f855795377c
+
+% 3 1 0 15381a93ddc6e8a0095551b1cf498501
+
+% 4 1 0 0a5085fb407d2284176445729e8cbc87
+
+% 5 1 0 13df7869f2c0e00c061047eceb55aa46
+
+% 6 1 0 1ce3d14f3ef38ae10bc1cfe5b845204c
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 2 1 0 0be81e5794b1ee14108c0284f63e7871
+
+% 0 1 0 1c0776b8e34a019e0658cd09129183c4
+
+% 0 1 0 0e4e84be3dad8958021eba426c1ae340
+
+% 0 1 0 0493806620a27ab903a45370e2590736
+
+% 0 1 0 1c19913b0acf881b1050932e304f238b
+
+% 0 1 0 0f9802a621b9fcd915b974e515a98840
+
+% 0 1 0 10d7d3e3e15d6777141a49f0ce1f29c9
+
+% 1 1 0 0f078e4e5eac7d311809ad5f92ac5810
+
+@ 0 3 0 0c67c64b9f93d06317107c3fbf942d68
++       パスから読んだ `Zipfile` のエントリーは切り離されている。
++       読み込みのたびにバックエンドを通じてファイルを開き直すので、値はどこででも使えるが、読み込みごとに一度開くコストがかかる。
++       `path.open[Zip]()` は、代わりにブロックの間、開いた一つのビューを通じて読む。
+
+@ 0 5 0 13e3dd5612e983250edc1bfd71ac2287
++       ZIP の読み手は、アーカイブのディレクトリをファイルの先頭ではなく末尾から見つけ、記録するすべてのオフセットは相対的なので、任意の先頭のバイトに連結されたアーカイブもなお読める。
++       `prefix` はそのためにある。
++       自己展開型の、あるいは直接実行できるアーカイブは、ランチャーの後に ZIP が続いたものである。
++       先頭のバイトを持つアーカイブを読むと、それが `prefix` として返される。
+
+% 1 1 0 166c77553d0abd5619d549a5acfe5d78
+
+% 2 1 0 0f092eb3504f211f022695f81be2f8a2
+
+@ 0 7 0 17a6f13b79e8aee711e0018884dabd5a
++   entry .read   パスから、あるいはメモリー上のバイトからアーカイブを読む
++       `Zipfile.read(path)` は、スコープ内の `FilesystemBackend` を通じてセントラルディレクトリを読み、`Tactic[Io.Error]` と `Tactic[Zip.Error]` を必要とする。
++       また `Zip.Event.Read` を記録するので、`Zip.Event is Loggable` もスコープに必要である。
++       `Zipfile.read(data)` はバイトから読み、何も記録しない。
++       ここで読まれるのはディレクトリと各エントリーのローカルヘッダーだけであり、ペイロードはエントリーが読まれるときに読まれる。
++       ZIP アーカイブでないバイトに対しては理由が `MissingEocd` である `Zip.Error` を、アーカイブの外に逃げるエントリー名に対しては `InvalidName` を発生させる。
+
+% 2 1 0 1dd3b76c34af240a14d497ce3a078a6d
+
+% 3 1 0 05e8e2a67a921b5d10bd9bb7142c84f3
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 1196fba2dd8f4bfd10ac74e8e9957175
+
+% 1 1 0 1061ce2d980c10d10d8cc7f9e9ce55aa
+
+@ 0 10 0 1902e1fc5787a7260878ba30a130cf07
++   entry .rebase   バイトが前に付け加えられた後、ZIP64 アーカイブの唯一の物理オフセットをずらす
++       ZIP アーカイブが記録するすべてのオフセットは、一つの例外を除いて、そのセントラルディレクトリからの相対値である。
++       例外は、ZIP64 のロケーターが持つ ZIP64 end-of-central-directory レコードへのポインターで、これはファイル内の物理オフセットである。
++       アーカイブに連結によって接頭辞を前に付けたり、アーカイブからバイトを切り取ったりすると、まさにそのフィールドが無効になる。
++       Zeppelin の読み手はそれを許容するが、JDK の読み手はポインターをたどり、何の診断もなくアーカイブを開くことを拒む。
++       `Zipfile.rebase(path, delta)` は、スコープ内の `FilesystemBackend` を通じて、ポインターをその場で `delta` バイトずらす。
++       ZIP64 のロケーターを持たないアーカイブ、つまり 65,535 エントリーと 4 GiB に満たないもの、すなわちほとんどすべては、手を付けずに残される。
++       ファイルの外に出てしまうポインターは、理由が `Zip64Error` である `Zip.Error` を発生させる。
+
+@ 0 17 0 00c985ea42edd9960a44e96a0076ab34
++       `prefix` を付けて書かれた `Zipfile` は、接頭辞を置いた状態でオフセットが計算されるので、リベースを必要としない。
++   entry .streamable   `Zipfile` をバイトのストリームとして直列化するので、どこにでも書ける
++       `Streamable by Data over Credit` の given であり、直列化は重複したエントリー名を拒否するので `Tactic[Zip.Error]` を必要とする。
++       `Zipfile` のコンパニオンにあるので、`path.write(zipfile)` にはインポートが要らない。
++   entry #entries   アーカイブのエントリー。書かれる順に並ぶ
++   entry #comment   アーカイブのコメント、または `Unset`
++   entry #prefix   アーカイブ本体の前に置かれる生のバイト、または `Unset`
++   entry #entry   あるパスのエントリー。なければ理由が `NotFound` である `Zip.Error` を発生させる
++   entry #serialize   バイトの遅延ストリームとしてのアーカイブ。エントリーのペイロードは順に開かれる
++       二つのエントリーがパスを共有すると、どの読み手もそれを解決できないので、バイトが一つも生み出される前に、理由が `DuplicateEntry` である `Zip.Error` を発生させる。
++       最初に接頭辞が来て、次に各エントリーのローカルヘッダー、ペイロード、データ記述子が続く。
++       各ペイロードはストリームがそこに達したときにだけ開かれ、有界のチャンクで排出される。
++       その後にセントラルディレクトリと終端のレコードが続き、エントリー、オフセット、エントリー数のいずれかが元の形式をあふれるところでは ZIP64 レコードが使われる。
+
+@ 0 1 0 181845abf83ae2b51af592b209e1c946
++ entry .Jar   Java アーカイブの形式。`path.open[Jar]()` は、パースされたマニフェストを伴う ZIP のハンドルを与える
+
+% 1 1 0 1fd6bd6bf6dc9c7b1ddb4350b5d3dee3
+
+@ 0 4 0 11a64dcfc709cf1d015adb33ec7fc9d4
++       JAR は ZIP なので、それを `Jar` として開くと `Jar.JarHandle` が得られる。
++       これは、`META-INF/MANIFEST.MF` のメイン属性で細分化された `Zip.Handle` である。
++       エントリーとその内容は、`Zip` 形式の場合とまったく同じように振る舞う。
++       JAR は他の `Zipfile` と同じように、`Jar.manifest` が作るエントリーを最初に置いて書かれる。
+
+% 2 1 0 1aacd1083e7d329d0a9df3137e2281da
+
+% 3 1 0 1903f8e0bf945b251680fbd494de3546
+
+% 4 1 0 10e9e30f6c5ca83810768e9fbbbd79e2
+
+% 5 1 0 12f235b16154c3a414cfff25e78f7476
+
+% 6 1 0 1c13324f10efa80317b18932d3152765
+
+% 1 1 0 09b61aaf44ce2be11b600e13eb868346
+
+% 2 1 0 1048afc7b48242b60b74171c696ebe01
+
+% 0 1 0 1d9dba871db33e261045fd93bd8a9c54
+
+% 0 1 0 01f4842cf4f321aa12bb2c4e1f60ef5f
+
+% 0 1 0 009b058abbc575c6004ef491e6a7d1b2
+
+% 0 1 0 0ca07f862bff4ebc0efa056d5cdc19e2
+
+% 0 1 0 07a36df3657642d80750581d3bbd0857
+
+% 1 1 0 0d46e106fdf179c81fda7e1239a320f5
+
+% 1 1 0 11cd4683cd52e9b6136115739f4d3e32
+
+% 1 1 0 18397302048da7ed0147a291589430b2
+
+@ 0 6 0 17bf4c589d7529ea15b9fcdcbac270a8
++   entry .manifest   メイン属性のリストに対する `META-INF/MANIFEST.MF` のエントリー
++       各属性は `Key: value` として書かれる。
++       行は、JAR の仕様の 72 バイトで、空白で始まる継続行によって折り返され、行末は `\r\n` で、空行がメインセクションを終える。
++       エントリーはスコープ内の `Zip.Compression` のもとで圧縮され、慣習では `Zipfile` の最初に置くのが好まれる。
++   entry .JarHandle   開かれた JAR。マニフェストのメイン属性を伴う `Zip.Handle`
+
+% 1 1 0 05e94faea536d34c07514d505fc36c61
+
+@ 0 7 0 104e6021f622271406e605171275f9cf
++         `path.open[Jar]()` または `data.open[Jar]()` のブロックの中で `zipfile` が名指すものである。
++         そのエントリーと、その読み込みは、`Zip.Handle` のものである。
++     entry #manifest   マニフェストのメイン属性。アーカイブにマニフェストがなければ空のマップ
++         `META-INF/MANIFEST.MF` から読まれる。
++         仕様が求めるとおり、（空白で始まる）継続行はその前の属性に連結し直され、パースはメインセクションを終える最初の空行で止まるので、エントリーごとのセクションは含まれない。
++   entry .JarOpenable   ファイルシステムのバックエンドを持つ任意のプレーン上のパスに対する、`path.open[Jar]()` の背後にあるオープナー
+
+% 1 1 0 1d010e583ae55e9a0073bc5e84050080
+
+@ 0 4 0 1ac2c74acd579ddf1a17d368f5d530e1
++         `Jar.openable` の given が構築する。
++         `Write` を含むモードは、理由が `WriteUnsupported` である `Zip.Error` を発生させる。
++     entry #open   バックエンドのファイルのビューを通じてアーカイブをパースし、ブロックを実行する
++   entry .JarDataOpenable   すでにメモリー上にある JAR に対する、`data.open[Jar]()` の背後にあるオープナー
+
+% 1 1 0 05deddc83025555b03c3f80f6064b941
+
+@ 0 7 0 0939113282c865220d799a87cab2222c
++         `Jar.dataOpenable` の given が構築する。
++     entry #open   バイトからアーカイブをパースし、そのハンドルを伴ってブロックを実行する
++   entry .openable   パスにある JAR を `Jar` として開く：`path.open[Jar]()`
++       パスのプレーンに対する `FilesystemBackend`、`Tactic[Zip.Error]`、`Tactic[Io.Error]` が必要である。
++       `Jar` のコンパニオンにあるので、インポートは要らない。
++   entry .dataOpenable   メモリー上の JAR を `Jar` として開く：`data.open[Jar]()`
++       `Tactic[Zip.Error]` が必要である。
++       `Jar` のコンパニオンにあるので、インポートは要らない。
+
+@ 0 4 0 0457a0ae1821056f0440a90e4e93a454
++ entry .zipfile   `path.open[Zip]()` または `open[Jar]` のブロックの中で、スコープにあるアーカイブのハンドル
++     galilei の `file` が開いたファイルを名指すように、コンテキストの `Zip.Handle` を名指す。
++     これは transparent なので、その型はハンドル自身の正確な型である。
++     `open[Jar]` のブロックの中では、`manifest` を持つ `Jar.JarHandle` になる。
+
+% 2 1 0 05d096a49379936c1bd44a6010244f15
+
+% 3 1 0 1cfbe987c1d0012707a3ab56d49eadcc
+
+% 1 1 0 0131c69c6998e20b073cb77c91c7dfbd
+
+% 1 1 0 07780dfd83bc4a2306ed804b6de043b1
+
+% 0 1 0 0bf6db96624e2cda0e2f2ce05bb912a3
+
+% 0 1 0 105a46f3f55eb1f617c3717ba8e2564f
+
+% 0 1 0 1d14c913af4e82a11ef36885e9790056
+
+% 0 1 0 134a594970cb4c031733a19a40b45e13
+
+% 1 1 0 078bc06d88eacf88186e10b746cc98dd

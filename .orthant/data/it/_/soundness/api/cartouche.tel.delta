@@ -1,0 +1,584 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06b23605c41af6441e37b1b6371b75e9
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e801473b9d9e33416d5d017c95661fc
++ info   posizionamento delle etichette: trova un posto per ogni pezzo di testo su un'immagine, lontano dal resto
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1f9a0f08a918a10d0b82fedd5f53b0ed
++     _Cartouche_ decide dove va ogni etichetta su un'immagine. Il testo si colloca accanto alla
++     cosa che nomina — una nota vicino a un punto, un nome vicino a una città, una percentuale in
++     uno spicchio — e quando due cose sono vicine le loro etichette si scontrano. Cartouche prende
++     ogni etichetta (una `Caption`: la sua dimensione misurata, il punto che descrive e i lati su
++     cui può stare), insieme a tutto ciò che sulla pagina il testo non deve coprire (ciascuno un
++     `Obstacle`), e trova una `Caption.Position` per ognuna. I grafici la usano per le loro
++     etichette; una mappa la userebbe per i nomi dei luoghi. Il motore vede soltanto geometria, in
++     un sistema di riferimento con l'asse y verso il basso come in SVG: chi disegna il testo lo
++     misura.
+
+@ 0 5 0 0fa1352abb9f107f012317f530969cbe
++     Il codice che costruisce un'immagine sa che cosa dice ogni etichetta ma non dove finiranno le
++     altre, quindi `arrange` esegue quel codice due volte. La prima esecuzione registra ogni
++     chiamata a `position`, `avoid` e `canvas` e risponde provvisoriamente a ogni `position`;
++     l'`Arranger` nell'ambito risolve poi l'intera disposizione; e la seconda esecuzione risponde a
++     ogni `position` con il posto risolto. Il valore di `arrange` è quello della seconda esecuzione.
+
+% 2 1 0 02d2230cc0d0412d0c890f1ddc859355
+
+% 3 1 0 190299e209cc4a061b9cbaf577a652e8
+
+% 0 1 0 0f930d453d5b8fc61a2568d8b2394d74
+
+% 0 1 0 14f7862be4a7ce250e219f0b0ec52154
+
+% 0 1 0 1765cc09e6a1193e1031704c60cb278e
+
+% 0 1 0 0ce2f2da9a3490db14c275a3ad7bee9e
+
+% 1 1 0 1b8b83463b55c0f700785170329c0881
+
+@ 0 3 0 115066fca4d3f3c41017e166ba178f8d
++     Il corpo deve quindi essere **ripetibile**: ogni volta le stesse chiamate a `position` nello
++     stesso ordine, senza fare nulla che non debba accadere due volte. Un contatore che numera le
++     etichette va dentro il corpo, dove ricomincia da capo con la seconda esecuzione.
+
+@ 0 4 0 1f8ce5ecd81357ff1917d90ab203d6ea
++     Quale algoritmo dispone le etichette lo decide l'`Arranger` nell'ambito: quello greedy
++     predefinito, dall'oggetto compagno di `Arranger`, oppure uno importato per nome dal package
++     `arrangers` (`import soundness.*` non importa i given), oppure un `Arranger.Greedy` o un
++     `Arranger.Annealing` configurato e legato come given locale.
+
+@ 0 3 0 12433aabb0e07aff1190255056f25d9a
++     La libreria ha un solo source set, `cartouche.core`, che compila per ogni piattaforma. Tutto
++     viene esportato nell'ombrello `soundness`, e il package di scelta `arrangers` si fonde con
++     quello dell'ombrello.
+
+% 0 1 0 0f49140743c8c46516706c51e3c4ebca
+
+% 0 1 0 011a27b591ad86660c6bd6fa70c7949d
+
+% 0 1 0 0e155f583a8e620408bc2f8c594677bd
+
+% 0 1 0 11c814630297185a10fc20263a04b722
+
+% 0 1 0 1ba23050185bff670a018354e444bdd2
+
+@ 0 1 0 088c9db08975d1e71060a165abb7d414
++ entry .arrange   esegue due volte un corpo che costruisce un'immagine, rispondendo alle sue chiamate a `position` con una disposizione
+
+% 1 1 0 064289f02572fb3f0e395be9ac9d889a
+
+@ 0 7 0 156389407f21c90100b827399daacc13
++       `arrange(body)` esegue `body` una volta con un `Arranger.Pass` di registrazione, in cui ogni
++       `position` risponde con `Caption.provisional` — l'etichetta dove è stata richiesta, sul lato
++       di prima scelta — e ogni `avoid` e `canvas` viene annotato; il risultato di quell'esecuzione
++       viene scartato. L'`Arranger` nell'ambito colloca poi tutte le didascalie registrate rispetto
++       agli ostacoli e all'area di disegno registrati, e il corpo viene eseguito di nuovo, con ogni
++       chiamata a `position` a cui risponde la sua `Caption.Position` risolta, abbinata alle
++       chiamate della prima esecuzione in base al loro ordine. Il risultato della seconda
++       esecuzione è quello di `arrange`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 04c916801aa89a3b15ec6c26b8e2c93a
++         label Niente in mezzo: l'etichetta sta a est
+
+% 1 1 0 15a92bc3bb87672e103b7f3cea7c086c
+
+% 2 1 0 1c5e477129e24c991631139742747a93
+
+% 4 1 0 0bfdd7cdbc3a50841d23838d72c21a25
+
+% 0 1 0 024ae26309597dc1132fa0e6025ea990
+
+% 1 1 0 19501732bd82408f01afd6a17c6edda0
+
+@ 0 1 0 1e4aeb3c6124c33f1ad8d363f6e9159d
++         label Un riquadro a est: l'etichetta si sposta a ovest
+
+% 1 1 0 1ae99e4baeea973d0585a67e739dcb58
+
+% 2 1 0 11f2a46fbf625f350be3a827cbfa04b5
+
+% 4 1 0 09c235a31aa8bf0408f2c78a77a9b5c8
+
+% 0 1 0 0a52c19896ca806e1b70520252c07d20
+
+% 0 1 0 17e6db6dec2e9b0c12f3a3c3b135eb37
+
+% 1 1 0 03df8e6176ebd856196354f0944d1ee5
+
+@ 0 1 0 06c991ef2dd2335a0dad8b2ca75d3c57
++         label Solo sud consentito, e bloccato: l'etichetta viene spostata, con una linea di richiamo
+
+% 1 1 0 05190a3be9a6716c0d8bfd76705d0e97
+
+% 2 1 0 1953ca498cc6f67e0922f6de3461a5c4
+
+% 4 1 0 037ca9d0a379d737057a30acbae642a2
+
+% 0 1 0 14bc0f114e3faa420883ec1a20784750
+
+% 0 1 0 1a35a1ca383882571429f831f7521c99
+
+% 0 1 0 1a2bcef174fddc5915b2815e805aa5b0
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 00f01867f14a56680b334509962f0ec9
++       Il corpo deve fare le stesse chiamate nello stesso ordine in entrambe le esecuzioni e non
++       avere altri effetti. A una chiamata della seconda esecuzione che la prima non ha fatto, o a
++       una con una didascalia diversa, si risponde provvisoriamente, e viene registrata come
++       `Arranger.Pass#diverged`.
+
+% 1 1 0 1ad9dc1e6300643205bf0417a6d8a61e
+
+% 1 1 0 01cefda173e9a12a1885a3a58888071b
+
+% 2 1 0 0b8171df598b7133022fff274f08136c
+
+% 0 1 0 025cfa407742f0280e2e3e0ecf4dd8a2
+
+@ 0 7 0 027ace35ce26078405f5247a563d155d
++ entry .position   chiede un posto per un'etichetta, dentro un corpo di `arrange`
++     Richiede l'`Arranger.Pass` fornito da `arrange`. Prende una `Caption`, oppure direttamente le
++     parti della didascalia: `width` e `height` (l'etichetta misurata), `x` e `y` (il punto
++     bersaglio), e facoltativamente `attachments` (i lati su cui può stare, dal migliore; per
++     impostazione predefinita `Caption.Attachment.compass`), `standoff`, `reach`, `padding`,
++     `priority` e `fallback`, ciascuno come lo descrive `Caption`. Nella prima esecuzione del corpo
++     la risposta è provvisoria; nella seconda è la `Caption.Position` risolta.
+
+% 2 1 0 16868ee13f6968e11cf54c6b08310250
+
+% 3 1 0 0e55ebf15d4060ef06a39ec8e1ded4c7
+
+% 0 1 0 1c2ed1219e8a168714ed9825fcb15453
+
+% 0 1 0 1f17fcdbb3aa2b3618e2a5e774147ce4
+
+% 1 1 0 0831c7ff13fc88b200f0d3573b1b94b4
+
+@ 0 5 0 1c8bc2c01d655466003dad376aced00e
++ entry .avoid   dichiara ostacoli su cui nessuna etichetta può essere collocata, dentro un corpo di `arrange`
++     Prende un numero qualsiasi di `Obstacle` — un `Obstacle.Box` per una barra o una legenda, un
++     `Obstacle.Line` per ogni segmento di una linea tracciata, un `Obstacle.Disc` per un
++     marcatore — e li aggiunge alla disposizione. Richiede l'`Arranger.Pass` fornito da `arrange`;
++     contano soltanto le chiamate della prima esecuzione.
+
+% 2 1 0 0b130e656e607d3313434de6863a692f
+
+% 3 1 0 0a37784d9a6887e10075b3ba4fc9d8ca
+
+% 5 1 0 0de1e4035e71e3a10acb53e05456d759
+
+% 0 1 0 0be6ce594f44b4811a115ea865eb0770
+
+% 0 1 0 18b009d6512271f9080e9f25ccebe0e1
+
+% 1 1 0 029893d87378fcd10a35def2574c7038
+
+@ 0 3 0 162cc59949a9ecfc06d384032808ab4a
++ entry .canvas   dichiara l'area entro cui le etichette devono restare, dentro un corpo di `arrange`
++     Prende un `Obstacle.Box`; la parte di un'etichetta che ne esce conta come collisione. Senza
++     un'area di disegno la pagina è illimitata, e se il corpo ne dichiara più d'una, vale l'ultima.
+
+% 2 1 0 035598e209e56d3e0109c53ef10893cf
+
+% 3 1 0 0caa193bf7aafbc71d8be4a0052be7f3
+
+% 5 1 0 1d6ed4f7ec4362990ba974ef41c71159
+
+% 0 1 0 0f2e27567938ffac008351017fc1b295
+
+% 0 1 0 1c91111d9ec6993911393bdae4cc85ed
+
+% 1 1 0 06ac1c627bbe9cff166053df7e78313d
+
+@ 0 1 0 0c7c9923b6caadf91c20761053360ac0
++ entry .Caption   una richiesta di collocare un'etichetta: la sua dimensione, il punto che descrive e come può essere disposta
+
+% 1 1 0 01b5ee5f13e661aa0e3f2fd0f93ca0c0
+
+@ 0 9 0 1b761a4ed72361b60a17a057fce485f9
++       Una case class con la geometria di un'etichetta. `width` e `height` sono la sua dimensione
++       misurata; `x` e `y` il bersaglio che descrive. `attachments` elenca i lati del bersaglio su
++       cui può stare, dal migliore (per impostazione predefinita `Caption.Attachment.compass`); una
++       didascalia senza lati viene trattata come una che può stare a est. `standoff` è lo spazio
++       tra il bersaglio e il bordo vicino dell'etichetta, per un'etichetta accanto a un marcatore
++       anziché sul suo centro. `reach` indica quanto l'ancora dell'etichetta può essere spostata
++       dal bersaglio quando ogni lato è bloccato; il valore predefinito, zero, la fissa. `padding`
++       è lo spazio libero richiesto attorno all'etichetta. Le didascalie con `priority` più alta
++       vengono collocate per prime, e così mantengono i loro bersagli. `fallback` dice che cosa
++       succede a un'etichetta che si scontra con qualcosa ovunque venga messa.
+
+% 2 1 0 0b42f840c2e96de20fac7258fcd5889e
+
+% 3 1 0 04a7881e544ac62e085886e369552e43
+
+% 0 1 0 1cc0d887a5117c5e05ea42fcf912440a
+
+% 0 1 0 0389a70a6e5ad4521b6bac84226b1054
+
+% 1 1 0 01f1689a4f0ca41905d4f4e96a80e7c4
+
+@ 0 3 0 17d93527bb64988711a431f93a7bff76
++       Una didascalia con un solo lato e nessuna portata viene collocata esattamente dove chiede,
++       qualunque cosa ci sia, e tutto ciò che viene dopo la aggira: è così che le etichette delle
++       tacche e la legenda di un grafico restano ferme mentre le etichette dei punti si spostano.
+
+% 0 1 0 157a37a9e0382c7d1d52bc28a16ad187
+
+% 0 1 0 0899ba996f1a94010ce54b2bca43a7dc
+
+% 1 1 0 1491c192403d00b30fbf08d81707d09a
+
+@ 0 20 0 04b69f0ebfc760e21e8a8f310cba94bb
++   entry #width   la larghezza misurata dell'etichetta
++   entry #height   l'altezza misurata dell'etichetta
++   entry #x   la coordinata orizzontale del bersaglio che l'etichetta descrive
++   entry #y   la coordinata verticale del bersaglio, crescente verso il basso
++   entry #attachments   i lati del bersaglio su cui l'etichetta può stare, dal migliore
++   entry #standoff   lo spazio tra il bersaglio e il bordo vicino dell'etichetta
++   entry #reach   quanto l'etichetta può essere spostata dal bersaglio quando ogni lato è bloccato
++   entry #padding   lo spazio libero richiesto attorno al riquadro dell'etichetta
++   entry #priority   l'ordine di collocazione: una priorità più alta viene collocata prima e mantiene il suo bersaglio
++   entry #fallback   se un'etichetta che si scontra ovunque viene disegnata comunque o nascosta
++   entry #sides   i lati da provare: `#attachments`, oppure soltanto `East` se è vuoto
++   entry #anchor   il punto di ancoraggio dell'etichetta su un lato del bersaglio, spostato di un offset
++       `caption.anchor(attachment, dx, dy)` è il bersaglio spostato di (`dx`, `dy`) e poi di
++       `#standoff` nella direzione dell'aggancio.
++   entry #footprint   il riquadro che l'etichetta occupa quando è ancorata a un punto su un lato
++       `Obstacle.Box.around` con la dimensione della didascalia.
++   entry .provisional   la risposta prima della disposizione: l'etichetta sul bersaglio, sul primo lato
++       Ciò che ogni chiamata a `position` riceve nella prima esecuzione di un corpo di `arrange`, e
++       ciò che riceve nella seconda una chiamata che diverge dalla prima esecuzione.
++   entry .Attachment   su quale lato del bersaglio sta un'etichetta: gli otto punti cardinali e intermedi o `Center`
+
+% 1 1 0 058a65202c21bd8d1f2125732a0c9422
+
+@ 0 6 0 05f64defba7d532f1ee37d0e6ba4c40f
++         Un enum, in un sistema di riferimento con l'asse y verso il basso, quindi `North` è sopra
++         il bersaglio. I suoi casi sono `North`, `Northeast`, `East`, `Southeast`, `South`,
++         `Southwest`, `West`, `Northwest` e `Center`. L'ancora di un'etichetta è il suo bordo più
++         vicino al bersaglio: per `East` il punto medio del bordo sinistro, per `North` il punto
++         medio del bordo inferiore, per `Center` il suo centro, quindi un renderer ricava il proprio
++         allineamento dall'aggancio (il `text-anchor` e il `dominant-baseline` di un elemento SVG
++         `text`).
+
+% 2 1 0 1ca7bfd0f1c81358134daa2546da1e35
+
+% 3 1 0 1aa13a6f2566c2d61caefe3fcc9e844c
+
+% 0 1 0 13913f8510433f170f081eb52aa4a262
+
+% 0 1 0 1f06db615423af62034f35e6d690bb84
+
+% 1 1 0 1105b6cb7ffe45b70ae1a1a7726588e9
+
+@ 0 8 0 0a7bd5cd2e1e46bc0ca318aac1ac811c
++     entry .compass   la preferenza cartografica: est, ovest, le quattro diagonali, poi nord e sud
++     entry .cardinal   est, ovest, nord e sud, in quest'ordine
++     entry #dx   lo scostamento unitario orizzontale dal bersaglio al bordo vicino dell'etichetta: -1, 0 o 1
++     entry #dy   lo scostamento unitario verticale dal bersaglio al bordo vicino dell'etichetta: -1, 0 o 1
++   entry .Fallback   che cosa succede a un'etichetta che si sovrappone a qualcosa ovunque venga messa
++       Un enum di due casi. `Overlap`, il predefinito, disegna l'etichetta nella posizione in cui
++       si sovrappone meno. `Hide` non la disegna: la sua `Caption.Position#visible` è `false`, il
++       corpo non disegna nulla per essa, e non blocca nulla per le etichette collocate dopo.
+
+% 2 1 0 03f85aae2c6fa9611442bfc243757931
+
+% 3 1 0 0b1cbd820d120e7d1c1c092640c857a1
+
+% 0 1 0 128ea21b9794b7e60caaf5345577b222
+
+% 0 1 0 0b23cf323a84886d192342cd62167be5
+
+% 0 1 0 1e30ae471fc597f405a06e2c92952e73
+
+% 0 1 0 0e0cc0589c0cbf6b17bd5eb9c3dbbbdd
+
+% 1 1 0 0770ead20c15800d1dfdaab1267fb5de
+
+@ 0 1 0 1c74bdf436404c930a5420ecb7693688
++   entry .Leader   una linea dal bordo di un'etichetta spostata fino al bersaglio che descrive
+
+% 1 1 0 035632d8f693394907a7fe3bcc7a6daf
+
+@ 0 9 0 1ea0d0521e995e4b040da8a8cb77b6b9
++         Viene disegnata per un'etichetta spostata dal bersaglio più della soglia per le linee di
++         richiamo del disponitore. Va dal punto del riquadro dell'etichetta più vicino al
++         bersaglio. Le etichette successive evitano una linea di richiamo come evitano l'etichetta
++         a cui appartiene; una linea di richiamo può attraversare un ostacolo fisso, poiché serve
++         proprio a indicare il bersaglio oltre un marcatore, ma non un'altra etichetta.
++     entry #x1   la coordinata orizzontale dell'estremo sul bordo dell'etichetta
++     entry #y1   la coordinata verticale dell'estremo sul bordo dell'etichetta
++     entry #x2   la coordinata orizzontale dell'estremo sul bersaglio
++     entry #y2   la coordinata verticale dell'estremo sul bersaglio
++   entry .Position   il posto assegnato a un'etichetta: punto di ancoraggio, lato, ingombro, linea di richiamo e visibilità
+
+% 1 1 0 1343b2d4d47668f70e0c6694864a8f39
+
+@ 0 4 0 076aba6b2dbe64f309c6e54fe751f3e2
++         Ciò che risponde `position`. Il testo si colloca in (`#x`, `#y`) con l'allineamento che
++         il suo `#attachment` implica, occupando `#box`; `#leader` è la linea da disegnare fino al
++         bersaglio, se l'etichetta è stata spostata abbastanza da averne bisogno; e `#visible` è
++         `false` per un'etichetta `Caption.Fallback.Hide` che non ha potuto essere collocata
++         libera.
+
+% 2 1 0 0ca1e88253fc6bd41922d08979447fd2
+
+% 3 1 0 0f3826d8103703df1f255e6f7aab7aec
+
+% 0 1 0 0f39e7722fc9b2ab041cd59644012251
+
+% 0 1 0 0ff0de59855274411f5b7436d1f4d934
+
+% 1 1 0 1af780c8ad57dc81151359b5c509f3df
+
+@ 0 6 0 078cd5131a370551095e903c6482ea9d
++     entry #x   la coordinata orizzontale del punto di ancoraggio dell'etichetta
++     entry #y   la coordinata verticale del punto di ancoraggio dell'etichetta
++     entry #attachment   il lato del bersaglio su cui sta l'etichetta, da cui segue il suo allineamento
++     entry #box   il riquadro che l'etichetta occupa
++     entry #leader   la linea di richiamo da disegnare fino al bersaglio, o `Unset` se non serve
++     entry #visible   se l'etichetta va disegnata o no
+
+@ 0 1 0 18c6fa005845f6260aadefcadb06941c
++ entry .Obstacle   qualcosa su cui nessuna etichetta può essere collocata: un riquadro, una linea tracciata o un disco
+
+% 1 1 0 02df2b3c0496ecbd0760cde5d0146b96
+
+@ 0 5 0 07d4aa8a832c50511d888dee9a7b6bd7
++       Un sealed trait di tre forme, ciascuna delle quali risponde a `#overlap` — quanta parte di
++       un riquadro copre, in unità di area. La risposta è esattamente zero quando i due sono
++       disgiunti, e la sua grandezza serve soltanto a ordinare le posizioni candidate tra loro,
++       quindi quella di un disco è una stima. Gli ostacoli si dichiarano in un corpo di `arrange`
++       con `avoid`, e l'area di disegno con `canvas`; l'ingombro e la linea di richiamo di ogni
++       etichetta collocata diventano ostacoli per le etichette successive.
+
+% 1 1 0 1f23fc055b6a8c211cdd6e82a64c75c7
+
+% 2 1 0 1a490104b459cbb40a4b00f8eb80f336
+
+@ 0 2 0 0e370975db9e53a1102789034ad5343a
++   entry #overlap   quanta parte di un riquadro copre questo ostacolo: esattamente zero quando sono disgiunti
++   entry .Box   un rettangolo allineato agli assi in un sistema con l'asse y verso il basso: una barra, una legenda, l'ingombro di un'etichetta
+
+% 1 1 0 1d639e5f9966cb1d1579a6ab1b52d2a7
+
+@ 0 2 0 149c4750d09c18e0069edd0ff80db524
++         Definito dai suoi bordi `#left` e `#top` e dalle sue `#width` e `#height`. Come
++         ostacolo, la sua sovrapposizione con un altro riquadro è l'area che hanno in comune.
+
+% 2 1 0 13a0ddbc5b4d61570e0f162e858367ca
+
+% 3 1 0 02782a06d6b951231e28b77f30ab2eae
+
+% 0 1 0 136c6df93614da980284b54106ea80f1
+
+% 0 1 0 15ccc1392729e2de0b2b48c6930574e4
+
+% 1 1 0 04eedf50127884ae0d1d84f979e538c3
+
+@ 0 17 0 121b44afa6f5b18d1ae2297eba056a3e
++     entry .around   l'ingombro di un'etichetta ancorata a un punto su un lato del suo bersaglio
++         `Obstacle.Box.around(x, y, width, height, attachment)`: per `East` l'ancora è il punto
++         medio del lato sinistro del riquadro, per `North` il centro del lato inferiore, per
++         `Center` il suo centro.
++     entry #left   il bordo sinistro del riquadro
++     entry #top   il bordo superiore del riquadro
++     entry #width   la larghezza del riquadro
++     entry #height   l'altezza del riquadro
++     entry #right   il bordo destro del riquadro
++     entry #bottom   il bordo inferiore del riquadro
++     entry #area   l'area del riquadro
++     entry #centerX   la coordinata orizzontale del centro del riquadro
++     entry #centerY   la coordinata verticale del centro del riquadro
++     entry #pad   il riquadro ingrandito di una certa misura su ogni lato
++     entry #excess   quanta parte dell'area di questo riquadro cade fuori da un altro riquadro, come l'area di disegno
++     entry #contains   se un punto cade nel riquadro, bordi compresi
++     entry #nearest   il punto del perimetro del riquadro più vicino a un punto dato, dove lo incontra una linea di richiamo
++   entry .Line   un segmento tracciato: un lato di una spezzata disegnata, o una linea di richiamo
+
+% 1 1 0 1f1d0f11642749c4044bf3111d587221
+
+@ 0 11 0 038115e0f767ab5b0f98b981e4289f12
++         Da (`#x1`, `#y1`) a (`#x2`, `#y2`), con uno spessore `#width` che vale 1 per
++         impostazione predefinita. La sua sovrapposizione con un riquadro è la lunghezza del
++         segmento all'interno del riquadro, trovata con il clipping di Liang–Barsky, moltiplicata
++         per il suo spessore, quindi un'etichetta non può toccarlo. Una spezzata si evita come
++         insieme dei suoi segmenti.
++     entry #x1   la coordinata orizzontale dell'inizio del segmento
++     entry #y1   la coordinata verticale dell'inizio del segmento
++     entry #x2   la coordinata orizzontale della fine del segmento
++     entry #y2   la coordinata verticale della fine del segmento
++     entry #width   lo spessore del tratto, per cui si moltiplica la lunghezza ritagliata
++     entry #length   la lunghezza del segmento
++   entry .Disc   un cerchio pieno, come il marcatore di un grafico a dispersione
+
+% 1 1 0 0d0db0eb1aa12962172c8dc9d423ed54
+
+@ 0 6 0 068f4d383f594da019542adfc65b2a01
++         Centrato in (`#x`, `#y`). Un riquadro ne è libero esattamente quando il suo punto più
++         vicino dista almeno `#radius` dal centro; altrimenti la sovrapposizione si stima come la
++         sovrapposizione del riquadro con il quadrato che delimita il disco, scalata di π/4.
++     entry #x   la coordinata orizzontale del centro
++     entry #y   la coordinata verticale del centro
++     entry #radius   il raggio del disco
+
+@ 0 1 0 13760589db0496f701311aadc5403328
++ entry .Arranger   un algoritmo che trova una posizione per ogni didascalia, dato tutto il resto sulla pagina
+
+% 1 1 0 1dd3063f2d57ec6f13fdfc6cc6734b28
+
+@ 0 4 0 1dc6a90f6d09b2a80397edadd25e4219
++       Un trait con un solo metodo: `#arrange` prende le didascalie, gli ostacoli e l'area di
++       disegno opzionale, e risponde con una `Caption.Position` per ogni didascalia, nell'ordine
++       delle didascalie. `arrange` usa quello nell'ambito: `.greedy`, dall'oggetto compagno, a meno
++       che un altro non sia importato dal package `arrangers` o legato come given locale.
+
+% 2 1 0 13f2daf1e43e3d2f1605a10c419eb759
+
+% 3 1 0 01b7c58fb39353f11a1e8cd7bfece576
+
+% 0 1 0 17c3c969b6faf1dc039d64e6e6e04cbc
+
+% 2 1 0 16209625213cd0b9144a0297bbb90010
+
+% 3 1 0 1e7ac317d65570ef139b21dcd6eefe9a
+
+% 1 1 0 082b20d2ddb0adc60711243386e1b1e2
+
+@ 0 6 0 1d901379b58d3d581b5efe014deb4509
++       Entrambi i disponitori integrati provano un elenco finito di candidate per ogni didascalia,
++       dalla meno spostata: ogni lato sul bersaglio, poi ogni lato in ciascuna di otto direzioni a
++       un `step` di distanza, poi a due passi, e così via fino alla `reach` della didascalia o a
++       `rings` passi. La collisione di una candidata è l'area del suo ingombro con il padding che
++       sta sotto ogni ostacolo fisso, ogni etichetta collocata e ogni linea di richiamo collocata,
++       più la sua area fuori dall'area di disegno e la lunghezza della sua stessa linea di
++       richiamo sopra le etichette collocate.
+
+% 0 1 0 14fdc156f5593bb30758bdc18ab590f4
+
+% 0 1 0 104aba3926f1e9ae13424a5c7c5ae017
+
+@ 0 5 0 19c51f01dc600ed00506f4d81fad62d0
++   entry #arrange   le posizioni per le didascalie, nel loro ordine, dati gli ostacoli e l'area di disegno
++   entry .greedy   il disponitore predefinito: `Arranger.Greedy()` con i suoi parametri predefiniti
++       Nell'ambito implicito, quindi `arrange` non richiede alcun import; un given importato da
++       `arrangers` o dichiarato localmente ha la precedenza.
++   entry .Pass   un'esecuzione di un corpo di `arrange`: registra le richieste nella prima, risponde nella seconda
+
+% 1 1 0 1e5a47432d3d6c8f0d0eb4345873ad91
+
+@ 0 9 0 09ae2163a3e35560134337a50a0d9a03
++         Il valore contestuale che `arrange` fornisce al suo corpo, e di cui hanno bisogno
++         `position`, `avoid` e `canvas`. È mutabile e viene creato da `arrange` per una sola
++         esecuzione, mai condiviso, e non può essere costruito altrove.
++     entry #solved   se questa è la seconda esecuzione, le cui risposte sono le posizioni risolte
++     entry #diverged   se la seconda esecuzione ha chiesto qualcosa che la prima non ha chiesto
++         A una chiamata oltre quelle registrate, o a una la cui didascalia differisce da quella
++         della prima esecuzione nella stessa posizione dell'ordine, si risponde provvisoriamente,
++         e questo flag viene impostato: il corpo non era ripetibile.
++   entry .Greedy   colloca ogni didascalia in ordine di priorità nel posto migliore, date quelle già collocate
+
+% 1 1 0 0c921040432db6da1289f34dd52f0f11
+
+@ 0 6 0 10f69d08da54140e149469ce3f5153ca
++         Ogni didascalia, prima quella con `priority` più alta e altrimenti in ordine, prende la
++         candidata meno spostata libera da tutto ciò che è stato collocato prima, o quella con
++         meno collisioni se nessuna è libera. È deterministico, e limitato dal numero di
++         candidate: al massimo 1 + 8 × `rings` per lato. Una didascalia collocata presto non viene
++         mai spostata per fare spazio a una collocata dopo, il che su un'immagine densa può
++         lasciare collisioni che un ordine diverso avrebbe evitato; `Arranger.Annealing` affronta
++         questo problema.
+
+@ 0 10 0 030792a73a231d881958801b1ed786de
++         I parametri: `step` (predefinito 4) è la distanza tra gli anelli di candidate, `rings`
++         (predefinito 8) quanti anelli cercare verso l'esterno, `leaderThreshold` (predefinito 6)
++         lo spostamento oltre il quale si disegna una linea di richiamo, e `leaderWidth`
++         (predefinito 1) lo spessore che una linea di richiamo ha come ostacolo.
++     entry #step   la distanza tra anelli successivi di posizioni candidate
++     entry #rings   quanti anelli di candidate cercare, prima della portata della didascalia
++     entry #leaderThreshold   lo spostamento oltre il quale un'etichetta riceve una linea di richiamo
++     entry #leaderWidth   lo spessore di una linea di richiamo, come ostacolo per le altre etichette
++     entry #arrange   colloca le didascalie in modo greedy, nascondendo quelle che si scontrano e chiedono di essere nascoste
++   entry .Annealing   raffina la disposizione greedy con la ricottura simulata, a partire da un seme fisso
+
+% 1 1 0 02bd1e25185bfd0e0b053f32088b414b
+
+@ 0 7 0 06417e7a803e1bdd1eed1726d8ccb413
++         Parte dalla disposizione greedy, poi sposta ripetutamente una didascalia casuale su una
++         delle sue candidate scelta a caso, accettando una mossa che abbassa la collisione totale
++         e lo spostamento pesato, e una che li alza con una probabilità che diminuisce man mano che
++         la temperatura si raffredda. A differenza del passaggio greedy, una didascalia collocata
++         presto può essere spostata per fare spazio a una collocata dopo. Le mosse casuali sono
++         tratte da `seed` tramite capricious, quindi lo stesso input viene disposto ogni volta
++         allo stesso modo, e `iterations` limita esattamente il lavoro. Le didascalie che si
++         scontrano ancora e chiedono di essere nascoste vengono nascoste, dalla meno importante.
+
+% 2 1 0 11534037e3ba0333139ad269514189c9
+
+% 3 1 0 1e1c36901849cd9c126ae4f35626f097
+
+% 0 1 0 071561058896c7330f34479307214b6a
+
+% 1 1 0 0d9c89185fc59c3e1be3936932313d20
+
+@ 0 14 0 128a545ce22c2dfc1034505cbc2605a2
++         I parametri, con i loro valori predefiniti: `seed` (`Seed(0L)`), `iterations` (4000),
++         `temperature` (1.0), `cooling` (0.995, il fattore applicato a ogni mossa),
++         `displacementWeight` (0.05, quanto lo spostamento pesa rispetto alla collisione), e
++         `step`, `rings`, `leaderThreshold` e `leaderWidth` come per `Arranger.Greedy`.
++     entry #seed   il seme da cui sono tratte le mosse casuali
++     entry #iterations   il numero esatto di mosse da provare
++     entry #temperature   la temperatura iniziale, che regola quanto facilmente si accetta una mossa peggiore
++     entry #cooling   il fattore per cui si moltiplica la temperatura dopo ogni mossa
++     entry #step   la distanza tra anelli successivi di posizioni candidate
++     entry #rings   quanti anelli di candidate cercare, prima della portata della didascalia
++     entry #leaderThreshold   lo spostamento oltre il quale un'etichetta riceve una linea di richiamo
++     entry #leaderWidth   lo spessore di una linea di richiamo, come ostacolo per le altre etichette
++     entry #displacementWeight   quanto pesa contro un'etichetta la sua distanza dal bersaglio
++     entry #arrange   ricuoce la disposizione partendo da quella greedy, poi nasconde ciò che va nascosto
+
+@ 0 1 0 12ca3e491d5610661d943d241a8211d5
++ entry .arrangers   i disponitori integrati, ciascuno un given da importare per nome
+
+% 1 1 0 13bab8bc64ba3d201325ab36ca865455
+
+@ 0 4 0 1c7a808d87f374fb15a9c7e30bf0bbfd
++       L'`Arranger` nell'ambito decide come `arrange` colloca le etichette. L'oggetto compagno di
++       `Arranger` fornisce per impostazione predefinita quello greedy; importarne uno di questi per
++       nome, o legare un `Arranger.Greedy` o un `Arranger.Annealing` configurato come given
++       locale, lo sostituisce. `import soundness.*` non importa i given, quindi ciascuno si importa
++       per nome.
+
+% 2 1 0 12c6069bc5ff53cf022ad836493dc4c3
+
+% 3 1 0 1063f763926a5e0308a5631e6772b492
+
+% 0 1 0 075d39f9c7df0f841fd3f22930e552d6
+
+% 2 1 0 09016133b09127f61d92bf50526f314e
+
+% 3 1 0 0ec34f66b294d11a1a1b7a64939169d4
+
+% 0 1 0 09beca149977b55211cd35e8a8791f0f
+
+% 0 1 0 0295d51219211984050cfc53bbc4e962
+
+% 1 1 0 05de78e533337026038fd62566beb1c2
+
+@ 0 2 0 1ae875e88eb4cb3c0b18c7dddee5382f
++   entry .greedyArranger   `Arranger.Greedy()`: deterministico, ordinato per priorità, non torna mai su un'etichetta
++   entry .annealingArranger   `Arranger.Annealing()`: ricottura simulata a partire dalla disposizione greedy, seme 0

@@ -1,0 +1,963 @@
+orthant 2 language
+
+@ 0 1 0 1c0bf6953362d69700309eb01b8f5d56
++ # モジュールの境界
+
+@ 0 9 0 12ff44dbb5898e6b07601783c5b7f228
++ Soundness には 134 のライブラリがあり、そのどれもが一つの、名前を付けられる目的を持つことになっている。
++ モジュールが大きくなるにつれ、それぞれのモジュールには、コンパイルのために必要だったがもはやそこに属さないコードが積み重なってきた。依存グラフはその蓄積を記録している。ビルドのクリティカルパスは 19 モジュールの深さがあり、テストフレームワークが単位ライブラリの閉包に入り込み、同じアルゴリズム（CRC-32、正準ハフマン符号、varint、ビット単位の I/O）が最大六か所で実装されている。
++ このトラック（issue #1640）は境界を取り戻す。すべてのモジュールが目的を明示し、それに奉仕するコードだけを含む。重複は取り除く。軽量なインターフェースで足りる場所では、anticipation 流の型クラスインターフェースか統合サブモジュールによってハードな依存を断ち切る。そしてビルドは浅く、広くなる。
+
+@ 0 5 0 0d533d15e455afc3014c61e4691fc553
++ 全体を通じた制約は、**意味論と動作を変えない**ことである。
++ コードは書き直し、移動し、分割し、結合してよいが、どの工程も観測可能な動作を同一に保ち、単独で `make attest` を通り、ベンチマークをコンパイル可能に保たなければならない（`make build`）。
++ この文書はコードベース全体の監査（2026-08）から作られた。ファイルと行への参照はその監査時点のスナップショットであり、実装時に改めて確かめなければならない。
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ このトラックの項目と、その時期およびハードな依存を示す。各項目の状況は [`status.tel`](status.tel) に記録されている。
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+@ 0 14 0 0f8604bed22c64d2034dded1ae191393
++ column  項目
++ column  題目
++ column  時期
++ column  依存
++ row  mod-1  不要なエッジと不要なコード  近期
++ row  mod-2  given 一つだけの統合サブモジュール  近期
++ row  mod-3  モジュールの分割  近期 → 中期
++ row  mod-4  コーデックごと、フォーマットごとの分割  中期
++ row  mod-5  アルゴリズムの重複排除  中期  mod-4
++ row  mod-6  ステージングされた導出のカーネル  中期 → 長期
++ row  mod-7  発展的な目標  長期
++ row  mod-8  不要なエッジの第二弾、およびそれが隠す誤った宣言  近期
++ row  mod-9  クリティカルパスの先頭  近期
++ row  mod-10  背骨となる given  近期
+
+% 1 1 0 05a4b136286d643f1087d589f9b9043e
+
+@ 0 1 0 03a72508a020fb7e0ebf064262aeb8c9
++ ## 測定した基準値（2026-08）
+
+@ 0 4 0 1bfb60768d528ea6179981ae184a3c74
++ クリティカルパスは 19 モジュールの深さである。exegesis → obligatory.json → jacinta.schema → telekinesis.jvm → telekinesis.core → legerdemain → honeycomb → urticose.url → escapade → escritoire → polysyllabic → gossamer → hypotenuse → cardinality → fulminate → anticipation.http → anticipation.codec → anticipation.text → symbolism。
+
+@ 0 1 0 1d2f4254db8247871568d578de803452
++ ファンインが最も大きいモジュール：
+
+% 2 1 0 073dfa29635d719f1473e2defc7ab331
+
+@ 0 2 0 1862e1fc01e90c601b205da056fd96a7
++ column  モジュール
++ column  依存元
+
+% 0 1 0 082e5e636ca340fd16ba4ef8ad3c1a8c
+
+% 0 1 0 003d37829c3fedad17628f30c4a928c5
+
+% 0 1 0 0fe2d0d6b9ceb10305f4c42a0b50186e
+
+% 0 1 0 101d8748017db18613d9499338894c96
+
+% 0 1 0 12d8d49bb4e9f8380515adf30c770f9b
+
+% 0 1 0 0f6febac77fc99211a5090d1666aeb41
+
+% 0 1 0 067dcff5451e8bbe01e446c461e31eac
+
+% 1 1 0 02446483d23aeded1cbda7a93cccd3b8
+
+@ 0 1 0 065dd3ac45d21d2c0cf88cfb8f6bb2ec
++ 最も大きいモジュール：
+
+% 2 1 0 1d1c901a2cfe880d1176e91c82d17ee6
+
+@ 0 3 0 1613e10c086d1209047362f879d40508
++ column  モジュール
++ column  行数
++ column  依存先
+
+% 0 1 0 07178ad1a998d69c0d3694aed2c685cb
+
+% 0 1 0 1119539066f94d381442a57071eef21a
+
+% 0 1 0 023b994d758a5245069c2514cac89dee
+
+% 0 1 0 0ed674ac14092ff61bf066c717d642c7
+
+% 0 1 0 0e285cb81088a8320487c9ad06c1ffd9
+
+% 0 1 0 12ff1a36c13343ab04d3f85e4318a99c
+
+% 0 1 0 0a9e9496e4ea18ce042fe343f1f146d3
+
+% 0 1 0 1e2552998794e4aa1c4caa2b24a9e320
+
+% 1 1 0 077d66b92bdc656f02df94146f3c238c
+
+@ 0 1 0 13a1100292722ac61fd153e7b35cebc0
++ ## すべての工程に当てはまる仕組み
+
+@ 0 26 0 1c5c77fe7604294a1b4f3905cb5ae4bf
++ - 新しいコンポーネントには、`build.mill` のオブジェクト、`lib/<name>/src/<sub>/` ディレクトリ、`soundness_<lib>_<sub>.scala` エクスポートファイル、そして**ちょうど一つ**のバンドルへの所属が必要である。`./mill groupCheck.validate` がこれを強制する。新しいライブラリにはさらに `allLibraries` の項目が必要である。#1744 以降、バンドルが公開の単位となり、各バンドルは閉包から POM の依存を導くので、どのバンドルにも属さないコンポーネントはまったく公開されず、二つに属するコンポーネントは二度パッケージされる。`groupCheck.excluded` はもうインターフェースモジュールを列挙せず、単独のコンパイラプラグイン三つだけを持つ。コンポーネントの兄弟をすでに持っているバンドルを優先し（`anticipation.*` はすべて `base` にある）、新しいバンドル間のエッジがグラフにすでにあるものかどうかを確かめる。
++ - 定義がコンポーネント間を移動するときは、古い `soundness_*.scala` エクスポートファイルのその行を**同じコミットで**削除しなければならない。トップレベルのエクスポートが重複すると、クラスパスの順序によって黙って解決されてしまう。
++ - `scalaJs`/`scalaNative` フラグは新しい依存の閉包と一致しなければならない。モジュールから JVM 専用の末尾を切り離すと、残りが対応プラットフォームを*増やせる*ことがある（たとえば facsimile.core は、ファイルシステム層が分離されれば `scalaJs = false` を外せる）。そうした増加は `soundness.js`/`soundness.native` の集約を変えるので、意図して行う。
++ - `*.wasi` コンポーネント（turbulence.wasi、capricious.wasi など）は代替のバックエンドを提供する。Stdio やエントロピーを再構成するときは、それらの向き先を変え、`soundness.wasi` を通る状態に保たなければならない。
++ - `bench.model` は六つの `*.staged` モジュールすべてに依存し、ベンチマークは `soundness.all` からは見えない。工程ごとに `make build` を実行する。
++ - コンパニオンオブジェクトから移された given は暗黙のスコープを離れるので、下流で import を一掃する必要がある。主題となる型のコンパニオン*へ*移された given は暗黙のスコープに戻る（エッジの反転にはこちらが望ましく、一掃は要らない）。
++ - 工程ごとの検証は `make attest` と `make build` である。ステージングされた導出やフォーマットのパーサーに触れる工程は、該当するフォーマットについて `make bench` も実行する。性能が同等であることも動作の保存の一部である。
+
+@ 0 1 0 0aa20f1db19802d60be28005779a1ca9
++ ## 監査中に確定した訂正
+
+@ 0 14 0 0721b74f599bb4721e9dca72fec4cf72
++ 1. 「cordillera」は `telekinesis.http2` の中のパッケージであり、ライブラリではなかった。これを挙げている重複排除の項目は telekinesis.http2 の項目である。このパッケージはその後 `telekinesis` に改名されたので、この区別はもう生じない。
++ 2. murmuration は半分しか配線されていない。`groupCheck.disabledLibraries` に挙げられ、`allLibraries` にはないのに、`rudiments.core` はすでに `murmuration.core` に依存している。murmuration へ何かを移すには、まず登録についての判断が要る。
++ 3. scintillate はチャンク転送の検出を二度導き直しており、そこに潜在的な食い違いがある（`== t"chunked"` と `.contains(t"chunked")`）。ヘッダー解析を統合するときは、このバグをそのまま保つか、明示的な承認を得て修正しなければならない。
++ 4. tarantula の `screenshot(): Raster in Png` は公開 API である。hallucination を切り離す際は、デコードするメソッドを（統合サブモジュールに）残し、生の `Data` を返す版を追加する。既存の戻り値の型は決して変えない。
++ 5. gossamer は実際に kaleidoscope を使っているが、推移的にしか到達していない。不要な依存を外すときに、この依存を宣言すべきである。
+
+@ 0 1 0 1c289e99c8bd54ef10ef66aba138d1de
++ ## mod-1：不要なエッジと不要なコード
+
+@ 2 2 0 05cd6a40c6af8e3618fc57699a3f3ce2
++ 時期：近期
++ 完了：#1746（2026-08-08）
+
+@ 0 2 0 0b19bf840edf850f050376f9193f5cb9
++ 存在するが使われていないビルドのエッジと、何も利用しないインターフェース型。
++ PR は一つで、削除以外のコードの移動はない。
+
+@ 0 9 0 06d8692cb3aa9baf1a495db404c119f4
++ - fulminate.core：`anticipation.http` → `anticipation.text`（http は使われておらず、この依存は text に推移的に到達するためだけにあった。fulminate のファンインは事実上リポジトリ全体なので、これによって anticipation.codec/generic が全体の最小の閉包から外れる）。
++ - urticose.url：`anticipation.html` を外す。xylophone.core：`urticose.core` は xylophone.test に移る。gossamer.core：mercator（テスト専用）と contextual（`t"…"` 補間子はむき出しのマクロである）を外し、kaleidoscope を宣言する。turbulence.core：stenography を外す。rudiments.core：`anticipation.http` を外す（ついでに `anticipation.path` も確かめる）。
++ - 利用者のいない anticipation の型を削除する。`Legible`（src/text）、`HtmlContent` と `Sgml`（src/html）、およびそれらのエクスポート行である。
+
+@ 0 2 0 0427aa4b331e7cdc0536a3527c0fb716
++ 完了条件：外した各エッジが使われていないことを grep で確かめ、削除後にコンパイルが通り、`make attest` が通ること。
+
+@ 0 1 0 1d478bfd0a1326751f9d7b944e9e5c73
++ ## mod-2：given 一つだけの統合サブモジュール
+
+@ 2 2 0 01178d1a1eccf7f11738b1f239139195
++ 時期：近期
++ 完了：#1746（2026-08-08）
+
+@ 0 4 0 099b0f71e4a89c9a02e7b38a1307223d
++ given インスタンス一つ（または小さなファイル一つ）を運ぶためだけにある依存は、`jacinta.time`、`eucalyptus.ansi`、`hallucination.ansi` という確立したひな形に従って統合サブモジュールへ移る。
++ 注記のある場合を除き、各工程は互いに独立している。
+
+@ 0 42 0 1237b70eb3b14ffa12dde42c97a8eb54
++ - **urticose.ansi**：`Url is Teletypeable` の given（urticose.Url.scala:61）と `UrlPalette` は、新しい `urticose.ansi`（依存先：urticose.url、escapade.core）に移る。これにより、URL、JSON、YAML を使うすべての利用者の閉包から escapade と iridescence が外れる。罠：汎用の代替 `given showable: [value: Showable] => value is Teletypeable`（escapade.Teletypeable.scala:68）があるので、新しい import を忘れた呼び出し箇所もコンパイルが通り、黙ってスタイルなしで描画される。given を `soundness` のトップレベルからエクスポートし、URL の内部の `e"…"` 補間を一掃し、スタイルを検査するテストを追加する。
++ - **honeycomb → anticipation.url**：特定の `HttpUrl is Attributive to Whatwg.Url` の given（honeycomb.Attributive.scala:67）は、:64 にある汎用の given（`Url` の `abstractable = _.show` を経由する）と動作が同一である。出力が同一であることを示す描画テストを追加し、:67 を削除し、honeycomb.core の依存を urticose.url から anticipation.url に替える。
++ - **anticipation.check**（`Commensurable` の境界のためにどのみち hypotenuse に依存することになったので、その後 `hypotenuse.check`、パッケージ `hypotenuse` に移った）：probably の `Checkable` 型クラスを持つ新しい anticipation のサブモジュール（兄弟とともに `base` バンドルに属する）。probably.core はこれを再エクスポートし、quantitative.core は probably.core への依存を anticipation.check に替える（マクロの箇所は quantitative.internal.scala:208 と protointernal.scala:790）。これにより、abacist、aviation とその上にあるすべてを含む約 40 のモジュールがテストフレームワークの閉包から解放される。
++ - **chiaroscuro の分割**：`chiaroscuro.core` は Contrastable/Decomposable/Similarity を残す。新しい `chiaroscuro.render` が Juxtaposition.scala を引き取り、それとともに escapade、escritoire、dendrology の依存も引き取る。probably.core は両方に依存するので動作は変わらないが、構造的な対比だけを必要とするものはすべて描画のスタックから逃れる。
++ - **escapade の分解**：新しい `digression.ansi` が、StackTrace/フレーム/メソッドの Teletypeable の given、スタックトレースのパレット、`graphical` の given（escapade.Teletypeable.scala:75–213）を引き取り、escapade.core から escritoire、digression、anticipation.gfx、そして（要確認）iridescence を切り離す。Stdio に書き込める given（escapade.Teletype.scala:71–79、134。escapade が turbulence を使う唯一の箇所）は `escapade.io` に移る。escapade.core は最終的に csi + gossamer + anticipation.url となり、真に ANSI の形をしたものになる。urticose.ansi と同じ、黙って代替に落ちる罠がここにも当てはまる。
++ - **fulminate.print**：`Message is Printable`（fulminate.Message.scala:46。termcap を無視する）は Message のコンパニオンから `fulminate.print` に移り、fulminate.core から anticipation.print を切り離す。Message に対する Printable を召喚する箇所を一掃し、escapade のオプトインの競合相手 `displayableTypes.messagePrintable` との相互作用を確かめる。
++ - **tarantula.image**：訂正 4 のとおり。tarantula.core は、ブラウザ自動化から hallucination（およびその gesticulate/pneumatic.flate/iridescence の閉包）を外す。
++ - **spectacular の反転**（escapade の工程の後）：`Uuid is Showable` は inimitable の Uuid のコンパニオンに、`StackTrace is Showable` は digression の StackTrace のコンパニオンに移る。それぞれの移動は同じコミットでビルドのエッジを反転させる（spectacular は依存を失い、末端が spectacular.core を得る。非循環であることは確認済み）。コンパニオンからコンパニオンへの移動は暗黙のスコープを保つので、import の一掃は要らない。`typeRepr`/`meta` の given は移さ**ない**。コンパイラが所有する型にはそれを受け入れるコンパニオンがなく、暗黙のスコープを失うと spectacular.Inspectable.scala:241 の `summonFrom` のフォールスルーが黙って変わってしまう。
+
+@ 0 6 0 0be87865924c25270b5a86d8830b7f68
++ そのままで正しいと記録したものは、蒸し返さない。fulminate → anticipation.log と gigantism（Communicable が Transcribable を継承するのは意図した設計であり、mod-1 が入れば anticipation.log の閉包は fulminate の閉包の内側にある）、escapade → anticipation.url/gfx、hellenism の依存、xylophone → serpentine（XPath はパスの代数を実際に再利用している）、stratiform の 14 のコアの依存（すべて使われ、すべて軽量である。mod-3 で移るのは panopticon の given だけである）。
+
+@ 0 2 0 0475c56d88a613f81386694467b5e5a5
++ 完了条件：挙げた各エッジが切られ、新しいサブモジュールがバンドルされ、どの下流モジュールも切り離した閉包を推移的に取り戻さないこと。
+
+@ 0 1 0 06c7a3615ea4588115c41be6e4c8fe83
++ ## mod-3：モジュールの分割
+
+@ 0 1 0 1be1c26a35f84add18c6be13de5a0e85
++ 時期：近期〜中期
+
+@ 0 29 0 0c4f79c4ebb1847902c246a598428096
++ - **legerdemain.query**：クリティカルパス上で最大の成果である。telekinesis が legerdemain を使うのは `Query` 型のためだけであり、honeycomb を必要とするのは legerdemain の HTML ウィジェットのコードである。`Query` は honeycomb に依存しない `legerdemain.query` に分割され、telekinesis.core はその向き先を変えて、HTTP クライアントの経路から HTML/XML のスタック全体を切り離す。プラットフォームのフラグを確かめること。query は完全にクロスプラットフォームになる。
++ - **ethereal.dist**：**指定どおりには行き詰まっており、再び試みる前に設計上の判断が要る。** 意図は、Runners、Assembler、Installer、Upgrade（ダウンロード、検証、パッケージ化、自己更新のツールチェーン）をデーモンから分割し、telekinesis.jvm、urticose.url、gastronomy、zeppelin をそちらに持っていくことだった。調べてみると、デーモンとツールチェーンはその線に沿って分けられない。`cli`（ethereal_core.scala:88）はファイルの残り全体にわたり、それ*自体が*デーモンである。そしてその `name` の解決は、`ethereal.name` プロパティがないときに、実行ファイルをビルドする経路全体を実行して回復する。その経路は `Runners.version`、`Runners.download`、`Assembler.PublicKeyLength`、`Assembler.assemble` を呼ぶ。したがって core は Runners も Assembler も手放せず、この二つで重い依存の四つすべてを必要とする。Installer と Upgrade（core は参照していない）だけを移しても何も切れない。それらが必要とするのは zeppelin だけで、zeppelin はどのみち Assembler が必要とするからである。代わりに `cli` を新しいコンポーネントに入れると、`core` にはデーモンを支える型くらいしか残らず、実際の外部の利用者二つ、anthology.xeq（`Runners`）と ziggurat.packager（`Assembler`）はいずれにせよ新しいコンポーネントを取り込むので、この分割はそれらにとっても何ももたらさない。きちんと行うには、実行ファイルをビルドする分岐を、`ethereal.dist` が提供するインターフェースの背後に切り出す必要がある。それはその経路への到達の仕方を変えるので、意味論を変えないという線を越える。`quantitative.units` についての所見はそれだけで成り立つ。そうしたリテラルは二つではなく一つ、ethereal_core.scala:266 の `val idleTimeout = Quantity[Hours[1]](6.0)` であり、`Long is Abstractable across Durations to Long` がそれを正確に置き換える。
++ - **ypsiloid から jacinta を外す**：`Bcd`（jacinta.internal.scala:284 以降、`IArray[Double]` の上の不透明型）は **hypotenuse** に移り、ypsiloid → jacinta を断ち切る。YAML のライブラリが JSON のライブラリに依存することは、グラフの中で最も誤ったエッジである。YamlPath（ypsiloid の中で serpentine、urticose、beneficence、symbolism を import する唯一のもの）は `ypsiloid.pointer` に移る。
+
+@ 0 2 0 0d149f81a87a3d4c0c1948ce540fb2d4
++   **完了。** 351 行の `Bcd` のブロックは `hypotenuse.Bcd` に移り、ypsiloid のコンパイルクラスパスにはもう jacinta がまったくない。
+
+@ 0 8 0 177aca8cf9202e5f0eaa4e71232eee14
++   以前の試みが失敗したのは、`Bcd` のコンストラクターが `object internal` の中で持つと*推論されていた*キャプチャの振る舞いを保とうとしたからである。そこではすべての結果が新しい `any.rd` ケイパビリティを持ち、jacinta のパーサーがそれを `unsafeAssumePure` で洗い流していた。
++   それを明示的に宣言すると jacinta が直って ypsiloid が壊れ、逆もまた同じだった。
++   解決は、`Bcd` が単に純粋な値であるということだった。`Bcd` は不変の `IArray[Double]` の不透明な別名なので、コンストラクターはそれを純粋なまま返し、その周りの `unsafeAssumePure` はすべて消え、唯一の本当に不純な段階である、新しく作った可変配列の採用は、各呼び出し箇所ではなくコンパニオンの `Bcd.adopt` で一度だけ処理される。
+
+@ 0 6 0 18be91292d999cfa19cbaaef442227a5
++   記録に値する罠が二つある。
++   `Bcd.fromContent15` は `private[jacinta]` で、その唯一の呼び出し元 `jacinta.Json.Parser` は今では別のライブラリにあるので、公開になった。これがこの移動で必要になる唯一のアクセスの拡大である。
++   また、型を再エクスポートすること（パッケージ `jacinta` での `export hypotenuse.Bcd`）は、import することと同等では*ない*。別名はコンパニオンの暗黙のスコープを運ばないので、それを使うファイルが `hypotenuse.Bcd` を直接 import するまで、`bcd.toLong` と `bcd.toDouble` は解決されなくなった。
+
+@ 0 18 0 04d988bfcbf375011b57a62a233498c1
++   この工程の YamlPath の半分は `Bcd` とは独立しており、ethereal.dist を行き詰まらせたのと同じ理由で、**これも行き詰まっている**。
++   YamlPath はたしかに ypsiloid の中で serpentine、urticose、beneficence、symbolism を import する唯一のものだが、`ypsiloid.core` はそれをあらゆる所で使っている。`Yaml.Focus` は `pointer: YamlPath` を持ち、`Yaml is Positionable by YamlPath` の given があり、`yp"…"` 補間子とそのマクロは core にある。したがって core より上のコンポーネントには移せず、core より下に移しても core の依存の閉包は変わらない。
++   この四つの依存を切るには、Yaml の AST をそのポインター型から分離する必要があり、それはこの工程が述べていたよりずっと大きな変更である。
++ - **jacinta.optics と JsonPointer からの URL の除去**（ypsiloid の工程の後。公開 API なので最大の注意を要する）：panopticon のレンズの given は jacinta.Json.scala を離れて `jacinta.optics` に移る。JsonPointer の文書レジストリのキーは `HttpUrl` から Text または `Abstractable across Urls` に変わり、具体的な HttpUrl の便宜機能は `jacinta.url` に置かれ、jacinta.schema はそれを通じて URL 風の検索を保つ。RFC 6901 のポインターのコア（ypsiloid.YamlPath と apoplexy.internal でも手書きされている）は、この工程の一部として共有される。
++ - **stratiform の分割**（PR 二つ）：(a) `stratiform.base256` は汎用のバイナリからテキストへのコーデックなので、**monotonous** に移る（`Serializable` を非 ASCII のアルファベットに拡張する）。stratiform.binary と revolution は向き先を変え、bitumen の手書きの `decodeOctal` は monotonous.Octal を採用し、turbulence に面した given は `stratiform.io` に移る。
+
+@ 0 20 0 07482f063ed96e6c18698cb47992ab55
++   **(a) はモジュールの分割ではなく mod-5 の作業であり、括弧の中身が仕事のすべてである。**
++   `monotonous.Alphabet` 自体は ASCII に縛られていない。文字あたりのビット数を `log2(chars.length)` として導くので、256 文字のアルファベットなら 8 になる。しかし `Serializable.base` は縛られている。`Array.tabulate(1 << bits)(alphabet(_).toByte)` という ASCII の*バイト*の参照表を前もって計算し、そのコメントは不変条件をはっきり述べている（"Every alphabet character is ASCII, so decoding the output as Latin-1 yields identical text"）。それによって、文字ごとのボックス化なしに Latin-1 のバイトから結果を組み立てられる。
++   `Base256` のアルファベットはまったく ASCII ではない（`ḀḁЂЃĄą…`）ので、`char.toByte` はそのすべての文字を切り詰めてしまう。
++   したがってこのコーデックを統合することは、monotonous の文書化された高速経路を変えることを意味する。それは性能に敏感であり、mod-5 のコーデックの作業に属し、現在の `Base256.encode`/`decode` に対する等価性のテストとベンチマークを関門とする。
++   また、stratiform と reliquary の 13 の利用者ファイルを、`Base256.encode(data)` から `serialize`/`deserialize` の語彙に移すことにもなる。
++   `Base256` をそのままパッケージ `monotonous` に移すと、統一を達成しないまま同じ 13 のファイルをかき回すことになるので、両方の選択肢の悪いところを取ることになり、行わなかった。
++   (b) 表現を保つ編集層（Mutation、Revision、TelHandle、約 1,607 行、および telOpenable の given）は `stratiform.editing` になり、aperture を切り離す。レンズの given（Tel2.scala:107–137）は `stratiform.optics` になり、panopticon を切り離す。スキーマ層（Tels.scala、Tels2.scala）は `stratiform.schema` になり、jacinta.schema のバンドルでの配置にならう。
+
+@ 0 5 0 1dfe4abd8191d79c0830c306b1dd9ce6
++   **状況：**`stratiform.optics` は**完了**した。三つのレンズ/オプティクスの given は `trait Tel2` のメンバーで（したがって `Tel` の暗黙のスコープに継承されていた）、今ではトップレベルの given `telLens`、`telOrdinalOptical`、`telEachOptical` となり、stratiform.core から panopticon を切り離した。
++   `Tel` は `Product` ではなく普通のクラスなので、panopticon の汎用の `deref` レンズが、import の欠落を黙って代わりに埋めることはない。
+
+@ 0 3 0 121c7106a045edd716f958a155a3e5b5
++   `stratiform.schema` は**行き詰まっている**。`Tel.scala` には `Tels` へのコード上の参照が 51 ある（`assign`、`resolveType`、`keywordMap` など）ので、スキーマ層はコアの AST に織り込まれており、その上に移せない。
++   core がスキーマを使わない jacinta と違い、stratiform の core はスキーマを使う。
+
+@ 0 26 0 107eec50ea0ba64512e5f0dc887ae72d
++   `stratiform.editing` は**一部分析したが、試みていない**。
++   有用な発見がある。`Tel.scala` の `import aperture.*` は使われていない（このファイルはそこから何も参照しない）ので、aperture のエッジは `TelHandle.scala` と二つの `Openable` の given だけに依っている。
++   この二つが障害である。`Tel` の `telOpenable`（Tel.scala:83）は `Tel2` の `telViewOpenable`（Tel2.scala:100）より意図的に優先される。オブジェクトにある given はトレイトから継承された given に勝つからであり、それによって書き込み可能なソースが書き戻しのインスタンスに解決される。
++   両方を新しいコンポーネントのトップレベルの given に平らにすると、この順序が壊れ、`Readable` でも `Writable` でもあるソースに対して曖昧になる。
++   この工程を行うには、オブジェクトがトレイトを継承する層構造を `stratiform.editing` の中に意図して作り直し、読み書き可能なソースがどのインスタンスを選ぶかを固定するテストを付ける必要がある。
++ - **turbulence.stdio**：「turbulence にはもっと明確な目的が要る」への具体的な答えである。*ストリーム*と*標準ストリーム*は別のモジュールである。確認済みのことだが、Stdio、In、Out、Err はストリーミングの代数にまったく触れない（import するのは java.io、anticipation.print、rudiments、beneficence だけである）。これらは turbulence の**下**のモジュール（`Component(anticipation.print, rudiments.core, beneficence.core)`、`stdios` の given を含めて約 290 行）に移る。turbulence.wasi は新しいモジュールに向き先を変える。これはまさに turbulence.wasi が置き換えるために存在するものである。`Stdio` と `stdios` のトップレベルのエクスポートは同じコミットで移る。**完了**したが、訂正がある。予測していた stdio だけの利用者六つは誤りだった。camouflage は stdio の型をまったく名指ししておらず、dendrology と escritoire のクラスパスにはそもそも turbulence がなく、burdock、probably、ultimatum はそれぞれ zeppelin、eucalyptus、profanity を通じて実際にストリーミングの代数に到達している。それらの向き先を変えても何も変わらない。turbulence.core を*宣言*していてストリーミングの名前を何も使わないコンポーネントをすべて数え上げると、ちょうど二つ、`pneumatic.core` と `dendrology.demo` になる。pneumatic.core の向き先を変えると（turbulence を通じて得ていた contingency と zephyrine も宣言する必要があった）、そのコンパイルクラスパスは 42 モジュールから 23 になり、turbulence.core、parasite、capricious、hieroglyph が外れる。
+
+@ 0 15 0 0d880753cd0e75230ccb609ee2e91094
++   二つの下位項目は**先送りされており、判断が要る**。
++   `shred` は単純に turbulence のテストスコープに移すことはできない。zephyrine のテストもそれを使い、probably を通じて推移的に到達しているからである。その自然な居場所は `capricious` だが（zephyrine の `Chain` の上のランダムデータ生成器である）、そうすると capricious が zephyrine に依存することになる。
++   それが移るまで、turbulence.core は capricious への依存を保つ。
++   `Document`/`Documentary` は依然として新しい `anticipation.document` に移したい。その利用者は「フォーマットのモジュール」より広い（caduceus、exegesis、archimedes などを含む）ので、それは独立した工程になる。
++ - **rudiments の減量**：このプログラムで最も広い一掃であり、純粋に機械的に保つ。限定された添字付けのまとまり（Scribe、Grouping、Lattice、Surveyor、Deindex、Segmentable、Populated、約 730 行。すべて denominative の直上にあり、ypsiloid、stratiform、facsimile、escapade が収束した形である）は、denominative と rudiments の間の新しいライブラリ（仮の名前は **`concordance`**）になる。Mutex、Counter、Loop（JVM の並行性）は parasite へ、Exit は imperial か ambience へ、DecimalConverter は gossamer へ（Decimalizer と再び一緒になり、beneficence を切り離す）、Bijection は訂正 2 が決まり次第 murmuration へ移る。
+
+@ 0 7 0 187ef67c59b80db21ef105e8030df3a6
++   `concordance` の切り出しは**完了**しており、残しておくべき判断が一つある。そのソースは `package rudiments` を保つ。
++   パッケージの変更を最初に試みたが、断念した。`Deindex` の `apply`、`at`、`prim` の拡張は木全体の添字付けの語彙なので、新しいパッケージにすると、何かを添字付けするほぼすべてのファイルに import が必要になる。その連鎖は六巡で六十あまりのコンポーネントに及び、なお広がり続けていた。
++   パッケージを保つことで分割は目に見えなくなった。ソースファイルは一つも変わらなかった。
++   `Bijection` は murmuration ではなくこのまとまりと一緒に移った。その唯一の利用者は `Deindex.bijection` で、murmuration にはない denominative を必要とするからである。
+
+@ 0 3 0 115d557849c44d7606ce4e9a095f8ea7
++   **残りの移転は指定どおりには行えず**、その理由は手間の問題ではなく構造的なものである。提案された居場所はどれも、すでにそのコードを使っているモジュールの*上*にある。
++   実施が承認され、試みられ、行き詰まりが見つかったもの：
+
+% 2 1 0 12e89c9f9dbba44d0c3a7eca0f749572
+
+@ 0 9 0 1d60853c25d059f70616fcbc55492ac5
++   column  ユーティリティ
++   column  提案された居場所
++   column  結果
++   column  理由
++   row  `Loop`  parasite  循環  `fulminate.internal` と `wisteria.internal` が `loop` を使い、parasite は推移的にその両方に依存する（parasite → digression → spectacular → wisteria。fulminate も同様）
++   row  `Exit`  imperial または ambience  循環  `contingency.Fatal` が `Exit` を使い、imperial は contingency に依存する
++   row  `DecimalConverter`  gossamer  循環  `spectacular.Showable` がそれを使い、gossamer は spectacular に依存する
++   row  `Mutex`  parasite  可能だが有害  `turbulence.Out` と `turbulence.Err` がそれを使うので、`turbulence.stdio` が 16 モジュールから少なくとも 37 に増える
++   row  `Counter`  parasite  削除  利用者がおらず、`rudiments.Atomic` がそれに取って代わる
+
+% 1 1 0 04a6dafcab3b1f0700df7ecf3f412401
+
+@ 0 5 0 17e0e9954dc13ea0111da3db739272c5
++   `turbulence.stdio` はこのトラックが作った意図的に最小のコンポーネントであり、parasite の閉包は 37 モジュールなので、`Mutex` を移すと標準ストリームを切り離して得たもののほとんどが元に戻ってしまう。
++   `Counter` には rudiments の内にも外にも利用者がいなかった。木の中のもう一つの `Counter` は `ultimatum.Reckoning.Counter` で、無関係な入れ子の enum である。そして `ere(_ + 1)` を伴う `Atomic[Int]` が `getAndIncrement` なので、移転するのではなく削除した。
+
+@ 0 4 0 05e26c1fcefcc25b1873e545739510d5
++   つまり rudiments がこれらのユーティリティを持っているのは、まさにそれらが属する主題よりも*下*から使われているからである。
++   主題ごとに移転するには、まずその低水準の利用者を移す必要があり、それはこの項目が述べるよりずっと大きな変更である。
++   以前の測定も依然として成り立つ。これらの移動のどれも、どの閉包も縮めない。
+
+@ 0 2 0 0af9614a2d739fbc06784e964f343b44
++ - **gossamer.lexicon**：Dictionary.scala（434 行）はサブモジュールに移る。まず nomenclature.lexicon との重なりを確かめる。
+
+@ 0 1 0 0019c01d1678ba6f04c58bd1915ffdea
++ 2026-09-25 時点の工程ごとの進捗：
+
+% 2 1 0 035174b7ae3c4d180c9e988279f3920b
+
+@ 0 15 0 1e5b68cb2e7357fa00f95dda0481fe08
++ column  工程
++ column  状態
++ row  legerdemain.query  導入済み
++ row  hypotenuse.Bcd による jacinta の除去  導入済み
++ row  jacinta.optics  導入済み
++ row  stratiform.optics  導入済み
++ row  turbulence.stdio  導入済み
++ row  concordance  導入済み
++ row  gossamer.lexicon  導入済み
++ row  ethereal.dist  上に記録したとおり行き詰まり
++ row  ypsiloid.pointer  上に記録したとおり行き詰まり
++ row  stratiform.schema  上に記録したとおり行き詰まり
++ row  jacinta.url  未導入：`JsonPointer` のキーはまだ `HttpUrl` である
++ row  stratiform.editing  未導入
++ row  stratiform.base256 の monotonous への移動  未導入
+
+% 1 1 0 0b4daf3e26ef237f0f8e47279b1c073c
+
+@ 0 2 0 027c26b98f3044d3114ee809badb1d4d
++ 完了条件：分割した各モジュールがバンドルされ、親の依存リストには残りのコードが使うエッジだけが含まれること。
+
+@ 0 1 0 1cd93e78bf22ebf7097e3b73ba3c7f7a
++ ## mod-4：コーデックごと、フォーマットごとの分割
+
+@ 0 2 0 028181b7e5c4e45b1bb880ca1a360a78
++ 時期：中期。順序は pneumatic、hallucination、facsimile。
++ 完了：#1748、#1756（2026-08-09）。下で行き詰まりと記録した facsimile の工程は、この基準に含まれない。
+
+@ 0 9 0 018b8a1dfaa8a7891845bbfd0e326ad1
++ - **pneumatic のコーデックごとの分割**：既存の `flate` と並んで `pneumatic.{brotli,lzma,lzw}` を設ける。BrotliDictionaryData（純粋な表だけで 1,761 行）は、すべての利用者に負担をかける代わりに brotli と一緒に移る。そうすれば telekinesis.http2、galilei、zeppelin、facsimile、hallucination は flate（+lzw）だけを選べる。
++ - **hallucination のフォーマットごとの分割**：五つのコーデックが約 890 行のコアを共有している。これらは `hallucination.{jpeg,png,gif,webp,bmp}` になり、CanvasHandle/RasterOpenable には `hallucination.aperture` が設けられる。gesticulate のメディアタイプの記述子はそれぞれのフォーマットに従い、pneumatic.flate は png コンポーネントに移り、tarantula.image は png に向き先を変える。重複排除（Crc32、GifLzw）は mod-5 を待つ。まず分割し、次に重複を排除する。PR 一つにつき目的は一つである。
+
+@ 0 6 0 0e0574ff612f14891056b37540f914c1
++   コアの大きさの見積もりは正しい。残るファイルは約 880 行になる。
++   aperture のコンポーネントは**完了**したが、名前は `hallucination.canvas` になった。`object hallucination` の中に入れ子にした `aperture` という名前のコンポーネントは、それが依存する `aperture` ライブラリを覆い隠し、mill のビルドファイルは内側の名前を先に解決するからである。
++   `Canvas` の `openable` の given は `CanvasHandle` と `RasterOpenable` と一緒に移り、それで `Canvas` のコンパニオンが空になったので、コンパニオンはなくなり、`Canvas` は今では形式を表す幻の型にすぎない。
+
+@ 0 4 0 1e25b6c51e4b91910156e8192510dcf4
++   **ファイルの移動ではなく、バックエンドの再設計として完了した。**
++   `Rasterizable` は今では単なる記述子ではなく、コーデックのインターフェースである。`name`、`mediaType`、`alpha` と並んで `decode`、`encode`、`sniff` を持ち、各フォーマットは自分のコンポーネントから自分のインスタンスを提供する。
++   中央の `RasterBackend` はなくなった。
+
+@ 0 2 0 1ca43ea3dcc465aa1b721d422d1354ed
++   各フォーマットは今では、`-jvm`/`-native` のソースディレクトリのパターンを使って、プラットフォームごとに自分の実装を選ぶ。
+
+% 2 1 0 1d8a91771d42b89b098703bbce2f3aaa
+
+@ 0 8 0 1587877699a36381175bb0ddde6d0291
++   column  フォーマット
++   column  JVM でのデコードの手段
++   column  Scala.js と WASI での手段
++   row  PNG  `javax.imageio`  独自の純粋なコーデック
++   row  JPEG  `javax.imageio`  独自の純粋なコーデック
++   row  GIF  `javax.imageio`  独自の純粋なコーデック
++   row  BMP  `javax.imageio`  独自の純粋なコーデック
++   row  WebP  独自の純粋なコーデック  独自の純粋なコーデック
+
+% 1 1 0 171027a4c6bd4ec308c1166b1d3162e9
+
+@ 0 4 0 147a87dac42de711074926edfd9d7124
++   WebP があらゆる所で純粋なコーデックを使うのは、標準の JRE に WebP のリーダーが同梱されていないからである。これによって、コアのポリシーに見えていたものが解消される。それがポリシーだったのは、コアが選択をしていたからにすぎない。
++   純粋なコーデックは各コンポーネントの共有ディレクトリに残るので、今もコンパイルされ、JVM では ImageIO との差分テストも続けて行われる。
+
+@ 0 5 0 0cc81871dda3f10d0cf1238dbb2620a1
++   判別は候補を明示的に受け取る。`Raster(data)` と `Aggregable` の given は今では `RasterFormats` を必要とし、それが呼び出し元のリンクしたフォーマットを列挙する。
++   `hallucination.formats` は五つすべてに依存してすべてのフォーマットを提供するので、「何でもデコードする」は今も import 一つで済む。
++   代替のコーデックを提供することも、新しいフォーマットを追加することも、今では新しいコンポーネントの中の普通の given である。コアは何も変わらない。
+
+@ 0 1 0 1e5664f909a9482b10cdc73c2e01fbea
++   結果の大きさ：
+
+% 2 1 0 1c5a8c0eb703f2231802843a3d8c2267
+
+@ 0 2 0 1ebb07d94328d3361140869cbd0dc86b
++   column  コンポーネント
++   column  行数
+
+% 0 1 0 0f871560ef4013dd0c0865b41860e5e6
+
+% 0 1 0 14cf32adf71f46f204f71c4ffa6cdf95
+
+% 0 1 0 0cb7ba25752849b2033db2670016e78c
+
+% 0 1 0 0f5b4742d4b42e41002a7cbd3bc13ede
+
+% 0 1 0 08d14909d967537c08bb37e0350e15c2
+
+% 0 1 0 0a18b6323e2a1eb105fba500f50be7f4
+
+% 1 1 0 1efebe0a824f630a1b15638b3a86ad95
+
+@ 0 9 0 0d5aef3a12c3f5020473854c26b0cf02
++   コアには `Quantization` が含まれる。GIF のパレットのエンコーダーがそれを JPEG と共有しているので、コアに残った。
++   tarantula のスクリーンショットのデコーダーが見るのは、今では `hallucination.core` と `hallucination.png` だけである。
++ - **facsimile の分割**：Ascii85 は monotonous へ、Rc4 は enigmatic へ、Predictor（PNG/TIFF の行フィルターで、PngCodec のロジックと重複する）は png コンポーネントか pneumatic へ移る。`facsimile.crypto` は Guard を引き取り（core から enigmatic と gastronomy を切り離す）、`facsimile.file` は PdfFile を引き取り（galilei と ambience を切り離し、core が `scalaJs = false` を外せるようにする）、`facsimile.fonts` は phoenicia に面した約 900 行のフォントの仕組みを引き取る。aviation は PdfInfo とともに残るか、file コンポーネントと一緒に移る。
+
+@ 0 1 0 193c66f240467c870ce1fb54e0840389
++   重い依存のそれぞれを、それを import するファイルに対応させると次のようになる。
+
+% 2 1 0 0abd9cc392c059da0a1c1441205170e3
+
+@ 0 6 0 0e759180d41365890f78c386170d24ee
++   column  依存先
++   column  import しているもの
++   row  enigmatic  Guard、Pdf、PdfFile
++   row  gastronomy  FontEmbedder、Guard
++   row  galilei と ambience  PdfFile のみ
++   row  phoenicia  FontEmbedder、PdfFont、facsimile_editing
+
+% 0 1 0 0e37e3045d676a6412697391f0b09d80
+
+% 1 1 0 11ece45022b362d91292d2ca3567f788
+
+@ 0 6 0 1ca52501fa1c3d5d0fc99e1e03ebeba8
++   **`facsimile.file` は完了**しており、galilei と ambience を一緒に持っていく。facsimile.core のコンパイルクラスパスは 67 モジュールから 62 に減る。
++   `PdfFile` が `Pdf` に現れていたのは三つの `Openable` の given としてだけで、それらは `pdfPathOpenable`、`pdfDataOpenable`、`pdfCreatable` としてそれと一緒に移った。
++   それらのコメントには、"anchored here — the form's companion — so `path.open[Pdf]()` … resolve with no import" と記録されていたので、これはその使い勝手を承知の上で手放すことになる。`Openable` には代替がないので、import を忘れた呼び出し箇所はコンパイルに失敗する。
+
+@ 0 3 0 012515250dedfba404315b7baf3d7773
++   ロードマップに反して、core は `scalaJs = false` を保つ。理由は二つ、メモリーマップされた読み込み*と* JCE であり、`PdfFile` とともに去ったのは前者だけだった。
++   `enigmatic` が残るのは、`Pdf` 自体がそれを使うからである。
+
+@ 0 9 0 1dfbe106bbfaa8c409904ade43d68d64
++   **`facsimile.crypto` と `facsimile.fonts` は行き詰まっている**。どちらも、`Pdf` とページのモデルが、それらが引き取るはずのものに依存しているからである。
++   暗号化は `Pdf` に織り込まれている。`guard` は `Optional[Guard]` 型の private な var であり、`decryptStrings` は `Guard` を受け取り、`Guard.Method` が `cryptMethod` を決める。
++   フォントはページのモデルに織り込まれている。`Page.fonts` は `Map[Text, PdfFont]` を返し、`TextExtractor.extract` はそれを一つ受け取り、`TextRun` には `font: PdfFont` フィールドがある。
++   `FontEmbedder` だけは分離できるかもしれないが、それで gastronomy が切れるのは `Guard` も移った場合だけなので、二つは結びついている。
++   Ascii85、Rc4、Predictor は分割ではなく mod-5 の重複排除の項目であり、特に Ascii85 は `monotonous.Serializable.base` を使えない。そのビットの詰め込みは二の累乗の大きさのアルファベットを前提とするが、85 進法はそうではない。
+
+@ 0 2 0 170a19735a360d51052f9b635de2ba0b
++ 完了条件：あるフォーマットの利用者が他のフォーマットのコードをもうコンパイルせず、プラットフォームのフラグが新しい閉包を反映していること。
+
+@ 0 1 0 1460eab221a796bf19b6ea6384d445ab
++ ## mod-5：アルゴリズムの重複排除
+
+@ 0 1 0 02cb1cf489ff8832138ebe3d90bd9caf
++ 時期：中期。mod-4 の後に行い、何も二度移らないようにする。
+
+@ 0 5 0 0fc9cb6f71acc6c4143b7230295e2f19
++ - **バイナリのプリミティブのライブラリ**（**`corpuscular`**、作成済み）：varint/LEB128（stratiform.Varint を元にする）、ビッグエンディアンとリトルエンディアンのアクセサーと後から書き戻せるバイトビルダー（hallucination.Binary を元にする）、LSB 先頭と MSB 先頭の両方のビットリーダー/ライター、そして正準ハフマンの表のビルダー（四つのうち最もきれいな pneumatic.BrotliDecoder のものを元にする）。どの利用者も移行する*前に*、提供元のすべての境界ケースを再現するテストとともに導入する。
+
+@ 0 2 0 03b3b29a952fe65906202c681cb72bd7
++   **varint は、ロードマップが想定するようには共有できない。**
++   `stratiform.Varint.decode` と locomotion の `ProtobufParser` は、見た目の違いがあるだけの同じ関数ではない。
+
+% 2 1 0 1661b3f3790480e71f4d61a21b6ad967
+
+@ 0 1 0 02e58a16872a0b31181438982f1ed8a5
++   column  観点
+
+% 0 1 0 0731529e5afd023302434c236999f23d
+
+% 0 1 0 0c87e91422efe79407f22826120aa4cd
+
+@ 0 3 0 1389366d772cf7ac07e8222ac2147caa
++   row  長いエンコーディング  `shift >= 64` のとき中断する  `shift` が 70 まで許容し、63 を超えるビットを*捨てる*（`if shift < 64 then result |= …`）
++   row  結果  アロケーションされた `Decoded(value, offset)`  パーサーの `pos` フィールドを変更し、何もアロケーションしない
++   row  エラー  `VarintError`  位置を持つ `ProtobufError`
+
+% 1 1 0 05151a4534aabcaa1619369be1294c60
+
+@ 0 4 0 1bd3dd94aaaea12b0b4419520d62599d
++   上位ビットを捨てるのは非正準なエンコーディングに対する protobuf の規則なので、二つを統一すると、不正な入力に対するどちらかの動作が変わる。共有のデコーダーは、protobuf のホットループでアロケーションするか、どの提供元も今は持たないカーソル式の API を必要とする。そして位置は protobuf の診断の一部である。
+
+@ 0 10 0 049c3eb9abe7f78c12f9ec9bc5824499
++   *エンコーダー*のほうが近く、`size`/`write` はなお共有する価値があるかもしれない。
++   本当に重複しているのは **locomotion の内部**である。`ProtobufParser` には同じデコードのループが二つあり、`data.length` と `boundary` のどちらに対して境界を取るかだけが違う。
++   これは境界をパラメーター化する局所的なリファクタリングであり、行う価値はあるが、ホットループなので、見つけてすぐ行うのではなく、変更の前後で protobuf について `make bench` を実行するべきである。
++ - **チェックサムを ~~gastronomy~~ `corpuscular` へ**：`Digestion` ではない高速な CRC-32/CRC-64/Adler-32 の API。**完了**（2026-10-21）。`corpuscular_core.scala` が `lib/` の中で唯一の `Crc32`、`Crc64`、`Adler32` の表の生成を持ち、以前の提供元はすべてそこから読む。下で決めたとおり、zeppelin は `java.util.zip.CRC32` を保つ。ハフマンのビルダーと varint のループはまだすべて提供元にあり、corpuscular はどちらも持たない。
+
+% 2 1 0 0c41e5c3524c50f008181ce51b1dbc66
+
+@ 0 5 0 055e81cb37a4673101a34010a5bd5d29
++   column  アルゴリズム
++   column  まだ持っているもの
++   row  ハフマンのビルダー、デコード側（五つ）  pneumatic の Inflater と Brotli、hallucination の WebP と JPEG、telekinesis の HPACK
++   row  ハフマンのビルダー、エンコード側  四つ
++   row  varint のループ  stratiform、locomotion の三つ、rudiments の `Scribe`、degustation、ethereal のランチャー、gastronomy の multihash、pneumatic の XZ コンテナー、octogenarian のパックファイル
+
+% 1 1 0 02c0b668bb474eff0e0bf482baac9423
+
+@ 0 4 0 147c27f9fa3880a60eaa1490d3e51a1e
++   gastronomy ではない理由。`gastronomy.core` は 45 モジュールの上にあり、`pneumatic.core` は 24 モジュールの上にある。そして pneumatic も hallucination も gastronomy に依存しないので、高速なチェックサムをそこに置くと、表一つとループ一つを節約するためにそれらの閉包がほぼ倍になる。
++   `corpuscular` はそれらの下で、`anticipation.codec` だけの上にある。
+
+@ 0 2 0 014a79df4948999d0f005f0a8f479459
++   「手書きの CRC-32 が四つ」という数は、両方向に訂正が要る。
++   三つのアルゴリズムの実装が五つある。
+
+% 2 1 0 1b67e0770464ed701af4399f47aa8ef5
+
+@ 0 8 0 01e7dce719d2e8490b49d35fcd630e61
++   column  実装
++   column  アルゴリズム
++   column  形
++   row  pneumatic の `Crc32`  CRC-32  ストリーミング、JZlib の移植
++   row  pneumatic の `Adler32`  Adler-32  ストリーミング、JZlib の移植
++   row  pneumatic の `Crc64`  CRC-64  XZ 層の中
++   row  hallucination の `Crc32`  CRC-32  一度きり
++   row  zeppelin の `crc32`  CRC-32  `java.util.zip.CRC32` に委譲する
+
+% 1 1 0 171deac81d062b5613a42ae135c8eda7
+
+@ 0 5 0 0be10b52b0cc00441e3b28d9a59101f9
++   しかし **CRC-32 のうち二つはまったく重複排除すべきでない**。`java.util.zip.CRC32` に委譲する zeppelin のものと、同様に `JavaBaseHashing` を経由する gastronomy の `Digestion` の CRC-32 である。
++   どちらも JVM の組み込み関数である。それを表駆動の Scala のループに置き換えると、何の利点もなく性能が後退する。
++   JVM 上の pneumatic も同じで、その `FlateBackend` は `JavaCrc32` を使う。その純粋な `Crc32` は JS/native の経路だけのものである。
+
+@ 0 9 0 1683a6b6b7664eb00a020453f6feff9f
++   この非対称自体も解消する価値があり、ここでは未決の判断として記録する。
++   pneumatic はチェックサムをプラットフォームごとに選ぶ。`flate-jvm` は `JavaCrc32` を、`flate-native` は純粋なものを提供する。一方、zeppelin と gastronomy は無条件に `java.util.zip` を使う。
++   zeppelin にとって、その選択は JVM に固定されている理由の一部である（`scalaJs = false`、"zip archives (`java.util.zip`, `galilei`)"）。クロスコンパイルする ZIP のライブラリには純粋なチェックサムが必要になり、それは今では `corpuscular` が提供している。
++   したがって配線は可能であり、pneumatic の `<name>-jvm`/`<name>-native` のソースディレクトリの分割がその先例である。
++   判断すべきは、それを採用するかどうかである。プラットフォームの選択をあらゆる所で一貫させるか、どのライブラリが設計上 JVM 専用なのかをはっきり述べて、他の所でその抽象化の代価を払うのをやめるかである。
+
+@ 0 8 0 13f5d0a4707888b319f3f2b060788e6f
++   **pneumatic の移行は完了**しており、それが必要としたキャプチャの規律は、書き直しではなく三つの小さなことだとわかった。
++   `FlateChecksum` は今では `update def` メソッドを持つ `caps.Mutable` トレイトであり、XzCheck のチェッカーや `corpuscular` のものと揃っている。
++   それをコンパイルさせるには、次のことが必要だった。それを持つフィールドを `FlateChecksum^` と宣言すること（普通の `val` は新しさを隠すので、参照が読み取り専用になり、更新メソッドを呼べなくなる）、両方の flate のバックエンドの `crc32()` ファクトリーにも同じことをすること、そして `Inflater` の中の二つの読み取りを手で分離されたものとして印を付けることである。`window` と `adler` はどちらも `this` を通じて到達されるので、`update` がバッファーを読み取り専用で受け取り、それへの参照を保持しないにもかかわらず、分離検査はこれを拒否する。
+
+@ 0 5 0 162d9627c3ea0b441a5156886e9639ba
++   pneumatic が「the faithfully-ported, aliasing-heavy zlib machinery does not (yet) satisfy the stricter ruleset」ために「compiled with capture checking (not separation checking)」であると主張していたビルドのコメントは古くなっていた。`settings.sep` は両方を適用し、このモジュールにはずっと適用されていた。
++   これは訂正した。
++ - **利用者の移行**：バイナリのプリミティブのライブラリへの移行を、利用者ごとに分ける。
+
+% 2 1 0 0978bba7b6b59df71810796b44a0988d
+
+@ 0 5 0 11bc7d78f5061df504a5a5b23307af26
++   column  バッチ
++   column  利用者
++   row  (a)  pneumatic と hallucination のコーデック
++   row  (b)  telekinesis.http2 の Hpack と FrameReader
++   row  (c)  stratiform、locomotion（内部に varint のコピーが二つある）、mandible、breviloquence、phoenicia、anthology、zeppelin
+
+% 1 1 0 16b3cf80618a9a520ec574fc6f3faeea
+
+@ 0 8 0 1e01417cf9d3bc6909a04632274a3bfa
++ - **残りの重複排除**：JSON の文字列エスケープの処理（jacinta.Json.scala:1247–1279、ypsiloid にそのまま複製されている）は gossamer の水準のヘルパーになる。escapade.csi の CSI トークナイザが、yossarian.Pty と profanity.Keyboard の private なエスケープシーケンスの状態機械を置き換える（yossarian のテストが関門である）。capricious の `SecureEntropy` ケイパビリティが、perihelion、enigmatic、inimitable での `SecureRandom`/`UUID.randomUUID` の直接の使用を置き換える（wasi との同等性を取り戻す）。**判断が要る。下を参照。** telekinesis は、obligatory.ContentLength と scintillate のために、バイト単位のヘッダーブロックのスキャナーをエクスポートする（訂正 3 が当てはまる）。
+
+@ 0 1 0 0509974d92157a020cd2911b1b1ef4c6
++   **このうち最初の二つの前提は、調べてみると成り立たない。**
+
+@ 0 8 0 1f270dba38f29b86043a016324798c0c
++   文字列のエスケープ処理はそのままの複製では*ない*。
++   jacinta は七つのエスケープ（引用符、バックスラッシュ、バックスペース、フォームフィード、改行、復帰、タブ）を名指しする。ypsiloid は五つを名指しし、バックスペースとフォームフィードを省く。その `c < ' '` の分岐は、それらを代わりに六文字の unicode 参照として出力する。YAML としては正しいが、バイトは違う。
++   ypsiloid はまた、処理全体を `if plainSafe(string)` で包む。YAML は引用符なしのプレーンスカラーを出力してよいが、JSON はそうできないからである。
++   本当に共有されているのは、十二行ほどのスライディングウィンドウのループと `escape` ヘルパーであり、違いはまさに重要な部分である。
++   それを共有するには、二つのホットなシリアライザーで、十二行のためにエスケープの表をパラメーター化することになる。
++   （ypsiloid の省略が意図的なものかどうかは、尋ねてみる価値がある。）
+
+@ 0 9 0 0b87cdad94d1f23e12b6b6a1dac65d50
++   CSI の項目はそもそも重複排除ではない。`escapade.csi` は*ライター*であり（`cuu`、`cud`、`sgr` などがシーケンスを生成する）、パーサーを含まないので、これはトークナイザを移すのではなく書くことを意味する。
++   そして二つの利用者は、トークナイザを共有しにくくする点で異なる。
++   yossarian は完全なバッファーを純粋な状態機械でパースし、不正な入力に対しては、端末エミュレーターがそうすべきように `Pty.Error` を*発生させる*。profanity は生きている TTY を読み、そこではパースがタイミングと絡み合っている。その `Lookahead` は、単独の ESC がエスケープキーなのか、パケットの境界をまたいで分かれたシーケンスの始まりなのかを判断するために存在する。そして失敗するのではなく `Keypress.Escape` に格下げする。ユーザーは何でも入力しうるからである。
++   共有のトークナイザは、入力のモデルとエラーのポリシーの両方を抽象化しなければならない。
+
+@ 0 6 0 00b4c6de4aa283021b6985b0560dd46c
++ **SecureEntropy。** これを試みる前に、箇所のリストを訂正する必要がある。
++ enigmatic の `SecureRandom` の使用はすべて、その JVM のバックエンドである `core-jvm` にあり、`core-native` の双子と OpenSSL のプロバイダーと並んでいる。これはプラットフォームのバックエンドのパターンが意図どおりに働いているのであって、同等性の欠落ではなく、そのまま残すべきである。
++ perihelion は `scalaJs = false` なので、WebSocket のマスキングキーのための接続ごとの `SecureRandom` は、構造上 JVM 専用である。
++ 本当の箇所は inimitable の `Uuid.apply()` であり、すべてのプラットフォームにクロスコンパイルするライブラリの中で `ju.UUID.randomUUID()` を呼んでいる。
+
+@ 0 3 0 00492ac0f9d4713c1db5918f12330818
++ capricious は実行可能な居場所である。`capricious.core` はクロスコンパイルし（`scalaNative = false` は `capricious.wasi` にある）、capricious にはまさにふさわしい先例がすでにある。`wasi:random/random` の import に支えられた `Randomization` を提供する `wasi` コンポーネントである。
+
+@ 0 7 0 08cf915f0fd68cca0737629bcff1ce81
++ これを変更ではなく判断にしているのは、その形である。
++ `Uuid()` には木全体で約 28 の呼び出し箇所があるので、`def apply()(using SecureEntropy)` は、あらゆる所でケイパビリティがスコープにあることを要求する公開 API の変更である。
++ 代案は、galilei や pneumatic がしているように、inimitable の中に `core-jvm`/`core-native` のバックエンドを設けることで、API を変えずに同等性を直せる。
++ どちらを選ぶかは、`java.util.UUID.randomUUID` が JS、Native、WASI で実際に不十分かどうかによる。それはそのすべてでコンパイルできるので、これはエントロピーの質の問題であり、想定するのではなく、それらのプラットフォームで測定すべきである。
+
+@ 0 7 0 1b24b0303545910b0aa36d19999c60f5
++ 進捗（2026-09-25）：CRC と Adler の表は corpuscular の中の一つの実装になった。pneumatic、XZ の CRC-64（#2043）、gastronomy の Soundness のハッシュ、hallucination の PNG コーデックはそれに委譲し、JVM の組み込み関数を使う二つは設計上そのままである。
++ corpuscular にはまだハフマンのビルダーも varint もない。四つのハフマンのデコード表のビルダー（Brotli、Inflater、WebP、JPEG）に加えて、エンコーダーの木と HPACK 独自の表が残り、varint のループは約十六ある。stratiform の五つ、locomotion の四つ、xenophile、mandible、degustation のアトマイザーにまたがる `uvarint` の七つのコピー、そして gastronomy の multihash である。
+
+@ 0 2 0 003706967ab9751809688859992fc6b0
++ 完了条件：各アルゴリズムの実装がちょうど一つであることを、シグネチャのパターン（CRC の表、ハフマンのビルダー、varint のループ）の grep で確かめること。
+
+@ 0 1 0 1e29ef05a59f39df1ae5c12562d2f627
++ ## mod-6：ステージングされた導出のカーネル
+
+@ 0 1 0 1ab4c6134dcf82e60833eaa1d94025d0
++ 時期：中期〜長期
+
+@ 0 5 0 10c4b1c6a2e5eba3045896cbcaf60b65
++ 六つのステージングされた導出のエンジン（jacinta、breviloquence、locomotion、xylophone、stratiform.staged、stratiform.binaryStaged。約 7,400 行）は、まったく同一の展開時の環境を共有している。macroClassloader、currentOutputDirectory、definedInCurrentRun、innerClasspath、TypeShape の輸送、`summonViaStaging`、そしてキャッシュであり、エンジンごとに約 250〜300 行になる。prescience.internal.scala には、それらがみな複製した原型がすでにある。
+
+@ 0 7 0 1d88069719eedbcf1c0690d784ecafcd
++ 新しい `prescience.staged`（兄弟とともにバンドルされる）がそのカーネルを一度だけ提供し、フォーマットのトレイトの `Class` でパラメーター化される（静的な `TypeRepr.of` の代わりに `TypeRepr.typeConstructorOf` を使う）。
++ フォーマット固有の生成器、`fieldSeam` のインラインメソッド、`Inlinable` トレイト、六つの `XxxReader` クラスは**それぞれのフォーマットのパッケージに残る**。生成器は `private[jacinta]` 風の `rawParser`/`rawTactic` のメンバーをクォートの中で使い、パッケージの外で書かれたクォートはそれを名指しできない。そしてこのケイパビリティの封は欠かせないものである。
++ 見込まれる重複排除は約 1,600〜1,800 行である。
+
+@ 0 3 0 11aafb77d44c65531b40ccd05f93e4ad
++ 移行は PR 一つにつきフォーマット一つで、xylophone、locomotion、jacinta、breviloquence、そして stratiform（staged と binaryStaged を一緒に）の順に行い、それぞれ `make attest`、`make build`、そのフォーマットについての `make bench` で検証する。
+
+@ 0 5 0 1c892ac14299257116098d988bc1395e
++ 進捗（2026-10-21）：なし。
++ 六つのエンジンはすべて、まだ `macroClassloader`、`currentOutputDirectory`、`definedInCurrentRun`、`innerClasspath` を定義している。そのうち四つは今では `*.InlinableStager.scala`（それぞれ 216〜265 行）に、stratiform の二つは `stagedInternal.scala` と `bintelInternal.scala`（`summonViaStaging` も保持している）にある。prescience の原型のコピーが七つ目になり、`prescience.staged` は存在しない。
+
+@ 0 2 0 0ee67e39efac44a613414d9c9a787d98
++ 完了条件：どの `*.staged` モジュールも展開時の環境の独自のコピーを持たず、ベンチマークのコーパスがフォーマットごとに性能の同等性を示すこと。
+
+@ 0 1 0 0f07aa0f86de62551b73a455e333ff8b
++ ## mod-7: 発展目標
+
+@ 0 2 0 07738317d7525a781d3b2ab3678051fc
++ 時期：長期。
++ いずれも着手前に明示的な承認を要する。
++ どれも「意味を変えない」という線を越えるか、現実的な退行のリスクを伴うからである。
+
+@ 0 13 0 0113d59f40d4d6ae0219fc147fd1d7da
++ - **ステージングエンジンの完全な統合**（mod-6 のカーネルを超えるもの）：`rawParser`/`rawTactic` のシールを解くこと（API とケイパビリティのシールの変更）と、モジュール境界をまたいで `Expr[Reader]` をケイパビリティに分類される型の上で抽象化することが必要であり、そこには既知の cc-in-quotes のピクル化の危険がある。さらに約 4,000 行の重複を除去できる可能性がある。
++ - **jacinta と ypsiloid のための共有ドキュメント AST 基盤**（仮称 **`palimpsest`**）：`Array[Any]` のノードレイアウト、PositionIndex、NumberMode、パーサープール、そして ypsiloid が jacinta から写している記述子のレイアウトである。監査で見つかった障害は、ypsiloid の同一性に依存する `arrayPad` 番兵（`eq` で比較される）、意図的に分岐させた記述子のレイアウト、そしてホットなパーサーの性能リスクである。承認された場合は、まず jacinta からそのまま抽出して jacinta をそれに委譲させ（ベンチマークで比較する）、次に ypsiloid を別途移行させる。
++ - ~~**anticipation.html の統合**~~ 完了：唯一の二つの利用者（gesticulate と telekinesis）にそれ自身の利用者がいないと判明した時点で、`anticipation.html` と `GenericHtmlAttribute` はまるごと削除された。
+
+@ 0 1 0 0c1aa529286631ff183e3fb0f90375a7
++ ## 却下した案とその理由 — 蒸し返されないよう記録する
+
+@ 0 9 0 0f2dc95f7574a2b604475e7bf274c6a0
++ - fulminate ↔ anticipation.log の向きの反転：現在の向きは意図的なものであり（`Communicable extends Transcribable` によって、anticipation が `Message` を名指しせずに `Loggable.fanOut` があらゆるエラーをログに記録できる）、mod-1 の後ではこのエッジのコストは小さい。
++ - spectacular の `typeRepr`/`meta` の given の移動：それらを収められるコンパニオンがなく、暗黙のスコープを失うと `summonFrom` のフォールスルーが暗黙のうちに変わってしまう。
++ - 六つの `XxxReader` クラスの共有：共通部分は約 15 行にすぎず、`private[pkg]` のシールが重要な役割を担っている。
++ - zephyrine の turbulence への統合、gossamer/hieroglyph の境界の引き直し、proscenium/rudiments/vacuous の統合：監査の結果は問題なしであり、この階層構造は実体を伴っている。
+
+@ 0 1 0 0da3690fa3085b6a159f26650d478819
++ ## 全体像と期待される成果
+
+@ 0 8 0 0030a332be0492c914ca9e0d217f3f38
++ フェーズごとに一つ、計五つの PR とする。
++ mod-1 と mod-2 はまとめて一つ、mod-3、mod-4、mod-5、mod-6 はそれぞれ単独である。
++ フェーズ内の工程は個別に検証可能なままであり、どれもツリーをコンパイル可能に保ち、動作を変えてはならないが、工程ごとに一つの PR にするのではなく、レビュー可能な一つの変更にまとめる。
++ PR の中では、独立したトラックはどの順序で行ってもよい。
++ すなわち、escapade の連鎖（urticose.ansi → escapade の分解 → spectacular の反転）、anticipation.check と chiaroscuro、legerdemain.query、ethereal.dist、ypsiloid → jacinta の連鎖、stratiform の分割、turbulence.stdio → rudiments、pneumatic → hallucination → facsimile → 重複除去の連鎖、そしてステージングのカーネルである。
++ mod-7 は別途承認されるまで対象外とする。
+
+@ 0 1 0 0afb682d27cabf921b34144ae5d6adbd
++ 期待される成果：
+
+% 2 1 0 19648c1ca47bf226144143f1ddf34a03
+
+@ 0 5 0 1ba0a16ed39b305019a80067e286e558
++ column  成果
++ column  尺度
++ row  クリティカルパスが短くなる  三つの隘路で：legerdemain.query、urticose.ansi、escapade の軽量化
++ row  テストフレームワークが閉包から外れる  約 40 モジュール
++ row  重複したアルゴリズムがなくなる  mod-5 で約 2,500 行、mod-6 で約 1,700 行
+
+% 1 1 0 1454c34e7b5dbaed1dd8423001dc2fd7
+
+@ 0 4 0 0abd7ef205a2e24c1537df009de374ad
++ issue が特に取り上げた二つのモジュールである Rudiments と turbulence も、明確な一文の目的を得る。
++ すなわち「コア型に対する拡張メソッドのユーティリティ」と「プルストリーミングの代数」であり、標準ストリーム、並行処理のプリミティブ、プロセスの終了、限定されたインデックス付けは、それぞれあるべき場所に置かれる。
+
+@ 0 1 0 16e98842bd50447f0e09791c259a4fef
++ # 第二の監査（2026-08-09）
+
+@ 0 11 0 02f8aa4af204df740d2316663b14eff7
++ mod-1 から mod-5 までが取り込まれた（あるいは理由を記録したうえで保留となった）段階で、`modularity/decided-items` の先端においてグラフを再計測し、改めて洗い出した。
++ 方法は次のとおりである。
++ コンポーネントのグラフを `build.mill` から解析し、深さ、ファンイン、閉包を*コンポーネント*ごとに計算した（最初の基準値はライブラリ単位で数えていたので、二つの深さの数値は比較できない）。
++ 宣言された依存関係のうち、そのパッケージ名が利用者のソースに一度も現れないものをすべて指摘した。
++ そして、指摘したそれぞれを、依存先の `soundness_*.scala` エクスポートファイル（パッケージを名指しせずに使えるトップレベルの名前のため）と暗黙のスコープ（言及された型のコンパニオンにある given）に照らして、手作業で確認した。
++ ファイルと行の参照はこの監査時点のスナップショットであり、実装時に再確認しなければならない。
++ grep による判定は証拠であって証明ではない。
++ 以下の削除のそれぞれについて決定的な確認となるのは、そのエッジなしでコンポーネント（とその依存元）をコンパイルすることである。
+
+@ 0 1 0 00ad68ddd113ef6215181512757afeae
++ ## 再計測した基準値
+
+@ 0 6 0 11f3d80465ba01f30afb47a975daa6ce
++ クリティカルパスの深さは 27 コンポーネントである。
++ exegesis.core → obligatory.json → hyperbole.core → harlequin.ansi → harlequin.core → hellenism.jvm → galilei.jvm → galilei.core → turbulence.core → parasite.core → nomenclature.core → gossamer.core → distillate.core → digression.core → iridescence.core → geodesy.angle → hypotenuse.core → contingency.core → rudiments.core → concordance.core → denominative.core → vacuous.core → fulminate.core → anticipation.log → anticipation.text → symbolism.core → prepositional.core。
+
+@ 0 1 0 1972573c9fd51e7c08b4082d93eaf718
++ ファンインが最も大きいコンポーネントと、閉包が最も大きいコンポーネント：
+
+% 2 1 0 09147ce4096567fd13ef22242f834c0d
+
+@ 0 2 0 0e5e5381ef2800001b81e67cb5b2c1e6
++ column  コンポーネント
++ column  ファンイン
+
+% 0 1 0 11117353ee417e481b39435ea922a6af
+
+% 0 1 0 053bfe961cb7ba73065212939f557b8a
+
+% 0 1 0 0d885ad4fe56443a1efa56e1f68eade8
+
+% 0 1 0 1056b80e10dd7a000e754de7432c2c39
+
+% 0 1 0 1184b20276e5a75c093ce144acce781b
+
+% 0 1 0 1f6865bde2c59acc0ee24e2c2ca7b490
+
+% 0 1 0 0012d0ccb37e5af311f85f6c4f4d56fe
+
+% 1 1 0 1114192a177b545508d819a01ef41031
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 2 0 0b91ce9bd83d07560b5b69f18988a4f3
++ column  コンポーネント
++ column  閉包（コンポーネント数）
+
+% 0 1 0 01779f8f7e7630cc041b9470c967a061
+
+% 0 1 0 00fc44dbda3e359816d4e476b8472bab
+
+% 0 1 0 100d65934ed8390f01a61b8bc9b7b2bb
+
+% 0 1 0 095dc6dfd3179ba31d41b71680be7409
+
+% 0 1 0 1951605f10b35aec1a8f1b800c4e0aca
+
+% 1 1 0 0a31b3bbef903b4511f593f95cba8047
+
+@ 0 1 0 182b6a7a8a900ea81a7e948f8a92922d
++ 以下の工程をすべて同時に適用した場合のシミュレーション結果：
+
+% 2 1 0 0968ace54ef4c0fa16bf58621fa20a0f
+
+@ 0 5 0 0c19b1c4ea3bde5906a1e92519416a77
++ column  尺度
++ column  計測値
++ column  シミュレーション値
++ row  クリティカルパス  27  23
++ row  exegesis.core の閉包  99  59
+
+% 1 1 0 1de1c2042d81fa8502168e712d5a9956
+
+@ 0 1 0 1e167a91790e2596155a67e4174d3787
++   cell  gossamer.core の閉包
+
+% 1 1 0 157792c62a1ff31609513d6fd4ee45ba
+
+% 0 1 0 146486612fcdc9d916d90ccf49b44acf
+
+% 1 1 0 02461475a35264d50522a6c8dfe082f0
+
+@ 0 1 0 076d78091d87333d1233a0c4ee95cd11
++   cell  pneumatic.core の閉包
+
+% 1 1 0 1063a56a7a8bce301ba7464a67d52a77
+
+% 0 1 0 146486612fcdc9d716d90ccf49b44acd
+
+% 1 1 0 01bda74d002a835e00e416c942ad5c40
+
+@ 0 2 0 1c59d78497cfe2e8077e0eb8315f037f
++ 残る背骨は anthology → hellenism.jvm → galilei → turbulence → parasite → nomenclature → gossamer → 基盤であり、その唯一の強固な結びつきについては末尾に記録する。
+
+@ 0 3 0 155bd62fc837b7dc09e6730377e5c279
++ 計測したパスの両端は、どちらも緩いものだと判明した。
++ 先頭（exegesis/obligatory から harlequin まで）は大部分が死んだエッジでつながっており、gossamer より下の末尾は、移動可能な少数の given にぶら下がっている。
+
+@ 0 1 0 143193f04542de6f0fc868bb11b42ebb
++ ## mod-8: 死んだエッジ、第二弾 — そしてその陰に隠れた誤宣言
+
+@ 0 2 0 0a0f9a960f4eb5981f0af2cf9bd83d1d
++ 時期：近期。
++ 削除と依存関係リストの修正だけからなる一つの PR。
++ 完了：#1758（2026-08-10）
+
+@ 0 4 0 1136d2db8565e44613c35c26b89fe670
++ この洗い出しでは、最初の監査の mod-1 が見つけなかった二つのことが明らかになった。
++ 真に死んだエッジの第二弾と、より緊急なものとして、宣言していない依存関係を*他者の*死んだエッジを通じて利用しているコンポーネントである。
++ 誤宣言は正しさに関する負債であり（クラスパスの順序が一つ変わればビルドが壊れる）、同じ PR の中で最初に扱う：
+
+@ 0 8 0 1481bfecc7e8a8591ed7a28fe47098a5
++ - **hallucination.png** は `corpuscular.Crc32.checksum` を使っている（hallucination.PngCodec.scala:84, 360）が、宣言しているのは `core` だけであり、core 自身の corpuscular へのエッジはそれ以外では死んでいる。`corpuscular.core` の宣言を core から png に移す。
++ - **obligatory.grpc** は spectacular を宣言せずにインポートしており（obligatory.Grpc.scala:44、obligatory.GrpcChannel.scala:47）、locomotion.core の死んだ spectacular へのエッジを通じてそれに到達している。そのエッジを切る前に宣言する。
++ - **ziggurat.packager** は gastronomy を宣言しないまま `digest[Sha2[256]]` を使っており（ziggurat.Packager.scala:133）、現在は telekinesis.jvm → coaxial.jvm 経由で供給されている。宣言する。
+
+@ 0 3 0 0137607c91997fc30343d6b35048c019
++ **導管エッジ** — 名前の上では死んでいるが、利用者が実際にインポートしているモジュールの唯一の供給元であるもの。
++ これらは切れるエッジではなく、誤って宣言された依存関係リストである。
++ 実際に使っているものを宣言し、そのうえで導管を外すかどうかをケースごとに決める：
+
+% 2 1 0 1a0c229f5367e47d00167539abec6842
+
+@ 0 4 0 0ddea31851f5afba0c2874154bb66a52
++ column  導管エッジ
++ column  唯一の供給対象
++ column  備考
++ row  breviloquence.core → urticose.url  gossamer.core  そのソースは gossamer、spectacular、distillate、wisteria をインポートしているが、どれも宣言されていない
+
+% 0 1 0 03c4306e5264bda00dd425b84e5a4708
+
+@ 0 4 0 0d163215d0e30ca715474b257c59ace1
++ row  serpentine.core → ambience.core  anticipation.path と anticipation.print  anticipation_serpentine_core.scala の `textPath` given が `Paths` を必要とする
++ row  profanity.core → eucalyptus.core  turbulence.core と parasite.core
++ row  profanity.core → frontier.core  escapade.core  profanity が宣言している escapade.csi には `Teletype` が含まれない
++ row  honeycomb.core → xylophone.core  typonym.core、adversaria.core、wisteria.core  いずれも honeycomb がインポートしている
+
+% 1 1 0 1cadea5ff3fe3bae00cd729f3fbc605a
+
+@ 0 2 0 163057ec4390d8e902cf42d0974e6264
++ **死んでいることを確認済み**（エクスポートされた名前は使われておらず、暗黙のスコープを通る経路もなく、閉包は宣言された他の依存関係によって再供給される）：
+
+% 2 1 0 01ee1cd005794210169d9758f02fe20a
+
+@ 0 3 0 0babedd5f255f2150bec8482c7e6faf1
++ column  コンポーネント
++ column  死んだエッジの先
++ column  備考
+
+% 0 1 0 13fa7a8ad745340114936a80b98b3547
+
+% 0 1 0 1bf2984c6a5ee1920d0f33f834ad222d
+
+@ 0 1 0 1f5cef08287b134214f44356f8cb4803
++ row  zephyrine.core  hypotenuse.core  anticipation.opaque が引き続き届くことを確認する
+
+% 0 1 0 070b0c73cfb02c2a138ba4ffe54180f8
+
+% 0 1 0 05489cffb0c4954119cf4a5b14df084c
+
+% 0 1 0 0779c68d3c02ac1718cb67125d5a044b
+
+% 0 1 0 06854ce9895a550f0a56d8813c9b2478
+
+% 0 1 0 04481a6e713c30c11624896fe610086a
+
+@ 0 1 0 065c8b81598fc31e01a99d5f452a00b4
++ row  tarantula.core  diuretic.core、gastronomy.core
+
+% 0 1 0 1c3083aefebd2dd30f5aee200a071028
+
+@ 0 1 0 0731374a9828f5af1633d8d2aca9339d
++ row  apoplexy.core  legerdemain.core  legerdemain.query には telekinesis.core を通じて到達しており、必要なのはそれだけである
+
+% 0 1 0 16be5f4639d403561eea1bccabe84b87
+
+% 0 1 0 004463021dc8bdfc1180f41134a9f893
+
+% 0 1 0 07886598f195c5b910ba4288017fe50b
+
+% 0 1 0 0b22d0c6dc9f0ee20144969f7cf09424
+
+% 0 1 0 08dc503a58ff8971156537a954fee108
+
+% 0 1 0 01b7757830ceca9a03aa00b9783f054a
+
+% 0 1 0 0fc56cc8595f9c3811359087ab809e5a
+
+% 0 1 0 1093a363e03d7482117962bccf199eb2
+
+% 0 1 0 105e3ff9b3f0c3a50fa39f984675c4ca
+
+% 0 1 0 17b94d1f4207536612694bcb98f9f164
+
+% 0 1 0 137ad45e622d4d721a8358116d57f098
+
+% 0 1 0 033a53f304bbf728134515bde1a55298
+
+% 0 1 0 1e95ecb90c4b10560be7df048049e46c
+
+% 0 1 0 1c69f045cc535c4219c155159dee2052
+
+% 0 1 0 11d71e49a4fd60e4119e9fb5b1ee5ab8
+
+% 0 1 0 11f078a70ef24c8d0c14d69f7ee738b4
+
+@ 0 2 0 11d4b575a6f4e69114222906ac59964e
++ row  stratiform.base256  gossamer.core、vacuous.core
++ row  embarcadero.containerd  coaxial.core  冗長：telekinesis.http2 → coaxial.jvm 経由で再供給される
+
+% 0 1 0 02168908615567301c57ee6f3978fc1d
+
+@ 0 1 0 12189922980b02fd10ed30fd285fbf58
++ row  prescience.core  fulminate.core、gossamer.core
+
+% 1 1 0 122335951f09dfb61141fd1bf0268f8f
+
+@ 0 8 0 04aa3ce2171639851cc6b5caa6f6e9c3
++ 洗い出しの二つの落とし穴を、次の洗い出しで繰り返さないよう記録しておく。
++ telekinesis.http2 のソースはかつて `package cordillera` にあったため、パッケージ名による grep は、実際には使われている（embarcadero.containerd がインポートしている）このエッジを死んでいると判定した。
++ そのパッケージは今では `telekinesis` だが、パッケージ名がライブラリ名と異なるコンポーネントは同じ罠にかかる。
++ また、`override def sources` を持つコンポーネントは兄弟ディレクトリを取り込むが、コンポーネントごとの洗い出しはそれを見落とす。
++ enigmatic.core → aperture.core は死んでいるように見えたが、`core-jvm`（enigmatic.Keystore.scala）で使われている。
+
+@ 0 2 0 13924ba9e119a27e0d9535a0d1782505
++ 完了条件：誤宣言がそれぞれ修正され、死んだエッジがそれぞれ削除され、影響を受けるすべてのコンポーネントとその依存元がコンパイルできること（`make attest`、`make build`）。
+
+@ 0 1 0 02516fbf1a8b64aa14c50ba8681b41bb
++ ## mod-9: クリティカルパスの先頭
+
+@ 0 4 0 0f4412c044c803ac0990c823976a3a50
++ 完了：#1759（2026-08-10） — `harlequin.scala` は別途承認を要する設計項目として残る。
++ 時期：近期。
++ exegesis → obligatory.json → hyperbole → harlequin → anthology という連鎖は、上位のつながりが死んだエッジで保たれている。
++ それらを切り離せば、LSP と JSON-RPC のスタックはコンパイラのスタックから完全に切り離される。
+
+@ 0 26 0 193ab67b39317179095eda03cd428af9
++ - **obligatory.json** は scintillate.server、hyperbole.core、revolution.core を外す。三つとも死んでいる。obligatory.json は JSON-RPC のピアに SSE のコーデックを加えたものである。HTTP を提供することはなく（その `Servable` は telekinesis のものであり、jacinta.http を通じて到達する。`httpBackends.javaNetHttp` は jacinta.schema を通じて telekinesis.jvm から来る）、TASTy を内省することも、マニフェストに触れることもない。hyperbole へのエッジこそが harlequin/anthology のスタック全体を exegesis の下に置いていたものであり、これを削除すると計測された最も深いパスが崩れる。（eucalyptus.core は実際に使われている — obligatory.JsonRpc.scala:42。）
++ - **exegesis.core** → ethereal.core と → exoskeleton.completions は、それらの唯一の実際の利用者である **exegesis.demo** に移す（exegesis_demoserver.scala:38–53、exegesis_demoproxy.scala:39–59。src/core 以下のものはどちらも参照していない）。ethereal は exegesis の `scalaJs = false`（build.mill）の理由として挙げられていたものなので、core はプラットフォームを得る可能性がある。これは mod のメカニズムの規則に従う意図的なフラグの変更であり、obligatory.json 自身の閉包を条件とする。
++ - **hyperbole.core** は harlequin.ansi を harlequin.core と escapade.core に付け替える。hyperbole の中で `ScalaSyntaxPalette` や `syntaxHighlighting`（harlequin.ansi の内容のすべてであり、パッケージスコープなので暗黙のスコープを通じて到達することはできない）を名指ししているものはない。hyperbole が使っているのは `SourceCode`/`Scala.highlight`（hyperbole.internal.scala:85, 93）と、直接の escapade（TastySymbol.scala:36、TastyTree.scala:39）である。escritoire と dendrology.tree は実際に使われているので残る。
++ - **mandible.core** は hyperbole.core への依存を、実際にインポートしている四つのモジュールに置き換える。すなわち anthology.scala（mandible_core.scala:68）、hellenism.jvm（mandible.Classfile.scala:43）、escritoire.core（mandible.Bytecode.scala:48–57）、escapade.core である。hyperbole は導管であり、mandible の中でそれを使っているものはない。
++ - **perihelion.core** は scintillate.server を telekinesis.core に置き換え（使われているのは `Servable`、`Http` とその仲間だけである — perihelion.Websocket.scala:201–202。付随していた telekinesis.http2 と hellenism.core は使われていない）、eucalyptus.core をまるごと外す（ログは anticipation の `Log` を通る。perihelion.WebsocketEvent.scala:35）。
+
+@ 0 13 0 01ff6f890767fabc095b57caeac6d989
++ **harlequin.scala（設計項目。着手前に承認が必要）。**
++ harlequin における Scalac/LocalClasspath の使用は、`Highlight`、`Diagnostic`（anthology.core の `Importance` だけを必要とする）、そして約 300 行の `SourceCode`（harlequin.SourceCode.scala:376–689：`resolveTypes`、`frontend`、補完の仕組み）に限られている。
++ `harlequin.scala` コンポーネントがあれば、harlequin.core を、そしてそれとともに harlequin.md と Markdown を描画するすべての利用者を、anthology.scala、hellenism.jvm、galilei.jvm から解放できる。
++ ただし scala3-compiler の jar そのものからは解放*しない*。
++ トークナイザが `dotty.tools.dotc.parsing` を直接インポートしているからである（harlequin.SourceCode.scala:41–46）。
++ 設計上回避すべき障害は次のとおりである。
++ `SourceCode.apply` は `using Highlight` を取り、その `scalac`/`classpath` フィールドに対してパターンマッチを行う（harlequin.SourceCode.scala:73–90）。
++ したがって `Highlight` を、`harlequin.scala` が提供するリゾルバーのインターフェースへと抽象化し、トークン化した経路を core のデフォルトにしなければならない。
++ 安価で独立したこととして、harlequin.core の明示的な hellenism.jvm への依存は、anthology.scala → anthology.core によってすでに含意されている。
+
+@ 0 2 0 0e7348d6fa045f53175f8a7dcd460c0e
++ 完了条件：exegesis.core の閉包にコンパイラのスタックのモジュールが含まれず、obligatory.json を通る最も深い連鎖が jacinta で終わること。
+
+@ 0 1 0 0ea6968abf2b063e06f5ad0ba95ef015
++ ## mod-10: 背骨の given
+
+@ 0 6 0 0d0b11849e39b9be037f46a2e2ba5bd7
++ 時期：近期。
++ gossamer.core のファンインは 44 なので、その下にあるものはすべてほぼツリー全体に負担をかける。
++ そして、その下にあるものは一桁の数の given にぶら下がっている。
++ これらは mod-2 と同じ型の、統合用サブモジュールへの移動であり、mod-2 が記録したのと同じ罠がある。
++ コンパニオンから（あるいはパッケージのトップレベルから）移動した given は暗黙のスコープから外れるので、移動ごとに下流のインポートの一掃と `soundness` のトップレベルへのエクスポートが必要であり、暗黙の汎用的な代替が存在する場合は、解決されるインスタンスを固定するテストが必要である。
++ 工程は次のとおりであり、それぞれ以下で詳しく述べる：
+
+% 2 1 0 04af983ea5076db9112747823da1a828
+
+@ 0 11 0 196212937f54147407ef912e7fed1df6
++ column  エッジ
++ column  保持しているもの
++ column  対処
++ row  gossamer.core → distillate.core  `textDecodable` と四つの `enumIdentification` given  `gossamer.codec` 型のサブモジュール
++ row  distillate.core → digression.core  `fqcn` の Decodable  digression 側のコンポーネントへ反転させる
++ row  distillate.core → inimitable.core  `uuid` の Decodable  同じ反転
++ row  distillate.core → wisteria.core  `VariantError`  双方から見える場所へエラークラスを移す
++ row  digression.core → iridescence.core  `StackTrace.Palette`、`hex`、`defaultPalette`  digression.ansi へ移す
++ row  digression.core → spectacular.core  `showable` given と一つの `show` 呼び出し  `digression.show`。優先度は最下位
++ row  parasite.core → mercator.core  `Monad[Task]`  `parasite.monad` コンポーネント
++ row  turbulence.core → capricious.core  先送りされた `shred` の項目  その置き場所に関する mod-3 の未決の判断
+
+% 1 1 0 0f02c03fc3f6696c0e8acc01423a3b42
+
+@ 0 34 0 195476f600c0a2b4145db1a497ed8874
++ - **gossamer.core → distillate.core** は一つのファイルにある五つの given に依っている。`textDecodable`（gossamer_core.scala:124）と、ケーススタイルの `Identifiable` である四つの `enumIdentification` given（gossamer_core.scala:614–625）である。後者はすでに明示的なインポートを要するオプトインなので、移動しても利用者には何のコストもない。それらを `gossamer.codec` 型のサブモジュールに移す。この一つのエッジを切ることには、クリティカルパス三段分の価値がある（ファンイン 44 のノードの下から distillate → digression → iridescence → geodesy.angle を取り除く）。
++ - **distillate.core → digression.core** は二行の given 一つである（`fqcn` の Decodable、distillate.Decodable.scala:62）。これを反転させる。`Fqcn` は digression の型なので、その given は distillate に依存する digression 側のコンポーネントに置くべきである。
++ - **distillate.core → inimitable.core** はまったく同じ形であり（`uuid` の Decodable、distillate.Decodable.scala:64）、まったく同じ反転を行う。
++ - **distillate.core → wisteria.core** が使っているのは、`enumeration` given のエラー型としての `VariantError` だけである（distillate.Decodable.scala:108–114）。エラークラス（wisteria.VariantError.scala にある素の fulminate の `Error`）を双方から見えるコンポーネントに移す。`enumeration` given 自体はコンパニオンのスコープに残る。なお、wisteria はいずれにせよ spectacular.core を通じて閉包に残る。この切断は distillate 自身の依存元のためのものである。
++ - **digression.core → iridescence.core** は `StackTrace.Palette`、`hex`、`defaultPalette` であり（digression.StackTrace.scala:135–163）、純粋に色を扱う約 30 行である。これらは **digression.ansi** に移り、digression.ansi が iridescence.core を得る。既存の二つの利用者（digression_ansi.scala、probably.AnsiRenderer.scala:137, 355）はどちらもすでにその下流にある。この一手で iridescence → geodesy.angle が背骨から切り離される。
++ - **digression.core → spectacular.core** は一つの given（`showable`、digression.StackTrace.scala:111–133）と、`Int` に対する一つの `.show`（128 行目。`int.toString.tt` で簡単に置き換えられる）である。`digression.show` へ移動可能だが、優先度は他より下にする。その given は `StackTrace` のコンパニオンにあるので、移動すると下流のすべての `stackTrace.show` で暗黙のスコープによる解決が失われる。また spectacular 自身の閉包（stenography、wisteria）は、背骨がいずれにせよ保持するモジュールである。
++ - **parasite.core → mercator.core** は一つの given、`Monad[Task]` である（parasite.Task.scala:90–99）。`parasite.monad` コンポーネントでこれを切り離せる。注意点はいつもと同じである（`Task` に対する for 内包表記は現在、コンパニオンからインポートなしで解決される）。
++ - **turbulence.core → capricious.core** は、先送りされた `shred` の項目（turbulence_core.scala:319–324）そのものであり、それ以外には何もないことが確認された。`shred` の置き場所に関する mod-3 の未決の判断は変わらず、ただ今ではそれがエッジのすべてになっている。
+
+@ 0 1 0 1ff6bc8bad1b7c7b0fc2f54e8a984280
++ **第二の監査で無罪とされたもの。蒸し返されないよう記録する：**
+
+% 2 1 0 151aece8353443051c3d1e824164f600
+
+@ 0 7 0 0c9b220832c9aac51dde494906ce2676
++ column  エッジ
++ column  残す理由
++ row  gossamer.core → kaleidoscope.core  `Scanner` は補間子のマクロ展開の中にあり（gossamer.internal.scala:239–292）、kaleidoscope 自身の閉包は contingency だけである
++ row  digression.core → contingency.core  `raises` が `Fqcn.apply` のシグネチャにある
++ row  parasite.core → anticipation.time  シグネチャ上の使用箇所が約 17 あり、この依存は深さ 2 でテキストのスタックを伴わない — コストはない
++ row  iridescence.core → geodesy.angle  `Angle` は `Hsl`/`Hsv` の公開フィールドにあり、iridescence はすでに hypotenuse に直接依存しているので、このエッジが加えるのは浅いノード一つだけである
++ row  turbulence.core → anticipation.http  使用箇所は三つだが、turbulence.Streamable.scala:48–50 の `import zephyrine.{stream as _, *}` による隠蔽の仕組みは `HttpStreams.Body.stream` が同じモジュール内の兄弟であることに依存しており、この依存は深さ 3 で背骨から外れている — 手間に見合わない
+
+% 1 1 0 1f99ffa482ccfb511b14a4a7756d6156
+
+@ 0 8 0 19973b9a9f1496cf0356097fdc2dba29
++ **唯一の強固なエッジ：parasite.core → nomenclature.core → gossamer.core。**
++ `Name[Async]` は、`task`（parasite_core.scala:150）、`Task.apply`、`Monitor`、そして両プラットフォームのスーパーバイザーの公開シグネチャ（約 20 箇所）にあり、`Async is Nominative under Rules`（parasite.Async.scala:47）によって nomenclature が暗黙の仕組みに組み込まれている。
++ これを切り離す移動はない。
++ 選択肢は、並行処理の API で検証済みの名前を使うか `Text` を使うかであり、これは mod-7 級の設計上の判断である。
++ それが下されるまでは、gossamer とその下にあるものすべてが、parasite、turbulence、そしてツリーの大部分の閉包に残る。
++ mod-8/9/10 の後では、これが残る背骨の唯一の緩い箇所である。
+
+@ 0 8 0 1482686188fb4295063686354bfba8a5
++ 完了条件：`parasite.core` が `mercator.core` へのエッジを宣言せず、`turbulence.core` が `capricious.core` へのエッジを宣言せず、`gossamer.core` の閉包が 23 コンポーネント以下であること。
++ gossamer、distillate、digression の工程は #1760（2026-08-10）で取り込まれた。
++ turbulence のエッジはなくなった。
++ `turbulence.core` はもはや `capricious.core` を挙げておらず、`shred` はチャンクサイズを名前渡しの `Int` として受け取る（2026-10-21）。
++ 残っているのは parasite の工程である。
++ `parasite.core` は `Monad[Task]` given のために依然として `mercator.core` を宣言しており、`gossamer.core` の閉包は `build.mill` をたどると（暗黙の `beneficence.core` と `proscenium.core` を含めて）26 である。
++ distillate、wisteria、kaleidoscope、spectacular はすべてまだその中にある。
+
+@ 0 1 0 1e7c1a3ac299bb6c0caf8967c9ae6fc8
++ ## 第二の監査の全体像
+
+@ 0 6 0 0a3d042588f0675d0401be4239c2971f
++ 三つの PR とする。
++ mod-8（まず誤宣言、次に死んだエッジ）、mod-9（安価な付け替えを含むクリティカルパスの先頭。harlequin.scala は設計が承認されるまで対象外）、mod-10（背骨の given。工程ごとに一つの統合用サブモジュールとし、それぞれにインポートの一掃と固定のテストを伴う）である。
++ 期待される成果は[再計測した基準値](#the-re-measured-baseline)のシミュレーション値であり、残る深さは、真に未解決である一つの問題、すなわち parasite の検証済みのタスク名に集中する。

@@ -1,0 +1,360 @@
+orthant 2 language
+
+% 0 1 0 12b67d94ae9c116d0ba0fd7323bb5fbd
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 3 0 0ea7deb1ba0b93f6117c38ad13eb8fd1
++ Un programa interactivo en un terminal necesita tres cosas que la consola en bruto no da: salida
++ con estilo, entrada del teclado como eventos y una forma de disponer y refrescar regiones de la
++ pantalla. Se proporcionan las tres:
+
+@ 0 5 0 15f906f89ac94f801dc422c73312a2ec
++ - El [interpolador] `e"…"` escribe texto con estilos ANSI, como un valor.
++ - Un bloque `interactive` pone el terminal en modo crudo y convierte las pulsaciones en un flujo
++   tipado de eventos.
++ - Una capa de disposición compone paneles, editores y menús en interfaces, a pantalla completa o
++   en línea, que se redibujan sin parpadeo.
+
+@ 0 1 0 1ff459212a92d16109fdd83250e1a2fc
++ ### Sobre los terminales
+
+@ 0 3 0 0a0661eb15f82003005c892e0d17027d
++ El terminal es un protocolo en el que el control viaja por el mismo canal que el contenido. Los
++ estilos, el movimiento del cursor y los informes del teclado viajan todos como secuencias de
++ escape, mezcladas con el texto.
+
+@ 0 4 0 0ffa68c74f9c9a1311ccbad57c142be9
++ Un programa que imprime códigos de escape directamente se ata al dialecto de un terminal, y
++ corrompe la salida que acaba en un fichero. Un programa que lee su entrada byte a byte debe
++ decodificar las secuencias de varios bytes que envían las teclas. Y un modo crudo que queda
++ activado tras un fallo destroza la shell del usuario.
+
+@ 0 1 0 0b0164ec8338a2730a267401ffea8cfd
++ Aquí el protocolo se mantiene en los bordes:
+
+@ 0 6 0 1adb5503e7cffe82103d2ce44e075c92
++ - El texto con estilo es un `Teletype`: un valor que lleva sus estilos. Se representa según las
++   prestaciones del terminal *real* cuando se emite, y como texto plano donde no hay terminal.
++ - La entrada llega como eventos tipados, decodificados a partir de las secuencias.
++ - La sesión en modo crudo es un bloque con ámbito, que restaura el terminal salga como salga. Eso
++   son los [ámbitos delimitados](../../philosophy/delimited-scopes.md), aplicados al terminal.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Todo procede del paquete `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 0dbd0833aa335f231fc5b058c792b15a
+
+% 1 1 0 0ad04f49658d0dec1443d56d859a4ca4
+
+@ 0 2 0 1daf61960bfa63e4084c67aeff9863c1
++ La segunda importación dice adónde va la salida, y la tercera dice lo que el terminal puede
++ mostrar: aquí, color completo de 24 bits.
+
+@ 0 1 0 1dd38613ca40e7110b23ae0b7c520eee
++ ### Texto con estilo
+
+@ 0 2 0 06edeeeabf51f0c81127a1231fe4f2cf
++ El interpolador `e"…"` da estilo a los tramos que marca. Los estilos son valores, y los
++ [colores](colors.md) son colores:
+
+% 2 1 0 1e3c843c03c17b371116a07c3422eca7
+
+% 0 1 0 0171179bac23820a0db52f55a0be7e8e
+
+% 1 1 0 1c118793eb9719ae0f5ffc4f2c84c473
+
+% 3 1 0 011ab0f580a1c7761712eb1fedee9404
+
+% 4 1 0 18b3f47e653c2e551223ad8d8318bd6e
+
+% 5 1 0 09e0b2ddcfe293ef05f534b77afc2565
+
+% 0 1 0 1b007dc2e33556d113df2073cb071363
+
+% 1 1 0 1e712c7ff8b0d734180073eb67749afd
+
+@ 0 1 0 002178934b0bbc3a1b7389f497376929
++ `Bold`, `Italic`, `Underline` y sus hermanos marcan tramos, y `Fg` y `Bg` los colorean.
+
+@ 0 4 0 1805e7af80f12a121dbe1c408b078bdf
++ Los colores se anidan, cosa que ANSI en bruto no permite. Un código de escape establece un color.
++ No puede restaurar el color que había antes, y solo puede volver al predeterminado, así que una
++ región coloreada dentro de otra región coloreada termina borrando ambas. Un `Teletype`, en cambio,
++ lleva el estilo como una pila, de modo que el color envolvente se restaura donde termina la región
++ interior:
+
+% 2 1 0 0fc77ad379943ae10a427d8f82e28b6c
+
+% 3 1 0 1b8778597644166b058ff2e938b9decf
+
+% 4 1 0 0bb57f0c784ba9e91c060b5da45ce9a4
+
+% 0 1 0 0d2d231cfbf3b77605a1b78f0e7bc5df
+
+% 0 1 0 01c2d1433bae6f9516d44cfa4d72de2f
+
+% 1 1 0 02681cbd757b3c0f12aa6693b71661aa
+
+@ 0 3 0 12f8078fb92eed2d0837f200a4859e93
++ Cada sustitución es una *transformación* del estilo vigente, no un ajuste absoluto, y eso es lo
++ que hace que funcione. Significa que una sustitución puede depender de lo que modifica. Un tipo
++ pasa a poder usarse como tal cuando se le da una instancia de `Stylize`:
+
+% 2 1 0 17a4da4f1b0d86850349d0a701f12d32
+
+% 0 1 0 05b1d7efb4bbeedf0b6756a5b91df8db
+
+% 0 1 0 18a43710a7f87056085d94e1d2de6a57
+
+% 1 1 0 1e9f57582b55c48a0138b789b2273ea4
+
+% 3 1 0 192b6c094d6a19d5194664ae2ce91794
+
+% 4 1 0 0032c34f8f6580da1006b5fab32cc398
+
+% 5 1 0 15486bf598bf73de0a84381242b586d2
+
+% 0 1 0 095cd10a8321e35e02a436c6e213f320
+
+% 1 1 0 0663bae52d63f0d20526bc78d7dce6f0
+
+@ 0 2 0 04d92fabe2c3e9bb02093cf40dcf8b1a
++ `$Toggle(…)` pone en negrita el texto normal, y en normal el texto en negrita. Decide a partir del
++ estilo que encuentra, y no impone uno fijo.
+
+@ 0 6 0 05da3441ddd6fff811348b6c51259430
++ Un `Teletype` se comporta como [texto](text.md#any-textual-type). Se corta, se une y se rellena,
++ conservando sus estilos. Se representa para cada terminal: en color completo de 24 bits en un
++ terminal capaz, en el color más cercano de la paleta en uno más antiguo, y como texto plano cuando
++ la salida no es un terminal en absoluto, para que los registros nunca se llenen de códigos de
++ escape. [Entorno](environment.md#the-machine) describe cómo se detectan las prestaciones del
++ terminal real.
+
+@ 0 1 0 1d21a36d393ea5531f585662fcb40a5c
++ ### Entrada del teclado
+
+@ 0 5 0 083be25d9a2447440cba889d71432521
++ `interactive` abre una sesión en modo crudo. Dentro de ella, los eventos del terminal llegan como
++ valores tipados: pulsaciones de tecla, cambios de tamaño de la ventana, cambios de enfoque y
++ pegados. La sesión se ejecuta bajo [supervisión](concurrency.md), y toma del contexto la consola y
++ el [entorno](environment.md). El [`Cli`](cli.md) de una aplicación proporciona la consola:
+
+% 2 1 0 15ac55cba9400b66039bb38b89c918f5
+
+% 3 1 0 1de99b5c05ff5de51d11ccb81ad5dc78
+
+% 4 1 0 05dad4c47b3d33140698346327c71c7d
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1034409fb9d408b2189fa867270f35c9
+
+% 0 1 0 1d5f33175a616c2614e5a23febe35a74
+
+% 0 1 0 1f73ff5585bae8ac145053cc87eeb028
+
+% 0 1 0 0cf4aeddc4cfd0b90f771fc54fc133bc
+
+% 2 1 0 1a45a0f26441115116acdef653d55e9d
+
+% 3 1 0 060b1c12a575850b1291042b7ac7377c
+
+% 0 1 0 1dcf9db2a7ac7e1c041a9a1a6000c3e8
+
+% 0 1 0 0f1fb1fbd56d5d760eeaaabd415d45a0
+
+% 0 1 0 16a9aed42410ad6e0798b865fe8d7598
+
+% 0 1 0 0c6c80183770ac581fbbc741b4af4a91
+
+% 0 1 0 0dd625b811f3e58f186d2ba0a0200a55
+
+% 1 1 0 06818e193d75eda20978706911197dff
+
+@ 0 3 0 1d419f9f45deecec1dd9b6a3c0c34e2c
++ La decodificación abarca las combinaciones de modificadores, las teclas de función, el protocolo
++ de teclado de kitty y el pegado entre corchetes. Por tanto, `Ctrl(Alt(Left))` es un valor con el
++ que comparar, no una secuencia de bytes que reconocer.
+
+@ 0 4 0 150b499595bc271907ac2bdb6eaa4e08
++ Un `Keypress` es un `CharKey` corriente, una `FunctionKey`, una de las teclas de edición con
++ nombre, o un `EscapeSeq` para una secuencia sin otro nombre. Las teclas con nombre son `Tab`,
++ `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`, `Home`, `End`, `PageUp`, `PageDown` y las
++ flechas. Cada una puede envolverse en los modificadores que se mantuvieron pulsados con ella,
++ anidándose hacia fuera:
+
+% 2 1 0 03ecaf51a844ccf51d478d50c0b40769
+
+% 0 1 0 1bd6981e3e9ada2305d1f45e334233fa
+
+% 0 1 0 1f5214efcab6f20b0dc58cdaf06cdbe7
+
+% 1 1 0 0b63e3c71a299ada085bd1b2c9b8f8a0
+
+@ 0 2 0 112760f0f42eed5c11d5499631ded142
++ Los envoltorios solo aceptan lo que puede modificarse con sentido. `Shift(CharKey('a'))` no pasa
++ la comprobación de tipos: una `a` con mayúsculas es `CharKey('A')`, y la mayúscula ya se ha
++ aplicado.
+
+@ 0 2 0 01fdf92e87189a881446243d602ecc0a
++ Una pulsación se muestra con un símbolo Unicode entre corchetes por cada tecla especial, unido con
++ `+` a lo que modifica, como en `[⇧]+[↵]`, `[⌃]+[C]` o `[⌥]+[→]`:
+
+% 2 1 0 1376cddbf089d75815b93155bff6859e
+
+@ 0 2 0 01bbb5ca6ec8f0a905c811d0ed34c884
++ column  Pulsación
++ column  Se representa como
+
+% 0 1 0 0f63fe68f1ad78fd0840f28cb1c6106c
+
+% 0 1 0 1540848e08c9e2b91c8fbacdc13b007b
+
+% 0 1 0 0ed9364cfde5e19f0c70b27ce446b17a
+
+% 0 1 0 1552c01289f7b54d0d007c97b5a26aa5
+
+% 0 1 0 1890a9b26c2495490c2b6fbcb8d5f72d
+
+% 0 1 0 11c4d26787ea450a0acc58ba8948921b
+
+% 0 1 0 06cf970caee9ac8d1b6c5ebbe7a2cb17
+
+% 0 1 0 0ca51a27bf1c2e610f91086ff98b01d1
+
+% 0 1 0 1f6c28a82b313e6e17af48223ef584fe
+
+% 0 1 0 05dab3750d6f951f07d72dfcd10abae7
+
+% 0 1 0 00327055fef903ad0655737fa4dd3814
+
+% 1 1 0 1d6c9c1ffbf57cbc121c0629bad41bd2
+
+@ 0 4 0 10672499c286eef404d7e81d6bf4f3c0
++ El vocabulario está deliberadamente separado de todo lo que lo produce o lo consume. El terminal
++ decodifica las secuencias de escape en estos valores, y la
++ [automatización web](web-automation.md) los convierte en las acciones que entiende un navegador,
++ sin que ninguno de los dos necesite saber del otro.
+
+@ 0 3 0 160a5aa89ed3e7191d6c5a5e9b75983c
++ Las prestaciones opcionales, como el seguimiento del ratón, la notificación del enfoque y la
++ pantalla alternativa, se activan importando el given correspondiente de `terminalFeatures`, y se
++ vuelven a desactivar cuando termina la sesión.
+
+@ 0 1 0 1db5af5cfa120652194cf831df005e97
++ ### Edición de líneas y menús
+
+@ 0 3 0 0e918aca1238b0fd0c2624e7486655d0
++ Una línea de entrada, con el movimiento del cursor y las teclas de edición gestionados, es un
++ `LineEditor`. Una elección entre opciones es un `SelectMenu`. Cada uno es una máquina de estados
++ pura, que recibe un evento y da un estado nuevo, y a la que se pide su resultado con una sola
++ llamada:
+
+% 2 1 0 1d7e2734f0382c680ec62b0cee7971e0
+
+% 3 1 0 1475060c963702800814e30a634e81f3
+
+% 4 1 0 18f7444c54730eec08837eff20181819
+
+% 1 1 0 0e8d146f6af1d04c05e0867a018ea3bf
+
+% 2 1 0 1c86299b5d4a72db197b71e1032fd154
+
+% 0 1 0 1e5362d63de7c0ac02106c9c04ecaf9f
+
+% 0 1 0 181525f667700a6d0e4a9d139f1d36cb
+
+% 1 1 0 12cbf252f62cf8a80b4bde0815af809c
+
+@ 0 1 0 1546ee97e2f4f62b035011d54e3ec8af
++ ### Disposición
+
+@ 0 1 0 12ad94fa83c0fb5c1cf3da0680c1bdbf
++ Las interfaces más grandes que una línea se componen a partir de paneles:
+
+% 2 1 0 1d83ad505154b565073c85c2881fb81c
+
+@ 0 7 0 1f92053ec2f9f3d61ebae148dd37ac74
++ column  Combinador
++ column  Crea
++ row  `panel`  un panel de contenido
++ row  `editor`, `menu`  un widget interactivo: un `LineEditor` o un menú de opciones
++ row  `strip`  paneles uno al lado de otro, como columnas
++ row  `stack`  paneles uno encima de otro, como filas
++ row  `border`  un borde alrededor de un panel
+
+% 1 1 0 03c16b87e2b2681306bdb232cd85d8ce
+
+@ 0 2 0 0359be252aea75de1ac48f25f12c85cc
++ `conduct` ejecuta la composición. Se ejecuta a pantalla completa, en el búfer alternativo, o *en
++ línea*, como un bloque vivo en el cursor, que deja intacto el historial de desplazamiento:
+
+% 2 1 0 0192032489e77f2304e9ccb97595d0d4
+
+% 3 1 0 1f8d723718e9ad9d135f9ad7513003dc
+
+% 4 1 0 116d65eef6588a391e4a9c9f15de063e
+
+% 0 1 0 039a6da02edf1dc21ca9c08467b43136
+
+% 2 1 0 0d7f090557fc93cf184ae467574e5cc7
+
+% 3 1 0 1eae18f6425963d406120267e2ee542b
+
+% 0 1 0 10c799b4e20fb1b210785eedb424101f
+
+% 0 1 0 165e12c93ddf3f4300753eff606d8aac
+
+% 0 1 0 19d7181152d3f75b024c1e220f1f3486
+
+% 0 1 0 18d1851e2236360b1e19470869dadc37
+
+% 1 1 0 1928b89234d0985215ad41542a9c0ed6
+
+@ 0 3 0 0ddd4eb1a1346f670fb6bc96b11ec9dc
++ Los tamaños se resuelven como fracciones, con mínimos y máximos, y el enfoque pasa de un widget a
++ otro con el tabulador. El estado en vivo se incrusta de la misma manera: barras de progreso,
++ spinners, niveles e indicadores de pasos. [Medidores](gauges.md) los describe.
+
+@ 0 1 0 099ec6afe7fa825200ac0ef260fd98a6
++ ### Redibujar sin parpadeo
+
+@ 0 5 0 0b72509622b5c5480a0f81e554283b07
++ La representación mantiene un modelo de lo que hay realmente en la pantalla, y cada trama se
++ compara con él. Por eso un repintado sobrescribe solo las rachas que han cambiado, y una trama
++ idéntica no emite nada en absoluto. La salida a pantalla completa pasa por un búfer y se vuelca
++ como una sola escritura, no como un flujo de escrituras pequeñas. Un cambio de geometría, o de
++ tamaño, toma el camino de un redibujado completo, porque entonces no puede confiarse en nada del
++ contenido anterior.
+
+@ 0 4 0 167c2dedde82e60c1479f7d109f78eac
++ Un bloque en línea, que deja intacto el historial de desplazamiento, tiene un problema adicional.
++ El terminal puede recolocar sus líneas cuando la ventana se estrecha, sacando el bloque de debajo
++ del cursor. Por eso un bloque en línea vuelve a calcular dónde está tras un cambio de tamaño, de
++ modo que una interfaz en ejecución sobrevive a una recolocación y no garabatea sobre el historial
++ de desplazamiento que tiene encima.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 6 0 1f500903ed2dd124135d5a9823ca635a
++ - [Colores](colors.md) describe los colores que reciben `Fg` y `Bg`.
++ - [Tablas](tables.md) y [Medidores](gauges.md) dibujan salida estructurada en un terminal.
++ - [Interfaces de línea de comandos](cli.md) lee los argumentos de un programa y los completa.
++ - [Emulador de terminal](terminal-emulator.md) es el otro lado: interpreta las secuencias de
++   escape que escribe un programa.
++ - [Procesos](processes.md#on-a-terminal) ejecuta otro programa en un pseudoterminal.

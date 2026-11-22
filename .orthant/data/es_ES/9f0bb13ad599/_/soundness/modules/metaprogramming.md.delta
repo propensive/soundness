@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 4 0 14931b02eca34bd916f67997ce15cdca
++ De vez en cuando la pregunta no es qué *tipó* el compilador, sino qué *emitió*: si un combinador
++ desaparece al hacerse inline, o en qué se compila un camino crítico. Un fichero de clase se
++ analiza en métodos e instrucciones con tipo, y cada instrucción lleva el estado de la pila de
++ operandos, reconstruido. Unos bytes que no son un fichero de clase lanzan un
++ `Classfile.Error`:
+
+% 0 1 0 02841fa017604ac603dfae8ad7043c4f

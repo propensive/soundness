@@ -1,0 +1,148 @@
+orthant 2 language
+
+@ 0 1 0 0bb7406c65f4195e0bb145cab3f9b16f
++ # Concorrência estruturada
+
+@ 0 6 0 13f37f2935a89dc50a1d863ca56b1266
++ A concorrência no Soundness é estruturada: as tarefas são criadas dentro de um escopo que é seu
++ dono, e esse escopo não termina até que suas tarefas terminem. Uma falha em uma tarefa se
++ propaga para suas irmãs e para sua mãe, em vez de desaparecer sem ser notada, e cancelar um
++ escopo cancela tudo o que está abaixo dele. Os tempos de vida concorrentes se aninham como os
++ blocos de um código comum, então o trabalho paralelo tem o mesmo começo e o mesmo fim claros que
++ o trabalho sequencial, e nenhuma tarefa sobrevive ao escopo que a lançou.
+
+@ 0 1 0 197386b47088f7c602111ce79f77f5c5
++ ## O escopo é dono da tarefa
+
+@ 0 2 0 122364f1850af72c1a094f00bc0b954f
++ `supervise` abre um escopo; `async` cria tarefas dentro dele. O escopo não retorna até que seus
++ filhos tenham se resolvido, quer algo os tenha aguardado, quer não:
+
+% 2 1 0 131b45c65c2cbdbc1cd3332e5f3860b1
+
+% 3 1 0 13522da2bda70d891cb11e255874a32f
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 19151d611c6de0cf17c9d86d2b0e35ea
+
+% 0 1 0 198b0d13abd9393819d2f453eab75e2d
+
+% 0 1 0 01ec73c9ff3d190c083dae6e683c7f49
+
+% 1 1 0 02960e878ef535d4013a8c00daa8e194
+
+@ 0 2 0 18ed9a83de3ba1121fcfec723995cd6b
++ O equivalente não estruturado — iniciar duas threads e torcer — difere no que acontece quando
++ algo dá errado, que é o único caso para o qual vale a pena projetar.
+
+@ 0 1 0 0119fd13b3a0abf61f86d235074b75d3
++ ## O que a estrutura compra
+
+@ 0 5 0 1001e3ca96a6033218604767be661356
++ **Uma falha tem para onde ir.** Uma thread que lança uma exceção não tem a quem relatá-la, então
++ sua exceção é impressa, ou engolida, ou entregue a um handler que não faz ideia do que se estava
++ tentando fazer. A falha de uma tarefa se propaga para o escopo que é seu dono, que cancela os
++ outros filhos desse escopo — porque o trabalho empreendido em nome de uma computação que já
++ falhou é um trabalho que ninguém quer ver terminado.
+
+@ 0 3 0 168f36c529a1ddb11c91d4ac1889696f
++ **O cancelamento alcança a subárvore inteira.** Cancelar um escopo cancela seus filhos, que
++ cancelam os deles. Não há nenhum conjunto de referências a threads para manter, nem possibilidade
++ de esquecer uma, porque a árvore de propriedade já existe.
+
+@ 0 3 0 1734226298b0771d09a734b7d9dce9da
++ **Nada sobrevive à sua razão de existir.** Uma tarefa não pode sobreviver ao escopo que a
++ lançou, então “aquele trabalho em segundo plano ainda está rodando?” tem uma resposta
++ estrutural, e não empírica.
+
+@ 0 1 0 15c104ca12628b581368636687d93c9f
++ ## O que acontece na fronteira
+
+@ 0 2 0 1215a63081f0fec919832f41c30b1a60
++ Um escopo precisa decidir o que fazer com um filho ainda em execução quando o corpo do pai
++ termina, e essa decisão é explícita em vez de presumida. A *sucessão* a nomeia:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 1665e3d5fbba20de07b4c87ee85a6eae
++ column  Importação
++ column  Um filho ainda em execução quando o corpo termina
++ row  `probates.awaitProbate`  é aguardado
++ row  `probates.cancelProbate`  é cancelado
++ row  `probates.panicProbate`  é um pânico
++ row  `probates.failProbate`  lança um `Async.Error`
+
+% 1 1 0 02b162bee2ac8c73182faf5b2d29cbe2
+
+@ 0 2 0 0106bf45d998429e1f90765a44b49f8b
++ Cada uma é defensável em algum lugar, e nenhuma é segura para adivinhar, e é por isso que não há
++ padrão.
+
+@ 0 3 0 0f9a271a621e231714e13ca6cbea23f6
++ Um `daemon` é a exceção deliberada: um trabalho fire-and-forget que o escopo não aguarda e que
++ cancela quando termina. Ele ainda assim não pode sobreviver ao seu escopo — só é não estruturado
++ no sentido de que nada aguarda seu resultado.
+
+@ 0 1 0 093a2db087bdf0970effe2c86d222749
++ ## A suspensão é visível
+
+@ 0 3 0 0c9ada3a2b11f8c91865b55221b3ef06
++ Esperar é um efeito, e aparece nos tipos como qualquer outro. Aguardar uma tarefa ou uma
++ promessa, dormir e ceder a vez exigem todos uma capability `Monitor`, então um método que pode
++ bloquear diz isso em sua assinatura:
+
+% 2 1 0 0a81a6945bdf8f41163183cbc92610d8
+
+% 3 1 0 1119f40b1c8cc0c3084094d7507216fd
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 103ac5c66c4d87620b1e7fa5e43ade81
+
+% 1 1 0 084ebc2b90c46ba60dd5d98eeb6ba0fd
+
+@ 0 3 0 142a85026146b6e618e1104948290a66
++ É a mesma disciplina que as [assinaturas honestas](honest-signatures.md) aplicam à falha. Quem
++ chama consegue ver, só pelo tipo, se um método pode estacionar a thread em que é chamado.
+
+@ 0 5 0 0592092f3d4016011f6d454c644a7c85
++ Por baixo, a unidade de execução é um `Strand`, e não uma thread, com as quatro operações de que
++ a suspensão precisa: interromper, fazer join, estacionar e desestacionar. Como um supervisor
++ fornece fios e um supervisor é um valor, um escalonador que não é construído sobre threads — um
++ laço de eventos sobre os waitable sets do WebAssembly — se encaixa sem mudar nenhum código que
++ cria ou aguarda tarefas.
+
+@ 0 1 0 1963ce40bed34c001fc6cbad16727a56
++ ## Os erros de um daemon não viajam para trás
+
+@ 0 5 0 0ebb9e2b9c61c748166f7639ca2a8937
++ Uma sutileza decorre de levar a propriedade a sério. O corpo de um daemon não pode capturar um
++ handler de erros do código que o criou, porque, quando o daemon falha, esse código já seguiu
++ adiante — entregar o erro ali significaria retomar uma computação que já terminou. Um daemon que
++ falha, portanto, escala como um `Fault`, que um programa intercepta onde trata o inesperado.
+
+@ 0 3 0 1453cbc75f08509a147270d4cbcb5392
++ Esse é o tipo de caso que a concorrência não estruturada deixa indefinido e que a estrutura
++ força a vir à tona: a pergunta “para onde vai este erro?” sempre tem uma resposta, mesmo quando a
++ resposta é “não para onde você talvez tenha presumido”.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto custa
+
+@ 0 6 0 01da9b750294f7371580b6c3a28977e0
++ A estrutura restringe o que pode ser expresso. Um trabalho que realmente precisa sobreviver ao
++ escopo que o iniciou — um serviço em segundo plano iniciado durante uma requisição, digamos —
++ não pode simplesmente ser criado e esquecido; ele precisa pertencer a um escopo que viva o
++ suficiente, o que significa providenciar um. Isso dá mais trabalho do que iniciar uma thread, e
++ dá mais trabalho por uma razão: uma thread sem dono é exatamente aquilo sobre cujo tempo de vida
++ ninguém consegue raciocinar depois.
+
+@ 0 3 0 10fa488026cf4af813c5297b417ddcb8
++ Veja [escopos delimitados](delimited-scopes.md) para a forma geral da qual isso é uma instância,
++ e [verificação de capturas](capture-checking.md) para como o escape se torna impossível, e não
++ apenas desencorajado.

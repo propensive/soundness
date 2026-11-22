@@ -1,0 +1,606 @@
+orthant 2 language
+
+@ 0 1 0 1070813e8cac23940264672a5f1ea824
++ ## Texto
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 4 0 1838d640f94b50970e23e15348942e5a
++ `Text` es el tipo de cadena que se usa en todo Soundness, y se escribe con el [interpolador]
++ `t"…"`. Tiene un conjunto amplio y coherente de operaciones: dividir y unir, extraer porciones,
++ cambiar entre mayúsculas y minúsculas, recortar, rellenar, sustituir, buscar y comparar de forma
++ aproximada. Cada una tiene tipos tales que un error se detecta en [tiempo de compilación], en
++ lugar de aflorar como una respuesta equivocada o una excepción en [tiempo de ejecución].
+
+@ 0 3 0 17d194593e6fc29d0f96dfdd05ac884e
++ `Text` es un [tipo opaco] sobre el `String` de la JVM, así que no cuesta nada en tiempo de
++ ejecución. Cada operación está escrita contra la [clase de tipos] `Textual`, así que los mismos
++ métodos funcionan igual con `Text` que con otros tipos textuales.
+
+@ 0 1 0 07b97f13156313db115e687e873d5024
++ ### Sobre el texto
+
+@ 0 2 0 091df3a7f54b1a291b05e03d4b9969c6
++ El `String` de Java fue acumulando sus métodos durante décadas, y se nota. Los tipos no detectan
++ ninguna de sus trampas, así que cada error espera al tiempo de ejecución:
+
+% 2 1 0 0f778b374998392e1837a93b2fff0d14
+
+@ 0 7 0 06e7e8f543b1097317a516beeeee5068
++ column  En el `String` de Java
++ column  La trampa
++ column  Con `Text`
++ row  `indexOf`  devuelve `-1` para «no encontrado»  `offsetOf` devuelve una posición `Optional`
++ row  `substring`  lanza una excepción ante un índice incorrecto  `keep`, `skip`, `snip` y `segment`, contando con ordinales
++ row  `split`  recibe una expresión regular donde se pretendía un literal  `cut` recibe un `Text`, un `Char` o una expresión regular, según el tipo
++ row  cualquier método que devuelve una cadena  puede devolver `null`  nada devuelve `null`
+
+% 1 1 0 03c4d3111f3405e2064eab24fd96002f
+
+@ 0 2 0 0ce833bbfda1aa41149a9a98527292db
++ `Text` presenta las mismas cadenas subyacentes a través de una superficie diseñada a propósito.
++ Tres reglas se cumplen en todas partes:
+
+@ 0 4 0 0c0342f279399dca1ab47b5534f8b175
++ - Nada devuelve `null`. La ausencia es un valor [opcional](optional-values.md).
++ - Nada devuelve un array mutable.
++ - Nada recibe `Any` para llamar discretamente a `toString` sobre él. Un valor debe decir cómo se
++   convierte en texto antes de que se le pueda tratar como texto.
+
+@ 0 2 0 1a4089cfa76656d91be79f91c093d4b9
++ Todo viene del paquete `soundness`. Las operaciones que miden anchuras necesitan una métrica de
++ texto en el ámbito, y la última importación permite a los ejemplos imprimir sus resultados:
+
+% 2 1 0 0c5586e0eef073e7056fb8f905118841
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0113ecd3cd2f810810d22a6b0e5b8695
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 3 0 0674532eb89018321c521b6c70dc64de
++ Siempre que una operación depende de una intercalación, una codificación o una métrica, esa
++ elección se nombra con una importación. Nada del texto se da por supuesto, lo que es
++ [contexto declarativo](../../philosophy/declarative-context.md) en acción.
+
+@ 0 1 0 0bef4652c9f6675507e10b4d2bbd0831
++ ### Escribir texto
+
+@ 0 1 0 15c56b3fa502e3e10f87e62d7976159c
++ El interpolador `t"…"` construye un `Text`, sustituyendo cualquier valor que se pueda mostrar:
+
+% 2 1 0 058623b22a69a54b03614b397e70b1a5
+
+% 0 1 0 1a8b5d78ec8ed14c1c6038f705c9cca6
+
+% 1 1 0 189951f0ae0ca0571e5589237513c0c7
+
+% 3 1 0 158836af887d9cf01c5cafc8dedd99db
+
+% 4 1 0 0fd8eb6e52bf42b50ec69617c9eca76c
+
+% 5 1 0 055b8b6c95fa3e3001c7b1a9baac6045
+
+% 0 1 0 12dba4c07fe528be09c250f504a6e621
+
+% 1 1 0 0227a512c354565105cb72b0a85e0a4f
+
+@ 0 2 0 1262a84f34fac2bd0d2a940b0b8b3cbe
++ Un valor que no tiene forma de mostrarse no se puede sustituir. Donde Java imprimiría algo como
++ `Object@1b6d3586`, esto no compila:
+
+% 2 1 0 17eac8e6aad5f878199c74706c5f306e
+
+% 3 1 0 1070ddac873f62ae04058454b504402c
+
+% 4 1 0 0f8a5439925cf1eb16662cb51942601a
+
+% 5 1 0 101d875df1c658e2054185c313752371
+
+% 0 1 0 076e81b315343d7b146a34ac0fcbf283
+
+% 1 1 0 1898292ba3aad7c6062dc0f507604467
+
+@ 0 3 0 150fd26633354cd8131e15fd3711a29c
++ La prosa en el código fuente pide estar ajustada para el programador, y sin ajustar para la
++ salida. El interpolador `txt"…"` une las líneas de un párrafo ajustado con espacios simples, y
++ elimina la sangría que necesitaba el código fuente. Una línea en blanco es un salto de párrafo,
++ y se convierte en un único salto de línea:
+
+% 2 1 0 1745ef5e0c1866bc0ea5637974a90c2d
+
+% 3 1 0 10e78c768368fef5030c6edf182d474b
+
+% 4 1 0 180d7e8fd3c7c7f91d0b25933d77cebd
+
+% 0 1 0 1e53b7fd13f00a7b0601cc4ed39deef1
+
+% 0 1 0 17a57add8f0f903b028f884c7a674b02
+
+% 0 1 0 1eae8d4ac2b3eefa1f1013f099dba440
+
+% 1 1 0 1306e177c0319a1d10dee360c42fe4bc
+
+@ 0 1 0 1663d941f5eb26901fd4a7fcdcba6b88
++ ### Dividir y unir
+
+@ 0 2 0 05fdf2294fd7cc591d33f6b49796f591
++ `cut` divide el texto en un delimitador, que puede ser un `Text`, un `Char` o una
++ [expresión regular](patterns.md). `words` y `lines` son los casos habituales:
+
+% 2 1 0 18c2d18767a35d951b1cf612f3d4867e
+
+% 3 1 0 0547a04178d34af409e564ef48838742
+
+% 4 1 0 1581689a466e1f531a43618e2eb96f36
+
+% 0 1 0 15b5d7ac780ded5901742917210b7884
+
+% 0 1 0 07f9220934b36870139d4257c70bffad
+
+% 1 1 0 096ba18e861fc6ac01bfd049750d7d16
+
+@ 0 2 0 016b7fc40d5a869118cf08d6012aa787
++ `join` combina una colección de texto. Recibe un separador opcional, y un separador final
++ opcional, para una lista que se lea de forma natural en inglés:
+
+% 2 1 0 1929444eb2c3003e03119a41a835c386
+
+% 3 1 0 0b133f91904dda6f16397916da22383f
+
+% 4 1 0 10aa79f4f80351be11bccc57dd8f0bfa
+
+% 0 1 0 083a76359948279c153c86461cc188cd
+
+% 0 1 0 125a8bf7e8fdf4340d572a96a2924201
+
+% 1 1 0 1fa6e993aa3c9d6607b8f4a335dd7be8
+
+@ 0 6 0 1eaeeaf3a8e87e401a8cb5749b5cfafc
++ `join` hace el trabajo del `mkString` de la biblioteca estándar, y difiere en lo que importa.
++ `mkString` llama a `toString` sobre cada elemento sin decirlo, así que una colección de
++ cualquier cosa produce algún tipo de texto. `join` solo produce texto a partir de elementos
++ textuales. Una colección cuyos elementos no tienen una representación con sentido no compila. Si
++ los elementos son a su vez colecciones, `join` las concatena, y el separador es entonces uno de
++ *sus* elementos; [Colecciones](collections.md#reshaping) describe esa forma.
+
+@ 0 1 0 1daa50c4aebe1dc31cafd2d57524c3d5
++ ### Extraer porciones
+
+@ 0 2 0 07f3e33befe3bcea0af29d9ac27b0ba1
++ `keep` toma un número de caracteres y `skip` los descarta. Ambos cuentan por defecto desde la
++ izquierda, y desde la derecha con `Rtl`. `snip` divide el texto en una posición, en un par:
+
+% 2 1 0 0f94057288dfcec20179fa76a6a9d042
+
+% 3 1 0 11c38485d705c35a021abd248c54010b
+
+% 4 1 0 0c9befa2782d4a6b0d9b6785766872da
+
+% 0 1 0 01920ee2c616d4390a7bb8941ff093a5
+
+% 0 1 0 13ced953995dc3d300fbeea372cff983
+
+% 0 1 0 10f8a486f9dd8d851811dbfeb8349e31
+
+% 1 1 0 1c45fc585a1186a703ee1c2a7a4fc148
+
+@ 0 4 0 0efd856e208ae1ad13bc0159ce6dc9a1
++ `segment` toma un rango de posiciones. Las posiciones son
++ [ordinales](https://en.wikipedia.org/wiki/Ordinal_number), `Prim`, `Sec`, `Ter`, etcétera, que
++ cuentan desde uno. Los caracteres quinto a séptimo son `Quin thru Sept`, así que no hay ningún
++ índice basado en cero con el que equivocarse por uno:
+
+% 2 1 0 17879996db11f79c0fc8070a2c0608b5
+
+% 3 1 0 1703c56377e0ac970945b0221d8e6761
+
+% 4 1 0 0d8be44eb1a04b390524824dc4266081
+
+% 0 1 0 13ffa9fa4222683a0d677b843b0c6f27
+
+% 1 1 0 10edc8a489af64f60907adb5a5c284cc
+
+@ 0 2 0 0c10fd4eeacc4bce0b64088df6b2e5fe
++ [Colecciones](collections.md#positions-and-access) usa los mismos ordinales para las posiciones
++ de una lista.
+
+@ 0 1 0 184e7137d957cc821fa3901d305490bb
++ ### Transformar
+
+@ 0 2 0 167587b287c293870fcc1820205abcab
++ Recortar, cambiar entre mayúsculas y minúsculas y sustituir son cada uno un verbo. `sub`
++ sustituye un trozo de texto por otro:
+
+% 2 1 0 0b9780b0b709a42b04305ba6ef90b2ff
+
+% 3 1 0 0c9f8660fd85dbf50fcaf409de622a2f
+
+% 4 1 0 0732033dd10096380e2350b4677298e5
+
+% 0 1 0 1a4b670da578eca20df984c19ac754f1
+
+% 0 1 0 11feb49958e0926e1652260ca78b043f
+
+% 0 1 0 1d5c255c1a672f160d4a2bc857ae144e
+
+% 0 1 0 170b1ee9deac31d91592f8365e79c66d
+
+% 1 1 0 1de3d174edb6491f08a932fc6d6ec487
+
+@ 0 1 0 0be2d774d4504b1817dedb2c1576b32c
++ `keep` también recibe un predicado, y conserva los caracteres que lo cumplen:
+
+% 2 1 0 03fbd6c583f830d50360cd39f3cc82c1
+
+% 3 1 0 1dd5276806acb67b0461ea1f1ef68f45
+
+% 4 1 0 0a45190943e8f2670e9cf1f5903c35dd
+
+% 0 1 0 10b2517292d64230024d2fcfb401efe2
+
+% 1 1 0 0d96f38490d8b6d90ac45bf61cd1715f
+
+@ 0 1 0 06e8c12eb865478014fe77699fcb7976
++ [Caracteres](characters.md) describe lo que se puede preguntar sobre un único carácter.
+
+@ 0 1 0 1a44cc02b580278f16960e6e87f14cde
++ ### Ordenar y comparar texto
+
+@ 0 4 0 04954720972c4ce8133025af38e05bc0
++ El texto no tiene un orden natural. Que `café` se ordene antes o después de `caff` depende de la
++ *intercalación*, y un programa que ordena texto sin elegir una está tomando una decisión de la
++ que no sabe nada. Por eso, ordenar texto, o compararlo con `<`, necesita una intercalación en el
++ ámbito. Sin ella, la comparación no compila:
+
+% 2 1 0 13f6a5016a3a51390f7966091971b14f
+
+% 3 1 0 1d801d200eba01f20bef9cb6f7ae8aae
+
+% 4 1 0 1cb079d9d75de4ca0f9d4fc3783ed3ef
+
+% 5 1 0 1ca8616529b7a0f51a0b9f966267708d
+
+% 0 1 0 1a42a81112ad1a7b15260b9b53caed5a
+
+% 1 1 0 040d6801e254896c04236dc667f003ed
+
+@ 0 1 0 118cbbcd63b2df06136e1a9b7ab0f99d
++ Se proporcionan dos intercalaciones:
+
+% 2 1 0 06d74e06ea529c1805380d5084362fd3
+
+@ 0 4 0 164ec5bbde02b01b0f9057fd0db36169
++ column  Importación
++ column  Ordena el texto
++ row  `collations.unicodeCollation`  según el Unicode Collation Algorithm: orden de diccionario, que antepone los acentos a la caja
++ row  `collations.codepointCollation`  por punto de código, que es rápido y estable, pero sitúa los caracteres suplementarios después de todo el plano básico
+
+% 1 1 0 1440176f3b5b0c0c0ebcf39f9a293b47
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 0846a5f2f878620207f9fc8b9de923e5
+
+% 0 1 0 1307bf4ae077a0c202ef7e594aa01dfc
+
+% 0 1 0 031a83585ff66cd91df2d52fec7183ef
+
+% 1 1 0 0935c67289bb7b2a11c31c6e7e5ad4de
+
+% 3 1 0 0631d669e4021af11fd6a8a68e740059
+
+% 4 1 0 11e72abc25c9ff4a0e5ff0b446eac3f2
+
+% 5 1 0 095caf3cc3339df40ab11761951858eb
+
+% 0 1 0 0b11dd95616d791f184daf02dacf1c21
+
+% 0 1 0 1dbd8f8c8182fb8c1c580e7606e2af3b
+
+% 1 1 0 184f2e42b7854e501c8d98e2a423b14c
+
+@ 0 1 0 172ffad94aed32a31b9d573e36aef390
++ [Colecciones](collections.md#sorting) explica `sort` y la elección del algoritmo de ordenación.
+
+@ 0 1 0 09abf73bc10c97af0b43bc8ef7b91dd6
++ ### Convenciones de caja
+
+@ 0 3 0 0de692706e2380200e95c12e55fd9acc
++ El texto se divide en palabras, y las palabras se vuelven a unir según una convención de
++ nombres. `uncamel` descompone un identificador en camel case o Pascal case en sus palabras, en
++ minúsculas. `unkebab` y `unsnake` hacen lo mismo con los otros estilos. Cuatro métodos unen
++ palabras en cada estilo:
+
+% 2 1 0 07488a8339a03fd6029e3802476b806a
+
+@ 0 6 0 13495ae46a3980b50fc9aafd1be1e419
++ column  Método
++ column  Une las palabras
++ row  `kebab`  con guiones
++ row  `snake`  con guiones bajos
++ row  `camel`  poniendo en mayúscula cada palabra salvo la primera
++ row  `pascal`  poniendo en mayúscula cada palabra
+
+% 1 1 0 0fc2b2498575518e0f6e8fb407bb1815
+
+% 3 1 0 17596b81044a551b15304bfbe3a666d7
+
+% 4 1 0 0f1726517582567700b972410ba95156
+
+% 5 1 0 08c952408f2a9cca09345ca5fb306db8
+
+% 0 1 0 02584ffc55926dde0beecacd4d619a24
+
+% 0 1 0 0fafbdd29a590cce1bcfdeb2cb629b1b
+
+% 0 1 0 1e43aae9a28ef8040123c10079ad2c74
+
+% 0 1 0 00942842b573df851cf79d6b6cacf204
+
+% 1 1 0 1d5224baa297e6e70872d9ad785f9c8b
+
+@ 0 1 0 1319d699c7dc1cbd1abed2dcf150c4c7
++ ### Rellenar y ajustar
+
+@ 0 3 0 18e88c3472bc9aaa06eeb5350e4693b1
++ `pad` extiende el texto hasta una anchura, `center` lo rellena por ambos lados, y `fit` impone
++ una anchura exacta, truncando si hace falta. Cada uno mide la anchura a través del given
++ `Text is Measurable` del ámbito. Aquí es `uniformMetric`, que cuenta cada carácter como una
++ columna:
+
+% 2 1 0 077769305833f6aa147fad7adf48e6b1
+
+% 3 1 0 11be461765078e0406564d42f314f5ce
+
+% 4 1 0 1916ffe9bad8397707fc682687d75f5c
+
+% 0 1 0 1914e47aecbc36541ee1e2133f8b386e
+
+% 0 1 0 1d1d7fdf9dafbb4a01964b2ced10251f
+
+% 0 1 0 10f633044eae82180e170f3289da9d2d
+
+% 1 1 0 136838fe298ee66f01ab6abb326c54f8
+
+@ 0 1 0 0b9d3f639fe024881202c6d3b5e3b815
++ [Tablas](tables.md) los usa para disponer columnas de texto.
+
+@ 0 1 0 17b5bdd1f71aeaf11f85262916b7b37e
++ ### Buscar
+
+@ 0 1 0 1f15825cc89bc3c10dad2033935b63a6
++ Cinco métodos responden sobre la pertenencia y la posición:
+
+% 2 1 0 02cc30cd2b2b43fc16acce978a6af7a6
+
+@ 0 7 0 079b5eb3d1110db01eeb669a27330826
++ column  Método
++ column  Responde
++ row  `contains`  si el texto contiene otro
++ row  `starts`  si el texto empieza por otro
++ row  `ends`  si el texto termina en otro
++ row  `count`  cuántos caracteres cumplen un predicado
++ row  `offsetOf`  dónde aparece otro texto, buscando por defecto desde la izquierda
+
+% 1 1 0 0d1fa5e1bc6287f00dedbdc0febae010
+
+@ 0 2 0 10c69ec578a0f36907c821ac3b055de7
++ `offsetOf` da una posición `Optional`. Un texto que no se encuentra da `Unset`, nunca un número
++ que pudiera confundirse con una posición:
+
+% 2 1 0 0a5782f351a0b87803624d574e7c05e8
+
+% 3 1 0 1a3e807d186134d70713a1dbdd0964aa
+
+% 4 1 0 143b7492a12f69141460e515f5738833
+
+% 0 1 0 089db8320a9bc3b90bb4500d230dcc4a
+
+% 0 1 0 1551c411bbd9d58e0526d59e92049d24
+
+% 0 1 0 191a32aa11f6436f0f5ce540defd6457
+
+% 0 1 0 0ad5a231f27e27181d9cddca84856b72
+
+% 1 1 0 13b55dcfed27c7b8100b0689613c63aa
+
+@ 0 2 0 0cabbc244eb502be0a5265db5230ce89
++ [Patrones](patterns.md) compara texto con expresiones regulares y globs, y extrae partes de él.
+
+% 0 1 0 077207e67380d38310c2c2173b7c444e
+
+@ 0 1 0 19d1ed61191c1e590b75971fd8667af2
++ El texto se codifica en bytes mediante la codificación de caracteres del ámbito, y los bytes se
++ vuelven a decodificar:
+
+% 2 1 0 03220028f75924ad104a7df1b38bff94
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 19e9c61160fe48a01af426abb1877be3
+
+% 1 1 0 03717f1d339716ba1981abc6c7fca5a6
+
+% 3 1 0 03f07294e4ae852818914568e93c7da8
+
+% 4 1 0 0043a160ee6dbf4a1f07d7078a9f397c
+
+% 5 1 0 113370e05259aa311a7c732732db8969
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 0 1 0 1774b6669db1f63512b29b52dc52259f
+
+% 1 1 0 13c1ddfb5aea7c441dc85b6d2b6171ec
+
+@ 0 3 0 0357afcfd59871bc04dd6906a2258b9e
++ Los ocho caracteres son diez bytes en UTF-8, ya que cada letra acentuada ocupa dos.
++ [Caracteres](characters.md) trata las codificaciones, y [Codificación en base](base-encoding.md)
++ escribe bytes como texto hexadecimal o Base64.
+
+@ 0 1 0 0160f07566fbc5b713d19200dac44d19
++ ### Comparación aproximada
+
+@ 0 3 0 094aab93f2b62ad90e1f7a9ca65f6ace
++ Dos trozos de texto se pueden comparar por su cercanía, no solo por su igualdad, mediante una
++ medida de `Proximity` en el ámbito. La distancia de
++ [Levenshtein](https://en.wikipedia.org/wiki/Levenshtein_distance) cuenta las ediciones de un
++ solo carácter que hay entre ellos:
+
+% 2 1 0 0d96dd4111ea3c4c06e8ad26fe9caa19
+
+% 0 1 0 1aa0a36b4be4ae9b07e198a2584d832b
+
+% 0 1 0 124219d1ab24e5be19822a05e17f002d
+
+% 1 1 0 0c21da8e3879bff00db2803f5584cf3d
+
+% 3 1 0 026719505fada24416a93f31f459c1f7
+
+% 4 1 0 05c39d98969fdca7148899160134aed7
+
+% 5 1 0 030356a471a59da40cffa413b0aa2fd8
+
+% 0 1 0 1680ec71cfbf7349152e21ea23e0164e
+
+% 1 1 0 0eba683e71f49fde18203043351faf81
+
+@ 0 4 0 14725bb85e8bc83402fa4595b716eb06
++ Comparar así una palabra con todo un vocabulario es lento, y una sugerencia ortográfica necesita
++ que sea rápido. Un `Lexicon` es un [árbol BK](https://en.wikipedia.org/wiki/BK-tree) sobre las
++ palabras. Usa la desigualdad triangular, que la distancia cumple, para descartar la mayor parte
++ del vocabulario sin medirla:
+
+% 2 1 0 0657d8f727982a320563378855304402
+
+% 0 1 0 1ceae6de57b6db8d03c1e93611d21927
+
+% 0 1 0 075afcf48d205fef063ab63997200a9c
+
+% 1 1 0 1129a0afdc6e6cfd099f927f18394dc7
+
+@ 0 2 0 147d2e245311063502f07611f99f3aa5
++ Una búsqueda a distancia cero es una búsqueda exacta. Ampliar el radio admite candidatos más
++ lejanos, y así es como se produce una sugerencia de «quizá quisiste decir» a partir de una lista
++ de palabras grande:
+
+% 2 1 0 107347cebbb617ac031c613ff087d3ba
+
+% 3 1 0 170401a0bf2f1f7c11fe1611127ab0ed
+
+% 4 1 0 1359cce1b267e2f518ed9c468ba849c9
+
+% 0 1 0 1435044a7fff2ff915bfdea11a1123d0
+
+% 0 1 0 0145433d0d64b3b316fc70367a57bece
+
+% 1 1 0 170ec007e323100e0c9839ab55974eb7
+
+@ 0 1 0 1553eebb55d759ca0ccecf967afbee78
++ ### Diccionarios de prefijos
+
+@ 0 3 0 1847ace068ad292c007f6ffc9aca3989
++ Cuando la búsqueda es por clave exacta, un `Dictionary` asocia texto con valores mediante un
++ [trie](https://en.wikipedia.org/wiki/Trie). Una búsqueda cuesta la longitud de la clave, no un
++ hash de toda ella, y una consulta por prefijo cuesta la longitud del prefijo:
+
+% 2 1 0 0aff441817c4fc431edbdebfa3e1536e
+
+% 0 1 0 0697b9a043efaba50aa89bc0c350dd9f
+
+% 1 1 0 02f2c5923f4017541feb19b4df8cdc4b
+
+% 3 1 0 0cfbfc3ec21a2cfc1410f05159d022cc
+
+% 4 1 0 108e78fe6e14ba8d1f4f4a8342f2cb3d
+
+% 5 1 0 0418e0b57c05123a09c5f050e97890c9
+
+% 0 1 0 1cd8101a9090733e1aed7b50c197661b
+
+% 0 1 0 0d2239e4edc575ac00aa640c00fc8ca0
+
+% 1 1 0 09896a65c6a58244099cc09a739b6131
+
+@ 0 1 0 00cff2248020d19f09e13e58cf398023
++ ### Grafemas y anchura
+
+@ 0 4 0 1941333d7f7f2b0e0af5368187205dd7
++ Un `Char` no es una unidad de texto que una persona reconocería. `é` puede ser uno o dos puntos
++ de código, y un emoji de familia son varios puntos de código unidos, así que contar `Char`s
++ responde a la pregunta equivocada. `Writing` da los *grupos de grafemas* de un texto, que son lo
++ que un lector llamaría caracteres, y las fronteras entre ellos:
+
+% 2 1 0 1a4b563c70a2150b1fe8065422cd462d
+
+% 3 1 0 05c92affe082aa3c0a24bb8b18337119
+
+% 4 1 0 10e8cf8fdb7c85071322ea05753d333b
+
+% 0 1 0 06be53b33980567411c9621c43be8ccd
+
+% 1 1 0 00c81c0f1debbbe218b3b19ac9cb4a4f
+
+@ 0 3 0 1c4ea952ff21e28705b3066cd0af1c22
++ Tampoco un grafema ocupa siempre una columna de ancho en un terminal. Con una métrica en el
++ ámbito, `metrics` da la anchura que usará realmente el terminal. Es una columna para ASCII, una
++ para una letra con un acento combinante, y dos para los caracteres chinos, japoneses y coreanos
++ y para la mayoría de los emojis:
+
+% 2 1 0 100cdc11d2981670007ab7e189cf12b6
+
+% 3 1 0 1c1882bda42609e71afc3745090f24f5
+
+% 4 1 0 08d08e1cf470623f0146ba17f1c14086
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 04f8e0c6c7665078197a30c2ebf0d146
+
+% 0 1 0 100399ed66dc50b21bd74ee8a45aed72
+
+% 0 1 0 08239d39178688dd0365caada95de44b
+
+% 0 1 0 18704af2de7d898e179dd9edc4627ae9
+
+% 1 1 0 169c063f5ce3698f00c2ea1a882e8bf0
+
+@ 0 1 0 15cc54e42ebf2767058b1b6cfe5a778e
++ Alinear columnas de texto en un [terminal](terminal.md) depende de esta anchura.
+
+@ 0 1 0 027d67a8eddcd61e090ef5d202984911
++ ### Representar números
+
+@ 0 3 0 08159325d2464c6402a181111d4037f5
++ Convertir un número en texto implica una elección, la de cuántos dígitos vale la pena mostrar,
++ que `toString` hace mal. Un `Decimalizer` expresa la elección como un número de cifras
++ significativas, y cada `show` de un número de coma flotante consulta el del ámbito:
+
+% 2 1 0 0667fbb56eb5d5581597611830005123
+
+% 3 1 0 0475fa156d1fe3f817c187bbf7169310
+
+% 4 1 0 0bcfb8041af82c180272aa6c62e73720
+
+% 0 1 0 0e2425704e7116f41633040942672a01
+
+% 1 1 0 04f6b3e2fa859f5c149f5eec65ec1ab7
+
+@ 0 3 0 03adcd664374b00911b22a804d1a0762
++ Por tanto, el mismo valor se representa de forma coherente en todo el programa, y cambiar la
++ precisión es cuestión de un given, no de buscar cadenas de formato. [Números](numbers.md) trata
++ los propios tipos numéricos.
+
+@ 0 1 0 0b57c466f05984a00339822571a75135
++ ### Cualquier tipo textual
+
+@ 0 4 0 123f37fb4425befd19cd3423364b83b2
++ Todas las operaciones anteriores se definen sobre la clase de tipos `Textual`, no solo sobre
++ `Text`. Un tipo que se declara textual obtiene los mismos `cut`, `join`, `keep`, `pad` y demás,
++ sin redefinir ninguno. El texto con estilo de un [terminal](terminal.md) es uno de esos tipos,
++ así que el texto con estilo y el texto plano se manipulan con un mismo vocabulario.

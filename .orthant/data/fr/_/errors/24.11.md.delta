@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 16130c7cf7857a560cae01155a53f8ef
++ # `↯/s.24.11` — Aucun gestionnaire disponible pour le type d'erreur
+
+@ 0 2 0 19ac25e246ac2f190fb2140418dfd70e
++ Levée à la compilation lorsqu'un code faillible est utilisé sans stratégie en portée pour l'erreur
++ qu'il lève.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 103a25497d72003009e4b12e1c4447cb
++ Une clause `raises` est acquittée par une `Tactic` en portée. Sans elle, le compilateur ne peut
++ pas décider de ce que doit faire un échec.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1f5c7be2c0af42e016f5ee21af04f88d
+
+% 1 1 0 13ff38975f075d1a0604ba1c1ec46ad8
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 3 0 02f9704a51e3a41b0b5ace7c96145b8b
++ Importez une stratégie — `strategies.throwUnsafely` pendant le prototypage — ou traitez l'erreur
++ avec `recover`, `safely` ou `accrue`. Importer `explainMissingContext` fait nommer au compilateur
++ les imports qui satisferaient la recherche.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0a577f73475efca20b96d2f17614deed
++ - Source : `lib/contingency/src/core/contingency.internal.scala`

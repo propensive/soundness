@@ -1,0 +1,14 @@
+orthant 2 language
+
+% 0 2 0 13cb20562ad12b90122b786e4aeea2b0
+
+@ 0 9 0 08fae36999e3381915e6efdc9645d2ff
++   entry .sha2_224   `0x1013`, `sha2-224`: um varint de dois bytes no envelope
++   entry .blake3   `0x1e`, `blake3`: uma entrada provisória na tabela, mas inequívoca e amplamente implementada
++   entry .md5   `0xd5`, `md5`: uma entrada provisória na tabela
++   entry .name   o nome registrado de um código que esta biblioteca conhece, ou `Unset`
++       `Multicodec.name(0x12)` é `t"sha2-256"`; `0x00` é `identity`. Um código fora do conjunto
++       acima é válido e representável em um `Multihash`, mas não tem nome aqui.
++   entry .apply   `Multicodec[algorithm](code, name)`: uma instância para um algoritmo próprio
++   entry #code   o código multicodec do algoritmo, tal como registrado na tabela multiformats
++   entry #name   o nome multicodec registrado do algoritmo, como `sha2-256`

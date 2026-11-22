@@ -1,0 +1,517 @@
+orthant 2 language
+
+% 0 1 0 1df526ef6ac41180167c8b1f34683745
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 032d4c23fa2a1ddd12906f9c1328108b
++ [YAML](https://en.wikipedia.org/wiki/YAML) wird genauso behandelt wie [JSON](json.md). Text wird
++ zu einem `Yaml`-Wert geparst. Ein `Yaml`-Wert wird mit [abgeleiteten][Ableitung] Codecs in Case-Klassen
++ und aus ihnen umgewandelt. Der [Interpolator] `y"…"` schreibt YAML, das zur [Kompilierzeit]
++ geprüft wird.
+
+@ 0 3 0 0a4ad8fb0dbe06a20897cbbaebfd91c2
++ Der Parser deckt die Sprache so ab, wie sie wirklich verwendet wird: Block- und Flow-Stil,
++ Quotierung, Block-Skalare, Tags, Anker und Aliasse sowie Streams aus mehreren Dokumenten. Ein
++ `Yaml`-Wert wird als sauberer Text im Block-Stil zurückgeschrieben.
+
+@ 0 3 0 00730b62891bf59e1c9a1d2974ca49f7
++ Navigation, Aktualisierung über Linsen, die Verfolgung von Quellpositionen und das Sammeln
++ mehrerer Dekodierungsfehler auf einmal haben dieselbe Gestalt wie bei JSON. Wer ein Format kennt,
++ kennt das andere.
+
+@ 0 1 0 176abbc22bd24ca91e2100497b6d26ce
++ ### Über YAML
+
+@ 0 5 0 1e3dab077af347c5041f647675a71c73
++ YAML ist die Konfigurationssprache der halben modernen Toolchain, und es ist bekanntermaßen leicht,
++ es schlecht zu verarbeiten. Seine Einrückung ist Struktur. Seine Skalare werden durch Raten
++ typisiert. Seine Extras, etwa Anker, Tags und Dateien mit mehreren Dokumenten, überfordern
++ beiläufig geschriebene Parser. Ein Verwender liest es typischerweise in einen untypisierten Baum
++ ein und holt Werte über String-Schlüssel heraus, wobei er jede Unstimmigkeit erst zur [Laufzeit]
++ entdeckt.
+
+@ 0 5 0 00a054d672fd8a841395cf6956b178cb
++ Hier wird die Sprache ordentlich geparst, und der untypisierte Baum wird danach zurückgelassen. Ein
++ Dokument wird in die Case-Klasse dekodiert, die es sein soll. Gelingt das nicht, nennt ein
++ typisierter Fehler, was fehlte oder den falschen Typ hatte, und bei eingeschalteter Verfolgung die
++ Zeile und Spalte, wo es stand. Direkt in einen typisierten Wert zu dekodieren, über dieselbe
++ Ableitung wie bei jedem anderen Format, ist
++ [Korrektheit](../../philosophy/correctness.md) mit einer einzigen Definition der Daten.
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ Alles stammt aus dem Paket `soundness`. Die Beispiele werfen jeden Fehler als Exception, und der
++ letzte Import erlaubt ihnen, ihre Ergebnisse auszugeben:
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1b7d339cdfb21c4305d099dcef66f4fa
++ ### Parsen und Dekodieren
+
+@ 0 3 0 081bfa8c83f78fbf11db222b34222020
++ `read[Yaml]` parst Text zu einem `Yaml`-Wert, und `as` dekodiert ihn zu einem Scala-Typ. Direkt
++ in einen Typ zu lesen, mit `read[Person in Yaml]`, verbindet beide Schritte. Flow-Stil und
++ Block-Stil liefern dasselbe Ergebnis:
+
+% 2 1 0 18bd1eb54208a80201ce01061709f8c1
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 0679310f3ec4aedd196767cea3ba251e
+
+% 0 1 0 0c6fa16666364f20042d0b512e91da9b
+
+% 1 1 0 127ce773e0f19fe7010037633c0c0358
+
+% 3 1 0 1ab2591c812e809f0a131d423b2ab90b
+
+% 4 1 0 1f48d05b3c34c2990bd9be2001434659
+
+% 5 1 0 022b018200ef220f13e899aa131310b7
+
+% 0 1 0 02d90a7699600a3f1ff9373d77403406
+
+% 0 1 0 1a8b049430f69fb817d4bbd64b2d14ff
+
+% 1 1 0 0bee6bda6e440c261952c24c0973a99b
+
+@ 0 2 0 1d8eefbc2030ff9104ed676766ea35f3
++ Ein Dokument, dem ein erforderliches Feld fehlt oder das einen Wert des falschen Typs enthält,
++ lässt sich nicht dekodieren, und der Fehler sagt, warum:
+
+% 2 1 0 049cf67b74bb1d1f0a7783e2e1780db0
+
+% 3 1 0 01a2636fdd0299ce1b7576df78b78c3a
+
+% 4 1 0 05ae2d59e08121be198fa7af7ca55980
+
+% 5 1 0 15d29aa82b7833830db4317497a53840
+
+% 0 1 0 12fb2af1ca47cdbd0a8d3e62f2ec37e9
+
+% 1 1 0 0027c7c69a174c2e1adf2793a72c2e75
+
+% 3 1 0 07ab9bc7a5f019ad10f1160af4c4f721
+
+% 4 1 0 0309a41f7efc620903c73a326158e7f6
+
+% 4 1 0 1a9f83f12eec02ae09166b7e3f404843
+
+% 5 1 0 057f515273fa81610fd007f7e6cca82c
+
+% 0 1 0 051764728a0c7245150f3d41e51f4cdd
+
+% 1 1 0 16e8df65da8eff3c187e23b20efb230f
+
+@ 0 1 0 0b82a69df0d0e55f0300841267e00d60
++ Ein Stream aus mehreren Dokumenten, getrennt durch `---`, wird als Liste gelesen:
+
+% 2 1 0 1c46847d2f270df81f49dfd008214735
+
+% 3 1 0 0724a3e778d19ce91a95af150dc723e1
+
+% 4 1 0 186e83fba13e3743192e45069dee1e55
+
+% 0 1 0 191a11c9ba0f3ec30f3829a5891a5143
+
+% 1 1 0 04297d2c48f8d92915d1ed7c9b86c949
+
+@ 0 4 0 027ed9a358409a990d550e7169e97ac0
++ Eine Quelle muss kein im Speicher gehaltener Text sein. Der Parser liest direkt aus einem
++ [Stream](streams.md) von Bytes oder Zeichen und füllt dabei nach, ohne die Eingabe zuerst
++ zusammenzufügen. Ein großes Dokument wird daher geparst, ohne je vollständig gehalten zu werden,
++ und eine `---`-Markierung, die über zwei Chunks verteilt ist, bleibt eine Dokumentgrenze.
+
+@ 0 1 0 196677f70196bdf61933b52d135abadd
++ ### Kodieren
+
+@ 0 2 0 10a757e817a7e0f71f021534b6f033ab
++ `in[Yaml]` kodiert einen Wert als `Yaml`, und `show` schreibt ihn als Text im Block-Stil, in der
++ Formatierung im Geltungsbereich:
+
+% 2 1 0 18f7511b017abb8f1c478f8eed1b5cc1
+
+% 0 1 0 0dd199fba6079d380f53b48f83fb7a3d
+
+% 1 1 0 007cdeada2b97dbc0e638085af6f5061
+
+% 3 1 0 013ee040875606021870f263b29e0685
+
+% 4 1 0 1b6344a1c3f0d2a602034d181caccb36
+
+% 5 1 0 19ea9008fd34d35918ed104caf2402e1
+
+% 0 1 0 119d173953674c651947ff72257da50d
+
+% 1 1 0 04f513faea47c28006aca06a3ca0ff4c
+
+@ 0 2 0 0c67c1365724b09d153f72795ec60201
++ `in[Text over Yaml]` kodiert einen Wert direkt zu YAML-Text, in der `Yaml.Formatting` im
++ Geltungsbereich, und `in[Data over Yaml]` schreibt denselben Text als Bytes, in der `Codepage` im
++ Geltungsbereich.
+
+@ 0 4 0 0cc7d2559bed5cc6106f3066eaf1640c
++ Die Annotation `@name` benennt ein Feld im Dokument um, genau wie bei
++ [JSON](json.md#renaming-fields). Eine Aufzählung wird mit einem Diskriminatorfeld kodiert, das durch
++ Import von `yamlByTypeDiscriminable` oder `yamlByKindDiscriminable` gewählt wird, wie es eine
++ [getaggte Union](json.md#tagged-unions) tut.
+
+@ 0 1 0 144fe1e096ebc90c106331620bc1b49e
++ ### Optionale Felder
+
+@ 0 2 0 00da43a1c39f8650152b43b426b1a0b0
++ Für ein `Optional`-Feld gibt es drei Richtlinien aus dem Paket `optionalityOptions`, wie
++ [Dekodierung](decoding.md#policies-for-optional-fields) beschreibt:
+
+% 2 1 0 1ff5e61f994af8121ff43395e4a39323
+
+@ 0 6 0 036317af79d8cacb11e020573f42104d
++ column  Ein Schlüssel, der
++ column  Wird gelesen als
++ column  Außer
++ row  im Mapping fehlt  `Unset`  `strictYamlAbsence` macht es zu einem Fehler
++ row  ein explizites `null` erhält  `Unset`  `strictYamlNulls` übergibt es dem inneren Decoder
++ row  vorhanden ist, aber vom inneren Decoder abgelehnt wird  ein Fehler  `lenientYamlFaults` liest es als `Unset`
+
+% 1 1 0 1108f27a8ae9366f01023988250e3bad
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 195aba314ddcc2cc02bed8f4b63d5882
+
+% 0 1 0 011a29bfb6df42140902f24b44480b73
+
+% 0 1 0 0786e7004c1af1c81d2c1e55a8457ed5
+
+% 0 1 0 1f642bece0f7f0f90c065fdc4b2e77a7
+
+% 0 1 0 018cc1224ee4ef13106f0801feee552b
+
+% 1 1 0 1f8d0b13609f14b7147baa99657b53af
+
+% 3 1 0 0e08145c3e9adb6d1f72ac91115576a3
+
+% 4 1 0 039b58e7697a1f310135a04af4a32b80
+
+% 5 1 0 00fee5e4ba274ec20ff2ce3d635662f7
+
+% 0 1 0 02e8d6b67100447e1405fcbd9ea217f7
+
+% 0 1 0 1f2a89d1afebd467031e1c016c6ba9ae
+
+% 1 1 0 07661fb9861c46ee0c745ac12530a0d2
+
+@ 0 1 0 0d2f1e153cbfefce0b7d5dd9ce281ee9
++ ### Skalare, Quotierung und Block-Stile
+
+@ 0 1 0 02db47b9e5545f5d0f6471f7f7df413d
++ Die meisten Überraschungen von YAML stecken in seinen Skalaren. Jeder Stil wird so behandelt, wie
++ die Spezifikation es vorschreibt:
+
+% 2 1 0 0f719eb6d1d474530f924bee4adf0ab1
+
+@ 0 7 0 1500b883a444c8fa1a98172c4f3e8af1
++ column  Skalar
++ column  Wird aufgelöst als
++ row  unquotiertes `true`  ein Boolean
++ row  unquotiertes `42`  eine ganze Zahl
++ row  unquotiertes `~` oder `null`  ein Null-Wert
++ row  `'…'`, einfach quotiert  Text ohne Escape-Sequenzen; ein Anführungszeichen wird verdoppelt, um eines aufzunehmen
++ row  `"…"`, doppelt quotiert  Text mit dem vollständigen Satz an Escape-Sequenzen
+
+% 1 1 0 0c3fbeceeba0bbf903c568b1b7e6337d
+
+@ 0 1 0 087d225fac337bcd17742aafdec18c4c
++ Ein quotierter Skalar ist immer Text, also bleibt `"42"` ein String:
+
+% 2 1 0 14f3ad7c92cfb81310410067295aa960
+
+% 3 1 0 1de6c70c5ead05d10d14e5250f002516
+
+% 4 1 0 1f379725da7c35401e621825af3e278a
+
+% 5 1 0 1dd9a43c42ec18751f6450e071c00e33
+
+% 0 1 0 10660e0f622b434405cbd932e1e19c9e
+
+% 1 1 0 14847fd70936fad819affa3280802e02
+
+@ 0 2 0 1a27437cc12161b518bda77aee87dcdc
++ Ein Block-Skalar bringt seine eigene Behandlung von Zeilenumbrüchen mit. Er hat einen
++ Stilindikator und einen optionalen *Chomping*-Indikator für den abschließenden Zeilenumbruch:
+
+% 2 1 0 08e0836100477ac415cfad6546759e77
+
+@ 0 7 0 0e7320a2a9d100731dc5d8ed793deb0a
++ column  Indikator
++ column  Wirkung
++ row  `|`  behält Zeilenumbrüche bei
++ row  `>`  faltet Zeilenumbrüche zu Leerzeichen
++ row  kein Chomping-Indikator  behält einen abschließenden Zeilenumbruch
++ row  `-`  entfernt den abschließenden Zeilenumbruch
++ row  `+`  behält jeden abschließenden Zeilenumbruch
+
+% 1 1 0 0c614b84d15a61d51369e3caf97ccf7c
+
+% 3 1 0 149ee8c3742cfc64044750a4201e7f1b
+
+% 4 1 0 0aa08463912ed75713e8caf5ecb0b910
+
+% 5 1 0 177f095b5470fb351d8bc32cea7168bc
+
+% 0 1 0 09edc3d4d1c6818700e2318be9369ddd
+
+% 0 1 0 0b533adee1be45a315ba9cfbd9d25c03
+
+% 0 1 0 0f8598b4fee101c60feb72c54f5f69d6
+
+% 1 1 0 16e9b7b74042a09a00b1919cf0f6c403
+
+@ 0 3 0 1af17e0d05449bb20b8b081a1a0a09db
++ Kommentare werden überall ignoriert, wo sie auftreten dürfen, ob nach einem Skalar oder auf einer
++ eigenen Zeile. Führender Leerraum, nachgestellter Leerraum und Leerraum am Zeilenende werden alle
++ so behandelt, wie die Spezifikation es verlangt.
+
+% 0 1 0 140952e0eb3777530cc4641fed18cda7
+
+@ 0 2 0 0a1735fd28f6416416faf12c75ef59c7
++ Ein Tag überschreibt den Typ, den der Inhalt eines Skalars sonst erhalten würde. So sagt YAML
++ „diese Zahl ist ein String“ und umgekehrt:
+
+% 2 1 0 1cfc57b7d017e3a21b061bac5bd51c07
+
+% 0 1 0 149748a466abfd5a142dc31eb38f88c8
+
+@ 0 6 0 1a32d64ca2a6096400fbbc056562c917
++ column  Löst einen Skalar auf als
++ row  `!!str`, `!`, `!!`  Text
++ row  `!!int`  eine ganze Zahl
++ row  `!!float`  eine Dezimalzahl
++ row  `!!bool`  ein Boolean, aus `true`, `True` oder `TRUE`, ebenso `false`
++ row  `!!null`  ein Null-Wert
+
+% 1 1 0 02d23883da0f8c64149e2ad0a56e7891
+
+% 3 1 0 13127530e1b962021cc87632979728a8
+
+% 4 1 0 1222240f98d00d861f3c4254133ac655
+
+% 5 1 0 054f1938d53d6cfa0e02209ac49566ef
+
+% 0 1 0 0f3ef0f8c21aeb8e095ac03312f0b850
+
+% 0 1 0 0f3ffc644122cdad0ce3e778117c60b6
+
+% 0 1 0 054f76e243e996391d145fb52e0b45fc
+
+% 1 1 0 1aff50b91d71deb70f2336eae6842d3c
+
+@ 0 1 0 1e19762dff34ff1209e9778a33ecd666
++ ### Anker und Aliasse
+
+@ 0 3 0 0dc19db19923f1170ed13afc722f4cde
++ Ein Anker benennt einen Knoten, und ein Alias verweist auf ihn zurück, sodass sich ein Dokument
++ nicht wiederholen muss. Aliasse werden beim Lesen des Dokuments aufgelöst, was auch immer der
++ verankerte Knoten war: ein Skalar, eine Flow-Sequenz oder ein Flow-Mapping oder ein ganzer Block.
+
+% 2 1 0 005ac46d00a3283c0120a3665fcaa617
+
+% 0 1 0 19353408f6c119d81fd66cf85d05416e
+
+% 1 1 0 110eb69c35ba84e603869b3547279dbf
+
+% 3 1 0 02129245b0517c740b91d9aab5c80209
+
+% 4 1 0 16a6fe3414d75d3e1db844c8996f9852
+
+% 5 1 0 13fa45e9374488f30222b67c549d80f9
+
+% 0 1 0 118ac1016899fe650220ea0a2c1bc324
+
+% 0 1 0 1a837f5cc2c02f830c6ddf1b05f70605
+
+% 1 1 0 0599f514b21d9ae30ebb37d3f14518d3
+
+@ 0 2 0 0bde4e4e52ae69b70394c02fe1e5b535
++ Das macht YAML-Konfigurationsdateien knapp, und das lässt einen naiven Parser sie falsch verstehen.
+
+@ 0 1 0 0046f691710be508029fc35f23a44a2f
++ ### YAML literal schreiben
+
+@ 0 3 0 1ae542b9791d466b06273847791da2ec
++ Der Interpolator `y"…"` schreibt YAML direkt. Er wird zur Kompilierzeit geprüft, und Werte werden
++ in ihn eingesetzt. Dasselbe Literal zerlegt ein Dokument in einem Pattern, wie es
++ [`j"…"`](json.md#matching-json) tut:
+
+% 2 1 0 0676ca010bfd7fee07badf49bec2d40c
+
+% 0 1 0 1a8b5d78ec8ed14c1c6038f705c9cca6
+
+% 0 1 0 1c6e9dd709006e4a15132d4a3007ff3f
+
+% 0 1 0 1ce64b2cb893507c030499b2e96ad96a
+
+% 0 1 0 1b7b4d6360cc336e15b0932c0f404fb3
+
+% 0 1 0 0a99ce6c794dab090d03d402ed727236
+
+% 1 1 0 1b5f2a7c888a90871c3fdd676412b333
+
+% 3 1 0 113b5dda3b701dd8037be254519c743c
+
+% 4 1 0 1e1aec30a23987b41db608d9083dbd89
+
+% 5 1 0 0ca39a0a7c7e180c156e9b8917caa143
+
+% 0 1 0 0a13a1c94aae08d60f8da4ea07113a73
+
+% 1 1 0 077384d7df096f431798fb4b39247d3b
+
+@ 0 1 0 0a429356bc825bc3171873cfbd26352d
++ ### Navigieren und Aktualisieren
+
+@ 0 2 0 13c3e803a0d934c11fa514204fdf7bd0
++ Bei aktiviertem dynamischem Zugriff wird ein Feld als Member gelesen, und die Zuweisung an ein Feld
++ liefert ein neues Dokument. Die Zuweisung von `Unset` entfernt ein Feld:
+
+% 2 1 0 10cf9f7d25c4178c0d0929ca7572059c
+
+% 0 1 0 179cf107e87a2dd21e14f123c29d7d36
+
+% 0 1 0 19576eb6051b3d5e02fc63895d25d6a6
+
+% 1 1 0 1a5a35a1d3af0c0410e939de94a4b3b5
+
+% 3 1 0 0c18e7c98c204c9c07b2268d0aaf96c6
+
+% 4 1 0 0ef06e91458b6b56106586f039c2028e
+
+% 5 1 0 0db392656218f9f508b015427e49addf
+
+% 0 1 0 19141bb6c6eda77b037c4104871ad0b3
+
+% 0 1 0 1fbd83c807dc6ad811b2f8a90ab43165
+
+% 1 1 0 11a7c1d47a2fcd4b16682871442d585b
+
+@ 0 3 0 0d5522b8ed25ec6a0b3f1abd6e6f7b96
++ Der Import gewährt dem Rest seines Geltungsbereichs die Berechtigung `Yaml is Dynamical`.
++ `dynamically[Yaml]:` gewährt sie stattdessen einem einzelnen Block, wie
++ [JSON](json.md#fields-as-members) beschreibt.
+
+@ 0 2 0 0f798bd7b491b4100061060129799de8
++ Eine tiefere Änderung geht über eine [Linse](optics.md), mit Optiken wie `Each` und `Filter`, um
++ viele Elemente auf einmal zu erreichen:
+
+% 2 1 0 0e08bbad3911c06d138bf0dea8dc7598
+
+% 0 1 0 0678876c8cd11ffb1ea44b7fda0845a7
+
+% 1 1 0 08f1c9525685563b03f49b50ae7e40c5
+
+@ 0 1 0 0dcce88508e255700e2daae9d9475b9b
++ ### Positionen und gesammelte Fehler
+
+@ 0 4 0 05440e99217508bb09d7a03376cf1e08
++ `parsing.trackPositions` in den Geltungsbereich zu bringen, schaltet die Verfolgung ein, wie bei
++ [JSON](json.md#source-positions). Jeder Wert merkt sich dann seine Zeile und Spalte, sodass ein
++ Dekodierungsfehler in die Quelldatei zeigen kann. Das ist der Unterschied zwischen „Feld fehlt“
++ und „Feld fehlt in Zeile 12“.
+
+% 2 1 0 1403d13b18232b2319b85782f41d09c9
+
+% 0 1 0 0486d8c05db7d50203b07ad1a55e9c35
+
+% 0 1 0 1203640f67749f1d1b345b2ac19c757e
+
+% 0 1 0 13604c4013e97f0d122a8823bd8805c3
+
+% 1 1 0 093d4239de9086a21f55f012eb26af56
+
+@ 0 4 0 0a69bcbfccc87d1d1a2833f23022b4fe
++ Unter einer Strategie, die [Fehlschläge sammelt](errors.md#accumulating-failures), sammelt die
++ Dekodierung jeden Fehler in einem Dokument, statt beim ersten anzuhalten. Jeder ist mit seinem
++ Pfad versehen, etwa `#/age` oder `#/email`, sodass die Probleme einer ganzen Konfigurationsdatei
++ gemeinsam gemeldet werden.
+
+@ 0 1 0 1b0aa8579bdb15441c061be469a6523b
++ ### Zahlen
+
+@ 0 3 0 128ea99a1019848a141c524d371386d0
++ Eine YAML-Zahl hat wie eine JSON-Zahl keine Grenze ihrer Genauigkeit. Eine Zahl jenseits des
++ Bereichs eines `Long` oder eines `Double` wird exakt aufbewahrt, als binär kodierte Dezimalzahl.
++ Ein langer Bezeichner oder eine genaue Dezimalzahl aus einer Konfigurationsdatei wird daher
++ unterwegs nie stillschweigend gerundet.
+
+@ 0 1 0 10246ca00ae1b3ed129e48cb651099b9
++ ### Den Baum überspringen
+
+@ 0 5 0 0f974645af5fb38b1eff3960dcf3f9e0
++ Die obigen Umwandlungen gehen alle über den Baum. Text wird zu einem `Yaml` geparst und dekodiert,
++ oder ein Wert wird zu einem `Yaml` kodiert und ausgeschrieben. Ein Datensatz kann stattdessen einen
++ *direkten* Parser und Printer tragen, die einmal mit `derives Yaml.Direct` in sein Begleitobjekt
++ abgeleitet werden. Ein einziger Import wählt dann den Weg für jeden Datensatz im
++ Geltungsbereich, wie bei [JSON](json.md#skipping-the-tree):
+
+% 2 1 0 078bdc01d0a64fed18c8f1781f0c270e
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 5 0 1fb2c43c320da8cb11ff2a85d00790ea
++ column  Für einen Datensatz
++ column  Für jeden anderen Typ
++ row  `codecs.direct`  ein direkter Parser und Printer  die Baum-Codecs, außer er hat eine eigene direkte Instanz
++ row  `codecs.derived`  die Baum-Codecs, selbst wo eine direkte Instanz im Geltungsbereich ist  die Baum-Codecs
++ row  `codecs.strict`  ein direkter Parser und Printer  ein Kompilierfehler, der den Typ nennt, außer er hat eine eigene direkte Instanz
+
+% 1 1 0 099c17edc222ba160e60ca5c9e2bcb67
+
+@ 0 2 0 0a2e10fc7effec92067b334e1ca139c9
++ Ein Typ, der kein Datensatz ist, ist eine Aufzählung oder eine versiegelte Hierarchie. Die Modi
++ sind Alternativen, also importieren Sie jeweils nur einen.
+
+@ 0 2 0 0d3ccd1237a9d65d0942f5fe99678afa
++ Ein direkter Printer schreibt den Text eines Datensatzes direkt aus seinen Feldern, ohne einen Baum
++ aufzubauen. Der Text ist derselbe, den `show` schreibt.
+
+@ 0 4 0 0b8e90037d9172f30e531b6d7fe34745
++ Ein direkter Parser liest die Felder direkt aus den Knoten des geparsten Dokuments. Um keinen
++ davon wird ein `Yaml` aufgebaut, und für kein Feld wird ein Codec gesucht. Das Dokument wird aber
++ trotzdem zuerst vollständig geparst. Anker und Aliasse bedeuten, dass ein Knoten auf jeden
++ früheren zurückverweisen kann, sodass ein Datensatz nicht gelesen werden kann, bevor das ganze
++ Dokument vorliegt.
+
+@ 0 1 0 0c7fa39597dc86da02895b6f5b8714e7
++ ### Konformität
+
+@ 0 4 0 0edab5b3016405931dc7bb7627a543b5
++ Der Parser wird gegen die [YAML-Testsuite](https://github.com/yaml/yaml-test-suite) geprüft, die
++ gemeinsame Fallsammlung der Community, einschließlich der Fälle, die darauf ausgelegt sind, Parser
++ zu brechen. Fälle außerhalb der unterstützten Teilmenge werden als bekannte Lücken festgehalten,
++ nicht stillschweigend übersprungen, sodass die Abdeckung angegeben und nicht bloß behauptet wird.
+
+@ 0 1 0 000bdbf872001d411d65b3d1651c5343
++ ### YAML über HTTP
+
+@ 0 3 0 1a06c494c5d2416e0ce5aa68e2d05a46
++ Ein `Yaml`-Wert ist ein Request-Body oder ein Response-Body mit dem Medientyp `application/yaml`,
++ und ein Body wird bei der Ankunft zurück zu `Yaml` geparst. Eine YAML-API wird daher mit demselben
++ Code verwendet und angeboten wie eine [JSON-API](json.md#json-over-http). Nur der Typ des Formats
++ unterscheidet sich.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 1 0 1a899cd431eeb2681e3b2cac7892b702
++ - [Annotationen](annotations.md), [CBOR](cbor.md), [CSV](csv.md), [XML](xml.md), [Netzwerkadressen](network-addresses.md) und [OpenAPI](openapi.md) teilen die Codecs von YAML und tragen seine Dokumente.

@@ -1,0 +1,53 @@
+orthant 2 language
+
+% 0 1 0 056a74de44515db50a2444c87b2ace96
+
+@ 0 1 0 1e236c8e352393a00f9d6bb179c9d681
++ Levée lorsqu'une expression mathématique écrite dans la notation abrégée Ergo ne peut pas être
++ analysée.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 094cf0b82ac93db81287e3857d422cf2
++ Ergo est une syntaxe compacte pour la notation mathématique, développée en MathML. Cette erreur
++ couvre une expression malformée : un regroupement déséquilibré, un opérateur inconnu ou un
++ opérande manquant.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 06a3f22bea25f0eb04720fd40e78925f
+
+% 0 1 0 05118ade26fb1e0d15c51b1c1beed87e
+
+% 0 1 0 10f72fbb530cd542089f20a11839316c
+
+% 0 1 0 09c9a0badd30297119075f4e1d1d4205
+
+% 0 1 0 1d014dcc71942976192ae5de388a3259
+
+% 0 1 0 013a7136191fa47d18a1d0d00aa87724
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 110e48681d57e6550db7896ea7883086
++ Le message nomme la position et la construction en cause. Lorsqu'une expression est réellement
++ complexe, l'alternative consiste à écrire directement le MathML.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0ce766a35b53b0a7000c3806dcdfe72c
++ - Source : `lib/archimedes/src/core/archimedes.Ergo.scala`

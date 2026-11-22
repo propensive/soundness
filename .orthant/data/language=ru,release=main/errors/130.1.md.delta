@@ -1,8 +1,0 @@
-orthant 1 language
-
-- Check that the element and its attributes are among those Savagery models. An SVG produced
-- by a drawing program may contain constructs outside that subset; reading it as plain
-- [XML](/doc/soundness/modules/xml.md) is the fallback.
-+ Проверьте, что элемент и его атрибуты входят в число тех, которые моделирует Savagery. SVG,
-+ созданный программой для рисования, может содержать конструкции за пределами этого подмножества;
-+ запасной вариант — прочитать его как обычный [XML](/doc/soundness/modules/xml.md).

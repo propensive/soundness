@@ -1,0 +1,457 @@
+orthant 2 language
+
+% 0 1 0 19ad1079971b1ef215dd71a23109c47c
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 4 0 0bce33c1495f117e042c72aac5495dc2
++ A comunicação de rede abaixo do HTTP é tratada por um único conjunto de operações, genérico em
++ relação ao transporte: [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol) cru,
++ [UDP](https://en.wikipedia.org/wiki/User_Datagram_Protocol) e
++ [sockets de domínio Unix](https://en.wikipedia.org/wiki/Unix_domain_socket).
+
+@ 0 4 0 0b8e1ec1aa0d6d3415663e7d481cb9f4
++ Um servidor *escuta* em um socket, com um handler para cada conexão. Um cliente *transmite* uma
++ mensagem e lê a resposta, mantém uma *troca* com estado, ou abre uma conexão *duplex* para tráfego
++ nos dois sentidos. Qual transporte leva os bytes é decidido pelo tipo do valor de socket, e não
++ por uma API diferente.
+
+@ 0 1 0 04e63d1e274d5e881bbc5e6ec4402da0
++ ### Sobre sockets
+
+@ 0 5 0 071bb6a8ab9939b51ea664c4b6f8d76d
++ Programar com sockets tem uma forma que é a mesma para todo transporte: vincular e aceitar de um
++ lado, conectar e conversar do outro. Mas a API de cada transporte difere nos detalhes. O TCP tem
++ conexões onde o UDP tem pacotes, e os sockets de domínio têm caminhos onde as portas têm números.
++ Código escrito para um raramente passa para outro, e todos expõem streams bloqueantes cujo tempo
++ de vida quem chama precisa gerenciar com precisão.
+
+@ 0 4 0 05795dbb3c58ecee053f7cd75b6534b1
++ Aqui a forma é abstraída em [classes de tipos][classe de tipos]. Um valor *vinculável* pode
++ servir, e um *conectável* pode manter uma conversa. Os transportes diferem apenas em quais
++ instâncias existem, de modo que um protocolo escrito sobre um tipo de socket roda sobre outro,
++ onde isso faz sentido.
+
+@ 0 2 0 0436ccf6dc4215671dbde5b89b95636b
++ Tudo vem do pacote `soundness`. A [concorrência](concurrency.md) está em escopo, para os
++ handlers das conexões:
+
+% 2 1 0 144f61c5f750f1981a4ed6231b9bebc0
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 10d199dc1f673997065b6030312b5591
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 1 1 0 0bebf89a4b673102173f41e5cf4c9ef9
+
+@ 0 1 0 1399de8b953cdbfe10e49d64b7d80912
++ Os exemplos desta página abrem conexões, então são compilados, mas não executados.
+
+@ 0 1 0 1353f137610bddec0f806bc903166d61
++ As operações, cada uma tratada abaixo:
+
+% 2 1 0 018f1b0d548e2bf5027131b11d156ad7
+
+@ 0 9 0 04504fa10e87612a0080f3bf671f028e
++ column  Operação
++ column  Lado
++ column  Faz
++ row  `listen`  servidor  executa um handler para cada conexão ou pacote, durante um bloco
++ row  `subscribe`  servidor  entra em um grupo multicast e executa um handler para cada datagrama
++ row  `transmit`  cliente  envia uma mensagem e devolve o stream da resposta
++ row  `react`  cliente  mantém uma conversa como uma máquina de estados
++ row  `duplex`  cliente  abre uma conexão bidirecional persistente
++ row  `session`  cliente  empresta uma conexão a um bloco e a fecha quando o bloco termina
+
+% 1 1 0 0e5c4f60a189487c1b6eb919597261b3
+
+@ 0 1 0 181964f461c030d701b6371a110e0b0c
++ ### Servindo
+
+@ 0 3 0 13b9acada329f4411995f8447f00ad78
++ `listen` vincula um socket e executa um handler para cada chegada: uma conexão, para TCP e
++ sockets de domínio, e um pacote, para UDP. Cada handler roda em uma tarefa própria. O listener
++ roda durante o bloco que recebe, e para quando o bloco termina:
+
+% 2 1 0 13eeb6fe487465d91523616705231e64
+
+% 3 1 0 14f38000f6c5706807cc4957a2a78a3c
+
+% 4 1 0 0f7e35e52b8c774c16c0da293ba4f399
+
+% 0 1 0 05af7644a005abcb092796af84753a23
+
+% 2 1 0 165362d573cf03bf1c7cdc3094755c3f
+
+% 0 1 0 096d9ea8b935877101162dcf440f28a7
+
+% 0 1 0 13a0e3817530661f1c8dd4b263a1ffd1
+
+% 1 1 0 1d758d506d9ec3b4199a98dd9378f66d
+
+% 2 1 0 0bb8363d24144be90dbe6f83a8f2f8b5
+
+@ 0 2 0 07d194498abeb359061ef4641f6f00f6
++ `Port[Tcp]()` pede ao sistema operacional uma
++ [porta que não esteja em uso](network-addresses.md#ports).
+
+@ 0 4 0 1b5db4b8c63f0319065bc6ef3a81f326
++ O endpoint decide a forma do handler, nos dois lados. Um endpoint com estado entrega ao handler
++ algo por meio do qual ele pode manter uma conversa. Um sem estado lhe entrega um payload e recebe
++ uma resposta de volta. Assim, o mesmo `listen` funciona corretamente para uma conexão TCP e para
++ um datagrama UDP, sem que o handler precise declarar com qual está lidando.
+
+@ 0 2 0 0fe3b96c262c4bae16d1386234d47d76
++ Um handler UDP recebe um `Packet`, que é o datagrama com seu remetente. Ele responde com uma
++ resposta, ou com silêncio:
+
+% 2 1 0 16be206aeaa2a62e13a1a193aec4b773
+
+% 3 1 0 10a7f6125bce38c9162701c799d02f20
+
+% 4 1 0 0091c7c68894172d0adfe10c8c01e212
+
+% 1 1 0 0e8d146f6af1d04c05e0867a018ea3bf
+
+% 0 1 0 1e86a0cbb7810f451936412b71c42a9d
+
+% 1 1 0 06854df816d6d85f154b59a7b04bb607
+
+% 2 1 0 0fb76dfacf2997e109a1f4a64b26583b
+
+@ 0 1 0 1ca19c0d353f230a00bfd5816738cfee
++ Assim, cada transporte é escolhido pelo valor de socket:
+
+% 2 1 0 0ca9ec1bbfc9989618ec47c9dfbf17a9
+
+@ 0 6 0 06e5e3de8590dfcc1c80658f50221bb8
++ column  Transporte
++ column  Valor de socket
++ column  Um handler recebe
++ row  TCP  uma `Port[Tcp]`, ou um `Endpoint` de uma, ao qual conectar  uma conexão
++ row  UDP  uma `Port[Udp]`, ou um `Endpoint` de uma, ao qual enviar  um `Packet`
++ row  Domínio Unix  um caminho `Uds`  uma conexão
+
+% 1 1 0 0ea14db091298b750a1f9896309aedd8
+
+@ 0 1 0 04e181c0459a21670e38be8fe7dbd33d
++ ### Clientes
+
+@ 0 3 0 14003cb2120c6ab11b5b0d370b7a1ab5
++ Um cliente que faz uma requisição e espera uma resposta envia uma mensagem e lê o stream da
++ resposta com `transmit`. Uma mensagem é qualquer coisa *transmissível*: bytes, texto, ou qualquer
++ valor que se codifique como texto.
+
+% 2 1 0 01b6146c7748c5b01e6ba385d986193c
+
+% 3 1 0 022f08161bad0ec4057834303d0389c9
+
+% 4 1 0 0d390868a3bc92f90c0dbe2437c10021
+
+% 0 1 0 18a7acc34f07f7621c22677afaf41624
+
+% 1 1 0 06b4690d2e0be9ba1c8ca781cb109a12
+
+@ 0 2 0 03da6fa35403746506ec6f8ef956a2c2
++ `duplex` abre uma conexão persistente nos dois sentidos, enviando e recebendo de forma
++ independente. É o transporte por baixo do [HTTP/2](http-server.md#http2):
+
+% 2 1 0 05d4ed03f6a3a5130393bc547e6f38b4
+
+% 3 1 0 1e2107e5cf73f4b5153a4d4359ed838d
+
+% 4 1 0 1951b5016f1151740e11182cb4fcecf7
+
+% 0 1 0 1771d3f2959ab008195f51553224be45
+
+% 0 1 0 0ccc58dc665ca5a80ebc825cc6c4ef95
+
+% 0 1 0 09f853960e3c9dfd1472f0b434bd3230
+
+% 1 1 0 14b75da0a3b0a472073c75a831bd0623
+
+@ 0 1 0 1512ad337f808ec9020294bf4e8838b6
++ `duplex.source` é o lado de leitura, um [`Stream[Data]`](streams.md).
+
+@ 0 1 0 11b47e421d6c37bb1452912897d06265
++ ### Sessões
+
+@ 0 3 0 002bf41eabc4b0480de1d087df6e62c5
++ Uma [sessão] é a mesma ideia, expressa como escopo. `session` abre uma conexão com o alvo, a
++ empresta ao bloco e a fecha quando o bloco termina. Um valor que ainda toma emprestada a conexão
++ ativa não pode escapar do bloco, ao passo que um valor que já foi lido para a memória pode:
+
+% 2 1 0 00861546e1db257f1a00c03e83d9ed22
+
+% 3 1 0 0499d438a736866d0e92df40a16ec57d
+
+% 4 1 0 1a8d17f7eb4ec7c21bb4eb432e2ea865
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 190d2799638d62bd1d04c532435f05a8
+
+% 0 1 0 0fc7d4bdb54bc4891ab6ecf9316ac116
+
+% 0 1 0 11e476408769c4f308c09a5152e742da
+
+% 0 1 0 0db5fa0ee2c45e24188ce719fc348740
+
+% 1 1 0 14a95475b33be71515d1af97061feca9
+
+@ 0 3 0 0263b54fbbce94dc0a63cbb92e6e5b0d
++ Uma [sessão HTTP](http-client.md#sessions) é construída sobre isso. É assim que requisições
++ concorrentes compartilham uma conexão HTTP/2, sem uma thread estacionada para gerenciá-la: o
++ empréstimo e o escopo coincidem.
+
+@ 0 1 0 118cd74113e39b640f954a3f79763fdb
++ ### Conversas como máquinas de estados
+
+@ 0 3 0 0eeae6c7b68fc58607f1ba32539e9381
++ `react` mantém uma conversa no lado do cliente, como uma máquina de estados. Cada mensagem
++ recebida dá um `Control`, que diz o que acontece em seguida. `Continue` leva o novo estado, ou
++ nenhum, para deixá-lo inalterado. `Terminate` encerra a conversa:
+
+% 2 1 0 1b5a158c009c7cb20b98b12532fa60f5
+
+% 3 1 0 02b04fcf55924ae412db0c5a01b76314
+
+% 4 1 0 1e17b974213cfe1f1b17661512e085cc
+
+% 0 1 0 07b33d7909c91aab1171898ac05cde59
+
+% 0 1 0 155e53aa5b790ee80946dea491457b80
+
+% 1 1 0 0b03676ef612a6e41b9a4393bbb0ba4c
+
+@ 0 2 0 08e7af73178def4b0e030e749b1f5bc1
++ Escrever um protocolo dessa forma mantém seus estados explícitos. Eles não ficam implícitos no
++ ponto em que o controle por acaso está, em uma sequência de leituras e escritas intercaladas.
+
+@ 0 1 0 0bc85202c2a8c45809699e22407a09f0
++ ### Mensagens e suas conversões
+
+@ 0 3 0 014ea1940dd39a1e1a8bc085fc6bb6ec
++ O que um socket envia e recebe não são bytes, mas valores. `Transmissible` diz como um valor vira
++ bytes na saída. `Ingressive` diz como bytes viram um valor na entrada. Um protocolo é, portanto,
++ escrito em seu próprio vocabulário:
+
+% 2 1 0 06e0852fc321a76b0968665c1c73a09b
+
+@ 0 5 0 1b45eac541f0cb4f148ab3b95447f0b3
++ column  Instância
++ column  Uma mensagem é recebida como
++ row  `Ingressive.bytes`  `Data` cru
++ row  `Ingressive.text`  texto, decodificado pela codificação de caracteres em escopo
++ row  `Ingressive.decoder[Port]`  qualquer tipo com uma instância [`Decodable`](decoding.md), aqui uma `Port`
+
+% 1 1 0 07a3807fd4138cf61a70e25604c8aa9e
+
+@ 0 2 0 11033a869d4784ae0f2843a984d19e7d
++ Uma `Port` recebida pela rede é, portanto, uma `Port`, validada na chegada, e não texto a ser
++ verificado depois.
+
+% 0 1 0 131fcca0d6e249c302d801891a41790d
+
+@ 0 5 0 1fa90ce1b2010045185443b3ad8c2a51
++ A um grupo multicast se faz uma assinatura, não se escuta nele. `subscribe` entra no grupo em
++ toda interface que esteja ativa e seja capaz de multicast, e executa o handler para cada
++ datagrama que o grupo entrega. Ele empresta uma `Multicast.Subscription`, que também pode enviar
++ ao grupo sem ser solicitada. Essa é a forma de um serviço que se anuncia, como faz o mDNS. Um
++ handler responde ao grupo, ao remetente individual, ou a ninguém:
+
+% 2 1 0 1b211682d40c17160c54fdcea2ffb49e
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 17f13357e6bab14b0bb00584ad6ddafc
+
+% 2 1 0 0b00590658fa408202d3a5abcdac3c31
+
+% 0 1 0 05b36c2afd29b91f1f11b92d68dfe7b5
+
+% 0 1 0 023a251ccf1df52a1198be1e6caa3adc
+
+% 0 1 0 160edfd95d5b0588063b48fcd62c5f5c
+
+% 1 1 0 1775ae778a81466a120b070021d41734
+
+@ 0 1 0 051ad3dd0c1e55f00b5748bbf8e190c4
++ A opção `multicastLoopSocketOption` permite que o programa veja também seus próprios anúncios.
+
+@ 0 4 0 0e9f2e2cc5f20f380a90267b44ffc371
++ A porta do grupo é vinculada com reutilização do endereço e da porta, de modo que vários
++ programas em um host podem assinar lado a lado, como este e o próprio responder mDNS do sistema.
++ Um grupo é um endereço, então um protocolo falado tanto sobre multicast IPv4 quanto IPv6 assina
++ dois. A [descoberta de serviços](service-discovery.md) é construída sobre isso.
+
+@ 0 1 0 0252a5acf74b2e200de1b9b8118ac343
++ ### Trocas de datagramas
+
+@ 0 3 0 0754e168875ed95809d2a14ef3b71e3c
++ Alguns protocolos sobre UDP enviam um datagrama e recebem um de volta: uma consulta DNS, ou uma
++ requisição NTP. O `exchangeUdp` do backend faz exatamente isso, a partir de uma porta efêmera,
++ limitado por um `Socket.Option.Timeout` em escopo. `coaxial.dns` constrói sobre ele um cliente
++ DNS tipado.
+
+@ 0 4 0 183d0961f04f81fe0a22968c4593b059
++ Um servidor de nomes é um `Endpoint` de uma porta UDP. `query` envia uma
++ [`Dns.Message`](network-addresses.md#dns-names-and-messages) e devolve a resposta que lhe
++ corresponde. Dados um nome e um tipo de registro, que é `A` por padrão, ele faz a pergunta comum
++ diretamente e devolve os registros que a respondem:
+
+% 2 1 0 0ae63ff04819d14f0e86cd5ccd68f8af
+
+% 3 1 0 1104c91349f6221519802b8cb53a5f93
+
+% 4 1 0 0426067b093fb7350a6ce93bb4165f8e
+
+% 0 1 0 1568c9d0cead4929119648a53e093841
+
+% 0 1 0 1bdb69f9e2e8b3d9149093e9291e21ac
+
+% 0 1 0 1fb1205d037bcd391cb4de2f521cefae
+
+% 1 1 0 077c06acfee8f7db0bf1dc69e01511f9
+
+@ 0 2 0 0d56dc806970dd6917bd4a43bf322281
++ Uma resposta cujo ID ou cuja pergunta difere dos da consulta é um datagrama perdido, e é um
++ `Dns.Error(Mismatch)`. Uma resposta que nunca chega é um `Dns.Error(Timeout)`.
+
+% 0 1 0 128bb70ceeaea11600e60cd617d815b2
+
+@ 0 8 0 0cbb833f3c5401980c6d244e88e13327
++ Uma conexão TLS é feita por meio de um endpoint seguro, e a política de confiança é um
++ [valor contextual]. O handshake pode oferecer protocolos
++ [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation), em ordem de
++ preferência, e o protocolo que o par selecionou é informado de volta na conexão. É isso que um
++ cliente HTTP usa para escolher entre um driver HTTP/2 e um driver HTTP/1.1 sobre um mesmo socket.
++ Não oferecer nada preserva o handshake TLS simples que os pares `wss` esperam. A
++ [criptografia](cryptography.md#certificates) gera os certificados que um servidor apresenta.
+
+@ 0 1 0 170d6aeb162539931b04a203fed8f369
++ ### Opções de socket
+
+@ 0 4 0 1c853fb1cbd7b2b5171c485a83753fd6
++ As opções de socket da plataforma subjacente, como `SO_REUSEADDR`, keep-alive, os tamanhos dos
++ buffers e os timeouts, são valores tipados, coletados do escopo. Cada uma só é válida para os
++ transportes que a suportam, de modo que uma opção exclusiva do TCP não pode ser aplicada a um
++ socket UDP. Uma flag é um given, importado pelo nome:
+
+% 2 1 0 087f40475502593b0985c57f70fcd24e
+
+% 0 1 0 0fb4926dc50ffe4a0f08c461f184ef80
+
+% 0 1 0 0d1d960365544c820cd6fd54416d859d
+
+% 0 1 0 11a4bac4acb6d9701a9dadf7714e19ea
+
+% 1 1 0 0b20f165e27516560f9b1d730ead645c
+
+@ 0 2 0 02d229b227aa45d2196c1611e6a7b6a6
++ Uma opção que leva um valor é criada por um método do mesmo pacote e fornecida em seu próprio
++ tipo, como em `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)`:
+
+% 2 1 0 1ffe506b1cdb013d0dbabc76a05d06d3
+
+@ 0 16 0 1ed4d178ffc5b63e14f02a9a3241d1c7
++ column  Opção
++ column  Em escopo com
++ column  Transportes
++ column  Para
++ row  `SO_REUSEADDR`  `reuseAddressSocketOption`  TCP, UDP, domínio  um servidor que precisa reiniciar sem esperar o fim de `TIME_WAIT`
++ row  `SO_REUSEPORT`  `reusePortSocketOption`  TCP, UDP  vários sockets em uma porta (depende do SO)
++ row  `TCP_NODELAY`  `noDelaySocketOption`  TCP  um protocolo que não pode esperar pelo algoritmo de Nagle
++ row  `SO_KEEPALIVE`  `keepAliveSocketOption`  TCP  sondagens de keep-alive em uma conexão ociosa
++ row  `SO_BROADCAST`  `broadcastSocketOption`  UDP  enviar para um endereço de broadcast
++ row  `IP_MULTICAST_LOOP`  `multicastLoopSocketOption`  UDP  receber nossos próprios datagramas multicast
++ row  `SO_RCVBUF`  `receiveBuffer(bytes)`  TCP, UDP, domínio  o tamanho do buffer de recepção
++ row  `SO_SNDBUF`  `sendBuffer(bytes)`  TCP, UDP, domínio  o tamanho do buffer de envio
++ row  `SO_TIMEOUT`  `timeout(milliseconds)`  TCP, UDP, domínio  limitar uma espera bloqueante
++ row  `SO_LINGER`  `linger(seconds)`  TCP, domínio  quanto tempo um fechamento espera por dados não enviados
++ row  `IP_TOS`  `trafficClass(value)`  TCP, UDP  a classe de tráfego
++ row  `IP_MULTICAST_TTL`  `multicastHops(count)`  UDP  quantos saltos um datagrama multicast percorre
+
+% 0 1 0 0f2bed8aa7e6961717544fd19f931ad4
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+% 0 1 0 12b8c5e3f3ad77581a9f20dfad2bace8
+
+% 0 1 0 0d871831a234ae3b1f7bb20a81709367
+
+@ 0 1 0 0ee1d7d35ed7ac120563ebd89cdcb9dc
++   cell  o maior datagrama recebido inteiro: 1472 bytes, a menos que definido
+
+% 1 1 0 0bc8830baca69773117fac23f0206f4f
+
+@ 0 3 0 17f63ae208ee8c161ca6efb80fe88fc4
++ As opções são coletadas do escopo como um conjunto, e não passadas a cada chamada, de modo que a
++ política de um programa para seus sockets é declarada uma vez. Um backend ignora em silêncio uma
++ opção que sua plataforma não suporta, e não falha.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Erros
+
+@ 0 4 0 0c4d8773940625671cfd306f52ac75d7
++ A vinculação pode falhar, porque a porta está em uso, ou porque a permissão é negada. Isso é um
++ `Bind.Error`. Uma conexão estabelecida pode falhar ao ser aceita, durante a transmissão, ou ao
++ ser fechada. Isso é um `Socket.Error`. Cada um nomeia seu motivo, e é tratado como qualquer outro
++ [erro](errors.md).
+
+@ 0 1 0 0f4ef2945e9b28a90956cbc6da521484
++ ### Escolhendo um backend
+
+@ 0 5 0 0819998fe8bb7aec0447338addfba0f0
++ Nada acima nomeia a API de uma plataforma. As operações primitivas de que cada papel precisa são
++ reunidas em um `Socket.Backend`: vincular e aceitar, conectar e conversar, receber e responder, e
++ despachar um datagrama. Os laços que as compõem permanecem neutros entre plataformas. Três
++ backends fornecem as mesmas operações, de modo que o mesmo código de protocolo roda na JVM,
++ dentro de um componente WebAssembly e em um binário nativo:
+
+% 2 1 0 05b2c09bd4ee3917149dcbe5ce2cc2e1
+
+% 0 1 0 011ba08513eeef2e0960fe824bf15d13
+
+@ 0 6 0 1cdb51a331d07437142e684af066b152
++ column  Plataforma
++ column  Sobre
++ column  Não suportado
++ row  `socketBackends.javaBaseSockets`  JVM  `java.nio.channels`  nada
++ row  `socketBackends.wasiSockets`  WebAssembly  `wasi:sockets`  sockets de domínio Unix, UDP, multicast, TLS
++ row  `socketBackends.scalaNativeSockets`  Scala Native  os sockets de Scala Native  sockets de domínio Unix
+
+% 1 1 0 083b9e92bd7d9e270fdbce9dc97f0982
+
+@ 0 3 0 18878cb3ec34d5c5131a7338f0f970e4
++ Uma operação que um backend não consegue suportar lança o erro apropriado. Ela nunca é
++ aproximada. Estreitar a superfície da plataforma a uma costura tão pequena é
++ [desacoplamento](../../philosophy/decoupling.md) aplicado dentro de uma biblioteca.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 5 0 0bf3d3cac94a1cfd0e38db65cb8408ea
++ - [Cliente HTTP](http-client.md) e [servidor HTTP](http-server.md) são construídos sobre esses
++   sockets.
++ - [Endereços de rede](network-addresses.md) descreve as portas, os endereços IP e os nomes DNS
++   usados aqui.
++ - [Streams](streams.md) descreve os streams que uma conexão lê e escreve.
++ - [RPC](rpc.md) constrói chamadas remotas tipadas sobre uma conexão.

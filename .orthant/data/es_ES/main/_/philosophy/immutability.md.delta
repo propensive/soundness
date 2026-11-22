@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 5 0 1f52db954f55f5811eeec5c28a446ede
++ La objeción a la inmutabilidad es siempre la misma: cambiar un campo en lo más profundo de una
++ estructura obliga a reconstruir todas las capas que hay por encima. Es cierto, y es un problema de
++ sintaxis y no de semántica, así que Soundness lo resuelve con sintaxis. Una
++ [lente](/doc/soundness/modules/optics.md) recibe la actualización escrita como una asignación corriente a
++ una ruta y hace la reconstrucción:
+
+@ 0 5 0 13b944085c973784002ec33f12ef5462
++ Un **`Canvas`**, que se obtiene abriendo un [ráster](/doc/soundness/modules/images.md) para escritura, muta
++ los píxeles en su sitio, porque generar una imagen grande con una llamada a una función por píxel
++ no es la forma adecuada para un algoritmo de dibujo. La mutación está limitada al ámbito del
++ bloque `open` y condicionada por la concesión `Write`, y `snapshot` toma una copia independiente
++ para lo que deba sobrevivirle.

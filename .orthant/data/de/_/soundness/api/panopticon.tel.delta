@@ -1,0 +1,565 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 10efbdd20e3809211af2be742c6914bb
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f40d2d7170c79531cce01d07ecd11b0
++ info   Linsen und Optiken: tiefe Aktualisierungen unveränderlicher Werte, geschrieben als Pfad und Zuweisung
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1ae4f85ca1837062081c1ebc348dc9f5
++     _Panopticon_ aktualisiert einen Wert tief in einer unveränderlichen Struktur ohne die
++     verschachtelten `copy`-Aufrufe, die sonst jede Schicht darüber neu aufbauen würden. Die
++     Methode `lens` nimmt Aktualisierungen entgegen, die als einfache Pfadzuweisungen geschrieben
++     sind — `_.troupe.name = t"Athenians"` —, und gibt den neuen Wert zurück; dabei baut sie nur
++     die Struktur auf den Pfaden neu auf, die sie berührt. Ein Schritt in Klammern traversiert
++     eine Collection: Ein `Ordinal` wählt ein Element, `Each` erreicht jedes Element, ein
++     Schlüssel indiziert eine `Map`, und ein `Filter` wählt nach einem Prädikat aus.
+
+% 2 1 0 159753f29161479713f4d5b56d9a241a
+
+% 3 1 0 157c2e34d1e6bc920ee14aa955230ff6
+
+% 5 1 0 1ca2fcfa937b7b4b1f0e742dacd8cbfd
+
+% 6 1 0 1036f4e2a5c21bf91441c6bdb3699516
+
+% 7 1 0 006fa8b3a62668c41e09911ca2188fd8
+
+% 9 1 0 0df7836e33baa44008a3374586693243
+
+% 10 1 0 025c619a058ed0130b524c17e07c20b9
+
+% 0 1 0 0804d9f51e11dae90a38b9fa0785e566
+
+% 0 1 0 08544f31381734b71dec5d6bf088ad95
+
+% 0 1 0 136a92ecbb3f777f011df0260d11cc78
+
+% 1 1 0 046ba66d482540581cbbcf74a5b592f5
+
+@ 0 6 0 05a24b116a27022b01bdc5a80cfc7014
++     Unter der Syntax liegen gewöhnliche Werte. Eine `Lens` ist ein Getter und ein Setter, und
++     eine `Optic` die allgemeinere Form, die nur verändern kann — ein Element, viele oder keines.
++     Eine Linse auf ein beliebiges Feld einer Case-Klasse wird als `"field" is Lens from Type`
++     herbeigerufen und vom Compiler aus der Struktur des Typs erzeugt (`Optic.deref`); ein
++     `Optical` macht aus einem Traversierungswert wie `Each` oder einer Ordinalzahl eine Optik
++     über eine bestimmte Collection; und zwei Linsen oder zwei Optiken werden mit `compose` zu
++     einer zusammengesetzt, die ganz hindurchreicht.
+
+@ 0 6 0 0ec360cc8a0577091153b053790644cd
++     Dieselbe Syntax aktualisiert die dynamischen Datenformate. Jedes Format liefert in seinem
++     Paket `optics` eine Linse und Opticals über seinen eigenen Werttyp — `jsonLens` und
++     `jsonEachOptical` für JSON, `xmlLens` für XML, `telLens` für TEL, `dsvCellLens` und
++     `dsvRowOptical` für CSV und DSV —, und diese Givens werden namentlich importiert, da
++     `import soundness.*` keine Givens importiert. Das Paket `conversions` des Formats
++     (`encodableToJson`, `encodableToTel`, …) erlaubt es, über `Coercible` einen bloßen
++     kodierbaren Wert rechts vom `=` zu schreiben.
+
+% 2 1 0 0dc8be526a9c50a515916ee76c6693f1
+
+% 3 1 0 0aa5862386e97b59001658fd0f6220f1
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0037aac004db6d471410c533b397137f
+
+% 0 1 0 104f9f1971d042480354a38aead165d8
+
+% 0 1 0 0467d098d584f57108ca2b20d0ab3c42
+
+% 1 1 0 0cc4e0e8f225d1e5134a73c25a653ea5
+
+% 0 1 0 0f8a03eda2655cdb135e393c02d7854b
+
+% 0 1 0 1723ed2741446b5f09046bc9f9c87708
+
+% 0 1 0 03aa343011ffcbf512832a7d1bd53e8a
+
+% 1 1 0 1de2b1d23efb407d1dc795fef3d1bced
+
+@ 0 5 0 06f8f78359b075220cd2c9ff1217f44e
++     Aktualisierungen mit gemeinsamem Präfix werden vom Makro `lens` verschmolzen, sodass die
++     gemeinsame Struktur einmal neu aufgebaut wird; ein Pfad, den das Makro nicht analysieren
++     kann (eine `Filter`-Traversierung, deren Operand kein Singleton ist), fällt darauf zurück,
++     die Aktualisierungen nacheinander anzuwenden, mit demselben Ergebnis. Spätere
++     Aktualisierungen in einem Aufruf sehen die Ergebnisse früherer: Von zwei Schreibvorgängen
++     in ein Feld gewinnt der spätere, und ein Schreibvorgang innerhalb eines Felds nach einem
++     Schreibvorgang des ganzen Felds verfeinert diesen.
+
+@ 0 2 0 1bd281366295277d0752e2debc7f7fbc
++     Die Bibliothek ist ein Source-Set, `panopticon.core`, und alles wird in das
++     `soundness`-Umbrella exportiert.
+
+% 0 1 0 04c386209ed80fd008997d80fa8d8d3f
+
+% 0 1 0 06f01d1ed72f5ab20143f1571973d4c8
+
+% 0 1 0 06f872f02d5aa3a5195660342741d7dd
+
+% 0 1 0 00ccb63578bf38ad0738ecf1c4a4d0a3
+
+% 0 1 0 113c48392b88fe7b171752c0b73c780c
+
+@ 0 3 0 120a88f8695361260a9a418f21abdd4a
++ entry .lens   wendet als Pfadzuweisungen geschriebene Aktualisierungen auf einen Wert an und gibt den neuen Wert zurück
++     `value.lens(update, …)` nimmt ein oder mehrere Lambdas entgegen, jedes ein Pfad vom Wert
++     aus, der in einer Zuweisung endet, und wendet sie der Reihe nach an:
+
+% 2 1 0 16e00a05d70217521325af7f31f0217f
+
+% 3 1 0 1e11c2a36025b99814d42a91497d18c1
+
+% 5 1 0 17896adb2ccf31230f3ffbc19833952e
+
+% 6 1 0 0e5e981e918d727e01239fbab6051971
+
+% 7 1 0 1c3dc7a5fc3acd5b0cfd703b1a0f854f
+
+% 9 1 0 040f242502a5384105e5c152a4aa1d94
+
+% 10 1 0 1651029ff2d96e971a4235634bf430e9
+
+% 0 1 0 02e317ff5ba5a66c1ed351d41c176ee5
+
+% 0 1 0 01e4cedf7052b1080f963f273ca19b40
+
+% 0 1 0 1a2ffbc235b139711b3212ec5d452844
+
+% 0 1 0 17ce339509d36937086ca61bd02e536e
+
+% 0 1 0 12ceb033656c76b719bc6cbd390fa021
+
+% 1 1 0 1a35596c434bd54b0ecc237d479dd89c
+
+@ 0 7 0 199e41e7200dab7e15a90c544f36ba59
++     Ein Feldschritt braucht eine `Lens` für diesen Namen und Typ: Für eine Case-Klasse erzeugt
++     `Optic.deref` eine, und ein Format liefert eine in seinem Paket `optics`. Ein Schritt in
++     Klammern braucht ein `Optical` für die Traversierung und die Collection: `Ordinal`s über
++     `List` und `Sequence`, einen Schlüssel oder einen Schlüssel-`Filter` über eine `Map`, `Each`
++     und einen Element-`Filter` über eine `List`, und was immer ein Format definiert. Innerhalb
++     einer Zuweisung ist `prior` der Wert, der ersetzt wird. Die rechte Seite kann von jedem Typ
++     sein, der `Coercible` zum Ziel ist: von dessen eigenem Typ oder einem Untertyp oder von
++     einem, für den eine `Conversion` im Geltungsbereich ist.
+
+@ 0 4 0 029debebed4c376a1d0ec58fc5c7d33d
++     Das Makro gruppiert Aktualisierungen mit gemeinsamem Pfadpräfix, sodass die Struktur
++     entlang dieses Präfixes einmal neu aufgebaut wird, wie viele Felder darunter sich auch
++     ändern; wo ein Schritt weder ein Feld noch eine Singleton-Traversierung ist (ein `Filter`),
++     wendet es stattdessen jede Aktualisierung einzeln an. Ein Pfad, der ein Feld nennt, das der
++     Typ nicht hat, ist ein Kompilierfehler, _`Type` has no field called `name`_.
+
+@ 0 6 0 038c506e4e8e0350132ed982c206add3
++ entry .compose   setzt zwei Linsen oder zwei Optiken zu einer zusammen, die durch beide hindurchreicht
++     `left.compose(right)` verbindet eine Linse von `A` auf `B` mit einer von `B` auf `C` und
++     ergibt eine Linse von `A` auf `C`, die liest, indem sie beide liest, und schreibt, indem
++     sie beide neu aufbaut; zwei Optiken werden ebenso zu einer Optik zusammengesetzt. Dafür
++     ist ein `Composable` für das Paar nötig, das das Begleitobjekt von `Composable` für Linsen
++     und für Optiken bereitstellt. Das Ergebnis fängt ein, was immer die beiden Teile
++     einfangen, sodass das Zusammensetzen einer fehlbaren Linse eine fehlbare ergibt.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1cc04b117558347a12e3d9b0ed63b6ea
++       label Eine Linse auf den Helden eines Stücks
+
+% 1 1 0 0d583492fdecc46317c15a4b0f08dabd
+
+% 2 1 0 1c03cb7ee26f707f19947645586c8e73
+
+% 4 1 0 011b31b5f12046c0036c181e19c48dc3
+
+% 5 1 0 0fa715ec868d60a91bdea006ce24b111
+
+% 7 1 0 04b98e1c917c71671987fab91e698f43
+
+% 8 1 0 0379ef6cd2f14ae909614148db032b5d
+
+% 0 1 0 1aca6f1b2d6d193816da1616a2c0c595
+
+% 1 1 0 0ffacd5dfeb601d70d4b0086f0ad034c
+
+@ 0 1 0 08aea89d5d125c410c088446151d994c
++       label Zusammengesetzt mit einer Linse auf den Namen einer Person
+
+% 1 1 0 1fd18e8cfd91699117b6400d3f6d1400
+
+% 2 1 0 05ff6428b6166ad507cd11da9dce8d69
+
+% 4 1 0 0c1ae2f42c67d78017bcf78bd51cfde3
+
+% 5 1 0 1cc7a453dfb8e76d1a80f74e8dce6809
+
+% 7 1 0 0f6e48d08f4e5a791ff0b955794820f4
+
+% 8 1 0 1357ea4a9650e90205210aecfb0132dd
+
+% 9 1 0 1548f12eb14d1df21e75b3590fb1d0c2
+
+% 10 1 0 06efde621dd6321709d5b5ca175d54d8
+
+% 0 1 0 0314bc0e5e8b63f41a7e0ad886c06cd6
+
+% 1 1 0 16fabd09fbb2e7aa1c4b0c894e6a11b1
+
+@ 0 1 0 07e4509cf95bafb6153476e1b15efd16
++       label Angewendet, um den Namen des Helden zu schreiben
+
+% 1 1 0 175df34cd6315e650cf596c0e6ac5968
+
+% 2 1 0 01632377551b731d157a5e15d482f3af
+
+% 4 1 0 0d059e09029fcdf71e9ab1aa6512c3e1
+
+% 5 1 0 0934044ec0e6ba21166203a60123ce00
+
+% 7 1 0 10ad9922d37a4f6c025937416edbe247
+
+% 8 1 0 194b440572f4be941053884616164b64
+
+% 9 1 0 16f053b0296fdd6211138841ce1e71c9
+
+% 10 1 0 1d1530facb163b110e2b41aeaff630c0
+
+% 0 1 0 17c0af4c733bc8c908cac2b6533add3a
+
+% 1 1 0 08b2ca7672eab45206e5c66c59ef8953
+
+@ 0 1 0 0f1069e544cddb33004b81cd6ce4f6ed
++       label Angewendet, um ihn zu verändern
+
+% 1 1 0 1eff2c19ff1bae051e69e4ebd4630b0e
+
+% 2 1 0 115a6c59688a7846102b72c26bf8a4c9
+
+% 4 1 0 18919065dd3e7a1a00159d3304b6b2bb
+
+% 5 1 0 14663e4646cc5cd00748194389f6f559
+
+% 7 1 0 1f0680e9e55d2397021acd2d08bd0ef0
+
+% 8 1 0 1e41f4e80887aab10b6e383f780dd6ad
+
+% 9 1 0 00b9d0892f8deb640fc2713bcefc7eb5
+
+% 10 1 0 14c8ddf7aae790b707904ee5ecf9f3d9
+
+% 0 1 0 0e126c14797129c3148eeb490cebe85d
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 2 0 140a50d011ecb46301500ae71b91f52a
++     Wo der ganze Pfad an einer Stelle bekannt ist, sagt `lens` es direkter; das Zusammensetzen
++     ist für Pfade gedacht, die aus getrennt gehaltenen Teilen zusammengefügt werden.
+
+@ 0 1 0 09f29d42cef59b0b1d25be0dfcc25b3a
++ entry .Optic   eine Art, den Teil oder die Teile eines Werts zu verändern, auf die sie fokussiert: die allgemeine Form einer Linse
+
+% 1 1 0 09718f88eb66fb0c141e7b0dee871c9e
+
+@ 0 4 0 1005d1077e5ffd461aa17dba264f4245
++       `Optic from Origin onto Target` kann mit `#modify` einen `Origin` neu aufbauen, indem sie
++       die `Target`s transformiert, auf die sie fokussiert. Anders als eine `Lens` muss sie nicht
++       auf genau ein Ziel fokussieren: Eine Optik über die Elemente einer Liste fokussiert auf
++       alle, und eine über einen fehlenden Schlüssel auf keines, sodass sie verändern, aber
++       nicht lesen kann. Jede `Lens` ist eine `Optic`.
+
+% 2 1 0 0ebc4c50b71881d20f20fb9783d1143c
+
+% 3 1 0 02d466da3af871260f0ce706b85d0042
+
+% 0 1 0 0c0919d6fec0590f19752e87c52559ab
+
+% 0 1 0 07dced4c495da3761e079aa9da7e101c
+
+% 1 1 0 11869d858d4ae3ca189ae935b037c790
+
+@ 0 5 0 0d93f15a92e617e91cb24a0f7625e2d1
++       Optiken erweitern sich dynamisch, und so wird ein `lens`-Pfad typisiert: `optic.name`
++       setzt sich durch die Feldlinse für `name` fort, `optic(traversal)` durch das `Optical`
++       für die Traversierung, und `optic.name = value` oder `optic(traversal) = value` beendet
++       den Pfad mit einer Zuweisung und ergibt die Funktion von `Origin` nach `Origin`, die sie
++       ausführt. Die Methode `lens` beginnt jeden Pfad bei `Optic.identity`.
+
+@ 0 3 0 1ff6843c854908b81d17da675b4dd78f
++       Eine `Optic` wird von Capture-Checking verfolgt (`Findable`): Eine, die über einer
++       fehlbaren Transformation aufgebaut ist, etwa der Linse eines Formats, die eine `Tactic`
++       braucht, fängt diese ein, und ebenso jede aus ihr zusammengesetzte Optik.
+
+% 0 1 0 12dd9d846bbe37f00908b515092c9715
+
+% 1 1 0 168f4773cb5786800c6afdaa8ffcce7f
+
+% 1 1 0 0c44643257a8514d198b85dda66337fa
+
+@ 0 32 0 03d30c3a91a323eb00db3dcd7c1d7f88
++   entry .deref   die Linse auf ein Feld einer Case-Klasse, nach Namen erzeugt: `"name" is Lens from Type`
++       Ein Transparent-Inline-Given, sodass `summon["name" is Lens from Person]` eine Linse ist,
++       deren `Target` der genaue Typ des Felds ist. Sie liest das Feld und schreibt es über das
++       `apply` des Begleitobjekts, wobei die anderen Felder unverändert bleiben. Sie gilt für
++       jeden `Product`-Typ; ein Name, für den der Typ kein Feld hat, ist ein Kompilierfehler,
++       _`Person` has no field called `nmae`_. Das Given kann nicht innerhalb eines zitierten
++       Ausdrucks expandiert werden: Ein solches Herbeirufen gehört in eine gewöhnliche Methode.
++   entry .identity   die Optik, die auf den ganzen Wert fokussiert: der Anfang jedes `lens`-Pfads
++   entry .apply   eine Optik aus ihrer Veränderungsfunktion: wie der Ursprung aus einer Transformation des Ziels neu aufgebaut wird
++       `Optic[Self, Origin, Target]((origin, transform) => …)` baut eine Optik, deren `modify`
++       die Funktion aufruft. Das Ergebnis fängt ein, was immer die Funktion einfängt, sodass
++       eine Optik über eine Transformation, die eine `Tactic` braucht, diesen Bedarf dorthin
++       trägt, wo sie verwendet wird. So erzeugt ein `Optical`-Given seine Optiken.
++   entry .prim   die Optik auf das erste Element einer Liste, für die Traversierung `Prim`
++       Verändert den Kopf einer Liste und lässt den Rest; eine leere Liste bleibt unverändert.
++   entry #Self     der Typ, nach dem die Optik geschlüsselt ist: der Literaltyp eines Feldnamens oder der Typ einer Traversierung
++   entry #Origin   der Typ des Werts, den die Optik verändert
++   entry #Target   der Typ des Teils oder der Teile, auf die die Optik fokussiert
++   entry #modify   baut einen Wert neu auf, indem das Ziel oder die Ziele transformiert werden, auf die die Optik fokussiert
++       `optic.modify(origin)(transform)` wendet die Transformation auf jedes fokussierte Ziel an
++       und gibt den neu aufgebauten Ursprung zurück; ein Ziel, das nicht vorhanden ist (ein
++       fehlender Schlüssel, eine Ordinalzahl hinter dem Ende), lässt den Ursprung unverändert.
++   entry #selectDynamic   `optic.name`: die Optik, fortgesetzt durch die Linse für das Feld `name`
++   entry #updateDynamic   `optic.name = value`: die Funktion, die das Feld `name` am Fokus der Optik setzt
++       Der Wert darf sich auf `prior` beziehen, den Wert, den er ersetzt, und wird durch ein
++       `Coercible`-Given in den Typ des Felds umgewandelt. Diese Gestalt hat jede Zuweisung in
++       einem `lens`-Aufruf.
++   entry #update   `optic(traversal) = value`: die Funktion, die jedes Ziel setzt, das die Traversierung erreicht
++       Braucht ein `Optical` für die Traversierung über das `Target` der Optik, und der Wert muss
++       `Coercible` zum Zieltyp der Traversierung sein.
++   entry #applyDynamic   `optic.name(traversal)`: die Optik, fortgesetzt durch ein Feld und dann eine Traversierung davon
++   entry #apply   `optic(traversal)`: die Optik, fortgesetzt durch eine Traversierung wie `Each` oder eine Ordinalzahl
++       Braucht ein `Optical` für den Typ der Traversierung über das `Target` der Optik.
+
+@ 0 1 0 0f0bada81576db6017e089e3d22a49a9
++ entry .Lens   ein Getter und ein Setter für einen Teil eines Werts: eine Optik, die auch lesen kann
+
+% 1 1 0 1c027f3a16c6a1f80f1d8a1a971ecab3
+
+@ 0 4 0 10b9dabe77f7910b16956bf64e4b40e0
++       `Lens from Origin onto Target` liest das Ziel mit `#apply` aus einem Ursprung und schreibt
++       mit `#update` eines zurück, wobei ein neuer Ursprung zurückgegeben wird. Eine Linse auf ein
++       Feld einer Case-Klasse wird nach Namen erzeugt (`Optic.deref`), und ein Format stellt eine
++       für seine eigenen Felder bereit; jede andere wird mit `Lens(get, set)` aus ihren beiden
++       Funktionen gebaut.
+
+% 2 1 0 13a2871fb64122ef0945bdfdfbeb5eed
+
+% 3 1 0 01dab87694d9d2ab0f88ca12474f8deb
+
+% 5 1 0 154e018a6e794e6a1b691fea67b9448e
+
+% 0 1 0 1a38f3cdea664b321f6bcbead332d797
+
+% 0 1 0 01f7a216fc32c0c81e82539f11d75186
+
+% 0 1 0 0a6d3ff23e19c94c1cdcef73a79391b4
+
+% 0 1 0 0ece9e3a1d328d7712caebee37384fbe
+
+% 0 1 0 079123dc1810379f04fba9f1445da005
+
+% 1 1 0 1b588a00a411a23e11c2ccbb25613994
+
+@ 0 1 0 1c69f9a5abd3d04003334d9ce49e3136
++       Zwei Linsen werden mit `compose` zu einer Linse durch beide zusammengesetzt.
+
+% 0 1 0 0df0cb7d418f51310b892fc726d940df
+
+% 1 1 0 0421ab9ead5ce9300bb24756c9ee5e14
+
+@ 0 8 0 048051de85c1a3051dd10d1bc35b973f
++   entry .apply   eine Linse aus einem Getter und einem Setter
++       `Lens[Self, Origin, Target](get, set)`: `get` liest das Ziel aus einem Ursprung, und `set`
++       nimmt einen Ursprung und ein neues Ziel und gibt den neu aufgebauten Ursprung zurück. Die
++       Linse fängt ein, was immer die beiden Funktionen einfangen, sodass eine, deren Accessoren
++       eine `Tactic` umschließen, eine einfangende Linse ist und die Anforderung ihre
++       Verwendungsstelle erreicht.
++   entry #apply    liest das Ziel aus einem Wert
++   entry #update   eine Kopie eines Werts mit ersetztem Ziel: `lens(origin) = target`
++   entry #modify   eine Kopie eines Werts mit transformiertem Ziel: lesen, die Funktion anwenden, zurückschreiben
+
+@ 0 1 0 0f4eb116d00967fd12d6205943b6681f
++ entry .Optical   macht aus einem Traversierungswert wie `Each` oder einer Ordinalzahl eine Optik über eine Collection
+
+% 1 1 0 1f8b4d0891494f411d55b0ddbde630fc
+
+@ 0 4 0 14d3cc7321d512e91f85ee5b0b53f672
++       `Traversal is Optical from Origin onto Target` erzeugt aus einem Wert des
++       Traversierungstyps eine `Optic from Origin onto Target`. Es gibt einem Schritt in Klammern
++       in einem `lens`-Pfad seine Bedeutung: `_.players(Each)` verwendet das `Optical` für
++       `Each.type` über den Typ von `players`. Das Begleitobjekt stellt bereit:
+
+@ 0 5 0 09a0b341ba611bec1390b1e5136e7706
++       - `ordinalList` und `ordinalSeries`: Ein `Ordinal` wählt ein Element einer `List` oder
++         einer `Sequence`, die unverändert bleibt, wenn die Ordinalzahl hinter ihrem Ende liegt;
++       - `at`: Ein Schlüssel wählt einen Wert einer `Map`, die unverändert bleibt, wenn der
++         Schlüssel fehlt;
++       - `filter`: Ein `Filter` über Schlüssel wählt jeden Wert einer `Map`, dessen Schlüssel passt;
++       - `filter2`: Ein `Filter` über Elemente wählt jedes Element einer `List`, das passt.
+
+@ 0 2 0 0a915a3fdc8a985e02ccbc5def26f305
++       `Each` hat sein eigenes in seinem Begleitobjekt, und ein Format stellt seine Opticals in
++       seinem Paket `optics` bereit, zum namentlichen Import.
+
+% 2 1 0 1fbd6f04378b927005cca6fd19a6bcb7
+
+% 3 1 0 0311f8e1955dbe0b156a799d2151d34d
+
+% 5 1 0 00a7fc6d09cb71ea02ea8f801ace1812
+
+% 0 1 0 1137ab43ee34eec01d873987e0bb0c2c
+
+% 0 1 0 1cfa727a515930b716be02be9dd73c1f
+
+% 0 1 0 05c5d32365c23b98024f85cfca7adb0a
+
+% 0 1 0 1ead02ec3deb64cc10b47830339cbbaf
+
+% 0 1 0 1577b5b0fd6e92d70a74fa3900b079c2
+
+% 1 1 0 05c489fea6c9db6908350015b736c79d
+
+% 0 1 0 17c8bcb46789b7c916b12a6b99e138d9
+
+% 0 1 0 0c538d6c46a068211969a65f1df4ce4a
+
+@ 0 9 0 006110241fd87ff814fd990907a38e0f
++   entry .ordinalList     ein `Ordinal` als die Optik auf ein Element einer `List`
++   entry .ordinalSeries   ein `Ordinal` als die Optik auf ein Element einer `Sequence`
++   entry .at              ein Schlüssel als die Optik auf seinen Wert in einer `Map`; ein fehlender Schlüssel lässt die Map unverändert
++   entry .filter          ein `Filter` über Schlüssel als die Optik auf jeden Wert einer `Map`, dessen Schlüssel passt
++   entry .filter2         ein `Filter` über Elemente als die Optik auf jedes Element einer `List`, das passt
++   entry #Self     der Traversierungstyp
++   entry #Target   der Typ der Teile, auf die die Optik fokussiert
++   entry #Origin   der Typ der Collection, die die Optik verändert
++   entry #optic    die Optik für einen Wert des Traversierungstyps
+
+@ 0 1 0 0bc059a216c24c840fb05a77af27a1db
++ entry .Each   die Traversierung, die jedes Element einer Collection erreicht
+
+% 1 1 0 14d380e4e53393681b8a8d66eb1b958e
+
+@ 0 4 0 0f06255fc675d97a08780e728500e15e
++       `_.players(Each)` in einem `lens`-Pfad fokussiert auf jedes Element von `players`, sodass
++       eine Zuweisung alle aktualisiert: `play.lens(_.troupe.players(Each).age = 0)`. Das Given
++       des Begleitobjekts deckt `List` ab; Formate stellen eigene für ihre Arrays bereit
++       (`jsonEachOptical`, `xmlEachOptical`, `telEachOptical`, `dsvRowEachOptical`).
+
+% 1 1 0 174be2064228c1a1195015b0c22798d0
+
+@ 0 1 0 1917770d7db295b31e62f26dde90a4ed
++   entry .optical   `Each` als die Optik auf jedes Element einer `List`
+
+@ 0 1 0 101823071de5b8f415bce4854ff981f5
++ entry .Filter   eine Traversierung, die die Elemente oder Map-Werte erreicht, deren Element oder Schlüssel ein Prädikat erfüllt
+
+% 1 1 0 1080b5124bf86abf0a95206d8074a78e
+
+@ 0 4 0 1137dcf78377ce9d07198abd5adfa492
++       `Filter[Person](_.age > 25)` in einem `lens`-Pfad fokussiert auf die Elemente einer Liste,
++       die das Prädikat erfüllen; `Filter[Text](_ == t"villain")` über eine `Map` fokussiert auf
++       die Werte, deren Schlüssel es erfüllt. Das Prädikat ist eine reine Funktion: Ein Filter
++       ist Teil einer Optik, die ein reiner Wert ist, sodass das Prädikat weder eine Capability
++       noch veränderlichen Zustand einfangen darf.
+
+% 2 1 0 026bd1660639ed5a17ff6e86374bfe8e
+
+% 3 1 0 040288c0986d97111f94f298c504cd5b
+
+% 5 1 0 0b0a3553e82b7f78151f99bcae870f96
+
+% 0 1 0 05f1ff44f75b82f5079e1ec4a3bdceca
+
+% 0 1 0 00c9321f158eb02d1c74203f5b7e2c33
+
+% 0 1 0 09cacfc0200253b302a970b80ecc0fd6
+
+% 0 1 0 0a49f0c6efd4cb620c0c26af4c90fe1a
+
+% 0 1 0 03752679f4279bf611227b325d7daf14
+
+% 0 1 0 0b49c62a943fb7b317dd1034114dd711
+
+% 1 1 0 0c8fb5f4ed3f43ba0e2d116edb0e9c14
+
+@ 0 2 0 0cc781843ed4d83c07b887371096c4bc
++       Ein `lens`-Aufruf mit einem `Filter`-Schritt kann nicht verschmolzen werden, da sein
++       Operand kein Singleton ist, und so werden seine Aktualisierungen einzeln angewendet; das
++       Ergebnis ist dasselbe.
+
+% 1 1 0 1d7849f3833d713902b308c3822dc56f
+
+@ 0 1 0 1fb04eaa9c25de1f17816c85df23dbda
++   entry #predicate   die Prüfung, die ein Element oder ein Map-Schlüssel bestehen muss, um fokussiert zu werden
+
+@ 0 1 0 1390bf743c9a666701c1be414a823a14
++ entry .Coercible   Nachweis, dass ein Wert dort zugewiesen werden darf, wo der Zieltyp einer Linse erwartet wird
+
+% 1 1 0 198cf77162558a7714b6cc73542236bf
+
+@ 0 8 0 1338b7620f6ff57a15b8803d2b89369e
++       `Source is Coercible to Target` wandelt die rechte Seite einer Zuweisung in einem
++       `lens`-Pfad in den Typ dessen um, was sie ersetzt. Ein Wert des Zieltyps oder eines
++       Untertyps braucht keine Umwandlung (`identity`, in `Coercible2`, mit niedrigerer
++       Priorität); ein Wert, für den eine `Conversion` zum Ziel im Geltungsbereich ist, wird
++       umgewandelt (`conversion`). Auf diese Weise erlaubt das Paket `conversions` eines Formats
++       — `encodableToJson`, `encodableToYaml`, … —, einen bloßen `Text` oder eine Case-Klasse in
++       ein Dokument zuzuweisen, und auf diese Weise erlaubt die Konversion von Gossamer, ein
++       String-Literal einem `Text`-Feld zuzuweisen. Eine Zuweisung ohne `Coercible` ist ein
++       Kompilierfehler, _cannot coerce `Source` to `Target` in this assignment_.
+
+% 1 1 0 187360d2d4f206b808bfece275a44190
+
+@ 0 4 0 1ed6016c867958af15c4abc15f53b417
++   entry .conversion   wandelt jeden Wert um, für den eine `Conversion` zum Zieltyp im Geltungsbereich ist
++   entry #Self     der Typ des zugewiesenen Werts
++   entry #Result   der Zieltyp, dem er zugewiesen wird
++   entry #coerce   wandelt den zugewiesenen Wert in den Zieltyp um
+
+@ 0 1 0 19f072dd961190b7152d860542ae6750
++ entry .Coercible2   das `Coercible`-Given mit niedrigerer Priorität, für einen Wert, der schon den Zieltyp hat
+
+% 1 1 0 171b7919e2b29a131c50a0c5deede63a
+
+@ 0 3 0 080e1b7fd4cabb951ac8597a648de6c6
++       In das Begleitobjekt von `Coercible` eingemischt, sodass eine `Conversion`, wo es eine
++       gibt, zuerst versucht wird.
++   entry #identity   ein Wert des Zieltyps oder eines Untertyps, so zugewiesen, wie er ist
+
+@ 0 1 0 0e3b088d3f1568220aa4195c4990ad09
++ entry .Composable   wie zwei Linsen oder Optiken zu einer zusammengesetzt werden, die durch beide hindurchreicht
+
+% 1 1 0 1b72456bf501e29618c71f1561242802
+
+@ 0 3 0 15eee343e2a8dbf11c39623d1c7747f9
++       `Left is Composable by Right to Result` ist die Typklasse, die `compose` braucht. Das
++       Begleitobjekt liefert eine für zwei Linsen, die eine Linse ergibt, und eine für zwei
++       Optiken, die eine Optik ergibt; das Zusammengesetzte fängt ein, was immer seine Teile
++       einfangen.
+
+% 1 1 0 1db1513adef9ccca1bc3eb938368f50e
+
+@ 0 6 0 19d74cd840a612991849101169f67787
++   entry .optics   setzt eine Optik von `A` auf `B` mit einer von `B` auf `C` zusammen
++   entry .lenses   setzt eine Linse von `A` auf `B` mit einer von `B` auf `C` zusammen und ergibt eine Linse, die liest und schreibt
++   entry #Self          der Typ der linken Seite
++   entry #Operand       der Typ der rechten Seite
++   entry #Result        der Typ des Zusammengesetzten
++   entry #composition   die Zusammensetzung eines linken und eines rechten Werts, die beide einfängt
+
+@ 0 1 0 05cf5cea1428a41a1a1507d7665897db
++ entry .internal   die Makros hinter `lens` und `Optic.deref`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 1a2905295a2bd75b1bd946052de065f3
++       Nicht zur direkten Verwendung: Das Objekt existiert, damit die Makros ein stabiles Zuhause haben.
++   entry .lens   das Makro hinter `Optic.deref`: die Linse auf ein Feld einer Case-Klasse, nach Namen
++   entry .fuse   das Makro hinter `lens`: gruppiert Aktualisierungen nach gemeinsamem Präfix und baut jedes Präfix einmal neu auf

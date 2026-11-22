@@ -1,8 +1,0 @@
-orthant 1 language
-
-- Nesting is deterministic too, but a nested scope does not continue the sequence of the scope
-- enclosing it. Each scope starts afresh from the `Randomization` in scope, so under the same seed
-- an inner scope repeats the first draws of the outer one.
-+ O aninhamento também é determinístico, mas um escopo aninhado não continua a sequência do escopo
-+ que o envolve. Cada escopo recomeça a partir da `Randomization` no escopo, então, sob a mesma
-+ semente, um escopo interno repete os primeiros sorteios do externo.

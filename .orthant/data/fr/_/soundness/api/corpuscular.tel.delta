@@ -1,0 +1,489 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1419c199c87f09a716d897571d592da1
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 06384c8e740db55d1a8c16c732c4e35d
++ info
++     les sommes de contrôle CRC-32, CRC-64 et Adler-32, et la `Digestion` incrémentale qu'alimente
++     tout hachage
+
+@ 0 5 0 101c80ea95c20eed0ac840f207bb4fdf
++ detail
++     _Corpuscular_ contient les trois sommes de contrôle non cryptographiques dont ont besoin les
++     formats de compression et de conteneurs — `Crc32` (gzip, PNG, ZIP, XZ), `Crc64` (la forme
++     ECMA-182 qu'utilise XZ) et `Adler32` (zlib) — ainsi que l'interface `Digestion` au moyen de
++     laquelle tout hachage de Soundness, cryptographique ou non, est calculé de façon incrémentale.
+
+@ 0 6 0 014017e83f55804407f905f816d3082e
++     Chaque somme de contrôle est nommée deux fois. En tant que **type**, `Crc32` est un
++     `Algorithm`, un marqueur qui nomme la somme de contrôle en position de type : une valeur
++     reçoit donc sa somme de contrôle avec le même `digest[Crc32]` que celui avec lequel elle est
++     hachée par `digest[Sha2[256]]`, au moyen de gastronomy. En tant qu'**objet**, `Crc32` crée un
++     `Crc32.Accumulator` courant, une `Digestion` mutable pour le code qui fournit des octets au
++     fil de leur passage et lit la somme de contrôle sous la forme de l'entier qu'un format de
++     conteneur écrit dans son trailer.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1a94ea18d9ba3afe12b51cc7d574e969
+
+% 0 1 0 1c9738c047469a341d2a96b1813d4d1e
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 1e404fe2bff6e6610c0b85f4b2228256
+
+% 0 1 0 074261751fe351b51cb0c863efdcf261
+
+% 0 1 0 03cbb34af1e02d35150e3cd7c88679bb
+
+% 0 1 0 1e20b38aecfb172e09776a80bb680410
+
+% 0 1 0 18c45e59b0925c4f0185d317380b948b
+
+% 1 1 0 1c5416bc9626d17a1e6147ba927123cc
+
+@ 0 7 0 1b670c0418c3da2c121a4dcd9cd43217
++     Une somme de contrôle détecte une corruption accidentelle et ne protège contre rien : `digest`
++     avec l'une d'elles est donc soumis au permis
++     `cryptoPermits.permitNonCryptographicHashes` de gastronomy, qui concède qu'aucun adversaire ne
++     figure dans le modèle de menace. Le fournisseur du JDK, `providers.javaBaseProvider`, propose
++     CRC-32 et Adler-32 ; CRC-64 n'a pas d'implémentation dans le JDK, et n'est proposé que par
++     `providers.soundnessProvider`, qui utilise les implémentations de cette bibliothèque pour les
++     trois. La même entrée donne la valeur de contrôle publiée avec chacun :
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 0a1936722edc2a0c11f64770a6628716
+
+% 1 1 0 02749d0fdf58669b04220e45c8933bc1
+
+% 2 1 0 0bec4a69dc7ba1a40e9e00b2dc0d1855
+
+% 3 1 0 03f9754a510f68991e20292fa1cfd6e6
+
+% 0 1 0 0ae38e960889630b076b85581dec183b
+
+% 0 1 0 08a8a5c5d348a581106f022baeba1933
+
+% 1 1 0 11ef13e9e3362e4f13b32cbe85df577e
+
+% 2 1 0 0a9f2c60d4bdde8113a6424914493c78
+
+% 3 1 0 066f89fbfb17449219664c64c2ae2ae4
+
+% 0 1 0 000d1240738cdbce0b563161f3a18a3a
+
+% 0 1 0 16d7760bbfc544870b42e5fab0b3e0e6
+
+% 1 1 0 1879e4bcff85d1ca04430ae1b76f5d05
+
+% 2 1 0 0a8571ed587de19b07fd469bcf9fb116
+
+% 3 1 0 1c4c60dbdd13270f12537837ac0c31df
+
+% 0 1 0 0c1cb6fc07e9e90b1e4935aab37ceaeb
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 4 0 00e7dd4867b01ed01a490fcc384568e9
++     La bibliothèque a un seul ensemble de sources, `corpuscular.core`, écrit en Scala portable :
++     les sommes de contrôle calculent donc les mêmes valeurs sur la JVM, Scala.js, Scala Native et
++     WebAssembly. `Adler32`, `Algorithm`, `Crc32`, `Crc64` et `Digestion` sont exportés vers le
++     package parapluie `soundness`.
+
+% 0 1 0 1b8683a9c12fec06023fb43c7afe81ed
+
+% 0 1 0 0844c343521906821b8c52c6854fdbbc
+
+% 0 1 0 089129042379844f0d7666f7f28dceaa
+
+% 0 1 0 075bce279f516beb039a97ab9f26acec
+
+% 0 1 0 18be7dab9dfafae60f304bb88a4a8a6a
+
+@ 0 1 0 1bd8419d6601f5211b11060a7f95750a
++ entry .Algorithm
++   info
++       le type marqueur d'un algorithme de hachage ou de somme de contrôle, nommé en position de
++       type comme dans `digest[Crc32]`
+
+@ 0 5 0 186f808b640efcf303608e8483f5422f
++   detail
++       Un trait sans membres. Chaque algorithme avec lequel Soundness peut hacher est un type qui
++       l'étend : les sommes de contrôle `Crc32`, `Crc64` et `Adler32` ici, et les `Sha2[256]`,
++       `Sha1`, `Md5`, `Blake3` et `Murmur3` de gastronomy. Les algorithmes ne sont jamais
++       instanciés ; un `Digest in Crc32` porte son algorithme dans son type : des condensés issus
++       d'algorithmes différents ne sont donc jamais confondus.
+
+@ 0 1 0 1d152179b90a163618e28e502a45678e
++ entry .Digestion
++   info
++       un calcul incrémental de hachage ou de somme de contrôle : ajouter des octets, puis lire
++       le condensé
+
+@ 0 6 0 183aad0fc7114b68026e021e83cb01eb
++   detail
++       Une `Digestion` est l'état mutable d'un hachage en cours. Elle est honnêtement mutable — un
++       `caps.Mutable`, dont `append` et `digest` sont des méthodes `update` — : une nouvelle
++       instance est donc une `Digestion^` exclusive, et chaque calcul a besoin de la sienne. Les
++       accumulateurs des sommes de contrôle (`Crc32.Accumulator`, `Crc64.Accumulator`,
++       `Adler32.Accumulator`) l'implémentent directement, et les fournisseurs `Hashing` de
++       gastronomy en fournissent une pour chaque hachage cryptographique.
+
+% 2 1 0 045f1bf3e8523a63008c7aa3a8a86df6
+
+% 3 1 0 03edc219c82d75ac1c0526f1e64cafd8
+
+% 0 1 0 1d23ee73391c3a9513f1f8d7e177e00a
+
+% 0 1 0 10b2afa1f14f9d4c1fba33a7a4e898c5
+
+% 0 1 0 017b73e31da16858143f81c739c10076
+
+% 0 1 0 1db1956b4e4ec50306c19599b0bd3233
+
+% 1 1 0 119f02a7c21aa6ff1789e415ffb4bb39
+
+@ 0 3 0 12199b63d5a29aff0e51868bd8e5d4b9
++       Un consommateur de flux qui lit dans une fenêtre réutilisable l'alimente avec l'`#append` à
++       fenêtre plutôt que d'en prendre un instantané : le hachage consomme son entrée de façon
++       synchrone et ne la conserve jamais.
+
+% 0 1 0 0255169508086e3015145186898d53c0
+
+@ 0 1 0 0657df5ee3372aee15da61101906ce06
++   entry #append
++     info
++         fournit des octets au calcul : la totalité d'un `Data`, ou une fenêtre d'un tableau
++         mutable
+
+@ 0 4 0 0fa9c7ff094ac5d2062d79c9b408bd44
++     detail
++         `append(bytes)` hache la totalité d'un `Data` immuable. `append(array, start, count)`
++         hache `count` octets d'un tableau mutable à partir de `start`, ce qui ne nécessite qu'un
++         accès en lecture à celui-ci ; l'implémentation par défaut copie la fenêtre, et les
++         accumulateurs des sommes de contrôle la redéfinissent pour lire le tableau sur place, sans
++         allocation.
+
+@ 0 1 0 147d3dd199ee89a01104eadb55a790e9
++   entry #digest
++     info
++         le résultat jusqu'ici, sous forme d'octets
+
+@ 0 4 0 05d4c3a25e1eb34d1ddf4de867a46c29
++     detail
++         Pour les sommes de contrôle, la valeur de la somme de contrôle sous forme d'octets
++         big-endian : quatre pour `Crc32` et `Adler32`, huit pour `Crc64`. La possibilité d'ajouts
++         ultérieurs dépend de l'implémentation ; les accumulateurs des sommes de contrôle la
++         permettent, et le résultat couvre alors chaque octet ajouté.
+
+@ 0 1 0 1a29ddcd1322b7981fed4d97b3d32479
++ entry .Crc32
++   info
++       la somme de contrôle CRC-32 standard, telle qu'utilisée par gzip, PNG, ZIP et XZ
+
+@ 0 6 0 0275727d3c7670fa00ccee24950d2518
++   detail
++       Le CRC-32 réfléchi de polynôme `0xedb88320`, dont la valeur de contrôle pour `123456789` est
++       `0xcbf43926`. En tant que type, c'est un `Algorithm` : `digest[Crc32]` calcule donc la somme
++       de contrôle de toute valeur hachable au moyen de gastronomy (derrière
++       `cryptoPermits.permitNonCryptographicHashes`). En tant qu'objet, il propose la méthode
++       ponctuelle `.checksum` sur plusieurs segments et l'`.Accumulator` courant.
+
+% 3 1 0 12b33af144aeab2805914a41616ec2a2
+
+% 4 1 0 1f0a50f10146b1a41836bf094365eacf
+
+% 0 1 0 09730c1324e280861b3abc366113ccb8
+
+% 0 1 0 132fe1dab4722ef304758c21df95b4af
+
+% 1 1 0 1eb818675efbec2511628e369b557482
+
+% 0 1 0 1e1e6b686953f98f04ad5fdba3943de7
+
+% 1 1 0 13b344d28194409a0aefd03e96de9463
+
+@ 0 2 0 0df8b77009221b340580259811c4a9f7
++       `.checksum` renvoie le CRC sous forme d'`Int` signé, les bits qu'écrivent les formats ;
++       `Accumulator#value` le renvoie sous forme de `Long` non signé.
+
+% 0 1 0 0946697535422bcb185e30d11de5d009
+
+% 0 1 0 0ab39a9bad90bfe015364972cdd272e4
+
+@ 0 1 0 1d98cbedb5b71d2508b5f9028a4b325c
++   entry .table
++     info
++         la table de correspondance à 256 entrées de l'algorithme CRC-32 octet par octet
+
+@ 0 2 0 139532c498c63949031cbf5aa54c7299
++     detail
++         Un `Array[Int]` gelé, calculé une seule fois, indexé par l'octet de poids faible du CRC
++         courant xor le prochain octet d'entrée.
+
+@ 0 1 0 07c2dd2b1045c40a10933ce6098a7828
++   entry .checksum
++     info
++         le CRC-32 d'une suite de segments d'octets, pris comme un seul flux, sous forme d'`Int`
+
+@ 0 2 0 10e6b59304a3b02e1e7aaa77cb56d4f8
++     detail
++         Comme l'exigent les morceaux PNG et les entrées ZIP : `Crc32.checksum(a, b)` est égal à la
++         somme de contrôle de `a` suivi de `b`. Sans segment, ou avec un segment vide, le résultat
++         est 0.
+
+@ 0 1 0 17b16c37a247f2390e00d3f2b7b02458
++   entry .apply
++     info
++         un nouveau CRC-32 courant, un `Crc32.Accumulator`
+
+@ 1 1 0 01122e057835593a1167abf01d0c7f78
++     detail
++         Renvoie un `Accumulator^` exclusif ; chaque somme de contrôle a besoin du sien.
+
+@ 0 1 0 08ef35d6bcd584e20dabada82da1f935
++   entry .Accumulator
++     info
++         l'état courant d'un CRC-32, alimenté de façon incrémentale, sous forme de `Digestion`
+
+@ 0 6 0 1a85a3d41552fa9f09e46178c2d83938
++     detail
++         Une `Digestion` mutable dont les `append`, d'un `Data` entier ou d'une fenêtre d'un
++         tableau mutable, exécutent tous deux la boucle native sur le tableau en place, sans copie.
++         `#update` est la même boucle sur un `scala.Array[Byte]` brut, pour le code qui en détient
++         déjà un. `#value` lit le CRC sous forme de nombre non signé et `#digest` sous forme de
++         quatre octets big-endian ; l'un ou l'autre peut être lu à tout moment, et les ajouts
++         peuvent continuer ensuite.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1431880c979b543c01476a2c782ba8fc
+
+% 0 1 0 1c96497c2f8de588007aa9a3fb11dc0b
+
+% 0 1 0 16854cac5b767d3a1aa48968f4f92ba7
+
+% 0 1 0 18703ec35eec9b6c1da7fdd3fe5b5513
+
+% 0 1 0 0f14f047d495f70f10791e8f366f213a
+
+% 0 1 0 1fe558f0ac62820c017131c2b26fa031
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 1 1 0 0514eaa0230989401c588a58680c505e
++     entry #update
++       info
++           fournit `length` octets d'un `scala.Array[Byte]` brut à partir de `index`
+
+@ 2 1 0 194a6591e883f90c1a4bdf579ddece26
++       detail
++           La boucle primitive à laquelle délèguent les méthodes `append` ; elle lit le tableau sur
++           place.
+
+@ 3 1 0 13f2f024500b9ce715e1586f249491f4
++     entry #reset
++       info
++           ramène l'accumulateur à son état initial, le CRC d'aucun octet
+
+@ 0 1 0 14db49364fcb4379007660ff31e5a69a
++     entry #value
++       info
++           le CRC-32 jusqu'ici, sous forme de `Long` non signé de 0 à 0xffffffff
+
+@ 0 1 0 1840b8b9921c3a651b6c5c3eb9bd660f
++     entry #digest
++       info
++           le CRC-32 jusqu'ici, sous forme de quatre octets big-endian
+
+@ 1 1 0 1701e7250e14afac11b3b65f0338fe16
++   entry #Bits
++     info
++         la largeur de la somme de contrôle : `32`
+
+@ 0 1 0 0997ce01faafb32b163c0420c41da0ad
++ entry .Crc64
++   info
++       la somme de contrôle CRC-64 dans la forme ECMA-182 qu'utilise XZ
+
+@ 0 7 0 120677eb8b941ab605e0d125f807118c
++   detail
++       Le CRC-64 réfléchi de polynôme `0xc96c5795d7870f42`, dont la valeur de contrôle pour
++       `123456789` est `0x995dc9bbdf1939fa`. En tant que type, c'est un `Algorithm` :
++       `digest[Crc64]` calcule donc la somme de contrôle de toute valeur hachable — mais seulement
++       avec `providers.soundnessProvider`, puisque le JDK n'a pas de CRC-64 et que
++       `providers.javaBaseProvider` n'en propose pas. En tant qu'objet, il crée l'`.Accumulator`
++       courant.
+
+% 3 1 0 00585802d121cf6b0813689bf933f063
+
+% 4 1 0 146aca2d224db582053f14ac59ebff88
+
+% 0 1 0 1a663aafd06d1ba308f78348dccc82ec
+
+% 1 1 0 1deb6f14c17dfdc7049313dc3c1b5fc2
+
+% 0 1 0 03d96fb11737d5041f0f22ee7ce8299a
+
+% 1 1 0 0c87b46af899038c0e8eaa0e19622097
+
+@ 0 3 0 1ff6645938e8678c05654a064ee0ea40
++       L'accumulateur utilise le découpage par huit (slicing-by-eight), consommant huit octets par
++       étape au moyen de huit recherches indépendantes dans des tables, ce qui est trois à quatre
++       fois plus rapide que la boucle octet par octet et aussi rapide que l'implémentation de
++       xz-java.
+
+% 1 1 0 12b7169b875944181536ea3272b01e90
+
+@ 0 1 0 0db52768192ecbd201239ca9652ba522
++   entry .table
++     info
++         les huit tables de découpage à 256 entrées de CRC-64, aplaties en un seul tableau
+
+@ 0 3 0 14410a4a6125dcf40c9db15f57dbc245
++     detail
++         Un `Array[Long]` gelé de 2048 entrées : `table(n)` pour `n` inférieur à 256 est la table
++         classique octet par octet, et `table(k*256 + n)` replie un octet situé `k` positions plus
++         loin dans un mot de huit octets.
+
+@ 0 1 0 1d5c181f7b9bb2b21553871c84e1d250
++   entry .apply
++     info
++         un nouveau CRC-64 courant, un `Crc64.Accumulator`
+
+@ 1 1 0 05a59f570e2abbea1df869a89998117a
++     detail
++         Renvoie un `Accumulator^` exclusif ; chaque somme de contrôle a besoin du sien.
+
+@ 0 1 0 1911f228c583023604820a121a05cea1
++   entry .Accumulator
++     info
++         l'état courant d'un CRC-64, alimenté de façon incrémentale, sous forme de `Digestion`
+
+@ 0 5 0 09658c2045e69b631efa1939395b8d0a
++     detail
++         Une `Digestion` mutable dont les `append` lisent leur entrée sur place, huit octets à la
++         fois avec une fin traitée octet par octet : une entrée segmentée donne donc la même somme
++         de contrôle que l'entrée entière, quel que soit l'alignement. `#value` lit le CRC sous
++         forme de `Long` et `#digest` sous forme de huit octets big-endian ; l'un ou l'autre peut
++         être lu à tout moment, et les ajouts peuvent continuer.
+
+@ 1 1 0 0130637867764f9017445336db693377
++     entry #update
++       info
++           fournit `length` octets d'un `scala.Array[Byte]` brut à partir de `index`
+
+@ 2 1 0 1d2c0c553f85f43b0b77bcf0f0606da6
++       detail
++           La boucle primitive à laquelle délèguent les méthodes `append` ; elle lit le tableau sur
++           place.
+
+@ 3 1 0 16d225544660dec51c8d27284b5d8771
++     entry #reset
++       info
++           ramène l'accumulateur à son état initial, le CRC d'aucun octet
+
+@ 0 1 0 03dffee57dc261d11202e38d084c9487
++     entry #value
++       info
++           le CRC-64 jusqu'ici, sous forme de `Long` : 0 pour aucun octet
+
+@ 0 1 0 0e92bf5b1372d6b015d59ae0f450d151
++     entry #digest
++       info
++           le CRC-64 jusqu'ici, sous forme de huit octets big-endian
+
+@ 0 1 0 1ee4b8d0a55e6bb4100e178981cb9dc0
++   entry #Bits
++     info
++         la largeur de la somme de contrôle : `64`
+
+@ 0 1 0 1b9a549dc18fc3b517bf919da1878f72
++ entry .Adler32
++   info
++       la somme de contrôle Adler-32, telle qu'utilisée par l'enveloppe zlib
+
+@ 0 7 0 09137a7a59b2d4fb19f5242aafc13266
++   detail
++       Adler-32 : deux sommes courantes modulo 65521, le plus grand nombre premier inférieur à
++       65536, combinées sous la forme `s2 << 16 | s1`. Sa valeur de contrôle pour `123456789` est
++       `0x091e01de`, et la somme de contrôle d'aucun octet vaut 1. En tant que type, c'est un
++       `Algorithm` : `digest[Adler32]` calcule donc la somme de contrôle de toute valeur hachable
++       au moyen de gastronomy (derrière `cryptoPermits.permitNonCryptographicHashes`). En tant
++       qu'objet, il crée l'`.Accumulator` courant.
+
+% 3 1 0 1403026d068616640395620618269d9f
+
+% 4 1 0 004bb23588b3052202c8d2cc683283a9
+
+% 0 1 0 1f4590c678ffa99907a0a6f65946af74
+
+% 0 1 0 026e5e79dff0956f16ec2c8dc1ef3659
+
+% 0 1 0 0ad9c65688b790041a8983dbed64f764
+
+% 1 1 0 15139e0de5fcb0d9043170fe09213cfe
+
+% 1 1 0 16ae23c91f9724981af182a3a1c61f27
+
+@ 0 1 0 1c9b54f265aa7df619d94e95ea41403f
++   entry .apply
++     info
++         un nouvel Adler-32 courant, un `Adler32.Accumulator`
+
+@ 1 1 0 19e0b659878e95660646fe4fc9f3ec33
++     detail
++         Renvoie un `Accumulator^` exclusif ; chaque somme de contrôle a besoin du sien.
+
+@ 0 1 0 0b91f24a93e911a10fe9cecf04337213
++   entry .Accumulator
++     info
++         l'état courant d'un Adler-32, alimenté de façon incrémentale, sous forme de `Digestion`
+
+@ 0 4 0 005325566c1113521867cc59f0a3f45c
++     detail
++         Une `Digestion` mutable dont les `append` lisent leur entrée sur place. `#value` lit la
++         somme de contrôle sous forme de `Long` et `#digest` sous forme de quatre octets
++         big-endian ; l'un ou l'autre peut être lu à tout moment, et les ajouts peuvent continuer.
+
+@ 1 1 0 1b4e63eca7ac582413ad60559067fbe0
++     entry #update
++       info
++           fournit `length` octets d'un `scala.Array[Byte]` brut à partir de `index`
+
+@ 2 1 0 13abfdf9d65a5af2105f43a33da406b9
++       detail
++           La boucle primitive à laquelle délèguent les méthodes `append` ; elle lit le tableau sur
++           place.
+
+@ 0 1 0 08acb02b409e7dbc07ec16cebda081a8
++     entry #reset
++       info
++           ramène l'accumulateur à son état initial, dont la valeur est 1
+
+@ 0 1 0 0c9d92a0e339876211c091a38ceede89
++     entry #value
++       info
++           l'Adler-32 jusqu'ici, sous forme de `Long` : 1 pour aucun octet
+
+@ 0 1 0 0c321ea7161d29d30c9fac1a38dfdda4
++     entry #digest
++       info
++           l'Adler-32 jusqu'ici, sous forme de quatre octets big-endian
+
+@ 1 1 0 1628e169be77c7e1002a2b82342783f1
++   entry #Bits
++     info
++         la largeur de la somme de contrôle : `32`

@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 073c9fc8278f23d40d127a7a8ef19a63
+
+@ 0 2 0 10889bcc5db9b15a11b9123325947f08
++ Levée lorsque Anthology ne peut pas satisfaire une demande de configuration du compilateur.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 05f7c5c878f3f6b80cb52818dd166ddb
++ Anthology configure et exécute le compilateur Scala par programme. Cette erreur signale un
++ problème de configuration : par exemple des entrées de classpath manquantes, une option
++ invalide, ou une cible que le compilateur intégré ne prend pas en charge.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1b8357e7083b2114164a29f1e8f6578e
+
+% 1 1 0 125346ceebf55d351a4a357dbb94c705
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 09ed563cdd96c72f1c5e58e6c95bc942
++ Examinez la chaîne des causes pour trouver l'erreur sous-jacente du compilateur. Des variantes
++ plus précises pourront être ajoutées à mesure que le module évolue.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0644adbe82de0b5812e59d2a3293e466
++ - Source : `lib/anthology/src/core/anthology.Compiler.scala`

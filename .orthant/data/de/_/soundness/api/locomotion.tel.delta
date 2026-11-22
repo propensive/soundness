@@ -1,0 +1,1721 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1dc51523555b6f5d16db6081b3ebd53a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 187fc9bf63ce93ac1b358c8fbe9d3a2e
++ info   Protocol Buffers aus Scala-Typen: nummerierte Case-Klassen-Felder als proto3-Nachrichten, mit abgeleiteten, direkten und streamenden Codecs
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 192356cdf1d10d6f16b638dbf718135d
++     _Locomotion_ kodiert und dekodiert das Übertragungsformat von Protocol Buffers direkt aus
++     Scala-Typen. Eine Case-Klasse, deren Felder proto3-Feldnummern tragen, *ist* die
++     Nachrichtendefinition: Es gibt keine proto-Schemadatei zu schreiben und keinen
++     Codegenerator auszuführen, und die erzeugten Bytes sind jene, die `protoc` für das
++     entsprechende Schema erzeugen würde. Feldnummern stammen aus der Annotation `field` (oder,
++     ohne Annotation, aus der Deklarationsreihenfolge); alles andere — Varints,
++     Zig-Zag-Kodierung, Little-Endian-Festwerte, längenbegrenzte Strings und verschachtelte
++     Nachrichten, gepackte wiederholte Felder, Map-Einträge und `oneof`-Varianten — folgt aus
++     den Feldtypen.
+
+% 2 1 0 169e15ba6567c0d218531abe09043006
+
+% 3 1 0 14b7bf587958534c1e7a823d2e6a0575
+
+% 4 1 0 17ae7cd7b99763cc1bac7ff2a2aebf5c
+
+% 0 1 0 085aa0922c2e230608ba19bd8d830c1e
+
+% 0 1 0 138e764fa0e84fdc0740966080b218f2
+
+% 0 1 0 1c2905436e26845a00eb8c1677585d46
+
+% 0 1 0 0034b96edce63c221a30b228cd3e16f2
+
+% 1 1 0 02b8f64a21839c4a0afb0a6947f70c8c
+
+@ 0 10 0 132242a94b2ac05c11ebb1b5026d9fc4
++     Der zentrale Typ ist `Protobuf`, ein einzelner Übertragungswert: `Wire(wireType, bytes)`,
++     `Absent` oder `Repeated` aller Vorkommen einer Feldnummer. Eine ganze Nachricht ist ein
++     längenbegrenzter `Wire`, und Instanzen von `Encodable in Protobuf` und
++     `Decodable in Protobuf` — die skalaren im Begleitobjekt von `Protobuf`, die für
++     Nachrichten über wisteria aus der Gestalt der Case-Klasse abgeleitet — wandeln Werte in
++     Übertragungswerte und zurück. Die Zahlentypen fester Größe aus hypotenuse wählen die
++     proto3-Ganzzahlvarianten allein über den Typ: `U32` und `U64` sind `uint`-Varints, `S32`
++     und `S64` Zig-Zag-`sint`s, `B32` und `B64` `fixed32` und `fixed64`. `Optional` ist
++     explizite Präsenz, eine `List`, ein `Set` oder eine `Sequence` ist ein wiederholtes Feld
++     (gepackt, wenn sein Element `Packable` ist), ein eingefrorenes `Array[Long]^{}` ist
++     dasselbe Feld ungeboxt, und eine `Map` ist die standardmäßige wiederholte
++     Eintragsnachricht.
+
+@ 0 1 0 14ab4850bdd66b9b076e3a3bdc71758f
++     Es gibt drei Wege durch die Bibliothek, die identische Bytes erzeugen:
+
+@ 0 11 0 07401444a141c5481cc36a1c54b7f6be
++     - **Abgeleitet**: `value.in[Protobuf]` baut den `Protobuf`-Baum über das abgeleitete
++       `Encodable`, und `read[Protobuf].as[T]` durchläuft den Baum über das abgeleitete
++       `Decodable`. Immer verfügbar und die Referenz, gegen die die anderen beiden getestet
++       werden.
++     - **Direkt**: Ein `Protobuf.Parsable` liest die Felder eines Werts über einen
++       `ProtobufReader` direkt von der Eingabe, ohne einen Baum zu bauen, und ein
++       `Protobuf.Printable` misst sie und schreibt sie direkt in das Ausgabe-Array. Beide werden
++       zur Kompilierzeit erzeugt, von `Inlinable.parsable[T]` und `Inlinable.printable[T]`, von
++       `derives Protobuf.Direct` auf der Nachricht oder für jede Nachricht und jedes oneof im
++       Geltungsbereich von `import codecs.direct`.
++     - **Streamend**: `ProtobufParser` liest über einem `Cursor` aus zephyrine, sodass ein
++       direktes Lesen über einer `Chain[Data]` oder einem `Stream[Data]` jeden Chunk liest,
++       sobald er ankommt, und nur das gerade gelesene Feld hält; ein über Chunks verteilter
++       Wert liest sich genau wie einer, der am Stück ankommt.
+
+% 2 1 0 183aa782606a437f1b8e4988251e020f
+
+% 3 1 0 1d72026c7c0900e41143372affa9b1c0
+
+% 4 1 0 1099e36b8861b9ad08ee6c8284bd7d3d
+
+% 0 1 0 0b9f2ee2c257769f10f4b12b577556bc
+
+% 0 1 0 037d2bb47a2186ca0e97493c01dccda5
+
+% 0 1 0 0f90ab872d2f56e0151f62577c7fcdab
+
+% 0 1 0 1e5484cd987bc1cc0ad17f8d1d520213
+
+% 1 1 0 0c3c61393f1fa98a1983816bbd03714c
+
+@ 0 4 0 1d29b2bdd060f6620a827f2382bf7b0c
++     `import codecs.derived` erzwingt den abgeleiteten Weg auch dort, wo ein direkter Codec im
++     Geltungsbereich ist, und `import codecs.strict` macht ein `read[T in Protobuf]` oder
++     `in[Data over Protobuf]` auf einem Typ ohne direkten Codec zu einem Kompilierfehler. Die
++     drei Modi sind Givens des `codecs`-Pakets aus distillate, die einzeln per Namen importiert
++     werden.
+
+@ 0 5 0 06bcbb94f888e47302909fa997879706
++     Eine fehlerhafte Nachricht löst `Protobuf.Error` (Nummer 700) aus, dessen `Reason` den
++     Fehler und den Byte-Offset nennt — abgeschnittene Eingabe, ein fehlerhafter oder
++     überlaufender Varint, ein unerwarteter Übertragungstyp, ein fehlendes `oneof`-Feld. Felder
++     werden per Nummer ausgewählt, daher ist die einzige Optik `fieldOptical`:
++     `message.lens(_(Prim) = value)` ersetzt Feld 1 und reicht jedes andere Feld durch,
++     einschließlich solcher, die das Programm nicht kennt.
+
+@ 0 1 0 1af03583aa97792d1ed95982f8b2b936
++     Die Bibliothek hat drei Komponenten:
+
+@ 0 11 0 0c60fd329385707f128681d3de1f0d45
++     - `locomotion.core` — `Protobuf` und seine Codecs, `field`, `WireType`, `Packable`, der
++       streamende `ProtobufParser`, der Rand `ProtobufReader`, `ProtobufPrinter` und
++       `ProtobufSizes` sowie `Inlinable` mit seinen Generatoren (dem Objekt `inlining`).
++       Kompiliert für die JVM, Scala.js und Scala Native.
++     - `locomotion.staged` — `InlinableStager`, der Staging-Compiler im Makro, der ein
++       *handgeschriebenes* `Inlinable`-Given zur Expansionszeit auswertet. Er wird per Namen auf
++       dem Makro-Klassenpfad gefunden; ohne ihn wird ein Feld, dessen Typ nur eine
++       handgeschriebene Instanz hat, über sein `Decodable in Protobuf` dekodiert und über sein
++       `Encodable` kodiert. Erzeugte Parser und Printer über Case-Klassen und versiegelten
++       Summen brauchen nur `core`.
++     - `locomotion.http` — die Medienbindungen für `application/protobuf`: die Givens
++       `postables`, `servables` und `construables` für telekinesis. Nur JVM.
+
+@ 0 7 0 1e8395bb7bbee2b41d746c62c705644e
++     Der Umbrella exportiert `Protobuf`, `Protobuf2`, `Packable`, `WireType` und `field` und
++     spiegelt die Auswahlpakete `conversions`, `postables`, `servables` und `construables`.
++     `Inlinable`, `ProtobufParser`, `ProtobufReader`, `ProtobufPrinter` und `ProtobufSizes`
++     werden als `locomotion.Inlinable` usw. erreicht, da ein erzeugter Codec sie für den
++     Benutzer benennt. Givens aus Auswahlpaketen werden per Namen importiert —
++     `import conversions.encodableToProtobuf`, `import postables.protobufPostable` —, weil
++     `import pkg.*` keine Givens importiert.
+
+% 0 1 0 169c9153dc2b56501ded5f2f0d8f9a0c
+
+% 0 1 0 0b120bfbb878b70017a0824c86a3efc1
+
+% 0 1 0 08be575c937344ef1780f75de3c746e4
+
+% 0 1 0 1a3d9632423bc9e31a7de3d1fb80d340
+
+% 0 1 0 13049792e7aefff2197f16f2db95b7c9
+
+% 0 1 0 0e7c7bf351514d7b13500227cd4f0f39
+
+@ 0 1 0 19fbe796cf9a746810f1daba25753e5a
++ entry .Protobuf   ein Übertragungswert von Protocol Buffers und die Heimat jedes Codecs in das Format hinein und aus ihm heraus
+
+% 1 1 0 163ad37ead37d5e10310fc4272e7fdfc
+
+@ 0 2 0 094a94ba13c840591c70678f4e15de43
++       `Protobuf` ist ein Enum der drei Gestalten, die der aufgezeichnete Wert eines Felds
++       annehmen kann, und die `Form` von `Encodable in Protobuf` und `Decodable in Protobuf`:
+
+@ 0 6 0 0bcd8eee4e8973080ddd6b47bcbd55e8
++       - `Wire(wireType, bytes)` — ein Übertragungswert: die Nutzdaten-Bytes eines Varints,
++         eines festen 32- oder 64-Bit-Werts oder eines längenbegrenzten Strings, Byte-Arrays,
++         gepackten Laufs oder einer verschachtelten Nachricht, mit seinem `WireType` versehen.
++         Eine ganze Nachricht ist ein `Wire(Len, bytes)`.
++       - `Repeated(values)` — alle Vorkommen einer Feldnummer in einer Nachricht, in
++         Übertragungsreihenfolge, für wiederholte Felder und für die proto3-Regel, dass bei
++         Skalaren der letzte gewinnt.
++       - `Absent` — ein Feld, das beim Dekodieren nicht vorhanden war oder beim Kodieren
++         ausgelassen werden soll.
+
+@ 0 2 0 03314d42f8dd5e0f11fc21582255d1fb
++       `#single`, `#occurrences`, `#payload`, `#wireKind` und `#isAbsent` lesen die drei
++       Gestalten einheitlich, und `#as` dekodiert einen Wert über ein beliebiges
++       `Decodable in Protobuf`.
+
+% 2 1 0 09a16f442d9efc0d0cf50d4119074f0e
+
+% 3 1 0 0beadd25708b92a403092f6c298a925a
+
+% 4 1 0 02f757305cc2fff20b69f1ce5db6cc4c
+
+% 0 1 0 191b7ae8b4522c131714b416a8b14f74
+
+% 0 1 0 158b4db8ecc09d48172c6ba467526219
+
+% 0 1 0 03e50b4a5d26794c06b71ba0ddbc31c1
+
+% 0 1 0 035cf8e2d36f30151dcd759fcc4a460f
+
+% 1 1 0 1481935e3f4b08200b3f3e73980fef44
+
+@ 0 8 0 0521de5f1a2bd0161d71fbfbb5b953e0
++       Das Begleitobjekt enthält die Codecs. Die skalaren Instanzen sind Givens des Objekts
++       selbst (`intEncodable`, `textDecodable`, `u32Encodable`, …), ebenso die Instanzen für
++       gepackte Collections und eingefrorene Arrays, `optionalEncodable`, `mapEncodable` und die
++       Modusselektoren. Die Prioritätsschichten niedrigerer Priorität `Protobuf2` (die
++       abgeleiteten Codecs, die ungepackten Collection-Instanzen und der baum-materialisierende
++       `read`-Weg) und `Protobuf1` (der direkte Weg, gewählt, wann immer ein `Protobuf.Parsable`
++       oder `Protobuf.Printable` im Geltungsbereich ist) sind Traits, die das Objekt erweitert,
++       sodass ihre Givens ebenfalls Member von `Protobuf` sind und ohne Import aus dem
++       impliziten Geltungsbereich aufgelöst werden.
+
+@ 0 8 0 0506f44af82ed6f01361d9953f29e053
++       Ein Lesevorgang ist `bytes.read[Protobuf]` (`aggregable`, über jeder Bytequelle), gefolgt
++       von `as[T]`, oder die Kurzform `read[T in Protobuf]`, die die Schichten weiterleiten: über
++       ein `Parsable`, wenn eines im Geltungsbereich ist (`Protobuf1#aggregableParsed`), und
++       sonst über den Baum (`Protobuf2#aggregableIn`). Ein Schreibvorgang ist
++       `value.in[Protobuf]`, dessen `encode` die Bytes der Nachricht sind (`encodableInData`),
++       oder `value.in[Data over Protobuf]` nur für die Bytes (`Protobuf2#encodableOver`). Mit
++       einem `Printable` im Geltungsbereich wird `in[Protobuf]` zu
++       `Protobuf1#encodablePrinted`: Das gedruckte Array ist der eine `Wire` der Nachricht,
++       sodass `encode` es ohne Kopie zurückgibt.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0cc70caa21ba76401dcf106834476559
++         label Eine Nachricht mit einem Varint-Feld: Tag 0x08, dann der Varint 150
+
+% 1 1 0 190ad679ccfa97811b4e93ef59a3ca49
+
+% 0 1 0 14406c08ea826e9b02e5581fbe7a9a51
+
+% 0 1 0 0fc16f135558470b022eab23c7085e4b
+
+% 1 1 0 0966c4d790c50e121d1f78063051102d
+
+@ 0 1 0 1c3b3f2939c0b4141f9226c1eb171038
++         label Ein String-Feld ist sein Tag, eine Länge und die UTF-8-Bytes
+
+% 1 1 0 09a8ad5fcd3bc46e02b11e1887c3298f
+
+% 0 1 0 0dc663b35f6a468318c95bd535370069
+
+% 0 1 0 0fd23290a6aad717112ae40e3b72a8d3
+
+% 1 1 0 0634316fe24a666119086a99f19522e9
+
+@ 0 1 0 126bfa1cb7d51e1305203f28e9aed067
++         label Eine verschachtelte Nachricht ist längenbegrenzt, und ihre Feldnummern sind ihre eigenen
+
+% 1 1 0 0c15e1bba4e917590593cd33406273c2
+
+% 0 1 0 1dc7bac1217ef57f11ae84613a9bd784
+
+% 0 1 0 1e8f28348cada8271b5d3b22cfc80e7c
+
+% 0 1 0 115be6d153a53da41a41506bf2702d27
+
+% 1 1 0 004dafba0982722d182af58d655d58d0
+
+@ 0 1 0 012c9f43eec56b0916a058c6b3710482
++         label Und zurück: dieselben Bytes als der Typ gelesen, über den Weg, der im Geltungsbereich ist
+
+% 1 1 0 0a9953ed8ad752321d879a979a9e54a7
+
+% 0 1 0 1aeb59c411d45b241b411878be1d0fc2
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1e5f84077a3d397b179128615cf9af20
++       Jedes dekodierende Given nimmt eine `Tactic[Protobuf.Error]`; die abgeleiteten schließen
++       über der Taktik ab, die an der Ableitungsstelle im Geltungsbereich ist, weshalb ein
++       `summon`, das eine solche Instanz benennt, ihr Einfangen erlauben muss
++       (`summon[(T is Decodable in Protobuf)^]`), während `read`, `as` und Ableitung nichts
++       Besonderes brauchen.
+
+% 0 1 0 120a6488ccad648c09d351df863b58c3
+
+% 0 1 0 00c91892e137142d1003bae9590f80d2
+
+% 0 1 0 14e2ea7727f6704002aef0b906b19e61
+
+% 1 1 0 086759f4cbbe09060f7e8a5a8f546b4d
+
+% 1 1 0 0fb801fb500eb02f1a045b30a28505b2
+
+@ 0 53 0 1ecc98d289b3b41d1b795edb9e7aa866
++   entry #single   der jüngste einzelne Übertragungswert: die proto3-Regel, dass bei Skalaren der letzte gewinnt
++       Ein `Repeated` gibt seinen letzten Wert (oder `Absent`, wenn es keinen enthält); ein `Wire`
++       oder `Absent` ist es selbst.
++   entry #occurrences   jeder für das Feld aufgezeichnete Übertragungswert, zum Dekodieren von `repeated`-Feldern
++       Ein `Repeated` gibt seine Liste, ein einzelner `Wire` eine einelementige Liste und
++       `Absent` `Nil`. Die Dekodierer für ungepackte Collections iterieren darüber; ein gepackter
++       Lauf kommt als ein einziges `Len`-Vorkommen an, das `ProtobufParser.packed` aufteilt.
++   entry #payload   die Bytes von `#single` oder ein leeres Array für einen abwesenden Wert
++   entry #wireKind   der `WireType` von `#single` oder `Len` für einen abwesenden Wert
++       Dient dazu, einen gepackten skalaren Lauf (`Len`) von eingebetteten skalaren Vorkommen zu
++       unterscheiden, wenn ein wiederholtes Feld aus `Packable`-Elementen dekodiert wird, da ein
++       Leser beides akzeptieren muss.
++   entry #isAbsent   ob der Wert `Absent` oder ein `Repeated` von nichts ist
++   entry #as   dekodiert den Übertragungswert als einen Typ, über dessen `Decodable in Protobuf`
++       `message.as[Person]` ist die zweite Hälfte des zweistufigen Lesens
++       `bytes.read[Protobuf].as[Person]`; es löst für fehlerhafte Nutzdaten `Protobuf.Error`
++       aus. Ein abgeleiteter Dekodierer übergibt ein Feld, das einmal vorkommt, als den `Wire`
++       selbst, eines, das mehr als einmal vorkommt, als `Repeated` aller Vorkommen und ein
++       fehlendes als `Absent`, sodass ein handgeschriebenes `Decodable in Protobuf` über
++       `single` oder `occurrences` abgleichen sollte, statt allein auf den Konstruktor
++       `Repeated`.
++   entry .emit   die Bytes einer Nachricht als Iterator von Blöcken, auf einer Fiber erzeugt
++       `Protobuf.emit(message)` gibt die bereits zusammengesetzten Nutzdaten über einen
++       `Producer` aus, sodass die Bytes als Stream konsumiert werden können; es braucht einen
++       `Monitor` und eine `Probate`. Protocol Buffers stellt jeder verschachtelten Nachricht
++       ihre Länge voran, daher müssen die Bytes vollständig sein, bevor irgendeines gesendet
++       werden kann — dies zerlegt sie in Chunks, es streamt nicht ihre Erzeugung. Für einen Wert
++       mit einem `Printable` schreibt stattdessen `Protobuf.Printable.emit` Block für Block.
++   entry .aggregable   `bytes.read[Protobuf]`: eine beliebige Bytequelle, als eine Nachricht aggregiert
++       Liest die ganze Quelle in den Speicher und umhüllt sie als `Wire(Len, bytes)`; ein
++       `Protobuf`-Wert ist seine Bytes, daher hält dies die gesamte Nachricht, wo ein direktes
++       Lesen über ein `Parsable` nur das gerade gelesene Feld hält.
++   entry .protobuf   `Protobuf is Decodable in Protobuf`: die Identität, für ein als `Protobuf` typisiertes Feld
++       Ein als `Protobuf` deklariertes Feld behält seinen rohen Übertragungswert; so werden
++       unbekannte oder durchgereichte Inhalte durch eine Nachricht getragen, die das Programm
++       ansonsten dekodiert.
++   entry .encodableInData   `message.encode`: die Übertragungsbytes einer `Protobuf`-Nachricht
++       Das Given `Encodable in Data`, sodass die Bytes der Nachricht mit demselben Verb erreicht
++       werden, das jacinta für `Json` verwendet; `serialize` ist den Byte-zu-Text-Kodierungen
++       vorbehalten.
++   entry .abstractable   eine `Protobuf`-Nachricht als HTTP-Body, mit `application/protobuf`
++       `Abstractable across HttpStreams to HttpStreams.Content`: der Medientyp und die kodierten
++       Bytes, aus denen telekinesis Request- und Response-Bodies ableitet. Die Givens
++       `postables`, `servables` und `construables` der Komponente `locomotion.http` sind die
++       benannten Bindungen für einen Client-Post, eine bediente Response und einen geparsten
++       Request-Body.
++   entry .chainReadable   `Chain(bytes).read[T in Protobuf]` liest eine Chain aus einem Block an Ort und Stelle
++       Das Given `Chain[Data] is Readable to (value in Protobuf)`: Eine bereits vorliegende Chain
++       geht direkt an das eigene `aggregate` des `Aggregable`, das eine Chain aus einem Block
++       ohne Kopie liest, statt über einen Stream über der Chain.
++   entry .fieldOptical   `message.lens(_(Prim) = value)`: Ein `Ordinal` wählt ein Feld per Nummer
++       Felder von Protocol Buffers sind nummeriert, nicht benannt, daher ist ein `Ordinal` die
++       Optik: `Prim` ist Feld 1, `Sec` Feld 2 und so weiter. Das Aktualisieren parst die Felder
++       der Nachricht, ersetzt den Übertragungswert der gewählten Nummer durch das Ergebnis der
++       Transformation (jedes Vorkommen, als `Repeated`) und kodiert den Rest unverändert neu —
++       einschließlich Feldern, die das Programm nicht kennt. Eine Nummer, die die Nachricht
++       nicht definiert, oder eine Nachricht, die sich nicht parsen lässt, lässt sie, wie sie
++       war. Der zugewiesene Wert ist ein `Protobuf`; mit
++       `import conversions.encodableToProtobuf` darf jeder `Encodable in Protobuf`-Wert direkt
++       zugewiesen werden.
+
+% 2 1 0 15ea09ac96f446471982c22f4ea87345
+
+% 3 1 0 17558bf962f02e010f5b77e94bf9d14e
+
+% 4 1 0 1ba03865800fed74146ce5000ccab4e6
+
+% 0 1 0 00c225b4ecc3acd10bd67608043a120e
+
+% 2 1 0 08b69bfaa97ed53c11af9a8800cc879f
+
+% 0 1 0 17d194efa984b9ab184c9a6d62cd91af
+
+% 0 1 0 0c4cc1891500b37b1bf062b92a25df8a
+
+% 0 1 0 0e453afcead973a31946109d04022a29
+
+% 0 1 0 0bbff86a1e71a6fb1b8a33a8acf99799
+
+% 1 1 0 1f5ff7445399e3eb1f33cf9efdba0dee
+
+@ 0 79 0 1efe45f79e50b70b0e76b6021857ce37
++   entry .intEncodable   ein `Int` als `int32`-Varint
++       Negative Werte belegen die vollen zehn Bytes, wie proto3 es vorschreibt; ein Wert, der
++       voraussichtlich negativ ist, ist besser als `S32` typisiert, dessen Zig-Zag-Kodierung ihn
++       kurz hält.
++   entry .longEncodable   ein `Long` als `int64`-Varint
++   entry .booleanEncodable   ein `Boolean` als Varint 1 oder 0
++   entry .doubleEncodable   ein `Double` als 64-Bit-Wert in Little-Endian (`I64`)
++   entry .floatEncodable   ein `Float` als 32-Bit-Wert in Little-Endian (`I32`)
++   entry .textEncodable   `Text` als seine UTF-8-Bytes, längenbegrenzt
++   entry .dataEncodable   `Data` als längenbegrenztes `bytes`-Feld
++   entry .sizedDataEncodable   ein Block `Data & Sized[n]` kodiert genau wie das einfache `Data`
++       So kodiert ein Block, dessen Größe auf Typebene bewiesen ist, ohne den Beweis zu verlieren.
++   entry .intDecodable   ein `int32`-Varint als `Int`; null, wenn abwesend
++       Nimmt eine `Tactic[Protobuf.Error]`, die für einen abgeschnittenen oder fehlerhaften
++       Varint ausgelöst wird. Jeder skalare Dekodierer liest ein abwesendes Feld als den
++       Nullwert von proto3.
++   entry .longDecodable   ein `int64`-Varint als `Long`; null, wenn abwesend
++   entry .booleanDecodable   ein Varint als `Boolean`: jeder von null verschiedene Wert ist `true`
++   entry .doubleDecodable   ein fester 64-Bit-Wert als `Double`; `0.0`, wenn abwesend
++   entry .floatDecodable   ein fester 32-Bit-Wert als `Float`; `0.0f`, wenn abwesend
++   entry .textDecodable   längenbegrenzte Nutzdaten als `Text`, als UTF-8 dekodiert
++   entry .dataDecodable   längenbegrenzte Nutzdaten als `Data`, die Bytes, wie sie sind
++   entry .u32Encodable   ein `U32` aus hypotenuse als `uint32`-Varint
++       Die Ganzzahltypen fester Größe wählen die proto3-Ganzzahlvariante über den Typ, ohne
++       Annotation: `U32`/`U64` sind einfache `uint`-Varints, `S32`/`S64` Zig-Zag-`sint`-Varints
++       und `B32`/`B64` `fixed32`/`fixed64` in Little-Endian.
++   entry .u64Encodable   ein `U64` als `uint64`-Varint
++   entry .s32Encodable   ein `S32` als Zig-Zag-`sint32`-Varint
++       Zig-Zag bildet 0, -1, 1, -2, … auf 0, 1, 2, 3, … ab, sodass eine kleine negative Zahl ein
++       kurzer Varint bleibt, wo ein `Int` zehn Bytes belegen würde.
++   entry .s64Encodable   ein `S64` als Zig-Zag-`sint64`-Varint
++   entry .b32Encodable   ein `B32` als `fixed32`, vier Bytes in Little-Endian
++   entry .b64Encodable   ein `B64` als `fixed64`, acht Bytes in Little-Endian
++   entry .u32Decodable   ein `uint32`-Varint als `U32`; braucht eine `Tactic[Protobuf.Error]`
++   entry .u64Decodable   ein `uint64`-Varint als `U64`
++   entry .s32Decodable   ein Zig-Zag-`sint32`-Varint als `S32`
++   entry .s64Decodable   ein Zig-Zag-`sint64`-Varint als `S64`
++   entry .b32Decodable   ein `fixed32` als `B32`
++   entry .b64Decodable   ein `fixed64` als `B64`
++   entry .optionalEncodable   ein `Optional[T]`-Feld: kodiert, wenn gesetzt, `Absent`, wenn `Unset`
++       Explizite Präsenz: Ein nicht gesetztes Feld schreibt nichts, wo ein vorhandener Skalar
++       mit Wert null sein Tag und seinen Wert schreibt. Gilt für jeden Typ, der zu seinem
++       inneren Typ `Mandatable` ist, sodass `Optional[Text]`, `Optional[Point]` und
++       `Optional[List[Int]]` alle funktionieren.
++   entry .optionalDecodable   ein abwesendes Feld liest sich als `Unset`; ein vorhandenes über den inneren Dekodierer
++   entry .packedEncodable   eine Collection von `Packable`-Skalaren als ein gepacktes `Len`-Feld
++       Die Voreinstellung von proto3 für wiederholte Zahlen: Die Kodierung jedes Elements wird
++       zu einem einzigen längenbegrenzten Feld verkettet. Hat Vorrang vor dem ungepackten
++       `Protobuf2#listEncodable`, weil `Packable` das Element einschränkt; eine leere Collection
++       ist `Absent`.
++   entry .packedDecodable   ein wiederholtes `Packable`-Feld, aus gepackten oder ungepackten Vorkommen
++       Akzeptiert beide Übertragungsformen, wie die proto3-Spezifikation es von einem Leser
++       verlangt: Ein `Len`-Vorkommen wird mit `ProtobufParser.packed` nach dem Übertragungstyp
++       des Elements aufgeteilt, und jedes andere Vorkommen ist ein Element. Braucht eine
++       `Factory` für die Collection und eine `Tactic[Protobuf.Error]`.
++   entry .packedListEncodable   der gepackte Kodierer für die Prelude-`List` aus `Packable`-Elementen
++       Die opaken Prelude-Collections sind nicht `Iterable`, daher haben `List`, `Set` und
++       `Sequence` jeweils ein eigenes gepacktes Paar, das an `packedEncodable` beim zugrunde
++       liegenden Typ delegiert.
++   entry .packedListDecodable   der gepackte Dekodierer für die Prelude-`List`
++   entry .packedSetEncodable   der gepackte Kodierer für das Prelude-`Set` aus `Packable`-Elementen
++   entry .packedSetDecodable   der gepackte Dekodierer für das Prelude-`Set`
++   entry .packedSeriesEncodable   der gepackte Kodierer für die Prelude-`Sequence` aus `Packable`-Elementen
++   entry .packedSeriesDecodable   der gepackte Dekodierer für die Prelude-`Sequence`
++   entry .intArrayEncodable   ein eingefrorenes `Array[Int]^{}` als gepacktes Feld, mit den Bytes der `List`-Form
++       Ein eingefrorenes Array packbarer Skalare ist die ungeboxte Darstellung eines
++       wiederholten numerischen Felds: Ein erzeugter Parser füllt es über einen ungeboxten
++       Builder, und ein erzeugter Printer durchläuft es per Index, sodass auf keinem der beiden
++       Wege ein Element geboxt wird. Die Bytes sind genau die der `List`-Form, sodass beide bei
++       der Übertragung austauschbar sind. Ein Paar von Instanzen pro Skalar, jedes rein wie das
++       des Skalars selbst; `Array[Byte]^{}` ist `Data`, ein Skalar.
++   entry .longArrayEncodable   ein eingefrorenes `Array[Long]^{}` als gepacktes Feld
++   entry .booleanArrayEncodable   ein eingefrorenes `Array[Boolean]^{}` als gepacktes Feld
++   entry .doubleArrayEncodable   ein eingefrorenes `Array[Double]^{}` als gepacktes Feld
++   entry .floatArrayEncodable   ein eingefrorenes `Array[Float]^{}` als gepacktes Feld
++   entry .intArrayDecodable   ein gepacktes oder ungepacktes wiederholtes Feld als eingefrorenes `Array[Int]^{}`
++   entry .longArrayDecodable   ein gepacktes oder ungepacktes wiederholtes Feld als eingefrorenes `Array[Long]^{}`
++   entry .booleanArrayDecodable   ein gepacktes oder ungepacktes wiederholtes Feld als eingefrorenes `Array[Boolean]^{}`
++   entry .doubleArrayDecodable   ein gepacktes oder ungepacktes wiederholtes Feld als eingefrorenes `Array[Double]^{}`
++   entry .floatArrayDecodable   ein gepacktes oder ungepacktes wiederholtes Feld als eingefrorenes `Array[Float]^{}`
++   entry .mapEncodable   eine `Map[K, V]` als wiederholte Eintragsnachrichten, `{ key = 1; value = 2 }`
++       Das proto3-Übertragungsformat für Maps: Jeder Eintrag ist eine längenbegrenzte Nachricht,
++       deren Feld 1 der Schlüssel und Feld 2 der Wert ist, sodass eine `Map[Text, Int]` bei der
++       Übertragung genau das ist, was `map<string, int32>` wäre. Eine leere Map ist `Absent`.
+
+% 2 1 0 022079eaae4b1df81fc3dcafc8b2d28b
+
+% 3 1 0 06cb8082c19ff4850a67fbe544b76f8e
+
+% 4 1 0 1014615c3a162845013ebda836effc8a
+
+% 0 1 0 02430143e1c8570712115354cb090b6a
+
+% 0 1 0 0f426416628e0b070b043c936ee3d601
+
+% 1 1 0 1d5f7fd0f5cc9bd51c0d83f86b5a8d27
+
+@ 0 17 0 180b88d218e1ca4e0acd1f252ab5e1ee
++   entry .mapDecodable   wiederholte Eintragsnachrichten als `Map[K, V]`
++       Jedes Vorkommen wird nach seinen Feldern 1 und 2 durchsucht; ein Eintrag, dem eines davon
++       fehlt, dekodiert es als `Absent` — die Null eines Skalars oder die leere Nachricht.
++       Braucht eine `Tactic[Protobuf.Error]`.
++   entry .aggregableDerived   unter `import codecs.derived` nimmt `read[T in Protobuf]` den Weg über den Baum
++       Hat Vorrang vor `Protobuf1#aggregableParsed` und greift genau dort, wo jenes greifen würde
++       — bei einem Typ mit einem `Parsable` im Geltungsbereich —, sodass das abgeleitete
++       `Decodable` dekodiert, selbst wenn ein direkter Parser im Geltungsbereich ist. Anderswo
++       wird der abgeleitete Weg ohnehin aufgelöst.
++   entry .readableDerived   unter `import codecs.derived` nimmt `data.read[T in Protobuf]` den Weg über den Baum
++   entry .encodableDerived   unter `import codecs.derived` leitet `in[Protobuf]` ab, selbst mit einem `Printable` im Geltungsbereich
++   entry .aggregableStrict   unter `import codecs.strict` muss `read[T in Protobuf]` ein `Parsable` finden
++       Der strikte Modus ist der direkte Modus für Code, der keinen Rückfall nehmen darf: Dies
++       nimmt einen direkten Parser, wo immer einer aufgelöst wird, und
++       `Protobuf1#aggregableStrictFailure` meldet einen Kompilierfehler, der den Typ nennt, wo
++       immer keiner aufgelöst wird.
++   entry .encodableOverStrict   unter `import codecs.strict` muss `in[Data over Protobuf]` ein `Printable` finden
++       `in[Protobuf]` selbst ist nicht gesperrt: Es benennt den Übertragungswert, wie `in[Json]`
++       den Baum benennt.
++   entry .Direct   `derives Protobuf.Direct`: Parser und Printer einer Nachricht einmal erzeugt, in ihr Begleitobjekt
+
+% 1 1 0 11111fc15dae2ef71f6b72205e7520f1
+
+@ 0 6 0 1445a9860c4dab44150da868c1d89393
++         Eine `Self`-typisierte Typklasse hat keinen Typparameter, daher kann weder
++         `Protobuf.Parsable` noch `Protobuf.Printable` in einer `derives`-Klausel stehen.
++         `Protobuf.Direct[T]` ist der Träger, der es kann: `case class Play(…) derives
++         Protobuf.Direct` ruft `.derived` auf, das Parser und Printer von `Play` mit
++         `Inlinable.parsable` und `Inlinable.printable` erzeugt und im Begleitobjekt ablegt, wo
++         `Protobuf.Parsable.declared` und `Protobuf.Printable.declared` sie finden.
+
+% 2 1 0 0d6e53c2763316bd00a8cd94640ea4ed
+
+% 3 1 0 1f1706128f4c014d033a3e58e5b63227
+
+% 4 1 0 15d80953f0041c2815b36958a9c4b574
+
+% 0 1 0 0bcabe5df62c62c816860bae38849e5b
+
+% 0 1 0 02cb33949b3032f211c13fe2ade87402
+
+% 1 1 0 1c9ab4bf1353d62417f6017256c747c4
+
+@ 0 8 0 0c4e9e54d74624a6105d9ded94706356
++         Die Instanzen bedienen jedes Lesen und Schreiben des Typs ohne Import, und unter
++         `import codecs.direct` verwendet ein Typ, der `Protobuf.Direct` ableitet, sie, statt an
++         jeder Verwendungsstelle erneut zu erzeugen, sodass die Staging-Kompilierung einmal
++         bezahlt wird. Unter `import codecs.derived` werden sie wie jeder andere direkte Codec
++         umgangen.
++     entry .derived   erzeugt `Parsable` und `Printable` des Typs und umhüllt sie
++     entry #parsable   das erzeugte `Protobuf.Parsable`
++     entry #printable   das erzeugte `Protobuf.Printable`
++   entry .Parsable   die Typklasse für direktes Parsen: liest die Felder eines Werts direkt von der Eingabe
+
+% 1 1 0 0e95188c8b6255b0082fd869b8bac18b
+
+@ 0 7 0 1fe0be496a039344169f7a8cf8cfa3ff
++         Das Gegenstück zu `Decodable in Protobuf`, das nie den Baum baut: Ein `Parsable`
++         erhält einen `ProtobufReader`, dessen Fenster auf die Nutzdaten des Werts gesetzt ist —
++         die ganze Eingabe auf oberster Ebene, der Übertragungswert eines Felds an einer
++         Feldposition —, und muss bis zum Ende des Fensters konsumieren. Es erweitert das
++         `Parsable` aus distillate mit `Transport =
++         Protobuf` und `Reader = ProtobufReader`, sodass seine eine Methode
++         `#parse(reader: ProtobufReader^): Self` ist. Der Reader trägt seine eigene
++         `Tactic[Protobuf.Error]`, sodass ein `parse`-Rumpf kein Fehlervokabular braucht.
+
+@ 0 3 0 10a2cbf43815eb351b1f095dd6a178c8
++         Ein `Parsable` ist das Opt-in: Mit einem im Geltungsbereich wird `read[T in Protobuf]`
++         zu `Protobuf1#aggregableParsed` oder `Protobuf1#readableParsed` aufgelöst und liest
++         direkt; ohne eines ändert sich nichts. Die Wege, eines zu bekommen, nach Allgemeinheit
++         geordnet:
+
+% 2 1 0 1dbb10b7eb885fbd1a62168c13e5b339
+
+% 3 1 0 0a340d6c13adb551079f68f26d1e9cd2
+
+% 4 1 0 087f67e3679a554f036f90cf4e1b5a8b
+
+% 5 1 0 1425ddbe95113e071f1670c387c606da
+
+% 7 1 0 1a9a1541952f94bf096a24ed85ebdf72
+
+% 0 1 0 10fc4d2db253674a01c3ca4193f56716
+
+% 0 1 0 1970e307cc4061901a2a6a297460fabf
+
+% 0 1 0 00b82f1752871d4c08f3eb7cd6bae001
+
+% 1 1 0 108db4f7399f3343010c300df4c78b1d
+
+@ 0 5 0 1d04fd22a806d51e1c917f8282d5a37b
++         oder `derives Protobuf.Direct` auf der Nachricht, oder `import codecs.direct` für jede
++         Nachricht und jedes oneof im Geltungsbereich (`Parsable2#generated`). Eine
++         handgeschriebene Instanz ist `Protobuf.Parsable(reader => …)` (`.apply`), und
++         `.fromDecodable` überbrückt jedes `Decodable in Protobuf` — der einzeilige Notausgang,
++         wenn ein eigener Dekodierer einen erzeugten Parser schlagen muss.
+
+@ 0 9 0 13c0fc3c1d95ea49064bc232f74412e1
++         Ein erzeugter Parser liest die Skalare einer Nachricht an Ort und Stelle, sammelt ein
++         Feld vom Typ `List`, `Set`, `Sequence` oder eingefrorenes Array Vorkommen für Vorkommen
++         (gepackt oder ungepackt), liest ein `Map`-Feld Eintrag für Eintrag in den Builder der
++         Map, verteilt ein `oneof`, indem er die Nachricht nach der niedrigsten vorhandenen
++         Variantennummer durchsucht (ihrem letzten Vorkommen), füllt einen abwesenden Skalar mit
++         seiner Null und ein abwesendes Feld mit einem deklarierten Standardwert, überspringt ein
++         unbekanntes Feld als Ganzes und nimmt das letzte Vorkommen eines wiederholten Skalars.
++         Ein Feld, dessen Typ kein `Inlinable` hat — eine Ganzzahl fester Größe, eine
++         `Optional`-Collection, ein Benutzertyp —, wird als Übertragungswerte gesammelt und
++         einmal über sein `Decodable in
++         Protobuf` dekodiert: die *Nahtstelle*, die denselben Wert langsamer liefert.
+
+@ 0 4 0 0bfea1bb035732ff0091cb24bb9f99c1
++         Über einer `Chain[Data]` oder einem `Stream[Data]` setzt das Lesen die Eingabe nie
++         zuerst zusammen: Der Parser zieht jeden Chunk, wenn er ihn braucht, und hält höchstens
++         das eine gerade gelesene Feld — außer bei einem `oneof`, dessen Nachricht gepuffert
++         wird, während seine Variante gewählt wird. Ein Lesen über einem ganzen `Data` geschieht
++         an Ort und Stelle.
+
+% 1 1 0 17660febed6dd2331dbd1bcf821c933e
+
+% 0 1 0 0876e925e67b594f0940ce84655ee4b0
+
+% 0 1 0 0fafe7c5410823400a3f9b63854a0027
+
+@ 0 19 0 077346a60ea3263803ae0010b5f58673
++     entry #Transport   der Transporttyp, `Protobuf`
++     entry #Reader   der Reader-Typ, `ProtobufReader`
++     entry .apply   ein `Parsable` aus einer Funktion über dem Reader
++         `Protobuf.Parsable[Point](reader => …)`: Die Instanz fängt die Funktion ein. Darin
++         durchlaufen `tag`, `enterField`, `varint`, `text` und `leaveField` des Readers das
++         Fenster; siehe `ProtobufReader`.
++     entry .fromDecodable   ein `Parsable`, das das Fenster als Nachricht materialisiert und dekodiert
++         Die Brücke aus der Welt der Bäume: `reader.message()` kopiert das verbleibende Fenster
++         als `Wire(Len, bytes)` heraus, und das `Decodable` dekodiert es. Darüber liest ein Typ,
++         der nur ein `Decodable in Protobuf` hat, wenn ein erzeugter Parser ihm als ganzem Wert
++         begegnet, und so lässt man einen eigenen Dekodierer über einen erzeugten Parser
++         gewinnen.
++     entry .declared   der Parser, den ein Typ mit `derives Protobuf.Direct` in sein Begleitobjekt erzeugt hat
++         Hat Vorrang vor `Parsable2#generated` (`import codecs.direct`), sodass ein Typ, der
++         `Direct` ableitet, den einmal erzeugten Codec verwendet.
++     entry .parseField   ruft ein nominales `Parsable` an einer Feldposition eines erzeugten Parsers auf
++         `Protobuf.Parsable.parseField[T](parsable, reader)` nimmt beide als neutrale
++         `AnyRef`-Träger — erzeugter Code ist capture-gelöscht — und bekräftigt sie hier erneut,
++         an der geprüften Stelle. Erzeugter Code ruft es auf; handgeschriebener Code hat keinen
++         Grund dazu.
++     entry .Direct   die Basisklasse erzeugter Parser, die den Reader als neutralen Träger nimmt
+
+% 1 1 0 12199d498e77f6e51fd2bf56ed4e1fda
+
+@ 0 8 0 135872de1e5f00c2180ae41eb6c91a9c
++           `Protobuf.Parsable.Direct[T]` implementiert `parse(reader: ProtobufReader^)`, indem es
++           den Reader als `AnyRef` an das geschützte `parseCarrier` übergibt, das erzeugter Code
++           implementiert und dabei die Capability bei jeder Verwendung mit `ProtobufReader.of`
++           erneut bekräftigt. Ein erzeugtes Override von `parse` selbst würde den
++           `Reader^`-Parameter des Traits auf einen reinen Typ verengen, was
++           Capture-Checking ablehnt, daher ist der Sprung über den Träger der
++           Rand. Von handgeschriebenen Instanzen nicht gebraucht, die
++           `Protobuf.Parsable.apply` verwenden.
++       entry #parse   `parseCarrier(reader)`, der Reader als `AnyRef` übergeben
++   entry .Parsable2   die Schicht niedrigerer Priorität, die `Parsable.generated` enthält
+
+% 1 1 0 07a3ae4f135d8b6b0ac71c7cca3eca3d
+
+% 2 1 0 01ed5ca4b82271231245e4afeedee60d
+
+@ 0 9 0 1767f10e113cb80919b978a6b2e106e8
++         Der Trait, den das Objekt `Protobuf.Parsable` erweitert, damit das Given von
++         `import codecs.direct` unterhalb von `Parsable.declared` liegt; `Protobuf.Parsable`
++         erbt `generated` von ihm.
++     entry #generated   unter `import codecs.direct` ein erzeugter Parser für jede Nachricht und jedes oneof
++         Ein Inline-Given, bedingt durch den Modus `Codecs.Direct` und durch
++         `Inlinable.Generates[T]`, das nur für eine Case-Klassen-Nachricht oder eine versiegelte
++         Summe solcher gilt; jeder andere Typ — eine generische Case-Klasse, eine Collection —
++         lässt die Suche scheitern und behält den abgeleiteten Weg. Der Parser wird an jeder
++         Verwendungsstelle expandiert, was Kompilierzeit kostet; `derives Protobuf.Direct`
++         bezahlt sie einmal.
++   entry .Printable   die Typklasse für direktes Drucken: misst die Felder eines Werts und schreibt sie direkt in die Ausgabe
+
+% 1 1 0 1719a315bc14f0750547085a151ba696
+
+@ 0 7 0 00aeeadfc6b7eb20060907de02c3c22b
++         Das Gegenstück zu `Encodable in Protobuf`, das nie den Baum baut, in zwei Durchläufen:
++         `#measure` durchläuft den Wert einmal, hält jede längenbegrenzte Größe, der es begegnet,
++         in einer `ProtobufSizes`-Tabelle fest und gibt die kodierte Länge des Werts zurück;
++         `#write` durchläuft ihn erneut, schreibt über einen `ProtobufPrinter` und liest die
++         Größen in derselben Reihenfolge zurück. Kein Feld wird in ein zwischengeschaltetes
++         `Protobuf` kodiert, und keine verschachtelte Nachricht wird kodiert und dann in ihre
++         Elternnachricht kopiert. (protobuf-java memoisiert eine Größe auf jedem
++         Nachrichtenobjekt; eine Case-Klasse hat keinen Ort, eine aufzubewahren, daher die
++         Tabelle.)
+
+@ 0 4 0 03cb744a83f5319609bae052b0898c67
++         Mit einem `Printable` im Geltungsbereich wird `value.in[Protobuf]` zu
++         `Protobuf1#encodablePrinted` aufgelöst, dessen Nachricht der eine `Wire(Len, bytes)` ist,
++         den der Printer gefüllt hat, sodass `encode` das Array unkopiert zurückgibt;
++         `in[Data over Protobuf]` gibt nur die Bytes, und `.print`, `.emit` führen die
++         Durchläufe explizit aus.
+
+% 2 1 0 0926c4a6c8fec6670910a2227b76d52f
+
+% 3 1 0 038ad621a4878e95145585e756e5a24c
+
+% 4 1 0 0f67c0148861e56317efab32debbba96
+
+% 5 1 0 122aca1a0650083012ac5e4896ca4285
+
+% 7 1 0 128dca5e070c7a3a0411161bde6f5fd8
+
+% 8 1 0 0ffebfb00b608ee609088f97ae104fed
+
+% 0 1 0 05772ab8cad662471a8884f3bdd22e2a
+
+% 0 1 0 0561f02bc8a4b590077a87890c7c9279
+
+% 1 1 0 1f47430e3ae2806b12ac6f0767ea2052
+
+@ 0 8 0 1db29b0a239351ea0cfd07aadb1c508e
++         Die Bytes sind genau jene, die das abgeleitete `Encodable` schreibt — jede Art von
++         Skalar, Text jenseits von ASCII, gepackte Läufe, Maps, verschachtelte und wiederholte
++         Nachrichten, ein `oneof` an einer Feldposition, eine optionale Nachricht —, sodass eine
++         Nachricht auf der einen Seite einer Verbindung direkt gedruckt und auf der anderen über
++         den Baum dekodiert werden kann. Die Opt-in-Oberfläche spiegelt `Protobuf.Parsable`: eine
++         explizite Instanz, `Inlinable.printable[T]`, `derives
++         Protobuf.Direct` oder `import codecs.direct` (`Printable2#generated`). Ein Feld, dessen
++         Typ kein druckendes `Inlinable` hat, wird im Messdurchlauf einmal über sein `Encodable in
++         Protobuf` kodiert, in der Tabelle abgelegt und im Schreibdurchlauf herauskopiert
++         (`.fromEncodable`).
+
+% 0 1 0 074712248eff05cf1ebc6ef3ffda7188
+
+% 0 1 0 0bfc473217b2731800ae1eb5f95d74aa
+
+% 1 1 0 16e969c048e5b72d1d6e57dc21acf726
+
+@ 0 15 0 1e362b6cccf1e7611b9d64f9fb781ad1
++     entry #measure   die kodierte Länge des Werts, wobei verschachtelte Größen in der Tabelle festgehalten werden
++     entry #write   schreibt den Wert über den Printer und liest die Größen zurück
++     entry .print   die Übertragungsbytes eines Werts über sein `Printable`: gemessen, dann einmal geschrieben
++         `Protobuf.Printable.print(value)` führt `measure` mit einer vom Thread bezogenen
++         Größentabelle aus (eine pro Thread, wiederverwendet, sodass ein Druckvorgang nur seine
++         Ausgabe alloziert), spult sie zurück und schreibt in ein `ProtobufPrinter.exact`-Array
++         der gemessenen Größe, das ohne Kopie zurückgegeben wird.
++     entry .emit   die Bytes eines Werts in Blöcken: an einen Verbraucher gereicht oder als Iterator gezogen
++         `emit(value, deliver)` misst wie `.print` und schreibt dann über einen
++         `ProtobufPrinter.blocks`-Printer, dessen Größe das `Buffering` im Geltungsbereich
++         bestimmt, wobei jeder Block an `deliver` übergeben wird, sobald er voll ist, und der
++         letzte durch ein `flush`; es wird kein Array der ganzen Nachricht gebaut, und ein String,
++         der länger als ein Block ist, wird am Stück ausgeliefert. `emit(value)` ist die
++         Zieh-Form: die Blöcke als `Iterator[Data]^`, auf einer Fiber geschrieben, während sie
++         konsumiert werden, was einen `Monitor`, eine `Probate` und ein `Buffering` braucht; das
++         `Printable` muss dort rein sein, wie ein erzeugtes es ist.
+
+% 2 1 0 028f7b28be5c12881edc74a236161278
+
+% 3 1 0 0df0dae936b21d7d1f4359a8681caa76
+
+% 4 1 0 17f3e8df47179cc5083ac86a6bfa403c
+
+% 5 1 0 16181118923562fd13c84bb2f670bc47
+
+% 7 1 0 03636ac83f23b1fc1cfdff7e059a91e8
+
+% 8 1 0 096a265fd045426c0013ca8ee1c3a88c
+
+% 0 1 0 10cadd242bc0cac5158a420a49607019
+
+% 0 1 0 1ea9d714e0bd161519c5a5b7b88ba570
+
+% 1 1 0 10be8bc09eb65ab40cf9b41ca90b668f
+
+@ 0 15 0 0ab788d06844eb0e12d63c2289bf9551
++     entry .apply   ein `Printable` aus einer Messfunktion und einer Schreibfunktion
++         `Protobuf.Printable[T]((value, sizes) => …, (value, printer, sizes) => …)`; die Instanz
++         fängt beide ein. Die Funktionen erhalten die Tabelle `ProtobufSizes^` und den
++         `ProtobufPrinter^` als exklusive Capabilities.
++     entry .fromEncodable   ein `Printable`, das den Wert einmal kodiert und seine Nutzdaten schreibt
++         Die Brücke aus der Welt der Bäume: Der Messdurchlauf kodiert den Wert über sein
++         `Encodable in Protobuf`, legt den Übertragungswert in der Tabelle ab und gibt die Länge
++         der Nutzdaten zurück; der Schreibdurchlauf holt ihn wieder heraus und schreibt die Bytes
++         roh. So behandelt ein erzeugter Printer ein Feld, dessen Typ nicht druckt.
++     entry .declared   der Printer, den ein Typ mit `derives Protobuf.Direct` in sein Begleitobjekt erzeugt hat
++     entry .measureField   ruft `measure` eines nominalen `Printable` aus einem erzeugten Printer auf
++         Die Träger reisen als `AnyRef` und werden hier erneut bekräftigt, an der geprüften
++         Stelle, wie es `Protobuf.Parsable.parseField` für Parser tut. Für erzeugten Code.
++     entry .writeField   ruft `write` eines nominalen `Printable` aus einem erzeugten Printer auf
++     entry .Direct   die Basisklasse erzeugter Printer, die Printer und Tabelle als Träger nimmt
+
+% 1 1 0 08fa505d82efa22910e395c8f5ccbc32
+
+@ 0 8 0 169ae24742d840ac023be0691ca4cd96
++           `Protobuf.Printable.Direct[T]` implementiert `measure` und `write`, indem es
++           `ProtobufSizes` und `ProtobufPrinter` als `AnyRef`s an die geschützten
++           `measureCarrier` und `writeCarrier` übergibt, die erzeugter Code implementiert und die
++           die Capabilities bei jeder Verwendung mit `ProtobufSizes.of` und `ProtobufPrinter.of`
++           erneut bekräftigen. Handgeschriebene Instanzen verwenden stattdessen
++           `Protobuf.Printable.apply`.
++       entry #measure   `measureCarrier(value, sizes)`, die Tabelle als `AnyRef` übergeben
++       entry #write   `writeCarrier(value, printer, sizes)`, beide als `AnyRef`s übergeben
++   entry .Printable2   die Schicht niedrigerer Priorität, die `Printable.generated` enthält
+
+% 1 1 0 1d3e38cfc677669b1faa2f85f9ee7cea
+
+% 2 1 0 0f6a0fb4902c2ff01dd1ec6ffead06c7
+
+@ 0 4 0 10343da8cdf9aa1f0b73e77d4bcc350e
++         Der Trait, den das Objekt `Protobuf.Printable` erweitert, damit das Given von
++         `import codecs.direct` unterhalb von `Printable.declared` liegt; `Protobuf.Printable`
++         erbt `generated` von ihm.
++     entry #generated   unter `import codecs.direct` ein erzeugter Printer für jede Nachricht und jedes oneof
++         Bedingt durch `Codecs.Direct` und `Inlinable.Generates[T]`, genau wie
+
+% 0 1 0 0da72180906615b611b983318ba5338b
+
+@ 0 1 0 047262c1474ad30a03ac2bebebdfff2a
++   entry .EncodableDerivation   leitet `Encodable in Protobuf` für eine Case-Klasse oder eine versiegelte Summe ab
+
+% 1 1 0 05074c6ca03fde841c66997718fc4884
+
+@ 0 6 0 002ad2948bafa011052c5938d05ea124
++         Das `Derivable` aus wisteria hinter `Protobuf2#encodable`. Ein Produkt kodiert als
++         längenbegrenzte Nachricht seiner Felder in Deklarationsreihenfolge, jedes nummeriert
++         durch seine `field`-Annotation oder, ohne Annotation, durch seine einsbasierte
++         Position; ein `Absent`-Feld schreibt nichts, und ein `Repeated`-Feld schreibt jedes
++         Vorkommen. Eine Summe kodiert als `oneof`: eine Nachricht mit einem Feld, nummeriert
++         durch die einsbasierte Position der Variante in der Summe, dessen Nutzdaten die eigene
++         Kodierung der Variante sind.
+
+% 2 1 0 0cc54fd57b29750f09ba75d3017f2189
+
+% 3 1 0 1dc6294e411dce0c07b36c832da1ec82
+
+% 0 1 0 01bf1f32dff7d5561b0f416224eaaaf9
+
+% 0 1 0 1b975e49ae04e1131697c33e51419e71
+
+% 0 1 0 1891e061c592ebcb0530c7a08c76e6cb
+
+% 0 1 0 17b7f12e4d877de8154d0137fd81b7d6
+
+% 1 1 0 128c4fa4d076bd2400ed73c8b9faf71a
+
+@ 0 3 0 18f687d6639299bf1afc29de74d75540
++     entry .conjunction   der Produkt-Kodierer: nummerierte Felder in eine längenbegrenzte Nachricht
++     entry .disjunction   der Summen-Kodierer: die Nachricht der Variante unter ihrer einsbasierten Variantennummer
++   entry .DecodableDerivation   leitet `Decodable in Protobuf` für eine Case-Klasse oder eine versiegelte Summe ab
+
+% 1 1 0 0f513e3bc6f7305e0947573891ba2f67
+
+@ 0 10 0 16d02b299e4dac461965fba5a559de9f
++         Das `Derivable` aus wisteria hinter `Protobuf2#decodable`. Die Nutzdaten eines Produkts
++         werden einmal in eine nach Nummern geordnete Tabelle eingelesen; der Dekodierer jedes
++         Felds erhält den Übertragungswert seiner Nummer — den `Wire` selbst, wenn er einmal
++         vorkommt, sonst `Repeated` aller Vorkommen, und `Absent`, wenn er fehlt; in diesem Fall
++         wird zuerst ein deklarierter Standardwert verwendet. Eine Summe wird über die
++         niedrigste in der Nachricht vorhandene Variantennummer dekodiert (ihr letztes
++         Vorkommen); eine Nachricht ohne Variantenfeld löst `Protobuf.Error` mit `MissingField`
++         aus. Beide schließen über der `Tactic[Protobuf.Error]` ab, die an der Ableitungsstelle
++         im Geltungsbereich ist.
++     entry .conjunction   der Produkt-Dekodierer: jedes Feld aus seiner Nummer, Standardwerte für die fehlenden
++     entry .disjunction   der Summen-Dekodierer: die vorhandene Variante mit der niedrigsten Nummer oder `MissingField`
++   entry .Error   ausgelöst, wenn Übertragungsbytes keine gültige Nachricht sind
+
+% 1 1 0 046c34893416180915605acb67b66fbe
+
+@ 0 7 0 01d7ac0094ddea3d09907de3cd541b0f
++         Fehler `↯/s.111.1`: _the protobuf data was not valid: `reason`_. Ausgelöst über eine
++         `Tactic[Protobuf.Error]` von jedem dekodierenden Weg — den abgeleiteten Dekodierern,
++         den skalaren Dekodierern, den Lesezugriffen von `ProtobufParser` und einem erzeugten
++         Parser —, und ein `.Reason` sagt, was falsch war und wo. Der Offset bei einem Grund auf
++         Byte-Ebene ist die Position innerhalb der gerade geparsten Nutzdaten der Nachricht oder
++         Unternachricht: Auf dem streamenden Weg ist er der absolute Offset in der Eingabe, auf
++         dem Weg über den Baum sind nur die Offsets der Nachricht oberster Ebene absolut, da
++         jede verschachtelte Nutzlast aus ihrem eigenen Ausschnitt dekodiert wird.
+
+% 2 1 0 0ea91013674e889c12800803f4c4c733
+
+% 3 1 0 0d4b451a555b8e6b0a364977c621d496
+
+% 0 1 0 0abba67f4d0de9eb0543a52190e7c765
+
+% 0 1 0 105dbad4fda64b39106f3112fd8abb8d
+
+% 0 1 0 086145cbe874da5411280f1018c0be22
+
+% 0 1 0 0e644837690eea950569db23ab7a1931
+
+% 0 1 0 02007947ca127f9d134f6a3641966c4e
+
+% 1 1 0 1fc40427dee146810a54c2a1514b474b
+
+@ 0 2 0 1c9980c7dc5424a31708b5fe44055b4d
++     entry #reason   warum die Daten zurückgewiesen wurden, und an welchem Offset
++     entry .Reason   die fünf Fehler, die eine Nachricht haben kann
+
+% 1 1 0 189b3b94da8b847600af1ff8b3113708
+
+@ 0 1 0 03d1aeb1f05fc3531e37b4d6dd0d83c9
++           Jeder Fall wird als seine Meldung dargestellt:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 8 0 00a9771a3e9f63f7078aff0f77c67407
++           column  Fall
++           column  Meldung
++           column  Anmerkung
++           row  `Truncated(offset)`  _the protobuf data ended unexpectedly at offset `offset`_  ein Längenpräfix, ein fester Wert oder ein Varint lief über das Ende seines Fensters hinaus
++           row  `MalformedVarint(offset)`  _a varint was malformed at offset `offset`_  mehr als zehn Fortsetzungsbytes
++           row  `UnexpectedWireType(found, offset)`  _an unexpected wire type, `found`, was encountered at offset `offset`_  der Übertragungscode eines Tags war 3, 4 (die veralteten Gruppen), 6 oder 7
++           row  `Overflow(offset)`  _a numeric value was too large for its type at offset `offset`_  ein zehntes Varint-Byte, das mehr als Bit 63 beiträgt
++           row  `MissingField(number)`  _the required field number `number` was missing_  ein `oneof` ohne vorhandene Variante; ein Fehler auf Dekodierebene, ohne Offset
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 1 0 06ade4f58b17d19a03a6a03e398784b9
++       entry .communicable   stellt jeden Grund als die obige Meldung dar
+
+@ 0 1 0 04da4f1f9bc02f751de9ff557d17ef2f
++ entry .Protobuf2   die unterste Codec-Schicht: abgeleitete Codecs, ungepackte Collections und der Leseweg über den Baum
+
+% 1 1 0 16215e42e4bfaadf1a4cded746207763
+
+@ 0 44 0 1f6c9d4a9cba38f20f2c3e6d4c7d4fa9
++       Ein Trait, den das Objekt `Protobuf` erweitert, sodass jedes seiner Givens ein Member von
++       `Protobuf` ist und aus dem impliziten Geltungsbereich aufgelöst wird. Es ist die unterste
++       von drei Schichten — unterhalb von `Protobuf1` (dem direkten Weg) und dem Objekt selbst
++       (Skalare, gepackte Collections und die Modusselektoren) —, sodass seine pauschalen
++       Instanzen nur gewählt werden, wenn nichts Spezifischeres greift: Die abgeleiteten
++       Nachrichten-Codecs weichen einem handgeschriebenen, die ungepackten Collection-Instanzen
++       den gepackten für `Packable`-Elemente und das baum-materialisierende Lesen einem
++       direkten Parser. In den Umbrella exportiert, weil eine Ableitung es benennt.
++   entry #encodable   leitet `Encodable in Protobuf` für jeden Typ mit einer `Reflection` aus wisteria ab
++       Ein Inline-Given, das `Protobuf.EncodableDerivation` für eine Case-Klasse oder eine
++       versiegelte Summe expandiert; ein Typ ohne Reflection und ohne andere Instanz lässt die
++       Suche scheitern.
++   entry #decodable   leitet `Decodable in Protobuf` für jeden Typ mit einer `Reflection` aus wisteria ab
++   entry #listEncodable   ein beliebiges `Iterable` als ungepacktes wiederholtes Feld, ein Tag pro Element
++       Der Rückfall für Elemente ohne `Packable`-Instanz — Strings, Byte-Arrays und
++       verschachtelte Nachrichten —, die jeweils als separates Vorkommen des Felds geschrieben
++       werden. Die eigenen `Repeated`-Vorkommen eines Elements werden eingeflacht, ein
++       `Absent`-Element wird verworfen, und eine leere Collection ist `Absent`. Fängt den
++       By-Name-Element-Codec ein.
++   entry #listDecodable   ein beliebiges `Iterable` aus seinen Vorkommen, über eine `Factory`
++       Dekodiert jedes Vorkommen mit dem Dekodierer des Elements. Ein gepacktes Feld übersteht
++       den Hin- und Rückweg hier auch dann, wenn kein `Packable` im Geltungsbereich ist, da der
++       Element-Dekodierer einen Wert liest.
++   entry #aliasListEncodable   der ungepackte Kodierer für die Prelude-`List`
++       Die opaken Prelude-Collections sind nicht konform zu `Iterable`, daher haben `List`,
++       `Set` und `Sequence` jeweils ein Alias-Paar, das beim zugrunde liegenden Stdlib-Typ
++       gebaut ist.
++   entry #aliasListDecodable   der ungepackte Dekodierer für die Prelude-`List`
++   entry #aliasSetEncodable   der ungepackte Kodierer für das Prelude-`Set`
++   entry #aliasSetDecodable   der ungepackte Dekodierer für das Prelude-`Set`
++   entry #aliasSeriesEncodable   der ungepackte Kodierer für die Prelude-`Sequence`
++   entry #aliasSeriesDecodable   der ungepackte Dekodierer für die Prelude-`Sequence`
++   entry #arrayEncodable   ein eingefrorenes `Array[T]^{}` aus Nachrichten, Text oder Bytes als ungepacktes wiederholtes Feld
++       Die Bytes der `List`-Form, sodass ein wiederholtes Nachrichtenfeld als
++       `Array[Message]^{}` deklariert und von einem erzeugten Parser ohne Zelle pro Element
++       gesammelt werden kann. Braucht einen `ClassTag`. Ein eingefrorenes Array eines
++       `Packable`-Skalars wird stattdessen gepackt, über `Protobuf.longArrayEncodable` und seine
++       Geschwister.
++   entry #arrayDecodable   ein wiederholtes Feld als eingefrorenes `Array[T]^{}`, für nicht-skalare Elemente
++   entry #aggregableIn   `read[T in Protobuf]` über den Baum: die Bytes aggregieren, dann `as[T]`
++       Das Given `(value in Protobuf) is Aggregable by Data` für jedes `Decodable in Protobuf`,
++       das dessen `Tactic[Protobuf.Error]` einfängt. Ein einzelner Block im Speicher wird an Ort
++       und Stelle dekodiert, eine Chain aus mehreren wird zuerst in einem Block gesammelt, und
++       ein Stream wird gesammelt, während er ankommt — in jedem Fall wird die ganze Nachricht
++       gehalten, da ein `Protobuf`-Wert seine Bytes ist. `Protobuf1#aggregableParsed` hat Vorrang,
++       wann immer ein `Parsable` im Geltungsbereich ist.
++   entry #encodableOver   `value.in[Data over Protobuf]`: die Übertragungsbytes der Nachricht
++       Das schreibseitige Spiegelbild von `read[T in Protobuf]`: die Nutzdaten dessen, was als
++       `Encodable in
++       Protobuf` aufgelöst wird, sodass direkt gedruckt wird, wo ein `Printable` im
++       Geltungsbereich ist, und sonst über den Baum kodiert wird.
+
+@ 0 1 0 05058753186c96400c9b8ac636985032
++ entry .Protobuf1   die mittlere Codec-Schicht: der direkte Weg, genommen, wann immer ein `Parsable` oder `Printable` im Geltungsbereich ist
+
+% 1 1 0 147d70ef9a23b00c0a926d4e050061e7
+
+@ 0 25 0 02316bc3ebad280f1eda4a949603f269
++       Ein Trait zwischen `Protobuf2` und dem Objekt `Protobuf`. Seine Givens gelten nur für
++       einen Typ mit einem `Protobuf.Parsable` oder `Protobuf.Printable` im Geltungsbereich und
++       haben dann Vorrang vor den baumbasierten von `Protobuf2`, sodass ein direkter Codec ein
++       Lesen oder Schreiben nur dort ändert, wo einer existiert. `import codecs.derived`
++       überschreibt sie vom Objekt darüber aus, und `import codecs.strict` paart die strikten
++       Givens des Objekts mit den Fehlschlägen hier.
++   entry #encodablePrinted   `in[Protobuf]` über ein `Printable`: das gedruckte Array als der eine `Wire` der Nachricht
++       Das `Encodable in Protobuf` für jeden Typ mit einem `Protobuf.Printable` im
++       Geltungsbereich, das es einfängt. Die Nachricht ist `Wire(Len, Printable.print(value))`,
++       sodass `encode` das Array ohne Kopie zurückgibt. Ein lexikalisch gebundenes `Printable` —
++       ein lokales Given oder eines, das per Namen importiert ist — macht die Kodierung direkt.
++   entry #aggregableParsed   `read[T in Protobuf]` über eine Chain oder einen Stream über ein `Parsable`
++       Das Given `(value in Protobuf) is Aggregable by Data` für jeden Typ mit einem
++       `Protobuf.Parsable`, das das Parsable und dessen `Tactic[Protobuf.Error]` einfängt. Eine
++       Chain aus einem Block wird an Ort und Stelle gelesen; eine längere Chain oder ein Stream
++       wird über einen `ProtobufParser` gelesen, der Zellen zieht, wenn er sie braucht, sodass
++       die Eingabe nie zusammengesetzt und höchstens ein Feld gehalten wird — außer bei einem
++       `oneof`, dessen Nachricht gepuffert wird, während seine Variante gewählt wird.
++       Fehler-Offsets sind in der Eingabe absolut.
++   entry #readableParsed   `data.read[T in Protobuf]` über einem ganzen `Data`, an Ort und Stelle geparst
++       Konkret in `Data`, sodass es die zusammengesetzte Pipeline schlägt, wenn der gesamte
++       Inhalt bereits vorliegt, und ihn parst, ohne ihn in einen einelementigen Stream zu
++       hüllen.
++   entry #aggregableStrictFailure   unter `import codecs.strict` kompiliert ein Lesen eines Typs ohne `Parsable` nicht
++       Ein Inline-Given, das an der Verwendungsstelle _`T` has no direct codec_ auslöst. Es liegt
++       über dem abgeleiteten Lesen, damit der abgeleitete Weg nicht stillschweigend genommen
++       werden kann, und unter `Protobuf.aggregableStrict`, das jeden Typ mit einem Parser
++       zuerst nimmt.
++   entry #encodableOverStrictFailure   unter `import codecs.strict` kompiliert `in[Data over Protobuf]` ohne `Printable` nicht
+
+@ 0 1 0 02399c22806a206819265f01ccf26369
++ entry .WireType   die vier Übertragungstypen von proto3: `Varint`, `I64`, `Len` und `I32`
+
+% 1 1 0 0c360b9cc5e06c9116803b488f70c070
+
+@ 0 6 0 18a4c1ac578c8a100ab141f6f5cf4c46
++       Die unteren drei Bits des Tags eines Felds geben an, wie sein Wert angeordnet ist: `Varint`
++       (Code 0) für `int32`, `int64`, `uint`, `sint`, `bool` und Enums; `I64` (Code 1) für
++       `fixed64`, `sfixed64` und `double`; `Len` (Code 2) für Strings, Bytes, verschachtelte
++       Nachrichten, gepackte Folgen und Map-Einträge; und `I32` (Code 5) für `fixed32`,
++       `sfixed32` und `float`. Die veralteten Gruppentypen, die Codes 3 und 4, werden nicht
++       unterstützt: Ein Tag mit einem davon wird mit `Protobuf.Error.Reason.UnexpectedWireType`
++       abgewiesen.
+
+% 2 1 0 15de928426ce5f980614e8f17bd0bd2d
+
+% 3 1 0 187ae6ba0723b0630d877caa125d962c
+
+% 0 1 0 16ef7832a33c68921a32db69827ed75c
+
+% 0 1 0 03e9fe429f03172f15f70161732bd57b
+
+% 0 1 0 1d4bc6856232090d00ef895413bea165
+
+% 1 1 0 160d07d5c20d3c7d0bf33ca3b3b77f6c
+
+@ 0 2 0 1454079fca24609b17976e9b36786061
++   entry .fromId   der Übertragungstyp mit einem 3-Bit-Code, oder `Unset` für 3, 4, 6 und 7
++   entry #id   der 3-Bit-Code, der in ein Feld-Tag gepackt wird: 0, 1, 2 oder 5
+
+@ 0 1 0 176a4aa5a99131721c10851e614fa91d
++ entry .Packable   kennzeichnet einen Skalar, dessen wiederholte Felder in eine längenbegrenzte Folge gepackt werden
+
+% 1 1 0 0129660e29ce61a717e7dba9a141e1d1
+
+@ 0 6 0 01a8b2d1d4f1f8c00c160ff84ae15fd4
++       proto3 packt ein wiederholtes numerisches Feld: Die Bytes aller Elemente werden zu einem
++       einzigen `Len`-Feld aneinandergehängt, statt mit einem Tag pro Element geschrieben zu
++       werden. `Packable` ist der Nachweis, dass ein Elementtyp gepackt wird, und hält den
++       `#wireType` fest, den seine Werte verwenden, damit ein Reader eine gepackte Folge wieder in
++       Elemente zerlegen kann. Nur numerische Skalare haben eine Instanz — `Int`, `Long`,
++       `Boolean`, `Float`, `Double` und die sechs Ganzzahlen fester Größe —, denn Strings,
++       Byte-Arrays und Nachrichten sind längenbegrenzt und wiederholen sich immer als getrennte
++       Felder.
+
+@ 0 3 0 19fb8bb7183b34c51b3f61bd583f2d0e
++       Die Instanzen sind Givens des Begleitobjekts, sodass ein `List[Int]`-Feld ohne Import
++       gepackt wird, während ein `List[Text]`-Feld das ungepackte `Protobuf2#listEncodable`
++       nimmt. Ein Reader akzeptiert beide Formen, gleich welche der Schreiber gewählt hat.
+
+% 1 1 0 0506374c408184810daa72b5a7f99830
+
+@ 0 12 0 1f94e54f6ca18ff61d017bb862be56b5
++   entry #wireType   wie ein Element angeordnet ist: `Varint`, `I32` oder `I64`
++   entry .int   `Int` wird als Varints gepackt
++   entry .long   `Long` wird als Varints gepackt
++   entry .boolean   `Boolean` wird als Varints gepackt
++   entry .u32   `U32` wird als Varints gepackt
++   entry .u64   `U64` wird als Varints gepackt
++   entry .s32   `S32` wird als Zickzack-Varints gepackt
++   entry .s64   `S64` wird als Zickzack-Varints gepackt
++   entry .float   `Float` wird als feste 32-Bit-Werte gepackt
++   entry .double   `Double` wird als feste 64-Bit-Werte gepackt
++   entry .b32   `B32` wird als feste 32-Bit-Werte gepackt
++   entry .b64   `B64` wird als feste 64-Bit-Werte gepackt
+
+@ 0 1 0 0c99364a4381578212a62f2de3e4afce
++ entry .field   die Annotation `@field(n)`: die Protocol-Buffers-Feldnummer eines Felds einer Case-Klasse
+
+% 1 1 0 19b1bd4fd1d869721943ffa530adc35a
+
+@ 0 6 0 1570679f83b8ec231ffcc5b25ec2567b
++       `case class Point(@field(1) x: Int, @field(2) y: Int)` deklariert `x` als Feld 1 und `y`
++       als Feld 2; das ist alles, was proto3 braucht und der Scala-Typ nicht sagt. Die Nummern
++       werden bei der Ableitung und von den Generatoren gelesen, daher ist die Annotation eine
++       `StaticAnnotation` mit einer `#number`. Ein Feld ohne Annotation wird nach seiner
++       1-basierten Deklarationsposition nummeriert — so, wie `protoc` dieselben Deklarationen
++       nummerieren würde —, und die Nummern dürfen Lücken haben, wie es die Weiterentwicklung
++       eines Protokolls verlangt:
+
+% 2 1 0 177106922e2857f11dc978f19ab2974b
+
+% 3 1 0 032e117616aa24a712f8f6a8f40383c9
+
+% 0 1 0 13ef00015d56b3b201f642d02b01a7a6
+
+% 0 1 0 127a74ad7a4fdefe12bc0a96f5070eb7
+
+% 0 1 0 038550b06f592ca7140359d1409c3545
+
+% 1 1 0 123e27092178dea3061c1164b5e7297d
+
+@ 0 4 0 1d7eb3665bea345a1c6e0739b0e9a1a1
++       Die Feldnummern der Varianten eines `oneof` sind positionsbezogen: Der erste Fall des Enums
++       oder versiegelten Traits ist Feld 1 der `oneof`-Nachricht, der zweite Feld 2, und die
++       Annotation wird für sie nicht herangezogen.
++   entry #number   die Feldnummer, 1 oder größer
+
+@ 0 1 0 1edb32c71ad9dcf11a495e22b57e2764
++ entry .conversions   Givens, mit denen ein kodierbarer Wert dort stehen kann, wo ein `Protobuf` verlangt ist
+
+% 1 1 0 06d03833f7fdd18008083f46e4a7977c
+
+@ 0 6 0 0cb695fd752500c913fca0735ec641da
++       Ein Auswahlpaket, das namentlich importiert wird: `import conversions.encodableToProtobuf`.
++   entry .encodableToProtobuf   eine im Geltungsbereich gültige `Conversion` von jedem `Encodable in Protobuf`-Wert in sein `Protobuf`
++       Bringt die implizite Konvertierung `value => value.in[Protobuf]` in den lexikalischen
++       Geltungsbereich, sodass ein kodierbarer Wert bei einer Linsenzuweisung direkt angegeben
++       werden kann — `message.lens(_(Prim) = Point(7, 8))` —, ohne `in[Protobuf]` zu schreiben.
++       Eine Konvertierung ist nie standardmäßig im Geltungsbereich; sie zu importieren ist die
++       ausdrückliche Wahl.
+
+@ 0 1 0 168b4e39869db247126d81020f92935b
++ entry .Inlinable   der Codegenerator zur Kompilierzeit hinter direkten Parsern und Printern, pro Feldtyp
+
+% 1 1 0 18217b659f57168a031c38560a07fe4c
+
+@ 0 8 0 176b346f5d4f8b7006614f9a710f4975
++       `Inlinable` ist das Gegenstück von `Protobuf.Parsable` und `Protobuf.Printable` auf der
++       Ebene von `Expr`: eine Typklasse, deren Methoden zur Zeit der Makroexpansion Code erzeugen.
++       `#parse` erhält einen `Expr` des Readers, dessen Fenster auf die Nutzdaten des Werts
++       gesetzt ist, und gibt einen `Expr` des dekodierten Werts zurück; `#measure` und `#write`
++       geben ebenso die beiden Durchgänge des Druckens zurück. Der Generator fügt jedes Ergebnis
++       direkt in den Parser oder Printer ein, den er aufbaut, sodass verschachtelte Nachrichten,
++       das Sammeln wiederholter Felder, die `oneof`-Verteilung und eigene Blatt-Codecs alle in
++       eine einzige flache Methode inline eingefügt werden, ohne Verteilung zur Laufzeit, ohne
++       Feld-Maps und ohne Adapter-Sprünge zwischen zusammengesetzten Parsern.
+
+@ 0 1 0 02cba14927f03df8131f6790b3937d08
++       Verwender begegnen ihm über zwei Einstiegspunkte:
+
+% 2 1 0 14c42fd427a5d97a0936e323b2671763
+
+% 3 1 0 1b101290be58011019c231869c59af5f
+
+% 4 1 0 0e8aa5f94db2620d193adda43c0eff11
+
+% 0 1 0 0d056e7399d96de419e1aaa893e149cc
+
+% 2 1 0 0284ceed9e4f1b16068706289d36580c
+
+% 0 1 0 0f76b1a797c93b19167941340d00ecc8
+
+% 0 1 0 0c679ec4366487e906353a9b2a237cf4
+
+% 0 1 0 0d68a3b3294b6e5d18a38e9ddb3da6e1
+
+% 1 1 0 158036a89a98186e0f073a64c42b89f5
+
+@ 0 8 0 1b9ed8734343ca740b72c86c18527db6
++       Jeder erzeugt eine monomorphe Instanz für eine Nachricht als Case-Klasse oder ein `oneof`
++       als versiegelte Summe, zusammengesetzt aus den `Inlinable`-Instanzen ihrer Feldtypen: den
++       strukturellen Instanzen, die `derived` für verschachtelte Nachrichten und Summen aufbaut,
++       den Blatt-Givens des Begleitobjekts (`int`, `long`, `boolean`, `double`, `float`, `text`,
++       `data`) und `iterable` für wiederholte Felder. Ein Feldtyp ohne Instanz — eine Ganzzahl
++       fester Größe, eine `Optional`-Collection, ein benutzerdefinierter Typ — nimmt die
++       *Nahtstelle*: Seine Vorkommen werden als Übertragungswerte gesammelt und über sein
++       `Decodable in Protobuf` dekodiert (über sein `Encodable` kodiert), sodass jede Nachricht
++       weiterhin geparst wird, nur an diesem Feld langsamer.
+
+@ 0 9 0 1dca7278ad9a4388065945a2eb792c3b
++       Eine handgeschriebene Instanz (`given (MyLeaf is Inlinable) = new Inlinable { … }`) ist
++       ein gewöhnlicher Laufzeitwert, und der Generator kann ihr `parse` nur aufrufen, indem er
++       sie innerhalb des Makros auswertet — was einen Staging-Compiler im Makro erfordert, den
++       `locomotion.staged` als `.Stager` beisteuert. Daraus folgen zwei Einschränkungen: Die
++       Instanz und ihr Typ müssen in einem *früheren* Lauf als die Expansion kompiliert sein
++       (eine Instanz aus demselben Lauf, noch ohne verlässliche Classfile, fällt auf die
++       Nahtstelle zurück), und ohne `locomotion.staged` auf dem Klassenpfad des Makros fällt jede
++       handgeschriebene Instanz auf die Nahtstelle zurück. Erzeugte strukturelle Instanzen
++       brauchen keines von beiden. Eine Nachricht, deren Instanz eine `derives`-Klausel ist
++       (`derives Inlinable.ForProtobuf`), wird beim Herbeirufen im Staging in ihrem Begleitobjekt
++       gefunden.
+
+@ 0 1 0 18c984cffbc18cad0c5845ef4967aab2
++       `Inlinable` wird nicht in das Umbrella exportiert: Schreiben Sie `import locomotion.Inlinable`.
+
+% 1 1 0 0b15f3928ca293111662ef5f02b4021f
+
+% 0 1 0 147e046f29e62e5b04a9813f1d58b1b4
+
+% 0 1 0 01bc8e1fb02213070d3215eedfc92819
+
+@ 0 10 0 0fe869a74a0ef2ab09a990601d9c3b94
++   entry .parsable   `Inlinable.parsable[T]`: ein erzeugtes `Protobuf.Parsable` für eine Nachricht oder ein oneof
++       Ein Makro. Der Typ muss eine Nachricht als Case-Klasse sein, eine versiegelte Summe
++       davon oder ein Typ mit einer `Inlinable`-Instanz; eine Collection wird abgewiesen
++       (_a Protobuf message is the unit of direct parsing_), und ein Typ ohne Instanz und ohne
++       Gestalt einer Nachricht ist ein Kompilierfehler, der ein `Decodable in Protobuf`
++       vorschlägt. Der erzeugte Parser ist an ein lazy `self` gebunden, sodass ein rekursives
++       Vorkommen seines eigenen Typs — `Tree` mit `children: List[Tree]` — an Ort und Stelle
++       über ihn gelesen wird.
++   entry .printable   `Inlinable.printable[T]`: ein erzeugtes `Protobuf.Printable` für eine Nachricht oder ein oneof
++       Ein Makro, wie `.parsable`. Ein Typ, dessen Instanz nicht druckt (`prints` ist `false`),
++       ist ein Kompilierfehler: _`T` has no generated printer; a Protobuf message is the unit of
+
+% 0 1 0 11d20b8db534441a03a17a4fb2ab9c8e
+
+@ 0 5 0 0bd7ec2dfbb6f4c90f9fdccb414e72dc
++   entry .derived   die strukturelle Instanz für eine Nachricht als Case-Klasse: `product is Inlinable`
++       Reflektiert das Produkt, wenn sein `parse`, `measure` oder `write` aufgerufen wird —
++       ohne eigenes Makro, da der `Type` mit dem Aufruf ankommt. Felder werden per Nummer
++       gelesen und je nach Typ gesammelt, verteilt oder über die Nahtstelle behandelt.
++   entry .ForProtobuf   der Träger `derives Inlinable.ForProtobuf`: die strukturelle Instanz einer Nachricht in ihrem Begleitobjekt
+
+% 1 1 0 0b22a341f68026f20aed7782544ffeb0
+
+@ 0 13 0 0332a38594a216bb1851f674008d9efe
++         Eine `Self`-typisierte Typklasse kann nicht in einer `derives`-Klausel stehen, daher
++         synthetisiert `case class Play(…) derives Inlinable.ForProtobuf` diese parametrisierte
++         Unterklasse — die ein `Play is Inlinable` *ist* — in das Begleitobjekt von `Play`, wo
++         das Herbeirufen zur Expansionszeit durch den Generator einer anderen Nachricht sie
++         findet. Sie delegiert jede Methode an die strukturelle Instanz, die
++         `Inlinable.derived` aufbaut, und die Auflösungsleiter packt sie aus, sodass die
++         Instanz ihre Identität als Generator behält.
++     entry .derived   umhüllt `Inlinable.derived[T]` für die `derives`-Klausel
++     entry #parse   delegiert an die strukturelle Instanz
++     entry #absent   delegiert an die strukturelle Instanz
++     entry #prints   delegiert an die strukturelle Instanz
++     entry #measure   delegiert an die strukturelle Instanz
++     entry #write   delegiert an die strukturelle Instanz
++   entry .Generates   Nachweis, dass der Codec eines Typs strukturell erzeugt werden kann: eine Nachricht oder ein oneof
+
+% 1 1 0 026f858860e2838f17f964a11113974e
+
+@ 0 7 0 073bf6407b322b3c1a2b411af7a433b9
++         Die Bedingung für die erzeugten Instanzen von `import codecs.direct`. Sein
++         transparentes Given `.generates` ist ein Makro, das für eine Nachricht als Case-Klasse
++         oder eine versiegelte Summe davon gelingt und für alles andere scheitert — _`T` has no
++         generated codec_ —, sodass die Suche nach einer erzeugten Instanz scheitert und
++         stattdessen der abgeleitete Weg aufgelöst wird. Ein günstiger Gestalttest, sodass eine
++         Suche in diesem Modus günstig bleibt.
++     entry .generates   das Makro-Given: `Generates[T]` für eine Nachricht oder ein oneof, sonst eine gescheiterte Suche
++   entry .Stager   der Hook, über den `locomotion.staged` eine handgeschriebene Instanz zur Expansionszeit auswertet
+
+% 1 1 0 0d2744b111282a860204b3237fa98d90
+
+@ 0 41 0 0949830b91184e681218f23fd2ebeebb
++         `Inlinable.Stager` ist der Trait mit einer Methode `#summon`, den `locomotion.staged`
++         als `InlinableStager.Implementation` implementiert; das Begleitobjekt lädt diese
++         Implementierung beim ersten Bedarf per Klassenname aus dem eigenen Classloader des
++         Makros, und `.summon` gibt `None` zurück, wenn sie fehlt, sodass der Kern keine
++         Abhängigkeit von den Compiler-Jars hat. Sie wird per Name statt über `ServiceLoader`
++         gesucht, damit der Kern für Scala Native kompiliert.
++     entry .summon   das im Staging gewonnene `Inlinable` für einen Feldtyp, oder `None`, wenn `locomotion.staged` fehlt
++     entry #summon   wertet das `Inlinable`-Given für einen Typ in einem Staging-Compiler aus
++   entry .int   `Int` wird als Varint gelesen und als solcher gedruckt; `0`, wenn es fehlt
++       Die Blatt-Generatoren lesen das Fenster des Readers genau so, wie die Baum-Accessoren
++       die aufgezeichneten Nutzdaten eines Felds interpretieren, für handgeschriebene Instanzen,
++       die über einem Wert zusammengesetzt sind.
++   entry .long   `Long` wird als Varint gelesen und gedruckt; `0L`, wenn es fehlt
++   entry .boolean   `Boolean` wird als Varint gelesen und gedruckt; `false`, wenn es fehlt
++   entry .double   `Double` wird als fester 64-Bit-Wert gelesen und gedruckt; `0.0`, wenn es fehlt
++   entry .float   `Float` wird als fester 32-Bit-Wert gelesen und gedruckt; `0.0f`, wenn es fehlt
++   entry .text   `Text` liest das Fenster als UTF-8 und druckt über den temporären Puffer der Größentabelle
++       Der Messdurchgang kodiert den String einmal in den temporären Puffer von `ProtobufSizes`
++       (`stashText`) und hält dessen Offset und Länge fest, und der Schreibdurchgang kopiert ihn
++       heraus (`ProtobufPrinter#stashedText`), sodass ein String genau einmal kodiert wird.
++   entry .data   `Data` liest das Fenster als Bytes und druckt sie unverändert
++   entry .iterable   trägt die Instanz des Elements für ein wiederholtes Feld; parst nie allein
++       Die Vorkommen einer Collection können über die ganze Nachricht verstreut und gepackt
++       sein, daher kann eine Collection nicht aus einem einzelnen Feldfenster geparst werden:
++       Das Sammeln liegt beim Nachrichtengenerator. Diese Instanz trägt ihm nur das `Inlinable`
++       des Elements zu, und ihr `parse` ist ein Kompilierfehler, wenn es direkt erreicht wird.
++   entry #parse   erzeugt den Code, der `Self` aus dem Fenster des Readers liest
++   entry #prints   ob die Instanz einen Printer erzeugt; standardmäßig `false`
++       Eine Instanz, die nicht druckt — die Vorgabe, damit eine reine Parse-Instanz ehrlich
++       bleibt —, legt ihr Feld in einem erzeugten Printer auf die Nahtstelle `Encodable in
++       Protobuf`.
++   entry #measure   erzeugt den Messdurchgang: hält verschachtelte Größen fest, gibt die kodierte Länge zurück
++       Die Vorgabe ist ein Kompilierfehler, _the Inlinable for `T` generates no printer_; eine
++       Instanz, die `prints` überschreibt, muss dies und `#write` überschreiben. Die Tabelle
++       reist als `Expr[AnyRef]` und wird mit `ProtobufSizes.of` erneut bekräftigt.
++   entry #write   erzeugt den Schreibdurchgang über den Printer und liest die Größen zurück
++       Printer und Tabelle reisen als `Expr[AnyRef]`s und werden mit `ProtobufPrinter.of` und
++       `ProtobufSizes.of` erneut bekräftigt, da erzeugter Code capture-gelöscht ist.
++   entry #absent   erzeugt, was ein Feld dieses Typs liefert, wenn seine Nummer fehlt
++       proto3 hat keine Pflichtfelder: Die Blatt-Instanzen liefern ihre Null, eine
++       Nachrichteninstanz einen Datensatz, dem alle Felder fehlen, und die Vorgabe bricht über
++       die gegebene Taktik mit `Protobuf.Error.Reason.MissingField(0)` ab, sodass eine eigene
++       Instanz, die dies nicht überschreibt, laut statt stillschweigend falsch ist.
+
+@ 0 1 0 0038746119113b2b04f4b732c44a9bc4
++ entry .ProtobufParser   der streamende Übertragungsparser: liest Felder direkt von einem `Cursor`, ein Fenster nach dem anderen
+
+% 1 1 0 18a3c9da1f2a2a330ead0b39c962abe5
+
+@ 0 6 0 08fe81bfc775e25d13a53e618e48562f
++       `ProtobufParser` liest Protocol-Buffers-Übertragungsbytes Feld für Feld von einem
++       zephyrine-`Cursor`, sodass eine in Chunks ankommende Nachricht gelesen wird, während sie
++       ankommt, und der Puffer nur das gerade gelesene Feld hält. Er ist eine zustandsbehaftete,
++       exklusive Capability (`ProtobufParser^`), die nur über `.apply` des Begleitobjekts
++       konstruiert wird, über einem ganzen `Data` (an Ort und Stelle gelesen, ohne Cursor), einer
++       `Chain[Data]` (Zellen werden nach Bedarf gezogen) oder einem `Stream[Data]` (Chunks werden
++       gelesen, wie sie geliefert werden), und der für die Dauer eines Lesevorgangs diesem gehört.
+
+@ 0 8 0 0bac87cc3a06e262042826c1860b8b08
++       Lesevorgänge sind durch ein *Fenster* begrenzt: die Ausdehnung des gerade geparsten Werts,
++       als absoluter Offset in der Eingabe, sodass verschachtelte Nachrichten an Ort und Stelle
++       statt über kopierte Nutzdaten geparst werden. `#directEnterField` verengt das Fenster
++       anhand des Übertragungscodes seines Tags auf den Übertragungswert eines Felds, und
++       `#directLeaveField` stellt das umschließende wieder her und überspringt, was vom Feld
++       übrig ist; jeder Skalar-Lesevorgang prüft das Fenster und meldet einen `Protobuf.Error`
++       mit dem absoluten Offset. Ein `oneof` wird gelesen, indem das Fenster als Ganzes gepuffert
++       (`#directBufferWindow`), nach der Variante durchsucht und die Ausdehnung der Variante
++       erneut betreten wird (`#directWindow`, `#directRestore`).
+
+@ 0 6 0 0bba8011c86ecd2f1b0fc4c9541ce19b
++       Erzeugte Parser, in Module der Verwender eingefügt, binden den Parser einmal pro Datensatz
++       und lesen über diesen *direkten Rand* — die `direct…`-Methoden, die jeweils eine
++       `Tactic[Protobuf.Error]` nehmen —, weshalb sie öffentlich sind. Handgeschriebene
++       `Parsable`-Instanzen verwenden `ProtobufReader`, den eingeschränkten Rand, der die Taktik
++       für sie trägt. Das Begleitobjekt enthält auch die Lesevorgänge über ganze Nutzdaten, die
++       der Baumweg verwendet: `.fields`, `.packed`, `.varintOf`, `.fixed32Of` und `.fixed64Of`,
++       jeweils über einem `Data` im Speicher.
+
+% 2 1 0 0c57b931321b2b9e1f7ea1a2e08626f5
+
+% 3 1 0 177192daf06922b10d5df2c957f2d8d6
+
+% 4 1 0 0f40c15c0d91d08812096037b1c803cd
+
+% 0 1 0 1f545fa8a719c3621c59a692dce5fe27
+
+% 0 1 0 0a1950f8a01f681b1b5a2af8a4e44091
+
+% 0 1 0 08a5ba10a803ac4b1f69743ca6cc05fa
+
+% 0 1 0 0984af592b3292be02b94995a301618e
+
+% 0 1 0 07d44f777cbfcb6c0aaafc89f6f9801e
+
+% 0 1 0 12e0260ddc2f3bf7044f6d770f0a0817
+
+% 0 1 0 0bbc03b5333e47b9053a0cd238fb0141
+
+% 1 1 0 094d9d9847e488e70e2683d6520e62f2
+
+@ 0 6 0 1f4e7011bb2076c91c174ee92d58afec
++       Hinweise zur Performance, auf die sich ein Verwender verlassen kann: Ein Ein-Byte-Varint
++       (ein Tag, ein Bool, eine kurze Länge) wird an Ort und Stelle gelesen; Varints von zwei bis
++       vier Bytes nehmen einen geradlinigen Pfad; ein String-Feld, dessen Bytes alle ASCII sind
++       und das über einem ganzen `Data` gelesen wird, wird über eine Latin-1-Kopie statt über den
++       UTF-8-Konstruktor dekodiert, mit identischem `Text`; und ein Lesevorgang über einem ganzen
++       `Data` hat überhaupt keinen Cursor. Fensterpositionen überqueren den Rand als `Int`s: Eine
++       Nachricht ist höchstens 2 GiB groß, wie es ihre `int32`-Längenpräfixe verlangen.
+
+% 1 1 0 1ecc24b255e8328306aad5ab10a4c8f4
+
+% 1 1 0 12d92586228731430860ed03611f0631
+
+@ 0 82 0 08ea117d3da0031702969d6011a1f9c3
++   entry .apply   ein Parser über einem ganzen `Data`, einer `Chain[Data]` oder einem konsumierten `Stream[Data] over Credit`
++       Über einem `Data` ist das Array der Puffer, geliehen und nie beschrieben, und das Fenster
++       ist seine Länge. Über einer Chain oder einem Stream ist das Fenster unbegrenzt — die
++       Nachricht endet, wo die Eingabe endet, was ein Stream erst durch sein Ende verrät —, und
++       Zellen werden gezogen, wie der Parser sie braucht. Die Stream-Überladung nimmt ihr
++       Argument als `consume`: Der Stream wird genau einmal verwendet, vom Parser.
++   entry .of   bekräftigt einen Parser, der als neutraler `AnyRef`-Träger gereist ist, erneut als `ProtobufParser^`
++       Für erzeugte Parser, die den Parser des Readers als Träger erhalten und für jeden
++       `update`-Aufruf die exklusive Capability brauchen; inline, sodass der Cast-Ausdruck
++       selbst im Modul des Verwenders landet. Handgeschriebener Code hat keinen Träger, den er
++       erneut bekräftigen müsste.
++   entry .varintOf   ein Varint vom Anfang von Nutzdaten im Speicher; braucht eine `Tactic[Protobuf.Error]`
++       Der allokationsfreie Skalar-Lesevorgang des Baumwegs: `Protobuf.intDecodable` und seine
++       Geschwister rufen ihn auf den aufgezeichneten Nutzdaten eines Felds auf. Ein
++       Ein-Byte-Varint wird an Ort und Stelle gelesen; mehr als zehn Bytes sind
++       `MalformedVarint`, das Ausgehen der Bytes ist `Truncated`, und ein zehntes Byte, das mehr
++       als Bit 63 beiträgt, ist `Overflow`.
++   entry .fixed32Of   ein Little-Endian-32-Bit-Wert aus Nutzdaten; `Truncated`, wenn kürzer als vier Bytes
++   entry .fixed64Of   ein Little-Endian-64-Bit-Wert aus Nutzdaten; `Truncated`, wenn kürzer als acht Bytes
++   entry .fields   die Nutzdaten einer Nachricht als Map von der Feldnummer auf jedes Vorkommen, in der Reihenfolge des ersten Vorkommens
++       Durchläuft die Nutzdaten einmal und kopiert die Nutzdaten jedes Felds in ein eigenes
++       `Protobuf.Wire`, wobei Wiederholungen und unbekannte Felder erhalten bleiben.
++       `fieldOptical` verwendet es, um ein Feld neu zu schreiben und die übrigen durchzureichen.
++       Die Vorkommen eines Felds werden in Übertragungsreihenfolge aufgeführt.
++   entry .packed   zerlegt eine gepackte Folge anhand des Übertragungstyps des Elements in einen Übertragungswert pro Element
++       `ProtobufParser.packed(payload, WireType.Varint)` zerlegt `Len`-Nutzdaten aus
++       aneinandergehängten Varints; `I32` und `I64` zerlegen in festen Breiten. Der
++       Übertragungstyp kommt aus der `Packable`-Instanz des Elements. Ein abgeschnittenes
++       letztes Element ist `Truncated`.
++   entry #directAtLimit   ob das Fenster keinen weiteren Inhalt hat; auf oberster Ebene, ob die Eingabe zu Ende ist
++       Der Test der Datensatzschleife: `while !parser.directAtLimit` liest Tags, bis das Fenster
++       verbraucht ist. Bei einem unbegrenzten Fenster fragt es den Cursor nach mehr, bevor es
++       antwortet, sodass das vollständige Feld eines aktiven Streams gelesen wird, ohne auf das
++       nächste zu warten.
++   entry #directMark   der aktuelle absolute Offset, als `Int`
++   entry #directBoundary   der End-Offset des Fensters, als `Int`; `Int.MaxValue`, wenn unbegrenzt
++   entry #directTag   das Tag des nächsten Felds, `(number << 3) | wireCode`; nur unterhalb der Grenze aufzurufen
++   entry #directVarint   ein durch das Fenster begrenzter Varint
++       `Truncated` am Ende des Fensters oder der Eingabe, `MalformedVarint` nach mehr als zehn
++       Bytes, `Overflow` für ein zehntes Byte über Bit 63; der Offset ist jeweils der, an dem
++       der Varint begann.
++   entry #directFixed32   vier Little-Endian-Bytes als `Int`, innerhalb des Fensters
++   entry #directFixed64   acht Little-Endian-Bytes als `Long`, innerhalb des Fensters
++   entry #directEnterField   verengt das Fenster anhand seines Übertragungscodes auf den Wert eines Felds; gibt die umschließende Grenze zurück
++       Code 0 umfasst die eigenen Bytes des Varints, 1 die nächsten acht, 5 die nächsten vier,
++       und 2 verbraucht das Längenpräfix und umfasst so viele Bytes; Code 3, 4, 6 oder 7 ist
++       `UnexpectedWireType` am Offset des Tags. Ein Feld, das über das umschließende Fenster
++       hinausreichen würde, ist `Truncated`; ein unbegrenztes umschließendes Fenster kann beim
++       Betreten nicht nachweisen, dass die Bytes existieren, daher melden stattdessen seine
++       Lesevorgänge das Abschneiden, am selben Offset. Das zurückgegebene Token ist für
++       `#directLeaveField` bestimmt.
++   entry #directLeaveField   stellt das umschließende Fenster wieder her und überspringt, was vom Feld übrig ist
++       Ein Parsevorgang darf rechtmäßig weniger als die Nutzdaten des Felds lesen — auch die
++       Baum-Accessoren ignorieren nachgestellte Bytes von Nutzdaten —, daher wird der Rest
++       übersprungen, nicht gepuffert.
++   entry #directSkipField   überspringt ein Feld als Ganzes anhand seines Übertragungscodes: betreten, dann verlassen
++       So übergeht ein erzeugter Parser eine Feldnummer, die er nicht kennt.
++   entry #directLong   der Wert eines Felds als `Long`, anhand seines Übertragungscodes
++       Bei Code 0 wird der Varint an Ort und Stelle gelesen; bei jedem anderen Code wird das
++       Fenster des Felds betreten und seine Nutzdaten so interpretiert, wie der Baum-Accessor
++       die aufgezeichneten Nutzdaten interpretieren würde — `Len`-Nutzdaten aus einem Varint
++       werden als dieser Varint gelesen.
++   entry #directDouble   der Wert eines Felds als `Double`: an Ort und Stelle für Code 1, sonst über das Fenster
++   entry #directFloat   der Wert eines Felds als `Float`: an Ort und Stelle für Code 5, sonst über das Fenster
++   entry #directString   der Inhalt eines längenbegrenzten Felds als `String`, für Code 2 verschmolzen
++       Für Code 2 sind Längenpräfix, Grenzprüfung und UTF-8-Dekodierung ein Schritt; jeder
++       andere Code nimmt den Weg über das Fenster.
++   entry #directData   der Inhalt eines längenbegrenzten Felds, als `Data` herauskopiert
++   entry #directWire   der Wert eines Felds, als `Protobuf.Wire` materialisiert
++       Die Laufzeit-Nahtstelle für einen Feldtyp ohne `Inlinable`: Jedes Vorkommen wird so
++       gesammelt und das Feld einmal über sein `Decodable in Protobuf` dekodiert, genau wie der
++       Baumweg `Repeated(values)` dekodiert.
++   entry #directStringWindow   das ganze aktuelle Fenster als `String`
++       Der Lesevorgang auf Fensterebene hinter `ProtobufReader#text`, für einen `parse`-Rumpf,
++       dem das Fenster des Felds bereits gehört.
++   entry #directDataWindow   das ganze aktuelle Fenster, als `Data` herauskopiert
++   entry #directMessage   das verbleibende Fenster als längenbegrenzte `Protobuf.Wire`-Nachricht
++       Die Nahtstelle für den ganzen Wert hinter `Protobuf.Parsable.fromDecodable`.
++   entry #directBufferWindow   puffert den verbleibenden Inhalt des Fensters als Ganzes, vor dem Durchsuchen eines oneof
++       Ein unbegrenztes Fenster wird durch das Ende der Eingabe begrenzt, das das Auffüllen
++       gefunden hat; danach kann weder ein Durchsuchen noch ein erneutes Betreten den Puffer
++       nachfüllen — und damit kompaktieren —, sodass von `#directMark` zurückgegebene Offsets
++       für `#directWindow` gültig bleiben, bis das Fenster verlassen wird. Muss `#directWindow`
++       und `#directRestore` vorausgehen.
++   entry #directWindow   springt zu einer absoluten Ausdehnung innerhalb des gepufferten Fensters; gibt ein Token für `#directRestore` zurück
++       `directWindow(start, end)` springt zu `start` und begrenzt das Fenster bei `end` — der
++       aufgezeichneten Ausdehnung einer Variante — und packt die vorige Position und Grenze in
++       den zurückgegebenen `Long`. Nur nach `#directBufferWindow`.
++   entry #directEmptyWindow   ein leeres Fenster an der Leseposition, aus dem ein fehlender verschachtelter Wert geparst wird
++       Ein fehlendes Nachrichtenfeld wird als leere Nachricht geparst, daher betritt ein
++       erzeugter Parser ein leeres Fenster und lässt den verschachtelten Parser darüber laufen.
++       Wird durch `#directRestore` wiederhergestellt.
++   entry #directRestore   stellt die Position und Grenze wieder her, die ein Token von `#directWindow` oder `#directEmptyWindow` hält
+
+@ 0 1 0 0716949c96f5d8af0742f7aedd1a2cae
++ entry .ProtobufReader   der eingeschränkte Rand, über den ein `Protobuf.Parsable` liest: ein Fenster, seine Felder und deren Skalare
+
+% 1 1 0 12b9b595b1dd84a303d6528a96001128
+
+@ 0 6 0 0f5f66204105ed8d09df381056278e5a
++       `ProtobufReader` ist, was ein `Protobuf.Parsable.parse` erhält: den Parser mit seinem
++       Fenster auf die Nutzdaten des Werts gesetzt und einer darin getragenen
++       `Tactic[Protobuf.Error]`, sodass ein `parse`-Rumpf kein Fehlervokabular braucht —
++       fehlerhafte Eingabe bricht über die ambiente Taktik des Lesevorgangs ab. Nur die
++       Lesewege von locomotion konstruieren einen; er ist eine exklusive, zustandsbehaftete
++       Capability, die für die Dauer eines `parse`-Aufrufs diesem gehört, und nichts davon darf
++       danach behalten werden.
+
+@ 0 2 0 12be84089bf8acf70cc5033e86e4ef5e
++       Eine handgeschriebene Instanz durchläuft ihr Fenster mit `#more`, `#tag`, `#enterField`
++       und `#leaveField` und liest dazwischen den Skalar jedes Felds:
+
+% 2 1 0 19b87fcddd0a64fb0372a7c0ee5eda0a
+
+% 3 1 0 110c537f37bf4374159c8ef8cf526b14
+
+% 4 1 0 13f95483c84837770cc0985789119770
+
+% 2 1 0 0c77a9a5eb6823581b7ea9dd63ec38d6
+
+% 0 1 0 1cb1d4afb5a924081223eee9f12bd3a5
+
+% 0 1 0 008d75f08751885506f1434d3a464c48
+
+% 0 1 0 070e4f0a9d0db9960ddee9735c891809
+
+% 0 1 0 1dafb60c51ad024f1baeddfc4bfde9d3
+
+% 0 1 0 0d2e6abec6a684c713f8b8dfcd38285a
+
+% 0 1 0 1abc4ba60027bb1b0602171d6f83e5cf
+
+% 0 1 0 0f430d0b9657c0691f0f531c924a732d
+
+% 0 1 0 1387d1bc6f84c01b1e2c23a89c7ad23e
+
+% 0 1 0 0c32bbf0c634be681eb179afbed2a6be
+
+% 0 1 0 038d05ecd365626b0dccf667cfc042e5
+
+% 0 1 0 1313296de8ed1d67139db199db057b70
+
+% 0 1 0 155db439953f062d1d9cb13944df35e8
+
+% 0 1 0 167826ab7d8ee6f11583690d0942178a
+
+% 1 1 0 09963d0e454135060d7f72c819a1cc8e
+
+@ 0 6 0 057d1a9a9dae0a211d9c66bfd3443fa2
++       Die Skalar-Reader (`#varint`, `#fixed32`, `#fixed64`, `#text`, `#data`) lesen den Inhalt
++       des Fensters genau so, wie die Baum-Accessoren die aufgezeichneten Nutzdaten eines Felds
++       interpretieren, sodass eine über einem Übertragungswert zusammengesetzte Instanz mit dem
++       abgeleiteten Dekodierer übereinstimmt. `#wire` und `#message` sind die Nahtstellen zurück
++       in die Welt der Bäume. Erzeugte Parser verwenden diese Weiterleitungen nicht: Sie nehmen
++       den Parser selbst über `ProtobufReader.of` und lesen über den direkten Rand von
++       `ProtobufParser`.
+
+% 0 1 0 06cd74cf4dbd0aad1c863cfea6bf1bea
+
+% 1 1 0 15a00fa6a8eed35c00a0d6c862b77a4b
+
+@ 0 16 0 17c0c480931297cc11b6494fd7b5d949
++   entry .of   bekräftigt einen Reader, der als neutraler `AnyRef`-Träger gereist ist, erneut als `ProtobufReader^`
++       Der Einstieg von `parseCarrier(reader: AnyRef)` eines erzeugten Parsers, in das Modul
++       des Verwenders eingefügt; inline, damit der Cast dort landet, wo das `^`-Ergebnis einer
++       Methode in einem Modul, das Capture-Checking, aber kein Separation-Checking hat, nur
++       lesbar wäre.
++   entry #more   ob das Fenster weiteren Inhalt hat: der Test der Datensatzschleife
++   entry #tag   das Tag des nächsten Felds, `(number << 3) | wireCode`
++   entry #enterField   verengt das Fenster anhand seines Übertragungscodes auf den Wert des nächsten Felds; gibt das Token zum Verlassen zurück
++   entry #leaveField   stellt das umschließende Fenster wieder her und überspringt den Rest des Felds
++   entry #skipField   überspringt das nächste Feld als Ganzes, anhand seines Übertragungscodes
++   entry #varint   ein Varint aus dem Fenster
++   entry #fixed32   vier Little-Endian-Bytes als `Int`
++   entry #fixed64   acht Little-Endian-Bytes als `Long`
++   entry #text   das ganze Fenster als UTF-8-`Text`
++   entry #data   das ganze Fenster, als `Data` herauskopiert
++   entry #wire   der Wert eines Felds, als `Protobuf` materialisiert, zum Dekodieren über ein `Decodable in Protobuf`
++   entry #message   das verbleibende Fenster als `Protobuf`-Nachricht, für `Protobuf.Parsable.fromDecodable`
+
+@ 0 1 0 1c85a1945862684609cd47d0cc8bddd0
++ entry .ProtobufPrinter   schreibt Übertragungsbytes in einen eigenen Puffer: in exakter Größe, wachsend oder blockweise
+
+% 1 1 0 152258d6d5c3524d03fbf897635adca6
+
+@ 0 10 0 0de63f64df469ada0498b54dbf81aa4e
++       `ProtobufPrinter` schreibt Protocol-Buffers-Übertragungsbytes: Varints als LEB128, feste
++       Werte als Little-Endian, ein Feld als sein Tag gefolgt von seinem Wert (für `Len` mit
++       Längenpräfix). Ihm gehört sein Puffer in einem von drei Modi, gewählt durch den
++       Konstruktor des Begleitobjekts: `.exact(size)` ist ein Array genau der gemessenen Größe,
++       das `#data` ohne Kopie zurückgibt; `.growing(hint)` verdoppelt sich nach Bedarf, für
++       Bytes unbekannter Länge; und `.blocks(size, deliver)` übergibt jeden gefüllten Block an
++       `deliver`, sobald der nächste Schreibvorgang ihn überlaufen ließe, wobei `#flush` den
++       letzten, teilweise gefüllten weitergibt, sodass eine Nachricht als Stream von Blöcken und
++       nie als ein Array geschrieben wird. Ein Schreibvorgang, der länger als ein ganzer Block
++       ist, geht direkt an `deliver`. Der Printer ist eine zustandsbehaftete, exklusive
++       Capability (`ProtobufPrinter^`) mit als `update` klassifizierten Schreibvorgängen.
+
+% 2 1 0 0dae0c38aa8880211c19d57571d9b1d7
+
+% 3 1 0 052ed3d0f6b1f5840163caf07524d324
+
+% 0 1 0 15dde595985c67261e13ec972c610fd3
+
+% 0 1 0 182f489a5192117c18f3a2865e9e4c4f
+
+% 0 1 0 1039f41cd8b4a5ad102b9539c9b0090b
+
+% 0 1 0 08b40a943d3778760179c231350dca5c
+
+% 1 1 0 0948f0b33ea9968b1d84f6b5929cb05a
+
+@ 0 5 0 005cabe31925ba1b07dd6e65b446adeb
++       Die Größenfunktionen des Begleitobjekts — `.varintSize`, `.tagSize`, `.utf8Length` und
++       `.fieldSize` — sind, was der Messdurchgang eines `Printable` summiert, und `#field`
++       entspricht `.fieldSize` Byte für Byte: Ein Schreiben über das Ende eines Printers exakter
++       Größe hinaus wirft `ArrayIndexOutOfBoundsException`, sodass ein Messen, das nicht mit
++       seinem Schreiben übereinstimmt, laut ist. `.varintData` und `.fixedData` sind die
++       Skalar-Kodierer des Baumwegs.
+
+% 0 1 0 04dae3c4d539afc61cad71069c72461a
+
+% 1 1 0 0446d67c793e883a1ebb053d5aba1f38
+
+@ 0 38 0 00582b43e7f2193c0450e4bb21ef5d7e
++   entry .exact   ein Printer von genau `size` Bytes, dessen `#data` dieses Array ist, unkopiert
++   entry .growing   ein Printer über einem wachsenden Puffer, beginnend bei `hint` Bytes (mindestens 16)
++   entry .blocks   ein Printer, der jeden gefüllten Block von `size` Bytes an einen Konsumenten übergibt
++       `deliver` wird als `consume` genommen: Es gehört dem Printer. Blöcke haben mindestens 16
++       Bytes. `#flush` liefert den letzten, teilweise gefüllten Block; `Protobuf.Printable.emit`
++       ist der übliche Aufrufer.
++   entry .of   bekräftigt einen Printer, der als neutraler `AnyRef`-Träger gereist ist, erneut als `ProtobufPrinter^`
++       Für erzeugte Printer, deren `writeCarrier` den Printer als `AnyRef` erhält; inline, wie
++       `ProtobufParser.of`.
++   entry .varintSize   die LEB128-Länge eines als vorzeichenlose 64 Bit gelesenen Werts: 1 bis 10 Bytes
++   entry .utf8Length   die Länge der UTF-8-Kodierung eines Strings, ohne ihn zu kodieren
++   entry .tagSize   die Länge des Tags eines Felds: ein Byte bis Feld 15, danach ein Varint
++   entry .fieldSize   die Anzahl der Bytes, die `#field` für eine Nummer und einen Übertragungswert schreibt
++       `Absent` ist 0, `Repeated` die Summe seiner Werte und ein `Wire` sein Tag plus — für
++       `Len` — ein Längenpräfix, plus die Nutzdaten.
++   entry .varintData   die LEB128-Bytes eines Werts als `Data` genau ihrer Länge
++   entry .fixedData   die unteren `width` Bytes eines Werts, Little-Endian, als `Data`
++   entry #data   die geschriebenen Bytes, im Modus exakter Größe oder im wachsenden Modus
++       Ein Printer exakter Größe, dessen Größe erreicht ist, gibt sein Array ohne Kopie zurück;
++       andernfalls werden die bisher geschriebenen Bytes herauskopiert.
++   entry #flush   übergibt im Blockmodus die bisher geschriebenen Bytes als Block an den Konsumenten
++   entry #byte   schreibt ein Byte
++   entry #raw   schreibt Bytes unverändert
++       Der häufige Fall — die Bytes passen — ist ein Vergleich und eine Kopie; im Blockmodus
++       werden Nutzdaten, die länger als ein Block sind, mit Flushes umgeben und als Ganzes
++       geliefert.
++   entry #chunk   schreibt längenbegrenzte Nutzdaten: ihre Länge als Varint, dann ihre Bytes
++   entry #varint   schreibt einen Wert als LEB128-Varint, 1 bis 10 Bytes
++   entry #utf8   schreibt die UTF-8-Kodierung eines Strings direkt in die Ausgabe
++       Ihre Länge, die ein Printer zuerst misst, ist `ProtobufPrinter.utf8Length`.
++   entry #stashedText   schreibt einen String, den der Messdurchgang abgelegt hat: sein Längenpräfix, dann seine Bytes aus der Tabelle
++       Liest den nächsten Offset und die nächste Länge aus den `ProtobufSizes` und kopiert die
++       Bytes aus dem temporären Puffer der Tabelle heraus; das Gegenstück zu
++       `ProtobufSizes#stashText`.
++   entry #fixed32   schreibt ein `Int` als vier Little-Endian-Bytes
++   entry #fixed64   schreibt einen `Long` als acht Little-Endian-Bytes
++   entry #tag   schreibt ein Feld-Tag, `(number << 3) | wireType.id`, als Varint
++   entry #field   schreibt ein nummeriertes Feld aus einem `Protobuf`-Wert: Tag, Längenpräfix für `Len`, Nutzdaten
++       `Absent` schreibt nichts, `Repeated` schreibt jeden Wert unter derselben Nummer, und ein
++       `Wire` schreibt sein Tag und seine Bytes. Genau `ProtobufPrinter.fieldSize` Bytes.
+
+@ 0 1 0 022c722087f2dcbd16d9ca014dea4df3
++ entry .ProtobufSizes   die Größentabelle zwischen dem Mess- und dem Schreibdurchgang eines direkten Printers
+
+% 1 1 0 10cc0fc97fa2b86813d9a0c63fd0cb28
+
+@ 0 9 0 1a491a2ad5fd5f2c050734e504eeff3d
++       Jeder längenbegrenzte Wert — eine verschachtelte Nachricht, ein String, eine gepackte
++       Folge — braucht seine Größe als Präfix vor seinen Bytes, daher misst ein
++       `Protobuf.Printable` einen Wert in einem Durchgang, hält dabei jede solche Größe hier in
++       der Reihenfolge fest, in der sie besucht wird, und schreibt ihn in einem zweiten, wobei
++       es die Größen in derselben Reihenfolge zurückliest (`#rewind`, dann `#next`). Der Slot
++       einer verschachtelten Nachricht wird reserviert, bevor ihre Kinder gemessen werden
++       (`#reserve`), und danach gefüllt (`#set`), sodass die Tabelle in beiden Durchgängen in
++       Pre-Order ist. Was der Messdurchgang erzeugt und der Schreibdurchgang braucht, wird
++       daneben aufbewahrt: Ein String wird einmal in den temporären Byte-Puffer der Tabelle
++       kodiert (`#stashText`) und von `ProtobufPrinter#stashedText` herauskopiert, und ein
++       Übertragungswert, den eine Nahtstelle kodiert hat, wird als Referenz abgelegt (`#stash`,
++       `#unstash`).
+
+@ 0 6 0 0ad3bf956b5b6ff4068952bc0828e772
++       Eine zustandsbehaftete, exklusive Capability (`ProtobufSizes^`), die für die Dauer eines
++       Druckvorgangs diesem gehört: `Protobuf.Printable.print` nimmt die Tabelle des Threads, die
++       jeder Druckvorgang auf diesem Thread wiederverwendet, sodass ein Druckvorgang nichts außer
++       seiner Ausgabe allokiert, und nimmt eine frische, wenn die des Threads belegt ist — wenn
++       das `Encodable` einer Nahtstelle eine verschachtelte Nachricht über ihr eigenes
++       `Printable` druckt. Handgeschriebene `Printable`-Instanzen erhalten sie als Parameter und
++       müssen sie nur an die Feld-Codecs weiterreichen, aus denen sie sich zusammensetzen.
+
+% 1 1 0 11913774c36e2e0a032e62a3cea10d9b
+
+% 1 1 0 17df2e56ac6171e60b57159ba00b5dfd
+
+@ 0 13 0 16693fcd52e134010577ceb74ccbdb6b
++   entry .of   bekräftigt eine Tabelle, die als neutraler `AnyRef`-Träger gereist ist, erneut als `ProtobufSizes^`
++       Für erzeugte Printer; inline, wie `ProtobufParser.of`.
++   entry #reserve   ein Slot für eine Größe, die erst nach dem Messen der Kinder bekannt ist; gibt seinen Index zurück
++   entry #set   füllt einen reservierten Slot
++   entry #record   hält eine Größe im nächsten Slot fest: `set(reserve(), size)`
++   entry #rewind   setzt die Leseposition für den Schreibdurchgang an den Anfang
++   entry #next   die nächste festgehaltene Größe, in der Reihenfolge des Festhaltens
++   entry #stashText   kodiert einen String in den temporären Puffer und hält Offset und Länge fest; gibt die kodierte Länge zurück
++       Die messende Hälfte des einmaligen Schreibens eines Strings; `ProtobufPrinter#stashedText`
++       ist die schreibende Hälfte, die die beiden festgehaltenen Werte über `#next` zurückliest.
++   entry #stash   bewahrt eine Referenz für den Schreibdurchgang auf, in Reihenfolge
++       `Protobuf.Printable.fromEncodable` legt beim Messen das `Protobuf` ab, das es kodiert hat.
++   entry #unstash   die nächste abgelegte Referenz, in der Reihenfolge des Ablegens
+
+@ 0 1 0 15fbe3351f227d0219c18ce416294e3f
++ entry .inlining   die Makro-Implementierungen hinter `Inlinable.parsable`, `Inlinable.printable` und `codecs.direct`
+
+% 1 1 0 0cfdffae0329d6ad187226d2c38d3281
+
+% 2 1 0 19897dfb91d68f7b03a67bdb36d3b5be
+
+@ 0 8 0 01425b3b418566b30413857b0108dec1
++       Nicht zur direkten Verwendung: Das Objekt enthält die Instanzauflösung zur Expansionszeit,
++       die strukturellen Generatoren für Nachrichten, wiederholte und Map-Felder und
++       `oneof`-Summen sowie die drei Einstiegsmakros. Der erzeugte Parser oder Printer ist an ein
++       lazy `self` gebunden, sodass ein rekursiver Typ an Ort und Stelle über ihn gelesen wird,
++       und ein mit einem `Form`-Member verfeinerter Typ — ein Lesevorgang `Play in Protobuf`
++       inferiert `Play { type Form = Protobuf }` — erzeugt den Codec von `Play`.
++   entry .inlinableParsable   das Makro hinter `Inlinable.parsable[T]`
++   entry .inlinablePrintable   das Makro hinter `Inlinable.printable[T]`
++   entry .generates   das Makro hinter `Inlinable.Generates.generates`: gelingt für eine Nachricht oder ein oneof
+
+@ 0 1 0 07b02c109381fb5615f5844f1eacf1aa
++ entry .InlinableStager   der Staging-Compiler im Makro, der ein handgeschriebenes `Inlinable` zur Expansionszeit auswertet
+
+% 1 1 0 0ed357b1ead48d481b1999ce8d495246
+
+% 2 1 0 0b8d559443e8e88017432385f1998dbf
+
+@ 0 13 0 0d76d4528470ac411f20253b6791ab35
++       Nicht zur direkten Verwendung. Das einzige Objekt der Komponente `locomotion.staged`:
++       `Inlinable.Stager` lädt `.Implementation` per Name, wenn `locomotion.staged` auf dem
++       Klassenpfad des Makros liegt, und `.evaluate` startet einen frischen Staging-Compiler —
++       über dem Klassenpfad des Makro-Classloaders, ohne das aktuelle Ausgabeverzeichnis —, um
++       das `Inlinable`-Given für einen Feldtyp herbeizurufen und die lebende Instanz an den
++       Generator zurückzugeben. Nur ein klassenförmiger Typ (eine Klasse oder eine Anwendung
++       einer solchen), dessen Classfile bereits existiert, kann in den inneren Compiler
++       gelangen: Ein opaker oder struktureller Typ oder einer, der im laufenden
++       Kompilierungslauf definiert ist, ergibt `None`, und das Feld nimmt die Laufzeit-Nahtstelle
++       über sein `Decodable`/`Encodable in Protobuf`. Jedes Herbeirufen meldet seine Dauer als
++       Info-Meldung des Compilers, _locomotion: staged summon for `T` took `n`ms_.
++   entry .evaluate   das Herbeirufen im Staging: `Some(instance)` für einen auswertbaren Typ, sonst `None`
++   entry .Implementation   der `Inlinable.Stager`, an den `Inlinable.Stager.summon` delegiert
++     entry .summon   ruft `InlinableStager.evaluate` für den Typ auf
+
+@ 0 1 0 1b3c661c5f1bd1561b19839156a60d3b
++ entry .postables   das Given, das eine `Protobuf`-Nachricht als HTTP-Request-Body sendet
+
+% 1 1 0 03d1dd785a0072cf16787e19b1ef190d
+
+@ 0 6 0 0b35e59224100b4a11a452526eafb10b
++       Ein Auswahlpaket von `locomotion.http` (nur JVM), mit dem eigenen des Umbrella
++       zusammengeführt, daher wird das Given namentlich importiert:
++       `import postables.protobufPostable`.
++   entry .protobufPostable   `Protobuf is Postable`: die Übertragungsbytes mit dem Medientyp `application/protobuf`
++       Protocol Buffers ist binär, daher ist der Body die Bytes der Nachricht, und es wird kein
++       Zeichensatz genannt. Ist es im Geltungsbereich, kann ein `Protobuf`-Wert der Body eines
++       telekinesis-`post` oder -`put` sein:
+
+% 2 1 0 14f2317681ee0bf6026254b118e01ff4
+
+% 3 1 0 1210be9c969adde413ffefa522d7b97e
+
+% 0 1 0 1d51791f5f5a891b17c7225b47754172
+
+% 2 1 0 174eb5968979728f1810f84c648ebdee
+
+% 0 1 0 0d470ab025ca02e5163777fdb35b8a76
+
+% 1 1 0 198ca633ab6a18920e39033c274f8daf
+
+@ 0 1 0 149b2a2ee9d9994f0fcfe8d66a89b29c
++ entry .servables   das Given, das eine `Protobuf`-Nachricht als HTTP-Response-Body ausliefert
+
+% 1 1 0 1ff34097b5e08ac10365b2fd0e8d3b39
+
+@ 2 1 0 0d2afbeac530ac5d07500ff1a4fe1355
++       Ein Auswahlpaket von `locomotion.http` (nur JVM), namentlich importiert:
+
+% 0 1 0 052e9c1cad9cdaa506d3ce4d63aa13fe
+
+@ 0 1 0 0a0f3e960e2dbd4b02275533d8884a9f
++   entry .protobufServable   `Protobuf is Servable`: ein fester Body aus den Übertragungsbytes, typisiert als `application/protobuf`
+
+@ 0 1 0 075c951b5dcbfe7f1a3e8d1de2e582b6
++ entry .construables   das Given, das einen `application/protobuf`-Request-Body als `Protobuf` liest
+
+% 1 1 0 03578590d1652e240db90114d63ec58f
+
+@ 2 1 0 0e31afeb5140106a0ac781bc35b93c3a
++       Ein Auswahlpaket von `locomotion.http` (nur JVM), namentlich importiert:
+
+% 0 1 0 019e88c0cc74f7dd1870ea74a9564e46
+
+@ 0 4 0 000d56c0ca00de4a10ee3f5c0eb257ad
++   entry .protobufConstruable   `"application/protobuf" is Construable to Protobuf`: die Bytes des Bodys als Nachricht
++       Einmal konstruiert, wird die Nachricht mit `as[T]` dekodiert, oder der Request-Body
++       direkt mit `read[T in Protobuf]` gelesen, sodass eine binäre API mit demselben Code
++       konsumiert wird wie eine JSON-API; nur der Typ des Formats unterscheidet sich.

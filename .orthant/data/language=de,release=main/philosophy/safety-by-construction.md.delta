@@ -1,6 +1,0 @@
-orthant 1 language
-
-- See [impossible states](impossible-states.md) for the rule this serves, and
-- [interpolation](/doc/soundness/modules/interpolation.md) for how such a literal is built.
-+ Siehe [unmögliche Zustände](impossible-states.md) für die Regel, der dies dient, und
-+ [Interpolation](/doc/soundness/modules/interpolation.md) dafür, wie ein solches Literal gebaut wird.

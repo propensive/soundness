@@ -1,0 +1,12 @@
+orthant 2 language
+
+% 0 1 0 064ababe6a63dda410fe6ab94b2902cf
+
+@ 0 6 0 0151eecb9f22598d1b6186f02898689d
++ O código executado em outro lugar pode falhar, mas um erro lançado no bloco em estágio não é
++ levado de volta através da fronteira como ele mesmo. `dispatch` lança apenas um
++ `Compiler.Error`, se o código em estágio não compila, ou um `Rig.Error`, para uma falha do rig.
++ Com o rig `Jvm`, um código em estágio que lança uma exceção faz o seu subprocesso terminar com
++ falha, o que é informado como um `Rig.Error` cujo motivo é `Invocation`: o mesmo erro de um
++ subprocesso que não quis iniciar. Um código em estágio que pode falhar deve, portanto, devolver
++ a sua falha como um valor.

@@ -1,0 +1,174 @@
+orthant 2 language
+
+@ 0 1 0 156914880018765e15b73637402051e7
++ info   les permutations comme réarrangements réversibles, stockées de façon compacte sous forme de tables d'inversions en base factorielle
+
+@ 0 5 0 0cb20f17463231881bb306b52757f8e8
++ detail
++     _Metamorphose_ représente une permutation — un réarrangement réversible d'une séquence —
++     par un seul nombre. Une `Permutation` se construit à partir des indices réordonnés,
++     s'applique à toute liste au moins aussi longue, et s'inverse ; une séquence d'indices qui
++     n'est pas une permutation, avec un doublon ou un trou, est une `Permutation.Error` typée.
+
+@ 0 7 0 0b0b3fa346652b010b400ba0e2dc5136
++     En interne, une permutation est sa [table
++     d'inversions](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) écrite dans
++     le système de numération factorielle, un `Factoradic` : un entier unique qui l'identifie de
++     façon univoque ; les permutations sont donc compactes à stocker et à énumérer, et
++     `Permutation.bySize(n)` les liste toutes, `n!` au total, dans l'ordre. Une permutation de
++     *n* éléments occupe O(*n* log *n*) bits, le minimum de la théorie de l'information.
++     `Factorial` fournit les factorielles sur lesquelles repose l'encodage.
+
+@ 0 1 0 1d26461196f23b53060f7a77f7f68e42
++ entry .Permutation   un réarrangement réversible d'une séquence, stocké sous forme de sa table d'inversions factoradique
+
+@ 0 4 0 159bb27404b96d690608ba3810127935
++   detail
++       Une `Permutation` se construit à partir des indices réordonnés d'une séquence avec
++       `.apply`, qui vérifie qu'ils sont exactement `0` à `n - 1`, chacun une fois, ou
++       directement à partir de son nombre avec `Permutation(Factoradic(n))` ; puisque le nombre
++       *est* la permutation, les deux concordent :
+
+% 0 1 0 12f1691e82eb607a119924e35c1f9b25
+
+% 0 1 0 0d5ee56739fbead310f5d36970a6b971
+
+% 0 1 0 1ea0e3bbe24709110340261a95fabb40
+
+% 0 1 0 1ccdfcf06f0fd45a167be8a7ab101cea
+
+@ 0 7 0 15bf6ad78c4a6277137f8ef993e37197
++       Appliquée à une liste, elle en réarrange les éléments (`#apply`) ; `#inverse` l'annule.
++       Une permutation n'enregistre pas la longueur à partir de laquelle elle a été construite,
++       mais seulement les positions de tête qu'elle réarrange, son `#extent` : l'identité de
++       toute taille est `Permutation(Factoradic(0))`, et `Permutation(Sequence(0, 2, 1))` est
++       égale à `Permutation(Sequence(0, 2, 1, 3, 4))`. C'est une permutation des entiers
++       naturels qui n'en déplace qu'un nombre fini. Appliquée à une liste plus longue, elle
++       réarrange les `#extent` premiers éléments et laisse les autres en place.
+
+@ 0 5 0 1ae4c1de8f631c5a17fc011d5d72440f
++   entry .apply   une permutation à partir de ses indices réordonnés, dont on vérifie qu'ils sont chacun de `0` à `n - 1` une fois
++       `Permutation(Sequence(3, 1, 0, 2))` est le réarrangement qui place en premier l'élément à
++       l'indice 3, puis celui à l'indice 1, et ainsi de suite. Elle nécessite une
++       `Tactic[Permutation.Error]`, levée avec `InvalidIndex` pour un indice inférieur à 0 ou non
++       inférieur à la longueur, et avec `DuplicateIndex` pour un indice qui apparaît deux fois.
+
+% 2 3 0 02ed9e420c3e29940b09641e11e309b6
+
+% 0 3 0 013c1156a0a9bfff1a4cdce5c708d57a
+
+@ 0 5 0 1928212459cf55110e017ca5b1a8d5d8
++       Le constructeur de case class `Permutation(factoradic)` en construit une à partir de son
++       nombre, sans vérification, puisque tout factoradique non négatif est une permutation.
++   entry .bySize   toutes les permutations de `n` éléments, dans l'ordre de leurs nombres factoradiques
++       Une `Chain` des `n!` permutations, de l'identité (`Factoradic(0)`) à l'inversion
++       (`Factoradic(n! - 1)`). Elle est calculée immédiatement ; elle n'est donc utilisable que
++       pour de petites valeurs de `n`.
+
+% 2 2 0 1d8ca2b5f0c39744087098423b5639e0
+
+@ 0 4 0 154981e7083297860ab6ac71536de1a5
++       val list = List(t"a", t"b", t"c")
++       Permutation.bySize(3).map(_(list))   // all six orderings of a, b, c
++       ```
++   entry .encodable   encode une permutation en `Data` : les octets de son nombre factoradique
++       Les octets gros-boutistes en complément à deux du nombre de `#factoradic`, tels que les
++       donne `BigInt#toByteArray`. Il n'y a pas de given de décodage ; lisez les octets comme un
++       `BigInt` et enveloppez-le dans un `Factoradic` pour retrouver la permutation.
++   entry .Error   levée lorsque des indices ou une séquence ne forment pas une permutation, ou n'y conviennent pas
+
+@ 0 7 0 13570e453a8739ee15e3fe3c7d24b580
++     detail
++         Error `↯/s.28.1` : _could not construct permutation because `reason`_, où la raison est
++         l'un des cas de `Permutation.Error.Reason` :
+
+@ 0 8 0 08eefffb16b65507134784a8c70cfbc2
++         column  Cas
++         column  Code
++         column  Message
++         column  Remarque
++         row  `BaseRange(value, base)`  1  _the value `value` is too large for its positional base `base`_  un chiffre donné à `Factoradic(List(…))` n'est pas inférieur à la base de sa position
++         row  `DuplicateIndex(index, element)`  2  _the index `index` was duplicated at `element`_  `Permutation(Sequence(…))` a rencontré un indice pour la seconde fois ; `element` est la position à laquelle il est réapparu
++         row  `InvalidIndex(last, max)`  3  _the index `last` appears, but every index should be in the range 0-`max`_  un indice donné à `Permutation(Sequence(…))` est négatif ou non inférieur à la longueur de la séquence
++         row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` a reçu une liste plus courte que l'étendue de la permutation
+
+@ 0 1 0 1d94348d6927a6021b40aaf0cd278cfb
++     entry .Reason   pourquoi une permutation n'a pas pu être construite ou appliquée
+
+@ 0 4 0 16f1f225b5ce8e891b654517b5039e5f
++       detail
++           Une énumération de `BaseRange`, `DuplicateIndex`, `InvalidIndex` et `TooShort`, chacun
++           avec les valeurs que nomme le message ; voir `Permutation.Error` pour savoir quand
++           chacun est levé. Chaque cas a un `#number`, de 1 à 4, le code secondaire de l'erreur.
+
+@ 0 19 0 145706f2de0ead35038730591aefa3e3
++       entry #number   le code d'erreur secondaire de la raison, de 1 à 4
++     entry .communicable   rend chaque `Permutation.Error.Reason` sous forme de message
++     entry #reason   pourquoi la permutation n'a pas pu être construite ou appliquée
++   entry #factoradic   le nombre de la permutation, dans le système de numération factorielle
++   entry #extent   combien de positions de tête la permutation réarrange : un de plus que la dernière position qu'elle déplace
++       Zéro pour l'identité. Toute position à partir de `#extent` est fixe.
++   entry #inversions   la table d'inversions : pour chaque position, combien de positions antérieures contiennent un indice plus grand
++       Une entrée pour chacune des `#extent` premières positions, dans l'ordre. L'entrée de la
++       position *i* vaut au plus *i* ; c'est donc un chiffre en base *i* + 1 : ce sont les
++       chiffres de `#factoradic`, du moins significatif au plus significatif. Une position qui
++       reste en place après toutes celles qui se déplacent n'a aucun indice plus grand avant
++       elle ; c'est pourquoi les positions fixes finales n'ajoutent rien au nombre.
++   entry #expansion   les indices réordonnés : la permutation appliquée à `0` à `extent - 1`
++       Les indices qu'a reçus `.apply`, jusqu'au dernier qui se déplace : pour
++       `Permutation(Sequence(3, 1, 4, 2, 0, 5))`, `List(3, 1, 4, 2, 0)`. Elle est aussi longue
++       que `#extent` ; elle omet donc les indices finaux que la permutation laisse en place.
++   entry #apply   réarrange une liste, ou donne l'indice d'où une position tire son élément
++       `permutation(list)` réarrange une liste au moins aussi longue que `#extent`, et lève
++       sinon `Permutation.Error` avec `TooShort` ; une liste plus longue voit ses `#extent`
++       premiers éléments réarrangés et garde les autres en place.
+
+@ 0 1 0 12fe71c5bb6214d10710da7ac30645dc
+
+% 2 3 0 1edd9b52e04ec25612381ae664d534d8
+
+% 0 5 0 1e8c3badc7d754a8027ac58efb79b487
+
+@ 0 6 0 07f2e686115a2ff903677a4591f8f464
++       `permutation(n)` avec un `Int` est le `n`-ième élément de `#expansion`, et `n` lui-même
++       au-delà, puisqu'une permutation fixe tout point hors de son domaine. Elle lit une `List`
++       par position ; elle est donc linéaire en `n`.
++   entry #inverse   la permutation qui annule celle-ci
++       Pour toute liste `xs` suffisamment longue, `p.inverse(p(xs)) == xs`. L'identité est sa
++       propre inverse.
+
+@ 0 1 0 01cf5a1c79149f4814f8f1324782e4d9
++ entry .Factoradic   un entier non négatif dans le système de numération factorielle, tel que s'écrit une table d'inversions
+
+@ 0 6 0 01b0d933f21a22c8021c8aed09b5dc15
++   detail
++       Dans le système de numération factorielle, le chiffre à la position *i* en partant de la
++       droite a pour base *i* + 1 et pour valeur de position *i*! ; tout entier non négatif a
++       donc une seule représentation, et les séquences de chiffres d'une longueur donnée
++       énumèrent les permutations de cette longueur. Un `Factoradic` contient le nombre sous
++       forme de `BigInt` (`#number`) ; `.apply` en construit un à partir de ses chiffres, du plus
++       significatif au moins significatif, et `#expand` les restitue.
+
+@ 0 9 0 09b0fffac4d2358314803651c90f4b7a
++   entry .apply   un factoradique à partir de ses chiffres, du plus significatif au moins significatif, chacun vérifié inférieur à sa base
++       Le dernier chiffre a pour base 1, et doit donc valoir 0 ; celui qui le précède a pour
++       base 2, et ainsi de suite. Un chiffre qui n'est pas inférieur à sa base lève
++       `Permutation.Error` avec `BaseRange` ; il faut donc une `Tactic[Permutation.Error]`. Le
++       constructeur de case class `Factoradic(number)` prend directement le `BigInt`.
++   entry #number   l'entier, sous forme de `BigInt`
++   entry #expand   les chiffres du nombre, du plus significatif au moins significatif, sans zéros de tête
++       `Factoradic(0).expand` vaut `Nil` ; sinon, la liste se termine par le chiffre des unités,
++       toujours nul. Inversée, c'est la `#inversions` d'une permutation.
+
+@ 0 1 0 14a24b3083e6718016a8898544fc65b4
++ entry .Factorial   les factorielles sous forme de `BigInt`, et les suites de factorielles qu'utilise l'encodage factoradique
+
+@ 0 8 0 05300b173f935aa2142caec3dc988dca
++   entry .apply   `n!`, sous forme de `BigInt`
++       `Factorial(0)` vaut 1. L'argument doit être non négatif.
++   entry .magnitude   un de plus que le nombre de chiffres factoradiques nécessaires pour écrire `n`
++       Le plus petit `i` pour lequel `(i - 1)!` dépasse `n` : la taille de la table des valeurs
++       de position dont a besoin `Factoradic#expand`, plus un.
++   entry .sequence   les factorielles de `(n - 1)!` jusqu'à `0!`, sous forme de liste de `n` `BigInt`
++       Les valeurs de position d'un nombre factoradique à `n` chiffres, du plus significatif au
++       moins significatif : `Factorial.sequence(3)` vaut `List(2, 1, 1)`.

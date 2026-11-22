@@ -1,0 +1,304 @@
+orthant 2 language
+
+@ 0 1 0 1c696909bd4341ce0381291a93d5b6f6
++ ## Dados binários
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 3 0 0dada82510aa678f1092922894cd7b91
++ Os dados binários estruturados são feitos de registros de largura fixa: os cabeçalhos de
++ arquivos, os pacotes de rede, as mensagens de protocolos de dispositivos. Eles são lidos por meio
++ de uma [classe de tipos] que mapeia bytes em tipos Scala.
+
+@ 0 3 0 05fd6f9b835b6ac80716eed97943e8a3
++ Uma case class de [tipos numéricos](numbers.md#numeric-types) com tamanho definido descreve um
++ layout binário. Cada campo declara sua largura exata e como seus bytes devem ser lidos, de modo
++ que a forma do registro é sua definição, e ler um valor é questão de nomear seu tipo em um
++ deslocamento.
+
+@ 0 1 0 020e83f6d3bf79e3099f4eefbdebdd08
++ ### Sobre layouts binários
+
+@ 0 4 0 149efb825f23ffeb01fc8fa79052f9c7
++ Analisar uma estrutura binária à mão é aritmética sobre índices. Os bytes 4 a 7 são o
++ comprimento, em little-endian. O byte 8 são as flags. Cada deslocamento é calculado em relação
++ ao anterior, cada largura é uma constante a ser mantida em sincronia com uma especificação, e uma
++ mudança em um campo desloca silenciosamente todos os campos depois dele.
+
+@ 0 6 0 04895b72c268a9af03f1e6d4c1856ccb
++ Aqui o layout é obtido por [derivação] a partir de uma case class. Os tipos com tamanho definido
++ dizem quantos bytes cada campo ocupa e como eles são lidos: um `U32` são quatro bytes lidos como
++ um inteiro sem sinal, e um `B16` são dois bytes brutos. A derivação compõe os campos na ordem em
++ que são declarados e calcula cada deslocamento. Descrever um layout uma vez, e derivar dele tanto
++ o leitor quanto o escritor, impede que os dois se distanciem, o que é
++ [correção](../../philosophy/correctness.md) por haver uma única definição.
+
+@ 0 2 0 0dab7bfd8ab0ef2001c3e80a89f0c88d
++ Tudo vem do pacote `soundness`. O segundo import permite que os exemplos imprimam seus
++ resultados:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 11ea3e0a24506b7019ada128db10be95
++ ### Descrevendo um layout
+
+@ 0 2 0 07f67a6206d27a08112d69d3f5b3a08c
++ Um registro binário é uma case class de campos de largura fixa, que recebe uma instância de
++ `Debufferable` por derivação:
+
+% 2 1 0 11b1a2068929ac9d087d1c38908ea155
+
+% 0 1 0 139241d4db4d97351b28452e6aa1d402
+
+% 0 1 0 02bd61b63a8907370d582cb446f30099
+
+% 0 1 0 107de0e09508d7550f7ef3c9632e2608
+
+% 1 1 0 1abb4c5bb1b49e6619f8c64b057e36b5
+
+@ 0 2 0 02890d5a9b94ff641de377049e0f6cef
++ A largura de cada campo decorre de seu tipo. Aqui as larguras são de quatro, dois, dois e quatro
++ bytes, então o registro tem doze bytes. `byteWidth` diz isso, sem nenhum valor em mãos:
+
+% 2 1 0 04cebf9846ba1eef0200fc91cf163611
+
+% 3 1 0 14b698d43b30b2370be5b13fd9242d4e
+
+% 4 1 0 0fd2d4d9df4115e80ab3b202bec66f00
+
+% 0 1 0 1b8a8e4e282a10cf1b676f54669a437b
+
+% 0 1 0 0adfbffcaecc29ca04dfb4d89e0e252a
+
+% 1 1 0 17eb65bd811a5a0f12a83c159164459c
+
+@ 0 2 0 1cb758ca251380401bcc6660cc4e1cb9
++ Os registros se aninham. Um campo cujo tipo é ele mesmo um registro `Debufferable` contribui com
++ sua largura inteira, de modo que um layout é composto a partir de layouts menores, e não precisa
++ ser achatado à mão.
+
+@ 0 1 0 08c941c3efc87d830104e747fd7bc7b2
++ ### Leitura
+
+@ 0 1 0 06ddfcccbb613bd21cbacb48b5fd9ec2
++ `unpackFrom` lê de bytes um valor de um tipo escolhido, em um deslocamento:
+
+% 2 1 0 198aebf43aca210a1b38ee4563291af1
+
+% 0 1 0 144fa10c1bc85d1f04ce5d49cd502e62
+
+% 0 1 0 0a8618b702ce80570f7aaa8baa74042a
+
+% 1 1 0 0365bc83869c51c31831a9fb625e9bdb
+
+% 3 1 0 07034649838a4ee11bd9a9f397da0e8a
+
+% 4 1 0 0dea941356a9a51f0ce841946786792a
+
+% 5 1 0 093e0852a15ddf8701389d83cec6a421
+
+% 0 1 0 1f19f3b42ac63e0c0c6dcf7512b94078
+
+% 0 1 0 11f5a6f06c6cc9580cea7810a33087e9
+
+% 0 1 0 17eb49a3ba34b04600a8e4a56e010fd5
+
+% 1 1 0 138639e8e14fe47804a4f47405da3911
+
+@ 0 2 0 0422fc80bd14a36e1f3e61e5c9e570cb
++ Dentro de um bloco `sextant`, nomeado em homenagem ao instrumento que lê uma posição, chamadas
++ sucessivas a `unpack` leem um valor depois do outro. A posição avança pela largura de cada valor:
+
+% 2 1 0 0a64394ff8ba55510ae1347468df57ca
+
+% 0 1 0 1d682ece67ec18bb153acae711f8d72a
+
+% 0 1 0 02c323d8ba32cc1a1c4c80724b80913d
+
+% 0 1 0 1b601fe5b0b8be8513a6e93ada7b0486
+
+% 1 1 0 003878100c6a57800413730978d656e6
+
+@ 0 3 0 12c85bac81eb53a7119985e556f78c91
++ Os formatos binários favorecem seções repetidas, e um array de registros é desempacotado pela sua
++ contagem. O resultado de `unpack[Array[Pair]]` é uma função da contagem para o array, de modo que
++ o array é lido assim que a contagem é conhecida:
+
+% 2 1 0 0228f61d92c879710df6173be784622f
+
+% 0 1 0 18810e3d3ff829971680f33f88c1a657
+
+% 0 1 0 041cb2dbda85b4dd0de1720dd68708f7
+
+% 0 1 0 076e00d140ed59fd095815a121f0f803
+
+% 0 1 0 08c68d91746915350c3da06e2b370342
+
+% 0 1 0 131b0490ef919d291aec8f99af47208e
+
+% 0 1 0 143467146de84dfc1dbc5860cc65cdef
+
+% 1 1 0 0ea0ec97b9029207148e61860e181054
+
+% 3 1 0 132f34cdde6bd1071fc62d133ecd5304
+
+% 4 1 0 0450dd7bc3e64c311f9599219dd268c2
+
+% 5 1 0 0ec75f00187c678f13280a95acaa480a
+
+% 0 1 0 15a1fd3dfeb312b911d72250bd743390
+
+% 0 1 0 06924912a4ad1e3b1f9d23295368206e
+
+% 1 1 0 0703fc5266c24a5c0a34bc804bb8bb59
+
+@ 0 1 0 11926a309d48dff805211f857b0fbca1
++ ### As classes de tipos
+
+@ 0 1 0 058d60929b6bf4cb08563604ef3a428b
++ Três classes de tipos fazem o trabalho:
+
+% 2 1 0 1fd759874e19a36915a79a8f07517fbd
+
+@ 0 5 0 15a243bdaf9a77e214b4db86856f60cf
++ column  Classe de tipos
++ column  Descreve
++ row  `Debufferable`  a leitura de um valor a partir de bytes; os dezesseis tipos numéricos com tamanho definido têm instâncias, e uma case class deriva uma a partir de seus campos
++ row  `Bufferable`  a escrita de um valor em bytes, com a mesma derivação
++ row  `Unpackable`  o que `unpack` pede: um único valor `Debufferable`, ou um array deles
+
+% 1 1 0 0b911620ae75395f17f7b8c14d3b0683
+
+@ 0 2 0 13a4717e5c34138205e96fa1dc448647
++ `Unpackable` é o que permite que uma seção prefixada pela sua contagem seja lida com uma única
++ chamada, em vez de um laço.
+
+@ 0 4 0 05176fa1fae1111d15fcfacf9c9ecc16
++ Uma instância declara duas coisas: `width`, o número de bytes que o valor ocupa, e como ler esses
++ bytes de um `Sextant`, ou escrevê-los nele. As duas são visíveis para a derivação. A largura total
++ de um registro é a soma das larguras de seus campos, e cada deslocamento dentro dele é calculado
++ em [tempo de compilação].
+
+@ 0 2 0 198d5e016f168c3f01f2448ba044d8aa
++ `Debufferable.apply` constrói uma instância a partir de uma largura e de uma função dos bytes e de
++ um deslocamento. As instâncias primitivas são definidas dessa forma:
+
+% 2 1 0 16237db12c92c6c105f88c0a219721e2
+
+% 0 1 0 12dfed929269776716973385c9f2f8ad
+
+% 0 1 0 1a71256a0d65e34713c2e8780aee5dde
+
+% 0 1 0 04106ea8e5150d2f0a7f901009b431f9
+
+% 0 1 0 034399488307589406f957ea755c963d
+
+% 0 1 0 09476e015abd24620b104f03ac87351f
+
+% 1 1 0 14df198d94b18228073ce32dc61487c8
+
+@ 0 3 0 1aaff2c857d7834a040c51499dcb2a34
++ Um formato cujos campos precisam de mais do que leituras de largura fixa, como uma string
++ prefixada pelo seu comprimento, define uma instância própria da mesma forma. Ela então se compõe
++ em registros derivados como qualquer primitivo.
+
+@ 0 3 0 00b23091f1f57aac0057c37a10bf0249
++ Os tipos com tamanho definido fixam como os bytes são *interpretados*, e não apenas quantos eles
++ são. Um `B32` são quatro bytes brutos, um `U32` os lê como um inteiro sem sinal, e um `S32` os lê
++ como um inteiro com sinal. Os tipos Scala simples também têm instâncias, para layouts que são
++ mais fáceis de declarar com eles:
+
+% 2 1 0 00e1b3fcd90584d001ab147f2c976023
+
+@ 0 5 0 079d3603c3cc63e91a2d7c1038ca2ab0
++ column  Largura em bytes
++ column  Bits brutos
++ column  Sem sinal
++ column  Com sinal
++ column  Tipo Scala
+
+% 0 1 0 080ed74fe9ffb7600a099bb590b5aa56
+
+% 0 1 0 16e5d4df692360ec15c3b0ce395aeac1
+
+% 0 1 0 09767375c3e6a6c2198a132d884001d0
+
+% 0 1 0 193ed2757ef747f20156a786659603cc
+
+% 1 1 0 0f9e81ed0bc8cd8b19e0680e86e68143
+
+@ 0 2 0 0a83adcc18df5960111907b3466ad013
++ `Bufferable` é o lado da escrita, e é derivado sobre case classes da mesma forma, de modo que um
++ layout é declarado uma vez e serve aos dois sentidos.
+
+@ 0 1 0 017137edaf3b91e000ffad69ca2e946c
++ ### O sextante é uma capability
+
+@ 0 5 0 0c2c6a64afbdf16b0a0ad26eacb595c5
++ Um `Sextant` carrega uma posição de leitura mutável. Isso faz do desempacotamento um efeito, e
++ não uma leitura pura, e a posição é o que faz chamadas sucessivas a `unpack` avançarem. Um
++ sextante é, portanto, introduzido pelo bloco `sextant` que delimita seu escopo, e é uma
++ [capability] *exclusiva*. Dois leitores que compartilhassem uma posição consumiriam, cada um,
++ bytes que o outro esperava, então o compilador impede que um sextante ganhe um alias ou escape
++ de seu bloco.
+
+@ 0 2 0 1ec5fddf4c12503d0d2a1e6cc7368759
++ `offset` informa a posição atual, para um formato que precisa declarar onde uma seção começa.
++ `advance` pula um preenchimento, ou um campo de que este leitor não precisa:
+
+% 2 1 0 193e2400f6add9b300bf7fc490d37488
+
+% 0 1 0 0fc08bf2d0db1c64122bdc87166ac4e9
+
+% 0 1 0 058a5f83f5b740540fc89c2f14141c4d
+
+% 0 1 0 095b4b3f5f6cf782056fd0e0db8cb143
+
+% 0 1 0 07d7e918eb0ce3470633934b8c1f1454
+
+% 1 1 0 11ca1e5735f9fe75125ed92bc6f0be86
+
+% 3 1 0 14bec06bf3a9d9ae141d1804dfe2349a
+
+% 4 1 0 1974c3a5eaacb1190200a2261abb57a9
+
+% 5 1 0 0aa308d0cc37fb4b0a4f518176962879
+
+% 0 1 0 1a3ff6adacdcf1e21f54fc69eb5f3e6b
+
+% 1 1 0 05f67ab38f6ab0080a6bc9b9aa0885ee
+
+@ 0 1 0 06dd6d731c46c0d11a8e206f5c8c4b77
++ Fora de um bloco `sextant` não há posição da qual ler, e `unpack` não compila:
+
+% 2 1 0 0b197c623930b09c1416eb8c44b2985a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0a4d642b26d9e7e50441d745a016c878
+
+% 1 1 0 15ce26665291dc570c3ffd9d6e6b0846
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 8 0 0adff5aec64a6a2a1d1aeab32a9cddbb
++ - [Números](numbers.md#numeric-types) descreve os tipos com tamanho definido com os quais os
++   campos são declarados.
++ - [Flags de bits](flags.md) nomeia os bits de uma palavra pelos casos de uma enumeração.
++ - [Streams](streams.md#parsing-with-a-cursor) lê formatos cujos registros não têm largura fixa.
++ - [CBOR](cbor.md) e [Protocol Buffers](protobuf.md) são formatos binários que descrevem a si
++   mesmos.
++ - [Áudio](audio.md), [imagens](images.md) e [codificação em base](base-encoding.md) leem e
++   escrevem seus bytes como `Data`.

@@ -1,0 +1,2384 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0cc810470cd6afba122df81c9322cbb6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c321ee2df17494216b450ab82f76241
++ info   型付きの値としての Language Server Protocol：ハンドラから作るサーバー、セッションとしてのクライアント、その間に立つプロキシ
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 03d5e98a24a431a61c2abf0900a4d7f4
++     _Exegesis_ は [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) を三通りの向きで実装する。
++     **サーバー**は `Lsp.listen` の一回の呼び出しである。そのブロックは言語が提供する機能ごとに型付きのハンドラを登録し、その後はエディターがパイプを閉じるまで、`Content-Length` でフレーミングされた JSON-RPC を標準入出力で提供する。
++     **クライアント**は `Lsp.Server`（起動するコマンド、またはすでにサーバーに接続済みのストリームの組）とのセッションであり、ブロックの実行中 `Lsp.Connection` を貸し出す。
++     これにはエディターが送るリクエストと通知のそれぞれに対応する型付きメソッドがある。
++     **プロキシ** `Lsp.proxy` はその両方を兼ねる。
++     実際のサーバーとのセッションを保ちながらエディターにサービスを提供し、すべてを転送しつつ、`rewrite` コンビネーターが登録したものを修正する。
+
+@ 0 8 0 07ae692186b83c0e19a11db4020b6e16
++     プロトコルの語彙は `object Lsp` 内の通常のケースクラスと列挙型としてモデル化されている。
++     `Lsp.Position`、`Lsp.Range`、`Lsp.Diagnostic`、`Lsp.Hover`、`Lsp.CompletionList`、`Lsp.ServerCapabilities` などであり、それぞれ導出された JSON コーデックを持つ。
++     そのためハンドラは型付きの値を受け取って型付きの値を返し、JSON を手で組み立てることはない。
++     ワイヤ上の表面そのものは七つの `@rpc` トレイト（`LspLifecycle`、`LspLanguage`、`LspNavigation`、`LspEditing`、`LspAdvanced`、`LspWorkspace`、`LspResolve`）であり、`Lsp` トレイトで合併される。
++     `Lsp.Dispatch` はその任意の実装を JSON-RPC ディスパッチャーに変え、`Lsp.Connection` はそれぞれについて生成されたクライアントプロキシを保持する。
+
+% 2 1 0 0e0e6e69189fd5b70116b3734886599c
+
+% 3 1 0 112bfad9b91ada8406410077eb445581
+
+% 0 1 0 1aa05f11c17f63e30d5bb160adc03709
+
+% 0 1 0 0eef447a7950324718eb36afb77fd276
+
+% 0 1 0 08c7f00dd9208f390009f73a3cdf697e
+
+% 0 1 0 02a57c8420bac1e31d073b19d12e24b0
+
+% 0 1 0 09447586849c1c59027fa70d4e1aff8c
+
+% 0 1 0 1547a6ee2d14948e1c2a9eb14ce23f10
+
+% 0 1 0 048fd973c07dd78d1d3ecec1f719e927
+
+% 0 1 0 106b16fdbfa0b94c1bc7565e42dc7e91
+
+% 0 1 0 1c8d001c6c78a47b129da179c8f8ae3e
+
+% 0 1 0 0ddf53bbec95052918c9e306f1cfc33e
+
+% 0 1 0 1008c452dd585fee1703b1010b6772c2
+
+% 0 1 0 135581dff005d63d069f9a04fb8f49c0
+
+% 1 1 0 1b49628c0e22547713c550d4ff6c7fdc
+
+@ 0 8 0 189bc276752a87a209f4b784c826d076
++     サーバーの形は**レジストリ**である。
++     `Lsp.listen` に渡すブロックには `Lsp.Registry` が貸し出され、各コンビネーター（`hover`、`complete`、`opened`、`command`、…）はそこに自分のハンドラを記録する。
++     サーバーの `ServerCapabilities` は登録されたものから導出されるので、エディターに告知されるケイパビリティが実在するハンドラと食い違うことはありえない。
++     ケイパビリティが単なる存在以上に必要とするオプション（補完のトリガー文字、セマンティックトークンの凡例、診断のオプション）は、登録のパラメーターである。
++     ブロックが戻るとレジストリは消費される。提供が始まった後には何も登録できない。
+
+@ 0 10 0 034c05f96525a37115e059110df862f6
++     **ハンドラ**はコンテキスト関数である。
++     ドキュメントを対象とする（`Focused`）ハンドラには現在の `Document`、`Workspace`、`Emit[Lsp.Error]` が貸し出される。
++     ワークスペースを対象とする（`Ambient`）ハンドラにはワークスペースとエミッターだけが貸し出される。
++     そして各リクエストのペイロードはタグ付きのコンテキストパラメーターとして届き、同じ名前のアクセサー（`position`、`range`、`options`、`arguments`、`item`、…）を通して読む。
++     これらのハンドルはその一回のディスパッチに閉じ込められたケイパビリティなので、ハンドラが `document` や `client` を後のために隠し持つことはできない（キャプチャ検査がそれを拒否する）。
++     一方、ハンドラがそこから読み取る純粋な値（`document.text` や `Hover`）は自由に外へ出てよい。
++     答えられないハンドラは `Lsp.Error` を発生させる。
++     これはリクエストに対しては理由のワイヤコードを持つエラー応答となり、通知に対しては `window/logMessage` となる。
+
+@ 0 5 0 0fa2caec5032850217c57d1ee08932e2
++     アクセサー `document`、`workspace`、`client`、`position`、`context`、`arguments`、`query` と型 `Document` は、ほかの Soundness ライブラリのメンバーと名前を共有している。
++     そのため `soundness` アンブレラは `Lsp` のメンバーを平坦化しない。
++     上の `DemoServer` のように、サーバー自身のオブジェクトの**内側**で `import Lsp.*` と書く。
++     そこではネストしたワイルドカードがアンブレラのものを正当にシャドーイングする。
+
+@ 0 7 0 14d1f486ae823df80bbe5cacc8c9dcbb
++     同じ語彙は逆向きにも読める。
++     `Lsp.Server(command)` または `Lsp.Server.streams(in, out)` はサーバーを記述し、`session`（`Lsp.Server.sessional` が提供する aperture の `Sessional` 拡張）はチャネルを開いて `Lsp.Connection` を貸し出す。
++     リクエストはハンドラと同じく `Optional[Hover]`、`CompletionList`、`List[Location]` を返し、エラー応答は `Lsp.Error` として発生させられる。
++     サーバーが求められずに発するものはコンテキストで与えられる `Lsp.Listener` に届き、`Lsp.Observer` は両方向の生のトラフィックを見る。
+
+% 2 1 0 18098fc29d09e07206cb265601460b82
+
+% 3 1 0 01ab08a6ec5c5d870604dd80bde2d461
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 18d9b46ca13dd19e1944675028f38782
+
+% 0 1 0 1741688c07b6d9150acfce3feacfba0e
+
+% 0 1 0 175b24fcc0a4b7dd0fab3c6ba8dac660
+
+% 0 1 0 0f981e368c1deb17145d1a1f7813f6d6
+
+% 0 1 0 0d229f22cb4036921387f711dea7678a
+
+% 0 1 0 0e031022ef04df2316b8d371659d5a0e
+
+% 1 1 0 0636ac6bd80f77f41cb3dae835455500
+
+@ 0 1 0 1f464efe1917bf091a914ec7f5969566
++     このライブラリには二つのコンポーネントがある。
+
+@ 0 6 0 18e3533597adb3ae146e534505d84444
++     - `exegesis.core` — 上記のすべて：`Lsp`、七つのワイヤトレイト、`LspSessional`、`rewrite`、`upstream`。JVM 専用である（Scala.js ビルドを持たない `obligatory.json` に依存するため）。
++     - `exegesis.demo` — `DemoLspServer` と `DemoLspProxy`。常駐デーモンのイディオム（ethereal の `cli`/`execute`）で書かれた二つの完全なプログラムであり、一つは最小限の言語サーバー、もう一つは引数で指定されたサーバーを起動するプロキシである。
+
+@ 0 5 0 00ed8b6e5fb5ddbf190b28417d9e1bd9
++     `Lsp`、`LspSessional`、`rewrite`、`upstream` は `soundness` アンブレラにエクスポートされる。
++     ワイヤトレイトとデモはエクスポートされず、`import exegesis.*` で到達する。
++     セッションが必要とする given（`Lsp.Listener.quiet`、`Lsp.Observer.silent`、`Lsp.Server.sessional`）はそれぞれの対象のコンパニオンにあるので、どれも名前でインポートしない。
++     独自のリスナーやオブザーバーはローカルの `given` として束縛すれば、それらより優先される。
+
+% 0 1 0 09f4f14b56f236a20f082955fe2d71a4
+
+% 0 1 0 011c5c9a13697ccd1a1abffadd0f53e1
+
+% 0 1 0 0777938784819126077a50b6de7635e6
+
+% 0 1 0 1952fe1b1b3fdd9d1258b07e91749ca2
+
+% 0 1 0 15ffbe15dc74649f0d00d300c0a79e13
+
+% 0 1 0 11a21a92fed618c101ee666bd4a88091
+
+% 0 1 0 1586f40001c12b700f776b33c37b88ec
+
+@ 0 1 0 083cbe68ee8b31dd0d27d3044b2fd91c
++ entry .Lsp   プロトコル：その型、ハンドラのレジストリ、`listen`、`proxy`、そしてクライアント側
+
+% 1 1 0 07c81b808275b48401e2ee8c5852ef88
+
+@ 0 6 0 17da59a998cf97010aeece197c6524fc
++       `Lsp` は名前を共有する二つのものである。
++       **トレイト**としては、Language Server Protocol のワイヤ上の表面全体である。
++       これは `LspLifecycle`、`LspLanguage`、`LspNavigation`、`LspEditing`、`LspAdvanced`、`LspWorkspace`、`LspResolve` の合併に obligatory の `JsonRpc` を混ぜ、`#Origin` を `Lsp.Client` に固定したものであり、`Lsp.listen` のセッションが実装し、`Lsp.Dispatch` が提供する。
++       独自の実装も可能だが（`dispatcher` がそれを振り分ける）、サーバーを作る方法として意図されているのは登録 API である。
+
+@ 0 1 0 1a81df26a0faa92316d9e51f4b88a3aa
++       **オブジェクト**としては語彙である。
++       ここには三群のメンバーがある。
+
+@ 0 12 0 08a8e25adf81ef20185fbc437f8d9ad1
++       - **プロトコルの型**。LSP の構造ごとに一つのケースクラスまたは列挙型があり、それぞれ JSON コーデックを持つ：`Position`、`Range`、`Location`、`Diagnostic`、`Hover`、`CompletionItem`、`CompletionList`、`TextEdit`、`WorkspaceEdit`、`ServerCapabilities`、`SymbolKind`、`DiagnosticSeverity` など。
++       - **サーバー側**。ハンドラの型（`Focused`、`Ambient`、`HoverHandler`、…）、ハンドラが読む環境のアクセサー（`document`、`workspace`、`client`、`position`、…）、登録コンビネーター（`hover`、`complete`、`opened`、`command`、…）、それらが書き込む `Registry`、提供を行う `listen`、そしてハンドラが発生させる `Error`。
++       - **クライアント側**。話す相手のサーバーを記述する `Server`、セッションが貸し出すハンドル `Connection`、`Listener` と `Observer`、サーバーがエディターに送る通知である `Client`。さらに、エディターとサーバーの間に一つのプロセスを置く `Proxy` と `proxy`。
+
+% 2 1 0 0aafc00fae589bab1cd66aa79b7a0acc
+
+% 3 1 0 1347fef257597af51b339ad52d72e4f5
+
+% 5 1 0 11853d9cf286480d012ac485cbc36000
+
+% 6 1 0 12fa3238bd1ded7c088d1f3d996a81c2
+
+% 8 1 0 080c321809c8600d06b45a559f9a04ba
+
+% 9 1 0 0660c98f4003de03116c07af10a91ea3
+
+% 10 1 0 096700d9cb0c9f7808cc9ece64df64a1
+
+% 0 1 0 133cd2f10de3e46c0a070192c753dcb8
+
+% 0 1 0 040442f9949fc651076d26dc6bd14193
+
+% 1 1 0 1c8c74f70fa3f3840881bf5db3311459
+
+% 2 1 0 1e741c340c21475b1082a29a88add546
+
+% 3 1 0 0ec45109e01ac4911fc1782c57150825
+
+% 4 1 0 1857f130283f07fe018711786f0a4023
+
+% 5 1 0 1d3b25797407f8450dee834d72e374d8
+
+@ 0 3 0 0165d58b991d3eb615c4f1f9a6e52e3b
++       登録は `Lsp.Registry^` がスコープにある場所ならどこでも可能である。
++       `listen` のブロックでも、上の `register` のようにそれを受け取るヘルパーでもよい。
++       そのため大きなサーバーは機能をいくつものメソッドに分割できる。
+
+@ 0 3 0 13a5c5728e3076de0009a78e19856b13
++       `Lsp.*` はそれを使うオブジェクトの内側でインポートする。
++       そのメンバーのいくつか（`document`、`context`、`arguments`、`query`、`Document`）は `soundness` アンブレラでほかのライブラリの名前と衝突する。
++       アンブレラが `Lsp` をエクスポートし、その中身をエクスポートしないのはそのためである。
+
+% 0 1 0 033ece319d80b85e01daa275b853f81c
+
+% 1 1 0 1e21d980519065cc170782cdc9b18a4c
+
+% 1 1 0 1f9d4847cf3942010711c04fdfe5dba4
+
+% 1 1 0 0e01538b0859f32617d45472977f6054
+
+% 1 1 0 0fd74705f93b0dda1e2eafeccc17cac5
+
+@ 0 4 0 086eec1efc86891b1073c9473f40b0bc
++   entry #Origin   サーバーから見たプロトコルの向こう側：`Lsp.Client`
++       `JsonRpc` のオリジン型。`Lsp` の実装が、メッセージを送ってきた相手に対してコールバックできるメソッドを持つインターフェースである。
++       サーバーの `client` ハンドルはその一つである。
++   entry .Position   行と文字。どちらも 0 起点で、UTF-16 コード単位で数える
+
+% 1 1 0 0deaae0e87cf915c146e7d62ae87194f
+
+@ 0 12 0 1f55f4699b14aa2f0e8db21cd13e2b26
++         プロトコルの位置である。
++         `line` と `character` は 0 から数え、`character` は UTF-16 コード単位でのオフセットである。
++         これはプロトコルの既定のエンコーディングであり、`Text` の内部の文字の単位でもあるので、ライブラリのどこでもトランスコードは起こらない。
++         `Document#offset` と `Document#position` は、位置とドキュメントのテキスト内のオフセットとを、プロトコルの要求どおりに範囲を切り詰めながら相互に変換する。
++         `#span` と `.from` は、同じく 0 起点である zephyrine の `Span` との間で変換する。
++     entry .from   `Span` の始点からの位置。スパンに行がなければ `Unset`
++         スパンの開始行と開始列を取る（ない場合は 0）。
++     entry #line   0 起点の行
++     entry #character   行内での 0 起点のオフセット。UTF-16 コード単位
++     entry #span   その行上の幅 0 の `Span` としての位置
++   entry .Range   二つの位置。始点は含み、終点は含まない
+
+% 1 1 0 11974fcd911257f710a3899af908aa34
+
+@ 0 12 0 0ea4ac1f16ea66091d7d272fe2f90c2b
++         プロトコルの範囲である。
++         `Document#apply(range)` は範囲内のテキストを読み、`Document#fullRange` はドキュメント全体の範囲である。
++         `.from` は `Span` を変換し、終点がなければ開始行と開始列を使う。`#span` は逆に変換する。
++         コンパニオンの `encodable` と `decodable` が JSON コーデックであり、ここで一度だけ導出されるので、すべての利用がそれを共有する。
++     entry .from   `Span` からの範囲。スパンに開始行がなければ `Unset`
++     entry .encodable   範囲の導出された JSON エンコーダー
++     entry .decodable   範囲の導出された JSON デコーダー。不正な範囲は `Json.Error` を投げる
++     entry #start   範囲の始まる位置
++     entry #end   範囲の終わる位置（含まない）
++     entry #span   その領域にわたる `Span` としての範囲
++   entry .Location   URI で指定されたドキュメント内の範囲
+
+% 1 1 0 0765b6ce320403631fb9d22e8e261afa
+
+@ 0 7 0 1422d7841ff9b63800e8cbf820577a50
++         `definition`、`declaration`、`references`、`typeDefinition`、`implementation` がリストとして返すものである。
++         コンパニオンは導出された JSON コーデックを持つ。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な位置情報は `Json.Error` を投げる
++     entry #uri   エディターが表記するとおりのドキュメントの URI（`file:///…`）
++     entry #range   そのドキュメント内の範囲
++   entry .Envelope   JSON-RPC メッセージの扱いを決める二つのメンバー
+
+% 1 1 0 094453f1eb948e921e6465e9678dfe6e
+
+@ 0 11 0 0990bb33e899c2941215f65808347d47
++         `method`（応答にはない）と `id`（通知にはない）だけを読み取ったメッセージである。
++         どちらもオプショナルなので、どのメッセージもデコードでき、プロキシはこれを使ってメッセージの形を知らずに分類する。
++         メソッドがなければ応答、id がなければ通知である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #method   メッセージが指定するメソッド。応答では `Unset`
++     entry #id   メッセージが対応付けに使う id。生の JSON として持つ。通知では `Unset`
++   entry .TextDocumentIdentifier   URI で指定されたドキュメント
++     entry #uri   ドキュメントの URI
++   entry .VersionedTextDocumentIdentifier   URI とバージョンで指定されたドキュメント
+
+% 1 1 0 0eb4bf58ca53684e16f050aa01c46289
+
+@ 0 5 0 1cdbdfcb2e68078718442b84a1aab941
++         `textDocument/didChange` が運ぶものである。
++         バージョンはエディターによる編集回数であり、セッションはそれを `Document#version` として記録する。
++     entry #uri   ドキュメントの URI
++     entry #version   エディターによるドキュメントのバージョン番号
++   entry .TextDocumentItem   開いているドキュメントの全体：URI、言語、バージョン、テキスト
+
+% 1 1 0 1a4cda347f26513008a6e369857dd811
+
+@ 0 7 0 032162b68103606b1ba32bb85ce67be1
++         `textDocument/didOpen` が運ぶものであり、`Workspace#document` がセッションの保持するドキュメントのスナップショットとして返すものである。
++     entry #uri   ドキュメントの URI
++     entry #languageId   エディターの言語識別子。`scala` や `rust` など
++     entry #version   エディターによるドキュメントのバージョン番号
++     entry #text   ドキュメントのテキスト全体
++   entry .TextDocumentContentChangeEvent   一つの編集：範囲をテキストで置き換えるか、テキスト全体を置き換える
+
+% 1 1 0 1d3f786d8670f25a1781167e126e6beb
+
+@ 0 10 0 033be843badda27a1922ed8c9a7fefc4
++         `range` を持つイベントは、範囲の UTF-16 オフセットの位置でテキストをつなぎ替える。
++         持たないイベントはドキュメント全体を置き換える。完全同期を使うエディターはこの方法であらゆる変更を報告する。
++         `Connection#edit` はこれのリストを送り、`Connection#replace` は範囲なしの形を送る。
++     entry #range   置き換える範囲。ドキュメント全体を置き換えるなら `Unset`
++     entry #text   置き換えるテキスト
++   entry .ClientInfo   初期化時に報告されるエディターの名前とバージョン
++     entry #name   エディターの名前
++     entry #version   エディターのバージョン（与えられた場合）
++   entry .ServerInfo   `initialize` の結果で告知されるサーバーの名前とバージョン
+
+% 1 1 0 0605eb6c8c0742231331f7c457fe497b
+
+@ 0 8 0 02b0e836544bedab07250ec70e074524
++         `Lsp.listen(name, version)` がこれらを送る。
++         `Connection#initialize` は `InitializeResult` の中に入れてこれらを返す。
++     entry #name   サーバーの名前
++     entry #version   サーバーのバージョン（与えられた場合）
++   entry .Folder   ワークスペースフォルダー：その URI と表示名
++     entry #uri   フォルダーの URI
++     entry #name   フォルダーの表示名
++   entry .CompletionOptions   サーバーの補完のしかた：トリガー文字と、項目を解決するかどうか
+
+% 1 1 0 1ac3c60071f3ad0213d815046b4d1a03
+
+@ 0 11 0 1a281ec47fae715a1aa47a6945e66145
++         `Registry#capabilities` が `complete(triggers*)` の登録から導出する。
++         `resolveCompletion` も登録されていれば `resolveProvider` が設定される。
++     entry #triggerCharacters   入力されると補完を要求する文字（あれば）
++     entry #resolveProvider   `completionItem/resolve` を提供するかどうか
++   entry .SignatureHelpOptions   シグネチャヘルプを起動する文字
++     entry #triggerCharacters   トリガー文字（あれば）
++   entry .DocumentLinkOptions   ドキュメントリンクを遅延して解決するかどうか
++     entry #resolveProvider   `documentLink/resolve` を提供するかどうか
++   entry .CodeLensOptions   コードレンズを遅延して解決するかどうか
++     entry #resolveProvider   `codeLens/resolve` を提供するかどうか
++   entry .DocumentOnTypeFormattingOptions   入力されると整形を起動する文字
+
+% 1 1 0 1ac9e032554279db0d9a0b609ec769cc
+
+@ 0 5 0 1382f48c85468d771cfcf9d80e9c7d04
++         `formatOnType(first, more*)` から導出される。
++         プロトコルはトリガー文字を一つ要求し、それ以上も許す。
++     entry #firstTriggerCharacter   必ず整形を起動する文字
++     entry #moreTriggerCharacter   追加のトリガー文字（あれば）
++   entry .SemanticTokensOptions   サーバーのセマンティックトークンが使う凡例と、提供するリクエスト
+
+% 1 1 0 10841ac69d37e1e7002c91403c24a467
+
+@ 0 6 0 1e81ba4ba33dec4412afbf3fa739403e
++         `semanticTokens(legend)` から導出される。
++         そのハンドラがあれば `full` が、`semanticTokensRange` が登録されていれば `range` が設定される。
++     entry #legend   サーバーのトークンデータが添字で参照するトークンの種類と修飾子
++     entry #range   `textDocument/semanticTokens/range` を提供するかどうか
++     entry #full   `textDocument/semanticTokens/full` を提供するかどうか
++   entry .DiagnosticOptions   サーバーのプル型診断のふるまい
+
+% 1 1 0 12e1d0b84943a6910462f7decb01fc68
+
+@ 0 7 0 08db8dbc8aa23d12029254b6ebbcf6f2
++         `diagnostics(options)` が登録時に取るオプションである。
++         プロトコルはサーバーに対し、ドキュメントの診断がほかのファイルに依存するかどうか、そしてワークスペース全体について報告できるかどうかを示すよう求める。
++     entry #identifier   クライアントが結果を保持する際の識別子（あれば）
++     entry #interFileDependencies   あるファイルの変更が別のファイルの診断を変えうるかどうか
++     entry #workspaceDiagnostics   サーバーがワークスペース全体の診断を報告するかどうか
++   entry .ExecuteCommandOptions   サーバーが実行するコマンド
+
+% 1 1 0 0b318d732622af281e7c0e8689d29f48
+
+@ 0 3 0 0a22787d85ed650d125a8a61864a2a88
++         すべての `command(name)` の登録から導出される。登録がなければ存在しない。
++     entry #commands   登録されたコマンド名
++   entry .ServerCapabilities   サーバーがエディターに伝える、自分にできること
+
+% 1 1 0 17b8db6a248ad58506523bc659836471
+
+@ 0 6 0 01586a9c75c8717801a4cfae2251a2a4
++         `initialize` の結果で送られるレコードである。
++         `Lsp.listen` で作ったサーバーがこれを書くことはない。
++         `Registry#capabilities` が登録されたハンドラからこれを導出し、各プロバイダーのフラグはそのハンドラが存在するときにだけ設定され、`textDocumentSync` は常に `Incremental` である。そして `capabilities(adjust)` の登録が、導出されたレコードを最後に修正する。
++         プロキシは上流サーバーのレコードを `rewrite.capabilities` で修正し、クライアントは `Connection#initialize` からそれを読む。
+
+% 2 1 0 0a9b7b28d74ca6bf005bf64723c32d6d
+
+% 3 1 0 0b116db7fe0ebb4405e1ab16ad884ee1
+
+% 0 1 0 05f3f18729d91c431d1da6b341e36773
+
+% 0 1 0 18e06184449b199013aa1af8d1767c64
+
+% 0 1 0 0cdd36f399563c62133e203508d9c721
+
+% 1 1 0 15e979bcbf392c3509c401b07a387086
+
+@ 0 33 0 1e9d6c7f1ed822180803b8233b76728f
++         すべてのフィールドはオプショナルで、既定値は `Unset` であり、コーデックはそれを省略する。
++     entry #textDocumentSync   ドキュメントの変更をどう報告してほしいか
++     entry #completionProvider   補完とそのオプション
++     entry #hoverProvider   ホバー
++     entry #definitionProvider   定義へ移動
++     entry #referencesProvider   参照の検索
++     entry #documentSymbolProvider   ドキュメントシンボル
++     entry #documentFormattingProvider   ドキュメント全体の整形
++     entry #renameProvider   名前の変更
++     entry #codeActionProvider   コードアクション
++     entry #signatureHelpProvider   シグネチャヘルプとそのトリガー文字
++     entry #declarationProvider   宣言へ移動
++     entry #typeDefinitionProvider   型定義へ移動
++     entry #implementationProvider   実装へ移動
++     entry #documentHighlightProvider   ドキュメントハイライト
++     entry #foldingRangeProvider   折りたたみ範囲
++     entry #selectionRangeProvider   選択範囲
++     entry #colorProvider   ドキュメントの色と色の表現
++     entry #documentRangeFormattingProvider   範囲の整形
++     entry #documentLinkProvider   ドキュメントリンクとそのオプション
++     entry #codeLensProvider   コードレンズとそのオプション
++     entry #documentOnTypeFormattingProvider   入力時の整形とそのトリガー文字
++     entry #callHierarchyProvider   呼び出し階層
++     entry #typeHierarchyProvider   型階層
++     entry #semanticTokensProvider   セマンティックトークンとその凡例
++     entry #inlayHintProvider   インレイヒント
++     entry #inlineValueProvider   インライン値
++     entry #linkedEditingRangeProvider   連動編集範囲
++     entry #monikerProvider   モニカー
++     entry #diagnosticProvider   プル型診断とそのオプション
++     entry #workspaceSymbolProvider   ワークスペースシンボル
++     entry #executeCommandProvider   コマンドとその名前
++   entry .InitializeResult   `initialize` に対するサーバーの応答：そのケイパビリティと身元
+
+% 1 1 0 10d51af5abb576220ebd73ae2e19ed1a
+
+@ 0 7 0 0b98865e07cfa9a902d2b30b478cec00
++         `Connection#initialize` が返すものであり、プロキシで `rewrite.capabilities` が修正するペイロードである。
++         コンパニオンは導出された JSON コーデックを持つ。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な結果は `Json.Error` を投げる
++     entry #capabilities   サーバーにできること
++     entry #serverInfo   サーバーの名前とバージョン（与えられた場合）
++   entry .MarkupContent   表示用のテキスト。種類が別のものを示さない限り Markdown
+
+% 1 1 0 051a3345236cdb990206b0f9f4447b1b
+
+@ 0 5 0 0cd7de541061bd0c0ea78f90cbc4e66f
++         `Hover` と `CompletionItem` のドキュメントが運ぶものである。
++         `kind` の既定値は `markdown` であり、プロトコルが知るもう一つの値は `plaintext` である。
++     entry #kind   `markdown`（既定値）または `plaintext`
++     entry #value   テキスト
++   entry .CompletionContext   エディターが補完を要求した理由
+
+% 1 1 0 16b6bad6f068596d0954a6396445a870
+
+@ 0 6 0 0909a51e203048c8078a6b68d41ce522
++         `triggerKind` はプロトコルの番号である。明示的な要求なら 1、トリガー文字なら 2（その文字は `triggerCharacter` に入る）、不完全なリストの再要求なら 3 である。
++         `complete` ハンドラはこれを `context` として読み、エディターが何も送らなかった場合は `Unset` である。
++     entry #triggerKind   トリガーの種類を表すプロトコルの番号
++     entry #triggerCharacter   トリガー文字が補完を要求したときに入力された文字
++   entry .CompletionItem   一つの補完：そのラベル、種類、詳細、ドキュメント、挿入テキスト
+
+% 1 1 0 1de14105d72edd77070e69c137a9b709
+
+@ 0 3 0 1f7235018a9c082813434e0f8c9a6132
++         `CompletionList` が保持するものであり、`resolveCompletion` が遅延して埋めるものである。
++         ドキュメントを要求に応じて計算するサーバーは、`complete` から簡素な項目を返し、`resolveCompletion` でそれを完成させる。必要なものは何でも `data` に入れて運ぶ。
+
+% 2 1 0 1ac53f4df635e7c508f9e44cc5c13dc0
+
+% 3 1 0 1501487f40b4d9670dc6e0319c9ce682
+
+% 0 1 0 0e460df07746c85506a1fc77fb0c44c8
+
+% 1 1 0 03202d9800b2296e04459beee3edbe1e
+
+@ 0 9 0 185027609091ad9c000f1b17d1efe518
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な項目は `Json.Error` を投げる
++     entry #label   リストに表示され、`insertText` が別のものを示さない限り挿入されるテキスト
++     entry #kind   項目の種類。エディターはこれをアイコンとして描画する
++     entry #detail   ラベルの横に表示される短い型またはシグネチャ
++     entry #documentation   マークアップとしての、より長いドキュメント
++     entry #insertText   ラベルと異なる場合に挿入されるテキスト
++     entry #data   サーバーが `completionItem/resolve` の際に返してほしいもの。生の JSON として持つ
++   entry .CompletionList   補完リクエストが返す項目と、さらに項目があるかどうか
+
+% 1 1 0 0dad51dc7ffd7605029ccf1433732e1c
+
+@ 0 7 0 0454fce04485c4c012c3ce2844e240f3
++         `complete` ハンドラが返すものである。
++         `isIncomplete` は、エディターに手持ちのリストを絞り込むのではなく、ユーザーの入力に応じて再度問い合わせるよう伝える。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なリストは `Json.Error` を投げる
++     entry #isIncomplete   さらに入力したときにサーバーに再度問い合わせるべきかどうか
++     entry #items   補完の候補
++   entry .Hover   ホバーが表示するもの：マークアップと、それが適用される範囲
+
+% 1 1 0 089e54ec651ca1d40547f2349c53d041
+
+@ 0 9 0 0e327d7a59929ae61c342c577c4bbb03
++         `hover` ハンドラが `Optional` に入れて返すものである。
++         `Unset` は表示するものがないことを意味し、ワイヤ上では `null` になる。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なホバーは `Json.Error` を投げる
++     entry #contents   表示されるマークアップ
++     entry #range   ホバーが説明する範囲（与えられた場合）。エディターはこれを強調表示してもよい
++   entry .ReferenceContext   参照リクエストが宣言を含めることを望むかどうか
++     entry #includeDeclaration   シンボル自身の宣言を参照として数えるかどうか
++   entry .DocumentSymbol   ドキュメント内のシンボル。その種類、範囲、子を持つ
+
+% 1 1 0 08b62d9d325271fa10566d15c6a4c527
+
+@ 0 16 0 1bccd600e985fd13110635eabed24612
++         `documentSymbols` ハンドラがリストとして返すものであり、プロトコルのシンボルの階層的な形である（平坦な `WorkspaceSymbol` に対して）。
++         シンボルは `children` を入れ子にし、その `range` は定義全体を囲み、`selectionRange` はその名前を指す。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なシンボルは `Json.Error` を投げる
++     entry #name   シンボルの名前
++     entry #kind   シンボルの種類
++     entry #range   定義全体
++     entry #selectionRange   定義内でのシンボルの名前
++     entry #detail   型またはシグネチャ（あれば）
++     entry #children   入れ子のシンボル（あれば）
++   entry .FormattingOptions   エディターの整形の設定：タブの幅と、空白かタブか
++     entry #tabSize   タブの幅
++     entry #insertSpaces   インデントにタブではなく空白を使うかどうか
++   entry .TextEdit   新しいテキストで置き換えられるドキュメントの範囲
+
+% 1 1 0 0efcd25d5f179d980e549cab24f703b3
+
+@ 0 7 0 19e552dfe419f7631e32a7750463bcab
++         `format`、`formatRange`、`formatOnType`、`savingEdits` がリストとして返すものであり、`WorkspaceEdit` がドキュメントごとに保持するものである。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な編集は `Json.Error` を投げる
++     entry #range   置き換えられる範囲
++     entry #newText   置き換えるテキスト
++   entry .WorkspaceEdit   URI をキーとする、複数のドキュメントにまたがる編集
+
+% 1 1 0 0b5502bde7997e671494a548beea0f65
+
+@ 0 8 0 0ca30f4c757104ad013e09ba931c14ec
++         `rename` が返すものであり、`creatingFiles`、`renamingFiles`、`deletingFiles` の各ハンドラがファイル操作の実行前にそれを修正するために返してよいものである。
++         モデル化されているのはプロトコルの編集のうち `changes` の形だけであり、バージョン付きのドキュメント変更はモデル化されていない。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な編集は `Json.Error` を投げる
++     entry #changes   URI ごとの各ドキュメントへの編集（あれば）
++   entry .CodeActionContext   コードアクションが要求された範囲にある診断
+
+% 1 1 0 1731ef674e3bf0da109e145fdee067fe
+
+@ 0 4 0 1e56933b8c88b1e103fe5efdfcbdbf21
++         `codeActions` ハンドラはこれを `context` として読む。
++         クイックフィックスは通常これらの診断から計算される。
++     entry #diagnostics   エディターがその範囲に表示している診断
++   entry .CodeAction   エディターが提示できる、タイトル付きのアクション：ある種類の下での編集
+
+% 1 1 0 1b3131017c331b9417900155c8b8f239
+
+@ 0 16 0 16bcda28eb75d90d18f75a4581c71071
++         `codeActions` ハンドラがリストとして返すものである。
++         `kind` は `quickfix` や `refactor.extract` のようなドット区切りのプロトコル文字列である。
++         `edit` は `Unset` のままにしておき、`resolveCodeAction` で埋めてもよい。必要なものは `data` に入れて運ぶ。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なアクションは `Json.Error` を投げる
++     entry #title   ユーザーに表示されるタイトル
++     entry #kind   アクションの種類。`quickfix` など
++     entry #edit   アクションが適用する編集（計算済みの場合）
++     entry #data   サーバーが `codeAction/resolve` の際に返してほしいもの。生の JSON として持つ
++   entry .ParameterInformation   シグネチャの一つのパラメーター。そのラベルで示す
++     entry #label   シグネチャに現れるとおりのパラメーターのラベル
++   entry .SignatureInformation   一つのシグネチャ：そのラベル、ドキュメント、パラメーター
++     entry #label   テキストとしてのシグネチャ
++     entry #documentation   マークアップとしてのドキュメント（あれば）
++     entry #parameters   パラメーター（列挙されている場合）
++   entry .SignatureHelp   呼び出し箇所でのシグネチャと、どれがアクティブか
+
+% 1 1 0 189021e05e73e1fc0f19b030e24812d6
+
+@ 0 7 0 0ae5dad27a9fd59106ea5667f1dca553
++         `signatureHelp` ハンドラが `Optional` に入れて返すものである。
++         `Unset` は表示するものがないことを意味する。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #signatures   候補のシグネチャ
++     entry #activeSignature   最初に表示するシグネチャの添字（あれば）
++   entry .DocumentHighlight   強調表示する範囲。読み取り、書き込み、またはプレーンテキストとして
+
+% 1 1 0 19b46a408b59ccbb0417cc1b0130d024
+
+@ 0 7 0 08533b117d3e88bb0daf5ba94bc2e471
++         `documentHighlights` ハンドラがリストとして返すものであり、カーソル下のシンボルのすべての出現箇所である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なハイライトは `Json.Error` を投げる
++     entry #range   強調表示する範囲
++     entry #kind   その出現が読み取りか、書き込みか、プレーンテキストか
++   entry .FoldingRange   折りたたみ可能な行の領域。種類を持つこともある
+
+% 1 1 0 01bc93c2a2783b7a0465dd42e53ee52a
+
+@ 0 11 0 0b2ead50dcc4bc391dba05b1666bc0cb
++         `foldingRanges` ハンドラがリストとして返すものである。
++         `kind` は `comment`、`imports`、`region` のようなプロトコル文字列である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な範囲は `Json.Error` を投げる
++     entry #startLine   折りたたまれる最初の行
++     entry #startCharacter   最初の行で折りたたみが始まる文字（行末でない場合）
++     entry #endLine   折りたたまれる最後の行
++     entry #endCharacter   最後の行で折りたたみが終わる文字（行末でない場合）
++     entry #kind   `comment`、`imports`、`region`、またはサーバー独自の種類
++     entry #collapsedText   折りたたまれた行の代わりに表示するテキスト（あれば）
++   entry .SelectionRange   ある範囲と、それが拡張される先の外側の範囲
+
+% 1 1 0 1943a7bba71096cd0cfe5b2598d9639e
+
+@ 0 8 0 049ae03ab403a0941fd406395ab9dbb5
++         `selectionRanges` ハンドラが、問い合わせられた位置ごとに一つ返すものである。
++         これは次第に広がる範囲の連鎖であり、それぞれが直前のものの `parent` である。エディターの選択範囲拡張コマンドはこれをたどる。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な範囲は `Json.Error` を投げる
++     entry #range   この範囲
++     entry #parent   次に広い範囲（あれば）
++   entry .Command   任意の引数を持つタイトル付きのコマンド。コードレンズやアクションが運ぶもの
+
+% 1 1 0 16b90d01cc1f2ad914fa854346a17651
+
+@ 0 7 0 1a9f8c7a10036d511044cfa8aad76c7c
++         `arguments` はプロトコルの `LSPAny[]` であり、生の `Json` として保持される。
++         エディターは `workspace/executeCommand` を送ってコマンドを実行し、`command(name)` の登録がそれに答える。
++     entry #title   ユーザーに表示されるタイトル
++     entry #command   コマンドの名前
++     entry #arguments   生の JSON 配列としての引数（あれば）
++   entry .CodeLens   ある範囲にインラインで表示されるコマンド
+
+% 1 1 0 174ded89327152dd1e43009a47e1d83b
+
+@ 0 8 0 0d0f48672b28c64204363723364227e6
++         `codeLenses` ハンドラがリストとして返すものである。
++         `command` は `Unset` のままにしておき、`resolveCodeLens` で埋めてもよい。必要なものは `data` に入れて運ぶ。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なレンズは `Json.Error` を投げる
++     entry #range   レンズが表示される場所
++     entry #command   レンズが実行するコマンド（計算済みの場合）
++     entry #data   サーバーが `codeLens/resolve` の際に返してほしいもの。生の JSON として持つ
++   entry .DocumentLink   ある対象へリンクする範囲
+
+% 1 1 0 0136c50863e60ea508c6e9bab311cc9c
+
+@ 0 14 0 0cc8551087d1498519094f7cdadc76f7
++         `documentLinks` ハンドラがリストとして返すものである。
++         `target` は `Unset` のままにしておき、`resolveDocumentLink` で埋めてもよい。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なリンクは `Json.Error` を投げる
++     entry #range   リンクされた範囲
++     entry #target   範囲のリンク先の URI（計算済みの場合）
++     entry #tooltip   リンクにホバーしたときに表示するテキスト（あれば）
++     entry #data   サーバーが `documentLink/resolve` の際に返してほしいもの。生の JSON として持つ
++   entry .Color   赤、緑、青、アルファで表した色。それぞれ 0 から 1
++     entry #red   赤の成分
++     entry #green   緑の成分
++     entry #blue   青の成分
++     entry #alpha   アルファの成分
++   entry .ColorInformation   ドキュメント内の色リテラル：その範囲と値
+
+% 1 1 0 1d0d302ad3ee16621f413064badab3b4
+
+@ 0 7 0 116dc11e594c537c174b2eaa0b6938bc
++         `documentColors` ハンドラがリストとして返すものである。
++         エディターはそれぞれの位置に色見本を表示する。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #range   色リテラルのある場所
++     entry #color   それが表す色
++   entry .ColorPresentation   色の書き方の一つ。ラベル付きの編集として
+
+% 1 1 0 00144ee3e08302ce04e449d1c478e276
+
+@ 0 8 0 18a8dc698b4b3309177fea124c3dc122
++         `colorPresentations` ハンドラがリストとして返すものである。
++         それぞれはユーザーが選んだ色の表記（`#ff0000`、`rgb(255, 0, 0)`、…）であり、それを書き込む編集を伴う。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #label   ユーザーに表示される表記
++     entry #textEdit   それを書き込む編集（ラベルの挿入と異なる場合）
++     entry #additionalTextEdits   インポートなどの追加の編集（あれば）
++   entry .CallHierarchyItem   呼び出し階層内の呼び出し可能なもの：位置情報を伴うシンボル
+
+% 1 1 0 1becdebe912e47ae1f038dbf590d3d25
+
+@ 0 24 0 121ca0023ebc2bd90b6b2dabe7c9cb8e
++         `callHierarchy` の準備ハンドラがリストとして返すものであり、その呼び出し元ハンドラと呼び出し先ハンドラが `item` として受け取るものである。
++         `data` は、エディターが呼び出し元や呼び出し先を問い合わせたときに、サーバーがその呼び出し可能なものを再び見つけるために必要なものを運ぶ。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な項目は `Json.Error` を投げる
++     entry #name   呼び出し可能なものの名前
++     entry #kind   シンボルの種類
++     entry #tags   非推奨などのシンボルのタグ（あれば）
++     entry #detail   シグネチャまたは型（あれば）
++     entry #uri   呼び出し可能なものが定義されているドキュメント
++     entry #range   定義全体
++     entry #selectionRange   定義内での呼び出し可能なものの名前
++     entry #data   サーバーが項目と一緒に返してほしいもの。生の JSON として持つ
++   entry .CallHierarchyIncomingCall   ある項目の呼び出し元と、呼び出し元の中で呼び出しが起こる場所
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #from   呼び出し元の項目
++     entry #fromRanges   呼び出し元の中で呼び出しが起こる範囲
++   entry .CallHierarchyOutgoingCall   ある項目の呼び出し先と、その項目の中で呼び出しが起こる場所
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #to   呼び出される項目
++     entry #fromRanges   呼び出し元の中で呼び出しが起こる範囲
++   entry .TypeHierarchyItem   型階層内の型：位置情報を伴うシンボル
+
+% 1 1 0 1cd6f2debc0cff801772c6f513a1e055
+
+@ 0 13 0 06d2b3152f6236881bffb0f7188ea50e
++         `typeHierarchy` の準備ハンドラがリストとして返すものであり、そのスーパータイプハンドラとサブタイプハンドラが `item` として受け取るものである。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な項目は `Json.Error` を投げる
++     entry #name   型の名前
++     entry #kind   シンボルの種類
++     entry #tags   シンボルのタグ（あれば）
++     entry #detail   さらなる詳細（あれば）
++     entry #uri   型が定義されているドキュメント
++     entry #range   定義全体
++     entry #selectionRange   定義内での型の名前
++     entry #data   サーバーが項目と一緒に返してほしいもの。生の JSON として持つ
++   entry .SemanticTokensLegend   サーバーのトークンデータが添字で参照するトークンの種類と修飾子
+
+% 1 1 0 11f3ed5241f24dc6088f9a256f421982
+
+@ 0 6 0 06d9ecd997751ace1b65a340fcbce21e
++         登録時に `semanticTokens(legend)` として与えられ、ケイパビリティで告知される。
++         `SemanticTokens#data` の各トークンは、これらのリストへの添字でその種類と修飾子を示す。
++     entry #tokenTypes   添字順のトークンの種類
++     entry #tokenModifiers   ビット順のトークンの修飾子
++   entry .SemanticTokens   ドキュメントのセマンティックトークン。プロトコルの平坦な整数配列として
+
+% 1 1 0 17de607efb6edc251b41b43ebac6406e
+
+@ 0 12 0 07033fd9efedacf91b9e69b1fb6fb51e
++         `semanticTokens` と `semanticTokensRange` のハンドラが返すものである。
++         `data` はプロトコルのエンコーディングであり、トークンごとに五つの整数（行の差分、開始文字の差分、長さ、トークン種類の添字、修飾子のビット集合）を、直前のトークンからの相対値で持つ。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #resultId   この結果の識別子。後の差分リクエストがこれを指定する
++     entry #data   トークン。それぞれ五つの整数で、直前のトークンからの相対値
++   entry .SemanticTokensEdit   以前のトークン配列へのつなぎ替え
++     entry #start   編集が始まる、以前のデータ内の添字
++     entry #deleteCount   削除する整数の個数
++     entry #data   挿入する整数（あれば）
++   entry .SemanticTokensDelta   以前のトークン配列を現在のものに変える編集
+
+% 1 1 0 1124e2b60d5eed4d084813f6c6c0dc7e
+
+@ 0 6 0 18705961d4a78d551b51442ac47ae834
++         `previousResultId` を与えられた `semanticTokensDelta` ハンドラが返すものである。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #resultId   編集後の結果の識別子
++     entry #edits   適用するつなぎ替え
++   entry .InlayHint   推論された型など、ある位置にインラインで表示されるラベル
+
+% 1 1 0 1fa9bf6b9e0147971a64a5e89da18595
+
+@ 0 17 0 05a822aaf455def9130e8c5f22aea3c3
++         `inlayHints` ハンドラがリストとして返すものである。
++         `tooltip` は `Unset` のままにしておき、`resolveInlayHint` で埋めてもよい。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なヒントは `Json.Error` を投げる
++     entry #position   ヒントが表示される場所
++     entry #label   ヒントのテキスト
++     entry #kind   ヒントが型かパラメーター名か
++     entry #tooltip   ヒントにホバーしたときに表示するテキスト（あれば）
++     entry #paddingLeft   ヒントの前にパディングを入れるかどうか
++     entry #paddingRight   ヒントの後にパディングを入れるかどうか
++     entry #data   サーバーが `inlayHint/resolve` の際に返してほしいもの。生の JSON として持つ
++   entry .InlineValueContext   インライン値リクエストが行われるときのデバッガーの状態
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #frameId   デバッガーが停止しているスタックフレーム
++     entry #stoppedLocation   デバッガーが停止している文の範囲
++   entry .InlineValueText   デバッグ中にある範囲にインラインで表示される値
+
+% 1 1 0 16b938231d1db4410f2757135b7d1af5
+
+@ 0 19 0 1a28203a9717d146114b5d054350fa9e
++         `inlineValues` ハンドラがリストとして返すものである。
++         モデル化されているのは、プロトコルのインライン値のうちリテラルテキストの形だけである。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #range   値が表示される場所
++     entry #text   表示されるテキスト
++   entry .LinkedEditingRanges   タグの二つの名前のように、一緒に編集される範囲
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #ranges   一緒に変わる範囲
++     entry #wordPattern   リンクされたテキストが一致しなければならない正規表現（あれば）
++   entry .Moniker   プロジェクトをまたいで安定したシンボルの身元
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なモニカーは `Json.Error` を投げる
++     entry #scheme   モニカーのスキーム。`tsc` や `.NET` など
++     entry #identifier   スキーム内での識別子
++     entry #unique   モニカーの一意性の範囲：`document`、`project`、`group`、`scheme`、`global` のいずれか
++     entry #kind   `import`、`export`、`local` のいずれか（与えられた場合）
++   entry .DocumentDiagnosticReport   一つのドキュメントに対するプル型診断の応答
+
+% 1 1 0 0b3054613efa892a0d0d4074479026e3
+
+@ 0 9 0 1fa4f7d7fcd980b119aa0c336fcd2d94
++         `diagnostics` ハンドラが返すものであり、`Connection#diagnostics` が要求するものである。
++         モデル化されているのは `full` の種類だけである。`kind` の既定値はそれであり、変化のない報告は同じ `resultId` を返すことで表す。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な報告は `Json.Error` を投げる
++     entry #kind   既定値である `full`
++     entry #resultId   この結果の識別子。後のリクエストがこれを指定する
++     entry #items   診断
++   entry .WorkspaceSymbol   ワークスペースのどこかにあるシンボル。その位置情報を伴う
+
+% 1 1 0 0bd94553b78ea57a1af74fcebe1f7115
+
+@ 0 12 0 005830f09d1d1ca51227d71ba0470069
++         `workspaceSymbols` ハンドラが `query` に答えてリストとして返すものであり、`DocumentSymbol` の平坦な対応物である。
++         `resolveWorkspaceSymbol` は位置情報を遅延して埋めてもよい。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なシンボルは `Json.Error` を投げる
++     entry #name   シンボルの名前
++     entry #kind   シンボルの種類
++     entry #tags   シンボルのタグ（あれば）
++     entry #location   シンボルのある場所
++     entry #containerName   シンボルのコンテナの名前（あれば）
++     entry #data   サーバーが `workspaceSymbol/resolve` の際に返してほしいもの。生の JSON として持つ
++   entry .FileEvent   作成、変更、または削除された監視対象のファイル
+
+% 1 1 0 1446d0dee6f1b3c714975da753cc4221
+
+@ 0 7 0 15dcdce70243c45e151e67275f7bc9c0
++         `watchedFiles` ハンドラが `changes` としてリストで受け取るものである。
++         このフィールドは、プロトコルと同じく Scala では `` `type` `` と綴る。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なイベントは `Json.Error` を投げる
++     entry #uri   ファイルの URI
++     entry #type   作成、変更、削除のいずれであったか
++   entry .WorkspaceFoldersChangeEvent   ワークスペースに追加されたフォルダーと削除されたフォルダー
+
+% 1 1 0 181ac064d8e05c721db513b81ffa1e18
+
+@ 0 6 0 140c6504347d29e5071b7ce9cba018f3
++         `foldersChanged` ハンドラが `event` として受け取るものである。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なイベントは `Json.Error` を投げる
++     entry #added   追加されたフォルダー
++     entry #removed   削除されたフォルダー
++   entry .FileCreate   作成されようとしている、または作成されたばかりのファイル
+
+% 1 1 0 1c483b7fe62ce8ac1fdc8dcd0afca7a1
+
+@ 0 5 0 1685e1b9eb9515a713e9b7d69ee6ebae
++         `creatingFiles` と `createdFiles` のハンドラが `files` としてリストで受け取るものである。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #uri   ファイルの URI
++   entry .FileRename   名前を変えられようとしている、または変えられたばかりのファイル
+
+% 1 1 0 043123ae2f4fa02302c5511d2021b565
+
+@ 0 6 0 0bc6901a1b32149b149e6fa5571a772a
++         `renamingFiles` と `renamedFiles` のハンドラが `files` としてリストで受け取るものである。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #oldUri   名前変更前の URI
++     entry #newUri   名前変更後の URI
++   entry .FileDelete   削除されようとしている、または削除されたばかりのファイル
+
+% 1 1 0 17878dd0477c936e0e18c63b6d9bf37f
+
+@ 0 5 0 17a90903bd9a093007e0a8b3d2dac6b2
++         `deletingFiles` と `deletedFiles` のハンドラが `files` としてリストで受け取るものである。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な値は `Json.Error` を投げる
++     entry #uri   ファイルの URI
++   entry .Diagnostic   ある範囲の問題：その重大度、コード、発生元、メッセージ
+
+% 1 1 0 0ff878951b3c017b036e6c070d5aaccd
+
+@ 0 2 0 1a2416e32e80803e0ff4f09faa243eab
++         サーバーが `client.publishDiagnostics` で公開し、`diagnostics` ハンドラから返し、クライアントの `Listener#diagnostics` に届くものである。
+
+% 2 1 0 11e7dbcdaf2aca7a00b21a02da98cc16
+
+% 3 1 0 166474dd48a55cbf1107e4c4a6a418bd
+
+% 0 1 0 1380e6796f1b26ad19ed9f56ef85fd06
+
+% 0 1 0 12cbd396243af70611d1b5d969d4904e
+
+% 0 1 0 00ac009b165f3756151ebe651e016b0c
+
+% 0 1 0 037ab3350a98f5bf09005031deb28e60
+
+% 1 1 0 1ceeef6e45cf698b1d18b0497f0f7ed1
+
+@ 0 10 0 05df4f0468ec0cca1bab3357ed235448
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な診断は `Json.Error` を投げる
++     entry #range   問題のある場所
++     entry #severity   エラー、警告、情報、ヒントのいずれか（与えられた場合）
++     entry #code   テキストとしての問題のコード（あれば）
++     entry #source   それを報告したもの。コンパイラの名前など（与えられた場合）
++     entry #message   ユーザーに表示されるメッセージ
++   entry .MessageActionItem   `window/showMessageRequest` の一つのボタン。そのタイトルで示す
++     entry #title   ボタンのタイトル
++   entry .DiagnosticSeverity   診断の重大度：`Error`、`Warning`、`Information`、`Hint`
+
+% 1 1 0 0924c7e0a7fa222f09123c223c63fdd5
+
+@ 0 7 0 190bcb73411267bc06ef763aa7d3b758
++         整数値を持つプロトコルの列挙型である。
++         ワイヤ上では 1 から番号が振られるので、`Error` は `1`、`Warning` は `2` にエンコードされる。
++         コンパニオンの `encodable` と `decodable` がコーデックである。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` を受け取ってキャプチャするので、デコードにはスコープに戦術が必要であり、範囲外のワイヤ上の整数はその戦術を通してエラーを発生させる。
++     entry .encodable   重大度を 1 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .MessageType   ウィンドウメッセージやログメッセージのレベル：`Error`、`Warning`、`Info`、`Log`
+
+% 1 1 0 1bec23ffcc77b52b05d6d5cab4bca272
+
+@ 0 6 0 04b0f2c123f910de14fbdc7097bcb3f0
++         ワイヤ上では 1 から番号が振られる。
++         `Client#showMessage` は `Info` を送り、`Client#logMessage` は `Log` を送る。ワイヤメソッドは任意のレベルを取る。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` をキャプチャする。
++     entry .encodable   レベルを 1 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .TextDocumentSyncKind   ドキュメントの変更の報告のしかた：`None`、`Full`、`Incremental`
+
+% 1 1 0 1d757bf6570eab760f4f82bc2ce7c9e9
+
+@ 0 7 0 1877b98f6b42da8e0345298e7b9aea6f
++         ワイヤ上で 0 から番号が振られる唯一の列挙型であり、`None` は `0`、`Full` は `1`、`Incremental` は `2` である。
++         `Lsp.listen` で作ったサーバーは常に `Incremental` を告知する。
++         ドキュメントの状態はどちらの形の変更イベントのもとでも正しく保たれる。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` をキャプチャする。
++     entry .encodable   種類を 0 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .CompletionItemKind   補完の種類：`Text`、`Method`、`Function`、…、`TypeParameter`
+
+% 1 1 0 12b31ab84b30dda00d2a2bb04cf511ed
+
+@ 0 10 0 1b308f53ffba5c051abbc6decce86255
++         プロトコルの二十五の種類であり、1 から始まるワイヤ上の順に並ぶ：`Text`、`Method`、`Function`、`Constructor`、`Field`、`Variable`、`Class`、`Interface`、`Module`、`Property`、`Unit`、`Value`、`Enum`、`Keyword`、`Snippet`、`Color`、`File`、`Reference`、`Folder`、`EnumMember`、`Constant`、`Struct`、`Event`、`Operator`、`TypeParameter`。
++         いくつかは Scala の型（`Text`、`Unit`）と名前を共有する。
++         これは列挙型のケースとしては無害だが、`CompletionItemKind.Unit` は修飾しなければならない。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` をキャプチャする。
++     entry .encodable   種類を 1 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .SymbolKind   シンボルの種類：`File`、`Module`、`Namespace`、`Package`、`Class`、…、`TypeParameter`
+
+% 1 1 0 13a117883daf552d0e85c1c6a5e651c2
+
+@ 0 9 0 1513cc3f252e8d58105a2a183578fdd4
++         プロトコルの二十六の種類であり、1 から始まるワイヤ上の順に並ぶ：`File`、`Module`、`Namespace`、`Package`、`Class`、`Method`、`Property`、`Field`、`Constructor`、`Enum`、`Interface`、`Function`、`Variable`、`Constant`、`String`、`Number`、`Boolean`、`Array`、`Object`、`Key`、`Null`、`EnumMember`、`Struct`、`Event`、`Operator`、`TypeParameter`。
++         Scala の型を名指すケースはソース中でバッククォート付きで書かれており、修飾しなければならない（`SymbolKind.String`）。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` をキャプチャする。
++     entry .encodable   種類を 1 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .DocumentHighlightKind   出現箇所が何をするか：`Text`、`Read`、`Write`
+
+% 1 1 0 09dc00ce562eae700c566de512429aa6
+
+@ 0 4 0 1f52e916d4fc15e51d67d1171b933019
++         ワイヤ上では 1 から番号が振られる。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` をキャプチャする。
++     entry .encodable   種類を 1 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .TextDocumentSaveReason   ドキュメントが保存される理由：`Manual`、`AfterDelay`、`FocusOut`
+
+% 1 1 0 0ea8e8b5f500858a1419535881d66e61
+
+@ 0 5 0 0531de880e6acaa10fc3d7c27b143a7a
++         `saving` と `savingEdits` のハンドラが `reason` として読むものである。
++         ワイヤ上では 1 から番号が振られる。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` をキャプチャする。
++     entry .encodable   理由を 1 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .SymbolTag   シンボルに付けるタグ。定義されているのは `Deprecated` だけである
+
+% 1 1 0 12c9611bcd9299ae07ac1b6e181e79f8
+
+@ 0 4 0 1d182ef0181866a5062fef8309aabe22
++         ワイヤ上では 1 から番号が振られる。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` をキャプチャする。
++     entry .encodable   タグを 1 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .InlayHintKind   インレイヒントが表示するもの：`Type` または `Parameter` の名前
+
+% 1 1 0 1f31d9a93d3c3f2603193f5e1dccec9b
+
+@ 0 4 0 19be0012e11f10f71adf537ed8b8daf6
++         ワイヤ上では 1 から番号が振られる。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` をキャプチャする。
++     entry .encodable   種類を 1 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .FileChangeType   監視対象のファイルに起きたこと：`Created`、`Changed`、`Deleted`
+
+% 1 1 0 080e0759c0cfb14a1455a96d5e947a6f
+
+@ 0 5 0 0a8f8283f5b0550115c675ecd7934678
++         `FileEvent` の `type` である。
++         ワイヤ上では 1 から番号が振られる。
++         デコーダーは呼び出し側の `Tactic[Json.Error]` をキャプチャする。
++     entry .encodable   変更を 1 から始まるプロトコルの番号としてエンコードする
++     entry .decodable   プロトコルの番号をデコードする。呼び出し側の戦術を通して `Json.Error` を発生させる
++   entry .Document   ハンドラが扱う開いているドキュメントの生きたビュー。一回のディスパッチの間貸し出される
+
+% 1 1 0 10321c547fdd0aa802b5c70ebae0b033
+
+@ 0 7 0 0d58cf5967bf46d710b182c41ea51bca
++         ドキュメントを対象とするハンドラが `document` として読むハンドルである。
++         リクエストが指定するドキュメントについてエディターがこれまでに報告したテキストであり、増分の変更は UTF-16 オフセットの位置で適用されている。
++         さらに行へのアクセス、プロトコルの位置とオフセットとの変換、ある位置の下にある単語を提供する。
++         これは排他的なケイパビリティであり、一つのハンドラの実行中だけ貸し出されてその中に閉じ込められる。
++         `document` を外側の変数に代入したり、タスクの中にキャプチャしたりすることはコンパイルエラーになる。
++         一方、これが返すすべての値（`Text`、`Position`、`Range`）は外へ出てよい純粋なスナップショットである。
+
+% 2 1 0 0d34d435439ca74507908d39a06a730b
+
+% 3 1 0 0d8c8aeed391078a0b0a4a29b89529d2
+
+% 5 1 0 04401f72a07823b2068be4a302f803df
+
+% 6 1 0 0fa06b4a8ba87b160d84294f9d4ebe64
+
+% 8 1 0 0356dbea7d58d15d0c937980af2731dd
+
+% 0 1 0 19274639e54b221b19121d8b739c63b3
+
+% 0 1 0 1792055b29582ae70770bd06d1debc0b
+
+% 0 1 0 02e6b160d5ac3a3c041033911b1223f3
+
+% 0 1 0 075e9cd26be316de17a6b63ade28da36
+
+% 1 1 0 1cd3f5836c19e20211ef19536d1737af
+
+@ 0 4 0 16ca23a044b2e614065f8c6dbaa2d38a
++         位置とオフセットは UTF-16 コード単位であり、これはプロトコルの既定の位置エンコーディングであると同時に `Text` の文字の単位でもある。
++         テキストの末尾や行の末尾を越える位置は、プロトコルの要求どおりに切り詰められる。
++         行は `\n`、`\r\n`、`\r` で区切られる。
+
+@ 0 3 0 1f517b9420a46c49064c5c6aba0c03fa
++         エディターが一度も開いていないドキュメントを指定するリクエストは、どのハンドラにも届かない。
++         セッションは理由 `InvalidParams`、_the document `uri` is not open_ を持つ `Lsp.Error` を記録し、それで応答する。
+
+% 1 1 0 1af829cb09a2019f10571ff1f3fc14df
+
+% 0 1 0 01d5e0fe46cab8d111e3f32839b9d622
+
+@ 0 17 0 196c03cb22a5fcbd063f35f3167fde9e
++     entry #uri   ドキュメントの URI
++     entry #language   そのドキュメントに対するエディターの言語識別子
++     entry #version   エディターが最後に報告したバージョン
++     entry #text   エディターがこれまでに報告したとおりのテキスト全体
++     entry #lineCount   行数。終端のない末尾の行も数える
++     entry #line   0 起点の番号で指定した行のテキスト。終端文字は含まない。なければ `Unset`
++     entry #apply   範囲内のテキスト：`document(range)`
++         終点は始点より前にならないよう切り詰められるので、逆転した範囲は空のテキストになる。
++     entry #offset   位置に対応するテキスト内の序数オフセット。ドキュメントの範囲に切り詰められる
++     entry #position   テキスト内の序数オフセットに対応する位置
++     entry #word   ある位置の下にある文字、数字、アンダースコアの連なり。なければ `Unset`
++         単語はその位置から左右に広げて見つける。
++         空白や句読点の上の位置は `Unset` になる。
++     entry #fullRange   最初の位置からテキストの末尾までの範囲
++         ドキュメント全体を覆う診断が使うものである。
++   entry .Workspace   ハンドラから見たセッションの状態：開いているドキュメント、エディターの詳細、クライアント
+
+% 1 1 0 124c5be15b0dec5d0215ffc3964d4f2b
+
+@ 0 5 0 132c9a22d95e8ff50d21937eff8fdcc1
++         すべてのハンドラが `workspace` として読むハンドルである。
++         開いているドキュメントの URI、そのいずれかのスナップショット、エディターが `initialize` で報告したもの（そのプロセス id、名前とバージョン、ルート、フォルダー、ケイパビリティ、トレース設定）、そしてエディターへの戻りのチャネルである `#client` を持つ。
++         `Document` と同じく、一回のディスパッチに閉じ込められた排他的なケイパビリティである。
++         これが返す値は純粋なスナップショットである。
+
+% 2 1 0 0cd36334fe1a86350911582b4b524e5f
+
+% 3 1 0 01527bf79a0702581d1953f3c94628c3
+
+% 5 1 0 1ca6cfc824b8a36a1ad135f3552c8757
+
+% 6 1 0 0f289bc42dcdb324137c5b23d3a9ab1f
+
+% 8 1 0 077be7f4564b628619763e7c1a269755
+
+% 0 1 0 1854822f7b2231d515f304075de2582d
+
+% 0 1 0 123cf29cffe533e31924003498bd33bb
+
+% 0 1 0 1a10c88bcd1ce3d700e16510e1011367
+
+% 1 1 0 0a4bf5e9e561d0b91524327f3cb60e06
+
+% 0 1 0 0a27b3f29b54626d185e91584e7788d5
+
+% 0 1 0 1451039b6f096e8f1d36f4e0ba7011d3
+
+@ 0 148 0 07fc5f0712e837ef0415331b97042c36
++     entry #documents   エディターが開いて、まだ閉じていないすべてのドキュメントの URI
++     entry #document   URI で指定した開いているドキュメントのスナップショット。`TextDocumentItem` として返す。なければ `Unset`
++     entry #processId   エディターのプロセス id（報告された場合）
++     entry #clientInfo   エディターの名前とバージョン（報告された場合）
++     entry #root   エディターが報告したワークスペースのルート URI（あれば）
++     entry #folders   エディターが報告したワークスペースフォルダー
++     entry #clientCapabilities   エディターが送った生の JSON としての、エディターのケイパビリティ
++         モデル化されていない。クライアントケイパビリティのレコードは大きく、サーバーは関心のある部分しか読まないからである。
++         `dynamicAccess.dynamicJson` のインポートでその中に手を伸ばせる。
++     entry #trace   エディターが最後に `$/setTrace` で設定したトレースレベル（あれば）
++     entry #client   サーバーがエディターに送ってよい通知。`Lsp.Client` として
++         ワークスペースとともに閉じ込められる。読み出し元のハンドルをキャプチャするからである。
++   entry .Focused   ペイロードを持たない、ドキュメントを対象とするハンドラの形
++       `(document: Document^, workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result`。
++       ハンドラには、リクエストが指定するドキュメント、ワークスペース、そして `raise(Lsp.Error(…))` が報告に使うエミッターが貸し出される。
++       結果は純粋なので、貸し出されたものが戻り値、クロージャー、タスクを通して外へ出ることはできない。
++       `OpenedHandler`、`ClosedHandler`、`DocumentSymbolsHandler`、`FoldingRangesHandler`、`DocumentLinksHandler`、`CodeLensesHandler`、`DocumentColorsHandler`、`SemanticTokensHandler` がその例である。
++   entry .Focused1   タグ付きのペイロードを一つ持つ、ドキュメントを対象とするハンドラ
++       `Focused` と同じで、最初のコンテキストパラメーター `payload: payload` を持つ。
++       これはタグ（`Position aka "position"`、`Range aka "range"`、…）を持ち、その名前のアクセサーを通して読む。
++       `HoverHandler` は `Focused1[Position aka "position", Optional[Hover]]` である。
++   entry .Focused2   タグ付きのペイロードを二つ持つ、ドキュメントを対象とするハンドラ
++       `Focused1` と同じで、ペイロードを二つ持つ。
++       `CompleteHandler` は `position` とオプショナルな `context` を取り、`RenameHandler` は `position` と `newName` を取る。
++   entry .Focused3   タグ付きのペイロードを三つ持つ、ドキュメントを対象とするハンドラ
++       `Focused1` と同じで、ペイロードを三つ持つ。
++       `FormatOnTypeHandler` は `position`、入力された `character`、整形の `options` を取る。
++   entry .Ambient   ペイロードを持たない、ワークスペースを対象とするハンドラの形
++       `(workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result`。
++       対象となる単一のドキュメントがないので、ワークスペースとエミッターだけが貸し出される。
++       `ReadyHandler` と `TerminatingHandler` がその例である。
++   entry .Ambient1   タグ付きのペイロードを一つ持つ、ワークスペースを対象とするハンドラ
++       `Ambient` と同じで、タグ付きのペイロードを持つ。
++       `WorkspaceSymbolsHandler` は `query` を、`CommandHandler` はその `arguments` を、`ResolveHandler` はその `item` を読む。
++   entry .ReadyHandler   `initialized` のハンドラ：`Ambient[Unit]`
++   entry .TerminatingHandler   `shutdown` のハンドラ：`Ambient[Unit]`
++   entry .OpenedHandler   `textDocument/didOpen` のハンドラ：`Focused[Unit]`
++   entry .ChangedHandler   `textDocument/didChange` のハンドラ。`changes` が適用された状態で
++       `Focused1[List[TextDocumentContentChangeEvent] aka "changes", Unit]`。
++       これが実行される時点でセッションはすでに変更を適用しているので、`document.text` は最新である。
++   entry .SavedHandler   `textDocument/didSave` のハンドラ。エディターが送った場合は `savedText` を伴う
++   entry .ClosedHandler   `textDocument/didClose` のハンドラ：`Focused[Unit]`
++       ハンドラの実行中はドキュメントをまだ読むことができ、その後で削除される。
++   entry .SavingHandler   `textDocument/willSave` のハンドラ。`reason` を伴う
++   entry .SavingEditsHandler   `textDocument/willSaveWaitUntil` のハンドラ：保存前に適用する編集
++   entry .HoverHandler   `textDocument/hover` のハンドラ：`position` からオプショナルな `Hover` へ
++   entry .CompleteHandler   `textDocument/completion` のハンドラ：`position` と `context` からリストへ
++   entry .DefinitionHandler   `textDocument/definition` のハンドラ：`position` から位置情報へ
++   entry .ReferencesHandler   `textDocument/references` のハンドラ。`includeDeclaration` を伴う
++   entry .DocumentSymbolsHandler   `textDocument/documentSymbol` のハンドラ
++   entry .FormatHandler   `textDocument/formatting` のハンドラ。エディターの `options` を伴う
++   entry .RenameHandler   `textDocument/rename` のハンドラ：`position` と `newName` から `WorkspaceEdit` へ
++   entry .CodeActionsHandler   `textDocument/codeAction` のハンドラ：`range` とその `context`
++   entry .SignatureHelpHandler   `textDocument/signatureHelp` のハンドラ
++   entry .DeclarationHandler   `textDocument/declaration` のハンドラ
++   entry .TypeDefinitionHandler   `textDocument/typeDefinition` のハンドラ
++   entry .ImplementationHandler   `textDocument/implementation` のハンドラ
++   entry .DocumentHighlightsHandler   `textDocument/documentHighlight` のハンドラ
++   entry .FoldingRangesHandler   `textDocument/foldingRange` のハンドラ
++   entry .SelectionRangesHandler   `textDocument/selectionRange` のハンドラ：`positions` から範囲へ
++   entry .DocumentLinksHandler   `textDocument/documentLink` のハンドラ
++   entry .CodeLensesHandler   `textDocument/codeLens` のハンドラ
++   entry .DocumentColorsHandler   `textDocument/documentColor` のハンドラ
++   entry .ColorPresentationsHandler   `textDocument/colorPresentation` のハンドラ：`color` とその `range`
++   entry .FormatRangeHandler   `textDocument/rangeFormatting` のハンドラ：`range` と `options`
++   entry .FormatOnTypeHandler   `textDocument/onTypeFormatting` のハンドラ：`position`、`character`、`options`
++   entry .PrepareRenameHandler   `textDocument/prepareRename` のハンドラ：名前を変更する範囲、または `Unset`
++   entry .CallHierarchyHandler   `callHierarchy` の準備ハンドラ：`position` から階層の項目へ
++   entry .IncomingCallsHandler   `callHierarchy` の呼び出し元ハンドラ：`item` からその呼び出し元へ
++   entry .OutgoingCallsHandler   `callHierarchy` の呼び出し先ハンドラ：`item` からその呼び出し先へ
++   entry .TypeHierarchyHandler   `typeHierarchy` の準備ハンドラ：`position` から階層の項目へ
++   entry .SupertypesHandler   `typeHierarchy` のスーパータイプハンドラ：`item` からそのスーパータイプへ
++   entry .SubtypesHandler   `typeHierarchy` のサブタイプハンドラ：`item` からそのサブタイプへ
++   entry .SemanticTokensHandler   `textDocument/semanticTokens/full` のハンドラ
++   entry .SemanticTokensDeltaHandler   `textDocument/semanticTokens/full/delta` のハンドラ。`previousResultId` を伴う
++   entry .SemanticTokensRangeHandler   `textDocument/semanticTokens/range` のハンドラ。`range` を伴う
++   entry .InlayHintsHandler   `textDocument/inlayHint` のハンドラ。`range` を伴う
++   entry .InlineValuesHandler   `textDocument/inlineValue` のハンドラ：`range` とその `context`
++   entry .LinkedEditingRangeHandler   `textDocument/linkedEditingRange` のハンドラ
++   entry .MonikersHandler   `textDocument/moniker` のハンドラ
++   entry .DiagnosticsHandler   `textDocument/diagnostic` のハンドラ：`identifier` と `previousResultId`
++   entry .WorkspaceSymbolsHandler   `workspace/symbol` のハンドラ：`query` からシンボルへ
++   entry .CommandHandler   一つの `workspace/executeCommand` 名のハンドラ：`arguments` からオプショナルな結果へ
++   entry .ConfigurationHandler   `workspace/didChangeConfiguration` のハンドラ。`settings` を伴う
++   entry .WatchedFilesHandler   `workspace/didChangeWatchedFiles` のハンドラ。`changes` を伴う
++   entry .FoldersChangedHandler   `workspace/didChangeWorkspaceFolders` のハンドラ。`event` を伴う
++   entry .CreatingFilesHandler   `workspace/willCreateFiles` のハンドラ：`files` からオプショナルな編集へ
++   entry .CreatedFilesHandler   `workspace/didCreateFiles` のハンドラ
++   entry .RenamingFilesHandler   `workspace/willRenameFiles` のハンドラ：`files` からオプショナルな編集へ
++   entry .RenamedFilesHandler   `workspace/didRenameFiles` のハンドラ
++   entry .DeletingFilesHandler   `workspace/willDeleteFiles` のハンドラ：`files` からオプショナルな編集へ
++   entry .DeletedFilesHandler   `workspace/didDeleteFiles` のハンドラ
++   entry .ResolveHandler   `*/resolve` リクエストのハンドラ：`item` を埋めて返す
++       `ResolveHandler[item] = Ambient1[item aka "item", item]`。
++       エディターは以前に受け取った項目を送り返し、ハンドラは遅延して計算されるフィールドを設定してそれを返す。
++       アクセサーはジェネリックなので、項目は `item[CompletionItem]`（あるいは該当する型）として読む。
++   entry .document   ドキュメントを対象とするハンドラの内側での現在のドキュメント
++       `Document^` コンテキストパラメーターに対する transparent inline のアクセサーである：`document.text`、`document.word(position)`、`document.uri`。
++       `Focused` ハンドラのパラメーターがスコープにある場所でだけ使える。
++   entry .workspace   任意のハンドラの内側でのワークスペースのハンドル
++       `Workspace^` コンテキストパラメーターに対する transparent inline のアクセサーである。
++   entry .client   任意のハンドラの内側での、`Lsp.Client` としてのエディター
++       `workspace.client`。`publishDiagnostics`、`showMessage`、`logMessage`、およびサーバーが求められずに送るほかの通知のためのチャネルである。
++       ワークスペースのハンドルをキャプチャし、それとともに閉じ込められる。
++   entry .position   ホバー、定義、名前変更などのリクエストの `position` ペイロード
++       `Position aka "position"` コンテキストパラメーターに対する inline のアクセサーである。
++   entry .range   コードアクション、インレイヒント、範囲整形などのリクエストの `range` ペイロード
++   entry .options   整形リクエストの `FormattingOptions` ペイロード
++   entry .newName   名前変更リクエストが求める新しい名前
++   entry .character   入力時整形リクエストで入力された文字
++   entry .savedText   エディターが `didSave` とともに送ったテキスト（含めた場合）
++   entry .reason   `saving` または `savingEdits` ハンドラでの、ドキュメントが保存される理由
++   entry .color   色表現リクエストが扱う `Color`
++   entry .positions   選択範囲リクエストが問い合わせる位置
++   entry .previousResultId   セマンティックトークンの差分リクエストが基にする結果 id
++   entry .identifier   プル型診断リクエストが指定する診断の識別子（あれば）
++   entry .query   ワークスペースシンボルリクエストのクエリテキスト
++   entry .arguments   生の JSON 値のリストとしてのコマンドの引数（あれば）
++   entry .settings   設定変更が届ける生の JSON としての設定
++   entry .event   フォルダー変更のイベント
++   entry .includeDeclaration   参照リクエストが宣言を含めることを望むかどうか
++   entry .item   解決、呼び出し階層、型階層のリクエストが扱う項目
++       項目の型についてジェネリックなので、ハンドラがそれを指定する：`item[CompletionItem]`、`item[CallHierarchyItem]`、`item[TypeHierarchyItem]`。
++   entry .context   補完、コードアクション、インライン値のリクエストのコンテキスト
++       ジェネリックである。`complete` ハンドラでは `Optional[CompletionContext]`、`codeActions` では `CodeActionContext`、`inlineValues` では `InlineValueContext` であり、型はハンドラから推論される。
++   entry .changes   `changed` ハンドラの内容の変更、または `watchedFiles` のファイルイベント
++   entry .files   ファイル操作ハンドラが扱うファイル
++   entry .ready   エディターが `initialized` を送ったときに一度実行されるものを登録する
++       どの登録コンビネーターもハンドラを取り、スコープに `Lsp.Registry^` を必要とする（`listen` のブロック、または `(using Lsp.Registry^)` を取るメソッド）。そしてハンドラをそこに記録する。
++       コンビネーターは inline ではない通常のメソッドなので、ハンドラのコンテキスト関数は定義の場所で一度だけ型付けされる。
++       同じ機能を二度目に登録すると、最初のものが置き換えられる。
++       `ready` は `ReadyHandler` であり、ハンドシェイクの後に実行される。サーバーはここでインデックス作成を始めたり、エディターに設定を問い合わせたりする。
++   entry .terminating   エディターが `shutdown` を送ったときに実行されるものを登録する
++       `TerminatingHandler` である。
++       続く `exit` 通知がプロセスの入力を終わらせ、したがって `listen` のループを終わらせる。
++   entry .opened   エディターがドキュメントを開いたときに実行されるものを登録する
++       `OpenedHandler` である。
++       これが実行される前にドキュメントはストアに入っているので、そのドキュメントの診断を公開するのが通常の本体である。
+
+% 2 1 0 03334fa33a154d8f09222a73609a61ae
+
+% 3 1 0 00b8b15c0f979ed2161562b6682d885f
+
+% 5 1 0 1e755b8f9bb8d190095fe9dae3e72ddb
+
+% 6 1 0 0ca5d18d0b9f1fd70ea9caae9937e863
+
+% 8 1 0 1be5e71c0ed67b8004205da3917041f7
+
+% 0 1 0 1a19e4e4e35d73340bd4dea71f776009
+
+% 0 1 0 0366afb6f78ecf10163f5e8a12f54486
+
+% 0 1 0 051514f4ba2a401c14190170f167c8d7
+
+% 0 1 0 10742f2393ecd0941ad69c3264589e1f
+
+% 0 1 0 0493c741dca554f40ee6ec6b760236cb
+
+% 0 1 0 07db2162dd91a09d12826cc4c2addb35
+
+% 0 1 0 05954c76bfdb18dd03ba79e0fd6b9711
+
+% 0 1 0 1c3aecafd66fd99d08fc303e2aac9a9d
+
+% 1 1 0 0a690ca90c9aa0fd0665540bb310a6fb
+
+@ 0 14 0 18dc6a13dbc1d55a1723400ba5be1983
++   entry .changed   エディターによるドキュメントへの変更が適用された後に実行されるものを登録する
++       `ChangedHandler` である。
++       `changes` はエディターが送った一括の変更であり、`document.text` にはすでにそれが反映されている。
++   entry .saved   エディターがドキュメントを保存したときに実行されるものを登録する
++       `SavedHandler` である。
++       エディターが含めた場合、`savedText` は保存された内容である。
++   entry .closed   エディターがドキュメントを閉じたときに実行されるものを登録する
++       `ClosedHandler` である。
++       ドキュメントはこれが実行された後でストアから削除される。
++   entry .saving   ドキュメントが保存される前に実行されるものを登録する
++       `reason` を与えられる `SavingHandler` である。
++   entry .savingEdits   ドキュメントが保存される前に適用される編集を登録する
++       `SavingEditsHandler` であり、エディターが完了を待つ `textDocument/willSaveWaitUntil` である。
++   entry .hover   ホバーハンドラを登録し、`hoverProvider` を告知する
++       `HoverHandler` であり、`position` から `Optional[Hover]` への関数である。`Unset` は表示するものがないことを意味する。
+
+% 2 1 0 18cb8cef23f7622511a055bf4b61b4e8
+
+% 3 1 0 03484bcd60158f661da7effb77baf037
+
+% 5 1 0 1fc195a9340a86dc1d19b98f01c260e3
+
+% 6 1 0 0b57385b8a81ac330f98a0c17ed3c3f7
+
+% 8 1 0 06e8710f411773e7147af394665adfbf
+
+% 9 1 0 1425cf1264a036900885ab718005243d
+
+% 10 1 0 1fae8fae79f4b0ed06031b94472e9b53
+
+% 0 1 0 0f9083c9ad9a7754164f12794914bb6e
+
+% 1 1 0 0a61419d48220f881c1276a0c26a82c1
+
+@ 0 4 0 08d67569fb7ba5ad0dd20f43b771fa2f
++   entry .complete   補完ハンドラをそのトリガー文字とともに登録する
++       `complete(triggers*)(handler)`。
++       トリガー文字は告知される `CompletionOptions` になり、`resolveCompletion` が登録されていれば `resolveProvider` が設定される。
++       ハンドラは `CompleteHandler` であり、`position` とオプショナルな `context` を読む。
+
+% 2 1 0 1321bfea5707b43b03186be3bb5337be
+
+% 3 1 0 0274fc900930e7311677445614d566fb
+
+% 5 1 0 10a37d7ad91f6dbe03cdc5f291c5dc6e
+
+% 6 1 0 123a9042ddb0fc28177f5217417ff3b5
+
+% 8 1 0 027cc9b6ce79912c0eeac1dd90d1137a
+
+% 0 1 0 16e2c933fd9a24810f5509c9a0961c88
+
+% 0 1 0 1ff8e315236d62950e3db754cb86ce02
+
+% 1 1 0 13fd52d64fdbcead1ddf93f9807b2483
+
+@ 0 61 0 12fbc3530e1c09a8083cb55d44d8d82d
++   entry .definition   定義へ移動するハンドラを登録する
++       `DefinitionHandler` であり、`position` から `Location` のリストへの関数である。該当がなければ空のリストを返す。
++   entry .references   参照を検索するハンドラを登録する
++       `position` と `includeDeclaration` を読む `ReferencesHandler` である。
++   entry .documentSymbols   ドキュメントシンボルのハンドラを登録する
++   entry .format   ドキュメント全体を整形するハンドラを登録する
++       エディターの `options` を読み、適用する編集を返す `FormatHandler` である。
++   entry .rename   名前変更のハンドラを登録する
++       `position` と `newName` を読み、`WorkspaceEdit` を返す `RenameHandler` である。
++   entry .codeActions   コードアクションのハンドラを登録する
++       `range` と、その診断を保持する `context` を読む `CodeActionsHandler` である。
++   entry .signatureHelp   シグネチャヘルプのハンドラをそのトリガー文字とともに登録する
++       `signatureHelp(triggers*)(handler)`。
++       トリガー文字は告知される `SignatureHelpOptions` になる。
++   entry .declaration   宣言へ移動するハンドラを登録する
++   entry .typeDefinition   型定義へ移動するハンドラを登録する
++   entry .implementation   実装へ移動するハンドラを登録する
++   entry .documentHighlights   ドキュメントハイライトのハンドラを登録する
++   entry .foldingRanges   折りたたみ範囲のハンドラを登録する
++   entry .selectionRanges   選択範囲のハンドラを登録する
++       `SelectionRangesHandler` であり、`positions` の位置ごとに `SelectionRange` の連鎖を一つ返す。
++   entry .documentLinks   ドキュメントリンクのハンドラを登録する
++   entry .codeLenses   コードレンズのハンドラを登録する
++       `resolveCodeLens` が登録されていれば、告知される `CodeLensOptions` の `resolveProvider` が設定される。
++   entry .documentColors   ドキュメントの色のハンドラを登録し、`colorProvider` を告知する
++   entry .colorPresentations   色表現のハンドラを登録する
++   entry .formatRange   範囲整形のハンドラを登録する
++   entry .formatOnType   入力時整形のハンドラをそのトリガー文字とともに登録する
++       `formatOnType(first, more*)(handler)`。
++       プロトコルはトリガー文字を一つ要求する。
++       ハンドラは `position`、入力された `character`、`options` を読む。
++   entry .prepareRename   ある位置での名前変更が何を対象とするかを答えるハンドラを登録する
++   entry .callHierarchy   三つの呼び出し階層ハンドラをまとめて登録する
++       `callHierarchy(prepare)(incoming, outgoing)`。
++       このケイパビリティは不可分なので、準備ハンドラ（`position` から項目へ）、呼び出し元ハンドラ、呼び出し先ハンドラ（それぞれ `item` から呼び出しへ）を一度に登録する。
++   entry .typeHierarchy   三つの型階層ハンドラをまとめて登録する
++       `typeHierarchy(prepare)(supertypes, subtypes)`。`callHierarchy` と同様である。
++   entry .semanticTokens   完全なセマンティックトークンのハンドラをその凡例とともに登録する
++       `semanticTokens(legend)(handler)`。
++       トークンデータが添字で参照するので `SemanticTokensLegend` は必須であり、`SemanticTokensOptions` で告知される。
++   entry .semanticTokensDelta   セマンティックトークンの差分ハンドラを登録する
++       `previousResultId` を読む `SemanticTokensDeltaHandler` である。
++   entry .semanticTokensRange   範囲指定のセマンティックトークンのハンドラを登録する
++       告知される `SemanticTokensOptions` の `range` を設定する。これは `semanticTokens` も登録されている場合にだけ存在する。
++   entry .inlayHints   インレイヒントのハンドラを登録する
++   entry .inlineValues   インライン値のハンドラを登録する
++   entry .linkedEditingRange   連動編集範囲のハンドラを登録する
++   entry .monikers   モニカーのハンドラを登録する
++   entry .diagnostics   プル型診断のハンドラをそのオプションとともに登録する
++       `diagnostics(options)(handler)`。
++       `DiagnosticOptions` はプロトコルが要求するものであり、与えられたとおりに告知される。
++   entry .workspaceSymbols   ワークスペースシンボル検索のハンドラを登録する
++       `query` を読む `WorkspaceSymbolsHandler` である。
++   entry .command   コマンドを名前で登録する
++       `command(name)(handler)`。
++       `workspace/executeCommand` リクエストは登録された名前ごとに振り分けられ、それらの名前は `ExecuteCommandOptions` で告知される。
++       ハンドラは `CommandHandler` であり、`arguments`（生の JSON のオプショナルなリスト）を読み、オプショナルな JSON の結果を返す。
++       誰も登録していない名前へのリクエストには `InvalidParams` エラー、_the command `name` is not registered_ で応答する。
+
+% 2 1 0 16241594d97982b803af8a07bf3e523a
+
+% 3 1 0 199a6611c763e30f1886fc5380ffc63f
+
+% 5 1 0 103959c885711af80d9ce0dbcf8b08b4
+
+% 6 1 0 0fb9d77cded6743b101688ae652dbab5
+
+% 8 1 0 162af4bb793453e40753cf66b1eccfeb
+
+% 1 1 0 0cdbec88e639b4340e81e744a9cf623a
+
+% 2 1 0 1a19f0ca1a1c9eaa1929520f71425082
+
+% 3 1 0 18570dcb539b76d40e82918d5369057c
+
+% 4 1 0 1cff1d835d12fd6d123b367d3203571d
+
+% 5 1 0 1f02f59b8c6a074802acb5a3f3e34f0f
+
+@ 0 14 0 07c1320446d98cc90d70b6cbc9f33467
++   entry .configuration   エディターの設定が変わったときに実行されるものを登録する
++       `settings` を生の JSON として読む `ConfigurationHandler` である。
++   entry .watchedFiles   監視対象のファイルが変わったときに実行されるものを登録する
++       `FileEvent` のリストである `changes` を読む `WatchedFilesHandler` である。
++   entry .foldersChanged   ワークスペースフォルダーが追加または削除されたときに実行されるものを登録する
++   entry .creatingFiles   ファイルが作成される前に実行され、オプショナルな編集を返すものを登録する
++   entry .createdFiles   ファイルが作成された後に実行されるものを登録する
++   entry .renamingFiles   ファイルの名前が変更される前に実行され、オプショナルな編集を返すものを登録する
++   entry .renamedFiles   ファイルの名前が変更された後に実行されるものを登録する
++   entry .deletingFiles   ファイルが削除される前に実行され、オプショナルな編集を返すものを登録する
++   entry .deletedFiles   ファイルが削除された後に実行されるものを登録する
++   entry .resolveCompletion   補完項目を要求に応じて埋めるハンドラを登録する
++       `item[CompletionItem]` として読む `ResolveHandler[CompletionItem]` である。
++       これを登録すると、告知される `CompletionOptions` の `resolveProvider` が設定される。
+
+% 2 1 0 1616ca4c2dde8844082bbd65517b44a6
+
+% 3 1 0 0e519a29f9a819cd1777bbc6e23a81fb
+
+% 5 1 0 0f216965ffb54f32028e544aba5886f9
+
+% 6 1 0 0909d9920250f7b61b25916ffca6c434
+
+% 8 1 0 19718545d2b9ad9007b42bc1050f56c2
+
+% 0 1 0 0d608133bcaf7c6610d8a49a75eac6f5
+
+% 1 1 0 036c2b44c4b1f48403fdb2cf0a9e16f2
+
+@ 0 17 0 0bf9dc406ff50aee186bb5789c5e3129
++   entry .resolveCodeAction   コードアクションを要求に応じて埋めるハンドラを登録する
++   entry .resolveCodeLens   コードレンズを要求に応じて埋めるハンドラを登録する
++       告知される `CodeLensOptions` の `resolveProvider` を設定する。
++   entry .resolveDocumentLink   ドキュメントリンクを要求に応じて埋めるハンドラを登録する
++       告知される `DocumentLinkOptions` の `resolveProvider` を設定する。
++   entry .resolveInlayHint   インレイヒントを要求に応じて埋めるハンドラを登録する
++   entry .resolveWorkspaceSymbol   ワークスペースシンボルを要求に応じて埋めるハンドラを登録する
++   entry .capabilities   導出されたケイパビリティへの調整を登録する。最後に適用される
++       `capabilities(adjust)`。
++       導出が扱わない隅のための逃げ道である。
++       この関数は純粋（`ServerCapabilities -> ServerCapabilities`）であり、`initialize` の時点で、`Registry#capabilities` が導出したレコードに対して一度だけ実行される。
++   entry .dispatcher   `Lsp` トレイトの任意の実装に対する JSON-RPC ディスパッチャー
++       `Lsp.Dispatch(server)`。
++       これは `Json => Optional[Json]` であり、各メッセージをそのメソッドが指定する `server` のワイヤメソッドに振り分けて応答を返す。通知に対しては `Unset` を返す。
++       `Lsp` を実装するクラスとして手で書いたサーバーのための低水準の逃げ道である。
++       `listen` 自身のセッションも同じ方法でディスパッチされる。
++   entry .Observer   生のトラフィックへのフック：トランスポートを通過するすべてのメッセージ
+
+% 1 1 0 07e8203d16a2a4a4008158af3c06ed92
+
+@ 0 7 0 1abbffacd2f23ba60b5cc218b1352a09
++         サーバーの標準出力はワイヤそのものなので、やりとりのログを出力することはできない。
++         代わりにオブザーバーが、運ばれたときの JSON 本体として各メッセージを見る。
++         受信側は解析の前に見るので、デコードに失敗したメッセージも観測される。送信側はフレーミングの前に見るので、両方向が同じように読める。
++         `listen`、`proxy`、`LspSessional` はオブザーバーを一つ取る。
++         どちらのメソッドも抽象であり、オブザーバーは書き込みタスクと読み取りタスクから同時に呼ばれるので、実装は二つのスレッドから呼んでも安全でなければならない。
+
+% 2 1 0 0b7520e3d3853914014718034208317d
+
+% 3 1 0 1ec7113406534eb00339196edc4142c1
+
+% 0 1 0 0e7d577587a86efd0cd4d71c3e25ae0c
+
+% 0 1 0 1d0b3b528ae9096c06dc99c6a9f1d14c
+
+% 0 1 0 165b1ebab8a216ec1f603e4ac86a1e61
+
+% 1 1 0 16302dfd130ab2a707735c23ae9fc12a
+
+@ 0 7 0 1a507d40128ec8fe0db021eedbf1553d
++         `Observer.Silent` が既定であり、`Observer.silent` がそれをセッションにコンテキストとして提供する。
++     entry .Silent   何もしないオブザーバー。純粋な値
++     entry .silent   `LspSessional` に `Silent` を提供する given。暗黙のスコープにある
++     entry #received   ワイヤから読んだ各メッセージを、パースする前に受け取る
++     entry #sent   書き出す各メッセージを、エンコードされた本文として、フレーミングする前に受け取る
++   entry .Listener   サーバーが求められずに送ってくるメッセージを、クライアントがどう扱うか
+
+% 1 1 0 1d012cd328c0e1671c53b233f9e01550
+
+@ 0 6 0 19fb56a7097870b91f9f916b96dcb7c3
++         クライアントのやり取りのうち受信側の半分である。サーバーが求められずに送る通知（診断、ウィンドウとログのメッセージ、トレース、テレメトリー、進捗、キャンセル）と、サーバーがクライアントに対して行うリクエストを扱う。
++         どのメソッドにも何もしない既定の実装があるので、リスナーは自分が対応するものだけを実装すればよい。`Listener.Quiet` が既定であり、given の `Listener.quiet` が提供する。
++         リスナーはローカルな given として束縛され、セッションが開くときに `Lsp.Server.sessional` が見つける。
+
+% 2 1 0 052d661673a1c7f00a202da414f6535b
+
+% 3 1 0 17d052471a7b0fca00977bd4baffa3cf
+
+% 0 1 0 1f12497ea2fd8b711ff16574a4e48c25
+
+% 0 1 0 0a6c05271ef6805009e5de1df4c2190c
+
+% 0 1 0 00c81b158b0303d6103fb7a8cf906442
+
+% 0 1 0 037ebeb413dbe2860cb41d807c7f5b29
+
+% 1 1 0 107c8cf0bf6da4b00101df3f371e6f30
+
+@ 0 21 0 03d67dad85d512091f478adc5660f79b
++         リスナーはセッションの読み取りタスクで実行されるので、メソッドは同じ接続のリクエストを待ってはならない。その応答は、メソッドがブロックしているスレッドに届くからである。
++     entry .Quiet   すべてを無視するリスナー
++     entry .quiet   `Quiet` を提供する given。暗黙のスコープにある
++     entry #diagnostics   サーバーがドキュメントについて公開した診断。バージョンが与えられていればそれも伴う
++     entry #message   ユーザーに示す `window/showMessage`。そのレベルを伴う
++     entry #log   エディターのログのための `window/logMessage`。そのレベルを伴う
++     entry #trace   `$/logTrace` メッセージ
++     entry #telemetry   `telemetry/event`。生の JSON として
++     entry #progress   `$/progress` 通知。そのトークンと値を、生の JSON として
++     entry #cancel   `$/cancelRequest`。サーバーがキャンセルを求める ID を伴う
++     entry #request   サーバーがクライアントに対して行ったリクエスト。生のまま応答する
++         `workspace/applyEdit`、`workspace/configuration`、`window/showMessageRequest`、`client/registerCapability`、その他サーバーが求めるものすべてである。
++         この集合は開いているので、メソッドとパラメーターは生のままで、応答は生の JSON である。
++         既定の `Unset` は JSON の `null` で応答する。クライアントが一度も主張しなかったケイパビリティについては、サーバーはこれを許容しなければならない。
++     entry #intercept   すべてのメッセージを最初に見る。`true` は処理済みで、それ以上ルーティングしないことを意味する
++         プロキシが、メッセージ（応答を含む）に対応するのではなく中継するために使うものである。通常のクライアントは既定の `false` のままにする。
++   entry .Transit   フックに示されたメッセージをプロキシがどうするか
+
+% 1 1 0 0f987421882c95b40d319e80db473630
+
+@ 0 7 0 1b0923b472a0bc951339bd0140503c50
++         `rewrite.outbound` または `rewrite.inbound` フックの結果である。
++         `Forward` はメッセージを変更せずに渡す。どのフックも見ないものはすべてこうなる。
++         `Rewrite(message)` は代わりに別のメッセージを渡す。
++         `Drop` はそれを飲み込む。送信途中で落としたリクエストには決して応答が来ないので、落とすのは通知にするか、代わりにリクエストに応答すること。
++         `Answer(result)` は送信されるリクエストにここで応答するので、サーバーはそれを見ない。リクエストでないメッセージと受信されるメッセージに対しては無視される。
+
+% 2 1 0 17347700a6c111e7193066d9011b9a8e
+
+% 3 1 0 0914a94f4a6e58991f78b16c8242c4ff
+
+% 4 1 0 1f6d71b4c1cd13ac12c36fb1e7b2147b
+
+% 1 1 0 0ee17493e9a2b8cc0e583160014e42c8
+
+% 2 1 0 01033e463435a3051703a6b25cf94dd9
+
+% 1 1 0 0834f02fd5d0356a182b833822d0389c
+
+@ 0 1 0 19f786c9cc563cc7014c8e91960cfb6d
++   entry .Server   このプロセスが通信できる言語サーバー。コマンド、またはストリームの組
+
+% 1 1 0 14b4e5a305afa4980cb26c95a99146ec
+
+@ 0 6 0 1f363ea6c56f0a2e1589b862c9435b46
++         サーバーがどこにあるかを記述する素朴な値で、自分自身のチャンネルは持たない。
++         `Server.Process(command)` はサブプロセスとして起動されるサーバーで、その標準入力と標準出力がプロトコルを運ぶ。`Server.Streams(input, output)` は、`java.io` のストリームの組の向こうですでに実行中のサーバーである。このプロセスの中、ソケットの向こう、あるいはテストのフィクスチャである。
++         `Server(command)` と `Server.streams(input, output)` がそれぞれを作り、`Server` に拡大する。
+
+@ 0 5 0 0896ff13674425221a0db24a8f61dcf7
++         それとのセッションは、aperture の `Sessional` の拡張である `session` によって、given の `.sessional` を通して開かれる。
++         チャンネルはセッションが開くときに作られ、`Lsp.Connection` がブロックの間だけ貸し出され、その後両者は破棄されるので、接続がサーバーより長く生き残ることはない。
++         サブプロセスは、セッションが終わると待たれるのではなく殺される。
+
+% 2 1 0 0fda4c55f05c0c5201fa7142a53dd815
+
+% 3 1 0 09430e86edc01ecc09a981ff1ecf1ec6
+
+% 4 1 0 1f3a5ad13e9beb440d2824c53621051b
+
+% 5 1 0 0fccf37e2f7e7a0d01bed714b7e4fe0b
+
+% 6 1 0 1f2aac086b1a0ea91e2cb7c336aef8a5
+
+% 7 1 0 08c904c9985e628f10c081dae40ba8d4
+
+% 8 1 0 1008b480e0fbcccf013fd8ba98424239
+
+% 9 1 0 1c06717c426d125e1e519dedacfcd73c
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 1 1 0 06d5aff9c8db707b1ff46de5fa393322
+
+% 2 1 0 16e3982b1e0188831a9baadfd6e71959
+
+% 3 1 0 133808a6501b82bd103c1e7b4490535d
+
+% 0 1 0 1e688bf456239579158b966fde385b61
+
+% 0 1 0 19e212d379b14eec0053367c70b3279f
+
+% 1 1 0 0b91ea214f5d86e1000aed7287c6b299
+
+% 0 1 0 08c609db6451cb0f1f7b5e210eabd747
+
+% 0 1 0 1c67198f4eaff9790220baa21dd1e901
+
+@ 0 12 0 135aeea629a59a44048c38d82284bafd
++     entry .apply   サブプロセスとして起動されるサーバー。`Lsp.Server(command)`
++     entry .streams   入力ストリームと出力ストリームの向こうですでに実行中のサーバー
++         どちらのストリームがどちらかは、このプロセスの視点による。`input` はサーバーが書くもの、`output` はサーバーが読むものである。
++     entry .sessional   `Server` とのセッションを開く given。暗黙のスコープにある
++         コンテキストから作られる `LspSessional` である。
++         `Monitor`、`Probate`、`Diagnostics`、`WorkingDirectory` と `Environment`（サブプロセスを起動するため）、`Tactic[Lsp.Error]`、そして `Listener^` と `Observer^`（独自の given がスコープ内になければ、何もしないもの）が必要である。
++         リスナーやオブザーバーは、渡すのではなく given として束縛して提供する。セッションのモニターを捕捉するインスタンスは、使用箇所で名前に束縛できないからである。
++   entry .proxy   上流のサーバーにすべてを転送しながら、stdio でエディターにサービスを提供する
+
+% 1 1 0 118efc54647e9d030ec6d3ba3f805036
+
+@ 0 7 0 1729652e040f379d10deb6215c20da2a
++         `Lsp.proxy(upstream, observer)(register)` では、このプロセスは標準入力からエディターのメッセージを読んで標準出力に書き、`upstream` とのセッションを保持し、両者の間ですべてのメッセージを中継する。その際、ブロックが貸し出された `Lsp.Proxy` に `rewrite` の結合子を通して登録したものに従ってメッセージを修正する。
++         中継は両方向で非同期なので、リクエストはいくつでも同時に送信中になり、どんな順でも応答され、リクエストの ID は変更されずに通過する。
++         登録されていないものはすべて（このライブラリがモデル化していないメソッドや、知らないケイパビリティ）バイト単位でそのまま渡る。
+
+% 2 1 0 04c0e151decffc911f9fa44863fcc4be
+
+% 3 1 0 10e762dec02663d5152c71667de3368b
+
+% 4 1 0 051c790f759decfe11c12b0e74f507b8
+
+% 0 1 0 1f371d1a8b4fa01e13f9eb97373920e1
+
+% 0 1 0 0ba9e7e9094042730f4394ec10336976
+
+% 0 1 0 0b354b055b5a380b07433702b914be12
+
+% 0 1 0 14f1fe3111aaef9f146a11f2c1ca7bc5
+
+% 0 1 0 071ac86c8523db690178f84eeb48d5d3
+
+% 1 1 0 0743e4a03610271404c91f97fe7ac9f9
+
+@ 0 6 0 04eed49bdc5a99080446596aed8ade11
++         `Stdio^`、`Monitor^`、`Probate`、`WorkingDirectory`、`Environment`、`Diagnostics`、そして `Lsp.Error`（起動に失敗したサーバーは `Reason.Unstarted`）、`Framing.Error`（不正なフレーム）、`Truncation.Error`（途中で切れたストリーム）の戦術が必要である。
++         登録ブロックはセッションが開く前に一度だけ同期的に実行され、モニターを捕捉してもよい。
++         `Lsp.Proxy.run` は、オブザーバーを明示的に指定する同じ呼び出しである。
+
+% 1 1 0 0d02c67c9275f88a1234b2b6a46613cb
+
+% 0 1 0 189a7320130ac64d142135fed43fe992
+
+% 1 1 0 0b733a69f665541b12a304d1001f2c1d
+
+@ 0 1 0 0dc3e29e3a8795971bad8b458c63b80d
++   entry .listen   登録されたハンドラから、標準入力と標準出力で言語サーバーのサービスを提供する
+
+% 1 1 0 02aad66074733b311e55d14e1451bd4a
+
+@ 0 9 0 1ac352f74de99dd40f33e757a5d9f6dc
++         `Lsp.listen(name, version, observer)(register)` では、ブロックが貸し出された `Lsp.Registry` にサーバーのハンドラを登録する。
++         ブロックが戻るとレジストリは消費され、そこから `ServerCapabilities` が導出され、ループは標準入力が尽きるまで `Content-Length` でフレーミングされた JSON-RPC を読み、各メッセージを読み取りスレッドでそのハンドラにディスパッチする。
++         単一の書き込みタスクが送信チャンネル（応答と、ハンドラが `client` を通して送る通知の両方）を排出し、それぞれを標準出力にフレーミングするので、書き込みが交互に混ざることはない。
++         `name` と `version` は、`initialize` の結果が `ServerInfo` として報告するものである。オブザーバーを与えると、両方向のすべてのメッセージを見る。
+
+@ 0 1 0 01964d6d8ef88cb215a07d412f04afc3
++         サーバーは登録によって成長し、そのケイパビリティもともに成長する。
+
+% 2 1 0 0cbf2aeca1005f621d9c4c1986b3a79c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 0454df2350dae15901103323ce368467
++           label 機能を持たないサーバーは initialize に応答し、ドキュメントを追跡する
+
+% 1 1 0 14850d9483d8e108122e21d0eaf93a51
+
+% 2 1 0 1526481ae2a43a83162247ee1dd46337
+
+% 4 1 0 1e298e6b50b98d891e06d427c9d8f27f
+
+% 5 1 0 15ba92caf11f4516040af6eb57ce267e
+
+% 0 1 0 127dfd1783380b721436ceac4554ba69
+
+% 1 1 0 1972fe720b5a76b01b2e8319e6c73f30
+
+@ 0 1 0 0a496198195670ff1cc9d805c51052e1
++           label hover を登録すると hoverProvider が広告される
+
+% 1 1 0 00376128669414de1c798d3ba30b1aba
+
+% 2 1 0 085d6fa3cad68cf703481a40d6f2451f
+
+% 4 1 0 1db68548bf2e86fd1f8e1f3e4859651f
+
+% 5 1 0 14dbde92e83f04000bf0f85b802ae34b
+
+% 7 1 0 05dd4bf02c2262941554544c870e1043
+
+% 8 1 0 0be4dcc0584b641c16988a82bece1c47
+
+% 9 1 0 0f9bdfa18e6a4e540bf43db154af0e6d
+
+% 10 1 0 11a1ef430704a82e0de6eebbd548fbaa
+
+% 1 1 0 18e79dbcf2177a361b17cd0043d57163
+
+@ 0 1 0 1b1a944bec37f3250b8a850cc8ab33c1
++           label complete を登録すると、そのトリガーとともに completionProvider が広告される
+
+% 1 1 0 033bae419d20dc2201721a2a42a73e2b
+
+% 2 1 0 171214164bebf7d1124e9d7bf9dbdfdb
+
+% 4 1 0 0820dd1e707bb96e0a5726cc301723f1
+
+% 5 1 0 03bb1d31a3b24d7d18e6e635cc5e486f
+
+% 7 1 0 1ebcbe0a04cdaceb1cae19012b7f11f1
+
+% 8 1 0 033e85cf2f86490e192373a1b53bba75
+
+% 9 1 0 1dd33e72bb55fb320fb97fa24c11acf1
+
+% 10 1 0 0e9831b9722c2a0b13cd0b2df05f8ee8
+
+% 12 1 0 1cd10ce50f6c11261b59323ade1c4903
+
+% 13 1 0 157bfc9f6aaede371103cdf5474ee91e
+
+% 1 1 0 19c38b68fb5048db1b93e3bf5249ed21
+
+@ 0 1 0 0f446e4fabd4df391a5cd6fd57bcc302
++           label opened ハンドラは、各ドキュメントが届くたびに診断を公開する
+
+% 1 1 0 0bad3a2a8dd6f230078c1727af7c649e
+
+% 2 1 0 0fe6a024dadad07e0ad22a1417ade748
+
+% 4 1 0 01d95c4c1445bba516993971efc6ece6
+
+% 5 1 0 0702d78635251748051e59b3a51a7f7e
+
+% 7 1 0 14f27edcb196dddf0bb86dc2b6405535
+
+% 8 1 0 161ed44ebf943b2010a0ee3d90a67490
+
+% 9 1 0 0e37b57f63504e1e0326da1c30e35516
+
+% 10 1 0 1c7c77045b58f56401b1bb27f4a337f0
+
+% 12 1 0 1d6271df54c153031de12b0b8e54cb32
+
+% 13 1 0 0d10149a19cf36ed0890b09aa3431912
+
+% 0 1 0 1c2a962998584aba06b895d882d19062
+
+% 0 1 0 09b795548343e5740c0b35ad091df0ad
+
+% 0 1 0 0cecb9d671b793991268cdfba8302b14
+
+% 0 1 0 00022712d7b3a48e144e0db63bc5252f
+
+% 0 1 0 00ffa211450fbedb0cb973a7969144eb
+
+% 0 1 0 0410d44f398231dc014071be633dd149
+
+% 0 1 0 16740b2abc85031c0a4d0abff979a5fd
+
+% 0 1 0 022ce80379162f8f0812d2f3eef56708
+
+% 1 1 0 039a23ebea1f92c61ecb7ce27d8624ab
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 2 0 0471e39fd6207f561a6b400969e1138c
++         サーバー全体は、常駐デーモンの慣用法に従った `main` になる。そうすることで、言語サーバーを頻繁に再起動するエディターは、すでに実行中の JVM に再接続できる。
+
+% 2 1 0 0c3ed027f65958271357831c610511c0
+
+% 3 1 0 002ce9a4631d59da01c87c24d1f39d72
+
+% 4 1 0 1aee365729636589000f2c8a1c15c146
+
+% 0 1 0 0853818f349b023003bb3bad9860badb
+
+% 0 1 0 0c332fad946d7e811c4c167bc5bf460b
+
+% 0 1 0 0deb762eb28b035101e67765529e6b7f
+
+% 0 1 0 05f3106ad4f8d4410c9c647c1794144f
+
+% 0 1 0 1d9724ee372a96b90c32bcca99559b44
+
+% 0 1 0 174a8f123f7a85c2153eefb4572f83a8
+
+% 0 1 0 08770c8d2d48ab3c1cecaf6dd69ac37e
+
+% 1 1 0 136c825de807cea601cfbb1cb9f7eea9
+
+@ 0 9 0 0849ee8d890988fe046901d02967d902
++         `Stdio`、`Monitor`、`Probate`（書き込み側はタスクである）と、`Framing.Error` と `Truncation.Error` の戦術が必要である。
++         誤りは送出されるのではなく、応答される。
++         JSON でないメッセージには `-32700` のパースエラー、デコードできないペイロードには `-32602` の不正パラメーターエラー、ハンドラ内のその他の例外には `-32603` の内部エラーが返る。ハンドラが発生させた `Lsp.Error` には、理由のワイヤ上のコードとリクエストの ID を持つエラー応答が返り、通知の場合は `window/logMessage` となる。
++         レジストリ、セッション、ディスパッチャーはすべてこの呼び出しのローカルである。ケイパビリティを保持するものがアプリケーションの寿命を持つオブジェクトに保存されることはなく、そうしようとするハンドラはキャプチャ検査が拒否する（`Document` と `Workspace` を参照）。
+
+% 1 1 0 0b788b8e3f79b82209d62678660a63be
+
+% 0 1 0 074486cf5dc3b5c50d443ce27c7e96da
+
+% 0 1 0 1244cd5c4a3610fe040c475b4db11e36
+
+% 0 1 0 10540b2f5fab4d2e15a7f9e83212a3ba
+
+% 1 1 0 1491c7ee695919fb0e724076c84237e9
+
+@ 0 1 0 19fd781253d050a213a1e7a1975e43d1
++   entry .Client   サーバーがエディターに送る通知
+
+% 1 1 0 07b8cf75389e133411a6101b52ffe0c0
+
+@ 0 7 0 07fdc07bbd2b32e21824b627b71004dc
++         プロトコルのサーバーからクライアントへの半分を、サーバーが呼び出す側として表したものである。
++         ハンドラはこれに `client` として到達し、`publishDiagnostics`、`showMessage`、`logMessage`、`telemetry`、`logTrace`、`progress`、`cancelRequest` を送る。
++         公開されるのは通知だけで、リクエストは決して公開されない。ハンドラはエディターのメッセージを読むスレッドで実行されるので、その中から往復を待つと、そのスレッドが読むべき応答を待つことになり、デッドロックする。
++         何かについてエディターの応答を必要とするクライアントは、`ready` で尋ね、エディターの通知が届いたときに結果を読む。
+
+@ 0 6 0 118d2560ed96b831070be8b6148a1036
++         ワイヤ上のメソッド（`` `textDocument/publishDiagnostics` ``、`` `window/showMessage` ``、`` `window/logMessage` ``、`` `telemetry/event` ``、`` `$/logTrace` ``、`` `$/progress` ``、`` `$/cancelRequest` ``）は、生成されたプロキシが実装する `@rpc` の表面である。名前付きのメソッドは、それらを通常の既定値（バージョンなし、`Info` と `Log` のレベル、詳細なトレースなし）で包む。
++         これらのメッセージを*受け取る*クライアント（`LspSessional` の読み取り側）は、同じトレイトを `Lsp.Listener` にディスパッチする。
+
+@ 0 4 0 167d958bf21dfaf4024da3665b843789
++         `Client` は共有のケイパビリティである。送信チャンネルは複数の生産者を許すので、ハンドラ内で起動したタスクから公開することは正当である。しかしハンドルはそれを作ったサービス提供のスコープに限定されており、セッションの終了後に使うために隠しておくことはできない。
+
+% 2 1 0 01053b29009ef078024b1499c65ed403
+
+% 3 1 0 1ccf052b950807f10744ce6e013e427b
+
+% 5 1 0 06804e1591bb55f30ffc43622ab1fef8
+
+% 6 1 0 0307ac1b42f723941808847edfc593ea
+
+% 8 1 0 08deb739b73d3da61565151292cd5ecf
+
+% 0 1 0 1be769be29548ae40a09ff67f8cec2b2
+
+% 0 1 0 031c084d92574c041dc4beffc3452d46
+
+% 0 1 0 1a1f83abc872849102db4b6e752255fe
+
+% 1 1 0 0b46d44493d958e0048c208b5d82d1d6
+
+% 1 1 0 085873e8b01f19ca1e80eb57afaec4cc
+
+% 1 1 0 1fbf7a2122f3cec806061bd0ebeee091
+
+@ 0 11 0 1383dcbfba0eb46718c37d789a4ea998
++     entry #publishDiagnostics   ドキュメントの診断を送り、表示されているものを置き換える
++         空のリストはそれらを消去する。
++         ドキュメントのバージョンは送られない。
++     entry #showMessage   `Info` レベルでユーザーにメッセージを示す
++     entry #logMessage   `Log` レベルでエディターのログに一行を書く
++     entry #telemetry   生の JSON のペイロードを持つ `telemetry/event` を送る
++     entry #logTrace   詳細な部分を持たない `$/logTrace` メッセージを送る
++     entry #progress   `$/progress` 通知を送る。トークンと値で、どちらも生の JSON
++         進捗のトークンは文字列または整数で、値はプロトコルに固有なので、どちらも生のままである。
++     entry #cancelRequest   エディターが行ったリクエストのキャンセルを、ID によって求める
++   entry .Connection   実行中のサーバーに対するクライアントのハンドル。セッションの間だけ貸し出される
+
+% 1 1 0 1a5c5ff60ca0c42e0eaacc88adaa5bb5
+
+@ 0 8 0 14f13545e49e86d015d76cee64cd762e
++         サーバーのセッションと対になるもので、`session` が開いている間、エディターまたはプロキシに貸し出すものである。
++         プロトコルが定義するすべてのリクエストにメソッド（`#hover`、`#complete`、`#definition`、`#rename`、…）があり、ドキュメントの URI とリクエストのパラメーターを受け取って、サーバーのハンドラが返すのと同じ型を返す。すべての通知（`#open`、`#edit`、`#save`、`#close`、`#initialized`、`#exit`、`#configure`）は何も返さない。
++         リクエストは応答が届くまで呼び出し側をブロックするが、読み取りタスクを決してブロックしないので、異なるタスクから複数のリクエストを同時に送信中にでき、順不同で応答されることがある。
+
+% 2 1 0 08ae80dd6d601da419003671ac74b7d9
+
+% 3 1 0 0836aa669619b00014202a784e9ea79d
+
+% 4 1 0 063986b6adab519f02e58d76beae5513
+
+% 5 1 0 194c2b9a65f1eb720c3099d302010dfc
+
+% 6 1 0 1c66c31b70ca806d05b74135ecd8f8c0
+
+% 7 1 0 149ce61b1cee07a71065d5fcb67a4c1f
+
+% 8 1 0 10b3c975708323d20d0f424d1c69bc24
+
+% 9 1 0 1b1ee3f6dff265b81512a8141402cdda
+
+% 0 1 0 0dc3f8ebd3b4942c123f887505d415e0
+
+% 1 1 0 03a6525eefc2989801cc3b504dabe259
+
+% 2 1 0 17a2eb098e8b8a6b14740682acd4ba1a
+
+% 3 1 0 19b5133c3b99898e11b113ca3911af86
+
+% 0 1 0 03bb6ccd9e747a2d07e2047ea83afff9
+
+% 0 1 0 0f009b303b07ea0805cc4c54c5f0b4ec
+
+% 1 1 0 1b18d2658efd4fc11f52ff4bc55000f2
+
+@ 0 6 0 13332a385b3d6a68106b51d84e20b5fa
++         すべてのリクエストには `Tactic[Lsp.Error]` が必要である。
++         サーバーからのエラー応答は、永遠に待たれるのではなく、ワイヤ上のコードが名指す理由（`Lsp.Error.reason`）を持つ `Lsp.Error` として発生させられる。標準の集合にないコードでは、理由は `Internal` となり、サーバー自身のメッセージが詳細となる。
++         接続は共有のケイパビリティであり、書き込み側、読み取り側、呼び出し側から同時に駆動される。また `JsonRpc` でもあるので、`#send` は生のメッセージをそのチャンネルに載せる。
+
+@ 0 5 0 060efc87ad2e06a10c4eb724ffab0946
++         メソッドの背後にある生成されたプロキシは、公開された `vals` の `#lifecycle`、`#language`、`#navigation`、`#editing`、`#advanced`、`#workspace`、`#resolve` で、ワイヤ上のトレイトごとに一つある。名前付きのメソッドが扱わないリクエスト（選択範囲、色、階層、resolve、ファイル操作）のためのものである。
++         ワイヤ上の各メソッドはプロトコル自身のパラメーターを受け取り、呼び出しの戦術のもとで結果のデコーダーを召喚する。
+
+% 0 1 0 11d44f593765ad63128f4769f78bacdb
+
+% 0 1 0 1f3ad2b097f1bd00027a72d8cef2d90d
+
+% 1 1 0 14beec1ed1f342940cb7a15172e3f932
+
+@ 0 48 0 0658bc2f4ad427b8058ee6dc7f5e1ec2
++     entry #Origin   接続の向こう側。`Lsp`
++     entry #lifecycle   `LspLifecycle` の生成されたクライアント。initialize、shutdown、ドキュメントの同期
++     entry #language   `LspLanguage` の生成されたクライアント。補完、ホバー、定義など
++     entry #navigation   `LspNavigation` の生成されたクライアント。宣言、折りたたみ、リンク、色
++     entry #editing   `LspEditing` の生成されたクライアント。範囲指定と入力時のフォーマット、階層
++     entry #advanced   `LspAdvanced` の生成されたクライアント。セマンティックトークン、インレイヒント、診断
++     entry #workspace   `LspWorkspace` の生成されたクライアント。シンボル、コマンド、ファイル操作
++     entry #resolve   `LspResolve` の生成されたクライアント。`*/resolve` リクエスト
++     entry #send   メッセージを与えられたとおりに送る。ID を作らず、応答も待たない
++         プロキシが転送に使う生の継ぎ目であり、エディター自身の ID や、このライブラリがモデル化していないメソッドが変更されずに渡る。
++     entry #initialize   ハンドシェイク。`initialize` を送り、サーバーのケイパビリティを返す
++         `initialize(root, name, version, folders, capabilities)` の引数はすべて任意である。指定しなければ、クライアントは自身を、バージョンもケイパビリティもない `soundness` として報告する。サーバーの応答は `InitializeResult` である。
++         この後に `#initialized` を続けること。
++     entry #initialized   ハンドシェイクが完了したことをサーバーに伝える
++     entry #shutdown   サーバーにシャットダウンを求め、その確認を待つ
++     entry #exit   サーバーに終了を伝える。行儀のよいサーバーを終わらせる通知
++     entry #open   ドキュメントが開いたことを、その言語、テキスト、バージョンとともにサーバーに伝える
++         `open(uri, language, text, version = 1)`。
++     entry #edit   開いているドキュメントへの変更の一括を、新しいバージョンとともに送る
++     entry #replace   `#edit` のドキュメント全体の形。新しいバージョンのもとでテキストを置き換える
++     entry #save   ドキュメントが保存されたことをサーバーに伝える。サーバーが求めればテキストも伴う
++     entry #close   ドキュメントが閉じたことをサーバーに伝える
++     entry #hover   ある位置のホバー、または `Unset`
++     entry #complete   ある位置の補完。任意で `CompletionContext` を伴う
++     entry #definition   ある位置のシンボルの定義の場所
++     entry #references   ある位置のシンボルへの参照。既定では宣言を含む
++     entry #symbols   ドキュメントのシンボル
++     entry #format   指定したオプションのもとでドキュメントをフォーマットする編集
++     entry #rename   ある位置のシンボルの名前を変更するワークスペースの編集
++     entry #codeActions   ある範囲のコードアクション。そのコンテキストを与える
++     entry #signatureHelp   ある位置のシグネチャヘルプ、または `Unset`
++     entry #declaration   ある位置のシンボルの宣言の場所
++     entry #typeDefinition   ある位置のシンボルの型定義の場所
++     entry #implementation   ある位置のシンボルの実装の場所
++     entry #highlights   ある位置のシンボルのドキュメント内のハイライト
++     entry #foldingRanges   ドキュメントの折りたたみ範囲
++     entry #documentLinks   ドキュメントのリンク
++     entry #codeLenses   ドキュメントのコードレンズ
++     entry #semanticTokens   ドキュメント全体のセマンティックトークン
++     entry #inlayHints   ある範囲内のインレイヒント
++     entry #diagnostics   ドキュメントのプル型の診断。完全なレポートとして
++     entry #search   クエリにマッチするワークスペースのシンボル
++     entry #execute   生の JSON の引数でコマンドを名前によって実行し、その生の結果を返す
++     entry #configure   構成が変わったことを、設定を生の JSON としてサーバーに伝える
++   entry .Dispatch   `Lsp` の実装のための JSON-RPC ディスパッチャーを作る
+
+% 1 1 0 16e046c099394b061eaa192e52160ad3
+
+@ 0 10 0 170cc971c87e25dc19ba5f2cf9ae3934
++         `Lsp.Dispatch(server)` は `Json => Optional[Json]` である。メッセージが名指すメソッドを読み、それを宣言するワイヤ上のトレイトの生成されたディスパッチャーにメッセージをルーティングし、応答を返すか、通知の場合は `Unset` を返す。
++         メソッドを持たないメッセージは応答であり、ライフサイクルのディスパッチャーが処理する。未知のメソッドは `Unset` を返す。
++         ディスパッチがプロトコル全体で一度ではなくサブトレイトごとに生成されるのは、obligatory の `JsonRpc.serve` がメソッドごとにコーデックをインライン化し、LSP 全体を一つのクラスにすると JVM の定数プールの上限を超えてしまうからである。トレイトが七つに分かれているのも同じ理由による。
++         `Lsp.dispatcher` は同じ呼び出しである。
++     entry .apply   サーバーのためのディスパッチャー。各メッセージを、そのメソッドを宣言するトレイトによってルーティングする
++   entry .Error   ハンドラが発生させる誤りと、サーバーが返すエラー応答
+
+% 1 1 0 1edd8b3be46c791d1d05cc7b874ce431
+
+@ 0 7 0 19eb896038bc768d1a195f7ca79b6235
++         エラー `↯/s.114.1`：_the LSP operation failed because `reason`_。理由ごとに番号が付く（`Parse` の 147.1 から `Unstarted` の 147.11 まで）。
++         各 `Reason` は、プロトコルが割り当てた JSON-RPC のワイヤ上のコードを持つ。`Parse` は −32700、`InvalidRequest` は −32600、`MethodNotFound` は −32601、`InvalidParams` は −32602、`Internal` は −32603、`ServerNotInitialized` は −32002、`RequestCancelled` は −32800、`ContentModified` は −32801、`ServerCancelled` は −32802、`RequestFailed` は −32803、そして `Unstarted` は −32000 である。最後のものはこのライブラリ独自のもので、起動に失敗したサーバーのサブプロセスを表す。
+
+@ 0 5 0 0982444fdab0ed4b08320118abb2ce15
++         ハンドラは貸し出された `Emit[Lsp.Error]` を通してこれを発生させ、`Lsp.listen` は、理由のコードを持ち `#response` をメッセージとするエラー応答でリクエストに応答する。通知の場合は `window/logMessage` となる。
++         開いていないドキュメントについてのリクエストと、誰も登録していないコマンドについては、セッション自身が `InvalidParams` を発生させる。
+
+% 2 1 0 0644a382edb9fa3516e481d69153d89c
+
+% 3 1 0 0e27b027e0fdc6bc03d05e7fbf5d1990
+
+% 1 1 0 108d7f683c90f3a204a6a908c9094992
+
+% 2 1 0 036c1c815340d144036e8063510f203e
+
+% 3 1 0 1c3745d5829aa7d818c77010d6bed788
+
+% 5 1 0 0b27f7a1c487fe470c1cfb4656f40099
+
+% 0 1 0 0e15f59c924c39861d75cf2d7d05b65b
+
+% 0 1 0 1c8109307b1404881b930e8eff3906e6
+
+% 0 1 0 10d77b885f3fbc410652ab48f8eeb12c
+
+% 1 1 0 1cce2f8e7a9a440c077b266de4e6e748
+
+@ 0 15 0 07cd998e7acba9f51fbeb7452a72a2a4
++         クライアント側では、`Connection` のリクエストはエラー応答に対してこれを発生させ、その理由は `.reason` がワイヤ上のコードから復元する。また、サーバーのコマンドをフォークできないとき、`LspSessional` は `Unstarted` を発生させる。
++         これを構築するには、すべての fulminate のエラーと同じく、スコープ内に `Diagnostics` が必要である。
++     entry .Reason   操作が失敗した理由。それぞれが JSON-RPC のワイヤ上の `code` と `number` を持つ
++         上記の十一の理由である。
++         `code` はワイヤ上のコード、`number` はエラー 147 の副番号である。
++     entry .reason   ワイヤ上のコードが名指す理由。標準の集合にないコードでは `Unset`
++         `Reason#code` の逆で、エラー応答を読むクライアントのためのものである。サーバーは実装定義のコードで応答することがあり、`Connection` はそれを `Internal` として報告する。
++     entry .communicable   理由を、_the request failed_ などのメッセージとして描画する
++     entry #reason   操作が失敗した理由
++     entry #details   エラーが発生させられたときに与えられたメッセージ。あれば
++     entry #response   エラー応答で送られるメッセージ。詳細、または理由の説明
++   entry .Registry   サーバーのハンドラが記録される場所。`listen` に渡すブロックに貸し出される
+
+% 1 1 0 016ccb68a090ae5700635ae4a99aa78b
+
+@ 0 6 0 1f9deeb56b2bda8417e619465f6fe636
++         登録の結合子の対象である。`Lsp.listen` が一つを作り、登録ブロックにコンテキストパラメーターとして貸し出し、ブロックが戻ると消費する。そのため、サービスの提供が始まった後の登録は、構造上不可能である。
++         これはブロックから逃れられない共有のケイパビリティであり（`summon[Lsp.Registry]` を外側の変数に代入する `listen` ブロックはキャプチャ検査が拒否する）、`#capabilities` は登録された内容から、サーバーが広告する `ServerCapabilities` を導出する。
+
+% 2 1 0 0ffe0314e61fefa91ea6a9f99f3a7694
+
+% 3 1 0 0a0bd57c27d1e4cb1ae362289ef554f9
+
+% 5 1 0 079bc46bd6b0657519a449c257baa143
+
+% 6 1 0 1344a8cff4610c321005f87d41757908
+
+% 0 1 0 19e14c4110fb36931aff3dbd16aa0eb7
+
+% 0 1 0 0626b4911eb701e20f2d09574715e5cd
+
+% 0 1 0 010e9010fb5dca7a1bc71b6c899e531f
+
+% 2 1 0 1ed35fe2b3844cf70b435d77565c605e
+
+% 0 1 0 1bc805b7f681605f1c7517f93e00aadb
+
+% 0 1 0 0587dc15d27f3e2615c2f1b3cbe886ec
+
+% 1 1 0 0460980a0c23d3a902d7a5ad2f07f0a2
+
+@ 0 7 0 10e9d534e7f843601c18c469ef05336f
++         そのスロット（機能ごとに一つの公開された `var` で、結合子の名前の末尾に `0` を付けたもの。それにハンドラと並んで登録されたオプションが加わる）が公開されているのは、結合子がそれに代入するからにすぎない。各ハンドラのスロットは `AnyRef | Null` 型である。コンテキスト関数型に言及するユニオンは適応のたびにキャプチャ集合を新しくしてしまうので、型付きの境界は結合子のパラメーターにあり、そこでレジストリを閉じ込めるハンドラが拒否される。セッションはディスパッチするときに型を復元する。
++         スロットは直接ではなく、その結合子を通して読むこと。
+
+% 0 1 0 073bc69dacded9bf09699d6e40b16635
+
+% 0 1 0 054515abb6b0eab110f6c8eb4a8e439f
+
+@ 0 1 0 08141d298360e799074715f67b9efc01
++     entry .Slot   登録されたハンドラを保持する箱
+
+% 1 1 0 0ab9dab1c683023501c59a63f933ef5c
+
+@ 0 80 0 1ac1fc778d9a4f1a14e27472af2d161e
++           コンテキスト関数の値は、コンテキスト関数でない任意の期待される型に、適用されることによって適応する。そのため、ハンドラは `Optional` や `AnyRef` のスロットに直接住むことができない。
++           `Slot[handler](value)` はそれをそのまま保持し、セッションが箱から取り出す。
++       entry #value   ハンドラ
++     entry #capabilities   登録が含意する `ServerCapabilities`。調整を最後に適用したもの
++         各プロバイダーのフラグは、そのハンドラが登録されたときにちょうど設定される。
++         登録時に与えたオプション（補完とシグネチャヘルプのトリガー、入力時のトリガー文字、セマンティックトークンの凡例、診断のオプション、コマンド名）が、構造を持つプロバイダーを埋める。
++         `textDocumentSync` は常に `Incremental` であり、`capabilities(adjust)` が登録されていれば、結果に対してそれが実行される。
++     entry #ready0   `ready` のハンドラ。包まれたもの、または `null`
++     entry #terminating0   `terminating` のハンドラ。包まれたもの、または `null`
++     entry #opened0   `opened` のハンドラ。包まれたもの、または `null`
++     entry #changed0   `changed` のハンドラ。包まれたもの、または `null`
++     entry #saved0   `saved` のハンドラ。包まれたもの、または `null`
++     entry #closed0   `closed` のハンドラ。包まれたもの、または `null`
++     entry #saving0   `saving` のハンドラ。包まれたもの、または `null`
++     entry #savingEdits0   `savingEdits` のハンドラ。包まれたもの、または `null`
++     entry #hover0   `hover` のハンドラ。包まれたもの、または `null`
++     entry #complete0   `complete` のハンドラ。包まれたもの、または `null`
++     entry #completeTriggers0   `complete` の登録時に指定したトリガー文字
++     entry #definition0   `definition` のハンドラ。包まれたもの、または `null`
++     entry #references0   `references` のハンドラ。包まれたもの、または `null`
++     entry #documentSymbols0   `documentSymbols` のハンドラ。包まれたもの、または `null`
++     entry #format0   `format` のハンドラ。包まれたもの、または `null`
++     entry #rename0   `rename` のハンドラ。包まれたもの、または `null`
++     entry #codeActions0   `codeActions` のハンドラ。包まれたもの、または `null`
++     entry #signatureHelp0   `signatureHelp` のハンドラ。包まれたもの、または `null`
++     entry #signatureHelpTriggers0   `signatureHelp` の登録時に指定したトリガー文字
++     entry #declaration0   `declaration` のハンドラ。包まれたもの、または `null`
++     entry #typeDefinition0   `typeDefinition` のハンドラ。包まれたもの、または `null`
++     entry #implementation0   `implementation` のハンドラ。包まれたもの、または `null`
++     entry #documentHighlights0   `documentHighlights` のハンドラ。包まれたもの、または `null`
++     entry #foldingRanges0   `foldingRanges` のハンドラ。包まれたもの、または `null`
++     entry #selectionRanges0   `selectionRanges` のハンドラ。包まれたもの、または `null`
++     entry #documentLinks0   `documentLinks` のハンドラ。包まれたもの、または `null`
++     entry #codeLenses0   `codeLenses` のハンドラ。包まれたもの、または `null`
++     entry #documentColors0   `documentColors` のハンドラ。包まれたもの、または `null`
++     entry #colorPresentations0   `colorPresentations` のハンドラ。包まれたもの、または `null`
++     entry #formatRange0   `formatRange` のハンドラ。包まれたもの、または `null`
++     entry #formatOnType0   `formatOnType` のハンドラ。包まれたもの、または `null`
++     entry #formatOnTypeFirst0   `formatOnType` の登録時に指定した最初のトリガー文字
++     entry #formatOnTypeMore0   `formatOnType` の登録時に指定した残りのトリガー文字
++     entry #prepareRename0   `prepareRename` のハンドラ。包まれたもの、または `null`
++     entry #prepareCallHierarchy0   `callHierarchy` の準備のハンドラ。包まれたもの、または `null`
++     entry #incomingCalls0   `callHierarchy` の着信呼び出しのハンドラ。包まれたもの、または `null`
++     entry #outgoingCalls0   `callHierarchy` の発信呼び出しのハンドラ。包まれたもの、または `null`
++     entry #prepareTypeHierarchy0   `typeHierarchy` の準備のハンドラ。包まれたもの、または `null`
++     entry #supertypes0   `typeHierarchy` の上位型のハンドラ。包まれたもの、または `null`
++     entry #subtypes0   `typeHierarchy` の部分型のハンドラ。包まれたもの、または `null`
++     entry #semanticTokens0   `semanticTokens` のハンドラ。包まれたもの、または `null`
++     entry #semanticTokensLegend0   `semanticTokens` の登録時に指定した凡例
++     entry #semanticTokensDelta0   `semanticTokensDelta` のハンドラ。包まれたもの、または `null`
++     entry #semanticTokensRange0   `semanticTokensRange` のハンドラ。包まれたもの、または `null`
++     entry #inlayHints0   `inlayHints` のハンドラ。包まれたもの、または `null`
++     entry #inlineValues0   `inlineValues` のハンドラ。包まれたもの、または `null`
++     entry #linkedEditingRange0   `linkedEditingRange` のハンドラ。包まれたもの、または `null`
++     entry #monikers0   `monikers` のハンドラ。包まれたもの、または `null`
++     entry #diagnostics0   `diagnostics` のハンドラ。包まれたもの、または `null`
++     entry #diagnosticOptions0   `diagnostics` の登録時に指定したオプション
++     entry #workspaceSymbols0   `workspaceSymbols` のハンドラ。包まれたもの、または `null`
++     entry #commands0   登録されたコマンド。各名前と、包まれたそのハンドラ
++     entry #commandNames0   登録されたコマンド名。ケイパビリティのために別に保持される
++     entry #configuration0   `configuration` のハンドラ。包まれたもの、または `null`
++     entry #watchedFiles0   `watchedFiles` のハンドラ。包まれたもの、または `null`
++     entry #foldersChanged0   `foldersChanged` のハンドラ。包まれたもの、または `null`
++     entry #creatingFiles0   `creatingFiles` のハンドラ。包まれたもの、または `null`
++     entry #createdFiles0   `createdFiles` のハンドラ。包まれたもの、または `null`
++     entry #renamingFiles0   `renamingFiles` のハンドラ。包まれたもの、または `null`
++     entry #renamedFiles0   `renamedFiles` のハンドラ。包まれたもの、または `null`
++     entry #deletingFiles0   `deletingFiles` のハンドラ。包まれたもの、または `null`
++     entry #deletedFiles0   `deletedFiles` のハンドラ。包まれたもの、または `null`
++     entry #resolveCompletion0   `resolveCompletion` のハンドラ。包まれたもの、または `null`
++     entry #resolveCodeAction0   `resolveCodeAction` のハンドラ。包まれたもの、または `null`
++     entry #resolveCodeLens0   `resolveCodeLens` のハンドラ。包まれたもの、または `null`
++     entry #resolveDocumentLink0   `resolveDocumentLink` のハンドラ。包まれたもの、または `null`
++     entry #resolveInlayHint0   `resolveInlayHint` のハンドラ。包まれたもの、または `null`
++     entry #resolveWorkspaceSymbol0   `resolveWorkspaceSymbol` のハンドラ。包まれたもの、または `null`
++     entry #adjust0   `capabilities(adjust)` が登録した純粋なケイパビリティの調整。あれば
++   entry .Proxy   プロキシの書き換え器とフックが記録される場所。`Lsp.proxy` に渡すブロックに貸し出される
+
+% 1 1 0 060409b47c49974a0641ad51c1c756d0
+
+@ 0 8 0 0b02770e318932040f3bc003d9bec1c4
++         `Lsp.Registry` がサーバーの結合子の対象であるように、`rewrite` の結合子の対象である。
++         ここには二つの層の傍受がある。型付きの書き換え器（`rewrite.hover`、`rewrite.capabilities`、`rewrite.diagnostics`、…）はメソッドをキーとし、デコードされたペイロードに作用する。生のフック（`rewrite.outbound`、`rewrite.inbound`）は、このライブラリがモデル化していないメソッドも含めて、メッセージ全体に作用する。
++         どちらも扱わないものは、バイト単位でそのまま転送される。
++         登録ブロックに限定された排他的なケイパビリティである。その公開されたスロットは結合子が代入し、登録が終わったときに `Proxy.run` が一度だけ読む。
+
+@ 0 3 0 09de8f4ed59b77951161414e081dab99
++         上流のサーバーとのセッションはプロキシとともに入ってきて、`upstream` を通して到達する。書き換え器やフックはセッションが存在する前に登録されるが、セッションが存在する間に実行されるので、プロキシはエディターが一度も尋ねなかったことをサーバーに尋ねることができる。
+
+% 0 1 0 1f553d1071f1b70d184df0b8bf490462
+
+% 0 1 0 0977dda287fa43aa1518cc04908b8adc
+
+% 0 1 0 18fa3e638764a8d71a104bda16f48886
+
+@ 0 1 0 09973a0048af76470d6d9351c69e7105
++     entry .Rewriter   一つのペイロードの書き換え器。プロキシの表でメソッドをキーとする
+
+% 1 1 0 0cb85bd8a0878dc30c7396cd561285b8
+
+@ 0 22 0 0b8b0f31335aff1b116fa32fd7424d5b
++           `rewrite.hover` やその他の型付きの結合子が構築するものである。
++           `rewrite(json)` は呼び出しのたびに、それを適用するループから `Tactic[Json.Error]` を受け取るので、プロキシが保持するインスタンスは独自の戦術を持たない。また、デコードできないペイロードは変更されずに通過する。たとえば `null` のホバーは、そのまま `null` として転送される。
++       entry #rewrite   修正されたペイロード、または与えられた戦術を通して発生させられた `Json.Error`
++     entry .run   オブザーバーを明示的に指定してプロキシを実行する。`Lsp.proxy` が呼ぶもの
++         `Proxy.run(upstream, observer)(register)` で、コンテキストの要件は `Lsp.proxy` と同じである。
++         ブロックは一度だけ実行される。その後、規則がプロキシから読み出され、`upstream` とのセッションが開き、`rewrite.connected` のブロックが独自のタスクで始まり、ループは標準入力が尽きるまでエディターのメッセージを読む。
++         エディターのメッセージはメソッドによって分類され、それ自身の ID のまま転送される。サーバーのメッセージはリスナーが傍受し、各応答を、それが答えるリクエストのメソッドによって型付けし直し、対応する書き換え器を適用して、結果を標準出力に書く。
++         プロキシ自身が行ったリクエスト（その ID は obligatory が作った文字列である）への応答は、代わりにそれを待つ呼び出し側にルーティングされるので、エディターには決して届かない。
++     entry #results   応答の書き換え器。それが答えるリクエストのメソッドごと
++     entry #notices   通知とサーバーからクライアントへのリクエストの書き換え器。メソッドごと
++     entry #outbound0   `rewrite.outbound` フック。包まれたもの、または `null`
++     entry #inbound0   `rewrite.inbound` フック。包まれたもの、または `null`
++     entry #connected0   `rewrite.connected` のブロック。包まれたもの、または `null`
+
+@ 0 10 0 0201fc521e3235c80c47ee5deb063068
++ entry .LspLifecycle   ライフサイクルとドキュメントの同期のメソッドのためのワイヤ上のトレイト
++     `Lsp` で一つにまとめられてワイヤ上の表面をなす七つの `@rpc` トレイトの一つである。obligatory の `JsonRpc.serve` と `JsonRpc.proxy` がトレイトごとに扱える大きさのクラスを生成するように、分割されている。
++     `initialize`、`initialized`、`shutdown`、`exit`、`textDocument/didOpen`、`textDocument/didChange`、`textDocument/didSave`、`textDocument/didClose` を宣言し、それぞれがプロトコル自身のパラメーターの名前と型（`textDocument: Lsp.TextDocumentIdentifier` など）を受け取る。
++     `Lsp.Connection#lifecycle` がその生成されたクライアントであり、`Lsp.listen` のセッションがこれを実装する。
++     `soundness` のアンブレラにはエクスポートされない。`import exegesis.*` で到達し、`Lsp` として手で書かれたサーバーか、ワイヤ上のメソッドを直接呼ぶクライアントだけが必要とする。
+
+@ 0 5 0 1a67f8a7654855cb0b0a27c39fe5a355
++ entry .LspLanguage   中核となる言語機能のためのワイヤ上のトレイト
++     `textDocument/completion`、`textDocument/hover`、`textDocument/definition`、`textDocument/references`、`textDocument/documentSymbol`、`textDocument/formatting`、`textDocument/rename`、`textDocument/codeAction`、`textDocument/signatureHelp` である。
++     表面が分割されている理由は `LspLifecycle` を参照。`Lsp.Connection#language` がそのクライアントである。
+
+@ 0 6 0 1cce1ac4c8f2f5be0e557638c11fe060
++ entry .LspNavigation   ナビゲーション、折りたたみ、リンク、レンズ、色のためのワイヤ上のトレイト
++     `textDocument/declaration`、`textDocument/typeDefinition`、`textDocument/implementation`、`textDocument/documentHighlight`、`textDocument/foldingRange`、`textDocument/selectionRange`、`textDocument/documentLink`、`textDocument/codeLens`、`textDocument/documentColor`、`textDocument/colorPresentation` である。
++     `Lsp.Connection#navigation` がそのクライアントである。
+
+@ 0 7 0 0905d1f7e0c90f4c1c9ac7ed0f83f1fc
++ entry .LspEditing   範囲指定と入力時のフォーマット、名前変更の準備、保存、階層のためのワイヤ上のトレイト
++     `textDocument/rangeFormatting`、`textDocument/onTypeFormatting`、`textDocument/prepareRename`、`textDocument/willSave`、`textDocument/willSaveWaitUntil`、`textDocument/prepareCallHierarchy`、`callHierarchy/incomingCalls`、`callHierarchy/outgoingCalls`、`textDocument/prepareTypeHierarchy`、`typeHierarchy/supertypes`、`typeHierarchy/subtypes` である。
++     `Lsp.Connection#editing` がそのクライアントである。
+
+@ 0 5 0 1c651001363c5020052ae5d75108bd8d
++ entry .LspAdvanced   セマンティックトークン、インレイヒント、インライン値、モニカー、プル型の診断のためのワイヤ上のトレイト
++     `textDocument/semanticTokens/full`、`textDocument/semanticTokens/full/delta`、`textDocument/semanticTokens/range`、`textDocument/inlayHint`、`textDocument/inlineValue`、`textDocument/linkedEditingRange`、`textDocument/moniker`、`textDocument/diagnostic` である。
++     `Lsp.Connection#advanced` がそのクライアントである。
+
+@ 0 5 0 1da566eecc0ae7f81a820b2f11becb07
++ entry .LspWorkspace   ワークスペースのシンボル、コマンド、構成、ファイル操作のためのワイヤ上のトレイト
++     `workspace/symbol`、`workspace/executeCommand`、`workspace/didChangeConfiguration`、`workspace/didChangeWatchedFiles`、`workspace/didChangeWorkspaceFolders`、`workspace/willCreateFiles`…`workspace/didDeleteFiles` の六つのメソッド、そして `$/setTrace` である。
++     `Lsp.Connection#workspace` がそのクライアントである。
+
+@ 0 5 0 19c48e233687a52004beef94350f0abe
++ entry .LspResolve   `*/resolve` リクエストのためのワイヤ上のトレイト
++     `completionItem/resolve`、`codeAction/resolve`、`codeLens/resolve`、`documentLink/resolve`、`inlayHint/resolve`、`workspaceSymbol/resolve` である。
++     それぞれは名前付きのフィールドを持つオブジェクトではなく、項目そのものを `params` として受け取るので、パラメーターには `@bare` が付けられている。
++     `Lsp.Connection#resolve` がそのクライアントである。
+
+@ 0 1 0 1a271315a2f1c15213cc209bd00bf55c
++ entry .LspSessional   `Lsp.Server` とのセッションを開く `Sessional` のインスタンス
+
+% 1 1 0 16ea887c297fc7431eabdf63b03b6230
+
+@ 0 6 0 1afee598f39eae08037318bdc28fcdea
++       `session` が `Lsp.Server` に対して実行するものである。
++       サーバーへのチャンネル（`Server.Process` ではフォークしたサブプロセスのパイプ、`Server.Streams` では与えられたストリーム）を作り、接続の送信メッセージをそこへ排出する書き込みタスクと、返ってくるものをルーティングする読み取りタスクを起動し、`Lsp.Connection^` をブロックに貸し出し、その後両方のタスクをキャンセルする。サブプロセスは待つのではなく中断する。
++       その `Self` は `Lsp.Server` で、`Result` は `Lsp.Connection^` である。
+
+@ 0 5 0 1860c86f7429158808a64f072859fd8b
++       読み取り側は、サーバーが送るものを、インスタンスの構築時に与えた `Lsp.Listener` にディスパッチする。
++       `Lsp.Client` トレイトがモデル化する通知はリスナーの名前付きのメソッドに届く。その他のメソッドはサーバーがクライアントに対して行うリクエストで、`Listener#request` が応答する。応答は、それを待つリクエストと照合される。
++       オブザーバーは両方向のすべてのメッセージを見る。
+
+@ 0 3 0 145e3592cae0fcf21929915300711562
++       アンビエントなインスタンスは given の `Lsp.Server.sessional` で、スコープ内のリスナーとオブザーバーの given から作られる。
++       明示的に構築するのは、リスナーやオブザーバーを値として渡すときだけにし、それをローカルな given として束縛すること。
+
+% 2 1 0 1da39dd0f34a0899014da3237505c4a7
+
+% 3 1 0 1c991fbaddfbaf2f01e3c6b40d070c1f
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 11738106f6d88b28149224b62d875beb
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 0d7f1e4b8b541f5918a614304decdd48
+
+% 0 1 0 1127b14c14fb4ec81dbeb7f7a40648e7
+
+% 0 1 0 0a6f46602ce0cfc21eb2242da9e90df1
+
+% 0 1 0 0c60ac168c84c0b21d277c50f1b7a7cb
+
+% 0 1 0 0f12f01fd76c24ca122a442b6e8e8309
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 13cc264b0e9e75430f7e78525d9f0449
+
+% 0 1 0 03477018f7d3c1f3172accaec474d532
+
+% 0 1 0 190748b913b6447a073e2abd9ea0ebc5
+
+% 1 1 0 12b7177654d2a81c042be60082fca283
+
+@ 0 5 0 10874093d6c2343d113e2ca192a3bd4c
++       `Monitor`、`Probate`、`Diagnostics`、`WorkingDirectory`、`Environment`、`Tactic[Lsp.Error]` が必要である。起動できないサブプロセスは、戦術を通して `Lsp.Error(Reason.Unstarted, details)` として報告される。
++       不正なフレームや途中で切れたストリームは読み取り側または書き込み側の誤りであり、検認に報告される。
+
+% 1 1 0 18ebe41efc92d071032d030b5874455d
+
+% 1 1 0 18f732ae4e9d067004553b63837cd7d3
+
+% 0 1 0 13553857db4f71f017ab9f948adab767
+
+% 0 1 0 0ded34ea2a61e6c701e5d26195452abd
+
+@ 0 3 0 021683acfb84110a0d86ad7a0f76d19d
++   entry #Self   対象。`Lsp.Server`
++   entry #Result   セッションが貸し出すもの。`Lsp.Connection^`
++   entry #session   サーバーへのチャンネルを開き、接続をブロックに貸し出し、その後それを閉じる
+
+@ 0 1 0 05af13e05968858b0c1a94787abe1ceb
++ entry .rewrite   プロキシの登録の結合子。上流のサーバーが言うことを修正する
+
+% 1 1 0 10d0f551dd0b4c1e1a44aba3f0b8d50c
+
+@ 0 7 0 0b7870cd0c948ad403be468ee34d94d8
++       独自の名前空間であり、そのため `rewrite.hover`（サーバーが返したホバーを修正する）と `Lsp.hover`（ホバーを提供する）が衝突することはない。
++       型付きの各結合子はメソッドをキーとし、ペイロードをサーバー側が使うのと同じ `Lsp` の型にデコードし、関数を適用して、再びエンコードする。書き換え器を持たないメソッドは手を加えずに転送される。デコードできないペイロード（サーバーがホバーを持たないときに送る `null`）はそのまま通過するので、書き換え器が空の場合を書き出す必要はない。
++       どれもスコープ内に `Lsp.Proxy^` を必要とする。`Lsp.proxy` のブロックである。
+
+% 2 1 0 1b87c04aca99c9e20becb6b63ba35a79
+
+% 3 1 0 03f2cac45f504f3414a1272fa6f71626
+
+% 4 1 0 09d3118c559d2882034f12530e6636d2
+
+% 0 1 0 14e653c0ce7803660ea4420dc55a6095
+
+% 0 1 0 0b20bfe3ef89853e0ea8baaa9c4fa618
+
+% 0 1 0 1ea56c684fd8f741053addd60dd67568
+
+% 0 1 0 1c26f3f967864300092b381e39a6e320
+
+% 0 1 0 0df7c86d58e81ebd0d0165e40c453d31
+
+% 1 1 0 1f03ec98160a34bf0df8854fc8f798a7
+
+% 2 1 0 1e21488fd04d885916b8f5f0c5eb2a73
+
+% 1 1 0 1e45d784727937141ffe9eb362eb8766
+
+@ 0 4 0 11290b8a85880bf50ee27d7f6f373f75
++       `.result` と `.notification` は結合子を持たないメソッドのための逃げ道であり、`.outbound`、`.inbound`、`.connected` はメッセージ全体のフックである。
++       フックは修正するメッセージを届けたスレッドで実行され、それによって `upstream` をどう使えるかが決まる。`exegesis.upstream` を参照。
+
+% 1 1 0 010054bc9edbe6e71476a951f0196f3c
+
+% 0 1 0 0cd5ab48f2e17d860ee2527ef40a310a
+
+% 1 1 0 04aae8c5d4b16dbd0877af345d6a0009
+
+% 0 1 0 1935ccc92138372a1e9d61bc29e69b69
+
+@ 0 37 0 1b7c3dab38632ab51845b1cc66061190
++   entry .capabilities   上流のサーバーが広告したケイパビリティを修正する
++       `initialize` の結果を書き換える。機能を追加するプロキシはそれを主張しなければならず、機能を取り除くプロキシはそれを主張するのをやめなければならない。
++   entry .hover   サーバーが返す各ホバーを修正する
++   entry .completions   サーバーが返す各補完リストを修正する
++   entry .definitions   サーバーが返す定義の場所の各リストを修正する
++   entry .symbols   サーバーが返すドキュメントのシンボルの各リストを修正する
++   entry .codeActions   サーバーが返すコードアクションの各リストを修正する
++   entry .codeLenses   サーバーが返すコードレンズの各リストを修正する
++   entry .inlayHints   サーバーが返すインレイヒントの各リストを修正する
++   entry .signatureHelp   サーバーが返す各シグネチャヘルプを修正する
++   entry .diagnostics   サーバーが公開する診断を修正する
++       型付きの書き換え器の中で唯一の通知である。サーバーが報告した `uri` と `version` は保たれ、プロキシが変更できるのはレポートのリストだけである。
++   entry .result   任意のリクエストの結果を、メソッドによって、生の JSON として修正する
++       `rewrite.result(method)(lambda)` は、このライブラリがモデル化していないメソッドや、プロキシが JSON として扱いたいペイロードのためのものである。
++       ラムダは呼び出しのたびにプロキシから `Tactic[Json.Error]` を受け取るので、読めないペイロードは変更されずに通過する。
++       `error` を持つ応答には手を加えない。
++   entry .notification   サーバーが送る任意の通知のパラメーターを、メソッドによって修正する
++       `rewrite.notification(method)(lambda)` は、通知、またはサーバーがクライアントに対して行うリクエストの `params` について、`.result` と同じように働く。メッセージは、ID があればそれとともに再構築される。
++   entry .outbound   エディターが送るすべてのメッセージを、転送される前に見る
++       `rewrite.outbound { (method, message) => … }` は `Transit` を返す。転送する、書き換える、落とす、またはリクエストにここで応答してサーバーにそれを見せない、のいずれかである。
++       エディターを読むループで実行されるので、`upstream` へのリクエストを待ってもよいが、その間エディターも待たされる。
++   entry .inbound   サーバーが送るすべてのメッセージを、書き換え器の後、転送される前に見る
++       `rewrite.inbound { (method, message) => … }` のメソッドは、通知のメソッド、応答が答えるリクエストのメソッド、または `Unset` である。
++       `Transit` を返すが、ここでは `Answer` は無視される。
++       サーバーを読むタスクで実行され、そのタスクは `upstream` に対して行ったリクエストへの応答を届けるタスクでもあるので、そのようなリクエストは `async` ブロックの中で行わなければならず、その場で待ってはならない。
++   entry .connected   上流のセッションが開くとすぐに、独自のタスクでブロックを一度実行する
++       プロキシが何かを修正できるようになる前にサーバーに尋ねなければならないことのための場所であり、応答を自由に待てる唯一のフックである。
++       エディターの最初のリクエストはサーバーの起動が終わる前に届くことがあるので、エディターを読むループはこれを待たない。
+
+% 2 1 0 1035467aa47cb9ba15e6e2e7de40366c
+
+% 3 1 0 0b022f1db3ed7d270b54fbfef9017369
+
+% 4 1 0 03eea4d67ce43ded0b0415b2c25aebe1
+
+% 0 1 0 0eb82e49ce6346bc0350c060e8a9a3cc
+
+% 0 1 0 070d5f043497d3d8176480697ea23d19
+
+% 0 1 0 0c642a30c01d343d047e1965f25812f6
+
+% 0 1 0 0c50126a661234090e58732bbafae7d2
+
+% 1 1 0 0ad251233b1defec05340de559f6c8af
+
+@ 0 7 0 1bab954bc1004bf202a78c5ead97cf13
++ entry .upstream   プロキシ自身の問い合わせのための、上流のサーバーとのセッション
++     `upstream`（スコープ内に `Lsp.Proxy^` を必要とする）は、プロキシが転送先のサーバーに対して保持する `Lsp.Connection` である。フックが、エディターが一度も尋ねなかったこと、典型的にはサーバーだけが知るプロジェクトの状態をサーバーに尋ねる手段である。
++     応答は尋ねた呼び出し側に返り、エディターには決して届かない。
++     これが値ではなくメソッドであるのは、登録がプロキシに話し相手のサーバーができる前に実行されるからである。登録ブロックの中でフックの外から、セッションが存在する前に呼び出すとパニックする。
+
+@ 0 5 0 01016f36a8651cc30faa3ab2b4a52e1a
++     どのフックが呼ぶかによって、応答を待ってよいかどうかが決まる。
++     `rewrite.connected` は独自のタスクを持つので、自由に待ってよい。`rewrite.outbound` はエディターを読むループで実行されるので、待つのは安全だがエディターを止める。`rewrite.inbound` はサーバーを読むタスク（応答を届けるはずのタスク）で実行されるので、そこで待ったリクエストは永遠に待ち続ける。そのため `async` ブロックの中で行わなければならない。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 00e0c08cbea4883f020550fe3638cae1
+
+% 0 1 0 1fa4ecd06c010031191be1c127209223
+
+% 0 1 0 114717083af5ecb108497712f7b97f45
+
+% 0 1 0 1a97cb6095ab2ac50cc43b4dc1b28b87
+
+% 0 1 0 18a7f376eca22d400ee057786049022b
+
+% 1 1 0 0cd28fbb870536b5120f93437cd1a43b

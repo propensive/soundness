@@ -1,0 +1,337 @@
+orthant 2 language
+
+@ 0 1 0 157898be62f31c91079f6ba6eafb1764
++ ## Depuración
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 1 0 06807f751098395a14c3df995c28bc52
++ Una JVM puede depurarse desde otra JVM mediante el
+
+% 0 1 0 02b7b4a79604c0b4187897107d76c70a
+
+@ 0 4 0 07a5e316fc58127a0394607de6427a55
++ y estos tipos lo hablan directamente sobre un socket. Un programa depurado se lanza bajo el
++ agente de depuración, o se adjunta uno allí donde ya se está ejecutando. La [sesión] resultante
++ establece puntos de interrupción, avanza hilos paso a paso, lee marcos y variables, evalúa
++ expresiones en el programa detenido y recibe los eventos de la VM como valores tipados. Nada
++ depende de `com.sun.jdi`.
+
+@ 0 1 0 0ed301e3b475215c07aa31a659b07b8f
++ La misma sesión da servicio a un editor mediante el
+
+% 0 1 0 07cbdfc863907ff1179d58bb1d0ce5ba
+
+@ 0 1 0 0be81a2dcfc17b521c3befeef36fb533
++ ### Sobre la depuración desde fuera
+
+@ 0 4 0 03f3c9161f41075307949907bee59b86
++ La interfaz de depuración propia de la JVM es una API de Java que envuelve un protocolo de
++ transmisión, y se nota. Los tipos son mutables, los errores no se comprueban, y la forma de una
++ sesión —conectar, suspender, pedir, reanudar y desconectar— queda en manos de quien llama. Todo
++ lo que se construye sobre ella hereda esto, y por eso los depuradores son programas grandes y no
++ pequeños.
+
+@ 0 5 0 078789de6ecfabd503ab0e766240ce78
++ El protocolo subyacente es sencillo: paquetes con prefijo de longitud, big-endian, con las
++ anchuras de los identificadores negociadas una vez al inicio de la conexión. Modelarlo
++ directamente proporciona identificadores tipados que no pueden confundirse entre sí, una sesión
++ confinada a un ámbito mediante la [comprobación de capturas](../../philosophy/capture-checking.md),
++ y eventos como un flujo que consumir y no como retrollamadas que registrar.
+
+@ 0 2 0 1129589e8aff8e110c1cc9a7785eeb2c
++ Todo procede del paquete `soundness`. Una sesión ejecuta su lector como una tarea, así que
++ necesita un [modelo de hilos](concurrency.md) en el ámbito y vive dentro de `supervise`:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 2 0 0e11f8939b4ddea40467964571f70f12
++ Los ejemplos de esta página lanzan otros procesos y se conectan a ellos, así que se compilan pero
++ no se ejecutan.
+
+@ 0 1 0 0ec2b64902f37b46093ea8a8967a89df
++ ### Abrir una sesión
+
+@ 0 4 0 0f4b0d5b15869b6301fdaeabf4048ece
++ Un `Debuggee` describe un programa que ejecutar bajo el agente de depuración: una orden, el puerto
++ en el que escuchar y si la VM debe suspenderse antes de ejecutar `main`, lo que necesita un punto
++ de interrupción en la inicialización. Su método `session` presta una [capacidad] `Debug` a un
++ bloque, a la que se llega mediante `debug`:
+
+% 2 1 0 05968f4f57f77a28096e1a3f8d88824e
+
+% 0 1 0 0571ca7ed22c077715312c7cc14010ef
+
+% 0 1 0 1004fc1cd39c91140f40e1d56b094b7a
+
+% 0 1 0 023064638668549b0f52e2c30b2bf873
+
+% 0 1 0 033e9bf3177d35620cb69ca34440fced
+
+% 1 1 0 0b561bc885c3f31b13590e17bd75f8e3
+
+@ 0 3 0 09d51ffc1ef28ddb10e194769327df5d
++ La orden se lanza con la opción del agente insertada, y la conexión espera a que la VM empiece a
++ escuchar. Cuando termina el bloque, tanto si devuelve un valor como si falla, se desmonta todo: se
++ cierra el socket y se detiene el proceso.
+
+@ 0 2 0 0d35f4426372f87f0992043325ff2128
++ Un `Debugger` abre el mismo tipo de sesión contra un endpoint en el que ya escucha una VM
++ suspendida, para adjuntarse a algo que ya se está ejecutando.
+
+@ 0 2 0 068a610c5e307a2b1182f27d85647151
++ El descriptor de la sesión es una capacidad confinada a su bloque. No puede escapar, y por tanto no
++ puede usarse después de que el programa depurado haya desaparecido.
+
+@ 0 1 0 151ebb23ca2ac6e21112920895a07b75
++ ### Hilos y marcos
+
+@ 0 2 0 0b373768e5a6c5ff0390837050d95f93
++ Los hilos de la VM se enumeran, se nombran, se suspenden y se reanudan, de uno en uno o todos a la
++ vez. La pila de llamadas de un hilo suspendido se lee como marcos emparejados con sus
++ ubicaciones:
+
+% 2 1 0 08cb2a599c4a6f671a559d16ea3dacf6
+
+% 0 1 0 0ea206d6336af5fe19d06697f3c0beb3
+
+% 0 1 0 1ecdf15dcd7e09c00dde3e4058338491
+
+% 0 1 0 107d49d5f9493f16085b943fa2eca6e4
+
+% 0 1 0 03e6c4723f839690169b8371caaa6f6c
+
+% 0 1 0 021634f44197c43a1bba713dfdd71ccd
+
+% 0 1 0 1f13839c3911715800e43868f813023d
+
+% 1 1 0 1b0cb5a1690e16a404b88d121cef6bc3
+
+@ 0 1 0 0e673cd6c58747591ea6586558568d90
++ ### Puntos de interrupción
+
+@ 0 2 0 012c2c7e8a59f98302907ca80e8a1393
++ Un punto de interrupción se establece en un fichero fuente y una línea, o en una clase y un
++ método. Recibe un *manejador*, que se ejecuta cada vez que un hilo se detiene allí.
+
+@ 0 5 0 05aafb4da850b02e1ca3c46c2ed899d0
++ Al manejador se le presta un `Halt`: una vista del hilo detenido, con sus `frames()`, sus
++ `variables()` y la excepción en curso si es por eso por lo que se detuvo. Un `Halt` no puede
++ sobrevivir a la parada, ya que, en cuanto se reanuda el hilo, todos los identificadores que
++ entregó pueden estar obsoletos. Un manejador que quiere que el hilo siga suspendido lo indica con
++ `remain()`. En otro caso, el hilo se reanuda cuando el manejador retorna:
+
+% 2 1 0 1a773831fe68e7e00d6327b4891f6418
+
+% 0 1 0 07abe88d4c16eef50438e6286123bb8c
+
+% 0 1 0 0bf43b3a6244d02909d2de72eead928a
+
+% 0 1 0 0882d847e1d432c90c8cd855b2a843ce
+
+% 0 1 0 14ad7420f730eb430d871cc1471bd5eb
+
+% 0 1 0 080de214a79dfd2a16c04fee038c1672
+
+% 0 1 0 19e6da23edf27b5e12c034090def4d77
+
+% 1 1 0 0637f1dd4090d7b015c802dcd572acfd
+
+@ 0 2 0 027dce16e3742f550fddbfdc28a031a1
++ Los puntos de interrupción en código inline funcionan por posición. El fichero y la línea son
++ donde se escribió el código, no donde lo colocó el compilador, y se recuperan de los mapas de
++ fuentes que registra el compilador.
+
+@ 0 1 0 172d13da1eddb0fe109e2fa1904c36ba
++ Cada clase de petición ejecuta su manejador ante un evento distinto:
+
+% 2 1 0 0f5a9f0396b818fd00dd8d22848fc956
+
+@ 0 8 0 18a407217dd93ca00af4ef3125ae75f0
++ column  Petición
++ column  Se ejecuta cuando
++ column  Clase de evento
++ row  `breakpoint`  un hilo llega a una línea del fichero fuente, a la entrada de un método o a una ubicación  `Breakpoint`
++ row  `logpoint`  un hilo llega a una ubicación, imprime un mensaje y se reanuda de inmediato  `Breakpoint`
++ row  `watch`  se escribe un campo, o se lee con `access = true`  `FieldModified`, `FieldAccess`
++ row  `exceptions`  se lanza una excepción  `Exception`
++ row  `step`  un hilo que avanza paso a paso llega a su destino  `SingleStep`
+
+% 1 1 0 0ae723cadf4c6d1a0a5f6d54fe3d4f9e
+
+@ 0 2 0 035998538a1e5ae604c2a7ebeefa0f10
++ Un punto de interrupción devuelve el identificador de su petición, que es lo que después lo
++ elimina. La *política de suspensión* decide qué parte de la VM se detiene cuando se alcanza el
++ punto de interrupción:
+
+% 2 1 0 1557cb833cebc1e916df55e9a0ff0bdd
+
+@ 0 5 0 125644865294ba0804f27229a4db88f2
++ column  Política de suspensión
++ column  Detiene
++ row  `Jdwp.SuspendPolicy.All`  la VM entera
++ row  `Jdwp.SuspendPolicy.EventThread`  solo el hilo que lo alcanzó
++ row  `Jdwp.SuspendPolicy.None`  nada en absoluto
+
+% 1 1 0 0bca717f90bf6b52072a4e88012aede2
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 058f0264436dda6615a615512e130515
+
+% 0 1 0 1279df74f6343b901709ac7a185279c5
+
+% 0 1 0 0e3536dedcc2bf791d318ca4915e3164
+
+% 1 1 0 0405206bdf576e390e0cc1068e52a5e6
+
+@ 0 1 0 0f8e7da9303a8abc04196170e78218c5
++ ### Avanzar paso a paso
+
+@ 0 4 0 0f5ec12b0180d33512fd531d5918ea98
++ Avanzar paso a paso es una petición sobre un hilo suspendido, con un manejador para el lugar al
++ que llega. La *profundidad* indica si se entra en una llamada (`Jdwp.StepDepth.Into`), se pasa
++ por encima de ella (`Over`) o se sale del marco actual (`Out`). Una llamada inline avanza tal como
++ se lee el código fuente, entrando en el cuerpo inline línea a línea, y no según se dispuso el
++ bytecode:
+
+% 2 1 0 07929dae8f49899f137ba49cb3129f60
+
+% 0 1 0 0e029580e49fa8bf0d1f1b49d8872eb5
+
+% 0 1 0 1bb8c8695f27c85715340e1249ac7f83
+
+% 0 1 0 159daf4d5ecf3f310d66036d45cff1ce
+
+% 0 1 0 0243c90657fc59a305aa80357ff801fc
+
+% 1 1 0 1c6f3c8c48f6387a05faba2bac946c51
+
+@ 0 1 0 04e58de82e57b5dd1c1a8a40b6794a92
++ ### Evaluar expresiones
+
+@ 0 4 0 1511d3352c2db6c81462dd0e7788c384
++ Con el `Evaluator` en el ámbito, una expresión se compila contra las variables locales del marco
++ detenido y se inyecta en el programa depurado en ejecución. Así, `total + 1` en un manejador
++ significa lo que significaría en esa línea del código fuente. La consola de un depurador y su
++ información emergente usan esto, y también es la forma en que un editor muestra el tipo que el
++ compilador infirió para un nombre.
+
+@ 0 1 0 1371d9ff712f24e21f0779e0ef739e63
++ ### Eventos
+
+@ 0 2 0 00ecdcfba0f6a3da023b865fc9cf9e2f
++ Por debajo de los manejadores, la VM informa de lo que ha ocurrido mediante eventos compuestos.
++ `events` es el [flujo](streams.md) de estos eventos, así que el bucle principal de un depurador
++ puede ser un recorrido corriente:
+
+% 2 1 0 1e0dc951c01aefda0760f3734e66b785
+
+% 0 1 0 18d66383bca38c610338862626568739
+
+% 0 1 0 1371a3a84c53c0cb0d355f3edef04382
+
+% 0 1 0 170ed5d0c1722d0f1e750a0934613841
+
+% 0 1 0 05f711d5bd8a6f600834f6818aac67a0
+
+% 0 1 0 0fdccbba6e5fb05f1d990b0444c01f5c
+
+% 0 1 0 169c4e6d4d895c3805f71503caf3dead
+
+% 1 1 0 11434a3f463114100ca9e51dac34f717
+
+@ 0 2 0 1a80b2aa5b7e56d10ae5c2b585b2c7bf
++ Las peticiones y las respuestas se emparejan de forma asíncrona. Puede haber muchas órdenes en
++ curso a la vez, y un evento que llega durante una de ellas no la perturba.
+
+@ 0 1 0 004bdc9321e719691f249ea08c309678
++ ### Dar servicio a un editor
+
+@ 0 4 0 03ab9e0bcef7742105740692ea7b460f
++ `Dap.listen` sirve la sesión mediante el Debug Adapter Protocol en un puerto TCP. Cualquier
++ editor que lo hable, como VS Code y la mayoría de los demás, puede lanzar, detener, avanzar paso a
++ paso, inspeccionar variables y evaluar a través de esta implementación. Las compleciones, los
++ tipos de la información emergente y el avance paso a paso consciente del código inline llegan
++ todos al editor.
+
+@ 0 1 0 145138a4d134b4b10538ce09f6babc7e
++ ### El vocabulario del protocolo
+
+@ 0 3 0 07ad9f76f655921b00071515e9ef8938
++ `Jdwp` contiene el modelo del propio protocolo, para trabajar por debajo del nivel que expone la
++ sesión. Los tipos de identificador son vistas etiquetadas de un único [tipo opaco]. No cuestan nada
++ en [tiempo de ejecución], y no pueden intercambiarse en [tiempo de compilación]:
+
+% 2 1 0 18f8a8107b348df802a9277c7b7bafec
+
+@ 0 11 0 14d1edce076f5a5f0a1f82000a803301
++ column  Tipo
++ column  Identifica
++ row  `ObjectId`  un objeto
++ row  `ThreadId`  un hilo
++ row  `ThreadGroupId`  un grupo de hilos
++ row  `StringId`  un objeto cadena
++ row  `ClassLoaderId`  un cargador de clases
++ row  `ReferenceTypeId`  una clase, una interfaz o un tipo array
++ row  `MethodId`  un método
++ row  `FieldId`  un campo
++ row  `FrameId`  un marco de pila
+
+% 1 1 0 1e2a05dab28216de1871ff59f463b23c
+
+@ 0 2 0 1d35b4954b53123415ebbbffc074a7b7
++ Junto a ellos están `Jdwp.Location`, los `Jdwp.Value` etiquetados, los `Jdwp.Modifier` que
++ restringen una petición de evento y los `Jdwp.Event` que devuelve una VM suspendida.
+
+@ 0 3 0 1e9cd40b8a5a012e1ba7c5476f6466a9
++ `Jdwp.Reader` y `Jdwp.Writer` son los códecs big-endian escritos a mano. Conocen los tamaños de
++ los identificadores negociados con la VM al abrir la sesión, y por eso se construyen con esos
++ tamaños en lugar de suponerlos.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 9 0 07aab45479f415f518aa01f0366a5a30
++ - [Procesos](processes.md) describe las órdenes `sh"…"` con las que se lanza un programa
++   depurado.
++ - [Concurrencia](concurrency.md) describe `supervise` y los modelos de hilos bajo los que se
++   ejecuta una sesión.
++ - [Sockets](sockets.md) describe las conexiones TCP por las que viajan los protocolos.
++ - [LSP](lsp.md) da servicio a un editor mediante el protocolo hermano, Language Server Protocol.
++ - [Trazas de pila](stack-traces.md) describe los marcos de un programa detenido como valores.
++ - [Comprobación de capturas](../../philosophy/capture-checking.md) explica cómo se confina a su
++   bloque el descriptor de una sesión.
++ - [Sistema de ficheros](filesystem.md) describe los descriptores cuya forma comparte una sesión de
++   depuración.

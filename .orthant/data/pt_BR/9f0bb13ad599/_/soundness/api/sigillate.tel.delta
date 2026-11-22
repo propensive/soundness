@@ -1,0 +1,123 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c8aebbcc5fa8d0f1f490e0d394ed554
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 18d9b8eb055272b705a4c8a7570112e5
++ info   JOSE: tokens assinados e cifrados, chaves como JSON e autenticação bearer
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 1568b6bc0a765c590a9f4dadff0fe8ec
++     O _Sigillate_ implementa o [JOSE](https://www.rfc-editor.org/rfc/rfc7515), os padrões
++     (RFC 7515–7519) por trás dos tokens com que as APIs web autenticam: `Jws`, um conteúdo com
++     uma assinatura ou um MAC sobre ele; `Jwe`, um conteúdo cifrado; `Jwk` e `Jwks`, chaves como
++     JSON; e `Jwt`, um conjunto de claims transportado em qualquer um dos dois. Eles são
++     construídos sobre as chaves e as cifras do enigmatic e o JSON do jacinta.
+
+@ 0 3 0 08f49886b7ea3fbf0324bdd42871d1d4
++     O tipo da chave escolhe o algoritmo. O `alg` de um cabeçalho é comparado com o algoritmo
++     que a cifra da chave representa, e nunca é usado para decidir o que fazer com a chave, de
++     modo que um token não pode ser rotulado de novo para ser verificado de outra forma:
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0ad93198262cba4102f10ea1980b5899
+
+% 0 1 0 15fecec1136068c01035a37d89ba0cd2
+
+% 0 1 0 1166258a5e9c00d8005e2019d58fd80e
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 098392ca96d9bb94167323c7f9c2a04c
+
+% 0 1 0 08c6a1e2df2e49520d917eb41b8ac957
+
+% 0 1 0 0f919ae58b75716307fb565236e72019
+
+% 0 1 0 19f482543f932e1713b0c4a3d38efd16
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 1 0 1c948d45ba03373419b271c209842386
++     A biblioteca tem três source sets:
+
+@ 0 6 0 1bf58aa7ae48949108e0638f93cf1516
++     - `sigillate.core` — `Jws`, `Jwe`, `Jwk`, `Jwks`, `Jwt` e `Jose`, que contém o cabeçalho,
++       o erro e as classes de tipos que associam uma cifra a um nome de algoritmo.
++     - `sigillate.http` — `Jwks.retrieve`, um conjunto de chaves buscado na URL em que o seu
++       proprietário o publica.
++     - `sigillate.server` — `bearerAuth`, autenticação por token bearer como middleware do
++       scintillate, com o token verificado no escopo como `jwt`.
+
+@ 0 4 0 07c5232cdb1a6ff403991cfa173a8acf
++     Tudo é exportado para o guarda-chuva `soundness`. Não há pacotes de escolhas próprios;
++     assinar e cifrar precisam de um provedor `Crypto` (`providers.javaBaseProvider`), ler uma
++     chave privada precisa de um `Cloak` (`cloaks.heapCloak`), verificar um token precisa de um
++     `Clock`, e toda falha é um `Jose.Error`.
+
+% 0 1 0 0afd0252650f07bc02371d49ca8ea624
+
+% 0 1 0 0afd0252650f07ae02371d49ca8ea616
+
+% 0 1 0 0afd0252650f07b402371d49ca8ea61c
+
+% 0 1 0 0afd0252650f07bd02371d49ca8ea625
+
+% 0 1 0 0d279ef8f3faed7101fb8a9080e2ef7c
+
+@ 0 1 0 17d9f76318a7b6c906ba68f88f0e1817
++ entry .Jws   uma JSON Web Signature: um conteúdo com uma assinatura ou um MAC sobre ele e o seu cabeçalho
+
+% 1 1 0 16ae6fe5a457bae7048183941dbd92f9
+
+@ 0 4 0 08f45c7d675d50760eed1cc0c38cc92b
++       `Jws(payload, key)` assina sob o algoritmo que a cifra da chave representa. `#verify`
++       verifica a assinatura contra uma chave pública ou simétrica e dá o payload, que é a única
++       forma de alcançá-lo. A serialização compacta é o codec `Text`; as serializações JSON são
++       `#flattened`, `Jws.general` e `Jws.read`.
+
+@ 0 1 0 1ea449b11cb1e7810e477ec7c7cab379
++ entry .Jwe   JSON Web Encryption: um conteúdo cifrado sob uma chave transmitida ao seu destinatário
+
+% 1 1 0 0d4259bad081eca11eeb15b434744e4b
+
+@ 0 3 0 10243a5f08f9f5b300c0b7e37628aedc
++       `Jwe[content](payload, key)` cifra com a cifra de conteúdo nomeada pelo argumento de
++       tipo, transmitindo a sua chave pela família de gerenciamento de chaves que a chave do
++       destinatário representa; `#decrypt` faz o inverso. Toda falha de decifragem é o mesmo
++       erro.
+
+@ 0 1 0 1882e86fd62e8c350607debc7a10aeaa
++ entry .Jwk   uma JSON Web Key: uma chave pública, privada ou simétrica como um objeto JSON
+
+% 1 1 0 12d35099084b1dc307cd7ac775a63298
+
+@ 0 3 0 047245c45fa3fc91051bd5681784f8a4
++       `Jwk(key)` escreve uma chave pública, e `Jwk(key, Divulgence)` uma privada ou simétrica.
++       `#publicKey`, `#privateKey` e `#symmetricKey` a leem de volta como uma chave de uma cifra
++       nomeada, e `#thumbprint` é o seu thumbprint da RFC 7638.
+
+@ 0 1 0 12c390603090b3b804fc2cb473c089b3
++ entry .Jwt   um JSON Web Token: as claims registradas e as próprias de uma aplicação
+
+% 1 1 0 1cd1f4f810fb48c604d6652902a5f17d
+
+@ 0 3 0 18c182f6f854eeda030f5ca22f1152c1
++       `Jwt.verify` verifica um token assinado contra uma chave, e o seu período de validade
++       contra o `Clock` no escopo. `#validate` verifica o seu emissor e o seu público, e `#sign`
++       faz dele um `Jws`.

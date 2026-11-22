@@ -1,0 +1,163 @@
+orthant 2 language
+
+@ 0 1 0 112e00a0bd848b011c4e0e445a493659
++ info   SVG-Diagramme aus typisierten Daten: Balken, Linien, Streuung, Kreis, Histogramm, Boxplots und Ringdiagramme
+
+@ 0 16 0 067dd5b85b1b7504178320a4b398acdc
++     - Die Gestalt steckt in den Typen. Eine `Series[x, y]` ist eine benannte Folge von Punkten;
++       ihr Abszissentyp bestimmt die Achse: Ein `Text`, ein Enum oder eine `Chart.Category` ist
++       `Categorical`, eine Zahl, eine `Duration`, ein `Instant` oder eine beliebige `Quantity`
++       ist `Continuous`. `Samples[y]` sind rohe Messwerte, `Chart.Estimate` ein Wert mit seinem
++       Intervall, `Noted` ein Wert mit einer Notiz, und ein `Dag` aus `Weighted`-,
++       `Progressive`-Knoten ist ein Abhängigkeitsgraph.
++     - Eine Art ist ein Wert — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
++       `Histogram()`, `Boxes()` oder `Annulus()` —, und `data.chart(kind)` kompiliert nur, wo
++       eine `Plottable`-Instanz sagt, dass die Art die Gestalt der Daten zeichnen kann: Ein
++       Kreisdiagramm aus drei Serien oder eine Linie durch Kategoriebeschriftungen ist ein
++       Kompilierfehler.
++     - Die Anpassung — Bereich, Transformation und Abstufungen jeder Achse — wählt eine
++       `Calibration`, die nach dem Werttyp der Achse ausgewählt wird und durch ein gebundenes
++       Given, einen Import aus `calibrations` oder ein Argument der Art überschrieben wird. Das
++       Ergebnis ist eine `Scale` oder `Bands`: einfache Daten, und das lässt ein Diagramm
++       erkennen, ob neue Daten noch zu seinen Achsen passen.
++     - Der Stil ist ein `Chart.Style`-Wert — standardmäßig `Chart.Standard` — mit einer Methode
++       für jede gezeichnete Komponente, einer `ChartPalette` von nach Rolle benannten Farben und
++       einer `FontMetric`, die Text für das Layout misst.
+
+@ 0 3 0 0a7750f3b1455772047955d94e1ba081
++     Eine unverträgliche Paarung kompiliert nicht: Eine kategoriale Serie kann nicht `Lines()`
++     sein, eine Collection von Serien kann nicht `Pie()` sein, `Samples` können nicht `Bars()`
++     sein, und ein `Dag`, dessen Knoten `Weighted` oder `Progressive` fehlt, kann nicht
++     `Annulus()` sein.
+
+@ 0 6 0 1917a3de2b6d1ec40d240e530bbf9c42
++       Ein `Chart[data, form, fit, style]` enthält seine `#data`, seine Art (`#form`), die `#fit`,
++       die die Art aus den Daten berechnet hat, und die `Plottable`-Instanz, die sie paart. Es
++       wird von der Erweiterung `chart` erzeugt statt direkt. Der Typ der Anpassung ist der
++       eigene der Art — `Bars.Fit` mit `bands` und `ordinate`, `Lines.Fit` mit zwei Skalen,
++       `Annulus.Fit[node]` mit seinen Bändern —, und der Stiltyp ist der Stil-Trait der Art,
++       sodass ein Balkendiagramm gegen einen `Bars.Style` rendert und ein Kreisdiagramm gegen
++       einen `Pie.Style`; `Chart.Standard` implementiert sie alle.
+
+@ 0 9 0 072fce925d770d9e02e5a9a1c5d675b3
++   entry .Legend   wohin die Legende kommt: `Hidden`, `Right` oder `Bottom`
++       `Chart.Style#legend` wählt eine aus. `Right` stapelt ein Farbfeld und einen Namen pro
++       Serie neben dem Plot, `Bottom` lässt sie in einer Zeile am unteren Rand entlangfließen,
++       und `Hidden` zeichnet keine Legende und reserviert keinen Platz dafür. Ein Ringdiagramm
++       hat unabhängig von der Einstellung keine Legende.
++   entry .Axis   welche Achse ein kartesischer Stil-Hook zeichnet: `Abscissa` oder `Ordinate`
++       Wird an `axisLine`, `tick`, `tickLabel`, `gridLine`, `axisTitle`, `arrowhead`,
++       `axisBreak` und `labelRoom` von `Chart.Cartesian` übergeben, sodass ein einzelnes
++       Override die horizontale Achse anders behandeln kann als die vertikale.
++   entry .Anchoring   wo ein Textstück gesetzt wird, wie die Anordnung es entschieden hat: Punkt und Ausrichtung
+
+@ 0 5 0 1831b6ac69f488340d399a735a559cbd
++         Erweitert `Chart.Style` um die Achsenkomponenten und die Parameter ihres Layouts.
++         Positionen werden in den Koordinaten der Zeichnung angegeben; der Stil entscheidet über
++         Form, Strich und darüber, wo eine Beschriftung relativ zu ihrem Teilstrich sitzt.
++         `Bars.Style`, `Lines.Style`, `Scatter.Style`, `Boxes.Style` und (über `Bars.Style`)
++         `StackedBars.Style` und `Histogram.Style` erweitern ihn; `Pie.Style` und
++         `Annulus.Style` nicht, da sie keine Achsen haben.
+
+@ 0 3 0 132ced8beb1dc6c7144294d70edb7253
++         Implementiert `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
++         `Scatter.Style`, `Boxes.Style`, `Pie.Style` und `Annulus.Style` auf einmal, sodass ein
++         Wert im Geltungsbereich jedes Diagramm gestaltet. Jeder Parameter hat einen
++         Standardwert: `width = 640.0`, `height =
+
+@ 0 15 0 1a99d3afece48c15170f5b17c966e665
++         Das Ergebnis von `Chart#drawing`: die Leinwandgröße, etwaige SVG-Definitionen und ein
++         `Ledger` von `Svg.Id` zu `Figure`, das `backdrop`, dann (für ein kartesisches
++         Diagramm) `grid`, `abscissa`, `ordinate`, `series-0`, `series-1`, … und `legend`
++         enthält; ein Kreisdiagramm hat `wedges` und `legend`, ein Ringdiagramm `rank-0`,
++         `rank-1`, …. Die Bezeichner sind das, was ein `Chart.Revision.Replace` benennt, und
++         jeder wird zur `id` eines `<g>` im SVG.
++     entry .encodable   die ganze Zeichnung als ein `Svg`, als `drawing.in[Svg]`
++     entry #width   die Leinwandbreite, aus dem Stil
++     entry #height   die Leinwandhöhe, aus dem Stil
++     entry #defs   SVG-Definitionen, die die Zeichnung braucht; keine für die Standardarten
++     entry #parts   die Teile nach Bezeichner, in Zeichenreihenfolge
++   entry .encodable   ein Diagramm als `Svg`, als `chart.in[Svg]`, mit den Komponenten, die es verlangt
++       Braucht den eigenen Stiltyp des Diagramms (`Bars.Style` für ein Balkendiagramm;
++       `Chart.Standard` erfüllt jede Art), eine `ChartPalette`, eine `FontMetric` und einen
++       `Arranger` im Geltungsbereich, die alle Standardwerte im Begleitobjekt haben.
++       `chart.in[Svg].in[Xml].show` ist der SVG-Text.
++   entry .Revision   was sich zwischen einer Zeichnung eines Diagramms und der nächsten geändert hat
+
+@ 0 9 0 1c28ec2691d0d19507526a5acda9efaa
++       `data is Plottable in form to fit by style` existiert nur, wo die Art die Daten zeichnen
++       kann: Ein Kreisdiagramm braucht eine kategoriale Serie, eine Linie numerische Achsen, ein
++       Ringdiagramm einen `Dag` gewichteter, fortschreitender Knoten. Die Art ist die `Form`, die
++       Anpassung das `Result` (sodass die Anpassung eines Diagramms die eigene der Art ist, mit
++       sichtbaren Achsen) und der Stil der `Operand`, nach oben durch `Chart.Style` begrenzt. Die
++       Standardinstanzen liegen im Begleitobjekt jeder Art — `Bars.series`, `Bars.traversable`,
++       `Lines.series`, `Histogram.samples`, `Annulus.dag`, … —, sodass sie ohne Import gefunden
++       werden; eine `traversable`-Instanz deckt jede Collection von Serien oder Stichproben ab
++       (eine `List`, ein `Set` oder eine `Sequence`), wobei ihr Traversierungsnachweis vor den
++       Typklassen der Elementtypen aufgelöst wird.
+
+@ 0 8 0 10d090d5a3debda7022c250b95d296cc
++   entry #fit   wählt die Achsen aus den Daten: das `Result`, etwa `Lines.Fit`
++   entry #accommodates   ob eine Anpassung neue Daten noch fasst, sodass eine Revision einen Teil ersetzen kann
++       Bei einer kartesischen Art liegt jede Position und jedes Intervall innerhalb der Skalen,
++       und jede Kategorie ist ein bekanntes Band; bei einem Kreisdiagramm sind die Kategorien
++       unverändert; bei einem Ringdiagramm sind Gestalt und Gewichte des Graphen unverändert.
++   entry #draw   rendert die Daten gegen eine Anpassung als `Chart.Drawing`
++       Nimmt den Stil (den `Operand`), eine `ChartPalette`, eine `FontMetric` und einen
++       `Arranger` als Kontextwerte.
+
+@ 0 4 0 1bdbb9d5ce2db9910b3f17d117999156
++ entry .Weighted   die Ausdehnung des Knotens eines Ringdiagramms: sein Anteil am Winkel seines Rangs und an der Dicke des Bands
++     `node is Weighted` liefert `weight(node): Double`. In einem `Annulus` überstreicht der
++     Sektor eines Knotens den Anteil an der Umdrehung seines Bands, den sein Gewicht an der
++     Summe des Rangs hat, und ein Band ist so dick wie der Anteil seines Rangs am Gewicht des
++     ganzen Graphen. Ein negatives Gewicht zählt als null.
+
+@ 0 5 0 124bcb22acae8dcd16f6400eea87d86d
++ entry .Progressive   wie weit der Knoten eines Ringdiagramms gekommen ist, von 0 (nicht begonnen) bis 1 (fertig)
++     `node is Progressive` liefert `completion(node): Double`, beim Zeichnen auf `[0, 1]`
++     begrenzt. Ein Knoten trägt seinen eigenen Fortschritt, sodass ein Ringdiagramm wie jedes
++     Diagramm überarbeitet wird, mit einem neuen `Dag` derselben Gestalt, dessen Knoten weiter
++     gekommen sind, und nur die Bänder, deren Sektoren sich weiter gefüllt haben, werden ersetzt.
+
+% 0 1 0 054d3f904bd128ce022edacb2a896287
+
+@ 0 1 0 12f074268f4e474211e04fa1a4fdb787
++ entry .Annulus   ein Abhängigkeitsgraph als konzentrische Bänder: eines je Rang, jeder Knoten ein Sektor, so weit gefüllt, wie er fertig ist
+
+@ 0 10 0 1d16274da5ae74870b75e0bde129fae8
++       Eine Diagrammart für einen acyclicity-`Dag[node]`, dessen Knoten `Weighted` und
++       `Progressive` sind, mit einem `Ranking` im Geltungsbereich (die Vorgabe im Begleitobjekt
++       von acyclicity; `import rankings.balancedRanking` zeichnet jeden Knoten so nah wie möglich
++       an den von ihm Abhängigen). Die Knoten, die von nichts abhängen, bilden das innerste Band,
++       jedes weitere Band die Knoten einen Rang weiter außen, sodass sich ein Build von der Mitte
++       nach außen füllt. Der Sektor eines Knotens überstreicht innerhalb seines Rangs einen
++       Winkel proportional zu seinem Gewicht, so angeordnet, dass er über den Abhängigkeiten
++       liegt, zu denen er hingezogen wurde, und ein Band ist so dick wie der Anteil seines Rangs
++       am Gesamtgewicht. Der Sektor füllt sich im Uhrzeigersinn so weit, wie der Knoten fertig
++       ist, der Rest in einer gedämpften Tönung; die Farbe ist die erste Farbe der Palette,
++       schattiert danach, wo der Sektor liegt. Ein Ringdiagramm hat keine Beschriftungen, keine
++       Achsen und keine Legende.
+
+% 0 2 0 14e9c2ce8abadbba09354805377d870d
+
+% 0 1 0 192dfaa53893ba201815a4fa9a1268c7
+
+@ 0 3 0 0c218c9188a3bb0711c8d394d44717cf
++         Der Fortschritt steht nicht hier; er wird bei jedem Zeichnen aus den Knoten gelesen.
++     entry #bands   die Bänder, das innerste zuerst
++   entry .Style   die Komponenten eines Ringdiagramms: der fertige Teil und der Rest jedes Sektors sowie die Fugen
+
+@ 0 11 0 0c3ca24d87538fed06175a0f6738d39a
++         Erweitert `Chart.Style`. `Chart.Standard` liefert `hole`, `sectorGap` und `bandGap`.
++     entry #hole   der aus der Mitte ausgehöhlte Anteil des Radius, geteilt mit `Pie.Style`
++     entry #sectorGap   die Breite in Pixeln der Fuge zwischen benachbarten Sektoren
++     entry #bandGap   die Breite in Pixeln der Fuge zwischen benachbarten Bändern
++     entry #shade   die Farbe eines Sektors aus seiner Position, ausgehend von der ersten Farbe der Palette
++         `x` und `y` laufen von -1 am linken bzw. unteren Rand des Ringdiagramms bis 1 am rechten bzw.
++         oberen: Der Farbton dreht sich von links nach rechts um dreißig Grad, und von unten nach
++         oben geht die Farbe von einem Fünftel dunkler über den reinen Farbton zu einem Fünftel
++         heller über.
++     entry #sector   der fertige Teil des Sektors eines Knotens, aus seinen Pfadoperationen: `sector-N`
++     entry #remainder   der unfertige Teil, in einer gedämpften Tönung: `sector-N-rest`
++   entry .dag   ein `Dag` gewichteter, fortschreitender Knoten lässt sich mit einem `Ranking` als Ringdiagramm darstellen

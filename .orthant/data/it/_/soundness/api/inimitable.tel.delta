@@ -1,0 +1,197 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1e1d180f2d06b6cf03a7e2c4c32ef25e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c79fcb9c99bb15116d4276462082f34
++ info   UUID come valori ben formati: generati, scritti come letterali verificati, analizzati con errori tipizzati
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 17956fbe1da8649700504779ce186b54
++     _Inimitable_ rappresenta un [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier),
++     un identificatore a 128 bit abbastanza unico da poter essere assegnato senza coordinamento,
++     come un valore `Uuid` che si sa essere ben formato. Una stringa può contenere un
++     identificatore malformato finché qualcosa non la analizza e fallisce; un `Uuid` no. Un
++     letterale scritto con `uuid"…"` viene verificato durante la compilazione, il testo
++     analizzato a runtime solleva un `Uuid.Error` tipizzato, e le due metà a 64 bit e i sedici
++     byte dell'identificatore sono disponibili direttamente.
+
+% 2 1 0 1297b56df900fc8604f937b9c1e3a7fd
+
+% 3 1 0 128270408b7eb3e01c001cc58682f4e3
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 090d70cddcbe0a981c3955a735e166c5
+
+% 0 1 0 055a1ba2c68be4150589e0e1f079b2c1
+
+% 0 1 0 0cb21e82a9b1ae3818249283e6d0fec2
+
+% 0 1 0 185b51a993d5f83f1469b901b0a0d57c
+
+% 0 1 0 124db967bd75d01a0b1f9f096fb1a06b
+
+% 0 1 0 01c6c86a2e358b1c1e45d99af2b307f0
+
+% 1 1 0 012c53dd5fa3164715b6f12642db67fa
+
+@ 0 6 0 11853f8d18a036fc0cea59f7bb4808a5
++     Un `Uuid` si mostra, si codifica e si decodifica come il suo testo canonico con trattini
++     tramite given nel suo oggetto compagno, quindi `as[Uuid]` ne legge uno dal testo senza alcun
++     import. Per un consumatore generico sul dominio `Uuids`
++     (`[uuid: Instantiable across Uuids from Text]`), l'istanza che rende `Uuid` il
++     rappresentante di quel dominio è `uuidInterfaces.soundnessUuid`, un given che va importato
++     per nome, poiché `import uuidInterfaces.*` non importa i given; è dichiarato nel package
++     `anticipation`.
+
+@ 0 2 0 08e5ae18824579d81a593ef78ad9b24e
++     La libreria ha un unico source set, `inimitable.core`, per ogni piattaforma. Tutto è
++     esportato nel modulo ombrello `soundness`.
+
+% 0 1 0 0d2f65ed52a733c71c3edae14a1d4284
+
+% 0 1 0 0b02ceef1a4fe8e50394670b2b36fafc
+
+@ 0 1 0 1824a6144f353f340b36feb184077eac
++ entry .Uuid   un identificatore universalmente unico a 128 bit, rappresentato dalle sue due metà a 64 bit
+
+% 1 1 0 0d09c9a43601f4d014b65f97459ecc5f
+
+@ 0 5 0 1dcf837e0617b42313e36dbc7a975305
++       Un `Uuid` è una case class dei suoi 64 bit più significativi e meno significativi, `#msb`
++       e `#lsb`. Se ne crea uno nuovo con `Uuid()`, che estrae un identificatore casuale
++       (versione 4) da `java.util.UUID.randomUUID`; si scrive in forma letterale con `uuid"…"`;
++       si analizza dal testo con `.parse`, che solleva `Uuid.Error`, o con `.extract`, che
++       restituisce un `Optional`; oppure si costruisce direttamente dalle sue due metà.
+
+@ 0 1 0 1a01088173aea14903ce128e13b4e226
++       L'oggetto compagno è anche un estrattore, quindi un pattern corrisponde a un testo che è
++       un UUID valido:
+
+% 2 1 0 072034875836d5aa002bea5a08995952
+
+% 3 1 0 073023ce76f27dc01ccf192f60fdf449
+
+% 0 1 0 10cb0856fd036f9e0c358bfee458c332
+
+% 0 1 0 0767d48afe8fef5006b0d983abef1a5f
+
+% 0 1 0 108211a64af5c4ad15bc97f5c3aecf76
+
+% 1 1 0 17504f391b40996b0b490e74c2363c1d
+
+@ 0 4 0 11a4bc68cbc53ee50640542dbd19aa53
++       Un `Uuid` si rende nella sua forma canonica minuscola con trattini tramite `#text`, `show`,
++       `encode`, `inspect` e come messaggio; `uuid.in[Data]` restituisce i suoi sedici byte, a
++       partire dalla metà più significativa, ciascuna metà in big-endian. `#^` e `#unary_~` lo
++       trattano come il pattern di bit che è, per derivare un identificatore da altri.
+
+% 0 1 0 16f04f54aedec6230b592ac91aefbd49
+
+% 0 1 0 19f0e99cd0b9c4041fc37a5e1773bfed
+
+@ 0 7 0 1461b176a2b6a19f0b2a26e353b3966d
++   entry .apply   un nuovo UUID casuale
++       Estrae un identificatore di versione 4 da `java.util.UUID.randomUUID`. Ogni chiamata ne
++       restituisce uno nuovo; `jvmInstanceId` è uno estratto una sola volta per programma in
++       esecuzione. Il costruttore della case class `Uuid(msb, lsb)` ne costruisce uno dalle sue
++       due metà.
++   entry .parse   legge un UUID dal suo testo, sollevando `Uuid.Error` se il testo non lo è
++       Accetta le forme che accetta `java.util.UUID.fromString`: cinque gruppi di cifre
++       esadecimali separati da trattini. Richiede una `Tactic[Uuid.Error]`.
+
+% 2 1 0 1bfc80f8639b74f7036aa8a69982b111
+
+% 3 1 0 1065a02dad35869809f993de9213ea14
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0e7f21646ad12c53110d625a2d2f0bdb
+
+% 1 1 0 15858c53d9b9a5271ad3e777a9291077
+
+@ 0 15 0 0b6f89103b154dfe005e2d81c058e8dd
++   entry .extract   legge un UUID dal suo testo, o `Unset` se il testo non lo è
++       Come `.parse`, senza tattica: un testo malformato restituisce `Unset`. È anche il metodo
++       dietro l'`unapply` dell'oggetto compagno, quindi `case Uuid(id) =>` corrisponde a un
++       testo valido.
++   entry .decodable   decodifica un `Uuid` dal testo, sollevando `Uuid.Error` se è malformato
++       Richiede una `Tactic[Uuid.Error]`, quindi `t"…".as[Uuid]` solleva tramite la strategia
++       presente nell'ambito. Si trova nell'ambito implicito, come tutti i given dell'oggetto
++       compagno.
++   entry .showable   mostra un UUID come il suo testo canonico con trattini
++   entry .inspectable   ispeziona un UUID come il suo testo canonico con trattini, come `show`
++       La forma canonica mostra già entrambe le metà per intero ed è inconfondibile nella forma,
++       quindi la resa di debug non vi aggiunge nulla.
++   entry .communicable   rende un UUID in un messaggio come il suo testo canonico
++   entry .encodable   codifica un UUID come il suo testo canonico con trattini
++   entry .encodableInData   codifica un UUID come i suoi sedici byte, a partire dalla metà più significativa
++       Ogni metà a 64 bit è scritta in big-endian. Vi si accede con `uuid.in[Data]`: un semplice
++       `uuid.encode` sarebbe ambiguo con la codifica in `Text`.
+
+% 2 1 0 0fec794f0dad2c331129d7f2eaa87313
+
+% 3 1 0 06fe6fd66971e8b10f0ebdcb46e43ddc
+
+% 0 1 0 0ca1d077f46fd2041331f1f7a410e8c8
+
+% 1 1 0 05b0f17dadc80ea41b8a89550d00e37a
+
+@ 0 1 0 18fe6c681cbe63561baa9c05f2dc3ae5
++   entry .Error   sollevato quando un testo non è un UUID valido
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 15 0 05c5e3189dfb521519e71614aca0a8ba
++         Errore `↯/s.47.1`: _`badUuid` is not a valid UUID_. Sollevato da `Uuid.parse` e dalla
++         decodifica di un `Uuid` dal testo. L'interpolatore `uuid"…"` riporta lo stesso messaggio
++         come errore di compilazione.
++     entry #badUuid   il testo la cui analisi è fallita
++   entry #msb   i 64 bit più significativi
++   entry #lsb   i 64 bit meno significativi
++   entry #java   l'UUID come `java.util.UUID`, per un'API che ne richiede uno
++   entry #text   la forma canonica minuscola con trattini, come `a0cb16f0-d41e-4c28-862f-bd6164bbcc8c`
++   entry #unary_~   l'inverso bit a bit dell'UUID, scritto `~uuid`
++       Inverte tutti i 128 bit; il risultato in genere non è un identificatore di versione 4
++       valido, il che conta solo per un consumatore che esamina i bit di versione.
++   entry #^   l'or esclusivo bit a bit di due UUID
++       Combina entrambe le metà bit per bit. Poiché l'or esclusivo è l'inverso di sé stesso,
++       `(a ^ b) ^ b == a`, il che lo rende un modo economico per derivare un identificatore
++       stabile da altri due e per recuperare l'uno o l'altro dal risultato.
+
+@ 0 4 0 0405fd11a6f9f9c91a2befb5510a3de4
++ entry .uuid   l'interpolatore `uuid"…"`: un letterale UUID, verificato durante la compilazione
++     Una macro che analizza il letterale in fase di compilazione e si espande in `Uuid(msb, lsb)`
++     con le due metà come costanti, quindi a runtime non avviene alcuna analisi. Un letterale
++     malformato è un errore di compilazione: _not-a-uuid is not a valid UUID_. L'interpolatore
++     non accetta sostituzioni.
+
+% 2 1 0 02e5054b42fd4d3b04e96ccc1295e389
+
+% 3 1 0 16738013ba57579e03072c064d53000b
+
+% 0 1 0 0789aea081483de5113864ad0094eb44
+
+% 1 1 0 1a06198b71ff91a01c5bef249bd85443
+
+@ 0 4 0 11b2ac67eed70a310f51fd01f4c4c9f5
++ entry .jvmInstanceId   un UUID estratto una sola volta per programma in esecuzione, che identifica questo processo
++     Un valore lazy, generato con `Uuid()` la prima volta che viene letto e identico da allora
++     in poi per tutta la vita del programma, quindi distingue un'istanza in esecuzione da
++     un'altra: nei log, o in un lock o in un messaggio che deve nominare il proprio titolare.
+
+@ 0 1 0 1bde3917f187c91b11a7531f724c17ac
++ entry .internal   la macro dietro l'interpolatore `uuid"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 2 0 062abcb811f2f2890e691c611bfe5559
++       Non destinata all'uso diretto.
++   entry .uuid   analizza un letterale `uuid"…"` in fase di compilazione

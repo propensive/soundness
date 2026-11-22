@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 0 1 0 0ab45d4b322d57f71cdb0ca8b538c946
+
+@ 0 1 0 0900b00a58e0e65510afc34e4cd8839d
++ Levée lorsqu'une interface réseau ne peut pas être énumérée ou recherchée.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 13155ee60d277cf002d6fffa6983d6ff
++ Les interfaces sont lues depuis le système d'exploitation. Cette erreur couvre un nom qui ne
++ correspond à aucune interface, et un échec de l'énumération sous-jacente.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 1580b1e7d0aa30ec17d0529a5a54b837
+
+% 0 1 0 18e00b61b0deef8e11dac579e195a5b4
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 00a310e1d5527f3012673b1ffeba8271
++ Comparez le nom à `NetworkInterface.all()`, qui liste ce qui est réellement présent. Les noms
++ d'interfaces ne sont pas portables d'un système d'exploitation à l'autre.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 12522946bd9c33a004569b9686f372e9
++ - Source : `lib/urticose/src/core/urticose.NetworkInterface.scala`

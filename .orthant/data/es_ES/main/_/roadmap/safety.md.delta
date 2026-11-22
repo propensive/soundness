@@ -1,0 +1,30 @@
+orthant 2 language
+
+@ 0 11 0 0d8437f96b7f51390097d96c0bd1f4ef
++ El plugin flare (fijado en `etc/tools`, configurado por `.pyrocosm/flare/config.tel` y habilitado
++ en cada componente comprobado por las opciones `-P:flare:` de `flareToolchain`) proporciona el
++ censo: cada regla de la configuración contada sobre las fuentes —los escapes declarados
++ (`unsafely`, la familia `caps.unsafe`, cada nombre con el prefijo `unsafe`, cada método
++ protegido por el token), los atajos que eluden la confianza en el compilador (`asInstanceOf`,
++ `.nn`, `@unchecked`, `???`, cláusulas que lo capturan todo), las lecturas parciales y las
++ construcciones imperativas que el núcleo de streaming debe confinar. `make unsafety` ejecuta
++ `flare metrics --dry-run` y lo imprime; `flare metrics` lo registra en notas de git, commit a
++ commit, de modo que la tendencia vive en git y no en un párrafo de la hoja de ruta. Una regla ya
++ actúa como compuerta: `S1.1`, un método que toma `(using Unsafe)` debe llamarse `unsafe…`, hace
++ fallar la compilación; su recíproca `S1.2` es consultiva, y las ocho definiciones que la
++ incumplen se enumeran en `doc/work/standards/naming.md`.
+
+@ 0 7 0 0d173ddf177ff3580a0262c16790a340
++ Las recetas que hacen practicables la comprobación de capturas y la de separación —cuándo un tipo
++ es Exclusive, Shared, Unscoped, Mutable o Pure y las trampas del retículo entre ellos; el manual
++ de givens honestos (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, evidencia de captura
++ explícita en lugar de cotas de contexto); dónde puede acuñarse un resultado nuevo y dónde no;
++ las costuras de `consume` y de préstamo; lo que una prueba puede y no puede hacer— solo existen
++ como entradas de `rep/DECISIONS.md`, un registro de 2400 líneas. Su lugar está en
++ `doc/work/standards/capabilities.md`, con el vocabulario de etiquetas del que depende `safety-2` y la
++ única forma de vía de escape autorizada para cada etiqueta, y con una referencia desde
++ `doc/work/philosophy/capture-checking.md`.
+
+@ 0 2 0 184abde0f441241915e910e4b48261e0
++ Terminado cuando: `doc/work/standards/capabilities.md` existe, define cada etiqueta que reconoce el
++ censo, y las secciones de recetas de `rep/DECISIONS.md` enlazan con él en lugar de repetirlo.

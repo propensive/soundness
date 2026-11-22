@@ -1,0 +1,242 @@
+orthant 2 language
+
+@ 0 15 0 0d63ba7de70b50eb15e73bb293def779
++ entry .Pixels   les unités de pixels CSS, `Pixels[1]`, sur la dimension `CssPixel`
++     Le type d'unités de `Px` ; `Quantity[Pixels[1]]` est une longueur en pixels. Le
++     paramètre de type `Power` est l'exposant, comme dans tout type d'unités de quantitative.
++ entry .Rems   les unités de tailles de police de l'élément racine, sur `CssRootFontSize`
++ entry .Exs   les unités de hauteurs d'x, sur `CssXHeight`
++ entry .Chs   les unités de chasses de caractère, sur `CssCharacterWidth`
++ entry .ViewportWidths   les unités de pourcentages de la largeur du viewport, sur `CssViewportWidth`
++ entry .ViewportHeights   les unités de pourcentages de la hauteur du viewport, sur `CssViewportHeight`
++ entry .ViewportMins   les unités de pourcentages du minimum du viewport, sur `CssViewportMin`
++ entry .ViewportMaxes   les unités de pourcentages du maximum du viewport, sur `CssViewportMax`
++ entry .Percents   les unités de pourcentages, sur `CssRatio`
++ entry .Degrees   les unités de degrés, sur `CssDegree`
++ entry .Radians   les unités de radians, sur `CssRadian`
++ entry .Turns   les unités de tours, sur `CssTurn`
++ entry .Flexes   les unités de fractions de grille, sur `CssFlex`
+
+@ 0 19 0 0c85157476b97a791fa10506149669e9
++ entry .CssPixel   la dimension des pixels CSS, sans rapport avec aucune autre
++     Une dimension scellée qui lui est propre, si bien qu'une longueur en pixels ne peut ni
++     être ajoutée à une longueur physique ou relative, ni convertie en une telle longueur.
++     Chacune des dimensions propres au CSS — `CssPixel`, `CssRootFontSize`, `CssXHeight`,
++     `CssCharacterWidth`, `CssViewportWidth`, `CssViewportHeight`, `CssViewportMin`,
++     `CssViewportMax`, `CssRatio`, `CssDegree`, `CssRadian`, `CssTurn` et `CssFlex` — est
++     délibérément non convertible, puisque sa taille physique est déterminée par le
++     navigateur, la police ou la zone d'affichage, et non par la feuille de style.
++ entry .CssRootFontSize   la dimension des longueurs `rem`, non convertible
++ entry .CssXHeight   la dimension des longueurs `ex`, non convertible
++ entry .CssCharacterWidth   la dimension des longueurs `ch`, non convertible
++ entry .CssViewportWidth   la dimension des longueurs `vw`, non convertible
++ entry .CssViewportHeight   la dimension des longueurs `vh`, non convertible
++ entry .CssViewportMin   la dimension des longueurs `vmin`, non convertible
++ entry .CssViewportMax   la dimension des longueurs `vmax`, non convertible
++ entry .CssRatio   la dimension des pourcentages, non convertible en un simple nombre
++ entry .CssDegree   la dimension des angles en degrés, non convertible en radians ou en tours
++ entry .CssRadian   la dimension des angles en radians, non convertible
++ entry .CssTurn   la dimension des angles en tours, non convertible
++ entry .CssFlex   la dimension des fractions de grille, non convertible
+
+@ 0 1 0 0eb0db0b7aa8f81913033a3ec608564c
++ entry .internal   les implémentations des macros derrière `css"…"` et `Css.Style(…)`
+
+@ 0 14 0 15d45527b22515ac047ef532383d1bb6
++   entry .expand   la macro derrière `css"…"` : analyse le littéral lors de l'expansion et le reconstruit sous forme de `Css` ou de `Css.Style`
++       Joint les parties littérales avec une sentinelle à chaque substitution, analyse et valide
++       le tout à la compilation (une faute est signalée à sa ligne et à sa colonne), et réinsère
++       les nœuds par splice sous forme d'expression : une valeur de déclaration constituée d'une
++       substitution seule devient la valeur typée, vérifiée par rapport à la propriété au moyen
++       de `propertyIssue` ; une substitution dans un sélecteur doit être un `Name[CssClass]` ou
++       un `Name[DomId]`.
++   entry .style   la macro derrière `Css.Style(property = value, …)`
++       Reconvertit chaque nom littéral du camelCase en sa propriété, invoque le
++       `Css.Convertible` de la valeur, vérifie que la propriété accepte le sujet du
++       convertible, et émet `Css.Style.of`.
++   entry .topicOf   le sujet de définition de valeur que porte le type d'une instance `Css.Convertible`, ou vide
++   entry .propertyIssue   `Unset` si une propriété accepte une valeur d'un sujet donné ; sinon le message expliquant pourquoi
++       Une propriété inconnue, ou un exemple du sujet (`1px` pour `"length"`, `#000000` pour
++       `"color"`, …) que la grammaire de la propriété rejette. Le sujet `"*"` est accepté pour
++       toute propriété connue, et un sujet sans exemple n'est pas vérifié.
+
+@ 0 1 0 0d8fc098bc89a68c12f621c1e765daf6
++ entry .Web   le web comme support de composition : la façon dont un navigateur obtient une police, et les familles génériques
+
+% 10 1 0 0910609b9679525c13cff87a432f4ae2
+
+% 10 1 0 1cb9e1b064257f0f16b50789eafee86e
+
+% 10 1 0 109f42a57f87821b140bc3d53c7858ea
+
+@ 0 1 0 1cd8e0a12386afb5193d73e99a82a0ba
++   entry .Provision   une fourniture web sous forme de valeur : ses sources et sa couverture déclarée
+
+@ 0 6 0 11d2845053cc2139102f12213578eb27
++     detail
++         La classe que renvoie chaque fabrique de `Web`, pour qu'une fourniture ait un type
++         stable : `Web.Provision[family](sources, coverage)` est un `(Typeface of family) is
++         Typesettable in Web` dont les `#sources` sont les `Typesettable.Source` à partir
++         desquelles le navigateur obtient la police et dont la `#coverage` est la `Font.Coverage` avec
++         laquelle elle a été déclarée. `FontFace.rules` rend une source à la fois.
+
+@ 0 27 0 1a7ee11b3c63ad1a150d05f22c63397a
++     entry #sources   l'endroit où le navigateur obtient la police : liée, importée, locale ou générique
++     entry #coverage   les graisses, inclinaisons, largeurs et axes que la fourniture a été déclarée offrir
++     entry #Self   la police fournie, `Typeface of family`
++     entry #Form   le support, `Web`
++   entry .sansSerif   la famille générique `sans-serif`, fournie sur le web sans déclaration
++       Un navigateur compose chaque famille générique à partir de ce dont il dispose ; la
++       fourniture a donc une seule source `Generic` et `Font.Coverage.Unknown`, qui admet toutes les
++       fontes ; elle ne rend aucune at-rule, et `font-family: sans-serif` sans guillemets.
++   entry .serif   la famille générique `serif`, fournie sans déclaration
++   entry .monospace   la famille générique `monospace`, fournie sans déclaration
++   entry .cursive   la famille générique `cursive`, fournie sans déclaration
++   entry .fantasy   la famille générique `fantasy`, fournie sans déclaration
++   entry .systemUi   la famille générique `system-ui`, fournie sans déclaration
++   entry .linked   une fourniture à partir d'un fichier de police que le navigateur récupère à une URL
++       `Web.linked[family](url, coverage, format)` prend n'importe quel type d'URL
++       `Abstractable across
++       Urls to Text` (un `HttpUrl` issu de `url"…"`, ou du texte), la `Font.Coverage` que le fichier
++       est déclaré avoir — puisque le fichier n'est pas disponible pour être lu, seul ce qui
++       est déclaré est admis, si bien qu'une police déclarée dans une graisse refuse une
++       demande pour une autre plutôt que de laisser le navigateur la synthétiser — et un
++       `Typesettable.Source.Format` optionnel (`Ttf`, `Otf`, `Woff` ou `Woff2`) pour
++       l'indication `format()`. L'argument de type `family` est normalement inféré à partir du
++       type déclaré du given. Il se rend sous forme d'une `@font-face` dont la `src` est
++       `url("…") format("woff2")`.
++   entry .local   une fourniture à partir d'une police que le lecteur est censé avoir installée
++       `Web.local[family](coverage)` nomme la police dans un `src: local("Name")`, le nom de
++       famille de la police étant le littéral `family`. Rien ne garantit que le lecteur en
++       dispose ; c'est donc la fourniture la plus faible, et sa couverture —
++       `Font.Coverage.Unknown` si elle n'est pas fournie, qui admet toutes les fontes — ne dit que
++       ce qui est déclaré.
+
+% 0 4 0 0b3e8ebdbd15535c03fa197d399bc21e
+
+@ 0 21 0 0903d2912203b4bd0593ab74cd111fc1
++       given (Typeface of "Menlo") is Typesettable in Web = Web.local()
++       Css.fontFace(Web.font(Typeface["Menlo"].face)).show
++       // @font-face{font-family:"Menlo";src:local("Menlo");}
++       ```
++   entry .imported   une fourniture à partir d'une feuille de style, comme celle d'un service de polices, qui déclare elle-même la police
++       `Web.imported[family](url, coverage)` prend l'URL de la feuille de style (de n'importe
++       quel type `Abstractable across Urls to Text`) et la couverture qu'elle est déclarée
++       offrir ; la page porte alors `@import url("…");`, que `Css.fontFaces` place avant toute
++       autre règle, comme l'exige le CSS.
++   entry .sansSerifFont   la famille sans-serif générique sous forme de `Font in Web` : une valeur par défaut qui ne peut pas échouer
++       `Typeface.SansSerif.face` associé à `.sansSerif` ; puisqu'une famille générique admet
++       toutes les fontes, l'association ne lève jamais d'erreur, et son `Css.fontFace` est
++       vide.
++   entry .font   une fonte associée à sa fourniture dans la portée, sous forme de `Font in Web`
++       `Web.font(face)` a besoin d'un given `(Typeface of family) is Typesettable in (? >: Web)`
++       pour la police de la fonte — une fourniture web ou une fourniture embarquée — et d'une
++       `Tactic[Font.Error]`, levée lorsque la couverture de la fourniture ne peut pas composer
++       la fonte. Une police sans fourniture dans la portée est une erreur de compilation. La
++       fonte est un paramètre inline ; une fonte dont la demande figure dans son type
++       (`inter.bold.italic`) et une fourniture dont le fichier de police est sur le classpath
++       sont donc vérifiées pendant la compilation du code, le même refus étant signalé comme
++       erreur de compilation. Là où le type attendu nomme déjà le support, le `Font(face)` de
++       phoenicia suffit.
+
+@ 0 1 0 08d3dfe7bfd653e605c6d296d61bc44d
++ entry .FontFace   les règles `@font-face` et `@import` dont a besoin la fourniture d'une police, sous forme de `Css.Node`
+
+@ 0 4 0 0065336cfd1875bb06e06eeefa42254a
++   entry .rules   les at-rules de la police d'une fonte, sous forme de nœuds
++   entry .stylesheet   une feuille de style des règles de plusieurs polices, chaque police une seule fois, les `@import` en premier
++       Prend une `List` de polices ; une police qui apparaît plus d'une fois n'obtient ses
++       règles qu'une seule fois, et chaque `@import` est placé avant les `@font-face`, comme
++       l'exige le CSS.
+
+@ 0 6 0 015833c1cfe2ecf00ea9c6abf042c712
++ entry .fontFace   `Css.fontFace(font)` : les at-rules dont une page a besoin pour la police d'une fonte, sous forme de `Css`
++     Une extension sur le compagnon de `Css`, dans `cataclysm.fonts`, qui prend une
++     `Font in (? >:
++     Web)` — une police web, ou une police dont la fourniture est une fourniture `Medium`
++     embarquée — et renvoie la feuille de style de `FontFace.rules` correspondante. Jointe
++     aux propres règles d'une feuille de style avec `+`, si bien qu'une page porte les
++     polices que nomment ses styles ; une famille générique donne une feuille de style vide.
+
+% 2 4 0 16515ab8aa2d6d5312d126545046e705
+
+% 0 2 0 022b994d9cc78349158d3788ab63284b
+
+% 0 2 0 16d5aa23739a1ada034b47d622d2dace
+
+@ 0 2 0 1ee968e57ec15d4314e023973273fe4b
++     Les déclarations qui sélectionnent la fonte, `code.style`, sont un `Css.Style` pour
++     l'attribut `style` d'un élément plutôt qu'une règle de la feuille de style.
+
+@ 0 3 0 04bce3f5840a790b022f7d8599367b9b
++ entry .fontFaces   `Css.fontFaces(fonts*)` : les règles de plusieurs polices, chaque police une seule fois, les `@import` en premier
++     Une extension sur le compagnon de `Css`, dans `cataclysm.fonts` : `FontFace.stylesheet`
++     sur les polices données, si bien qu'une page qui utilise deux fontes d'une même police
++     ne la déclare qu'une fois.
+
+% 2 4 0 03b8f0098032cfd81c29e441dda19245
+
+% 0 2 0 06a6f268a28431141e14167bec59097b
+
+% 0 3 0 0bb1d8427410ef82165f335136e5b784
+
+@ 0 8 0 0dbab9f85273927a11e33654309e66e5
++ entry .style   les déclarations qui sélectionnent une `Face` ou une `Font` de phoenicia, sous forme de `Css.Style`
++     Une extension sur `Face`, et sur `Font` (au moyen de sa fonte), dans `cataclysm.fonts`.
++     Le style a toujours `font-family` — une famille générique sans guillemets, tout autre
++     nom entre guillemets — et `font-weight`, et n'ajoute que ce qui diffère des valeurs par
++     défaut : `font-style: italic` ou `oblique 12deg` pour une inclinaison, `font-stretch`
++     pour une largeur, `font-variation-settings` pour des positions sur les propres axes de
++     la police, et `font-feature-settings` pour les fonctionnalités de mise en page activées
++     ou désactivées. Les axes enregistrés de graisse, de largeur et d'italique passent par
++     les propriétés de haut niveau ; une police statique et une police variable sont donc
++     demandées de la même façon.
+
+% 2 2 0 07596f66d01a0e5b0df5155fb6a3271c
+
+% 0 1 0 16f500912f13cb8f08eeb14977aa4460
+
+% 0 7 0 12ddb3af19d1acc81c4f88df65aa0c88
+
+@ 0 2 0 12c2cafaf89d767d0d4d2b85136dbe3c
++     Le résultat est un `Css.Style` ; il se joint donc à un autre par `+` et sert d'attribut
++     `style` de honeycomb au moyen d'`inlineStyle`.
+
+@ 0 1 0 1a33ef216a9d69a619861d2629ddebbd
++ entry .Styles   une feuille de style du classpath, liée de sorte que les noms de classes et d'identifiants HTML soient vérifiés par rapport à elle
+
+@ 0 4 0 0c9268bf6f5b1a7f0e0e39184548f954
++   entry .apply   `Styles(cp"/path.css")` : un marqueur dont le `Locus` est le chemin de la ressource
++       Une macro qui élève le `Locus` de la ressource `cp"…"` dans le type de résultat ;
++       `Styles(cp"/site.css")` est donc typé `Styles at "/site.css"` ; une ressource sans
++       `Locus` est une erreur de compilation.
+
+@ 0 7 0 182401e38076570818326c3bc02f0f19
++ entry .attributeFor   l'attribut, `class` ou `id`, que dénote un nom dans la feuille de style `Styles` dans la portée
++     `attributeFor["button"]` se développe en `t"class"` ou `t"id"` selon ce que déclare la
++     feuille de style `Styles` dans la portée, et ne compile pas si le nom n'est ni l'un ni
++     l'autre (_cataclysm: `name` is not a class or id in the stylesheet_), s'il est les deux
++     (_… is both a class
++     and an id in the stylesheet; rename one_), ou si aucun given `Styles` n'est dans la
++     portée (_cataclysm: no stylesheet is in scope; add a `given Styles at "/path"`_). Le nom
++     doit être un littéral de chaîne. `cssBindings.checkedBinding` est construit dessus.
+
+@ 0 6 0 1ca501dcb030435e10f5c76272a8ccf4
++ entry .inlineStyle   permet à un `Css.Style` d'être la valeur d'un attribut `style` de honeycomb
++     Le given `Css.Style is Attributive to Whatwg.Css`, dans `cataclysm.html`, si bien que
++     `Div(style = Css.Style(color = red, width = 4.0*Px))` rend `style="color: #ff0000;
++     width: 4px"`. C'est un given de niveau supérieur, au nom unique, qui n'est dans la
++     portée avec `import soundness.*` que s'il est importé par son nom
++     (`import soundness.inlineStyle`) ou par `import cataclysm.inlineStyle`.
+
+@ 0 1 0 0e4b54c2261fb56f0ef0aeaa949e2ca7
++ entry .cssBindings   des noms de classes et d'identifiants vérifiés pour le HTML, un given à importer par son nom
+
+@ 0 6 0 03cdf203582e356a11e3493b2a6d597c
++   entry .checkedBinding   fait que `Tag.name(…)` attache `class="name"` ou `id="name"` selon ce que dit la feuille de style dans la portée
++       Un given inline `Attribution of name` pour chaque nom littéral sauf `apply`, qui se
++       développe au moyen d'`attributeFor` en l'attribut correct, ou en une erreur de
++       compilation pour un nom que la feuille de style `Styles` dans la portée ne déclare pas.
++       Son équivalent non vérifié est `stylesheets.uncheckedClasses` de honeycomb, qui attache
++       `class="name"` pour n'importe quel nom ; les deux sont des alternatives, chacune importée
++       par son nom, et pas les deux à la fois.

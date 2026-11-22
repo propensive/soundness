@@ -1,0 +1,749 @@
+orthant 2 language
+
+@ 0 1 0 1c06fb4c4199375c023bc573879c14d1
++ # Mudanças na 0.65.0
+
+@ 0 3 0 1165394560cb3c3e0b87b2459886c457
++ Este arquivo é lido por um agente LLM para atualizar código que consome bibliotecas Soundness da
++ 0.64.0 para a 0.65.0. Cada entrada descreve com precisão o que mudou; veja `AGENTS.md` para o
++ formato. As entradas são agrupadas por módulo, com as adicionadas mais recentemente por último
++ dentro de cada módulo.
+
+% 0 1 0 0815a537589592e21b251a53558048d3
+
+@ 0 7 0 12ebfa12e030ce50056aa3a1fb56a228
++ - `ambience.systems.javaSystem` renomeado para `javaBaseSystem`. (#1939)
++ - `ambience.environments.javaEnvironment` renomeado para `javaBaseEnvironment`. (#1939)
++ - `ambience.workingDirectories.javaWorkingDirectory` renomeado para `javaBaseWorkingDirectory`. (#1939)
++ - `ambience.workingDirectories.defaultWorkingDirectory` removido; use `javaBaseWorkingDirectory`,
++   que lê a propriedade `user.dir` (o given removido lia `java.nio.file.Paths.get("")`, que se
++   resolve no mesmo diretório). (#1939)
++ - `ambience.temporaryDirectories.javaTemporaryDirectory` renomeado para `javaBaseTemporaryDirectory`. (#1939)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 3 0 1b4207eab588ddc31a6d199c1225c8f3
++ - `turbulence.stdios.virtualMachineStdio` (que envolve `java.io.FileDescriptor.{in,out,err}`)
++   renomeado para `fileDescriptorStdio`. (#1939)
++ - `turbulence.stdios.systemStdio` (que envolve `java.lang.System.{in,out,err}`) renomeado para
+
+% 0 1 0 1177afaa3b63a02f08c0e6d6e553f03f
+
+@ 0 1 0 05ecf1de04c62a5807dad184bf406715
++ - `turbulence.lineSeparation.virtualMachineLineSeparation` renomeado para `javaBaseLineSeparation`. (#1939)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 3 0 0f644d03ba57975c0b85e88f5f76f60f
++ - `coaxial.socketBackends.virtualMachineSockets` renomeado para `javaBaseSockets`. (#1939)
++ - `coaxial.socketBackends.native` (módulo Scala Native) renomeado para `scalaNativeSockets`, e
++   agora reexportado como `soundness.socketBackends.scalaNativeSockets`. (#1939)
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 5 0 0a8fe4ac173fd0f105a6b9454256b15f
++ - `galilei.filesystemBackends.virtualMachineFilesystem` renomeado para `javaBaseFilesystem`. (#1939)
++ - `galilei.filesystemBackends.native` (módulo Scala Native) renomeado para `scalaNativeFilesystem`,
++   e agora reexportado como `soundness.filesystemBackends.scalaNativeFilesystem`. (#1939)
++ - Os objetos aninhados sob `galilei.filesystemOptions` foram achatados em givens dos mesmos
++   tipos: `dereferenceSymlinks.enabled` → `dereferenceSymlinks`, `dereferenceSymlinks.disabled` →
+
+% 0 1 0 11474ef40b310e6b1cb2b458bbabbae1
+
+% 0 1 0 0a7dbbd595d8e9020db4a187dfbad6e3
+
+% 0 1 0 18b37746b9a5006407ab10a01dd41f58
+
+% 0 1 0 1375aaeae20cb0c311f53c2cdf33cdf4
+
+% 0 1 0 015d940059179a4a14db4622c0fa6db0
+
+% 0 1 0 04aa440ec3dafbb004da7b1f51db4571
+
+@ 0 1 0 1100acadb0e5e0d1094f5450a7dfc522
++   `createNonexistentParents.disabled` → `requireParents`. Os objetos não existem mais. (#1939)
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 2 0 10fd34f9fca8266313b05b3bb2f7d627
++ - `telekinesis.httpBackends.virtualMachineHttp` renomeado para `javaNetHttp`. (#1939)
++ - `telekinesis.httpBackends.nativeHttp` renomeado para `soundnessHttp`. (#1939)
+
+% 0 1 0 0cc2d1f372946d701781f2258ebc29ab
+
+@ 0 8 0 1f7ca1e6df93f6940522d8a22e2f4b25
++ - `scintillate.httpServers.stdlibHttpd` renomeado para `jdkHttpserver`; `stdlibPublicHttpd`
++   renomeado para `jdkHttpserverPublic`. (#1939)
++ - `scintillate.httpServers.nativeHttpServer` renomeado para `soundnessHttpd`;
++   `nativePublicHttpServer` renomeado para `soundnessHttpdPublic`; ambos agora também são
++   reexportados como `soundness.httpServers.{soundnessHttpd, soundnessHttpdPublic}`. (#1939)
++ - `scintillate.frontends.threadPerConnection` renomeado para `threadPerConnectionFrontend`;
++   `frontends.reactive` renomeado para `reactiveFrontend`. (#1939)
++ - `scintillate.webserverErrorPages.standardErrorPage` renomeado para `styledErrorPage`. (#1939)
+
+% 0 1 0 1b8a4df21a24e9b507d1dd74e6543c8d
+
+@ 0 2 0 1dbeec6cac27cf511e6f40da03c25a91
++ - `surveillance.watchers.nativeWatcher` renomeado para `javaBaseWatcher`;
++   `surveillance.NativeWatcher` (objeto) renomeado para `JavaBaseWatcher`. (#1939)
+
+% 0 1 0 05a039658357a62915cb363c5761cf36
+
+@ 0 4 0 1508ea84447222f619eaf21356014d11
++ - `gastronomy.Provider.JavaStdlib` renomeado para `Provider.JavaBase`;
++   `gastronomy.JavaStdlibHashing` renomeado para `JavaBaseHashing`;
++   `gastronomy.Hashing.javaStdlibHashing` renomeado para `javaBaseHashing`;
++   `gastronomy.providers.javaStdlibProvider` renomeado para `javaBaseProvider`. (#1939)
++ - Pacote de escolhas `gastronomy.crypto` renomeado para `gastronomy.cryptoPermits` (os membros
+
+% 0 1 0 03fd5fb67b05a07a1fed83e4aa9bce4d
+
+% 0 1 0 1ee716600a2eb93d02269d02c86afa3b
+
+% 0 1 0 02b083420084ae2f1e673a4d0806fa5f
+
+@ 0 1 0 1d0ff03f168621151856704ded9d6ba8
++   `permitUncheckedRevocation`, `permitNonCryptographicHashes` não mudaram). (#1939)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 7 0 1e2ffcd4728a8bb70190a569364ab960
++ - `enigmatic.JavaStdlibCrypto` renomeado para `JavaBaseCrypto`;
++   `enigmatic.Crypto.javaStdlibCrypto` renomeado para `javaBaseCrypto`. (#1939)
++ - `enigmatic.cloaks.{cloakHeap, cloakOffHeap, cloakVeiledHeap, cloakVeiledOffHeap}` renomeados
++   para `{heapCloak, offHeapCloak, veiledHeapCloak, veiledOffHeapCloak}`. (#1939)
++ - Pacotes de escolhas `enigmatic.blockCipherMode` e `enigmatic.blockCipherPadding` renomeados
++   para `blockCipherModes` e `blockCipherPaddings` (os membros `cbc`, `ctr`, `cfb`, `ofb`,
++   `pkcs7`, `iso10126` não mudaram). (#1939)
+
+% 0 1 0 1fc810244c2cd3bf14cb7bb4f199169b
+
+@ 0 2 0 1a3404243c5f2dce18d8a99516f2e1e1
++ - `kaleidoscope.Jur` (tipo e objeto companheiro) renomeado para `JavaBaseRegex`;
++   `kaleidoscope.regexBackends.jur` renomeado para `javaBaseRegex`. (#1939)
+
+% 0 1 0 11d5d50734a7e80a1e85faf7259fa0fc
+
+@ 0 3 0 007869b88a18a000058ed03a949735d5
++ - `diuretic.javaNioFilePath` de nível superior renomeado para `javaNioPathRepresentative`, e
++   `diuretic.javaIoFile` de nível superior renomeado para `javaIoFileRepresentative` (os
++   marcadores `Representative of Paths`; `anticipation.pathInterfaces.{javaNioPath, javaIoFile}`
++   não mudaram). (#1939)
+
+% 0 1 0 0aebba901602cb461334bf128bd66cd1
+
+@ 0 2 0 151142f2640bfeb70975c456442bfdc6
++ - `punctuation.formattables.{scala, java}` (os givens `CommonFormattable` em `harlequin.md`)
++   renomeados para `{scalaFormattable, javaFormattable}`. (#1939)
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 5 0 1037965adcd7194e1f34c6194abe9416
++ - `aviation.chronometries.unix` renomeado para `unixChronometry`; `chronometries.atomic`
++   renomeado para `taiChronometry`. (#1939)
++ - `aviation.leapModes.exact` renomeado para `exactLeapMode`. (#1939)
++ - `aviation.gapPolicies.pushBackward` renomeado para `pushBackwardGapPolicy`;
++   `gapPolicies.rejectGap` renomeado para `rejectGapPolicy`. (#1939)
+
+% 0 1 0 169250f805d55e4c1160ce8373749237
+
+@ 0 1 0 18e259f748aaf3f41da0bf246a9441ef
++   renomeados para `{englishRelativeTimespan, frenchRelativeTimespan, germanRelativeTimespan,
+
+% 0 1 0 0152bc99e0400b6c10576082bdc1f171
+
+@ 0 3 0 183415a7325fce10142e3de5db7c6dc7
++ - Agora reexportados em `soundness`: `hourFormats.{twelveHourSecondsClock,
++   twentyFourHourSecondsClock}`, a nova família `timeSpecificities.{minutesSpecificity,
++   secondsSpecificity}` (pacote de biblioteca `aviation.timeSpecificities`), e
+
+% 0 1 0 026ec7251bce07c519b57218bd767c52
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 16 0 0572b3dd0a3648c607ecdee39ef2427a
++ - `probably.harnesses.threadLocal` renomeado para `threadLocalHarness`. (#1939)
++ - `probably.autopsies.none` renomeado para `noAutopsy`; `autopsies.contrastExpectations`
++   renomeado para `contrastAutopsy`. (#1939)
++ - Novo `probably.Tag` (`into case class Tag(name: Name[Tagging])`, com `def text: Text`) e plano
++   de nomes `probably.Tagging` (`Tagging is Nominative under
++   MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`), cujo given é exportado no nível do pacote como
++   `probably.taggingNominative` (e `soundness.taggingNominative`), ao lado do já existente
++   `probably.nominative`. `Tag.conversion: Conversion[Name[Tagging], Tag]` permite que um literal
++   `n"…"` sirva como `Tag`. O próprio `Tag` não é reexportado por `soundness` (`soundness.Tag`
++   continua sendo `honeycomb.Tag`); nomeie-o como `probably.Tag`. `Tagging` é reexportado.
++   Nenhum dos givens `nominative` é trazido ao escopo por `import probably.*` ou
++   `import soundness.*`; uma suíte que use literais `n"…"` precisa importá-los pelo nome. (#1966)
++ - `probably.Test.Id` ganhou um quinto campo, `tags: List[Tag] = Nil`, depois de `moniker`; a
++   igualdade de case class, `unapply` e `copy` o incluem. (#1966)
++ - `probably.test(name: Message)(using Testable, Codepoint): Test.Id` agora é
++   `test(name: Message, tags: Tag*)(using Testable, Codepoint): Test.Id`, e
++   `test(name: Name[Probing], description: Message)(using Testable, Codepoint): Test.Id` agora é
+
+% 0 1 0 176348304a3e6b661f6f4a8a22a17adc
+
+@ 0 6 0 00051506240386441b5a29615d31b694
++   Chamadas sem tags não mudam; uma aplicação `test(name)(body)` continua se resolvendo. (#1966)
++ - `probably.Selection` ganhou campos, nesta ordem, depois de `constraints`:
++   `tags: List[Set[Text]]`, `exclusions: List[Selection]`. O construtor completo agora é
++   `Selection(terms, kinds, constraints, tags, exclusions, listOnly, scale)`; a construção
++   posicional e o `unapply` precisam mudar. `Selection.trivial` só é verdadeiro quando `tags` e
++   `exclusions` também estão vazios. (#1966)
+
+% 0 1 0 119809da0d3869c70a7e563449603b45
+
+@ 0 11 0 1a5580a2a78cd8961f9c892b4fbb02bb
++   agora é `admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag]): Boolean`. (#1966)
++ - `probably.Selection.parse` agora reconhece mais quatro formas de termo: `tag:<t1>,<t2>` (admite
++   um teste que carregue qualquer uma das tags listadas; termos `tag:` repetidos se intersectam),
++   `not:<term>` (analisado como uma `Selection` de um termo acrescentada a `exclusions`; uma
++   célula que qualquer exclusão admitiria é rejeitada, sendo que uma restrição sobre um eixo que
++   a célula não tem não casa com nada, em vez de casar com tudo), `<axis>=<lo>..` (analisado como
++   `Constraint.Least(axis, lo, inclusive = true)`) e `<axis>=..<hi>` (analisado como
++   `Constraint.Most(axis, hi, inclusive = true)`); um argumento vazio é ignorado. Antes, `tag:x`
++   e `not:x` eram analisados como globs de nome, `N=4..` como `Membership(N, {"4.."})`, e `""`
++   como um glob. (#1966)
++ - `probably.Runner#listed: List[(Test.Id, Entry.Kind, Optional[Long])]` agora é
++   `listed: List[Runner.Scheduled]`, em que o novo
+
+% 0 1 0 1479726f4cf35438072c1c28e31205c1
+
+@ 0 5 0 0ddc2d7a0c78c6df1b050684f9bb9ce5
++   tem `def tags: List[Tag] = id.tags`. (#1966)
++ - Novo `probably.Axis.Schedule(spec: Axis.Spec, values: List[Value], least: Optional[Double] = Unset, most: Optional[Double] = Unset)`
++   e novo `probably.Runner#declare(id: Test.Id, kind: Entry.Kind, axis: Axis.Spec, least: Optional[Double], most: Optional[Double]): Unit`
++   (um anúncio, no modo de listagem, dos limites de um eixo emergente; sem efeito nos demais
++   casos). (#1966)
++ - `probably.TestEvent.TestScheduled(test: Ref, kind: Text, expected: Optional[Long])` agora é
+
+% 0 1 0 137a2fba75447dd808dac098eecc940a
+
+@ 0 4 0 0ef34224e6a8a465056f254afd74cd2d
++   com o novo `TestEvent.AxisSchedule(axis: Text, domain: Text, emergent: Boolean, values: List[Text], least: Optional[Double], most: Optional[Double])`
++   e `AxisSchedule.of(schedule: Axis.Schedule): AxisSchedule`. O schema BinTEL derivado de
++   `TestEvent`, e portanto `probably.Streamer.fingerprint`, muda: um consumidor construído com o
++   layout anterior relata o stream como incompatível. (#1966)
+
+% 2 1 0 16c5a6a063fbdd970e1a87cc5f849ce0
+
+% 0 1 0 1d2f8e70f5629fab09acd6a5ae7f6810
+
+@ 0 3 0 09e5c192cd01582913ad760dd813b696
++   agora é `apply(name: Message, tags: Tag*)(…same second list…): Bench.Plan`, e
++   `sedentary.Bench.Plan` ganhou um terceiro campo, `tags: List[Tag]`, entre `name` e `target`
++   (a construção posicional e o `unapply` precisam mudar). (#1966)
+
+% 0 1 0 0c4dbe6bc68e4cde1829c71207742d29
+
+@ 0 7 0 15e25ca5d2a171de056c7cf5c952848d
++   agora é `apply(name: Message, tags: Tag*)(…)(body)`, e
++   `sedentary.Profile#apply(name: Message)(target, frames)(body)` agora é
++   `apply(name: Message, tags: Tag*)(target, frames)(body)`. Cada um passa as tags ao `Test.Id`
++   que constrói. (#1966)
++ - `sedentary.Stress#apply` agora chama `Runner#declare` com um eixo integral emergente `N`,
++   limitado por `concurrency` (padrão 1) e pelo limite da varredura, antes de chamar
++   `Runner#skip`, de modo que um `--list` de um teste de stress relata um eixo `N` com limites.
++   (#1966)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 1 0 1e041e9ce76942360fd9eb506719d3a7
++ - Todo membro de `iridescence.mixing` ganha o sufixo `Mixing`: `proportional` →
+
+% 0 1 0 1a326db35b8e2e0e1d1129aa34ef6c01
+
+% 0 1 0 065bfd755e4c59a70d58b93e51dda22b
+
+% 0 1 0 03fe82e37a68623516978a98cc06216c
+
+% 0 1 0 1899f58cc2555b600f87e17da32f2e87
+
+% 0 1 0 1dcc361dd10a69cd1478dbde3319d155
+
+@ 0 1 0 00a9f8da35a69f241c53ed8ded1ee173
++ - Todo membro de `iridescence.colorimetry` ganha o sufixo `Colorimetry`: `incandescentTungsten`,
+
+% 0 1 0 0239c205b703a55f1b1726746018c045
+
+% 0 1 0 0e331c732b15dd500b70d4528939383f
+
+% 0 1 0 03810ae92231f57f0c8872dc88a507cc
+
+% 0 1 0 0d3333c09b007fbe00e980f35fa190c0
+
+% 0 1 0 159096fde214827f1af88bf214537ee4
+
+@ 0 1 0 1c4d5acf3c1a22cd18977ced07a69378
++   `philipsTl83`, `ultralume30` passam a ser `incandescentTungstenColorimetry`, …,
+
+% 0 1 0 140aefa7e62dfd1c113e283f392d5636
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 2 0 1b34cfc861a25134021bee46e5f9565d
++ - `gossamer.collations.unicode` renomeado para `unicodeCollation`; `collations.codepoints`
++   renomeado para `codepointCollation`. (#1939)
+
+% 0 1 0 0136e0d647519dc716274602a4340b64
+
+@ 0 5 0 16205c341861a51e0ded9907a5ab8bb0
++ - Novo `rudiments.Atomic`, exportado como `soundness.Atomic`: wrappers opacos e de custo zero
++   sobre `java.util.concurrent.atomic`, cada um com o nome do tipo que contém. `Atomic.Int`
++   envolve `AtomicInteger`, `Atomic.Long` envolve `AtomicLong`, `Atomic.Bool` envolve
++   `AtomicBoolean`, `Atomic.Ref[value]` envolve `AtomicReference[value]`, `Atomic.Ints` envolve
++   `AtomicIntegerArray`, `Atomic.Longs` envolve `AtomicLongArray`, e `Atomic.Refs[value]` envolve
+
+% 0 1 0 1b0d4c3f9a02e9281660910771fd7cf8
+
+@ 0 32 0 0a896013260b95fd178d87b31039d92c
++   `DoubleAccumulator`, `AtomicMarkableReference`, `AtomicStampedReference` e as três classes
++   `*FieldUpdater` não são envolvidas. `Atomic.Int` e `Atomic.Long` sombreiam `scala.Int` e
++   `scala.Long` sob `import Atomic.*`, o que não é um uso pretendido. (#1957)
++ - Um match type `Atomic[value]` se reduz a `Atomic.Int` para `Int`, `Atomic.Long` para `Long`,
++   `Atomic.Bool` para `Boolean`, e `Atomic.Ref[value]` nos demais casos. Ele não se reduz para um
++   parâmetro de tipo abstrato, nem para um tipo opaco cuja representação não é visível no ponto
++   de uso — `Atomic[Text]`, `Atomic[Optional[Text]]` e `Atomic[SomeClass]` se reduzem, mas
++   `Atomic[List[x]]` não, porque o `List` do prelúdio é opaco. Nesses casos, nomeia-se o tipo
++   concreto: `Atomic.Ref[List[x]]`. `Atomic(0)`, `Atomic(0L)`, `Atomic(false)` e
++   `Atomic(reference)` constroem a célula correspondente; um argumento de tipo explícito
++   (`Atomic[Int](0)`) aplica o ramo genérico e não se conforma. Toda operação é `inline` e compila
++   para o mesmo bytecode da chamada de `java.util.concurrent.atomic` que substitui. (#1957)
++ - As leituras são `atomic()` (`get`), as escritas são `atomic() = value` (`set`) e
++   `atomic.publish(value)` (`lazySet`); `atomic.swap(value)` é `getAndSet` e
++   `atomic.replace(expected, updated)` é `compareAndSet`. `Atomic.Ref#apply()` retorna `value`, e
++   não `value | Null`, de modo que nenhum ponto de chamada precisa de `.nn`; uma célula declarada
++   `Atomic.Ref[Optional[x]]` é lida como `Unset` quando ausente, onde `.nn` sobre a
++   `AtomicReference` subjacente teria lançado uma exceção. Os três tipos de array são indexados
++   por `denominative.Ordinal`; `Atomic.Refs#apply` retorna `vacuous.Optional[value]` porque um
++   array de referências novo vem preenchido com null, enquanto `Atomic.Ints#apply` e
++   `Atomic.Longs#apply` retornam o primitivo, porque um array primitivo novo contém zeros. (#1957)
++ - As transições são `atomic.ere(transition)`, que produz o valor que a transição deslocou, e
++   `atomic.since(transition)`, que produz o valor que ela instalou — substituindo `getAndUpdate`
++   e `updateAndGet`, respectivamente. Elas são definidas em `Atomic.Int`, `Atomic.Long`,
++   `Atomic.Bool` e `Atomic.Ref`, e não nos tipos de array. A transição precisa ser escrita como um
++   literal lambda: sua forma é lida em tempo de compilação e substituída pelo intrínseco do JDK
++   correspondente, quando existe (`_ + 1` vira `getAndIncrement`/`incrementAndGet`, `_ + n` vira
++   `getAndAdd`/`addAndGet`, `_ - 1` vira `getAndDecrement`/`decrementAndGet`, uma constante vira
++   `getAndSet`, e a identidade vira `get`), e, caso contrário, por um laço de novas tentativas
++   com compare-and-set, com a transição beta-reduzida dentro dele. Nenhum
++   `java.util.function.UnaryOperator` e nenhuma closure é alocado em nenhum dos casos. Uma
++   transição pode ser reexecutada sob contenção e, portanto, precisa ser pura; uma transição que
++   aplica um valor de função obtido de fora é rejeitada em tempo de compilação.
+
+% 0 1 0 1c93296df55f7f560be6f09708abbced
+
+@ 0 10 0 12f8320005f18f9d0200cab96ad234d8
++ - `ere` é sobrecarregado para receber um valor diretamente, de modo que `bool.ere(true)` é
++   `getAndSet(true)` sem lambda. Não há contraparte `since`, que retornaria o próprio argumento. A
++   sobrecarga por valor é inalcançável num `Atomic.Ref[value]` cujo `value` seja um tipo de
++   função, em que `ere` se resolve na sobrecarga de transição e não compila; use
++   `ref() = supplied`. (#1957)
++ - `Atomic.Ref#revise(transition)` recebe um valor de função em vez de um literal, para uma
++   transição cuja forma não pode ser lida, e produz o valor que instalou. É `inline`, de modo que
++   nenhuma closure é alocada, mas a obrigação de pureza não é verificada: a transição pode ser
++   reexecutada sob contenção. (#1957)
++ - `rudiments.test` agora depende de `mandible.core`, que verifica o bytecode para o qual as
++   operações de `Atomic` compilam. Nenhum efeito sobre o próprio `rudiments`. (#1960)
+
+% 0 1 0 13897a5b469c56bc058ae094048dac5d
+
+@ 0 7 0 06e233fe05d1a4f316da25da3a805067
++ - `proscenium.Array#copyFrom(source, sourceStart, targetStart, count)` renomeado para `place`,
++   com mais duas sobrecargas: `place(source)` copia a origem inteira para o início, e
++   `place(source, at)` a copia para `at`. O comportamento não mudou. O nome corresponde a
++   `rudiments.place` e a `concordance.Scribe#place`, que já significavam copiar uma origem para
++   o receptor; `snapshot` continua sendo sua contraparte, copiando para fora, num array novo. Os
++   índices continuam `Int`, e não `Ordinal`, como os de `apply`/`update`/`readUnchecked` de
++   `Array`, porque `denominative` fica acima de `proscenium`. (#1960)
+
+% 0 1 0 015105b70d6115860b88f53408ae1428
+
+@ 0 8 0 020a46ce172711a011a8a33502140e8d
++ - `rudiments.Scribe` agora pode crescer. `Array.collect[element](hint)(lambda)` empresta um
++   scribe sem tamanho, que se estende à medida que é escrito e produz exatamente o que foi
++   escrito, enquanto `Array.scribe[element](size)(lambda)` continua emprestando um scribe de
++   tamanho fixo, retornando um array de exatamente `size` e truncando em vez de crescer. O
++   comportamento existente de `Array.scribe` não mudou. (#1960)
++ - `rudiments.Scribe#append` ganha duas sobrecargas em bloco, na posição do cursor:
++   `append(source)` e `append(source, from, count)`, ambas recebendo `Array[element]^{}`. `place`
++   ainda exige um `Ordinal in scribe.type` e, portanto, continua disponível apenas para um scribe
++   com tamanho. (#1960)
+
+% 0 1 0 1aa1711c33dc078f11fd7629dab81114
+
+@ 0 6 0 1aa8a8a54d844d520313effc1454b227
++ - `frontier.context.explainMissingContext` e `soundness.explainMissingContext` não têm mais
++   sucesso como candidato implícito quando a busca se resolve sem eles; o candidato agora sempre
++   falha (seu diagnóstico só é usado se a busca inteira falhar), deixando ao compilador a escolha
++   da instância. Efeito: uma busca implícita feita enquanto parâmetros de tipo ainda estão
++   indeterminados (por exemplo, `element`/`textual` de `join`) não é mais resolvida com esses
++   parâmetros instanciados como `Any`. Os tipos inferidos de código que já compilava não mudam.
++   (#1944)
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 12 0 0b7a518729833d4b056df96fc19b7b3d
++ - `stenography.Imports` ganha `Imports.exports(scope: Designator)(using
++   dotty.tools.dotc.core.Contexts.Context): Set[Designator]`, os alvos (tipo e objeto
++   companheiro) dos aliases `export` declarados em `scope`, e `Imports.resolve(designators: Set[Designator],
++   direct: Set[Designator])(using Context): Imports`, que é `Imports(designators, direct)` com
++   `direct` estendido pelos `exports` de cada um de `designators`. `delicious.Reifier` ganha
++   `imports(designators: Set[Designator], direct: Set[Designator]): Imports`, que é
++   `Imports.resolve` sob o próprio contexto do reifier. Código que constrói um `Imports` à mão a
++   partir de um conjunto de imports curinga para `Syntax#text` ou `Designator#text` (um REPL que
++   abrevia tipos de acordo com os imports da sua sessão) deve construí-lo por meio de
++   `Reifier#imports` ou `Imports.resolve`: só assim um tipo alcançado por um `export` num escopo
++   importado com curinga (`jacinta.Json` sob `import
++   soundness.*`) é renderizado pelo seu nome final (`Json`), e não qualificado (`jacinta.Json`).
++   O caminho de macro (`Syntax.name`, `Syntax.designator`) já fazia isso e não mudou. (#1959)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 4 0 1c3c62aeedcb362c067b93ed682dc19c
++ - O enquadramento do BinTEL mudou (TEL upstream 8380ef7): `Bintel.frame` e
++   `Bintel.frameSelfContained` agora escrevem um varint com o comprimento do documento logo depois
++   do número mágico, contando cada byte que vem depois dele. Quadros escritos antes desta mudança
++   não são decodificados e falham com `Bintel.Error.Reason.BadSignatureLength` (B03). Recodifique
++   os documentos BinTEL armazenados. (#1961)
+
+@ 0 3 0 08c457d186d93d4d0d4fb9bf6cf5ba8c
++ - `Bintel.Framed(signature, body)` ganhou um terceiro campo, `continuation: Int`, o offset em que
++   começam os bytes que vêm depois do documento; `Bintel.Document(signature, root)` também ganhou
++   `continuation: Int`. Casamentos de padrões sobre qualquer um deles precisam vincular três
++   campos. (#1961)
+
+@ 0 7 0 037f1c12329da6c80ccc3b5223dd6dca
++ - `Bintel.decodeDocument` e `Bintel.decodeDocumentSelfContained` agora são leitores de um único
++   documento: os bytes depois do documento não são decodificados nem rejeitados, e o
++   `continuation` do resultado informa onde eles começam. Para rejeitar bytes excedentes como
++   antes (B08), use os novos `Bintel.decodeWholeDocument(data, schema)` /
++   `Bintel.decodeWholeDocumentSelfContained(data)` (cada um também com
++   `(…, codecs: Tel.Codec.Bindings, checkCanonical: Boolean = false)`). Os dois leitores de um
++   único documento ganharam sobrecargas que recebem um `offset: Int` (como último parâmetro).
++   `Bintel.unframe` também não rejeita mais bytes excedentes e ganhou `unframe(data, offset)`. (#1961)
+
+@ 0 4 0 14a021fd375692551e978e0fcdfc530c
++ - Novo: `Bintel.decodeStream(data, schema): List[Bintel.Document]` (e uma sobrecarga que
++   considera codecs) decodifica, em ordem, todos os documentos de um stream de bytes, despachando
++   os documentos autocontidos para o schema que eles incorporam;
++   `Bintel.documentExtent(data)` / `documentExtent(data, offset)` retorna o offset de continuação
++   de um documento apenas a partir do seu cabeçalho, sem schema. (#1961)
+
+@ 0 4 0 05a535eda499dcc11d9c83e5763c4903
++ - `Bintel.Error.Reason` ganhou `DeclaredLengthMismatch` (`SN-609.16`, B16: o comprimento
++   declarado diverge da extensão estrutural) e `NestingLimitExceeded` (`SN-609.17`: mais de 256
++   Structs aninhadas; um limite de recursos do decodificador, não um código B). A mensagem de
++   `TrailingBytes` agora diz "a whole-document reader found bytes after the document". (#1961)
+
+@ 0 4 0 1f4c7db9f11ee4c8116d492bc38a9dd4
++ - A decodificação de varints do BinTEL (`Varint.decode`, `Bintel.decode`, `Bintel.parse`) agora
++   rejeita codificações não mínimas, como `80 00` (novo `Varint.Error.Reason.Overlong`,
++   `SN-608.3`; relatado como `Bintel.Error.Reason.VarintError`, B02). Um varint sem nenhum byte
++   disponível agora é `VarintError` (B02), e não `UnexpectedEoi` (B09). (#1961)
+
+@ 0 3 0 1cfa1c1b49247ad70b017e32acdd1b0f
++ - `Bintel.decode`/`Bintel.encode` agora lançam `Bintel.Error.Reason.ReferenceUnresolved` (B10)
++   para um `Tels.SelectRef` cujo nome não é uma `SelectDefinition` do schema; antes, um membro
++   assim silenciosamente não contribuía com nenhum slot de palavra-chave. (#1961)
+
+@ 0 5 0 0bd93fabc925f6f616e9eb494e64d530
++ - `Tel.Type.assign` agora ordena os filhos de um Node pela ordem dos membros (TEL §18.3): cada
++   elemento que preenche `members[0]`, depois `members[1]`, …, átomos antes de compostos dentro de
++   um membro, e ordem do código-fonte nos demais casos. Antes, todos os elementos derivados de
++   átomos precediam todos os derivados de compostos, cada grupo na ordem do documento. Código que
++   dependia da ordem do documento de `Tel.Element.Node.children` precisa ordenar por posição no
++   código-fonte por conta própria. (#1961)
+
+@ 0 4 0 15d715bc2f34d55d0f0a380995fe8e76
++ - `Tel.Document` ganhou `margin: Int` (quarto campo posicional, antes de `children`) e
++   `continuation: Optional[Int] = Unset` (último campo: a linha, indexada a partir de 1, em que
++   começa o conteúdo depois do separador de documentos, ou `Unset` quando o documento terminou no
++   fim da entrada ou foi construído em vez de analisado). Chamadas ao construtor e casamentos de
++   padrões precisam ser atualizados. (#1961)
+
+@ 0 6 0 153a653b8f62abe108275af1b4727b10
++ - A composição de camadas (`Tels.Layers.compose`) agora lança
++   `Tel.Error.Reason.LayerKeywordCollision` (E205) quando a palavra-chave de um campo de camada
++   coincide com uma palavra-chave de variante contribuída por um `SelectRef` existente, ou quando
++   um `SelectRef` de camada traz uma palavra-chave de variante já presente; antes, o primeiro caso
++   aparecia mais tarde como E201 (`DuplicateKeywordInStruct`) e o segundo não era detectado.
++   `Tels.Validation.validate` agora lança `EmptySelectVariants` (E202) para um select declarado
++   numa camada sem variantes nem exclusões. (#1961)
+
+@ 0 6 0 005d36ec8313e03b167dd156b780538a
++ - Diagnósticos do parser reatribuídos: uma linha indentada sob um bloco só de comentários agora
++   é E111 (`OverIndentation`), e não E112 (`ChildOfNonCompound`), que fica reservado para uma
++   linha indentada sob uma linha tabulada; uma linha tabulada cuja parte de palavra-chave e átomo
++   anterior às colunas, ou qualquer valor de coluna, ocupa uma posição de separador de coluna
++   (`M_i − 2` ou `M_i − 1`) agora é E118 (`ColumnValueTooWide`). A linha do delimitador de
++   fechamento de um átomo literal agora é a linha de abertura sem os espaços finais. (#1961)
+
+@ 0 3 0 11b1f40a0edf0c730c98b371a416330e
++ - `Tels.Validation.validate` agora lança `DuplicateDefinition` (E210) quando duas definições de
++   um schema base, ou de uma mesma camada, compartilham um nome entre seus registros, escalares e
++   selects; antes, só era detectada uma definição de camada que duplicasse uma da base. (#1961)
+
+@ 0 4 0 1b0af54b2fdbc3e81bcc0e1cb72c8f15
++ - Diagnósticos de pragma: `BadPragmaPhrase` (E121) e `MisplacedPragmaPhrase` (E122) são cada um
++   acumulados no máximo uma vez por linha de pragma, na primeira frase problemática, em vez de uma
++   vez por frase; e uma frase de um único caractere que não é a última frase agora é E121, e não
++   E122 (a forma de sigilo é final por definição). (#1961)
+
+@ 0 3 0 16dec1f785d88da919fc8b732fc9ff70
++ - Uma linha de comentário dentro de um bloco tabulado (E109, `CommentNotPreceded`) agora se junta
++   aos `comments` desse bloco, e as linhas seguintes continuam sendo linhas do mesmo bloco; antes,
++   ela iniciava um novo bloco e as linhas seguintes eram analisadas como compostos comuns. (#1961)
+
+@ 0 1 0 109a87279daee9a1121ba5adb8bbdcee
++ - `Telp.delimiters` ganhou `+` (agora são vinte e dois caracteres, `!"#$%&*+,./:;=?@\^_`|~`), so
+
+% 0 1 0 15e9465f0d050d101227150660e769d1
+
+@ 0 6 0 0987684ac5d27e7314f5fc29ac8f6bc7
++ - `Base256.decodeStrict` relata todos os caracteres problemáticos, não só o primeiro, como
++   `Base256.Error.Reason.NotInAlphabet(offenders: scala.collection.immutable.List[Base256.Offender])`,
++   em que `Base256.Offender(position: Int, codepoint: Int)` dá um índice de *code point* a partir
++   de zero (antes, `NotInAlphabet(position: Int, character: Char)`, com um índice de unidade
++   UTF-16). `Base256.decode` e `decodeStrict` agora tratam um caractere suplementar como um único
++   caractere, que produz um único byte (antes, dois).
+
+% 0 1 0 0e95a33c2b5adec917c41123ec8c45fa
+
+@ 0 3 0 1db75418bb6afc4a1ce372b1f3dc18a1
++ - `Palimpsest.resolve` agora limita sua busca com backtracking a `Palimpsest.searchLimit`
++   (100.000) tentativas de candidatos e retorna `Unset` quando ela se esgota; uma nova sobrecarga
++   `resolve(limit: Int)(using
++   Bibliography)` recebe um limite explícito. (#1961)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 7 0 11327d7774d397f7105d4c1783fd1173
++ - O protocolo entre o launcher e o daemon agora são documentos BinTEL do schema TEL
++   `ethereal-launcher` (`ethereal.Launcher.schemaText`), substituindo as mensagens orientadas a
++   linhas `i`/`e`/`m`/`s`/`x`/`v` e as respostas de um único byte. Um daemon construído a partir
++   desta versão só aceita launchers construídos a partir do código-fonte do runner em Rust desta
++   versão: reconstrua os stubs de runner (`make
++   runners-build`) ou use uma release `runners-<version>` publicada, igual ou posterior à que traz
++   este protocolo. Aplicações empacotadas com stubs mais antigos precisam ser reempacotadas.
++ - `ethereal.DaemonEvent` removido. O daemon despacha com base em `ethereal.Launcher.Message`
+
+% 0 1 0 0274a1f31cc099b1196ffbe0fc82aba2
+
+@ 0 24 0 15d98e4fd05a145909c941becad7844f
++   `ExitStatus`); `Launcher.encode`, `Launcher.decode` e `Launcher.readDocument` são o codec.
++   `ethereal.Tty#byte` removido: uma mudança de modo do terminal é um documento
++   `Launcher.Message.Mode` no canal de controle.
++ - `ethereal.Runners.version` é `0.4` (a primeira release do runner que fala o protocolo
++   BinTEL), com `etc/runners/0.4.tsv` registrando os hashes dos stubs; o empacotamento com
++   `-Dbuild.executable` sem um `dist/runners` local baixa da release `runners-0.4` no GitHub.
++ - `ethereal.DaemonLogEvent` ganhou `ProtocolMismatch` (um documento com a assinatura de outro
++   schema).
++ - `ethereal.core` agora depende de `stratiform.binary` (e, portanto, de `stratiform.core`,
++   `stratiform.base256` e `ulysses.core`).
++ - O prazo de inicialização do launcher agora é um limite de *inatividade*: o daemon precisa
++   vincular seu socket em até 10 s depois da última mudança no arquivo `progress` do seu
++   diretório de estado, e não em até 10 s depois de ser criado. O launcher passa
++   `-Dburdock.progress=<state dir>/progress` à JVM; um bootstrap do Burdock que preenche um cache
++   frio escreve ali sua posição, o launcher mostra `Fetching dependencies n/N (size)…` enquanto
++   espera, e o relatório de falha nomeia o download em andamento (`it was still fetching dependency 35 of 128 … after 10s
++   without progress`). Um segundo launcher que espera a inicialização de outro launcher segue a
++   mesma regra (antes, 4 s fixos). Esta é uma mudança no runner em Rust: reconstrua os stubs
++   (`make runners-build`) ou use uma release `runners-<version>` que a traga. (#1938)
++ - `ethereal.Runners.version` é `0.5`: `-Dbuild.executable` baixa seu stub de runner da release
++   `runners-0.5` no GitHub e o verifica contra `etc/runners/0.5.tsv`. O manifesto de
++   `runners-0.4` não correspondia aos assets que aquela release servia (seu digest para
++   macOS-arm64 nomeava um stub que nunca foi publicado), de modo que construir um executável numa
++   máquina sem um stub em cache falhava; um stub já em cache em `~/.cache/ethereal/runners/0.4`
++   não é mais consultado.
+
+@ 0 1 0 0938ff3e6aa308c302f99e6477fdd838
++ ## probably (o fume assume a execução e os relatórios)
+
+@ 0 2 0 0016ce9e0cdcf612037c246dc57c20e2
++ - `probably.Suite#main(arguments: Array[Text]): Unit` removido. Uma `Suite` não é mais uma
++   classe main: ela só é executada por um host, por meio de
+
+% 0 1 0 1e24e0956a6d9b5c0d0b0e4552c09045
+
+@ 0 3 0 1e15377aa1947ac5004a4b58e5e5e74d
++   (módulo `probably.events`) ou de `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int`.
++   Scripts de build que executavam `java -cp … <package>.Tests …` precisam, em vez disso,
++   executar a ferramenta `fume` sobre o classpath construído (`fume run -c <jar>`, ou `fume run`
++   com um `.fume/config.tel` que o nomeie). (#1963)
+
+% 0 1 0 17b38c61700cda6817146cb89ba7ff43
+
+@ 0 9 0 0e78dfd03db60fe21aabc8b20e5124de
++   e `probably.Suite#invoke(arguments: List[Text]): Int` removidos; eles renderizavam um relatório
++   no stdio da suíte, que não existe mais. `invoke(arguments: Text, sink: TestEvent -> Unit): Int`
++   continua sendo o único ponto de entrada. (#1963)
++ - `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int` não retorna mais 3
++   (erro de ambiente durante o relatório); os resultados são 0 (passou), 1 (falhas) ou 2 (a suíte
++   lançou uma exceção). (#1963)
++ - `probably.Suite#suiteIo: turbulence.Stdio` removido. (#1963)
++ - O construtor de `probably.Report` mudou de `Report()(using ambience.Environment)(using probably.TestPalette)`
++   para `Report()`; nenhum given é exigido. (#1963)
+
+% 0 1 0 0942e4faed8bd4100bc0a988e355eccd
+
+@ 0 2 0 1dcaf7551118f15f15c7a059b689726a
++   mudou para `complete(): Unit`. Ele não renderiza nada; ele define `passed` e emite
++   `TestEvent.RunCompleted` para o sink instalado (sem efeito se não houver nenhum). (#1963)
+
+% 0 1 0 1ff5bf433600a21f0d9edf5d985a20de
+
+@ 0 5 0 0b8933cc671689a310529690ab0690bb
++   Profile, AspirePass, AspireFail`, com `symbol(using TestPalette): Teletype` e
++   `describe: Teletype`) removido. `TestEvent.Outcome#outcome: Text` carrega o vocabulário de cada
++   veredito no stream de eventos. (#1963)
++ - O given `probably.Reporter.report` mudou de
++   `(turbulence.Stdio, ambience.Environment, probably.TestPalette) => Reporter[Report]` para
+
+% 0 1 0 157c72cb3694aa3c19a890fbd4084b3a
+
+@ 0 4 0 1a9574a79ced07db1cd819a4fd722dcc
++ - `probably.Reporter[report]#live(report: report): Boolean` removido. (#1963)
++ - `probably.Runner[report]#redraw(size: Int): Unit` removido; `Runner` não escreve mais progresso
++   no stdout em nenhuma condição. (#1963)
++ - `probably.TestPalette` (trait que estende `chiaroscuro.JuxtapositionPalette`; membros `warning,
+
+% 0 1 0 12767c45b569fd6a1c85e34be5f15b8a
+
+@ 0 3 0 1561e47c48d99aca1d924499acbc800f
++   fail, aspirePass, aspireFail, subdued, unaccented, positive, negative: Color in Srgb`) removido,
++   junto com `soundness.TestPalette`. (#1963)
++ - `probably.Ci` (objeto; membros `apply(), githubActions, gitlabCi, circleCi, travisCi, jenkins,
+
+% 0 1 0 0223028c5e0bb9531468fe162dd70bbc
+
+@ 0 2 0 10181bc428cb27f31ecacd1e59bf7d01
++   claudeCode: Boolean`) removido, junto com `soundness.Ci`. Sem substituto. (#1963)
++ - `probably.GithubActions` (objeto; membros `workspaceRelative(path: Text): Text`,
+
+% 0 1 0 1b9d0912e3ad21730fce2588483b6f45
+
+% 0 1 0 0228579fc950679e0bec93fc6e084476
+
+% 0 1 0 122cea4d3571d674076176b4a224e40f
+
+@ 0 14 0 04a14a79cef42d981a351e203bbd4ace
++   removido, junto com `soundness.GithubActions`. Sem substituto: um host renderiza as anotações a
++   partir do stream de `TestEvent`. (#1963)
++ - `probably.AnsiRenderer` e `probably.TerseRenderer` removidos; `probably` não renderiza mais
++   relatórios. `probably.Documenting`, `probably.Doc` e `probably.Format` (todos
++   `private[probably]`) removidos. As variáveis de ambiente `CLAUDECODE` e `COLUMNS` e a
++   propriedade de sistema `-Dscalac.coverage` não afetam mais uma suíte. (#1963)
++ - Módulo `probably.coverage` (artefato `probably-coverage`) removido, com `probably.Coverage`
++   (objeto e `case class Coverage(path: Text, spec: Array[Juncture], oldHits: Set[Int], hits: Set[Int])`),
++   `probably.Juncture`, `probably.Surface` e as exportações `soundness.{Coverage, Juncture, Surface}`.
++   O pacote `soundness-test` não o contém mais. Sem substituto. (#1963)
++ - `probably.core` não depende mais de `chiaroscuro.render`, `ambience.core`, `digression.ansi`
++   nem `escapade.io` (e, portanto, transitivamente, de `escritoire.core`, `dendrology.tree`,
++   `iridescence.core` nem `turbulence.core`); ele depende diretamente de `digression.core`. Um
++   módulo a jusante que obtinha qualquer um deles por meio de `probably` precisa declará-los. (#1963)
+
+% 0 1 0 162fdd68f08c465a12122d34e6c4d9a3
+
+@ 0 7 0 010422db0ec3bd9216bad0ef04178c32
++ - Novo: `hellenism.LocalClasspath.of(classloader: Classloader)(using ambience.System): LocalClasspath`
++   — o classpath a partir do qual um `URLClassLoader` carrega, ou, caso contrário, a propriedade
++   `java.class.path`. Código que inicia uma JVM para executar suas próprias classes
++   (`sh"java -classpath …"`) deve derivar o classpath disto, com o classloader de uma de suas
++   próprias classes (`Classloader[MyObject.type]`), em vez de ler a propriedade: sob um host que
++   executa testes, como o fume, a propriedade nomeia os jars do host.
++   `anthology.Bundler.applicationClasspath` e `superlunary.Rig#classpath` agora passam por ele
++   (mesmo resultado de antes). (#1963)
+
+% 0 1 0 0dfcf29c1bceffc41205596c976dfcce
+
+@ 0 5 0 0c8333ffeb9ae6db08b45844a5376cfb
++ - `superlunary.Jvm` e `superlunary.Isolation` agora passam ao `Rig` o classloader que os carregou
++   (`Classloader[Jvm.type]` / `Classloader[Isolation.type]`) em vez de
++   `hellenism.classloaders.systemClassloader`, e `superlunary.Rig#classpath` deriva suas entradas
++   de `Classloader[Rig]`, e não do classloader de contexto da thread. Idêntico num processo
++   `java -cp` simples; só difere quando o rig é carregado por um classloader que não é o do
++   sistema. (#1963)
+
+% 0 1 0 0ef4c64348822baf04644f2877e95bc9
+
+@ 0 13 0 084b4c0fe95d67c30486f03673f97348
++ - `burdock.Bootstrap` (a classe de tempo de execução com que um JAR reempacotado inicia) baixa
++   suas dependências `Burdock-Require` de forma concorrente (até oito por vez), em vez de uma
++   depois da outra, aplica timeouts de conexão e de leitura a cada download, e remove seu arquivo
++   temporário em caso de falha; a ordem do classpath não muda. Um item `Burdock-Require`
++   malformado sai com status 2 e uma mensagem, em vez de um stack trace. (#1938)
++ - `burdock.Bootstrap` agora respeita `XDG_CACHE_HOME`: o cache é `$XDG_CACHE_HOME/burdock` quando
++   a variável está definida e não vazia, e `~/.cache/burdock` caso contrário. Antes, uma variável
++   definida o fazia usar um diretório `burdock` relativo ao diretório de trabalho. (#1938)
++ - `burdock.Bootstrap` lê a propriedade de sistema opcional `burdock.progress`: quando definida,
++   ela é o caminho de um arquivo que o bootstrap mantém atualizado com uma linha,
++   `<completed> <total> <bytes>`, enquanto baixa, e que apaga ao terminar. O launcher do Ethereal
++   a define; uma execução `java -jar` simples não escreve nada. (#1938)
++ ## probably (alocação por operação)
+
+@ 0 8 0 04efcdaa36cb20a6103766743c8c8081
++ - `probably.TestEvent.BenchmarkRecorded` ganha um campo `allocation: Optional[Long]` (bytes
++   alocados por operação ao longo dos lotes cronometrados; `Unset` quando o produtor não o mediu)
++   entre `operationRate` e `timestamp`. Sua aridade agora é 14. A impressão digital do schema
++   BinTEL, `probably.Streamer.fingerprint`, muda de acordo, de modo que um host construído com um
++   `probably` anterior relata a suíte como incompatível: o fume precisa ser reconstruído com esta
++   versão. (#1969)
++ - `probably.Benchmark` ganha um parâmetro final `allocation: Optional[Long] = Unset`, e
++   `Benchmark.inclusion` registra `Metric.Allocation` (bytes por operação) nas métricas do `Run`
++   quando ele está presente. (#1969)
+
+% 2 1 0 190516a6262d44291cb12acf05b1a641
+
+@ 0 11 0 0a698333079e02e006203d30eb48d302
++ - O construtor de `sedentary.Bench` mudou de `Bench()(using Classloader, Environment)(using BenchmarkDevice)`
++   para `Bench(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset)(using Classloader, Environment)(using BenchmarkDevice)`,
++   com o mesmo significado dos parâmetros de `Stress`: o heap fixo da JVM de medição
++   (`-Xms`/`-Xmx`, padrão `1g`), sua contagem de processadores e seu coletor
++   (`-XX:+Use<gc>GC`, padrão `Serial`). O comportamento de `Bench()` não muda. (#1969)
++ - `sedentary.Bench` agora mede os bytes alocados ao longo dos lotes cronometrados de uma célula
++   (por meio de `com.sun.management.ThreadMXBean#getTotalThreadAllocatedBytes`, de modo que a
++   alocação dos workers e das threads virtuais é incluída) e os relata como `allocation` em
++   `probably.Benchmark` e `TestEvent.BenchmarkRecorded`. O boxing que o próprio harness faz de
++   cada resultado do corpo em seu sink (um box por operação para um resultado primitivo) é
++   incluído, e não subtraído. A lista de medições em estágios retornada por uma célula tem um
++   elemento final a mais. (#1969)
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 14 0 19092bfec82e4f5d1d8a50a3a8081835
++ - Novo: `zephyrine.Addressable#assemble(pieces: scala.collection.immutable.Seq[Self], total: Int): Self`,
++   que junta pedaços de tamanho exato num único valor de comprimento `total`. O trait fornece um
++   padrão por meio de `allocate`/`copyChunk`/`materialize`; as instâncias de `Data` e `Text` o
++   sobrescrevem para copiar os pedaços uma única vez. Um `Addressable` personalizado não precisa
++   de mudança. (#1969)
++ - `zephyrine.Stream#memoize` agora copia cada região uma vez, no seu tamanho exato, e junta os
++   pedaços com `assemble` (retornando diretamente a cópia de uma região única), em vez de
++   acrescentar a um builder que cresce: para um resultado de 4 MB, cerca de 8 MB alocados em vez
++   de 12 MB. O valor retornado não muda. (#1969)
++ - `zephyrine.Handoff#take()` e `Handoff#drain(into)` não relatam mais o anel como esgotado
++   (`null` / `0`) quando o `finish()` do produtor foi observado entre a leitura do índice da
++   cauda pelo consumidor e sua verificação da flag de término: a cauda é relida depois que `done`
++   é visto, de modo que o último item oferecido antes de `finish()` é sempre entregue. Antes, um
++   consumidor em corrida com o último par `offer`/`finish` do produtor podia perder esse item
++   (cerca de uma passagem em 10⁵ com os dois lados em threads virtuais). O comportamento em
++   qualquer outro entrelaçamento não muda. (#1969)
+
+% 0 1 0 1ff629affd81c87111d067a62bcc62a1
+
+@ 0 13 0 0fa0aa49c04a894e1b657607700202fe
++ - Novo: `parasite.concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int => result)(using Monitor^, Probate^, Codepoint): IArray[result] raises Async.Error`
++   (também exportado como `soundness.concurrently`): executa de `job(0)` a `job(count - 1)` em no
++   máximo `parallelism` tarefas, que puxam índices de um contador compartilhado, e retorna os
++   resultados na ordem dos índices depois que todos tiverem feito join. Prefira-o a um `async` por
++   elemento para um lote de jobs baratos: uma tarefa é uma thread virtual, de modo que o custo de
++   criação é pago `parallelism` vezes, e não `count`. Uma exceção de um job faz sua tarefa falhar
++   e é relançada no join. (#1969)
++ - Novo: `parasite.PoolingSupervisor` (abstrato; `protected def spawn(runnable: Runnable): Thread`,
++   `protected def idleLimit: Int = 256`), um `ThreadSupervisor` que executa tarefas em threads
++   portadoras reutilizáveis, e `parasite.PooledSupervisor`, sua instância sobre threads virtuais
++   na JVM e threads de plataforma no Scala Native, selecionada pelo novo given
++   `parasite.threading.pooledThreading` (os três reexportados de `soundness`). Sob ele, o
++   `Thread.currentThread` de uma tarefa é uma portadora reutilizada entre tarefas, de modo que
++   thread-locals e nomes de thread não são por tarefa; o cancelamento, as sucessões, a espera em
++   `Promise` e todos os outros comportamentos observáveis correspondem a `virtualThreading`.
++   (#1969)

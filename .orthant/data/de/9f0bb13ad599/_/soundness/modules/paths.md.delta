@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 6 0 197ddfd7d976c3090927fb7db5492691
++ `Linux`, `Posix`, `MacOs` und `Windows` sind die Plattformen bestimmter Systeme. `Local` ist die
++ Plattform der Maschine, auf der das Programm gerade läuft: eine eigene Plattform, deren Wurzel
++ `%` oder ein `Drive` ist, deren Trennzeichen das des laufenden Systems ist und deren Regeln für
++ einen Namen die strengsten von allen sind, sodass ein `Path on Local` überall gültig ist, wo das
++ Programm läuft. Code, der auf jedem System funktionieren soll, typisiert seine Pfade
++ `on Local`. [Namen](names.md) beschreibt, wie die Regeln jeder Plattform für ein Element
++ formuliert und geprüft werden.

@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 5 0 1bf97d2d5e7a1aa81304c4fbe202e179
++       Ein `Classfile` ist eine `.class`-Datei, die bei ihrer Erzeugung über die JDK-API
++       `java.lang.classfile` geparst wird; Bytes, die das JDK zurückweist, lösen `Classfile.Error`
++       aus, sodass jeder Weg, eines zu erzeugen, eine `Tactic[Classfile.Error]` im Geltungsbereich
++       braucht. Es wird auf dem Klassenpfad nach Name oder Typ gefunden, über den im
++       Geltungsbereich gegebenen `Classloader`, oder mit `read[Classfile]` aus einer beliebigen
++       Byte-Quelle gelesen — einer Datei, einer Ressource, einem Stream —, da es `Aggregable by
++       Data` ist.
+
+% 5 1 0 184eec9e339a69a009ad9c121ae982a9
+
+@ 0 2 0 025e575fa3e422da0e0082a616e51e3c
++       Ein `Classfile` hält keine Capability: Es wird bei der Konstruktion geparst, sodass der Wert
++       frei aufbewahrt, geteilt und weitergegeben werden kann.
+
+@ 0 10 0 0c8f4b52251b603d193208e2f9ff02de
++   entry .Error   ausgelöst, wenn ein Classfile nicht gelesen werden kann
++       Fehler `↯/s.88.2`: _there was an error reading the classfile_. Ausgelöst von
++       `Classfile(data)`, `Classfile(name)`, `Classfile[type]` und `read[Classfile]`, wenn sich
++       Header, Konstantenpool, Attribute oder Methodentabelle nicht parsen lassen. Eine Klasse,
++       die der Classloader nicht hat, ist weiterhin `Unset`, kein Fehler. Der Code einer Methode
++       wird erst von `Method#bytecode` dekodiert, das denselben Fehler auslöst, wenn sich der Code
++       nicht dekodieren lässt.
++   entry .aggregable   liest ein `Classfile` aus einem beliebigen Byte-Stream, als `read[Classfile]`
++       Das Given `Aggregable by Data`, mit dem eine Datei, eine Klassenpfad-Ressource oder eine
++       beliebige andere `Readable`-Quelle als Classfile gelesen werden kann: Der gesamte Stream
++       wird in ein `Data` gesammelt und geparst, wobei `Classfile.Error` ausgelöst wird, wenn es
++       kein Classfile ist.
+
+@ 0 7 0 07bdfe6f7dc0a0a90d9a107495ae4c92
++   entry .apply   das Classfile zu einigen Bytes, oder zu einem Ressourcennamen oder einem Typ über den `Classloader` im Geltungsbereich
++       `Classfile(data)` parst die Bytes eines Classfiles. `Classfile(name)` liest die
++       Klassenpfad-Ressource unter `name` — ein interner JVM-Name mit Endung,
++       `scala/Option.class` — über den im Geltungsbereich gegebenen `Classloader`, und
++       `Classfile[T]` findet die Klasse von `T` über ihr `ClassTag` und liest die Ressource, die
++       ihr binärer Name bezeichnet, sodass eine verschachtelte Klasse zu `Outer$Nested.class`
++       aufgelöst wird. Beide liefern `Unset`, wenn der Classloader keine solche Ressource hat. Alle
++       drei lösen für Bytes, die sich nicht parsen lassen, `Classfile.Error` aus.
+
+@ 0 13 0 04733c65a7566127086a69d8ca19ffd1
++     entry #name   der Name der Methode, wie das Classfile ihn schreibt
++         Der kompilierte Name, nicht der Quellname: Ein Konstruktor ist `<init>`, ein Operator
++         wie `+` ist `$plus`, und ein Lambda-Rumpf ist `$anonfun$…`. `StackTrace.rewrite` in
++         Digression wandelt einen solchen Namen zurück in Richtung seiner Schreibweise im
++         Quelltext.
++     entry #bytecode   das `Code`-Attribut der Methode, dekodiert zu einem `Bytecode`, oder `Unset` für eine abstrakte Methode
++         Braucht eine `Tactic[Classfile.Error]`; der Fehler wird ausgelöst, wenn das
++         Code-Attribut fehlerhaft ist. Dekodiert jede Instruktion der Methode zu einem `Bytecode.Opcode`, löst
++         Sprungziele zu Byte-Offsets auf und führt eine Simulation des Operandenstacks durch sie
++         hindurch: Der Stack nach jeder Instruktion wird von `Bytecode.Opcode#transform` berechnet
++         und an jedem Label aus den `StackMapTable`-Frames der Methode zurückgesetzt, sodass der
++         Stack an einem Sprungziel das ist, was der Verifier festhält, nicht was der Durchfallpfad
++         hinterlassen hat. Zeilennummern aus der `LineNumberTable` werden an die erste
++         Instruktion jeder Zeile angehängt. Eine Methode ohne Code — abstrakt oder nativ —
++         liefert `Unset`.

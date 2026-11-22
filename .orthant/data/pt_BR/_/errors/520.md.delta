@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 13dbfbcad5228fdc18c72755039015eb
++ # `SN-520` — Não é possível casar com uma declaração doctype (aposentado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este erro não existe mais. A página é mantida para que o código não seja reutilizado, e para
++ que uma referência a ele vinda de uma versão mais antiga ainda possa ser resolvida.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## O que aconteceu
+
+@ 0 2 0 120530ebcba650a7040f736124472bc2
++ O casamento de padrões HTML do Honeycomb não lança mais este erro: nada no código-fonte o relatava
++ quando o Soundness adotou os códigos bolt, então ele não recebeu nenhum.

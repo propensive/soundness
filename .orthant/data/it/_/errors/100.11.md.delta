@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 0ffbaef51914fc620a270b726bb53c8c
++ # `↯/s.100.11` — Non è una porta valida
+
+@ 0 2 0 1d00f5b6141b8030199cd26055e70571
++ Sollevato in fase di compilazione quando un letterale di servizio con nome non indica una porta
++ registrata per quel trasporto.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 092cf12c612a39010ae4a210fd5a9105
++ Gli interpolatori `tcp"…"` e `udp"…"` verificano un nome di servizio rispetto al registro,
++ compreso il trasporto per cui è registrato.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Messaggio di esempio
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 00561378eadcbde7135e7b9d0ec6af57
+
+% 1 1 0 101cbd46f27f81681c6ce889e0d0b553
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 2 0 0b404b90bd72490219ac1eddf8eca136
++ Controllare il nome del servizio e il trasporto. Docker, per esempio, è registrato su TCP, quindi
++ `udp"docker"` non compila.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 12ca3c998dde439e07bfac83b65fead3
++ - Sorgente: `lib/urticose/src/core/urticose.internal.scala`

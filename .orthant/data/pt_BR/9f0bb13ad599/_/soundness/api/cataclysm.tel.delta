@@ -1,0 +1,41 @@
+orthant 2 language
+
+% 10 1 0 0910609b9679525c13cff87a432f4ae2
+
+% 10 1 0 1cb9e1b064257f0f16b50789eafee86e
+
+% 10 1 0 109f42a57f87821b140bc3d53c7858ea
+
+@ 0 32 0 0b5c195f738b6d571cb44228d729119f
++         A classe que toda fábrica de `Web` retorna, para que uma provisão tenha um tipo
++         estável: `Web.Provision[family](sources, coverage)` é um `(Typeface of family) is
++         Typesettable in Web` cujos `#sources` são os `Typesettable.Source` dos quais o
++         navegador obtém a família tipográfica e cuja `#coverage` é a `Font.Coverage` com que foi
++         declarada. `FontFace.rules` renderiza uma origem por vez.
++     entry #sources   de onde o navegador obtém a família tipográfica: vinculada, importada, local ou genérica
++     entry #coverage   os pesos, inclinações, larguras e eixos que a provisão foi declarada oferecer
++     entry #Self   a família tipográfica provida, `Typeface of family`
++     entry #Form   o meio, `Web`
++   entry .sansSerif   a família genérica `sans-serif`, provida na web sem declaração
++       Um navegador compõe cada família genérica com o que tiver, então a provisão tem uma
++       única origem `Generic` e `Font.Coverage.Unknown`, que admite toda face; não renderiza
++       nenhuma at-rule, e renderiza `font-family: sans-serif` sem aspas.
++   entry .serif   a família genérica `serif`, provida sem declaração
++   entry .monospace   a família genérica `monospace`, provida sem declaração
++   entry .cursive   a família genérica `cursive`, provida sem declaração
++   entry .fantasy   a família genérica `fantasy`, provida sem declaração
++   entry .systemUi   a família genérica `system-ui`, provida sem declaração
++   entry .linked   uma provisão a partir de um arquivo de fonte que o navegador busca numa URL
++       `Web.linked[family](url, coverage, format)` recebe qualquer tipo de URL `Abstractable
++       across Urls to Text` (um `HttpUrl` de `url"…"`, ou texto), a `Font.Coverage` que o arquivo é
++       declarado ter — já que o arquivo não está à mão para ser lido, só se admite o que é
++       declarado, de modo que uma fonte declarada com um único peso recusa um pedido de outro,
++       em vez de deixar o navegador sintetizá-lo — e um `Typesettable.Source.Format` opcional
++       (`Ttf`, `Otf`, `Woff` ou `Woff2`) para a dica `format()`. O argumento de tipo `family`
++       normalmente é inferido do tipo declarado do given. É renderizado como um `@font-face`
++       cujo `src` é `url("…") format("woff2")`.
++   entry .local   uma provisão a partir de uma fonte que se espera que o leitor tenha instalada
++       `Web.local[family](coverage)` nomeia a família tipográfica num `src: local("Name")`,
++       sendo o nome da família o literal `family`. Nada garante que o leitor a tenha, então
++       esta é a provisão mais fraca, e sua cobertura — `Font.Coverage.Unknown`, a menos que seja
++       dada, o que admite toda face — diz apenas o que é declarado.

@@ -1,0 +1,1282 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1dc51523555b6f5d16db6081b3ebd53a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 187fc9bf63ce93ac1b358c8fbe9d3a2e
++ info   Scala の型から得る Protocol Buffers：番号付きのケースクラスのフィールドを proto3 メッセージとして扱い、導出、直接、ストリーミングのコーデックを備える
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 192356cdf1d10d6f16b638dbf718135d
++     _Locomotion_ は、Protocol Buffers のワイヤ形式を Scala の型から直接エンコード・デコードする。
++     フィールドに proto3 のフィールド番号を持つケースクラスが、そのままメッセージ定義*である*。
++     書くべき proto スキーマファイルも実行すべきコード生成器もなく、生成されるバイト列は、同等のスキーマに対して `protoc` が生成するものと同じである。
++     フィールド番号は `field` アノテーションから（アノテーションがなければ宣言順から）取られる。それ以外のすべて — varint、ジグザグエンコーディング、リトルエンディアンの固定長の値、長さで区切られた文字列と入れ子のメッセージ、パックされた繰り返しフィールド、マップのエントリー、`oneof` のバリアント — はフィールドの型から決まる。
+
+% 2 1 0 169e15ba6567c0d218531abe09043006
+
+% 3 1 0 14b7bf587958534c1e7a823d2e6a0575
+
+% 4 1 0 17ae7cd7b99763cc1bac7ff2a2aebf5c
+
+% 0 1 0 085aa0922c2e230608ba19bd8d830c1e
+
+% 0 1 0 138e764fa0e84fdc0740966080b218f2
+
+% 0 1 0 1c2905436e26845a00eb8c1677585d46
+
+% 0 1 0 0034b96edce63c221a30b228cd3e16f2
+
+% 1 1 0 02b8f64a21839c4a0afb0a6947f70c8c
+
+@ 0 10 0 132242a94b2ac05c11ebb1b5026d9fc4
++     中心となる型は `Protobuf` で、単一のワイヤ値である。`Wire(wireType, bytes)`、`Absent`、あるいはあるフィールド番号のすべての出現からなる `Repeated` のいずれかである。
++     メッセージ全体は長さで区切られた一つの `Wire` であり、`Encodable in Protobuf` と `Decodable in Protobuf` のインスタンス — スカラーのものは `Protobuf` のコンパニオンにあり、メッセージのものはケースクラスの形から wisteria を通じて導出される — が値をワイヤ値に変換し、また元に戻す。
++     hypotenuse のサイズ付き数値型は、型だけで proto3 の整数の種類を選ぶ。`U32` と `U64` は `uint` の varint、`S32` と `S64` はジグザグの `sint`、`B32` と `B64` は `fixed32` と `fixed64` である。
++     `Optional` は明示的な存在を表し、`List`、`Set`、`Sequence` は繰り返しフィールド（要素が `Packable` ならパックされる）、凍結済みの `Array[Long]^{}` はボックス化されない同じフィールド、そして `Map` は標準の繰り返しエントリーメッセージである。
+
+@ 0 1 0 14ab4850bdd66b9b076e3a3bdc71758f
++     ライブラリを通る経路は三つあり、どれも同一のバイト列を生成する。
+
+@ 0 11 0 07401444a141c5481cc36a1c54b7f6be
++     - **導出**：`value.in[Protobuf]` は導出された `Encodable` を通じて `Protobuf` のツリーを組み立て、`read[Protobuf].as[T]` は導出された `Decodable` を通じてツリーをたどる。常に利用でき、他の二つがテストされる基準である。
++     - **直接**：`Protobuf.Parsable` は、ツリーを組み立てずに `ProtobufReader` を通じて値のフィールドを入力から直接読み、`Protobuf.Printable` はそれらを測って出力配列に直接書き込む。どちらもコンパイル時に、`Inlinable.parsable[T]` と `Inlinable.printable[T]` によって、メッセージ上の `derives Protobuf.Direct` によって、あるいはスコープにあるすべてのメッセージと oneof について `import codecs.direct` によって生成される。
++     - **ストリーミング**：`ProtobufParser` は zephyrine の `Cursor` の上で読むので、`Chain[Data]` や `Stream[Data]` の上の直接読み取りは、各チャンクを届いたそばから読み、読んでいるフィールドだけを保持する。チャンクをまたいで分割された値は、まとめて届いた値とまったく同じように読まれる。
+
+% 2 1 0 183aa782606a437f1b8e4988251e020f
+
+% 3 1 0 1d72026c7c0900e41143372affa9b1c0
+
+% 4 1 0 1099e36b8861b9ad08ee6c8284bd7d3d
+
+% 0 1 0 0b9f2ee2c257769f10f4b12b577556bc
+
+% 0 1 0 037d2bb47a2186ca0e97493c01dccda5
+
+% 0 1 0 0f90ab872d2f56e0151f62577c7fcdab
+
+% 0 1 0 1e5484cd987bc1cc0ad17f8d1d520213
+
+% 1 1 0 0c3c61393f1fa98a1983816bbd03714c
+
+@ 0 4 0 1d29b2bdd060f6620a827f2382bf7b0c
++     `import codecs.derived` は、直接のコーデックがスコープにある場合でも導出の経路を強制し、`import codecs.strict` は、直接のコーデックを持たない型に対する `read[T in Protobuf]` や `in[Data over Protobuf]` をコンパイルエラーにする。
++     この三つのモードは distillate の `codecs` パッケージの given で、名前で一つずつインポートする。
+
+@ 0 5 0 06bcbb94f888e47302909fa997879706
++     不正な形式のメッセージは `Protobuf.Error`（番号 700）を発生させ、その `Reason` は誤りとバイトオフセットを示す。途中で切れた入力、不正な形式の varint やオーバーフローする varint、予期しないワイヤ型、欠けている `oneof` フィールドなどである。
++     フィールドの選択は番号によるので、唯一のオプティクスは `fieldOptical` である。`message.lens(_(Prim) = value)` はフィールド 1 を置き換え、プログラムが知らないものも含めて、他のすべてのフィールドをそのまま通す。
+
+@ 0 1 0 1af03583aa97792d1ed95982f8b2b936
++     ライブラリは三つのコンポーネントからなる。
+
+@ 0 11 0 0c60fd329385707f128681d3de1f0d45
++     - `locomotion.core` — `Protobuf` とそのコーデック、`field`、`WireType`、`Packable`、ストリーミングの `ProtobufParser`、`ProtobufReader` の縁、`ProtobufPrinter` と `ProtobufSizes`、そして生成器を備えた `Inlinable`（`inlining` オブジェクト）。JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     - `locomotion.staged` — `InlinableStager`。展開時に*手書きの* `Inlinable` の given を評価する、マクロ内のステージングコンパイラ。マクロのクラスパス上で名前によって見つけられる。これがなければ、手書きのインスタンスしか持たない型のフィールドは、その `Decodable in Protobuf` を通じてデコードされ、その `Encodable` を通じてエンコードされる。ケースクラスとシールされた直和型に対して生成されるパーサーとプリンターは `core` だけを必要とする。
++     - `locomotion.http` — `application/protobuf` のメディアのバインディング。telekinesis のための `postables`、`servables`、`construables` の given である。JVM 専用。
+
+@ 0 7 0 1e8395bb7bbee2b41d746c62c705644e
++     アンブレラは `Protobuf`、`Protobuf2`、`Packable`、`WireType`、`field` をエクスポートし、`conversions`、`postables`、`servables`、`construables` の選択パッケージを写し取る。
++     `Inlinable`、`ProtobufParser`、`ProtobufReader`、`ProtobufPrinter`、`ProtobufSizes` には `locomotion.Inlinable` などとして到達する。生成されたコーデックが利用者に代わってそれらを名指すからである。
++     選択パッケージの given は名前でインポートする — `import conversions.encodableToProtobuf`、`import postables.protobufPostable` — `import pkg.*` は given をインポートしないからである。
+
+% 0 1 0 169c9153dc2b56501ded5f2f0d8f9a0c
+
+% 0 1 0 0b120bfbb878b70017a0824c86a3efc1
+
+% 0 1 0 08be575c937344ef1780f75de3c746e4
+
+% 0 1 0 1a3d9632423bc9e31a7de3d1fb80d340
+
+% 0 1 0 13049792e7aefff2197f16f2db95b7c9
+
+% 0 1 0 0e7c7bf351514d7b13500227cd4f0f39
+
+@ 0 1 0 19fbe796cf9a746810f1daba25753e5a
++ entry .Protobuf   Protocol Buffers のワイヤ値。そしてこの形式との間のあらゆるコーデックの置き場所
+
+% 1 1 0 163ad37ead37d5e10310fc4272e7fdfc
+
+@ 0 2 0 094a94ba13c840591c70678f4e15de43
++       `Protobuf` は、フィールドの記録された値が取りうる三つの形の enum であり、`Encodable in Protobuf` と `Decodable in Protobuf` の `Form` である。
+
+@ 0 6 0 0bcd8eee4e8973080ddd6b47bcbd55e8
++       - `Wire(wireType, bytes)` — 一つのワイヤ値。varint、32 ビットまたは 64 ビットの固定長の値、あるいは長さで区切られた文字列、バイト配列、パックされた連なり、入れ子のメッセージのペイロードのバイト列で、その `WireType` のタグが付く。メッセージ全体は `Wire(Len, bytes)` である。
++       - `Repeated(values)` — メッセージ中の一つのフィールド番号のすべての出現をワイヤ上の順序で並べたもの。繰り返しフィールドのため、またスカラーに対する proto3 の「最後のものが勝つ」規則のためにある。
++       - `Absent` — デコード時に存在しなかったフィールド、またはエンコード時に省くべきフィールド。
+
+@ 0 2 0 03314d42f8dd5e0f11fc21582255d1fb
++       `#single`、`#occurrences`、`#payload`、`#wireKind`、`#isAbsent` は三つの形を一様に読み、`#as` は任意の `Decodable in Protobuf` を通じて値をデコードする。
+
+% 2 1 0 09a16f442d9efc0d0cf50d4119074f0e
+
+% 3 1 0 0beadd25708b92a403092f6c298a925a
+
+% 4 1 0 02f757305cc2fff20b69f1ce5db6cc4c
+
+% 0 1 0 191b7ae8b4522c131714b416a8b14f74
+
+% 0 1 0 158b4db8ecc09d48172c6ba467526219
+
+% 0 1 0 03e50b4a5d26794c06b71ba0ddbc31c1
+
+% 0 1 0 035cf8e2d36f30151dcd759fcc4a460f
+
+% 1 1 0 1481935e3f4b08200b3f3e73980fef44
+
+@ 0 8 0 0521de5f1a2bd0161d71fbfbb5b953e0
++       コンパニオンはコーデックを保持する。
++       スカラーのインスタンスはオブジェクト自体の given（`intEncodable`、`textDecodable`、`u32Encodable`、…）であり、パックされたコレクションと凍結済み配列のインスタンス、`optionalEncodable`、`mapEncodable`、モードの選択子も同様である。
++       優先度の低いレイヤー `Protobuf2`（導出されたコーデック、パックされないコレクションのインスタンス、ツリーを実体化する `read` の経路）と `Protobuf1`（`Protobuf.Parsable` か `Protobuf.Printable` がスコープにあればいつでも選ばれる直接の経路）は、オブジェクトが継承するトレイトなので、その given も `Protobuf` のメンバーであり、インポートなしで暗黙のスコープから解決される。
+
+@ 0 8 0 0506f44af82ed6f01361d9953f29e053
++       読み取りは、`bytes.read[Protobuf]`（任意のバイト源に対する `aggregable`）に `as[T]` を続けるか、略記の `read[T in Protobuf]` で行い、後者はレイヤーが振り分ける。`Parsable` がスコープにあればそれを通じ（`Protobuf1#aggregableParsed`）、そうでなければツリーを通じる（`Protobuf2#aggregableIn`）。
++       書き込みは `value.in[Protobuf]` で、その `encode` はメッセージのバイト列（`encodableInData`）である。バイト列だけなら `value.in[Data over Protobuf]` とする（`Protobuf2#encodableOver`）。
++       `Printable` がスコープにあると、`in[Protobuf]` は `Protobuf1#encodablePrinted` になる。出力された配列がメッセージの唯一の `Wire` なので、`encode` はコピーせずにそれを返す。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0cc70caa21ba76401dcf106834476559
++         label varint のフィールドを一つ持つメッセージ：タグ 0x08、続いて varint の 150
+
+% 1 1 0 190ad679ccfa97811b4e93ef59a3ca49
+
+% 0 1 0 14406c08ea826e9b02e5581fbe7a9a51
+
+% 0 1 0 0fc16f135558470b022eab23c7085e4b
+
+% 1 1 0 0966c4d790c50e121d1f78063051102d
+
+@ 0 1 0 1c3b3f2939c0b4141f9226c1eb171038
++         label 文字列のフィールドは、そのタグ、長さ、UTF-8 のバイト列からなる
+
+% 1 1 0 09a8ad5fcd3bc46e02b11e1887c3298f
+
+% 0 1 0 0dc663b35f6a468318c95bd535370069
+
+% 0 1 0 0fd23290a6aad717112ae40e3b72a8d3
+
+% 1 1 0 0634316fe24a666119086a99f19522e9
+
+@ 0 1 0 126bfa1cb7d51e1305203f28e9aed067
++         label 入れ子のメッセージは長さで区切られ、そのフィールド番号はそれ自身のものである
+
+% 1 1 0 0c15e1bba4e917590593cd33406273c2
+
+% 0 1 0 1dc7bac1217ef57f11ae84613a9bd784
+
+% 0 1 0 1e8f28348cada8271b5d3b22cfc80e7c
+
+% 0 1 0 115be6d153a53da41a41506bf2702d27
+
+% 1 1 0 004dafba0982722d182af58d655d58d0
+
+@ 0 1 0 012c9f43eec56b0916a058c6b3710482
++         label そして元に戻す：同じバイト列を、スコープにあるいずれかの経路を通じてその型として読む
+
+% 1 1 0 0a9953ed8ad752321d879a979a9e54a7
+
+% 0 1 0 1aeb59c411d45b241b411878be1d0fc2
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1e5f84077a3d397b179128615cf9af20
++       すべてのデコードの given は `Tactic[Protobuf.Error]` を取る。導出されたものは導出位置のスコープにある戦術を閉じ込むので、そのようなインスタンスを名指す `summon` はそのキャプチャを許さなければならない（`summon[(T is Decodable in Protobuf)^]`）。一方、`read`、`as`、導出には特別なことは何も必要ない。
+
+% 0 1 0 120a6488ccad648c09d351df863b58c3
+
+% 0 1 0 00c91892e137142d1003bae9590f80d2
+
+% 0 1 0 14e2ea7727f6704002aef0b906b19e61
+
+% 1 1 0 086759f4cbbe09060f7e8a5a8f546b4d
+
+% 1 1 0 0fb801fb500eb02f1a045b30a28505b2
+
+@ 0 53 0 1ecc98d289b3b41d1b795edb9e7aa866
++   entry #single   最も新しい単一のワイヤ値：スカラーに対する proto3 の「最後のものが勝つ」規則
++       `Repeated` はその最後の値（何も持たなければ `Absent`）を与え、`Wire` と `Absent` はそれ自身である。
++   entry #occurrences   フィールドについて記録されたすべてのワイヤ値。`repeated` フィールドのデコードのため
++       `Repeated` はそのリストを、単独の `Wire` は一要素のリストを、`Absent` は `Nil` を与える。
++       パックされないコレクションのデコーダーはこれを反復する。パックされた連なりは単一の `Len` の出現として届き、`ProtobufParser.packed` がそれを分割する。
++   entry #payload   `#single` のバイト列。存在しない値なら空の配列
++   entry #wireKind   `#single` の `WireType`。存在しない値なら `Len`
++       `Packable` な要素の繰り返しフィールドをデコードするとき、パックされたスカラーの連なり（`Len`）とインラインのスカラーの出現を見分けるために使う。リーダーはその両方を受け入れなければならないからである。
++   entry #isAbsent   値が `Absent`、または何もない `Repeated` であるかどうか
++   entry #as   ワイヤ値を、その型の `Decodable in Protobuf` を通じてその型としてデコードする
++       `message.as[Person]` は、二段階の読み取り `bytes.read[Protobuf].as[Person]` の後半である。不正な形式のペイロードに対しては `Protobuf.Error` を発生させる。
++       導出されたデコーダーは、一度だけ出現するフィールドを `Wire` そのものとして、二度以上出現するものをすべての出現の `Repeated` として、欠けているものを `Absent` として渡すので、手書きの `Decodable in Protobuf` は `Repeated` のコンストラクターだけで照合するのではなく、`single` または `occurrences` を通じて照合すべきである。
++   entry .emit   メッセージのバイト列を、ファイバー上で生成されるブロックのイテレーターとして返す
++       `Protobuf.emit(message)` は、すでに組み立てられたペイロードを `Producer` を通じて渡すので、そのバイト列をストリームとして消費できる。`Monitor` と `Probate` が必要である。
++       Protocol Buffers は入れ子のメッセージすべてに長さの接頭辞を付けるので、どれかを送る前にバイト列は完成していなければならない。これはバイト列をチャンクに分けるのであって、その生成をストリーミングするのではない。
++       `Printable` を持つ値なら、代わりに `Protobuf.Printable.emit` がブロックごとに書き込む。
++   entry .aggregable   `bytes.read[Protobuf]`：任意のバイト源を一つのメッセージとして集約する
++       ソース全体をメモリに読み込み、`Wire(Len, bytes)` として包む。`Protobuf` の値はそのバイト列なので、これはメッセージ全体を保持する。一方、`Parsable` を通じた直接の読み取りは、読んでいるフィールドだけを保持する。
++   entry .protobuf   `Protobuf is Decodable in Protobuf`：`Protobuf` 型のフィールドのための恒等変換
++       `Protobuf` として宣言されたフィールドは生のワイヤ値を保持する。プログラムがそれ以外はデコードするメッセージを通して、未知の内容や素通しの内容を運ぶのはこうしてである。
++   entry .encodableInData   `message.encode`：`Protobuf` メッセージのワイヤ上のバイト列
++       `Encodable in Data` の given なので、メッセージのバイト列には、jacinta が `Json` に使うのと同じ動詞で到達する。`serialize` はバイトからテキストへのエンコーディングのために取ってある。
++   entry .abstractable   `application/protobuf` を伴う、HTTP 本文としての `Protobuf` メッセージ
++       `Abstractable across HttpStreams to HttpStreams.Content`：メディアタイプとエンコードされたバイト列であり、telekinesis はそこからリクエストとレスポンスの本文を導出する。
++       `locomotion.http` コンポーネントの `postables`、`servables`、`construables` の given は、クライアントの POST、提供されるレスポンス、パースされるリクエスト本文のための名前付きバインディングである。
++   entry .chainReadable   `Chain(bytes).read[T in Protobuf]` は、単一ブロックのチェーンをその場で読む
++       `Chain[Data] is Readable to (value in Protobuf)` の given：すでに手元にあるチェーンは、チェーン上のストリームを通じるのではなく、`Aggregable` 自身の `aggregate` に直接渡され、それは一ブロックのチェーンをコピーなしで読む。
++   entry .fieldOptical   `message.lens(_(Prim) = value)`：`Ordinal` が番号でフィールドを選ぶ
++       Protocol Buffers のフィールドは名前ではなく番号で識別されるので、`Ordinal` がオプティクスとなる。`Prim` はフィールド 1、`Sec` はフィールド 2、以下同様である。
++       更新はメッセージのフィールドをパースし、選んだ番号のワイヤ値を変換の結果で（すべての出現を `Repeated` として）置き換え、残りを — プログラムが知らないフィールドも含めて — 変えずに再エンコードする。
++       メッセージが定義しない番号、あるいはパースできないメッセージは、元のままにされる。
++       代入される値は `Protobuf` である。`import conversions.encodableToProtobuf` があれば、任意の `Encodable in Protobuf` の値を直接代入できる。
+
+% 2 1 0 15ea09ac96f446471982c22f4ea87345
+
+% 3 1 0 17558bf962f02e010f5b77e94bf9d14e
+
+% 4 1 0 1ba03865800fed74146ce5000ccab4e6
+
+% 0 1 0 00c225b4ecc3acd10bd67608043a120e
+
+% 2 1 0 08b69bfaa97ed53c11af9a8800cc879f
+
+% 0 1 0 17d194efa984b9ab184c9a6d62cd91af
+
+% 0 1 0 0c4cc1891500b37b1bf062b92a25df8a
+
+% 0 1 0 0e453afcead973a31946109d04022a29
+
+% 0 1 0 0bbff86a1e71a6fb1b8a33a8acf99799
+
+% 1 1 0 1f5ff7445399e3eb1f33cf9efdba0dee
+
+@ 0 79 0 1efe45f79e50b70b0e76b6021857ce37
++   entry .intEncodable   `Int` を `int32` の varint として
++       proto3 の仕様通り、負の値は 10 バイトすべてを占める。負になると見込まれる値には `S32` 型を付けるほうがよい。そのジグザグエンコーディングは値を短く保つ。
++   entry .longEncodable   `Long` を `int64` の varint として
++   entry .booleanEncodable   `Boolean` を varint の 1 または 0 として
++   entry .doubleEncodable   `Double` をリトルエンディアンの 64 ビット値（`I64`）として
++   entry .floatEncodable   `Float` をリトルエンディアンの 32 ビット値（`I32`）として
++   entry .textEncodable   `Text` を、長さで区切られた UTF-8 のバイト列として
++   entry .dataEncodable   `Data` を、長さで区切られた `bytes` フィールドとして
++   entry .sizedDataEncodable   `Data & Sized[n]` のブロックは、ただの `Data` とまったく同じようにエンコードされる
++       そのため、サイズが型レベルで証明されたブロックは、その証明を失わずにエンコードされる。
++   entry .intDecodable   `int32` の varint を `Int` として。存在しなければゼロ
++       `Tactic[Protobuf.Error]` を取り、途中で切れた varint や不正な形式の varint に対してそれを発生させる。
++       すべてのスカラーのデコーダーは、存在しないフィールドを proto3 のゼロ値として読む。
++   entry .longDecodable   `int64` の varint を `Long` として。存在しなければゼロ
++   entry .booleanDecodable   varint を `Boolean` として：ゼロでない値はすべて `true`
++   entry .doubleDecodable   64 ビットの固定長の値を `Double` として。存在しなければ `0.0`
++   entry .floatDecodable   32 ビットの固定長の値を `Float` として。存在しなければ `0.0f`
++   entry .textDecodable   長さで区切られたペイロードを、UTF-8 としてデコードした `Text` として
++   entry .dataDecodable   長さで区切られたペイロードを、バイト列そのままの `Data` として
++   entry .u32Encodable   hypotenuse の `U32` を `uint32` の varint として
++       サイズ付き整数型は、アノテーションなしに型によって proto3 の整数の種類を選ぶ。`U32`/`U64` は普通の `uint` の varint、`S32`/`S64` はジグザグの `sint` の varint、`B32`/`B64` はリトルエンディアンの `fixed32`/`fixed64` である。
++   entry .u64Encodable   `U64` を `uint64` の varint として
++   entry .s32Encodable   `S32` をジグザグの `sint32` の varint として
++       ジグザグは 0, -1, 1, -2, … を 0, 1, 2, 3, … に写すので、小さな負の数は短い varint のままである。`Int` なら 10 バイトを占めるところである。
++   entry .s64Encodable   `S64` をジグザグの `sint64` の varint として
++   entry .b32Encodable   `B32` を `fixed32`、すなわちリトルエンディアンの 4 バイトとして
++   entry .b64Encodable   `B64` を `fixed64`、すなわちリトルエンディアンの 8 バイトとして
++   entry .u32Decodable   `uint32` の varint を `U32` として。`Tactic[Protobuf.Error]` が必要
++   entry .u64Decodable   `uint64` の varint を `U64` として
++   entry .s32Decodable   ジグザグの `sint32` の varint を `S32` として
++   entry .s64Decodable   ジグザグの `sint64` の varint を `S64` として
++   entry .b32Decodable   `fixed32` を `B32` として
++   entry .b64Decodable   `fixed64` を `B64` として
++   entry .optionalEncodable   `Optional[T]` のフィールド：設定されていればエンコードし、`Unset` なら `Absent`
++       明示的な存在：設定されていないフィールドは何も書かないが、存在していてゼロであるスカラーはそのタグと値を書く。
++       内側の型に対して `Mandatable` である任意の型に適用されるので、`Optional[Text]`、`Optional[Point]`、`Optional[List[Int]]` はどれも動作する。
++   entry .optionalDecodable   存在しないフィールドは `Unset` として読まれ、存在するものは内側のデコーダーを通じて読まれる
++   entry .packedEncodable   `Packable` なスカラーのコレクションを、パックされた一つの `Len` フィールドとして
++       繰り返しの数値に対する proto3 のデフォルトである。各要素のエンコーディングが、長さで区切られた単一のフィールドに連結される。
++       `Packable` が要素を制約するので、パックされない `Protobuf2#listEncodable` より優先される。空のコレクションは `Absent` である。
++   entry .packedDecodable   パックされた、またはパックされない出現から、`Packable` の繰り返しフィールドを読む
++       proto3 の仕様がリーダーに求める通り、両方のワイヤ形式を受け入れる。`Len` の出現は要素のワイヤ型に従って `ProtobufParser.packed` で分割され、それ以外の出現は一つの要素である。
++       コレクションのための `Factory` と `Tactic[Protobuf.Error]` が必要である。
++   entry .packedListEncodable   `Packable` な要素のプレリュードの `List` に対する、パックされたエンコーダー
++       不透明なプレリュードのコレクションは `Iterable` ではないので、`List`、`Set`、`Sequence` はそれぞれ自分専用のパックされた組を持ち、基底の型で `packedEncodable` に委譲する。
++   entry .packedListDecodable   プレリュードの `List` に対する、パックされたデコーダー
++   entry .packedSetEncodable   `Packable` な要素のプレリュードの `Set` に対する、パックされたエンコーダー
++   entry .packedSetDecodable   プレリュードの `Set` に対する、パックされたデコーダー
++   entry .packedSeriesEncodable   `Packable` な要素のプレリュードの `Sequence` に対する、パックされたエンコーダー
++   entry .packedSeriesDecodable   プレリュードの `Sequence` に対する、パックされたデコーダー
++   entry .intArrayEncodable   凍結済みの `Array[Int]^{}` を、`List` の形と同じバイト列のパックされたフィールドとして
++       パック可能なスカラーの凍結済み配列は、繰り返しの数値フィールドのボックス化されない表現である。生成されたパーサーはボックス化されないビルダーを通じてそれを満たし、生成されたプリンターはインデックスでそれをたどるので、どちらの経路でも要素はボックス化されない。
++       バイト列は `List` の形のものとまったく同じなので、二つはワイヤ上で交換可能である。
++       インスタンスはスカラーごとに一組あり、それぞれスカラー自身のものと同様に純粋である。`Array[Byte]^{}` は `Data`、すなわちスカラーである。
++   entry .longArrayEncodable   凍結済みの `Array[Long]^{}` を、パックされたフィールドとして
++   entry .booleanArrayEncodable   凍結済みの `Array[Boolean]^{}` を、パックされたフィールドとして
++   entry .doubleArrayEncodable   凍結済みの `Array[Double]^{}` を、パックされたフィールドとして
++   entry .floatArrayEncodable   凍結済みの `Array[Float]^{}` を、パックされたフィールドとして
++   entry .intArrayDecodable   パックされた、またはパックされない繰り返しフィールドを、凍結済みの `Array[Int]^{}` として
++   entry .longArrayDecodable   パックされた、またはパックされない繰り返しフィールドを、凍結済みの `Array[Long]^{}` として
++   entry .booleanArrayDecodable   パックされた、またはパックされない繰り返しフィールドを、凍結済みの `Array[Boolean]^{}` として
++   entry .doubleArrayDecodable   パックされた、またはパックされない繰り返しフィールドを、凍結済みの `Array[Double]^{}` として
++   entry .floatArrayDecodable   パックされた、またはパックされない繰り返しフィールドを、凍結済みの `Array[Float]^{}` として
++   entry .mapEncodable   `Map[K, V]` を、繰り返しのエントリーメッセージ `{ key = 1; value = 2 }` として
++       proto3 のマップのワイヤ形式である。各エントリーは長さで区切られたメッセージで、そのフィールド 1 がキー、フィールド 2 が値なので、`Map[Text, Int]` はワイヤ上で `map<string, int32>` とまったく同じものになる。
++       空のマップは `Absent` である。
+
+% 2 1 0 022079eaae4b1df81fc3dcafc8b2d28b
+
+% 3 1 0 06cb8082c19ff4850a67fbe544b76f8e
+
+% 4 1 0 1014615c3a162845013ebda836effc8a
+
+% 0 1 0 02430143e1c8570712115354cb090b6a
+
+% 0 1 0 0f426416628e0b070b043c936ee3d601
+
+% 1 1 0 1d5f7fd0f5cc9bd51c0d83f86b5a8d27
+
+@ 0 17 0 180b88d218e1ca4e0acd1f252ab5e1ee
++   entry .mapDecodable   繰り返しのエントリーメッセージを `Map[K, V]` として
++       各出現について、そのフィールド 1 と 2 が走査される。どちらかが欠けているエントリーは、それを `Absent` — スカラーのゼロ、または空のメッセージ — としてデコードする。
++       `Tactic[Protobuf.Error]` が必要である。
++   entry .aggregableDerived   `import codecs.derived` の下で、`read[T in Protobuf]` はツリーの経路を取る
++       `Protobuf1#aggregableParsed` より優先され、それが適用されるまさにその場所 — `Parsable` がスコープにある型 — に適用されるので、直接のパーサーがスコープにある場合でも、導出された `Decodable` がデコードする。
++       それ以外の場所では、いずれにせよ導出の経路が解決される。
++   entry .readableDerived   `import codecs.derived` の下で、`data.read[T in Protobuf]` はツリーの経路を取る
++   entry .encodableDerived   `import codecs.derived` の下で、`in[Protobuf]` は `Printable` がスコープにあっても導出する
++   entry .aggregableStrict   `import codecs.strict` の下で、`read[T in Protobuf]` は `Parsable` を見つけなければならない
++       厳格モードは、代替に頼ってはならないコードのための直接モードである。これは直接のパーサーが解決される場所ではどこでもそれを取り、解決されない場所ではどこでも `Protobuf1#aggregableStrictFailure` がその型を名指すコンパイルエラーを報告する。
++   entry .encodableOverStrict   `import codecs.strict` の下で、`in[Data over Protobuf]` は `Printable` を見つけなければならない
++       `in[Protobuf]` 自体は制限されない。`in[Json]` がツリーを名指すように、それはワイヤ値を名指す。
++   entry .Direct   `derives Protobuf.Direct`：メッセージのパーサーとプリンターを一度だけ生成し、そのコンパニオンに置く
+
+% 1 1 0 11111fc15dae2ef71f6b72205e7520f1
+
+@ 0 6 0 1445a9860c4dab44150da868c1d89393
++         `Self` 型の型クラスには型パラメーターがないので、`Protobuf.Parsable` も `Protobuf.Printable` も `derives` 節に現れることはできない。
++         `Protobuf.Direct[T]` はそれができるキャリアである。`case class Play(…) derives Protobuf.Direct` は `.derived` を呼び、それが `Inlinable.parsable` と `Inlinable.printable` で `Play` のパーサーとプリンターを生成してコンパニオンに格納し、そこで `Protobuf.Parsable.declared` と `Protobuf.Printable.declared` がそれらを見つける。
+
+% 2 1 0 0d6e53c2763316bd00a8cd94640ea4ed
+
+% 3 1 0 1f1706128f4c014d033a3e58e5b63227
+
+% 4 1 0 15d80953f0041c2815b36958a9c4b574
+
+% 0 1 0 0bcabe5df62c62c816860bae38849e5b
+
+% 0 1 0 02cb33949b3032f211c13fe2ade87402
+
+% 1 1 0 1c9ab4bf1353d62417f6017256c747c4
+
+@ 0 8 0 0c4e9e54d74624a6105d9ded94706356
++         これらのインスタンスはインポートなしでその型のすべての読み書きに使われ、`import codecs.direct` の下では、`Protobuf.Direct` を導出する型は使用箇所ごとに再生成するのではなくそれらを使うので、ステージングのコンパイルのコストは一度だけで済む。
++         `import codecs.derived` の下では、他の直接のコーデックと同様に迂回される。
++     entry .derived   型の `Parsable` と `Printable` を生成して包む
++     entry #parsable   生成された `Protobuf.Parsable`
++     entry #printable   生成された `Protobuf.Printable`
++   entry .Parsable   直接パースの型クラス：値のフィールドを入力から直接読む
+
+% 1 1 0 0e95188c8b6255b0082fd869b8bac18b
+
+@ 0 7 0 1fe0be496a039344169f7a8cf8cfa3ff
++         決してツリーを組み立てない、`Decodable in Protobuf` の対応物である。`Parsable` は、ウィンドウが値のペイロード — 最上位では入力全体、フィールドの位置では一つのフィールドのワイヤ値 — に設定された `ProtobufReader` を受け取り、ウィンドウの終わりまで消費しなければならない。
++         distillate の `Parsable` を `Transport = Protobuf` と `Reader = ProtobufReader` で継承するので、そのただ一つのメソッドは `#parse(reader: ProtobufReader^): Self` である。
++         リーダーは自身の `Tactic[Protobuf.Error]` を持っているので、`parse` の本体にエラーの語彙は必要ない。
+
+@ 0 3 0 10a2cbf43815eb351b1f095dd6a178c8
++         `Parsable` はオプトインである。それがスコープにあれば、`read[T in Protobuf]` は `Protobuf1#aggregableParsed` または `Protobuf1#readableParsed` に解決されて直接読む。なければ何も変わらない。
++         それを得る方法は、汎用性の順に次の通りである。
+
+% 2 1 0 1dbb10b7eb885fbd1a62168c13e5b339
+
+% 3 1 0 0a340d6c13adb551079f68f26d1e9cd2
+
+% 4 1 0 087f67e3679a554f036f90cf4e1b5a8b
+
+% 5 1 0 1425ddbe95113e071f1670c387c606da
+
+% 7 1 0 1a9a1541952f94bf096a24ed85ebdf72
+
+% 0 1 0 10fc4d2db253674a01c3ca4193f56716
+
+% 0 1 0 1970e307cc4061901a2a6a297460fabf
+
+% 0 1 0 00b82f1752871d4c08f3eb7cd6bae001
+
+% 1 1 0 108db4f7399f3343010c300df4c78b1d
+
+@ 0 5 0 1d04fd22a806d51e1c917f8282d5a37b
++         あるいはメッセージ上の `derives Protobuf.Direct`、あるいはスコープにあるすべてのメッセージと oneof について `import codecs.direct`（`Parsable2#generated`）である。
++         手書きのインスタンスは `Protobuf.Parsable(reader => …)`（`.apply`）であり、`.fromDecodable` は任意の `Decodable in Protobuf` を橋渡しする。独自のデコーダーが生成されたパーサーに勝たなければならないときの、一行の逃げ道である。
+
+@ 0 9 0 13c0fc3c1d95ea49064bc232f74412e1
++         生成されたパーサーは、メッセージのスカラーをその場で読み、`List`、`Set`、`Sequence`、凍結済み配列のフィールドを出現ごとに（パックされていてもいなくても）集め、`Map` のフィールドをエントリーごとにマップのビルダーへ読み込み、`oneof` を、メッセージ中に存在する最小のバリアント番号（その最後の出現）を走査して振り分け、存在しないスカラーをそのゼロで、存在しないフィールドを宣言されたデフォルトで埋め、未知のフィールドを丸ごと飛ばし、繰り返されたスカラーの最後の出現を取る。
++         型が `Inlinable` を持たないフィールド — サイズ付き整数、`Optional` のコレクション、ユーザー定義の型 — はワイヤ値として集められ、その `Decodable in Protobuf` を通じて一度だけデコードされる。これが*継ぎ目*であり、同じ値をより遅く生み出す。
+
+@ 0 4 0 0bfea1bb035732ff0091cb24bb9f99c1
++         `Chain[Data]` や `Stream[Data]` の上では、読み取りは決して先に入力を組み立てない。
++         パーサーは必要に応じて各チャンクを引き出し、保持するのは高々読んでいる一つのフィールドだけである。ただし `oneof` をまたぐ場合は別で、そのメッセージはバリアントが選ばれる間バッファーされる。
++         `Data` 全体の上の読み取りは、その場で読まれる。
+
+% 1 1 0 17660febed6dd2331dbd1bcf821c933e
+
+% 0 1 0 0876e925e67b594f0940ce84655ee4b0
+
+% 0 1 0 0fafe7c5410823400a3f9b63854a0027
+
+@ 0 19 0 077346a60ea3263803ae0010b5f58673
++     entry #Transport   トランスポートの型、`Protobuf`
++     entry #Reader   リーダーの型、`ProtobufReader`
++     entry .apply   リーダー上の関数から作る `Parsable`
++         `Protobuf.Parsable[Point](reader => …)`：インスタンスはその関数をキャプチャする。
++         その中では、リーダーの `tag`、`enterField`、`varint`、`text`、`leaveField` がウィンドウをたどる。`ProtobufReader` を参照のこと。
++     entry .fromDecodable   ウィンドウをメッセージとして実体化し、それをデコードする `Parsable`
++         ツリーの世界からの橋渡しである。`reader.message()` は残りのウィンドウを `Wire(Len, bytes)` としてコピーし、`Decodable` がそれをデコードする。
++         `Decodable in Protobuf` しか持たない型が、生成されたパーサーに値全体として出会ったときに通るのはこれであり、独自のデコーダーを生成されたパーサーに勝たせる方法でもある。
++     entry .declared   `derives Protobuf.Direct` によって型がそのコンパニオンに生成したパーサー
++         `Parsable2#generated`（`import codecs.direct`）より優先されるので、`Direct` を導出する型は一度生成したコーデックを使う。
++     entry .parseField   生成されたパーサーのフィールドの位置で、名目的な `Parsable` を呼ぶ
++         `Protobuf.Parsable.parseField[T](parsable, reader)` は両方を中立の `AnyRef` キャリアとして受け取り — 生成されたコードはキャプチャが消去されている — 監査された地点であるここでそれらを再び表明する。
++         生成されたコードがこれを呼ぶ。手書きのコードには呼ぶ理由がない。
++     entry .Direct   生成されたパーサーの基底クラス。リーダーを中立のキャリアとして受け取る
+
+% 1 1 0 12199d498e77f6e51fd2bf56ed4e1fda
+
+@ 0 8 0 135872de1e5f00c2180ae41eb6c91a9c
++           `Protobuf.Parsable.Direct[T]` は、リーダーを `AnyRef` として protected の `parseCarrier` に渡すことで `parse(reader: ProtobufReader^)` を実装する。`parseCarrier` は生成されたコードが実装し、使うたびに `ProtobufReader.of` でケイパビリティを再び表明する。
++           `parse` 自体を生成コードでオーバーライドすると、トレイトの `Reader^` パラメーターを純粋な型に狭めてしまい、キャプチャ検査がそれを拒否するので、キャリアを経由する一手間が縁となる。
++           `Protobuf.Parsable.apply` を使う手書きのインスタンスには必要ない。
++       entry #parse   `parseCarrier(reader)`。リーダーは `AnyRef` として渡される
++   entry .Parsable2   `Parsable.generated` を保持する、優先度の低いレイヤー
+
+% 1 1 0 07a3ae4f135d8b6b0ac71c7cca3eca3d
+
+% 2 1 0 01ed5ca4b82271231245e4afeedee60d
+
+@ 0 9 0 1767f10e113cb80919b978a6b2e106e8
++         `import codecs.direct` の given が `Parsable.declared` より下に位置するよう、オブジェクト `Protobuf.Parsable` が継承するトレイトである。`Protobuf.Parsable` は `generated` をここから受け継ぐ。
++     entry #generated   `import codecs.direct` の下で、すべてのメッセージと oneof に対して生成されるパーサー
++         `Codecs.Direct` モードと `Inlinable.Generates[T]` を条件とする inline given である。後者はケースクラスのメッセージ、またはそれらのシールされた直和型に対してのみ成り立つ。それ以外の型 — ジェネリックなケースクラス、コレクション — は探索に失敗し、導出の経路のままとなる。
++         パーサーは使用箇所ごとに展開されるので、コンパイル時間がかかる。`derives Protobuf.Direct` ならそのコストは一度だけである。
++   entry .Printable   直接出力の型クラス：値のフィールドを測り、出力に直接書き込む
+
+% 1 1 0 1719a315bc14f0750547085a151ba696
+
+@ 0 7 0 00aeeadfc6b7eb20060907de02c3c22b
++         決してツリーを組み立てない `Encodable in Protobuf` の対応物で、二つのパスからなる。`#measure` は値を一度たどり、出会った長さで区切られたサイズをすべて `ProtobufSizes` のテーブルに記録して、値のエンコードされた長さを返す。`#write` はもう一度たどり、`ProtobufPrinter` を通じて書き込みながら、同じ順序でサイズを読み戻す。
++         中間の `Protobuf` にエンコードされるフィールドはなく、エンコードされてから親にコピーされる入れ子のメッセージもない。
++         （protobuf-java は各メッセージオブジェクトにサイズをメモ化する。ケースクラスにはそれを保持する場所がないので、テーブルを使う。）
+
+@ 0 4 0 03cb744a83f5319609bae052b0898c67
++         `Printable` がスコープにあると、`value.in[Protobuf]` は `Protobuf1#encodablePrinted` に解決され、そのメッセージはプリンターが満たした唯一の `Wire(Len, bytes)` なので、`encode` は配列をコピーせずに返す。`in[Data over Protobuf]` はバイト列だけを与え、`.print` と `.emit` はパスを明示的に実行する。
+
+% 2 1 0 0926c4a6c8fec6670910a2227b76d52f
+
+% 3 1 0 038ad621a4878e95145585e756e5a24c
+
+% 4 1 0 0f67c0148861e56317efab32debbba96
+
+% 5 1 0 122aca1a0650083012ac5e4896ca4285
+
+% 7 1 0 128dca5e070c7a3a0411161bde6f5fd8
+
+% 8 1 0 0ffebfb00b608ee609088f97ae104fed
+
+% 0 1 0 05772ab8cad662471a8884f3bdd22e2a
+
+% 0 1 0 0561f02bc8a4b590077a87890c7c9279
+
+% 1 1 0 1f47430e3ae2806b12ac6f0767ea2052
+
+@ 0 8 0 1db29b0a239351ea0cfd07aadb1c508e
++         バイト列は導出された `Encodable` が書くものとまったく同じである — すべての種類のスカラー、ASCII を超えるテキスト、パックされた連なり、マップ、入れ子のメッセージと繰り返されたメッセージ、フィールドの位置の `oneof`、オプショナルなメッセージ — ので、メッセージを接続の一方の側で直接出力し、もう一方の側でツリーを通じてデコードしてもよい。
++         オプトインの面は `Protobuf.Parsable` を写したものである。明示的なインスタンス、`Inlinable.printable[T]`、`derives
++         Protobuf.Direct`、あるいは `import codecs.direct`（`Printable2#generated`）である。
++         出力用の `Inlinable` を持たない型のフィールドは、測定のパスでその `Encodable in Protobuf` を通じて一度だけエンコードされ、テーブルにしまわれて、書き込みのパスでコピーされる（`.fromEncodable`）。
+
+% 0 1 0 074712248eff05cf1ebc6ef3ffda7188
+
+% 0 1 0 0bfc473217b2731800ae1eb5f95d74aa
+
+% 1 1 0 16e969c048e5b72d1d6e57dc21acf726
+
+@ 0 15 0 1e362b6cccf1e7611b9d64f9fb781ad1
++     entry #measure   値のエンコードされた長さ。入れ子のサイズをテーブルに記録する
++     entry #write   サイズを読み戻しながら、プリンターを通じて値を書き込む
++     entry .print   `Printable` を通じた値のワイヤ上のバイト列：測ってから一度だけ書き込む
++         `Protobuf.Printable.print(value)` は、スレッドから取得したサイズテーブル（スレッドごとに一つで再利用されるので、出力だけがアロケーションとなる）で `measure` を実行し、それを巻き戻して、測ったサイズの `ProtobufPrinter.exact` の配列に書き込み、その配列をコピーせずに返す。
++     entry .emit   値のバイト列をブロックで：消費者に押し出すか、イテレーターとして引き出す
++         `emit(value, deliver)` は `.print` と同様に測ってから、スコープにある `Buffering` でサイズの決まる `ProtobufPrinter.blocks` プリンターを通じて書き込み、各ブロックを満ちるたびに `deliver` に渡し、最後のものは `flush` で渡す。メッセージ全体の配列は組み立てられず、ブロックより長い文字列は丸ごと渡される。
++         `emit(value)` は引き出しの形である。ブロックは `Iterator[Data]^` として、消費されるにつれてファイバー上で書き込まれ、`Monitor`、`Probate`、`Buffering` が必要である。その場合 `Printable` は、生成されたものがそうであるように、純粋でなければならない。
+
+% 2 1 0 028f7b28be5c12881edc74a236161278
+
+% 3 1 0 0df0dae936b21d7d1f4359a8681caa76
+
+% 4 1 0 17f3e8df47179cc5083ac86a6bfa403c
+
+% 5 1 0 16181118923562fd13c84bb2f670bc47
+
+% 7 1 0 03636ac83f23b1fc1cfdff7e059a91e8
+
+% 8 1 0 096a265fd045426c0013ca8ee1c3a88c
+
+% 0 1 0 10cadd242bc0cac5158a420a49607019
+
+% 0 1 0 1ea9d714e0bd161519c5a5b7b88ba570
+
+% 1 1 0 10be8bc09eb65ab40cf9b41ca90b668f
+
+@ 0 15 0 0ab788d06844eb0e12d63c2289bf9551
++     entry .apply   測定する関数と書き込む関数から作る `Printable`
++         `Protobuf.Printable[T]((value, sizes) => …, (value, printer, sizes) => …)`：インスタンスは両方をキャプチャする。
++         関数は `ProtobufSizes^` のテーブルと `ProtobufPrinter^` を排他的なケイパビリティとして受け取る。
++     entry .fromEncodable   値を一度だけエンコードし、そのペイロードを書き込む `Printable`
++         ツリーの世界からの橋渡しである。測定のパスは値をその `Encodable in Protobuf` を通じてエンコードし、ワイヤ値をテーブルにしまってペイロードの長さを返す。書き込みのパスはそれを取り出し、バイト列をそのまま書く。
++         生成されたプリンターが、出力できない型のフィールドを扱うのはこうしてである。
++     entry .declared   `derives Protobuf.Direct` によって型がそのコンパニオンに生成したプリンター
++     entry .measureField   生成されたプリンターから、名目的な `Printable` の `measure` を呼ぶ
++         キャリアは `AnyRef` として運ばれ、`Protobuf.Parsable.parseField` がパーサーに対してするように、監査された地点であるここで再び表明される。
++         生成されたコードのためのものである。
++     entry .writeField   生成されたプリンターから、名目的な `Printable` の `write` を呼ぶ
++     entry .Direct   生成されたプリンターの基底クラス。プリンターとテーブルをキャリアとして受け取る
+
+% 1 1 0 08fa505d82efa22910e395c8f5ccbc32
+
+@ 0 8 0 169ae24742d840ac023be0691ca4cd96
++           `Protobuf.Printable.Direct[T]` は、`ProtobufSizes` と `ProtobufPrinter` を `AnyRef` として protected の `measureCarrier` と `writeCarrier` に渡すことで `measure` と `write` を実装する。それらは生成されたコードが実装し、使うたびに `ProtobufSizes.of` と `ProtobufPrinter.of` でケイパビリティを再び表明する。
++           手書きのインスタンスは、代わりに `Protobuf.Printable.apply` を使う。
++       entry #measure   `measureCarrier(value, sizes)`。テーブルは `AnyRef` として渡される
++       entry #write   `writeCarrier(value, printer, sizes)`。両方とも `AnyRef` として渡される
++   entry .Printable2   `Printable.generated` を保持する、優先度の低いレイヤー
+
+% 1 1 0 1d3e38cfc677669b1faa2f85f9ee7cea
+
+% 2 1 0 0f6a0fb4902c2ff01dd1ec6ffead06c7
+
+@ 0 6 0 126ccc77776d190d07c32b92af81316e
++         `import codecs.direct` の given が `Printable.declared` より下に位置するよう、オブジェクト `Protobuf.Printable` が継承するトレイトである。`Protobuf.Printable` は `generated` をここから受け継ぐ。
++     entry #generated   `import codecs.direct` の下で、すべてのメッセージと oneof に対して生成されるプリンター
++         `Protobuf.Parsable2#generated` とまったく同様に、`Codecs.Direct` と `Inlinable.Generates[T]` を条件とする。
++   entry .EncodableDerivation   ケースクラスまたはシールされた直和型に対して `Encodable in Protobuf` を導出する
+
+% 1 1 0 05074c6ca03fde841c66997718fc4884
+
+@ 0 6 0 002ad2948bafa011052c5938d05ea124
++         `Protobuf2#encodable` の背後にある wisteria の `Derivable` である。
++         直積型は、そのフィールドを宣言順に並べた、長さで区切られたメッセージとしてエンコードされ、各フィールドは `field` アノテーションによって、アノテーションがなければ 1 から始まる位置によって番号付けされる。`Absent` のフィールドは何も書かず、`Repeated` のものはすべての出現を書く。
++         直和型は `oneof` としてエンコードされる。それは一つのフィールドを持つメッセージで、そのフィールドは直和型の中でのバリアントの 1 から始まる位置で番号付けされ、ペイロードはそのバリアント自身のエンコーディングである。
+
+% 2 1 0 0cc54fd57b29750f09ba75d3017f2189
+
+% 3 1 0 1dc6294e411dce0c07b36c832da1ec82
+
+% 0 1 0 01bf1f32dff7d5561b0f416224eaaaf9
+
+% 0 1 0 1b975e49ae04e1131697c33e51419e71
+
+% 0 1 0 1891e061c592ebcb0530c7a08c76e6cb
+
+% 0 1 0 17b7f12e4d877de8154d0137fd81b7d6
+
+% 1 1 0 128c4fa4d076bd2400ed73c8b9faf71a
+
+@ 0 3 0 18f687d6639299bf1afc29de74d75540
++     entry .conjunction   直積型のエンコーダー：番号付きのフィールドを、長さで区切られた一つのメッセージにする
++     entry .disjunction   直和型のエンコーダー：バリアントのメッセージを、その 1 から始まるバリアント番号の下に置く
++   entry .DecodableDerivation   ケースクラスまたはシールされた直和型に対して `Decodable in Protobuf` を導出する
+
+% 1 1 0 0f513e3bc6f7305e0947573891ba2f67
+
+@ 0 10 0 16d02b299e4dac461965fba5a559de9f
++         `Protobuf2#decodable` の背後にある wisteria の `Derivable` である。
++         直積型のペイロードは一度走査されて番号をキーとするテーブルになる。各フィールドのデコーダーはその番号のワイヤ値を受け取る — 一度だけ出現するなら `Wire` そのもの、そうでなければすべての出現の `Repeated`、欠けていれば `Absent` で、その場合は宣言されたデフォルトが先に使われる。
++         直和型は、メッセージ中に存在する最小のバリアント番号（その最後の出現）によってデコードされる。バリアントのフィールドを持たないメッセージは、`MissingField` で `Protobuf.Error` を発生させる。
++         どちらも導出位置のスコープにある `Tactic[Protobuf.Error]` を閉じ込む。
++     entry .conjunction   直積型のデコーダー：各フィールドをその番号から読み、欠けているものにはデフォルトを使う
++     entry .disjunction   直和型のデコーダー：存在する最小の番号のバリアント、または `MissingField`
++   entry .Error   ワイヤ上のバイト列が有効なメッセージでないときに発生する
+
+% 1 1 0 046c34893416180915605acb67b66fbe
+
+@ 0 7 0 01d7ac0094ddea3d09907de3cd541b0f
++         エラー `↯/s.111.1`：_the protobuf data was not valid: `reason`_。
++         すべてのデコードの経路 — 導出されたデコーダー、スカラーのデコーダー、`ProtobufParser` の読み取り、生成されたパーサー — が `Tactic[Protobuf.Error]` を通じて発生させ、`.Reason` が何がどこで誤っていたかを示す。
++         バイトレベルの理由に付くオフセットは、パースしているメッセージまたはサブメッセージのペイロード内の位置である。ストリーミングの経路では入力中の絶対オフセットであり、ツリーの経路では最上位のメッセージのオフセットだけが絶対である。入れ子の各ペイロードはそれ自身のスライスからデコードされるからである。
+
+% 2 1 0 0ea91013674e889c12800803f4c4c733
+
+% 3 1 0 0d4b451a555b8e6b0a364977c621d496
+
+% 0 1 0 0abba67f4d0de9eb0543a52190e7c765
+
+% 0 1 0 105dbad4fda64b39106f3112fd8abb8d
+
+% 0 1 0 086145cbe874da5411280f1018c0be22
+
+% 0 1 0 0e644837690eea950569db23ab7a1931
+
+% 0 1 0 02007947ca127f9d134f6a3641966c4e
+
+% 1 1 0 1fc40427dee146810a54c2a1514b474b
+
+@ 0 2 0 1c9980c7dc5424a31708b5fe44055b4d
++     entry #reason   データが拒否された理由と、そのオフセット
++     entry .Reason   メッセージが持ちうる五つの誤り
+
+% 1 1 0 189b3b94da8b847600af1ff8b3113708
+
+@ 0 1 0 03d1aeb1f05fc3531e37b4d6dd0d83c9
++           各ケースはそのメッセージとして描画される。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 8 0 00a9771a3e9f63f7078aff0f77c67407
++           column  ケース
++           column  メッセージ
++           column  注記
++           row  `Truncated(offset)`  _the protobuf data ended unexpectedly at offset `offset`_  長さの接頭辞、固定長の値、または varint が、そのウィンドウの終わりを越えた
++           row  `MalformedVarint(offset)`  _a varint was malformed at offset `offset`_  継続バイトが 10 個を超えた
++           row  `UnexpectedWireType(found, offset)`  _an unexpected wire type, `found`, was encountered at offset `offset`_  タグのワイヤコードが 3、4（非推奨のグループ）、6、7 のいずれかだった
++           row  `Overflow(offset)`  _a numeric value was too large for its type at offset `offset`_  varint の 10 バイト目がビット 63 を超える寄与をした
++           row  `MissingField(number)`  _the required field number `number` was missing_  バリアントが一つも存在しない `oneof`。デコードレベルの誤りで、オフセットはない
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 1 0 06ade4f58b17d19a03a6a03e398784b9
++       entry .communicable   各理由を上のメッセージとして描画する
+
+@ 0 1 0 04da4f1f9bc02f751de9ff557d17ef2f
++ entry .Protobuf2   最も低いコーデックのレイヤー：導出されたコーデック、パックされないコレクション、ツリーを読む経路
+
+% 1 1 0 16215e42e4bfaadf1a4cded746207763
+
+@ 0 44 0 1f6c9d4a9cba38f20f2c3e6d4c7d4fa9
++       `Protobuf` オブジェクトが継承するトレイトなので、その given はどれも `Protobuf` のメンバーであり、暗黙のスコープから解決される。
++       三つのレイヤーのうち最も低く — `Protobuf1`（直接の経路）とオブジェクト自体（スカラー、パックされたコレクション、モードの選択子）の下にある — そのため、その包括的なインスタンスは、より具体的なものが何も適用されないときにだけ選ばれる。導出されたメッセージのコーデックは手書きのものに譲り、パックされないコレクションのインスタンスは `Packable` な要素に対するパックされたものに譲り、ツリーを実体化する読み取りは直接のパーサーに譲る。
++       導出がこれを名指すので、アンブレラにエクスポートされている。
++   entry #encodable   wisteria の `Reflection` を持つ任意の型に対して `Encodable in Protobuf` を導出する
++       ケースクラスまたはシールされた直和型に対して `Protobuf.EncodableDerivation` を展開する inline given である。リフレクションも他のインスタンスも持たない型は探索に失敗する。
++   entry #decodable   wisteria の `Reflection` を持つ任意の型に対して `Decodable in Protobuf` を導出する
++   entry #listEncodable   任意の `Iterable` を、要素ごとに一つのタグを持つ、パックされない繰り返しフィールドとして
++       `Packable` のインスタンスを持たない要素 — 文字列、バイト配列、入れ子のメッセージ — のための代替で、各要素はフィールドの別々の出現として書かれる。
++       要素自身の `Repeated` の出現は平坦化して取り込まれ、`Absent` のものは捨てられ、空のコレクションは `Absent` である。
++       名前渡しの要素コーデックをキャプチャする。
++   entry #listDecodable   任意の `Iterable` を、その出現から `Factory` を通じて
++       各出現を要素のデコーダーでデコードする。
++       `Packable` がスコープにないとき、パックされたフィールドもここで往復できる。要素のデコーダーが一つの値を読むからである。
++   entry #aliasListEncodable   プレリュードの `List` に対する、パックされないエンコーダー
++       不透明なプレリュードのコレクションは `Iterable` に適合しないので、`List`、`Set`、`Sequence` はそれぞれ、基底の stdlib の型で組み立てられたエイリアスの組を持つ。
++   entry #aliasListDecodable   プレリュードの `List` に対する、パックされないデコーダー
++   entry #aliasSetEncodable   プレリュードの `Set` に対する、パックされないエンコーダー
++   entry #aliasSetDecodable   プレリュードの `Set` に対する、パックされないデコーダー
++   entry #aliasSeriesEncodable   プレリュードの `Sequence` に対する、パックされないエンコーダー
++   entry #aliasSeriesDecodable   プレリュードの `Sequence` に対する、パックされないデコーダー
++   entry #arrayEncodable   メッセージ、テキスト、バイト列の凍結済みの `Array[T]^{}` を、パックされない繰り返しフィールドとして
++       `List` の形のバイト列なので、繰り返しのメッセージフィールドを `Array[Message]^{}` と宣言し、要素ごとのセルなしに生成されたパーサーで集めることができる。
++       `ClassTag` が必要である。
++       `Packable` なスカラーの凍結済み配列は、代わりに `Protobuf.longArrayEncodable` とその仲間を通じてパックされる。
++   entry #arrayDecodable   スカラーでない要素について、繰り返しフィールドを凍結済みの `Array[T]^{}` として
++   entry #aggregableIn   ツリーを通じた `read[T in Protobuf]`：バイト列を集約してから `as[T]`
++       任意の `Decodable in Protobuf` に対する `(value in Protobuf) is Aggregable by Data` の given で、その `Tactic[Protobuf.Error]` をキャプチャする。
++       メモリ上の単一のブロックはその場でデコードされ、複数のブロックのチェーンはまず一つのブロックに集められ、ストリームは届くにつれて集められる。`Protobuf` の値はそのバイト列なので、どの場合もメッセージ全体が保持される。
++       `Parsable` がスコープにあるときはいつでも、`Protobuf1#aggregableParsed` がこれより優先される。
++   entry #encodableOver   `value.in[Data over Protobuf]`：メッセージのワイヤ上のバイト列
++       `read[T in Protobuf]` の書き込み側の鏡像である。解決された何らかの `Encodable in Protobuf` のペイロードなので、`Printable` がスコープにあれば直接出力し、そうでなければツリーを通じてエンコードする。
+
+@ 0 1 0 05058753186c96400c9b8ac636985032
++ entry .Protobuf1   中間のコーデックのレイヤー：`Parsable` か `Printable` がスコープにあればいつでも取られる直接の経路
+
+% 1 1 0 147d70ef9a23b00c0a926d4e050061e7
+
+@ 0 25 0 02316bc3ebad280f1eda4a949603f269
++       `Protobuf2` と `Protobuf` オブジェクトの間にあるトレイトである。
++       その given は、`Protobuf.Parsable` か `Protobuf.Printable` がスコープにある型にだけ適用され、そのときは `Protobuf2` のツリーに基づくものより優先されるので、直接のコーデックは、それが存在する場所でだけ読み書きを変える。
++       `import codecs.derived` は上のオブジェクトからこれらを上書きし、`import codecs.strict` はオブジェクトの厳格な given をここにある失敗と組み合わせる。
++   entry #encodablePrinted   `Printable` を通じた `in[Protobuf]`：出力された配列をメッセージの唯一の `Wire` とする
++       `Protobuf.Printable` がスコープにある任意の型に対する `Encodable in Protobuf` で、それをキャプチャする。
++       メッセージは `Wire(Len, Printable.print(value))` なので、`encode` は配列をコピーせずに返す。
++       レキシカルスコープの `Printable` — ローカルの given、または名前でインポートしたもの — はエンコーディングを直接にする。
++   entry #aggregableParsed   `Parsable` を通じた、チェーンまたはストリーム上の `read[T in Protobuf]`
++       `Protobuf.Parsable` を持つ任意の型に対する `(value in Protobuf) is Aggregable by Data` の given で、その Parsable と `Tactic[Protobuf.Error]` をキャプチャする。
++       単一ブロックのチェーンはその場で読まれる。より長いチェーンやストリームは、必要に応じてセルを引き出す `ProtobufParser` を通じて読まれるので、入力は決して組み立てられず、保持されるのは高々一つのフィールドである。ただし `oneof` をまたぐ場合は別で、そのメッセージはバリアントが選ばれる間バッファーされる。
++       エラーのオフセットは入力中の絶対位置である。
++   entry #readableParsed   `Data` 全体の上の `data.read[T in Protobuf]`。その場でパースされる
++       `Data` について具体的なので、内容全体がすでに手元にあるときは合成されたパイプラインに勝ち、それを一要素のストリームに包まずにパースする。
++   entry #aggregableStrictFailure   `import codecs.strict` の下で、`Parsable` を持たない型の読み取りはコンパイルに失敗する
++       使用箇所で _`T` has no direct codec_ を発生させる inline given である。
++       導出の経路が黙って取られないよう導出による読み取りより上にあり、パーサーを持つすべての型を先に取る `Protobuf.aggregableStrict` より下にある。
++   entry #encodableOverStrictFailure   `import codecs.strict` の下で、`Printable` のない `in[Data over Protobuf]` はコンパイルに失敗する
+
+@ 0 1 0 02399c22806a206819265f01ccf26369
++ entry .WireType   proto3 の四つのワイヤ型。`Varint`、`I64`、`Len`、`I32`
+
+% 1 1 0 0c360b9cc5e06c9116803b488f70c070
+
+@ 0 6 0 18a4c1ac578c8a100ab141f6f5cf4c46
++       フィールドのタグの下位 3 ビットが、その値の配置を示す。
++       `Varint`（コード 0）は `int32`、`int64`、`uint`、`sint`、`bool` と列挙型、`I64`（コード 1）は `fixed64`、`sfixed64`、`double`、`Len`（コード 2）は文字列、バイト列、入れ子のメッセージ、パックされた連続部分、マップのエントリー、`I32`（コード 5）は `fixed32`、`sfixed32`、`float` に使われる。
++       非推奨のグループ型であるコード 3 と 4 はサポートされない。そのどちらかを持つタグは `Protobuf.Error.Reason.UnexpectedWireType` で拒否される。
+
+% 2 1 0 15de928426ce5f980614e8f17bd0bd2d
+
+% 3 1 0 187ae6ba0723b0630d877caa125d962c
+
+% 0 1 0 16ef7832a33c68921a32db69827ed75c
+
+% 0 1 0 03e9fe429f03172f15f70161732bd57b
+
+% 0 1 0 1d4bc6856232090d00ef895413bea165
+
+% 1 1 0 160d07d5c20d3c7d0bf33ca3b3b77f6c
+
+@ 0 2 0 1454079fca24609b17976e9b36786061
++   entry .fromId   3 ビットのコードに対応するワイヤ型。3、4、6、7 では `Unset`
++   entry #id   フィールドのタグに詰め込まれる 3 ビットのコード。0、1、2、5 のいずれか
+
+@ 0 1 0 176a4aa5a99131721c10851e614fa91d
++ entry .Packable   repeated フィールドが一つの長さ区切りの連続部分にパックされるスカラーを示す
+
+% 1 1 0 0129660e29ce61a717e7dba9a141e1d1
+
+@ 0 6 0 01a8b2d1d4f1f8c00c160ff84ae15fd4
++       proto3 は数値の repeated フィールドをパックする。要素ごとに一つのタグを書くのではなく、すべての要素のバイトを連結して一つの `Len` フィールドにする。
++       `Packable` は要素の型がパックされることの証拠であり、その値が使う `#wireType` を記録するので、読み手はパックされた連続部分を要素に分割し直せる。
++       インスタンスを持つのは数値のスカラー（`Int`、`Long`、`Boolean`、`Float`、`Double` と、サイズ指定の六つの整数）だけである。文字列、バイト配列、メッセージは長さ区切りであり、常に別々のフィールドとして繰り返されるからである。
+
+@ 0 3 0 19fb8bb7183b34c51b3f61bd583f2d0e
++       インスタンスはコンパニオンの given なので、`List[Int]` のフィールドはインポートなしでパックされ、`List[Text]` のフィールドはパックされない `Protobuf2#listEncodable` を使う。
++       読み手は、書き手がどちらを選んでも両方の形を受け付ける。
+
+% 1 1 0 0506374c408184810daa72b5a7f99830
+
+@ 0 12 0 1f94e54f6ca18ff61d017bb862be56b5
++   entry #wireType   一つの要素の配置。`Varint`、`I32`、`I64` のいずれか
++   entry .int   `Int` は varint としてパックされる
++   entry .long   `Long` は varint としてパックされる
++   entry .boolean   `Boolean` は varint としてパックされる
++   entry .u32   `U32` は varint としてパックされる
++   entry .u64   `U64` は varint としてパックされる
++   entry .s32   `S32` はジグザグ符号化の varint としてパックされる
++   entry .s64   `S64` はジグザグ符号化の varint としてパックされる
++   entry .float   `Float` は 32 ビットの固定長の値としてパックされる
++   entry .double   `Double` は 64 ビットの固定長の値としてパックされる
++   entry .b32   `B32` は 32 ビットの固定長の値としてパックされる
++   entry .b64   `B64` は 64 ビットの固定長の値としてパックされる
+
+@ 0 1 0 0c99364a4381578212a62f2de3e4afce
++ entry .field   `@field(n)` アノテーション。ケースクラスのフィールドの Protocol Buffers のフィールド番号
+
+% 1 1 0 19b1bd4fd1d869721943ffa530adc35a
+
+@ 0 6 0 1570679f83b8ec231ffcc5b25ec2567b
++       `case class Point(@field(1) x: Int, @field(2) y: Int)` は、`x` をフィールド 1、`y` をフィールド 2 として宣言する。これが、Scala の型が示さないもので proto3 が必要とするもののすべてである。
++       番号は導出の間とジェネレーターによって読まれるので、このアノテーションは一つの `#number` を持つ `StaticAnnotation` である。
++       アノテーションを持たないフィールドは、1 から始まる宣言位置によって自分の番号を決める。これは同じ宣言に対して `protoc` が割り当てる番号である。番号は、プロトコルの進化が求めるとおり、飛び飛びでもよい。
+
+% 2 1 0 177106922e2857f11dc978f19ab2974b
+
+% 3 1 0 032e117616aa24a712f8f6a8f40383c9
+
+% 0 1 0 13ef00015d56b3b201f642d02b01a7a6
+
+% 0 1 0 127a74ad7a4fdefe12bc0a96f5070eb7
+
+% 0 1 0 038550b06f592ca7140359d1409c3545
+
+% 1 1 0 123e27092178dea3061c1164b5e7297d
+
+@ 0 4 0 1d7eb3665bea345a1c6e0739b0e9a1a1
++       `oneof` のバリアントのフィールド番号は位置によって決まる。列挙型またはシールされたトレイトの最初のケースが `oneof` メッセージのフィールド 1、二番目がフィールド 2 となり、それらについてはアノテーションは参照されない。
++   entry #number   フィールド番号。1 以上
+
+@ 0 1 0 1edb32c71ad9dcf11a495e22b57e2764
++ entry .conversions   エンコード可能な値を、`Protobuf` が求められる場所で使えるようにする given
+
+% 1 1 0 06d03833f7fdd18008083f46e4a7977c
+
+@ 0 6 0 0cb695fd752500c913fca0735ec641da
++       名前でインポートする選択パッケージである。`import conversions.encodableToProtobuf`。
++   entry .encodableToProtobuf   任意の `Encodable in Protobuf` の値からその `Protobuf` への、スコープ付きの `Conversion`
++       暗黙の変換 `value => value.in[Protobuf]` をレキシカルスコープに持ち込むので、レンズの代入（`message.lens(_(Prim) = Point(7, 8))`）でエンコード可能な値を `in[Protobuf]` と書かずに直接与えられる。
++       変換が既定でスコープ内にあることはなく、これをインポートすることが明示的な選択である。
+
+@ 0 1 0 168b4e39869db247126d81020f92935b
++ entry .Inlinable   直接パーサーとプリンターの背後にある、フィールドの型ごとのコンパイル時のコードジェネレーター
+
+% 1 1 0 18217b659f57168a031c38560a07fe4c
+
+@ 0 8 0 176b346f5d4f8b7006614f9a710f4975
++       `Inlinable` は `Protobuf.Parsable` と `Protobuf.Printable` に対応する `Expr` レベルのものである。メソッドがマクロ展開時にコードを生成する型クラスである。
++       `#parse` は、ウィンドウを値のペイロードに設定した読み手の `Expr` を受け取り、デコードされた値の `Expr` を返す。`#measure` と `#write` も同様に、印字の二つのパスを返す。
++       ジェネレーターは各結果を組み立て中のパーサーやプリンターに直接スプライスするので、入れ子のメッセージ、repeated フィールドの収集、`oneof` のディスパッチ、独自の葉のコーデックがすべて一つの平坦なメソッドにインライン化される。実行時のディスパッチも、フィールドのマップも、合成されたパーサー間のアダプターの経由もない。
+
+@ 0 1 0 02cba14927f03df8131f6790b3937d08
++       利用者は二つの入口を通してこれに出会う。
+
+% 2 1 0 14c42fd427a5d97a0936e323b2671763
+
+% 3 1 0 1b101290be58011019c231869c59af5f
+
+% 4 1 0 0e8aa5f94db2620d193adda43c0eff11
+
+% 0 1 0 0d056e7399d96de419e1aaa893e149cc
+
+% 2 1 0 0284ceed9e4f1b16068706289d36580c
+
+% 0 1 0 0f76b1a797c93b19167941340d00ecc8
+
+% 0 1 0 0c679ec4366487e906353a9b2a237cf4
+
+% 0 1 0 0d68a3b3294b6e5d18a38e9ddb3da6e1
+
+% 1 1 0 158036a89a98186e0f073a64c42b89f5
+
+@ 0 8 0 1b9ed8734343ca740b72c86c18527db6
++       それぞれが、ケースクラスのメッセージまたはシールされた直和型の `oneof` について、単相のインスタンスを生成する。そのインスタンスは、フィールドの型の `Inlinable` インスタンスから合成される。入れ子のメッセージと直和型に対して `derived` が作る構造的なインスタンス、コンパニオンの葉の given（`int`、`long`、`boolean`、`double`、`float`、`text`、`data`）、そして repeated フィールドに対する `iterable` である。
++       インスタンスを持たないフィールドの型（サイズ指定の整数、`Optional` のコレクション、利用者の型）は*継ぎ目*を通る。その出現はワイヤ値として収集され、その `Decodable in Protobuf` を通してデコードされる（エンコードはその `Encodable` を通す）ので、どのメッセージも依然としてパースでき、そのフィールドで遅くなるだけである。
+
+@ 0 9 0 1dca7278ad9a4388065945a2eb792c3b
++       手書きのインスタンス（`given (MyLeaf is Inlinable) = new Inlinable { … }`）は通常の実行時の値であり、ジェネレーターがその `parse` を呼ぶには、マクロの中でそれを評価するしかない。それにはマクロ内のステージングコンパイラが必要で、`locomotion.staged` が `.Stager` として提供する。
++       ここから二つの制約が生じる。インスタンスとその型は展開よりも*前の*実行でコンパイルされていなければならない（同じ実行のインスタンスは、まだ信頼できるクラスファイルがないので、継ぎ目に格下げされる）。また、マクロのクラスパスに `locomotion.staged` がなければ、手書きのインスタンスはすべて継ぎ目に格下げされる。
++       生成された構造的なインスタンスはどちらも必要としない。
++       インスタンスが `derives` 節（`derives Inlinable.ForProtobuf`）であるメッセージは、ステージングの召喚によってそのコンパニオンで見つかる。
+
+@ 0 1 0 18c984cffbc18cad0c5845ef4967aab2
++       `Inlinable` はアンブレラにエクスポートされない。`import locomotion.Inlinable` と書くこと。
+
+% 1 1 0 0b15f3928ca293111662ef5f02b4021f
+
+% 0 1 0 147e046f29e62e5b04a9813f1d58b1b4
+
+% 0 1 0 01bc8e1fb02213070d3215eedfc92819
+
+@ 0 16 0 1a9eecfffb61a9e21739250564c9a628
++   entry .parsable   `Inlinable.parsable[T]`。メッセージまたは oneof のための生成された `Protobuf.Parsable`
++       マクロである。
++       型は、ケースクラスのメッセージ、それらのシールされた直和型、または `Inlinable` インスタンスを持つ型でなければならない。コレクションは拒否され（_a Protobuf message is the unit of direct parsing_）、インスタンスもメッセージの形も持たない型は `Decodable in Protobuf` を提案するコンパイルエラーになる。
++       生成されたパーサーは遅延の `self` に束縛されるので、自分自身の型の再帰的な出現（`children: List[Tree]` を持つ `Tree`）はその場でそれを通して読まれる。
++   entry .printable   `Inlinable.printable[T]`。メッセージまたは oneof のための生成された `Protobuf.Printable`
++       `.parsable` と同じくマクロである。
++       インスタンスが印字しない（`prints` が `false`）型はコンパイルエラーになる。_`T` has no generated printer; a Protobuf message is the unit of direct printing_。
++   entry .derived   ケースクラスのメッセージのための構造的なインスタンス。`product is Inlinable`
++       `parse`、`measure`、`write` が呼ばれたときに直積型をリフレクトする。`Type` は呼び出しとともに届くので、独自のマクロは持たない。
++       フィールドは番号によって読まれ、その型に応じて収集、ディスパッチ、または継ぎ目による処理を受ける。
++   entry .ForProtobuf   `derives Inlinable.ForProtobuf` のキャリア。コンパニオンにあるメッセージの構造的なインスタンス
+
+% 1 1 0 0b22a341f68026f20aed7782544ffeb0
+
+@ 0 13 0 0332a38594a216bb1851f674008d9efe
++         `Self` 型の型クラスは `derives` 節に現れることができない。そのため `case class Play(…) derives Inlinable.ForProtobuf` は、このパラメーター化されたサブクラス（これは `Play is Inlinable` *である*）を `Play` のコンパニオンに合成し、そこで別のメッセージのジェネレーターの展開時の召喚がそれを見つける。
++         すべてのメソッドを `Inlinable.derived` が作る構造的なインスタンスに委譲し、解決の段階がそれを包みから取り出すので、インスタンスはジェネレーターとしての同一性を保つ。
++     entry .derived   `derives` 節のために `Inlinable.derived[T]` を包む
++     entry #parse   構造的なインスタンスに委譲する
++     entry #absent   構造的なインスタンスに委譲する
++     entry #prints   構造的なインスタンスに委譲する
++     entry #measure   構造的なインスタンスに委譲する
++     entry #write   構造的なインスタンスに委譲する
++   entry .Generates   型のコーデックを構造的に生成できることの証拠。メッセージまたは oneof
+
+% 1 1 0 026f858860e2838f17f964a11113974e
+
+@ 0 7 0 073bf6407b322b3c1a2b411af7a433b9
++         `import codecs.direct` の生成されたインスタンスに付く条件である。
++         その transparent な given `.generates` はマクロで、ケースクラスのメッセージまたはそれらのシールされた直和型に対しては成功し、それ以外に対しては失敗する（_`T` has no generated codec_）。そのため生成されたインスタンスの探索が失敗し、代わりに導出の経路が解決される。
++         安価な形の検査なので、このモードでの探索も安価なままである。
++     entry .generates   マクロの given。メッセージまたは oneof に対しては `Generates[T]`、それ以外では失敗する探索
++   entry .Stager   `locomotion.staged` が手書きのインスタンスを展開時に評価するためのフック
+
+% 1 1 0 0d2744b111282a860204b3237fa98d90
+
+@ 0 41 0 0949830b91184e681218f23fd2ebeebb
++         `Inlinable.Stager` は一つのメソッド `#summon` を持つトレイトで、`locomotion.staged` が `InlinableStager.Implementation` として実装する。
++         コンパニオンオブジェクトは、最初に求められたときに、その実装をマクロ自身のクラスローダーからクラス名によって読み込み、それがなければ `.summon` は `None` を返す。そのため中核部分はコンパイラの jar に依存しない。
++         `ServiceLoader` を通さずに名前で探すのは、中核部分が Scala Native 向けにコンパイルできるようにするためである。
++     entry .summon   フィールドの型のためのステージングされた `Inlinable`。`locomotion.staged` がなければ `None`
++     entry #summon   ステージングコンパイラの中で、型のための `Inlinable` の given を評価する
++   entry .int   `Int` は varint として読まれ、varint として印字される。存在しなければ `0`
++       葉のジェネレーターは、木のアクセサーがフィールドの記録されたペイロードを解釈するのとまったく同じように、読み手のウィンドウを読む。一つの値の上で合成される手書きのインスタンスのためである。
++   entry .long   `Long` は varint として読まれ、印字される。存在しなければ `0L`
++   entry .boolean   `Boolean` は varint として読まれ、印字される。存在しなければ `false`
++   entry .double   `Double` は 64 ビットの固定長の値として読まれ、印字される。存在しなければ `0.0`
++   entry .float   `Float` は 32 ビットの固定長の値として読まれ、印字される。存在しなければ `0.0f`
++   entry .text   `Text` はウィンドウを UTF-8 として読み、サイズ表の作業領域を通して印字される
++       計測パスは文字列を一度だけ `ProtobufSizes` の作業領域にエンコードして（`stashText`）、そのオフセットと長さを記録し、書き込みパスがそれをコピーし出す（`ProtobufPrinter#stashedText`）。そのため文字列はちょうど一度だけエンコードされる。
++   entry .data   `Data` はウィンドウをバイト列として読み、それをそのまま印字する
++   entry .iterable   repeated フィールドのために要素のインスタンスを運ぶ。単独ではパースしない
++       コレクションの出現はメッセージ全体に散らばっていることがあり、パックされていることもあるので、コレクションを一つのフィールドのウィンドウからパースすることはできない。収集はメッセージのジェネレーターが行う。
++       このインスタンスは要素の `Inlinable` をそこへ運ぶだけであり、直接到達するとその `parse` はコンパイルエラーになる。
++   entry #parse   読み手のウィンドウから `Self` を読むコードを生成する
++   entry #prints   インスタンスがプリンターを生成するかどうか。既定では `false`
++       印字しないインスタンス（既定であり、そのためパース専用のインスタンスは正直なままである）は、生成されたプリンターではそのフィールドを `Encodable in Protobuf` の継ぎ目に回す。
++   entry #measure   計測パスを生成する。入れ子のサイズを記録し、エンコードされた長さを返す
++       既定ではコンパイルエラー _the Inlinable for `T` generates no printer_ になる。`prints` をオーバーライドするインスタンスは、これと `#write` をオーバーライドしなければならない。
++       表は `Expr[AnyRef]` として運ばれ、`ProtobufSizes.of` で型を再表明される。
++   entry #write   プリンターを通した書き込みパスを生成する。サイズを読み戻す
++       生成されたコードはキャプチャが消去されているので、プリンターと表は `Expr[AnyRef]` として運ばれ、`ProtobufPrinter.of` と `ProtobufSizes.of` で型を再表明される。
++   entry #absent   この型のフィールドの番号が欠けているときに生じるものを生成する
++       proto3 には必須のフィールドがない。葉のインスタンスはゼロを生じ、メッセージのインスタンスはすべてのフィールドが存在しないレコードを生じる。既定では、与えられた戦術を通して `Protobuf.Error.Reason.MissingField(0)` で中断するので、これをオーバーライドしない独自のインスタンスは、黙って誤るのではなく、はっきりと失敗する。
+
+@ 0 1 0 0038746119113b2b04f4b732c44a9bc4
++ entry .ProtobufParser   ストリーミングのワイヤパーサー。`Cursor` からフィールドを、一度に一つのウィンドウずつ直接読む
+
+% 1 1 0 18a3c9da1f2a2a330ead0b39c962abe5
+
+@ 0 6 0 08fe81bfc775e25d13a53e618e48562f
++       `ProtobufParser` は zephyrine の `Cursor` から Protocol Buffers のワイヤ上のバイトを一度に一つのフィールドずつ読むので、チャンクで届くメッセージは届くにつれて読まれ、バッファは読んでいるフィールドだけを保持する。
++       これは状態を持つ排他的なケイパビリティ（`ProtobufParser^`）であり、コンパニオンの `.apply` を通してのみ構築される。対象は `Data` 全体（カーソルなしでその場で読む）、`Chain[Data]`（必要に応じてセルを引き出す）、`Stream[Data]`（チャンクを届くにつれて読む）であり、一つの読み取りがその間これを所有する。
+
+@ 0 8 0 0bac87cc3a06e262042826c1860b8b08
++       読み取りは*ウィンドウ*によって制限される。ウィンドウはパース中の値の範囲を入力中の絶対オフセットで表したもので、そのため入れ子のメッセージは、コピーしたペイロードの上ではなく、その場でパースされる。
++       `#directEnterField` はウィンドウをタグのワイヤ上のコードによって一つのフィールドのワイヤ値に狭め、`#directLeaveField` は外側のウィンドウを復元し、フィールドの残りをスキップする。スカラーの読み取りはどれもウィンドウを検査し、絶対オフセットを伴う `Protobuf.Error` を報告する。
++       `oneof` は、ウィンドウ全体をバッファリングし（`#directBufferWindow`）、それを走査してバリアントを探し、バリアントの範囲に入り直す（`#directWindow`、`#directRestore`）ことで読まれる。
+
+@ 0 6 0 0bba8011c86ecd2f1b0fc4c9541ce19b
++       利用者のモジュールにスプライスされた生成済みのパーサーは、レコードごとに一度パーサーを束縛し、この*直接の縁*（それぞれが `Tactic[Protobuf.Error]` を受け取る `direct…` メソッド）を通して読む。これらが公開されているのはそのためである。
++       手書きの `Parsable` インスタンスは、戦術を代わりに運ぶ制限された縁である `ProtobufReader` を使う。
++       コンパニオンは、木の経路が使うペイロード全体の読み取りも保持する。`.fields`、`.packed`、`.varintOf`、`.fixed32Of`、`.fixed64Of` で、いずれもメモリ上の `Data` に対するものである。
+
+% 2 1 0 0c57b931321b2b9e1f7ea1a2e08626f5
+
+% 3 1 0 177192daf06922b10d5df2c957f2d8d6
+
+% 4 1 0 0f40c15c0d91d08812096037b1c803cd
+
+% 0 1 0 1f545fa8a719c3621c59a692dce5fe27
+
+% 0 1 0 0a1950f8a01f681b1b5a2af8a4e44091
+
+% 0 1 0 08a5ba10a803ac4b1f69743ca6cc05fa
+
+% 0 1 0 0984af592b3292be02b94995a301618e
+
+% 0 1 0 07d44f777cbfcb6c0aaafc89f6f9801e
+
+% 0 1 0 12e0260ddc2f3bf7044f6d770f0a0817
+
+% 0 1 0 0bbc03b5333e47b9053a0cd238fb0141
+
+% 1 1 0 094d9d9847e488e70e2683d6520e62f2
+
+@ 0 6 0 1f4e7011bb2076c91c174ee92d58afec
++       利用者が頼ってよい性能上の注意を挙げる。
++       1 バイトの varint（タグ、bool、短い長さ）はその場で読まれる。2 から 4 バイトの varint は分岐のない経路を通る。`Data` 全体に対して読まれる、バイトがすべて ASCII の文字列フィールドは、UTF-8 のコンストラクターではなく Latin-1 のコピーを通してデコードされ、同一の `Text` になる。そして `Data` 全体に対する読み取りにはカーソルがまったくない。
++       ウィンドウの位置は `Int` として縁を越える。メッセージは、その `int32` の長さの接頭辞が求めるとおり、最大で 2 GiB である。
+
+% 1 1 0 1ecc24b255e8328306aad5ab10a4c8f4
+
+% 1 1 0 12d92586228731430860ed03611f0631
+
+@ 0 82 0 08ea117d3da0031702969d6011a1f9c3
++   entry .apply   `Data` 全体、`Chain[Data]`、または消費される `Stream[Data] over Credit` に対するパーサー
++       `Data` に対しては、配列がバッファであり、借用されて書き込まれることはなく、ウィンドウはその長さである。
++       チェーンやストリームに対しては、ウィンドウは無制限である。メッセージは入力の終わりで終わり、ストリームではそれは終わることによってしか分からない。セルはパーサーが必要とするにつれて引き出される。
++       ストリームのオーバーロードは引数を `consume` として受け取る。ストリームはパーサーによってちょうど一度だけ使われる。
++   entry .of   中立な `AnyRef` のキャリアとして運ばれたパーサーを、`ProtobufParser^` として再表明する
++       生成されたパーサーのためのものである。それは読み手のパーサーをキャリアとして受け取り、`update` 呼び出しのたびに排他的なケイパビリティを必要とする。インラインなので、キャスト式そのものが利用者のモジュールに置かれる。
++       手書きのコードには再表明すべきキャリアがない。
++   entry .varintOf   メモリ上のペイロードの先頭からの varint。`Tactic[Protobuf.Error]` が必要
++       木の経路のアロケーションのないスカラーの読み取りである。`Protobuf.intDecodable` とその兄弟が、フィールドの記録されたペイロードに対してこれを呼ぶ。
++       1 バイトの varint はその場で読まれる。10 バイトを超えると `MalformedVarint`、尽きると `Truncated`、10 バイト目がビット 63 を超えて寄与すると `Overflow` である。
++   entry .fixed32Of   ペイロードからのリトルエンディアンの 32 ビット値。4 バイトより短ければ `Truncated`
++   entry .fixed64Of   ペイロードからのリトルエンディアンの 64 ビット値。8 バイトより短ければ `Truncated`
++   entry .fields   メッセージのペイロードを、フィールド番号からすべての出現へのマップとしたもの。初出順
++       ペイロードを一度たどり、各フィールドのペイロードをそれぞれの `Protobuf.Wire` にコピーする。繰り返しと未知のフィールドは保たれる。
++       `fieldOptical` はこれを使って一つのフィールドを書き換え、残りをそのまま通す。
++       フィールドの出現はワイヤ上の順に並ぶ。
++   entry .packed   パックされた連続部分を、要素のワイヤ型によって要素ごとに一つのワイヤ値に分割する
++       `ProtobufParser.packed(payload, WireType.Varint)` は、varint を連結した `Len` のペイロードを分割する。`I32` と `I64` は固定幅で分割する。
++       ワイヤ型は要素の `Packable` インスタンスから来る。
++       途中で切れた最後の要素は `Truncated` である。
++   entry #directAtLimit   ウィンドウにもう内容がないかどうか。最上位では、入力が終わったかどうか
++       レコードのループの検査である。`while !parser.directAtLimit` は、ウィンドウが消費されるまでタグを読む。
++       無制限のウィンドウでは、答える前にカーソルにさらに求めるので、ライブのストリームの完全なフィールドは次のフィールドを待たずに読まれる。
++   entry #directMark   現在の絶対オフセット。`Int` として
++   entry #directBoundary   ウィンドウの終わりのオフセット。`Int` として。無制限のときは `Int.MaxValue`
++   entry #directTag   次のフィールドのタグ `(number << 3) | wireCode`。上限より手前でのみ呼ぶこと
++   entry #directVarint   ウィンドウで制限された varint
++       ウィンドウまたは入力の終わりでは `Truncated`、10 バイトを超えると `MalformedVarint`、10 バイト目がビット 63 を超えると `Overflow` である。いずれもオフセットは varint が始まった位置である。
++   entry #directFixed32   ウィンドウ内の 4 つのリトルエンディアンのバイトを `Int` として
++   entry #directFixed64   ウィンドウ内の 8 つのリトルエンディアンのバイトを `Long` として
++   entry #directEnterField   ウィンドウを、ワイヤ上のコードによって一つのフィールドの値に狭める。外側の境界を返す
++       コード 0 は varint 自身のバイトを、1 は次の 8 バイトを、5 は次の 4 バイトを覆い、2 は長さの接頭辞を消費してそのバイト数を覆う。コード 3、4、6、7 は、タグのオフセットでの `UnexpectedWireType` である。
++       外側のウィンドウを越えてしまうフィールドは `Truncated` である。無制限の外側のウィンドウでは、入る時点でバイトが存在することを証明できないので、代わりにその読み取りが同じオフセットで切り詰めを報告する。
++       返されるトークンは `#directLeaveField` のためのものである。
++   entry #directLeaveField   外側のウィンドウを復元し、フィールドの残りをスキップする
++       パースがフィールドのペイロードより少なく読むことは正当である（木のアクセサーもペイロードの末尾のバイトを無視する）ので、残りはバッファリングされずにスキップされる。
++   entry #directSkipField   ワイヤ上のコードによって一つのフィールドを丸ごとスキップする。入ってから出る
++       生成されたパーサーが知らないフィールド番号を読み飛ばす方法である。
++   entry #directLong   ワイヤ上のコードによって、フィールドの値を `Long` として
++       コード 0 では varint がその場で読まれる。その他のコードでは、フィールドのウィンドウに入り、そのペイロードを木のアクセサーが記録されたペイロードを解釈するのと同じように解釈する。一つの varint からなる `Len` のペイロードは、その varint として読まれる。
++   entry #directDouble   フィールドの値を `Double` として。コード 1 ではその場で、それ以外ではウィンドウを通して
++   entry #directFloat   フィールドの値を `Float` として。コード 5 ではその場で、それ以外ではウィンドウを通して
++   entry #directString   長さ区切りのフィールドの内容を `String` として。コード 2 では一体化されている
++       コード 2 では、長さの接頭辞、境界の検査、UTF-8 のデコードが一つの段階で行われる。その他のコードではウィンドウの経路を通る。
++   entry #directData   長さ区切りのフィールドの内容を `Data` としてコピーし出したもの
++   entry #directWire   一つのフィールドの値を `Protobuf.Wire` として実体化したもの
++       `Inlinable` を持たないフィールドの型のための実行時の継ぎ目である。各出現はこの方法で収集され、フィールドはその `Decodable in Protobuf` を通して一度だけデコードされる。木の経路が `Repeated(values)` をデコードするのとまったく同じである。
++   entry #directStringWindow   現在のウィンドウ全体を `String` として
++       `ProtobufReader#text` の背後にあるウィンドウ単位の読み取りで、すでにフィールドのウィンドウを所有している `parse` 本体のためのものである。
++   entry #directDataWindow   現在のウィンドウ全体を `Data` としてコピーし出したもの
++   entry #directMessage   残りのウィンドウを長さ区切りの `Protobuf.Wire` メッセージとして
++       `Protobuf.Parsable.fromDecodable` の背後にある、値全体の継ぎ目である。
++   entry #directBufferWindow   oneof の走査の前に、ウィンドウの残りの内容を丸ごとバッファリングする
++       無制限のウィンドウは、充填によって見つかった入力の終わりで制限されるようになる。その後は走査も入り直しもバッファを再充填（したがって圧縮）できないので、`#directMark` が返したオフセットは、ウィンドウを出るまで `#directWindow` に対して有効なままである。
++       `#directWindow` と `#directRestore` より前に呼ばなければならない。
++   entry #directWindow   バッファリングされたウィンドウ内の絶対的な範囲に移動する。`#directRestore` のためのトークンを返す
++       `directWindow(start, end)` は `start` にシークし、ウィンドウを `end`（バリアントの記録された範囲）で制限し、以前の位置と境界を返り値の `Long` に詰め込む。
++       `#directBufferWindow` の後でのみ使う。
++   entry #directEmptyWindow   読み取り位置にある空のウィンドウ。存在しない入れ子の値はここからパースされる
++       存在しないメッセージのフィールドは空のメッセージとしてパースされるので、生成されたパーサーは空のウィンドウに入り、その上で入れ子のパーサーを実行する。
++       `#directRestore` で復元される。
++   entry #directRestore   `#directWindow` または `#directEmptyWindow` のトークンが保持する位置と境界を復元する
+
+@ 0 1 0 0716949c96f5d8af0742f7aedd1a2cae
++ entry .ProtobufReader   `Protobuf.Parsable` が読むための制限された縁。ウィンドウ、そのフィールド、それらのスカラー
+
+% 1 1 0 12b9b595b1dd84a303d6528a96001128
+
+@ 0 6 0 0f5f66204105ed8d09df381056278e5a
++       `ProtobufReader` は `Protobuf.Parsable.parse` が受け取るものである。ウィンドウを値のペイロードに設定したパーサーと、内部に運ばれる `Tactic[Protobuf.Error]` からなるので、`parse` の本体はエラーの語彙を必要としない。不正な入力は読み取りのアンビエントな戦術を通して中断する。
++       これを構築するのは locomotion の読み取りの経路だけである。一つの `parse` 呼び出しがその間所有する排他的で状態を持つケイパビリティであり、その後に何も保持してはならない。
+
+@ 0 2 0 12be84089bf8acf70cc5033e86e4ef5e
++       手書きのインスタンスは、`#more`、`#tag`、`#enterField`、`#leaveField` でウィンドウをたどり、その合間に各フィールドのスカラーを読む。
+
+% 2 1 0 19b87fcddd0a64fb0372a7c0ee5eda0a
+
+% 3 1 0 110c537f37bf4374159c8ef8cf526b14
+
+% 4 1 0 13f95483c84837770cc0985789119770
+
+% 2 1 0 0c77a9a5eb6823581b7ea9dd63ec38d6
+
+% 0 1 0 1cb1d4afb5a924081223eee9f12bd3a5
+
+% 0 1 0 008d75f08751885506f1434d3a464c48
+
+% 0 1 0 070e4f0a9d0db9960ddee9735c891809
+
+% 0 1 0 1dafb60c51ad024f1baeddfc4bfde9d3
+
+% 0 1 0 0d2e6abec6a684c713f8b8dfcd38285a
+
+% 0 1 0 1abc4ba60027bb1b0602171d6f83e5cf
+
+% 0 1 0 0f430d0b9657c0691f0f531c924a732d
+
+% 0 1 0 1387d1bc6f84c01b1e2c23a89c7ad23e
+
+% 0 1 0 0c32bbf0c634be681eb179afbed2a6be
+
+% 0 1 0 038d05ecd365626b0dccf667cfc042e5
+
+% 0 1 0 1313296de8ed1d67139db199db057b70
+
+% 0 1 0 155db439953f062d1d9cb13944df35e8
+
+% 0 1 0 167826ab7d8ee6f11583690d0942178a
+
+% 1 1 0 09963d0e454135060d7f72c819a1cc8e
+
+@ 0 6 0 057d1a9a9dae0a211d9c66bfd3443fa2
++       スカラーの読み取り（`#varint`、`#fixed32`、`#fixed64`、`#text`、`#data`）は、木のアクセサーがフィールドの記録されたペイロードを解釈するのとまったく同じようにウィンドウの内容を読むので、一つのワイヤ値の上で合成されたインスタンスは導出されたデコーダーと一致する。
++       `#wire` と `#message` は木の世界へ戻る継ぎ目である。
++       生成されたパーサーはこれらのフォワーダーを使わない。`ProtobufReader.of` を通してパーサーそのものを受け取り、`ProtobufParser` の直接の縁を通して読む。
+
+% 0 1 0 06cd74cf4dbd0aad1c863cfea6bf1bea
+
+% 1 1 0 15a00fa6a8eed35c00a0d6c862b77a4b
+
+@ 0 16 0 17c0c480931297cc11b6494fd7b5d949
++   entry .of   中立な `AnyRef` のキャリアとして運ばれた読み手を、`ProtobufReader^` として再表明する
++       利用者のモジュールにスプライスされる、生成されたパーサーの `parseCarrier(reader: AnyRef)` の入口である。
++       インラインなので、キャストはそこに置かれる。キャプチャ検査されているが分離検査されていないモジュールでは、メソッドの `^` の結果は読み取り専用になってしまうからである。
++   entry #more   ウィンドウにさらに内容があるかどうか。レコードのループの検査
++   entry #tag   次のフィールドのタグ `(number << 3) | wireCode`
++   entry #enterField   ウィンドウを、ワイヤ上のコードによって次のフィールドの値に狭める。出るためのトークンを返す
++   entry #leaveField   外側のウィンドウを復元し、フィールドの残りをスキップする
++   entry #skipField   ワイヤ上のコードによって、次のフィールドを丸ごとスキップする
++   entry #varint   ウィンドウからの varint
++   entry #fixed32   4 つのリトルエンディアンのバイトを `Int` として
++   entry #fixed64   8 つのリトルエンディアンのバイトを `Long` として
++   entry #text   ウィンドウ全体を UTF-8 の `Text` として
++   entry #data   ウィンドウ全体を `Data` としてコピーし出したもの
++   entry #wire   一つのフィールドの値を `Protobuf` として実体化したもの。`Decodable in Protobuf` を通してデコードするため
++   entry #message   残りのウィンドウを `Protobuf` メッセージとして。`Protobuf.Parsable.fromDecodable` のため
+
+@ 0 1 0 1c85a1945862684609cd47d0cc8bddd0
++ entry .ProtobufPrinter   所有するバッファにワイヤ上のバイトを書く。正確なサイズ、伸長可能、またはブロックごと
+
+% 1 1 0 152258d6d5c3524d03fbf897635adca6
+
+@ 0 10 0 0de63f64df469ada0498b54dbf81aa4e
++       `ProtobufPrinter` は Protocol Buffers のワイヤ上のバイトを書く。varint は LEB128 として、固定長の値はリトルエンディアンで、フィールドはタグの後に値を続けて（`Len` では長さの接頭辞付きで）書く。
++       バッファは三つのモードのいずれかで所有され、コンパニオンのコンストラクターで選ぶ。
++       `.exact(size)` は計測したサイズちょうどの配列で、`#data` はそれをコピーせずに返す。`.growing(hint)` は必要に応じて倍に伸び、長さが分からないバイトのためのものである。`.blocks(size, deliver)` は、次の書き込みがブロックをあふれさせるときに、満たされた各ブロックを `deliver` に渡し、`#flush` が最後の部分的なブロックを渡す。そのためメッセージは一つの配列としてではなく、ブロックのストリームとして書かれる。
++       ブロック全体より長い書き込みは `deliver` に直接渡る。
++       プリンターは状態を持つ排他的なケイパビリティ（`ProtobufPrinter^`）で、書き込みは更新として分類される。
+
+% 2 1 0 0dae0c38aa8880211c19d57571d9b1d7
+
+% 3 1 0 052ed3d0f6b1f5840163caf07524d324
+
+% 0 1 0 15dde595985c67261e13ec972c610fd3
+
+% 0 1 0 182f489a5192117c18f3a2865e9e4c4f
+
+% 0 1 0 1039f41cd8b4a5ad102b9539c9b0090b
+
+% 0 1 0 08b40a943d3778760179c231350dca5c
+
+% 1 1 0 0948f0b33ea9968b1d84f6b5929cb05a
+
+@ 0 5 0 005cabe31925ba1b07dd6e65b446adeb
++       コンパニオンのサイズ関数（`.varintSize`、`.tagSize`、`.utf8Length`、`.fieldSize`）は `Printable` の計測パスが合計するものであり、`#field` はバイト単位で `.fieldSize` と一致する。正確なサイズのプリンターの終わりを越えて書くと `ArrayIndexOutOfBoundsException` が送出されるので、書き込みと食い違う計測ははっきりと失敗する。
++       `.varintData` と `.fixedData` は木の経路のスカラーのエンコーダーである。
+
+% 0 1 0 04dae3c4d539afc61cad71069c72461a
+
+% 1 1 0 0446d67c793e883a1ebb053d5aba1f38
+
+@ 0 38 0 00582b43e7f2193c0450e4bb21ef5d7e
++   entry .exact   ちょうど `size` バイトのプリンター。その `#data` はコピーされないその配列
++   entry .growing   伸長可能なバッファに対するプリンター。`hint` バイト（最低 16）から始まる
++   entry .blocks   `size` バイトの満たされた各ブロックを消費者に渡すプリンター
++       `deliver` は `consume` として受け取られ、プリンターが所有する。
++       ブロックは最低 16 バイトである。
++       `#flush` は最後の部分的なブロックを届ける。通常の呼び出し側は `Protobuf.Printable.emit` である。
++   entry .of   中立な `AnyRef` のキャリアとして運ばれたプリンターを、`ProtobufPrinter^` として再表明する
++       生成されたプリンターのためのもので、その `writeCarrier` はプリンターを `AnyRef` として受け取る。`ProtobufParser.of` と同じくインラインである。
++   entry .varintSize   符号なし 64 ビットとして読んだ値の LEB128 での長さ。1 から 10 バイト
++   entry .utf8Length   文字列の UTF-8 エンコーディングの長さ。エンコードせずに求める
++   entry .tagSize   フィールドのタグの長さ。フィールド 15 までは 1 バイト、それ以降は varint
++   entry .fieldSize   番号とワイヤ値に対して `#field` が書くバイト数
++       `Absent` は 0、`Repeated` はその値の合計、`Wire` はそのタグに、`Len` では長さの接頭辞を加え、さらにペイロードを加えたものである。
++   entry .varintData   値の LEB128 のバイトを、ちょうどその長さの `Data` として
++   entry .fixedData   値の下位 `width` バイトを、リトルエンディアンで `Data` として
++   entry #data   書かれたバイト。正確なサイズまたは伸長可能のモードで
++       サイズに達した正確なサイズのプリンターは、配列をコピーせずに返す。それ以外では、これまでに書かれたバイトがコピーし出される。
++   entry #flush   ブロックモードで、これまでに書かれたバイトをブロックとして消費者に渡す
++   entry #byte   1 バイトを書く
++   entry #raw   バイトをそのまま書く
++       よくある場合（バイトが収まる場合）は、一回の比較と一回のコピーである。ブロックモードでは、ブロックより長いペイロードは前後をフラッシュして丸ごと届けられる。
++   entry #chunk   長さ区切りのペイロードを書く。長さを varint で、その後にバイトを
++   entry #varint   値を LEB128 の varint として書く。1 から 10 バイト
++   entry #utf8   文字列の UTF-8 エンコーディングを出力に直接書く
++       プリンターが最初に計測するその長さは、`ProtobufPrinter.utf8Length` である。
++   entry #stashedText   計測パスが格納した文字列を書く。長さの接頭辞の後に、表からそのバイトを
++       `ProtobufSizes` から次のオフセットと長さを読み、表の作業領域からバイトをコピーし出す。`ProtobufSizes#stashText` と対になるものである。
++   entry #fixed32   `Int` を 4 つのリトルエンディアンのバイトとして書く
++   entry #fixed64   `Long` を 8 つのリトルエンディアンのバイトとして書く
++   entry #tag   フィールドのタグ `(number << 3) | wireType.id` を varint として書く
++   entry #field   `Protobuf` の値から番号付きのフィールドを書く。タグ、`Len` では長さの接頭辞、ペイロード
++       `Absent` は何も書かず、`Repeated` はすべての値を同じ番号で書き、`Wire` はそのタグとバイトを書く。
++       ちょうど `ProtobufPrinter.fieldSize` バイトである。
+
+@ 0 1 0 022c722087f2dcbd16d9ca014dea4df3
++ entry .ProtobufSizes   直接プリンターの計測パスと書き込みパスの間にあるサイズ表
+
+% 1 1 0 10cc0fc97fa2b86813d9a0c63fd0cb28
+
+@ 0 9 0 1a491a2ad5fd5f2c050734e504eeff3d
++       長さ区切りの値（入れ子のメッセージ、文字列、パックされた連続部分）はどれも、そのバイトの前に接頭辞としてサイズを必要とする。そのため `Protobuf.Printable` は、一つ目のパスで値を計測して、そのようなサイズを訪れた順にここに記録し、二つ目のパスでサイズを同じ順に読み戻しながら（`#rewind` の後に `#next`）書く。
++       入れ子のメッセージのスロットは、その子を計測する前に予約され（`#reserve`）、後で埋められる（`#set`）ので、表はどちらのパスでも前順である。
++       計測パスが生み出し書き込みパスが必要とするものも並べて保持される。文字列は表のバイトの作業領域に一度だけエンコードされ（`#stashText`）、`ProtobufPrinter#stashedText` がコピーし出す。継ぎ目がエンコードしたワイヤ値は参照として格納される（`#stash`、`#unstash`）。
+
+@ 0 6 0 0ad3bf956b5b6ff4068952bc0828e772
++       状態を持つ排他的なケイパビリティ（`ProtobufSizes^`）であり、一つの印字がその間所有する。
++       `Protobuf.Printable.print` はスレッドの表を使う。表はそのスレッドのすべての印字で再利用されるので、印字は出力以外に何もアロケートしない。スレッドの表が使用中のとき（継ぎ目の `Encodable` が独自の `Printable` を通して入れ子のメッセージを印字するとき）は、新しい表を使う。
++       手書きの `Printable` インスタンスはこれをパラメーターとして受け取り、合成するフィールドのコーデックに渡すだけでよい。
+
+% 1 1 0 11913774c36e2e0a032e62a3cea10d9b
+
+% 1 1 0 17df2e56ac6171e60b57159ba00b5dfd
+
+@ 0 13 0 16693fcd52e134010577ceb74ccbdb6b
++   entry .of   中立な `AnyRef` のキャリアとして運ばれた表を、`ProtobufSizes^` として再表明する
++       生成されたプリンターのためのもので、`ProtobufParser.of` と同じくインラインである。
++   entry #reserve   子を計測した後にしか分からないサイズのためのスロット。そのインデックスを返す
++   entry #set   予約したスロットを埋める
++   entry #record   次のスロットにサイズを記録する。`set(reserve(), size)`
++   entry #rewind   書き込みパスのために、読み取り位置を先頭に移す
++   entry #next   次に記録されたサイズ。記録された順
++   entry #stashText   文字列を作業領域にエンコードし、そのオフセットと長さを記録する。エンコードされた長さを返す
++       文字列を一度だけ書くための計測側の半分である。`ProtobufPrinter#stashedText` が書き込み側の半分で、記録された二つの値を `#next` を通して読み戻す。
++   entry #stash   書き込みパスのために、参照を順に保持する
++       `Protobuf.Printable.fromEncodable` は、計測中にエンコードした `Protobuf` を格納する。
++   entry #unstash   次に格納された参照。格納された順
+
+@ 0 1 0 15fbe3351f227d0219c18ce416294e3f
++ entry .inlining   `Inlinable.parsable`、`Inlinable.printable`、`codecs.direct` の背後にあるマクロの実装
+
+% 1 1 0 0cfdffae0329d6ad187226d2c38d3281
+
+% 2 1 0 19897dfb91d68f7b03a67bdb36d3b5be
+
+@ 0 8 0 01425b3b418566b30413857b0108dec1
++       直接使うためのものではない。このオブジェクトは、展開時のインスタンスの解決、メッセージ、repeated フィールドとマップのフィールド、`oneof` の直和型のための構造的なジェネレーター、そして三つの入口のマクロを保持する。
++       生成されたパーサーやプリンターは遅延の `self` に束縛されるので、再帰的な型はその場でそれを通して読まれる。また、`Form` メンバーで細分化された型（`Play in Protobuf` の読み取りは `Play { type Form = Protobuf }` を推論する）は `Play` のコーデックを生成する。
++   entry .inlinableParsable   `Inlinable.parsable[T]` の背後にあるマクロ
++   entry .inlinablePrintable   `Inlinable.printable[T]` の背後にあるマクロ
++   entry .generates   `Inlinable.Generates.generates` の背後にあるマクロ。メッセージまたは oneof に対して成功する
+
+@ 0 1 0 07b02c109381fb5615f5844f1eacf1aa
++ entry .InlinableStager   手書きの `Inlinable` を展開時に評価する、マクロ内のステージングコンパイラ
+
+% 1 1 0 0ed357b1ead48d481b1999ce8d495246
+
+% 2 1 0 0b8d559443e8e88017432385f1998dbf
+
+@ 0 13 0 0d76d4528470ac411f20253b6791ab35
++       直接使うためのものではない。
++       `locomotion.staged` コンポーネントの唯一のオブジェクトである。`locomotion.staged` がマクロのクラスパスにあるとき、`Inlinable.Stager` は `.Implementation` を名前で読み込み、`.evaluate` は新しいステージングコンパイラを（マクロのクラスローダーのクラスパスに対して、現在の出力ディレクトリーを除いて）実行し、フィールドの型のための `Inlinable` の given を召喚して、生きたインスタンスをジェネレーターに渡す。
++       内側のコンパイラに渡れるのは、クラスファイルがすでに存在するクラスの形の型（クラスまたはその適用）だけである。不透明型や構造的な型、あるいは進行中のコンパイルの実行で定義された型は `None` となり、そのフィールドはその `Decodable`/`Encodable in Protobuf` を通る実行時の継ぎ目を使う。
++       各召喚は、その所要時間をコンパイラの情報メッセージ _locomotion: staged summon for `T` took `n`ms_ として報告する。
++   entry .evaluate   ステージングされた召喚。評価可能な型では `Some(instance)`、それ以外では `None`
++   entry .Implementation   `Inlinable.Stager.summon` が委譲する `Inlinable.Stager`
++     entry .summon   その型について `InlinableStager.evaluate` を呼ぶ
+
+@ 0 1 0 1b3c661c5f1bd1561b19839156a60d3b
++ entry .postables   `Protobuf` メッセージを HTTP リクエストの本文として送信する given
+
+% 1 1 0 03d1dd785a0072cf16787e19b1ef190d
+
+@ 0 6 0 0b35e59224100b4a11a452526eafb10b
++       `locomotion.http`（JVM のみ）の選択パッケージで、アンブレラ自身のものとマージされるので、given は名前でインポートする。`import postables.protobufPostable`。
++   entry .protobufPostable   `Protobuf is Postable`。メディアタイプ `application/protobuf` のワイヤ上のバイト
++       Protocol Buffers はバイナリなので、本文はメッセージのバイトであり、文字セットは指定されない。
++       これがスコープ内にあると、`Protobuf` の値を telekinesis の `post` や `put` の本文にできる。
+
+% 2 1 0 14f2317681ee0bf6026254b118e01ff4
+
+% 3 1 0 1210be9c969adde413ffefa522d7b97e
+
+% 0 1 0 1d51791f5f5a891b17c7225b47754172
+
+% 2 1 0 174eb5968979728f1810f84c648ebdee
+
+% 0 1 0 0d470ab025ca02e5163777fdb35b8a76
+
+% 1 1 0 198ca633ab6a18920e39033c274f8daf
+
+@ 0 1 0 149b2a2ee9d9994f0fcfe8d66a89b29c
++ entry .servables   `Protobuf` メッセージを HTTP レスポンスの本文として提供する given
+
+% 1 1 0 1ff34097b5e08ac10365b2fd0e8d3b39
+
+@ 0 3 0 090afb345d69f3f108676ea60964cd96
++       `locomotion.http`（JVM のみ）の選択パッケージで、名前でインポートする。
++       `import servables.protobufServable`。
++   entry .protobufServable   `Protobuf is Servable`。ワイヤ上のバイトからなる固定の本文で、型は `application/protobuf`
+
+@ 0 1 0 075c951b5dcbfe7f1a3e8d1de2e582b6
++ entry .construables   `application/protobuf` のリクエストの本文を `Protobuf` として読む given
+
+% 1 1 0 03578590d1652e240db90114d63ec58f
+
+@ 0 6 0 02e7f061914ff7c2116a8e6cc8f59c75
++       `locomotion.http`（JVM のみ）の選択パッケージで、名前でインポートする。
++       `import construables.protobufConstruable`。
++   entry .protobufConstruable   `"application/protobuf" is Construable to Protobuf`。本文のバイトをメッセージとして
++       構築された後、メッセージは `as[T]` でデコードされる。あるいはリクエストの本文を `read[T in Protobuf]` で直接読む。そのためバイナリの API は JSON の API と同じコードで利用でき、違うのは形式の型だけである。

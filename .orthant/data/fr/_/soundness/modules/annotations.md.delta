@@ -1,0 +1,470 @@
+orthant 2 language
+
+% 0 1 0 0be26bd1e7f1b04c037738e58aeba05c
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 00b43f9e9883090116c0b8a11827e7dc
++ Les [annotations
++ statiques](https://docs.scala-lang.org/scala3/reference/other-new-features/annotations.html) de
++ Scala attachent des métadonnées aux types et aux champs. Le langage n'offre aucun moyen ordinaire
++ de les relire, et y parvenir implique normalement d'écrire une macro.
+
+@ 0 3 0 0de229a2cd1ee9fa10c8c25e55868f99
++ Ici, on les lit au moyen d'une [classe de types]. Invoquer `Annotated` pour un type donne
++ les annotations qu'il porte, celles de ses champs, ou celles des variantes d'une hiérarchie
++ scellée. La réponse est résolue [à la compilation][compilation], sans réflexion
++ [à l'exécution][exécution], et le consommateur n'écrit aucune macro.
+
+@ 0 2 0 1ac2e182458633991ab6588883d89317
++ L'annotation `@name`, qui renomme les champs dans tous les formats de sérialisation, est
++ définie ici et lue par ce moyen.
+
+@ 0 1 0 0767f0aa57654d0e00737f1e21bc7a8e
++ ### À propos des annotations
+
+@ 0 3 0 0abf6f4b5b80e0f51be1b6893d7661f8
++ Une annotation est l'endroit où certaines métadonnées ont leur place. Un nom de transport se
++ trouve sur le champ qu'il renomme, et un marqueur sur le cas qu'il distingue. L'annotation
++ est à côté de ce qu'elle décrit, et voyage avec.
+
+@ 0 2 0 04d8d700fee5baec18006c2ba0abbce7
++ Les annotations sont sous-utilisées en Scala parce qu'elles sont difficiles à lire. La
++ réflexion à l'exécution est lente et non typée, et l'accès à la compilation exige une
++ expertise des quotes et des splices.
+
+@ 0 4 0 0a5846638f4b66f11cc278104768cbf8
++ La classe de types `Annotated` masque cette mécanique. Une requête indique ce qui est
++ voulu : quel type d'annotation, sur quel champ, de quel type. Le compilateur fournit la
++ réponse sous forme de valeur. Un nom de champ mal orthographié ou un mauvais type est une
++ erreur de compilation, ce qui relève de la
++ [sûreté par construction](../../philosophy/safety-by-construction.md).
+
+@ 0 2 0 0d4a86d72c7bf8530bee6e539f01ffee
++ Tout provient du package `soundness`, et le second import permet aux exemples d'afficher
++ leurs résultats :
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 16a88183e1d10e2210adbcad2b1908e9
++ ### Lire des annotations
+
+@ 0 2 0 1b4317a04ca6dfe412768be2261675fa
++ Une annotation est une case class ordinaire qui étend `StaticAnnotation`. Les exemples en
++ utilisent trois, ainsi que quelques définitions qui les portent :
+
+% 2 1 0 03171844df3c388d10c42552da3af530
+
+% 0 1 0 0f4b995fb32b420a1ca96a7d02439e8d
+
+% 0 1 0 1a6fd7032f1d56c100ac763533a4b823
+
+% 0 1 0 0c1d580858569fcc1cbeadad5d3060c0
+
+% 0 1 0 009332a33ea3ee660d98ede325655db9
+
+% 0 1 0 19915447f0678efa11e8b28cbfc67229
+
+% 0 1 0 14c1a310a765f774167f07a2b058c015
+
+% 0 1 0 0f7a67827f97f5ad03c7960e4848ee84
+
+% 1 1 0 116bd6528ce8e21e007843a645b7d4dd
+
+@ 0 1 0 16424772ff3accfc1becb3a54436e408
++ On invoque les annotations d'un champ en nommant le type et le champ :
+
+% 2 1 0 09ae3f0ea3819b711433f214302d7498
+
+% 3 1 0 0ffdb433ea98ef0919bf8303b84626fd
+
+% 4 1 0 0d4b91adce2b351d1722d46d4dad1f75
+
+% 0 1 0 0af567d1afa10341083931c10ebf0438
+
+% 1 1 0 1619c803dc69e7551d2aedf2285d314a
+
+@ 0 1 0 0a456f3cf649862f1480d9a1e1a6c4ad
++ `by` restreint la requête à un seul type d'annotation :
+
+% 2 1 0 1ebf9bd56d5f679e1f2d32fcc41e358c
+
+% 3 1 0 0f033c3a393072ea11cba8775f43abe5
+
+% 4 1 0 0b1684cc49824081169717d4a1aa1213
+
+% 0 1 0 0cb570b2bfdd1cac1bc847e3753d4460
+
+% 1 1 0 11bd12c909bf292a18d98b58714662b4
+
+@ 0 1 0 03a867660af53c821683df7d02b1d3d0
++ La forme simple donne les annotations portées par le type lui-même :
+
+% 2 1 0 05f0768ce1880b610afadb7b48c730db
+
+% 3 1 0 16101371c72d2ece039087cd14ea6fb7
+
+% 4 1 0 1c882556b63e7e59091586befbfbc71d
+
+% 0 1 0 0895ffe9bb48c93a1cba3614aa6952b5
+
+% 1 1 0 0f8a38c792344da70e7cf9f082d9c3d4
+
+@ 0 2 0 0ec0823efc26806a0e62724e907aaec3
++ `fields` donne tous les champs annotés d'un coup. Un champ sans annotation du type demandé
++ est absent de la map :
+
+% 2 1 0 1182cd7da61377e10d3a5257fc1a273f
+
+% 3 1 0 1ad53cfc0ab153e10ea67be7e77b604f
+
+% 4 1 0 054b8f26063833f204434d8a57c5b4cc
+
+% 0 1 0 1f5ff6b8a7c4ddf2005aec49e42a656a
+
+% 1 1 0 149fec9ed92add8d15feeab7a2877439
+
+@ 0 2 0 00c34e98651d182a1fcc635f504ceddf
++ La réponse est calculée pendant la compilation du code, et est une constante dans le
++ programme compilé. Un champ sans annotations a un ensemble vide, de même qu'un nom qui n'est
++ pas du tout un champ :
+
+% 2 1 0 1b66dafd320d48b2047aed88968f2aae
+
+% 3 1 0 13cc5ff2259b895c076eb7f7788e39ac
+
+% 4 1 0 18312c2a365785d40790eebef69476df
+
+% 0 1 0 1b62750460e6d47a0f86f9015b5391c6
+
+% 0 1 0 08473e3d548c434a08c4c9f39aa7c842
+
+% 1 1 0 1e22a3b936fe29fa100bc696c9764ff5
+
+@ 0 1 0 0c2fbd66016a17e90db8984a8fdda292
++ ### Trouver le champ annoté
+
+@ 0 2 0 17e02add7d9836e116eaf018008d4896
++ Souvent, la question se pose dans l'autre sens : *quel* champ porte l'annotation ? Lorsque
++ exactement un champ la porte, l'instance invoquée connaît son nom :
+
+% 2 1 0 0f8058d677286c5c1e70b9348753fca6
+
+% 3 1 0 047e29e053a846be195a78e30dcd9dca
+
+% 4 1 0 163ce027bdecb6a600de76ac6c338e51
+
+% 0 1 0 00fccaebef5159b50d01f7920ffe959a
+
+% 1 1 0 08ba084811ef657d1573306f4bc5ed7e
+
+@ 0 2 0 1d662a401c99646917ab9add761d1449
++ Trouver le champ est généralement la première étape pour le lire ou l'écrire ; l'instance
++ offre donc aussi une [lentille](optics.md#lenses-as-values) sur ce champ :
+
+% 2 1 0 0b93180978fa058f194f88829fbc589e
+
+% 0 1 0 10faa57fb663289d073643178fdb3d3b
+
+% 1 1 0 0848f93c2693c8870c019ed81a1daf94
+
+% 3 1 0 001674a9f24efd1311010dcaa29b5fb7
+
+% 4 1 0 1c1f7d5e745ca5160de8f74c1dc1dd74
+
+% 5 1 0 1989cefa5301a54319fd1a7fa5816fcb
+
+% 0 1 0 0cbbf9cd315bafc40f99258692bb709e
+
+% 0 1 0 0fd504180ea9f8b11431bd13ee529338
+
+% 0 1 0 12204f5a9827538701ec6c59977febd7
+
+% 1 1 0 095070ea880cef651d097eee5bcf6928
+
+@ 0 3 0 00e9a4761108fc521ca0ce486b959747
++ C'est ainsi qu'une bibliothèque de sérialisation trouve « le champ marqué comme
++ identifiant » sans qu'on lui dise son nom. Si plus d'un champ porte l'annotation, `field`
++ n'est pas disponible, car le type de l'instance enregistre si la correspondance était
++ unique.
+
+@ 0 1 0 0aa8af291695b581085ddf1e3ae9d077
++ ### Variantes d'un type scellé
+
+@ 0 2 0 13df3585119b5ab01b906f963c8d7966
++ Les cas d'une [énumération] ou d'un trait scellé sont interrogés avec `under`. Le résultat
++ associe le nom de chaque variante à ses annotations :
+
+% 2 1 0 02ff8da8ec20f81a19c20a998d0c2f29
+
+% 0 1 0 0be42c5e934b3b501e25bca0c26cd4ec
+
+% 0 1 0 0e7a2839191937d71b9d625ac0681ddc
+
+% 0 1 0 0d0adb268a15c68712b7ba2e35c97f21
+
+% 0 1 0 1701c349a32ad66114dd3ee5a70682a8
+
+% 0 1 0 0f0e01927a755c1a007819ce12ac7dc2
+
+% 1 1 0 06871dbe01d6dce016d1fe9eebe752d0
+
+% 3 1 0 025c51a6bd13f49e0c0f41701022640a
+
+% 4 1 0 162695465a78089d03b6260b71bdbd3e
+
+% 5 1 0 0029d6d3b6bf17c10e04161389ce2426
+
+% 0 1 0 1b471124de6f36b40e5032401c4ef872
+
+% 1 1 0 06c345e714c7f29810daf9fc4f3e5e29
+
+@ 0 1 0 14952affebf8f481042969c9165bf436
++ Voici les formes de requête, et ce que chacune donne :
+
+% 2 1 0 1f4a4a0c77055aea1defbb7fa1af868f
+
+@ 0 9 0 19ae0c4319831e0c0da02288514f1dcc
++ column  Forme de requête
++ column  Membre
++ column  Renvoie
++ row  `T is Annotated`  `apply()`  les annotations du type `T`
++ row  `T is Annotated on "f"`  `apply()`  les annotations du champ `f`
++ row  `T is Annotated by A on "f"`  `apply()`  les annotations de type `A` du champ `f`
++ row  `T is Annotated by A`  `fields`  chaque champ associé à ses annotations de type `A`
++ row  `T is Annotated by A`, un seul champ correspondant  `field`, `lens`  le nom du champ, et une lentille sur lui
++ row  `Annotated under T`  `subtypes`  chaque variante de `T` associée à ses annotations
+
+% 1 1 0 010ed93be120a541064a69f7b0218e91
+
+@ 0 1 0 008708f7234c96c20f6584d14f57061d
++ ### Annotations paramétrées
+
+@ 0 1 0 176b1dcf8c6cd53610ca554938d221c7
++ Une annotation peut prendre un argument de type, et une requête peut filtrer selon celui-ci :
+
+% 2 1 0 003f0e74c47cd4880fd7db21bc567dbe
+
+% 0 1 0 0afc9df64976139c0439f90ef24ac987
+
+% 0 1 0 17514da2d263ee260964fa793e19aa86
+
+% 1 1 0 0c18aef0c6091fed0098a0068f25f8c1
+
+% 3 1 0 10329fa2ec2df4fb0e766c480ac62b6a
+
+% 4 1 0 16ebcd0afb69393111abfde5fa62c482
+
+% 5 1 0 08f0136bbc7e2d0e15113db779694eab
+
+% 0 1 0 17de4d5507723b9c00daa692e616aebc
+
+% 0 1 0 08772ff2fd9368d31b42bb4a88634ecf
+
+% 1 1 0 0340ed58f678660305b6217d0f2f1067
+
+@ 0 2 0 1dc43ba1d7f4cb6506d9017366d40433
++ Le champ `two` porte un marqueur, mais aucun pour `Person` ; la première requête lui donne
++ donc un ensemble vide.
+
+@ 0 2 0 08b1910b0ece35f50c2c4ca40d2af154
++ Un `@marker(1)` seul est inféré comme `marker[Any]`. Une requête pour `marker[Any]` le voit,
++ et une requête pour `marker[Person]` ne le voit pas.
+
+@ 0 1 0 129b9ca60bb7ec7c100faba6aa88bdbf
++ ### L'annotation `@name`
+
+@ 0 3 0 1a302ba7df4373080111c5313e2d18c8
++ L'annotation `@name` est définie ici, et respectée par tous les formats de sérialisation.
++ Elle renomme un champ ou une variante dans la représentation transmise. Seule, elle
++ s'applique à tous les formats. Avec un argument de type, elle s'applique à un seul :
+
+% 2 1 0 10f351ab4247dac006d89b24822b6fad
+
+% 0 1 0 0136154c7ce32de81f00b5e87d14a633
+
+% 1 1 0 0cc2caf674e3201b136076467ba3d3b6
+
+@ 0 2 0 05bfd561fe5e91f604a5aa3c32c1d1d0
++ La [dérivation] d'un format les lit au moyen de `relabelling`. Elle associe chaque champ
++ renommé à son nom sérialisé, et un renommage pour un format l'emporte sur le renommage
++ général par défaut :
+
+% 2 1 0 12b251447a9d95a91a76a51f6526bebc
+
+% 3 1 0 173b7a3f06f496ec13b70db5331dc07f
+
+% 4 1 0 0fa0a8edf10f88b30a2e3ce47213cad9
+
+% 0 1 0 18c4ef056cdcce6a0d2229083b988f63
+
+% 0 1 0 1e937459c98d1ebe1cf0ec31d8a3aee2
+
+% 1 1 0 00d654a3460a8d9c0ce94c61fa6827c9
+
+@ 0 2 0 1527562588c8302516765601ea54bb72
++ C'est pourquoi une seule annotation sert aussi bien pour [JSON](json.md#renaming-fields),
++ [XML](xml.md), [YAML](yaml.md) que pour les autres.
+
+@ 0 2 0 081f3850474a93b016a99f6c21740075
++ Quatre fonctions lisent les annotations pour une dérivation. Dans chacune, la map ne
++ contient que les champs ou les variantes qui portent l'annotation en question :
+
+% 2 1 0 124a51c97e96d0f004130050add43472
+
+@ 0 7 0 0a6ba0b7beaabe5b0b7b943849431350
++ column  Fonction
++ column  Lit
++ column  Renvoie
++ row  `relabelling[T, F]`  `@name` sur les champs de `T`  chaque champ renommé associé à son nom dans `F`
++ row  `variantRelabelling[T, F]`  `@name` sur les variantes de `T`  chaque variante renommée associée à son nom dans `F`
++ row  `fieldAnnotations[T, A]`  les annotations de type `A` sur les champs  chaque champ associé à son ensemble de `A`
++ row  `subtypeAnnotations[T, A]`  les annotations de type `A` sur les variantes  chaque variante associée à son ensemble de `A`
+
+% 1 1 0 1f768ea30584ece20e868f178e3bbb19
+
+@ 0 1 0 15326abc96bd60860ce5802a72a60488
++ Les deux dernières sont les formes générales derrière les deux premières.
+
+@ 0 1 0 0e790e9cbba1d51c186d1fdc2ba6759c
++ ### Atteindre les champs par leur nom
+
+@ 0 2 0 17afae2b3e8cee3e0cade3e7299001a2
++ Les champs d'une case class peuvent aussi être atteints par leur nom à l'exécution. La
++ correspondance est générée pendant la compilation du code, et non par réflexion.
+
+@ 0 4 0 0e01c32eb5eedf600370dcaa4cda486f
++ Un `Dereferenceable` donne les noms des champs, la valeur d'un champ d'après son nom, et
++ l'enregistrement entier sous forme de map. L'instance est paramétrée par le type que
++ produisent les champs. Un enregistrement dont tous les champs sont des `Int` se déréférence
++ en `Int`. Tout enregistrement se déréférence en `Any`, qui couvre tous les champs.
+
+% 2 1 0 1453dd24c5836b2401c7f4db553414a9
+
+% 0 1 0 01d276d0040ec8290e6f64db9543f519
+
+% 0 1 0 15b7be4f4a9d4aa80f83297d1346f52f
+
+% 0 1 0 1f8e82a62403cf791e21390ad53f3c9f
+
+% 1 1 0 1396ccf72b4692bc0834e14df2ae1dac
+
+% 3 1 0 1cdcc00ec6f51c850eee4fe37f76b45c
+
+% 4 1 0 06edeb055c275c4d08f2f9f3a41efc7f
+
+% 5 1 0 054c5718628335080cb0608fa1d92eea
+
+% 0 1 0 1c17d589112169e31ae746da3bb77a02
+
+% 0 1 0 17256a412a367aa607a870afa119b96f
+
+% 0 1 0 12d4561d7cc4f70517d09bc09cab282c
+
+% 1 1 0 0ac275903d194bf511c3c5ce508d51a7
+
+@ 0 1 0 1bcc5a100dcefb761d2ed3763b89e2f6
++ Les noms et les membres proviennent d'une map, et ne sont pas dans l'ordre de déclaration.
+
+@ 0 2 0 0b1dcf78c4eda17e00324cbf021755d2
++ `membersOfType` extrait les valeurs d'un type donné de n'importe quel enregistrement. Un
++ moteur de rendu générique ou un moteur de templates peut s'en servir pour lire les champs
++ d'une valeur sans transtypage :
+
+% 2 1 0 1da28bcccf87488c051a337e702a1b7a
+
+% 3 1 0 036ce448caec758f0ba8eff90bbbdfe5
+
+% 4 1 0 1660cb095ddb418e1d439d771ddd8127
+
+% 0 1 0 0df9d6df879a148e00e9c6c9f240ac32
+
+% 1 1 0 0f1941b708c97cc91d0e9253548ebed3
+
+@ 0 3 0 0402aeeb39a92b5f0b9d5636fd14d922
++ Chaque accesseur est une [lentille](optics.md) ; un champ trouvé par son nom peut donc être
++ écrit aussi bien que lu. `update` remplace le champ nommé, et `modify` lui applique une
++ fonction. Chacune donne un nouvel enregistrement, ou `Unset` lorsque le nom n'est pas un
++ paramètre du constructeur :
+
+% 2 1 0 1d0dd3acc168e3891ec55da2ba5695b4
+
+% 3 1 0 15ddb0389d42e06a103b16f3c14c6e5b
+
+% 4 1 0 02936296aa0195841b03e54dd2918e48
+
+% 0 1 0 1e35b80c9ee11e090731b1b7281ca89b
+
+% 0 1 0 010d33b906ad536e06625b889c5db961
+
+% 0 1 0 17d018923568a0c00d30bb9921e8564c
+
+% 1 1 0 16ab0a4421e39d1c00d839fd16fd0aca
+
+@ 0 3 0 0f8891e3817be9311cf4b360c496bfd0
++ Un champ n'est accessible en écriture que si son type accepte toutes les valeurs que
++ produit l'instance. Les champs d'un enregistrement déréférencé `to Any` peuvent être lus,
++ mais pas écrits, puisqu'un `Any` ne peut pas être placé dans un `Long` :
+
+% 2 1 0 084273d2e9d0cda31a7c591e33d4ed35
+
+% 0 1 0 01b7da61c25f6b5002ad042101756328
+
+% 1 1 0 0dea52613748698511969eeae87b3494
+
+% 3 1 0 049081a39defc4f913c591a0518c49db
+
+% 4 1 0 1e0f934ce4fdcfd30ff26e34552dc1f7
+
+% 5 1 0 1b949efab0a730fb0a5704bfdf306d0d
+
+% 0 1 0 1a6e126cc0ba2de5073ef79b4ed1b567
+
+% 0 1 0 0d427dafb91c9f7c142f449df159207b
+
+% 1 1 0 114cb050f83143b10e369ca8c3e438c4
+
+@ 0 1 0 16c5dd520ff3ea41098fb3dea0d9245b
++ Voici les membres d'un `Dereferenceable`, pour un enregistrement de type `T` déréférencé
++ `to R` :
+
+% 2 1 0 1cf6a04bb406c27b1d37b333bf06ebc3
+
+@ 0 8 0 026cb44cad6a37f31a0268cb0ed72a7a
++ column  Membre
++ column  Renvoie
++ row  `names(record)`  les noms des champs
++ row  `select(record, name)`  la valeur du champ nommé, en tant que `R`
++ row  `members(record)`  chaque nom de champ associé à sa valeur
++ row  `lens(name)`  une lentille sur le champ nommé, ou `Unset`
++ row  `update(record, name, value)`  un nouveau `T` dont le champ est remplacé, ou `Unset`
++ row  `modify(record, name)(lambda)`  un nouveau `T` où la fonction est appliquée au champ, ou `Unset`
+
+% 1 1 0 007e0167eac975c40de117ac559db86b
+
+@ 0 3 0 0d3760b73a5e4c5703e167d8858be435
++ La correspondance est une table compilée d'accesseurs. Atteindre un champ coûte un appel de
++ méthode, et un nom que le type ne possède pas est découvert là où la table est construite,
++ et non par une recherche réflexive qui échoue à l'exécution.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 9 0 0bba0fddb1dae0b81424bea48f5bdc95
++ - [JSON](json.md#renaming-fields), [XML](xml.md), [YAML](yaml.md) et les autres formats
++   respectent `@name`.
++ - [Optiques](optics.md) décrit les lentilles par lesquelles on atteint le champ annoté et
++   les champs nommés.
++ - [Dérivation](derivation.md) décrit les instances de classes de types générées qui
++   consultent les annotations.
++ - [Métaprogrammation](metaprogramming.md) décrit les macros que cette classe de types rend
++   inutiles.
++ - [CBOR](cbor.md), [Protobuf](protobuf.md), les [bases de données](database.md) et
++   [MCP](mcp.md) lisent les annotations des champs et des méthodes.

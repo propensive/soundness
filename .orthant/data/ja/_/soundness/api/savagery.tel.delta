@@ -1,0 +1,980 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1eb977bd9176e51c01b1d4c1ae38a604
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 11a1f33127b56fc40a4e716c248db2b6
++ info   型付きの値としての SVG 図形：図形、パス、変換、グラデーション、テキストを XML へ描画し、XML からパースする
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 139cda82622f6c3106cecf60a08c7537
++     _Savagery_ は SVG を文字列ではなく値から組み立てる。
++     SVG 文書は小さな言語に満ちた XML である — パスの `d` 属性は座標のプログラムであり、`transform` は関数のパイプラインであり、色と長さにはそれぞれ独自の構文がある — そして、それらを連結するプログラムは、そのすべてを一度に正しく書かなければならない。
++     ここでは `Point` は位置、`Delta` は変位であり、両者は別個の型で、その間にベクトル演算がある。パスは名前の付いたステップによって伸びていく `Svg.Outline` である。変換は図形の座標に適用されるのではなく、図形に記録される `Transform` 値である。そして、それぞれの小さな言語は、それを理解する型によって `in[Xml]` または `encode` として描画される。
+
+% 2 1 0 16bc3be5b4c2e7841da63d2575d5e190
+
+% 3 1 0 15f8d0a1f9731c2d1a5acccc7072b1fa
+
+% 0 1 0 1c686a28dfb100921079df0c99d85f8d
+
+% 0 1 0 08107ec6440ecda9007dbc44947efd2b
+
+% 0 1 0 059802db1f735e3b051a6f2af34c4d19
+
+% 0 1 0 080a590087f11f1000f3e7c4749ad2dd
+
+% 0 1 0 190676681080aeda1bcff66d68a3b1e1
+
+% 0 1 0 008f28746f575087165d84a9d02e1d3c
+
+% 1 1 0 0f7081b128bb2c090ec3e0a9ff06d942
+
+@ 0 7 0 0a49b890227a0b311c9adfd820fce48a
++     図形は `Svg.Rectangle`、`Svg.Ellipse`（およびそれを作る `Circle`）、`Svg.Outline`、`Svg.Polyline`、`Svg.Lettering`、`Svg.Group` であり、いずれも `Svg.Figure` である。どの図形も `id`（`Svg.Id`）、型付きの CSS の `style`、そして `transforms` のリストを持てる。
++     `Svg.Lettering` の `font` は `Font in Web` であり、これはプロビジョンがスコープ内にある書体についてのみ存在する。そのため、テキストを持つ `Svg` は、その書体を利用可能にする `@font-face` も持つ。
++     定義は `Svg.Def` — `Stop` から成る `Svg.LinearGradient` — であり、`Svg` は定義と図形を、サイズ、`unit`、`viewBox` とともにまとめる。
+
+@ 0 7 0 09ea7095befaab251a665a5e41649487
++     パースは逆向きに働く。`text.read[Svg]` と `text.load[Svg]`（または `data.load[Svg]`）は SVG のテキストを型付きの図形へ読み戻し、ルートが `<svg>` でないとき、パスのデータが不正なとき、色、長さ、viewBox が不正なとき、あるいは幅と高さの単位が異なるときに `Svg.Error` を発生させる。
++     `XmlSchema` は必要ない。SVG の語彙は図形の型によって検証されるので、下層の XML は自由形式のスキーマに対してパースされる。
++     `construables` パッケージの `svgConstruable` は、名前でインポートする given であり、`image/svg+xml` メディアタイプから `Svg` を構築できるようにする。
+
+@ 0 6 0 10b9cd54309cf07f1c23deb66d28d43a
++     座標は SVG の属性が書くとおり `Float` であり、数の組は `Point` が期待されるところで `Point` に変換される。
++     角度は geodesy の `Angle` である。
++     このライブラリは 1 つのソースセット `savagery.core` から成り、xylophone（XML）、cataclysm（CSS と `Web` フォント）、phoenicia、mosquito（その `Affine` を再エクスポートする）、geodesy の角度、iridescence、cardinality に依存する。
++     `Segment` 以外のすべては `soundness` アンブレラへエクスポートされ、`construables` パッケージはアンブレラ自身のものと統合される。
+
+% 0 1 0 12d688908203c235122f0674a400804e
+
+% 0 1 0 0defe88869fdcb2d1e0b3c32fe34ca7c
+
+% 0 1 0 18c475b5829eed8d1b35d12a1577cfd3
+
+% 0 1 0 016bbca3f65e579a1b3cd7a1a652c505
+
+% 0 1 0 05abc848eede2e6210a27a23a1a67945
+
+% 0 1 0 06f438cba935a186007c8c82e03e2a03
+
+@ 0 1 0 17f160d9938e2e3c08308554244361be
++ entry .Svg   `<svg>` 文書要素：サイズ、定義、図形を持ち、XML へ書き出され、XML から読み込まれる
+
+% 1 1 0 1af40528c22003a5081467253987170e
+
+@ 0 8 0 12bcac1e3d4a14450dcf4e540a35449e
++       `Svg(width, height, defs = Nil, figures = Nil, transforms = Nil, unit = Unset, viewBox = Unset)`。
++       `#width` と `#height` は `#unit` での、未設定ならユーザー単位でのビューポートのサイズである。`#viewBox` はビューポートが表示するユーザー空間の矩形で、デフォルトは原点からのビューポート自身のサイズである。
++       `svg.in[Xml]` として描画すると、要素は `xmlns`、`viewBox`、`width`、`height` の属性を持ち、文字の図形が名指すすべての書体についての `@font-face` 規則から成る `<style>` と各定義を収める `<defs>` を持ち、そして図形を持つ — `Svg` 自身が変換を持つなら、図形は 1 つの `<g transform="…">` に包まれる。
+
+% 2 1 0 13a3ff6b81a3f3d41fceab047471e982
+
+% 3 1 0 129823ae0d2e4d8819a43928e32cf24c
+
+% 0 1 0 0f476bb1bed2e90903b60d2aac27f35e
+
+% 0 1 0 1b264a13c5dada11151154fe838e67de
+
+% 0 1 0 068379e10db15bf91c3d5426ff8ffe9d
+
+% 0 1 0 16710377d55bddf1085ab4a381cb0758
+
+% 1 1 0 1147034b5f4a1fb304b56798bb4ab09f
+
+@ 0 5 0 11905a252a159c480ba5280266e1fbc9
++       `Svg` は `Documentary` なので、`Document(svg, enc"UTF-8").show` は XML 宣言付きの独立した `.svg` ファイルになる。下層は XML なので、HTML ページに直接埋め込むこともできる。
++       パースには `text.read[Svg]`（`.aggregable` given で、要素の前の XML 宣言とコメントを受け入れて捨てる）、`text.load[Svg]`（宣言されたエンコーディングを保持する `Document[Svg]`）、またはバイト列からの `data.load[Svg]` を使う。
+
+% 2 1 0 06a2c4172fb5c1cf0d258bb70c4cb3aa
+
+% 3 1 0 165a1f4bc1f603e00013328021be8f0e
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 07b35e60826b05000eccca9b33f254a6
+
+% 0 1 0 0071ca290fc5137400722aab45d47eb0
+
+% 0 1 0 030f7b512294885c10d1fb5eff914848
+
+% 0 1 0 1805779925b8ab4809d6380947af3492
+
+% 1 1 0 082fd5dd347592110b20da35811aa891
+
+@ 0 5 0 1303f05152900786154322460f9bb0a5
++       `<g>` は `Group` として、`<polyline>` と `<polygon>` は `Polyline` として、`<text>` は `Lettering` として、`<circle>` と `<ellipse>` は `Ellipse` として、`<path>` は `Outline` として、`<defs>` の中の `<linearGradient>` は `LinearGradient` としてパースされる。`id`、`transform`、`style` はすべての図形で読み取られ、未知の要素（たとえば `<image>`）や属性は読み飛ばされる。
++       書き出して読み戻した図形は、まったく同じに描画される。
+
+% 0 1 0 10125a1ff41506be05cb1eadd9796eb7
+
+% 0 1 0 06ae4d247472223e1d344d92b570d5a1
+
+% 0 1 0 11cfb34fc283d1f2117693bdbd374fb8
+
+% 0 1 0 119c813ed6e203f71e51c3357fd9821a
+
+@ 0 11 0 0ac15e7c634ac5311c7ae4e5dc13e74c
++   entry .encodable   定義と図形を持つ `<svg>` 要素。`svg.in[Xml]` として
++   entry .aggregable   `text.read[Svg]`：SVG のテキストをパースし、要素の前の XML 宣言を捨てる
++       スコープ内に `Tactic[Parse.Error]`、`Tactic[Xml.Error]`、`Tactic[Svg.Error]` を必要とする。
++       XML は `XmlSchema.Freeform` に対してパースされるので、呼び出し側はスキーマを与えない。
++   entry .loadable   `text.load[Svg]`：宣言されたエンコーディングをメタデータとする `Document[Svg]`
++       同じ 3 つの戦術を必要とする。
++       エンコーディングが宣言されていなければ、デフォルトは UTF-8 である。
++   entry .loadableData   `data.load[Svg]`：バイト列からパースした `Document[Svg]`
++       3 つの戦術と、スコープ内の `Buffering` を必要とする。
++   entry .showable   独立したファイルとしての `Document[Svg]`：XML 宣言、続いて要素
++       `Document(Svg(10, 10), enc"UTF-8").show` は `<?xml version="1.0" encoding="UTF-8"?>` で始まる。
++   entry .Error   SVG のテキストを `Svg` として読めないときに発生する
+
+% 1 1 0 0ec5f00454840b261e6ca1f2a2c3abe2
+
+@ 0 4 0 14f0872777a2592a187a78253afb4094
++         エラー `↯/s.130.1`：_the SVG could not be parsed because `reason`_。理由自身の番号がサブ番号となる。
++         `Tactic[Svg.Error]` を通して `read[Svg]` と `load[Svg]` が発生させる。整形式でない XML は、下層のパーサーから先に `Xml.Error` を発生させる。
+
+% 2 1 0 06c8803f0ecd8b3408cecf0884d6959d
+
+% 3 1 0 1208642a4d2069210140916f5b0fc6a2
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 125026af6512d63601ea36ca5f253e8e
+
+% 1 1 0 064ab119bb9a57891307e525cc56e6f8
+
+@ 0 1 0 08a50e0991d78cc60fcc899291700517
++     entry .Reason   SVG を読めなかった理由。それぞれに番号がある
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 8 0 155e0e6531bd609d0dcf6e3f39c4eec5
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
++         row  `NotAnSvg(label)`  1  _the root element was `<label>` instead of `<svg>`_  断片のノードの中に `<svg>` がなかった場合も
++         row  `MalformedPathData(data)`  2  _the path data `data` could not be parsed_  未知のコマンドを含む `d` 属性、または数が来るべきところに数でないもの
++         row  `MalformedColor(color)`  3  _the color `color` could not be parsed_  `#rgb`、`#rrggbb`、`rgb(r, g, b)`、または名前付きの色 red、green、blue、black、white、yellow、cyan、magenta のいずれでもない `stop-color`
++         row  `MalformedLength(length)`  4  _the length `length` is not a number with a unit_  ルートの `width` または `height`。単位は省略できる
+
+% 0 1 0 11ed89446bd4a9aa0f1195b6febde579
+
+% 0 1 0 0b9cee0e9ec04403171762af71ee9d1f
+
+% 1 1 0 03a199cd019c36391d388508c20a3433
+
+@ 0 7 0 02b5b4143c47aeae124b23c4ca0081f3
++     entry .communicable   各理由をメッセージとして描画する
++     entry #reason   `Svg.Error.Reason`
++   entry .Units   `<svg>` 要素の `width` と `height` が持つ単位：`Em`、`Ex`、`Px`、`In`、`Cm`、`Mm`、`Pt`、`Pc`、`Percent`
++       各ケースの `suffix` は数の後に書かれるテキストで、`mm`、`%` などである。
++       `unit = Unset` の `Svg` は単位のない数を書き、SVG はそれをユーザー単位として読む。
++       `scala.Unit` を隠してしまう `Unit` ではなく、`Units` と名付けられている。
++   entry .ViewBox   `viewBox` 属性：ビューポートが表示するユーザー空間の矩形
+
+% 1 1 0 14423505540e9e220a02330aaf3cb303
+
+@ 0 9 0 1d21e2fd3b97f0740b79aaaed44c3e6f
++         `ViewBox(x, y, width, height)`。
++         viewBox を持たない `Svg` は、原点から自身のサイズの viewBox を書き出す。テキストから読んだものは保持されてそのまま書き戻されるので、描画ツールの `width="48.5mm" height="20mm" viewBox="0 0 48.5 20"` は往復を経ても失われない。
++     entry .showable   属性に書かれるとおり、空白で区切った 4 つの数
++     entry #x   左端。ユーザー単位で
++     entry #y   上端
++     entry #width   表示する幅
++     entry #height   表示する高さ
++   entry .Parser   `read[Svg]` の下層にある SVG リーダー：`<svg>` 要素を見つけ、それをデコードする
+
+% 1 1 0 0fae4aa6a61b536d0486f234181092ac
+
+@ 0 18 0 1560d61aa6cf6ecd185f0bb05fc63d6e
++         通常は直接呼ばない。`read[Svg]` と `load[Svg]` がこれを経由する。
++         公開メソッドはすでにパース済みの `Xml` 値を取るので、SVG がより大きな文書の 1 要素であるときに役立つ。
++         パスのデータは `M`、`L`、`H`、`V`、`C`、`Q`、`Z` のコマンドを大文字小文字の両方でサポートし、移動の後には暗黙の直線が続く。絶対的な水平のみ、垂直のみのストロークは存在しないので、`H` と `V` はどちらの大文字小文字でも相対的な `Stroke.Draw` になり、絶対形については情報が失われる。
++         変換のリストは `translate`、`scale`、`rotate`、`skewX`、`skewY`、`matrix` を認識し、未知の関数は読み飛ばす。インラインの `style` は `name: value` の宣言に分割される。`points` 属性は空白またはカンマで区切られた組を取る。
++     entry .labelOf   要素のラベル。それ以外のノードなら `<unknown>`
++     entry .findSvg   ノードのリストの中の `<svg>` 要素。なければ `Svg.Error(NotAnSvg)`
++         `Tactic[Svg.Error]` を必要とする。
++     entry .rootElement   `Xml` 値の `<svg>` 要素：その値自身、または断片のノードの中のもの
++         他のラベルの要素に対しては `Svg.Error(NotAnSvg(label))` を発生させる。
++     entry .decodeSvg   定義と図形をデコードした `Svg` としての `<svg>` 要素
++         長さが不正なとき、単位が一致しないとき、viewBox が不正なとき、パスのデータが不正なとき、またはグラデーションの色が不正なときに `Svg.Error` を発生させる。
++   entry .Id   テキストとは別個の型としての要素の識別子
+
+% 1 1 0 13d39f2de2bb8e751f60f52a3c5d08b8
+
+@ 0 4 0 19aeeca7c61bf6ca1c04b12cb2a85e42
++         グラデーションの参照、アニメーションの対象、`<use>` 要素、あるいはチャートの改訂が、図形や定義を名指すのに必要とするもの。
++         `Svg.Id` は下層では `Text` だが、別個の不透明型なので、識別子がそれがラベル付けするテキストと混同されることはない。
++         `Svg.Id(t"logo")` として検査用に表示される。
+
+% 2 1 0 1b34be3dde99a09a08535b4094753241
+
+% 3 1 0 0b55d9b857185983024fd3f258fd4572
+
+% 0 1 0 046f9451295a592e17c561bd1e6b2e08
+
+% 0 1 0 14dba756a1b5722c00356965252503ff
+
+% 1 1 0 0f86a20352a7486414db43eec1ddbe3b
+
+@ 0 4 0 00c5b934a0f3f68f1753fae49069f584
++     entry .apply   `Svg.Id(text)`：テキストからの識別子
++     entry .text   識別子のテキスト。`id.text` として
++     entry .inspectable   型名を付けて識別子を `Svg.Id(t"…")` として描画する
++   entry .Def   `<defs>` 要素のエントリー。種類は `LinearGradient` だけである
+
+% 1 1 0 04430ea67453d0ad177d4297f2dfdb28
+
+@ 0 4 0 1d60a408f839db3b00f9d860148932ec
++         シールされたトレイトであり、そのサブタイプは savagery 自身のソースに限られる。
++         定義は図形のスタイルから、その `Svg.Id` によって参照される。
++     entry .encodable   定義の要素。`definition.in[Xml]` として
++   entry .LinearGradient   識別子と型付きの停止点を持つ `<linearGradient>`
+
+% 1 1 0 087561e8bfb610fd1c4dbfc6fa303988
+
+@ 0 2 0 08186c19f9c54caf0ab1946715f6a510
++         `Svg.LinearGradient(id, stops*)`。各 `Stop` は `[0, 1]` の中のオフセットと、任意の `Chromatic` な型の色である。
++         パースしたグラデーションは `Color in Srgb` の停止点を持つ。
+
+% 2 1 0 0ae80f1a524a98df19ad5ac5a4e3b7a3
+
+% 3 1 0 0723bac5298d4d4704e3790c5b86ca38
+
+% 0 1 0 15f8a4db02ca848e16e52aed552d0fc0
+
+% 0 1 0 096f1522cce5f8331222955e3e431a5f
+
+% 1 1 0 0e9efcd945d4bf6c19eeebf1447fdf1b
+
+@ 0 12 0 0772ac678e6dbc361bcaa80ad731a45b
++     entry #id   グラデーションの識別子。図形の `fill` がこれを参照する
++     entry #stops   色の停止点。順番どおり
++   entry #width   ビューポートの幅。`#unit` またはユーザー単位で
++   entry #height   ビューポートの高さ
++   entry #defs   定義。`<defs>` の中に、`@font-face` のスタイルがあればその後に書かれる
++   entry #figures   図形。描画順に
++   entry #transforms   図形全体に適用される変換：図形はそれを持つ `<g>` に包まれる
++       任意の `Transformable` と同様に、`translate`、`rotate`、`scale`、`skew`、`transform` 拡張メソッドで追加する。
++   entry #unit   `#width` と `#height` の単位。ユーザー単位なら `Unset`
++   entry #viewBox   表示するユーザー空間の矩形。原点からのビューポートのサイズなら `Unset`
++   entry #Metadata   `Document[Svg]` が図形のほかに持つもの：その `Encoding`
+
+@ 0 1 0 0b94e382eee646aa02cfb801079e623b
++   entry .Figure   描画可能なすべての要素のシールされたルート：矩形、アウトライン、楕円、グループ、折れ線、文字
+
+% 1 1 0 1d4ab37b6abd694504267b455d024ce9
+
+@ 0 5 0 0876925f265729dc0cc81f840104acb7
++         どの図形も、コンパニオンの `.encodable` を通して `figure.in[Xml]` としてその SVG 要素へ描画され、ケース名とラベル付きのフィールドで検査用に表示され、`id`、インラインの `style`、そして `transforms` のリストを持てる。これらは存在するときだけ、`id`、`style`、`transform` 属性としてこの順に書かれる。
++         `Figure.fonts` は図形のリストがテキストを組むフォントを集めるので、`Svg` はそれらの `@font-face` 規則を持てる。
+
+% 2 1 0 09ce2c815455a8ef0d6378c12d52cd6a
+
+% 3 1 0 117274e3264c3bc206405d595f07cede
+
+% 0 1 0 0ef5d9b241f3d2dc08402604c884c9c1
+
+% 0 1 0 09f52cc11c8467c10f3d885a12ab3805
+
+% 0 1 0 1c615494544990270908b9a3f3286f99
+
+% 0 1 0 0e7380bb61c5dac21fdc464961bfba74
+
+% 0 1 0 1879adaf78d9a69d1ebc137d5b0d88c6
+
+% 0 1 0 073a3effe2b438640f6f8a948f00c144
+
+% 1 1 0 1863e60bc649e70012988078d9c651a9
+
+@ 0 3 0 1cce422a46d8335f0dfdab8febfe6a12
++         変換は、任意の `Transformable` な図形に対する `translate`、`rotate`、`scale`、`skew`、`transform` 拡張メソッドで流れるように追加する。いずれも変換を末尾に追加した新しい図形を返す。図形が定義されたときの幾何は、その図形が保持し続ける幾何である。
+
+% 0 1 0 1465dcb7c81c8ae608d7d4d35bdfc449
+
+% 0 1 0 06314687e9dd21a517880acefb632bd7
+
+% 0 1 0 07bb9dd8870b4db005e7df934f11e3dc
+
+% 0 1 0 1531472aec5b3b720a9be5499958e0cf
+
+% 0 1 0 1169c313788515680f37e547c9eea2ed
+
+% 0 1 0 1e56ead9fb2c0ea312ca2c881a73e864
+
+% 0 1 0 037937d755b665c51498128e49be195c
+
+@ 0 9 0 10931fa66134379d19a8702fd5d9acfb
++     entry .encodable   すべてのサブタイプについて、図形の SVG 要素。`figure.in[Xml]` として
++         `Figure` で上限が定められているので、`Figure` と同様に `Rectangle` や `Outline` にも適用される。
++     entry .inspectable   図形をケース名と各フィールドのラベルで描画し、ストロークと変換を読みやすく示す
++         `Rectangle(position:Point(x:0.0F ╱ y:0.0F) ╱ width:10.0F ╱ …)`。XML と異なり、パスの操作は 1 つの `d` 属性に圧縮されない。
++     entry .fonts   図形のリストがテキストを組むフォント。グループも含む
++     entry #fonts   この図形がテキストを組むフォント：`Lettering` のフォント、`Group` の中の文字のフォント、それ以外はなし
++   entry .Rectangle   `<rect>`：位置、幅、高さ
+
+% 1 1 0 1660e1fc5bc37172044d2dbc24b8877f
+
+@ 0 2 0 0bca65c379fcf7c81a5f3ff672412c38
++         `Rectangle(position, width, height, transforms = Nil, style = Unset, id = Unset)`。
++         位置は左上の角である。数の組は `Point` に変換される。
+
+% 2 1 0 16850180d3a2ab250d3f27fcbbe1604c
+
+% 3 1 0 090e718cb724baf400f9c3e44cddcb72
+
+% 0 1 0 10db5ada497e5b760b43b2e7b968e40e
+
+% 0 1 0 0ce1c4316cccdc001f5d3c1d722dc7ec
+
+% 0 1 0 08484d37cd95b3db027b8585dceb7cc6
+
+% 0 1 0 0b3c242d28f8bd4a0f463ef526666205
+
+% 1 1 0 04eebde1120d541f1f8ef641b25645e6
+
+@ 0 9 0 1255b9a271989cbf165877e0597e53fb
++         抽出子のパターンは 6 つのフィールドすべてを名指す：`case Rectangle(position, width, height, transforms, style, id)`。
++     entry #position   左上の角
++     entry #width   幅。ユーザー単位で
++     entry #height   高さ
++     entry #transforms   変換。順番どおり `transform` 属性として書かれる
++     entry #style   インラインの CSS、または `Unset`
++     entry #id   識別子、または `Unset`
++   entry .Outline   1 ステップずつ組み立てる `<path>`：絶対的なステップは `To` が付き、相対的なステップには付かない
+
+% 1 1 0 17a30151a4d40789058bf5233c946921
+
+@ 0 6 0 193dfd91ac4f722f0053be6bf1701dbf
++         `Outline(ops = Nil, style = Unset, id = Unset, transforms = Nil)`。
++         `#ops` は**最後のものが先頭**に保持され — 各ステップはリストの先頭に追加される — `d` 属性として順番どおりに描画される。
++         ステップは `Stroke` のケースである。移動、直線、3 次または 2 次の曲線（滑らかな続きのために最初の制御点を省くこともできる）、円弧、そして閉じる操作である。
++         流れるようなメソッドがそれぞれ 1 つずつ追加する。円グラフが円弧について行うように、`Stroke` 値を直接与えることもできる。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 105003a32f7278cb035d2dd64bbfa908
++           label 空のパス
+
+% 1 1 0 1e689bd73ee43be609f7decaef0d1fb0
+
+% 0 1 0 1da4e266630b5b2600e44cafef459048
+
+% 0 1 0 01a845dee6ab13ae1bea424918cceeb5
+
+% 1 1 0 1d9122ad018fabd915ca3a5ff21e06ef
+
+@ 0 1 0 1c0c42635e0f230a0b626af5a3257794
++           label 始点への移動
+
+% 1 1 0 1ff0b9388fdcdf341e09b99c9adc4902
+
+% 0 1 0 091b24e04bc9acfa07b0c025ea083b90
+
+% 0 1 0 0f8084b0ba1099130e9e8fe4ee2dce75
+
+% 1 1 0 0f6db969547369881455bb0ac7c8f5dd
+
+@ 0 1 0 0049a8d68dc3c7d60664db9a7112211c
++           label 別の点への直線
+
+% 1 1 0 1854c300f3a8cf5d1127346a049fecc0
+
+% 0 1 0 03e0a327e9da7ab213ff5de6450eff86
+
+% 0 1 0 1858603df920a6d80578e0c8ca677d25
+
+% 1 1 0 1fd95640572910df15de2b6c91fcbd2c
+
+@ 0 1 0 1cc3c2cbbede206c1cf01f6ab74ae88a
++           label 2 つの制御点を持つ 3 次曲線
+
+% 1 1 0 00668ba1f67b60731c7bd8a70363c80d
+
+% 0 1 0 11784179cc8f41451a87739d20a72f93
+
+% 0 1 0 1bf812d1fc1c39e61c26321408923659
+
+% 1 1 0 12b881568f4fe9cf08861c99505b9bb8
+
+@ 0 1 0 1d459c4f1cf7dc061b04ed8c9a192509
++           label Delta による相対的なステップ
+
+% 1 1 0 0821f775e6eddb2f0fda02e61073ecea
+
+% 0 1 0 0ab1fbf50eaeee1e029b1dd323b6b275
+
+% 0 1 0 11ff6739a524b1671927c3d77b907252
+
+% 1 1 0 09d4669147ff2bee0ae9c08d47692bdf
+
+@ 0 1 0 0ed66323eac7e724082346d6d4cd94d8
++           label 始点まで閉じる
+
+% 1 1 0 09405ffd204edf61002fbd6e46f02db1
+
+% 0 1 0 11382bdc3b7112c611ba9110d884b696
+
+% 0 1 0 1a863cb2af09c9c40ff9fc4c0c10fe07
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 12ce468c0b9736171742e8ae1c969da8
++         1 つの軸に沿った相対的な直線は `h` または `v` として書かれる。
++         方向付きのステップ `#lineUp`、`#lineDown`、`#lineLeft`、`#lineRight` と、対になる `move…` は、それぞれ 1 つの長さを SVG の軸で取る。SVG の `y` は下向きに増えるので、`lineUp(v)` は `Delta(0, -v)`（`v` ステップ）を、`lineLeft(v)` は `Delta(-v, 0)`（`h` ステップ）を描く。
+
+% 0 1 0 1dfb5831bdb66a1f1b3c108952c9493e
+
+% 0 1 0 1e1a578846bb0f81055995106fcbd9c9
+
+% 0 1 0 025a632d3f3ae64a1abf37926b1f8e08
+
+@ 0 24 0 05bd8f5ab2e50a031474f6bd73b92d0b
++     entry #ops   パスの操作。最新のものが先頭
++     entry #style   インラインの CSS、または `Unset`
++     entry #id   識別子、または `Unset`
++     entry #transforms   変換。`transform` 属性として書かれる
++     entry #moveTo   `M`：絶対的な点への移動
++     entry #lineTo   `L`：絶対的な点への直線
++     entry #move   `m`：`Delta` による移動
++     entry #line   `l`、`h`、`v`：`Delta` による直線。1 つの軸に沿うときは `h` または `v` として書かれる
++     entry #curve   `c` または `s`：相対的な 3 次曲線。制御点を 2 つとも、または 2 つ目だけ与える
++         `curve(ctrl1, ctrl2, point)` は完全な 3 次曲線である。`curve(ctrl2, point)` は前の曲線から滑らかに続き、最初の制御点はその鏡像となる。
++     entry #curveTo   `C` または `S`：絶対的な 3 次曲線。制御点を 2 つとも、または 2 つ目だけ与える
++     entry #quadCurve   `q` または `t`：相対的な 2 次曲線。制御点を与えるか、滑らかに続ける
++     entry #quadCurveTo   `Q` または `T`：絶対的な 2 次曲線。制御点を与えるか、滑らかに続ける
++     entry #moveUp   `Move(Delta(0, -value))` と書かれる相対的な移動
++     entry #moveDown   `Move(Delta(0, value))` と書かれる相対的な移動
++     entry #moveLeft   `Move(Delta(-value, 0))` と書かれる相対的な移動
++     entry #moveRight   `Move(Delta(value, 0))` と書かれる相対的な移動
++     entry #lineUp   `Draw(Delta(0, -value))` と書かれ、`v -value` と描画される相対的な直線
++     entry #lineDown   `Draw(Delta(0, value))` と書かれ、`v value` と描画される相対的な直線
++     entry #lineLeft   `Draw(Delta(-value, 0))` と書かれ、`h -value` と描画される相対的な直線
++     entry #lineRight   `Draw(Delta(value, 0))` と書かれ、`h value` と描画される相対的な直線
++     entry #closed   `Z`：現在のサブパスを始点まで閉じる
++   entry .Ellipse   `<ellipse>`。半径が等しければ `<circle>`
+
+% 1 1 0 10c808a32f58064b10342d2c73399624
+
+@ 0 4 0 128aedf114a6b3cf0ea3361e12ac355d
++         `Ellipse(center, xRadius, yRadius, angle, transforms = Nil, style = Unset, id = Unset)`。
++         `angle` は値には保持されるが、まだ要素には書かれない。楕円は `cx`、`cy`、`rx`、`ry`（あるいは `#circle` が真なら `<circle>` として `r`）で描画される。
++         `Circle` は半径が等しく角度が 0 のものを作り、パースした `<circle>` も `Ellipse` である。
+
+% 2 1 0 175672264599232809270886375b4313
+
+% 3 1 0 10fde6e842bc4e30190ddb4e7746c4d1
+
+% 0 1 0 1f283c166c9003a9011a47c33978fe80
+
+% 0 1 0 05d4da257891c8a4010a8099214df18f
+
+% 1 1 0 001acbe931eef65b0b5d58be333c44cd
+
+% 0 1 0 085b3b5b1c55a6511e7eaa55010df8b8
+
+@ 0 9 0 060d67a6c045665d0fbacb85f185753d
++     entry #center   中心
++     entry #xRadius   水平方向の半径
++     entry #yRadius   垂直方向の半径
++     entry #angle   軸の回転。`Angle` で、要素には書かれない
++     entry #transforms   変換。`transform` 属性として書かれる
++     entry #style   インラインの CSS、または `Unset`
++     entry #id   識別子、または `Unset`
++     entry #circle   2 つの半径が等しく、要素が `<circle>` になるかどうか
++   entry .Group   `<g>`：まとめて移動し、スタイルを持ち、識別される図形
+
+% 1 1 0 0378bbfa81493dc111c2d69960918e20
+
+@ 0 4 0 16fe0f4d1968c17012bd8c1ca52dfe31
++         `Group(figures, id = Unset, style = Unset, transforms = Nil)`。
++         チャートの軸やその系列の 1 つはグループなので、変化したときに部分全体を識別子で見つけて置き換えられる。
++         その `fonts` は中にある文字のフォントなので、テキストがどれほど深く入れ子になっていても、`Svg` は書体ごとに 1 つの `@font-face` を持つ。
+
+% 2 1 0 124adfa1ee2c3827181d338326f2d362
+
+% 3 1 0 16cd73cedf39c5ae09cea1a523750a1f
+
+% 0 1 0 14904f22ac23f3e01faa62295a70b870
+
+% 0 1 0 0916a8923a79a2d311a9a2c821ab484e
+
+% 0 1 0 0ce0da82d03b821714ddb2607b9141eb
+
+% 1 1 0 09fae7b3cd85b15d1c621b034acbb423
+
+@ 0 6 0 0b0480e805b844131d2ed483eec5f13c
++     entry #figures   図形。描画順に
++     entry #id   識別子、または `Unset`
++     entry #style   インラインの CSS、または `Unset`
++     entry #transforms   変換。中のすべての図形に適用される
++     entry #fonts   中にあるすべての文字のフォント。再帰的に
++   entry .Polyline   絶対的な点を通る `<polyline>`。閉じていれば `<polygon>`
+
+% 1 1 0 0c4f4bca5ff6c10411bffda11c0ab927
+
+@ 0 4 0 0eb7ef05fe56f7180145354a4900ec7f
++         `Polyline(points, closed = false, id = Unset, style = Unset, transforms = Nil)`。
++         頂点ごとにパスの操作を使わずに、プロットした線、その下の領域、棒の輪郭の形を表す。プロットした線とその下の塗りつぶされた領域は、フラグが 1 つ違うだけの同じ図形である。
+
+% 2 1 0 0fcf2b45370085e110ba3be98d81992e
+
+% 3 1 0 06463abc4bd9cf9005d544abc749fe47
+
+% 0 1 0 1b940cdabc50ac571a1d9401c0ad780e
+
+% 0 1 0 1dcab334f7cdb6ab15a4ec0272b0b753
+
+% 0 1 0 091fabe6c0d27d3f122df07364d544d3
+
+% 0 1 0 0532ac1a8376d4ff07718b9d20094d57
+
+% 1 1 0 1fb3d4f0537c12de11a73acf5b60f24c
+
+@ 0 6 0 071ff754b36f7cd51d156f01a6bc6204
++     entry #points   頂点。順番どおり
++     entry #closed   最後の点が最初の点とつながるかどうか：`<polyline>` ではなく `<polygon>` になる
++     entry #id   識別子、または `Unset`
++     entry #style   インラインの CSS、または `Unset`
++     entry #transforms   変換。`transform` 属性として書かれる
++   entry .Lettering   `<text>`：ある位置に組まれた文字の並び。始点、中央、終点のいずれかで揃えられる
+
+% 1 1 0 1d8ebb267b934356068b5fa77bfbcd3a
+
+@ 0 6 0 1d60090a8bfab192106758b6a3228630
++         `Lettering(position, text, anchor = Anchor.Start, baseline = Unset, id = Unset, style = Unset, font = Unset, transforms = Nil)`。
++         `Text` は文字列の型なので、図形の中での役割にちなんで名付けられている。
++         `#anchor` は位置が文字の並びの始点、中央、終点のどれであるか（`text-anchor`。`Start` なら省略される）を、`#baseline` はグリフのどの線がその位置に来るか（`dominant-baseline`。未設定なら描画器に任される）を示す。
++         テキストはエスケープされる：`a < b` は `a &lt; b` と描画される。
+
+% 2 1 0 116e80c534a7c84a0014565676f547ad
+
+% 3 1 0 11dab317146828dd1840d8b758ee9161
+
+% 0 1 0 1fc0abf00997532503e7239263ecf14a
+
+% 0 1 0 01d7220d7f0fda1d1e4a0e18f8b1b3be
+
+% 1 1 0 152fc778c9ff6a720c5f9e1eb0ced78d
+
+@ 0 6 0 0eb0b47d435b79cf18707f518fe57fb9
++         `#font` は `Font in Web`、すなわちフェイスとその書体のためのプロビジョンの組であり、そのようなプロビジョンがスコープ内にある場所にだけ存在する。そのため、プロビジョンのない書体では SVG に文字を組めない。
++         フォントの宣言（`font-family`、`font-weight`、…）はインラインのスタイルに加わり、`Svg` は、その文字が名指すすべての書体について `@font-face` 規則から成る `<style>` を定義の中に書き出す。`Web.sansSerifFont` のような総称ファミリーは何も追加しない。
+
+% 2 1 0 0aac0b06dd2a5cbe16f1d4cdd9b63a91
+
+% 3 1 0 172102b55709b7721821ab6c1f65e836
+
+% 0 1 0 020998cd3ec9f4781ef2dbe8f889db11
+
+% 0 1 0 1eae9e655630c3df1fc8c5c6173f2efd
+
+% 0 1 0 1b0408c6001ad5aa17177fb893424a4b
+
+% 0 1 0 0a7c319645667e1110c5172d112a4098
+
+% 1 1 0 0106ea91fb634b7b1f91f97935ade059
+
+@ 0 3 0 15fa461afe7622ca0be217e8e7d1ef16
++         `Font(face)` はメディアを、それが代入される `Optional[Font in Web]` のフィールドから推論する。それ以外の場所では `Web.font(face)` と書く。
++     entry .Anchor   テキストが位置に対してどこに置かれるか：`Start`、`Middle`、`End`
+
+% 1 1 0 0a8fee495b21d3231cfa278ee7cf3b5b
+
+@ 0 3 0 0c6154ee654f8e3e1db832c96d010ea6
++           `text-anchor` 属性。`Start` でないときにだけ書かれる。
++       entry #text   属性の値：`start`、`middle`、`end`
++     entry .Baseline   テキストのどの線が位置に来るか：`Alphabetic`、`Middle`、`Hanging`
+
+% 1 1 0 0e02dd7a110a0dc4120aca8455a6847e
+
+@ 0 13 0 0beb301bae4755be10aa64af2e213c1e
++           `dominant-baseline` 属性。
++           未設定のベースラインは描画器に任され、それはアルファベットのベースラインになる。`Hanging` は、軸の下のラベルが求めるように、テキストを位置の下に吊り下げる。
++       entry #text   属性の値：`alphabetic`、`middle`、`hanging`
++     entry #position   基準点
++     entry #text   文字。書き出すときにエスケープされる
++     entry #anchor   `Lettering.Anchor`
++     entry #baseline   `Lettering.Baseline`、または `Unset`
++     entry #id   識別子、または `Unset`
++     entry #style   インラインの CSS、または `Unset`。フォントの宣言がこれに追加される
++     entry #font   `Font in Web`。描画器のデフォルトなら `Unset`
++     entry #transforms   変換。`transform` 属性として書かれる
++     entry #fonts   フォントを 1 要素のリストとして、またはなし
+
+@ 0 1 0 12c3d44a6d22bb8b1c385a50bfcc29ae
++ entry .Circle   半径の等しい `Ellipse`、すなわち `<circle>` を作る
+
+% 1 1 0 0bbe356bbac3bc79112fe3ce904925e7
+
+@ 0 3 0 184ed30fead6d0ae1290a8548299a4b5
++       `Circle(center, radius, transforms = Nil, style = Unset, id = Unset)` は、両方の半径がその半径で、角度が 0 の `Svg.Ellipse` である。
++       `Circle` という型は存在しない。図形に対するマッチは、`circle` が真の `Svg.Ellipse` を見る。
+
+% 2 1 0 07e38f1b433aead3179d765fd75172d2
+
+% 3 1 0 1a7815f28dd35433153120ec4bb22056
+
+% 0 1 0 11494f920618b6b1134cb685c1a6d429
+
+% 0 1 0 155ecfccc7805a841833c4b32b44a400
+
+% 1 1 0 0b44a5571a163fab1515f6d8e116c038
+
+@ 0 1 0 048a99dafddb48470a44e60ce0cf3748
++   entry .apply   `Circle(center, radius, transforms, style, id)`：その半径の楕円
+
+@ 0 1 0 1f5795d2ab5dfadd0cd2a16508e6fa40
++ entry .Stroke   パスのデータの 1 つの操作：移動、直線、曲線、円弧、または閉じる操作
+
+% 1 1 0 0e9d1cab8e14b90b0335dc9a19f85240
+
+@ 0 9 0 046d430be927464d00cbb6b2002987ab
++       各ケースは、`To` が付き `Point` を取る絶対形と、`Delta` を取る相対形の対になっている。`MoveTo(point)` / `Move(shift)`、`DrawTo(point)` / `Draw(shift)`、`CubicTo(ctrl1, ctrl2, point)` / `Cubic(ctrl1, ctrl2, shift)`（最初の制御点は `Optional` で、`Unset` なら `S` / `s` のように前の曲線から滑らかに続く）、`QuadraticTo(ctrl1, point)` / `Quadratic(ctrl1, shift)`（同様に、制御点が未設定なら `T` / `t`）、`ArcTo(rx, ry, angle, largeArc, sweep, point)` / `Arc(…, shift)`、そして `Close` である。
++       `Svg.Outline` はそれらのリストを最新のものを先頭にして保持し、その流れるようなメソッドがそれらを作る。円グラフの扇形は `MoveTo`、`DrawTo`、`ArcTo`、`Close` から直接組み立てられる。
+
+% 2 1 0 0c51cf027029a6741a4ccf08ab6b3bd3
+
+% 3 1 0 130697da9d12d37109df4bc139b0528a
+
+% 0 1 0 16311d6ac92c76a01aace77b4e26e11f
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 1c9a230863b1995d1e3c095b4ced85b7
+
+% 0 1 0 13dde68271081c2a03a0c080d3ce31b8
+
+% 0 1 0 0ee23ccf614bd01700a9a29310405222
+
+% 0 1 0 03c6a5bb7f218e2412f057a53b18e5dd
+
+% 0 1 0 11a2c465dccb49790b5ff0baa4f3aa22
+
+% 0 1 0 155cf17ec7a35f6a0b4f03be2702ca18
+
+% 1 1 0 0f9583bf3e618a3f01cd45302aaf4876
+
+% 0 1 0 04e908d0172218df0663ca8538622750
+
+% 0 1 0 190997c350639c25183b5b5610166ad7
+
+@ 0 8 0 1f7494430326bd8619e097e9ddf6ef87
++   entry .inspectable   ストロークをケース名とフィールドで描画する：`MoveTo(Point(x:0.0F ╱ y:0.0F))`
++       パスのデータの形（`A 3.0 4.0 0.0 1 0 …`）は、読み手がソースと照らし合わせるケース名を落としてしまうので、導出ではなく明示的に書かれている。
++   entry .encodable   ストロークをパスのデータのテキストとして。`stroke.encode` として
++       `M x y`、`m dx dy`、`L x y`、`l dx dy`（変位が 1 つの軸に沿うときは `h dx` / `v dy`）、`C c1, c2, p` / `S c2, p`、`Q c1, p` / `T p`、それらの小文字の相対形、フラグを `1` または `0` とする `A rx ry angle large sweep p`、そして `Z`。
++       相対的な円弧は、ソースのとおり、`A` とその変位の成分で書かれる。
+
+@ 0 2 0 087dabc951cce6cb1e3d680f127905d9
++ entry .Sweep   円弧の向き：`Clockwise` または `Counterclockwise`
++     `Stroke.ArcTo` と `Stroke.Arc` の sweep フラグ。`Clockwise` は SVG の sweep フラグ `1` である。
+
+@ 0 3 0 06dfd56578205922196b901491e926f6
++ entry .Orientation   傾斜変換が作用する軸：`Horizontal`（`skewX`）または `Vertical`（`skewY`）
++     `Transform.Skew` と `skew` 拡張メソッドの 2 つ目の引数で、デフォルトは `Horizontal` である。
+
+@ 0 1 0 03fef6c6438371580bf7a950074a1f3d
++ entry .Transform   `transform` 属性の 1 つのエントリー：平行移動、拡大縮小、回転、傾斜、行列
+
+% 1 1 0 1498b184110eb7b703b62db7ea8ed2ca
+
+@ 0 5 0 1294352859177c6a0ce2001752b82f75
++       `Translate(vector: Delta)`、`Scale(x, y: Optional[Float])`（`y` が未設定なら一様）、`Rotate(angle: Angle)`、`Skew(angle, orientation = Horizontal)`、`Matrix(affine: Affine[Float])`。
++       図形の `transforms` のリストは、順番どおり空白区切りでその `transform` 属性として書かれ、SVG はその順に適用する。流れるような拡張メソッド `translate`、`scale`、`rotate`、`skew`、`transform` は、それぞれ 1 つずつ追加する。
+
+% 2 1 0 023a89b81086db7b1df79e6b32976db9
+
+% 3 1 0 014c58868652367a07a418a42b84f4ed
+
+% 0 1 0 117eada43ff48ad012a87b516e059f3c
+
+% 0 1 0 0d3f4e8a90633c321b42d30086fb3ad2
+
+% 0 1 0 04212f15c81033400c9bc7d8f22d062c
+
+% 0 1 0 14ee284f379d77a40655e80fa6558ef9
+
+% 0 1 0 1dc97e4e03b663a5090850a8de17402b
+
+% 0 1 0 146104f30392e35b1b27bd0b8a77b242
+
+% 1 1 0 1f6e9f696a3412f21bf5781bc53b663f
+
+% 0 1 0 0252254bbef4119b0256a66c6c1b3896
+
+% 0 1 0 0d2b4b57da1cad0d13760b97f507bcc0
+
+@ 0 6 0 125d2d4a5c230ca30015e6cf0c858d5e
++   entry .inspectable   変換をケース名とフィールドで描画する
++       `Angle` のインスタンスはコンパニオンではなく geodesy のトップレベルの given なので、ケースごとに明示的に書かれている。
++   entry .encodable   変換を属性のテキストとして。`transform.encode` として
++       `translate(dx,dy)`、`scale(x)` または `scale(x,y)`、`rotate(degrees)`、`skewX(degrees)` または `skewY(degrees)`、そして `matrix(a,b,c,d,e,f)`。
+
+@ 0 1 0 0b538ad661ca262909adfacb7e960111
++ entry .Transformable   変換のリストを読み取り置き換えられる図形。流れるような変換がそれに適用できる
+
+% 1 1 0 01bba03178c0587e1d5982d671092ed1
+
+@ 0 5 0 1ed6229a4f0850bd1fdbbfcfc854164f
++       `value is Transformable` は `transforms(value)` と `withTransforms(value, list)` を与える。
++       コンパニオンには `Svg.Rectangle`、`Svg.Outline`、`Svg.Ellipse`、`Svg.Group`、`Svg.Polyline`、`Svg.Lettering`、そして `Svg` 自身のインスタンスがあり、これが `translate`、`scale`、`rotate`、`skew`、`transform` 拡張メソッドの要求するものである。
++       `Transformable(get, put)` は、1 組の純粋な関数から独自の型のためのインスタンスを作る。
+
+% 0 1 0 0a4dbde89e24e42c14fcc9338d478c14
+
+@ 0 12 0 184e348ced1390bd012fb142f5915720
++   entry .apply   `Transformable(get, put)`：変換のリストのゲッターと置き換え関数からのインスタンス
++       どちらの関数も純粋（`->`）である。インスタンスはそれらを保持するので、キャプチャする関数では型クラスのインスタンス自体がケイパビリティになってしまう。
++   entry .rectangle   `Rectangle` の変換
++   entry .outline   `Outline` の変換
++   entry .ellipse   `Ellipse` の変換
++   entry .svg   `Svg` の変換。その図形を `<g>` で包む
++   entry .group   `Group` の変換
++   entry .polyline   `Polyline` の変換
++   entry .lettering   `Lettering` の変換
++   entry #transforms   値の変換のリスト
++   entry #withTransforms   変換のリストを置き換えた値
+
+@ 0 6 0 074700bdc53f646d0b080bf09b578d48
++ entry .transform   任意の `Transform` を図形に追加する：`figure.transform(Transform.Rotate(angle))`
++     任意の `Transformable` な値に対する拡張メソッドで、すでにある変換の後に変換を追加した新しい値を返す。
++     他の 4 つの拡張メソッドは、いずれもこれの一例である。
++     `import soundness.*` のもとでは、このレキシカルな `transform` が、構築された `Affine` に対する mosquito の `Affine#transform` 拡張メソッドより優先される。両方が必要な場所では、そちらを名前でインポートする（`import mosquito.Affine.transform`）。
+
+@ 0 1 0 1f42360db2ee811200694438beced87d
++ entry .translate   `Delta` による平行移動を追加する：`figure.translate(Delta(3, 4))`
+
+% 1 1 0 03630288b440356d17053ac4e8c628c3
+
+% 2 1 0 1a16bf03b15040d00b646ac9e83c5256
+
+% 0 1 0 1f24307ede0980ec171023d61ebe95a8
+
+% 0 1 0 124cf80a6e10055914dd3d17f9ee8441
+
+% 0 1 0 14c7b1cf8fb52fa70d2d09c5c78efff4
+
+% 1 1 0 076636c1ae00de2c00314a64a1685382
+
+@ 0 1 0 173aa46c39abb8fc112d0a9be30fee12
++ entry .scale   一様な、または 2 つの係数による拡大縮小を追加する：`figure.scale(2.0f)` または `figure.scale(2.0f, 3.0f)`
+
+@ 0 1 0 16e5dcc357fc11e607367a0e8a8fc9f3
++ entry .rotate   原点を中心とする `Angle` による回転を追加する：`figure.rotate(Angle.degrees(90))`
+
+% 1 1 0 176592b05e21ab2807d5134d3eae624b
+
+% 2 1 0 1066b6524b9711e51f53b4815173531a
+
+% 0 1 0 12c068f1a94da7521b73dcc4b2d6ccdd
+
+% 0 1 0 04f383fc59b4ec671f048724d59c747b
+
+% 1 1 0 0a68f5353bcad92911ed42b38bd94be8
+
+@ 0 2 0 182a338764615c091b576888f034c7aa
++     変換は適用した順に合成される。ここでは矩形が平行移動され、次にその結果が原点を中心に回転される。
+
+@ 0 1 0 157ed0ff2a08852f0f6ca72e596c2fc7
++ entry .skew   `Angle` による傾斜を追加する。デフォルトは水平方向：`figure.skew(angle, Orientation.Vertical)`
+
+@ 0 1 0 1c574e5613cb8d661ba8c6779908ee3e
++ entry .Point   位置：`Float` としての `x` と `y`
+
+% 1 1 0 17171eddf4f4cb351bd8fbb7e58f86e7
+
+@ 0 5 0 1f9233b00f1e94ed0f23a7de654e533a
++       `Point(x, y)`。mosquito の `Vector[Float, 2]` として保持される。
++       `Point` と `Delta` は異なるもののための異なる型である。点に変位を足すと点になり、点から点を引くと変位になり、2 つの点は足せない。
++       任意の数値型の数の組は `Point` が期待されるところで `Point` に変換されるので、`Svg.Rectangle((0, 0), 10, 5)` や `Svg.Outline().moveTo((3, 4))` にはコンストラクターが要らない。
+
+% 2 1 0 1f993c201a76b2fa18ab181fd147745b
+
+% 3 1 0 12c27fc1f1d973d01f1a481ba764cf15
+
+% 0 1 0 168d4c4918f943d00739e139d42c9f0d
+
+% 0 1 0 000290bb8819496f02a59cfeea367290
+
+% 0 1 0 153a50d09b82a0f105e98a6c20afffc5
+
+% 0 1 0 1a876e694a8cbe1600d318c85d59524d
+
+% 0 1 0 0293730ce90e9e990f84f1ea29b4ddc5
+
+% 1 1 0 0da4fd2a3a276e911a2593090aea654f
+
+% 0 1 0 1b620aa02b0638bd088c67ff6b882507
+
+@ 0 10 0 0285acca1e5a3032116b519deafed4f1
++   entry .apply   2 つの `Float` からの `Point(x, y)`
++   entry .showable   SVG のパスのデータの形：空白で区切った 2 つの数
++   entry .inspectable   `Point(x:3.0F ╱ y:4.0F)`。点が `Delta` と取り違えられることはない
++   entry .fromTuple   任意の数値型の組を `Point` として。`Point` が期待されるところならどこでも
++   entry .addable   `point + delta`：変位させた点
++   entry .subtractableByDelta   `point - delta`：逆に変位させた点
++   entry .subtractableByPoint   `point - point`：2 つ目から 1 つ目への `Delta`
++   entry #vector   下層の `Vector[Float, 2]`
++   entry #x   水平方向の座標
++   entry #y   垂直方向の座標。SVG と同じく下向きに増える
+
+@ 0 1 0 19675754fbbbde480801a03f16c9cca1
++ entry .Delta   変位：`Float` としての `dx` と `dy`
+
+% 1 1 0 0e7e1a1527b49de4026fe359be4760cd
+
+@ 0 4 0 0b8d38ad27cd16121fe19a24bec7c3b8
++       `Delta(dx, dy)`。mosquito の `Vector[Float, 2]` として保持される。
++       変位どうしは足し引きでき、符号を反転でき、どちら側からでも `Int`、`Float`、`Double` で拡大縮小でき、`Point` を変位させる。
++       名前付きの方向 `Up`、`Down`、`Left`、`Right` は単位変位なので、変位の演算が素直に読める。組は単項の `+` または `-` で変位になる。
+
+% 2 1 0 105468fd32782f6509f53fcf6e3b05d9
+
+% 3 1 0 11d75884a8096662024e57c5e0d8a9e8
+
+% 0 1 0 0b37e673495fe2ef18f306a5b47b878a
+
+% 0 1 0 040ee1e9a5f34c411d9d2a940169fe8f
+
+% 0 1 0 09dc78f5d436f22a1000321436c24964
+
+% 0 1 0 1baecd2843c60883055286cb2795261c
+
+% 1 1 0 188e0fb5bb3945c51f679e1d6830ecfa
+
+% 0 1 0 1721fefb328661f51326c57d703470c7
+
+% 0 1 0 0accbaf07b1697841e45e9a4d4dddbae
+
+@ 0 3 0 0ec82b1603ad32f006c4c00228967cb4
++   entry .apply   2 つの `Float` からの `Delta(dx, dy)`
++   entry .showable   パスのデータが相対的なステップを書くとおり、空白で区切った 2 つの成分
++   entry .inspectable   `Delta(dx:1.0F ╱ dy:-2.0F)`。`Point` と区別するためにラベルが付く
+
+% 0 1 0 1571a1eeb7a23ddc1cf197f06e18c061
+
+% 0 1 0 041cc920e950d6b709437c0b9b389856
+
+% 0 1 0 02e5c78c518207ea12ea35bf795e1d8a
+
+% 0 1 0 159e8d64ca57acd1031606f8116d4213
+
+@ 0 1 0 09d537106a9102aa1ac8c2610d4c4477
++   entry .multiplicableDouble   `double * delta`。`Float` に丸められる
+
+% 0 1 0 0df0932a882e99b5159aa9bc8ec78118
+
+% 0 1 0 1197e0b1064e12250e110e29aa215ba2
+
+@ 0 1 0 0c9866c79635bcff1408e5a039950e1b
++   entry .multiplicableByDouble   `delta * double`。`Float` に丸められる
+
+% 0 1 0 06d461a08ce4b3611c90fa7596aac16b
+
+@ 0 3 0 186cd98253a2cb940b073879a98373ad
++   entry #vector   下層の `Vector[Float, 2]`
++   entry #dx   水平方向の成分
++   entry #dy   垂直方向の成分。下向きが正
+
+@ 0 5 0 1a1b9b04c7ea836f16c43928fc537815
++   entry .Up   上向きの単位変位：SVG の y 軸は下を向くので `Delta(0, -1)`
++       `7*Up` は `Delta(0, -7)` である。
++   entry .Down   下向きの単位変位：`Delta(0, 1)`
++   entry .Left   左向きの単位変位：`Delta(-1, 0)`
++   entry .Right   右向きの単位変位：`Delta(1, 0)`
+
+@ 0 3 0 102a7baec3dc4b2503afbf1648671dfe
++ entry .unary_+   2 つの数の組を `Delta` として：`+(3, 4)` は `Delta(3, 4)`
++     任意の数値型の組に対する拡張メソッドなので、変位をコンストラクターなしで書ける：`rectangle.translate(+(3, 4))`。
+
+@ 0 2 0 02835127fdfb531e0cc2352fecf74e0b
++ entry .negatableTuple   符号を反転した 2 つの数の組を `Delta` として：`-(3, 4)` は `Delta(-3, -4)`
++     組に対する単項の `-` を逆向きの変位にする `Negatable` given。
+
+@ 0 1 0 1b16167e55d302a51d598e7c6d0d6c99
++ entry .Stop   グラデーションの色の停止点：`[0, 1]` の中のオフセットと、任意の `Chromatic` な型の色
+
+% 1 1 0 1baf7f77cc82eeeb0f9b5eff8fc926c0
+
+@ 0 4 0 1bb153710f68713918b55dee48dff138
++       `Stop(offset, color)`。オフセットは cardinality の `0.0 ~ 1.0` — 範囲付きの数なので、範囲外のオフセットはコンパイルされない — であり、色は `WebColors` の値や `Srgb` のような、`Chromatic` インスタンスを持つ任意の型である。
++       `stop.in[Xml]` として描画すると、色は 6 桁の 16 進数になる。
+
+% 2 1 0 1591796444acb78d0b6a46ee980b6674
+
+% 3 1 0 085b18e86d4978a215454316c2dfe5f7
+
+% 0 1 0 0fdf8ff4656033091c3b955b61e7b2e9
+
+% 1 1 0 089f9eb470ce1e7f1330d2a6901e2277
+
+% 0 1 0 175f1a93cada7442102b7a5cff901474
+
+@ 0 6 0 13bbd24357e1462607589bd894f52c55
++   entry .encodable   色を `#rrggbb` とする `<stop>` 要素。`stop.in[Xml]` として
++       裸のパラメーターではなく `stop <: Stop[color]` で上限が定められているので、xylophone の包括的な XML エンコーダーより特定的である。
++   entry #offset   停止点がグラデーションのどこにあるか。`0.0` から `1.0` まで
++   entry #color   色
++   entry #chromatic   構築時にキャプチャした、色の型の `Chromatic` インスタンス
+
+@ 0 1 0 1d3b82048428acb80a8d68ab646a2051
++ entry .Segment   生のパスのデータのコマンド：記号と、その数値または真偽値のパラメーターをテキストとして
+
+% 1 1 0 14f3150e4eb72d66138d898a13ad59c0
+
+@ 0 6 0 0e6ad8fe794695af1ac4962ab0af76ed
++       `Segment(symbol, parameters*)` は、記号、空白、そして空白で区切ったパラメーターとして描画され、真偽値は `1` または `0` になる。
++       `soundness` アンブレラへエクスポートされない低水準の補助であり、型付きの形は `Stroke` である。
++   entry #symbol   コマンドの文字
++   entry #parameters   数とフラグ
++   entry #text   パスのデータのテキストとしてのコマンド
+
+@ 0 8 0 1eb922ed1471ccad196aa32f22d40864
++ entry .Affine   mosquito の 2 次元アフィン行列。`Transform.Matrix` のために再エクスポートされる
++     `Affine(a, b, c, d, e, f)` は 2 次元アフィン変換の 6 つの有効な成分を、SVG の `matrix(a, b, c, d, e, f)` が取る順に保持する。savagery はこれを `Float` で使う。
++     `Affine.identity[Float]` は単位行列であり、mosquito の `transform(x, y)` と `andThen(next)` 拡張メソッドが行列を適用し合成する。
++     `import soundness.*` のもとでは、構築された `Affine` に対して、この 2 つの名前は savagery の `transform` と functions の `andThen` に優先されてしまうので、名前でインポートする：`import mosquito.Affine.{andThen, transform}`。
+
+% 2 1 0 18d00d9e19c666f71a52131a869eb373
+
+% 3 1 0 1091f7143a5ec4a30edc4debbf491e4b
+
+% 0 1 0 13369e175144f8f30193a7762017dfda
+
+% 0 1 0 11d2d3356f39d1bb0fec138ada000dd7
+
+% 0 1 0 1dbfe704cecffbd1015c70abc4549c7c
+
+% 0 1 0 09b184e9ee68a8921a229b220a8fe85f
+
+% 1 1 0 1e7bd80ebda10a7a0add29eec6b27872
+
+@ 0 1 0 18fe6221f62aaad4193d8c75cdef0332
++ entry .construables   名前でインポートする given。そのメディアタイプから `Svg` を構築できるようにする
+
+% 1 1 0 0c07f3d7d9a3901c1c82c5c97e26f8d8
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 0 1 0 1162d8fa985e498f135221164936da81
+
+% 1 1 0 1adca76ca22857b6101665ad11eb14a0
+
+% 0 1 0 147329cc30a7830c15ab8ed1c1431ac8
+
+@ 0 3 0 1aa7763bf33dc8ab064a7f8c1d0e707e
++       `image/svg+xml` の本文が構築する型として `Svg` を名指す。これは、メディアタイプによって型を選ぶコードの経路 — HTTP のレスポンス、メディアタイプによるファイル — のためのものである。
++       `import savagery.*` はこれを取り込まない。

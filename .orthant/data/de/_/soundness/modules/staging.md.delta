@@ -1,0 +1,324 @@
+orthant 2 language
+
+% 0 1 0 1edcb2d5c07e1ae6037ab4f8a299dfa9
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 3 0 1f8a7808387c6ad10b2f9ac6a6cb4771
++ Zitierter Scala-Code, `'{…}`, läuft normalerweise in der nächsten Stufe *desselben*
++ Programms. Hier wird die Idee verallgemeinert, sodass zitierter Code in einer anderen
++ *Umgebung* läuft: einer frischen JVM, einem isolierten Classloader oder im Prinzip auf jeder
++ Maschine, die kompilierten Code empfangen kann.
+
+@ 0 4 0 1e7295b5bfe74b2410dc4a47051ff54c
++ Ein `dispatch`-Block zitiert gewöhnliches Scala, spleißt Werte aus dem umschließenden
++ Geltungsbereich ein und gibt das Ergebnis zurück. Der Code wird kompiliert, übertragen und
++ anderswo ausgeführt, und seine Antwort wird zurückgebracht. Werte überqueren die Grenze als
++ [Classloader-neutrale Daten](generic-data.md) oder als [JSON](json.md).
+
+@ 0 1 0 15ec42317f52d46d10b7510789f8a364
++ ### Über mehrstufige Programme
+
+@ 0 5 0 133ca4adf6cb4efe19a4590b535784b5
++ Code, der zusammen kompiliert wird, wird normalerweise auch zusammen ausgeführt, in einer
++ Umgebung: einer einzelnen JVM oder einem Browser unter Scala.js. Eine verteilte Anwendung bricht
++ diese Annahme ihrem Wesen nach. Der Code für jede Umgebung wird getrennt kompiliert und bleibt
++ auf dem ganzen Weg vom Quelltext bis zur Ausführung getrennt, in verschiedenen JVMs, in einem
++ Browser oder auf verschiedenen Maschinen. Zwischen je zwei dieser Umgebungen besteht ein
++ Vertrag.
+
+@ 0 3 0 0bb3a5bd3158b3ec1dd309a8034c34a2
++ Der Compiler setzt diesen Vertrag nicht durch. Andere Werkzeuge können ihn prüfen, aber sie
++ prüfen ihn von außen und selten mit den Garantien, die Scala innerhalb einer Kompilierung gibt.
++ Also kann der Vertrag gebrochen werden, und der Bruch zeigt sich zur [Laufzeit].
+
+@ 0 9 0 0b4f3f51e3dde9580aba3a00956fbbb7
++ Code anderswo auszuführen, bedeutet gewöhnlich, ein Artefakt zu bauen, seine Ausführung zu
++ organisieren und eine Serialisierungsgrenze zu erfinden: Infrastruktur im Umfang eines ganzen
++ Projekts für etwas, das dem Konzept nach ein einziger Ausdruck ist. Die Staging-Mechanik von
++ Scala weiß bereits, wie man einen zitierten Ausdruck zur Laufzeit kompiliert und wie man Werte
++ in ihn einspleißt. Was sie festlegt, ist, *wo* das Ergebnis läuft. Beide Seiten *zusammen* zu
++ kompilieren und sie mit Zitaten und Splices abzugrenzen, stellt den Vertrag wieder unter die
++ Kontrolle des Compilers. Entfernter Code wird neben dem lokalen Code geschrieben, der ihn
++ aufruft, mit ihm geprüft, für ihn gemarshalt und im Gleichschritt mit ihm gepflegt. Das ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md), über eine
++ Prozessgrenze hinweg erweitert.
+
+@ 0 1 0 04ec28bd31c53c7d1d7ee85757fef6b7
++ ### Zitate, Splices und Phasen
+
+@ 0 1 0 0d12a98f5ffe9a2a1a02f5c87ca92691
++ Die Syntax ist die von Scala selbst, und es lohnt sich, noch einmal zu sagen, was sie bedeutet.
++ In einem Makro:
+
+% 2 1 0 0ac0018ad133dfa00dfbafff5f516fdf
+
+% 3 1 0 0c5cca4b37c27bef1b9cddbc6d7d8ed7
+
+% 4 1 0 03946c7073eaa232122b3943195908cb
+
+% 1 1 0 0772349862ed8139164b2b8fd1c6e1ac
+
+% 0 1 0 0f17e5e9fe72c960196cf0d7d9d154d1
+
+% 0 1 0 1ebebd54a285ba6912d9e202e7018d50
+
+% 0 1 0 18572c2f7276dbba03372aa0b0387049
+
+% 1 1 0 1041d490406608a31679808b48a9b53a
+
+@ 0 5 0 0e83d639abff968e07873da2cfd95454
++ `'{…}` und `${…}` markieren *Phasenverschiebungen*. Code innerhalb von Zitaten läuft eine Phase
++ später als der Code um ihn herum, und Code innerhalb eines Splice läuft eine Phase früher. Oben
++ liegen Definition und Verwendung von `name` in derselben Phase, wie es das *Prinzip der
++ Phasenkonsistenz* verlangt. `Out.println` und das String-Literal gehören zur nächsten Phase.
++ Ein `Expr[String]` ist der abstrakte Begriff eines Ausdrucks, der in dieser nächsten Phase ein
++ `String` sein wird.
+
+@ 0 5 0 08c5a91a5665b7351c82dd91671b3abf
++ Für ein Makro ist „die nächste Phase“ eine spätere Kompilierung. Nichts an Zitaten verlangt
++ diese Lesart. Die nächste Phase kann jeder Ort sein, an dem Code *anderswo* läuft: eine andere
++ JVM, eine Cloud-Maschine, ein Browser. Zitate und Splices lassen sich auf der Ebene eines
++ Ausdrucks verschachteln und verschränken, und der Compiler prüft die Konsistenz *über* die
++ Phasen hinweg. Den entfernten Code in eine andere Datei zu legen, bietet keines von beidem.
+
+@ 0 3 0 0bc4e2ac03bdac56138a59d74fc06d9b
++ Hier ist das „Wo“ ein Wert. Ein `Rig` sagt, wie Code ausgeliefert und aufgerufen wird, und
++ `dispatch` erledigt den Rest: Kompilierung, Caching für jede Aufrufstelle und das Marshalling
++ erfasster Werte hinein und der Ergebnisse heraus. Alles stammt aus dem Paket `soundness`:
+
+% 2 1 0 1ff422443eeea8a8028b5d03eb4e03d2
+
+% 1 1 0 0ecfd64ab286274f1bb736cc7209c2b7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 1b084ed53cb66d2b0640671c5773c02d
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 03c9874b4d17338b1cba21d2250ea99e
+
+% 1 1 0 012f68f2e0aabca9159afbbdcd5eb282
+
+@ 0 2 0 1f91087725dabbff123c4be5fed03a5e
++ Die Beispiele auf dieser Seite kompilieren Code und führen ihn in anderen Prozessen aus; sie
++ werden daher kompiliert, aber nicht ausgeführt.
+
+@ 0 1 0 03ce9ea26997f2b70448fab292f58d00
++ ### Code verteilen
+
+@ 0 2 0 11e9c6037ca8b6d4088bc5928f40274e
++ `dispatch` auf einem Rig nimmt einen zitierten Block. Werte aus dem umschließenden
++ Geltungsbereich werden mit `${…}` eingespleißt und automatisch über die Grenze getragen:
+
+% 2 1 0 093bc78e13f401be1b020ff1775c3b7a
+
+% 0 1 0 0c11aab6ad1eeeae1a3ed658d1057ea9
+
+% 0 1 0 102f6aaafc625364055ecca7d3b89ed7
+
+% 0 1 0 13085cec4432a5720715e8ee43890b08
+
+% 0 1 0 02399dc61fbc21f3109458acb81aaf33
+
+% 0 1 0 11cc7ecb80e5caac07c8d76bba729c2b
+
+% 0 1 0 154c73309cbd67ae016321ac2b75e42a
+
+% 1 1 0 1acf0bc33592c4670cf29777a0ad1637
+
+@ 0 3 0 0fd6a46c737bcac91a266796255a0337
++ Der Block wird für jede Aufrufstelle einmal kompiliert und gecacht. Jeder Aufruf marshalt
++ seine eingespleißten Werte hinein und sein Ergebnis heraus. Für den Aufrufer ist
++ `runElsewhere` eine gewöhnliche Funktion. Ihr Rumpf wird eben in einer anderen JVM ausgeführt.
+
+@ 0 6 0 0689170c3f357ab114d880a3fdc4e604
++ Namen innerhalb eines Zitats werden gegen die Importe außerhalb davon aufgelöst, aber nur
++ *statische Präfixe*: Namen, die der Compiler ohne einen Wert auflösen kann. Diese Einschränkung
++ ist keine Unannehmlichkeit, die es zu umgehen gilt. Sie ist die Sicherheitseigenschaft. Ein
++ Verweis auf ein Objekt auf dem Heap der lokalen JVM hat auf der entfernten keine Bedeutung, und
++ die Phasenkonsistenz ist genau das, was verhindert, dass ein solcher Verweis überhaupt
++ geschrieben wird. Alles, was die Grenze überquert, tut das über einen Splice, bewusst und
++ sichtbar.
+
+@ 0 6 0 1a41cc4a7425de560743cd04d0a4b808
++ Drei Rollen verwenden diese Mechanik, und gewöhnlich sind es drei verschiedene Personen. Wer
++ ein `Rig` implementiert, weiß, wie man Code in einer Umgebung paketiert, ausliefert und
++ ausführt, etwa in einem Browser, einem Container oder einer Cloud-VM, und weiß nichts darüber,
++ was ausgeführt werden wird. Wer einen `dispatch`-Block schreibt, weiß, was entfernt laufen soll,
++ schreibt es in Zitaten und Splices und präsentiert es den eigenen Aufrufern als gewöhnliche
++ Methode. Diese Aufrufer erfahren nie, dass irgendetwas davon beteiligt ist. Nur die ersten
++ beiden Rollen sehen je ein Zitat.
+
+% 0 1 0 0dd6384493c95ad71996d3698f78c5e7
+
+@ 0 3 0 035932f1d22b9c8b1282294c0f9dcd58
++ Zwei Rigs werden bereitgestellt. `Jvm` kompiliert den Block und führt ihn in einem frischen
++ JVM-Unterprozess aus, mit vollständiger Isolation, um den Preis eines Prozessstarts.
++ `Isolation` führt ihn im selben Prozess unter einem isolierten Classloader aus, was günstig und
++ abgeschottet ist:
+
+% 2 1 0 15b5121c703bcf820c8b21eda127146d
+
+% 3 1 0 0c6b41a18ef44ec1106c7c87f5478224
+
+% 4 1 0 12e3cef723a5946103f1bf8acb348afd
+
+% 0 1 0 109e7c5866754dc31d80db234ba076b9
+
+% 0 1 0 156b40a5f53e5ca71279e54d23698718
+
+% 1 1 0 17b3f400516532a60d31486b1f5d987a
+
+@ 0 3 0 0983e813722ced1003ef1178c787d158
++ Eine neue Umgebung wird durch Implementieren von `Rig` angeschlossen, das sagt, wie der
++ kompilierte Code an sein Ziel *gestagt* und wie er dort *aufgerufen* wird. Die Werkzeuge dieser
++ Bibliotheken liefern weitere Beispiele:
+
+% 2 1 0 1caa0c0a715f616e00abc07c86e85da3
+
+% 0 1 0 092815eba281283e0e28228bbef6bdfb
+
+@ 0 6 0 0260283263c1d1b61457a73dff79ed8f
++ column  Führt den Block aus
++ column  Ein Dispatch liefert
++ row  `Jvm`  in einem frischen JVM-Unterprozess  die Ausgabe
++ row  `Isolation`  im selben Prozess, unter einem isolierten Classloader  die Ausgabe
++ row  `Enclave`  als eigenständige ausführbare Datei paketiert, für Tests  einen `Enclave.Launcher`
++ row  `Bench`, `Stress`, `Profile`  in einer kontrollierten JVM, als [Benchmark](../../standards/benchmarking.md) gemessen  die Ausgabe
+
+% 1 1 0 0d4402299cc7e2e50ad20c40f032859f
+
+@ 0 1 0 07254426e278795417e3b50bfabd4279
++ ### Ein Rig schreiben
+
+@ 0 4 0 04a49b896fb4822516ecb4a892592c90
++ `dispatch` erledigt die schwierigen Teile, bevor ein Rig irgendetwas sieht. Es entnimmt den
++ Klassenpfad dem laufenden Classloader, kompiliert den zitierten Code, falls er noch nicht
++ kompiliert ist, erfasst die eingespleißten Eingaben und kodiert sie in einen einzigen
++ transportierbaren Wert. Für das Rig bleibt eine schmale Aufgabe: irgendwo Code ausführen, mit
++ diesem Wert, und den Wert zurückbringen, den er erzeugt hat.
+
+@ 0 1 0 0cbb6b17a2c7ae9f0b94eec3f4e1d16c
++ Ein Rig deklariert daher eine Handvoll Member:
+
+% 2 1 0 010f3b67d25ab7510e15a6e018aa88aa
+
+% 0 1 0 189521acd4350fc312ab47aa5d907636
+
+@ 0 1 0 02519e9d769e07641b600bc4823e48b6
++ column  Deklariert
+
+% 0 1 0 0977d8ad51ac06c5049fc52d72be4ec4
+
+@ 0 7 0 17a9ae771c38e34513005b3a94bedc4c
++ row  `Result[output]`  was ein Dispatch liefert: die bloße Ausgabe, ein `Optional`, eine `Task`…  `output`
++ row  `Form`  die kodierte Form von Eingabe und Ausgabe  `Text`
++ row  `Target`  was das Staging erzeugt  `LocalClasspath`
++ row  `Transport`  die Form, in der eingespleißte Werte reisen  `Json`
++ row  `scalac`  der Compiler, mit dem gestagt wird  `Scalac[3.6]`
++ row  `stage`  wie kompilierte Ausgabe an ihr Ziel *gestagt* wird  der Klassenpfad der Ausgabe
++ row  `invoke`  wie sie dort *aufgerufen* wird  ein `java`-Unterprozess
+
+% 1 1 0 01ccee9aa0474c8203830f3c145a54c4
+
+@ 0 1 0 1e54096a8f062286082541c755843a0b
++ Das `Jvm`-Rig ist das Ganze:
+
+% 2 1 0 10fbe94192b393dd15873842c2455c83
+
+% 0 1 0 0cf73b34cada60b00abad23d96a1d321
+
+% 0 1 0 19ec4aac20ba8be31941eb1142c4e0a9
+
+% 0 1 0 0226bdbf213578a91ecae3291c0b7faf
+
+% 0 1 0 140f91b18572ace403fa102734ad3a6e
+
+% 0 1 0 048e99dc47fdf7b915bd72b8dc7a3f0a
+
+% 0 1 0 13afa3fc7054ff171b336e7a10d1d16b
+
+% 0 1 0 01fed1543f5d90f00b0829b119e5607f
+
+% 0 1 0 0be53963959ef25515a0211055ac4b77
+
+% 0 1 0 17613176063bc1650642144257889bf1
+
+% 0 1 0 1f87f60295f9961a0acd097649e05466
+
+% 0 1 0 1c92b56aa2b919bb1ce7466b6cd3aa69
+
+% 1 1 0 15515b6b834e2e680a55f8c227ece3de
+
+@ 0 5 0 0add9716b8eeafe718a3b49a15953be2
++ `stage.remote` ist der Kern. Es erhält eine Funktion von der kodierten Eingabe zur kodierten
++ Ausgabe und kümmert sich um alles auf beiden Seiten. Hier startet diese Funktion mit einem
++ [Prozess](processes.md) eine JVM und erfasst deren Standardausgabe. Ein Rig für einen Browser
++ oder einen Container unterscheidet sich nur in dieser Funktion und in `stage`, das für eine
++ wirklich entfernte Umgebung die kompilierten Klassen dort *verfügbar* machen muss, statt bloß
++ ihre lokalen Pfade zu benennen.
+
+@ 0 1 0 00f746f0ca5df2040bf06c8f26293b88
++ ### Die Grenze
+
+@ 0 4 0 1bc514ffe7c2b4c9139fd292feca319d
++ Was die Grenze überquert, muss serialisierbar sein, und der Transport ist ein `Stageable`. Die
++ bereitgestellten Instanzen tragen Werte als [Pojo](generic-data.md)-Bäume oder als JSON. Ein
++ erfasster Wert ohne transportierbare Form wird abgelehnt, wenn der Block kompiliert wird. Die
++ Grenze steckt in den Typen und wird nicht aus der Ferne entdeckt.
+
+@ 0 1 0 0852ae2a80b5b5710fd6590b3a4fa0f3
++ ### Was gecacht wird, und wann nicht
+
+@ 0 2 0 1b35112ecc0b95f105a39520eef6e474
++ Das Kompilieren eines Blocks ist teuer, daher wird das Ergebnis gecacht. Der Schlüssel des
++ Caches zählt. Er ist der *Fingerabdruck des gestagten Baums* zusammen mit der Aufrufstelle, und
++ nicht die Aufrufstelle allein.
+
+@ 0 5 0 0cd5be61b7b2d6bb089564fb9f830383
++ Diese Unterscheidung hat Gewicht. Eine einzige Aufrufstelle innerhalb einer Inline-Methode kann
++ bei jeder Verwendung zu einem anderen Baum expandieren. Nur nach der Aufrufstelle zu schlüsseln,
++ würde für jede spätere Expansion stillschweigend die erste erneut ausführen. Nach dem Baum zu
++ schlüsseln, bedeutet, dass mehrere verschiedene Expansionen einer Stelle jeweils einmal
++ kompiliert werden, während Aufrufe, die sich nur in den transportierten Daten unterscheiden,
++ eine einzige Kompilierung teilen. Das macht das Verteilen aus einem generischen oder
++ Inline-Kontext sicher.
+
+@ 0 2 0 00bb67f349bca02a156e5cb9e572a97a
++ Ein eingespleißter Wert wird einmal pro Dispatch ausgewertet, nicht einmal pro Vorkommen.
++ Zweimal in einem Block verwendetes `${job.name}` verweist auf denselben gemarshalten Wert, und
++ `job.name` wird nicht zweimal ausgewertet.
+
+@ 0 1 0 0859c72de186e15b0673d53af260b405
++ ### Fehler über die Grenze hinweg
+
+@ 0 5 0 0e31ec5086c776e11e2e6adab70c3c3b
++ Code, der anderswo läuft, kann fehlschlagen, und der Fehlschlag muss zurückkommen. Ein im
++ gestagten Block ausgelöster Fehler wird hinübergetragen und an der Aufrufstelle erneut
++ ausgelöst. So meldet `dispatch` den Fehlschlag der entfernten Berechnung und nicht, dass die
++ entfernte Berechnung nicht erreicht werden konnte. Ein Fehlschlag des Rigs selbst, etwa ein
++ Unterprozess, der nicht starten wollte, oder ein Classloader, der sich nicht bauen ließ, ist
++ davon verschieden, da beide unterschiedliche Reaktionen verlangen.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 6 0 05cb058f449e73bc0302f943e3f1dcbf
++ - [Metaprogrammierung](metaprogramming.md) beschreibt die Werkzeuge der Kompilierzeit, auf
++   denen Zitate beruhen.
++ - [Compiler](compiler.md) beschreibt den `Scalac`, mit dem ein Rig Code stagt.
++ - [Prozesse](processes.md) beschreibt den Befehl `sh"…"`, den das `Jvm`-Rig startet.
++ - [Generische Daten](generic-data.md) und [JSON](json.md) beschreiben die Formen, in denen
++   Werte die Grenze überqueren.
++ - [Testen](testing.md) verwendet das `Enclave`-Rig, um ein zu testendes Programm zu paketieren.

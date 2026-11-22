@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 5 0 12f616587e1d40261eaad5c40b24f46b
++     Um layout também diz se se destina a receber escrita: `readOnly` é `true` para `/boot`, `/efi`,
++     `/sys`, `/usr` e tudo abaixo dele, e para os diretórios por processo sob `/proc`. Os cinco
++     layouts de `Home` que a especificação XDG Base Directory permite ao usuário mover seguem suas
++     variáveis: `Home.Config` é `$HOME/.config`, a menos que `XDG_CONFIG_HOME` esteja definida como
++     um caminho absoluto, caso em que é esse caminho.
+
+@ 0 24 0 14cf3883801275e111a4d6e9e704a313
++         O `BaseLayout.Dir` de um layout é passado a seus layouts aninhados como valor contextual,
++         e é assim que um objeto aninhado sabe em que diretório está. Os segmentos são mantidos do
++         mais interno para o mais externo.
++     entry #home   se o caminho é relativo ao diretório home do usuário
++     entry #path   os segmentos do caminho, do mais interno para o mais externo
++     entry #/   o diretório de um filho, pelo seu nome
++     entry #render   o caminho absoluto como texto, dado o caminho do diretório home
++         Um `Dir` que não é relativo ao home e não tem segmentos é renderizado como `/`.
++   entry #readOnly   se o diretório, por convenção, não recebe escrita de programas
++       `true` para `/boot`, `/efi`, `/sys`, `/usr` e tudo abaixo dele, e para os diretórios de
++       `/proc`; `false` para todo layout sob `Home`.
++   entry #Topic   os nomes de diretório deste nó até sua raiz, como um tipo de tupla
++   entry #absolutePath   o caminho absoluto do layout, como texto
++       Precisa de um `Environment` e de um `System`. Um layout que nomeia uma `#variable` é o valor
++       dessa variável, se for um caminho absoluto. Caso contrário, um layout sob `Home` lê a
++       variável de ambiente `HOME`, sem `/` final, e lança `Environment.Error` se ela não estiver
++       definida.
++   entry #variable   a variável de ambiente que realoca o layout, se houver uma
++   entry #relocation   onde `#variable` põe o layout: seu valor, se estiver definida como um caminho absoluto
++   entry #dir   o `BaseLayout.Dir` deste layout, dado aos layouts aninhados nele
++   entry #apply   o caminho absoluto do layout, como um tipo de caminho à escolha de quem chama
++       `layout[Path on Linux]()` cria, a partir de `#absolutePath`, um valor de qualquer tipo que
++       seja `Instantiable across Paths from Text`. Precisa de um `Environment` e de um `System`, e
++       lança `Environment.Error` (para um layout de `Home` cujo `HOME` não está definido) e
+
+@ 0 5 0 01aa2e748611aecf137de178c7d6d652
++       `Cache`, `Config`, `Local.Bin`, `Local.Share` e `Local.State` são os diretórios que a
++       especificação XDG Base Directory permite ao usuário mover, e cada um fica onde sua variável
++       indica quando ela está definida como um caminho absoluto: `Home.Config` é
++       `$XDG_CONFIG_HOME`, e `$HOME/.config` caso contrário. Um valor relativo ou vazio é ignorado,
++       como a especificação exige. Os outros layouts são fixos.
+
+@ 0 3 0 11d0e7a0fc4ed11505d86722fbaebfdd
++   entry .Cache   o diretório de cache do usuário, `$XDG_CACHE_HOME` ou `~/.cache`
++   entry .Config   o diretório de configuração do usuário, `$XDG_CONFIG_HOME` ou `~/.config`
++   entry .Local   o prefixo de instalação local do usuário, `~/.local`
+
+@ 0 6 0 12bb298788522c6106cc24f983f11dce
++         A contraparte por usuário de `/usr`, que contém os programas, bibliotecas, dados e estado
++         do próprio usuário.
++     entry .Bin   os executáveis do próprio usuário, `$XDG_BIN_HOME` ou `~/.local/bin`
++     entry .Lib   as bibliotecas do próprio usuário, `~/.local/lib`
++     entry .Share   os dados de aplicação do próprio usuário, `$XDG_DATA_HOME` ou `~/.local/share`
++     entry .State   o estado de aplicação do usuário, `$XDG_STATE_HOME` ou `~/.local/state`

@@ -1,0 +1,50 @@
+orthant 2 language
+
+% 0 1 0 001f90608b7dd22610ab692a46e148e2
+
+@ 0 1 0 0e6a3581b82c83fb0193d29a278f43cb
++ Lançado quando um classpath não pode ser reduzido ao mundo fechado que seus pontos de entrada alcançam.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 146fc008d5517a990b24a43854e6709c
++ A redução recompila as classes de um classpath a partir do seu TASTy, sem os membros que nada
++ alcança, e depois segue as referências do bytecode resultante para decidir que outras classes
++ vão junto. Este erro cobre um mundo fechado que não seria correto e o redutor terminando de
++ forma anormal.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0445185a914a06611a6ed8aa9e7b31b8
+
+@ 0 1 0 1ea7e942cbda33c20db5d8f6cad70bd9
++ **Exemplo.** `[↯/s.146.1.1] the classpath could not be shrunk because a problem was found: example.Main refers to render()Ljava/lang/String; of example.Page, which was removed`
+
+@ 0 5 0 0a6beb09f5addefd16e83673c5aa63bf
++ Algo que foi mantido faz referência a algo que não foi. O motivo carrega todas essas
++ referências, como `problems`: cada uma foi encontrada ou nas árvores do compilador, antes de
++ qualquer bytecode ser gerado, ou no bytecode, depois. O erro cobre também uma unidade que não
++ pôde ser recompilada nem fixada no lugar, tendo como problemas os erros do próprio compilador.
+
+@ 0 4 0 054f9ecd59a5c94216c88c08bbb08648
++ **Resolução.** Uma referência que só a reflexão faz não é algo que a análise consiga encontrar:
++ mantenha a classe que ela alcança, com o `keep` de `Shrink` ou `shrinkOptions.keep`. Uma
++ referência que a análise deveria ter encontrado é uma falha da análise; fixar a unidade que faz
++ a referência, com `pin` ou `shrinkOptions.pin`, copia essa unidade tal como estava e mantém tudo
++ aquilo a que ela faz referência.
+
+% 0 1 0 1b762c079bc654b5142014f9af7b1a17
+
+@ 0 1 0 03df6e2c0d24a7d11d98571df5e1a5ff
++ **Exemplo.** `[↯/s.146.1.2] the classpath could not be shrunk because the shrinker terminated abnormally`
+
+@ 0 1 0 184f587cfad810a00a1733b948aecece
++ O motivo carrega o stack trace.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 02e06909ce28d85e05bef9ddc48783d3
++ - Código-fonte: `lib/abscission/src/core/abscission.Shrink.scala`

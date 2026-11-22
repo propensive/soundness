@@ -1,0 +1,2137 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c512ee62b2c07ea0579443876a48cad
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 18f88a3d7ad30bb7114fd37577713766
++ info
++     un lecteur de Scala compilé : les fichiers TASTy sous forme de simples données, résolus par
++     rapport à un classpath, et effacés
+
+@ 0 10 0 017323c9d77fd985160ea9ed020e9837
++ detail
++     _Degustation_ lit ce que laisse derrière lui le compilateur Scala. Chaque fichier de
++     classe Scala 3 est accompagné d'un fichier **TASTy** (`Option.tasty` à côté de
++     `Option.class`), l'arbre syntaxique typé du compilateur sérialisé sous une forme binaire
++     compacte : chaque définition, ses modificateurs et ses annotations, ses types de
++     paramètres et de résultat, les parents de chaque classe, et les corps des définitions
++     inline et des macros. C'est l'enregistrement complet de l'API d'un module, et ce que doit
++     lire tout outil qui a besoin de comprendre du Scala compilé — un explorateur d'API, un
++     moteur de rendu de documentation, un vérificateur de compatibilité. Degustation le lit
++     sans exécuter le compilateur : sa seule dépendance est `tasty-core`, la petite
++     bibliothèque qui connaît la disposition des octets du format ; une lecture fonctionne
++     donc sur la JVM, dans un navigateur et dans un binaire natif.
+
+@ 0 10 0 12a18f350387740217fba6da1b06bfe7
++     Le lecteur produit des **valeurs**. `Unpickler(data)` transforme les octets d'un fichier
++     en un `Unpickler.File` de `Pickled.Tree`, de `Pickled.Type` et de `Pickled.Name`,
++     exactement tels que le format les dispose et sans table des symboles derrière eux : une
++     référence à une définition locale est l'adresse de son nœud de définition, et une
++     référence à toute autre chose est un nom par rapport à un type préfixe, tel que le
++     fichier l'écrit. Un `Universe` répond aux questions auxquelles les octets seuls ne
++     peuvent pas répondre — à quoi un nom fait référence, quelle classe déclare un membre
++     sélectionné, comment une classe se linéarise — en chargeant paresseusement d'autres
++     fichiers depuis une `Universe.Source`, un classpath réduit aux deux opérations de
++     lecture d'une entrée et de listage d'un répertoire. Au-dessus d'un univers, une
++     `Erasure` calcule l'effacement de types de Scala 3, de sorte que la signature effacée
++     d'un membre — `(scala.Function1)scala.Option` — s'écrit comme l'écrirait le compilateur.
+
+% 2 1 0 1bd4cfe18ee09db0081ac6af1640fb2d
+
+% 3 1 0 1d9bd8d5a0996c0217de1bc69d502fad
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1a5a01e2ed24ba24127e1a03d9eca9e6
+
+% 0 1 0 09ef15007528a849019ca624db24343f
+
+% 0 1 0 05ddc344de11437f14fb4e564eab942f
+
+% 1 1 0 015c9d592928cc9f116b1fe802d31234
+
+@ 0 7 0 119736f76edc793207cca4c4cd0737cf
++     Au-dessus du lecteur se trouve l'**atomiseur**, la raison d'être de la bibliothèque :
++     `Degustation.
++     atomize` applique les règles de la discipline Scala de LIRA (`tasty/2`) aux fichiers
++     d'un module, découpant son API en `ScalaAtom` — chacun étant une clé stable comme
++     `fixture.Overloads.f(scala.
++     Int)scala.Int`, un encodage binaire canonique dont le hachage est la valeur de l'atome,
++     et, pour un corps inline, les `ScalaReference` qu'il effectue — de sorte que deux
++     versions d'une bibliothèque peuvent être comparées par arithmétique d'ensembles.
++     `Inspection.atomize` fait de même sur des fichiers et un classpath sur disque.
+
+@ 0 1 0 1b6ad1cac25e4f71104ce07a549b507d
++     Les parties de la bibliothèque, selon ce que chaque plateforme peut faire :
+
+@ 0 10 0 1356bb03823a0cf31720f22007bdcc77
++     - `degustation.tasty` — le modèle de données (`Pickled`), le lecteur (`Unpickler`), le
++       lecteur de fichiers de classe (`Classfile`), l'univers du classpath
++       (`Universe.Source`, `Scope`, `Universe.ClassInfo`, `Member`, `Kind`, `Resolution`,
++       `Universe`), l'effacement (`Erasure`), l'atomiseur (`Degustation`) et sa sortie
++       (`ScalaAtom`, `ScalaReference`). Compile pour la JVM, Scala.js et Scala Native ; rien
++       ici ne touche à un système de fichiers.
++     - `degustation.core` — `Inspection`, la face système de fichiers : les fichiers `.tasty`
++       et les répertoires du classpath sont lus par le backend de système de fichiers de
++       galilei, les jars par zeppelin. JVM et Scala Native. Sur la JVM, les propres classes du
++       JDK sont lues depuis le chargeur de classes de la JVM en cours d'exécution ; sur Native,
++       il n'y a pas de JVM où les lire, si bien qu'un jar des fichiers de classe du JDK doit
++       figurer sur le classpath.
+
+@ 0 4 0 01036fc2cec08d9d1311d98b37ea0c2b
++     Tout sauf `Universe` et `Classfile` est exporté vers le package parapluie `soundness` ;
++     ces deux-là y laissent leurs noms simples à anthology et mandible, et s'atteignent par
++     `degustation.Universe` et `degustation.Classfile`. La bibliothèque n'a pas de packages
++     de choix et un seul given, `Inspection.Error.communicable`, qui est dans la portée
++     implicite.
+
+% 0 1 0 12db27cc995f512d068d6c1d92268fa4
+
+% 0 1 0 1173679ca8fefb361812d0ed10891951
+
+% 0 1 0 1bf564bb53c55b5c1b969c458b1622d4
+
+% 0 1 0 1ec079fc65d090e10e6ad2878f5c2407
+
+% 0 1 0 067ef04878655b4106f5304349ed0fe5
+
+% 0 1 0 14ac662483455c0a1191b972e14431f1
+
+@ 0 1 0 0a1c35441a98317e11d24f2efbfe4098
++ entry .Unpickler
++   info
++       lit les octets d'un fichier `.tasty` dans le modèle `Pickled` : arbres, définitions et
++       lieurs par adresse
+
+@ 0 9 0 127b54c1cf97f27e0b5a20811ace0737
++   detail
++       `Unpickler(data)` vérifie l'en-tête du fichier, décode sa table des noms et désérialise
++       sa section ASTs en `Pickled.Tree` ; les sections des positions, des commentaires et des
++       attributs sont ignorées, puisque rien en elles ne relève de l'API. Chaque sous-arbre
++       partagé (`SHAREDtype`, `SHAREDterm`) est résolu vers l'arbre qu'il partage, mémoïsé par
++       adresse, si bien que le résultat est un simple arbre dans lequel seuls les nœuds porteurs
++       d'identité — définitions, lieurs, types récursifs — conservent leur adresse. La grammaire
++       suivie est celle que documente `TastyFormat` ; là où le propre désérialiseur du
++       compilateur s'en écarte pour construire des symboles ou retyper des nœuds, ce lecteur
++       conserve ce que dit le fichier.
+
+% 2 1 0 0b07d18533cd80d00a7e8735294fe4b1
+
+% 3 1 0 0e89ebbf7b79a67300511191f1acd900
+
+% 4 1 0 1284d37ccdf0d737133c88aecc030336
+
+% 5 1 0 1ae1da2072fb829a0207d55ee01aa39a
+
+% 0 1 0 0ed83039c096e93f0f8a371292915522
+
+% 0 1 0 0e66d7f641914bab146fa4a18d8ded50
+
+% 1 1 0 02294cc8a4e8fa78095bf8dbc0eabc8f
+
+@ 0 5 0 168662190e81dfba080141e77d7194d4
++       Un fichier dont l'en-tête n'est pas un en-tête TASTy, ou dont la version ne peut pas être
++       lue par le `tasty-core` embarqué, lève `dotty.tools.tasty.UnpickleException` ; de même
++       pour un nœud dont la lecture ne s'arrête pas à sa fin enregistrée, ce qui signifie que la
++       grammaire a divergé de celle du fichier, et c'est signalé plutôt que mal lu en silence.
++       Les octets sont copiés une fois dans un tableau JVM avant la lecture.
+
+% 1 1 0 1b89d85f1e41d0ce19e47d6ad1161920
+
+% 1 1 0 13b55e423b3b3b56173ff1dc176f63b6
+
+@ 0 1 0 01d0531ce2d287f802d71b41f9fcb88a
++   entry .apply
++     info
++         désérialise les octets d'un fichier en son `File`
+
+@ 0 2 0 0d28e47131d7bd8c12b893925c851b23
++     detail
++         Lit l'en-tête, les noms et les ASTs de `data`. Un fichier sans section ASTs (ce qui ne
++         manque jamais à un fichier valide) donne un `File` vide.
+
+@ 0 1 0 01f3bb7e8ea103c90cce8fee66dd071d
++   entry .File
++     info
++         les ASTs d'un fichier : instructions de niveau supérieur, chaque définition par adresse,
++         chaque lieur par adresse
+
+@ 0 7 0 1ecb2a993e42df7d0a9b9fa44afc26a3
++     detail
++         Un `File` est ce que renvoie `Unpickler(data)` et ce que `Universe.index` indexe dans un
++         `Scope`. `#statements` sont les arbres de niveau supérieur du fichier, chacun un
++         `Pickled.Tree.Package` ; `#definitions` associe l'adresse de chaque nœud de définition
++         au nœud, si bien qu'une référence locale (`Type.TermRefDirect` et ses semblables) peut
++         être suivie jusqu'à la définition qu'elle nomme ; `#binders` associe à son adresse chaque
++         type méthodique, lambda ou récursif, pour que les références `Type.Param` et
++         `Type.RecursiveThis` puissent s'y résoudre.
+
+@ 0 1 0 1b68e5ae8a23c482004e1cdfbb00ed30
++     entry #statements
++       info
++           les arbres de niveau supérieur, dans l'ordre du fichier
+
+@ 0 1 0 0699e517f509119c1888a0f25d6d834a
++     entry #definitions
++       info
++           chaque nœud de définition — `TypeDef`, `ValDef`, `DefDef`, `TypeParam`, `Param`, `Bind`
++           — par son adresse
+
+@ 0 1 0 172feddeda870d1d070d654014402c45
++     entry #binders
++       info
++           chaque `Type.Method`, `Type.Poly`, `Type.Lambda` et `Type.Recursive`, par son adresse
+
+@ 0 1 0 0fcd8a3fc00683d01c6f43d8b7f0613f
++ entry .Pickled
++   info
++       le modèle de données TASTy : noms, types, arbres et modificateurs tels que le format les
++       dispose
+
+@ 0 8 0 09f662a8825ad0a8068bf57b5fa7093f
++   detail
++       `Pickled` contient les types qui modélisent un fichier `.tasty` sous forme de données,
++       sans table des symboles derrière eux : un `Name` de la table des noms, un `Type`, un
++       `Tree`, les `Modifiers` d'une définition, et les énumérations plus petites à partir
++       desquelles ils sont construits. Une référence à une définition locale est l'adresse de
++       son nœud de définition ; une référence à toute autre chose est un nom et un type préfixe,
++       tels que le fichier les écrit. Tout ce dont a besoin une question sémantique — à quoi un
++       nom fait référence, vers quoi un type s'efface, quelle classe déclare un membre
++       sélectionné — trouve sa réponse ailleurs, dans `Universe` et `Erasure`.
+
+@ 0 3 0 1cdd056294214e7a12eaf9b33ab32b10
++       Quelques formes ne sont pas du tout sérialisées mais construites par le lecteur ou
++       l'univers pour leur propre usage, et le disent : `Type.AppliedTerms`, `Type.Opaque`,
++       `Type.Abstraction`, `Type.Foreign`, `Flag.ParamAccessor` et `Tree.Path`.
+
+% 2 1 0 1695f529137870a50fde3f3081c5994d
+
+% 3 1 0 059015469707ce0213f56d0f93858c3a
+
+% 0 1 0 129c1f47bf84a32001250908aa737fd8
+
+% 0 1 0 029f1d4fbf61c5261397f1e30ffc2648
+
+% 0 1 0 0c363c0585b58b3c13d264b426a95cf4
+
+% 0 1 0 07fad97a566885071347693917901e42
+
+% 0 1 0 1bfdb582e889d22215525138d4f63116
+
+% 1 1 0 109066aedd987921054b99ad2d8ed12b
+
+% 1 1 0 10fe1a2623fb85d709fc5772a8b5a6ab
+
+% 1 1 0 082e02ecea17dddf005de11924268322
+
+@ 0 1 0 05006b283afe13061f21d6816c3bd707
++   entry .Name
++     info
++         un nom de la table des noms, structuré comme le structurent les sortes de noms du
++         compilateur
+
+@ 0 9 0 02b7dd15470334581db58a18d020bf5b
++     detail
++         Un `Name` est `Simple(value)` pour un nom simple, ou l'une des sortes dérivées du
++         compilateur sur un autre nom : `Qualified(prefix, selector)` pour `a.b`, `Expanded` et
++         `ExpandPrefix` pour les expansions séparées par `$$` et par `$` d'un nom privé ou local,
++         `Unique(separator, number, original)` pour un nom frais, `DefaultGetter(method, index)`
++         pour l'accesseur d'un argument par défaut, les enveloppes `SuperAccessor`,
++         `InlineAccessor`, `ObjectClass` (le `X$` d'une classe de module) et `BodyRetainer`, et
++         `Signed(original, target,
++         result, params)` — un nom de terme portant la signature effacée du membre auquel il fait
++         référence, ce qui permet à une référence à une méthode surchargée de dire quelle
++         alternative elle désigne.
+
+@ 0 5 0 0fba2628fe51b4cf0c0622a18d7adb13
++         `#text` rend un nom comme le fait le `Name#toString` du compilateur, de sorte que ce que
++         montre un cadre de pile ou un fichier de classe peut lui être comparé ; `#spelled` est
++         l'écriture de `fullName`, qui ne diffère que pour l'accesseur par défaut d'un
++         constructeur ; `#unsigned` supprime une signature, et `#signature` est la signature que
++         porte un nom signé, écrite `(paramSigs)resultSig` exactement comme les clés des
++         `ScalaAtom` écrivent les leurs.
+
+@ 0 1 0 089648b51afc1aa30d8df4f10f8ecfa3
++     entry #text
++       info
++           le nom tel que le rend le `Name#toString` du compilateur
+
+@ 0 7 0 17ff4df336439fbb0e2d4980c6c9db30
++       detail
++           `Simple` est sa valeur ; `Qualified` joint avec `.` ; `Expanded` avec `$$` et
++           `ExpandPrefix` avec `$` ; un nom `Unique` est `original`, séparateur, numéro (ou `$3$`
++           pour un nom frais sans rien dont dériver) ; un `DefaultGetter` est `method$default$N`,
++           le `<init>` d'un constructeur étant transformé en `$lessinit$greater` ;
++           `SuperAccessor`, `InlineAccessor` et `BodyRetainer` placent `super$`, `inline$` et
++           `$retainedBody` sur le dernier segment d'un nom qualifié ; `ObjectClass` ajoute `$` ; et
++           un nom `Signed` se rend comme son original.
+
+@ 0 1 0 0e1a1753ca60ec86084be9d3921a720d
++     entry #spelled
++       info
++           le nom tel que l'écrit le `fullName` du compilateur
+
+@ 0 3 0 1cca204beebf56dd18ac6096afbba4d4
++       detail
++           Identique à `#text`, sauf que l'accesseur par défaut d'un constructeur garde `<init>`
++           non transformé : `<init>$default$1`. C'est l'écriture qu'utilisent `Scope#names` et les
++           clés de `ScalaAtom`.
+
+@ 0 1 0 0668db5eb9181e8416179a4b2562f4ea
++     entry #unsigned
++       info
++           le nom sans sa signature, s'il en avait une
+
+@ 0 1 0 1442397c0259587515439473cd60cb41
++     entry #signature
++       info
++           la signature effacée que porte un nom signé, ou `Unset`
+
+@ 0 3 0 028c1cd605cb87fa1f550391d95e1a91
++       detail
++           Écrite `(paramSigs)resultSig`, chaque signature de paramètre étant un nom de classe
++           effacé pleinement qualifié ou un nombre de paramètres de type — l'écriture que produit
++           `Erasure` pour une déclaration, de sorte que les deux côtés d'une référence concordent
++           par construction.
+
+@ 0 1 0 0b0060e32b1e488d03e081fc573da762
++   entry .ParamSig
++     info
++         une composante de la signature effacée d'un nom signé
+
+@ 0 4 0 0316657b70b641cd02f8bb07790dc199
++     detail
++         `Erased(name)` est un nom de type effacé pleinement qualifié ; `TypeParams(count)` est
++         la longueur d'une section de paramètres de type. `#text` rend l'un ou l'autre comme
++         l'écrit la signature : le nom, ou le nombre en chiffres.
+
+@ 0 1 0 09ac5b0788e301f8102759a48ec367b1
++     entry #text
++       info
++           la composante telle qu'elle apparaît dans une signature écrite
+
+@ 0 1 0 184a43e79ca399f713a755f0de7fa0c8
++   entry .Constant
++     info
++         une constante littérale : unit, booléens, null, les primitives numériques et caractère,
++         une chaîne ou une classe
+
+@ 0 5 0 1b95a3aec2492b4f0475375bd2f263dd
++     detail
++         Les cas sont `UnitValue`, `FalseValue`, `TrueValue`, `NullValue`, `ByteValue`,
++         `ShortValue`, `CharValue`, `IntValue`, `LongValue`, `FloatValue`, `DoubleValue`,
++         `StringValue(value: Text)` et `ClassValue(tpe: Type)`, qui est la forme sérialisée d'un
++         littéral `classOf[T]`.
+
+@ 0 1 0 011f9b7bc6d6d90c17192cc816f2ade2
++     entry #className
++       info
++           la classe pleinement qualifiée à laquelle le type de la constante fait référence
+
+@ 0 2 0 0d625968a38ce79d143e9b4a59189618
++       detail
++           `scala.Unit`, `scala.Boolean`, `scala.Null`, `scala.Int` et les autres primitives,
++           `java.lang.String` pour une chaîne et `java.lang.Class` pour un littéral de classe.
+
+@ 0 1 0 04a59f9fc2c0535315fa8873459cd270
++   entry .Variance
++     info
++         `Invariant`, `Covariant` ou `Contravariant`, tels que les portent les paramètres d'une
++         lambda de type
+
+@ 0 1 0 112fdf0d3c213993068bb54e8adbcb1f
++   entry .Clause
++     info
++         la sorte de la clause de paramètres d'un type de méthode : `Plain`, `Implicit` ou
++         `Contextual`
+
+@ 0 1 0 1106afaab26f18ef11d02250379aab6a
++   entry .Type
++     info
++         un type tel que sérialisé : des références par adresse ou par nom par rapport à un
++         préfixe, et les constructeurs de types
+
+@ 0 9 0 1241eac76f5cbec615fe7f66a9c20458
++     detail
++         Les références se répartissent en trois familles. Une référence **locale** nomme une
++         définition du même fichier par l'adresse de son nœud : `TermRefDirect(address)` et
++         `TypeRefDirect(address)`, ou `TermRefLocal(address, prefix)` et `TypeRefLocal(address,
++         prefix)` lorsqu'un préfixe est aussi enregistré. Un **membre de package** est nommé
++         directement : `TermRefPkg(name)` et `TypeRefPkg(name)` portent un nom pleinement
++         qualifié. Toute autre chose est un nom par rapport à un type préfixe :
++         `TermRef(name, prefix)` avec un `Name` qui peut être signé, `TypeRef(name, prefix)`, et
++         les formes `TermRefIn` et `TypeRefIn`, qui enregistrent aussi la classe dans laquelle le
++         membre a été sélectionné.
+
+@ 0 10 0 10f5e49ef2edafec15f9dec5fcb9ada9
++         Les constructeurs sont ceux du format : `This(cls)` et `Super(thisType, underlying)` ;
++         `Recursive(address, parent)` et `RecursiveThis(address)` pour un raffinement récursif ;
++         `Refined(parent, name, info)` ; `Applied(constructor, arguments)` ; `Bounds(low, high,
++         variances)`, où un `high` absent signifie un alias de `low` ; `Annotated(underlying,
++         annotation)` ; `And` et `Or` ; `Match(bound, scrutinee, cases)` et `MatchCase(pattern,
++         rhs)` ; `Flexible(underlying)` pour un type Java flexible quant à null ;
++         `ByName(underlying)` ; `Literal(constant)` ; et `Bind(address, name, bounds)`. Les
++         lieurs — `Method(address,
++         names, params, result, clause)`, `Poly(address, names, bounds, result)` et
++         `Lambda(address, names, bounds, result)` — portent l'adresse à laquelle renvoie un
++         `Param(binder, number)` qu'ils contiennent, et `Unpickler.File#binders` les retrouve par
++         elle.
+
+@ 0 8 0 0ec6733f625eefbe00bddb898a234bdb
++         Quatre formes ne sont pas sérialisées mais construites par le lecteur ou l'univers :
++         `AppliedTerms
++         (function, arguments)`, le type d'une application de terme dont le type de la fonction
++         n'est pas encore résolu ; `Opaque(alias, bounds)`, le membre droit d'un type opaque avec
++         les bornes à travers lesquelles on le voit de l'extérieur ;
++         `Abstraction(params, names, bounds, result)`, une lambda de type telle que l'écrit un
++         *arbre* de type lambda, liant ses paramètres comme des définitions par adresse ; et
++         `Foreign(path, tpe)`, un type rattaché au fichier dont il a été lu, de sorte que ses
++         références locales se résolvent encore lorsqu'il est transporté dans les types d'un autre
++         fichier — un argument de type substitué dans un alias, par exemple.
+
+@ 0 2 0 14974d4e2bc9c4d81e1598c60caf4db5
++         `Universe.resolve` indique à quoi un type fait référence ; `Universe.transform` et
++         `Universe.mapChildren` en réécrivent un ; `Erasure#erase` en efface un.
+
+@ 0 1 0 163d6f0d84fb1098108709de3c820e1d
++   entry .Flag
++     info
++         un indicateur de modificateur, nommé comme le sont les balises du format
+
+@ 0 9 0 136d36dec45e6e5c15251cb412c0e654
++     detail
++         `Private`, `Protected`, `Abstract`, `Final`, `Sealed`, `Case`, `Implicit`, `Given`,
++         `Erased`, `Lazy`, `Override`, `Opaque`, `Inline`, `Macro`, `InlineProxy`, `Static`,
++         `Object`, `Trait`, `Enum`, `Local`, `Synthetic`, `Artifact`, `Mutable`,
++         `FieldAccessor`, `CaseAccessor`, `Covariant`, `Contravariant`, `HasDefault`, `Stable`,
++         `Extension`, `ParamSetter`, `ParamAlias`, `Exported`, `Open`, `Invisible`,
++         `Transparent`, `Infix`, `Tracked`, `Into` et `AbsOverride` sont ceux du format.
++         `ParamAccessor` n'est pas un modificateur TASTy : l'univers l'ajoute pour marquer un
++         paramètre de classe parmi les membres de sa classe, comme le fait l'indicateur du même
++         nom du compilateur.
+
+@ 0 1 0 04cafcd283baca9b17d7952b2ebe0828
++   entry .Annotation
++     info
++         une annotation sur une définition : son type et l'arbre qui la construit
+
+@ 0 1 0 0f96baa5a5c4382c08b61518a75b7d71
++     entry #tpe
++       info
++           le type de classe de l'annotation
+
+@ 0 1 0 1cb09a174853279b164a32cc1c8745e2
++     entry #tree
++       info
++           l'appel au constructeur, tel que sérialisé
+
+@ 0 1 0 1c535dd9683e831319abe1757d22cef2
++   entry .Modifiers
++     info
++         les indicateurs d'une définition, son qualificateur `private[X]` et ses annotations
+
+@ 0 5 0 12319626076776410901658e94953349
++     detail
++         Chaque `Tree.TypeDef`, `ValDef`, `DefDef`, `TypeParam`, `Param` et `Bind` en porte un.
++         `#has(flag)` teste un indicateur ; `#privateWithin` est le type que nomme un
++         qualificateur `private[X]` ou `protected[X]`, ou `Unset` ; `.empty` n'a ni indicateurs,
++         ni qualificateur, ni annotations.
+
+@ 0 1 0 004ddb67e795a711186dc1dff00a60c1
++     entry .empty
++       info
++           ni indicateurs, ni qualificateur, ni annotations
+
+@ 0 1 0 04e7de36fbb5612d15aac1d682aa89b1
++     entry #flags
++       info
++           les indicateurs de la définition, sous forme d'ensemble
+
+@ 0 1 0 025ccb87546e07f61f5c94609b846a87
++     entry #privateWithin
++       info
++           le `X` de `private[X]` ou `protected[X]`, sous forme de type, ou `Unset`
+
+@ 0 1 0 19077734ba791e170ee2ddb1409d1803
++     entry #annotations
++       info
++           les annotations de la définition, dans l'ordre
+
+@ 0 1 0 012362ef3e12ea030fce02c0d86ad0a7
++     entry #has
++       info
++           indique si un indicateur est positionné
+
+@ 0 1 0 1c4bca41e8b73bac0213fcaef373ae56
++   entry .Selector
++     info
++         un sélecteur d'un `import` ou d'un `export` : `Imported(name)`, `Renamed(to)` ou
++         `Bounded(tpe)`
+
+@ 0 1 0 031d673c66ce9f8d14e6e1b2bf7ff2a6
++   entry .Tree
++     info
++         un arbre tel que sérialisé : définitions, templates, termes, motifs et arbres de type
+
+@ 0 8 0 0f832d2a84e3ec3017715c984b49eeb9
++     detail
++         Les arbres de niveau supérieur d'un fichier sont des `Package(path, statements)`. Les
++         définitions sont `TypeDef(address, name, rhs, modifiers)` — une classe lorsque `rhs` est
++         un `Template
++         (typeParams, params, parents, self, body)`, sinon un alias de type, des bornes ou un
++         type opaque — `ValDef(address, name, tpt, rhs, modifiers)`, `DefDef(address, name,
++         clauses, returns,
++         rhs, modifiers)` avec ses clauses sous forme de listes d'arbres `TypeParam` ou `Param`,
++         et `Import` et `Export` avec leurs `Selector`. Chaque définition porte l'adresse par
++         laquelle ses références locales la nomment.
+
+@ 0 6 0 0f56f2a6458231ce1c21daead7bcf901
++         Les termes sont les formes Scala habituelles — `Ident`, `Select`, `SelectIn`,
++         `QualifiedThis`, `New`, `Apply`, `TypeApply`, `ApplySigPoly`, `Typed`, `Assign`,
++         `Block`, `Inlined`, `Lambda`, `If`, `Match`, `Try`, `Return`, `While`, `Repeated`,
++         `Throw`, `NamedArg`, `SuperRef`, `SelectOuter`, `Elided` — avec les formes de quotation
++         `Quote`, `Splice`, `SplicePattern`, `QuotePattern` et `Hole`, et les formes de motifs
++         `Bind`, `Alternative`, `Unapply` et `CaseDef`. `Match` porte un `Tree.MatchKind`.
+
+@ 0 4 0 03a96ff50468bc8a19d17b1e6cbddde5
++         Les arbres de type sont `IdentTpt`, `SelectTpt`, `SingletonTpt`, `RefinedTpt`,
++         `AppliedTpt`, `LambdaTpt`, `BoundsTpt`, `AnnotatedTpt`, `MatchTpt`, `ByNameTpt` et
++         `ExplicitTpt` ; `#isTypeTree` indique si un arbre est l'un d'eux. `Path(tpe)` n'est pas
++         une forme sérialisée : un chemin ou une constante en position d'arbre, dont tout le
++         contenu est un type.
+
+@ 0 2 0 0fb72e12b468041a034369ca58bb849e
++         `Universe.typeOf` est le type que dénote un arbre de type, `Universe.termType` le type
++         d'un terme utilisé comme préfixe, et `Universe.children` les sous-arbres immédiats d'un
++         arbre.
+
+@ 0 1 0 0385e3d71d2381c90440d18ca7f02b8a
++     entry .MatchKind
++       info
++           la façon dont un `Match` a été écrit : `Plain`, `Inline`, `Implicit` ou `Sub`
+
+@ 0 1 0 12a03f032fafe92d0e860fd12d4c94b0
++     entry #isTypeTree
++       info
++           indique s'il s'agit d'un arbre de type, que le compilateur lirait avec `readTpt`
+
+@ 0 1 0 1a74ddbc18d3520a0fee899c87b36221
++ entry .Scope
++   info
++       un fichier `.tasty` chargé et indexé : le nom complet, la localité et le propriétaire de
++       chaque définition, par adresse
+
+@ 0 8 0 0cffc9975c4dc73413cdb6fc95bdd7ff
++   detail
++       `Universe.index(path, file)` construit un `Scope` à partir d'un `Unpickler.File`, et
++       `Universe#scope(path)` en charge et en indexe un depuis une `Universe.Source`. Il contient
++       le `#path` depuis lequel le fichier a été lu, le `#file` lui-même, `#names` — le nom
++       pleinement qualifié de chaque définition qu'une référence extérieure à un corps de terme
++       peut atteindre, par adresse, écrit comme l'écrit le `fullName` du compilateur (les
++       paramètres d'une méthode sous la forme `pkg.Class._$param`) — les `#locals`, les
++       définitions à l'intérieur des corps de termes, et `#owners`, le propriétaire de chaque
++       définition : l'adresse de la définition qui l'englobe, ou le nom de son package au
++       niveau supérieur.
+
+% 2 1 0 1d7fce92c3911568198391cf3018ff34
+
+% 3 1 0 1b110a84ec5e92b10e5929e02b3102e0
+
+% 4 1 0 12bed6982d04af2805e2244762705008
+
+% 5 1 0 08368f954612f80a15b38eb04d90b635
+
+% 0 1 0 0dcc600c34e43384037177094d3ce3f9
+
+% 0 1 0 1df9b591de1cdba2110cdf91ac38e0f0
+
+% 0 1 0 13c1ca5a3c03d4c801b55c23e2c2ed97
+
+% 1 1 0 0b8ebd2c676e5baf170e6b8ccb35bb5e
+
+@ 0 2 0 1a9cd476ed65668e0f9396d54fe6c9fb
++       `Universe#resolve` prend une portée comme contexte dans lequel suivre les références
++       locales d'un type ; un type transporté dans un autre fichier conserve sa propre portée
++       sous forme de `Type.Foreign`.
+
+% 1 1 0 002d3214ea100a7917e39e8c2490e8e1
+
+% 1 1 0 00abd9b3528dd01e1fd2877ac8404e9a
+
+@ 0 1 0 1981e1138b7410f31a32d179c1514e78
++   entry #path
++     info
++         le chemin, relatif au classpath, depuis lequel le fichier a été lu
+
+@ 0 1 0 0462711a952a90d200f98a7ef65e4792
++   entry #file
++     info
++         le fichier désérialisé
+
+@ 0 1 0 04a7103c1559aad91a403aeaab28f922
++   entry #names
++     info
++         le nom pleinement qualifié de chaque définition atteignable, par adresse
+
+@ 0 1 0 07c176928b58d8eb1ad74b87ab82218d
++   entry #locals
++     info
++         les adresses des définitions à l'intérieur des corps de termes
+
+@ 0 1 0 15dee9a238429c580d67e90a95c78046
++   entry #owners
++     info
++         le propriétaire de chaque définition : l'adresse d'une définition englobante, ou un nom de
++         package au niveau supérieur
+
+@ 0 1 0 0de30e71b815af1b057757fc18f7ed87
++   entry #definition
++     info
++         le nœud de définition à une adresse, ou `Unset`
+
+@ 0 1 0 18e342fa3325882f0ec5ad7ca7a82a2b
++   entry #binder
++     info
++         le type méthodique, lambda ou récursif à une adresse, ou `Unset`
+
+@ 0 1 0 0e2b6036bbe113c60e8cdbae52364713
++   entry #within
++     info
++         indique si la définition à une adresse est englobée, à n'importe quelle profondeur, par
++         celle à une autre
+
+@ 0 1 0 19f52b144d41ce4a0c1ca1f6d90b7236
++   entry #enclosingClass
++     info
++         l'adresse de la classe englobante la plus proche d'une définition, ou `Unset` au niveau
++         supérieur
+
+@ 0 1 0 14ada27681bdcdf01d78021ebf09dff2
++ entry .Kind
++   info
++       la sorte d'un membre de classe : `Val`, `Def`, `Type` ou `Class`
+
+@ 0 2 0 068d3d73b02dd8c5057dea9b9fb8c740
++   detail
++       `Universe#memberIn` et `Universe#packageObjectMember` prennent un ensemble de sortes à
++       rechercher, de sorte qu'un membre de type et un membre de terme du même nom sont
++       distingués.
+
+@ 0 1 0 12a4ce33f673f07c192b714da615637c
++ entry .Member
++   info
++       un membre d'une classe, par déclaration : son nom, sa sorte, son type déclaré, ses
++       indicateurs et son adresse
+
+@ 0 6 0 1365b909329baf6713cb15656c067177
++   detail
++       Une entrée de `Universe.ClassInfo#members`. `#tpe` est le type déclaré du membre — pour
++       une méthode, le type méthodique qu'écrivent ses clauses, construit par
++       `Universe.methodType` — et `#address` retrouve l'arbre déclarant dans le `Scope` de la
++       classe. Pour un membre lu dans un fichier de classe Java, `#erased` est la signature
++       effacée que constitue déjà son descripteur, et `#address` vaut `-1` ;
++       `Erasure#signature(owner, member)` utilise celui des deux qui est présent.
+
+@ 0 1 0 13d84143443b2003157b571449cd4f64
++   entry #name
++     info
++         le nom du membre, tel que l'écrit `Name#spelled`
+
+@ 0 1 0 1877ab47598755131f4599c45e210572
++   entry #kind
++     info
++         `Val`, `Def`, `Type` ou `Class`
+
+@ 0 1 0 09e289f63c1e90f21fe1f8fc927f4289
++   entry #tpe
++     info
++         le type déclaré : un type méthodique pour une méthode, l'alias ou les bornes pour un
++         membre de type
+
+@ 0 1 0 103d6f36aace7208178b1ff2be2da436
++   entry #flags
++     info
++         les indicateurs de modificateurs du membre
+
+@ 0 1 0 130de236711adebf1e6ac6e239e04abb
++   entry #address
++     info
++         l'adresse de l'arbre déclarant dans la portée de la classe, ou `-1` pour un membre Java
+
+@ 0 1 0 0dcc6b29d5f832330152d3f76d9642b5
++   entry #erased
++     info
++         la signature effacée d'un membre Java, lue dans son descripteur ; `Unset` pour un membre
++         Scala
+
+@ 0 1 0 0e74b22ba7a440540f65daac7b632484
++ entry .Resolution
++   info
++       ce que désigne finalement une référence de type : une classe, un alias, un type abstrait, un
++       terme, un package
+
+@ 0 11 0 1248d5812446b5b812512dbffcf87017
++   detail
++       `Universe#resolve` en renvoie une. `Class(info, arguments, scope)` est une classe avec
++       les arguments de type auxquels elle a été appliquée, le cas échéant.
++       `Alias(arity, apply, scope, body, opaque)` est un alias de type, opaque ou non : `apply`
++       substitue des arguments dans son membre droit, `body` est ce membre droit tel que déclaré
++       (une lambda, lorsqu'il est paramétré), et `opaque` indique s'il s'agit d'un type opaque,
++       à travers lequel l'effacement voit et la résolution non. `Abstract(high, scope)` est un
++       type abstrait ou un paramètre de type, connu seulement par sa borne supérieure ;
++       `Term(tpe, scope)` un terme, connu par son type déclaré ; `Package(path)` un package ;
++       et `Unknown(reason)` une référence que l'univers n'a pas pu suivre, avec la raison en
++       toutes lettres. Chacune porte la portée dans laquelle son résultat est écrit, pour la
++       suivre plus loin.
+
+@ 0 1 0 0866135f180d4c10021554dd1341fec0
++ entry .Universe
++   info
++       les classes que peut atteindre le TASTy d'un module, chargées paresseusement, et les
++       questions sémantiques à leur sujet
+
+@ 0 9 0 143f9aaaa3ded782197295e37b9f2009
++   detail
++       Un `Universe` est construit sur une `Source` et y charge à la demande : le `Scope` d'un
++       fichier la première fois qu'un chemin est demandé, une `ClassInfo` la première fois
++       qu'une classe est nommée, à partir du premier existant entre son TASTy et son fichier de
++       classe. Sur ceux-ci, il répond à ce que les octets d'un seul fichier ne peuvent pas dire :
++       à quoi un nom fait référence (`#resolve`), quelle classe déclare un membre sélectionné
++       et quelle alternative désigne une référence surchargée (`#memberIn`, `#termsIn`,
++       `#choose`), comment une classe se linéarise (`#linearization`, `#derivesFrom`), et quels
++       arguments de type une classe transmet à sa base (`#baseArguments`). Rien ici n'effectue
++       de sous-typage, d'inférence ni de substitution au-delà des paramètres d'un alias :
++       l'effacement et la recherche de membres n'en demandent pas plus.
+
+@ 0 4 0 1c825262ed9b0df9060c11e207976c65
++       Il est exporté vers le package parapluie sous le nom `Universe`, maintenant que
++       l'univers de compilateur d'anthology est `Toolchain.Universe`, et contient la `Source`
++       qu'il lit et la `ClassInfo` qu'il construit. Le compagnon contient les fonctions pures
++       sur le modèle `Pickled` qui n'ont pas besoin de classpath : `typeOf`, `termType`,
++       `methodType`, `substitute`, `transform`, `index`, `encode`, `classRef`, `className` et
++       les autres.
+
+@ 0 1 0 136b3077147fa18c059bb9429c6dc731
++       Le TASTy d'un fichier de classe ouvert, ses définitions listées, et le type d'un membre
++       effacé :
+
+% 2 1 0 13552761e55762b9106162695ada2d8a
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 00fe80f73680e7641d8fd0582fd9fda8
+
+% 1 1 0 0b7235b2829ff32c1f61bc9aa488673a
+
+% 2 1 0 0653fbd2cf1fe73c166ecfaaa003882c
+
+% 3 1 0 06ad98e44bfc6fd800ab68bfd35c4e80
+
+% 4 1 0 144c5db268722717194edd18af3ba517
+
+% 6 1 0 01611198d76928af06172d5c1893b833
+
+% 0 1 0 107750e37eaa78f3053827f15bfa16d3
+
+% 1 1 0 1d633b5d9b41af9010bd6a03e83d108e
+
+% 0 1 0 001dc069ed247aee1e37348078e151fa
+
+% 1 1 0 1937c997e1aae26f1a694a6904988583
+
+% 2 1 0 1abbee9a30776c5411bac1320f601221
+
+% 3 1 0 1c2f4ac28b920e1a069f4ac53e349de4
+
+% 4 1 0 1976bdeb4dcb09c81bc7933e89a5226b
+
+% 6 1 0 0cc9642ccd104364129bbceaeb193fc4
+
+% 0 1 0 0da542ba6012e16f1b5fce8c0a170301
+
+% 0 1 0 16bc81f8dabb2dbe1b8ddf354ab9a31b
+
+% 1 1 0 05b4ee3aa999cb0e10184c776b0cb9ad
+
+% 0 1 0 0b41ec83db43ebe5083a167ed9cde5f0
+
+% 1 1 0 154447e4ef67daee1fb1b36c755e21e6
+
+% 2 1 0 138a4e3dffff82631ffc547c75c8b489
+
+% 3 1 0 1daafb0129fa244f17fd7ade506c367d
+
+% 4 1 0 03b069c7a5b87c571bdfc23c8865f6fd
+
+% 6 1 0 1c6492c41a2d01d904ea56f54a28af41
+
+% 7 1 0 0fc15f3c424014a31e91f9642fcaf34f
+
+% 8 1 0 076c9ff23cc37300058fec38fded550e
+
+% 10 1 0 1d955cd6eaea277203e7750d2101dd73
+
+% 0 1 0 0d88321f36bae3161f1aae8a1205f91b
+
+% 0 1 0 09187230dcefad0c0ba21ec32c062f8b
+
+% 1 1 0 0b5e2377f46b85d71d51d40c41cac4e8
+
+% 0 1 0 1279141e770b3a030a601b6d7fe33704
+
+% 1 1 0 1e28a2bbaa2d000811eb9b0784a48ff5
+
+% 2 1 0 1714827a3253e976067a8602f6f251b6
+
+% 3 1 0 1946dc9c2029c28b183bd0ab2d549cff
+
+% 4 1 0 15b145089a0a7e7d03036986958baec0
+
+% 6 1 0 0d78ed708cd33dff19d0314ec3f52de4
+
+% 7 1 0 0fce6e1b6c2939bb0cf5b725545e4433
+
+% 8 1 0 0b209dd7c82b6f2e047cabc0ad53e910
+
+% 10 1 0 14b955c4de62c75d1c9e05ef0abc2e42
+
+% 0 1 0 029ad34bc3a4c5a20284872a58ee9087
+
+% 0 1 0 04bfc6bc4d5adb8d01c06f28e2872d21
+
+% 0 1 0 1c34b173ada5cd7c18072bdee4eec19e
+
+% 1 1 0 058525c9535542f5125633786086a432
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 19b333f68fc6bb1f12247ef363181d4e
++       Un univers met en cache tout ce qu'il charge et n'est pas thread-safe : construisez-en un
++       par lecture. Un nom qu'aucune source ne possède donne `Unset` à partir de `#classOf`
++       plutôt qu'une erreur ; `Erasure` ne le transforme en `Erasure.Unresolved` que là où une
++       signature ne peut pas s'écrire sans lui.
+
+% 0 1 0 00bd8d74798b700a100d042405765707
+
+% 1 1 0 09bf747c4e0c2b6313b96655534551ce
+
+% 0 1 0 08167c239baa6b020cfc798d8f88c642
+
+% 0 1 0 08765ebde290b9261ec33467cf58a3e2
+
+% 0 1 0 00e2eb93efe7cc73162ab5026aa0c841
+
+@ 0 1 0 1cc926dbbdf8c22007a332814c7543a6
++   entry .marker
++     info
++         une annotation marqueur de `scala.annotation.internal`, sous forme d'arbre
+
+@ 0 3 0 0d1405766fc9653a1ea28e7333de6028
++     detail
++         `Universe.marker(t"Repeated")` est le `New` de la classe nommée dans
++         `scala.annotation.internal`, tel que le compilateur l'attache au type d'un paramètre pour
++         un modificateur qu'un type de méthode ne peut pas représenter autrement.
+
+@ 0 1 0 1612fe3060a1e99f19e0ac7d496741a6
++   entry .synthetic
++     info
++         les classes que le compilateur définit sans fichier de classe ni TASTy derrière elles
+
+@ 0 6 0 0aa024bbcc1d5cca0f037c6c89694a2b
++     detail
++         `scala.Any` (avec les membres que lui donne le compilateur), `scala.AnyKind`,
++         `scala.Matchable`, `scala.Nothing`, `scala.Null`, `scala.Singleton`, le marqueur de
++         paramètre répété `scala.<repeated>`, `scala.&` et `scala.|`, et les classes de fonctions
++         que le compilateur fabrique selon l'arité — `FunctionN` au-delà de 22 et chaque
++         `ContextFunctionN` — chacune sous forme de `ClassInfo` ; `Unset` pour tout autre nom.
++         `Universe#classOf` consulte ceci avant le classpath.
+
+@ 0 1 0 1c715e3b83b6ba3907903e067d639132
++   entry .impureFunction
++     info
++         `scala.ImpureFunctionN` et `scala.ImpureContextFunctionN` en tant que les alias qu'ils
++         sont
+
+@ 0 2 0 002220d77580afad0a8ef2d2b10ddffa
++     detail
++         Les propres alias du compilateur, présents dans aucun fichier :
++         `[-T1, …, -TN, +R] =>> FunctionN[T1, …, TN, R]^`, donnés sous forme de `Resolution.Alias`
++         dont le corps est la lambda ; `Unset` pour tout autre nom.
+
+@ 0 1 0 04cb329509b7e4db167e594fbba3a956
++   entry .anyMembers
++     info
++         les membres que le compilateur donne à `Any`, avec leurs signatures
+
+@ 0 3 0 13627b41d5a128b30e0cd5f266b9c37e
++     detail
++         `==`, `!=`, `equals`, `##`, `hashCode`, `toString`, `getClass`, `isInstanceOf`,
++         `asInstanceOf` et leurs formes enveloppées par `$`, chacun un `Member` dont la signature
++         `erased` est celle que lui attribue le compilateur (`getClass` et `isInstanceOf` prennent
++         un paramètre de type).
+
+@ 0 1 0 0a4819e36cec26b4031e4b2be01cdcde
++   entry .objectMembers
++     info
++         les membres que le compilateur donne à `AnyRef` en plus de ceux de `java.lang.Object`
+
+@ 0 1 0 0cdda9b24325ba8f09771d217b3c68a2
++     detail
++         `eq`, `ne`, `synchronized` et `getClass`, ajoutés à `java.lang.Object` lors de son
++         chargement.
+
+@ 0 1 0 03ae69a22b04c63101638cf1b9af0ce2
++   entry .functionArity
++     info
++         l'arité d'une classe de fonction que le compilateur synthétise, ou `-1`
+
+@ 0 2 0 0c23cea24fc1918d1f325ce091af4115
++     detail
++         `scala.FunctionN` pour N au-delà des 22 implémentées, et tout `scala.ContextFunctionN`,
++         `scala.ImpureFunctionN` ou `scala.ImpureContextFunctionN`.
+
+@ 0 1 0 1b7e2f5d632f42a116eb267a3f88c665
++   entry .encode
++     info
++         un nom de classe tel qu'il s'écrit dans un fichier de classe ou dans le nom d'un fichier
++         `.tasty`
+
+@ 0 2 0 0e0b08026681184c05663dd2b9144d06
++     detail
++         Les caractères d'opérateurs deviennent leurs noms `NameTransformer` (`*:` donne
++         `$times$colon`) et un point — que peut contenir le nom d'un porteur de définitions de
++         niveau supérieur — devient `$u002E`.
+
+@ 0 1 0 0bd068dd768e606a01fd8b7a0eec3314
++   entry .decode
++     info
++         l'inverse de `.encode`, pour un nom de classe lu dans un nom de fichier
+
+@ 0 1 0 13d983d6d0c80d470fb605ffe3eb182d
++   entry .qualify
++     info
++         le nom complet d'un membre de package : `pkg.name`, ou `name` seul dans le package vide ou
++         racine
+
+@ 0 1 0 1eda3352825ecd9b1bb84962119395e6
++   entry .nth
++     info
++         l'élément d'une liste à un indice, ou `Unset` lorsque l'indice est hors limites
+
+@ 0 1 0 0eaedcd50b764f7e0c3fdd3d32f08d72
++   entry .pin
++     info
++         des types quittant le fichier dans lequel ils ont été lus, rattachés à lui sous forme de
++         `Type.Foreign`
+
+@ 0 3 0 1a9e41039f755a2c1b801acd685b20c3
++     detail
++         Les arguments substitués dans l'alias ou la classe de valeur d'un autre fichier
++         continuent de résoudre leurs références locales dans leur propre portée ; sans portée à
++         laquelle les rattacher, les types sont renvoyés tels quels.
+
+@ 0 1 0 118ac3f15b9cd536191b6a53e3c6c6c0
++   entry .primitives
++     info
++         les neuf classes de valeurs primitives, de `scala.Unit` à `scala.Double`, par nom complet
+
+@ 0 1 0 1860f965b47028a40f01f8c9b0f5e730
++   entry .classRef
++     info
++         une référence à une classe par nom pleinement qualifié, sous forme de `Type`
+
+@ 0 3 0 0bd0016a6a71d82e00a286e898a0a37c
++     detail
++         `Universe.classRef(t"scala.Option")` est `TypeRef(t"Option", TermRefPkg(t"scala"))` ;
++         un nom sans package fait référence à `<empty>`. Le `$` binaire d'une classe imbriquée
++         Java est lu comme un `.` dans son nom.
+
+@ 0 1 0 1b046e59ab7a06500627159e5659d1e0
++   entry .className
++     info
++         le nom pleinement qualifié que nomme un type de classe, lorsqu'il peut être lu à partir du
++         seul type
+
+@ 0 3 0 0312ac342c0e76770c8f591e0037e0fe
++     detail
++         Suit `TypeRefPkg`, `TypeRef` et `TypeRefIn` à travers les préfixes de package, de `this`
++         et de terme stable, et `Applied` et `Annotated` jusqu'à leur type sous-jacent ; `Unset`
++         pour un type dont le nom nécessite une résolution — une référence locale, un paramètre
++         de type, un alias.
+
+@ 0 1 0 0f7d7fea080df52c0522eaf3435a09d5
++   entry .upper
++     info
++         la borne supérieure qu'impose un type de bornes, ou le type lui-même lorsque ce n'est pas
++         un type de bornes
+
+@ 0 1 0 0507bf0469a296981001a554c0208084
++   entry .typeOf
++     info
++         le type que dénote un arbre de type
+
+@ 0 6 0 198491acb34211f00eb47c25f96d5840
++     detail
++         `IdentTpt` et `Path` portent leur type ; `SelectTpt` devient un `TypeRef` par rapport au
++         `termType` de son qualificateur ; `SingletonTpt` le type de sa référence ; `AppliedTpt`
++         un `Applied` (ou un `And`/`Or`, lorsque le constructeur est `scala.&` ou `scala.|` écrit
++         sous forme d'arbre de type) ; `RefinedTpt`, `LambdaTpt`, `BoundsTpt`, `AnnotatedTpt`,
++         `MatchTpt` et `ByNameTpt` leurs types correspondants, les paramètres d'une lambda étant
++         liés par adresse sous forme de `Type.Abstraction`.
+
+@ 0 1 0 0d475681ec11469c1788d592114c7908
++   entry .termType
++     info
++         le type d'un arbre de terme utilisé comme préfixe d'un type, ou d'un appel au constructeur
++         d'un parent
+
+@ 0 4 0 14bfd7c111b651ab01dd0dd310569953
++     detail
++         `Ident` porte son type ; `Select` et `SelectIn` deviennent des références de terme par
++         rapport à leur qualificateur ; `QualifiedThis` un `This` ; `New` son type ; `Apply` le
++         résultat de l'application du type de sa fonction, ou un `AppliedTerms` à résoudre plus
++         tard lorsque ce type n'est pas encore disponible ; un `Block` celui de son expression ;
++         et toute autre chose `scala.Nothing`.
+
+@ 0 1 0 18988573f603872f1da6c80cd1dc3c79
++   entry .memberInfo
++     info
++         l'info d'un membre de type telle que la conserve le compilateur : un alias est un type de
++         bornes qui coïncident
+
+@ 0 1 0 10a6a918ed3dde79045f646d92a36441
++   entry .annotationType
++     info
++         le type de classe que construit un arbre d'annotation
+
+@ 0 2 0 01746006fc7dc87a0bc7da20093d90e9
++     detail
++         Regarde à travers l'`Apply`, le `TypeApply`, le `Select` de `<init>` et le `New` de
++         l'appel au constructeur d'une annotation jusqu'à la classe annotée, appliquée à
++         d'éventuels arguments de type explicites.
+
+@ 0 1 0 11acebc4fb75ae960be830019fda6ffc
++   entry .parentType
++     info
++         le type de classe que nomme une clause de parent : le type sous son appel au constructeur,
++         s'il y en a un
+
+@ 0 1 0 1264286d2118c945040746822a53e358
++   entry .methodType
++     info
++         le type méthodique qu'écrivent les clauses et le résultat d'une définition
+
+@ 0 4 0 15d34c8d01ef13a110ab65d0d469aa76
++     detail
++         `Universe.methodType(address, clauses, returns)` replie les clauses d'un `DefDef` en
++         types `Type.Poly` et `Type.Method` imbriqués, la propre adresse de la définition servant
++         de lieur à chaque clause, de sorte qu'une référence `Type.Param` qu'ils contiennent se
++         résout par `Universe#clauseAddresses`. C'est ainsi qu'est construit le `Member#tpe`
++         d'une méthode.
+
+@ 0 1 0 029ee1074ef74bed0baa33e7865ae02f
++   entry .substitute
++     info
++         les paramètres de la lambda d'un lieur remplacés par des arguments, dans tout un type
+
+@ 0 1 0 163925bf04496b29172ff7a2e51569a0
++   entry .replace
++     info
++         les références locales par adresse remplacées par des types, dans tout un type
+
+@ 0 3 0 0c3a6095405d00cb0182145ded3163f2
++     detail
++         Remplace les références `TypeRefDirect`, `TypeRefLocal`, `TermRefDirect` et
++         `TermRefLocal` aux adresses données : des paramètres de type dans un type, ou des
++         paramètres de terme dont un type de méthode dépendant mentionne les types singletons.
+
+@ 0 1 0 0b73aad3f5fcc7c21e3dcdfc1ae080de
++   entry .transform
++     info
++         réécrit chaque sous-type pour lequel une fonction partielle est définie, de bas en haut
+
+@ 0 1 0 06325f9a6ddfe3c71bc03a8eef9f0874
++   entry .mapChildren
++     info
++         reconstruit un type en appliquant une fonction à chacun de ses types composants immédiats
+
+@ 0 1 0 099f761d5f09ebb5008034fc4019fe2f
++   entry .index
++     info
++         indexe un fichier désérialisé dans un `Scope`
+
+@ 0 6 0 04791bd3a5b1a12304df57faa819971f
++     detail
++         Parcourt les arbres du fichier, en enregistrant chaque définition par adresse avec le nom
++         pleinement qualifié que lui donnerait le `fullName` du compilateur : les membres d'une
++         classe ou d'un package qualifiés par celle-ci ou celui-ci, et les paramètres et types
++         locaux d'une méthode avec le bouche-trou `_$` du compilateur pour chaque terme englobant
++         (`pkg.Class._$param`). Les définitions à l'intérieur des corps de termes sont
++         enregistrées comme locales ; un type local conserve aussi son nom qualifié, puisqu'un
++         corps inline y fait référence par ce nom. `Universe#scope` fait cela pour un fichier
++         trouvé sur le classpath.
+
+@ 0 1 0 15ad2ad79b441fee1c73a6ce532662c3
++   entry .children
++     info
++         les sous-arbres immédiats d'un arbre
+
+@ 0 1 0 078b3b0398e0f1120b035c4cc7d888b5
++   entry #erasure
++     info
++         l'`Erasure` sur cet univers, construite une seule fois
+
+@ 0 1 0 0de2a9020bcbb091120012e9fd106ce5
++   entry #scope
++     info
++         la portée du fichier `.tasty` situé à un chemin, chargée et indexée une seule fois, ou
++         `Unset`
+
+@ 0 1 0 06cc2568c244832b06e1619e50552e52
++   entry #enter
++     info
++         un fichier fourni directement plutôt que trouvé sur le classpath, enregistré sous un
++         chemin
+
+@ 0 2 0 0f3deba89715114805246aab273f989a
++     detail
++         Le module en cours d'atomisation, par exemple : ses classes deviennent résolubles comme
++         celles de n'importe quel autre. Renvoie le `Scope` construit pour lui.
+
+@ 0 1 0 024c2946477eec9013500c3107cf30d5
++   entry #classOf
++     info
++         la classe nommée par un nom complet, ou la classe à laquelle un type fait référence
+
+@ 0 8 0 1ba9726e6d5039ed0e1ca5374bb25630
++     detail
++         `classOf(fullName)` donne la `ClassInfo` issue du premier existant parmi la définition
++         synthétique de la classe, son TASTy ou son fichier de classe, mise en cache. Une classe
++         imbriquée vit dans le TASTy de sa classe de niveau supérieur, et le nom simple d'une
++         classe peut lui-même contenir des points (un porteur de définitions de niveau supérieur
++         est nommé d'après son fichier source) ; on essaie donc chaque découpage du nom entre
++         segments de package, classe de niveau supérieur et classes imbriquées, en commençant par
++         le package le plus long ; une classe de module `X$` se trouve dans `X.tasty`.
++         `classOf(tpe, scope)` est la classe à laquelle un type fait référence, à travers les
++         alias, les bornes et les singletons ; les deux donnent `Unset` pour ce qui est
++         introuvable.
+
+@ 0 1 0 0df21e282959ca611c3f9d40dc3d4d4d
++   entry #resolve
++     info
++         ce à quoi un type fait référence, en suivant les références locales dans une portée
+
+@ 0 7 0 02076cc1debb0d5e1e531fc818a22c36
++     detail
++         La question centrale. Les références de package se résolvent en une classe ou un
++         `Package` ; les références nommées en le membre de leur préfixe, recherché le long de la
++         linéarisation de sa classe et à travers les parties d'une intersection ; les références
++         locales en la définition située à leur adresse ; un alias appliqué en ce vers quoi se
++         résout son expansion, les arguments étant rattachés à la portée dans laquelle ils ont été
++         écrits ; un `Param` en la borne ou le paramètre de son lieur ; un type de méthode en son
++         résultat ; un littéral en la classe de sa constante. Ce qui ne peut pas être suivi donne
++         un `Resolution.Unknown` avec la raison en toutes lettres, jamais une exception.
+
+@ 0 1 0 1425581bd109576516fbd98c6b109770
++   entry #parts
++     info
++         les deux parties d'un préfixe qui est une intersection ou une union, ou `Unset`
+
+@ 0 3 0 1562fe6801861087065555d888b8738f
++     detail
++         Écrit sous la forme `And`/`Or`, ou d'une application de `scala.&` ou `scala.|` (ou d'un
++         alias de l'un d'eux), dont les membres sont ceux de ses parties, la première partie qui
++         possède le membre le fournissant.
+
+@ 0 1 0 0a757ad9d7d6248e118cda76c26925fa
++   entry #clauseAddresses
++     info
++         les adresses des paramètres de la clause d'une définition, selon les noms de la clause
+
+@ 0 3 0 04fa6dbdb76add7a1365df1eea549e53
++     detail
++         C'est ainsi qu'un `Type.Param(binder, number)` d'un `methodType` est rattaché à la
++         définition de paramètre qu'il représente. Vide lorsque le lieur n'est pas celui d'une
++         définition (celui d'un membre synthétique, par exemple).
+
+@ 0 1 0 024cc1e5ae5b1b811c08a1f1317c953f
++   entry #applicationType
++     info
++         le type d'une application d'une référence de méthode, avec les arguments substitués
+
+@ 0 5 0 18840a9edaffd7f21f08a67ebd142845
++     detail
++         Une application de type d'une méthode polymorphe, ou une application de terme d'une
++         méthode, donne le résultat de la méthode avec les arguments à la place des paramètres —
++         par adresse pour ceux d'une définition, par position pour ceux d'un membre synthétique
++         — ce qui est l'endroit où un résultat dépendant en vient à faire référence à un argument.
++         Une référence qui n'est pas une application se résout en son type déclaré. Renvoie le
++         type avec la portée dans laquelle il est écrit.
+
+@ 0 1 0 17dabdc8859f96bd055f075036b1a804
++   entry #expansionOf
++     info
++         l'expansion d'une référence ou d'une application d'alias, avec la portée dans laquelle
++         elle est écrite, ou `Unset`
+
+@ 0 1 0 1b2f871ea0dd14e51142f66fdde9791c
++   entry #choose
++     info
++         parmi les membres d'un nom le long de la linéarisation d'une classe, celui que dénote une
++         référence
+
+@ 0 4 0 128ba7cbabd68bc916377ca455fb30c1
++     detail
++         Celui dont la signature est portée par le `Name#signature` de la référence, si elle est
++         signée ; une référence non signée à un nom surchargé dénote l'alternative sans
++         paramètres, puisque le sérialiseur signe toutes les autres sortes de méthodes. Un membre
++         concret est préféré à une redéclaration abstraite, comme les joint le `findMember` du
++         compilateur.
+
+@ 0 1 0 020af4697da33c760f5cd1f0c34c5826
++   entry #baseArguments
++     info
++         les arguments de type avec lesquels une classe, appliquée à des arguments, instancie une
++         classe de base
+
+@ 0 3 0 0a823b548d214adc120ab60282b6f2af
++     detail
++         Les arguments eux-mêmes pour la classe elle-même ; sinon ceux de la clause de parent qui
++         mène à la base, les propres paramètres de la classe étant substitués ; `Unset` lorsque la
++         classe ne dérive pas de la base.
+
+@ 0 1 0 1398e06817a621f614bd4cf1285c9c74
++   entry #packageObjectMember
++     info
++         un membre de l'objet de package d'un package ou de l'un de ses porteurs de définitions de
++         niveau supérieur
+
+@ 0 3 0 1ef780c40ba6e93705c90528b3654279
++     detail
++         Là où une référence sérialisée par rapport à un préfixe de package trouve un alias de
++         type ou une définition de niveau package : d'abord l'objet `package$`, puis chaque
++         porteur `<file>$package` que la `Source` liste dans le répertoire du package.
+
+@ 0 1 0 1ab1bf30cc7db60b13629cb0c8d9f4e3
++   entry #owner
++     info
++         la classe ou le package que dénote un préfixe : un chemin de package, le `this` d'une
++         classe, la classe d'un terme
+
+@ 0 1 0 00bf31daea4b2413092a33781fb243dc
++   entry #selfType
++     info
++         le self-type que déclare une classe, s'il y en a un
+
+@ 0 1 0 0f1494293d7a3bc10f0edf8597a78f36
++   entry #memberIn
++     info
++         le membre d'un nom et de sortes donnés, dans une classe ou dans la première de sa
++         linéarisation qui en déclare un
+
+@ 0 2 0 087248bb25c200d80d3f0fbec0458234
++     detail
++         Renvoie le membre avec sa classe déclarante. Les propres déclarations de la classe sont
++         recherchées d'abord, puis sa linéarisation dans l'ordre.
+
+@ 0 1 0 168ce0b1c00820aa16d8157525bf8ee6
++   entry #termsIn
++     info
++         chaque membre de terme d'un nom le long de la linéarisation d'une classe, la classe
++         déclarante en premier
+
+@ 0 1 0 04a7199dc917ec1204694bb4dc3dcc85
++   entry #linearization
++     info
++         la linéarisation de la classe par nom complet : elle-même, puis celles de ses parents du
++         dernier au premier
+
+@ 0 3 0 1160abe03ed574351ed61f839ba66199
++     detail
++         `L(C) = C, L(Pn) +: … +: L(P1)`, en conservant la dernière occurrence d'une classe qui
++         apparaît plus d'une fois, si bien que la linéarisation d'une superclasse est un suffixe.
++         Une classe demandée pendant le calcul de sa propre linéarisation ne contribue qu'à
++         elle-même.
+
+@ 0 1 0 1016fa2db98db0e70cadfd17d0a0364f
++   entry #derivesFrom
++     info
++         indique si une classe a une base du nom complet donné dans sa linéarisation
+
+@ 0 1 0 1b7f2d30becc687b0c5b4628197da01d
++   entry .Source
++     info
++         l'endroit où un univers trouve ses classes : lire une entrée par chemin, lister un
++         répertoire
+
+@ 0 9 0 19e0b23a0eef9114161aab7112b151bc
++     detail
++         Un classpath réduit à deux questions, de sorte que la même couche sémantique fonctionne
++         partout où les octets peuvent être récupérés : répertoires et jars sur la JVM, un bundle
++         dans un navigateur, une archive liée dans un binaire natif. Les chemins sont relatifs et
++         séparés par des barres obliques, comme sont nommés les fichiers de classe et les
++         fichiers `.tasty` : `scala/collection/immutable/List.tasty`. `#read` donne les octets
++         d'une entrée ou `Unset` ; `#list` donne les noms simples dans un répertoire, qu'un
++         `Universe` utilise pour trouver les porteurs de définitions de niveau supérieur d'un
++         package (les fichiers `<file>$package.tasty`), et peut être vide là où le listage est
++         impossible, au prix de définitions de niveau package qui ne se résolvent que par un
++         objet de package.
+
+@ 0 3 0 1d883330f90060be04364a1faafe41b2
++         `Source(first, second, …)` combine des sources, la première qui possède une entrée
++         répondant pour elle. `Degustation.atomize` prend le classpath des dépendances sous cette
++         forme, et `Inspection` en construit une sur des répertoires, des jars et les classes du
++         JDK.
+
+% 2 1 0 0e103675337a10be02d104f31276fc42
+
+% 3 1 0 049231c271eaa74916cd3ae8fb882c74
+
+% 4 1 0 00a54044369ba83f182f3ac9eb653572
+
+% 6 1 0 0a0f5e2d1fd924d30573226929f7c34d
+
+% 7 1 0 107408cf8b430cfa08f2a035031fdf89
+
+% 8 1 0 17187b1c10ebe9c119cebb869f80ede1
+
+% 0 1 0 1bbc4e0f98668eaf17b0af773af9e22b
+
+% 1 1 0 01969691d7a2ebff164a753b09c09ead
+
+% 2 1 0 1619e42356792ce80a4d853742316848
+
+% 0 1 0 171bb667ecc2b8fa14f765de81e8173f
+
+@ 0 1 0 0a929a37dd080e951dc31738cf27cf92
++     entry .apply
++       info
++           combine plusieurs sources : la première qui possède une entrée répond pour elle
+
+@ 0 2 0 15bed7902c6b183e0d53cf7828f4b497
++       detail
++           `read` renvoie la réponse de la première source qui est présente ; `list` est l'union
++           des listages de toutes les sources, sans doublons.
+
+@ 0 1 0 06f86a41528997ff054f924860cecac6
++     entry #read
++       info
++           les octets de l'entrée située à un chemin relatif séparé par des barres obliques, ou
++           `Unset`
+
+@ 0 1 0 0c122516fe5284741a110ade25f554ae
++     entry #list
++       info
++           les noms simples des entrées situées directement dans un répertoire (`t""` pour la
++           racine)
+
+@ 0 1 0 0352b790086fc1530128eb57384f9626
++   entry .ClassInfo
++     info
++         une classe telle que la connaît l'univers, d'après son TASTy ou son fichier de classe
+
+@ 0 7 0 050e5c3379ae1d310dd7b0ac336053cc
++     detail
++         `Universe#classOf(fullName)` en donne une. Elle porte le `#fullName` de la classe, ses
++         `#flags`, ses `#typeParams` (nom et bornes) avec les `#typeParamAddresses` par lesquelles
++         les propres types de la classe y font référence, ses `#parents` sous forme de types, ses
++         `#members`, le type sous-jacent `#valueParam` d'une classe qui étend `AnyVal`, le
++         `#scope` du fichier dans lequel elle a été lue (`Unset` pour une classe Java ou
++         synthétique), si elle est `#java`, et l'`#address` de sa définition dans sa portée (`-1`
++         sans TASTy).
+
+@ 0 5 0 044dd544d4c6fd9f177479bdc11794c3
++         Les membres d'une classe Java proviennent des descripteurs de son fichier de classe, les
++         membres que le compilateur donne à `Any` et `AnyRef` étant ajoutés à `java.lang.Object`,
++         ainsi que le `+` que le compilateur donne à `java.lang.String` ; ses interfaces sont ses
++         parents, et une interface Java sans superclasse a `scala.Any`, de sorte qu'un trait
++         universel de Java est traité comme le traite le compilateur.
+
+% 2 1 0 0020b6b2bdec58aa19c25a6540446963
+
+% 3 1 0 145eaf54088e4070115a7f124372a61c
+
+% 4 1 0 14f8e3a187692bef023bce022cfff24d
+
+% 6 1 0 1eca722281b5241b189a2083f4c27c26
+
+% 7 1 0 048f3e7a0d7fb89f1fe61ead8ec35ae3
+
+% 8 1 0 13243128db2445dc147f3948c9c8067d
+
+% 0 1 0 0930e26d537776fa02e908ad9cad22c9
+
+% 0 1 0 065854090bf7a1dd0e6ffac951061b79
+
+% 0 1 0 16ce1c8b92261a5d0c3986cbfe3e887f
+
+% 1 1 0 15114cb8840388d8098e66d99f8510c8
+
+% 2 1 0 0b8613f3a9ad0d2d0da5ddb0de70c759
+
+% 0 1 0 14096790de275dac117c4e8e726c7b27
+
+@ 0 1 0 03996a1f10f465951e0be21a71e552d0
++     entry #fullName
++       info
++           le nom pleinement qualifié de la classe, celui d'une classe imbriquée étant joint à
++           celui de son propriétaire par `.`
+
+@ 0 1 0 0cefe1235e260cd501d5a12272f27d84
++     entry #flags
++       info
++           les indicateurs de modificateurs de la classe : `Trait`, `Object`, `Abstract`, `Final`,
++           `Sealed`, `Case`, …
+
+@ 0 1 0 1a63b5b85946be7b02c9b116ab35179a
++     entry #typeParams
++       info
++           le nom et les bornes de chaque paramètre de type, dans l'ordre
+
+@ 0 1 0 01f7efc9b7dd03a219b9c1d82720863b
++     entry #typeParamAddresses
++       info
++           les adresses des définitions des paramètres de type, auxquelles font référence les
++           propres types de la classe
+
+@ 0 1 0 09311ce4598df8dd12e96b02e1d3ba14
++     entry #parents
++       info
++           les types parents, tels que les nomment les clauses de parents du template
+
+@ 0 1 0 1f0561436884ecae03a9360e3e3bda01
++     entry #members
++       info
++           les propres déclarations de la classe, sous forme de `Member` ; pas celles dont elle
++           hérite
+
+@ 0 1 0 1f76332686aab3a20b2b9d0909da2319
++     entry #valueParam
++       info
++           le type sous-jacent d'une classe qui étend `AnyVal`, ou `Unset`
+
+@ 0 1 0 0b7a1dbc4fc4381018da30df7e5f2e87
++     entry #scope
++       info
++           la portée du fichier dans lequel la classe a été lue ; `Unset` pour une classe Java ou
++           synthétique
+
+@ 0 1 0 0503792059cfe2a218a809aa96253a4d
++     entry #java
++       info
++           indique si la classe a été lue dans un fichier de classe plutôt que dans du TASTy
+
+@ 0 1 0 1d3274bf13c3b00405ad75b5dd1c4e78
++     entry #address
++       info
++           l'adresse de la définition de la classe dans sa portée ; `-1` pour une classe sans TASTy
+
+@ 0 1 0 03e3691985bb43111e3df6b90ea904d4
++     entry #pkg
++       info
++           le package dans lequel se trouve la classe : le propriétaire de sa classe de niveau
++           supérieur
+
+@ 0 1 0 1f8fb9a584e6d047161f95e766b7d73b
++     entry #isTrait
++       info
++           indique si l'indicateur `Trait` est positionné ; une interface Java compte
+
+@ 0 1 0 1c02579b8a30afcd060d069cfada4930
++     entry #isObject
++       info
++           indique si l'indicateur `Object` est positionné : une classe de module
+
+@ 0 1 0 1d5ffc17d7b6699f01f1e815ba02a279
++     entry #isValueClass
++       info
++           indique si le compilateur traite la classe comme une classe de valeur
+
+@ 0 3 0 1e8542f4db407fcb1eea01351f8a6192
++       detail
++           Une classe qui étend `AnyVal` et qui n'est pas l'une des primitives (ni `AnyVal` ou
++           `Null` eux-mêmes), ce qui est la règle qu'applique le compilateur, et qui détermine si
++           un paramètre de ce type s'efface vers son type sous-jacent.
+
+@ 0 1 0 0bb1120c488d7edc115e5707f2221064
++ entry .Erasure
++   info
++       l'effacement de types de Scala 3 sur le modèle `Pickled`, dans la mesure où l'écriture d'une
++       signature effacée en a besoin
+
+@ 0 9 0 19ab6192795bc0e912da056d35106f33
++   detail
++       Une `Erasure` est construite sur un `Universe` — `universe.erasure` est celle construite
++       pour lui — et reproduit les règles de `TypeErasure` et de `Signature` du compilateur,
++       pour du code source Scala 3, avec les classes de valeur semi-effacées, en mode
++       nom-de-signature : le réglage sous lequel le compilateur écrit la signature qu'il stocke
++       dans un nom `SIGNED`. La signature d'un membre est `(paramSigs)resultSig`, chaque partie
++       étant un nom de classe effacé pleinement qualifié ou un nombre de paramètres de type :
++       `(1,scala.Function1)scala.Option` pour `Option#map`. Ce sont les discriminants des clés
++       de `ScalaAtom` et de `Name#signature`, de sorte que les deux côtés d'une référence
++       concordent par construction.
+
+% 2 1 0 10d5fa8357d862d00fd83b9875ed80ba
+
+% 3 1 0 031f75617de418c71140da30cb5ffcc8
+
+% 4 1 0 08082c66113e59a502dcc15481132484
+
+% 0 1 0 01c5618b7c52c475167e972337689c75
+
+% 1 1 0 0f961b8146a87a7803bfe14da812b366
+
+% 2 1 0 10b145180739e93509c388ce160fd80e
+
+% 0 1 0 09fce63d72da8f020a9cff38e0f91029
+
+% 0 1 0 090179fbcd599bc41f30cd1c35a30857
+
+% 0 1 0 1d4f3f30f3d01370024c25bd69478dae
+
+% 0 1 0 02811e70195e7e6f19117edfbe56df60
+
+% 0 1 0 0798e619bcd4fc0d01e2b9e9b5a9e011
+
+% 1 1 0 0e7a236bbdff92d3077aefc5f6c3cd5b
+
+@ 0 10 0 05a986227c781e1d154794eec81c12fc
++       Les règles, en bref : `Any`, `AnyVal`, `Matchable`, `Singleton` et `caps.Pure`
++       s'effacent vers `java.lang.Object` ; `Tuple` et `NonEmptyTuple` vers `scala.Product` ;
++       `Unit` vers `scala.runtime.BoxedUnit` comme paramètre et `scala.Unit` comme résultat ;
++       une classe de valeur vers son type sous-jacent comme paramètre et vers elle-même comme
++       élément de tableau ; un alias ou un type opaque vers son membre droit ; un type abstrait
++       ou un paramètre de type vers sa borne supérieure ; un paramètre par nom vers
++       `scala.Function0` ; un type de fonction polymorphe vers le `FunctionN` de son arité ; un
++       tuple `*:` vers `TupleN` ou `TupleXXL` ; un `Array[T]` vers un tableau de l'effacement de
++       `T`, ou vers `Object` lorsque `T` est générique ; une intersection vers la plus grande
++       borne inférieure effacée de ses parties (en écartant une partie de capacité pure) ; une
++       union vers la plus petite borne supérieure effacée ; un match type vers sa réduction, ou
++       sa borne.
+
+@ 0 3 0 1932fa5f290f0be107f3637e1b236de2
++       Un type dont l'effacement nécessite une classe que l'univers ne trouve pas lève
++       `Erasure.Unresolved`, que `Inspection.atomize` signale sous forme d'`Inspection.Error`
++       avec `Reason.Unencodable`.
+
+% 1 1 0 05b1b14ab36a5d2f160be51ccfe81a48
+
+% 1 1 0 1d6992aedce694561188d3cc998a0e69
+
+@ 0 1 0 1d6322365f6bf00506b8cef27dcec931
++   entry .Erased
++     info
++         un type effacé : une référence à une classe par nom complet, ou un tableau d'une telle
++         référence
+
+@ 0 1 0 1b469f79e7176080134ffffe11229be8
++     detail
++         `Ref(name)` ou `Array(element)` ; `Erasure#render` les écrit `name` et `name[]`.
+
+@ 0 1 0 0459f866cdaff02401b578a20e9830d6
++   entry .Unresolved
++     info
++         levée lorsque l'effacement d'un type nécessite une classe que l'univers ne trouve pas
+
+@ 0 6 0 14c0445d03026e1309a1ae8dee7705db
++     detail
++         Une `RuntimeException` portant `#detail` : la raison qu'a donnée l'univers, ou le
++         package qui a été utilisé comme type. L'effacement ne peut échouer que sur un classpath
++         auquel manque quelque chose auquel le module fait référence ; le classpath des
++         dépendances fourni à `Degustation.atomize` ou à `Inspection.atomize` doit donc contenir
++         tout ce à quoi les fichiers font référence, y compris la bibliothèque Scala et les
++         classes du JDK.
+
+@ 0 1 0 122ea8c4d81e54e0165c603bdbed0371
++     entry #detail
++       info
++           la raison pour laquelle le type n'a pas pu être résolu
+
+@ 0 1 0 115e18fbab2476a30d266a33494c7094
++   entry #signature
++     info
++         la signature effacée d'une définition, ou d'un membre trouvé par recherche
+
+@ 0 7 0 1e7deece48d6e39e16ad6c12bc934d2d
++     detail
++         `signature(tree, scope, owner)` est la signature d'un `DefDef` : chaque clause de type
++         sous la forme de son nombre de paramètres, le nom effacé de chaque paramètre de terme
++         (un paramètre `erased`, ou un paramètre dont le type est une `erased class`, n'y a pas
++         sa place), et celui du résultat ; le résultat d'un constructeur est sa propre classe,
++         effacée comme l'est la classe. Tout ce qui n'est pas une méthode — une valeur, une
++         méthode sans paramètres — a la signature que le compilateur donne à une non-méthode,
++         `()`. `signature(owner, member)` est celle d'un membre trouvé par recherche : celle d'un
++         membre Java est lue dans son descripteur, celle d'un membre Scala à partir de sa
++         déclaration dans le fichier de sa classe.
+
+@ 0 1 0 1e53883894c05ea01754a486292c44da
++   entry #signatureOf
++     info
++         la signature d'un type méthodique sérialisé — la méthode d'un raffinement, par exemple —
++         écrite comme le serait celle d'une déclaration
+
+@ 0 1 0 190a5cc24006af540dae25cbaf3b4a76
++   entry #javaSignature
++     info
++         la signature d'un membre Java à partir des types de son descripteur, qui sont déjà effacés
+
+@ 0 1 0 061f22fa89e3c87d0cf80af469957a18
++   entry #sigName
++     info
++         le nom effacé d'un type en tant que paramètre : `render(erase(tpe, scope, vc = true))`
+
+@ 0 1 0 1f0abddb32f077cb0be4f1cfb7bd25d6
++   entry #resultSigName
++     info
++         le nom effacé d'un type en tant que résultat : comme pour un paramètre, sauf que `Unit`
++         reste `scala.Unit`
+
+@ 0 1 0 144145e8bf3ab9d21400fe68a83cb140
++   entry #render
++     info
++         un `Erased` écrit comme dans une signature : le nom complet de la classe, avec `[]` pour
++         chaque niveau de tableau
+
+@ 0 1 0 0347ab93910225590dc64067ac9179ce
++   entry #erase
++     info
++         l'effacement |T| d'un type, dans une portée, avec ou sans classes de valeur semi-effacées
+
+@ 0 4 0 1c01d2a8036ae5200f21ce6cfbbbdaa7
++     detail
++         `vc` est le `semiEraseVCs` du compilateur : `true` efface une classe de valeur vers son
++         type sous-jacent, comme est effacé un paramètre ; `false` la garde telle quelle, comme
++         l'est un élément de tableau ou le type sous-jacent d'une autre classe de valeur. Lève
++         `Erasure.Unresolved` pour un type que l'univers ne peut pas suivre.
+
+@ 0 1 0 15551556837efbbf1deb0830d63d6d70
++   entry #erasedGlb
++     info
++         la plus grande borne inférieure effacée : l'un de ses deux arguments, selon l'ordre total
++         du compilateur
+
+@ 0 2 0 0ad00853cc1af6b219f142774de93bb5
++     detail
++         Les tableaux avant les non-tableaux, les primitives avant les autres, les classes avant
++         les traits, les sous-classes avant les superclasses, puis par nom. C'est ainsi que
++         s'efface une intersection.
+
+@ 0 1 0 02b63571945c591b08cd044c82cd8677
++   entry #erasedLub
++     info
++         la plus petite borne supérieure effacée, comme s'efface une union
+
+@ 0 3 0 1bccabda4796acc3175dd064e45a4cbf
++     detail
++         `Nothing` disparaît face à n'importe quoi, `Null` face à un type qui dérive d'`Object`
++         (ce que ne fait pas un trait universel) ; les tableaux se joignent élément par élément ;
++         deux classes se joignent à la dernière classe de base commune minimale, en préférant les
++         classes aux traits, ou à `java.lang.Object`.
+
+@ 0 1 0 1caa6432ec4f87a910841d9ceeed7cf6
++ entry .Classfile
++   info
++       le peu d'un fichier de classe Java dont ont besoin l'effacement et la recherche de membres
+
+@ 0 7 0 1294f9d5a9a6ea6001616aacf5e054af
++   detail
++       Un lecteur du nom, de la sorte et des supertypes de la classe, ainsi que des noms et des
++       descripteurs de ses membres — lesquels, pour un membre Java, *sont* déjà sa signature
++       effacée. Rien de générique n'est lu : un paramètre de type Java s'efface vers sa borne,
++       que le descripteur écrit en toutes lettres, et l'effacement d'une référence Scala à une
++       classe Java est la classe. Un `Universe` en lit un pour chaque classe dont il trouve un
++       fichier `.class` mais pas de `.tasty`, ce qui est la façon dont les classes du JDK et de
++       toute bibliothèque Java rejoignent l'univers.
+
+@ 0 2 0 1de48ebb14adc6d019b066fd7f869ac7
++       Il est marqué `@unexported` dans le package parapluie, où `Classfile` est le nom de
++       mandible ; on l'écrit donc `degustation.Classfile`.
+
+% 2 1 0 0ed96fb8d57bf33919dbabb3c19541b3
+
+% 3 1 0 1b772ab0f899001b07ce5cf415afa544
+
+% 4 1 0 03aaf60eed83b6df1576d689b9deacf4
+
+% 5 1 0 03c2fc3ee7370d8a06f502d281f91e84
+
+% 0 1 0 01048e74ce18961e162e8ea09a213ba3
+
+% 0 1 0 08fc9cca8ee86bdf0e6f1333e2fcea72
+
+% 0 1 0 09f0072768ed79311e1346bb467d0915
+
+% 1 1 0 07d67b3eba06ed370b97474c90acadaa
+
+% 1 1 0 023ff1c3638699f702a485fd3c32233f
+
+@ 0 1 0 005c8330cf9409680fec6409a37987d1
++   entry .apply
++     info
++         lit le pool de constantes, l'en-tête et les tables de membres d'un fichier de classe ; les
++         attributs sont ignorés
+
+@ 0 4 0 0337deb774afa27f1266a90bc47cbaf6
++     detail
++         Parmi les propres attributs de la classe, seul `InnerClasses` est lu, pour l'entrée qui
++         décrit la classe elle-même : sa classe englobante et si elle y est statique. Des octets
++         qui ne commencent pas par le nombre magique des fichiers de classe, ou une balise de pool
++         de constantes inconnue, lèvent `Classfile.Malformed`.
+
+@ 0 1 0 053b750694dfe2fa009fef76b4d6d633
++   entry .Class
++     info
++         une classe telle que lue : nom, indicateurs, supertypes, membres, et sa classe englobante
++         si elle est imbriquée
+
+@ 0 5 0 1c7866b6f7ccba240b7b431852b21320
++     detail
++         `#name` est le nom binaire pointé ; `#superclass` ne vaut `Unset` que pour `java.lang.
++         Object` ; `#outer` et `#static` proviennent de l'attribut `InnerClasses`, et indiquent à
++         un `Universe` de nommer une classe imbriquée sous sa classe externe (`Outer.Inner`, ou
++         `Outer$.Inner` pour une classe statique, que Scala voit comme un membre du compagnon).
+
+@ 0 1 0 06ffae7281bf5f280532282f88696343
++     entry #name
++       info
++           le nom de la classe, avec `.` entre ses segments de package
+
+@ 0 1 0 01baa5bdf0edc36a0cb090e5426dc80c
++     entry #flags
++       info
++           les indicateurs d'accès de la classe, tels que les stocke le fichier de classe
+
+@ 0 1 0 01e6dbb13d9497b216b3318b202e0bcb
++     entry #superclass
++       info
++           le nom de la superclasse, ou `Unset` pour `java.lang.Object`
+
+@ 0 1 0 1a57751a251da1220a8f522483704c14
++     entry #interfaces
++       info
++           les noms des interfaces que la classe implémente
+
+@ 0 1 0 11660de1cd8e1c4f164ebf3542ef5c45
++     entry #fields
++       info
++           les champs de la classe
+
+@ 0 1 0 102d7552e1734f6506c3292c1021cfa4
++     entry #methods
++       info
++           les méthodes de la classe, y compris les constructeurs et les méthodes statiques
+
+@ 0 1 0 1e9808b4d892f3f20272192dc91a3cd8
++     entry #outer
++       info
++           le nom binaire de la classe englobante, d'après `InnerClasses`, ou `Unset`
+
+@ 0 1 0 09d2e468e9ed34e51dce0a838ea9481c
++     entry #static
++       info
++           indique si une classe imbriquée est statique dans sa classe externe
+
+@ 0 1 0 1807b135fab7122815e2cba24317d09e
++     entry #isInterface
++       info
++           indique si l'indicateur `ACC_INTERFACE` est positionné
+
+@ 0 1 0 05b58ebc47d85d480f07afc93b639c40
++   entry .Method
++     info
++         le nom, le descripteur et les indicateurs d'accès d'une méthode
+
+@ 0 1 0 11c5ace6309823cc1c5618f9e76c796c
++     entry #name
++       info
++           le nom de la méthode ; `<init>` pour un constructeur
+
+@ 0 1 0 0805cd8c37a61bb50177c514043b22fd
++     entry #descriptor
++       info
++           le descripteur JVM, `(I)C` pour `charAt`
+
+@ 0 1 0 0c8fe3a09ede2b9f0c0b2e21b1a67195
++     entry #flags
++       info
++           les indicateurs d'accès de la méthode
+
+@ 0 1 0 1bffc5f80a81f8ae0f18472dc915de66
++   entry .Field
++     info
++         le nom, le descripteur et les indicateurs d'accès d'un champ
+
+@ 0 1 0 104d7cece888f737188d4db69b015e74
++     entry #name
++       info
++           le nom du champ
+
+@ 0 1 0 1eaae043fd93f75310c64aa5b3ddd7fb
++     entry #descriptor
++       info
++           le descripteur JVM du type du champ
+
+@ 0 1 0 1f8bfdd27ed9e2ab17488519def0ddbf
++     entry #flags
++       info
++           les indicateurs d'accès du champ
+
+@ 0 1 0 1f6d4383c59287fe0b100679d89eed01
++   entry .Descriptor
++     info
++         les types d'un descripteur sous forme de `Pickled.Type`
+
+@ 0 4 0 175df35707987ea11dc96bd0069b8130
++     detail
++         Des références aux classes nommées, les primitives étant représentées par les classes de
++         valeur Scala auxquelles elles correspondent (`I` donne `scala.Int`, `V` donne
++         `scala.Unit`) et les tableaux par des applications de `scala.Array`.
+
+@ 0 1 0 0bbfe396cb3840151a5c6c248e278641
++     entry .parameters
++       info
++           les types des paramètres d'un descripteur de méthode
+
+@ 0 1 0 1d797284816918c7031d41bd5bfc4df2
++     entry .result
++       info
++           le type de résultat d'un descripteur de méthode
+
+@ 0 1 0 03d34da3d022bb031adc596a110bf54a
++     entry .field
++       info
++           le type d'un descripteur de champ
+
+@ 0 1 0 0269b366cb50c8040f44a864f0c5a8e4
++   entry .Malformed
++     info
++         levée pour des octets qui ne sont pas un fichier de classe, ou un descripteur qui ne peut
++         pas être analysé
+
+@ 0 1 0 038089d9c107a00617ebc56b4da04508
++     entry #detail
++       info
++           ce qui n'allait pas : _not a classfile_, _unknown constant pool tag N_, _bad descriptor
++           …_
+
+@ 0 1 0 1effbf0e9308538f191d9df60f58351e
++ entry .Degustation
++   info
++       l'atomiseur : les fichiers TASTy d'un module découpés en `ScalaAtom` selon la discipline
++       Scala de LIRA
+
+@ 0 11 0 1235820e13e5ca8e190179327da138d5
++   detail
++       `Degustation.atomize` applique les règles d'atomisation de la discipline Scala
++       (`tasty/2`) au modèle `Pickled` des fichiers d'un module, un `Universe` répondant aux
++       deux questions auxquelles les octets ne peuvent pas répondre : ce que nomme une
++       référence, et vers quoi s'effacent les paramètres d'une déclaration. Le principe de
++       repliement régit chaque décision : une déclaration dont l'ajout ne peut pas casser les
++       consommateurs — une classe, une méthode, une valeur, un membre de type — constitue à
++       elle seule un atome, indexé par son nom pleinement qualifié et sa signature effacée ; un
++       fragment dont l'ajout *peut* casser les consommateurs — un membre abstrait d'un trait
++       ouvert, un enfant d'un type scellé, un paramètre — se replie dans la valeur de l'atome
++       qui l'englobe, de sorte que toute la vérification de compatibilité entre deux versions
++       d'une bibliothèque reste de l'arithmétique d'ensembles sur des clés et des valeurs.
+
+@ 0 8 0 065da37fbddab03d19e1471babac7f4b
++       La canonicalisation est structurelle, jamais textuelle : les symboles apparaissent sous
++       forme de noms pleinement qualifiés, les types sous forme d'un repliement
++       tag-longueur-valeur sur les constructeurs de types, les paramètres des lambdas de
++       type sous forme d'indices de de Bruijn, et les membres dans l'ordre trié de leurs clés.
++       Les positions, les versions des outils et le partage n'entrent jamais dans l'encodage ;
++       recompiler un module, ou réordonner ses déclarations, produit donc des atomes identiques
++       à l'octet près ; ajouter une méthode concrète laisse tous les autres atomes inchangés ;
++       et modifier un corps inline ne modifie que l'atome de ce corps. Une construction hors du
++       vocabulaire de l'encodeur est une erreur bloquante, `Degustation.Unencodable`, si bien
++       qu'une dérive du vocabulaire dans la toolchain est détectée plutôt qu'absorbée en
++       silence.
+
+% 2 1 0 1089759524816ff60770357b2ebce4a4
+
+% 3 1 0 00f77480ffa220ec191037d461f721b4
+
+% 4 1 0 09c20fef396b84730b35cc478a770160
+
+% 5 1 0 15ad87fb9325a53f1ba0dd68443732b0
+
+% 0 1 0 19aadc43dc01e42f06e2d79b7940e9bf
+
+% 1 1 0 131e0df9b2059ad11926e28747eadac7
+
+% 2 1 0 1f90b3105b022c3c1104bfd06897c6bb
+
+% 0 1 0 0a590d29fd28a7821975dde1f98d3e29
+
+% 0 1 0 18e10f7efcc5863c16a443e5dcc11dc7
+
+% 0 1 0 0de27056d0766494118d89ae1864e54c
+
+% 0 1 0 0e658e4b43486cd40af39cfbf77baada
+
+% 1 1 0 161a5218e657f4f51495d68f02af2ab1
+
+@ 0 5 0 1b514dae08ca7c9b139fcbdf63cf0bb9
++       Les membres privés ne font pas partie de l'API et ne produisent aucun atome ; un membre
++       `private[pkg]` fait partie de l'API, par prudence ; un redirecteur d'export s'atomise
++       exactement comme son équivalent écrit à la main ; une définition inline ou une macro
++       produit un atome *remplaçable*, indexé avec un suffixe `[inline]`, dont les références
++       nomment ce que son corps insère par splice. `Inspection.atomize` fait de même sur des
++       fichiers et un classpath sur disque.
+
+% 1 1 0 054348f4e06316c60aef77c1a1c17e02
+
+% 0 1 0 15f4a3dc560064d002b5f9bca4453679
+
+% 1 1 0 120b8d22f90cd8ae1126a748ba99d829
+
+@ 0 1 0 13b069c9ccd0d1f51c53416975c72a2c
++   entry .atomize
++     info
++         atomise les fichiers `.tasty` d'un module, chacun nommé par son chemin relatif au
++         classpath, par rapport à un classpath de dépendances
+
+@ 0 8 0 1cded90c25ff110e074912aebb22c6c2
++     detail
++         Les fichiers sont des paires `(path, bytes)`, le chemin étant relatif au classpath comme
++         est nommé un fichier `.tasty` (`fixture/Overloads.tasty`), et sont enregistrés dans
++         l'univers avant les dépendances, de sorte que les propres classes du module se résolvent
++         en premier. `dependencies` doit contenir tout ce à quoi les fichiers font référence, y
++         compris la bibliothèque Scala et les classes du JDK ; une référence qu'il ne peut pas
++         résoudre lève `Erasure.Unresolved` là où une signature en avait besoin. Les références
++         recueillies dans les corps inline sont classées à la fin : celles qui correspondent à un
++         atome du module sont des `ScalaReference.Own`, les autres des `ScalaReference.Foreign`,
++         à résoudre par rapport aux dépendances au moment de l'assemblage.
+
+@ 0 1 0 0e166f26d52019a7032e95423a5240f8
++   entry .Unencodable
++     info
++         levée pour une construction hors du vocabulaire de l'encodeur
+
+@ 0 6 0 19e5803f73bd766800f9ca5b0b680838
++     detail
++         Une `RuntimeException` portant la `#construct` qui n'a pas pu être encodée. Elle
++         signifie qu'une forme de TASTy pour laquelle la discipline n'a pas d'encodage canonique a
++         été rencontrée, et c'est le signal que le vocabulaire doit être étendu ;
++         `Inspection.atomize` la signale sous forme d'`Inspection.Error` avec
++         `Reason.Unencodable`, ou `Reason.DuplicateKey` lorsque la construction est une clé
++         produite deux fois.
+
+@ 0 1 0 03934b6fb308917212688b2c5582201f
++     entry #construct
++       info
++           la construction, en toutes lettres
+
+@ 0 1 0 187e2b6a97b5fc770dc50f9c8bf9ae59
++ entry .ScalaAtom
++   info
++       un atome de la discipline Scala, avant hachage : clé, classe, encodage canonique et
++       références
+
+@ 0 9 0 120895bf2aab933e0aff34742820aad0
++   detail
++       L'unité de la vérification de compatibilité de LIRA. `#key` est la clé stable : le nom
++       pleinement qualifié de la définition avec, pour une méthode, sa signature effacée —
++       `fixture.Overloads.
++       f(scala.Int)scala.Int` — et un suffixe `[inline]` pour un atome remplaçable.
++       `#replaceable` indique si l'atome est un corps inline ou de macro, qu'un consommateur
++       copie et dont il dépend donc par valeur, plutôt qu'une déclaration rigide à laquelle il
++       se lie. `#encoding` est l'encodage canonique dont le hachage est la valeur de l'atome, et
++       `#references` les références symboliques recueillies dans un corps remplaçable, vide
++       pour un atome rigide.
+
+% 2 1 0 05b3015c2f2609881a1e201257026b56
+
+% 3 1 0 10067fa03e6991cb01dd99b0665e3695
+
+% 0 1 0 12b67dba1554ec480041613270691c2f
+
+% 0 1 0 192de90507f432d113fb3768796871f6
+
+% 0 1 0 02fb4c254b5334cd0b5b4ea50ac25807
+
+% 1 1 0 064d7c6716da0b8a07958eb817a6babe
+
+% 1 1 0 0388175931341b320def7515aa17aace
+
+% 0 1 0 0abdba9a3c59efc31c328197fcfe85a1
+
+@ 0 1 0 1749a8369d266a2d0abf4d6bf1dc1188
++   entry #key
++     info
++         la clé stable : nom pleinement qualifié, signature effacée pour une méthode, `[inline]`
++         pour un atome remplaçable
+
+@ 0 1 0 016f2e9d312302a7055cd579e201a0fe
++   entry #replaceable
++     info
++         indique si l'atome est un corps inline ou de macro plutôt qu'une déclaration rigide
+
+@ 0 1 0 0102759fe036ced803a54489cc52257b
++   entry #encoding
++     info
++         l'encodage canonique dont le hachage est la valeur de l'atome
+
+@ 0 1 0 0401eb33268235560317a965c7f29963
++   entry #references
++     info
++         les références qu'effectue un corps remplaçable ; vide pour un atome rigide
+
+@ 0 1 0 021491a6defa605c1a2e41fbd1f5c6a0
++ entry .ScalaReference
++   info
++       une référence symbolique depuis un corps inline : vers un atome du même module, ou d'une
++       dépendance
+
+@ 0 4 0 06c419a2403c4adb069a4c4467e4ddf8
++   detail
++       `Own(key)` nomme un atome du même module par sa clé ; `Foreign(key)` en nomme un dans
++       une dépendance, résolu en un hachage de valeur au moment de l'assemblage, lorsque les
++       atomes de la dépendance sont disponibles. `Degustation.atomize` classe chaque référence
++       qu'il a recueillie selon que la clé figure ou non parmi les propres atomes du module.
+
+@ 2 1 0 13c0fb9a1042deff0e5c6affc48148bf
++       ```scala
+
+@ 3 1 0 0a46ee34cf00065f174daeb052301c41
++       import soundness.*
+
+@ 0 1 0 1d35d8713d0d80d81d8832c8ff9a5f14
++       val reference: ScalaReference = ScalaReference.Foreign(t"scala.Option.map(1,scala.Function1)scala.Option")
+
+@ 0 1 0 0689bc266db374d90abb78949b5f0e56
++       reference match
+
+@ 0 1 0 0552808d5c9a31661287d9450f38d5f0
++         case ScalaReference.Own(key)     => t"own: $key"
+
+@ 0 1 0 0307b2adcc7e52770abbfd523629bc22
++         case ScalaReference.Foreign(key) => t"foreign: $key"
+
+@ 1 1 0 06bc6f0e94d0be18127a066730da6115
++       ```
+
+@ 0 1 0 006d0ab41503b66e12600d4e2ad9f81b
++ entry .Inspection
++   info
++       atomise des fichiers `.tasty` sur disque par rapport à un classpath de répertoires et de
++       jars
+
+@ 0 6 0 1abb5a377b5a474511efad5c8e6b6ad8
++   detail
++       La face système de fichiers de `Degustation.atomize`, dans `degustation.core`.
++       `Inspection.
++       atomize(tastyFiles, classpath)` lit chaque fichier et chaque répertoire du classpath au
++       moyen du `FilesystemBackend on Linux` de galilei dans la portée, et chaque jar au moyen
++       de zeppelin, construit une `Universe.Source` sur eux, et atomise. Aucun compilateur
++       n'intervient ; ni `scala3-compiler` ni `scala3-tasty-inspector` n'ont donc besoin d'être
++       sur le classpath pour l'appeler.
+
+% 2 1 0 045293dea73e47cb1fe293524a754dca
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 1c4feda9015341a80f1b872d295c8d8c
+
+% 0 1 0 12ab46e446da00570ac1c1c46235b922
+
+% 0 1 0 12423dd4e8da88e71515a55a8f008bfc
+
+% 0 1 0 1e6d65891d7fb8ab11ff24123db369d0
+
+% 0 1 0 062a23ff319e2ca1132e469758689f68
+
+% 0 1 0 04b205f46cc25a9711bc3d1b6d1bb444
+
+% 1 1 0 15ae35a219d440e3068564f2e8409e25
+
+@ 0 7 0 0a01a1228b5717211eecaae7d1141caa
++       Chaque `Text` doit s'analyser comme un chemin Linux absolu. Chaque entrée du classpath
++       est un répertoire ou un jar, selon ce qui se trouve sur le disque ; le classpath doit
++       contenir tout ce à quoi les fichiers font référence, y compris la bibliothèque Scala.
++       Les propres classes du JDK sont lues depuis le chargeur de classes de la JVM en cours
++       d'exécution sur la JVM ; sur Scala Native, il n'y a pas de JVM où les lire, si bien qu'un
++       jar des fichiers de classe du JDK doit figurer sur le classpath. Un fichier situé dans
++       l'un des répertoires du classpath est nommé par son chemin relatif à celui-ci ; un
++       fichier situé hors de tous est placé selon le package qu'il déclare, lu dans le fichier
++       lui-même.
+
+@ 0 5 0 040c17c8fa31ae5601e2b8b19d7d9641
++       Un chemin mal formé, un fichier illisible ou un jar mal formé lève `Inspection.Error`
++       avec `Reason.InspectionFailed` ; une construction que l'encodeur ne sait pas encoder la
++       lève avec `Reason.Unencodable`, et une clé produite deux fois avec
++       `Reason.DuplicateKey`. Les atomes sont ceux que produit `Degustation.atomize` :
++       identiques à l'octet près pour une recompilation ou un réordonnancement des
++       déclarations, et la discipline qu'ils implémentent est `tasty/2`.
+
+% 1 1 0 0018c4f23cc1a26502f93bd129e0078f
+
+% 1 1 0 00b9a448700e678b150470ebb000db2c
+
+@ 0 1 0 01f099a75a3a475414ce8acf6ea4ce1b
++   entry .atomize
++     info
++         atomise les fichiers `.tasty` nommés par rapport aux entrées de classpath nommées
+
+@ 0 4 0 180e06f636958e9414787b6607535264
++     detail
++         A besoin d'un `FilesystemBackend on Linux`
++         (`import filesystemBackends.javaBaseFilesystem` sur la JVM,
++         `filesystemBackends.scalaNativeFilesystem` sur Native) et d'une
++         `Tactic[Inspection.Error]`. Les jars sont lus paresseusement : le répertoire central d'un
++         jar est analysé une seule fois, et les octets de chaque entrée lorsqu'une classe qu'il
++         contient est demandée pour la première fois.
+
+@ 0 1 0 046f3c08f45de03c1d12ba3a9c36eb3c
++   entry .Error
++     info
++         levée lorsque la discipline Scala ne peut pas être appliquée aux fichiers
+
+@ 0 10 0 082db80e3b211de80a82557075a2fd9a
++     detail
++         Erreur `↯/s.139.1` : _the Scala discipline failed because `reason`_, où la raison est l'un
++         des cas d'`Inspection.Error.Reason` : `InspectionFailed(detail)` (raison 1), _the TASTy
++         could not be read: `detail`_, pour un chemin mal formé, un fichier illisible, un jar mal
++         formé ou un fichier de classe mal formé ; `Unencodable(construct)` (raison 2), _no
++         canonical encoding is defined for `construct`_, pour une forme pour laquelle l'encodeur
++         n'a pas de vocabulaire ou un type dont l'effacement nécessite une classe qui manque au
++         classpath ; et `DuplicateKey(key)` (raison 3), _the key `key` was produced twice_. Levée
++         par `Inspection.atomize` seul ; les couches inférieures de la bibliothèque lèvent plutôt
++         `Degustation.Unencodable`, `Erasure.Unresolved` et `Classfile.Malformed`, qu'`Inspection`
++         traduit.
+
+@ 0 1 0 005767342d54fcc619324cfbf335c96d
++     entry .Reason
++       info
++           la raison de l'échec de la discipline : `InspectionFailed`, `Unencodable` ou
++           `DuplicateKey`
+
+@ 0 2 0 047060fe9f4747820ae82ca0a9cbd6d2
++       detail
++           Chaque cas porte son détail — le texte de ce qui n'a pas pu être lu, la construction ou
++           la clé — et le numéro de la raison, de 1 à 3, qui devient le sous-numéro de l'erreur.
+
+@ 0 1 0 0b71fe2201653323082878f3516b33ed
++     entry .communicable
++       info
++           rend chaque `Reason` sous forme de message
+
+@ 0 1 0 1c6e710653b0ddce05f4aa34d03839d0
++       detail
++           Dans la portée implicite par le compagnon ; rien n'a besoin d'être importé.
+
+@ 0 1 0 1f7ce7faae35abe711ac876e633eb357
++     entry #reason
++       info
++           la `Reason` que porte l'erreur

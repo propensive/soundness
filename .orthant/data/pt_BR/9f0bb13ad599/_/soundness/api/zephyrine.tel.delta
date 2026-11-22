@@ -1,0 +1,175 @@
+orthant 2 language
+
+@ 0 1 0 1697104509eaad480ac7b84102fc11d4
++ entry .Terrain   um `Expanse` cujos bytes estão na memória e são lidos onde estão: um arquivo mapeado, ou bytes no heap
+
+% 1 1 0 1d2d43abbc556280043457e64eb6d264
+
+@ 0 13 0 110b3ddc217ac7a50f82398a9c83af58
++       Inteiros são carregados em qualquer deslocamento, em little-endian, sem cópia, e um
++       `slice` é uma visão mais estreita da mesma memória. Um terrain pertence a um escopo -- um
++       arquivo é mapeado durante um bloco -- por isso é emprestado como um `Terrain^` rastreado, e
++       nada carrega de memória que não está mais mapeada. `Terrain(data)` é um sobre bytes que já
++       estão no heap.
++   entry #u8   o byte sem sinal em um deslocamento, como um `Int`
++   entry #u16   o inteiro de 16 bits sem sinal em um deslocamento, como um `Int`
++   entry #u32   o inteiro de 32 bits sem sinal em um deslocamento, como um `Long`
++   entry #u64   o inteiro de 64 bits em um deslocamento, como um `Long`
++   entry #i32   os 32 bits em um deslocamento como um `Int` com sinal
++   entry #slice   uma visão de parte da memória, compartilhando-a e compartilhando seu tempo de vida
++   entry #same   se os bytes em um deslocamento são os de algum `Data`, comparados no lugar
++   entry #compare   a ordem de alguns bytes em relação a algum `Data`, comparados no lugar, com um prefixo próprio ordenado primeiro
+
+@ 0 1 0 07161a9b0652a0aa1a17db213819117e
++ entry .Structural   a classe de tipos de um tipo com layout fixo em bytes: um registro de inteiros com tamanho, lido por `unpack` e escrito por `pack`
+
+% 1 1 0 1dbdb63afee1f932156ed79702a8c661
+
+@ 0 6 0 128e315dd90f3568120e87157c8b8686
++       Uma case class cujos campos são inteiros com tamanho (`B32`, `U16`, `S64`, …, ou os simples
++       `Byte`, `Short`, `Int` e `Long`) *é* um layout binário: o tipo de cada campo declara sua
++       largura e sua interpretação, e `Structural.derived` os compõe na ordem de declaração,
++       calculando cada deslocamento onde o layout é declarado. A ordem dos bytes dentro de um campo
++       pertence ao formato, por isso um dos givens de `byteOrders` precisa estar no escopo na
++       derivação, e é fixado ali.
+
+% 2 1 0 1028348aece70ff31c7aaeed6837ca1c
+
+% 3 1 0 1896b8c0fd7e20bf1ab326a30c99f925
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 145c2a0e5b655f4a01551ae66745ea11
+
+% 0 1 0 168466ec95ae64f612bc885cb2b2841d
+
+% 0 1 0 093c6418b1f1700a18f1408c98a066b3
+
+% 0 1 0 0615a36d4f727fca02926d57d58112ad
+
+% 0 1 0 189ffa41490178111b536fb9e978357e
+
+% 0 1 0 0d039d9fc0a074461f06c4c8881b3917
+
+% 0 1 0 0623aad5d5ab330b14edbda2daf2aa25
+
+% 0 1 0 1ddb200b0bd0fd091d26a860a273ba8d
+
+% 1 1 0 0d40c4a93de9c323126dc8a441ea820a
+
+@ 0 5 0 15c8c758d092fc251614546e2bfce78a
++       A derivação se expande em uma carga (e um armazenamento) por campo no seu deslocamento,
++       então ler um registro é uma verificação de limites e tantas cargas quantos forem os campos.
++       Um campo de qualquer outro tipo precisa de uma instância `Structural` própria: é assim que
++       registros se aninham, cada um mantendo a ordem de bytes com que foi declarado, e é assim que
++       um campo recebe uma representação que os inteiros com tamanho não oferecem.
+
+@ 0 2 0 13110f9cb023a7e71678dba20250a369
++       Ele está no componente `zephyrine.layout`, que acrescenta uma dependência do hypotenuse para
++       os inteiros com tamanho, e compila para todas as plataformas.
+
+% 0 1 0 1ccfba1656f9ccc70c9054f4bd681ef1
+
+% 0 1 0 058d7a75c2bb1d1903db18c18ef15834
+
+% 0 1 0 1ef84f397a13cf410f01323e64924852
+
+@ 0 4 0 1bc592d720ca964706fd45171fed07e4
++   entry .derived   o layout de uma case class, na ordem de bytes do escopo; não compila sem uma, nem para um campo sem layout fixo
++   entry .width   o número de bytes que um valor de um tipo ocupa, sem precisar de um valor em mãos
++   entry .Error   um registro foi pedido em um deslocamento onde sua largura inteira não está presente
++       Carrega o `offset`, a `width` do registro e o `size` dos dados ou do expanse.
+
+% 0 1 0 1c4f3e0c99e11c4411895c65f9246c30
+
+@ 0 3 0 0ac6e16edc7a15da10ff1df8d7dd4462
++   entry #width   o número de bytes que o layout ocupa
++   entry #load   o valor disposto em um deslocamento, sem verificação: `unpack` é o ponto de entrada verificado
++   entry #store   dispõe um valor em um array de bytes em um deslocamento, sem verificação: `pack` é o ponto de entrada verificado
+
+@ 0 5 0 073bbbd5db87b69d1bc422484fb59138
++ entry .unpack   lê um registro de layout fixo de `Data`, ou de um `Expanse`, em um deslocamento
++     `data.unpack[T](offset)` verifica uma vez que o registro inteiro está presente, lançando
++     `Structural.Error` se não estiver, e então o carrega. `data.unpack[T](offset, count)` lê uma
++     seção repetida de `count` registros como um array. Em um `Expanse`, como um `Terrain` de
++     memória mapeada, o deslocamento é um `Long`, e apenas os bytes do próprio registro são lidos.
+
+@ 0 1 0 1a8068e940a69be61d8478647b738c6b
++ entry .pack   os bytes de um valor de layout fixo: exatamente tantos quanto a largura do seu layout
+
+@ 0 3 0 08bb951cb83163ed1539cbb483ceb5f2
++ entry .ByteOrder   a ordem dos bytes de um campo de vários bytes: `BigEndian` ou `LittleEndian`
++     Consultada por `Structural.derived` onde um layout é declarado, por meio de um given importado
++     de `byteOrders`.
+
+@ 0 3 0 06b7ea3d72d532bf1160db93d95677f1
++ entry .byteOrders   as ordens de bytes, cada uma um given a importar pelo nome onde um layout é derivado
++   entry .bigEndianByteOrder   o byte mais significativo primeiro, como em formatos de rede e arquivos de fontes
++   entry .littleEndianByteOrder   o byte menos significativo primeiro
+
+@ 0 1 0 0833390a9f3ea0de00a05e7c4ef60e79
++ entry .layoutInternal   a macro por trás de `Structural.derived`, e os armazenamentos em que ela se expande
+
+% 1 1 0 0f148338f1aac85318242f2f9b2fe261
+
+@ 0 1 0 1c20bcc328e8566b052a425d501b2b14
++ entry .Holding   um `Terrain` que pode ser alterado onde está: gravado em um deslocamento, e expandido
+
+% 1 1 0 05f75a5b3e3bdc5b121c3e8a020f114f
+
+@ 0 14 0 1fc606f03c17fca60f8681cc5ca8bb55
++       Aquilo por meio do qual se altera um formato que é mantido e alterado no lugar: um arquivo
++       mapeado para escrita pelo único processo que é seu proprietário (o `hold` do galilei), ou
++       bytes no heap (`Holding(size)`, `Holding(data)`). Todo armazenamento é feito em um
++       deslocamento, e nenhum endereço da sua memória é entregue, já que `expand` pode movê-la; um
++       `slice` lê através do holding de onde veio, e continua válido após uma expansão.
++   entry #set8   armazena um byte em um deslocamento
++   entry #set16   armazena um inteiro de 16 bits em um deslocamento, em little-endian
++   entry #set32   armazena um inteiro de 32 bits em um deslocamento, em little-endian
++   entry #set64   armazena um inteiro de 64 bits em um deslocamento, em little-endian
++   entry #write   armazena os bytes de algum `Data` a partir de um deslocamento
++   entry #zero   armazena bytes zero sobre um intervalo
++   entry #move   copia um intervalo para outro deslocamento, com o qual pode se sobrepor
++   entry #expand   faz o holding ter pelo menos um dado tamanho, com os novos bytes zerados; nunca encolhe
++   entry #flush   torna durável o que foi armazenado, onde há um arquivo em que isso possa ser durável
+
+@ 0 1 0 0d8f4cf87083945e1a83c5e80dcf998d
++ entry .Viewable   a classe de tipos de um valor cujos bytes podem ser emprestados como um `Terrain` durante um bloco
+
+% 1 1 0 02d61088aef9e5921be1c93bfc7a44dd
+
+@ 0 8 0 0bef3200f1a8e8871cba9f72bec143a9
++       Um caminho é `Viewable`, com seu arquivo mapeado durante o bloco; também o são uma imagem
++       que já está no heap e um terrain que já está em mãos. Um formato lido no lugar é aberto a
++       partir de qualquer um deles da mesma forma.
++   entry #view   empresta os bytes do valor como um `Terrain`
++   entry #hold   empresta os bytes do valor para alteração, como um `Holding`, ou responde `otherwise` se eles não puderem ser alterados
++       Um arquivo é mapeado para escrita sob um lock exclusivo, e um holding em mãos é emprestado
++       como está; bytes imutáveis, como tudo que não diga o contrário, respondem `otherwise`.
+
+@ 0 1 0 1d63dd87fd4f5677117bdc5b51b32bce
++ entry .Surveyable   a classe de tipos de uma forma lida no lugar a partir de uma visão dos seus bytes: `Form is Surveyable by Flag to Handle`
+
+% 1 1 0 145174b3209a5d680323fbd5ec8e1ae5
+
+@ 0 4 0 16f068234f5f4b8b18a0176f5834c305
++       É uma instância para a forma, e não para aquilo que empresta a visão, e é isso que permite a
++       quem empresta e é ele próprio uma capability -- um `Observer` de um nome publicado -- abrir
++       a visão como uma forma.
++   entry #survey   abre uma visão como a forma, com flags, e fornece o handle contextualmente durante um bloco
+
+@ 0 8 0 17dc62c86d3ce90c1f9827154fa5f3ca
++       Um `Stream` é lido uma única vez; um `Spring[medium]` pode ser puxado quantas vezes se
++       quiser, e cada `apply()` dá um novo stream sobre o mesmo conteúdo. É um trait, e não um
++       tipo de função, porque uma lambda não pode criar uma capability com escopo nova como seu
++       resultado, enquanto o resultado de um método é renivelado em cada ponto de chamada; e,
++       como `apply` recebe uma `Tactic[Truncation.Error]` (o pull é onde uma origem cortada
++       antes do fim é relatada), uma lambda não se converte em um. `Spring(expression)` cria um
++       spring que avalia a expressão de novo a cada `apply()`; dê o argumento de tipo, como
++       `Spring[Data](…)`, onde o tipo esperado sozinho não o fixa. Uma classe anônima também
++       funciona.
+
+% 0 1 0 01b8dfabb485bf69089d4d5c0df0dc55
+
+@ 0 1 0 01b50f4322e8d8860d8e2d8aaf23d35c
++   entry .apply   `Spring(expression)`: um spring em que cada pull avalia a expressão para um stream novo

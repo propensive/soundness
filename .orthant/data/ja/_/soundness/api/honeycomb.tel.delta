@@ -1,0 +1,3047 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12e037388b61695c0954660348391519
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1dd057f9c6d794211794c2b00db6df30
++ info   型付きの不変な値としての HTML：タグから構築し、テキストからパースし、マッチし、描画する
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 163173ad77468f5215efeb477c5ed856
++     _Honeycomb_ は HTML を不変な値の木として表し、その型は HTML の仕様がそれについて述べていることを保持する。
++     要素は、タグをその属性と子に適用することで構築され、その構築はコードのコンパイル時に検査される。子を与えた `<br>`、`src` 属性を与えた `<p>`、`<div>` の中に置いた `<li>` は、不正な出力ではなくコンパイルエラーになる。
++     同じ値は、`read[Html]` と `load[Html]` でテキストから読み戻され、`h"…"` 補間子をパターンとして使ってマッチされ、`+`、`^+`、`+^` と属性の代入で結合・変換され、`show` で描画されるか、`Document[Html]` からストリームとして出力される。
+
+@ 0 8 0 0ad0db574e57ba2e0163ce9ec451892d
++     中心となる型は `Html` であり、一つのノードまたはノードの列である。
++     そのコンパニオンはノードの種類（`Html.Element`、`Html.Text`、`Html.Comment`、`Html.Doctype`、そして列のための `Html.Fragment`）を、HTML をパース・描画・変換するすべての given、パーサーの `Html.Issue` と `Html.Position`、そして `parsing.trackPositions` のもとで読み込んだ文書の中で要素の位置を示す `Html.Path` とともに保持する。
++     値の静的な型は `Html` よりはるかに多くのことを表せる。`Html of "br"` はタグを、`Html of Flow` はコンテンツカテゴリーを、`Html.Element
++     of "ul" over "li"` は要素が何を含められるかを、`Html in Whatwg` はどの仕様に準拠するかを記録する。
+
+@ 0 9 0 0326f45a7e6b23ba096ce64ecca6cd7f
++     語彙は **DOM** から来る。これは `htmlDoms` の given の一つを名前でインポートすることで選ぶ `Dom` の値である。
++     `Whatwg` は WHATWG HTML Living Standard である。そのコンパニオンには約 110 のタグオブジェクト（`Div`、`P`、`Img` など）があり、それぞれが受け入れる子と属性で型付けされている。さらに属性の型（`Whatwg.Url`、`Whatwg.PositiveInt` など）、コンテンツカテゴリー（`Flow`、`Phrasing`、`Metadata` など）、名前付き文字参照がある。
++     `Html4Transitional` は HTML 4.01 Transitional の方言であり、非推奨の表示用のタグと属性を持つ。
++     `Tag` クラスはすべてのタグオブジェクトの型である。`Attribute`、`Attributive`、`Unattributive` は各属性の値を型付けする。`Renderable` は、任意の型の値を HTML が期待される場所に置けるようにする。
+
+% 2 1 0 020274bbe74cf0501a3c3ea9448e9cf3
+
+% 3 1 0 0fda17131daadf5a0f98eea318d4f4b0
+
+% 4 1 0 1fea3d5ab7bea855149219f5ee3bf485
+
+% 5 1 0 1f1b0bcb167108f81a8fe92a6d50b57a
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 1 1 0 1b412743e86fa15405cb7478fb345f5d
+
+% 0 1 0 024be1b29dab3ba70e328e6e976383cf
+
+% 0 1 0 1db74e55d003daeb1d3d1c61b9faf6e6
+
+% 0 1 0 11d4467abe08ffa21ecbcd4723e8cbe5
+
+% 0 1 0 0af354932a2edb5e000040e127d0bf3f
+
+% 0 1 0 01ed4c0c52de92d10374d1b0d79e4dc8
+
+% 1 1 0 0ac1a16e2387238806125d4c51fcedd4
+
+@ 0 3 0 0cdac9a4252baca70ce3c084fad2f488
++     読み取りには `Dom` と、`recoveries.permissiveRecovery` がスコープにない限り `Tactic[Parse.Error]` が必要である。
++     パースの失敗は `Parse.Error`（エラー `↯/s.60.2`）であり、その位置は `Html.Position`、その問題は `Html.Issue` である。
++     `strategies.throwUnsafely` はそれを例外として投げる。
+
+@ 0 2 0 1e0e95d916d7c3471b90a0d81bf6cccd
++     このライブラリは一つのソースセット `honeycomb.core` からなり、プラットフォーム固有のコンポーネントはない。
++     `import soundness.*` は given をインポートしないので、選択パッケージは名前でインポートする。
+
+@ 0 10 0 1c9ea3b39a68521604d31d0490389c63
++     - `htmlDoms`：`whatwg` と `html4Transitional`。パースとタグの適用が使う語彙である。
++     - `formatting`：`indentedHtmlFormatting`（既定）と `compactHtmlFormatting`。ストリームとして出力するときの `Document[Html]` のレイアウトである。
++     - `attributives`：`textAttributive`。宣言された型にかかわらず、すべての属性に `Text` を受け入れられるようにする。
++     - `stylesheets`：`uncheckedClasses`。`P.info(…)` で任意の CSS クラスを挙げられるようにする。
++     - `recoveries`：`permissiveRecovery`。回復するパーサーを選ぶ。
++     - `construables`：`htmlConstruable`。`text/html` の本文を `Document[Html]` として解釈する。
+
+@ 0 4 0 0ec36a1f4b18f41f1adf54005ea31bfe
++     すべては `soundness` アンブレラにエクスポートされ、各選択パッケージはアンブレラの同名のパッケージと統合される。
++     ノードの型は `Html.Element`、`Html.Fragment` などとして参照する。`import Html.*` は `anticipation.Text` を `Html.Text` で覆い隠してしまうので、推奨されない。
+
+% 0 1 0 1ae9f53f6b35845b14a57023ba6bd887
+
+% 0 1 0 1f0c77d553c179e20c91b37919f0b0f1
+
+% 0 1 0 08c8e3783dc340f90396a256b0d57eee
+
+% 0 1 0 1b178bc35d45cb471351009f6ae50046
+
+% 0 1 0 0659d4cb18f5ceef0ec9cc31f3902795
+
+@ 0 1 0 11966e815acd09291207396c8af9fe22
++ entry .Html   HTML の値：タグ、内容、仕様によって型付けされた、一つのノードまたはノードの列
+
+% 1 1 0 1e8ec42c7a6420e80bb7596e71f1e970
+
+@ 0 6 0 0e956811f22986220aefe777637d6728
++       `Html` はすべての HTML の値が適合するシールされたトレイトである。
++       値は `Html.Node`（ちょうど一つの `Html.Element`、`Html.Text`、`Html.Comment`、`Html.Doctype`）か、単一の親を持たないノードの列である `Html.Fragment` のどちらかである。
++       HTML はテキスト形式なので、ノードが一つであることが必要な制約になることはまれである。そのため `Html` はどこでも列を受け入れ、`Html.Node` は単一のノードが必要な少数の場所を示す。
++       フラグメントは子として与えられると展開され、ノードを一つだけ持つフラグメントはそのノードに等しい。
+
+@ 0 5 0 131d57f4c3922208068bb8c7e4c3e2ee
++       三つの型メンバーが値を細分化する。`Topic` はタグ名（`Html of "br"`）、名前のユニオン、または有効な DOM の `Flow` や `Phrasing` のようなコンテンツカテゴリーである。`Transport` は値が何を含められるか（`Html.Element of "ul" over "li"`）、`Form` は値が適合する `Dom`（`Html in Whatwg`）である。
++       ライブラリはこの精度を内部で使う。アプリケーションが `Html of Flow` より多くを必要とすることはまれである。
+
+@ 0 7 0 01163b5fb5426b810d8ea3ec27da9b13
++       オブジェクト `Html` それ自体が `<html>` タグ（`head` と `body` を受け入れる `Tag.Container`）なので、ページ全体は `Html(Head(…), Body(…))` であり、`Html.doctype` は `<!DOCTYPE html>` ヘッダーである。
++       そのコンパニオンは HTML をパース・描画・変換するすべての given も保持する。テキストと文字列は子の `Html.Text` に変換され、`Renderable` な値はそれが描画する HTML に変換される。`Aggregable`、`Loadable`、`Streamable`、`Showable`、`Inspectable` のインスタンスが、`read[Html]`、`load[Html]`、`document.stream[Text]`、`show`、`inspect` が解決するものである。
+
+% 2 1 0 1209182f19b00643188a653646dae417
+
+% 3 1 0 146cbed67ed7c189123749edcda0c09c
+
+@ 0 1 0 135d787e28357e931b54d31d281d9e05
++         label 裸の要素
+
+% 1 1 0 0988b9192d9e8e0502c350d656e3b68c
+
+% 2 1 0 12ffad208d0ac9141de465b2eff6c91d
+
+% 3 1 0 14dddfefcaba865101b0fcb4a962a26a
+
+% 4 1 0 178295ec88915adb085162b58508ff4e
+
+% 5 1 0 0bd46b8c9e0154fd0a745e5bb393a5d4
+
+% 0 1 0 160cab87c6cf0a9102ff41442d85a47e
+
+% 1 1 0 04a52acd53c50a280ebf0585ac605814
+
+@ 0 1 0 1b5cbb135b43fcb7177a1d3be6c45ade
++         label 属性を代入し、新しい値を得る
+
+% 1 1 0 185040392a60c911188a75696f7de587
+
+% 0 1 0 1dc9498d168a3666062a1bdfe451d05d
+
+% 1 1 0 0f1f4b4fb7fe973603d0ce16b0746e11
+
+@ 0 1 0 1a049db928cedc850f01793aa0a07edc
++         label コンテナーに子を適用する
+
+% 1 1 0 19796ced94959bd201128b71d49f0f8f
+
+% 0 1 0 05bcbc32c5ff550f01727f941c5e9cb3
+
+% 1 1 0 1d0b6f3a1e88e07919978c8f00bdb344
+
+@ 0 1 0 169798f67f22488c16c781a28930fba1
++         label 先頭に子を一つ、末尾に子を一つ加える
+
+% 1 1 0 0f6e8a10cacffc9914ac52d435d8a16a
+
+% 0 1 0 1be1e4d43ff8fdef1cd564b54029d29a
+
+% 1 1 0 139b8d020de201fd1914e9116a42fe4e
+
+@ 0 1 0 007c88093e65c0eb0689dd4fef878ec5
++         label 二つの値を結合してフラグメントにする
+
+% 1 1 0 0651fd33b3b95edb06f2cc5277910ede
+
+% 0 1 0 057f81947db9f8711afda03964b5ea1b
+
+% 1 1 0 1222edec9dd178a80c84136e4202d18d
+
+@ 0 1 0 0c33feb523386925165d347a0b24d7f9
++         label ページを描画する
+
+% 1 1 0 11cd822225e61934125fef50649a9b80
+
+% 0 1 0 0b7ac22baad06b5503cf24790039ca4d
+
+% 1 1 0 122d62c26e49e2090aa71b8027c62968
+
+% 2 1 0 0f34ee42cbd2bcf80711f2a988198e24
+
+@ 0 4 0 14c814032b1e757b0e95dfa5714e03e7
++       すべてのノードは不変である。代入によって `image` は変わらず、`described` は新しい要素である。
++       等価性は構造的である。二つの要素は、ラベル、属性（順序は問わない）、子、外来性が等しいときに等しく、コメント、テキスト、doctype は、それだけを保持するフラグメントに等しい。
+
+@ 0 8 0 1f6544d7bd53e921090c743c06d38a4d
++       HTML の読み取りには、スコープにある `Dom`（`htmlDoms.whatwg`）と `Tactic[Parse.Error]` が必要である。ただし `recoveries.permissiveRecovery` が回復するパーサーを選ぶ場合は戦術を必要としない。
++       `read[Html]` は任意のノードのフラグメントを受け入れる。`read[Html of "ul"]` は型が挙げるタグだけを受け入れ、それは省略されたタグのパーサーによる推論の手がかりにもなる。`load[Html]` は doctype を含む文書全体を `Document[Html]` として読み、その `metadata` は `Html.Provenance` である。
++       `show` は任意のノードを WHATWG DOM に照らしてコンパクトに描画する。`Document[Html]` は自身の DOM を通して、スコープにある `Html.Formatting` に従ったレイアウトでストリームとして出力される。
+
+% 1 1 0 027be51a1a696b430af4bab1a5a9591c
+
+% 1 1 0 063bcf9c80085d7516f215e3123263f0
+
+% 0 1 0 073c1eddf1c8f6991e7ef9fa8dcf57c2
+
+% 0 1 0 034af467350816a1104d15d2b5417014
+
+% 0 1 0 09d1e33a5289bddd1a674ff93fa17783
+
+@ 0 1 0 1a835aa11cb8d4510539964572346ac4
++   entry .Formatting   ストリームとして出力する `Document[Html]` のレイアウト：一行に一要素ずつインデントするか、コンパクトにするか
+
+% 1 1 0 12a1e590341cdde00254f26dd6cc5b2d
+
+@ 0 8 0 15f977a1c1d674c71d1418f04c0a8162
++         `Html.Formatting` は honeycomb の `zephyrine.Formatting` であり、パラメーター `indented` を一つ持つ。
++         それが `true` のとき（コンパニオンの `default` と `formatting.indentedHtmlFormatting`）、DOM のモードが `Html.Mode.Whitespace` である要素（`html`、`head`、`body`、`ul`、`table` など、子のあいだのテキストに意味がないもの）は、一行に一つずつ、一段ごとに 2 スペースずつインデントして、深さ 32 まで書き出される。`false` のとき（`formatting.compactHtmlFormatting`）、文書全体が一行になる。
++         これは `Document[Html]` のストリームである `Html.streamable` にだけ適用される。裸のノードの `show` は常にコンパクトである。
+
+% 2 1 0 10c9861db6f5236d14a323fbd60701e9
+
+% 3 1 0 1108415f21d935a011e506b79c7dfa39
+
+% 0 1 0 04de2b64b050deb40ce863dab0726323
+
+% 1 1 0 1110745f5bed9d790f19b19b7fcf849b
+
+@ 0 45 0 1e752f93145d9de817bc122f06d909d1
++     entry .apply   与えられたインデントの設定によるフォーマット
++     entry .default   コンパニオンの given：インデントあり
++         暗黙のスコープにあるので、`formatting.compactHtmlFormatting` をインポートしない限り `Document[Html]` はインデントされて出力される。インポートした given はレキシカルスコープにあるので、こちらより優先される。
++     entry #indented   空白モードの要素を、インデントした行に一つずつレイアウトするかどうか
++   entry .Integral   整数値の属性型を示すマーカートレイト
++       コンパニオンにある三つのマーカートレイト（`Integral`、`Decimal`、`Id`）の一つであり、`Whatwg` が属性の値の型のために宣言するのと同じ種類のものである。WHATWG の属性はこれらではなく `Whatwg.Integral`、`Whatwg.Decimal`、`Whatwg.Id` を使う。
++   entry .Decimal   十進小数値の属性型を示すマーカートレイト
++       `Html.Integral` を参照。WHATWG の属性は `Whatwg.Decimal` を使う。
++   entry .Id   識別子値の属性型を示すマーカートレイト
++       `Html.Integral` を参照。WHATWG の属性は `Whatwg.Id` を使う。
++   entry .media   `Document[Html]` はメディアタイプ `text/html; charset=UTF-8` を持つ
++       `Document[Html]` を、正しい `Content-Type` を付けて HTTP レスポンスの本文として返したり、リクエストの本文として送ったりできるようにする `Media` の given である。
++       暗黙のスコープにある。
++   entry .doctype   `Html.Doctype(t"html")` としての `<!DOCTYPE html>` ヘッダー
++   entry .nodes   フラグメントを展開して、`List[Html]` を `Array[Html.Node]` に平坦化する
++       `List[Html]` に対する拡張である。各 `Html.Fragment` はそのノードを、各ノードはそれ自身を寄与するので、結果は親の子の配列が保持する平坦な列になる。
++       タグの `apply` と `Html.Fragment.apply` がこれを使うので、子として与えたフラグメントは決して入れ子にならない。
++   entry .interpolator   `h"…"` の背後にある given：コンパイル時にリテラルをパースし、ノードを埋め込む
++       `h` 補間子が解決する `Interpolable` インスタンスである。
++       その `interpolate` はマクロ `internal.interpolator` であり、各部分を WHATWG DOM に照らしてパースし、`Html.Issue` があればリテラルの位置で報告し、実行時にはノードを直接インスタンス化するので、結果にパースのコストはかからない。
++       `honeycomb.h` を参照。
++   entry .extrapolator   パターンとしての `h"…"` の背後にある given：検査対象をリテラルにマッチさせる
++       `case h"<li>$value</li>"` をパターンにする `Extrapolable` インスタンスである。
++       その `extrapolate` はマクロ `internal.extractor` であり、パターンを本物の HTML として DOM に照らしてパースする。そのため閉じタグを付けて書いたパターンは、閉じタグなしで書かれた入力にもマッチする。各穴は、その位置にあるテキスト、属性値、属性のマップ、要素、子の内容に束縛される。
++       `honeycomb.h` を参照。
++   entry .addable   `left + right`：二つの HTML の値を結合したフラグメント。両方のトピックで型付けされる
++       `Addable` の given である。`H1("title") + P("Hello")` は両辺のノードを平坦化して保持する `Html.Fragment of "h1" | "p" in
++       Whatwg` である。
++       両辺は同じ `Dom` になければならない。
++   entry .strictAggregable   `read[Html of content]`：テキストを型が挙げるタグとしてパースし、エラーがあれば失敗する
++       `read[Html of "ul"]`、`read[Html of "ul" | "ol"]`、`read[Html of Flow]`、その他の任意のタグ名のユニオンのための `Aggregable` の given である。パーサーは挙げられたタグだけを最上位で受け入れ、それは省略されたタグの推論の手がかりにもなる。そのため `Html of "html"` として読んだ `<p>Hello</p>` は、欠けている `<html>` と `<body>` を得る。
++       結果は、ソースが一つのノードを生じるときは単一の `Html.Element`、`Html.Text`、`Html.Comment` であり、それ以外のときは `Html.Fragment`（空のテキストなら空）である。
+
+@ 0 5 0 1fb0fdf3ea215ce910899cc35ff9c097
++       スコープに `Dom` と `Tactic[Parse.Error]` が必要であり、`Html.Recovery.Permissive` がスコープにないときにだけ解決される。`recoveries.permissiveRecovery` は `Html.permissiveAggregable` に切り替える。
++       すべての `Html.Issue` は戦術を通して発生させられる。パーサーは、受け入れられないタグのようないくつかの問題からは `raise` の後で回復し、それ以外では中止する。
+
+% 2 1 0 094cf9da76319ee51794cffcdf753544
+
+% 3 1 0 126f03f9d0b65bd01d5058ef6a22848d
+
+% 4 1 0 1f9732f003226a481fb7a9953aaf3bf8
+
+% 5 1 0 1be6a44fb3ce06940225466b841340a4
+
+% 6 1 0 1651a4dd262509d110d70810e528c53b
+
+% 0 1 0 015ad2fdbbae6d8319f883e0eeb5c9b0
+
+% 0 1 0 11d72264d3561eaf1b691b7ef1f77053
+
+% 1 1 0 0189ed03640f5ab11ff12b582c02f606
+
+@ 0 10 0 14bf48da2c05b6e91d49cfe237a9867e
++   entry .strictAggregable2   `read[Html]`：テキストを DOM が定義する任意のノードとしてパースし、エラーがあれば失敗する
++       `Html.strictAggregable` と同じだが、`Dom` のすべての要素を最上位で受け入れ、doctype は受け入れない。
++       `Dom` と `Tactic[Parse.Error]` が必要であり、`Html.Recovery.Permissive` がスコープにあるときは `Html.permissiveAggregable2` に譲る。
++   entry .strictLoadable   `load[Html]`：文書全体を `Document[Html]` として読み、エラーがあれば失敗する
++       `Loadable` の given である。ソースは文書としてパースされ（doctype を受け入れ、ルートは `<html>` であり、省略された `<html>`、`<head>`、`<body>` は推論される）、結果は `root` が `<html>` 要素で、`metadata` が `Dom` を保持する `Html.Provenance` である `Document[Html]` になる。
++       単一のルートを持たないソースは、`Html.Issue.BadDocument` を伴う `Parse.Error` を発生させる。
+
+@ 0 4 0 04535754fbacebd609e8ef483613a37b
++       `Dom`、`Tactic[Parse.Error]`、`PositionTracking` が必要である（既定は `Off` であり、`import parsing.trackPositions` で有効になる。そうすると文書はすべての要素と属性のソース上の位置を記録し、`Html.Path` による `document.locate(path)` に使える）。
++       `Html.Recovery.Permissive` がスコープにないときにだけ解決される。
+
+% 2 1 0 117a2e02bf4cd91b0d44bca3855efa75
+
+% 3 1 0 06276baec4ec77860d9021830db6dc08
+
+% 4 1 0 0ade7235894e407f1bd5c2f6ac3e2475
+
+% 5 1 0 019220eb0261e8dd1ab23ec516c5ac7f
+
+% 6 1 0 06eef97efc795d46027a18b47971a2e2
+
+% 0 1 0 086f9e81bceaf12706ab4b7cfdfed5c9
+
+% 0 1 0 0c1892a911a69c5a0b85ac8cbc2e9fcb
+
+% 0 1 0 02d832c5c28c1b36029ff80dd18795e8
+
+% 1 1 0 0851e3811f8f32ab0fb3a10e5d590ce1
+
+@ 0 8 0 1b984ce52aa7635c03ffea7989f6d004
++   entry .permissiveAggregable   `recoveries.permissiveRecovery` のもとでの `read[Html of content]`：回復し、決してエラーを発生させない
++       `Html.strictAggregable` の回復する版であり、`Html.Recovery.Permissive` をスコープに持ち込む（`import recoveries.permissiveRecovery`）ことで選ばれる。これは `Tactic[Parse.Error]` が存在する場合でも厳格な given を無効にする。
++       必要なのは `Dom` だけである。
++       パーサーは定められた範囲の不正な入力（未知の属性、閉じられていないタグ、余分な閉じタグ、誤った場所にあるタグ）から回復し、その警告は捨てられる。回復できない状態はエラーではなく空の `Html.Fragment` を生じる。
+
+% 2 1 0 14f42ef12bef992809ee9548ae0d185e
+
+% 3 1 0 1376f44ad568bd1d07488436e2c2fa41
+
+% 4 1 0 1bec815872383f6f0db10507e62fe0a5
+
+% 5 1 0 034f46aa3fe7c60811e309034f9620f5
+
+% 6 1 0 1c74c53d9463cfb10a072e3a09f66a86
+
+% 8 1 0 13f392db8217fb2c1c0dd39ecd761a41
+
+% 0 1 0 070bff5187c536b406a685677d7b6681
+
+% 1 1 0 09835feeafe6762e0dad144ce27c86cb
+
+@ 0 17 0 19611587f44cf1141b750a524d86bdda
++   entry .permissiveAggregable2   `recoveries.permissiveRecovery` のもとでの `read[Html]`：回復し、決してエラーを発生させない
++       `Html.permissiveAggregable` と同じだが、`Dom` のすべての要素を最上位で受け入れる。
++       必要なのは `Dom` だけである。
++   entry .permissiveLoadable   `recoveries.permissiveRecovery` のもとでの `load[Html]`：回復し、決してエラーを発生させない
++       `Html.strictLoadable` と同じだが、`Tactic[Parse.Error]` を必要としない。回復できる誤りは修復され、単一のルートを持たないソースはそのまま包まれ、回復できないソースは空のフラグメントをルートとする文書を生じる。
++       位置の追跡は厳格な読み込みと同じように働く。
++   entry .streamable   `document.stream[Text]`：`Document[Html]` を、その HTML ソースのチャンク化されたストリームとして得る
++       `Document[Html]` のための `Streamable` の given である。
++       doctype とルートは文書自身の `Dom`（`metadata.dom`）を通して、スコープにある `Html.Formatting` に従ったレイアウト（既定ではインデントあり、`formatting.compactHtmlFormatting` では一行）で書き出される。出力は別のファイバーで生成されるので、`Monitor` と `Probate`、つまり `threads.virtualThreads` と `probates.cancelProbate` を伴う `supervisors.globalSupervisor` のようなアンビエントな並行処理のコンテキストが必要である。
++       シリアライザーは `show` が使うものと同じである。空要素は閉じタグを省略し、`script` と `style` の内容はそのまま書き出され、テキストはエスケープされる。
+
+% 2 1 0 0129c359a98ef4bd0d2697984df189f3
+
+% 3 1 0 1e5cd59295f3a7de150c555bf9a193a2
+
+% 4 1 0 1c2f62f071ce1eab0300b9e8b8547d2a
+
+% 5 1 0 000c9e5ba08eef6003d4827d5c3c758b
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 0 1 0 0cee0142c243a0af1e9c17a78b0871b5
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 13a90bd9807757220147cb6f5b014f66
+
+% 0 1 0 057c2814bee630c313d6f72e284acc07
+
+% 1 1 0 00ee7184fb2400e10255a164f9cde70f
+
+@ 0 5 0 02a8bdcf22ea29b119a47269572a642b
++   entry .showable   `html.show`：任意のノードやフラグメントを、WHATWG DOM に照らしたコンパクトな HTML ソースとして得る
++       型がどれほど細分化されていても、すべての `Html` の値のための `Showable` の given である。
++       描画はインデントのない一行であり、値がどの DOM で構築されたかにかかわらず標準の WHATWG DOM を通すので、裸のノードも `Document` の外で正しく描画される（空要素は閉じられず、テキストはエスケープされる）。
++       すべてのノードの `toString` はその `show` である。
+
+% 2 1 0 03a85fed1b5a3e4e0b94fc3dabbbe13d
+
+% 3 1 0 0d828b0291bb9e7315b6750c5087372d
+
+% 4 1 0 0e09d85154a504fe10749ae1fa5870ac
+
+% 5 1 0 0393d12dbc8768ca118112c6b2e007a7
+
+% 0 1 0 16d81f55cafae60c17e4ba48ebc362be
+
+% 0 1 0 1a6df42beeb58c6719ef89df45df3509
+
+% 0 1 0 0bfe06b0a9a17c6c144908f96997c9a3
+
+% 1 1 0 14ae11c9ecf966671289de822d2b5c07
+
+@ 0 10 0 11e0a71a61236ba40f66bb2c8a69ac90
++       テキストの内容は `&`、`<`、`>` をエスケープし、二重引用符で囲んだ属性値は `&` と `"` をエスケープする。
++       生テキスト要素（`Html.Mode.Raw`：`script`、`style`）の内容はそのまま書き出される。
++   entry .inspectable   `html.inspect`：ノードのコンパクトなソースを、`html"…"` リテラルの中にエスケープして得る
++       すべての `Html` の値のための `Inspectable` の given である。`show` が生成するのと同じマークアップを、引用符とバックスラッシュをエスケープして `html"…"` の中に置く。そのため `Div(style = t"color: red")("hello")` は `html"<div style=\"color: red\">hello</div>"` として表示され、同じマークアップを保持する `Text` とも、xylophone の `xml"…"` とも区別できる。
++   entry .Vacuiscible   コンテナータグから作った要素のミックスイン：`apply(children*)` は子を加える
+
+% 1 1 0 1293ffbfc495bd871d50e7c5a82177ee
+
+@ 0 7 0 17f8a7e3905141e413036519156b3fee
++         属性だけに適用した `Tag.Container`（`Div(style = t"color: red")` など）は `Html.Element & Html.Vacuiscible` を生じ、その `apply` は二番目の引数リストで子を取る。`Div(style = t"color: red")("hello")` のようにである。
++         各子は要素の `Transport`（タグが受け入れるもの）の `Html` であるか、捨てられる `Unset` でなければならない。
++         結果は同じトピックと形式の要素である。
++     entry #apply   子を与えた要素。各子はタグが受け入れるものに照らして検査される
++   entry .Transparent   透過的なタグから作った要素のミックスイン：子がトピックを決める
+
+% 1 1 0 14aa3b13e4a27b0310924d473160aca1
+
+@ 0 33 0 11852f047749cbf10d44cc972613e8cd
++         透過的な要素（`<a>`、`<ins>`、`<del>`、`<map>`、`<object>` など）はコンテンツモデルを親から受け継ぐので、`<li>` を置けない `<div>` には `A(Li("x"))` も置けない。
++         `Html.Transparent#apply` は子のラベルを結果の `Topic` として記録するので、`A(Li("x"))` は `Html.Element of "li"` であり、ちょうど `<li>` が受け入れられる場所で受け入れられる。
++     entry #apply   子を与えた要素。そのトピックは子のラベルになる
++   entry .name   `Parse.Error` が報告する形式の名前 `HTML`
++       `Html` は `zephyrine.Format` なので、パースの失敗は _the HTML was not valid at
++       line 1, column 23 because the content ended while the tag `<ul>` was left open_ と表示される。
++   entry .text   テキストの内容が受け入れられる場所で、`Text` を `Html of "#text"` に変換する
++       `P(t"Hello")` や `h"<p>$name</p>"` が、フレージングコンテンツの要素の子が期待される場所で `Text` を取れるようにする `Conversion` である。結果は `Html.Text` であり、そのトピック `"#text"` は `Phrasing` の一員である。
++       内容から `"#text"` を除く `<ul>` はそれを拒否する。
++   entry .string   テキストの内容が受け入れられる場所で、`String` を `Html of "#text"` に変換する
++       文字列リテラルのための `Html.text` である：`P("Hello world")`。
++   entry .conversion3   `content` がラベルを含むとき、`Html of label` を `Html of content` に拡大する
++       `Html of "li"` を、`Html of "li" | "#text"` や `Html of Flow` が期待される場所に置けるようにする `Conversion` である。ラベルはより広いユニオンの一員でなければならない。
++   entry .comment   `Html.Comment` を任意のコンテンツ型の HTML に変換する
++       コメントはどこにでも現れうるので、すべてのコンテンツ型について `Html of content` に変換される。
++   entry .string2   `String` を外来のテキスト `Html of "#foreign"` に変換する
++       `Html.Element.foreign` が構築するような、外来のコンテンツ（SVG、MathML）の中の文字データである：`Html.Element.foreign(t"mi", attributes, "π")`。
++   entry .renderable   任意の `Renderable in content` な値を、それが描画する HTML に変換する
++       `List[Text] is Renderable in "li"` がスコープにあれば、`List[Text]` は `Html of "li"` が受け入れられる場所（`Ul(items)`、`h"<ol>$items</ol>"`）で、それに変換される。受け入れられない場所では変換されない。
++   entry .sequences   HTML への変換を `List` の上に持ち上げる：`List[nodal]` から `List[html]` へ
++       `Conversion[nodal, html]` があれば、`List[nodal]` の各要素を変換するので、テキストや描画可能な値のリストは、HTML のリストが期待される場所で HTML のリストになる。
++   entry .Issue   パーサーが見つけた誤り：HTML から生じた `Parse.Error` の中にある理由
+
+% 1 1 0 130868d2e1e6044607fd588fa7586c63
+
+@ 0 16 0 0302ba71eaba4e1a1602065363339a1e
++         `zephyrine.Format.Issue` の列挙型であり、各ケースは `describe` メッセージを持ち、厳格な読み取りが発生させる `Parse.Error(Html, position, issue)` の中に `Html.Position` とともに運ばれる。
++         ケースは次のとおりである。`BadInsertion`（_a value cannot be inserted into HTML at this point_。どの値も入らない位置にある `h"…"` の置換）、`ExpectedMore`（_the content ended prematurely_）、`UnexpectedDoctype`、`BadDocument`（_the document did not contain a single root tag_。`load[Html]` から）、`InvalidCdata`（_CDATA content is only permitted in foreign namespaces_）、`InvalidTag(name)`（_`<name>` is not a valid tag_）、`InvalidTagStart(prefix)`、`DuplicateAttribute(name)`、`InadmissibleTag(name,
++         parent)`（_`<name>` cannot be a child of `<parent>`_）、`OnlyWhitespace(char)`（空白モードの要素が空白だけを受け入れる位置にある文字）、`Unexpected(char)`、`UnknownEntity(name)`（_the entity `&name` is not defined_）、`ForbiddenUnquoted(char)`（引用符で囲まない属性値で禁止されている文字）、`MismatchedTag(open, close)`、`UnopenedTag(close)`、`Incomplete(tag)`（_the content ended while the tag `<tag>` was left open_）、`UnknownAttribute(name)`、`UnknownAttributeStart(name)`、そして `InvalidAttributeUse(attribute, element)`（_the attribute `name` cannot be used on the tag `<tag>`_）である。
+
+% 2 1 0 1687bd00d3bc178417510406685acf55
+
+% 3 1 0 041af08eb699f1d70009101354b37374
+
+% 4 1 0 1fa036bd3481ba140988c8a1d2aa02f0
+
+% 5 1 0 1dbf5e2b6a23e3691e7328254a9a2d02
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 14b11a0b83330a0e1cfddd5bc55d2e1c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1ae7fd36758db37d059e155fd72bd785
+
+% 0 1 0 135ad6e58653f03403fc174ed4e23b59
+
+% 0 1 0 178d2d6d8df9600a0500d456d47bffd3
+
+% 0 1 0 0bb83a7501ba065b03bf979e2afb0ded
+
+% 1 1 0 09ab40493367dff202833680c3282aee
+
+@ 0 5 0 1a81edaedcdc067d1135692db1ebb785
++         未知の属性は、パーサーが名前全体を読んだときは `UnknownAttribute`、そのように始まる属性がないときは `UnknownAttributeStart` になる。マッチでは両方を扱うべきである。
++         `recoveries.permissiveRecovery` のもとでは、回復できる問題は黙って修復される。
++     entry #describe   `Message` としての問題
++   entry .Position   パーサーがソースのどこにいたか：行と列、およびオフセットと長さ
+
+% 1 1 0 0c63a376d61fc1230599d97431cda7cf
+
+@ 0 22 0 1533221eb0d037d20f633d66fc78418e
++         HTML のパースにおける `zephyrine.Format.Position` である。
++         `line` と `column` は `Ordinal` であり（したがって `line.n1` は 1 始まりの番号）、`offset` と `length`（範囲がわかっているエラーと、`document.locate` が返すすべての位置に存在する）はソースの先頭から char を数える。
++         行と列はコードポイントを数えるので、非 ASCII 文字は一列である。長さは char を数える。
++         エラーとともに報告される列は、次に読まれる文字の列である。
++     entry #line   `Ordinal` としての行
++     entry #column   コードポイントを数える、`Ordinal` としての行内の列
++     entry #offset   わかっていれば、ソースの先頭からの char のオフセット
++     entry #length   わかっていれば、char 単位の範囲
++     entry #describe   `Parse.Error` が報告する形の `line 2, column 8`
++     entry #span   行モードの `Span` としての位置
++   entry .PositionIndex   追跡を有効にした `load[Html]` が文書に保持する、ソース上の位置の記録
++       要素と属性ごとに一つずつある記述子の凍結済みの配列に対する不透明型であり、パースの後に完成した木を辿って構築される。HTML の木の構築は、祖先を推論し、誤った場所にある表の内容を移し替え、書式要素を再構築することでノードを並べ替えるので、位置をソースの順序で出力することはできない。
++       これは `parsing.trackPositions` のもとでだけ生成され、`Html.Provenance#positionIndex` に保持され、`Html.positionable` を通して `document.locate(path)` が読む。それ自身の公開メンバーはない。
++       パーサーが推論した要素は、それを促したトークンの位置から始まり、属性の位置を持たない。
++   entry .Provenance   `Document[Html]` のメタデータ：パースに使った DOM と、その位置のインデックス
+
+% 1 1 0 07f974d410e12b4f0fadfcbe08cffa97
+
+@ 0 6 0 1375e52c7c96b77a1c346698e7b385c1
++         すべての `Html` の値の `Metadata` 型である。そのため `Document(root, Html.Provenance(dom))` は文書を作り、`document.metadata.dom` はストリームとして出力するときに直列化に使う `Dom` である。
++         `positionIndex` が設定されるのは、`parsing.trackPositions` のもとでの `load[Html]` だけである。
++         このインデックスはパースの来歴であって同一性ではない。等価性やハッシュには関与しないので、同じソースを追跡ありと追跡なしで読み込んだものは等しいと比較される。
+
+% 2 1 0 12ef8d4367701eb30cf6a7c3c15b17fd
+
+% 3 1 0 1600a40de6b5bcd613285cbc63ae7add
+
+% 4 1 0 15a2575cff901bf41afcf2fe2bae2b6b
+
+% 5 1 0 0f6c4460055d83a30e408eff5700e7c9
+
+% 0 1 0 09d94db0098e294706a5596333818596
+
+% 0 1 0 04aae8b8c489724a0daa0a8e33716bd3
+
+% 1 1 0 1e28f22725159ffe163f37201e29c7ad
+
+@ 0 5 0 08998fa9d3d354ef0f3cf28b6b2080a9
++         `Metadata` ではなく `Provenance` という名前なのは、オブジェクト `Html` それ自体が要素であり、その `Metadata` 型メンバーと、その名前の入れ子のクラスが衝突してしまうからである。
++     entry #dom   文書のパースに使い、直列化にも使う `Dom`
++     entry #positionIndex   `Html.PositionIndex`。追跡なしで読み込んだ文書では `Unset`
++   entry .Path   `document.locate` のための、文書の要素や属性へのルートから始まるパス
+
+% 1 1 0 08a5ef565c5f95e31033763962f0557d
+
+@ 0 5 0 1e98a5068b82ef4311c0c582c06560bc
++         パスは `Html.Path()` にステップを付け加えることで構築する。
++         `element(label, ordinal)` は子要素を、そのタグと、親の子要素のうち同じラベルを持つものの中での 1 始まりの順位によって指定する（テキストとコメントは数えない）。`attribute(name)` は最後の要素の属性を指定する。
++         最初のステップは文書のルート要素そのものを指定するので、普通の文書へのパスは `element(t"html")` から始まる。
+
+% 2 1 0 1258e5cb5b060ae71fb9dc13465270e1
+
+% 3 1 0 0b53a3a729cee17413ef38aff1058c6b
+
+% 4 1 0 017cc6c3453921821f42afea2a136c8c
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 0c5e7da21545287f0200475c5c26fe72
+
+% 0 1 0 0c19256ec35d05c204eef2ded64bad01
+
+% 0 1 0 1e040e8e9599601c012ce7e597929271
+
+% 0 1 0 1bcc4fd152543bcb1731cb16e5fb9b89
+
+% 0 1 0 0279453f06141101188b984564460ef9
+
+% 0 1 0 04135fb0b22a46681dbb58a92a0f5e88
+
+% 0 1 0 14c465df4f6d08ba1695e5354f815bf7
+
+% 1 1 0 021c066dbc97f9e00c38c5928c9e3c9d
+
+@ 0 24 0 0949414ba7085ad109be0fd66ddb8f37
++         位置は要素全体、すなわち開始タグから終了タグの終わりまでにわたる。親の終了タグによって閉じられた要素はそこで終わる。
++         解決できないパス（誤ったルートのラベル、存在しない子、パーサーが読まなかった属性）は `Unset` を返し、`parsing.trackPositions` なしで読み込んだ文書に対するすべての検索も同様である。
++     entry .Step   パスの一つのステップ：ラベルと順位による子要素、または名前による属性
++         列挙型であり、`Element(label, rank)` はそのラベルを持つ `rank` 番目（1 始まり）の子要素、`Attribute(name)` は最後のステップにしかなれない属性である。
++     entry #steps   ルートから順のステップ
++     entry #element   子要素で延長したパス：`element(t"p")`、または二番目のものなら `element(t"p", 2)`
++     entry #attribute   最後の要素の属性で延長したパス
++   entry .positionable   `document.locate(path)`：`Html.Path` を、追跡を有効にした読み込みが記録した `Html.Position` に解決する
++       `Document[Html]` のための `Positionable` の given であり、暗黙のスコープにある。
++       `locate` は文書の `Html.PositionIndex` を辿る。HTML には独立したキーの位置がないので、`locateKey` は常に `Unset` である。
++       `parsing.trackPositions` なしで読み込んだ文書では、どちらも `Unset` である。
++   entry .Mode   要素の内容をどうトークン化し、どうレイアウトするか：raw、RCDATA、空白、通常
++       すべての `Tag` は `Mode` を持ち、パーサーとシリアライザーはそれを DOM の中で名前によって調べる。
++       `Raw` の内容（`script`、`style`）にはタグもエンティティもなく、そのまま書き出される。`Rcdata` の内容（`textarea`、`title`）にはエンティティはあるがタグはない。`Whitespace` の要素（`html`、`head`、`ul`、`table` など）は子のあいだのテキストとして空白だけを受け入れ（それ以外は `Html.Issue.OnlyWhitespace`）、`formatting.indentedHtmlFormatting` のもとで文書をストリームとして出力するときには、子を一つずつインデントした行にレイアウトする。`Normal` はそれ以外のすべてである。
++   entry .Recovery   スコープに存在することで回復するパーサーを選ぶマーカー
+
+% 1 1 0 134fd310eff86c990c7c51be1d06fd40
+
+@ 0 14 0 11f64c4cc0e8eb051c415c5ea7540049
++         `Html.Recovery.Permissive` はメンバーを持たないクラスである。その given がスコープにあると、`read[Html]`、`read[Html of …]`、`load[Html]` は、`Tactic[Parse.Error]` を必要としすべての `Html.Issue` を発生させる厳格な given から、それを必要とせず修復できるものを修復する寛容な given に切り替わる。
++         インポートする given は `recoveries.permissiveRecovery` である。厳格な given は `Permissive` が存在しないことを要求するので、戦術もスコープにある場合でもこちらが勝つ。
++     entry .Permissive   マーカーのクラス。`recoveries.permissiveRecovery` はその given である
++   entry .Hole   `h"…"` の置換が占めうる位置の種類
++       `h` 補間子のマクロが、各置換をそれが置かれた位置によって型付けするために使う列挙型である。
++       `Text`（文字データ）、`Tagbody`（開始タグの属性、`h"<img $attributes>"`）、`Comment`（`h"<!--$text-->"`）、`Element(tag)`（要素全体、`h"<$element>"`）、`Attribute(tag, attribute)`（属性の値、`h"<img src=$url>"`）、`Node(parent)`（指定された親の子の内容）がある。
++       普通のコードでは必要ない。
++   entry .Node   ちょうど一つのノード：要素、テキスト、コメント、doctype のいずれかであり、決してフラグメントではない
+
+% 1 1 0 191a115492f608790c80f1878974a5b1
+
+@ 0 8 0 198e49d61c69834f0195181d3009fbca
++         列である `Html.Fragment` に対して、単一ノードの種類（`Html.Element`、`Html.Text`、`Html.Comment`、`Html.Doctype`）のシールされたトレイトである。
++         `Html` の値はそのどちらかなので、両方に対するマッチは網羅的である。
++         `Html.Node` は、要素が保持する子の配列や `h"<$element>"` の結果のように、本当に一つのノードを必要とする少数の場所を示す。列でもかまわない場所では、型は `Html` である。
++         ノードは純粋で不変な値である。
++     entry #body   フラグメントとしてのノードの子。テキスト、コメント、doctype では空
++   entry .Comment   コメントのノード `<!--text-->`
+
+% 1 1 0 041ef31149da2b1b0e5fe8b460c88dbb
+
+@ 0 6 0 1c584157252c2ffb1150134036aa8500
++         `Html.Comment(t"note")` は `<!--note-->` として描画され、ソースのコメントからは、前後の空白を含め、書かれたとおりのテキストで読み戻される。
++         コメントは `Html.comment` を通してどの内容にも受け入れられ、それだけを保持するフラグメントに等しい。
++     entry #text   区切り記号のあいだにあるコメントのテキスト
++   entry .Text   テキストのノード：トピック `"#text"` を持つ文字データ
+
+% 1 1 0 0728d2818cf9b4871b78982ef37507e3
+
+@ 0 7 0 07efce602b151de404cbd2a1ccfc973b
++         `Html.Text(t"Hello")` は、`Text` や文字列リテラルが `Html.text` と `Html.string` を通して子になったものであり、パーサーが文字データに対して生じるものでもある。エンティティはデコードされる：`t"to &amp; fro".read[Html of Flow] == Html.Text("to & fro")`。
++         そのトピックは `Phrasing` の一員である `"#text"` なので、テキストはちょうど DOM がそれを受け入れる場所で受け入れられる。
++         生テキスト要素の中を除いて、エスケープして（`&`、`<`、`>`）描画され、それだけを保持するフラグメントに等しい。
++         パターンの中では、`case Html.Text("one")` はキャプチャした本体のテキストにマッチする。
+
+@ 0 6 0 0066ec8d584ac1e71db600a4c289354a
++         `Html.*` をインポートするスコープの中では、裸の名前 `Text` は `anticipation.Text` ではなくこのノードを意味する。代わりに `Html.Text` と書く。
++     entry .foreign   外来のコンテンツの中の文字データ。`Html of "#foreign"` として
++         `Html.Text.foreign(t"π")` は、内容が `"#foreign"` と型付けされる `Html.Element.foreign`（SVG、MathML）の中に受け入れられるテキストノードである。
++     entry #text   文字データ
+
+% 0 1 0 11d9fed4914dd9af138a17a2f894671b
+
+@ 0 1 0 00a9e683818cdb1f179585aead33556c
++   entry .Element   要素：タグ名、属性、子、そして外来であるかどうか
+
+% 1 1 0 0e1dcded6e0a4b3e1a60c428c415acf4
+
+@ 0 5 0 1be0f6673637520f0b89a62c0fdd0951
++         `Html.Element(label, attributes, children, foreign)` は、すべてのタグの適用が構築するもの（`Div(id = t"x")("hi")` は `Html.Element("div", Attributes(t"id" -> t"x"),
++         Array(Html.Text("hi")), false)` である）であり、`case Html.Element(label, attributes,
++         children, _)` が分解するものである。
++         その静的な型はたいていもっと多くを表す：`Html.Element of "img"
++         in Whatwg`、あるいは `Html.Element of "ul" over "li" in Whatwg`。
+
+@ 0 4 0 1e0040a0b8e7e8a003f17be236f5d2a6
++         静的に要素だとわかっている値には三つの変換があり、それぞれ新しい要素を返す。`^+` は先頭に、`+^` は末尾に子を加え（キャレットが端を示し、子は要素の `Transport` でなければならない）、属性は `Dynamic` を通して名前で設定・置換・読み取りされる。
+
+% 2 1 0 00a7b8739e9cf1a5081303a56ab41dfa
+
+% 3 1 0 19fd1daf09bfdc3009e2f0415115b1d1
+
+% 4 1 0 009cf375baad76e716d966bf0e251383
+
+% 5 1 0 1def407a31feddeb161cc6a0a8a8f008
+
+% 0 1 0 00b67e552ec60d391393bd60a21f8888
+
+% 0 1 0 0183136e944561a4002037f4d6186813
+
+% 0 1 0 1fd2b218384ae1881eb9c0d17fa74939
+
+% 0 1 0 1b4aff9a99a7a66d1c37237a6c5e4b01
+
+% 0 1 0 116df61036867f881d4143c89eaa43ca
+
+% 1 1 0 0c0e3a74ffc38bb61bfcb179cb459d45
+
+@ 0 41 0 18b86cf09b2e74351cf6bf1ec210179e
++         `/` はタグによって子要素を選ぶ。`table / Tbody / Tr / Th` はそのように辿って到達したすべての `<th>` のフラグメントであり、ノードを一つだけ保持するならそのノードに等しい。
++         等価性は構造的であり、属性は順序を問わず比較される。要素は、それ自身だけからなるフラグメントに等しい。
++         `toString` は要素の `show` である。
++     entry .foreign   外来の名前空間（SVG、MathML）の要素。その属性と子を伴う
++         `Html.Element.foreign(label, attributes, children*)` は、`Attributes` または `Map[Text, Optional[Text]]` から、DOM が記述しない要素を `Html.Element of "#foreign"` と型付けし、`foreign = true` として構築する。
++         その子は `Html of
++         "#foreign"`、すなわちさらに外来の要素か、`Html.string2` によって変換された文字列である。
++         パーサーは `<svg>` と `<math>` の内容に対してこれを構築する。`t"<svg><circle r=\"1\"/></svg>".read[Html of Flow]` は `Svg(Html.Element.foreign(t"circle", Map[Text, Optional[Text]](t"r" -> t"1")))` である。
++     entry #label   小文字のタグ名
++     entry #attributes   `Attributes` としての、順序どおりの属性
++     entry #children   凍結済みの `Array[Html.Node]` としての子のノード
++     entry #foreign   要素が外来の名前空間（SVG、MathML）にあるかどうか
++     entry #/   `element / tag`：そのタグを持つ子要素を、タグで型付けされたフラグメントとして得る
++         `Div(Ul(Li("one"), Li("two"))) / Ul / Li` は `Html.Fragment(Li("one"), Li("two"))` である。各ステップはラベルがタグのものである子を残し、そこから続ける。
++         結果は `Html.Fragment of tag.Topic in tag.Form` なので、次のステップには直前のものが受け入れるタグしか置けない。
++     entry #body   要素自身のトピック、トランスポート、形式を持つフラグメントとしての、要素の子
++     entry #^+   `element ^+ child`：子を先頭に挿入した要素
++         要素の `Transport` のノードまたはフラグメントである子は、既存の子の前に置かれる：`Div(P("body")) ^+ H1("title")` は `<div><h1>title</h1><p>body</p></div>` である。
++     entry #+^   `element +^ child`：子を末尾に追加した要素
++         要素の `Transport` のノードまたはフラグメントである子は、既存の子の後に置かれる：`Div(H1("title")) +^ P("body")`。
++     entry #selectDynamic   `element.attribute`：属性を読み、その `Unattributive` でデコードする
++         `image.alt` は、名前をその DOM における要素のトピックの `Attribute`（またはグローバル属性）として解決し、そのテキストを属性型の `Unattributive` でデコードする。
++         その要素の属性でない名前や、型にデコーダーがない名前は、コンパイルエラーになる。
++     entry #updateDynamic   `element.attribute = value`：属性を設定した、または取り除いた新しい要素
++         `image.alt = t"…"` は、名前をその DOM における要素のトピックの `Attribute` として解決し、値を属性の型への `value is Attributive to` を通してエンコードし、その組を設定した新しい要素を返す。`Attributive` が `Unset` を生じる場合（存在属性に対する `false`、空のクラスのリスト）は、属性を取り除いた新しい要素を返す。
++         元の要素は変わらない。
++         `attributives.textAttributive` がスコープにあれば、`Text` はすべての属性型を満たす。
++   entry .Fragment   単一の親を持たないノードの列
+
+% 1 1 0 11a9326cf2ee33ce066ba277ff7c0073
+
+@ 0 5 0 015f9dd8a23c3df3123e90338b44507a
++         `Html.Fragment(nodes*)` は零個以上の `Html.Node` を保持する。最上位に複数のノードを持つテキストを読んだ結果、`+` の結果、`/` の結果、複数の要素を生成する `Renderable` の結果がこれである。
++         子として与えたフラグメントは親の子の中に展開され、ノードを一つだけ持つフラグメントはそのノードに等しいので、`Html.Fragment(P("x")) ==
++         P("x")` である。空のテキストは `Html.Fragment()` として読める。
+
+% 2 1 0 0d4661c9e7b81f091d9aa354028824d2
+
+% 3 1 0 09425924635dd35416e34962dde73aa5
+
+% 4 1 0 15ae36fdbabf1f1f1d20c5904e07762c
+
+% 5 1 0 0f22d796c6812b221fb1a34d68d45a23
+
+% 0 1 0 03a3fcd5dc37fc1400050d55258454a5
+
+% 0 1 0 1766c5e9263506910d7421b1355451a4
+
+% 1 1 0 02e92b3fd3d72fd01436e1626125abae
+
+@ 0 8 0 143932f6e9f9ea1a03fa83efb7e09eee
++     entry .apply   `Html.Fragment[topic](nodes*)`：与えたノードのフラグメント。それらのトピックで型付けされる
++         各引数はトピックが `topic` に含まれる任意の `Html` であり、その中のフラグメントは平坦化される。
++         `Html.Fragment(Li("one"), Li("two"))` が呼ぶのはコンパニオンの `apply` である。ケースクラスのコンストラクターは `Html.Node` だけを取る。
++     entry #nodes   順序どおりのノード
++     entry #/   `fragment / tag`：すべてのノードの、そのタグを持つ子要素を連結したもの
++     entry #body   フラグメントそのもの
++   entry .Doctype   文書型宣言 `<!DOCTYPE text>`
+
+% 1 1 0 023a5d643dcd43350aea878c51c0bc8c
+
+@ 0 20 0 1cdca5387515cebc1326ae8aca08ae99
++         `Html.Doctype(t"html")` は HTML5 のヘッダーであり、`Html.doctype` と `Whatwg#doctype` が提供し、ストリームとして出力する `Document[Html]` が最初に書き出す。`Html4Transitional#doctype` は HTML 4.01 Transitional のものである。
++         ソース中の doctype は、`load[Html]` では大文字と小文字を区別せずに受け入れられ、`read[Html]` では `Html.Issue.UnexpectedDoctype` として報告される。
++     entry #text   `DOCTYPE` の後の宣言のテキスト
++   entry #Topic   リテラル型としての、値のタグ名、名前のユニオン、またはコンテンツカテゴリー
++       `Label` のサブタイプである。`<br>` なら `"br"`、どちらかのリストなら `"ul" | "ol"`、任意のフローコンテンツなら `Flow`、テキストノードなら `"#text"`、外来のコンテンツなら `"#foreign"` である。
++   entry #Transport   タグ名のユニオンとしての、値が含められるもの
++       `<ul>` なら `"li"`、`<p>` なら `Phrasing`、`<html>` なら `"head" | "body"` である。
++   entry #Form   値が適合する `Dom`：`Whatwg` または `Html4Transitional`
++   entry #Metadata   `Html.Provenance`。`Document[Html]` がルートとともに運ぶもの
++   entry #Chunks   `Text`：HTML の文書はテキストとしてストリームされる
++   entry #/   `html / tag`：そのタグを持つ子要素を、タグで型付けされたフラグメントとして得る
++       要素ではタグのラベルを持つ子、フラグメントではすべてのノードのそれ、その他のノードでは空である。
++       結果は `Html.Fragment of tag.Topic in tag.Form` である。
++   entry #body   値自身のトピック、トランスポート、形式を持つフラグメントとしての、値の子
++       要素では子、フラグメントではそれ自身、テキスト、コメント、doctype では空のフラグメントである。
+
+@ 0 5 0 16872837bc1725d316e6543fd22304b3
++ entry .html   `value.html`：任意の `Renderable` な値を、それが描画する HTML として得る
++     `Renderable` インスタンスを持つすべての型に対する拡張である。`Message` に対する `message.html` は `Html of
++     Phrasing` であり、`StackTrace` に対する `stackTrace.html` は `Html of Flow` であり、`Math` や `Mathml` は自身のインスタンスを通して描画される。
++     結果の型はインスタンスの `Form` なので、ちょうどその内容が受け入れられる場所で受け入れられる。
+
+% 2 1 0 0134246673c159ac0b20f544b89279b0
+
+% 3 1 0 18e87071813de5b61f4dc7c94b872851
+
+% 4 1 0 078baec028f963ac1b824d8807830fd2
+
+% 5 1 0 17e366c1b304b60d112c0a15a4c5c389
+
+% 0 1 0 13bc8f6df187b57e12177d1be326ade2
+
+% 0 1 0 0a27b1b4ec7f36e700e9c1afa0636cbf
+
+% 1 1 0 1505eb5cca64c64d1ca046ca2be1403a
+
+@ 0 7 0 06727b07a22da773059a5c3c66648800
++ entry .h   `h"…"` 補間子：コンパイル時にパースされる HTML リテラルであり、パターンでもある
++     `h"<ol><li>Alpha</li><li>Beta</li></ol>"` は、コードのコンパイル時にマークアップを WHATWG DOM に照らしてパースし、`Html.Issue` があればリテラルの位置で報告し、実行時にはノードを直接インスタンス化するので、パースのコストもなく、検査も失われない。
++     標準のパースの規則が適用されるので、省略可能な閉じタグは省略してよい。`h"<ol><li>Alpha<li>Beta</ol>"` は同じ値である。
++     結果は `Whatwg` における最上位のタグで型付けされる。
+
+@ 0 5 0 17ab8c586fa201f415a059822f5abefd
++     置換は周囲のマークアップに合う場所ならどこでも許され、その位置で検査される。
++     本体の内容は、囲む要素が受け入れる HTML（または `Html.text`、`Html.renderable` などの変換を通してそれに変換できるもの）でなければならず、属性値は `Attributive` を通して属性の型を満たさなければならず、コメントの内容は `Showable` でなければならない。
+
+% 2 1 0 147555afa69d4b4a193e00c87b199e72
+
+% 3 1 0 04f7a835f3d507f90fc9a4c54ea5f4cb
+
+% 4 1 0 1c5b55d2c957812e0e9bf5d3a9b020fd
+
+% 5 1 0 16fcb2d3163d22801567a200f3ec62d9
+
+% 1 1 0 1413d16ad0d32a510c5ebe62c56a8197
+
+% 0 1 0 15e72dc7affd3cc60a7eb5a2296170f4
+
+% 0 1 0 1b5e3e92f2b79b72190db6c85c97aa92
+
+% 0 1 0 1eaa2cacde6a5db20673ce80a1bb4dfd
+
+% 0 1 0 174867ee8b75963803778201af50bdd1
+
+% 0 1 0 0bf8044cd49d43c615a87b933936af6c
+
+% 1 1 0 057e22a790c17be81649c3b72e8df063
+
+@ 0 6 0 19843639656cac7c03d9f1faefeba686
++     パターンとしては、リテラルは等しいノードにマッチする。検査対象がそのノードそのものでも、それだけを保持するフラグメントでもよい。また、テキストとしてではなく DOM に照らした HTML として検査されるので、閉じタグを付けて書いたパターンは閉じタグなしで書かれた入力にもマッチする。
++     穴はそれが表すものを束縛する。`h"<li>$value</li>"` は本体を `Html` として、`h"<img src=$source>"` は属性の値を、`h"<img $attributes>"` は属性のマップを束縛し、`h"<$element>"` は任意の要素を束縛するが、それ以外の種類のノードは束縛しない。
+
+% 2 1 0 0d9807b7ec5fffc504687c7b4697a6cc
+
+% 3 1 0 1a57a36d30821ce90b9c57adbe451471
+
+% 4 1 0 0426dcf000920c6709b5e86c9d7fb873
+
+% 5 1 0 04632d08c0310e17171f1b3e370f3c5c
+
+% 0 1 0 0ead2f25fc050c5018ec5317034fdffd
+
+% 0 1 0 111f11d003011f6e052c0893bb642593
+
+% 0 1 0 0e8e6e164850741600b08ce17ad4ab5b
+
+% 0 1 0 0466f89aa292f0c10e2ea9298f127426
+
+% 0 1 0 02b915bcfcb1b72a132b4783a927c859
+
+% 0 1 0 0284ba07bd535f760627545abc4a8ece
+
+% 1 1 0 0b334fb0833a54b412d77d1383791b52
+
+@ 0 2 0 18a55f0bbef75ac00da7bc9d66860c03
++     この補間子は `transparent inline` であり、`Html.interpolator` と `Html.extrapolator` を解決する。それらのマクロは `honeycomb.internal` にある。
+
+@ 0 1 0 1eee16148de7352800f453ccb89bbfd2
++ entry .Attributes   要素の属性：名前から省略可能な値への、順序付きの不変なマップ
+
+% 1 1 0 113573ba57fca8cb1b8d26371aba5177
+
+@ 0 7 0 0e71b6a329a624ca1eab32133129d753
++       `Html.Element` の属性を文書の順序で保持する。`Map` ではなく、キーと値を交互に並べた凍結済みの配列に対する不透明型である。
++       値は `Optional[Text]` である。`disabled` や `checked` のような存在属性は値として `Unset` を持ち、裸の名前として描画される。
++       パースは開始タグを読むときにこれを構築し、すべてのタグの適用は既定値と引数からこれを構築し、すべての更新（`updated`、`removed`、`++`）は新しい値を返す。
++       `honeycomb.internal` で宣言され、`honeycomb` パッケージにエクスポートされている。
+
+% 2 1 0 09401e04a8dd479a028560968e32ee9d
+
+% 3 1 0 144ad17380a8551e093ae5738a6eecc7
+
+% 4 1 0 18eaa7d341a8c66001fc8ebb6ecd46bc
+
+% 5 1 0 153a73ad77c76c4b0356f8cd2a4a4b1c
+
+% 0 1 0 10ae0f1a82c4d97c1e7c357493bcb164
+
+% 0 1 0 0373655f4e5d6c731e36b49c82ec13f3
+
+% 0 1 0 02e67ca885abbca11134d18f01a21421
+
+% 0 1 0 1d258e6473955cbd19ba1df856a3bc84
+
+% 0 1 0 137d1f9638b7cdb51bcc6779bf28d82c
+
+% 0 1 0 0b625c567bc715311dbc9ec16cb1d1d0
+
+% 1 1 0 0080b0950db8c0681053eba8488b584c
+
+@ 0 4 0 0feb426f7ddaabda1b33c8a9f6d0e457
++       二つの `Attributes` の等価性は順序に依存しない（`equalsAttributes`）。これが `Html.Element` 自身の等価性が使うものである。反復（`keys`、`iterator`、`each`、`to[List]`、`toMap`）は文書の順序で行われる。
++       開始タグに現れるのと同じように、`html{class="a", hidden}` として表示される。
+
+% 1 1 0 17cd292c4ad3d7cf0a4b4daf1137a2f6
+
+@ 0 1 0 09dd42a3b28fd1bb189c24e804eeeb8b
++ entry .htmlDoms   パースとタグの適用が使う HTML の仕様。それぞれ名前でインポートする given である
+
+% 1 1 0 1fff9b41aecbe32904a0ce476fd56b5d
+
+@ 0 5 0 0645c23d49594bbb07e87f4d77e5a80b
++       どのタグが存在するか、それぞれがどの子と属性を受け入れるか、その内容がどうトークン化されるか、どの名前付き文字参照が定義されているかは、すべて `Dom` から来る。そしてその選択が暗黙に行われることはない。`import soundness.*` は何も持ち込まないので、一つを名前でインポートする。
++       タグオブジェクト自体は DOM のコンパニオンのメンバーなので、いつもの二つのインポートは、given と、その語彙である。
+
+% 2 1 0 13adf749e06fea4616a5d619225b36b4
+
+% 3 1 0 1a7190a56eadfda90e2412e0530348c3
+
+% 4 1 0 1568b4821067bda10471db335d0b98a4
+
+% 5 1 0 0c0c03013d34375c15d9a8b8d593577b
+
+% 0 1 0 0d993ecc5591ff26147d00ecdf48cdad
+
+% 1 1 0 138a2db03b688b710086c5538e83bcc0
+
+@ 0 5 0 0b5f61ca70c5dd7d12847c881e43a8be
++       `Whatwg` は HTML Living Standard であり、今日「HTML」が意味するものであって、ほとんどすべての用途に適する。`Html4Transitional` は HTML 4.01 Transitional であり、その方言の表示用のタグと属性を出力または読み取らなければならないプログラムのためのものである。
++       読み取り（`read[Html]`、`load[Html]`）にはスコープに `Dom` が必要である。`show` による描画は常に WHATWG のものを使い、ストリームとして出力する `Document[Html]` はその `Html.Provenance` に記録された DOM を使う。
+
+% 1 1 0 090632db37c790fb16b485e191df80c0
+
+% 2 1 0 057cd73e0807048a157f07788a7ab782
+
+@ 0 9 0 05b41872de398b900fcb1a7f468770be
++   entry .whatwg   `Whatwg` インスタンスとしての WHATWG HTML Living Standard
++       `import htmlDoms.whatwg` は `Dom` をスコープに持ち込み、`import htmlDoms.whatwg.*`（またはその後の `import whatwg.*`）は、タグオブジェクト `A` から `Wbr` と、コンテンツカテゴリー `Flow`、`Phrasing`、`Metadata`、`Heading`、`Sectioning`、`Embedded`、`Interactive` を持ち込む。
++   entry .html4Transitional   `Html4Transitional` インスタンスとしての HTML 4.01 Transitional
++       `import htmlDoms.html4Transitional` に続けて、そのタグのために `import html4Transitional.*` を使う。そのタグには `Font`、`Center` など Living Standard が廃止した表示用の要素が含まれ、その `doctype` は HTML 4.01 Transitional のものである。
+
+@ 0 1 0 0361a5b36cc7a1b11becc63e1e0abbec
++ entry .formatting   ストリームとして書き出す `Document[Html]` のレイアウト。どれも名前でインポートする `Html.Formatting` の given である
+
+% 1 1 0 15d9d090d0066ff302823c50bb23aa1d
+
+@ 0 7 0 0d62d4be1033831912c1f35f7a8f49ee
++       スコープ内の `Html.Formatting` は、`document.stream[Text]` が DOM モード `Html.Mode.Whitespace` の要素を一行に一つずつ、一段につき二文字ずつ字下げして書くか、文書全体を一行に収めるかを決める。
++       DOM モードが `Html.Mode.Whitespace` の要素とは、`html`、`head`、`body`、`ul`、`ol`、`table`、`tr` などの、子の間の空白に意味のない要素である。
++       `Html.Formatting.default` は字下げするレイアウトなので、それを使うには何もインポートしなくてよい。
++       詰めたレイアウトは `compactHtmlFormatting` をインポートして選ぶ。これはレキシカルスコープの given として、コンパニオンのデフォルトに優先する。
++       どちらも `show` には影響しない。`show` は常に詰めたレイアウトである。
+
+% 2 1 0 0c693ace002af08500537c601d4f8d33
+
+% 0 1 0 111d95d52c2ff33b11ad745df3b0669b
+
+% 1 1 0 0e5468dda34c539e0927db36e44bd2b2
+
+% 2 1 0 124a90d7384ad360019e9671381ff0cb
+
+% 3 1 0 14859fefefdda7e7049dcbd6472a44a2
+
+% 4 1 0 15d672d8872ca8ed03e306fc6ecb49df
+
+% 5 1 0 0e3d99f73e99342213c72b6c4cb46c68
+
+% 6 1 0 09c4c48fc1f36ff8032be0e2c2d2386c
+
+% 7 1 0 011759c9231ba58908e86cd0151ff807
+
+% 0 1 0 02641310f7087de40d74534a1eb83fef
+
+% 2 1 0 1f132271aabce754069e6b907631a07e
+
+% 3 1 0 0a72e5a4409f598709feb21626674199
+
+% 5 1 0 1db8f9e155ee3cfe11af1d28f0cb3ec7
+
+% 0 1 0 18c8ade059fe5569072d446ccca82039
+
+% 0 1 0 001edb7aa623b4c10c1c8f99dc0af299
+
+% 0 1 0 00f3c2d1d341d384172ff93bccce0f59
+
+% 0 1 0 10b92bc995cbbfdf1580f42574665692
+
+% 0 1 0 053dbb5dfa4796101b1d3bff3db7cd9f
+
+% 0 1 0 029444b43f81c778053c10eef5f95e83
+
+% 0 1 0 066c1ec68b9bddcb0e366f4d65deb7d3
+
+% 0 1 0 0147f6f87e12a0aa1056d4c86291ead8
+
+% 0 1 0 1af2cc59ec8bcc9e1a174c80df404fc3
+
+% 0 1 0 1dc034276ad98d7312d9db58e0a108f5
+
+% 0 1 0 06de3d4066878a04092953b266e31cc9
+
+% 0 1 0 1dcf1811c4bee233031e4548a4cbe14f
+
+% 0 1 0 0595e598221146b1165c699509e4abe3
+
+% 1 1 0 12b1f2e7519fc2c708515716d18d30a0
+
+% 2 1 0 0308e45cd2f79ed6011e3b3aee16bbab
+
+% 3 1 0 179507e1ecf22964036d6a8737895c74
+
+% 4 1 0 10e90aac3c346bf01c99e184bd5956a7
+
+% 5 1 0 15109fa4dc4f391d1edb685966fa1d34
+
+% 6 1 0 0b59a106e741d1990eb04749103141b3
+
+% 7 1 0 17d741a1f7af6c0f15a66bfc0ce12d57
+
+% 0 1 0 13a87340be077daf1ef1ebe9d40727df
+
+% 2 1 0 1e5e0759357776e4102d4abd00161540
+
+% 3 1 0 164bf7bf89d1be0b0344118c8d4c0e6f
+
+% 5 1 0 0ec6ea3104816d7d0889de41a187dd99
+
+% 0 1 0 06dee0c76bffcf6208a7fe5fb6eb30ff
+
+% 1 1 0 101df65f0deb5c821030639c5fc8d291
+
+% 2 1 0 0b01108cc0e0680f0dbfe337a6479008
+
+@ 0 3 0 0d9ba242f9353f4510d764a0273b09cc
++       `<p>` など、テキストに意味のある要素は、レイアウトにかかわらず行をまたいで分割されることがない。したがって、字下げによってブラウザの表示が変わることはない。
++       このパッケージは、アンブレラの `formatting` に、ほかのフォーマットのレイアウトと並んでマージされる。
+
+% 1 1 0 0dc1902babef39fa0894b4e78ceabb59
+
+@ 0 2 0 134702ae14e0281f1a9dc609e89f2ab1
++   entry .indentedHtmlFormatting   空白モードの要素を、字下げした行に一つずつ書く。デフォルトと同じである
++   entry .compactHtmlFormatting   文書全体を一行に書く
+
+@ 0 1 0 1ca6dfed2cfbda81196edb97ecf2b766
++ entry .attributives   属性が受け付ける値を広げる `Attributive` の given。名前でインポートする
+
+% 1 1 0 1dc1e5834b1a565e1ed7c46eedac6fe0
+
+@ 0 6 0 0fcb1c43ba4c79c91572276b40bc9a96
++       属性の値には型がある。
++       `width` は正の整数を、`src` は URL を、`disabled` は存在の有無を取るので、`Img(width = 64)` はコンパイルでき、`Img(width = 1.5)` はできない。
++       `Attributive` のコンパニオンにある `Attributive` のインスタンスは、よく使う型を扱う。
++       手元の値に対するインスタンスがその属性の型にない場合、`textAttributive` を使うとすべての属性で `Text` を受け付けるようになるので、URL が求められる場所に `Img(src = t"image.jpg")` と書ける。
++       これは意図して属性の型を迂回するものなので、名前でインポートする。
+
+% 1 1 0 14f8738788f0dbb611cd42aeb71dbf1b
+
+@ 0 5 0 0477cc6db58c393b0b7bc4e43d085f07
++   entry .textAttributive   どの属性の値としても `Text` を受け付け、そのまま書く
++       `[target] => Text is Attributive to target` である。テキストは、属性の宣言された型にかかわらず、変更されずに属性の値になる。
++       これがスコープ内にあれば、`src = t"x.jpg"`、`width = t"64"`、`onclick = t"…"` はどれもコンパイルできる。これがなければ、それぞれに属性自身の型の値が必要になる。
+
+% 2 1 0 1f484c142e5ddc78099de295fbacbf3f
+
+% 3 1 0 16006d825483965705ee804388f6e5d7
+
+% 4 1 0 1517503361a09efe176c9f02966102dc
+
+% 5 1 0 09f0046829e8f1330a02640f9f6d84bb
+
+% 6 1 0 0c6e4ff6b62aef7f1653cfe1a737323e
+
+% 0 1 0 046b5b060496208a1c2827689581a8b1
+
+% 1 1 0 1bb971c505100774095a7bb67c311c9e
+
+@ 0 1 0 0473519103d3b3de01a4f66e0b126af0
++ entry .stylesheets   クラス名の構文 `P.info(…)` で名指せるもの。名前でインポートする given である
+
+% 1 1 0 1d38643b7265289f0cfed50776bdf4b3
+
+@ 0 7 0 19011e922e45307b1a4da98b4bb6e254
++       `class` は Scala のキーワードなので、クラスはタグのメソッドとして名指す。
++       `P.info("body text")` は `<p class="info">body text</p>` であり、一回の適用につき一つの名前を取る。これを `applyDynamic` が `Attribution of name` を通して解決する。
++       `uncheckedClasses` はどんな名前にもその証拠を与える。
++       代わりに cataclysm のスタイルシートを束縛すると、そのスタイルシートが定義する名前だけが正当なものになるので、クラス名の書き間違いはコンパイルエラーになり、スタイルシートが id として宣言する名前は `id="…"` として描画される。
+
+% 2 1 0 009d97dc2b36d574093625121e17eebc
+
+% 3 1 0 0fca172b242f936108637c311325d84e
+
+% 4 1 0 0c4936cfe48a31a00ebe104c22108ff8
+
+% 5 1 0 057aad1d9ae427f20a6a2ef442e0958c
+
+% 0 1 0 0ae84bbedfe662e2188eefe162fe2bc5
+
+% 0 1 0 11ede364fe0327ee134083566082a4b4
+
+% 1 1 0 0922de513bf9820a02b856476fab8d46
+
+% 2 1 0 0f371b3f6a899173082570f903bda6c7
+
+@ 0 4 0 1b626a8914197e1517c627a083d9ce2c
++   entry .uncheckedClasses   `Tag.name(…)` として使う名前はどれも CSS クラスであり、検査されない
++       `apply`（素の `Tag(…)` 呼び出し）を除くすべてのラベルに対する `Attribution of name` である。
++       名前は `class` 属性に入り、タグのプリセットがすでにもつクラスの後ろに追加される。
+
+@ 0 1 0 1a8f8074c8e0cf920fb9b88f8238e84e
++ entry .recoveries   回復する HTML パーサー。名前でインポートする given である
+
+% 1 1 0 09098511ad98b36607d0b8f636fec692
+
+@ 0 7 0 18294149d8668bd8166b1e399d0fe8de
++       `read[Html]` と `load[Html]` の背後にある厳格なパーサーは `Tactic[Parse.Error]` を必要とし、すべての `Html.Issue` を発生させる。
++       `permissiveRecovery` をスコープに入れると、代わりに寛容な given（`Html.permissiveAggregable`、`Html.permissiveAggregable2`、`Html.permissiveLoadable`）が選ばれる。
++       これらは戦術を必要とせず、定められた範囲の不正な入力をブラウザと同じように修復する。未知の属性は残し、閉じられていないタグは閉じ、余分な閉じタグは捨て、誤った位置のタグは外側の階層で再試行する。それ以外の入力に対しては、失敗する代わりに空のフラグメントまたは空の文書を返す。
+
+% 2 1 0 0a673e23bfffdc8a0f0e592986012aa8
+
+% 3 1 0 0f0047637b3e83560ee49691a6dd45d5
+
+% 4 1 0 1877a6625a6fbde6105ab86e27ab3455
+
+% 5 1 0 16949b639f16537d1f2ab93c182e3763
+
+% 6 1 0 1c0d431352fcd9180953ecacd56d1fe8
+
+% 8 1 0 1a1597be685aeb721dc77ba9be8aa688
+
+% 0 1 0 07b4abddb3fce7e3101d564499e1d8cb
+
+% 1 1 0 1e9edea8c83cd7b11c14f44057085678
+
+@ 0 3 0 19f7990a054eaaef1014867a76c08038
++       寛容な given は、戦術が同時にスコープ内にあっても優先される。厳格な given は `Html.Recovery.Permissive` が存在しないことを要求するからである。
++       位置の追跡（`parsing.trackPositions`）は、どちらのパーサーでも動作する。
+
+% 1 1 0 1417da485d9636c0142929140072b29b
+
+@ 0 1 0 11c20e65c2e4ab591513cc5c59b2d6e5
++   entry .permissiveRecovery   `Html.Recovery.Permissive`。回復するパーサーを選ぶ
+
+@ 0 1 0 0a098cd8af33e7a91b741a51939b8ac1
++ entry .construables   `text/html` のボディを `Document[Html]` として解釈する。名前でインポートする given である
+
+% 1 1 0 0189cbbc48c3014311d3b573d753b135
+
+@ 0 5 0 06e6e3e951142af61c23eebe623e77cd
++       `Construable` はメディアタイプを、その内容を読み取る型に結び付ける。これにより、その `Content-Type` で受け取ったボディ（HTTP レスポンスや OpenAPI のメディア定義）は、デフォルトによってではなく意図して復号される。
++       `htmlConstruable` は `text/html` を `Document[Html]` に結び付ける。これは名前でインポートし、文書はスコープ内の `Dom` と `Html.Loadable` の given を通してパースされる。
+
+% 0 1 0 16ead114565755a70e930c00ff1395e5
+
+@ 0 1 0 19bbfb84c6c1d99c0a384657e3a68d64
++ entry .internal   `h"…"`、タグの適用、`ClassList` の背後にあるマクロと、`Attributes` の置き場所
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 17 0 0aa0d61580762d981191abfe4104172c
++       直接使うものではない。このオブジェクトは、マクロに安定した置き場所を与えるために存在する。
++       `Attributes` はここから `honeycomb` パッケージへエクスポートされる。
++   entry .classList   `ClassList[name]()` の背後にあるマクロ。各ラベルを CSS 識別子の規則に照らして検査する
++       CSS 識別子でないラベル（`ClassList["1bad"]()`）や、文字列リテラルでできていない型引数は、展開時にコンパイルエラーになる。
++   entry .extractor   パターンとしての `h"…"` の背後にあるマクロ
++       パターンの各部分を、置換のそれぞれを穴として、WHATWG DOM に照らしてパースする。そして、検査対象を構造的に照合して各穴を束縛する抽出子を埋め込む。
++   entry .interpolator   式としての `h"…"` の背後にあるマクロ
++       各部分を WHATWG DOM に照らしてパースし、各置換をそれが入る `Html.Hole` に照らして検査して、ノードの構築を埋め込む。
++   entry .attributes   タグの名前付き引数による適用 `Img(src = …)` の背後にあるマクロ
++       `name = value` の各引数を、その DOM におけるタグのトピックの `Attribute` として解決し、属性の型に対する `value is Attributive to` を見つけて、得られた組とともに要素を埋め込む。
++       タグの属性でない名前や、`Attributive` のない値は、コンパイルエラーになる。
++   entry .Attributes   要素の属性。`honeycomb.Attributes` を参照
+
+% 1 1 0 154e26d9685841cb115ec51a84225277
+
+@ 0 31 0 1ed8cdf244eaff3b0327ea296f6f689a
++         キーとオプショナルな値を交互に並べた凍結済み配列の上の不透明型であり、そのコンストラクター、given、拡張メソッドを含む。
++         詳しい説明は `honeycomb` パッケージの下のページにある。
++     entry .empty   属性がない
++     entry .inspectable   属性を `html{class="a", hidden}` として描画する
++     entry .traversable   文書の順序で並んだ組。したがって `attributes.to[List]` に変換は要らない
++     entry .apply   `Attributes(pairs*)` は組から構築し、`attributes(key)` は値または `Unset` である
++         コンストラクターは組の順序を保つ。存在の有無だけを表す属性では、組の値は `Unset` である。
++         参照は、キーがない場合にも、キーがあって値がない場合にも `Unset` を返す。両者は `contains` で区別する。
++     entry .from   `Map[Text, Optional[Text]]` から、マップの反復順序で構築する
++     entry .size   属性の数
++     entry .isEmpty   属性が一つもないかどうか
++     entry .nonEmpty   属性が少なくとも一つあるかどうか
++     entry .nil   属性が一つもないかどうか
++     entry .contains   キーがあるかどうか。値の有無は問わない
++     entry .keys   文書の順序で並んだキーの `Iterator`
++     entry .iterator   文書の順序で並んだ `(key, value)` の組の `Iterator`
++     entry .toMap   属性を `Map[Text, Optional[Text]]` として返す。このマップは文書の順序で反復する
++     entry .each   `(key, value)` の各組に、順に処理を適用する
++     entry .removed   あるキーを除いた属性。キーがなければ同じ値である
++     entry .-   `attributes - key`。`removed` と同じである
++     entry .--   複数のキーをそれぞれ除いた属性
++     entry .updated   あるキーに値を設定した属性。キーがあればその場で置き換え、なければ末尾に追加する
++         値は `Optional` である。`updated(t"disabled", Unset)` は存在の有無だけを表す属性を設定する。
++     entry .++   属性を、別の `Attributes` または `Map` とマージしたもの。右側が優先する
++         左側のキーは位置を保ち、両方にあるキーには右側の値が入る。右側の新しいキーは、右側の順序でその後に続く。
++     entry .equalsAttributes   二つの属性の集合が、順序を問わず同じ組をもつかどうか
++     entry .hashAttributes   順序に依存しないハッシュ。`equalsAttributes` と整合する
++     entry .showAttributes   デバッグ用の描画 `Attributes(class -> a, hidden -> Unset)` を `String` として返す
+
+@ 0 1 0 0bbec27a998c5b6015d1ba3f5aec7fcc
++ entry .Whatwg   WHATWG HTML Living Standard。そのタグを `Dom` の値として、その属性を given としてもつ
+
+% 1 1 0 18d79f960fe20630017f5754529234ea
+
+@ 0 10 0 1b5a62f1eb5a2cbd13f8fb0dc9d4c24b
++       `Whatwg` は、ほかのものが選ばれない限り honeycomb が使う HTML の記述である。
++       これは名前を共有する二つのものからなる。
++       **オブジェクト**は属性の語彙である。属性が取りうる値の種類ごとに一つのマーカー型（`Url`、`PositiveInt`、`Presence`、`CssClassList`、…）をもち、仕様のすべての属性について一つずつ `Attribute` の given をもつ。各 given は、その名前、それが有効な要素、その値のマーカーによって型付けされている（`"src" is Attribute on "img" | "video" | … of Url in Whatwg`）。
++       **クラス**は `Dom` である。すべてのタグに対する `val`（`Div`、`P`、`Img`、`Table`、…）、型エイリアスとしてのコンテンツカテゴリ（`#Flow`、`#Phrasing`、`#Metadata`、…）、`<!doctype html>` の doctype、名前付き文字参照、そしてパーサーとシリアライザーが読む `#elements` と `#attributes` の表をもつ。
+
+@ 0 2 0 01def9cc86205dd710cbac58975c1ae5
++       プログラムは `Whatwg` のインスタンスを `Dom` の given `htmlDoms.whatwg` として受け取り、そこからタグをインポートする。
+
+% 2 1 0 059fe932cf14e767062a957a32b3bcd6
+
+% 3 1 0 1de4609bf72672de1501dd2154f10597
+
+% 4 1 0 0f696be6326f35480f74f25933c6666d
+
+% 5 1 0 17a74c765335123d08900eff0e84fcef
+
+% 6 1 0 01f7d8e461603ad51dea3ac602f5cc21
+
+% 0 1 0 19d50a72b60ca9cd01dcc4ab794a0851
+
+% 0 1 0 1b16c169250d966c043b96e39f9298a1
+
+% 1 1 0 0ecef46303c4c5ab0eee4e1ce594f3dd
+
+@ 0 10 0 1c5990e0ed6d8207166c4da9dbe8d089
++       すべてのタグは `Tag` であり、その型は、タグの名前、何を含められるか、この方言に属することを記録する。
++       `Div` は `Tag.Container of "div" over Flow in Whatwg`、`Br` は `Tag.Void of "br" in Whatwg`、`A` は `Tag.Transparent of "a" over "" in Whatwg` である。
++       属性の given はコンパニオンにあるので、インポートしなくても暗黙のスコープに入っている。
++       `Img(src = …)` は `"src" is Attribute on (? >: "img") in Whatwg` を見つけ、その `Topic`（`Url`）を読み、与えられた値に対する `value is Attributive to Url` を召喚する。
++       そのため、`attributives.textAttributive` をインポートしない限り `src` に `Text` は拒否され、`Img(width = 1.5)` はコンパイルできない。
++       要素で有効でない属性（`P(src = …)`）はコンパイルエラー _the attribute `src` cannot be used on the element `<p>`_ になる。
+
+@ 0 4 0 151d2a1f2dd4f09a1b8209fa9c4eb11b
++       仕様が一つの属性名に要素ごとに異なる意味を与えている場合、意味ごとに given が一つあり、数字の接尾辞で区別される（`.href`、`.href2`、`.href3`。`.type` から `.type6`。`.value` から `.value5`）。
++       解決は属性名と要素によって行われるので、接尾辞は名前にすぎない。
+
+% 2 1 0 1276badfb543f6380619ba7e99a2674e
+
+% 3 1 0 080e58e2a50262f91803f7eb4c1a0eaf
+
+@ 0 1 0 0517794b901720360cc109d101e4f803
++         label 表のヘッダー
+
+% 1 1 0 10489bec6f58202b0879ba8ceaa431fd
+
+% 2 1 0 0edc9a3989a09e74118c17a90066d956
+
+% 3 1 0 1726f0159bcf28c5171a7224af1b32a3
+
+% 4 1 0 1394d97c681b409102d979bdfa01d3c2
+
+% 5 1 0 003a3f8835fd559e1612b6573d1a5fc4
+
+% 0 1 0 1f92a6b298d0045207920b423c578d97
+
+% 0 1 0 044f82845909be37050528e8074b916e
+
+% 1 1 0 0a15d3d69b700e340cdb6d8de708cd83
+
+@ 0 1 0 00e1b0669a82b0ee1aa2af285ced6005
++         label データから組み立てたボディ
+
+% 1 1 0 0779cab01a7151c916fe0cbe6d03a7c3
+
+% 0 1 0 044d64ccc28f6ee01d3cc54cf9cafcba
+
+% 0 1 0 0c0209f7a079b4fb1811598e907549ec
+
+% 0 1 0 0cbb400388bbc603082568c93debba14
+
+% 1 1 0 101cd3fbae0ff4d61e75cfc423338f96
+
+@ 0 1 0 154edd757e0a9693136771caada4ce4a
++         label キャプションとクラス
+
+% 1 1 0 0027759a7057e5c50f69cf0b3604a609
+
+% 0 1 0 1ee50e9ba63c892c12c457168298fde2
+
+% 0 1 0 1ac369b44870e5e81c7f159b58fef6ac
+
+% 0 1 0 003aea746dd1868b1f1cf95e2083fbcc
+
+% 1 1 0 12048ac452ceaf1318e3e44fc1116a6f
+
+% 2 1 0 0746446badafd01007f89e8a10626075
+
+@ 0 7 0 0552b64d26564fcd005fb03b88343662
++       仕様のすべての規則が型になっているわけではない。
++       規則が入れ子以上のものに依存する場合（子が `src` に依存する `<audio>` や、インタラクティブコンテンツを含められない `<button>`）、型は寛容な側に合わせてある。したがって、仕様が許す構築が拒否されることはない。
++       語彙は現行の Living Standard に従うので、`<search>`、`<selectedcontent>`、`commandfor`、`closedby`、`popover`、`headingoffset` をもち、HTML 4 で非推奨になったものはすべて省いている。それらは `Html4Transitional` の方言がもつ。
+
+% 1 1 0 1f6a33fc993901231f80596ce1bc00e7
+
+% 2 1 0 045dd5213166d2af1a87e9b1afb49e94
+
+% 1 1 0 0bd99c014bbe143b0ca7c1ced443f436
+
+% 1 1 0 1aa26eac027020a11f8897b723451f02
+
+% 1 1 0 063478350bb281e2123fc63dee817a18
+
+@ 0 12 0 1628202ad637c7371b2e4dab0279d158
++   entry .Attribute   `honeycomb.Attribute in Whatwg`。この方言の属性
++       コンパニオンのすべての given の型付けに使われるエイリアスである。したがって属性の given は `"alt" is Attribute on "img" of Textual` と読め、`Form` が `Whatwg` である `honeycomb.Attribute` になる。
++       `Html4Transitional` の方言の属性は別の型なので、二つの語彙が混ざることはない。
++   entry .attribute   名指した要素で有効な属性の given を作る
++       `attribute["src", "img" | "video", Url]()` は `"src" is Attribute on "img" | "video" of Url in Whatwg` を構築する。名前は一つ目の型引数から、要素の集合は二つ目の型引数（文字列リテラルのユニオンで、`Set[Text]` に具象化される）から、値のマーカーは三つ目から取る。
++       コンパニオン自身の given はすべてこの方法で作られている。語彙を拡張するプログラムは、データ属性やカスタム要素の属性について、これを使って独自の given を定義する。
+
+% 2 1 0 0987766037bb75c900d4a33fe42a900d
+
+% 3 1 0 1037dd6bc49cb6011cfe0c7ac1e50919
+
+% 0 1 0 10cad747b7d0fe621b136955dea44d30
+
+% 0 1 0 06e3aa52d20a2a6a1c71d7515cac5dad
+
+% 1 1 0 1704d3fb40754fb512fc46f2aa058db8
+
+@ 0 335 0 00ad40fc53a541b41e893fed8884b9d2
++   entry .globalAttribute   すべての要素で有効な属性の given を作る
++       `globalAttribute["title", Textual]()` は、要素の集合をもたず `global` が真である `"title" is Attribute of Textual in Whatwg` を構築する。したがって、これはすべての要素を `targets` する。
++       仕様のグローバル属性（`id`、`class`、`style`、`title`、`lang`、`dir`、`hidden`、`tabindex`、`accesskey` など）は、すべてこれで定義されている。
++   entry .AccessKeys   `accesskey` の値のマーカー。キーラベルの順序付き集合
++   entry .Affirmation   `translate` の値のマーカー。`yes` または `no`
++   entry .Autocapitalization   `autocapitalize` の値のマーカー。`off`、`none`、`on`、`sentences`、`words`、`characters` のいずれか
++   entry .ButtonType   `<button>` の `type` の値のマーカー。`submit`、`reset`、`button` のいずれか
++   entry .Closedby   `<dialog>` の `closedby` の値のマーカー。`any`、`closerequest`、`none` のいずれか
++   entry .Color   `<link color>` が取る、CSS の色の値のマーカー
++   entry .Colorspace   `<input type="color">` の `colorspace` の値のマーカー
++   entry .Command   `<button>` の `command` の値のマーカー。組み込みのコマンド名か、独自の `--name`
++   entry .ContentEditable   `contenteditable` の値のマーカー。`true`、`false`、`plaintext-only`、空のいずれか
++   entry .Coords   `<area>` の `coords` の値のマーカー。カンマ区切りの数のリスト
++   entry .Crossorigin   `crossorigin` の値のマーカー。`anonymous` または `use-credentials`
++       これはマーカーにすぎない。`honeycomb.Crossorigin` の enum が二つの値をもつが、独自の `Attributive` をもたないので、`attributives.textAttributive` をスコープに入れて `.show` として渡す。
++   entry .CustomElementName   `is` の値のマーカー。ハイフンを含むカスタム要素名
++   entry .Css   `style` の値のマーカー。インラインの CSS 宣言
++       `Attributive.style` が `Text` を受け付ける。
++   entry .CssClassList   `class` の値のマーカー。空白区切りの CSS クラス名
++       `Name[CssClass]`、`List[Name[CssClass]]`、`ClassList` を受け付ける（`Attributive.cssClass`、`.cssClassList`、`.classList`）。空のリストでは属性そのものが省かれる。
++   entry .Datetime   `<del>` または `<ins>` の `datetime` の値のマーカー。日付、または日付と時刻
++   entry .Decimal   浮動小数点数の属性の値のマーカー。`step`、`min`、`max`、`<meter>` の `value`、`high`、`low`、`optimum`
++       `Attributive.double` が `Double` を受け付ける。
++   entry .Decoding   `<img>` の `decoding` の値のマーカー。`sync`、`async`、`auto` のいずれか
++   entry .Dir   `dir` の値のマーカー。`ltr`、`rtl`、`auto` のいずれか
++       `HDir` はその値の enum であり、独自の `Attributive` をもつ。したがって `Body(dir = HDir.Rtl)` は、ほかに何もインポートせずにコンパイルできる。
++   entry .Enctype   `enctype` と `formenctype` の値のマーカー。フォームのエンコーディングの MIME タイプ
++   entry .EnterKeyHint   `enterkeyhint` の値のマーカー。`enter`、`done`、`go`、`next`、`previous`、`search`、`send` のいずれか
++   entry .FetchPriority   `fetchpriority` の値のマーカー。`high`、`low`、`auto` のいずれか
++   entry .HashName   `usemap` の値のマーカー。`<map>` の名前への、`#` を前に付けた参照
++   entry .Hidden   `hidden` の値のマーカー。存在するか、`until-found`
++   entry .HttpEquiv   `<meta>` の `http-equiv` の値のマーカー。プラグマ指令の名前
++       `honeycomb.HttpEquiv` の enum が四つの指令をもち、`.show` として渡す。
++   entry .Id   `id` の値のマーカー。一つの要素を id で名指す属性の値のマーカーでもある
++       `for`、`form`、`list`、`commandfor`、`popovertarget` は、どれも `Id` を取る。
++       `Attributive.domId` が `Name[DomId]` を受け付ける。
++   entry .Ids   空白区切りの id のリストの値のマーカー。`headers`、`itemref`、`<output>` の `for`
++       `Attributive.domIds` が `List[Name[DomId]]` を受け付け、リストが空なら属性を省く。
++   entry .ImageSizes   `<link>` の `imagesizes` の値のマーカー。プリロードする画像のソースサイズのリスト
++   entry .ImageSrcSet   `<link>` の `imagesrcset` の値のマーカー。プリロードする画像の srcset
++   entry .InputMode   `inputmode` の値のマーカー。`none`、`text`、`tel`、`url`、`email`、`numeric`、`decimal`、`search` のいずれか
++   entry .InputType   `<input>` の `type` の値のマーカー
++       `#Input` オブジェクトが各タイプをプリセットのタグ（`Input.Email`、`Input.Checkbox`、…）として提供するので、この属性を直接書くことはまれである。
++   entry .InputValue   `<input>` の `value` の値のマーカー。その形は入力のタイプによって決まる
++   entry .Integral   符号付き整数の属性の値のマーカー。`tabindex`、`start`、`<li>` の `value`
++       `Attributive.int` が `Int` を受け付ける。
++   entry .ItemProp   `itemprop` の値のマーカー。マイクロデータのプロパティ名
++   entry .Kind   `<track>` の `kind` の値のマーカー。`subtitles`、`captions`、`descriptions`、`chapters`、`metadata` のいずれか
++       `#Track` オブジェクトが各種類をプリセットのタグとして提供する。値は `honeycomb.Kind` の enum がもつ。
++   entry .Language   `lang`、`hreflang`、`srclang` の値のマーカー。BCP 47 の言語タグ
++   entry .Laziness   `loading` の値のマーカー。`lazy` または `eager`
++   entry .MediaQueryList   `media` の値のマーカー。CSS のメディアクエリのリスト
++   entry .Method   `method` と `formmethod` の値のマーカー。`get`、`post`、`dialog` のいずれか
++       `honeycomb.Method` の enum が三つの値をもち、`.show` として渡す。
++   entry .Minmax   `<input>` の `min` と `max` の値のマーカー。その形は入力のタイプによって決まる
++   entry .MimeList   `accept` の値のマーカー。MIME タイプと拡張子のカンマ区切りのリスト
++   entry .Mime   単一の MIME タイプの値のマーカー。`<a>`、`<link>`、`<embed>`、`<object>`、`<source>` の `type`
++   entry .Name   `name` の値のマーカー。フォームコントロール、フォーム、マップ、メタ、スロットの名前
++   entry .OlType   `<ol>` の `type` の値のマーカー。`1`、`a`、`A`、`i`、`I` のいずれか
++   entry .Openness   `<template>` の `shadowrootmode` の値のマーカー。`open` または `closed`
++   entry .PermissionsPolicy   `<iframe>` の `allow` の値のマーカー。パーミッションポリシー
++   entry .Popover   `popover` の値のマーカー。`auto`、`manual`、`hint` のいずれか
++   entry .PopoverAction   `popovertargetaction` の値のマーカー。`toggle`、`show`、`hide` のいずれか
++   entry .PositiveInt   非負整数の属性の値のマーカー。`width`、`height`、`rows`、`cols`、`colspan`、`span`、`size`、…
++       `Attributive.posInt` が `Int` を受け付ける。値の符号は検査されない。
++   entry .Presence   真偽値属性の値のマーカー。値をもたず、存在するか存在しないかだけを表す
++       `disabled`、`checked`、`hidden` の素の形、`required`、`autofocus`、`controls`、`open`、そして存在すること自体が意味であるほかのすべての属性である。
++       `Attributive.boolean` が `Boolean` を受け付け、`true` は属性名だけを書き（`<input disabled>`）、`false` は属性を省く。
++   entry .Preload   `preload` の値のマーカー。`none`、`metadata`、`auto` のいずれか
++       `honeycomb.Preload` の enum が値をもち、`.show` として渡す。
++   entry .ReferrerPolicy   `referrerpolicy` の値のマーカー。リファラーポリシーの名前
++   entry .Regex   `<input>` の `pattern` の値のマーカー。JavaScript の正規表現
++   entry .Sandbox   `<iframe>` の `sandbox` の値のマーカー。空白区切りの `allow-…` トークン
++       `honeycomb.Sandbox` の enum がトークンをもち、`.show` として渡す。
++   entry .ScriptType   `<script>` の `type` の値のマーカー。`module`、`importmap`、MIME タイプ、データブロックのタイプのいずれか
++   entry .Scripting   イベントハンドラ属性の値のマーカー。テキストではなくスクリプトを取る
++       これに対する `Text` の `Attributive` は、意図して存在しない。ハンドラは、querencia の外部 DOM 式のような、型付けされたスクリプトの値として与え、そのスクリプトライブラリが `Attributive to Whatwg.Scripting` を提供する。
++       WHATWG の語彙自体は `on…` 属性の given を宣言しない。`Html4Transitional` は宣言する。
++   entry .Shape   `<area>` の `shape` の値のマーカー。`circle`、`default`、`poly`、`rect` のいずれか
++   entry .Sizes   `<link rel="icon">` の `sizes` の値のマーカー。`any` または `WxH` のトークン
++   entry .Softness   `<textarea>` の `wrap` の値のマーカー。`soft` または `hard`
++       `honeycomb.Wrap` の enum が二つの値をもち、`.show` として渡す。
++   entry .SourceSizeList   `<img>` または `<source>` の `sizes` の値のマーカー
++   entry .Srcdoc   `<iframe>` の `srcdoc` の値のマーカー。テキストとしての HTML 文書全体
++   entry .SrcSet   `srcset` の値のマーカー。記述子を伴う画像ソースの候補
++   entry .Switch   `autocomplete` の値のマーカー。`on` または `off`
++       `Attributive.switch` が `Boolean` を受け付け、`on` または `off` として書く。
++       `honeycomb.Autocomplete` の enum も同じ二つの値をもつ。
++   entry .Target   `target` と `formtarget` の値のマーカー。ブラウジングコンテキストの名前またはキーワード
++       `honeycomb.Target` の enum が `_self`、`_blank`、`_parent`、`_top` と名前付きのコンテキストをもち、`.show` として渡す。
++   entry .Temporal   `<time>` の `datetime` の値のマーカー。仕様が定める日付、時刻、期間のどの形でもよい
++   entry .Textual   任意のテキストを取る属性の値のマーカー
++       `alt`、`title`、`placeholder`、`content`、`label`、`slot`、`nonce`、`integrity` などである。
++       `Attributive.textTextual` と `.stringTextual` が、インポートなしで `Text` または `String` を受け付ける。選択の given `attributives.textAttributive` は、同じ受け付けをほかのすべてのマーカーに広げる。
++   entry .ThScope   `<th>` の `scope` の値のマーカー。`row`、`col`、`rowgroup`、`colgroup` のいずれか
++   entry .Tokens   空白区切りのトークンリストの値のマーカー。`rel`、`blocking`
++       `honeycomb.Rel` の enum がリンクタイプをもち、`.show` として渡す。
++   entry .Truth   `true` または `false` と書く属性の値のマーカー。`draggable`、`spellcheck`、`writingsuggestions`
++       `Attributive.truth` が `Boolean` を受け付け、単語 `true` または `false` として書く。書くか省くかで表す `Presence` の属性とは異なる。
++   entry .Upto8   `headingoffset` の値のマーカー。0 から 8 までの整数
++   entry .Url   URL を値とする属性の値のマーカー。`href`、`src`、`action`、`cite`、`poster`、`data`、`itemid`、…
++       `Attributive.url` は `Abstractable across Urls to Text` であるどんな値（`HttpUrl` や任意の型付き URL）も受け付け、`attributives.textAttributive` がスコープ内にあれば `Text` も受け付ける。
++   entry .Urls   空白区切りの URL のリストの値のマーカー。`ping`、`itemtype`
++   entry .Utf8   `charset` と `accept-charset` の値のマーカー。有効な値は `utf-8` だけである
++   entry .abbr   `<th>` の `abbr`。省略したヘッダー。`Textual` として
++   entry .accept   `<input>` の `accept`。受け付けるファイルの種類。`MimeList` として
++   entry .acceptCharset   `<form>` の、フォームが受け付けるエンコーディング。`Utf8` として
++       この given は、仕様の `accept-charset` ではなく `acceptCharset` という名前で登録されている。したがって `Form(acceptCharset = …)` と書くが、パーサーが目にする必要があるのは `accept-charset` である。HTML 4 の方言は正しく綴る。
++   entry .accesskey   すべての要素の `accesskey`。キーボードショートカットのラベル。`AccessKeys` として
++   entry .action   `<form>` の `action`。フォームの送信先の URL。`Url` として
++   entry .allow   `<iframe>` の `allow`。フレームのパーミッションポリシー。`PermissionsPolicy` として
++   entry .allowfullscreen   `<iframe>` の `allowfullscreen`。`Presence`
++   entry .alpha   `<input>` の `alpha`。色の入力がアルファチャンネルをもつかどうか。`Presence` として
++   entry .alt   `<area>`、`<img>`、`<input>` の `alt`。代替テキスト。`Textual` として
++   entry .as   `<link>` の `as`。プリロードの宛先の種類。`Textual` として
++   entry .async   `<script>` の `async`。`Presence`
++   entry .autocapitalize   すべての要素の `autocapitalize`。`Autocapitalization` として
++   entry .autocomplete   `<form>` の `autocomplete`。`on` または `off`。`Switch` として
++   entry .autocomplete2   `<input>`、`<select>`、`<textarea>` の `autocomplete`。`Switch` として
++   entry .autocorrect   すべての要素の `autocorrect`。`Textual` として
++   entry .autofocus   すべての要素の `autofocus`。`Presence`
++   entry .autoplay   `<audio>` と `<video>` の `autoplay`。`Presence`
++   entry .blocking   `<link>`、`<script>`、`<style>` の `blocking`。描画をブロックするトークン。`Tokens` として
++   entry .charset   `<meta>` の `charset`。文書のエンコーディング。`Utf8` として
++   entry .checked   `<input>` の `checked`。`Presence`
++   entry .cite   `<blockquote>`、`<del>`、`<ins>`、`<q>` の `cite`。出典の URL。`Url` として
++   entry .class   すべての要素の `class`。CSS クラス名。`CssClassList` として
++       `class` はキーワードなので `` `class` = … `` と書く。通常の書き方は `Tag.name(children)` の形（`Div.panel(…)`）であり、スコープ内の `Attribution` がこれを許す。
++   entry .closedby   `<dialog>` の `closedby`。`Closedby` として
++   entry .color   `<link>` の `color`。マスクアイコンの色。`Color` として
++   entry .colorspace   `<input>` の `colorspace`。`Colorspace` として
++   entry .cols   `<textarea>` の `cols`。文字数で表す表示幅。`PositiveInt` として
++   entry .colspan   `<td>` と `<th>` の `colspan`。`PositiveInt` として
++   entry .command   `<button>` の `command`。呼び出すコマンド。`Command` として
++   entry .commandfor   `<button>` の `commandfor`。対象の要素の id。`Id` として
++   entry .content   `<meta>` の `content`。メタデータの値。`Textual` として
++   entry .contenteditable   すべての要素の `contenteditable`。`ContentEditable` として
++   entry .controls   `<audio>` と `<video>` の `controls`。`Presence`
++   entry .coords   `<area>` の `coords`。`Coords` として
++   entry .crossorigin   `<audio>`、`<img>`、`<link>`、`<script>`、`<video>` の `crossorigin`。`Crossorigin` として
++   entry .data   `<object>` の `data`。リソースの URL。`Url` として
++   entry .datetime   `<del>` と `<ins>` の `datetime`。変更が行われた日時。`Datetime` として
++   entry .datetime2   `<time>` の `datetime`。機械可読な形。`Temporal` として
++   entry .decoding   `<img>` の `decoding`。`Decoding` として
++   entry .default   `<track>` の `default`。`Presence`
++   entry .defer   `<script>` の `defer`。`Presence`
++   entry .dir   すべての要素の `dir`。テキストの方向。`Dir` として
++       `Body(dir = HDir.Rtl)` は、`HDir.attributive` によって、インポートなしでコンパイルできる。
++   entry .dirname   `<input>` と `<textarea>` の `dirname`。方向を送るフィールドの名前。`Textual` として
++   entry .disabled   `<button>`、`<input>`、`<optgroup>`、`<option>`、`<select>`、`<textarea>` の `disabled`。`Presence`
++   entry .disabled2   `<fieldset>` の `disabled`。`Presence`
++   entry .disabled3   `<link>` の `disabled`。`Presence`
++   entry .download4   `<a>` と `<area>` の `download`。推奨するファイル名。`Textual` として
++   entry .draggable   すべての要素の `draggable`。`true` または `false`。`Truth` として
++   entry .enctype   `<form>` の `enctype`。`Enctype` として
++   entry .enterkeyhint   すべての要素の `enterkeyhint`。`EnterKeyHint` として
++   entry .fetchpriority   `<img>`、`<link>`、`<script>` の `fetchpriority`。`FetchPriority` として
++   entry .for   `<label>` の `for`。ラベルが付くコントロールの id。`Id` として
++       `for` はキーワードなので `` `for` = … `` と書く。
++   entry .for2   `<output>` の `for`。計算に寄与するコントロールの id。`Ids` として
++   entry .form   フォームコントロールの `form`。それが属するフォームの id。`Id` として
++       `<button>`、`<fieldset>`、`<input>`、`<object>`、`<output>`、`<select>`、`<textarea>` にある。
++   entry .formaction   `<input>` と `<button>` の `formaction`。`Url` として
++   entry .formenctype   `<input>` と `<button>` の `formenctype`。`Enctype` として
++   entry .formmethod   `<input>` と `<button>` の `formmethod`。`Method` として
++   entry .formnovalidate   `<input>` と `<button>` の `formnovalidate`。`Presence`
++   entry .formtarget   `<input>` と `<button>` の `formtarget`。`Target` として
++   entry .headers   `<td>` と `<th>` の `headers`。そのセルのヘッダーセルの id。`Ids` として
++   entry .headingoffset   すべての要素の `headingoffset`。0 から 8。`Upto8` として
++   entry .headingreset   すべての要素の `headingreset`。`Presence` として
++       この given は `headingreset` ではなく `headingoffset` という属性名で登録されている。したがって `headingreset = true` は属性名だけの `headingoffset` を書く。
++   entry .height   `<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<object>`、`<video>`、`<svg>` の `height`。`PositiveInt` として
++   entry .hidden   すべての要素の `hidden`。存在するか、`until-found`。`Hidden` として
++       マーカーは `Presence` ではなく `Hidden` なので、`hidden = true` には `Boolean` から `Hidden` への given が必要だが、ライブラリはそれを提供しない。`attributives.textAttributive` がスコープ内にあれば、`hidden = t""` が属性名だけを書く。
++   entry .high   `<meter>` の `high`。`Decimal` として
++   entry .href   `<a>` と `<area>` の `href`。リンク先。`Url` として
++   entry .href2   `<base>` の `href`。文書のベース URL。`Url` として
++   entry .href3   `<link>` の `href`。リンクされるリソース。`Url` として
++   entry .hreflang   `<a>` と `<link>` の `hreflang`。`Language` として
++   entry .httpEquiv   `<meta>` の `http-equiv`。プラグマ指令。`HttpEquiv` として
++       `httpEquiv = …` と書く。属性は `http-equiv` としてシリアライズされる。
++   entry .id   すべての要素の `id`。`Id` として
++       `Attributive.domId` によって `Name[DomId]` を取り、`attributives.textAttributive` があれば `Text` を取る。
++   entry .imagesizes   `<link>` の `imagesizes`。`ImageSizes` として
++   entry .imagesrcset   `<link>` の `imagesrcset`。`ImageSrcSet` として
++   entry .inert   すべての要素の `inert`。`Presence`
++   entry .inputmode   すべての要素の `inputmode`。`InputMode` として
++   entry .integrity   `<link>` と `<script>` の `integrity`。サブリソース完全性のハッシュ。`Textual` として
++   entry .is   すべての要素の `is`。カスタム要素名。`CustomElementName` として
++   entry .ismap   `<img>` の `ismap`。`Presence`
++   entry .itemid   すべての要素の `itemid`。マイクロデータのアイテムの大域的な識別子。`Url` として
++   entry .itemprop   すべての要素の `itemprop`。`ItemProp` として
++   entry .itemref   すべての要素の `itemref`。`Ids` として
++   entry .itemscope   すべての要素の `itemscope`。`Presence`
++   entry .itemtype   すべての要素の `itemtype`。`Urls` として
++   entry .kind   `<track>` の `kind`。`Kind` として
++   entry .label   `<optgroup>`、`<option>`、`<track>` の `label`。ユーザーに見えるラベル。`Textual` として
++       `label` という名前の given はほかの Soundness ライブラリもエクスポートしている。そのため `soundness` アンブレラでは、素の参照があいまいになる場所で、この名前に `Whatwg.label` を通して到達する。属性の解決そのものがこの名前を必要とすることはない。
++   entry .lang   すべての要素の `lang`。`Language` として
++   entry .list   `<input>` の `list`。`<datalist>` の id。`Id` として
++   entry .loading   `<img>` と `<iframe>` の `loading`。`lazy` または `eager`。`Laziness` として
++   entry .loop   `<audio>` と `<video>` の `loop`。`Presence`
++   entry .low   `<meter>` の `low`。`Decimal` として
++   entry .max   `<input>` の `max`。`Minmax` として
++   entry .max2   `<meter>` と `<progress>` の `max`。`Decimal` として
++   entry .maxlength   `<input>` と `<textarea>` の `maxlength`。`PositiveInt` として
++   entry .media   `<a>`、`<area>`、`<link>`、`<source>`、`<style>` の `media`。`MediaQueryList` として
++   entry .method   `<form>` の `method`。`get`、`post`、`dialog` のいずれか。`Method` として
++   entry .min   `<input>` の `min`。`Minmax` として
++   entry .min2   `<meter>` の `min`。`Decimal` として
++   entry .minlength   `<input>` と `<textarea>` の `minlength`。`PositiveInt` として
++   entry .multiple   `<input>` と `<select>` の `multiple`。`Presence`
++   entry .muted   `<audio>` と `<video>` の `muted`。`Presence`
++   entry .name   `<button>`、`<fieldset>`、`<input>`、`<output>`、`<select>`、`<textarea>` の `name`。`Name` として
++   entry .name2   `<details>` の `name`。排他的なアコーディオンのグループ。`Name` として
++   entry .name3   `<form>` の `name`。`Name` として
++   entry .name4   `<iframe>` と `<object>` の `name`。ブラウジングコンテキストの名前。`Target` として
++   entry .name5   `<map>` の `name`。`Name` として
++   entry .name6   `<meta>` の `name`。メタデータの名前。`Name` として
++       `#Meta` オブジェクトが標準の名前をプリセットのタグ（`Meta.Viewport`、`Meta.Description`、…）として提供する。
++   entry .name7   `<slot>` の `name`。`Name` として
++   entry .nomodule   `<script>` の `nomodule`。`Presence`
++   entry .nonce   すべての要素の `nonce`。暗号学的なノンス。`Textual` として
++   entry .novalidate   `<form>` の `novalidate`。`Presence`
++   entry .open   `<details>` と `<dialog>` の `open`。`Presence`
++   entry .optimum   `<meter>` の `optimum`。`Decimal` として
++   entry .pattern   `<input>` の `pattern`。`Regex` として
++   entry .ping   `<a>` と `<area>` の `ping`。通知先の URL。`Urls` として
++   entry .placeholder   `<input>` と `<textarea>` の `placeholder`。`Textual` として
++   entry .playsinline   `<video>` の `playsinline`。`Presence`
++   entry .popover   すべての要素の `popover`。`Popover` として
++   entry .popovertarget   `<button>` と `<input>` の `popovertarget`。ポップオーバーの id。`Id` として
++   entry .pta   `<button>` と `<input>` の `popovertargetaction`。`PopoverAction` として
++   entry .poster   `<video>` の `poster`。プレースホルダーの画像。`Url` として
++   entry .preload   `<audio>` と `<video>` の `preload`。`Preload` として
++   entry .readonly   `<input>` と `<textarea>` の `readonly`。`Presence`
++   entry .referrerpolicy   `<a>`、`<area>`、`<iframe>`、`<img>`、`<link>`、`<script>` の `referrerpolicy`。`ReferrerPolicy` として
++   entry .rel   `<a>` と `<area>` の `rel`。リンクタイプ。`Tokens` として
++   entry .rel2   `<link>` の `rel`。リンクタイプ。`Tokens` として
++       `#Link` オブジェクトが各リンクタイプをプリセットのタグ（`Link.Stylesheet`、`Link.Icon`、…）として提供する。
++   entry .required   `<input>`、`<select>`、`<textarea>` の `required`。`Presence`
++   entry .reversed   `<ol>` の `reversed`。`Presence`
++   entry .rows   `<textarea>` の `rows`。`PositiveInt` として
++   entry .rowspan   `<td>` と `<th>` の `rowspan`。`PositiveInt` として
++   entry .sandbox   `<iframe>` の `sandbox`。`Sandbox` として
++   entry .scope   `<th>` の `scope`。`ThScope` として
++   entry .selected   `<option>` の `selected`。`Presence`
++   entry .shadowrootclonable   `<template>` の `shadowrootclonable`。`Presence`
++   entry .srcer   `<template>` の `shadowrootcustomelementregistry`。`Presence`
++   entry .srdf   `<template>` の `shadowrootdelegatesfocus`。`Presence`
++   entry .shadowrootmode   `<template>` の `shadowrootmode`。`open` または `closed`。`Openness` として
++   entry .shadowrootserializable   `<template>` の `shadowrootserializable`。`Presence`
++   entry .shape   `<area>` の `shape`。`Shape` として
++   entry .size   `<input>` と `<select>` の `size`。`PositiveInt` として
++   entry .sizes   `<img>` と `<source>` の `sizes`。`SourceSizeList` として
++   entry .sizes2   `<link>` の `sizes`。アイコンのサイズ。`Sizes` として
++   entry .slot   すべての要素の `slot`。シャドウツリーのスロット名。`Textual` として
++   entry .span   `<col>` と `<colgroup>` の `span`。`PositiveInt` として
++   entry .spellcheck   すべての要素の `spellcheck`。`true` または `false`。`Truth` として
++   entry .src   `<audio>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<script>`、`<source>`、`<track>`、`<video>` の `src`。`Url` として
++   entry .srcdoc   `<iframe>` の `srcdoc`。インラインの文書。`Srcdoc` として
++   entry .srclang   `<track>` の `srclang`。`Language` として
++   entry .srcset   `<img>` と `<source>` の `srcset`。`SrcSet` として
++   entry .start   `<ol>` の `start`。最初の項目の番号。`Integral` として
++   entry .step   `<input>` の `step`。`Decimal` として
++   entry .style   すべての要素の `style`。インラインの CSS。`Css` として
++   entry .tabindex   すべての要素の `tabindex`。`Integral` として
++   entry .target   `<a>` と `<area>` の `target`。`Target` として
++   entry .target2   `<base>` の `target`。デフォルトのブラウジングコンテキスト。`Target` として
++   entry .target3   `<form>` の `target`。`Target` として
++   entry .title   すべての要素の `title`。補足のテキスト。`Textual` として
++   entry .translate   すべての要素の `translate`。`yes` または `no`。`Affirmation` として
++   entry .type   `<a>` と `<link>` の `type`。リンクされるリソースの MIME タイプ。`Mime` として
++       `type` はキーワードなので `` `type` = … `` と書く。
++   entry .type2   `<button>` の `type`。`submit`、`reset`、`button` のいずれか。`ButtonType` として
++   entry .type3   `<embed>`、`<object>`、`<source>` の `type`。`Mime` として
++   entry .type4   `<input>` の `type`。`InputType` として
++       書くことはまれである。`#Input` がタイプごとにプリセットのタグ（`Input.Email`、`Input.Range`、…）をもつ。
++   entry .type5   `<ol>` の `type`。番号付けのスタイル。`OlType` として
++   entry .type6   `<script>` の `type`。`ScriptType` として
++   entry .usemap   `<img>`、`<input>`、`<object>` のイメージマップの参照。`HashName` として
++       この given は仕様の `usemap` ではなく `usemaptype` という属性名で登録されている。したがって、これが書くのは `usemaptype="#map"` である。
++   entry .value   `<button>` と `<option>` の `value`。`Textual` として
++   entry .value2   `<data>` の `value`。機械可読な値。`Textual` として
++   entry .value3   `<input>` の `value`。`InputValue` として
++   entry .value4   `<li>` の `value`。項目の序数。`Integral` として
++   entry .value5   `<meter>` と `<progress>` の `value`。`Decimal` として
++   entry .width   `<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<object>`、`<video>`、`<svg>` の `width`。`PositiveInt` として
++   entry .wrap   `<textarea>` の `wrap`。`soft` または `hard`。`Softness` として
++   entry .writingsuggestions   すべての要素の `writingsuggestions`。`true` または `false`。`Truth` として
++   entry #doctype   この方言の `Document[Html]` がもつ `<!doctype html>` の doctype
++   entry #Interactive   インタラクティブコンテンツのカテゴリ。タグ名のユニオンとして
++       `<a>`、`<audio>`、`<button>`、`<details>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<label>`、`<select>`、`<textarea>`、`<video>` である。
++       カテゴリは型なので、`Html of Interactive` は任意のインタラクティブな要素である。
++   entry #Flow   フローコンテンツのカテゴリ。`<body>`、`<div>`、`<li>` に入れられるすべてのもの
++       すべての見出し、すべてのフレージング要素、セクショニング要素、そしてブロックレベルの要素（`<address>`、`<blockquote>`、`<details>`、`<dialog>`、`<div>`、`<dl>`、`<fieldset>`、`<figure>`、`<footer>`、`<form>`、`<header>`、`<hr>`、`<main>`、`<menu>`、`<ol>`、`<p>`、`<pre>`、`<table>`、`<ul>`、`<search>`）である。
++       `Html of Flow` は、ページの内容の一片としてたいていのコードが求める型であり、複数なら `List[Html of Flow]` である。
+
+% 2 1 0 04b7953a611427c4040c93cc1bdb3146
+
+% 3 1 0 0945bf781a065b6d0cdad50dff0c113c
+
+% 4 1 0 01078cd0509a88b119148cbcf7794646
+
+% 5 1 0 098d3307a51c92320b2d260a437bc83b
+
+% 0 1 0 1467ba45fda629c20c3820eaecacc120
+
+% 1 1 0 19c2f738a66353581c8dc954fb044d35
+
+@ 0 47 0 1c791a1a17af35db0f67b78a0255e0d8
++   entry #Phrasing   フレージングコンテンツのカテゴリ。文書のテキストと、それをマークアップする要素
++       `"#text"` を含むので、テキストはフレージングコンテンツが置ける場所ならどこにでも置ける。インライン要素（`<abbr>`、`<b>`、`<code>`、`<em>`、`<span>`、`<time>`、…）のほかに、埋め込み要素とインタラクティブなフレージング要素をすべて含む。
++       `<p>` や見出しは `over Phrasing` であり、`Renderable in Phrasing` はそのどちらの中にも置ける。
++   entry #Embedded   埋め込みコンテンツのカテゴリ。`<audio>`、`<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<object>`、`<picture>`、`<video>`、`<math>`、`<svg>`
++   entry #Sectioning   セクショニングコンテンツのカテゴリ。`<article>`、`<aside>`、`<nav>`、`<section>`
++   entry #ScriptSupporting   `<script>` と `<template>`。リストや表自身の子が置ける場所ならどこにでも置ける
++   entry #Metadata   メタデータコンテンツのカテゴリ。`<head>` が含められるもの
++       `<base>`、`<link>`、`<meta>`、`<noscript>`、`<script>`、`<style>`、`<template>`、`<title>` である。
++   entry #Heading   `<h1>` から `<h6>` と `<hgroup>`
++   entry #insertable   パーサーが、書かれていなくてもタグとその子の間に挿入できるタグ
++       `insertable(tag)` は、`tag` が受け入れる子のうち `insertable` と印の付いたものの部分集合である。`<html>` の `<head>` と `<body>`、`<table>` の `<tbody>`、`<tbody>` の `<tr>`、`<colgroup>` がそれにあたる。
++       `#infer` が使う。
++   entry #infer   親が直接もてない子と、その親との間に挿入するタグ
++       `infer(parent, child)` は、`child` に到達できる `parent` の挿入可能な子、または `Unset` である。これにより、`<table><tr>` は `<table><tbody><tr>` としてパースされ、文書として読んだ `<p>Hello` には `<html>` と `<body>` が補われる。
++       `Dom` の契約であり、パーサーがこれを呼ぶ。
++   entry #elements   方言のすべてのタグ。名前で引く
++       このインスタンスの `Tag` メンバーから構築した `Dictionary[Tag]` である。パーサーは開始タグをここで引き、`Dom#generic` はそのキーを列挙する。
++   entry #entities   HTML の名前付き文字参照。名前で引く
++       HTML 4 の集合に Living Standard の追加分を加えた、名前から置換テキストへの対応である（`amp` から `&`、`nbsp` からノーブレークスペース、ほか二千以上）。
++       パーサーがこれを読む。未知の参照（`&puck;`）は、テキストに文字どおり残される。
++   entry #attributes   方言のすべての属性。名前で引く
++       コンパニオンの属性の given から構築した `Dictionary[Attribute]` である。一つの名前に対する複数の given（`href`、`href2`、`href3`）は、要素の集合をその和集合とする一つの `Attribute` にマージされる。
++       パーサーはこれを参照して、既知の要素にある未知の属性を拒否する（`Html.Issue.UnknownAttribute`）。
++   entry #Html   ルート要素 `<html>`。`honeycomb.Html` として
++       遅延エイリアスであり、`import htmlDoms.whatwg.*` がほかのタグと並んで `Html` をタグとしてスコープに入れられるようにする。`Html(Head(Title("x")), Body(P("y")))` が文書のツリー全体になる。
++       `Html` オブジェクト自体は `Html` 型のコンパニオンであり、`Tag.Container of "html" over "head" | "body"` である。
++   entry #A   `<a>`。ハイパーリンク。透過的なので、親がもてるものなら何でももてる
++       `Tag.Transparent of "a" over "" in Whatwg` である。
++       `href`、`target`、`download`、`rel`、`hreflang`、`type`、`referrerpolicy`、`ping` を取る。
++       透過的なので、`<p>` の中の `A(…)` はフレージングコンテンツを、`<div>` の中のものはフローコンテンツをもてる。外側の要素がもてない子は、パーサーが拒否する（`Html.Issue.InadmissibleTag`）。
++   entry #Abbr   `<abbr>`。略語。フレージングコンテンツをもつ。`title` が展開形を与える
++   entry #Address   `<address>`。連絡先の情報。見出し、セクショニング、入れ子の address を除いたフローコンテンツをもつ
++   entry #Area   `<area>`。イメージマップの領域。形のプリセットをもつ空要素のタグ
+
+% 1 1 0 03257be7e62db82602eda1b7c6cd497b
+
+@ 0 8 0 08a0aec5f35c9280030f144bc1815de0
++         `Topic` が `"area"` である `Tag.Void` であり、`alt`、`coords`、`shape`、`href`、`target`、`download`、`ping`、`rel`、`referrerpolicy` を取る。
++         四つのメンバーは `shape` 属性をプリセットする。ただし現在のソースではラベル `input` で構築されているので、`Area.Rect` は `<input shape="rect">` としてシリアライズされることに注意する。
++     entry .Default   `shape="default"` の領域。画像全体
++     entry .Rect   `shape="rect"` の領域。`coords` は左、上、右、下
++     entry .Circle   `shape="circle"` の領域。`coords` は中心の x、中心の y、半径
++     entry .Poly   `shape="poly"` の領域。`coords` は頂点の組のリスト
+
+% 0 1 0 1758718c93ca7c19154ca700645739c7
+
+@ 1 1 0 01598a7031213ffa1586ffee2f2a5435
++     entry .Transport   `""`。子をもたない
+
+% 2 1 0 0769f835ed306d0d1fc5dc358e26c18c
+
+@ 0 77 0 1e9bc4d531b4931f0c7cfe82c0a46e1e
++   entry #Article   `<article>`。それだけで完結した構成物。フローコンテンツをもつ
++   entry #Aside   `<aside>`。本筋から外れた内容。フローコンテンツをもつ
++   entry #Audio   `<audio>`。音声。透過的で、加えて `<source>` と `<track>` の子をもつ
++       `src`、`crossorigin`、`preload`、`autoplay`、`loop`、`muted`、`controls` を取る。
++       子が `src` の有無によって決まるという仕様の規則は型になっていないので、どちらの形もコンパイルできる。
++   entry #B   `<b>`。重要性を加えずに注意を引くテキスト。フレージングコンテンツをもつ
++   entry #Base   `<base>`。文書のベース URL とデフォルトのリンク先。空要素で、`<head>` の中に置く
++       `href` と `target` を取る。仕様は少なくとも一つを要求するが、これは強制されない。
++   entry #Bdi   `<bdi>`。双方向の整形から切り離したテキスト。フレージングコンテンツをもつ
++   entry #Bdo   `<bdo>`。方向を明示したテキスト。フレージングコンテンツをもつ。`dir` は必須である
++   entry #Blockquote   `<blockquote>`。引用された節。フローコンテンツをもつ。`cite` が出典を与える
++   entry #Body   `<body>`。文書の内容。フローコンテンツをもつ
++       自動で閉じ、挿入可能である。文書全体として読んだ内容の周りにはパーサーがこれを補い、入力の終わりで閉じる。
++   entry #Br   `<br>`。改行。空要素
++   entry #Button   `<button>`。ボタン。フレージングコンテンツをもつ
++       境界タグである。外で開かれた書式要素が中まで続くことを、パーサーは許さない。
++       `type`、`disabled`、`form`、`formaction`、`formenctype`、`formmethod`、`formnovalidate`、`formtarget`、`name`、`value`、`command`、`commandfor`、`popovertarget`、`popovertargetaction` を取る。
++   entry #Canvas   `<canvas>`。スクリプトで描けるビットマップ。透過的なので、代替コンテンツをもつ
++       `width` と `height` を取る。
++   entry #Caption   `<caption>`。表の題。フローコンテンツをもつ。`<table>` の最初の子
++   entry #Cite   `<cite>`。作品の題。フレージングコンテンツをもつ
++   entry #Code   `<code>`。コンピューターのコードの断片。フレージングコンテンツをもつ
++   entry #Col   `<col>`。表の列。空要素で、`<colgroup>` の中に置く。`span` で複数の列にまたがる
++   entry #Colgroup   `<colgroup>`。列のグループ。`<col>` 要素をもつ
++       子の間には空白しか置けず（`Html.Mode.Whitespace`）、挿入可能なので、`<table>` の中で直接出会った `<col>` にはこれが補われる。
++   entry #Data   `<data>`。機械可読な `value` を伴う内容。フレージングコンテンツをもつ
++   entry #Datalist   `<datalist>`。`<input list=…>` のための定義済みの選択肢。フレージングコンテンツと `<option>` をもつ
++   entry #Dd   `<dd>`。`<dl>` の中の説明。フローコンテンツをもつ。自動で閉じる
++   entry #Del   `<del>`。削除されたテキスト。透過的で、`cite` と `datetime` をもつ
++   entry #Details   `<details>`。開閉ウィジェット。`<summary>` に続いてフローコンテンツをもつ
++       `open` と `name` を取る。後者は、複数の details をまとめて排他的なアコーディオンにする。
++   entry #Dfn   `<dfn>`。用語を定義している箇所。フレージングコンテンツをもつ
++   entry #Dialog   `<dialog>`。ダイアログボックス。フローコンテンツをもつ。`open` と `closedby` を取る
++   entry #Div   `<div>`。汎用のコンテナ。フローコンテンツをもつ
++   entry #Dl   `<dl>`。説明リスト。`<dt>`、`<dd>`、`<div>` のグループをもつ
++       子の間には空白しか置けず、自動で閉じる。
++   entry #Dt   `<dt>`。`<dl>` の中の用語。フローコンテンツをもつ。自動で閉じる
++   entry #Em   `<em>`。強勢の強調。フレージングコンテンツをもつ
++   entry #Embed   `<embed>`。外部のアプリケーションまたはインタラクティブな内容。空要素
++       `src`、`type`、`width`、`height` を取る。
++   entry #Fieldset   `<fieldset>`。フォームコントロールのグループ。省略可能な `<legend>` に続いてフローコンテンツをもつ
++       `disabled`、`form`、`name` を取る。
++   entry #Figcaption   `<figcaption>`。図のキャプション。フローコンテンツをもつ
++   entry #Figure   `<figure>`。省略可能な `<figcaption>` を伴う、それだけで完結した内容。フローコンテンツをもつ
++   entry #Footer   `<footer>`。最も近い祖先のセクションのフッター。フローコンテンツをもつ
++   entry #Form   `<form>`。フォーム。フローコンテンツをもつ
++       `action`、`method`、`enctype`、`accept-charset`（`acceptCharset` として）、`autocomplete`、`name`、`novalidate`、`target` を取る。
++   entry #H1   `<h1>`。第一階層の見出し。フレージングコンテンツをもつ
++   entry #H2   `<h2>`。第二階層の見出し。フレージングコンテンツをもつ
++   entry #H3   `<h3>`。第三階層の見出し。フレージングコンテンツをもつ
++   entry #H4   `<h4>`。第四階層の見出し。フレージングコンテンツをもつ
++   entry #H5   `<h5>`。第五階層の見出し。フレージングコンテンツをもつ
++   entry #H6   `<h6>`。第六階層の見出し。フレージングコンテンツをもつ
++   entry #Head   `<head>`。文書のメタデータ。`#Metadata` のコンテンツをもつ
++       子の間には空白しか置けない。自動で閉じ、挿入可能なので、文書の先頭で出会った `<title>` の周りには `<head>` が補われる。
++   entry #Header   `<header>`。最も近い祖先のセクションの導入部。フローコンテンツをもつ。自動で閉じる
++   entry #Hgroup   `<hgroup>`。見出しとその副見出し。`<p>` と `<h1>` から `<h6>` をもつ
++   entry #Hr   `<hr>`。主題の区切り。空要素
++   entry #I   `<i>`。別の声で語られるテキスト。フレージングコンテンツをもつ
++   entry #Iframe   `<iframe>`。入れ子のブラウジングコンテキスト。この語彙では空要素
++       `src`、`srcdoc`、`name`、`sandbox`、`allow`、`allowfullscreen`、`width`、`height`、`referrerpolicy`、`loading` を取る。
++       `Tag.Void` として定義されているので、子をもたず、終了タグのない `<iframe …>` としてシリアライズされる。仕様は `</iframe>` を要求している。
++   entry #Img   `<img>`。画像。空要素
++       `src`、`alt`、`srcset`、`sizes`、`crossorigin`、`usemap`、`ismap`、`width`、`height`、`referrerpolicy`、`decoding`、`loading`、`fetchpriority` を取る。
++       `Unattributive` によって、`alt` は `img.alt` で、`width` は `img.width`（`Optional[Int]`）で読み戻せる。
+
+% 2 1 0 03f7e17846a38e8c174857ab541ae5e6
+
+% 3 1 0 18c84f16d64c9e991a395daab53236cc
+
+% 4 1 0 06df25f1c749179e04989ff0b976ab45
+
+% 5 1 0 125826beff64d2831939e68a516609aa
+
+% 6 1 0 0c59215b5a6987dc1fbe466132642306
+
+% 0 1 0 025220e43d442d4d00d78f5ae0b25466
+
+% 0 1 0 1a9f85dc203bc1fb10c51654cdc31cfe
+
+% 0 1 0 01898fb9bb95434911151e17825cff23
+
+% 1 1 0 021e863cc7a20a0f0a304d09e6749933
+
+@ 0 1 0 09075fc3cbb043b21acb7d6f215b4b11
++   entry #Input   `<input>`。フォームコントロール。`type` ごとにプリセットをもつ空要素のタグ
+
+% 1 1 0 0ae07bbc95dc63950894f669f6aef457
+
+@ 0 8 0 08bdbf5aed83754507813d2f0e82ead7
++         `Topic` が `"input"` である `Tag.Void` である。
++         `Input` だけでは `type` のない入力（テキストフィールド）になる。各メンバーは `type` をプリセットするので、`Input.Email(name = t"email")` は `<input type="email" name="email">` であり、パーサーは `<input type="button">` を `Input.Button` として読み戻す。
++         入力は `name`、`value`、`disabled`、`readonly`、`required`、`checked`、`placeholder`、`autocomplete`、`list`、`min`、`max`、`step`、`pattern`、`size`、`maxlength`、`minlength`、`multiple`、`accept`、`alt`、`src`、`width`、`height`、`form`、`formaction` とその仲間、`dirname`、`popovertarget`、`popovertargetaction` を取る。
+
+% 2 1 0 004ef438cab5ce6b0776307a28a79900
+
+% 3 1 0 0e583a5233fbbf4d0e6ed0603637e598
+
+% 4 1 0 0a69d050acc3af3f06b170f5bc8b553c
+
+% 5 1 0 0705afa2b03d6722167ab1a4a85bd4d1
+
+% 0 1 0 0069175a695b6a751fe1fca78233f1be
+
+% 0 1 0 19712ef9c2f82c1209901dcca48549c7
+
+% 0 1 0 0dd785dd53fd43340c75791a6a4f7be3
+
+% 0 1 0 16b16b87d11dcd741a86a175c8a962e8
+
+% 0 1 0 074beae20fe7b5d60a3ebf16013ace29
+
+% 0 1 0 15d7426af5395aed18f629ec3b4a45de
+
+% 1 1 0 1cfb63396a67ea8913a7cb1babbf4cf3
+
+% 1 1 0 168bbb89462f9021028385090ccedaaa
+
+% 2 1 0 0ad501599eebd4ae0f9f9893d5a6110d
+
+% 0 1 0 1fd9e4d6e089289a168e451d54f69244
+
+% 0 1 0 1db7fc37f0e5e7fa04a2945b15effd74
+
+% 0 1 0 1c9a9d9f0d6af57a0c920f4e3aa7e191
+
+% 0 1 0 0a45d8181175fd701a0425228f903f43
+
+% 1 1 0 0106abe1573517f905f3c7db9f0959e6
+
+% 0 1 0 0d05b4573d0b967514bf1648bad77785
+
+% 0 1 0 14a047e3d9445f000725ce33e802f49b
+
+% 0 1 0 19a05f243f1807341edc08783761c522
+
+% 0 1 0 0b1346a7a6450d910dc4b8854e663121
+
+% 0 1 0 0828ac24c01ed8940998eaaa82474c47
+
+% 0 1 0 08456e162bf543f5052932f07018de7d
+
+% 0 1 0 06eee7a6308aa35b1a374c8876718443
+
+% 0 1 0 196e07ab7ead6ff603a63463a485cdd2
+
+% 1 1 0 02a3a31c0db77fb0113fcb0da2fbc4b9
+
+% 2 1 0 13b99e60712cfc4d1ce9bf3cac6b915c
+
+% 3 1 0 1dbf989c65fc736f1e6236ef87dcb1bd
+
+% 4 1 0 0de85f04ae3bd73115be70724d416889
+
+% 5 1 0 197a201a0f4a64e90f6deb6394551e8f
+
+% 6 1 0 180ba83c420275fe07e3d7e4878a5e81
+
+% 1 1 0 1aa7d1187d3b6ac100fd7fd3c1c844f6
+
+@ 2 1 0 1cf1598c69499d341279d280b4e568ec
++     entry .Transport   `""`。子をもたない
+
+% 2 1 0 0400dc8b640238710230298e4675c008
+
+@ 0 9 0 06a6962c3498b8ed144744b32df2ba63
++   entry #Ins   `<ins>`。挿入されたテキスト。透過的で、`cite` と `datetime` をもつ
++   entry #Kbd   `<kbd>`。ユーザーの入力。フレージングコンテンツをもつ
++   entry #Label   `<label>`。フォームコントロールのキャプション。フレージングコンテンツをもつ。`for` がコントロールを名指す
++   entry #Legend   `<legend>`。`<fieldset>` のキャプション。フレージングコンテンツと見出しをもつ
++       現在のソースではこのタグはラベル `label` で構築されているので、`Legend(…)` は `<label>` としてシリアライズされる。パーサーの `<legend>` も、`#elements` を通してそのラベルで解決される。
++   entry #Li   `<li>`。リストの項目。フローコンテンツをもつ。自動で閉じる。`value` は `<ol>` の中での序数を設定する
++   entry #Link   `<link>`。外部リソースへのリンク。`rel` ごとにプリセットをもつ空要素のタグ
+
+% 1 1 0 0706f5242056950a04881a36a14b9132
+
+@ 0 6 0 1e9299e3c925f8f20f9e1dffad8a80f8
++         `Topic` が `"link"` である `Tag.Void` であり、`href`、`rel`、`type`、`media`、`hreflang`、`sizes`、`as`、`crossorigin`、`integrity`、`referrerpolicy`、`blocking`、`disabled`、`color`、`imagesizes`、`imagesrcset`、`fetchpriority` を取る。
++         各メンバーは `rel` をプリセットするので、`Link.Stylesheet(href = t"/style.css")` は `<link rel="stylesheet" href="/style.css">` であり、パーサーは `<link rel="stylesheet">` を `Link.Stylesheet` として読み戻す。
+
+% 0 1 0 1d42c09c91b1b7aa0833df955f30e419
+
+% 0 1 0 10a85bb573d2bca61fc3529cc911aaee
+
+% 0 1 0 150379a258ea6ede069ba61ed7f5f1f8
+
+% 0 1 0 1bfb3037c3fb3a2f0f67d288b2af4bb8
+
+% 0 1 0 0cf16779e757eb4806b6910cca1f63b8
+
+% 0 1 0 16dc0478fbd3dc7c0b725692ca98dce0
+
+% 0 1 0 07b0471fa21797710978d9bd8935dfb6
+
+% 0 1 0 1e1e7c59bcb1aedd1e1a722325d299bc
+
+% 0 1 0 0bbb4c3b7974139c048aa513865b3fd3
+
+% 0 1 0 1e56fc9e78f50b590426ff1cc3879264
+
+% 0 1 0 0f7ce2489b2038350295f7b18eab80c2
+
+% 0 1 0 0fc0d5d6adeaddab1b24553ecb07d533
+
+% 0 1 0 1889953115faf2650b2ddefbfd3bd5ad
+
+% 0 1 0 03f9b16f12491f5b03483cff938c0669
+
+% 0 1 0 14da6370333d616807abc4c72a726bf8
+
+% 0 1 0 1e38fa06084c45f60e37d05055dc9387
+
+% 0 1 0 07a4c8f283f20bc10ab4a83e78681819
+
+% 0 1 0 04b1d43bd027b9c915f74f06f3406ef5
+
+% 0 1 0 0b6f74ce86e1d0b50279c3f333fcaeac
+
+% 0 1 0 048cab25a458ec87030482f3b10f52a7
+
+% 0 1 0 068cbe83c9e254301f781f9adcdb15e7
+
+@ 1 1 0 1ce83cfdbeda450a0771bbd314540714
++     entry .Transport   `""`。子をもたない
+
+% 2 1 0 09ddbdfe3fe0f1d502913a81be1ccb41
+
+@ 0 9 0 11c5a605c72a35930490d6e9534c029f
++   entry #Main   `<main>`。文書の主要な内容。フローコンテンツをもつ
++   entry #Map   `<map>`。イメージマップ。透過的で、加えて `<area>` の子をもつ。`name` は必須である
++   entry #Mark   `<mark>`。強調表示されたテキスト。フレージングコンテンツをもつ
++   entry #Math   `<math>`。HTML にとって外部の MathML の内容
++       外部のタグである。その子は HTML の要素ではなく `Html.Element.foreign` のノードであり、パーサーはその中のどのタグに対してもこれを構築し、属性の大文字と小文字を保ち、`<![CDATA[…]]>` を受け付ける。
++       archimedes ライブラリが `Math` の値をこれに描画する。
++   entry #Menu   `<menu>`。ツールバーのコマンド。`<li>` 要素をもち、その間には空白しか置けない
++   entry #Meta   `<meta>`。文書のメタデータ。標準の `name` ごとにプリセットをもつ空要素のタグ
+
+% 1 1 0 03401698d83002c21f32f37602d14033
+
+@ 0 6 0 1f2a9ff600ed2cb809a34d3516b05b20
++         `name`、`content`、`charset`、`http-equiv`（`httpEquiv` として）を取る。
++         各メンバーは `name` をプリセットするので、`Meta.Viewport(content = t"width=device-width")` は `<meta name="viewport" content="width=device-width">` であり、パーサーは `<meta name="viewport">` を `Meta.Viewport` として読み戻す。
++         `#Area`、`#Input`、`#Link`、`#Track` とは異なり、このオブジェクトは型メンバー `Topic`、`Transport`、`Form` を固定しない。
+
+% 0 1 0 11257a3108edb07306797fa8d8a62114
+
+% 0 1 0 019e7e59d31cf9bc046e1f4b9a691438
+
+% 0 1 0 11590e5d630771240dc2729d5cf766c0
+
+% 0 1 0 056dea36c1a90df40a0a3cdd22344d14
+
+% 0 1 0 0557d9ae7616763c1ffc565324e6c380
+
+% 0 1 0 0d067c4968cf648511a355ce900963ff
+
+% 0 1 0 059fe8c60c510ebf1d5fb04b54e839d7
+
+% 0 1 0 1a4924fdc61fcac7101ac9821d468e8d
+
+% 0 1 0 061c7b841ac66e5911fa33f7673f8e2c
+
+@ 0 57 0 152cc76f0779134d1f5078d7805b7398
++   entry #Meter   `<meter>`。既知の範囲にあるスカラーの測定値。フレージングコンテンツをもつ
++       `value`、`min`、`max`、`low`、`high`、`optimum` を取り、それぞれ `Decimal` である。
++   entry #Nav   `<nav>`。ナビゲーションのリンク。フローコンテンツをもつ
++   entry #Noscript   `<noscript>`。スクリプトが無効なときの代替。`<link>`、`<style>`、`<meta>` をもつ
++       語彙はこれに `<head>` の形を与える。仕様が定める `<body>` の中でのフローコンテンツの形は型付けされていない。
++   entry #Object   `<object>`。外部リソース。透過的で、`data`、`type`、`name`、`form`、`width`、`height` をもつ
++       書式要素に対する境界タグである。
++   entry #Ol   `<ol>`。順序付きリスト。`<li>` 要素をもち、その間には空白しか置けない
++       `reversed`、`start`、`type` を取る。
++   entry #Optgroup   `<optgroup>`。`<legend>` を伴う `<option>` のグループ。自動で閉じ、間には空白を置く
++       `disabled` と `label` を取る。
++   entry #Option   `<option>`。`<select>` または `<datalist>` の中の選択肢。テキストをもつ。自動で閉じる
++       `disabled`、`label`、`selected`、`value` を取る。
++       `import htmlDoms.whatwg.*` のもとでは `scala.Option` を隠す。これも `Optional` を選ぶべき理由の一つである。
++   entry #Output   `<output>`。計算の結果。フレージングコンテンツをもつ。`for` がその入力を名指す
++   entry #P   `<p>`。段落。フレージングコンテンツをもつ。自動で閉じる
++       自動で閉じるので、`<p>one<p>two` は二つの段落としてパースされる。`<div>` はフレージングコンテンツではないので、`P(Div(…))` はコンパイルできない。
++   entry #Picture   `<picture>`。代替の `<source>` を伴う画像。`<source>` と `<img>` をもち、間には空白を置く
++   entry #Pre   `<pre>`。整形済みのテキスト。フレージングコンテンツをもつ
++       ほかの場所では字下げするレイアウトが空白を組み直すことがあるが、この中の空白はシリアライザーが保つ。
++   entry #Progress   `<progress>`。タスクの進捗。フレージングコンテンツをもつ。`value` と `max`
++   entry #Q   `<q>`。インラインの引用。フレージングコンテンツをもつ。`cite` が出典を与える
++   entry #Rp   `<rp>`。ルビ注釈のための代替の括弧。テキストをもつ。自動で閉じる
++   entry #Rt   `<rt>`。ルビ注釈。フレージングコンテンツをもつ。自動で閉じる
++   entry #Ruby   `<ruby>`。ルビ注釈付きのテキスト。`<rt>` と `<rp>` を伴うフレージングコンテンツをもつ
++   entry #S   `<s>`。もう正確でないテキスト。フレージングコンテンツをもつ
++   entry #Samp   `<samp>`。出力の例。フレージングコンテンツをもつ
++   entry #Script   `<script>`。スクリプト。生のテキストをもつ
++       `Html.Mode.Raw` である。内容は、実体を復号することもタグを認識することもなく最初の `</script>` まで読まれ、そのまま書かれる。
++       `src`、`type`、`async`、`defer`、`nomodule`、`crossorigin`、`integrity`、`referrerpolicy`、`blocking`、`fetchpriority` を取る。
++   entry #Search   `<search>`。検索フォームまたはコントロールのグループ。フローコンテンツをもつ
++   entry #Section   `<section>`。汎用のセクション。フローコンテンツをもつ
++   entry #Select   `<select>`。ドロップダウンのコントロール。`<option>`、`<optgroup>`、`<hr>`、`<button>`、`<noscript>` をもつ
++       子の間には空白しか置けない。
++       `name`、`multiple`、`size`、`disabled`、`required`、`form`、`autocomplete` を取る。
++   entry #Selectedcontent   `<selectedcontent>`。カスタマイズ可能な `<select>` で選ばれた選択肢の内容を映したもの。空要素
++   entry #Slot   `<slot>`。シャドウツリーの挿入点。透過的で、`name` をもつ
++   entry #Small   `<small>`。傍注と細則。フレージングコンテンツをもつ
++   entry #Source   `<source>`。メディアまたは画像のソース。空要素
++       `src`、`type`、`srcset`、`sizes`、`media`、`width`、`height` を取る。
++   entry #Span   `<span>`。汎用のフレージングのコンテナ
++   entry #Strong   `<strong>`。強い重要性。フレージングコンテンツをもつ
++   entry #Style   `<style>`。埋め込みの CSS。生のテキストをもつ
++       `Html.Mode.Raw` である。`Style(".a { color: red }")` はテキストを実体の符号化なしにそのまま書き、パーサーも何も復号しない。
++       `media` と `blocking` を取る。
++   entry #Sub   `<sub>`。下付き文字。フレージングコンテンツをもつ
++   entry #Summary   `<summary>`。`<details>` のキャプション。フレージングコンテンツまたは一つの見出しをもつ
++   entry #Sup   `<sup>`。上付き文字。フレージングコンテンツをもつ
++   entry #Svg   `<svg>`。HTML にとって外部の SVG の内容
++       外部のタグである。その子は `Html.Element.foreign` のノードであり、パーサーがその中のどのタグに対してもこれを構築し、属性の大文字と小文字を保ち、`<![CDATA[…]]>` を受け付ける。
++       `width` と `height` を取る。
+
+% 2 1 0 1a350e20f051b2a81f9d02458749064d
+
+% 3 1 0 18c8211062d06ec805570e7570e7fd72
+
+% 4 1 0 0c1ccf3ef06fcf15154b5a08667aafea
+
+% 5 1 0 037bda3f9d55117a1eeefbe2a82dc9c3
+
+% 6 1 0 009c6f888da3561b0d853fb8d558aad7
+
+% 0 1 0 01cfa8b31fbfaba00398aed82e62061a
+
+% 0 1 0 194d3a0ab756de130c196e4774c03d82
+
+% 1 1 0 0afcd418b021140615045a52347f5eb0
+
+@ 0 26 0 11c7f7f52fccca1205abcc68d2381143
++   entry #Table   `<table>`。表。`<caption>`、`<colgroup>`、`<thead>`、`<tbody>`、`<tfoot>` をもつ
++       子の間には空白しか置けず、書式要素に対する境界である。
++       `Table(…)` に直接与えた `<tr>` はコンパイルできない。一方パーサーは `<tbody>` を推論する（`#infer`）ので、`<table><tr>…` は `Table(Tbody(Tr(…)))` として読まれる。
++   entry #Tbody   `<tbody>`。表の本体の行。`<tr>` をもつ。自動で閉じ、挿入可能で、間には空白を置く
++   entry #Td   `<td>`。データセル。フローコンテンツをもつ。自動で閉じ、境界である
++       `colspan`、`rowspan`、`headers` を取る。
++   entry #Template   `<template>`。不活性なフラグメント。フローコンテンツ、メタデータコンテンツ、その場に置かれるすべての子をもつ
++       その内容がその場で描画されることはないので、ほかではリスト、表、行、ルビ、`<select>` の中でしか有効でないもの（`<li>`、`<tr>`、`<td>`、`<option>`、`<source>` など）を受け入れる。
++       空のときは `<template></template>` としてシリアライズされ、必須の `</template>` までパースされる。
++       `shadowrootmode` と、その仲間の `shadowroot…` を取る。
++   entry #Textarea   `<textarea>`。複数行のテキストコントロール。テキストをもつ
++       `Html.Mode.Rcdata` である。内容の実体は復号されるがタグは認識されないので、`<textarea><div>x</div></textarea>` はテキスト `<div>x</div>` として読まれる。
++       `name`、`rows`、`cols`、`wrap`、`placeholder`、`maxlength`、`minlength`、`required`、`readonly`、`disabled`、`dirname`、`form`、`autocomplete` を取る。
++   entry #Tfoot   `<tfoot>`。表のフッターの行。`<tr>` をもつ。自動で閉じ、間には空白を置く
++   entry #Th   `<th>`。ヘッダーセル。フローコンテンツをもつ。自動で閉じ、境界である
++       `colspan`、`rowspan`、`headers`、`scope`、`abbr` を取る。
++   entry #Thead   `<thead>`。表のヘッダーの行。`<tr>` をもつ。自動で閉じ、間には空白を置く
++   entry #Time   `<time>`。日付または時刻。フレージングコンテンツをもつ。`datetime` が機械可読な形を与える
++   entry #Title   `<title>`。文書の題。テキストをもつ。`<head>` の中に置く
++       `Html.Mode.Rcdata` である。`<title>a &amp; <b></title>` はテキスト `a & <b>` として読まれる。
++   entry #Tr   `<tr>`。表の行。`<td>` と `<th>` をもつ。自動で閉じ、挿入可能で、間には空白を置く
++   entry #Track   `<track>`。`<audio>` または `<video>` のための時間指定テキストトラック。`kind` ごとにプリセットをもつ空要素のタグ
+
+% 1 1 0 0ab5cc1a9c1882dd0af766d6b5858e96
+
+@ 0 2 0 07f26d93db7adb4611925465dea1c85d
++         `Topic` が `"track"` である `Tag.Void` であり、`src`、`srclang`、`label`、`default`、`kind` を取る。
++         各メンバーは `kind` をプリセットする。
+
+% 0 1 0 14cbc45d6a74302703b568fa32cbcbf9
+
+% 0 1 0 0fbe4dbcfce10a0e085b1d681c1f124a
+
+% 0 1 0 1d853b831094a136021401872ed48b82
+
+% 0 1 0 0a6f28d9242c4e941e006614c708c575
+
+% 0 1 0 1d85f62e91ec716b03cc397946d7ab97
+
+% 0 1 0 047cf93f210047100704608c02f5312f
+
+@ 1 1 0 0f5d696b1eb883021453932ab0eb31f7
++     entry .Transport   `""`。子をもたない
+
+% 2 1 0 17f122dba6b7df9c190c04320d97e49b
+
+@ 0 7 0 0fbd4d2fe4204575098a90702dd46e4a
++   entry #U   `<u>`。明示されない注釈。フレージングコンテンツをもつ
++   entry #Ul   `<ul>`。順序なしリスト。`<li>` 要素をもち、その間には空白しか置けない
++   entry #Var   `<var>`。変数。フレージングコンテンツをもつ
++   entry #Video   `<video>`。動画。透過的で、加えて `<source>` と `<track>` の子をもつ
++       `src`、`poster`、`crossorigin`、`preload`、`autoplay`、`playsinline`、`loop`、`muted`、`controls`、`width`、`height` を取る。
++   entry #Wbr   `<wbr>`。改行の機会。空要素
+
+@ 0 1 0 04e8d3433acbf5ab000fa1cb5de7b1de
++ entry .Html4Transitional   HTML 4.01 Transitional の方言。そのタグを `Dom` として、その属性を given としてもつ
+
+% 1 1 0 12a42f93356ede88176ea4613df39741
+
+@ 0 8 0 1e26de8f2be4505a013948b5a8a11914
++       honeycomb が提供する HTML の二つ目の記述であり、HTML 4.01 Transitional でなければならない文書のためのものである。
++       旧来のコンテンツ、メールのテンプレート、そして Living Standard が廃止した表示用の要素や属性を使うマークアップがそれにあたる。
++       `Whatwg` と同じく、属性の given をもつ**オブジェクト**と、`Dom` である**クラス**からなる。
++       クラスがもつのは、タグの語彙（共通のタグに加えて `Font`、`Center`、`Applet`、`Strike`、`Isindex`、…）、HTML 4 のコンテンツカテゴリ（`#Inline`、`#Block`、`#Flow`）、`HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"` の doctype、そして HTML 4 の文字参照である。
+
+% 2 1 0 1edf6eb6493c99cc03226acaeb619975
+
+% 3 1 0 0a50404ce481fada18f365d9d70e5501
+
+% 0 1 0 16dc1cda338424090471d71981f2e655
+
+% 0 1 0 12b24b3f033b3df109f5cab406122ca5
+
+% 1 1 0 0b96b6a03f1acee90d61283ae923620e
+
+% 0 1 0 0fc194d34cfa9fa616ee65c9fa14f2c6
+
+% 1 1 0 1c81cf466bbc1f4c0e63c38d343a7204
+
+@ 0 8 0 10748fe39179ffb91623c9ca74d244f6
++       属性の値のマーカーは `Whatwg` のもの（`Textual`、`Url`、`Presence`、`Color`、…）をエイリアスとして再エクスポートしたものなので、同じ `Attributive` の given が当てはまる。
++       `checked` には `Boolean`、`colspan` には `Int`、そして `attributives.textAttributive` があれば何にでも `Text` である。
++       この方言独自のマーカー（`Align`、`Charset`、`Clear`、`Frame`、`Rules`、`Scope`、`Size`、`Valign`、`Valuetype`、`Wrap`）は `Whatwg.Textual` のエイリアスである。
++       組み込みのイベント属性（`onclick`、`onload`、…）は `Whatwg.Scripting` のエイリアスである `of Script` で型付けされているので、ハンドラはテキストではなく、型付けされたスクリプトの値でなければならない。
+
+@ 0 5 0 186b0bd3959d394204f5ac6b126f6666
++       この方言の属性は `Attribute in Html4Transitional` であり、WHATWG のものとは区別される。そのため、一方の語彙のタグがもう一方の属性を取ることはない。
++       パーサーは HTML 4 の doctype を認識し、その下で読み込んだ文書のメタデータは `Html.Provenance(htmlDoms.html4Transitional)` である。
++       タグは `Tag.Container of "font" over Inline in Html4Transitional` などである。
+
+% 1 1 0 183f0c23f09a54f51ee9ae1862c91f96
+
+% 1 1 0 165f6b2c44d9fb5b0bc8144ec1758a27
+
+% 2 1 0 1134b435c9167ec8057a656ac52311d1
+
+@ 0 7 0 1ade5a25929ad2df0a3dd6a964a5a3cf
++   entry .Attribute   `honeycomb.Attribute in Html4Transitional`。この方言の属性
++   entry .attribute   この方言の名指した要素で有効な属性の given を作る
++       `Whatwg.attribute` と同じだが、`in Html4Transitional` で型付けされる。
++       `attribute["bgcolor", "body" | "table", Color]()` のように使う。
++   entry .globalAttribute   この方言のすべての要素で有効な属性の given を作る
++       `Whatwg.globalAttribute` と同じだが、`in Html4Transitional` で型付けされる。
++   entry .Color   `Whatwg.Color`。`bgcolor`、`text`、`link`、`color` が取る色の値
+
+% 0 1 0 0856a3ef092a2c7e1c1a1d5f59900092
+
+% 0 1 0 0706e36a29e3c70504847dfcc1858343
+
+% 0 1 0 17f7a1e6bde80cf314aa13bbaaf2cbec
+
+% 0 1 0 162f9f7778b3bc0a1801aaf2c2723649
+
+% 0 1 0 1084c6d3f9ef40e50982340eed1db785
+
+% 0 1 0 09cac6ca8649d0b3142c1e6a9a5b1003
+
+% 0 1 0 19ca6f259342677311d90392b041f522
+
+% 0 1 0 05a6ad98447341d01b43e58d0c6c61ad
+
+% 0 1 0 121d1cf4d821db4f18204d391772c7e7
+
+% 0 1 0 110c1bf7869d34c10995f1f7daf0c9e6
+
+% 0 1 0 0d97f1659cbca4fb11c7bf2749c99469
+
+% 0 1 0 1c8110271ab8671a135ec505862ae2c5
+
+% 0 1 0 06a9294c6595decd034bdfee04fb4a00
+
+% 0 1 0 1be503456036e2841deda50f80c270dc
+
+% 0 1 0 0b84bd621c849dab19d39b501c1f395e
+
+% 0 1 0 0328ed7f262a41e40091cf9d665df566
+
+@ 0 1 0 13871b094eef29a51989f248f4034875
++   entry .Presence   `Whatwg.Presence`。真偽値の属性で、あるかないかのどちらか
+
+% 0 1 0 1baf8f213b29d4070c623ed371a74f5a
+
+% 0 1 0 09561c50715a87e91f66a2173b6d7f88
+
+% 0 1 0 0c5c21e39addaab20c312aca812498db
+
+% 0 1 0 01f06c31b75658b6094ac52f1072cc59
+
+@ 0 1 0 031b818cd68a91730a8947e1b18debb7
++   entry .Textual   `Whatwg.Textual`。任意のテキスト
+
+% 0 1 0 181e6214896f5ceb093bd075d2544712
+
+% 0 1 0 10d0ed546a8c05bd05e0dd44fdbe99a1
+
+@ 0 238 0 0bcaa535c93dad371b4031bf18d5b3a9
++   entry .Align   `align` の値のマーカー。`left`、`center`、`right`、`justify` のいずれか。任意のテキストを受け付ける
++   entry .Charset   `charset` と `accept-charset` の値のマーカー。文字エンコーディングの名前。任意のテキストを受け付ける
++   entry .Clear   `<br>` の `clear` の値のマーカー。`left`、`right`、`all`、`none` のいずれか。任意のテキストを受け付ける
++   entry .Frame   `<table>` の `frame` の値のマーカー。枠線のどの辺を描くか。任意のテキストを受け付ける
++   entry .Rules   `<table>` の `rules` の値のマーカー。内側のどの枠線を描くか。任意のテキストを受け付ける
++   entry .Scope   セルの `scope` の値のマーカー。`row`、`col`、`rowgroup`、`colgroup` のいずれか。任意のテキストを受け付ける
++   entry .Script   組み込みのイベントハンドラの値のマーカー。`Whatwg.Scripting` であり、プレーンテキストはこれを満たさない
++       `onclick = t"…"` は意図的にコンパイルできない。
++       ハンドラは型付けされたスクリプトの値であり、その `Attributive to Whatwg.Scripting` はスクリプトのライブラリが提供する。
++   entry .Size   `<font>`、`<basefont>`、`<hr>` の `size` の値のマーカー。任意のテキストを受け付ける
++   entry .Valign   `valign` の値のマーカー。`top`、`middle`、`bottom`、`baseline` のいずれか。任意のテキストを受け付ける
++   entry .Valuetype   `<param>` の `valuetype` の値のマーカー。`data`、`ref`、`object` のいずれか。任意のテキストを受け付ける
++   entry .Wrap   `<textarea>` の `wrap` の値のマーカー。任意のテキストを受け付ける
++   entry .id   すべての要素の `id`。`Id` として
++   entry .class   すべての要素の `class`。`CssClassList` として
++   entry .style   すべての要素の `style`。`Css` として
++   entry .title   すべての要素の `title`。`Textual` として
++   entry .lang   すべての要素の `lang`。`Language` として
++   entry .dir   すべての要素の `dir`。`Dir` として
++   entry .onclick   すべての要素の `onclick`。`Script` として
++   entry .ondblclick   すべての要素の `ondblclick`。`Script` として
++   entry .onmousedown   すべての要素の `onmousedown`。`Script` として
++   entry .onmouseup   すべての要素の `onmouseup`。`Script` として
++   entry .onmouseover   すべての要素の `onmouseover`。`Script` として
++   entry .onmousemove   すべての要素の `onmousemove`。`Script` として
++   entry .onmouseout   すべての要素の `onmouseout`。`Script` として
++   entry .onkeypress   すべての要素の `onkeypress`。`Script` として
++   entry .onkeydown   すべての要素の `onkeydown`。`Script` として
++   entry .onkeyup   すべての要素の `onkeyup`。`Script` として
++   entry .onload   `<body>` と `<frameset>` の `onload`。`Script` として
++   entry .onunload   `<body>` と `<frameset>` の `onunload`。`Script` として
++   entry .onfocus   `<a>`、`<area>`、`<label>`、`<input>`、`<select>`、`<textarea>`、`<button>` の `onfocus`。`Script` として
++   entry .onblur   `<a>`、`<area>`、`<label>`、`<input>`、`<select>`、`<textarea>`、`<button>` の `onblur`。`Script` として
++   entry .onsubmit   `<form>` の `onsubmit`。`Script` として
++   entry .onreset   `<form>` の `onreset`。`Script` として
++   entry .onchange   `<input>`、`<select>`、`<textarea>` の `onchange`。`Script` として
++   entry .onselect   `<input>` と `<textarea>` の `onselect`。`Script` として
++   entry .href   `<a>`、`<area>`、`<base>`、`<link>` の `href`。`Url` として
++   entry .src   `<img>`、`<input>`、`<script>`、`<iframe>` の `src`。`Url` として
++   entry .alt   `<applet>`、`<area>`、`<img>`、`<input>` の `alt`。`Textual` として
++   entry .type   `<a>`、`<link>`、`<object>`、`<param>`、`<script>`、`<style>`、`<input>`、`<button>` の `type`。`Mime` として
++       `type` はキーワードなので、`` `type` = … `` と書く。
++       `<input>` の type は、ふつうは代わりに `#Input` のプリセットで選ぶ。
++   entry .typeOl   `<ol>`、`<ul>`、`<li>` の `type`。リストのマーカーのスタイル。`OlType` として
++   entry .name   `<a>`、`<applet>`、`<button>`、`<form>`、`<iframe>`、`<img>`、`<input>`、`<map>`、`<meta>`、`<object>`、`<param>`、`<select>`、`<textarea>` の `name`
++       `Name` の値である。
++       `<a name=…>` は HTML 4 のアンカーであり、Living Standard はこれを `id` で置き換えた。
++   entry .value   `<input>`、`<option>`、`<param>`、`<button>` の `value`。`Textual` として
++   entry .valueLi   `<li>` の `value`。項目の番号。`PositiveInt` として
++   entry .rel   `<a>` と `<link>` の `rel`。`Tokens` として
++   entry .rev   `<a>` と `<link>` の `rev`。逆方向のリンクの種類。`Tokens` として
++       列挙型 `honeycomb.Rev` が HTML 4 のリンクの種類をもち、`.show` として渡す。
++   entry .target   `<a>`、`<area>`、`<base>`、`<form>`、`<link>` の `target`。`Target` として
++   entry .action   `<form>` の `action`。`Url` として
++   entry .method   `<form>` の `method`。`Method` として
++   entry .enctype   `<form>` の `enctype`。`Enctype` として
++   entry .accept   `<form>` と `<input>` の `accept`。`MimeList` として
++   entry .acceptCharset   `<form>` の `accept-charset`。`Charset` として
++       `acceptCharset = …` と書く。属性は `accept-charset` としてシリアライズされる。
++   entry .checked   `<input>` の `checked`。`Presence`
++   entry .disabled   `<button>`、`<input>`、`<optgroup>`、`<option>`、`<select>`、`<textarea>` の `disabled`。`Presence`
++   entry .readonly   `<input>` と `<textarea>` の `readonly`。`Presence`
++   entry .multiple   `<select>` の `multiple`。`Presence`
++   entry .selected   `<option>` の `selected`。`Presence`
++   entry .maxlength   `<input>` の `maxlength`。`PositiveInt` として
++   entry .size   `<input>` と `<select>` の `size`。`PositiveInt` として
++   entry .sizeFont   `<basefont>`、`<font>`、`<hr>` の `size`。フォントの大きさ（`1` から `7`、または `+1`）か罫線の高さ。`Size` として
++   entry .rows   `<textarea>` の `rows`。`PositiveInt` として
++   entry .cols   `<textarea>` の `cols`。`PositiveInt` として
++   entry .wrap   `<textarea>` の `wrap`。`Wrap` として
++   entry .for   `<label>` の `for`。ラベルを付けるコントロールの id。`Id` として
++       `for` はキーワードなので、`` `for` = … `` と書く。
++   entry .usemap   `<img>`、`<input>`、`<object>` の `usemap`。イメージマップ。`Url` として
++   entry .ismap   `<img>` と `<input>` の `ismap`。`Presence`
++   entry .longdesc   `<img>` と `<iframe>` の `longdesc`。詳しい説明の URL。`Url` として
++   entry .shape   `<a>` と `<area>` の `shape`。`Shape` として
++   entry .coords   `<a>` と `<area>` の `coords`。`Coords` として
++   entry .nohref   `<area>` の `nohref`。`Presence`
++   entry .hreflang   `<a>` と `<link>` の `hreflang`。`Language` として
++   entry .charset   `<a>`、`<link>`、`<script>`、`<meta>` の `charset`。`Charset` として
++   entry .media   `<link>` と `<style>` の `media`。`MediaQueryList` として
++   entry .defer   `<script>` の `defer`。`Presence`
++   entry .language   `<script>` の `language`。スクリプト言語の名前。`Textual` として
++   entry .httpEquiv   `<meta>` の `http-equiv`。`HttpEquiv` として
++       `httpEquiv = …` と書く。属性は `http-equiv` としてシリアライズされる。
++   entry .content   `<meta>` の `content`。`Textual` として
++   entry .scheme   `<meta>` の `scheme`。`content` を解釈するスキーム。`Textual` として
++   entry .cite   `<blockquote>`、`<del>`、`<ins>`、`<q>` の `cite`。`Url` として
++   entry .datetime   `<del>` と `<ins>` の `datetime`。`Datetime` として
++   entry .accesskey   `<a>`、`<area>`、`<button>`、`<input>`、`<label>`、`<legend>`、`<textarea>` の `accesskey`。`Textual` として
++   entry .tabindex   `<a>`、`<area>`、`<button>`、`<input>`、`<object>`、`<select>`、`<textarea>` の `tabindex`。`Integral` として
++   entry .profile   `<head>` の `profile`。メタデータのプロファイルの URL。`Url` として
++   entry .version   `<html>` の `version`。DTD のバージョン。`Textual` として
++   entry .prompt   `<isindex>` の `prompt`。プロンプトのテキスト。`Textual` として
++   entry .xmlns   `<html>` の `xmlns`。XHTML の名前空間。`Url` として
++   entry .label   `<optgroup>` と `<option>` の `label`。`Textual` として
++   entry .standby   `<object>` の `standby`。読み込み中に表示するテキスト。`Textual` として
++   entry .classid   `<object>` の `classid`。実装の URL。`Url` として
++   entry .codebase   `<applet>` と `<object>` の `codebase`。`classid`、`data`、`archive` のベース URL。`Url` として
++   entry .codetype   `<object>` の `codetype`。実装の MIME タイプ。`Mime` として
++   entry .archive   `<applet>` と `<object>` の `archive`。アーカイブの URL。`Url` として
++   entry .declare   `<object>` の `declare`。`Presence`
++   entry .data   `<object>` の `data`。リソースの URL。`Url` として
++   entry .code   `<applet>` の `code`。アプレットのクラスファイル。`Textual` として
++   entry .mayscript   `<applet>` の `mayscript`。`Presence`
++   entry .object   `<applet>` の `object`。シリアライズされたアプレット。`Textual` として
++       `object` はキーワードなので、`` `object` = … `` と書く。
++   entry .valuetype   `<param>` の `valuetype`。`Valuetype` として
++   entry .frameborder   `<iframe>` の `frameborder`。`0` または `1`。`Integral` として
++   entry .scrolling   `<iframe>` の `scrolling`。`yes`、`no`、`auto` のいずれか。`Textual` として
++   entry .marginheight   `<iframe>` の `marginheight`。`PositiveInt` として
++   entry .marginwidth   `<iframe>` の `marginwidth`。`PositiveInt` として
++   entry .summary   `<table>` の `summary`。視覚によらない描画のための説明。`Textual` として
++   entry .border   `<img>`、`<object>`、`<table>` の `border`。枠線の幅。`PositiveInt` として
++   entry .cellpadding   `<table>` の `cellpadding`。`PositiveInt` として
++   entry .cellspacing   `<table>` の `cellspacing`。`PositiveInt` として
++   entry .frameTable   `<table>` の `frame`。外側のどの枠線を描くか。`Frame` として
++   entry .rules   `<table>` の `rules`。内側のどの枠線を描くか。`Rules` として
++   entry .colspan   `<td>` と `<th>` の `colspan`。`PositiveInt` として
++   entry .rowspan   `<td>` と `<th>` の `rowspan`。`PositiveInt` として
++   entry .headers   `<td>` と `<th>` の `headers`。ヘッダーセルの id。`Tokens` として
++   entry .abbr   `<td>` と `<th>` の `abbr`。`Textual` として
++   entry .axis   `<td>` と `<th>` の `axis`。セルの分類。`Textual` として
++   entry .scope   `<td>` と `<th>` の `scope`。`Scope` として
++   entry .valign   `<col>`、`<colgroup>`、`<tbody>`、`<td>`、`<tfoot>`、`<th>`、`<thead>`、`<tr>` の `valign`。`Valign` として
++   entry .char   `<col>`、`<colgroup>`、`<tbody>`、`<td>`、`<tfoot>`、`<th>`、`<thead>`、`<tr>` の `char`。揃えの基準となる文字。`Textual` として
++   entry .charoff   `char` と同じ要素の `charoff`。揃えの基準となる文字までのオフセット。`Textual` として
++   entry .span   `<col>` と `<colgroup>` の `span`。`PositiveInt` として
++   entry .start   `<ol>` の `start`。`PositiveInt` として
++   entry .compact   `<dir>`、`<dl>`、`<menu>`、`<ol>`、`<ul>` の `compact`。`Presence`
++   entry .align   キャプション、列、見出し、`<div>`、`<p>`、`<hr>`、`<img>`、`<table>` とその部分、ほかの `align`。`Align` として
++       対象は `<applet>`、`<caption>`、`<col>`、`<colgroup>`、`<div>`、`<h1>` から `<h6>`、`<hr>`、`<iframe>`、`<img>`、`<input>`、`<legend>`、`<object>`、`<p>`、`<table>`、`<tbody>`、`<td>`、`<tfoot>`、`<th>`、`<thead>`、`<tr>` である。
++   entry .bgcolor   `<body>`、`<table>`、`<td>`、`<th>`、`<tr>` の `bgcolor`。`Color` として
++   entry .background   `<body>` の `background`。背景画像。`Url` として
++   entry .text   `<body>` の `text`。テキストの色。`Color` として
++   entry .link   `<body>` の `link`。未訪問のリンクの色。`Color` として
++   entry .vlink   `<body>` の `vlink`。訪問済みのリンクの色。`Color` として
++   entry .alink   `<body>` の `alink`。アクティブなリンクの色。`Color` として
++   entry .color   `<basefont>` と `<font>` の `color`。`Color` として
++   entry .face   `<basefont>` と `<font>` の `face`。フォントファミリーのリスト。`Textual` として
++   entry .noshade   `<hr>` の `noshade`。`Presence`
++   entry .clear   `<br>` の `clear`。どの回り込みを越えるか。`Clear` として
++   entry .width   `<applet>`、`<col>`、`<colgroup>`、`<hr>`、`<iframe>`、`<img>`、`<object>`、`<pre>`、`<table>`、`<td>`、`<th>` の `width`。`PositiveInt` として
++   entry .height   `<applet>`、`<iframe>`、`<img>`、`<object>`、`<td>`、`<th>` の `height`。`PositiveInt` として
++   entry .hspace   `<applet>`、`<img>`、`<object>` の `hspace`。水平方向の余白。`PositiveInt` として
++   entry .vspace   `<applet>`、`<img>`、`<object>` の `vspace`。垂直方向の余白。`PositiveInt` として
++   entry .nowrap   `<td>` と `<th>` の `nowrap`。`Presence`
++   entry #doctype   HTML 4.01 Transitional の doctype。公開識別子と loose DTD の URL をもつ
++       `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">` であり、この方言の下で読み込んだ、または構築した `Document[Html]` がこれをもつ。
++   entry #Heading   `<h1>` から `<h6>`
++   entry #Phrase   HTML 4 の句要素。`<em>`、`<strong>`、`<dfn>`、`<code>`、`<samp>`、`<kbd>`、`<var>`、`<cite>`、`<abbr>`、`<acronym>`
++   entry #FontStyle   HTML 4 のフォントスタイル要素。`<tt>`、`<i>`、`<b>`、`<u>`、`<s>`、`<strike>`、`<big>`、`<small>`
++   entry #Special   HTML 4 の特殊なインライン要素。リンク、画像、オブジェクト、フォント、改行、スクリプト、マップ、引用、ほか
++       `<a>`、`<img>`、`<applet>`、`<object>`、`<font>`、`<basefont>`、`<br>`、`<script>`、`<map>`、`<q>`、`<sub>`、`<sup>`、`<span>`、`<bdo>`、`<iframe>` である。
++   entry #FormCtrl   HTML 4 のフォームコントロール。`<input>`、`<select>`、`<textarea>`、`<label>`、`<button>`
++   entry #Inline   インラインコンテンツのカテゴリ。句要素、フォントスタイル要素、特殊要素、フォームコントロール要素、そしてテキスト
++       WHATWG の `Phrasing` に相当する HTML 4 のものであり、`"#text"` を含む。
++   entry #Lists   リストの要素。`<ul>`、`<ol>`、`<dir>`、`<menu>`
++   entry #Block   ブロックレベルのコンテンツのカテゴリ
++       見出し、リスト、`<p>`、`<pre>`、`<dl>`、`<div>`、`<noscript>`、`<blockquote>`、`<form>`、`<hr>`、`<table>`、`<fieldset>`、`<address>`、`<center>`、`<isindex>`、`<noframes>` である。
++   entry #Flow   フローコンテンツのカテゴリ。`#Block` または `#Inline`
++       本文の内容の一片を表す型は `Html of Flow` である。
++   entry #Metadata   `<head>` が含められるもの。`<title>`、`<base>`、`<script>`、`<style>`、`<meta>`、`<link>`、`<object>`
++   entry #insertable   パーサーが、書かれていなくてもタグとその子の間に挿入できるタグ
++       `Whatwg#insertable` と同じで、`<head>`、`<body>`、`<tbody>`、`<tr>`、`<colgroup>` である。
++   entry #infer   親が直接もてない子と、その親との間に挿入するタグ
++       `Whatwg#infer` と同じである。`Dom` の契約であり、パーサーがこれを呼ぶ。
++   entry #elements   方言のすべてのタグ。名前で引く
++   entry #entities   HTML 4 の名前付き文字参照。名前で引く
++       HTML 4 の DTD の 252 個の実体である。Living Standard の追加分は含まない。
++   entry #attributes   方言のすべての属性。名前で引く。一つの名前に対する複数の given はマージされる
++   entry #Html   ルート要素 `<html>`。`honeycomb.Html` として
++       遅延エイリアスであり、`import htmlDoms.html4Transitional.*` が `Html` をタグとしてスコープに入れられるようにする。
++       `Html(Head(Title("x")), Body(P("y")))` のように使う。
++   entry #A   `<a>`。ハイパーリンク、または `name` を伴うならアンカー。透過的
++   entry #Abbr   `<abbr>`。略語。インラインコンテンツをもつ
++   entry #Acronym   `<acronym>`。頭字語。インラインコンテンツをもつ。Living Standard にはない
++   entry #Address   `<address>`。連絡先の情報。インラインコンテンツと `<p>` をもつ
++   entry #Applet   `<applet>`。Java アプレット。`<param>` とフローコンテンツをもつ。HTML 4 で非推奨
++       `code`、`codebase`、`archive`、`object`、`alt`、`name`、`width`、`height`、`align`、`hspace`、`vspace`、`mayscript` を取る。
++   entry #Area   `<area>`。イメージマップの領域。空要素
++   entry #B   `<b>`。太字のテキスト。インラインコンテンツをもつ
++   entry #Base   `<base>`。文書のベース URL。空要素
++   entry #Basefont   `<basefont>`。基本のフォントの大きさ、色、フェイス。空要素で、HTML 4 で非推奨
++   entry #Bdo   `<bdo>`。方向を明示したテキスト。インラインコンテンツをもつ
++   entry #Big   `<big>`。大きめのテキスト。インラインコンテンツをもつ。Living Standard にはない
++   entry #Blockquote   `<blockquote>`。長い引用。フローコンテンツをもつ
++   entry #Body   `<body>`。文書の内容。フローコンテンツをもつ。自動で閉じ、挿入可能
++       表示用の `bgcolor`、`background`、`text`、`link`、`vlink`、`alink` と、`onload`、`onunload` を取る。
++   entry #Br   `<br>`。改行。空要素。`clear` で回り込みを越える
++   entry #Button   `<button>`。ボタン。フローコンテンツをもつ。書式要素の境界
++   entry #Caption   `<caption>`。表の題。インラインコンテンツをもつ。境界
++   entry #Center   `<center>`。中央揃えのフローコンテンツ。HTML 4 で非推奨で、Living Standard にはない
++   entry #Cite   `<cite>`。引用元。インラインコンテンツをもつ
++   entry #Code   `<code>`。コンピューターのコード。インラインコンテンツをもつ
++   entry #Col   `<col>`。表の列。空要素
++   entry #Colgroup   `<colgroup>`。列のグループ。`<col>` をもつ。子の間は空白のみで、挿入可能
++   entry #Dd   `<dd>`。`<dl>` の中の定義。フローコンテンツをもつ。自動で閉じる
++   entry #Del   `<del>`。削除されたテキスト。透過的
++   entry #Dfn   `<dfn>`。用語を定義している箇所。インラインコンテンツをもつ
++   entry #Dir   `<dir>`。ディレクトリのリスト。`<li>` をもつ。HTML 4 で非推奨
++       項目の間には空白しか置けない。
++       `dir` 属性や列挙型 `HDir` と混同しないこと。
++   entry #Div   `<div>`。汎用のブロックコンテナ。フローコンテンツをもつ。`align` を許す
++   entry #Dl   `<dl>`。定義リスト。`<dt>` と `<dd>` をもつ。自動で閉じ、子の間は空白のみ
++   entry #Dt   `<dt>`。`<dl>` の中の用語。インラインコンテンツをもつ。自動で閉じる
++   entry #Em   `<em>`。強調。インラインコンテンツをもつ
++   entry #Fieldset   `<fieldset>`。コントロールのグループ。省略可能な `<legend>` に続いてフローコンテンツをもつ
++   entry #Font   `<font>`。`color`、`face`、`size` を伴うテキスト。インラインコンテンツをもつ。HTML 4 で非推奨
++   entry #Form   `<form>`。フォーム。フローコンテンツをもつ
++       `action`、`method`、`enctype`、`accept`、`accept-charset`（`acceptCharset` として）、`name`、`target`、`onsubmit`、`onreset` を取る。
++   entry #H1   `<h1>`。第一レベルの見出し。インラインコンテンツをもつ
++   entry #H2   `<h2>`。第二レベルの見出し。インラインコンテンツをもつ
++   entry #H3   `<h3>`。第三レベルの見出し。インラインコンテンツをもつ
++   entry #H4   `<h4>`。第四レベルの見出し。インラインコンテンツをもつ
++   entry #H5   `<h5>`。第五レベルの見出し。インラインコンテンツをもつ
++   entry #H6   `<h6>`。第六レベルの見出し。インラインコンテンツをもつ
++   entry #Head   `<head>`。文書のメタデータ。`#Metadata` をもつ。自動で閉じ、挿入可能で、子の間は空白のみ
++   entry #Hr   `<hr>`。水平線。空要素。`align`、`noshade`、`size`、`width` を取る
++   entry #I   `<i>`。斜体のテキスト。インラインコンテンツをもつ
++   entry #Iframe   `<iframe>`。インラインフレーム。代替としてフローコンテンツをもつ
++       `Whatwg#Iframe` と異なり、この方言ではコンテナである。
++       `src`、`name`、`longdesc`、`frameborder`、`scrolling`、`marginheight`、`marginwidth`、`width`、`height`、`align` を取る。
++   entry #Img   `<img>`。画像。空要素
++       `src`、`alt`、`longdesc`、`name`、`usemap`、`ismap`、`width`、`height`、`border`、`align`、`hspace`、`vspace` を取る。
++   entry #Input   `<input>`。フォームコントロール。HTML 4 の `type` ごとにプリセットをもつ空要素のタグ
+
+% 1 1 0 0b041732339024a210a62baf39508373
+
+@ 0 3 0 176a3f6a7d32eafe05d9fa0be85ffeed
++         `Topic` が `"input"` である `Tag.Void` である。
++         各メンバーは `type` をプリセットするので、`Input.Checkbox(name = t"terms", checked = true)` は `<input type="checkbox" name="terms" checked>` である。
+
+% 1 1 0 136ba03838f778e91b55ac8cc97eb78d
+
+% 2 1 0 112adb0b6ab0f7db121bbe06c0e3da48
+
+% 1 1 0 1136d9e56d70694818bc7a188cc89ec4
+
+% 1 1 0 11a7974cfd989e480483800a42bc41d9
+
+% 2 1 0 195190ef8629669d11b813aa6b933c1d
+
+% 3 1 0 0e28bf2c972c37f102338472c57be10e
+
+% 4 1 0 1917b10ae608abb41451f57141ca5299
+
+% 5 1 0 0d2170ab2bd8bc680bf9c424e216e983
+
+% 6 1 0 1a102f5cce602ea80ef96955a1b1d1cc
+
+% 0 1 0 11a7fd4dea49396e01f6619032646425
+
+% 1 1 0 1a3923fa77e2c3a00364fbd6058a5f7b
+
+@ 2 1 0 00d50d656c8c7dea18fcc17255cd76d5
++     entry .Transport   `""`。子をもたない
+
+% 0 1 0 14308abb1fbfb717089a566c6c3124ae
+
+@ 0 54 0 12bb8dcd495f1c9811ee36145bedde21
++   entry #Ins   `<ins>`。挿入されたテキスト。透過的
++   entry #Isindex   `<isindex>`。一行の検索プロンプト。空要素で、HTML 4 で非推奨
++   entry #Kbd   `<kbd>`。キーボード入力。インラインコンテンツをもつ
++   entry #Label   `<label>`。コントロールの見出し。インラインコンテンツをもつ
++   entry #Legend   `<legend>`。`<fieldset>` の見出し。インラインコンテンツをもつ
++   entry #Li   `<li>`。リストの項目。フローコンテンツをもつ。自動で閉じる
++   entry #Link   `<link>`。外部リソースへのリンク。空要素
++   entry #Map   `<map>`。イメージマップ。ブロックコンテンツと `<area>` をもつ
++   entry #Menu   `<menu>`。メニューのリスト。`<li>` をもつ。HTML 4 で非推奨。子の間は空白のみ
++   entry #Meta   `<meta>`。文書のメタデータ。空要素
++   entry #Noframes   `<noframes>`。フレームをもたないエージェントのための内容。フローコンテンツをもつ
++   entry #Noscript   `<noscript>`。スクリプトをもたないエージェントのための内容。フローコンテンツをもつ
++   entry #Object   `<object>`。埋め込みオブジェクト。`<param>` とフローコンテンツをもつ。境界
++   entry #Ol   `<ol>`。順序付きリスト。`<li>` をもつ。子の間は空白のみ。`start`、`type`、`compact` を取る
++   entry #Optgroup   `<optgroup>`。選択肢のグループ。`<option>` をもつ。自動で閉じ、子の間は空白のみ
++   entry #Option   `<option>`。`<select>` の中の選択肢。テキストをもつ。自動で閉じる
++       `import htmlDoms.html4Transitional.*` の中では `scala.Option` を隠す。
++   entry #P   `<p>`。段落。インラインコンテンツをもつ。自動で閉じる
++   entry #Param   `<param>`。`<object>` または `<applet>` のパラメーター。空要素
++   entry #Pre   `<pre>`。整形済みテキスト。インラインコンテンツをもつ。`width` を許す
++   entry #Q   `<q>`。短い引用。インラインコンテンツをもつ
++   entry #S   `<s>`。取り消し線付きのテキスト。インラインコンテンツをもつ。HTML 4 で非推奨
++   entry #Samp   `<samp>`。出力の例。インラインコンテンツをもつ
++   entry #Script   `<script>`。スクリプト。生のテキストをもつ
++       `Html.Mode.Raw` であり、実体をデコードせずに `</script>` まで読む。
++       `src`、`type`、`language`、`charset`、`defer` を取る。
++   entry #Select   `<select>`。メニューのコントロール。`<option>` と `<optgroup>` をもつ。子の間は空白のみ
++   entry #Small   `<small>`。小さめのテキスト。インラインコンテンツをもつ
++   entry #Span   `<span>`。汎用のインラインコンテナ
++   entry #Strike   `<strike>`。取り消し線付きのテキスト。インラインコンテンツをもつ。HTML 4 で非推奨
++   entry #Strong   `<strong>`。強い強調。インラインコンテンツをもつ
++   entry #Style   `<style>`。埋め込みの CSS。生のテキストをもつ。`type` と `media` を取る
++   entry #Sub   `<sub>`。下付き添字。インラインコンテンツをもつ
++   entry #Sup   `<sup>`。上付き添字。インラインコンテンツをもつ
++   entry #Table   `<table>`。表。`<caption>`、`<colgroup>`、`<thead>`、`<tbody>`、`<tfoot>` をもつ
++       子の間には空白しか置けず、境界である。
++       `summary`、`border`、`cellpadding`、`cellspacing`、`frame`（`frameTable` として）、`rules`、`width`、`align`、`bgcolor` を取る。
++   entry #Tbody   `<tbody>`。本体の行。`<tr>` をもつ。自動で閉じ、挿入可能で、子の間は空白のみ
++   entry #Td   `<td>`。データセル。フローコンテンツをもつ。自動で閉じ、境界である
++       `colspan`、`rowspan`、`headers`、`abbr`、`axis`、`scope`、`align`、`valign`、`char`、`charoff`、`bgcolor`、`width`、`height`、`nowrap` を取る。
++   entry #Textarea   `<textarea>`。複数行のテキストコントロール。テキストをもつ（`Html.Mode.Rcdata`）
++       `name`、`rows`、`cols`、`wrap`、`readonly`、`disabled`、`accesskey`、`tabindex`、そしてハンドラ `onfocus`、`onblur`、`onselect`、`onchange` を取る。
++   entry #Tfoot   `<tfoot>`。フッターの行。`<tr>` をもつ。自動で閉じ、子の間は空白のみ
++   entry #Th   `<th>`。ヘッダーセル。フローコンテンツをもつ。自動で閉じ、境界である。`<td>` が取るものを取る
++   entry #Thead   `<thead>`。ヘッダーの行。`<tr>` をもつ。自動で閉じ、子の間は空白のみ
++   entry #Title   `<title>`。文書の題。テキストをもつ（`Html.Mode.Rcdata`）
++   entry #Tr   `<tr>`。表の行。`<td>` と `<th>` をもつ。自動で閉じ、挿入可能で、子の間は空白のみ
++   entry #Tt   `<tt>`。テレタイプのテキスト。インラインコンテンツをもつ。Living Standard にはない
++   entry #U   `<u>`。下線付きのテキスト。インラインコンテンツをもつ。HTML 4 で非推奨
++   entry #Ul   `<ul>`。順序なしリスト。`<li>` をもつ。子の間は空白のみ。`type` と `compact` を取る
++   entry #Var   `<var>`。変数。インラインコンテンツをもつ
+
+@ 0 1 0 0c77208f8e644f59152a7668d498de53
++ entry .Tag   値としての HTML タグ。属性と子に適用すると要素を作る
+
+% 1 1 0 1cc5dba03baa35370eeab227618c5bec
+
+@ 0 5 0 12898409be1bc1ed19fc43ff61bbd83c
++       `Tag` は一つの要素名に対するビルダーであり、`Whatwg` のような `Dom` のすべての `val`（`Div`、`P`、`Img`、`Table`）がそれである。
++       それ自体が `Html.Element`（その名前の空の要素）でもある。`Br` だけで `<br>` になり、`Title` だけで `<title></title>` になるのはそのためである。
++       これを適用すると新しい要素ができる。名前付き引数は属性、位置引数は子であり、属性が先に来る。
+
+% 2 1 0 146c4df74aad60f30c66675f43e2bdeb
+
+% 3 1 0 0db49fb5dfb93b7a1d89a7092b82f2e9
+
+% 4 1 0 16d9be8af9fa7f4c07112a584f428ef1
+
+% 5 1 0 1ece1e6812f699c406b62e87d06b77f8
+
+% 6 1 0 0a8d3c8edb51c0551c2f01f14eca9dad
+
+% 0 1 0 154ffb88d3732d4502c8dcf325b33d59
+
+% 0 1 0 0368718e8d0287a70d80e412c601295e
+
+% 0 1 0 1861dafb05e5a0590783aec0f1d8ffde
+
+% 0 1 0 12d20e35dee37c7915d06ba067a2bd14
+
+% 1 1 0 0fc0a57e0d20e50e119e9927a8d0acc6
+
+@ 0 9 0 110c4484b337bedc0ef9b0c305845791
++       検査は型の中にある。
++       タグの型は `Tag.Container of "ul" over "li" in Whatwg`、`Tag.Void of "br" in Whatwg`、`Tag.Transparent of "a" over "" in Whatwg` のいずれかである。
++       その `Topic` は要素名、`Transport` は含められるもの、`Form` は方言である。
++       子は `Html of (? <: Transport)` でなければならない。すなわち、`Tag`、要素、（テキストが許される場所では）`Text` か `String`、`Html.Fragment`、あるいは許されるラベルへの `Renderable` をもつ任意の値である。そのため、`Ul("hello")` や `P(Li)` はコンパイルできない。
++       属性は、方言のコンパニオンにある `Attribute` の given に照らして名前で検査され、その値は `Attributive` を通して属性のマーカーに照らして検査される。そのため、`Br(Hr)`、`P(src = …)`、`Img(width = 1.5)` はどれもコンパイルエラーになる。
+
+@ 0 7 0 0ca1934819c12588169909cc801994b2
++       タグは二つの意味で `Dynamic` である。
++       `Tag(…)` と `Tag(attribute = …)` は `#applyDynamicNamed` を通り、そこで `attributes` マクロが各名前を解決する。
++       `Tag.name(…)`（`Div.panel(P("x"))`）は `Tag.Container#applyDynamic` を通り、`class`（または `id`）が `name` である要素を作る。ただし、`Attribution of "panel"` がスコープにある場合に限る。`stylesheets.uncheckedClasses` は任意の名前を許し、cataclysm のスタイルシートは自身が宣言する名前だけを許す。
++       タグにプリセットされたクラスは残り、新しいクラスはその後ろに追加される。
+
+@ 0 4 0 010d3fbf6da3e0dc0a522298c6009c0f
++       三つのサブクラスのほかに、`Tag.root` はパーサーの合成的なルートを作り、`Tag.foreign` は HTML 以外の内容（`Svg`、`Math`）のためのタグを作る。
++       フラグ `autoclose`、`mode`、`insertable`、`boundary`、`void`、`transparent` がパーサーとシリアライザーを動かし、`admissible` は `Transport` の実行時の形である。
+
+% 1 1 0 1dbbcc0206619dca0e88dffd28cbd899
+
+% 1 1 0 1e6be24921d0bc681dd8ac55b05c44a7
+
+% 1 1 0 1ce684f05afae2e419d5d0750b31f82b
+
+% 1 1 0 015c7c2fe2921afd05f06d21c0d86818
+
+@ 0 40 0 1a0629aff417ba28023c6c4a87755c9b
++   entry .focusable   診断でのタグの名指し方。タグ名による
++       すべてのタグのシングルトン型に対する `Focusable` の given である（型クラスの `Self` は非変であり、各タグは固有の型をもつ）。
++       tarantula のようなブラウザドライバーが、タグ名で要素を探すために使う（`driver \ Div`）。
++   entry .optical   要素から、このタグの名前をもつ各子へのオプティクス
++       `Tag is Optical from html onto Html.Node` である。
++       （panopticon を通した）`element.focus(Div)` は、ラベルがタグのものである直接の子をすべて指すので、レンズによる更新はそれらの子だけを写し、その周りに要素を組み直す。
++       ほかの子はそのまま残り、要素でない起点は変更されずに返る。
++   entry .root   与えられたラベルを許す合成的なルートタグ。パーサーのためのもの
++       `Tag.root(Set(t"html"))` は、呼び出し側が `Html of "html"` を求めたときにパーサーが読み込む先の、目に見えない親である。`read[Html of "ul" | "ol"]` は両方を許すものを使う。
++       その `node` は自身を返す。
++   entry .void   与えられたラベルの空要素のタグ。省略可能なプリセット属性をもつ
++       `Tag.void["br", Whatwg]()` は `Tag.Void of "br" in Whatwg` である。
++       `presets` は、そのタグから作られるすべての要素がもつ属性であり、`Input.Email` が `type="email"` を固定した `<input>` であるのはこれによる。`boundary` は、それを書式要素の境界とする。
++   entry .foreign   HTML 以外の内容のためのタグ。その子は外来の要素である
++       二つの形がある。
++       `Tag.foreign["svg", Whatwg]()` は `Container of "svg" over "#foreign"` を作り、`Svg` と `Math` がそれである。その中では、パーサーはどのタグについても `Html.Element.foreign` のノードを構築し、属性の大文字・小文字を保ち、CDATA を受け付ける。
++       `Tag.foreign[dom](label, attributes)` は、属性を設定済みの任意のラベルの外来タグを作り、`Tag of "#foreign" over "#foreign"` で型付けされる。パーサーが `<svg>` の中の `<circle>` に対して行うのがこれである。
++   entry .container   与えられたラベルの、子のラベルのユニオンをもつコンテナタグ
++       `Tag.container["ul", "li" | ScriptSupporting, Whatwg](mode = Html.Mode.Whitespace)` は `Container of "ul" over "li" | "script" | "template" in Whatwg` である。
++       子の型は具象化されて `admissible` の集合になる。
++       `autoclose` は、兄弟が始まったときにパーサーが要素を閉じることを許す。`mode` は `Html.Mode.Normal`、`Whitespace`（子の間は空白のみ）、`Raw`（`<script>`）、`Rcdata`（`<textarea>`、`<title>`）のいずれかである。`insertable` は、書かれていない要素をパーサーが補うことを許す。`boundary` は、書式要素がそれを越えるのを止める。`presets` は属性を固定する。
++   entry .transparent   透過的なタグ。親がもてるものに加えて、名指した追加分をもつ
++       `Tag.transparent["a", "", Whatwg]()` は `Transparent of "a" over "" in Whatwg` である。適用すると、その子は自身の内容モデルではなく、*外側の*要素の内容モデルに照らして検査される。`A` が `<p>` の中でも `<div>` の中でも使えるのはこのためである。
++       子の型は、継承するもののほかにタグ自身が許す追加分を名指す（`Video` なら `"source" | "track"`）。
++       二つ目のオーバーロードは、ラベルと許される集合を値として取る。
++   entry .Container   子をもつタグ
+
+% 1 1 0 06ed8257112e6b0f0e617005b72ae01f
+
+@ 0 14 0 06ab044e9eb6923b0651cf39a5e52ec3
++         すべての普通のタグのクラスであり、`Container of label over children in dom` である。その `#Result` は `Html.Element & Html.Vacuiscible`、すなわち二つ目の引数リストでまだ子を与えられる要素である（`Div(id = t"x")(P("y"))`）。
++     entry #applyDynamic   `Tag.name(children*)`。`name` をクラスまたは id とする要素
++         `Div.panel(P("x"))` をディスパッチして `<div class="panel"><p>x</p></div>` を作る。
++         名前はスコープにある `Attribution of (? >: name)` によって検査される。`Attribution.empty` はプレーンな `Div(…)` の形（`apply`）を扱い、`stylesheets.uncheckedClasses` は任意のクラス名を許し、スタイルシート独自の `Attribution` はその名前だけを許し、id として宣言された名前からは id を作る。
++         タグにプリセットされた `class` は残り、新しい名前は空白を挟んでその後ろに追加される。
++     entry #node   一組の属性に対する、まだ子をもたない要素
++         属性を適用した `Result` である。タグのラベルの `Html.Element` であり、プリセットに続いて与えられた属性をもち、子を続けるための `Vacuiscible#apply` をもつ。
+
+% 0 1 0 1e1614b95cd845a716be3a4dd93d2d40
+
+@ 0 1 0 0eaf44011fdbb6e504ee3fc9e96929c9
++   entry .Transparent   内容モデルを親から受け取るタグ
+
+% 1 1 0 0305f98eb6d1ee8c1a77878582aefe7e
+
+@ 0 8 0 1c93c6ef7b46a1771a3b7fb58d8c0190
++         `A`、`Del`、`Ins`、`Canvas`、`Map`、`Object`、`Slot`、`Audio`、`Video` のクラスである。
++         その `#Result` は `Html.Element & Html.Transparent` であり、その `apply` は任意のラベルのユニオンの子を取り、そのユニオンを要素の `Topic` として記録する。そのため、外側の要素はそれらを自身の子であるかのように検査する。
++     entry #applyDynamic   `Tag.name(children*)`。`name` をクラスまたは id とする要素
++         `Tag.Container#applyDynamic` と同じだが、子はタグ自身の追加分だけに照らして検査される。`Tag.transparent` を参照。
++     entry #node   一組の属性に対する、まだ子をもたない要素
+
+% 0 1 0 1b95d271a14418390b9ce50e896a3917
+
+@ 0 1 0 10320ae24293243302341cbaa25f67fd
++   entry .Void   子を取らないタグ
+
+% 1 1 0 05f0f534f5d5bc191184dbedd2a254c5
+
+@ 0 5 0 05460f99019d3636182d2267622d7883
++         `Br`、`Img`、`Input`、`Link`、`Meta` などのクラスである。
++         その `#Result` はプレーンな `Html.Element of Topic in Form` であり、二つ目の引数リストをもたないので、`Br(Hr)` はコンパイルできない。
++         オブジェクト `Whatwg.Input`、`Whatwg.Link`、`Whatwg.Meta`、`Whatwg.Area`、`Whatwg.Track` は、プリセットのバリアントをもつためにこれを直接拡張する。
++     entry #node   一組の属性に対する要素
+
+% 0 1 0 122f7fd0404ecd480f65881039201a32
+
+@ 0 42 0 1fa0a16b98d48dc9149cb7d13fe0fdbc
++   entry #autoclose   兄弟または親が閉じたときに、パーサーがこの要素を閉じてよいかどうか
++       `<li>`、`<p>`、`<dt>`、`<dd>`、`<option>`、`<tr>`、`<td>`、`<th>`、表のセクション、`<head>`、`<body>` であり、HTML が文書に終了タグの省略を許す要素である。
++   entry #mode   要素の内容の読み書きの仕方。`Html.Mode.Normal`、`Whitespace`、`Raw`、`Rcdata` のいずれか
++       `Raw`（`<script>`、`<style>`）はデコードせずに終了タグまで読む。`Rcdata`（`<textarea>`、`<title>`）は実体をデコードするがタグは読まない。`Whitespace`（リスト、表、`<select>`、`<head>`）は子の間に空白のテキストだけを許し、パーサーはほかのテキストを `Html.Issue.OnlyWhitespace` で拒否する。
++   entry #presets   このタグから作られるすべての要素がもつ属性
++       `Input.Email` なら `type="email"`、`Link.Stylesheet` なら `rel="stylesheet"` である。
++       タグを適用すると、その属性がこれらの後ろに加わる。パーサーはタグのプリセットを開始タグの属性と照合し、`<input type="button">` を `Input.Button` として読み戻す。
++   entry #admissible   このタグが含められるラベル。テキストの集合として
++       `Transport` の実行時の形である。パーサーが子を拒否するのに（`Html.Issue.InadmissibleTag`）、`Dom#infer` が挿入する要素を見つけるのに使う。
++       空要素のタグや、純粋に透過的なタグでは空である。
++   entry #insertable   書かれていないこの要素をパーサーが補ってよいかどうか
++       `<head>`、`<body>`、`<tbody>`、`<tr>`、`<colgroup>` で真である。
++   entry #void   タグが空要素かどうか。子も終了タグももたない
++   entry #transparent   タグの内容モデルが親のものかどうか
++   entry #boundary   外で開かれた書式要素が中で続いてはならないかどうか
++       `<button>`、`<caption>`、`<object>`、`<table>`、`<td>`、`<th>`、`<template>` で真である。adoption agency アルゴリズムは、開いている `<b>` や `<i>` をこれらを越えて再構築しない。
++   entry #tableLike   これが `<table>`、`<tbody>`、`<thead>`、`<tfoot>`、`<tr>` のいずれかかどうか
++       タグを作るときに一度だけ計算され、パーサーの foster parenting の検査に使われる。
++   entry #isTable   これが `<table>` かどうか
++   entry #Result   タグが作る要素の型。`Container`、`Transparent`、`Void` が固定する
++   entry #applyDynamicNamed   `Tag(attribute = value, …)`。それらの属性をもつ要素
++       名前付き引数によるすべての適用の背後にある `Dynamic` の入口である。
++       プレーンな `apply` では、組から要素を構築する。`Tag.name(attribute = value)` では、スコープにある `Attribution` が割り当てるクラスまたは id として `name` も設定する。
++       各組は `#element` に渡され、そのマクロが属性を解決して値を変換する。
++   entry #element   各属性を検査して要素を作るマクロ
++       `(name, value)` の各組について、`name is Attribute on (? >: Topic) in Form` の given（またはグローバルなもの）を見つけ、その `Topic` のマーカーを読み、`value is Attributive to marker` を召喚する。
++       失敗すると引数の位置で停止し、_`name` has attribute type `marker`, but `value` cannot be attributed as a `marker` without a contextual instance of `value is Attributive to marker`_ を報告する。その要素でその名前を許す given がなければ、_the attribute `name` cannot be used on the element `<tag>`_ を報告する。
++       `Attributive` が `Unset` を返す値（`false` の `Boolean`、空のクラスリスト）は、属性を省く。
++   entry #node   変換済みの一組の属性に対する要素。各サブクラスが実装する
+
+@ 0 1 0 0b4edad196f1b4af0daa36f501751f97
++ entry .Attribute   方言の属性。その名前、有効な要素、値の型をもつ
+
+% 1 1 0 11e8b14fe2a82f640764acc8ee19088b
+
+@ 0 6 0 0d866fd5c41c224201c94fa39cc5c3c6
++       `Attribute(label, elements, global)` は、`Whatwg` と `Html4Transitional` のすべての属性の given がそのインスタンスであるものである。
++       型付けはその細分化が担う。
++       given は `"src" is Attribute on "img" | "video" of Url in Whatwg` であり、`Self` はリテラル型としての名前、`Plane` は要素、`Topic` は値のマーカー、`Form` は方言である。
++       `Tag#element` は `Self`、`Plane`、`Form` について召喚することで属性を解決する。`Html.Element#selectDynamic` も同じようにして、`Unattributive` を通して属性を読み戻す。
+
+@ 0 3 0 071b88ec76fb147413092d4cc9b58183
++       方言の `attributes` 辞書は名前ごとに一つの `Attribute` をもち、一つの名前に対する複数の given（`<a>`、`<base>`、`<link>` の `href`）は `#merge` でマージされる。
++       プログラムは `Whatwg.attribute()` または `Whatwg.globalAttribute()` で独自のものを定義する。
+
+% 1 1 0 1aeea62ba1f52ebd16d15e8e34982ed2
+
+% 1 1 0 1c772c825f9db52a0e29ee7b2677920a
+
+@ 0 9 0 0a2cd73cfeaa656c04d962545ac36313
++   entry #label   属性の名前。マークアップに書かれるとおりのもの
++   entry #elements   属性が有効な要素名。グローバルな属性では空
++   entry #global   属性がすべての要素で有効かどうか
++   entry #targets   属性が名指した要素で有効かどうか
++       `global || elements.has(tag)` であり、未知の属性に対するパーサーの検査である。
++   entry #merge   この属性と同じ名前の別の属性を一つにしたもの。両者の要素の和集合で有効
++   entry #Self   属性の名前。文字列リテラル型として
++   entry #Topic   属性が取る値のマーカー。`Whatwg.Url`、`Whatwg.Presence`、…
++   entry #Plane   属性が有効な要素名。リテラル型のユニオンとして
+
+@ 0 1 0 1ebc17f08e0949411de9e3054c5b7b44
++ entry .Attribution   タグのメソッドとして使った名前が、有効なクラスまたは id であることの証拠
+
+% 1 1 0 0c627209c9d305dd1b9cf6501d965402
+
+@ 0 6 0 1d7f649d69fc586d07a2670665870123
++       `Div.panel(…)` は、`Attribution of "panel"`（またはそれを含むユニオンのもの）がスコープにある場合に限り許される。attribution は、その名前が `class` と `id` のどちらの属性に入るかを示す。
++       ライブラリは、プレーンな `apply` の形のための `.empty` と、任意の名前のための `stylesheets.uncheckedClasses` を提供する。cataclysm のスタイルシートは、自身が宣言するクラスと id を列挙した独自のものをもたらすので、知らない名前はコンパイルエラーになる。
++       既知の名前の集合に対しては、`.classes` で手作業で作る。
+
+% 2 1 0 19faa8e1545ba18507a63a8950294a4c
+
+% 3 1 0 18c81dd374f4573f09193b8daf5cdfc2
+
+% 4 1 0 125970247177f8b91ff10defafbd6b0d
+
+% 5 1 0 137ebd0ad791e4fc06e605c02a804ff7
+
+% 0 1 0 0cefbec28e649b6e08fcd9c1bf36517b
+
+% 0 1 0 0c971b1b914f534d1e4e6d08826c7950
+
+% 1 1 0 098bebea9146d4b30a9dbbc6d10ac408
+
+% 1 1 0 19d5cac85e7f6a9f0ba582bbdba7a976
+
+% 0 1 0 1607047dfc5d7d0b0945d0eda897eb1b
+
+@ 0 7 0 01033636861fd0b50a5098908aaba179
++   entry .classes   一つ以上の名前をクラスとする attribution
++       `Attribution.classes[topic]()` であり、`topic` はリテラル型またはそのユニオンで、`Topic` になる。
++       名前は CSS 識別子の規則に照らして検査されない。`ClassList` は検査される。
++   entry .empty   プレーンな `Tag(children)` の呼び出しの attribution
++       `Tag(…)` は `Dynamic` を通して `applyDynamic("apply")` としてディスパッチされる。空の `attribute` をもつこの given が、その形で何も加えないようにする。
++       暗黙のスコープにある。
++   entry #attribute   名前が入る属性。`class`、`id`、またはプレーンな呼び出しでは空
+
+@ 0 1 0 0ae14f4755be0fb70c4bd4f6a22a1b5e
++ entry .Attributive   属性の値のマーカーに対して、値を属性のテキストにする方法
+
+% 1 1 0 102a1c1027e931fe1deef3f81651ceff
+
+@ 0 5 0 1b9dc9500de281e91dd87a24bff4d2b5
++       `value is Attributive to marker` は、`Topic` が `marker` である属性のために値を変換する。`Img(width = 50)` がコンパイルでき、`Img(width = 1.5)` ができないのは、`Int is Attributive to Whatwg.PositiveInt` があるからである。
++       `#attribute` は属性の名前と値を取り、名前とそのテキスト、名前だけ（`disabled` のような裸の属性）、または属性を省く `Unset` を返す。
+
+@ 0 1 0 1b7440a46e3874f913982b12f6950638
++       コンパニオンは標準の組に対する given をもち、すべて暗黙のスコープにある。
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 2 0 19b6bcdcf51dd65c1221de49bc680e37
++       column  マーカー
++       column  値の型
+
+% 0 1 0 1decd2b981be51750bbb7bb7b180dc12
+
+% 0 1 0 197632c6f5b04229181b698e2608e3c1
+
+% 0 1 0 1582b33fb1c4956d1385390e409959e2
+
+% 0 1 0 1c28caf398f4a66e0e469fc886c8329e
+
+% 0 1 0 085e470981cef2960cc5745d8ab4b15d
+
+% 0 1 0 1eeaddb9f91252d20700198fc5a88a30
+
+% 0 1 0 1cd296155545456e02a4a48467126dbf
+
+@ 0 1 0 0bcf5e0a6966fb580b3bdea39cb676aa
++       row  `Whatwg.Url`  任意の型付き URL
+
+% 0 1 0 08f9e913b8570933055a3c32aeebab82
+
+% 1 1 0 0a1206ac909b4fa71c59282f0790f020
+
+@ 0 2 0 1930a5f287d430cc0225c6e081896702
++       ほかのライブラリが独自のものを加える。graffiti の `urlText` は `Text` を `Url` として扱わせ、querencia の `scripting` は外来の DOM の式をイベントハンドラとして扱わせる。
+
+@ 0 4 0 1c32a69c14b32b911b992683705c8f26
++       この集合はまだ完全ではない。多くのマーカー（`Target`、`Method`、`Sandbox`、`Rel`、…）は固有の given をもたないので、その値を名指す列挙型は `.show` として渡す。
++       また、選択の given `attributives.textAttributive` は、すべてのマーカーに対して一度に `Text` を受け付けるようにするので、集合が埋まるまではこれをインポートするのが普通である。
+
+% 2 1 0 1da107eb78575594139627df2f960b2e
+
+% 3 1 0 00cbc16ae621f34017ce7ffeac548abb
+
+@ 0 1 0 071185095d5e3574160f87514852b4bb
++         label `src` には URL、`width` には `Int`、`ismap` には `Boolean`
+
+% 1 1 0 1ff89179ab81b4a00554a7a82f14715f
+
+% 2 1 0 0145ff55b6d04d72137c444ca072b5ce
+
+% 3 1 0 14b43f72b5a0cd851f440aecd6223bd1
+
+% 4 1 0 0ade9a89397b743c0205cf26ad9b3141
+
+% 0 1 0 077b99e61887819807dd06af2d9eebdc
+
+% 0 1 0 1726b7797913cfea145d82d4312c95a8
+
+% 1 1 0 13551f317cf7aab017b72527e15e589b
+
+@ 0 1 0 193392417b6549f2006197981c5a2856
++         label `false` の `Boolean` は属性を省く
+
+% 1 1 0 0ef8994502dfe4160ec96a2588c21a62
+
+% 0 1 0 013038691df77c6d1af7f57554e892b6
+
+% 0 1 0 1507c99ea66b77db0523b3f1dd860d0f
+
+% 1 1 0 059cba465f461e441cc39d2dd3704a4b
+
+@ 0 1 0 0c0abfbb3eb7f13d0d9ee6c42dc05ad9
++         label URL を期待する場所の `Text` には選択の given が要る
+
+% 1 1 0 1df722cbf86312501265932930e3e985
+
+% 0 1 0 1c5e0714acac0f6c0e9b539e8e3b025d
+
+% 0 1 0 06f28554ec9c28420ade3c85047cd029
+
+% 0 1 0 0db8f2f3b60c20b003d67b689ccbc880
+
+% 0 1 0 17093402a196e9d50d5b842d4dc03239
+
+% 1 1 0 01bb05c2802e858d17b1331085fe405c
+
+% 2 1 0 0018abd3f47a6f5a0327744eab8c6d88
+
+% 0 1 0 1eb2f8d04280d3cb04245062daf594ea
+
+% 1 1 0 145c99a740ba4e70085615df8f1b8c52
+
+@ 0 18 0 1259042bc39fa8371c8b224b1a2aac4b
++   entry .textTextual   `Text` を `Whatwg.Textual` の属性の値として、そのまま
++   entry .stringTextual   `String` を `Whatwg.Textual` の属性の値として、そのまま
++   entry .boolean   `Boolean` を `Whatwg.Presence` の属性として。真ならあり、偽なら省く
++   entry .switch   `Boolean` を `Whatwg.Switch` の属性として。`on` または `off`
++   entry .truth   `Boolean` を `Whatwg.Truth` の属性として。`true` または `false`
++   entry .int   `Int` を `Whatwg.Integral` の属性として
++   entry .posInt   `Int` を `Whatwg.PositiveInt` の属性として。符号は検査しない
++   entry .double   `Double` を `Whatwg.Decimal` の属性として
++   entry .domId   `Name[DomId]` を `Whatwg.Id` の属性として
++   entry .cssClass   `Name[CssClass]` を `Whatwg.CssClassList` の属性として
++   entry .classList   `ClassList` を `Whatwg.CssClassList` の属性として。空白で連結し、空なら省く
++   entry .url   `Abstractable across Urls to Text` である任意の値を `Whatwg.Url` の属性として
++       `HttpUrl` や任意の型付き URL を、その汎用のテキストとして書く。
++       プレーンな `Text` はそれにあたらない。`attributives.textAttributive` か graffiti の `urlText` がそれを許す。
++   entry .style   `Text` を `Whatwg.Css` の属性として、そのまま
++   entry .cssClassList   `List[Name[CssClass]]` を `Whatwg.CssClassList` の属性として。空白で連結し、空なら省く
++   entry .domIds   `List[Name[DomId]]` を `Whatwg.Ids` の属性として。空白で連結し、空なら省く
++   entry #attribute   値に対する属性の名前とテキスト、名前だけ、または省くための `Unset`
+
+@ 0 1 0 08571082166cb3841da576f8bb6aa96b
++ entry .Unattributive   属性のテキストを、その値のマーカーによって型付きの値として読み戻す方法
+
+% 1 1 0 1716956cc10de77b1efda94eaea73fa7
+
+@ 0 6 0 1788f1216170d7af173261d9509aba96
++       `Attributive` の逆である。`marker is Unattributive to result` は、要素が属性について保持する `Optional[Text]` を値に変換し、`Html.Element` に対する `element.alt` や `element.width` はこれを通じて解決される。属性の given の `Topic` がインスタンスを選ぶので、`Img(width = 50).width` は `Optional[Int]`、`Img(alt = t"x").alt` は `Text` である。
++       given は四つしかないので、それ以外のマーカーの属性は名前で読み戻せない。
+
+% 2 1 0 0ad25ad013d7b6700f27feca57d0bac2
+
+% 3 1 0 0a72f76796a87f950192daba83d2618c
+
+% 4 1 0 012dc1d58881360e0296e5a4f42cb725
+
+% 5 1 0 0bc920fe5f82f2af142b5f66d3604705
+
+% 6 1 0 178e3d8141a7cf6c0e8583ca1c46096f
+
+% 0 1 0 04e0bd217b410f6c1336be68e7e62498
+
+% 0 1 0 0ea879979ea1b02508785f0ba238cf06
+
+% 1 1 0 05073f4b192bacab0992adfef42801df
+
+% 1 1 0 101127ae3e14c25502dd5b53efecd790
+
+@ 0 5 0 01d846dd1ac652c21797549ab7c3e52b
++   entry .textTextual   `Whatwg.Textual` の属性を `Text` として。存在しなければ空
++   entry .int   `Whatwg.Integral` の属性を `Optional[Int]` として。存在しないか数でなければ `Unset`
++   entry .positiveInt   `Whatwg.PositiveInt` の属性を `Optional[Int]` として。存在しないか数でなければ `Unset`
++   entry .cssClassList   `Whatwg.CssClassList` の属性を、空白で分割した `List[Text]` として。存在しなければ `Nil`
++   entry #unattribute   属性のテキスト、またはその欠如に対する値
+
+@ 0 1 0 1aa75de295c0dc6d11316f39b658512f
++ entry .ClassList   要素の `class` 属性のための、CSS のクラス名の集合
+
+% 1 1 0 03193359f296269501ba332224d975f6
+
+@ 0 5 0 1ab5b3b6805e1e17107dc8c108ea36c0
++       `ClassList["one" | "two"]()` は、コードのコンパイル時に検査されるクラス名の集合である。型引数の各リテラルは CSS の識別子でなければならないので、`ClassList["1bad"]()` は実行時の失敗ではなく、コンパイルエラー _`1bad` is not a valid CSS class name_ になる。
++       結果は細分化された型 `ClassList of "one" | "two"` を持ち、`ClassList(set)` は `Name[CssClass]` としてすでに検査された名前を包む。
+
+@ 0 2 0 07b84fa068f59e4b186d9581512a99e7
++       クラスのリストは `Attributive.classList` を通じて属性の値になり（空のものは属性を省く）、リストは `+` と `-` で組み合わせられる。
+
+% 2 1 0 12f8a8028e85f41c052b8fa91df9167f
+
+% 3 1 0 0b0d678f37c8ca47001c37c5da7a882a
+
+% 4 1 0 0e820d0bf006b72d04434f2d6f22a7ff
+
+% 5 1 0 0bc9a337e5b7077a15bb130d87bf8e96
+
+% 0 1 0 05f5d4c1e3a2195d00ae5e836bb6e731
+
+% 0 1 0 0490ff23cca43c381ed7d06bf0738614
+
+% 0 1 0 0f818e950148527a1e7b70c863537093
+
+% 0 1 0 1393ef9efc369cec0dc639642dd70520
+
+% 1 1 0 03af5ba4fefc894310d709d6738e4027
+
+% 2 1 0 1ae7fddad03832ee18d06150db89cc6f
+
+% 1 1 0 07743d85fd55d4cc0852474e25da6ffb
+
+@ 0 14 0 0e02658bb8dfeee0113e8f3b73288724
++   entry .apply   `ClassList["a" | "b"]()`：リテラルからのクラスのリスト。それぞれ CSS の識別子として検査される
++       マクロである。型引数は文字列リテラルかそのユニオンでなければならず、そうでなければ展開は _the class names should be string literals_ で停止する。各リテラルは `CssClass` の `Nominative` の規則に対して検査される。
++       ケースクラスの `apply(classes)` は、すでに検査された `Set[Name[CssClass]]` を取る。
++   entry .focusable   診断でクラスのリストをどう名指すか：CSS セレクター `.a.b` として
++       細分化されたすべての `ClassList of …` 型に対して与えられているので、ブラウザのドライバーは要素をそのクラスで特定できる。
++   entry .addable   `list + other`：二つのクラスのリストの和
++   entry .subtractable   `list - other`：一方のクラスのうち、もう一方にないもの
++   entry .empty   空のクラスのリスト。素の呼び出しの `Attribution` として
++       `ClassList` は `Topical` であり、`Topic = "apply"` を持つこの given は、`ClassList` が証拠である場所で `Attribution.empty` と同じ役割を果たす。
++   entry #classes   名前。`Set[Name[CssClass]]` として
+
+@ 0 1 0 182e5f19b6d672301093bd6dc2f25f19
++ entry .Dom   HTML の方言の記述：そのタグ、属性、実体、doctype、推論の規則
+
+% 1 1 0 1abb748d0ee599cb12c0510c55cbd915
+
+@ 0 7 0 0f891f999ab090fd11b35751ef89eea1
++       `Whatwg` と `Html4Transitional` が実装する契約であり、パーサー、シリアライザー、`h"…"` 補間子が必要とするコンテキスト値である。
++       `Dom` の given（`import soundness.*` はどちらも持ち込まないので、`htmlDoms` から `htmlDoms.whatwg` または `htmlDoms.html4Transitional` を名前でインポートする）は、どのタグが存在するか、それぞれがどの属性を認めるか、どの名前付き実体がデコードされるか、文書がどの doctype を得るか、そしてパーサーがどの要素を書かれていなくても挿入してよいかを示す。
++       `Document[Html]` は、それが読まれたときの dom をその `Html.Provenance` に記録する。
+
+@ 0 4 0 0653b965072aa7a7146b23085940f831
++       別の方言は、`Tag.void`、`Tag.container`、`Tag.transparent` で作ったタグごとの `val` と、`Attribute` の given のコンパニオンを持つ、`Dom` を拡張したクラスである。提供されている二つの方言がするように、`elements` と `attributes` の表はリフレクションによってメンバーから作れる。
+
+% 1 1 0 00d82e03285336d40c51dd7997a5b30f
+
+% 2 1 0 0aecb3f4544d81a717a49eaeedd382ca
+
+% 1 1 0 0e57e8152790a3f00a9651b8f7ccee66
+
+@ 0 10 0 1d68b84b3fbf883609239f56acbba8e3
++   entry #elements   方言のすべてのタグ。名前ごと
++   entry #attributes   方言のすべての属性。名前ごと
++   entry #entities   名前付き文字参照。名前から置き換えのテキストへ
++   entry #doctype   この方言の `Document[Html]` が持つ doctype
++   entry #infer   親と、親が直接保持できない子の間に挿入するタグ。なければ `Unset`
++       文書全体として読むときに、`<table><tr>` が `<tbody>` を得て、裸の `<p>` が `<html>` と `<body>` を得る方法である。
++   entry #generic   方言のすべての要素を認める根のタグ
++       `#elements` のすべての名前に対する `Tag.root` であり、ラベルなしの `read[Html]` がパースする先である。そのため、断片はどの要素から始まってもよい。
+
+@ 0 1 0 0df801bda3e6b2630dff6856091fb84a
++ entry .Renderable   任意の型の値がどのように HTML になり、どんな HTML になるか
+
+% 1 1 0 022dc36404607239131be563f1a5a57c
+
+@ 0 5 0 08d0a21764778b470dca9f817b0e8c57
++       `value is Renderable in label` は、`value` が `Html of label` に描画されることを示し、そのラベルが認められるところならどこにでも置けるようにする。タグの子として、`h"…"` リテラルへの埋め込みとして、または `html` 拡張による変換としてである。
++       `Form` 型メンバーはラベル（またはユニオン）なので、コンパイラは `List[Text] is Renderable in "li"` が `<ul>` には入れられ、`<div>` には入れられないことを知っている。
+
+% 2 1 0 0a082249556b3074014493b1e1b82c1f
+
+% 3 1 0 13752bd20cd064b71ca67c9c16ac5345
+
+% 4 1 0 1ccd3cea7464bf90142033228e071530
+
+% 5 1 0 0b0cae729f967ba50565aa5c5a5bec8d
+
+% 0 1 0 1b04b9f57f180dc6164787cee617fb32
+
+% 0 1 0 1e5bf1f9d3a439051e3f52f2a42042da
+
+% 0 1 0 096c5abc1af8ad3802127c141f0d3eaf
+
+% 0 1 0 072cf1706c9269650129c8e56d7e9b95
+
+% 0 1 0 18769f26cf7371511bf4b5b3380b9354
+
+% 1 1 0 0e5cf5e99fc964cf14b21f61be61a66f
+
+@ 0 3 0 08b47aecae1288cf060777f014122040
++       他のライブラリも自分の型に描画を与えている。ここでは `Message` と `StackTrace`、他では punctuation の Markdown、archimedes の `Math`、legerdemain のフォームのフィールド、graffiti の `Archetype` のページであり、これによってページは接着コードなしに HTML として提供される。
+
+% 0 1 0 0e73a0986f0643d513e4ea2965673cc0
+
+% 1 1 0 1dcfa7f28910aaad005e6c2a0e56c41e
+
+@ 0 8 0 069fa1b60254b24a16bb570ac6d71180
++   entry .message   フレージングコンテンツとしての `Message`：そのテキストで、入れ子のメッセージも順に描画される
++       `Form = Phrasing` なので、メッセージは `<p>` や見出しに入れられる。スタックトレースの描画は `H4(stackTrace.message.html)` としてこれを使う。
++   entry .stackTrace   フローコンテンツとしての `StackTrace`：見出しとフレームの表を持つ `<div class="stack">`
++       コンポーネント、クラス名、メッセージを `<h2>`、`<h3>`、`<h4>` とし、その後にフレームごとに `<tr>` を持つ `<table>` が続く。各セルには、スタイルシートが選び出せるよう、`class`、`method`、`file`、`line`、`code` のクラスが付く。
++   entry #render   値に対する HTML。`Html of Form` として
+
+@ 0 1 0 1d5c6c4e87b648d20623b844ff04197f
++ entry .Autocomplete   `autocomplete` の値：`On` または `Off`
+
+% 1 1 0 12f6110c4d34f4a719cbf55123efb2e8
+
+@ 0 4 0 1d13856ed3beef780dd9d8610b412365
++       `Autocomplete.On.show` は `on` である。
++       属性そのものは `Whatwg.Switch` と型付けされており、`Boolean` が `Attributive.switch` を通じて直接それを満たす。この列挙型は独自の `Attributive` を持たない。
++   entry .showable   値を小文字の名前として描画する
+
+@ 0 1 0 07d883904d366f23063493b6c21e676e
++ entry .Capture   `<input type="file">` の `capture` の値：`Environment` または `User`
+
+% 1 1 0 1040dcd805b7ecb01c9b10e19ffce16e
+
+@ 0 3 0 0dfb05cfb3195d24110eb2d47c9e70da
++       小文字で表示される。
++       WHATWG の語彙には `capture` 属性の given が宣言されていないので、この列挙型は現在のところ名前の語彙にすぎない。
++   entry .showable   値を小文字の名前として描画する
+
+@ 0 1 0 0b7aadb9a53399de114d1dc0c93ba1e8
++ entry .Crossorigin   `crossorigin` の値：`UseCredentials` または `Anonymous`
+
+% 1 1 0 1adb2073272cd3820dce912db998600e
+
+@ 0 5 0 0f50dad451712c300a3a6875c287d9c2
++       ケバブケースで `use-credentials` と `anonymous` と表示される。
++       属性は `Whatwg.Crossorigin` と型付けされており、この列挙型はそれに対する `Attributive` を持たないので、`attributives.textAttributive` をスコープに置いて `crossorigin = Crossorigin.Anonymous.show` として渡す。
++   entry .showable   値をケバブケースの名前として描画する
+
+@ 0 1 0 0bad3cd383ba35360032179a94c70090
++ entry .HDir   `dir` の値：`Ltr`、`Rtl`、または `Auto`
+
+% 1 1 0 0d025faf776d60101ac10dbce78b6f72
+
+@ 0 5 0 158d91555ceb901e19651f18c1e58a41
++       独自の `Attributive` を持つ唯一の属性の列挙型なので、`Body(dir = HDir.Rtl)` はインポートなしにコンパイルされ、`dir="rtl"` を書く。
++       HTML 4 の `<dir>` タグや他のライブラリの `Dir` のための余地を残すため、`Dir` ではなく `HDir` と名付けている。
++   entry .showable   値を小文字の名前として描画する
++   entry .attributive   `Whatwg.Dir` の属性の値としての `HDir`
+
+@ 0 1 0 01f4602d2d1c744a01a2b2867d685441
++ entry .HttpEquiv   `<meta>` の `http-equiv` の値：`ContentSecurityPolicy`、`ContentType`、`DefaultStyle`、または `Refresh`
+
+% 1 1 0 18b70a1b89f09f240d65e5676a3989e5
+
+@ 0 3 0 0bf64fca3f1dd54f0a61f875f44d0968
++       ケバブケースで表示される（`content-security-policy`）。
++       この列挙型は `Attributive` を持たないので、`attributives.textAttributive` とともに `.show` として渡す。
++   entry .showable   値をケバブケースの名前として描画する
+
+@ 0 1 0 191492c3ee0d50071ae75ab8c1eb5394
++ entry .Kind   `<track>` の `kind` の値：`Subtitles`、`Captions`、`Descriptions`、`Chapters`、または `Metadata`
+
+% 1 1 0 1db59f5c426b93881b11aa67237858f9
+
+@ 0 3 0 16f881d41673b7a807395691c08e9101
++       小文字で表示される。
++       `Whatwg.Track` はそれぞれをプリセットのタグ（`Track.Captions`）として提供しており、それがふつうの書き方である。この列挙型は `Attributive` を持たない。
++   entry .showable   値を小文字の名前として描画する
+
+@ 0 1 0 10753c6cea2ebd8906a1e3d4b84ae50f
++ entry .Method   `<form>` の `method` の値：`Post`、`Get`、または `Dialog`
+
+% 1 1 0 19ef58c124b87745151d603e8ac4e444
+
+@ 0 3 0 07382eba021dce2f195b8e750d7cc06c
++       小文字で表示される。
++       この列挙型は `Attributive` を持たないので、`attributives.textAttributive` とともに `method = Method.Post.show` として渡す。
++   entry .showable   値を小文字の名前として描画する
+
+@ 0 1 0 029b255c41bdecd011fb91783536fea5
++ entry .Preload   `preload` の値：`None`、`Metadata`、または `Auto`
+
+% 1 1 0 131b4a64695cfeeb055cbf3b6833b187
+
+@ 0 3 0 0e983746a3f93cbf16bc349ce8ca057e
++       小文字で表示される。
++       `scala.None` と取り違えないよう、`Preload.None` と完全な形で書く。
++       `.show` として渡す。この列挙型は `Attributive` を持たない。
++   entry .showable   値を小文字の名前として描画する
+
+@ 0 1 0 1a71afe0af476dfd02283d5804300e55
++ entry .Rel   `rel` のリンクの種類。`Alternate` から `Tag` まで
+
+% 1 1 0 01d5ec7e930ef448018cef6ba94ab383
+
+@ 0 6 0 079a132fc076afeb1aa1ee24d9503228
++       `Alternate`、`Author`、`Bookmark`、`Canonical`、`DnsPrefetch`、`External`、`Help`、`Icon`、`License`、`Manifest`、`Modulepreload`、`Next`、`Nofollow`、`Noopener`、`Noreferrer`、`Opener`、`Pingback`、`Preconnect`、`Prefetch`、`Preload`、`Prerender`、`Prev`、`Search`、`Stylesheet`、`Tag` があり、ケバブケースで表示される（`dns-prefetch`）。
++       `<link>` については `Whatwg.Link` がほとんどをプリセットのタグとして提供している。`<a>` では `.show` を渡す。
++   entry .showable   値をケバブケースの名前として描画する
+
+@ 0 1 0 131ec2184fdcac880e565420dac032f5
++ entry .Rev   `rev` の HTML 4 の逆方向リンクの種類。`Alternate` から `Bookmark` まで
+
+% 1 1 0 1fad3fb4da9536051009836f31d94d71
+
+@ 0 4 0 13df40fa599c7f361a72a6fb9932e130
++       `Alternate`、`Stylesheet`、`Start`、`Next`、`Prev`、`Contents`、`Index`、`Glossary`、`Copyright`、`Chapter`、`Section`、`Subsection`、`Appendix`、`Help`、`Bookmark` があり、小文字で表示される。
++       `rev` は `Html4Transitional` にしか存在しない。
++   entry .showable   値を小文字の名前として描画する
+
+@ 0 1 0 1306814d4021797b0db5d70f1d00ea07
++ entry .Sandbox   `<iframe>` の `sandbox` のトークン
+
+% 1 1 0 1a6e4d734d47ac790d562d2f4a34767f
+
+@ 0 5 0 18793b5c6204d12d0cfc016d98f89f27
++       `AllowForms`、`AllowPointerLock`、`AllowPopups`、`AllowPresentation`、`AllowSameOrigin`、`AllowScripts`、`AllowTopNavigation` があり、ケバブケースで表示される（`allow-forms`）。
++       属性は `Whatwg.Sandbox` として、空白で区切った複数のトークンを取る。この列挙型は `Attributive` を持たないので、リストをつなげてテキストとして渡す。
++   entry .showable   値をケバブケースの名前として描画する
+
+@ 0 1 0 09d9aa133bb3b0720a58f9e56e684c1e
++ entry .Shape   `<area>` の `shape` の値：`Circle`、`Default`、`Poly`、または `Rect`
+
+% 1 1 0 0807134655ea55eb0620e4afa5953f15
+
+@ 0 3 0 01ffc9a9509978a30bea58537cf8c400
++       小文字で表示される。
++       `Whatwg.Area` はそれぞれをプリセットのタグとして提供している。この列挙型は `Attributive` を持たない。
++   entry .showable   値を小文字の名前として描画する
+
+@ 0 1 0 1e2a3e26190d8c6b07da37ae7936c076
++ entry .Target   `target` の値：名前付きのコンテキスト、または `Self`、`Blank`、`Parent`、`Top`
+
+% 1 1 0 036079e396d2db200ef30deef3d4f1a5
+
+@ 0 5 0 193a81fe985234cc1da05e761b1f5f6c
++       `Target.Browse(name)` は名前付きの閲覧コンテキストで、名前として表示される。四つのキーワードは `_self`、`_blank`、`_parent`、`_top` と表示される。
++       属性は `Whatwg.Target` と型付けされており、この列挙型はそれに対する `Attributive` を持たないので、`attributives.textAttributive` をスコープに置いて `.show` として渡す。
++   entry .showable   値をそのキーワード、またはコンテキストの名前として描画する
+
+@ 0 1 0 0bdf15674f74923e1e0264783492350d
++ entry .Wrap   `<textarea>` の `wrap` の値：`Soft` または `Hard`
+
+% 1 1 0 07cb67e88de1ada11a7cc86618279869
+
+@ 0 4 0 126017d5d33c20ba0bbe6575001394cd
++       小文字で表示される。
++       WHATWG の属性は `Whatwg.Softness` と、HTML 4 のものは `Html4Transitional.Wrap`（任意のテキスト）と型付けされている。この列挙型は `Attributive` を持たないので、`.show` として渡す。
++   entry .showable   値を小文字の名前として描画する

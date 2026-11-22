@@ -1,0 +1,44 @@
+orthant 2 language
+
+% 0 1 0 0c21520be20ec02f153aaebf19bbf61b
+
+@ 0 2 0 01de378e79b9e6e20786ca882372489d
++ Порождается, когда значение JSON не удовлетворяет схеме, по которой оно проверяется.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Причина
+
+@ 0 4 0 1a1a9257451335b51f72027c10e57f4e
++ `Json.Provider` из Jacinta проверяет значения JSON по схеме по мере чтения полей записи и
++ сообщает о каждом несоответствии этой ошибкой через `Tactic` кода, читающего поле, чтобы
++ проверяющий читающий мог собрать их все. Сообщение:
++ `the JSON was not valid according to the schema because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Варианты
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 14 0 08d296b9302f8492128252de64ce0b1e
++ column  Код
++ column  Причина
++ column  Значение
++ column  Сообщение
++ column  Решение
++ row  `↯/s.106.3.1`  `JsonType`  Тип значения не соответствует тому, что требует схема.  `[↯/s.106.3.1] the JSON was not valid according to the schema because expected JSON type number, but found string`  Предоставьте значение того типа, который требует схема, или ослабьте схему, если тип действительно гибок.
++ row  `↯/s.106.3.2`  `MissingValue`  Обязательное значение отсутствует в JSON. Причина называет отсутствующее поле, если оно известно.  `[↯/s.106.3.2] the JSON was not valid according to the schema because the value of locality was missing`  Добавьте отсутствующее поле или отметьте его в схеме как необязательное.
++ row  `↯/s.106.3.3`  `IntOutOfRange`  Целое значение выходит за пределы `minimum`/`maximum`, допускаемых схемой. Порождается типом провайдера `"integer!"`; отсутствующая граница — это `Unset`, а не значение-маркер.  `[↯/s.106.3.3] the JSON was not valid according to the schema because the value was not between 1 and 99`  Ограничьте значение допустимым по схеме диапазоном.
++ row  `↯/s.106.3.4`  `PatternMismatch`  Строковое значение не соответствует регулярному выражению в `pattern` схемы.  `[↯/s.106.3.4] the JSON was not valid according to the schema because the value did not conform to the regular expression [a-z]+`  Исправьте значение так, чтобы оно соответствовало шаблону схемы, или ослабьте шаблон.
++ row  `↯/s.106.3.5`  `NumberOutOfRange`  Число выходит за пределы `minimum`/`maximum` (или исключающих границ), объявленных схемой. Порождается типом провайдера `"number!"`.  `[↯/s.106.3.5] the JSON was not valid according to the schema because the number was not between -90.0 and 90.0`  Ограничьте значение допустимым по схеме диапазоном.
++ row  `↯/s.106.3.6`  `LengthOutOfRange`  Длина строки выходит за пределы `minLength`/`maxLength` схемы. Порождается типом провайдера `"string!"`.  `[↯/s.106.3.6] the JSON was not valid according to the schema because the string's length was not between 1 and 214`  Укоротите или удлините значение, чтобы оно соответствовало схеме.
++ row  `↯/s.106.3.7`  `NotPermitted`  Строка не входит в значения `enum` схемы (или не равна её `const`). Порождается типом провайдера `"enum"`.  `[↯/s.106.3.7] the JSON was not valid according to the schema because the value Polygon was not one of Point`  Используйте одно из перечисленных значений или расширьте `enum` схемы.
++ row  `↯/s.106.3.8`  `UnexpectedKind`  Значение относится к такому виду JSON, который не принимает ни одна из альтернатив его объединения (`anyOf`, `oneOf` или `type`, называющий несколько).  `[↯/s.106.3.8] the JSON was not valid according to the schema because the value was a JSON boolean, which is not one of string, number`  Предоставьте значение одного из видов, перечисленных в схеме.
++ row  `↯/s.106.3.9`  `Unparsable`  Текст строки недопустим для её `format`: `json-pointer` или `regex`, который не разбирается.  `[↯/s.106.3.9] the JSON was not valid according to the schema because the value a[ is not a valid regex`  Исправьте значение так, чтобы оно разбиралось в своём формате.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## См. также
+
+@ 0 1 0 1eacee630aefe77708d9951599b52b0f
++ - Исходный код: `lib/jacinta/src/core/jacinta.Json4.scala`

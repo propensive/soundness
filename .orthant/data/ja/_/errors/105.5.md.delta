@@ -1,0 +1,69 @@
+orthant 2 language
+
+% 0 1 0 09fbcbdae03a5ca4160f26a8aac8c980
+
+@ 0 1 0 140a0843629ce8ad000b7aca0f860cda
++ Enigmatic が X.509 の証明書を組み立てられないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 6 0 13cca1974cfbe8bf07752ba0d0dd89a0
++ 証明書の生成は、構造的には正しいが、どの検証者も受け入れない証明書を生むような入力を拒否する。X.509 が許す範囲の外のシリアル番号、決して始まらない有効期間、エンコーディングが `SubjectPublicKeyInfo` でない鍵、組に対してオブジェクト識別子が割り当てられていない暗号方式とダイジェストである。
++ メッセージは `could not build the certificate because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 13f2fc8bb3f129f51b3286c1a6a6888a
+
+@ 0 3 0 16ca40573160779407d7a418b13715f1
++ 暗号方式とアンビエントな `SignatureDigest` の組に、署名アルゴリズムのオブジェクト識別子がない。
++ RSA と ECDSA に識別子が割り当てられているのは、SHA-256、SHA-384、SHA-512 だけである。
+
+@ 0 1 0 1e3541f31b0b2cea07832466a53fc17f
++ **例。** `[↯/s.105.5.1] could not build the certificate because no signature algorithm is assigned to SHA1`
+
+@ 0 2 0 0e6d79dc6137c72a1917c733f541f398
++ **解決方法。** 識別子を持つダイジェストの一つを選ぶ。既定の SHA-256 は、現在のすべての証明書プロファイルが義務付けるものである。
+
+% 0 1 0 0e3b55bc87972f5619c65cd151e06819
+
+@ 0 2 0 013b4903dd15e17c1d7a70a431d43ee7
++ 鍵の公開部分が DER の `SubjectPublicKeyInfo` ではなかったので、証明書に埋め込めない。
+
+@ 0 1 0 145083d0aa97c2e71805504b23f997cb
++ **例。** `[↯/s.105.5.2] could not build the certificate because the public key was not a SubjectPublicKeyInfo`
+
+@ 0 2 0 1a6125439d32eb8d05d83319ac57335b
++ **解決方法。** これは、プロバイダーが `Crypto` の契約の鍵のエンコーディングに従っていないことを示している。どのプロバイダーがスコープにあるかを確認する。
+
+% 0 1 0 0687947107d0cfa20c8c5b10dee7df02
+
+@ 0 2 0 04f2172e95419ae81cb809723a4a2bc9
++ シリアル番号がゼロまたは負だった。
++ RFC 5280 は正の整数を要求している。
+
+@ 0 1 0 128703b3715221d419087741274c5711
++ **例。** `[↯/s.105.5.3] could not build the certificate because the serial number was negative or zero`
+
+@ 0 2 0 0c4d9ea341a3aa5b01fce545c3e21ae9
++ **解決方法。** 正のシリアル番号を使う。認証局の場合は、それが発行した証明書の中で一意でもなければならない。
+
+% 0 1 0 0ca4125e71421fb70cbaf68a43c535e9
+
+@ 0 1 0 0bd7218162cbd6d70ddfb404c25a5a7b
++ 有効期間の終わりが、その始まりより後ではなかった。
+
+@ 0 1 0 1b374f263443b1431f1e13e6248298c6
++ **例。** `[↯/s.105.5.4] could not build the certificate because the validity period ended before it began`
+
+@ 0 2 0 197a038feb19064d16a947f0dbfa3777
++ **解決方法。** `notBefore ~ notAfter` のように、早いほうの時点を先にして期間を組み立てる。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 3 0 1cfce0c752685a200ce00f0c359faa8f
++ - ソース：`lib/enigmatic/src/x509/enigmatic.Certificate.scala`
++ - `↯/s.105.4` — `Asn1Error`。証明書の DER を読み戻せないときに発生する

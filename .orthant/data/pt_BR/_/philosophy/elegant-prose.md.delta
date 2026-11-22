@@ -1,0 +1,143 @@
+orthant 2 language
+
+@ 0 1 0 11b1d9dbac7517c609511e8e77d4f296
++ # Prosa elegante
+
+@ 0 6 0 192e4867caa6218b09533aa7127958ec
++ Código no Soundness deve ser lido como prosa elegante: alguém que conhece o domínio deveria
++ conseguir ler um método em voz alta e entender o que ele faz. Esse é o objetivo a que os outros
++ princípios servem — o [estilo direto](direct-style.md), a [nomenclatura](naming.md) cuidadosa,
++ as [APIs pequenas](small-apis.md) e as [assinaturas honestas](honest-signatures.md) existem para
++ que o significado do código venha à tona e o mecanismo recue. A clareza para o leitor é tratada
++ como um objetivo primário do design, e não como um feliz efeito colateral dele.
+
+@ 0 9 0 00f630af2dde9e1b18fa715e3082d676
++ A prosa se aprende por analogia, e uma API bem projetada também. Um leitor que viu
++ `text.read[Json]` deve adivinhar corretamente que `text.read[Markdown]` analisa Markdown, que
++ `bytes.read[Audio in Wave]` lê um arquivo WAV e que `stream.read[Csv]` leria CSV — um único
++ verbo, com o mesmo significado em todos os formatos. A mesma analogia percorre todo o
++ vocabulário: tudo o que pode ser decodificado é `text.as[T]`, tudo o que pode ser exibido é
++ `value.show`, tudo o que é transmitido em stream é `source.stream[Data]`, todo literal
++ verificado é um interpolador (`url"…"`, `p"…"`, `json"…"`, `v"…"`), e toda forma serializada faz
++ a ida e volta pelo mesmo par de operações. Aprender um canto do Soundness é aprender a gramática
++ de todo ele.
+
+@ 0 4 0 07bc9fc9c9d3ac1c061dd1b1333c8136
++ A analogia é uma restrição de design, e não um acidente: um novo módulo *deve* grafar sua análise
++ como `read`, sua renderização como `show`, seus literais como um interpolador — porque, no
++ momento em que ele inventa `parseFrom` ou `stringify`, os palpites corretos do leitor começam a
++ falhar, e a prosa perde o ritmo.
+
+@ 0 1 0 0fbdab94d49e82a80a6eb1224785e7ff
++ ## O teste
+
+@ 0 2 0 15fa1815b0dfb7271522f7bea4632229
++ A afirmação pode ser verificada: leia o código em voz alta e veja se ele faz sentido para alguém
++ que conhece o domínio, mas não a biblioteca.
+
+% 2 1 0 1ea8275c9ccbd60b1c05c9285907679c
+
+% 3 1 0 14514a5d8c7594410030df39929bc3f4
+
+% 4 1 0 12b14d4b78034b441e5a92aa4d17b52c
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 11debf3f8ca0d1ef0fe3bc9f51899a5c
+
+% 0 1 0 196b923a40c8885b0ea0831911ed4fb1
+
+% 0 1 0 1ec9f438ce6113e6059f84cf01229841
+
+% 0 1 0 145858cbd1a860e913502d0d67da3295
+
+% 0 1 0 09d92ce0f689a9410a227fe219f8936a
+
+% 1 1 0 03cc50d3d9ca38531fe3257992d1059b
+
+@ 0 3 0 145db717aa100d21093b0695eb88dc57
++ “Supervisione: o servidor é um servidor de socket na porta 8080 que trata — case o alvo da
++ requisição: para barra, uma resposta HTTP, OK, a página inicial…”. Um leitor que conhece HTTP
++ acompanha isso sem saber nada sobre o Soundness.
+
+@ 0 1 0 1ab24b93e77c7e4f0ec2f76cda4cb365
++ O mesmo teste aplicado em outros lugares:
+
+% 2 1 0 06da447884b50a511536aec664fd13e1
+
+% 3 1 0 1cf254ea407b5ffd042a72dac4d406c7
+
+% 4 1 0 06d058051559dec61c33b5f21e27b24a
+
+% 0 1 0 12cea3836f3c8d9115628600dc5a06b1
+
+% 0 1 0 101d7caa0fcf1db70943a9316fc4f554
+
+% 0 1 0 1efa76fd5405969200bfd834d84b96a2
+
+% 0 1 0 0567dd676232b453187980514e92885f
+
+% 0 1 0 1beb41604f6a00bb1330ae8f161608b1
+
+% 0 1 0 1ed1bd904def568018b2775f634e6ae5
+
+% 1 1 0 029ce7110081b51702585b287f75ed4a
+
+@ 0 1 0 146d5a6dfd0d006a0f4d67a2f770e581
++ Cada um se lê como uma afirmação sobre o domínio, e não como uma instrução para uma máquina.
+
+@ 0 1 0 0b15b6b50dc99b9507e1167f59d816d6
++ ## Quanto custa esconder o mecanismo
+
+@ 0 2 0 080a90c8970e7d5101ffc4f12535b67a
++ Prosa que se lê bem não é prosa sem nada por trás. Cada linha acima se apoia em vários dos outros
++ princípios ao mesmo tempo, e o leitor não deve notar nenhum deles:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 1e6d54f9efee65be1b14332443f218c5
++ column  Expressão
++ column  Apoia-se em
++ column  O leitor vê
++ row  `path.open[Directory](Read & Exclusive)`  uma [capability com escopo](delimited-scopes.md), um conjunto de concessões em nível de tipo e a [verificação de capturas](capture-checking.md) provando que o handle não escapa  um diretório sendo aberto para leitura exclusiva
++ row  `t"2011-12-13".as[Date]`  uma classe de tipos resolvida pelo tipo de destino, uma estratégia de erro contextual e um calendário  texto se tornando uma data
++ row  `5.25.pm on 2018-Aug-11`  um literal verificado em tempo de compilação, um construtor [infixo](infix-types.md) e uma validação que rejeita `13.00.am`  uma hora em uma data
+
+% 1 1 0 07c85d279b80a6de06f5c2c9bf309c7b
+
+@ 0 3 0 0de12326003c82a3109d9166e913edd2
++ Esse é o objetivo: um mecanismo que recua. Quando o mecanismo *precisa* ser visível — quando uma
++ capability precisa ser nomeada, ou um tipo atribuído —, é porque o leitor genuinamente precisa
++ saber, e não porque o design vazou.
+
+@ 0 1 0 0970d700e34264b81fa1e73a79c5296c
++ ## Onde a prosa falha
+
+@ 0 1 0 102f38f04e77ea411269d0e0bbcbcac2
++ Ser honesto sobre isso é mais útil do que o princípio declarado sozinho.
+
+@ 0 2 0 1eb69c9eb1336bb81173b2ac365b9463
++ **Atribuições de tipo se intrometem.** Onde a inferência não alcança, um tipo precisa ser
++ escrito, e um longo tipo infixo no meio de uma expressão interrompe a frase de vez.
+
+@ 0 3 0 072fec0eff6f32c4019b737c4c900d13
++ **Mensagens de erro não são prosa.** Um given ausente é informado como uma busca implícita que
++ falhou, no vocabulário do compilador e não no da biblioteca — e é por isso que
++ `explainMissingContext` existe, e por isso ele é um reparo, e não uma solução.
+
+@ 0 4 0 051cb752a9e2ef471ec1c85abbc11191
++ **Alguns domínios não têm um bom vocabulário cotidiano.** Uma pipeline de stream se lê bem; o
++ vocabulário de `Duct` e `Intake` por baixo dela não, e não poderia, porque os conceitos não têm
++ nomes do dia a dia. A resposta é manter esse vocabulário abaixo da superfície, onde a maioria dos
++ leitores nunca o encontra, e não fingir que ele se lê como prosa.
+
+@ 0 4 0 02ac4c8818b4668f1096c5b94d6b252c
++ **Ler em voz alta é um teste, não uma prova.** Um código pode ter um ritmo lindo e estar errado,
++ e o princípio não substitui a verificação que os outros princípios fornecem. Ele faz um código
++ correto *parecer* correto e — o que é mais útil — faz um código errado parecer errado para um
++ leitor que conhece o domínio.
+
+@ 0 3 0 18c61c76b1eeace018da2b6e0635f379
++ Veja [nomenclatura](naming.md) e [APIs pequenas](small-apis.md) para as duas disciplinas que
++ produzem isso mais diretamente, e [estilo direto](direct-style.md) para a forma que permite que
++ uma frase continue sendo uma frase.

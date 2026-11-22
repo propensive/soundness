@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 4 0 0d12584f3176092d189938948043cdd6
++ Se puede añadir cualquier valor [digerible](hashing.md#hashing-your-own-types), y el algoritmo de
++ hash se elige como un tipo. Un filtro puede llenarse en su sitio mientras es nuevo, y después se
++ congela. Un filtro congelado es [inmutable]: `+` y `++` dan un filtro nuevo y dejan el anterior
++ sin cambios, de modo que los filtros congelados se comparten y se acumulan con tanta seguridad
++ como cualquier otro valor.

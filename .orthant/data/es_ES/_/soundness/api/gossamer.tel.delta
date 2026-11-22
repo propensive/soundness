@@ -1,0 +1,2017 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0d2063bbe5efb5860f6f784f6c463904
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0eaca7ef4efa00ce178e5819a55a45d7
++ info   el texto como valor tipado: `Text`, el interpolador `t"…"` y un vocabulario de operaciones sobre cualquier tipo textual
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 0dde71729355683c0b585e9ca82bb8e5
++     _Gossamer_ es la biblioteca de texto: las operaciones sobre `Text` —el alias opaco del
++     `String` de la JVM que Soundness usa en lugar de `String` en todas partes— y las clases de
++     tipos que ponen esas mismas operaciones a disposición de cualquier otro tipo textual, como un
++     `Teletype` con estilos ANSI, una cadena de bytes `Ascii` o un `Writing` de grupos de grafemas.
+
+@ 0 9 0 15d1c37dd8c74a3a1c5af57b4eca052d
++     Un `Text` se escribe con el interpolador `t"…"`, que sustituye cualquier valor que sea
++     `Showable` y procesa los escapes mientras se compila el código, o con `txt"…"`, que además
++     reúne en uno solo un párrafo escrito a lo largo de varias líneas de código fuente. Sus
++     operaciones son verbos sencillos: `cut` divide en un delimitador y `join` vuelve a unir;
++     `keep`, `skip`, `snip`, `before`, `after`, `upto`, `from` y `segment` recortan por cantidad
++     o por posición ordinal; `lower`, `upper`, `capitalize`, `trim`, `pad`, `fit` y `sub`
++     transforman; `starts`, `ends`, `contains`, `offsetOf`, `tally`, `pinpoint` y `search` hacen
++     preguntas. La ausencia es un `Optional`, no `-1` ni `null`; las posiciones son `Ordinal`s
++     (`Prim`, `Sec`, `Ter`, …), que no pueden confundirse con longitudes; y está demostrado que un
++     `cut` produce al menos un trozo.
+
+% 2 1 0 0e8e9e8def100b1b1e69c0fa8e0fe68a
+
+% 3 1 0 06ec704c9ddf0fce1c4a36c0c26cf54e
+
+% 4 1 0 0a89e89a23198e971486cdf5cd587ccc
+
+% 0 1 0 049be74cec392a8f0b2e3713feb24799
+
+% 0 1 0 13e45beaf01fc7b2046a5d81153f196c
+
+% 0 1 0 1b430b72bce17b9306dda8b27cf836b3
+
+% 0 1 0 1d721cefbd3caee01801a5542168a9a9
+
+% 0 1 0 0b6c61edd04b4f93022a858e83f45bfa
+
+% 0 1 0 0e432c84425dcf91040cea8ea9f46c59
+
+% 1 1 0 08d673d324904af716a360c37fb89de9
+
+@ 0 8 0 12ced88ca10cf91d0bbd13f14f774332
++     La mayor parte del vocabulario se escribe una sola vez, sobre la clase de tipos `Textual`, de
++     modo que un tipo con una instancia de `Textual` —`Text`, `Ascii`, `Writing` y el `Teletype`
++     de escapade— obtiene todas las operaciones sin redefinir ninguna. `Textual` extiende las
++     clases de tipos generales de colecciones (`Countable`, `Segmentable`), y así es como `keep`,
++     `skip` y `snip` basados en cantidad y en predicado, `before`/`after`/`upto`/`from` basados en
++     ordinales, y `count`, `where`, `all` y `exists` de la biblioteca de colecciones sirven también
++     para el texto: esas viven en `rudiments` y `murmuration`, no aquí. Las factorías
++     `reversibleTextual` y `traversableTextual` permiten que un tipo textual nuevo publique
++     `reverse` y el recorrido en su propio objeto compañero.
+
+@ 0 2 0 0d2ffddc9ec6b56e1824bbfc7f757ed5
++     Tres aspectos del texto son políticas, que se eligen importando un given **por nombre**
++     (porque `import soundness.*` no importa givens):
+
+@ 0 7 0 03a1f22a1f3c37271ac422ebab703d46
++     - **La sensibilidad a mayúsculas y minúsculas** (`caseSensitivity.caseSensitive`,
++       `caseInsensitive` o `smartCase`), que consultan todas las medidas de proximidad.
++     - **La intercalación** (`collations.unicodeCollation` o `codepointCollation`), sin la cual el
++       texto no puede ordenarse ni compararse con `<`: con `collationComparable`, una `Collation`
++       en el ámbito hace que `Text` sea `Comparable`.
++     - **La proximidad** (`proximities.levenshteinProximity`, `jaroProximity`, …), la medida que
++       hay detrás de `proximity`, `fuzzy` y el `Lexicon`.
+
+@ 0 3 0 162aaef74114f99517d62d922be08080
++     `Decimalizer` representa un `Double` con un número elegido de cifras significativas o de
++     decimales, y es lo que consulta `show` sobre un `Double`;
++     `decimalConverters.javaDecimalConverter` es la alternativa simple basada en `toString`.
+
+@ 0 1 0 1af03583aa97792d1ed95982f8b2b936
++     La biblioteca tiene tres componentes:
+
+@ 0 10 0 171bed539baa28ed1b7b463e3ed472a8
++     - `gossamer.core`: las operaciones de `Text`, `t"…"`, `txt"…"` y `a"…"`, `Textual`,
++       `Builder` y `Text.build`, `Cuttable` y `Joinable`, `Writing` y `Grapheme`, `Ascii`,
++       `Decimalizer`, `Numerous`, `CaseSensitivity`, `Collation`, `Proximity` y los paquetes de
++       elección `caseSensitivity`, `collations`, `proximities` y `decimalConverters`.
++     - `gossamer.codec`: la mitad orientada a `distillate`: `textDecodable`, que decodifica bytes
++       a `Text` mediante un `Charset`, y el paquete `enumIdentification`, que nombra los casos de
++       un enum en kebab, snake, camel o Pascal case. Se separa para que un módulo que solo necesita
++       texto no dependa de `distillate`.
++     - `gossamer.lexicon`: `Lexicon`, un árbol BK para la búsqueda por similitud sobre un
++       vocabulario, y `Dictionary`, un trie denso para la búsqueda exacta y por prefijo.
+
+@ 0 3 0 124f785e9ce2fdf10cafda1bd09c874d
++     Todo se exporta al paraguas `soundness`, y los paquetes de elección se fusionan con los del
++     propio paraguas, así que el usuario escribe `import soundness.*` y después importa por nombre
++     un given de cada política.
+
+% 0 1 0 1cb99be0c6364ae90bcaca8d0f0393d0
+
+% 0 1 0 1ae68af5c6d9ea450a530e077ffa85c6
+
+% 0 1 0 1307a59e9a82a6681d69d19c9d1b8a67
+
+% 0 1 0 0b4856cf1a0bce450d66f97c1901d65d
+
+% 0 1 0 1631f648de7531c706ecde251846f177
+
+% 0 1 0 18283946a065cb540c93cd17543f6eb1
+
+% 0 1 0 1b105736a890f215154fba55236f87d8
+
+% 0 1 0 12529380dbfed102016f60f62548f22b
+
+@ 0 1 0 088afddc33f4d8c205629ac12e14b93e
++ entry .t   el interpolador `t"…"`: un `Text` a partir de un literal, con sustituciones `Showable`; y un patrón `t"…"`
+
+% 1 1 0 06d7e2aefa25c8ab1139347a643f7e93
+
+@ 0 5 0 0bc3851ccd6bb87f1494d47aa3e16c56
++       `t"Hello, $name!"` construye un `Text`. Cada parte literal se procesa en cuanto a escapes
++       mientras se compila el código (`\n`, `\t`, `→`, `\\`, `\$`; un escape incorrecto es un
++       error de compilación en el carácter culpable), y cada sustitución se representa mediante la
++       instancia de `Showable` de su tipo: un valor sin `Showable` es un error de compilación,
++       _a value of `T` is not Showable_, y no un `toString` silencioso. El resultado es `Text`,
++       nunca `String`.
+
+% 2 1 0 0f9852dd5a79b4c51289946172c68183
+
+% 3 1 0 17135b6786f4b59d025e4ad3752066c2
+
+% 0 1 0 1df4c24d9bd279f40aa9b11fba4bfc3a
+
+% 0 1 0 1a479cdf6c00c9bd1468d4644aa98c38
+
+% 0 1 0 063bbc2b9b4d305c0fe55b9e5653c006
+
+% 0 1 0 14925258b5e287290443908b26e4fdb8
+
+% 1 1 0 07b3831b3b2e07bb04194bee4b857299
+
+@ 0 3 0 0cb51fc098eccfae1d763f455714c9e7
++       El mismo prefijo es un patrón: `case t"quit" =>` coincide con un `Text` igual al literal,
++       mediante `SimpleTExtractor`. La forma de patrón no admite sustituciones. `fuzzy` también
++       acepta patrones `t"…"` en sus casos.
+
+% 2 1 0 075606c26a23a20a17051c3b1693ac00
+
+% 3 1 0 06463f92964e4f2316059df10cf140e4
+
+% 0 1 0 0062787c089bcf200eddb8e3a22cf715
+
+% 0 1 0 0213a18ee0b108641f61190bfb6c9129
+
+% 0 1 0 16e7dd24469a7307058807e16676d8c2
+
+% 1 1 0 1280d732bdcdc75d0d982c63dccc70fd
+
+@ 0 1 0 1b013881d26b1b180db1dc29fc65b8bc
++       `txt"…"` es la variante para prosa de varias líneas, y `a"…"` crea un `Ascii`.
+
+% 0 1 0 0578a50888e209b600d8d256afc20fa8
+
+% 0 1 0 02ac02ecd19cf9ef0bfdb2fffe2487d3
+
+% 1 1 0 04ed385f6a5800c6066a4dab9f8ded0c
+
+@ 0 6 0 1a382fa76d6e538a1da4ddf14de54e21
++ entry .txt   el interpolador `txt"…"`: un `Text` con las líneas de código fuente ajustadas reunidas en una
++     Como `t"…"`, pero con el espacio en blanco de un literal escrito a lo largo de varias líneas
++     de código fuente normalizado: cada secuencia de espacio en blanco (incluido un salto de línea
++     simple y la sangría que lo sigue) se convierte en un espacio, y una línea en blanco —dos
++     saltos de línea— se convierte en un único `\n`, de modo que un párrafo ajustado para quien lee
++     el código fuente se desajusta para quien lee la salida, y una línea en blanco separa
++     párrafos.
+
+% 2 1 0 17519fbaa49198b016caaadaae4118a0
+
+% 3 1 0 1df2baa837aec93600e959993a0691a1
+
+% 0 1 0 1ce5e21b2d2f6d041dc4a26d6bab4e4a
+
+% 0 1 0 0911935cc7c035d303c0bb6da6e38e07
+
+% 0 1 0 0e591537a973b2d81af9384c6bc3a9f7
+
+% 0 1 0 06aa6101a985e98d17c16eadaccff0f1
+
+% 0 1 0 12fe4487d3d69a9f1e097d76ddb8dfd1
+
+% 0 1 0 1940dea9d14323a21b0d7e92578989b9
+
+% 1 1 0 0e1ba0bf939270ab1de39971e1d11499
+
+@ 0 2 0 177bf424f5322c230a62a3de89abbf98
++     Las sustituciones se representan mediante `Showable`, como en `t"…"`, y se normalizan junto
++     con el resto del texto.
+
+@ 0 5 0 13b1f1c51aeec34f14e592f75817cf7b
++ entry .a   el interpolador `a"…"`: una cadena de bytes `Ascii`, cuyo carácter ASCII se comprueba mientras se compila el código
++     `a"hello"` es un `Ascii`, un array congelado de bytes que contiene los caracteres del
++     literal, un byte por carácter. Un carácter fuera de ASCII es un error de compilación (número
++     824, _`é` is not a valid ASCII character_) que se informa en la posición del propio carácter
++     en el código fuente, no al principio del literal. Las sustituciones son a su vez valores
++     `Ascii`, que se concatenan.
+
+% 2 1 0 051d6133369871aa126977ab25ddbb4b
+
+% 3 1 0 17ab86559999eaff0a8c9804c138cc62
+
+% 0 1 0 0478a6eac7ba37fc1b321257df4b7bec
+
+% 0 1 0 1f121c60238443a2009e112f730a77fb
+
+% 0 1 0 1edacc6180d2f3f80275fd30124e3bc9
+
+% 1 1 0 1448578a1728a38f19b981831a70d7dc
+
+@ 0 1 0 1eb2cc11a62ada081531296f0011d3f4
++ entry .SimpleTExtractor   el extractor que hay detrás de un patrón `t"…"`: igualdad con el literal
+
+% 1 1 0 09d915d91a07f0061c9ca4464a568006
+
+@ 0 5 0 1fa88a10963723ce018e7e8116f8255b
++       `case t"quit" =>` se desazucara en un `SimpleTExtractor(t"quit")` cuyo `#unapply` es la
++       igualdad con el valor examinado. Existe para que `t"…"` pueda escribirse tanto en un patrón
++       como en una expresión; rara vez hay motivo para construir uno directamente.
++   entry #text   el literal con el que coincide el patrón
++   entry #unapply   si el valor examinado es igual a `#text`
+
+@ 0 1 0 03192535705f45d6003f0c839b1b2815
++ entry .Textual   la clase de tipos que hace textual un tipo: `Text`, `Ascii`, `Writing`, `Teletype`
+
+% 1 1 0 1dfc915390628d4a1c509867399c56c0
+
+@ 0 6 0 1b9ffd8b4963956c1459566925e57a8d
++       `textual is Textual` dice que `textual` es una secuencia de caracteres de longitud conocida,
++       que puede recortarse, transformarse, buscarse y concatenarse, construirse en un `Builder` y
++       representarse como `Text` simple. Toda operación genérica de gossamer —`cut`, `join`,
++       `words`, `lower`, `trim`, `pad`, `capitalize`, `uncamel`, `pinpoint`, `chomp`, …— es una
++       extensión sobre un receptor con una instancia de `Textual`, así que un tipo textual nuevo
++       obtiene todo el vocabulario proporcionando una instancia en su objeto compañero.
+
+@ 0 7 0 0ec53a8e8baaab4f12bd664e544310c0
++       El miembro de tipo `#Result` es el tipo de los elementos: `Char` para `Text`, `Byte` para
++       `Ascii`, `Grapheme` para `Writing`. Las operaciones que actúan sobre caracteres (`lower`,
++       `upper`, `trim`, `capitalize`, `tr`, `pad`, `pinpoint`, …) requieren
++       `Textual { type Result = Char }`; las que actúan sobre posiciones y subcadenas (`cut`,
++       `words`, `starts`, `offsetOf`, `slices`, `chomp`, …) admiten cualquier `Textual`.
++       `#Show[value]` es la clase de tipos que debe satisfacer un valor para añadirse a un builder
++       de este tipo (`Showable` para `Text`; el `Teletype` de escapade usa la suya propia, de modo
++       que un valor con estilo se añade con su estilo).
+
+@ 0 5 0 091eb2dc6dc4a1e410c0bd13f5ab00a5
++       `Textual` extiende `Countable` y `Segmentable` (con `Segment = Self` y `Operand =
++       Ordinal`), que es lo que permite que las operaciones generales de colecciones —`keep`,
++       `skip`, `snip`, `before`, `after`, `upto`, `from`, `segment`, `count`, `where`, `all`,
++       `exists`— sirvan para valores textuales, y `Zeroic` y `Applicable`, de modo que
++       `textual.zero` es el valor vacío y `Textual[Teletype](text)` convierte texto simple.
+
+% 2 1 0 1f1c44f765ebf8881bedba09d91f1c04
+
+% 3 1 0 11711410d4afa5501994e4111df0e0f3
+
+% 0 1 0 14967e055f142249184934cf67d94a43
+
+% 0 1 0 0aad168c935482530732ae1f04e59d21
+
+% 0 1 0 0b583a965e56bbf9096ec257d8c02156
+
+% 1 1 0 0d5cd735f7fcfade142957f15a1391f5
+
+@ 0 4 0 107c88dd8331b2370d914a49cf4e037c
++       Las instancias para `Text` (`.text`) y, mediante sus objetos compañeros, para `Ascii` y
++       `Writing` están en el ámbito implícito. Un tipo cuyo `reverse` y cuyo recorrido deban pasar
++       por su instancia de `Textual` publica `reversibleTextual` y `traversableTextual` en su propio
++       objeto compañero, porque un given genérico no podría encontrarse desde `rudiments`.
+
+% 0 1 0 0d419ea1421c57421530ac1da4380b8d
+
+% 0 1 0 187bf92a225e2c58028f03694db327fe
+
+% 0 1 0 160617c1c45eb5e71dc1a6962087e48f
+
+% 1 1 0 0c0adbb5877dd95e0ede3da577660e3b
+
+% 0 1 0 1bb4b560495664af1099c405a55de713
+
+@ 0 39 0 166d423d43f827710ef7c70a021437d8
++   entry .apply   `Textual[textual](text)`: convierte un `Text` en cualquier tipo textual
++       La forma explícita de `#apply`: `Textual[Teletype](t"plain")` envuelve texto simple como un
++       valor con estilo sin estilo alguno, y `Textual[Text](text)` es la identidad.
++   entry .text   la instancia de `Textual` para el propio `Text`, con elementos `Char` y `Showable` como `Show`
++       La longitud, el acceso, `indexOf`, `segment` y `map` van directamente al `String`
++       subyacente; el builder es un `TextBuilder`.
++   entry .concatenable   `left + right` sobre cualquier tipo textual, mediante `Textual#concat`
++       El given `Concatenable` que da `+` a todo tipo textual. Es un given del objeto compañero de
++       `Textual`, así que se encuentra para cualquier `textual: Textual`.
++   entry #Result   el tipo de los elementos: `Char` para `Text`, `Byte` para `Ascii`, `Grapheme` para `Writing`
++   entry #Show   la clase de tipos que necesita un valor para añadirse a un builder de este tipo
++       `Show[value]` es `value is Showable` para `Text`, `Ascii` y `Writing`; un tipo con estilo
++       puede elegir una más rica. `append` en un bloque `Text.build` la exige a todo lo que no sea
++       ni un `Text` ni un `Char`.
++   entry #Segment   el tipo que tiene un fragmento de este texto: el propio tipo del texto
++   entry #Operand   el tipo de índice: `Ordinal`
++   entry #show   representa un valor como este tipo textual, mediante `#Show`
++   entry #apply   convierte un `Text` simple en este tipo textual
++   entry #single   un texto de un elemento a partir de un `#Result`
++   entry #fromChar   el elemento `#Result` que corresponde a un `Char`
++   entry #classTag   el `ClassTag` del tipo textual, para reservar arrays de él
++   entry #length   el número de elementos: caracteres, bytes o grafemas
++   entry #text   el `Text` simple de un valor, sin ningún estilo
++   entry #map   un texto nuevo con una función aplicada a cada elemento
++   entry #empty   el valor vacío de este tipo
++   entry #concat   dos valores unidos en uno
++   entry #access   el elemento en una posición ordinal; no se comprueba que esté dentro del rango
++   entry #contains   si un ordinal es una posición válida en el texto
++   entry #indexOf   la posición de la primera aparición de una subcadena en `start` o después, o `Unset`
++       La primitiva que hay detrás de `offsetOf`, `contains` y `tally`. La subcadena siempre es
++       `Text` simple, sea cual sea el tipo textual.
++   entry #lastIndexOf   la posición de la última aparición de una subcadena, o `Unset`
++       Por defecto, un recorrido de llamadas repetidas a `#indexOf`; la instancia de `Text` lo
++       redefine con la primitiva de `String`. Una subcadena vacía da `Unset`.
++   entry #builder   un `Builder` nuevo para este tipo, opcionalmente dimensionado
++   entry #segment   el fragmento de un texto sobre un `Interval` de ordinales, limitado a los extremos del texto
++       Un intervalo que llega más allá del final se acorta, y uno que empieza más allá del final
++       está vacío, en lugar de fallar en ambos casos.
++   entry #zero   el valor vacío, como lo nombra la clase de tipos `Zeroic`
+
+@ 0 1 0 1b9ba37c66e5719313430a47e684ef95
++ entry .Builder   un acumulador mutable que construye un valor textual a partir de trozos añadidos
+
+% 1 1 0 05dce116e571da3511551280e957ef81
+
+@ 0 5 0 04484e256fb22ffc00b75c4e421c138f
++       `Builder[textual]` es la clase abstracta que hay detrás de `TextBuilder`, `AsciiBuilder`,
++       `WritingBuilder` y los builders de otros tipos textuales, cada uno obtenido de su
++       `Textual#builder`. Los trozos se añaden con `#append` (un valor del tipo, o un único
++       `Char`), el resultado se lee con `#apply`, y `#build` ejecuta un bloque en el que `append` y
++       `appendln` de nivel de paquete escriben en él como valor contextual.
+
+% 2 1 0 1bc54daada06aa9610e1cdab8ff23d4f
+
+% 3 1 0 1710c2d23a9e3c2404d1c58d052890a0
+
+% 0 1 0 147d8f5b19fc1997075583f29db9f00f
+
+% 0 1 0 1fa3cf35d41f00d40cbff25891bf0b2c
+
+% 0 1 0 0b424e3649da9c8718a714afa8303543
+
+% 0 1 0 0546b71de2ac6c011374116ba8e2e581
+
+% 1 1 0 12bc111e575a4e210cc6fe31ce10b249
+
+@ 0 2 0 1705c730f54a173a17c6809faa84144d
++       Un builder es estado mutable y no es seguro compartirlo entre hilos; para texto, es
++       preferible `Text.build`, que confina uno a un bloque.
+
+% 0 1 0 03754eda6fac3ee61b7db574d637742a
+
+% 0 1 0 0bcb8cc5e3ac9c4705e0b1ba694b1b1d
+
+% 0 1 0 032bbcdd97c5b6fe1973fc45e8b24f21
+
+@ 0 9 0 0b8a62cddb0deac01416528daf45b7fd
++   entry #append   añade un valor del tipo textual, o un único `Char`; devuelve el builder
++   entry #build   ejecuta un bloque con este builder como `builder` contextual y después devuelve el resultado
++       Dentro del bloque, `append(value)`, `appendln(value)` y `builder` se refieren a este
++       builder. El bloque no puede sobrevivir a la llamada, y por eso el builder se entrega como
++       valor contextual puro a pesar de ser mutable.
++   entry #apply   el valor acumulado
++   entry #clear   descarta todo lo añadido hasta el momento; devuelve el builder
++   entry #nil   si no se ha añadido nada
++   entry #length   el número de elementos añadidos hasta el momento
+
+@ 0 1 0 00eef8e649f60e140618cb5a066eced1
++ entry .TextBuilder   el `Builder` para `Text`, sobre un `StringBuilder`
+
+% 1 1 0 1aa9f86c0b80c4190c659dc91878ea4d
+
+@ 0 4 0 1594da8117a98ecd017de28b6245279d
++       `TextBuilder(size)` dimensiona el búfer subyacente, como indicación, cuando se conoce la
++       longitud. `Textual.text.builder` devuelve uno, y `Text.build` confina uno a un bloque.
++   entry #put   añade un carácter
++   entry #length   el número de caracteres añadidos hasta el momento
+
+@ 0 1 0 1209ed2e09be2d8d16dcf74a8e79cd23
++ entry .AsciiBuilder   el `Builder` para `Ascii`, que acumula bytes
+
+% 1 1 0 00794af433cf31061286edaba14fa404
+
+@ 0 4 0 07df1c22bc7e098b08c360f52c849093
++       Cada `Char` añadido se trunca a su byte bajo; un `Ascii` añadido aporta sus bytes. La
++       instancia de `Textual` de `Ascii` lo usa para todas las operaciones de construcción.
++   entry #put   añade un carácter como byte
++   entry #length   el número de bytes añadidos hasta el momento
+
+@ 0 1 0 0f9bc8049ca78f7a1fecdb3fcfd0ac6a
++ entry .WritingBuilder   el `Builder` para `Writing`
+
+% 1 1 0 101c2ca409dd6add07dc90be2ed6fbcc
+
+@ 0 4 0 04b28d9ce65a8937015e9eff92709d63
++       Acumula el texto de cada `Writing` añadido y vuelve a calcular los límites de los grafemas
++       del conjunto cuando se lee el resultado, así que `#length` cuenta caracteres durante la
++       construcción, no grafemas.
++   entry #length   el número de caracteres añadidos hasta el momento
+
+@ 0 6 0 1f861b40fb0013c21d04b789b127364e
++ entry .append   añade un valor al `Builder` contextual, dentro de un bloque `build`
++     Un método inline de nivel de paquete para usarlo dentro de `Text.build` o `Builder#build`,
++     donde hay un `Builder[textual]` en el ámbito como valor contextual `builder`. Un `Text` se
++     añade tal cual (convertido al tipo del builder), un `Char` como un elemento, y cualquier
++     otra cosa mediante la clase de tipos `Textual#Show` del builder —`Showable`, para `Text`—, de
++     modo que un valor sin representación es un error de compilación en lugar de un `toString`.
+
+% 2 1 0 0077cf903fe9914d0ecf050a0e7011e0
+
+% 3 1 0 16629ae36a5067dc1b2611e7cc41ffd4
+
+% 0 1 0 1519f26f726ca36c0b38f0fbe07f017b
+
+% 0 1 0 1a8e7e04f32789fd046468bc18fb9444
+
+% 0 1 0 02d5bbd4022b283e19cceef797e17c93
+
+% 0 1 0 127a022e0b9b080e1a0fc75658fba712
+
+% 0 1 0 064f2efd1a6c438000e7ca53f7f2af7d
+
+% 1 1 0 0c67fc6310acbbaa1c63a6f111d84221
+
+@ 0 2 0 05a0758713361c0a094d5bc16e5acad1
++ entry .appendln   añade un valor y después un salto de línea al `Builder` contextual
++     Como `append`, seguido de `'\n'`.
+
+@ 0 4 0 1042d930eb699d890ee7032cf6da9cf8
++ entry .builder   el `Builder` contextual dentro de un bloque `build`, como valor
++     `builder[TextBuilder]` (o `builder[Builder[Text]]`) obtiene el builder en el que escribe un
++     bloque `Text.build` o `Builder#build`, para las operaciones que `append` no cubre, como
++     `clear()` o la lectura de `length`.
+
+@ 0 5 0 13a933d42f0037d60fbbb9ea67cf1aa9
++ entry .build   `Text.build` confina un `TextBuilder` a un bloque; `Array.build` rellena un array nuevo
++     Dos extensiones comparten el nombre. `Text.build { … }` ejecuta el bloque con un
++     `TextBuilder` nuevo como builder contextual —`append`, `appendln` y `builder` dentro de él se
++     refieren a ese builder— y devuelve el texto construido, de modo que un texto montado a partir
++     de muchos trozos se escribe sin ningún valor mutable visible:
+
+% 2 1 0 130e0ccc6942ea2f1802f4d705f8d169
+
+% 3 1 0 10c33df10457fbe60ef75d484d9c4266
+
+% 0 1 0 1b28bdf68583d7471f0da3e06bcd00d9
+
+% 0 1 0 1fee23c4f3b3f69100a69466c69ed6a5
+
+% 0 1 0 1f9d884b80893f6902c69409d4f2d7bb
+
+% 0 1 0 1c9d9f925a78eef800c92a8811234897
+
+% 1 1 0 14de1771a6ade58b14b10ded29cb5be4
+
+@ 0 3 0 09827f72596789ae1b9956f916ba611f
++     `Array.build[element](size) { array => … }` reserva un array mutable de la JVM de `size`
++     elementos, lo entrega a la lambda para que lo rellene y lo devuelve congelado como
++     `Array[element]^{}`; lo usan `Pue.apply` y la concatenación de `Ascii`. El array de la lambda
++     no debe escapar.
+
+@ 0 3 0 1ddce184ce5de4141e322f3033fbd706
++ entry .fill   `Text.fill(length)(index => char)`: un texto de una longitud dada, un carácter por índice
++     El índice empieza en cero (`Int`), así que `Text.fill(3)(_ => '-')` es `t"---"` y
++     `Text.fill(3)(i => ('a' + i).toChar)` es `t"abc"`.
+
+@ 0 4 0 02dfc6dd7f0ab638142c303e57e1542c
++ entry .ascii   `Text.ascii(bytes)` y `bytes.ascii`: decodifica un `Data` como texto US-ASCII
++     Ambas formas decodifican cada byte como un carácter ASCII; un byte por encima de 127 se
++     convierte en el carácter de sustitución. Para UTF-8 se usa `utf8`; para un juego de
++     caracteres arbitrario, se decodifica con `data.as[Text]` bajo un given `Charset`
++     (`textDecodable`).
+
+@ 0 3 0 1ddacbba7c8212700fa3cbdb747fb67d
++ entry .utf8   decodifica un `Data` como texto UTF-8
++     `bytes.utf8`: la inversa de `text.in[Data]` bajo `codepages.utf8Codepage`. Las secuencias mal
++     formadas se convierten en el carácter de sustitución en lugar de fallar.
+
+% 2 1 0 18dd3824a46dc587135db8e446c45de2
+
+% 3 1 0 1028e943968ad61c159cb42e3e684f67
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 198cf0fc0960389c19f48140f0d4085b
+
+% 1 1 0 1cc0d41face70c1117e29b544cebfa1d
+
+@ 0 2 0 0decb6f1bda3d3490e3ba6330faf5cd7
++ entry .utf16   decodifica un `Data` como texto UTF-16, respetando una marca de orden de bytes
++     `bytes.utf16`: sin marca, los bytes se leen en big-endian.
+
+@ 0 7 0 0c273a88f6fea5800e73170c6fb00e57
++ entry .pue   representa un `Data` como texto en el que cada byte es un carácter imprimible
++     `bytes.pue`: la _codificación Unicode imprimible_, una representación reversible de bytes
++     como texto en la que cada byte es un carácter, elegida de modo que ninguno sea un carácter de
++     control: un byte que sería de control (con sus siete bits bajos como mucho 0x20, o 0x7f) se
++     desplaza hacia arriba en 0x100, y cualquier otro byte es el carácter de su propio valor.
++     `Pue(text)` lo invierte. El resultado sirve para mostrarse y para transportar bytes por
++     canales que solo admiten texto; no es una codificación estándar.
+
+@ 0 1 0 11b9dc723e9dc30105c66650c894cd86
++ entry .Pue   decodifica de vuelta a sus bytes un texto con codificación Unicode imprimible
+
+% 1 1 0 1379868abb2816151d94bf60b1909946
+
+@ 0 5 0 0c519f23beafd89405681a363d42c69d
++       `Pue(text)` es la inversa de `bytes.pue`: el byte bajo de cada carácter es un byte del
++       resultado, de modo que un byte que `pue` desplazó hacia arriba en 0x100 para evitar un
++       carácter de control vuelve a bajar. Un texto que no procede de `pue` se reduce a los bytes
++       bajos de sus caracteres sin queja alguna.
++   entry .apply   los bytes que codifica un texto con codificación Unicode imprimible
+
+@ 0 6 0 0255d0f714381cde086b982a4d5ca3cc
++ entry .cut   divide un texto en cada aparición de un delimitador, en una lista que se demuestra no vacía
++     `text.cut(delimiter)` divide en un `Text`, un `Char` o una `Regex` (un literal `r"…"`), para
++     cualquier tipo textual con una instancia de `Cuttable` para ese delimitador. El resultado es
++     `List[textual] { type Occupied = true }`: un corte siempre produce al menos un trozo —el texto
++     posterior al último delimitador, o el texto entero cuando el delimitador no aparece nunca—,
++     así que `head` y `last` sobre él son totales, y `case List(a, b) =>` liga el tipo de los
++     elementos.
+
+% 2 1 0 1a65c2fe7bf8701d0daa0b27cee1c365
+
+% 3 1 0 1fb27b55194b6db207e2b3b0551727b5
+
+% 0 1 0 00b36b221b2310410d45c04de19b6083
+
+% 0 1 0 0bb6fa1b2f86afd31335ee9ecb1ea830
+
+% 0 1 0 05104541e58fffe101842016e2046604
+
+% 0 1 0 01992267879eb6d1197a4f1b9d1ffc03
+
+% 0 1 0 0367157293212d6e170d5c85e388ba56
+
+% 1 1 0 026df1ce664e84b808e64f98caa5912e
+
+@ 0 4 0 017c973c15c817de097a106ac9a69689
++     Un `limit` positivo limita el número de trozos, y el último se queda con el resto; un límite
++     de cero o menos significa ilimitado. Los trozos vacíos finales se conservan, igual que los
++     conserva `String.split` con un límite positivo, así que `t"a,".cut(t",")` es
++     `List(t"a", t"")`. `words`, `lines`, `unkebab` y `unsnake` son cortes en un espacio, un salto
++     de línea, `-` y `_`.
+
+@ 0 1 0 0ead16ae853282ab12c558b5e239fe1d
++ entry .Cuttable   la clase de tipos que hay detrás de `cut`: cómo se divide un tipo textual en una clase de delimitador
+
+% 1 1 0 084235061f6f9df710b657f0b5e4c572
+
+@ 0 21 0 1c7c50c2a232610711f4e71875549500
++       `textual is Cuttable by delimiter` tiene un método, `#cut(text, delimiter, limit)`, y debe
++       devolver al menos un trozo. Hay instancias para `Text` cortado por `Text` (una búsqueda del
++       delimitador literal, sin ninguna expresión regular de por medio) y por `Regex`, para
++       cualquier `Textual` con una instancia de `Countable` cortado por `Text` o por `Regex` (de
++       modo que el texto con estilo se corta mediante `segment` y conserva su estilo), y para
++       cualquier tipo que pueda cortarse por `Text` cortado por un `Char`. Todas son givens del
++       objeto compañero, en el ámbito implícito.
++   entry .textualText   cualquier textual cortado por un `Text` literal; y cualquier tipo que pueda cortarse por `Text` cortado por un `Char`
++       Dos givens comparten el nombre. El primero sirve a cualquier `Textual` con `Countable`,
++       buscando con `Textual#indexOf` y recortando con `segment`; el segundo deriva `Cuttable by
++       Char` de la instancia `Cuttable by Text` de un tipo, de modo que `cut(',')` funciona allí
++       donde funciona `cut(t",")`.
++   entry .textualRegex   cualquier textual cortado en las coincidencias de una `Regex`
++       Los trozos *entre* coincidencias, con el texto posterior a la última coincidencia como
++       último trozo. Una coincidencia de anchura cero en el cursor no es un corte, así que la
++       búsqueda siempre avanza. El propio `Text` tiene el `.textRegex`, más directo.
++   entry .textText   `Text` cortado por un `Text` literal, mediante una búsqueda simple de subcadena
++       No se compila ninguna expresión regular, así que un delimitador como `.` o `|` no necesita
++       escaparse, y el corte funciona en entornos de ejecución cuyo motor de expresiones regulares
++       no está disponible.
++   entry .textRegex   `Text` cortado en las coincidencias de una `Regex`, mediante `String.split`
++       El `limit` se pasa a `split` tal cual (después de que `cut` haya sustituido un límite no
++       positivo por ilimitado), así que los trozos vacíos finales se conservan.
++   entry #cut   los trozos de un texto dividido en un delimitador, como mucho `limit` de ellos, nunca ninguno
+
+@ 0 3 0 1b0cf0ec8af0b273141cbb13ea9cccdc
++ entry .words   un texto cortado en cada espacio
++     `text.words` es `text.cut(t" ")`: los espacios consecutivos producen trozos vacíos, y ningún
++     otro espacio en blanco es un límite. El resultado no está vacío.
+
+@ 0 2 0 0daaf318932618d30b5d7fe4fe332c82
++ entry .lines   un texto cortado en cada salto de línea
++     `text.lines` es `text.cut(t"\n")`; un `\r` antes del salto de línea se queda en su línea.
+
+@ 0 2 0 05aaf2e7cf0633c310d99337b9b06a52
++ entry .unkebab   las palabras de un identificador en kebab case: cortado en cada `-`
++     `t"one-two-three".unkebab` es `List(t"one", t"two", t"three")`. Es la inversa de `kebab`.
+
+@ 0 2 0 15b694cb2eaea6d71437754e6dbcf10c
++ entry .unsnake   las palabras de un identificador en snake case: cortado en cada `_`
++     `t"one_two_three".unsnake` es `List(t"one", t"two", t"three")`. Es la inversa de `snake`.
+
+@ 0 6 0 1fc33801a0758d63025669068cf08db8
++ entry .uncamel   las palabras de un identificador en camel case o Pascal case, cada una en minúsculas
++     Corta antes de cada letra mayúscula posterior al primer carácter, y pasa cada palabra a
++     minúsculas: `t"oneTwoThree".uncamel` y `t"OneTwoThree".uncamel` son ambos `List(t"one",
++     t"two", t"three")`. Una secuencia de mayúsculas da una palabra por letra (`t"parseXML"` da
++     `parse`, `x`, `m`, `l`). `kebab`, `snake`, `dotted`, `spaced`, `camel` y `pascal` vuelven a
++     unir las palabras con otra convención:
+
+% 2 1 0 08e15d35dd2b6c901c98496d069f325c
+
+% 3 1 0 0d6f019df19d4171132b6be2095f68cc
+
+% 0 1 0 1e64ee57594cd69916ac4d8c185865e7
+
+% 0 1 0 121a5da0c9aea0331a55f992e2fba416
+
+% 0 1 0 16c89afb7848d38d0b135319dfe4c7c8
+
+% 0 1 0 0eb7a09a1693872f1425e7148f73dbca
+
+% 1 1 0 0621fdfed9a0220807d2cf01d09bf741
+
+@ 0 6 0 05610c6df752863f0b2fa0da2b6acd90
++ entry .join   concatena una colección de textos, con separadores y delimitadores opcionales
++     Una extensión sobre cualquier colección `Traversable` —`List`, `Set`, `Chain`, `Sequence`, un
++     array congelado o un `Iterable` de la biblioteca estándar— cuyos elementos son `Joinable`:
++     textos de cualquier tipo textual, `Message`s o colecciones, que se unen por concatenación. El
++     tipo del resultado es el tipo de los elementos, así que unir una `List[Text]` da `Text` y unir
++     una `List[Teletype]` da `Teletype`, con separadores de ese mismo tipo.
+
+% 2 1 0 14802c39942e223a0b2026646c554f0d
+
+% 3 1 0 023f87f23937f1a917ba1ff5a592bbc7
+
+% 0 1 0 06c707af01998eb81d493bb2e90b4ca3
+
+% 0 1 0 0468ffe8b013f54b01e847e09a722992
+
+% 0 1 0 1218b83ba29f246f0b3e44b9a04d558c
+
+% 0 1 0 0180f5dc3cdf5ecc1758d9a5a5988316
+
+% 0 1 0 0aeddd5f3dafd97a0a2f2cdee050ed8b
+
+% 1 1 0 1977f49ac75b1f981f25a77569f57605
+
+@ 0 3 0 15932bcb0d403bd2094129830b16144a
++     Las cinco formas son: sin separador; con un separador; con delimitador izquierdo, separador
++     y delimitador derecho; con un separador y un separador *penúltimo* distinto colocado antes
++     del último elemento, para la prosa; y con los cuatro. Dos elementos con un separador
++     penúltimo dan `t"a and b"`.
+
+@ 0 6 0 1a1297ceb3a0cc960f180c0a4b902477
++     Cuando los elementos no son a su vez unibles —`List(1, 2, 3)`—, el separador es un
++     *elemento*, intercalado en una colección reconstruida con la forma del receptor:
++     `List(1, 2, 3).join(0)` es `List(1, 0, 2, 0, 3)`, y `List(List(1), List(2)).join(List(0))`
++     es `List(1, 0, 2)`. `join` es el equivalente de `mkString`, pero nunca llama a `toString`:
++     una colección cuyos elementos no saben unirse no compila. Un `Set` se une en su orden de
++     iteración, que quien llama acepta al unirlo.
+
+@ 0 1 0 0e6ffcf24695b45a1328b1297915daed
++ entry .Joinable   la clase de tipos que hay detrás de `join`: cómo una colección de valores se convierte en un valor
+
+% 1 1 0 1fe870142c3206bd0723bb7443be5373
+
+@ 0 7 0 11e7fe4f19935bb90f6255eb55460835
++       `textual is Joinable` tiene un método, `#join(elements)`, que concatena un `Iterable` de
++       valores en uno. Las instancias del objeto compañero cubren todo tipo `Textual` (mediante su
++       builder, dimensionado a la longitud total), `Message` y las formas de colección nativas
++       `List`, `Chain`, `Sequence` (por concatenación) y `Set` (por unión). El lado del receptor de
++       `join` es `Joinable.Source` (cualquier cosa `Traversable`), y qué es el resultado —un
++       elemento unido, o una colección reconstruida con separadores intercalados— lo decide
++       `Joinable.Assembly`.
+
+% 0 1 0 0d18e3ab83f34825131bce2db4e77311
+
+@ 0 7 0 1ade7ba83789062e1569df723c9a5985
++   entry .textual   cualquier tipo `Textual` es `Joinable`, mediante su `Builder`
++   entry .message   los `Message`s se unen por concatenación
++   entry .list   las `List[element]`s se unen en una sola `List`, por concatenación
++   entry .chain   las `Chain[element]`s se unen en una sola `Chain`
++   entry .sequence   las `Sequence[element]`s se unen en una sola `Sequence`
++   entry .set   los `Set[element]`s se unen en un solo `Set`, por unión
++   entry .Source   el lado del receptor de `join`: una colección que se recorre hasta sus elementos
+
+% 1 1 0 0f6fe5ec6f60cfa3082ad2910ed2f290
+
+@ 0 8 0 0435a91aa45b14d814e50017430c551f
++         `self is Joinable.Source by element` produce los elementos de un receptor como un
++         iterador. La única instancia, `.traversable`, sirve a cualquier receptor `Traversable`,
++         que son todas las formas nativas y cualquier `Iterable` estándar. Es una clase de tipos
++         en lugar de una extensión `join` por receptor, porque extensiones del mismo nombre con
++         formas de cláusula distintas harían ambiguo cualquier receptor.
++     entry .traversable   cualquier receptor `Traversable` es una `Source` de sus elementos
++     entry #traverse   los elementos del receptor, en orden, como un iterador
++   entry .Assembly   cómo ensambla `join` los elementos de un receptor, y el tipo de sus separadores
+
+% 1 1 0 18953b4196608fd9048de931f996ce01
+
+@ 0 13 0 024e589703e0c0fc10115351cd336447
++         `self is Joinable.Assembly by element to result` decide qué devuelve `join`. `#Part` es
++         el tipo de los separadores y los delimitadores, y `#assemble` convierte el flujo de
++         partes en el resultado. Se prueban dos instancias por orden de prioridad: `.joinable`,
++         cuando los elementos son a su vez `Joinable` (texto, mensajes, colecciones), en cuyo
++         caso el resultado es uno de ellos y los separadores son del mismo tipo; y la alternativa
++         `Fallback#interleaving`, cuando no lo son, en cuyo caso los separadores son elementos y
++         el resultado es una colección reconstruida con la forma del receptor, mediante
++         `Reshapable`. La elección se hace por prioridad de givens, porque para una `List[Text]`
++         se aplicarían ambas lecturas y la sobrecarga no puede ordenarlas.
++     entry .joinable   los elementos que son `Joinable` se unen en uno de ellos, con separadores de ese tipo
++         `List(t"a", t"b").join(t",")` es `t"a,b"`. El elemento puede ampliarse a un supertipo
++         unible, de modo que una lista de un subtipo de `Text` se une como `Text`.
++     entry .Fallback   el ensamblaje de menor prioridad: separadores intercalados como elementos
+
+% 1 1 0 06862d9416e711100ba9e1e6f2802e02
+
+@ 0 4 0 18007735b48bf1820ec29719aeec0da1
++           El trait que extiende el objeto compañero de `Joinable.Assembly`, para que
++           `#interleaving` solo se encuentre cuando `.joinable` no se aplica.
++       entry #interleaving   los elementos que no son `Joinable` se reconstruyen con los separadores intercalados
++           Necesita `self is Reshapable by element to result`. `List(1, 2, 3).join(0)` es
+
+% 0 1 0 19ce0cc6d6a36acc00af0846aa6e75bf
+
+@ 0 3 0 192e46fb4a9b81fa14c25938e06457d4
++     entry #Part   el tipo de un separador o un delimitador: el tipo unido, o el tipo de los elementos
++     entry #assemble   construye el resultado a partir del flujo de elementos y separadores
++   entry #join   un valor a partir de un `Iterable` de ellos
+
+@ 0 4 0 0914f1ac5ba16de7119b9f1cb77955e9
++ entry .pascal   palabras unidas en Pascal case: cada una con mayúscula inicial, sin separador
++     Una extensión sobre cualquier `Traversable` de un tipo textual con elementos `Char`:
++     `List(t"one", t"two").pascal` es `t"OneTwo"`. Cada palabra se pasa a minúsculas y después se
++     le pone mayúscula inicial, así que `List(t"ONE", t"two").pascal` también es `t"OneTwo"`.
+
+@ 0 2 0 003d365f0248932a0ee973dd828aa769
++ entry .camel   palabras unidas en camel case: Pascal case con la primera letra en minúscula
++     `List(t"one", t"two", t"three").camel` es `t"oneTwoThree"`. `uncamel` es su inversa.
+
+@ 0 3 0 03e8487b9003d187098e0b9f41d9bad8
++ entry .snake   palabras unidas con `_`
++     `List(t"one", t"two").snake` es `t"one_two"`; no se cambia la caja de las palabras. `unsnake`
++     es su inversa.
+
+@ 0 3 0 06826d066af23d071693799633467339
++ entry .kebab   palabras unidas con `-`
++     `List(t"one", t"two").kebab` es `t"one-two"`; no se cambia la caja de las palabras. `unkebab`
++     es su inversa.
+
+@ 0 2 0 1695b655c13bca6f1d21ed357ddbdda9
++ entry .dotted   palabras unidas con `.`
++     `List(t"one", t"two").dotted` es `t"one.two"`.
+
+@ 0 2 0 0a0797583005508d0088d0d694d69261
++ entry .spaced   palabras unidas con un espacio
++     `List(t"one", t"two").spaced` es `t"one two"`, la inversa de `words`.
+
+@ 0 3 0 1c15557013cf0af219ab2e24402858b5
++ entry .length   el número de elementos de un valor textual: caracteres, bytes o grafemas
++     `t"hello".length` es `5`; `Writing(t"👨‍👩‍👧").length` es `1`, un grafema. Una extensión inline
++     sobre cualquier tipo `Textual`, mediante `Textual#length`.
+
+@ 0 4 0 00194b9389247e9c17dd7e4ad5de2f35
++ entry .plain   el `Text` simple de cualquier valor textual, sin estilo
++     `Textual#text` como extensión: `teletype.plain` son solo los caracteres del texto con estilo,
++     y `text.plain` es el propio `text`. Las operaciones que miden anchuras (`pad`, `fit`,
++     `center`) miden el texto simple.
+
+@ 0 3 0 1597dd865759779b10d51954ba4614c8
++ entry .init   un valor textual sin su último elemento
++     `t"Hello".init` es `t"Hell"`, y el `init` del texto vacío está vacío. Es lo mismo que
++     `skip(1, Rtl)`; `tail` es la operación general de colecciones para el otro extremo.
+
+@ 0 4 0 0542fa0c1505892f177369813da7d166
++ entry .chars   los caracteres de un valor textual como un `Array[Char]` congelado
++     `t"Hello".chars.to[List]` es `List('H', 'e', 'l', 'l', 'o')`. El array contiene los
++     caracteres del texto simple, sea cual sea el tipo textual. `text` sobre un `Array[Char]`
++     congelado es la inversa.
+
+@ 0 3 0 0cbecc7348d766ad0f7ad0f37cc14e93
++ entry .text   un `Array[Char]` congelado como `Text`; y el contenido de un `StringBuilder` como `Text`
++     `chars.text` es la inversa de `chars`. Sobre un `StringBuilder`, `builder.text` lee el texto
++     acumulado, como complemento de `add`.
+
+@ 0 4 0 0372405eabba5b251e0d6d743d2c05cc
++ entry .add   añade un `Text` o un `Char` a un `StringBuilder`
++     Para código que trabaja con un `StringBuilder` en bruto: `builder.add(t"…")` y
++     `builder.add('x')` añaden sin una conversión a `String` en el punto de llamada, y
++     `builder.text` lee el resultado. `TextBuilder` y `Text.build` son las alternativas tipadas.
+
+@ 0 5 0 06081d032208485511c0de7be5be86fa
++ entry .slices   un valor textual dividido en trozos de un tamaño fijo
++     `t"abcdefg".slices(3)` es `List(t"abc", t"def", t"g")`: todos los trozos salvo el último
++     tienen exactamente `size` elementos, y el último tiene lo que quede. Funciona sobre cualquier
++     tipo `Textual` mediante `segment`, de modo que los trozos de un texto con estilo conservan su
++     estilo. El texto vacío da un trozo vacío.
+
+@ 0 4 0 1920fe273eddaaf91c06ed68f5903a9c
++ entry .punch   divide un valor textual en un ordinal, descartando el elemento que hay en él
++     `t"key=value".punch(Quart)` es `(t"key", t"value")`: todo lo anterior al ordinal y todo lo
++     posterior, con el elemento del propio ordinal eliminado. Compárese con `snip`, que divide
++     entre elementos y los conserva todos.
+
+@ 0 5 0 17a1124c5e8421250df1f370ad0a3eba
++ entry .justify   ensancha un texto hasta una anchura repartiendo espacios adicionales entre los huecos entre palabras
++     La intención es la justificación completa: la diferencia entre `width` y la longitud del
++     texto se reparte como espacios adicionales entre las palabras, de modo que una línea llena su
++     columna. Solo se tiene en cuenta el número de caracteres simple, no la anchura de
++     visualización. La implementación está marcada en el código fuente como necesitada de
++     revisión y todavía no debe confiarse en ella.
+
+@ 0 4 0 0b55a012481838bf00e7fcedb57c5747
++ entry .contains   si un valor textual contiene una subcadena, o un carácter
++     `t"hello world".contains(t"ello")` y `t"hello".contains('e')` son `true`; todo texto
++     contiene el texto vacío. La subcadena es `Text` simple, así que en un texto con estilo se
++     busca por sus caracteres. Para obtener una posición en lugar de un sí o un no, se usa
++     `offsetOf`.
+
+@ 0 3 0 1286a5246c38e86317eb83259bc7779c
++ entry .starts   si un valor textual empieza por un prefijo
++     `t"hello".starts(t"he")` es `true`. Se compara sobre el texto simple; `chomp` elimina el
++     prefijo si está presente.
+
+@ 0 3 0 1c169ba0a8bddbb81180e6f35f549466
++ entry .ends   si un valor textual termina en un sufijo
++     `t"hello".ends(t"lo")` es `true`. Se compara sobre el texto simple; `chomp(suffix, Rtl)` lo
++     elimina si está presente.
+
+@ 0 4 0 02f1a75dc3cd39d4103d0ce36a582f3c
++ entry .chomp   elimina un prefijo (o, con `Rtl`, un sufijo) de un valor textual, si está ahí
++     `t"Sir Toby".chomp(t"Sir ")` es `t"Toby"`, y `t"file.txt".chomp(t".txt", Rtl)` es
++     `t"file"`; un texto sin el afijo se devuelve sin cambios, así que es seguro aplicar `chomp`
++     sin comprobar antes `starts` o `ends`.
+
+@ 0 5 0 013e39ca29c46635049b3ead970cbf49
++ entry .offsetOf   la posición de la primera (o, con `Rtl`, la última) aparición de una subcadena, como un ordinal `Optional`
++     `t"hello world".offsetOf(t"o")` es el ordinal `Quin`, y `offsetOf(t"o", Rtl)`, el ordinal
++     de la última `o`; una subcadena que no aparece da `Unset`, nunca un centinela. El resultado
++     es un `Ordinal`, así que alimenta directamente `before`, `after`, `upto`, `from`, `punch` y
++     `segment`, y así es como se descompone un texto en torno a un delimitador:
+
+% 2 1 0 08ba2e1f18b6b4d21e6a4da7a4442e09
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1520d953bbbfd2091dbaf26a916e193e
++       label Encontrar el separador
+
+% 1 1 0 18c1e10beb27d43307238ecdd275fbfa
+
+% 2 1 0 160af94bcf403f89074156fa5345d775
+
+% 4 1 0 19892b0c902f7f2f14d5fb90ec5af2e2
+
+% 0 1 0 11274b0be484456b1caa35f3b24f8ef3
+
+% 1 1 0 04addcf0f9490aae049d9c0355cc0bcc
+
+@ 0 1 0 0298cdd3013834e30a19679b181b3249
++       label Tomar el nombre anterior
+
+% 1 1 0 0c21cb1986fc76c80441c24b6bb02c8a
+
+% 2 1 0 1ba22028dd10d9b01ac6fd8d0312e192
+
+% 4 1 0 10607942135538db0f43015565a5ed86
+
+% 0 1 0 05ccade1c36766d51f5dc0f909ef977f
+
+% 1 1 0 1345f0d31bfd42df16f8229b2d2a7ced
+
+@ 0 1 0 03592b0a66f692e307fbb485ab6b51ae
++       label Y el valor posterior, recortado
+
+% 1 1 0 14e98ff2987171650bed5f43cdd3216b
+
+% 2 1 0 0e3951b4b3fbb6251c4631df6f5d35f1
+
+% 4 1 0 03abf736576f3f350bad42551318a159
+
+% 5 1 0 04dc1e0d90c22c8805184aedd7a56248
+
+% 0 1 0 073b68327f58c6a60992ae1ce94a9455
+
+% 1 1 0 1ab0dc5bcb04635a05fc73999b417cd0
+
+@ 0 1 0 1d8de30634b90d78153e75fcf58a88a3
++       label Después, dividir el valor en el primer parámetro
+
+% 1 1 0 157f33ed7412cb910290a33112d6fd5a
+
+% 2 1 0 04f34bad0f6533f901d74928116a5ec1
+
+% 4 1 0 0e8d9e7244f1a00f01eed2529534a54b
+
+% 5 1 0 0602c11a99bd802b09978648975fc161
+
+% 0 1 0 1ba5de609b990b841021b7147a998c98
+
+% 1 1 0 11aca008af2887b201da4b6882dbc0e0
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 3 0 06469edb3faf7dae19accf00a154286e
++     `offsetOf` encuentra una subcadena; `pinpoint` encuentra un carácter mediante un predicado,
++     y `search` encuentra las coincidencias de una expresión regular. `Textual#indexOf` es la
++     primitiva que hay por debajo. Una subcadena vacía se encuentra en `Prim` desde la izquierda y
++     da `Unset` desde la derecha.
+
+@ 0 5 0 139a5dc461c245b401a82868f518a5f6
++ entry .tally   el número de apariciones no solapadas de una subcadena
++     `t"banana".tally(t"an")` es `2`, y `t"aaaa".tally(t"aa")` es `2`, porque cada aparición se
++     cuenta desde el final de la anterior. La subcadena vacía da `0`. Esta es la forma de
++     subcadena; `count(predicate)` sobre un texto —`t"banana".count(_ == 'a')`— es la operación
++     de las colecciones, y por eso la forma de subcadena tiene nombre propio.
+
+@ 0 5 0 191ed2bcf2bcacf20ec45c6178c10476
++ entry .search   las subcadenas de un valor textual con las que coincide una expresión regular
++     `t"a1b22c".search(r"[0-9]+")` es una `Chain` de `t"1"` y `t"22"`, cada una un fragmento del
++     receptor (de modo que las coincidencias de un texto con estilo conservan su estilo). Con
++     `overlap = true`, una coincidencia puede empezar dentro de la anterior. Necesita un
++     `Regex.Engine` en el ámbito, que proporciona la forma del literal `r"…"`. Para los trozos
++     *entre* coincidencias, se usa `cut`.
+
+@ 0 8 0 18553ebc914420f90e08163cc031bee2
++ entry .extract   recorre un valor textual con una función parcial de patrones de expresiones regulares, recogiendo cada coincidencia
++     `text.extract { case r"…" => value }` aplica una función parcial de patrones `r"…"` a lo
++     largo del texto, desde `start` (`Prim` por defecto), y produce una `Chain` de los valores
++     que producen los casos que coinciden; el recorrido avanza hasta el final de cada
++     coincidencia. Los casos se descomponen mientras se compila el código, para que cada patrón
++     se pruebe en cada posición, con un `Scanner` que registra dónde empezó y terminó su
++     coincidencia; una lambda que no puede descomponerse recurre a volver a ejecutar la función
++     parcial entera en cada posición. El tipo del resultado se infiere de los casos.
+
+% 2 1 0 00f4c76df71b2d38100ace2db66fab94
+
+% 3 1 0 126e0913dfdbb2ad1f425f32537a822d
+
+% 0 1 0 0556d061636198d00069be3b657a96f4
+
+% 0 1 0 04fda55ff8217f360b7ea2ccf62b53d0
+
+% 1 1 0 0417ff00aebddd800d6418da1c28c1f6
+
+@ 0 4 0 0c85a5e963bb59d01b01d8910cb7f4f0
++ entry .lower   un valor textual en minúsculas
++     `t"Hello World".lower` es `t"hello world"`, y transforma cada carácter con `Char#toLower`.
++     Requiere elementos `Char`, así que está disponible en `Text`, `Writing` queda excluido, y un
++     texto con estilo conserva su estilo.
+
+@ 0 3 0 1f19f3d1fe57c62d0c1ed6886635b6f6
++ entry .upper   un valor textual en mayúsculas
++     `t"Hello World".upper` es `t"HELLO WORLD"`, y transforma cada carácter con `Char#toUpper`;
++     un carácter sin mayúscula de un solo carácter (`ß`) se deja como está.
+
+@ 0 3 0 049c117eca3fec5f0565bbbc9813f15a
++ entry .capitalize   un valor textual con su primer carácter en mayúscula
++     `t"hello".capitalize` es `t"Hello"` y `t"kingLear".capitalize` es `t"KingLear"`; el resto no
++     cambia. El texto vacío sigue vacío.
+
+@ 0 2 0 18a099b5aa67e6db0c17dccbea8062aa
++ entry .uncapitalize   un valor textual con su primer carácter en minúscula
++     `t"Hello".uncapitalize` es `t"hello"`; `camel` es `pascal` seguido de esto.
+
+@ 0 4 0 1857b040c5cd2af91fd10b446dec2dbf
++ entry .trim   un valor textual sin el espacio en blanco inicial y final, o sin el de un solo lado con un `Bidi`
++     `t"  Hello \n".trim` es `t"Hello"`, y `trim(Ltr)` o `trim(Rtl)` solo eliminan un lado. El
++     espacio en blanco es lo que dice `Char#isWhitespace`: espacios, tabuladores, saltos de línea
++     y los demás separadores de espacio de Unicode. Un texto que es todo espacio en blanco queda
++     en el texto vacío.
+
+@ 0 3 0 0dc337fd972dfbe016aa232ffc59765e
++ entry .blank   si un valor textual está vacío o es todo espacio en blanco
++     `t"  \t".blank` y `t"".blank` son `true`; para comprobar solo si está vacío, se usa `nil` de
++     las colecciones.
+
+@ 0 8 0 144534d9364d79631609fa5805c0373b
++ entry .pinpoint   el ordinal del primer carácter que satisface un predicado, desde un inicio, en cualquier sentido
++     `t"oh, Hello World".pinpoint(_.isUpper)` es `Quin`, la posición de `H`;
++     `pinpoint(_.isUpper, Sen)` empieza la búsqueda en el sexto carácter y encuentra `W`; y
++     `pinpoint(!_.isWhitespace, bidi = Rtl)` recorre desde el final. El resultado es `Unset`
++     cuando ningún carácter satisface el predicado. Es la primitiva posicional que hay por debajo
++     de `trim`, `blank` y `uncamel`, y llega a cada carácter mediante acceso directo en lugar de
++     un recorrido. Para la posición de una subcadena, se usa `offsetOf`; `where` de las
++     colecciones es la búsqueda por predicado sin inicio ni sentido.
+
+@ 0 4 0 1cde42d6d2a3604b0dc64c6cd1cf07c4
++ entry .tr   transforma cada carácter; o sustituye un carácter por otro
++     `t"ABC".tr(_.toLower)` es `t"abc"`, y `t"one,two".tr(',', ';')` es `t"one;two"`. Una
++     transliteración carácter a carácter que nunca cambia la longitud; para una subcadena, se usa
++     `sub`.
+
+@ 0 2 0 1e80b5964d8f78030252d5d2c9a22e71
++ entry .erase   un valor textual sin ninguna aparición de los caracteres indicados
++     `t"a-b_c".erase('-', '_')` es `t"abc"`.
+
+@ 0 6 0 1b34c3d54da8c2410e87001cd95eeca5
++ entry .broken   inserta un carácter de corte allí donde dos caracteres adyacentes satisfacen un predicado
++     `text.broken((left, right) => …)` prueba cada par adyacente e inserta `break` —por defecto,
++     un espacio de anchura cero— entre los dos cuando se cumple el predicado, de modo que a un
++     identificador largo pueden dársele puntos de corte suaves para el ajuste de línea:
++     `t"camelCaseName".broken((a, b) => a.isLower && b.isUpper)` marca cada límite de palabra. Un
++     texto de menos de dos caracteres no cambia.
+
+@ 0 6 0 10855d65429e305a05eeb2908f3adcdc
++ entry .pad   extiende un valor textual con un carácter hasta una anchura, por la derecha o, con `Rtl`, por la izquierda
++     `t"123".pad(5)` es `t"123  "` y `t"123".pad(5, Rtl, '0')` es `t"00123"`; un texto que ya
++     alcanza o supera la anchura no cambia, y nunca se trunca. La anchura se mide mediante el given
++     `Text is Measurable` del ámbito (`textMetrics.uniformMetric` cuenta una columna por carácter;
++     `wideCharacterWidthMetric` cuenta dos para CJK y emoji), de modo que el relleno alinea
++     columnas de texto tal como las muestra un terminal.
+
+% 2 1 0 109622438fc194330993af0c53a0f3d2
+
+% 3 1 0 0173702d378cf1d1046a1f6bc6bf8bdf
+
+% 4 1 0 0443117395fc62dd17dfd86de9232795
+
+% 0 1 0 0c78fd810adfe1ca132c46af44e98a75
+
+% 1 1 0 07b81afc0ae020fd17e9e130ac1e3f6e
+
+@ 0 3 0 0fa49ad222f606441d223ff7388c38e5
++ entry .center   rellena un valor textual por ambos lados hasta una anchura
++     `t"ab".center(6)` es `t"  ab  "`, con la columna impar, cuando la hay, a la izquierda. Se
++     mide mediante el given `Text is Measurable` del ámbito, igual que `pad`.
+
+@ 0 5 0 04a21d16fa56538b03b9e68174d34c8c
++ entry .fit   fuerza un valor textual a una anchura exacta, rellenando o truncando según haga falta
++     `t"123".fit(5)` es `t"123  "`, `t"12345".fit(3)` es `t"123"`, y con `Rtl` el relleno va a la
++     izquierda y el truncamiento conserva la derecha: `t"12345".fit(3, Rtl)` es `t"345"` y
++     `t"123".fit(5, Rtl, '.')` es `t"..123"`. Se mide mediante el given `Text is Measurable` del
++     ámbito.
+
+@ 0 3 0 0b6f74b4b1b67ffc0d7cf3dbe74588c1
++ entry .ossify   sustituye cada espacio por un espacio de no separación
++     `t"a b".ossify` tiene U+00A0 entre las letras, de modo que una disposición con ajuste de
++     línea mantiene juntas las palabras.
+
+@ 0 2 0 14153480253b8c8501ed1b8630ff51b4
++ entry .subscripts   un valor textual con cada carácter sustituido por su forma de subíndice
++     `t"2".subscripts` es `t"₂"`; un carácter sin subíndice en Unicode se convierte en un espacio.
+
+@ 0 2 0 08ddfbc5753fd6651cabad6558d77d12
++ entry .superscripts   un valor textual con cada carácter sustituido por su forma de superíndice
++     `t"23".superscripts` es `t"²³"`; un carácter sin superíndice en Unicode se convierte en un
++     espacio.
+
+@ 0 7 0 1c6607b02110b8ef03838b8661cfc5ed
++ entry .sub   sustituye las apariciones de una subcadena, o las coincidencias de una expresión regular, en un `Text`
++     `t"naive".sub(t"i", t"ï")` es `t"naïve"`, y se sustituyen todas las apariciones salvo que se
++     indique un `count`: `t"aaa".sub(t"a", t"b", 2)` es `t"bba"`. Un reemplazo literal se inserta
++     tal cual —`\` y `$` no son escapes en él—, así que `t"a.b".sub(t".", t"\\.")` da `a\.b`. Con
++     una `Regex` como patrón, `$1` en el reemplazo se refiere al primer grupo:
++     `t"ab".sub(r"(a)b", t"$$1c")` es `t"ac"`. Las coincidencias no se solapan:
++     `t"fofofoo".sub(t"fofo", t"momo")` es `t"momofoo"`.
+
+@ 0 3 0 15a5d20c8decca1e14f366ad4a8206c5
++ entry .urlEncode   un `Text` con codificación porcentual como componente de consulta de una URL, en UTF-8
++     `t"hello world".urlEncode` es `t"hello+world"` y `t"é".urlEncode` es `t"%C3%A9"`: la
++     codificación de formularios, en la que un espacio es `+`. `urlDecode` la invierte.
+
+@ 0 2 0 0a57c1c75022d63c1cf8e106589c8602
++ entry .urlDecode   decodifica un `Text` con codificación porcentual, con `+` como espacio
++     `t"%2B".urlDecode` es `t"+"` y `t"+".urlDecode` es `t" "`.
+
+@ 0 2 0 05d5683d7034acf10b8f16ad7e89b446
++ entry .punycode   un nombre de dominio internacionalizado en su forma ASCII (Punycode)
++     `t"www.äpfel.com".punycode` es `t"www.xn--pfel-koa.com"`, a través de `java.net.IDN`.
+
+@ 0 3 0 095763c090f190ed177570d35e8e1086
++ entry .sysData   los bytes de un `Text` en la página de códigos del sistema, como array congelado
++     `t"hello".sysData` son los bytes `104, 101, 108, 108, 111`. Para una codificación elegida,
++     se usa `text.in[Data]` con un given de `codepages` en el ámbito.
+
+@ 0 6 0 180a4666a7bd84d2048a558082125a8c
++ entry .proximity   la distancia entre dos `Text`s según la medida `Proximity` del ámbito
++     `t"Hello world".proximity(t"Hello orld")` es `1` con `proximities.levenshteinProximity`
++     (y `caseSensitivity.caseSensitive`): el tipo del resultado es el `Operand` de la medida
++     —un `Int` para Levenshtein y las medidas de prefijo, un `Double` para Jaro, Jaro–Winkler
++     y Levenshtein normalizada—. Tanto un `Proximity` como un `CaseSensitivity` deben
++     importarse por nombre.
+
+% 2 1 0 17ae4524e4d7faa706176e139ff4d446
+
+% 3 1 0 02ad62dda354bb27190b61b95fb5c7c1
+
+% 0 1 0 01bb34a2d0bdaad70bf21c35db82b7e2
+
+% 0 1 0 001716f4c0f290721deda3807d16c220
+
+% 0 1 0 1e7c4b1d183ff3c004413e3583df4967
+
+% 1 1 0 04ee86c83279f93b1b8dc06133da137a
+
+@ 0 8 0 10208e5ba23794661c753096e77824ad
++ entry .fuzzy   compara un `Text` con casos literales por proximidad en lugar de por igualdad
++     `text.fuzzy() { case t"hello" => … }` evalúa el caso cuyo literal está más cerca del
++     texto según la medida `Proximity by Double` del ámbito —`proximities.normalized
++     LevenshteinProximity` o `jaroWinklerProximity`—, y los empates se resuelven a favor del
++     caso anterior. Un `threshold` acota la distancia a la que puede elegirse un caso; un texto
++     más alejado que eso de todos los literales cae en el caso comodín, que debe ser el último
++     y puede ligar el texto, y se lanza `MatchError` si no lo hay. Todo caso que no sea
++     comodín debe ser un literal `"…"` o `t"…"`, lo que se comprueba al compilar el código.
+
+% 2 1 0 0c22c565b51df0bc0268778aa0a335bf
+
+% 3 1 0 07e612972dca8a3604d1818a67ecd9f9
+
+% 0 1 0 179b22b75b69454912f65511fccf9278
+
+% 0 1 0 1a389aad30b4767e0ad7f88ba7004bb9
+
+% 0 1 0 1aaf6273303a2ae60212bfcdaaf8bf00
+
+% 0 1 0 1a5def411d6fa0ae0284cd5f1b72bc6f
+
+% 0 1 0 097bfe0f63817b020796bbff7b974f8a
+
+% 0 1 0 1670a4af074c11c61a057d484da16b9d
+
+% 0 1 0 18c219d20bfef2a50e95f0725d8cc70e
+
+% 1 1 0 08181cbf977f93791fa719d79c8f084a
+
+@ 0 1 0 14f9cace7f3310491124ff447b4135fe
++ entry .Proximity   una medida de la distancia entre dos `Text`s: la clase de tipos tras `proximity`, `fuzzy` y `Lexicon`
+
+% 1 1 0 1a5bd1013b4743631b8e5884abaf0210
+
+@ 0 5 0 1d987aa4b8c29e2819782758ef0c37ec
++       `Proximity by operand` tiene un único método, `#distance(left, right)`, cuyo tipo de
++       resultado es `#Operand`: un `Int` para un recuento de ediciones o de caracteres
++       coincidentes, un `Double` para una puntuación normalizada. No hay ninguna por defecto:
++       una medida se importa por nombre del paquete `proximities`, y todas ellas consultan el
++       `CaseSensitivity` del ámbito para decidir si dos caracteres son el mismo, así que
++       también se importa uno.
+
+% 2 1 0 1bd0761ed2f8044a14bbb8bdd4849c5c
+
+% 3 1 0 08c8cb24ae1f33b21f715f61c8fff921
+
+% 4 1 0 1e9dc2005401f7b31ea12ad108dcb487
+
+% 0 1 0 07325107ba6075ec0e326daf3deb0df2
+
+% 0 1 0 15b3b599e5ba8b4d1bb3e400b397604b
+
+% 1 1 0 1dfade9e7cccae1010877196502bb2b2
+
+@ 0 4 0 13e57a1526f8a5191d88209cf1ef0aeb
++       `#Triangulable` es `true` para una medida que es una métrica y cumple la desigualdad
++       triangular (Levenshtein), que es lo que necesita un `Lexicon` para podar su búsqueda;
++       las medidas de Jaro son similitudes, no métricas, y `Lexicon(terms)` no las acepta.
+
+% 1 1 0 1af513c5a74ca2f4130665957f6bd443
+
+% 0 1 0 1e69dc539d8034bb09cff705d078e9ea
+
+% 1 1 0 1100b7cb9a92b4d909c71b83662786d5
+
+% 1 1 0 19293a5e34c2772610466b77f39c170f
+
+@ 0 3 0 051e646a665ac0ee1e45b68a8aa6a958
++   entry #Operand   el tipo que tiene una distancia: `Int` o `Double`
++   entry #Triangulable   `true` cuando la medida es una métrica que cumple la desigualdad triangular
++   entry #distance   la distancia entre dos textos
+
+@ 0 1 0 0d27eafa6e5bc55d0e4eb8a3667929d1
++ entry .proximities   las medidas de similitud entre cadenas, cada una un given `Proximity` que se importa por nombre
+
+% 1 1 0 10515cb1ebd2d52a015eeec1927a7312
+
+@ 0 3 0 0467c7d4fe3c6e150d844e080a8bb436
++       Qué noción de cercanía usan `proximity`, `fuzzy` y `Lexicon` es una elección, así que
++       `import soundness.*` no trae ninguna de ellas; se importa una por nombre, junto con un
++       `CaseSensitivity`, que toda medida necesita para comparar caracteres.
+
+% 2 1 0 173c6477efb8131910139d59f56ee4dd
+
+% 3 1 0 1d7f8b51510ea6480fbcc0ab520d8847
+
+% 0 1 0 1879cb9a0ca3632602b434379def3247
+
+% 1 1 0 1289a1cae3de325f09fed6e43bf64903
+
+% 0 1 0 19db33a11c9e0707093b2b873ace6c07
+
+% 1 1 0 0acd6cf127a37a8610f0ae87d5039656
+
+@ 0 23 0 0c3c0175e6decb180e45e9da82daea72
++       Las distancias de Levenshtein y de prefijo son `Int`s, y cero significa idénticos; las
++       medidas de Jaro, Jaro–Winkler y Levenshtein normalizada son `Double`s. Jaro y
++       Jaro–Winkler son *similitudes* (uno significa idénticos), mientras que Levenshtein
++       normalizada es una *distancia* (cero significa idénticos); `fuzzy`, que elige el caso con
++       el valor más pequeño, espera una distancia.
++   entry .levenshteinProximity   la distancia de edición de Levenshtein: inserciones, eliminaciones y sustituciones de un solo carácter
++       `t"kitten".proximity(t"sitting")` es `3`. La distancia entre un texto y el texto vacío
++       es la longitud del texto. Es una métrica verdadera (`Triangulable = true`), así que es
++       sobre la que se construye un `Lexicon`. Se calcula en dos filas de enteros, así que la
++       memoria es lineal en el texto más corto.
++   entry .normalizedLevenshteinProximity   la distancia de Levenshtein dividida por la longitud del texto más largo, entre `0.0` y `1.0`
++       `0.0` para textos idénticos, `1.0` para textos sin nada en común y `0.0` para dos
++       textos vacíos. Es la medida con la que suele usarse `fuzzy`, ya que un umbral sobre ella
++       no depende de la longitud de los textos.
++   entry .jaroProximity   la similitud de Jaro: caracteres coincidentes dentro de una ventana, menos las transposiciones
++       `1.0` para textos idénticos, `0.0` para textos que no comparten ningún carácter a menos
++       de la mitad de la longitud mayor el uno del otro. Una similitud, no una distancia.
++   entry .jaroWinklerProximity   la similitud de Jaro reforzada por un prefijo común de hasta cuatro caracteres
++       Jaro, más una décima parte de la longitud del prefijo común (con un máximo de cuatro)
++       multiplicada por lo que a Jaro le falta para llegar a `1.0`; favorece los textos que
++       empiezan igual, como suelen hacer las faltas de ortografía.
++   entry .prefixProximity   la longitud del prefijo común de dos textos
++       `t"interview".proximity(t"internal")` es `5`. Un número mayor significa *más*
++       parecidos; es una pieza de `jaroWinklerProximity` más que una distancia para `fuzzy`.
+
+@ 0 1 0 07b57b913f4889691df85f49385854f6
++ entry .CaseSensitivity   si dos caracteres cuentan como el mismo: una política que consulta toda medida de proximidad
+
+% 1 1 0 0f362d9a1e109c0c12c1e7f78ca83c67
+
+@ 0 4 0 18ae1a06e3bc1ac70140cce38962f5a4
++       Un `CaseSensitivity` es una función de dos `Char`s a si coinciden. Las tres políticas
++       del paquete `caseSensitivity` —`caseSensitive`, `caseInsensitive` y `smartCase`— son
++       las elecciones habituales y se importan por nombre; una personalizada es cualquier
++       lambda con la forma adecuada.
+
+% 0 1 0 10de0472bfcb1d4c0544b1a8fc6b2e1a
+
+@ 0 1 0 1f1912132806dfcc0f13f1f84396ba3f
++   entry #compare   si dos caracteres coinciden según esta política
+
+@ 0 1 0 14e77f9cd6bce0e51e168545a7293433
++ entry .caseSensitivity   las políticas de coincidencia de mayúsculas y minúsculas, cada una un given `CaseSensitivity` que se importa por nombre
+
+% 1 1 0 0eb12e77d6ede00e0f00e039089e26f3
+
+@ 0 2 0 0aeae3210365ed5e1a09c9d4bb012371
++       `import soundness.*` no trae ninguna de ellas. Se importa una por nombre allí donde se
++       usa un `Proximity`, ya que toda medida le pregunta si dos caracteres son el mismo.
+
+% 2 1 0 192b35ace8183f250c4256e429bbb83c
+
+% 0 1 0 136eece6874131450e11c79453722b45
+
+% 1 1 0 11f40f328a770b7a0385b3c047dafdc1
+
+% 2 1 0 1c987fe9be164466037e10b2f04ec4e6
+
+% 3 1 0 0ca647cafc6eda8d1fe2507826b0903f
+
+% 0 1 0 07d2afc9a9789aac10b4d532221ea5cb
+
+% 0 1 0 1f2494ad0a6cd9f6130d3519750a63f5
+
+% 0 1 0 0990dd2e1d8805a30fe26db752f812b9
+
+% 1 1 0 01f8d5e289adac7f175635014a1f63b1
+
+% 2 1 0 15545a498bca5fff1eda85f801930d54
+
+% 3 1 0 06f22cfe9e09259e16d62119994d2d61
+
+% 0 1 0 1130122ad0e28f7f0e45fcbbca6cf743
+
+% 0 1 0 1988865f09e6fcc7092575f36e3b1925
+
+% 0 1 0 1fa8140495f611be17bf901c6fb07a61
+
+% 1 1 0 1bd2a533bbea88840d6374c9d36c939b
+
+% 2 1 0 1b1b4718b06cdff900a6ebec27c412aa
+
+% 3 1 0 1f84399ecaf6517415e06e95c0e195fa
+
+% 0 1 0 0e8dbcae8b4fc5010e2fb6fcdaf93d8c
+
+% 0 1 0 111dea5d4be1402c1e67d459489d3ba8
+
+% 1 1 0 161e97cf325b049e1e86f7a222be00bd
+
+% 2 1 0 023f78848f4101760a4009b02ef32760
+
+@ 0 6 0 0f575d19463e930312107f1f24e81c39
++   entry .caseSensitive   los caracteres coinciden solo cuando son iguales
++   entry .caseInsensitive   los caracteres coinciden cuando sus formas en mayúscula son iguales
++   entry .smartCase   un carácter en minúscula a la izquierda coincide con ambas formas; cualquier otro carácter coincide solo consigo mismo
++       La regla de herramientas de búsqueda como el `smartcase` de Vim: una consulta escrita
++       en minúsculas no distingue mayúsculas, y una mayúscula en la consulta debe coincidir
++       exactamente. El operando izquierdo es la consulta.
+
+@ 0 1 0 15f79144967721480829164e70394a08
++ entry .Collation   un orden total de `Text`: lo que requiere ordenar y comparar texto
+
+% 1 1 0 187511314d9189cc17b1b57960937b90
+
+@ 0 7 0 0f83761330500fd20662c9a2917a9f3b
++       El texto no tiene un orden natural —que `café` vaya antes que `caff` depende del idioma
++       y del propósito—, así que Soundness no tiene uno ambiental: ordenar un `List[Text]`, o
++       escribir `t"a" < t"b"`, necesita un `Collation` en el ámbito, y no compila sin él. Una
++       intercalación se importa por nombre del paquete `collations` (`unicodeCollation` para el
++       orden de diccionario, `codepointCollation` para un orden rápido y sin tablas) o se
++       construye a partir de una `CollationTable` de hieroglyph con `.apply`, y
++       `collationComparable` la convierte en el `Text is Comparable` que buscan los operadores
++       de comparación y las ordenaciones.
+
+% 2 1 0 06fb88e3d27239b1142bf4a0d7045526
+
+% 3 1 0 138d01285a77ad770bafea0982a2ee2e
+
+% 0 1 0 1285ef31f17a40770ec6b6f0bbd813af
+
+% 0 1 0 1e5f4b9c319e82950983f04a2f5db149
+
+% 0 1 0 09bd1f97efb7692319774c2a96f513ac
+
+% 0 1 0 1a0b705e3a58d182070dadfd6ccca56a
+
+% 1 1 0 0a4a3c8edc407a1005f4242fdfe9bfff
+
+@ 0 3 0 00936ba1fc232af6057d8b49f76defa6
++       `#compare` da la `Comparison` de dos textos, y `#key` una clave de ordenación: un array
++       de enteros que, comparados elemento a elemento, se ordenan como lo hace la
++       intercalación, para ordenar muchos textos sin repetir el trabajo de comparación.
+
+% 0 1 0 14c68f3f67c0578c0e70b4fc041d16ce
+
+% 0 1 0 1c4f05048b2b06fe0566f1a18d8e8c36
+
+@ 0 3 0 07dc6a1c58d2d8c603a1a401ffb6ebb0
++   entry .apply   un `Collation` sobre una `CollationTable` de hieroglyph, como la adaptación de un idioma
++   entry #compare   la `Comparison` (`Less`, `Same` o `More`) de dos textos
++   entry #key   una clave de ordenación de un texto: enteros que se comparan como lo hace la intercalación
+
+@ 0 7 0 06c83fc5e6cb1f1f062079b410a9fae3
++ entry .collationComparable   hace que `Text` sea `Comparable` siempre que haya un `Collation` en el ámbito
++     El given a través del cual se resuelven `<`, `>`, `least`, `sort` y cualquier otra
++     comparación sobre `Text`. Necesita un `Collation` en el ámbito, así que el texto se vuelve
++     ordenable exactamente cuando se ha elegido un orden, y el error para un `List[Text]` sin
++     ordenar nombra el `Comparable` que falta. Es un given de nivel superior con un nombre
++     cualificado por la biblioteca, ya que ni el objeto compañero de `Comparable` ni el de
++     `Text` pueden hacer referencia a gossamer, así que debe importarse por nombre
++     —`import soundness.collationComparable`— junto con la intercalación.
+
+% 2 1 0 143b1ff2d6c293021469411cf6f6a0a0
+
+% 3 1 0 05e8299b64dc7e21076221524f9d921c
+
+% 0 1 0 161ba3160e460cb50c6576063980e5d8
+
+% 0 1 0 00bb9d3937e1649c0e3805cd5e749bfe
+
+% 0 1 0 074f2d88bda64d9219f64ea3eebd4777
+
+% 1 1 0 14a9c4b5095d4f8c12e2f249bae02434
+
+@ 0 1 0 0415d3c5f34169920992b62e09cb9801
++ entry .collations   los órdenes de texto, cada uno un given `Collation` que se importa por nombre
+
+% 1 1 0 05014f8ee6faad691a7c34173f9c4ed1
+
+@ 0 2 0 16940fd200f758a91d76504b46fc9632
++       `import soundness.*` no trae ninguno de ellos; un orden se elige importando uno. Los dos
++       órdenes difieren en mayúsculas, acentos y caracteres fuera del plano básico:
+
+% 2 1 0 06e22c38f4bbd7800340bb6eecfbdc00
+
+% 0 1 0 0c22ba6d0a62a47a12fbbe4c8f30d91d
+
+% 1 1 0 1b83dd50030db11c09144ea4d4ef7849
+
+% 2 1 0 18a5cc87e519fcf113869db63db84456
+
+% 0 1 0 140b8725d89050d21ae20ffce63e4f64
+
+% 1 1 0 0338fed99a5e0afa02b76c69825eb969
+
+% 0 1 0 17b40f81e1f842790280b0aa82e382cb
+
+% 0 1 0 05839c29923015ce18fd1352046d440d
+
+% 1 1 0 107a3d3e0b33af93145d8bb694909cc9
+
+% 2 1 0 0ed5e491ffd8cc3212c246bb3b1b1633
+
+% 0 1 0 0877360e20676ed600ff377f037c7fa9
+
+% 1 1 0 02c8a01cbe20fc20176e06dd185f00f0
+
+% 0 1 0 0001b5d1a6354b0c08c163a90a02c449
+
+% 1 1 0 0a22b8cf71af2b360c9bca69b0ecb28e
+
+% 2 1 0 04aa94bd2df4f4af0889f903c2586ef8
+
+@ 0 12 0 0ec9ce377f07534a18700b104079a4bd
++       Una adaptación específica de una configuración regional procede de cosmopolite, que
++       deriva un `Collation` de un `Locale` contextual, o de `Collation(table)` sobre una
++       `CollationTable` de hieroglyph.
++   entry .unicodeCollation   orden de diccionario: la tabla raíz del Unicode Collation Algorithm, tres niveles, no ignorable
++       El orden de la Default Unicode Collation Element Table (UTS #10): las letras por su peso
++       primario sin tener en cuenta mayúsculas ni acentos, luego los acentos, luego las
++       mayúsculas, de modo que `cafe` < `café` < `caff` y `a` < `B`. La clave de ordenación es
++       la clave de la tabla para el texto.
++   entry .codepointCollation   orden bruto por punto de código: determinista, sin tablas, para ordenaciones destinadas a máquinas
++       Ordena por valor escalar Unicode, así que es estable entre versiones de los datos de
++       intercalación y no cuesta nada cargarlo; adecuado para listados de ficheros y otras
++       salidas que deben ser reproducibles más que legibles. No es el orden de `String`, que
++       compara unidades de código UTF-16 y por eso coloca los caracteres suplementarios (`𝓐`)
++       antes de U+E000–U+FFFF; aquí se ordenan después de todo el plano básico. Las mayúsculas
++       van antes que cualquier letra minúscula.
+
+@ 0 1 0 153cbca83488361616c600a6f33510ad
++ entry .Decimalizer   representa un `Double` como texto decimal con una precisión elegida, como consulta `show` el `DecimalConverter`
+
+% 1 1 0 131e8f48d69fe32e1f1e3c7f0f755589
+
+@ 0 5 0 139ad7fd5b683a2d07dd64583853cc5b
++       Un `Decimalizer` es un `DecimalConverter`, la clase de tipos que busca `Double is
++       Showable` (y por tanto `t"$x"` para un `Double`), y que indica cuántos dígitos vale la
++       pena mostrar: `Decimalizer(3)` son tres cifras significativas, y
++       `Decimalizer(decimalPlaces = 2)` dos dígitos tras el punto. Los valores cuya magnitud
++       alcanza `#exponentThreshold` potencias de diez (tres por defecto) se escriben en
++       notación científica con un exponente en superíndice.
+
+% 2 1 0 031584548f52bb0604efabde299102cf
+
+% 3 1 0 0caa0a3fd84c8e58101a65d1b42a883c
+
+% 0 1 0 1d08d79b5f5709130d2666989c77baaf
+
+% 0 1 0 02aa449918b4ba141dd797dc20482922
+
+% 0 1 0 094e28e45a14fb8d068f90eafb3edeeb
+
+% 0 1 0 13ab2d11a47c287c007962fef008d2d0
+
+% 0 1 0 1bf1187c77aaee6713bc60630ad482a2
+
+% 0 1 0 136a33f3fd0e72650fb76ccd0cb68a0c
+
+% 1 1 0 0b61cbb398676fb013724c89dd4f51fb
+
+@ 0 6 0 0cf74315ae75c92309ba67317b73653a
++       Un `given Decimalizer(3)` en el ámbito hace entonces que todo `show` de un número de
++       coma flotante se represente igual, así que cambiar la precisión de un programa es un
++       solo given y no una búsqueda de cadenas de formato. El redondeo se acarrea
++       correctamente más allá del dígito inicial. Los valores especiales se representan como
++       `#infinity` (`∞`, con `#minusSign` cuando es negativo) y `#nan` (`∉ℝ`).
++       `decimalConverters.javaDecimalConverter` es la alternativa simple de `Double#toString`.
+
+% 0 1 0 0cadd17fdce7c0d3001ae4d3513cb578
+
+% 0 1 0 0b19ef9d8df904131fb8f63308d771d3
+
+@ 0 19 0 0c8c1f781c3d97d005616feb3090c029
++   entry #significantFigures   el número de dígitos significativos que se muestran, o `Unset` para usar `#decimalPlaces`
++       El primer parámetro, así que `Decimalizer(3)` lo fija. Cuando tanto él como
++       `#decimalPlaces` son `Unset`, se usan tres cifras significativas.
++   entry #decimalPlaces   el número de dígitos tras el punto decimal, usado cuando `#significantFigures` es `Unset`
++   entry #decimalPoint   el carácter del punto decimal, `.` por defecto
++       `Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)` es `t"6·626070×10¯³⁴"`.
++   entry #minusSign   el carácter que se escribe antes de un número negativo, `-` por defecto
++   entry #plusSign   el carácter que se escribe antes de un número positivo, o `Unset` (por defecto) para ninguno
++   entry #exponent   el texto entre la mantisa y el exponente, `×10` por defecto
++   entry #exponentThreshold   la magnitud, en potencias de diez, a partir de la cual empieza la notación científica; `3` por defecto
++       `Unset` desactiva por completo la notación científica.
++   entry #superscript   si el exponente se escribe con dígitos en superíndice (`10²³`), por defecto, o sin formato (`10-34`)
++       Con superíndice, un exponente negativo usa como signo `¯`, parecido a un macrón.
++   entry #exponentMultiple   redondea el exponente hacia abajo a un múltiplo, `3` para la notación de ingeniería; `1` por defecto
++       Con `exponentMultiple = 3`, `6.0221408e23` se representa como `602.2141×10²¹`.
++   entry #infinity   el texto de un valor infinito, `∞` por defecto
++   entry #nan   el texto de un valor que no es un número, `∉ℝ` por defecto
++   entry #decimalize   el texto de un `Double` según los ajustes de este decimalizador
++   entry #exponentScale   el número de dígitos decimales de un exponente; un auxiliar de `#decimalize`
+
+@ 0 1 0 0508c9d5c3d9653b0bfaeaa706548f1c
++ entry .decimalConverters   las alternativas `DecimalConverter` a un `Decimalizer`, para importar por nombre
+
+% 1 1 0 1809323c391c4bb9122934b3a3200fb2
+
+@ 0 6 0 0467a005d4c99f290aa11f314b86ce54
++       Un `Double` se muestra a través del `DecimalConverter` del ámbito. Un `Decimalizer`
++       indica una precisión; este paquete contiene el conversor que no lo hace.
++   entry .javaDecimalConverter   representa un `Double` con `Double#toString`, exactamente como lo haría Java
++       `3.14159` se representa como `3.14159`, `1e21` como `1.0E21` y `0.1 + 0.2` como
++       `0.30000000000000004`: todos los dígitos que tiene el valor binario, sin redondear a
++       ninguna precisión.
+
+@ 0 1 0 0c9117d2f32e8f630e3343fa7d1388f0
++ entry .Numerous   una palabra con sus terminaciones de singular y plural, para contar cosas en prosa
+
+% 1 1 0 116e9e43ba72363316ed2b8e6ae502f3
+
+@ 0 3 0 11354cd9e448cf701a8fe8c8592b07fd
++       `Numerous(t"item")(3)` es `t"items"` y `Numerous(t"item")(1)` es `t"item"`. Las
++       terminaciones son `s` y nada por defecto, y se indican para las palabras irregulares:
++       `Numerous(t"quer", t"ies", t"y")`. Puede pasarse una colección en lugar de un recuento.
+
+% 2 1 0 1cd00686e8e03ea50d6d2e022bafccea
+
+% 3 1 0 0e28bc40ad0e369405c579277c02bd96
+
+% 0 1 0 1124e97b083af06611282880540fe23e
+
+% 0 1 0 1de33667ff1675cd0b5d91f9a1c1b587
+
+% 0 1 0 03753e8f73c4d2e815d868d72cca0004
+
+% 0 1 0 0998a9a1d645ad1101ef734bebfba7ba
+
+% 1 1 0 1165d6a04ae9f97c186a5c98da214b89
+
+@ 0 4 0 02044e881142acba1bb0f1d6ad31b378
++   entry #word   la raíz a la que se añaden las terminaciones
++   entry #pluralEnd   la terminación para cualquier recuento salvo uno; `s` por defecto
++   entry #singularEnd   la terminación para un recuento de uno; vacía por defecto
++   entry #apply   la palabra con la terminación para un recuento, o para el tamaño de una colección
+
+@ 0 1 0 1bc0439dbf81237312307bbf5d792eca
++ entry .Range   el hogar de `Range.Error`, que se lanza cuando un índice está fuera de los límites de un texto
+
+% 1 1 0 06a794a67ee6c4190853ad119abafa82
+
+@ 0 3 0 17d49cca707489840d86faaab82c86d4
++       Aquí solo vive el error. Las propias operaciones de corte limitan en lugar de fallar
++       —`segment` acorta un intervalo demasiado grande—, así que el error lo lanzan las pocas
++       operaciones que deben rechazar un índice, como el movimiento del cursor de un editor de
++       líneas.
+
+% 0 1 0 0363b1a420eebc09088f9224187430dc
+
+% 1 1 0 1c82d34216796840072f8fb59c388e10
+
+@ 0 6 0 10122ebeefb82edc04f3bb34814b2528
++         Se lanza cuando una posición está fuera de los límites de un texto en una operación
++         que no puede limitarla. Es un `fulminate.Error`, así que se lanza a través de un
++         `Tactic[Range.Error]` y puede manejarse con `safely` o `mend`.
++     entry #index   el índice que se pidió
++     entry #from   el índice válido más bajo
++     entry #to   el índice válido más alto
+
+@ 0 5 0 055c9b9fbdc1d849128c0b460301cdc0
++ entry .Bidi   la dirección desde la que trabaja una operación: `Ltr` (el principio) o `Rtl` (el final)
++     `Bidi` es el enum de anticipation, reexportado aquí con sus casos para que `import
++     gossamer.*` tenga todo el vocabulario de corte. `keep`, `skip`, `pad`, `fit`, `trim`,
++     `chomp`, `offsetOf` y `pinpoint` toman cada uno un `Bidi`, `Ltr` por defecto, y `Rtl`
++     hace que trabajen desde el final: `t"Hello".keep(2, Rtl)` es `t"lo"`.
+
+@ 0 3 0 0796ba76d5ee223a17b684196e1fb5fd
++ entry .Ltr   de izquierda a derecha: desde el principio del texto, la dirección por defecto
++     `Bidi.Ltr`, reexportado para que pueda escribirse sin prefijo: `t"123".pad(5, Ltr, '.')`
++     es `t"123.."`.
+
+@ 0 3 0 1e182269e0a2ce4311592304e2150ea9
++ entry .Rtl   de derecha a izquierda: desde el final del texto
++     `Bidi.Rtl`, reexportado para que pueda escribirse sin prefijo: `t"123".pad(5, Rtl, '.')`
++     es `t"..123"`, y `t"Hello".skip(1, Rtl)` es `t"Hell"`.
+
+@ 0 5 0 1eb1af350a5a4d52125e7eb4c291a64e
++ entry .reversibleTextual   una instancia de `Reversible` para cualquier tipo textual, para que la publique un objeto compañero
++     `reverse` es una única extensión tanto para colecciones como para texto, impulsada por la
++     clase de tipos `Reversible` de rudiments; pero un given general para todo tipo `Textual`
++     no puede colocarse donde la búsqueda implícita lo encontraría, ya que el objeto compañero
++     de `Reversible` está en `rudiments`, por debajo de gossamer. Así que cada tipo textual
++     publica la instancia en su propio objeto compañero:
+
+% 2 1 0 0140ec3b7bba7cf518b9a50aa9dee6f2
+
+% 0 1 0 06b5aa9bb0e2148116df5511cfb637db
+
+% 1 1 0 13a044c22d96d78511a97f25240fbe40
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 1643cd7fd72c22981ec68aed5653b98c
+
+% 0 1 0 09659e236c813bd3122a82f9f71d7f97
+
+% 0 1 0 09580821ec10efc9132bdcbbfbcea5c1
+
+% 0 1 0 114d41ff69b133e9130920aabac9b6f5
+
+% 1 1 0 1e6ef8d1ccfe887d13dfa0b5d8d1f220
+
+@ 0 3 0 01127e691fcc705a0088d50d063f1a48
++     El refinamiento debe ir entre paréntesis como se muestra, o las llaves se analizan como el
++     cuerpo del given. La inversión construye el resultado elemento a elemento a través del
++     `Builder` del tipo, de modo que un texto con estilo conserva su estilo.
+
+@ 0 7 0 1965025f7cb68f5e038fbf09c9306a87
++ entry .traversableTextual   una instancia de `Traversable` para cualquier tipo textual, para que la publique un objeto compañero
++     La contrapartida de `reversibleTextual` para el recorrido: un tipo textual cuyo objeto
++     compañero declara `given traversable: (Styled is Traversable { type Operand = Char }) =
++     traversableTextual` obtiene las formas con predicado de `keep`, `skip`, `snip`, `count`,
++     `where`, `all`, `exists` y las demás operaciones de `Traversable` de la biblioteca de
++     colecciones, con la reconstrucción a través de `segment` para que el estilo sobreviva. Los
++     elementos recorridos son el `Textual#Result` del tipo.
+
+@ 0 1 0 164eb937ebca35fd17261f7547d2ec49
++ entry .Writing   un texto segmentado en grupos de grafemas: los caracteres que ve un lector
+
+% 1 1 0 06afbd4aeb84087314be649a43e2ddbe
+
+@ 0 6 0 0221942b48cb92180da38838590d3778
++       Un `Char` no es lo que una persona llama un carácter: `é` puede ser uno o dos puntos de
++       código, una bandera es un par de indicadores regionales y un emoji de familia son varios
++       puntos de código unidos. `Writing(text)` calcula una sola vez los `#boundaries` de los
++       grupos de grafemas del texto (Unicode UAX #29), y después lo
++       presenta como un `Textual` cuyos elementos son `Grapheme`s, de modo que `length`, `keep`,
++       `skip`, `segment`, `slices` y `reverse` cuentan y cortan por lo que se ve y no por
++       unidades de código UTF-16.
+
+% 2 1 0 02c74f4d2411604712b56b82af22d47e
+
+% 3 1 0 1de6c10a3569e1d7095b8ae14317d001
+
+% 0 1 0 17cf5a2661de60a3157c36fcb6e7e50a
+
+% 0 1 0 0c58cbbef4c94eff11af9fb9cbdd2ada
+
+% 0 1 0 02833d88d77e923a1faf1c715c1a50a7
+
+% 0 1 0 03c7787e9a3b68ab1b6f51501c58d369
+
+% 0 1 0 1e520efd372bf5ff12c13f3a5469c7a1
+
+% 1 1 0 0439a3e702ed10b809fc15a409ad2d28
+
+@ 0 4 0 12cff669074ca88812a899bff80ad524
++       Con un `Grapheme is Measurable` en el ámbito (de un given de `textMetrics`),
++       `.measurable` da la anchura de visualización de un writing como la suma de las anchuras
++       de sus grafemas, lo que es más preciso que medir el texto simple punto de código a punto
++       de código. Un `Writing` se muestra como su texto y se inspecciona con sus grupos
++       separados por `·`.
+
+% 0 1 0 07a92d31bf9ef86219fe40a7bfd89acc
+
+% 0 1 0 01dee382db0e97d21c85dd9a7f91eec7
+
+@ 0 20 0 0e633bbe9ab7a2fe1729cbf1b49c62a1
++   entry .apply   un `Writing` de un texto, con sus fronteras de grafema calculadas
++   entry .empty   el writing vacío
++   entry .showable   muestra un writing como su texto simple
++   entry .inspectable   inspecciona un writing como `w"…"` con `·` entre sus grafemas
++       `Writing(t"a\r\nb").inspect` es `w"a·\r\n·b"`: la segmentación es lo que distingue un
++       writing de otro, así que es lo que muestra la inspección.
++   entry .concatenable   `left + right` sobre writings, con las fronteras recalculadas
++   entry .measurable   la anchura de visualización de un writing: la suma de las anchuras de sus grafemas
++       Necesita un `Grapheme is Measurable` en el ámbito, que
++       `textMetrics.wideCharacterWidthMetric` proporciona a través de `Grapheme.measurable`. Un
++       acento combinante no añade nada a su base, y una bandera o una secuencia ZWJ es una
++       celda ancha y no la suma de sus partes.
++   entry .textual   la instancia de `Textual` para `Writing`, con elementos `Grapheme`
++       La longitud es el número de grafemas, el acceso y `segment` trabajan en grafemas, e
++       `indexOf` devuelve una posición solo cuando la subcadena empieza en una frontera de
++       grafema.
++   entry .graphemes   los grafemas del writing, como secuencia indexada
++   entry .graphemeCount   el número de grupos de grafemas; lo mismo que `length`
++   entry #text   el texto simple subyacente
++   entry #boundaries   los desplazamientos en caracteres de las fronteras de grafema, desde `0` hasta la longitud del texto
++       Un array congelado con un elemento más que grafemas hay; el grafema `i` son los
++       caracteres entre `boundaries(i)` y `boundaries(i + 1)`.
+
+@ 0 1 0 155a286f74189b03045067c921296cf6
++ entry .Grapheme   un grupo de grafemas: un carácter base con sus marcas combinantes, o una secuencia unida
+
+% 1 1 0 0e2fd49c9777a55d1414b43a03db0fac
+
+@ 0 4 0 14686a3441f3838613ea197ed7618ebe
++       El tipo de los elementos de `Writing`: un tipo opaco sobre `String` que contiene los
++       puntos de código de un único carácter percibido por el usuario. `Grapheme("é")` envuelve
++       uno; `#text` es él como `Text` y `#chars` su longitud en unidades UTF-16. Se inspecciona
++       como `‹é›`, con el grupo mostrado intacto entre comillas latinas en lugar de escapado, ya
++       que la estructura es lo que importa.
+
+% 2 1 0 1b2b7c95b766eaf51a85ae9dd646a16a
+
+% 3 1 0 1e86ad4772c4cf4c16418435f3a338cc
+
+% 0 1 0 00e9d5b71cf9ab080cfecb5746060983
+
+% 0 1 0 1e7e22ead531858e1c277408c3e0afc8
+
+% 0 1 0 07ee11cd059c1acc093cf1e61c617377
+
+% 0 1 0 061b7d4b94ca9bd11f3a4ec24e34c29d
+
+% 1 1 0 1256fb718a4d1e49051faf38d85d19df
+
+@ 0 3 0 0381843fba506f2e1e5c93adb3bb9023
++       Los miembros de su objeto compañero —`apply`, los givens `showable`, `inspectable` y
++       `measurable`, y las extensiones `text` y `chars`— se declaran en
++       `internal.opaques.Grapheme`, desde donde se exporta el tipo, y se documentan allí.
+
+% 1 1 0 118adeba898a3e3a00a32de0dfb431bd
+
+@ 0 1 0 043b853bd518cb9a1981cefb677888dc
++ entry .Ascii   una cadena de bytes de caracteres ASCII, creada con `a"…"`
+
+% 1 1 0 025559248ee42c1a062720f5b3461bec
+
+@ 0 5 0 0252768855d7fc1712a0aa98b36131fa
++       Un tipo opaco sobre un `Array[Byte]` congelado, un byte por carácter, con una instancia
++       de `Textual` cuyos elementos son `Byte`s, de modo que las operaciones posicionales y de
++       subcadena (`cut`, `keep`, `starts`, `offsetOf`, `slices`, `+`, …) trabajan directamente
++       sobre él y `plain` lo convierte en `Text`. El interpolador `a"…"` comprueba al compilar
++       el código que todo carácter es ASCII; `Ascii(bytes)` envuelve bytes que ya se tienen, sin
++       comprobarlos.
+
+% 2 1 0 1fa62ce875bdd5ac0e2a099339e0b17a
+
+% 3 1 0 09b8bf393ec99047150c3305f66d4019
+
+% 0 1 0 139da282229722560e3ad580a1bc0358
+
+% 0 1 0 047d0b7f52284fb71a20c8e227276507
+
+% 0 1 0 1a06f0a1f74c69d00f7c0acb6f5bd238
+
+% 0 1 0 037ccd134eb215c51f1ba237a936ef70
+
+% 1 1 0 082a8cc19e47101510856a84bc9c39e5
+
+@ 0 3 0 0ad2150928e71b7918ebf759d891bac9
++       Los miembros de su objeto compañero —`apply`, los givens `showable`, `inspectable`,
++       `concatenable` y `textual`, y la extensión `bytes`— se declaran en
++       `internal.opaques.Ascii`, desde donde se exporta el tipo, y se documentan allí.
+
+% 0 1 0 12e50c0f512032521e1c5cb19b0e4bae
+
+@ 0 7 0 113b37a7988e2b9315795ecff0f06565
++ entry .textDecodable   decodifica un `Data` como `Text` a través del `Charset` del ámbito, para `data.as[Text]`
++     El given `Decodable in Data` para `Text`, en `gossamer.codec`: `bytes.as[Text]` lee los
++     bytes en el `Charset` dado en el ámbito (`charsets.utf8Charset`, `asciiCharset`, …), y es
++     la contrapartida de `text.in[Data]` con un given de `codepages`. Un juego de caracteres
++     distinto de ISO-8859-1 necesita además un `TextSanitizer` para la entrada mal formada
++     (`strictSanitizer` lanza `Charset.Error`). Es un given de nivel superior y por tanto debe
++     importarse por nombre: `import soundness.textDecodable`.
+
+% 2 1 0 11f85c1fbdcf708211c7dd6b55599ba4
+
+% 3 1 0 0272a28ef126475315cb957f9b120862
+
+% 0 1 0 0ad93198262cba4102f10ea1980b5899
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 0 1 0 195d698c79e48182084de8e2fe1b52e0
+
+% 0 1 0 14ad7791959ecbd2182874a17e7ce744
+
+% 1 1 0 0014f482f1cb64bb11bbaa81566a8412
+
+@ 0 1 0 1d240539574aa65b1ef8a90dace08686
++ entry .enumIdentification   cómo se escriben como texto los nombres de los casos de un enum, cada uno un given `Identifiable` que se importa por nombre
+
+% 1 1 0 027138c0d020227809b6eaa568eeda56
+
+@ 0 5 0 165ae8e7f570a95d013ae8bab5dcf1eb
++       Un caso `Verbosity.Loud` puede aparecer en una línea de comandos, un fichero de
++       configuración o un documento JSON como `loud`, `LOUD`, `Loud` o `loud-level`; cuál de
++       ellos es una elección, así que los givens `Identifiable` para enums viven aquí y se
++       importa uno por nombre. Cada uno codifica el nombre de un caso en la convención y
++       decodifica el texto escrito en esa convención de vuelta al nombre en Pascal case que
++       declara el enum.
+
+% 2 1 0 02fcc2e29c8da45c0caeafb74ef70d2b
+
+% 3 1 0 06bf63447de38b081ecda646e0429c9d
+
+% 0 1 0 0a64e7aa3d9799e41209266460234792
+
+% 0 1 0 15ef8fa0251cf9fe085a698b8dfd7893
+
+% 0 1 0 191116ac2dca1f8a1d566ff0afb51f66
+
+% 0 1 0 0760df20b28407af0b17849a073b801f
+
+% 0 1 0 11c67d2ae77b8bb41572aae89c52183f
+
+% 1 1 0 04a092ba86c0ab1e0b7ec836138c8d2c
+
+@ 0 2 0 16a32dd94bf44b970f1abb4015ad485b
++       Una opción de la CLI con tipo `Flag[Verbosity]` lee entonces `--verbosity very-loud`, y
++       un códec de JSON o de TEL escribe el caso como `very-loud`.
+
+@ 0 2 0 1ac573af4e987f96170b0df1ea43a28f
++       `pascalCaseIdentifiable` es la identidad, para un enum cuyos casos se escriben tal como
++       se declaran. Los givens están en `gossamer.codec`, ya que `Identifiable` es de
++       distillate.
+
+% 0 1 0 0f88e25e7dcfcc37166291640af2c899
+
+% 0 1 0 16d863ef386c4d8309adaa428b5e8ff8
+
+% 0 1 0 00704d3aa6f96e8507d8580d3fceabcd
+
+@ 0 3 0 1079e0e2c9c55681071c1e9cab516e06
++       Al decodificar, `_` se trata como una frontera de palabra, igual que hace el given de
++       snake case, antes de volver a poner las mayúsculas.
++   entry .pascalCaseIdentifiable   `VeryLoud` ↔ `VeryLoud`: el nombre del caso tal como se declara
+
+@ 0 1 0 1f9c0c43469fa4be130152411ad6f6e7
++ entry .Lexicon   un árbol BK sobre un vocabulario: encuentra todos los términos a una distancia dada de una consulta
+
+% 1 1 0 128a42484c21a43e0b35e6e172dba45a
+
+@ 0 5 0 11b5c6a0b2afcb821e7cff2cf08f8b97
++       Comparar una consulta con cada palabra de un vocabulario es cuadrático, y una sugerencia
++       ortográfica necesita que sea rápido. Un `Lexicon` indexa términos en un árbol de
++       Burkhard–Keller según el `Proximity by Int` del ámbito, y usa la desigualdad triangular
++       —que la medida debe cumplir, así que su `Triangulable` debe ser `true`, como lo es el de
++       `levenshteinProximity`— para podar la mayor parte del vocabulario sin medirlo.
+
+% 2 1 0 04f08f7e6691704d13ea9b9d27959d02
+
+% 3 1 0 07f25f1c5f66c6071236fffffedd2904
+
+% 4 1 0 0459f21502d0b8781f83492e385ddca8
+
+% 1 1 0 1118e79849ad83f30a07ef83e20bd831
+
+% 0 1 0 14bf560888b588a913941905276b49fc
+
+% 0 1 0 19839187e62cefe819dcf8b5ecee5ed5
+
+% 0 1 0 131f6e88a31b29b307e68021f450fd80
+
+% 1 1 0 0f40fda82e85b7291f788a5885e2c173
+
+@ 0 4 0 1dcbbd9b322e3e921b13790fa6cce14f
++       Un léxico puede asociar cada término a un valor (`Lexicon(Map(t"colour" ->
++       Colour.Blue))`), en cuyo caso una búsqueda devuelve los valores. Es mutable: `#update`
++       añade un término, `lexicon(t"term") = value`, y la estructura no puede compartirse con
++       seguridad entre hilos mientras se construye.
+
+% 0 1 0 01cb21270777e2d6197c750f0e78a2a8
+
+% 1 1 0 1ff5d5811ce5306d01c80a6327c4a35b
+
+@ 0 6 0 06c307b8fcc1e6d600a71d64329e72a1
++   entry .apply   un léxico de una lista de términos, de un mapa de términos a valores, o uno vacío
++       `Lexicon(terms)` indexa cada `Text` como clave y como valor; `Lexicon(map)` indexa las
++       claves y devuelve los valores en una búsqueda; y `Lexicon[element]()` está vacío, para
++       llenarlo con `#update`. Las dos primeras formas necesitan una medida `Triangulable`; la
++       forma vacía acepta cualquier `Proximity by Int`, y confía en que quien la llama haya
++       elegido una métrica.
++   entry .Node   un nodo del árbol: un término, su valor y los hijos indexados por distancia
+
+% 1 1 0 048e3b8a87a30fc403f17a1e9210e9da
+
+@ 0 10 0 1dc0509180ec88e7013b29483ffc3dab
++         La implementación de un léxico no vacío. Cada subárbol hijo se indexa por la distancia
++         de su raíz al término de este nodo, que es lo que permite a una búsqueda saltarse todo
++         subárbol cuya clave esté más lejos que el radio de la distancia de la consulta.
++     entry #children   los subárboles hijos, indexados por su distancia al término de este nodo
++     entry #update   añade un término al subárbol de su distancia, creándolo si hace falta
++     entry #search   los valores a menos de `radius` de la consulta, en este subárbol
++   entry #update   añade un término con un valor: `lexicon(key) = value`
++   entry #search   los valores de todos los términos a menos de `radius` de la consulta
++       El radio cero es una búsqueda exacta; cada radio mayor admite candidatos más lejanos, y
++       así es como se produce una sugerencia de «quizás quisiste decir» a partir de una lista
++       de palabras grande.
+
+@ 0 1 0 08c1f213d532536e050c36ddf634425c
++ entry .Dictionary   un trie denso de claves `Text` a valores, para búsquedas exactas y por prefijo
+
+% 1 1 0 0cafccc78741b89c1c0a8e554c4c8706
+
+@ 0 5 0 1316e2047acc49260b20ac39ef781c79
++       Un `Dictionary[value]` asocia texto a valores mediante un trie dispuesto en arrays
++       planos: cada nodo posee un bloque de `alphabet.size` posiciones en `#children`, así que
++       una búsqueda cuesta una lectura de array por cada carácter de la clave, y ningún hash de
++       la clave entera. Se adapta a tablas de silabeo, nombres de atributos HTML, conjuntos de
++       palabras clave y cualquier otro vocabulario fijo que se consulte constantemente.
+
+% 2 1 0 043bf89226be48e61c55086eaf8cb6ad
+
+% 3 1 0 080086e95dfe048c0aec0c11f0089f25
+
+% 0 1 0 146ef45f4625aa68120c2226f00fb80c
+
+% 0 1 0 13981b2b539e30a50bce2a46626655b3
+
+% 0 1 0 1d74aa6e18c8040403b1092af5094064
+
+% 0 1 0 129182031f5c2e7c03e6869dab2dc4d1
+
+% 1 1 0 11528d5993a898da09c1072341975990
+
+@ 0 5 0 02d053f6f0bc7311029938f21871c221
++       El alfabeto —los caracteres que pueden contener las claves, cada uno con una posición—
++       lo derivan de las claves `.apply` y `.empty`, o se pasa a `.withAlphabet` y `.aho`; una
++       clave con un carácter fuera del alfabeto se descarta en silencio. `.aho` construye
++       además los enlaces de fallo de un autómata de Aho–Corasick, de modo que una sola pasada
++       sobre una entrada encuentra todas las claves que terminan en cada posición, mediante
++       `#step`, `#fail` y `#dictLink`.
+
+@ 0 3 0 1aa6bc5f09e346111aca931ff927c197
++       Un diccionario es inmutable una vez construido, y sus arrays están congelados, así que
++       puede compartirse libremente; `#add`, `#+` y `#++` construyen uno nuevo con un tipo de
++       valor ampliado. El tipo de valor debería ser un tipo referencia, ya que los valores se
++       almacenan con boxing en un array de `AnyRef`.
+
+% 1 1 0 10c23a16ae6051ee130b78160bf58da4
+
+@ 0 1 0 1f53b611320e6a210239fa26dd97be2d
++   entry .Alphabet   los caracteres que pueden usar las claves de un diccionario, cada uno asociado a una posición densa
+
+% 1 1 0 0e836df6c55c4e0515e38aeb130c8b1c
+
+@ 0 43 0 0126d6f19b345489095ee3d8ba873fbc
++         Una asociación fija de `Char` a una posición en `[0, size)`, con `-1` para un carácter
++         que no pertenece a él. `Alphabet.of(t"abc…")` numera en orden los caracteres de una
++         cadena; los constructores por defecto derivan uno de las claves automáticamente, así
++         que la mayoría de quienes los llaman nunca crean uno. Solo los caracteres por debajo
++         de 128 pueden estar en un alfabeto. Un alfabeto es puro y pueden compartirlo todos los
++         diccionarios construidos sobre él.
++     entry .of   un alfabeto de los caracteres de una cadena, en ese orden; solo ASCII
++     entry .empty   el alfabeto sin caracteres, usado por el diccionario vacío
++     entry #slot   la posición de un carácter, o `-1` si no está en el alfabeto
++     entry #char   el carácter de una posición
++     entry #size   el número de caracteres, y por tanto la anchura del bloque de hijos de cada nodo
++   entry .empty   el diccionario sin entradas
++       Su alfabeto está vacío; `+` y `++` lo reconstruyen con un alfabeto derivado de las claves.
++   entry .apply   un diccionario de pares `(key -> value)`, con el alfabeto derivado de las claves
++       Las posiciones del alfabeto siguen el orden en que se ven por primera vez los
++       caracteres, así que es estable para la misma entrada.
++   entry .withAlphabet   un diccionario de pares sobre un alfabeto dado
++       Una clave con un carácter fuera del alfabeto se descarta.
++   entry .aho   un diccionario de pares sobre un alfabeto, con enlaces de fallo y de sufijo de diccionario de Aho–Corasick
++       Rellena `#depth`, `#fail` y `#dictLink`, que los constructores simples dejan vacíos, de
++       modo que un recorrido de una entrada con `#step` puede seguir un enlace de fallo cuando
++       no hay coincidencia e informar de cada clave que termina en la posición actual a través
++       de `#dictLink`.
++   entry #children   la tabla de nodos hijos: `children(node * alphabet.size + slot)` es el hijo, o `-1`
++   entry #values   el valor de cada nodo, o `null` donde no termina ninguna clave; con tipo `AnyRef` porque los arrays son invariantes
++       Para leer un valor tipado se usa `#value(node)`.
++   entry #depth   la profundidad de cada nodo, para un diccionario de Aho–Corasick; vacío en otro caso
++   entry #fail   el enlace de fallo de cada nodo, para un diccionario de Aho–Corasick; vacío en otro caso
++   entry #dictLink   el antecesor más cercano de cada nodo en la cadena de fallo que contiene un valor; vacío salvo si se construye con `aho`
++   entry #alphabet   el alfabeto en que se codifican las claves
++   entry #root   el identificador del nodo raíz, `0`
++   entry #step   el nodo al que se llega desde un nodo con un carácter, o `-1` si ninguna clave continúa por ahí
++       La primitiva de toda búsqueda: se empieza en `#root` y se avanza una vez por carácter.
++   entry #value   el valor de un nodo, o `null` donde no termina ninguna clave
++   entry #apply   el valor de una clave, o `Unset`; también una búsqueda de un tramo de un búfer de caracteres
++       `dictionary(t"key")` es la forma de clave exacta. `dictionary(buffer, offset, length)`
++       busca los caracteres de un tramo de un `Array[Char]` mutable sin asignar un `Text`, para
++       un analizador que ya tiene un búfer.
++   entry #size   el número de claves almacenadas
++   entry #iterator   los valores almacenados, como `Iterable`
++   entry #entries   todos los pares `(key, value)`, en orden del alfabeto
++   entry #add   un diccionario nuevo con una entrada más, como `#+` con la clave y el valor por separado
++   entry #+   un diccionario nuevo con una entrada añadida, reconstruido con un alfabeto que cubre ambos
++       `dictionary + (t"key" -> value)`. El tipo de valor se amplía a un supertipo común.
++   entry #++   un diccionario nuevo con varias entradas añadidas
+
+@ 0 1 0 15fb3b746a709c9a1aa241f9398a21b1
++ entry .internal   las implementaciones de macros tras `t"…"`, `txt"…"`, `a"…"`, `extract` y `fuzzy`, y el hogar de los tipos opacos
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 9 0 14dbb660ee9d830d145965fa883f1a47
++       No es para uso directo: el objeto existe para que las macros tengan un hogar estable y
++       para que `Ascii` y `Grapheme` puedan ser opacos. Ambos se exportan desde `.opaques` al
++       paquete `gossamer`.
++   entry .t   la macro tras `t"…"`: procesa los escapes de las partes y representa las sustituciones mediante `Showable`
++   entry .txt   la macro tras `txt"…"`: como `.t`, y después pliega las rachas de espacios en blanco y las líneas en blanco
++   entry .ascii   la macro tras `a"…"`: comprueba que cada carácter literal es ASCII e informa en su posición
++   entry .extractMacro   la macro tras `extract`: descompone los casos y recorre el texto con un `Scanner`
++   entry .fuzzyMacro   la macro tras `fuzzy`: reúne los patrones literales y elige el más cercano en tiempo de ejecución
++   entry .opaques   las declaraciones de los tipos opacos `Ascii` y `Grapheme`
+
+% 1 1 0 0df48bbc54dc386914b01df23956f402
+
+@ 0 3 0 09317e308a90ef8c117c86d21accd6d4
++         Las páginas de los tipos en el paquete `gossamer` tienen la descripción completa; los
++         miembros de sus objetos compañeros se documentan aquí, donde se declaran.
++     entry .Ascii   una cadena de bytes de caracteres ASCII; véase `gossamer.Ascii`
+
+% 1 1 0 0b2d638d415d00ed01f08a5b1fae262e
+
+@ 0 10 0 1890d2b0b19de9000417ba02dd4f7255
++           El objeto compañero del tipo opaco `Ascii`, exportado con él al paquete `gossamer`.
++       entry .apply   envuelve un `Data` como `Ascii`, sin comprobar sus bytes
++       entry .showable   muestra un `Ascii` como el texto que codifican sus bytes
++       entry .inspectable   inspecciona un `Ascii` como `ascii"…"`, con los caracteres escapados como en un literal de texto
++       entry .concatenable   `left + right` sobre valores `Ascii`
++       entry .bytes   los bytes subyacentes, como `Data`
++       entry .textual   la instancia de `Textual` para `Ascii`, con elementos `Byte`
++           `apply(text)` codifica el texto en la página de códigos del sistema, `segment` y
++           `concat` copian bytes, y el builder es un `AsciiBuilder`.
++     entry .Grapheme   un grupo de grafemas; véase `gossamer.Grapheme`
+
+% 1 1 0 0cf3a0d8c5090f14024abbc9ba49fa60
+
+@ 0 10 0 1025020f6517940a126b29fa19da6700
++           El objeto compañero del tipo opaco `Grapheme`, exportado con él al paquete `gossamer`.
++       entry .apply   un grafema a partir de la cadena de sus puntos de código; no se comprueba que sea un solo grupo
++       entry .showable   muestra un grafema como su texto
++       entry .inspectable   inspecciona un grafema como `‹…›`, con el grupo sin escapar
++       entry .measurable   la anchura de visualización de un grafema: la del más ancho de sus puntos de código
++           Necesita un `Char is Measurable` en el ámbito (un given de `textMetrics`). El máximo
++           y no la suma, de modo que una base con marcas combinantes es tan ancha como su base,
++           y un par de bandera o una familia ZWJ es una celda ancha.
++       entry .text   los puntos de código del grafema como `Text`
++       entry .chars   el número de unidades de código UTF-16 del grafema

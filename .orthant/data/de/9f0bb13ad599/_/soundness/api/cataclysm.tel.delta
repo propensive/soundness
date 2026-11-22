@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 10 1 0 0910609b9679525c13cff87a432f4ae2
+
+% 10 1 0 1cb9e1b064257f0f16b50789eafee86e
+
+% 10 1 0 109f42a57f87821b140bc3d53c7858ea
+
+@ 0 32 0 0b5c195f738b6d571cb44228d729119f
++         Die Klasse, die jede Fabrik in `Web` zurückgibt, sodass eine Bereitstellung einen
++         stabilen Typ hat: `Web.Provision[family](sources, coverage)` ist ein `(Typeface of family) is
++         Typesettable in Web`, dessen `#sources` die `Typesettable.Source`s sind, aus denen der
++         Browser die Schriftart erhält, und dessen `#coverage` die `Font.Coverage` ist, mit der es
++         deklariert wurde. `FontFace.rules` stellt eine Quelle nach der anderen dar.
++     entry #sources   woher der Browser die Schriftart bekommt: verlinkt, importiert, lokal oder generisch
++     entry #coverage   die Stärken, Neigungen, Breiten und Achsen, die die Bereitstellung laut Deklaration bietet
++     entry #Self   die bereitgestellte Schriftart, `Typeface of family`
++     entry #Form   das Medium, `Web`
++   entry .sansSerif   die generische Familie `sans-serif`, im Web ohne Deklaration bereitgestellt
++       Ein Browser setzt jede generische Familie aus dem, was er hat, daher hat die
++       Bereitstellung eine einzige `Generic`-Quelle und `Font.Coverage.Unknown`, was jeden
++       Schriftschnitt zulässt; sie stellt keine At-Regel dar und `font-family: sans-serif` ohne
++       Anführungszeichen.
++   entry .serif   die generische Familie `serif`, ohne Deklaration bereitgestellt
++   entry .monospace   die generische Familie `monospace`, ohne Deklaration bereitgestellt
++   entry .cursive   die generische Familie `cursive`, ohne Deklaration bereitgestellt
++   entry .fantasy   die generische Familie `fantasy`, ohne Deklaration bereitgestellt
++   entry .systemUi   die generische Familie `system-ui`, ohne Deklaration bereitgestellt
++   entry .linked   eine Bereitstellung aus einer Schriftdatei, die der Browser von einer URL abruft
++       `Web.linked[family](url, coverage, format)` nimmt einen beliebigen URL-Typ, der `Abstractable across
++       Urls to Text` ist (eine `HttpUrl` aus `url"…"` oder Text), die `Font.Coverage`, die die Datei
++       laut Deklaration hat — da die Datei nicht zum Lesen vorliegt, wird nur zugelassen, was
++       deklariert ist, sodass eine in einer Stärke deklarierte Schrift eine Anfrage nach einer
++       anderen ablehnt, statt den Browser sie synthetisieren zu lassen —, und ein optionales
++       `Typesettable.Source.Format` (`Ttf`, `Otf`, `Woff` oder `Woff2`) für den Hinweis
++       `format()`. Das Typargument `family` wird normalerweise aus dem deklarierten Typ des
++       Givens inferiert. Es wird als `@font-face` dargestellt, dessen `src` `url("…") format("woff2")` ist.
++   entry .local   eine Bereitstellung aus einer Schrift, die der Leser voraussichtlich installiert hat
++       `Web.local[family](coverage)` nennt die Schriftart in einem `src: local("Name")`, wobei der
++       Familienname der Schriftart das Literal `family` ist. Nichts garantiert, dass der Leser
++       sie hat, daher ist dies die schwächste Bereitstellung, und ihre Abdeckung —
++       `Font.Coverage.Unknown`, sofern nicht angegeben, was jeden Schriftschnitt zulässt — sagt nur,
++       was deklariert ist.

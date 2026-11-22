@@ -1,0 +1,341 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1acedd231e89c7d705a5c65e1625afb7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12cf4099ba8dd085122513165ab3907a
++ info   hifenização pelo algoritmo de Liang sobre arquivos de padrões do TeX: pontos de quebra, hífens suaves e sílabas
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1da156422b65704216f4e9ab4379ae9d
++     _Polysyllabic_ encontra onde uma palavra pode ser quebrada no fim de uma linha, com o
++     algoritmo e os arquivos de padrões que o TeX usa. Onde uma palavra se quebra não pode ser
++     lido na sua grafia, de modo que o algoritmo de Liang pontua cada intervalo entre letras
++     contra um dicionário de milhares de pequenos padrões derivados de dicionários de hifenização
++     reais, e permite uma quebra onde quer que a maior pontuação seja ímpar. O idioma é uma
++     `Hyphenation` contextual, e três extensões sobre `Text` a usam: `hyphenate` insere um hífen
++     em cada quebra permitida, `syllables` divide o texto em suas partes, e `breakPoints` dá as
++     posições brutas.
+
+% 2 1 0 03723a808ebc72fc07ac196dbdb78556
+
+% 3 1 0 1d19a29c8c119fc01093e47c03ff0179
+
+% 4 1 0 059ecc8b12296a7a144c203de7d5647a
+
+% 0 1 0 13992425f04cc99d0fab42777b11e2eb
+
+% 0 1 0 0e28d4c979ae163c1962e1d5498c80d3
+
+% 0 1 0 19340d047010097a19c2cd4ca90e2b1a
+
+% 1 1 0 1b5c3da20bf8f8541d7e6a841860408e
+
+@ 0 7 0 0f53087ed56686db0586e044844dd34e
++     O inglês americano é fornecido como `hyphenations.englishHyphenation`, analisado a partir do
++     arquivo de padrões hyph-utf8 da CTAN empacotado no classpath. Ele é um given em um pacote de
++     escolhas, de modo que é importado pelo nome: `import hyphenations.*` não importa givens.
++     Qualquer outro idioma é carregado a partir do seu arquivo de padrões do TeX com
++     `Hyphenation.fromTex`, e qualquer conjunto é corrigido com padrões ou exceções adicionais por
++     `Hyphenation#extending`. Sem nenhum idioma importado, o `Hyphenation.fallback` do objeto
++     companheiro não hifeniza nada, de modo que o texto passa inalterado, em vez de ser quebrado
++     por regras que o programa não tem.
+
+@ 0 4 0 1c67b1b397824a5d160118c8d038beb7
++     Cada sequência de letras é hifenizada de forma independente; espaços, pontuação e dígitos
++     passam intactos. A biblioteca tem um único source set, `polysyllabic.core`, para todas as
++     plataformas, e tudo é exportado para o guarda-chuva `soundness`, onde o pacote
++     `hyphenations` se funde com o do próprio guarda-chuva.
+
+% 0 1 0 137993f06410fb67033c0e5c5eeb0c17
+
+% 0 1 0 1d2517adc1a8137f127a5234448b34c0
+
+% 0 1 0 07972c3deecfa7ac1d4c1405c0309cb9
+
+@ 0 1 0 0a856f6f88e58a5b1ad2fe0202456ce3
++ entry .Hyphenation   os padrões e as exceções de hifenização de um idioma, com seus comprimentos mínimos de fragmento
+
+% 1 1 0 069f9a029e36920d1716965eb42fc51f
+
+@ 0 5 0 0f832fdd444630bb10d62907cf1f38ac
++       Uma `Hyphenation` é o valor contextual que toda operação da biblioteca lê: os `#patterns`
++       de pontuação do idioma, sua lista `#exceptions` de palavras cujas quebras são declaradas
++       diretamente, e os caracteres `#leftMin` e `#rightMin` que uma quebra precisa deixar antes e
++       depois dela. Ela é escolhida como um given — em geral `hyphenations.englishHyphenation`,
++       importado pelo nome — e é imutável: `#extending` cria uma nova.
+
+% 2 1 0 16997e4b8fe3e59a070ed76f7a126cfe
+
+% 3 1 0 00802a4835e7ce95112db416ada78fa5
+
+% 4 1 0 1642c7534ec96c6b060dbafae507123a
+
+% 0 1 0 07c696d2e895de0a14efca041998754e
+
+% 0 1 0 037638fb1d31757c075f669236486d27
+
+% 1 1 0 08ce28f651919cc0013a40ff83d49667
+
+@ 0 6 0 006fcca133232503033cd5637adda8e1
++       Um novo idioma é construído a partir de padrões brutos com
++       `Hyphenation(patterns, exceptions)`, ou lido de um arquivo de padrões do TeX inteiro com
++       `.fromTex`. Os padrões estão na notação do TeX: as letras de um fragmento com um dígito em
++       qualquer intervalo, de modo que `hy3ph` pontua 3 no intervalo entre `y` e `p`, e um `.`
++       marca uma fronteira de palavra (`.ach4`, `ion5.`). As exceções são palavras com hífens nas
++       suas quebras, como `as-so-ciate`. Só as letras ASCII de `a` a `z` participam da trie de
++       padrões; uma palavra é convertida para minúsculas antes de ser procurada.
+
+% 0 1 0 12d3e61bc99acf39146fdadb0e4a0f82
+
+% 0 1 0 1e6d556594631c45039e927e078c3948
+
+@ 0 15 0 171f6744d15bba500c94b410a20f7e71
++   entry .fallback   a hifenização no escopo implícito quando nenhuma é importada: ela não permite quebras
++       O given do objeto companheiro, encontrado quando nenhuma outra `Hyphenation` está no
++       escopo léxico. Seus dicionários estão vazios e seus comprimentos mínimos de fragmento são
++       tão grandes quanto um `Int` permite, de modo que `hyphenate` devolve seu texto inalterado,
++       `syllables` divide apenas em não letras, e `breakPoints` é vazio. Um algoritmo de quebra de
++       linhas, portanto, se reduz a quebrar nos espaços. Um given importado, como
++       `hyphenations.englishHyphenation`, tem precedência sobre ele.
++   entry .alphabet   o alfabeto da trie de padrões: as letras ASCII minúsculas seguidas da fronteira `.`
++       Um `Dictionary.Alphabet` do gossamer de `abcdefghijklmnopqrstuvwxyz.`, nessa ordem. O laço
++       interno do algoritmo calcula os slots para esse alfabeto diretamente, de modo que toda
++       `Hyphenation` é construída sobre ele; um caractere fora dele reinicia o percurso da trie.
++   entry .apply   constrói uma hifenização a partir de padrões e exceções no formato do TeX
++       Recebe os `patterns` (como `t"hy3ph"`), `exceptions` opcionais (como `t"as-so-ciate"`) e
++       os comprimentos mínimos de fragmento `leftMin`, por padrão 2, e `rightMin`, por padrão 3.
++       Os padrões são compilados em uma trie de Aho–Corasick, de modo que cada palavra é pontuada
++       em uma única passada para a frente.
+
+% 2 1 0 0634226245bcbc6e1d99f04cbdc3331d
+
+% 3 1 0 05f60505f421d61f07b2b8ace8b5fc9a
+
+% 0 1 0 1a4eeb69da675b8a0e320c9fcbb32ac7
+
+% 0 1 0 097e12bad3508c2f0efc4807cba6415e
+
+% 0 1 0 0d85d2dd4191752a0aac57514f537e00
+
+% 1 1 0 08484f9e81af2d5c1d238a367b9cf041
+
+@ 0 6 0 1221e49371f9071114e3563227134ae7
++   entry .fromTex   lê uma hifenização a partir do texto de um arquivo de padrões de hifenização do TeX inteiro
++       Lê um arquivo no formato que o hyph-utf8 da CTAN publica: remove os comentários `%`, toma
++       os padrões do bloco `\patterns{…}` e as exceções do bloco `\hyphenation{…}`, e os
++       comprimentos mínimos de fragmento de `\lefthyphenmin` e `\righthyphenmin`, que têm como
++       padrão 2 e 3 quando o arquivo não os define. Todos os idiomas publicados para o TeX estão
++       disponíveis desta forma.
+
+% 2 1 0 1260cd9c9de744c30e03082a49ec9d3a
+
+% 3 1 0 0c61ac2aa2f3d1c108298dfbb082e6d8
+
+% 0 1 0 1b2fc40646840a3f068e0180d211f5ea
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 19a0ea94c9f2227808a72baf39f905b0
+
+% 1 1 0 01afd9d2e58dad1a1ccb1553305edf58
+
+@ 0 15 0 07323e3ebb9f3ec51d7ad3d143080b52
++   entry .breakPoints   as posições em que uma palavra pode ser quebrada, sob comprimentos mínimos de fragmento explícitos
++       O próprio algoritmo, como função. `Hyphenation.breakPoints(word, hyphenation, leftMin,
++       rightMin)` devolve um `Array[Int]` imutável de deslocamentos na palavra, em ordem
++       crescente: o deslocamento `p` significa que um hífen pode ser inserido antes da letra `p`.
++       Uma correspondência exata na lista de exceções interrompe o percurso dos padrões. Uma
++       sobrecarga recebe uma `String` com um deslocamento e um comprimento, para trabalhar sobre
++       uma fatia sem alocar uma substring. A maior parte do código quer a extensão `breakPoints`
++       sobre `Text`, que lê os comprimentos mínimos da `Hyphenation` dada.
++   entry .breakPointsInto   escreve as posições de quebra de uma palavra em buffers fornecidos por quem chama, sem alocar nada
++       A forma sem alocação de `.breakPoints`, para código que hifeniza muitas palavras, como faz
++       a extensão `hyphenate`: recebe uma fatia de `String` e três arrays mutáveis temporários,
++       `padded` (pelo menos o comprimento da palavra mais 2), `scores` (comprimento mais 3) e
++       `breaks` (comprimento), escreve os deslocamentos em `breaks` e devolve quantos escreveu.
++       Os buffers podem ser reutilizados em todas as palavras de um texto.
++   entry .Error   lançado quando um recurso de hifenização não pode ser carregado do classpath
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 17 0 0e78f82f6a8f56a41e67aadddd90ad19
++         _the hyphenation resource `resource` could not be loaded from the classpath_. O
++         `hyphenations.englishHyphenation` empacotado não o lança: um arquivo de padrões
++         empacotado ausente é uma falha de empacotamento, e em vez disso entra em pânico.
++     entry #resource   o caminho no classpath do recurso que não pôde ser carregado
++   entry #patterns   os padrões de pontuação, compilados em uma trie de Aho–Corasick indexada por letras
++       Um `Dictionary` do gossamer que associa as letras de cada padrão (com `.` para uma
++       fronteira de palavra) às suas pontuações, uma por intervalo, incluindo os anteriores à
++       primeira letra e posteriores à última.
++   entry #exceptions   as palavras cujas quebras são declaradas diretamente, cada uma associada aos seus deslocamentos de quebra
++       Uma exceção tem precedência sobre os padrões, de modo que uma palavra que os padrões
++       quebram errado é corrigida sem perturbar nenhuma outra.
++   entry #leftMin   o menor número de caracteres que uma quebra pode deixar antes dela
++   entry #rightMin   o menor número de caracteres que uma quebra pode deixar depois dela
++   entry #extending   uma nova hifenização com padrões e exceções adicionais e, opcionalmente, novos comprimentos mínimos
++       Sobrepõe `patterns` e `exceptions` aos desta hifenização, e substitui `leftMin` ou
++       `rightMin` se algum deles for dado. Os padrões são fundidos tomando a maior pontuação em
++       cada intervalo, de modo que um padrão acrescentado com pontuação ímpar restabelece uma
++       quebra que um padrão padrão de pontuação par proibia; uma exceção declara diretamente as
++       quebras de uma palavra.
+
+% 2 1 0 1b62f3cc50e975a11b1d7407338f0d06
+
+% 3 1 0 14a747097c96406d0920d902b0ac7368
+
+% 4 1 0 121d0a1aa2c11ad011c01d80e81b77da
+
+% 0 1 0 1dc528685ea6d0e012c0583ef67392d7
+
+% 0 1 0 1c5c3737470eb7e11b853a4918356142
+
+% 1 1 0 16028378309946cd1ddd538784b3622a
+
+@ 0 1 0 0ef8312be51a95301209d979c50d911e
++ entry .hyphenate   insere um hífen em cada quebra permitida em cada sequência de letras de um texto
+
+% 1 1 0 092a7cf722ee573a00a85bf7d1b13a8c
+
+@ 0 6 0 1ff7829fb65520290f9bbdb458a15739
++       Uma extensão sobre `Text`, que usa o given `Hyphenation` no escopo. O hífen é, por padrão,
++       o hífen suave Unicode, U+00AD, que é invisível a menos que uma linha de fato se quebre ali;
++       passar um caractere visível mostra os pontos de quebra. `leftMin` e `rightMin` substituem
++       os comprimentos mínimos de fragmento da própria hifenização, de modo que uma quebra nunca
++       deixa uma ou duas letras isoladas. Cada sequência de letras é hifenizada de forma
++       independente, e todo o resto passa inalterado.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 16268dd5aae49ea10b54baea04a7d9b5
++         label Toda quebra permitida
+
+% 1 1 0 12654915d74f3d250a2138aa57a11c74
+
+% 2 1 0 1be31981a91dd64517c51681418cac6a
+
+% 3 1 0 14d229424a202cfa138d67c2a003a593
+
+% 0 1 0 1665b2d7fc541cb519a91faa32293826
+
+% 1 1 0 05b8871d91d04a411623c30da2ee88fb
+
+@ 0 1 0 0ee6e8b8f169dc771ecd2f303b60c6d8
++         label Pelo menos quatro caracteres antes da primeira quebra
+
+% 1 1 0 005dc1122d0ea00c1d21e5c2f43e9780
+
+% 2 1 0 091753953f3b2d8f02b7d85921c72220
+
+% 3 1 0 15ccecea0d958a6e16b5d5d67cd4648b
+
+% 0 1 0 125191af62511d8f0a499fff507a4889
+
+% 1 1 0 1512c9ea528ca721140c486586c88148
+
+@ 0 1 0 134a10410b89e5421a991f8f4b89ba1d
++         label Pelo menos seis caracteres depois da última quebra
+
+% 1 1 0 1b148371d7a2069219bef38018138c7e
+
+% 2 1 0 009b96492a27859213b107e9c8ab086f
+
+% 3 1 0 0a13c100f583390c08d15e555c4238af
+
+% 0 1 0 0e972117d9d7ce5e0687dc5a1a4f8b41
+
+% 1 1 0 14707f1653bd26081e6c52ff2e7c0921
+
+@ 0 1 0 052be5c84b4c55c303ee9e5b62078681
++         label Em texto corrido, palavra por palavra
+
+% 1 1 0 1bd7f4e57f8a0a22195fd76e926b99b8
+
+% 2 1 0 1298f8ae7a7e5aa51dec3cf65aa3e6d7
+
+% 3 1 0 14a8356633ff6bdb0b8b66bef5c11610
+
+% 0 1 0 1a4908707c1b3c030b4682e50652e465
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 112d688775560a7100804852ae7ef208
++       Os buffers temporários são compartilhados por todas as palavras de uma chamada e só crescem
++       quando chega uma palavra mais longa, de modo que hifenizar um texto longo aloca pouco além
++       do seu resultado.
+
+% 0 1 0 14a0a67bfad34f91157d7a7e3c8decdd
+
+% 0 1 0 00ae6f27e3fa253a0450dac366a481fc
+
+@ 0 4 0 199a034e7002f5070443794491a41726
++ entry .syllables   divide o texto em sílabas, com cada sequência de não letras como um segmento próprio
++     Uma extensão sobre `Text`, que usa o given `Hyphenation` no escopo e devolve uma
++     `Sequence[Text]`. Cada sequência de letras é dividida nos seus pontos de quebra, e cada
++     sequência de não letras é um segmento, de modo que concatenar os segmentos reproduz
++     exatamente o texto original.
+
+% 2 1 0 04884696ce53db8c1568e6d7f6e6f25f
+
+% 3 1 0 0782ea631fbc620e1c20ad1aa72be3c7
+
+% 4 1 0 0515ff661c3c5b0a1aa833922448138e
+
+% 0 1 0 13d262b70fa3f1811d96c9b3865a44f1
+
+% 1 1 0 0fe07311044af0d107cd6365aecb3d20
+
+@ 0 6 0 098d181082bc4e840bb60b3bc960474f
++ entry .breakPoints   os deslocamentos em que uma palavra pode ser quebrada, sob a hifenização no escopo
++     Uma extensão sobre `Text`, para código, como um algoritmo de quebra de linhas, que posiciona
++     as quebras por conta própria em vez de inserir caracteres. Devolve um `Array[Int]` imutável
++     de deslocamentos em ordem crescente: o deslocamento `p` significa que um hífen pode ir entre
++     as letras `p - 1` e `p`. Ela trata o texto inteiro como uma palavra, com os próprios
++     `leftMin` e `rightMin` da `Hyphenation` dada; para texto corrido, use `syllables` ou
++     `hyphenate`.
+
+% 2 1 0 032b05fb124b3d310e67d3ce01eea9e0
+
+% 3 1 0 0761755d7bade41f02d42462ebe5fce0
+
+% 4 1 0 0dd5653c3d509c900d6d109ad6ae1f47
+
+% 0 1 0 189ca7324de5f65d1b1feb2adba09e4e
+
+% 1 1 0 03035af83cee2edb1066057674f7051d
+
+@ 0 1 0 1444a2e1ffe13bc500f57881fa33c0ce
++ entry .hyphenations   os idiomas de hifenização empacotados, cada um deles um given a importar pelo nome
+
+% 1 1 0 1629fae86b6f60190fd75896fb785205
+
+@ 0 3 0 0d534221c1d237750dbafe6d6493f19f
++       Um pacote de escolhas: quais regras de idioma se aplicam é decidido pelo given
++       `Hyphenation` no escopo, e um deles é importado pelo nome, já que
++       `import hyphenations.*` não importa givens. Ele se funde com o pacote `hyphenations` do
++       guarda-chuva `soundness`.
+
+% 2 1 0 0f040206f73090f00257a612fca9a2ab
+
+% 3 1 0 09ed33ebc8ddc78c149a8c596300265b
+
+% 4 1 0 1dd50837050f28301f65fc87498adc20
+
+% 1 1 0 0d6ff2d3864c33ef17b1d3fe0f640cf6
+
+@ 0 6 0 18d7f3badfdfd25f06ab3365761d8f15
++   entry .englishHyphenation   inglês americano, a partir dos padrões hyph-utf8 da CTAN e da lista de exceções do TeX
++       Analisado a partir de `polysyllabic/hyph-en-us.tex`, empacotado no classpath e
++       redistribuído literalmente sob a licença totalmente permissiva da FSF que está no seu
++       cabeçalho, na primeira vez que o given é usado. Ele traz as exceções que o TeX distribui,
++       de modo que `associate` se quebra como `as-so-ciate` e `table` como `ta-ble`, onde só os
++       padrões não fariam isso. Se o arquivo empacotado estiver ausente do classpath, o given
++       entra em pânico.

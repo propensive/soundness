@@ -1,0 +1,555 @@
+orthant 2 language
+
+@ 0 1 0 18e0c24595a1ea5d03eeaa6598a2cda5
++ # Änderungen seit 0.72.0
+
+@ 0 3 0 1945720ba50f630009480b8ed6ffc010
++ Diese Datei wird von einem LLM-Agenten gelesen, um Code, der Soundness-Bibliotheken verwendet, von
++ 0.72.0 auf das nächste Release zu aktualisieren. Jeder Eintrag gibt genau an, was sich geändert hat;
++ das Format beschreibt `AGENTS.md`. Die Einträge sind nach Modul gruppiert, innerhalb eines Moduls
++ steht der zuletzt hinzugefügte am Ende.
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 25 0 087a1d923af0ca7e15542f43fc10adfd
++ - Neu: `zephyrine.Cursor.Snapshot[medium, operand]`, ein Inline-Trait (Scala 3.10;
++   `-language:experimental.inlineTraits` braucht nur zephyrine, nicht ein Verwender), den ein
++   schneller Parser über einem `Cursor[medium, {}]` erweitert, um die parserlokale
++   Momentaufnahme des Puffers des Cursors zu erhalten, die jacinta, xylophone, stratiform,
++   ypsiloid, honeycomb, locomotion und breviloquence zuvor jeweils von Hand ausschrieben: die
++   Felder `cells: scala.Array[operand]` (ein `byte[]` für `Snapshot[Data, Byte]`, ein `char[]`
++   für `Snapshot[Text, Char]`), `pos`, `bufEnd`, `base`, `lineationPos` und `cursor0: AnyRef`
++   (der Cursor, bei jedem Zurücksetzen neu ausgerichtet), den Accessor `cursor` sowie
++   `syncTo()`, `syncFrom()`, `more`, `moreSlow()`, `peek`, `advance()`, `position`,
++   `reconcileLineation()`, `reconcileUtf8()` und `reconcileUtf16()`. Ein Parser, der ihn
++   erweitert, muss eine `caps.Stateful`-Klasse sein und die beiden abstrakten Hooks `protected
++   update def reconcile(): Unit` (vor jedem Nachfüllen aufgerufen) und `protected update def
++   resynced(): Unit` (nach jedem `syncFrom()` aufgerufen) implementieren, als `()`, wo es nichts
++   zu tun gibt. Er darf kein anderes Member überschreiben: Die eigenen Aufrufe eines
++   Inline-Traits an ein Member, das der Empfänger überschreibt, binden an die Kopie des Traits,
++   nicht an die Überschreibung. Keine bestehende API hat sich geändert.
++ - Die Erweiterungsmethoden `peek: Datum` und `expect[error <: Hazard](target: Char)
++   (failure)(using Tactic[error])` von `zephyrine.Cursor`, zuvor doppelt definiert, als
++   Erweiterungen `@targetName("peekByte")`/
++   `("peekChar")` und `("expectByte")`/`("expectChar")` auf `Cursor[Data, cap]` und
++   `Cursor[Text, cap]`, sind jetzt jeweils eine Definition auf `Cursor[data, cap]` mit einer
++   zusätzlichen Klausel `(using data is Addressable)` an der Erweiterung (aufgelöst aus dem
++   Begleitobjekt des Mediums, also ohne Änderungen an Importen), die das Byte oder Zeichen
++   wählt, das der `Operand` des Mediums liest. Aufrufstellen bleiben unverändert; ein Cursor
++   über einem anderen Medium erhält von `peek` einen Kompilierfehler, wo er zuvor gar kein
++   `peek` hatte. (#2279)
++ - `zephyrine.Cursor#seek(target: addressable.Operand): Boolean` ist nicht mehr `inline` (ein
++   einfaches `update def`); gleiche Semantik, und es vergleicht Bytes und Zeichen jetzt ohne
++   Boxing. (#2279)
+
+% 0 1 0 0fc8ab4b076c19c00524f7be90c364eb
+
+@ 0 16 0 138705a8892d10e90199e2a2091ab211
++ - `baroque.Complex[component]` ist keine Case-Klasse mehr, sondern eine `sealed abstract
++   class` mit zwei finalen Unterklassen in ihrem Begleitobjekt, gewählt nach der
++   Laufzeitklasse der Komponente: `Complex.Doubles[component](real: Double, imaginary: Double)`
++   für jede Komponente, die darunter ein `Double` ist (`Double` selbst, eine Größe, ein `F64` –
++   alles mit einem Nachweis `Underlying[_, Double]`), und sonst
++   `Complex.Boxed[component](real: component, imaginary: component)`. `Complex(real,
++   imaginary)`, `complex.real`, `complex.imaginary`, `argument`, `modulus`, `sqrt`, `unary_~`,
++   Gleichheit, Hashing, `toString` (`Complex(1.0, 2.0)`) und jede Typklassen-Instanz bleiben in
++   der Verwendung unverändert, und `case Complex(real, imaginary)` passt weiterhin. Entfallen
++   sind die Extras einer Case-Klasse: `copy`, die Zugehörigkeit zu `Product`
++   (`productElement`, `productArity`) und `Complex.curried`/`tupled`. Der Konstruktor, die
++   Accessoren und die arithmetischen Instanzen sind `inline`: `c + d`, `c*d`, `c/d`, `-c` und
++   `c*2.0` auf `Complex[Double]`s kompilieren zu primitiver Arithmetik mit einer Allokation von
++   zwei ungeboxten Feldern pro Ergebnis, wo zuvor jede ein Objekt und zwei geboxte Doubles
++   allozierte und sie bei jedem Lesen entboxte. Die Ergebnistypen der arithmetischen Instanzen
++   sind jetzt Typparameter, die über ihre `using`-Klauseln inferiert werden, statt der
++   `Result`-Member der Parameter; sie namentlich als Werte herbeizurufen funktioniert weiterhin.
++   (#2286)
+
+% 0 1 0 10336422395755bf1e478ba611fcc433
+
+@ 0 7 0 103081bcced787ef19791f83c7e4d342
++ - Die arithmetischen Instanzen von `Q64` und `Q32` (`addable`, `subtractable`, `multiplicable`,
++   `divisible`, `negatable` und die Varianten `multiplicable…`/`divisible…` mit Operanden
++   `Double`/`Int`/`Long`) sind Inline-Givens (`inline given`) mit `inline def`-Operationen,
++   sodass eine Verwendung, die eine davon an ihrem eigenen Typ erreicht (die Operatoren von
++   symbolism, die Inline-Instanzen von mosquito und baroque), die `Long`-Arithmetik ohne
++   Instanzaufruf und ohne Boxing ausführt: `Vector[Q64, n] + Vector[Q64, n]` ist eine Schleife
++   aus `laload`/`lastore` um die rationale Summe. Typen und Namen bleiben unverändert;
++   `negatable` ist eine strukturelle Instanz statt eines Lambdas. (#2287)
+
+% 0 1 0 147d49b588f77205066729e9a2f261f4
+
+@ 0 18 0 035e4350c9b4273e1a7172feec1a62ef
++ - `mosquito.Vector[value, size]` speichert seine Elemente jetzt in einem `Array[value]^{}`
++   (einem `double[]` für einen `Vector[Double, 3]`, ebenso für eine Größe, deren opaker Typ zu
++   `Double` gelöscht wird) statt in einem `Array[Any]^{}` geboxter Elemente, sodass
++   `Vector#data` diesen Typ hat und `Vector#iarray` kein `ClassTag` mehr nimmt.
++   `Vector.apply(tuple)` nimmt daher ein `using
++   ClassTag[Tuple.Union[tuple.type]]`: Ein Tupel gemischter Elementtypen, das keines hat, wird
++   zurückgewiesen, wo es zuvor akzeptiert wurde. `Vector.take[element: ClassTag]`,
++   `Vector#map[left2: ClassTag]` und `List#slide[element: ClassTag]` erhielten die Schranke.
++   Das `cross` für 3-Vektoren ist als `Vector[subtraction.Result, 3]` typisiert und das `cross`
++   für 7-Vektoren als `Vector[multiplication.Result, 7]` – die Typen der Werte, die sie immer
++   enthielten (für jedes Primitiv dieselben Typen wie zuvor) –, und jedes nimmt ein `ClassTag`
++   dieses Ergebnisses. (#2285)
++ - Die arithmetischen Instanzen von `Vector` und `Matrix` (`addable`, `subtractable`,
++   `negatable`, `scalarMultiplicable`, `scalarDivisible`, `matrixMultiplicable`,
++   `vectorMultiplicable`) sind Inline-Givens (`inline given`) mit `inline def`-Operationen, die
++   die Element-Arithmetik an der Aufrufstelle auflösen (zuerst ein `AddOp`/`MulOp`/…, sonst die
++   Instanz `Addable`/… an ihrem eigenen Typ), sodass `v + w`, `m*n`, `m*2.0`, `v.dot(w)` und
++   `v.norm` auf `Double`-Elementen zu Schleifen aus `daload`/`dadd`/`dmul`/`dastore` ohne
++   Boxing kompilieren. `negatable` und `vectorMultiplicable` von `Vector` nehmen ein
++   `ClassTag[result]`; `dot` und `norm` sind `inline`. Code, der eine dieser Instanzen
++   namentlich als Wert herbeirief, kann das weiterhin. (#2285)
+
+% 0 1 0 0136e0d647519dc716274602a4340b64
+
+@ 0 4 0 0fcc3e0f1a9c3b5611f6926e62ad77a7
++ - Neu: `rudiments.Scroll[element]` (im Modul `concordance`, wie `Scribe`), ein wachsendes Array,
++   an das angehängt und das nach Position indiziert wird – der ungeboxte Ersatz für
++   `scala.collection.mutable.
++   ArrayBuffer[Int|Long|Byte|…]`, dessen Speicher geboxte Elemente hält. `Scroll[Int]()`
++   (optional mit einer Kapazität), dann `append(value)`, `append(other: Scroll[element])`,
+
+% 0 1 0 0b1a288faa9249e71a02fcd70f527fe4
+
+@ 0 6 0 19b9ceac5f1908eb1b9941acfde7772c
++   `isEmpty`, `last`, `retract(count)` (vergisst die letzten `count` Elemente), `clear()` und
++   `freeze: Array[element]^{}` (eine eingefrorene Kopie exakter Größe). Indizes sind einfache
++   `Int`s, die gegen `length` geprüft werden. Nicht vom Umbrella `soundness` exportiert (wie
++   `Scribe` auch nicht); erreicht wird es über `import rudiments.*`. Die Positionsindex-Puffer
++   von jacinta, xylophone und ypsiloid, die BCD-Zahlenpuffer von jacinta, der
++   `StreamOutputStream` von turbulence, die Stil-Stacks von escapade, der Zeilenindex von
++   exegesis und `Gathering` von facsimile verwenden es jetzt. (#2283)
+
+% 0 1 0 1bd2f5ecb2191c7c078d57c4d6475936
+
+@ 0 10 0 15efdb2fbb3050da051a4275f72c2a1e
++ - Die primitiven arithmetischen Instanzen in `symbolism.Addable`, `Subtractable`,
++   `Multiplicable`, `Divisible` und `Negatable` (`double`, `float`, `long`, `int`, `short`,
++   `byte` und die gemischten `int2`/`int3`/`double2`/`float2`/`float3`/`long2`/`short2`/`byte2`)
++   behalten ihre Namen, sind aber jetzt Inline-Givens (`inline given`), typisiert durch
++   Singleton-Objekte – `Addable.DoubleAddition.type`, `Subtractable.IntSubtraction.type`,
++   `Divisible.FloatDoubleDivision.type`, `Negatable.LongNegation.type` und so weiter –, deren
++   `add`/`subtract`/`multiply`/`divide`/`negate` `inline def`s sind. Code, der `Double is
++   Addable by Double to Double` herbeiruft, erhält sie weiterhin; Code, der den bisherigen Typ
++   des Givens benannte (`val a: Double is Addable by Double to Double = Addable.double`),
++   kompiliert weiterhin durch Erweiterung. Inline-Code, der eine davon über `+`, `-`, `*`, `/`
++   oder `unary_-` von symbolism erreicht, kompiliert jetzt zur primitiven Instruktion statt zu
++   einem geboxten `Function2`-Aufruf. (#2282)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 69 0 0499254cd2456d6a1562f8b61d659265
++ - Neue Chiffre `enigmatic.Ed25519` (RFC 8032; `Cipher & Signing`, `Size = 256`, kein
++   Größenparameter, kein `Signature.Digest`), erreicht über das neue strukturelle Member `def
++   ed25519: Crypto.SignatureScheme` des JDK-Providers; `Ed25519 is SignatureAlgorithm` (x509)
++   erlaubt es, ein Zertifikat damit zu signieren. Additiv. (#2243)
++ - Bestehende private Schlüssel können jetzt gelesen werden. `PrivateKey[cipher]` hat Givens
++   `Decodable in Der` (PKCS#8 `PrivateKeyInfo`) und `Decodable in Pem` (Beschriftungen `PRIVATE
++   KEY`, `RSA PRIVATE KEY`, `EC PRIVATE
++   KEY`, `OPENSSH PRIVATE KEY`) für jede `cipher` mit einem `KeyAlgorithm` (Rsa, Ecdsa,
++   Ed25519, MlDsa, Dsa), die jeweils einen `Cloak^` und eine `Tactic[PrivateKey.Error]`
++   brauchen: Schreiben Sie `text.read[PrivateKey[Ed25519] in Pem]`,
++   `pem.as[PrivateKey[Rsa[2048]]]` oder `der.as[PrivateKey[Rsa[2048]]]`. Algorithmus, Kurve und
++   Größe des Dokuments werden gegen `cipher` geprüft; ein `PrivateKey.Error` hat den Grund
++   `Malformed(detail)`, `Mismatch(expected, found)`, `Encrypted` (passphrasengeschützte
++   Schlüssel werden noch nicht gelesen), `Unsupported(detail)` oder `PublicKeyAbsent` (ein
++   EC-, Ed25519- oder ML-DSA-Schlüssel in PKCS#8, geschrieben ohne seinen optionalen
++   öffentlichen Schlüssel). Additiv. (#2243)
++ - `PublicKey[cipher]` hat ebenso Givens `Decodable in Der` (SubjectPublicKeyInfo) und
++   `Decodable in Pem` (`PUBLIC KEY`, `RSA PUBLIC KEY`), die `PublicKey.Error` (`Malformed`,
++   `Mismatch`, `Unsupported`) auslösen. Das neue `enigmatic.OpenSsh` liest die einzeilige Form
++   öffentlicher Schlüssel von OpenSSH mit `OpenSsh.publicKey[cipher](line: Text):
++   PublicKey[cipher]` und schreibt sie mit `OpenSsh.line(key: PublicKey[cipher], comment:
++   Optional[Text] = Unset): Optional[Text]`. Additiv. (#2243)
++ - Neue Typklasse `enigmatic.KeyAlgorithm` (`cipher is KeyAlgorithm`: `name`, `sshName`,
++   `conforms(algorithm: Asn1, material: KeyAlgorithm.Material)`), mit Givens im Begleitobjekt
++   jeder Chiffre; sowie die Helfer `enigmatic.Pkcs8`/`enigmatic.Spki` für die beiden Gestalten
++   von Schlüsseldokumenten. Additiv. (#2243)
++ - Neue Chiffren zur Schlüsselvereinbarung `enigmatic.X25519` (RFC 7748, `Size = 256`) und
++   `enigmatic.Ecdh[256 | 384
++   | 521]` (NIST-Kurven, dieselben Schlüsseldokumente wie `Ecdsa`), beide `Cipher & Agreeing`,
++   wobei das neue `enigmatic.Agreeing` `agree(privateKey: Data, publicKey: Data): Data` hat. Sie
++   werden über die neuen strukturellen Member `x25519: Crypto.KeyAgreement` und `ecdh:
++   Crypto.KeyAgreement` des JDK-Providers erreicht (neuer Trait: `generateKeyPair`,
++   `privateToPublic`, `agree`). Verwenden Sie sie als `privateKey.agree(peer:
++   PublicKey[cipher])(block: Data => result)`: Das gemeinsame Geheimnis wird dem Block geliehen
++   und danach genullt. Additiv. (#2243)
++ - Neue AEAD-Chiffre `enigmatic.AesGcm[128 | 256]` (`Cipher & Symmetric & Authenticated`;
++   12-Byte-Nonce, 16-Byte-Tag), wobei das neue `enigmatic.Authenticated` `nonceSize`,
++   `tagSize`, `seal(key, nonce, associated, plaintext): Data` und `unseal(key, nonce,
++   associated, ciphertext): Optional[Data]` hat, erreicht über das neue strukturelle Member
++   `aesGcm: Crypto.Aead` des JDK-Providers (neuer Trait: `generateKey`, `seal`, `unseal`).
++   Verwenden Sie sie als `symmetricKey.seal(nonce, associated, plaintext): Data` und
++   `symmetricKey.unseal(nonce, associated, ciphertext): Data`, das bei einem Tag-Fehler
++   `Crypto.Error` mit dem neuen Grund `Crypto.Error.Reason.BadTag` auslöst. Es ist keine
++   `Permit` nötig: Eine AEAD-Chiffre ist nicht `Unauthenticated`. Additiv. (#2243)
++ - Neu: `enigmatic.ChaCha20` (`Cipher & Symmetric & Keystream`, wobei das neue
++   `enigmatic.Keystream` `nonceSize` und `xor(key, nonce, counter, data): Data` hat), verwendet
++   als `symmetricKey.xor(nonce, counter, data)`, und `enigmatic.ChaCha20Poly1305` (RFC 8439
++   AEAD, `Authenticated`, verwendet mit `seal`/`unseal` wie `AesGcm`); beide über die neuen
++   strukturellen Member `chaCha20: Crypto.StreamCipher` (neuer Trait: `generateKey`, `xor`) und
++   `chaCha20Poly1305: Crypto.Aead` des JDK-Providers. Neu: `enigmatic.Poly1305.mac(key: Data,
++   message: Data): Data`, ein einmaliger Authentifikator in reinem Scala, für Konstruktionen wie
++   `chacha20-poly1305@openssh.com` von OpenSSH, die ihn getrennt von ChaCha20 verwenden.
++   Additiv. (#2243)
++ - `enigmatic.KeyAlgorithm` erhielt `algorithm: Optional[Asn1]`, den `AlgorithmIdentifier` des
++   Typs (`Unset` für DSA), und `PublicKey` erhielt `PublicKey.raw[cipher](bits: Data):
++   Optional[PublicKey[cipher]]` und `PublicKey#raw: Optional[Data]`, die zwischen einem
++   Schlüsseldokument und dem rohen Schlüssel umwandeln, den ein Übertragungsprotokoll trägt (32
++   Bytes für X25519/Ed25519, ein unkomprimierter Punkt für EC). Additiv. (#2243)
++ - `enigmatic.Pem.Label` erhielt den Fall `OpensshPrivateKey` (`OPENSSH PRIVATE KEY`), der
++   zuvor als `Proprietary(t"OPENSSH PRIVATE KEY")` geparst wurde; ein Abgleich auf die
++   `Proprietary`-Form muss den neuen Fall verwenden. `Pem.aggregableIn` (die Hebung
++   `text.read[value in Pem]` über einem `Decodable in Der`) ist in den Eltern-Trait
++   `enigmatic.Pem2` umgezogen, sodass das neue `Pem.aggregableInPem` über einem `Decodable in
++   Pem` Vorrang davor hat; es namentlich mit `summon` herbeizurufen muss weiterhin
++   `Pem.aggregableIn` (geerbt) verwenden, daher ist keine Änderung zu erwarten. (#2243)
++ - Die Entschlüsselungspfade von `enigmatic` bilden Provider-Fehler jetzt über eine einzige
++   Funktion ab. `Data#decrypt` (`enigmatic_uncloak.scala`) bleibt darin unverändert, welche
++   Ausnahmen es abbildet; das streamende `BlockCipher#decrypt(stream, key)` bildete zuvor nur
++   `javax.crypto.BadPaddingException` (→ `Crypto.Error.Reason.BadPadding`) und
++   `IllegalBlockSizeException` (→ `IllegalBlockSize`) ab und warf alles andere erneut, und
++   bildet jetzt auch `java.security.InvalidKeyException` (→ `InvalidKey`) und jede andere
++   `java.security.GeneralSecurityException` (→ `IoFailure`) auf einen `Crypto.Error` ab, wie es
++   die Form für ganze Werte immer tat; Code, der diese JDK-Ausnahmen um eine streamende
++   Entschlüsselung abfängt, muss stattdessen `Crypto.Error` behandeln. `Crypto.javaBaseCrypto`
++   auf Scala Native, dessen Member alle eine Panic auslösten, leitet jetzt `random`, `aes`,
++   `hmac`, `aesGcm`, `chaCha20`, `chaCha20Poly1305`, `x25519` und `ed25519` an das reine
++   Scala-`enigmatic.SoundnessCrypto` weiter; `rsa`, `rsaSignature`, `ecdsa` und die veralteten
++   Chiffren lösen weiterhin eine Panic aus. (#2305)
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 8 0 17fc66b926e648401df393556707bdb1
++ - `telekinesis.httpBackends.soundnessHttp` (das `Http.Backend` über den Sockets von coaxial)
++   ist vom Modul `telekinesis-jvm` in das neue Modul `telekinesis-sockets` umgezogen, das nach
++   Scala Native cross-kompiliert (veröffentlicht als `telekinesis-sockets_native0.5_3`);
++   `telekinesis-jvm` hängt davon ab, sodass ein Verwender von `telekinesis-jvm` oder des
++   Umbrellas `soundness` keine Änderung bemerkt. Sein `https`-Austausch ist jetzt nach
++   Plattform aufgeteilt: Auf der JVM ist er unverändert (ALPN bietet `h2`, dann `http/1.1` an,
++   getrieben von `Http2` oder dem HTTP/1.1-Codec); auf Scala Native ist er ein einzelner
++   HTTP/1.1-Austausch über den OpenSSL-`SecureEndpoint` von coaxial, gesendet mit `Connection:
++   close`. Die Helfer `repackage` und `sequentialFetch` sind mit umgezogen
++   (`private[telekinesis]`). (#2308)
+
+% 0 1 0 162fdd68f08c465a12122d34e6c4d9a3
+
+% 0 1 0 0c508415fecf757800352dbf085c57eb
+
+@ 0 8 0 0054d90c4f4faafb00399fd449e1c56b
++   `Classpath.Entry#javaUrl` und `internal.ClassRef#classpathEntry` sind jetzt
++   Erweiterungsmethoden (gleiche Namen und Signaturen, auf oberster Ebene des Pakets
++   `hellenism` definiert und nach `soundness` exportiert) im Source-Set `core-jvm` für
++   JVM/Scala.js statt Member; Aufrufstellen bleiben unverändert, aber ein `summon` oder eine
++   Eta-Expansion über den Membernamen muss die Erweiterung verwenden. Auf Scala Native, wohin
++   `hellenism.core` jetzt cross-kompiliert, fehlen sie. `Classpath.servicesFor[service]
++   (classpath, cls)` und `Classpath.Entry.apply(url: java.net.URL)` wurden aus der öffentlichen
++   API entfernt (beide waren JVM-Klempnerei: Ersteres stützt `services`, Letzteres
++   `LocalClasspath`), und `Classpath.delegatingClassloader` ist in das private
++   `hellenism.Loaders` umgezogen. (#2310)
+
+@ 0 5 0 120658dfbcca91e51a4f6d6d213c68e0
++ - `LocalClasspath(path)`, der einstellige Konstruktor, der einen beliebigen Pfad nimmt
++   (`Abstractable across
++   Paths to Text`), ist jetzt `LocalClasspath.of(path)`: Mit einem einzelnen
++   `Classpath.Entry.Jar` oder `Classpath.Entry.Directory` – selbst ein Pfad – war
++   `LocalClasspath(entry)` mehrdeutig zwischen dieser Überladung und dem Varargs-`apply` für
++   Einträge, das jetzt allein aufgelöst wird. Das Varargs-`apply`, `of(classloader)` und
++   `classpath + path` bleiben unverändert.
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 8 0 113a5d8c954f9d8f072cfb5f996c4f48
++ - Nur auf Scala Native: `Multicast`-Abonnements (`coaxial.socketBackends.scalaNativeSockets`)
++   senden einmal an die Gruppe, über die Standard-Multicast-Route des Kernels, statt einmal pro
++   beigetretener Schnittstelle, wie es das JVM-Backend tut, und `Socket.Option.MulticastLoop`
++   und `MulticastHops` werden nicht angewandt (die Kernel-Vorgaben: Loopback an, ein Hop) – die
++   javalib von Scala Native deklariert `DatagramSocket.setOption`, ohne es zu implementieren.
++   Empfangen, `sendTo` und `leave` verhalten sich wie auf der JVM. UDP-Bindungen übergeben auf
++   Scala Native jetzt eine explizite Wildcard-Adresse: `InetSocketAddress(port)` der javalib
++   lässt den Hostnamen null, und `bind` wies ihn zurück, sodass `listenUdp` dort zuvor
++   `IllegalArgumentException` warf. (#2312)
+
+% 0 1 0 052d6af0cb62d1bd1fbc477fa1ee3ea7
+
+@ 0 6 0 0e3924f0a5e8d40807e2fad4b532b367
++ - `guillotine.Command#escape` quotiert ein eingebettetes einfaches Anführungszeichen jetzt
++   korrekt, als `'\''`; früher blieb es unmaskiert, sodass ein `Command`, dessen Argument eines
++   enthielt, als mehrere Argumente neu geparst wurde. Ein Aufrufer, der das durch vorheriges
++   Maskieren von Anführungszeichen ausglich, muss damit aufhören. (#2243)
++ - Auf Scala Native führt `Command#pty` den Befehl jetzt auf einem echten Pseudoterminal aus
++   (dem nativen `PtyProcess`, über `posix_openpt`/`posix_spawn`/`poll`), wo es zuvor
++   `Exec.Error` auslöste; `OnTerminal.Job#resize`, `mode` und `mode_=` funktionieren dort wie auf
++   der JVM. (#2312)
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 11 0 04e396699d62465f1a96693bb83a5976
++ - Neue Komponente `octogenarian.sshNative` (Bündel `tool`): entfernte Repositorys über
++   susurration, den nativen SSH-Client, ohne `ssh`-Binary. `gitTransports.soundnessSsh` ist das
++   Given `Transport` (verlangt `Online`, `Socket.Backend`, `Ssh.Provider`, `Ssh.Algorithms`,
++   `Ssh.HostKeys`, `Ssh.Credentials`, `Hash in Sha2[256]` und `Diagnostics`), und `SshNative()`
++   die Klasse; sie akzeptiert dieselben URLs `ssh://[user@]host[:port]/path` und
++   `[user@]host:path` wie `gitTransports.sshCommand`, das bleibt. Eine SSH-Verbindung bedient
++   jeden Austausch mit einer Gegenstelle und bleibt so lange offen wie die Gegenstelle.
++   Additiv. (#2243)
++ - `octogenarian.SshCommand.Address` und `SshCommand.parse` sind in die Komponente `native`
++   umgezogen, als `octogenarian.SshAddress(user, host, port, path)` und `SshAddress.parse(url)`,
++   sodass beide SSH-Transporte sie teilen. Ersetzen Sie `SshCommand.Address` durch `SshAddress`
++   und `SshCommand.parse` durch `SshAddress.parse`. (#2243)
+
+% 0 1 0 06a6182dec9c330a161e0393c0b9495e
+
+@ 0 9 0 1f7eb8c03f1241301d1bf6dcb30215e4
++ - Neue Bibliothek `susurration` (der SSH-2-Client; Bündel `web`), mit `susurration.Wire` (die
++   Übertragungskodierung nach RFC 4251: `Wire.Reader(data)` mit `byte`, `boolean`, `uint32`,
++   `uint64`, `string`, `bytes(count)`, `text`, `mpint`, `names`, `rest`, `end`, das `Wire.Error`
++   auslöst; `Wire.Writer()` mit denselben Feldern und `data`), `susurration.KnownHosts`
++   (`KnownHosts(text)`, `lookup(host, port)`, `verify(host, port, keyType, keyBlob):
++   KnownHosts.Verdict` aus `Known`, `Unknown`, `Changed` oder `Revoked`; Patterns, Negation,
++   `[host]:port`, gehashte Einträge und Marker) und `susurration.SshConfig`
++   (`SshConfig(text).resolve(host): SshConfig.Resolution(hostName, user, port,
++   identityFiles)`; `Host`-Blöcke mit `HostName`, `User`, `Port` und `IdentityFile`). Additiv.
++   (#2243)
+
+% 0 1 0 082d0ec1f563dc3c09da706d7415f610
+
+@ 0 44 0 1ef980f725da4ffe1df341689c7e03e0
++   Ssh.Algorithms, Ssh.HostKeys, Hash in Sha2[256])` ist die SSH-Transportschicht (RFC 4253)
++   über einem `Duplex` von coaxial: `connect()` führt den Identifikationsaustausch und den
++   Schlüsselaustausch durch (`curve25519-
++   sha256`, `ecdh-sha2-nistp256`; Host-Schlüssel `ssh-ed25519`, `ecdsa-sha2-nistp256`,
++   `rsa-sha2-512`, `rsa-sha2-256`; Chiffren `chacha20-poly1305@openssh.com`,
++   `aes256-gcm@openssh.com`, `aes128-gcm@openssh.com`), dann bewegen `send(payload)`,
++   `receive(): Data`, `expect(message)`, `service(name)` und `disconnect()` verschlüsselte
++   Pakete; `sessionId`, `negotiated` und `serverVersion` beschreiben die Sitzung.
++   `susurration.Ssh` enthält `Ssh.Version`, die Nummern von `Ssh.Message`, `Ssh.Algorithms` (die
++   Präferenzlisten, mit einem `default`-Given), `Ssh.HostKeys` (die Host-Schlüssel-Richtlinie:
++   ein Given aus einem `KnownHosts`, `trustOnFirstUse(known)`, `insecurelyAcceptAll`) und
++   `Ssh.Error` (`Malformed`, `Unexpected`, `NoCommonAlgorithm`, `HostKeyRejected`,
++   `BadSignature`, `Disconnected`, `ClosedConnection`, `Integrity`, `ServiceRefused`). Ein
++   erneuter Schlüsselaustausch wird noch nicht durchgeführt. Additiv. (#2243)
++ - `Transport#authenticate(user: Text, signers: List[Signer])` führt die
++   Public-Key-Authentifizierung (RFC 4252) mit dem ersten akzeptierten Signierer durch und
++   fordert `ssh-userauth` selbst an; es löst `Ssh.Error` mit dem neuen Grund
++   `Unauthenticated(methods)` aus, oder `Agent(detail)` bei einem Fehler des Agenten.
++   `susurration.Signer` (`algorithm`, `blob`, `sign(data): Data`, der vollständige
++   Signatur-Blob) wird mit `Signer(key: PrivateKey[cipher]^)` erzeugt, für eine Chiffre mit
++   einer `susurration.Identity`-Instanz (`Ed25519`, `Ecdsa[256|384|521]`,
++   `Rsa[2048|3072|4096]`, die als `ssh-ed25519`, `ecdsa-sha2-nistp*` und `rsa-sha2-256`
++   signieren), oder von einem ssh-agent mit `Agent(socketPath).identities()` bezogen, der über
++   den Agenten signiert. `Transport#receive` löst bei `SSH_MSG_UNIMPLEMENTED` jetzt
++   `Unexpected(3)` aus, statt es zu überspringen. Additiv. (#2243)
++ - `enigmatic.OpenSsh.blob(key: PublicKey[cipher]): Optional[Data]` ist die Übertragungsform
++   eines öffentlichen Schlüssels, auf der `OpenSsh.line` jetzt aufbaut. Additiv. (#2243)
++ - Das Umbrella erreicht die Klassen von susurration als Member von `Ssh`: `Ssh.Transport`,
++   `Ssh.Channel`, `Ssh.Session`, `Ssh.Signer`, `Ssh.Identity` und `Ssh.Agent` (Typaliase und
++   Werte der Begleitobjekte), da andere Bibliotheken `Transport`, `Channel`, `Session`, `Agent`
++   und `Identity` exportieren; innerhalb von `package susurration` bleiben die bloßen Namen
++   unverändert. `Ssh.Credentials` (`user(host): Optional[Text]`, `signers(host, user):
++   List[Signer]`; `Ssh.Credentials(signers*)` und `Ssh.Credentials.agent(socket)`) liefert
++   einem Transport, dem nur eine URL gegeben wird, Identitäten. Additiv. (#2243)
++ - Das Verbindungsprotokoll (RFC 4254): `susurration.Session(transport)` öffnet
++   Sitzungskanäle – `exec(command, input = Data(), environment = Nil): Session.Result(stdout,
++   stderr, status)` führt einen Befehl bis zum Ende aus, `channel(block: Channel => result)`
++   leiht einen `susurration.Channel` (`env`, `exec`, `write`, `eof`, `next():
++   Optional[Channel.Event]`, `stdout(): Chain[Data]` lazy, `stderr`, `exitStatus`, `close`),
++   und `close()` trennt die Verbindung. `Ssh.Endpoint(host, port, user, signers)` ist
++   `Sessional to Session^` (mit gegebenem `Online`, `Socket.Backend`, dem Provider, den
++   Algorithmen, der Host-Schlüssel-Richtlinie, `Hash in Sha2[256]`, `Tactic[Ssh.Error]` und
++   `Diagnostics`), sodass `endpoint.session: ssh ?=> ssh.exec(t"uname")` verbindet, prüft,
++   authentifiziert und ausführt; `Endpoint#resolved(config: SshConfig)` wendet `~/.ssh/config`
++   an. `exec` nimmt bei beiden jedes `command: Ssh.Invocable` – einen `Text`, der so ausgeführt
++   wird, wie er geschrieben ist, oder ein `Command` von guillotine, Argument für Argument
++   quotiert (`ssh.exec(sh"git log -1 $$branch")`); susurration hängt jetzt von guillotine ab.
++   Neue Gründe `ChannelRefused` und `RequestRefused`. `Transport`, `Session` und `Channel` sind
++   einfache Klassen, die von einem einzigen Thread getrieben werden (nicht `caps.Mutable`): Ihre
++   Methoden sind keine `update`-Methoden mehr, daher braucht ein `Transport` kein `^`.
++   Additiv. (#2243)
+
+% 0 1 0 084189d30aa0110e1b5fe33e3e43dcd6
+
+@ 0 9 0 1f90c9f23eedcd510e4478ee50bb7466
++ - Der Typ `field`, den `wisteria.ProductDerivation.Methods#build`,
++   `wisteria.ProductDerivation.Methods#construct`, `wisteria.ProductDerivation.Methods#contexts`
++   und `wisteria.ProductDerivation.Methods#fields` für ihre Lambdas binden (und
++   `constructMonadic` für das konstruierte Tupel), behält jetzt die Capture-Annotation des
++   Feldes: Ein als `values: Array[Long]^{}` deklariertes Feld bindet `field` als
++   `Array[Long]^{}`, wo es zuvor das bloße `Array[Long]` band. Eine abgeleitete
++   Typklassen-Instanz über einem Produkt mit einem Feld als eingefrorenes Array
++   (`Array[element]^{}`) kompiliert daher jetzt in einem capture-geprüften Modul
++   (`-language:experimental.captureChecking` mit Separation-Checking), wo sie zuvor mit einem
++   Capture-Fehler scheiterte oder den Checker zum Absturz brachte; die unter `## locomotion` in
++   `0.72.0.md` festgehaltene „bekannte Einschränkung“ (#2248) gilt nicht mehr. Ableitungen über
++   Feldern ohne Capture-Annotation bleiben unverändert. (#2292)
+
+% 0 1 0 0709addc77995521151ea74263edf6fe
+
+@ 0 11 0 13a92782f9a64e9c12c4ed7106b1d626
++ - `import codecs.direct` wählt jetzt auch den direkten DSV-Parser: Darunter lösen
++   `read[Foo in Dsv]`, `read[List[Foo] in Dsv]` und `rowsOf[Foo]` für jeden Produkttyp `Foo`
++   `Foo is caesura.Dsv.Parsable` über das neue pauschale Given `caesura.Dsv.Parsable2#generated`
++   auf (gleichwertig mit `Dsv.Parsable.derived[Foo]`), wo zuvor nur ein Typ mit einer eigenen
++   `Dsv.Parsable`-Instanz diesen Weg nahm und jedes andere Produkt über `Decodable in Dsv`
++   dekodiert wurde. Die Ergebnisse sind dieselben, aber der direkte Parser liest jedes Feld über
++   `Dsv.Field` (ein beliebiges `Decodable in
++   Text`, ein `Optional` davon oder ein Produkt solcher Felder), sodass ein Produkt mit einem
++   Feld, dessen einzige Instanz `Decodable in Dsv` ist, unter `import codecs.direct` jetzt nicht
++   kompiliert; deklarieren Sie für einen solchen Typ keinen Modus, oder `import
++   codecs.derived`. `import codecs.derived` überschreibt jetzt ein `Dsv.Parsable` im
++   Geltungsbereich für `read[Foo in Dsv]` (nicht für `read[List[Foo] in Dsv]`, das kein
++   abgeleitetes Gegenstück hat), wie es das für die anderen Formate tut. (#2251)
+
+% 0 1 0 0a4cdd5273865dd7126f966067eddb4e
+
+@ 0 3 0 10542c8018a7ecb6040fa4c0b4049cbb
++ - `couriers.resendCourier` deklariert sein Ergebnis jetzt als `Courier { type Result =
++   Resend.Receipt }` statt als bloßen `Courier`, sodass `courier.send(…)` darunter an der
++   Verwendungsstelle ein `Resend.Receipt` ist, wo es zuvor als opakes `?.Result` inferiert wurde
++   und nicht annotiert werden konnte.
+
+% 0 1 0 1aa1711c33dc078f11fd7629dab81114
+
+@ 0 5 0 148a95b5f67bbb4d0bd7d5973a97c87c
++ - Die Erklärung eines fehlenden Givens (`explainMissingContext`) ist jetzt begrenzt: Eine Kette
++   von Kandidaten, die tiefer als sechs ist, oder mehr als 256 implizite Suchen in einer
++   Erklärung werden als fehlend gemeldet, statt verfolgt zu werden. Eine Erklärung in einem
++   großen Geltungsbereich – etwa einer REPL-Sitzung mit jedem Import eines langen Tutorials –
++   lief zuvor stundenlang. Der Bericht ist für jede Kette innerhalb der Grenze derselbe.
+
+@ 0 12 0 1a54146ad81a638714d906979c05b013
++ - Geänderte Ausgabeformatierung des Baums des Catch-alls
++   (`frontier.context.explainMissingContext`, `soundness.explainMissingContext`): Eine
++   Anforderung `scala.util.NotGiven[X]` – ein `using`-Parameter eines versuchten Kandidaten oder
++   eines vorgeschlagenen Classpath-Givens, einschließlich des Parameters eines
++   `proscenium.prohibits`-Givens – wird jetzt als `⊘ prohibits X` statt als
++   `✗ requires NotGiven[X]` dargestellt; wenn ein `X` im Geltungsbereich ist, hat der Knoten ein
++   Kind, `✓ found X (<given>)`, das das liefernde Given benennt, und wenn keines da ist, hat er
++   kein Kind und die Beschriftung `(absent)`. Ein Kandidat vom Typ einer Kontextfunktion
++   (`Choice prohibits Policy`, also `NotGiven[Policy] ?=> Choice`) wird jetzt als
++   `▪ candidate <given>` aufgeführt, wo er `▪ candidate ContextFunction1.apply` war, der
++   `ContextFunction1.scala$ContextFunction1$$T1` verlangte. Ein `summon[NotGiven[X]]` auf
++   oberster Ebene bleibt unverändert (kein Baum; die eigene Meldung des Compilers). Code, der
++   den Meldungstext auf `requires` und `NotGiven` abgleicht, muss aktualisiert werden. (#2307)
+
+% 0 1 0 17f94539b937dacb1c8f57fb7f04ec71
+
+@ 0 14 0 004c2fff49d8fcc80682153f4bd3dfc4
++ - Geänderte Abhängigkeit von `hyperbole.tasty` (`Tasty.parse`, `Tasty.File`,
++   `Tasty.Definition`): Es liest TASTy jetzt über `org.scala-lang:tasty-core_3` – eine
++   Laufzeitabhängigkeit des Moduls, die daher transitiv aufgelöst wird – statt über den
++   `TastyUnpickler` des Compilers, und der Compiler (`scala3-compiler_3`) wird zum Aufruf von
++   `Tasty.parse` nicht mehr auf dem Laufzeit-Klassenpfad gebraucht. Code, der den Compiler nur
++   dafür zu seinem Klassenpfad hinzufügte, kann ihn entfernen. Keine API-Änderung: Die
++   Modelltypen und `Tasty.parse(data: Data): Optional[Tasty.File]` bleiben unverändert. Vom
++   Compiler abgeleitete Namen werden wie bisher dargestellt (`prefix.name`, `name$1`,
++   `method$default$2`, `super$name`, …), außer signierten Namen, die jetzt als der Name
++   dargestellt werden, den sie signieren, statt als `name[with sig …]`; eine
++   Stackframe-Auflösung sah diese nie, da der Reader einen Namen nur an einer Definition, einem
++   Paket oder dem Quelldatei-Attribut liest.
++ - Neu: `hyperbole.tasty` wird ab diesem Release für Scala.js (`hyperbole-tasty_sjs1_3`) und
++   Scala Native (`hyperbole-tasty_native0.5_3`) veröffentlicht, sodass `Tasty.parse` in einem
++   Browser, unter Wasm oder in einem nativen Binary laufen kann; es braucht Proscala 1.0.4, von
++   dessen `tasty-core_sjs1_3` und `tasty-core_native0.5_3` es abhängt. `hyperbole.core` und
++   `hyperbole.stacks` bleiben auf die JVM beschränkt.
+
+% 0 1 0 07f33a1bf4fa2505029751dde4102879
+
+@ 0 32 0 07de9bd251460a7e12f3142cabbcd6b7
++ - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text]):
++   List[ScalaAtom] raises Inspection.Error` behält seine Signatur, führt aber nicht mehr den
++   Scala-Compiler aus: Es liest die Dateien mit `tasty-core` und löst sie selbst gegen den
++   Klassenpfad auf (die neue Komponente `degustation.tasty`, `Degustation.atomize(files:
++   List[(Text, Data)], dependencies: ClassSource): List[ScalaAtom]`, von der `degustation.core`
++   jetzt abhängt). `scala3-compiler_3` und `scala3-tasty-inspector_3` werden zum Aufruf nicht
++   mehr auf dem Klassenpfad gebraucht. Die Einträge des Klassenpfads müssen Verzeichnisse oder
++   Jars sein; die Klassen des JDK werden über den Plattform-Classloader gelesen. Eine
++   `*.tasty`-Datei außerhalb aller Klassenpfad-Verzeichnisse wird nach dem Paket eingeordnet,
++   das sie deklariert. Die Atome sind byte-identisch mit den vom Compiler erzeugten, außer:
++   `apply`-Weiterleiter von Konstruktor-Proxys für einen exportierten Alias einer Klasse ohne
++   Begleitobjekt werden immer ausgegeben (der Compiler gab sie reihenfolgeabhängig aus);
++   Capture-Annotationen (`@retains`, `@retainsCap`, `@retainsByName`) werden einheitlich
++   entfernt und die Aliase, die sie schmücken, expandiert, wo die Ausgabe des Compilers davon
++   abhing, ob eine früher gelesene Datei einen `captureChecking`-Import trug; Module, bei denen
++   der Unpickler des Compilers abstürzte, werden jetzt atomisiert. `Inspection.Error.Reason.
++   InspectionFailed` meldet jetzt eine unlesbare Datei oder eine fehlerhafte Classfile statt
++   eines Compilerfehlers. Die Disziplin, die diese Atome umsetzen, ist `tasty/2` (lira
++   `spec/tasty.md`).
++ - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text])` nimmt jetzt
++   außerdem `(using FilesystemBackend on galilei.Linux)`: Dateien und Klassenpfad-Verzeichnisse
++   werden über das Dateisystem-Backend von galilei gelesen und Jars über zeppelin, statt über
++   `java.nio` und `java.util.zip`. Aufrufstellen brauchen ein Backend im Geltungsbereich
++   (`import filesystemBackends.javaBaseFilesystem` auf der JVM,
++   `filesystemBackends.scalaNativeFilesystem` auf Native). Jeder `Text` muss sich als absoluter
++   Linux-Pfad parsen lassen; ein fehlerhafter Pfad, eine unlesbare Datei oder ein fehlerhaftes
++   Jar löst jetzt `Inspection.Error` mit `Reason.InspectionFailed` aus. `degustation.core` wird
++   jetzt für Scala Native veröffentlicht (`degustation-core_native0.5_3`); dort werden die
++   eigenen Klassen des JDK nicht aus einer laufenden JVM gelesen und müssen als Jar auf
++   `classpath` liegen.
++ - `degustation.Atomizer` (der Atomisierer über Compiler-Reflection) wurde aus
++   `degustation.core` entfernt; er lebt in der Testsuite als Orakel weiter, mit dem die
++   differenziellen Tests vergleichen. Der Export von `Atomizer` in `soundness` wurde entfernt.
++ - `degustation.ScalaAtom` und `degustation.ScalaReference` sind von `degustation.core` nach
++   `degustation.tasty` umgezogen (gleiches Paket, gleiche Definitionen; `degustation-tasty` ist
++   eine Abhängigkeit von `degustation-core`, daher ändert sich für Verwender von `core` nichts).
++   `degustation.tasty` wird für die JVM, Scala.js und Scala Native veröffentlicht.
+
+% 0 1 0 00f35d5d7c41def71e715ddeb1b22857
+
+@ 0 1 0 12af1e22ee6581a603d95cdbda0d797f
++ - `zeppelin.Zipfile.read[path: Abstractable across Paths to Text](path: path)` ist jetzt
+
+% 0 1 0 04779e7e7a308b2407dfd67c077b5cc7
+
+@ 0 28 0 1efeb21fb4e802bb1538c01e41ffe2cc
++   Tactic[galilei.Io.Error])`: Die Datei wird über das Dateisystem-Backend von galilei gelesen
++   statt über `java.nio`. Ein Aufruf, der einen `Path on Linux` (oder einen beliebigen `Path on
++   plane`) übergibt, kompiliert unverändert, wo ein Backend im Geltungsbereich ist (`import
++   filesystemBackends.javaBaseFilesystem` auf der JVM, `filesystemBackends.scalaNativeFilesystem`
++   auf Native); ein Aufruf, der einen `Text` oder einen anderen Wert übergibt, der kein `Path`
++   ist, muss ihn zuerst in einen `Path` umwandeln. Ein Fehler beim Öffnen oder Lesen der Datei
++   löst jetzt `galilei.Io.Error` aus, statt eine Java-Ausnahme zu werfen. `Zipfile.read(data:
++   Data)` bleibt unverändert.
++ - `zeppelin.Zipfile.rebase(path, delta)` nimmt `path: Path on plane` mit denselben beiden
++   Kontextparametern wie `read` und schreibt über das Backend.
++ - `path.open[Zip]()` und `path.open[Jar]()` verlangen ebenso, dass `path` ein `Path on plane`
++   ist und dass ein `FilesystemBackend on plane` und eine `Tactic[galilei.Io.Error]` im
++   Geltungsbereich sind; die Givens sind jetzt `Zip.openable: [plane: Filesystem, path <: Path
++   on plane] => (FilesystemBackend on plane, Tactic[Zip.Error], Tactic[Io.Error]) =>
++   Zip.Openable[plane, path]` und das entsprechende `Jar.openable` (`Jar.JarOpenable[plane,
++   path]`). `data.open[Zip]()` und `data.open[Jar]()` bleiben unverändert.
++ - Änderungszeiten werden jetzt in UTC aufgezeichnet: `Zip.Entry.at(ref, content, modified)` und
++   `path.archive[Zip]()` kodieren `modified` als DOS-Datum und -Uhrzeit in UTC, wo sie zuvor die
++   Standard-Zeitzone der JVM verwendeten. Ein Zeitpunkt vor 1980 wird jetzt als 00:00:00 am
++   1. Januar 1980 aufgezeichnet (zuvor wurde das Jahr auf 1980 begrenzt, während Monat und Tag
++   erhalten blieben). Code, der `dosDate`/`dosTime` eines Eintrags mit der Ortszeit vergleicht,
++   muss von UTC umrechnen.
++ - Die Kompression verwendet jetzt den Deflater von pneumatic in reinem Scala, der eine einzige
++   Kompressionsstufe hat: `Zip.Compression.Deflate(0)` speichert den Eintrag jetzt
++   (`Zip.Method.Stored`), und jede andere Stufe komprimiert identisch, sodass sich komprimierte
++   Nutzdaten Byte für Byte von denen unterscheiden, die das JDK bei derselben Stufe erzeugte.
++   Archive bleiben für jeden ZIP-Leser lesbar; die `crc32`-Werte bleiben unverändert.
++ - `zeppelin.core` hängt nicht mehr von `galilei.jvm` ab (es hängt von `galilei.core` ab) und
++   wird jetzt für Scala.js und Scala Native veröffentlicht. Ein JVM-Verwender, der das
++   JVM-Backend von galilei (`filesystemBackends.javaBaseFilesystem`) nur über `zeppelin`
++   erreichte, muss das Modul `galilei-jvm` selbst hinzufügen.
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 13 0 0cba7b36752fa531037275a1efb9fb48
++ - Neu: `Doughnut()`, eine Diagrammart, die einen `Dag[node]` von acyclicity als konzentrische
++   Bänder zeichnet, eines pro Rang des Graphen, von den Knoten, die von nichts abhängen, nach
++   außen, wobei jeder Knoten ein Sektor seines Bandes ist, proportional zu seiner Größe und im
++   Uhrzeigersinn so weit gefüllt, wie er vollständig ist. Er braucht die neuen Typklassen `node
++   is Sized` (`size(node): Double`) und `node is Progressive` (`completion(node): Double`, von
++   `0.0` bis `1.0`), beide aus `soundness` exportiert; ein Doughnut wird mit einem neuen `Dag`
++   fortgeschrittener Knoten überarbeitet, und seine Anpassung übersteht jeden Graphen derselben
++   Gestalt und Größen. Die Teile der Zeichnung sind `rank-N`-Gruppen aus `sector-N`- und
++   `sector-N-rest`-Pfaden; `Doughnut.Style` fügt `hole` (geteilt mit `Pie.Style`),
++   `sectorGap`, `bandGap`, `shade(x, y, base)` (die Farbe eines Sektors aus seiner Position),
++   `sector(...)` und `remainder(...)` hinzu, und `Chart.Standard` hat die neuen Felder
++   `sectorGap: Double
++   = 2.0` und `bandGap: Double = 2.0` (beide in Pixeln) und erweitert `Doughnut.Style`.
++   `tasseomancy.core` hängt jetzt von `acyclicity.core` ab, das ein Verwender, der
++   Soundness-Module einzeln deklariert, hinzufügen muss. (#2309)

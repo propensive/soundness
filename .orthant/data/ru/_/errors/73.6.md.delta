@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 1bc754d2e778c69a15b91caa7fa0a128
+
+@ 0 1 0 0ad69af0389d574605401f25b185d497
++ Порождается, когда Aviation не может разобрать файл базы данных часовых поясов (TZDB).
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Причина
+
+@ 0 4 0 07ce5f0a5cd88a02010c65bfe68175b9
++ `Tzdb.Error` бросается при чтении IANA TZDB. Каждый вариант определяет вид повреждения или
++ неожиданного содержимого. Сообщение указывает номер строки:
++ `the timezone could not be parsed at line $line: $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Варианты
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 05b649f1a707f3a502ab3c4fcb788e15
++ column  Код
++ column  Причина
++ column  Значение
++ column  Сообщение
++ column  Решение
++ row  `↯/s.73.6.1`  `CouldNotParseTime`  Значение времени в строке не разобралось.  `[↯/s.73.6.1] the timezone could not be parsed at line 42: could not parse time 25:00`  Исправьте исходный файл TZDB или используйте другую его копию.
++ row  `↯/s.73.6.2`  `UnexpectedRule`  Строка `Rule` появилась там, где парсер её не ожидал.  `[↯/s.73.6.2] the timezone could not be parsed at line 42: unexpected rule`  Убедитесь, что файл соответствует документированной структуре TZDB.
++ row  `↯/s.73.6.3`  `UnexpectedLink`  Строка `Link` появилась в неожиданной позиции.  `[↯/s.73.6.3] the timezone could not be parsed at line 42: unexpected link`  Убедитесь, что файл соответствует документированной структуре TZDB.
++ row  `↯/s.73.6.4`  `UnexpectedZoneInfo`  Строка с информацией о поясе появилась там, где её быть не должно.  `[↯/s.73.6.4] the timezone could not be parsed at line 42: unexpected zone info`  Убедитесь, что файл соответствует документированной структуре TZDB.
++ row  `↯/s.73.6.5`  `UnparsableDate`  Поле даты в строке не удалось разобрать.  `[↯/s.73.6.5] the timezone could not be parsed at line 42: the date could not be parsed`  Исправьте ошибочную строку.
++ row  `↯/s.73.6.6`  `BadZoneInfo`  Строка с информацией о поясе имела структурно недопустимое содержимое.  `[↯/s.73.6.6] the timezone could not be parsed at line 42: bad zone information: [ Elsinore Hamlet Yorick ]`  Убедитесь, что в строке правильные число и порядок столбцов.
++ row  `↯/s.73.6.7`  `BadName`  Имя (пояса или правила) синтаксически недопустимо.  `[↯/s.73.6.7] the timezone could not be parsed at line 42: the name verona/Juliet! is not valid`  Используйте только символы, допускаемые синтаксисом TZDB.
++ row  `↯/s.73.6.8`  `NoTzdbFile`  Указанный файл TZDB не найден на пути классов.  `[↯/s.73.6.8] the timezone could not be parsed at line 0: the zonefile europe could not be found on the classpath`  Убедитесь, что ресурсы TZDB включены в путь классов; их предоставляет дистрибутив Aviation.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## См. также
+
+@ 0 1 0 16d615c5fcec4f8919f3545a78d6afc4
++ - Исходный код: `lib/aviation/src/core/aviation.Tzdb.scala`

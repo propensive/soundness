@@ -1,0 +1,81 @@
+orthant 2 language
+
+% 0 1 0 0f7c5e2c5bc906011288134ddce1a000
+
+@ 0 1 0 0b9a95c22f0385bf01be3f9435e0b08d
++ Wird ausgelöst, wenn ein Wert nicht als gültiger DNS-Hostname geparst werden kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 012c821cbcc7d388105487378e17141c
++ Urticose validiert Hostnamen nach den DNS-Regeln: Gesamtlänge ≤ 253, jedes Label ≤ 63 Zeichen,
++ nur `A`-`Z`, `a`-`z`, `0`-`9` und `-` zulässig (und `-` nicht am Anfang eines Labels). Die
++ Meldung ist `the
+
+% 0 1 0 076d136d9361d0cd00ab82dbee36840c
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 18be17ea0f059f870f208ef5f7dbb3c9
+
+@ 0 1 0 1e736d64dd66f77208b70959fe2683e6
++ Ein einzelnes DNS-Label ist länger als 63 Zeichen.
+
+@ 0 1 0 1d4ab59b11582e27190e9782b1d4347d
++ **Beispiel.** `[↯/s.100.10.1] the hostname is not valid because the DNS label tomorrowandtomorrowandtomorrow... is longer than 63 characters`
+
+@ 0 1 0 0a37cf1d3e985a89066421b931893410
++ **Behebung.** Kürzen Sie das betreffende Label.
+
+% 0 1 0 0fd8e96b3217a75305468e22744cac09
+
+@ 0 1 0 140dc22cf5832a91098f9ebeacad2141
++ Der Hostname insgesamt überschreitet 253 Zeichen.
+
+@ 0 1 0 1202b9e52c53571c10ce3652f2a43c6c
++ **Beispiel.** `[↯/s.100.10.2] the hostname is not valid because the hostname is longer than 253 characters`
+
+@ 0 1 0 1d9dda003ebfc37b0ca1310c39b68d18
++ **Behebung.** Verwenden Sie einen kürzeren vollqualifizierten Domainnamen.
+
+% 0 1 0 0ff64bb0f206b2ae177218029b51b7ab
+
+@ 0 1 0 05008ea48ba8d14d095a285dfc2b22fb
++ Es kommt ein Zeichen vor, das in einem DNS-Hostnamen nicht zulässig ist.
+
+@ 0 1 0 1d7284f4c2f4543a17cc853573bad044
++ **Beispiel.** `[↯/s.100.10.3] the hostname is not valid because the character _ is not allowed in a hostname`
+
+@ 0 1 0 1cf229672fd1dbf81eaad111162e603e
++ **Behebung.** Entfernen oder ersetzen Sie das betreffende Zeichen.
+
+% 0 1 0 1bbcaa38e8c1c1f7113f93b8c9b7cd8e
+
+@ 0 2 0 02d88aef9c3c3d07184c21bae7276335
++ Ein Label ist leer — typischerweise verursacht durch `..` in der Eingabe oder einen führenden
++ oder abschließenden Punkt.
+
+@ 0 1 0 1c07acd2f9e83d070bfdd9d8b795a8f1
++ **Beispiel.** `[↯/s.100.10.4] the hostname is not valid because a DNS label cannot be empty`
+
+@ 0 1 0 1e09978f8d72f1b01af1f3d2ee7ab85d
++ **Behebung.** Entfernen Sie das leere Label.
+
+% 0 1 0 0ff0529bd290b2440a95bfabac3d395f
+
+@ 0 1 0 12376c16eedd6d8c0498c56e90df2419
++ Ein Label beginnt mit `-`, was DNS nicht erlaubt.
+
+@ 0 1 0 1d7f8649ff328de11c495e970f1e9ce5
++ **Beispiel.** `[↯/s.100.10.5] the hostname is not valid because the DNS label -elsinore begins with a dash which is not allowed`
+
+@ 0 1 0 1c02c6c40591a29f0f1f38c20c0e98af
++ **Behebung.** Entfernen oder versetzen Sie den führenden Bindestrich.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 0358e14015706fb902370159834cd347
++ - Quelle: `lib/urticose/src/core/urticose.Hostname.scala`

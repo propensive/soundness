@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 173c47bae2eabcc51ed9f53c62aff0de
+
+@ 0 1 0 18bca49ee94f1e0c0224951ae3282aec
++ Lançado quando um inteiro de comprimento variável em BinTEL está malformado.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 162c15d95ec78ded1f7f888ab73b0478
++ O BinTEL codifica inteiros como varints, sete bits por byte com uma flag de continuação. Este erro
++ cobre um varint que ultrapassa o fim da entrada, um mais largo que os 64 bits que o formato
++ permite e um que não é mínimo — uma codificação longa demais, como `80 00` para zero, que a §4 da
++ especificação do BinTEL rejeita para que todo inteiro tenha exatamente uma codificação.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+% 0 1 0 0ccd023f9a98df4d16b17217a6e7aa9f
+
+% 0 1 0 1116c36d6bb2987f002600d475ffebb0
+
+% 0 1 0 05d7a7f71396d4030d99b36743d3f2c9
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 3 0 02c0ae5a3593f800110501e38ccd5a6b
++ O stream está truncado ou corrompido. Um varint mais longo do que o tipo de destino permite
++ geralmente significa que leitor e escritor discordam sobre o tipo do campo. Um varint longo demais
++ vem de um codificador que acrescenta preenchimento, o que nenhum codificador BinTEL conforme faz.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 07aa718866039f7e0ff5e503f72fcab5
++ - Código-fonte: `lib/stratiform/src/core/stratiform.Varint.scala`

@@ -1,0 +1,656 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1215aba0f96e415a1fcddaa063eb1a68
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1b54bc16cb4f36f9141571ab3411c8fb
++ info   vectores y matrices con sus dimensiones en sus tipos, genéricos sobre cualquier elemento con aritmética
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 191dc8e953fab6d71c6370de25c11f0d
++     _Mosquito_ es álgebra lineal cuyas formas se comprueban mientras se compila el código. Un
++     `Vector[element, size]` es un número fijo de componentes, una `Matrix[element, rows,
++     columns]` es una cuadrícula, y ambos llevan sus dimensiones como argumentos de tipo: no
++     se pueden sumar dos vectores de tamaños distintos, un producto de matrices solo está
++     definido donde coinciden las dimensiones interiores, y `determinant`, `inverse` y
++     `trace` solo existen en una matriz cuadrada; cada caso es un error de compilación y no
++     una comprobación de forma en tiempo de ejecución. El tipo de elemento es genérico sobre
++     cualquier cosa con la aritmética que necesite una operación, resuelta mediante las clases
++     de tipos de symbolism, así que funcionan un vector de `Int`, de `Double`, de racionales
++     exactos o de magnitudes tipadas, y un producto escalar de longitudes es un área porque
++     las unidades también se multiplicaron.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 009e5eda30a6d17907732460496aec47
+
+% 0 1 0 144376e231de1cd509285f5eee297eb3
+
+% 0 1 0 090efb631fff0c141965602265691b93
+
+% 0 1 0 1418b23960e501a117609c038c8aacad
+
+% 0 1 0 19c53883930f326d1f1328a71f29f348
+
+% 0 1 0 1d53db87e28b4aa7030d21a5e1e00655
+
+% 0 1 0 0770af2cb597b87f16ad23ef8e237d36
+
+% 0 1 0 168239551f36d8bc1e239869a99fc0b9
+
+% 0 1 0 0f2a396a71fd035a006155b7c916eded
+
+% 0 1 0 00b6c8a2ea8c7ec502ddaba0ec33f117
+
+% 0 1 0 0ffd2706393d28c30b8676f5156f4da2
+
+% 0 1 0 1600c795e2349e0d1933c4db73278b7a
+
+% 0 1 0 15a7ef9394ccd37701e62d8d0b0cc7c4
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 8 0 0717971b4ba7da7c140455312310a480
++     Nada de esto hace boxing. Un `Vector[Double, n]` almacena un `double[]` (igual que un
++     vector de magnitudes, que son de forma opaca `Double`), las instancias aritméticas y los
++     accesores son `inline` y resuelven la operación propia del elemento en el punto de
++     expansión, y una suma de dos `Vector[Double, 3]` se compila a un bucle de `daload`,
++     `dadd` y `dastore`. El precio es que las formas son tipos literales: un `Vector[Int, 3]`
++     se construye a partir de una tupla de tres, una `Matrix[2, 3]` a partir de dos filas de
++     tres, y un tamaño que solo se conoce en tiempo de ejecución es `Vector.take` a partir de
++     una lista, que da un vector `Optional` del tamaño que nombra el tipo singleton del
++     argumento.
+
+@ 0 1 0 1e1e3f50c7e0b95b192252a13b76d1ec
++     Tres tipos, todos en `mosquito.core` para la JVM, Scala.js y Scala Native:
+
+@ 0 10 0 0c9392923775ff0d0ae7361744751880
++     - `Vector`: construcción, acceso a elementos, `map`, `norm`, `unitary`, `dot`, `cross`
++       (en tres y siete dimensiones), y la aritmética `+`, `-`, `-` unario, `*` y `/` por un
++       escalar o elemento a elemento por un vector del mismo tamaño.
++     - `Matrix`: construcción fila a fila, `identity`, `zero`, acceso a elementos, filas y
++       columnas, `transpose`, `submatrix`, la aritmética `+`, `-`, `-` unario, `*` y `/` por
++       un escalar, los productos de matriz por matriz y de matriz por vector, y, para una
++       matriz cuadrada, `determinant`, `trace`, `minor`, `cofactor`, `adjugate`, `inverse`,
++       `solve`, `rank`, `frobeniusNorm` y (para elementos `Double`) `eigenvalues`.
++     - `Affine`: una transformación afín 2D como matriz de 3×3, en el orden de seis números de
++       SVG y PDF, con `transform` y `andThen`.
+
+@ 0 7 0 0cf5cbbbe94daf5f1ca2bf2b914f42b9
++     Todo se exporta al paraguas `soundness`. La aritmética entre un número simple y un vector
++     o una matriz depende de las conversiones `into` del compilador, así que `import
++     scala.language.experimental.into` acompaña a `import soundness.*`; mostrar un vector o una
++     matriz como una cuadrícula entre corchetes necesita un given `Text is Measurable`
++     (`import textMetrics.uniformMetric`); y `transform` y `andThen` de `Affine` deben
++     importarse por nombre, `import mosquito.Affine.{andThen, transform}`, porque con `import
++     soundness.*` las extensiones genéricas homónimas de otras bibliotecas tienen prioridad
++     sobre ellas.
+
+% 0 1 0 1c0c8cc43e28abb1053adafdbf621ff9
+
+% 0 1 0 0ef17cb65501016f0af8a3634ba205b6
+
+% 0 1 0 13e5aa826c9111650d2e8e26906d3e2e
+
+@ 0 1 0 1692a6c528ed6cc311fe90ea4a405d08
++ entry .Vector   un número fijo de componentes, con el tamaño en el tipo: `Vector[Int, 3]`
+
+% 1 1 0 1f838cf4b02ff36c1c6a1d11d7725311
+
+@ 0 7 0 1a10743817993e9c1d5466212b5d8ac1
++       `Vector` es la clase `mosquito.internal.Vector`, exportada aquí: un híbrido entre una
++       `Tuple`, cuyo tamaño se conoce estáticamente, y una colección, cuyos elementos comparten
++       tipo. Se construye a partir de una tupla, cuya longitud se convierte en el tamaño y cuyo
++       tipo de elemento común se convierte en el elemento —`Vector(1, 2, 3)` es un
++       `Vector[Int, 3]`, `Vector(1.0*Metre, 2.0*Metre)` un `Vector[Quantity[Metres[1]], 2]`, y
++       un vector de un solo componente es `Vector(Mono(42))`—, y sus componentes se almacenan
++       en un `Array[element]^{}`, `#data`, de la propia clase del elemento, así que un vector
++       de `Double` o de magnitudes es un `double[]`.
+
+% 2 1 0 14f4359a817a18800ebc94b4b99c4f49
+
+% 3 1 0 18fa41311df8ddc31ef9fd4f5cd54b4a
+
+% 4 1 0 05acb37d318f56cb03aeeec9e8dba7a3
+
+% 5 1 0 1897662628631e8702498a10f157a60f
+
+% 0 1 0 022946d814015f3c09aada6565bab986
+
+% 0 1 0 015bfe0b0226126d1c6f82b13cd6cfb6
+
+% 0 1 0 1d1900a455fba56012a316194f5847f4
+
+% 0 1 0 017cbd42bff680f7144cf82977aa9b76
+
+% 0 1 0 0edde86379bfb22f1049d1af91cb6aaf
+
+% 0 1 0 1971e90724d527eb1fc02320f2c3555a
+
+% 0 1 0 102ebcee2a9eef6801c4b22a8ae89799
+
+% 0 1 0 1a03dc209c006193034228dbf7d863f6
+
+% 0 1 0 1136682c4c96b9940175109c3a212c79
+
+% 0 1 0 069d4a6b4966bc8517f10b201debd18e
+
+% 0 1 0 1e977043db95f7a815e8590f810e1a13
+
+% 0 1 0 0fcfd79278c579510518a5978b0d79c5
+
+% 0 1 0 0b9d53f058052275190ae54053856824
+
+% 1 1 0 01341e6250f846421abe894278cefde2
+
+@ 0 12 0 0f765946e308cbc6138ca359b7d43666
++       La aritmética se define por instancias de clases de tipos, cada una `inline` y con el
++       tamaño como clave, así que una discordancia no compila: `+` y `-` entre dos vectores
++       del mismo tamaño (`.addable`, `.subtractable`), `-` unario (`.negatable`), `*` y `/` por
++       un escalar (`.scalarMultiplicable`, `.scalarDivisible`) o elemento a elemento por otro
++       vector del mismo tamaño (`.vectorMultiplicable`, `.vectorDivisible`). El producto
++       escalar de dos vectores es `dot`, no `*`; un escalar va a la derecha (`v*2`, no `2*v`);
++       y los elementos deciden el resultado, así que sumar un vector de pies a un vector de
++       metros da metros, y el producto elemento a elemento de dos vectores de metros es un
++       vector de metros cuadrados. Las operaciones que no son instancias —`element`, `apply`,
++       `list`, `iarray`, `size`, `norm`, `map`, `unitary`, `dot` y `cross`— son métodos de
++       extensión declarados en `mosquito.internal`, disponibles con `import soundness.*`, y
++       cada una tiene allí su página.
+
+@ 0 2 0 01324a22a4c5a42f1f7a714984c8dea9
++       Dos vectores son iguales cuando lo son sus componentes, sean cuales sean sus tipos de
++       elemento declarados; `hashCode` concuerda. `toString` es `Vector(1, 2, 3)`.
+
+@ 0 2 0 00f434c0cd868f101f6169473baeda1d
++       Los constructores e instancias del objeto compañero, y el `data` de la clase, se
++       declaran en `mosquito.internal.Vector`, donde cada uno tiene su página.
+
+% 1 1 0 038544fe5003b799140e8793cf091530
+
+% 0 1 0 0a98c7eac7e184f210978c1cc04892e2
+
+% 0 1 0 134d7649a363840e1501725ec369b335
+
+@ 0 1 0 1d593762e68ab1131f8459c45d5b9cee
++ entry .Matrix   una cuadrícula con su número de filas y de columnas en su tipo: `Matrix[Int, 2, 3]`
+
+% 1 1 0 155d8b7734a99313092b64081ed062ac
+
+@ 0 6 0 1142aa69fcea63ac0a428c72794c955c
++       Una `Matrix[element, rows, columns]` son `#rows` por `#columns` elementos almacenados
++       por filas en `#elements`, un `Array[element]^{}`. Se escribe con su forma como
++       argumentos de tipo y sus filas como tuplas, `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`, con el
++       tipo de elemento inferido a partir de ellas; `Matrix.identity[Double, 3]` y
++       `Matrix.zero[Double, 2, 3]` son las matrices constantes. Un producto solo está definido
++       donde las formas concuerdan, y la forma del resultado se calcula en el tipo:
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0f56b93f75e7c6ba0eace23a0c9e4689
++         label Una matriz de 2×3, fila a fila
+
+% 1 1 0 1d4641a0c2803065162837e05c9a25da
+
+% 0 1 0 1386ffb620a70aab000a6ad84acab8e7
+
+% 1 1 0 0ea218c9bfb71c450e6e77a15f33a0b6
+
+@ 0 1 0 002dfd4b4f9c334d08ed24e0bdf91332
++         label Una matriz de 3×2
+
+% 1 1 0 06660a5b4ecec1ea1fa02299c77b540b
+
+% 2 1 0 00e70f05379df0a01d2415769148373e
+
+% 0 1 0 1f9d122d9141fd911232c1c7013dfc07
+
+% 1 1 0 10a487ca401c933210016444289303a0
+
+@ 0 1 0 191b068cc2c906b51de41d67117b86d5
++         label Su producto: las dimensiones interiores coinciden, así que el resultado es de 2×2
+
+% 1 1 0 0cdb70a3a28f80fa1595de2d7c3d5725
+
+% 2 1 0 16f94e638aacaf9000bfa2af7063cde7
+
+% 3 1 0 0f0913edf661429210d11c641b7879f7
+
+% 0 1 0 0c30b73114ff2df31f9de43ce1f2a4e2
+
+% 1 1 0 132d1f35bccb5d2706e42e97160b8ef8
+
+@ 0 1 0 025c19c6d5813f7a1119c96486ce4c5a
++         label En el otro orden, de 3×3
+
+% 1 1 0 1d6b85e32e56e7fa11e9b093c53a1412
+
+% 2 1 0 1010f259ff9065920d06cc707f9eaee6
+
+% 3 1 0 0aad1d6bcd784c320f0540c8a6d29a60
+
+% 0 1 0 12c5be79da91bcf71c653f828065b5db
+
+% 1 1 0 05378bfcc18bfea30c2e1a68d48f0696
+
+@ 0 1 0 0df2fd59684bf2eb014ff4ba80ab3191
++         label Una matriz por un vector de la longitud adecuada
+
+% 1 1 0 05baddee8cc83c3306911753c13aafe0
+
+% 2 1 0 0e1036e09bbcb6cf0965ff194b861800
+
+% 0 1 0 0a539ff246d6902d05e67fd29faef369
+
+% 1 1 0 16f63992782c10651218e192e341b250
+
+@ 0 1 0 02509338b2f06439137cd5094b1af2ce
++         label Y una discordancia de forma no compila
+
+% 1 1 0 08fe87edf43bccc604834839f0cc4b92
+
+% 2 1 0 0c54bda7c1015f531095ce39da6a0383
+
+% 0 1 0 08dc6b39878556b71b262deac4c47b47
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 10 0 1f1ea67d77365bc516df76def10bb59c
++       La aritmética se define por instancias inline de clases de tipos: `+` y `-` entre
++       matrices de la misma forma (`.addable`, `.subtractable`), `-` unario (`.negatable`), `*`
++       y `/` por un escalar (`.scalarMultiplicable`, `.scalarDivisible`), el producto de
++       matrices (`.matrixMultiplicable`) y el producto de matriz por vector
++       (`.vectorMultiplicable`). `*` entre dos matrices es siempre el producto de matrices,
++       nunca elemento a elemento. Una matriz cuadrada tiene además `determinant`, `trace`,
++       `minor`, `cofactor`, `adjugate`, `inverse` y `solve` como extensiones sobre
++       `Matrix[element, n, n]`, y una matriz cuadrada de `Double` tiene `eigensystem`,
++       `eigenvalues` y `eigenvectors`. Cada operación resuelve la aritmética del elemento, así
++       que una matriz de magnitudes se suma, y una matriz de racionales `Q32` se multiplica de
++       forma exacta.
+
+% 2 1 0 02353ecd1d21984c1a4c2a13a8351b19
+
+% 3 1 0 1df33e4167bbde830ccd89fece6db9f9
+
+% 4 1 0 1cc921f5ea12f54208d131f109ceaa78
+
+% 5 1 0 009c3bd4562e08ff0ae3d745d742138a
+
+% 0 1 0 06b21ab1711cd7cb0fd1b6eafff6a708
+
+% 0 1 0 1b097172f6a6987406241e4fdd7fcd67
+
+% 0 1 0 02a4ca99c9dce70811acb1eb55b11344
+
+% 0 1 0 04e7ae1ad18c59ce146cc3b41def4616
+
+% 0 1 0 0c8715c658fcf962101ad4e614f85682
+
+% 0 1 0 06a4d228d9842f53098896943ee02bb8
+
+% 0 1 0 19ead65254a29f2e1c34bd703dc449a4
+
+% 0 1 0 1edf8d945d4f6a840809da822fb4f71f
+
+% 0 1 0 0af32bc81fc93e7313cc41aafb64b369
+
+% 0 1 0 059c03961e872a9d040d44605a583f82
+
+% 0 1 0 10296640812fa6f01be93934d350692d
+
+% 0 1 0 18f14c2699971b4112d5c6654e277be9
+
+% 0 1 0 1533d4359668d0e71ec6312469f7c992
+
+% 0 1 0 0b3895c3ac21d2c10094a678fdb0e329
+
+% 0 1 0 1dfc4d5056cc0f820791823dfce5c270
+
+% 1 1 0 0493b37faa19eb441705d41996785471
+
+@ 0 2 0 162375aab2f6f5411efd13c477d208ed
++       Dos matrices son iguales cuando lo son sus elementos, sean cuales sean sus tipos de
++       elemento declarados. `toString` es la lista plana de elementos, `[1, 2, 3, 4, 5, 6]`.
+
+% 0 1 0 07fa0d29d2b788f00cff9ebbaf1ae246
+
+% 0 1 0 1fd32ae8011feea314f351e48026007b
+
+@ 0 20 0 07d8ea15ce985ad3008938df645a2f8f
++   entry .apply   `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`: una matriz a partir de sus filas, con la forma como argumentos de tipo
++       Transparent inline: el número de filas y de columnas se da como argumentos de tipo y se
++       comprueba contra la tupla de tuplas de filas: el número de filas debe ser `Rows`, cada
++       fila debe tener `Columns` elementos, y todos los elementos deben tener un mismo tipo, que
++       se convierte en el tipo de elemento. Una matriz de una fila se escribe con `Tuple1`,
++       `Matrix[1, 2](Tuple1((4, 6)))`. En el punto de llamada se encuentra un `ClassTag` para
++       el elemento.
++   entry .identity   `Matrix.identity[Double, 3]`: la matriz identidad de un tamaño
++       Unos en la diagonal y ceros en el resto, mediante las instancias `Unital` y `Zeroic` del
++       elemento; el tamaño es un argumento de tipo con un `ValueOf`. Es inline, así que los
++       almacenamientos son escrituras tipadas en el array.
++   entry .zero   `Matrix.zero[Double, 2, 3]`: la matriz cero de una forma
++       Todos los elementos son el cero de `Zeroic`; la forma son dos argumentos de tipo con
++       sendos `ValueOf`.
++   entry .addable   `m + n` entre dos matrices de la misma forma: los elementos sumados por pares
++       Una instancia inline que necesita `a is Addable by b to result` para los tipos de
++       elemento y un `ClassTag[result]`; dos `Matrix[Double, 2, 2]` se suman en un bucle de
++       `dadd`, y dos matrices de magnitudes se suman mediante la suma con unidades comprobadas.
++       Las formas distintas no compilan.
++   entry .subtractable   `m - n` entre dos matrices de la misma forma: los elementos restados por pares
++   entry .negatable   `-m`: todos los elementos negados
++       `-Matrix[2, 2]((1, -2), (3, 4))` es `Matrix[2, 2]((-1, 2), (-3, -4))`, e igual a
+
+% 0 1 0 0ee8e3dbcf05297e03fe48952d217a47
+
+@ 0 44 0 1f182bd3c03b13150cd6bb672fe4d7bb
++   entry .scalarMultiplicable   `m*scalar`: todos los elementos multiplicados por el escalar
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*10` es `Matrix[2, 3]((10, 20, 30), (40, 50, 60))`.
++       El escalar va solo a la derecha. Un operando `Matrix` llega en su lugar a
++       `.matrixMultiplicable`, y un operando `Vector`, a `.vectorMultiplicable`.
++   entry .scalarDivisible   `m/scalar`: todos los elementos divididos por el escalar
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))/2` es `Matrix[2, 3]((0, 1, 1), (2, 2, 3))`: los
++       elementos se dividen como lo hace su tipo.
++   entry .matrixMultiplicable   `m*n`: el producto de matrices, definido solo donde coinciden las dimensiones interiores
++       Una `Matrix[a, rows, columns]` por una `Matrix[b, columns, rightColumns]` es una
++       `Matrix[result, rows, rightColumns]`, y necesita `a is Multiplicable by b to result` y
++       `result is Addable by result to result`; el número de columnas debe ser `ValueOf`. Un
++       producto cuyas dimensiones interiores difieren no compila. Nunca es elemento a elemento.
++   entry .vectorMultiplicable   `m*v`: una matriz por un vector columna de longitud `columns`, que da un vector de longitud `rows`
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*Vector(7, 8, 9)` es `Vector(50, 122)`, y
++       `Matrix.identity[Int, 3]*v` es `v`. Un vector de longitud equivocada no compila.
++   entry .inspectable   la representación de depuración, en una sola línea: `⌈1 ∣ 2 ⫽ 3 ∣ 4⌋`
++       Las filas separadas por `⫽` y los elementos dentro de una fila por `∣`, entre corchetes
++       de esquina que sustituyen a los altos que usa `show`; disponible para cualquier matriz
++       cuyo elemento sea `Inspectable`.
++   entry .showable   representa una matriz como una cuadrícula entre corchetes altos, con las columnas alineadas a la derecha
++       Cada fila es una línea, `⎡ 1 2 ⎤` arriba, `⎣ 3 4 ⎦` abajo y `⎪ … ⎪` entre ellas;
++       necesita que el elemento sea `Showable` y un `Text is Measurable` en el ámbito (`import
++       textMetrics.uniformMetric`) para medir la anchura de las columnas.
++   entry .determinant   el determinante de una matriz cuadrada, por desarrollo de Laplace
++       Una extensión sobre `Matrix[element, n, n]`, que necesita `Multiplicable`, `Addable` y
++       `Subtractable` del elemento en su propio tipo: `Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1,
++       4, 5)).determinant` es 49. Llamarla sobre una matriz no cuadrada no compila. El
++       desarrollo es exponencial en `n`, adecuado para las matrices pequeñas cuyas formas se
++       escriben en los tipos.
++   entry .trace   la suma de la diagonal de una matriz cuadrada
++       Inline, con la suma resuelta en el punto de llamada:
++       `Matrix.identity[Int, 4].trace` es 4.
++   entry .minor   `m.minor(row, column)`: el determinante de la matriz sin esa fila y esa columna
++   entry .cofactor   `m.cofactor(row, column)`: el menor, con el signo cambiado donde los índices de fila y columna suman un número impar
++       Necesita el `Zeroic` del elemento para la negación.
++   entry .adjugate   la traspuesta de la matriz de cofactores, definida sobre cualquier anillo
++       `Matrix[2, 2]((1, 2), (3, 4)).adjugate` es `Matrix[2, 2]((4, -2), (-3, 1))`, y
++       `m*m.adjugate` es el determinante por la identidad. No necesita división, así que una
++       matriz de enteros tiene adjunta donde no tiene inversa.
++   entry .inverse   la inversa de una matriz cuadrada, o `Unset` si es singular
++       La adjunta dividida por el determinante, que necesita el `Divisible` del elemento además
++       de sus operaciones de anillo: `Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse` es
++       `Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5))`, y una matriz cuyo determinante es el cero del
++       elemento da `Unset`. Una matriz no cuadrada no compila.
+
+% 2 1 0 1a03c0b479efaa421ce440b0ec255f9b
+
+% 3 1 0 1d1c969e10c6566711dda4f6a7d30621
+
+% 0 1 0 08555ff1d50b527c0265026b6994bbed
+
+% 0 1 0 045e4ae917a4433806522a04c48bad53
+
+% 1 1 0 1cafef948d5be81f0fe2bcb14ad4f3d3
+
+@ 0 39 0 1f80b51814969242047ae8821dbc79e5
++   entry .solve   `m.solve(b)`: el `x` con `m*x == b`, por eliminación gaussiana, o `Unset` si es singular
++       Una extensión sobre una `Matrix[element, n, n]` cuadrada que toma un
++       `Vector[element, n]`, con pivoteo parcial (un pivote cero intercambia filas), y que
++       necesita `Zeroic`, `Subtractable`, `Multiplicable` y `Divisible` del elemento:
++       `Matrix[2, 2]((2.0, 1.0), (1.0, 3.0)).solve(Vector(3.0, 4.0))` es `Vector(1.0, 1.0)`.
++   entry .eigensystem   los autovalores y autovectores de una matriz `Double` simétrica, o `Unset`
++       Una extensión sobre `Matrix[Double, n, n]`, por rotaciones de Jacobi, que solo converge
++       para una matriz simétrica: el resultado es `Unset` para una matriz que no es simétrica
++       (con una tolerancia de 10⁻¹²) o que no converge, y en otro caso un par formado por los
++       autovalores como `Vector[Double, n]` y los autovectores como columnas de una
++       `Matrix[Double, n, n]`, cada uno un vector unitario.
++   entry .eigenvalues   los autovalores de una matriz `Double` simétrica, o `Unset`
++       `Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues` contiene 1.0 y 3.0; la primera mitad
++       de `eigensystem`.
++   entry .eigenvectors   los autovectores de una matriz `Double` simétrica como columnas, o `Unset`
++       La segunda mitad de `eigensystem`.
++   entry #rows   el número de filas, como valor
++   entry #columns   el número de columnas, como valor
++   entry #elements   los elementos, por filas, como un `Array[element]^{}` congelado
++   entry #apply   `m(row, column)`: un elemento, con índices desde cero
++       Inline, así que una lectura de una `Matrix[Double, m, n]` es un `daload`. En un
++       `Affine`, que también es una matriz, aplicarlo a dos números es este accesor, y por eso
++       su transformación de puntos se llama `transform`.
++   entry #row   `m.row(i)`: una fila como `Vector[element, columns]`
++       Inline; copia con acceso tipado al array donde hay un `ClassTag` para el elemento en el
++       punto de llamada, y por reflexión en otro caso, de modo que nunca se lo pide a quien
++       llama.
++   entry #column   `m.column(j)`: una columna como `Vector[element, rows]`
++   entry #transpose   la traspuesta, una `Matrix[element, columns, rows]`
++       Necesita un `ClassTag` para el elemento; `m.transpose.transpose == m`.
++   entry #submatrix   `m.submatrix(row, column)`: la matriz sin esa fila y esa columna, una unidad menor en cada dimensión
++       Con el tipo `Matrix[element, rows - 1, columns - 1]`; `Matrix[2, 3](…).submatrix(0, 1)`
++       es una `Matrix[Int, 1, 2]`.
++   entry #frobeniusNorm   la raíz cuadrada de la suma de los cuadrados de los elementos
++       Inline, necesita `Multiplicable`, `Addable` y `Rootable[2]` del elemento:
++       `Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm` es 5.0.
++   entry #rank   el rango, por eliminación gaussiana
++       El número de filas linealmente independientes, que necesita `Zeroic`, `Subtractable`,
++       `Multiplicable` y `Divisible` del elemento; definido para cualquier forma:
++       `Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).rank` es 1.
+
+@ 0 1 0 044d376f39c83a6901d7c0eae8715f66
++ entry .Affine   una transformación afín 2D: una matriz de 3×3 construida a partir de los seis números de SVG y PDF
+
+% 1 1 0 1db0d5be80fd5da30c163ac94d22e9da
+
+@ 0 3 0 1977e8589f4f181a17ffebd022b81e50
++       `Affine[element]` es un subtipo opaco de `Matrix[element, 3, 3]` que contiene la matriz
++       homogénea de una transformación afín bidimensional, construida a partir de las seis
++       entradas vivas en el orden que comparten `matrix(a, b, c, d, e, f)` de SVG y
++       `a b c d e f cm` de PDF:
+
+% 0 1 0 0d2523ced4fb8ce31bd4b9e3b3275137
+
+% 0 1 0 10560dcb6382d41e0af4817d9bfc9334
+
+% 0 1 0 1fa6ddc7f7b9de800aa94e1d45a580f7
+
+@ 0 4 0 145251692c72567f103c9476efa9094d
++       que actúa sobre vectores columna. `transform` la aplica a un punto y `andThen` compone
++       dos, en seis multiplicaciones y doce respectivamente, en lugar de las veintisiete del
++       producto general de matrices, con la aritmética de los elementos en línea. El orden de
++       composición es el único punto en que divergen las convenciones de SVG y PDF, así que es
++       una operación con nombre y no `*`.
+
+% 2 1 0 1437b632e627b1d507e45bed1438736c
+
+% 3 1 0 02b46cb78d69e0f1008c75bf86c5d613
+
+% 0 1 0 1d8767710e1c95ab06e950ff91f6a026
+
+% 0 1 0 1dc100e003bf2f7b16777ab637bdf2d9
+
+% 0 1 0 124c89b507bd28dd05ba071f1d51e1d2
+
+% 0 1 0 1e840ebd672669f1040a86a9cf979e94
+
+% 0 1 0 1f78056ce8ead34f0dc73ffedef988da
+
+% 1 1 0 0dcc2ec929c6b2f41b28bce59c6bf31c
+
+@ 0 6 0 0f7b9bbbe15588531517972506a412ea
++       `transform` y `andThen` deben importarse por nombre con `import soundness.*`: el
++       `transform` genérico del paraguas (el de savagery) y `andThen` (sobre funciones) están
++       allí en el ámbito léxico, y una extensión léxica tiene prioridad sobre la del objeto
++       compañero e informa de su propio fallo en lugar de dejar paso. Al ser una `Matrix`, un
++       `Affine` también tiene todas las operaciones de matriz, incluida `apply(row, column)`,
++       y por eso la transformación de puntos no es `apply`.
+
+% 1 1 0 068e4ecebed125c604d561af502913a2
+
+@ 0 19 0 19b0cb2f7aa2e4fb02065bf61cc3414e
++   entry .apply   `Affine[Double](a, b, c, d, e, f)`: una transformación a partir de sus seis entradas
++       Necesita `Zeroic` y `Unital` del elemento para la fila inferior fija, y un `ClassTag`.
++       No es inline, a diferencia de los constructores de `Matrix`, para que su resultado se
++       vea como un `Affine` en el punto de llamada.
++   entry .identity   `Affine.identity[Double]`: la transformación identidad
++   entry .a   la primera entrada: la escala en x
++   entry .b   la segunda entrada: la inclinación en y
++   entry .c   la tercera entrada: la inclinación en x
++   entry .d   la cuarta entrada: la escala en y
++   entry .e   la quinta entrada: la traslación en x
++   entry .f   la sexta entrada: la traslación en y
++   entry .transform   `affine.transform(x, y)`: el punto `(a·x + c·y + e, b·x + d·y + f)`
++       Inline, necesita `Multiplicable` y `Addable` del elemento en su propio tipo; un
++       `Affine[Double]` transforma un punto con seis `dmul` y cuatro `dadd`. Se importa por
++       nombre: `import mosquito.Affine.transform`.
++   entry .andThen   `first.andThen(next)`: la transformación que aplica `first` y después `next`
++       El producto de vectores columna `next*first`, que es el producto de vectores fila
++       `first*next` de PDF, especializado en las seis entradas vivas. Necesita `Multiplicable`,
++       `Addable`, `Zeroic` y `Unital` del elemento, y un `ClassTag`. Se importa por nombre:
++       `import mosquito.Affine.andThen`.
+
+@ 0 5 0 118bca2c7278738e074b3c6f9d0c6725
++ entry .slide   `list.slide(n)`: las ventanas deslizantes de una lista como una `Chain` perezosa de `Vector` de tamaño `n`
++     Una extensión sobre `List[element]` (que necesita un `ClassTag`): `List(1, 2, 3,
++     4).slide(2)` es la cadena `Vector(1, 2)`, `Vector(2, 3)`, `Vector(3, 4)`, cada uno un
++     `Vector[element, n.type]` tipado por el argumento, construido con `Vector.take` y que se
++     detiene cuando quedan menos de `n` elementos.
+
+@ 0 1 0 131caaa5fe0272d8026e53c2561d7d65
++ entry .internal   el hogar de la clase `Vector`, sus métodos de extensión y la aritmética inline de los elementos
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 15 0 0383c7df731c4e6b013df1479f34d62c
++       No es para uso directo: el objeto existe para que las instancias inline de `Vector`
++       puedan resolver la operación propia del elemento en su punto de expansión. `Vector` se
++       exporta desde aquí al paquete `mosquito`, y su página allí tiene la descripción
++       completa; sus constructores e instancias se documentan en esta entrada `Vector`. Los
++       métodos de extensión sobre un vector declarados aquí —`element`, `apply`, `list`,
++       `iarray`, `size`, `norm`, `map`, `unitary`, `dot` y los dos productos `cross`— están
++       disponibles con `import soundness.*`.
++   entry .Vector   la clase vector y su objeto compañero; véase `mosquito.Vector`
++     entry .apply   `Vector(1, 2, 3)`: un vector a partir de una tupla, con su tamaño y su tipo de elemento inferidos
++         Un constructor transparent inline sobre cualquier tupla: el tamaño es el de la tupla, y
++         el tipo de elemento es el tipo de sus componentes, que deben ser todos el mismo
++         —`Vector(1, 2.0)` es un error de compilación, _Cannot prove that Int | Double =:= Int_,
++         y no un vector de `AnyVal`—. Un vector de un solo componente es `Vector(Mono(42))`, ya
++         que `Vector(42)` tomaría el propio 42 como la tupla. El almacenamiento es un array de
++         la clase del elemento, encontrada mediante un `ClassTag` en el punto de llamada, así
++         que un `Vector(2.0, 4.0)` se lee y se calcula sin boxing.
+
+% 2 1 0 0c4609ce8d51b2ea02f8495b4dfabbc5
+
+% 3 1 0 0f13bab761920b900c2015056e8aa3a0
+
+% 0 1 0 1084ce22168fe358156691d11e979518
+
+% 0 1 0 1259869ebaf041ba07e511bbb577b9f9
+
+% 0 1 0 1a2f2f1fe7e0f3c612b9831bce67bf27
+
+% 1 1 0 1fd8e905092441e90267920889b591c7
+
+@ 0 5 0 0493f46ec9901dcf07dc3056ff155362
++     entry .take   `Vector.take(list, n)`: los primeros `n` elementos de una lista como vector, o `Unset` si hay menos
++         El constructor para un tamaño que solo se conoce en tiempo de ejecución: el resultado
++         es un `Vector[element, n.type]`, tipado por el tipo singleton del argumento, y `Unset`
++         cuando la lista es demasiado corta. `Vector.take(Nil, 0)` es el vector vacío. Necesita
++         un `ClassTag` para el elemento.
+
+% 2 1 0 1465d2f9b11e86d711bbfbbf862b0edd
+
+% 3 1 0 10dac79786bfa60a005fdf784327db74
+
+% 0 1 0 06d0acb42eac51a71a85fc969a4f1c06
+
+% 0 1 0 0c9e66012e2841c0015043e6a40b310c
+
+% 1 1 0 007db9d3fdfab0fa1621780808ada384
+
+@ 0 65 0 0cb21e6c903104ab09b5089d4e2ca758
++     entry .addable   `v + w` entre dos vectores del mismo tamaño: los elementos sumados por pares
++         Una instancia inline que necesita `value is Addable by value2 to result` para los dos
++         tipos de elemento y un `ClassTag[result]`; el resultado es un `Vector[result, size]`.
++         La suma de elementos se resuelve en el punto de expansión, así que dos
++         `Vector[Double, n]` se suman en un bucle de `dadd`, y dos vectores de magnitudes se
++         suman mediante la suma con unidades comprobadas de quantitative: `Vector(1.0*Foot,
++         1.0*Foot) + Vector(3.0*Metre, 4.0*Metre)` está en metros. Los tamaños distintos no
++         compilan.
++     entry .subtractable   `v - w` entre dos vectores del mismo tamaño: los elementos restados por pares
++         Como `.addable`, necesita `value is Subtractable by value2 to result`.
++     entry .negatable   `-v`: todos los elementos negados
++         Necesita `value is Negatable to result`; `-Vector(1, -2, 3)` es `Vector(-1, 2, -3)`.
++     entry .scalarMultiplicable   `v*scalar`: todos los elementos multiplicados por el escalar
++         Necesita `value is Multiplicable by scalar to result`: `Vector(1, 2, 3)*2` es
++         `Vector(2, 4, 6)`, y `Vector(1.0*Metre, 2.0*Metre)*2.0` un vector de metros. El escalar
++         va solo a la derecha; `2*v` no está definido. Un operando `Vector` llega en su lugar a
++         `.vectorMultiplicable`, ya que ningún elemento se multiplica por un vector.
++     entry .scalarDivisible   `v/scalar`: todos los elementos divididos por el escalar
++         Necesita `value is Divisible by scalar to result`: `Vector(2.0, 4.0)/2.0` es
++         `Vector(1.0, 2.0)`, y `Vector(7, 8, 9)/2` es `Vector(3, 4, 4)`, división entera, tal
++         como se dividen los elementos.
++     entry .vectorMultiplicable   `v*w` entre dos vectores del mismo tamaño: los elementos multiplicados por pares
++         El producto de Hadamard, que necesita `value is Multiplicable by value2 to result`:
++         `Vector(1, 2, 3)*Vector(4, 5, 6)` es `Vector(4, 10, 18)`, y dos vectores de metros se
++         multiplican en un vector de metros cuadrados. El producto escalar es `dot`. Los tamaños
++         distintos no compilan.
++     entry .vectorDivisible   `v/w` entre dos vectores del mismo tamaño: los elementos divididos por pares
++         `Vector(8, 9)/Vector(2, 3)` es `Vector(4, 3)`.
++     entry .inspectable   la representación de depuración, en una sola línea: `⟨1 ∣ 2 ∣ 3⟩`
++         Disponible para cualquier vector cuyo elemento sea `Inspectable`; el separador `∣` es
++         el que usa `Matrix` entre los elementos de una fila.
++     entry .showable   representa un vector como una columna entre corchetes altos
++         `Vector(1, 3, 6).show` son tres líneas, `⎛ 1 ⎞`, `⎜ 3 ⎟`, `⎝ 6 ⎠`, con los elementos
++         alineados a la derecha según el más ancho; un vector de dos no tiene línea central, y
++         uno de un solo componente es `( 42 )`. Necesita que el elemento sea `Showable`, el
++         tamaño como `ValueOf`, y un `Text is Measurable` en el ámbito (`import
++         textMetrics.uniformMetric`) para medir la anchura de los elementos.
++     entry #data   los componentes, como un `Array[element]^{}` congelado de la propia clase del elemento
++   entry .element   `v.element(i)`: un componente, con índices desde cero
++       Inline, así que una lectura de un `Vector[Double, n]` es un `daload`; no se exige
++       ninguna prueba de límites, y un índice fuera de rango lanza una excepción.
++   entry .apply   `v(i)`: un componente, con índices desde cero; lo mismo que `element`
++   entry .list   los componentes como `List[element]`
++   entry .iarray   los componentes como el `Array[element]^{}` congelado en que se almacenan
++   entry .size   el número de componentes, como valor, a partir del tamaño en el tipo
++   entry .norm   la longitud euclídea: la raíz cuadrada de la suma de los cuadrados de los componentes
++       Inline, necesita `Multiplicable`, `Addable` y `Rootable[2]` del elemento, de vuelta al
++       elemento: `Vector(3.0, 4.0).norm` es 5.0, y un vector de metros tiene una norma en
++       metros.
++   entry .map   `v.map(f)`: un vector del mismo tamaño con `f` aplicada a cada componente
++       La función es inline y se aplica en el cuerpo del bucle en lugar de a través de una
++       `Function1`, así que un elemento primitivo no sufre boxing por el camino; puede cambiar
++       el tipo de elemento (`Vector(1, 2, 3).map(_.toString)`), dado un `ClassTag` para el
++       resultado. `Vector(1.0*Metre, 2.0*Metre).map(_*Metre)` es un vector de metros
++       cuadrados.
++   entry .unitary   el vector unitario en la misma dirección, un `Vector[Double, size]`
++       Cada componente dividido por la `norm`: `Vector(3.0, 4.0).unitary` es
++       `Vector(0.6, 0.8)`.
++   entry .dot   `v.dot(w)`: el producto escalar de dos vectores del mismo tamaño
++       La suma de los productos por pares, en el tipo que da el `Multiplicable` del elemento:
++       `Vector(1, 2, 3).dot(Vector(4, 3, 7))` es 31, y `Vector(5*Inch, 2*Inch,
++       Inch).dot(Vector(2*Inch, 3*Inch, 6*Inch))` son 22 pulgadas cuadradas. Inline, con la
++       aritmética de los elementos resuelta en el punto de llamada. Los tamaños distintos no
++       compilan.
++   entry .cross   `v.cross(w)`: el producto vectorial, en tres o siete dimensiones
++       Dos sobrecargas, sobre `Vector[left, 3]` y `Vector[left, 7]` —las únicas dimensiones en
++       que existe un producto vectorial—, cada una con necesidad de `Multiplicable`, `Addable`
++       y `Subtractable` del elemento: `Vector(1, 2, 3).cross(Vector(4, 3, 7))` es
++       `Vector(5, 5, -5)`, anticonmutativo y ortogonal a ambos operandos. El producto en siete
++       dimensiones sigue las ternas de índices del plano de Fano. Cualquier otro tamaño no
++       compila.

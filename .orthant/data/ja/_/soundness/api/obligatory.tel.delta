@@ -1,0 +1,1214 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 181208bb8e1b61921cc7c7acca994648
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 070d55ffe2c201b41054fa1f33ee109d
++ info   型付きのリモートプロシージャコール：JSON-RPC、gRPC、サーバー送信イベント、メッセージのフレーミング
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1c7c2bc9a8ff39ed0e5eff2b640df3bf
++     _Obligatory_ は、リモートプロシージャコールを両端で型付けする。
++     RPC のインターフェースは、メソッドに `@rpc` アノテーションを付けた普通のトレイトである。
++     その一つの定義から、マクロが、受信したリクエストを実装へ振り分ける**サーバー側のディスパッチャー**と、各メソッド呼び出しをワイヤ上のメッセージに変換する**クライアントのスタブ**を導出するので、両側がメソッドの名前、パラメーター、結果について食い違うことはない。
++     同じ形が二つのプロトコルに使われる。ペイロードが `Json` である JSON-RPC 2.0 と、ペイロードが Protocol Buffers のメッセージである HTTP/2 上の gRPC である。
+
+@ 0 6 0 1dbb1059ee1924390430dbe049aa6195
++     プロトコルの下には、メッセージのストリームを扱う配管がある。
++     **フレーミング**は、型として名前を付けた規約 — `LengthPrefix`、`ContentLength`、`CrLf`、`Linefeed`、`CarriageReturn`、`Sse`、`Grpc.Framing` — によって、`frames` 拡張メソッドと型クラス `Framable` を通じて、テキストやバイトのストリームをメッセージに切り分ける。
++     `Sse` の値は一つのサーバー送信イベントであり、`Sse.Source` は `text/event-stream` のレスポンスのために、それらを再生可能なバッファーに保持する。
+
+% 2 1 0 015612327cb29c291284fdb7a970c12f
+
+% 3 1 0 132559872a7f5e5818fb6dbe8a86c7a5
+
+% 4 1 0 0d7151a43e6281391a48047847451b79
+
+% 2 1 0 1ffa06cbaa856763054f085afa384185
+
+% 3 1 0 0b661f856c5a2b921b0fb8008f20e69a
+
+% 5 1 0 132d8bcdba6627c8181a0c0895995e55
+
+% 6 1 0 0c61ea64dc5a77780df5e27b1cfc0cfe
+
+% 0 1 0 013ebe4898310f3819572e0bfaa4ae3a
+
+% 0 1 0 1213fec88dccd3e71082ac419383b354
+
+% 0 1 0 04b8d46e97492f07036d83eeac7c021a
+
+% 0 1 0 00592949af9e49521361c8a0d9785094
+
+% 0 1 0 04310b8972df79280e04a912ec3d5cb5
+
+% 1 1 0 1a24ee2fc89b8cb5131cb1c1dbaf58e9
+
+@ 0 11 0 083e8eb353b8b76f02c636f2ef1e373f
++     結果の型が `Unit` であるメソッドは*通知*である。クライアントはそれを ID なしで送り、レスポンスを待たず、ディスパッチャーはそれに `Unset` で答える。
++     それ以外のメソッドはすべてリクエストであり、ID によって対応付けられる。
++     呼び出し側では、`remote[Echo](url)` が、各呼び出しを JSON-RPC として HTTP の URL へ POST するクライアントを作り出す。`JsonRpc` のインスタンスの `client`/`proxy` は、`Json` メッセージの双方向のチャンネル上にクライアントを作り出し、言語サーバー（`exegesis`）、エージェント（`espionage`）、MCP のセッション（`synesthesia`）はこれによって相手と通信する。
++     gRPC では、`Grpc.remote[Echo](channel, t"echo.Echo")` が、単一の持続的な HTTP/2 接続である `Grpc.Channel` 上にスタブを導出する。値を返すメソッドは単項呼び出しを行い、`Chain` を返すメソッドはサーバーストリーミングの呼び出しを行い、`Ok` でないステータスは正規の `Grpc.Status` を持つ `Grpc.Error` として届く。
+
+@ 0 6 0 0ec0dd0843a4716b01302a22dfc635ed
++     MCP は JSON-RPC の側の上に構築される。
++     `synesthesia` の `Mcp.Server` は、`Origin` がクライアントのインターフェースである `JsonRpc` であり、すべてのリクエストは `JsonRpc.serve` によって振り分けられ、誤りには `JsonRpc.failure` で答え、MCP のストリーミング可能な HTTP トランスポートのサーバーからクライアントへの側は、`Sse` イベントの `JsonRpc#stream` であり、`Sse.servable` によって `text/event-stream` として提供される。
++     Language Server Protocol は `ContentLength` でフレーミングされた標準ストリーム上で同じことを行い、Agent Client Protocol は `Linefeed` でフレーミングされた標準ストリーム上で同じことを行う。
+
+@ 0 1 0 1c2315358367c5db196b18bacc02b83e
++     このライブラリは三つのソースセットに分かれている。
+
+@ 0 8 0 14a2b4dbc3eef69411310374de5c9b06
++     - `obligatory.core` — フレーミングの型クラス `Framable`、`frames` 拡張メソッド、フレーマー `CarriageReturn`、`Linefeed`、`CrLf`、`ContentLength`、`LengthPrefix`、`Framing.Error`、`@rpc` と `@bare` のアノテーション、`Rpc.Error`。JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     - `obligatory.json` — `JsonRpc`、`remote`、`Sse`。`telekinesis` と `jacinta.http` を通じて HTTP に到達するので、JVM のみ。
++     - `obligatory.grpc` — `telekinesis` の HTTP/2 クライアントと `locomotion` の Protocol Buffers の上にある `Grpc` と `GrpcSessional`。JVM のみ。
+
+@ 0 6 0 158d27a12e3f0cd517ad59a949429d74
++     すべてが `soundness` のアンブレラにエクスポートされる。
++     このライブラリには選択パッケージがない。
++     すべての given はその主題のコンパニオン（`Sse.framable`、`LengthPrefix.framable`、`Grpc.Endpoint.sessional`、…）にあり、インポートなしに暗黙のスコープを通じて見つかる。
++     サンプルに必要なのは、フレーマーや呼び出しが発生させるエラーのための `Tactic` — 少なくとも `import strategies.throwUnsafely` — と、接続を使うものについては `Monitor` と `Probate` を与える `supervise` のスコープである。
+
+% 0 1 0 0e54dc62de0993661f606bd62a10cbd2
+
+% 0 1 0 1365aa8a54b97c05055e92fedc1cdab9
+
+% 0 1 0 167feb5cd6bc483d136efb95ec0715b4
+
+% 0 1 0 0b41cae943974c7b189767beb31972cd
+
+% 0 1 0 1881221f0f435dab1e42f49ff260cb0d
+
+% 0 1 0 19a86f2751a907bc184a7c7689d338f0
+
+@ 0 1 0 1b963bdf41cc22e9165d8ce4783486b4
++ entry .Framable   名前の付いた規約によってストリームをフレームに切り分ける型クラス
+
+% 1 1 0 108c33e78f4fad9905d4780a6a3eed91
+
+@ 0 5 0 1a0fcea759f6a28c0d3b229e8d420176
++       `element is Framable by frame` は、`element`（`Text` または `Data`）のストリームを、`frame` が指す規約 — `CrLf`、`Linefeed`、`CarriageReturn`、`ContentLength`、`LengthPrefix`、`Sse`、`Grpc.Framing` — によってメッセージに分割できるという証拠である。
++       それぞれはシールされた、値を持たない型であり、そのコンパニオンが given を保持する。
++       `Iterator[element]^` または `Chain[element]` に対する `frames` 拡張メソッドがそれを適用する：`chain.frames[Linefeed]`。
+
+@ 0 3 0 03bf9bfb280592d31e31e506dfd119c0
++       フレーマーは入力上の `Cursor` に自身の位置を保持するので、チャンクの境界はフレーマーにとって何の意味も持たない。
++       三つのチャンクにまたがるメッセージも、一つのチャンクにある二つのメッセージも、終端のない最後のメッセージも、すべて丸ごと届けられる。
+
+% 2 1 0 18a460d5bae971f003a10610f0dece3d
+
+% 3 1 0 0820af156097af2b068e28e23e66ac20
+
+% 2 1 0 1b4d93f3905c53771b93a5eefdbb2163
+
+% 1 1 0 0593fb8b9162f077138f4bf83319ba50
+
+@ 0 5 0 1b6d56e968886d41186466d5ff82a49e
++       フレーミングされたイテレーターは入力から遅延して取り出すので入力を捕捉し、フレーマーも捕捉する。`Tactic[Framing.Error]` から構築されたフレーマーは、最初にではなく反復の間にそれを通じてエラーを発生させるからである。
++       したがって、戦術を必要とするフレーマー（`CrLf`、`ContentLength`、`LengthPrefix`、`Grpc.Framing`）は、`frames` を呼び出す場所のスコープに戦術を必要とする。
++       `CarriageReturn`、`Linefeed`、`Sse` は失敗しえないので、何も必要としない。
+
+@ 0 2 0 13e4947cf90026c21853b5c8f7fc5fa9
++       ユーザー定義のフレーマーは、`Self` と `Operand` を設定し `frames` を実装した `new Framable` であり、`Framable.frames` と `Cursor` の上に書くのが最も簡単である。
+
+% 1 1 0 1161d15563a7b08118800f80dfa65034
+
+% 0 1 0 1dd6c0c49ffa68ea11bebb0c57045d51
+
+@ 0 10 0 151d1f80efa11fae01dd894e8a89f755
++   entry .frames   一つのフレーム、または終わりでは `Unset` を読むサンクを、イテレーターとして包む
++       `Framable.frames[data](frame)` は、名前渡しの式 — 次のフレームを読んで返すか、入力が尽きたら `Unset` を返す — を `murmuration.Iterator[data]` に変換し、本来ならすべてのフレーマーが重複して持つ一つ先読みのバッファリングを隠す。
++       サンクは通常、呼び出し元の `Cursor` を閉じ込めるので、イテレーターはサンクを捕捉する（`^{frame, caps.any}`）。
++       このライブラリのすべてのフレーマーと `Sse.framable` は、こうして書かれている。
++   entry #frames   入力ストリームのフレーミングされたメッセージを、遅延したワンショットのイテレーターとして
++       `Iterator[Self]^` を受け取り、そのフレームの `Iterator[Self]^{input, this}` を返す。
++       直接ではなく、`frames` 拡張メソッドを通じて呼び出す。
+
+@ 0 7 0 087844b8758ab4c119b2a67480d8df69
++ entry .frames   `stream.frames[Convention]`：フレーミングの規約による、ストリームのメッセージ
++     `Iterator[element]^` と `Chain[element]` に対する拡張メソッドであり、それぞれ、スコープ内の `element is Framable by frame` の given が区切るメッセージのワンショットの `Iterator[element]` を返す。
++     型引数が規約を指す：`frames[LengthPrefix]`、`frames[ContentLength]`、`frames[CrLf]`、`frames[Linefeed]`、`frames[CarriageReturn]`、`frames[Sse]`、`frames[Grpc.Framing]`。
++     レシーバは消費される。フレーミングされたイテレーターは、その入力の唯一の読み手である。
+
+% 2 1 0 06b70005d6216bfc1b685ebb9b424b34
+
+% 3 1 0 0849c0ec96291db2061795a3552817db
+
+% 4 1 0 183e51cc584faca21eac01113b59b4e5
+
+% 0 1 0 01b5f6639dba21fe1f20e49c40a99bbb
+
+% 0 1 0 15eb285d9fca2ec10ee6c080ec8d094d
+
+% 0 1 0 1e58a159388b44031efbb8368512cd05
+
+% 0 1 0 023cb931f96fda95141d2e790899c1a7
+
+% 0 1 0 065d0b9a3e166d0519488bfec95b27fe
+
+% 0 1 0 1cc021532b1318201fed00172f55f919
+
+% 0 1 0 0db1aa190f7b505008c9f260bf65a481
+
+% 1 1 0 01a49e12abb8679d1156b80bee87d009
+
+@ 0 5 0 1dd966f64245b1100d649aa395b5f562
++     証拠はキャプチャ多相である。
++     `Framing.Error` を発生させるフレーマー（`CrLf`、`ContentLength`、`LengthPrefix`）は呼び出し箇所のスコープに `Tactic[Framing.Error]` を必要とし、イテレーターはそれを保持して、切り詰められたフレームや不正なフレームについて、`frames` を呼び出したときではなく読むときにエラーを発生させる。
++     `Chain` のレシーバは、ストリームの `.chain` が届く形である。`stream.chain.frames[Linefeed]` はサブプロセスの出力を一行ずつ読む。
+
+@ 0 1 0 1babd0165c573a9814f89680cbcee84f
++ entry .Framing   ストリーム内のメッセージを区切る行為と、それが失敗したときのエラー
+
+% 1 1 0 09be15ece9c73f1e0208635e611a4398
+
+@ 0 4 0 1e300a53ca06d9c30ec1622bdd04e3ff
++       `Framing` は `Framing.Error` の置き場所であり、これはすべてのフレーマーが、フレームを解けないストリームに対して発生させるエラーである。
++       フレームではなく行為にちなんで名付けられており — obligatory には `Frame` 型がない — gRPC のメッセージの規約である `Grpc.Framing` とは別のものである。後者は代わりに `Grpc.Error` を発生させる。
+
+% 1 1 0 1fe94366cf0a3bd90279c3da40d3cf09
+
+@ 0 1 0 139a09562dc763c50f78024b60a2ef88
++   entry .Error   ストリームをフレームに分割できないときに発生する：エラー `↯/s.112.2`
+
+% 1 1 0 1c36b3769c5a6a2c1208ab9797e3629e
+
+@ 0 10 0 1ceb0c9c4da34359118163e0dac34ee2
++         エラー `↯/s.112.2`：_could not deframe the message because `reason`_。
++         フレーミングされたイテレーターを読むときに、フレーマーの given が捕捉した `Tactic[Framing.Error]` を通じて発生する。
++         `reason` は何が誤っていたかを示す。
++         `ShortRead` は入力がフレームの途中で終わったとき（`LengthPrefix` でヘッダーが約束したより少ないバイトしかないとき、`ContentLength` でヘッダーまたは本文が切り詰められているとき）、`MissingLineFeed` は `CrLf` がラインフィードの続かないキャリッジリターンに出会ったとき、`MalformedLength` は `Content-Length` ヘッダーの値が存在しないか数値でなかったとき、`UnknownHeader` はプロトコルが拒否するヘッダーのために予約されている（`ContentLength` は現在、これを発生させるのではなく、認識できないヘッダーを読み飛ばす）。
++     entry .Reason   フレームを読めなかった理由
++         番号はエラーの詳細番号である。
+
+% 3 1 0 1c3c8fa4c76c609a0d18d6510c3500ea
+
+@ 4 4 0 09cbb2932ef5fca603e49f5b8b313bf0
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
+
+% 0 1 0 11796bcc7d5d8c520121e216d8978bc2
+
+% 0 1 0 034859d340cb4ade170b3284c11ed730
+
+% 0 1 0 15d463aa4ad64116093fbc505de801ef
+
+% 0 1 0 1fd7fadf16bedcc9053ea7055f1446fb
+
+% 1 1 0 148107bd6dcc8c9a0112a186534afb90
+
+@ 0 2 0 158be23c86b4a36e1bb2d1e663321064
++     entry .communicable   各 `Framing.Error.Reason` をそのメッセージとして描画する
++     entry #reason   フレームを読めなかった理由
+
+@ 0 1 0 0bbf2d9308ed84b31e5240cf80c9d93d
++ entry .CarriageReturn   単独のキャリッジリターンで終わる行のフレーミングの規約
+
+% 1 1 0 078ec04105f20d4b0b1fd469996c8dfa
+
+@ 0 4 0 1c7f40b4b208acef07bcf1a7ebf9e186
++       `frames[CarriageReturn]` が `Text` のストリームに適用する規約を名付けるシールされた型である。
++       各フレームは `\r` の前のテキストであり、`\r` は消費される。終端のない最後の断片はそのまま返され、空の入力は何も返さない。
++       この規約は失敗しえないので、戦術は必要ない。
+
+% 2 1 0 0298ff36abb9ba081479d017ca09eaaa
+
+% 3 1 0 0777e5f6bc4a4abd1157544c184d1034
+
+% 0 1 0 00631730011a71e0113468695aabb6fc
+
+% 1 1 0 066ccff8352fe2f805ef26ec4424a6e8
+
+@ 0 1 0 02fe9d6a8f861c081ed66768bb581b78
++   entry .framable   暗黙のスコープにある `Text is Framable by CarriageReturn` の given
+
+@ 0 1 0 04012cb8a6f8a69f0477655b24bccb8b
++ entry .Linefeed   ラインフィードで終わる行のフレーミングの規約。テキストとバイトの両方に使える
+
+% 1 1 0 0ae959a21ef497bc0a629612a128a40a
+
+@ 0 7 0 09600fcc02aa7572135feb3863a0418b
++       `frames[Linefeed]` が適用する規約を名付けるシールされた型である。
++       各フレームは `\n` の前の内容であり、`\n` は消費される。終端のない最後の断片はそのまま返され、空の行は空のフレームとして保持される。
++       失敗しえないので、戦術は必要ない。
++       二つの given がこれに使われる。`Text` のストリームには `.framable`、`Data` のストリームには `.framableData` である。後者はテキストのデコードの前に生のバイトで分割するので、マルチバイトの UTF-8 の内容は損なわれずに通過する。これは、Agent Client Protocol が使う、バイナリーのストリーム上の改行区切りの JSON の形である。
+
+% 2 1 0 1ddb909287e34a24068906f4b2de7907
+
+% 3 1 0 03286c1085f3f5830ef47661d026cfd6
+
+% 1 1 0 1b393a49198909460836d728f5136ee6
+
+% 2 1 0 10176be1a29bef310dd4ade131ced455
+
+% 0 1 0 1dcb0ec8498407de1ad9c1c0359b3e82
+
+% 1 1 0 14f0f7ab1953ffe71084f3cf54855173
+
+@ 0 8 0 0f0790dcc5dec5710c16ed0b91f15530
++       バイトのフレーマーは、サブプロセスの出力のような*生きた*ストリームを読む。
++       終端をカーソルの補充しない `advance()` で消費するので、チャンクの終わりにちょうど一致して終わる行は、その先のバイトを待ってブロックすることなく、すぐに届けられる。
++       補充のコストは次の行の先頭で払われる。
++   entry .framable   暗黙のスコープにある `Text is Framable by Linefeed` の given
++   entry .framableData   `Data is Framable by Linefeed` の given：生の `\n` のバイトでバイトを分割する
++       暗黙のスコープにある。
++       デコードの前にバイト 10 で分割するので、UTF-8 の内容が文字の途中で切られることはない。終端のない最後の断片はそのまま返される。
+
+@ 0 1 0 17fe30b1c214248c1b6ff1749950291f
++ entry .CrLf   キャリッジリターンとラインフィードで終わる行のフレーミングの規約
+
+% 1 1 0 145b73a8f2d31a420f13a01e7116401d
+
+@ 0 5 0 1225fd68cb998476114a18d3716f9252
++       `frames[CrLf]` が `Text` のストリームに適用する規約を名付けるシールされた型である。
++       各フレームは `\r\n` の前のテキストであり、その両方が消費される。終端のない最後の断片はそのまま返される。
++       `\n` の続かない `\r` はプロトコル違反であり、`Framing.Error(MissingLineFeed)` として発生するので、この given はスコープ内に `Tactic[Framing.Error]` を必要とし、フレーミングされたイテレーターがそれを保持する。
+
+% 2 1 0 13bb1301c9ebd10e0e3c6a1a1050cb66
+
+% 3 1 0 0cff337c002748960aabfaefdaa297b8
+
+% 4 1 0 14e7256774cea5be1d1f68c45dacc42f
+
+% 0 1 0 069ea1b5866efff318cc4c0befbdfe54
+
+% 1 1 0 075c88c381e2292b177e401f68c30cca
+
+@ 0 1 0 143c8c0972368e7c17a0d7ea444cad25
++   entry .framable   `Text is Framable by CrLf` の given。`Tactic[Framing.Error]` を必要とする
+
+@ 0 1 0 1523faff4a6928d50572924633f33720
++ entry .ContentLength   各本文の前に `Content-Length` ヘッダーのブロックを置くフレーミングの規約
+
+% 1 1 0 0e3564d90561628213cb367d3305221f
+
+@ 0 9 0 07743c53ea38d30f0de59a4de2dd5ed4
++       `frames[ContentLength]` が `Data` のストリームに適用する規約を名付けるシールされた型である。
++       Language Server Protocol の基本プロトコルであり、それが由来する HTTP 風のフレーミングである。
++       各メッセージは、それぞれ `\r\n` で終わる `Name: value` のヘッダーのブロック、空の `\r\n`、そしてちょうど `Content-Length` バイトの本文からなり、本文は `Data` として返される。
++       仕様が定めるとおり、数えるのは*バイト*である。そのためフレーマーは `Data` 上で動作し、テキストのデコードを呼び出し元に任せる。文字を数えることがバイトを数えることと一致するのは ASCII の場合だけであり、マルチバイトの UTF-8 の本文があるとストリームが壊れる。
++       ヘッダー名は大文字と小文字を区別せずに照合され、`Content-Length` 以外のヘッダー（例えば `Content-Type`）は読み飛ばされる。
+
+% 2 1 0 12d0a87f9f42272a1583d40fa735ae87
+
+% 3 1 0 1fa412d765958ac61805e5e43688afce
+
+% 4 1 0 13c90b87718f2d0c180b383b5c3384a7
+
+% 1 1 0 1f0d33ac9029de9b05c44d6992611c68
+
+% 0 1 0 07c9c22a5b80d5610c7ad5c18f49bcd9
+
+% 0 1 0 02b8a43376fc7ecf1033350b03ec4b74
+
+% 1 1 0 1a80d556dd2fa8b5188b88335729d612
+
+@ 0 4 0 176c00c3065130ed1bde4285f93eea5c
++       数値の `Content-Length` を持たないヘッダーのブロックは `Framing.Error(MalformedLength)` を発生させ、ヘッダーや本文の途中で終わる入力は `Framing.Error(ShortRead)` を発生させるので、この given は `Tactic[Framing.Error]` を必要とし、フレーミングされたイテレーターがそれを保持する。
++   entry .framable   `Data is Framable by ContentLength` の given。`Tactic[Framing.Error]` を必要とする
+
+@ 0 1 0 0a7109e13fd0afc807add075fbc7be84
++ entry .LengthPrefix   各レコードの前に 4 バイトのビッグエンディアンの長さを置くフレーミングの規約
+
+% 1 1 0 11c65d5cd27b3fc40974977d13b338ba
+
+@ 0 4 0 0a940ac6b9664a741585c08cf9ed346c
++       `frames[LengthPrefix]` が `Data` のストリームに適用する規約を名付けるシールされた型である。
++       各レコードは 4 バイトのビッグエンディアンの長さと、その数のバイトからなり、`Data` として返される。
++       `.encode` は書き込みの側であり、ワイヤのために一つのレコードに接頭辞を付けるので、フレーミングされたストリームを読むだけでなく生成することもできる。BinTEL のメッセージを運ぶ `Duplex` はこのようにフレーミングされる。
+
+% 2 1 0 0aff3c7c5f6f01bf0e48b3b1e5726bcd
+
+% 3 1 0 0c986d8620d0a681122a52d0e5e42a6f
+
+% 4 1 0 1d4791f9b022020e18c3ab1be9c1c971
+
+% 0 1 0 0a0df8633f29cc450b2ccc10b306f5c1
+
+% 0 1 0 0696122e1252c0ac074a8c983264a0da
+
+% 1 1 0 171d55f7c5cc4b0701b91bfcf6509e05
+
+@ 0 9 0 10d338907f73322e10331fc1971abc6b
++       ヘッダーやレコードの途中で終わる入力は `Framing.Error(ShortRead)` を発生させるので、この given は `Tactic[Framing.Error]` を必要とし、フレーミングされたイテレーターがそれを保持する。
++       長さは、各バイトをシフトする前にマスクして読むので、`Data` のバイトが符号付きであっても、128 バイト以上のレコードや 32767 より長いレコードは正しくフレーミングされる。
++   entry .encode   一つのレコードに、その長さを 4 バイトのビッグエンディアンとして接頭辞として付ける
++       `LengthPrefix.encode(record)` は、4 バイトのヘッダーにレコードが続く `Data` である。
++       `.framable` の逆であり、長さの接頭辞付きのストリームの書き手が各レコードについて呼び出すものである。
++   entry .framable   `Data is Framable by LengthPrefix` の given。`Tactic[Framing.Error]` を必要とする
+
+@ 0 1 0 05a129c020ddf4061d986bf87d83207c
++ entry .Associable   セッションの値を、それが管理するレスポンスと組にする型クラス
+
+% 1 1 0 04b614026f4b238414125379cf0eced0
+
+@ 0 7 0 096888983312d0fb13804c53e878f325
++       `Self is Associable by Operand to Target` である。
++       `association(operand)` はオペランドからセッションの値を作り、`associate(session)(response)` はそのセッションを `Target` 型のレスポンスに付ける。
++       各レスポンスに、それが属するセッションの印を付けなければならないトランスポートのためのフックである（MCP がレスポンスにセッション ID のヘッダーで印を付けるように）。
++       このライブラリは型クラスを宣言するだけで、そのインスタンスは持たない。
++   entry #association   `Operand` から `Self` のセッションの値を作る
++   entry #associate   `Target` のレスポンスにセッションを付け、印の付いたレスポンスを返す
+
+@ 0 1 0 1fcc2ee040324fc21a2c040a184a99bf
++ entry .Rpc   リモート呼び出しの汎用的な失敗である `Rpc.Error` の置き場所
+
+% 1 1 0 01cb95cdccd2f97907487bea39354f38
+
+@ 0 7 0 10facd6a3377f8540a4eb121f2bd9f44
++       このオブジェクトは `Rpc.Error` だけを保持する。
++       プロトコル固有の失敗は `JsonRpc.Error` と `Grpc.Error` であり、それぞれワイヤ形式が報告するものを持つ。`Rpc.Error` は呼び出しが失敗したことだけを示す。
++   entry .Error   リモートプロシージャコールが失敗したときに発生する：エラー `↯/s.112.8`
++       エラー `↯/s.112.8`：_the remote procedure call failed_。
++       それ以上のことを言えないトランスポートのための、詳細のない汎用的な失敗である。`JsonRpc.Error` と `Grpc.Error` は相手のコードとメッセージを持つ。
+
+@ 0 9 0 0d716715d1ba21000fcb9695e7ba4222
++ entry .rpc   `@rpc` アノテーション：インターフェースのメソッドをリモートプロシージャとして印付ける
++     `@rpc def call(request: Ping): Pong` は、`call` がプロトコルの公開するメソッドであることを宣言する。
++     `JsonRpc.serve`、`JsonRpc#proxy`、`remote`、`Grpc.remote` は、いずれもインターフェースの `@rpc` メソッド（継承したものを含む）を読み、それ以外のメンバーはすべて無視する。
++     メソッドの名前はワイヤ上のメソッド名であり — スラッシュを含む JSON-RPC の名前はバッククォートで囲んだ識別子 `` @rpc def `prompts/list`(…) `` として書く — パラメーター名は JSON-RPC の `params` オブジェクトのメンバーであり、`Unit` の結果は、レスポンスを期待しない通知を示す。
++     gRPC の `@rpc` メソッドは、ちょうど一つのリクエストメッセージを受け取る。
++     このアノテーションは `annotations` オブジェクトで宣言され、エクスポートされる。
+
+@ 0 7 0 139481e33424ec0f045021d30a1e0b69
++ entry .bare   `@bare` アノテーション：`params` の値全体である JSON-RPC のパラメーター
++     `@rpc` メソッドの一つのパラメーターを、`params` オブジェクトの同名のフィールドからではなく、`params` の値全体からデコードされるものとして印付ける。クライアント側も同様に、それを `params` 全体として送る。
++     LSP の `*/resolve` 系のように、`params` が一つの型に直接デコードされる裸のオブジェクトであるワイヤプロトコルのためのものである。
++     メソッドが宣言できる `@bare` パラメーターは高々一つであり、二つ目は `JsonRpc#proxy` でコンパイルエラーになる。
++     このアノテーションは `annotations` オブジェクトで宣言され、エクスポートされる。
+
+@ 0 1 0 1d044ad1bde91951017d95654230d3a4
++ entry .annotations   `@rpc` と `@bare` のアノテーションの置き場所
+
+% 1 1 0 04e621464944ac1d0dbae72c8fea6bab
+
+@ 0 6 0 18b13a364ca9125313fe077762449a3a
++       二つのアノテーションがパッケージのトップレベルではなくここで宣言されるのは、大文字と小文字を区別しないファイルシステムで `rpc` が `Rpc` とクラスファイル名を共有しないようにするためである。
++       どちらも `obligatory` と `soundness` のアンブレラにエクスポートされるので、`@rpc` と `@bare` は修飾なしで書ける。
++   entry .rpc   インターフェースのメソッドをリモートプロシージャとして印付ける。`obligatory.rpc` を参照
++   entry .bare   パラメーターを JSON-RPC の `params` の値全体として印付ける。`obligatory.bare` を参照
+
+@ 0 1 0 19faf76ab9d192e21602b758de2cc4ec
++ entry .JsonRpc   JSON-RPC 2.0：`@rpc` インターフェースから導出される、HTTP またはチャンネル上のディスパッチャーとクライアントのスタブ
+
+% 1 1 0 10e729884a2f28f706b99cdb15d0bdf6
+
+@ 0 9 0 100547103a84178a0d45aef4ceb95b80
++       `JsonRpc` には二つの顔がある。
++       **オブジェクト**としては、JSON-RPC 2.0 の道具一式である。`.serve` は `@rpc` メソッドのインターフェースからディスパッチャーを導出し、`.Request`、`.Response`、`.Failure` は三つのメッセージの形であり、`.failure` は仕様に適合したエラーレスポンスを書き、`.call`、`.request`、`.notification`、`.outcome`、`.answer` はクライアントを構築するための対応付けの仕組みである。
++       **トレイト**としては、双方向の接続である。プロトコルのクラスは `JsonRpc` を継承し、相手のインターフェースを `Origin` として指定し、`#client`（呼び出しが接続の送信チャンネルにキューされる、そのインターフェースのスタブ）、自身のメッセージのための `#put`、トランスポートが排出するための `#outgoing` または `#stream` を得る。
+
+% 2 1 0 0db83e3c081630d708d386d561e0f4ba
+
+% 3 1 0 1ec53f5a1e6e7f15180b7fe982065482
+
+@ 0 1 0 19f00fc56b7e1d6a101a839d14860dd9
++         label リモートメソッドのインターフェース
+
+% 1 1 0 13690aa4d70db9e10c5f6a31ea8f2921
+
+% 2 1 0 1b1589ee76c0abea001652545b8dc6b7
+
+% 3 1 0 0675ef31a7918d1e1b60971d251f4a81
+
+% 5 1 0 0c060c4a10f41ede0a3b241202f7814f
+
+% 6 1 0 1546347dc8c2565516ac4f788c8b3b8a
+
+% 8 1 0 1ea87b2e5f464f780d5e138bf3418197
+
+% 9 1 0 0620400443b9f1740462d8debe2b0e0a
+
+% 10 1 0 00650472f2900278017638622f5adf8b
+
+% 1 1 0 0bb48eb5e71a55341b767ae7f3520dbc
+
+@ 0 1 0 055d6e13f5e9df1a07dbb596f81b1737
++         label 実装がディスパッチャーになる
+
+% 1 1 0 138be5bc30dd9d500434de6f573f7d7f
+
+% 2 1 0 1681facef18cf0180b2860514f592259
+
+% 3 1 0 1a58f390ee70c42f1bedeb19f853e252
+
+% 5 1 0 1bf366614e795f590bd14bbf74bb6806
+
+% 6 1 0 05ca2187a28cf6ba0d678a83242c336b
+
+% 8 1 0 1e44939d967c2f151e360de9585af0c1
+
+% 9 1 0 0116c057fd18963412c339a23c41f359
+
+% 10 1 0 10a6d7284ee4386a191080caa4e2d409
+
+% 12 1 0 1b7882cb29ef584a1e7e0da6eacf6791
+
+% 13 1 0 18ec0852909802dc08b508626035c163
+
+% 14 1 0 0db0248dd44505961fcf0e9deb21378f
+
+% 16 1 0 0c242aa1a146b26b0248d7c1ae3c36cc
+
+% 1 1 0 0e70b1634f9ae4d41967b9d534d1eb56
+
+@ 0 1 0 13358fb0d50226431007c0fb017ed1a5
++         label リクエストが振り分けられ、答えられる
+
+% 1 1 0 08ba1c16f02716f612d916a72e7b97f1
+
+% 2 1 0 074c372185377a6e15ee9629b5da19af
+
+% 3 1 0 0329e129353c85f117785c496252b812
+
+% 5 1 0 132b2f53e6429db7077938ec6b2cf535
+
+% 6 1 0 1020a08e5c174dda15d988de9f92e6c4
+
+% 8 1 0 072edcfa8dfd56440d895fc60b1255b8
+
+% 9 1 0 0555ae8e481926b2007e2b67d05e9b36
+
+% 10 1 0 17c24bc6b92ac47418d430d00355e8dd
+
+% 12 1 0 00655c9947ea301a1c9fcaa52c205277
+
+% 13 1 0 064b36dce536da9f1076b4e2f67af13c
+
+% 14 1 0 0e33462a49921d4c01b8512269c6017a
+
+% 16 1 0 06c85035b36c3f2518ff2ce16b927483
+
+% 18 1 0 040ed28eff949d7a00a284bfa126bb78
+
+% 19 1 0 04ecaf2166d6cf35121424256a561f3d
+
+% 1 1 0 0dc25ea83d18f7141e8ac4e88257fa30
+
+@ 0 1 0 1744e19c8efc76a9184f52b1a43747d9
++         label 通知が振り分けられ、レスポンスを生成しない
+
+% 1 1 0 06fa76c6e0bceb9c16b1c23bdb9be86d
+
+% 2 1 0 19c817a9961e6d3715385de9c2f257f7
+
+% 3 1 0 102fdd4cce2a3bac02c84f90219ae827
+
+% 5 1 0 100497d4bbe62c921c20a1110edb48b4
+
+% 6 1 0 00483a5ba51032a410941373b6b23428
+
+% 8 1 0 1aabdd5731aa9b0e1ffe996c572b9bd1
+
+% 9 1 0 1156ae00bfd102ea170b1a2414ac2e62
+
+% 10 1 0 04cea3dda559cb4212c064afbf214849
+
+% 12 1 0 1cfb5a5bc9446bab1b28f29880f9ade8
+
+% 13 1 0 02f9078c2b7d0e2f1d5cc133e59996b6
+
+% 14 1 0 0fbb6328248dbf8c0a24006f067a7112
+
+% 16 1 0 15337713bc8046a5143593773f3abafd
+
+% 18 1 0 13ffc29b9e0510c50bd91a792915f796
+
+% 19 1 0 13a5fbb607069965184f999db45bdcc9
+
+% 0 1 0 0ffaa65478b8c361061cd4b3752949bc
+
+% 0 1 0 0ecc3830f3a0f2c90fa7c9eca7845c6c
+
+% 1 1 0 1eb86a172aaf360b126cbe5d26fccc80
+
+% 2 1 0 09dbeed81ab7a3091f2a8f87847a3e1a
+
+@ 0 10 0 116ab51a463d8ae51535f608b215d9da
++       メソッドのパラメーターは、リクエストの `params` オブジェクトのメンバーであり、名前で対応し、それぞれその型の `Json.Decodable` でデコードされる。`@bare` パラメーターは、代わりに `params` の値全体である。
++       結果はその型の `Encodable in Json` でエンコードされ、リクエストの ID を返す `Response` に包まれる。
++       `Unit` を返すメソッドは通知であり、`Unset` で答えられる。
++       インターフェースが宣言していないメソッドのリクエストは `JsonRpc.Error(UnknownMethod)` を投げ、パラメーターがデコードできないリクエストは `Json.Error` を投げる。どちらも、提供ループが捕らえて `.failure`（仕様の用語では `-32601` と `-32602`）で答えるためのものである。
++       `method` メンバーを持たないメッセージはレスポンスであり、ディスパッチャーはそれを `.answer` に回して `Unset` を返すので、一つのディスパッチャーで双方向のストリームを読める。
+
+@ 0 5 0 109459591e7dc8e91fae36a927744ca9
++       ディスパッチャーは実装だけを閉じ込め、永続的なケイパビリティだけを保持するので、タスクから呼び出せる。
++       `.serve` の展開はそれぞれ、すべてのメソッドについてスキーマを持つコーデックをインライン化するので、非常に大きなインターフェース — Language Server Protocol のもの — は JVM のクラスごとのコンスタントプールを超えることがある。その場合は複数のトレイトに分割し、トレイトごとにディスパッチャーを導出し、`.methods` で振り分ける。
+
+@ 0 9 0 0d9c29af31ab5f90124041b915c47456
++       **HTTP 上で。**
++       `remote[Echo](url)` は、HTTP のルートの背後に置かれたディスパッチャーのためのクライアントである。各呼び出しは `Request` を URL へ POST し、`Response` をデコードする。
++       **チャンネル上で。**
++       長く続く双方向の接続 — `ContentLength` や `Linefeed` でフレーミングされた標準ストリーム、ソケット、MCP のセッション — では、クラスが `JsonRpc` トレイトを継承し、トランスポートのライターが `#outgoing` を排出し、リーダーが受信した各ドキュメントをディスパッチャーに渡す。
++       `synesthesia` の `Mcp.Server` はそのようなクラスであり、`Origin = Mcp.Client` である。その `serve` は POST されたすべてのリクエストを `.serve` を通じて振り分け、誤りには `.failure` で答え、`Sse` イベントの `#stream` を `text/event-stream` として送り返す。
+
+% 0 1 0 1aaa155934d22d05151c5a8122692d3d
+
+% 1 1 0 0ac2c0e0c878a05d061ae7ccab3997df
+
+% 0 1 0 110d2606f44d246f1e9e78d92f9d1828
+
+% 0 1 0 091bece190e186611d4880daa5fe867a
+
+@ 0 6 0 1f2fd76ef3a6aab10cf148cd684f06c2
++   entry .serve   インターフェースの実装から、ディスパッチャー `Json => Optional[Json]` を導出する
++       `JsonRpc.serve[Interface](implementation)` はマクロであり、`Interface` の `@rpc` メソッドを読み、リクエストのドキュメントからそのレスポンスのドキュメントへの関数を返す。通知や、`.answer` に回されたレスポンスに対しては `Unset` を返す。
++       結果の型は `Json ->{caps.any.only[Durable]} Optional[Json]` である。ディスパッチャーは永続的なケイパビリティと実装だけを保持するので、タスクが保持できる。
+
+@ 0 13 0 1d38c97fd74e9f541f2d4f91d6e6e4d1
++       このマクロは、展開箇所で、すべてのメソッドの結果の型について `Encodable in Json` を必要とする。欠けている場合は、そのメソッドを名指しするコンパイルエラーになる。
++       各パラメーターの `Json.Decodable` は、生成されたディスパッチャーの中で呼び出しごとの戦術のもとで召喚されるので、欠けたデコーダーは `serve` の箇所で、コンパイラ自身の "no given instance" のメッセージによって報告される。
++       未知のメソッドは `JsonRpc.Error(UnknownMethod)` として、デコードできないパラメーターは `Json.Error` として投げられ、提供ループが捕らえて `.failure` で答える。展開箇所に戦術は必要ない。
++   entry .methods   複数のディスパッチャーにまたがって振り分けるための、インターフェースの `@rpc` メソッドの名前
++       `JsonRpc.methods[Interface]` は、継承したものを含む、インターフェースの `@rpc` メソッドの名前の `List[Text]` である。
++       一つのディスパッチャーのクラスには大きすぎるプロトコルは、サブインターフェースごとに `.serve` でディスパッチャーを導出し、各リクエストを、その `methods` がリクエストの `method` を含むディスパッチャーへ振り分ける。`exegesis` は LSP の七つのメソッドのグループについてこれを行う。
++   entry .Request   値としての、JSON-RPC のリクエストまたは通知のドキュメント
+
+% 1 1 0 119f365b3c97037d0c7d70c57fee948d
+
+@ 0 14 0 1a2f4a0468568c43140558daafc8bfd5
++         `Request(jsonrpc, method, params, id)` である。`jsonrpc` のバージョン（`"2.0"`）、`method` の名前、`params` のドキュメント、そして通知では `Unset` である `id` からなる。
++         コンパニオンの `.decodable` が `Json` からこれを読むので、`safely(json.as[JsonRpc.Request])` はリクエストとレスポンスを区別する。レスポンスは `method` メンバーを持たず、デコードに失敗する。
++         `json.as[JsonRpc.Request].id` は、失敗のときに返す ID である。
++     entry .decodable   暗黙のスコープにある `JsonRpc.Request is Json.Decodable` の given
++         純粋な、例外を投げる導出の拠り所である。スコープの戦術を通じてエラーを発生させるのではなく `Json.Error` を投げるので、召喚が戦術を捕捉することなく、`safely` の中で召喚できる。
++     entry #jsonrpc   プロトコルのバージョン、`"2.0"`
++     entry #method   メソッドの名前
++     entry #params   パラメーター：名前付きのメンバーのオブジェクト、または `@bare` パラメーターのための裸の値
++     entry #id   対応付けの ID。通知では `Unset`
++   entry .Response   値としての、成功した JSON-RPC のレスポンスのドキュメント
+
+% 1 1 0 03a01275090517001144b0fc008b54a3
+
+@ 0 8 0 0e4c8a077b33842904e2e925022f08ec
++         `Response(jsonrpc, result, id)` である。バージョン、エンコードされた `result`、そして答えるリクエストの `id` からなる。
++         `JsonRpc.serve` は振り分ける各リクエストについてこれを構築する。リクエストに自分で答えるプロトコル（例えばプロキシ）は `JsonRpc.Response("2.0", result, id).in[Json]` でこれを構築する。
++         誤りは `Response` ではなく、`JsonRpc.failure` のドキュメントである。
++     entry #jsonrpc   プロトコルのバージョン、`"2.0"`
++     entry #result   メソッドのエンコードされた結果
++     entry #id   答えるリクエストの ID
++   entry .Failure   JSON-RPC のエラーレスポンスの `error` メンバー：コード、メッセージ、オプショナルなデータ
+
+% 1 1 0 0268f6e5d42442e1049b4ba0f5199057
+
+@ 0 3 0 0be9437a7dbb3a7113159504162ce501
++         `Failure(code, message, data)` は、仕様に適合した相手が、レスポンスの `result` の代わりに `error` メンバーに置くオブジェクトである。
++         コードは仕様のものであり、プロトコルはそれ以外に独自のものを定義してもよい。
+
+% 2 1 0 09c9e296603c81631f8fd7dfc680d35f
+
+@ 0 7 0 18d5442eaa9195d4010510e9815680bc
++         column  コード
++         column  意味
++         row  -32700  JSON をパースできなかった
++         row  -32600  無効なリクエスト
++         row  -32601  未知のメソッド
++         row  -32602  無効なパラメーター
++         row  -32603  内部エラー
+
+% 1 1 0 0d90478489faa4831b5abe5d2f89db91
+
+@ 0 15 0 13affb388a77135c1e245c11675065db
++         `JsonRpc.failure` はこれを中心にレスポンスのドキュメント全体を構築する。`JsonRpc.answer` はレスポンスからこれを読み戻して `JsonRpc.receiveFailure` に渡し、そこで `JsonRpc.outcome` がコードとメッセージを持つ `JsonRpc.Error(Failed)` に変換する。
++     entry .decodable   暗黙のスコープにある `JsonRpc.Failure is Json.Decodable` の given
++         `JsonRpc.Request.decodable` と同じく、純粋な、例外を投げる導出の拠り所なので、使用箇所で `safely(json.error.as[JsonRpc.Failure])` が機能する。
++     entry #code   数値のエラーコード
++     entry #message   人が読めるエラーメッセージ
++     entry #data   相手が添付したその他の詳細、または `Unset`
++   entry .failure   失敗したリクエストの ID を返す、仕様どおりのエラーレスポンスのドキュメント
++       `JsonRpc.failure(code, message, id)` はエラーレスポンスの `Json` である。
++       誤りは `error` メンバーに `.Failure` として入り、`result` メンバーはなく、`id` は失敗したリクエストの ID を返す。リクエストがパースできずに ID が分からないために省かれた場合は、仕様が求めるとおり、明示的な JSON の `null` になる。
+
+% 2 1 0 18f43889d06676750883b59caee3e19e
+
+% 3 1 0 11e28b841bb1aa79024bb5d80384bf40
+
+% 0 1 0 10d6f7e0646a3ed70876a012b19a9826
+
+% 0 1 0 1bde9bbbacc964b11cad4d18135dab71
+
+% 1 1 0 13903722b44c908413f40a303d08c76c
+
+@ 0 46 0 1660d5f84df6337f1e47753ea2096121
++   entry .notification   `JsonRpc` のチャンネルへ、または HTTP の URL への POST で、通知を送る
++       二つのオーバーロードがあり、どちらも ID のない `Request` を送り、通知は答えを期待しないので、すでに値が与えられた `Promise[Unit]` を返す。
++       `JsonRpc.notification(target: JsonRpc, method, payload)` は、ドキュメントを対象の送信チャンネルに置く。
++       `JsonRpc.notification(url: HttpUrl, method, payload)` はそれを URL へ POST し、レスポンスを捨てる。これはスコープ内に `Monitor`、`Probate`、`Online` を必要とし、通知の配送は確認されないので、接続、HTTP、メディアタイプ、切り詰めの失敗は無視される。
++       `@rpc` のクライアントのスタブは、`Unit` のメソッドについてこれらを呼び出す。
++   entry .call   `JsonRpc` のチャンネル上でリクエストを送り、待つべき `Pending` の呼び出しを返す
++       `JsonRpc.call(target, method, payload)` は UUID の ID を発行し、その下にプロミスを登録し、`Request` を対象の送信チャンネルに置き、ID とプロミスの組である `.Pending` を返す。
++       `.outcome` はそれを待ち、`.answer` はレスポンスが届いたときにそれを履行するか取り消す。
++       ID を保持するのは、エラーレスポンスではプロミスを履行できず、ID によって呼び出し元と照合しなければならないからである。
++   entry .request   `JsonRpc` のチャンネル上で、または HTTP の URL への POST で、リクエストを送り、結果のプロミスとする
++       二つのオーバーロードがある。
++       `JsonRpc.request(target: JsonRpc, method, payload)` は ID のない `.call` であり、結果の `Promise[Json]` を返す。`.answer` は、レスポンスが接続のリーダーに届いたときにそれを履行し、相手がエラーで答えた場合は取り消す（その場合、誤りは `.Pending` に対する `.outcome` を通じてしか回復できない）。
++       `JsonRpc.request(url: HttpUrl, method, payload)` は、タスクの中で `Request` を URL へ POST し、レスポンスのドキュメントでプロミスを履行する。これはスコープ内に `Monitor`、`Probate`、`Online` を必要とし、接続、HTTP、メディアタイプ、パースの失敗はプロミスを取り消すので、待っている呼び出し元には `Async.Error` が見える。
++   entry .outcome   `Pending` の呼び出しのレスポンスを待ち、相手の誤りを `JsonRpc.Error` として発生させる
++       `JsonRpc.outcome(pending)` はプロミスを待ち、`Monitor` と `Tactic[JsonRpc.Error]` を必要とする。
++       `result` を持つレスポンスは `Json` として返される。
++       `error` を持つレスポンスは `JsonRpc.Error(Failed, code, message)` として届き、呼び出し元が自身の用語に対応付けられるように、相手のコードとメッセージを持つ。
++       誤りが記録されないまま取り消されたプロミス — 接続が先に終わった場合 — は `JsonRpc.Error(Abandoned)` になる。
++       生成された `#proxy` のメソッドはこれを呼び出す。
++   entry .answer   受信したレスポンスを、ID によって、それを待っている `.call` に回す
++       `JsonRpc.answer(json)` は、レスポンスの `id` と、`result` と `error` のうちちょうど一方を読む。
++       `result` は `.receive` で待機中のプロミスを履行し、`error` は `.receiveFailure` で `.Failure` を記録してプロミスを取り消す。
++       読める `id` を持たないドキュメントや、何も待っていない ID は無視される。
++       `.serve` のディスパッチャーは `method` メンバーを持たないすべてのドキュメントについてこれを呼び出すので、接続のリーダーは受信したすべてのドキュメントを一つのディスパッチャーに渡せる。
++   entry .receive   与えられた ID の待機中の呼び出しを、その結果で履行する
++       `JsonRpc.receive(id, result)` は、`id` の下に登録されたプロミスを完了させて忘れる。未知の ID は無視される。
++       通常の呼び出し元は `.answer` である。
++   entry .receiveFailure   与えられた ID の待機中の呼び出しについて誤りを記録し、それを取り消す
++       `JsonRpc.receiveFailure(id, failure)` は、`.outcome` が見つけられるように `.Failure` を保存し、`id` の下に登録されたプロミスを取り消す。エラーレスポンスはプロミスを履行するための結果を持たないからである。
++       通常の呼び出し元は `.answer` である。
++   entry .Pending   処理中のリクエスト：その対応付けの ID と、レスポンスのプロミス
+
+% 1 1 0 0d9e68676dea64951feb6b21b5852b57
+
+@ 0 5 0 1d9895eb8aff3b37159a023a1db82d1d
++         `JsonRpc.call` が返し、`JsonRpc.outcome` が消費する。
++         ID をプロミスと並べて保持するのは、エラーレスポンスではプロミスを履行できず、ID によって照合されるからである。
++     entry #id   リクエストを送ったときの UUID
++     entry #promise   `JsonRpc.answer` が結果で履行するか、誤りのときに取り消すプロミス
++   entry .Error   JSON-RPC の操作が失敗したときに発生する：エラー `↯/s.112.7`
+
+% 1 1 0 057bca10a44fb127012c81e37b93fc0f
+
+@ 0 42 0 06cf9be50183c3f90d617245ee0c2255
++         エラー `↯/s.112.7`：_the JSON-RPC operation failed because `reason`_。
++         インターフェースが宣言していないメソッドについて `JsonRpc.serve` のディスパッチャーが投げ（`UnknownMethod`）、相手がエラーで答えたとき（`Failed`。`#code` と `#detail` が相手の `error.code` と `error.message` を持つ）や、プロミスが取り消されてリクエストに答えが返らなかったとき（`Abandoned`）に、`JsonRpc.outcome` が — したがって生成されたすべての `#proxy` のメソッドが — 発生させる。
++         プロトコルのクライアントは、コードから自身のエラーの用語を回復する。LSP のクライアントは `code` を `Lsp.Error.Reason` に対応付ける。
++     entry .Reason   操作が失敗した理由
++         `UnknownMethod`（1）、_the method name was not recognised by the dispatcher_。`Failed`（2）、_the peer answered the request with an error_。`Abandoned`（3）、_the request was never answered_。
++         番号はエラーの詳細番号である。
++     entry .communicable   各 `JsonRpc.Error.Reason` をそのメッセージとして描画する
++     entry #reason   操作が失敗した理由
++     entry #code   誤りがワイヤ越しに返ってきた場合は相手の `error.code`、そうでなければ `Unset`
++     entry #detail   誤りがワイヤ越しに返ってきた場合は相手の `error.message`、そうでなければ `Unset`
++   entry #client   呼び出しがこの接続上で送られる、`Origin` インターフェースのスタブ
++       `proxy[Origin]` である。`@rpc` メソッドがそれぞれこのインスタンスの送信チャンネルに `JsonRpc.Request` を置く `Origin^` である。
++       接続を保持するので、その結果はケイパビリティである。
++   entry #proxy   呼び出しがこの接続上で送られる、任意の `@rpc` インターフェースのスタブ
++       `proxy[Interface]` は、`Interface` を実装するオブジェクトを構築するマクロである。
++       各 `@rpc` メソッドは、パラメーターを `params` オブジェクトとして（`@bare` パラメーターは `params` 全体として）エンコードし、`JsonRpc.call` でリクエストをこのインスタンスのチャンネルに置き、`JsonRpc.outcome` でそれを待ち、結果をその型の `Json.Decodable` でデコードする。デコーダーは、生成されたメソッドの中で呼び出し自身の戦術のもとで召喚される。
++       `Unit` のメソッドは通知を送り、すぐに戻る。
++       このマクロは展開箇所に `Monitor` を、すべてのパラメーターについて `Encodable in Json` を必要とする。相手のエラーレスポンスは、呼び出しから `JsonRpc.Error(Failed)` を投げる。
++       表面が複数のインターフェースに分かれているプロトコルは、インターフェースごとに一つのプロキシを構築し、それらはすべて一つの送信チャンネルを共有する。
++   entry #put   この接続の送信チャンネルにドキュメントをキューする
++       スタブが作らないメッセージのためのものである。プロトコルが自分で答えるレスポンス、`JsonRpc.failure` による失敗、サーバーから始める通知などである。
++   entry #stop   送信チャンネルを終わらせ、`#outgoing` と `#stream` が排出し終えたところで完了するようにする
++       チャンネルの読み手は、さらに待つのではなく、すでに置かれたものの後で完了する。
++       すでに `stop()` という名前のメンバーを持っていたサブクラスは、それを上書きしなければならない。
++   entry #outgoing   トランスポートのライターが排出するための、`Chain[Json]` としての送信ドキュメント
++       それぞれのアクセサーは、新しい単一所有者のビューを通じて共有のキューを排出する。一つのインスタンスでは `outgoing` と `stream` のどちらか一方だけを使う。
++   entry #stream   `text/event-stream` のレスポンスのための、`Sse` イベントとしての送信ドキュメント
++       各ドキュメントは、唯一の `data` 行がそのコンパクトな JSON である `Sse` になり、`Sse.servable` がそれを `text/event-stream` として提供する。これが MCP のストリーミング可能な HTTP トランスポートの、サーバーからクライアントへの側である。
++       一つのインスタンスでは `stream` と `outgoing` のどちらか一方だけを使う。
+
+@ 0 6 0 005b306c92fb955208f16c8a630834b0
++ entry .remote   `remote[Interface](url)`：各呼び出しを HTTP の URL へ POST する JSON-RPC のクライアントのスタブ
++     HTTP のルートの背後に置かれたディスパッチャーのために、`Interface` の `@rpc` メソッドからそれを実装するオブジェクトを構築するマクロである。
++     各メソッドは、パラメーターを `params` オブジェクトとしてエンコードし、`JsonRpc.request` で `JsonRpc.Request` を `url` へ POST し、レスポンスを待ち、`result` を結果の型の `Json.Decodable` でデコードする。
++     `Unit` のメソッドは `JsonRpc.notification` で通知を送り、POST が済むと戻る。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 2 1 0 00c648c4451d3840102b5a9ac5af6427
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 059174723a298f9c186e2cbad03d1515
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 2 1 0 1b92696f897689ba1a719427b33c8f80
+
+% 3 1 0 109e179f2da37a521fae52f792b39466
+
+% 5 1 0 1628154c9fc5e5d81d9bcfc8b04c6455
+
+% 6 1 0 1c0aa24e5082690b1fb1f23a467e898f
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 0a2a8d667154a8c80f795fb1eb7ca1fd
+
+% 0 1 0 19bd53717efe5eed1cf1c9f3d94081b9
+
+% 1 1 0 11f5997087bca1a30f765f8e613c24fd
+
+@ 0 5 0 1468e252ed4733e61f62a179ac5a8b3e
++     展開箇所には、スコープ内に `Monitor`、`Probate`、`Online` がなければならず — どれかが欠けているとコンパイルエラーになる — すべてのパラメーターについて `Encodable in Json`、すべての結果について `Json.Decodable` が必要である。
++     接続、HTTP、パースの失敗はリクエストのプロミスを取り消し、生成されたメソッドは呼び出しからそれを `Async.Error` として投げる。
++     HTTP ではなく双方向のチャンネル上のクライアントについては、`JsonRpc#proxy` を参照。
+
+@ 0 1 0 1228d0d85679ffb90aa97731bd254dfa
++ entry .Sse   一つのサーバー送信イベント：イベント名、データ行、ID、再試行の間隔
+
+% 1 1 0 0ab10a8695d98876158ce7286b7630ea
+
+@ 0 8 0 1fb235948a7291111074705467f7b428
++       `Sse(event, data, id, retry)` は `text/event-stream` の一つのイベントである。`event` の名前（設定しなければ `"message"`）、`data` の行、そしてオプショナルな `id` とミリ秒単位の `retry` の間隔からなる。
++       コンパニオンは、ストリームの読み書きのためのすべてを保持する。`.framable` はテキストのストリームを空行でイベントに分割し、`.decodable` は一つのイベントのフィールドをパースし、`.encodable` は一つのイベントを描画し、`.servable` は `Chain[Sse]` をストリーミングの HTTP レスポンスとして提供し、`.jsonEncodable` と `.textEncodable` は JSON のドキュメントやテキストの一行からイベントを作る。
++       `Sse.Source` は、最後に見た ID で再接続するクライアントのための、再生可能なイベントのバッファーである。
+
+% 2 1 0 06d146a9bcda11fd07f0eb18d111784d
+
+% 3 1 0 188b17d6ee19b4881d9aeea6766665df
+
+@ 0 1 0 10630a5e204a38121af89e256906d263
++         label イベントストリームのテキスト
+
+% 1 1 0 043cc594da2b334603d4862be80ffae2
+
+% 2 1 0 0c9255001deda2d6193f81b60146bf5e
+
+% 3 1 0 18ea2d6076e455591c071d1d1a4a9da2
+
+% 5 1 0 125890a7a2d1bce51376b6d2a72164c9
+
+% 1 1 0 15ad0e7c1eb3cb680ff73f28fad50add
+
+@ 0 1 0 09b4ea18cc89849a13583744845154d1
++         label 空行ごとにイベントへフレーミングする
+
+% 1 1 0 0632a021a393d3fb0da72990650cbcdb
+
+% 2 1 0 1a84ef9afe1eeb1e147fd974b9832b01
+
+% 3 1 0 0c5e44e5c48994e0177e91900bfc9abd
+
+% 5 1 0 0675c07744881d0f11b4ec931b434922
+
+% 0 1 0 15dee661d85d37eb174ba6d4e1026c77
+
+% 0 1 0 0859dfacf01525f1155350716510fef1
+
+% 1 1 0 06fdd9c673ac3c1a11898a702f3b2643
+
+@ 0 1 0 1b3fb89c8892cd6001cc74582b6d8336
++         label 各イベントをフィールドにデコードする
+
+% 1 1 0 1fc44a804b47f931055e83dcef3b5a2d
+
+% 2 1 0 1451d1bf73e8ac3a1659b3e7a9990e1e
+
+% 3 1 0 05df0e09992aef7c060ea3e346b2c37b
+
+% 5 1 0 1d84ff1bca43471f0f91a80eac204e07
+
+% 0 1 0 08ec8e3b17b5d32b0b976211a164b6f7
+
+% 0 1 0 063224d02abdea150210021c113a1cbc
+
+% 1 1 0 0311bed8e49ea4b0046afbe99ef47607
+
+% 2 1 0 1d14b26503ea4fe702dd1d6137a3c058
+
+@ 0 3 0 0cc34dc080dfed4414114926fe96050c
++       `JsonRpc#stream` は接続の送信ドキュメントの `Chain[Sse]` であり、MCP のサーバーはこれによって通知をクライアントへストリームする。
++       `Sse.servable` は、HTTP のハンドラがその連鎖をレスポンスとして返せるようにする given である。
+
+% 0 1 0 150fa6533cf08426038d26901519e6a3
+
+% 1 1 0 0c5d1c57b6db92ba1e0c2c5277254138
+
+@ 0 27 0 06abfb524adcb3931940ea4fff6a095b
++   entry .servable   `Chain[Sse]` を、ストリーミングの `text/event-stream` の HTTP レスポンスとして提供する
++       暗黙のスコープにある `Chain[Sse] is Servable` の given である。
++       `Chain[Sse]` を返す HTTP のハンドラは、各イベントの `.encodable` のテキストを UTF-8 でエンコードした流れる本文を、メディアタイプ `text/event-stream` のもとで送り、連鎖がイベントを生み出すたびにそれを届ける。
++   entry .framable   `Text is Framable by Sse` の given：空行で分割した、イベントごとに一つのフレーム
++       暗黙のスコープにある。
++       `text.frames[Sse]` は各イベントの行を、それを終わらせた空行を除いて一つの `Text` として返し、終端の空行のない最後のイベントはそのまま返す。
++       失敗しえない。
++       フレームはその後 `.decodable` でデコードされる：`frame.as[Sse]`。
++   entry .decodable   一つのイベントの `field: value` の行を `Sse` にパースする。`Tactic[Sse.Error]` を必要とする
++       暗黙のスコープにある `Sse is Decodable in Text` の given なので、`text.as[Sse]` はフレーミングされた一つのイベントを読む。
++       各行は `field: value` であり、コロンの後に空白を一つ置いてもよい。
++       `event` は名前を設定し、各 `data` 行は順に追加され、`id` はテキストとして保持され、`retry` は `Long` としてパースされる。
++       コロンのない行は `Sse.Error(MalformedField)` を、未知のフィールド名は `Sse.Error(UnknownField)` を、数値でない `retry` は `Sse.Error(BadRetryValue)` を発生させる。
++       フレーム内のすべてのエラーが発生し、エラーのあるフレームが中途半端に埋められたイベントとして届けられることはない。
++   entry .encodable   `Sse` をワイヤ上のテキストとして描画する：`event:`、`data:`、`id:`、`retry:` の行と、それに続く空行
++       暗黙のスコープにある `Sse is Encodable in Text` の given である。
++       `sse.encode` は、`event: name`、データ行ごとに一つの `data: line`、設定されていれば `id: …` と `retry: …` からなり、それぞれ `\n` で終わり、最後の `\n` がイベントを終わらせる。
++       `.servable` は、提供する各イベントについてこれを書き出す。
++   entry .jsonEncodable   `Json` のドキュメントから `Sse` を作る：コンパクトな JSON をデータとする `message` イベント
++       暗黙のスコープにある `Json is Encodable in Sse` の given である。
++       `Sse` としての `json.encode` は、イベント名 `message` と、ドキュメントのコンパクトな描画からなる一つのデータ行を持つ。これが `Sse.Source#put(json)` が保存し、`JsonRpc#stream` が生成するものである。
++   entry .textEncodable   `Text` から `Sse` を作る：テキストを唯一のデータ行とする `message` イベント
++       暗黙のスコープにある `Text is Encodable in Sse` の given なので、`Sse.Source#put(t"…")` が機能する。
++   entry .Error   サーバー送信イベントが無効であるか、再生がソースのバッファーを超えたときに発生する：エラー `↯/s.112.5`
+
+% 1 1 0 1d4fe11890f19e7602ee3f40365523d6
+
+@ 0 7 0 0c898753b5b056260f36d5638585b177
++         エラー `↯/s.112.5`：_the server-sent event was not valid because `reason`_。
++         不正な行（`MalformedField`）、未知のフィールド名（`UnknownField`）、整数でない `retry`（`BadRetryValue`）について `Sse.decodable` が発生させ、要求された再生がソースの容量より前にさかのぼるとき（`CapacityExceeded`）に `Sse.Source#stream` が発生させる。
++     entry .Reason   イベント、または再生が無効であった理由
++         番号はエラーの詳細番号である。
+
+% 3 1 0 1d443b425db050651557c15cff807ee8
+
+@ 4 4 0 18bc1dae84c32bd41b32da1463652ba4
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
+
+% 0 1 0 1f06d451e2d932271836a1aafa15672b
+
+% 0 1 0 05a311f96df4a68d14b645f6587f6857
+
+% 0 1 0 05ab5e21aaafc17a09f670f490448441
+
+% 0 1 0 001416a8b2b403c300d3853be107d8df
+
+% 1 1 0 0cb98cc39c17e78100d2b08c3d085e0a
+
+@ 0 3 0 1949e8aea82b0c3b0632008ca9f868a9
++     entry .communicable   各 `Sse.Error.Reason` をそのメッセージとして描画する
++     entry #reason   イベント、または再生が無効であった理由
++   entry .Source   再接続するクライアントのための、ID で番号付けされた再生可能なイベントのバッファー
+
+% 1 1 0 1e6577b9cd04d2181c7def95f73d80f9
+
+@ 0 5 0 1551284250a21e350c40cba1332051ab
++         `Sse.Source(capacity)` は、直近の `capacity` 個のイベントをリングに保持し、それらの生きたストリームを供給する。
++         `#put` は各イベントにその連番を `id` として刻印し、`#stream(start)` は ID `start` の後のイベントの連鎖 — リングから再生され、その後は置かれるたびに生きたまま — である。これがプロトコルの求める再接続の動作である。クライアントは見た `Last-Event-ID` を送り、ソースはそこから再開する。
+
+% 2 1 0 145619edf69056d400cf10ad7765c12a
+
+% 3 1 0 14ff874b57ef3c5e13c70caa31c2c9e6
+
+% 4 1 0 0ed05fcf289a8cd31b3105aa077f1bf1
+
+% 0 1 0 14507dc1b739096a0d7255100d423f11
+
+% 0 1 0 1293f89741b811cc14c375e21da725a9
+
+% 0 1 0 1ba29754a636195c130bef1285288a96
+
+% 0 1 0 0b3951b9bfe2dd960b3f685ae8c7b4d6
+
+% 0 1 0 0980ce4c3008e1731b56c486b317a0d9
+
+% 1 1 0 03f6bb3df693f9451a9249ec77c3dca1
+
+@ 0 17 0 1b1cfa8db70d0b0a08b2b71afae6a356
++         ソースは同期化されているので、どのスレッドからでもイベントを置ける。
++         しかし、開始位置を指定した `#stream(start)` の呼び出しはそれぞれ生きたスプールを置き換え、それより前の消費者のストリームを終わらせるので、ソースは一度に一つの消費者にしか供給しない。
++     entry #put   イベントを保存して公開し、その連番を ID として刻印する
++         `put(value)` は `Encodable in Sse` である任意のもの — `Text`、`Json`、`Sse` — を受け取り、その `id` を次の連番に設定し、リングに保持し（`capacity` を超えたら最も古いものを追い出す）、生きたストリームに送る。
++     entry #stream   最後に見た ID の後のイベント。バッファーから再生し、その後は生きたまま
++         開始 ID を指定した `stream(start)` は、ID が `start` より大きいバッファー内のすべてのイベントを再生し、その後に置かれた各イベントへと続けて、`Chain[Sse]` として返す。
++         `start` 以降に `capacity` 個より多くのイベントが置かれていると、再生に欠落が生じるので、`Sse.Error(CapacityExceeded)` を発生させる。
++         開始を指定しない場合は、生きたイベントだけである。
++         再生を始めると、それより前の消費者のストリームは終わる。
++   entry #event   イベント名。ストリームが名前を付けていなければ `message`
++   entry #data   データ行を順に。消費者はそれらを改行でつなぐ
++   entry #id   ストリームが設定していればイベントの ID。クライアントはこれを `Last-Event-ID` として送り返す
++   entry #retry   ストリームが設定していれば、ミリ秒単位の再接続の間隔
+
+@ 0 1 0 129409bc5d6cd2a409d9ae99d05c99f0
++ entry .internal   `JsonRpc.serve`、`JsonRpc.methods`、`JsonRpc#proxy`、`remote` の背後にあるマクロの実装
+
+% 1 1 0 11d5a1855a0bd8ad14b75aafb12cb844
+
+% 2 1 0 1d70faa39fe80a750e5d9444ce619a36
+
+@ 0 7 0 09637ca10cde2739131d80ba7db3705d
++       直接使うものではない。このオブジェクトは、JSON-RPC のマクロに安定した置き場を与えるために存在する。
++       それぞれがインターフェースの `@rpc` メソッド（継承したものも含む）を読み、`JsonRpc` と `remote` がスプライスするコードを生成する。
++   entry .methodNames   `JsonRpc.methods` の背後にあるマクロ：インターフェースの `@rpc` メソッドの名前
++   entry .dispatcher   `JsonRpc.serve` の背後にあるマクロ：メソッド名に対するマッチで、それぞれをデコードしエンコードする
++   entry .remote   `remote` の背後にあるマクロ：HTTP の POST によってインターフェースを実装するオブジェクト
++   entry .client   `JsonRpc#proxy` の背後にあるマクロ：チャンネルによってインターフェースを実装するオブジェクト
+
+@ 0 1 0 03dcc7a2b6de0784089d290c679b093b
++ entry .Grpc   HTTP/2 上の gRPC：チャンネル、エンドポイント、正規のステータス、メッセージのフレーミング、導出されたスタブ
+
+% 1 1 0 0f9b0020c82a295b0db060eab220a7de
+
+@ 0 8 0 14f59bc2aa3e4bc40e5fea9ae14c2a67
++       `Grpc` は、`telekinesis` がその型を `Http` と `Http2` の下にまとめるように、gRPC の語彙（`Status`、`Method`、`Metadata`、`Endpoint`、`Channel`、`Error`、`Framing`）を一つの名前の下にまとめる。
++       `Grpc.Channel` は単一の永続的な HTTP/2 接続であり、その上で各呼び出しが多重化されたストリームを一つ開く。リクエストは長さを接頭辞に持つ Protocol Buffers のメッセージ一つであり、レスポンスはメッセージ一つ（`Channel#unary`）か、遅延的にデコードされるメッセージのシーケンス（`Channel#serverStreaming`）であり、正規のステータスはレスポンスの `grpc-status` トレーラーで届く。
++       `Grpc.remote` は、`@rpc` メソッドからなるサービスインターフェースに対して、チャンネル上の型付きのスタブを導出するので、呼び出しはメソッド呼び出しになる。
+
+% 2 1 0 197ae190836cac7d0147eca91d242e73
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 04ea60e84068f7921bdf4ecb54884444
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 099cc1f5b3c02f8d103cd6a42f21344b
+
+% 0 1 0 08f5b05833287b1618a12d159d43d9ad
+
+% 0 1 0 12c65388be6c9cba0f41551ac4c2f48c
+
+% 0 1 0 11456b760a806ff90248e5c1f27698dd
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 06ebef5403ea94af1a20eba023d619b7
+
+% 0 1 0 09545cd0bdf4771e04d278b7e462a8cb
+
+% 0 1 0 1607e1b04c0c531e167bacdb8f38df29
+
+% 0 1 0 1a650a14ba7e2b220ea0cb0fe7e0940c
+
+% 1 1 0 039ed632a320dea006f6295022ccb505
+
+@ 0 8 0 1eaa359dc59cad7e186e857b9f1b3eb7
++       メッセージは、ケースクラスに対して導出された `locomotion` の `Encodable in Protobuf` と `Decodable in Protobuf` でエンコード、デコードされる。
++       リクエストは常にメッセージ一つである。クライアントストリーミングと双方向の呼び出しは、`Http2` の機能強化を待っている。
++       チャンネルは接続を保持し、接続はアンビエントな `Monitor` を保持するので、チャンネルはケイパビリティであり、`supervise` スコープの中に存在する。代わりに `Grpc.Endpoint(…).session: channel ?=> …` はチャンネルをブロックにスコープし、ブロックが終わると接続を破棄する。
++       ステータスが `Ok` でないレスポンス、HTTP ステータスが 200 でないレスポンス、本文が途中で切れたレスポンス、メッセージのないレスポンスは `Grpc.Error` を発生させ、その `status` は正規の `Grpc.Status` である。
+
+% 0 1 0 0dcb6423fd3698930e5256943b3381b4
+
+% 1 1 0 132def176c7657fc0546d41a2cab4384
+
+% 1 1 0 1519932a1c29406004316c37e738bee8
+
+@ 0 1 0 1ac33d7b84241ef6112487a86b29fb74
++   entry .Status   `grpc-status` トレーラーで運ばれる、十七の正規の gRPC ステータスコード
+
+% 1 1 0 09958014b99aedf60e5621892f3606f8
+
+@ 0 14 0 1e2cf17acec069b01df11a711101e279
++         正規のコードの enum であり、それぞれ数値の `#code` を持つ。`Ok`（0）は成功で、ほかはすべて失敗である：`Cancelled`（1）、`Unknown`（2）、`InvalidArgument`（3）、`DeadlineExceeded`（4）、`NotFound`（5）、`AlreadyExists`（6）、`PermissionDenied`（7）、`ResourceExhausted`（8）、`FailedPrecondition`（9）、`Aborted`（10）、`OutOfRange`（11）、`Unimplemented`（12）、`Internal`（13）、`Unavailable`（14）、`DataLoss`（15）、`Unauthenticated`（16）。
++         `Grpc.Error` はサーバーが返したステータスを持つので、呼び出し側はそれでマッチする：`case Grpc.Error(Grpc.Status.NotFound, _) => …`。
++         チャンネル自身が検出したトランスポート層の失敗は `Internal` として報告される。
++     entry .of   数値のコードのステータス。認識できないコードには `Unset`
++         `Grpc.Status.of(5)` は `Grpc.Status.NotFound` である。
++         チャンネルはこれで `grpc-status` トレーラーを読み、存在しないコードや認識できないコードは `Unknown` として扱う。
++     entry .communicable   `Grpc.Error` のメッセージのために、ステータスをその名前として描画する
++     entry #code   数値のコード。`0` から `16`
++   entry .Method   完全修飾された gRPC のメソッド：サービス名と rpc 名
+
+% 1 1 0 096e4c6515d3c2291d39d4b84aae34a5
+
+@ 0 9 0 1325013890d4089414e365b34a5ad6bf
++         `Grpc.Method(service, rpc)` は、ワイヤがメソッドを指すとおりに、HTTP/2 の `:path` `/<package>.<Service>/<Method>` でメソッドを名指す。`/grpc.health.v1.Health/Check` に対しては `Grpc.Method(t"grpc.health.v1.Health", t"Check")` である。
++         `Channel#unary` と `Channel#serverStreaming` はこれを一つ取る。`Grpc.remote` は、サービス名とメソッド自身の名前から `@rpc` メソッドごとに一つ作る。
++     entry #service   完全修飾されたサービス名。パッケージと `Service`
++     entry #rpc   サービス内でのメソッドの名前
++     entry #path   HTTP/2 の `:path`。`/service/rpc`
++   entry .Metadata   独自の呼び出しのメタデータ：呼び出しとともに HTTP/2 のヘッダーとして送られるキーと値の対
+
+% 1 1 0 070b0fcc04b7b17a0d1a8b012e8da516
+
+@ 0 6 0 02ad4658da297dfb0a7fb949aef24795
++         `Grpc.Metadata(entries)` は、gRPC の疑似ヘッダーと並んで送られるヘッダー名と値の対のリストである。containerd の `containerd-namespace` や認可トークンがその例である。
++         チャンネルの `defaults` はすべての呼び出しとともに送られ、呼び出し自身のメタデータはその後に追加される。
++     entry #entries   ヘッダー名と値の対。順に
++   entry .Endpoint   gRPC のエンドポイント：スコープ付きのチャンネルの対象、`Grpc.Endpoint(…).session`
+
+% 1 1 0 140e1e3f5717388f0562df2632e985ef
+
+@ 0 7 0 0b4ba86507be99e4156c1e109c11f5a6
++         `Grpc.Endpoint(endpoint, defaults)` は、`Http2.Endpoint`（TCP の `Endpoint` や Unix ソケットのような、`Connectable` で `Showable` なあらゆるアドレス）を、すべての呼び出しが持つべき `Metadata` と組にする。
++         その唯一の用途はセッションの対象になることである。コンパニオンの `.sessional` given がこれを `Sessional` にするので、`Grpc.Endpoint(…).session: channel ?=> …` は HTTP/2 接続を開き、ハンドシェイクを完了し、`Grpc.Channel^` をブロックに貸し出し、ブロックが終わると接続を破棄する。一方、`Grpc.Channel.apply` は、囲む `supervise` スコープが終わるまで接続を開いたままにする。
+
+% 2 1 0 0a6e62180f97c73312228ca23939b932
+
+% 3 1 0 13b3eb261bceeed81f8332df75de9ce9
+
+% 4 1 0 1da145652dfff2a9020a803c9e27045c
+
+% 5 1 0 12e355363e3784a306a9821e6b3680d1
+
+% 6 1 0 19a9ce7bb78684461e848cb465108e6a
+
+% 7 1 0 0cbc51aaa049d8d30523c120a4c2816d
+
+% 8 1 0 0d829c04f0cad5ee1fd4b4d6dc6b9f1b
+
+% 0 1 0 1cc3b0e519c77d4c1c98c05c46dfe672
+
+% 2 1 0 0962506583a0991f035adf6c7aeaefad
+
+% 3 1 0 09ef38a3e68c015012861e4f59c87e25
+
+% 5 1 0 1f8660474e5d317a1c5e0c9252cb8a84
+
+% 0 1 0 0c4809ceeab50ae11a2d49c014ebb97f
+
+% 0 1 0 1782753e3b0e8ba404948b2f6e5a64f7
+
+% 0 1 0 076b0b5c257e608402adb47ec1f55e76
+
+% 1 1 0 0bedf1a1641ebe621359bd5ecc29e843
+
+@ 0 16 0 0ff0f4f9433c31151f643b7e1e6f0530
++         チャンネルはブロックの新しいケイパビリティである。それ、あるいはそれをキャプチャするものをブロックから返すと、キャプチャ検査器に拒まれる。
++     entry .sessional   `Grpc.Endpoint` をスコープ付きのチャンネルのセッションの対象にする given
++         `Connectable` で `Showable` なあらゆるエンドポイントの型に対する、暗黙のスコープにある `GrpcSessional[endpoint]` である。
++         スコープに `Monitor`、`Probate`、`Tactic[Async.Error]`、`Tactic[Socket.Error]`、`Socket.Event is Loggable` が必要であり、接続のリーダーとライターのデーモンがそれらのもとで動くので、それらをキャプチャする。
++     entry #endpoint   接続先の HTTP/2 エンドポイント
++     entry #defaults   チャンネル上のすべての呼び出しとともに送られるメタデータ
++   entry .remote   `Grpc.remote[Interface](channel, service)`：チャンネル上の型付きのクライアントスタブ
++       `Interface` をその `@rpc` メソッドから実装するオブジェクトを作るマクロであり、各メソッドはちょうど一つのリクエストメッセージを取らなければならない。
++       値を返すメソッドは `Channel#unary` の呼び出しを行い、`Chain[Response]` を返すメソッドは `Channel#serverStreaming` の呼び出しを行う。
++       それぞれの `:path` は、与えられた完全修飾の proto サービス名とメソッド自身の名前からなる `/service/method` なので、`Grpc.remote[Echo](channel, t"echo.Echo")` は `call` を `/echo.Echo/call` に送る。
+
+@ 0 7 0 161ebc13a1fc3cc800bbde8060840e79
++       Protocol Buffers のコーデック（各リクエストには `Encodable in Protobuf`、各レスポンスには `Decodable in Protobuf`）と呼び出しのケイパビリティ（`Monitor` と、`Grpc.Error`、`Http2.Error`、`Async.Error`、`Protobuf.Error` の戦術）は `remote` の呼び出し場所で召喚されるので、それらがスコープにある場所で呼び出さなければならない。
++       するとスタブのメソッドはインターフェースのそのままのシグネチャを持ち、失敗した呼び出しはそこでキャプチャされた戦術を通して投げる。
++       パラメーターがゼロ個または複数のメソッドはコンパイルエラーになる。
++   entry .Channel   単一の永続的な HTTP/2 接続上の gRPC チャンネル。単項呼び出しとサーバーストリーミング呼び出しのため
+
+% 1 1 0 19c1bbff87a7cc9e0e96221172a39c9b
+
+@ 0 9 0 08b512b08c6f6d950101e9101bc33202
++         `Channel` は、`Http2.Connection`、送る `:authority`、すべての呼び出しが持つ `Metadata` を包む。
++         `Channel.apply(endpoint)` は `supervise` スコープの中でチャンネルを開き、スコープが終わるまで接続を開いたままにする。`Grpc.Endpoint(…).session` はブロックの間だけチャンネルを貸し出す。
++         各呼び出しは一つの HTTP/2 ストリームである。メソッドの `:path` への `POST` で、`content-type: application/grpc+proto`、`te: trailers`、メタデータをヘッダーとし、本文は `Grpc.Framing` の接頭辞を持つメッセージちょうど一つである。レスポンスのメッセージは本文からフレームを解いて取り出され、そのステータスはトレーラー（Trailers-Only のレスポンスではヘッダー）の `grpc-status` と `grpc-message` フィールドから読まれる。
+
+% 2 1 0 1118f39a777bd87101f009dfc5ef24df
+
+% 3 1 0 0adb407da6200e351f99c749fda76171
+
+% 4 1 0 063c24f7cc38880a01f699e20b6eef9e
+
+% 5 1 0 12920f0a336b33441c43aaed2671953d
+
+% 6 1 0 0ccc17e545a24c8708c6f6413fc6c0f3
+
+% 7 1 0 091f46d74d2e14b80a56bed22401979a
+
+% 8 1 0 0f49ad4fd599fae6070fc65515cab38f
+
+% 2 1 0 1ad1c811aec9cc511ccc81fc833d54b0
+
+% 3 1 0 06e1821c853b76b61d160a272a3637cc
+
+% 5 1 0 023bb0a9c45ffb8404872eb364bd8182
+
+% 0 1 0 0ff26a3025010e07007c9a9ca28fa52c
+
+% 0 1 0 150b0f3d47e77784004f31c745c5d90f
+
+% 0 1 0 1a50ab14d13ba2b2095c56e2cf0d62dc
+
+% 0 1 0 17bbd7974fee50e51fc638095207eb4b
+
+% 1 1 0 10216f9ac7bec56314420f3b4892506b
+
+@ 0 29 0 0d2e3cf00999514c0a5e0624965bf874
++         チャンネルの接続はアンビエントな `Monitor` を保持するので、チャンネルはケイパビリティ（`Channel^{monitor, caps.any}`）である。
++         コンストラクター `new Channel(connection, authority, defaults)` は、別の方法で開いた接続のために公開されている。それが作るリクエストの `Host` は、`authority` の最初の `:` より前の部分から取られ、それがホスト名でない場合（たとえば角括弧で囲んだ IPv6 リテラル）は `Localhost` になる。HTTP/2 のトランスポートは `authority` を `:authority` として送り、`Host` を無視するので、これは無害である。
++     entry .apply   平文（h2c）のエンドポイントへのチャンネルを開き、HTTP/2 のハンドシェイクを完了する
++         `Grpc.Channel(endpoint, defaults)` は `Http2.Endpoint` に接続し、ハンドシェイクを完了してチャンネルを返す。
++         接続の読み取りと書き込みのデーモンはアンビエントな `Monitor` と `Probate` をキャプチャするので、`supervise` スコープの中で呼ばなければならず、接続できない場合のために `Tactic[Async.Error]` と `Tactic[Socket.Error]` が必要である。
++         接続はスコープが終わるまで開いたままである。ブロックにスコープした接続には `Grpc.Endpoint(…).session` を使う。
++     entry #unary   メッセージを一つ送ってレスポンスのメッセージをちょうど一つ読み、ステータスを検査する
++         `channel.unary[Request, Response](method, value, metadata)` は `value` をその `Encodable in Protobuf` でエンコードして送り、最初のレスポンスメッセージを `Response` の `Decodable in Protobuf` でデコードして返す。
++         `Monitor` と、`Grpc.Error`、`Http2.Error`、`Async.Error`、`Protobuf.Error` の戦術が必要である。
++         末尾のステータスはメッセージを求める前に検査されるので、Trailers-Only のエラーレスポンスは、メッセージがないことによる `Internal` ではなく、その本当のステータスで `Grpc.Error` を発生させる。200 以外の HTTP ステータス、途中で切れた本文、メッセージのない成功のステータスは、それぞれ `Grpc.Error(Internal, …)` を発生させる。
++     entry #serverStreaming   メッセージを一つ送り、レスポンスの各メッセージを `Chain` として遅延的にデコードする
++         `channel.serverStreaming[Request, Response](method, value, metadata)` は `#unary` と同様だが、レスポンスの本文にあるすべてのメッセージの `Chain[Response]` を返し、メッセージはチェーンが強制されるにつれてデコードされる。
++         末尾のステータスは本文を使い切ったときにはじめて検証されるので、`Ok` でないステータスはチェーンの終わりで発生し、チェーンはチャンネルを所有する `supervise` スコープの中で消費しなければならない。
++   entry .Error   gRPC の呼び出しが失敗したときに発生する：正規のステータスとサーバーのメッセージ
+
+% 1 1 0 012dcca6444840f5037bbb9b21eceffc
+
+@ 0 10 0 1534491fc2f8faa41c61888b5441a97f
++         _the gRPC call failed with status `status`: `detail`_。
++         レスポンスの `grpc-status` が `Ok` でないとき、`Channel#unary` と `Channel#serverStreaming`（したがってすべての `Grpc.remote` のスタブメソッド）が発生させ、`#status` は正規の `Grpc.Status`、`#detail` は `grpc-message` のテキストである。また、サーバーが 200 以外の HTTP ステータスを返した場合、単項呼び出しにメッセージを送らなかった場合、レスポンスを途中で切った場合、途中で切れたメッセージフレームを送った場合（`Grpc.Framing.framable`）には、`Grpc.Status.Internal` とローカルの診断とともに発生する。
++         このエラーは fulminate のエラー番号を持たない。
++     entry #status   `grpc-status` のコードを反映した正規のステータス
++     entry #detail   `grpc-message` のテキスト、またはローカルの診断
++   entry .Framing   gRPC のメッセージのフレーミング：圧縮フラグのバイト、4 バイトの長さ、そしてペイロード
+
+% 1 1 0 0c128efd0b26a34d0f4d199ebe8d06f9
+
+@ 0 7 0 0015fa0f3d4d6a800119a81a72ee8d1f
++         すべての gRPC メッセージは、そのコーデックが何であれ、ワイヤ上で、ペイロードが呼び出しの `grpc-encoding`（ここでは gzip）で圧縮されていれば `1`、そうでなければ `0` である 1 バイトと、それに続く 4 バイトのビッグエンディアンの長さを接頭辞として持つ。
++         `.encode` はメッセージ一つに接頭辞を付け、`.framable` は任意にチャンクに分かれたレスポンスの本文から完全なメッセージを組み立て直すので、`body.frames[Grpc.Framing]` はそのメッセージの `Iterator[Data]` であり、フラグが立っているものは展開される。
++         `Grpc.Framing` はこの規約に名前を付けるシールされた型である。その失敗は `Framing.Error` ではなく `Grpc.Error` である。
+
+% 2 1 0 0a9564034ca414fb0b37d75ae1ffa58c
+
+% 3 1 0 1dff50f4418f7fe31173a9dc5afbd527
+
+% 4 1 0 0c6ef3b7f570f70c0e1d5a7772d2f70a
+
+% 0 1 0 1549dce1def0d2b3146a423ec9cc1b2e
+
+% 0 1 0 0d58d694702ca6d41c37fcdd4c940a4b
+
+% 0 1 0 03b273905b0a865a02efa0007292f33c
+
+% 0 1 0 17f661e428c8e14c06145efd85384357
+
+% 0 1 0 0d7d112cfa88365c1543dd4405c34829
+
+% 1 1 0 13f42f9289c8e88818eba79b0a0a33f2
+
+@ 0 11 0 00b7ea925c904e9710292df72b5c4125
++     entry .encode   メッセージ一つにワイヤのための接頭辞を付け、求められれば gzip で圧縮する
++         `Grpc.Framing.encode(message, compress)` は、5 バイトのヘッダーとそれに続くペイロードである。ペイロードは与えられたままのメッセージか、`compress` が `true` のとき（設定しなければ `false`）はフラグのバイトを立てたその gzip 圧縮である。
++         チャンネルはすべてのリクエストメッセージを圧縮せずに送る。
++     entry .framable   `Data is Framable by Grpc.Framing` の given。`Tactic[Grpc.Error]` を必要とする
++         暗黙のスコープにある。
++         5 バイトのヘッダーを一つずつ読んでその数のバイトを取り、フラグが立っているペイロードは gunzip する。入力がメッセージの境界で終わるとイテレーターが終わり、ヘッダーやペイロードの途中で終わると `Grpc.Error(Internal, "the gRPC message frame was truncated")` が発生する。
++         長さはバイトごとにマスクされるので、128 バイト以上のメッセージも正しくフレーミングされる。
+
+@ 0 1 0 0b18d5b10efae680098e2ba45236cdff
++ entry .GrpcSessional   `Grpc.Endpoint` に対してスコープ付きの `Grpc.Channel` を貸し出す `Sessional` インスタンス
+
+% 1 1 0 027ed91951aeef35186dcee4b342c221
+
+@ 0 8 0 1a70b92740780f730eb179bab8e7e2a9
++       `GrpcSessional[endpoint]` は `Grpc.Endpoint.sessional` の背後にあるクラスであり、その `Self` は `Grpc.Endpoint[endpoint]`、`Result` は新しい `Grpc.Channel^` である。
++       `session(target)` は `Http2.EndpointSessional` を通してエンドポイントの HTTP/2 接続を開き、ハンドシェイクを完了し、その上のチャンネルをブロックに貸し出し、ブロックが終わると接続とそのリーダーとライターのデーモンを破棄する。これは、パークしたデーモンが囲む `supervise` スコープの終わりまで接続を開いたままにする `Grpc.Channel.apply` とは異なる。
++       無名のインスタンスは推論された `Result` のケイパビリティの型を新しくしてしまうので、無名の given ではなく名前付きのクラスになっている。
+
+@ 0 4 0 19e3fb255645135611c91956492ccd33
++       これは `Monitor`、`Probate`、`Tactic[Async.Error]`、`Tactic[Socket.Error]`、`Socket.Event is Loggable` とともに構築され、`Grpc.Endpoint.sessional` はそのすべてをスコープから取る。
++       ユーザーは `Grpc.Endpoint(endpoint).session: channel ?=> …` と書き、このクラスを名指すことはない。
+
+% 0 1 0 026d6bc26b4b257c1b33bf53dbbfd801
+
+@ 0 7 0 11aa7950ca207358009db789616ce42b
++   entry #Self   対象の型 `Grpc.Endpoint[endpoint]`
++   entry #Result   貸し出される値。ブロックから逃げてはならない新しい `Grpc.Channel^`
++   entry #session   接続を開き、ブロックにチャンネルを貸し出し、その後で閉じる
++       `session(target)(lambda)`：ブロックは `Grpc.Channel^` をコンテキスト値として受け取るので、その中での呼び出しは `channel.unary[…](…)` であり、`channel` はブロックが名付けるコンテキストパラメーターである。
++       接続できない場合は、インスタンスがキャプチャした戦術を通して `Socket.Error` または `Async.Error` が発生する。
+
+@ 0 1 0 0ea0c1e17dc4b2b00bb87aa67dc1124f
++ entry .grpcInternal   `Grpc.remote` の背後にあるマクロの実装
+
+% 1 1 0 11425998ffe5882e197e0a89277992bf
+
+% 2 1 0 038a205e94a595b30282d863b630e9b0
+
+@ 0 5 0 19671ee6f2155246123e5e1fce1312bb
++       直接使うものではない。このオブジェクトは、gRPC のスタブのマクロに安定した置き場を与えるために存在する。
++   entry .remote   `Grpc.remote` の背後にあるマクロ：チャンネル上でインターフェースを実装するオブジェクト
++       インターフェースの各 `@rpc` メソッドについて、展開場所で Protocol Buffers のコーデック、`Monitor`、四つの戦術を召喚し、`Grpc.Channel#unary` を、または結果が `Chain` なら `Grpc.Channel#serverStreaming` を呼ぶ本体を生成する。

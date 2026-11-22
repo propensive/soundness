@@ -1,0 +1,1242 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 13682742deb4a48416b253e3be12b424
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 083f92d1a261a4760f587b7a57c5070f
++ info
++     angles, positions sur la Terre, caps au compas, geohashes et URI `geo:` sous forme de valeurs
++     typées
+
+@ 0 11 0 177be4952af3c26c05d49275a32a1381
++ detail
++     _Geodesy_ fournit au code géographique des types pour les choses qu'il conserve sinon dans
++     de simples doubles. Un `Angle` est une véritable quantité angulaire — construite en degrés,
++     radians ou tours, additionnée et multipliée de façon modulaire, normalisée en une valeur
++     principale ou canonique — de sorte qu'aucun `Double` ne représente jamais un angle dont
++     l'unité relève de la mémoire. Une `Location` est une latitude et une longitude réunies dans
++     un seul mot machine, à partir duquel on calcule le cap initial vers une autre position, la
++     distance orthodromique qui les sépare et le geohash de la position. Un cap se résout en un
++     point d'une rose des vents à 4, 8 ou 16 points, choisie par un argument de type, ou reste
++     un `Angle` mesuré depuis le nord ou l'est ; et une `Geolocation` est une position avec
++     altitude, incertitude et paramètres, lue depuis et écrite sous forme d'URI `geo:` selon la
++     RFC 5870.
+
+% 2 1 0 07a2f3a97693cb2218b47021b797dc4e
+
+% 3 1 0 1d69b555e63e3b3f1edc150aad3e98ff
+
+% 4 1 0 0b5650d138970e9a10acc960a9a819f7
+
+% 0 1 0 0ec0cbc75df83b33073d505d275d0234
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0de1f5a1ddf7d741136f8635834234dc
+
+% 0 1 0 13a11911d49a7ed51ffeec7a0152d060
+
+% 0 1 0 09441b34ed9451330fc6714567f287ab
+
+% 0 1 0 0db450ec1a2f4eca03479621396433aa
+
+% 0 1 0 1817b20c714129c70e98899035b79c62
+
+% 0 1 0 0a310acf281f74c41e6190ab2e87f2c6
+
+% 0 1 0 0049fa0a5d85a506062f1c9458935e5c
+
+% 0 1 0 1b526a560ec8e9990e86a166662501da
+
+% 1 1 0 0ef1d41668752ec018d5eb89e738f6cf
+
+@ 0 8 0 02b15288b8cf50020c8a5a597fdcdd28
++     Deux givens s'importent par leur nom, puisque `import soundness.*` n'importe aucun given.
++     La forme textuelle d'un angle, en degrés à une décimale avec un `°`, est `angleShowable`,
++     un given de premier niveau, car `Angle` réside dans un composant situé sous la pile
++     textuelle et son compagnon ne peut pas le porter. La rose sur laquelle un cap est résolu
++     est un given du package de choix `compassBearings` : `fourPointCompassBearing`,
++     `eightPointCompassBearing`, `sixteenPointCompassBearing`, ou `fromNorthBearing` et
++     `fromEastBearing` pour le cap sous forme d'angle. Tout le reste — l'arithmétique des
++     angles, leur inspection, les codecs de `Location` et `Geolocation` — se trouve dans les
++     compagnons et ne requiert aucun import.
+
+@ 0 1 0 1a27b2eabeb00d7d136b91b85df2e1f0
++     La bibliothèque comprend deux ensembles de sources :
+
+@ 0 6 0 1f9a8f93cc542e041bad768744ce8823
++     - `geodesy.angle` — `Angle`, son arithmétique, `Degree`, `ArcMinute`, `ArcSecond` et les
++       extensions `deg` et `rad`. Il ne dépend que de hypotenuse et symbolism ; les
++       bibliothèques situées sous la pile textuelle (la teinte d'une couleur, une rotation)
++       peuvent donc utiliser un angle sans le reste.
++     - `geodesy.core` — `Location`, `Compass` et les vents, `Directional`, `Locatable`,
++       `Geolocation`, `angleShowable` et le package `compassBearings`.
+
+@ 0 2 0 112870a50a8d28720fc11ba8376218a0
++     Les deux se compilent pour la JVM, Scala.js et Scala Native, et tout est exporté dans le
++     package parapluie `soundness`, où le package `compassBearings` fusionne avec celui du
++     package parapluie.
+
+% 0 1 0 12485a04c3b429d81f432f10e0012dab
+
+% 0 1 0 1278ebb6db3985e0029a1a82ab68a179
+
+% 0 1 0 1e42c142ba85aeb41c7059085d10131a
+
+% 0 1 0 11217f2b5e7cd8d614801e20b5d6bd2d
+
+% 0 1 0 0fc7cb957f0daaa30ad9e38d436fa050
+
+@ 0 1 0 0f18e5675870b2f1149717be76280673
++ entry .Angle
++   info
++       un angle sous forme de quantité : construit en degrés, radians ou tours, avec une
++       arithmétique cyclique
+
+@ 0 6 0 1c6d1c0d0f08c9f1149b8fd2cb93ecde
++   detail
++       `Angle` est un type opaque sur un `Double` de radians ; un angle ne peut donc pas être
++       confondu avec un simple nombre ou une longueur, et son unité ne relève jamais d'une
++       convention. On en crée un par son unité — `Angle.degrees(45)`, `45.deg`,
++       `Angle.turns(0.25)`, `Angle(math.Pi/4)` ou `0.785.rad` — et on le relit dans n'importe
++       laquelle : `degrees`, `radians`, `turns`.
+
+% 2 1 0 0427135d5d00dba616299d00d8500175
+
+% 3 1 0 14bd69165ff07edc07d17916b63bad45
+
+% 0 1 0 13066e3833ea86f51e3015dee6381087
+
+% 0 1 0 05856861695a6d22063175267d6531e8
+
+% 0 1 0 09dd4ef1122203b60fcbc298b2c3fb19
+
+% 0 1 0 15cb204a5874b0a8068eeea7d30e91cb
+
+% 0 1 0 0f33fe87519cb37310110fc4b8539138
+
+% 0 1 0 1eca6605ab206ee61bd80871393eda73
+
+% 0 1 0 1621b4b1dc6f2b541c9e816b05e1ad05
+
+% 0 1 0 0b27620cf65e1f7d07fdd8ecc75ca2c6
+
+% 0 1 0 143d60889c21e643040e5ac542dcbc9a
+
+% 1 1 0 0d1df770a36a5dfc0c7d60e8d0a1b4ef
+
+@ 0 5 0 1c4dcd3fa87a100c00297055f413c34a
++       L'arithmétique boucle comme le font les angles : `+` et `-` entre angles, ainsi que `*` et
++       `/` par un `Double` d'un côté ou de l'autre, réduisent tous modulo un tour complet ; 370° et
++       10° sont donc le même angle après toute opération. Deux formes normales sont disponibles :
++       `principal` dans `[0°, 360°)` et `canonical` dans `[−180°, 180°)`. Le littéral `45.deg`
++       fonctionne pour un littéral entier, car celui-ci est élargi au `Double` que prend
++       l'extension.
+
+@ 0 5 0 03c1037bdde2f06219c8675424098f69
++       Le rendu se trouve à deux endroits. `inspect` est dans le compagnon, en pleine précision
++       (`7.25°`), de sorte qu'un rendu de débogage ne dépend jamais du souvenir d'un import ;
++       `show`, qui arrondit à une décimale pour l'affichage, est le given de premier niveau
++       `angleShowable` et doit être importé par son nom, car le composant `geodesy.angle` se situe
++       sous la pile textuelle et ne peut pas le placer ici.
+
+@ 0 2 0 1e6c93b15fb800e80f03a201a191ea83
++       `Compass[n](angle)` résout un angle en un point du compas, et `Location#bearing` en produit
++       un, mesuré dans le sens horaire depuis le nord.
+
+% 0 1 0 02737bb414ca7d2f14498738c280c888
+
+% 0 1 0 02514f35f86603d70c1de3112f486994
+
+% 1 1 0 00f4ef6b447dbff4089c84cddc18c7b0
+
+@ 0 1 0 0b3cd24b5134331a0c8caaf5b7adae06
++ entry .Degree
++   info
++       un degré, sous forme d'`Angle` : π/180 radians
+
+@ 0 2 0 12cc51342def839b0b28345e3f359691
++   detail
++       Une constante à multiplier : `45.0*Degree` vaut 45°, et `Degree/60.0` vaut `ArcMinute`.
++       L'extension `deg` donne le même angle multiplié par son receveur.
+
+@ 0 1 0 1f02357804745b31179c4a65aff6c459
++ entry .ArcMinute
++   info
++       une minute d'arc, un soixantième de degré, sous forme d'`Angle`
+
+@ 0 1 0 0ed471e0fcabed1e1d3d9b12a5614e75
++ entry .ArcSecond
++   info
++       une seconde d'arc, un soixantième de minute d'arc, sous forme d'`Angle`
+
+@ 0 1 0 1e191b13888a3d2a08a0a74c44c7cdab
++ entry .deg
++   info
++       un angle de ce nombre de degrés, comme `45.0.deg`
+
+@ 0 3 0 1df86beda028d7861e1551d3a0c51d99
++   detail
++       Une extension sur `Double` : `51.5074.deg`. Un littéral entier est élargi ; `45.deg`
++       fonctionne donc aussi. Une valeur négative est plus claire entre parenthèses,
++       `(-0.1278).deg`, ou sous la forme `Angle.degrees(-0.1278)` ; `Angle` n'a pas de négation
++       unaire propre.
+
+@ 0 1 0 0def38a1e0882ae50c1a3601343eeb15
++ entry .rad
++   info
++       un angle de ce nombre de radians, comme `math.Pi.rad`
+
+@ 0 1 0 07707bce98e85b9a12ad1ece1ecc19a9
++   detail
++       Une extension sur `Double`, identique à `Angle(value)`.
+
+@ 0 1 0 01897bf058d1911b1a4e230c20b22653
++ entry .angleShowable
++   info
++       rend un angle en degrés à une décimale avec un `°` : `45.0°`
+
+@ 0 5 0 09853f412dbbed210529fe8a72ff3c73
++   detail
++       Le given `Showable` pour `Angle`. C'est un given de premier niveau ; il doit donc être
++       importé par son nom — `import soundness.angleShowable` — car `Angle` est déclaré dans le
++       composant `geodesy.angle`, sous la pile textuelle, et son compagnon ne peut pas contenir de
++       `Showable`. L'arrondi sert à l'affichage : `Angle.degrees(7.25).show` donne `7.3°`, là où
++       `inspect` donne `7.25°`.
+
+@ 2 1 0 18488e9b62ee4c0a058deda3ebf804eb
++       ```scala
+
+@ 3 1 0 0c3590f3e0e42744163979d2fa2257dc
++       import soundness.*
+
+@ 4 1 0 1df13546ebff6dd715336b6519c31f17
++       import soundness.angleShowable
+
+@ 0 1 0 057894a7d67fce681b07becfa79a7fac
++       Angle.degrees(7.25).show          // t"7.3°"
+
+@ 0 1 0 0fe4c0739d04c007046a236f54d75674
++       Angle.degrees(-30).principal.show // t"330.0°"
+
+@ 1 1 0 1bbdeb5106d9cdb906ce0f26ddad753c
++       ```
+
+@ 0 1 0 0bb21496fce29eb719a5fa33ec6f3ae8
++ entry .angleInternal
++   info
++       l'objet qui déclare le type opaque `Angle` et ses extensions
+
+% 1 1 0 05bb3bc6dc003d9000a2959d00defc77
+
+@ 0 4 0 1a2e38b1741cfc8b1be0ed3f83a11d8d
++   detail
++       Pas destiné à un usage direct : `Angle` est exporté d'ici vers le package `geodesy`, et les
++       extensions ci-dessous sont trouvées par la portée implicite du type opaque. Sa page dans le
++       package `geodesy` en donne la description complète.
+
+@ 0 1 0 19d2757383e198740a9373ece0d1fc76
++   entry .Angle
++     info
++         le type opaque des angles ; voir `geodesy.Angle`
+
+@ 0 1 0 032815755d2ca4b41892138e07d47b88
++     entry .apply
++       info
++           un angle du nombre de radians donné
+
+@ 0 1 0 12fced2233425c0317d42c7d58a0c58a
++       detail
++           `Angle(math.Pi)` est un demi-tour ; `.rad` sur un `Double` est identique.
+
+@ 0 1 0 0d4084bdefea92bf1c7ed9b36a2ab394
++     entry .degrees
++       info
++           un angle du nombre de degrés donné, comme `Angle.degrees(45)`
+
+@ 0 2 0 0c5bb4d8114717a80d8570e06973df27
++       detail
++           Le constructeur du compagnon ; l'extension `degrees` sur un angle le relit. `45.deg` et
++           `45.0*Degree` sont le même angle.
+
+@ 0 1 0 15546c81eca301c61cf10b19f7689c24
++     entry .turns
++       info
++           un angle de la fraction de tour complet donnée, comme `Angle.turns(0.5)`
+
+@ 0 1 0 065972ee26eaf4481e77cc6df47e4bad
++     entry .addable
++       info
++           `angle + angle`, réduit modulo un tour complet
+
+@ 0 1 0 0b50b972037783640369413a5b83d452
++       detail
++           `350.deg + 20.deg` vaut 10°. Le given `Addable`, dans le compagnon.
+
+@ 0 1 0 1052befb458f975812b89a842f126edc
++     entry .subtractable
++       info
++           `angle - angle`, réduit modulo un tour complet en un résultat positif ou nul
+
+@ 0 1 0 0159166d697b4a8b128d7f386e9ee454
++       detail
++           `10.deg - 20.deg` vaut 350° : le résultat est la valeur principale.
+
+@ 0 1 0 10c8ce67a12a12e50527ae7c8eb569ff
++     entry .multiplicable
++       info
++           `angle * double`, réduit modulo un tour complet
+
+@ 0 1 0 1363755dd73a072b038b48b6a4d2d0a3
++       detail
++           `Angle.degrees(100)*4.0` vaut 40°. `ArcMinute*60.0` vaut un degré.
+
+@ 0 1 0 1e9d63d34b327d15173f55e8c51c6aa0
++     entry .divisible
++       info
++           `angle / double`, réduit modulo un tour complet
+
+@ 0 1 0 01c2233df3748f430cce4efd8d245052
++       detail
++           `Angle.degrees(90)/2.0` vaut 45° ; `Degree/60.0` vaut `ArcMinute`.
+
+@ 0 1 0 0cf6638cc29404031fb942b7f62416eb
++     entry .multiplicable2
++       info
++           `double * angle` : un scalaire multipliant un angle par la gauche
+
+@ 0 1 0 1e85bfec9ec26fd915e393b14fea4d48
++       detail
++           `2.0*Angle.degrees(90)` vaut 180°, tout comme `Angle.degrees(90)*2.0`.
+
+@ 0 1 0 153e75c494becbe913ffc1e84ddc6db1
++     entry .inspectable
++       info
++           un rendu de débogage en degrés en pleine précision : `7.25°`
+
+@ 0 3 0 1e1e19a916ede24d187c714572dcd270
++       detail
++           Contrairement à `angleShowable`, qui arrondit à une décimale pour l'affichage,
++           l'inspection écrit le rendu propre au `Double` des degrés, puisqu'un rendu arrondi
++           masquerait l'état qu'il a pour but de montrer. Dans le compagnon ; il ne requiert donc
++           aucun import.
+
+@ 0 1 0 1ad140c6611aa97915c8781cdc70f18a
++   entry .degrees
++     info
++         l'angle en degrés, sous forme de `Double`
+
+@ 0 2 0 0ba9414da8a610910367405faa7387ab
++     detail
++         `45.deg.degrees` vaut `45.0`. Non réduit : un angle construit par `Angle.degrees(375)` se
++         relit comme 375 tant qu'on n'en prend pas `principal` ou `canonical`.
+
+@ 0 1 0 089c4e8088191bca089ab4d97461d6a9
++   entry .radians
++     info
++         l'angle en radians, sous forme de `Double`
+
+@ 0 3 0 02d0746596f5008411bf360c809cccb2
++     detail
++         La représentation elle-même : `90.deg.radians` vaut π/2. Une distance orthodromique tirée
++         de `Location#surfaceDistance` est un angle dont les radians, multipliés par le rayon d'une
++         sphère, donnent une longueur le long de sa surface.
+
+@ 0 1 0 08fb129ef9b62ac91bdd39381097209b
++   entry .turns
++     info
++         l'angle sous forme de fraction de tour complet
+
+@ 0 1 0 0932a557b244211a0040a3411c98d163
++     detail
++         `Angle.degrees(90).turns` vaut `0.25`.
+
+@ 0 1 0 0dd0ae0c96f23dc3129bb798cc3e721a
++   entry .principal
++     info
++         l'angle équivalent dans `[0, 2π)` : 375° devient 15°, −30° devient 330°
+
+@ 0 1 0 06bb86d9062191fa170c2d4e262cf936
++     detail
++         La forme sous laquelle un cap au compas est normalisé avant d'atteindre un `Directional`.
+
+@ 0 1 0 18d496a612a0f440104bfa11b01a6dd3
++   entry .canonical
++     info
++         l'angle équivalent dans `[−π, π)` : 355° devient −5°, 190° devient −170°
+
+@ 0 1 0 16276d0d18ad1bbb107f4511398ff749
++     detail
++         La forme sous laquelle une longitude est stockée, de sorte qu'une longitude ouest conserve
++         son signe.
+
+@ 0 1 0 0351aa31d826c471050505e4551570b8
++ entry .Location
++   info
++       une latitude et une longitude réunies dans un seul mot machine, avec caps, distances et
++       geohashes
+
+@ 0 5 0 14c0c1d22b1719911199ac81626084d7
++   detail
++       `Location` est un type opaque sur un `Long` : la latitude et la longitude sont chacune
++       stockées sous forme de fraction à virgule fixe de 32 bits d'un demi-tour ; une position
++       coûte donc un mot machine, une collection de positions n'est pas boxée, et deux positions
++       égales sont des valeurs égales. Elle se construit à partir de deux angles, la latitude en
++       premier, et se relit sous forme d'angles :
+
+% 2 1 0 0d9e8a77d5202fb700481e00aa5e73b4
+
+% 3 1 0 029f6adbe22dc84302069c7c3ebba609
+
+% 0 1 0 12e094f9142410a215282952a9c2cc90
+
+% 0 1 0 01281b6e728d279d1e5dd81c7f858acc
+
+% 0 1 0 17141e7c44aec6cf14761148aa4835b5
+
+% 0 1 0 0223d0f368a3763619022b912d147ebf
+
+% 0 1 0 08b6c9895d9d274d1e3948e9b32bde68
+
+% 0 1 0 151ffbc0724683a205c0bbb7c335c686
+
+% 0 1 0 02e0a8d4b86a8bab0140e08209c47ba3
+
+% 1 1 0 1eb89a9ef80f8ade08e391064930683d
+
+@ 0 4 0 103dc7d46f13308705e69a39e1f6e541
++       La forme à virgule fixe conserve une coordonnée à environ un centimètre près à la surface
++       de la Terre ; une coordonnée se relit donc à environ un dix-millionième de degré près de ce
++       qui a été donné, pas exactement : comparez les angles relus avec une tolérance. La longitude
++       est stockée dans son intervalle canonique, `[−180°, 180°)` ; une longitude ouest se relit
++       donc négative.
+
+@ 0 2 0 1d6aae481159c46715645414e3fd8198
++       Les questions géographiques sont des méthodes d'extension sur `Location`, trouvées par la
++       portée implicite du type opaque :
+
+@ 0 9 0 1d399035f6a6d18f1470439257b65045
++       - `latitude` et `longitude`, chacune un `Angle`, et `pair`, les deux sous forme de tuple ;
++       - `surfaceDistance(other)`, la séparation orthodromique sous forme d'`Angle` (par la
++         formule de haversine), dont les radians multipliés par le rayon d'une sphère donnent la
++         distance le long de sa surface ; le même code sert donc pour la Terre et pour Mars ;
++       - `bearing[Compass[8]](other)`, le cap initial vers une autre position, résolu sur la
++         rose ou la convention angulaire que fournit un given `Directional` de
++         `compassBearings` ;
++       - `geohash(n)`, le geohash en base 32 de la position, de `n` caractères, où un hash plus
++         court est toujours un préfixe d'un hash plus long.
+
+@ 0 4 0 1fb88470eec54fc31547d80a557c9cd3
++       Une `Location` s'encode en `latitude,longitude` en degrés à six décimales (`.encodable`),
++       la forme qu'utilise une URI `geo:`, et s'inspecte en pleine précision sous la forme
++       `⌖51.4999999718275°,0.12599995365645733°`. Avec une altitude, une incertitude ou un système
++       de coordonnées de référence, elle devient une `Geolocation`.
+
+% 0 1 0 092f4767693240360b721f197ca1af46
+
+% 0 1 0 1343f0c2e89414671c40009b911b6167
+
+% 1 1 0 19705984c247585312bd8528b4d01705
+
+% 0 1 0 10862db0219cfb7a1296fddf61871ba7
+
+@ 0 1 0 1e179cecab394a1a07b123a233d67ae7
++ entry .Compass
++   info
++       une rose des vents de 4, 8 ou 16 points, sous forme de type, et la résolution d'un angle en
++       l'un de ses points
+
+@ 0 6 0 10fff8ebaca636770932c621b76f4386
++   detail
++       `Compass[4]`, `Compass[8]` et `Compass[16]` sont des match types qui nomment les vents de
++       chaque rose : `CardinalWind` pour quatre points, `CardinalWind | IntercardinalWind` pour
++       huit, et ceux-ci avec `HalfWind` pour seize. Comme le nombre de points est un argument de
++       type, le type d'un cap résolu indique de quelle rose il provient, et un filtrage sur un cap
++       à quatre points est exhaustif sur quatre cas plutôt que seize.
+
+@ 0 4 0 02736dd7dd54cdab1f37db82a0ed8681
++       `Compass[n](angle)` résout un angle, mesuré dans le sens horaire depuis le nord, en le
++       point le plus proche de la rose ; chaque point couvre le secteur centré sur lui ; sur une
++       rose à huit points, `Northeast` couvre donc de 22.5° à 67.5°. L'angle est d'abord
++       normalisé ; un angle négatif est donc mesuré dans le sens antihoraire, et un angle
++       au-delà d'un tour complet reboucle.
+
+% 2 1 0 0b1287b1ce0417620cc049caaa8960de
+
+% 3 1 0 0dd648c5bb63ad36065711a74bf8357a
+
+% 0 1 0 080442b0a8f3536a09be2dd0946a08e4
+
+% 0 1 0 005057d857e86fd50815ccb2d2176092
+
+% 0 1 0 17fda4ee9cb9b6c4169f768fa2415baa
+
+% 0 1 0 0d6711fe356bffc6161228b184b3efa5
+
+% 0 1 0 1933dad4c8b3028b0e7999a9ebed06d2
+
+% 1 1 0 13da946545cd88dd16d1e4b79f65c668
+
+@ 0 3 0 026776674c15d8f602fbc2d63dbc590c
++       Un `Location#bearing` se résout sur une rose au moyen d'un given `Directional`, importé par
++       son nom depuis `compassBearings` ; les givens à quatre, huit et seize points qui s'y
++       trouvent appellent `Compass[n]`.
+
+@ 0 2 0 0a7fa3d9447712d514f88f9c864d516a
++       `CardinalWind` et `IntercardinalWind` s'affichent sous forme de flèches (`↑`, `↗`) ;
++       `HalfWind` n'a pas de `Showable` ; un cap à seize points s'affiche donc par filtrage.
+
+% 0 1 0 079219ecd1abb199056f60e033d9ecfa
+
+% 0 1 0 03bf164ac3d2a0f51431a588941e46cf
+
+% 0 1 0 180a7439330635040c871787fbc5c132
+
+% 1 1 0 06b32f7abf86e34315fbe63a4d6e90d6
+
+@ 0 1 0 1d1921affef652fe0d2f11d819d5b758
++   entry .apply
++     info
++         le point d'une rose à 4, 8 ou 16 points le plus proche d'un angle mesuré dans le sens
++         horaire depuis le nord
+
+@ 0 2 0 1fe9c12afea4e83c1d76e680107aa0e5
++     detail
++         `Compass[8](Angle.degrees(315))` vaut `Northwest`. Une méthode inline : le nombre de
++         points est un argument de type littéral, `4`, `8` ou `16`, et le résultat est typé
++         `Compass[n]`.
+
+@ 0 1 0 1479744f7c4be33000eaa68a752b01c4
++   entry .points4
++     info
++         les quatre vents cardinaux, dans le sens horaire depuis le nord
+
+@ 0 1 0 1513e5839e00a8cc12e87f90ab5ccc39
++     detail
++         Un tableau immuable de `North`, `East`, `South`, `West` : le point *i* est centré sur
++         *i* × 90°.
+
+@ 0 1 0 0546fdb075ac4e6f1a521e9709b1cc9c
++   entry .points8
++     info
++         les huit vents, dans le sens horaire depuis le nord
+
+@ 0 2 0 022d7232e15583b0074dc38e887b0902
++     detail
++         Les vents cardinaux avec un vent intercardinal entre chaque paire : `North`, `Northeast`,
++         `East`, … `Northwest`. Le point *i* est centré sur *i* × 45°.
+
+@ 0 1 0 101c27e10026135c163c59167c578755
++   entry .points16
++     info
++         les seize vents, dans le sens horaire depuis le nord
+
+@ 0 3 0 09e2b3b6c306acb51a86cd131e40c0a3
++     detail
++         Les huit vents avec un demi-vent entre chaque paire : `North`, `NorthNortheast`,
++         `Northeast`, … `NorthNorthwest`. Un point sur quatre est un vent cardinal, et le point *i*
++         est centré sur *i* × 22.5°.
+
+@ 0 1 0 14ebefe68ed313ec00435ca37f63853a
++ entry .CardinalWind
++   info
++       les quatre points cardinaux : `North`, `East`, `South` et `West`
+
+@ 0 4 0 1c9a847723b260f815efb113b9152124
++   detail
++       Les points d'une rose `Compass[4]`, et les points cardinaux de toute rose plus grande. Les
++       cas sont exportés dans le package `geodesy` (et le package parapluie) ; ils s'écrivent donc
++       seuls : `North`, et non `CardinalWind.North`.
+
+% 2 1 0 18cc731ea34d91f51b0aacccbdd0a935
+
+% 3 1 0 152f449c9882ab510c94018e36504908
+
+% 0 1 0 0c5cae2bbc6c87e000189f877d9eebc4
+
+% 0 1 0 03f47f7ccc777070140615ffb8e03ab7
+
+% 0 1 0 142546fd7ad7a1011aebb32ebe986178
+
+% 0 1 0 091cea1d04d9a5d01dcb6cfcd8fb6f72
+
+% 0 1 0 0b54b17b702062251bce7e795077b8f6
+
+% 1 1 0 060be14724e7395d1bda0d9e1c475dcd
+
+% 1 1 0 04563b95ca529f3c00150d22dafa7e56
+
+@ 0 1 0 0aae8e617ef0855d1dd969ffda15e404
++   entry .showable
++     info
++         rend un vent cardinal sous forme de flèche : `↑`, `→`, `↓` ou `←`
+
+@ 0 1 0 025011393f133e31019818db7c811f6a
++     detail
++         Dans le compagnon ; il ne requiert donc aucun import : `North.show` vaut `t"↑"`.
+
+@ 0 1 0 1a4b24ee998af6af030e992a29a359e0
++ entry .IntercardinalWind
++   info
++       les quatre points intercardinaux : `Northeast`, `Southeast`, `Southwest` et `Northwest`
+
+@ 0 4 0 0f5c6fc6cbb635c21e127d88f5775ffc
++   detail
++       Les points situés entre les vents cardinaux, qu'une rose `Compass[8]` ajoute à
++       `CardinalWind`. Les cas sont exportés dans le package `geodesy` et le package parapluie ;
++       ils s'écrivent donc seuls : `Northeast`.
+
+% 1 1 0 17f6c4cebb7b9c66192475b520e8f6f2
+
+@ 0 1 0 0e544e3e292f31a41b4cde7a4e170f2c
++   entry .showable
++     info
++         rend un vent intercardinal sous forme de flèche diagonale : `↗`, `↘`, `↙` ou `↖`
+
+@ 0 1 0 12f59b83af4da0a41c6d8cba30265c60
++     detail
++         Dans le compagnon ; il ne requiert donc aucun import : `Northeast.show` vaut `t"↗"`.
+
+@ 0 1 0 1a09cc879beb62850bfb0afe9df91b83
++ entry .HalfWind
++   info
++       les huit demi-vents d'une rose à 16 points, de `NorthNortheast` à `NorthNorthwest`
+
+@ 0 5 0 127f2efd89f672d513d4ca5bc94e6706
++   detail
++       Les points situés entre chaque vent cardinal et intercardinal, qu'une rose `Compass[16]`
++       ajoute aux huit : `NorthNortheast`, `EastNortheast`, `EastSoutheast`, `SouthSoutheast`,
++       `SouthSouthwest`, `WestSouthwest`, `WestNorthwest` et `NorthNorthwest`. Les cas sont
++       exportés dans le package `geodesy` et le package parapluie ; ils s'écrivent donc seuls.
++       Contrairement à `CardinalWind` et `IntercardinalWind`, un demi-vent n'a pas de flèche
++       `Showable`.
+
+@ 0 1 0 15dd7421c7c8c7ce09dc89bb4c88e53b
++ entry .North
++   info
++       le vent cardinal nord, 0° : `CardinalWind.North`, exporté
+
+@ 0 1 0 10f024fbe053bba90e136f160a79f50b
++ entry .East
++   info
++       le vent cardinal est, 90° : `CardinalWind.East`, exporté
+
+@ 0 1 0 077344cc34f3aaf2028b6923b00c4413
++ entry .South
++   info
++       le vent cardinal sud, 180° : `CardinalWind.South`, exporté
+
+@ 0 1 0 14fd18a3f73fc0210c6d37cb33fc94d3
++ entry .West
++   info
++       le vent cardinal ouest, 270° : `CardinalWind.West`, exporté
+
+@ 0 1 0 12985d2cf1e65b501dca347d6414fbe0
++ entry .Northeast
++   info
++       le vent intercardinal nord-est, 45° : `IntercardinalWind.Northeast`, exporté
+
+@ 0 1 0 0e4a34a7dcce590c1629c8cec1a26cc5
++ entry .Southeast
++   info
++       le vent intercardinal sud-est, 135° : `IntercardinalWind.Southeast`, exporté
+
+@ 0 1 0 06b3199e189a01a51b6430815a01e1af
++ entry .Southwest
++   info
++       le vent intercardinal sud-ouest, 225° : `IntercardinalWind.Southwest`, exporté
+
+@ 0 1 0 1770420d8357ba3f1905151b5e12b5a3
++ entry .Northwest
++   info
++       le vent intercardinal nord-ouest, 315° : `IntercardinalWind.Northwest`, exporté
+
+@ 0 1 0 1d91f8c44d9d66611bf528886242b779
++ entry .NorthNortheast
++   info
++       le demi-vent nord-nord-est, 22.5° : `HalfWind.NorthNortheast`, exporté
+
+@ 0 1 0 0576c29bce804cf409cce44deca1a002
++ entry .EastNortheast
++   info
++       le demi-vent est-nord-est, 67.5° : `HalfWind.EastNortheast`, exporté
+
+@ 0 1 0 0a7c0da224a45b31072e4130ea97697b
++ entry .EastSoutheast
++   info
++       le demi-vent est-sud-est, 112.5° : `HalfWind.EastSoutheast`, exporté
+
+@ 0 1 0 0d6702a7becfc22d091a0b9ee161a0f8
++ entry .SouthSoutheast
++   info
++       le demi-vent sud-sud-est, 157.5° : `HalfWind.SouthSoutheast`, exporté
+
+@ 0 1 0 1a5ed9efd74c5e2a1402993dc2d59027
++ entry .SouthSouthwest
++   info
++       le demi-vent sud-sud-ouest, 202.5° : `HalfWind.SouthSouthwest`, exporté
+
+@ 0 1 0 0e6099d66a2d90040f7573ec6096f8a3
++ entry .WestSouthwest
++   info
++       le demi-vent ouest-sud-ouest, 247.5° : `HalfWind.WestSouthwest`, exporté
+
+@ 0 1 0 19461b76d6724d710971e6a060ba7122
++ entry .WestNorthwest
++   info
++       le demi-vent ouest-nord-ouest, 292.5° : `HalfWind.WestNorthwest`, exporté
+
+@ 0 1 0 18cecb7d9b7f1c9f147efcc40c48d432
++ entry .NorthNorthwest
++   info
++       le demi-vent nord-nord-ouest, 337.5° : `HalfWind.NorthNorthwest`, exporté
+
+@ 0 1 0 044df08b9d5e95f70fd28069a2843d20
++ entry .Directional
++   info
++       une classe de types qui transforme un cap, un angle dans le sens horaire depuis le nord, en
++       une valeur de direction
+
+@ 0 6 0 14d7f5475aa33be51708680b341bbdf7
++   detail
++       `Directional` est ce que `Location#bearing[T]` exige de son type de résultat `T` : une seule
++       méthode, `direction`, qui va de l'angle principal du cap (dans `[0°, 360°)`, dans le sens
++       horaire depuis le nord) vers un `T`. Le package `compassBearings` fournit les instances
++       standard, chacune importée par son nom : les roses à 4, 8 et 16 points, et le cap sous
++       forme d'`Angle` depuis le nord ou depuis l'est.
+
+@ 0 1 0 1727e9dcac7da0f3007b260d98c5bb8e
++       Un domaine doté de ses propres secteurs en implémente une :
+
+% 2 1 0 14728406025973571701ae0d148a3083
+
+% 3 1 0 100d19786b7dc0a5151e9cee59de030f
+
+% 0 1 0 11056cb5d7c0a33a016c9940724da134
+
+% 0 1 0 1ea293228a2aa5730fdfdf91285c4d2e
+
+% 0 1 0 01838468c44aa1321285b6c33eb0a176
+
+% 0 1 0 14af5ae2c0fd98e8086519edb55233c1
+
+% 1 1 0 18a5e7d8a259ed3b0d9ecb1939e935bc
+
+% 1 1 0 0cd0f2a637dc6a9411d4285fa39a3b39
+
+% 1 1 0 0fc5f61145c226f21040b3b4bfdabf2c
+
+@ 0 1 0 16c8c17edd4661191bb0f2fea2384c9e
++   entry #direction
++     info
++         la direction correspondant à un cap, donné sous forme d'angle dans le sens horaire depuis
++         le nord dans `[0°, 360°)`
+
+@ 0 1 0 011fbfbc04fef1870fe7e46977834c80
++ entry .Locatable
++   info
++       une classe de types pour une valeur qui a une position sur la Terre
+
+@ 0 4 0 14ca4fc58e596fee0a867a40dbcc16b7
++   detail
++       Un type `Locatable` peut donner une `Location` pour chacune de ses valeurs : une ville, une
++       gare, une photographie. Son unique méthode, `location`, l'extrait ; un code générique sur
++       les choses localisées peut donc demander `T is Locatable` et lire une position sur
++       chacune.
+
+% 2 1 0 136f77199cf068ba0ef000fd7a3e672e
+
+% 3 1 0 1f1d1df294440f481ab4b975c5e296f7
+
+% 0 1 0 1c2e7dd40d2d210e0b0b510ef759846e
+
+% 0 1 0 09087ddea37d4f2e0cfc5a4e3e4cfca9
+
+% 0 1 0 1c641e02684d52400f2c0f48a50e6c7a
+
+% 0 1 0 00b4744854e1cf901a0b9a24125a7d8f
+
+% 1 1 0 1b14470dc3827e4218aadbefef8857a9
+
+@ 0 3 0 1c63bf4cb97117a0186089d184f396d9
++       Geodesy lui-même ne définit aucune instance ni aucune opération qui en prenne une ; les
++       extensions de `Location` requièrent donc toujours une `Location` ; `Locatable` est la
++       jonction pour une bibliothèque construite par-dessus.
+
+% 1 1 0 0c5574e8fb256001063bbed1a016dcf9
+
+@ 0 1 0 015bf80004b3eeef0430f7fd82d786b9
++   entry #location
++     info
++         la position d'une valeur, sous forme de `Location`
+
+@ 0 1 0 1dae529f02d5c8a71fe241384cad3dd6
++ entry .Geolocation
++   info
++       une position avec altitude, incertitude, système de référence et paramètres optionnels : une
++       URI `geo:` selon la RFC 5870
+
+@ 0 5 0 09f7c6ffac7e7b2a0d746365b6b548be
++   detail
++       Une `Geolocation` est le contenu d'une URI `geo:` de la RFC 5870 sous forme de case class :
++       une `Location`, une altitude optionnelle en mètres, un système de coordonnées de référence
++       optionnel (`crs`), une incertitude optionnelle en mètres (`u`), et d'éventuels autres
++       paramètres. Elle se décode depuis un texte `geo:` et s'y réencode :
+
+% 2 1 0 142a37add1e69850033e357673a0d900
+
+% 3 1 0 15b6f6d39840fc4d0fcd9ef9ccdfa735
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0e589a84e1d8e7cd1c0162f025842027
+
+% 0 1 0 0b21de40911578a6191209f637f1b72f
+
+% 0 1 0 11a0b7fd77cc583801e5cb943a8d5405
+
+% 0 1 0 0bfc5330b8f204f70e538a048b25c948
+
+% 0 1 0 08e4032c600a6769009f4c97a4b7c97e
+
+% 0 1 0 0f70e667ce1835e50d31bbb9bbc97b69
+
+% 0 1 0 007b314eb43698e009377a4efa3332ac
+
+% 1 1 0 0c0ae222cefd4b310cf8763eacd54b2f
+
+@ 0 6 0 0954fd126766d8371d19f0da2a27045c
++       Le décodage requiert une `Tactic[Geolocation.Error]` et en lève une dont la `Reason` nomme
++       le défaut ; sous une tactique qui récupère, une `Geolocation` partielle est renvoyée, avec
++       les parties qui ont pu être analysées. Les coordonnées et l'altitude sont des nombres de la
++       forme `-?[0-9]+(.[0-9]+)?` (sans exposant ni `+` initial). Dans l'ordre qu'impose la RFC,
++       `crs` n'est reconnu qu'en premier paramètre et `u` qu'en premier paramètre qui le suit ;
++       tout autre paramètre, y compris un `crs` ou un `u` mal placé, est conservé dans
++       `#parameters`.
+
+@ 0 2 0 121a369ea88c14090c6cb74fed0af043
++       L'encodage écrit chaque nombre à six décimales ; une URI décodée puis réencodée est donc
++       égale en valeur, mais pas toujours en texte.
+
+% 1 1 0 15051c11848586951c6dbb4aa5d97431
+
+% 0 1 0 1dbaec3479e296710564c3cec93236f2
+
+@ 0 1 0 004ba22e468f82ea013ac137dfe288c5
++   entry .decoder
++     info
++         lit une URI `geo:` sous forme de `Geolocation`, en levant `Geolocation.Error` si elle est
++         mal formée
+
+@ 0 4 0 01837ad5687cf91b0ab0a0f0f25c0fda
++     detail
++         Le given `Decodable in Text`, dans le compagnon ; `text.as[Geolocation]` ne requiert donc
++         qu'une `Tactic[Geolocation.Error]` dans la portée. Un texte avec un autre schéma lève
++         `BadScheme`, et un texte `geo:` sans deux coordonnées lève `ExpectedCoordinates` ; dans
++         les deux cas, la valeur récupérée est une `Geolocation` à 0°, 0°.
+
+@ 0 1 0 0b41af6e911415181b8d664c59d19dbb
++   entry .encodable
++     info
++         écrit une `Geolocation` sous forme d'URI `geo:`, les nombres à six décimales
+
+@ 0 3 0 0f7d5968b350086700df441f30ad6648
++     detail
++         Écrit `geo:`, la `latitude,longitude` de la position, puis `,altitude`, `;crs=…`, `;u=…`
++         et les paramètres restants, chacun seulement s'il est présent. Dans le compagnon ; il ne
++         requiert donc aucun import.
+
+@ 0 1 0 12fdf343ecf5448e10f39f0fe9c3589b
++   entry .Error
++     info
++         levée lorsqu'un texte n'est pas une URI `geo:` bien formée
+
+@ 0 4 0 0b32836b3b05d19e0d91b79b8b7dd731
++     detail
++         Erreur `↯/s.46.1` : _the geo URI is not in the correct format because …_, suivi du message
++         de la `Reason`. Levée par `Geolocation.decoder`, au moyen de la
++         `Tactic[Geolocation.Error]` dans la portée.
+
+% 2 1 0 1259794ee1a19daf1837d5df396d0624
+
+% 3 1 0 09148195721b613c0aa70b9de0105caa
+
+% 0 1 0 1931ca3a183060d60c58d942d49fbc0e
+
+% 0 1 0 1df9d3f652c477490e9a7fb7793c6420
+
+% 1 1 0 196840b5ede78ea31457d26c8934d965
+
+@ 0 2 0 0ef8dbb8e45df3161931b3d37b9e57b8
++         Chaque `Reason` est numérotée comme un sous-code de 420 ; les cas et leurs messages sont
++         présentés en tableau sous `Geolocation.Error.Reason`.
+
+@ 0 1 0 096b46c2f978b2771f7497ee4c04fb1f
++     entry .Reason
++       info
++           la raison pour laquelle une URI `geo:` n'a pas pu être décodée, numérotée comme un
++           sous-code de l'erreur `↯/s.46.1`
+
+@ 0 2 0 13b765894ed3455c17b67b2bd16a3929
++       detail
++           Une énumération de `Clarification`, numérotées comme des sous-codes de l'erreur
++           `↯/s.46.1` :
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 11 0 051ffd078a3110131437aa54b6d7922a
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `MissingEquals`  1  _the parameter does not contain an `=`_
++           row  `MultipleEquals`  2  _the parameter contains more than one `=`_
++           row  `BadScheme`  3  _the value does not begin with the `geo:` URI scheme_
++           row  `ExpectedSemicolon`  4  _a `;` was expected after the altitude value_
++           row  `UnexpectedSuffix`  5  _a `,` or `;` was expected_  texte parasite après la longitude, ou altitude non numérique
++           row  `ExpectedCoordinates`  6  _latitude and longitude coordinates were expected_
++           row  `BadUncertainty`  7  _the `uncertainty` parameter was not a valid number_
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 1 0 068a0909dde97ff616d5ccd0ca68dd14
++       entry #number
++         info
++             le sous-code de la raison, de 1 à 7
+
+@ 0 1 0 1c84edfd496952860c66c73927dd5fd9
++     entry .communicable
++       info
++           rend chaque `Geolocation.Error.Reason` sous forme de son message
+
+@ 0 1 0 1e3dd8b54838c5511aab52672fb9fd80
++     entry #reason
++       info
++           la raison pour laquelle l'URI n'a pas pu être décodée, une `Geolocation.Error.Reason`
+
+@ 0 1 0 0641081fc8f116c70d507d4f1642b625
++   entry #location
++     info
++         la latitude et la longitude, sous forme de `Location`
+
+@ 0 1 0 09ea1c186307d77c0ccc5dd5971908d2
++   entry #altitude
++     info
++         l'altitude en mètres, ou `Unset`
+
+@ 0 1 0 0fa6c1196e63d53a131584b643d0bc29
++   entry #crs
++     info
++         le système de coordonnées de référence désigné par le paramètre `crs`, ou `Unset`
++         (signifiant WGS-84)
+
+@ 0 1 0 1d10530dc250c8cb16aceac95ee9164c
++   entry #uncertainty
++     info
++         l'incertitude en mètres, tirée du paramètre `u`, ou `Unset`
+
+@ 0 1 0 0b727767bcbdd5a30863371b71e32d5b
++   entry #parameters
++     info
++         tous les paramètres après `crs` et `u`, par nom, sous forme de `Map[Text, Text]`
+
+@ 0 1 0 0cc85fc40bc87cc612f4b8b99ffc7b0f
++ entry .compassBearings
++   info
++       les conventions sur lesquelles un cap peut être résolu, chacune un given `Directional` à
++       importer par son nom
+
+@ 0 6 0 1e1ac0923b5bc236182a47218fb5b0fc
++   detail
++       `Location#bearing[T]` requiert un `T is Directional`, et lequel relève d'un choix — le
++       nombre de points de la rose, ou un angle et son zéro — ; aucun n'est donc dans la portée
++       implicite et `import soundness.*` n'en importe aucun : on en importe un par son nom,
++       puisqu'un import joker n'importe pas les givens. Le package fusionne avec le
++       `compassBearings` propre au package parapluie.
+
+@ 0 1 0 1f5b81396a2670b91f45166d4fc40aa9
++       Le même cap, de Londres à Paris, sous chacun d'eux :
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 07ed05f754f4f3f30b6948203e2fb068
+
+% 1 1 0 10b68e92662b345400c3f6065c335605
+
+% 2 1 0 0b3024186dfee8cc03b2285676eb61d8
+
+% 0 1 0 128cd2382e1dd91e1fdffd39725218ec
+
+% 2 1 0 1b7f9cdc72a177f40a2ef287b6e71a0d
+
+% 3 1 0 0150909cda548287059c71aeb7edc6c4
+
+% 0 1 0 17afe9c7ab3e56ef187f15fd8007f6a7
+
+% 0 1 0 0857b52f3f2fc0cf04f14f587482671f
+
+% 1 1 0 17954f05d953c5c505960d02f075e4d0
+
+% 2 1 0 15337c31e63e43761c222c0115e2e3db
+
+% 0 1 0 0ff5b778b8302a040d6275b8a2cf0c7f
+
+% 2 1 0 05d5ac6473f7d721064173a66ab79fce
+
+% 3 1 0 0a09e161a388a0ea15364486ac7b6aeb
+
+% 0 1 0 0175adad82ad62bb195a849cd0302fa7
+
+% 0 1 0 1798df88921672e00cbc96626b53143f
+
+% 1 1 0 138128e815158d811a9f26a845108f99
+
+% 2 1 0 0123ed2ca65ddd54134ddb4fc3af7f69
+
+% 0 1 0 120021db0fec257f02c18ec8ff178b75
+
+% 2 1 0 10509dc09c30c5171dc982efdca49754
+
+% 3 1 0 0364873b26b5dd480f64fc875116ef42
+
+% 0 1 0 0289e6b538b7d7e51e9f8e114396fa51
+
+% 0 1 0 1dccb270d38b864801b8ffaeeb517069
+
+% 1 1 0 16f2f9990c3d100f0f2feee8b2198c8f
+
+% 2 1 0 1349d0b685eff4f2170f8c6e32c7e80f
+
+% 3 1 0 14fda9975ad9ffb21ff517e1755622c1
+
+% 0 1 0 0ff801a7e673185a106f20254b8d5612
+
+% 2 1 0 08058eb2eb7b3af41fb9e67899377aaa
+
+% 3 1 0 071e13384636289617b4b74751495596
+
+% 0 1 0 0a600f2e392e2dca0853f09e4a098da4
+
+% 0 1 0 111a39a3a038f3860b91f90d97b4b445
+
+% 1 1 0 04a88cecd0e4a5b41e8732169f9ec2ce
+
+% 2 1 0 1f06edc7e352297d055f1e96372c52cc
+
+% 3 1 0 0fdabcdbbfa8cede03bcf8c2257ec531
+
+% 0 1 0 1ba0ed0ce37ed6d600d7d0a0b31c1f7f
+
+% 2 1 0 1f2f6702a1c1ad2d04189d1ffc18bc7d
+
+% 3 1 0 027d1eeeb00d1eca0e7b1e9b28112393
+
+% 0 1 0 1e6bcdbd9f9632a40db753409584d74b
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 1ff178f7eb83fda51f9ec83c94ab0750
++       Chaque rose donne une réponse plus grossière ou plus fine d'un type différent ; les givens
++       angulaires conservent le cap exact. Un seul `Angle is Directional` devrait être dans la
++       portée à la fois, puisque `fromNorthBearing` et `fromEastBearing` donnent le même type.
+
+% 0 1 0 1e4eac66239a8ab60c33a936798e45b7
+
+% 1 1 0 0d568bac681ee86e1c74c69a1741e5f2
+
+@ 0 1 0 0e1a4131c4b4a9c206a4555a355d30f6
++   entry .fourPointCompassBearing
++     info
++         résout un cap en le vent cardinal le plus proche, sous forme de `Compass[4]`
+
+@ 0 1 0 0a929470237dfbf717b7082bc53a0c71
++     detail
++         `Compass[4] is Directional`, par `Compass[4](angle)` : `North`, `East`, `South` ou `West`.
+
+@ 0 1 0 0cd708573edea3b50b02134bafb7b3bb
++   entry .eightPointCompassBearing
++     info
++         résout un cap en le plus proche des huit vents, sous forme de `Compass[8]`
+
+@ 0 2 0 089426f0d37a6b3c0e85949718d6fa54
++     detail
++         `Compass[8] is Directional`, par `Compass[8](angle)` : un `CardinalWind` ou un
++         `IntercardinalWind`.
+
+@ 0 1 0 05a62b40daa706d11bc9c77289089e49
++   entry .sixteenPointCompassBearing
++     info
++         résout un cap en le plus proche des seize vents, sous forme de `Compass[16]`
+
+@ 0 2 0 12fe8d84bd74e86b144d0bc3bfeb78b8
++     detail
++         `Compass[16] is Directional`, par `Compass[16](angle)` : un `CardinalWind`, un
++         `IntercardinalWind` ou un `HalfWind`.
+
+@ 0 1 0 191729de0992fd400d2b2b34c012fe11
++   entry .fromNorthBearing
++     info
++         donne un cap sous forme d'`Angle` dans le sens horaire depuis le nord, dans `[0°, 360°)`
+
+@ 0 1 0 1e521765d90d3dec0f8022dc59e95464
++     detail
++         `Angle is Directional`, en tant qu'identité : la convention du navigateur, où 90° est
++         l'est.
+
+@ 0 1 0 1d83049507740c0c0d6b3c2c9eb78e97
++   entry .fromEastBearing
++     info
++         donne un cap sous forme d'`Angle` depuis l'est : le cap au compas moins 90°
+
+@ 0 4 0 111450fd8e59486e0ed11f32b1da9586
++     detail
++         `Angle is Directional`, en soustrayant un quart de tour au cap ; plein est vaut donc 0° et
++         plein nord 270°. Comme la soustraction d'angles reboucle en un résultat positif ou nul,
++         l'angle est dans `[0°, 360°)` et croît toujours dans le sens horaire ; ce n'est pas
++         l'angle antihoraire de la convention mathématique.
+
+@ 0 1 0 0cf146d3c7aa92100141eb3afe88ecba
++ entry .internal
++   info
++       l'objet qui déclare le type opaque `Location` et ses extensions
+
+% 1 1 0 1000b434f071f54d060497e447f29931
+
+@ 0 4 0 1dbbb6f3ffb93113113b67bc07cab51b
++   detail
++       Pas destiné à un usage direct : `Location` est exporté d'ici vers le package `geodesy`, et
++       les extensions ci-dessous sont trouvées par la portée implicite du type opaque. Sa page
++       dans le package `geodesy` en donne la description complète.
+
+@ 0 1 0 03b9bcb7c720e9a316a07d05d3905bec
++   entry .Location
++     info
++         le type opaque des positions ; voir `geodesy.Location`
+
+@ 0 3 0 1e9d5deb5ded7c8a1efa98567a8403e4
++     detail
++         Le type opaque `Location = Long`, avec ses constructeurs et ses codecs. Sa page dans le
++         package `geodesy` en donne la description complète.
+
+@ 0 1 0 0e1dc9be7756c8a21622b74291746e49
++     entry .apply
++       info
++           une position à partir d'une latitude et d'une longitude, sous forme de deux angles ou de
++           deux entiers en microdegrés
+
+@ 0 3 0 1dd37e8993d68ea40d4b6aeab843acfd
++       detail
++           `Location(51.5.deg, Angle.degrees(-0.13))` prend la latitude en premier. Tous les angles
++           sont acceptés : la longitude est réduite à `[−180°, 180°)`, et la latitude n'est pas
++           vérifiée ; une latitude au-delà de ±90° donne donc une position dénuée de sens plutôt
++           qu'une erreur.
+
+@ 0 2 0 0d0a2afabb2fd7c204bb94e443b04082
++           `Location(north, east)` avec deux `Int` prend des millionièmes de degré, une forme
++           compacte pour les tables de coordonnées : `Location(51500000, -130000)` est 51.5° N,
++           0.13° O.
+
+@ 2 1 0 18023eebbf200361054701c01fdf36ca
++           ```scala
+
+@ 3 1 0 18f012f5da220afd018aded88a2d2aca
++           import soundness.*
+
+@ 0 1 0 0af49f4aa37c49171f16f90f7aa1722f
++           Location(51.5.deg, Angle.degrees(-0.13))
+
+@ 0 1 0 07235120a241ad290b315560710970d7
++           Location(51500000, -130000)
+
+@ 1 1 0 147e3bb38853c99d014cf0c5b46653a5
++           ```
+
+@ 0 1 0 0c3ac1afd565040d04733562fdcc1eaa
++     entry .encodable
++       info
++           écrit une position sous la forme `latitude,longitude` en degrés, à six décimales
+
+@ 0 3 0 0bc7fad05c789e4416af82f43537b24b
++       detail
++           `Location(51.5.deg, 0.25.deg).encode` vaut `t"51.500000,0.250000"` : la paire de
++           coordonnées d'une URI `geo:`, que réutilise l'encodeur de `Geolocation`. Dans le
++           compagnon ; il ne requiert donc aucun import.
+
+@ 0 1 0 1cae7f0168f887801f425f45fd8aca68
++     entry .inspectable
++       info
++           un rendu de débogage en pleine précision, marqué comme une position : `⌖51.5°,0.126°`
+
+@ 0 3 0 041d163d1e07fcaa1e42819a96027d41
++       detail
++           Chaque coordonnée est rendue par l'inspection propre à `Angle`, à la pleine précision de
++           la valeur stockée, après un `⌖` qui marque la paire comme une position plutôt que comme
++           deux angles indépendants. Dans le compagnon ; il ne requiert donc aucun import.
+
+@ 0 1 0 0def2369ecb7339b08ad7607eaeff372
++   entry .latitude
++     info
++         la latitude, sous forme d'`Angle` dans `[−90°, 90°]`
+
+@ 0 2 0 08b6046c3849666c08ec7486d15c35ef
++     detail
++         Relue depuis la forme à virgule fixe, donc à environ un dix-millionième de degré près de
++         l'angle à partir duquel la position a été construite.
+
+@ 0 1 0 1dfd21523bb4870a0caf220dce352277
++   entry .longitude
++     info
++         la longitude, sous forme d'`Angle` dans `[−180°, 180°)`
+
+@ 0 2 0 08e75f3e8891207b1e767d9182ce276c
++     detail
++         Une longitude ouest est négative :
++         `Location(0.deg, Angle.degrees(-74.006)).longitude.degrees` vaut environ `-74.006`.
+
+@ 0 1 0 13003f3a03fc12281ec08fc56612a858
++   entry .pair
++     info
++         la latitude et la longitude, sous forme de tuple d'angles
+
+@ 0 1 0 12a6413fe420927a09000778337de983
++   entry .geohash
++     info
++         le geohash en base 32 de la position, du nombre de caractères donné
+
+@ 0 4 0 18e0cc1a6042326b04396eab9135768c
++     detail
++         `Location(57.64911.deg, 10.40744.deg).geohash(11)` vaut `t"u4pruydqqvj"`, l'exemple
++         canonique. Un hash plus court est un préfixe d'un hash plus long, et des positions proches
++         partagent généralement un préfixe, bien que deux positions de part et d'autre d'une
++         frontière de cellule puissent n'en partager aucun ; une correspondance de préfixe est donc
++         un premier filtre de proximité, pas une réponse.
+
+@ 0 1 0 15de7f33ba80d4f8142e0b8190044e2e
++   entry .surfaceDistance
++     info
++         la séparation orthodromique de deux positions, sous forme d'`Angle`
+
+@ 0 3 0 18a0e5e74ff797ff192355acb2b7f57b
++     detail
++         Par la formule de haversine. Les radians de l'angle multipliés par le rayon d'une sphère
++         donnent la distance le long de sa surface : `london.surfaceDistance(paris).radians*6371`
++         vaut environ 344 km sur la Terre. Symétrique, et nulle d'une position à elle-même ; les
++         pôles sont séparés d'un demi-tour.
+
+@ 0 1 0 0adeaf2f7171897a1cff11eae46a0189
++   entry .bearing
++     info
++         le cap initial vers une autre position, résolu par un given `Directional`
+
+@ 0 5 0 138384668954e9a3015f5e6bbcc42f05
++     detail
++         `here.bearing[Compass[8]](there)` prend le cap orthodromique en `here`, dans le sens
++         horaire depuis le nord et normalisé dans `[0°, 360°)`, et le transmet au
++         `T is Directional` dans la portée : une rose des vents ou une convention angulaire de
++         `compassBearings`, importée par son nom. Le long d'un grand cercle, le cap change au cours
++         du trajet ; il s'agit donc du cap au départ.

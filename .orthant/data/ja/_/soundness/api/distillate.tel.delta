@@ -1,0 +1,812 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05ea6290cf383b1415d25369611b31e6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f4c16a21204bad9072e5e555bd0e99e
++ info   テキストやその他の形式からの型付きの変換：`as[T]`、`As` 抽出子、それらの型クラス
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1e0f174c3b1dfb1a02e93d38ac1035e9
++     _Distillate_ は、まとまりのない値（コマンドライン引数、環境変数、正規表現のキャプチャ、パースされた文書のフィールド）を型付きの値に変え、それぞれの変換がどう失敗しうるかを型に表す。
++     そのために三つの型クラスを使い、それぞれが独自の失敗の仕方を持つ。
+
+@ 0 5 0 1f40c8e4af3c372b0131c492189d8432
++     - `Decodable` はある形式_から_値を読み出し（`Int is Decodable in Text`）、読めないときは `Tactic` を通じて型付きのエラーを発生させる。
++     - `Extractable` は結果_へ向けて_変換し（`Text is Extractable to Int`）、変換を断るときは `Unset` を返す。これはパターンマッチが求めるものである。
++     - `Irrefutable` は何も失敗しえないところで変換する（`Byte is Irrefutable to Int`）。
+
+@ 0 2 0 03e046b02184756402acc3ed8e36ca2e
++     日常的に使う表面は二つの名前である。
++     デコードする `as` 拡張メソッドと、パターンの中で抽出する `As` 抽出子である。
+
+% 2 1 0 0b5bafb24f15e461180c83d322b978fb
+
+% 3 1 0 0a27c92abba46e151a001ffa0a3c6a77
+
+% 4 1 0 028090d4d24e2d1e0fb1479a17df6561
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 05d3bce67d532d2404eaa96a1aba7f7c
+
+% 0 1 0 0d4fa444f9ea8c421b6dd2ef1fd9559b
+
+% 0 1 0 11d9e8d37bd2051e05fd9b2fd4e3497f
+
+% 0 1 0 0aa9d2abc67dc526112a149d803d0377
+
+% 0 1 0 1e49d9c9e84f2caa0d73fe7c506aa055
+
+% 1 1 0 1d9592f73a83d45301b58585e3ac221f
+
+@ 0 8 0 1e7d2d323cfe691c1fd01ce31c14c789
++     このライブラリは、すべてのデータ形式が共有する部品も持つ。
++     すべての形式のコーデックがケースに名前を付けるのに使う、`enum` の導出された記述 `Enumerable`。
++     命名規則の間の双方向の対応付け `Identifiable`。
++     形式のトークンリーダーから値を直接読む、`Decodable` のストリーミング版 `Parsable`。
++     `Optional` なフィールドが参照する三つのポリシー `Decodable.Absence`、`Decodable.Nullity`、`Decodable.Fault`。
++     そして、形式の導出されたコーデックと直接の（生成された）コーデックを選ぶコンテキスト上のモード `Codecs` である。
++     エンコードの方向である `Encodable` と `value.in[Format]` は、このライブラリの下にある `anticipation` に属する。
+
+@ 0 4 0 0533d9d3a406aef00a860caf5c6be16d
++     二つの選択パッケージが、名前でインポートしなければならない given を保持している。
++     `import pkg.*` は given をインポートしないからである。
++     `truths` の `Truth` の綴りは、`true`/`false` に加えて `Boolean` のデコーダーが受け付ける。
++     `codecs` の三つのモードは、すべての形式のコーデックの経路を一度に選ぶ。
+
+@ 0 3 0 0feea3bb2d1ca4ed0670ebde16da78c2
++     ライブラリはすべてのプラットフォームに共通の単一のソースセット `distillate.core` である。
++     すべてが `soundness` アンブレラにエクスポートされ、`truths` と `codecs` パッケージはアンブレラ自身のものと統合される。
+
+% 0 1 0 18eee1eb80ef1f0010edb99c2b432c96
+
+% 0 1 0 03feafdbc00573331eeff869629b76bc
+
+% 0 1 0 02d222113c027073070fd840449a835f
+
+% 0 1 0 1126c6cb023dff86198187c9e341670e
+
+% 0 1 0 191417dbb69f19ea1cb2cd8a514fcfa1
+
+@ 0 6 0 1c45b9aa1122046a033c2bd96f1e439e
++ entry .as   値を、その形式に対する `T is Decodable in` で `T` としてデコードする。または given の `Irrefutable` で変換する
++     `value.as[T]` は、`F` を `value` の静的な型として `T is Decodable in F` を召喚し、それを適用する。
++     `Tactic` から作られたデコーダー（数値のデコーダーは `Tactic[Number.Error]` を、`Boolean` のデコーダーは `Tactic[Truth.Error]` を必要とする）はそれを通じてエラーを発生させる。
++     そのため、デコードに失敗したときに例外を投げるか、`safely` のもとで `Unset` を返すか、蓄積するかは、スコープ内の戦略が決める。
++     デコーダーは何も残さない。
++     結果は単なる値である。
+
+% 2 1 0 034b6010bb70de160a362b03ac9011dc
+
+% 3 1 0 0cb66c7984b36d441a4980541933949e
+
+% 4 1 0 009359c5327bcbef19d8213ed069d134
+
+% 0 1 0 025b7e36cf092eed07ca38a2243d52b1
+
+% 0 1 0 0e6e7c2a8394e9ae11d720d91eb96799
+
+% 1 1 0 050c9814b2e13294106f7dc0fb57db1f
+
+@ 0 2 0 1cb95139f4c733000f914945f347f5c2
++     二つ目のオーバーロード `value.as[T](irrefutable)` は、`Irrefutable` をコンテキスト上の引数ではなく通常の引数として明示的に取り、それを適用する。
++     これは失敗しえない。
+
+@ 0 1 0 186fe446a4d0935816ea357c775720f2
++ entry .As   抽出子 `As[T]`。`T` を返す検査対象にマッチし、それを束縛する
+
+% 1 1 0 00638b1b4bb4bd9214328d369354085f
+
+@ 0 4 0 0752560b1e45fbda18bd92af6e210aac
++       パターン中の `As[T](binding)` は `scrutinee.type is Extractable to T` を召喚し、それが値を返すときにマッチし、`Unset` を返すときは次のケースへ進む。
++       通常の抽出子なので、どんなパターンの中にも入れ子にできる。
++       `r"…"` パターンのグループの中、リストのパターンの中、他の抽出子と並べて使える。
+
+% 2 1 0 011310976d1797cf0936c3f76a72c20c
+
+% 3 1 0 10d279ab671d4d2918abffb9fc51e092
+
+% 0 1 0 171b8ae5b22e903717e5c3d1f02a7c7a
+
+% 0 1 0 1b0d3ef135a04dd0037a2aff2378f36d
+
+% 0 1 0 1de7b6efbc68fd4204be7e0ed4115006
+
+% 0 1 0 15475c2498c297d61636677955f69f57
+
+% 0 1 0 0a10a96b80746a8b0268dbeb5312ba5b
+
+% 0 1 0 13dc03c2da2bfa7b0dcf17072ac36121
+
+% 1 1 0 180b89ece618f0120a493c9d409829e9
+
+@ 0 4 0 16daec072d67ec75111cb4b17eb9dc6f
++       キャプチャ検査のもとでは、`As[T]` の明示的な型引数が検査対象をシングルトン型に通してしまい、検査器はそれをインスタンスの `Self` に束縛できない。
++       結果を固定した抽出子 `As.Int` と `As.Boolean` は型引数を取らず、キャプチャ検査されるコードから使える。
+
+% 1 1 0 1074f8deb6f75860080c281d3cb5350d
+
+@ 0 2 0 1b8c19e70c2337c00749be2984e04588
++   entry .unapply   シングルトン型が結果へ `Extractable` である検査対象にマッチする
++   entry .Int   型引数のない、`Int` に固定された抽出子。キャプチャ検査されるコード向け
+
+% 1 1 0 1dcacf4e0db85dc60f69584b97eff31e
+
+@ 0 5 0 1beb115dae1d63f113f436be01e8c171
++         `case As.Int(number) =>` は、スコープ内に `scrutinee is Extractable to Int` がある任意の検査対象にマッチする。
++         検査対象の型をシングルトンからではなくマッチした値から推論するので、インスタンスはキャプチャ検査のもとでも問題なく解決される。
++     entry .unapply   `Extractable to Int` である検査対象にマッチする
++   entry .Boolean   型引数のない、`Boolean` に固定された抽出子。キャプチャ検査されるコード向け
+
+% 1 1 0 14cae39e6d0e7711190bc18088c36193
+
+@ 0 3 0 19cfcfcfdcf8913211e197e9f170bb1e
++         `case As.Boolean(flag) =>` は、スコープ内に `scrutinee is Extractable to Boolean` がある任意の検査対象にマッチする。
++         テキストについては、ちょうど `true` か `false` であるものにマッチする。
++     entry .unapply   `Extractable to Boolean` である検査対象にマッチする
+
+@ 0 1 0 0ab14ede12f714211579a1e27fbe1d75
++ entry .Decodable   `Form` から `Self` を読み出し、読めないときは型付きのエラーを発生させる型クラス
+
+% 1 1 0 064101130e0056ae0e6db54d2b268019
+
+@ 0 5 0 07e98f2c5b177a6416f47fdfb0e2cd70
++       `T is Decodable in F` は単一の関数 `F => T`、`#decoded` である。
++       これは `value.as[T]` が適用するものであり、すべてのデータ形式のコーデックが土台にするものである（`Person is Decodable in Json`、`Int is Decodable in Text`）。
++       失敗しうるインスタンスは、そのエラーのための `Tactic` をコンテキストパラメーターとして取り、それを通じてエラーを発生させる。
++       そのためエラーは given が必要とするものの一部になり、戦略は `as` を呼ぶ場所で選ばれる。
+
+@ 0 2 0 175ddaa29c8da5d41ed57a3a391b146e
++       インスタンスを書くことは関数を書くことである。
++       コンパニオンオブジェクトに置けば、インポートなしで見つかる。
+
+% 2 1 0 03c9f6a886f8d8f815c4238b8f492e94
+
+% 3 1 0 0e2f18436597be350eb291197f62a843
+
+% 4 1 0 0f19f0c84500869504c3b764b50028e1
+
+% 0 1 0 045b2e8f1474650417954b11a8811d54
+
+% 0 1 0 174099191763bace1654c4c598c14280
+
+% 0 1 0 043633eea5fbd1e70e989b5d7f9bc89e
+
+% 0 1 0 11f9d08a09eea6f803cff33f6f4d5e43
+
+% 0 1 0 0f9ef0564f67647a05fdf695e8d72c8f
+
+% 0 1 0 1f1ced82adada7ce1d4ebbe60c0791de
+
+% 0 1 0 0fb1ecd6457bcf8f1ddec4d6cda99cc2
+
+% 0 1 0 16983d2de67932e805b072a1f296454f
+
+% 0 1 0 0088927ebcc57ad4038a7aedd584b6cd
+
+% 1 1 0 1ab5502455d192f70225e10b0da2d2b2
+
+@ 0 4 0 190785f33a6dc33f15e2d98e6e263965
++       コンパニオンは、プリミティブ型と任意の `enum` のための `Text` からのデコーダーと、`Optional` なフィールドが参照する三つのポリシー（`.Absence`、`.Nullity`、`.Fault`）を持つ。
++       これは `Decodable2` を継承しており、その優先度の低い `generic` は、自身の形式にある任意の値をそれ自身としてデコードする。
+
+@ 0 3 0 0043893ce89d7997180ac67c5e6d5743
++       形式の包括的な given（`[value] => value is Decodable in Json` など）は、裸の型パラメーターに対するコンパニオンの given と同順位になり、曖昧さのエラーになる。
++       型パラメーターに上限のある given（`[item <: Item]`）はより特定的なので勝つ。
+
+% 1 1 0 1c1e269b6271aad71020835811fd277b
+
+% 1 1 0 1eb427962326df06140cffe5375e596d
+
+% 1 1 0 07c1273d3005620213081d2dfd33bb5a
+
+% 0 1 0 0938c754f8aebe5607a202ce9f4b4013
+
+@ 0 27 0 172b854ce9c583161939ad0ee6e2bbc2
++   entry .int   十進のテキストから `Int` をデコードする。パースできなければ `Number.Error` を発生させる
++       `Tactic[Number.Error]` が必要である。
++       `Integer.parseInt` でパースするので、テキストは前後に空白のない、符号を任意に付けた十進の整数でなければならない。
++       オーバーフローを含め、どんな失敗も `Number.Error.Reason.Unparseable` になる。
++   entry .byte   十進のテキストから `Byte` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要である。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       −128 から 127 の外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .short   十進のテキストから `Short` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要である。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       `Short` の範囲外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .long   十進のテキストから `Long` をデコードする。パースできなければ `Number.Error` を発生させる
++       `Tactic[Number.Error]` が必要である。
++       `java.lang.Long.parseLong` でパースする。
++   entry .double   テキストから `Double` をデコードする。パースできなければ `Number.Error` を発生させる
++       `Tactic[Number.Error]` が必要である。
++       `java.lang.Double.parseDouble` でパースするので、指数、`NaN`、`Infinity` は Java が受け付けるとおりに受け付けられる。
++   entry .float   テキストから `Float` をデコードする。パースできなければ `Number.Error` を発生させる
++       `Tactic[Number.Error]` が必要である。
++       `java.lang.Float.parseFloat` でパースする。
++   entry .char   テキストの最初の文字として `Char` をデコードする
++       戦術は必要ない。
++       最初の文字より後のテキストは無視され、空のテキストは検査されない。
++       ちょうど一文字のテキストにだけマッチする `As[Char]` を使うほうがよい。
++   entry .boolean   スコープ内の任意の `Truth` の綴りから、大文字小文字を問わず `Boolean` をデコードする。`Truth.Error` を発生させる
++       `Tactic[Truth.Error]` が必要で、スコープ内のすべての `Truth` を集める（`Every[Truth]`）。
++       テキストはトリムされて小文字にされ、それから各綴りに順に渡される。
++       どれも認識しないテキストは `Truth.Error` を発生させる。
++       `Truth` のコンパニオンにある `Truth.trueFalse` は常にスコープ内にあり、インポートした `truths` の given はそれぞれ、それを置き換えるのではなく、その横に綴りを加える。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 05ac48424d5a46fa00da1a5f4395d9aa
++         label true と false だけ
+
+% 1 1 0 14ba17509e2a01fd0b208a6db3cdc2cb
+
+% 2 1 0 0c9f1f2234209f970a3c86d120e81b8b
+
+% 3 1 0 17934a0db3514ec511149243c6052024
+
+% 0 1 0 0991a9e8233d719e041fb7d8a3dee6ee
+
+% 0 1 0 0cfb68515eb24ad3069d7c3c87e9d167
+
+% 1 1 0 0eb413b51ea127b8046e515d1c8bd6b9
+
+@ 0 1 0 1da467d1a4b7d15a023368b5f41ed8d7
++         label yes と no を加える
+
+% 1 1 0 0c7ab6496c8c9b651717e185a36aa190
+
+% 2 1 0 0b68b5fdcb1aa0750dade8e0bbd23fa0
+
+% 3 1 0 0bda3ab1adbd0a23089b0381ee32dc9f
+
+% 0 1 0 0200d10b8c4c94fe1a27aee6ad721c56
+
+% 0 1 0 00acdf0e21956f74107132a1429f635e
+
+% 0 1 0 13056ca6d6d006c3135f256a75c9fa98
+
+% 1 1 0 1440c68972f55850061dcf3e511c7a0e
+
+@ 0 1 0 1964bcd8a38f694f1f144d12fe64dcf3
++         label さらに on/off と 1/0 も加える
+
+% 1 1 0 042289cc336b7679039b6beb3f0bdebb
+
+% 2 1 0 1f7fd978ecc659a3031a7d0c3521b46c
+
+% 3 1 0 14c760ca98ed0269007d0b429d32f8fe
+
+% 0 1 0 1ec884492935962c0e2f09857b54d72a
+
+% 0 1 0 1edd28f9e631eb331c2b3c6efee88418
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 7 0 1723b63b019fcae11e31cf493ee42893
++   entry .enumeration   名前から `enum` のケースをデコードする。どのケースも名指さなければ `Enumerable.Error` を発生させる
++       `Enumerable`（自動的に導出される）を持ち、スコープ内に `Identifiable` と `Tactic[Enumerable.Error]` がある任意の `enum` に使える。
++       テキストはまず `Identifiable` の `#decode` で対応付けられるので、テキストとケース名の間に命名規則（入力はスネークケース、出力はキャメルケース）を挟める。
++       エラーは有効な名前を列挙し、それは同じ `Identifiable` で逆にエンコードされる。
++   entry .Absence   文書が省略したキーのためのポリシー：寛容なら `Unset` を返し、厳格ならエラーを発生させる
+
+% 1 1 0 0c74acaa9ac5586d09bea475f2543071
+
+@ 0 6 0 15b3d5ad7118f6a818ee489c0b6ae06a
++         形式で索引付けされたポリシー（`Decodable.Absence in Json`）で、`Optional` または `Option` のフィールドをデコードするすべての形式が参照する。
++         デフォルトの `.default` は、すべての形式について寛容である。
++         省略されたキーは `Unset`（または `None`）として読まれる。
++         形式の `optionalityOptions` パッケージは、その形式の名を冠した厳格な given（`strictJsonAbsence`）を提供し、名前でインポートすればデフォルトより優先される。
++         ローカルに宣言することもできる。
+
+% 2 1 0 04d2735b6cf48c831f190b9b1a3bc067
+
+% 3 1 0 1c5834e8f858e43a1cc58f87744ff78e
+
+% 0 1 0 0d40d8693ddf593c1b985c24d3ce91d2
+
+% 0 1 0 1bac8baa5acbe6d305ff0039830c895b
+
+% 0 1 0 0a1762596a0bd6ae1a967f5795bb2523
+
+% 0 1 0 0b6b0e2d39ac03b210fe23f432065057
+
+% 1 1 0 0771fb5474794e571cdf29d26d34ce77
+
+@ 0 4 0 0427d94c67170d0b0dfc6a17c2ad694c
++     entry .apply   形式のための不在のポリシー。厳格または寛容
++     entry .default   すべての形式に対するコンパニオンのデフォルト：寛容
++     entry #strict   省略されたキーが `Unset` ではなくエラーになるか
++   entry .Nullity   形式の明示的な null のためのポリシー：寛容なら `Unset` を返し、厳格ならエラーを発生させる
+
+% 1 1 0 129ff32be998367e0207346001298e7a
+
+@ 0 8 0 0d01f8a8fbd275620380095990592436
++         形式で索引付けされたポリシー（`Decodable.Nullity in Json`）で、null リテラルを持つ形式だけが参照する。
++         デフォルトの `.default` は寛容である。
++         null は `Unset`（または `None`）として読まれる。
++         形式の `optionalityOptions` パッケージは、その形式の名を冠した厳格な given（`strictCborNulls`）を提供し、名前でインポートすればデフォルトより優先される。
++     entry .apply   形式のための null のポリシー。厳格または寛容
++     entry .default   すべての形式に対するコンパニオンのデフォルト：寛容
++     entry #strict   明示的な null が `Unset` ではなくエラーになるか
++   entry .Fault   存在する値を内側のデコーダーが拒否したときのポリシー：厳格ならエラーを発生させ、寛容なら `Unset` を返す
+
+% 1 1 0 0f8921d6c7911ad41601861c7ab274e2
+
+@ 0 19 0 0bd5edab8c9641410ba9578446d488a2
++         形式で索引付けされたポリシー（`Decodable.Fault in Json`）である。
++         デフォルトの `.default` は厳格である。
++         内側のデコーダーのエラーがそのまま通る。
++         形式の `optionalityOptions` パッケージは、その形式の名を冠した寛容な given（`lenientYamlFaults`）を提供し、名前でインポートする。
++         そのもとでは、拒否された値はアンビエントな戦術の `tolerate` のもとでデコードされるので、蓄積型の戦術のもとでも何も蓄積されず、`Unset`（または `None`）として読まれる。
++     entry .apply   形式のための誤りのポリシー。厳格または寛容
++     entry .default   すべての形式に対するコンパニオンのデフォルト：厳格
++     entry #strict   拒否された値が、`Unset` として読まれる代わりにそのエラーを発生させるか
++   entry #decodable   このインスタンス。ラムダの中で使うための安定した参照として
++   entry #decoded   その形式の値を `Self` としてデコードする
++       単一抽象メソッドである。
++       `Form => Self` 型のラムダはインスタンスになる。
++       インスタンスが解決されたときに捕捉した戦術を通じて、エラーを発生させることがある。
++   entry #position   位置による入力フォーカスを、デコードされた形式についてわかることで補強する
++       デフォルトでは恒等である。
++       デコーダーが文書中のどこで値が見つかったかを追跡する形式（Jacinta の `Json.Decodable`）は、これをオーバーライドして、デコード後の `Form` から得た情報で入力フォーカスを細分化する。
++   entry #map   同じ形式で新しい型のためのデコーダー。デコード後に関数を適用する
++       `summon[Int is Decodable in Text].map(Percent(_))` は `Int` をデコードし、それを包む。
++       結果はこのデコーダーと関数の両方を捕捉する。
+
+@ 0 1 0 00d3a3ff4c35149a0d74487d592a91eb
++ entry .Decodable2   `Decodable` のコンパニオンの、優先度の低い given
+
+% 1 1 0 1797feabbfbe3b4402bfb183a1304ae4
+
+@ 0 5 0 1ce067269c2698ef1dda493948858953
++       `Decodable` のコンパニオンが継承するトレイトである。
++       これにより、その `generic` の given はコンパニオン自体に宣言されたすべての given より下の順位になる。
++   entry #generic   自身の形式にある任意の値をそれ自身としてデコードする：`T is Decodable in T`
++       恒等のデコーダーなので、`json.as[Json]` や `text.as[Text]` は専用のインスタンスを必要としない。
++       コンパニオンの親にあるので、コンパニオンの特定的な given より下の順位になる。
+
+@ 0 1 0 194ff3f7d8cf348f106524daec041b51
++ entry .Extractable   `Self` を `Result` へ向けて変換し、断るときは `Unset` を返す型クラス
+
+% 1 1 0 1bf4fcd2d29ceb101cec1b68d548ab8a
+
+@ 0 3 0 16c88828a013173605fde210a1783b2a
++       `Text is Extractable to Int` は単一の関数 `Text => Optional[Int]`、`#extract` である。
++       その `#unapply` は `As[T]` 抽出子が呼ぶものなので、インスタンスはパターンになる。
++       決してエラーを発生させない。
++       変換できない入力は `Unset` を返し、マッチは次へ進む。
+
+@ 0 6 0 1259f3879484518e061d2bead3b72ebe
++       コンパニオンは、テキストから各プリミティブ型への変換、数値型の間のあらゆる縮小（値が往復で保たれないときはそれぞれ断る）、名前によるテキストから `enum` のケースへの変換と序数による `Int` からの変換、`Optional` を通した持ち上げ、そして任意の `Decodable in Text` からの橋渡しを持つ。
++       橋渡しはデコーダーを `safely` のもとで実行する。
++       この橋渡しがあるので、`As[EmailAddress]` や `As[Uuid]` は、テキストからデコードできるすべての型で動く。
+
+@ 0 1 0 120ab1b0428fb007010b4c859b8db7b4
++       インスタンスは既存のインスタンスを借りることができる。
+
+% 2 1 0 068f775d4ec116ca1f759d733b8e43bd
+
+% 3 1 0 0b6b0f0b760e57230d07eb2a16d8d2a1
+
+% 0 1 0 035909b90ccd67ea151c13bb1cab9cbe
+
+% 0 1 0 194227e2fc4d24ee142450195dbe27ec
+
+% 0 1 0 0a8722d2bd58a8d2192173456963f921
+
+% 0 1 0 1caa744938283c5e03e994997539ff37
+
+% 0 1 0 0f8a541d978a52780187be28ba9b8b0b
+
+% 0 1 0 1e55cb4ec318aa0818bebd73a2a280df
+
+% 0 1 0 0ebb44c51cf6a89b0660a84a5b7b1e37
+
+% 1 1 0 19784a7d054438bb10a7c8db1397dec4
+
+% 0 1 0 080db42da7bc15e405b077d27fe1e8a9
+
+% 1 1 0 09b7b55571385cbb0d49806872a1b581
+
+% 0 1 0 041a5fc90ebd79391834188a079b87e6
+
+@ 0 42 0 1dadf24f0be30ae50c78634d9064a8dd
++   entry .decodable   `Decodable in Text` を持つ任意の型を抽出する。デコーダーがエラーを発生させる場合は `Unset` を返す
++       `Decodable` から `Extractable` への橋渡しである。
++       デコーダーは `safely` のもとで適用されるので、それが発生させるどんなエラーも `Unset` になる。
++       これにより、テキストからデコードできるすべての型が `As[T]` で使えるようになる。
++   entry .optional   抽出子を `Optional` を通して持ち上げる：`Unset` は `Unset` のまま
++   entry .irrefutable   `String` は、`Text` に変換した後、`Text` の `Irrefutable` で変換される
++   entry .textChar   ちょうど一文字のテキストから `Char` を抽出する
++   entry .textByte   テキストから `Byte` を抽出する。パースできないか範囲外のテキストは断る
++   entry .textShort   テキストから `Short` を抽出する。パースできないか範囲外のテキストは断る
++   entry .textInt   テキストから `Int` を抽出する。収まる十進の整数でないテキストは断る
++   entry .textLong   テキストから `Long` を抽出する。収まる十進の整数でないテキストは断る
++   entry .textFloat   テキストから `Float` を抽出する。数でないテキストは断る
++   entry .textDouble   テキストから `Double` を抽出する。数でないテキストは断る
++   entry .textBoolean   ちょうど `true` か `false` から、大文字小文字を区別して `Boolean` を抽出する
++       トリムし、小文字にし、スコープ内のすべての `Truth` を参照する `Boolean` のデコーダーと違い、`As[Boolean]` はその二語そのものにだけマッチする。
++   entry .shortByte   `Short` を `Byte` に縮小する。収まらない値は断る
++   entry .intByte   `Int` を `Byte` に縮小する。収まらない値は断る
++   entry .intShort   `Int` を `Short` に縮小する。収まらない値は断る
++   entry .intFloat   `Int` を `Float` に変換する。`Float` が正確に保持できない値は断る
++   entry .longByte   `Long` を `Byte` に縮小する。収まらない値は断る
++   entry .longShort   `Long` を `Short` に縮小する。収まらない値は断る
++   entry .longInt   `Long` を `Int` に縮小する。収まらない値は断る
++   entry .longFloat   `Long` を `Float` に変換する。`Float` が正確に保持できない値は断る
++   entry .longDouble   `Long` を `Double` に変換する。`Double` が正確に保持できない値は断る
++   entry .floatByte   `Float` を `Byte` に変換する。収まる整数でない値は断る
++   entry .floatShort   `Float` を `Short` に変換する。収まる整数でない値は断る
++   entry .floatInt   `Float` を `Int` に変換する。収まる整数でない値は断る
++   entry .floatLong   `Float` を `Long` に変換する。収まる整数でない値は断る
++   entry .doubleByte   `Double` を `Byte` に変換する。収まる整数でない値は断る
++   entry .doubleShort   `Double` を `Short` に変換する。収まる整数でない値は断る
++   entry .doubleInt   `Double` を `Int` に変換する。収まる整数でない値は断る
++   entry .doubleLong   `Double` を `Long` に変換する。収まる整数でない値は断る
++   entry .doubleFloat   `Double` を `Float` に変換する。`Float` が正確に保持できない値は断る
++   entry .valueOf   `enum` のケースを、それをちょうど名指すテキストから、列挙型の `valueOf` を通じて抽出する
++       必要なのは、コンパイラが提供する列挙型の `Mirror` だけである。
++       `As[Direction]` はインスタンスを書かずに `t"North"` にマッチする。
++       名前はケースの名前とちょうど一致しなければならない。
++       `valueOf` を持たないパラメーター付きのケースは決してマッチしない。
++   entry .fromOrdinal   `Int` から、その序数によって `enum` のケースを抽出する
++       列挙型の範囲外の序数は断る。
++   entry #extract   値を変換する。変換できなければ `Unset` を返す
++   entry #unapply   抽出子として使うために、値を `Option` として変換する
+
+@ 0 1 0 0e40f143828bc6250eb2293add9b552e
++ entry .Irrefutable   失敗しえない方法で `Self` を `Result` に変換する型クラス
+
+% 1 1 0 1030fb2fe54984570781e1d022bd240e
+
+@ 0 4 0 1416d982c70797aa088fe7ad81de95df
++       `Byte is Irrefutable to Int` は単一の関数 `Byte => Int`、`#unapply` である。
++       `Option` を返さない `unapply` なので、インスタンスは反駁不能なパターンになる。
++       コンパニオンは、`String` と `Text` の間の変換、恒等変換、数値型の間のあらゆる拡大を持つ。
++       これは `Typeclass.Pure` であり、インスタンスは何も捕捉しない。
+
+@ 0 1 0 0d25e491362704190b80662f3cd0f86b
++       `value.as[T](irrefutable)` はインスタンスを明示的に適用する。
+
+% 2 1 0 1f446875b146959c04f918c2c7329a17
+
+% 3 1 0 1079b43257b38de612afa92c3336c37a
+
+% 0 1 0 0ad02bff0579145a0127ee5c57936bd3
+
+% 1 1 0 1c071e94139853821fa7a97dcb29dd4b
+
+% 1 1 0 1f6ce7810dfe8f410bf4290fb3ce2432
+
+% 1 1 0 1758979d56b8b7df087fa2296e159b28
+
+@ 0 18 0 034be711923613e317a323dc8ed3ac92
++   entry .stringText   `String` を `Text` に変換する
++   entry .irrefutable   `String` は、`Text` に変換した後、`Text` の `Irrefutable` で変換される
++   entry .textString   `Text` を `String` に変換する
++   entry .ident   任意の値をそれ自身に変換する
++   entry .byteShort   `Byte` を `Short` に拡大する
++   entry .byteInt   `Byte` を `Int` に拡大する
++   entry .byteLong   `Byte` を `Long` に拡大する
++   entry .byteFloat   `Byte` を `Float` に拡大する
++   entry .byteDouble   `Byte` を `Double` に拡大する
++   entry .shortInt   `Short` を `Int` に拡大する
++   entry .shortLong   `Short` を `Long` に拡大する
++   entry .shortFloat   `Short` を `Float` に拡大する
++   entry .shortDouble   `Short` を `Double` に拡大する
++   entry .intLong   `Int` を `Long` に拡大する
++   entry .intDoule   `Int` を `Double` に拡大する（名前はソース上で綴りを誤っている）
++   entry .floatDouble   `Float` を `Double` に拡大する
++   entry #unapply   値を変換する。失敗しえない
++   entry #contramap   新しい型からの反駁不能な変換。先に純粋な関数を適用する
+
+@ 0 1 0 0cd006d94d9b83fd0cd9dd86c64cb8b2
++ entry .Enumerable   `enum` の導出された記述：その名前、ケース、名前と序数による検索
+
+% 1 1 0 032ac40b0e026ae01a37087808b3ac42
+
+@ 0 6 0 1a5ac804b3b8163f0264836bda8ee404
++       `Enumerable` は、ケースがすべてシングルトンである任意の `enum` について、インスタンスを書かずに導出される。
++       `.derived` はコンパニオンの `values` からケースを読む。
++       これは列挙型の `#name`、宣言順の `#values`、そして双方向の検索を提供する。
++       名前も序数もケースに対応するとは限らないので、どちらの検索もエラーを発生させず `Optional` を返す。
++       すべての形式の導出されたコーデックはこれを使って列挙型のケースに名前を付けるので、どれも一致する。
+
+% 2 1 0 17ac936828b77cef1d99bd9ba7beb2e3
+
+% 3 1 0 139cfc9a8a58bc700da333a2ff7e6387
+
+% 0 1 0 04f7d1f6e7978ec51a6e6e62367a998c
+
+% 0 1 0 07c8340a8c5cf84214e2defb7d537c26
+
+% 0 1 0 0a4d36eba12d4ab2045842ce52f49da7
+
+% 0 1 0 1d5c375f2282ad1516eeea06a3198f98
+
+% 0 1 0 0db73de48733f548179c9810fb6b7754
+
+% 0 1 0 05d3051684910fbb18213351a666c61c
+
+% 0 1 0 1adc3a2c3b4fa27a0346a81225b450c0
+
+% 0 1 0 087c20e3a986fb4815ba4214426d30be
+
+% 1 1 0 045588de78f6723e06e98fc8cc7d8594
+
+@ 0 2 0 1f203ccdf021012411c33918a81cdbd6
++       パラメーター付きのケースを持つために `values` メソッドがない列挙型に対しては、導出は _enum `T` is not a simple choice_ で停止する。
+
+% 0 1 0 145ca79242ed388e089653ac6f6cdbe5
+
+% 0 1 0 09d985b0912f82fc0c7a8b14633403b9
+
+@ 0 2 0 0f4f925746e2fbf116220397d57f4816
++   entry .derived   シングルトンのケースからなる `enum` のための `Enumerable` をマクロで導出する
++   entry .Error   列挙型としてデコードしたテキストが、そのどのケースも名指さない
+
+% 1 1 0 1697f3e701cdf7b716d1b4b3873a5546
+
+@ 0 14 0 1187999dac0a733102ecb6ed35b2b393
++         エラー `↯/s.25.3`：_the specified variant (`inputLabel`) is not one of the valid variants (`validVariants`) of the enumeration `sum`_。
++         `Decodable.enumeration` デコーダーが発生させる。
++     entry #inputLabel   どのケースも名指さなかったテキスト
++     entry #sum   列挙型の名前
++     entry #validVariants   デコーダーが受け付けるとおりの、すべてのケースの名前
++   entry #name   列挙型の名前、またはそのケースの一つの名前
++       引数なしでは、コンパイラが表示するとおりの列挙型の名前である。
++       ケースに適用すると、そのケースの名前である。
++   entry #values   列挙型のすべてのケース。宣言順
++   entry #value   与えられた名前を持つケース、または与えられた `Ordinal` にあるケース。あれば
++       `value(t"North")` はケースを正確な名前で、`value(Prim)` は位置で検索する。
++       どちらも、対応するものがなければ `Unset` を返す。
++   entry #index   ケースのゼロ始まりの序数。`Int` として
+
+@ 0 1 0 0bb07cc37759328313c03564f9f89970
++ entry .Identifiable   命名規則と型のメンバーの名前との双方向の対応付け
+
+% 1 1 0 112bebbf2c3663601152b1aa38455d3b
+
+@ 0 4 0 09bb7cd9627595d9191b088a2ee01056
++       `Identifiable` はテキスト関数の組である。
++       `#encode` は Scala の名前をその規則に変換し、`#decode` は元に戻す。
++       `Decodable.enumeration` デコーダーは、ケースを検索する前にこれを通してデコードし、有効な名前をこれでエンコードして報告するので、形式は `first_name` を `firstName` として読める。
+
+% 2 1 0 10a46ba7773c5e000a89492938cf40e2
+
+% 3 1 0 0bdd6b4e3c30ab0713034ce34c096a7b
+
+% 0 1 0 15eb20b547aad48012e54248c30fd66f
+
+% 0 1 0 04802773760a9ac01f9b8c5d82e6bdeb
+
+% 1 1 0 1702470ab58be9960a3983e279acfedb
+
+@ 0 4 0 105e0419856da5120dd64a298665e3f9
++       `Typeclass.Pure` なので、インスタンスは何も捕捉せず、自由に共有できる。
++   entry .apply   エンコード関数とデコード関数から作る `Identifiable`
++   entry #encode   Scala の名前をその規則に変換する
++   entry #decode   その規則による名前を Scala の名前に戻す
+
+@ 0 1 0 1a5bba2902747482096dfe1685ba3da6
++ entry .Parsable   `Decodable` のストリーミング版。形式のトークンリーダーから `Self` を直接読む
+
+% 1 1 0 08462ecf88c8a92713539f3ec3f71170
+
+@ 0 5 0 0c723fbb9cc937410183ad7c73710fd8
++       `Decodable` がすでに組み立てられた構文木（`Json`、`Xml`）を受け取るのに対し、`Parsable` は入力に対して形式のトークンリーダーを駆動する。
++       そのため複合的な値は中間の木なしに組み立てられる。
++       木のアロケーションも、ボックス化も、二度目の走査もない。
++       `Transport` が形式を名指し（`Person is Parsable over Json`）、各形式のサブトレイトが `#Reader` を固定する（Jacinta の `Json.Parsable` はそれを `Json.Reader` にする）。
+
+@ 0 5 0 021cb96a6971efe9084107d95debea26
++       リーダーは、`#parse` の間だけ貸し出される、排他的で状態を持つケイパビリティである。
++       その何も結果の中に保持してはならない。
++       エラーは、独自の戦術を持つリーダーを通じて、またはインスタンスが解決されたときに捕捉した戦術を通じて流れるので、`#parse` 自体はエラーを宣言しない。
++       ユーザーが手で書くことはまれである。
++       各形式がそれを導出し（`derives Json.Direct`）、`codecs` パッケージがいつ使うかを選ぶ。
+
+% 1 1 0 12b5f6bf2e8b9349154ab8947fee2c78
+
+% 1 1 0 12c690a5a6f7301f1b365aef66b68fce
+
+@ 0 2 0 09e61e365a27db5610de1ae57b854438
++   entry #Reader   形式のトークンリーダーのケイパビリティ。各形式のサブトレイトが固定する
++   entry #parse   リーダーから `Self` の値を読む
+
+@ 0 1 0 01bce77e02edac1f118067a29999386d
++ entry .Number   テキストを数としてデコードできないときに発生する `Number.Error` の置き場所
+
+% 1 1 0 1f74c6d1f4f420810bd280f07eb4d071
+
+@ 0 2 0 00a31ed0956088a71768bad57d7b17ce
++       エラー型以外にメンバーを持たないオブジェクトである。
++   entry .Error   数としてデコードできなかったテキスト、またはその数が範囲外だったテキスト
+
+% 1 1 0 10eefdec2f945ee31d0891662ce7fbc0
+
+@ 0 2 0 1a66bcdb63afc0c91c90b5e1f3887a0e
++         エラー `↯/s.25.1`。`#reason` のためのサブコードを持つ：_`text` is not a valid `specializable` because `reason`_。
++         `Decodable` のコンパニオンにある数値のデコーダーが発生させる。
+
+% 2 1 0 1be13447bc9c4dd419a05c04ab2d4a42
+
+% 3 1 0 101c68c812a8f93f02e279a6cb01198e
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1b9accabb61c6934142725b4d9ded9c3
+
+% 0 1 0 14fb3b0fa5a421b41de75f12b33e47b7
+
+% 1 1 0 1de4c9131267adc8046786eb7cfb49da
+
+@ 0 1 0 08ed73cf67302ea809aa4a1446db26b7
++     entry .Reason   数をデコードできなかった理由：`Unparseable` または `OutOfRange`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 7 0 09836c4c447d4dcf160b025124a152b6
++           二つのケースを持つ列挙型である。
++           まったく数でないテキストには `Unparseable`（サブコード 1）、対象の型が表現できない数には `OutOfRange`（サブコード 2）を使う。
++       entry #number   理由がエラーの番号に寄与するサブコード
++     entry .communicable   `Number.Error.Reason` をエラーメッセージの節として描画する
++     entry #text   デコードできなかったテキスト
++     entry #specializable   テキストのデコード先の数値型
++     entry #reason   デコードできなかった理由。`Number.Error.Reason` として
+
+@ 0 1 0 18aa1dfa97365d6d0a5f316fad4e77c7
++ entry .Truth   真と偽の綴り。スコープ内にあれば `Boolean` のデコーダーが受け付ける
+
+% 1 1 0 01d18012762ecc8106aad7f098bda338
+
+@ 0 5 0 0375ad595fa8f5311024635dfad575ab
++       `Truth` は `#affirmative` と `#negative` の二語の組である。
++       `Boolean` のデコーダーはスコープ内のすべての `Truth` を集め、テキストをトリムして小文字にした後、そのどの綴りも受け付けるので、複数を同時にスコープに置ける。
++       このコンパニオンにある `.trueFalse` は常に見つかる。
++       `truths` パッケージは、インポートによって `yes`/`no`、`on`/`off`、`1`/`0` を、それの代わりにではなく、その横に加える。
+
+% 2 1 0 1f763295fdc24cdd1a5b676b3097438e
+
+% 3 1 0 04c144829e2fe83f081083c1cba916d3
+
+% 4 1 0 0a3bd6a72c398f481df9c44ad73d643d
+
+% 0 1 0 151794df2d5bf322001700fa158b50fc
+
+% 0 1 0 1124dbb75d2d9be1004a6400f5427f11
+
+% 1 1 0 042d80cb1c98d10b09e8d32c674ca477
+
+% 0 1 0 1a3e6e88a58119be062aab94a1d38efb
+
+% 0 1 0 13ca79f151dac2c114990c791fb342c2
+
+@ 0 2 0 1fd945b992554fe0049f7ef9fa0c45ae
++   entry .trueFalse   `true`/`false` の綴り。コンパニオンを通じて常にスコープ内にある
++   entry .Error   スコープ内のどの `Truth` も `Boolean` として認識しないテキスト
+
+% 1 1 0 1ee7ebbaeb44e8050b2c4f4c3dc3b72f
+
+@ 0 6 0 12872974d5595bd1179d4f78ce336bf3
++         エラー `↯/s.25.2`：_`text` is not a recognized Boolean_。
++         `Boolean` のデコーダーが発生させる。
++     entry #text   与えられたとおりのテキスト
++   entry #affirmative   `true` を表す語。小文字
++   entry #negative   `false` を表す語。小文字
++   entry #apply   テキストが二語のどちらかなら `true` か `false` として読み、そうでなければ `Unset` を返す
++       正確に比較する。
++       `Boolean` のデコーダーは、これを呼ぶ前にトリムと小文字化を行う。
+
+@ 0 1 0 12ed1f512889a09c0b89a222386fa5ab
++ entry .truths   `Boolean` の追加の綴り。インポートすると、それぞれ `true`/`false` の横で受け付けられる
+
+% 1 1 0 193dade30f77e1841e5dae48fe69b6fa
+
+@ 0 3 0 00b340a8a5fae8161cb4cae3fee86e77
++       given を名前でインポートする選択パッケージである。
++       `import truths.*` は given をインポートしないからである。
++       多くの選択パッケージと違い、インポートは加算的である。
++       `Boolean` のデコーダーはスコープ内のすべての `Truth` を集めるので、インポートするごとに綴りが一つ加わる。
+
+% 2 1 0 1db39401a4f7118a06b7aef0bfc61db0
+
+% 3 1 0 13ce7595d3bf3b4a003ce8ec45f74bb8
+
+% 4 1 0 0a570789d1f9a7e70957d5fffe424d7c
+
+% 0 1 0 095d08b9debd08d806fef95026a94d05
+
+% 0 1 0 163bc075406b1e9018842272303dbf26
+
+% 1 1 0 1b71a7e84755160a19c1a914cfb6d6f6
+
+% 0 1 0 147f2ca999da4a4209fc6e103cf50ab6
+
+@ 0 3 0 1ed53d23a26917f516ed8db47bf77098
++   entry .yesNoTruth   `yes` と `no` を `Boolean` として受け付ける
++   entry .onOffTruth   `on` と `off` を `Boolean` として受け付ける
++   entry .oneZeroTruth   `1` と `0` を `Boolean` として受け付ける
+
+@ 0 1 0 1fe5b45965fe7d730ae065b8eb45912a
++ entry .Codecs   形式の導出されたコーデックと直接のコーデックを選ぶコンテキスト上のモード
+
+% 1 1 0 14b96725c505264302bc31814b8f8503
+
+@ 0 7 0 0963dd4a3c4bd00b0e01378126dfb22a
++       生成された（「直接の」）コーデックを持つ形式はすべて、型付きの値への経路を二つ提供する。
++       導出の経路は、形式の構文木を組み立ててそれをデコードする（またはそれへエンコードする）。
++       直接の経路は、形式のトークンリーダーやプリンターを駆動して、値へ直接読み込み、値から直接書き出す。
++       形式のコンパニオンはこれらのモードのいずれかを条件とする given を提供するので、`codecs` パッケージからの一つのインポートで、すべての形式の経路を一度に選べる。
++       スコープ内に何もなければ、型は専用の直接のインスタンス（明示的な given または `derives`）を持つときにちょうど直接の経路を取り、そうでなければ導出の経路を取る。
+
+@ 0 2 0 1549b958197863e9145f755aabc1ec71
++       結果はどちらの経路でも同じである。
++       違うのは速度と、エラー診断に現れる位置だけである。
+
+% 0 1 0 161310760b33b0b5027589f7ae117d2c
+
+% 1 1 0 0fce97824206fe4f059cfd21fe86cf27
+
+@ 0 11 0 0a47e9ac98284851106e85252e3b1112
++   entry .Direct   型がインライン化可能なところではどこでも生成されたコーデックを取るモード
++   entry .Derived   直接のインスタンスがあっても導出されたコーデックを取るモード
++   entry .Strict   生成されたコーデックを取り、型がそれを持たないところではコンパイルエラーにするモード
++       `Strict` は `Direct` なので、形式の生成されたインスタンスはどちらのもとでも適用される。
++       厳格さはエントリーポイント（`read[Play in F]`、`in[Text over F]`、`in[Data over F]`）で加えられ、形式はそこを `.strictFailure` で制限する。
++   entry .strictFailure   直接のコーデックを持たない型について、形式が `codecs.strict` のもとで報告するコンパイルエラー
++       _`format`: `T` has no direct codec, and `codecs.strict` does not take the derived one_ でコンパイルを停止するマクロである。
++       given が選ばれた後でその中から発生するので、探索が素通りできる失敗した候補ではなく、探索の結果になる。
++       形式の作者向けである。
+
+@ 0 1 0 0a54052477f669f406532b4a1edc8099
++ entry .codecs   三つのコーデックのモード。それぞれインポートによってすべての形式の経路を一度に選ぶ
+
+% 1 1 0 104cfcdd81c04ca510869d5410d67e5e
+
+@ 0 3 0 19b4db39dd3d6aea028e38a9d03332cf
++       given を名前でインポートする選択パッケージである。
++       `import codecs.*` は given をインポートしないからである。
++       モードは互いに代わりになるものである。
++       二つを同時にインポートすると、両方が適用されるところではそれらの given が曖昧になる。
+
+% 2 1 0 18caec70af55971d19a1476cbd158081
+
+% 3 1 0 0fa68b6c371e66cc0ae71f8aa4e76a6e
+
+% 0 1 0 0ebe51ab68611d87121007de000a5ab5
+
+% 1 1 0 108b47b7dabf996810445e03678a3a21
+
+@ 0 3 0 0405daf87bd3f69d1d124c8355bf14f3
++       `import codecs.derived` は直接のインスタンスがあっても導出されたコーデックを取る。
++       `import codecs.strict` は生成されたコーデックを取り、そうでなければ導出の経路が黙って取られるところでは、型を名指すコンパイルエラーにする。
+
+% 1 1 0 0429a1c3d9114fcd15811370b1c226fd
+
+@ 0 3 0 019a9b7e03f0ccd00c3df2ff6aa10baf
++   entry .direct   すべての形式について、型がインライン化可能なところではどこでも生成されたコーデックを選ぶ
++   entry .derived   直接のインスタンスがスコープ内にあっても、導出されたコーデックを選ぶ
++   entry .strict   生成されたコーデックを選び、それを持たない型をコンパイルエラーにする
+
+@ 0 1 0 0dcea2174f0c852710c1dddb48fdc065
++ entry .internal   `Enumerable.derived` と `Codecs.strictFailure` の背後にあるマクロの実装
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 1d995df1e43af4ce0442edaa5a240b8a
++       直接使うためのものではない。
++   entry .strictFailure   `Codecs.strictFailure` の背後にあるマクロ
++   entry .enumerable   `Enumerable.derived` の背後にあるマクロ

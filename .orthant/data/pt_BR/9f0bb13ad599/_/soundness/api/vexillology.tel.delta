@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 12 0 01becbfee9c75a7014a280a00d20f9d7
++         O tipo opaco sobre `Long`. Sua página sob o pacote `vexillology` tem a descrição
++         completa.
++     entry .apply   o conjunto vazio de flags sobre uma enumeração, sem nenhum bit ligado, `Flags[Color]()`
++   entry .apply   se um caso está ligado em algumas flags, `flags(case)`
++       Precisa que a enumeração seja `Enumerable`, para encontrar o ordinal do caso.
++   entry .update   uma cópia de algumas flags com um caso ligado ou desligado, `flags(case) = enabled`
++       Devolve o novo `Flags` em vez de alterar o receptor, então uma variável que guarda as
++       flags é reatribuída: `flags = flags(Orange) = true`.
++   entry .bits   as flags como seus bits subjacentes, um `B64`: o caso de índice `n` é dono do bit `n`
++       Não precisa de `Enumerable`. Um `B64` é convertido em um `Long` com `.long`.
++   entry .set   os casos ligados em algumas flags, como um `Set` da enumeração
++       Visita apenas os bits ligados, do mais baixo para o mais alto.

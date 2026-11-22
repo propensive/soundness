@@ -1,0 +1,264 @@
+orthant 2 language
+
+@ 0 1 0 091eacb9df682c9c1d0711ca050e70ee
++ entry .Arfile   une archive ar comme valeur : une liste de membres qui se transmet en flux d'octets
+
+@ 0 17 0 0f6b8efbdd3065f60d08acc195556b97
++   entry .streamable   transmet en flux un `Arfile` sous forme de ses octets : `arfile.source[Data]`, `path.write(arfile)`
++       Le given qui rend un `Arfile` `Streamable by Data over Credit`, dans la portée
++       implicite. Le corps de chaque membre est ouvert quand le flux l'atteint.
++   entry .read   analyse un flux d'octets en membres ar, paresseusement, un membre par étape
++       `Arfile.read(stream)` renvoie un `Iterator[Ar.Entry]^` qui analyse directement le flux à
++       mesure qu'il avance, en absorbant les limites de morceaux, quelles qu'elles soient, dans
++       lesquelles il arrive. Il consomme le flux et nécessite une `Tactic[Ar.Error]`. Les
++       membres ont un seul propriétaire — consommez-les dans l'ordre, sur un seul thread — et
++       chaque corps tire du curseur partagé des morceaux bornés, en se mémoïsant si l'itérateur
++       le dépasse, comme le fait `Tarfile.read`. Le seul membre lu en entier est la table des
++       noms `//`, car chaque nom long ultérieur se résout par rapport à elle. L'archive se
++       termine quand le flux se termine ; un flux qui ne commence pas par `Ar.magic` provoque
++       un abandon avec `BadMagic`.
++   entry .from   relit un flux d'octets entier en un `Arfile`
++       `Arfile.from(stream)` est `.read` dont les membres sont collectés dans une `List`. Comme
++       chaque membre conserve son en-tête tel quel et son nom brut, le résultat se resérialise
++       octet pour octet : `Arfile.from(stream).source[Data]` reproduit l'original.
++   entry #entries   les membres de l'archive, dans l'ordre
+
+@ 0 1 0 1725f339d68da963051f316d25a837ed
++ entry .Pax   le format d'enregistrement d'en-tête étendu pax POSIX : des lignes `length key=value`
+
+@ 0 9 0 1b70c22fc03adb311a489d04909688ae
++   entry .record   un enregistrement, `length key=value` et un saut de ligne, sous forme d'octets
++       La longueur est celle de l'enregistrement entier, ses propres chiffres compris, ce que
++       l'encodeur résout.
++   entry .records   plusieurs enregistrements concaténés, comme charge utile d'une entrée pax
++   entry .parse   les enregistrements d'une charge utile pax, sous forme de `Map` de clé vers valeur
++       Nécessite une `Tactic[Tar.Error]`. Un enregistrement dont le préfixe de longueur est mal
++       formé lève `Tar.Error` avec la raison `BadPaxRecord` et termine le balayage, car on ne
++       peut plus se fier au curseur ; un enregistrement sans `=` lève la même erreur et
++       n'ignore que cet enregistrement ; ainsi chaque enregistrement mal formé s'accumule sous
++       une tactique cumulative.
+
+@ 0 1 0 19d134a1fa01682012fcba7e587ce57a
++ entry .TypeFlag   le genre d'une entrée tar, sous forme de l'indicateur d'un octet qui le nomme dans l'en-tête
+
+@ 0 1 0 02c58c768b8e6f27029b2b33b36eabcf
++   entry #id   l'octet écrit à la position 156 de l'en-tête, sous forme de `Char`
+
+@ 0 1 0 1635550cd1a5fe710d3cec8d7b0ac8d8
++ entry .UnixMode   un mode de permission Unix sous forme de douze bits nommés
+
+@ 0 14 0 130813cd92edbec20e8734eb49faadae
++   entry .from   un mode à partir de ses bits entiers : `UnixMode.from(493)` vaut `rwxr-xr-x`
++       Seuls les douze bits de poids faible sont lus ; les bits de type de fichier au-dessus
++       sont ignorés.
++   entry #setUid   le bit set-user-id, `04000`
++   entry #setGid   le bit set-group-id, `02000`
++   entry #ownerRead   le propriétaire peut lire, `0400` ; `true` par défaut
++   entry #ownerWrite   le propriétaire peut écrire, `0200` ; `true` par défaut
++   entry #ownerExec   le propriétaire peut exécuter, `0100`
++   entry #groupRead   le groupe peut lire, `040` ; `true` par défaut
++   entry #groupWrite   le groupe peut écrire, `020`
++   entry #groupExec   le groupe peut exécuter, `010`
++   entry #otherRead   tout le monde peut lire, `04` ; `true` par défaut
++   entry #otherWrite   tout le monde peut écrire, `02`
++   entry #otherExec   tout le monde peut exécuter, `01`
++   entry #int   le mode sous forme d'entier : la somme de ses bits
+
+@ 0 1 0 07efe470b0f605cc19bb4e9e51995ef1
++ entry .UnixUser   le propriétaire d'une entrée : un identifiant numérique et, s'il est connu, un nom
+
+@ 0 2 0 1249f5c9941297c5104fcd815f1cfe68
++   entry #value   l'identifiant numérique de l'utilisateur
++   entry #name   le nom de l'utilisateur, ou `Unset` si aucun n'est enregistré
+
+@ 0 1 0 09d762d7cb85ae7b0813a1f23abfdf2c
++ entry .UnixGroup   le groupe d'une entrée : un identifiant numérique et, s'il est connu, un nom
+
+@ 0 2 0 12b3f979b036c3a5154e55ca3f96370d
++   entry #value   l'identifiant numérique du groupe
++   entry #name   le nom du groupe, ou `Unset` si aucun n'est enregistré
+
+@ 0 1 0 00e809fec79f76430900abfde7c6fb47
++ entry .TarBuilder   la poignée de rédaction de `path.create[Tar](flags*)` : les entrées sont écrites en flux sur le disque à mesure qu'elles sont insérées
+
+@ 0 1 0 0c742a077151792f18471e65f335fc1f
++   entry .TarCreatable   l'instance de `Creatable` derrière `path.create[Tar](flags*)`
+
+@ 0 22 0 0da2aa08bf13bb150f51f2799889a3bf
++     entry #Self   le receveur : le type de chemin
++     entry #Form   le format choisi : `Tar`
++     entry #Operand   le type des options : `CreateFlag | Tar.Flag | LongNameFormat`
++     entry #Grants   ce qui est accordé à la poignée : `Grant.Read & Grant.Write`
++     entry #Result   la poignée prêtée au bloc : `TarBuilder`
++     entry #create   écrit dans le chemin, de façon atomique, l'archive que rédige le bloc
++         Trie les options, refuse une cible existante sans `CreateFlag.Replace`, crée les
++         parents sous `CreateFlag.Parents`, et exécute le bloc avec un builder en mode flux (sans
++         `Tar.Flag`) ou en mode accumulation (avec un `Tar.Flag`), puis déplace le fichier
++         temporaire terminé sur la cible.
++   entry #insert   ajoute une entrée : une `Tar.Entry` telle quelle, ou un fichier à partir d'un nom et de n'importe quelles données lisibles en flux
++       `insert(entry)` écrit toute `Tar.Entry` — un répertoire, un lien, un fichier avec un mode
++       et un propriétaire fixes — immédiatement sur une cible non compressée, ou la met en file
++       d'attente sur une cible compressée. `insert(name, data)` crée une entrée `File` à partir
++       de tout ce qui est `Streamable by Data`, avec le mode par défaut, le propriétaire `0` et
++       un horodatage nul, dont le corps est lu paresseusement depuis les données à mesure
++       qu'il est écrit : une source volumineuse n'est jamais conservée en mémoire.
++   entry #file   rédige une entrée dont le corps, de longueur inconnue, est écrit en flux au moyen d'un `TarEntryWriter`
++       `file(name, mode, user, group, mtime)` exécute son bloc avec un `TarEntryWriter` dont
++       `put` ajoute un morceau au corps de l'entrée. Sur une cible non compressée, les morceaux
++       vont directement sur le disque et l'en-tête est corrigé après coup avec la taille
++       finale ; sur une cible compressée, les morceaux sont mis en tampon et l'entrée est
++       insérée en entier quand le bloc se termine. Le résultat du bloc est renvoyé.
+
+% 2 10 0 06c6a51fb48b9f7a0603647e279a92d4
+
+% 0 1 0 03dd2c35137c005907f771fb7df61b3e
+
+% 0 5 0 06c1fd40347bf1e70397037f08827008
+
+@ 0 1 0 00c5abff18809dd50befe568d36ab36d
++ entry .TarEntryWriter   l'écrivain prêté par `TarBuilder#file` : ajoute des morceaux au corps d'une entrée
+
+@ 0 4 0 14c1e50026fe81b00261ff9d95c12bd8
++   entry #put   ajoute un morceau de `Data` au corps de l'entrée
++   entry #write   écrit en flux toute valeur `Streamable by Data` dans le corps de l'entrée, morceau par morceau
++       Nécessite un `Buffering` dans la portée ; la valeur est lue au moyen de son given
++       `Streamable` et chaque morceau est ajouté par `put` à mesure qu'il arrive.
+
+@ 0 1 0 09c1fe58764ab118190f8fbcb7f325ea
++ entry .TarOpenable   l'instance d'`Openable` derrière `path.open[Tar](flags*)`
+
+@ 0 5 0 161000348f4f0ef416440e2f5a503f46
++   entry #Self   le receveur : le type de chemin
++   entry #Form   le format choisi : `Tar`
++   entry #Operand   le type des options : `Tar.Flag`
++   entry #Result   la poignée prêtée au bloc : `Tar.Handle`
++   entry #open   ouvre le fichier, exécute le bloc avec une `Tar.Handle`, puis le ferme
+
+@ 0 1 0 059c07f02f19162b0804ec6ee9aa607b
++ entry .ArOpenable   l'instance d'`Openable` derrière `path.open[Ar]()`
+
+@ 0 5 0 045be92aeae5082613e4946d21756583
++   entry #Self   le receveur : le type de chemin
++   entry #Form   le format choisi : `Ar`
++   entry #Operand   le type des options : `Nothing`, puisqu'il n'y a pas d'options
++   entry #Result   la poignée prêtée au bloc : `Ar.Handle`
++   entry #open   ouvre le fichier, exécute le bloc avec une `Ar.Handle`, puis le ferme
+
+@ 0 7 0 0d89225ae967a834125cf36c477d88f9
++ entry .tarPathOpenable   ouvre un fichier sur le disque comme archive tar : `path.open[Tar](flags*)`
++     Un given de premier niveau dans `bitumen.jvm`, pour tout type de chemin
++     `Abstractable across Paths to
++     Text` (un `Path` de galilei, ou du texte), qui fournit un `TarOpenable`. Il nécessite une
++     `Tactic[Tar.Error]` et une `Tactic[Truncation.Error]` dans la portée. Il est de premier
++     niveau car son sujet, le type de chemin, appartient à une autre bibliothèque ;
++     `import soundness.*` l'importe, mais un programme qui importe `bitumen.*` doit le nommer,
++     `import
++     bitumen.tarPathOpenable`, car un import joker n'importe pas les givens.
+
+% 2 9 0 0f58bbaf5c7768dd1a4ccb26feda89f4
+
+% 0 1 0 0840acd20901b02d178ca37ad2c04c78
+
+% 0 5 0 1ab117f77e153d5108f0ee18b54d9664
+
+@ 0 5 0 1ee861f4146ecb4c09bdebbf68a34c9c
++ entry .arPathOpenable   ouvre un fichier sur le disque comme archive ar : `path.open[Ar]()`
++     Un given de premier niveau dans `bitumen.jvm`, pour tout type de chemin
++     `Abstractable across Paths to
++     Text`, qui fournit un `ArOpenable`. Il nécessite une `Tactic[Ar.Error]` et une
++     `Tactic[Truncation.Error]` dans la portée. `import soundness.*` l'importe ; un programme
++     qui importe `bitumen.*` le nomme, `import bitumen.arPathOpenable`.
+
+% 2 9 0 11f563f1a98835ce0f178e68c42e8d3b
+
+% 0 1 0 01f23d423d6360eb111819a3763bf840
+
+% 0 3 0 15088f0a3bc7df811f36ca8732a510e4
+
+@ 0 6 0 0e20a2be2120882f188ad4f5cd5c6a85
++ entry .tarPathCreatable   crée une archive tar sur le disque, rédigée par un bloc : `path.create[Tar](flags*)`
++     Un given de premier niveau dans `bitumen.jvm`, pour tout type de chemin
++     `Abstractable across Paths to
++     Text`, qui fournit un `TarBuilder.TarCreatable`, pour que `path.create[Tar](flags*)`
++     prête un `TarBuilder` à son bloc. Il nécessite une `Tactic[Tar.Error]` dans la portée.
++     `import soundness.*` l'importe ; un programme qui importe `bitumen.*` le nomme,
++     `import
++     bitumen.tarPathCreatable`.
+
+% 0 10 0 12cdc7f4302298db12ec143b9703b0e0
+
+% 0 1 0 0abfa2e8482367a2161705ec1ea852f4
+
+% 0 3 0 09baf4c4048829620df5d7697f7e8156
+
+@ 0 9 0 1a366e32d966086305c4fbba88933bcd
++ entry .extractTo   décompresse un `Tarfile` sur un système de fichiers, sous un répertoire racine
++     Une extension propre à la JVM sur `Tarfile`, dans `bitumen.jvm` : l'inverse de
++     `directory.archive[Tar]()`. Chaque entrée est placée sous `root` selon son `Tar.Ref` —
++     qui, étant relatif et exempt de `..`, ne peut pas atterrir en dehors — sur tout plan
++     `Posix` : un fichier est écrit avec son mode et sa date de modification, un répertoire
++     est créé avec son mode, un lien symbolique est créé avec sa cible (en remplaçant un lien
++     existant), et un lien physique est lié à l'entrée qu'il nomme. Les répertoires parents
++     que l'archive ne répertorie pas sont créés selon les besoins. Une entrée de FIFO ou de
++     périphérique lève `Tar.Error` avec la raison `DeviceCreationUnsupported` ; une
++     pseudo-entrée pax ou de nom long GNU est ignorée.
+
+@ 0 13 0 1c37ba460039433b02ee22b0b0a2b9de
++     ```scala fuel
++     frame
++       label Un répertoire, archivé
++       code
++           import soundness.*
++           import filesystemBackends.javaBaseFilesystem
++           import filesystemOptions.createParents
++           import filesystemOptions.overwritePreexisting
++           import filesystemOptions.preserveSymlinks
++           import pathInterfaces.pathOnLinux
++           import strategies.throwUnsafely
++           import systems.javaBaseSystem
++           import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 0 14 0 17dea9de7f053b310aa14b1ad8021b19
++           val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
++           val tarball: Tarfile = source.archive[Tar]()
++     frame
++       label Compressé et écrit sur le disque
++       code
++           import soundness.*
++           import filesystemBackends.javaBaseFilesystem
++           import filesystemOptions.createParents
++           import filesystemOptions.overwritePreexisting
++           import filesystemOptions.preserveSymlinks
++           import pathInterfaces.pathOnLinux
++           import strategies.throwUnsafely
++           import systems.javaBaseSystem
++           import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 0 16 0 1f0cad157de9b0df143612d142e55734
++           val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
++           val tarball: Tarfile = source.archive[Tar]()
++           val release: Path on Linux = temporaryDirectory[Path on Linux] / "project.tar.gz"
++           release.create[File](): handle ?=> handle.write(tarball.gzip)
++     frame
++       label Décompressé ailleurs
++       code
++           import soundness.*
++           import filesystemBackends.javaBaseFilesystem
++           import filesystemOptions.createParents
++           import filesystemOptions.overwritePreexisting
++           import filesystemOptions.preserveSymlinks
++           import pathInterfaces.pathOnLinux
++           import strategies.throwUnsafely
++           import systems.javaBaseSystem
++           import temporaryDirectories.javaBaseTemporaryDirectory
+
+% 0 8 0 1a84924a1c562cb50c738e50c283f252
+
+@ 0 6 0 1c74390e481d23371a212d68849cc0ca
++     Elle nécessite les politiques `CreateParents` et `OverwritePreexisting` pour
++     le plan (importées par leur nom depuis `filesystemOptions`), une `Tactic[Io.Error]` et
++     une `Tactic[Tar.Error]`. Les modes sont fixés au moyen de l'attribut `unix:mode`, et
++     laissés silencieusement à la valeur par défaut du système de fichiers là où il n'est pas
++     pris en charge. Pour extraire une archive trop volumineuse pour être conservée sous
++     forme de `Tarfile`, itérez sur `Tarfile.read` ou sur un bloc `open[Tar]` et construisez
++     un `Tarfile` d'une seule entrée à la fois.

@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 13e2a929818d862e06c7a223ec9e3157
++ # `↯/s.24.1` — Das Argument von `recover` muss aus Match-Fällen bestehen
+
+@ 0 2 0 0108b13187fb303415c781af3bfa076c
++ Wird zur Kompilierzeit ausgelöst, wenn das Argument von `recover` nicht als literaler Block von
++ `case`-Klauseln geschrieben ist.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 0061e424b1104c6d18d1a572d989840b
++ `recover` untersucht die Fälle beim Kompilieren des Codes, damit es weiß, welche Fehlertypen
++ behandelt werden. Eine anderswo berechnete oder als Wert übergebene partielle Funktion lässt sich
++ nicht untersuchen.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 072262c68f50f63a1a6740425e813589
+
+% 1 1 0 0d62ec5de55aa9370f8727b956f0535d
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 1 0 04e98f37c29256c6056bc158f30c3666
++ Schreiben Sie die Fälle inline:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 0e0a6105d4153e270ab6a3c05a3b1643
+
+% 0 1 0 0332bde3012f56720c50243145b8708c
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 0c5b48f9a53ae50d15051c342c618152
+
+% 0 1 0 145e82c115e6b4ba01cd1045f50640e1
+
+% 1 1 0 023e0f516253c92c183782155b90d359
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 0a577f73475efca20b96d2f17614deed
++ - Quelle: `lib/contingency/src/core/contingency.internal.scala`

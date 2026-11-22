@@ -1,0 +1,4129 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f418631adc3fa321304fa486e32890a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 116504c699c7cdf81e6527e42ac1203d
++ info
++     les identifiants réseau — noms d'hôtes, adresses IP, URL, adresses e-mail, ports, adresses MAC
++     et noms DNS — en valeurs typées
+
+@ 0 8 0 071c3a77b5d2b8d504ac3026d65c7e34
++ detail
++     _Urticose_ donne à chaque identifiant d'un réseau son propre type, et le valide au plus tôt :
++     un littéral à la compilation du code, via un interpolateur, et un texte au moment même où il
++     est décodé, via `as[T]`. Un `Hostname`, une adresse `Ipv4` ou `Ipv6`, une `HttpUrl`, une
++     `EmailAddress`, un `Port` ou une `MacAddress` est donc connu pour être bien formé partout où
++     on le détient, et ses parties sont typées elles aussi : l'hôte d'une URL est un
++     `Hostname | Ipv4 | Ipv6` (l'alias `Host`), son port un nombre, et le type d'un port
++     enregistre son transport (`Port over
++     Tcp`) et, pour un littéral, son numéro (`Port over Tcp of 25`).
+
+% 2 1 0 0ab03ee58399ecda171abc34e33b39c2
+
+% 3 1 0 1e0aabc3413b847b0276c60d0f55c33c
+
+% 4 1 0 11676a519ac5a7bd04dd4c371fc179ca
+
+% 0 1 0 15125322f5497eff1079082c899bfe0e
+
+% 0 1 0 0d48e01a9943a6bd1d2913f4fed30813
+
+% 0 1 0 194a8b6ffbcef9a9011608c6e2271504
+
+% 0 1 0 15b1ba49a06ae8691fe04326f4460332
+
+% 0 1 0 1c42675ee2c8b45d0afc163bd3b0c79b
+
+% 0 1 0 01b56145648e15dd09dd2f08894ab3b0
+
+% 0 1 0 093679b08e5e3e5e1950e01078724eb9
+
+% 1 1 0 0fd76cd241661c7d17fddbfd81ed2707
+
+@ 0 5 0 161a3f75db2fea9e07e55d082918e719
++     Une valeur invalide est une erreur de compilation là où elle est écrite
++     (`ip"192.168.0.0.0.1"` ne compile pas), et un texte non conforme lève une erreur typée qui
++     nomme ce qui n'allait pas : `Hostname.Error`, `IpAddress.Error`, `EmailAddress.Error`,
++     `Url.Error`, `MacAddress.Error`, `Port.Error` ou `Dns.Error`, chacune avec une `Reason` qu'un
++     programme peut signaler plutôt que de simplement rejeter.
+
+@ 0 5 0 1cc8483c15b6610200fce1dd83f9ef96
++     L'**accès** au réseau est une capacité. Une méthode qui atteint le réseau prend un `Online`
++     (ou son supertype `Internet`) comme paramètre contextuel, et un programme l'accorde en
++     important `internetAccess.online` par son nom, ou en délimite la portée avec
++     `internet(true)` et le teste avec `online` ; `internetAccess.offline` le refuse, en levant
++     `Internet.Error` dès que la capacité est demandée.
+
+@ 0 1 0 02e881c0e2bfbd4a1c37c9b9fc5586eb
++     La bibliothèque est divisée en quatre ensembles de sources :
+
+@ 0 12 0 00990f89c4e8be511da66bf04806e50f
++     - `urticose.core` — `Hostname`, `DnsLabel`, `Ipv4`, `Ipv6`, `Ipv4Subnet`, `Ipv6Subnet`,
++       `MacAddress`, `EmailAddress`, `Port` avec `Tcp`, `Udp` et `Quic`, `Endpoint` et
++       l'extension `on`, `NetworkInterface`, `Internet`/`Online` et le package
++       `internetAccess`, ainsi que les interpolateurs `ip"…"`, `subnet"…"`, `mac"…"`, `tcp"…"`
++       et `udp"…"`.
++     - `urticose.url` — `Url` avec `HttpUrl`, `Scheme`, `Authority`, `Origin`, le plan `Www`
++       sur lequel vit le chemin d'une URL, et les interpolateurs `url"…"`, `host"…"` et
++       `email"…"`.
++     - `urticose.ansi` — le given `teletypeables.urlTeletype`, qui rend une URL soulignée et en
++       couleur dans un terminal, avec `UrlPalette` pour sa couleur ; tenu à part pour que
++       l'analyse des URL n'entraîne pas la pile ANSI.
++     - `urticose.dns` — `Dns` : le vocabulaire RFC 1035 des noms, questions, enregistrements et
++       messages, leur codec binaire, `Dns.resolve` via le résolveur de la plateforme,
++       l'interpolateur `dns"…"` et les extensions `dnsName` et `reverseName`.
+
+@ 0 6 0 1a7f1a9c1fc6dd44011d5efe92e00a63
++     Tout est exporté vers le package parapluie `soundness`, et les packages de choix
++     (`internetAccess`, `teletypeables`, et les packages `emailAddressInterfaces`,
++     `hostnameInterfaces`, `ipAddressInterfaces` et `urlInterfaces`, qui désignent les types
++     d'urticose comme représentants des domaines réseau d'anticipation) fusionnent avec ceux du
++     parapluie ; un utilisateur écrit donc `import soundness.*` puis importe un given par son
++     nom : `import soundness.*` seul n'apporte aucun given d'un package.
+
+% 0 1 0 148c71fca26a9b4f1c2d31d1a31f0e8e
+
+% 0 1 0 05c41d843477be191ff24189315fde53
+
+% 0 1 0 05c41d843477be1b1ff24189315fde55
+
+% 0 1 0 05f9d66e3e297b6611e47ad40641c494
+
+% 0 1 0 1c48f55aef7b5f5f1085e369ad7b19bd
+
+% 0 1 0 0293a070f9126adc157138b1dc4d75b4
+
+% 0 1 0 0f976edc08f6f4d016bdd678c4cd7f62
+
+% 0 1 0 1e22744ad5c3fc1e140c9c740e18b39c
+
+% 0 1 0 12f2b0e624e2ec9a0f85c901ef8e9d80
+
+@ 0 1 0 0b554cec81cf219a1f43cfec0a50e9ae
++ entry .Hostname
++   info
++       un nom d'hôte DNS : des étiquettes séparées par des points, chacune soumise aux règles d'une
++       étiquette
+
+@ 0 6 0 17f1ee1cf29572c00f2fa4bdaafcf69f
++   detail
++       Un `Hostname` est une séquence de `DnsLabel`, écrite `host"www.example.com"` (vérifiée à la
++       compilation du code) ou décodée depuis du texte avec `as[Hostname]`, qui lève
++       `Hostname.Error` lorsque le texte enfreint une règle : chaque étiquette ne peut contenir que
++       des lettres, des chiffres et `-`, ne peut commencer par `-`, ne peut être vide (donc pas de
++       point initial, final ou doublé) et ne peut dépasser 63 caractères, et le nom entier ne peut
++       dépasser 253 caractères.
+
+% 2 1 0 0b2f069e38b1d890057658383f76cb0d
+
+% 3 1 0 1b2c0f524079cfdd09c7057d748ebdea
+
+% 4 1 0 01a3211c26f711621a5b58d6a6b839ca
+
+% 0 1 0 023a8a9a1fba855e1775e4c576b77950
+
+% 0 1 0 1191d8fb5c0eca371c092caa7f2f1a32
+
+% 0 1 0 0e97cc324587fc56137908d7f20ca80a
+
+% 0 1 0 044332cb4c5c46511acf3ffdbe639bcc
+
+% 1 1 0 17fa50bf8012087d025ad3914657f793
+
+@ 0 4 0 0ae0767731571fbf0d74165e574ecd50
++       Un nom d'hôte est un `Host` (avec `Ipv4` et `Ipv6`), et donc l'hôte d'une `Authority` ou le
++       domaine d'une `EmailAddress` ; il est `Remotable`, de sorte que
++       `host"example.com" on tcp"80"` crée un `Endpoint` ; et dans `urticose.dns`, `dnsName` le
++       convertit en `Dns.Name` et `Dns.resolve` le résout. `Localhost` est le nom d'hôte
++       `localhost`.
+
+% 0 1 0 0c17a5a73d00793100852bdb0e70c4aa
+
+% 1 1 0 1daabedd519a17d319b503088f3d0b86
+
+% 0 1 0 191c558889d69bd7038679cecdb1be9b
+
+@ 0 1 0 1544dbcb4cfbbc7509667abf67ee02ff
++   entry .showable
++     info
++         rend un nom d'hôte par ses étiquettes jointes par des points
+
+@ 1 1 0 1a2f5b78b8223e831c05b3b838244073
++   entry .inspectable
++     info
++         un rendu de débogage, identique à la forme affichée
+
+@ 0 1 0 060b0e4ffab0c92a1896cb134d78fa6e
++     detail
++         Les étiquettes séparées par des points identifient d'emblée un nom d'hôte ; l'inspection
++         n'a donc besoin d'aucune décoration.
+
+@ 0 1 0 1c28494a6e92792513cd59a4efc2ffb2
++   entry .decodable
++     info
++         lit un nom d'hôte depuis du texte, en levant `Hostname.Error` s'il n'est pas valide
+
+@ 0 1 0 1f004b74a850aaba19091b31794d16ef
++     detail
++         Requiert une `Tactic[Hostname.Error]` ; le given la capture.
+
+@ 0 1 0 11e6a43e2198e49802025871ceb5560a
++   entry .encodable
++     info
++         encode un nom d'hôte en texte, identique à la forme affichée
+
+@ 0 1 0 1719e4cfb25b132e0f7086b523645bf0
++   entry .toExpr
++     info
++         élève un nom d'hôte en une expression quotée, pour les macros qui en construisent un
+
+@ 0 1 0 1be60eb50426cbeb08ed9a22af73cb4a
++   entry .Error
++     info
++         levée lorsqu'un texte n'est pas un nom d'hôte valide
+
+@ 0 4 0 0c0dc1c98aa15c4908622ffca214621e
++     detail
++         Erreur `↯/s.100.10` : _the hostname is not valid because `reason`_. Levée par
++         `as[Hostname]` (via `Hostname.decodable`) et, sous forme d'erreur de compilation, par
++         `host"…"`. Le `#text` est le texte entier qui a été décodé et la `#reason` indique ce qui
++         n'allait pas.
+
+@ 0 1 0 098a9fde0a3cb2aa09139ac9a8033e36
++     entry .Reason
++       info
++           la raison du rejet d'un nom d'hôte
+
+@ 0 2 0 125f9a8e08c5eb3e16e1c3fd858bb59f
++       detail
++           Une énumération de cinq cas numérotés, chacun avec un message via
++           `Reason.communicable` :
+
+% 2 1 0 1eccaa884bfbf7d200090d1a13eb3345
+
+@ 0 9 0 17906c123ba0cf160bf06830cd9e1e8a
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `LongDnsLabel(label)`  1  _the DNS label `label` is longer than 63 characters_
++           row  `LongHostname`  2  _the hostname is longer than 253 characters_
++           row  `InvalidChar(char)`  3  _the character `char` is not allowed in a hostname_  tout sauf une lettre, un chiffre, `-` ou `.`
++           row  `EmptyDnsLabel(n)`  4  _a DNS label cannot be empty_  un point initial, final ou doublé ; `n` est le nombre d'étiquettes qui le précèdent
++           row  `InitialDash(label)`  5  _the DNS label `label` begins with a dash which is not allowed_
+
+% 1 1 0 1269cc32fea910be1cd19fef52b7022e
+
+@ 2 1 0 1ca2ffcbd374871407d0c7dc5febffa8
++       entry .communicable
++         info
++             rend chaque raison sous forme de message
+
+@ 1 1 0 15bb1784b1c1beb7166219c020de8aaa
++     entry #text
++       info
++           le texte qui a été décodé
+
+@ 1 1 0 10f79751dd796fcc06e1824d5ac1799e
++     entry #reason
++       info
++           la raison de son rejet
+
+@ 0 1 0 1601b28e7c96cb7e190a88da7fcda863
++   entry #dnsLabels
++     info
++         les étiquettes du nom d'hôte, dans l'ordre depuis la plus à gauche
+
+@ 0 1 0 0260d9a662588b861dd23b95649936c1
++ entry .DnsLabel
++   info
++       une étiquette d'un nom d'hôte, entre les points
+
+@ 0 6 0 0ca278355d2df7310975a3567ff4f6b0
++   detail
++       Un type opaque sur `Text`, créé avec `DnsLabel(text)` et relu avec son extension `text` ;
++       il n'est pas validé à la construction, puisque `Hostname.parse` l'a déjà soumis aux règles
++       d'une étiquette. Un `Hostname` en est une séquence, et `Hostname#dnsLabels` les restitue.
++       Il est `Showable` sous forme de son texte. L'extension `text` est déclarée dans
++       `urticose.internal.Opaques`, le foyer du type opaque.
+
+@ 0 2 0 149d93af236bea6208dcc1b534afe441
++       Les membres de son compagnon sont déclarés dans `internal.Opaques.DnsLabel`, d'où le type
++       est exporté, et y sont documentés.
+
+@ 0 1 0 13da5add21824a130d5dec8a2cf2acd9
++ entry .Host
++   info
++       un nom d'hôte ou une adresse IP : `Hostname | Ipv4 | Ipv6`
+
+@ 0 4 0 16544c8839e4b2dc1834680a1aee7960
++   detail
++       Le type de la partie hôte d'une `Authority` et de `Url#host` : les trois choses que peut
++       être un hôte. Un `Host` est `Showable` via `Ipv6.hostShowable`, qui met une adresse IPv6
++       entre crochets comme le fait une URL (`[::1]`), et se décode depuis du texte via
++       `Ipv6.hostDecodable`, qui essaie IPv6, puis IPv4, puis un nom d'hôte, en levant
++       `Hostname.Error` lorsqu'aucun ne convient.
+
+@ 2 1 0 1fd1199b13629da41b2c64faeec537b6
++       ```scala
+
+@ 3 1 0 1e7c6e3be7c2aa0900e9d3614bb5cd14
++       import soundness.*
+
+@ 4 1 0 07dffd1e2c7bce89186f2aedba7ac82e
++       import strategies.throwUnsafely
+
+@ 0 1 0 0f1f3bc8f1fe1b271a4df534379803b9
++       t"[::1]".as[Host]
+
+@ 0 1 0 1a82bb9746851ac60d44959b8dc174b7
++       t"example.com".as[Host]
+
+@ 1 1 0 0f6b44ce2883492410adfdbb2ceace6a
++       ```
+
+@ 0 1 0 0a500c320ba9a7e90eda1deb99f96892
++ entry .Localhost
++   info
++       le nom d'hôte `localhost`, sous forme de valeur
+
+@ 0 1 0 093296ec07b228ec14bc62812a274b3e
++ entry .host
++   info
++       l'interpolateur `host"…"` : un nom d'hôte, vérifié à la compilation du code
+
+@ 0 4 0 1a2e978640dda9d403e103297c2752be
++   detail
++       `host"www.example.com"` est un `Hostname`, et un texte qui n'est pas un nom d'hôte valide
++       est une erreur de compilation portant le message de `Hostname.Error` (`[↯/s.100.10.4] the
++       hostname is not valid because a DNS label cannot be empty` pour `host"www..com"`).
++       L'interpolateur ne prend aucune substitution. Déclaré dans `urticose.url`.
+
+@ 0 1 0 184a7af67c3bcdaf13d768d39009cff5
++ entry .Ipv4
++   info
++       une adresse IPv4 : quatre octets, sous forme de type opaque sur `Int`
+
+@ 0 6 0 1a7c0ffaa7c2af25128865aec6ce041d
++   detail
++       Une `Ipv4` s'écrit `ip"192.168.0.1"` (vérifiée à la compilation du code), se construit à
++       partir de ses octets avec `Ipv4(192, 168, 0, 1)` ou à partir d'un `Int` compacté, ou se
++       décode depuis du texte avec `as[Ipv4]`, qui lève `IpAddress.Error` pour tout ce qui n'est
++       pas exactement quatre nombres séparés par des points dans la plage 0–255. C'est un type
++       opaque sur l'entier 32 bits compacté, de sorte qu'en détenir une ne coûte rien de plus qu'un
++       `Int`.
+
+% 2 1 0 1cbbef0122b687890dd9f44ecc28bd37
+
+% 3 1 0 0aeb47f2e3b6e6320b57ff38a0de8f6c
+
+% 4 1 0 12b1d6074061752515ecee729acb6331
+
+% 0 1 0 154720bbb34704e61b5f3e5ff7a2b6f2
+
+% 0 1 0 10103c3424d94c5406da9bf9b2aa16cb
+
+% 0 1 0 0c6189011fa79806024869bf4b889583
+
+% 0 1 0 14603657d197814f0ecdbfa9740b2e14
+
+% 0 1 0 07ec4e73dfdaeefd05d66ba0a726ec53
+
+% 0 1 0 0b310b990232361c13536d58a891d327
+
+% 1 1 0 077e0614f49729b81bbf33e5a64e5838
+
+@ 0 6 0 055c9356051e0ea2093100e7fafed29f
++       Les extensions `byte0`, `byte1`, `byte2` et `byte3` lisent les octets, `int` l'entier
++       compacté, `subnet(size)` crée l'`Ipv4Subnet` d'une longueur de préfixe (en masquant les bits
++       d'hôte), et `bytes` donne les quatre octets dans l'ordre réseau sous forme de `Data` ; elles
++       sont déclarées dans `urticose.internal`, le foyer du type opaque. Une adresse s'encode aussi
++       vers et depuis `Data` (`in[Data]`, `data.as[Ipv4]`), telle que la transporte un résolveur
++       ou un enregistrement DNS `A`. L'interpolateur `ip"…"` sert les deux familles et tire le
++       type de son résultat du littéral.
+
+@ 0 2 0 16786b3223395cb409e5b835a15f5c23
++       Les membres de son compagnon sont déclarés dans `internal.Opaques.Ipv4`, d'où le type est
++       exporté, et y sont documentés.
+
+% 1 1 0 08bc73b8c9888ccc071b986148dd75cb
+
+% 0 1 0 036fbcdd1fc3de900fe78555ee143dcf
+
+% 1 1 0 19269d2e30d83ace1ec71c28f51214ff
+
+% 0 1 0 0c935015a86a4548113d4ae9639bc016
+
+@ 0 1 0 1eb9cca84af2b23d1f2cc39eaf1d24f9
++ entry .Ipv6
++   info
++       une adresse IPv6 : huit groupes de 16 bits, conservés sous forme de deux `Long`
+
+@ 0 7 0 1c6ced21690a81bc0798415dc2c55957
++   detail
++       Une `Ipv6` s'écrit `ip"2001:db8::1"` (vérifiée à la compilation du code), se construit à
++       partir de ses huit groupes avec `Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 1)` ou se décode depuis
++       du texte avec `as[Ipv6]`, qui accepte la notation usuelle — jusqu'à huit groupes séparés par
++       des deux-points, de un à quatre chiffres hexadécimaux, dans l'une ou l'autre casse, avec au
++       plus un `::` représentant une suite de groupes nuls — et lève `IpAddress.Error` sinon. C'est
++       une case class de `#highBits` et `#lowBits`, les quatre premiers et les quatre derniers
++       groupes étant chacun compactés dans un `Long`.
+
+% 2 1 0 0159cffc295d34af0477aec65246a794
+
+% 3 1 0 1fe8e13347dcc3b20bdf3e65d05e088e
+
+% 0 1 0 1b01a1fb080d1d5f12672135473c66b1
+
+% 1 1 0 1ac6549c56f97d651369bb4a51029cff
+
+% 2 1 0 06e5d82ff5751e820a182ba6c519beda
+
+% 3 1 0 087d573bd6cc2ce01abc8447d1bcd9b7
+
+% 5 1 0 05bbbec1433e4e7f198a793a06edc44b
+
+% 1 1 0 0bbad1a2ee38dc87187a4bab5f1a4ab0
+
+% 0 1 0 18fdb32cf0d7c1f80175d1907aa392b6
+
+% 1 1 0 0f3226c50b94dc0b16a92d4a79b5f8be
+
+% 2 1 0 11a678d15537153313f39ead5a5e61fa
+
+% 3 1 0 179cf04842a809c60da40b7a68a1c75f
+
+% 5 1 0 0d6de5a7d967f63410fd9176989d4833
+
+% 6 1 0 0af45de1b267ee061f6c372cba6f78f9
+
+% 1 1 0 042974ad9aed2fc80259bda4ec618a39
+
+% 0 1 0 1895a8728a3ebfc115613315f3516a54
+
+% 1 1 0 039d14ac6394a01d0df41cea68ecad6b
+
+% 2 1 0 1de0acc509ad90280d2ed19241009f45
+
+% 3 1 0 01e693f727627c1208152e8e9fb05ad7
+
+% 5 1 0 17e085410a30485d15d0658dd0fa9c9a
+
+% 6 1 0 16edf6390d36c95d0c5736a4c4daf86d
+
+% 0 1 0 0cb352ab3933ff110a9d4706de0a1e09
+
+% 0 1 0 0a9042217fd85dc2113952c5b94d31a6
+
+% 1 1 0 0bbe74f26e32c77d0ddf0bee4d9231e1
+
+% 2 1 0 04bf44d6831aa65b05d39919865b7d3e
+
+@ 0 5 0 1c32e1ed09aeb8e016c32c358296787d
++       L'extension `subnet(size)` crée l'`Ipv6Subnet` d'une longueur de préfixe, et `bytes` donne
++       les seize octets dans l'ordre réseau ; toutes deux sont déclarées dans `urticose.internal`.
++       Une adresse s'encode vers et depuis `Data` (`in[Data]`, `data.as[Ipv6]`), telle que la
++       transporte un enregistrement DNS `AAAA`. Le compagnon contient aussi les givens de l'union
++       `Host`, `hostShowable` et `hostDecodable`, puisqu'une union n'a pas de compagnon propre.
+
+@ 0 2 0 0b65fa92247218be117e7da36a7f6a03
++       Ses champs et les membres de son compagnon sont déclarés dans `internal.Ipv6`, d'où elle
++       est exportée, et y sont documentés.
+
+% 1 1 0 08bc73b8c9888cca071b986148dd75c9
+
+% 0 1 0 0f6557a52016eece0179d63a6b1cc554
+
+% 1 1 0 1fe006927a9e66eb18b47f3eea779bbf
+
+% 1 1 0 1bf5804795a83837040d6cc714c0e886
+
+@ 0 1 0 01f632462495101c0e883f2bdb008ef7
++ entry .ip
++   info
++       l'interpolateur `ip"…"` : une adresse IPv4 ou IPv6, vérifiée à la compilation du code
+
+@ 0 6 0 03860e665be93cfc00a3d2684e333540
++   detail
++       `ip"192.168.0.1"` est une `Ipv4` et `ip"2001:db8::1"` une `Ipv6` : l'interpolateur est
++       transparent, de sorte que le résultat a le type que lui donne la famille du littéral,
++       choisie selon que le texte contient un point ou non. Une adresse invalide est une erreur de
++       compilation portant le message d'`IpAddress.Error`, avec les mêmes vérifications que le
++       décodage à l'exécution : pour IPv4, quatre groupes de 0–255 ; pour IPv6, au plus huit
++       groupes, au plus un `::`, et de un à quatre chiffres hexadécimaux dans chacun.
+
+@ 2 1 0 1074895ce5ffe09101ab2ec92ec70360
++       ```scala
+
+@ 3 1 0 0bb410e2eda1360f1bbb2ff963626f26
++       import soundness.*
+
+@ 0 1 0 1780718de55be95913cb49126f135a90
++       ip"122.0.0.1" == Ipv4(122, 0, 0, 1)
+
+@ 0 1 0 0bd465d539c8977d1fb78837f7a7a8d0
++       ip"2001:db8::1:1:1:1" == Ipv6(0x2001, 0xdb8, 0, 0, 0x1, 0x1, 0x1, 0x1)
+
+@ 0 1 0 086248c459b71086199f493ce7309e51
++       ip"192.168.0.0.0.1"   // does not compile
+
+@ 1 1 0 0200e2b6e7797ad50011d281c79a60e7
++       ```
+
+@ 0 1 0 17f0615dcfc7f31e0ec657bc1463e6d1
++       L'interpolateur ne prend aucune substitution.
+
+@ 0 1 0 03b214476e1d3d530db6f08b5a66a89d
++ entry .IpAddress
++   info
++       le foyer d'`IpAddress.Error`, levée pour une adresse IP ou un sous-réseau non valide
+
+@ 0 3 0 14fa3983246ecfc4015fe2baef8c0571
++   detail
++       `IpAddress` n'a pas d'instances propres : il contient l'erreur que lèvent les deux familles
++       d'adresses et les deux types de sous-réseaux, de sorte qu'un programme qui décode l'un ou
++       l'autre peut traiter un seul type.
+
+@ 0 1 0 190ff9473402a94701997412435be1b5
++   entry .Error
++     info
++         levée lorsqu'un texte ou des octets ne sont pas une adresse ou un sous-réseau IPv4 ou IPv6
++         valide
+
+@ 0 5 0 0f3b671270e931e01fe396605bf78582
++     detail
++         Erreur `↯/s.100.2` : _the IP address is not valid because `reason`_. Levée par `as[Ipv4]`,
++         `as[Ipv6]`, `as[Ipv4Subnet]` et `as[Ipv6Subnet]`, par les décodeurs de `Data`, et sous
++         forme d'erreur de compilation par `ip"…"` et `subnet"…"` ; elle est aussi enveloppée comme
++         raison d'une `EmailAddress.Error` ou d'une `Url.Error` dont la partie adresse est
++         incorrecte.
+
+@ 0 1 0 09c2013eb4eeadc71d1c6092f1e9654a
++     entry .Reason
++       info
++           la raison du rejet d'une adresse ou d'un sous-réseau
+
+@ 0 2 0 0cb26db4e93d03f9123a429f7ec650ee
++       detail
++           Une énumération de quatorze cas numérotés, chacun avec un message via
++           `Reason.communicable` :
+
+% 2 1 0 04d9bef35f394dad0f67439b33491f7c
+
+@ 0 18 0 0dcd74b74936a6170f274e9d06946eda
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `Ipv4ByteOutOfRange(byte)`  1  _the number `byte` is not in the range 0-255_
++           row  `Ipv4ByteNotNumeric(byte)`  2  _the part `byte` is not a number_
++           row  `Ipv4WrongNumberOfGroups(count)`  3  _the address contains `count` period-separated groups instead of 4_
++           row  `Ipv6GroupWrongLength(group)`  4  _the group is more than 4 hexadecimal characters long_
++           row  `Ipv6GroupNotHex(group)`  5  _the group '`group`' is not a hexadecimal number_
++           row  `Ipv6TooManyNonzeroGroups(count)`  6  _the address has `count` non-zero groups, which is more than is permitted_
++           row  `Ipv6WrongNumberOfGroups(count)`  7  _the address has `count` groups, but should have 8_
++           row  `Ipv6MultipleDoubleColons`  8  _:: appears more than once_
++           row  `Ipv4SubnetPrefixOutOfRange(prefix)`  9  _the prefix length `prefix` is not in the range 0-32_
++           row  `Ipv6SubnetPrefixOutOfRange(prefix)`  10  _the prefix length `prefix` is not in the range 0-128_
++           row  `SubnetPrefixNotNumeric(prefix)`  11  _the prefix length `prefix` is not a number_
++           row  `SubnetWrongFormat(count)`  12  _the subnet contains `count` slash-separated parts instead of 2_  un texte sans exactement un `/`
++           row  `Ipv4WrongNumberOfBytes(count)`  13  _the address is `count` bytes long instead of 4_
++           row  `Ipv6WrongNumberOfBytes(count)`  14  _the address is `count` bytes long instead of 16_
+
+% 1 1 0 14618a3977d7842c1384305b4ed88b6e
+
+@ 2 1 0 1943441463e8b2650ab456b4735004f0
++       entry .communicable
++         info
++             rend chaque raison sous forme de message
+
+@ 3 1 0 03ffa28bc5e0eacc0b67c37547f7e292
++     entry #reason
++       info
++           la raison du rejet de l'adresse
+
+@ 0 1 0 1ce37710aa8b80360b213b5c42918401
++ entry .Ipv4Subnet
++   info
++       un réseau IPv4 : une adresse et une longueur de préfixe, comme `192.168.0.0/24`
+
+@ 0 5 0 16d37cc65fb96ecb1aafc9cb2b59e372
++   detail
++       Se crée avec `address.subnet(size)` sur une `Ipv4`, s'écrit `subnet"192.168.0.0/24"` ou se
++       décode depuis du texte avec `as[Ipv4Subnet]`. Les bits d'hôte sous le préfixe sont masqués
++       à la construction, de sorte qu'un sous-réseau écrit négligemment est corrigé plutôt que mal
++       interprété : `subnet"255.123.143.0/12"` s'affiche `255.112.0.0/12`.
+
+% 2 1 0 0d348b526c2d5287133cf50fd08bc2c9
+
+% 3 1 0 153da04db06593ad1c57ff0c9530128b
+
+% 4 1 0 0f7651e6c290fbfd1d06ed273f21f4a5
+
+% 0 1 0 08e9363568b4fff01e339b455343990e
+
+% 0 1 0 15d3598f31c7d146183d7cce30e71385
+
+% 0 1 0 19124db33bbd3803041795a95eff3145
+
+% 1 1 0 096bb1b0620245db1ad716b58f875768
+
+@ 0 2 0 0ad9a8236ecf23760bcb8bdfdb412c22
++       Ses champs et les membres de son compagnon sont déclarés dans `internal.Ipv4Subnet`, d'où
++       il est exporté, et y sont documentés.
+
+% 1 1 0 0f2887955e81b4f50536d6c276f47571
+
+% 1 1 0 0ef3b0a8bc435780160c5d427f96ecdf
+
+@ 0 1 0 0788d685e0f454f413b0b7d6bf2e87a4
++ entry .Ipv6Subnet
++   info
++       un réseau IPv6 : une adresse et une longueur de préfixe, comme `2001:db8::/32`
+
+@ 0 4 0 046bf63cb6556fd81f2bba936bab5a40
++   detail
++       Se crée avec `address.subnet(size)` sur une `Ipv6`, s'écrit `subnet"2001:db8::/32"` ou se
++       décode depuis du texte avec `as[Ipv6Subnet]`. Les bits d'hôte sous le préfixe sont masqués
++       à la construction.
+
+% 2 1 0 153c7db77f48228d0af531e6800a9bd5
+
+% 3 1 0 0e385378cb9f077a0c1e070c1f0ff311
+
+% 4 1 0 1addcb2ea40b3bec1e75436d609ae7ea
+
+% 0 1 0 155f1dba7a98c2a11ecb3b94e38b0af8
+
+% 0 1 0 0ddbd45a445a93761989f3efca47f9af
+
+% 1 1 0 1496e28c2b067aee18a39f739485b64e
+
+@ 0 2 0 03d2c12185a65a090cd4e68dd959b9e2
++       Ses champs et les membres de son compagnon sont déclarés dans `internal.Ipv6Subnet`, d'où
++       il est exporté, et y sont documentés.
+
+% 1 1 0 0f2887955e81b4f70536d6c276f47573
+
+% 1 1 0 170620ed0f81bb20066a52745833c5f2
+
+@ 0 1 0 0aa36b98444d98fe1102199c309e917f
++ entry .subnet
++   info
++       l'interpolateur `subnet"…"` : un sous-réseau IPv4 ou IPv6, vérifié à la compilation du code
+
+@ 0 5 0 0f78187fdaf062771a5e785e500283a4
++   detail
++       `subnet"192.168.0.0/24"` est un `Ipv4Subnet` et `subnet"2001:db8::/32"` un `Ipv6Subnet` :
++       l'interpolateur est transparent et tire sa famille de la présence ou non d'un point dans
++       l'adresse. Le préfixe est vérifié par rapport à la plage de la famille (0–32 ou 0–128), de
++       sorte qu'un masque impossible est une erreur de compilation
++       (`[↯/s.100.2.9] … the prefix length 40 is not in the range 0-32`), et les bits d'hôte sous
++       le préfixe sont masqués. Il ne prend aucune substitution.
+
+@ 2 1 0 0fc8ae0210ebd80b18c8209b21f802f5
++       ```scala
+
+@ 3 1 0 1e38c8c3b2f8a71403c4de011fd0e5c9
++       import soundness.*
+
+@ 0 1 0 1e2d1b5eee8e0cd103a85c4f54113ba7
++       subnet"255.123.143.0/12".show   // t"255.112.0.0/12"
+
+@ 0 1 0 0ff5aeae7a24d70f022522b13d7908ab
++       subnet"10.0.0.0/40"             // does not compile
+
+@ 1 1 0 1da92bce7a79671901735aa10ebacacb
++       ```
+
+@ 0 1 0 119b5ba6f3f98f1b15083fa19256eb48
++ entry .MacAddress
++   info
++       une adresse matérielle de 48 bits, sous forme de type opaque sur `Long`
+
+@ 0 6 0 192b6cf29cee959a03fa0828b7edb73d
++   detail
++       Une `MacAddress` s'écrit `mac"01-23-45-ab-cd-ef"` (vérifiée à la compilation du code), se
++       construit à partir de six octets avec `MacAddress(1, 2, 3, 4, 5, 6)` ou à partir de son
++       `Long` compacté, ou se décode depuis du texte avec `as[MacAddress]`, qui exige six groupes
++       séparés par des tirets d'exactement deux chiffres hexadécimaux et lève `MacAddress.Error`
++       sinon. Une `NetworkInterface` signale son adresse matérielle sous cette forme.
+
+% 2 1 0 0090bb2d89ac93db097bced85eb4ee58
+
+% 3 1 0 01ab155fb90978020c33535cbcf249ae
+
+% 4 1 0 0d9f77f16a17825d175e118d2074a05e
+
+% 0 1 0 18267b3475e997fa199eeb1058d81073
+
+% 0 1 0 10ef8df92103248818efedcac938ff70
+
+% 0 1 0 0c5139d98eab37820b16eedc88132e9f
+
+% 0 1 0 1c694421a6b60b2d1bb1944f53d16e9a
+
+% 1 1 0 1b1868f0aa1b2be907f95bbabcc82dda
+
+@ 0 3 0 0106ab0056a67cda06336eb73288c063
++       Les extensions `byte0` à `byte5` lisent les six octets, `text` rend la forme en minuscules
++       avec tirets et `long` donne la valeur compactée ; elles sont déclarées dans
++       `urticose.internal.Opaques`, le foyer du type opaque.
+
+@ 0 2 0 1caa8b66dd34a12b0b1c791b3971581b
++       Les membres de son compagnon sont déclarés dans `internal.Opaques.MacAddress`, d'où le type
++       est exporté, et y sont documentés.
+
+% 0 1 0 0a2aaa7288ade74a03365721109c5dc9
+
+% 0 1 0 1fcc8aa11639e287101407a09d8cf774
+
+@ 0 1 0 0956edeb82ae19990bfe04faf77476d7
++ entry .mac
++   info
++       l'interpolateur `mac"…"` : une adresse MAC, vérifiée à la compilation du code
+
+@ 0 4 0 0a1bff3aaab8657f170891fd3e290cb6
++   detail
++       `mac"01-23-45-ab-cd-ef"` est une `MacAddress` ; un texte qui n'est pas six paires de
++       chiffres hexadécimaux séparées par des tirets est une erreur de compilation portant le
++       message de `MacAddress.Error` (`[↯/s.100.7.2] the MAC address is not valid because group 5
++       should be two hex digits, but its length is 1`). Il ne prend aucune substitution.
+
+@ 0 1 0 1a03cba8cc77c8431a508bfa55d1ea8c
++ entry .Port
++   info
++       un numéro de port dont le type enregistre son transport et, pour un littéral, son numéro
+
+@ 0 6 0 14c16a1c0c3308ff02243d4e75e94d45
++   detail
++       Un `Port` est un type opaque sur `Int`, raffiné par deux membres de type de `Port.Type` :
++       `Transport` nomme le protocole, de sorte qu'un `Port over Tcp` et un `Port over Udp` sont
++       des types distincts (`Tcp.Port` et `Udp.Port` en sont des alias), et `Topic` porte le
++       numéro littéral, de sorte que `tcp"smtp"` est un `Port over Tcp of 25`. Le given
++       `Protocolic` d'un serveur peut donc être lié à des ports précis au niveau des types.
+
+% 2 1 0 0c6f064e458e5fd80fba6ed2478293e2
+
+% 3 1 0 1415e32cb777aa660e1ec27047b9a108
+
+% 4 1 0 1a5bd1109e6ccaff01703d7f2276fc87
+
+% 0 1 0 01c66542172fc6a903d0a7f978e70cb3
+
+% 0 1 0 1d39205f2fcdcf7404bf1b845e7f5407
+
+% 0 1 0 13241ef96c92aff009a17337b3d6d058
+
+% 0 1 0 05f68ed9adbf24a70598dd04ff54768c
+
+% 0 1 0 0455913a8673c8661e755876f3787aa7
+
+% 0 1 0 12e3ad5acf245bee052634dedc90587d
+
+% 1 1 0 089220147d032e8e03b41c0a172e4f4e
+
+@ 0 7 0 1cfbe6f0f4ad54d9143d922faac80e2f
++       `Port[Tcp]()` sans numéro demande au système d'exploitation un port éphémère en liant puis
++       en libérant un socket de sondage, ce dont ont besoin un serveur de test ou un service lié
++       dynamiquement ; rien ne le réserve entre-temps, de sorte que, lorsque l'appelant lie
++       lui-même le port, lier le port 0 et lire le port obtenu (`Service#port`) est l'alternative
++       sans situation de compétition. Les extensions `number` et `privileged` sont déclarées dans
++       `urticose.internal.Opaques`, le foyer du type opaque. Un port est `Showable` et s'encode
++       sous forme de son numéro ; il s'inspecte en `⌗25`, pour ne pas être confondu avec l'`Int`
++       vers lequel il est effacé.
+
+@ 0 2 0 05a7e86426c48203163faabc8337082d
++       Les membres de son compagnon sont déclarés dans `internal.Opaques.Port`, d'où le type est
++       exporté, et y sont documentés.
+
+% 0 1 0 1af5e829cc2d1ea118291a56ce1a568e
+
+% 0 1 0 15ea9630ca71b54f0aab9d865998fc4c
+
+% 0 1 0 119e57f8e05ed9f805483a87cfe0a5ae
+
+% 0 1 0 0c9305ffdea370a617cabdb75b5f4b6b
+
+% 1 1 0 0610235b3b522896030a38c064f2391c
+
+@ 0 1 0 1ba4a969971b0a42006749138c324cc9
++ entry .tcp
++   info
++       l'interpolateur `tcp"…"` : un port TCP par numéro ou par nom de service IANA, vérifié à la
++       compilation du code
+
+@ 0 5 0 0871c6ac81315ad50e82333b60e957f0
++   detail
++       `tcp"443"` est un `Port over Tcp of 443` et `tcp"smtp"` un `Port over Tcp of 25` : un nom
++       est recherché dans le registre IANA des noms de services fourni avec la bibliothèque, pour
++       le transport TCP spécifiquement, de sorte qu'un service enregistré seulement sur UDP, ou un
++       nom inconnu, est une erreur de compilation (`[↯/s.100.11] abcdef is not a valid TCP port`),
++       de même qu'un numéro hors de 1–65535 (`[↯/s.100.5]`). Il ne prend aucune substitution.
+
+@ 2 1 0 028851b87af923fe1836b2a8ec62c491
++       ```scala
+
+@ 3 1 0 01cc181691ad257f0cb50b6ccea58bc2
++       import soundness.*
+
+@ 0 1 0 013d485072e3e3a101340c938db94623
++       tcp"smtp" == Port[Tcp](25)
+
+@ 0 1 0 1e6c34de28060bec14bee712bd2c7a9c
++       tcp"abcdef"   // does not compile
+
+@ 1 1 0 152cbbffa58c87ea01e5ab49db510231
++       ```
+
+@ 0 1 0 06f3c3473098bb2c02ce0d3acf0cc5d9
++ entry .udp
++   info
++       l'interpolateur `udp"…"` : un port UDP par numéro ou par nom de service IANA, vérifié à la
++       compilation du code
+
+@ 0 3 0 11e0bdab4b89047e1cb34a9d687739d2
++   detail
++       Comme `tcp"…"`, pour le transport UDP : `udp"53"` et `udp"domain"` sont chacun un
++       `Port over Udp of 53`, et un nom enregistré seulement sur TCP ne compile pas
++       (`[↯/s.100.11] docker is not a valid UDP port`).
+
+@ 2 1 0 17fa3294bff1a7801a5d793b89b65874
++       ```scala
+
+@ 3 1 0 1a43e8b0a17951810c527d11e770652c
++       import soundness.*
+
+@ 0 1 0 1fee05ff882ff2ef0296fb7b6b03bf37
++       udp"docker"   // does not compile
+
+@ 1 1 0 1f347a3d89f385150351a30c5d5faaba
++       ```
+
+@ 0 1 0 0f57bf0c0c235a861e53cb5acbe43396
++ entry .Tcp
++   info
++       le transport TCP, sous forme de type fantôme pour les ports et les points de terminaison
+
+@ 0 4 0 02b58d33e1b7db29008ec8526fe9b201
++   detail
++       `Tcp` marque un `Port over Tcp`, qu'abrège `Tcp.Port` et que crée l'interpolateur
++       `tcp"…"`. Le given `allocatable` de son compagnon permet à `Port[Tcp]()` de trouver un port
++       inutilisé en liant un `ServerSocket` sur le port 0.
+
+% 1 1 0 05afc13a1179b1e007b9496ecb5084c1
+
+@ 0 1 0 0e0baac2b8111d9d0079e836eb0eb688
++   entry .Port
++     info
++         l'alias `urticose.Port over Tcp`
+
+@ 0 1 0 1575180a5bbe5a4c072e926518de05e0
++   entry .allocatable
++     info
++         trouve un port TCP inutilisé, pour `Port[Tcp]()`
+
+@ 0 2 0 178e24b3f26c56fa0b0bdd45d10f1f05
++     detail
++         Lie un `java.net.ServerSocket` sur le port 0, lit le port qu'a choisi le système, et le
++         ferme ; le port est libre à ce moment-là mais n'est pas réservé.
+
+@ 0 1 0 16ce0b3defd9c4601e5098d8476ed3fd
++ entry .Udp
++   info
++       le transport UDP, sous forme de type fantôme pour les ports et les points de terminaison
+
+@ 0 4 0 0a21975f00bbe20b1163718c01deb327
++   detail
++       `Udp` marque un `Port over Udp`, qu'abrège `Udp.Port` et que crée l'interpolateur
++       `udp"…"`. Le given `allocatable` de son compagnon permet à `Port[Udp]()` de trouver un port
++       inutilisé en liant un `DatagramSocket` sur le port 0.
+
+% 1 1 0 0ed0ecd883422ceb087153687ee1d62d
+
+@ 0 1 0 02af89893eeff121171d8d99c225b6c4
++   entry .Port
++     info
++         l'alias `urticose.Port over Udp`
+
+@ 0 1 0 0496232724439c8513d7691463d0f508
++   entry .allocatable
++     info
++         trouve un port UDP inutilisé, pour `Port[Udp]()`
+
+@ 0 2 0 08e0862c31b277bf19e21cd3c911a804
++     detail
++         Lie un `java.net.DatagramSocket` sur le port 0, lit le port qu'a choisi le système, et le
++         ferme ; le port est libre à ce moment-là mais n'est pas réservé.
+
+@ 0 1 0 166f229a882e940e18436f0df16de889
++ entry .Quic
++   info
++       le transport QUIC, sous forme de type fantôme pour les ports
+
+@ 0 3 0 133e7cdf72e644db0c2a1fb02c7ba9ca
++   detail
++       QUIC fonctionne sur UDP, mais un `Port over Quic` est d'un type distinct d'un
++       `Port over Udp`. Aucune instance `Allocatable` n'est fournie, de sorte qu'un port QUIC
++       requiert un numéro explicite, `Port[Quic](443)`, et que `Port[Quic]()` ne compile pas.
+
+@ 0 1 0 169bbd3a8660632f09f02f59b7784567
++ entry .Allocatable
++   info
++       un transport pour lequel le système d'exploitation peut trouver un port inutilisé
+
+@ 0 5 0 16aaf6852c87ba3f0c62f518819422dc
++   detail
++       La classe de types derrière `Port[transport]()` : `Tcp.allocatable` et `Udp.allocatable` en
++       sont les instances, chacune liant sur le port 0 un socket de sondage du bon genre puis le
++       libérant. Elle est indexée sur le type fantôme du transport, puisque le transport est effacé
++       à l'exécution et que le socket de sondage doit tout de même être du bon genre.
+
+@ 0 1 0 072636ed7ae6d15114588086270e31da
++   entry #unused
++     info
++         un numéro de port que le système a signalé comme libre il y a un instant
+
+@ 0 1 0 084c41206e56edcb1b6946ea6c9655bb
++ entry .Service
++   info
++       un serveur en fonctionnement : comment l'arrêter, et le port auquel il est lié
+
+@ 0 5 0 1b7b41296c7299af03397157234cc6ae
++   detail
++       Ce que renvoie un serveur `Protocolic` (et `serve`) sur les plateformes dont les serveurs
++       s'arrêtent par un callback. `#port` est le port effectivement lié, c'est-à-dire celui
++       qu'a choisi le système lorsque le serveur a demandé le port 0 ; demander le port 0 puis
++       lire `port` est donc la manière, sans situation de compétition, de faire tourner un serveur
++       sur un port libre.
+
+@ 0 1 0 0853e83e1ac140610d0ac9d1f48f1617
++   entry #cancel
++     info
++         arrête le serveur
+
+@ 0 1 0 1a383ddfd67434e10b9b94146a98c90c
++   entry #port
++     info
++         le port auquel le serveur est lié
+
+@ 0 1 0 1bb9148da28b1a350729785b40ee7f69
++ entry .Protocolic
++   info
++       un protocole qui peut servir un port : la classe de types derrière `serve`
+
+@ 0 8 0 0157462f4d2a32781d402cc3c1679fdc
++   detail
++       Un `protocol is Protocolic over port` indique comment démarrer un serveur pour `protocol`
++       sur un `port` du transport correspondant : `scintillate` fournit
++       `Http is Protocolic over (Tcp.Port of 8080)` et ses semblables, de sorte que
++       `tcp"8080".serve[Http](handler)` démarre un serveur web. La classe de types fixe un type
++       `Request` (une capacité, puisqu'une requête est une connexion active), un type `Response` et
++       un type `Server`, et sa méthode `server` prend un gestionnaire qui reçoit chaque requête de
++       manière contextuelle et peut renvoyer une réponse qui capture cette requête — un corps en
++       flux conserve légitimement la connexion à laquelle il répond.
+
+% 1 1 0 077da9ed90d992bf01ecb634d987ee68
+
+% 1 1 0 07ae7f2521a14d6c022cf28b8b6013a5
+
+@ 0 1 0 09ef4d15950e09f41377a73833d6e212
++   entry #Request
++     info
++         le type d'une requête que reçoit le gestionnaire, une capacité
+
+@ 0 1 0 18e18c2d6e3b62091585760aac7bbe88
++   entry #Response
++     info
++         le type d'une réponse que renvoie le gestionnaire
+
+@ 0 1 0 1e77422cc5da7bfb16b6f6babd30965c
++   entry #Server
++     info
++         le type du serveur en fonctionnement, tel que `Service`
+
+@ 0 1 0 1becbdea3328cfc8133db1e71d5012d2
++   entry #server
++     info
++         démarre un serveur sur un port, avec un gestionnaire pour chaque requête
+
+@ 0 1 0 06edc9f66f9f22f606c8fcf95666364b
++ entry .serve
++   info
++       `port.serve[Protocol](handler)` : démarre un serveur pour un protocole sur un port
+
+@ 0 5 0 18bd96c2166cb1e01123aad15b988614
++   detail
++       Une extension sur tout type de port pour lequel existe un `Protocolic over` :
++       `tcp"8080".serve[Http]: request ?=> …` démarre le serveur que décrit le given
++       `Http is Protocolic` dans la portée, le gestionnaire étant invoqué pour chaque requête, et
++       renvoie le `Server` du protocole (un `Service`, pour celui de scintillate). Le given porte
++       ses propres besoins — une `Tactic`, un `Monitor`, de la journalisation — et c'est donc cela
++       que le site d'appel doit avoir dans la portée.
+
+@ 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
++       ```scala fuel
+
+@ 0 1 0 1a8ec18672c39e03185024ae675e9c25
++       typecheck
+
+@ 0 1 0 0472326144a49ce71767be845f62f575
++       ##
+
+@ 1 1 0 149c77db45ac644f1a74f205bbafc35a
++       import soundness.*
+
+@ 0 1 0 1fd1ddf7dfb5ad7a0e39279b9f8cd6df
++       import httpServers.jdkHttpserver
+
+@ 0 1 0 03f91ab3dc19c4f9112c539014548423
++       import logging.silentLogging
+
+@ 0 1 0 0a521d99b45fc7d610917706d09c2d5c
++       import probates.awaitProbate
+
+@ 1 1 0 062360b94dd462cb18e2d0c3dddc770e
++       import strategies.throwUnsafely
+
+@ 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
++       import threads.virtualThreads
+
+@ 0 1 0 1d5e1a4fa6f0818802d7be243df390a3
++       import webserverErrorPages.minimalErrorPage
+
+@ 0 1 0 144465424113a2fd0327fada211973c4
++       def hello(): Unit = supervise:
+
+@ 0 1 0 1f0f52b4cf1ae7a8171c92112fe8b384
++         val service = tcp"8080".serve[Http]:
+
+@ 0 1 0 126848a6f7ec053615c06d5aaf144740
++           Http.Response(Http.Ok)(t"Hello, world!")
+
+@ 0 1 0 0d32a4a3749b6c3f11e46c42e6bd1fa5
++         service.cancel()
+
+@ 1 1 0 1c4297c18e007a6e08183e0ab165aabb
++       ```
+
+@ 0 1 0 0c434a525ac6c3df1d2a21e8cb4b291f
++ entry .Endpoint
++   info
++       un hôte distant et un port : là où s'établit une connexion
+
+@ 0 5 0 135cf97e3f64eb2315929ddfd8bd7193
++   detail
++       Un `Endpoint[port]` associe le texte d'un hôte distant — un nom d'hôte ou une adresse IP
++       rendus — à un port de type quelconque, et se crée avec l'extension `on` :
++       `host"example.com" on tcp"80"`. Les bibliothèques de sockets en prennent un pour se
++       connecter, et un `Endpoint[Udp.Port]` est ce à quoi `coaxial.dns` envoie les requêtes DNS.
+
+% 2 1 0 1a40c6b3c6ba567e187bffa3f7a5dda3
+
+% 3 1 0 00702d827ab936980af76f537f7ca022
+
+% 0 1 0 156ea0aff08afd7b169c6dc68d5bf1ba
+
+% 0 1 0 04f8ec880abadb2114fe51a46bdcc333
+
+% 0 1 0 1b2c549b922dd12810eeb2efa35d9c0d
+
+% 1 1 0 0d0eca40fc69e74d0c4e9d367b76b28d
+
+% 0 1 0 09143826c29ebac712ec771083d3f67c
+
+% 0 1 0 0234c678526576581205a595d961d3fd
+
+@ 0 1 0 00e43f97de71769002ff1977db42029f
++   entry .showable
++     info
++         rend un endpoint sous la forme `remote:port`, pour un type de port qui est
++         `Showable`
+
+@ 0 1 0 0bea0ec52aaced9e0ef3448f5491ed96
++   entry .inspectable
++     info
++         un rendu de débogage avec les deux parties inspectées : `Endpoint(t"example.com":⌗80)`
+
+@ 0 2 0 17314e06debb10f3024158292e461932
++     detail
++         Le port est inspecté plutôt qu'affiché, de sorte qu'aucun `Showable` n'est nécessaire pour
++         le type de port et que le port garde la marque de son propre type.
+
+@ 0 1 0 08cf1c3deb42b9e21b4749e40b8d4e93
++   entry #remote
++     info
++         l'hôte distant, sous forme de texte
+
+@ 0 1 0 0fe5d690fb7de5c6157a436f3ff71f51
++   entry #port
++     info
++         le port, quel que soit le type sous lequel il a été donné
+
+@ 0 1 0 196b05ec3c4b4fe21baf3a37058f2aa0
++ entry .on
++   info
++       `remote on port` : crée un `Endpoint` à partir de tout ce qui est `Remotable` et d'un port
+
+@ 0 3 0 0a2c7ab1c9171e7c1d34ad9b4d0f785b
++   detail
++       Une extension infixe sur toute valeur dotée d'une instance `Remotable` — un `Hostname`, une
++       `Ipv4` ou une `Ipv6` — qui associe son texte rendu à un port de type quelconque :
++       `ip"127.0.0.1" on udp"53"` est un `Endpoint[Port over Udp of 53]`.
+
+@ 0 1 0 1e97a6156b9229560f989ac83b8e269c
++ entry .Remotable
++   info
++       quelque chose qui peut être l'hôte distant d'un `Endpoint`
+
+@ 0 4 0 179ba28c6d7952160ebb2af38e6ae98c
++   detail
++       Une classe de types qui rend une valeur sous forme du texte d'un hôte distant ; `Hostname`,
++       `Ipv4` et `Ipv6` ont des instances dans ce compagnon, et tout autre type peut en ajouter une
++       pour être utilisable avec `on`.
+
+@ 0 1 0 13daa4ab00133eaa1b9b0970d972a59d
++   entry .ipv4
++     info
++         une adresse IPv4 comme hôte distant, sous forme décimale pointée
+
+@ 0 1 0 00e4c3341d3d405403715550917e0091
++   entry .ipv6
++     info
++         une adresse IPv6 comme hôte distant, sous sa forme la plus courte (sans crochets)
+
+@ 0 1 0 00793afcff1f179713ad67d521aee04b
++   entry .hostname
++     info
++         un nom d'hôte comme hôte distant, sous forme de ses étiquettes séparées par des points
+
+@ 0 1 0 0a5fa571100eecdf1d0490145c83248e
++   entry #remote
++     info
++         le texte de l'hôte distant
+
+@ 0 1 0 116d8e116eedfd11192de623d331ba29
++ entry .EmailAddress
++   info
++       une adresse e-mail : une partie locale, un domaine et, optionnellement, un nom d'affichage
+
+@ 0 8 0 093db6989a0f94b21af5ef54638f5801
++   detail
++       Une `EmailAddress` s'écrit `email"test@example.com"` (vérifiée à la compilation du code) ou
++       se décode depuis du texte avec `as[EmailAddress]`, qui lève `EmailAddress.Error` lorsque le
++       texte enfreint les règles : la partie locale compte au plus 64 caractères, sans guillemets
++       (lettres, chiffres, les symboles `` !#$%&'*+-/=?^_`{|}~ `` et des points, mais sans point
++       initial, final ou doublé) ou entre guillemets (`"john..doe"@example.org`, avec les
++       échappements `\"` et `\\`), et le domaine est un `Hostname` ou une adresse IP entre
++       crochets, `[192.168.0.1]` ou `[IPv6:2001:db8::1]`.
+
+% 2 1 0 0c1db1e28ad4a2911121888f017ba883
+
+% 3 1 0 1f6c06d0a5068bd0076cbf05f2b9ada5
+
+% 4 1 0 1578bd3752ef68b300d22d6a06db98d4
+
+% 0 1 0 14043b2db7dc47f21fbe03070b6da809
+
+% 0 1 0 0af4bb79f9bca6b50bff19852cd8cff9
+
+% 0 1 0 0d4bdc60bc3bda1806d911344ef53f71
+
+% 0 1 0 09a25f4cb59380131319902e4d502ee4
+
+% 1 1 0 0984fe1a7c0802c61ef5e647a662d5e6
+
+@ 0 4 0 07c935ab6196571c1f0d0e52948f622f
++       Une adresse décodée n'a pas de nom d'affichage ;
++       `EmailAddress(t"Hamlet", localPart, domain)` en donne un, que `#text` rend sous la forme
++       `Hamlet <local@domain>`. Le package `emailAddressInterfaces` désigne ce type comme
++       représentant du domaine `EmailAddresses` d'anticipation, pour les bibliothèques qui
++       acceptent n'importe quel type d'adresse e-mail.
+
+% 0 1 0 0f43a595939e59e5186e8350e4357b3d
+
+% 0 1 0 08bd667e652766281c933b266c160223
+
+% 1 1 0 1cda35cb832606441ed75aafb5c6cab6
+
+@ 0 1 0 0fa0f3d4481ee3780ab20a2d973ba2fe
++   entry .decodable
++     info
++         lit une adresse depuis du texte, en levant `EmailAddress.Error` si elle n'est pas valide
+
+@ 0 2 0 1b2a1f31404dfe9a11ba5a592aecd690
++     detail
++         Requiert une `Tactic[EmailAddress.Error]` ; le given la capture. Un domaine incorrect est
++         signalé comme `InvalidDomain`, qui enveloppe la `Hostname.Error` ou l'`IpAddress.Error`
++         trouvée.
+
+@ 0 1 0 182e71698a57c0721a8505324590133e
++   entry .encodable
++     info
++         encode une adresse sous forme de son texte, avec le nom d'affichage s'il y en a un
+
+@ 0 1 0 0aa0b8259bc1e89310812adc8fbb4f2d
++   entry .showable
++     info
++         rend une adresse sous forme de son texte
+
+@ 1 1 0 10632ec584d9ae24158ce43ba62484a8
++   entry .inspectable
++     info
++         un rendu de débogage, identique à la forme affichée
+
+@ 0 1 0 0fa10339369570930e68e5f842fff397
++   entry .parse
++     info
++         lit une adresse depuis du texte, comme le fait `.decodable`
+
+@ 0 1 0 1c609dd238bae8020c58524866264873
++   entry .Error
++     info
++         levée lorsqu'un texte n'est pas une adresse e-mail valide
+
+@ 0 3 0 09516f75ad6d9d78089370941e2a24d0
++     detail
++         Erreur `↯/s.100.4` : _the email address is not valid because `reason`_. Levée par
++         `as[EmailAddress]` et, sous forme d'erreur de compilation, par `email"…"`.
+
+@ 0 1 0 194f705aca65e93009aad812265c6d85
++     entry .Reason
++       info
++           la raison du rejet d'une adresse e-mail
+
+@ 0 2 0 03dba86e4957bcbc0f800ba8ef14e50d
++       detail
++           Une énumération de douze cas numérotés, chacun avec un message via
++           `Reason.communicable` :
+
+% 2 1 0 038377ec8d2f124b1dbaa6ab825f0d68
+
+@ 0 16 0 1f1cd65cdd006ae90285287262593708
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `Empty`  1  _it is empty_
++           row  `InvalidDomain(error)`  2  _the domain is not a valid IP address: …_ or _the domain is not a valid hostname: …_  enveloppe l'`IpAddress.Error` ou la `Hostname.Error` du domaine, dont le message suit les deux-points
++           row  `LongLocalPart`  3  _the local part is more than 64 characters long_
++           row  `TerminalPeriod`  4  _the local part ends in a period, which is not allowed_  dans une partie locale sans guillemets
++           row  `SuccessivePeriods`  5  _the local part contains two adjacent periods_  dans une partie locale sans guillemets
++           row  `InitialPeriod`  6  _the local part starts with a period, which is not allowed_  dans une partie locale sans guillemets
++           row  `UnescapedQuote`  7  _the local part contains a quote character which is not escaped_  dans une partie locale entre guillemets
++           row  `UnclosedQuote`  8  _the quoted local part has no closing quote_
++           row  `MissingDomain`  9  _the domain is missing_
++           row  `MissingAtSymbol`  10  _the at-symbol is missing_
++           row  `UnclosedIpAddress`  11  _the domain begins with `[` but does not end with `]`_
++           row  `InvalidChar(char)`  12  _the local part contains the character `char` which is not allowed_
+
+% 1 1 0 0a5c74ac0ec139ae190055517f562e9a
+
+@ 2 1 0 0665dedbf638fbd100b3846473c3f2ea
++       entry .communicable
++         info
++             rend chaque raison sous forme de message
+
+@ 3 1 0 094497a8d0c19f490fe105e2dcdacc10
++     entry #reason
++       info
++           la raison du rejet de l'adresse
+
+@ 0 1 0 0130676104bfb6a51ae4a96834d4119d
++   entry #displayName
++     info
++         le nom d'affichage, ou `Unset`
+
+@ 0 1 0 1bcd481260e2a7691e32be043e026a47
++   entry #localPart
++     info
++         la partie avant le `@`, entre guillemets ou non
+
+@ 0 1 0 1ebdcfc95dcc7eb709a8bd41b3220114
++   entry #domain
++     info
++         la partie après le `@` : un nom d'hôte ou une adresse IP
+
+@ 0 1 0 02d49b9f5099f6e30afa367815ddec81
++   entry #text
++     info
++         l'adresse sous forme de texte : `local@domain`, ou `name <local@domain>` avec un nom
++         d'affichage
+
+@ 0 2 0 0476992dab360003004c22a9fc2252f6
++     detail
++         Une partie locale entre guillemets est rendue avec ses guillemets, et un domaine IPv6
++         entre crochets, tels que l'adresse a été écrite.
+
+@ 0 1 0 12a639ef403a0022123dd6bc77967e28
++ entry .email
++   info
++       l'interpolateur `email"…"` : une adresse e-mail, vérifiée à la compilation du code
+
+@ 0 4 0 15ad2162ec620bf50c404dd9cd3d881d
++   detail
++       `email"test@example.com"` est une `EmailAddress`, avec les mêmes vérifications
++       qu'`as[EmailAddress]` et une erreur de compilation portant le message
++       d'`EmailAddress.Error` là où elles échouent. Une partie locale entre guillemets requiert un
++       littéral à triples guillemets : `email""""test user"@example.com"""`. Il ne prend aucune
++       substitution. Déclaré dans `urticose.url`.
+
+@ 0 1 0 07ee492a85944e481c1d82281e20209d
++ entry .LocalPart
++   info
++       la partie d'une adresse e-mail avant le `@` : entre guillemets ou non
+
+@ 0 4 0 120866bc4cd070f61640097a207358fc
++   detail
++       Une énumération de deux cas, chacun contenant son `text` : `Unquoted(text)`, la forme
++       ordinaire, et `Quoted(text)`, le texte entre les guillemets d'une partie locale entre
++       guillemets (`"john..doe"`), qui peut contenir des caractères qu'une partie sans guillemets
++       ne peut pas contenir. `EmailAddress#text` rétablit les guillemets lors du rendu.
+
+@ 0 1 0 1b1fc49461c9188e0a81f052909bc9f0
++ entry .NetworkInterface
++   info
++       l'une des interfaces réseau de la machine, avec ses adresses
+
+@ 0 6 0 064dc9ada02a3af61ddc391f404d6c0a
++   detail
++       Un instantané d'une `java.net.NetworkInterface` sous forme de valeur : son nom et son nom
++       d'affichage, son index, son adresse matérielle (MAC), les `InterfaceAddress` qui lui sont
++       liées, son MTU, et si elle est active, de bouclage, point à point, compatible multicast ou
++       virtuelle. Le compagnon énumère et recherche les interfaces ; chaque appel lève
++       `NetworkInterface.Error` si la plateforme ne peut pas les énumérer ou les inspecter.
+
+% 2 1 0 196f87d8f0f8c04e001d97d20d4b3215
+
+% 3 1 0 0ee39dfcb239c64b0b866a87ef82497c
+
+% 4 1 0 0ae24295884c456e1688aef3cda2c7e1
+
+% 0 1 0 1c52e7b4fd2f352b1de45685987d99b5
+
+% 0 1 0 1df1a2ab201475c21b70a8537b9c4dc7
+
+% 0 1 0 05cb229c54c0b2501c2c21d87c00e052
+
+% 1 1 0 059f079f8ea7e64a0e837eed02d41f91
+
+% 0 1 0 1a41a5c76ff61d320df3c39074588601
+
+% 0 1 0 104a7d0b4aecc50f12135065d904fb11
+
+@ 0 1 0 12ecffa33a7ad43306e577d28893b51e
++   entry .showable
++     info
++         rend une interface par son nom
+
+@ 0 1 0 167af34e1112d873112bbb5926762bb1
++   entry .all
++     info
++         toutes les interfaces que signale la plateforme, dans l'ordre de la plateforme
+
+@ 0 1 0 12fda6c8929cd2d11762080b10abc0de
++   entry .byName
++     info
++         l'interface d'un nom tel que `eth0`, ou `Unset`
+
+@ 0 1 0 06c489ab03978e310b5ee019d523a556
++   entry .byIndex
++     info
++         l'interface d'un index de la plateforme, ou `Unset`
+
+@ 0 1 0 1977983fa30cdaf21d83d2dda24b8910
++   entry .byAddress
++     info
++         l'interface à laquelle est liée une adresse IP, ou `Unset`
+
+@ 0 1 0 06302290e451bbc3085e0b709f599452
++   entry .Error
++     info
++         levée lorsque la plateforme ne peut pas énumérer ou inspecter ses interfaces
+
+@ 0 3 0 19fd3e23e6a8131f13ffeb90794ce4f3
++     detail
++         Erreur `↯/s.100.6` : _the network interface could not be read because `reason`_, qui
++         enveloppe le message de l'erreur de socket.
+
+@ 0 1 0 1787c69598db2b871bdbce0abea9ec55
++     entry .Reason
++       info
++           la raison pour laquelle les interfaces n'ont pas pu être lues
+
+@ 0 3 0 184cf322246418540312d89622fa81b9
++       detail
++           `Enumeration(message)` lorsque la liste des interfaces n'a pas pu être obtenue, et
++           `Inspection(name, message)` lorsque les détails d'une interface n'ont pas pu être lus.
+
+@ 1 1 0 0c101b3664ba762801de103ba50bea23
++       entry .communicable
++         info
++             rend chaque raison sous forme de message
+
+@ 0 1 0 0a6cfccb07a5c14e002881a354773380
++     entry #reason
++       info
++           la raison pour laquelle les interfaces n'ont pas pu être lues
+
+@ 0 1 0 1958cab2fc7032a21fb09e7d20658287
++   entry #name
++     info
++         le nom de l'interface, tel que `eth0` ou `lo0`
+
+@ 0 1 0 0b9c6e10cbcd814b1e8c2dff012c87cc
++   entry #displayName
++     info
++         le nom descriptif que donne la plateforme à l'interface
+
+@ 0 1 0 06949ea35cb9c2930f9f053eeacbd0d5
++   entry #index
++     info
++         l'index de l'interface sur la plateforme
+
+@ 0 1 0 06340d657e6c804f02e8c9ba943fde99
++   entry #hardware
++     info
++         l'adresse MAC, ou `Unset` pour une interface qui n'en a pas
+
+@ 0 1 0 0ea012e2e6189e4a1154b499285d0482
++   entry #addresses
++     info
++         les adresses liées à l'interface, chacune avec son préfixe et son adresse de diffusion
+
+@ 0 1 0 02a31953c1cdd5d419ff49e51726e978
++   entry #mtu
++     info
++         l'unité de transmission maximale, en octets
+
+@ 0 1 0 18127dd5618602450446a4878352daa5
++   entry #up
++     info
++         si l'interface est active et fonctionne
+
+@ 0 1 0 091d2ea64a5ce6921a0d5c332ee0d29a
++   entry #loopback
++     info
++         si l'interface est une interface de bouclage
+
+@ 0 1 0 0dfab14f60ce427e0b5a346f8911cb84
++   entry #pointToPoint
++     info
++         si l'interface est une liaison point à point
+
+@ 0 1 0 07a700658ab2398613790750fdf10187
++   entry #multicast
++     info
++         si l'interface prend en charge le multicast
+
+@ 0 1 0 1a9726f4572d23680fb90f1c25bf5a11
++   entry #virtual
++     info
++         si l'interface est une (sous-)interface virtuelle
+
+@ 0 1 0 0a9d88260e37fc39062e76cf40c2e9a5
++   entry #ipv4
++     info
++         les adresses IPv4 liées à l'interface
+
+@ 0 1 0 0afe4dcd57b217a6016945988be7e8bb
++   entry #ipv6
++     info
++         les adresses IPv6 liées à l'interface
+
+@ 0 1 0 0333ec08429ddc4c08308a7e84321881
++ entry .InterfaceAddress
++   info
++       une adresse liée à une interface réseau, avec sa longueur de préfixe et son adresse de
++       diffusion
+
+@ 0 3 0 17822ab982063e6a0c1d4fbd650137ff
++   detail
++       L'une des `addresses` d'une `NetworkInterface` : l'adresse elle-même (IPv4 ou IPv6), la
++       longueur de son préfixe de sous-réseau et, pour IPv4, l'adresse de diffusion.
+
+@ 0 1 0 109c5dfe59b09a810819470faad465b7
++   entry #address
++     info
++         l'adresse, IPv4 ou IPv6
+
+@ 0 1 0 15e024ca8d3d451b0c0d618ecad3acbe
++   entry #prefix
++     info
++         la longueur du préfixe de sous-réseau, en bits
+
+@ 0 1 0 1e60f89c577ec03c14f51bfaa79d7ac1
++   entry #broadcast
++     info
++         l'adresse de diffusion, ou `Unset` pour une adresse IPv6
+
+@ 0 1 0 1e01da636ae603af18be90a80767c9b0
++ entry .Internet
++   info
++       la preuve d'un accès au réseau, sous forme de capacité, qui peut indiquer que le réseau est
++       indisponible
+
+@ 0 8 0 0f0edd319c1bd84d0ec168806701fc6d
++   detail
++       Un `Internet` contient un seul fait, `#online`, et est une capacité : une méthode qui
++       dépend de la connectivité en prend un de manière contextuelle, de sorte que sa portée
++       apparaît dans sa signature et dans les ensembles de capture de ce qu'elle renvoie. `Online`
++       est le sous-type qui affirme que le réseau *est* disponible, et c'est ce qu'exigent
++       habituellement les méthodes qui atteignent le réseau ; un `Internet` qui peut être hors
++       ligne se convertit en ce sous-type avec `#require` (qui lève `Internet.Error` sinon) ou
++       `#appropriate` (qui produit `Unset` sinon). `internet(online)` exécute un bloc avec un
++       `Internet` dans la portée, et `online` lit le fait depuis celui qui est dans la portée.
+
+% 2 1 0 075a23e51a76ec4808d735454e7f3522
+
+% 3 1 0 11765b3094df837016efd59ba5c0bf0e
+
+% 4 1 0 00dc87b40c6e220b1e2fe72a1096ecf5
+
+% 0 1 0 1b74f09a239842df0bd2cf23d3bac185
+
+% 0 1 0 07d3876f0b8de93805e1c70cf8f22a42
+
+% 0 1 0 0b155bd7fbc494b109968f9e7e4d68de
+
+% 0 1 0 1cc1e4249ecf7efc0c0e5ce5491250a3
+
+% 1 1 0 0857ff39090053f906e9bdff7fcdff3b
+
+@ 0 2 0 0b5f1235380ecc6908f21984f013e50a
++       La capacité n'a pas de portée délimitée et est durable : elle ne porte aucun état, de sorte
++       qu'elle peut être stockée et utilisée depuis toutes les tâches à la fois, ce qui explique
++       aussi que `internetAccess.online` puisse être un given.
+
+% 0 1 0 0a0ff4b06a52d95d1bd16031fdd175e9
+
+% 0 1 0 1ef0edcfd58a8b460026ca18d21ae078
+
+% 0 1 0 0e8327949d4c137c0db90f4036f585e9
+
+@ 0 1 0 01f4b56189bec38d1884b2c3663b0e80
++   entry .Error
++     info
++         levée lorsqu'un accès au réseau était requis et n'est pas disponible
+
+@ 0 4 0 0cdb52ace7dc6b71194bfad9236ad6b9
++     detail
++         Erreur `↯/s.100.9` : _an Internet connection is not available_. Levée par
++         `Internet#require` sur un `Internet` hors ligne, et par `internetAccess.offline` dès qu'un
++         `Online` est invoqué.
+
+@ 0 1 0 0a7f18ee15222c630a15bb749ac02b07
++   entry #online
++     info
++         si le réseau est disponible
+
+@ 0 1 0 1a414f2515c39c6d0610266fa3f4520f
++   entry #require
++     info
++         exécute un bloc qui requiert `Online`, en levant `Internet.Error` en cas d'absence de
++         réseau
+
+@ 0 1 0 011eaa7f0e80ecb11a76ebc6c8587f29
++     detail
++         Requiert une `Tactic[Internet.Error]`.
+
+@ 0 1 0 04c3cb38ddac3eae0daf489803df4eff
++   entry #appropriate
++     info
++         exécute un bloc qui requiert `Online`, ou produit `Unset` en cas d'absence de réseau
+
+@ 0 1 0 07eb8267983453041fc119b770823d6a
++ entry .Online
++   info
++       la capacité qui affirme que le réseau est disponible
+
+@ 0 5 0 01c6653b9d5c52e81146749c6a93d456
++   detail
++       `Online` est l'`Internet` dont `online` vaut `true` : le paramètre contextuel que prend une
++       méthode qui atteint le réseau (`(using Online)`), de sorte que rien ne peut l'atteindre sans
++       qu'il ait été accordé. Il est accordé par `import internetAccess.online`, par
++       `Internet#require` ou `Internet#appropriate`, ou par le compagnon, `Online`, qui est
++       lui-même une instance destinée à être passée explicitement.
+
+@ 2 1 0 031520116ddc41fa0299078fb6bdf140
++       ```scala
+
+@ 3 1 0 1e7edf8a85457e4c01b3d47b2ab48553
++       import soundness.*
+
+@ 0 1 0 11638efeb008c55609d015e26792ca37
++       import internetAccess.online
+
+@ 0 1 0 1ea562b633bdf8221e198d2771dc7029
++       def remoteCall()(using Online): Unit = ()
+
+@ 0 1 0 1709d120de5eb56803b08094b7b0c1d3
++       remoteCall()
+
+@ 1 1 0 1e0f20b11ee9509d121b4840474e204e
++       ```
+
+@ 0 1 0 0ee0ea46c0fc6aad0bd426313b38514c
++ entry .internet
++   info
++       `internet(online)(block)` : exécute un bloc avec un `Internet` dans la portée
+
+@ 0 4 0 1fdd406bf71ee1fe0ad9445deed7dcb8
++   detail
++       `internet(true)` accorde au bloc un `Internet` en ligne, et `internet(false)` un autre qui
++       ne l'est pas ; le code du bloc peut alors appeler `online`, ou `Internet#require` et
++       `Internet#appropriate` pour obtenir un `Online`. Un test qui ne doit pas atteindre le réseau
++       exécute son code sous `internet(false)`.
+
+@ 0 1 0 14d0552a8a39d3ee07a995d50d1b44a2
++ entry .online
++   info
++       si l'`Internet` dans la portée indique que le réseau est disponible
+
+@ 0 2 0 03a9b922b2d99198121d093579c86484
++   detail
++       Lit `Internet#online` depuis l'`Internet` contextuel ; en requiert un dans la portée, tel
++       que celui que fournit `internet(…)`.
+
+@ 0 1 0 1dcebfeae8e82c4513e6100daa511c23
++ entry .internetAccess
++   info
++       les deux politiques d'accès au réseau, chacune un given à importer par son nom
+
+@ 0 4 0 00be1f4ec496304617a60d174bb80328
++   detail
++       La possibilité pour du code d'atteindre le réseau dépend de la présence d'un `Online` dans
++       la portée, et ce choix n'est délibérément jamais implicite : `import soundness.*` n'apporte
++       ni l'un ni l'autre, et un programme en importe un par son nom.
+
+% 2 1 0 04d004e0902f279c118f6d67493b8605
+
+% 3 1 0 086a29f014306e1f1086c56e41516453
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 1 1 0 0d89d1606c94ba231e737fda57594f4d
+
+@ 0 3 0 002099c77eec8b3b0359d5a397850677
++       `online` accorde la capacité partout où il est importé ; `offline` fait lever
++       `Internet.Error` à toute tentative de l'utiliser, ce qui permet à un programme (ou à un
++       test) de prouver qu'un chemin de code n'atteint pas le réseau.
+
+@ 0 1 0 16fc9a3b9edfd9001b524085d893047a
++   entry .online
++     info
++         accorde `Online` : le réseau est disponible
+
+@ 0 2 0 0b9cf0364d6dacec121b5beb13e15197
++     detail
++         Un given inline, de sorte que chaque invocation produit un nouvel `Online` plutôt que de
++         partager un champ statique.
+
+@ 0 1 0 148dd7cd56f57a2f144032481151d567
++   entry .offline
++     info
++         refuse `Online` : l'invoquer lève `Internet.Error`
+
+@ 0 2 0 0db8d804338c23251d05fc9c1b12c6a2
++     detail
++         Requiert une `Tactic[Internet.Error]`, levée dès qu'un `Online` est demandé, avant toute
++         tentative d'appel réseau.
+
+@ 0 1 0 09ccb02845e4b14607a8718d7fe2a786
++ entry .Url
++   info
++       une URL : un schéma, une autorité optionnelle, un emplacement, et une requête et un
++       fragment optionnels
+
+@ 0 9 0 17a1f344493cfef00c76d0de2dd7e24b
++   detail
++       Une `Url[scheme]` s'écrit `url"https://example.com/path"` (vérifiée à la compilation du
++       code) ou se décode depuis du texte avec `as[HttpUrl]` ou `as[Url[Label]]`, qui lève
++       `Url.Error` lorsque le texte n'est pas une URL. Son paramètre de type est le schéma sous
++       forme de type littéral : `HttpUrl` est `Url["https" | "http"]`, et `url"ftp://…"` est une
++       `Url["ftp"]`, de sorte qu'on ne peut pas donner une URL `mailto:` à une fonction qui prend
++       une `HttpUrl`. Les parties sont typées : `#scheme` est un `Scheme`, `#authority` une
++       `Authority` (informations d'utilisateur, `Host` et port), `#location` le texte du chemin,
++       et `#query` et `#fragment` sont des `Optional[Text]`, absents lorsque l'URL n'a pas de `?`
++       ou de `#`.
+
+% 2 1 0 17303a0b1a31acd7069e74629b67c163
+
+% 3 1 0 1eef51d2e476878d11a00ca7edde6b3a
+
+% 0 1 0 13c8c92566d4517e064a9b659758dbc0
+
+% 1 1 0 119d8c9aee91537c0d146321b359aa17
+
+% 2 1 0 0f89452b45634c4e16ada5ed55d400c8
+
+% 3 1 0 09ef67d2c50da3561431efeeaf967cff
+
+% 5 1 0 0d3a54cfcc1a4b6e15a86c2bb418bc16
+
+% 0 1 0 12da7bcf8728b2820b8487a93054e40c
+
+% 0 1 0 0c029ee5dbf78e001e778351c8c8b258
+
+% 1 1 0 0ea7213b960c7e6908c8bd726204f4a7
+
+% 0 1 0 1f08e1449b02a63315c9f734dc41c799
+
+% 1 1 0 15830c1aa81696860d3838c0977359fd
+
+% 2 1 0 1aa7c79b5bd9ee66090f64bf4b7323cf
+
+% 3 1 0 045d966a34da3ae517e1406abe6440d9
+
+% 5 1 0 0089faf840b71ae517ae8443025717ec
+
+% 0 1 0 18e88f9523806e6a1ff26f34208df35d
+
+% 0 1 0 10c79dd5eabe82530ac5806664e053db
+
+% 1 1 0 0c5cdc78420805271bb9a057fb8ffd3c
+
+% 0 1 0 13aeff8ba3a6152900acd10907c05291
+
+% 1 1 0 19f9d40441af89590544a0c5c3a40cc9
+
+% 2 1 0 1c875af11968887b040a6884c67319e9
+
+% 3 1 0 1073d2fafde1f1ba070febc25c7663d7
+
+% 0 1 0 10da65b51b91f7f91d49b17760fffe1b
+
+% 0 1 0 0e6e3a6f809eddf215b93d0d95af34df
+
+% 0 1 0 1d4a1fccee04771e0054c720c6bbde1a
+
+% 0 1 0 154a24af8eb393ee04045dcb084943af
+
+% 0 1 0 0b8e1682c3fcaccb142a506f119eeef0
+
+% 1 1 0 158240196cf0715b0a4db908b76385d5
+
+% 2 1 0 1e1dcc5beca90adf1ae3275c074ce330
+
+@ 0 8 0 1c21b33aef05060e06aab4e94f82bc05
++       Une URL est une `Root` du plan `Www`, dont descend un `Path on Www` avec le séparateur `/`
++       du web et l'encodage-pourcent. L'autorité est lue strictement : un nom d'hôte ou une
++       adresse IPv6 incorrects donnent une `Url.Error` de raison `BadHostname` ou `BadIpv6`, et un
++       port doit être un nombre dans la plage 0–65535. Une URL sans `//` après son schéma
++       (`mailto:`, `urn:`, `tel:`) n'a pas d'autorité, et tout son reste constitue l'emplacement.
++       Seule une `HttpUrl` est `Abstractable across Urls`, ce qui permet à d'autres bibliothèques
++       d'en prendre une comme « n'importe quel type d'URL » ; `urlInterfaces.soundnessUrl` la
++       désigne comme représentante de ce domaine.
+
+% 0 1 0 03414de803b00cec02b8b2fcad1282bf
+
+% 0 1 0 080ad9772d8dec2e03304c3b8b859928
+
+% 0 1 0 08295236594eecbb0cd92a795fa831be
+
+% 0 1 0 079feb990919859b13864ebd78739663
+
+% 0 1 0 0c2d7d437e3526d30ca06500440ee999
+
+% 0 1 0 140a054fa6ce78b71462d0f3ab0def5c
+
+@ 0 1 0 07b4e3672644d89b1f9eba1338a526ef
++   entry .abstractable
++     info
++         une `HttpUrl` sous forme du texte du domaine `Urls` d'anticipation
+
+@ 0 1 0 031cecccb54b41670c20ce2ff64c764b
++   entry .showable
++     info
++         rend une URL sous la forme `scheme:` puis `//authority`, emplacement, `?query` et
++         `#fragment`
+
+@ 0 1 0 1a17c138e75ecd86133d50dc2b44a5ec
++   entry .encodable
++     info
++         encode une URL sous forme de son texte
+
+@ 0 1 0 145bad85c22fcc39028fd58e8fff94e3
++   entry .inspectable
++     info
++         un rendu de débogage, le texte canonique de l'URL
+
+@ 0 2 0 145f4cd06eaab79b09177916ada37e92
++     detail
++         `Url` est une classe ordinaire, et non une case class, de sorte que sans ceci elle
++         s'inspecterait sous forme de son `toString` ; le texte de l'URL montre toutes les parties
++         que porte le type.
+
+@ 0 1 0 01b1ab2e2c2567451b3b563bdb621312
++   entry .decodable
++     info
++         lit une `Url[scheme]` depuis du texte, en levant `Url.Error` si ce n'est pas une URL
+
+@ 0 6 0 0c6b3de8c4a7411f03e3e6575745b24d
++     detail
++         Requiert une `Tactic[Url.Error]` ; le given la capture. Le schéma est tout ce qui précède
++         le premier `:` (en son absence, `Expected(Colon)` est levée) ; si `//` suit, l'autorité
++         s'étend jusqu'au `/`, `?` ou `#` suivant et est décodée en `Authority` ; puis
++         l'emplacement, la requête et le fragment sont séparés au premier `?` et au premier `#` qui
++         le suit. Le paramètre de type du schéma n'est pas vérifié par rapport au texte :
++         `t"ftp://x".as[HttpUrl]` réussit ; utilisez donc `Url[Label]` pour un texte de schéma
++         quelconque et vérifiez `scheme` là où cela compte.
+
+@ 0 1 0 1f8fba6edbf75da30a6d09d7e3d535a7
++   entry .instantiable
++     info
++         crée une `HttpUrl` à partir de texte, pour le domaine `Urls` d'anticipation
+
+@ 0 2 0 0eed4c35783d9cc9145c682b1b3d89b0
++     detail
++         Le given `Instantiable across Urls from Text`, qui requiert une `Tactic[Url.Error]` ;
++         `urlInterfaces.soundnessUrl` est la même instance, par son nom.
+
+@ 0 1 0 1cdd0b90ef633e1e05f42b9d55d927dc
++   entry .Error
++     info
++         levée lorsqu'un texte n'est pas une URL valide
+
+@ 0 4 0 1ba560a88b642cdd15e85bfafa532f93
++     detail
++         Erreur `↯/s.100.8` : _the URL `text` is not valid: `reason` at `offset`_. Levée par
++         `as[HttpUrl]`, par `as[Authority]`, et sous forme d'erreur de compilation par `url"…"`.
++         L'`#offset` est la position dans le texte où le défaut a été trouvé.
+
+@ 0 1 0 087a9c190447b40b1ff5878c3a6dfed4
++     entry .communicable
++       info
++           rend chaque raison sous forme de message
+
+@ 0 1 0 174dba12453fddad1b45eea36b9b143b
++     entry .Reason
++       info
++           la raison du rejet d'une URL
+
+@ 0 4 0 1ce05a504f93ffe814c653068439b980
++       detail
++           `Expected(expectation)` pour un caractère ou une partie qui n'était pas là où il le
++           fallait ; `BadHostname(hostname, reason)`, qui enveloppe la `Hostname.Error.Reason` d'un
++           hôte incorrect ; et `BadIpv6(reason)`, qui enveloppe l'`IpAddress.Error.Reason` d'une
++           adresse entre crochets incorrecte.
+
+@ 0 1 0 14d14d0c9e76fb461c3bbca75424cb9b
++     entry .Expectation
++       info
++           ce qu'attendait l'analyseur lorsqu'il a échoué
+
+@ 0 4 0 0c35c68f56fac27b15c644e4aaa7ab88
++       detail
++           `Colon` (pas de séparateur de schéma), `More` (le texte s'est terminé trop tôt, comme
++           après un `[` sans `]`), `LowerCaseLetter`, `PortRange` (un numéro de port hors de
++           0–65535) et `Number` (un port qui n'est pas un nombre).
+
+@ 0 1 0 1e1676f5fb0b5cb0070c47ddd5add18f
++       entry .communicable
++         info
++             rend chaque attente sous forme d'expression
+
+@ 1 1 0 087142677079d5d41acd5a3b3879d003
++     entry #text
++       info
++           le texte qui a été décodé
+
+@ 0 1 0 07df91331de5514300cfddd99fd09bc4
++     entry #offset
++       info
++           l'endroit du texte où le défaut a été trouvé
+
+@ 1 1 0 14ec4b6dd8821266055d5124e8800e96
++     entry #reason
++       info
++           la raison de son rejet
+
+@ 0 1 0 02ebea123cd8c2a814d8632bd9daefe6
++   entry .Fragment
++     info
++         une valeur substituée dans l'interpolateur `url"…"`, et la façon dont elle est insérée
+
+@ 0 7 0 174e4829c98c2bdf143c91cd12c3bda8
++     detail
++         Le type `Insertion` de l'interpolateur `url"…"` : chaque `$value` du littéral est
++         convertie en `Fragment` par un given `Substitution`, dont trois sont fournis.
++         `Integral(value)` est un `Int`, qui ne peut suivre qu'un `:` et devient un port ;
++         `Textual(value)` est du texte, encodé pour URL là où il est inséré ; et
++         `RawTextual(value)` est du texte inséré tel quel, sans encodage (aucune substitution
++         fournie ne le produit).
+
+% 2 1 0 072331ab06928f81106761776aee2a3c
+
+% 3 1 0 104781e6d07f5f751d3c5fdeca95d4bd
+
+% 0 1 0 0f5489f225ee6a910d9c30162836aa89
+
+% 0 1 0 1b1a9b566a4bdfdc0279869ffb5508c8
+
+% 0 1 0 00547552ceb7a5340f87d6c41e888621
+
+% 1 1 0 121648d63cdb08cd0525274357630cfa
+
+@ 0 1 0 06cb6b7d791a695917ae43ffd14be55e
++     entry .apply
++       info
++           enveloppe du texte en un fragment `Textual`, ou un `Int` en un fragment `Integral`
+
+@ 0 1 0 1402d3e957698c210f70c6e9643f4aa5
++     entry .text
++       info
++           substitue du `Text` dans une URL, encodé
+
+@ 0 1 0 15b8935c837fb597196431138de08e06
++     entry .int
++       info
++           substitue un `Int` dans une URL comme numéro de port, après un `:`
+
+@ 0 1 0 119c21c04732ea8410fada8fcfe57501
++     entry .encodable
++       info
++           substitue toute valeur `Encodable in Text` dans une URL, encodée
+
+@ 0 1 0 183768e8c325c90b13609cbf0470fa5a
++   entry #origin
++     info
++         le schéma et l'autorité réunis, sous forme d'`Origin`
+
+@ 0 1 0 1925e0496bf3f12b0d788c6c37da182c
++   entry #location
++     info
++         la partie chemin, sous forme de texte, commençant par `/` lorsqu'il y a une autorité
+
+@ 0 1 0 08d0253244b30fce1f575e0b63ccd448
++   entry #query
++     info
++         le texte après `?`, ou `Unset`
+
+@ 0 1 0 15cfb977b4615b9400023e83abd90082
++   entry #fragment
++     info
++         le texte après `#`, ou `Unset`
+
+@ 0 1 0 1962c1d7c0301d9c07df691ba1e1bcfe
++   entry #Plane
++     info
++         le plan sur lequel vit le chemin de l'URL : `Www`
+
+@ 0 1 0 06af58bd018b03bc05836ab4138765c8
++   entry #Topic
++     info
++         le sujet racine du chemin, `Zero`
+
+@ 0 1 0 0f6ba78b77846c6219aa578ad6d6478b
++   entry #scheme
++     info
++         le schéma, typé selon le paramètre de schéma de l'URL
+
+@ 0 1 0 09dcee84fd5ef9c61e9852e826b595af
++   entry #authority
++     info
++         l'autorité — informations d'utilisateur, hôte et port — ou `Unset` pour une URL sans `//`
+
+@ 0 1 0 16e9f33df70da95919e0abeb15c904f6
++   entry #requestTarget
++     info
++         l'emplacement et la requête réunis, tels que les porte une ligne de requête HTTP
+
+@ 0 1 0 0a71ea6946654bb31ef17aee629a5eb1
++   entry #host
++     info
++         l'hôte de l'autorité, ou `Unset`
+
+@ 0 1 0 0546c6b5237987750d33ec5f6f5336de
++   entry #path
++     info
++         l'emplacement sous forme de `Path on Www`, chaque segment étant décodé de son
++         encodage-pourcent
+
+@ 0 1 0 1bef849e25f057180a96545dc0eef4d9
++     detail
++         Le décodage ne peut pas échouer : la racine d'un chemin web est le `/` initial, présent ou
++         non.
+
+@ 0 1 0 1cab68d1fda6a5a80c3756e3eb915271
++ entry .HttpUrl
++   info
++       `Url["https" | "http"]` : une URL dont le schéma est l'un des deux schémas du web
+
+@ 0 4 0 079789d733ac5aa51b03f14525dca1e5
++   detail
++       Le type que prend un client web et que produisent `url"https://…"` et `url"http://…"`. Lui
++       seul possède `Url.abstractable` et `Url.instantiable`, de sorte que c'est le type d'URL
++       qu'entendent les autres bibliothèques par « une URL » à travers le domaine `Urls`
++       d'anticipation. Décoder du texte avec `as[HttpUrl]` ne vérifie pas le schéma par rapport au
++       type.
+
+@ 0 1 0 0ddcc8fb103827b6011fb1177141f31d
++ entry .url
++   info
++       l'interpolateur `url"…"` : une URL vérifiée à la compilation du code, avec des
++       substitutions typées
+
+@ 0 7 0 19a2b95c576050cb130095324dd03821
++   detail
++       `url"https://example.com/path"` est une `Url["https"]` (donc une `HttpUrl`), et le littéral
++       est analysé à la compilation du code, de sorte qu'un littéral mal formé est une erreur de
++       compilation. Chaque `$value` est insérée par un given `Substitution[Url.Fragment, …]` : un
++       `Int` après un `:` devient le port, et un `Text` ou toute valeur `Encodable in Text` est
++       encodé pour URL (`t"Hello world!"` devient `Hello+world%21`). Le littéral est vérifié avec
++       des valeurs fictives à la compilation et analysé de nouveau avec les vraies valeurs à
++       l'exécution ; une valeur d'exécution qui rend l'URL invalide lève une exception, puisque
++       le littéral vérifié ne peut pas être signalé comme une erreur typée.
+
+@ 2 1 0 0b26e67463f3996b154405b32ac424b4
++       ```scala
+
+@ 3 1 0 070177833b4f2f7a15bbd820c4924967
++       import soundness.*
+
+@ 0 1 0 0c801c29ebe176f519a87c4f9bdd66a1
++       val port = 1234
+
+@ 0 1 0 1c629801f2d8b1a3137e55bf36cafced
++       url"http://user:pw@example.com:$port/path"
+
+@ 0 1 0 19498f80b2ca21bb178b5c5d9b470243
++       url"ftp://ftp.example.com/pub"   // a Url["ftp"], not an HttpUrl
+
+@ 1 1 0 0cfe71f951ca3881054f017f38f6be4f
++       ```
+
+@ 0 2 0 18f1d52460a9f5b6033e83807427d1bf
++       Le type du résultat porte le schéma sous forme de type littéral, lu dans le texte qui
++       précède le premier `:`. Déclaré dans `urticose.url`.
+
+@ 0 1 0 02b415cbef46ef18028df36db8b109e0
++ entry .Scheme
++   info
++       un schéma d'URL, sous la forme `Scheme[scheme](name)`, le nom étant aussi un type littéral
+
+@ 0 4 0 1dcfb8b4bd2bdab708eb9485131bff5e
++   detail
++       `Scheme.Http` et `Scheme.Https` sont les deux schémas du web ; `Scheme(t"ftp")` en crée
++       n'importe quel autre. Le paramètre de type est le nom du schéma sous forme de type
++       littéral, ce qui permet à `Url` et `HttpUrl` de le porter.
+
+@ 0 1 0 10ff9bfef69da4170b6f3f28ba5a51d2
++   entry .showable
++     info
++         rend un schéma par son nom
+
+@ 0 1 0 0cd58ffc3b46df4517391d946b519172
++   entry .inspectable
++     info
++         un rendu de débogage suivi d'un deux-points, `https:`, tel qu'il apparaît dans une URL
+
+@ 0 1 0 15accfb876d30aff18ff7edf975fb44d
++   entry .Http
++     info
++         le schéma `http`, un `Scheme["http"]`
+
+@ 0 1 0 00d1286efa9a03fc18bda3ac562de9a1
++   entry .Https
++     info
++         le schéma `https`, un `Scheme["https"]`
+
+@ 0 1 0 0c14a5aebe567c241521c34fdc277f78
++   entry #name
++     info
++         le nom du schéma, sous forme de texte
+
+@ 0 1 0 09703afc2389d97c00192f22f55f6423
++ entry .Authority
++   info
++       l'autorité d'une URL : des informations d'utilisateur optionnelles, un hôte et un port
++       optionnel
+
+@ 0 6 0 00c229b2a64d3e1b19282730a0cdc470
++   detail
++       La partie d'une URL entre `//` et le chemin, créée avec `Authority(host, userInfo, port)`
++       ou décodée depuis du texte avec `as[Authority]`, qui lève `Hostname.Error`,
++       `IpAddress.Error` ou `Url.Error` : tout ce qui précède un `@` constitue les informations
++       d'utilisateur, l'hôte est un nom d'hôte, une adresse IPv4 ou une adresse IPv6 entre
++       crochets, et un port après un `:` doit être un nombre dans la plage 0–65535.
+
+% 2 1 0 003c6a88ef67ba141f081fe8f862d48e
+
+% 3 1 0 15f71fa9e91909180c80fc1225d00c8b
+
+% 4 1 0 1d49ce85fc3f3a4907cda77cf0d36fa6
+
+% 0 1 0 15c896d8fd1510980585a6c6bbf97f2a
+
+% 0 1 0 151c9b6174530d72170f6b0d8e5d3f30
+
+% 0 1 0 09ad1119ee2d02dc1a90dafa75da9da8
+
+% 0 1 0 0f153e2d516387c31d44ca0551bf4376
+
+% 1 1 0 13279cf576a8ed5e04f8d7f1f17adb40
+
+% 1 1 0 0b886395949a442011f11c6717f0f2f6
+
+% 1 1 0 1b9d49fa497d66da171cb72ed3d0199e
+
+@ 0 1 0 00b37a126d482fcf1c3130c2ff0d8e5d
++   entry .showable
++     info
++         rend une autorité sous la forme `userInfo@host:port`, chaque partie n'apparaissant que si
++         elle est présente
+
+@ 0 1 0 00088fab87f6ae4a0415cb2f0f3de900
++   entry .inspectable
++     info
++         un rendu de débogage introduit par `//` : `//user@example.com:8080`
+
+@ 0 2 0 0c640e9c7f8600620cb00933b5cff54c
++     detail
++         Le préfixe indique de quelle partie d'une URL il s'agit, et évite qu'on la confonde avec
++         un simple nom d'hôte.
+
+@ 0 1 0 0e4fa3fb27666913011bba789fcd23ce
++   entry .decodable
++     info
++         lit une autorité depuis du texte, en levant `Hostname.Error`, `IpAddress.Error` ou
++         `Url.Error`
+
+@ 0 1 0 0b5e85eb835ad4c2097bb0142e743305
++     detail
++         Requiert une `Tactic` pour chacune des trois ; le given les capture.
+
+@ 0 1 0 16fc7b0398ccdb831cd3c21ade712267
++   entry #host
++     info
++         l'hôte : un `Hostname`, une `Ipv4` ou une `Ipv6`
+
+@ 0 1 0 168e69b4460f463d1d871fe8665e5041
++   entry #userInfo
++     info
++         le texte avant le `@`, ou `Unset`
+
+@ 0 1 0 011304a1f0236eb60ebff2777cae1e63
++   entry #port
++     info
++         le numéro de port, ou `Unset`
+
+@ 0 1 0 04414d1796787ac006ef5931296d0694
++ entry .Origin
++   info
++       le schéma et l'autorité d'une URL réunis, au sens où l'entend un navigateur web
+
+@ 0 3 0 14e3dd0a17ee99561d7784e67b02946f
++   detail
++       `Origin(scheme, authority)` est ce que prend `Url` comme premier paramètre : le schéma,
++       typé par son nom littéral, et l'autorité, qui vaut `Unset` pour une URL sans `//`.
+
+@ 0 1 0 1c324f4c076da4481ceeee623b17ca82
++   entry #scheme
++     info
++         le schéma
+
+@ 0 1 0 0183084af0d8dcf61a46a6a9c3c34254
++   entry #authority
++     info
++         l'autorité, ou `Unset`
+
+@ 0 1 0 04d4bc3d1c3a6f3f0f8bafd6f5885d67
++ entry .Www
++   info
++       le plan des chemins d'URL : séparés par `/`, à encodage-pourcent, enracinés en `/`
+
+@ 0 7 0 0eabe40194d248121f769791f24ecf5c
++   detail
++       Un trait scellé utilisé comme type de plan de `Path on Www`, que renvoie `Url#path` et que
++       prolonge `url / "segment"`. Son compagnon contient le `Filesystem` du web — nommé
++       `World Wide Web`, de séparateur `/`, avec `.` et `..` comme segments courant et parent, et
++       l'encodage-pourcent comme échappement — et les givens de racine : la racine est `%`,
++       encodée en `/`, et son décodage ne peut pas échouer, puisque le `/` initial d'un chemin web
++       est lu comme la racine, qu'il soit présent ou non.
+
+% 1 1 0 0ba392ed80a52b5305354064a24d5ff0
+
+@ 0 1 0 18cc6642fa862fff1851b548f7f781ed
++   entry .submissible
++     info
++         fait de `%` la racine dont descend un chemin web
+
+@ 0 1 0 1db83cd9680c97e6007bcd967ea49da7
++   entry .admissible
++     info
++         permet d'ajouter un segment `Text` à un chemin web
+
+@ 0 1 0 075599a5d4eb9dca0378b73b581509de
++   entry .admissible2
++     info
++         permet d'ajouter un segment littéral `String` à un chemin web
+
+@ 0 1 0 0da6a1956038f22b0b5e0954dcf6e805
++   entry .radical
++     info
++         encode la racine web `%` en `/`
+
+@ 0 1 0 07f5d774f8f321661be30270400cca8c
++   entry .eradicable
++     info
++         lit la racine web depuis du texte : un `/` initial s'il y en a un, rien sinon
+
+@ 0 1 0 01158217a41f01fb1e54fc1a88de6077
++     detail
++         Pur, de sorte qu'un `Path on Www` se décode sans tactique.
+
+@ 0 1 0 0ef2f56c442d7fc2109444971986f550
++   entry .filesystem
++     info
++         le web sous forme de `Filesystem` : séparé par `/`, avec `.` et `..`, à encodage-pourcent
+
+@ 0 1 0 190dc68cce44f15a102cce5bba7d7302
++     detail
++         Ce n'est pas un système de fichiers à racine unique : un chemin sur le web peut être
++         relatif.
+
+@ 0 1 0 0a458a2f32ad352a1a7474fa7cfaacae
++ entry .UrlPalette
++   info
++       les couleurs dont a besoin une URL stylée : une `Palette` en sRGB avec une couleur `link`
+
+@ 0 3 0 02bde8bf35631c8f03300146438c792e
++   detail
++       Un raffinement de la `Palette` d'`escapade`, `Palette { type Form = Srgb; def link: Color in
++       Srgb }`, que `teletypeables.urlTeletype` prend de manière contextuelle pour colorer une URL.
++       Déclaré dans `urticose.ansi`.
+
+@ 2 1 0 1c6f0b993d6338091bc8082baefaeb42
++       ```scala
+
+@ 3 1 0 12b34008d72bc5b31ba1ebda2dad033e
++       import soundness.*
+
+@ 0 1 0 069597896e96e4de1bdf0bcebdaf9ca8
++       given palette: UrlPalette = new Palette:
+
+@ 0 1 0 045552636ab390d117494ddfc8a2cba6
++         type Form = Srgb
+
+@ 0 1 0 0a6456c0b2fcca4b02f1660cd5dd6ab5
++         def background: Color in Srgb = WebColors.Black
+
+@ 0 1 0 00d17034d10f3ded0d511e6670714786
++         def foreground: Color in Srgb = WebColors.White
+
+@ 0 1 0 196cdaa3180a0126098eddeda309ccea
++         def link: Color in Srgb       = WebColors.DeepSkyBlue
+
+@ 1 1 0 09c3b8860d669de918dfcc140f25bdc3
++       ```
+
+@ 0 1 0 19c0e2cd0921b7930aa6a8d25676e979
++ entry .teletypeables
++   info
++       le rendu en terminal des URL, un given à importer par son nom
+
+@ 0 5 0 0977d64fa1329bf21fcc8ea15d9a5626
++   detail
++       Un `Teletypeable` indique comment une valeur est rendue dans une chaîne de téléscripteur
++       `e"…"` ; ce package contient l'unique instance d'urticose, pour les URL. Il s'importe par
++       son nom, puisque `import
++       soundness.*` n'apporte aucun given d'un package, et il fusionne avec le package
++       `teletypeables` de toutes les autres bibliothèques du parapluie.
+
+% 2 1 0 14a2688a3fe66f7705dce678aecc95f5
+
+% 3 1 0 1eb86a40f2182d131bd29c02a7a81e70
+
+% 0 1 0 155c937194faaeb1036d7e780e4d5d55
+
+% 1 1 0 1a681ad1a890b4640ec3a3b4dabbbaca
+
+@ 0 3 0 1a5ccec58a12298908c7290764ea6a6b
++       Sans l'import, une URL se rend tout de même dans une chaîne `e"…"`, via le repli
++       d'escapade pour tout type `Showable`, mais sans style : un import oublié dégrade le rendu
++       en silence plutôt que d'empêcher la compilation. Déclaré dans `urticose.ansi`.
+
+@ 0 1 0 03d9c6a8b114ccf9124cb8582083da37
++   entry .urlTeletype
++     info
++         rend une `Url` soulignée, dans la couleur `link` de la palette
+
+@ 0 2 0 11c61a7d8cdf48d514c0392712496f44
++     detail
++         Requiert un given `UrlPalette` dans la portée pour la couleur. Le texte brut du rendu est
++         la forme affichée de l'URL.
+
+@ 0 1 0 0225ac91f200eb19108d75a4bc071413
++ entry .Dns
++   info
++       le vocabulaire DNS de la RFC 1035 : noms, types d'enregistrements, questions,
++       enregistrements, messages et leur forme de transmission
+
+@ 0 9 0 1f9e0a51ba2b43cf1362cdcd7c2c77db
++   detail
++       `Dns` est le foyer d'un DNS typé, dans l'ensemble de sources `urticose.dns`. Un `Dns.Name`
++       est une liste d'étiquettes qui peuvent contenir n'importe quel texte UTF-8 — y compris des
++       points et des espaces, sur lesquels s'appuient les instances de services DNS-SD
++       (`Hamlet's Printer._ipp._tcp.local`) — écrite `dns"…"` ou analysée depuis la forme de
++       présentation, et comparée sans tenir compte de la casse ASCII, comme le DNS compare les
++       noms. Une `Dns.Question` demande un `Dns.Type` d'enregistrement pour un nom ; un
++       `Dns.Record` contient un nom, un TTL et des données typées, l'un des cas de `Dns.Rdata` sur
++       les propres adresses d'urticose (`A(ipv4)`, `Aaaa(ipv6)`, `Ptr`, `Srv`, `Txt`, …) ou un
++       `Unknown` portant ses octets ; et un `Dns.Message` porte des questions et des
++       enregistrements avec ses `Dns.Flags`.
+
+% 2 1 0 1163b6cc620f99c20242fa0432ee9d92
+
+% 3 1 0 0140b848f5350fa205f1a1710377ac03
+
+% 4 1 0 00698d4ad6919c47153ca3ff9fbc45ea
+
+% 0 1 0 0ee01d5e348d9e761ac3e68e46edeb58
+
+% 0 1 0 044549e1d0ba61d308ef591b7ef07610
+
+% 0 1 0 10e6eab39c1b889f01a9667be7cd2664
+
+% 0 1 0 04e2447db936cd2a1575d0bf1e4c40fe
+
+% 0 1 0 0e158407a53e3b020358dd298c791d5b
+
+% 1 1 0 0e1f995d38e9377d1e9f9138cee07180
+
+@ 0 8 0 16a034e06cc098250a53fc14df669ec9
++       Les messages s'encodent vers `Data` et s'en décodent avec `in[Data]` et
++       `as[Dns.Message]` : l'écriture compresse les noms propriétaires et les noms contenus dans
++       les types bien connus, et elle est totale, puisque les limites de longueur sont garanties
++       par `Name` et `Rdata.Txt` dès la construction ; la lecture est stricte, ne suit les
++       pointeurs de compression que vers l'arrière, et lève `Dns.Error` pour tout ce qui est mal
++       formé. mDNS (RFC 6762) ajoute deux bits qui apparaissent comme de simples champs valant
++       `false` par défaut : l'`unicast` d'une question et le `flush` d'un enregistrement.
++       L'échange de messages avec un serveur de noms est l'affaire de `coaxial.dns` ;
++       `Dns.resolve` atteint le résolveur de la plateforme.
+
+% 0 1 0 1503b3ef14475d6200d19a6974d27214
+
+% 1 1 0 0abe6f01c23add201a4ba70f7f5a34a8
+
+% 1 1 0 02da05ddeb63d75a1d78adccdd5aa014
+
+% 1 1 0 0fe78053b4ec69370ce8d476d6c96c69
+
+@ 0 1 0 0e77b55cd593ac6802f62f65911086ed
++   entry .Name
++     info
++         un nom DNS : des étiquettes qui peuvent contenir n'importe quel texte UTF-8, comparées
++         sans tenir compte de la casse ASCII
+
+@ 0 8 0 1c7dfa18bc1b84800fd4ce3cf9dc5e81
++     detail
++         Un `Name` se crée avec `Dns.Name(t"_fury", t"_tcp", t"local")` (étiquettes prises telles
++         quelles, de sorte qu'une étiquette peut contenir un point), avec `dns"_fury._tcp.local"`
++         (forme de présentation, vérifiée à la compilation du code), à partir d'un `Hostname`, ou
++         en analysant la forme de présentation avec `as[Dns.Name]`, où `\.` et `\\` échappent un
++         point ou une barre oblique inverse, `\DDD` est un code de caractère décimal, et un point
++         final est toléré. Les limites — 63 octets par étiquette, 255 pour le nom — sont vérifiées
++         à la construction et à la composition, en levant `Dns.Error`, de sorte que l'encodage d'un
++         nom ne peut pas échouer.
+
+% 2 1 0 1315a02dd72375f3163dff7e5eb511dd
+
+% 3 1 0 0c3a5f1bd68598651b547fe7a8dfeba5
+
+% 4 1 0 0bf0eaa370fbfd980f8bc87d9ea08c4e
+
+% 0 1 0 1247459a81d4098917fa3a05c47b9cd3
+
+% 0 1 0 08888966fbc035f9122e62ea8ab27fb4
+
+% 0 1 0 1aeb5037e2a6703117492d7fd04856fa
+
+% 0 1 0 0cc81b9d096683821eda5ac36d4576b5
+
+% 0 1 0 032f29185a69de5d1e4a8d2bc8be852d
+
+% 0 1 0 0de6ff0c4de199900b2793e26c0ba8ca
+
+% 1 1 0 1f0f328af24a6b38170fc810fb8c815c
+
+@ 0 1 0 0b121afab5fa45661d076a30ea3a8012
++         `hashCode` ignore la casse comme le fait `equals`, de sorte que des noms peuvent servir de
++         clés à une `Map`.
+
+% 0 1 0 0ab9f646506f67be18bb88453eb41dd5
+
+% 0 1 0 1bca87e08283c64609955c0e6e40068e
+
+% 0 1 0 06ebfae6847df8880d99d69b40aa0931
+
+@ 0 1 0 0eb01056349c0fd11f1963f3a44dc92c
++     entry .Root
++       info
++           le nom racine, sans étiquettes, affiché `.`
+
+@ 0 1 0 006862d5995a08ae04d09d1b47de93dc
++     entry .local
++       info
++           le nom `local`, le domaine mDNS
+
+@ 0 1 0 04b985959d4627931c02e736265c273e
++     entry .apply
++       info
++           un nom à partir d'étiquettes prises telles quelles, ou d'un `Hostname`
+
+@ 0 3 0 05eb4d27f82664f506a345f755def8a4
++       detail
++           `Dns.Name(labels*)` lève `Dns.Error` pour une étiquette vide (`EmptyLabel`), une
++           étiquette de plus de 63 octets (`LongLabel`) ou un nom de plus de 255 (`LongName`) ;
++           `Dns.Name(hostname)` ne peut pas échouer, puisque les étiquettes d'un nom d'hôte
++           satisfont déjà les limites.
+
+@ 0 1 0 0704cd40ff2aa7fc1874a3cc7c7a242b
++     entry .toExpr
++       info
++           élève un nom en une expression quotée, pour les macros qui en construisent un
+
+@ 0 1 0 1b91855b5b0421b510682db9ddc6c2e7
++     entry .fold
++       info
++           met en minuscules les lettres ASCII d'une étiquette, comme le DNS les compare
+
+@ 0 2 0 1d1a70470d085dd01c6f17a4eaf0cfe9
++       detail
++           Seules les lettres ASCII sont concernées (RFC 4343) ; tout autre caractère se compare
++           exactement. C'est aussi la comparaison que DNS-SD applique aux clés TXT.
+
+@ 0 1 0 1a0c3768d038b73f0bed4a1230d927d6
++     entry .parse
++       info
++           lit un nom depuis la forme de présentation, en levant `Dns.Error`
+
+@ 0 2 0 19dab24e3cfc3ea5038e0ee41812f00c
++       detail
++           `.` ou un texte vide est la racine ; sinon, des étiquettes séparées par des points, avec
++           les échappements `\.`, `\\` et `\DDD` ; un échappement mal formé est un `BadEscape`, et
++           les limites s'appliquent.
+
+@ 0 1 0 0676d8b2fb04dc641a9cb373929ca489
++     entry .showable
++       info
++           rend un nom sous forme de présentation, en échappant de nouveau les points et les barres
++           obliques inverses des étiquettes
+
+@ 0 1 0 03e99073980181f113b252c13e8c7afd
++       detail
++           La racine se rend `.` ; tout autre nom, sans point final.
+
+@ 1 1 0 1f0ac74d3ed0aff915e69fe9d38db42f
++     entry .inspectable
++       info
++           un rendu de débogage, identique à la forme affichée
+
+@ 0 1 0 1f7a937204eb3d3e08d31cd42e999cea
++     entry .encodable
++       info
++           encode un nom sous sa forme de présentation
+
+@ 0 1 0 0a898bf5b62b7f771edbe0b1dcf2dfa8
++     entry .decodable
++       info
++           lit un nom depuis la forme de présentation, en levant `Dns.Error`
+
+@ 0 1 0 0d9376aa0ef1f6930104e67d147f947c
++       detail
++           Requiert une `Tactic[Dns.Error]` ; le given la capture.
+
+@ 0 1 0 0583e8cf0fbbabc816917c07acb5f103
++     entry #labels
++       info
++           les étiquettes, la plus à gauche en premier, dans la casse où elles ont été écrites
+
+@ 0 1 0 16c1a0c1468ebda910b391dd805b098a
++     entry #+
++       info
++           `name + suffix` : les étiquettes des deux, en levant `Dns.Error` si le résultat dépasse
++           255 octets
+
+@ 0 1 0 062e4c0bafb5faf50026747925c9c067
++     entry #prefix
++       info
++           un nom avec une étiquette de plus en tête, en levant `Dns.Error` s'il est trop long
+
+@ 0 1 0 144b74ce652c6a201c52f5fe03cce286
++     entry #parent
++       info
++           le nom privé de sa première étiquette, ou `Unset` pour la racine
+
+@ 0 1 0 112db77696601eba04ba5b9ecd00c65c
++     entry #endsWith
++       info
++           si un nom se termine par les étiquettes d'un autre, sans tenir compte de la casse
+
+@ 0 1 0 19053ff04f2084fe042695c6e20f6ad2
++     entry #octets
++       info
++           la longueur en transmission, sans compression : chaque étiquette plus son octet de
++           longueur, plus le terminateur
+
+@ 0 1 0 167e60dd483634ab12d9f351b56e470b
++   entry .Type
++     info
++         un type d'enregistrement par numéro, avec les types bien connus sous forme de valeurs
+
+@ 0 4 0 13d480839c9e47240fdaf4802eb85fe8
++     detail
++         `Dns.Type(number)` enveloppe n'importe quel numéro ; `A`, `Ns`, `Cname`, `Soa`, `Ptr`,
++         `Mx`, `Txt`, `Aaaa`, `Srv`, `Opt`, `Nsec` et `Any` sont ceux qui sont reconnus. Un type
++         s'affiche par son mnémonique, ou `TYPE99` (RFC 3597) pour un numéro inconnu.
+
+@ 0 1 0 1267022a88889af41f7c168617a7d223
++     entry .A
++       info
++           type 1 : une adresse IPv4
+
+@ 0 1 0 0911e4587c5fb7f0118b610c5b043d86
++     entry .Ns
++       info
++           type 2 : un serveur de noms
+
+@ 0 1 0 0d7f824b0f419789069f0501875953b6
++     entry .Cname
++       info
++           type 5 : un nom canonique
+
+@ 0 1 0 0d526d909c1a3e9408dafb6231a0e901
++     entry .Soa
++       info
++           type 6 : le début d'autorité
+
+@ 0 1 0 0e252a5c2f8bd91f0317ef183713ab31
++     entry .Ptr
++       info
++           type 12 : un pointeur
+
+@ 0 1 0 1a790d6c02c8cf321ff217bb76065666
++     entry .Mx
++       info
++           type 15 : un échangeur de courrier
+
+@ 0 1 0 1e1636452d11ff5706464c6e84578c91
++     entry .Txt
++       info
++           type 16 : des chaînes de texte
+
+@ 0 1 0 177c6623854b573c146e31e034965b4b
++     entry .Aaaa
++       info
++           type 28 : une adresse IPv6
+
+@ 0 1 0 19d3b8d902b47be3159d289ed2ee7d5e
++     entry .Srv
++       info
++           type 33 : une localisation de service
+
+@ 0 1 0 1cbcb3c5a70a381b04b03c1c2e4376f9
++     entry .Opt
++       info
++           type 41 : le pseudo-enregistrement EDNS(0)
+
+@ 0 1 0 197bcb4dfff5de650d11835374304f20
++     entry .Nsec
++       info
++           type 47 : next secure, tel que l'utilise mDNS
+
+@ 0 1 0 07d1cb9a2ab93972147ba2587c6bfd4c
++     entry .Any
++       info
++           type 255 : n'importe quel type, dans une question
+
+@ 0 1 0 17394192caf81e081c053e728364ce97
++     entry .showable
++       info
++           rend un type par son mnémonique, ou `TYPE1234` pour un numéro inconnu
+
+@ 1 1 0 0460190e473f09d61b12ec8d183cd9ee
++     entry .inspectable
++       info
++           un rendu de débogage, identique à la forme affichée
+
+@ 0 1 0 0187dc3c698f503e044cb410ae90ecf2
++     entry #number
++       info
++           le numéro du type en transmission
+
+@ 0 1 0 138a873f2b8311351eaea12e791ab5ba
++   entry .NetClass
++     info
++         la classe d'un enregistrement : `Internet`, `Any`, ou n'importe quel numéro
+
+@ 0 4 0 0314ffd9fbb971e91df476b858588101
++     detail
++         Le champ de classe sans son bit de poids fort, qui, en transmission, est un indicateur
++         mDNS plutôt qu'une partie de la classe — sauf dans un enregistrement `OPT`, dont le champ
++         de classe est la taille de charge utile UDP de l'émetteur (`Record#udpPayload`). S'affiche
++         `IN`, `ANY` ou `CLASS123`.
+
+@ 0 1 0 1c0fd3c62e402dd61dc51f9ff1e22db4
++     entry .Internet
++       info
++           classe 1, `IN`
+
+@ 0 1 0 03966fd9a51b7f9a0dc61c212b5787b5
++     entry .Any
++       info
++           classe 255, dans une question
+
+@ 0 1 0 15c03524071fd8da18487445de980af7
++     entry .showable
++       info
++           rend une classe sous la forme `IN`, `ANY` ou `CLASS123`
+
+@ 1 1 0 17d2b6e0accb70e31be5d434d829fa9b
++     entry .inspectable
++       info
++           un rendu de débogage, identique à la forme affichée
+
+@ 0 1 0 159d1a1d8ebb204e08cd465954ea22ce
++     entry #number
++       info
++           le numéro de la classe en transmission
+
+@ 0 1 0 1370f295ede20d871079a5b7dd2d4e2b
++   entry .Opcode
++     info
++         l'opération d'un message : `Query`, `Notify`, `Update`, ou n'importe quel numéro
+
+@ 0 3 0 085f13d1ab0c9dce1252f6e135876eb5
++     detail
++         Fait partie de `Flags` ; l'opcode d'une requête est `Query` sauf indication contraire, et
++         une réponse reprend celui de sa requête.
+
+@ 0 1 0 10cdb5f478d2ceeb03ad9d6a62af34c0
++     entry .Query
++       info
++           opcode 0, une requête standard
+
+@ 0 1 0 06ab54fb3bb4d55a0a790e0d1b490809
++     entry .Notify
++       info
++           opcode 4
+
+@ 0 1 0 053cd322af3b345c11cb11301ee07809
++     entry .Update
++       info
++           opcode 5
+
+@ 0 1 0 06482926147df1e210f9b6ad78ea6aaa
++     entry #number
++       info
++           le numéro de l'opcode en transmission
+
+@ 0 1 0 1156679af081ff7a164b52a23d7e4533
++   entry .Rcode
++     info
++         un code de réponse : `NoError`, `NxDomain`, `ServFail`, …, ou n'importe quel numéro
+
+@ 0 4 0 09eb1ac7fca2ca631673f11e5a709e15
++     detail
++         Les quatre bits de poids faible des indicateurs d'une réponse ; l'`extendedRcode` d'un
++         enregistrement `OPT` porte les bits de poids fort. S'affiche `NOERROR`, `NXDOMAIN`, etc.,
++         ou `RCODE12` pour un numéro inconnu.
+
+@ 0 1 0 14498c2c2b98c6ad0078279c253e4f68
++     entry .NoError
++       info
++           code 0
+
+@ 0 1 0 12267b1d10c7d3d7084048e3fa46d69e
++     entry .FormErr
++       info
++           code 1 : la requête n'a pas pu être interprétée
+
+@ 0 1 0 1211283e8fe7a6d812d12c7544f49c14
++     entry .ServFail
++       info
++           code 2 : le serveur a échoué
+
+@ 0 1 0 0655720b1fbab8390e70f3b20a9c1d4e
++     entry .NxDomain
++       info
++           code 3 : le nom n'existe pas
+
+@ 0 1 0 0ec8733758c8cf4f0f4d5fae5db0d91d
++     entry .NotImp
++       info
++           code 4 : l'opération n'est pas prise en charge
+
+@ 0 1 0 04bdc9f1ee738662007665e354743dbc
++     entry .Refused
++       info
++           code 5 : le serveur a refusé
+
+@ 0 1 0 0e1daf938600128712a140bbbbf2332f
++     entry .showable
++       info
++           rend un code par son mnémonique, ou `RCODE12` pour un numéro inconnu
+
+@ 0 1 0 08b3bb0ed358a66d033b5e01ecae9a5c
++     entry #number
++       info
++           le numéro du code en transmission
+
+@ 0 1 0 07926d5ffbddd8a10d5ff77f5a339fc8
++   entry .Question
++     info
++         une question dans un message : un nom, un type et une classe
+
+@ 0 5 0 06b51bfc7c3dc3b80624805509a41fe0
++     detail
++         `Dns.Question(name, rtype, netClass = NetClass.Internet, unicast = false)`. Le champ
++         `unicast` est le bit « QU » de mDNS (RFC 6762 §5.4), activé lorsque le demandeur accepte
++         une réponse unicast ; il s'écrit comme bit de poids fort de la classe en transmission et
++         est désactivé pour le DNS ordinaire.
+
+@ 0 1 0 0b1b7f8d382aa0640c08951bdea8660c
++     entry .showable
++       info
++           rend une question sous la forme `name class type`
+
+@ 0 1 0 0eab3d8ff9e94e0112ffea45b9a22faa
++     entry #name
++       info
++           le nom sur lequel porte la question
+
+@ 0 1 0 1edf9150cece3f301921ab94cb099c4b
++     entry #rtype
++       info
++           le type d'enregistrement demandé
+
+@ 1 1 0 1ee91be52f8ef53612b6bc4bfd1de8ac
++     entry #netClass
++       info
++           la classe, `Internet` sauf indication contraire
+
+@ 0 1 0 0c71c68fc71ce1510bb4b6ed386fdc28
++     entry #unicast
++       info
++           si une réponse unicast est acceptée (mDNS)
+
+@ 0 1 0 0702b0027514df0a1c4c4df85dbf52ef
++   entry .Rdata
++     info
++         les données typées d'un enregistrement : un cas par type reconnu, ou `Unknown`
+
+@ 0 5 0 0bee89096dfb5e291543ca17a0c5ba71
++     detail
++         Une famille scellée sur les propres adresses et noms d'urticose. Le port de `Srv` est un
++         simple nombre, car le transport est une convention du nom propriétaire (`_tcp`/`_udp`) que
++         les données ne voient pas. Les cas qui portent des octets (`Txt`, `Opt`, `Unknown`)
++         comparent leurs octets structurellement, puisque `Data` lui-même se compare par référence.
+
+% 2 1 0 1683b694af8a47ba0e6a84c53a9a354c
+
+% 3 1 0 027845c1fa6bbd3d0a490802d901e7b2
+
+% 4 1 0 1b4f5826af1cb5ac14c88bd6e5362a53
+
+% 0 1 0 01d11738ed462d02196bd179c98df2e1
+
+% 0 1 0 026c265fe11d155f05c32ee8a3bb39b9
+
+% 0 1 0 0b8de30e56c56c9f07fde01a39c47cf6
+
+% 0 1 0 0c9210cce20af8d903ae8eeb0b065de7
+
+% 0 1 0 1b3d27965032281f14266c6d29605931
+
+% 0 1 0 1db3cadd532048d01d29b7f6f715f77e
+
+% 0 1 0 0b1412d8531b251b0e032cdd362539fc
+
+% 1 1 0 08b98e0f13fcd7a61087bb2a2019b183
+
+@ 0 1 0 025eb71bfc0b27d70ef9f1820de5bfdc
++     entry .A
++       info
++           une adresse IPv4
+
+@ 1 1 0 034e3e4fce63aeca14a1863633cf672d
++       entry #address
++         info
++             l'adresse
+
+@ 0 1 0 1eea85572939da020bbe62da8c3a2d27
++     entry .Aaaa
++       info
++           une adresse IPv6
+
+@ 1 1 0 12a6717689020967068256482f7cd416
++       entry #address
++         info
++             l'adresse
+
+@ 0 1 0 19093a86bcac0c55039ca4ee16ca3c1a
++     entry .Ptr
++       info
++           un pointeur vers un autre nom, comme une recherche inverse ou une instance de service
++           DNS-SD
+
+@ 0 1 0 1136324144c4907e16629c82a4abea24
++       entry #target
++         info
++             le nom pointé
+
+@ 0 1 0 02fe2e2da3ccf98a08707f8b6f48d841
++     entry .Cname
++       info
++           le nom canonique d'un alias
+
+@ 0 1 0 0844bace3b389b5a05acb07d27255742
++       entry #target
++         info
++             le nom canonique
+
+@ 0 1 0 0a9b3eee56961c990df79008be027457
++     entry .Ns
++       info
++           un serveur de noms pour la zone
+
+@ 0 1 0 0ba0fa09a653102c13842d15f26db179
++       entry #target
++         info
++             le nom du serveur de noms
+
+@ 0 1 0 04c3be82b27adda700472a76d4ec5ee6
++     entry .Mx
++       info
++           un échangeur de courrier, avec sa préférence
+
+@ 0 1 0 17bae65b000b40fa148ad4ab83a30ab1
++       entry #preference
++         info
++             la préférence ; la plus basse est essayée en premier
+
+@ 0 1 0 14c7f7aee559824914823588b5b21ac2
++       entry #exchange
++         info
++             le nom du serveur de courrier
+
+@ 0 1 0 0594139164bd534601f3e530c5a512eb
++     entry .Srv
++       info
++           une localisation de service : priorité, poids, port et hôte cible
+
+@ 0 1 0 06009f8a6f8b76bd07104065f81ef4c1
++       entry #priority
++         info
++             la priorité ; la plus basse est essayée en premier
+
+@ 0 1 0 097e07298eb1cadb09549032925a1623
++       entry #weight
++         info
++             le poids pour choisir entre des priorités égales
+
+@ 0 1 0 1f65ad76aef7203e1d3870c5de58d5a0
++       entry #port
++         info
++             le port, sous forme de simple nombre
+
+@ 0 1 0 032103ed82c591f01bbb4c18f639582b
++       entry #target
++         info
++             l'hôte qui fournit le service
+
+@ 0 1 0 018394765db18c1c1d58769889539046
++     entry .Soa
++       info
++           le début d'autorité : le serveur primaire, la boîte aux lettres responsable et les
++           délais de la zone
+
+@ 0 1 0 0fe1ad1ad97c5caf07b6866e61af6e99
++       entry #mname
++         info
++             le nom du serveur de noms primaire
+
+@ 0 1 0 0a560adf221f161116a06ee5b97107a9
++       entry #rname
++         info
++             la boîte aux lettres de la personne responsable, sous forme de nom
+
+@ 0 1 0 14828d6cf70fab841af31d1602594d9c
++       entry #serial
++         info
++             le numéro de série de la zone
+
+@ 0 1 0 001bdc25df7fcec30e384842c7f86b48
++       entry #refresh
++         info
++             l'intervalle de rafraîchissement, en secondes
+
+@ 0 1 0 1695ec81f2ab7a7a15442d7eb4bfd7fe
++       entry #retry
++         info
++             l'intervalle de nouvelle tentative, en secondes
+
+@ 0 1 0 03f06888e934010508de42d4df26e11a
++       entry #expire
++         info
++             l'intervalle d'expiration, en secondes
+
+@ 0 1 0 1342772ab3e20f1817abb38297471788
++       entry #minimum
++         info
++             le TTL minimal, en secondes
+
+@ 0 1 0 17aab4e04fe94a0d1ee24110a549bbc4
++     entry .Txt
++       info
++           des chaînes de caractères d'au plus 255 octets chacune, que DNS-SD lit comme des paires
++           `key=value`
+
+@ 0 5 0 19f6cde8657fa5a308bac3cdc61c822e
++       detail
++           Se crée avec `Dns.Rdata.Txt(t"a=1", t"b")` à partir de textes (encodés en UTF-8) ou à
++           partir d'une liste de `Data`, chaque forme levant `Dns.Error` (`LongString`) pour une
++           chaîne de plus de 255 octets, de sorte que l'encodage ne peut pas échouer. Une liste
++           vide s'encode en une chaîne vide. Compare ses octets structurellement.
+
+@ 0 1 0 0f75a56c218f8a640d3828ebce65f437
++       entry .apply
++         info
++             un `Txt` à partir de textes, ou d'une liste de `Data`, en levant `Dns.Error` pour une
++             chaîne de plus de 255 octets
+
+@ 0 1 0 1189c2b05b56ce231b2b0b22c66726f1
++       entry #strings
++         info
++             les chaînes, sous forme d'octets
+
+@ 0 1 0 0e4785ff7a0997e20c35258fd10d1244
++       entry #texts
++         info
++             les chaînes décodées en UTF-8
+
+@ 0 1 0 1dcac5add1bd0e570c973710ee804a29
++     entry .Opt
++       info
++           les options EDNS(0) d'un enregistrement `OPT`, sous forme de paires `(code, data)`
+
+@ 0 3 0 08be935f9d36d4d10e258f2e1ce49959
++       detail
++           Les autres champs de l'enregistrement sont réinterprétés pour un enregistrement `OPT` :
++           voir `Record.opt`. Compare ses octets structurellement.
+
+@ 0 1 0 1e287509fd9c4bb608944597e06d9eaf
++       entry #options
++         info
++             les options, chacune un code et ses données
+
+@ 0 1 0 0e881d923185d3961720d83d4701d28b
++     entry .Unknown
++       info
++           un type d'enregistrement que ce vocabulaire n'interprète pas, porté sous forme de ses
++           octets binaires
+
+@ 0 2 0 0bfa1c24fbb4f94b03255c085d53333b
++       detail
++           Fait l'aller-retour pour n'importe quel type (RFC 3597). Compare ses octets
++           structurellement.
+
+@ 0 1 0 1ca79abb685fed3107100f096d6f484f
++       entry #rtype
++         info
++             le type d'enregistrement
+
+@ 0 1 0 0dbbd4f361d2c7f704099cc7325ae716
++       entry #data
++         info
++             les données, telles qu'elles étaient en transmission
+
+@ 0 1 0 0737b2c38407cd2a0fe638aa443d7978
++     entry .showable
++       info
++           rend les données comme le ferait un fichier de zone : une adresse, un nom, `pref name`,
++           des chaînes entre guillemets, …
+
+@ 0 1 0 1139ab9031ab85ed029778e1dcae75aa
++     entry #rtype
++       info
++           le type d'enregistrement auquel appartiennent ces données
+
+@ 0 1 0 0c4d13774c0a3d340b0d639d6711cecc
++   entry .Record
++     info
++         un enregistrement de ressource : un nom, un TTL, des données typées, une classe et le bit
++         flush de mDNS
+
+@ 0 7 0 00e4ff4ee78e8a391976ec4ef464a421
++     detail
++         `Dns.Record(name, ttl, rdata, netClass = NetClass.Internet, flush = false)`. Le type de
++         l'enregistrement est celui de ses données. Le champ `flush` est le bit de vidage de cache
++         de mDNS (RFC 6762 §10.2) : l'ensemble d'enregistrements de l'émetteur pour ce nom et ce
++         type remplace ce qu'un récepteur a en cache. Il s'écrit comme bit de poids fort de la
++         classe en transmission et est désactivé pour le DNS ordinaire. Un TTL lu en transmission
++         avec son bit de poids fort activé est considéré comme nul (RFC
++         2181 §8).
+
+% 2 1 0 1562a83d2fdd042c1a92e2c6b4a3f432
+
+% 3 1 0 042654dd5a42c5e80f26068a6f6987e0
+
+% 4 1 0 0ca79f2e8ceea4ce0fdbbbccdaea735a
+
+% 0 1 0 0fa30e7d552fe83d09ffc4a24376f4e9
+
+% 0 1 0 005b1be5cb97606218328466ecf28a49
+
+% 0 1 0 1f2b7855a59d27381cad18768348c175
+
+% 1 1 0 007e681f8f31a42517905a4ccbcfde7e
+
+@ 0 1 0 188542b636ecc35611fe32ed78779085
++     entry .opt
++       info
++           un pseudo-enregistrement EDNS(0) `OPT`, avec la taille de charge utile UDP de l'émetteur
++           et le bit DO
+
+@ 0 4 0 1341b9b8a15ee7a10b021b980dcb92e4
++       detail
++           `Dns.Record.opt(udpPayload = 1232, dnssecOk = false, options = Nil)` : le nom de
++           l'enregistrement est la racine, son champ de classe porte la taille de charge utile et
++           son champ TTL le RCODE étendu, la version et le bit DO, que relisent `#udpPayload`,
++           `#extendedRcode` et `#dnssecOk`.
+
+@ 0 1 0 0d441509608b88560a6a57e3cfe78232
++     entry .showable
++       info
++           rend un enregistrement sous la forme `name ttl class type data`, avec ` (flush)` lorsque
++           le bit est activé
+
+@ 0 1 0 008f301f88c3d4cd0b0ead2c8f237063
++     entry #name
++       info
++           le nom propriétaire
+
+@ 0 1 0 130b1c130858a3780c0204781c79caf7
++     entry #ttl
++       info
++           la durée de vie, en secondes
+
+@ 0 1 0 1a6d8d14379e1b8209baacb776c6b731
++     entry #rdata
++       info
++           les données typées
+
+@ 1 1 0 03bd1f9c1044640415e5d8e3f16b67cc
++     entry #netClass
++       info
++           la classe, `Internet` sauf indication contraire
+
+@ 0 1 0 1de3bcf0273ea785072bd75566f2cab3
++     entry #flush
++       info
++           si un récepteur doit vider son cache pour ce nom et ce type (mDNS)
+
+@ 0 1 0 0b67bf7b9c769afb0f66fe7c95bb285b
++     entry #rtype
++       info
++           le type d'enregistrement, tiré des données
+
+@ 0 1 0 01af7f3e139fa68f04d807261c9254ef
++     entry #key
++       info
++           l'identité de l'enregistrement dans un cache : son nom, son type et ses données, sans
++           TTL ni bit flush
+
+@ 0 1 0 06ab1234baede66a01e7686334d4a675
++     entry #rdataBytes
++       info
++           les données sous leur forme de transmission non compressée
+
+@ 0 2 0 14598a8ef905aa930c00cd7286e8b370
++       detail
++           Ce que la RFC 6762 §8.2.1 compare lexicographiquement pour départager deux hôtes qui
++           sondent le même nom au même moment.
+
+@ 0 1 0 1547ddb40d8616fe07ef2a70a4cdc842
++     entry #udpPayload
++       info
++           pour un enregistrement `OPT`, la taille de charge utile UDP de l'émetteur ; sinon
++           `Unset`
+
+@ 0 1 0 111eae2536b5ec540af6c50fcfa3b6a5
++     entry #extendedRcode
++       info
++           pour un enregistrement `OPT`, les bits de poids fort du code de réponse ; sinon `Unset`
+
+@ 0 1 0 1c5a270262c1deac1eb0c8fcaf7f6668
++     entry #dnssecOk
++       info
++           pour un enregistrement `OPT`, le bit DO ; sinon `Unset`
+
+@ 0 1 0 19447b95de1d31c00e291b2c1986f1a3
++   entry .Flags
++     info
++         les bits d'en-tête d'un message : réponse ou requête, opcode, les quatre indicateurs et le
++         code de réponse
+
+@ 0 4 0 01d67eaa8be8c9e81e1d17580d46d03a
++     detail
++         `Dns.Flags()` est une requête simple : tous les indicateurs désactivés, opcode `Query`,
++         rcode `NoError`. `Message.query` active `recursionDesired` et `Message.response` active
++         `response`, en reprenant l'opcode et la demande de récursion de la requête.
+
+@ 0 1 0 0bb8808bdb33d7a90523c662378a00a3
++     entry #response
++       info
++           si le message est une réponse (QR)
+
+@ 0 1 0 077ed56c7eb499ed02a732d904f3df14
++     entry #opcode
++       info
++           l'opération
+
+@ 0 1 0 15ec0c52d88fa22e1d3590ae606c4c05
++     entry #authoritative
++       info
++           si le répondeur fait autorité pour le nom (AA)
+
+@ 0 1 0 06084dac1caae41f081d0bb7764c614d
++     entry #truncated
++       info
++           si le message a été tronqué pour tenir dans son transport (TC)
+
+@ 0 1 0 05b2dcf247d388471b2c191f43826ff3
++     entry #recursionDesired
++       info
++           si le demandeur demande la récursion (RD)
+
+@ 0 1 0 0b2653385fc0a3710a6a5e94134cfa6f
++     entry #recursionAvailable
++       info
++           si le répondeur offre la récursion (RA)
+
+@ 0 1 0 124cbe32a186b4e50b1a05c64161619b
++     entry #authentic
++       info
++           si les données ont été authentifiées (AD)
+
+@ 0 1 0 136b9f5eb67912450acd75c00b669d6c
++     entry #checkingDisabled
++       info
++           si le demandeur a désactivé la vérification DNSSEC (CD)
+
+@ 0 1 0 01c104311241206917033b33619386c8
++     entry #rcode
++       info
++           le code de réponse
+
+@ 0 1 0 1edabb95304f21271c23b413a5f1040b
++   entry .Message
++     info
++         un message DNS : un identifiant, des indicateurs, et les sections question, réponse,
++         autorité et additionnelle
+
+@ 0 6 0 1b4ee4c15637ca83020e0f47de5c8649
++     detail
++         Construit directement, ou avec `Message.query` et `Message.response` ; encodé en `Data`
++         avec `in[Data]` et décodé avec `as[Dns.Message]`, qui lève `Dns.Error` pour un message mal
++         formé. L'encodage est total, puisque les limites qu'un message pourrait enfreindre sont
++         garanties par `Name` et `Rdata.Txt` dès la construction ; une section de plus de 65535
++         entrées est écrite modulo 65536, puisqu'aucun transport DNS ne pourrait de toute façon la
++         porter.
+
+% 2 1 0 103b00ca96f95f4500bb2888e3975a45
+
+% 3 1 0 1f240de2d30d35aa179541c2d0d7999a
+
+% 4 1 0 028536fa7968604b1d9bb924d3aac002
+
+% 0 1 0 175fb005e7c61ed1092c6e946eeabdfc
+
+% 0 1 0 149eff091198fd5a05edc32a3915a98f
+
+% 0 1 0 1f6699c0da421d761b440630afa2e197
+
+% 1 1 0 02eeeba54d3508b600e0a8425a690572
+
+@ 0 1 0 0283529960dd6b6d1e6007ef9fc0f7d5
++     entry .query
++       info
++           un message de requête : un identifiant, des questions, et la récursion demandée sauf
++           indication contraire
+
+@ 0 1 0 1a9e55a69a3c8007083b87e393842cd7
++     entry .response
++       info
++           une réponse à une requête : le même identifiant et les mêmes questions, avec des
++           réponses et un code de réponse
+
+@ 0 2 0 1d7335fe0f8e480d12af64af3acba8de
++       detail
++           `Dns.Message.response(query, answers, authoritative = false, rcode = Rcode.NoError,
++           authority = Nil, additional = Nil)` reprend l'opcode et la demande de récursion de la
++           requête.
+
+@ 0 1 0 0436b3fd64000f7607285c17c938a6ef
++     entry .encodable
++       info
++           écrit un message sous sa forme de transmission RFC 1035, en compressant les noms
+
+@ 0 3 0 09ae0b34d2ccc2750c64e1ec793ae325
++       detail
++           Les noms propriétaires et les noms contenus dans les types bien connus de la RFC 1035
++           §4.1.4 sont compressés avec des pointeurs vers l'arrière ; les noms contenus dans les
++           types `SRV`, `TXT`, `OPT` et inconnus ne le sont pas (RFC 2782, RFC 3597).
+
+@ 0 1 0 193624dc1c93cb27096790b90c0176a4
++     entry .decodable
++       info
++           lit un message depuis sa forme de transmission, en levant `Dns.Error` s'il est mal formé
+
+@ 0 4 0 1475d4ce3f0bc522179c2f36b7e22528
++       detail
++           Requiert une `Tactic[Dns.Error]`. Les pointeurs de compression ne sont suivis que vers
++           l'arrière (`BadPointer` sinon) ; un message tronqué donne `Truncated`, des données
++           d'enregistrement de mauvaise longueur `BadRdata`, et des octets après le dernier
++           enregistrement `Trailing`. Une cible `SRV` compressée est acceptée, puisque les
++           émetteurs mDNS en produisent.
+
+@ 0 1 0 11636c69536fafce006031d857185b75
++     entry .showable
++       info
++           rend un message sous la forme `query|response id rcode [questions] [answers]`
+
+@ 0 1 0 1bd1754ab601600e0accf3dfeddcde95
++     entry #id
++       info
++           l'identifiant du message, que reprend une réponse
+
+@ 0 1 0 149e9ad44d69f0140c57a0b435af6eb4
++     entry #flags
++       info
++           les indicateurs d'en-tête
+
+@ 0 1 0 051780dbe170c8f1010e62e9a378753e
++     entry #questions
++       info
++           la section question
+
+@ 0 1 0 00959c03458dbec5010272a85505e155
++     entry #answers
++       info
++           la section réponse
+
+@ 0 1 0 1fecd7913c4a570c1bb6852d017d040f
++     entry #authority
++       info
++           la section autorité
+
+@ 0 1 0 0f3560c0a82fc04112c8554f0500d050
++     entry #additional
++       info
++           la section additionnelle
+
+@ 0 1 0 04bdd52e6b03652e177cfdef370a9bad
++   entry .resolve
++     info
++         les adresses d'un nom ou d'un nom d'hôte, via le résolveur de la plateforme
+
+@ 0 4 0 14f2d8e72f36eee91cb507f2feb02c47
++     detail
++         `Dns.resolve(name)` ou `Dns.resolve(hostname)` demande à la plateforme (via
++         `InetAddress.getAllByName`) toutes les adresses du nom et les renvoie sous forme de liste
++         d'`Ipv4 | Ipv6`, en levant `Dns.Error` avec `Unresolved` lorsque le nom ne se résout pas.
++         Elle atteint le réseau via le résolveur de la plateforme et ne prend pas d'`Online`.
+
+@ 2 1 0 03fdfea5d8d63ea80a6f5e408d3ea527
++         ```scala fuel
+
+@ 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
++         typecheck
+
+@ 1 1 0 10f090fe19e7ee750458b0e6da583f6b
++         ##
+
+@ 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
++         import soundness.*
+
+@ 2 1 0 04ea60e84068f7921bdf4ecb54884444
++         import strategies.throwUnsafely
+
+@ 0 1 0 17e094dfdcf82f56180a6688d3e9a10a
++         Dns.resolve(dns"localhost")
+
+@ 0 1 0 00c236fccb5e1a101c1bfeb3ea4b2fe6
++         Dns.resolve(host"example.com").map(_.show)
+
+@ 1 1 0 08e624ca0d3ef78b05ff0649089879b3
++         ```
+
+@ 0 1 0 1b260b80088280d9197ff76402d364bd
++   entry .Error
++     info
++         levée lorsqu'un nom ou un message DNS n'est pas valide, ou qu'un nom ne se résout pas
+
+@ 0 4 0 02b5fa7fa29c0a1719df1f1af0a7ec94
++     detail
++         Erreur `↯/s.100.1` : _the DNS message is not valid because `reason`_. Levée par la
++         construction et l'analyse des noms, par `Rdata.Txt`, par le décodage d'un message depuis
++         `Data`, par `Dns.resolve`, et sous forme d'erreur de compilation par `dns"…"`.
+
+@ 0 1 0 033acf8d504986700e0df5dd5c9ce48d
++     entry .Reason
++       info
++           la raison de l'échec d'un nom, d'un message ou d'une recherche
+
+@ 0 2 0 0203f189d4f43f791f048d19c37fdb89
++       detail
++           Chacune a un message via `Reason.communicable` :
+
+% 2 1 0 101ae17950042db20f5b075753c7534a
+
+@ 0 17 0 0e5c3d28405a3ef50a459809261dfdda
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `Truncated(offset)`  1  _the message ends at offset `offset`, inside a field_  un message mal formé
++           row  `BadPointer(offset)`  2  _the name pointer at offset `offset` points forward_  un message mal formé
++           row  `BadLabel(offset, kind)`  3  _the label at offset `offset` has unsupported type `kind`_  un message mal formé
++           row  `LongLabel(label)`  4  _the label `label` is longer than 63 octets_  un nom incorrect
++           row  `LongName(name)`  5  _the name `name` is longer than 255 octets_  un nom incorrect
++           row  `EmptyLabel(text)`  6  _the name `text` contains an empty label_  un nom incorrect
++           row  `BadEscape(text)`  7  _the name `text` contains a malformed escape sequence_  un nom incorrect
++           row  `BadRdata(rtype, offset)`  8  _the `rtype` record data at offset `offset` is malformed_  un message mal formé
++           row  `LongString(length)`  9  _a character-string of `length` octets exceeds 255_  une chaîne TXT
++           row  `Trailing(offset)`  10  _the message has trailing bytes from offset `offset`_  un message mal formé
++           row  `Unresolved(name)`  11  _the name `name` could not be resolved_  issue de `Dns.resolve`
++           row  `Timeout`  12  _no response arrived before the timeout_  levée par un transport tel que `coaxial.dns`
++           row  `Mismatch(id)`  13  _the response with ID `id` does not answer the query_  levée par un transport, pour une réponse au mauvais identifiant
+
+% 1 1 0 147569e0f8cabdc20ecd7927e142f958
+
+@ 2 1 0 07170ec0358e7af002508146b6a592c3
++       entry .communicable
++         info
++             rend chaque raison sous forme de message
+
+@ 0 1 0 0c70c6298f1c1927186adac678da13e2
++     entry #reason
++       info
++           la raison de l'échec
+
+@ 0 1 0 0d2f74d9c26ee8c40777f9ce4e588aef
++ entry .dns
++   info
++       l'interpolateur `dns"…"` : un nom DNS sous forme de présentation, vérifié à la compilation
++       du code
+
+@ 0 4 0 18f05eeebbf29ee511e13e18208461d5
++   detail
++       `dns"_fury._tcp.local"` est un `Dns.Name`, analysé comme le fait `Dns.Name.parse` — avec
++       les échappements `\.`, `\\` et `\DDD` et un point final optionnel — et un nom qui enfreint
++       les limites est une erreur de compilation portant le message de `Dns.Error`. Il ne prend
++       aucune substitution. Déclaré dans `urticose.dns`.
+
+@ 2 1 0 11cc73c3be6303b90bb6a25a9680e2c7
++       ```scala
+
+@ 3 1 0 0ef745c407160a090c252c4d47e203a5
++       import soundness.*
+
+@ 0 1 0 0683171193bbc92618098c8d54c8cb76
++       dns"_fury._tcp.local" == Dns.Name(t"_fury", t"_tcp", t"local")
+
+@ 0 1 0 0dd7c140342040f8007a90f8b1807fc7
++       dns"a..b"   // does not compile
+
+@ 1 1 0 19ad9d0e9ce9a97515c8b9d94246070f
++       ```
+
+@ 0 1 0 1ef327f2ded5f310123ef93e2596a97b
++ entry .dnsName
++   info
++       un `Hostname` sous forme de `Dns.Name`, étiquette pour étiquette
+
+@ 0 3 0 17dd8debe4a723fe003c9f7e860377a5
++   detail
++       Une extension sur `Hostname`, dans `urticose.dns` : `host"example.com".dnsName` vaut
++       `dns"example.com"`. Elle ne peut pas échouer, puisque les étiquettes d'un nom d'hôte
++       satisfont déjà les limites du DNS.
+
+@ 0 1 0 053af2955bb44b5e024c5fc963192fc6
++ entry .reverseName
++   info
++       le nom propriétaire de l'enregistrement `PTR` de résolution inverse d'une adresse
+
+@ 0 3 0 0fc33759c1ecd8e613b85f3fbfd452c6
++   detail
++       Une extension sur `Ipv4 | Ipv6`, dans `urticose.dns` : les octets d'une adresse IPv4
++       inversés sous `in-addr.arpa` (RFC 1035 §3.5), ou les 32 quartets d'une adresse IPv6
++       inversés sous `ip6.arpa` (RFC 3596 §2.5).
+
+@ 2 1 0 18702b8e52df3618168eae4fac78e5eb
++       ```scala
+
+@ 3 1 0 087557458d6605d5054d400af56bea95
++       import soundness.*
+
+@ 0 1 0 079ae74708c275ba0de43c5a051c56e1
++       ip"192.0.2.1".reverseName.show   // t"1.2.0.192.in-addr.arpa"
+
+@ 0 1 0 12ccbfcef5310ee614ecdc0fa71e0b49
++       ip"2001:db8::1".reverseName.show // t"1.0.0.…0.8.b.d.0.1.0.0.2.ip6.arpa"
+
+@ 1 1 0 0450d5722f50c807006b0bbdd2fa0ea2
++       ```
+
+@ 0 1 0 1cc76623e463e30516bee9143eff3c64
++ entry .internal
++   info
++       le foyer des types opaques et les implémentations des macros derrière les interpolateurs
++       du cœur
+
+% 1 1 0 1a42ac50b5b377ae16b4ea3116aaba65
+
+@ 0 7 0 161e6b6d365771a80c57034cd28c8111
++   detail
++       Pas destiné à un usage direct : l'objet existe pour que les types opaques `Ipv4`,
++       `MacAddress`, `DnsLabel` et `Port` (dans `Opaques`), les case classes `Ipv6`,
++       `Ipv4Subnet` et `Ipv6Subnet`, et leurs méthodes d'extension aient un foyer stable où les
++       représentations des types opaques sont visibles, et pour que les macros en aient un. Les
++       types sont exportés vers le package `urticose`, où se trouvent leurs pages ; les méthodes
++       d'extension déclarées ici se résolvent sur ces types via la portée implicite de leur
++       préfixe.
+
+@ 0 1 0 06bd150d40a2b48e0218ffab75148e4f
++   entry .Opaques
++     info
++         les types opaques `Ipv4`, `MacAddress`, `DnsLabel` et `Port`, avec leurs extensions
+
+% 1 1 0 19980b02783fadc7149cdcd1a2cd9048
+
+@ 0 3 0 0c6b9692f03a7f311d2b4a8fcde18d00
++     detail
++         La page de chaque type sous le package `urticose` en donne la description complète. Les
++         méthodes d'extension sur les types sont déclarées ici, à côté de leurs définitions
++         opaques.
+
+@ 0 1 0 165782d817ebb6d90abb9946ded19adf
++     entry .Ipv4
++       info
++           une adresse IPv4 sur `Int` ; voir `urticose.Ipv4`
+
+@ 0 2 0 039000d4c74b84bb105440378cd631d7
++       detail
++           Le compagnon du type opaque `Ipv4`, exporté avec lui vers le package `urticose`.
+
+@ 1 1 0 1188bd3b241255e810673407b7f54485
++       entry .underlying
++         info
++             déclare la représentation du type opaque, `Int`, pour la mécanique générique
+
+@ 0 1 0 0841dbd2099af4ec0f635158ec84ba8e
++       entry .showable
++         info
++             rend une adresse sous forme décimale pointée, `192.168.0.1`
+
+@ 0 1 0 0202e5d257ff49b51d224d8f774e420d
++       entry .inspectable
++         info
++             un rendu de débogage, la forme décimale pointée
+
+@ 0 2 0 05c847d5ea62179d1ce169edbbfa6488
++         detail
++             La notation décimale pointée identifie d'emblée une adresse IPv4 ; sans cette
++             instance, une adresse s'inspecterait sous forme de l'`Int` vers lequel elle est
++             effacée.
+
+@ 0 1 0 15df822390b8f4761ea0961a7389acb1
++       entry .encodable
++         info
++             encode une adresse sous forme de son texte décimal pointé
+
+@ 0 1 0 021c58258c7f826812d061acb35f185d
++       entry .decodable
++         info
++             lit une adresse depuis un texte décimal pointé, en levant `IpAddress.Error`
+
+@ 0 3 0 16baea15a0760ed204bf42e7959c9007
++         detail
++             Requiert une `Tactic[IpAddress.Error]` ; le given la capture. Quatre groupes séparés
++             par des points sont requis (`Ipv4WrongNumberOfGroups`), chacun étant un nombre
++             (`Ipv4ByteNotNumeric`) dans la plage 0–255 (`Ipv4ByteOutOfRange`).
+
+@ 0 1 0 0e79d82b4aaa7b1219b6243f71dad8ab
++       entry .dataEncodable
++         info
++             encode une adresse sous forme de ses quatre octets dans l'ordre réseau
+
+@ 0 1 0 0b7cf08139be01061224ce4cda7c353b
++       entry .dataDecodable
++         info
++             lit une adresse depuis quatre octets, en levant `IpAddress.Error` sinon
+
+@ 0 1 0 102738ef5f7840690691b49f3407bc4e
++         detail
++             `Ipv4WrongNumberOfBytes` pour toute `Data` dont la longueur n'est pas 4.
+
+@ 0 1 0 0b06a45b417da6d4064446649bd9d6b1
++       entry .Localhost
++         info
++             l'adresse de bouclage `127.0.0.1`
+
+@ 0 1 0 0e90346760a4cbcc17cc8e1e42c3f488
++       entry .apply
++         info
++             une adresse à partir de quatre octets, ou de son `Int` compacté
+
+@ 0 2 0 1d48a3738a9a6dc50d775829c5e6ebc5
++         detail
++             `Ipv4(192, 168, 0, 1)` compacte quatre octets (chacun masqué à ses huit bits de poids
++             faible) ; `Ipv4(int)` réinterprète un entier compacté, tel que le produit `Ipv4#int`.
+
+@ 0 1 0 0787319d67c64daa122d9ed57c65a1ce
++       entry .parse
++         info
++             lit une adresse depuis un texte décimal pointé, comme le fait `.decodable`
+
+@ 0 1 0 150fa638364d975a19191cd4789181f4
++     entry .MacAddress
++       info
++           une adresse MAC sur `Long` ; voir `urticose.MacAddress`
+
+@ 0 3 0 1f753c6639923a861bbfc78b0e45bf6d
++       detail
++           Le compagnon du type opaque `MacAddress`, exporté avec lui vers le package `urticose`.
+
+@ 0 1 0 080ec387c6c9ac4b0ef2f8d140cfb129
++       entry .underlying
++         info
++             déclare la représentation du type opaque, `Long`, pour la mécanique générique
+
+@ 0 1 0 18865611f5d7e8840a63a10c7e4d185f
++       entry .showable
++         info
++             rend une adresse sous forme de six paires hexadécimales en minuscules jointes par `-`
+
+@ 0 1 0 150032d94edb90430b99daefe0176a01
++       entry .inspectable
++         info
++             un rendu de débogage, la même forme avec tirets
+
+@ 0 1 0 0535752c21e8bf3f17512ae5405e707b
++       entry .encodable
++         info
++             encode une adresse sous forme de son texte avec tirets
+
+@ 0 1 0 08bda573448d830d117c13ab5464dea9
++       entry .decoder
++         info
++             lit une adresse depuis un texte avec tirets, en levant `MacAddress.Error`
+
+@ 0 2 0 1915b05d4e97d36d0d36832ddb59853c
++         detail
++             Requiert une `Tactic[MacAddress.Error]` ; le given la capture. Ce given se nomme
++             `decoder`, là où les autres décodeurs de texte de la bibliothèque se nomment
++             `decodable`.
+
+@ 0 1 0 1c4aefa50b6c725b1bf33ccb39596575
++       entry .apply
++         info
++             une adresse à partir de six octets, ou de son `Long` compacté
+
+@ 0 2 0 08ae868d71aceb981507c68f9e99949c
++         detail
++             `MacAddress(b0, b1, b2, b3, b4, b5)` compacte six octets, chacun masqué de sorte qu'un
++             octet supérieur ou égal à 0x80 ne subisse pas d'extension de signe ;
++             `MacAddress(long)` réinterprète une valeur compactée.
+
+@ 0 1 0 0e2b1b4ba2a5eeb7192766d6477139de
++       entry .parse
++         info
++             lit une adresse depuis un texte avec tirets, comme le fait `.decoder`
+
+@ 0 1 0 087671daa6b9ee9b0893264e55e647d7
++       entry .Error
++         info
++             levée lorsqu'un texte n'est pas une adresse MAC valide
+
+@ 0 3 0 01576ef457e7e4f600e7d68f334e2a73
++         detail
++             Erreur `↯/s.100.7` : _the MAC address is not valid because `reason`_. Levée par
++             `as[MacAddress]` et, sous forme d'erreur de compilation, par `mac"…"`.
+
+@ 0 1 0 134810506087eccd06d16d03e8cf94d5
++         entry .Reason
++           info
++               la raison du rejet d'une adresse MAC
+
+@ 0 4 0 0026e63dcb90c7351060a21e0a429300
++           detail
++               `WrongGroupCount(count)` pour un nombre de groupes séparés par des tirets différent
++               de six, `WrongGroupLength(group, length)` pour un groupe qui ne compte pas deux
++               caractères (les groupes étant numérotés à partir de 0), et `NotHex(group, content)`
++               pour un groupe qui n'est pas hexadécimal.
+
+@ 0 1 0 1651d6d8067db2ce07590df2672cd942
++           entry .communicable
++             info
++                 rend chaque raison sous forme de message
+
+@ 0 1 0 196e5a588f79b42012a5d98c0a677b43
++         entry #reason
++           info
++               la raison du rejet de l'adresse
+
+@ 0 1 0 018e0bcd91b7bd921cae1171ed3e6d27
++     entry .DnsLabel
++       info
++           une étiquette de nom d'hôte sur `Text` ; voir `urticose.DnsLabel`
+
+@ 0 3 0 077d61d40d21c18209a7749e1e9f2ca8
++       detail
++           Le compagnon du type opaque `DnsLabel`, exporté avec lui vers le package `urticose`.
+
+@ 0 1 0 1797e5da67d77a05168984d20b2c7490
++       entry .showable
++         info
++             rend une étiquette sous forme de son texte
+
+@ 0 1 0 0fba71efa673b663008f59f5b2eb82e7
++       entry .apply
++         info
++             enveloppe du texte en une étiquette, sans vérification
+
+@ 0 1 0 122f1b35e94ad1e600610666ee327f5e
++     entry .Port
++       info
++           un port sur `Int & Port.Type` ; voir `urticose.Port`
+
+@ 0 2 0 0cc1533f8de6e5a513108ef60eef92ad
++       detail
++           Le compagnon du type opaque `Port`, exporté avec lui vers le package `urticose`.
+
+@ 1 1 0 13bb406792a67fd5152a52bbe1d39610
++       entry .underlying
++         info
++             déclare la représentation du type opaque, `Int`, pour la mécanique générique
+
+@ 0 1 0 1bad156f90dc93c60f80aa13fbca0251
++       entry .showable
++         info
++             rend un port sous forme de son numéro
+
+@ 0 1 0 15feb0741aa5407f13ab4e9ef582fc18
++       entry .encodable
++         info
++             encode un port sous forme du texte de son numéro
+
+@ 0 1 0 06ed5dabd352ec5c1bcae07c4b2094c0
++       entry .inspectable
++         info
++             un rendu de débogage, `⌗8080`, pour un port de raffinement quelconque
+
+@ 0 2 0 051637f3ed6bc7571a115f841a588706
++         detail
++             Paramétré sur tous les sous-types de `Port`, puisqu'un port est couramment raffiné
++             plus d'une fois (`Port over Tcp of 25`) et que le `Self` d'une classe de types est
++             invariant.
+
+@ 0 1 0 11dada2bce26f49916618959eef6a071
++       entry .showableOver
++         info
++             rend un `Port over transport` raffiné par son transport sous forme de son numéro
+
+@ 0 3 0 0367fecb48883cfd1ab91ce320510fa8
++         detail
++             Nécessaire à côté de `.showable` parce que `Self` est invariant : l'instance nue ne
++             couvre pas `Port over Tcp`. Un port raffiné davantage encore, `Port over Tcp of 25`,
++             n'est couvert par aucune des deux et se rabat sur son `toString` lorsqu'il est
++             affiché ; `number.show` est la forme sûre.
+
+@ 0 1 0 07bbe11fddb1a4a2023a579f2f506867
++       entry .decodable
++         info
++             lit un port depuis le texte de son numéro, en levant `Number.Error` ou `Port.Error`
+
+@ 0 2 0 03647dab486366a51ae03401ec6063dd
++         detail
++             Requiert une `Tactic[Number.Error]` pour un texte qui n'est pas un nombre et une
++             `Tactic[Port.Error]` pour un nombre hors de 1–65535. Le résultat est un `Port` non
++             raffiné.
+
+@ 0 1 0 1977a13a8fd2f5d112be609bb6dbed4c
++       entry .unsafe
++         info
++             convertit un nombre en un `Port over transport` sans vérification de plage
+
+@ 0 2 0 0884e502df755f5e18c9e82330e4d3e7
++         detail
++             Pour les macros des interpolateurs, qui ont déjà vérifié le nombre ; `.apply` est la
++             forme vérifiée.
+
+@ 0 1 0 1b2981d6969b36f2190dddd825d7580f
++       entry .apply
++         info
++             `Port[Tcp](8080)`, un numéro de port vérifié ; `Port[Tcp]()`, un port que le système
++             signale comme inutilisé
+
+@ 0 6 0 1a547ec956dfec6d0b561f61e7c5a1b3
++         detail
++             `Port[transport](number)` lève `Port.Error` à moins que le nombre ne soit dans
++             1–65535 ; le transport est donné explicitement ou inféré du type attendu
++             (`val p: Udp.Port = Port(53)`). `Port[transport]()` requiert un
++             `transport is Allocatable` — `Tcp.allocatable` ou `Udp.allocatable` ; il n'en existe
++             pas encore pour `Quic` — et lie puis libère un socket de sondage de ce genre pour
++             trouver un port éphémère, de sorte que le résultat était libre il y a un instant mais
++             n'est pas réservé.
+
+@ 0 1 0 0045388b157dcfce122dcc1f8eefdc09
++       entry .Error
++         info
++             levée lorsqu'un numéro de port est hors de 1–65535
+
+@ 0 4 0 1aa98928147656160dff3473a65fbbaf
++         detail
++             Erreur `↯/s.100.3` : _the port is not in the valid range_. Levée par
++             `Port[transport](number)` et par le décodage d'un port depuis du texte ; les
++             interpolateurs `tcp"…"` et `udp"…"` signalent plutôt un nombre hors plage sous forme
++             d'erreur de compilation.
+
+@ 0 1 0 0ded24a9ab3969b202568f7ec98d9371
++       entry .Type
++         info
++             la borne structurelle de `Port` : les membres de type qui le raffinent
+
+@ 0 3 0 18c9be63ac730af80a9be09ff54daaab
++         detail
++             Un trait scellé à deux membres de type, que `Port over Tcp of 25` fixe via les
++             raffinements `over` et `of` de `prepositional`.
+
+@ 0 1 0 0fa043e76de06750083e60f3abaa10eb
++         entry #Transport
++           info
++               le protocole : `Tcp`, `Udp`, `Quic`, …
+
+@ 0 1 0 0c9fc21f0b2a291608846048fadb409b
++         entry #Topic
++           info
++               le numéro de port littéral, pour un port dont le numéro est connu à la compilation
+
+@ 0 1 0 14a71923ca08050c06806eb3eb9be2ef
++     entry .number
++       info
++           le numéro d'un `Port`
+
+@ 0 1 0 09c477e9ed629a2e1e2e7c3ef4c863d9
++     entry .privileged
++       info
++           si un `Port` est inférieur à 1024
+
+@ 0 1 0 190e4eb4a245e92d07ac1fa0d11679bd
++     entry .byte0
++       info
++           le premier octet d'une `MacAddress`, ou le premier octet d'une `Ipv4`
+
+@ 0 1 0 1edbe5368766db200542eae1496d4043
++     entry .byte1
++       info
++           le deuxième octet d'une `MacAddress`, ou le deuxième octet d'une `Ipv4`
+
+@ 0 1 0 044e413807f6c82817ca3b469512f9c0
++     entry .byte2
++       info
++           le troisième octet d'une `MacAddress`, ou le troisième octet d'une `Ipv4`
+
+@ 0 1 0 053c645567f9c24408f78c7d4cd6a9e4
++     entry .byte3
++       info
++           le quatrième octet d'une `MacAddress`, ou le quatrième octet d'une `Ipv4`
+
+@ 0 1 0 0a7d3d862d2474fc17c12e287bb05c32
++     entry .byte4
++       info
++           le cinquième octet d'une `MacAddress`
+
+@ 0 1 0 0a039aa89394d078195255223ecc8956
++     entry .byte5
++       info
++           le sixième octet d'une `MacAddress`
+
+@ 0 1 0 1d8a3c7fcfd16d450d7a7c3ba4d82fe8
++     entry .text
++       info
++           le texte d'un `DnsLabel`, ou une `MacAddress` sous forme de six paires hexadécimales
++           avec tirets
+
+@ 0 1 0 05eec2d4ed89351a08c94142747a63ea
++     entry .long
++       info
++           une `MacAddress` sous forme de son `Long` compacté
+
+@ 0 1 0 1e50fd7878576f6f17ee0327f1875bb2
++     entry .subnet
++       info
++           `ipv4.subnet(size)` : l'`Ipv4Subnet` d'une longueur de préfixe, bits d'hôte masqués
+
+@ 0 1 0 00703cc3f7ade0c107a81190a1090e38
++     entry .int
++       info
++           une `Ipv4` sous forme de son `Int` compacté
+
+@ 0 1 0 0b592d696bb596e1170d4a752d559cab
++   entry .subnetPrefix
++     info
++         lit un préfixe de sous-réseau depuis du texte et vérifie sa plage, pour les analyseurs de
++         sous-réseaux
+
+@ 0 1 0 0210956e337efea60b4466d8ad9e15bd
++   entry .Ipv4Subnet
++     info
++         un sous-réseau IPv4 ; voir `urticose.Ipv4Subnet`
+
+@ 0 2 0 109a9a137cf2f57f0b4b10de992e26f5
++     detail
++         La case class `Ipv4Subnet` et son compagnon, exportés vers le package `urticose`.
+
+@ 0 1 0 025fb0bd39fc5753134903225473b37a
++     entry .showable
++       info
++           rend un sous-réseau sous la forme `address/prefix`
+
+@ 1 1 0 1e1dfbac744b966e0a887b57a5f19090
++     entry .inspectable
++       info
++           un rendu de débogage, identique à la forme affichée
+
+@ 2 1 0 014ac3627028bdc11b85781bdb5b2e85
++     entry .encodable
++       info
++           encode un sous-réseau sous forme de texte `address/prefix`
+
+@ 3 1 0 181f4a0b978e623208d1397827174852
++     entry .decodable
++       info
++           lit un sous-réseau depuis un texte `address/prefix`, en levant `IpAddress.Error`
+
+@ 0 3 0 1755a03d40f0334a1f27d1b43101f222
++       detail
++           Requiert une `Tactic[IpAddress.Error]` : `SubnetWrongFormat` sans exactement un `/`,
++           `SubnetPrefixNotNumeric`, `Ipv4SubnetPrefixOutOfRange` au-delà de 32, et les raisons
++           propres à l'adresse.
+
+@ 1 1 0 1aac60dffdb89dd719a02864370810a6
++     entry .parse
++       info
++           lit un sous-réseau depuis du texte, comme le fait `.decodable`
+
+@ 0 1 0 0416975fb62209631601ba1878750aa1
++     entry #ipv4
++       info
++           l'adresse réseau, avec ses bits d'hôte masqués à zéro
+
+@ 0 1 0 03c44ad1d35f95dc11c8e2548a13643f
++     entry #size
++       info
++           la longueur du préfixe, de 0 à 32
+
+@ 0 1 0 05e18a5cc1632d0005670bbeb3c86d71
++   entry .Ipv6
++     info
++         une adresse IPv6 ; voir `urticose.Ipv6`
+
+@ 0 2 0 1acb720a126108ff1c5eb8539acd358c
++     detail
++         La case class `Ipv6` et son compagnon, exportés vers le package `urticose`.
+
+@ 0 1 0 1d53ba46d1f7620f1288404ac2800ee3
++     entry .Localhost
++       info
++           l'adresse de bouclage `::1`
+
+@ 0 1 0 1e4e381e1c0dfd540560637d224158c0
++     entry .dataEncodable
++       info
++           encode une adresse sous forme de ses seize octets dans l'ordre réseau
+
+@ 0 1 0 133ddbd1e625815f0ab31718242d388b
++       detail
++           Les huit octets de poids fort sont `#highBits`, tels qu'`Ipv6.apply` compacte les quatre
++           premiers groupes.
+
+@ 0 1 0 004adb80fda51fba1523e92e52e06a3c
++     entry .dataDecodable
++       info
++           lit une adresse depuis seize octets, en levant `IpAddress.Error` sinon
+
+@ 0 1 0 1ea844df920ff40d11f57a92c0c045ab
++       detail
++           `Ipv6WrongNumberOfBytes` pour toute `Data` dont la longueur n'est pas 16.
+
+@ 0 1 0 0cf2124f0cbeb34403eca9636a6b3e89
++     entry .hostShowable
++       info
++           rend un `Host` : un nom d'hôte ou une adresse IPv4 tels quels, une adresse IPv6 entre
++           crochets
+
+@ 0 3 0 109846aeab1f3fd41f61ea11d877648c
++       detail
++           Le `Showable` de l'union `Hostname | Ipv4 | Ipv6`, logé ici parce qu'une union n'a pas
++           de compagnon. Une adresse IPv6 se rend `[2001:db8::1]`, la forme que prend l'autorité
++           d'une URL.
+
+@ 0 1 0 0a4a1231b059c61b05a97ada2f8cf5d0
++     entry .hostDecodable
++       info
++           lit un `Host` depuis du texte : une adresse IPv6, sinon IPv4, sinon un nom d'hôte
+
+@ 0 2 0 02ac71323989b8411e82cbdcae1b3efd
++       detail
++           Essaie chacun tour à tour et lève `Hostname.Error` lorsque le texte n'est aucun d'eux ;
++           requiert une `Tactic[Hostname.Error]`.
+
+@ 0 1 0 05c54894100a51a608f110135d04817d
++     entry .decodable
++       info
++           lit une adresse depuis un texte hexadécimal séparé par des deux-points, en levant
++           `IpAddress.Error`
+
+@ 0 4 0 0199ec145d1b5c8d0dec1b942444b8bd
++       detail
++           Requiert une `Tactic[IpAddress.Error]`. Les raisons : `Ipv6WrongNumberOfGroups` pour une
++           adresse complète sans huit groupes, `Ipv6TooManyNonzeroGroups` pour une adresse avec
++           `::` de plus de sept groupes, `Ipv6MultipleDoubleColons`, `Ipv6GroupWrongLength` pour un
++           groupe de plus de quatre chiffres, et `Ipv6GroupNotHex`.
+
+@ 0 1 0 1712e071621ab8c40eed3f66a1151e32
++     entry .toExpr
++       info
++           élève une adresse en une expression quotée, pour les macros qui en construisent une
+
+@ 0 1 0 1a6a3fd1dbee17b3153db51826524721
++     entry .showable
++       info
++           rend une adresse sous sa forme la plus courte, avec `::` pour la plus longue suite de
++           zéros
+
+@ 0 3 0 1583910ac25f55b20ce8c05b7021366d
++       detail
++           Chaque groupe est en hexadécimal minuscule sans zéros initiaux ; la plus longue suite
++           d'au moins deux groupes nuls se réduit à `::`, de sorte que `::1`, `8::` et `::` sont
++           respectivement l'adresse de bouclage, une adresse dont seul le premier groupe est
++           défini, et l'adresse non spécifiée.
+
+@ 0 1 0 00417f45439aa71e0f9a9c9c9de5a8b6
++     entry .inspectable
++       info
++           un rendu de débogage, la même forme la plus courte
+
+@ 0 1 0 1eff482d5dee103604bef44c91484009
++     entry .apply
++       info
++           une adresse à partir de huit groupes de 16 bits
+
+@ 0 2 0 1cfa9c80f8d01d9a13d4ab2504f7eafe
++       detail
++           `Ipv6(g0, g1, g2, g3, g4, g5, g6, g7)`, chaque groupe étant masqué à 16 bits ; le
++           constructeur de la case class `Ipv6(highBits, lowBits)` prend les deux moitiés
++           compactées.
+
+@ 0 1 0 08130b3c520a9a27141e66a5e4cfa6fe
++     entry .parseGroup
++       info
++           lit un groupe de un à quatre chiffres hexadécimaux, en levant `IpAddress.Error`
+
+@ 0 1 0 06c4d7915a98325a18f2999438b47db2
++     entry .pack
++       info
++           compacte une liste de groupes de 16 bits dans un `Long`, le groupe de poids fort en
++           premier
+
+@ 0 1 0 0c755b9fb0eed06414cc0232dc3f6033
++     entry .parse
++       info
++           lit une adresse depuis du texte, comme le fait `.decodable`
+
+@ 0 1 0 13fcc4fe6d363779162ac7bf05b2a1b4
++     entry #highBits
++       info
++           les quatre premiers groupes, compactés dans un `Long`
+
+@ 0 1 0 17d466e8932dcbb015dee1eeec4a4811
++     entry #lowBits
++       info
++           les quatre derniers groupes, compactés dans un `Long`
+
+@ 0 1 0 0253c0bea51c04f8095b6d93fc6dbb10
++   entry .Ipv6Subnet
++     info
++         un sous-réseau IPv6 ; voir `urticose.Ipv6Subnet`
+
+@ 0 2 0 1a73c62d886f3e4a1c41a2237c584aa3
++     detail
++         La case class `Ipv6Subnet` et son compagnon, exportés vers le package `urticose`.
+
+@ 0 1 0 1332b6ce4bacbfdb000e7c03a087e327
++     entry .showable
++       info
++           rend un sous-réseau sous la forme `address/prefix`, l'adresse sous sa forme la plus
++           courte
+
+@ 1 1 0 0d5e46eb63d3f7310cb36654d6d40538
++     entry .inspectable
++       info
++           un rendu de débogage, identique à la forme affichée
+
+@ 2 1 0 1a68479327733d7d04f4efefb8d974b3
++     entry .encodable
++       info
++           encode un sous-réseau sous forme de texte `address/prefix`
+
+@ 3 1 0 02a1ce49f4467b8308c4f542fa375dad
++     entry .decodable
++       info
++           lit un sous-réseau depuis un texte `address/prefix`, en levant `IpAddress.Error`
+
+@ 0 2 0 016525a752aadc581313649b076988d6
++       detail
++           Requiert une `Tactic[IpAddress.Error]` : `SubnetWrongFormat`, `SubnetPrefixNotNumeric`,
++           `Ipv6SubnetPrefixOutOfRange` au-delà de 128, et les raisons propres à l'adresse.
+
+@ 1 1 0 1f14b7b920fc390c1ea3cea1ae78f4d2
++     entry .parse
++       info
++           lit un sous-réseau depuis du texte, comme le fait `.decodable`
+
+@ 0 1 0 0c2f26f8b928f1a816faf9e70219e6d9
++     entry #ipv6
++       info
++           l'adresse réseau, avec ses bits d'hôte masqués à zéro
+
+@ 0 1 0 02593bf645f966be0d01b063cef4b9c5
++     entry #size
++       info
++           la longueur du préfixe, de 0 à 128
+
+@ 0 1 0 055dd732f21e5dae1f1f09b40847447b
++   entry .bytes
++     info
++         les octets d'une `Ipv4 | Ipv6` dans l'ordre réseau, quatre ou seize, sous forme de `Data`
+
+@ 0 2 0 1514e5c31e4fdfe30ebf8866e7fb2b3f
++     detail
++         Une seule extension sur l'union, puisqu'un given ne peut pas cibler une union ; elle se
++         résout donc pour l'une ou l'autre adresse seule et pour une union semblable à `Host`.
+
+@ 0 1 0 13d69e205aeb645014547bb2809c059a
++   entry .subnet
++     info
++         `ipv6.subnet(size)` : l'`Ipv6Subnet` d'une longueur de préfixe ; et la macro derrière
++         `subnet"…"`
+
+@ 0 1 0 1a903895d3e4f46008a9cf2a691b6e2b
++   entry .emailAddress
++     info
++         la macro derrière `email"…"`
+
+@ 0 1 0 1b6130be5867c7050117db32ee7bc5fa
++   entry .hostname
++     info
++         la macro derrière `host"…"`
+
+@ 0 1 0 183d4fd644be986818e74352dda61de7
++   entry .portService
++     info
++         la macro derrière `tcp"…"` et `udp"…"` : d'un numéro ou d'un nom de service IANA vers un
++         port
+
+@ 0 2 0 0ae2ba90c20f598608cd8aea2a7f0b9c
++     detail
++         Recherche un nom dans la table des noms de services fournie comme ressource du classpath
++         (ou récupérée auprès de l'IANA si la ressource est absente), pour le transport demandé.
+
+@ 0 1 0 07055132675b75c81763c7c5b88995b6
++   entry .ip
++     info
++         la macro derrière `ip"…"`
+
+@ 0 1 0 118a71434b47853e0d6f9ba4e302143f
++   entry .mac
++     info
++         la macro derrière `mac"…"`
+
+@ 0 1 0 148ef2de2d89e65103136147b2e4677e
++ entry .protointernal
++   info
++       la macro et l'environnement d'exécution derrière l'interpolateur `url"…"`
+
+% 1 1 0 1026d432f08f517f06f0bf0d76655702
+
+@ 0 6 0 0eac1bc220d0505a1ad73210ad89a0e1
++   detail
++       Pas destiné à un usage direct. `refined` est la macro : elle vérifie le littéral à la
++       compilation avec des substitutions fictives, et insère une analyse à l'exécution avec les
++       vraies valeurs, typée selon le schéma que nomme le littéral. `Runtime` est la machine à
++       états de l'interpolateur qu'appelle le code inséré, et `UrlInterpolatorError` est ce
++       qu'elle lève lorsqu'une valeur substituée rend l'URL invalide.
+
+@ 0 1 0 1297e2a9d0e12c0e0211e15c41e73dfd
++   entry .UrlInterpolatorError
++     info
++         levée lorsqu'une substitution à l'exécution rend l'URL invalide
+
+@ 0 1 0 1edc4c93a7232ba101651cb5f73cec5f
++     entry #detail
++       info
++           le message
+
+@ 0 1 0 131bab3dc23ad46b18f3243c63b2cbdf
++   entry .Runtime
++     info
++         la machine à états de l'interpolateur : analyser, substituer, insérer et terminer
+
+% 1 1 0 1f942c3d1a78851902b56b31d7ee9cbf
+
+@ 0 2 0 196d5dfcf5d91d161b242a7c8e46996d
++     detail
++         Pas destiné à un usage direct : les méthodes qu'appelle le code inséré de `url"…"`.
+
+@ 0 1 0 19bffa5f6758577b0e2e89f6d14940b5
++     entry .initial
++       info
++           l'état vide
+
+@ 0 1 0 1f3fe674c79611a60a6d64f334ef2a3b
++     entry .parse
++       info
++           ajoute une partie littérale
+
+@ 0 1 0 1e4bc4dcf58829d7002d9b8c45b0ae2e
++     entry .skip
++       info
++           tient lieu d'une substitution sans valeur fictive connue
+
+@ 0 1 0 065f4e3d7e695b7e16b2e9478cfef9f1
++     entry .substitute
++       info
++           tient lieu d'une substitution avec sa valeur fictive, à la compilation
+
+@ 0 1 0 048437c5ccabce5507ce603b4f2d206b
++     entry .insert
++       info
++           insère un `Url.Fragment` : un port après un deux-points, ou du texte encodé ou brut
+
+@ 0 1 0 1a0416e0289d59a90d6e742d3d6ebd69
++     entry .complete
++       info
++           analyse le texte accumulé en tant qu'`Url[Label]`
+
+@ 0 1 0 15c09f747ee45e5306d67b51a6513030
++   entry .refined
++     info
++         la macro derrière `url"…"`

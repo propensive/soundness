@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 0513a20313d8da7c1533f1d09c934316
++ Anche l'annidamento è deterministico, ma un ambito annidato non prosegue la sequenza dell'ambito
++ che lo racchiude. Ogni ambito riparte da capo dalla `Randomization` nell'ambito, quindi con lo
++ stesso seme un ambito interno ripete le prime estrazioni di quello esterno.

@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 5 0 0f0a020048ce75790f970f9a5a6f8db9
++       Una enumeración de `NetForward` (que se muestra `→`, de `-->`), `BothDirections` (`⇄`, de
++       `<=>`), `Equilibrium` (`⇋`, de `<~>`), `Stoichiometric` (`=`, de `===`) y `Resonance`
++       (`↔`, de `<->`). La flecha que escribe un químico tiene significado, y una ecuación la
++       conserva.
++   entry .showable   muestra una reacción como su flecha

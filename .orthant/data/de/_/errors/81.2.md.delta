@@ -1,0 +1,85 @@
+orthant 2 language
+
+% 0 1 0 134735d34eb71cf017d174d515b950fb
+
+@ 0 1 0 1d875e78cb65a32f0633838315ab108a
++ Wird ausgelöst, wenn Multipart-MIME-Daten nicht geparst werden können.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 4 0 0eb4d549ccd903aa01d0359df27b2cc2
++ Gesticulate parst Multipart-Bodys, die durch ein im `Content-Type`-Header deklariertes
++ Trennzeichen begrenzt sind. Jeder Teil hat eigene Header und einen eigenen Body. Dieser Fehler
++ meldet ein strukturelles Problem mit dem Multipart-Stream. Die Meldung lautet `multipart data could not be read because
+
+% 0 1 0 04ca5a28474c5b9905df7261499fb1eb
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 03b81b73ddd7267518f25999a3ba4dd8
+
+@ 0 2 0 06de294ad6efdc0f08541bbf0c9df6e8
++ An der Position des Parsers wurde ein bestimmtes Zeichen erwartet, aber ein anderes angetroffen.
+
+@ 0 1 0 179cd578b684d6f91fa543e88d229f51
++ **Beispiel.** `[↯/s.81.2.1] multipart data could not be read because the character ':' was expected`
+
+@ 0 2 0 1b1f8d2a051f110b1c2d1b7caffa7abd
++ **Behebung.** Vergewissern Sie sich, dass der Erzeuger gültige Multipart-Daten ausgibt; suchen Sie
++ nach fehlenden CRLFs oder Begrenzungen.
+
+% 0 1 0 06327e7539aefd3e1c54a53a8580d6df
+
+@ 0 1 0 19b8128eddd2072519b2007300c69d1d
++ Nach der abschließenden Begrenzung folgten weitere Bytes.
+
+@ 0 1 0 1447cfdebb48387c11532467976372f2
++ **Beispiel.** `[↯/s.81.2.2] multipart data could not be read because the stream continues beyond the last part`
+
+@ 0 2 0 146a6b0c128621d01fcafbcc843d5a91
++ **Behebung.** Kürzen Sie den Body an der abschließenden Begrenzung, oder geben Sie danach keine
++ Bytes mehr aus.
+
+% 0 1 0 045ffbc24f719ee916ada862b714fe96
+
+@ 0 2 0 1079b41110a9b279025e8043caaf632c
++ Auf eine Begrenzung folgte Inhalt, der nicht dem dokumentierten Format des Abschlusses entspricht.
+
+@ 0 1 0 0875a7f4316e7e7410f6451484f34424
++ **Beispiel.** `[↯/s.81.2.3] multipart data could not be read because unexpected content followed the boundary`
+
+@ 0 2 0 1b0fd42990acc13616be6c9c63d00662
++ **Behebung.** Auf Begrenzungen muss entweder `\r\n` (Beginn des nächsten Teils) oder `--\r\n`
++ (Ende des Bodys) folgen; korrigieren Sie den Erzeuger.
+
+% 0 1 0 0706709ad094f8f608b4209d08210c02
+
+@ 0 1 0 06502d9c18b588a51e4ccb50e9bf5dd4
++ Der `Content-Type`-Header eines Teils ist kein gültiger Medientyp.
+
+@ 0 1 0 004dc69806bbad6c06a819903e709254
++ **Beispiel.** `[↯/s.81.2.4] multipart data could not be read because the media type is invalid`
+
+@ 0 1 0 089ccafbd17c28bf0ec2d540f2916ec7
++ **Behebung.** Siehe `↯/s.81.1` für die Regeln zu Medientypen.
+
+% 0 1 0 1c2ada53b6f13e370a507d969d35893f
+
+@ 0 1 0 1db8dfa05ca0a9e217d749a66e3b58a7
++ Der `Content-Disposition`-Header eines Teils hat das falsche Format.
+
+@ 0 1 0 0eda9a5f2afde8180e9ed8487d17192b
++ **Beispiel.** `` [↯/s.81.2.5] multipart data could not be read because the `Content-Disposition` header has the wrong format ``
+
+@ 0 1 0 19c3de0bc0aa86e30c098bf467570802
++ **Behebung.** Verwenden Sie die Standardform, z. B.
+
+% 0 1 0 0932e7d4542db3551ffb4f375a5c7f7a
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 09952908d92f8c7f0ebacac01d6389de
++ - Quelle: `lib/gesticulate/src/core/gesticulate.Multipart.scala`

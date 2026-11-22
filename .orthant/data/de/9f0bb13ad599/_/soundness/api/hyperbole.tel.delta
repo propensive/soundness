@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 7 0 17ba98e4f07396441288739143c29fab
++ entry .tastySymbolTeletypeable   stellt ein `Tasty.Symbol` als zweispaltige Tabelle seiner Eigenschaften dar
++     Das `Teletypeable`-Given für `Tasty.Symbol`, das eine `TastyPalette` benötigt. Die Tabelle
++     hat eine Zeile für den Namen (Präfix abgeblendet, Name fett), eine Zeile mit Flags, in der
++     die gesetzten auf der Farbe `flagOn` der Palette hervorgehoben sind, eine Zeile mit
++     Eigenschaften, in der die gesetzten auf `propertyOn` stehen, und eine Zeile pro Detail. Es
++     ist ein Top-Level-Given, wird also innerhalb von `hyperbole` ohne Import aufgelöst und
++     anderswo beim Namen importiert: `import soundness.tastySymbolTeletypeable`.

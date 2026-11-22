@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 1 0 0759e20c45d415b5063ca3aa6cc4447d
++ row  `↯/s.89.1.11`  `TruncatedTable`  Une table de disposition fixe, identifiée par `tag`, est plus courte que cette disposition.  `[↯/s.89.1.11] the font could not be used because the table head is shorter than its layout`  Le fichier est tronqué ou son répertoire de tables est erroné ; procurez-vous une copie intacte de la police.
+
+@ 0 1 0 0e86a3df8efdcb251ec31daa5feda606
++ - Source : `lib/phoenicia/src/core/phoenicia.Font.scala`

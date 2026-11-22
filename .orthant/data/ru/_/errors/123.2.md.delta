@@ -1,0 +1,45 @@
+orthant 2 language
+
+% 0 1 0 1097a49644ebfac503974006102a5376
+
+@ 0 1 0 13d9f5d1201526010c6c5973f997ea05
++ Порождается, когда значение не является допустимым именем ссылки Git.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Причина
+
+@ 0 3 0 03b22ba921137ddc175afe7226acc9c7
++ Octogenarian проверяет имена ссылок по правилам `git
++ check-ref-format`. Конструктор записывает ошибочное
++ значение `value` и `reason: Reason`; отображаемое сообщение — `$value
+
+% 0 1 0 16b2c817393226b8094072fca4d978f2
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Варианты
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 1b5d062075a6030b0fe6de0445e2ba23
++ column  Код
++ column  Причина
++ column  Значение
++ column  Сообщение
++ column  Решение
++ row  `↯/s.123.2.1`  `LeadingOrTrailingDot`  Сегмент пути ссылки начинается или заканчивается на `.`.  `[↯/s.123.2.1] .verona is not a valid Git reference because a path segment starts or ends with .`  Уберите точку в начале или в конце сегмента.
++ row  `↯/s.123.2.2`  `ReservedSuffix`  Сегмент пути соответствует `*.lock` — образцу, который Git резервирует для файлов блокировки.  `[↯/s.123.2.2] feature.lock is not a valid Git reference because a path segment ends with the reserved suffix .lock`  Выберите имя, не соответствующее `*.lock`.
++ row  `↯/s.123.2.3`  `ReservedSequence`  Имя содержит `@{`, которое Git резервирует для селекторов reflog (например, `HEAD@{1}`).  `[↯/s.123.2.3] verona@{capulet} is not a valid Git reference because the name contains the reserved sequence @{`  Удалите или замените последовательность `@{`.
++ row  `↯/s.123.2.4`  `DoubleDot`  Имя содержит `..`, которое Git резервирует для селекторов диапазонов.  `[↯/s.123.2.4] verona..capulet is not a valid Git reference because the name contains ..`  Замените `..` одной `.` или другим разделителем.
++ row  `↯/s.123.2.5`  `EmptySegment`  Имя содержит пустой сегмент пути — обычно это `/` в начале, в конце или удвоенный.  `[↯/s.123.2.5] verona//capulet is not a valid Git reference because the name contains an empty path segment`  Удалите пустой сегмент.
++ row  `↯/s.123.2.6`  `InvalidCharacter`  Имя содержит символ, который Git запрещает в ссылках: любой из `*`, `[`, `\`, ` `, `^`, `~`, `:` или `?`.  `[↯/s.123.2.6] verona capulet is not a valid Git reference because the name contains a character forbidden by Git`  Замените запрещённый символ на `-` или `_`.
++ row  `↯/s.123.2.7`  `BadHash`  Значение, переданное в `Git.Hash`, не является 40-символьной шестнадцатеричной строкой в нижнем регистре.  `[↯/s.123.2.7] abc is not a valid Git reference because the value is not a 40-character hexadecimal hash`  Укажите полный 40-символьный хеш коммита SHA-1.
++ row  `↯/s.123.2.8`  `BadRefspec`  Значение, переданное в `Git.Refspec.parse`, не является refspec: в нём больше одного `:`, разделяющего источник и назначение.  `[↯/s.123.2.8] a:b:c is not a valid Git reference because the value is not a valid refspec`  Запишите refspec как `source`, `source:destination` или `:destination`, с необязательным `+` в начале.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## См. также
+
+@ 0 2 0 023fbd10cb04d6eb059b3853ad9a959e
++ - Исходник: `lib/octogenarian/src/core/octogenarian.Git.scala`
++ - `↯/s.123.1` — варианты сбоев операций Git

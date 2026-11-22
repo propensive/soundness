@@ -1,0 +1,31 @@
+orthant 2 language
+
+% 0 1 0 0f026212a2b772471c4fb8468bb5c5ff
+
+% 0 1 0 1751e012accd74720c57d65fd8292233
+
+@ 0 18 0 0392750bc2a343160e360fff43d2cf1b
++         `Exec(event)` envuelve un `guillotine.Exec.Event`, con la etiqueta `Log.Process`;
++         `.execEvent` transcribe en él los eventos de guillotine, así que un
++         `Commandline.Event is Loggable` en el ámbito es todo lo que necesita el backend.
++         `logging.silentLogging` los descarta.
++     entry .execEvent   transcribe un `Exec.Event` de guillotine en un `Commandline.Event`
++     entry .communicable   representa un evento como _git: `event`_
++   entry .Outcome   lo que produjo una invocación de `git`: su estado de salida, su salida estándar y su salida de error estándar
++     entry #exit   el estado de salida
++     entry #stdout   la salida estándar, como texto
++     entry #stderr   la salida de error estándar, como texto
++     entry #ok   si el estado de salida fue cero
++     entry #lines   la salida estándar como líneas no vacías
++   entry .reason   lee la salida de error estándar de git como un `Git.Error.Reason`
++       Compara los mensajes de git (lo bastante estables para compararlos) para `NoRepository`,
++       `Moved`, `RefExists`, `Locked`, `NoSuchRef`, `Unmerged`, `NoSuchObject`,
++       `NothingToCommit`, `Detached`, `Dirty`, `NotFastForward`, `LeaseFailed`,
++       `OutsideWorktree`, `Untracked`, `NoOperationInProgress`, `NoSuchRemote`, `RemoteExists`,
++       `Unauthorized`, `Unreachable`, `RemoteRejected`, `InvalidConfig`, `NoteExists`,
++       `BadSignature`, `SigningFailed`, `NoSuchWorktree` y `Conflict`; todo lo demás es
++       `Unexpected`.
+
+% 7 1 0 1629a76aa3214d6912f2ede136ce4616
+
+% 7 1 0 07f206a66839aca11ebfcd26c08e27a7

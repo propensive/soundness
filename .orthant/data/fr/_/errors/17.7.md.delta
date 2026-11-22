@@ -1,0 +1,34 @@
+orthant 2 language
+
+@ 0 1 0 1c70bbac3a1e6b8f122b965e008a81b7
++ # `↯/s.17.7` — Le type n'a pas de méthode `map`
+
+@ 0 2 0 058d9f7d10b78b65111e0ec860d6d6ec
++ Levée à la compilation par la macro `functor` de Mercator lorsque le type cible n'a pas de méthode
++ `map`.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 06920f8071404347163030e88dbfee3c
++ La dérivation de `Functor` par Mercator exige une méthode `map` sur le type.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0083998f6401f62e18e331001d5a4eb3
+
+% 1 1 0 1ee5f02934538dc017ce0a8afd5161ee
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 099ad02aee77d6d702d14067ffd1555b
++ Définissez une méthode `map` sur le type, ou fournissez manuellement une instance de `Functor`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1cb104d057b8971f1427e232956fe585
++ - Source : `lib/mercator/src/core/mercator.internal.scala`

@@ -1,0 +1,811 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 13823121897fee7e15809ea5817ec9a2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 087361cc8a07c1141306004178086fd1
++ info   los errores como valores con mensajes estructurados: `Error`, `Message` y `m"…"`, `Panic`, `Diagnostics`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0f5446647d39c8da0c3697c1cfbddf52
++     _Fulminate_ es el vocabulario del fallo que comparten todas las bibliotecas de Soundness. Un
++     **error** es un valor —una case class que extiende `Error`— que lleva los campos tipados que
++     explican qué ha ido mal y un **mensaje** construido a partir de ellos; un `Message` no es
++     una cadena sino un valor estructurado, escrito con el interpolador `m"…"`, que mantiene cada
++     parte interpolada separada de las palabras que la rodean, de modo que el mismo mensaje se
++     representa como texto simple, texto de terminal con estilos, Markdown o HTML. Puede
++     interpolarse cualquier cosa con una instancia de `Communicable`, y así es como un tipo
++     decide, una sola vez, cómo se lee en prosa.
+
+% 2 1 0 0f9e3d4c5531ab800d01d764ae661f1f
+
+% 3 1 0 1ad955a1beb7cc0e140de402cb78b4d9
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 020a0412c73473b41777c60a4749ff18
+
+% 0 1 0 180e0cad3e7b2b590a536e40f52fbaac
+
+% 0 1 0 144efdc0424766891a05274f1b987c82
+
+% 1 1 0 0b44d0d6bfba20d703b0e50008dd914d
+
+@ 0 6 0 0ae7822513db22b804469eb30be867c2
++     Un tipo de error tiene un código bolt —`Error(25, 1, 0)`, el primer error del vigésimo
++     quinto módulo, es `↯/s.25.1`— que es estable entre versiones, nunca se reutiliza y está
++     documentado en `doc/errors/25.1.md`; sus distintas causas son los casos de un enum `Reason`
++     que extiende `Clarification`, cada uno numerado dentro del error (`↯/s.25.1.1`), y cada uno
++     representado a través de su propio `Communicable`. Un error completo, construido paso a
++     paso (900 representa el número del módulo en que está el error):
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0ae1a21f912c45ef17a8dd4ca99a798a
++       label Un error con un mensaje
+
+% 1 1 0 0328d1534a36af590237e09ac5593eea
+
+% 2 1 0 0b11842f1e079a7c10806ffb42ea1fc2
+
+% 4 1 0 1743357d284a3aed0122a77f73a2ac3d
+
+% 0 1 0 09fabbabb96b7b7b1f9f53862768f12a
+
+% 0 1 0 01c2873408e850f10adc1b68e6bab1c1
+
+% 1 1 0 19a8dc7a790845e70c37c28bf854a679
+
+@ 0 1 0 15e0d275ed3ff6400dd1654f8419c734
++       label Con un número, para el catálogo
+
+% 1 1 0 068e2a721018f5a6190b9cd3a332965d
+
+% 2 1 0 0fd7c9b0199bb0830e02c95064297f92
+
+% 4 1 0 127eda6eff15b0541b2f45911cc4a3e3
+
+% 0 1 0 003cadc07451c21106f2dcb9aaff95fe
+
+% 0 1 0 16b6f5bddc917a791598712c48679a21
+
+% 0 1 0 1f3bf6b677165efc094c7326fac365e8
+
+% 1 1 0 139e2da6efee7c150d71e0cf12b4f3ec
+
+@ 0 1 0 1106b721b26c20a10a190d88c308de62
++       label Con un motivo, numerado dentro de él
+
+% 1 1 0 194f8f947e6be87311bb8378d41d49c1
+
+% 2 1 0 111706587623671c018395dd8f0c261a
+
+% 0 1 0 02fdb30f117464470d5d8a10d9e87e3d
+
+% 0 1 0 0dc8cc56619eac3006f2dd8a8de719e0
+
+% 0 1 0 1c39d16e0c8758041335b87d90f12820
+
+% 0 1 0 0081504e0ee4283b0465561120fecbdd
+
+% 0 1 0 1b83e0dcd82ee60e0939f836a29d75fd
+
+% 0 1 0 134c90bd9a042ba40e2fcb6a137c9839
+
+% 0 1 0 1550269f423e76200f45c7f468d2237d
+
+% 0 1 0 0561cb2b10556e9f1abdb66112fbdb6a
+
+% 0 1 0 082e02a5b551f3c51ea1bf779ac2214d
+
+% 0 1 0 1bee96452562dac91666b59056c4dcac
+
+% 0 1 0 1953fc3e63191b981e019cb162594b10
+
+% 0 1 0 1551a45598799c7a05325a7f27b76e86
+
+% 0 1 0 1eccf6e29bf99c3a057fd856cc64c0fa
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 8 0 0ff8be92e706d8b10761ea9376e7e0c6
++     Todo error es un `Hazard` —una `Exception` que es `caps.Pure`—, así que nunca puede sacar
++     una capacidad viva del ámbito que la confinaba: un error contiene la ruta que no pudo
++     abrirse, no el descriptor abierto. Que un error capture una traza de pila es una elección
++     contextual, el given `Diagnostics`: `errorDiagnostics.stackTracesDiagnostics` registra una,
++     y `errorDiagnostics.emptyDiagnostics` la omite, y por eso el constructor de todo error toma
++     `(using Diagnostics)`, y por eso un error esperado y manejado no cuesta más de construir que
++     cualquier otro valor. Un `Panic` es el único fallo que no está pensado para manejarse: un
++     `java.lang.Error` que explica por qué se creía imposible una situación.
+
+@ 0 4 0 1586d1bdf9786f63023aab263d37bce5
++     Para las macros, `halt` y `warn` informan de un `Message` como diagnóstico en tiempo de
++     compilación, con el mismo código bolt como prefijo, y un `Throwable` ajeno se envuelve como
++     `Error.Unchecked` para convertirlo en un `Hazard`. Cómo *lanzar* y *manejar* un error
++     —`raises`, `Tactic`, `safely`, `recover`…— es cosa de `contingency`, que se construye sobre
++     esta biblioteca.
+
+@ 0 7 0 11cd230cad243b911130fd8957f4282d
++     La biblioteca consta de dos conjuntos de fuentes. `fulminate.core` contiene todo lo
++     anterior y compila para la JVM, Scala.js y Scala Native; `fulminate.print` añade
++     `printables.messagePrintable`, la instancia de `Printable` que permite imprimir un
++     `Message`, separada para que el vocabulario de errores no dependa de la impresión. Todo se
++     exporta al paraguas `soundness`, y los paquetes de elección `errorDiagnostics` y
++     `printables` se fusionan con los del propio paraguas, así que sus givens se importan por
++     nombre (`import errorDiagnostics.stackTracesDiagnostics`): una importación con comodín
++     nunca importa givens.
+
+% 0 1 0 0afc6443f648f4f31ac1dc48d6a16eab
+
+% 0 1 0 178d51de9e4ed77d1a55624949f5e859
+
+% 0 1 0 05a4f924dcf33d8305bf103c78caed92
+
+% 0 1 0 1795a2df43e7052d13f20017cfafffd2
+
+% 0 1 0 1a67ed30f0cf88061235702b5f37216a
+
+% 0 1 0 1a4262049dd395cd1d61a31a45add749
+
+% 0 1 0 0db7ca6617f1b5c50f03c89938e496e6
+
+@ 0 1 0 04b35377cdce06240778ca0777d8309a
++ entry .Error   la base de todo error de Soundness: un número, un mensaje estructurado y diagnósticos opcionales
+
+% 1 1 0 0803f60870d2a7b90024267a53d67d95
+
+@ 0 5 0 1f074a11e3e9b0710bf04738c1f23f3d
++       Un error es una case class que extiende `Error`, que lleva como campos los valores que
++       lo explican, con su mensaje escrito con `m"…"` a partir de esos mismos campos, de modo
++       que el mensaje nunca puede describir un estado en el que el valor no está. El
++       constructor primario es `Error(d, e)(message, cause)(using Diagnostics)`, con dos formas
++       más cortas: `Error(d, e)(message)` y `Error(message, cause = null)`, la última para un
++       error sin número.
+
+% 2 1 0 0d491ab674b9a5380ff5a11d66332cf2
+
+% 3 1 0 0ad95af81941bd8a0976297a3f25774b
+
+% 4 1 0 17a6e8a7f0f327f11db3743f9a229561
+
+% 2 1 0 157983f23aaa21770fa5dc6e236bb050
+
+% 3 1 0 16267d4ca443c23104e6be7c52e21938
+
+% 0 1 0 144443d7e7968e081a8a4faf96943c68
+
+% 0 1 0 0aa90aad8bcdce76139490af670e2891
+
+% 0 1 0 155ff78dba9cf8d209f73b4d00d46ccb
+
+% 0 1 0 1a047e92dd258538077154b7641bee1f
+
+% 1 1 0 01068e5a799be0741ef8acac3b160a47
+
+@ 0 11 0 19d0a8d2167931e0146293929bc0aa5c
++       Un error se identifica por tres números, que forman su código bolt. `module` es el
++       número de la biblioteca en que está el error, tal como lo registra el `s.tel` del
++       registro `bolt`; `number` es el número propio del error dentro de esa biblioteca, el
++       siguiente libre cuando se escribe el tipo de error, y nunca se reutiliza (un número
++       retirado permanece en el registro, marcado como tal); y `variant` es el número del
++       motivo del error —el `number` de su caso `Reason`, un enum que extiende
++       `Clarification`—, o 0 cuando el error no tiene motivos. El error se documenta en
++       `doc/errors/<module>.<number>.md` con su causa y los remedios habituales, de modo que
++       `↯/s.25.1` en el informe de un usuario puede consultarse en lugar de adivinarse. Un error
++       escrito `Error(message)` tiene `module = 0`: no tiene código, y `getMessage` antepone en
++       su lugar su componente. El código se representa en el prefijo `[↯/s.25.1.2]` de
++       `#labelled`, de `getMessage` y de un `halt` en tiempo de compilación.
+
+@ 0 7 0 0cb182ea64cce1430eb008e342a52635
++       Un `Error` es `caps.Pure`: nunca puede contener una capacidad viva, porque `throw` es el
++       único canal que la comprobación de capturas no puede ver, y una excepción capturada fuera
++       de un ámbito llega con sus capturas borradas. El given `Diagnostics` decide si el
++       constructor captura una traza de pila (el `writableStackTrace` de `Exception` se fija a
++       partir de él), que es la única ceremonia que impone definir un error. El texto del
++       mensaje es también el `getMessage` de la excepción, así que un error que sí escapa como
++       excepción lanzada sigue leyéndose correctamente.
+
+@ 0 4 0 0b6f654c48ede4541a940cb6f02515e6
++       El estilo de la casa para el mensaje es `doc/standards/messages.md`: en minúsculas, sin
++       punto final, en presente, con el recurso concreto en falta interpolado como valor
++       tipado, y nunca *invalid* o *bad* como predicado completo. Los errores están pensados
++       para hacer coincidencia de patrones con ellos: un manejador descompone la case class y
++       su `Reason`, nunca su texto.
+
+% 1 1 0 18189a56275f46ee09dbb519c6d80e16
+
+% 0 1 0 13030e7e0f0a6e1d17173d1683e2a7d9
+
+% 0 1 0 1bebfe4fcc5efa011d455316ccc24d13
+
+% 1 1 0 11f7e8def6ea75820429a1e912688a47
+
+% 0 1 0 16e18ae3bbfc914a05958525dfac50ce
+
+% 0 1 0 1198682780fae52b0e4b6a6ec7658ed1
+
+@ 0 14 0 0380284be7a7a72803034fec37b75571
++   entry .apply   cualquier `Throwable` como un `Error`: él mismo si lo es, o envuelto como `Error.Unchecked` en otro caso
++       `Error(throwable)` deja pasar sin cambios un `Error` y envuelve cualquier otro
++       `Throwable` en un `Error.Unchecked`, que conserva su mensaje y su traza de pila. Así es
++       como una excepción del JDK se convierte en un `Hazard` que puede lanzarse.
++   entry #module   el número de la biblioteca del error: el `25` de `↯/s.25.1.2`, o 0 para un error sin número
++   entry #number   el número del error dentro de su biblioteca: el `1` de `↯/s.25.1.2`
++   entry #variant   el número del motivo dentro del error: el `2` de `↯/s.25.1.2`, o 0
++   entry #bolt   el código bolt del error; `Bolt.Uncoded` para un error sin número
++       Un error del que se informa a causa de otro proyecto lo redefine para llevar el código
++       de ese error: el `Tel.Error` de Stratiform para un motivo que numera la TEL
++       Specification es `↯/s.118.1/t.1.7`.
++   entry #message   el mensaje del error, como un `Message` estructurado
++   entry #diagnostics   los `Diagnostics` con los que se construyó el error
++       Disponible para que un error traducido pueda construirse con la elección del original:
+
+% 0 1 0 1ede76ea97142b3516e12338955250a7
+
+@ 0 11 0 1bf99e43201bc3b7156075d72056dd47
++   entry #fullClass   el nombre completamente cualificado de la clase del error, como sus segmentos
++   entry #className   el nombre simple de la clase del error
++   entry #component   el primer segmento del nombre de la clase: la biblioteca que la define
++       El primer segmento del nombre completamente cualificado de la clase, que es el paquete
++       de nivel superior para un error de Soundness. Es el prefijo de `getMessage` para un
++       error sin número, de modo que un mensaje como `galilei: the path is not a directory`
++       dice de dónde procede el error.
++   entry #errorCode   el código como texto, `↯/s.25.1` o `↯/s.25.1.2`; vacío para un error sin número
++   entry #colourCode   el código como `[↯/s.25.1.2]`, con colores ANSI; vacío para un error sin número
++   entry #labelled   el mensaje con su código como prefijo: `[↯/s.25.1.2] message`
++       Solo el mensaje cuando el error no tiene número. Es lo que informa `HaltTactic` cuando
++       un error se convierte en un error de compilación.
+
+@ 0 1 0 03960099997858210b9ce1c3b49cb5e8
++   entry .Unchecked   un `Throwable` ajeno envuelto como un `Error`, para que pueda lanzarse
+
+% 1 1 0 1a8e31cb4c0ed5290069f711cffe3d26
+
+@ 0 8 0 0d897d164659fe66000941c9f328707e
++         Error `↯/s.15.1`: _unchecked error with message, `text`_, o _unchecked error with no
++         message_. `Unchecked(throwable)` conserva el mensaje del original como `#text` y
++         adopta su traza de pila, y se construye con `emptyDiagnostics`, ya que la traza que
++         lleva es la del original. `Error(throwable)` es la forma habitual de crear uno: deja
++         pasar un `Error` real y envuelve cualquier otra cosa. El original en sí no se
++         conserva —`getCause` es `null`—, solo su mensaje y su traza de pila, así que un
++         manejador que se encuentra con uno debería exponerlo como un error tipado, o corregir
++         el origen del lanzamiento, en lugar de hacer coincidencia de patrones con la clase del
++         original.
+
+% 0 1 0 17eb8adb6e00f77a1f587e115ef02545
+
+@ 0 4 0 053bdffe1fadcf9a1753321ec16bfa03
++     entry .describe   el mensaje para el texto de un mensaje original; _with no message_ cuando está vacío
++     entry .apply   envuelve un `Throwable`, conservando su mensaje y su traza de pila
++     entry #text   el mensaje del original, o texto vacío
++     entry #stackTrace   la traza de pila del original, como el array de la JVM
+
+@ 0 1 0 0a15ebd0a2c74600140a0a32e30c6b48
++ entry .Bolt   un código bolt: el nombre de un diagnóstico, como `↯/s.25.1.2` o `↯/s.118.1/t.1.7`
+
+% 1 1 0 1f0d6c72542d251d1bcc2584f1d88024
+
+@ 0 7 0 080d3de261e544db02582b5e4fe1ecd0
++       Un código bolt nombra un diagnóstico de uno de los proyectos de Propensive con una misma
++       forma en todos ellos: `↯`, y uno o más grupos, cada uno iniciado por `/`. Un grupo es la
++       letra de un proyecto (`s` es Soundness) y sus números: una subdivisión del proyecto
++       —para Soundness, una biblioteca—, un error dentro de ella y, opcionalmente, una variante
++       del error y un lugar desde el que se informa. Un código de varios grupos es un
++       compuesto: el primero es el error del que se informó, y los siguientes son la `cause` a
++       causa de la cual se informó, que es un código por derecho propio.
+
+% 2 1 0 114a44ee8640f6901f7a6fa0ef0d6e8a
+
+% 0 1 0 0b44719f5c0e5542150760ac6398e922
+
+% 0 1 0 01b0f8eef48ddda00537354cab44d844
+
+% 0 1 0 1be5994cf971a7af0d77f31987577ded
+
+% 0 1 0 1ed8496af1986f400900f16f4d9b5170
+
+% 1 1 0 03c28723925ab5a601cff9e98da20d82
+
+@ 0 2 0 1e42b06c995d9a4f0576039facd8d8f9
++       El registro de lo que significa cada código es el repositorio
++       [bolt](https://github.com/propensive/bolt).
+
+% 1 1 0 14ef3baace8ad76611a2a923841d290a
+
+@ 0 18 0 106991bec040f6231d360a4858b9239a
++   entry .Soundness   la letra con la que los códigos bolt nombran a Soundness, `s`
++   entry .Uncoded   el código de un diagnóstico que no tiene ninguno
++   entry .prefix   el código con el que empieza un texto, entre corchetes o no, y cuántos caracteres ocupa
++       `Uncoded` y cero si el texto no empieza con un código. La cuenta incluye un espacio que
++       siga al código, de modo que al descartar esa cantidad de caracteres queda el mensaje.
++   entry .parse   el código en que consiste un texto; `Uncoded` si no es exactamente un código
++   entry #project   la letra del proyecto
++   entry #subdivision   el número de la parte del proyecto: para Soundness, de la biblioteca
++   entry #error   el número del error dentro de la subdivisión
++   entry #variant   el número de la variante del error, o 0
++   entry #site   el número del lugar desde el que se informa del error, o 0
++   entry #cause   el código a causa del cual se informó de este error, o `null`
++   entry #coded   si esto es un código: falso solo para `Uncoded`
++   entry #carrier   el error del que se informó, sin su causa
++   entry #carrying   este código llevando otro, que va en el lugar más interno de un compuesto
++   entry #text   el código tal como se escribe, `↯/s.25.1.2`; vacío para `Uncoded`
++   entry #label   el código entre corchetes, tal como se escribe antes de un mensaje
++   entry #colorLabel   el código entre corchetes con colores ANSI
+
+@ 0 6 0 030e4cdbe1b56ebf10763fe927280a2a
++ entry .Hazard   el dominio de los valores que pueden lanzarse: cualquier `Exception` pura
++     `type Hazard = Exception & caps.Pure`. `Error` es puro por herencia, así que todo error de
++     Soundness es un `Hazard`; una excepción del JDK debe envolverse (con `Error(throwable)`,
++     como un `Error.Unchecked`) para lanzarse, ya que la pureza no puede establecerse para una
++     subclase arbitraria de `Throwable`. Toda `Tactic[error]`, todo `raises error` y todo
++     `Attempt[_, error]` acota su error por `Hazard`.
+
+@ 0 1 0 09c9082abae7915e18aadca4f81573b1
++ entry .Message   un mensaje estructurado: texto fijo con partes tipadas y distinguibles incrustadas
+
+% 1 1 0 15debc45561bf9c1146c2a54f2a91563
+
+@ 0 5 0 0189ba36a7c0b6ef1c10bc666e6fd479
++       Un `Message` son `texts` —las piezas literales— intercaladas con `messages`, las partes
++       incrustadas, una menos que los textos, de modo que la frontera entre las partes fijas y
++       las variables de un mensaje sobrevive hasta el momento de representarlo. `m"…"`
++       construye uno; `#text` lo aplana como texto simple; `#colorText` representa las partes
++       incrustadas en cursiva en un terminal; un representador para Markdown, HTML o texto con
++       estilos recorre `#segments` o `#fold`.
+
+% 2 1 0 1e5ebdf183347edf016dc5b6ba415ea3
+
+% 3 1 0 18a00485b3bd795109723048a65d4651
+
+% 0 1 0 0c89b7db98b1a0900b2b2275eb90ce1f
+
+% 0 1 0 1a629175e24703eb162d1df7c3696cc0
+
+% 0 1 0 12fe8bc0056773cc0c0409a42b56f88d
+
+% 0 1 0 08f0fb5b1b87372706da73b8680fb7a9
+
+% 0 1 0 1cb02e80b139288615f4942410df34c0
+
+% 0 1 0 1affb38f10a25488036fea45773a287a
+
+% 1 1 0 1d059076dba91a221e7b9ecb2fb6c92a
+
+@ 0 6 0 092649811126157c1b14786c1f8e829e
++       Las partes de un mensaje pueden anidarse a cualquier profundidad: un `Message`
++       incrustado conserva su propia estructura, y `m"…"` también incrusta como parte el texto
++       entre comillas invertidas, de modo que `m"the field `name` is absent"` representa `name`
++       como una parte distinguible. `Message` es `Communicable` (como sí mismo), así que un
++       mensaje se interpola en otro, y un `List[Message]` se interpola como viñetas. Imprimir
++       un `Message` necesita `printables.messagePrintable`, de `fulminate.print`.
+
+% 1 1 0 0191588842b204f60e516a039c14fc8d
+
+% 0 1 0 18dde09716a20df30516406192b1045a
+
+% 0 1 0 0923ba834fc086d7131f4446fa6e0b57
+
+@ 0 25 0 0e2d8fad0c1269ce12bf5d7408984145
++   entry .apply   un mensaje de un único texto literal
++       `Message(text)` es un mensaje sin partes incrustadas. La sobrecarga `Message[tuple]
++       (messages, done)` es el auxiliar inline que usa la macro `m"…"` para convertir una tupla
++       de sustituciones a través de sus instancias de `Communicable`; no es para uso directo.
++   entry .communicable   un `Message` se interpola en otro como sí mismo
++       Está en el propio objeto compañero de `Message` para que esté en el ámbito implícito de
++       `Message is Transcribable to Message`, que es como un logger puede registrar un mensaje
++       sin más.
++   entry #texts   las piezas literales, una más que las partes incrustadas; texto vacío donde las partes son contiguas
++   entry #messages   las partes incrustadas, en orden
++   entry #+   `left + right`: concatenación, con los textos de la unión fusionados en una sola pieza
++   entry #segments   el mensaje como una única lista plana de sus textos y partes, intercalados
++   entry #fold   representa el mensaje en profundidad, y la función recibe cada texto con su nivel de anidamiento
++       `message.fold(initial)((accumulator, text, level) => …)`: cada pieza literal del mensaje
++       y de sus partes, en orden de lectura, con la profundidad a la que está incrustada (0
++       para el nivel superior). `#text` y `#colorText` son plegados.
++   entry #text   el mensaje aplanado como texto simple, con los literales de varias líneas desenvueltos
++       Las líneas de un `m"""…"""` entre comillas triples se recortan y se unen con espacios
++       simples, y una línea en blanco se convierte en un salto de línea, de modo que un mensaje
++       puede distribuirse en varias líneas del código fuente sin que la disposición llegue al
++       lector.
++   entry #colorText   el mensaje como texto de terminal, con las partes incrustadas en cursiva y las más profundas en negrita cursiva
++       Solo estilos ANSI —sin color, pese al nombre—, con la profundidad 1 en cursiva y la
++       profundidad 2 o más en negrita cursiva. El `halt` de una macro lo usa cuando está
++       activado el ajuste de color del compilador.
++   entry #unwrap   contrae una cadena de varias líneas: líneas recortadas y unidas con espacios, y las líneas en blanco como saltos de línea
++       La normalización que aplica `#text`; es pública para que un representador pueda aplicar
++       la misma regla a un literal.
+
+@ 0 8 0 1c1df70cf8ee7f600922f9b8d1c61768
++ entry .m   el interpolador `m"…"`: un `Message` a partir de texto literal y sustituciones `Communicable`
++     `m"the port $port is not available"` construye un `Message` cuyas piezas literales son el
++     texto entre las sustituciones y cuyas partes son las sustituciones, cada una convertida a
++     través de su instancia de `Communicable`, de modo que solo puede interpolarse un valor que
++     sabe cómo leerse en prosa, y un valor sin instancia es un error de compilación. Un
++     `Message` se interpola como sí mismo, `Text` como sí mismo (entre `“ ”` si está vacío o
++     tiene espacios de relleno), los primitivos como su texto decimal o de carácter, cualquier
++     `Textualizable` a través de su texto, y un `List[Message]` como viñetas.
+
+% 2 1 0 080c4aaaa4c040640b7ce0b1a22d961c
+
+% 3 1 0 19b5b883b99f339d03b4bd0375ed741c
+
+% 0 1 0 1c9769053f0173fb0ac0d060dce26e0b
+
+% 0 1 0 1957adcee2ee33bc15698fd933c27fed
+
+% 0 1 0 0d7f55b364d8676219fd5d8ad3ba5257
+
+% 0 1 0 1b4ca5974a7ce9cb0bdce535e23e7a72
+
+% 0 1 0 01129071b6926718054f47e47f430891
+
+% 1 1 0 19c6788aff86530210f0e17f282e907d
+
+@ 0 7 0 133e6fedf1262b801427114ec24a2e3c
++     El texto entre un par de comillas invertidas se convierte en una parte incrustada —un
++     mensaje por sí mismo, que puede contener a su vez sustituciones—, de modo que un
++     identificador o un fragmento literal en la prosa se distingue de las palabras que lo
++     rodean, y se representa en cursiva en un terminal o como código en Markdown. Una comilla
++     invertida sin pareja es un error de compilación, _the m"" interpolator has an unmatched
++     backtick_. Los escapes `\n`, `\r`, `\t`, `\f`, `\b`, `\e`, `\\`, `\"`, `\'` y `\uXXXX` se
++     decodifican en tiempo de compilación, y cualquier otro escape es un error de compilación.
++     Un `m"""…"""` entre comillas triples puede abarcar varias líneas; `Message#text` las
++     desenvuelve.
+
+@ 0 1 0 02edaaeae12f74cb148e8582e38cd76e
++     El estilo de la casa para lo que dice un mensaje es `doc/standards/messages.md`.
+
+@ 0 1 0 1ed2cedd19f1bfd41f4b8d393016c907
++ entry .Communicable   la clase de tipos de los valores que pueden leerse en prosa: de un valor a un `Message`
+
+% 1 1 0 1d2b3e510214c40b10fa0a74b662e9ac
+
+@ 0 9 0 078416fbea8a2473102a655c7a055549
++       `value is Communicable` convierte un valor en un `Message`, y es lo que `m"…"` pide de
++       cada sustitución. Un tipo que aparece en mensajes da una instancia en su objeto
++       compañero, normalmente derivada de su representación como texto, para que todos los
++       mensajes sobre esos valores coincidan en cómo se lee uno; un enum `Reason` da una que
++       formula cada caso. Las instancias del objeto compañero cubren `Text` (entre `“ ”` cuando
++       está vacío o tiene espacios de relleno, para que un valor ausente o de espacios en
++       blanco sea visible), `String`, `Char`, `Int`, `Long`, `Message`, cualquier
++       `Textualizable`, un `List[Message]` (como viñetas, una por línea), un `Specializable`
++       (`Int` como `int`, para mensajes que nombran un tipo primitivo) y —dentro de una macro,
++       con `Quotes` en el ámbito— un `Term` o un `Expr`.
+
+% 2 1 0 17a79ecbe06f0424055063d142788481
+
+% 3 1 0 08efc07760e9826a14aff92fedfee4a5
+
+% 0 1 0 1a088d7cc72006e01e0a5862f787f2e8
+
+% 0 1 0 04b489e8f8b2598d05b85d18b94e76e6
+
+% 0 1 0 19e392dc58a773c3150da8aecea29e32
+
+% 0 1 0 19530c5f2e80b89301864330a462617f
+
+% 0 1 0 05e2cc5f8e8480ae1f13313b0cd976d0
+
+% 0 1 0 00563016e218e12012782ccbf7fae300
+
+% 0 1 0 02a4671c3b4336fa19b991f3f5441f27
+
+% 1 1 0 0f8d4bb18f16ad66039819d8169ffd0a
+
+@ 0 4 0 0bafdbabfe80d9801d152a5a07a7e9e9
++       Un `Communicable` es un `Transcribable to Message`: convertir un valor en un mensaje es
++       exactamente cómo se transcribe un evento registrable al portador de un registro, que es
++       lo que permite que un logger registre cualquier evento `Communicable` sin más puentes.
++       `value.communicate` es la conversión como método de extensión.
+
+% 1 1 0 0e4b266afb969cec00bf40d80d875b24
+
+% 1 1 0 0047eae1946031b21ae3485cb292b614
+
+% 0 1 0 175ffc5341b679381ab2db8c43261eeb
+
+@ 0 13 0 062682d45547079012e487f3207c9f25
++   entry .text   `Text` como sí mismo, entre `“ ”` si está vacío o empieza o termina con un espacio
++   entry .string   `String` como su texto
++   entry .char   un `Char` como el carácter
++   entry .int   un `Int` en decimal
++   entry .long   un `Long` en decimal
++   entry .textualizable   cualquier valor `Textualizable`, como su texto
++   entry .term   un `quotes.reflect.Term`, tal como lo muestra el compilador; para macros, con `Quotes` en el ámbito
++   entry .expr   un `Expr[T]`, tal como lo muestra el compilador; para macros, con `Quotes` en el ámbito
++   entry .specializable   el objeto compañero de un primitivo (`Int`, `Boolean`…) como su nombre en minúsculas
++       Para un mensaje que nombra un tipo primitivo, como hace el _is not a valid int_ de
++       `Number.Error`.
++   entry .listMessage   un `List[Message]` como viñetas, un mensaje por línea
++       Cada mensaje en su propia línea con el prefijo ` - `, de modo que un error que agrega
++       otros dice cuántos son y los enumera debajo. No se unen mensajes con comas a mano.
+
+% 0 1 0 0ea6bcfa716420281516b24b1c0b6be1
+
+@ 0 4 0 08990125b0a8706b0976bcdb7f23c4dc
++   entry #message   el mensaje para un valor
++   entry #record   el mensaje para un valor: el nombre de `Transcribable` para la misma conversión
++   entry #contramap   un `Communicable` para otro tipo, asociándolo a este
++       `Communicable.text.contramap(_.tt)` es como se crea la instancia de `String`.
+
+@ 0 1 0 0cff86a3a4b102110dd2f7bd3935ec42
++ entry .communicate   `value.communicate`: el valor como un `Message`, a través de su `Communicable`
+
+@ 0 8 0 063f0d9811f50917072f41f93b8399e8
++ entry .Clarification   el trait que extiende un enum `Reason`: un número para cada causa distinta de un error
++     `trait Clarification { def number: Int }`. Las distintas causas de un error son los casos
++     de un enum `Reason` que extiende `Clarification`, cada uno con un número único dentro del
++     error, de modo que `Error(25, 1, reason.number)` se representa como `↯/s.25.1.1`,
++     `↯/s.25.1.2`… y cada uno tiene una subsección de la página del error en `doc/errors`. Un
++     `Reason` lleva datos propios donde el diagnóstico los necesita
++     (`Ipv4ByteOutOfRange(byte: Int)`), y da su propia instancia de `Communicable` que formula
++     cada caso, y que interpola el mensaje del error. Un `halt` o un `warn` al que se da una
++     `Clarification` pone su número en el prefijo del diagnóstico.
+
+% 2 1 0 069206f7c6c020f4099a571186506b26
+
+% 3 1 0 0fbf3143ec95d19016fc04b4ad326e05
+
+% 0 1 0 07d9fda9feeb831d0a87d5e164fe64a7
+
+% 0 1 0 05c0ffa24de6952504546b3171e81a7e
+
+% 0 1 0 083d0e91463131ba1900514871565603
+
+% 0 1 0 0c848d71488e01f00a2feedc0163f9c0
+
+% 0 1 0 099dc5fd05ccda9e191dbfa63f172dc0
+
+% 1 1 0 192aba54fb29f9071c9d65c73dc6d584
+
+@ 0 1 0 00b1797ec363f38f1cc845d241e6ffdf
++ entry .Diagnostics   si un error captura una traza de pila: `Diagnostics.capture` o `Diagnostics.omit`
+
+% 1 1 0 158c494051901ff51503c5e4ec4b676d
+
+@ 0 7 0 00d88eef3e76a0771264152124aa6693
++       Un tipo opaco (exportado desde `fulminate.internal`) con dos valores. El constructor de
++       todo error toma uno como parámetro contextual y pasa `captureStack` al
++       `writableStackTrace` de `Exception`, de modo que un error construido con `omit` no tiene
++       traza de pila y no cuesta más que cualquier otro valor, que es lo que hace asequibles
++       los errores tipados en caminos críticos donde se esperan y se manejan. Las tácticas que
++       descartan sus errores (`safely`, `recover`) proporcionan `omit` ellas mismas; las que
++       los conservan toman los `Diagnostics` del ámbito; una táctica que lanza usa `capture`.
+
+% 2 1 0 19255ec83813cd8602bac62e933075e5
+
+% 3 1 0 053132de18aa422c0137ee68f7c5c9c6
+
+% 2 1 0 0823b74bc01c96280b75760f51f37a5e
+
+% 3 1 0 0e8235c20bbe3d261b34b55af9c9ba63
+
+% 2 1 0 13fbc5e5eab3450c037f10b023def64f
+
+% 0 1 0 11420fbb5e6b718f1b3000e7ba19486d
+
+% 0 1 0 1d186ac06c9efc2c183862503ad8f05f
+
+% 2 1 0 07e7157a20592ac10d2ab440d4c58977
+
+% 0 1 0 18f5aa26b33b5d75164ce04461dfd972
+
+% 0 1 0 070f2f1622bcba18198bfe3101efaf84
+
+% 1 1 0 184e6f4731ecd69b1ca8ae95e669190d
+
+@ 0 1 0 0618eefdbf505c8f1bf4710b1d86daef
++       La forma habitual de elegir es importar por nombre uno de los givens de
++       `errorDiagnostics`.
+
+% 0 1 0 0163c571e04c5920016250c9a29905d9
+
+% 1 1 0 0f5b5c3dba37cd33097787c06bb357be
+
+@ 0 1 0 0ce7812318f2ee01164abe240b930fe8
++ entry .errorDiagnostics   las dos opciones de `Diagnostics`, como givens que se importan por nombre
+
+% 1 1 0 050075c64a0d0bb2033622194eab7f03
+
+@ 0 4 0 10529abb7c13359f04d0e9794ac19037
++       `import soundness.*` no trae ninguna, ya que una importación con comodín nunca importa
++       givens; se importa una por nombre allí donde se construyen errores fuera del thunk de
++       una táctica: una prueba, un caso de `mitigate`, un `PortError(80)` directo. Dentro de
++       `abort(…)` y `raise(…)` la táctica proporciona la suya, así que un método `raises` no
++       necesita ninguna importación.
+
+% 2 1 0 0d009dc699db24b30b36facdba45a437
+
+% 3 1 0 16a30e40476cb7461b1fc20fdcedca9b
+
+% 4 1 0 1181d99ce6e347bc1611e67ace7585f3
+
+% 1 1 0 052232952f6381a509d59a6b8923d0ea
+
+% 1 1 0 188adf8a7b6bbcb015a45b8075c63871
+
+@ 0 2 0 096d425e068f30590b9dffec7b90b222
++   entry .emptyDiagnostics   `Diagnostics.omit`: sin trazas de pila; más barato donde un error se espera y se maneja
++   entry .stackTracesDiagnostics   `Diagnostics.capture`: con trazas de pila, para depurar
+
+@ 0 1 0 128419ef4c220f6e0e1f05b57a43650e
++ entry .Panic   un error que no está pensado para capturarse: la comprensión de un programador era errónea
+
+% 1 1 0 059e8192a6599bd318f2cf778861f834
+
+@ 0 5 0 04141182da23a0b114ed062babd7aea2
++       Un `java.lang.Error` (no una `Exception`, y por tanto no un `Hazard`) que lleva un
++       `Message` que explica por qué se creía imposible la situación. Llegar a uno no es un
++       fallo que haya que manejar: no aparece en ninguna cláusula `raises`, y ninguna táctica
++       lo captura. `panic(message)` lanza uno; `Panic(exception)` envuelve una excepción que se
++       lanzó inesperadamente, con un mensaje que nombra su clase y su texto.
+
+% 2 1 0 07c20c3533221db51fc08bcf80a2070a
+
+% 3 1 0 117bb1af2b37062c11d9fd1064757790
+
+% 0 1 0 112c373021ddc262094ba15ce932f6f7
+
+% 0 1 0 190999d6c15d389512c8529b26a450df
+
+% 1 1 0 1ee3e3fee7720165092e298baebc545c
+
+% 0 1 0 1d647f153b0a0b80114ef4de132142df
+
+@ 0 4 0 18da0ee4f86e7a6a05cd99cd4e636a34
++   entry .apply   un pánico para una excepción que se lanzó inesperadamente
++       `Panic(exception)` tiene el mensaje _an `ClassName` exception was unexpectedly thrown;
++       the error was: `text`_, con `[null]` para una excepción sin mensaje.
++   entry #message   por qué se creía imposible la situación
+
+@ 0 4 0 0b7ad92bb8e1673115424ab29d53f6a5
++ entry .panic   lanza un `Panic` con un mensaje: se creía imposible la situación
++     `panic(m"…")` tiene el tipo `Nothing`, así que puede estar en cualquier lugar donde se
++     necesite un valor: la rama inalcanzable de un match, el `else` de una comprobación que un
++     paso anterior garantizó. No es un error que haya que manejar, y no se declara en una
++     signatura.
+
+@ 0 12 0 16cb5647bd90c4100dc733b2079a83bf
++ entry .halt   informa de un error de compilación desde una macro y aborta la expansión
++     Para implementaciones de macros, con `Quotes` en el ámbito. `halt(message)` informa del
++     texto del `Message` (en color, a través de `Message#colorText`, cuando está activado el
++     ajuste `-color` del compilador) con `report.errorAndAbort`; `halt(message, position)`
++     adjunta una posición. Las sobrecargas numeradas anteponen al diagnóstico el código del
++     error como `[↯/s.25.1] ` —`halt(module, number, message)`, `halt(module, number, message,
++     position)`— o el número de su motivo como `[↯/s.25.1.2] `: `halt(module, number,
++     reason, message)` y `halt(module, number, reason, message, position)`, donde `reason` es
++     una `Clarification`. El parámetro de posición de las formas numeradas es `Matchable`, y
++     un valor que no es un `quotes.reflect.Position` (o `null`) informa sin posición. Todo
++     código lanzado por una macro tiene una página en `doc/errors`, igual que el de un error
++     de tiempo de ejecución.
+
+% 2 1 0 02a48611362d461e0226da392ed47025
+
+% 3 1 0 0f5a51c74283bfb01e202aaebfd8c2e9
+
+% 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
+
+% 0 1 0 08813f89405a48fe137845c61f358491
+
+% 0 1 0 0546aea4ca06a0af18dbf62dc8b35ac8
+
+% 0 1 0 0b9e627db83890290c01ace59d03f955
+
+% 1 1 0 1848c1bae463f99a116720e6b4b1ab22
+
+@ 0 2 0 003a54a1a6f71e711f73f89ef05fae3f
++     `HaltTactic`, de `contingency`, convierte un `Error` lanzado en un `halt` de su mensaje
++     `labelled`, de modo que un analizador que lanza en tiempo de ejecución informa del mismo
++     error en tiempo de compilación.
+
+@ 0 5 0 158bac973b84b36c1688024204f392ec
++ entry .warn   informa de una advertencia de compilación desde una macro
++     Para implementaciones de macros, con `Quotes` en el ámbito. Las mismas sobrecargas que
++     `halt` —`warn(message)`, `warn(message, position)`, `warn(d, message)`, `warn(d, message,
++     position)`, `warn(d, reason, message)` y `warn(d, reason, message, position)`—, con
++     `report.warning` en lugar de `report.errorAndAbort`, de modo que la expansión continúa.
+
+@ 0 1 0 190937ab60c2efc21d27a888d07ef0e0
++ entry .TextEscapes   decodifica las secuencias de escape estándar del texto: `\n`, `\t`, `\uXXXX`…
+
+% 1 1 0 05ccedeec59996f706a0998634b04290
+
+@ 0 6 0 0be3696d0b3895eb041277c1ea3f608f
++       Las reglas de escape que comparten `m"…"` y los demás interpoladores, como funciones de
++       tiempo de ejecución para un analizador que encuentra escapes en su entrada.
++       `escape(text)` decodifica todos los escapes de un texto; `standardEscape` es un paso de
++       ese bucle. Los escapes reconocidos son `\\`, `\n`, `\r`, `\f`, `\b`, `\t`, `\e`, `\"`,
++       `\'` y `\uXXXX`. Estas funciones lanzan `TextEscapes.Error` como excepción comprobada
++       (`throws`, no `raises`), así que quien las llama necesita un
++       `CanThrow[TextEscapes.Error]` o `unsafeExceptions.canThrowAny` en el ámbito.
+
+% 2 1 0 109f345d18a7136c1f52072e71ad3ab3
+
+% 3 1 0 005bab09caa0ce24134048893f2a5328
+
+% 0 1 0 04730089dbbde68612610fed08563f9c
+
+% 0 1 0 0bd017d0658991251a7f82e999e63b67
+
+% 1 1 0 14475c7abac07d9011552f07177ea691
+
+@ 0 8 0 1beba6f02770085a130796775b2cf341
++   entry .standardEscape   decodifica un carácter en una posición: el carácter (o -1), la posición siguiente y si hay un escape abierto
++       `standardEscape(text, cursor, escaping)` lee el carácter en `cursor` en el estado que
++       indica `escaping`, y devuelve el carácter decodificado (`-1` cuando el carácter abrió un
++       escape y no produjo nada), la posición desde la que continuar y el nuevo estado.
++   entry .escape   decodifica todos los escapes de un texto
++       Lanza `TextEscapes.Error` para un escape no reconocido, una secuencia `\u` incompleta o
++       un texto que termina con una barra invertida suelta.
++   entry .Error   se lanza cuando una secuencia de escape no es válida
+
+% 1 1 0 141f933cd84fa62f1b2dcef1cc040760
+
+% 0 1 0 0c4cf8a1caa1244f1bbc2613fe053a39
+
+@ 0 1 0 0983a7641b5804ca165cdb5273bf8e16
++         incomplete_ o _the final character cannot be an escape_. Lo lanzan `escape` y
+
+% 0 1 0 14dda8c01d2d97c50f1fb35fb908834f
+
+@ 0 1 0 02d3fd9288283cf517c79f63fc71e95c
++     entry #initMessage   el mensaje que describe el escape no válido
+
+@ 0 1 0 1f35cb9cff96be8d13521e886490e7c9
++ entry .printables   la instancia de `Printable` para `Message`, como given que se importa por nombre
+
+% 1 1 0 07202c24b97677a716a590ba4ccd47fb
+
+@ 0 4 0 0ad22b61728ef04f05511227c479e515
++       En `fulminate.print`, un conjunto de fuentes aparte, para que el vocabulario de errores
++       del que depende todo módulo no dependa también de la impresión. Desde ahí el given no
++       está en el ámbito implícito de `Message`, así que debe importarse; `Printable` no tiene
++       alternativa genérica, así que un punto de llamada que lo olvida no compila en lugar de
++       imprimir algo degradado.
+
+% 2 1 0 1120688565fc7439065ee4629797c2dc
+
+% 3 1 0 0b85761646101d900481e52c0d117a50
+
+% 0 1 0 034be053725dc6ad1c679036533262ec
+
+% 0 1 0 1f48a0a0e8c01b3b10f4167929a40652
+
+% 0 1 0 1ce570b588c2901109d732798d700c35
+
+% 1 1 0 0261860c9fbf98de1830bc17e3ff3d8a
+
+@ 0 1 0 083e30d1576601f100a2143c462d8fe1
++   entry .messagePrintable   imprime un `Message` como su `text` simple, sea cual sea el terminal
+
+@ 0 1 0 1638be5e5c2552021a7e1795d7fdae06
++ entry .internal   el hogar de `Diagnostics` y de la macro `m"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 1c8fccd0051fb4cf19fe6cbcf88e7d25
++       No es para uso directo. `Diagnostics` se declara aquí, como un tipo opaco sobre
++       `Boolean`, y se exporta al paquete `fulminate`; la macro tras `m"…"` y su auxiliar viven
++       a su lado.
++   entry .Diagnostics   el tipo opaco `Diagnostics`; véase `fulminate.Diagnostics`
+
+% 1 1 0 1566a1c3d7dc599305a0634541514e9c
+
+@ 0 7 0 073d79aedef5ebbe14ce35114a387d99
++         Se declara aquí y se exporta; su página en el paquete `fulminate` tiene la descripción.
++     entry .capture   los errores registran su traza de pila
++     entry .omit   los errores no registran ninguna traza de pila
++   entry .captureStack   una extensión sobre `Diagnostics`: si debe capturarse una traza de pila
++       El `Boolean` que el constructor de `Error` pasa al `writableStackTrace` de `Exception`.
++   entry .mSubMessages   convierte una sustitución, o una tupla de ellas, en mensajes a través de `Communicable`
++   entry .mMacro   la macro tras `m"…"`: decodifica los escapes, divide en las comillas invertidas e inserta un `Message`

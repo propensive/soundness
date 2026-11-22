@@ -1,0 +1,13 @@
+orthant 2 release
+
+@ 0 3 0 17c253c3de302f930464d1e4f735596d
++ row  2  its `Encodable in Text` instance, between `⸤` and `⸥`
++ row  3  its `Showable` instance, between `⸢` and `⸣`
++ row  4  for an `Optional`, the value it holds, between `｢` and `｣`, or `○` if it is unset
++ row  5  a structural rendering derived from its shape
++ row  6  a last-resort rendering, its `toString` between `“` and `”`
+
+@ 3 0 0 07a82c3c347f0e2e18b93ddf1f1d34c2
++ The brackets mark a rendering which was borrowed from another typeclass, or from `toString`, and
++ is not the type's own.
++

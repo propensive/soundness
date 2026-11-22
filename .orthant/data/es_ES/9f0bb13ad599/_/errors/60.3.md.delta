@@ -1,0 +1,39 @@
+orthant 2 language
+
+% 0 1 0 07e44edbcd41755c07cefe86bb358e83
+
+@ 0 1 0 023e7d72a2402b8d0dbf0ec236e56eba
++ Se lanza cuando un registro de disposición fija se lee de menos bytes de los que necesita su
++ disposición.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 113988bebea8141c1cd2f65b126f6d91
++ `unpack` comprueba el registro entero contra los bytes que está leyendo antes de cargar ningún
++ campo. El error se lanza cuando no hay `width` bytes en `offset`: el desplazamiento es
++ negativo, o el registro (o la sección repetida de registros) se saldría del `size` de los datos
++ o de la extensión.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 185ed552d5041e5f169036a6fa51a6ef
+
+% 1 1 0 0ec2c5d99cd9bca41d8aa25241253218
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 2 0 151d846c2d530e4b06c22a5cf9228d75
++ Comprueba el desplazamiento contra la especificación del formato, y que la entrada está
++ completa. Un fichero que es más corto de lo que afirman sus propias cabeceras está truncado o
++ no está en el formato esperado.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 1c3ec29c6fc470aa1c1220089890c7cb
++ - Fuente: `lib/zephyrine/src/layout/zephyrine.Structural.scala`

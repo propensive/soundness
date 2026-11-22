@@ -1,0 +1,62 @@
+orthant 2 language
+
+% 0 1 0 03b39a17f3fb9a0409fcda5d5b61298a
+
+@ 0 3 0 145ee454bd282db10fb8ef5b2ec42a32
++ Levée lorsqu'une opération du Language Server Protocol échoue, ou par un gestionnaire pour
++ répondre à une requête par une réponse d'erreur JSON-RPC. Chaque raison porte le code de
++ transmission standard JSON-RPC/LSP, que `Lsp.listen` place dans le membre `error.code` de la
++ réponse d'erreur.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 01362123253bc53314617c0e9eae6c37
++ Exegesis implémente le protocole de transmission LSP. Cette erreur couvre un message mal formé,
++ une requête que le serveur ne peut pas satisfaire, et toute défaillance qu'un gestionnaire choisit
++ de lever : une `LspError` levée prend le pas sur le résultat du gestionnaire, et devient une
++ réponse d'erreur pour une requête, ou une notification `window/logMessage` sinon.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 0abb6dd48cf5ac8c07b5a65d41bf8b97
++ column  Raison
++ column  Code de transmission
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 09c51f069fd08f310c9ef8301e2bec58
+
+% 0 1 0 0502f21b65d619b81ddd0a1abe46b659
+
+% 0 1 0 1e2b3edf5f1dee891a614925cde4f4fa
+
+% 0 1 0 14c7451d016421a51fb01f3ba499ddb9
+
+% 0 1 0 1c106cc65cc5d9790e80aae5fb5e7e53
+
+% 0 1 0 11ef8ee6bef543240ed41d8039d49041
+
+% 0 1 0 111b3a20ccd636a21112d2c6935d1b0d
+
+% 0 1 0 1449dc8d64df26ca1cde9e0a910b817b
+
+% 0 1 0 0641aac9691363dc0fad88d61d8c754b
+
+% 0 1 0 04a55e9baca7418603d7596922ef73db
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 5 0 1e00c1aa9db7a5c611a9b35fc5b7868a
++ La raison distingue une défaillance du protocole d'une requête bien formée qui n'a pas pu être
++ servie. Une défaillance du protocole signifie généralement que le client et le serveur ne
++ s'accordent pas sur la version du protocole ou sur le tramage des messages ; une raison levée par
++ un gestionnaire, comme `RequestFailed`, décrit le refus propre du serveur, et ses détails sont
++ transmis au client dans le message de la réponse d'erreur.

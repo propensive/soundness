@@ -1,0 +1,3540 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1866150ecbc5dda91e755367aeb0d04c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1cd8dc1c0400040d07ec64e45739db0b
++ info
++     les polices TrueType et OpenType comme valeurs, et des familles, des styles et des fournitures
++     typés pour composer du texte
+
+@ 0 3 0 0f5f1fcbecc8172e1466beadcf6a05b1
++ detail
++     _Phoenicia_ lit les fichiers de polices et type la façon dont un document nomme et utilise
++     une police. Elle comporte deux couches qui se rejoignent au milieu.
+
+@ 0 9 0 1742c8e63e946a03011664ee56254400
++     La couche inférieure est le **fichier de police**. Un `Sfnt` est le conteneur de tables
++     que partagent TrueType et OpenType, lu depuis n'importe quelle source d'octets ; un
++     `Truetype` est un conteneur dont les contours sont quadratiques (`glyf` et `loca`), un
++     `Opentype` un conteneur dont les contours sont PostScript (`CFF `), et `Sfnt(data)` les
++     distingue selon les tables présentes. Les tables sont analysées paresseusement, chacune
++     comme une valeur : `cmap` associe un caractère à son `Glyph`, `hmtx` donne la chasse et
++     l'approche latérale, `head` les unités par em et la boîte englobante, `name` les noms de
++     famille et PostScript, `OS/2` la graisse, la largeur et les droits d'incorporation,
++     `fvar` les axes d'une police variable, et `GSUB`/`GPOS` les fonctionnalités de mise en
++     page qu'elle implémente. `Sfnt#width` mesure un texte en ems, et `Truetype#subset`
++     construit une nouvelle police ne contenant que les glyphes dont un texte a besoin.
+
+@ 0 9 0 1970f43a040cecbd022bec103d031176
++     La couche supérieure est la **demande typographique**. Un `Typeface` est une famille
++     désignée par son nom, qui est aussi son type (`Typeface["Inter"]` est un
++     `Typeface of "Inter"`) ; un `Face` indique comment la composer — une `Weight`, une
++     `Slant`, un `Stretch`, des positions sur d'éventuels autres axes de `Variation`, et les
++     `Face.Feature` à activer ou désactiver — et rien sur la provenance de la police. Une
++     fourniture `Typesettable` indique comment un `Medium` (le web, l'impression, ou tout
++     support que définit un moteur de rendu) obtient la famille et quels styles il peut alors
++     composer, sous forme de `Coverage`. Une `Font` associe un style à la fourniture dans la
++     portée pour sa famille dans un support, et c'est la seule forme sous laquelle un moteur
++     de rendu accepte une police ; ainsi un document ne peut ni nommer une famille qu'il ne
++     transporte pas, ni demander à une fourniture un style qu'elle ne peut pas composer.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 14aa36c394dcafe60d01e835074ba4f2
+
+% 0 1 0 10891421cbed82481ae8fac7a21e8b9e
+
+% 1 1 0 1e2995190281206e1fe9d76dbddc58fd
+
+% 2 1 0 04c585ec192223b016fd40b1dd3724e2
+
+% 0 1 0 0d350c7e5e66a51f113866595e1f5456
+
+% 0 1 0 16f500912f13cb8f08eeb14977aa4460
+
+% 0 1 0 0c402fde44414bad06248bef18d0d589
+
+% 0 1 0 13ab6dde57221b8e0ddfd7a0c7b91d14
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 8 0 12ae2323372107d50640764eeefc1216
++     La demande est vérifiée deux fois. Toujours à l'exécution, quand la police est créée :
++     une graisse dont la fourniture est dépourvue, un italique qu'elle n'a pas, une
++     fonctionnalité que ses tables n'implémentent pas, ou une valeur d'axe hors de la plage
++     de la police lève `Font.Error`, en nommant la famille et le problème. Et, lorsque la
++     fourniture a été créée à partir d'un fichier du classpath (`Typesettable.embedded
++     (cp"/fonts/Inter.ttf")`, dont le chemin devient le `Locus` de la fourniture) et que la
++     demande du style est enregistrée dans son type (`inter.bold.italic` a `Weights = 700` et
++     `Slanting =
++     "italic"`), le compilateur lit le fichier et refuse l'association pendant la compilation
++     du code, avec le même message.
+
+@ 0 7 0 03b29709a6290b771a7b1635b1608754
++     La bibliothèque est un seul ensemble de sources, `phoenicia.core`, qui compile pour la
++     JVM, Scala.js et Scala Native et ne dépend de rien de propre à une plateforme ;
++     `Sfnt(source)` lit depuis tout ce qui est `Streamable by Data`. Les supports et leurs
++     fournitures se trouvent avec les moteurs de rendu : le `Web` de cataclysm contient les
++     familles génériques CSS et les fabriques `Web.linked`, `Web.imported` et `Web.local`, et
++     le `Print` de facsimile contient les quatorze polices standard de PDF. Ces givens se
++     trouvent dans le compagnon du support ; ils ne nécessitent donc aucun import. Les
++     fournitures propres à un projet sont des givens qu'il déclare et importe par leur nom, car
++     `import pkg.*` n'importe pas les givens.
+
+@ 0 3 0 012e1b7c32c785c9065f36ae71793b3b
++     Tout est exporté vers le package parapluie `soundness` : `Coverage`, `Face`, `Font`,
++     `Glyph`, `Medium`, `Opentype`, `Sfnt`, `Slant`, `Stretch`, `Truetype`, `Typeface`,
++     `Typesettable`, `Variation` et `Weight`.
+
+% 0 1 0 109fa47ff5f3bd6d0571fce426a43e07
+
+% 0 1 0 0f0b1d6064528d4c10db460412c24385
+
+% 0 1 0 15104d77b892450111a9fd20a13773cc
+
+% 0 1 0 0b3ddc8123ae0d7208516ef15515dab8
+
+% 0 1 0 17e121497a8530891227fd00ebb19157
+
+% 0 1 0 0e23135c50c6b3041b84a24f166220ba
+
+% 0 1 0 028d54a33b69a0541369b63c2b9a0532
+
+@ 0 1 0 0001bfb9f303302f0c82f773be6bf1c9
++ entry .Sfnt
++   info
++       un fichier de police comme valeur : le conteneur de tables sfnt que partagent TrueType et
++       OpenType
+
+@ 0 7 0 0166961e48a189ad067d80e6ad79d585
++   detail
++       Un `Sfnt` est un fichier de police, conservé sous forme de ses `#data` et lu
++       paresseusement, table par table. Le nom est celui du format : un _sfnt_ est le conteneur
++       — un en-tête, un répertoire de tables taguées, et les tables — qu'utilisent TrueType et
++       OpenType, qui ne diffèrent que par la façon de stocker les contours. Tout ce que les deux
++       partagent est défini ici : la table des caractères, les métriques horizontales, l'en-tête,
++       la table des noms, les métriques OS/2, les métadonnées PostScript, les axes d'une police
++       variable et les fonctionnalités de mise en page.
+
+@ 0 4 0 116690128ed80f251b3d5f1099aaf80f
++       `Sfnt(source)` lit une police depuis tout ce qui est `Streamable by Data` — un chemin
++       galilei, une ressource du classpath, une URL — et `Sfnt(data)` enveloppe des octets déjà
++       disponibles. L'une et l'autre renvoient un `Opentype` si le répertoire comporte une table
++       `CFF ` et un `Truetype` sinon ; ainsi un filtrage par motif peut recourir aux opérations
++       propres à TrueType là où elles s'appliquent :
+
+% 2 1 0 0458cfbdd150f22b1eeaa197f93ea748
+
+% 3 1 0 0b015a9bc7599c141f3e57e33903e4de
+
+% 4 1 0 01e824b796eff2cb0d05fce3b09fc212
+
+% 0 1 0 01d582a488c5c4e40e69712408c1d2b1
+
+% 0 1 0 02c7ff65c19d25490413248f952c3c41
+
+% 0 1 0 0c02291d1d8f9ce9044d9909f8d08ccf
+
+% 0 1 0 0b1f30df551bfc2414ad1a957135dfc5
+
+% 1 1 0 14b781944cb7957905c51c4b02739cc6
+
+@ 0 9 0 18fb08e1af16ad3516a3336e3df6fa73
++       La construction est totale : envelopper des octets n'échoue jamais, et un répertoire
++       illisible produit un `Truetype`. Chaque table est analysée la première fois qu'on la
++       demande ; ainsi un fichier qui n'est pas une police, ou auquel manque une table dont une
++       opération a besoin, lève `Font.Error` lors de cette lecture, avec
++       `Font.Error.Reason.MissingTable` nommant la table, `MagicNumber` pour une table `head`
++       dont la constante de contrôle est fausse, `UnknownFormat` pour un format de sous-table
++       `cmap` que la bibliothèque ne lit pas, et `MissingEncoding` pour une police sans table
++       des caractères utilisable. Les accesseurs `#head`, `#cmap`, `#hhea`, `#hmtx`, `#maxp`,
++       `#post`, `#os2` et `#name` prennent tous une `Tactic[Font.Error]` ; `#fontName`,
++       `#familyName`, `#fvar` et `#features` absorbent l'erreur et répondent `Unset` ou `Nil`.
+
+@ 0 4 0 013338be52c1b7bb1e6138e37bd4648d
++       Les questions que pose le plus souvent le code typographique reçoivent une réponse
++       directe : `#glyph` résout un caractère au moyen de la table des caractères préférée,
++       `#advanceWidth` et `#leftSideBearing` donnent les métriques d'un caractère en unités de
++       dessin, et `#width` mesure un texte en ems, une quantité typée qui, multipliée par un
++       corps en points, donne une largeur physique.
+
+% 2 1 0 13e7f947d5185997005d214326523a8d
+
+% 3 1 0 11778af9a091cadf1f1d4173eaa3cc04
+
+% 4 1 0 08eb928478cb23820b277272794d517f
+
+% 0 1 0 1a335216f558fc410addc81ce8e31847
+
+% 0 1 0 0f591fdb6abba76918920f53298cd19b
+
+% 1 1 0 0f313be179f64f2b0b87f8e4e15ad751
+
+@ 0 4 0 139f3bbe5d90c86a18835bce616f7318
++       Les tables d'une police se lisent au moyen de `#tables`, une `Map` de `Sfnt.Table.Tag`
++       vers la `TableOffset` de la table ; les tags que la bibliothèque ne nomme pas en
++       sont écartés. `Sfnt.assemble` est l'inverse : il sérialise un ensemble de tables en un
++       fichier de police, et c'est ainsi que `Truetype#subset` écrit son résultat.
+
+% 1 1 0 184de4136bd9bd84034cea2723fbfe38
+
+% 1 1 0 1eadeb55b32c6dbf0417cfc30bec68ab
+
+% 1 1 0 0f766614488e070f0f031dc9a8c8fbd2
+
+% 0 1 0 08f5437fa29f893b030c74eca9fc87ff
+
+@ 0 1 0 1420a53c43ce00121ee9b27655aa7e10
++   entry .apply
++     info
++         lit une police depuis des octets ou depuis toute source lisible en flux, comme `Truetype`
++         ou `Opentype`
+
+@ 0 6 0 1300de12060738231e9705c69c4e9ff3
++     detail
++         `Sfnt(data)` enveloppe une valeur `Data` ; `Sfnt(source)` lit entièrement toute source
++         `Streamable by Data over
++         Credit` et enveloppe le résultat. L'une et l'autre sondent le répertoire des tables à la
++         recherche d'une table `CFF ` — des contours PostScript — et renvoient un `Opentype` si
++         elle est présente, sinon un `Truetype`. La sonde est enveloppée dans `safely` ; ainsi des
++         octets dont le répertoire est illisible deviennent un `Truetype` plutôt que d'échouer :
++         la construction est toujours totale, et le défaut apparaît sous forme de `Font.Error`
++         lors de la première lecture d'une table.
+
+@ 0 1 0 0936aa7d454dd79c181ec10ff6d0a0fc
++   entry .PlatformId
++     info
++         la plateforme d'un enregistrement `cmap` ou `name` : Unicode, Macintosh, Windows ou
++         personnalisée
+
+@ 0 3 0 0500ceaf9ef37a5c1a5570b5393dc15f
++     detail
++         Une énumération dont les ordinaux sont les identifiants de plateforme OpenType 0 à 3. La
++         bibliothèque lit les identifiants de plateforme comme de simples `Int` dans
++         `CmapTable.GlyphEncoding` et `NameTable.Record`, en classant les enregistrements Windows
++         et Unicode avant les enregistrements Macintosh ; l'énumération nomme les valeurs.
+
+@ 0 1 0 173ab33f65d9be93102fbaab64f2dce5
++   entry .EncodingId
++     info
++         les identifiants d'encodage Unicode d'un enregistrement `cmap`
+
+@ 0 4 0 0187a55fe96d25e30626000f4af13a26
++     detail
++         `Unicode1`, `Unicode1_1`, `IsoIec10646`, `Unicode2Bmp`, `Unicode2Full`,
++         `UnicodeVariation` et `UnicodeFull`, dont les ordinaux sont les identifiants d'encodage 0
++         à 6 de la plateforme Unicode. `CmapTable#best` préfère les encodages Unicode complets (4
++         et 6) à ceux limités au BMP.
+
+@ 0 1 0 1dab48812cff65d1043a06e7174e055f
++   entry .NameId
++     info
++         les identifiants des chaînes de la table des noms ; l'ordinal de chaque cas est son
++         identifiant de nom
+
+@ 0 7 0 14eab40c187100850688d45c37b5b4fb
++     detail
++         `Copyright`, `Family`, `Subfamily`, `UniqueId`, `FullName`, `Version`,
++         `PostScriptName`, `Trademark`, `Manufacturer`, `Designer`, `Description`, `VendorUrl`,
++         `DesignerUrl`, `License`, `LicenseUrl`, `Reserved`, `TypographicFamily`,
++         `TypographicSubfamily`, `CompatibleFullName`, `SampleText`, `PostScriptCidName`,
++         `WwsFamily`, `WwsSubfamily`, `LightBackgroundPalette`, `DarkBackgroundPalette` et
++         `VariationsPostScriptNamePrefix`, dans l'ordre des identifiants 0 à 25 de la table
++         `name` d'OpenType. `NameTable#apply` en prend un et donne le meilleur enregistrement
++         correspondant.
+
+@ 2 1 0 0de3995b31de4a100ca7cd2d234cfafc
++         ```scala
+
+@ 3 1 0 13d2c235fd4698d50e0194aec7f96766
++         import soundness.*
+
+@ 4 1 0 14f4c9f3f21e2804123d1ae31deb93f7
++         import strategies.throwUnsafely
+
+@ 0 1 0 157aa9d18c6cf6e60b0a1a0e831174ee
++         def describe(font: Sfnt): Optional[Text] = font.name(Sfnt.NameId.FullName)
+
+@ 1 1 0 14389f33fc5b3ef7099c7a757357e55c
++         ```
+
+@ 0 1 0 0646bfdbf9cdc8c11f65cf95da95f936
++   entry .Table
++     info
++         les tags des tables que peut contenir une police, sous forme d'énumérations `Ttf`
++         (TrueType) et `Otf` (OpenType)
+
+@ 0 8 0 1a2432aa8a9fc7a01f3667773fe76140
++     detail
++         Le tag de quatre caractères d'une table l'identifie dans le répertoire. Les
++         tags sont répartis entre l'ensemble TrueType (`Sfnt.Table.Ttf` : `cmap`, `head`,
++         `hhea`, `hmtx`, `maxp`, `name`, `post`, `glyf`, `loca`, `fvar`, …) et l'ensemble OpenType
++         (`Sfnt.Table.Otf` : `CFF `, `OS/2`, `GSUB`, `GPOS`, `GDEF`, `STAT`, …), qui sont tous
++         deux des `Sfnt.Table.Tag` et les clés de `Sfnt#tables`. Chaque compagnon est un
++         extracteur à partir du texte du tag ; ainsi une entrée du répertoire est classée
++         en filtrant avec `Sfnt.Table.Otf(tag)` et `Sfnt.Table.Ttf
++         (tag)` ; un tag que ni l'un ni l'autre ne nomme est écarté de la map des tables.
+
+@ 0 1 0 17ee33d91aa8808c03a4ed2fd98ea0cd
++     entry .Tag
++       info
++           le type commun des tags `Ttf` et `Otf`
+
+@ 0 1 0 0cf1c48e1a58326c092bde36d7929304
++       entry #text
++         info
++             le tag tel qu'il s'écrit dans le fichier : `cmap`, `OS/2`, `CFF `, `cvt `
+
+@ 0 2 0 0dfd5de84ffc43500eb73cc16f3b2c9d
++         detail
++             Quatre caractères, y compris l'espace finale de `CFF ` et de `cvt `. Un tag
++             TrueType est en minuscules et un tag OpenType en majuscules, à l'exception de
++             `OS/2` et de `CFF `.
+
+@ 0 1 0 0ccdf61dbaf9b19b144a7dfd8ceebe62
++     entry .Ttf
++       info
++           les tables TrueType : `avar`, `cmap`, `cvar`, `cvt `, `fpgm`, `fvar`, `gasp`, `glyf`, …
+
+@ 0 5 0 01d108d60fbe906f002b98c62844dce9
++       detail
++           `Avar`, `Cmap`, `Cvar`, `Cvt`, `Fpgm`, `Fvar`, `Gasp`, `Glyf`, `Gvar`, `Hdmx`, `Head`,
++           `Hhea`, `Hmtx`, `Kern`, `Loca`, `Maxp`, `Meta`, `Name`, `Post`, `Prep`, `Sbix`, `Vhea`
++           et `Vmtx`. Le compagnon extrait un cas à partir de son texte
++           (`Sfnt.Table.Ttf(t"cmap")`), `cvt ` s'écrivant avec son espace finale.
+
+@ 0 1 0 0ddc47ac6d84333b1e362c303637e9f1
++       entry .extract
++         info
++             le tag `Ttf` pour un texte de quatre caractères, ou `Unset`
+
+@ 0 1 0 0b89caca0160ad1d0edf5e67ebd4ce3c
++     entry .Otf
++       info
++           les tables OpenType : `BASE`, `CFF `, `CFF2`, `COLR`, `GDEF`, `GPOS`, `GSUB`, `OS/2`, …
+
+@ 0 5 0 08bb86527bdb4a6e045f7dc8b28f374a
++       detail
++           `Base`, `Cbdt`, `Cblc`, `Cff`, `Cff2`, `Colr`, `Cpal`, `Dsig`, `Ebdt`, `Eblc`, `Ebsc`,
++           `Gdef`, `Gpos`, `Gsub`, `Hvar`, `Jstf`, `Ltsh`, `Math`, `Merg`, `Mvar`, `Os2`, `Pclt`,
++           `Stat`, `Svg`, `Vdmx`, `Vorg` et `Vvar`. Le compagnon extrait un cas à partir de son
++           texte (`Sfnt.Table.Otf(t"OS/2")`), `OS/2` et `CFF ` s'écrivant comme dans le fichier.
+
+@ 0 1 0 1e967bd72f4d69ae13e69819cd0e9687
++       entry .extract
++         info
++             le tag `Otf` pour un texte de quatre caractères, ou `Unset`
+
+@ 0 1 0 059c37e8ae114efb0d332a519262d5cf
++   entry .assemble
++     info
++         sérialise des tables taguées en un fichier sfnt complet, avec sommes de contrôle
+
+@ 0 7 0 0360c3cd16053dd302ebf2d998242e97
++     detail
++         `Sfnt.assemble(version, tables)` prend la version sur quatre octets (les quatre premiers
++         octets d'une police : `0x00010000` pour TrueType) et une liste de paires `(tag, bytes)`,
++         et écrit l'en-tête, un répertoire trié par tag avec les champs de recherche
++         qu'exige le format, et les tables alignées sur quatre octets et complétées par des zéros.
++         Chaque entrée du répertoire porte la somme de contrôle de sa table, et si une table
++         `head` en fait partie, son ajustement de somme de contrôle est fixé de sorte que le
++         fichier entier ait pour somme la constante du format. La table `head` doit être fournie
++         avec son ajustement à zéro. `Truetype#subset` construit son résultat de cette façon.
+
+@ 1 1 0 0593a2d0ef8b398111b9439cfaa8b921
++   entry #data
++     info
++         les octets du fichier de police
+
+@ 0 1 0 0d2530c8dcc47777004272e7dc287fd1
++   entry #TableOffset
++     info
++         une entrée du répertoire : le tag, la somme de contrôle, la position et la longueur
++         d'une table
+
+@ 0 3 0 0bbc6dd47d41d5731470be07a73d54a1
++     detail
++         Les valeurs de `#tables`. La position et la longueur situent la table dans `#data` ; la
++         somme de contrôle est celle du fichier, que la bibliothèque enregistre mais ne vérifie
++         pas.
+
+@ 0 1 0 1a4a8ee95489cdcc10ac5a3a049e053f
++     entry #id
++       info
++           la `Sfnt.Table.Tag` de la table
+
+@ 0 1 0 1127822f2f9e9560057d912f9f4cdbfb
++     entry #checksum
++       info
++           la somme de contrôle qu'enregistre le répertoire, sous forme de `B32`
+
+@ 0 1 0 104214cd02e9bf521106a69c2024d5dc
++     entry #offset
++       info
++           la position de la table depuis le début du fichier
+
+@ 0 1 0 0a3c0477fb9a4b69090bc75d20a7f33c
++     entry #length
++       info
++           la longueur de la table en octets
+
+@ 0 1 0 127cf675cb904d0f06922a0e3585ea08
++   entry #numTables
++     info
++         le nombre de tables que déclare le répertoire
+
+@ 0 1 0 1db3663ed46aefd103fe231e420e1cee
++   entry #searchRange
++     info
++         le champ `searchRange` du répertoire : la plus grande puissance de deux ne dépassant pas
++         le nombre, multipliée par 16
+
+@ 0 1 0 1160e36a7ecae2d00d2312aa413a4d22
++   entry #entrySelector
++     info
++         le champ `entrySelector` du répertoire : le logarithme de `searchRange` divisé par 16
+
+@ 0 1 0 1378ff8daac850b9055da3e23df9a849
++   entry #rangeShift
++     info
++         le champ `rangeShift` du répertoire : le nombre multiplié par 16, moins `searchRange`
+
+@ 0 1 0 1133560ee9a7c64d0ee1c0b50fb2bdb9
++   entry #tables
++     info
++         chaque table que nomme la bibliothèque, par tag, avec sa position et sa longueur
+
+@ 0 4 0 15e819855d4222c61669b2fb9f691622
++     detail
++         Une `Map[Sfnt.Table.Tag, TableOffset]` lue depuis le répertoire. Les tags qui ne
++         sont ni un cas de `Ttf` ni un cas d'`Otf` sont écartés ; les tables privées d'une police
++         ne sont donc pas représentées. La lecture de la map est totale ; un répertoire mal formé
++         la rend vide, et chaque accesseur de table lève alors `Font.Error` avec `MissingTable`.
+
+@ 0 1 0 065409c617f2bc8e1974e7330211e8e0
++   entry #glyph
++     info
++         le glyphe d'un caractère, au moyen de la table des caractères préférée de la police
+
+@ 0 4 0 16e21ebe444a44d615137998ed23a2ea
++     detail
++         `cmap.glyph(char)` : le glyphe est un `Glyph[this.type]`, typé pour cette police ; ainsi
++         un glyphe d'une police ne peut pas être utilisé avec une autre. Un caractère que la
++         police n'associe pas donne le glyphe 0, le glyphe manquant, plutôt qu'une erreur. Lève
++         `Font.Error` avec `MissingEncoding` si la police n'a aucune sous-table `cmap`
++         utilisable, ou `MissingTable` si elle n'a pas de `cmap`.
+
+@ 2 1 0 01589e61a9a43eec1b77923bdba4c157
++         ```scala
+
+@ 3 1 0 1111d550203a46b20ab7a8e3b96581f0
++         import soundness.*
+
+@ 4 1 0 1a8292b8723b295f14f4af7248ee7121
++         import strategies.throwUnsafely
+
+@ 0 1 0 12322af46b5987e801e328e66d6e8761
++         def ids(font: Sfnt): List[Int] = List('A', 'B', 'C').map(font.glyph(_).id)
+
+@ 1 1 0 0f31409e14edba8d1979ce961e592b60
++         ```
+
+@ 0 1 0 0b115acb395dac251752353c189e9d28
++   entry #advanceWidth
++     info
++         la chasse d'un caractère en unités de dessin de la police
+
+@ 0 4 0 149b84fd0828db3818e12aff34a1860e
++     detail
++         L'avance horizontale du glyphe du caractère d'après `hmtx`, en unités de
++         `head.unitsPerEm` par em. Un glyphe au-delà du nombre de métriques de la table répète la
++         dernière avance, comme le format le prescrit pour une fin à chasse fixe. Lève
++         `Font.Error` si `cmap`, `hhea` ou `hmtx` manque.
+
+@ 0 1 0 133675eaba6c82ab002938c7c521e7a0
++   entry #width
++     info
++         la largeur d'un texte dans cette police, comme quantité en ems
+
+@ 0 3 0 0a50fe854b73d81b0647d2f46d4de4ba
++     detail
++         La somme des chasses des caractères, divisée par les unités par em, sous forme de
++         `Quantity[Ems[1]]`. Une largeur en ems est une quantité typée ; on ne peut donc pas la
++         confondre avec une mesure en pixels ou en points ; la mettre à l'échelle d'un corps de
++         police est une opération arithmétique explicite.
+
+@ 2 1 0 1b8562d593ca5ac817abd5e390e20023
++         ```scala
+
+@ 3 1 0 18bb21b93b6fcb741ac84c181afdbede
++         import soundness.*
+
+@ 4 1 0 0c43af336724a6f71b688c0b2a045484
++         import strategies.throwUnsafely
+
+@ 0 1 0 080d990923bb95ff1e2cdabed7295ca8
++         def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"AB")
+
+@ 1 1 0 0b954aa3d20c99cf128da7a0a2d4456d
++         ```
+
+@ 0 1 0 161f3a42b7149bf7088a6ec2502eada0
++   entry #leftSideBearing
++     info
++         l'approche gauche d'un caractère en unités de dessin de la police
+
+@ 0 2 0 09282f0a055d75080fa2b9e016d4f30f
++     detail
++         L'approche du glyphe du caractère d'après `hmtx`, qui se poursuit dans un tableau propre
++         pour les glyphes au-delà du nombre de métriques. Lève `Font.Error` si une table
++         nécessaire manque.
+
+@ 0 1 0 1b7dc15f63fbfda712cc581318a3e245
++   entry #head
++     info
++         la table `head` : unités par em, boîte englobante, dates de création et format de `loca`
+
+@ 0 2 0 1eccedce73ddbbd11d3168bb8be06ab5
++     detail
++         Décodée en `HeadTable` ; lève `Font.Error` avec `MissingTable` si elle est absente
++         et avec `MagicNumber` si la constante de contrôle de la table n'est pas le `0x5f0f3cf5`
++         du format.
+
+@ 0 1 0 1e43ff18ff2e16601c8b648525e1eacc
++   entry #cmap
++     info
++         la table `cmap` : les correspondances des caractères vers les glyphes
+
+@ 0 2 0 128c1e72d845607416221b41fab1ab30
++     detail
++         Sous forme de `CmapTable`, dont la sous-table `best` est choisie selon une préférence
++         Unicode et dont `glyph` résout un caractère. Lève `Font.Error` avec `MissingTable` si elle
++         est absente.
+
+@ 0 1 0 1820a129bd1572740fc97ed53ba04a33
++   entry #hhea
++     info
++         la table `hhea` : jambage supérieur, jambage inférieur, interligne et nombre de métriques
+
+@ 0 1 0 03d8c11e04859bc318ffa930727cd4de
++     detail
++         Décodée en `HheaTable` ; lève `Font.Error` avec `MissingTable` si elle est absente.
+
+@ 0 1 0 0cc4b12369b3d90102172e0747629e0e
++   entry #hmtx
++     info
++         la table `hmtx` : chasses et approches gauches par glyphe
+
+@ 0 2 0 1ae397ae7cbd1332111e5630601ceb0a
++     detail
++         Sous forme de `HmtxTable` dimensionnée par `hhea.numberOfHMetrics` ; lève `Font.Error` si
++         l'une ou l'autre table est absente.
+
+@ 0 1 0 0ed008d229cdcd3e13e2466cf17fae02
++   entry #maxp
++     info
++         la table `maxp` : le nombre de glyphes
+
+@ 0 1 0 159da1b95c96bebf0f037adf7064f542
++     detail
++         Sous forme de `MaxpTable` ; lève `Font.Error` avec `MissingTable` si elle est absente.
+
+@ 0 1 0 11d22c28a57cb8121b023b7a61d50153
++   entry #post
++     info
++         la table `post` : angle d'italique, métriques du soulignement et chasse fixe ou non de la
++         police
+
+@ 0 1 0 1a3e65f6d32264510ec77ba0d400923e
++     detail
++         Sous forme de `PostTable` ; lève `Font.Error` avec `MissingTable` si elle est absente.
+
+@ 0 1 0 10db1b5cb449158316e8bfe7f1005873
++   entry #os2
++     info
++         la table `OS/2` : classes de graisse et de largeur, métriques typographiques, droits
++         d'incorporation
+
+@ 0 1 0 0ef869149136c2690491b6bcf89ea95c
++     detail
++         Sous forme d'`Os2Table` ; lève `Font.Error` avec `MissingTable` si elle est absente.
+
+@ 0 1 0 1cf58e41ba83bded0d52b977251aada2
++   entry #name
++     info
++         la table `name` : les noms localisés de la police, par `Sfnt.NameId`
+
+@ 0 1 0 07a37d369b614c7312fdfa4232067167
++     detail
++         Sous forme de `NameTable` ; lève `Font.Error` avec `MissingTable` si elle est absente.
+
+@ 0 1 0 0e79617de7c60ed019a524cf71f28837
++   entry #fontName
++     info
++         le nom PostScript de la police, ou `Unset`
+
+@ 0 3 0 1c9b6384dea0742d0e9faee4e3fd19f6
++     detail
++         `name(Sfnt.NameId.PostScriptName)`, toute `Font.Error` étant absorbée : le nom sous lequel
++         les documents PDF et PostScript font référence à une police. `Unset` pour une police qui
++         n'en enregistre pas ou qui n'a pas de table `name`.
+
+@ 0 1 0 0347b9762621ba5e1bbf9b8e0ec73a9f
++   entry #familyName
++     info
++         le nom de famille de la police, ou `Unset`
+
+@ 0 1 0 09c8caa396fc054f0475227e637a3f7a
++     detail
++         `name(Sfnt.NameId.Family)`, toute `Font.Error` étant absorbée.
+
+@ 0 1 0 0ee4015b7e21fec60079b48c92250a04
++   entry #fvar
++     info
++         la table `fvar` d'une police variable, ou `Unset` pour une police statique
+
+@ 0 2 0 1bc66d5405305f3e059d9f6bc536be80
++     detail
++         Les axes le long desquels se déplacent les contours d'une police variable, chacun avec
++         sa plage. `Coverage.of` lit ici les plages de graisse et de largeur quand la table est
++         présente.
+
+@ 0 1 0 08b8006453bd34c21a1b3c8a372b46ef
++   entry #features
++     info
++         les fonctionnalités de mise en page qu'implémente la police, par tag, d'après `GSUB`
++         et `GPOS`
+
+@ 0 3 0 192f9f82af74137e15b45edb3dc7ab48
++     detail
++         Les listes de fonctionnalités des deux tables de mise en page, sous forme de
++         `Face.Feature`, dédupliquées. Une police sans aucune de ces tables n'en implémente
++         aucune. C'est ce qu'enregistre `Coverage.of` ; ainsi un style qui active une
++         fonctionnalité dont la police est dépourvue est refusé.
+
+@ 2 1 0 193d7615390939c91c14cf3b7557fde9
++         ```scala
+
+@ 3 1 0 0dd9d82342add75d0a21f3be962c06f7
++         import soundness.*
+
+@ 0 1 0 023e88caee675ae30c25145143d93c9a
++         def tags(font: Sfnt): List[Text] = font.features.map(_.tag)
+
+@ 1 1 0 1d390aee43c25ddb1d7c5e94c8854bdc
++         ```
+
+@ 0 1 0 195baa6fd3d260a41f10e2833dcc78e7
++   entry #FvarTable
++     info
++         la table des variations de police d'une police variable
+
+@ 0 4 0 1a2b0a2bda6c653e0bc0e7693f185a90
++     detail
++         Les axes d'une police variable — `wght`, `wdth`, `ital`, `slnt`, `opsz`, ou un axe propre
++         à la police — chacun avec les valeurs minimale, par défaut et maximale qu'il admet, sous
++         forme d'enregistrements `Axis`. Accessible au moyen de `Sfnt#fvar`.
+
+@ 0 1 0 094cab7d336b3f681ccb2d39dd207b1c
++     entry #axisCount
++       info
++           le nombre d'axes
+
+@ 0 1 0 1e12e15c6529191c1a6dc7bbf30ca53b
++     entry #axisSize
++       info
++           la taille en octets de chaque enregistrement d'axe
+
+@ 0 1 0 1ce5310b4708140d1b74f29546041d47
++     entry #axes
++       info
++           les axes, chacun avec son tag, sa plage et son identifiant de nom
+
+@ 0 1 0 02c697b72e19aded093d08e5ebc51d17
++     entry #Axis
++       info
++           un axe : son tag de quatre caractères, son minimum, sa valeur par défaut et son
++           maximum, et son identifiant `name`
+
+@ 0 1 0 1323212afe1e0aca15f42b1e8fc1a6f6
++       entry #tag
++         info
++             le tag de l'axe, comme `wght`
+
+@ 0 1 0 09505bb8f7e5d464027769146385c27b
++       entry #minimum
++         info
++             la plus petite valeur qu'admet l'axe
+
+@ 0 1 0 194f79baf235732407d83fd0b71042bb
++       entry #default
++         info
++             la valeur par défaut de l'axe
+
+@ 0 1 0 163d0af3f5eeb8280f1f80a3ac9ce170
++       entry #maximum
++         info
++             la plus grande valeur qu'admet l'axe
+
+@ 0 1 0 16b29b0864229dee0ee3f4821cc2d656
++       entry #nameId
++         info
++             l'identifiant, dans la table `name`, du nom d'affichage de l'axe
+
+@ 0 1 0 0632967a922df06f18e798c2ab7cc8c7
++   entry #HeadTable
++     info
++         l'en-tête de la police : versions, constantes de contrôle, unités par em, boîte
++         englobante, indicateurs
+
+@ 0 6 0 1ebceba3b643794e164eeae514d8404a
++     detail
++         La table `head`, décodée champ par champ dans les types à largeur fixe propres au
++         format (`U16`, `S16`, `B16`, `B32`, `S64`), si bien que chaque champ se lit comme
++         l'entier ou le motif de bits que définit le format. `unitsPerEm` est l'échelle qui relie
++         les unités de dessin aux ems ; `xMin`, `yMin`, `xMax` et `yMax` forment la boîte
++         englobante de tous les glyphes ; `indexToLocFormat` indique si `loca` utilise des
++         positions courtes ou longues.
+
+% 2 1 0 19ef62565b2fbbd91c8080ba024d0dda
+
+% 3 1 0 0680a632c9ae5d021dcf479880fd454e
+
+% 4 1 0 00113718cebb877a0e98c5151b7e892a
+
+% 0 1 0 128237ade6865a061c6406d0ecfac66b
+
+% 0 1 0 0d4ac6149dae80b7144afc32d0ad1439
+
+% 1 1 0 143d68e7cb1492be1b527236566bed52
+
+@ 0 1 0 186de9a5d04bec291e34da9e7be11ed5
++     entry #majorVersion
++       info
++           la version majeure de la table, 1
+
+@ 0 1 0 12e9e3d1efcf7fbb00ad894cb374f3d2
++     entry #minorVersion
++       info
++           la version mineure de la table, 0
+
+@ 0 1 0 0ca7539486c9d60a0faedc44321173d7
++     entry #fontRevisionHigh
++       info
++           la partie entière du numéro de révision de la police
+
+@ 0 1 0 0d69d228f4be85161be02aeb11f452b7
++     entry #fontRevisionLow
++       info
++           la partie fractionnaire du numéro de révision de la police
+
+@ 0 1 0 14b56f1d48ed09921c536d28ed0af4ce
++     entry #checksumAdjustment
++       info
++           la valeur qui donne au fichier entier pour somme la constante du format
+
+@ 0 1 0 119ecf99e48b0ebc1402e2ed1d0aef63
++     entry #magicNumber
++       info
++           la constante de contrôle `0x5f0f3cf5` ; `Sfnt#head` lève `MagicNumber` si elle diffère
+
+@ 0 1 0 1a5d2f5322a234fe19e25cb5ff205d91
++     entry #flags
++       info
++           les bits d'indicateurs de l'en-tête
+
+@ 0 1 0 1bbcaba495547f4b1976d6d41f7fb45b
++     entry #unitsPerEm
++       info
++           les unités de dessin dans un em, par lesquelles les avances sont divisées pour donner
++           des largeurs en ems
+
+@ 0 1 0 0fbd58e778aaa6fc1545a50239289fc8
++     entry #created
++       info
++           la date de création, en secondes depuis 1904
+
+@ 0 1 0 080e93d8285e523205a40de3c2d2803f
++     entry #modified
++       info
++           la date de modification, en secondes depuis 1904
+
+@ 0 1 0 14c4fd3e68dc377618fc9a5e8471edf1
++     entry #xMin
++       info
++           le bord gauche de la boîte englobante de tous les glyphes
+
+@ 0 1 0 0abe8ae26fb8cb200c42b0330517a63f
++     entry #yMin
++       info
++           le bord inférieur de la boîte englobante de tous les glyphes
+
+@ 0 1 0 076f1db057548ec91cbe29dc21081b14
++     entry #xMax
++       info
++           le bord droit de la boîte englobante de tous les glyphes
+
+@ 0 1 0 03d2beb4b1718f211f6f4f9f6bc86c03
++     entry #yMax
++       info
++           le bord supérieur de la boîte englobante de tous les glyphes
+
+@ 0 1 0 14a0b0243324f7d300766cf3ba8eb505
++     entry #macStyle
++       info
++           les bits de style Macintosh : gras, italique, souligné, …
+
+@ 0 1 0 1f7833787e49f6551482d122aa585447
++     entry #lowestRecPpem
++       info
++           la plus petite taille lisible en pixels par em
+
+@ 0 1 0 0478116953aedd2219bcde31a3282a41
++     entry #fontDirectionHint
++       info
++           l'indication de direction, dépréciée
+
+@ 0 1 0 099ba39ebcf642680e3b7859726df433
++     entry #indexToLocFormat
++       info
++           0 pour des positions `loca` courtes (divisées par deux, sur 16 bits), 1 pour des longues
++           (32 bits)
+
+@ 0 1 0 0a4ae65b14ac01f71fe54abb4ed2779a
++     entry #glyphDataFormat
++       info
++           le format des données de glyphes, 0
+
+@ 0 1 0 10921279be12d9c30cee73381bcd0632
++   entry #HheaTable
++     info
++         l'en-tête horizontal : jambage supérieur, jambage inférieur, interligne, pente du curseur
++         et nombre de métriques
+
+@ 0 4 0 04a6966bb8a80ac61e0eb5a02f98ff37
++     detail
++         La table `hhea`, décodée champ par champ. `ascender`, `descender` et `lineGap` sont
++         les métriques verticales dont a besoin la mise en page d'une ligne, en unités de dessin ;
++         `numberOfHMetrics` est le nombre de paires complètes (avance, approche) que contient
++         `hmtx` avant sa fin à chasse fixe.
+
+@ 0 1 0 186aea3e47c393c80d31e698a1c1806f
++     entry #majorVersion
++       info
++           la version majeure de la table
+
+@ 0 1 0 087025ec11d8c1dc14fa981183ac96c4
++     entry #minorVersion
++       info
++           la version mineure de la table
+
+@ 0 1 0 1d7d493b8ac124bf1cf1420f6447ca78
++     entry #ascender
++       info
++           le jambage supérieur typographique, en unités de dessin
+
+@ 0 1 0 002431e63b38eb37095ede2fe906de7a
++     entry #descender
++       info
++           le jambage inférieur typographique, en unités de dessin, négatif sous la ligne de base
+
+@ 0 1 0 072ebffb7cac2dfa05aa5e635915f4f3
++     entry #lineGap
++       info
++           l'interligne typographique
+
+@ 0 1 0 0c7ac0785cfec6e31f5d14dcba3d17be
++     entry #advanceWidthMax
++       info
++           la plus grande chasse dans `hmtx`
+
+@ 0 1 0 128980dfe669daa91de7bd1e05799cd6
++     entry #minLeftSideBearing
++       info
++           la plus petite approche gauche
+
+@ 0 1 0 1b921b677e781e9a17819fc75f2b2c1d
++     entry #minRightSideBearing
++       info
++           la plus petite approche droite
+
+@ 0 1 0 070477fe41835bcc0e36aac4e9fa5ad3
++     entry #xMaxExtent
++       info
++           la plus grande étendue horizontale d'un glyphe
+
+@ 0 1 0 0c0d877d1646bff319793d0fb64499d1
++     entry #caretSlopeRise
++       info
++           la montée de la pente du curseur ; 1 pour un curseur droit
+
+@ 0 1 0 18e860cbb8695d0f1b9ecc7225b5f028
++     entry #caretSlopeRun
++       info
++           la course de la pente du curseur ; 0 pour un curseur droit
+
+@ 0 1 0 0d97fa030a71944e0e4dc107597984ad
++     entry #caretOffset
++       info
++           le décalage horizontal du curseur
+
+@ 0 1 0 06b101e15d4a983807ca53a7a007b679
++     entry #reserved0
++       info
++           un champ réservé
+
+@ 0 1 0 048ecc37177a75fc11bc75d089cffd1b
++     entry #reserved1
++       info
++           un champ réservé
+
+@ 0 1 0 026c968cd1aa53c01bae97f9739843bd
++     entry #reserved2
++       info
++           un champ réservé
+
+@ 0 1 0 1e282b38460a0f470f92dc4b4728d102
++     entry #reserved4
++       info
++           un champ réservé
+
+@ 0 1 0 0021c838ab93273407e21a7fbf14e4d6
++     entry #metricDataFormat
++       info
++           le format des données de métriques, 0
+
+@ 0 1 0 04726ca9671fdbd00a7bc48e5d174caa
++     entry #numberOfHMetrics
++       info
++           le nombre de paires de métriques complètes dans `hmtx`
+
+@ 0 1 0 01cb3966ca3da9ff0363d46fa0b7b873
++   entry #HmtxTable
++     info
++         les métriques horizontales : une chasse et une approche gauche par glyphe
+
+@ 0 4 0 0bcede916eca060c1fff11d54b686303
++     detail
++         Une paire `HMetrics` par glyphe jusqu'au nombre que déclare `hhea`, après quoi la
++         dernière avance se répète — une fin à chasse fixe — et les approches se poursuivent dans
++         un tableau propre. `Sfnt#advanceWidth` et `Sfnt#leftSideBearing` y recherchent le glyphe
++         d'un caractère.
+
+@ 1 1 0 0aa400168726d4d3121e3105b0b6c57c
++     entry #offset
++       info
++           la position de la table dans le fichier
+
+@ 0 1 0 059d8c4828b82a8014b7c0294029d2c4
++     entry #count
++       info
++           le nombre de paires de métriques complètes, d'après `hhea`
+
+@ 0 1 0 0d514c8445419b64181fa3c5124f234c
++     entry #metrics
++       info
++           les paires de métriques complètes, lues une seule fois
+
+@ 0 1 0 1f6a64e55df0744801eaf4e4f02b1972
++     entry #advanceWidth
++       info
++           la chasse d'un glyphe par identifiant, la dernière se répétant pour la fin
+
+@ 0 1 0 1bd7cae1123efd0c16b639cdb0d53eee
++     entry #leftSideBearing
++       info
++           l'approche gauche d'un glyphe par identifiant, d'après les paires ou la fin des
++           approches
+
+@ 0 1 0 138b8f8a1957f5ec08e53f82bec813da
++     entry #HMetrics
++       info
++           la chasse et l'approche gauche d'un glyphe
+
+@ 0 1 0 05ab83af81f0c6570a7773f29e9ca060
++       entry #advanceWidth
++         info
++             l'avance horizontale, en unités de dessin
+
+@ 0 1 0 00e34546384468d3056d136456593d1b
++       entry #leftSideBearing
++         info
++             l'approche gauche, en unités de dessin
+
+@ 0 1 0 12512e496f8336250b9cd9c6d9e17ebd
++   entry #MaxpTable
++     info
++         le profil maximal ; seul le nombre de glyphes est lu
+
+@ 0 2 0 0594192ff99de54b1a0bb2dd665ec5bb
++     detail
++         La table `maxp`. `glyphCount` dimensionne la table `loca` et borne chaque identifiant de
++         glyphe.
+
+@ 1 1 0 0b66434a06f7cb391b8a58c2cd158d8c
++     entry #offset
++       info
++           la position de la table dans le fichier
+
+@ 0 1 0 1091e7e47f34e3a20ee3672061ca5008
++     entry #glyphCount
++       info
++           le nombre de glyphes de la police
+
+@ 0 1 0 1272567f194c2c3402e87eda71505505
++   entry #PostTable
++     info
++         métadonnées PostScript : angle d'italique, position et épaisseur du soulignement, chasse
++         fixe
+
+@ 0 4 0 10e9e2128712056d0306bb0b239ad534
++     detail
++         La table `post`. L'angle d'italique est un nombre de degrés en virgule fixe, négatif pour
++         une inclinaison vers la droite, et c'est l'un des signes que lit `Coverage.of` pour
++         décider qu'un fichier est italique.
+
+% 2 1 0 0d8007feb17c29d80633110110991d13
+
+% 3 1 0 1bb832052ec26fed1ca18ace09d9b8d0
+
+% 4 1 0 12910f6aa4bb4a0612b49f226e185336
+
+% 0 1 0 182cc677406fb3f9005bca4610f62a92
+
+% 1 1 0 0ed542def9e6811d027eeeea8067746e
+
+@ 2 1 0 0a487fbacfe1ad9a01ff63d63d7bd8b5
++     entry #offset
++       info
++           la position de la table dans le fichier
+
+@ 0 1 0 06f2a6d6b779d9511558e5a61894a49f
++     entry #italicAngle
++       info
++           l'angle d'italique en degrés, 0 pour un style droit, décodé depuis la virgule fixe 16.16
+
+@ 0 1 0 1f238c4e20f0c14d094cf9516cb95948
++     entry #underlinePosition
++       info
++           la position du soulignement par rapport à la ligne de base
+
+@ 0 1 0 152f4d3de7e5317e190e6816c1ed08e6
++     entry #underlineThickness
++       info
++           l'épaisseur du soulignement
+
+@ 0 1 0 10e74f81d973955e1aca22b5a40ecd13
++     entry #monospaced
++       info
++           si la police est à chasse fixe
+
+@ 0 1 0 1625c3e54978a65f063d008576b8c957
++   entry #Os2Table
++     info
++         métriques OS/2 et Windows : classes de graisse et de largeur, droits d'incorporation,
++         métriques typographiques
+
+@ 0 7 0 14a99958af25a2b2183423b96fc4352c
++     detail
++         La table `OS/2`, lue champ par champ aux positions que définit sa version. La classe de
++         graisse (1–1000, l'échelle qu'utilise `Weight`) et la classe de largeur (1–9, que nomme
++         `Stretch.widthClass`) sont ce qu'enregistre `Coverage.of` pour une police statique ; les
++         bits de sélection indiquent si le style est italique ; le jambage supérieur, le jambage
++         inférieur et l'interligne typographiques, l'ascendance et la descendance Windows, la
++         hauteur d'x et la hauteur des capitales sont ce dont a besoin un descripteur de police
++         PDF. Les champs plus récents que la version d'une table valent `Unset`.
+
+% 2 1 0 1f3c26e404c5056811b71529abc83609
+
+% 3 1 0 0b41dfb5ba5754301cf4906be14f8b2d
+
+% 4 1 0 1faaf41055f072b810686fd5f69f36dc
+
+% 0 1 0 0d9556c6db19f57c0f556392467fc482
+
+% 1 1 0 19d674a81db981d4004d720453dc7c2b
+
+@ 2 1 0 0672f0590adfe7fb181255562cea1880
++     entry #offset
++       info
++           la position de la table dans le fichier
+
+@ 0 1 0 1ae951ca501b0c1517f74ed5a3e15dfb
++     entry #version
++       info
++           la version de la table, qui détermine quels champs plus récents sont présents
+
+@ 0 1 0 0cefced94182450a0dfaf43cb8cfcd3d
++     entry #weightClass
++       info
++           la graisse sur l'échelle 1–1000 ; `Weight(weightClass)` est la `Weight`
+
+@ 0 1 0 091b6cb02addfb881342a337369e3cf4
++     entry #widthClass
++       info
++           la classe de largeur, de 1 à 9 ; `Stretch.widthClass` la nomme
+
+@ 0 1 0 08d9e5a4e4fea8e21e0b3d13624699b5
++     entry #fsType
++       info
++           les bits des droits d'incorporation
+
+@ 0 1 0 1292c4b801d3b0ca00f930c887f9b4db
++     entry #familyClass
++       info
++           la classe et la sous-classe de police IBM
+
+@ 0 1 0 12c39b5682a5cb2805dc722bf97bad60
++     entry #selection
++       info
++           les bits `fsSelection` : italique, souligné, négatif, contour, barré, gras, …
+
+@ 0 1 0 04f5602be60a4535029b597621aec8f2
++     entry #typoAscender
++       info
++           le jambage supérieur typographique
+
+@ 0 1 0 1abcd347c348234b1d9ab97862e76323
++     entry #typoDescender
++       info
++           le jambage inférieur typographique
+
+@ 0 1 0 125c6d946377c2d8174985e9eeaac90e
++     entry #typoLineGap
++       info
++           l'interligne typographique
+
+@ 0 1 0 15215cb7594444ac095668a74cf715ac
++     entry #winAscent
++       info
++           l'ascendance Windows : le haut de la zone de découpage
+
+@ 0 1 0 02aaaba6db0a4836090ee53838bbedbf
++     entry #winDescent
++       info
++           la descendance Windows : le bas de la zone de découpage
+
+@ 0 1 0 1bb7ca5863556d9b14d745195ed4e890
++     entry #xHeight
++       info
++           la hauteur d'x, à partir de la version 2 de la table ; `Unset` auparavant
+
+@ 0 1 0 1154b4436dd1df7103c7524aedcb685b
++     entry #capHeight
++       info
++           la hauteur des capitales, à partir de la version 2 de la table ; `Unset` auparavant
+
+@ 0 1 0 1dd0e0222c6dd67001ba1d8f87d4656d
++     entry #embeddable
++       info
++           si la police peut être incorporée dans un document
+
+@ 0 2 0 073ddb4c314df94f16d22df8b7c0a6cf
++       detail
++           L'incorporation installable vaut 0, et parmi les bits de restriction seul `0x0002`
++           interdit purement et simplement l'incorporation ; ainsi les polices en
++           aperçu-et-impression et modifiables comptent comme incorporables.
+
+@ 0 1 0 14849d33df930cad031d858c9b8b4ca5
++     entry #italic
++       info
++           si les bits de sélection marquent le style comme italique ou oblique
+
+@ 0 1 0 0288b2a624ae118102c7bc4e080b5611
++       detail
++           Le bit 0 de `fsSelection` marque un style italique et le bit 9 un style oblique ; l'un
++           comme l'autre est incliné.
+
+@ 0 1 0 01eee777643e41be0813a2d310823ffa
++   entry #NameTable
++     info
++         la table des noms : des chaînes localisées et propres à chaque plateforme, comme les noms
++         de famille et PostScript
+
+@ 0 6 0 1ceb9cc5f725b5fe13ae0bd5a4b3226d
++     detail
++         Les enregistrements de la table `name`, chacun une chaîne pour un identifiant de nom sur
++         une plateforme, un encodage et une langue. `apply` choisit le meilleur enregistrement
++         pour un `Sfnt.NameId` : d'abord Windows anglais américain, puis les autres
++         enregistrements Windows et Unicode, puis l'ancien Macintosh. Les chaînes Windows et
++         Unicode se décodent depuis UTF-16BE, les chaînes Macintosh depuis MacRoman avec
++         ISO-8859-1 en repli.
+
+@ 1 1 0 0fb218cbd5959b90155774c0708d924d
++     entry #offset
++       info
++           la position de la table dans le fichier
+
+@ 0 1 0 11e3cbb972af08fb0c5e877dac2f6463
++     entry #count
++       info
++           le nombre d'enregistrements de noms
+
+@ 0 1 0 0f3f930fae692814070c92ddb8b14bf1
++     entry #records
++       info
++           chaque enregistrement, avec sa plateforme, son encodage, sa langue, son identifiant de
++           nom et son étendue
+
+@ 0 1 0 113d3fef9629f6ae007bec5ce35ce96a
++     entry #apply
++       info
++           la meilleure chaîne pour un identifiant de nom, ou `Unset` si la police n'en enregistre
++           aucune
+
+@ 1 1 0 09199ca52fc79c1f06aff5a8509d8145
++       detail
++           ```scala
+
+@ 2 1 0 128d011e463d04bf0778473a555495e8
++           import soundness.*
+
+@ 3 1 0 118501d041d753f11774bc8293c2de4c
++           import strategies.throwUnsafely
+
+@ 0 1 0 17fe423f4b6b726e1936f006fdbeb132
++           def postScriptName(font: Sfnt): Optional[Text] = font.name(Sfnt.NameId.PostScriptName)
+
+@ 1 1 0 19ec48fa56284abc0067fe5fb53d3124
++           ```
+
+@ 0 1 0 0d97d1ee52e3958b152cec302d2f96c6
++     entry #Record
++       info
++           un enregistrement de nom : plateforme, encodage, langue, identifiant de nom, et
++           emplacement de sa chaîne
+
+@ 0 1 0 0af57028c072047e10e4602de079fe6f
++       entry #platformId
++         info
++             la plateforme : 0 Unicode, 1 Macintosh, 3 Windows
+
+@ 0 1 0 0a07010b37ded3440cd3247bb4a9096b
++       entry #encodingId
++         info
++             l'encodage au sein de la plateforme
+
+@ 0 1 0 1cbed1b0477741870994f2b8596e3397
++       entry #languageId
++         info
++             la langue ; `0x409` est l'anglais américain de Windows
+
+@ 0 1 0 18276d8796c1555501cb72551e30b93f
++       entry #nameId
++         info
++             l'identifiant de nom, comparé à `Sfnt.NameId#ordinal`
+
+@ 0 1 0 1f3c78b85c7d35970f23c8a7cebe5fdd
++       entry #length
++         info
++             la longueur de la chaîne en octets
+
+@ 0 1 0 0bc6476020eebb8e04a3b6125eda5e73
++       entry #start
++         info
++             la position de la chaîne dans le fichier
+
+@ 0 1 0 12906bb5121d79821b727b4c0e84cb01
++       entry #decode
++         info
++             la chaîne, décodée selon l'encodage de sa plateforme
+
+@ 0 1 0 0289d613307d77b00d1ea7c1f142ac91
++   entry #CmapTable
++     info
++         les correspondances des caractères vers les glyphes, sous forme de sous-tables d'encodage
++         de plusieurs formats
+
+@ 0 8 0 0c0c7be1d19b89241f48da9424fc7c72
++     detail
++         La table `cmap` contient une ou plusieurs sous-tables `GlyphEncoding`, chacune pour une
++         plateforme et un encodage, et chacune dans l'un des formats que lit la bibliothèque : 0
++         (un tableau indexé par octet), 4 (des plages segmentées sur le plan multilingue de base),
++         6 (une suite dense) et 12 (des groupes couvrant tout Unicode). `best` choisit la
++         sous-table préférée — Unicode complet avant le BMP, Unicode avant le symbole Windows et
++         Macintosh — et `glyph` résout un caractère au moyen de celle-ci. Une sous-table dans tout
++         autre format lève `Font.Error` avec `UnknownFormat` lors de la première lecture de son
++         `format`.
+
+@ 1 1 0 0c9270a16e38e4e41e26b54957234af9
++     entry #offset
++       info
++           la position de la table dans le fichier
+
+@ 0 1 0 14f284c1506237ea023e8bc6fbb6f0bd
++     entry #version
++       info
++           la version de la table
+
+@ 0 1 0 10974ec43ab3ddfd1fefc57ec0dee5c0
++     entry #numTables
++       info
++           le nombre de sous-tables d'encodage
+
+@ 0 1 0 1f25a0dd6247346515cebd13f5f0ce0d
++     entry #glyphEncodings
++       info
++           chaque sous-table d'encodage, avec sa plateforme, son encodage et sa position
+
+@ 0 1 0 04b54a7c5fb9dfbf11fdeb4291410923
++     entry #best
++       info
++           la sous-table préférée, ou `Unset` s'il n'y en a aucune
+
+@ 0 3 0 12e30413a4e52848141f51d1364a74d9
++       detail
++           Classées par (plateforme, encodage) : d'abord Windows Unicode complet (3, 10), puis
++           Unicode complet (0, 4) et (0, 6), Windows BMP (3, 1), Unicode BMP (0, 3), les autres
++           Unicode, le symbole Windows (3, 0) et enfin Macintosh Roman (1, 0).
+
+@ 0 1 0 1fc356f7aafb4e9f1a1912ebf16f148c
++     entry #glyph
++       info
++           le glyphe d'un caractère au moyen de la meilleure sous-table
+
+@ 0 3 0 13f2c7b7324725ac187a6f4a3c85cc85
++       detail
++           Lève `Font.Error` avec `MissingEncoding` s'il n'y a pas de sous-table, et
++           `UnknownFormat` si la meilleure est dans un format que la bibliothèque ne lit pas. Un
++           caractère sans correspondance donne le glyphe 0.
+
+@ 0 1 0 1978c8fc5bfbb6a608d1435c8462b7fd
++     entry #GlyphEncoding
++       info
++           une sous-table d'encodage : sa plateforme, son encodage, sa position et son format
++           analysé
+
+@ 0 3 0 1259a270e438d91b0167a0ab529b44e4
++       detail
++           Le `format` de la sous-table est analysé une seule fois, à la première utilisation, en
++           un `Format` dont `glyph` effectue la recherche ; l'analyse est mémoïsée sous un mutex
++           pour que des lectures concurrentes la partagent.
+
+@ 0 1 0 05fab1fbaf5f1a22148e9be3452e5061
++       entry #platformId
++         info
++             la plateforme de la sous-table
+
+@ 0 1 0 17dd2e1d1d31459618137defe6f3b718
++       entry #encodingId
++         info
++             l'encodage de la sous-table
+
+@ 0 1 0 0317d89c345394971823f235e733d3e1
++       entry #offset
++         info
++             la position de la sous-table dans le fichier
+
+@ 0 1 0 03aebed076bf37fc0d401d682176517a
++       entry #formatId
++         info
++             le numéro de format de la sous-table, lu immédiatement
+
+@ 0 1 0 07aa5e46c300db4a12ebbe85dd2c7194
++       entry #format
++         info
++             la sous-table analysée, qui lève `Font.Error` avec `UnknownFormat` pour un format non
++             lu
+
+@ 0 1 0 0ca4fbef1c0e72990af7e69392586dee
++       entry #Segment
++         info
++             un segment de format 4 : une plage de caractères avec son delta et sa position de
++             plage
+
+@ 0 1 0 1882f417d371c1b919485d03461aa294
++         entry #start
++           info
++               le premier caractère du segment
+
+@ 0 1 0 04b54b3f01eac9ee1c37a526dbcae6ec
++         entry #end
++           info
++               le dernier caractère du segment
+
+@ 0 1 0 19f2eb25322c1eb910936407d72e49b1
++         entry #delta
++           info
++               ajouté à un caractère pour donner son glyphe, quand la position de plage est nulle
+
+@ 0 1 0 031edf6283c9125b1f2ad01f7ba270f5
++         entry #rangeOffset
++           info
++               non nul quand le segment passe indirectement par le tableau des identifiants de
++               glyphes
+
+@ 0 1 0 0b02e4115b2096b91bd238e382be71b1
++       entry #Format
++         info
++             ce que sait faire chaque sous-table analysée : associer un caractère à un glyphe de
++             cette police
+
+@ 0 1 0 04f5f6505f8641800fd07e1a57e4f094
++         entry #glyph
++           info
++               le glyphe d'un caractère, ou le glyphe 0 s'il n'a pas de correspondance
+
+@ 0 1 0 182db1c9a7e9cd510d1469e78a75e468
++       entry #Format0
++         info
++             un tableau d'identifiants de glyphes indexé par octet, pour les 256 premiers codes de
++             caractères seulement
+
+@ 0 1 0 0efb59103c06bbbc00b94b9f6331b35a
++         entry #start
++           info
++               la position du tableau
+
+@ 0 1 0 03cec22539b6993d1e304652a0af6ee3
++         entry #glyph
++           info
++               le glyphe d'un caractère inférieur à 256, sinon le glyphe 0
+
+@ 0 1 0 1d4e5fdd9a56d5fc014cf4d522f30634
++       entry #Format4
++         info
++             des plages segmentées sur le plan multilingue de base, par delta ou par indirection
+
+@ 0 1 0 04027b142a74364400b23df67f5a1c0f
++         entry #idRangeOffsetsStart
++           info
++               la position du tableau des positions de plage, par rapport auquel les indirections
++               sont relatives
+
+@ 0 1 0 049642d895987f830fe45cc097b41726
++         entry #segments
++           info
++               les segments, dans l'ordre de leurs caractères de fin
+
+@ 0 1 0 0935ce74c17eb3c2042f269ef7ca9f93
++         entry #glyph
++           info
++               le glyphe d'un caractère : trouvé par segment, puis par delta ou au moyen du tableau
++               des identifiants de glyphes
+
+@ 0 1 0 126e4108f57b509e135fa43d76b6a647
++       entry #Format6
++         info
++             une suite dense d'identifiants de glyphes pour une plage contiguë de codes de
++             caractères
+
+@ 0 1 0 180570a40160504c0a3e02f6c4f2fdce
++         entry #first
++           info
++               le premier code de caractère de la suite
+
+@ 0 1 0 082641da2073402009baf954f148798b
++         entry #count
++           info
++               le nombre de codes dans la suite
+
+@ 0 1 0 0e54d085d436622018b9c3f47865d729
++         entry #start
++           info
++               la position du tableau des identifiants de glyphes
+
+@ 0 1 0 05d08f8486bccf001dbb5495e65d0696
++         entry #glyph
++           info
++               le glyphe d'un caractère dans la suite, sinon le glyphe 0
+
+@ 0 1 0 105e551fb61c46d91406fd7bd3d101f5
++       entry #Format12
++         info
++             des groupes de correspondances séquentielles couvrant tout Unicode, parcourus par
++             recherche dichotomique
+
+@ 0 1 0 185728206b8b97951f413dad9122b3f3
++         entry #groupCount
++           info
++               le nombre de groupes
+
+@ 0 1 0 139c299c5bfb6fe616b0ddd6e30ce551
++         entry #start
++           info
++               la position du tableau des groupes
+
+@ 0 1 0 0254157b5f9ea92105f7d692f310abd1
++         entry #glyph
++           info
++               le glyphe d'un caractère, par recherche dichotomique sur les groupes
+
+@ 0 1 0 0cdf83def44c05a011e576661ed7a75c
++ entry .Truetype
++   info
++       une police TrueType : un sfnt dont les contours sont quadratiques, dans `glyf` et `loca`, et
++       qu'on peut réduire à un sous-ensemble
+
+@ 0 6 0 09e98c75f34aa092086ad09c7c2045d9
++   detail
++       Un `Truetype` est un `Sfnt` doté des deux tables de contours — `loca`, l'index de
++       l'emplacement des données de chaque glyphe, et `glyf`, les données elles-mêmes — et des
++       opérations qui en ont besoin. `Truetype(source)` en lit un depuis toute source lisible en
++       flux sans sonder le format ; `Sfnt(source)` est le point d'entrée habituel, car il
++       renvoie un `Truetype` pour une police sans table `CFF `.
+
+@ 0 2 0 0b3dbde7ac8f3f2f191501b4e258ddf1
++       L'opération qui compte est `#subset` : une nouvelle police ne contenant que les contours
++       dont certains caractères ont besoin, pour l'incorporer dans un document.
+
+% 2 1 0 01e34357d1b1ace312bda73e1eccb3bd
+
+% 3 1 0 082f214d778838a10b376348fbbcb81e
+
+% 4 1 0 04bf0752aa0731c81b0a8592033ab19f
+
+% 0 1 0 085ef5989bf2586711352803bcfe1585
+
+% 1 1 0 1f43393010905c2c00b0d29c9ed4bca2
+
+@ 0 7 0 13e15d547801325a1014f3b5778f991d
++       La réduction conserve la numérotation d'origine des glyphes — les glyphes inutilisés
++       gardent leur numéro avec des contours vides — si bien que la table des caractères, les
++       métriques et chaque référence entre glyphes restent valides sans être réécrites, et que
++       chaque autre table est reprise inchangée. Les glyphes composites sont suivis :
++       l'ensemble conservé est la fermeture transitive par composition (`#glyphClosure`) ;
++       ainsi un caractère accentué conserve les composants à partir desquels il est dessiné.
++       Le résultat est un fichier complet, sommes de contrôle comprises, avec `head` passé à
++       des positions `loca` longues.
+
+% 1 1 0 0d0668d2963a5cac1d77311fe281e317
+
+% 1 1 0 03b9109a5c4a70e80bd1193965612465
+
+@ 0 1 0 04841c63e718837a1b49771f84ee6776
++   entry .apply
++     info
++         lit une police TrueType depuis toute source lisible en flux
+
+@ 0 3 0 007a452fa124d277129687320123ebcd
++     detail
++         `Truetype(source)` lit entièrement une source `Streamable by Data over Credit` ;
++         `Truetype(data)` est le constructeur de la case class sur des octets. Ni l'un ni l'autre
++         ne vérifie le format des contours : `Sfnt(…)` le fait, et c'est lui qu'il faut utiliser
++         quand le fichier pourrait être OpenType.
+
+@ 1 1 0 046d1b6a51d0426e00efdfbedeb1a55d
++   entry #data
++     info
++         les octets du fichier de police
+
+@ 0 1 0 07d66825ba5994ee072985c53e7a44b7
++   entry #loca
++     info
++         la table `loca` : la position de chaque glyphe dans `glyf`
+
+@ 0 2 0 01c77aed55a6596c023adb4fb8a97fc1
++     detail
++         Dimensionnée par `maxp.glyphCount` et lue dans le format que nomme
++         `head.indexToLocFormat`. Lève `Font.Error` avec `MissingTable` si `loca`, `maxp` ou
++         `head` est absente.
+
+@ 0 1 0 0395585179ddf26f1b23e201d65430f7
++   entry #glyf
++     info
++         la table `glyf` : les contours des glyphes, indexés au moyen de `loca`
+
+@ 0 1 0 1bf76db30d97566209cd0cb1b76e0216
++     detail
++         Lève `Font.Error` avec `MissingTable` si `glyf` ou `loca` est absente.
+
+@ 0 1 0 1785b9a0d83f8a8b0ab8f0b6e82d956f
++   entry #subset
++     info
++         une nouvelle police ne contenant que les glyphes dont certains caractères ont besoin,
++         numérotation préservée
+
+@ 0 6 0 1f050e1201b78e6f10bc00bfa8694f18
++     detail
++         `subset(chars: Set[Char])` ou `subset(text: Text)`. Les glyphes conservés sont ceux
++         auxquels correspondent les caractères, le glyphe 0, et la fermeture transitive par les
++         composants composites. Chaque autre glyphe garde son numéro et perd son contour ; `glyf`
++         et `loca` sont reconstruites (cette dernière toujours au format long, `head` étant ajusté
++         pour l'indiquer), et chaque autre table est copiée octet par octet. Le fichier entier est
++         réassemblé avec `Sfnt.assemble` ; ses sommes de contrôle sont donc valides. Lève
++         `Font.Error` si une table dont la reconstruction a besoin manque.
+
+@ 2 1 0 1491c2eb7077bb6f113ebac8c10128e5
++         ```scala
+
+@ 3 1 0 1c43205d7c84a62d0aabcf5c7ffebea0
++         import soundness.*
+
+@ 4 1 0 128150f0a8e57f601696e138a75cc2b1
++         import strategies.throwUnsafely
+
+@ 0 1 0 1e54c0e3d5f664e215a06352159ec437
++         def embeddable(font: Truetype): Truetype = font.subset(Set('H', 'e', 'l', 'o'))
+
+@ 1 1 0 094218539787af3605ca9832dcd856d7
++         ```
+
+@ 0 1 0 1426685179ce0119091717fab02a236a
++   entry #glyphClosure
++     info
++         les glyphes nécessaires au rendu d'un ensemble de glyphes, en suivant les composants
++         composites
+
+@ 0 3 0 1d59fa4ef6495dd303724c21eaaa1e37
++     detail
++         La fermeture transitive d'un ensemble d'identifiants de glyphes par
++         `GlyphRecord#components` : un glyphe composite est dessiné à partir d'autres, qui peuvent
++         eux-mêmes être composites. `#subset` l'utilise pour décider de ce qu'il faut conserver.
++         Lève `Font.Error` si `glyf` ou `loca` manque.
+
+@ 0 1 0 15a758657448880f03a06c4aa0d77123
++   entry #LocaTable
++     info
++         l'index d'emplacement des glyphes : pour chaque glyphe, l'endroit où ses données
++         commencent dans `glyf`
+
+@ 0 4 0 01a4f76adc1b42ad00d2114cdd0ce4e1
++     detail
++         Une position par glyphe plus une ; ainsi l'étendue d'un glyphe est la différence entre
++         sa position et la suivante. Au format court, les positions sont stockées divisées par
++         deux sur seize bits ; au format long, elles sont stockées telles quelles.
+
+@ 1 1 0 185ffd71498f72a106bf01b8b3ecf78c
++     entry #offset
++       info
++           la position de la table dans le fichier
+
+@ 0 1 0 17f667e769f047760ef01566055a1605
++     entry #glyphCount
++       info
++           le nombre de glyphes, d'après `maxp`
+
+@ 0 1 0 14bee16682011fb60f4d0fb8a1d00c31
++     entry #longFormat
++       info
++           si les positions sont sur 32 bits (`true`) ou sur 16 bits divisées par deux (`false`)
+
+@ 0 1 0 035c0ed3035c2d150b7641b138e4a310
++     entry #offsets
++       info
++           les positions, non divisées, lues une seule fois
+
+@ 0 1 0 083001022b33ae231a099867315d36d1
++   entry #GlyfTable
++     info
++         les contours des glyphes, chacun accessible par identifiant sous forme de `GlyphRecord`
+
+@ 0 4 0 0b0336bd1d04ef290cfb1d29c048b61e
++     detail
++         `glyf(id)` localise les données d'un glyphe au moyen de `loca`. L'enregistrement expose
++         les octets bruts, le nombre de contours, le caractère composite ou non du glyphe et, s'il
++         l'est, les composants à partir desquels il est dessiné ; les contours eux-mêmes ne sont
++         pas décodés au-delà.
+
+@ 1 1 0 02fb10299155a12614469ad370433b44
++     entry #offset
++       info
++           la position de la table dans le fichier
+
+@ 0 1 0 1edb479aab8455b608c351584febb2b7
++     entry #loca
++       info
++           la table `loca` au moyen de laquelle les contours sont indexés
+
+@ 0 1 0 0ab978268a3d4378184bbd5a544902ce
++     entry #apply
++       info
++           l'enregistrement d'un identifiant de glyphe
+
+@ 0 1 0 03967e479ca2b2fc13db505fdb45bd1b
++     entry #GlyphRecord
++       info
++           les données brutes d'un glyphe : son étendue, son nombre de contours et ses composants
++           composites
+
+@ 0 4 0 1e3b2fc739093763186ff90350dc4001
++       detail
++           Un glyphe sans contour — une espace, ou un glyphe écarté par `#subset` — a une étendue
++           nulle ; un glyphe composite a un nombre de contours négatif et énumère les glyphes à
++           partir desquels il est assemblé.
+
+@ 0 1 0 132fa83368f5f2e001db6f044e2ba273
++       entry #start
++         info
++             la position des données du glyphe dans le fichier
+
+@ 0 1 0 0528daa6988a351a03491680ea8bed56
++       entry #length
++         info
++             la longueur des données du glyphe ; 0 pour un glyphe sans contour
+
+@ 0 1 0 106524e111261e5a12bb9660a1c216f6
++       entry #empty
++         info
++             si le glyphe n'a pas de contour
+
+@ 0 1 0 01363612f4ec69e01957367586e32043
++       entry #bytes
++         info
++             les données brutes du glyphe
+
+@ 0 1 0 0f463542ba12b76309ed5c7aee722a13
++       entry #contourCount
++         info
++             le nombre de contours, ou une valeur négative pour un glyphe composite
+
+@ 0 1 0 0c8f1a6cd549e62a04d7dfb7eacb0390
++       entry #composite
++         info
++             si le glyphe est assemblé à partir d'autres glyphes
+
+@ 0 1 0 07d4abe028a3b22409b62e97fdd4b568
++       entry #components
++         info
++             les identifiants des glyphes à partir desquels un composite est dessiné ; `Nil` pour
++             un glyphe simple
+
+@ 0 2 0 167cae645f5a7eae158a3a5b9d04d662
++         detail
++             Lus une seule fois, en parcourant les enregistrements de composants selon leurs
++             indicateurs : arguments sur un mot ou un octet, et une seule échelle, des échelles x
++             et y distinctes, ou une transformation 2×2.
+
+@ 0 1 0 182d0e6aa3d51277062e20b4752d43d4
++ entry .Opentype
++   info
++       une police OpenType : un sfnt dont les contours sont PostScript, dans une table `CFF `
+
+@ 0 6 0 1c8a3253e676cc4f0ecfee67921f105f
++   detail
++       Un `Sfnt` dont les contours des glyphes sont stockés dans `CFF `. Chaque table partagée
++       fonctionne — correspondance des caractères, métriques, noms, `OS/2`, `fvar`,
++       fonctionnalités de mise en page — mais les données de contours ne sont pas encore
++       analysées ; il n'y a donc pas d'équivalent de `Truetype#glyf` ni de réduction à un
++       sous-ensemble. `Sfnt(source)` renvoie un `Opentype` quand il trouve la table `CFF ` ;
++       `Opentype(source)` en lit un sans vérification.
+
+% 1 1 0 0c4c215b71ade75b0b6d56ebb8f467cc
+
+% 1 1 0 09b149d3fc254bef09ba8abba6758304
+
+@ 0 1 0 087c300f10e10e37013cc94afe17daeb
++   entry .apply
++     info
++         lit une police OpenType depuis toute source lisible en flux
+
+@ 1 1 0 0c91981056ea5ecc1f041c6f3a788ea9
++   entry #data
++     info
++         les octets du fichier de police
+
+@ 0 1 0 0c5db2110664c2570b4ab363baa721e7
++ entry .Glyph
++   info
++       un glyphe d'une police particulière, par son identifiant
+
+@ 0 6 0 034f661ec7a35c660442db34cc866c57
++   detail
++       `Glyph[font.type]` est une enveloppe opaque sur un identifiant de glyphe, typée pour la
++       police dans laquelle il a été résolu ; ainsi un glyphe d'une police ne peut pas servir à
++       indexer une autre police. `Sfnt#glyph(char)` est le moyen d'en obtenir un ; `glyph.id`,
++       une extension déclarée dans `internal`, relit l'identifiant (0 est le glyphe manquant).
++       `Glyph(font, id)` enveloppe un identifiant déjà connu. Le type est
++       `phoenicia.internal.Glyph`, exporté ici.
+
+% 2 1 0 052a7e1e06e94e0f056f2e0594b80f82
+
+% 3 1 0 0b8aa9def61b663a1feb47bce5956c14
+
+% 4 1 0 0437f580ddb9394b0e7e2814ea5147d5
+
+% 0 1 0 1ea461913e74a44f1c6eba2654932309
+
+% 1 1 0 06a9444b0df9015216b804848f2c4e9c
+
+@ 0 2 0 07dd1ebec1967310045a30e568b0ac77
++       Les membres de son compagnon sont déclarés dans `internal.Glyph`, d'où le type est
++       exporté, et documentés là.
+
+% 1 1 0 12674fa921ae801c1856518f6b62ffa3
+
+@ 0 1 0 0d00cde479db274807a554a0b3bcdf7a
++ entry .Typeface
++   info
++       une famille de polices désignée par son nom, qui est aussi son type : `Typeface["Inter"]`
++       est un `Typeface of "Inter"`
+
+@ 0 6 0 02c4e6ca0eb2f1eb0776690b23696e7b
++   detail
++       Un `Typeface` nomme une famille — le nom qu'écrit un document là où il fait référence à
++       la famille, une `font-family` CSS ou un `/BaseFont` PDF — et porte ce nom comme son
++       `Topic` ; ainsi `Typeface["Inter"]` a le type `Typeface of "Inter"` et une fourniture pour
++       une famille se distingue d'une fourniture pour une autre pendant la compilation du code.
++       Il ne dit rien de la provenance de la police : c'est le rôle d'une fourniture
++       `Typesettable`.
+
+@ 0 3 0 02b07e962b0b2fe902a1e75a96489591
++       On atteint les styles d'une famille de manière fluide. `#face` (ou `#regular`) est son
++       style droit normal, et `#bold`, `#light`, `#italic` et les autres choisissent à partir
++       de là ; chacun est un `Face of "Inter"`, qui porte sa demande dans son type pour la
++       vérification à la compilation.
+
+% 2 1 0 0e3de47e2ccd08a110fee7d5c02ccfdc
+
+% 3 1 0 0f0502210be118600c016a683d7b3c63
+
+% 0 1 0 1fd77387225ee42216a80fae5635289c
+
+% 0 1 0 0569c5651bd2d5710d79c49a6d57b445
+
+% 0 1 0 0591e0ad8475396a07feb7f5d602e53f
+
+% 0 1 0 042ea1d71f2fedc109f39a620eaa62dc
+
+% 1 1 0 044bc9cfdfb4316c007f6287f5b8305e
+
+@ 0 4 0 07a8f6deb7d9484b0ff0751aa6c41618
++       Les familles génériques CSS — `.SansSerif`, `.Serif`, `.Monospace`, `.Cursive`,
++       `.Fantasy` et `.SystemUi` — sont aussi des familles ; un navigateur compose chacune avec
++       ce dont il dispose ; ainsi le compagnon `Web` de cataclysm les fournit sans qu'il faille
++       rien déclarer. Deux familles sont égales quand leurs noms le sont, et une famille
++       s'affiche comme son nom.
+
+% 1 1 0 029191e12616d51d011f5bcee30664ad
+
+% 2 1 0 0c8cd626203e4d7f1cfb92633fa45ddf
+
+% 2 1 0 16b416dfa30cbdec108782ef3340319b
+
+@ 0 1 0 1651dfdd65b35771169f43480da5bafb
++   entry .apply
++     info
++         `Typeface["Inter"]` : une famille de polices, à partir de son nom comme type littéral
+
+@ 0 3 0 172caa19e3752d0d1eb95b28248b2df8
++     detail
++         Une méthode inline dont l'argument de type est le nom de la famille, sous forme de
++         `Label` : le nom est lu depuis le type avec `constValue` ; il doit donc être un littéral.
++         Le résultat est `Typeface of
++         family`, avec le nom à la fois comme valeur et comme type.
+
+@ 0 1 0 0614f07acd08d0ba05330a6c43a38f98
++   entry .SansSerif
++     info
++         la famille générique CSS `sans-serif`, un `Typeface of "sans-serif"`
+
+@ 0 1 0 1136c885b60127c819faf6a4fe94defb
++   entry .Serif
++     info
++         la famille générique CSS `serif`, un `Typeface of "serif"`
+
+@ 0 1 0 18cefa5ae8e985cc17b4eb1e2fe69465
++   entry .Monospace
++     info
++         la famille générique CSS `monospace`, un `Typeface of "monospace"`
+
+@ 0 1 0 177d594ed6e6cd321c19de6ab65dfb1e
++   entry .Cursive
++     info
++         la famille générique CSS `cursive`, un `Typeface of "cursive"`
+
+@ 0 1 0 17f55616925a71320133a29818d3c33f
++   entry .Fantasy
++     info
++         la famille générique CSS `fantasy`, un `Typeface of "fantasy"`
+
+@ 0 1 0 1be51e619a0f567203dc3831e1499893
++   entry .SystemUi
++     info
++         la famille générique CSS `system-ui`, un `Typeface of "system-ui"`
+
+@ 0 1 0 0c9580cf0ef7572901ac0f77af5b9952
++   entry .showable
++     info
++         affiche une famille comme son nom de famille
+
+@ 0 1 0 035ecbcb390834c51cd918a0a5d83078
++   entry .inspectable
++     info
++         inspecte une famille sous la forme `Typeface["Inter"]`
+
+@ 0 1 0 186b2d417e28a30b1540ae8cb2fc5378
++   entry #name
++     info
++         le nom de famille, sous forme de texte
+
+@ 0 1 0 1ef37098f983c01d0752ba887b27d2dd
++   entry #Topic
++     info
++         le nom de famille comme type littéral : `"Inter"` pour `Typeface["Inter"]`
+
+@ 0 1 0 069c6295a7d20ea4104cff1aeb9fb29a
++   entry #face
++     info
++         le style droit normal de la famille, à partir duquel les autres sont choisis
+
+@ 0 3 0 0419b9a316636320014b9d5f545752e3
++     detail
++         Un `Face of Topic` en `Weight.Regular`, `Slant.Upright` et `Stretch.Normal`, sans
++         variations ni fonctionnalités, dont le type enregistre `Weights = 400`,
++         `Slanting = "upright"` et `Enabled = Nothing`. `#regular` est le même style.
+
+@ 0 1 0 0a6b92f6a73abe1c045ba07e3e259b3f
++   entry #regular
++     info
++         le style droit normal ; identique à `#face`
+
+@ 0 1 0 0ab748c0f8ae5190090b0b9f63a8b9e6
++   entry #light
++     info
++         le style droit maigre (300)
+
+@ 0 1 0 01e60a2bf68befe70e4575d9e1b2bbe0
++   entry #medium
++     info
++         le style droit medium (500)
+
+@ 0 1 0 10d8e6a5949521d40ccda8aed2cb8fc8
++   entry #semibold
++     info
++         le style droit demi-gras (600)
+
+@ 0 1 0 1539f4b55b08e1b80eabc5ede24aa0ea
++   entry #bold
++     info
++         le style droit gras (700)
+
+@ 0 1 0 09149a91a1a3f39219d9a7596bbebbf9
++   entry #black
++     info
++         le style droit extra-gras (900)
+
+@ 0 1 0 10e3f66f182f3aa70de9b35f73e2d764
++   entry #italic
++     info
++         le style italique normal
+
+@ 0 1 0 0772c9b9f4dc08981eb17598a0b450d6
++ entry .Face
++   info
++       comment composer une famille : graisse, inclinaison, chasse, axes de variation et
++       fonctionnalités de mise en page
+
+@ 0 6 0 0beaf4cb7a562cb81ad9922d6e22d07f
++   detail
++       Un `Face` décrit une demande : une `#typeface` avec une `#weight`, une `#slant` et un
++       `#stretch`, avec des `#variations` sur d'éventuels autres axes d'une police variable et
++       les `#features` à activer ou désactiver. Il ne dit rien de la provenance de la police ;
++       l'associer à une fourniture `Typesettable` produit une `Font`. Le nom de la famille est
++       le `Topic` du style ; ainsi `Typeface["Inter"].bold` est un `Face of "Inter"`.
+
+@ 0 2 0 07ba8bacd63b51dd049fe305f1f7e347
++       Les styles se construisent de manière fluide à partir du `face` d'une famille, chaque
++       méthode renvoyant un nouveau style dont une partie est modifiée et dont le type est mis
++       à jour en conséquence :
+
+% 2 1 0 150083330a06980c148330eaf92b6044
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 04554ff5aa7fbff011575f4fe320ecd7
+
+% 1 1 0 04c62758f4f83ac1153f9fb7ce33b9af
+
+% 0 1 0 0184f8be8bf7a3db003c5c0054d7f08e
+
+% 0 1 0 02de0783f879a54910f30064330e8f62
+
+% 1 1 0 1f7fca2031e3261912e5430dd89e41fb
+
+% 0 1 0 121c3c927674ac221315e5bd29a3a62c
+
+% 1 1 0 1d6e75103b2ce451138ae63de30a7210
+
+% 0 1 0 0d71b14ffd26e3501840c43492c7d6de
+
+% 0 1 0 1be8535929107ef8169e964b530d3074
+
+% 1 1 0 08893dbd810f73c5080ae887ef94bdb8
+
+% 0 1 0 1effa55a791cc2561b59e3931df954f0
+
+% 1 1 0 128ae89ae0a17a080c53be56ca133ec4
+
+% 0 1 0 1d1d0436b816aece0cf422f0fd200839
+
+% 0 1 0 030cb1b67323f5581aeefb5daa8d3223
+
+% 1 1 0 17abffee9f19b9b51227bb572eb61f84
+
+% 0 1 0 19c61af23a6d01220888c182f086757a
+
+% 1 1 0 066baf3fbf40be5e0ec41ef05a4d2ae9
+
+% 0 1 0 0338895b0ad0be5110a2fb002bedd872
+
+% 0 1 0 18a5affb21db0d8306e71d1bbc44b9da
+
+% 1 1 0 03208a2d69f8707a1db07b7af8ea612d
+
+% 0 1 0 0cf795cd3ff681c00ca1e60da84e84aa
+
+% 1 1 0 0565070e99edbd38189dd18933ec865d
+
+% 0 1 0 0b2fdbff1fe44bc207c1115b13aa6ce6
+
+% 0 1 0 0c0aa6b929b0c0130b682ec920d3f242
+
+% 0 1 0 054a0417a0857ac20b9419f2045bb890
+
+% 1 1 0 0d91bb94e3a6bdc806259c1d088a6784
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 9 0 07345358dec714fe1c5b999b31194c92
++       Trois membres de type enregistrent ce que le code a demandé, lorsque c'est connu pendant
++       la compilation du code : `#Weights` est la graisse sous forme de littéral (`700`),
++       `#Slanting` vaut `"upright"` ou `"italic"`, et `#Enabled` est l'union des tags des
++       fonctionnalités activées (`"onum" | "tnum"`, ou `Nothing` s'il n'y en a aucune). Une
++       partie décidée à l'exécution — `#weighing` avec une graisse calculée, `#slanted`,
++       `#featuring` avec une fonctionnalité désignée par son tag — est enregistrée comme
++       `Face.Runtime`. Quand une `Font` est créée à partir d'une fourniture dont le fichier est
++       dans le classpath, la demande enregistrée est vérifiée par rapport au fichier pendant la
++       compilation du code ; le reste est vérifié à la création de la police. Un style annoté
++       comme simple `Face of "Inter"` perd cet enregistrement, et n'est vérifié qu'à
++       l'exécution.
+
+@ 0 2 0 135a63b7af107b8a18c5ad4a75c104f0
++       `Face(typeface, weight, slant, …)` construit un style à partir de valeurs d'exécution,
++       chaque membre de type valant `Runtime`. Un style s'affiche sous la forme
++       `Inter 700 italic`.
+
+% 1 1 0 15b5badb1ec0839e10188b1b40403207
+
+% 2 1 0 0daf18bbbf36f6ac13c4eb7e509d7b5c
+
+% 0 1 0 011566bfdd640c841186f1c1dc58fad3
+
+% 0 1 0 0d8247cc4d067a2e1e25d2357ce87338
+
+% 0 1 0 1d813bd53f13f3d308064c2d493b6b86
+
+% 0 1 0 0c8caa14dfa91dfb1ad3ca2bd89b8599
+
+@ 0 1 0 0e440d83d33dd0130f58f93d81b3552e
++   entry .Runtime
++     info
++         le type marqueur d'une partie d'une demande décidée à l'exécution
+
+@ 0 2 0 190f8913ac032f4703f501709a0bfeb1
++     detail
++         Un trait scellé utilisé uniquement comme type : `Weights = Face.Runtime` indique que la
++         graisse a été calculée plutôt que choisie par son nom ; la vérification à la compilation
++         la laisse donc à la vérification à l'exécution.
+
+@ 0 1 0 07bad00c45dd3bc10a6fd0422dd954d1
++   entry .Shape
++     info
++         `Face.Shape[family, weights, slanting, enabled]` : un style dont toute la demande est dans
++         son type
+
+@ 0 2 0 095fbf5746ca7add0c636771fce8c699
++     detail
++         Le raffinement `Face { type Topic = family; type Weights = weights; type Slanting =
++         slanting; type Enabled = enabled }`, que renvoie chaque méthode fluide.
+
+@ 0 1 0 1c038b52823455100a4cf72af21c7ae4
++   entry .apply
++     info
++         un style à partir de valeurs d'exécution :
++         `Face(typeface, weight, slant, stretch, variations, features)`
+
+@ 0 3 0 0177cad6fde5b4821e0e9cb251e6d184
++     detail
++         Chaque paramètre après la famille a une valeur par défaut — normale, droite, normale,
++         aucune, aucune — et le résultat est `Face.Shape[family, Runtime, Runtime, Runtime]` ;
++         ainsi une police créée à partir de lui n'est vérifiée qu'à l'exécution.
+
+@ 0 1 0 1611146a087400df120c8e3140e377e8
++   entry .showable
++     info
++         affiche un style comme sa famille, sa graisse et son inclinaison : `Inter 700 italic`
+
+@ 0 1 0 0212e0a0103458320284d34796dd31bc
++     detail
++         L'inclinaison est omise pour un style droit : `Inter 400`.
+
+@ 0 1 0 0430250968e7970e1ab92d4be228d281
++   entry .inspectable
++     info
++         inspecte un style sous la forme `Face("Inter", Weight(700), Slant.Italic)`
+
+@ 0 1 0 15c9c8880df3b8570114def9844ea41f
++   entry .Feature
++     info
++         une fonctionnalité de mise en page OpenType désignée par son tag de quatre
++         caractères, qui est aussi son type
+
+@ 0 6 0 1689c38ce2ef6d33023502cc93d54177
++     detail
++         `Face.Feature.OldstyleNumerals` est une `Feature of "onum"` : le tag est le `Topic`
++         de la fonctionnalité ; ainsi un style qui l'active enregistre `"onum"` dans son type
++         `Enabled`. Les fonctionnalités enregistrées courantes ont des noms ; les jeux
++         stylistiques et les variantes de caractères sont numérotés (`.stylisticSet(3)` est
++         `ss03`) ; et `Face.Feature(t"…")` admet tout autre tag, connu seulement à
++         l'exécution comme `Feature of Runtime`.
+
+@ 0 3 0 1c22c6c81c286f7c1af81b9bf9082b2b
++         Une fonctionnalité devient un `Setting` par `#enabled`, `#disabled` ou `#set(value)`, et
++         un style reçoit des réglages au moyen de `Face#enabling`, `Face#disabling` et
++         `Face#featuring`. Deux fonctionnalités sont égales quand leurs tags le sont ; une
++         fonctionnalité s'affiche comme son tag.
+
+% 2 1 0 0889b0e1d22969a71d0e9aefaa7b6c96
+
+% 3 1 0 08d077412ca15afc1a461d852a13b098
+
+% 0 1 0 1769430724898de31be42a7827eae01f
+
+% 0 1 0 10b86447a4f855c910404542c7ca3e48
+
+% 0 1 0 065936e7b4611481136f34010d2ff993
+
+% 0 1 0 119715f7bd03c72a0612a8019b4c38ec
+
+% 1 1 0 02f032f2bd8bcc581c50b694c13481d9
+
+@ 0 1 0 15ea9b7ae2fc50981ff60fbd32b52b53
++     entry .apply
++       info
++           `Face.Feature(tag)` : une fonctionnalité désignée par un tag quelconque, connue
++           seulement à l'exécution
+
+@ 0 2 0 02b48a4f1afadcd7082b1a5d5df76e5d
++       detail
++           Le résultat est une `Feature of Runtime` ; l'activer ajoute donc `Face.Runtime` au type
++           `Enabled` d'un style plutôt que le tag, et la vérification à la compilation
++           l'ignore.
+
+@ 0 1 0 0663ad16be65c49802ac4f6ec9f8a858
++     entry .Ligatures
++       info
++           ligatures standard, `liga`
+
+@ 0 1 0 1a890d3b5af916d517401447224b91dd
++     entry .DiscretionaryLigatures
++       info
++           ligatures facultatives, `dlig`
+
+@ 0 1 0 1f21880a9bfda806125cfefe8bde917e
++     entry .HistoricalLigatures
++       info
++           ligatures historiques, `hlig`
+
+@ 0 1 0 1ab937d7b58be7b50cacbec64695cfad
++     entry .ContextualAlternates
++       info
++           variantes contextuelles, `calt`
+
+@ 0 1 0 038625b720d2781315ef270d5b523c66
++     entry .Kerning
++       info
++           crénage, `kern`
+
+@ 0 1 0 17b2e0769bf8099a1822464316ef2506
++     entry .OldstyleNumerals
++       info
++           chiffres elzéviriens, `onum`
+
+@ 0 1 0 04757ab560864ecc1336abfe6acdd054
++     entry .LiningNumerals
++       info
++           chiffres alignés, `lnum`
+
+@ 0 1 0 1fb237d08637041812f78d9f6fe00589
++     entry .TabularNumerals
++       info
++           chiffres tabulaires, `tnum`
+
+@ 0 1 0 0d13200cca785471180021f141658842
++     entry .ProportionalNumerals
++       info
++           chiffres proportionnels, `pnum`
+
+@ 0 1 0 1f89c22a36e0282c09a8b494ef403b26
++     entry .SlashedZero
++       info
++           un zéro barré, `zero`
+
+@ 0 1 0 1a0bc6dc2f9d07741d78ce6fe7cb6927
++     entry .Fractions
++       info
++           fractions, `frac`
+
+@ 0 1 0 0cf5879ddc8ec669053b79e11c9dac38
++     entry .Ordinals
++       info
++           indicateurs ordinaux, `ordn`
+
+@ 0 1 0 00f9d7dd8a9e117901e7df15f2ac5905
++     entry .SmallCapitals
++       info
++           petites capitales à partir des minuscules, `smcp`
+
+@ 0 1 0 1a815fd9ba486cf01a8efcedc5a4fc73
++     entry .CapitalSmallCapitals
++       info
++           petites capitales à partir des capitales, `c2sc`
+
+@ 0 1 0 01efc0ece354e4c60ae297ac40278b7a
++     entry .Swashes
++       info
++           formes ornées, `swsh`
+
+@ 0 1 0 0d1151a52bc3916008ba72f2a2e40844
++     entry .Superscript
++       info
++           formes en exposant, `sups`
+
+@ 0 1 0 188c2bc47b6f78ff1bccc3ce37e6e44e
++     entry .Subscript
++       info
++           formes en indice, `subs`
+
+@ 0 1 0 1c08addb520138841932eba470495e1c
++     entry .stylisticSet
++       info
++           jeu stylistique _n_, de `ss01` à `ss20`, comme fonctionnalité d'exécution
+
+@ 0 2 0 003cdc6618d6521911e7dda78bb67750
++       detail
++           Le numéro est complété par des zéros sur deux chiffres. Le résultat est une
++           `Feature of Runtime`, car le tag est créé à l'exécution.
+
+@ 0 1 0 090dd49da1ea72f40eee4a58cc475ff8
++     entry .characterVariant
++       info
++           variante de caractère _n_, de `cv01` à `cv99`, comme fonctionnalité d'exécution
+
+@ 0 1 0 0cc2edbe5af18c590d45c5331662cd14
++     entry .Setting
++       info
++           une fonctionnalité avec la valeur qu'on lui donne : 0 la désactive, 1 l'active, une
++           valeur supérieure choisit une variante
+
+@ 0 3 0 1aadde382eac3ee103b326f579aa5601
++       detail
++           Ce qu'un style contient dans sa liste `features`. La plupart des fonctionnalités sont
++           activées ou désactivées ; les variantes de caractères et quelques autres choisissent
++           parmi des variantes au moyen de valeurs supérieures.
+
+@ 0 1 0 1695b4d5003025570cd5dff769963b35
++       entry #feature
++         info
++             la fonctionnalité
+
+@ 0 1 0 02046379ffbbb78d0b364fae7ab68f29
++       entry #value
++         info
++             la valeur : 0 désactivée, 1 activée, ou le numéro d'une variante
+
+@ 0 1 0 026062be01d2fdc0197335e51135a051
++     entry .showable
++       info
++           affiche une fonctionnalité comme son tag
+
+@ 0 1 0 0e3e8a4e3136d62b0360ebf5e1d857d1
++     entry .inspectable
++       info
++           inspecte une fonctionnalité sous la forme `Face.Feature("onum")`
+
+@ 0 1 0 1ed837e7337583d30fb79b7e8323ff73
++     entry #tag
++       info
++           le tag de quatre caractères
+
+@ 0 1 0 0c3f4ced5815c6640e29324eb40c7f91
++     entry #enabled
++       info
++           le réglage qui active la fonctionnalité, valeur 1
+
+@ 0 1 0 1b3d74b1f32fbf2f1fdc9f3452a8c9bf
++     entry #disabled
++       info
++           le réglage qui désactive la fonctionnalité, valeur 0
+
+@ 0 1 0 143a94b50559c2090145533829bcfa91
++     entry #set
++       info
++           le réglage avec une valeur choisie, pour les fonctionnalités qui choisissent parmi des
++           variantes
+
+@ 0 1 0 16962f0844acb7390488e4e81712baae
++   entry #typeface
++     info
++         la famille dont relève le style
+
+@ 0 1 0 1683cc31c7b4c68102836c708bea25c0
++   entry #weight
++     info
++         la graisse, sur l'échelle 1–1000
+
+@ 0 1 0 1dd54ef6a5a7cf5f02fd33dd975fd223
++   entry #slant
++     info
++         droit, italique, ou oblique selon un angle
+
+@ 0 1 0 0bbae4bb25f2cd5615a849a56e9f3ead
++   entry #stretch
++     info
++         la chasse en pourcentage de la normale
+
+@ 0 1 0 1da01fa441b730a7058586729610cf65
++   entry #variations
++     info
++         des positions sur d'autres axes d'une police variable
+
+@ 0 1 0 07bfff7ed9dc82a9177ea07d95a640bb
++   entry #features
++     info
++         les réglages des fonctionnalités de mise en page, dans l'ordre où ils ont été ajoutés
+
+@ 0 1 0 1f8ff7296751c7c5063de8be319fe2c7
++   entry #Topic
++     info
++         le nom de famille comme type littéral
+
+@ 0 1 0 0cf3399b02f97d1f1ef9fe737d28937e
++   entry #Weights
++     info
++         la graisse demandée comme type littéral (`700`), ou `Face.Runtime`
+
+@ 0 1 0 1c17857fb8b3520e0255aae2dfa31138
++   entry #Slanting
++     info
++         l'inclinaison demandée, `"upright"` ou `"italic"`, ou `Face.Runtime`
+
+@ 0 1 0 0c18fdd87c9f82d91ab020df38434669
++   entry #Enabled
++     info
++         les tags des fonctionnalités activées comme type union, `Nothing` s'il n'y en a
++         aucune, ou avec `Face.Runtime`
+
+@ 0 1 0 024982f1c178bc250b856904a00d7772
++   entry #weighing
++     info
++         le style avec une graisse quelconque, décidée à l'exécution
+
+@ 0 2 0 1370ee7bf921c8e0042627eb3e92ca7b
++     detail
++         `Weights` devient `Face.Runtime` ; la graisse n'est donc vérifiée qu'à la création de la
++         police. Les graisses nommées (`#bold`, `#light`, …) enregistrent plutôt leur littéral.
+
+@ 0 1 0 108d9bd22271b8091e6ceaa9decbe6f8
++   entry #thin
++     info
++         le style en graisse 100
+
+@ 0 1 0 09f3515503263f9614b9a3df0222dcb5
++   entry #light
++     info
++         le style en graisse 300
+
+@ 0 1 0 0bce63678bcb23b71531708153633cb0
++   entry #regular
++     info
++         le style en graisse 400
+
+@ 0 1 0 045574637014f2d6068cf915bf449a2f
++   entry #medium
++     info
++         le style en graisse 500
+
+@ 0 1 0 12d4eb53042044bf1af42367c8964dce
++   entry #semibold
++     info
++         le style en graisse 600
+
+@ 0 1 0 123856e6abd53630193d5aeb5f583913
++   entry #bold
++     info
++         le style en graisse 700
+
+@ 0 1 0 19d107fcd67a3d371c30ef58e2691d10
++   entry #black
++     info
++         le style en graisse 900
+
+@ 0 1 0 19b5153fb6584664108f3ce4f959f28f
++   entry #slanted
++     info
++         le style avec une inclinaison quelconque, décidée à l'exécution
+
+@ 0 2 0 08850b91c5ae0eae017efdaef47560d6
++     detail
++         `Slanting` devient `Face.Runtime`. `#italic`, `#upright` et `#oblique` enregistrent
++         plutôt l'inclinaison.
+
+@ 0 1 0 0762905c6b3be3eb15b35b21c533f17e
++   entry #italic
++     info
++         le style italique ; `Slanting` devient `"italic"`
+
+@ 0 1 0 16e64291233b790e1016c287dda95ff7
++   entry #upright
++     info
++         le style droit ; `Slanting` devient `"upright"`
+
+@ 0 1 0 0e0b38ebefd1990b078e55733c519a2b
++   entry #oblique
++     info
++         le style incliné selon un angle en degrés, penché vers la droite quand il est positif
+
+@ 0 3 0 0c131c0e5fbe89371f4b35a44fa8cf73
++     detail
++         Un oblique est un style droit incliné plutôt qu'un italique dessiné séparément, mais il
++         est enregistré comme `"italic"` pour la vérification de couverture, car c'est une
++         fourniture qui propose un style italique qui le compose.
+
+@ 0 1 0 00fb6dba01aca27e18742c3042ef20fa
++   entry #stretched
++     info
++         le style avec une chasse quelconque
+
+@ 0 1 0 01f910c4dcb923ea0ba0ccba7fb3393b
++     detail
++         La chasse n'est pas enregistrée dans le type ; elle n'est donc vérifiée qu'à la création
++         de la police.
+
+@ 0 1 0 083134d19417d3cb09ba4c13b7a5d326
++   entry #condensed
++     info
++         le style à 75 % de la chasse normale
+
+@ 0 1 0 0f3bdf91dc70946b086e899f24ec5710
++   entry #expanded
++     info
++         le style à 125 % de la chasse normale
+
+@ 0 1 0 1159dbdd8fab82d9152fcd300c19135a
++   entry #varying
++     info
++         le style avec une position sur un autre axe d'une police variable
+
+@ 0 5 0 17ed3c56af26e78b0ecc079dcf0604c1
++     detail
++         `varying(Variation.Axis.OpticalSize, 24.0)` ajoute une `Variation`. Les axes enregistrés
++         de graisse, de chasse, d'italique et d'inclinaison se règlent plutôt au moyen de la
++         graisse, de la chasse et de l'inclinaison ; ainsi on demande de la même façon une police
++         statique et une police variable ; `varying` sert pour la taille optique et les axes
++         propres à une police. Un axe dont la police est dépourvue, ou une valeur hors de sa
++         plage, est refusé à la création de la police.
+
+@ 0 1 0 08b492c806e0f9da19723212434ea756
++   entry #featuring
++     info
++         le style avec un réglage de fonctionnalité créé à l'exécution
+
+@ 0 2 0 0bce8ffc2bfafe3409e94c6eb7ac6864
++     detail
++         Ajoute un `Face.Feature.Setting`. Le réglage peut activer n'importe quoi ; `Enabled`
++         reçoit donc `Face.Runtime`, et la vérification à la compilation ignore ce qu'elle ne
++         peut pas voir.
+
+@ 0 1 0 1ebddb6b5d1f225613c3090577c7c180
++   entry #enabling
++     info
++         le style avec une fonctionnalité activée, son tag étant enregistré dans le type
+
+@ 0 2 0 0eb12397b68038901290c08a3125c49d
++     detail
++         `enabling(Face.Feature.OldstyleNumerals)` ajoute `"onum"` à `Enabled` ; ainsi une
++         fourniture dont le fichier est dépourvu de la fonctionnalité refuse la police pendant la
++         compilation du code.
+
+@ 0 1 0 118392d31e04082518734c0359f1a76d
++   entry #disabling
++     info
++         le style avec une fonctionnalité désactivée
+
+@ 0 2 0 191f33c7a34e053a0fe8806eb8fab504
++     detail
++         Désactiver une fonctionnalité dont la police est dépourvue ne change rien ; cela
++         n'ajoute donc aucune exigence et le type est inchangé.
+
+@ 0 1 0 0d049b2356a65e1b1ccc5e0e48ecf6f3
++ entry .Weight
++   info
++       une graisse sur l'échelle 1–1000 que partagent CSS et OpenType, avec les noms habituels
+
+@ 0 7 0 0d1cd69bca8a59b30720e505a9f9435d
++   detail
++       Un `Int` opaque (`phoenicia.internal.Weight`, exporté ici). `Weight(value)` ramène une
++       valeur hors de l'échelle à l'extrémité la plus proche plutôt que de la rejeter. Les neuf
++       graisses nommées sont `.Thin` (100), `.ExtraLight` (200), `.Light` (300), `.Regular`
++       (400), `.Medium` (500), `.Semibold` (600), `.Bold` (700), `.ExtraBold` (800) et `.Black`
++       (900). Une `.Range` est un intervalle inclusif, tel qu'en propose l'axe `wght` d'une
++       police variable ou une déclaration `@font-face`, créé avec `lower to upper` ou
++       `weight.range`.
+
+% 2 1 0 1ecd1e6b0efe3c8f11f6db5270a8fb8b
+
+% 3 1 0 132e69f2d79997410c2fcf7ca434e4e7
+
+% 0 1 0 042644f2a8dfa05b0810f3ab0e6b7700
+
+% 0 1 0 0eb743b5eedaf65a09612bc077dd7dd1
+
+% 1 1 0 043e0da8ea1c9ec11dc0fdb1ba05b93b
+
+@ 0 2 0 08188797f03da00117d84e37e501b492
++       Les membres de son compagnon sont déclarés dans `internal.Weight`, d'où le type est
++       exporté, et documentés là.
+
+% 2 1 0 1bec525c99cc39040bd1063941c247cc
+
+% 2 1 0 067d5b52c2dc79e0025d4cb595104d4e
+
+@ 0 1 0 1c9672acf789b333099c1f2a3a5b6499
++ entry .Slant
++   info
++       si un style est incliné : droit, véritable italique, ou oblique selon un angle
+
+@ 0 4 0 18ae2b1380185fd803b11eca3525e9b4
++   detail
++       `Upright` et `Italic` sont les deux styles dessinés ; `Oblique(angle)` est un style droit
++       incliné selon un angle en degrés, penché vers la droite quand il est positif. Pour la
++       couverture, un oblique compte comme italique. Une inclinaison s'affiche sous la forme
++       `upright`, `italic` ou `oblique 11.5°`.
+
+@ 0 1 0 105fe9ce4dbcf83811a9d3b146db53a2
++   entry .showable
++     info
++         affiche une inclinaison sous la forme `upright`, `italic` ou `oblique 11.5°`
+
+@ 0 1 0 1c509cfb1f25d229169202449e63ad13
++   entry .inspectable
++     info
++         inspecte une inclinaison sous la forme `Slant.Upright`, `Slant.Italic` ou
++         `Slant.Oblique(11.5)`
+
+@ 0 1 0 018ba8db710294cd01ab5abc504471a4
++   entry #upright
++     info
++         si l'inclinaison est `Upright`
+
+@ 0 1 0 1d6f08e8fab9fee5172a95132721e8b0
++ entry .Stretch
++   info
++       la chasse d'un style en pourcentage de sa chasse normale, de 50 % à 200 %
+
+@ 0 6 0 0152281b8a17dc2e1940fd1b50d87a37
++   detail
++       Un `Double` opaque (`phoenicia.internal.Stretch`, exporté ici), tel que le mesure la
++       propriété CSS `font-stretch`. `Stretch(percentage)` ramène la valeur dans l'intervalle
++       50–200. Les neuf chasses nommées, de `.UltraCondensed` (50 %) à `.UltraExpanded` (200 %)
++       en passant par `.Normal` (100 %), sont celles que numérote de 1 à 9 le `usWidthClass` de
++       la table OS/2, auquel les associe `.widthClass`. Une `.Range` est un intervalle
++       inclusif, tel qu'en propose l'axe `wdth` d'une police variable.
+
+@ 0 2 0 05b6503d0bee3df803580d5fba17aa62
++       Les membres de son compagnon sont déclarés dans `internal.Stretch`, d'où le type est
++       exporté, et documentés là.
+
+% 2 1 0 08e77ae33884235d0b9f361cfeed72b0
+
+@ 0 1 0 0ff5cf9aad030ea61eff1bfb01e2cdc0
++ entry .Variation
++   info
++       une position sur un axe d'une police variable
+
+@ 0 6 0 172578ba8660d5b6075121d72328d031
++   detail
++       `Variation(axis, value)` est ce que `Face#varying` ajoute à un style. Les axes
++       enregistrés de graisse, de chasse, d'italique et d'inclinaison se règlent au moyen des
++       `Weight`, `Stretch` et `Slant` d'un style ; une `Variation` sert donc pour la taille
++       optique et les axes propres à une police. Une fourniture vérifie chaque variation par
++       rapport aux plages `fvar` de la police : un axe dont la police est dépourvue est refusé
++       avec `Font.Error.Reason.UnknownAxis`, une valeur hors de la plage avec
++       `AxisOutOfRange`.
+
+% 2 1 0 0f3c1498ec3ec97c070d06e66ac5f1dd
+
+% 3 1 0 1125ea5ffc3d4f091ac851150b05e94f
+
+% 0 1 0 18d424417af5566f138a0ee981ac6578
+
+% 1 1 0 09545358c386809e14b15dac95bc09ee
+
+% 1 1 0 1b1a18c5db142b161c1b4d29ad292f67
+
+% 2 1 0 017f05980cf9c1380185dd5d7a5482ec
+
+@ 0 1 0 067ae38ffb01d2d40f8525953387402a
++   entry .Axis
++     info
++         un axe de variation désigné par son tag de quatre caractères
+
+@ 0 4 0 0987e2807ed30b67154b4f97033bc67b
++     detail
++         Un `Text` opaque. Les cinq axes enregistrés ont des noms — `.Weight` (`wght`), `.Width`
++         (`wdth`), `.Italic` (`ital`), `.Slant` (`slnt`) et `.OpticalSize` (`opsz`) — et les axes
++         propres à une police se créent à partir de leurs tags avec `Variation.Axis(tag)`.
+
+@ 0 1 0 1b66c0a0d1106e4918505ef5d54a4a62
++     entry .apply
++       info
++           un axe à partir de son tag
+
+@ 0 1 0 165354073f5d7af90657ae97d6bbf745
++     entry .Weight
++       info
++           l'axe `wght`
+
+@ 0 1 0 17c39d8eed92e9cc1a263b050667066a
++     entry .Width
++       info
++           l'axe `wdth`
+
+@ 0 1 0 039723c5c0e9db770a1cc353ad7633e8
++     entry .Italic
++       info
++           l'axe `ital`
+
+@ 0 1 0 0cba5dbdd810925a0bd5f0e86502b643
++     entry .Slant
++       info
++           l'axe `slnt`
+
+@ 0 1 0 02372df718316067097f7e97614c9fad
++     entry .OpticalSize
++       info
++           l'axe `opsz`
+
+@ 0 1 0 1d480424eafbfd220acdd98f28c80ecf
++     entry .showable
++       info
++           affiche un axe comme son tag
+
+@ 0 1 0 1999ec861b1a95a20d341f92a3133b18
++     entry .inspectable
++       info
++           inspecte un axe sous la forme `Variation.Axis("opsz")`
+
+@ 0 1 0 09c85d9259b3325d19d9cda75d3fe24c
++     entry .tag
++       info
++           le tag de quatre caractères
+
+@ 0 1 0 0d58887da4bfe55801f2cadcd8fd1fee
++   entry .Range
++     info
++         les valeurs qu'admet une police sur un axe, d'après sa table `fvar`
+
+@ 0 1 0 12c7ff6d1656f1aa030094f4e368d29a
++     entry #axis
++       info
++           l'axe
+
+@ 0 1 0 16f9f3588b6bd7b9074202266ac2bb3e
++     entry #lower
++       info
++           la plus petite valeur admise
+
+@ 0 1 0 00dcb7f9b560f6841492ec33794d9d02
++     entry #upper
++       info
++           la plus grande valeur admise
+
+@ 0 1 0 1fcd7d3ac26e9cac0ad8f7061e6a1a21
++     entry #contains
++       info
++           si une valeur se trouve dans la plage
+
+@ 0 1 0 0c0d357cb77000ea1ed3da3af85fb7c9
++   entry #axis
++     info
++         l'axe
+
+@ 0 1 0 1e25d7ce6f8bb9681ecff6dc6c805f76
++   entry #value
++     info
++         la position sur cet axe
+
+@ 0 1 0 17d8a4db9386a541179f33b124c20c1a
++ entry .Medium
++   info
++       un support dans lequel le texte est composé : le web, l'impression, ou tout support que
++       définit un moteur de rendu
+
+@ 0 6 0 1086b864399954ab0c4e3545a47b63d4
++   detail
++       Un trait ouvert. Une fourniture `Typesettable` nomme le support qu'elle sert comme son
++       `Form`, et une `Font in Web` est une police pour un navigateur, une `Font in Print` une
++       police pour un PDF. Une fourniture `in Medium` elle-même — un fichier de police
++       incorporé — sert tous les supports, car un fichier peut être transporté partout ; c'est
++       pourquoi un demandeur réclame une fourniture `in (? >:
++       medium)` plutôt que `in medium`.
+
+@ 0 4 0 1236a77117f0bec41a71e19796f1eb59
++       Chaque moteur de rendu déclare son propre support sous forme de trait doté d'un
++       compagnon, et c'est dans le compagnon, dans la portée implicite, que se trouvent les
++       fournitures que ce support peut toujours honorer : l'`object Web` de cataclysm contient
++       les familles génériques CSS, l'`object Print` de facsimile contient les quatorze polices
++       standard de PDF. Un test ou un moteur de rendu propre en déclare un en une ligne :
+
+% 2 1 0 0fd58c4c51e6fcda11c18ba0aaf2cddf
+
+% 3 1 0 136953f30898647d05e0420401af0f1e
+
+% 2 1 0 0c1bd193120172b21ae02cb9f3afbb62
+
+% 1 1 0 12b201685371fa2914380c76084cfdbc
+
+% 2 1 0 1d2357269924b1ac19facc48518da793
+
+% 3 1 0 1df29d565a498ccd057f13efef4f36f5
+
+@ 0 1 0 1afdf3ca45c6c1801cf558ff1403188c
++ entry .Typesettable
++   info
++       la fourniture d'une famille dans un support : la provenance de la police, et les styles
++       qu'elle compose
+
+@ 0 9 0 07b93ad600c618be12892683c9ecfda5
++   detail
++       Un `Typeface of "Inter" is Typesettable in Web` indique comment le web obtient Inter —
++       sous forme de ses `#sources` : le fichier de police lui-même, une URL, une police que le
++       lecteur a installée, une feuille de style, ou rien pour une famille générique — et quels
++       styles il peut alors composer, sous forme de sa `#coverage`. Le support servi est son
++       `Form`, un membre de type hérité de `Formal` : `Medium` pour tous les supports, ou un
++       seul support comme `Web`.
++       Elle est déclarée une seule fois, comme given, et une `Font` ne peut être créée que là
++       où une fourniture est dans la portée pour la famille dans le support : c'est ce qui
++       garantit qu'un document transporte ce dont son support a besoin pour chaque famille
++       qu'il nomme.
+
+% 2 1 0 0e69cfb0089c1e8f0a228523858934ad
+
+% 3 1 0 0694d98170217235132d82443eb6c934
+
+% 4 1 0 09b0dc000b8165860246e3300eceb64d
+
+% 0 1 0 0ec3b16c63b240e905072027e08983c3
+
+% 0 1 0 1d71b97489d920e306751232a49a3683
+
+% 0 1 0 1d66122d61624ee41d9b9d5338d43fdd
+
+% 0 1 0 187acf8f10fb57de0db00dd08059b2a8
+
+% 1 1 0 1fb8b47aa69b73b9092133b6ce155499
+
+@ 0 7 0 04590d238ceedadb161bfee666e5abdd
++       `.embedded` crée une fourniture à partir de fichiers de polices, que tout support peut
++       transporter ; elle est donc `in Medium` ; sa couverture est lue depuis les fichiers, et
++       plusieurs fichiers — normal, gras, italique — forment une seule fourniture dont la
++       couverture est leur union. Les fournitures propres à un support se déclarent au moyen de
++       ce support : `Web.linked` pour un fichier à une URL, `Web.imported` pour une feuille de
++       style, `Web.local` pour une police installée, chacune avec la couverture qu'on lui
++       déclare, puisqu'il n'y a pas de fichier à lire ; les quatorze polices standard de `Print`
++       ne nécessitent aucune déclaration, pas plus que les familles génériques sur le web.
+
+@ 0 4 0 17b876113cfb0ebe01ddce3f02b2a577
++       Un demandeur réclame une fourniture `in (? >: medium)` : une instance `in Medium` sert
++       tous les supports, tandis qu'une instance `in Web` ne sert que le web, et
++       `Font.of[Print](face)` avec seulement une fourniture `Web` dans la portée est une erreur
++       de compilation. Le message `@missingContext` l'indique, et nomme les deux façons d'en
++       déclarer une.
+
+@ 0 5 0 0825728665a9f59503055d809b0fd5c6
++       Une fourniture est `Locative` : créée à partir d'une ressource du classpath
++       (`Typesettable.embedded
++       (cp"/fonts/Inter.ttf")`), elle conserve le chemin comme son `Locus`, et une `Font` créée
++       à partir d'elle est vérifiée par rapport au fichier pendant la compilation du code. Le
++       type entier est alors mis entre parenthèses dans un given nommé, car une chaîne infixe
++       comportant un type littéral n'est pas admise autrement dans le type du given :
+
+% 2 1 0 1c6a5435bb0d273f0f3029ff3131fcb7
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 18d07e8a352d11ed1ecd461c9345d31b
+
+% 0 1 0 088e390e17f4c8ae01c149c44fd1bbad
+
+% 1 1 0 17cf565af6301afc1f1e0ae3951de9b6
+
+@ 0 3 0 0fc6ab032dd5443917bc0b01cf86eed3
++       Les fournitures sont de pures données et se trouvent là où se trouve le support : dans le
++       compagnon de `Web` ou de `Print` pour celles dont un support dispose toujours, et dans un
++       objet qu'un projet importe par son nom pour les siennes — `import fonts.inter`, car
++       `import fonts.*` n'importe pas les givens.
+
+% 1 1 0 1616cca3f7c6e3c30048ed2e32dd91ba
+
+% 2 1 0 14afe8ec5325a26e037ce8b0dee74556
+
+% 1 1 0 1c15c96efd7af7af0f0d4109eed1e62e
+
+% 1 1 0 020f1537fe2ce5260d5314a53ad64b86
+
+@ 0 1 0 0a8830c6adfc80e306051fc6c45d10d1
++   entry .Source
++     info
++         comment un support obtient une famille : incorporée, liée, locale, importée ou générique
+
+@ 0 7 0 01ef392245b9ee6b1f0662d3e7123079
++     detail
++         `Embedded(sfnt)` transporte le fichier de police lui-même dans le document ; `Linked(url,
++         format)` nomme un fichier à récupérer, avec son `Format` s'il est connu ; `Local(name)`
++         nomme une police que le lecteur a déjà installée ; `Imported(url)` nomme une feuille de
++         style qui déclare la famille ; et `Generic` est une famille que tout support sait
++         composer. Un document collecte les sources de ses polices et émet ce dont son support a
++         besoin — des règles `@font-face`, un programme incorporé.
+
+@ 0 1 0 1785d3ab3c51d94a006357c50ec75405
++     entry .Format
++       info
++           le format d'un fichier de police lié : `Ttf`, `Otf`, `Woff` ou `Woff2`
+
+@ 0 2 0 18562d4228b561cf0941de923865d39a
++       detail
++           Ce qu'un `src` de `@font-face` déclare avec `format(…)`, pour qu'un navigateur puisse
++           ignorer un fichier qu'il ne sait pas lire.
+
+@ 0 1 0 09f87deedfee39a11dc41917f9bfb183
++   entry .Embedding
++     info
++         la fourniture que renvoie `.embedded` : des fichiers transportés dans le document
+
+@ 0 4 0 07f493b5a6e7a7111393b08977503aae
++     detail
++         Une classe nommée, pour que la fourniture ait un type stable. Elle est `in Medium`, ses
++         sources sont un `Source.Embedded` par fichier, et sa couverture est `Coverage.combine`
++         sur les `Coverage.of` des fichiers.
+
+@ 0 1 0 1934996dee2bbdf9142ac8fe2a64e2b4
++     entry #Self
++       info
++           la famille fournie
+
+@ 0 1 0 060b2b248baf02fe172fdfa30263d8fc
++     entry #Form
++       info
++           `Medium` : un fichier incorporé sert tous les supports
+
+@ 0 1 0 1228591487c6b597048d3291d88d50eb
++     entry #sources
++       info
++           un `Typesettable.Source.Embedded` par fichier de police
+
+@ 0 1 0 1c3e52916131cc220342c6fe02d210cf
++     entry #coverage
++       info
++           l'union des couvertures des fichiers, lues depuis leurs tables
+
+@ 0 1 0 1a56ca0bdfb8c6bc014e9c7cf2189797
++   entry .embedded
++     info
++         une fourniture à partir de fichiers de polices, `in Medium`, dont la couverture est lue
++         depuis les fichiers
+
+@ 0 7 0 1656c0eca775364b171949a7a13cf3ce
++     detail
++         Deux surcharges. `Typesettable.embedded[family](sfnts*)` prend un nombre quelconque de
++         `Sfnt` déjà disponibles et crée un `Typeface of family is Typesettable in Medium` ; la
++         famille est donnée explicitement ou inférée à partir du type déclaré du given.
++         `Typesettable.embedded
++         (source)` prend une source `Locative` lisible en flux — une ressource `cp"…"` — la lit,
++         et conserve son chemin comme `Locus` de la fourniture ; ainsi une `Font` créée à partir de
++         la fourniture est vérifiée pendant la compilation du code par rapport au fichier situé à
++         ce chemin dans le classpath du compilateur. Lorsque le fichier n'est pas dans le
++         classpath du compilateur, la vérification est laissée à l'exécution.
+
+@ 2 1 0 0ed84d5ccb4d89541ac59b9d374e518d
++         ```scala
+
+@ 3 1 0 1fca932335e3697a10a2d869321f9a3c
++         import soundness.*
+
+@ 4 1 0 1c7a7410d73bf6090737e55738130c5e
++         import strategies.throwUnsafely
+
+@ 2 1 0 03264539c79d32080a9a95ea147082e5
++         given inter: (Typeface of "Inter") is Typesettable in Medium =
+
+@ 0 1 0 0f44654b5b4588f20d270017fe412b5f
++           Typesettable.embedded(Sfnt(cp"/fonts/Inter-Regular.ttf"), Sfnt(cp"/fonts/Inter-Bold.ttf"))
+
+@ 1 1 0 0224dd887c2f602d1dea1aeb2dbc4396
++         ```
+
+@ 0 1 0 0cb5cf6fd15213b9138d66f73585de65
++   entry #Self
++     info
++         la famille fournie, un `Typeface of family`
+
+@ 0 1 0 094f03a0c4a5016f023cfb09a82f12b7
++   entry #sources
++     info
++         comment le support obtient la famille, un `Typesettable.Source` par partie
+
+@ 0 1 0 10bb893993a0aeea1edefc90659a6c5c
++   entry #coverage
++     info
++         les styles que la fourniture peut composer
+
+@ 0 1 0 0741e81772fb52580e0e4c00487490cf
++ entry .Coverage
++   info
++       les styles que peut composer une fourniture : graisses, inclinaisons, chasses, axes et
++       fonctionnalités
+
+@ 0 6 0 0244229ed4daa63b194e9dcb75d4e97c
++   detail
++       Une `Coverage` est soit `Unknown` — on ne sait rien des styles que propose une source ;
++       tout style est donc admis — soit `Entries(entries)`, une liste de `Coverage.Entry`,
++       chacune étant un style que propose une fourniture ou la plage de styles que propose une
++       police variable. Une `Font` n'est créée que pour un style qu'admet la couverture ;
++       `#complaint` donne la `Font.Error.Reason` pour laquelle il ne l'est pas, ou `Unset` s'il
++       l'est.
+
+@ 0 5 0 00e0279350c4ccb00988c4cac78247ed
++       La couverture est comparée comme un navigateur compare une déclaration `@font-face` :
++       on cherche d'abord les entrées qui couvrent la graisse, puis parmi celles-ci celles qui
++       ont l'inclinaison, puis la chasse, et les variations et fonctionnalités du style sont
++       vérifiées par rapport à ce qui reste. La première étape en échec nomme le refus :
++       `UncoveredWeight`, `UncoveredSlant`, `UncoveredStretch`, `UnknownAxis`,
++       `AxisOutOfRange` ou `MissingFeature`.
+
+@ 0 7 0 1d1206267dd7c32a1e979523926d98c2
++       `.of(sfnt)` lit la couverture d'un fichier de police depuis ses tables — les axes `fvar`
++       d'une police variable, sinon la graisse et la largeur uniques qu'enregistre la table
++       `OS/2`, les bits d'italique d'`OS/2` et de `post`, et les fonctionnalités de `GSUB` et de
++       `GPOS` — et `.combine` réunit celles de plusieurs fichiers.
++       `Coverage(weights = …, italic = …)` déclare la couverture d'une source dont le fichier
++       n'est pas disponible, une URL ou une police installée ; seul ce qui est déclaré est
++       admis ; ainsi une police liée déclarée dans une graisse rejette une demande pour une
++       autre plutôt que de laisser le navigateur la synthétiser.
+
+% 2 1 0 16c1a2cb7e038d260c2fbcb205da06a5
+
+% 3 1 0 197e3704e71f89490385220e29001fd9
+
+% 4 1 0 19caa94135d6b4d31be3128fcca52010
+
+% 0 1 0 041f7ba406b014f41225266f45670872
+
+% 0 1 0 08f91640e7fe16f40c5fec30f9807291
+
+% 0 1 0 18e643efdc9e3b621ee9ab0dc2340cc6
+
+% 0 1 0 0d339d4c183b840704c68660060df84c
+
+% 1 1 0 140583bcad764f6d1a3d3c13f772dde3
+
+% 2 1 0 188700662bb987f0195d0088bf2f59b2
+
+% 3 1 0 1db9a2eef0be519f09285df32996ebaf
+
+% 1 1 0 13c1c9b3c3007e6917b22ce0f7264ca5
+
+@ 0 1 0 0d272a16e1e60a9000c19a3fe7cd534c
++   entry .Entry
++     info
++         un style que propose une fourniture, ou la plage que propose une police variable
+
+@ 0 4 0 1ee2d8127097b1ec0b71f54ccdb70f15
++     detail
++         Les graisses et les chasses couvertes, si l'entrée est droite, italique ou les deux, les
++         autres axes avec leurs plages, et les fonctionnalités de mise en page implémentées — ou
++         `Unset` pour les fonctionnalités d'un style déclaré sans fichier, qui admet alors toute
++         fonctionnalité.
+
+% 2 1 0 18ecba61dae7a5fd17bc504d0149b329
+
+% 3 1 0 159383fb6c6da50318a93ba85fa293e3
+
+% 0 1 0 07fae3b532d799d9037ccf21f667ddde
+
+% 1 1 0 0e1cb3e9d8454f7c0ccb8da1d26aec57
+
+@ 0 1 0 1f9f17d59994e13e07a5e79aad0a2846
++     entry #weights
++       info
++           l'intervalle des graisses
+
+@ 0 1 0 05051cf40a758c2909192cec89411615
++     entry #upright
++       info
++           si un style droit est proposé
+
+@ 0 1 0 1df19d25ead84f2f00cacffda3f3c890
++     entry #italic
++       info
++           si un style italique est proposé
+
+@ 0 1 0 1d5072988aa9febf0d8b7f59e8e2794a
++     entry #stretches
++       info
++           l'intervalle des chasses
+
+@ 0 1 0 147518952d5bfbbf12c5d404cb4e738c
++     entry #axes
++       info
++           les autres axes de variation, chacun avec sa plage
+
+@ 0 1 0 1596b680a346e38602325a9a8e75a65f
++     entry #features
++       info
++           les fonctionnalités implémentées, ou `Unset` si elles sont inconnues
+
+@ 0 1 0 1ad91d05f79a0489081658ed2979f1f0
++     entry #sets
++       info
++           si la graisse, l'inclinaison et la chasse de l'entrée admettent un style
+
+@ 0 1 0 1e0f913042cd6ba2050468e2c0e3cf9d
++     entry #complaint
++       info
++           la première variation ou le premier réglage de fonctionnalité que l'entrée ne peut pas
++           fournir, ou `Unset`
+
+@ 0 3 0 0904cd0fcdb00a441c25dc792e1c9bcc
++       detail
++           `complaint(name, variations, settings)` vérifie l'axe et la valeur de chaque variation
++           par rapport à `axes` (`UnknownAxis`, `AxisOutOfRange`) et la fonctionnalité de chaque
++           réglage par rapport à `features` (`MissingFeature`), en nommant la famille dans la
++           raison. Des fonctionnalités inconnues admettent n'importe quoi.
+
+@ 0 1 0 0367e7ced925e49301629072e048fe4c
++   entry .apply
++     info
++         une couverture déclarée, pour une source dont le fichier n'est pas disponible
+
+@ 0 3 0 1325b15518fd5208028cdb204e7fceb3
++     detail
++         `Coverage(weights, upright, italic, stretches, axes)`, chacun avec une valeur par défaut
++         — normale, droit uniquement, chasse normale, aucun axe — créant une seule `Entry` aux
++         fonctionnalités inconnues. Pour une URL ou une police installée, dont les styles sont ce
++         que dit la déclaration et rien de plus.
+
+@ 0 1 0 0d05fcf55628d32b11d26f8d0d3d1db7
++   entry .of
++     info
++         la couverture d'un fichier de police, lue depuis ses tables
+
+@ 0 7 0 154535af0bfc1135136ea8fe58c8c50b
++     detail
++         D'après la table `fvar` d'une police variable : l'axe `wght` comme intervalle de
++         graisses, `wdth` comme intervalle de chasses, un axe `ital` ou `slnt` comme proposant
++         les deux postures, et chaque axe comme `Variation.Range`. D'après une police statique :
++         les classes de graisse et de largeur d'`OS/2` comme graisse et chasse uniques. Les bits
++         d'italique d'`OS/2` et un angle d'italique `post` non nul rendent l'entrée italique. Les
++         fonctionnalités sont `Sfnt#features`. Un fichier dont les tables ne peuvent pas être
++         lues a une couverture `Unknown`, qui admet tout, plutôt que de refuser des styles qu'il
++         pourrait fort bien avoir.
+
+@ 0 1 0 0856b9d0d2828452031a9a6f57a888a9
++   entry .combine
++     info
++         l'union de plusieurs couvertures ; un seul `Unknown` rend l'ensemble `Unknown`
+
+@ 0 1 0 10c0335c3aa659b71001d4175a948dd0
++   entry #complaint
++     info
++         pourquoi un style ne peut pas être composé à partir de cette couverture, ou `Unset` s'il
++         le peut
+
+@ 0 4 0 0c737c8d57fbef7d1f9ba5782b31ff45
++     detail
++         Deux surcharges. `complaint(face)` vérifie un style entier. `complaint(name, weight,
++         slant, stretch, variations, features)` ne vérifie que ce qui est donné : une partie
++         passée comme `Unset` n'est pas vérifiée ; c'est la forme qu'utilise la vérification à
++         la compilation quand la graisse ou l'inclinaison d'un style est décidée à l'exécution.
++         Une couverture `Unknown` ne se plaint jamais.
+
+@ 0 1 0 0c2244085e8284e712a00e43ffb4b3fe
++ entry .Font
++   info
++       un style associé à la fourniture pour sa famille dans un support : ce qu'accepte un moteur
++       de rendu
+
+@ 0 7 0 155d7a0beeaf755e1fbf787df77adb21
++   detail
++       Une `Font in Web` est un style accompagné de la fourniture `Typesettable` qui rend sa
++       famille disponible sur le web ; une `Font in Print` est l'équivalent pour un PDF. Le
++       support est le `Form` de la police, un membre de type qu'elle hérite de `Formal` : `Web`,
++       `Print`, ou le support dans lequel la police a été créée. Un moteur de rendu n'accepte
++       les polices que sous cette forme ; ainsi un document ne peut pas nommer une famille pour
++       laquelle il ne transporte pas de fourniture ; le document collecte ensuite les fournitures
++       de ses polices et émet ce dont son support a besoin.
+
+@ 0 6 0 1f7fe236ec8c62b5160fd2efcc19b6eb
++       Une police se crée de deux façons. `Font(face)` infère le support à partir du type
++       attendu, ce qui fonctionne pour `Optional[Font in Web]` comme pour `Font in Web` ; ainsi
++       un champ comme `Lettering(…, font = Font(inter.bold))` ne nécessite aucune annotation.
++       `Font.of[Web](face)` nomme le support, là où il n'y a pas de type attendu à partir
++       duquel l'inférer. Les deux nécessitent un
++       `Typeface of family is Typesettable in (? >: medium)` dans la portée — une fourniture
++       pour la famille dans ce support, ou dans tous les supports — et une
++       `Tactic[Font.Error]`.
+
+% 2 1 0 125b0bfe28a0eede002b202ace4c0f87
+
+% 3 1 0 1c42b24180ede9de1085b38050d7843d
+
+% 4 1 0 006abfe38fd8410709484402f4cdebf4
+
+% 2 1 0 125872f2f7be30ac107700393afdc178
+
+% 2 1 0 1e3a5fdd1f8219d51307ddf394a88d12
+
+% 2 1 0 101eac0fbc3bb91801c2f7ac6ba22696
+
+% 0 1 0 17dd2c034102d2ee03de10456ee197f4
+
+% 0 1 0 0f155b072f013bfc0a04ba245c6cf25e
+
+% 1 1 0 10f3136a5247606614fcf2298db18f20
+
+@ 0 8 0 0e1f9edb6d01993d0012d3c2e1a7df29
++       Un style que la fourniture ne peut pas composer — une graisse dont elle est dépourvue, un
++       italique qu'elle n'a pas, une fonctionnalité que son fichier n'implémente pas, une valeur
++       d'axe hors de sa plage — est refusé plutôt que synthétisé ou ignoré silencieusement. Le
++       refus est une `Font.Error` à la création de la police, qui nomme la famille et le
++       problème. Et lorsque le fichier de la fourniture est dans le classpath (son `Locus`,
++       issu de `Typesettable.embedded(cp"…")`) et que la demande du style est dans son type, le
++       refus est une erreur de compilation avec le même message, _phoenicia: the font
++       at /fonts/Inter.ttf cannot set this face: Inter is not provided at weight 300_. Seul ce
++       qui est connu statiquement est vérifié statiquement ; la vérification à l'exécution a
++       toujours lieu.
+
+@ 0 1 0 004b61c62a504e291c549425b71844d4
++       Une police s'affiche comme son style : `Inter 700 italic`.
+
+% 1 1 0 16037dbbbd1d1b5b0f3d596d4cee9c6f
+
+% 2 1 0 0709d8ac5eba537702ba4141abd86bbc
+
+% 1 1 0 022c7470f76563fe1d1b1998f8a8a4ab
+
+% 1 1 0 00c6d790ce27ec4507d47e05e616c43a
+
+@ 0 1 0 1aa7a474aec88e3b11877786d7fa877c
++   entry .Error
++     info
++         levée quand une police ne peut pas être lue ou qu'un style ne peut pas être composé
+
+@ 0 5 0 1a78fe82feb5129b1e08f6f2a0c57d3f
++     detail
++         Erreur `↯/s.89.1`, _the font could not be used because …_, avec une `Reason` dont le
++         numéro est le sous-code de l'erreur. Les raisons liées à la lecture des tables sont levées
++         par les accesseurs de `Sfnt` ; les raisons de couverture par `Font(…)`, `Font.of[…](…)` et
++         `Font.paired` quand la `Coverage` de la fourniture refuse le style.
+
+% 2 1 0 1e93e1320fd6713e034c6a69dc493bab
+
+% 3 1 0 0dc8c28f47c5da4f07a3b401b1624d6a
+
+% 0 1 0 0d375dffa5cb104510e1e4be880d77cc
+
+% 0 1 0 107914071670bd261df9fbb8862d6e87
+
+% 0 1 0 0e179f043036efa40dfa965b9dec8eda
+
+% 0 1 0 035922082b4c447c1dcc12eb85a072db
+
+% 1 1 0 03e7fc7e0387bcef0889a2a6c9912504
+
+@ 0 1 0 07b4985405fcfd22113ad33f4438b4cc
++     entry .Reason
++       info
++           la raison : une table manquante ou illisible, ou un style que la fourniture ne peut pas
++           composer
+
+@ 0 3 0 0041c1fdc702ad9c16875b95e90aad2e
++       detail
++           Les cas 1 à 4 sont des défauts de la police ; les cas 5 à 10 sont des raisons de
++           couverture, chacune nommant la famille :
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 14 0 14267d24714981110cfeed8e79344654
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `MissingTable(tag)`  1  _the table `tag` was not found_
++           row  `UnknownFormat(format)`  2  _the table contains data in unknown format `format`_  un format de sous-table `cmap` que la bibliothèque ne lit pas
++           row  `MagicNumber`  3  _the font did not contain expected check data_  une table `head` dont la constante est fausse
++           row  `MissingEncoding`  4  _the font contains no usable character encoding_
++           row  `UncoveredWeight(typeface, weight)`  5  _`typeface` is not provided at weight `weight`_  _Inter is not provided at weight 300_
++           row  `UncoveredSlant(typeface, slant)`  6  _`typeface` is not provided in an `slant` face_  _Inter is not provided in an italic face_
++           row  `UncoveredStretch(typeface, stretch)`  7  _`typeface` is not provided at a stretch of `stretch`_
++           row  `UnknownAxis(typeface, axis)`  8  _`typeface` has no variation axis `axis`_  _Inter has no variation axis opsz_
++           row  `AxisOutOfRange(typeface, axis, value)`  9  _`typeface` does not admit `value` on its `axis` axis_
++           row  `MissingFeature(typeface, feature)`  10  _`typeface` does not implement the layout feature `feature`_  _Inter does not implement the layout feature onum_
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 1 0 045dd06c04d00ce60c93fb942aaf52f5
++       entry #number
++         info
++             le numéro de la raison, de 1 à 10, qui est le sous-code de l'erreur
+
+@ 0 1 0 0ca428d439cafd4c0be8a88f0331da03
++     entry .communicable
++       info
++           rend chaque raison sous forme de son message
+
+@ 0 1 0 18aa22b9172b17980d7623c2d294bf05
++     entry #reason
++       info
++           la raison
+
+@ 0 1 0 1ca79474beb73f0618b894d411dca44c
++   entry .apply
++     info
++         `Font(face)` : associe un style à la fourniture dans la portée, dans le support que nomme
++         le type attendu
+
+@ 0 5 0 0a60fd99b7d65d810ace20bd4113f4cc
++     detail
++         Une méthode inline dont le support est inféré à partir du type attendu : `Font in Web`,
++         ou `Optional[Font in Web]`, car `Form` est un membre de type et le type attendu le fixe.
++         Nécessite un `Typeface of family is Typesettable in (? >: medium)` et une
++         `Tactic[Font.Error]`. Lorsque la fourniture porte un `Locus`, la demande enregistrée du
++         style est vérifiée à la compilation ; la vérification à l'exécution a lieu ensuite
++         quoi qu'il arrive. Lorsqu'il n'y a pas de type attendu, utilisez `.of`.
+
+@ 0 1 0 13b3fdc9ebe11ff508d47dc3bd86cdf1
++   entry .of
++     info
++         `Font.of[Web](face)` : la même association, le support étant nommé
+
+@ 0 3 0 0a62a80547154f940175a35844349afd
++     detail
++         Renvoie un `.Of[medium]` dont `apply` prend le style, pour qu'il ne faille écrire que le
++         support et que la famille soit inférée à partir du style. Le `Web.font(face)` de
++         Cataclysm est `Font.of[Web](face)`.
+
+@ 0 1 0 0365ea90393e1f4117afebfa78ab07c5
++   entry .Of
++     info
++         l'auxiliaire que renvoie `.of`, dont `apply` prend le style
+
+@ 0 3 0 17a623fcf7b0c8fe076a6d4e42631bf3
++     detail
++         `Font.of[medium]` est un `Of[medium]` ; `Font.of[medium](face)` est son `apply`. Les deux
++         clauses sont séparées pour qu'on puisse nommer le support sans la famille.
+
+@ 0 1 0 09a85debddf78b150738a280d18cdb8a
++     entry #apply
++       info
++           associe un style à la fourniture dans la portée pour sa famille, dans le support nommé
+
+@ 0 1 0 0e2a79e026149ed719b16a170205a4f1
++   entry .paired
++     info
++         l'association à l'exécution en laquelle se développent les formes inline : la vérification
++         de couverture, puis la police
+
+@ 0 5 0 0007c120861ec7a2091afdda45f84ddf
++     detail
++         `Font.paired[family, medium](face)` vérifie `provision.coverage.complaint(face)`, lève
++         `Font.Error` avec la raison s'il y en a une, et sinon crée la `Font in medium`. Les
++         formes inline `.apply` et `.of` ajoutent la vérification à la compilation en amont ; le
++         code qui n'a besoin d'aucune vérification statique, ou dont le style a une demande qui
++         n'est pas dans son type, peut l'appeler directement.
+
+@ 0 1 0 04fff572b925a5db16526ce751d508a8
++   entry .showable
++     info
++         affiche une police comme son style : `Inter 700 italic`
+
+@ 0 1 0 0ff461a7e309033e080ea622f06307ff
++   entry .inspectable
++     info
++         inspecte une police sous la forme `Font(Face("Inter", Weight(700), Slant.Italic))`
+
+@ 0 1 0 18cef1ecd45d8845018e25a5aa1d684d
++   entry #face
++     info
++         le style
+
+@ 0 1 0 19f09df8165f0f81100477cceff98fb9
++   entry #provision
++     info
++         la fourniture qui rend la famille disponible dans le support
+
+@ 0 1 0 0d29ba43ee672c7e15ea85ca1638cbe7
++   entry #typeface
++     info
++         la famille du style
+
+@ 0 1 0 0cf5baab85f731440b64b372aa49e5a7
++ entry .internal
++   info
++       les types opaques `Glyph`, `Weight` et `Stretch`, et la macro derrière `Font(…)`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 4 0 01ecdac294f722b80711e0cb49992aa9
++   detail
++       Pas destiné à un usage direct. `Glyph`, `Weight` et `Stretch` sont déclarés ici comme
++       types opaques, avec leurs compagnons, et exportés vers le package `phoenicia`, où se
++       trouvent leurs pages ; l'objet existe pour que les types opaques et la macro `Font`
++       aient un foyer stable.
+
+@ 0 1 0 0c03fc35ed85ce5b06b29cbc0c7824a6
++   entry .Glyph
++     info
++         un glyphe d'une police ; voir `phoenicia.Glyph`
+
+@ 0 2 0 10d9db1fc68edffa159831372c13879a
++     detail
++         Le compagnon du type opaque `Glyph`, exporté avec lui vers le package `phoenicia`.
+
+@ 0 1 0 1586f745a84238ec1774259f57da0d82
++     entry .apply
++       info
++           `Glyph(font, id)` : enveloppe un identifiant de glyphe comme glyphe de cette police
+
+@ 0 1 0 1ecc09f53de0d24a1b091c37699c5d9c
++   entry .Weight
++     info
++         une graisse sur l'échelle 1–1000 ; voir `phoenicia.Weight`
+
+@ 0 3 0 119e6753749dcfe901bf2d1f6a189946
++     detail
++         Le compagnon du type opaque `Weight`, exporté avec lui vers le package `phoenicia`.
+
+@ 0 1 0 0d2923b2fd8d4638030e96af1c671f60
++     entry .apply
++       info
++           une graisse à partir d'un entier, ramené dans l'intervalle 1–1000
+
+@ 0 1 0 1562df0e22e0c4840edee888724fa469
++     entry .Thin
++       info
++           graisse 100
+
+@ 0 1 0 1288f915a95814ad15cd37bbab003238
++     entry .ExtraLight
++       info
++           graisse 200
+
+@ 0 1 0 1d24780c5c6dbf8c0493b4df5e79351b
++     entry .Light
++       info
++           graisse 300
+
+@ 0 1 0 1bf53754411501c812ca57c4d9cc45cb
++     entry .Regular
++       info
++           graisse 400
+
+@ 0 1 0 1f3878e36d4712c010d822ab55e4d90d
++     entry .Medium
++       info
++           graisse 500
+
+@ 0 1 0 19d2bf24dbfbd3d716df058bbfa51326
++     entry .Semibold
++       info
++           graisse 600
+
+@ 0 1 0 1558e02b382950371041f264ad196c80
++     entry .Bold
++       info
++           graisse 700
+
+@ 0 1 0 16db93a5d4b5dd230b79a1e5f80d3c5f
++     entry .ExtraBold
++       info
++           graisse 800
+
+@ 0 1 0 12ffbef280667c0110d1e93c0e00232f
++     entry .Black
++       info
++           graisse 900
+
+@ 0 1 0 0dd524de7f2fba71025a8b37b4b06827
++     entry .Range
++       info
++           un intervalle inclusif de graisses
+
+@ 0 1 0 0cc204cda5434b440d31b85547c20563
++       entry #lower
++         info
++             la graisse la plus maigre de l'intervalle
+
+@ 0 1 0 0a8142fb373660c10cc3fc5eb31eb631
++       entry #upper
++         info
++             la graisse la plus grasse de l'intervalle
+
+@ 0 1 0 01470f93ac4b5de911e8f18b7f7c905d
++       entry #contains
++         info
++             si une graisse se trouve dans l'intervalle
+
+@ 0 1 0 092f37c9e39ddba418d24cf719d70ee3
++     entry .showable
++       info
++           affiche une graisse comme son nombre : `700`
+
+@ 0 1 0 14210f546c78db1402fed087bab55127
++     entry .inspectable
++       info
++           inspecte une graisse sous la forme `Weight(700)`
+
+@ 0 1 0 17c6a67f7844137b0a514681ce15f81a
++     entry .value
++       info
++           la graisse sous forme d'entier
+
+@ 0 1 0 0db77c62580091700a18fef831fe908d
++     entry .to
++       info
++           `lower to upper` : l'intervalle inclusif entre deux graisses
+
+@ 0 1 0 08621603bde094980d9dff22ac54f013
++     entry .range
++       info
++           l'intervalle de cette seule graisse
+
+@ 0 1 0 077860bf2b3bc28f112f1bbce6bb3735
++   entry .Stretch
++     info
++         une chasse en pourcentage ; voir `phoenicia.Stretch`
+
+@ 0 3 0 0932a55c658f38191783c1d8c0ef8840
++     detail
++         Le compagnon du type opaque `Stretch`, exporté avec lui vers le package `phoenicia`.
+
+@ 0 1 0 16dc0394cba5d69802597286a2a57847
++     entry .apply
++       info
++           une chasse à partir d'un pourcentage, ramené dans l'intervalle 50–200
+
+@ 0 1 0 1dc6dc90d21fdf010aa6f9dc5f69d397
++     entry .UltraCondensed
++       info
++           50 %
+
+@ 0 1 0 08d469758f6dd4f91daffd39af248e4f
++     entry .ExtraCondensed
++       info
++           62,5 %
+
+@ 0 1 0 0699a8c2c79ef89f0c27fd14b400230c
++     entry .Condensed
++       info
++           75 %
+
+@ 0 1 0 080b3c0ef8d044b20869433ee9bca0cd
++     entry .SemiCondensed
++       info
++           87,5 %
+
+@ 0 1 0 147375e30489178d02b8d2e2cd24749d
++     entry .Normal
++       info
++           100 %
+
+@ 0 1 0 1f20daa655ed25b60a1ec7cecf62ff6f
++     entry .SemiExpanded
++       info
++           112,5 %
+
+@ 0 1 0 13b3369dc384fd1c1229c72b91260d22
++     entry .Expanded
++       info
++           125 %
+
+@ 0 1 0 167d2d2478be0668074a24f23cee198b
++     entry .ExtraExpanded
++       info
++           150 %
+
+@ 0 1 0 08cf05b3dc43292807e370548b988b71
++     entry .UltraExpanded
++       info
++           200 %
+
+@ 0 1 0 12189238c696166e0cc5f3778be503b3
++     entry .widthClass
++       info
++           la chasse que nomme une classe de largeur OS/2 de 1 à 9 ; `Normal` pour 5 ou une valeur
++           inconnue
+
+@ 0 1 0 096ed3a4831ac12702f91a1b4048c8f6
++     entry .Range
++       info
++           un intervalle inclusif de chasses
+
+@ 0 1 0 04a5020722c27f1418fe46b955f2c5a9
++       entry #lower
++         info
++             la chasse la plus étroite de l'intervalle
+
+@ 0 1 0 17c2e4aab1a41ea60facc66484e874e4
++       entry #upper
++         info
++             la chasse la plus large de l'intervalle
+
+@ 0 1 0 01a9156ca754cad509b8d2c6d1da53ea
++       entry #contains
++         info
++             si une chasse se trouve dans l'intervalle
+
+@ 0 1 0 1bd14382b226086a0ef7a1197212137c
++     entry .showable
++       info
++           affiche une chasse sous forme de pourcentage : `100.0%`
+
+@ 0 1 0 04cbac3e797fc9651b3629a1e0b64f8c
++     entry .inspectable
++       info
++           inspecte une chasse sous la forme `Stretch(100.0)`
+
+@ 0 1 0 1f2170a1f4b5bae50e4706d2d69075ec
++     entry .percentage
++       info
++           la chasse en pourcentage de la chasse normale
+
+@ 0 1 0 1d32bb22029211ea1b969a4ea4f0e273
++     entry .to
++       info
++           `lower to upper` : l'intervalle inclusif entre deux chasses
+
+@ 0 1 0 0ca4d4637d8dccee074d879882a719d1
++     entry .range
++       info
++           l'intervalle de cette seule chasse
+
+@ 0 1 0 1d0081707ed7dd1c09e8882a50de0383
++   entry .id
++     info
++         l'identifiant du glyphe dans sa police ; 0 est le glyphe manquant
+
+@ 0 1 0 065d88f468d806ad0198067dc50333d7
++   entry .font
++     info
++         la macro derrière `Font(face)` et `Font.of[medium](face)`
+
+@ 0 5 0 117b80b0df98e0e90ced1bd9a24bd25a
++     detail
++         Lit le `Locus` de la fourniture depuis son type ; s'il s'agit d'un littéral de chaîne
++         nommant une ressource du classpath du compilateur, lit la police (une fois par chemin),
++         en dérive la `Coverage` et vérifie par rapport à elle les membres de type `Weights`,
++         `Slanting` et `Enabled` du style, en s'arrêtant avec _phoenicia: the font at `path`
++         cannot set this face: …_ en cas de refus. Se développe ensuite en `Font.paired`.

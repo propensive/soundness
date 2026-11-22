@@ -1,0 +1,150 @@
+orthant 2 language
+
+@ 0 1 0 0764d003b2d73399122ce3a270fcbfa4
++ # Seguridad por construcción
+
+@ 0 5 0 12aadd03548ddd7a097194cf02e95c45
++ Soundness hace que los valores no válidos sean imposibles de construir desde el principio, y los
++ comprueba mientras el código compila. Una convicción que la guía es que cualquier análisis estático
++ que pueda hacer un programador, el compilador puede hacerlo mejor; y cualquier análisis que pueda
++ hacer el compilador, debe hacerlo. Por eso se sabe que un valor que existe está bien formado, y el
++ código que lo recibe no necesita volver a comprobarlo.
+
+@ 0 5 0 050ba2c0784f05cf10341c2c3b696a0a
++ Los interpoladores lo expresan con la mayor claridad. Cada pequeño lenguaje incrustado en un
++ programa —URL, rutas, expresiones regulares, fechas, tipos de medio, JSON— tiene una gramática, y sus
++ literales se analizan con esa gramática en tiempo de compilación, con el mismo analizador que tratará
++ la entrada en tiempo de ejecución. Un literal mal formado es un error de compilación que señala el
++ carácter culpable:
+
+% 2 1 0 0bbec91b09000cd81ea0f69c75b4df45
+
+% 3 1 0 0a0239a309474f48171c8acf80f08a8c
+
+% 4 1 0 101ca460ec05283f0fb456c616de83cc
+
+% 0 1 0 1bb57990592a2cd601d4fcc1c8376afc
+
+% 0 1 0 1d56685db19c0b940cc591a734567bf6
+
+% 0 1 0 03b60f1eb8e5e7de025c577b0cc1df4c
+
+% 0 1 0 1354ba3c0bd04d301ed774709e8718ea
+
+% 1 1 0 080f5bd43c4309a716cfd395297700d5
+
+@ 0 7 0 09f886996a0fa8860f134f33e11b3f97
++ El mismo principio va más allá de los literales. Una fecha que no puede existir —el día 31 de un mes
++ de 30 días— se rechaza allí donde se escribe; un `Money in "EUR"` no puede sumarse a un
++ `Money in "GBP"`; una relación de base de datos que el esquema no declara no compila; y un `<br>` de
++ HTML al que se le dan hijos es un error de compilación porque la especificación así lo dice. En cada
++ caso la comprobación no es una validación en tiempo de ejecución adelantada, sino una construcción
++ que solo admite valores válidos: así el estado no válido no tiene representación alguna, y el código
++ posterior hereda la garantía gratis.
+
+@ 0 1 0 009da7f2e145b0bc178e41b0b27b76bb
++ ## Un analizador, dos momentos
+
+@ 0 4 0 1361fb180d65287b1d92cd54283e7703
++ La propiedad que hace esto fiable es que los caminos de tiempo de compilación y de tiempo de
++ ejecución son *el mismo código*. La lógica de análisis de un interpolador es Scala corriente; se
++ ejecuta en tiempo de compilación sobre un literal, y produce un error de compilación, y en tiempo de
++ ejecución sobre una entrada dinámica, y produce un error tipado:
+
+% 2 1 0 0a7c7d676b83db220b0d4ae7caeabb93
+
+% 3 1 0 1df291f82e0f4d7604485e60a19c2fa7
+
+% 4 1 0 105e313eb329d0e71cefb0330164f720
+
+% 0 1 0 06d43944fce464700b9c4ed728e2836a
+
+% 0 1 0 16c6c267601bf76d03cd63a6600b55ad
+
+% 1 1 0 1b8df6aaa8def2c11618aea93d46bd96
+
+@ 0 3 0 0aeae3130e9fe6121b9133a0bcab7a23
++ Los dos no pueden divergir, porque no hay nada que mantener sincronizado. Una macro escrita a mano más
++ un analizador independiente en tiempo de ejecución es la disposición que se evita: dos
++ implementaciones de una misma gramática, que difieren precisamente en los casos límite que nadie ha
++ probado.
+
+@ 0 3 0 024cd703bb1958460b438daae9d71864
++ Por eso la convención es que todo literal comprobado tiene una contrapartida en tiempo de ejecución, y
++ un valor puede pasar de uno a otro: una configuración leída de un fichero y un valor por defecto
++ escrito en el código fuente producen el mismo tipo, con las mismas garantías.
+
+@ 0 1 0 0db4f7a360e4e5a406d0815ddaface26
++ ## Precisión en el tipo de retorno
+
+@ 0 3 0 1cc38bc23600d848161e5dcdc186f858
++ El método prefijo de un interpolador es `transparent inline`, así que puede devolver algo más
++ específico que su tipo declarado. Es lo que permite a un literal llevar lo que *es* al sistema de
++ tipos, en lugar de limitarse a validarse:
+
+% 2 1 0 07a358831606ac57130169022ac844c9
+
+% 3 1 0 13972933396c919f1c4df3b806db7c8f
+
+% 4 1 0 1af7f9b5938a440a0b69921924fc901b
+
+% 0 1 0 0e0e33ffd0034f4819ba4ea80e3177a6
+
+% 0 1 0 0d703fc43ae9608f0b5e0a2fb0cf04ab
+
+% 0 1 0 1698b4f0fc04b3bb1e159d5af11d02c4
+
+% 1 1 0 07d1bc6ef5ec6dd3083a1c2c3992e164
+
+@ 0 4 0 050ad6494fcaf1041d27097ddb74da24
++ El último es la forma más fuerte: los nombres de los elementos de la ruta están en su tipo, así que el
++ código que la recibe sabe exactamente adónde apunta. Esa precisión solo está disponible para los
++ literales, que es el límite honesto de la técnica: el texto obtenido en tiempo de ejecución da el tipo
++ general, porque no se sabe nada más de él.
+
+@ 0 1 0 078c4179ff580cd81fb18bf30fb78d54
++ ## Qué puede comprobarse así y qué no
+
+@ 0 3 0 12ef372b18b956a0095042ab71e587ea
++ La técnica se aplica cuando la validez es una propiedad del *valor*, decidible a partir del valor
++ solo. La sintaxis de una URL, la existencia de una fecha, el registro de un tipo de medio, el
++ equilibrio de una expresión regular, la forma de un esquema: todo decidible, todo comprobado.
+
+@ 0 5 0 1e7304ed291048970a0af9879189cfa0
++ No se aplica cuando la validez depende del mundo. Si `example.com` se resuelve, si un fichero existe,
++ si un puerto está libre, si un certificado sigue siendo válido: nada de ello puede saberse cuando el
++ código compila, y un tipo que afirmara lo contrario mentiría. Esos casos se convierten en errores
++ tipados en el punto de uso, y es entonces el trabajo de las [transiciones
++ totales](total-transitions.md).
+
+@ 0 3 0 07e15608a1ea73aa16a0eb4b49fee918
++ Merece la pena trazar con cuidado la línea entre ambos, porque la tentación es prometer de más. Un
++ `Hostname` promete validez sintáctica y nada más, y la documentación lo dice, en lugar de dejar que
++ el lector deduzca que un nombre de host bien tipado es un nombre alcanzable.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Lo que cuesta
+
+@ 0 3 0 10c64cbaf3bea6db08a3bf43cf1cce5d
++ **Tiempo de compilación.** El compilador analiza cada literal, y un fichero repleto de ellos compila
++ de forma apreciablemente más lenta. La expansión de macros es el mayor contribuyente a los tiempos de
++ compilación del propio Soundness.
+
+@ 0 5 0 14e4d8fa704a752b096eefc5f044ae31
++ **Los mensajes de error son responsabilidad de la macro.** Un error de compilación de un literal
++ fallido solo es tan bueno como el mensaje que produce el interpolador. Situar un signo de
++ intercalación en el carácter culpable —en lugar de subrayar la expresión entera— exige un trabajo
++ deliberado con las posiciones de código fuente que recibe el interpolador, y un interpolador que
++ escatima en ello produce peores diagnósticos de los que habría dado un analizador en tiempo de
++ ejecución.
+
+@ 0 5 0 0ea35d68ceb20fa1065d2c9acf34fb34
++ **Los literales deben ser literales.** Una URL construida a partir de partes en tiempo de compilación
++ no puede aprovechar la comprobación del interpolador a menos que las partes sean a su vez literales.
++ El camino en tiempo de ejecución siempre está disponible, pero la garantía es más débil, y la forma
++ del código cambia; lo que a veces empuja un diseño a mantener literal algo que de otro modo se habría
++ calculado.
+
+@ 0 2 0 08deaea14db629dc0fffffd511663b39
++ Véase [estados imposibles](impossible-states.md) para la regla a la que esto sirve, e
++ [interpolación](../en/modules/interpolation.md) para cómo se construye un literal así.

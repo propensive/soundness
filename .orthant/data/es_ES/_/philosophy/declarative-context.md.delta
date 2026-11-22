@@ -1,0 +1,116 @@
+orthant 2 language
+
+@ 0 1 0 1bfc33e2edf2fc8f121308653215d922
++ # Contexto declarativo
+
+@ 0 7 0 1d92e83ec686989c182a8572fbb330ee
++ Soundness configura el comportamiento de forma declarativa, mediante valores contextuales en el
++ ámbito, en lugar de argumentos pasados a mano o indicadores consultados en tiempo de ejecución.
++ Elegir un formato de salida, una estrategia de errores, una codificación de caracteres o una
++ implementación concreta consiste en traer al ámbito el `given` adecuado, tras lo cual la elección se
++ aplica automáticamente a todo lo que está dentro de ese ámbito. Como la configuración es declarativa,
++ es independiente del flujo de control y fácil de razonar: lo que está en el ámbito determina lo que
++ ocurre, dondequiera que se ejecute el código afectado.
+
+@ 0 5 0 0ccd789078bba8931f8edef54dab7236
++ La fuerza del enfoque es que el ámbito es un instrumento preciso. Un given importado al principio de
++ un fichero configura el fichero; uno declarado dentro de un bloque configura solo ese bloque, y
++ sustituye cualquier elección más amplia; y un bloque `locally` limita una excepción a unas pocas
++ líneas. [Ámbitos delimitados](delimited-scopes.md#scope-is-a-precise-instrument) muestra los tres en
++ un solo ejemplo.
+
+@ 0 4 0 1df4daca083094a405998d73f5729c9a
++ La configuración se compone como el código que configura. Un proyecto define sus elecciones propias
++ una vez y las comparte con `export`, de modo que `import myproject.conventions.*` dota a cualquier
++ fichero de la estrategia de errores, las codificaciones y los formatos del equipo: configuración como
++ biblioteca, versionada y revisada como tal.
+
+@ 0 8 0 15130699107ff7ce07eb333f08b1a870
++ Dos herramientas mantienen honesto el enfoque. Los valores contextuales que representan capacidades o
++ configuración extienden el marcador `Findable`, que el plugin del compilador de Soundness usa para
++ distinguir el contexto *encontrable* —lo que se espera que el usuario proporcione o importe— de la
++ maquinaria interna. Y cuando falta un given necesario, importar `explainMissingContext` convierte el
++ escueto «no implicit found» del compilador en un diagnóstico: busca en el classpath las instancias que
++ *satisfarían* la búsqueda y nombra las importaciones que las proporcionan, de modo que la respuesta a
++ un contexto que falta es una importación de una línea, no una sesión de arqueología.
+
+@ 0 1 0 1f2cfe28048ef52a014414f319348b48
++ ## Qué entra en el ámbito
+
+@ 0 3 0 08ab6e64349664401a049f51916e12fc
++ Merece la pena ver el abanico de una vez, porque la uniformidad es lo esencial. Un único mecanismo
++ lleva elecciones que otros diseños repartirían entre argumentos de constructor, ajustes globales,
++ métodos de builder e indicadores en tiempo de ejecución:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 0a9d417d25c782ee1525af846ea40100
++ column  Elección
++ column  Importación
++ row  qué hace un fallo  `strategies.throwUnsafely`
++ row  cómo el texto se convierte en bytes  `codepages.utf8Codepage`
++ row  cómo se representa el JSON  `formatting.compactJsonFormatting`
++ row  cómo se muestran las fechas  `dateFormats.iso8601DateFormat`
++ row  cómo se muestra un booleano  `affirmations.yesNoAffirmation`
++ row  sobre qué se ejecuta una tarea  `threads.virtualThreads`
++ row  qué pasa con las tareas sin terminar  `probates.cancelProbate`
++ row  qué transporte HTTP se usa  `httpBackends.soundnessHttp`
++ row  qué implementación del sistema de ficheros  `filesystemBackends.javaBaseFilesystem`
++ row  qué calendario significa un literal de fecha  `calendars.gregorianCalendar`
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0f4325e2e28fd8fe0eb6619c2d9e23bf
++ Un solo modismo que aprender, y el mismo razonamiento —«lo que está en el ámbito determina lo que
++ ocurre»— se aplica a todos ellos.
+
+@ 0 1 0 051ff2ba1d0a5e911e96d25d468d9ce8
++ ## El nombre hace legible la elección
+
+@ 0 3 0 0338cae7de17808a12f362eb0e0255c4
++ Un given recibe el nombre de lo que *selecciona*, no de su tipo, porque la línea de importación es lo
++ que ve el lector. `import strategies.throwUnsafely` dice algo sobre el código que la sigue;
++ `import strategies.given` no lo diría.
+
+@ 0 4 0 1f2308d40559540504acf589b86bbe3d
++ Por eso la convención importa aquí más que en otros sitios: un valor contextual se invoca sin
++ escribirse en el punto de llamada, así que la importación es el único lugar donde su elección es
++ visible. Un given mal nombrado hace la configuración contextual exactamente tan opaca como dicen sus
++ críticos.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Lo que cuesta
+
+@ 0 2 0 021c580bb192a4c90d3cf4ac02f1998f
++ La objeción honesta a la configuración contextual es la acción a distancia, y no está equivocada.
+
+@ 0 5 0 08a8364f101114b81d9f5e65f3c4db5c
++ **El efecto no es local al punto de llamada.** Un `json.show` se representa de forma distinta según
++ una importación que puede estar cien líneas más arriba, y nada en el punto de llamada lo indica. El
++ lector debe saber que tiene que mirar. La mitigación es la precisión del ámbito —cuanto más estrecho
++ es el ámbito, más cerca está el given de lo que afecta—, pero la tensión es real, y un given importado
++ para todo el fichero es de verdad acción a distancia.
+
+@ 0 4 0 0bf53ac56528f89c034b002070df71e2
++ **La ambigüedad es un error de compilación, y confuso.** Dos givens del mismo tipo en el ámbito hacen
++ ambiguo el código, lo cual es seguro, pero se informa en términos de resolución de implícitos y no
++ como «has elegido dos formatos JSON». Importar dos agrupaciones de convenciones que discrepan produce
++ exactamente esto.
+
+@ 0 4 0 12e85f801961fb31108ba097de7fe655
++ **Refactorizar puede cambiar el comportamiento sin avisar.** Mover una función a otro fichero la saca
++ de un conjunto de importaciones y la mete en otro. Los tipos siguen cuadrando; el comportamiento puede
++ diferir. Es el filo más cortante del enfoque, y la razón por la que conviene reunir las convenciones
++ de un proyecto en un único objeto compartido en lugar de ensamblarlas ad hoc en cada fichero.
+
+@ 0 5 0 1e2bd1a98a0147f819f7a3476225b5bf
++ **No hay sustitución en tiempo de ejecución.** Como la configuración se resuelve mientras el código
++ compila, no puede cambiarse con una opción de línea de comandos ni con un fichero de configuración
++ sin pasar la decisión explícitamente. Cuando de verdad se quiere poder configurar en tiempo de
++ ejecución, el valor debe ser un parámetro corriente; y reconocer cuál de las dos necesita una
++ elección dada es una decisión de diseño, no automática.
+
+@ 0 3 0 1f04c87e82ebf96301e4edea8825ca01
++ Véase [ámbitos delimitados](delimited-scopes.md) para cómo se establece el ámbito, y [signaturas
++ honestas](honest-signatures.md) para saber por qué que los requisitos estén en la signatura es lo
++ que hace esto legible.

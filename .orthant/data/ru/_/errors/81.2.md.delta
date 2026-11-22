@@ -1,0 +1,88 @@
+orthant 2 language
+
+% 0 1 0 134735d34eb71cf017d174d515b950fb
+
+@ 0 1 0 1d875e78cb65a32f0633838315ab108a
++ Порождается, когда не удаётся разобрать данные multipart MIME.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Причина
+
+@ 0 4 0 0eb4d549ccd903aa01d0359df27b2cc2
++ Gesticulate разбирает тела multipart, ограниченные разделителем,
++ объявленным в заголовке `Content-Type`. У каждой части свои заголовки и
++ тело. Эта ошибка сообщает о структурной проблеме в потоке данных
++ multipart. Сообщение — `multipart data could not be read because
+
+% 0 1 0 04ca5a28474c5b9905df7261499fb1eb
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Варианты
+
+% 0 1 0 03b81b73ddd7267518f25999a3ba4dd8
+
+@ 0 2 0 06de294ad6efdc0f08541bbf0c9df6e8
++ В позиции парсера ожидался определённый символ, но встретился
++ другой.
+
+@ 0 1 0 179cd578b684d6f91fa543e88d229f51
++ **Пример.** `[↯/s.81.2.1] multipart data could not be read because the character ':' was expected`
+
+@ 0 2 0 1b1f8d2a051f110b1c2d1b7caffa7abd
++ **Решение.** Убедитесь, что источник выдаёт корректные данные
++ multipart; проверьте, нет ли пропущенных CRLF или границ.
+
+% 0 1 0 06327e7539aefd3e1c54a53a8580d6df
+
+@ 0 1 0 19b8128eddd2072519b2007300c69d1d
++ После закрывающей границы появились байты.
+
+@ 0 1 0 1447cfdebb48387c11532467976372f2
++ **Пример.** `[↯/s.81.2.2] multipart data could not be read because the stream continues beyond the last part`
+
+@ 0 2 0 146a6b0c128621d01fcafbcc843d5a91
++ **Решение.** Обрежьте тело по закрывающей границе или прекратите
++ выдавать байты после неё.
+
+% 0 1 0 045ffbc24f719ee916ada862b714fe96
+
+@ 0 2 0 1079b41110a9b279025e8043caaf632c
++ За границей следовало содержимое, не соответствующее документированному
++ формату завершителя.
+
+@ 0 1 0 0875a7f4316e7e7410f6451484f34424
++ **Пример.** `[↯/s.81.2.3] multipart data could not be read because unexpected content followed the boundary`
+
+@ 0 2 0 1b0fd42990acc13616be6c9c63d00662
++ **Решение.** За границей должно следовать либо `\r\n` (начало
++ следующей части), либо `--\r\n` (конец тела); исправьте источник.
+
+% 0 1 0 0706709ad094f8f608b4209d08210c02
+
+@ 0 1 0 06502d9c18b588a51e4ccb50e9bf5dd4
++ Заголовок `Content-Type` части не является допустимым медиатипом.
+
+@ 0 1 0 004dc69806bbad6c06a819903e709254
++ **Пример.** `[↯/s.81.2.4] multipart data could not be read because the media type is invalid`
+
+@ 0 1 0 089ccafbd17c28bf0ec2d540f2916ec7
++ **Решение.** Правила для медиатипов см. в `↯/s.81.1`.
+
+% 0 1 0 1c2ada53b6f13e370a507d969d35893f
+
+@ 0 1 0 1db8dfa05ca0a9e217d749a66e3b58a7
++ Заголовок `Content-Disposition` части имеет неверный формат.
+
+@ 0 1 0 0eda9a5f2afde8180e9ed8487d17192b
++ **Пример.** `` [↯/s.81.2.5] multipart data could not be read because the `Content-Disposition` header has the wrong format ``
+
+@ 0 1 0 19c3de0bc0aa86e30c098bf467570802
++ **Решение.** Используйте стандартную форму, например
+
+% 0 1 0 0932e7d4542db3551ffb4f375a5c7f7a
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## См. также
+
+@ 0 1 0 09952908d92f8c7f0ebacac01d6389de
++ - Исходный код: `lib/gesticulate/src/core/gesticulate.Multipart.scala`

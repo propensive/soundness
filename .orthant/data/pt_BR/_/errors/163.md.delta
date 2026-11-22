@@ -1,0 +1,31 @@
+orthant 2 language
+
+@ 0 1 0 1ab514d1ddb96d7002a8384b7034bade
++ # `SN-163` — Linhas de continuação `.method(…)` (aposentado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este erro não existe mais. A página é mantida para que o código não seja reutilizado, e para que
++ uma referência a ele a partir de uma release mais antiga ainda possa ser resolvida.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## O que aconteceu
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ O plugin de compilador Decorum, que lançava este erro, foi extraído do Soundness e agora é o
++ [Consequent](https://github.com/propensive/consequent), um verificador independente do
++ Consequent Style. A regra sobrevive lá sob um novo identificador, em que a letra nomeia o
++ princípio de que ela deriva:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Era
++ column  Agora
+
+% 0 1 0 1c2c4c9af9cf0c71007e6eac8f75c1cf
+
+% 0 1 0 00aa267be6f585450c3ee3c7ebde5898
+
+% 0 1 0 07c92192402dbe9a083b406454264ed3
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

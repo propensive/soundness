@@ -1,0 +1,1659 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0ca98edbf8c026ea06beef76a82b0787
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 13b937258a6302250e974521ed5b4518
++ info   conversaciones tipadas con modelos de lenguaje: sesiones, flujos, herramientas como métodos de Scala, respuestas estructuradas y lotes
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 0715b6f537baf7651b0d1d238bda320a
++     _Sibylline_ habla con grandes modelos de lenguaje a través de un único vocabulario, sea cual
++     sea el proveedor. Un proveedor y un modelo son un valor sin más (`Anthropic`, `OpenAI`, `Gemini`
++     o un servidor compatible con OpenAI como vLLM, Ollama o Groq), ajustado mediante métodos que
++     devuelven cada uno un valor nuevo; una conversación es una `Llm.Session`, abierta sobre ese
++     valor con `session` y alcanzada dentro del bloque como `llm`, que acumula su historial y su
++     consumo de tokens; un turno devuelve un `Llm.Reply`, datos puros que dicen por qué se detuvo el
++     modelo; la salida en flujo es una `Llm.Response` cuyo texto se extrae de la conexión viva; una
++     herramienta es un método ordinario de Scala anotado con `@ability`, reunido en un `Toolkit`
++     cuyos esquemas JSON se derivan de los tipos de los parámetros; y `solicit[T]` pide una
++     respuesta de un tipo y decodifica el documento que suministra el modelo con respecto a un
++     esquema derivado de `T`.
+
+% 2 1 0 1a601cffb1af49350b194d4332ea62c9
+
+% 3 1 0 024ddbbdf9d9c64410f767dc13cad61d
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 06c45d481874d88318d8fe9c3997b2da
+
+% 1 1 0 03a3551516fdbca6012781329e2a4fbd
+
+% 3 1 0 1279980e0316c0890d1cc3722196db91
+
+% 4 1 0 00f09b46ddd6c4d6064c9a4b74bf9108
+
+% 5 1 0 156d677cbdfeb1391088a4fd74fd72e5
+
+% 0 1 0 08d922d2f9d53ff30f55a8338d18369d
+
+% 0 1 0 10c8ea13f41671cf06517e74ba5f0ecb
+
+% 0 1 0 04a6cc00e2dabfc11aff3785f9f9f9d5
+
+% 0 1 0 19a2a01ec462eaaf074fb6cc785dc4d6
+
+% 0 1 0 0a183a7314e1a5671b55c5e40335debb
+
+% 0 1 0 13a7161d2aad9f3f19af355e422d0eb0
+
+% 1 1 0 12bb4639713d43e206f54410409a4877
+
+@ 0 8 0 0dfd98bb9b5e6b4e1bb16172b4b6e3fc
++     La API de cada proveedor es un dialecto de JSON: una petición con el modelo, los mensajes hasta
++     el momento y unos pocos parámetros de ajuste; una respuesta con bloques de contenido, un motivo
++     de parada y recuentos de tokens; una variante en flujo de eventos enviados por el servidor; y
++     un protocolo de llamada a herramientas. Los dialectos difieren en cada detalle y coinciden en
++     cada concepto, así que los conceptos se modelan una sola vez —`Llm.Message`, `Llm.Content`,
++     `Llm.Reply`, `Llm.Usage`, `Llm.Tool`, `Llm.Stop`, `Llm.Event`— y se traducen a cada protocolo
++     de transmisión mediante un `Llm.Dialect` privado que construye el `Sessional` del proveedor. Un
++     bloque que el protocolo de transmisión no modela se conserva tal cual como
++     `Llm.Content.Opaque`, así que una transcripción nunca miente.
+
+@ 0 7 0 0d0fe813f38d5cdf1a70923378cf5bc3
++     Una sesión es una capacidad confinada a su bloque por la comprobación de capturas: los valores
++     puros que produce (un `Reply`, una instantánea de `history`, el `usage` acumulado) salen
++     libremente, mientras que la propia sesión y cualquier `Response` en curso no pueden devolverse
++     ni guardarse, así que una conexión no puede mantenerse abierta por accidente, y no puede
++     empezarse un turno nuevo mientras un flujo no se ha vaciado. Un `Toolkit` given en el ámbito
++     convierte `ask` en el bucle de herramientas completo: se ejecutan las llamadas del modelo, se
++     notifican sus resultados y la conversación continúa hasta que el modelo responde con texto o
++     salta el límite de `iterating`.
+
+@ 0 7 0 099b17e54c4077fc0b642e28e7cb3f78
++     Todo fallo es un `Llm.Error` (error `↯/s.126.1`) cuyo `Reason` es uno de un conjunto fijo, con
++     el estado HTTP y cualquier retardo `retry-after`; un límite de tasa o una sobrecarga se
++     reintentan tres veces antes de lanzarse. Una llamada necesita una capacidad `Online`
++     (`internetAccess.online`), un `Http.Backend` (`httpBackends.javaNetHttp`), un
++     `Http.Event is Loggable` (`logging.silentLogging`) y una `Tactic[Llm.Error]`, todos los cuales
++     toma del ámbito el given `sessional` del proveedor cuando se llama a `session`; un `Toolkit` es
++     el único given que una sesión lee en cada `ask`, y se aplica `Toolkit.empty` cuando no se da
++     ninguno.
+
+@ 0 6 0 14a29542e52a20fe177dcf1067c7c86d
++     La biblioteca es un único conjunto de fuentes, `sibylline.core`, para la JVM: cada llamada es
++     un viaje de ida y vuelta síncrono en el hilo de quien llama, y un reintento o el `await` de un
++     lote duermen el hilo. `Anthropic`, `Gemini`, `OpenAI`, `Llm`, `Toolkit`, `ability`, `llm` y
++     `solicit` se exportan al paraguas `soundness`. La anotación `@about` que describe una
++     herramienta es la de synesthesia, así que una sola descripción sirve para un método expuesto
++     tanto como herramienta MCP como como habilidad del modelo.
+
+% 0 1 0 1fc455017438ca130998dfa1187b5b78
+
+% 0 1 0 09cb290cc5ab9d241ec091ed5e5acb7c
+
+% 0 1 0 04121744e7f6cc091c3906354ab6aa22
+
+% 0 1 0 18ad8144451e1f3012ee2254feca4b5c
+
+% 0 1 0 07be8226c30cbf3b0439e5959ff04f85
+
+% 0 1 0 166cc4d0886a856a16b7ffd21a41aa97
+
+% 0 1 0 1e24e828971b676d1ed50bc89da023b4
+
+@ 0 5 0 03c9cbef869a0451137eed478520ab58
++ entry .llm   la sesión que presta un bloque `provider.session:`, como accesor contextual
++     `llm` es la `Llm.Session` que recibió el bloque `session` que lo rodea: `llm.ask(…)`,
++     `llm.stream(…)`, `llm.solicit[T](…)`, `llm.history` y `llm.usage`. Es un parámetro contextual
++     con nombre, no un `summon`, así que se refiere a la misma sesión que posee el bloque, y su
++     resultado captura esa sesión, lo que la mantiene confinada al bloque.
+
+% 2 1 0 0b1ba538fe7e7dfc0c91c17a6e5be450
+
+% 3 1 0 026bbeaadff8925b0e17400f0f886cac
+
+% 4 1 0 16043f616b7db6f7156adec9be220e92
+
+% 5 1 0 179de008530042a41b209fffa1f79e61
+
+% 0 1 0 11218212b5b0a1cb09936fb30ab98825
+
+% 0 1 0 145f229efe736e9b1a9b5bd21fbec897
+
+% 1 1 0 122c601e7e26845e0aeeeec87948e0bf
+
+@ 0 9 0 1823bdefc2dc06f61861c8216ecc8854
++ entry .solicit   una respuesta estructurada de un tipo con nombre, decodificada del documento que suministra el modelo
++     Una extensión sobre `Llm.Session`. `llm.solicit[T](prompt)` deriva el esquema JSON de `T`
++     (`T is Schematic over JsonSchema`, derivado para una case class), envía `prompt` como turno
++     del usuario y decodifica la respuesta a `T` (`T is Decodable in Json`). Cómo llega el esquema
++     al modelo es asunto del dialecto: en un dialecto cuyo protocolo de transmisión restringe una
++     respuesta de forma nativa (`Anthropic`, mediante el formato de salida de la Messages API) es el
++     `format` de la respuesta; en los demás, se obliga al modelo a llamar a una herramienta
++     sintética llamada `answer` cuyos argumentos tienen ese esquema, y se decodifican los
++     argumentos. Quien llama nombra un tipo y recibe un valor, con todos los proveedores, incluidos
++     los servidores locales sin modo de salida estructurada.
+
+% 2 1 0 07f340fecf410e01186498a47ec90915
+
+% 3 1 0 14307e64a478d0f61b4d7664cad0addb
+
+% 0 1 0 107a83b4d229a25410b1e1af43d018c5
+
+% 1 1 0 1ffdbf66ed8555720c666c1138e5b305
+
+% 3 1 0 185b7c1c78e174e11463a5019fb24ce9
+
+% 4 1 0 0f2e6d660342e923010535a7d47984ad
+
+% 5 1 0 180525cc1afdc8e119e78beaeaf0b6e9
+
+% 5 1 0 1ab9a1cea928f9b10ca8fe21d160f4a4
+
+% 0 1 0 1f1067b83240da480ad69003bf5377fb
+
+% 1 1 0 13a5cc91b4db34950e5defb1d6151509
+
+@ 0 4 0 0b02cac9950cdec902fbb1de511af807
++     Una respuesta que ignora la herramienta forzada, que no es JSON o cuyo documento no se
++     decodifica a `T` lanza `Llm.Error` con el motivo `Malformed`, a través de la propia táctica de
++     la sesión, así que una respuesta mal formada es un error que hay que gestionar y no un valor
++     que parece correcto. El turno se consigna en el historial como cualquier otro.
+
+@ 0 8 0 18068fe74a55e9930c82e1e95f393f1b
++ entry .ability   marca un método como una herramienta a la que puede llamar el modelo, para que `Toolkit(…)` la derive
++     Una `StaticAnnotation`, escrita `@ability` sobre un método del objeto a partir del cual se
++     construye un `Toolkit`. La primera lista de parámetros del método se convierte en el esquema
++     JSON de la herramienta (cada tipo de parámetro necesita un `Schematic over JsonSchema` y un
++     `Decodable in Json`), su tipo de retorno se codifica como el resultado (`Encodable in Json`), y
++     una segunda lista de parámetros, contextual, se convoca donde se escribe `Toolkit(…)`. Su
++     descripción es el `@about(text)` de synesthesia, compartido con la integración MCP; un método
++     sin él tiene una descripción vacía. El nombre es `ability`, no `tool`, que synesthesia ya
++     exporta.
+
+% 2 1 0 0b0e174d74241b791b0138d44cbd3b76
+
+% 3 1 0 1afabbc00a61a4e00d6adaf4243b8b7e
+
+% 0 1 0 1003d67f7f071a05065a93f3cb623587
+
+% 0 1 0 1ab9429fe5f39b000834cd2b0517e75f
+
+% 0 1 0 01d218d223fd60521cb3d8a27358d216
+
+% 0 1 0 01d64e5aee2bbcc70b06965db3479379
+
+% 0 1 0 10c0acf990c6bb19035df6900c09de4d
+
+% 1 1 0 0c5d37d1148ad252009a3d7f35d7c56e
+
+@ 0 1 0 09acda63e1e3ceee115536c53e9a2771
++ entry .Toolkit   las herramientas que una conversación ofrece a su modelo: sus especificaciones y un despachador
+
+% 1 1 0 17f836fa6e07c7811d67e177e327721a
+
+@ 0 7 0 0c2684e6bfcb8a941ed312678b231e43
++       Un `Toolkit` es lo que una sesión lee, como given, en cada `ask`: `#specs` son las
++       `Llm.Tool` que se ofrecen al modelo, y `#invoke` ejecuta la que nombró el modelo con los
++       argumentos JSON que este suministró. Con un kit de herramientas given en el ámbito, `ask`
++       ejecuta el bucle completo —se invocan las llamadas del modelo, se notifica de vuelta cada
++       resultado como un `Llm.Content.ToolResult` y se reenvía el intercambio— hasta que el modelo
++       se detiene por un motivo distinto de `ToolCall` o salta el límite de `iterations` con
++       `Llm.Error(ToolLoopExceeded)`. Sin ningún given en el ámbito se aplica `.empty`, y una
++       respuesta `ToolCall` se devuelve a quien llama para que la gestione.
+
+@ 0 1 0 0440209f553a99d516e337a4d10dd1a2
++       `Toolkit(target)` deriva uno a partir de los métodos anotados con `@ability` de un objeto:
+
+% 2 1 0 1534ab0b260783b709f67ca31b135a99
+
+% 3 1 0 0a587cc57724356b122d6d09837d5842
+
+% 4 1 0 15b69bccf823903e15a3df337ed0f028
+
+% 0 1 0 1b6c69b95a39cf760a87452a4edfbafb
+
+% 1 1 0 1f81c9d3d2cc8a1e1b563365e797c80a
+
+% 0 1 0 013c2476ae8a109716c276f9981c8fbe
+
+% 0 1 0 1f2e7534b7d4a7180b80a49058282f57
+
+% 0 1 0 069b34891e9d67310feeb4f592b03150
+
+% 0 1 0 1a2e2fcea9d438b30d1d4ca94afa5533
+
+% 0 1 0 0d057af74a126d841981c72f3f9e81cc
+
+% 1 1 0 1d444c442973ef3c086503c999f3ec4b
+
+% 3 1 0 05044bd71b2cab820c94359c4efce9ce
+
+% 4 1 0 158da5c96b01ab63185487fd71a9f99c
+
+% 5 1 0 082a9bdc96270a631d33ef43c4335fcb
+
+% 6 1 0 0181a494e7ad03df0d7842024db131b8
+
+% 0 1 0 04b44cc96b47268801c66e9534c9ee12
+
+% 0 1 0 0735c2aaf0a4ede31ccfb4e0cdc87b55
+
+% 1 1 0 1a9f0da165a019c40e9a6b4765c02186
+
+@ 0 5 0 0410b8ed3d9872cd05a9242528c456f2
++       Un fallo dentro de `invoke` —una herramienta desconocida, un argumento ausente o mal formado,
++       o un error que lanzó el propio método— llega al modelo como un resultado de herramienta
++       marcado como error, a partir del cual puede corregirse a sí mismo, en lugar de terminar la
++       conversación. Un resultado textual se envía como prosa, no como una cadena entrecomillada en
++       JSON. Cada turno que da el bucle se consigna en el historial de la sesión, así que el
++       registro muestra las llamadas que hizo el modelo y lo que se le dijo.
+
+@ 0 3 0 1b5b8b48065bca8a0b20a225abd3f003
++       Un kit de herramientas construido donde hay una capacidad en el ámbito la captura (un
++       parámetro contextual se convoca en el lugar de construcción), y la comprobación de capturas
++       confina el kit de herramientas en consecuencia; un kit de herramientas de métodos puros es un
++       valor sin más que puede compartirse.
+
+% 0 1 0 0747d51ddd5cf4fc1a44bff388f15743
+
+% 0 1 0 0c5cfe4809422b4d0589dc2f194f1f61
+
+@ 0 14 0 1ff1e03a0136839d1d815cce3cc2c028
++   entry .empty   el kit de herramientas que tiene una sesión salvo que se dé otro: ninguna herramienta
++       El given por defecto, en el objeto compañero de `Toolkit`: `specs` está vacío e `invoke`
++       lanza `Llm.Error(Invalid)`, _no tool named `name` is defined_, para una llamada que nunca
++       debería llegar. Un `given Toolkit = Toolkit(…)` en el bloque de la sesión tiene prioridad
++       sobre él.
++   entry .apply   deriva un kit de herramientas a partir de los métodos `@ability` de un objeto
++       `Toolkit(target)` es una macro. Para cada método del tipo de `target` anotado con `@ability`
++       (directamente, o en un método que sobrescribe) crea una `Llm.Tool` con el nombre del método,
++       descrita por su anotación `@about` (o vacía), cuyo esquema es un objeto JSON con una
++       propiedad obligatoria por cada parámetro de la primera lista de parámetros, con el esquema de
++       cada tipo de parámetro convocado como `Schematic over JsonSchema`; y un despachador que
++       decodifica cada argumento (`Decodable in Json`), aplica el método y codifica el resultado
++       (`Encodable in Json`). Un método puede tener una lista de parámetros explícita y,
++       opcionalmente, una lista contextual, cuyos valores se convocan donde se escribe
++       `Toolkit(…)`, así que el modelo nunca los ve.
+
+% 2 1 0 1b3a7c95bb3f5ccc09a865319ee87c5f
+
+% 3 1 0 028dc691747421761e7b180d2e9c1ca6
+
+% 4 1 0 0d0dea79a3c097661f642ee7677bd593
+
+% 0 1 0 00c6ac8d21845ed41c8c038830daa121
+
+% 1 1 0 124b8ccae4de15c90e473bab21d164a0
+
+% 0 1 0 0ded71eaa38f61ef0837f613fb054798
+
+% 0 1 0 1ec531c0c86af131021a095d588ca887
+
+% 0 1 0 1fb77ab78783e1610db5361e20c985d1
+
+% 1 1 0 059f976b92d30f30006d39aab4b73318
+
+@ 0 8 0 08303769d2e6a4f505fde453a46bc2bc
++       Cada uno de estos es un error de compilación: un objetivo sin ningún método `@ability`, un
++       parámetro sin esquema JSON ni decodificador, un tipo de retorno sin codificador, un
++       parámetro contextual que nada en el ámbito proporciona, o un método con más de dos listas de
++       parámetros.
++   entry #specs   las herramientas que se ofrecen al modelo: cada una un nombre, una descripción y un esquema de argumentos
++   entry #invoke   ejecuta la herramienta con nombre con los argumentos JSON del modelo y codifica su resultado como JSON
++       Lanza `Llm.Error` con el motivo `Invalid` para una herramienta que el kit de herramientas no
++       tiene o para un argumento que falta o que no se decodifica; el bucle de herramientas de la
++       sesión convierte ese error en un `ToolResult` marcado como error para que lo lea el modelo.
+
+@ 0 1 0 19eba929f90758711384876e94cd8084
++ entry .internal   la implementación de la macro que hay detrás de `Toolkit(…)`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 0206850fae9e5db10276567998c8d435
++       No es para uso directo: el objeto existe para que la macro `Toolkit.apply` tenga un hogar
++       estable.
++   entry .argument   decodifica un argumento de herramienta a partir de JSON, o `Unset` cuando está mal formado
++   entry .toolkit   la macro que hay detrás de `Toolkit.apply`: de métodos `@ability` a especificaciones y un despachador
+
+@ 0 1 0 098a8775d55e32c40b9375bf74f33481
++ entry .Llm   el vocabulario neutral respecto al proveedor: mensajes, respuestas, sesiones, flujos, herramientas, consumo y errores
+
+% 1 1 0 1ef3d656ac354a6e18a8491d23a174b3
+
+@ 0 7 0 1bfceed477f40cac12440effd67c715c
++       `Llm` es el objeto que contiene todo lo que comparten los dialectos. Una conversación es una
++       `.Session`, que se obtiene solo mediante el `session` de un proveedor y se alcanza como
++       `llm`; un turno es un `.Message` de un `.Role` y una lista de bloques `.Content`; un turno
++       completado del asistente es un `.Reply` con su motivo `.Stop` y su `.Usage`; un turno en
++       flujo es una `.Response` de `.Event`; una herramienta es una `.Tool`; los parámetros de ajuste
++       que expresa todo protocolo de transmisión son `.Settings`; un fallo es un `.Error`. Un
++       adaptador de proveedor es un `.Dialect`, que codifica un `.Exchange` en su protocolo de
++       transmisión y traduce de vuelta la respuesta o el flujo.
+
+% 2 1 0 18c8e35b6cbb165d135d08e6a430e86b
+
+% 3 1 0 12f3a09907517e571064b98dc1d087e1
+
+% 4 1 0 177631a612b8151713460a9194d4f3da
+
+% 0 1 0 1c9258f7e74083bf0968296336229a26
+
+% 0 1 0 09f3a952f0e62425021aedcb553e0a45
+
+% 0 1 0 1e2662303c3d4356085c206e7d1c67b7
+
+% 1 1 0 183ca6b061851566066567313f320a10
+
+% 0 1 0 099ca0a03b22a10218c7c3ff5a2d4335
+
+% 0 1 0 08a22c78fdd5ef4514a3179f432ed705
+
+% 1 1 0 077c1575ce5fcfd2087de77b8a1fba67
+
+@ 0 4 0 010c67462a4151a90fc220a926d01729
++       Los identificadores se tipan por lo que nombran: un `Llm.Id[Llm.Reply]` es el de una
++       respuesta, un `Llm.Id[Llm.Request]` el de una petición en lote, un
++       `Llm.Id[Anthropic.Batch[?]]` el de un lote, y ninguno es un `Text`, así que el identificador
++       de una respuesta no puede entregarse a un método que espera el de un lote. Un lote de
++       preguntas es una lista de `.Request` y se responde como `.Outcome`.
+
+% 1 1 0 0d8b5c92e68cd13e133443d2fbd16da8
+
+% 0 1 0 16133429e72fd15218813f5fc36fcbb1
+
+% 0 1 0 03f6820bc01c15ed1620baa0af856d2d
+
+% 0 1 0 0f4c377284416eb410e37380e7a7326a
+
+% 0 1 0 00ced71607ea10bf048920ee23eba48b
+
+% 0 1 0 0d53b2332de89bc802e6efdab6e22c32
+
+@ 0 5 0 163f196b5528dc08031a7cb926a3edc6
++   entry .Role   los dos roles que se turnan: `User` y `Assistant`
++       Una conversación alterna entre los dos. El prompt de sistema no es un rol —dos de las API de
++       transmisión lo llevan fuera de la lista de mensajes—, así que se establece en el valor del
++       proveedor con `prompted` y viaja como un campo del `Exchange`, nunca como un mensaje.
++   entry .Id   un identificador tipado por lo que nombra: una respuesta, una petición en lote o un lote
+
+% 1 1 0 180decf21982855f0b65f9378db84c94
+
+@ 0 4 0 1369d72e34df28e6140a29909e6ed0de
++         `Llm.Id[subject]` es un tipo opaco sobre `Text`: un proveedor acuña el de una respuesta
++         (`Reply#id`, `Event.Started#id`) y el de un lote (`Anthropic.Batch#id`) a partir de la
++         transmisión, y quien llama acuña el de una petición con `.request`, que lo comprueba antes
++         de que ningún proveedor pueda rechazarlo. El texto se lee de vuelta con `.text`, y los
++         sujetos distintos nunca se mezclan.
+
+% 2 1 0 0ff748a28b41008d098bc1cd663a2d96
+
+% 3 1 0 0f6995751f8adc920107c041ba4aa191
+
+% 4 1 0 0d7313fbcbea84fd15d19630b13208b0
+
+% 5 1 0 16779dec8eeae19e0b71188cfd720635
+
+% 0 1 0 0a779c02cbfa940b0d892ca65833fe94
+
+% 0 1 0 1521d73ad4be4073076a61fee6b26779
+
+% 0 1 0 18d707a7794b213d10b6915ba2ba8cae
+
+% 1 1 0 1a37c5f2f1d7d0fb13a45432ff2e227d
+
+@ 0 16 0 072f494bd546e018034fc915199174cb
++         Un `Id` es `Showable` (como su texto), codificable y decodificable en `Text` y, por tanto,
++         en JSON, y se inspecciona como `Llm.Id(…)` para que no se confunda con un `Text` a secas.
++     entry .request   un identificador de petición elegido por quien llama, comprobado antes del envío
++         Acepta de uno a sesenta y cuatro caracteres entre letras, dígitos, `_` y `-` —la regla de
++         `custom_id` de Anthropic, la más estricta de las de las API de transmisión, aplicada a todos
++         los dialectos— y lanza `Llm.Error` con el motivo `Invalid`, _the request identifier `text`
++         is not permitted_, para cualquier otra cosa, así que un identificador incorrecto falla antes
++         de que se envíe un lote.
++     entry .text   el texto del identificador
++         Una extensión sobre cualquier `Id[subject]`: `reply.id.let(_.text) == t"msg_1"`.
++     entry .showable   muestra un identificador como su texto
++     entry .encodable   codifica un identificador como texto y, por tanto, como una cadena JSON
++     entry .decodable   decodifica cualquier texto como un identificador, sin comprobarlo
++         Para leer de vuelta un identificador de lote almacenado:
++         `text.as[Llm.Id[Anthropic.Batch[?]]]`. No se aplica ninguna regla; `.request` es la manera
++         comprobada de acuñar el de una petición.
++     entry .inspectable   inspecciona un identificador como `Llm.Id("…")`, lo que lo distingue de un `Text`
++   entry .Request   una pregunta de un lote: su identificador y su prompt
+
+% 1 1 0 008c3d15f317d85e1be747f275e6d57c
+
+@ 0 3 0 13294abae036d4711ee44236ffd9ecc2
++         `Llm.Request(id, prompt)` es aquello de lo que `Anthropic#elicitAll` recibe una lista: cada
++         uno se convierte en su propio intercambio, con el prompt de sistema, la preparación y los
++         ajustes del valor del proveedor, y su `Outcome` se indexa por `#id`, ya que el proveedor
++         devuelve los resultados en cualquier orden.
+
+% 2 1 0 040799102f8467570427683846e3d37f
+
+% 3 1 0 12802cd6d05e83fc0b72ca5711863fe3
+
+% 4 1 0 019fa23e8e4821d419aea93138823956
+
+% 5 1 0 174cb7c0f285118f1d9b93902422ee3c
+
+% 1 1 0 18f5e688d8bd20b20da4a846e7bed6c2
+
+% 2 1 0 0432be20f0c7b3500e4e92213c09e095
+
+% 3 1 0 0db2eb329c3377a40dca1f729823213e
+
+% 1 1 0 03348d3fa1e65938196653310f197e2b
+
+@ 0 3 0 08c1e1f1d6aa9837147594e4d27cc9ab
++     entry #id   el identificador que llevará su resultado, creado con `Llm.Id.request`
++     entry #prompt   el turno del usuario del intercambio de la petición
++   entry .Outcome   qué fue de una petición en lote: su respuesta decodificada, o el error que la sustituye
+
+% 1 1 0 0fffade0e499253606cad83803491af1
+
+@ 0 6 0 05c85a269a1a5277037b8b3c82c15ae5
++         `Anthropic.Batch#outcomes()` devuelve un `Outcome[value]` por petición, en el orden del
++         proveedor. `#result` es un `value | Llm.Error`: la respuesta de una petición que tuvo éxito,
++         decodificada al tipo del lote, o un `Llm.Error` para una petición que dio error (con el
++         motivo del proveedor), se canceló (`Provider("canceled")`), caducó (`Provider("expired")`)
++         o cuya respuesta no encajaba con su esquema (`Malformed`). Se hace una coincidencia de
++         patrones sobre la unión:
+
+% 2 1 0 0efcec99436fd173138680ed44f8fb9f
+
+% 3 1 0 095679c49da1a9b21f2167dda0dd1b0b
+
+% 4 1 0 1576b5284c01fa51096ee214a6b38844
+
+% 0 1 0 0970a8d58f4932021734912854822b00
+
+% 1 1 0 0c5ee51933fd407913b7f1754c9d6aa5
+
+% 2 1 0 1156068c544f22c70636e46ea2c61d8d
+
+% 3 1 0 0b43f3e5c29679bf0fc3fd9bc4006df7
+
+% 4 1 0 1a96212d0fecae121813e3d033d5abbe
+
+@ 0 3 0 0ece7da46576ec4805174170ac98d1c6
++     entry #id   el propio identificador de la petición, mediante el cual el resultado se empareja con su pregunta
++     entry #result   la respuesta decodificada, o el `Llm.Error` que la sustituye
++   entry .Content   un bloque de un mensaje, en el vocabulario al que y desde el que traduce todo dialecto
+
+% 1 1 0 034a4e3e15a48eeb0a0eb48c7eb1fcf6
+
+@ 0 10 0 15db91814e116c7c0c5d378cdcee3b47
++         El contenido de un mensaje es una lista de bloques. `Textual(text)` es prosa;
++         `Graphic(source)` una imagen y `Document(source)` un documento (un PDF, por ejemplo), cada
++         uno a partir de una `.Source`; `ToolUse(id, tool, arguments)` una llamada que hizo el
++         modelo, con sus argumentos como `Json`; `ToolResult(id, content, failure)` la respuesta a
++         esa llamada, en un turno del usuario, donde `failure = true` marca un error del que el
++         modelo debería recuperarse; `Thinking(text, signature)` el razonamiento del modelo, cuando
++         el proveedor lo expone, y `Redacted(data)` el razonamiento que retuvo; y
++         `Opaque(provider, json)` cualquier bloque del proveedor que el vocabulario no modela, tal
++         cual. Un dialecto reproduce los bloques opacos de su propio proveedor cuando se reenvía el
++         historial y descarta los de otro proveedor, así que una transcripción nunca se corrompe ni
++         miente.
+
+% 2 1 0 1ab9aeac381b0cb410b4c1374ffe0345
+
+% 3 1 0 01ee2a42afb1044701b969fb0749606c
+
+% 4 1 0 06d485ee0a815fd9131a83b00560be9f
+
+% 0 1 0 1e4c76d9baab902109b17efadf46f9c6
+
+% 0 1 0 174d23685f97e0c016b4e433e2d39e36
+
+% 0 1 0 1ad28f9dcb19fcb805a3278ae2c109f9
+
+% 1 1 0 01c265ec5996357f19e2a5696b9aafa3
+
+@ 0 3 0 172db2166b2392830ae723ebb71848e5
++         No todos los bloques tienen una forma en todos los protocolos de transmisión: Chat
++         Completions de OpenAI descarta un `Document`, y Gemini no lleva ningún identificador en una
++         llamada a herramienta, así que allí el nombre de la herramienta sirve como id del `ToolUse`
++         y un `ToolResult` se dirige a su llamada mediante ese nombre.
+
+% 0 1 0 06d9af2efdacc295013b0f16817e5f29
+
+@ 0 4 0 0c5e8d71f3ab779a16857f64ecae203a
++     entry .Source   dónde está el contenido binario: bytes en línea con un tipo de medio, o una URL
++         `Inline(data, mediaType)` lleva los propios bytes, representados como base64 en la
++         transmisión (o como una URL de datos, en un protocolo de transmisión que solo acepta URL);
++         `Remote(url)` es una `HttpUrl` que el proveedor obtiene por sí mismo.
+
+% 2 1 0 053966957faae95509a9e3185b7883db
+
+% 3 1 0 0e9205c29ef085fd0bcfb0e1b738470f
+
+% 4 1 0 0e8e48c14485c17d125c1e4b55019a95
+
+% 0 1 0 0f657f44bab99de508b6e78404864f52
+
+% 1 1 0 09acc9991ea3502b0f1d2d5823719ec5
+
+@ 0 1 0 19bd76cd62d7ac0a0bc416a42a596c20
++   entry .Message   un turno de una conversación: un rol y una lista de bloques de contenido
+
+% 1 1 0 10a8e9be049f263518bab45ebc7a1600
+
+@ 0 4 0 09c0746e2f0eb6dc08605d1961f55016
++         `Message(role, content)` es un turno del usuario o del asistente; `Message(role, text)` crea
++         el turno textual habitual de un solo bloque. `Session#ask` y `Session#stream` aceptan un
++         mensaje con la misma facilidad que un texto, que es como se envía una imagen, un documento
++         o un resultado de herramienta, y `Session#record` añade uno al historial sin un viaje de
++         ida y vuelta.
+
+% 2 1 0 054444f646a490d80e72d63d3a61c99f
+
+% 3 1 0 035a11b0cd10a49b07bc6c8ae358c595
+
+% 4 1 0 1accc3047233da501f547fd9cb4e5e28
+
+% 0 1 0 077203d4b12401411e25055612031abd
+
+% 0 1 0 1975cf7e6c16719d058eae4eb0444da0
+
+% 0 1 0 04e12c209b2434170c88db2868258287
+
+% 0 1 0 052e3579021c8f2615f75fe6e2e85751
+
+% 0 1 0 190569f0e57c54b01b1f0f68007c6761
+
+% 0 1 0 06455c30c938b6fd0c45123db73815d0
+
+% 1 1 0 18d8c3e2506a83e6167a60f5e9aa392e
+
+% 0 1 0 122f6495c1d21b5c1bfdc7f6b9a02465
+
+@ 0 12 0 031d2a2d664a29c71a8d51fb5ffb0cfb
++     entry .apply   `Message(role, text)`: un turno de un solo bloque textual
++     entry #role   `User` o `Assistant`
++     entry #content   los bloques del turno, en orden
++   entry .Stop   por qué dejó de emitir el modelo
++       `Ended` es un final natural del turno; `Exhausted`, el límite de tokens de salida;
++       `ToolCall`, una petición de ejecutar una herramienta, según la cual despacha el bucle de
++       herramientas de la sesión; `Refused`, un rechazo; `Sequence(text)`, una de las secuencias de
++       `stopping`, que se lleva consigo; `Filtered(detail)`, un filtro de contenido; y `Other(code)`,
++       cualquier motivo que el vocabulario no modela, conservando el código del proveedor. La
++       decodificación es total, así que nunca se pierde un motivo de parada. Una respuesta que
++       contiene una llamada a herramienta es `ToolCall` en todos los dialectos, incluso donde el
++       protocolo de transmisión (Gemini) dice que se detuvo con normalidad.
++   entry .Usage   la contabilidad de tokens: recuentos de entrada y de salida, y los recuentos opcionales de caché y de razonamiento
+
+% 1 1 0 084a6b09a87bed0c1c55d2cc479a0213
+
+@ 0 6 0 0a172afe53a402350a57854a50355ad1
++         `Usage(input, output, cacheRead, cacheWrite, reasoning)`: solo los recuentos de entrada y
++         de salida son universales, y los demás son `Optional`, notificados solo por algunos
++         proveedores —`cacheRead` y `cacheWrite` por Anthropic (y `cacheRead` por OpenAI),
++         `reasoning` por Gemini—. El consumo de una respuesta es el coste de ese turno;
++         `Session#usage` es la acumulación sobre todos los turnos consignados, y `.addable` es cómo
++         se acumula: un recuento ausente más un recuento ausente sigue ausente, así que nunca se
++         inventa un total.
+
+% 2 1 0 0788bccfcdbb4cde17599a6d91ef7977
+
+% 3 1 0 1b4f1f88cac06a311261355bba259106
+
+% 0 1 0 1a72d02dd7aaf22c1b5bfae29bd5b0df
+
+% 0 1 0 07b0504efaa555ce0e02607ff5778c8f
+
+% 1 1 0 19d5929d7d3c561809c79632942657c5
+
+@ 0 9 0 0600426f98889ae614cbbc42a6bb8f87
++     entry .addable   `usage + usage`: suma los recuentos, manteniendo ausente un recuento opcional cuando lo están ambos
++     entry #input   los tokens de entrada
++     entry #output   los tokens de salida
++     entry #cacheRead   los tokens de entrada leídos de la caché de prompts del proveedor, cuando se notifican
++         Para esto sirve `Anthropic#caching`: un prompt de sistema en caché aparece aquí en cada
++         petición que lo comparte.
++     entry #cacheWrite   los tokens de entrada escritos en la caché de prompts, cuando se notifican
++     entry #reasoning   los tokens gastados en pensar, cuando se notifican
++   entry .Reply   un turno completado del asistente: su mensaje, su motivo de parada, su consumo, su modelo y su identificador
+
+% 1 1 0 1ede9c57603de4eb031a354122edf00c
+
+@ 0 4 0 0a8a73e09d102cb512e756f3bbd29d8a
++         Datos puros, así que puede salir del bloque de la sesión. `#text` une sus bloques textuales
++         y `#toolCalls` selecciona sus bloques `ToolUse`; `#stop` dice por qué se detuvo el modelo y
++         `#usage` lo que costó el turno; `#model` e `#id` son lo que notificó el proveedor, cuando lo
++         hizo.
+
+% 2 1 0 0fe3d1aa060fc81d1645a8b43aae3e79
+
+% 3 1 0 16a85e3a57ce6232001fff885ff43041
+
+% 4 1 0 15253cb9b7ae4933100b0ace6fed2289
+
+% 0 1 0 1087b73f39b85ce7068ff6f7c50fddbe
+
+% 0 1 0 14b90f4760989e110ebc196e468da57c
+
+% 0 1 0 0191bb84ca07454816aa10a2d34427b5
+
+% 0 1 0 03481736f450a50f14a4f2d484c7a5ef
+
+% 0 1 0 1edf27c11459d6e605cc0d2f0685f0ce
+
+% 1 1 0 101843fc86c48b960248ba0dbca9dd53
+
+% 1 1 0 174c83bfbff15d691239531ad8e7e97c
+
+@ 0 16 0 15b21e3046cd13570d01dfaeae3e1db9
++     entry #message   el mensaje del asistente, con todos los bloques de contenido que envió el modelo
++     entry #stop   por qué se detuvo el modelo: `Ended`, `Exhausted`, `ToolCall`, …
++     entry #usage   los tokens que costó este turno
++     entry #model   el modelo que notificó el proveedor, o `Unset`
++     entry #id   el identificador de la respuesta tal como lo emitió el proveedor, o `Unset`
++     entry #text   los bloques textuales de la respuesta, unidos
++         Se omiten el razonamiento, las llamadas a herramientas y los bloques opacos; una respuesta
++         sin texto está vacía.
++     entry #toolCalls   los bloques `ToolUse` de la respuesta, en orden
++         Lo que ejecuta el bucle de herramientas cuando `#stop` es `ToolCall`; vacío para una
++         respuesta que no llamó a ninguna herramienta.
++   entry .ToolChoice   si el modelo puede, debe, no debe o debe concretamente llamar a una herramienta
++       `Auto` deja la elección al modelo, `Forbidden` impide cualquier llamada, `Required` exige
++       una, y `Named(tool)` exige esa herramienta. Se establece mediante `Settings#toolChoice`;
++       `solicit` establece `Named("answer")` para su único turno forzado en un dialecto sin salida
++       estructurada nativa. Todo protocolo de transmisión admite las cuatro.
++   entry .Settings   los parámetros de ajuste de la petición que expresa todo protocolo de transmisión
+
+% 1 1 0 1d4d3a69450892261a56377fa40c42a9
+
+@ 0 14 0 124ab6cac9837acc0913fc290d8f94f1
++         `maxTokens`, `temperature`, `topP`, `stopSequences`, `toolChoice` e `iterations`, cada uno
++         opcional: un parámetro que se deja `Unset` se omite de la petición, así que se aplica el
++         valor por defecto del propio proveedor, en lugar de enviarse un valor por defecto de la
++         biblioteca. Los métodos `limit`, `warmth`, `sampling`, `stopping` e `iterating` de un valor
++         de proveedor los establecen de uno en uno; un parámetro específico de un proveedor (un
++         presupuesto de razonamiento, la caché, una cabecera beta) es un método del valor del
++         proveedor, no un campo de aquí. El protocolo de transmisión de Anthropic exige
++         `max_tokens`, así que allí un `maxTokens` no establecido se envía como 4096.
++     entry #maxTokens   el máximo de tokens de salida que puede producir un turno
++     entry #temperature   la temperatura de muestreo
++     entry #topP   el umbral de muestreo de núcleo
++     entry #stopSequences   los textos en los que se detiene el modelo; vacío si no hay ninguno
++     entry #toolChoice   si el modelo debe llamar a una herramienta, y a cuál
++     entry #iterations   el máximo de viajes de ida y vuelta del bucle de herramientas que puede hacer un `ask`; 16 si no se establece
++   entry .Tool   una herramienta a la que puede llamar el modelo: su nombre, su descripción y el esquema JSON de sus argumentos
+
+% 1 1 0 1429651669d202471f9cedc4c6d641f3
+
+@ 0 4 0 17ecd3967dbd51bd18a5d0673dad5f5d
++         `Tool(name, description, parameters)` es solo la especificación para la transmisión; la
++         macro `Toolkit` produce una por cada método `@ability`, con el despachador que la ejecuta.
++         El `tooled(tools)` de un valor de proveedor anuncia herramientas en cada turno sin un kit
++         de herramientas que las ejecute, para un programa que gestiona por sí mismo las respuestas
++         `ToolCall`.
+
+% 1 1 0 0c2335f18537b52815a6706116db5bc0
+
+@ 0 4 0 1362c72f6bcd1f331d9548301bf0bbd8
++     entry #name   el nombre con el que la llama el modelo
++     entry #description   lo que hace, tal como lo lee el modelo
++     entry #parameters   el esquema JSON de sus argumentos, un objeto con una propiedad por parámetro
++   entry .Exchange   una descripción pura de una petición: todo lo que un dialecto necesita para codificar una llamada
+
+% 1 1 0 1edfccdee9bf1d211a272a37f6bb7030
+
+@ 0 11 0 1f18d687a84ef3ab1e811c49e9bbda07
++         `Exchange(system, history, tools, settings, format)`: el prompt de sistema, el historial
++         completo incluido el turno nuevo, las herramientas que se ofrecen, los ajustes y, cuando
++         está establecido, el esquema JSON al que debe ajustarse el texto de la respuesta. La sesión
++         construye uno por cada viaje de ida y vuelta y el dialecto lo codifica; un dialecto que no
++         es `structured` nunca ve un `format`. Un programa solo se encuentra con un `Exchange` cuando
++         implementa o simula un `Dialect`.
++     entry #system   el prompt de sistema, o `Unset`
++     entry #history   todos los mensajes hasta el momento, terminando con el turno que se envía
++     entry #tools   las herramientas que se ofrecen en este turno
++     entry #settings   los parámetros de ajuste de este turno
++     entry #format   el esquema JSON al que debe ajustarse una respuesta estructurada, o `Unset`
++   entry .Event   el vocabulario neutral de flujo: los bloques se abren, crecen por incrementos y se cierran
+
+% 1 1 0 19f9a058ad2d9737091fc82b4c8ec94d
+
+@ 0 8 0 18a8747e9190f29914537e5cc902c96b
++         El flujo de eventos de todo protocolo de transmisión se reduce a la misma forma,
++         direccionada por índice. `Started(id, model)` comienza el mensaje; `Opened(index, content)`
++         abre un bloque de contenido, tal como aparece por primera vez; `Delta(index, increment)` lo
++         hace crecer en un `.Increment`; `Closed(index)` lo cierra; `Update(stop, usage)` lleva el
++         estado a nivel de mensaje, posiblemente varias veces (Anthropic notifica los tokens de
++         entrada al principio y los de salida al final, y el acumulador los suma); y `Finished`
++         termina el mensaje. `Response#events` los produce, y `Response#reply()` los acumula en un
++         `Reply`; un flujo que termina sin `Finished`, o con un bloque aún abierto, lanza
++         `Llm.Error(Interrupted)`.
+
+% 2 1 0 0f8ec885c58e2f9f1d54759f078b4fc0
+
+% 3 1 0 1c9490fc71e1343a0a06e30bd7dc59b9
+
+% 4 1 0 08f5df4c81837cf00bb936a7c21d59a5
+
+% 0 1 0 1e23d7d88f5d8fea003c9edc7f4844d2
+
+% 1 1 0 1ecb7e520b4352bb03226ae974f28f6b
+
+% 0 1 0 0ce4656d99b3301c1a46bcfd5dda10eb
+
+% 0 1 0 07c62ffed8f398ed1308682d16b2afb0
+
+% 0 1 0 14a00ab1823a77281f275a872efb828f
+
+% 0 1 0 08503266e41060fe06d8f4328c9a0d0e
+
+% 0 1 0 1ee16d8da7cac0d3031e3a47b33e62a9
+
+% 0 1 0 090638ccacb53c6b1b3b2870df9849e9
+
+% 0 1 0 119e89fbb2dc1f0d0fc3d88a14947681
+
+% 1 1 0 03f9d47709f6bbc6104968c6c121fc4d
+
+@ 0 2 0 02d951d7a6168e0b1b7f3d3bdf02cfbc
++         Los deltas de texto rellenan el bloque al que se dirigen; los argumentos de una llamada a
++         herramienta llegan como JSON parcial, que se analiza cuando se cierra el bloque (`Malformed`
++         si para entonces no es JSON).
+
+% 1 1 0 0c96d9f1f7a3147e09b9942666b3b2d4
+
+@ 0 5 0 18bb9d0f6755234304ecd1e30787388c
++     entry .Increment   un fragmento de un bloque abierto: texto, razonamiento, una firma o argumentos JSON parciales
++         `Textual(text)` amplía un bloque de texto, `Thinking(text)` un bloque de razonamiento,
++         `Signature(text)` la firma de un bloque de razonamiento, y `Arguments(json)` los argumentos
++         de una llamada a herramienta con texto JSON parcial, que solo está completo cuando se cierra
++         el bloque.
++   entry .Dialect   la costura que implementa un adaptador de proveedor: codificar un intercambio, hacer la llamada, traducir la respuesta
+
+% 1 1 0 0aa30aa5b42f7d311f3865af79bdbe37
+
+@ 0 8 0 08557f97f124d30a16a8a10337fd7632
++         Un dialecto habla mediante dos métodos: `#exchange` para una respuesta completa, `#stream`
++         para el flujo de eventos, ambos a partir de un `Exchange` puro; `#name` nombra el protocolo
++         de transmisión, y `#structured` dice si respeta `Exchange#format` de forma nativa. Los
++         cuatro dialectos de la biblioteca (la Messages API de Anthropic, Chat Completions y
++         Responses de OpenAI, Gemini) son privados y los construye el `Sessional` de cada proveedor,
++         capturando las capacidades HTTP y la táctica de quien llama, así que la sesión nunca toca
++         HTTP. El trait es público para que una prueba pueda simular uno; el constructor de
++         `Session`, que recibe un dialecto, no lo es, así que un dialecto personalizado no puede
++         manejarse a través de una `Session` desde fuera de la biblioteca.
+
+% 2 1 0 1e2b2254fded5ad01c553a1940f7751c
+
+% 3 1 0 1930a98182867eb509798b1c9dd81972
+
+% 0 1 0 11dfeea4d299bdb2085352be60372494
+
+% 0 1 0 0bcb7b86128ad1e20a0d6aeb1df414db
+
+% 0 1 0 0fb6d9247ae4f10f0ec6801fbc0f9374
+
+% 0 1 0 0dbfb9029a13416308198755f434997e
+
+% 0 1 0 0d6d162b292059b50991ab806e1822d8
+
+% 0 1 0 164eb772f95f93971fe85d4bd322892f
+
+% 1 1 0 03977cf7fd0030801c8710c57c09f029
+
+@ 0 14 0 03e5c657834683fb17add4706251f49e
++         El motor HTTP compartido que hay detrás de los dialectos reales aplica una única política
++         de reintentos: un 429, 503 o 529 se reintenta tres veces, tras el retardo `retry-after`
++         cuando el proveedor envía uno, y con espera exponencial (1, 2, 4 segundos) cuando no lo
++         hace; cualquier otro fallo se traduce mediante el sobre de error del dialecto y se lanza
++         como `Llm.Error`.
++     entry #name   el nombre del protocolo de transmisión: `anthropic`, `openai`, `openai-responses`, `gemini`
++     entry #exchange   un viaje de ida y vuelta sin flujo: del intercambio a un `Reply`
++     entry #stream   un viaje de ida y vuelta en flujo: del intercambio a un iterador de `Event`
++         El resultado captura el dialecto y el estado de flujo nuevo que hace avanzar, así que su
++         tipo es `Iterator[Event]^{this, caps.any}`; una implementación debe declarar el mismo.
++     entry #structured   si el protocolo de transmisión restringe una respuesta a un esquema JSON de forma nativa; `false` salvo que se sobrescriba
++         El dialecto de Anthropic es `true`. Cuando es `false`, `solicit` obtiene una respuesta
++         estructurada mediante una llamada a herramienta forzada, y quien llama no ve ninguna
++         diferencia; un dialecto simulado que lo sobrescribe a `true` debe devolver el documento JSON
++         como texto de la respuesta.
++   entry .Error   se lanza cuando falla una petición al modelo: inalcanzable, no autorizada, con límite de tasa, mal formada, …
+
+% 1 1 0 109796590a6f69fd1d8c82c398f46616
+
+@ 0 8 0 16384e94e625ed4e059854b9e8764352
++         Error `↯/s.126.1`, con subcódigo según `.Reason`: _the model request failed because
++         `reason`: `detail`_. Todo fallo que pueden producir un proveedor, la red o la traducción es
++         un `Llm.Error`; `#status` es el estado HTTP cuando lo hubo, y `#retry` el retardo
++         `retry-after` en segundos ante un límite de tasa o una sobrecarga, los dos datos que
++         necesita quien llama para decidir si volver a intentarlo y cuándo. Para cuando se lanza, un
++         límite de tasa o una sobrecarga ya se ha reintentado tres veces. La `Tactic[Llm.Error]` se
++         toma cuando se abre `session`, así que `strategies.throwUnsafely`, `safely` o `recover`
++         alrededor de la llamada a la sesión gestiona cada turno que hay dentro de ella:
+
+% 2 1 0 10a8f7e5985f399215276c398bfff753
+
+% 3 1 0 1d2bf543aa2957e41cf16f977cb1f1a4
+
+% 4 1 0 1edb59dd07af4fa3092e3ea7df3bb8a5
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 01e93273e73663551a59f9c0dbf3ac5f
+
+% 0 1 0 1bd04f2b9ed31e571f3b76d22c30f2a7
+
+% 0 1 0 0b79751e49aae3fb1ba012b8324a4d00
+
+% 0 1 0 0435fc7907e9f5c21ff734bcfe72d3b9
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 153ddedd54b96a0d11610b6337beac43
+
+% 0 1 0 0fc6d4a4742132c701e3311479ff01d4
+
+% 1 1 0 0190b4c4f813754e0cc28a5363a6efba
+
+@ 0 5 0 0e451c69723b0dc8085b66debc2f213a
++         Un sobre de error de la transmisión se asigna a un motivo según su tipo o su estado, y un
++         código de error que no coincide con ningún motivo se conserva bajo `Provider(code)`, así que
++         nunca se pierde el error propio del protocolo de transmisión.
++     entry .Reason   el conjunto fijo de tipos de fallo, cada uno el subcódigo del error
++         Los números están congelados; un motivo añadido más tarde se agrega al final:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  Caso
++         column  Código
++         column  Mensaje
++         column  Nota
+
+% 0 1 0 188aaf81bbd2a7961ba58b7d51269f63
+
+% 0 1 0 11b1cec9802fccf10d09ae2d55e6cc3e
+
+@ 0 1 0 098354c23f590cbf111d15974b7a75e2
++         row  `Invalid`  3  _the provider rejected the request as invalid_  también una herramienta desconocida, un argumento mal formado o un identificador de petición incorrecto
+
+% 0 1 0 0a25b3bfb05a14921df357edd5d4cd12
+
+% 0 1 0 02234ad997dc4a1d16e33545cef8602a
+
+% 0 1 0 1a679c4c5d46407b180650a1778f5dca
+
+% 0 1 0 18c9b50e57402550005529f9aad032f5
+
+@ 0 1 0 0bae174aa004ed230b373c0436396433
++         row  `Malformed`  8  _the provider's reply could not be interpreted_  la respuesta, una trama del flujo o una respuesta estructurada
+
+% 0 1 0 134d0335931c6f820d4a8352afe3d3ac
+
+@ 0 2 0 084abe775dcf619d1900603194ffacb8
++         row  `ToolLoopExceeded`  10  _the tool-use loop exceeded its iteration limit_  su límite de `iterations`
++         row  `Provider(code0)`  11  _the provider reported the error code `code0`_  un código que no corresponde a ninguno de los demás
+
+% 1 1 0 10aea4a79330c538056d433a8b3126ea
+
+@ 0 6 0 0a5459386a32ff3210935be35a83faa5
++     entry .communicable   representa cada motivo como el mensaje que lleva el error
++     entry #reason   qué tipo de fallo fue
++     entry #detail   el mensaje del proveedor, o la explicación de la biblioteca de un fallo local
++     entry #status   el estado HTTP, cuando lo hubo
++     entry #retry   el retardo `retry-after` en segundos, ante un límite de tasa o una sobrecarga que lo envió
++   entry .Response   un turno del asistente en flujo en curso: sus eventos, su texto y la respuesta una vez vaciado
+
+% 1 1 0 1e790bdac1a8812d117923566ee500b6
+
+@ 0 6 0 13d25fe1654b49951b32cbbff07e82bb
++         `Session#stream` devuelve una. `#text` es un iterador de los fragmentos de texto, extraídos
++         de forma síncrona de la conexión a medida que llegan, y `#events` los `Event` más
++         detallados; `#reply()` vacía lo que quede, lo acumula todo en un `Reply` y consigna a la
++         vez los turnos del usuario y del asistente en el historial de la sesión. Cada evento
++         extraído a través de cualquiera de los tres alimenta el mismo acumulador, así que un flujo
++         consumido parcialmente se completa igualmente con `reply()`, y `reply()` es idempotente.
+
+% 2 1 0 0694d7fd81c345681b54a9102a048c3d
+
+% 3 1 0 19128e7e1b3316a903a737551f131888
+
+% 4 1 0 0261e09258de2aee1e5d3daaa1785dca
+
+% 5 1 0 1329ff53ce7cb42415de42cce6aa4c45
+
+% 0 1 0 16c1a9a6a1bfa5cb0c956f91dac0c939
+
+% 0 1 0 1997d9c4444c58fa0af99a9f8c5cdcd6
+
+% 0 1 0 1fb8b074425682d81db3c7a1a4a711aa
+
+% 1 1 0 1271debe3de1d6f7140df60a737183af
+
+@ 0 5 0 0ae27b32af7648560bde529a81e109db
++         No se consigna nada hasta que se llama a `reply()`: un flujo abandonado o fallido deja el
++         historial como estaba, así que un turno fallido simplemente se vuelve a preguntar desde el
++         límite del turno anterior. La respuesta toma prestada la sesión, así que queda confinada al
++         bloque de la sesión y —como la sesión es exclusiva— ningún otro turno puede empezar
++         mientras no se haya vaciado; almacenarla en una variable exterior es un error de
++         compilación.
+
+% 1 1 0 037782a368b3228e00b00ab1ab1c4962
+
+% 0 1 0 111264adaa660bd71d949e29fc43464b
+
+@ 0 9 0 017c4e2deac73ce116f631bedbd26aa4
++     entry #events   todos los eventos del flujo, una vez, en orden
++     entry #text   solo los deltas de texto, a medida que llegan
++         Para `response.text.each(Out.print(_))`; los incrementos de razonamiento, de argumentos de
++         herramienta y de firma se absorben pero no se producen.
++     entry #reply   vacía el flujo, ensambla el `Reply` y consigna el turno en la sesión
++         Lanza `Llm.Error(Interrupted)` si el flujo terminó antes de `Finished` o con un bloque aún
++         abierto, y `Malformed` si los argumentos en flujo de una llamada a herramienta no eran JSON.
++         Una segunda llamada devuelve el mismo `Reply` sin tocar el flujo.
++   entry .Session   una conversación: el único contenedor mutable de su historial y su consumo, confinado a su bloque
+
+% 1 1 0 07ae1513b5ae603606591be02556e331
+
+@ 0 6 0 1caf9c7ede9cb3ca1dbd6d4b464be045
++         Una sesión se abre sobre un valor de proveedor con `session` —`claude.session: …`— y se
++         alcanza dentro del bloque como `llm`; no tiene ningún constructor público. `#ask` envía un
++         turno y devuelve el `Reply`, consignando ambos turnos en `#history`; `#stream` envía un
++         turno y devuelve una `Response` que se lee a medida que llega; `solicit[T]` pide una
++         respuesta tipada; `#record` siembra el historial sin un viaje de ida y vuelta; `#usage` es la
++         acumulación del coste de todos los turnos consignados.
+
+@ 0 2 0 18b4ced297b241ef0b5bf6fe2d9e3c34
++         Con un `Toolkit` given en el ámbito, `ask` ejecuta el bucle de herramientas, y el historial
++         crece con cada turno que da el bucle:
+
+% 2 1 0 0497022606a47e1e0d2b37692af3f04e
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 1863e3c490a787aa0106e5d4215271c9
++           label La pregunta
+
+% 1 1 0 10ea8b4bf2be2cf214ed7bc9f2b8ad1e
+
+% 2 1 0 00320df58d6a3d551ed5926da6372d8a
+
+% 4 1 0 1dabf0f7c7087e5f09429ec9b73b59eb
+
+% 0 1 0 196503d32d2c44851d7531e08dedb564
+
+% 1 1 0 17aea8ba62c2b50b1fac1c9867f280bc
+
+@ 0 1 0 14bb77e478ab21ef1b7bc0f2828fd4c5
++           label El modelo se detiene para llamar a una herramienta
+
+% 1 1 0 11972878058aa97a0df6b3984d64e587
+
+% 2 1 0 1f2dadc199f0f0bc1333ff995bd13262
+
+% 4 1 0 00867dd8a1993d23068a3f0441863b3f
+
+% 6 1 0 1594cce6ca1a9ee71f3af5ddfcfb242a
+
+% 7 1 0 096a26005280c60a0a78b908ccfacd1c
+
+% 8 1 0 0fc39708b01aed4910ed511698abf16d
+
+% 0 1 0 1a9e1f54903995e309153a2965c6431b
+
+% 1 1 0 1899493f28b63d0c15a1a07a2978b4c4
+
+@ 0 1 0 145f78d6d8d398bc1462f7538eb006db
++           label El bucle ejecuta la herramienta y notifica su resultado
+
+% 1 1 0 137c8acdb31d089e078dba13c7aebe5e
+
+% 2 1 0 1824f3a75080fe8610b6f3d8ab12c1e5
+
+% 4 1 0 16e248854a9674be1d7663bf48063ee0
+
+% 6 1 0 06165245c0c2d4311699a7c0ec7222b3
+
+% 7 1 0 1c4ed12060bc65000cba3dc402ade956
+
+% 8 1 0 19391acf448f83a01f70e5fe367a4403
+
+% 10 1 0 0b4c2495f6435a0c1e7e4356d88f3cca
+
+% 11 1 0 1e659620c622f1621fb2e686e58be0ba
+
+% 12 1 0 0f220cef203b5645180ea1ec35b94e3c
+
+% 0 1 0 0673390d503c36b0031de7194c5fb3b0
+
+% 1 1 0 1c5a407e191cce2b0b34dc22cd35b2a1
+
+@ 0 1 0 1dcdc7ac49baec5d138ecbf53441b011
++           label El modelo responde con texto y el bucle termina
+
+% 1 1 0 0eb773b565a4001606d2628ab57d9578
+
+% 2 1 0 10c323ca9683cb3602599da77eb24c01
+
+% 4 1 0 0891ba1bb74714ee08aece8823bc19c8
+
+% 6 1 0 1a0c76a5250d9e9017ab8ff2daee8d48
+
+% 7 1 0 19a113194cbfd1141d56c3e63c0170a1
+
+% 8 1 0 168cba01c653bced1e82add217b62e93
+
+% 10 1 0 1abf290e4ea17b3f1c50417f5a1f690f
+
+% 11 1 0 091b9b6273a9e03a08c25ae7c9000778
+
+% 12 1 0 15b0dec360ce3d0a18b3e7508679b1ed
+
+% 0 1 0 0f1cef74f0377ae8086886adf4bb27f5
+
+% 0 1 0 066626f642a40b4e0e46f5f46368cbea
+
+% 1 1 0 0564ffcfa50736ad0c2f03e1f7603ee9
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 3 0 01d713413de6b889018f8247d9dab9ac
++         Ese historial de cuatro mensajes es lo que contiene `llm.history` tras un `ask` que hizo una
++         llamada a herramienta, y lo que el siguiente `ask` envía completo: el cliente reproduce el
++         historial en todos los protocolos de transmisión, nunca se mantiene en el servidor.
+
+@ 0 5 0 068e8efca7751c52055ef637cc5b9ac7
++         Una sesión es una capacidad exclusiva y con estado: `ask`, `stream` y `record` son
++         actualizaciones, una `Response` en flujo la toma prestada, y el tipo del resultado del
++         bloque `session` está cuantificado fuera del bloque, así que devolver la sesión, o una
++         clausura sobre ella, es un error de compilación, mientras que un `Reply`, una instantánea de
++         `history` o un `Usage` salen libremente. Todo método lanza `Llm.Error` a través de la
++         táctica tomada cuando se abrió la sesión.
+
+% 0 1 0 19413298c27779060aabb398a69aee7f
+
+% 0 1 0 0148fff2045bc8480366cc4e117abc3c
+
+% 1 1 0 14f4ef22aea38bee109a710e8fe2a604
+
+% 1 1 0 1a2db6bbf7d0871e1450e3e5cf39922b
+
+@ 0 16 0 1dbf12538773047e0889ba72c9e5bc28
++     entry #history   todos los mensajes consignados hasta el momento, como una instantánea que puede salir del bloque
++     entry #usage   la acumulación del `Usage` de todos los turnos consignados
++     entry #record   añade un mensaje al historial sin un viaje de ida y vuelta
++         Para reproducir una transcripción, o sembrar contexto: un mensaje registrado se envía con
++         cada turno posterior, pero no cuesta nada hasta entonces. El `primed(messages)` de un valor
++         de proveedor hace lo mismo para cada sesión abierta sobre él.
++     entry #ask   envía un turno y devuelve la respuesta, ejecutando el bucle de herramientas si se da un `Toolkit`
++         `ask(text)` envía un turno del usuario de un solo bloque; `ask(message)`, cualquier
++         `Message`, que es como se envía una imagen, un documento o un resultado de herramienta hecho
++         a mano. El turno del usuario y la respuesta se consignan juntos en el historial, después de
++         que la llamada haya tenido éxito. Si el `Toolkit` given tiene herramientas y la parada de la
++         respuesta es `ToolCall`, se invoca cada llamada, su resultado (o, para una llamada fallida
++         o desconocida, un resultado marcado como error) se envía como el siguiente turno del
++         usuario, y el intercambio se repite hasta que el modelo se detiene por otro motivo, con
++         cada turno consignado; `Settings#iterations` (`iterating`, 16 por defecto) limita los viajes
++         de ida y vuelta, más allá de los cuales se lanza `Llm.Error(ToolLoopExceeded)`. Sin
++         herramientas que ofrecer, una respuesta `ToolCall` se devuelve para que la gestione quien
++         llama.
+
+% 2 1 0 0c417c48f6b374090e973860b65630d1
+
+% 3 1 0 1bdc3641a86fbdd10d2a18d881e2690f
+
+% 4 1 0 0acb02d2701ca5951416e939f0d57aa9
+
+% 5 1 0 1fbaec152ef6c3dd005bccb1ebd6d868
+
+% 0 1 0 05db5f5502097ab21407dab7126cced8
+
+% 0 1 0 177aab4a939323531bf56a1af420c4da
+
+% 1 1 0 1ba0f4923a084d4807609c927e42998e
+
+@ 0 7 0 0603b769edee96a706035c832885506c
++     entry #stream   envía un turno y devuelve una `Response` que se lee a medida que llega
++         `stream(text)` o `stream(message)`. No se consigna nada hasta que se llama al `reply()` de
++         la respuesta; la respuesta toma prestada la sesión, así que ningún otro turno puede empezar
++         mientras no se haya vaciado, y no puede salir del bloque.
++     entry #structured   si el dialecto de esta sesión restringe las respuestas a un esquema de forma nativa
++         `true` con Anthropic; `solicit` lo lee para elegir entre el formato nativo y una llamada a
++         herramienta forzada.
+
+@ 0 1 0 005993d32ca370001c476538ffcb949d
++ entry .Anthropic   un modelo Claude en la Messages API de Anthropic: un valor puro y reutilizable que abre sesiones y lotes
+
+% 1 1 0 1c0988512448c4831ca4683704dd662d
+
+@ 0 6 0 19458f8c826df3de0d16cee7fb195548
++       `Anthropic(model, key)` nombra un modelo y lleva la clave de la API; cada método de ajuste
++       devuelve un valor nuevo, así que un modelo configurado es un valor inmutable que puede ser un
++       `val`, compartido y reutilizado entre sesiones. Es el objetivo de `session`, a través del
++       given `.sessional`, y ofrece además lo que solo tiene la Messages API: lotes estructurados
++       (`#elicitAll`, `#batch`), recuento de tokens (`#countTokens`), caché de prompts (`#caching`),
++       una cabecera de versión (`#versioned`) y funciones beta (`#trying`).
+
+% 2 1 0 058189a368a616d001913576939031d0
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 05ffe52a7ef1b6e4190edf4d94169349
++         label Un modelo y su clave
+
+% 1 1 0 0bb6ac39b551692f0fbbe152d413d458
+
+% 2 1 0 1d41096f12a3622604d8d56616f49cb7
+
+% 4 1 0 0348cadad3727bca148ef66c20147528
+
+% 1 1 0 0ef008b0b80fa025031dc782b46a4e01
+
+@ 0 1 0 1261a5df538f652e0e5b39b170f145a2
++         label Un prompt de sistema y un límite de salida
+
+% 1 1 0 1c9e49d2d464bd8a0b077860f00f6126
+
+% 2 1 0 1709b8e3d3d5c3380ccbd018ba72abb8
+
+% 4 1 0 11e71c4d11b130f2018d83947a655d7c
+
+% 5 1 0 1e1d34d57d384e2a05779c8afd9210e4
+
+% 6 1 0 0b6652290ae52924126fed0a23f1c180
+
+% 1 1 0 0defe4a9740a67f41ca770cf2a45dac1
+
+@ 0 1 0 0c09ccf90334cf25199f344788bfb78c
++         label El prompt en la caché del proveedor y un bucle de herramientas limitado
+
+% 1 1 0 02d7dae147809367008d262fdc66bb88
+
+% 2 1 0 08fbd0a9bb969ee71aa51139d13357c5
+
+% 4 1 0 1eaf4ed3a4d866420c4b083883285fef
+
+% 5 1 0 01e3fae680f780ba0a7e25ae53c5d197
+
+% 6 1 0 1cf062d4b4b7405d13626e0be15e3d89
+
+% 0 1 0 10e909d867879b2410fb7feb60e2f448
+
+% 0 1 0 02724b01f4abc4f204bdb5662aa76380
+
+% 1 1 0 0f872b530a658b9f12ec75b1aa70050d
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 3 1 0 1531fe4b04fb71cf12be58c9430a6d06
+
+% 4 1 0 17ddb6ab61819f19043551fbd16f2e0a
+
+% 5 1 0 0d4505ff73c9ad3b026b88958f35151d
+
+% 6 1 0 13e4e7c2bb18598d1cf18f4cb989c04e
+
+% 1 1 0 1bad254f693cedb51e832856c7d427cc
+
+% 2 1 0 1e14a86c11f17a590ff9e640f21bbdae
+
+@ 0 9 0 1ae4581717d7fc16085e5438147f948a
++       Abrir una sesión necesita un `Online`, un `Http.Backend`, un `Http.Event is Loggable` y una
++       `Tactic[Llm.Error]` en el ámbito (`internetAccess.online`, `httpBackends.javaNetHttp`,
++       `logging.silentLogging`, `strategies.throwUnsafely`). Las cabeceras de la transmisión
++       (`x-api-key`, `anthropic-version`, `anthropic-beta`) se declaran como givens en el objeto
++       compañero, así que usar `Anthropic` no necesita ninguna importación. La Messages API no
++       tiene estado entre peticiones, así que una sesión es solo memoria, y su dialecto es el que
++       restringe de forma nativa una respuesta estructurada, así que `solicit[T]` envía el esquema
++       como formato de la respuesta en lugar de una herramienta forzada. Un parámetro de ajuste que
++       se deja sin establecer se omite de la petición, salvo `max_tokens`, que el protocolo de
++       transmisión exige y que se envía como 4096 cuando no se ha llamado a `limit`.
+
+@ 0 2 0 034ec9a56ad1653f0557ddd1048d5bed
++       La clase no es una case class a propósito: `Anthropic(…)` tiene como tipo `Anthropic` a
++       secas, que es con lo que encaja la instancia de `Sessional`.
+
+% 1 1 0 033efcb191caf45d090de921657b74ae
+
+% 0 1 0 15fa96b81f370d490cb54d6f823fc8f8
+
+% 0 1 0 1f268e5a7a448cb61ba6e9d336361801
+
+@ 0 7 0 18476e30694e1b941d7bebf57ed37a51
++   entry .apply   `Anthropic(model, key)`: un modelo en `api.anthropic.com`, versión `2023-06-01`, sin nada más establecido
++   entry .xApiKey   la directiva de cabecera `x-api-key`, para que `xApiKey = key` la nombre en una petición HTTP
++       Está en el ámbito implícito a través del objeto compañero; la usa el dialecto, y está
++       disponible para un programa que llama a la API directamente con telekinesis.
++   entry .anthropicVersion   la directiva de cabecera `anthropic-version`
++   entry .anthropicBeta   la directiva de cabecera `anthropic-beta`
++   entry .Sessional   la instancia de `Sessional` que abre una `Llm.Session` sobre un valor `Anthropic`
+
+% 1 1 0 1da702b077cafb981c1807462af10419
+
+@ 0 6 0 17274e06c67866f01690779a3976aabc
++         La clase que hay detrás de `.sessional`: `Self` es `Anthropic`, `Result` es una
++         `Llm.Session^` nueva, y `session(target)(block)` construye el dialecto de Messages a partir
++         de las capacidades HTTP y la táctica que están en el ámbito y presta al bloque una sesión
++         sobre él. La capacidad `Result` es nueva en cada llamada, así que el comprobador de capturas
++         rechaza que el bloque devuelva la sesión, o cualquier cosa que la capture. Es una clase con
++         nombre y no un given anónimo para que su tipo `Result` se indique con exactitud.
+
+% 0 1 0 1a38ddbe4fcbeabf04038a4a795b60db
+
+@ 0 7 0 036841be80306e870159adf36c291d2f
++     entry #Result   `Llm.Session^`, el descriptor de sesión nuevo que recibe el bloque
++     entry #session   abre una sesión sobre el objetivo y ejecuta el bloque con ella
++   entry .sessional   el given que permite resolver `anthropic.session: …`
++       Está en el ámbito implícito a través del objeto compañero. Necesita un `Online`, un
++       `Http.Backend`, un `Http.Event is Loggable`, una `Tactic[Llm.Error]` y `Diagnostics` donde se
++       llama a `session`, y captura los tres primeros.
++   entry .Batch   un lote de preguntas estructuradas en la Message Batches API, tal como se vio por última vez
+
+% 1 1 0 1493e635e93bd23d008204524144973b
+
+@ 0 7 0 1352a35821e9d77d061af96332fa7654
++         `Anthropic#elicitAll[T](requests)` envía uno y `Anthropic#batch[T](id)` lo vuelve a
++         encontrar. Un `Batch[T]` es un registro puro de su `#id`, su `#status` y sus `#counts`, y
++         del tipo al que se decodifica cada respuesta; consultar al proveedor —`#refresh()`,
++         `#await()`, `#outcomes()`— toma las capacidades HTTP y la táctica en la llamada, así que un
++         lote puede guardarse, pasarse de un lado a otro o reanudarse a partir de su identificador en
++         un proceso posterior. La Message Batches API ejecuta las peticiones de forma asíncrona, a lo
++         largo de minutos u horas, a la mitad del precio de la Messages API.
+
+% 2 1 0 04eaa1a6cf6596201d991fa5a6afbda7
+
+% 3 1 0 0f6f3d81160631b11252d8656044e1dd
+
+% 4 1 0 0839638c1eef900b1c6a0bfac77ee4ab
+
+% 1 1 0 08d36e84ac55a4bf0e045457201580e3
+
+% 2 1 0 0714b3d754afcdfb0e9942e2d31803fb
+
+% 3 1 0 1ea3b7f992b614dc15ef2c1e9c9b5a4c
+
+% 0 1 0 04e277e40837bfbe0829c7fa9a27f654
+
+% 0 1 0 1b5936224110b6001be62efd60004080
+
+% 0 1 0 10b65e2816e2513111d869b1157e0033
+
+% 1 1 0 196afd79a58f6f9c09d8f54cae0e8da6
+
+% 2 1 0 17856df979a56e150bf85241394cd41e
+
+% 3 1 0 10cda8da2b5547cb1d5776d5a2ece214
+
+% 4 1 0 143859f8edddaaee0ac024c01cf2703a
+
+@ 0 2 0 1d07614d80c7b3b611a7313956738604
++         Los resultados llegan en el orden del proveedor, no en el orden de envío, por eso cada uno
++         lleva el identificador de su petición.
+
+% 0 1 0 016942df15a93560109943f65d1de723
+
+% 0 1 0 13a3a8007aeaa9021b1c3be23148f13d
+
+@ 0 4 0 17e5e918b63f14a50f485f3dd5bb0e4a
++     entry .Status   en qué punto de su vida está un lote: `Processing`, `Canceling`, `Ended` u `Other(code)`
++         La decodificación es total: un estado que el vocabulario no modela conserva el código del
++         proveedor. `await` consulta repetidamente hasta `Ended`.
++     entry .Counts   cuántas de las peticiones del lote están en cada estado
+
+% 1 1 0 07c4bb915f27e87d0a37383592501381
+
+@ 0 51 0 083eba63e78fc3961b6e3f24facf8730
++           `Counts(processing, succeeded, errored, canceled, expired)`; `processing` llega a cero
++           cuando el lote está en `Ended`.
++       entry #processing   peticiones aún en ejecución
++       entry #succeeded   peticiones que produjeron una respuesta
++       entry #errored   peticiones que rechazó el proveedor
++       entry #canceled   peticiones canceladas antes de ejecutarse
++       entry #expired   peticiones que el lote dejó caducar antes de ejecutarlas
++     entry #id   el identificador del lote, un `Llm.Id[Anthropic.Batch[?]]`, mediante el cual se vuelve a encontrar
++     entry #status   el estado tal como se vio por última vez; `refresh()` para el actual
++     entry #counts   los recuentos de peticiones tal como se vieron por última vez
++     entry #refresh   obtiene el estado y los recuentos actuales del lote, como un `Batch` nuevo
++         Un único `GET` del recurso del lote; lanza `Llm.Error` (`NotFound` para un identificador
++         que el proveedor no conoce). El receptor no cambia.
++     entry #await   consulta repetidamente hasta que el lote ha terminado, durmiendo `seconds` (30 por defecto) entre consultas
++         Una espera bloqueante sin más en el hilo de quien llama, donde cada consulta es un
++         `refresh()`; devuelve el lote terminado. Un lote que ya está en `Ended` vuelve de inmediato.
++     entry #outcomes   el resultado de cada petición, en el orden del proveedor
++         Lee el fichero de resultados (JSON Lines) y decodifica cada línea a un `Llm.Outcome[T]`: el
++         texto de la respuesta de una petición que tuvo éxito, analizado como JSON y decodificado a
++         `T`, o un `Llm.Error` para una que dio error, se canceló, caducó o cuya respuesta no
++         encajaba con el esquema. El lote debería estar en `Ended`; lanza `Llm.Error` si los
++         resultados aún no están disponibles.
++   entry #model   el identificador del modelo, tal como se dio a `Anthropic(model, key)`
++   entry #system   el prompt de sistema establecido por `#prompted`, o `Unset`
++   entry #settings   los `Llm.Settings` que han ido construyendo los métodos de ajuste
++   entry #priming   el historial desde el que empieza cada sesión abierta sobre este valor
++   entry #tools   las herramientas anunciadas en cada turno, establecidas por `#tooled`
++   entry #cached   si el prompt de sistema está marcado como punto de corte de la caché de prompts
++   entry #prompted   una copia con un prompt de sistema
++       El prompt de sistema viaja fuera de la lista de mensajes, tal como lo recibe la Messages API.
++   entry #caching   una copia cuyo prompt de sistema es un punto de corte de la caché de prompts
++       Envía el prompt de sistema como un bloque de contenido con control de caché efímero, así que
++       cada petición que lo comparte —cada turno de una sesión larga, o cada petición de un lote—
++       lee el prefijo de la caché del proveedor; `Llm.Usage#cacheRead` en cada respuesta notifica
++       cuánto se leyó. Solo tiene sentido después de `#prompted`.
++   entry #limit   una copia con un número máximo de tokens de salida
++       Se envía como `max_tokens`; se envía 4096 cuando no se ha llamado a esto, ya que el protocolo
++       de transmisión exige un valor.
++   entry #warmth   una copia con una temperatura de muestreo
++   entry #sampling   una copia con un umbral de muestreo de núcleo (`top_p`)
++   entry #stopping   una copia con secuencias de parada
++       Una respuesta que terminó en una de ellas tiene `Llm.Stop.Sequence(text)` como motivo de
++       parada.
++   entry #iterating   una copia con un límite de viajes de ida y vuelta del bucle de herramientas por `ask`; 16 salvo que se establezca
++   entry #primed   una copia cuyas sesiones empiezan con el historial dado
++       Para reproducir una transcripción: los mensajes se envían con cada turno y no cuestan nada
++       hasta entonces. `Llm.Session#record`, en cambio, añade a una sola sesión.
++   entry #tooled   una copia que anuncia las `Llm.Tool` dadas en cada turno
++       Solo especificaciones: sin ningún `Toolkit` given que las ejecute, una respuesta `ToolCall`
++       se devuelve a quien llama. Un `Toolkit` given en el bloque de la sesión ofrece además sus
++       propias herramientas.
++   entry #on   una copia que se dirige a otra URL base
++       Para un proxy o una pasarela que hable la Messages API; el valor por defecto es
+
+% 0 1 0 0f37704a55c932741e6ea38f30e995a8
+
+@ 0 10 0 1cbbbdf3209ceab9152e01c7ef7d3501
++   entry #versioned   una copia que envía otra cabecera `anthropic-version`; `2023-06-01` por defecto
++   entry #trying   una copia que envía una cabecera `anthropic-beta`, para optar por una función beta
++   entry #elicitAll   envía muchas preguntas estructuradas como un solo lote, que se responde más tarde a la mitad del precio
++       `claude.elicitAll[T](requests)` crea un intercambio por cada `Llm.Request` —el prompt de
++       sistema, la preparación y los ajustes de este valor, el prompt de la petición como turno del
++       usuario y el esquema derivado de `T` como formato de la respuesta— y los envía a la Message
++       Batches API, devolviendo un `Anthropic.Batch[T]` en su estado inicial `Processing`. Necesita
++       `T is Schematic over JsonSchema` y `T is Json.Decodable`, además de las capacidades HTTP y
++       una `Tactic[Llm.Error]`. El identificador de cada petición debería proceder de
++       `Llm.Id.request`, que aplica la regla de `custom_id` antes de enviar nada.
+
+% 2 1 0 03c70606ea6d287511af51d87fcc32d7
+
+% 3 1 0 1793dc8177b5df3e0c686ca365f0a686
+
+% 4 1 0 0e4433491cdb726815e38b6652a988de
+
+% 0 1 0 067307a8571ceaaf1ea33b4f93e4d0bb
+
+% 0 1 0 095be59ba3dbc64608558d5e719c4742
+
+% 1 1 0 1add633bb4a706a61c1f5f0a77c984e6
+
+@ 0 4 0 0be6834c97fc5a9912459cbb9ca09d50
++   entry #batch   un lote enviado antes, en este proceso o en otro, que se vuelve a encontrar por su identificador
++       `claude.batch[T](id)` obtiene el estado y los recuentos actuales del lote; `T` es el tipo
++       al que se decodifican sus respuestas, que quien llama debe volver a nombrar, ya que el
++       proveedor no lo registra. Lanza `Llm.Error(NotFound)` para un identificador desconocido.
+
+% 2 1 0 0da62be8d01da15515ad454ba8267fd1
+
+% 3 1 0 05399789c1d434a113090661d43c9f9b
+
+% 4 1 0 009d11ab1a74ae1b02381547a108eea2
+
+% 0 1 0 12cbe99612b511ee1c2852aa7d0f619b
+
+% 0 1 0 024fa6aa49b4f9af0fa06627da89627f
+
+% 1 1 0 056c1448f3b4b1d018f0118fc1880e9a
+
+@ 0 5 0 1bd967568d531d231a699ec0cc657d25
++   entry #countTokens   los tokens de entrada que costaría una conversación prevista, sin ejecutarla
++       `claude.countTokens(messages, system)` llama al endpoint `count_tokens` con este modelo, los
++       mensajes y un prompt de sistema opcional, y devuelve el recuento, así que un programa puede
++       decidir si un documento cabe antes de enviarlo. Lanza `Llm.Error(Malformed)` si falta el
++       recuento en la respuesta.
+
+% 2 1 0 0c87c1edc6f655be0c6632a2bb3d5be9
+
+% 3 1 0 0ea4427d0fa9f30c08b464a939b06cc0
+
+% 4 1 0 0d92da99dfee6a600714efab36163ee4
+
+% 0 1 0 1c32bc395aa33fef1b1c70afccbc256e
+
+% 1 1 0 0d26d47b2d87937d1dd8a87296011b18
+
+@ 0 1 0 14db2b0b03a14cc31de8675206312ef4
++ entry .OpenAI   un modelo en la Chat Completions API de OpenAI, o en cualquier servidor compatible: un valor puro y reutilizable
+
+% 1 1 0 17d65b15f17d1a15174ff1ee77a331ac
+
+@ 0 6 0 1685369bb92ae4960f1429986a55d99d
++       `OpenAI(model, key)` nombra un modelo en `api.openai.com`; `OpenAI.compatible(base, model,
++       key)` nombra uno en cualquier servidor que hable el mismo protocolo de transmisión —vLLM,
++       Ollama, Groq, Mistral y los demás—, donde solo cambia la URL base y un servidor local puede
++       no necesitar ninguna clave. Los métodos de ajuste devuelven valores nuevos, y el valor es el
++       objetivo de `session` a través del given `.sessional`. `#responses` es el mismo modelo, al
++       que se habla a través de la Responses API de OpenAI.
+
+% 2 1 0 063c93ea81107ce81f4341efcdeff2c0
+
+% 3 1 0 1f2feabd0b38bee501c61da8f5f04068
+
+% 0 1 0 0268e78af5d8b7080f627bfe926470d8
+
+% 0 1 0 1effdcf42ed612770502c97b531db29c
+
+% 1 1 0 0b0b46f061872dfa1be0cd7e929b1635
+
+% 3 1 0 085dba25b90fd7ab07195b35c7988c91
+
+% 4 1 0 0223be501bc339da1462ef227186bee0
+
+% 5 1 0 1762383177b7f9be1281911bd18c2cf4
+
+% 0 1 0 1cf4962429aefc73031d404f8ee1f5bf
+
+% 1 1 0 14147f325063245319ef7ce1ab822df4
+
+% 2 1 0 16d35a77d18518c3182e9e19aadb134a
+
+@ 0 6 0 046dd9d855ec81ac0ab4e7a8222c73fb
++       La clave, cuando la hay, se envía como token bearer; el prompt de sistema pasa a ser un
++       mensaje `system` inicial; una petición en flujo pide el fragmento final de uso; los
++       argumentos de una llamada a una herramienta, que este protocolo lleva como una cadena de
++       JSON, se analizan como `Json`. El dialecto de Chat no es `structured`, así que
++       `solicit[T]` fuerza una llamada a una herramienta sintética `answer`. Un bloque `Document`
++       no tiene forma en este protocolo y se descarta. La clase no es una case class, así que
++       `OpenAI(…)` tiene el tipo `OpenAI` a secas, que es con el que coincide la instancia de
++       `Sessional`.
+
+% 1 1 0 150ad11f0d76d2121c0507fa9c5a16b4
+
+% 0 1 0 1d88f035b58ea0981fc4d961cb8c5951
+
+@ 0 6 0 02f64d8e14618c851ff1b20449da0111
++   entry .apply   `OpenAI(model, key)`: un modelo en `api.openai.com/v1`, sin nada más establecido
++   entry .compatible   `OpenAI.compatible(base, model, key)`: el mismo protocolo en otro servidor, con la clave opcional
++       `OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")` para un servidor local sin
++       clave; con una clave, se envía como token bearer. Los endpoints se direccionan por debajo
++       de la base, así que esta incluye el `/v1` cuando el servidor lo espera.
++   entry .Sessional   la instancia de `Sessional` que abre una `Llm.Session` sobre un valor `OpenAI`
+
+% 1 1 0 09a88b3614a16ddf0f0bf24a2f15fbd4
+
+@ 0 4 0 12e9157f13dc3434053d8eeb5a10c663
++         La clase que hay detrás de `.sessional`: `Self` es `OpenAI`, `Result` es una
++         `Llm.Session^` nueva, y `session(target)(block)` construye el dialecto de Chat
++         Completions a partir de las capacidades HTTP y la táctica que están en el ámbito y presta
++         al bloque una sesión sobre él, que el bloque no puede devolver.
+
+% 0 1 0 0827f0834d7e5c941ce365dcf172c48f
+
+@ 0 7 0 1ccb0768df9082561d866ee1531c5a0c
++     entry #Result   `Llm.Session^`, el descriptor de sesión nuevo que recibe el bloque
++     entry #session   abre una sesión sobre el objetivo y ejecuta el bloque con ella
++   entry .sessional   el given que permite resolver `openai.session: …`
++       Está en el ámbito implícito a través del objeto compañero; necesita un `Online`, un
++       `Http.Backend`, un `Http.Event is Loggable`, una `Tactic[Llm.Error]` y `Diagnostics` donde
++       se llama a `session`.
++   entry .Responses   un valor `OpenAI` al que se habla a través de la Responses API en lugar de Chat Completions
+
+% 1 1 0 00c53c00723a75100e5bb3a51488dd2a
+
+@ 0 7 0 009f560b3cb1a098014e418fd9680008
++         Se obtiene con `OpenAI(model, key).responses`: las mismas credenciales, el mismo modelo y
++         los mismos ajustes, y otra forma en la transmisión —entrada basada en elementos, con el
++         prompt de sistema como `instructions`, y eventos de flujo semánticos—. Es el objetivo de
++         `session` a través de su propio `.sessional`. El cliente reproduce el historial en cada
++         turno, como en todos los demás dialectos; un elemento de razonamiento en la salida se
++         descarta, un rechazo pasa a ser texto, y cualquier otro elemento se conserva como
++         `Llm.Content.Opaque("openai-responses", …)`. Como el dialecto de Chat, no es
++         `structured`, así que `solicit[T]` fuerza la herramienta `answer`.
+
+% 2 1 0 19bd1f9b7f12479319c921c47e81722d
+
+% 3 1 0 1719375c1ba8aff70b2c85837b39707a
+
+% 4 1 0 02b86181baba1f9a18d1f9dd6008ae8f
+
+% 0 1 0 0d4a8e2c32e24c5a0bb1f50cac6a39b8
+
+% 0 1 0 10bc1dbd9859df4900faf70d53068fd1
+
+% 1 1 0 1738c5072f447a711a458c09688a1ef6
+
+@ 0 3 0 1f4f520bdc3b330e04ba8bfc8a1c16c0
++         El valor no tiene métodos de ajuste propios: se configura primero el valor `OpenAI` y
++         luego se toma `responses`.
++     entry .Sessional   la instancia de `Sessional` que abre una `Llm.Session` sobre un valor `Responses`
+
+% 1 1 0 1c4be54c1883d9441ee5a728213fdecf
+
+@ 0 2 0 0fc566a1e9983ed1004ae887383a0755
++           `Self` es `OpenAI.Responses`, `Result` es una `Llm.Session^` nueva; `session`
++           construye el dialecto de Responses sobre los ajustes del valor `OpenAI` subyacente.
+
+% 0 1 0 1e8992b55d351e9c068f591429661e24
+
+@ 0 20 0 0fa872e2fb539af418ee42985ae973d6
++       entry #Result   `Llm.Session^`, el descriptor de sesión nuevo que recibe el bloque
++       entry #session   abre una sesión sobre el objetivo y ejecuta el bloque con ella
++     entry .sessional   el given que permite resolver `openai.responses.session: …`
++         Está en el ámbito implícito a través del objeto compañero; necesita los mismos `Online`,
++         `Http.Backend`, `Http.Event is Loggable`, `Tactic[Llm.Error]` y `Diagnostics` que
++         `OpenAI.sessional`.
++   entry #model   el identificador del modelo
++   entry #system   el prompt de sistema establecido por `#prompted`, o `Unset`
++   entry #settings   los `Llm.Settings` que han ido construyendo los métodos de ajuste
++   entry #priming   el historial desde el que empieza cada sesión abierta sobre este valor
++   entry #tools   las herramientas anunciadas en cada turno, establecidas por `#tooled`
++   entry #prompted   una copia con un prompt de sistema, que se envía como mensaje `system` inicial
++   entry #limit   una copia con un número máximo de tokens de salida (`max_completion_tokens`)
++   entry #warmth   una copia con una temperatura de muestreo
++   entry #sampling   una copia con un umbral de muestreo de núcleo (`top_p`)
++   entry #stopping   una copia con secuencias de parada
++   entry #iterating   una copia con un límite de viajes de ida y vuelta del bucle de herramientas por `ask`; 16 salvo que se establezca
++   entry #primed   una copia cuyas sesiones empiezan con el historial dado
++   entry #tooled   una copia que anuncia las `Llm.Tool` dadas en cada turno, sin ejecutarlas
++   entry #responses   el mismo modelo, las mismas credenciales y los mismos ajustes a través de la Responses API
++       Devuelve un `OpenAI.Responses`, cuya `session` habla con `/responses` en lugar de con
+
+% 0 1 0 1540a85c1b443a3213a0f7ebd080dab7
+
+@ 0 1 0 1b9c7f3c7b4e55901327e61ede1c471f
++ entry .Gemini   un modelo en la API Gemini de Google: un valor puro y reutilizable que abre sesiones
+
+% 1 1 0 0fe36609ff7f1c650f6a2adc5d04fdff
+
+@ 0 3 0 13c4237550635214156dce5688cc8d5e
++       `Gemini(model, key)` nombra un modelo en `generativelanguage.googleapis.com` y lleva la
++       clave de la API, que se envía como cabecera `x-goog-api-key`. Los métodos de ajuste
++       devuelven valores nuevos, y el valor es el objetivo de `session` a través del given
++       `.sessional`.
+
+% 2 1 0 084212456aeeb7570267367d5eb24668
+
+% 3 1 0 11362361574c781719a75163b2589e45
+
+% 0 1 0 04a8a4f725ffae37110330eed5d631e2
+
+% 1 1 0 09e9b93585371aba10ec74fec5d8fa47
+
+% 3 1 0 03d1ae2b5914394a14c9d9e32c7c4516
+
+% 4 1 0 18221b1f74ab97320bec358811581e3c
+
+% 5 1 0 0dfc875be2c07f2c12c52de5286d165f
+
+% 0 1 0 134903c3683bde35037213251c412318
+
+% 1 1 0 0f47a5768d211f5b1c8ac1b112843c5c
+
+% 2 1 0 1fa3c28c68c026940b19fb052ef7ec33
+
+@ 0 9 0 0d652da7f65cb96919c91c39d9c21e56
++       Las convenciones del protocolo se traducen: el prompt de sistema pasa a ser la instrucción
++       de sistema, el papel del asistente es `model`, una respuesta que contiene una llamada a
++       una función es `Llm.Stop.ToolCall` aunque la API diga que se detuvo con normalidad, un
++       bloqueo por seguridad o por recitación es `Llm.Stop.Filtered(code)`, y el recuento de
++       tokens de razonamiento se notifica como `Llm.Usage#reasoning`. Las llamadas a funciones no
++       llevan identificador en este protocolo, así que el identificador de un bloque `ToolUse` es
++       el nombre de la herramienta, y un `ToolResult` se dirige a su llamada por ese nombre. El
++       dialecto no es `structured`, así que `solicit[T]` fuerza una llamada a una herramienta
++       sintética `answer`. La clase no es una case class, así que `Gemini(…)` tiene el tipo
++       `Gemini` a secas, que es con el que coincide la instancia de `Sessional`.
+
+% 1 1 0 1bb02ee5cc918df90c66188f38d44a91
+
+@ 0 4 0 191a47d6df8236501ffe867028bb3c74
++   entry .apply   `Gemini(model, key)`: un modelo en `generativelanguage.googleapis.com`, sin nada más establecido
++   entry .xGoogApiKey   la directiva de cabecera `x-goog-api-key`, para que `xGoogApiKey = key` la nombre en una petición HTTP
++       Está en el ámbito implícito a través del objeto compañero.
++   entry .Sessional   la instancia de `Sessional` que abre una `Llm.Session` sobre un valor `Gemini`
+
+% 1 1 0 1a19009c9e79c3ed00d3e8426578245d
+
+@ 0 3 0 1e4cb4cc152c70fd0c225d900833c0fe
++         La clase que hay detrás de `.sessional`: `Self` es `Gemini`, `Result` es una
++         `Llm.Session^` nueva, y `session(target)(block)` construye el dialecto de Gemini a partir
++         de las capacidades HTTP y la táctica que están en el ámbito y presta al bloque una sesión
++         sobre él, que el bloque no puede devolver.
+
+% 0 1 0 03359daed869bd48052a7a2447c8763c
+
+@ 0 22 0 13d9764a2f9bbe330d1da7d43a51cc6f
++     entry #Result   `Llm.Session^`, el descriptor de sesión nuevo que recibe el bloque
++     entry #session   abre una sesión sobre el objetivo y ejecuta el bloque con ella
++   entry .sessional   el given que permite resolver `gemini.session: …`
++       Está en el ámbito implícito a través del objeto compañero; necesita un `Online`, un
++       `Http.Backend`, un `Http.Event is Loggable`, una `Tactic[Llm.Error]` y `Diagnostics` donde
++       se llama a `session`.
++   entry #model   el identificador del modelo, que se direcciona en la ruta del endpoint
++   entry #system   el prompt de sistema establecido por `#prompted`, o `Unset`
++   entry #settings   los `Llm.Settings` que han ido construyendo los métodos de ajuste
++   entry #priming   el historial desde el que empieza cada sesión abierta sobre este valor
++   entry #tools   las herramientas anunciadas en cada turno, establecidas por `#tooled`
++   entry #prompted   una copia con un prompt de sistema, que se envía como instrucción de sistema
++   entry #limit   una copia con un número máximo de tokens de salida (`maxOutputTokens`)
++   entry #warmth   una copia con una temperatura de muestreo
++   entry #sampling   una copia con un umbral de muestreo de núcleo (`topP`)
++   entry #stopping   una copia con secuencias de parada
++   entry #iterating   una copia con un límite de viajes de ida y vuelta del bucle de herramientas por `ask`; 16 salvo que se establezca
++   entry #primed   una copia cuyas sesiones empiezan con el historial dado
++   entry #tooled   una copia que anuncia las `Llm.Tool` dadas en cada turno, sin ejecutarlas
++   entry #on   una copia que se dirige a otra URL base
++       Para un proxy o una pasarela que hable la API Gemini; la ruta `v1beta/models/…` se añade
++       por debajo de ella.

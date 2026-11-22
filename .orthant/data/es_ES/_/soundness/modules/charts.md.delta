@@ -1,0 +1,583 @@
+orthant 2 language
+
+@ 0 1 0 0c96663fd6468e6a0d4727729ef491f9
++ ## Gráficos
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 5 0 08ff5d6573125ac9145902f24c990802
++ Un gráfico convierte una serie de números en una imagen: barras para categorías, una línea para
++ una tendencia, porciones para las partes de un todo, un histograma para una distribución. Aquí
++ los gráficos se dibujan como [SVG](svg.md) a partir de datos tipados, en cuatro capas separables:
++ la forma de los datos, la clase de gráfico, el ajuste de unos a otra, y el estilo. Cada una puede
++ elegirse sin alterar las demás, y un gráfico puede revisarse a medida que llegan datos nuevos.
+
+@ 0 1 0 03f59cd1461598590bc0266df9006621
++ ### Sobre los gráficos
+
+@ 0 5 0 1ce739b08b019be501acd7b2c92317bf
++ Las bibliotecas de gráficos suelen tomar un saco de números y un saco de opciones, y descubren en
++ [tiempo de ejecución] que ambos no casan: un gráfico de tarta de tres series, una línea a través
++ de rótulos de categoría, un eje logarítmico sobre un rango que incluye el cero. Las decisiones
++ que deberían estar separadas, que son qué son los datos, cómo se dibujan, cómo se eligen sus ejes
++ y qué aspecto tienen, llegan enredadas en una sola llamada.
+
+@ 0 7 0 0ba4c741ab60fc040d5a6fb7ce19aed4
++ Aquí las cuatro decisiones se mantienen separadas. La *forma* de los datos está en sus tipos.
++ Una serie sobre `Text` es categórica, y una serie sobre `Double` o un `Duration` es continua.
++ Una *clase* de gráfico es compatible con unas formas y no con otras, y el compilador comprueba
++ el emparejamiento. El *ajuste* de los datos a los ejes, que es lineal o logarítmico, ampliado
++ hasta números redondos o ceñido, anclado en cero o no, es una calibración que se elige para cada
++ tipo de eje, o que se pasa explícitamente. Todo lo relativo al *estilo*, que es el tamaño, los
++ colores, la tipografía y la leyenda, es un valor aparte. Esto es el
++ [desacoplamiento](../../philosophy/decoupling.md) del significado respecto de la representación.
+
+@ 0 2 0 0bcbe4c8555c85431339fc36c514f36f
++ Todo procede del paquete `soundness`. La segunda importación elige una [estrategia] para los
++ errores, y la tercera permite que los ejemplos impriman sus resultados:
+
+% 2 1 0 1fae61954e023d26038f4043e06b964b
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+% 0 1 0 0a5bea9cc766c6ff010cb926bcc71c55
+
+@ 0 1 0 0019d74d8b44ed2712e747f4815e11b9
++ Una `Series` es una serie de puntos con nombre, cada uno una abscisa emparejada con una ordenada:
+
+% 2 1 0 1c0949b26336a2a1154c75aaf303ebf7
+
+% 0 1 0 05c577267af84d641e80ee73864c95a5
+
+% 0 1 0 13e792d6c381ec9901eaaa5ad79e0510
+
+% 1 1 0 099229e0299c6bc2107cadd647c3f612
+
+@ 0 4 0 0808d78d9b99ff3d0de657adeb3c2b27
++ El tipo de la abscisa decide el eje. Un `Text`, una [enumeración] o una `Category` es
++ `Categorical`: sus valores son rótulos distintos, en el orden de su primera aparición. Un número,
++ un `Duration`, un `Instant` o cualquier `Quantity` es `Continuous`: sus valores tienen posiciones
++ en un eje numérico. Cualquiera de las dos [clases de tipos][clase de tipos] puede darse para un
++ tipo propio.
+
+@ 0 2 0 1eae6d48ab6af09f1443852b6b9a5336
++ Un `Chart.Estimate` es un valor continuo con el intervalo en el que se encuentra, que un gráfico
++ dibuja como una barra de error o una banda:
+
+% 2 1 0 0d348e2e435cb1db19e7f9af71be349b
+
+% 0 1 0 1e64d10b4259f7b206f1f3f6da48cefa
+
+% 0 1 0 1a3efbf02f8e35620f38c5b4682d1f46
+
+% 1 1 0 0238e30a2d10a792070c6ce447ada140
+
+@ 0 3 0 01fbc378f63d53fc02871db7fed292fd
++ Un valor también puede llevar una nota, como `Noted(3.0, t"Paris")`, que un gráfico de dispersión
++ o un gráfico de líneas coloca junto al punto. El nombre de una serie, como el de un conjunto de
++ muestras o el de una `Category`, es cualquier valor que pueda mostrarse, como un texto, un caso
++ de enumeración o un número, y se representa una vez, cuando se crea.
+
+@ 0 4 0 0d23fa25a2bda14e198a1fe0674cf9b5
++ Una serie es [inmutable], y `add` añade un punto en tiempo constante amortizado, que es lo que
++ necesita un gráfico al que se le suministra una medición cada vez. Varias series son cualquier
++ colección de ellas, como una `List`, una `Sequence` o un `Set`, puesto que la compatibilidad se
++ declara para cualquier cosa que pueda recorrerse por series.
+
+@ 0 1 0 02d71fa2f3dcf9d204772f975d92abcb
++ ### Clases de gráfico
+
+@ 0 1 0 0a6b5cbfc4126e1403b5c97a0876dbb9
++ Una clase de gráfico es un valor, y cada una dibuja datos de su propia forma:
+
+% 2 1 0 0865c84c80c49ccc1bb373ff0fbabbce
+
+@ 0 13 0 1915ddfa5be868470f3aae595d32a7b1
++ column  Clase
++ column  Dibuja
++ column  Abscisa
++ column  Ordenada
++ column  Estilo
++ row  `Bars()`  una serie, o una colección de series  categórica  continua  `Bars.Style`
++ row  `StackedBars()`  una colección de series  categórica  continua  `StackedBars.Style`
++ row  `Lines()`  una serie, o una colección de series  continua  continua  `Lines.Style`
++ row  `Scatter()`  una serie, o una colección de series  continua  continua  `Scatter.Style`
++ row  `Pie()`  exactamente una serie  categórica  continua  `Pie.Style`
++ row  `Histogram()`  `Samples`, o una colección de ellas  continua  recuentos  `Histogram.Style`
++ row  `Boxes()`  `Samples`, o una colección de ellas  una caja por conjunto  continua  `Boxes.Style`
++ row  `Doughnut()`  un `Dag` de nodos `Weighted` y `Progressive`  ninguna  ninguna  `Doughnut.Style`
+
+% 1 1 0 15e6a05d8a61cab01842cda25c07048c
+
+@ 0 2 0 1305ec78ed1531fc1837a3a683bfe80d
++ El método `chart` empareja datos con una clase, y solo compila donde la clase puede dibujar la
++ forma de los datos:
+
+% 2 1 0 0872adde109405760243a620f54b68db
+
+% 0 1 0 0d268f7fce66118817ed40228b92779d
+
+% 1 1 0 1cc6391d1ab022911fc5eef435e72fa0
+
+@ 0 3 0 036967466ba45f020b3eb0165529a4b9
++ Un histograma y un diagrama de caja toman `Samples`, que son mediciones en bruto, en lugar de
++ puntos. Un emparejamiento que no tiene sentido es un error de compilación, no una sorpresa en
++ tiempo de ejecución. Una serie categórica no tiene abscisa numérica para una línea:
+
+% 2 1 0 0eb0b6370bc0530714cf735a217fd8d7
+
+% 3 1 0 04ec2fba972063400d880eccda0e3695
+
+% 4 1 0 0568b2a7a08c70941c46dfe96197adee
+
+% 5 1 0 082b674df0a3f84200f834b52889c6b2
+
+% 0 1 0 0431ae51bcb20187165538eea7aa0239
+
+% 1 1 0 07ae1407f6a244fc0d6cbeca8ec3b980
+
+@ 0 1 0 0808a411d6e0a16b05ce7510d72cffa1
++ Una tarta es una sola serie:
+
+% 2 1 0 06420a45d59874b21333c65a9ceb648a
+
+% 3 1 0 1f9ee84f1151b3cb0031e65562bfc4a2
+
+% 4 1 0 002903d75f07c61f02c81201d30f6c68
+
+% 5 1 0 1a71dc5975612d121bce64c2876e7a33
+
+% 0 1 0 1b07f216788204340b09a14da37dc934
+
+% 1 1 0 132f5237bd5dce17075e69d3ebf0b1be
+
+@ 0 2 0 0a6877543df6f55818bd8e87e22c2e9b
++ El emparejamiento es una instancia de `Plottable`. Una nueva clase de gráfico es un valor nuevo
++ con instancias para las formas que puede dibujar, y no hay que cambiar nada más.
+
+@ 0 1 0 1bf734d912b8e09719926501a9b33f5d
++ ### Ajuste
+
+@ 0 4 0 01202d4e65c43f920c626ed65d3d6d58
++ El ajuste elige el rango y las graduaciones de cada eje a partir de los datos. La clase de
++ gráfico decide qué debe mostrar el eje. La ordenada de un gráfico de barras está anclada en cero,
++ y la de un gráfico de líneas no. Una `Calibration` decide cómo: posiciones lineales o
++ logarítmicas, ampliadas hacia fuera hasta pasos enteros o ceñidas a los datos. El valor por
++ defecto es lineal.
+
+@ 0 2 0 1502b838a90dc67d119389b9d858a87c
++ Una calibración se asocia al tipo de los valores del eje, así que un given con ámbito cambia
++ todos los ejes de ese tipo, y una importación cambia todos los ejes:
+
+% 2 1 0 13f397e165896a891f227549c9e370f9
+
+% 0 1 0 11eb99bd787cd2dc0654d6959d24d568
+
+% 1 1 0 1e3cb016af6ff425006a46444ff3515a
+
+% 3 1 0 0e7362370e9a42700aecf0b132aa9f35
+
+% 4 1 0 148572ac3bea0764041167a8c4c6b610
+
+% 5 1 0 1aaa434a18afcf9d1b284b7a76302730
+
+% 0 1 0 19b6403d61741b8404571c9c37e2b647
+
+% 0 1 0 1ea1f64cab316b230c8253a91d0f3fe8
+
+% 0 1 0 064a901684ea100402c530e6e079099a
+
+% 0 1 0 024bdc24d804486a1d104184939e6905
+
+% 0 1 0 1a745a715f559fe515900c5a07f2a61f
+
+% 1 1 0 09fa8ba6a58189de1ae4fd0c5abc1b3a
+
+@ 0 1 0 029d237acb45cb7f09c44d0c02a09a6a
++ También puede pasarse una calibración a una clase de gráfico para un solo eje, cuando ambos ejes
++ comparten un tipo:
+
+% 2 1 0 0d3c565288bc6a45094b388397c94826
+
+% 0 1 0 12b25e580520e64d0ed4ae008e990c52
+
+% 1 1 0 0cff0272d1f5549a1fbbef84c8a9f4d9
+
+@ 0 1 0 113cc6c9ef9009db1f7afed90c9dd8c4
++ Las calibraciones son givens del paquete `calibrations`:
+
+% 2 1 0 01ae43b5f0b29fbf1415becbed99c154
+
+@ 0 7 0 170b318875e04d0715bf239d77a0db16
++ column  Calibración
++ column  Posiciones
++ column  Rango
++ row  `linearCalibration`  lineales  ampliado hacia fuera hasta graduaciones enteras; el valor por defecto
++ row  `logarithmicCalibration`  logarítmicas, o lineales cuando los datos llegan a cero  décadas enteras
++ row  `adaptiveCalibration`  logarítmicas cuando el rango abarca tres órdenes de magnitud, si no lineales  ampliado
++ row  `tightCalibration`  lineales  exactamente la extensión de los datos
+
+% 1 1 0 0c3a15fb0388856204a375294dca2273
+
+@ 0 4 0 0b3d4a464eac82aa0a8dd118cae2a2cf
++ La calibración adaptativa es la que suelen querer los tiempos de un benchmark sobre distintos
++ tamaños de entrada. La `Scale` que produce un ajuste son datos simples: sus límites, su
++ transformación y sus graduaciones. Las graduaciones se espacian en múltiplos de uno, dos y cinco
++ para los números, y en pasos de reloj, como segundos, medios minutos y horas, para las duraciones
++ y los instantes.
+
+@ 0 1 0 0f9da56da06abf8815251102b719ea7f
++ ### Estilo
+
+@ 0 8 0 16e8ac4fdd741f900935c8033d17e2b4
++ Todo lo relativo al aspecto de un gráfico que no son datos es un *estilo*: un trait con un método
++ para cada componente que dibuja el gráfico, como una marca de graduación, su rótulo, una barra,
++ una porción o una muestra de color de la leyenda. Cada método toma la geometría que calculó el
++ gráfico y devuelve las figuras que hay que dibujar. `Chart.Style` contiene lo que comparten todas
++ las clases: el lienzo, el tipo de letra, la leyenda y cómo se compone el texto. `Chart.Cartesian`
++ añade ejes, graduaciones, cuadrícula, títulos, marcadores y barras de error. Cada clase añade lo
++ suyo: `Bars.Style` tiene `bar`, `Lines.Style` tiene `line` y `band`, y `Pie.Style` tiene `wedge`.
++ Un gráfico pide el estilo de su clase, así que un gráfico de barras compila contra `Bars.Style`.
+
+@ 0 2 0 13bba648c7097a2d0ca9c6f9f18a2303
++ `Chart.Standard` los implementa todos. Es una case class, así que sus parámetros son argumentos
++ con nombre, y cualquier componente se puede sobrescribir:
+
+% 2 1 0 12635a4a953ab1500ca45e8416a0e5df
+
+% 0 1 0 13fcfac96f11d9f5060c782ebaab8d48
+
+% 0 1 0 121c274ccbb7b4261681efbf04ed78f3
+
+% 0 1 0 08983f04256a67cc1d9f7efc6c654bd8
+
+% 0 1 0 1ae5bac0326c0c4e1b29e900e072e06c
+
+% 0 1 0 0ba10acfc6bfbbe011306e9c640bb3a9
+
+% 0 1 0 1d295cf1792a44250c496cad7ce36dc6
+
+% 1 1 0 0cfd6a85f8f14e53098ab3898e7dac73
+
+@ 0 1 0 1bd297cff10a3a5d0556f075dd86bbcd
++ Los ganchos cubren los detalles por los que se suele juzgar un gráfico:
+
+% 2 1 0 065b2dd1803ae3ed1940cd15cd60a062
+
+@ 0 20 0 128c67d0c12709f3072b4962a711da34
++ column  Gancho
++ column  Dibuja
++ column  Definido en
++ row  `fontStyle`, `lettering`  el tamaño y el color del texto; cada tramo de texto  `Chart.Style`
++ row  `backdrop`  el lienzo que hay detrás del gráfico  `Chart.Style`
++ row  `swatch`, `legendLabel`  una entrada de la leyenda  `Chart.Style`
++ row  `leader`  la línea desde un rótulo desplazado hasta su punto  `Chart.Style`
++ row  `axisLine`  el trazo de cada eje  `Chart.Cartesian`
++ row  `axisBreak`  una marca de interrupción donde un eje lineal no empieza en cero  `Chart.Cartesian`
++ row  `arrowhead`  el extremo de un eje  `Chart.Cartesian`
++ row  `tick`, `gridLine`  una graduación y su línea de cuadrícula  `Chart.Cartesian`
++ row  `tickLabel`  el rótulo de una marca de graduación, dónde se sitúa y si está girado  `Chart.Cartesian`
++ row  `axisTitle`  el título de un eje  `Chart.Cartesian`
++ row  `marker`, `errorBar`  un punto y su intervalo  `Chart.Cartesian`
++ row  `pointLabel`  la nota de un punto `Noted`  `Chart.Cartesian`
++ row  `bar`  una barra  `Bars.Style`
++ row  `line`, `band`  la línea de una serie y la banda de una estimación  `Lines.Style`
++ row  `box`, `whisker`, `median`  las partes de un diagrama de caja  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  una porción y su porcentaje  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  el color de un sector y sus dos partes  `Doughnut.Style`
+
+% 1 1 0 154b23be00d128f40403102c283637fe
+
+@ 0 2 0 0c2302e080b7a86d0fdc0b03144c8ea9
++ `labelRoom` indica a la disposición cuánto espacio ocupan los rótulos de las marcas de
++ graduación, así que un estilo que los gira lo sobrescribe junto a `tickLabel`.
+
+@ 0 2 0 18366fc25794b53a0ba6e01ac5ae76ea
++ Los colores son una `ChartPalette`, con nombres según su papel: la gama de las series, los ejes,
++ la cuadrícula, la rotulación. Por tanto, un mismo estilo se representa con cualquier paleta, y una
++ paleta se elige importándola:
+
+% 2 1 0 156fe033f3f729520883ded0b073b061
+
+% 0 1 0 0b4baa4babbe394e0cef4346332c8405
+
+% 1 1 0 0c414f1234d02afa160107762a54815a
+
+@ 0 4 0 08287a1d2475bf4c191d38d5b0b1491b
++ La `font` de un estilo es una `Font in Web`: un estilo tipográfico emparejado con una provisión
++ para su tipo de letra, como describe [fuentes](fonts.md#providing-a-typeface). Por tanto, un
++ gráfico solo puede componerse en un tipo de letra para el que su SVG lleve un `@font-face`, o en
++ una familia genérica, que es el valor por defecto. Una provisión se declara una vez, y la fuente
++ se elige en el estilo:
+
+% 2 1 0 135eb1f741890a571793e0533a2050b7
+
+% 0 1 0 086a108bf83a31bb1110712e206bf3ab
+
+% 0 1 0 19f41b45aa9f01b10700f4faef780fc0
+
+% 1 1 0 06d8ce0a1434fada087db0e64c24cb1a
+
+@ 0 4 0 1ecccf5445ab85f906a113687b454fb1
++ El texto se mide para disponer los rótulos de los ejes y la leyenda. Se usan los avances de glifo
++ de una fuente incrustada, así que el estilo tipográfico que se mide es el que se representa, y
++ los márgenes se ajustan exactamente a sus rótulos. Para una fuente cuyo fichero no está a mano,
++ se supone una anchura media para cada carácter. Cualquiera de las dos cosas puede sustituirse
++ importando una métrica:
+
+% 2 1 0 1c20b66c3e6179650e6b72f7af7082c6
+
+% 0 1 0 1925dccbc71c725813e5c32d77396476
+
+% 1 1 0 1d3efa5c5b2d392c11fd1bb44d54a259
+
+@ 0 6 0 0861e544045acb140cbd151621ef10bb
++ Un eje sobre una [magnitud](quantities.md) se titula según lo que mide y su unidad, tomados del
++ tipo. Una serie de valores `Quantity[Metres[1]]` tiene como título de la ordenada `distance / m`,
++ y una de valores `Metre/Second` tiene `velocity / m·s¯¹`, con las unidades representadas como en
++ cualquier otro sitio. Un título dado en el estilo sustituye al nombre pero conserva la unidad. El
++ estilo dado más arriba titula la ordenada `units sold`, así que este gráfico de alturas en metros
++ se titula `units sold / m`:
+
+% 2 1 0 05ecd88f2932fe461252c9108e56c272
+
+% 0 1 0 19af03434c40585b17e1d78e0ea779b5
+
+% 1 1 0 00db0dcf163a090801f7647a301c0cb8
+
+% 3 1 0 05cb28843b301d030a1cb06e718b3cf3
+
+% 4 1 0 0ca8b1cd391d2c0c127b07557bf138ea
+
+% 5 1 0 0e271484733a35021c68c1d2073c2b00
+
+% 0 1 0 0e03e887a0d1f7190086744795a5b58f
+
+% 1 1 0 1df927aed3f7443515c053affa1e4e8f
+
+@ 0 2 0 1e6dd270dcd6e6801ac0f759eea4dc0a
++ Un eje `Duration` se titula `time`, y sus graduaciones llevan sus propias unidades, como `250ms` y
++ `1m30s`, puesto que los pasos de reloj no son decimales.
+
+@ 0 1 0 03287d32f8590fc206c6a987574d4ca1
++ ### Colocación de rótulos
+
+@ 0 7 0 195f36632d50b50d1a1c87570cec9a5a
++ El texto de un gráfico se coloca mediante la [colocación de rótulos](label-placement.md), así que
++ los rótulos no colisionan. Los rótulos de las marcas de graduación, los títulos de los ejes y las
++ entradas de la leyenda permanecen fijos, y se omite el rótulo de una marca de graduación que se
++ solaparía con su vecino. La nota junto a un punto `Noted` y el porcentaje en la porción de una
++ tarta se mueven. La nota de un punto se coloca a su derecha cuando ese lado está libre de otras
++ notas, marcadores y líneas, en otro lado cuando no lo está, y más lejos, con una línea guía hasta
++ el punto, cuando todos los lados están ocupados. El porcentaje de una porción se sitúa en su
++ porción, o se desplaza hacia fuera con una línea guía cuando el rótulo de una porción vecina
++ estorba.
+
+@ 0 3 0 09f16b0b70851a181379cf9b15f3e2d0
++ El `Arranger` del ámbito decide la colocación. El valor por defecto coloca cada rótulo por turno.
++ Para un gráfico abarrotado, el recocido simulado considera los rótulos en conjunto, y se elige
++ importándolo:
+
+% 2 1 0 1e657a9a35ab64631273d1bc5e7ffd0a
+
+% 0 1 0 07df0a12b6dc6fcf13fcb991bfad5d23
+
+% 1 1 0 1ac5dcf69a06ecb01062ba8c55f43b9b
+
+@ 0 3 0 1407a04433753df50b78c668b92049d5
++ Un estilo dibuja cada rótulo donde lo puso la colocación. `tickLabel`, `pointLabel` y
++ `wedgeLabel` toman un `Chart.Anchoring`, que es el punto y la alineación que sitúa el texto en el
++ lado correcto de él, y `leader` dibuja la línea desde un rótulo desplazado hasta su punto.
+
+@ 0 1 0 0644d0e91014059201012368fc0e7313
++ ### Representación
+
+@ 0 1 0 146cf99daf1045a3093e92ce0180d0a1
++ Un gráfico se representa como un `Svg`, que se serializa a texto XML como cualquier otro:
+
+% 2 1 0 121bb4c062e3bb0b1a35ff607e354dce
+
+% 3 1 0 14ecedfe5c2975470ba8ddc9afc375fd
+
+% 4 1 0 0e03ab8f84a8e32107bb69996b13beaa
+
+% 0 1 0 0dcd73f60caba365012aad73ddb3a147
+
+% 0 1 0 060db6bdad79f96a1639d5d82b0fed44
+
+% 1 1 0 08abc61117f0daad053e847a1856ed80
+
+@ 0 2 0 02da70fa94cb69b614e1bc43e5723183
++ Cada parte del dibujo es un grupo con un identificador estable, que es lo que hace que el gráfico
++ pueda revisarse:
+
+% 2 1 0 185b71f255c50f3304ce93070147ed81
+
+@ 0 10 0 16532a3919bf3fed082ffaf59df6e86c
++ column  Identificador
++ column  Contiene
++ column  En
++ row  `backdrop`  el lienzo, en el color de fondo de la paleta  todo gráfico
++ row  `grid`  las líneas de la cuadrícula  gráficos cartesianos
++ row  `abscissa`, `ordinate`  cada eje, sus graduaciones y su título  gráficos cartesianos
++ row  `legend`  la leyenda  gráficos con leyenda
++ row  `series-0`, `series-1`, …  cada serie  gráficos cartesianos
++ row  `wedges`  cada porción y su rótulo  `Pie`
++ row  `rank-0`, `rank-1`, …  cada banda  `Doughnut`
+
+% 1 1 0 0b90fbb85042aa3e1e23d7c20c4bfcd7
+
+@ 0 1 0 0c98c9f6a206185f092e4eaf027c2765
++ ### Revisión
+
+@ 0 3 0 1981bda70016bcd719d1c7fda2da1bb4
++ Un gráfico es inmutable. Dados datos nuevos, `revise` da el gráfico siguiente y una lista de lo
++ que ha cambiado en la página. Si el ajuste todavía da cabida a los datos nuevos, los ejes
++ permanecen fijos, y solo se sustituyen las partes que difieren. Si un punto queda fuera de ellos,
++ se vuelve a dibujar el gráfico entero:
+
+% 2 1 0 16870e1755249f5919e9aaf3a245e923
+
+% 3 1 0 1fe8175879eabc800e05c64e5a454c28
+
+% 4 1 0 0c5f7091344e438f1fb94f3ee2a8f768
+
+% 5 1 0 1d1db7f68e2806030b3adc0718624965
+
+% 0 1 0 05334ec6b66b6b391a19f11b599af89a
+
+% 0 1 0 09f63558bbc040810b78686e8ee9aa40
+
+% 0 1 0 1dc80aa4dd8fc7a816a42d0dcfb3f1cc
+
+% 1 1 0 0098a26f43570b011f6be276b33f0408
+
+@ 0 4 0 1f81d889adc8a1d60f8c2b02b141aafb
++ La única revisión es un `Chart.Revision.Replace` de `series-0`. Una página que contiene el SVG
++ necesita solo dos operaciones, que son sustituir un elemento por su identificador y sustituir el
++ dibujo entero, así que un gráfico puede mantenerse al día a través de un WebSocket enviando cada
++ revisión a medida que se produce.
+
+@ 0 1 0 130ec102035b54480bb76ee4e21b3dd4
++ ### Distribuciones
+
+@ 0 3 0 1c15d16bf09255271327b43ece2d4e60
++ Las mediciones en bruto son `Samples`. Un `Histogram` divide su rango en intervalos iguales,
++ según la regla de Sturges salvo que se dé un número de intervalos, y cuenta las muestras de cada
++ uno. `Boxes` resume cada conjunto de muestras como una caja entre sus cuartiles, con bigotes hasta
++ sus extremos:
+
+% 2 1 0 11f29b9b17574cf418ce85d39712aa68
+
+% 3 1 0 02e51c5735e45dd3192c75fe8065554f
+
+% 4 1 0 14edd651438a3e69002e5acfa8f67400
+
+% 5 1 0 06997d1615b693500c9859027dce69cd
+
+% 0 1 0 033413227a5a19bc161a20d8abb03a01
+
+% 0 1 0 120641c5ed15b98719881891031cd91d
+
+% 0 1 0 16eaab8e03df40b91564bc83c7d578e4
+
+% 0 1 0 08a4d5eaf52798fb102bf632a7a154e9
+
+% 0 1 0 039e03d91e4f895d1863647075c6d3d5
+
+% 1 1 0 04e091e103d977c91d49843136a78104
+
+@ 0 1 0 06561035a92422101cd7dc5d18ffb45c
++ Ambos aceptan cualquier colección de conjuntos de muestras, igual que las demás clases aceptan
++ colecciones de series.
+
+@ 0 1 0 011d83e381dd7f9214bb8471ad71a2cd
++ ### Gráficos de anillo
+
+@ 0 5 0 10c61f40162d8d7803c0b4fe67b283c0
++ Un `Doughnut` dibuja un grafo de dependencias, un [`Dag`](graphs.md), como bandas concéntricas.
++ Los nodos que no dependen de nada están en la banda más interna, y cada banda sucesiva contiene
++ los nodos un rango más afuera, así que una compilación se va rellenando desde el centro hacia
++ fuera. Cada nodo es un sector de su banda, que barre un ángulo proporcional a su tamaño dentro
++ del rango, y una banda es tan gruesa como la parte del tamaño total que corresponde a su rango.
+
+@ 0 7 0 174d054413f9c42015242617e7d5556d
++ El tamaño de un nodo y su progreso, de `0.0` a `1.0`, proceden de dos clases de tipos sobre el
++ tipo del nodo, `Weighted` y `Progressive`. El sector se rellena en el sentido de las agujas del
++ reloj hasta donde el nodo está completo, y el resto queda en un tinte apagado del color del
++ sector. Ese color es el primer color de la paleta, matizado según dónde se encuentra el sector:
++ su tono gira treinta grados de izquierda a derecha, y es más oscuro por debajo del centro y más
++ claro por encima. Un gráfico de anillo no tiene rótulos ni leyenda. Cada banda es un grupo
++ `rank-0`, `rank-1`, …, cada sector un trazado `sector-0`, `sector-1`, …, y la parte sin terminar
++ de un sector es `sector-0-rest`.
+
+@ 0 3 0 186d282768e4a38b0e1b4a430a91b85d
++ Un nodo lleva su progreso, así que un gráfico de anillo se revisa como cualquier gráfico, con
++ datos nuevos. El ajuste sobrevive a cualquier grafo de la misma forma y tamaños, y solo se
++ sustituyen las bandas cuyos sectores se han rellenado más:
+
+% 2 1 0 18f4b7aff6b0de110e30179153ee763a
+
+% 0 1 0 1c9603d260d4845d0627ad6edabe3b4a
+
+% 0 1 0 16177b4b4491d314047ceb7a82921210
+
+% 0 1 0 09cc65b4500751fe18583ec2678045f9
+
+% 0 1 0 19fbe38972d93a8301629fc4a2d1ada1
+
+% 0 1 0 1d37cb09c68e85f6025ad2b133644a13
+
+% 0 1 0 0df9837846b58da419cb2d50259e7ec0
+
+% 0 1 0 18ceb764a89b38990f901c38d106eee2
+
+% 1 1 0 13cbc4141a3177041f7a4636c73314f0
+
+% 3 1 0 13abf6457ef29e920ca7e7e87e026661
+
+% 4 1 0 1188afa3209114471cb16aa280be7ca9
+
+% 5 1 0 1c89bbe9b2220ba91c446b729f51bf20
+
+% 5 1 0 0af780ea235f9323035be0c8310c8b6a
+
+% 0 1 0 144953e5d6637f7211871894602a275f
+
+% 0 1 0 0ede66e7c1428cd21f0d3a7cce77dfd5
+
+% 0 1 0 1a1a1757fda426f01cd5a437e645ec0e
+
+% 1 1 0 1bb306cc8eda97d4084e5d4752dd8e6d
+
+@ 0 1 0 0b5a150e94b838ff0c05fd0f9cea858d
++ Hay tres bandas, una por cada rango. Terminar `typecheck` solo sustituye `rank-1`.
+
+@ 0 5 0 0ef8f078864b9b480d7386095e5501ec
++ `Chart.Standard(hole = 0.3)` vacía el centro. `sectorGap` y `bandGap` son las anchuras de la
++ junta entre sectores y entre bandas. `Doughnut.Style` tiene `shade` para el color de un sector a
++ partir de su posición, y `sector` y `remainder` para sus dos partes. La asignación de rangos es la
++ que describe [grafos](graphs.md#layering): `import rankings.balancedRanking` dibuja cada nodo tan
++ cerca de sus dependientes como sea posible, en lugar de tan cerca del centro.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 8 0 073cfdea2b0f98e207a2a38e223c33c8
++ - [SVG](svg.md) describe el dibujo en el que se representa un gráfico.
++ - [Colocación de rótulos](label-placement.md) describe cómo los rótulos de un gráfico se evitan
++   entre sí.
++ - [Fuentes](fonts.md) describe los tipos de letra en los que puede componerse un gráfico.
++ - [Magnitudes](quantities.md) describe las unidades que titulan un eje.
++ - [Grafos](graphs.md) describe el `Dag` que dibuja un gráfico de anillo.
++ - [Colores](colors.md) describe los colores de la paleta.
++ - [Tiempo](time.md) describe las duraciones y los instantes que puede contener un eje continuo.
++ - [Medidores](gauges.md) y [tablas](tables.md) presentan valores en el terminal, y
++   [las pruebas](testing.md) representan en gráficos los resultados de los benchmarks.

@@ -1,0 +1,683 @@
+orthant 2 language
+
+@ 0 1 0 0b763b48a45ecea8051cb862888668b3
++ # Modifiche rispetto alla 0.70.0
+
+@ 0 3 0 1927253d08deb58b176f4d393c6c49f6
++ Questo file viene letto da un agente LLM per aggiornare il codice che usa le librerie Soundness
++ dalla 0.70.0 alla release successiva. Ogni voce indica con precisione che cosa è cambiato; il
++ formato è descritto in `AGENTS.md`. Le voci sono raggruppate per modulo e, all'interno di un
++ modulo, la più recente è l'ultima.
+
+% 0 1 0 0815a537589592e21b251a53558048d3
+
+@ 0 9 0 19dcf51e4108b6111da6e25c85bcff1c
++ - `ambience.temporaryDirectories.environmentTemporaryDirectory` (anche
++   `soundness.temporaryDirectories.environmentTemporaryDirectory`) ora legge `TMPDIR`, `TMP` e
++   `TEMP` dall'`ambience.Environment` fornito come given; prima ignorava quel given e leggeva
++   `java.lang.System.getenv`. Il suo tipo è invariato. Il codice che lo evoca con un
++   `Environment` diverso da `javaBaseEnvironment` ottiene ora la directory temporanea di
++   quell'ambiente. (#2180)
++ - `ambience.environments.javaBaseEnvironment` legge l'ambiente della JVM stessa, come prima; in
++   un demone avviato da un launcher xek 1.2.0 quell'ambiente è ripulito (vedi `## ethereal`),
++   quindi il codice del demone che legge una variabile dell'applicazione tramite esso deve usare
++   invece l'ambiente dell'invocazione o `environments.daemonEnvironment`. (#2180)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 14 0 0adcfd612455b75d077822950d289152
++ - `anthology.Format` acquisisce un membro astratto `kind: anthology.Format.Kind` (nuovo enum:
++   `Source`, `Ir`, `Application`), implementato come `final def` da `Format.Source`, `Format.Ir`
++   e `Format.Application`, e definizioni `final override` di `equals` e `hashCode`: due formati
++   sono uguali quando i loro `kind` e i loro `id` sono uguali. Una classe che estende `Format` se
++   non tramite uno dei tre trait di livello deve definire `kind`; una che ridefinisce `equals` o
++   `hashCode` non compila più; e una case class che estende `Format` non ha più un `equals`
++   strutturale sintetizzato. Due formati dello stesso tipo con lo stesso `id` sono ora uguali
++   anche se gli altri membri differiscono, quindi un formato i cui parametri distinguono i nodi
++   deve codificarli nel suo `id` (ogni formato predefinito lo fa già). (#2166)
++ - `anthology.WasiToolchain.apply()` e `anthology.nativeEdges.apply(triples*)` (il componente
++   `nir`) ora prendono `(using WorkingDirectory, Environment)`, e cercano i loro strumenti con
++   quell'ambiente. Si fornisce l'`Environment` che i processi devono ereditare: quello
++   dell'invocazione (`environments.daemonClientEnvironment`, o `Environment.provided` da un `Cli`)
++   in uno strumento, `environments.javaBaseEnvironment` per il comportamento precedente. (#2180)
+
+% 0 1 0 0f65516622e01f5401b594a2ce4c1b1b
+
+@ 0 4 0 178b08acf1f899110016b0710d37f321
++ - Rimosso `apoplexy.OpenApi.json(yaml: Yaml): Json`. La traduzione è ora il given di primo
++   livello `apoplexy.yamlEncodableInJson: Yaml is Encodable in Json` (non esportato da
++   `soundness`), quindi si scrive `yaml.in[Json]` con `import apoplexy.yamlEncodableInJson`
++   nell'ambito al posto di `OpenApi.json(yaml)`. L'output è invariato. (#2176)
+
+% 0 1 0 07409a9b4226d59e0356189f39895ad5
+
+@ 0 17 0 1fc182a2f5c18b651790c53022e18104
++ - `archimedes.Ergo.Error.Reason.BadOpener(char: Text)`, `Unclosed(expected: Text)` e
++   `MissingBody(char: Text)` ora prendono un `Char` al posto del `Text` di un solo carattere:
++   `BadOpener(char: Char)`, `Unclosed(expected: Char)`, `MissingBody(char: Char)`. I messaggi resi
++   sono invariati. I pattern che legano il campo e lo confrontano con un `Text` lo confrontano
++   invece con un `Char`. (#2167)
++ - Rimosso `archimedes.Mathml#htmlAttributes: List[(Text, Optional[Text])]`. Si usa
++   `attributes`, la cui `List[(Text, Text)]` è conforme ovunque siano attese coppie
++   `(Text, Optional[Text])` (per esempio `honeycomb.Attributes(node.attributes*)`). (#2167)
++ - Rimossi `archimedes.Math#xml: Xml` e `archimedes.Mathml#xml: Xml` in favore dei given
++   `Math.encodableInXml: Math is Encodable in Xml` e `Mathml.encodable: [node <: Mathml] =>
++   node is Encodable in Xml`. Si scrive `math.in[Xml]` per `math.xml` ed `element.in[Xml]` per
++   `element.xml`; su un `Math`, che ha anche un `Encodable in Math`, si usa `in[Xml]`, non
++   `encode`. L'output è invariato. (#2176)
++ - Rimossi `archimedes.Math#html: Html of "math"` e `archimedes.Mathml#html: Html of "#foreign"`.
++   `math.html` ed `element.html` compilano ancora senza modifiche tramite l'estensione `html` di
++   honeycomb (nell'ambito con `import soundness.*` o `import honeycomb.*`), risolta dall'esistente
++   `Math.renderable` e dal nuovo `Mathml.renderable: [node <: Mathml] => node is
+
+% 0 1 0 1efc6f841d8cf3b70fe39d1797fb9d0b
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 7 0 1de4bd501f4a67ad059a54c7740082b5
++ - `aviation.Calendar#Mensual` ha ora un context bound `Showable` (`type Mensual: Showable`), e
++   `Calendar#monthName(month: Mensual): Text` ora rende `month.show` dove rendeva
++   `month.toString.tt`. Un calendario definito fuori da aviation deve avere un `Showable` per il
++   suo tipo di mese nell'ambito in cui il calendario è definito; un mese `enum` ne ha già uno
++   tramite `spectacular.Showable.enumeration`, che rende il nome del caso come prima. (#2173)
++ - `aviation.AlexandrianCalendar` è passato da `abstract class AlexandrianCalendar()` a
++   `trait AlexandrianCalendar`. Si riscrive `extends AlexandrianCalendar()` come
+
+% 0 1 0 1581d00956f0bc8d07eae4102795b6b0
+
+@ 0 5 0 1855781fa923c63705c56aa064feca98
++ - Rimossi i given `aviation.CopticMonth.showable`, `aviation.EthiopianMonth.showable`,
++   `aviation.FrenchRepublicanMonth.showable`, `aviation.IndianMonth.showable` e
++   `aviation.PersianMonth.showable`; al loro posto si risolve `spectacular.Showable.enumeration`
++   con lo stesso output, quindi deve cambiare solo il codice che nomina esplicitamente uno di
++   questi given. (#2173)
+
+% 0 1 0 1370790ba805908e18fbb957e25dfabd
+
+@ 0 8 0 021d455e3be5d10c1f2e099d5f7fc861
++ - Il plugin del compilatore (`beneficence-plugin`) scrive una nuova directory di risorse,
++   `META-INF/probably/tests`, nell'output di ogni compilazione che ha `probably.Suite` e
++   `probably.Testable` nel classpath: un file per ogni file sorgente che dichiara una suite o un
++   test, chiamato `<source file name>-<12 hex digits of the SHA-256 of its path>`. Il formato è
++   documentato in `beneficence.TestsIndex`. `META-INF/services/probably.Suite` è invariato. Una
++   build che impacchetta l'output del compilatore secondo una lista esplicita di percorsi di
++   risorse deve includere la nuova directory perché un host (fume) possa elencarne i test senza
++   eseguirli; non serve alcuna regola di fusione, dato che due moduli non scrivono mai la stessa
++   voce. (#2169)
+
+% 0 1 0 1281cf5693caddee047e57c2960f2348
+
+@ 0 4 0 1e5b490ce692c8d20cff29ad90e7c5bb
++ - Rimossi `bitumen.UnixMode#bytes: Data`, `bitumen.UnixUser#bytes: Data` e
++   `bitumen.UnixGroup#bytes: Data`. Producevano il campo dell'intestazione USTAR (sette cifre
++   ottali ASCII con zeri iniziali), un formato di tar anziché dei tipi, e sono ora privati di
++   `Tar.Header`. Il codice che ha bisogno del campo scrive
++   `value.octal.pad(7, Rtl, '0').in[Data]` a partire da `mode.int`, `user.value` o
+
+% 0 1 0 04bf62ba46cd0bbf007a1548c0385ac4
+
+% 0 1 0 0f922ec341ccae34075ef751ece930db
+
+@ 0 8 0 11bc7393f68ced2403546e9e64c4b38f
++ - Soundness è compilato con Proscala `3.9.1-dev-p17` (era `3.9.0-p16`), lo stream 3.9 del fork
++   che ora segue il branch `lts-3.9` di scala/scala3; i valori predefiniti di `build.mill` per
++   `SOUNDNESS_SCALA_RELEASE` (il tag di release di proscala scaricato) e
++   `SOUNDNESS_SCALA_VERSION` (la versione delle coordinate) sono entrambi `3.9.1-dev-p17`, e ogni
++   dipendenza `org.scala-lang` è forzata a quella coordinata. Un consumatore compila con la
++   stessa versione del fork. (#2175)
++ - Gli strumenti in `etc/tools` sono flare 0.5.0 (il plugin del compilatore con cui è compilato
++   Soundness), fume 0.6.0 (il runner dei test, che legge gli eventi emessi dalle suite dalla
++   0.70.0) e flame 0.5.0; un progetto che esegue suite di Soundness ha bisogno di fume 0.6.0 o
++   successivo. (#2158)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 31 0 00a53c6e37080835155a7a5ca68b638f
++ - `coaxial.Socket.Error.Reason` acquisisce `Timeout` (5), sollevato quando scade una ricezione
++   su un socket datagram configurato con `Socket.Option.Timeout`; un match esaustivo sui motivi
++   acquisisce un caso. (#2178)
++ - `coaxial.Socket.Option` acquisisce `MulticastLoop` (`IP_MULTICAST_LOOP`),
++   `MulticastHops(count)` (`IP_MULTICAST_TTL`) e `DatagramSize(bytes)` (il buffer di ricezione
++   per datagram, quindi il datagram più grande ricevuto per intero; 1472 se non impostato), con
++   `socketOptions.multicastLoopSocketOption`, `multicastHops(n)` e `datagramSize(n)`. Un match
++   esaustivo su `Socket.Option` acquisisce tre casi. (#2178)
++ - `coaxial.Socket.Backend` acquisisce un membro astratto `exchangeUdp(endpoint, interface,
++   options, data): Packet` — un datagram in uscita da una porta effimera, una risposta in entrata,
++   limitato da `Option.Timeout` — e il suo tipo di handle `DatagramSocket` sui backend JVM e Scala
++   Native è ora un binding privato anziché `java.net.DatagramSocket`. Un backend di terze parti
++   deve implementare `exchangeUdp`; il codice che faceva affidamento sul fatto che l'handle fosse
++   un `DatagramSocket` deve passare per le operazioni del backend. (#2178)
++ - Aggiunto `coaxial.Multicast(group: Ipv4 | Ipv6, port: Udp.Port)`, con `Multicast.Reply`
++   (`Ignore`/`Group(data)`/`Unicast(data)`), `Multicast.Subscription` (un `Socket.Service` che
++   può anche fare `send` al gruppo o a una singola destinazione), la typeclass
++   `coaxial.Subscribable` con un given per `Multicast` (e un given `Bindable` sopra di esso, così
++   `listen` funziona su un gruppo), e il prestito `multicast.subscribe(handler)(block)`.
++   `Multicast.interfaces(interface: Optional[MacAddress])` elenca le interfacce su cui si unisce
++   una sottoscrizione. `Socket.Backend` acquisisce i membri astratti `MulticastSocket`,
++   `joinMulticast`, `receiveMulticast`, `sendGroup`, `sendTo` e `leaveMulticast`, implementati
++   sulla JVM (un `DatagramChannel` unito per interfaccia) e che sollevano `Socket.Error` su Scala
++   Native e WASI; un backend di terze parti deve implementarli. (#2178)
++ - Nuovo componente `coaxial.dns` (nel bundle `soundness-web`): `endpoint.query(message:
++   Dns.Message)` ed `endpoint.lookup(name, rtype)` su un `Endpoint[Udp.Port]`, che scambiano
++   messaggi DNS con un nameserver su UDP; additivo. (#2178)
++ - Il `listenUdp` dei backend JVM e Scala Native ora configura il socket *prima* di farne il
++   bind, così `Socket.Option.ReuseAddress` e `ReusePort` hanno effetto per i listener UDP (prima
++   erano silenziosamente inefficaci). (#2178)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 3 0 1dfa60000ff174271606f282fe94ac93
++ - Rimosso `enigmatic.Cose#bytes: Data` in favore del given `Cose.encodable: [cose <: Cose] =>
++   cose is Encodable in Data`. Si scrive `cose.in[Data]` per `cose.bytes`; la forma di
++   trasmissione è invariata. (#2176)
+
+% 0 1 0 10d5740d33bd672200a59ac24b495f6e
+
+@ 0 1 0 13d043fefc2e920313a241b1d6bda792
++ - `espionage.Acp.connect` acquisisce un parametro using di tipo `ambience.Environment`, dopo
+
+% 0 1 0 0a2770d52427a7041eb9e071717b015e
+
+@ 0 4 0 00c8c7f4e12b6eb0130a9be03f421df3
++   Environment, Tactic[Acp.Error])`. Un `Agent.Process` viene avviato con quell'ambiente. Si
++   fornisce l'`Environment` che i processi devono ereditare: quello dell'invocazione
++   (`environments.daemonClientEnvironment`, o `Environment.provided` da un `Cli`) in uno
++   strumento, `environments.javaBaseEnvironment` per il comportamento precedente. (#2180)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 9 0 1c53257db8e18b540ea626dbf1c00fc0
++ - `ethereal.DaemonService` rinominato in `ethereal.Resident` (esportato anche come
++   `soundness.Resident`), e il suo parametro di tipo sostituito da un membro di tipo:
++   `case class DaemonService[bus <: Matchable](…)` è ora `abstract class Resident(…)` con
++   `type Transport <: Matchable`, il tipo dei messaggi che i suoi client si scambiano. Si scrive
++   `DaemonService[X]` come `Resident over X` (`prepositional.over`), e `DaemonService[?]` come
++   `Resident`. Il costruttore non prende più `deliver: bus => Unit` né `bus: Chain[bus]`;
++   `bus: Chain[Transport]` e `broadcast(message: Transport): Unit` sono membri astratti,
++   implementati dal demone. Non essendo più una case class, non ha `copy`, `unapply`, né
++   `equals`/`hashCode` strutturali; gli altri parametri del costruttore restano `val` pubblici,
++   con gli stessi nomi. (#2163)
+
+% 0 1 0 1df3de93746f1b0f1312c6894db3192b
+
+@ 0 48 0 199f1795451144fc0386a1e4397e74d5
++   (anche `soundness.service`) rinominato in `ethereal.resident[bus <: Matchable](using Resident
++   over bus): (Resident over bus)^{resident}` (anche `soundness.resident`); `service` rimosso. Si
++   riscrive ogni `service.…` dentro un blocco `cli` come `resident.…`. La funzione di contesto
++   presa da `ethereal.cli[bus]` fornisce ora `Resident over bus` al posto di
++   `DaemonService[bus]`. (#2163)
++ - Rimossi `ethereal.Upgrade.apply[source](source: source): Nothing raises Upgrade.Error` e
++   `Upgrade.applyBytes(bytes: Data): Nothing raises Upgrade.Error`; si usa
++   `Upgrade.stage[source](source: source): Unit raises Upgrade.Error`, che prende la stessa
++   sorgente `Readable to Data`. Scrive il candidato come `<data>/<name>/.pending` e *ritorna*:
++   non avvia più un launcher né termina la JVM, e il launcher applica l'aggiornamento all'inizio
++   dell'invocazione successiva del comando. Il codice che faceva affidamento sul fatto che
++   `Upgrade(…)` non ritornasse (per esempio come ultima espressione di un metodo di tipo
++   `Nothing`) deve ora ritornare normalmente, e dovrebbe dire all'utente che l'aggiornamento ha
++   effetto alla prossima esecuzione del comando. (#2171)
++ - Rimosso `ethereal.Upgrade.Error.Reason.CannotRespawnLauncher`, e
++   `Upgrade.Error.Reason.CannotResolveLauncher` rinominato in `CannotResolveName` (ancora
++   `SN-631.3`, sollevato quando il demone non ha ricevuto il proprio nome da un launcher). I
++   match su ciascuno dei due si aggiornano di conseguenza. (#2171)
++ - `ethereal.Upgrade` acquisisce `pending: Boolean` (se un aggiornamento preparato attende la
++   prossima invocazione), `outcome: Optional[Upgrade.Outcome]` (che cosa ne ha fatto l'ultima
++   volta il launcher, letto da `<data>/<name>/.upgrade-result`), `acknowledge(): Unit` (azzera
++   quell'esito) ed `enabled: Boolean` (dalla proprietà `ethereal.upgradable`; falso per un
++   eseguibile costruito senza chiave di release e id dell'applicazione).
++   `Upgrade.Outcome(result: Outcome.Result, candidate: Long, previous: Long, time: Long)` ha
++   `when[instant]`, un `Instant` tramite `Instantiable`; `Outcome.Result` è un enum di `Applied`,
++   `Disabled`, `NoRecord`, `WrongApplication`, `BadSignature`, `NotNewer` e `SwapFailed`.
++   Additivo. (#2171)
++ - `ethereal.Resident` acquisisce `buildId: Long`, l'id di build dell'eseguibile in esecuzione
++   (la proprietà `build.id`, o zero). Il demone ora legge `build.id`, e la risorsa di classpath
++   `build.id` che ne fa le veci, come `Long` a 64 bit anziché come `Int`. Additivo. (#2171)
++ - Rimosso il crate Rust `ethereal-sign` (`lib/ethereal/Cargo.toml`, `src/sign`): firmava un
++   formato di record (`ETHRCFG` v2) che nessun launcher attuale legge. Si firma con `xek` 1.1.0 o
++   successivo (`xek keygen --out <prefix>`, `xek sign --key <seed> --in <binary> --out <signed>`;
++   Java 24 o successivo). Gli eseguibili hanno bisogno di xek 1.1.0 o successivo (`ETHRCFG` v4)
++   per essere aggiornabili, e si costruiscono con `--app-id <identifier>` oltre che con
++   `--public-key`. Da xek 1.1.0, ogni riga di comando `xek` inizia con un sottocomando: si scrive
++   `xek build [options] <app.jar> [<output>]` dove si scriveva
++   `xek [options] <app.jar> [<output>]`, compresa la riga d'uso che il demone stampa quando è
++   eseguito senza un launcher. (#2171)
++ - Un demone avviato da un launcher xek 1.2.0 gira in `/` (la radice dell'unità di sistema su
++   Windows), con umask `077`, senza descrittori ereditati sopra il 2, e con un ambiente JVM
++   ripulito che contiene solo `PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`,
++   `TMPDIR`, le directory base `XDG_*`, `JAVA_TOOL_OPTIONS`, `JDK_JAVA_OPTIONS`, `_JAVA_OPTIONS`
++   ed `ETHEREAL_DEBUG` (`spec/launcher.md` di xek, *The daemon process*). Il codice del demone che
++   legge `workingDirectories.javaBaseWorkingDirectory`, `user.dir`,
++   `environments.javaBaseEnvironment` o `System.getenv` vede ora quello stato anziché quello della
++   prima invocazione; deve usare quello dell'invocazione (`daemonClientWorkingDirectory`,
++   `daemonClientEnvironment`) oppure, per l'ambiente con cui il demone è stato avviato, il nuovo
++   `ethereal.DaemonEnvironment` (fornito come `environments.daemonEnvironment`, anche
++   `soundness.environments.daemonEnvironment`), che contiene l'ambiente che il launcher invia
++   sullo standard input del demone (annunciato da `-Dethereal.environment=stdin`), letto
++   all'avvio del demone, e ripiega sull'ambiente della JVM. Un demone non ha più il dispositivo
++   nullo come standard input. (#2180)
+
+% 0 1 0 0f2fae5b9c5fe06518c74765d22a1341
+
+@ 0 7 0 0a95f573ec4bb93302216c16d4cb7c02
++ - Il costruttore di `exegesis.LspSessional` acquisisce un parametro using `ambience.Environment`
++   dopo `WorkingDirectory`; il given `exegesis.Lsp.Server.sessional` acquisisce
++   `environment: Environment` dopo `working`; `exegesis.Lsp.proxy` ed `exegesis.Lsp.Proxy.run`
++   acquisiscono `Environment` dopo `WorkingDirectory`. Un `Lsp.Server.Process` viene avviato con
++   quell'ambiente. Si fornisce l'`Environment` che i processi devono ereditare: quello
++   dell'invocazione (`environments.daemonClientEnvironment`, o `Environment.provided` da un
++   `Cli`) in uno strumento, `environments.javaBaseEnvironment` per il comportamento precedente.
++   (#2180)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 22 0 00c351ad01c509901522e7d6bf768d92
++ - `exoskeleton.Enclave` (`exoskeleton-rig`) ora trova il builder con cui impacchetta nella
++   variabile d'ambiente `$XEK` anziché `$XEQ`, e usa per impostazione predefinita `dist/xek`
++   anziché `dist/xeq`. Un ambiente di test che impostava `$XEQ`, o scaricava il builder in
++   `dist/xeq`, imposta invece `$XEK`, o lo scarica in `dist/xek`; `$XEQ` non viene più letto.
++   (#2157)
++ - Il parametro `buildId` di `exoskeleton.Enclave` è ora `Optional[Long]` (era
++   `Optional[Int]`); un argomento `Int` viene allargato dal compilatore. `Enclave` prende anche
++   `releaseKey: Optional[Path on Linux]`, `recoveryKey: Optional[Path on Linux]` e
++   `appId: Optional[Text]`, tutti con valore predefinito `Unset`, passati a `xek` come
++   `--public-key`, `--recovery-key` e `--app-id`; gli argomenti posizionali dopo `buildId` non
++   sono toccati, dato che questi lo seguono. `Enclave.keygen(prefix)` ed
++   `Enclave.Launcher#sign(seed, out, foreign = false)` eseguono `xek keygen` e `xek sign` (Java 24
++   o successivo). `Enclave` ora esegue `xek build`, quindi ha bisogno di un builder di xek 1.1.0
++   o successivo in `$XEK` o `dist/xek`. Un fallimento di `xek` nell'impacchettare l'eseguibile
++   ora va in panico con un messaggio, dove sollevava un `NotImplementedError`. (#2171)
++ - Un `Subcommand` con `hidden = true` è invariato per corrispondenza, completamento e aiuto, ma
++   dove *ogni* sottocomando candidato in una posizione è nascosto, il completamento ora offre
++   anche le flag, anziché (in bash, fish e PowerShell) nulla. (#2171)
++ - `exoskeleton.Enclave.Tool#completions` ora prende `(using Monitor, Environment)` ed
++   `exoskeleton.Enclave.Launcher#sandbox` prende `Environment` come primo parametro using;
++   `exoskeleton.Tmux` acquisisce un campo `environment: Environment` dopo `workingDirectory`, ed
++   `exoskeleton.tmux`, `Tmux.resize`, `Tmux.screenshot`, `Tmux.attend`, `Tmux.completions` e
++   `Tmux.progress` prendono `Environment` dopo `WorkingDirectory`. I comandi dello strumento e di
++   tmux girano con quell'ambiente. (#2180)
+
+% 0 1 0 1cc5e70970ad42a51e424017e29c8c25
+
+@ 0 3 0 02e8e19402a8eb1d078af0e575261111
++ - Rimosso `facsimile.Print.baseFont(standard: Pdf.Font.Standard): Text`. Il nome PostScript è
++   ora un campo dell'enum, `facsimile.Pdf.Font.Standard#baseFont: Text`, quindi si scrive
++   `standard.baseFont` per `Print.baseFont(standard)`; i nomi sono invariati. (#2173)
+
+% 0 1 0 1aa1711c33dc078f11fd7629dab81114
+
+@ 0 12 0 10c71e483996dda60826e3ce539a7393
++ - Con `frontier.context.explainMissingContext` o `soundness.explainMissingContext` nell'ambito
++   (il secondo è portato da `import soundness.*`), `scala.util.NotGiven[X]` prima si risolveva
++   che un'istanza di `X` fosse disponibile o no; ora si risolve se e solo se la ricerca di `X`
++   fallisce, come da specifica. Il catch-all, quando è provato come candidato per un obiettivo
++   `NotGiven[X]`, ora restituisce `scala.util.NotGiven.value` anziché interrompersi, cosa che la
++   negazione per candidato del compilatore trasforma in un fallimento, così decidono le istanze
++   proprie di `NotGiven`. Conseguenze per il codice esistente compilato sotto l'ombrello: un
++   given protetto da un `NotGiven` il cui soggetto è presente non è più idoneo, quindi le ricerche
++   che riportavano due alternative ambigue (una protetta, una no) ora selezionano quella non
++   protetta, per esempio `aviation.Timespan.dateMonths` invece di `dateRegular` per
++   `date + n*Month` sotto un `Calendar`, ed `escapade.Teletype.add` non si applica più dove
++   `Teletype is Textual` è nell'ambito; il codice che compilava solo perché una tale protezione
++   veniva aggirata (per esempio `summon[NotGiven[Ordering[Int]]]`) ora fallisce con un errore di
++   given mancante. (#2123, #1955)
+
+% 0 1 0 1566b19ab23a3dd01b479ed03ce8f585
+
+@ 0 1 0 1416a97516c2a87a19cb51cdcfb9519d
++ - Rimosso `graffiti.Archetype#html: Html of "html"` (un `final def`) in favore del given
+
+% 0 1 0 054a7ba98ed890480d1eb9945f205fbe
+
+@ 0 3 0 02f4a0376ad2c46c1f66244218d16dfc
++   compila senza modifiche tramite l'estensione `html` di honeycomb (nell'ambito con
++   `import soundness.*` o `import honeycomb.*`), e `Archetype#document` è invariato. Una pagina
++   che definisce un proprio membro `html` ora oscurerebbe l'estensione anziché non compilare.
++   (#2176)
+
+% 0 1 0 052d6af0cb62d1bd1fbc477fa1ee3ea7
+
+@ 0 1 0 058164830378fdb60677c77930255e64
++ - `guillotine.Executable#fork[result]()` (e quindi `Command#fork` e `Pipeline#fork`) ora prende
+
+% 0 1 0 02263a893029d473158ee0ff65302ce4
+
+@ 0 14 0 17c096824748375e19cf239f1af37819
++   `Executable#exec[result]()` prende `(using computable: (result is Computable)^, working:
++   WorkingDirectory, environment: Environment)`; l'`Executable#apply()` inline prende
++   `environment: Environment` dopo `working`. Un punto di chiamata senza un `Environment`
++   nell'ambito non compila più. Si fornisce l'`Environment` che i processi devono ereditare:
++   quello dell'invocazione (`environments.daemonClientEnvironment`, o `Environment.provided` da
++   un `Cli`) in uno strumento, `environments.javaBaseEnvironment` per il comportamento
++   precedente. (#2180)
++ - Semantica: quando il nuovo membro `entries` dell'`Environment` fornito non è `Unset`, il
++   processo viene avviato esattamente con quelle variabili, anziché con quelle della JVM, e un
++   comando il cui nome non contiene `/` viene prima cercato nel `PATH` di quell'ambiente, e il
++   suo percorso assoluto sostituisce il nome come `argv[0]`; un nome non trovato lì è lasciato al
++   JDK. Quando `entries` è `Unset` (per esempio un `Environment` scritto come lambda) l'ambiente
++   della JVM è ereditato come prima. `environments.javaBaseEnvironment` definisce `entries`,
++   quindi un processo avviato sotto di esso riceve l'ambiente della JVM, come prima. (#2180)
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 18 0 137f9e8050b3dfad1c325dd57fdf1d0d
++ - `honeycomb.Node`, `honeycomb.Element`, `honeycomb.Comment`, `honeycomb.Doctype` e
++   `honeycomb.Fragment` spostati nell'oggetto compagno di `Html`, con i loro oggetti compagni: ora
++   sono `honeycomb.Html.Node`, `honeycomb.Html.Element`, `honeycomb.Html.Comment`,
++   `honeycomb.Html.Doctype` e `honeycomb.Html.Fragment` (quindi `Element.foreign` è
++   `Html.Element.foreign`). Ciascuno è rimosso dall'esportazione dell'ombrello `soundness`,
++   quindi i nomi nudi `Node`, `Element`, `Comment`, `Doctype` e `Fragment` non si risolvono più
++   tramite `import soundness.*` o `import honeycomb.*`; si scrive `Html.Element`,
++   `Html.Fragment` e così via, nei tipi, nelle chiamate ai costruttori e nei pattern
++   (`case Html.Element(label, attributes, children, _)`). Comportamento invariato. (#2167)
++ - `honeycomb.TextNode` rinominato in `honeycomb.Html.Text`, e `TextNode.foreign` in
++   `Html.Text.foreign`; `TextNode` rimosso, anche dall'esportazione dell'ombrello `soundness`.
++   Comportamento invariato. In un ambito che importa `Html.*`, il nome nudo `Text` indica ora
++   questo tipo di nodo anziché `anticipation.Text`; tali import vanno sostituiti da riferimenti
++   qualificati. (#2167)
++ - Rimosso `honeycomb.Honeycomb` (esportato anche come `soundness.Honeycomb`). I suoi membri,
++   `extractor`, `interpolator` e `attributes`, erano duplicati inutilizzati delle
++   implementazioni delle macro in `honeycomb.internal`, che l'interpolatore `h""` e
++   l'applicazione dei tag chiamano; non serve alcuna sostituzione. (#2173)
+
+% 0 1 0 17f94539b937dacb1c8f57fb7f04ec71
+
+@ 0 8 0 1288fd6d8e9adc76070722edfedde1c0
++ - `hyperbole.StackResolver` ora prende `(using classloader: Classloader, working:
++   ambience.WorkingDirectory)`; il given `hyperbole.stackResolutions.tastyStackResolution` (anche
++   `soundness.stackResolutions.tastyStackResolution`) ha tipo `(Classloader, WorkingDirectory) =>
++   StackTrace.Resolver`, era `Classloader => StackTrace.Resolver`; e l'estensione
++   `StackTrace#resolved` prende `(using Classloader, WorkingDirectory)`. Un percorso di sorgente
++   che TASTy registra relativo a `-sourceroot` è ora risolto rispetto alla `WorkingDirectory`
++   fornita, dove era risolto rispetto a `workingDirectories.javaBaseWorkingDirectory`
++   (`user.dir`). Si fornisce la directory in cui il codice è stato compilato. (#2180)
+
+% 0 1 0 14802db87637bb240c0e50c6611271aa
+
+@ 0 3 0 0bbe004bac5e1292086453d15f57c355
++ - Rimosso `inimitable.Uuid#bytes: Data` in favore del given `Uuid.encodableInData: Uuid is
++   Encodable in Data`. Si scrive `uuid.in[Data]` per `uuid.bytes`; si usa `in[Data]`, non
++   `encode`, perché `Uuid` ha anche un `Encodable in Text`. I sedici byte sono invariati. (#2176)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 2 0 1efbe9c5c9294adc019682a3bcacb63b
++ - Rimosso `iridescence.Rgb12#hex: Text` (un'estensione). `rgb12.inspect` rende lo stesso testo
++   in stile `#0f8`, come faceva già. (#2176)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 6 0 178bfc03155cd9b00326f1b93280f67b
++ - `jacinta.Json.apply` acquisisce gli overload `apply(value: Int)`, `apply(value: Short)`,
++   `apply(value: Byte)`, `apply(value: Float)`, `apply(value: Long)` e `apply(value: Double)`
++   accanto ad `apply(value: Any)`. `Json(i)` per un `Int`, uno `Short` o un `Byte` contiene ora
++   quell'intero (memorizzato come `Long`), dove prima conteneva l'`Int` grezzo, che l'AST legge
++   come un piccolo decimale compatto, così il valore riletto era sbagliato (di solito `0`); un
++   `Float` è memorizzato come `Double`. Un valore staticamente di tipo `Any` va ancora ad
++   `apply(value: Any)` senza modifiche. (#2162)
+
+% 0 1 0 15ea6feaac12c1f31aef1231a48de2e8
+
+@ 0 3 0 1804c58fcbe4fabd048865be94c54285
++ - Rimosso `metamorphose.Permutation#bytes: Data` in favore del given `Permutation.encodable:
++   Permutation is Encodable in Data`. Si scrive `permutation.in[Data]` per `permutation.bytes`; i
++   byte sono invariati. (#2176)
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 16 0 02ff9fd16441b9f71a7546bc4e87b125
++ - Ogni operazione di `octogenarian` che esegue `git` ora prende un parametro using di tipo
++   `ambience.Environment` subito dopo la sua `WorkingDirectory`, ed esegue `git` con
++   quell'ambiente: `Git.init`, `Git.initBare`, `Git.cloneCommit`, `Git.clone`, `Git.cloneBare`,
++   `Git.uncheckedCloneCommit`, `Git.uncheckedClone`, `Git.uncheckedCloneBare`;
++   `Git.Repo#pushTags`, `push`, `fetch`, `config.get`, `tags`, `tag`, `deleteTag`,
++   `deleteBranch`, `renameBranch`, `remotes`, `addRemote`, `removeRemote`, `log`, `diff`,
++   `reflog`, `revParse`, `notes.show`, `notes.add`, `notes.append`, `notes.remove`, `notes.list`,
++   `notes.copy`, `worktrees`, `addWorktree`, `removeWorktree`, `pruneWorktrees`;
++   `Worktree#checkout` (tutti e tre gli overload), `switch`, `pull`, `commit`, `branches`,
++   `branch`, `makeBranch`, `add`, `reset`, `unstage`, `mv`, `diff`, `merge`, `cherryPick`,
++   `revert`, `lock`, `unlock`, `move`, `remove`, `status`; l'estensione `NoteRef#content`; e il
++   given `octogenarian.gitCommands.searchpathGitCommand`, il cui contesto è ora
++   `(WorkingDirectory, Environment, Git.Event is Loggable, Tactic[Name.Error],
++   Tactic[Path.Error], Tactic[Io.Error], Tactic[Exec.Error])`. Si fornisce l'`Environment` che i
++   processi devono ereditare: quello dell'invocazione (`environments.daemonClientEnvironment`, o
++   `Environment.provided` da un `Cli`) in uno strumento, `environments.javaBaseEnvironment` per
++   il comportamento precedente. (#2180)
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 39 0 06dacd9b1f7fa43d1d7dd40cb68d35ec
++ - `probably.Suite` ha un parametro di tipo e un secondo costruttore:
++   `abstract class Suite(suiteName: fulminate.Message)` è ora
++   `abstract class Suite[topic <: Label]`, con `type Topic = topic` e i costruttori pubblici
++   `Suite(title: Message)(using Suite.Derivation[topic])` e `Suite(id: topic, title: Message)`.
++   `object Tests extends Suite(m"Parser tests")` compila senza modifiche, con `topic` inferito
++   come `probably.Derived` (nuovo, una `Label` opaca); `Suite("parser", m"Parser tests")`
++   inferisce il tipo letterale `"parser"`. Il tipo `Suite` da solo non compila più; si scrive
++   `Suite[?]`. (#2169)
++ - Ogni suite ha un id (`Testable#key: Optional[Text]`, nuovo; `Test.Id#key`, nuovo, un campo
++   finale della case class, con valore predefinito `Unset`): la stringa data a
++   `Suite(id, title)`, o `Suite.derive(title.text)` — le lettere e le cifre del titolo in
++   minuscolo, ogni serie di altri caratteri come un solo `-`, nessuno all'inizio o alla fine,
++   `suite` se vuoto (`m"Honeycomb Tests"` dà `honeycomb-tests`). Con il plugin beneficence, un id
++   fornito che non corrisponde a `[A-Za-z_][A-Za-z0-9_-]*` è un errore di compilazione. Effetti
++   osservabili: il `TestEvent.Ref#path` di una suite e di tutto ciò che contiene ora inizia con
++   l'id della suite dove iniziava con il suo titolo; il `TestEvent.Ref#moniker` di una suite è il
++   suo id dove era `Unset`; un termine di selezione uguale all'id di una suite, o un glob che vi
++   corrisponde, ammette tutto ciò che è nella suite, e un glob di percorso deve iniziare con l'id
++   (`honeycomb-tests/**`), anche se un glob che corrisponde solo al titolo
++   (`'Honeycomb Tests'`) ammette ancora la suite. (#2169)
++ - `probably.Testable` ha un membro di tipo astratto, `type Topic`, e il valore contestuale che
++   prendono le dichiarazioni è un `Testable of topic` (`prepositional.of`) il cui topic è una
++   `Label`: l'id letterale della `Suite` a cui appartiene, `probably.Derived` per una suite senza
++   un id fornito, o `probably.Impromptu` (nuovo, una `Label` opaca). `Suite#testable` è ora
++   `given testable: Testable of topic`. Un parametro `given` o `using` del tipo nudo `Testable`
++   non soddisfa più `test`, `suite` o le dichiarazioni di sedentary, e fallisce con "a test must
++   be declared for a Suite …". Un metodo che dichiara test per una suite deve prendere
++   `(using Testable of "<that suite's id>")` al posto di `(using Testable)`, dando allo scopo un
++   id alla suite (`Suite("<id>", title)`); un metodo condiviso da più suite, o che dichiara test
++   per una suite con un id derivato, prende un parametro di tipo,
++   `[topic <: Label](using Testable of topic)`. (#2169)
++ - Un metodo con un parametro `using` del tipo nudo `Testable`, compilato con il plugin
++   beneficence dove `probably.Suite` è nel classpath, è ora un errore di compilazione ("this
++   Testable has no topic …"), che dichiari un test o no. Senza il plugin un tale metodo compila
++   se un altro `Testable` con un topic è nell'ambito dove i suoi test sono dichiarati
++   (tipicamente quello della `Suite` che lo racchiude), e i suoi test sono allora dichiarati in
++   QUELLA posizione — la radice della suite — e non, come prima, ovunque il metodo fosse
++   chiamato. Ogni `(using Testable)` va verificato. (#2169)
++ - `probably.test` (entrambi gli overload): il parametro di tipo inutilizzato `report` è
++   sostituito da `topic <: Label`, e il parametro `suite: Testable` è ora
++   `suite: Testable of topic`. `probably.suite` (entrambi gli overload) è ora
+
+% 0 1 0 0fee0859f32a028f0001a23bff2ca404
+
+@ 0 11 0 19d74d3329dad12e1df6beb680a3a155
++   codepoint: Codepoint)(block: (Testable of topic) ?=> Unit)`: acquisisce il parametro di tipo
++   `topic` prima di `report` e il parametro `Codepoint`, e il suo blocco riceve un
++   `Testable of topic`. Il `TestEvent.Ref` di un gruppo (`SuiteStarted`, `SuiteEnded`) porta ora
++   il file e la riga della chiamata `suite(…)`, dove portava una posizione dentro il sorgente di
++   Probably stesso. (#2169)
++ - `probably.Runner#suite(suite: Testable, block: Testable ?=> Unit): Unit` è ora
++   `suite[topic](suite: Testable of topic, block: (Testable of topic) ?=> Unit): Unit`. Le
++   implementazioni di `Runner` devono cambiare la firma di conseguenza. (#2169)
++ - Il costruttore di `probably.Testable` è ora `private[probably]`, e il suo secondo parametro è
++   `parents: List[Testable]` (non un membro) dove era `val parent: Optional[Testable]`;
++   `Testable#parent: Optional[Testable]` resta, come metodo. Se ne costruisce uno con
+
+% 0 1 0 043325aff16ec3ba060df198d6171c0a
+
+% 0 1 0 144d1461156bac0b0d9e2292910af9f6
+
+@ 0 15 0 09e52fab67f63cf40d898c190855f752
++   topic` (nuovo). (#2169)
++ - Un test dichiarato dove il `Testable` contestuale è quello di una suite, ma che non è uno dei
++   test di quella suite — una fixture dichiarata dentro il corpo di un altro test per esercitare
++   un `Runner` o una `Selection` del programma stesso, per esempio — compila ancora, ma è ora
++   registrato nell'indice dei test che scrive il plugin beneficence. Tali dichiarazioni si
++   racchiudono in `probably.impromptu` (nuovo: `impromptu[result](using parent: Testable =
++   Testable.detached)(block: (Testable of Impromptu) ?=> result): result`, anche
++   `soundness.impromptu`), che mantiene il test nella stessa posizione della gerarchia e lo
++   lascia fuori dall'indice. (#2169)
++ - `probably.Test.Id#id`, le sei cifre esadecimali con cui è noto un test o una suite (e
++   `TestEvent.Ref#id`, che lo porta), è calcolato diversamente, quindi OGNI id cambia: ora sono i
++   24 bit bassi di `h ^ name.text.s.hashCode`, dove `h` è la somma di `name.text.s.hashCode` sulle
++   suite in cui si trova il test, e `Testable#hashCode` è quella somma compreso il proprio nome.
++   Era calcolato da `Message#hashCode`, che dipende dalla struttura del messaggio e non solo dal
++   suo testo. Gli id memorizzati (nelle selezioni, negli script, nei grafici indicizzati per id)
++   non corrispondono più; moniker e nomi non sono toccati. (#2169)
+
+% 0 1 0 012115d2210015c8084b240aed3fed8f
+
+@ 0 3 0 04bfe28654f763d40e3f8a445c984e32
++ - Rimossi `savagery.Figure#xml: Xml` (su `Rectangle`, `Outline`, `Ellipse`, `Group`,
++   `Polyline` e `Lettering`), `savagery.Stop#xml`, `savagery.Svg.Def#xml` (su `LinearGradient`)
++   e `savagery.Svg#xml` in favore di given `Encodable in Xml`: `Figure.encodable: [figure
+
+% 0 1 0 1d13127e5ffa8ab504234bdf92676369
+
+% 0 1 0 1f30425f91b8093e09496b3e587cd29d
+
+@ 0 3 0 1bb3c61d3629c2b416eb2e0a6d739e11
++   Encodable in Xml` e `Svg.encodable: Svg is Encodable in Xml`. Si scrive `figure.in[Xml]` per
++   `figure.xml`, e analogamente per gli altri; `figure.xml.show` diventa `figure.in[Xml].show`.
++   L'XML è invariato. (#2176)
+
+% 0 1 0 0297adaaf208f36b050fef6919e7a155
+
+@ 0 5 0 06940743fb98dc35065b95947a6d57ed
++ - `sedentary.Bench.Plan#apply`, ogni overload di `sedentary.Bench.Plan#over`,
++   `sedentary.Stress#apply` e `sedentary.Profile#apply` acquisiscono un parametro di tipo finale
++   `topic <: Label`, e il loro parametro `suite: Testable` è ora `suite: Testable of topic`. Le
++   chiamate che non passano argomenti di tipo espliciti non sono toccate, purché ci sia un
++   `Testable` contestuale con un topic (vedi probably). (#2169)
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 4 0 0f89324a1796020b08d412db2390e37e
++ - Rimossi `stenography.Designator.fromUrl(text: Text): Designator` e
++   `stenography.Designator#url: Text`, senza sostituzione: nessuno dei due era usato, e non
++   erano l'uno l'inverso dell'altro (`fromUrl` sostituiva `~` con `#` senza decodificare l'URL).
++   `Designator(text)` analizza la forma separata da `#`. (#2176)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 32 0 1698a7bdd93fc5a61d1f733d2d62c762
++ - Rimosso `stratiform.layer` (`case class layer(name: Text) extends StaticAnnotation`,
++   esportato anche come `soundness.layer`). Lo sostituisce `stratiform.assign`
++   (`final class assign(layer: Tel.Layer[?]) extends StaticAnnotation`; `soundness.assign` ne è
++   un alias di tipo, lasciando il termine `soundness.assign` ad anamnesis), che nomina uno strato
++   con un oggetto singleton anziché con un testo. Si riscrive `@layer(t"foo")` su un campo come
++   `@assign(foo)`, dichiarando una volta sola, al livello superiore o in un oggetto,
++   `object foo extends Tel.Layer("foo")` (lo stesso nome); i campi che condividono il nome di uno
++   strato condividono l'unico oggetto. Lo schema derivato è invariato. L'argomento di `@assign`
++   deve essere un riferimento a un tale oggetto, il cui nome è un letterale stringa; qualsiasi
++   altra cosa è ora un errore di compilazione sull'annotazione. (#2165)
++ - Nuovi `stratiform.Tel.Layer[name <: String & Singleton](val name: name)`, una classe aperta
++   che un oggetto strato estende, e `stratiform.Tel.Name[layer <: Tel.Layer[?]]`, il match type
++   che dà il nome di uno strato a partire dal suo tipo. Nuova annotazione `stratiform.retract`
++   (`final class retract(layer: Tel.Layer[?]) extends StaticAnnotation`, anche
++   `soundness.retract`), per un caso di una somma. Non richiesti dal codice esistente. (#2165)
++ - La composizione degli strati (`Tels.Layers.compose`, `Tels.Layers.composeComponents`, e il
++   servizio e la lettura dell'accettazione) non rifiuta più l'`exclude` di uno strato su una
++   variante che il `select` di base dichiara ma che uno strato precedente ha già escluso: è
++   un'operazione nulla. Prima questo sollevava `Tel.Error` con motivo `ExcludeMissingVariant`
++   (E211). Un `exclude` di una variante che il `select` di base non ha mai dichiarato lo solleva
++   ancora. (#2165)
++ - `fulfil(acceptance, codecs)` su un valore lascia fuori dalla sua composizione ogni strato
++   offerto il cui `select` esclude una parola chiave di variante che il documento codificato del
++   valore usa in qualsiasi punto, dove prima offriva ogni strato (e non riusciva a servire un
++   tale valore). Gli `Tel.Acceptance.Served#hashes` serviti possono quindi omettere tali strati.
++   (#2165)
++ - Rimosso `stratiform.Tels.Reconstructor.fromTel(tel: Tel): Tels raises Tel.Error` in favore del
++   given `Tel.telsDecodable: Tels is Tel.Decodable`. Si scrive `tel.as[Tels]` per
++   `Tels.Reconstructor.fromTel(tel)`; solleva `Tel.Error` come prima. `Tels.Reconstructor` resta
++   per `equivalent`. (#2176)
++ - Rimosso `stratiform.Tels.SemanticReconstructor.fromElement(root: Tel.Element): Tels raises
++   Tel.Error` in favore del given `Tels.elementDecodable: Tels is Decodable in Tel.Element`. Si
++   scrive `element.as[Tels]` per `Tels.SemanticReconstructor.fromElement(element)`; un valore
++   tipizzato come il sottotipo `Tel.Element.Node` va annotato, `(node: Tel.Element).as[Tels]`,
++   perché la forma di `Decodable` è esatta. (#2176)
+
+% 0 1 0 19751db48a45fac8054f045dab5ba311
+
+@ 0 5 0 132e19cc02d619301a9cd8376b5617db
++ - Il costruttore di `tarantula.WebDriver.Local.Sessional` e il given `sessional` accanto a esso
++   acquisiscono `environment: ambience.Environment` dopo `working: WorkingDirectory`. Il processo
++   del driver viene avviato con quell'ambiente. Si fornisce l'`Environment` che i processi devono
++   ereditare: quello dell'invocazione (`environments.daemonClientEnvironment`, o
++   `Environment.provided` da un `Cli`) in uno strumento, `environments.javaBaseEnvironment` per il
++   comportamento precedente. (#2180)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 2 0 1478ef545d3113140da0a40154e4c916
++ - Rimossi `tasseomancy.Chart#svg(using style, ChartPalette, FontMetric, Arranger): Svg` e
++   `tasseomancy.Chart.Drawing#svg: Svg` in favore dei given `Chart.encodable: [data,
+
+% 0 1 0 119543e411ebec810bb39c8e303d9990
+
+@ 0 4 0 1fb80e8bbc056afd17edf42c0f948b44
++   Chart[data, form, fit, style] is Encodable in Svg` e `Chart.Drawing.encodable: Drawing is
++   Encodable in Svg`. Si scrive `chart.in[Svg]` per `chart.svg` (con gli stessi valori
++   contestuali nell'ambito) e `drawing.in[Svg]` per `drawing.svg`; `chart.svg.xml.show` diventa
++   `chart.in[Svg].in[Xml].show`. L'output è invariato. (#2176)
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 2 0 1de0e560a701a15e155460a24fb27000
++ - Rimosso `telekinesis.Http2.SettingId.fromId(id: Int): Optional[SettingId]`; non era usato. Si
++   fa invece il match sul campo `id` dell'enum. (#2176)
+
+% 0 1 0 01a924463d4d2ade199e4991ad39d095
+
+@ 0 14 0 0615fce5547e70ce06cff95ab41e4570
++ - Nuovo componente `urticose.dns` (nel bundle `soundness-web`): il vocabolario DNS tipizzato
++   (`Dns.Name`, `Dns.Question`, `Dns.Record` con la sua famiglia `Rdata`, `Dns.Message`), il suo
++   codec di trasmissione (`Encodable`/`Decodable in Data`), l'interpolatore `dns"…"`,
++   `Dns.resolve`, e le estensioni `Hostname#dnsName` e `reverseName` su `Ipv4 | Ipv6`; additivo.
++   (#2178)
++ - `urticose.Ipv4` e `urticose.Ipv6` acquisiscono i given `Encodable in Data` e
++   `Decodable in Data` (`ip.in[Data]`, `data.as[Ipv4]`) sui loro ottetti in ordine di rete, e
++   un'estensione `bytes: Data` su `Ipv4 | Ipv6`. La decodifica solleva `IpAddress.Error` con i
++   nuovi motivi `Ipv4WrongNumberOfBytes(count)` (13) e `Ipv6WrongNumberOfBytes(count)` (14) a
++   meno che i dati non siano esattamente quattro o sedici byte; un match esaustivo su
++   `IpAddress.Error.Reason` acquisisce due casi. Il codice che converte tramite
++   `java.net.InetAddress#getAddress`, `Ipv4(b0, b1, b2, b3)` su singoli byte, o long
++   `Ipv6(highBits, lowBits)` impacchettati a mano può usare invece questi. (#2178)
++ - `urticose.MacAddress.apply(byte0: Byte, …, byte5: Byte)` non estende più il segno di un byte
++   pari o superiore a `0x80` negli ottetti più alti; un `NetworkInterface#hardware` il cui
++   indirizzo conteneva un tale byte prima veniva reso e confrontato in modo errato. (#2178)
+
+% 0 1 0 0daabac2e02218c20d4f9d914c51325b
+
+@ 0 6 0 0557a2fdfd6c1749093779949ee036fe
++ - Il costruttore di `vivisection.Debuggee.Sessional` e il given
++   `vivisection.Debuggee.sessional` acquisiscono `environment: ambience.Environment` dopo
++   `working: WorkingDirectory`, e `vivisection.Dap.listen` acquisisce
++   `environment: Environment` dopo `working`. Il processo sottoposto a debug viene avviato con
++   quell'ambiente. Si fornisce l'`Environment` che i processi devono ereditare: quello
++   dell'invocazione (`environments.daemonClientEnvironment`, o `Environment.provided` da un
++   `Cli`) in uno strumento, `environments.javaBaseEnvironment` per il comportamento precedente.
++   (#2180)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 4 0 17de90382b17f8220aae0503fa5ded89
++ - Rimossa l'estensione `xylophone.Attributes#toList: scala.collection.immutable.List[(Text,
++   Text)]`. `Attributes` è ora `Traversable by (Text, Text)`, in ordine di documento, quindi si
++   scrive `attributes.to[List]`, che produce una `proscenium.List[(Text, Text)]`. Dove serve
++   ancora una `List` della stdlib, si scrive `attributes.iterator.toList`. (#2167)
+
+% 0 1 0 00a8c0638eb30ace16fca3cbe76bdf4d
+
+@ 0 10 0 16febfeaf6c1c47901a58420bd002dea
++   `xylophone.Cdata`, `xylophone.ProcessingInstruction`, `xylophone.Header` e
++   `xylophone.Fragment` spostati nell'oggetto compagno di `Xml`, con i loro oggetti compagni: ora
++   sono `xylophone.Xml.Node`, `xylophone.Xml.Element`, `xylophone.Xml.Comment`,
++   `xylophone.Xml.Doctype`, `xylophone.Xml.Cdata`, `xylophone.Xml.ProcessingInstruction`,
++   `xylophone.Xml.Header` e `xylophone.Xml.Fragment`. I nomi nudi non si risolvono più tramite
++   `import xylophone.*`; si scrive `Xml.Element`, `Xml.Fragment` e così via, nei tipi, nelle
++   chiamate ai costruttori e nei pattern (`case Xml.Element(label, attributes, children)`).
++   Comportamento invariato. (#2167)
++ - `xylophone.TextNode` rinominato in `xylophone.Xml.Text`; `TextNode` rimosso. Comportamento
++   invariato. In un ambito che importa `Xml.*`, il nome nudo `Text` indica ora questo tipo di
++   nodo anziché `anticipation.Text`; tali import vanno sostituiti da riferimenti qualificati.
++   (#2167)

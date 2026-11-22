@@ -1,4 +1,0 @@
-orthant 1 release
-
-- A [stream](../en/modules/streams.md) pipeline is the clearest case. Each stage takes a
-+ A [stream](/doc/soundness/modules/streams.md) pipeline is the clearest case. Each stage takes a

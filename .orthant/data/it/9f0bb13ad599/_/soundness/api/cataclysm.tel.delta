@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 10 1 0 0910609b9679525c13cff87a432f4ae2
+
+% 10 1 0 1cb9e1b064257f0f16b50789eafee86e
+
+% 10 1 0 109f42a57f87821b140bc3d53c7858ea
+
+@ 0 32 0 0b5c195f738b6d571cb44228d729119f
++         La classe che ogni factory di `Web` restituisce, così che una fornitura abbia un tipo
++         stabile: `Web.Provision[family](sources, coverage)` è un `(Typeface of family) is
++         Typesettable in Web` le cui `#sources` sono i `Typesettable.Source` da cui il browser
++         ottiene il carattere tipografico e la cui `#coverage` è la `Font.Coverage` con cui è stata
++         dichiarata. `FontFace.rules` rende una sorgente alla volta.
++     entry #sources   dove il browser prende il carattere tipografico: collegato, importato, locale o generico
++     entry #coverage   i pesi, le inclinazioni, le larghezze e gli assi che la fornitura è stata dichiarata offrire
++     entry #Self   il carattere tipografico fornito, `Typeface of family`
++     entry #Form   il mezzo, `Web`
++   entry .sansSerif   la famiglia generica `sans-serif`, fornita sul web senza dichiarazione
++       Un browser compone ogni famiglia generica con ciò che ha, quindi la fornitura ha
++       un'unica sorgente `Generic` e `Font.Coverage.Unknown`, che ammette ogni stile tipografico;
++       non rende alcuna at-rule, e `font-family: sans-serif` senza virgolette.
++   entry .serif   la famiglia generica `serif`, fornita senza dichiarazione
++   entry .monospace   la famiglia generica `monospace`, fornita senza dichiarazione
++   entry .cursive   la famiglia generica `cursive`, fornita senza dichiarazione
++   entry .fantasy   la famiglia generica `fantasy`, fornita senza dichiarazione
++   entry .systemUi   la famiglia generica `system-ui`, fornita senza dichiarazione
++   entry .linked   una fornitura da un file di font che il browser scarica da un URL
++       `Web.linked[family](url, coverage, format)` accetta qualsiasi tipo di URL `Abstractable
++       across Urls to Text` (un `HttpUrl` da `url"…"`, o testo), la `Font.Coverage` che il file è
++       dichiarato avere — poiché il file non è a disposizione per essere letto, viene ammesso
++       solo ciò che è dichiarato, così un font dichiarato con un solo peso rifiuta una
++       richiesta di un altro anziché lasciare che il browser lo sintetizzi — e un
++       `Typesettable.Source.Format` facoltativo (`Ttf`, `Otf`, `Woff` o `Woff2`) per
++       l'indicazione `format()`. L'argomento di tipo `family` viene normalmente inferito dal
++       tipo dichiarato del given. Si rende come un `@font-face` il cui `src` è `url("…")
++       format("woff2")`.
++   entry .local   una fornitura da un font che il lettore dovrebbe avere installato
++       `Web.local[family](coverage)` nomina il carattere tipografico in un `src:
++       local("Name")`, essendo il nome di famiglia del carattere tipografico il letterale
++       `family`. Nulla garantisce che il lettore lo abbia, quindi questa è la fornitura più
++       debole, e la sua copertura — `Font.Coverage.Unknown` se non indicata, che ammette ogni stile
++       tipografico — dice solo ciò che è dichiarato.

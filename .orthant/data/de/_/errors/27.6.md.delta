@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 10dd380fb1d097421e74aa49f7184dc8
++ # `↯/s.27.6` — `S8`-Wert unter `Byte.MinValue`
+
+@ 0 2 0 09c383c1d13b3a9e01e44ae667d35594
++ Wird zur Kompilierzeit vom Makro `s8` von Hypotenuse ausgelöst, wenn der Wert unter `-128` liegt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 1 0 18e9c393389a1f391f03acc24404df5a
++ Ein `S8` (vorzeichenbehaftet, 8 Bit) kann keine Werte unter `Byte.MinValue` darstellen.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 124936d6a7c89a580ab2d9aa7d80e604
+
+% 1 1 0 1fb116b1ec104baa0b40153114bd53ff
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 1 0 1be8379dbd35b9db02b47f135aa97b08
++ Geben Sie einen Wert im Bereich `-128`–`127` an.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 2 0 1670b5a1d401440e1b2b356791d92b91
++ - Die anderen Fehler bei Ganzzahlliteralen: [Familien](README.md#families)
++ - Quelle: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

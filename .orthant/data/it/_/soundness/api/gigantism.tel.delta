@@ -1,0 +1,173 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12c51ec2a255dfe307ae1a2f6c8a8e5f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c0b1b5741d01c6f05e4b0c520bc2c4d
++ info   strumenti di metaprogrammazione: ogni istanza given nell'ambito, tipi di risultato delle macro, import in un punto di chiamata
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 3 0 1291c08b85811cb200c43dac6bf0ae4e
++     _Gigantism_ è un piccolo insieme di strumenti per le macro delle librerie Soundness stesse, e
++     per qualsiasi libreria che, come loro, chieda al compilatore un po' più di quanto offra l'API
++     pubblica di reflection di Scala.
+
+@ 0 5 0 019c1c4f82f00505127179dc87dd9c68
++     La sua funzionalità centrale è `every[T]`, che raccoglie *ogni* istanza given di `T` visibile
++     dove viene chiamato, comprese le istanze reciprocamente ambigue, che un normale `summon`
++     rifiuta, in un `Every[T]`. È così che una libreria permette a un utente di abilitare più opzioni
++     insieme importando più given: il decoder di `Boolean` raccoglie `Every[Truth]`, e i socket di
++     coaxial raccolgono `Every` opzione di socket nell'ambito.
+
+% 2 1 0 1aa7a7da55f13e3e07cd70c0b3e49155
+
+% 3 1 0 0fd3a53392543d5511cbd4b4dd3647bc
+
+% 0 1 0 1a12b930d81785af0cdb0afe65193532
+
+% 0 1 0 0c3293b2b2b128301d71855ae329f96b
+
+% 0 1 0 0fec5d581218f4890945106668d0ba3e
+
+% 0 1 0 0168540847d4a6341ab85d30168fd7c2
+
+% 0 1 0 041d27ca0f62882504744b38f137bde8
+
+% 0 1 0 1d702f3a53eeae5915bddd80620bdc6f
+
+% 0 1 0 0a79be357cd823be1aa8834531d4fb2b
+
+% 1 1 0 16446a5e2430100219877d6eda977191
+
+@ 0 3 0 048a9b46899a268e19297e88800ee581
++     Accanto a esso ci sono `Macro[T]`, il tipo del risultato di un'implementazione di macro;
++     `Lifts`, che solleva `List` Soundness di espressioni in liste quotate e varargs; e
++     `metaprogramming.imports`, che elenca gli import nell'ambito nel punto di chiamata di una macro.
+
+@ 0 4 0 1f8ebae719f41ea811625dc1f00dc2f4
++     `every` e `metaprogramming` accedono all'API interna del compilatore (`dotty.tools.dotc`),
++     quindi sono legati alla versione del compilatore con cui Soundness è costruito. La libreria ha
++     un solo insieme di sorgenti, `gigantism.core`, e tutto è esportato nel modulo ombrello
++     `soundness`.
+
+% 0 1 0 09c4d1410d2ef3811f0fe94795bccf97
+
+% 0 1 0 19dff483c4b51ba71cc4ae0bde1647be
+
+% 0 1 0 1bce562b9ec6aaef0fdb047a1bfde797
+
+@ 0 1 0 1a54cd97dfdde41e04a33a6c83a7d91f
++ entry .Every   ogni istanza given di un tipo visibile in un punto di chiamata, raccolta in una lista
+
+% 1 1 0 1795abc8182d4f3905fc5a0a0c880462
+
+@ 0 4 0 102dcbb844481f271da70b843046c4c8
++       Un `Every[T]` contiene tutti i given `T` nell'ambito dove è stato evocato, in `#values`.
++       Si crea con `every[T]`, oppure si evoca come parametro di contesto attraverso il given
++       `.default` dell'oggetto compagno, che non richiede import: un metodo che prende
++       `(using Every[Option])` vede ogni given `Option` che il suo chiamante ha nell'ambito.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 04b0044dd6433a0b04e8a680bdf25784
+
+% 0 1 0 04ea60bb96ff950e0c3026d4e670f2d0
+
+% 0 1 0 1abc9a1ab52eb50a1e4420c99214b47a
+
+% 0 1 0 0caf0dfd4031115204f8421a7d8a8426
+
+% 0 1 0 02b0368c71fde08a14bbe10217cecb65
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 3 0 160d3aff2c561ac202f298e0a72f6de8
++       Le istanze vengono trovate che siano locali, importate per nome o nell'ambito implicito, e
++       quelle reciprocamente ambigue sono tutte incluse; un'istanza fuori dall'ambito no. L'ordine
++       dei valori non è specificato. Senza istanze nell'ambito, `#values` è vuoto.
+
+% 0 1 0 05cd74e95943f8e6048971c9cdcf0a0c
+
+@ 0 11 0 00de7323de3b023410731949273dd4ec
++   entry .default   evoca un `Every[T]` di tutte le istanze di `T` nell'ambito, come parametro di contesto
++       Un given transparent inline: si espande in ogni punto d'uso, così vede le istanze
++       nell'ambito in quel punto.
++   entry .summonAll   la macro che raccoglie ogni istanza di un tipo nell'ambito nel punto in cui si espande
++       L'implementazione dietro `every` e `.default`. Cerca ripetutamente un'istanza ignorando
++       quelle già trovate, e recupera entrambe le alternative da una ricerca ambigua attraverso
++       l'`AmbiguousImplicits` interno del compilatore.
++   entry #values   le istanze trovate, come `List` della libreria standard
++       La lista è quella della libreria standard di Scala, non quella di Soundness, perché le
++       istanze raccolte possono portare capability, che la `List` di Soundness non contiene.
++       `List.from(every[T].values)` la converte.
+
+@ 0 4 0 0ef33791380a46530907b2dfef9476ec
++ entry .every   raccoglie ogni istanza given di un tipo visibile nel punto di chiamata, come `Every`
++     `every[T]` si espande in un `Every[T]` che contiene ogni given `T` nell'ambito al momento
++     della chiamata, comprese le istanze ambigue tra loro. Non fallisce quando nell'ambito non ce
++     n'è nessuna: il risultato è allora vuoto.
+
+% 2 1 0 1e6e0e9590e8cdb7097f7202cabe589d
+
+% 3 1 0 116aa2aee29b49a30f13bd01285ad581
+
+% 0 1 0 1d8ea0e093ca76b800e7f8d1610728f5
+
+% 0 1 0 0fd9f35046b3f6270f71df2216711b29
+
+% 0 1 0 145fad91442647bb15e9e560a201c5e3
+
+% 0 1 0 0757b072cb32fe1901cb1cbc36971cb4
+
+% 1 1 0 0c39eede3e04bc570eb616eca85395a6
+
+@ 0 3 0 0fa294985018e9120a922eba13d1898b
++ entry .Macro   il tipo del risultato di un'implementazione di macro: `Quotes ?=> Expr[T]`
++     Un'implementazione di macro dichiarata come restituente `Macro[T]` riceve le `Quotes` come
++     parametro di contesto, così `def impl(x: Expr[Int]): Macro[Text] = '{…}` non ha bisogno di
++     `(using Quotes)`.
+
+@ 0 1 0 1f44a5ffd935e92c01ab85a71b6b3f42
++ entry .Lifts   solleva `List` Soundness di espressioni in liste quotate e varargs
+
+% 1 1 0 174d807dc6bbf97f1e363e627d3a7076
+
+@ 0 5 0 135c00abe6204d6b0cab5da6d047ac72
++       Le controparti di `Expr.ofList` e `Varargs` per il codice di macro che conserva le sue
++       espressioni sollevate in una `List` Soundness anziché in una `Seq` della libreria standard.
++   entry .list   solleva una `List` di espressioni in un'espressione di una `List`
++   entry .varargs   solleva una `List` di espressioni in un argomento varargs, `Expr[Seq[T]]`
++   entry .Varargs   riconosce un argomento varargs, dando le espressioni dei suoi elementi come `List`
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 3 0 1c33f3fb42989d8f0344c2764de6a915
++         La controparte estrattore di `Lifts.varargs`: `case Lifts.Varargs(elements) =>`
++         riconosce un `Expr[Seq[T]]` scritto come argomenti letterali.
++     entry .unapply   le espressioni degli elementi di un argomento varargs, se è stato scritto come argomenti letterali
+
+@ 0 4 0 0461b64f53e3287918ee46b8d45b7571
++ entry .metaprogramming   funzionalità del compilatore oltre l'API pubblica di reflection, per le `Quotes` nell'ambito
++     All'interno di un'implementazione di macro, `metaprogramming` incapsula le `Quotes`
++     nell'ambito come `Metaprogramming`, così che `metaprogramming.imports` elenchi gli import
++     visibili nel punto di chiamata della macro.
+
+@ 0 1 0 1262f1a883756bac0b4c1ac6357fd4f0
++ entry .Metaprogramming   funzionalità del compilatore oltre l'API pubblica di reflection, per un unico `Quotes`
+
+% 1 1 0 034793d8705e9c3b0db32a1cd681c8ec
+
+@ 0 7 0 090f5c53810cc41b01c01e7c880cb99a
++       Si crea con `metaprogramming` all'interno di un'implementazione di macro. Accede al
++       contesto interno del compilatore, quindi dipende dalla versione del compilatore.
++   entry #Import   un import visibile nel punto di chiamata di una macro
++     entry #wildcard   se l'import è un wildcard, `import p.*`
++     entry #term   il termine da cui si importa, come `TermRef`
++   entry #quotes   le `Quotes` che questo incapsula
++   entry #imports   ogni import nell'ambito nel punto di chiamata della macro, dal più esterno

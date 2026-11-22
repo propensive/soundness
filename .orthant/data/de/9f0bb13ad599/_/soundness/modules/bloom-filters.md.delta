@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 4 0 0d12584f3176092d189938948043cdd6
++ Jeder [hashbare](hashing.md#hashing-your-own-types) Wert kann hinzugefügt werden, und der
++ Hash-Algorithmus wird als Typ gewählt. Ein Filter kann, solange er neu ist, an Ort und Stelle
++ gefüllt werden und wird dann eingefroren. Ein eingefrorener Filter ist
++ [unveränderlich]: `+` und `++` liefern einen neuen Filter und lassen den alten unverändert,
++ sodass eingefrorene Filter so sicher geteilt und angesammelt werden wie jeder andere Wert.

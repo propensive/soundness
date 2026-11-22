@@ -1,0 +1,158 @@
+orthant 2 language
+
+@ 0 1 0 15d61a42cfc8ebd90ef3e513b9e3d5f7
++ # Begrenzte Geltungsbereiche
+
+@ 0 7 0 1e4d5aa9ab013e0c0bee47f1362dd0f9
++ Soundness verwendet Kontextfunktionen, um die Blöcke abzugrenzen, in denen eine zusätzliche
++ Capability oder ein Stück Kontext verfügbar ist. Wer einen solchen Block betritt – um Fehler zu
++ behandeln, nebenläufige Aufgaben auszuführen, eine Ressource offen zu halten –, macht darin die
++ betreffenden Kontextwerte verfügbar und zieht sie an seiner Grenze wieder zurück. Die Reichweite
++ einer Capability ist deshalb in der Struktur des Codes selbst sichtbar: Eine Capability gilt genau
++ dort, wo der Block es sagt, und nicht darüber hinaus. Diese strukturelle Eingrenzung erzwingt dann
++ das [Capture-Checking](capture-checking.md) in den Typen.
+
+@ 0 1 0 182d61a630d365b00cc707c94117bb0b
++ ## Eine Gestalt, überall
+
+@ 0 2 0 0949f07ad9e9af50178a6bde4b1b548e
++ Dasselbe Muster führt eine Ressource, einen Fehler-Handler, einen Nebenläufigkeitskontext und ein
++ verliehenes Geheimnis ein. Wer es einmal erkennt, erkennt sie alle:
+
+% 2 1 0 150773a18b0dfa7b0633e6b06935a0ed
+
+% 3 1 0 0bcb8136ec1bc4d904183fae567951fb
+
+% 4 1 0 0eca05afe4986a3000831daa72f4fa55
+
+% 0 1 0 140e5dd57243cd3f10ccaa75527863d8
+
+% 0 1 0 15d5d175bff5f9a30f2b42fb44fda259
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 0c5b48f9a53ae50d15051c342c618152
+
+% 0 1 0 1fb74406d1b64bef06148f6d54815341
+
+% 0 1 0 1548ee3ef66c5283179ab1deae8f1167
+
+% 0 1 0 1ad537c6cf1a386b02c70fe6d7907a6d
+
+% 0 1 0 16fd4b340c492b2b167ef521dbaf2235
+
+% 0 1 0 13ba912b44dc874409c867769842ac5d
+
+% 1 1 0 02be1ae0330118a10cf896b480bbbf7c
+
+@ 0 3 0 17a76be72fc445c40d5f2aa421022517
++ In jedem Fall existiert die Capability innerhalb der Klammern und nirgends sonst, und die
++ Ausdehnung des Blocks ist die Ausdehnung der Capability – auf der Seite sichtbar, ohne
++ Dokumentation über Lebensdauern lesen zu müssen.
+
+@ 0 1 0 0f845d3e6c5d749516fede9047c25c19
++ ## Warum ein Block statt eines Konstruktors
+
+@ 0 1 0 161d0e446dbb946619f933d24b8f0118
++ Die Alternative besteht darin, die Capability zu konstruieren, zu benutzen und freizugeben:
+
+% 2 1 0 1c6b6963fc68a89f1883c0f620153564
+
+% 3 1 0 0b4ef4af8c3b99651c8a828b04b9fa86
+
+% 4 1 0 1fd7a04c9824b42d1bf4f74b3f6eb7ea
+
+% 0 1 0 1792013304fc896d06c4fac6ebd73604
+
+% 0 1 0 0bc703a8f20071dd057f8aa66d1607cf
+
+% 1 1 0 08055d312a59260e17c767fa58478372
+
+@ 0 4 0 0f4cffbf8500fac8070aa5767aabda12
++ Das hat drei Mängel, die die Blockform nicht hat. Das `close` kann vergessen werden oder an einer
++ Stelle stehen, die ein vorzeitiger Return überspringt. Das Handle existiert als Wert, *bevor* es
++ gültig ist und *nachdem* es das nicht mehr ist, sodass sein Typ nichts darüber aussagt, wann es
++ benutzt werden darf. Und zwei davon zu verschachteln verdoppelt den Aufwand, wobei die Reihenfolge
++ der Freigabe von Hand festgelegt wird.
+
+@ 0 2 0 0bf5c70ab2e60aea1707244877d82982
++ Die Blockform behebt jeden davon: Es ist keine Freigabe zu schreiben, die Capability ist nur dort im
++ Geltungsbereich, wo sie gültig ist, und zwei Ressourcen zu verschachteln heißt, zwei Blöcke zu
++ verschachteln.
+
+@ 0 1 0 10cf37bd950e7d9e02d6ef70c530f449
++ ## Der Geltungsbereich ist ein präzises Instrument
+
+@ 0 4 0 15a1c922632128d6064cbd239e48f435
++ Weil der Mechanismus der gewöhnliche lexikalische Geltungsbereich ist, ist die Granularität genau
++ die, die der Code braucht. Ein Given, das am Anfang einer Datei importiert wird, konfiguriert die
++ Datei; eines, das in einer Methode deklariert wird, konfiguriert die Methode und überschreibt die
++ weitere Wahl; ein `locally`-Block beschränkt eine Ausnahme auf wenige Zeilen:
+
+% 2 1 0 11b350b050bda128113e9a42214b22aa
+
+% 3 1 0 04085bf39e2b3a4a04ee39719f0cd9a8
+
+% 4 1 0 058d9e57e17f74ab0c30811ce28cece8
+
+% 0 1 0 0d2451b6474da3780123f5bcca399f0f
+
+% 0 1 0 1713b723343ad4240a44a0dfaf90cb33
+
+% 0 1 0 1ce56f8149b9021819efd845b2ba91d3
+
+% 0 1 0 02d46d4a051a899110041929ea41bb5e
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 1e37049925fe18571e4e747e84736cf7
+
+% 0 1 0 155ce7bf0c4ba643122956989fd4487c
+
+% 1 1 0 18a60f504236cc0e01b4f68bba4fd17e
+
+@ 0 2 0 032693b2c2b7987e062a0fddd71aa1a7
++ Nichts muss diese Granularität eigens unterstützen. Sie ergibt sich daraus, dass die Sprache ihre
++ eigenen Geltungsbereiche verwendet statt eines eigens gebauten Konfigurationsmechanismus.
+
+@ 0 1 0 15117289264c368706ba363a9c536dbc
++ ## Was „an der Grenze zurückgezogen“ wirklich bedeutet
+
+@ 0 5 0 1bd021c390e95f6803b6e9b8037423a8
++ Strukturell verlässt die Capability den Geltungsbereich, wenn der Block endet. Das allein würde
++ einen Wert nicht daran hindern, sie hinaus*zutragen* – ein lazy Stream, der noch eine offene Datei
++ hält, eine Closure, die noch einen Fehler-Handler hält, eine Aufgabe, die noch ihren Supervisor
++ hält. Genau solche Ausbrüche übersieht das Nachdenken nach Augenmaß, denn Laziness, Closures und
++ Nebenläufigkeit lösen den Zeitpunkt, zu dem Code läuft, von dem Ort, an dem er geschrieben wurde.
+
+@ 0 3 0 046fd529cf1ef20c10c260509085c5be
++ Das [Capture-Checking](capture-checking.md) schließt die Lücke: Der Geltungsbereich der Capability
++ reist im Typ des Werts mit, sodass ein Ausbruch ein Kompilierfehler ist statt einer Überraschung zur
++ Laufzeit. Begrenzte Geltungsbereiche drücken die Absicht aus; das Capture-Checking macht daraus
++ eine Garantie.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 1 0 17a2511765a941c813f0e8f41d2e6936
++ Zwei Kosten, beide echt.
+
+@ 0 5 0 0fe7d414c896df000e1c825912012eb3
++ **Drift nach rechts.** Jede verschachtelte Capability rückt den Code ein, und eine Funktion, die
++ vier davon braucht, steht vier Ebenen tief, bevor sie beginnt. Die Doppelpunkt-Lambda-Syntax von
++ Scala begrenzt das auf eine Ebene pro Capability statt einer Ebene plus schließender Klammer, doch
++ Code mit vielen Capabilities sieht trotzdem tief verschachtelt aus – und wo das unlesbar wird,
++ besteht die Antwort darin, die innere Arbeit in eine Methode auszulagern, die deklariert, was sie
++ braucht, und nicht darin, die Geltungsbereiche zu erweitern.
+
+@ 0 5 0 0dbd12442f91dada19d427499e0db9ab
++ **Die Capability lässt sich nicht einfach speichern.** Ein Wert, der zu einem späteren,
++ unabhängigen Zeitpunkt ein Datei-Handle braucht, kann keines halten; er muss seine Arbeit entweder
++ innerhalb des Geltungsbereichs erledigen oder eine memoisierte Kopie dessen nehmen, was er brauchte.
++ Das ist eine echte Einschränkung, und gerade die Einschränkung leistet die Arbeit: „Diese Ressource
++ unbegrenzt halten und hoffen“ ist genau das Muster, das ausgeschlossen wird.
+
+@ 0 3 0 024c8c94b0011b82179ff59cd5b4507b
++ Siehe [deklarativer Kontext](declarative-context.md) dafür, was in diese Geltungsbereiche gelangt,
++ und [strukturierte Nebenläufigkeit](structured-concurrency.md) für den Fall, dass das Begrenzte eine
++ Menge laufender Aufgaben ist.

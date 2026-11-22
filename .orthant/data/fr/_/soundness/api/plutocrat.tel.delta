@@ -1,0 +1,1064 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a8319544e2ec9d2084ea275fc7a7f38
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f58a0ebe9d5c3a91c97303a289457f4
++ info
++     des montants d'argent avec la devise dans le type, des prix avec taxe, et des ISIN vérifiés
+
+@ 0 7 0 10b387f72d40f9f40f2f9020c4e82dc7
++ detail
++     _Plutocrat_ représente l'argent comme un nombre en virgule fixe d'unités divisionnaires
++     d'une devise, avec la devise dans le type : un `Money in "EUR"` et un `Money in "GBP"` ne
++     peuvent pas s'additionner, car ajouter des euros à des livres est une erreur et non une
++     somme. Au sein d'une devise, les montants s'additionnent, se soustraient, se multiplient,
++     se divisent, se comparent et se répartissent en parts dont la somme est exactement le
++     tout ; un `Price` garde séparés un montant principal et sa taxe ; et un montant est rendu
++     selon le `Currency.Style` dans la portée, avec le symbole de la devise ou son code ISO.
+
+% 2 1 0 12ea31803aa7bc00049db7000afb7f1f
+
+% 3 1 0 107dbe5c22ecff6f09c9a97b8bc0696f
+
+% 0 1 0 1164ae0ce1c1e0780026602ddf1809d8
+
+% 0 1 0 0ab865311279c5950b2f577701c35259
+
+% 0 1 0 1963cc3860b02ebf19c038fbc976ac3b
+
+% 0 1 0 1b0e879f71c09d2612d01a43a2162264
+
+% 0 1 0 12b9839401583e9e1dd867c544a48872
+
+% 0 1 0 190b65b085c485730f2b926c2a81c211
+
+% 0 1 0 19f15d0d8ec2a3670d30dda38163d685
+
+% 1 1 0 1fe4d9857851971e1a7605c7e1b18799
+
+@ 0 5 0 1c1c9d76c2880f3c18b058038f83602b
++     Une devise est un given, `"EUR" is Currency of "Euro" in "€" over 100`, qui enregistre son
++     code ISO, son nom, son symbole et le nombre d'unités divisionnaires dans une unité
++     principale ; trente-six des plus échangées se trouvent dans le package `currencies`, et en
++     ajouter une autre tient en une ligne. Il n'y a pas de change entre devises : une
++     conversion a un taux, une date et une source, et elle est laissée au programme.
+
+@ 0 4 0 17cd92fe2450746d1de460d4da6e434f
++     La bibliothèque vérifie aussi les identifiants de la finance : un `Isin`, l'identifiant
++     international d'un titre, est validé avec son chiffre de contrôle à la compilation par
++     `isin"…"` ou à l'exécution par `Isin(…)`, et `Luhn` calcule et vérifie le chiffre de Luhn
++     utilisé par les numéros de carte.
+
+@ 0 5 0 02e791b3f4ae9e361b120f3d479a72d7
++     La bibliothèque est un seul ensemble de sources, `plutocrat.core`, indépendant de la
++     plateforme. Tout est exporté vers le package parapluie `soundness`. Les devises et les
++     styles de devise sont des givens dans les packages de choix `currencies` et
++     `currencyStyles`, importés par leur nom car `import currencies.*` n'importe pas les
++     givens ; tous deux fusionnent avec les packages du même nom du package parapluie.
+
+% 0 1 0 00ca4d00e25e636d07df6d8f3ecc2eb1
+
+% 0 1 0 0b335e9646b20e460c7e8f3f060d9742
+
+% 0 1 0 140f839de7dcf12b1f1873c1e3871845
+
+% 0 1 0 0407b75b72c7255a13c49bdc658a87bd
+
+% 0 1 0 16188c92c7a93f7310513636768a82ab
+
+@ 0 1 0 10e0324ed47befe519482249c7a80461
++ entry .Money
++   info
++       un montant d'argent : un nombre entier d'unités divisionnaires d'une devise, avec la devise
++       dans son type
+
+@ 0 5 0 1576a421358243ee1870e078a8e5e86a
++   detail
++       `Money` est le type opaque `plutocrat.internal.Money`, exporté ici, sur un `Long`.
++       `Money in "EUR"` est un montant en euros ; un `Money` nu est un montant d'une devise non
++       précisée, vers lequel tout `Money in c` s'élargit. Un montant se construit en appliquant
++       une devise, `Eur(3.01)`, qui arrondit à l'unité divisionnaire la plus proche, ou à partir
++       d'un nombre d'unités divisionnaires avec `Money["EUR"](301L)`.
+
+@ 2 1 0 069fd1743bf6f6121e128bd5ef26ab52
++       ```scala
+
+@ 3 1 0 16beb947864a6b670d15bee52b43612b
++       import soundness.*
+
+@ 0 1 0 01dc4217f16c12d019d17434c549e87d
++       import currencies.Eur
+
+@ 0 1 0 1216f5221388d2b605ad749e51aa65a1
++       Eur(3.01) + Eur(0.02)      // Eur(3.03)
+
+@ 0 1 0 01fabbb535b521600810044462bdb158
++       Eur(3.01) - Eur(0.02)      // Eur(2.99)
+
+@ 0 1 0 078bb1b9e07184db07af6549ced46163
++       Eur(3.01)*3.0              // Eur(9.03)
+
+@ 0 1 0 177471f0797195ed018a1d7244447240
++       Eur(3.01)/3                // Eur(1.00)
+
+@ 0 1 0 0288b3880aad582416d984b1fc33aa31
++       Eur(3.01)/Eur(1.00)        // 3.01
+
+@ 0 1 0 07ce89a41bc6f05c1a90e5f353d1400d
++       -Eur(1.99)                 // Eur(-1.99)
+
+@ 0 1 0 1ff48870a96827d0178ff31df9a5554c
++       Eur(1.01) >= Eur(1.01)     // true
+
+@ 1 1 0 1afdcff569adf52915afcf4fd9030c84
++       ```
+
+@ 0 3 0 1a7b636ba8e1287a02b668915a4974e5
++       Les opérateurs prennent deux montants de la même devise, si bien que mélanger les devises
++       est une erreur de compilation. La division par un nombre tronque vers zéro, en unités
++       divisionnaires entières ; `share` est la division qui ne perd rien.
+
+@ 0 6 0 17334a2e6a3aa87d012e03250c52fc90
++       Le code de devise à trois lettres est stocké dans les quinze bits de poids fort du `Long`,
++       et le montant, en unités divisionnaires, dans les quarante-neuf bits inférieurs ; un
++       montant reste donc interprétable comme de l'argent même lorsque son type a été élargi
++       (`money.currency` donne `t"EUR"`), et le plus grand montant est d'environ 2,8 × 10¹⁴
++       unités divisionnaires. Comme la représentation est un `Long`, `toString` donne le nombre
++       compacté : on rend un montant avec `show`, sous un `Currency.Style`, ou avec `inspect`,
++       qui donne `¤EUR301ₘ`.
+
+@ 0 2 0 1febf784e4ad48c50a4db5a6c60237bd
++       Les extensions d'un montant, dans `plutocrat.internal`, sont `currency`, `value` (le
++       nombre d'unités divisionnaires), `tax` et `share`.
+
+@ 0 1 0 0362f690a58fdfb20d8ca4e7d169d543
++ entry .Isin
++   info
++       un International Securities Identification Number, validé et compacté dans un `Long`
+
+@ 0 4 0 069ad53a7f7912181ad0dd9a0d607b1a
++   detail
++       `Isin` est le type opaque `plutocrat.internal.Isin`, exporté ici. Un ISIN compte douze
++       caractères : un code pays de deux lettres, un numéro national de neuf caractères composé
++       de chiffres et de lettres majuscules, et un chiffre de contrôle calculé par l'algorithme
++       de Luhn. Une valeur de ce type a passé toutes les vérifications, et ne coûte pas plus
++       qu'un `Long` à conserver ou à comparer.
+
+@ 2 1 0 1200ca50f5c2aac00c8d80a975217d2a
++       ```scala
+
+@ 3 1 0 0025a716fe19c8b81250997e6fc36c1b
++       import soundness.*
+
+@ 0 1 0 15ad72895dd42c88120f5a09481f0629
++       val apple: Isin = isin"US0378331005"
+
+@ 0 1 0 1351b04171e3afcb0f386871f1dfba09
++       apple.countryCode    // t"US"
+
+@ 0 1 0 0171c3de4cb892a2016e294d570445ca
++       apple.nsin           // t"0378331005"
+
+@ 0 1 0 0ae9f55f6147226a0996daba9ad07a40
++       apple.isin           // t"US0378331005"
+
+@ 1 1 0 072882ec4e9de8030f5e269dc38fbb0c
++       ```
+
+@ 0 3 0 000ff2979d7d5521195461cc31d768cc
++       `isin"…"` vérifie un littéral à la compilation ; `Isin(text)` en vérifie un à
++       l'exécution, en levant `Isin.Error`. Un `Isin` s'inspecte sous la forme de
++       l'interpolateur qui le produirait, `isin"US0378331005"`.
+
+@ 0 1 0 071f4d390d25be780d7cb1ea58a002bb
++ entry .isin
++   info
++       l'interpolateur `isin"…"` : un ISIN vérifié pendant la compilation du code
+
+@ 0 4 0 03b59dc8acb09226003de0fd573c6289
++   detail
++       `isin"GB00BH4HKS39"` valide son littéral pendant la compilation du code, avec les mêmes
++       vérifications que `Isin(…)`, et signale un échec par une erreur de compilation portant le
++       message de l'`Isin.Error`, par exemple _the ISIN number is not valid because its last
++       digit failed the Luhn check_. Il n'accepte aucune substitution.
+
+@ 2 1 0 10df69c657e63a6c01f1096a3c2d6bbb
++       ```scala
+
+@ 3 1 0 153a89c038b8f1981de8507607aa166b
++       import soundness.*
+
+@ 0 1 0 144fbb38b24240c50ce3e39aea7d43ec
++       isin"GB00BH4HKS39"
+
+@ 0 1 0 09586dd5ab0825b70af51fe9327cf8b8
++       isin"GB00BH4HKS3"   // does not compile
+
+@ 1 1 0 1f1e6328df86edd213dbea74fc0e67c0
++       ```
+
+@ 0 1 0 01831c8991a7e38e0fe19715df4b1a44
++ entry .Currency
++   info
++       une devise : son code ISO, son nom, son symbole et son nombre d'unités divisionnaires, en
++       tant que given
+
+@ 0 3 0 0361fd5228557b920b1ab06f3ff7880d
++   detail
++       Une devise est un given dont le type porte toutes ses caractéristiques sous forme de
++       types littéraux, et qui construit des montants :
+
+% 2 1 0 04ab162c9281b05014f8908ea1284ecc
+
+% 3 1 0 1e794cb913b847ec16f5189ae2227a49
+
+% 0 1 0 03f12f5b933b3ba61d93b1ceeb5a3f74
+
+% 0 1 0 0fecaae7e647a20315dc4a0792ea0d0e
+
+% 1 1 0 001f5516721d229e1e81bb8b2f420d8b
+
+@ 0 5 0 1b59296c1f16d54002d52234cfe67c0c
++       `Self` est le code ISO 4217, `Topic` le nom, `Form` le symbole et `Transport` le nombre
++       d'unités divisionnaires dans une unité principale. Le code doit être composé de trois
++       lettres ASCII majuscules, puisqu'il est compacté dans chaque montant. Les devises standard
++       se trouvent dans le package `currencies`, chacune importée par son nom ; une `Currency`
++       dans la portée est aussi ce dont ont besoin le `show` de `Money` et son zéro.
+
+% 0 1 0 102c4a76074a50ab1ef295378874df39
+
+% 1 1 0 0effa39d9276bc6712ab1332871b58e4
+
+@ 0 1 0 1c72f04bd2980e1d056f5d64d4b23e03
++   entry .apply
++     info
++         construit une devise à partir des types littéraux du type déclaré de son given :
++         `= Currency()`
+
+@ 0 2 0 054a834d676b4e1b1a1b7c0b096c06b9
++     detail
++         Les quatre caractéristiques sont lues dans le type attribué au résultat, si bien qu'une
++         devise se déclare par son seul type.
+
+@ 0 1 0 1de85e3271a1fd7f1ac42d6376880229
++   entry .Style
++     info
++         la manière dont un montant est rendu : avec le symbole de la devise, ou avec son code
+
+@ 0 3 0 00e58398e165e6a80a945264e7bc6ded
++     detail
++         Un `Currency.Style` dans la portée est ce qu'utilise le `Showable` de `Money`. Le package
++         `currencyStyles` en propose deux, importés par leur nom :
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 0118ebd67e1219af1a4264c3a2de9e69
+
+% 1 1 0 180a769c3046e25701bad0523f9c07e6
+
+% 2 1 0 1025f2323b2e21a41976b178bc3c2302
+
+% 3 1 0 0f78730de4b6c9231674dce4692f4d94
+
+% 0 1 0 13e3386dba5b3e8110ba19dc0120e2e2
+
+% 0 1 0 0bee76bb669c391902e6b36372b1f539
+
+% 0 1 0 07434e86b03c90c91689bd92ec6aba0f
+
+% 1 1 0 0738e958c04f39f1096742a4456ff383
+
+% 2 1 0 0e98568a18ad1215116f356288293e2f
+
+% 3 1 0 1de633305294273604af3a65910a7f63
+
+% 0 1 0 0a2553b4c2edfe4d1f7e9b3f93042ba1
+
+% 0 1 0 1f87a0ff687ace38186611d3e968db02
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 2 0 05487181b0cc9a1f1fb1dc2777ea1ac6
++         Un style personnalisé est une lambda qui, à partir du code, du symbole, des unités
++         principales et des unités divisionnaires sur deux chiffres, produit du texte.
+
+@ 0 1 0 06d52e871e5b6c75175caebe89df9dfd
++     entry #format
++       info
++           rend un montant à partir du code et du symbole de la devise et de ses unités principales
++           et divisionnaires
+
+@ 0 1 0 1b70cbd9f9c0bd330f094f4fae0f33f5
++   entry #Self
++     info
++         le code ISO 4217 de la devise, sous forme de type littéral : `"EUR"`
+
+@ 0 1 0 173910fbcf9c6d341888d4df37e619b1
++   entry #Topic
++     info
++         le nom de la devise, sous forme de type littéral : `"Euro"`
+
+@ 0 1 0 18f0de4aaffe2698012839b052a53ba4
++   entry #Transport
++     info
++         le nombre d'unités divisionnaires dans une unité principale, sous forme de type littéral :
++         `100`
+
+@ 0 1 0 181f42445cd71d4f1cce06d566d8f0fa
++   entry #Form
++     info
++         le symbole de la devise, sous forme de type littéral : `"€"`
+
+@ 0 1 0 1fe310abb54cb49c1f315140b85c1b55
++   entry #code
++     info
++         le code ISO 4217 de la devise, `EUR`
+
+@ 0 1 0 1befb621dc551d1219e6d68a79fd8062
++   entry #name
++     info
++         le nom de la devise, `Euro`
+
+@ 0 1 0 065e0dac76a575131d9a375505381eac
++   entry #symbol
++     info
++         le symbole de la devise, `€`
+
+@ 0 1 0 13833d5c2ec6d86d1c282ee26262909b
++   entry #modulus
++     info
++         le nombre d'unités divisionnaires dans une unité principale, `100`
+
+@ 0 1 0 11214e69778ae6740fa836993476c9b0
++   entry #apply
++     info
++         un montant dans cette devise, à partir d'un nombre décimal arrondi à l'unité divisionnaire
++         la plus proche
+
+@ 0 3 0 11a2ed8d412007841d0cbb51609551c4
++     detail
++         `Eur(3.01)` est un `Money in "EUR"` de 301 centimes. Le nombre est un `Double`, multiplié
++         par le module puis arrondi ; un littéral comportant plus de décimales que la devise n'en
++         a est donc arrondi plutôt que rejeté.
+
+@ 0 1 0 0568f88a0236c43c0d000da17316c4ce
++ entry .Price
++   info
++       un montant dont la taxe est gardée à part : un principal et une taxe
+
+@ 0 4 0 0f52f6fdd2d791f50775d497dd734b9e
++   detail
++       Un `Price in "GBP"` contient le montant hors taxe et la taxe elle-même, de sorte que les
++       chiffres du vendeur, de l'acheteur et de l'administration fiscale sont chacun exacts,
++       plutôt que reconstitués par division. On le construit généralement avec `tax` sur un
++       montant.
+
+% 2 1 0 0cb0b052865635530570135caa84d680
+
+% 3 1 0 00979ed76d035a9d075699d73425efac
+
+% 0 1 0 00b4528a81acc269157e07486f526390
+
+% 0 1 0 044e8b694921fbbf12e40fed821427c4
+
+% 0 1 0 03ea397c6d634b2a1d21167a93f8b4c1
+
+% 0 1 0 1c81e2a88f9b554a195ac3b82d61a5d4
+
+% 0 1 0 02bfbeed0dde6f801c9db8d58bab19ad
+
+% 1 1 0 1fb58cc8b82d31f81217ba3d6cf754a5
+
+@ 0 5 0 0cf2d2dba6b5950a0a05c9b627fe4bc7
++       La taxe est le principal multiplié par le taux, arrondi à l'unité divisionnaire la plus
++       proche (au demi supérieur) : vingt pour cent de 2,94 £, soit 0,588 £, donnent 0,59 £.
++       Les prix d'une même devise s'additionnent, se soustraient et s'opposent, composante par
++       composante, et se divisent par un `Double` (un given anonyme dans l'objet compagnon). Un
++       prix n'a pas de `Showable` : c'est au programme de dire s'il faut afficher le montant
++       toutes taxes comprises ou hors taxe, en affichant `#inclusive` ou `#principal`.
+
+% 1 1 0 0b46b1d3b0847dbb07c38d03ee95304b
+
+@ 0 1 0 07c9ba45cac5b69e099ce0caed0da993
++   entry .apply
++     info
++         un prix à partir d'un principal et d'une taxe dans la même devise
+
+@ 0 1 0 08dfb299cb09b3041f158923c4aa44fa
++   entry .addable
++     info
++         additionne deux prix d'une même devise, principal avec principal et taxe avec taxe
+
+@ 0 1 0 0f6253b87361961313f2744178cd8abe
++   entry .subtractable
++     info
++         soustrait un prix d'un autre de la même devise, composante par composante
+
+@ 0 1 0 10537d97ea6703b7043fe9b1991b4bb6
++   entry .negatable
++     info
++         prend l'opposé du principal et de la taxe d'un prix
+
+@ 0 1 0 1916ea490d55fb221b26d282066dec09
++   entry #Form
++     info
++         la devise, sous forme de son code ISO littéral
+
+@ 0 1 0 0941609e3d234ee411093ebb4ab4f74e
++   entry #principal
++     info
++         le montant hors taxe
+
+@ 0 1 0 1d8970fecaa9ee83037c89cc5e71dc0d
++   entry #tax
++     info
++         la taxe sur le principal
+
+@ 0 1 0 1ef09acb92dee16f00cc64e7bb9b5258
++   entry #effectiveTaxRate
++     info
++         la taxe en tant que fraction du principal
+
+@ 0 1 0 14b5faac31bba5fc19da511f359d0a0f
++   entry #inclusive
++     info
++         le montant toutes taxes comprises : principal plus taxe
+
+@ 0 1 0 1e70b1267fbc5abc0c17e6e92dc9691e
++ entry .Luhn
++   info
++       le chiffre de contrôle de Luhn, utilisé par les numéros de carte et les ISIN
+
+@ 0 3 0 1a0870dd50f7b6fd1c1416f77016ca0a
++   detail
++       L'[algorithme de Luhn](https://en.wikipedia.org/wiki/Luhn_algorithm) détecte toute
++       erreur de frappe sur un seul chiffre et la plupart des inversions de chiffres adjacents.
+
+% 2 1 0 174c99efd07b9f3c1f8d85915fca8134
+
+% 3 1 0 073829a3772f8c160d893f61bf53a5fe
+
+% 0 1 0 0ac121678d77c58515dc75ef3b695f8d
+
+% 0 1 0 1a2e1d82e45fb9000180495ec51434df
+
+% 0 1 0 1c369713365170791f8401651d624fa7
+
+% 1 1 0 0345ce4bcde5c82b0f2c7071c1e7b2f0
+
+@ 0 1 0 179afcffc986fc6417186a2d36d3f2c4
++   entry .digit
++     info
++         le chiffre de contrôle à ajouter à la fin d'une chaîne de chiffres décimaux
+
+@ 0 1 0 012201e6db8711090a5c49b0c0b2464c
++     detail
++         L'entrée ne doit contenir que des chiffres décimaux ; d'autres caractères donnent un
++         résultat dénué de sens.
+
+@ 0 1 0 13ff871ce0cc160e01b96c1f8a0ccc52
++   entry .check
++     info
++         si le dernier chiffre d'un nombre est le bon chiffre de contrôle de Luhn pour le reste
+
+@ 0 1 0 099c44d9a04517ed0b564c03463befff
++     detail
++         Prend le nombre sous forme de `Text` ou de `Long`. Un texte vide donne `false`.
+
+@ 0 1 0 10a331e90017a96519734aa653a88229
++ entry .currencyStyles
++   info
++       les styles de devise fournis, chacun un given à importer par son nom
+
+@ 0 4 0 0195edd4a0912c46182e3f7e7f4c30f1
++   detail
++       Un package de choix, fusionné avec le `currencyStyles` du package parapluie. Un montant a
++       besoin d'un `Currency.Style` dans la portée pour être affiché, et aucun ne se trouve dans
++       la portée implicite : on en importe un par son nom.
+
+% 2 1 0 1eca638f4d71cd6006a029a2ebbd2448
+
+% 3 1 0 19156eef4f1b9b7a10a1328edf87fcd7
+
+% 0 1 0 06d41685fa561a5811edd26c1a90cdb0
+
+% 0 1 0 060e2cd692e3c85317dd006cb74bec53
+
+% 0 1 0 10ac8f77233ea1e205e49d81d81e2403
+
+% 1 1 0 1838d7ffb106d69c16849f785b563a7f
+
+@ 0 1 0 1ab533549d3bc7c109e1243fc742a4ba
++   entry .localCurrencyStyle
++     info
++         le symbole de la devise avant le montant : `€3.01`
+
+@ 0 2 0 1b58c7f41a312e7101944aeb7086149c
++     detail
++         Convient à un contexte où la devise est sous-entendue, bien que plusieurs devises
++         partagent un même symbole (`$`, `kr`, `¥`).
+
+@ 0 1 0 129aeb81f3412f9504be95009b7cb6b3
++   entry .genericCurrencyStyle
++     info
++         le montant suivi du code ISO : `3.01 EUR`
+
+@ 0 1 0 09135c8fca87292f0861e769a29f95e5
++     detail
++         Sans ambiguïté, il convient donc à un contexte comportant plusieurs devises.
+
+@ 0 1 0 0a8b4427c5575ec910bde6fb27b471f1
++ entry .currencies
++   info
++       trente-six des devises les plus échangées, chacune un given à importer par son nom
+
+@ 0 5 0 01c0e60eb54141231fe4310e4c954d96
++   detail
++       Un package de choix, fusionné avec le `currencies` du package parapluie. Chaque membre est
++       le given `Currency` d'une devise, nommé d'après son code ISO avec une majuscule initiale,
++       et s'importe par son nom : c'est à la fois la preuve dont a besoin le `show` d'un montant
++       et la valeur qui construit les montants.
+
+% 2 1 0 078cd85e91f957dc08207328503beec0
+
+% 3 1 0 19de69d00d6a6f7f1b8a006be91246ae
+
+% 0 1 0 1754e9540216fe6f0bdcd5ce036a37b0
+
+% 0 1 0 187e1e520abafe1b12aedacc4b1b39c8
+
+% 1 1 0 0d8bab419972968f117dd32cbdac2e84
+
+@ 0 3 0 1841ec1b41a7bdc10ec37dc79c453dea
++       Chaque devise ici a un module de 100, y compris celles, comme le yen et le won, qui n'ont
++       pas d'unité divisionnaire en pratique. Une devise absente d'ici se déclare avec
++       `Currency()`.
+
+@ 0 1 0 18497989697953121349c77af32702b0
++   entry .Usd
++     info
++         le dollar américain, `USD`, affiché avec le symbole `$`
+
+@ 0 1 0 193afe94f5e93a1b0b1cd5b807139f68
++   entry .Eur
++     info
++         l'euro, `EUR`, affiché avec le symbole `€`
+
+@ 0 1 0 08b18c2d34eaf06d1e43176a0cfac920
++   entry .Jpy
++     info
++         le yen japonais, `JPY`, affiché avec le symbole `¥`
+
+@ 0 1 0 0281fd6d73c0e734140130ffc64842c5
++   entry .Gbp
++     info
++         la livre sterling, `GBP`, affichée avec le symbole `£`
+
+@ 0 1 0 073a3f0cd09a3df40402365c0093c1b5
++   entry .Cny
++     info
++         le renminbi, `CNY`, affiché avec le symbole `¥`
+
+@ 0 1 0 0fcc14a970c10262053d582e7e64f1f7
++   entry .Aud
++     info
++         le dollar australien, `AUD`, affiché avec le symbole `A$`
+
+@ 0 1 0 0ea92cc8ccc5d4af1e0a9ad2a9019a1b
++   entry .Cad
++     info
++         le dollar canadien, `CAD`, affiché avec le symbole `C$`
+
+@ 0 1 0 03672af62e64ff431ff68649559e8479
++   entry .Chf
++     info
++         le franc suisse, `CHF`, affiché avec le symbole `CHF`
+
+@ 0 1 0 01ad322ad9e252f7155d7f03125e30ec
++   entry .Hkd
++     info
++         le dollar de Hong Kong, `HKD`, affiché avec le symbole `HK$`
+
+@ 0 1 0 13c2fe6960cc42191cea1ae73ed11592
++   entry .Sgd
++     info
++         le dollar de Singapour, `SGD`, affiché avec le symbole `S$`
+
+@ 0 1 0 1857c4027c58fe260223859d81c15bcb
++   entry .Sek
++     info
++         la couronne suédoise, `SEK`, affichée avec le symbole `kr`
+
+@ 0 1 0 1039b607a11ebf2e0b876516ad53df1c
++   entry .Krw
++     info
++         le won sud-coréen, `KRW`, affiché avec le symbole `₩`
+
+@ 0 1 0 191467479b748f5416fe378e5120c54c
++   entry .Nok
++     info
++         la couronne norvégienne, `NOK`, affichée avec le symbole `kr`
+
+@ 0 1 0 151a70788f0cad420d1b93e202d710af
++   entry .Nzd
++     info
++         le dollar néo-zélandais, `NZD`, affiché avec le symbole `NZ$`
+
+@ 0 1 0 1530489a1727089f047efcc290f2bf26
++   entry .Inr
++     info
++         la roupie indienne, `INR`, affichée avec le symbole `₹`
+
+@ 0 1 0 0fa847a13a11fc321367a0da8065da4a
++   entry .Mxn
++     info
++         le peso mexicain, `MXN`, affiché avec le symbole `$`
+
+@ 0 1 0 1c11d7688d3982b11cbe50c09698ddc0
++   entry .Twd
++     info
++         le nouveau dollar de Taïwan, `TWD`, affiché avec le symbole `NT$`
+
+@ 0 1 0 00050cf5104af59117e1f387a31a92b9
++   entry .Zar
++     info
++         le rand sud-africain, `ZAR`, affiché avec le symbole `R`
+
+@ 0 1 0 1489b6f4ff72808a0bb6955442ecd933
++   entry .Brl
++     info
++         le real brésilien, `BRL`, affiché avec le symbole `R$`
+
+@ 0 1 0 1d6e04a2a4298bf71a4769256a6013b1
++   entry .Dkk
++     info
++         la couronne danoise, `DKK`, affichée avec le symbole `kr`
+
+@ 0 1 0 1ccdefe070a574490c24fadffeff9869
++   entry .Pln
++     info
++         le złoty polonais, `PLN`, affiché avec le symbole `zł`
+
+@ 0 1 0 1f55d72a553fb7e8151a103471e9e3ea
++   entry .Thb
++     info
++         le baht thaïlandais, `THB`, affiché avec le symbole `฿`
+
+@ 0 1 0 0b3c68a980b4a27804293060f92b7d09
++   entry .Ils
++     info
++         le nouveau shekel israélien, `ILS`, affiché avec le symbole `₪`
+
+@ 0 1 0 17ba88aba5e677cf1490e6c80adec9a9
++   entry .Idr
++     info
++         la roupie indonésienne, `IDR`, affichée avec le symbole `Rp`
+
+@ 0 1 0 192d822d162d8edc098cf767ce8e86b6
++   entry .Czk
++     info
++         la couronne tchèque, `CZK`, affichée avec le symbole `Kč`
+
+@ 0 1 0 085807c4231833a91cb7b41e7c8d3e63
++   entry .Aed
++     info
++         le dirham des Émirats arabes unis, `AED`, affiché avec le symbole `AED`
+
+@ 0 1 0 06dd8baf58ae51af14b8ddf27f5e71c0
++   entry .Try
++     info
++         la livre turque, `TRY`, affichée avec le symbole `₺`
+
+@ 0 1 0 105c9c35bd34518c0fd5890a79a8af7e
++   entry .Huf
++     info
++         le forint hongrois, `HUF`, affiché avec le symbole `Ft`
+
+@ 0 1 0 0dcdd16126ed39331a9fa2d226a84782
++   entry .Clp
++     info
++         le peso chilien, `CLP`, affiché avec le symbole `$`
+
+@ 0 1 0 0ee078391ca612720fd4f9e62a1e1cbf
++   entry .Sar
++     info
++         le riyal saoudien, `SAR`, affiché avec le symbole `SR`
+
+@ 0 1 0 1674a4915fd03c6307971cafd62013fa
++   entry .Php
++     info
++         le peso philippin, `PHP`, affiché avec le symbole `₱`
+
+@ 0 1 0 15d5b30e3958d24814510d71b7333df9
++   entry .Myr
++     info
++         le ringgit malaisien, `MYR`, affiché avec le symbole `RM`
+
+@ 0 1 0 0a8c7d859029a00f067794c668a502fd
++   entry .Cop
++     info
++         le peso colombien, `COP`, affiché avec le symbole `$$`
+
+@ 0 1 0 1a70a5dd1cfece4804693f5a59e8bff9
++   entry .Rub
++     info
++         le rouble russe, `RUB`, affiché avec le symbole `₽`
+
+@ 0 1 0 09cfb2ca2905f672044c72a445a1b2a3
++   entry .Ron
++     info
++         le leu roumain, `RON`, affiché avec le symbole `lei`
+
+@ 0 1 0 01cb2f146615bbb80ba6566d39a37cef
++   entry .Pen
++     info
++         le sol péruvien, `PEN`, affiché avec le symbole `S/`
+
+@ 0 1 0 1f4baac04c5838f51f408c61fab914cc
++ entry .internal
++   info
++       les types opaques `Money` et `Isin`, leurs compagnons et extensions, et la macro `isin"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 5 0 130afb7b914af10f101ff3ec30ac418e
++   detail
++       L'objet existe pour que `Money` et `Isin` puissent être opaques sur `Long` : c'est
++       seulement ici que la représentation est visible. Les deux types sont exportés vers le
++       package `plutocrat`, dont les pages consacrées à `Money` et `Isin` en donnent la
++       description complète ; leurs méthodes d'extension sont des membres de cet objet, et se
++       trouvent dans la portée implicite de tout montant ou ISIN.
+
+@ 0 1 0 0c64d800812cea4d0ab5b7180d65ff6e
++   entry .Money
++     info
++         un montant d'argent, opaque sur un `Long` ; voir `plutocrat.Money`
+
+@ 0 5 0 0d164a562463e8e711e6d5521956c97a
++     detail
++         Le code de la devise et le nombre d'unités divisionnaires, compactés dans un seul `Long`.
++         Son compagnon contient les givens d'arithmétique, de comparaison et de rendu pour les
++         montants d'une devise, si bien qu'aucun n'a besoin d'être importé ; chacun prend deux
++         montants de la même devise, ce qui fait de tout mélange de devises une erreur de
++         compilation.
+
+@ 0 1 0 163fda792dd5b7fa1b85987b6a34b81d
++     entry .apply
++       info
++           un montant à partir d'un nombre d'unités divisionnaires, avec la devise comme argument
++           de type
+
+@ 0 2 0 1bd535df6ee2b2e21c3150ab2343ff45
++       detail
++           `Money["EUR"](301L)` vaut 3,01 €, quel que soit le module de la `Currency` ; aucun given
++           `Currency` n'est nécessaire.
+
+@ 0 1 0 13ba50016d2115e41429e05b576e48e0
++     entry .underlying
++       info
++           la preuve que la représentation d'un montant est un nombre primitif, pour le code
++           numérique générique
+
+@ 0 1 0 0779e8fd776256be1bf9d9ee2ccfc792
++     entry .showable
++       info
++           affiche un montant selon le `Currency.Style` dans la portée, avec le symbole ou le code
++           de sa devise
+
+@ 0 3 0 0f299569be70dc751035b27634fd46eb
++       detail
++           Nécessite le given `Currency` du montant (issu de `currencies`, ou déclaré) et un
++           `Currency.Style` (issu de `currencyStyles`). Les unités divisionnaires sont toujours
++           écrites sur deux chiffres.
+
+@ 2 1 0 1503271d71976630038d9e272351e6b3
++           ```scala
+
+@ 3 1 0 08efdcfd224dfe910d2fe9fc2743774e
++           import soundness.*
+
+@ 0 1 0 07fbac1b8ae16fc2092051a828ebfad1
++           import currencies.Eur
+
+@ 0 1 0 03436b954cc0bdbc0d734708c58a20ec
++           import currencyStyles.localCurrencyStyle
+
+@ 0 1 0 03e4708d7d1498121d244820ce86f387
++           Eur(3.01).show   // t"€3.01"
+
+@ 1 1 0 1541aa25dc4f56001be2c0dd9c44f068
++           ```
+
+@ 0 2 0 0cecd4afabe91a9e14214b950f4f2bd3
++           Un montant négatif n'est pas rendu correctement : ses unités principales et ses unités
++           divisionnaires sont chacune écrites avec un signe moins.
+
+@ 0 1 0 0d7b42703123de311eb1708638f968a9
++     entry .inspectable
++       info
++           inspecte un montant exactement, sous forme de son code de devise et de ses unités
++           divisionnaires : `¤EUR301ₘ`
+
+@ 0 3 0 0b40be6d4bfb73d80e6c74ecde1cd9fc
++       detail
++           Ne nécessite ni `Currency` ni style, puisque le code est compacté dans la valeur. Le `ₘ`
++           indique que le nombre est en unités divisionnaires, si bien que 3,01 € ne peut être pris
++           pour trois cent un euros.
+
+@ 0 1 0 00a6fe89d9b14eb50e8ff6145dd8c07f
++     entry .addable
++       info
++           additionne deux montants de la même devise
+
+@ 0 1 0 180cb0fe6fe86db5047d815435c3813c
++     entry .subtractable
++       info
++           soustrait un montant d'un autre de la même devise
+
+@ 0 1 0 1d92fcc2ba42e9a80f4200e4fe2e5ced
++     entry .multiplicable
++       info
++           multiplie un montant par un `Double`, en arrondissant à l'unité divisionnaire la plus
++           proche
+
+@ 0 1 0 0472bf2d02875c1716ccdb041f4cb536
++     entry .divisible
++       info
++           divise un montant par un `Double`, en tronquant aux unités divisionnaires entières
+
+@ 0 1 0 0476987016a70728018c5d4bda339e65
++     entry .divisible2
++       info
++           divise un montant par un autre de la même devise, en donnant leur rapport sous forme de
++           `Double`
+
+@ 0 1 0 15f942dea9a265ec01b4e36e253152de
++     entry .divisible3
++       info
++           divise un montant par un `Int`, en tronquant aux unités divisionnaires entières
+
+@ 0 1 0 117e257dfe31470714c1adecd7ef635a
++       detail
++           Pour une division exacte en parts, utilisez `share`.
+
+@ 0 1 0 0cbbd551fdde6103051c6f1356fb46b2
++     entry .orderable
++       info
++           compare deux montants de la même devise avec `<`, `<=`, `>` et `>=`
+
+@ 0 1 0 174a3162d7501d0d02d744df874b6729
++     entry .zeroic
++       info
++           le montant nul d'une devise, qui nécessite le given `Currency`
+
+@ 0 1 0 10e6ac2462d1614c1962995bf830fc94
++       detail
++           Permet de sommer des montants, comme `List(…).total`, avec zéro comme somme d'aucun
++           montant.
+
+@ 0 1 0 00baa70d8c5ca03b0e0655a2d374cade
++     entry .negatable
++       info
++           prend l'opposé d'un montant : `-Eur(1.99)`
+
+@ 0 1 0 14942a125fd4155c12439b6f3cc3b8d1
++   entry .Isin
++     info
++         un ISIN, opaque sur un `Long` ; voir `plutocrat.Isin`
+
+@ 0 3 0 1897bc22e1a1427519c8e7771ab74c04
++     detail
++         Le code pays à deux lettres et le numéro national à neuf caractères, compactés dans un
++         `Long` ; le chiffre de contrôle est recalculé lorsque l'ISIN est rendu.
+
+@ 0 1 0 1e59185b065217b901ec069a40f0159d
++     entry .apply
++       info
++           vérifie un ISIN contenu dans un texte, en levant `Isin.Error` s'il est invalide
+
+@ 0 3 0 1dd122dd58eb3bd218fa76fb449bf996
++       detail
++           Nécessite une `Tactic[Isin.Error]`. Les vérifications portent sur la longueur, le code
++           pays (deux lettres majuscules), les caractères du numéro national (chiffres et lettres
++           majuscules), et le chiffre de contrôle de Luhn.
+
+@ 2 1 0 15dc9d1a1d81ad4c02ea03bd917f8811
++           ```scala
+
+@ 3 1 0 1d6f623489d826691b4d25a8a001e81d
++           import soundness.*
+
+@ 0 1 0 007d86684f8769fe09636d5f556d8a87
++           import strategies.throwUnsafely
+
+@ 0 1 0 0f625644990da65c152ae19e0e5182f6
++           Isin(t"GB00BH4HKS39").countryCode   // t"GB"
+
+@ 1 1 0 00fac05d1213193b07636911a397942d
++           ```
+
+@ 0 1 0 11e40e14fabc804b1e46e177c222f778
++     entry .inspectable
++       info
++           inspecte un ISIN sous la forme de l'interpolateur qui le produirait :
++           `isin"US0378331005"`
+
+@ 0 1 0 1f8388d430a9d7a21124192e7caac880
++     entry .Error
++       info
++           levée lorsqu'un texte n'est pas un ISIN valide, en indiquant quelle règle il enfreint
+
+@ 0 6 0 0ce052ea091591761cda5b8791069e87
++       detail
++           Erreur `↯/s.50.1` : _the ISIN number is not valid because …_, avec la raison : une
++           longueur incorrecte (_it had length 11, but it should be 12 characters long_), un code
++           pays invalide, un caractère qui n'est ni un chiffre ni une lettre majuscule (avec sa
++           position), ou un échec du contrôle de Luhn sur le dernier chiffre. Levée par `Isin(…)`,
++           et signalée comme erreur de compilation par `isin"…"`.
+
+@ 0 1 0 09a1422badbdb5441677be054f2c157a
++       entry .Reason
++         info
++             la règle qu'un ISIN invalide enfreint
+
+@ 0 2 0 00d118c11f34db040c7bc051ec58aec3
++         detail
++             Numérotées selon le sous-numéro de l'erreur (`↯/s.50.1.3` pour une longueur
++             incorrecte) :
+
+% 0 1 0 17a12efcb5b524961abe798015d06fdd
+
+@ 0 8 0 158ec58bbc47aaa7067309c6313b46f3
++             column  Cas
++             column  Code
++             column  Message
++             column  Remarque
++             row  `InvalidCharacter(index, char)`  1  _the character `char` at position `index` is not a digit or uppercase letter_
++             row  `BadCountryCode(code)`  2  _its country code `code` was not valid_
++             row  `WrongLength(length)`  3  _it had length `length`, but it should be 12 characters long_
++             row  `LuhnCheck`  4  _its last digit failed the Luhn check_
+
+% 0 1 0 0886f09d22a849f8174ec96cea203f24
+
+@ 0 1 0 027047b9ef861f0c02d59729fc2bb9f7
++         entry #number
++           info
++               le numéro de la raison, le sous-numéro de l'erreur
+
+@ 0 1 0 1a58a94ad1eb791a01b4c0da7ac33adf
++       entry .communicable
++         info
++             décrit une raison sous la forme de la proposition qui complète le message de l'erreur
+
+@ 0 1 0 123fcc19b1002a301f3589e418a83dfe
++       entry .InvalidCharacter
++         info
++             la raison pour un caractère qui n'est ni un chiffre ni une lettre majuscule, à un
++             indice
+
+@ 0 1 0 154cbe745f8365ab14657e19e9312a10
++       entry .BadCountryCode
++         info
++             la raison pour un code pays qui n'est pas formé de deux lettres majuscules
+
+@ 0 1 0 037d059bce3cfd531f51bf082d4c5ca3
++       entry .WrongLength
++         info
++             la raison pour un texte qui ne fait pas douze caractères
+
+@ 0 1 0 0d752996a5b949681585f924906d5726
++       entry .LuhnCheck
++         info
++             la raison pour un dernier chiffre qui n'est pas le chiffre de contrôle de Luhn du
++             reste
+
+@ 0 1 0 17f5b082862fab6001c26b6d3911e43c
++       entry #reason
++         info
++             la règle que le texte enfreint
+
+@ 0 1 0 1d70b0fc729501c71dca20097da79ef8
++   entry .currency
++     info
++         le code ISO de la devise d'un montant, lu dans le montant lui-même : `t"EUR"`
+
+@ 0 2 0 0e7a3f632d2cf5ae1548172ddf386565
++     detail
++         Une extension de `Money`, disponible même lorsque le type du montant a été élargi en un
++         `Money` nu.
+
+@ 0 1 0 0ddc113bafd15b87043ac6f2a838da35
++   entry .value
++     info
++         le montant sous forme de nombre d'unités divisionnaires : 301 pour 3,01 €
+
+@ 0 1 0 0ed394961d48578a13a1ef44783ca911
++     detail
++         Une extension de `Money`.
+
+@ 0 1 0 0f17cf1e9d8ff0b1172b2a7c6797ebbf
++   entry .tax
++     info
++         un `Price` composé de ce montant et de la taxe calculée à un taux : `Gbp(2.30).tax(0.2)`
+
+@ 0 2 0 1dd3770903a79b24139d47d8909e5a5b
++     detail
++         Une extension de `Money in c`. La taxe est le montant multiplié par le taux, arrondi à
++         l'unité divisionnaire la plus proche.
+
+@ 0 1 0 050fb1dfcf1800af19a8f1b22e95b838
++   entry .share
++     info
++         divise un montant en un nombre de parts dont la somme est exactement ce montant
+
+@ 0 2 0 0587996fe158ae920e5abbb09e36a4d2
++     detail
++         Une extension de `Money in c`. Les parts diffèrent d'au plus une unité divisionnaire, et
++         les plus grandes viennent en premier :
+
+@ 2 1 0 049140896ec2d40b1034f1325807bc2c
++         ```scala
+
+@ 3 1 0 14921e32d8d51b830d025cea9cc2e93f
++         import soundness.*
+
+@ 0 1 0 03feb3af7b834e61019156afa08e8cb8
++         import currencies.Eur
+
+@ 0 1 0 18774c9f070da0bc073c2258924050c5
++         Eur(3.01).share(3)   // List(Eur(1.01), Eur(1.00), Eur(1.00))
+
+@ 0 1 0 1e82a914c7a7e155058342857a77bb86
++         Eur(3.01).share(3).total == Eur(3.01)
+
+@ 1 1 0 1df8220b9a4e09f6056783fcacdaa247
++         ```
+
+@ 0 1 0 1bb476c5f6c83cdc11b8488447320464
++         Le nombre de parts doit être au moins égal à un.
+
+@ 0 1 0 0bd347eeddd69a11088fe2d8d9e057ab
++   entry .countryCode
++     info
++         le code pays à deux lettres d'un ISIN : `t"US"`
+
+@ 0 1 0 13f2e877db0c230a04f506fdfd3bec73
++   entry .nsin
++     info
++         le numéro national d'un ISIN avec son chiffre de contrôle : les dix derniers caractères
+
+@ 0 1 0 00554e91863116df0e503a58bf97ca0c
++   entry .isin
++     info
++         un ISIN sous forme de ses douze caractères : `t"US0378331005"`
+
+@ 0 1 0 0f5960bbbff2ed8e0e38cd44f1f7801b
++   entry .interpolator
++     info
++         la macro derrière `isin"…"`

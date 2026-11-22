@@ -1,0 +1,612 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 026dba39094ed9ac08404b0481ba81d6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f86def002901d0d1ddd908b1aa994e9
++ info   RE2 正規表現エンジン。線形時間のマッチングと、パターンの包含の決定を提供する
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 14b0e81f11cfc39217dabbf013702c04
++     _Praxinoscope_ は [RE2](https://github.com/google/re2/wiki/Syntax) 構文の純粋な Scala 実装である。
++     パターンが何であっても、マッチングにかかる時間が入力の長さに対して線形である正規表現エンジンである。
++     これは、パターンを有限オートマトンにコンパイルし、バックトラックせずにシミュレートすることで実現している。
++     それが可能なのは、RE2 のサブセットがオートマトンでは表現できない構文（後方参照、先読みと後読み、強欲な量指定子、アトミックグループ）を含まず、パターンのパース時にそれらを拒否するからである。
++     同じ制限により、さらに二つの問いが決定可能になる。あるパターンが別のパターンのマッチするものすべてにマッチするか（`subsumes`）と、両方にマッチする入力があるか（`intersects`）である。
+
+@ 0 6 0 1d74a54fb531421111ae1655698cd641
++     パターンは `Motif` にパースされる。`Motif` は構造を表す `Motif.Node` の木、キャプチャグループの数、コンパイルされた `Motif.Program` を保持し、`matches`、`seek`、`search`、`groups`、`spans` でマッチングを行う。
++     文字クラスはコードポイントの集合 `Motif.Ranges` である。
++     仮想マシン `Pike` は、`Symbolizer` が記号に復号できる任意の入力（現在は Unicode コードポイントとしての `Text`）の上でプログラムを実行する。
++     `Subsumption` は、コンパイルされたプログラムについて包含と交差を決定する。
+
+% 2 1 0 0fc0e01fdc003bb00b1325900c0443d8
+
+% 3 1 0 02cdf2650c3a18c40a5149e1855581de
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 19da03f730fc3f9910c014e2c8138632
+
+% 0 1 0 00692078999f67fd0c877cb213366c27
+
+% 0 1 0 184209af5d76b6771ec523177ad1c485
+
+% 0 1 0 1ca0b9f609e366fe0238f054a2aba244
+
+% 0 1 0 0b7a7093ffb74799144fe2dd404fc8c4
+
+% 0 1 0 110973c05d89ba4f147ac2df3792732c
+
+% 1 1 0 0c781181596d3d3b0262a3fa50b38d81
+
+@ 0 7 0 0b8e9192e2837b490fef55c404ef4ed5
++     エンジンを使う通常の方法は `Motif` を通すことではなく、`import regexBackends.re2` のもとで kaleidoscope の `r"…"` リテラルを使うことである。
++     そうすると、スコープ内のすべてのリテラルはコードのコンパイル時にパースおよびコンパイルされ、RE2 のサブセットを外れればその場で拒否され、抽出子にステージングされるので、実行時には何もパースされない。
++     さらに、キャプチャのないリテラルは静的なオートマトン `Fsa` にコンパイルされる。
++     そのような `Regex in Re2` に付くタグがマーカー型 `Re2` である。
++     その `Regex.Engine` インスタンスは、このライブラリより上にある kaleidoscope にある。
+
+@ 0 12 0 12c5dfe10b0364a30d9e0ec1bd040cef
++     受け付ける構文は RE2 のものである。リテラルと `.`、エスケープ `\n \t \r \f \a \v \e`、`\xHH`、`\x{…}` とエスケープされた句読点、ASCII クラス `\d \w \s` とその補集合、ブラケット内の POSIX クラス `[[:alpha:]]` と `[[:^alpha:]]`、Unicode の一般カテゴリーとスクリプト `\pL`、`\p{Lu}`、`\p{Greek}`、`\P{…}`、`\p{^…}`、範囲と否定を含むブラケットのクラス、引用された並び `\Q…\E`、選択、キャプチャするグループ、キャプチャしない `(?:…)`、名前付きの `(?<name>…)`/`(?P<name>…)` グループ（名前は何の役割も持たず、グループは位置によって番号が付く）、量指定子 `* + ? {n} {n,} {n,m}` と控えめな `?` 接尾辞（繰り返し回数は `Motif.maxRepetition`（1000）まで）、インラインフラグ `i`（大文字小文字の畳み込み）、`m`（複数行のアンカー）、`s`（ドットが改行にマッチする）、`U`（貪欲さの反転）（外側のグループの終わりまでは `(?i)`、一つのグループには `(?i:…)`、解除には `(?-i)` と書く）、そしてアンカー `^ $ \A \z \b \B` である。
++     マッチングは Unicode コードポイントの上で行われるので、アストラル文字は一つの記号である。
+
+@ 0 3 0 1f538f8514f5287d186b0280d0f099af
++     ライブラリは単一のソースセット `praxinoscope.core` であり、JVM、Scala.js、Scala Native 向けにコンパイルされる。キャプチャ検査は行われない。Pike VM は設計上ミュータブルだからである。
++     すべては `soundness` アンブレラにエクスポートされる。
+
+% 0 1 0 0943afc710b4907404c244469294b459
+
+% 0 1 0 1941f0c78b1f80dc0a6c537cac896203
+
+% 0 1 0 084e71060ece581002859e84951a5ad9
+
+% 0 1 0 1c6c5751fd70a988035a851cdd9c25fc
+
+% 0 1 0 06ff01176f41801e04d884f364d24005
+
+% 0 1 0 1d6f5ed891f1ceca1083ed4c7ae25a4e
+
+@ 0 8 0 1e81a7c9afa077421b5019fc9f3d19d6
++ entry .Re2   RE2 エンジンのマーカー。kaleidoscope の `Regex in Re2` の `Form` である
++     メンバーを持たない、シールされた幻の型のトレイトである。
++     kaleidoscope の `Regex in Re2` は、このライブラリでマッチングするようにタグ付けされた正規表現である。これは `import regexBackends.re2` のもとでコンパイルされた `r"…"` リテラルの型であり、また、RE2 のサブセットに照らして正規表現を検査してからタグを付け替える `Regex#re2` の型でもある。
++     `Regex` はこのライブラリより上で定義されているので、`Re2` のための `Regex.Engine` インスタンスはこのトレイトのコンパニオンには置けず、kaleidoscope の `Regex.Engine.re2` にある。
++     それでも暗黙のスコープにあるので、`Regex in Re2` のマッチングに import は必要ない。
+
+% 2 1 0 1d6da639705377d11794e5bd65d09b52
+
+% 3 1 0 1ed5fe9efda107d21f4de1e0f176aab9
+
+% 0 1 0 141f233fcd26b6930e8e815f40388dc8
+
+% 0 1 0 0a93c6c32257479d090e4298cb7036fb
+
+% 0 1 0 06049b0b6773827a19e65c627cd6cd2f
+
+% 1 1 0 00342a8f8c0528211dfe85896da1375d
+
+@ 0 1 0 0f73bdb4725ba503073fc1a0b044c93e
++ entry .Motif   パースされた RE2 正規表現。そのパターン、ノードの木、キャプチャ、プログラムを持つ
+
+% 1 1 0 1376cd144cc46cea1dbacca0a07d967d
+
+@ 0 5 0 0453ed98f3c44f9e1b578f4328a5a560
++       `Motif` は RE2 構文のパターンをパースした結果である。ソースの `#pattern`、構造を表す `#node` の木、キャプチャグループの数 `#captures`、マッチャーが実行するコンパイル済みの `#program` からなる。
++       `.parse`（または `.apply`）がこれを作る。構文が拒否するもの（RE2 が意図的に除外したすべての構文を含む）に対しては、位置と理由を添えて `Motif.Error` を発生させる。
+
+@ 0 5 0 0c05865350344fc30151f14fab57df4f
++       マッチングは常に入力に対して線形である。`#matches` は入力全体のテスト、`#seek` はある位置から最も左のマッチを見つけ、`#search` はすべてのマッチを順に見つけ、`#groups`、`#spans`、`#slots` は各キャプチャグループが何にマッチしたかを報告する。
++       `#subsumes` と `#intersects` は二つのモティーフの言語を比較する。これを決定できるのはオートマトンのエンジンだけである。
+
+% 2 1 0 1430da8beadfb5c80254432888ac87fb
+
+% 3 1 0 12fa36b64c8568eb08ba7206d4ae160b
+
+% 4 1 0 07396bcf11563e921f387022b0b1cc46
+
+% 0 1 0 1f09c0d97e67b35b120b4f682f7a78e7
+
+% 0 1 0 0382a60058b2c7940ad2edcffd07bdc4
+
+% 0 1 0 0b88a7684dde5bf70fcd14ad3e116395
+
+% 0 1 0 1b9ade2a74d31cc80a04358e09736d72
+
+% 0 1 0 180c544ccaa9bd87130f5e59ee2c0d3d
+
+% 1 1 0 1b39a9fa59a5c6c40bbbaae0b9e372a5
+
+@ 0 4 0 00ed87580386ce230cb497c89fb36555
++       `Symbolizer` を持つ任意の入力型でマッチングできる。提供されているのは `Text` である。
++       `regexBackends.re2` のもとで `r"…"` リテラルから作られたモティーフは、`.staged` を通じてコンパイル時にプログラムへステージングされるので、その `#node` は `Node.Empty` である。マッチングに関わるのはプログラムだけである。
+
+% 1 1 0 1d9f7410cee67d180258edef4a6ede63
+
+% 0 1 0 1d51df9b8ec3bb160ff753ef0f944313
+
+% 0 1 0 1d9369dd9432fdb2159bf13ebb3f06c2
+
+% 0 1 0 0db9cb07ce2870de09053fad4fdb5ad5
+
+@ 0 6 0 093e0e64246bbbfb09f6bea0cd035fe8
++   entry .parse   RE2 構文を `Motif` にパースする。問題のある位置で `Motif.Error` を発生させる
++       `praxinoscope` パッケージに列挙した RE2 構文のための再帰下降パーサーである。
++       文字クラスはパースしながら `Ranges` に解決され（したがって否定されたクラスとその補集合は同じノードになる）、キャプチャグループは開き括弧の順に 1 から番号が付き、インラインフラグは外側のグループにスコープが限られ、最後にノードの木が `Program` にコンパイルされる。
++       `Tactic[Motif.Error]` を必要とする。
+
+% 2 1 0 064b3987c4a090080a970f9bcdcdc510
+
+% 3 1 0 0ebc012a72f4a63216d9cb9ce02ee39a
+
+% 4 1 0 17dd813d14b1e48f0ea331fe589271f1
+
+% 0 1 0 16aa1f845545e01816d2761a77c88b19
+
+% 0 1 0 0578aae5f6f1391900c5b615e7832df2
+
+% 0 1 0 12cf823e716946de12864edb7a9fb5ab
+
+% 0 1 0 175de8784fadd61001cd95f93a9e18d0
+
+% 0 1 0 18b1fea2dd5a83760e26c72b962eec33
+
+% 1 1 0 0424ebbedb18c8fa10a24fda15ab3a11
+
+@ 0 19 0 1771f598a5c36d5101c1f2757d5a9c3c
++       何がなぜ拒否されるか。後方参照 `\1` や `\k<name>`（`Backreference`）、先読み・後読み `(?=…)`、`(?!…)`、`(?<=…)`、`(?<!…)`（`Lookaround`）、強欲な `*+`（`PossessiveQuantifier`）、アトミックグループ `(?>…)`（`AtomicGroup`）、`i`、`m`、`s`、`U` 以外のフラグ文字（`Flag`）、1000 を超える繰り返し回数（`RepetitionTooLarge`）、意味を持たない文字のエスケープ（`InvalidEscape`）、そして構造上の誤り（閉じられていないグループ、クラス、繰り返し、余分な `)`、空の `[]`、逆転した `[z-a]`）である。
++       数字が続かない `{` は、RE2 の読み方どおりリテラルである。したがって `a{x}` はその四文字にマッチする。
++   entry .apply   `Motif(text)`：`.parse` と同じ
++   entry .staged   コンパイル時にコンパイルされたモティーフを、パターンごとに高々一度だけ再構築する
++       `Motif.staged(pattern, captures, program)` は、ステージングされたモティーフが展開される形である。
++       プログラムは名前渡しであり、あるパターンについての最初の呼び出しでのみ実体化され、その後はパターンのテキストをキーとするキャッシュから提供される。
++       `regexBackends.re2` のもとの `case r"…" =>` はマッチのたびに抽出子を構築するので、キャッシュがなければステージングされた表は毎回再構築されることになる。
++       ステージングされたモティーフの `node` は `Node.Empty` である。
++   entry .maxRepetition   `{n,m}` 量指定子が指定できる最大の回数。RE2 の定めるとおり 1000
++       有界な繰り返しは展開によってコンパイルされるので、この上限がプログラムの大きさを制限する。これを超えると `Motif.Error.Reason.RepetitionTooLarge` になる。
++   entry .Node   パースされたパターンの構造的な形
+
+% 1 1 0 182f6fb72b1982330f55b18f234b997b
+
+@ 0 8 0 0e594d23be7aeb87109ddcd622d00ac0
++         八つのケースを持つ列挙型である。
++         `Empty` は空文字列にマッチし、`Literal(codepoint)` は一つのコードポイントにマッチし、`Klass(ranges)` は `Ranges` 内の任意のコードポイントにマッチする（あらゆる形のクラス、`[…]`、`.`、`\d`、`\p{…}`、`[[:…:]]` はこれになり、否定は適用済みである）。
++         `Sequence(nodes)` と `Alternation(options)` は連結と選択である。`Repeat(child, minimum, maximum, reluctant)` は任意の量指定子であり、上限がなければ `maximum` は `Unset` である。
++         `Group(child, index)` はグループであり、`index` は 1 から始まるキャプチャ番号、キャプチャしないグループなら `Unset` である。`Boundary(anchor)` は幅ゼロのテストで、`Node.Anchor` のいずれかである。
+
+% 2 1 0 0b3d99911d950a6e1f3822d1d3bd3aea
+
+% 3 1 0 15484e91dd0bb08802fa93b1f92e3905
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 03d4fd48b124361b1f8b57f864a43c93
+
+% 0 1 0 14ec70927ea6fa1a1acf42fda950cc41
+
+% 1 1 0 136fbc53234504480d868f53d15da598
+
+@ 0 1 0 1b8015c17d8057951e7bf560332ea3f8
++     entry .Anchor   幅ゼロのテスト：`Start`、`End`、`WordBoundary`、`NonWordBoundary`、`LineStart`、`LineEnd`
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 9 0 0fd33a6721ea3dc911cfd3d006b5af4f
++         column  アンカー
++         column  書き方
++         column  マッチする位置
++         row  `Start`  `^` または `\A`  入力全体の先頭
++         row  `End`  `$` または `\z`  入力全体の末尾
++         row  `WordBoundary`  `\b`  単語文字（`\w`、ASCII）と非単語文字が接する位置
++         row  `NonWordBoundary`  `\B`  そうでない位置
++         row  `LineStart`  `m` フラグのもとの `^`  入力の先頭、または改行の直後
++         row  `LineEnd`  `m` フラグのもとの `$`  入力の末尾、または改行の直前
+
+% 1 1 0 036d356c4c4bcb5c092418a65d75b056
+
+@ 0 3 0 15115f44849489d315abc8db8a0f1b7b
++         包含の解析は最後の四つをモデル化できず、それを含むプログラムに対しては `Unverifiable` を発生させる。
++   entry .Error   パターンが RE2 構文でないとき、または解析が答えを出せないときに発生する
+
+% 1 1 0 0bc741daa135adf5191d363c7060cbb4
+
+@ 0 7 0 0e762ab953a8320b1d6b190e0468ef03
++         エラー `↯/s.33.1`：_the regular expression could not be compiled because `reason` at `index`_。理由の番号がサブ番号になる。
++         `Motif.parse` が `Tactic[Motif.Error]` を通じて、問題のある文字のオフセットで発生させる。
++         また、プログラムが `Program.maxOps` を超えたときに `Program.compile` が、単語境界や行境界を含むパターン、または `Subsumption.maxStates` を超える探索に対して `Subsumption`（したがって `Motif#subsumes`、`Motif#intersects`、kaleidoscope の `Regex#subsumes`）が、そしてタグを付け替える際にこのエンジン向けに正規表現をパースする kaleidoscope の `Regex#re2` が発生させる。
+
+% 2 1 0 11049fa13392726b0e0784976e02d970
+
+% 3 1 0 0db0405c83d6cc991f760a60b4bb428e
+
+% 0 1 0 0483013d33748f6811bc39a224aadaf7
+
+% 1 1 0 1214283a9bbc83d91470efafaaf610e9
+
+@ 0 1 0 05ab83ddbca06d870644534ed2a5ee20
++     entry .Reason   パターンが拒否された理由。番号の付いた二十一のケースのいずれか
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 2 0 04cfeb5096710fe11cba485d6ba3f0da
++           各ケースの `number` はエラーのサブ番号である。
++           ケース 11 から 16 は RE2 が除外した構文、17 から 19 は制限であり、残りは構造上の誤りである。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
+
+% 0 1 0 0dbd608b927438ed1052771639ddeb10
+
+@ 0 2 0 1ece6f28827fd0bd03a844d891e8a6b8
++           row  `NotInGroup`  2  _a closing parenthesis was found without a corresponding opening parenthesis_  余分な `)`
++           row  `UnexpectedChar`  3  _an unexpected character was found_  位置の誤った量指定子、または不正な形の繰り返し
+
+% 0 1 0 0c6b3bc1475dad3e0129c98fbfaa22e0
+
+% 0 1 0 04db4ba7ac9d7d9d1ad60e57cf750d90
+
+% 0 1 0 05e62773619e333f1af1c40e8fe4d7bf
+
+% 0 1 0 1e00e4df3df3b3a5198a2ff42ca7f983
+
+% 0 1 0 1c3016cd07456abe164ef5cec774022c
+
+@ 0 1 0 0afb260550bef2be10a9ab0c4d8084e1
++           row  `InvalidEscape`  9  _the escape sequence is not valid_  意味を持たない文字のエスケープ、または不正な `\x` の形
+
+% 0 1 0 1bec5736c562a99d1d699955ae500a3f
+
+% 0 1 0 0661484c219229a8003f2583d887f94b
+
+% 0 1 0 1468ff2e860244300977343cfe963128
+
+% 0 1 0 054d95a8f533ca111b5c4e12b427c55d
+
+% 0 1 0 1129704098cf0bc611cd78d5dc49ef36
+
+@ 0 5 0 1d3195ef487ad50018c57c8733591885
++           row  `UnsupportedGroup`  15  _the group syntax is not supported_  `<` が続かない `(?P`
++           row  `Flag`  16  _inline flags are not supported_  `i`、`m`、`s`、`U` 以外のフラグ文字
++           row  `RepetitionTooLarge`  17  _the number of repetitions exceeds the limit of 1000_  `Motif.maxRepetition` を超える回数、または `Motif.Program.maxOps` を超えるプログラム
++           row  `BudgetExceeded`  18  _the analysis exceeded its computation budget_  `Subsumption.maxStates` を超えた包含の解析
++           row  `Unverifiable`  19  _the pattern contains constructs which the analysis cannot verify_  単語境界や行境界を含むパターンについての包含の問い
+
+% 0 1 0 1861a6dfe59bf5f30ef06f4d0bdd08b0
+
+% 0 1 0 17acb28af431b1fa038f134c5fca3ffd
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 17 0 1ffc1aa9bfb784d1027f82f622ec5f6f
++       entry .communicable   各理由をメッセージとして描画する：_backreferences are not part of RE2 syntax_、…
++       entry #number   理由の番号。1 から 21 までで、その `Motif.Error` のサブ番号になる
++     entry #index   パターン中で誤りが見つかったオフセット。解析の失敗では 0
++     entry #reason   `Motif.Error.Reason`
++   entry #pattern   パースされたパターン
++   entry #node   構造を表す木である `Motif.Node`。コンパイル時にステージングされたモティーフでは `Node.Empty`
++   entry #captures   キャプチャグループの数
++   entry #program   Pike VM が実行するコンパイル済みの `Program`
++   entry #matches   入力全体がマッチするかどうか
++       両端に固定された、入力全体のテストである。`Motif.parse(t"abc").matches(t"xabcx")` は false である。
++       `Symbolizer` を持つ任意の入力を取る。`Text` は提供されている。
++       入力に対して線形である。
++   entry #seek   `start` 以降で最も左のマッチの区間、または `Unset`
++       最左優先であり、バックトラックするエンジンが最初に見つけるマッチを返す。
++       `start` は `Ordinal` で、デフォルトは `Prim` である。`Interval` は UTF-16 単位で 0 から数える。
++       リテラルで始まらなければならないパターンは、そのリテラルの出現位置の間を跳んで探索され（`Program#prefix`）、ある記号のクラスで始まらなければならないパターンはその記号を走査して探索される。空にマッチしうるパターンは `start` で空にマッチする。
+
+% 2 1 0 0d4544e0c0e06fa9130912721c0a2e19
+
+% 3 1 0 1dad5799a5d0f3b71eb34e9f4145bb28
+
+% 4 1 0 0d7bc01f85e229940320821c44594079
+
+% 0 1 0 0f700c0c300ab9890b0e98591ae5e899
+
+% 0 1 0 168d546d0780109a0647c8b9d6ec730e
+
+% 1 1 0 00f1ee6ea97f33641b8b3c95b6321a23
+
+@ 0 5 0 1210a9f201e2dfd21fd40c7cbb1cffc5
++   entry #search   `start` 以降のすべてのマッチ。区間の、遅延的に構築される `Chain` として返す
++       各探索は直前のマッチの終わりから、マッチが空だった場合はその一つ先から再開する。したがって `ab` に対する `a*` は区間 0–1、1–1、2–2 を生じる。
++       `Regex in Re2` に対する kaleidoscope の `Regex#search` は、`java.util.regex` と一致させるため、すべてのマッチについてその終わりの一つ先から再開する点が異なる。
+
+% 2 1 0 14f3e641ca2402240f96beaf7b6e4cca
+
+% 3 1 0 048403be1b8ccdb40e292b5359eafc25
+
+% 4 1 0 09b5af39d5f4e10a1cb84a72404a8c8b
+
+% 0 1 0 1ef322299d71a67408985454260f3fab
+
+% 0 1 0 17890b4b30f5961a10b42fa945c9845a
+
+% 1 1 0 0c8615a002720044169bcd1b2aeb9414
+
+@ 0 8 0 088d9de641ca59230a710ed9b6a921cb
++   entry #subsumes   このモティーフが、別のモティーフのマッチするすべての入力、または複数のモティーフすべてがマッチするすべての入力にマッチするかどうか
++       `motif.subsumes(that)` は `L(that) ⊆ L(this)` を決定し、`motif.subsumes(those)` は `L(⋂those) ⊆ L(this)` を決定する。後者は、モティーフのリストの*すべて*に同時にマッチする入力の包含であり、単一の RE2 パターンでは表現できず（RE2 には交差の演算子がない）、ペアごとの検査では誤った答えになる。
++       どちらもコンパイル済みのプログラムに対する `Subsumption.subsumes` であり、いずれかのパターンに単語境界や行境界があれば（`Unverifiable`）、または予算を使い果たすペアであれば（`BudgetExceeded`）、`Motif.Error` を発生させる。
++       等価なパターンは互いを包含するので、二回の検査で等価性が決定できる。
+
+% 2 1 0 137c4a3486a1c0630c5c719ef0f8f437
+
+% 3 1 0 18c2914225019a440f5b20056dbd08f7
+
+% 4 1 0 0204d68a603630f00f7dfaf53bd5e53f
+
+% 0 1 0 00bde870845fdb5e0a3290d7ef9f8ebd
+
+% 0 1 0 0e11b8ab513adf0c1b52e65f7e1daf76
+
+% 0 1 0 142642c374ee9635089915b9d5399804
+
+% 0 1 0 1d37c0486d2b0e2316f287193e1cd396
+
+% 0 1 0 1568f680644b4b9a19a49305e1f53fc9
+
+% 0 1 0 1d9ef17f845f09e80dd2e3f42d3cd2b7
+
+% 1 1 0 1b95c51dfd6ba8931f4180154bac3fec
+
+@ 0 4 0 1708a28c47b05feb0a1104912386b50a
++   entry #intersects   このモティーフと別のモティーフの両方にマッチする入力があるかどうか
++       二つのプログラムに対する `Subsumption.intersects` である。`#subsumes` と異なり、多項式時間の到達可能性の問いである。
++       空にマッチしうる二つのパターンは空の入力で交差する。
++       どちらかに単語境界や行境界があれば `Motif.Error` を発生させる。
+
+% 2 1 0 06cf3d650b6f01c6181bf950491ad8bd
+
+% 3 1 0 1d8ddbb1e44133920bc154eaeab364e2
+
+% 4 1 0 1dcde43e6d8161b610f89fc46154887e
+
+% 0 1 0 0d3d9151e64b0a70022671434fad695b
+
+% 0 1 0 0672453af2523de00db40f08368a5f41
+
+% 1 1 0 1ecccf02ee621dc417aaa85c83d8ea61
+
+@ 0 4 0 1f82eb2a8c03b8c208a0dbed9c0b68ea
++   entry #groups   入力全体のマッチで各キャプチャグループが何にマッチしたか。グループの順に返す
++       `Optional[List[Optional[Interval]]]` である。入力がマッチしなければ `Unset` であり、リストの中では、どの繰り返しにも関わらなかったグループは `Unset` である。
++       繰り返されたグループは最後の繰り返しを記録する。貪欲なグループは最大限に、控えめなグループは最小限にキャプチャする。
+
+% 2 1 0 1c52d24b97392fbb0fdb39badd3974b1
+
+% 3 1 0 0ec68399e22b4de50b81b0cf82353e23
+
+% 4 1 0 0aa264f9c719c9c205e04cff3789e074
+
+% 0 1 0 11fa89adc119d4b613240df335cceab1
+
+% 0 1 0 01df58a78f05353d033f6fa7f109d7d8
+
+% 1 1 0 1944e17512f90cf21485a4d0cae33d2c
+
+@ 0 9 0 138a991615504caa0fef40da64bb3e3e
++   entry #spans   `#groups` と同じだが、インデックス 0 にマッチ全体を置き、`start` から固定せずに探すこともできる
++       `anchored` が true（デフォルト）なら入力全体がマッチしなければならない。false なら、`#seek` が見つけるのと同じく `start` からの最も左のマッチが報告される。
++   entry #slots   マッチの生のキャプチャスロット配列。グループ `n` の境界は `2n` と `2n + 1` にある
++       勝ったスレッドのスロットを `Array[Int]` として返す。マッチ全体は 0 と 1 にあり、どのスレッドも到達しなかったスロットは `-1` である。マッチしなければ `Unset` である。
++       これが `#spans` と並んで存在するのは、`Interval` では空のマッチの*位置*を記録できず、繰り返しマッチを一つずつ進む呼び出し側にはそれが必要だからである。
++       `anchored` が false なら、入力全体を要求する代わりに `start` から探索する。
+
+@ 0 1 0 0e96103ccb380d5202e533618c6f9478
++   entry .Program   フラットな命令配列にコンパイルされたパターン。Pike VM と包含の解析のためのもの
+
+% 1 1 0 1621b2c671ca647507cc709bf33bdf7c
+
+@ 0 6 0 16214606bb41027c10ee8a3f86765107
++         `Program` はパターンの `#ops` を `Program.Op` の配列として持つ。キャプチャグループ `n` はその境界をスロット `2n` と `2n + 1` に、マッチ全体をスロット 0 と 1 に記録するので、`#slots` は `2 × (captures + 1)` である。
++         `.compile` が `Motif.Node` からこれを作り、`Motif#program` がこれを保持する。`Pike.run` がこれを実行し、`Subsumption` がこれを解析する。
++         遅延的に計算される `#nullable`、`#firstBounds`、`#prefix` によって、固定されていない探索はマッチが始まりえない位置を飛ばせる。
+
+% 1 1 0 11a36b717fcf0dea10ef716e6d325fbb
+
+% 0 1 0 08c5b9c39794f37d0d37aa799129316a
+
+@ 0 30 0 1b2ad6c35958e53814c63748ebdcf29b
++     entry .compile   ノードの木をプログラムにコンパイルする。`.maxOps` を超えて大きくなれば `Motif.Error` を発生させる
++         リテラルやクラスごとに一つの `Symbol` 命令、選択と繰り返しには `Split`（優先する分岐が先であり、これが貪欲さと控えめさの符号化である）、ループには `Jump`、キャプチャグループの前後には `Save`、アンカーには `Test`、そして最後に `Accept` を出力する。
++         有界な繰り返し `{n,m}` は展開されるので、入れ子になった有界な繰り返しは幾何級数的に大きくなる。命令数が `maxOps` を超えると、コンパイルは `Motif.Error.Reason.RepetitionTooLarge` を発生させる。
++     entry .maxOps   プログラムの長さの上限。100000 命令
++     entry .Op   一つの命令：`Symbol`、`Split`、`Jump`、`Save`、`Test`、`Accept`
++         `Symbol(bounds, next)` は、交互に並んだ `lo, hi, lo, hi, …` の境界（アロケーションのない走査のために平らにした `Ranges`）の範囲内の記号を一つ消費し、`next` へ続く。
++         `Split(preferred, alternate)` はスレッドを分岐させ、一つ目を優先する。`Jump(target)` は別の場所へ続く。`Save(slot, next)` は現在の位置をキャプチャスロットに記録する。`Test(anchor, next)` は `Motif.Node.Anchor` が成り立つところでのみ通過する。`Accept` はマッチを終える。
++         入力を消費するのは `Symbol` だけであり、残りは VM の ε 閉包の中でコストなしにたどられる。
++     entry #ops   プログラムカウンターで添字付けられた命令
++     entry #slots   キャプチャスロットの数。グループごとに二つと、マッチ全体のための二つ
++     entry #captures   キャプチャグループの数
++     entry #entry   実行が始まるプログラムカウンター：0
++     entry #nullable   マッチが何も消費しない可能性があるかどうか。その場合、探索で飛ばせる位置はない
++     entry #firstBounds   マッチの先頭になりうるすべての記号の、交互に並んだ境界。結合済み
++         マッチの先頭になりうる記号がなければ空である。
++         リテラルの接頭辞を持たないパターンに対する固定されていない探索は、スレッドを開始する前に、これらの境界の範囲内の記号を走査して探す。
++     entry #prefix   すべてのマッチが必ず始まる最長のリテラル、または空のテキスト
++         UTF-16 単位で 32 までに制限され、最初の消費する命令が単一の一意な記号でなければ空である。
++         固定されていない探索は、すべての位置を一つずつ進む代わりに、`Symbolizer#find`（`Text` では `String.indexOf`）でその出現位置の間を跳ぶ。
++   entry .Ranges   ソートされた互いに素なコードポイントの並びとしての記号の集合。あらゆる文字クラスがとる形
+
+% 1 1 0 0b10706c7b9020781eb9f8df68edd836
+
+@ 0 6 0 18ba5e8e65e80c610796c2a9ca8ae1bd
++         `Ranges` は `#spans` を、両端を含む境界を交互に並べたリスト `lo :: hi :: lo :: hi :: …` として保持する。ソートされ、互いに素で、隣接することがないので、二つの集合はその並びが等しいときに限り等しい。
++         コンストラクターは private である。`.apply`、`.point`、`.empty` と名前付きのクラスが正規化された集合を作り、`#union`、`#negate`、`#intersect`、`#folded` が不変条件を保つ。
++         記号は順序付きのアルファベットの `Int` で符号化された要素であり、現在は `.maxSymbol` までの Unicode コードポイントである。
+
+% 2 1 0 098db9929ceac719015cc7e79c477e85
+
+% 3 1 0 034a68e9e85023190e13839279ae0e5f
+
+% 0 1 0 16664aac82dbcac41fb8be1ecfa86284
+
+% 0 1 0 0b477e35de0aa03c04d6713accc85ec1
+
+% 0 1 0 060a4cbea73abc71086f0e579c4d03e0
+
+% 0 1 0 1a2aadf9b2f82cb51f0ee7ae1b9fa6b1
+
+% 0 1 0 11ccd510f51dec37174dd15c05206f88
+
+% 0 1 0 12ff04ca2fb232e21e2f3561bd64cab0
+
+% 1 1 0 018ba37588e1c941164874dc04749887
+
+@ 0 2 0 1193a59fa51825141b8e9194c6a6e249
++         パーサーはあらゆる形のクラスを `Ranges` に解決するので、`Motif.parse(t"[a-cd-f]").node` は `Klass(Ranges('a', 'f'))` となり、隣接する並びは結合される。
+
+% 1 1 0 0e1fa9c91bbb895f018f5823215afc8c
+
+@ 0 38 0 1363baab91141ece0e59dd77c82b70d6
++     entry .maxSymbol   Unicode コードポイントの領域で最大の記号：`0x10ffff`
++         `#negate` が補集合をとる際の上限である。
++         他の記号の領域はどれもこれより小さいので、普遍的な上限として安全である。
++     entry .empty   記号を一つも持たない集合
++     entry .apply   `Ranges(lo, hi)`：`lo` から `hi` までの両端を含む並び
++     entry .point   `Ranges.point(symbol)`：一つの記号からなる集合
++     entry .digit   `\d`：ASCII の数字 `0`–`9`
++         RE2 の perl クラスは、`.word` と `.space` と同じく ASCII のみである。
++     entry .word   `\w`：ASCII の文字、数字、`_`
++     entry .space   `\s`：タブ、改行、垂直タブ、改ページ、復帰、空白
++     entry .any   `.`：改行以外のすべてのコードポイント
++         `s` フラグのもとでは、`.` は代わりに `.anySymbol` である。
++     entry .anySymbol   すべてのコードポイント。`\p{Any}` であり、`s` フラグのもとの `.` でもある
++     entry .where   述語が認めるすべての記号。結合された並びとして返す
++         コードポイントの領域全体を一度走査する。これにより、Unicode データベースの二つ目のコピーを持たずに Unicode クラスを正確にできる。述語に答えるのは JDK 自身の `Character` の表である。
++         異なるクラスごとに一回の走査であり、`.unicode` がそれをメモ化する。
++     entry .posix   `[[:name:]]` の POSIX クラスを名前で引く。すべて ASCII のみ
++         `alnum`、`alpha`、`ascii`、`blank`、`cntrl`、`digit`、`graph`、`lower`、`print`、`punct`、`space`、`upper`、`word`、`xdigit` を `Map[String, Ranges]` として持つ。存在しない名前は、パース時に `Motif.Error.Reason.InvalidPosixClass` になる。
++     entry .unicode   `\p{…}` が使う名前による Unicode の一般カテゴリーまたはスクリプト、または `Unset`
++         `Any` は領域全体である。`Lu` や `Nd` のような二文字のカテゴリーは正確にマッチする。`L` のような一文字のグループは、RE2 の定義どおりその下位カテゴリーの和集合である。その他の名前は `Greek` や `Han` のようなスクリプトとして試される。
++         各クラスは領域全体の一回の走査を要するので、結果はメモ化される。
++         未知の名前は、パース時に `Motif.Error.Reason.UnknownUnicodeClass` になる。
++     entry #spans   交互に並んだ両端を含む境界 `lo :: hi :: lo :: hi :: …`
++     entry #vacant   集合が空かどうか
++     entry #contains   記号が集合に含まれるかどうか
++     entry #union   どちらかの集合にある記号。結合済み
++     entry #negate   集合にない記号。`max`（デフォルトは `Ranges.maxSymbol`）まで
++     entry #intersect   両方の集合にある記号
++     entry #folded   `i` フラグの定義する単純な大文字小文字の畳み込みについての集合の閉包
++         畳み込みの軌道は常に対になるとは限らない（`K`、`k`、ケルビン記号は一緒に畳み込まれる）ので、閉包は各記号を上下に写すのではなく、軌道について計算される。
++         大文字小文字の変わるコードポイントだけを調べるので、コストは集合の大きさではなくそれらの数に比例する。
+
+@ 0 1 0 1708042325488d8d0956d3aaee6e24f1
++ entry .Pike   `Program` を入力の上で線形時間で実行する仮想マシン
+
+% 1 1 0 02f813c8c5a1f44206eaedcb0411da52
+
+@ 0 7 0 10af1e65c95fda2419a91589490fcd63
++       Pike VM はオートマトンを幅優先でシミュレートする。入力の各位置で、プログラムカウンターごとに一つ、優先順位の順に並んだスレッドのリストを保持し、すべてのスレッドを一度に記号の上で進め、決してバックトラックしない。
++       各プログラムカウンターがある位置のスレッドのリストに加わるのは高々一度なので、一回の実行のコストは、パターンが何であっても高々入力の長さとプログラムの長さの積であり、これがライブラリ全体の拠り所となる保証である。
++       スレッドの順序は優先の順序なので、最初に受理したスレッドが、バックトラックするエンジンが最初に見つけたはずのマッチであり、キャプチャの境界も同じである。
+
+% 1 1 0 1599e6c900928d0f033abaa1a547e3c4
+
+% 1 1 0 07fc889f22c4dee617b8d635fed7bb23
+
+@ 0 8 0 1c5a3496d2b8be260a135ee4542ea078
++   entry .run   プログラムを UTF-16 のオフセットから実行し、勝ったスレッドのキャプチャスロット、または `Unset` を返す
++       `Symbolizer` を持つ任意の入力に対する `Pike.run(program, input, start, anchoredStart, anchoredEnd)` である。
++       `anchoredStart` が false なら、マッチが見つかるまで各位置で新しい最低優先度のスレッドが加わり（最左優先の `seek` の意味論）、マッチが始まりえない位置は `Motif.Program#prefix` または `Motif.Program#firstBounds` によって飛ばされる。`anchoredEnd` が true なら、マッチは入力の末尾まで達しなければならない。
++       スロットは `Array[Int]` であり、どのスレッドも位置を保存しなかったところは `-1` である。
++       通常の呼び出し側は `Motif#matches`、`#seek`、`#search`、`#slots` である。
+
+@ 0 1 0 12ace39a58a502f114e06e6d88842444
++ entry .Subsumption   コンパイルされたプログラムの言語の包含と交差を決定する
+
+% 1 1 0 05e2fca2c0db1577027411265afe0d3f
+
+@ 0 8 0 1b2603b19ecce2301c8db2b1661c984e
++       バックトラックするエンジンには答えられない二つの問いであり、RE2 のパターンが正規言語であるためにここでは決定可能である。
++       `.subsumes` は、あるプログラムのマッチするすべての入力に別のプログラムもマッチするかどうかを問う（最悪の場合は指数的である。覆う側のプログラムはその場で決定化されるので、探索は `.maxStates` で予算が決められている）。`.intersects` は、両方にマッチする入力があるかどうかを問う（多項式時間）。
++       これらを問う通常の方法は、`Motif#subsumes`、`Motif#intersects`、kaleidoscope の `Regex#subsumes` と `Regex#intersects` である。
++       単語境界と行境界は解析がモデル化しない形で文脈に依存するので、それを含むプログラムは `Motif.Error.Reason.Unverifiable` を発生させる。
+
+% 1 1 0 0f5a471778a43182172894f29cb3d647
+
+% 1 1 0 111002e0e861d1011d9ca12132e04e30
+
+@ 0 12 0 04826fadd4692fa803fc43980c380272
++   entry .maxStates   探索する状態の予算。100000 であり、これを超えると `.subsumes` は `BudgetExceeded` を発生させる
++   entry .subsumes   一つのプログラム、またはリストのすべてのプログラムがマッチするすべての入力に、覆う側がマッチするかどうか
++       `Subsumption.subsumes(first, second)` は `L(second) ⊆ L(first)` を決定する。`Subsumption.subsumes(cover, candidates)` は `L(⋂candidates) ⊆ L(cover)` を決定する。覆う側を決定化しながら各候補をプログラムカウンターごとに探索し、すべての候補が受理し覆う側が受理しない到達可能な状態があれば、包含は成り立たない。
++       候補のリストが空なら、覆う側がすべてにマッチするかを決定するのではなく、安全側に倒して `false` と答える。
++       `Unverifiable` または `BudgetExceeded` に対して `Motif.Error` を発生させる。
++   entry .intersects   両方のプログラムがマッチする入力があるかどうか
++       二つのオートマトンの積の中で、両方が受理する点に到達できるかどうかである。
++       `Unverifiable` または `BudgetExceeded` に対して `Motif.Error` を発生させる。
+
+@ 0 1 0 192e139c74be97fd1f927693a1ba9451
++ entry .Symbolizer   プログラムが実行できるように、入力を `Int` で符号化された記号の並びとして読む方法
+
+% 1 1 0 131863d3c37729fe00d5cd7e29b8e6bd
+
+@ 0 7 0 0bd06c363ce6f1760c64da8ef6d8476f
++       型クラス `input is Symbolizer` であり、入力を `Motif.Program` が消費する記号に復号する。入力の `#length`、UTF-16 オフセットにある `#symbol`、`#next` の記号のオフセット、オフセットの `#before` の記号、記号が `#word` 文字かどうか、そして探索の高速化のためにリテラルを見つける `#find` を提供する。
++       プログラムの表現は入力についてこれ以外の何にも依存しないので、ストリームやネイティブでのマッチングのための UTF-8 のバイト領域を、`Motif.Program` や `Pike` を変えずに追加できる。
++       `.text` が提供されている唯一のインスタンスであり、Unicode コードポイントとしての `Text` に対するもので、暗黙のスコープにある。
+
+% 0 1 0 06a3482c0d7db7ec0577c7feb5e48d30
+
+@ 0 10 0 0593113c319c728607deda3f77374088
++   entry .text   `Text is Symbolizer`：UTF-16 テキスト上の Unicode コードポイント
++       `codePointAt` と `codePointBefore` を使うので、アストラル文字は一つの記号である。`find` は `String.indexOf` であり、JVM はこれをベクトル化された走査に組み込み化する。
++   entry #Self   入力の型
++   entry #length   オフセットで数えた入力の長さ
++   entry #symbol   あるオフセットにある記号
++   entry #next   あるオフセットにある記号の次のオフセット
++   entry #before   あるオフセットで終わる記号
++   entry #word   記号が単語文字（`\w`、ASCII）かどうか。`\b` と `\B` のためのもの
++   entry #find   `from` 以降で最初にリテラルが現れるオフセット。なければ負の値
+
+@ 0 1 0 0f3fdf6dcf0abbf10bd64ecbcb60cfa5
++ entry .Fsa   コードのコンパイル時に生成される入力全体のマッチャー。一つのパターンのための静的なオートマトン
+
+% 1 1 0 005bdaba259950b80c8d635ead3151b1
+
+@ 0 8 0 1400f26c67fbf1db0367d5cbccf294d7
++       `Fsa` は `Text` から `Boolean` への `#test` を包む。これは `regexBackends.re2` のもとのキャプチャのない `r"…"` リテラルに対して部分集合構成で生成されるもので、パターンの記号クラスの上の密な遷移表を、バックトラックもスレッドの追跡もしないアロケーションのないループで駆動する。
++       裸の関数型ではなく名前付きの入れ物であるのは、キャプチャ検査される利用者がそれをクォートされたコードの中で運べるようにするためである。
++       単語境界や行境界を含むパターン、またはオートマトンが 512 状態を超えるパターンに対しては、生成器は生成を断り、リテラルはステージングされた `Motif.Program` に代替する。
++       プログラムがこれを手で作ることはない。
+
+% 0 1 0 0490c245d46a921d14849afbd7cd88dd
+
+@ 0 5 0 10c1ed0ec104f8e0197a691349c7b18b
++   entry .of   パターンのためのマッチャー。高々一度だけ作られる
++       `Fsa.of(key)(fsa)`：`fsa` は名前渡しであり、`key`（パターンの文字列リテラル）が初めて現れたときにだけ評価される。抽出子はマッチのたびに構築されるからである。
++   entry #test   生成された入力全体のテスト
++   entry #matches   テキスト全体がマッチするかどうか
+
+@ 0 1 0 0d6d73a683c4f693102942fde59bcb8b
++ entry .internal   モティーフとプログラムのコンパイル済みコードへのステージングと、静的なマッチャーの生成器
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 0fb0b651419061f914bed7b56968a78d
++       直接使うためのものではない。kaleidoscope の `r"…"` マクロが、出力する抽出子の中に `Motif`（`Motif.staged` の呼び出しとして）、`Motif.Program`、各 `Motif.Program.Op`、各 `Motif.Node.Anchor` をスプライスできるようにする `ToExpr` の given と、キャプチャのないリテラルが使う `Fsa` へプログラムを部分集合構成でコンパイルする `matcher` からなる。
+
+% 0 1 0 089aac5872cfd9120426d9f1d9567cd2
+
+% 0 1 0 16825a90dfe47cf40aa0c1f291873d09
+
+@ 0 7 0 1b6defa793eba4d90831ffb63f71ab12
++   entry .program   `ToExpr[Program]`：命令を配列リテラルとして表す
++   entry .motif   `ToExpr[Motif]`：パターンごとにキャッシュされる `Motif.staged(pattern, captures, program)` の呼び出し
++   entry .maxStates   生成されるオートマトンの上限。512 状態であり、これを超えると `.matcher` は生成を断る
++   entry .matcher   プログラムのための `Fsa` の式を生成する。または `Unset`
++       アルファベットの同値クラスの上の密な表への部分集合構成であり、ASCII には直接添字付けるクラス対応表を、それより上には二分探索を使う。
++       単語境界や行境界を含むプログラム、または状態数が `.maxStates` を超えるプログラムに対しては `Unset` である。

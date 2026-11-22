@@ -1,0 +1,39 @@
+orthant 2 language
+
+% 0 1 0 1992d28bc027cd86144d8211aebbc5e3
+
+@ 0 2 0 0a914f7ca990f7411312c59f95389510
++ Lançado quando o Scintillate não consegue iniciar um servidor HTTP na porta pedida.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 16d858387f91b9f61d6c27a694355b4f
++ O sistema operacional se recusou a vincular o listener — em geral porque a porta já está em uso,
++ ou porque ela é privilegiada e o processo não tem permissão.
+
+@ 0 4 0 0d201869c13bd46b0d76dd3129898f34
++ Isto **não** é uma resposta HTTP 5xx. Essa é `Http.Status.Category.ServerError` no telekinesis, e
++ descreve uma resposta que o servidor enviou; isto descreve um servidor que nunca chegou a
++ iniciar. O erro se chamava `ServerError` até que os dois fossem distinguidos.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1226dc50bc5618d319fb15e7b9fa3a09
+
+% 1 1 0 1155b4147f71d900099fb1711c5f6595
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 0cae5ffc7e29ed1c10e315cb2f3e0955
++ Escolha outra porta, libere a que está em conflito, ou execute com privilégios suficientes.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 1d31e7adc17911a20596ff34e3235ba2
++ - Código-fonte: `lib/scintillate/src/server/scintillate.Httpd.scala`

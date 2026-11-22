@@ -1,0 +1,166 @@
+orthant 2 language
+
+@ 0 1 0 112e00a0bd848b011c4e0e445a493659
++ info   Gráficos SVG a partir de datos tipados: barras, líneas, dispersión, sectores, histogramas, diagramas de caja y anillos
+
+@ 0 16 0 067dd5b85b1b7504178320a4b398acdc
++     - La forma está en los tipos. Una `Series[x, y]` es una sucesión de puntos con nombre; el
++       tipo de su abscisa decide el eje: un `Text`, un enum o una `Chart.Category` es
++       `Categorical`; un número, una `Duration`, un `Instant` o cualquier `Quantity` es
++       `Continuous`. `Samples[y]` son mediciones en bruto, `Chart.Estimate` un valor con su
++       intervalo, `Noted` un valor con una nota, y un `Dag` de nodos `Weighted` y `Progressive`
++       es un grafo de dependencias.
++     - Una clase es un valor —`Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
++       `Histogram()`, `Boxes()` o `Annulus()`— y `data.chart(kind)` solo compila donde una
++       instancia de `Plottable` dice que la clase puede dibujar la forma de los datos: un gráfico
++       de sectores de tres series o una línea que pasa por rótulos de categorías es un error de
++       compilación.
++     - El ajuste —el rango, la transformación y las graduaciones de cada eje— lo elige una
++       `Calibration` indexada por el tipo de valor del eje, y se sustituye con un given en el
++       ámbito, una importación de `calibrations` o un argumento de la clase. El resultado es una
++       `Scale` o unas `Bands`: datos simples, que es lo que permite a un gráfico saber si los
++       datos nuevos aún caben en sus ejes.
++     - El estilo es un valor `Chart.Style` —`Chart.Standard` por defecto— con un método para
++       cada componente que se dibuja, una `ChartPalette` de colores nombrados por su papel, y una
++       `FontMetric` que mide el texto para la disposición.
+
+@ 0 3 0 0a7750f3b1455772047955d94e1ba081
++     Un emparejamiento incompatible no compila: una serie categórica no puede ser `Lines()`,
++     una colección de series no puede ser `Pie()`, `Samples` no puede ser `Bars()`, y un `Dag`
++     cuyos nodos carezcan de `Weighted` o `Progressive` no puede ser `Annulus()`.
+
+@ 0 6 0 1917a3de2b6d1ec40d240e530bbf9c42
++       Un `Chart[data, form, fit, style]` contiene sus datos (`#data`), su clase (`#form`), el
++       ajuste (`#fit`) que la clase calculó a partir de los datos, y la instancia de `Plottable`
++       que los empareja. Se crea con la extensión `chart`, no directamente. El tipo del ajuste es
++       el propio de la clase de gráfico —`Bars.Fit` con `bands` y `ordinate`, `Lines.Fit` con dos
++       escalas, `Annulus.Fit[node]` con sus bandas— y el tipo del estilo es el trait de estilo
++       de la clase, así que un gráfico de barras se representa con un `Bars.Style` y uno de
++       sectores con un `Pie.Style`; `Chart.Standard` los implementa todos.
+
+@ 0 9 0 072fce925d770d9e02e5a9a1c5d675b3
++   entry .Legend   dónde va la leyenda: `Hidden`, `Right` o `Bottom`
++       `Chart.Style#legend` elige una. `Right` apila una muestra y un nombre por serie junto al
++       área de trazado, `Bottom` los distribuye a lo largo de la parte inferior en una fila, y
++       `Hidden` no dibuja leyenda ni le reserva espacio. Un gráfico de anillo no tiene leyenda,
++       sea cual sea el ajuste.
++   entry .Axis   qué eje está dibujando un gancho de estilo cartesiano: `Abscissa` u `Ordinate`
++       Se pasa a `axisLine`, `tick`, `tickLabel`, `gridLine`, `axisTitle`, `arrowhead`,
++       `axisBreak` y `labelRoom` de `Chart.Cartesian`, para que una sustitución pueda tratar el
++       eje horizontal de forma distinta del vertical.
++   entry .Anchoring   dónde se coloca un fragmento de texto, según decidió la disposición: punto y alineación
+
+@ 0 5 0 1831b6ac69f488340d399a735a559cbd
++         Extiende `Chart.Style` con los componentes de los ejes y los parámetros de su
++         disposición. Las posiciones se dan en las coordenadas del dibujo; el estilo decide la
++         forma, el trazo y dónde se sitúa un rótulo respecto a su marca de eje. `Bars.Style`,
++         `Lines.Style`, `Scatter.Style`, `Boxes.Style` y (a través de `Bars.Style`)
++         `StackedBars.Style` e `Histogram.Style` lo extienden; `Pie.Style` y `Annulus.Style`
++         no, porque no tienen ejes.
+
+@ 0 8 0 0891e807181f12b60920a4f6d3afeed6
++         Implementa a la vez `Bars.Style`, `StackedBars.Style`, `Histogram.Style`,
++         `Lines.Style`, `Scatter.Style`, `Boxes.Style`, `Pie.Style` y `Annulus.Style`, de modo
++         que un solo valor en el ámbito da estilo a cualquier gráfico. Todos los parámetros
++         tienen un valor por defecto: `width = 640.0`, `height = 400.0`, `inset = 12.0`, `font =
++         Web.sansSerifFont`, `fontSize = 12.0`, `legend = Legend.Right`, `pitch = 60.0`,
++         `tickLength = 5.0`, `grid = true`, `abscissaTitle` y `ordinateTitle` sin definir,
++         `strokeWidth = 2.0`, `markerRadius = 3.5`, `markers = false`, `smoothing = 0.0`,
++         `barGap = 0.25`, `boxGap = 0.25`, `hole = 0.0`, `sectorGap = 2.0` y `bandGap = 2.0`. La
++         representación de cualquier componente es una sustitución en una subclase anónima:
+
+@ 0 15 0 1a99d3afece48c15170f5b17c966e665
++         El resultado de `Chart#drawing`: el tamaño del lienzo, cualquier definición SVG, y un
++         `Ledger` de `Svg.Id` a `Figure` que contiene `backdrop` y luego (para un gráfico
++         cartesiano) `grid`, `abscissa`, `ordinate`, `series-0`, `series-1`, … y `legend`; un
++         gráfico de sectores tiene `wedges` y `legend`; uno de anillo, `rank-0`, `rank-1`, ….
++         Los identificadores son lo que nombra un `Chart.Revision.Replace`, y cada uno se
++         convierte en el `id` de un `<g>` en el SVG.
++     entry .encodable   el dibujo entero como un único `Svg`, como `drawing.in[Svg]`
++     entry #width   la anchura del lienzo, tomada del estilo
++     entry #height   la altura del lienzo, tomada del estilo
++     entry #defs   las definiciones SVG que necesita el dibujo; ninguna para las clases estándar
++     entry #parts   las partes por identificador, en orden de dibujo
++   entry .encodable   un gráfico como un `Svg`, como `chart.in[Svg]`, con los componentes que pide
++       Necesita en el ámbito el tipo de estilo propio del gráfico (`Bars.Style` para un gráfico
++       de barras; `Chart.Standard` satisface todas las clases), una `ChartPalette`, una
++       `FontMetric` y un `Arranger`, todos los cuales tienen valores por defecto en su objeto
++       compañero. `chart.in[Svg].in[Xml].show` es el texto SVG.
++   entry .Revision   lo que cambió entre un dibujo de un gráfico y el siguiente
+
+@ 0 9 0 1c28ec2691d0d19507526a5acda9efaa
++       `data is Plottable in form to fit by style` solo existe donde la clase puede dibujar los
++       datos: un gráfico de sectores necesita una serie categórica, uno de líneas necesita ejes
++       numéricos, uno de anillo un `Dag` de nodos ponderados y progresivos. La clase es la
++       `Form`, el ajuste el `Result` (de modo que el ajuste de un gráfico es el propio de su
++       clase, con sus ejes visibles), y el estilo el `Operand`, acotado por `Chart.Style`. Las
++       instancias estándar viven en el objeto compañero de cada clase —`Bars.series`,
++       `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Annulus.dag`, …—, así que se
++       encuentran sin importar nada; una instancia `traversable` cubre cualquier colección de
++       series o de muestras (una `List`, un `Set` o una `Sequence`), y su evidencia de recorrido
++       se resuelve antes que las clases de tipos de los tipos de los elementos.
+
+@ 0 8 0 10d090d5a3debda7022c250b95d296cc
++   entry #fit   elige los ejes a partir de los datos: el `Result`, como `Lines.Fit`
++   entry #accommodates   si un ajuste aún contiene los datos nuevos, para que una revisión pueda sustituir una sola parte
++       Para una clase cartesiana, cada posición e intervalo cae dentro de las escalas y cada
++       categoría es una banda conocida; para un gráfico de sectores, las categorías no han
++       cambiado; para uno de anillo, la forma del grafo y sus pesos no han cambiado.
++   entry #draw   representa los datos con un ajuste como un `Chart.Drawing`
++       Toma como valores contextuales el estilo (el `Operand`), una `ChartPalette`, una
++       `FontMetric` y un `Arranger`.
+
+@ 0 4 0 1bdbb9d5ce2db9910b3f17d117999156
++ entry .Weighted   la extensión de un nodo de un gráfico de anillo: su parte del ángulo de su rango y del grosor de la banda
++     `node is Weighted` da `weight(node): Double`. En un `Annulus`, el sector de un nodo
++     barre la parte de la vuelta de su banda que su peso representa del total de su rango, y
++     una banda es tan gruesa como la parte de su rango en el peso del grafo entero. Un peso
++     negativo cuenta como cero.
+
+@ 0 5 0 124bcb22acae8dcd16f6400eea87d86d
++ entry .Progressive   cuánto ha avanzado un nodo de un gráfico de anillo, de 0 (sin empezar) a 1 (terminado)
++     `node is Progressive` da `completion(node): Double`, recortado a `[0, 1]` al dibujarse. Un
++     nodo lleva su propio progreso, de modo que un gráfico de anillo se revisa como cualquier
++     gráfico, con un `Dag` nuevo de la misma forma cuyos nodos han avanzado más, y solo se
++     sustituyen las bandas cuyos sectores se han llenado más.
+
+% 0 1 0 054d3f904bd128ce022edacb2a896287
+
+@ 0 1 0 12f074268f4e474211e04fa1a4fdb787
++ entry .Annulus   un grafo de dependencias como bandas concéntricas: una por rango, y cada nodo un sector que se llena según lo completo que esté
+
+@ 0 10 0 1d16274da5ae74870b75e0bde129fae8
++       Una clase de gráfico para un `Dag[node]` de acyclicity cuyos nodos son `Weighted` y
++       `Progressive`, con un `Ranking` en el ámbito (el valor por defecto del objeto compañero de
++       acyclicity; `import rankings.balancedRanking` dibuja cada nodo tan cerca de sus
++       dependientes como sea posible). Los nodos que no dependen de nada forman la banda más
++       interior, y cada banda siguiente los nodos un rango más afuera, de modo que una
++       construcción se rellena desde el centro hacia fuera. El sector de un nodo barre un ángulo
++       proporcional a su peso dentro de su rango, ordenado para que quede sobre las dependencias
++       hacia las que se le atrajo, y una banda es tan gruesa como la parte del peso total que
++       corresponde a su rango. El sector se llena en el sentido de las agujas del reloj según lo
++       completo que esté el nodo, con el resto en un tono apagado; el color es el primer color de
++       la paleta, matizado según dónde esté el sector. Un gráfico de anillo no tiene rótulos, ni
++       ejes, ni leyenda.
+
+% 0 2 0 14e9c2ce8abadbba09354805377d870d
+
+% 0 1 0 192dfaa53893ba201815a4fa9a1268c7
+
+@ 0 3 0 0c218c9188a3bb0711c8d394d44717cf
++         La completitud no está aquí; se lee de los nodos en cada dibujo.
++     entry #bands   las bandas, de la más interior a la más exterior
++   entry .Style   los componentes de un gráfico de anillo: la parte completada y el resto de cada sector, y la junta
+
+@ 0 11 0 0c3ca24d87538fed06175a0f6738d39a
++         Extiende `Chart.Style`. `Chart.Standard` proporciona `hole`, `sectorGap` y `bandGap`.
++     entry #hole   la fracción del radio que se vacía desde el centro, compartida con `Pie.Style`
++     entry #sectorGap   la anchura en píxeles de la junta entre sectores vecinos
++     entry #bandGap   la anchura en píxeles de la junta entre bandas vecinas
++     entry #shade   el color de un sector según su posición, a partir del primer color de la paleta
++         `x` e `y` van de -1 a la izquierda o abajo del anillo a 1 a la derecha o arriba: el tono
++         gira treinta grados de izquierda a derecha, y de abajo arriba el color pasa de un quinto
++         más oscuro, por el tono puro, a un quinto más claro.
++     entry #sector   la parte completada del sector de un nodo, a partir de sus operaciones de trazado: `sector-N`
++     entry #remainder   la parte sin terminar, en un tono apagado: `sector-N-rest`
++   entry .dag   un `Dag` de nodos ponderados y progresivos se puede dibujar como gráfico de anillo, dado un `Ranking`

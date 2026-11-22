@@ -1,0 +1,23 @@
+orthant 2 release
+
+@ 1 0 0 17b38e8389e4ec64114faef8f9440c91
++   entry .Bits   the bits each character of an encoding carries, as a type: `Serialization.Bits[Hex]` is `4`
+
+@ 0 1 0 09a7dc3eb0345cf408250cda173d0613
++       given Alphabet[Hex] = Alphabet("0123456789ABCDEF", false)
+
+@ 0 3 0 10e4c4dfb1aa481a175e2a26d9473d47
++       `Alphabet(chars, padding)` is the only way to make one, and `chars` must be a string
++       literal, because it is checked as the call is compiled: it must have exactly `2^bits`
++       characters for the encoding, plus one for padding when `padding` is `true`; no
++       character may appear twice; and every character must be ASCII. An alphabet which
++       breaks any of these does not compile, so a wrong one cannot exist at runtime. An
++       alphabet is pure (`caps.Pure`), so it may not capture a capability.
+
+@ 1 0 0 0c6768bba50414f3055734d43576e0d0
++   entry .apply        `Alphabet("…", padding)`: an alphabet from a string literal, its size and characters checked at compile time
++       A third argument gives the `#tolerance`. The encoding is taken from the expected type,
++       or written as `Alphabet[Hex]("…", false)`.
+
+@ 1 0 0 1dc866f875da313a009762e0063bbdf5
++   entry #bits         the bits each character carries, from the encoding: 4 for `Hex`, 6 for `Base64`

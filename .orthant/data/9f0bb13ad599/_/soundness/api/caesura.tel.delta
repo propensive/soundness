@@ -1,0 +1,10 @@
+orthant 2 release
+
+@ 0 1 0 034a5b5220d489590ed65b54edfcfd7f
++               Sheet(proscenium.Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick,\"Bottom, weaver\""
+
+@ 0 1 0 1a784c8c157e8cd10d6b9fc0ef00df2b
++               Sheet(proscenium.Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick\tBottom, weaver"
+
+@ 0 1 0 1ce4df4d66962429177cc169f899ade3
++               Sheet(proscenium.Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""

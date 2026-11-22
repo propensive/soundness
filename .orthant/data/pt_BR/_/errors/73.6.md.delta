@@ -1,0 +1,44 @@
+orthant 2 language
+
+% 0 1 0 1bc754d2e778c69a15b91caa7fa0a128
+
+@ 0 1 0 0ad69af0389d574605401f25b185d497
++ Lançado quando o Aviation não consegue analisar um arquivo do banco de dados de fusos horários
++ (TZDB).
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0c3318bdb7a9607608d61d09f67b7918
++ `Tzdb.Error` é lançado durante a leitura do TZDB da IANA. Cada variante identifica a categoria de
++ corrupção ou de conteúdo inesperado. A mensagem informa o número da linha: `the timezone could not be parsed
+
+% 0 1 0 07063b8ecab44ce117cfe3aea8edd51c
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 05b649f1a707f3a502ab3c4fcb788e15
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensagem
++ column  Resolução
++ row  `↯/s.73.6.1`  `CouldNotParseTime`  Um valor de horário na linha não pôde ser analisado.  `[↯/s.73.6.1] the timezone could not be parsed at line 42: could not parse time 25:00`  Repare o arquivo TZDB de origem ou use outra cópia.
++ row  `↯/s.73.6.2`  `UnexpectedRule`  Uma linha `Rule` apareceu onde o parser não a esperava.  `[↯/s.73.6.2] the timezone could not be parsed at line 42: unexpected rule`  Confirme que o arquivo segue a estrutura documentada do TZDB.
++ row  `↯/s.73.6.3`  `UnexpectedLink`  Uma linha `Link` apareceu numa posição inesperada.  `[↯/s.73.6.3] the timezone could not be parsed at line 42: unexpected link`  Confirme que o arquivo segue a estrutura documentada do TZDB.
++ row  `↯/s.73.6.4`  `UnexpectedZoneInfo`  Uma linha de informações de zona apareceu onde não deveria.  `[↯/s.73.6.4] the timezone could not be parsed at line 42: unexpected zone info`  Confirme que o arquivo segue a estrutura documentada do TZDB.
++ row  `↯/s.73.6.5`  `UnparsableDate`  Um campo de data na linha não pôde ser analisado.  `[↯/s.73.6.5] the timezone could not be parsed at line 42: the date could not be parsed`  Repare a linha problemática.
++ row  `↯/s.73.6.6`  `BadZoneInfo`  Uma linha de informações de zona tinha conteúdo estruturalmente inválido.  `[↯/s.73.6.6] the timezone could not be parsed at line 42: bad zone information: [ Elsinore Hamlet Yorick ]`  Confirme que a linha tem o número e a ordem corretos de colunas.
++ row  `↯/s.73.6.7`  `BadName`  Um nome (de zona ou de regra) era sintaticamente inválido.  `[↯/s.73.6.7] the timezone could not be parsed at line 42: the name verona/Juliet! is not valid`  Use apenas os caracteres permitidos pela sintaxe do TZDB.
++ row  `↯/s.73.6.8`  `NoTzdbFile`  O arquivo TZDB nomeado não foi encontrado no classpath.  `[↯/s.73.6.8] the timezone could not be parsed at line 0: the zonefile europe could not be found on the classpath`  Garanta que os recursos do TZDB estejam incluídos no classpath; a distribuição do Aviation os fornece.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 16d615c5fcec4f8919f3545a78d6afc4
++ - Código-fonte: `lib/aviation/src/core/aviation.Tzdb.scala`

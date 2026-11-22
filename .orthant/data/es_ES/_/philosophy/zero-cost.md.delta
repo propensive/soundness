@@ -1,0 +1,167 @@
+orthant 2 language
+
+@ 0 1 0 1aa94afa9fe43dba1fa81c13c4a66c91
++ # Coste cero
+
+@ 0 6 0 12893373d05452180d6a62cc944063cb
++ Soundness paga su seguridad en tiempo de compilación, no en tiempo de ejecución. Los tipos
++ opacos, la expansión inline y el cálculo a nivel de tipos hacen que las garantías que lleva un
++ tipo —las unidades de una magnitud, un nombre validado, una ruta comprobada— se compilen por lo
++ general en el valor desnudo que envuelven, sin asignar ningún objeto envoltorio y sin dejar
++ ninguna comprobación por ejecutar. Por tanto, la seguridad no es un impuesto sobre el
++ rendimiento: el mismo código que se demuestra correcto es también tan rápido como la versión sin
++ comprobar que habría escrito a mano un programador descuidado.
+
+@ 0 1 0 194920cf413d32d4001e2196365ee4ca
++ ## Lo que cuestan los tipos en tiempo de ejecución
+
+@ 0 2 0 0ff9c1638664d9511d91931db00f1917
++ Nada, en el caso habitual, porque no están ahí. Un tipo opaco es su representación subyacente con
++ otro nombre, solo a efectos del compilador:
+
+% 2 1 0 0e8a9d57a4981e4000bba9188a14e854
+
+% 3 1 0 04d19b78fbdfc2781233f534cea3d073
+
+% 4 1 0 0f8c669b140c78161993b1ce4cec5ceb
+
+% 0 1 0 1f29fe33329d0fdb1a6090b6cee52a0c
+
+% 0 1 0 0cbf92c0ff406f531cc93de9b5ec3e77
+
+% 0 1 0 08936ef72555ceae0c5ed79641b70f5d
+
+% 0 1 0 0871db3e46b29de50e4201cc59a2dd4e
+
+% 0 1 0 0e41f304801724c80e46ac8bad49f6fa
+
+% 1 1 0 141180964439b00b020d5e0dd52e0f92
+
+@ 0 2 0 0fb25d821c8101f205e033d7206d3c1d
++ `Optional[value]` es entonces simplemente `Unset | value`: una unión con un centinela respaldado
++ por null, de modo que un valor ausente cuesta una referencia nula y uno presente cuesta
++ exactamente el valor.
+
+@ 0 3 0 06bfd94728a9f3bd0731f4eb7c31b642
++ Un `Quantity[Metres[1]]` es un `Double`. Un millón de ellos en un array son un millón de doubles,
++ no un millón de objetos. Las unidades existen mientras se comprueban los tipos del código y han
++ desaparecido cuando se ejecuta.
+
+@ 0 3 0 04c82918342d0ae200bb9ca8e67134ca
++ El mismo razonamiento abarca las operaciones. Son `inline`, de modo que un cálculo dimensional se
++ convierte en las instrucciones aritméticas que habría producido el código equivalente con
++ `Double` desnudos: ningún envoltorio que asignar, ningún método de una clase de tipos al que
++ despachar:
+
+% 2 1 0 08fbda1cc4cab6e51ab710dc243d7d68
+
+% 3 1 0 0741bc480694b87e13266e659dc2976b
+
+% 4 1 0 0a9c06621d301e4c1ba8f4a0a3626f9d
+
+% 0 1 0 08587b413de912fb1740e01b0fa905db
+
+% 0 1 0 0bd72fd524f01ded0f3e6a25a450609c
+
+% 0 1 0 12dcaa370104ae7e14b6f895080175d7
+
+% 0 1 0 192c7b6a32bb589010fb608001ab5eb5
+
+% 0 1 0 0cdae38f35fcf74316d1a9e7c74d8b1f
+
+% 0 1 0 0315ed95e1726869115c6f6ac3045972
+
+% 1 1 0 04507a954e90e7bd1c16d5945eb9c06b
+
+@ 0 2 0 1082be9e8a8180ad04aab144fe31bdf8
++ Cada dimensión de esa signatura se comprueba mientras se compila el código. Nada de ello
++ sobrevive en el bytecode.
+
+@ 0 1 0 198723e6d9bc0c7402a7e7b58b70d50f
++ ## La afirmación se prueba, no se asevera
+
+@ 0 3 0 018213ed332a73db0124328834cc119f
++ Una afirmación sobre rendimiento que solo se enuncia tiende a dejar de ser cierta: se elimina una
++ anotación inline, un método de una clase de tipos deja de especializarse, y la garantía
++ desaparece en silencio mientras la documentación sigue prometiéndola.
+
+@ 0 4 0 095c36707e40b5c6179fd00ed88024bf
++ Por eso la suite de pruebas lee el bytecode compilado y falla si la garantía ha caducado. Analiza
++ el fichero de clase, recorre las instrucciones de cálculos representativos y comprueba que no
++ sobrevive ningún despacho virtual ni de interfaz a una operación de una clase de tipos y que no
++ aparece ningún boxing:
+
+% 2 1 0 1f07b2bbe1b2a97a014c1cb3cea23749
+
+% 3 1 0 0daff0e084b9ec7b17f59080400b2c21
+
+% 4 1 0 002721501da8d99508deac8e171bb198
+
+% 0 1 0 06d451209c19eed41a0f9d0083ad909e
+
+% 0 1 0 1b200465c57fdf6e12fbf8f61cd071bb
+
+% 0 1 0 13ffe0cd979a979a1d56260556b68786
+
+% 0 1 0 01c6ccda5a9ba44e13a992cc72333823
+
+% 0 1 0 0a563bb6f7acae8019de746f7e6b7887
+
+% 0 1 0 0b2b94bd5874194c152b360f8eebf1fd
+
+% 0 1 0 11f9afa54a68157d02f7e84f4514dee2
+
+% 1 1 0 0af6c2974a25a2430f6222499baa4dbd
+
+@ 0 3 0 191e8dd69be4f3670579c1cd3249123a
++ El módulo de [metaprogramación](../en/modules/metaprogramming.md) existe en parte para hacer esto
++ posible: si vale la pena hacer una afirmación sobre lo que emitió el compilador, vale la pena
++ comprobarla en cada compilación.
+
+@ 0 1 0 079f5d730989cb5508161ade7244a6e5
++ ## Dónde el coste no es cero
+
+@ 0 1 0 0ef41bf0dda30b821c768df6a2862db6
++ Ser honesto sobre esto importa más que la propia afirmación.
+
+@ 0 3 0 046b02c97c26023504fc6408c9a22f9c
++ **La aritmética comprobada cuesta lo que comprueba.** Importar
++ `arithmeticOptions.checkedOverflow` añade una comprobación real a cada suma. Por defecto no se
++ comprueba, así que el coste solo se paga donde se pide; pero donde se pide, se paga.
+
+@ 0 2 0 1b20f45cafddcab80affdf4f4f229c09
++ **La validación cuesta una vez, al construir.** Convertir texto en un `Port` lo analiza y
++ comprueba su rango. Lo que se ahorra es que nada posterior vuelve a comprobarlo, no que la
++ primera comprobación sea gratuita.
+
+@ 0 4 0 0079351502704df71e7ad9cef55dbae5
++ **Parte de la seguridad es verdaderamente estructural.** La disciplina de propiedad única de un
++ `Stream` la impone el sistema de tipos sin coste en tiempo de ejecución, pero el uso de búferes y
++ ventanas que lo hace funcionar sin copias es maquinaria real. La comprobación de capturas
++ demuestra que la maquinaria es segura; no la hace desaparecer.
+
+@ 0 4 0 1f53d1108d1028361bdfc556a306293b
++ **El tiempo de compilación es la factura.** El cálculo a nivel de tipos, la expansión inline y la
++ expansión de macros son trabajo que se hace en cada compilación para evitar trabajo en cada
++ ejecución. Un proyecto de Soundness compila más despacio que un equivalente con tipos laxos, y
++ `-Xmax-inlines` es un ajuste que de vez en cuando hay que aumentar. Ese es el trato, enunciado en
++ la dirección en que realmente funciona.
+
+@ 0 1 0 12784414e4b65cbc1a6691e34e408af0
++ ## Por qué este principio es estructural
+
+@ 0 3 0 14545fee662b7ba60dcb16e547e28029
++ Sin él, cada uno de los demás principios de esta colección se convierte en una negociación. Un
++ equipo que cree que la seguridad cuesta rendimiento recurrirá al tipo sin comprobar en el bucle
++ interno, y el bucle interno es justamente donde un error sale más caro.
+
+@ 0 4 0 04b4898a50cc61171253e9d20b7a15a5
++ Si la versión segura es también la versión rápida, la cuestión nunca se plantea. Por eso el
++ «coste cero» se trata como una restricción de diseño sobre las nuevas abstracciones y no como una
++ feliz observación sobre las existentes: una abstracción que no se puede hacer desaparecer se
++ reconsidera antes de añadirla.
+
+@ 0 2 0 0c493f1cfe6d1dcb0d639adeb54a223d
++ Véase [corrección](correctness.md) para saber qué se compra con la factura del tiempo de
++ compilación, y [opcionalidad](optionality.md) para el caso más extendido de un envoltorio
++ eliminado.

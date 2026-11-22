@@ -1,0 +1,46 @@
+orthant 2 language
+
+% 0 1 0 0bce2f7b5838d1170aee00a2af4f94e3
+
+@ 0 1 0 0bfb679f9dbfa11712bb259b8a1897be
++ Exoskeleton がコマンドラインアプリケーションをインストールできないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 0f60ddc061c87920185f899450e67b9a
++ Exoskeleton のインストーラーは、シェルの補完とランチャーのファイルをユーザーの環境に書き込む。
++ このエラーは、探索の段階（どこに書き込むかを突き止める）か、I/O の段階（実際に書き込む）のどちらかでの失敗を報告する。
++ メッセージは `the installation failed because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 168e1f1fb6dbf43300a9ddd1d7e5e513
+
+@ 0 3 0 05d1e0598770261e00122cc642a56416
++ インストーラーが環境について十分な情報を集められなかった。たとえば、必要な環境変数やシェルの設定ファイルがない。
+
+@ 0 1 0 0945954da965167410505a272eccfb45
++ **例。** `[↯/s.109.3.1] the installation failed because it was not possible to get enough information about the install environment`
+
+@ 0 3 0 132610e500e85f91083a325d098b41ad
++ **解決方法。** 期待される変数と設定ファイルが利用できる環境でインストーラーを実行する。サポートされる環境についてはドキュメントを参照する。
+
+% 0 1 0 1000f20a954ee16415a6d1cbf885bacf
+
+@ 0 1 0 0ff515532e84277511eda9a1651e17eb
++ インストールのファイルの一つを書き込む間に I/O エラーが起きた。
+
+@ 0 1 0 04aef35cde3027aa059f92bebe85661d
++ **例。** `[↯/s.109.3.2] the installation failed because an I/O error occurred when trying to write an installation file`
+
+@ 0 2 0 1de6b9de53e9ccae0643961730c75902
++ **解決方法。** 書き込み先の場所のファイルシステムのパーミッションと空き容量を確認する。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 2 0 0ba58c02050968b61af7168a4d7259d1
++ - ソース：`lib/exoskeleton/src/core/exoskeleton.Install.scala`
++ - `↯/s.109.1` — tmux のランチャーを実行できない

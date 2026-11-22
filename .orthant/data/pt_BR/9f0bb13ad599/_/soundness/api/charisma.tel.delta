@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 5 0 0f0a020048ce75790f970f9a5a6f8db9
++       Uma enumeração de `NetForward` (mostrada como `→`, de `-->`), `BothDirections` (`⇄`, de
++       `<=>`), `Equilibrium` (`⇋`, de `<~>`), `Stoichiometric` (`=`, de `===`) e `Resonance` (`↔`, de
++       `<->`). A seta que um químico escreve carrega significado, e uma equação a preserva.
++   entry .showable   mostra uma reação como a sua seta

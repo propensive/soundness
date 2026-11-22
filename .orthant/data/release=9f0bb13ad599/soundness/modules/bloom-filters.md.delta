@@ -1,7 +1,0 @@
-orthant 1 release
-
-- is chosen as a type. A filter is [immutable]: adding an element gives a new filter, so filters
-- are shared and accumulated as safely as any other value.
-+ is chosen as a type. A filter can be filled in place while it is new, and is then frozen. A
-+ frozen filter is [immutable]: `+` and `++` give a new filter and leave the old one unchanged, so
-+ frozen filters are shared and accumulated as safely as any other value.

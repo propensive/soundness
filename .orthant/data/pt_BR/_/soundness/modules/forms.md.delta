@@ -1,0 +1,167 @@
+orthant 2 language
+
+@ 0 1 0 168196334f18aeaf07cb0c1a1f564eb7
++ ## Formulários
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 5 0 08588ae0d9ef15990daa04173dee371d
++ Um formulário HTML é uma interface de usuário para um tipo de dados, e aqui ele é gerado a
++ partir do próprio tipo. Uma case class produz um formulário, com uma entrada rotulada para cada
++ campo e um widget escolhido pelo tipo do campo. Um envio é decodificado de volta na case class,
++ e quaisquer falhas de validação são anexadas aos campos que as causaram. Case classes aninhadas
++ viram fieldsets aninhados, de modo que o formulário espelha a estrutura dos dados.
+
+@ 0 1 0 15f16e187bbdbbea0f18b2a2bd3d617f
++ ### Sobre formulários
+
+@ 0 4 0 082e8dfc91e0c5ff13f596c998cd5fcd
++ Na maioria das aplicações web, os formulários são escritos duas vezes: uma como entradas HTML, e
++ de novo como a análise e a validação do que volta. As duas metades são mantidas consistentes à
++ mão. Toda mudança nos dados, como um campo novo, um campo renomeado ou um tipo mais estrito,
++ precisa ser feita nas duas, ou o formulário se afasta dos dados que diz coletar.
+
+@ 0 5 0 0db0c9b7b69fe4100dfd3821c7be49b0
++ [Derivar][derivação] as duas metades de um único tipo elimina a duplicação. O tipo diz que
++ campos existem e o que cada um aceita. Os widgets decorrem dos tipos dos campos. Decodificar um
++ envio aplica os mesmos tipos validados que governam o resto do programa, então um endereço de
++ e-mail malformado falha no formulário, com uma mensagem que aponta para o campo de e-mail. Isso
++ é [correção](../../philosophy/correctness.md) por meio de uma única fonte da verdade.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Tudo vem do pacote `soundness`. O último import permite que os exemplos imprimam seus
++ resultados:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1e6efd6ba2ee26271b8f1afe03e46881
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 11705d700f7701241eee627da978f20c
++ ### Renderizando um formulário
+
+@ 0 2 0 0e4939c0d018e7e81b9d6e44ecfff070
++ `elicit` renderiza o formulário de um tipo como [HTML](html.md), pronto para ser servido. `edit`
++ o renderiza preenchido a partir de um valor existente:
+
+% 2 1 0 06d9a77898a98e6a0a35b6a4b819f492
+
+% 0 1 0 12c5781411ce8df600e42adec8d9409a
+
+% 0 1 0 031ae47311cf570d05242c937cd26044
+
+% 0 1 0 056f45d0b43bf51c18c4106f79ba8dce
+
+% 1 1 0 13394f7d3bb5ce75081757cd69aedbb6
+
+% 3 1 0 196e46597aed5264050269039a58f407
+
+% 4 1 0 0a3fff44615041250391fc1c43867b53
+
+% 5 1 0 06557776e30687911c0bd6de7d03a269
+
+% 0 1 0 0f763904aac3ceb60224537300dba089
+
+% 1 1 0 128014851ed987600c44f207ebd5a698
+
+@ 0 3 0 172b600f6b9547b70c1dfd1f238f3525
++ Cada campo aparece com um rótulo derivado do seu nome, então `leader` vira “Leader”. Uma case
++ class aninhada vira um `<fieldset>` com uma legenda, de modo que a estrutura do formulário se
++ explica sozinha.
+
+@ 0 1 0 10e8abd500d5355b0925b24afd5fd462
++ O widget de cada campo é escolhido pelo seu tipo:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 0ecc7117ed09dd040d364770f02a7295
++ column  Tipo do campo
+
+% 0 1 0 07e5c7d8a05f0c7c150fe24a94d90cbb
+
+@ 0 6 0 001aa5d9a509581a152fc862ff42560c
++ column  Renderizado como
++ row  `Boolean`  `Checkbox`  uma caixa de seleção
++ row  uma enumeração  `Combobox`  uma entrada de texto com um `<datalist>` dos casos
++ row  `Reference[entity]`  `Dropdown`  um `<select>` das entidades listadas
++ row  qualquer outro tipo codificável como `Text`  `Field`  uma entrada de texto
++ row  uma case class  nenhum  um `<fieldset>` de seus campos
+
+% 1 1 0 17ea37663dc0fb811160659a806c506f
+
+@ 0 1 0 0c0fdb72612479f50276d42f14943021
++ ### Envios
+
+@ 0 2 0 093fc17af4a0d9df0ee2617e63fb5666
++ Um envio chega como uma `Query`: os pares de chaves e valores de um post de formulário, em que
++ os campos aninhados são separados por pontos, como em `leader.name`. `as` o decodifica no tipo:
+
+% 2 1 0 1e70a100b748aa0b17f03d2c62926625
+
+% 0 1 0 05b3aa41a0ab130d187cb0a15f3e4431
+
+% 1 1 0 00d57f922281f0f0184c31a573d1c23b
+
+% 3 1 0 0ddf4497666b8bd61acc490efcc640d0
+
+% 4 1 0 08c642ac7577858b00e6c5feecc7908b
+
+% 5 1 0 12c5b75ff2dca513076da2ab2543b5b5
+
+% 0 1 0 0389b82f3f45bad10a681078ab116323
+
+% 1 1 0 0742dd1918a8d4be16a5ea6fc9d7d0cb
+
+@ 0 5 0 01d7a5377e924a8617f2480d829c29b2
++ Os campos são decodificados pelos mesmos tipos usados em toda parte. Um
++ [`EmailAddress`](network-addresses.md#email-addresses) precisa ser analisável, e um
++ [`Name`](names.md) precisa satisfazer suas regras. A validação de um formulário, portanto, não é
++ um conjunto separado de regras. É o sistema de tipos fazendo seu trabalho habitual na fronteira,
++ e uma falha carrega um ponteiro para o campo culpado:
+
+% 2 1 0 0e48b76268981a0b1241289de9854127
+
+% 3 1 0 19cca74033a2c71419bec283d8e506dd
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 013f911a420f94a7158aa0945de503f7
+
+% 1 1 0 1da2f77fbd8f251c13e3d03b864f6422
+
+@ 0 2 0 12d7d5af045f553e0a7032812eedc801
++ [Decodificação](decoding.md#requiring-a-value) explica como o tipo de um campo decide se o campo
++ é obrigatório.
+
+@ 0 1 0 06721b11e346cde9170c88e0b8a8fb07
++ ### O ciclo do formulário
+
+@ 0 3 0 14628e26c9c075c11e295da695ca7bb7
++ Um formulário é um laço: renderizar, enviar e renderizar de novo com erros, até que o valor
++ esteja completo. `elicit` recebe a `Query` enviada e o estado da validação, de modo que o
++ formulário renderizado de novo mostra o que foi digitado, com as falhas anexadas aos seus campos.
+
+@ 0 3 0 167ec85cb404b0960fafe02742978202
++ Um handler de [servidor](http-server.md#responses) executa o laço, decodificando em caso de
++ sucesso e renderizando de novo em caso de falha. Ele lida, portanto, com valores, e não com
++ requisições. O [cliente HTTP](http-client.md#posting-a-body) envia uma `Query` por post como um
++ envio de formulário.
+
+@ 0 1 0 10469fddfe7d0c78174a62c9cf8fb5f3
++ ### Personalizando a aparência
+
+@ 0 4 0 1b560c673a3b18ad1deeafbfb47931d7
++ A forma como um formulário e suas linhas são renderizados é uma `Formulation`: a moldura em
++ torno dos widgets e o posicionamento dos rótulos e das mensagens de erro. `postFormulation` dá
++ uma renderização simples, sem estilo. Uma aplicação fornece a sua própria, para combinar com seu
++ design, sem mexer na forma como os campos são derivados. O [CSS](css.md) estiliza o resultado.

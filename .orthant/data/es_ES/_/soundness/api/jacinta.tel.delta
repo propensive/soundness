@@ -1,0 +1,3403 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d20724440cb8d66152c646816b18768
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0bea5823ded45c690e110e06b4e7fcef
++ info   JSON como valor tipado e inmutable: analizado, construido, recorrido, convertido a tipos de Scala y de vuelta, y emitido en flujo
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 18db12a9416a865d065b5c4d1114bdc0
++     _Jacinta_ lee y escribe [JSON](https://www.json.org/). Su tipo central es `Json`, un
++     documento inmutable (o cualquier valor dentro de uno) que se analiza a partir de texto o de
++     bytes con `read[Json]`, se construye con `Json.make` o con el interpolador `j"…"`, se recorre
++     por clave y por índice, y se convierte a un tipo de Scala con `as[T]` o desde uno con
++     `in[Json]`. Las conversiones son clases de tipos —`Json.Encodable` y `Json.Decodable`— que el
++     compilador deriva para case classes, enumeraciones y jerarquías selladas a partir de su forma,
++     de modo que un registro se convierte en un objeto y de vuelta sin escribir nada a mano, y una
++     discrepancia entre los datos y el tipo lanza un `Json.Error` que nombra el motivo y, cuando
++     puede, el campo.
+
+% 2 1 0 02bd98843b81ecda1c8dd057466a3618
+
+% 3 1 0 17e2a008020ac8fe1e9f2b6ec287c192
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 098392ca96d9bb94167323c7f9c2a04c
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 19abe2ec09131ec207294a8ced389e79
+
+% 0 1 0 0d38c8e5f3abe58a03dd4cc4ff58f891
+
+% 0 1 0 1cda8a7dd9c0d58509ac67b9987dd424
+
+% 0 1 0 1b66d206664c53581ff58aa5ff96c020
+
+% 0 1 0 14fb1344611ef9d10937f4eb448d1c86
+
+% 1 1 0 1bab4866822c186301e3c020cecb100a
+
+@ 0 8 0 1f60de6f60c44cd71b468fdd33e479e0
++     Un documento ni siquiera tiene por qué construirse: un tipo con un `Json.Parsable` se lee
++     *directamente* del flujo de tokens (`Json.Parsable.derived`, `Json.Parsable.staged`,
++     `Inlinable.parsable`, o `derives Json.Direct` para un analizador y un impresor generados), y un
++     tipo con un `Json.Printable` se escribe directamente como texto o bytes mediante
++     `in[Text over Json]` e `in[Data over Json]`. Las importaciones `codecs.direct`,
++     `codecs.derived` y `codecs.strict` eligen entre la vía generada y la basada en el árbol para
++     cada registro en ámbito. El análisis y la impresión directos sitúan a la biblioteca a poca
++     distancia de las bibliotecas JSON más rápidas de la JVM, sin dejar de tipar cada valor.
+
+@ 0 4 0 05a17db2289dfded0a925397fb5655b5
++     Los documentos grandes se emiten en flujo: `Json.emit` serializa en una fibra y entrega el
++     texto a medida que se produce, la forma de empuje `Json.emit[Text]`/`Json.emit[Data]` entrega
++     bloques en el hilo del llamante, y `Json.lend` presta los propios búferes del escritor sin
++     copiarlos. El análisis también es en flujo: un `Json` es `Aggregable by Data`, así que se lee
++     desde cualquier fuente que turbulence pueda transmitir en flujo.
+
+@ 0 7 0 077eefaa9415bc3402ef619ec21f70b8
++     Más allá de la conversión, la biblioteca ofrece `JsonPointer` (rutas RFC 6901, escritas con
++     `jp"…"`), posiciones en el código fuente para cada valor cuando `parsing.trackPositions` está
++     en ámbito (`locate` y `locateKey`), acceso dinámico a campos (`json.name`) habilitado por
++     `dynamicAccess.dynamicJson` o por un bloque `dynamically[Json]`, lentes y ópticas sobre
++     documentos (`json.lens(_.a.b = …)`, con `Each` y `Filter` del paquete `optics`), un
++     `NumberMode` que decide qué ocurre con un número demasiado largo para un `Long` o un `Double`,
++     y `Json.Provider`, que lee un documento JSON Schema mientras se compila el código y produce
++     registros tipados a partir del JSON que se ajusta a él.
+
+@ 0 1 0 0b20078b7e7ded3518104830a387ab30
++     La biblioteca se divide en seis conjuntos de fuentes:
+
+@ 0 16 0 095dee269a5bf03d0a7cc2423bbd1d62
++     - `jacinta.core` — `Json` y todo lo anterior; `JsonPointer`, `NumberMode`, `Inlinable`, los
++       interpoladores `j"…"` y `jp"…"`, y los paquetes de elección `formatting`,
++       `numberModes`, `optionalityOptions`, `discriminables`, `dynamicAccess` y `conversions`.
++       Compila para la JVM, Scala.js y Scala Native.
++     - `jacinta.schema` — `JsonSchema`, un documento JSON Schema derivado de un tipo de Scala o
++       leído de JSON; `verify`, que comprueba un `Json` contra el esquema de un tipo y lo devuelve
++       tipado, de modo que sus campos se recorren con comprobación en tiempo de compilación; y la
++       anotación `@memo`.
++     - `jacinta.optics` — el paquete `optics`: `jsonLens`, que hace funcionar `json.lens(…)`, y
++       las ópticas `Each`, `Filter` y ordinales sobre arrays.
++     - `jacinta.http` — solo JVM: los paquetes `postables`, `servables` y `construables`, que
++       envían un `Json` como cuerpo de petición `application/json`, sirven uno como respuesta y
++       leen el cuerpo JSON de una API como un `Json`.
++     - `jacinta.time` — los paquetes `encodables`, `decodables` y `parsables`, que transportan el
++       `Instant` y la `Duration` de aviation como números enteros de milisegundos.
++     - `jacinta.staged` — `InlinableStager`, la maquinaria de tiempo de compilación que permite
++       evaluar un `Inlinable` escrito por el usuario mientras se inserta un analizador generado;
++       nada de ella se llama a mano.
+
+@ 0 3 0 1f696cf4ca2311a31e651015b8cdfde3
++     Todo se exporta al paraguas `soundness`, y cada paquete de elección de aquí se fusiona con el
++     paquete del mismo nombre del paraguas. Los paquetes de elección contienen *givens*, e
++     `import soundness.*` no importa givens, así que cada uno se importa por su nombre:
+
+% 0 1 0 081aac3136ae3c3d180788525d6ab891
+
+@ 0 3 0 0d232db0c477ddc4156460848bfb4978
++     `import discriminables.jsonByKindDiscriminable`, `import dynamicAccess.dynamicJson`, etc. El
++     `Json.Formatting` es el único given que la mayor parte del código debe elegir, puesto que
++     `show`, `emit` y los givens de HTTP lo necesitan.
+
+% 0 1 0 1d2152a3928d9f851691f916cc6f9358
+
+% 0 1 0 061a77203fb7f0240a3078207d9d3e81
+
+% 0 1 0 19df02dd7d7682031f33db288688ee03
+
+% 0 1 0 161234bca78558f1089324f2fd0614f0
+
+% 0 1 0 13ea7e81f5f548760ffa1f837626e2a2
+
+@ 0 1 0 026e41c7fbbd4c96079da36bd92bd6be
++ entry .Json   un valor JSON inmutable, y el objeto compañero que lo analiza, construye, convierte y emite en flujo
+
+% 1 1 0 0593cb63538646a51a4cd4b9adc35b5f
+
+@ 0 5 0 0f0923e15d11e54111244b6c15e30f40
++       Un `Json` es cualquier valor JSON —un objeto, un array, una cadena, un número, un booleano o
++       `null`— o un valor *ausente*, que es lo que se obtiene al buscar una clave de la que carece un
++       objeto. Es inmutable: cada actualización devuelve un `Json` nuevo. Dos documentos son iguales
++       cuando lo son sus valores, sea cual sea el orden de sus claves, y un número entero es igual al
++       mismo valor escrito con punto decimal.
+
+% 2 1 0 0e338a17538aa1b9072a1d79eedecbc7
+
+% 3 1 0 0d2393294ccc2b861a3c21807603dc3c
+
+% 4 1 0 10ad4af30ddd61480332899d417ff923
+
+% 5 1 0 1f871896ac3e75b70fac62482ebb4469
+
+% 0 1 0 1f463dc5dc23ed750b40974831f6ef65
+
+% 0 1 0 1e250b33fa579a461abe8a3c7a79683e
+
+% 0 1 0 19da6d8d7e3ea6ae10eba123d792e8e6
+
+% 0 1 0 15c9518ab06854081173378bbfcda3aa
+
+% 0 1 0 0be1ea50616e25cc06ac3dfe5011253c
+
+% 0 1 0 14d606000a000f871ef4d04fd1397b19
+
+% 1 1 0 1a95b1ca2ee7ef6e09a9d8b9ddb56a0a
+
+@ 0 6 0 1af883f182fea8f3084ad91ec7c1e6ea
++       **Lectura.** Un `Json` es `Aggregable by Data` (`.aggregable`), así que cualquier fuente que
++       turbulence pueda transmitir en flujo —`Text`, `Data`, un fichero, un cuerpo HTTP— admite
++       `read[Json]`, que lanza `Parse.Error` ante una entrada mal formada a través de una
++       `Tactic[Parse.Error]`. Con `parsing.trackPositions` en ámbito, el analizador registra además
++       la línea y la columna de cada valor, que se recuperan con `locate` y `locateKey`
++       (`.positionable`). `read[T in Json]` lee un valor de tipo `T` de un texto JSON en un solo
++       paso, directamente de los tokens cuando `T` tiene un `Json.Parsable`, y a través de un árbol
++       en caso contrario.
+
+@ 0 7 0 00556aac8a2ca22709ef8e87299a4e44
++       **Conversión.** `as[T]` decodifica mediante un `Json.Decodable` (`#as`), y `value.in[Json]`
++       codifica mediante un `Json.Encodable`. El objeto compañero contiene las instancias para los
++       primitivos, `Text`, `Unit` (un `null` de JSON), `Optional`, `Option`, `List`, `Set`,
++       `Sequence`, `Map` y el propio `Json`, y deriva una para cualquier case class, enumeración o
++       jerarquía sellada (`.decodable`, `.encodable`). Una conversión que no puede realizarse lanza
++       `Json.Error`, y bajo una estrategia acumulativa se notifica cada campo fallido, cada uno con
++       un `Json.Focus` que nombra su puntero JSON.
+
+@ 0 5 0 070d99b6016f09e213bf396c63366ac3
++       **Construcción.** `Json.make(a = …, b = …)` construye un objeto a partir de argumentos `Json`
++       con nombre (`.applyDynamicNamed`), `Json(value)` envuelve un primitivo (`.apply`), y el
++       interpolador `j"…"` escribe JSON literalmente, comprobado mientras se compila el código, con
++       huecos para valores codificados, colecciones expandidas con `*` y mapas fusionados
++       (`.interpolator`); el mismo interpolador sirve de patrón (`.extrapolator`).
+
+@ 0 6 0 03cc294f8e9647391fbc138b6d936021
++       **Recorrido y actualización.** `json(t"key")` y `json(index)` seleccionan un campo o un
++       elemento (`#apply`). Con `dynamicAccess.dynamicJson` importado, un campo se lee como un
++       miembro, `json.name`, y se asigna con `json.name = value` o se elimina con
++       `json.name = Unset` (`#selectDynamic`, `#updateDynamic`); un documento al que se ha aplicado
++       `verify` contra un tipo recorre sus campos con comprobación en tiempo de compilación y no
++       necesita esa importación. Las actualizaciones más profundas se escriben con
++       `json.lens(_.a.b = …)` del paquete `optics`.
+
+@ 0 4 0 12082aebcddcb077125c1c62b592c822
++       **Escritura.** `show` representa el documento entero como `Text` en el `Json.Formatting` en
++       ámbito (`.showable`; `formatting.compactJsonFormatting` o
++       `formatting.indentedJsonFormatting`), `.emit` lo emite en flujo, y `.lend` presta los búferes
++       del escritor. Un `Json` es también `Streamable by Text`, `Encodable in Text`, un cuerpo HTTP
++       (`.abstractable`) e `Inspectable`.
+
+% 2 1 0 1c81ccba59ca290e17532560a1b61825
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 05f78b0540c9888e15949bbd6615e268
++         label Un documento, tal como se ha analizado
+
+% 1 1 0 13163d984d78fad20fffd303a1806661
+
+% 2 1 0 1e9f29f2a80dc648192d50e654d209c7
+
+% 3 1 0 1c2b018c0cd7c18e1ba94fb1814e0455
+
+% 0 1 0 1a6f88364bcdcf7a12b543fbd0bd45d7
+
+% 1 1 0 1a8f05db56d23fb305523e8b8cea2d68
+
+@ 0 1 0 1c98a8b781dc6cb91250ced123d317a1
++         label Un campo alcanzado por clave
+
+% 1 1 0 05994c97230ec3b01eeb3eebd244cba3
+
+% 0 1 0 1995af221d664aba0de21e72f1ff054c
+
+% 1 1 0 0e65469fe71e5574013e39a377449f3b
+
+@ 0 1 0 1d09a888a3811b7b100cda332fa5aeeb
++         label El mismo campo, con el acceso dinámico habilitado
+
+% 1 1 0 0ea15984ea24b27803a0385e73a5f37f
+
+% 0 1 0 077990a899cf9f3116e8bda8edbc7330
+
+% 0 1 0 1464d0bf860f8a4b13dd9af5a4994837
+
+% 1 1 0 1e7a62761b5d12630a8680a423a8c12c
+
+@ 0 1 0 1fdad915d4900a511fb9c3c149a757c6
++         label El documento entero, decodificado como case class
+
+% 1 1 0 0d8c2d6ba3a416450634fa4b7502b490
+
+% 0 1 0 04f0d78cdf7b631415250ce3ec09397d
+
+% 0 1 0 02b8c0faaf9ce7530d5c8e400b449be1
+
+% 1 1 0 163cd9e1f96ef53511bb316a9ebfdf81
+
+@ 0 1 0 18272ab12da8092310e50dd365317d50
++         label Una actualización, como documento nuevo
+
+% 1 1 0 09457f743a0d6a3f0a371ad775855a09
+
+% 0 1 0 18b2041adec90470127de9ac16c8c488
+
+% 1 1 0 1db5ca88e96858be075a5025fc1de020
+
+% 2 1 0 0db951a1657703761832c655e1d24ee4
+
+@ 0 4 0 146ac517b6688a961b8a2e14d7ef4000
++       El objeto compañero se compone de una cadena de mixins (de `Json1` a `Json4`) que ordenan sus
++       givens por prioridad: los analizadores e impresores directos por encima de los códecs
++       derivados, y las instancias elemento a elemento por encima de la alternativa universal. Sus
++       miembros se documentan en las entradas de esos mixins; `object Json` los hereda. El
++       tokenizador que hay detrás de toda lectura es el `Parser` de nivel superior, que tiene su
++       propia página.
+
+% 0 1 0 02bf5e05a46d03f005fa1b11207f5d6c
+
+% 0 1 0 1b316b80f78379141149fb7ef044b574
+
+% 0 1 0 1c75699b95080a3203722bce3a7952bb
+
+% 0 1 0 165ca562a1253f280aad7efcc423e7e8
+
+% 0 1 0 1c6abe5019a5a1b018896581e12b633a
+
+% 0 1 0 0c44697e1c5c27b51796b71895c78b6f
+
+% 0 1 0 083ce8b7c9cf2bb511f05a9b58e1e2bb
+
+% 0 1 0 1ed67cda0c32e92a0787b7204879b260
+
+@ 0 9 0 17f578c3020391320f343826de466282
++   entry .apply   envuelve un valor primitivo como `Json`: `Json(42)`, `Json(t"text")`, `Json(true)`
++       `Json(value)` crea un `Json` a partir de un valor en bruto. Las sobrecargas para `Int`,
++       `Short`, `Byte`, `Long`, `Float` y `Double` guardan el número en las formas propias del árbol
++       (un entero como `Long`, un `Float` como `Double`), ya que un `Int` en bruto dentro del árbol se
++       leería como un decimal pequeño empaquetado, no como un entero. `apply(value: Any)` acepta
++       cualquier otra cosa tal cual, así que sirve para valores que ya están en la representación del
++       árbol (un `String`, un `Boolean`, `Json.JsonNull`) y no para valores arbitrarios de Scala, que
++       deben pasar por `in[Json]`. La forma de dos argumentos, `Json(value, positions)`, adjunta un
++       `Json.PositionIndex` a un valor, como hace el analizador con seguimiento de posiciones.
+
+% 2 1 0 1526adeae91fc2bd04312302dc766c81
+
+% 3 1 0 16f6a032f70be83e19ba7f04db83545f
+
+% 0 1 0 1577aa836c7a4cc614620f62b4d9e4f7
+
+% 0 1 0 1c5bc6bf89d957530b50e05f2b9e3bda
+
+% 0 1 0 0e13ff17864fa6581037eba5cddcfb0d
+
+% 1 1 0 0e2b14b8cb5bee891550d8db99c84800
+
+@ 0 8 0 1f4ad3855a99501c0c68b63ed4fb64e3
++   entry .ast   envuelve un nodo `Json.Ast` como `Json`
++       La inversa de `.unseal`: `Json.ast(node)` es el documento cuya raíz es el nodo del árbol
++       dado. `Json.ast(Json.Ast(Unset))` es el valor ausente que produce una clave inexistente.
++   entry .applyDynamicNamed   `Json.make(key = json, …)`: un objeto construido a partir de argumentos `Json` con nombre
++       `Json` es `Dynamic`, y su único método dinámico es `make`: `Json.make(a = 1.in[Json],
++       b = t"two".in[Json])` construye el objeto `{"a":1,"b":"two"}`, conservando el orden de los
++       argumentos. Cada argumento debe ser ya un `Json`; con `conversions.encodableToJson`
++       importado, se puede pasar directamente cualquier valor `Encodable in Json`.
+
+% 2 1 0 1799fb94c86141ea08c53cd737ad79eb
+
+% 3 1 0 1f2f3f6990d88b8b10adad6dd7144ceb
+
+% 1 1 0 1053fd0643bf9b4b1e235d624092d5e3
+
+% 0 1 0 02cb9b144db6714b145837f582d2b7d0
+
+% 0 1 0 00b9a848c01c01f80d98e3340234abfc
+
+% 0 1 0 13ed5eb1dca8ca0c1be1a98a21417ccb
+
+% 1 1 0 0c7c2dfbd87d19151535ff1536311567
+
+@ 0 5 0 0cbcb37d8a99d3581160905c784406a7
++   entry .unseal   el árbol `Json.Ast` que hay bajo un `Json`, para examinar directamente su clase
++       Atravesar la abstracción `Json` es una acción deliberada y con nombre: `Json.unseal(json)` es
++       el nodo raíz `Json.Ast`, sobre el que los predicados de `Json.Ast` (`isLong`, `isDouble`,
++       `isNumber`, `isString`, `isBoolean`, `isNull`, `isObject`, `isArray`, `isAbsent`) y
++       `primitive` responden qué es el valor.
+
+% 2 1 0 064d4b0cf144983b071ea77770259304
+
+% 3 1 0 11013baa94617e2612467fd56d8b1325
+
+% 4 1 0 12ce1e1a521c71841a5bfbd41a7b1f4e
+
+% 0 1 0 0a69ac88953efa6e0089799f8aeebb6d
+
+% 0 1 0 0e01f635c5e367c3189c674609284571
+
+% 0 1 0 0e4d7b7557b4ec010f51c01ed30750ff
+
+% 1 1 0 1024d4a33083857d17bbb4d3b0af62f3
+
+@ 0 12 0 08421f24e9fdd0df04e9aa28bbd38cd5
++   entry .emit   emite en flujo el texto de un documento: extraído de una fibra, o empujado a una función bloque a bloque
++       Dos formas. `Json.emit(json)` serializa en una fibra y devuelve un `Iterator[Text]` que
++       entrega el texto a medida que se produce, de modo que un documento grande puede escribirse en
++       un socket o en un fichero antes de estar completamente generado; necesita un
++       `Json.Formatting`, un `Monitor` y una `Probate`, así que se ejecuta dentro de `supervise`. La
++       forma de empuje, `Json.emit[medium](json, deliver)`, serializa en el hilo del llamante sin
++       fibra y entrega cada bloque a `deliver` en cuanto se llena: `emit[Text]` entrega texto a
++       través de un `Producer[Text]`, y `emit[Data]` entrega bytes UTF-8 escritos directamente por
++       el serializador a nivel de bytes, que escapa y codifica cada cadena en una sola pasada y
++       genera un número BCD a partir de sus nibbles sin pasar por un `String`. El medio es un
++       `Json.Emitter`, y el argumento de tipo es necesario cuando `deliver` es una lambda sin tipo.
++       La forma de empuje necesita un `Json.Formatting` y un `Buffering`, cuya capacidad determina
++       el tamaño de los bloques.
+
+% 2 1 0 027a867e5a9245ae1e480f5b2e8fb05f
+
+% 3 1 0 1e511c94c551be470f5876ed9796c375
+
+% 4 1 0 085f4f9bc9e38fb013a583e0ceecc20b
+
+% 0 1 0 093ab821d61fba4b078a63210a8e55bc
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 1e48fef646e976e000522bb412f06ee9
+
+% 1 1 0 07459be2e19b007e0292fc3fa49ca394
+
+@ 0 8 0 0d08c10dae0b59341744b15cd5de0f16
++       Todas las formas generan el mismo texto que `show`.
++   entry .lend   la forma de préstamo del `emit` de empuje: cada bloque UTF-8 se presta, no se copia
++       `Json.lend(json)(lending)` serializa a UTF-8 en el hilo del llamante y presta cada bloque
++       lleno a `lending` como una `Region[Data]` con un `Interval` con marca que demuestra que cada
++       índice está dentro del rango, válida solo mientras dura la llamada —la disciplina de
++       `Stream.lend`—, de modo que no se copia nada. Un consumidor que deba conservar los bytes los
++       materializa él mismo; `Json.emit[Data]` es ese consumidor para el caso común. Necesita un
++       `Json.Formatting` y un `Buffering`.
+
+% 2 1 0 1ebd39677b31e1851f3c46cdeee31b7e
+
+% 3 1 0 072f219567bac1c207a66171d22acccd
+
+% 4 1 0 043da4d108508b0c136fc9b0b30edc62
+
+% 0 1 0 090500b811b7c8af0d8e28870bdd76fb
+
+% 0 1 0 026286b741a4d11708de5b3cbeb1bb22
+
+% 1 1 0 050bbeff7f47a1540f4320316c580b48
+
+@ 0 1 0 167bc3a709550b270dea4abc66ea0a4e
++   entry .Emitter   cómo llega la forma de empuje de `Json.emit` a su consumidor: como texto o como bytes UTF-8
+
+% 1 1 0 03e652d1602ca37b018620dc70ed2cf3
+
+@ 0 7 0 0cd389f4ced3cd5d18f6a167563550e9
++         Un `Json.Emitter[medium]` es la clase de tipos sobre la que despacha
++         `Json.emit[medium](json, deliver)`. Las dos instancias están en el objeto compañero:
++         `.text` para bloques `Text` y `.data` para bloques `Data`. El medio se elige con el
++         argumento de tipo, `Json.emit[Data](…)`.
++     entry .text   entrega bloques de texto, a través de un `Producer[Text]`
++     entry .data   entrega bloques UTF-8, materializados a partir de las regiones prestadas por el escritor a nivel de bytes
++     entry #emit   serializa un documento y entrega cada bloque a `deliver`, con la capacidad del `Buffering`
++   entry .Formatting   cómo se genera un documento: la unidad de sangrado, si la hay, y si termina con un salto de línea
+
+% 1 1 0 18a5cda86ddeefb015e369f68eed2550
+
+@ 0 7 0 02b17c62fa0903fa1480894eeb6d305d
++         Necesitan un `Json.Formatting` `show`, `emit`, `lend`, los givens `Streamable` y
++         `Encodable in Text`, `in[Text over Json]` y los givens de HTTP. `#indent` es la unidad de
++         espacio en blanco por nivel de anidamiento, o `Unset` para un JSON mínimo en una sola línea,
++         y `#trailingNewline` añade un salto de línea final. Las dos opciones estándar son givens del
++         paquete `formatting`, importados por su nombre: `formatting.compactJsonFormatting` (sin
++         ningún espacio en blanco) y `formatting.indentedJsonFormatting` (dos espacios por nivel).
++         Es un `zephyrine.Formatting`, así que un serializador genérico puede aceptarlo.
+
+% 2 1 0 0aa9e804b3226c08008b2752cc60b2fa
+
+% 3 1 0 1581b9422710b9e912277bd606bc9136
+
+% 0 1 0 0be6ff261178615b004927e25e323b2a
+
+% 1 1 0 170534067064b5361800660a1122a6cd
+
+@ 0 26 0 03119d430dd14d9802f8b0b2da59e89c
++     entry .apply   un formato con la unidad de sangrado y la opción de salto de línea final dadas
++     entry #indent   la unidad de espacio en blanco por nivel de anidamiento, o `Unset` para una salida en una sola línea
++     entry #trailingNewline   si sigue un salto de línea al carácter de cierre
++   entry .JsonString   la representación en el árbol de una cadena JSON: un `String`
++   entry .JsonNumber   las representaciones en el árbol de un número JSON: `Long`, `Double`, `Bcd` o un `Int` empaquetado
++       Un número de hasta unos quince dígitos se analiza como `Long` o `Double`; uno más largo se
++       convierte en un `Bcd` (conservando todos los dígitos) con el `NumberMode` predeterminado. La
++       forma `Int` es un decimal codificado en binario pequeño y *empaquetado* de hasta siete
++       nibbles, no un entero, y por eso `Json(int)` amplía un `Int` a `Long` en lugar de guardarlo en
++       bruto.
++   entry .JsonBoolean   la representación en el árbol de un booleano JSON: un `Boolean`
++   entry .JsonNull   el centinela que representa un `null` de JSON en el árbol, y su tipo
++       Un objeto propio en lugar del `null` de la JVM, para que un `null` explícito en un documento
++       se mantenga separado de un valor *ausente* (`Unset`), que es lo que produce una clave
++       inexistente; `Json.Ast.isNull` lo comprueba.
++   entry .JsonObject   la representación en el árbol de un objeto: un `Array[Any]` congelado de claves y valores alternos
++   entry .JsonArray   las representaciones en el árbol de un array: un `Array[Any]`, `Array[Long]` o `Array[Int]` congelado
++       Un array heterogéneo es un `Array[Any]`, rellenado hasta una longitud impar para que se
++       distinga de un objeto (siempre par); un array formado solo por números se guarda sin boxing
++       como `Long`s o `Int`s BCD empaquetados.
++   entry .aggregable   lee un `Json` de un flujo de `Data`: el given que hay detrás de `source.read[Json]`
++       La instancia `Aggregable by Data` que analiza cualquier fuente en flujo —`Text`, `Data`, un
++       fichero, un cuerpo de respuesta— como un `Json`. Necesita una `Tactic[Parse.Error]`, que se
++       lanza ante una entrada mal formada con la línea y la columna del fallo, y un
++       `PositionTracking`: con `parsing.trackPositions` en ámbito se registran las posiciones de
++       cada valor para `locate`; el predeterminado no registra nada y no cuesta nada. Un único bloque
++       en memoria se analiza in situ; un flujo se analiza a medida que llega.
+
+% 2 1 0 0ed1ec60fe5a2d49096019af2a202419
+
+% 3 1 0 14fbe0023cbd776508b81cf96cb1a709
+
+% 4 1 0 1ec514f9a974cea0177e68f800470088
+
+% 0 1 0 1c30c632d38a561f01deb993f3f6861f
+
+% 1 1 0 1501fc74a8fc4dec0aaf76f3e2aa2da3
+
+@ 0 31 0 0eda654ac2bd4cee0fd855b9760f59bb
++   entry .showable   representa un documento como `Text` en el `Json.Formatting` en ámbito
++       `json.show` es la única vía hacia el texto de un documento: compacto con
++       `formatting.compactJsonFormatting`, sangrado con `formatting.indentedJsonFormatting`. Los
++       números se escriben a partir de los dígitos que vio el analizador, de modo que un documento
++       hace el viaje de ida y vuelta sin perder precisión; las cadenas se escapan según la RFC 8259.
++   entry .streamable   un documento como `Stream[Text]`, serializado en una fibra a medida que se consume
++       La instancia `Streamable by Text over Credit` construida sobre la forma de extracción de
++       `.emit`, así que necesita un `Json.Formatting`, un `Monitor` y una `Probate` (un bloque
++       `supervise`).
++   entry .inspectable   una representación de depuración: el texto compacto, sea cual sea el formato en ámbito
++       Por convención, una inspección ocupa una sola línea, así que esta fija el formato compacto en
++       lugar de tomarlo del lugar de la llamada, y no necesita ningún given.
++   entry .abstractable   un documento como cuerpo HTTP, `application/json` en la `Codepage` en ámbito
++       La instancia `Abstractable across HttpStreams`: el tipo de contenido es `application/json;
++       charset=…` según el given `Codepage`, y el cuerpo es `show` codificado en ella, así que
++       necesita también un `Json.Formatting`. Los paquetes `postables` y `servables` de
++       `jacinta.http` son los givens explícitos de petición y de respuesta.
++   entry .decodable   `Json` a partir de texto: lee un documento de `Text`, lanzando `Parse.Error`
++       `Json is Decodable in Text` lee un documento de `Text` (`t"…".as[Json]`, o un campo `Json`
++       dentro de un registro decodificado desde otro formato), lanzando `Parse.Error`; también es
++       aquello mediante lo cual se serializan los valores `Json` por etapas de superlunary.
++   entry .instantiable   un `Json` a partir del texto de una petición HTTP, lanzando `Parse.Error`
++       La instancia `Instantiable across HttpRequests from Text`, mediante la cual se analiza el
++       cuerpo de una petición tipado como JSON; captura la `Tactic[Parse.Error]` en ámbito.
++   entry .positionable   `json.locate(pointer)` y `json.locateKey(pointer)`: dónde estaba un valor en el código fuente
++       La instancia `Positionable by JsonPointer to Json.Ast.Position`. `locate` es la línea y la
++       columna (y el desplazamiento y la longitud) del valor que nombra un puntero, abarcando el
++       valor entero —un número negativo incluye su signo, un objeto va desde su llave de apertura
++       hasta la de cierre—, y `locateKey` es la posición de la *clave* que coincide con el último
++       segmento del puntero, para subrayar un nombre de campo mal escrito. Ambos son `Unset` cuando
++       el puntero no se resuelve (una clave inexistente, un índice más allá del final), y siempre
++       `Unset` para un documento analizado sin `parsing.trackPositions` en ámbito.
+
+% 2 1 0 155d40df14522ece06514ca6a509e412
+
+% 3 1 0 0af69ed423c2d58d1a3cb0d3be6a7084
+
+% 4 1 0 04d85b434aea1a7f00bb7f15111cffd1
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 0f7ea51247475e3b00aa61536dcb6477
+
+% 0 1 0 0d1d9c87286250f8090113673cf1cfbc
+
+% 0 1 0 06fcd6d15ccfc18209aa02541222cff3
+
+% 1 1 0 1af587480080dd360fff995ea95660f9
+
+@ 0 19 0 0f95942142bdd592110e60ef89c422d9
++   entry .interpolator   la macro que hay detrás de `j"…"`: un literal JSON comprobado al compilar, con huecos tipados
++       La instancia `Interpolable` para `Json`. El literal se analiza en tiempo de compilación, y un
++       error de sintaxis se notifica en el carácter culpable. Un hueco `$x` sustituye cualquier
++       valor `Encodable in Json`; `$xs*` dentro de un array inserta cada elemento de una colección
++       (un `Iterable`, o un literal `List(…)` con marca); un hueco `$map` entre los campos de un
++       objeto fusiona un `Map[Text, Json]` en el objeto. Véase `jacinta.j`.
++   entry .extrapolator   la macro que hay detrás de `case j"…" =>`: un patrón JSON que liga sus huecos
++       La instancia `Extrapolable` para `Json`. En un `match`, `case j"""{"a": $a}"""` coincide con
++       un objeto que tenga las claves literales y liga cada hueco al `Json` encontrado allí; un
++       patrón de array coincide por longitud, y un `$rest*` final liga los elementos restantes como
++       un array `Json`. Un documento de otra forma rechaza el caso.
++   entry .jsonEncodableInText   un documento como `Text` compacto, sea cual sea el formato en ámbito
++       La instancia `Encodable in Text`, `json.encode`: siempre compacta, de modo que un campo
++       `Json` escrito dentro de otro formato ocupa una sola línea.
++   entry .discriminatedUnion   un `Discriminable` que etiqueta una variante con un campo del nombre dado
++       `Json.discriminatedUnion[Shape](t"type")` es un `Json.DiscriminantField` bajo la clave
++       `type`: la forma `{"radius":1.0,"type":"Circle"}`. `jsonByTypeDiscriminable` y
++       `jsonByKindDiscriminable`, del paquete `discriminables`, son esto mismo para `type` y `kind`.
++   entry .Encodable   la clase de tipos que convierte un valor en un `Json`, con la forma que produce
+
+% 1 1 0 03c6d4447081bf5816b12413e0ca4c90
+
+@ 0 7 0 018309372929f33603530ca8fd383d07
++         `T is Json.Encodable` es un `Encodable in Json` que conoce además su `Morphology` —la forma,
++         neutral respecto al formato, de lo que escribe—, de modo que un JSON Schema derivado de un
++         tipo (`JsonSchema.derived`, `verify`) es coherente con el códec por construcción. Es lo que
++         resuelve `value.in[Json]`. El objeto compañero contiene instancias para los primitivos,
++         `Text`, `Unit`, `Ordinal`, `Optional`, `Option`, `List`, `Set`, `Sequence`, `Map` y `Json`,
++         y deriva una para cualquier case class, enumeración o jerarquía sellada (`.encodable`); un
++         tipo con un `Encodable in Text` se codifica como una cadena JSON.
+
+@ 0 2 0 1da1e833213699ba1cdbc528189d3308
++         Una instancia personalizada se construye con `.apply`, dando la forma como un thunk y la
++         codificación como una lambda, y va en el objeto compañero del tipo:
+
+% 2 1 0 10f56ba11949f4470b3d11c18f03f6d5
+
+% 3 1 0 0f9d805bdde3c2d410bcd1ab64ec16ac
+
+% 4 1 0 07ef3fb4df9337050756162d18f103c1
+
+% 2 1 0 140cb804efb123b60984d73b0275ce6d
+
+% 4 1 0 123da1c7ab11c1ff11595a04f3af5f23
+
+% 0 1 0 03ed632429cb2e9a1a1a9dc755f5123a
+
+% 0 1 0 0e4d22e2903e23cc047e6fb4ce794bb4
+
+% 0 1 0 1a06e9c65200294e065df30af9349ca4
+
+% 1 1 0 0bd31b4aeaedb1370630d17de5ae3260
+
+@ 0 2 0 0adcf9a52b1ee8e30cd0a7e29ce7ab44
++         Un codificador derivado usa, para cada campo, la instancia en ámbito para el tipo del
++         campo; para redefinir un solo campo, un `Specific over Json.Encodable` nombra la ruta.
+
+% 1 1 0 0613585f5ab534bb1bfe7497916304d8
+
+% 0 1 0 1783b7ee37e793521ceeeb1ea1c6c8ae
+
+@ 0 7 0 0a651c5bce66b7660f80f75f8e151c27
++     entry .apply   un codificador a partir de un thunk de forma y una lambda de codificación
++         `Json.Encodable(() => shape)(value => json)`. La forma es un thunk explícito, para que una
++         derivación recursiva pueda aplazarla; `Morphology.Any` es la forma honesta para cualquier
++         cosa que la maquinaria de esquemas no deba restringir.
++     entry #shape   la `Morphology` de lo que escribe este codificador
++     entry #Form   el formato al que se dirige este codificador: `Json`
++   entry .Decodable   la clase de tipos que lee un valor de un `Json`, con la forma que espera
+
+% 1 1 0 190b8d9e790e233814942e87c0d21382
+
+@ 0 8 0 1eadeb2645b62e0b155df081b5bc5261
++         `T is Json.Decodable` es un `Decodable in Json` que conoce además su `Morphology`, de modo
++         que `verify` y la maquinaria de esquemas comprueban exactamente lo que lee el decodificador.
++         Es lo que resuelven `json.as[T]` y `read[T in Json]` (este último a través del árbol, salvo
++         que `T` tenga también un `Json.Parsable`). El objeto compañero contiene instancias para los
++         primitivos, `Text`, `Unit` (que solo acepta `null`), `Ordinal`, `Memory`, `Optional`,
++         `Option`, `List`, `Set`, `Sequence`, `Map` y `Json`, y deriva una para cualquier case class,
++         enumeración o jerarquía sellada (`.decodable`); un tipo con un `Decodable in Text` se
++         decodifica a partir de una cadena JSON a través de él.
+
+@ 0 4 0 13d92c67e6158a961672ef327688427e
++         Toda instancia lanza `Json.Error` a través de la `Tactic[Json.Error]` en ámbito: un valor de
++         clase equivocada es `NotType`, un campo obligatorio que falta en el objeto es `Absent`, y un
++         índice de array más allá del final es `OutOfRange`. Bajo una estrategia acumulativa se
++         notifica cada campo fallido con su `Json.Focus`.
+
+% 2 1 0 18d65fc29b8664a803c33f0b6db411a7
+
+% 3 1 0 00cd5f8983f244000405fcdfba46a33f
+
+% 4 1 0 1c5627dd70ff57bf06dfde711533f4c5
+
+% 2 1 0 1ef37705db344e9a176aab26b2bc3341
+
+% 4 1 0 1106e977e69c4392161306fb4b02a219
+
+% 0 1 0 1d0c5b3ea5fe81731e5caf5bf5c7b630
+
+% 0 1 0 1dfde200ce9db517104096ecdf52c4b1
+
+% 0 1 0 030c8200786c6086127fde8e96dd023b
+
+% 1 1 0 034cc7ae74d0f8261692bab4e6f1d546
+
+@ 0 4 0 15eac6e12fbe8f6e09843ef4a983a4ad
++         Una case class que tiene a la vez una `Reflection` y un `Json.Decodable` escrito a mano se
++         lee *directamente* mediante derivación cuando se usa `read[T in Json]`, apartándose del
++         decodificador personalizado; el remedio, de una línea, es poner a su lado
++         `given T is Json.Parsable = Json.Parsable.fromDecodable(…)`.
+
+% 1 1 0 0fe2ea739bc48d5c0efca54527e1f369
+
+% 1 1 0 0bc581c41a3a3f7c0f82945d81078243
+
+% 0 1 0 1868fc98b0df530602c4b073b8b1e2ec
+
+@ 0 51 0 0c665faa795172280d0464420a399147
++     entry .apply   un decodificador a partir de una forma y una función de decodificación
++         `Json.Decodable(shape)(json => value)`, donde la función de decodificación puede ser
++         cualquier `Decodable in Json` o una lambda sobre el `Json`. La lambda lanza `Json.Error` a
++         través de la táctica con la que se resolvió.
++     entry #shape   la `Morphology` de lo que lee este decodificador
++   entry .boolean   decodifica un booleano JSON como `Boolean`
++       Lanza `Json.Error(NotType(…, Boolean))` para cualquier otro valor. Cada decodificador de
++       primitivos captura la `Tactic[Json.Error]` con la que se resolvió.
++   entry .double   decodifica un número JSON como `Double`, desde cualquier forma numérica
++   entry .float   decodifica un número JSON como `Float`
++   entry .long   decodifica un número JSON como `Long`; un decimal se trunca
++   entry .int   decodifica un número JSON como `Int`, a través de `Long`
++   entry .ordinalDecodable   decodifica un número JSON como un `Ordinal`, contando desde cero
++   entry .text   decodifica una cadena JSON como `Text`
++       Lanza `Json.Error(NotType(…, String))` para cualquier otro valor: un número no se convierte
++       en texto sin avisar.
++   entry .string   decodifica una cadena JSON como `String`
++   entry .unit   decodifica un `null` de JSON como `()`, y nada más
++       Un valor que no es `null` lanza `NotType(found, Null)`, y un valor ausente, `Absent`.
++   entry .jsonDecodable   un `Json` se decodifica como sí mismo: `json.as[Json]`
++       Tipado como el `Decodable in Json` simple para que gane a la instancia identidad genérica de
++       distillate; un `Json` anidado en una colección o en un `Optional` pasa por `.decodable`.
++   entry .option   decodifica un campo `Option[T]`, como hace `.optional`, produciendo `None`
++       Las mismas tres políticas de `optionalityOptions`, con `None` para una clave ausente o un
++       `null` y `Some` en otro caso.
++   entry .optionEncodable   codifica un `Option[T]`: `None` se codifica como ausente, así que un objeto omite el campo
++   entry .integralEncodable   codifica cualquier tipo `Integral` como un entero JSON
++   entry .textEncodableInJson   codifica `Text` como una cadena JSON
++   entry .stringEncodable   codifica `String` como una cadena JSON
++   entry .doubleEncodable   codifica `Double` como un número JSON
++   entry .intEncodable   codifica `Int` como un entero JSON
++   entry .longEncodable   codifica `Long` como un entero JSON
++   entry .booleanEncodable   codifica `Boolean` como un booleano JSON
++   entry .unitEncodable   codifica `Unit` como un `null` de JSON
++   entry .ordinalEncodable   codifica un `Ordinal` como su entero JSON contado desde cero
++   entry .jsonEncodable   un `Json` se codifica como sí mismo
++   entry .listEncodable   codifica una `List[T]` como un array JSON de sus elementos
++       Necesita un `T is Json.Encodable`, recibido por nombre para que un tipo recursivo pueda
++       derivarse.
++   entry .setEncodable   codifica un `Set[T]` como un array JSON de sus elementos, en el orden del conjunto
++   entry .seriesEncodable   codifica una `Sequence[T]` como un array JSON de sus elementos
++   entry .mapEncodable   codifica un `Map[K, V]` como un objeto JSON, con cada clave codificada como texto
++       El tipo de la clave necesita un `Encodable in Text`, y el valor un `Json.Encodable`.
++   entry .array   decodifica un array JSON en cualquier colección `Iterable`, con una `Factory` en ámbito
++       Cada elemento se decodifica en su propio `Json.Focus` (`#/items/3`), de modo que bajo una
++       estrategia acumulativa se notifica cada elemento erróneo. Necesita una `Tactic[Json.Error]` y
++       un `Foci[Json.Focus]`.
++   entry .listDecodable   decodifica un array JSON en una `List[T]`
++   entry .setDecodable   decodifica un array JSON en un `Set[T]`
++   entry .seriesDecodable   decodifica un array JSON en una `Sequence[T]`
++   entry .map   decodifica un objeto JSON en un `Map[K, V]`, con cada clave decodificada a partir de texto
++       El tipo de la clave necesita un `Decodable in Text`; `Map[Text, Int]` lee `{"a": 1, "b": 2}`.
++   entry .Parsable   la clase de tipos que lee un valor directamente de los tokens JSON, sin construir ningún árbol
+
+% 1 1 0 0177bc860a69bd2b1cfeba09546c9500
+
+@ 0 9 0 08d2b2f280ac38bd0baca2ef4022684d
++         `T is Json.Parsable` consume tokens de un `Json.Reader` en lugar de recorrer un `Json`, así
++         que `read[T in Json]` (y `read[T in Json]` sobre cualquier flujo) instancia `T` sin
++         materializar un árbol, ahorrándose la reserva de memoria, el boxing y el segundo recorrido.
++         Es la superficie voluntaria del análisis directo: un tipo se analiza directamente en cuanto
++         tiene una instancia, mediante `.derived`, `.staged`, `Inlinable.parsable`,
++         `derives Json.Direct` o `import codecs.direct`, y nada cambia para un tipo que no la tenga.
++         El objeto compañero contiene instancias para los primitivos (`Json.booleanParsable` y sus
++         afines) y, para una colección cuyo elemento se haya acogido, `Optional`, `Option`, `List`,
++         `Set`, `Sequence`, `Map` y cualquier `Iterable`.
+
+% 2 1 0 1dd8690f65a998bc0abef6833609141b
+
+% 3 1 0 1ab4cd0029c171d10ecf07ed12fbea85
+
+% 4 1 0 0cb929fd04266d441d8b54bbb1eb5c32
+
+% 6 1 0 089972f66cfab88b1a3ddb0fe531b9b4
+
+% 0 1 0 10698e52d63f7cd81710258d8163f27b
+
+% 0 1 0 137e789fef27efee0a4d695dfe21b34d
+
+% 0 1 0 1670462e3ba9afd617aaf9b148bcc54b
+
+% 1 1 0 0d5a1b3c154f1bd91a2f2c09d21e206d
+
+@ 0 7 0 054e0cd72aa30db61cae6452ea15e3f2
++         Una instancia escrita a mano se construye con `.apply` a partir de una forma y una función
++         del lector; `.fromDecodable` sirve de puente hacia un `Json.Decodable` existente, que es
++         también la manera de hacer que un decodificador personalizado gane a la derivación. Las
++         políticas de `optionalityOptions` se aplican a los analizadores directos igual que a los
++         decodificadores, con un límite: un fallo permisivo solo se tolera cuando el valor recibido
++         es de una *clase* equivocada, que el analizador puede saltarse entero; un valor de la clase
++         correcta que falla por dentro ya se ha consumido en parte y sigue lanzando el error.
+
+@ 0 1 0 0c36d19d506018c71f8305c54e65f622
++         El objeto compañero hereda `generated`, el given de `codecs.direct`, de `Json.Parsable2`.
+
+% 0 1 0 0b1f59fd93de0d21011ec18ce636bcc7
+
+% 0 1 0 1d93b3249556c2b407010390209b88cb
+
+% 1 1 0 0573ea2643b009e612c46ebd3c68c080
+
+% 1 1 0 1abeb5c89612631815004b89b3be2a08
+
+@ 0 53 0 10ef83d6ee95471d1ed323ec77b193db
++     entry .apply   un analizador a partir de una forma y una función del `Json.Reader`
++         `Json.Parsable(Morphology.Str)(reader => Celsius(reader.string()))`. El lector lleva su
++         propia `Tactic[Parse.Error]`, así que el cuerpo no necesita ningún vocabulario de errores:
++         un token mal formado o de tipo equivocado aborta a través de la táctica ambiental de la
++         llamada de lectura.
++     entry .derived   un analizador directo derivado con wisteria para una case class o un tipo suma, como adhesión de una línea
++         `given T is Json.Parsable = Json.Parsable.derived`. Los campos se leen a través de la
++         cadena de alternativas de `Json.Field`, de modo que los registros anidados también se
++         analizan directamente; el `Discriminable in Json` de un tipo suma elige el despacho a nivel
++         de tokens.
++     entry .staged   un analizador monomórfico generado en tiempo de compilación, sin maquinaria interpretativa en tiempo de ejecución
++         La contrapartida por etapas de `.derived`, con idéntica semántica: una case class se
++         analiza mediante ranuras locales tipadas y despacho de claves por literales empaquetados, y
++         un tipo suma sellado despacha su etiqueta mediante una cadena de comparaciones hacia
++         analizadores por variante. Un tipo suma por etapas necesita un `Discriminable` discriminado
++         por campo (`jsonByKindDiscriminable` u otro `DiscriminantField`); las demás formas fallan al
++         construir la instancia. Las clases locales a un método, las case classes currificadas, las
++         variantes singleton y los tipos suma genéricos se quedan en `.derived`.
++     entry .fromDecodable   un analizador que materializa un valor y se lo entrega a un `Json.Decodable`
++         El puente universal desde el árbol: un tipo de campo que solo tiene un `Json.Decodable` se
++         analiza a través de él, y es la vía de escape de una línea cuando un decodificador
++         personalizado debe ganar a un analizador directo derivado:
++         `given T is Json.Parsable = Json.Parsable.fromDecodable(…)`.
++     entry .fromField   un `Json.Parsable` nominal sobre cualquier `Json.Parsing`
++     entry .declared   el analizador que generó un tipo con `derives Json.Direct`
++         El given que lee un `Json.Direct[T]` en ámbito —el miembro del objeto compañero que genera
++         `derives Json.Direct`— como el `Json.Parsable` de `T`.
++     entry .Direct   la clase base de los analizadores generados
++         El código generado recibe el lector como un portador neutro y la capacidad se afirma en este
++         borde; un analizador generado implementa `parseCarrier`. No es para código escrito a mano.
++     entry .parseField   llama al analizador de un campo desde código generado
++         Un punto de apoyo para los analizadores generados, que se insertan en módulos del usuario y
++         solo pueden referenciar miembros públicos; no es para código escrito a mano.
++     entry .absentField   el valor ausente de un campo, desde código generado
++     entry .optionality   un analizador de `Optional[T]` sobre un analizador de `T`, que aplica las políticas de `optionalityOptions`
++         Un `null` recibido y una clave ausente se leen ambos como `Unset`, salvo que la política
++         `Nullity` o `Absence` en ámbito sea estricta; con un `Fault` permisivo, un valor de clase
++         equivocada se salta entero y se lee como `Unset`.
++     entry .boxed   un analizador de `Option[T]` sobre un analizador de `T`, que produce `None` como `.optionality`
++     entry .iterable   un analizador para cualquier colección `Iterable` sobre un analizador de elementos
++         Cada elemento se analiza en su propio `Json.Focus` cuando hay un `Foci` activo, de modo que
++         cada elemento erróneo se acumula; el predeterminado inerte no cuesta nada.
++     entry .dictionary   un analizador de `Map[K, V]` sobre un analizador de valores, que decodifica cada clave a partir de texto
++     entry .discriminantField   el campo de etiqueta de un tipo suma discriminado por campo, para analizadores por etapas
++         Entra en pánico ante un `Discriminable` que no sea un `Json.DiscriminantField`, ya que un
++         tipo suma por etapas no tiene un único paso de exploración anticipada para las demás formas.
++     entry .wireKeys   las claves de transmisión de un producto, con los renombres `@name` aplicados
++         Un punto de apoyo para los analizadores por etapas.
++     entry .missing   lanza `Json.Error(Absent)` para un campo obligatorio cuya clave no venía en la entrada
++     entry .focusing   ejecuta la lectura de un campo en su `Json.Focus`, eliminada al compilar cuando no hay ningún `Foci` activo
++     entry .assemble   construye un producto posicionalmente a partir de un búfer de valores lleno, mediante su `Mirror`
++     entry .product   el motor del analizador de productos derivado: un bucle de análisis que despacha por claves sobre los analizadores de campos
++         Recibe un thunk de ternas `(wire key, parser, declared default)` y un constructor sobre
++         el búfer lleno, y lee un objeto despachando con un
++         `Json.KeyTable`, saltándose las claves desconocidas, rellenando las claves ausentes con los
++         valores predeterminados y acumulando cada campo obligatorio que falte en su foco una vez
++         consumido el objeto por completo.
++   entry .Parsing   lo que comparten `Json.Parsable` y `Json.Field`: un analizador de tokens con una forma
+
+% 1 1 0 0d903fc2281fd45715b2a544bcfb98b7
+
+@ 0 10 0 03090fde6c4998b21077249f93c88ee7
++         Un `distillate.Parsable` sobre `Json` con un `Json.Reader`. Los dos subtraits no añaden nada
++         propio: existen para que ninguno sea subtipo del otro, evitando que las instancias nominales
++         y la alternativa de campos compitan. `#absent` es lo que produce un campo de este tipo
++         cuando su clave está ausente: un error salvo que se redefina (`Unset` para `Optional`,
++         `None` para `Option`); un `null` recibido nunca llega a él.
++     entry #Transport   el formato leído: `Json`
++     entry #Reader   el lector consumido: `Json.Reader`
++     entry #shape   la `Morphology` de lo que lee este analizador
++     entry #absent   el valor para una clave ausente: lanza `Json.Error(Absent)` salvo que se redefina
++   entry .Field   la cara operativa del análisis directo: cómo se lee un *campo* de un tipo
+
+% 1 1 0 156b429437bda8d01ae3d5f143c4c9f3
+
+@ 0 30 0 01740ca750e205ce089770098c6d1980
++         La clase de tipos que la derivación de productos resuelve para cada campo:
++         `Json.Field(parsing)` adapta cualquier `Json.Parsing` (`.apply`). Sus instancias son
++         `.fieldOptional`, `.fieldOption`, `.fieldArray`, `.fieldList`, `.fieldSet`, `.fieldSeries` y
++         `.fieldMap` para los casos elemento a elemento, y `.field`, la alternativa universal, de
++         modo que los productos anidados se analizan directamente aunque solo el tipo exterior se
++         haya acogido. Deliberadamente no es subtipo de `Json.Parsable`, y no sirve para nada más
++         que escribir un analizador de campos.
++     entry .apply   adapta un `Json.Parsing` como analizador de campos
++   entry .booleanParsable   lee directamente un booleano JSON
++   entry .doubleParsable   lee directamente un número JSON como `Double`
++   entry .floatParsable   lee directamente un número JSON como `Float`
++   entry .longParsable   lee directamente un número JSON como `Long`
++   entry .intParsable   lee directamente un número JSON como `Int`
++   entry .textParsable   lee directamente una cadena JSON como `Text`
++   entry .stringParsable   lee directamente una cadena JSON como `String`
++   entry .jsonParsable   lee un valor entero como `Json`, materializando solo ese valor
++   entry .optionParsable   un `Option[T]` se analiza directamente cuando `T` se ha acogido
++   entry .arrayParsable   cualquier colección `Iterable` se analiza directamente cuando su elemento se ha acogido
++   entry .listParsable   una `List[T]` se analiza directamente cuando `T` se ha acogido
++   entry .setParsable   un `Set[T]` se analiza directamente cuando `T` se ha acogido
++   entry .seriesParsable   una `Sequence[T]` se analiza directamente cuando `T` se ha acogido
++   entry .mapParsable   un `Map[K, V]` se analiza directamente cuando `V` se ha acogido
++   entry .aggregableDerived   `import codecs.derived`: leer a través del árbol aunque exista un analizador directo
++   entry .readableDerived   `import codecs.derived`: la lectura de `Data` completo a través del árbol
++   entry .encodableOverDerived   `import codecs.derived`: escribir a través del árbol aunque exista un impresor
++   entry .aggregableStrict   `import codecs.strict`: leer directamente, o no compilar
++       Junto con `.aggregableStrictFailure`, forma una pareja: un tipo con un `Json.Parsable` se lee
++       directamente, y un tipo sin él es un error de compilación que nombra el tipo, donde
++       `codecs.direct` recurriría al árbol.
++   entry .encodableOverStrict   `import codecs.strict`: escribir directamente, o no compilar
++   entry .Printable   la clase de tipos que escribe el texto JSON compacto de un valor directamente en un escritor, sin árbol
+
+% 1 1 0 094dd22fab0bfe1f1fffa059297e6610
+
+@ 0 5 0 18ee7a6352d523991a33146c925ec5b7
++         La contrapartida de impresión directa de `Json.Encodable`: `T is Json.Printable` escribe `T`
++         en un `Json.Ast.Out` —el escritor de texto que hay detrás de `show` o el escritor a nivel de
++         bytes que hay detrás de `emit[Data]`— token a token. Se llega a él mediante
++         `in[Text over Json]` e `in[Data over Json]` siempre que el formato sea compacto, y su
++         superficie son las instancias explícitas, `Inlinable.printable[T]`, `derives Json.Direct` e
++         `import codecs.direct`.
+
+% 2 1 0 181bd3b517cdc547003258b66d006733
+
+% 3 1 0 0e0cb30450acfbfc0edf1288426e050d
+
+% 4 1 0 016bf5d8c9570a181f6b5599a6210f32
+
+% 2 1 0 0e3a263ec67d17e411f1e8bb3f77ad65
+
+% 1 1 0 0f616d610914a8e707deb5d93142fb34
+
+% 0 1 0 1b74567aba270b5e1e643035bd50b47c
+
+% 0 1 0 10b0e31d43df4e1812f5695b9fa138aa
+
+% 1 1 0 09ffee23d53893d80c4ed7438fc29477
+
+@ 0 1 0 12535557c8835bb80088535047fb9d68
++         `.print` genera un valor entero y `.emit` entrega su texto en bloques.
+
+@ 0 1 0 1eec7d6c2576d118128996e5ed695efc
++         El objeto compañero hereda `generated`, el given de `codecs.direct`, de `Json.Printable2`.
+
+% 1 1 0 157cd583c9bb938413c9dc60a7953c54
+
+% 1 1 0 05a3378b5c67426d0e1af991e575eb04
+
+@ 0 19 0 1177a2899b238cc31796ef5ef96e7674
++     entry .print   el texto JSON compacto de un valor, entero, mediante su `Json.Printable`
++     entry .emit   el texto de un valor en bloques de la capacidad del `Buffering`, cada uno entregado a una función
++         `Json.Printable.emit(value, deliver)`: nunca se construye el texto del valor entero.
++     entry .fromEncodable   el puente desde el árbol: un impresor que codifica el valor y escribe su árbol de forma compacta
++     entry .declared   el impresor que generó un tipo con `derives Json.Direct`
++     entry .Direct   la clase base de los impresores generados; implementa `write` sobre un portador neutro
++     entry .writeAscii   escribe un literal ASCII, desde código generado
++         Un punto de apoyo para los impresores generados, que se insertan en módulos del usuario; no
++         es para código escrito a mano. Lo mismo vale para `.writeString`, `.writeLong`,
++         `.writeDouble`, `.writeBoolean`, `.writeAst`, `.present` y `.writeField`.
++     entry .writeString   escribe una cadena JSON entrecomillada y escapada, desde código generado
++     entry .writeLong   escribe un entero, desde código generado
++     entry .writeDouble   escribe un `Double`, desde código generado
++     entry .writeBoolean   escribe `true` o `false`, desde código generado
++     entry .writeAst   escribe un árbol `Json.Ast` de forma compacta, desde código generado
++     entry .present   si el árbol codificado de un campo llega a escribirse: una codificación ausente se omite
++     entry .writeField   escribe un campo mediante un `Json.Printable` nominal, desde código generado
++     entry #write   escribe un valor en un `Json.Ast.Out`
++   entry .Parsable2   el mixin que contiene `Json.Parsable.generated`, el given analizador de `codecs.direct`
+
+% 1 1 0 144cad91252274be1daaa343b4ddcb63
+
+% 2 1 0 13aee5105ddddbe01afb68df3dce16b7
+
+@ 0 7 0 113cec6f02b5c5c4196c091989ce2f88
++         No es para uso directo; véase `Json.Parsable`.
++     entry #generated   `import codecs.direct`: un analizador generado donde un registro lo necesita
++         Con `Codecs.Direct`, un tipo que `Inlinable.Generates` obtiene un analizador generado en el
++         lugar de uso, y un tipo que no es un registro recurre a la vía derivada. Por debajo de
++         `Json.Parsable.declared`, de modo que un tipo que deriva `Json.Direct` usa el códec que
++         generó una sola vez.
++   entry .Printable2   el mixin que contiene `Json.Printable.generated`, el given impresor de `codecs.direct`
+
+% 1 1 0 1a13e1e7f82bbeff1e4811d41e704ed4
+
+% 2 1 0 00c53f007d8fad001504645daf3475a4
+
+@ 0 5 0 007fef51d28c6e3c030a88dbf0642f9f
++         No es para uso directo; véase `Json.Printable`.
++     entry #generated   `import codecs.direct`: un impresor generado donde un registro lo necesita
++         Con `Codecs.Direct`, un registro obtiene un impresor generado en el lugar de uso; un tipo que
++         no es un registro toma la vía derivada.
++   entry .Direct   el portador de `derives Json.Direct`: el analizador y el impresor generados de un tipo, creados una sola vez
+
+% 1 1 0 0a314529409791941ed6c527b7b7df46
+
+@ 0 4 0 094e6a0b2d3aea530f26c698f6fde51d
++         `case class Play(…) derives Json.Direct` genera el `Json.Parsable` y el `Json.Printable` de
++         `Play` una sola vez, en su objeto compañero, donde `Json.Parsable.declared` y
++         `Json.Printable.declared` los encuentran sin ninguna importación. Una clase de tipos tipada
++         con `Self` no puede aparecer en una cláusula `derives`, y por eso existe este portador
++         parametrizado.
+
+% 2 1 0 17b02b224864878f17432656df6cc6e5
+
+% 3 1 0 07e8ee423beb12a61baa48c9aae292c3
+
+% 4 1 0 1c37d5e5850b6d7f1d2b2721746d8df1
+
+% 1 1 0 09e95ecb3b447b7b14337615ec289628
+
+% 0 1 0 03674de687ae03560c1ca034a44b5075
+
+% 0 1 0 1567144059eeb4500962f15bba2b69dc
+
+% 0 1 0 0a191c1a8e152e281dfa56ad79e1fd10
+
+% 1 1 0 1bb0d27c3539d79a1d9a3633516abac5
+
+@ 0 4 0 0f53c8956bad442f05da84c5ad294391
++     entry .derived   genera el analizador y el impresor, mediante `Inlinable.parsable` e `Inlinable.printable`
++     entry #parsable   el `Json.Parsable` generado
++     entry #printable   el `Json.Printable` generado
++   entry .KeyTable   una tabla precalculada de las claves que se esperan en un objeto, para despachar según ellas sin materializarlas
+
+% 1 1 0 01ac91bcb2c5ddc90f7b29e0f65f343d
+
+@ 0 10 0 1137b5722c6a99061336bfb976939316
++         Se construye una vez por registro a partir de sus claves de transmisión;
++         `Json.Reader#keyIndex(table)` resuelve con ella la siguiente clave como índice de la tabla,
++         `.Unknown` o `.End`. Las claves de hasta dieciséis bytes ASCII imprimibles se comparan
++         empaquetadas en dos `Long`s; las demás, por nombre. Es la forma más rápida de que un
++         analizador escrito a mano despache por claves.
++     entry .apply   una tabla sobre las claves dadas, en orden de índice
++     entry .Unknown   el índice de una clave que la tabla no contiene: `-1`
++     entry .End   el índice devuelto una vez consumida la llave de cierre: `-2`
++     entry #indexOf   el índice de una clave empaquetada, por sus dos palabras
++     entry #indexOfName   el índice de una clave por su nombre, o `.Unknown`
++   entry .Reader   el borde restringido del tokenizador a través del cual un `Json.Parsable` consume tokens
+
+% 1 1 0 0c23d90ed3bceabe163fdd65609a8f8b
+
+@ 0 6 0 1d82ac4437f32ace05b2cef83addf515
++         Entregado a `Json.Parsable#parse`, un `Json.Reader` lee JSON directamente de la entrada, un
++         token o paso estructural por llamada, saltándose el espacio en blanco inicial. Lleva su
++         propia `Tactic[Parse.Error]`, así que el cuerpo de un analizador no necesita ningún
++         vocabulario de errores: la entrada mal formada y los valores de tipo equivocado abortan a
++         través de la táctica ambiental de la llamada de lectura, con un `Json.Ast.Issue` como
++         `ExpectedNumber` que nombra lo que se esperaba. Es una capacidad exclusiva y con estado,
++         propiedad de una llamada a `parse` mientras dura; no puede retenerse nada de ella.
+
+% 2 1 0 1aabdced9c33592b0c2a062818cbc86c
+
+% 3 1 0 0d54c47e2813b78417998f6514e0c2c1
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 1979bf26ed5a84e118fb59819b19a259
+
+% 0 1 0 164d2af47ea010b1147c1de892e2e7e5
+
+% 0 1 0 15af009dc4945d531d3e58b61551c606
+
+% 0 1 0 1c2fd9b7da508e94042bfedc379491c8
+
+% 0 1 0 03d2b7a62bab0af40d7042186d840795
+
+% 0 1 0 1b66a53bb4809ff516a3989da26e052b
+
+% 0 1 0 182655fe863aee3b1da8b27b21828335
+
+% 0 1 0 092dcf1d0efb3da01e0379919f39145d
+
+% 0 1 0 05133a0337347beb09a8afc602525aa2
+
+% 0 1 0 0e60855f8b6a9c76044b0f8ae86d7718
+
+% 0 1 0 075512e4963b3c8000e090ed97c84ac1
+
+% 0 1 0 012d6e281740eb610e12709dffd9e6e6
+
+% 0 1 0 18322201cf4bf9c9119064ffd13879d0
+
+% 1 1 0 027c9d65592a75f5050dd089b70337c3
+
+@ 0 5 0 067375b2ec9791ca19564c9e017dbc3b
++         Tras `#openObject`, `#key` produce cada clave por turno y `Unset` una vez consumida la llave
++         de cierre; tras `#openArray`, `#element` es verdadero mientras sigue otro elemento. `#value`
++         materializa un valor entero como `Json` y `#skipValue` se salta uno, que es como se pasan por
++         alto las claves desconocidas. Los números se convierten exactamente como lo hacen los
++         accesores de `Json.Ast`, de modo que las lecturas directas y las del árbol producen valores
++         iguales.
+
+% 1 1 0 100d33ce2406f1b204772efcb401f7c6
+
+% 0 1 0 13c45f307dd236b30d9c6a71d9c17361
+
+@ 0 36 0 1d873e18786804c500ae95c11340703d
++     entry .KeyEnd   el centinela de `#keyWord` una vez consumida la llave de cierre
++     entry .KeyOpaque   el centinela de `#keyWord` para una clave que no puede explorarse in situ
++     entry .keyNameOf   el nombre de una clave opaca, sometido a interning, para analizadores generados
++     entry #string   consume una cadena JSON como `Text`
++     entry #boolean   consume un booleano JSON
++     entry #long   consume un número JSON como `Long`
++     entry #int   consume un número JSON como `Int`
++     entry #double   consume un número JSON como `Double`
++     entry #bcd   consume un número JSON como `Bcd`, conservando todos los dígitos
++     entry #hasNull   si el siguiente valor es `null`, sin consumirlo
++     entry #primitive   la clase del siguiente valor según su primer byte, sin consumirlo
++         `Unset` al final de la entrada o ante un byte con el que no empieza ningún valor; los
++         envoltorios opcionales lo comparan con la forma del campo antes de analizar.
++     entry #nullValue   consume un `null`
++     entry #openObject   consume la llave de apertura de un objeto
++     entry #key   la siguiente clave de un objeto abierto, o `Unset` una vez consumida la llave de cierre
++         Consume el separador y los dos puntos, dejando el lector en el valor.
++     entry #keyIndex   la siguiente clave resuelta con un `Json.KeyTable`, sin materializarla
++         El índice de la tabla, `Json.KeyTable.Unknown`, o `Json.KeyTable.End` una vez consumida la
++         llave de cierre.
++     entry #keyWord   la siguiente clave en forma empaquetada, para analizadores que comparan claves con constantes literales
++         La palabra baja empaquetada (su palabra alta, con `#keyWordHigh`), `.KeyEnd`, o `.KeyOpaque`
++         cuando la clave no puede explorarse in situ, en cuyo caso el llamante da en su lugar el paso
++         `#keyIndex`.
++     entry #keyWordFirst   el primer paso de clave del protocolo dividido para analizadores generados
++     entry #keyWordNext   un paso de clave posterior del protocolo dividido para analizadores generados
++     entry #keyWordHigh   la palabra alta de la clave que `#keyWord` exploró por última vez
++     entry #openArray   consume el corchete de apertura de un array
++     entry #element   si sigue otro elemento del array: verdadero, situado en él; falso, una vez consumido el corchete
++     entry #value   consume un valor entero, materializado como `Json`
++     entry #skipValue   consume un valor entero sin materializarlo
++     entry #discriminant   el valor de cadena de una clave en cualquier punto del objeto siguiente, dejando el lector donde estaba
++         La primitiva de despacho para un campo discriminador que puede aparecer en cualquier punto
++         del objeto; `Unset` cuando el objeto no tiene esa clave o su valor no es una cadena.
++     entry #fail   aborta a través de la táctica del lector con un `Json.Ast.Issue`, situado en el desplazamiento actual
++   entry .Focus   dónde está un decodificador dentro del documento: un puntero JSON, y la posición en el código fuente una vez conocida
+
+% 1 1 0 19dddf7aa8f128981caa4b36e27ac9c8
+
+@ 0 5 0 0185ac33250efad008ebb09091d7c0a8
++         El tipo de foco que los decodificadores y analizadores de Jacinta siguen a medida que
++         descienden, de modo que un error lanzado al leer `person.age` se notifica en `#/person/age`.
++         Bajo una estrategia acumulativa, el foco de cada error se lee mediante `prior`, y
++         `#withPosition` rellena la `Json.Ast.Position` en el código fuente (para un documento
++         analizado con `parsing.trackPositions`) solo cuando de verdad se genera un error, así que la
++         vía de éxito no cuesta nada.
+
+% 2 1 0 13f1f4ca4dd74ff004ee40841f22a169
+
+% 3 1 0 0134ae3a78a54b471631f40dd2740c0e
+
+% 4 1 0 145924dde34db2b2002bdef91b377a9d
+
+% 6 1 0 1e95ae72ddd18fd50fcc8c8511717075
+
+% 0 1 0 189f89963dc28dc10a99fa6314dfb8a2
+
+% 0 1 0 1fb10d99fa04099503e4e9408ac1728f
+
+% 0 1 0 11412dfac4abac620dd4a3a78ae238d4
+
+% 0 1 0 0e4d8c9bd9908bf21996c53c71150c61
+
+% 0 1 0 007acb6de783c4e9081c74990c2bd8ac
+
+% 0 1 0 0db289832fd5c7e508b64ecc4e3c04fa
+
+% 0 1 0 1fc38eb58fce8d740c7009363e0e47d3
+
+% 0 1 0 143203f6adfbba1603ffb0917ce81f32
+
+% 0 1 0 15c566899a03f5c806662f9039b40d9b
+
+% 0 1 0 18b3956083c672ac03e3e936c3d23a21
+
+% 1 1 0 143a3a2e3b17e3390412808c996634cd
+
+@ 0 8 0 140688dc0e45b9a0188543c2d065dd83
++     entry #pointer   el puntero JSON al valor que se está leyendo
++     entry #position   la posición del valor en el código fuente, una vez que `#withPosition` la ha encontrado, o `Unset`
++     entry #withPosition   el foco con su posición buscada en un documento con seguimiento
++   entry .PositionIndex   el registro compacto de la posición en el código fuente de cada valor de un documento con seguimiento
++       Un `Array[Int]` congelado y opaco, producido por el analizador con `parsing.trackPositions` y
++       transportado por `Json#positionIndex`; `json.locate(pointer)` lo lee. Nada de él se maneja a
++       mano.
++   entry .Ast   el árbol bajo un `Json`: una unión opaca de las clases de JSON, con predicados, accesores y analizadores
+
+% 1 1 0 004a6b6d5cc3cad6012576eec48136c4
+
+@ 0 9 0 195ea26bab878cc913471fca92d90023
++         `Json.Ast` es la representación que envuelve un `Json`: un `String`, un número (`Long`,
++         `Double`, `Bcd` o un `Int` empaquetado), un `Boolean`, el centinela `Json.JsonNull`, un
++         objeto (un `Array[Any]` congelado de claves y valores alternos), un array, o `Unset` para un
++         valor ausente. `Json.unseal(json)` expone el nodo raíz de un documento y `Json.ast(node)`
++         envuelve uno. Los métodos de extensión de este objeto compañero —los predicados `isX`,
++         `.primitive`, y los accesores `.string`, `.long`, `.double`, `.bcd`, `.number`, `.boolean`,
++         `.array`, `.obj`, `.arrayLength`, `.arrayElement`, `.objectSize`, `.objectKey`,
++         `.objectValue` y `.objectIndexOf`— están en el ámbito implícito allí donde se usa un
++         `Json.Ast`, sin entrar en el espacio de nombres del paraguas.
+
+% 2 1 0 16e660fa2c6b744c037a76140a3c23de
+
+% 3 1 0 1c1f123a4b44264c0d9b1e546d2bd223
+
+% 4 1 0 0821da1446b9dadd0f8fa3942016a4a4
+
+% 0 1 0 106f35a7f06c75df136955ff00fb3666
+
+% 0 1 0 17afc517ae3eb63e19b508574616c426
+
+% 0 1 0 0abfd8ddea2847311d3fcb02560d54aa
+
+% 0 1 0 0545369a6464a62e0a86b22470f2c764
+
+% 0 1 0 021560dec0cedf471ec9ceb6a8a281ee
+
+% 0 1 0 07b6b4866c2671ab18399d6d47f1dd95
+
+% 1 1 0 17d6a2c273b7283114d3fa28d1334655
+
+@ 0 7 0 12fa72c9e905164f07fc9797d426cb35
++         Los predicados son más finos que los primitivos: `.isLong` e `.isDouble` distinguen las dos
++         representaciones numéricas, `.isBcd` e `.isSmallBcd` las dos empaquetadas, e `.isNumber`
++         abarca las cuatro. Los accesores lanzan `Json.Error(NotType(found, expected))` para un nodo
++         de clase equivocada, y `Absent` para uno ausente. `Json.Ast` es también un `Format` de
++         zephyrine, lo que le da los tipos `Position` e `Issue` que lleva todo error de análisis. Los
++         analizadores de bajo nivel de `.parse` construyen un árbol a partir de bytes; la lectura
++         ordinaria pasa por `read[Json]`.
+
+% 0 1 0 1e402834a9e85f5212a8982919cec48e
+
+% 0 1 0 0ad48ed24b943e171c813c2f780d3821
+
+@ 0 24 0 0418861971fdfb840548b5dcd7e680b5
++     entry .name   el nombre del formato, `JSON`
++     entry .apply   envuelve como `Ast` un valor en bruto que ya está en la representación del árbol
++     entry .obj   un nodo objeto a partir de arrays paralelos de claves y valores, o las claves y valores de un nodo objeto
++         Dos sobrecargas. `Json.Ast.obj(keys, values)` construye un nodo objeto a partir de arrays
++         paralelos; la extensión `node.obj` devuelve las claves y los valores de un objeto como dos
++         arrays paralelos, lanzando `Json.Error` para cualquier otra clase. La extensión materializa
++         dos arrays nuevos; para unas pocas entradas son preferibles `.objectKey` y `.objectValue`.
++     entry .arr   un nodo array a partir de sus elementos
++     entry .bcdArr   un array de números en la forma BCD de `Long` empaquetado
++     entry .smallBcdArr   un array de números en la forma BCD de `Int` empaquetado
++     entry .arrayPad   el centinela que rellena un array de longitud par para que se distinga de un objeto
++         Nunca forma parte del contenido visible de un array; `.arrayLength` lo excluye.
++     entry .parse   analiza un árbol a partir de `Data` o de un iterador de bloques `Data`
++         Cuatro sobrecargas, cada una de las cuales toma el `NumberMode` en ámbito y lanza
++         `Parse.Error`: sobre un único `Data` o un `Iterator[Data]` consumido, cada una con o sin
++         `holes`, que admite las marcas de hueco del interpolador `j"…"`. El motor subyacente de
++         `read[Json]`; la lectura pública pasa por las instancias `Aggregable`.
++     entry .parserAggregable   lee un `Json.Ast` desnudo de un flujo de `Data`, lanzando `Parse.Error`
++     entry .showable   representa un nodo como texto JSON en el `Json.Formatting` en ámbito
++         El único serializador: tanto `Json.showable` como `Json.emit` pasan por él. Los números se
++         escriben directamente a partir de sus nibbles BCD, de modo que se conserva cada dígito que
++         vio el analizador.
++     entry .inspectable   una representación de depuración de un nodo: su texto compacto, marcado con `ᵃˢᵗ`
++         Distingue un nodo desnudo del documento `Json` que lo envuelve.
++     entry .Out   el escritor en el que escribe un `Json.Printable` o el serializador: texto, o bytes UTF-8
+
+% 1 1 0 0fe04a524b44de661295599302302588
+
+@ 0 12 0 055f661740ec0194099295448080b380
++           Una capacidad exclusiva y con estado, con un método por cada clase de token. Sus dos
++           implementaciones son internas: el escritor de texto que hay detrás de `show` y del `emit`
++           de extracción, y el escritor a nivel de bytes que hay detrás de `emit[Data]` y de `lend`.
++           El cuerpo de un `Json.Printable#write` recibe uno y llama a estos métodos.
++       entry #ascii   escribe un literal que se sabe ASCII: puntuación, palabras clave, dígitos
++       entry #raw   escribe texto literalmente, sin escapar nada: la unidad de sangrado
++       entry #string   escribe un literal de cadena JSON, entrecomillado y escapado según la RFC 8259
++       entry #long   escribe un entero
++       entry #bcdInt   escribe un número BCD de `Int` empaquetado como texto canónico de número JSON
++       entry #bcdLong   escribe un número BCD de `Long` empaquetado como texto canónico de número JSON
++       entry #bcd   escribe un `Bcd` como texto canónico de número JSON
++     entry .Position   el lugar de un valor en el código fuente: línea y columna, con su desplazamiento y su longitud
+
+% 1 1 0 035d253a17159bc81cc14822a88e1f96
+
+@ 0 11 0 18dc15ba9da19d7b1430e703c05c70f0
++           La `Format.Position` de JSON: `#line` y `#column` empiezan en 1; `#span` es el rango
++           contado desde 0. Un `Parse.Error` lleva una para el fallo, y `json.locate(pointer)`
++           devuelve una para un valor de un documento con seguimiento, abarcando el valor entero.
++       entry #line   la línea, contada desde 1
++       entry #column   la columna, contada desde 1
++       entry #offset   el desplazamiento en caracteres desde el principio de la entrada, si se conoce
++       entry #length   la longitud del texto del valor, si se conoce
++       entry #describe   la posición como texto: `line 2, column 3`
++       entry #span   el tramo del valor, contado desde 0
++     entry .Issue   lo que puede estar mal en un texto JSON: los motivos que lleva un `Parse.Error`
++         Cada caso tiene un mensaje, mediante `#describe`: `EmptyInput` (_the input was empty_),
+
+% 0 1 0 14d90c3dc06d9b0d151b30ac954228d1
+
+% 0 1 0 063dc35027176f05196510bd0a0572dc
+
+% 0 1 0 086350e20abb55901378c75804bbfa0b
+
+@ 0 5 0 0126ba1c91c32cbe09930a4bf1a4ad85
++         `SpuriousContent` (algo después del valor completo), `LeadingDecimalPoint`, `NotEscaped`,
++         `IncorrectEscape`, `MultipleDecimalPoints` y `ExpectedDigit`. Cuatro surgen solo en la vía
++         de análisis directo, donde un lector tipado sabe lo que espera: `ExpectedNumber`,
++         `ExpectedBoolean`, `ExpectedObject` y `ExpectedArray`.
++     entry .AsciiByte   las constantes de byte con las que compara el tokenizador
+
+% 1 1 0 14b6334a27ef0cb9014bf345c2755569
+
+% 2 1 0 1000e1b54f1b80dd10efc0a9cce8dc34
+
+@ 0 34 0 071c7d4ce99aa87a13d3c9734b9be197
++           No es para uso directo: puntos de código ASCII con nombre (`Comma`, `Quote`, `OpenBrace`,
++           …) para las comparaciones a nivel de bytes del analizador.
++     entry .isNumber   si el nodo es un número, en cualquiera de sus cuatro representaciones
++     entry .isAbsent   si el nodo es el valor ausente, como el que produce una clave inexistente
++     entry .isLong   si el nodo es un número guardado como `Long`
++     entry .isDouble   si el nodo es un número guardado como `Double`
++     entry .isSmallBcd   si el nodo es un número guardado como un `Int` empaquetado de hasta siete nibbles
++     entry .isBcd   si el nodo es un número de alta precisión guardado como `Bcd`
++     entry .isString   si el nodo es una cadena
++     entry .isBoolean   si el nodo es un booleano
++     entry .isNull   si el nodo es un `null` explícito de JSON
++     entry .isObject   si el nodo es un objeto
++     entry .isArray   si el nodo es un array, en cualquiera de sus representaciones
++     entry .isNumberArray   si el nodo es un array guardado sin boxing como números empaquetados
++     entry .isBcdIntArray   si el nodo es un array en la forma de `Int` empaquetado
++     entry .isBcdLongArray   si el nodo es un array en la forma de `Long` empaquetado
++     entry .primitive   el `Json.Primitive` del nodo: `Number`, `Boolean`, `String`, `Object`, `Array` o `Null`
++         Un nodo ausente notifica `Null`.
++     entry .arrayLength   el número de elementos de un nodo array, sin contar el relleno
++     entry .arrayElement   el elemento en un índice, materializado como nodo
++         Un número empaquetado se decodifica como `Long` si es un entero exacto que cabe, y como
++         `Double` en caso contrario.
++     entry .objectSize   el número de pares clave/valor de un nodo objeto
++     entry .objectKey   la clave en un índice de par
++     entry .objectValue   el valor en un índice de par
++     entry .objectIndexOf   el índice de par de una clave, por búsqueda lineal, o `-1`
++     entry .array   los elementos de un nodo array, lanzando `Json.Error` para cualquier otra clase
++     entry .double   el nodo como `Double`, lanzando `Json.Error` si no es un número
++     entry .bcd   el nodo como `Bcd`, lanzando `Json.Error` si no es un número
++     entry .long   el nodo como `Long`, lanzando `Json.Error` si no es un número; un decimal se trunca
++     entry .number   el nodo como `Long | Double | Bcd`, en la forma que lo contenga exactamente
++     entry .string   el nodo como `Text`, lanzando `Json.Error` si no es una cadena
++     entry .boolean   el nodo como `Boolean`, lanzando `Json.Error` si no es un booleano
++   entry .Error   se lanza cuando un valor no puede leerse como lo que se ha pedido
+
+% 1 1 0 1968c91e487df5210431d0ed44059a98
+
+@ 0 1 0 04d619d523829c1201d8bc07f1608b64
++         Error `↯/s.106.1`: _could not access the value because `reason`_, donde el `#reason` es un
+
+% 0 1 0 1b4e0ecd951d738a0e9559cac274b1dd
+
+@ 0 6 0 147594e49e6c47de11221a572ab40e75
++         instead of `expected`_, cada uno un `Json.Primitive`), `Absent` (_the JSON value was not
++         present_: un campo obligatorio que falta en el objeto, o un valor más allá del final de un
++         array con `as`), y `OutOfRange` (_the array index is out of range_, de `json(index)`). Lo
++         lanzan todos los accesores de `Json.Decodable`, `Json.Parsable` y `Json.Ast` a través de la
++         `Tactic[Json.Error]` en ámbito, y bajo una estrategia acumulativa cada uno se etiqueta con el
++         `Json.Focus` del campo que falló.
+
+% 2 1 0 03aa92b955d118b11afdacc1b88dfd23
+
+% 3 1 0 00fefb005b7b7ab10ab2ed708af92dbb
+
+% 4 1 0 0f2a4ce4be461b6c04aa3cb19b7add14
+
+% 6 1 0 169e60c5a8921adf1efbe975c12b5c65
+
+% 0 1 0 1c060c585a34ce42078b84102bba6152
+
+% 0 1 0 187e23c95d5a1c4b049b84ae25aa5d89
+
+% 0 1 0 1d722d76ffad156a13c1eb43d6413247
+
+% 1 1 0 13835ca5be48e6c912d4465d662f56e2
+
+@ 0 3 0 1ef800bfc948271d1f8a700fd0252491
++         El *texto* JSON mal formado es un error distinto: `Parse.Error`, de zephyrine, con una
++         `Json.Ast.Position` y un `Json.Ast.Issue`. Un campo de registro de `Json.Provider` lanza en
++         su lugar `Json.Provider.Error`.
+
+% 0 1 0 0a017b5db32129c002467580199d0498
+
+% 0 1 0 09fb8ea4ac3e98701f74f77309a803e7
+
+@ 0 1 0 0aa883656761c9d41904688a4a2dd031
++     entry .Reason   por qué no pudo leerse un valor: `OutOfRange`, `NotType(found, expected)` o `Absent`
+
+% 1 1 0 1b9661a7d975c0ac0f8ffdfa2f4f15e0
+
+@ 0 5 0 1bc8dbfd3271cb5e1c69f99e08fa5ab6
++           Una enumeración con un número por caso (1, 2 y 3), representada por `.communicable`.
++       entry .communicable   representa cada motivo como un mensaje
++       entry #number   el número del motivo dentro del error `↯/s.106.1`
++     entry #reason   el `Json.Error.Reason`
++   entry .Primitive   las seis clases de valor JSON: `Array`, `Object`, `Number`, `Null`, `Boolean` y `String`
+
+% 1 1 0 18c06b28ca8535141c960231ee0b2cc0
+
+@ 0 4 0 046f872d835839661713a7eca37e802a
++         Lo que notifica `Json.Ast.primitive`, y lo que nombra `Json.Error.Reason.NotType` a cada
++         lado. `.communicable` representa uno como mensaje.
++     entry .communicable   representa el nombre de un primitivo como mensaje
++   entry .DiscriminantField   la forma de unión etiquetada en la que la etiqueta es un campo junto a los de la propia variante
+
+% 1 1 0 12321a66138edc660dfd536c9f206f9b
+
+@ 0 10 0 04c766305992a3fe00501a094a2fadda
++         `{"radius": 1.0, "type": "Circle"}`: un `Discriminable in Json` cuya etiqueta es un campo
++         del propio objeto de la variante, bajo el nombre dado. `Json.discriminatedUnion(label)`
++         construye uno, y `discriminables.jsonByTypeDiscriminable` y
++         `discriminables.jsonByKindDiscriminable` son las instancias para `type` y `kind`. El
++         análisis directo encuentra la etiqueta con una exploración anticipada acotada, así que no
++         es necesario que vaya primero; es la única forma que admite `Json.Parsable.staged` para los
++         tipos suma.
++     entry #rewrite   adjunta el campo de etiqueta a la codificación de una variante
++     entry #discriminate   lee el campo de etiqueta, o `Unset` cuando no lo hay
++     entry #variant   los campos propios de la variante, sin la etiqueta
++   entry .DiscriminantWrapper   la forma de unión etiquetada en la que la variante va dentro de un objeto de una sola clave con su nombre
+
+% 1 1 0 1354b2836009894a1dd05f446299acbe
+
+@ 0 4 0 042318a45c2b8d8b0f6f1d921c359ab1
++         `{"Circle": {"radius": 1.0}}`: la forma más favorable para el flujo, ya que la etiqueta es
++         siempre el primer token. `discriminables.jsonWrapperDiscriminable` es la instancia para
++         todos los tipos; un objeto con más de una clave no es una variante válida y lanza
++         `Json.Error(Absent)` en lugar de adivinar qué clave se pretendía.
+
+% 2 1 0 14657e0db8d4c82d12f04d041f7322bf
+
+% 3 1 0 1f870ab7116189a900fecf478f36f24c
+
+% 4 1 0 00c105ce6329bac417dc9fd9a80058eb
+
+% 0 1 0 01bf1f32dff7d5561b0f416224eaaaf9
+
+% 0 1 0 064d9cf281bffad31da9d6a2a43059d9
+
+% 0 1 0 175d173166d6deb7103c0165a1683d56
+
+% 0 1 0 170832852def38050d0e2797ac9e1a2a
+
+% 0 1 0 15e9182a07f4c6f41c4b26a277833a93
+
+% 1 1 0 15d6688d02e367d317f4f5e4103c772d
+
+@ 0 4 0 14651bb316283e8506975237035308a9
++     entry #rewrite   envuelve la codificación de una variante en un objeto cuya clave es su etiqueta
++     entry #discriminate   la única clave, o `Unset` para cualquier cosa que no sea un objeto de una sola clave
++     entry #variant   el valor bajo la única clave
++   entry .DiscriminantEnvelope   la forma de unión etiquetada con un campo de etiqueta y un campo de carga útil uno al lado del otro
+
+% 1 1 0 15fe8636aa2b787e02e5e4124f0282be
+
+@ 0 16 0 1cdfe78751ffe4dc18832f1c810ed2ae
++         `{"type": "Circle", "value": {"radius": 1.0}}`, con los dos nombres de campo dados.
++         `discriminables.jsonEnvelopeDiscriminable` es la instancia `type`/`value`. El análisis
++         directo no exige que la etiqueta vaya primero.
++     entry #rewrite   encierra la codificación de una variante en un sobre con su etiqueta
++     entry #discriminate   el valor de cadena del campo de etiqueta, o `Unset`
++     entry #variant   el campo de carga útil
++   entry #positionIndex   el `Json.PositionIndex` de un documento con seguimiento, o `Unset`
++       Solo está presente en un documento analizado con `parsing.trackPositions` en ámbito; `locate`
++       y `locateKey` lo leen.
++   entry #apply   `json(t"key")` selecciona un campo, y `json(index)` un elemento de un array
++       `json(t"key")` produce el valor del campo, o un `Json` ausente (que se decodifica como `Unset`
++       y lanza `Absent` para cualquier otra cosa) cuando el objeto carece de él. `json(index)`
++       produce el elemento en un índice contado desde cero, lanzando `Json.Error(OutOfRange)` más
++       allá del final y `NotType(…, Array)` para algo que no es un array. Ambos toman una
++       `Tactic[Json.Error]`. Para un documento al que se ha aplicado `verify` contra un tipo,
++       `json(index)` es una macro que tipa el elemento según el esquema.
+
+% 2 1 0 09ee3e7fbaff7a7c061b1d6175161aec
+
+% 3 1 0 0e08a98c8c2aad1611f274ee56d4b1c6
+
+% 4 1 0 15f49316b97849c20ee786bb2a2ee777
+
+% 0 1 0 1a72f0d92d8c404f108f540d79a5ad34
+
+% 0 1 0 0041163d27bccefc00bbb9127853be2f
+
+% 0 1 0 14483f2f205a19d014ec531ecce88126
+
+% 1 1 0 1dddece4ed1f8f7318fda439bcdfe38b
+
+@ 0 7 0 01994b24482c838c04c28175e7d0031f
++   entry #selectDynamic   `json.field`: un campo leído como miembro, con el acceso dinámico habilitado
++       Una macro. Para un `Json` simple necesita un `Json is Dynamical` en ámbito
++       —`dynamicAccess.dynamicJson` importado, o un bloque `dynamically[Json]`— y lee el campo en
++       tiempo de ejecución, produciendo un `Json` ausente para una clave inexistente; para un
++       documento al que se ha aplicado `verify` contra un tipo, comprueba que el tipo tenga el campo,
++       no necesita habilitador y tipa el resultado según el esquema. Un campo de un documento no
++       verificado sin el habilitador es un error de compilación que lo indica.
+
+% 2 1 0 0c15ec755dd49a0a1e56e1e7a287f948
+
+% 3 1 0 1caf1f435a652fb01d1a710a0d0b39e8
+
+% 4 1 0 0ee7ba082ac455851c5d549a8873e7da
+
+% 1 1 0 0c69b0fe979693131d9854b01f8153b9
+
+% 0 1 0 1a61ea502936255417a4247fb74a7040
+
+% 0 1 0 1aec921c36050c781e5e6d1ae036ed3a
+
+% 0 1 0 182fe60298aa60ed06570d62829f8666
+
+% 1 1 0 1b5b66b2c5a4518f0b66dd8298c0c8db
+
+@ 0 11 0 053fd2e274a95341032f175d004e2f47
++   entry #applyDynamic   `json.field(index)`: un elemento de un campo array, con el acceso dinámico habilitado
++       La macro que hay detrás de `json.items(2)`: selecciona el campo y luego el elemento, con la
++       misma regla del habilitador y el mismo tipado de documentos verificados que `#selectDynamic`.
++   entry #update   `json(index) = value`: un documento nuevo con un elemento del array sustituido
++       Necesita el acceso dinámico habilitado, una táctica de `Json.Error` (que se lanza si no es un
++       array) y un valor `Encodable in Json`.
++   entry #updateDynamic   `json.field = value` asigna o sustituye un campo, y `json.field = Unset` lo elimina
++       Dos sobrecargas, cada una de las cuales necesita el acceso dinámico habilitado
++       (`dynamicAccess.dynamicJson` o un bloque `dynamically[Json]`) y devuelve un documento nuevo:
++       el original no cambia. El valor puede ser cualquier cosa `Encodable in Json`. Ninguna lanza
++       errores: aplicar cualquiera de ellas a un `Json` que no sea un objeto es un error de
++       programación, que arroja una excepción en lugar de lanzar `Json.Error`.
+
+% 2 1 0 1b595f80a6f4c8761cb2491e694c9fe2
+
+% 3 1 0 0360f25227aa808e0c33627a6a508626
+
+% 4 1 0 175ce0d762a5070a09357b2552567a33
+
+% 5 1 0 1fb68b7ee70f241317efbcbab3fda54e
+
+% 1 1 0 0d69abb038e62a4113b3e4efe6e8e15a
+
+% 0 1 0 12fc171415de26ff1806b7e7d685692a
+
+% 0 1 0 07e9cf8804b1a02e09223daa8bf0e63a
+
+% 0 1 0 0ec3583bd81839440074c224b49c209b
+
+% 1 1 0 1284a1fee2a8e5501f66baee1b9f1761
+
+@ 0 6 0 18af94bc7740f8ba1a274236494ccf40
++   entry #as   decodifica el valor como un tipo de Scala: `json.as[Person]`
++       Resuelve un `Decodable in Json` para el tipo —cualquier `Json.Decodable`, así que los
++       primitivos, las colecciones, `Optional` y toda case class y tipo suma por derivación— y
++       necesita una `Tactic[Json.Error]` y un `Foci[Json.Focus]`. Tras la decodificación, el foco de
++       cualquier error registrado bajo una estrategia acumulativa se enriquece con la posición del
++       valor en el código fuente, en un documento con seguimiento. `read[T in Json]` sobre la fuente
++       es la forma de un solo paso.
+
+% 2 1 0 04d23bc60579db9516d772ab32a36fdc
+
+% 3 1 0 1211269d579d675a0a31b655e64b6694
+
+% 4 1 0 15aff9e3ffdb6b22043d51670eabb885
+
+% 0 1 0 1a7632430ed1405e1931642babd375e1
+
+% 0 1 0 06aa2af5cb8c4cb6169a62c66e7f410b
+
+% 0 1 0 09510feb718a45bb1c00b7a61a04ea35
+
+% 0 1 0 02dd5e9c8e97319e0ad9aae3197c72b9
+
+% 1 1 0 1b088156da9b48471a07ade198bf7299
+
+@ 0 1 0 0fed892d257d1c1b0d9c7facaf85f422
++ entry .Json1   el mixin que contiene los givens del camino directo del objeto compañero de `Json`
+
+% 1 1 0 161dd79670a4dfeb0a3bed23610cbda6
+
+% 2 1 0 0f5281ddfcad73381cad84e17e22223e
+
+@ 0 16 0 0ef47631e76c3cbe1b95188f57460bf4
++       No es para uso directo: una capa de la cadena de prioridad de givens de `object Json`,
++       por encima de `Json2`. Contiene `aggregableParsed`, `readableParsed`,
++       `encodableOverPrinted`, `aggregableStrictFailure` y `encodableOverStrictFailure`,
++       documentados más abajo; `object Json` los hereda.
++   entry #aggregableParsed   `read[T in Json]` directamente desde un flujo, siempre que `T` tenga un `Json.Parsable`
++       El camino de lectura directo, por encima de `.aggregableDirect`: la entrada, un solo
++       bloque o un flujo, se analiza in situ mediante un `Json.Reader`, y no se construye ningún
++       árbol para lo que la instancia lee directamente. Bajo `parsing.trackPositions`, los
++       errores de análisis llevan coordenadas reales del código fuente. Necesita una
++       `Tactic[Parse.Error]` y un `PositionTracking`.
++   entry #readableParsed   `data.read[T in Json]` directamente desde un `Data` entero, sin envolverlo en un flujo
++   entry #encodableOverPrinted   `value.in[Text over Json]` escrito directamente por un `Json.Printable`, cuando es compacto
++       Por encima de `.encodableOver`: un tipo con un `Json.Printable` se escribe directamente
++       como texto, sin árbol, siempre que el `Json.Formatting` del ámbito sea compacto; el
++       formato sangrado se sigue representando a través del árbol, que los impresores generados
++       no escriben.
++   entry #aggregableStrictFailure   el error de compilación de `codecs.strict` para un tipo sin analizador directo
++   entry #encodableOverStrictFailure   el error de compilación de `codecs.strict` para un tipo sin impresor directo
+
+@ 0 1 0 1949eaa180486f4319d26b58c949da78
++ entry .Json2   el mixin que contiene los givens del camino derivado y elemento a elemento del objeto compañero de `Json`
+
+% 1 1 0 006b4a00cb8e24f81a884040af94de8f
+
+% 2 1 0 1292185f5011bec006e9defbbfd98de0
+
+@ 0 45 0 1ff572a940c1e25c03b46390b63d2141
++       No es para uso directo: una capa de la cadena de prioridad de givens de `object Json`,
++       por encima de `Json3`. Contiene `decodable`, `encodable`, `optional`,
++       `optionalEncodable`, `bytes`, las instancias `field…`, `optionalParsable`,
++       `encodableOver`, `encodableOverData`, `aggregableDirect` y los tres objetos de
++       derivación, documentados más abajo; `object Json` los hereda.
++   entry #optionalEncodable   codifica un `Optional[T]`: `Unset` se codifica como ausente, así que un objeto omite el campo
++   entry #optional   decodifica un campo `Optional[T]`: ausente o `null` se lee como `Unset`, según las políticas del ámbito
++       Una clave ausente se lee como `Unset`, un `null` explícito se lee como `Unset`, y un
++       valor que el decodificador interno rechaza lanza un error. Cada cosa es una política,
++       leída de un given en la resolución: `Decodable.Absence in Json`,
++       `Decodable.Nullity in Json` y `Decodable.Fault in Json`, cuyos valores por defecto son
++       esos tres, y cuyas alternativas son, del paquete `optionalityOptions`,
++       `strictJsonAbsence` (lo ausente lanza `Absent`), `strictJsonNulls` (un `null` se entrega
++       al decodificador interno) y `lenientJsonFaults` (un valor rechazado se lee como `Unset`,
++       bajo el `tolerate` de la táctica del entorno, así que no se acumula nada).
++   entry #memory   decodifica un número JSON como `Memory`, una cuenta de bytes
++   entry #fieldOptional   lee directamente un campo `Optional[T]`, según las políticas de `optionalityOptions` del ámbito
++   entry #fieldOption   lee directamente un campo `Option[T]`
++   entry #fieldArray   lee directamente un campo de cualquier colección `Iterable`, con una `Factory` en el ámbito
++   entry #fieldList   lee directamente un campo `List[T]`
++   entry #fieldSet   lee directamente un campo `Set[T]`
++   entry #fieldSeries   lee directamente un campo `Sequence[T]`
++   entry #fieldMap   lee directamente un campo `Map[K, V]`, decodificando cada clave desde texto
++   entry #optionalParsable   un `Optional[T]` se analiza directamente cuando `T` lo ha activado
++   entry #encodableOver   `value.in[Text over Json]`: el texto JSON de un valor, a través del árbol
++       El reflejo, en el lado de escritura, de `read[T in Json]`: codifica a un `Json` y lo
++       representa con el `Json.Formatting` del ámbito, como haría `show`.
++       `.encodableOverPrinted` tiene precedencia sobre él allí donde existe un `Json.Printable`
++       y el formato es compacto.
++   entry #encodableOverData   `value.in[Data over Json]`: el mismo texto como bytes, en el `Codepage` del ámbito
++   entry #aggregableDirect   `read[T in Json]` a través del árbol: se analiza la entrada entera y después se decodifica
++       El camino de lectura para un tipo con un `Json.Decodable` pero sin `Json.Parsable`: la
++       entrada se analiza como un `Json` y se decodifica con `as[T]`. Necesita una
++       `Tactic[Parse.Error]`, una `Tactic[Json.Error]` y un `PositionTracking`.
++       `.aggregableParsed` gana siempre que el tipo tenga un `Json.Parsable`.
++   entry #decodable   el `Json.Decodable` universal: el propio `Json`, un códec de texto o la derivación a partir de la forma del tipo
++       `[value] => value is Json.Decodable`: un valor es el propio `Json`; o tiene un
++       `Decodable in Text`, en cuyo caso una cadena JSON se decodifica mediante él; o es una case
++       class, una enumeración o una jerarquía sellada, derivada por `.DecodableDerivation`. Un
++       `Json.Decodable` escrito a mano en el objeto compañero del tipo tiene precedencia sobre
++       él.
++   entry #encodable   el `Json.Encodable` universal: un códec de texto o la derivación a partir de la forma del tipo
++       `[value] => value is Json.Encodable`. Un tipo con un `Encodable in Text` se codifica como
++       cadena JSON; una case class se codifica como objeto con sus campos (renombrados por
++       `@name` o `@name[Json]`, y los campos `Optional`/`Option` omitidos cuando están
++       ausentes); una enumeración o una jerarquía sellada se codifica como su variante,
++       etiquetada por el `Discriminable in Json` del ámbito. Una instancia escrita a mano en el
++       objeto compañero del tipo tiene precedencia sobre él.
++   entry #DecodableDerivation   deriva un `Json.Decodable` para una case class o una suma, mediante wisteria
+
+% 1 1 0 036e83918b4a31571b4d9080b4557c7d
+
+@ 0 9 0 0960658680a1dce90609d80c958ed7f3
++         No es para uso directo: `.decodable` llega a él. Un producto se decodifica desde un
++         objeto, leyendo cada campo en su propio `Json.Focus` para que todo campo ausente o de
++         tipo erróneo se acumule, con los renombrados de `@name` aplicados y los valores por
++         defecto declarados rellenando las claves ausentes; una suma lee el discriminador
++         mediante el `Discriminable in Json` del ámbito (el paquete `discriminables`, o un
++         `Json.DiscriminantField`/`DiscriminantWrapper`/`DiscriminantEnvelope` en el objeto
++         compañero del tipo) y decodifica la variante que nombra.
++     entry .conjunction   la derivación de productos: un objeto con un campo por parámetro del constructor
++     entry .disjunction   la derivación de sumas: una variante etiquetada, según el `Discriminable in Json` del ámbito
++   entry #ParsableDerivation   deriva un analizador directo (`Json.Field`) para una case class o una suma
+
+% 1 1 0 13c4c9db0b4f83061a600c62d5161ea0
+
+@ 0 9 0 1d0a2fe92fe1cc3a1313f239ad7d1958
++         No es para uso directo: `Json.Parsable.derived` y la alternativa `.field` llegan a él.
++         Un producto se analiza mediante `Json.Parsable.product`, despachando sobre las claves
++         mediante una `Json.KeyTable`; una suma elige su estrategia a nivel de token según la
++         forma del `Discriminable in Json`: la etiqueta de un `DiscriminantWrapper` es su primer
++         token, las de un sobre y de un campo se encuentran con un examen anticipado acotado, y
++         cualquier otro `Discriminable` materializa un valor y lo decodifica.
++     entry .conjunction   la derivación de productos
++     entry .disjunction   la derivación de sumas
++   entry #EncodableDerivation   deriva un `Json.Encodable` para una case class o una suma, mediante wisteria
+
+% 1 1 0 1c9408075f9ac236016b46f299bfa26a
+
+@ 0 5 0 0d9f03f3482401031aeeeb65a72a4e02
++         No es para uso directo: `.encodable` llega a él. Un producto se codifica como objeto,
++         omitiendo un campo cuya codificación está ausente (un `Unset` o `None`); una suma
++         codifica su variante y la etiqueta con el `Discriminable in Json` del ámbito,
++         renombrando la variante con `@name`.
++     entry .conjunction   la derivación de productos
++     entry .disjunction   la derivación de sumas
+
+@ 0 1 0 12030e526a4e5b020b56873b90b4f620
++ entry .Json3   el mixin que contiene las alternativas de menor prioridad del objeto compañero de `Json`
+
+% 1 1 0 0c30961b75d5561d1a0498138f05f60d
+
+% 2 1 0 1043de4850346a7302577eb2499e2113
+
+@ 0 13 0 0afbb05cdf365ae3197a5cda5ad3329a
++       No es para uso directo: contiene `field`, la alternativa universal `Json.Field`, y
++       `decodableAtFocus`, el adaptador que resuelve `Json#as`, documentados más abajo;
++       `object Json` los hereda.
++   entry #field   el analizador de campos universal: un analizador directo, un códec de texto, la derivación o el puente al árbol
++       Refleja el orden de `.decodable` para que el formato de transmisión de un campo sea
++       idéntico en ambos caminos: un `Json.Parsable` explícito o derivado; un
++       `Decodable in Text`, que lee una cadena JSON; una case class o una suma, derivada por
++       `.ParsableDerivation`; y por último, cualquier `Json.Decodable` restante mediante
++       `Json.Parsable.fromDecodable`. Un tipo con una `Reflection` y un `Json.Decodable`
++       personalizado a la vez se deriva aquí, divergiendo de su decodificador; el remedio es una
++       instancia `Json.Parsable.fromDecodable` en su objeto compañero.
++   entry #decodableAtFocus   eleva cualquier `Decodable in Json` a uno que lleva un `Json.Focus`, para `as[T]`
++       El given de menor prioridad, y el único que produce la forma `at Json.Focus` que convoca
++       `Json#as`, así que un llamante genérico acotado por `Decodable in Json` sigue
++       resolviéndose.
+
+@ 0 1 0 02a9ad7300022851052a30431997d5b8
++ entry .Json4   el mixin que contiene `Json.Provider`
+
+% 1 1 0 1f2e45874a295f250653458d7aa914df
+
+@ 0 4 0 1576d1c29b542ea51d24b3ce9027a1da
++       No es para uso directo: la capa de la cadena del objeto compañero de `object Json` que
++       contiene el proveedor de tipos sobre un documento JSON Schema, documentado más abajo;
++       `object Json` lo hereda, así que se usa como `Json.Provider`.
++   entry #Provider   un proveedor de tipos sobre un documento JSON Schema: registros tipados a partir del JSON que encaja
+
+% 1 1 0 1dbd08e8c568ea4805dc08ee0cbf4dc2
+
+@ 0 7 0 0c91f57d7fb5cc24033b86e7c3dce355
++         `object Catalogue extends Json.Provider(schema)` vincula un JSON Schema, leído al
++         compilar el código, a un registro de tipado estructural con un campo por cada propiedad
++         del objeto raíz del esquema, cada uno leído con el tipo que declara su esquema.
++         `Catalogue.record(json)` convierte un `Json` en un registro así, y
++         `Catalogue.tuple(json)` en una tupla con nombres cuyos elementos se leen todos a la vez.
++         El esquema es `into[Json.Provider.Schema]`: un `Json`, o cualquier cosa legible como
++         JSON, como un recurso del classpath (`cp"/schemas/x.json"`, con un `Classloader` en el
++         ámbito) o texto JSON.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 0 1 0 148570702548156d11ae429d8a4dcd87
+
+% 0 1 0 16b286dec9a231491ff30ea03fbffeb7
+
+% 0 1 0 1b0416670fa21d3c171721d1fb5c12de
+
+% 0 1 0 0c08ca4eb4f6c0640d76689a5eb071e0
+
+% 0 1 0 0fbaee85e5db7e6a1aebd2e1cb951217
+
+% 0 1 0 1aa4683cfb21b1570f8af86d2a44d9c3
+
+% 0 1 0 1dd66e09a284bb491d172bf733255752
+
+% 0 1 0 0ae9c347196aec70057dca224f7c025e
+
+% 0 1 0 146c45aebb1aff521ab42c5d9e971758
+
+% 0 1 0 0a228b0b2212401c14a4b73b4554a776
+
+% 0 1 0 0cf14058733fdaaa18b4724b6736862f
+
+% 0 1 0 012505606fa35c621e4e55f96123ac4a
+
+% 0 1 0 0b5b6edd91829e9f16adfd8a0a76cfdc
+
+% 0 1 0 15f9908ba9d6814e1fc2f8134113ee83
+
+% 0 1 0 04e6d4d11ff7aaae105de61e06afb275
+
+% 0 1 0 17b5859336d4af7a1c174d07bc1bfef9
+
+% 0 1 0 16cd3b4a89f4153a0223e014fd6d1373
+
+% 0 1 0 0755e0758c1c42051d22ff59827e1025
+
+% 0 1 0 14d273c1fdf360aa1f5d376e28c577b0
+
+% 0 1 0 1d01165eed3b1a760a21c3bdfecf43f2
+
+% 0 1 0 120137392726cbbc006188b923e66a55
+
+% 1 1 0 1dff330499b789371865684bb4c73248
+
+@ 0 14 0 1e59db7e74b319651513f6efcf6347c6
++         Una propiedad de la lista `required` del esquema se lee con su tipo y lanza
++         `Json.Provider.Error(MissingValue(name))` cuando el documento la omite; cualquier otra,
++         o una cuyo tipo admite `null`, se lee como `Optional`. Un `array` se lee como `List` de
++         su tipo `items`, un `object` con `properties` como registro anidado, un objeto cuyos
++         valores describe un único esquema (`additionalProperties`, o `patternProperties` de un
++         solo tipo) como `Map[Text, T]`, y una propiedad cuyo nombre no es un identificador
++         mediante un nombre entre comillas invertidas. Se sigue un `$ref` local, un `allOf` de
++         objetos fusiona sus propiedades, y las alternativas `anyOf`/`oneOf` (o un `type` que
++         nombra varios) se leen como una unión de Scala elegida según la clase del valor
++         encontrado. El `enum`/`const`, el `pattern` y el `minLength`/`maxLength` de una cadena y
++         los límites de un número se comprueban al leer el campo, mediante los lectores
++         `.boundedInteger`, `.boundedNumber`, `.boundedString`, `.pattern` y `.enumeration`, y un
++         valor del tipo JSON equivocado lanza `JsonType(expected, found)`; todo error pasa por la
++         `Tactic` del código que lee el campo, así que `validate` con un `venture` por campo
++         recoge todos los problemas.
+
+@ 0 6 0 03fe5e589c2d16f306bab06d3eccbeb7
++         Lo que queda como `Json` en bruto: alternativas que la clase de un valor no puede
++         distinguir (dos formas de objeto en un `oneOf`), `not` e `if`, un objeto sin
++         `properties` ni esquema de valores, un array sin `items` o con `items` en forma de
++         tupla, una referencia a otro documento y una referencia recursiva en su punto de
++         recursión. Una raíz que no es un objeto con propiedades es un error de compilación. Una
++         propiedad con el nombre de un método de todo objeto de la JVM (`notify`, `toString`, …)
++         se lee mediante `record.selectDynamic("notify")`.
+
+@ 0 5 0 047ffc64f83102f91b1f20356a1ad57d
++         Un formato que nombra un tipo de dominio —`date-time`, `email`, `hostname`, `ipv4`,
++         `uri`, `uuid`, …— se lee como el tipo que represente ese dominio en el punto de llamada,
++         elegido importando su interfaz: `emailAddressInterfaces.soundnessEmailAddress` hace de un
++         campo `email` un `EmailAddress`, `uuidInterfaces.soundnessUuid` de un campo `uuid` un
++         `Uuid`, y así sucesivamente. Los lectores son givens de `.Reader` en este objeto
++         compañero.
+
+% 0 1 0 12be43def6cb9b2b09143400e2a12d26
+
+% 0 1 0 0cbe5fe870e09e150e8e8f3d947c6050
+
+@ 0 38 0 154cb939a8603267058e4f4fa56284d0
++     entry .Reader   el tipo de los lectores falibles de un proveedor: una `Intensional.Reading` que lanza `Json.Provider.Error`
++         `Json.Provider.Reader[label, result]` es una lectura de un `Json` rotulada con el nombre
++         del tipo o del formato del esquema, mediante la `Tactic[Json.Provider.Error]` del código
++         que lee el campo. Todos los lectores que siguen lo son.
++     entry .boolean   lee una propiedad `boolean` como `Boolean`
++     entry .string   lee una propiedad `string` como `Text`
++     entry .integer   lee una propiedad `integer` como `Int`
++     entry .long   lee un `integer` de formato `int64` como `Long`
++     entry .number   lee una propiedad `number` como `Double`
++     entry .json   lee una propiedad que el esquema no restringe a un solo tipo, como el `Json` en bruto
++     entry .dateTime   lee una cadena `date-time` mediante el `Instantiable across Instants` del ámbito
++     entry .date   lee una cadena `date` mediante el `Instantiable across Dates` del ámbito
++     entry .time   lee una cadena `time` mediante el `Instantiable across Times` del ámbito
++     entry .duration   lee una cadena `duration` mediante el `Instantiable across Durations` del ámbito
++     entry .uriReference   lee una cadena `uri-reference` como `Text`
++     entry .email   lee una cadena `email` mediante el `Instantiable across EmailAddresses` del ámbito
++     entry .idnEmail   lee una cadena `idn-email` mediante el `Instantiable across EmailAddresses` del ámbito
++     entry .hostname   lee una cadena `hostname` mediante el `Instantiable across Hostnames` del ámbito
++     entry .ipv4   lee una cadena `ipv4` mediante el `Instantiable across IpAddresses` del ámbito
++     entry .ipv6   lee una cadena `ipv6` mediante el `Instantiable across IpAddresses` del ámbito
++     entry .uri   lee una cadena `uri` mediante el `Instantiable across Urls` del ámbito
++     entry .iri   lee una cadena `iri` mediante el `Instantiable across Urls` del ámbito
++     entry .iriReference   lee una cadena `iri-reference` como `Text`
++     entry .uuid   lee una cadena `uuid` mediante el `Instantiable across Uuids` del ámbito
++     entry .uriTemplate   lee una cadena `uri-template` como `Text`
++     entry .jsonPointer   lee una cadena `json-pointer` como `JsonPointer`, y lanza `Unparsable` si no se puede analizar
++     entry .regex   lee una cadena `regex` como `Regex`, y lanza `Unparsable` si no compila
++     entry .BoundedInteger   el lector de un `integer` con límites `minimum`/`maximum`, que lanza `IntOutOfRange`
++     entry .boundedInteger   el given `BoundedInteger`
++     entry .BoundedNumber   el lector de un `number` con límites, exclusivos o inclusivos, que lanza `NumberOutOfRange`
++     entry .boundedNumber   el given `BoundedNumber`
++     entry .BoundedString   el lector de un `string` con `minLength`/`maxLength`, que lanza `LengthOutOfRange`
++     entry .boundedString   el given `BoundedString`
++     entry .Pattern   el lector de un `string` con un `pattern`, que lanza `PatternMismatch`
++     entry .pattern   el given `Pattern`
++     entry .Enumeration   el lector de un `string` con `enum` o `const`, que lanza `NotPermitted`
++     entry .enumeration   el given `Enumeration`
++     entry .Primitives   las primitivas de lectura del formato sin esquema: aquello a lo que un proveedor añade sus campos
+
+% 1 1 0 152a4252c34eaa990704d58a8b6e9e35
+
+@ 0 23 0 14155eb60f0501f70cf50e45296293b2
++           Una `Specification` de polyvinyl sobre `Json` cuyo tipo de fallo es
++           `Json.Provider.Error`. `Json.Provider` la extiende, y una macro con campos propios (un
++           `record()` de OpenAPI) construye registros sobre ella. Sus métodos son los enganches
++           que invoca la macro de registros para acceder a valores JSON, comprobarlos y
++           enumerarlos.
++       entry #access   el valor bajo un nombre, ausente en lugar de fallar para una clave que el objeto no tiene
++       entry #absent   si un valor está ausente o es `null`; un tipo `null` marca un campo como opcional
++       entry #required   el valor bajo un nombre, que lanza `MissingValue(name)` cuando está ausente
++       entry #kind   la clase de un valor, según la cual una unión elige su alternativa
++       entry #elements   los elementos de un valor array
++       entry #pairs   los pares clave/valor de un valor objeto
++       entry #entries   los pares del objeto bajo un nombre
++       entry #repeated   los elementos del array bajo un nombre, vacío donde está ausente
++       entry #unoffered   lanza `UnexpectedKind` para un valor de unión de una clase que ninguna alternativa ofrece
++     entry .fieldsOf   los campos del objeto raíz de un esquema, como especificación de un proveedor
++         Lanza `Json.Error` mediante su táctica para un esquema que no se puede leer; un llamante
++         en tiempo de macro lo envuelve en `safely(…).or(halt(…))`.
++     entry .memberOf   el miembro que lee los valores que describe un nodo dentro de un documento mayor
++         Sus `$ref` se resuelven respecto al documento, así que un esquema incrustado en uno —un
++         esquema de respuesta de un documento OpenAPI que remite a `#/components/schemas/…`— se
++         lee como se leería solo. Un objeto se lee como registro, un array de objetos como uno
++         repetido. `limit` acota cuántas referencias de profundidad sigue el recorrido antes de
++         leer una referencia como `Json` en bruto.
++     entry .Schema   el esquema a partir del cual se construye un proveedor: un `Json`, o cualquier cosa legible como tal
+
+% 1 1 0 0d23e164072c1fbe0c343db0c96e6593
+
+@ 0 8 0 1e20604ed06afca30543f0a45f8d184d
++           El parámetro `into[Json.Provider.Schema]` de `Json.Provider` convierte su argumento
++           mediante los givens de aquí: `.json` para un `Json` ya analizado, y `.readable` para
++           cualquier fuente `Readable to Json`, como un recurso del classpath o texto JSON, leída
++           al compilar el código.
++           El objeto compañero hereda `readable` de `.Schema2`.
++       entry .json   un `Json` como esquema
++       entry #json   el documento del esquema
++     entry .Schema2   el mixin que contiene la conversión `readable` de menor prioridad
+
+% 1 1 0 0dd59583433b3f8b1e47313df8394549
+
+% 2 1 0 1de567ba9cf07ccc0afa2c9f48026f79
+
+@ 0 3 0 05b59acf213737370251f37c2f2df0ea
++           No es para uso directo; véase `Json.Provider.Schema`.
++       entry #readable   cualquier fuente legible como `Json`, como esquema
++     entry .Error   se lanza cuando un documento no se ajusta al esquema de un proveedor
+
+% 1 1 0 05317af05c72480e109c3edcc4ff50ca
+
+@ 0 10 0 0478e78cb7485c501c8640f5534c500d
++           Error `↯/s.106.3`: _the JSON was not valid according to the schema because `reason`_,
++           lanzado mediante la `Tactic` del código que lee un campo del registro, así que
++           `attempt`, `recover`, `validate` y `track` lo ven. El `#reason` es un
++           `Json.Provider.Error.Reason`: `JsonType(expected, found)`, `MissingValue(name)` (falta
++           una propiedad obligatoria), `IntOutOfRange(value, minimum, maximum)`,
++           `PatternMismatch(value, pattern)`, `NumberOutOfRange(value, minimum, maximum)`,
++           `LengthOutOfRange(value, minimum, maximum)`, `NotPermitted(value, permitted)` (no está
++           en el `enum`), `UnexpectedKind(found, offered)` (un valor de unión de una clase que
++           ninguna alternativa ofrece) y `Unparsable(value, format)` (un `json-pointer` o un
++           `regex` que no se puede analizar).
++       entry .Reason   por qué un documento no se ajustaba, numerado de 1 a 9 dentro del error `↯/s.106.3`
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 8 0 0ac9fded9838cecb03dac275f6f3e2ec
++             Una enumeración de los nueve motivos, representados como mensajes por el
++             `Communicable` anónimo de su objeto compañero.
++         entry #number   el número del motivo
++       entry #reason   el `Json.Provider.Error.Reason`
++     entry #schema   el documento de esquema a partir del cual se construyó el proveedor
++     entry #fields   las propiedades raíz del esquema como miembros de polyvinyl, que lanza `Specification.Error`
++         Un esquema que no se puede leer se lanza, y las macros `record`/`tuple` se detienen con
++         su mensaje en el punto de uso.
+
+@ 0 1 0 1f8870518c02f26111bf90565011b06c
++ entry .JsonPointer   un JSON Pointer de RFC 6901: una ruta dentro de un documento, escrita `jp"#/a/0/b"`
+
+% 1 1 0 06a0c7c688c3a08d0a5c2db9a742c53b
+
+@ 0 6 0 071dfed93e05ee7f18a623266e83327f
++       Un `JsonPointer` nombra una ubicación dentro de un documento como una ruta de claves e
++       índices de array sobre el plano `JsonPointer`: el objeto es la raíz del plano, y un
++       puntero se construye segmento a segmento con `#apply`, o se escribe con el interpolador
++       `jp"…"`, que lo comprueba al compilar el código. Se codifica como `#/a/b` (el puntero
++       vacío como `#`), con `~` y `/` dentro de un segmento escapados como `~0` y `~1`, y se
++       decodifica a partir del mismo texto, lanzando `JsonPointer.Error` con el desplazamiento
++       del fallo.
+
+% 2 1 0 0cd6f7feac55858805af628469bf0d6c
+
+% 3 1 0 14c15e6e4c2f782d03adee02e7445b12
+
+% 4 1 0 1455cf2bfb8da60d125d9aeadb438b9a
+
+% 0 1 0 04339478942393060fdb4e2e412be765
+
+% 0 1 0 06b576b3f0358cd2057f00cf9e242ae9
+
+% 0 1 0 07fcee389214814a161305ff7e60896e
+
+% 0 1 0 19369422d506bcd8141c36c8b825cafd
+
+% 1 1 0 0791132f01ff96bc0338eb312e7eac15
+
+@ 0 3 0 050460148678322d08d45675951ff601
++       Los punteros son la forma en que `Json.Focus` nombra el campo en el que se lanzó un
++       error, en que `locate` y `locateKey` direccionan las posiciones de un documento con
++       seguimiento, y en que un `Json.Provider` sigue un `$ref`.
+
+% 0 1 0 1ea1b3f9841651b0131421cf67e695ea
+
+% 0 1 0 1dd6fb8a17bb6d1e1446fe17e6bdac6b
+
+@ 0 18 0 0d86aa3131805ca915315168ddb9b1fb
++   entry .Plane   el tipo de plano de las rutas de punteros: el propio `JsonPointer`
++   entry .navigable   un `Ordinal` como segmento de puntero, representado como su índice basado en cero
++   entry .admissible   cualquier `Ordinal` es un segmento permitido
++   entry .admissible2   cualquier `Text` es un segmento permitido
++   entry .filesystem   el plano de punteros como `Filesystem`: separado por `/`, con raíz en `#`, con escapes `~0`/`~1`
++   entry .interpolable   la macro que hay detrás de `jp"…"`: un literal de puntero analizado al compilar el código
++       Reutiliza `.decodable` en la expansión, así que un literal mal formado es un error de
++       compilación en el carácter culpable: `jp"#/verona~2capulet"` no compila.
++   entry .decodable   lee un puntero a partir de texto, lanzando `JsonPointer.Error` con el desplazamiento del fallo
++       El texto debe empezar por `#` (`ExpectedHash`), un puntero no vacío debe continuar con
++       `/` (`ExpectedSlash`), y todo `~` debe ir seguido de `0` o `1` (`BadEscape`). Se rechaza
++       una referencia que lleva una URL: las referencias dentro del mismo documento son las
++       únicas que sigue la biblioteca.
++   entry .unsafeParse   decodifica un puntero cuyo texto ya se sabe válido, para el interpolador
++       Recibe el token `Unsafe`: la macro `jp"…"` ha analizado el literal en la expansión, así
++       que el nuevo análisis en tiempo de ejecución no puede fallar.
++   entry .divisible   `pointer / t"key"`: un puntero extendido con un segmento de clave
++   entry .divisible2   `pointer / ordinal`: un puntero extendido con un índice de array
++   entry .Error   se lanza cuando un texto no es una referencia JSON válida
+
+% 1 1 0 0133047e45c870f106d2c325ba1b6048
+
+@ 0 6 0 0f6cd7912ff243a619b10b81b7ae4902
++         Error `↯/s.106.2`: _the JSON reference was not valid because `reason`_, con el `#offset`
++         del carácter culpable, que el interpolador `jp"…"` usa para situar su error de
++         compilación. Los motivos son `ExpectedHash` (_a JSON reference must begin with '#'_),
++         `ExpectedSlash` (_a JSON reference fragment must begin with '/'_) y `BadEscape` (_a '~'
++         in a JSON reference must be followed by '0' or '1'_).
++     entry .Reason   por qué la referencia no era válida: `ExpectedHash`, `ExpectedSlash` o `BadEscape`
+
+% 1 1 0 02ed9eb4b540b1920cc5ac5fe850136a
+
+@ 0 7 0 1146f5636c85ebe30883acf32427ecde
++           Numerados 2, 3 y 4 dentro del error `↯/s.106.2`, representados por `.communicable`.
++       entry #number   el número del motivo
++     entry .communicable   representa cada motivo como un mensaje
++     entry #reason   el `JsonPointer.Error.Reason`
++     entry #offset   el índice de carácter dentro del texto de la referencia en el que se detectó el error
++   entry #path   el puntero como `Path on JsonPointer`
++   entry #apply   el puntero extendido con una clave (`Text`) o un índice (`Ordinal`)
+
+@ 0 1 0 06deae85eddb8ff71f576918b193761c
++ entry .NumberMode   qué ocurre con un número JSON demasiado largo para el camino rápido del analizador
+
+% 1 1 0 05373a88087789c30663b216839dd04d
+
+@ 0 3 0 1665a780bfba12bb0f6bb911ef295bd1
++       Un número de hasta unos quince dígitos se decodifica igual sea cual sea el modo, como
++       `Long` o como `Double`. El modo decide el resto, y es un given que se elige importando
++       por nombre uno del paquete `numberModes`; `.default` es `Full`.
+
+@ 0 8 0 1c4f61b742c171fb01a874af21b35360
++       `Full` conserva todos los dígitos, acumulándolos como decimal codificado en binario
++       (`Bcd`) a costa de una asignación de memoria para ese número: es el valor por defecto,
++       porque perder dígitos en silencio es lo que no se debe hacer por defecto. `Double`
++       descarta el desbordamiento y calcula un `Double` IEEE-754 a partir de los dígitos
++       iniciales —lo que hacen Jawn, Circe, Jsoniter y Jackson—, para una comparación de
++       rendimiento en igualdad de condiciones, o para datos que se sabe que están dentro del
++       rango de un double. `Bcd` también descarta el desbordamiento, pero emite el acumulador
++       empaquetado en bruto como `Long` sin ninguna asignación: el `Long` lleva nibbles BCD y no
++       el valor del número, así que esos números deben tratarse como opacos.
+
+% 2 1 0 0c22387405fb97bb0b904b147ae60d4b
+
+% 0 1 0 0fb1cb441cea031803684f135a2f7439
+
+% 1 1 0 0834f067d532384d05a7ee237f6700bb
+
+% 2 1 0 136ce8ad9c70f7b81d09d9fe391579b5
+
+% 3 1 0 0f9cfdb15b693a311354285b0da41222
+
+% 0 1 0 1892927cc87c82910ed9b4e3935fcca8
+
+% 0 1 0 1c377db432e7559e1ccc28fde4db55f8
+
+% 0 1 0 1075188337b2a3690133bc29e76644b6
+
+% 1 1 0 16d130c4befa20100ea3dc5421bd39cb
+
+% 2 1 0 10cb61b6c05933c516e976ef4e8b09f4
+
+% 3 1 0 071272a9107f2f8501ddd954bc8e276e
+
+% 0 1 0 18551c27c7ec1e450025aa8e0b4f710c
+
+% 0 1 0 14a5a63dfd05de0c1f18e612709fc42f
+
+% 1 1 0 130216e84b61de07035445c617a4777e
+
+% 2 1 0 16c79121bbec9bb61e577c34dced562f
+
+% 0 1 0 100438f3e3ca07ad177b0f3579ad8c25
+
+@ 0 1 0 144f4e1a67a8d7d91ec5944c8dc0250c
++   entry .default   el modo en el ámbito cuando no se importa ninguno: `Full`
+
+@ 0 4 0 16c968d10581a1ad122d5d14fa383478
++ entry .Bcd   el decimal codificado en binario de hypotenuse, exportado aquí: la forma exacta de un número JSON largo
++     `export hypotenuse.Bcd`. Un número con más dígitos de los que puede contener un `Long` o
++     un `Double` se analiza como `Bcd` bajo el `NumberMode` por defecto, y `Json.Ast.bcd` lee
++     cualquier número como tal. Su propia página está en el paquete `hypotenuse`.
+
+@ 0 6 0 0af83277a18079db1a43023f097ffc52
++ entry .j   el interpolador `j"…"`: un literal JSON comprobado al compilar, con huecos, expansiones y fusiones
++     `j"""{"a": $x}"""` es un `Json` cuya sintaxis se comprobó al compilar el código —una coma
++     final, por ejemplo, se señala en el carácter— y cuyos huecos se rellenan en tiempo de
++     ejecución. Un hueco sustituye cualquier valor `Encodable in Json`; dentro de un array,
++     `$xs*` inserta todos los elementos de una colección; entre los campos de un objeto, un
++     hueco `$map` fusiona un `Map[Text, Json]`. En un `match`, el mismo interpolador es un patrón
++     que vincula sus huecos.
+
+% 2 1 0 0feb25d290e467950ee18400550879d9
+
+% 3 1 0 146eee44ba38c38501838c82057ff42c
+
+% 0 1 0 10b3cc7404c7981b04ce6c456331b843
+
+% 0 1 0 09ecb89c41ab418c0aa61168b826d51a
+
+% 0 1 0 057140e12f9972fe130d92f75b7bba52
+
+% 0 1 0 1b61a221916f6d2015ad19f3815dead0
+
+% 0 1 0 184453bdd45202ea06a3e5d20b066443
+
+% 0 1 0 07eb816bd3dc14171d1b085b6297512d
+
+% 0 1 0 14834d871c2853be031ed9df63599bc1
+
+% 0 1 0 1cbb2f4b05f6be0701adf2c35acb9f93
+
+% 0 1 0 03d05e39e035de6f1915b641b9db4c05
+
+% 0 1 0 13bcbf275356fb271e6b2778bb6d83f4
+
+% 1 1 0 1545a159f16981cb09bd554657caa88c
+
+@ 0 4 0 110045075cad50c312ddfdd3af98003d
++ entry .jp   el interpolador `jp"…"`: un literal JSON Pointer comprobado al compilar
++     `jp"#/verona/capulet"` es un `JsonPointer`, analizado al compilar el código para que un
++     puntero mal formado —uno que no empieza por `#`, o con un escape `~` incorrecto— sea un
++     error de compilación en el carácter culpable. El interpolador no admite sustituciones.
+
+% 2 1 0 01330de50b446d7b07dc1463bfa79a73
+
+% 3 1 0 08a0413fbd18d1a5174c05f78143a87d
+
+% 0 1 0 17c0402aeefc23131427996f352bb7f3
+
+% 0 1 0 144e93d4a1ba752c0de661c947ed8330
+
+% 0 1 0 01643e6b54dfeb5813d808241f0f69f4
+
+% 1 1 0 085834c3423828d717e3bc40ec0da7b6
+
+@ 0 1 0 18e06af7b32de902006df1f1ecba6fa8
++ entry .formatting   los dos `Json.Formatting` estándar, cada uno un given que se importa por nombre
+
+% 1 1 0 07087f3caaf4e8490ffdaae0105cc7f3
+
+@ 0 3 0 1f6bfc53a15f741908d22454dee6a789
++       `show`, `emit`, `in[Text over Json]` y los givens HTTP necesitan todos un
++       `Json.Formatting`, e `import soundness.*` no trae ninguno; se importa uno por nombre. Uno
++       personalizado es `Json.Formatting(indent, trailingNewline)`.
+
+% 2 1 0 0f80c8375e5047011b99cced69b2164d
+
+% 0 1 0 0595e598221146b1165c699509e4abe3
+
+% 1 1 0 12b1f2e7519fc2c708515716d18d30a0
+
+% 2 1 0 0308e45cd2f79ed6011e3b3aee16bbab
+
+% 0 1 0 16076a93c42759c712b3abfdd00e89ad
+
+% 0 1 0 094f9f1fdca7e454089eac838d0fb300
+
+% 0 1 0 111d95d52c2ff33b11ad745df3b0669b
+
+% 1 1 0 0e5468dda34c539e0927db36e44bd2b2
+
+% 2 1 0 124a90d7384ad360019e9671381ff0cb
+
+% 0 1 0 04c30a63fd2859fc0136135e1abfa1bd
+
+% 0 1 0 045527b77fa78d66170a7e698386929c
+
+% 1 1 0 11b7ca06068d6ecb0bffa5f9ad97b18e
+
+% 2 1 0 1e51759e245a8ec00ccd5080a6bba20a
+
+@ 0 2 0 0f67f6b0deeba68b1e9c5ac6c343b352
++   entry .compactJsonFormatting   sin espacios en blanco ni salto de línea final: `{"a":1}`
++   entry .indentedJsonFormatting   dos espacios por nivel de anidamiento, saltos de línea entre miembros, sin salto de línea final
+
+@ 0 1 0 126e1420bfad52a001d00b87c1867b36
++ entry .numberModes   los tres `NumberMode`, cada uno un given que se importa por nombre
+
+% 1 1 0 00c667b1d81867c31c699936b45abdd2
+
+@ 0 5 0 03e902b7cb817259119fb53f46aa0297
++       Cómo se analiza un número demasiado largo para un `Long` o un `Double`: véase
++       `NumberMode`. Sin importación, el valor por defecto es `fullNumberMode`.
++   entry .fullNumberMode   todos los dígitos conservados como `Bcd`; el valor por defecto
++   entry .doubleNumberMode   los dígitos iniciales como `Double`, como hacen Jackson y Circe
++   entry .bcdNumberMode   el acumulador empaquetado en bruto como `Long` opaco, sin ninguna asignación
+
+@ 0 1 0 1b6b944cca26b3260269bcd7e72b913f
++ entry .optionalityOptions   cómo lee un campo `Optional` u `Option` una clave ausente, un `null` o un valor rechazado
+
+% 1 1 0 0c635436c6735fc21de622e806180e9a
+
+@ 0 11 0 134ac8b18d41b2c51b7d36a22a5dd525
++       Un campo `Optional` (u `Option`) responde a tres preguntas, cada una un given distinto con
++       un valor por defecto: una clave ausente se lee como `Unset` (`lenientJsonAbsence`, el
++       valor por defecto; `strictJsonAbsence` lanza `Json.Error(Absent)`); un `null` explícito
++       se lee como `Unset` (`lenientJsonNulls`, el valor por defecto; `strictJsonNulls` lo
++       entrega al decodificador interno, que lo rechaza como haría con cualquier otro campo); y
++       un valor que el decodificador interno rechaza es un error (`strictJsonFaults`, el valor
++       por defecto; `lenientJsonFaults` lo lee como `Unset`, bajo el `tolerate` de la táctica
++       del entorno, así que no se acumula nada). Cada una puede variarse por separado. Los
++       analizadores directo y por etapas respetan las mismas políticas, con un límite: un fallo
++       permisivo solo se tolera cuando el valor de la transmisión es de una clase equivocada, que
++       el analizador puede saltar entero; un valor de la clase correcta que falla dentro de ella
++       sigue lanzando un error. Un valor por defecto declarado de `Unset` no se distingue de la
++       ausencia de valor por defecto, así que no satisface una ausencia estricta.
+
+% 2 1 0 163f14948b92f63b19aa9e7bdbb92fa1
+
+% 0 1 0 1a64040dc63845e7121043dd67139bee
+
+% 1 1 0 18e1e17281ab535916c544b433820b5e
+
+% 2 1 0 10daf487394b362d0a7dfc1520c696de
+
+% 3 1 0 18028c8a797c631f0db117c5d6113570
+
+% 2 1 0 1d13c7ec1a8bf31e0014f08d4f0ced3c
+
+% 0 1 0 12b456e126bf3acd09a1191f0899d7e0
+
+% 0 1 0 178cf4adb014fd880bd8ae8e1a269bfa
+
+% 0 1 0 0a2e75481a97b7e31f0b4af842442674
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 0005a1e84f5f49d71a7e315ad826f30f
+
+% 2 1 0 13305fb3c7230d6810bcb68956fd1e1e
+
+% 0 1 0 04a1d41166cf48e210df69e983d9dbf9
+
+% 0 1 0 09bcb0d6853524c7077803a92d1c2a43
+
+% 0 1 0 07e253f3624b8da30eab6cc67e48a7b8
+
+% 1 1 0 07efe15c21df60c115ea8ae4dbd88690
+
+% 2 1 0 1756d680ec28f6a5077c212f83658f9d
+
+% 3 1 0 133db89c7e21d089012a04b69db5bd15
+
+% 0 1 0 02484df4ea0a49621fbcff3bc0953b07
+
+% 2 1 0 110c68d17a10de601f2c31f0c6c5c6e1
+
+% 0 1 0 1b5d8d67bce0d7f1132cd9ee0649cb75
+
+% 0 1 0 01fada15b29248351d001b4e6b308dad
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 01bb6839ede799f81d9bc9317563e368
+
+% 3 1 0 1e4557722bdaad6707a253e01f9c9655
+
+% 0 1 0 1e5b6278577d343009236a4e36b9335c
+
+% 2 1 0 14647245c1be288d15048176fe6ac1e5
+
+% 0 1 0 1619231e6b65d5c416b340edd2510c48
+
+% 1 1 0 19666fbc7f19052f0c2e208e6654a0da
+
+% 2 1 0 157f2552799a9ef206944e3391b3ecc4
+
+@ 0 6 0 1135b8ebeafa2bc506908a04abd420b1
++   entry .strictJsonAbsence   una clave ausente lanza `Json.Error(Absent)` en lugar de leerse como `Unset`
++   entry .lenientJsonAbsence   una clave ausente se lee como `Unset`; el valor por defecto
++   entry .strictJsonNulls   un `null` se entrega al decodificador interno, que lo rechaza
++   entry .lenientJsonNulls   un `null` se lee como `Unset`; el valor por defecto
++   entry .strictJsonFaults   un valor que el decodificador interno rechaza lanza un error; el valor por defecto
++   entry .lenientJsonFaults   un valor que el decodificador interno rechaza se lee como `Unset`, y no se acumula nada
+
+@ 0 1 0 1f77f65868306f47068cda35de0c1b79
++ entry .discriminables   las formas de transmisión estándar de una unión etiquetada, cada una un given que se importa por nombre
+
+% 1 1 0 16dbd94d31e3b82f1b1646d743d0383d
+
+@ 0 5 0 071d76a032447ef6133fcdb2bfc11e7a
++       Una enumeración o una jerarquía sellada se codifica como su variante más una etiqueta, y
++       el `Discriminable in Json` del ámbito dice dónde va la etiqueta. Por defecto no hay
++       ninguno en el ámbito; se importa uno por nombre, o se da un `Json.DiscriminantField`, un
++       `Json.DiscriminantWrapper` o un `Json.DiscriminantEnvelope` en el objeto compañero del
++       tipo. Cada uno funciona a través del árbol y mediante el análisis directo;
++       `Json.Parsable.staged` solo admite las formas de campo.
+
+% 2 1 0 0291a381d7b0f43a14550e9b5f52696c
+
+% 3 1 0 0cfc6a62a0a6f4e01b68ed7df3e4f82e
+
+% 4 1 0 0856bf498a8233b60a3e5e02657ddd59
+
+% 5 1 0 1ce4c6f8fb74bdd309b846ad9047f015
+
+% 0 1 0 1da16eceb39d1fde1b58c775e81e158a
+
+% 0 1 0 038481e8483316b510f11c01e67fb2d5
+
+% 0 1 0 16cb76c7068fad5a1a36161f492a167e
+
+% 0 1 0 0e7aa43b738bc6240282a300c2dd591a
+
+% 0 1 0 1c03ec27c5ccb6b6041f541d8356d7d7
+
+% 0 1 0 007fb93ee0e0224a1bcd1e0ea135643c
+
+% 1 1 0 145f348212bc9e3b0cd199b5005b6b52
+
+@ 0 6 0 1a9b698954e01e830e4651b81ca2b054
++       `@name` renombra el valor de etiqueta de un caso igual que renombra un campo.
++   entry .jsonByTypeDiscriminable   la etiqueta en un campo `type` junto a los de la variante: `{"radius":1.0,"type":"Circle"}`
++   entry .jsonByKindDiscriminable   la etiqueta en un campo `kind` junto a los de la variante: `{"radius":1.0,"kind":"Circle"}`
++   entry .jsonWrapperDiscriminable   la variante dentro de un objeto cuya clave es su etiqueta: `{"Circle":{"radius":1.0}}`
++       La forma más favorable al análisis en flujo, ya que la etiqueta es siempre el primer
++       token.
++   entry .jsonEnvelopeDiscriminable   un campo `type` y un campo `value`: `{"type":"Circle","value":{"radius":1.0}}`
+
+@ 0 1 0 11ecd6b32573a13c1bc2e9c4ca060712
++ entry .dynamicAccess   el given que autoriza `json.field` sobre un documento no verificado
+
+% 1 1 0 1f30c0af9d94601c120d25c59ffcb42e
+
+@ 0 6 0 1c0bf6ea6ee4c3480747978701e63bb8
++       Un `Json` tiene tipado dinámico, y el compilador no sabe nada de sus campos, así que leer
++       uno como miembro supone una pérdida real de comprobación y no está activado por defecto.
++       `import dynamicAccess.dynamicJson` concede el permiso, `Json is Dynamical`, al resto de su
++       ámbito; el mismo permiso se limita a un bloque con `dynamically[Json]:`, o con
++       `dynamically:` para todos los formatos con acceso dinámico. Un documento sometido a
++       `verify` frente a un tipo recorre sus campos sin ninguno de los dos, ya que el esquema lo
++       autoriza.
+
+% 2 1 0 1f53e96830a72f4b080a337e93a0480c
+
+% 3 1 0 11601f0b94a15c5f1b9aea7565c35323
+
+% 4 1 0 00dac38d6c77b9740d00dc2aaddd11ef
+
+% 0 1 0 06069bf80815a8e61a8e9d26187c8704
+
+% 0 1 0 05ccb8d973276bab0bcd9fa2c1846105
+
+% 0 1 0 00c4a12a659f75cf196b0674c805097c
+
+% 1 1 0 1fadaffd4409620802d3e8c899523d91
+
+@ 0 1 0 157f346b91ac7200010b0ce27b81cda3
++   entry .dynamicJson   `Json is Dynamical`: habilita `json.field`, `json.field = value` y `json.lens(…)` en su ámbito
+
+@ 0 1 0 050a1fcf2a92e1840f68b7996d4ba226
++ entry .conversions   una `Conversion` de cualquier valor `Encodable in Json` a `Json`, que se importa por nombre
+
+% 1 1 0 0c51f078c5cfdd4c0b20d88f68a4b28e
+
+@ 0 4 0 0a3f97a49d2a495510c2a70945cfe7b4
++       Con `conversions.encodableToJson` importado, un valor con codificador puede
++       proporcionarse allí donde se espera un `Json` —`Json.make(a = 1)`, o una asignación
++       mediante lente `json.lens(_.name = t"x")`— sin escribir `.in[Json]`.
++   entry .encodableToJson   `Conversion[T, Json]` para cualquier `T` que sea `Encodable in Json`
+
+@ 0 1 0 09fbfda1f1ec732904dd783331aece47
++ entry .postables   envía un `Json` como cuerpo de petición `application/json`; solo JVM
+
+% 1 1 0 0950c52f0dc016411ef82f9a41edb3ba
+
+@ 0 3 0 06ea9ad95dcc65870be5b3c0aaab3b84
++       `jacinta.http`. El given necesita un `Codepage` y un `Json.Formatting`, y representa el
++       documento con `show`, codificado en la página de códigos, bajo el tipo de medio
++       `application/json; charset=UTF-8`.
+
+% 2 1 0 135f34d244480be714b07065928e7d8e
+
+% 3 1 0 1fac54737130458e0325e18e28dc3f51
+
+% 4 1 0 13d200c00b3fe02a1307777e5c3504f6
+
+% 0 1 0 1d18ef6e6172b2cc122e3568b3e9c9fc
+
+% 0 1 0 0ecb5c3023f5baa314b248c9dd122458
+
+% 1 1 0 06bb2cb933115d3e0f9c789e2919b656
+
+@ 0 1 0 05b07e21a6a3bfb0010de69a31e33558
++   entry .jsonPostable   `Json is Postable`: un cuerpo de petición con el texto del documento, como `application/json`
+
+@ 0 1 0 09a0ed1bb22e93b8197c2ff095663ce3
++ entry .servables   sirve un `Json` como cuerpo de respuesta `application/json`; solo JVM
+
+% 1 1 0 0e75c4e1dfaa4fb80d49de13841c5b14
+
+@ 0 3 0 09f7dda2565cb9410b0d84481b9ad27b
++       `jacinta.http`. El given necesita un `Codepage` y un `Json.Formatting`, y representa el
++       documento con `show` en un cuerpo de respuesta de longitud fija.
++   entry .jsonServable   `Json is Servable`: una respuesta con el texto del documento, como `application/json`
+
+@ 0 1 0 0678c6ed6abac20d0424710e04aca69c
++ entry .construables   lee un cuerpo de API de tipo de medio `application/json` como `Json`; solo JVM
+
+% 1 1 0 0fafc7c6e2b1f3760d301d89fc345dd6
+
+@ 0 2 0 16c6730876bf322e1f0f02736397652b
++       `jacinta.http`. El given que permite a una descripción de API (el `Api` de apoplexy)
++       construir un `Json` a partir de una petición o una respuesta cuyo tipo de medio es
++       `application/json`.
+
+% 0 1 0 198332a92f595922032e9f34dfa0a80a
+
+@ 0 1 0 036bc2557c6123ce14979fa6d6617f60
++ entry .optics   lentes y ópticas sobre documentos `Json`, cada una un given que se importa por nombre
+
+% 1 1 0 189345c06019766e1cdc3124e5e2bd4f
+
+@ 0 6 0 1ab376bebdd823a11acf1358ad1e4195
++       `jacinta.optics`. Son lo que hace funcionar `json.lens(…)`: la lente de panopticon para un
++       campo con nombre, y las ópticas que entran en los arrays. Están en un paquete y no en el
++       objeto compañero de `Json` para que una importación que falta sea un error de compilación
++       y no un cambio silencioso de comportamiento; `import optics.*` las trae todas (o
++       `import soundness.optics.*`, donde se fusionan las ópticas de todas las bibliotecas). Una
++       asignación mediante lente también necesita el acceso dinámico habilitado y, para asignar
++       un valor corriente, `conversions.encodableToJson`.
+
+% 2 1 0 1c7ab9bb97765601032fe20c83630076
+
+% 3 1 0 1a125d7adacd5137063313a45de617f0
+
+% 4 1 0 1510f7c93239f0210b10081e7df28e81
+
+% 0 1 0 1d0c03267f34cd171a73e16e4cd6801b
+
+% 0 1 0 015b918db1adbea803d43755da82713a
+
+% 0 1 0 071d4bb8a658af7c078621eb7705fb38
+
+% 0 1 0 0d89a0ba07f883ae12b446da80290287
+
+% 0 1 0 0d6cc5788728285306cb5e43d54bcd0f
+
+% 0 1 0 15eb5b188c739ba1002637a4c21e4eae
+
+% 0 1 0 0078f758b43066181163c942e6577065
+
+% 0 1 0 13b364aed23e8f5217ad1e86f9917c6b
+
+% 0 1 0 0ec5cf8932b41c691b6f0c2e41cfed69
+
+% 0 1 0 0e111993eb52492f1eb6939073caba4f
+
+% 1 1 0 10d9dcdfdc1331c803e662eea019d711
+
+@ 0 8 0 1cb8b0f7b86219e61547e20e85fa23a3
++   entry .jsonLens   una lente de un `Json` sobre un campo con nombre, para `json.lens(_.name = …)`
++       Necesita el acceso dinámico habilitado (`dynamicAccess.dynamicJson`) y una
++       `Tactic[Json.Error]`; leer un campo que falta da un `Json` ausente, y escribirlo lo añade.
++   entry .jsonOrdinalOptical   una óptica sobre un elemento de un array por su `Ordinal`: `scenes(Prim)`
++       Reconstruye el array de forma inmutable; un índice más allá del final, o algo que no es
++       un array, deja el documento sin cambios.
++   entry .jsonEachOptical   la óptica `Each`: aplica una transformación a cada elemento de un array
++   entry .jsonFilterOptical   la óptica `Filter[Json](predicate)`: aplica una transformación a los elementos que lo cumplen
+
+@ 0 1 0 01262333a3b609a41d5ab7579cccd6af
++ entry .encodables   el `Instant` y el `Duration` de aviation codificados como milisegundos, cada uno un given que se importa por nombre
+
+% 1 1 0 029d81485af9066d17787b8a146db886
+
+@ 0 2 0 092ea3a99035e5cb072d5d68698049fd
++       `jacinta.time`. Un `Instant over Unix` se codifica como su número entero de milisegundos
++       desde la época, y un `Duration` como su número entero de milisegundos.
+
+% 2 1 0 0171a44d5c8ad131107464c8731291be
+
+% 3 1 0 07a279ce8925c6781fb06293e6ecad91
+
+% 0 1 0 1040cb96db7e64de129bcf8960d9e85f
+
+% 1 1 0 050e135c25fb4248051a75f0be7427ad
+
+% 0 1 0 174fd610fcf6945e18641991d93e4dc1
+
+% 0 1 0 08e50f3c1ae8d99515f11ab3088ae704
+
+% 1 1 0 1eafd111e3076ce61cf0d5a804d43343
+
+@ 0 2 0 085f6d0f73fdc4470e1a39d769f75898
++   entry .instantJsonEncodable   `Instant over Unix` como entero JSON de milisegundos
++   entry .durationJsonEncodable   `Duration` como entero JSON de milisegundos
+
+@ 0 1 0 171e38abbd1a3527106151889b2f7f2b
++ entry .decodables   el `Instant` y el `Duration` de aviation decodificados desde milisegundos, a través del árbol
+
+% 1 1 0 0926864cd0bd3fe31a91dc84f6489c2e
+
+@ 0 1 0 198f3621a1127feb1c02b332cb9c7acb
++       `jacinta.time`. Los decodificadores que recorren el árbol; `parsables` son sus gemelos de
++       análisis directo.
+
+% 2 1 0 06ec0ea1b11ab06a1b556a9b79cd7a5e
+
+% 3 1 0 0700918512ba78bf06c07bded7919555
+
+% 4 1 0 13643487c62bf7900f41e43718eb32f6
+
+% 0 1 0 1e91d232cf0ae70d0e703f4db5663c21
+
+% 0 1 0 13289e6aa371d55011dabcd0ff387c51
+
+% 1 1 0 05e18a259c827553178eaa5eff06c10d
+
+@ 0 2 0 18db408127923f5e1e80b330e662691c
++   entry .instantJsonDecodable   `Instant over Unix` desde un entero JSON de milisegundos
++   entry .durationJsonDecodable   `Duration` desde un entero JSON de milisegundos
+
+@ 0 1 0 12f3a81670fc91321e92b47d7474c136
++ entry .parsables   el `Instant` y el `Duration` de aviation leídos directamente del flujo de tokens
+
+% 1 1 0 1b088fddf6efdfef04de4c9bd6572aeb
+
+@ 0 5 0 0360ed9fdc9f1bab1d9f52237c3e1753
++       `jacinta.time`. Las contrapartidas de análisis directo de `decodables`: el número se lee
++       directamente de los tokens, sin nodo intermedio, así que un registro con un campo
++       `Instant` se analiza directamente cuando lo ha activado.
++   entry .instantJsonParsable   `Instant over Unix` leído directamente de un entero JSON de milisegundos
++   entry .durationJsonParsable   `Duration` leído directamente de un entero JSON de milisegundos
+
+@ 0 1 0 11cd31be57f15f681ba9ce70288477d2
++ entry .InlinableStager   el compilador de ejecución por etapas en tiempo de compilación que hay detrás de `Inlinable.parsable`
+
+% 1 1 0 1278d4b1c806195b109f0f1a15fedc5d
+
+% 2 1 0 1ca0af1a25b6816d024e380007afe52f
+
+@ 0 9 0 03afceb58ecf38a11dd475307a227d2a
++       No es para uso directo. `jacinta.staged`. Cuando se genera un analizador para un
++       registro, un given `Inlinable` escrito por el usuario para el tipo de un campo se evalúa
++       en el momento de la expansión en un compilador de ejecución por etapas nuevo sobre el
++       cargador de clases de las macros (excluyendo el directorio de salida actual, ya que una
++       clase de la compilación en curso no tiene un fichero de clase fiable), para que el
++       generador pueda invocar su `parse`. Un tipo que no puede pasar al compilador interno
++       —opaco, estructural o definido en la compilación en curso— se degrada a una costura en
++       tiempo de ejecución. `Inlinable.Stager` carga `.Implementation` por nombre.
++   entry .evaluate   evalúa la instancia `Inlinable` de un tipo en un compilador de ejecución por etapas, si puede
++   entry .Implementation   el `Inlinable.Stager` que `Inlinable.parsable` carga por nombre
+
+% 1 1 0 19eedb816dca6452117f1f68331add6e
+
+@ 0 2 0 10158eda32a95c3e1b64cd253dbbc4b6
++         Delega `summon` en `.evaluate`.
++     entry .summon   el `Inlinable` de un tipo, evaluado en el momento de la expansión, o `None`
+
+@ 0 1 0 1ffad89919342d880600041b89cffff1
++ entry .Inlinable   un generador de código en tiempo de compilación para el analizador y el impresor JSON de un tipo, compuestos en un único analizador plano
+
+% 1 1 0 198099299fb5d65a1a90567bcbf94bdc
+
+@ 0 10 0 064a20c26da34079040cf5a699d07a6d
++       `Inlinable` es la contrapartida en tiempo de macro de `Json.Parsable` y `Json.Printable`:
++       donde una instancia `Json.Parsable` se *ejecuta* contra un `Json.Reader`, una instancia
++       `Inlinable` *genera*, como `Expr`, el código que lo haría. `Inlinable.parsable[T]` compone
++       las instancias de `T` y de todos los tipos de campo que hay por debajo en un único
++       analizador monomórfico —variables locales tipadas para los campos, claves despachadas
++       comparando palabras empaquetadas con literales, registros anidados y bucles de colección
++       insertados in situ— sin despacho en tiempo de ejecución, sin arrays de instancias y sin
++       adaptador entre los analizadores compuestos, e `Inlinable.printable[T]` hace lo mismo
++       para la escritura. El resultado se inserta en el módulo que lo pidió, así que cada campo
++       se lee directamente del flujo de tokens y nunca se construye ningún árbol `Json`.
+
+% 2 1 0 0ea7e636c2cc065a19c70ea778d3ac59
+
+% 3 1 0 14124626735f734e18b8ab0ec05d98fb
+
+% 4 1 0 1774d7384f5fc0d01d4f106f8381a92d
+
+% 5 1 0 09c2768b5bb0e4d01432225bcbd00403
+
+% 1 1 0 10e5dba181c2b4c409406624fe518ffa
+
+% 2 1 0 1b57ab72b70c598c0e3d02af8b5ce210
+
+% 0 1 0 1ab34bfb9a17727c1f2637b1b78246b9
+
+% 0 1 0 04fc31fa311781550f666118336f01d9
+
+% 1 1 0 1c5f35c29c0aa1651d7b856f2499c7a7
+
+% 0 1 0 0f29ef5ed663065c1613650057f4734f
+
+% 0 1 0 1dbc9bb35bbf0b0a14e219f161451630
+
+% 1 1 0 122a749be4c8cefb10a213bf369658d5
+
+@ 0 14 0 1193c7112619bfff01468c59c672730e
++       Las mismas dos instancias se generan una sola vez en el objeto compañero de un registro
++       mediante `derives Json.Direct`, e `import codecs.direct` selecciona un analizador y un
++       impresor generados para todo registro en el ámbito sin declarar nada, así que la mayor
++       parte del código nunca invoca `Inlinable` directamente. Lo que se genera para un tipo lo
++       decide una escalera de resolución, por orden: una hoja incorporada (`Int`, `Long`,
++       `Double`, `Float`, `Boolean`, `Text`, `String`); un given `Inlinable` escrito por el
++       usuario, evaluado en el momento de la expansión; un generador estructural para una case
++       class (`.derived`) o un tipo de colección aplicado —`List`, `Set`, `Sequence`, `Vector` y
++       las colecciones inmutables de la biblioteca estándar, reunidas elemento a elemento en el
++       constructor de la colección—; y, en otro caso, la **costura en tiempo de ejecución**,
++       una llamada insertada al `Json.Parsable` o al `Json.Field` del tipo del campo (y, al
++       imprimir, a su `Encodable in Json`), que es como participan un `Optional[…]`, un `Map`,
++       una enumeración o una suma sellada. Un tipo recursivo —`Tree(children: List[Tree])`— ata
++       la aparición recursiva de vuelta a la instancia que se está generando, a través de su
++       propio `Json.Parsable` nominal, de modo que la expansión termina.
+
+@ 0 11 0 194be54d1cb3477f01de9871945ce7f2
++       Tres hechos rigen una instancia escrita a mano. Primero, un given `Inlinable` es un valor
++       corriente en tiempo de ejecución, así que el generador solo puede invocar su `parse`
++       evaluando el given dentro de la macro, lo que necesita un compilador de ejecución por
++       etapas dentro de la macro: `jacinta.staged` proporciona uno (`Inlinable.Stager`), y sin
++       él en el classpath de compilación un campo cuyo tipo solo tiene una instancia escrita por
++       el usuario toma la costura en tiempo de ejecución. Segundo, la instancia y su tipo deben
++       haberse compilado en una compilación *anterior* a la expansión: una instancia de la misma
++       compilación no tiene un fichero de clase fiable y también se degrada a la costura.
++       Tercero, el propio `Inlinable.parsable[T]` rechaza un `T` sin generador propio (un tipo
++       cuya única instancia es un `Json.Parsable` nominal), con el error _jacinta: `T` has no
++       generator of its own; use `Json.Parsable.staged` or `derived` rather than
++       `Inlinable.parsable`_, ya que el resultado no añadiría nada o se invocaría a sí mismo.
+
+@ 0 5 0 084e5cb2062685f80565183a4a1ec0c8
++       El `#prints` de una instancia dice si genera un impresor; el valor por defecto, `false`,
++       mantiene honesta una instancia que solo analiza, y un campo cuya instancia no imprime se
++       escribe mediante su `Encodable in Json`. `#absent` es el código para una clave que falta
++       en el objeto: por defecto lanza `Json.Error` mediante la táctica que recibe, como hacen
++       las instancias de tiempo de ejecución.
+
+% 1 1 0 1fefd31920f7188e1eb1145d5eeee4c3
+
+% 0 1 0 03dc3645375f908b0a4e6c9c7875cf20
+
+% 0 1 0 0d1a2447c65c7bfc1074748ea61b4d20
+
+@ 0 7 0 03b8cf6fe664046b139f430a48286885
++   entry .parsable   `Inlinable.parsable[T]`: un `Json.Parsable` monomórfico para `T`, generado al compilar el código
++       Una macro. Resuelve el `Inlinable` de `T` mediante la escalera descrita en `Inlinable` e
++       inserta un único analizador plano como `Json.Parsable.Direct[T]`, que lee un valor del
++       `Parser` subyacente del `Json.Reader` sin construir ningún `Json`. Un tipo sin instancia
++       ni generador estructural es un error de compilación, _jacinta: no Inlinable instance for
++       `T`, and it is not an inlinable product; use `Json.Parsable.staged` or `derived`_. El
++       lugar habitual del resultado es el objeto compañero del tipo:
+
+% 2 1 0 17b6a87855ae197a0da7ae46820caf4e
+
+% 3 1 0 0df9169765cece5211e3ec7da72c9bdf
+
+% 4 1 0 0ef048efede817751896305082516e4e
+
+% 5 1 0 080be18a5f13736214c2691f7760d686
+
+% 0 1 0 16e7677aa284c8e107d6438b1b0409df
+
+% 0 1 0 149aeeef426fec9f15cd40ecbcc76d27
+
+% 0 1 0 0d06b86acd872a0a11df3e835dd6020c
+
+% 0 1 0 0b75991676b12b8510afcbc115f1961e
+
+% 1 1 0 1a1ee4d9e09255e6079d9334865813c6
+
+@ 0 18 0 1e8b7abf013d0d870e124f7ac30568cc
++       La semántica coincide con la de `Json.Parsable.derived`: para una clave que falta se usa
++       el valor por defecto declarado, se aplican los renombrados de `@name`, las claves
++       desconocidas se saltan con `Parser#directSkipValue`, y el foco de un error nombra el
++       campo. Las colecciones se reúnen aparición a aparición en el constructor de la colección,
++       con un foco de índice por elemento.
++   entry .printable   `Inlinable.printable[T]`: un `Json.Printable` monomórfico para `T`, generado al compilar el código
++       Una macro: la contrapartida de escritura de `.parsable`, un `Json.Printable.Direct[T]` que
++       escribe el texto JSON compacto de `T` directamente en el escritor, campo a campo,
++       compuesto mediante las mismas instancias. Un tipo cuya instancia raíz no imprime —un tipo
++       que se codifica como texto, o cuya única instancia es un `Encodable` de tiempo de
++       ejecución— es un error de compilación, _jacinta: `T` has no generated printer; use its
++       `Encodable in Json`_. `in[Text over Json]` e `in[Data over Json]` usan un impresor
++       generado allí donde el `Json.Formatting` del ámbito es compacto; la salida sangrada se
++       sigue representando a través del árbol.
++   entry .derived   el `Inlinable` estructural para una case class: cada campo mediante su propia instancia
++       `Inlinable.derived[T]` es el generador de productos como valor, para una case class `T`:
++       refleja `T` cuando se invoca su `parse`, así que no necesita macro propia y puede
++       escribirse como given, `given Tree is Inlinable = Inlinable.derived`. Imprime además de
++       analizar.
++   entry .ForJson   el portador que permite a una case class decir `derives Inlinable.ForJson`
+
+% 1 1 0 13f91a10243baf41066a0fc0f30f8ddd
+
+@ 0 12 0 1f4d626c0eecd4761b12221eea289b63
++         Una clase de tipos con tipo `Self` no tiene parámetros de tipo, así que `Inlinable` no
++         puede aparecer en una cláusula `derives`. `case class Play(…) derives Inlinable.ForJson`
++         sintetiza un `ForJson[Play]` —que *es* un `Play is Inlinable`, y delega todos los
++         métodos en `Inlinable.derived[Play]`— en el objeto compañero de `Play`, donde lo
++         encuentra la convocatoria en el momento de la expansión. La escalera de resolución
++         desenvuelve el delegado, así que una instancia estructural conserva su identidad de
++         generador.
++     entry .derived   `ForJson.derived[T]`: envuelve `Inlinable.derived[T]`, para la cláusula `derives`
++     entry #parse   el parse generado del delegado
++     entry #absent   el código del delegado para una clave que falta
++     entry #prints   si el delegado imprime
++     entry #write   el write generado del delegado
++   entry .Generates   evidencia de que el códec de un tipo se genera estructuralmente, como registro
+
+% 1 1 0 06732068a3942a7604f1cc5a1e91afb4
+
+@ 0 7 0 0d270a7759f784501e08694615f12dbb
++         `Inlinable.Generates[T]` es la condición de las instancias generadas de
++         `import codecs.direct`: su given, `.generates`, es una macro que solo tiene éxito para
++         una case class que el generador de productos admite y que no se codifica como texto, y
++         falla —_jacinta: `T` has no generated codec_— para todo lo demás, de modo que la
++         búsqueda de una instancia generada falla y en su lugar se resuelve el camino derivado.
++         No es para uso directo.
++     entry .generates   el given transparent inline que hay detrás de `Generates[T]`: una comprobación de forma barata
++   entry .Stager   el enganche a través del cual `jacinta.staged` evalúa una instancia escrita por el usuario en el momento de la expansión
+
+% 1 1 0 0248d3e57e505ecc1660d1182e762e68
+
+@ 0 39 0 1a7454cc1d391eb909182bb55ca6307f
++         Un given `Inlinable` es un valor de tiempo de ejecución, así que el generador solo puede
++         llegar al código que genera una instancia escrita por el usuario ejecutando ese given
++         dentro de la macro, en un compilador de ejecución por etapas. `jacinta.core` no depende
++         de los jars del compilador, así que el trait `Stager` declara la capacidad y
++         `jacinta.staged` la implementa (`InlinableStager`); el objeto compañero carga la
++         implementación por su nombre de clase cuando `jacinta.staged` está en el classpath de
++         las macros, y en otro caso responde `None` para todo tipo, lo que envía esos campos a la
++         costura en tiempo de ejecución. El resultado de una convocatoria se guarda en caché
++         durante la expansión, así que la convocatoria por etapas de un tipo se ejecuta como
++         mucho una vez por muchas veces que se repita.
++     entry .summon   el `summon[field]` del stager cargado, o `None` sin `jacinta.staged` en el classpath
++     entry #summon   evalúa en vivo, dentro de la macro, el given `Inlinable` de `field`, si se resuelve alguno
++   entry .int   el generador para un campo `Int`: `reader.int()`, escrito como número sin más
++   entry .long   el generador para un campo `Long`: `reader.long()`, escrito como número sin más
++   entry .double   el generador para un campo `Double`: `reader.double()`, escrito como número sin más
++   entry .float   el generador para un campo `Float`: `reader.double().toFloat`; solo análisis
++   entry .boolean   el generador para un campo `Boolean`: `reader.boolean()`, escrito como `true` o `false`
++   entry .text   el generador para un campo `Text`: `reader.string()`, escrito como cadena JSON escapada
++   entry .string   el generador para un campo `String`: `reader.string()`, escrito como cadena JSON escapada
++   entry .iterable   el generador para una colección aplicada cuyo elemento es `Inlinable`
++       `collection[element] is Inlinable` para cualquier `collection <: Iterable`, dado un
++       `element is Inlinable`: el bucle generado abre el array con `Parser#directOpenArray`,
++       avanza con `Parser#directElementFirst` y `Parser#directElementNext`, analiza cada
++       elemento in situ y lo añade al constructor de la `Factory` de la colección. Imprime si su
++       elemento imprime. Se compone mediante la resolución corriente de givens cuando el grafo de
++       instancias se resuelve dentro del compilador de ejecución por etapas.
++   entry #parse   genera el código que lee un `Self` de un `Json.Reader`
++       Recibe la `Expr` del lector y los `Quotes` y el `Type[Self]` de la expansión, y devuelve
++       la `Expr` del valor decodificado, que la macro de derivación inserta in situ. Un `def`
++       local o una lambda en el código generado captura el analizador exclusivo en modo de solo
++       lectura, así que los cuerpos generados vinculan el analizador una sola vez y leen
++       directamente a través de él.
++   entry #prints   si esta instancia también genera un impresor; `false` salvo que se sobrescriba
++   entry #write   genera el código que escribe un `Self` en el escritor JSON
++       Recibe el valor y el escritor —que viaja como portador `AnyRef` neutro, ya que el código
++       generado tiene la captura borrada, y se reafirma en cada uso— y devuelve una
++       `Expr[Unit]`. El valor por defecto aborta la expansión con _jacinta: the Inlinable for
++       `T` generates no printer_; una instancia que sobrescribe `#prints` a `true` sobrescribe
++       también esto.
++   entry #absent   genera el valor para una clave que falta en el objeto
++       El valor por defecto es `Json.Parsable.missing[Self]()` mediante la táctica que recibe,
++       que lanza `Json.Error`; un envoltorio opcional lo sobrescribe para producir su valor
++       ausente.
+
+@ 0 1 0 1ea3ffbc51c2e545096d04b5314db242
++ entry .inlining   la maquinaria tras `Inlinable`: resolución en tiempo de expansión, generadores estructurales y macros de entrada
+
+% 1 1 0 09ae3379b23807d60c2082ccf2756cf1
+
+% 2 1 0 05d2215676f61f68042934d36b0ee080
+
+@ 0 12 0 1c4985826d234afd05e998721ce78737
++       No es para uso directo: el objeto alberga las implementaciones de macro a las que se
++       expanden `Inlinable.parsable`, `Inlinable.printable` e `Inlinable.Generates`, la escala
++       de resolución (integrado, convocatoria por etapas, producto o colección estructural,
++       costura en tiempo de ejecución), la caché por expansión que memoiza las convocatorias de
++       la ejecución por etapas y detecta la recursión, y los generadores de productos y de
++       colecciones.
++   entry .fieldSeam   la costura en tiempo de ejecución: analiza un campo mediante su `Json.Parsable` nominal o su `Json.Field`
++       Un método inline (un `summonFrom` solo puede vivir en uno) que un analizador generado
++       inserta para un tipo de campo sin `Inlinable`: se llama directamente a un
++       `Json.Parsable` nominal y, si no lo hay, al `Json.Field` del campo.
++   entry .generates   la macro tras `Inlinable.Generates.generates`
++   entry .inlinablePrintable   la macro tras `Inlinable.printable[T]`
++   entry .inlinableParsable   la macro tras `Inlinable.parsable[T]`
+
+@ 0 1 0 0bb2580f6aeb905b11d42159ad387348
++ entry .internal   las implementaciones de macro tras `j"…"`, `jp"…"`, la navegación tipada por esquema y `Json.Parsable.staged`
+
+% 1 1 0 0517e13bd05bcfcf1cdafb52a7603357
+
+% 2 1 0 0801d48b0eb81d5a0a1240e22fc220cf
+
+@ 0 30 0 0eb04a0cb9d6d6bc16ed5c013cf8f3a3
++       No es para uso directo: el objeto existe para que las macros tengan un hogar estable.
++   entry .jsonPointer   la macro tras el interpolador `jp"…"`
++       Decodifica el literal como un `JsonPointer` mientras se compila el código, mediante el
++       propio `Decodable` del puntero, y traslada el desplazamiento de un `JsonPointer.Error`
++       al código fuente para que el error de compilación señale el carácter culpable.
++   entry .select   la macro tras `json.field` sobre un `Json`: se comprueba contra el tipo de esquema cuando lo hay
++       Para un `Json of P from R` —un documento al que `verify` ha dado tipo— el campo se busca
++       en la estructura de `P` y el resultado es `Json of <field type> from R`; un campo del
++       que `P` carece es un error de compilación. Para un `Json` simple, el acceso está
++       condicionado por el habilitador `dynamicAccess.dynamicJson` y lee el campo de forma
++       total.
++   entry .index   la macro tras `json(i)` sobre un `Json`: se comprueba contra el tipo de esquema cuando lo hay
++   entry .applied   la macro tras `json.field(i)` sobre un `Json`
++   entry .interpolator   la macro tras el literal `j"…"`
++       Analiza las partes del literal, con un marcador en lugar de cada sustitución, mientras
++       se compila el código —de modo que un JSON mal formado es un error de compilación en su
++       posición— e inserta un `Json.Ast` con los valores sustituidos ya rellenos.
++   entry .extractor   la macro tras `j"…"` como patrón
++       Compila un literal JSON con huecos `$name` en un extractor que compara un `Json` con él
++       y liga los huecos, como un `Boolean`, un único valor o una tupla de ellos.
++   entry .stagedParsable   la macro tras `Json.Parsable.staged` para una case class
++       Genera un analizador monomórfico: los valores de los campos en variables locales
++       tipadas, las claves despachadas mediante una `Json.KeyTable` precalculada hacia un
++       switch de enteros, las primitivas integradas leídas en línea del flujo de tokens, y el
++       registro construido con una llamada directa al constructor. Los tipos de campo que van
++       más allá de los integrados pasan por instancias de `Json.Field`, de modo que los valores
++       por defecto, `@name`, la ausencia y la nulidad, las claves desconocidas, los duplicados y
++       los focos de error se comportan exactamente como en `Json.Parsable.derived`.
++   entry .stagedSum   la macro tras `Json.Parsable.staged` para una suma sellada
++       Localiza el discriminador con una exploración anticipada acotada que retrocede, despacha
++       por comparación de cadenas contra los nombres de variante en la forma de transmisión, y
++       analiza la variante elegida mediante su `Json.Field`. Una etiqueta ausente lanza
++       `Json.Error(Absent)` y una etiqueta desconocida el `Variant.Error` de wisteria, como hace
++       el motor derivado.
+
+@ 0 1 0 14e80d32de791fea0037f00a559e17a2
++ entry .jsonSchematics   constructores de un códec fusionado con el esquema que lee o escribe: `Decodable & Schematic`
+
+% 1 1 0 01a06c61a493730b0e7ed7144f91aafa
+
+@ 0 8 0 17661cf9aabc5cc01bc67e880e36fad4
++       Un `Json.Encodable` y un `Json.Decodable` llevan cada uno la `Morphology` de lo que
++       escriben o leen, y `jsonSchematics.encodable[T]` y `jsonSchematics.decodable[T]`
++       reifican esa forma en un `JsonSchema` y la emparejan con el códec en una sola instancia,
++       `T is Encodable & Schematic in Json over JsonSchema` (o `Decodable & Schematic`). El
++       esquema procede del propio códec y nunca se deriva por separado, así que el par es
++       coherente por construcción: un tipo cuyo códec JSON pasa por su `Encodable in Text`
++       —una enumeración escrita como cadena— obtiene un `JsonSchema.String`, mientras que la
++       derivación independiente de `Schematic` describiría su estructura como un objeto.
+
+% 2 1 0 13ea3c6416a3ecaa0b936af10521b68d
+
+% 3 1 0 0b9384495cec80ea17c8db4a8de9819b
+
+% 4 1 0 05924c02737f6f4f1dc8c13a326c83fa
+
+% 5 1 0 04f80ab30f7eb3df10fc4873ec139b62
+
+% 0 1 0 0e8f9b9e37857b7a09aebafd0d92762e
+
+% 0 1 0 126a738502af624903ff15d87ee75a15
+
+% 0 1 0 0a8359486732e850025748367e685f36
+
+% 0 1 0 08540d815aa32ffa116ab8b6c12d891f
+
+% 1 1 0 02e15e85f84de8ac1d9887754ebde49d
+
+@ 0 5 0 0f6001903ddf3370137ee5bd86293948
++       Son métodos, no givens, a propósito: un given `Decodable & Schematic` es un subtipo
++       tanto de su clase de tipos de códec como de `Schematic`, así que como given sería ambiguo
++       para cualquier convocatoria de un `Schematic` a secas. Llama a uno donde se quiera una
++       instancia fusionada, o lígalo como given local: `given (Contact is Decodable & Schematic
++       in Json over JsonSchema) = jsonSchematics.decodable[Contact]`.
+
+% 1 1 0 15978586e46c4f7313042332cac9c676
+
+@ 0 6 0 0faba517862868840b23860bd6774433
++   entry .encodable   el `Json.Encodable` de `T` fusionado con el `JsonSchema` de lo que escribe
++       Necesita un `T is Json.Encodable` en el ámbito; `encoded` delega en él, y `schema()` es
++       `JsonSchema.reify` de su `shape()`.
++   entry .decodable   el `Json.Decodable` de `T` fusionado con el `JsonSchema` de lo que lee
++       Necesita un `T is Json.Decodable` en el ámbito; `decoded` delega en él, y `schema()` es
++       `JsonSchema.reify` de su `shape()`.
+
+@ 0 1 0 019501f78e0aced310b9130dd4d81c39
++ entry .JsonSchema   un JSON Schema como valor: derivado de un tipo de Scala, leído de un documento, escrito como tal
+
+% 1 1 0 06a5929399607b52050300d36f37afe1
+
+@ 0 10 0 1f22e8e677ceccfa1f92a6189fe518f6
++       `JsonSchema` es un enum cuyos casos son las clases de nodo de un esquema —`Object`,
++       `Array`, `String`, `Number`, `Integer`, `Boolean`, `Null` y `Ref`—, cada uno con las
++       palabras clave que JSON Schema admite para él, una `description` opcional y un indicador
++       `optional` que registra que el nodo admite `null` o la ausencia (un `"null"` entre los
++       `type`, el `nullable` de OpenAPI, o un campo `Optional` en un esquema derivado). Es el
++       transporte de `Schematic` para JSON: `T is Schematic over JsonSchema` da un esquema para
++       `T`, el objeto compañero deriva uno para cualquier case class o jerarquía sellada
++       (`JsonSchema.derived[T]`, a partir del `Derivable` de wisteria, y el given inline
++       `.schematic`, que lo resuelve para cualquier tipo reflejable), y un `JsonSchema` se
++       codifica en un documento JSON Schema estándar y se decodifica a partir de él.
+
+% 2 1 0 1bb8ce533d77f04a0c99bab221a0f79b
+
+% 3 1 0 08a97c932363929212c861c059129440
+
+% 4 1 0 08c47d22c19433f30965e96828f09a37
+
+% 5 1 0 0caa25edfa2b5bd1103130533249a3f1
+
+% 0 1 0 021366bdd725b08b1901918e0d0c1ebf
+
+% 0 1 0 11b522624f1396eb18612da25cc7d34b
+
+% 0 1 0 0d6be4e494791348091ed4acaccb5e54
+
+% 1 1 0 100ae03d43a50e401095bbe4b5ee150e
+
+% 0 1 0 0d18bfafd5f50271007c6e5c1e6a50b0
+
+% 0 1 0 07445028f940a2531be59e031f1894cf
+
+% 0 1 0 0561f9555e513d241caed3499e6f484a
+
+% 1 1 0 03b38c81391335d7054dcbf627674f4d
+
+@ 0 1 0 090802b4f428a4e61eb4397c902a4b94
++       Los casos, cada uno una case class con valores por defecto para todos sus parámetros:
+
+% 0 1 0 0d54b4720edd84a61d0e0cc14a0b137e
+
+% 0 1 0 0112de4b1607bcec1c85c21c9a0fde42
+
+@ 0 6 0 0dad9dd34d210862092748cd279feace
++         oneOf, additionalSchema: Optional[JsonSchema], allOf, anyOf, not, const)`. El
++         `required` de un esquema derivado enumera los campos que no son `Optional`; una
++         jerarquía sellada se deriva como un `Object` cuyo `oneOf` contiene un esquema por
++         variante, con `kind` obligatorio. `additionalProperties` es `true` cuando el esquema
++         admite más propiedades, ya sea mediante un `true` a secas o mediante un esquema para
++         ellas, que entonces lleva `additionalSchema`; un esquema booleano `true` se lee como
++         `Object(additionalProperties = true)`.
+
+% 0 1 0 07a4580ced45573d0d954bb8acd483c2
+
+@ 0 2 0 0bd7044a1d3737e9005f6f629290b479
++         maxContains, minContains)`: un `List` o un `Set` se deriva como un `Array` del esquema
++         de su elemento.
+
+% 0 1 0 0a2d09ba2e1a472606d5c3bf168a7d46
+
+@ 0 1 0 1716eb4ce53c47c5091ddcea0b064afd
++         Optional[JsonSchema.Format], optional)`: `Text` y `EmailAddress` se derivan como un
+
+% 0 1 0 16a6186a2d3577bf188f46ac55d907fc
+
+% 0 1 0 07f3b4e1bcf75c060d1fa1f04e523779
+
+@ 0 1 0 1250f7cba2091b8617fa6bd5f2b2b591
++         optional)`, con todas las cotas `Optional[Double]`: `Float` y `Double` se derivan como
++         un `Number`.
+
+% 0 1 0 12ad7e7297c9f0bd0b0f1fd0bcaa9cbd
+
+@ 0 6 0 0918c4e8f5ec1f0e1c7e310f1f240048
++         format)`, con todas las cotas `Optional[Long]`: `Byte`, `Short`, `Int` y `Long` se
++         derivan como un `Integer`.
++       - `Boolean(description, optional)` y `Null(description, optional)`.
++       - `Ref(pointer: JsonPointer, description, optional)`: una referencia `{"$ref": "#/…"}`,
++         que se mantiene sin resolver para que un grafo de esquemas cíclico siga siendo finito;
++         `verify` deja sin comprobar un nodo `Ref`.
+
+@ 0 4 0 1dd44f38bfaa4fcf006ae18a8828db80
++       Los casos de esquema `Array`, `String`, `Number` y `Boolean` ocultan los nombres del
++       preludio solo dentro de `object JsonSchema`; desde fuera, `JsonSchema.Array(…)` y el
++       `Array` del preludio conviven. La descripción de un campo en un esquema derivado procede
++       de la anotación `@memo` del campo, y la de una variante, de `@memo` en la variante.
+
+% 0 1 0 19c09abbbc05077409d38929a6799169
+
+% 0 1 0 13691869747c083e047302ed5a05c028
+
+% 0 1 0 152c95810e78aed31c0165603950d105
+
+% 1 1 0 12366fd777f813af1894edece5f7dfc8
+
+@ 0 39 0 153e3ca57b1c3aab0d10f9a8549fc6d0
++   entry .byteSchematic   `Byte` se deriva como `Integer()`
++   entry .shortSchematic   `Short` se deriva como `Integer()`
++   entry .intSchematic   `Int` se deriva como `Integer()`
++   entry .longSchematic   `Long` se deriva como `Integer()`
++   entry .floatSchematic   `Float` se deriva como `Number()`
++   entry .doubleSchematic   `Double` se deriva como `Number()`
++   entry .textSchematic   `Text` se deriva como `String()`
++   entry .emailSchematic   `EmailAddress` se deriva como `String()`
++       El esquema no registra ningún `format`: las instancias fusionadas de `jsonSchematics` y
++       `Json.Provider` son donde se interpreta `format: "email"`.
++   entry .booleanSchematic   `Boolean` se deriva como `Boolean()`
++   entry .optionalSchematic   un `Optional[T]` (o cualquier envoltorio `Mandatable`) se deriva como el esquema de `T` marcado como opcional
++       Toma el esquema del tipo interior y activa su indicador `optional` mediante `.optional`,
++       de modo que un `Object` derivado omite el campo de `required`.
++   entry .listSchematic   un `List[T]` se deriva como `Array(items = T's schema)`
++   entry .setSchematic   un `Set[T]` se deriva como `Array(items = T's schema)`
++   entry .mapSchematic   un `Map[K, V]` con una clave codificable como texto se deriva como `Object(additionalProperties = true)`
++       El esquema del valor no se registra: la palabra clave `additionalProperties` de JSON
++       Schema podría llevarlo, y lo lleva cuando se lee un esquema de un documento
++       (`additionalSchema`), pero la derivación todavía no lo escribe.
++   entry .schematic   el given inline que deriva un esquema para cualquier tipo reflejable
++       `[value: Reflection] => value is Schematic over JsonSchema`, que se expande a `derived`:
++       una case class se convierte en un `Object` con una propiedad por campo y los campos no
++       opcionales en `required`; una jerarquía sellada se convierte en un `Object` con un
++       `oneOf` por variante. Las anotaciones `@memo` de cada campo y de cada variante se
++       convierten en su `description`, unidas con saltos de línea cuando hay varias.
++   entry .jsonSchemaSchematic   el propio `JsonSchema` se deriva como un `Object()` permisivo
++       Una instancia manual, preferida frente a `.schematic`, para que derivar un esquema para
++       un tipo que tiene un campo `JsonSchema` termine en lugar de recurrir indefinidamente por
++       el esquema de los esquemas.
++   entry .pointerEncodable   `JsonPointer` se codifica como su texto, así que un `Ref` se serializa como una cadena
++       Se proporciona explícitamente como `Json.Encodable` para que la derivación genérica trate
++       un puntero como una hoja en lugar de derivar la estructura de su ruta.
++   entry .encodable   escribe un `JsonSchema` como un documento JSON Schema
++       El `Json.Encodable` de `JsonSchema`: cada caso se convierte en un objeto con su `type`
++       (`"object"`, `"array"`, `"string"`, …) y sus palabras clave, mediante la derivación
++       discriminada por `type`; un `Ref` se convierte en un `{"$ref": "…"}` a secas. Ser un
++       `Json.Encodable` y no un códec simple es lo que permite que los códecs de colecciones y
++       de mapas resuelvan un `JsonSchema` anidado a esta instancia en lugar de derivar un
++       esquema de esquemas divergente.
+
+% 2 1 0 1d6772b133518cc20b0c4e31da1f2708
+
+% 3 1 0 184fe9be563937de15beb53deaa654ac
+
+% 0 1 0 18552f7e79b98f441a67f8a18fa53bb6
+
+% 0 1 0 0c6c313bb91c224e19fa5d9c1876ffff
+
+% 1 1 0 15c1df8dccd9f8aa0686a8be3cbc3064
+
+@ 0 7 0 0335c53fc5905e9f0ce86d96b4ad634c
++   entry .decodable   lee un `JsonSchema` de un documento JSON Schema
++       El `Json.Decodable` de `JsonSchema`, escrito a mano porque un nodo de esquema se
++       discrimina por el *valor* de su campo `type`, que puede ser un nombre, una lista de
++       nombres (draft 2019-09 y OpenAPI 3.1), o estar ausente en un `$ref` o un objeto sin
++       tipo. Necesita una `Tactic[Json.Error]` y una `Tactic[JsonPointer.Error]` (para un
++       `$ref` mal formado), y la instancia captura ambas, así que una convocatoria que nombre su
++       tipo debe permitir la captura, `summon[(JsonSchema is Json.Decodable)^]`;
++       `as[JsonSchema]` no necesita nada especial.
+
+@ 0 6 0 14ee8f80d43f45df0d344ca70aa34c9f
++       Lo que acepta: un esquema booleano (`true` es `Object(additionalProperties = true)`,
++       `false` no admite nada); un `"null"` entre los `type` o el `nullable: true` de OpenAPI
++       3.0, registrados como `optional`; el `exclusiveMinimum: true` del draft 4, que califica a
++       `minimum`, así como la forma numérica posterior, ambos leídos al mismo modelo;
++       `additionalProperties` como booleano o como esquema; un `format` de cualquier nombre,
++       conservando los desconocidos como `JsonSchema.Format.Other`; y un nodo sin `type`
++       reconocido, leído como un `Object`.
+
+% 2 1 0 1ce23233946f57e613b4caaaad56d19c
+
+% 3 1 0 1cd39ba24b5d85d60a649c37a7ab96a1
+
+% 4 1 0 0f18be6fee0e2a710bef6a503b6e74f6
+
+% 5 1 0 1605ca11f2ff614c0f3b3d7c9b4e0106
+
+% 0 1 0 12ec883e3bf139e71dbed151eae57bae
+
+% 0 1 0 07f8296cbbb83b1e1bbe889bd484ae79
+
+% 1 1 0 1ec18a00a4fcd7d804cfd6f6063d0424
+
+@ 0 6 0 106bb9ac5262fb561d8c03dc03799593
++   entry .discriminatedUnion   cómo indica un documento `JsonSchema` qué caso es: mediante su campo `type`
++       La instancia de `Discriminable` que usa el codificador derivado: el discriminador es la
++       palabra clave `type` en minúsculas (`"object"`, `"integer"`, …), que al leerse se
++       convierte de nuevo en el nombre del caso con mayúscula inicial. Es lo que hace que
++       `{"type": "integer"}` se codifique sin un envoltorio `kind`.
++   entry .reify   una `Morphology` neutral respecto al formato como `JsonSchema`
++       El puente entre la forma declarada de un códec y un esquema:
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+% 0 1 0 0153be1d41a877db10642c9eea64676f
+
+% 0 1 0 0764477653d9043115c2a4ce8dd9be69
+
+% 0 1 0 057f4ced034825e71ac16a64bd2ffbd1
+
+% 0 1 0 0fceab894344bd8a195b9f9cd0c74cf8
+
+% 0 1 0 11ac2742c5cd69420a9180bcd92717fd
+
+% 0 1 0 11b151bf3fb31f12138db61f7ba2ce0c
+
+% 0 1 0 1b08ed9cbe78f01715c77be199e92248
+
+% 0 1 0 1141726130aecc9a1a0a3c09de35db53
+
+@ 0 4 0 042cca7961b0505516131e58acf6a0cd
++       row  `Opt(inner)`  el esquema interior, marcado como opcional
++       row  `Arr(items)`  un `Array`
++       row  `Obj(fields, required)`  un `Object` con esas propiedades
++       row  `OneOf(variants)`  un `Object` cuyo `oneOf` las enumera, con `kind` obligatorio
+
+% 1 1 0 0add4f02e4f39b1d15e1379d58abea80
+
+@ 0 15 0 0d938692aef0602f12a933795dcdd2f9
++       `verify` y `jsonSchematics` se construyen sobre él, y así es como `jacinta.core` se
++       mantiene libre de cualquier dependencia de esquemas.
++   entry .optional   el mismo esquema con su indicador `optional` activado
++       Copia cualquier caso con `optional = true`; lo usan `.optionalSchematic` y los códecs de
++       los campos `Optional` y `Option`.
++   entry .conjunction   la derivación del esquema de una case class: un `Object` de sus campos
++       El gancho de `Derivable`: una propiedad por campo mediante el `Schematic` del tipo del
++       campo, los campos cuyo esquema no es opcional enumerados como `required`, y las
++       descripciones `@memo` de cada campo unidas como su `description`. No se llama
++       directamente; `.schematic` y `derived` llegan a él.
++   entry .disjunction   la derivación del esquema de una jerarquía sellada: un `Object` con un `oneOf` por variante
++       El gancho de `Derivable`: un esquema por variante, con el `@memo` de la variante como su
++       descripción, bajo `oneOf`, con `kind` obligatorio —el campo discriminador que escribe la
++       codificación `jsonByKindDiscriminable`—. No se llama directamente.
++   entry .Format   la palabra clave `format` de un esquema de cadena o de entero: un vocabulario abierto con los nombres conocidos como casos
+
+% 1 1 0 063c75f1a2eae6df0a32791e2ec9b949
+
+@ 0 7 0 1986b7e519e6ce9413a888b991e9a8d3
++         Los casos son los formatos propios de JSON Schema —`DateTime`, `Date`, `Time`,
++         `Duration`, `Email`, `Hostname`, `Ipv4`, `Ipv6`, `Uri`, `UriReference`, `UriTemplate`,
++         `Uuid`, `JsonPointer`, `RelativeJsonPointer`, `Regex`— y los añadidos de OpenAPI
++         `Int32`, `Int64`, `Float`, `Double`, `Byte`, `Binary` y `Password`; cualquier otro que
++         invente un documento (`snowflake`, `unix-time`) es `Other(name)`, de modo que la
++         decodificación es total. Un `Json.Provider` lee un `format` como el tipo que nombra:
++         `email` como una dirección de correo electrónico, `uuid` como un `Uuid`, etcétera.
+
+% 2 1 0 0ccca4a829054dc0150a90f21162c2df
+
+% 3 1 0 087d053b94677908122e2483cb454c69
+
+% 4 1 0 1969d2a3ea1330d8005085633cb732f2
+
+% 0 1 0 0b46519939f7212f1083a7854f046e0a
+
+% 0 1 0 16782249826edbe01add01fb5167a964
+
+% 0 1 0 1510a99a20e6702b03a512e52e812eaf
+
+% 1 1 0 1d616fbab2e3d50411acfd225a34acc6
+
+@ 0 9 0 0190c150c26597f51dffb1b6e642ef95
++     entry .encodable   escribe un formato como su nombre en kebab-case: `DateTime` como `date-time`, `Other(name)` como `name`
++     entry .decodable   lee un formato a partir de su nombre; un nombre desconocido es `Other(name)`, nunca un fallo
++   entry #optional   si el nodo admite `null` o la ausencia
++       Se activa para un campo `Optional` en un esquema derivado, o para un `"null"` entre los
++       `type` de un documento o su `nullable: true`; un `Object` derivado omite de `required`
++       una propiedad opcional, y `verify` acepta un valor ausente solo donde el esquema es
++       opcional.
++   entry #description   la `description` del nodo, o `Unset`
++   entry #description_=   el mismo nodo con una descripción: `schema.description = t"…"`
++       Copia cualquier caso con la descripción sustituida; `@memo` la establece durante la
++       derivación.
+
+@ 0 1 0 0c9d6ade29b7479b0f1fbee32e4d3d7f
++ entry .memo   una anotación que da a un campo o a una variante una `description` en el esquema derivado
+
+% 1 1 0 17784699f806ec3d0e21a3b137a62f70
+
+@ 0 3 0 134c61750bc204a4088dc769928b2fb7
++       `@memo(t"…")` en un campo de una case class, o en una variante de una jerarquía sellada,
++       se convierte en la `description` de esa propiedad o alternativa en el `JsonSchema` que
++       deriva el objeto compañero. Varios `@memo` en un mismo campo se unen con saltos de línea.
+
+% 2 1 0 1709ba6a4333350d07cc11eeee894cfa
+
+% 3 1 0 19fed2a7780e4d0b1a1c54308c2fdad8
+
+% 0 1 0 19186705c564daa705a05b413d3484d0
+
+% 0 1 0 1e66d4a5a593727e05d1cb92ea78cb90
+
+% 0 1 0 0cc1bc9d02fdf7e319c036424c46590e
+
+% 1 1 0 0e5a2eec8c2fcc6502454fe8bfe4202b
+
+% 0 1 0 17005df1b298165b1e934cce95720140
+
+% 1 1 0 1e53a9c7d027d98904fea55c8e5579fd
+
+% 1 1 0 1abfc6bb579b860c1f40863effc3b1c1
+
+@ 0 1 0 120773dcd338ddb30edc565bf7ec4a8d
++   entry #description   el texto de la anotación
+
+@ 0 9 0 0d6fd08d0627d7841c6deaf9f043651e
++ entry .verify   comprueba un documento contra el esquema de un tipo y le vuelve a dar tipo, para que sus campos se puedan navegar con comprobación en tiempo de compilación
++     Una extensión sobre `Json`. `json.verify[T]` reifica el esquema que declara el
++     `Json.Decodable` de `T` (mediante `JsonSchema.reify` de su `shape()`), recorre el
++     documento comparándolo con él y, si tiene éxito, devuelve el mismo documento con el tipo
++     `Json of T from T`: un `Json` cuyo `Topic` fantasma es la posición dentro del esquema y
++     cuyo `Origin` es la raíz. En la primera discrepancia lanza `Json.Error` —`Reason.NotType`
++     para un valor de la clase equivocada, `Reason.Absent` para un campo obligatorio del que
++     carece el documento—, así que necesita una `Tactic[Json.Error]`, y
++     `safely(json.verify[T])` es `Unset` para un documento no conforme.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0d909c0e8898d3c312beea729ffa2f25
++       label Falta un campo obligatorio: la verificación falla
+
+% 1 1 0 18728b4c6127f0910807b8f967c08904
+
+% 2 1 0 009745c72746fff004145d772c827bc6
+
+% 3 1 0 00c78d9b652792b3188172863da095a7
+
+% 4 1 0 19d31047c74b5f6600c7b6225e21b518
+
+% 6 1 0 15532f3ff376dc011ab286c42c0606c8
+
+% 0 1 0 076510b1fe5295f70e8454fa9863d7d9
+
+% 0 1 0 0be0348b737a9cc6016469e9b6cb51c1
+
+% 1 1 0 111857f5b0a66b450b0a033fc8c2d2d6
+
+@ 0 1 0 04b9d2cb1bd4b6be14e014ae48cd15b2
++       label Un campo de la clase equivocada también falla
+
+% 1 1 0 0d6dce824cad4be50fa85b8cdc035121
+
+% 2 1 0 1e119404ce2413fb13f90ec240013a6e
+
+% 3 1 0 1efed181b6dbe6ac0f3a8d9659a16f38
+
+% 4 1 0 11be2d9b925f1c410ca2beb268e299eb
+
+% 6 1 0 01e25ea9a687f09011ae164faee53ef2
+
+% 0 1 0 07c3f607baeb47730aecbcc79a3431a3
+
+% 0 1 0 151fead40e4903a91b23ff606994bb07
+
+% 1 1 0 1fb48054f2862e301629c9955d765e58
+
+@ 0 1 0 1428803bd2b9d65c1eb82ff54d231fec
++       label Un documento conforme se verifica, se decodifica y se navega con nombres de campo comprobados
+
+% 1 1 0 0cb2a254bac66aa90976bf0767854cef
+
+% 2 1 0 18bab82e1cfc8ea40fd9834ad261c530
+
+% 3 1 0 027a9c6e17b7018402b208720bfdd75b
+
+% 4 1 0 15759e6f48d4e815066b30c4ea24ff53
+
+% 6 1 0 110f830efe216b4b02adf7a775ca3083
+
+% 0 1 0 1da790cc6ef5fe46000c4afe5f8e67c5
+
+% 0 1 0 1888c083c572bc0c0e284f4253c0e362
+
+% 0 1 0 17e4ec359e3217160ea3ca0621cdbe6c
+
+% 0 1 0 03e4f85a3d43ad3b140110b9dc26b145
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 7 0 0eb267edde423a8618a21cc0ac6b6ee5
++     El tipo del documento verificado es lo que autoriza la navegación: `verified.name`,
++     `verified.workplace.city` y `verified.members(1).name` se comprueban cada uno contra la
++     estructura del esquema mientras se compila el código —un campo del que carece el tipo, un
++     índice en un campo que no es un array, o un campo de un escalar es un error de
++     compilación que nombra el problema—, y no hace falta importar `dynamicAccess.dynamicJson`.
++     Un `Json` simple, sin verificar, sigue requiriendo el habilitador, y el error lo dice, así
++     que los dos tipos de acceso no se pueden confundir.
+
+@ 0 6 0 077e3930e9da8476148ab614ae883464
++     Lo que cubre la comprobación: cada propiedad que nombra el esquema se comprueba
++     recursivamente, y solo puede estar ausente donde su esquema es opcional; se permiten las
++     propiedades que el esquema no nombra; cada elemento de un array se comprueba contra
++     `items`; un `oneOf` pasa si pasa alguna variante; y un nodo `Ref` se deja sin comprobar,
++     pues una referencia no se puede resolver sin el documento raíz. Un campo `Optional[T]`
++     derivado puede estar ausente, pero un `null` de JSON en su lugar no es una ausencia y no
++     supera la comprobación contra el esquema interior.
+
+@ 0 1 0 000d78aa6ce356f512c624830965a5b6
++ entry .Parser   el tokenizador de JSON en flujo tras cada `read[Json]`: una instancia exclusiva, en un pool, por hilo
+
+% 1 1 0 1d917967065f372508d14405b047ec76
+
+@ 0 7 0 0eb2c97eed12411d02d6dfc1d79d25ea
++       `Parser` es el analizador de JSON de una sola pasada por el que pasan cada `read[Json]`,
++       `Json.Ast.parse`, literal `j"…"` y `read[T in Json]` directo. Es una capacidad
++       exclusiva con estado (`caps.ExclusiveCapability, caps.Stateful`) sobre un
++       `zephyrine.Cursor` de `Data`, así que cada método que avanza por la entrada es un
++       `update def`, invocable solo mediante una referencia exclusiva `Parser^`; una instancia
++       vive en un pool por hilo y se reinicia para cada análisis, de modo que analizar no reserva
++       ningún analizador y mantiene calientes sus búferes temporales y su caché de claves de un
++       documento al siguiente.
+
+@ 0 4 0 1063bee80db08a100a7fdaedf2b0752b
++       El código corriente nunca lo nombra. Los puntos de entrada de cara al usuario son
++       `read[Json]` (y `read[Json]` sobre un `Stream[Data]` o un `Iterator[Data]`, que analiza
++       bloque a bloque sin unir antes la entrada), `Json.Ast.parse`, y las instancias de
++       `Json.Parsable` que leen un valor directamente del flujo de tokens mediante un
++       `Json.Reader`:
+
+% 2 1 0 1076eb8d0aa2e9ac0ddf56fd80f176d5
+
+% 3 1 0 00c4afd4c64ed0771a9785a5f9c40322
+
+% 4 1 0 0560004b10f2744b08bd5172bfd2ea38
+
+% 5 1 0 052113960352db0f0cb24d72a38a4902
+
+% 2 1 0 1561d4f6954518f517d834f4208ed13a
+
+% 0 1 0 14e7fdf40a6f035305834c6eb1167555
+
+% 0 1 0 120ba75bcf3dfb81082d993092e48385
+
+% 0 1 0 178c9cc64570d359035ad4214d13c4ea
+
+% 1 1 0 00f9ab7aee0197891010262f590524fb
+
+@ 0 8 0 0efe30f819d5f12603ec4f86731332f3
++       La clase es pública como *tipo* porque los analizadores que generan
++       `Inlinable.parsable[T]` y `Json.Parsable.staged` se insertan en el propio módulo del
++       usuario y leen a través de su borde directo (`#directString`, `#directLong`,
++       `#directElementFirst`, …), que es unos pocos puntos porcentuales más rápido que pasar por
++       los reenviadores por token de `Json.Reader`. Un `Json.Parsable` escrito a mano debería
++       usar `Json.Reader` en su lugar: el lector lleva su propia `Tactic[Parse.Error]`, y la
++       única forma de llegar al analizador tras una lectura en curso está sellada dentro de
++       jacinta. Un `new Parser` es posible, pero no es la vía prevista: no tiene pool, y hay que
++       llamar a `#resetData` antes de `#parse`.
+
+@ 0 7 0 10d4c9be5740e9510a88c4edd02bb04d
++       Lo que produce es `Json.Ast`: un `String`, un `Long`, un `Double`, un `Bcd` (para números
++       de más de quince dígitos, según diga el `NumberMode` del ámbito), `true`/`false`,
++       `Json.JsonNull`, un `Array[Any]` para un objeto o un array mixto, y un `Array[Int]` o
++       `Array[Long]` empaquetado para un array compuesto solo de números pequeños, que se
++       decodifica a los mismos valores que la forma con boxing pero cuesta una sola reserva de
++       memoria. Las claves de objeto de hasta dieciséis bytes ASCII pasan por interning mediante
++       una caché por hilo, de modo que una forma de registro repetida en varios documentos
++       reutiliza sus cadenas de clave.
+
+@ 0 10 0 015947a9abc3261d0c38cfd9abb9a648
++       Los números que caben exactamente en un `Long` o un `Double` se decodifican por una vía
++       rápida; los más largos o más precisos se conservan como dígitos `Bcd` para no perder
++       nada, a menos que se importe `numberModes.doubleNumberMode` o `numberModes.bcdNumberMode`
++       para cambiar esa precisión por rendimiento. Se omite una marca de orden de bytes UTF-8
++       inicial. Las cadenas se decodifican desde UTF-8, respetando todos los escapes, y una
++       entrada que no es JSON válido aborta con un `Parse.Error` cuyo `Json.Ast.Issue` nombra
++       el fallo —`EmptyInput`, `SpuriousContent` tras el valor, `ExpectedColon`,
++       `NumberHasLeadingZero`, `IncorrectEscape`, `PrematureEnd`, etcétera— en su posición de
++       byte. Con `parsing.trackPositions`, el mismo análisis construye también un
++       `Json.PositionIndex`, para que `locate` pueda remitir un nodo a su línea y su columna.
+
+@ 0 3 0 05135bea71eb17111211fc9845df6066
++       Rendimiento: con los documentos del corpus de benchmarks, el análisis en flujo queda a
++       menos de un quince por ciento de Jackson, y las lecturas directas mediante un
++       `Json.Parsable` generado se saltan por completo el árbol.
+
+% 1 1 0 192beb85fef2cbfc0da7eda141f06e57
+
+% 0 1 0 1713daee8aae7e3a056502fd959c093d
+
+% 0 1 0 1aa5487254dc39361426da3d612ffd72
+
+@ 0 87 0 16afa76d15d2d98a01771b2fd7242c90
++   entry #Region   una posición marcada en la entrada, `Cursor.Mark`, como alias propio del analizador
++       Una `Region` es una posición absoluta en la entrada, tomada cuando empieza un token y
++       usada para recortar los bytes del token cuando termina o para indicar el rango de un
++       error. Es el `Cursor.Mark` de zephyrine, y solo tiene sentido dentro de la retención que
++       la produjo.
++   entry #resetData   dirige el analizador a un documento entero guardado en memoria
++       Reconstruye el cursor sobre `input: Data` y borra todo el estado propio de cada análisis:
++       el búfer de cadenas, los arrays temporales y el índice de posiciones. Los puntos de
++       entrada del pool llaman a esto antes de cada `#parse`; un analizador manejado a mano debe
++       hacer lo mismo.
++   entry #resetIterator   dirige el analizador a un documento que llega en bloques de bytes
++       Como `#resetData`, sobre un `Iterator[Data]` que el analizador consume (el parámetro es
++       `consume`d, así que quien llama renuncia al iterador). Los bloques se recargan a medida
++       que avanza el análisis, y el cursor hace contiguo un token que se extiende a lo largo de
++       dos bloques —un número, una cadena, una palabra clave—, de modo que el resultado es
++       idéntico al de analizar los bytes unidos.
++   entry #resetStream   dirige el analizador a un `Stream[Data] over Credit`
++       Como `#resetIterator`, sobre un `Stream[Data]` medido por créditos: así es como
++       `read[Json]` desde un socket o un fichero analiza a medida que llegan los bytes, en
++       memoria acotada, en lugar de hacerlo tras unir toda la entrada.
++   entry #parse   analiza un documento JSON completo y devuelve su `Json.Ast`
++       Omite una marca de orden de bytes y los espacios en blanco iniciales, analiza
++       exactamente un valor y después exige solo espacios en blanco hasta el final de la
++       entrada: cualquier otra cosa aborta con `Json.Ast.Issue.SpuriousContent`, y una entrada
++       vacía, con `Json.Ast.Issue.EmptyInput`. Necesita una `Tactic[Parse.Error]`, mediante la
++       cual se lanza cada fallo de entrada mal formada con su posición de byte. Cuando el
++       analizador registra posiciones, el `Json.PositionIndex` raíz se construye junto al árbol.
++   entry #directSkipValue   consume un valor entero sin construir nada
++       El salto del borde directo: una exploración validada de un valor —escalar, array u
++       objeto, a cualquier profundidad— que impone la misma gramática y lanza los mismos
++       `Json.Ast.Issue` que `#parse`, pero no reserva ningún nodo, ningún búfer ni ninguna
++       cadena de clave. Un analizador generado lo usa para cada clave que no reconoce, de modo
++       que un campo desconocido solo cuesta los bytes que ocupa.
++   entry #directString   consume un token de cadena JSON y lo devuelve como un `String`
++       Omite los espacios en blanco y después exige un `"`; cualquier otra cosa aborta con
++       `Json.Ast.Issue.ExpectedString`. Una cadena de ASCII puro que se cierra dentro del búfer
++       actual se copia directamente; una con escapes o bytes no ASCII, o una que cruza el
++       límite de un bloque, la decodifica la vía general, con el mismo resultado.
++   entry #directBoolean   consume `true` o `false`
++       Omite los espacios en blanco y después lee la palabra clave, abortando con
++       `Json.Ast.Issue.ExpectedTrue` o `ExpectedFalse` si los bytes no son exactamente la
++       palabra clave.
++   entry #directLong   consume un token entero como un `Long`
++       Omite los espacios en blanco y después lee hasta dieciocho dígitos con un signo menos
++       opcional por una vía rápida que nunca recarga el búfer. Una fracción, un exponente, un
++       decimonoveno dígito, un cero inicial (que debe rechazarse, como `NumberHasLeadingZero`)
++       o un número que toca el final de la ventana recurre al analizador general de números,
++       de modo que el valor es el mismo sea cual sea la vía que se haya seguido.
++       `Json.Reader#long` y `Json.Reader#int` son esta llamada.
++   entry #directDouble   consume un token numérico como un `Double`
++       Omite los espacios en blanco y después lee un número con hasta quince dígitos
++       significativos y un exponente dentro del rango en que tanto la mantisa como la potencia
++       de diez son exactas, de modo que la vía rápida es idéntica bit a bit a la vía general;
++       cualquier otra cosa —un decimosexto dígito, un cero inicial antes de un dígito, un
++       exponente grande, el final de la ventana— toma la vía general. `Json.Reader#double` es
++       esta llamada.
++   entry #directOpenObject   consume `{` y entra en un objeto
++       Omite los espacios en blanco y después exige `{` (si no, `Json.Ast.Issue.ExpectedObject`)
++       y apila un nivel de anidamiento, cuyo estado de separadores mantienen los métodos que
++       avanzan por las claves, para que una coma ausente o duplicada se rechace exactamente como
++       la rechazaría `#parse`.
++   entry #directKeyWordFirst   la primera clave de un objeto, empaquetada en un `Long`, o un centinela
++       Para analizadores generados que saben estáticamente que están leyendo la primera clave
++       de un objeto: no espera ninguna coma de separación. Una clave de uno a dieciséis bytes
++       ASCII imprimibles sin escapes se devuelve empaquetada, con sus primeros ocho bytes en el
++       resultado y el resto en `#directKeyWordHigh`, de modo que un analizador generado puede
++       despachar comparando con constantes literales sin materializar la clave. Dos valores son
++       imposibles como claves empaquetadas y sirven de centinelas: `-1` tras consumir la `}` de
++       cierre (`Json.Reader.KeyEnd`), y `-2` (`Json.Reader.KeyOpaque`) cuando la vía rápida no
++       puede decidir aquí —la clave tiene escapes, supera los dieciséis bytes, está vacía, está
++       en el borde de la ventana o está mal formada—, en cuyo caso quien llama la resuelve
++       mediante el paso general, con nombres pasados por interning (`Json.Reader.keyNameOf`).
++   entry #directKeyWordNext   una clave posterior de un objeto, empaquetada en un `Long`, o un centinela
++       Como `#directKeyWordFirst`, para cada clave tras la primera: espera una `,` antes de la
++       clave (o la `}` de cierre), y no consulta ningún estado por clave. Se aplican los mismos
++       centinelas.
++   entry #directKeyWordHigh   los bytes noveno a decimosexto de la clave empaquetada más reciente
++       La palabra alta de la clave que `#directKeyWordFirst` o `#directKeyWordNext` acaba de
++       explorar, cero para una clave de ocho bytes o menos. Léela inmediatamente después de la
++       palabra baja, antes de que se explore la siguiente clave.
++   entry #directOpenArray   consume `[` y entra en un array
++       Omite los espacios en blanco y después exige `[` (si no, `Json.Ast.Issue.ExpectedArray`)
++       y apila un nivel de anidamiento para los métodos que avanzan por los elementos.
++   entry #directElement   avanza al siguiente elemento del array abierto, o lo cierra
++       Devuelve `true` situado en el siguiente elemento, con la coma de separación ya
++       consumida, y `false` tras consumir el `]` de cierre. Registra si el nivel actual ya ha
++       producido algún elemento, de modo que una coma ausente entre elementos, o una coma antes
++       del primero, se rechaza como la rechazaría `#parse`.
++   entry #directElementFirst   el primer paso de un bucle sobre un array: un elemento o el `]` de cierre
++       Como `#directElement`, para un bucle que sabe estáticamente que este es su primer paso:
++       espera un valor o `]`, nunca una coma, y marca el nivel como iniciado. Un analizador de
++       colecciones generado lo combina con `#directElementNext`.
++   entry #directElementNext   un paso posterior de un bucle sobre un array: `,` y después un elemento, o el `]` de cierre
++       Como `#directElement`, tras el primer elemento: espera `,` o `]`, y no consulta ningún
++       estado por elemento. Una `,` seguida de `]` aborta con
+
+% 0 1 0 03447fb6bda006780da443fe3a9768ad

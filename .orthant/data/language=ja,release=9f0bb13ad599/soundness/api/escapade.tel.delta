@@ -1,6 +1,0 @@
-orthant 1 language
-
--     entry .BrightWhite   SGR 97
--   entry .background   the sixteen background colours, SGR 40–47 and 100–107, each reset by SGR 49
-+     entry .BrightWhite   SGR 97
-+   entry .background   16 色の背景色。SGR 40–47 と 100–107 で、それぞれ SGR 49 でリセットされる

@@ -1,0 +1,51 @@
+orthant 2 language
+
+% 0 1 0 0eb586c4aaacf0571befc87c637122ec
+
+@ 0 1 0 1077292b9ece1e681aa0b8f30151d772
++ Wird ausgelöst, wenn Übertragungsdaten von Protocol Buffers nicht dekodiert werden können.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 04d20d695c473b090201fb1d4b37263c
++ Locomotion dekodiert das Übertragungsformat von proto3 direkt. Dieser Fehler deckt eine
++ abgeschnittene Nachricht ab, einen fehlerhaften Varint, einen unerwarteten Übertragungstyp für
++ eine Feldnummer und ein längenbegrenztes Feld, das über das Ende der Nachricht hinausreicht.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 00b2b331d6dd13681468e36156f9420a
+
+% 0 1 0 01cb8bc347beb834024edcd77b073b51
+
+% 0 1 0 158ad6c4d7f165491a663355e0633a6b
+
+% 0 1 0 1b7927de57d7528b00a5cc478645c1de
+
+% 0 1 0 1d2e5dd42ee35327181c2d4fea23aa1c
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 01ff5442217bf07713ee0cb304e4a108
++ Die Meldung trägt den Byte-Offset. Ein unerwarteter Übertragungstyp bedeutet meist, dass Leser
++ und Schreiber sich über den Typ eines Felds uneinig sind – die Feldnummer passte, die Kodierung
++ aber nicht.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1980738f5ddac723063a605ebd35cc33
++ - Quelle: `lib/locomotion/src/core/locomotion.Protobuf.scala`

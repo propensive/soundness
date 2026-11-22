@@ -1,0 +1,982 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06b23605c41af6441e37b1b6371b75e9
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e801473b9d9e33416d5d017c95661fc
++ info
++     placement d'étiquettes : trouve une position pour chaque texte d'une image, à l'écart du reste
+
+@ 0 8 0 149588a3304e981f18542f05f64d4648
++ detail
++     _Cartouche_ décide où va chaque étiquette d'une image. Un texte se place à côté de ce
++     qu'il nomme — une note près d'un point, un nom près d'une ville, un pourcentage dans un
++     secteur — et quand deux éléments sont proches, leurs étiquettes entrent en collision.
++     Cartouche prend chaque étiquette (une `Caption` : sa taille mesurée, le point qu'elle
++     décrit et les côtés où elle peut se placer), ainsi que tout ce que le texte ne doit pas
++     recouvrir sur la page (chacun étant un `Obstacle`), et trouve une `Caption.Position` pour
++     chacune. Les graphiques l'utilisent pour leurs étiquettes ; une carte l'utiliserait pour
++     ses noms de lieux. Le moteur ne voit que de la géométrie, dans un repère où l'axe y est
++     orienté vers le bas, comme en SVG : c'est à celui qui dessine le texte de le mesurer.
+
+@ 0 5 0 0fa1352abb9f107f012317f530969cbe
++     Le code qui construit une image sait ce que dit chaque étiquette, mais pas où les autres
++     se retrouveront ; `arrange` exécute donc ce code deux fois. La première exécution
++     enregistre chaque appel à `position`, `avoid` et `canvas` et répond provisoirement à
++     chaque `position` ; l'`Arranger` dans la portée résout alors l'ensemble de la
++     disposition ; et la seconde exécution répond à chaque `position` avec la place calculée.
++     La valeur d'`arrange` est celle de la seconde exécution.
+
+% 2 1 0 02d2230cc0d0412d0c890f1ddc859355
+
+% 3 1 0 190299e209cc4a061b9cbaf577a652e8
+
+% 0 1 0 0f930d453d5b8fc61a2568d8b2394d74
+
+% 0 1 0 14f7862be4a7ce250e219f0b0ec52154
+
+% 0 1 0 1765cc09e6a1193e1031704c60cb278e
+
+% 0 1 0 0ce2f2da9a3490db14c275a3ad7bee9e
+
+% 1 1 0 1b8b83463b55c0f700785170329c0881
+
+@ 0 3 0 115066fca4d3f3c41017e166ba178f8d
++     Le corps doit donc être **répétable** : les mêmes appels à `position` dans le même ordre à
++     chaque fois, sans rien faire qui ne devrait pas se produire deux fois. Un compteur qui
++     numérote les étiquettes a sa place dans le corps, où il repart de zéro à la seconde
++     exécution.
+
+@ 0 4 0 1f8ce5ecd81357ff1917d90ab203d6ea
++     L'algorithme de disposition est l'`Arranger` dans la portée : celui par défaut, glouton,
++     fourni par le compagnon d'`Arranger`, ou un autre importé par son nom depuis le package
++     `arrangers` (`import soundness.*` n'importe pas les givens), ou encore un
++     `Arranger.Greedy` ou un `Arranger.Annealing` configuré et lié comme given local.
+
+@ 0 3 0 12433aabb0e07aff1190255056f25d9a
++     La bibliothèque a un seul ensemble de sources, `cartouche.core`, qui compile pour toutes
++     les plateformes. Tout est exporté vers le package parapluie `soundness`, et le package de
++     choix `arrangers` fusionne avec celui du package parapluie.
+
+% 0 1 0 0f49140743c8c46516706c51e3c4ebca
+
+% 0 1 0 011a27b591ad86660c6bd6fa70c7949d
+
+% 0 1 0 0e155f583a8e620408bc2f8c594677bd
+
+% 0 1 0 11c814630297185a10fc20263a04b722
+
+% 0 1 0 1ba23050185bff670a018354e444bdd2
+
+@ 0 1 0 088c9db08975d1e71060a165abb7d414
++ entry .arrange
++   info
++       exécute deux fois un corps qui construit une image, en répondant à ses appels `position` par
++       une disposition
+
+@ 0 8 0 19e3da9da2585d691136fb81359a3ffc
++   detail
++       `arrange(body)` exécute `body` une première fois avec un `Arranger.Pass` d'enregistrement,
++       dans lequel chaque `position` répond par `Caption.provisional` — l'étiquette là où elle a
++       été demandée, sur son côté préféré — et chaque `avoid` et `canvas` est noté ; le résultat
++       de cette exécution est ignoré. L'`Arranger` dans la portée place alors toutes les captions
++       enregistrées par rapport aux obstacles et au canevas enregistrés, et le corps est exécuté
++       à nouveau, chaque appel à `position` recevant sa `Caption.Position` calculée, associée aux
++       appels de la première exécution selon leur ordre. Le résultat de la seconde exécution est
++       celui d'`arrange`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 04c916801aa89a3b15ec6c26b8e2c93a
+
+% 1 1 0 15a92bc3bb87672e103b7f3cea7c086c
+
+% 2 1 0 1c5e477129e24c991631139742747a93
+
+% 4 1 0 0bfdd7cdbc3a50841d23838d72c21a25
+
+% 0 1 0 024ae26309597dc1132fa0e6025ea990
+
+% 1 1 0 19501732bd82408f01afd6a17c6edda0
+
+% 0 1 0 1e4aeb3c6124c33f1ad8d363f6e9159d
+
+% 1 1 0 1ae99e4baeea973d0585a67e739dcb58
+
+% 2 1 0 11f2a46fbf625f350be3a827cbfa04b5
+
+% 4 1 0 09c235a31aa8bf0408f2c78a77a9b5c8
+
+% 0 1 0 0a52c19896ca806e1b70520252c07d20
+
+% 0 1 0 17e6db6dec2e9b0c12f3a3c3b135eb37
+
+% 1 1 0 03df8e6176ebd856196354f0944d1ee5
+
+% 0 1 0 06c991ef2dd2335a0dad8b2ca75d3c57
+
+% 1 1 0 05190a3be9a6716c0d8bfd76705d0e97
+
+% 2 1 0 1953ca498cc6f67e0922f6de3461a5c4
+
+% 4 1 0 037ca9d0a379d737057a30acbae642a2
+
+% 0 1 0 14bc0f114e3faa420883ec1a20784750
+
+% 0 1 0 1a35a1ca383882571429f831f7521c99
+
+% 0 1 0 1a2bcef174fddc5915b2815e805aa5b0
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 00f01867f14a56680b334509962f0ec9
++       Le corps doit faire les mêmes appels dans le même ordre lors des deux exécutions, et
++       n'avoir aucun autre effet. Un appel de la seconde exécution que la première n'a pas fait,
++       ou un appel avec une caption différente, reçoit une réponse provisoire et est enregistré
++       comme `Arranger.Pass#diverged`.
+
+% 1 1 0 1ad9dc1e6300643205bf0417a6d8a61e
+
+% 1 1 0 01cefda173e9a12a1885a3a58888071b
+
+% 2 1 0 0b8171df598b7133022fff274f08136c
+
+% 0 1 0 025cfa407742f0280e2e3e0ecf4dd8a2
+
+@ 0 1 0 16edd15edfc50be51b7656e6b12b28b3
++ entry .position
++   info
++       demande une place pour une étiquette, dans le corps d'un `arrange`
+
+@ 0 6 0 0521344c399a7a4511b01ae3fe86c0f3
++   detail
++       Requiert l'`Arranger.Pass` que fournit `arrange`. Elle prend une `Caption`, ou directement
++       les éléments de la caption : `width` et `height` (l'étiquette mesurée), `x` et `y` (le
++       point cible) et, en option, `attachments` (les côtés où elle peut se placer, du meilleur
++       au moins bon ; par défaut `Caption.Attachment.compass`), `standoff`, `reach`, `padding`,
++       `priority` et `fallback`, chacun tel que le décrit `Caption`. Lors de la première
++       exécution du corps, la réponse est provisoire ; lors de la seconde, c'est la
++       `Caption.Position` calculée.
+
+@ 2 1 0 16868ee13f6968e11cf54c6b08310250
++       ```scala
+
+@ 3 1 0 0e55ebf15d4060ef06a39ec8e1ded4c7
++       import soundness.*
+
+@ 0 1 0 1c2ed1219e8a168714ed9825fcb15453
++       val caption = Caption(60.0, 12.0, 100.0, 100.0, standoff = 4.0, reach = 24.0)
+
+@ 0 1 0 1f17fcdbb3aa2b3618e2a5e774147ce4
++       val placed: Caption.Position = arrange(position(caption))
+
+@ 1 1 0 0831c7ff13fc88b200f0d3573b1b94b4
++       ```
+
+@ 0 1 0 0313b9b7430d672c09a74ed30451b355
++ entry .avoid
++   info
++       déclare des obstacles sur lesquels aucune étiquette ne peut être placée, dans le corps d'un
++       `arrange`
+
+@ 0 4 0 0462488796c2fa900c9da378f8eecf6e
++   detail
++       Prend un nombre quelconque d'`Obstacle`s — un `Obstacle.Box` pour une barre ou une
++       légende, un `Obstacle.Line` pour chaque segment d'une ligne tracée, un `Obstacle.Disc`
++       pour un marqueur — et les ajoute à la disposition. Requiert l'`Arranger.Pass` que fournit
++       `arrange` ; seuls les appels de la première exécution comptent.
+
+@ 2 1 0 0b130e656e607d3313434de6863a692f
++       ```scala
+
+@ 3 1 0 0a37784d9a6887e10075b3ba4fc9d8ca
++       import soundness.*
+
+@ 5 1 0 0de1e4035e71e3a10acb53e05456d759
++       arrange:
+
+@ 0 1 0 0be6ce594f44b4811a115ea865eb0770
++         avoid(Obstacle.Line(0.0, 100.0, 300.0, 100.0), Obstacle.Disc(100.0, 100.0, 3.0))
+
+@ 0 1 0 18b009d6512271f9080e9f25ccebe0e1
++         position(60.0, 12.0, 100.0, 100.0)
+
+@ 1 1 0 029893d87378fcd10a35def2574c7038
++       ```
+
+@ 0 1 0 13e7f8224068f8ea0cc8522e5c18398a
++ entry .canvas
++   info
++       déclare la zone dans laquelle les étiquettes doivent rester, dans le corps d'un `arrange`
+
+@ 0 2 0 1c876dcc235fab6a1523049a0ccae2fa
++   detail
++       Prend un `Obstacle.Box` ; la partie d'une étiquette située à l'extérieur compte comme une
++       collision. Sans canevas, la page est illimitée, et si le corps en déclare plusieurs, le
++       dernier l'emporte.
+
+@ 2 1 0 035598e209e56d3e0109c53ef10893cf
++       ```scala
+
+@ 3 1 0 0caa193bf7aafbc71d8be4a0052be7f3
++       import soundness.*
+
+@ 5 1 0 1d6ed4f7ec4362990ba974ef41c71159
++       arrange:
+
+@ 0 1 0 0f2e27567938ffac008351017fc1b295
++         canvas(Obstacle.Box(0.0, 0.0, 120.0, 120.0))
+
+@ 0 1 0 1c91111d9ec6993911393bdae4cc85ed
++         position(60.0, 12.0, 110.0, 100.0).attachment   // West: east would run off the edge
+
+@ 1 1 0 06ac1c627bbe9cff166053df7e78313d
++       ```
+
+@ 0 1 0 0c7c9923b6caadf91c20761053360ac0
++ entry .Caption
++   info
++       une demande de placement d'étiquette : sa taille, le point qu'elle décrit et la façon dont
++       elle peut être placée
+
+@ 0 10 0 03b364772419e0f818c9102ce32e996e
++   detail
++       Une case class de la géométrie d'une étiquette. `width` et `height` sont sa taille
++       mesurée ; `x` et `y` la cible qu'elle décrit. `attachments` liste les côtés de la cible
++       où elle peut se placer, du meilleur au moins bon (par défaut
++       `Caption.Attachment.compass`) ; une caption qui n'en a aucun est traitée comme pouvant se
++       placer à l'est. `standoff` est l'écart entre la cible et le bord proche de l'étiquette,
++       pour une étiquette placée à côté d'un marqueur plutôt qu'en son centre. `reach` est la
++       distance dont l'ancre de l'étiquette peut être éloignée de sa cible quand tous les côtés
++       sont bloqués ; la valeur par défaut, zéro, la fixe. `padding` est le dégagement exigé
++       autour de l'étiquette. Les captions de `priority` plus élevée sont placées en premier, et
++       conservent donc leur cible. `fallback` dit ce qu'il advient d'une étiquette qui entre en
++       collision où qu'on la place.
+
+% 2 1 0 0b42f840c2e96de20fac7258fcd5889e
+
+% 3 1 0 04a7881e544ac62e085886e369552e43
+
+% 0 1 0 1cc0d887a5117c5e05ea42fcf912440a
+
+% 0 1 0 0389a70a6e5ad4521b6bac84226b1054
+
+% 1 1 0 01f1689a4f0ca41905d4f4e96a80e7c4
+
+@ 0 3 0 17d93527bb64988711a431f93a7bff76
++       Une caption avec un seul côté et sans portée de déplacement est placée exactement où elle
++       le demande, quoi qu'il s'y trouve, et tout ce qui suit la contourne : c'est ainsi que les
++       étiquettes de graduation et la légende d'un graphique restent immobiles pendant que les
++       étiquettes de ses points se déplacent.
+
+% 0 1 0 157a37a9e0382c7d1d52bc28a16ad187
+
+% 0 1 0 0899ba996f1a94010ce54b2bca43a7dc
+
+% 1 1 0 1491c192403d00b30fbf08d81707d09a
+
+@ 0 1 0 1dbdd7f82b613a890c9f1725529b83ce
++   entry #width
++     info
++         la largeur mesurée de l'étiquette
+
+@ 0 1 0 11aa3ddbb4e5012911673a0691e64ff3
++   entry #height
++     info
++         la hauteur mesurée de l'étiquette
+
+@ 0 1 0 13c4efe5c597bd6f157a95e09078ef48
++   entry #x
++     info
++         la coordonnée horizontale de la cible que décrit l'étiquette
+
+@ 0 1 0 0e15eb30495eee72008d87e5794867fd
++   entry #y
++     info
++         la coordonnée verticale de la cible, croissant vers le bas
+
+@ 0 1 0 0b43ef6a428a023610ec3b256db3830f
++   entry #attachments
++     info
++         les côtés de la cible où l'étiquette peut se placer, du meilleur au moins bon
+
+@ 0 1 0 12e606354cd8c3b102f569b52d0b2360
++   entry #standoff
++     info
++         l'écart entre la cible et le bord proche de l'étiquette
+
+@ 0 1 0 05f005e5267d68f31e11c87369ec8f59
++   entry #reach
++     info
++         la distance dont l'étiquette peut être éloignée de sa cible quand tous les côtés sont
++         bloqués
+
+@ 0 1 0 1a5df4c9750542321354fb8bfc0012a7
++   entry #padding
++     info
++         le dégagement exigé autour du rectangle de l'étiquette
+
+@ 0 1 0 05379a6af1b4e7db1f089d260fb836ed
++   entry #priority
++     info
++         l'ordre de placement : une priorité plus élevée est placée plus tôt et conserve sa cible
+
+@ 0 1 0 1d904bb183e834d6182177d69860e6d2
++   entry #fallback
++     info
++         indique si une étiquette en collision partout est tout de même dessinée, ou masquée
+
+@ 0 1 0 068d1778fbcd9f810af5fb23d1881979
++   entry #sides
++     info
++         les côtés à essayer : `#attachments`, ou `East` seul si c'est vide
+
+@ 0 1 0 196a98413b1fa4cc11ec1a3e2e15a666
++   entry #anchor
++     info
++         le point d'ancrage de l'étiquette sur un côté de sa cible, déplacé d'un décalage
+
+@ 0 2 0 00468de1b00dfdcc169c6d9b0fbcab4c
++     detail
++         `caption.anchor(attachment, dx, dy)` est la cible déplacée de (`dx`, `dy`), puis de
++         `#standoff` dans la direction de l'attachement.
+
+@ 0 1 0 1ebb6a59fe44cb821f972a27ca8c4e9b
++   entry #footprint
++     info
++         le rectangle qu'occupe l'étiquette lorsqu'elle est ancrée en un point d'un côté
+
+@ 0 1 0 0d33a5c8f733ea1e02ed70e209267dc4
++     detail
++         `Obstacle.Box.around` avec la taille de la caption.
+
+@ 0 1 0 078c2caa525ba4b41f691701897da96f
++   entry .provisional
++     info
++         la réponse avant disposition : l'étiquette sur sa cible, de son côté préféré
+
+@ 0 2 0 1f61a8bb6d020af01a8b61fccab531b2
++     detail
++         Ce que reçoit chaque appel à `position` lors de la première exécution du corps d'un
++         `arrange`, et ce que reçoit lors de la seconde un appel qui diverge de la première.
+
+@ 0 1 0 10e7b497dc3b0d481e9841ba24428e47
++   entry .Attachment
++     info
++         le côté de sa cible où se place une étiquette : les huit points cardinaux et
++         intermédiaires, ou `Center`
+
+@ 0 7 0 0faa72f13f2351ec1baa14abf6fa1d32
++     detail
++         Une énumération, dans un repère où l'axe y est orienté vers le bas, de sorte que `North`
++         est au-dessus de la cible. Ses cas sont `North`, `Northeast`, `East`, `Southeast`,
++         `South`, `Southwest`, `West`, `Northwest` et `Center`. L'ancre d'une étiquette est son
++         bord le plus proche de la cible : pour `East`, le milieu de son bord gauche ; pour
++         `North`, le milieu de son bord inférieur ; pour `Center`, son centre ; un moteur de rendu
++         déduit donc son propre alignement de l'attachement (le `text-anchor` et le
++         `dominant-baseline` d'un élément SVG `text`).
+
+% 2 1 0 1ca7bfd0f1c81358134daa2546da1e35
+
+% 3 1 0 1aa13a6f2566c2d61caefe3fcc9e844c
+
+% 0 1 0 13913f8510433f170f081eb52aa4a262
+
+% 0 1 0 1f06db615423af62034f35e6d690bb84
+
+% 1 1 0 1105b6cb7ffe45b70ae1a1a7726588e9
+
+@ 0 1 0 0e1817760613779b174ab327cc133fb7
++     entry .compass
++       info
++           la préférence cartographique : est, ouest, les quatre diagonales, puis nord et sud
+
+@ 0 1 0 1b3a97629807f7600204e5636eb915a3
++     entry .cardinal
++       info
++           est, ouest, nord et sud, dans cet ordre
+
+@ 0 1 0 198572a2cf6a97a410ed1da1dbc5e9c6
++     entry #dx
++       info
++           le décalage horizontal unitaire de la cible au bord proche de l'étiquette : -1, 0 ou 1
+
+@ 0 1 0 0cd96eee17044487026d3c0794f8242e
++     entry #dy
++       info
++           le décalage vertical unitaire de la cible au bord proche de l'étiquette : -1, 0 ou 1
+
+@ 0 1 0 0b209e8c167df9681e9b35c047d737ac
++   entry .Fallback
++     info
++         ce qu'il advient d'une étiquette qui chevauche quelque chose où qu'on la place
+
+@ 0 3 0 0bdce3b363cb74ea1cb9cb65e9302d52
++     detail
++         Une énumération à deux cas. `Overlap`, la valeur par défaut, dessine l'étiquette à la
++         position où elle chevauche le moins. `Hide` ne la dessine pas : sa
++         `Caption.Position#visible` vaut `false`, le corps ne dessine rien pour elle, et elle ne
++         bloque rien pour les étiquettes placées après elle.
+
+@ 2 1 0 03f85aae2c6fa9611442bfc243757931
++         ```scala
+
+@ 3 1 0 0b1cbd820d120e7d1c1c092640c857a1
++         import soundness.*
+
+@ 0 1 0 128ea21b9794b7e60caaf5345577b222
++         val hidden = arrange:
+
+@ 0 1 0 0b23cf323a84886d192342cd62167be5
++           avoid(Obstacle.Box(0.0, 0.0, 300.0, 300.0))
+
+@ 0 1 0 1e30ae471fc597f405a06e2c92952e73
++           position(60.0, 12.0, 100.0, 100.0, fallback = Caption.Fallback.Hide)
+
+@ 0 1 0 0e0cc0589c0cbf6b17bd5eb9c3dbbbdd
++         hidden.visible   // false
+
+@ 1 1 0 0770ead20c15800d1dfdaab1267fb5de
++         ```
+
+@ 0 1 0 1c74bdf436404c930a5420ecb7693688
++   entry .Leader
++     info
++         une ligne qui relie le bord d'une étiquette déplacée à la cible qu'elle décrit
+
+@ 0 5 0 07c401cadb51189f1ecb3577b90eceaf
++     detail
++         Tracée pour une étiquette éloignée de sa cible au-delà du seuil de ligne de rappel de
++         l'arrangeur. Elle va du point du rectangle de l'étiquette le plus proche de la cible
++         jusqu'à celle-ci. Les étiquettes suivantes évitent une ligne de rappel comme elles évitent
++         l'étiquette à laquelle elle appartient ; une ligne de rappel peut traverser un obstacle
++         fixe, puisque pointer au-delà d'un marqueur vers la cible est sa raison d'être, mais pas
++         une autre étiquette.
+
+@ 0 1 0 0d08abcdccce714710fedf56305e591d
++     entry #x1
++       info
++           la coordonnée horizontale de l'extrémité sur le bord de l'étiquette
+
+@ 0 1 0 189589a5e461287e1c3c42ae966cfbe8
++     entry #y1
++       info
++           la coordonnée verticale de l'extrémité sur le bord de l'étiquette
+
+@ 0 1 0 0825ac2ce802c49f115b0a207940923b
++     entry #x2
++       info
++           la coordonnée horizontale de l'extrémité sur la cible
+
+@ 0 1 0 1322123735b1c3a515234fdf39dea215
++     entry #y2
++       info
++           la coordonnée verticale de l'extrémité sur la cible
+
+@ 0 1 0 119835054b5717631411995a0f1fa6c3
++   entry .Position
++     info
++         la place attribuée à une étiquette : point d'ancrage, côté, emprise, ligne de rappel et
++         visibilité
+
+@ 0 5 0 004617bccafdc74c0567b1b6263ffdbb
++     detail
++         Ce que répond `position`. Le texte est placé en (`#x`, `#y`) avec l'alignement
++         qu'implique son `#attachment`, et occupe `#box` ; `#leader` est la ligne à tracer jusqu'à
++         la cible, si l'étiquette a été suffisamment déplacée pour en avoir besoin ; et `#visible`
++         vaut `false` pour une étiquette `Caption.Fallback.Hide` qui n'a pas pu être placée à
++         l'écart.
+
+% 2 1 0 0ca1e88253fc6bd41922d08979447fd2
+
+% 3 1 0 0f3826d8103703df1f255e6f7aab7aec
+
+% 0 1 0 0f39e7722fc9b2ab041cd59644012251
+
+% 0 1 0 0ff0de59855274411f5b7436d1f4d934
+
+% 1 1 0 1af780c8ad57dc81151359b5c509f3df
+
+@ 0 1 0 0a982b3c1d2463961613007595f7d253
++     entry #x
++       info
++           la coordonnée horizontale du point d'ancrage de l'étiquette
+
+@ 0 1 0 1e61bfd620000e4a020d8ece4be423e5
++     entry #y
++       info
++           la coordonnée verticale du point d'ancrage de l'étiquette
+
+@ 0 1 0 03ae2e3b30600906056f598ec7af440c
++     entry #attachment
++       info
++           le côté de la cible où se place l'étiquette, dont découle son alignement
+
+@ 0 1 0 14ec9b0b7f37a96603ce8fe65d8c135d
++     entry #box
++       info
++           le rectangle qu'occupe l'étiquette
+
+@ 0 1 0 15aa5cb7cdeb09fd12d11e9faf07e1b6
++     entry #leader
++       info
++           la ligne de rappel à tracer jusqu'à la cible, ou `Unset` si aucune n'est nécessaire
+
+@ 0 1 0 1bc926995161394a171479ec5b9d0599
++     entry #visible
++       info
++           indique si l'étiquette doit être dessinée
+
+@ 0 1 0 18c6fa005845f6260aadefcadb06941c
++ entry .Obstacle
++   info
++       une chose sur laquelle aucune étiquette ne peut être placée : un rectangle, une ligne tracée
++       ou un disque
+
+@ 0 6 0 12423b1739cff4fe09b2e4024b020501
++   detail
++       Un trait scellé à trois formes, chacune répondant à `#overlap` — la part d'un rectangle
++       qu'elle recouvre, en unités d'aire. La réponse est exactement zéro quand les deux sont
++       disjoints, et sa grandeur ne sert qu'à classer les positions candidates entre elles ;
++       celle d'un disque est donc une estimation. Les obstacles sont déclarés dans le corps d'un
++       `arrange` avec `avoid`, et le canevas avec `canvas` ; l'emprise et la ligne de rappel de
++       chaque étiquette placée deviennent des obstacles pour les étiquettes suivantes.
+
+% 1 1 0 1f23fc055b6a8c211cdd6e82a64c75c7
+
+% 2 1 0 1a490104b459cbb40a4b00f8eb80f336
+
+@ 0 1 0 0bd1847301e1cd3b03aabff4df04c8b4
++   entry #overlap
++     info
++         la part d'un rectangle que recouvre cet obstacle : zéro exactement quand ils sont
++         disjoints
+
+@ 0 1 0 0173517e4ae04ce80e781f5e2c32f50e
++   entry .Box
++     info
++         un rectangle aligné sur les axes, dans un repère orienté vers le bas : une barre, une
++         légende, l'emprise d'une étiquette
+
+@ 0 3 0 1b8de6cc8bccf4b4042e89ed3d9da8d7
++     detail
++         Défini par ses bords `#left` et `#top` et par ses `#width` et `#height`. En tant
++         qu'obstacle, son chevauchement avec un autre rectangle est l'aire qu'ils ont en commun.
+
+% 2 1 0 13a0ddbc5b4d61570e0f162e858367ca
+
+% 3 1 0 02782a06d6b951231e28b77f30ab2eae
+
+% 0 1 0 136c6df93614da980284b54106ea80f1
+
+% 0 1 0 15ccc1392729e2de0b2b48c6930574e4
+
+% 1 1 0 04eedf50127884ae0d1d84f979e538c3
+
+@ 0 1 0 1e182fae5b461ff41a39008d467b9c53
++     entry .around
++       info
++           l'emprise d'une étiquette ancrée en un point d'un côté de sa cible
+
+@ 0 2 0 1ed5b932ccca9c7a158903fd748b2de1
++       detail
++           `Obstacle.Box.around(x, y, width, height, attachment)` : pour `East`, l'ancre est le
++           milieu gauche du rectangle ; pour `North`, le milieu de son bas ; pour `Center`, son
++           centre.
+
+@ 0 1 0 041afb695225b592183de845c1846387
++     entry #left
++       info
++           le bord gauche du rectangle
+
+@ 0 1 0 016f35c2174ed5db1ed8b2fb279416e7
++     entry #top
++       info
++           le bord supérieur du rectangle
+
+@ 0 1 0 1f70853096323e2d075528027bedb8ef
++     entry #width
++       info
++           la largeur du rectangle
+
+@ 0 1 0 0f6bd2749ef9f3061da69ed8322bf263
++     entry #height
++       info
++           la hauteur du rectangle
+
+@ 0 1 0 023c785ba87a343b13070dfd8a577a19
++     entry #right
++       info
++           le bord droit du rectangle
+
+@ 0 1 0 0f0f25739a1391a51b2e8230d2406333
++     entry #bottom
++       info
++           le bord inférieur du rectangle
+
+@ 0 1 0 03674b0202a89ab6160b9743013ac2b9
++     entry #area
++       info
++           l'aire du rectangle
+
+@ 0 1 0 1c81438e14acaf8c1e0b222a71ccb396
++     entry #centerX
++       info
++           la coordonnée horizontale du centre du rectangle
+
+@ 0 1 0 08e9af4d42236f0304e275980bf4c11b
++     entry #centerY
++       info
++           la coordonnée verticale du centre du rectangle
+
+@ 0 1 0 1064286a2bef35121fb0c1982d7c1d54
++     entry #pad
++       info
++           le rectangle agrandi d'une certaine quantité de chaque côté
+
+@ 0 1 0 1ff2baff36f9236611d1f4c350abe37e
++     entry #excess
++       info
++           la part de l'aire de ce rectangle située hors d'un autre rectangle, tel que le canevas
+
+@ 0 1 0 018a270c487aa9e40e021efe4caa8137
++     entry #contains
++       info
++           indique si un point se trouve dans le rectangle, bords compris
+
+@ 0 1 0 0f5b37dc9902bbc80268d8126bca3047
++     entry #nearest
++       info
++           le point du périmètre du rectangle le plus proche d'un point donné, où une ligne de
++           rappel le rejoint
+
+@ 0 1 0 0419d991dd565e3c0d150830978198a7
++   entry .Line
++     info
++         un segment tracé : un côté d'une polyligne tracée, ou une ligne de rappel
+
+@ 0 5 0 051f8f06d0e131a51b908895057c1fbe
++     detail
++         De (`#x1`, `#y1`) à (`#x2`, `#y2`), avec une épaisseur de trait `#width` valant 1 par
++         défaut. Son chevauchement avec un rectangle est la longueur du segment à l'intérieur du
++         rectangle, obtenue par découpage de Liang–Barsky, multipliée par son épaisseur, de sorte
++         qu'une étiquette ne peut pas le toucher. Une polyligne est évitée segment par segment.
+
+@ 0 1 0 176b58c22fc31cf904e1780deaa80fc8
++     entry #x1
++       info
++           la coordonnée horizontale du début du segment
+
+@ 0 1 0 17f9dcb3f3db547f0988738f130a89e8
++     entry #y1
++       info
++           la coordonnée verticale du début du segment
+
+@ 0 1 0 14ecb536854924141caa4ae10dc44635
++     entry #x2
++       info
++           la coordonnée horizontale de la fin du segment
+
+@ 0 1 0 0dc4827a1bc3714d0d595d86cbb7495a
++     entry #y2
++       info
++           la coordonnée verticale de la fin du segment
+
+@ 0 1 0 1e7a82d960a089fb0421c465c29efa15
++     entry #width
++       info
++           l'épaisseur du trait, par laquelle la longueur découpée est multipliée
+
+@ 0 1 0 08534507e07962e619f73fb4fa48d80c
++     entry #length
++       info
++           la longueur du segment
+
+@ 0 1 0 1a67fd1c97f3316e0bd13b8c01b9a381
++   entry .Disc
++     info
++         un cercle plein, tel que le marqueur d'un nuage de points
+
+@ 0 4 0 1a1d5349513341621d75a27b3d580547
++     detail
++         Centré en (`#x`, `#y`). Un rectangle en est dégagé exactement quand son point le plus
++         proche est à une distance au moins égale à `#radius` du centre ; sinon, le chevauchement
++         est estimé comme celui du rectangle avec le carré englobant du disque, multiplié par π/4.
+
+@ 0 1 0 124d891810b340951d5fe8cd26ee8163
++     entry #x
++       info
++           la coordonnée horizontale du centre
+
+@ 0 1 0 1f540fc6681c89e00b104023fb43d356
++     entry #y
++       info
++           la coordonnée verticale du centre
+
+@ 0 1 0 048a75dae4239ab40021fba46ad32133
++     entry #radius
++       info
++           le rayon du disque
+
+@ 0 1 0 13760589db0496f701311aadc5403328
++ entry .Arranger
++   info
++       un algorithme qui trouve une position pour chaque caption, compte tenu de tout le reste de
++       la page
+
+@ 0 5 0 0184a90c71f78553014b6c17f5a74e9e
++   detail
++       Un trait à une seule méthode : `#arrange` prend les captions, les obstacles et le canevas
++       optionnel, et répond par une `Caption.Position` pour chaque caption, dans l'ordre des
++       captions. `arrange` utilise celui qui est dans la portée : `.greedy`, du compagnon, à
++       moins qu'un autre ne soit importé du package `arrangers` ou lié comme given local.
+
+% 2 1 0 13f2daf1e43e3d2f1605a10c419eb759
+
+% 3 1 0 01b7c58fb39353f11a1e8cd7bfece576
+
+% 0 1 0 17c3c969b6faf1dc039d64e6e6e04cbc
+
+% 2 1 0 16209625213cd0b9144a0297bbb90010
+
+% 3 1 0 1e7ac317d65570ef139b21dcd6eefe9a
+
+% 1 1 0 082b20d2ddb0adc60711243386e1b1e2
+
+@ 0 6 0 1d901379b58d3d581b5efe014deb4509
++       Les deux arrangeurs intégrés essaient une liste finie de candidats pour chaque caption,
++       du moins déplacé au plus déplacé : chaque côté sur la cible, puis chaque côté dans
++       chacune des huit directions à un `step` de distance, puis à deux pas, et ainsi de suite
++       jusqu'au `reach` de la caption ou à `rings` pas. La collision d'un candidat est l'aire
++       de son emprise avec dégagement sous chaque obstacle fixe, chaque étiquette placée et
++       chaque ligne de rappel placée, plus son aire hors du canevas et la longueur de sa propre
++       ligne de rappel qui traverse des étiquettes placées.
+
+% 0 1 0 14fdc156f5593bb30758bdc18ab590f4
+
+% 0 1 0 104aba3926f1e9ae13424a5c7c5ae017
+
+@ 0 1 0 085c729325bf827f060726e387e76ea6
++   entry #arrange
++     info
++         les positions des captions, dans leur ordre, compte tenu des obstacles et du canevas
+
+@ 0 1 0 0d2c735bc1dc684a1ca27356b6e4f3b2
++   entry .greedy
++     info
++         l'arrangeur par défaut : `Arranger.Greedy()` avec ses paramètres par défaut
+
+@ 0 2 0 16b201cfe25576bc1262ebee56367c30
++     detail
++         Dans la portée implicite, de sorte qu'`arrange` ne requiert aucun import ; un given
++         importé depuis `arrangers` ou déclaré localement a la précédence.
+
+@ 0 1 0 1dee6536d7a1d4251a574dd6f9d344dc
++   entry .Pass
++     info
++         une exécution du corps d'un `arrange` : enregistre les demandes dans la première, répond
++         dans la seconde
+
+@ 0 4 0 12accb085810fd500c47495828836f74
++     detail
++         La valeur contextuelle qu'`arrange` fournit à son corps, et dont `position`, `avoid` et
++         `canvas` ont besoin. Elle est mutable, créée par `arrange` pour une seule exécution,
++         jamais partagée, et ne peut pas être construite ailleurs.
+
+@ 0 1 0 18a42e6e0b4a59e4012695a4935aafed
++     entry #solved
++       info
++           indique s'il s'agit de la seconde exécution, dont les réponses sont les positions
++           calculées
+
+@ 0 1 0 14e235b7cc3d511400e9b3e4bfe3b786
++     entry #diverged
++       info
++           indique si la seconde exécution a demandé quelque chose que la première n'a pas demandé
+
+@ 0 3 0 15b9c39fcc0563b500eba0975fd22e0f
++       detail
++           Un appel au-delà de ceux enregistrés, ou un appel dont la caption diffère de celle de la
++           première exécution à la même place dans l'ordre, reçoit une réponse provisoire et
++           positionne cet indicateur : le corps n'était pas répétable.
+
+@ 0 1 0 1bd85f06467d699a1e413b094e977371
++   entry .Greedy
++     info
++         place chaque caption par ordre de priorité au meilleur endroit, compte tenu de celles déjà
++         placées
+
+@ 0 7 0 1aaac20a5efa12cb115b016bcaa6aced
++     detail
++         Chaque caption, par `priority` décroissante et sinon dans l'ordre, prend le candidat le
++         moins déplacé qui soit dégagé de tout ce qui a été placé avant elle, ou celui qui entre
++         le moins en collision si aucun n'est dégagé. Déterministe, et borné par le nombre de
++         candidats : au plus 1 + 8 × `rings` par côté. Une caption placée tôt n'est jamais
++         déplacée pour faire de la place à une caption placée plus tard, ce qui, sur une image
++         dense, peut laisser des collisions qu'un autre ordre aurait évitées ;
++         `Arranger.Annealing` y remédie.
+
+@ 0 4 0 0063b42f7ebe62d901c65fd19e4cfacb
++         Les paramètres : `step` (4 par défaut) est la distance entre les anneaux de candidats,
++         `rings` (8 par défaut) le nombre d'anneaux à explorer, `leaderThreshold` (6 par défaut)
++         le déplacement au-delà duquel une ligne de rappel est tracée, et `leaderWidth` (1 par
++         défaut) l'épaisseur attribuée à une ligne de rappel en tant qu'obstacle.
+
+@ 1 1 0 171bc56da6d187c01805d6f2688c523b
++     entry #step
++       info
++           la distance entre anneaux successifs de positions candidates
+
+@ 2 1 0 0be5d285911fa1c5130ebdcc8342a5f6
++     entry #rings
++       info
++           le nombre d'anneaux de candidats à explorer, avant la portée de déplacement de la
++           caption
+
+@ 3 1 0 0ee96321e5b40c1219ff5207074e9284
++     entry #leaderThreshold
++       info
++           le déplacement au-delà duquel une étiquette reçoit une ligne de rappel
+
+@ 4 1 0 1682b8390a80a89a198b8ecfc872e16d
++     entry #leaderWidth
++       info
++           l'épaisseur d'une ligne de rappel, en tant qu'obstacle pour les autres étiquettes
+
+@ 0 1 0 02bebcaffd0db0dc0ce8580f12379d38
++     entry #arrange
++       info
++           place les captions de façon gloutonne, en masquant celles qui sont en collision et
++           demandent à être masquées
+
+@ 0 1 0 09f7dd6881757bda1ae4b5d6e00f075a
++   entry .Annealing
++     info
++         affine la disposition gloutonne par recuit simulé, à partir d'une graine fixe
+
+@ 0 8 0 15885069bf0d60500acdd855450b80f4
++     detail
++         Part de la disposition gloutonne, puis déplace à répétition une caption choisie au hasard
++         vers l'un de ses candidats choisi au hasard, en acceptant un déplacement qui diminue la
++         collision totale et le déplacement pondéré, et un déplacement qui les augmente avec une
++         probabilité qui décroît à mesure que la température baisse. Contrairement au balayage
++         glouton, une caption placée tôt peut être déplacée pour faire de la place à une caption
++         placée plus tard. Les déplacements aléatoires sont tirés de `seed` via capricious, de
++         sorte que la même entrée est disposée de la même façon à chaque fois, et `iterations`
++         borne exactement le travail. Les captions encore en collision qui demandent à être
++         masquées le sont, les moins importantes en premier.
+
+% 2 1 0 11534037e3ba0333139ad269514189c9
+
+% 3 1 0 1e1c36901849cd9c126ae4f35626f097
+
+% 0 1 0 071561058896c7330f34479307214b6a
+
+% 1 1 0 0d9c89185fc59c3e1be3936932313d20
+
+@ 0 4 0 0d05bc3868c948f51bc27f1b65e4e3d0
++         Les paramètres, avec leurs valeurs par défaut : `seed` (`Seed(0L)`), `iterations`
++         (4000), `temperature` (1.0), `cooling` (0.995, le facteur appliqué à chaque
++         déplacement), `displacementWeight` (0.05, le poids du déplacement par rapport à la
++         collision), et `step`, `rings`, `leaderThreshold` et `leaderWidth` comme pour
++         `Arranger.Greedy`.
+
+@ 0 1 0 07de146276b715711a92e8c835303812
++     entry #seed
++       info
++           la graine dont sont tirés les déplacements aléatoires
+
+@ 0 1 0 15cb9de8583341b9168237577b68427c
++     entry #iterations
++       info
++           le nombre exact de déplacements à essayer
+
+@ 0 1 0 062e799da94a038b1fb97be3c5904631
++     entry #temperature
++       info
++           la température initiale, qui règle la facilité avec laquelle un déplacement moins bon
++           est accepté
+
+@ 0 1 0 12263a1b14e850120898725babd32c92
++     entry #cooling
++       info
++           le facteur par lequel la température est multipliée après chaque déplacement
+
+@ 1 1 0 0d5294ea17aead0b03b463e9faeecade
++     entry #step
++       info
++           la distance entre anneaux successifs de positions candidates
+
+@ 2 1 0 1a7121b4273d713e19b09f15876048af
++     entry #rings
++       info
++           le nombre d'anneaux de candidats à explorer, avant la portée de déplacement de la
++           caption
+
+@ 3 1 0 14aa471f39283a300f27bfaf581eb057
++     entry #leaderThreshold
++       info
++           le déplacement au-delà duquel une étiquette reçoit une ligne de rappel
+
+@ 4 1 0 12e058650573301d180faeca2d857b50
++     entry #leaderWidth
++       info
++           l'épaisseur d'une ligne de rappel, en tant qu'obstacle pour les autres étiquettes
+
+@ 0 1 0 05f5dbc412a548ae0a0e61e6e735f6f6
++     entry #displacementWeight
++       info
++           le poids avec lequel la distance d'une étiquette à sa cible compte contre elle
+
+@ 0 1 0 10cdb672e1ac923802d9a4167b7a668c
++     entry #arrange
++       info
++           applique le recuit à la disposition à partir du départ glouton, puis masque ce qui doit
++           l'être
+
+@ 0 1 0 12ca3e491d5610661d943d241a8211d5
++ entry .arrangers
++   info
++       les arrangeurs intégrés, chacun étant un given à importer par son nom
+
+@ 0 5 0 0038808a8ce147a6135d464d2f39c882
++   detail
++       L'`Arranger` dans la portée décide de la façon dont `arrange` place les étiquettes. Le
++       compagnon d'`Arranger` fournit par défaut l'arrangeur glouton ; importer l'un de ceux-ci
++       par son nom, ou lier un `Arranger.Greedy` ou un `Arranger.Annealing` configuré comme
++       given local, le remplace. `import soundness.*` n'importe pas les givens ; chacun
++       s'importe donc par son nom.
+
+% 2 1 0 12c6069bc5ff53cf022ad836493dc4c3
+
+% 3 1 0 1063f763926a5e0308a5631e6772b492
+
+% 0 1 0 075d39f9c7df0f841fd3f22930e552d6
+
+% 2 1 0 09016133b09127f61d92bf50526f314e
+
+% 3 1 0 0ec34f66b294d11a1a1b7a64939169d4
+
+% 0 1 0 09beca149977b55211cd35e8a8791f0f
+
+% 0 1 0 0295d51219211984050cfc53bbc4e962
+
+% 1 1 0 05de78e533337026038fd62566beb1c2
+
+@ 0 1 0 07a421d88ce550b718365b446b345827
++   entry .greedyArranger
++     info
++         `Arranger.Greedy()` : déterministe, ordonné par priorité, ne revient jamais sur une
++         étiquette
+
+@ 0 1 0 137fce89c533a9850b769816efa423cb
++   entry .annealingArranger
++     info
++         `Arranger.Annealing()` : recuit simulé à partir du départ glouton, graine 0

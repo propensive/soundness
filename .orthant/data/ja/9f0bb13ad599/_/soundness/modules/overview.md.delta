@@ -1,0 +1,18 @@
+orthant 2 language
+
+@ 0 15 0 1a577346faef63ba19f24433df1356b1
++ - [JSON](json.md) — パース、型付きのアクセス、構築、スキーマ、検証
++ - [YAML](yaml.md) — パース、タグ、アンカー、エンコード
++ - [XML](xml.md) — ノード、名前空間、XPath、スキーマ
++ - [CBOR](cbor.md) — タグと診断記法を備えた、JSON に似たバイナリのエンコーディング
++ - [CSV](csv.md) — ケースクラスへデコードされる行、ヘッダー、形式
++ - [TEL](tel.md) — インデントに基づくデータ言語と、そのスキーマと編集
++ - [Protocol Buffers](protobuf.md) — メッセージ、フィールド、互換性
++ - [Markdown](markdown.md) — パース、描画、書き戻し
++ - [Base エンコーディング](base-encoding.md) — Base64、16 進数、その他のアルファベット
++ - [バイナリデータ](binary-data.md) — バイナリのレイアウトの記述、読み取り、書き込み
++ - [圧縮](compression.md) — 値とストリームの圧縮
++ - [アーカイブ](archives.md) — ZIP、tar、ar
++ - [ハッシュ](hashing.md) — ダイジェスト、チェックサム、高速なハッシュ
++ - [暗号](cryptography.md) — 暗号化、署名、鍵、証明書
++ - [メディアタイプ](media-types.md) — メディアタイプと、自身のメディアタイプを知っている型

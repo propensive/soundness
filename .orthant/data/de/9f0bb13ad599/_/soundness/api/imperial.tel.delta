@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 5 0 12f616587e1d40261eaad5c40b24f46b
++     Ein Layout sagt auch, ob darin geschrieben werden soll: `readOnly` ist `true` für `/boot`,
++     `/efi`, `/sys`, `/usr` und alles darunter sowie für die prozessbezogenen Verzeichnisse unter
++     `/proc`. Die fünf `Home`-Layouts, die ein Benutzer nach der Spezifikation
++     XDG Base Directory verschieben darf, folgen deren Variablen: `Home.Config` ist `$HOME/.config`,
++     sofern `XDG_CONFIG_HOME` nicht auf einen absoluten Pfad gesetzt ist; dann ist es dieser Pfad.
+
+@ 0 25 0 00cbd246801ef52a1510286dae4d794c
++         Das `BaseLayout.Dir` eines Layouts wird seinen verschachtelten Layouts als Kontextwert
++         übergeben; so weiß ein verschachteltes Objekt, in welchem Verzeichnis es liegt. Die
++         Segmente werden mit dem innersten zuerst gehalten.
++     entry #home   ob der Pfad relativ zum Home-Verzeichnis des Benutzers ist
++     entry #path   die Segmente des Pfads, das innerste zuerst
++     entry #/   das Verzeichnis eines Kindes, über seinen Namen
++     entry #render   der absolute Pfad als Text, gegeben den Pfad des Home-Verzeichnisses
++         Ein `Dir`, das nicht relativ zum Home-Verzeichnis ist und keine Segmente hat, wird als
++         `/` dargestellt.
++   entry #readOnly   ob in das Verzeichnis üblicherweise nicht von Programmen geschrieben wird
++       `true` für `/boot`, `/efi`, `/sys`, `/usr` und alles darunter sowie die Verzeichnisse von
++       `/proc`; `false` für jedes Layout unter `Home`.
++   entry #Topic   die Verzeichnisnamen von diesem Knoten bis zu seiner Wurzel, als Tupeltyp
++   entry #absolutePath   der absolute Pfad des Layouts, als Text
++       Braucht ein `Environment` und ein `System`. Ein Layout, das eine `#variable` nennt, ist
++       der Wert dieser Variablen, wenn er ein absoluter Pfad ist. Andernfalls liest ein Layout
++       unter `Home` die Umgebungsvariable `HOME`, ohne abschließenden `/`, und löst
++       `Environment.Error` aus, wenn sie nicht gesetzt ist.
++   entry #variable   die Umgebungsvariable, die das Layout verlegt, sofern es eine gibt
++   entry #relocation   wohin `#variable` das Layout legt: ihr Wert, wenn er auf einen absoluten Pfad gesetzt ist
++   entry #dir   das `BaseLayout.Dir` dieses Layouts, den in ihm verschachtelten Layouts übergeben
++   entry #apply   der absolute Pfad des Layouts, als Pfadtyp nach Wahl des Aufrufers
++       `layout[Path on Linux]()` erzeugt aus `#absolutePath` einen Wert jedes Typs, der
++       `Instantiable across Paths from Text` ist. Braucht ein `Environment` und ein `System` und
++       löst `Environment.Error` (für ein `Home`-Layout, dessen `HOME` nicht gesetzt ist) und
++       `Property.Error` aus.
+
+@ 0 5 0 01aa2e748611aecf137de178c7d6d652
++       `Cache`, `Config`, `Local.Bin`, `Local.Share` und `Local.State` sind die Verzeichnisse,
++       die ein Benutzer nach der XDG-Base-Directory-Spezifikation verschieben darf, und jedes
++       liegt dort, wo seine Variable es angibt, wenn sie auf einen absoluten Pfad gesetzt ist:
++       `Home.Config` ist `$XDG_CONFIG_HOME` und andernfalls `$HOME/.config`. Ein relativer oder
++       leerer Wert wird ignoriert, wie die Spezifikation es verlangt. Die übrigen Layouts sind
++       fest.
+
+@ 0 3 0 11d0e7a0fc4ed11505d86722fbaebfdd
++   entry .Cache   das Cache-Verzeichnis des Benutzers, `$XDG_CACHE_HOME` oder `~/.cache`
++   entry .Config   das Konfigurationsverzeichnis des Benutzers, `$XDG_CONFIG_HOME` oder `~/.config`
++   entry .Local   das lokale Installationspräfix des Benutzers, `~/.local`
+
+@ 0 6 0 12bb298788522c6106cc24f983f11dce
++         Das benutzerbezogene Gegenstück zu `/usr`, das die eigenen Programme, Bibliotheken,
++         Daten und Zustände eines Benutzers enthält.
++     entry .Bin   die eigenen ausführbaren Dateien des Benutzers, `$XDG_BIN_HOME` oder `~/.local/bin`
++     entry .Lib   die eigenen Bibliotheken des Benutzers, `~/.local/lib`
++     entry .Share   die eigenen Anwendungsdaten des Benutzers, `$XDG_DATA_HOME` oder `~/.local/share`
++     entry .State   der Anwendungszustand des Benutzers, `$XDG_STATE_HOME` oder `~/.local/state`

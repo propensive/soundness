@@ -1,0 +1,188 @@
+orthant 2 language
+
+@ 0 4 0 076f3a2c7175aad905094f6428929d7f
++ Os arquivos em um disco são lidos e escritos por meio dos [caminhos](paths.md) tipados que já os
++ descrevem. Um `Path on Local` tem as operações que tocam o disco: abri-lo para leitura ou
++ escrita, criá-lo como arquivo ou como diretório, listar os seus filhos, copiar, mover e
++ remover. Cada operação declara os erros que pode lançar.
+
+% 0 1 0 07a6bbccfdc10c36118bf8c330ca242d
+
+% 0 1 0 1e08e13d7ad73e8b06fccd1c9451ef37
+
+@ 0 9 0 09472bfee23aa8780d430b81cdd4858a
++ column  Importações
++ column  Decidem
++ row  `filesystemBackends.javaBaseFilesystem`  qual implementação toca o disco: aqui, `java.nio`
++ row  `pathInterfaces.pathOnLocal`  o tipo de caminho em que os diretórios padrão são fornecidos
++ row  as cinco de `filesystemOptions`  as respostas às questões de política, descritas em [Copiar, mover e remover](#copying-moving-and-deleting)
++ row  `charsets`, `codepages`, `textSanitizers`  como bytes se tornam texto, e texto se torna bytes; [Caracteres](characters.md) os descreve
++ row  `environments`, `systems`, `temporaryDirectories`  de onde vêm o [ambiente](environment.md), as propriedades do sistema e o diretório temporário
++ row  `strategies.throwUnsafely`  que um erro é lançado como exceção; [Erros](errors.md#choosing-a-strategy) tem as outras estratégias
++ row  `stdios`, `termcapDefinitions`  onde os exemplos imprimem os seus resultados
+
+% 0 1 0 0ad34dc7ef8466c117a9041d5906cbf7
+
+@ 0 4 0 147dc8c57905f0090c0f6c64e0ab2d19
++ Por padrão, a criação se recusa a destruir qualquer coisa. Criar sobre algo que existe é um
++ `Io.Error`, e também o é criar sob um pai que não existe, a menos que
++ `filesystemOptions.createParents` seja importado, como é aqui. Uma flag declara qualquer uma
++ das duas intenções no lugar onde acontece, seja o que for importado:
+
+@ 0 7 0 16fb572e6cc32f1402ae4baac6748de7
++ `hold` mapeia um arquivo inteiro para alterá-lo onde ele está, e empresta um `Holding`: um
++ `Terrain` no qual também se armazena, além de se carregar. `set8`, `set16`, `set32` e `set64`
++ armazenam um inteiro num deslocamento, `write` armazena alguns `Data`, `zero` limpa um intervalo
++ e `move` copia um intervalo dentro do arquivo, e `expand` torna o holding mais longo, e o arquivo
++ com ele. Um arquivo que não existe é criado, com o tamanho dado a `hold`. Um lock exclusivo é
++ mantido sobre o arquivo durante o bloco, de modo que um segundo `hold` do mesmo arquivo, neste
++ programa ou em outro, é recusado com `Busy`:
+
+% 2 1 0 0f3c4b9942efdd081df38bf6eafdd2be
+
+% 3 1 0 177034a6d9894cbe127cbf3eae086fd7
+
+% 4 1 0 054a5474f62499da0a27b7acf9cc7681
+
+% 0 1 0 0af503765f93353d0df404e5d3c69bc0
+
+% 0 1 0 1c5c36c18c1959fd0f77c99d72c55579
+
+% 0 1 0 15b561bea16c7fa31aa61d31c281b743
+
+% 0 1 0 17df5e4110d84b3905d413d42e1a8f69
+
+% 0 1 0 0f2775ab3cab1ac7117e9be7db3cdea5
+
+% 0 1 0 057efa6db286cdf1064285e5f8199fd2
+
+% 0 1 0 1eb09499a06180c012723d68125c5448
+
+% 0 1 0 00802cf9c0b1f1c4184307590f2bb478
+
+% 1 1 0 0aea9e473a740da0017fd73374d836cb
+
+@ 0 6 0 1e4730eed1fa1b4800b412a6f8a860d0
++ Um holding não entrega nenhum endereço de sua memória, já que `expand` pode movê-la: todo
++ carregamento e todo armazenamento é feito num deslocamento, e uma `slice` de um holding lê por
++ meio dele, de modo que continua válida depois. O que foi armazenado está no arquivo quando o
++ bloco termina. É por meio dele que um formato alterado no lugar é alterado, como uma imagem de
++ [RaTEL](tel.md#ratel) o é pelo programa que é seu proprietário. `Holding(size)` é um holding no
++ heap, para uma imagem que ainda não é um arquivo. Um arquivo é mapeado para alteração na JVM e
++ no Scala Native; o WASI, que não consegue nem mapear nem fazer lock de um arquivo, reporta
+
+% 1 1 0 06854d3029a594d107fc51cdcfbbdaeb
+
+@ 0 3 0 0842c470117a4cba1a2a1189913eb77e
++ `observe` dá um `Observer`, que lê o que o proprietário publica. O seu `map` empresta uma visão
++ `Terrain` da versão que ele mantém, e o seu `refresh` o move para a versão a que o nome agora
++ leva, e diz se havia uma:
+
+% 0 1 0 1bbca05c3d1bc9580b5665ebbe8cdca2
+
+% 0 3 0 1ff26da9489229c61aff298fe794b21b
+
+@ 0 4 0 15815165a3adbf851793b882b34d4012
++ Um observador não obtém nenhum lock, de modo que nunca atrasa o proprietário, e o proprietário
++ nunca o atrasa. Uma visão que está em uso quando ocorre um `refresh`, nesta thread ou em outra,
++ continua válida até o fim do seu bloco. Duas edições são iguais exatamente quando são a mesma
++ versão do arquivo; elas não têm ordem.
+
+@ 0 4 0 00bc870c28c4b9601fe8c8dab4a6d6bb
++ O tipo dado a `claim` e a `observe` é o que é publicado sob o nome. Para uma forma que é lida
++ no lugar, o `open` de um observador mapeia a versão atual e a abre como esse tipo, num só
++ bloco: um observador de um `Ratel of Playbill` abre uma imagem de um `Playbill`, e recusa uma de
++ qualquer outra coisa, como mostra [RaTEL](tel.md#ratel).
++
++ Um observador mantém em existência a versão que mapeou, mesmo depois de uma mais nova a ter
++ substituído sob o nome, por isso um observador de vida longa deve chamar `refresh` quando souber
++ que há algo novo, seja por uma mensagem, seja [observando](#watching-for-changes) o nome. O lock
++ é consultivo, e é confiável entre programas que cooperam nos sistemas de arquivos da própria
++ máquina, mas não sobre um sistema de arquivos de rede.
+
+@ 0 6 0 0e5ce7e73de4158f1720e7710640f9bb
+
+@ 0 8 0 10f3fcf8c82d6c4212bb3847d07244c9
++ column  Pergunta
++ column  Sim
++ column  Não
++ row  Substituir o que já está no destino?  `overwritePreexisting`  `failOnPreexisting`
++ row  Esvaziar um diretório antes de removê-lo?  `deleteRecursively`  `deleteOnlyEmpty`
++ row  Criar os diretórios pais ausentes?  `createParents`  `requireParents`
++ row  Seguir links simbólicos?  `dereferenceSymlinks`  `preserveSymlinks`
++ row  Mover atomicamente?  `moveAtomically`  `moveNonAtomically`
+
+% 0 1 0 0c1835cc187004d314b03272bc4ef7ec
+
+% 0 4 0 0d4d5b87a0846880033f872371cd899c
+
+% 0 1 0 165ceb6e1937d87b0dfe97b5d3b085aa
+
+@ 0 42 0 18de2372cc28892605c3c039078794ca
++ column  Diretório
++ column  Somente leitura
++ row  `Home`  `~`  não
++ row  `Home.Cache`  `~/.cache`, ou `$XDG_CACHE_HOME`  não
++ row  `Home.Config`  `~/.config`, ou `$XDG_CONFIG_HOME`  não
++ row  `Home.Local`  `~/.local`  não
++ row  `Home.Local.Bin`  `~/.local/bin`, ou `$XDG_BIN_HOME`  não
++ row  `Home.Local.Lib`  `~/.local/lib`  não
++ row  `Home.Local.Share`  `~/.local/share`, ou `$XDG_DATA_HOME`  não
++ row  `Home.Local.State`  `~/.local/state`, ou `$XDG_STATE_HOME`  não
++ row  `Base`  `/`  não
++ row  `Base.Boot`  `/boot`  sim
++ row  `Base.Dev`  `/dev`  não
++ row  `Base.Dev.Shm`  `/dev/shm`  não
++ row  `Base.Efi`  `/efi`  sim
++ row  `Base.Etc`  `/etc`  não
++ row  `Base.Home`  `/home`  não
++ row  `Base.Proc`  `/proc`  não
++ row  `Base.Proc(pid)`  `/proc/<pid>`  sim
++ row  `Base.Proc.Sys`  `/proc/sys`  sim
++ row  `Base.Root`  `/root`  não
++ row  `Base.Run`  `/run`  não
++ row  `Base.Run.Log`  `/run/log`  não
++ row  `Base.Run.User`  `/run/user`  não
++ row  `Base.Srv`  `/srv`  não
++ row  `Base.Sys`  `/sys`  sim
++ row  `Base.Tmp`  `/tmp`  não
++ row  `Base.Usr`  `/usr`  sim
++ row  `Base.Usr.Bin`  `/usr/bin`  sim
++ row  `Base.Usr.Include`  `/usr/include`  sim
++ row  `Base.Usr.Lib`  `/usr/lib`  sim
++ row  `Base.Usr.Share`  `/usr/share`  sim
++ row  `Base.Usr.Share.Doc`  `/usr/share/doc`  sim
++ row  `Base.Usr.Share.Factory`  `/usr/share/factory`  sim
++ row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  sim
++ row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  sim
++ row  `Base.Var`  `/var`  não
++ row  `Base.Var.Cache`  `/var/cache`  não
++ row  `Base.Var.Lib`  `/var/lib`  não
++ row  `Base.Var.Log`  `/var/log`  não
++ row  `Base.Var.Spool`  `/var/spool`  não
++ row  `Base.Var.Tmp`  `/var/tmp`  não
+
+@ 0 6 0 1610caae51f739a60fbfe549b33fe7f8
++ A maioria dos layouts são lugares fixos. Os cinco que a
++ [especificação XDG](environment.md#standard-directories) permite ao usuário mover não são:
++ `Home.Config` é normalmente `$HOME/.config`, mas é `$XDG_CONFIG_HOME` onde o usuário o definiu
++ como um caminho absoluto. Aplicar um layout constrói um valor do tipo de diretório que for
++ pedido, de modo que os mesmos nomes servem a um `Path on Local` e a qualquer outra
++ representação.
+
+@ 0 5 0 1e6e64ccc98c34b21b9e72e2a13cf126
++ Muitos arquivos são procurados não em um local, mas ao longo de uma lista deles: um ícone em
++ qualquer um dos diretórios de dados XDG que o contenha, ou um arquivo de configuração no
++ primeiro de vários lugares. Uma instância de `Searchpaths.Stems` nomeia os diretórios a tentar,
++ em ordem. Um caminho relativo no plano correspondente é resolvido com `discover` para o primeiro
++ deles que o contém, ou para `Unset`:
+
+% 0 1 0 0a9c7cabe0be34810f28ad757cda9796
+
+% 0 2 0 01cf3bfe0c9892600d0e18f210b3580a
+
+% 0 1 0 00cb6418191de455117c8274c4ff2ad1
+
+% 0 1 0 1271d4d30a1427360bcc88397a941d7c
+
+% 0 1 0 1ae5474dbd0db4ae06de468d53dbd2a3

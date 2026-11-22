@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 0 1 0 013219ebf05cbbc101f789b1e30e1a06
+
+@ 0 1 0 107ebfd3039bc54f06bd219702873a80
++ Lançado quando uma requisição a uma API descrita não tem sucesso.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 0d46a739b5e7142a08a536f580478131
++ Esta é uma falha da chamada, e não da especificação: um status de insucesso, ou um corpo de
++ resposta que não corresponde ao que a especificação declarou.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+% 0 1 0 0dee1814916a30560147cc68c2350185
+
+% 0 1 0 150e54f1e0d5e1db0b1434fa89d1251f
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 3 0 190ca8d335d052d607bfef769ce4e032
++ Uma falha de status carrega o status, para que quem chama possa distinguir uma falha do cliente
++ de uma falha do servidor. Um corpo que não corresponde ao schema declarado significa que o serviço
++ e sua especificação divergiram.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 0c866dae17abb2500ec28a733a553b2c
++ - Código-fonte: `lib/apoplexy/src/core/apoplexy.Api.scala`

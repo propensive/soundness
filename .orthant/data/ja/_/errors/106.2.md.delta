@@ -1,0 +1,62 @@
+orthant 2 language
+
+% 0 1 0 034521a36c271d7c1f86f106004c533d
+
+@ 0 1 0 16b7e94f7205b3f90afbfe475dbc515c
++ JSON ポインターを解決できないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 173017d0ef47177f0b34bde670ebaa9c
++ Jacinta は RFC 6901 に従って JSON ポインターを解決する。
++ コンストラクターは `reason: Reason` を受け取り、描画されるメッセージは `the JSON pointer could not be resolved because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+@ 0 2 0 0ce9f3323010cab5021e70adfcef5654
++ （`↯/s.106.2.1` の `UnknownDocument` は、`JsonPointer` が一度も値の入らなかったドキュメントの URL と `JsonPointer.Registry` を失ったときに廃止された。
++ 残りの番号は変わっていない。）
+
+% 0 1 0 00dd5d5779c0f95f1477eb240a154ecb
+
+@ 0 1 0 01c29b357a79e9d80c0e5d213f43e9e8
++ JSON 参照が `#` で始まっていない。
+
+@ 0 1 0 105e3c4dee51a790105a64c459096fa9
++ **例。** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
+
+@ 0 1 0 0e02c3730b3808551133a6b50f498754
++ **解決方法。** `#/play/title` のように、参照を `#` で始める。
+
+% 0 1 0 034c98f84dc358491b08ae76143624e5
+
+@ 0 1 0 06fbbc8ff422674809e73432ced72b39
++ JSON 参照のフラグメントが `/` で始まっていない。
+
+@ 0 1 0 1eebdd34b53ab9cd0b440a81e81db782
++ **例。** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
+
+@ 0 1 0 045bcb580c6de5281b75c7ff0313c11f
++ **解決方法。** `#/play` のように、フラグメントを `/` で始める。
++ ドキュメント全体を指す素の `#` も正しい。
+
+% 0 1 0 06c60eb430a43dda148893f098ee48aa
+
+@ 0 1 0 1b3c92628749be9715451d7fbc0415f1
++ JSON 参照の中の `~` の後に `0` も `1` も続いていない。
+
+@ 0 1 0 05c7364129967dc101f1e6e394871984
++ **例。** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
+
+@ 0 1 0 12b5dc6f91211c980559d07428049b1b
++ **解決方法。** リテラルの `~` は `~0` に、リテラルの `/` は `~1` にエスケープする。
++ 他のエスケープは定義されていない。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 2 0 1969b177843c517a1349e53956b6ebf8
++ - ソース：`lib/jacinta/src/core/jacinta.JsonPointer.scala`
++ - `↯/s.106.1` — 型付きの JSON アクセスのエラー

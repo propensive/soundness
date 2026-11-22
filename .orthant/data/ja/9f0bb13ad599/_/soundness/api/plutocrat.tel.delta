@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 39 0 136f115cd774eb38038f6c08e069f0ca
++       ここにあるすべての通貨のモジュラスは 100 である。円やウォンのように、実際には補助単位を持たないものも含む。
++       ここにない通貨は `Currency()` で宣言する。
++   entry .Usd   米ドル、`USD`。記号 `$` で表示される
++   entry .Eur   ユーロ、`EUR`。記号 `€` で表示される
++   entry .Jpy   日本円、`JPY`。記号 `¥` で表示される
++   entry .Gbp   英ポンド、`GBP`。記号 `£` で表示される
++   entry .Cny   人民元、`CNY`。記号 `¥` で表示される
++   entry .Aud   オーストラリア・ドル、`AUD`。記号 `A$` で表示される
++   entry .Cad   カナダ・ドル、`CAD`。記号 `C$` で表示される
++   entry .Chf   スイス・フラン、`CHF`。記号 `CHF` で表示される
++   entry .Hkd   香港ドル、`HKD`。記号 `HK$` で表示される
++   entry .Sgd   シンガポール・ドル、`SGD`。記号 `S$` で表示される
++   entry .Sek   スウェーデン・クローナ、`SEK`。記号 `kr` で表示される
++   entry .Krw   韓国ウォン、`KRW`。記号 `₩` で表示される
++   entry .Nok   ノルウェー・クローネ、`NOK`。記号 `kr` で表示される
++   entry .Nzd   ニュージーランド・ドル、`NZD`。記号 `NZ$` で表示される
++   entry .Inr   インド・ルピー、`INR`。記号 `₹` で表示される
++   entry .Mxn   メキシコ・ペソ、`MXN`。記号 `$` で表示される
++   entry .Twd   ニュー台湾ドル、`TWD`。記号 `NT$` で表示される
++   entry .Zar   南アフリカ・ランド、`ZAR`。記号 `R` で表示される
++   entry .Brl   ブラジル・レアル、`BRL`。記号 `R$` で表示される
++   entry .Dkk   デンマーク・クローネ、`DKK`。記号 `kr` で表示される
++   entry .Pln   ポーランド・ズウォティ、`PLN`。記号 `zł` で表示される
++   entry .Thb   タイ・バーツ、`THB`。記号 `฿` で表示される
++   entry .Ils   イスラエル新シェケル、`ILS`。記号 `₪` で表示される
++   entry .Idr   インドネシア・ルピア、`IDR`。記号 `Rp` で表示される
++   entry .Czk   チェコ・コルナ、`CZK`。記号 `Kč` で表示される
++   entry .Aed   UAE ディルハム、`AED`。記号 `AED` で表示される
++   entry .Try   トルコ・リラ、`TRY`。記号 `₺` で表示される
++   entry .Huf   ハンガリー・フォリント、`HUF`。記号 `Ft` で表示される
++   entry .Clp   チリ・ペソ、`CLP`。記号 `$` で表示される
++   entry .Sar   サウジアラビア・リヤル、`SAR`。記号 `SR` で表示される
++   entry .Php   フィリピン・ペソ、`PHP`。記号 `₱` で表示される
++   entry .Myr   マレーシア・リンギット、`MYR`。記号 `RM` で表示される
++   entry .Cop   コロンビア・ペソ、`COP`。記号 `$` で表示される
++   entry .Rub   ロシア・ルーブル、`RUB`。記号 `₽` で表示される
++   entry .Ron   ルーマニア・レウ、`RON`。記号 `lei` で表示される
++   entry .Pen   ペルー・ソル、`PEN`。記号 `S/` で表示される

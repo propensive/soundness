@@ -1,0 +1,391 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 09cbac8af64cca111f523c05306fffdd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 103a904729db1d011e11b9a57aa4e175
++ info   disposiciones binarias de anchura fija como case classes, leídas de bytes mediante una clase de tipos derivada
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1cd33b5b10c56028140188541b9a262f
++     _Polaris_ lee datos binarios estructurados —los registros de anchura fija de las cabeceras de
++     ficheros, de los paquetes de red y de los protocolos de dispositivos— haciendo corresponder
++     los bytes con tipos de Scala. Una case class cuyos campos son tipos numéricos con tamaño
++     (`B32`, `U16`, `S64`, …) *es* una disposición binaria: el tipo de cada campo indica su anchura
++     y su interpretación, y la derivación los compone en el orden de declaración, calculando cada
++     desplazamiento, así que no hay ninguna aritmética de índices que mantener al día con una
++     especificación.
+
+% 2 1 0 1c2ad74512ccb1f51e7145c0ca3b72e7
+
+% 3 1 0 161d47b011669c0c01d8765722849a1a
+
+% 5 1 0 16c3f9719ab0d235151492185c61e48c
+
+% 7 1 0 028da08a0ef7f4da08128d79734deafd
+
+% 8 1 0 1fdc5c0f91f083530499aa90df74b2a5
+
+% 0 1 0 1d4a329bc89775530ea5c6c433ef9b84
+
+% 0 1 0 04e594a8aeb47ad5072081b065a6447e
+
+% 0 1 0 0708bf558873885b1095289b326d44eb
+
+% 0 1 0 07715eefd2188c950644914a4a949b3a
+
+% 0 1 0 08e28ddc53a8290c0b9b5de5af22a391
+
+% 0 1 0 01e41fe9c3432470173975e4f1ad10a0
+
+% 1 1 0 1730089acb2ac3fe0a629312c82d29c6
+
+@ 0 6 0 156018afcf720612097017fbdb143b7e
++     `Debufferable` es la clase de tipos de lectura, con instancias para los dieciséis tipos
++     numéricos con tamaño y simples, y derivación para los productos; `Unpackable` está por encima
++     de ella y es lo que resuelven `unpack` y `unpackFrom`, y abarca un único valor y un array de
++     ellos precedido de su recuento. Un `Sextant` es la posición de lectura, una capacidad mutable
++     que introduce el bloque `sextant { … }`, de modo que los sucesivos `unpack` avanzan por los
++     bytes. `Bufferable` es la clase de tipos de escritura, que se deriva sobre los productos del
++     mismo modo.
+
+@ 0 3 0 0f13131089ff02b31e8edc2d01c5c8c7
++     Todos los números de varios bytes se leen en big-endian. Las lecturas no comprueban los
++     límites contra una disposición: leer más allá del final de los bytes lanza la
++     `ArrayIndexOutOfBoundsException` de la plataforma, así que conviene comprobar primero la
++     longitud de una entrada que no es de confianza contra `byteWidth`.
+
+@ 0 2 0 1b3e8826b3f3c2c115eda0f35bc4df81
++     La biblioteca tiene un único conjunto de fuentes, `polaris.core`, que compila para todas las
++     plataformas. Todo se exporta al paraguas `soundness`.
+
+% 0 1 0 1e99a68f3a13f4b01ebaf9bb80becb1b
+
+% 0 1 0 0458fc73c6faf8ef1e4364774861601e
+
+% 0 1 0 18421c7989c65eaf105980ecdc46258e
+
+% 0 1 0 1dc07a79636d637f09481912bb693347
+
+@ 0 1 0 163c478cdfe00aac0263e811a56445d5
++ entry .Sextant   una posición de lectura en un array de bytes: la capacidad mutable que hacen avanzar los sucesivos `unpack`
+
+% 1 1 0 195df160d6729e6100f0141ef4b8fa6c
+
+@ 0 6 0 1da2292f3cc822a302fe95c2b07b37fb
++       Un `Sextant` es un cursor sobre `Data`, que debe su nombre al instrumento de navegación que
++       lee una posición. Es una *capacidad*: contiene un desplazamiento mutable, así que
++       desempaquetar a través de él es un efecto, y es `caps.Mutable`, así que solo una referencia
++       exclusiva (`Sextant^`) puede hacerlo avanzar. Dos lectores que compartieran una misma
++       posición consumirían cada uno bytes que el otro esperaba, y el comprobador de capturas
++       impide que un sextante tenga alias o escape del bloque que lo introdujo.
+
+@ 0 2 0 148a92ef422446070a4891999708dd53
++       La manera habitual de obtener uno es la extensión `sextant { … }` sobre `Data`, que crea un
++       sextante en el desplazamiento 0 y lo pasa como valor contextual al bloque, donde lo
++       encuentra `unpack`:
+
+% 2 1 0 1176a3b4b87e08e103f64b21c9e651c1
+
+% 3 1 0 1131f92c2c665092153b14d092aaf759
+
+% 0 1 0 123a919e2a1521ab1b1b69356eaf0dd7
+
+% 2 1 0 0a776139e96a8d82089815302a730c86
+
+% 0 1 0 1ddebf43c097c95b026b9c597aaa57bf
+
+% 0 1 0 0bb458fb892c730e14615277165dbd2f
+
+% 0 1 0 1b8926e3e876645813e7ad0227cd43f8
+
+% 1 1 0 100a75981895c429020b570bb5aafda9
+
+@ 0 3 0 11af4f717ad9e5101d9139fe5b556235
++       `Sextant(bytes, initialPosition)` construye uno directamente, empezando en
++       `initialPosition` (0 por defecto). Es `Findable`, así que las búsquedas de capacidades en el
++       ámbito en tiempo de compilación pueden verlo.
+
+% 0 1 0 0389495f23863fd4114352f29c876024
+
+% 1 1 0 043341d63486eadb1c43796fec48c33d
+
+@ 0 7 0 11f3752cd4642a2e13d65b99ff90dba6
++   entry #offset   la posición de lectura actual, como índice de byte desde el principio de los datos
++       Cada `unpack` la hace avanzar en la anchura del valor leído, así que dice dónde empezará la
++       siguiente lectura, para un formato que registra dónde empieza una sección.
++   entry #advance   adelanta la posición de lectura un número de bytes, sin leerlos
++       Un método `update`, así que necesita una referencia exclusiva al sextante: se salta un
++       relleno, o un campo que este lector no necesita. El recuento no se comprueba contra la
++       longitud de los datos; una lectura posterior más allá del final lanza una excepción.
+
+@ 0 4 0 16c22ea65cacb0b419d39e470736b82e
++ entry .sextant   ejecuta un bloque con un `Sextant` sobre estos bytes, empezando en el desplazamiento 0
++     Una extensión sobre `Data`: `data.sextant { … }` crea un `Sextant` al principio de los bytes
++     y lo pasa al bloque como un `Sextant^` contextual, de modo que cada `unpack` de dentro lee el
++     siguiente valor y avanza más allá de él. Se devuelve el resultado del bloque; el sextante no
++     escapa de él.
+
+% 2 1 0 13685c49a3596f731af58bc867b3243a
+
+% 3 1 0 1403721f9d627ff903ebc470c1aae95e
+
+% 0 1 0 0b8dd91f168f9f411604f405a1d497f3
+
+% 0 1 0 042ceab7dc8b776904abe6c283b8d2e5
+
+% 1 1 0 1600cb0237cfc65408bde456bed1c805
+
+@ 0 5 0 073547ae56a6d6ba059e1cb430b13697
++ entry .unpack   lee el siguiente valor de un tipo del `Sextant` que está en el ámbito, y avanza más allá de él
++     `unpack[T]` resuelve `T is Unpackable` y lee a través del `Sextant^` contextual. Para un tipo
++     `Debufferable`, el resultado es el valor, y el sextante avanza en su anchura; para un array
++     congelado `Array[T]^{}`, el resultado es una función de un recuento al array, que se lee
++     cuando se conoce el recuento y no mueve el sextante del llamante.
+
+% 2 1 0 1dfd7966c029244809727cfba8d974b5
+
+% 3 1 0 0a6721b047fcd7181b2f1204a919c2d4
+
+% 0 1 0 1fdcb482e4ee8fa80144b2c2e3ad482a
+
+% 0 1 0 0fef4b35ee9da589046e932543227729
+
+% 0 1 0 09077f0a2d3eb8af1bbafb7c49c0bc4c
+
+% 0 1 0 13c7830be363e96c097e6d0c01f16ffd
+
+% 0 1 0 17c2a8953184dff305917e0ff6154f89
+
+% 0 1 0 16895e3f0af4c58d128d038d0e51374a
+
+% 1 1 0 1f49531429cb7bc81e0f5ba3f202c733
+
+@ 0 1 0 0dd5dd11df8d33361c2553bdfdf80388
++     Leer más allá del final de los datos lanza `ArrayIndexOutOfBoundsException`.
+
+@ 0 4 0 03bb1240aafa7eb70deb2cfa5c3f082c
++ entry .unpackFrom   lee un valor de un tipo elegido a partir de bytes en un desplazamiento
++     Una extensión sobre `Data`: `bytes.unpackFrom[T](offset)` crea un `Sextant` en `offset` y
++     desempaqueta un `T` a través de él, para una lectura única en la que un bloque
++     `sextant { … }` sería pura ceremonia. Como con `unpack`, un tipo de array da una función de
++     un recuento al array.
+
+% 2 1 0 1b860fa6acd49d58037fc0982688c900
+
+% 3 1 0 0f40d7cfcad580e116ba12d63a03001c
+
+% 0 1 0 097c6da54be58c1213b257fd8c88c9b9
+
+% 0 1 0 031a107a366d51ae1dcf9491d1e99e78
+
+% 1 1 0 070d160dde7f930602066cb24629405f
+
+@ 0 1 0 0a8194d988649fb507ecbb0113d77965
++     Los números se leen en big-endian; leer más allá del final de los bytes lanza
+
+% 0 1 0 13c98c4bf2f42cd707995dfcdd299db7
+
+@ 0 3 0 1e42cf37419187e80007b6ebe534d3be
++ entry .byteWidth   el número de bytes que ocupa un tipo `Debufferable`, sin tener ningún valor a mano
++     `byteWidth[T]` es el `Debufferable#width` de `T`: 1, 2, 4 u 8 para los tipos numéricos, y la
++     suma de las anchuras de sus campos para un producto derivado, incluidos los registros
++     anidados.
+
+% 2 1 0 141e98f499f1f8871d90dada3b726ec2
+
+% 3 1 0 19689daa9e9bcdc7027f2f7dc92e0743
+
+% 5 1 0 1bd67e2f4a60e3df1f0f1f3ed69440a5
+
+% 7 1 0 15c243291c50b3211ffe840b90dd08db
+
+% 8 1 0 060159b02f74a8e515d1d85b94873361
+
+% 0 1 0 19a8379502353d32002a98f68a34eb21
+
+% 0 1 0 18ede67eb0ac1f791e63883251302a3b
+
+% 1 1 0 17bd52a34f8919c817c693837832941e
+
+@ 0 1 0 04f97d587a8ea2eb0b0999a80e683afc
++ entry .Debufferable   una clase de tipos para un tipo de anchura fija que puede leerse de bytes
+
+% 1 1 0 00285643dae6b9ec0c24fa9429eb6111
+
+@ 0 4 0 05d328707a1504a91b743f2e696ff647
++       `T is Debufferable` indica dos cosas: `#width`, el número de bytes que ocupa un `T`, y
++       `#debuffer`, que lee uno de un `Sextant` y lo hace avanzar en esa anchura. El objeto
++       compañero tiene instancias para los tipos de bits con tamaño (`B8`–`B64`), los enteros con
++       y sin signo (`S8`–`S64`, `U8`–`U64`) y los `Byte`, `Short`, `Int` y `Long` de Scala, todos
++       en big-endian.
+
+@ 0 3 0 10907f2955d5b2f70d060c47de5a212a
++       Una case class deriva su instancia de las de sus campos, que se leen en el orden de
++       declaración; un campo cuyo tipo es a su vez un registro derivado aporta toda su anchura, así
++       que las disposiciones se componen:
+
+% 2 1 0 031513b8415209391d716f545f826489
+
+% 3 1 0 05fc8dfc172113501a32ea3b120d3812
+
+% 0 1 0 1fdd7b5d876af13f1375c1df5811816d
+
+% 0 1 0 093c6418b1f1700a18f1408c98a066b3
+
+% 0 1 0 19f5a982f5ed769b1178f02b5cab27cd
+
+% 0 1 0 05382fa3d6e7556f0114762520bf6b64
+
+% 1 1 0 0e0efd2aced3a71f14e341467866d41d
+
+@ 0 4 0 1cc1283acc28c920045ba906b7c4a6ab
++       Una disposición que no es un producto de campos de anchura fija —un color empaquetado, por
++       ejemplo, o un tipo con su propia interpretación de algunos bytes— define una instancia con
++       `.apply`. Solo se derivan los productos: no hay derivación para los tipos suma, ya que una
++       disposición binaria no tiene ninguna etiqueta estándar.
+
+% 0 1 0 0b13c66425e1e9af02701f31336a7aef
+
+% 0 1 0 0530e3b0af9686c915294e9d54ef4407
+
+@ 0 4 0 0685db29a5fbb5a41661dbcb6d55dbd7
++   entry .apply   crea una instancia a partir de una anchura en bytes y de una función de los bytes y un desplazamiento
++       `Debufferable(width)((bytes, offset) => …)` lee un valor que empieza en `offset` en
++       `bytes`, y la instancia hace avanzar después el sextante en `width`. Así es como se
++       escriben las instancias primitivas.
+
+% 2 1 0 10e6cd3262e804841da714aa06019370
+
+% 3 1 0 0f647d6a609c0e9b031fa88b43128aa8
+
+% 0 1 0 0d18e47f1119b2200b93055586d0584a
+
+% 0 1 0 0eea53aebcf56b79079aa2d188561520
+
+% 0 1 0 09ff443a9b96e04514ef739c5cfa7270
+
+% 0 1 0 010627f547b111d20edfa81f496df6a0
+
+% 0 1 0 07e985f315e8fe64076748f5854e7339
+
+% 1 1 0 1c1ba8a1e3cfbf2614cf21c5caf1f23b
+
+@ 0 17 0 0ee623b99a171e721ed138521b65c898
++   entry .b8   lee un byte como un `B8`
++   entry .b16   lee dos bytes, en big-endian, como un `B16`
++   entry .b32   lee cuatro bytes, en big-endian, como un `B32`
++   entry .b64   lee ocho bytes, en big-endian, como un `B64`
++   entry .s8   lee un byte como un `S8` con signo
++   entry .s16   lee dos bytes, en big-endian, como un `S16` con signo
++   entry .s32   lee cuatro bytes, en big-endian, como un `S32` con signo
++   entry .s64   lee ocho bytes, en big-endian, como un `S64` con signo
++   entry .u8   lee un byte como un `U8` sin signo
++   entry .u16   lee dos bytes, en big-endian, como un `U16` sin signo
++   entry .u32   lee cuatro bytes, en big-endian, como un `U32` sin signo
++   entry .u64   lee ocho bytes, en big-endian, como un `U64` sin signo
++   entry .byte   lee un byte como un `Byte`
++   entry .short   lee dos bytes, en big-endian y con signo, como un `Short`
++   entry .int   lee cuatro bytes, en big-endian y con signo, como un `Int`
++   entry .long   lee ocho bytes, en big-endian y con signo, como un `Long`
++   entry .Join   la instancia que construye la derivación para un producto: una anchura total y un lector
+
+% 1 1 0 1ef2a5fffbd880710548274c9ea2c999
+
+@ 0 11 0 1c3f9e9a1ee0e6620b9ae87d37e80ba5
++         La construye `.conjunction`, a la que llama `Debufferable.derived` para una case class:
++         su anchura es la suma de las anchuras de los campos, y su lector lee cada campo por turno
++         a través del mismo sextante y construye el producto. Normalmente el código de usuario no
++         la nombra.
++     entry #width   la anchura total del producto en bytes
++   entry .conjunction   deriva una instancia para un producto a partir de las instancias de sus campos
++       La mitad de producto de la derivación `ProductDerivable`, que invoca
++       `Debufferable.derived`; el código de usuario escribe `Debufferable.derived` en lugar de
++       llamar a esto.
++   entry #width   el número de bytes que ocupa un valor de este tipo
++   entry #debuffer   lee un valor de un `Sextant` y lo hace avanzar en `#width`
++       Toma un `Sextant^` exclusivo, ya que leer mueve su posición. Una instancia escrita a mano
++       debe declarar su parámetro como `Sextant^`.
+
+@ 0 1 0 0d5651f804986d570528d6cbcd12db54
++ entry .Unpackable   una clase de tipos para lo que `unpack` puede leer: un único valor, o un array por recuento
+
+% 1 1 0 14e8748307678f7f0d857d5bf35eb401
+
+@ 0 5 0 15cfe83f9f0bfffa01937f3b8a0f70cd
++       `unpack` y `unpackFrom` resuelven `T is Unpackable`, cuyo tipo `#Wrap` dice la forma del
++       resultado: para cualquier tipo `Debufferable`, el resultado es el propio valor
++       (`.debufferable`), y para un array congelado `Array[T]^{}` es `Int -> Array[T]^{}`, una
++       función de un recuento al array (`.frozenArray`). La segunda es la manera en que una
++       sección precedida de su recuento se lee con una sola llamada, suministrando el recuento en
++       cuanto se conoce:
+
+% 2 1 0 101f2d23ff7aec9f19c67154b2e9f42c
+
+% 3 1 0 03d6052d347a526b17a25650fa63a1c0
+
+% 0 1 0 1aa256b3c3eaba231e857ad3a82b9acc
+
+% 2 1 0 1ffa999e06af01e805f159fb93195e92
+
+% 0 1 0 1a99a969f45d1da400ca55945ef59f24
+
+% 0 1 0 16978b100aa45a800899f2518d562014
+
+% 1 1 0 1486b42c8dbc4b3814d509addd9d5223
+
+% 1 1 0 04e4339749d5334b05c8e37331dacb86
+
+% 1 1 0 18c9444f483bbfd410ea04b02fd30f1f
+
+@ 0 11 0 181db71a9f151f93186df0ea0b445e65
++   entry .frozenArray   lee un array congelado de elementos `Debufferable`, como función de un recuento
++       Proporciona `Array[T]^{} is Unpackable` para cualquier `T` con un `Debufferable` y un
++       `ClassTag`. Su resultado registra los datos y el desplazamiento inicial, y crea un sextante
++       nuevo cada vez que se aplica, así que la función es pura, puede aplicarse más de una vez y
++       nunca hace avanzar el sextante del llamante: un lector que continúa después del array debe
++       hacer `advance` para saltarlo.
++   entry .debufferable   lee un único valor de cualquier tipo `Debufferable`
++       Proporciona `T is Unpackable` para todo `T is Debufferable`, con el propio valor como
++       resultado, haciendo avanzar el sextante en la anchura del tipo.
++   entry #Wrap   la forma del resultado: el propio valor, o una función de un recuento
++   entry #Result   el tipo de resultado que da `unpack`: `Wrap[Self]`
++   entry #unpack   lee de un `Sextant`, dando un `Wrap[Self]`
+
+@ 0 1 0 17534bcf3c7c8ca61019df5e28fc9780
++ entry .Bufferable   una clase de tipos para un tipo de anchura fija que puede escribirse en bytes
+
+% 1 1 0 0d13d52abe5441de08b35195ea4a1bb6
+
+@ 0 4 0 0e2cfb1d5cf5552218c2fb42fb34e609
++       La contrapartida de escritura de `Debufferable`: `T is Bufferable` indica el `#width` que
++       ocupa un `T` y `#sextant`, que escribe uno a través de un `Sextant`. Los productos derivan
++       sus instancias de las de sus campos con `Bufferable.derived`, como hace `Debufferable`, así
++       que una disposición se declara una sola vez para ambas direcciones.
+
+@ 0 2 0 0108aef959994f7f1b3d47846c385dc3
++       El objeto compañero no declara por ahora ninguna instancia para los tipos numéricos, así
++       que un producto derivado no tiene instancias de campos que componer hasta que se
++       suministren.
+
+% 1 1 0 194264aa4963e1fa063450dc9f63064d
+
+@ 0 1 0 1af25351a8d860560fdc0b0659848eb4
++   entry .Join   la instancia que construye la derivación para un producto: una anchura total y un escritor
+
+% 1 1 0 098a8491887f78cf17111b4bb46f3356
+
+@ 0 9 0 17ad53ac0996101712b994363cc3dd4d
++         La construye `.conjunction`, a la que llama `Bufferable.derived` para una case class: su
++         anchura es la suma de las anchuras de los campos, y su escritor escribe cada campo por
++         turno a través del mismo sextante. Normalmente el código de usuario no la nombra.
++     entry #width   la anchura total del producto en bytes
++   entry .conjunction   deriva una instancia para un producto a partir de las instancias de sus campos
++       La mitad de producto de la derivación `ProductDerivable`, que invoca `Bufferable.derived`.
++   entry #width   el número de bytes que ocupa un valor de este tipo
++   entry #sextant   escribe un valor a través de un `Sextant`
++       Toma un `Sextant^` exclusivo; una instancia escrita a mano debe declarar así su parámetro.

@@ -1,0 +1,194 @@
+orthant 2 release
+
+@ 3 0 0 1cd5bb5afabb520108ccd661475a1baa
++ The padding which a plain RSA key encrypts with is that of PKCS#1 v1.5. It is provided for the
++ protocols which still use it, and should not be chosen for anything new. `RsaOaep` is the
++ modern padding. Its second type parameter is the hash it uses:
++
++ ```scala
++ val oaepKey = PrivateKey.generate[RsaOaep[2048, Sha2[256]]]()
++
++ val wrappedMessage = oaepKey.public.uncloak:
++   t"secret".encrypt(InitializationVector.random)
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Out.println(oaepKey.uncloak(wrappedMessage.decrypt.as[Text]))
++ ```
++
++ An `Rsa` key and an `RsaOaep` key are the same document. The type is what selects the
++ padding, and keeps one key from being used under both.
++
+
+@ 3 0 0 13efbbbf8f6ddae31ed52fb06680cfc7
++ RSA has a second signature scheme as well. `RsaPss` signs with the randomized padding of
++ RSASSA-PSS, which is what TLS 1.3 and the `PS256` algorithm of [JOSE](jose.md) require:
++
++ ```scala
++ val pssSigner = PrivateKey.generate[RsaPss[2048]]()
++ val pssSignature = pssSigner.sign(document)
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Out.println(pssSigner.public.verify(document, pssSignature).inspect)
++ ```
++
++ An ECDSA signature is a pair of integers, which a provider writes as DER. JOSE and COSE
++ write the same pair as two fixed-width numbers instead. `Ecdsa.concatenation` and
++ `Ecdsa.signature` convert between the two forms:
++
++ ```scala
++ val fixedWidth: Optional[Data] = Ecdsa.concatenation(signature)
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Out.println(fixedWidth.let(_.length).or(0).show)
++ ```
++
+
+@ 3 0 0 1180b43cb17a40f704cc2ae3578d4ffb
++ ### Deriving and wrapping keys
++
++ The secret which a key agreement produces is not itself a key, and neither is a password. A
++ *key-derivation function* turns either into key material of the length a cipher needs.
++ `KeyDerivation` provides three, each over a hash which is named as a type:
++
++ ```tabular
++ column  Function
++ column  Standard
++ column  For
++ row  `hkdf`  RFC 5869  a key from an agreed secret, as TLS 1.3 and most modern protocols derive theirs
++ row  `concat`  NIST SP 800-56A  the same, as the `ECDH-ES` algorithms of [JOSE](jose.md) do it
++ row  `pbkdf2`  RFC 8018  a key from a password, deliberately slowly
++ ```
++
++ ```scala
++ val material: Data = t"an agreed secret".in[Data]
++ val derived: Data = KeyDerivation.hkdf[Sha2[256]](material, Data(), t"session".in[Data], 32)
++ val slow: Data = KeyDerivation.pbkdf2[Sha2[256]](t"hunter2".in[Data], t"salt".in[Data], 4096, 32)
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Out.println(derived.length.show)
++ Out.println(slow.serialize[Hex])
++ ```
++
++ *Key wrapping* is encryption whose plaintext is another key. `AesKeyWrap` is the algorithm
++ of RFC 3394. It needs no nonce, and its integrity check is built in, so unwrapping with the
++ wrong key raises a `Crypto.Error`:
++
++ ```scala
++ val wrappingKey = SymmetricKey.generate[AesKeyWrap[256]]()
++ val wrapped: Data = wrappingKey.wrap(derived)
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Out.println(wrapped.length.show)
++ Out.println(wrappingKey.unwrap(wrapped).length.show)
++ ```
++
++ `AesCbcHmac` is a second authenticated cipher, beside AES-GCM. It is AES in CBC mode with an
++ HMAC over the result, as JOSE's `A128CBC-HS256` defines it, and it seals and opens in the same
++ way. Its size is that of the whole key, half of which is for each part.
++
+
+@ 2 0 0 1715a929215d6f580633759ad5faa6c6
++ A certificate's fields are read back from it. Its key is read as a key of a named cipher,
++ which the certificate's own algorithm must agree with:
++
++ ```scala
++ val named: Optional[Text] = certificate.subject.let(_.commonName)
++ val certified: PublicKey[Rsa[2048]] = certificate.key[Rsa[2048]]
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Out.println(named.or(t"nobody"))
++ Out.println(certificate.authority.inspect)
++ ```
++
++ `serial`, `issuer`, `notBefore`, `notAfter` and `extension` read the other fields, and
++ `authority` says whether a certificate is a certificate authority's.
++
++ `Certificate.validate` checks a *chain* of certificates against a set of trusted roots. The
++ chain begins with the certificate which is being relied on, and each certificate is followed
++ by that of the authority which issued it. Every certificate must be within its validity
++ period, by the `Clock` in scope, and must be signed by the next. Every issuer must be an
++ authority, and the last certificate must be a trusted root, or be issued by one:
++
++ ```scala
++ val authorityKey = PrivateKey.generate[Ecdsa[256]]()
++ val authorityName = Distinguished(commonName = t"Example Root")
++
++ val trusted =
++   Certificate.selfSigned(authorityName, authorityKey, validity, BigInt(1), authority = true)
++
++ val issued =
++   Certificate.issued(subject, tlsKey.public, authorityName, authorityKey, validity, BigInt(2))
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Certificate.validate(List(issued), List(trusted))
++ Out.println(issued.signedBy(trusted).inspect)
++ ```
++
++ A chain which does not lead to a trusted root raises a `Certificate.Path.Error`. Revocation
++ and name constraints are not examined, so this suits a closed set of roots which were chosen
++ for one purpose, and not the roots of the public web.
++
++ ### COSE
++
++ [COSE](https://www.rfc-editor.org/rfc/rfc9052) is the counterpart of [JOSE](jose.md) for
++ CBOR. `Cose` signs a payload with a private key, or authenticates it with a symmetric key, and
++ `authenticate` checks the result. The key's type chooses the algorithm, and a message whose
++ header names another is refused:
++
++ ```scala
++ val envelope: Data = Cose(document.in[Data], signer).in[Data]
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Out.println(envelope.authenticate[Cose](signer.public).inspect)
++ ```
++
++ A `Cose.Key` is a public key in COSE's own form, which is how a [WebAuthn](webauthn.md)
++ authenticator describes the key of a new credential. It records the algorithm the key is to
++ be used with, and reads back as a key of a named cipher:
++
++ ```scala
++ val coseKey: Cose.Key = Cose.Key(signer.public)
++ val restoredKey: PublicKey[Ecdsa[256]] = coseKey.key[Ecdsa[256]]
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Out.println(coseKey.algorithm.show)
++ ```
++
+
+@ 0 1 0 192f76a6c5156586131e417dd782493b
++ import pathInterfaces.pathOnLocal
++ import systems.javaBaseSystem
+
+@ 0 1 0 149ad3677949008008fa20b1ece28568
++ val storePath = temporaryDirectory[Path on Local] / "cryptography" / "store.p12"
+
+@ 1 0 0 018131d01b42f3aa1055d485c3b1b735
++ - [JOSE](jose.md) signs and encrypts tokens with them, and [WebAuthn](webauthn.md) verifies a
++   user's key.

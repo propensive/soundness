@@ -1,0 +1,4 @@
+orthant 2 release
+
+@ 0 1 0 0fe48aac32b3e04c02475eea17911527
++       val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str)(text => Json(text.upper))

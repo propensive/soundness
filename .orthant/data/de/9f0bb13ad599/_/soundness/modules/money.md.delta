@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 2 0 07fe400905129e5c09ca3a130de28d35
++ Sechsunddreißig Währungen sind definiert, jede als Wert, der Beträge konstruiert. Ein Betrag
++ wird entweder mit seinem Symbol oder seinem ISO-Code geschrieben, wie es ein Stil im
++ Geltungsbereich festlegt.
+
+@ 0 2 0 0521150f08d80306145fc8161d1d3d86
++ Steuer wird auf die nächste Untereinheit gerundet, wobei eine Hälfte aufgerundet wird.
++ Zwanzig Prozent von 2,94 £ sind 0,588 £, die als 0,59 £ berechnet werden:

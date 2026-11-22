@@ -1,0 +1,113 @@
+orthant 2 language
+
+@ 0 6 0 18bde842eaafb6c2030a76a358be455a
++     照合の型を除くすべてが `soundness` のアンブレラにエクスポートされ、五つの選択パッケージ `charsets`、`codepages`、`textSanitizers`、`textMetrics`、`communication` は、アンブレラ自身の同名のパッケージと統合される。
++     `import soundness.*` は given をインポートしないので、プログラムは必要なエンコーディング、サニタイザー、メトリックを名指しする。`import codepages.utf8Codepage`、`import textSanitizers.strictSanitizer`、`import textMetrics.uniformMetric` のようにである。
+
+@ 0 23 0 1d873dff0e4308d807341aebad2d1951
++         `encoding`_。
++         `textSanitizers.strictSanitizer` は最初のデコードできない列で、`textSanitizers.accrueSanitizer` はそのすべてで（デコードは続けながら）、`Tactic[Charset.Error]` を通じてこれを発生させる。
++         位置は入力へのバイトオフセットであり、ストリームをデコードするときはチャンクをまたいで数えられ、入力の終わりで不完全なまま残った列は入力の長さの位置で報告される。
++         飛ばすサニタイザーと置き換えるサニタイザーは、これを決して発生させない。
++     entry #position   デコードできない列のバイトオフセット
++     entry #encoding   それをデコードできなかったエンコーディング
++   entry #encoding   この文字セットがデコードするエンコーディング
++   entry #sanitizer   デコードできないバイト列のたびに参照されるサニタイザー
++       文字セットが作られたときにスコープにあった `TextSanitizer` である。
++       `charsets` の given はそれを使用箇所から取るので、同じ `charsets.utf8Charset` が、そこでどのサニタイザーがインポートされているかに応じて、あるブロックでは厳格になり、別のブロックでは寛容になる。
++   entry #Self   この文字セットが生成するもの：`Text`
++   entry #Form   この文字セットが消費するもの：`Data`
++   entry #decoded   いくつかのバイトのテキスト、またはバイトのストリームから得るテキストのストリーム
++       `decoded(bytes)` は `Data` 全体を一つの `Text` としてデコードする。
++       `decoded(stream)` は `Chain[Data]` を取って `Chain[Text]` を返し、バッファー一杯分ずつ届くたびにデコードし、不完全なマルチバイト列を次のチャンクに持ち越すので、入力のチャンクの分け方がテキストに影響することはない。空のチャンクは出力から除かれる。
++       どちらも誤りのたびに `#sanitizer` を参照するので、`strictSanitizer` や `accrueSanitizer` のもとでは、その戦術を通じて `Charset.Error` を発生させることがある。
++       二引数のオーバーロード `decoded(bytes, omit)` は `decoded(bytes)` と同じである。
+
+@ 0 6 0 027a366880bc28e70fdf77d69d3c289f
++       エンコーディングが表現できない文字は、デフォルトでは（エンコーディングの代替文字、ASCII では `?` で）置き換えられる。
++       `encodingSanitizers.strictEncodingSanitizer` のもとでは、代わりに `Codepage.Error` を発生させる。どちらになるかは、コードページが召喚される場所のスコープにある `EncodingSanitizer` が決める。
++       ストリームのエンコードは逐次的で、文字をバッファーに溜めて段階的に処理するので、二つのチャンクにまたがって分かれたサロゲートペアは一つのアストラル文字としてエンコードされる。チャンクを一つずつエンコードすれば、それは壊れてしまう。
+
+@ 0 20 0 0ccaf61ff7ef5bc905e5ba9b37da6bdb
++         エラー `↯/s.35.1`：_character `char` cannot be encoded with the encoding `encoding`_。
++         エンコーディングのレパートリー外の文字のためのエラー型である。
++         `Codepage#encoded` は `encodingSanitizers.strictEncodingSanitizer` のもとでこれを発生させる。デフォルトでは、対応付けられない文字は `String#getBytes` がそうするように置き換えられる。
++     entry #char   エンコードできなかった文字
++     entry #encoding   それをエンコードできなかったエンコーディング
++   entry #encoding   このコードページがエンコードに使うエンコーディング。エンコードできることが分かっている
++       型は `Encoding { type CanEncode = true }` である。
++   entry #sanitizer   エンコードできない文字のたびに参照される `EncodingSanitizer`
++   entry #sanitized   別の `EncodingSanitizer` のもとでの同じコードページ
++   entry #Self   このコードページが消費するもの：`Text`
++   entry #Form   このコードページが生成するもの：`Data`
++   entry #encoded   テキストのバイト、またはテキストのストリームから得るバイトのストリーム
++       `encoded(text)` は、解決済みの文字セットで `String#getBytes` を使い、`Text` 全体を一つの `Data` としてエンコードする。
++       `encoded(stream)` は `Chain[Text]` を取って `Chain[Data]` を返し、バッファー一杯分ずつエンコードする。半分ずつが異なるチャンクに入ったサロゲートペアは持ち越されてまとめてエンコードされ、状態を持つエンコーディングは最後に一度フラッシュされ、空のチャンクは出力から除かれる。
++       不正な入力や対応付けられない入力は置き換えられるか、コードページの `EncodingSanitizer` に報告される。厳格な `EncodingSanitizer` は、それを `Codepage.Error` として発生させる。
+
+@ 0 5 0 138fc8d8625833211edf37a0e1c0bbaf
++       バイトをどのエンコーディングとして読むかはスコープにある `Charset` の given で決まり、その選択が暗黙に行われることはない。`import soundness.*` はこれらのどれも持ち込まず、一つを名前でインポートする。
++       それぞれは使用箇所でスコープにある `TextSanitizer` を解決するので、同じ `utf8Charset` が、`strictSanitizer` がインポートされている場所では厳格になり、`skipSanitizer` がインポートされている場所では寛容になる。
+
+@ 0 9 0 1dda4ae744c35904149839a2db4da54c
++   entry .utf8Charset   UTF-8。スコープにあるサニタイザーを伴う
++   entry .utf16Charset   UTF-16。バイトオーダーマークを読み、既定はビッグエンディアン。スコープにあるサニタイザーを伴う
++   entry .utf16LeCharset   UTF-16 リトルエンディアン。スコープにあるサニタイザーを伴う
++   entry .utf16BeCharset   UTF-16 ビッグエンディアン。スコープにあるサニタイザーを伴う
++   entry .asciiCharset   US-ASCII。スコープにあるサニタイザーを伴う
++       `0x7f` を超えるバイトは誤りであり、サニタイザーの指示どおりに扱われる。
++   entry .iso88591Charset   ISO-8859-1（Latin-1）。スコープにあるサニタイザーを伴う
++       どのバイトも有効な Latin-1 の文字なので、サニタイザーが参照されることはないが、ほかの文字セットと同じく、スコープに一つ必要である。
+
+@ 0 5 0 0c97b3626f1d4e1c1543be1670b76195
++   entry .utf16Codepage   UTF-16。バイトオーダーマーク付きのビッグエンディアンで書く
++   entry .utf16LeCodepage   UTF-16 リトルエンディアン。バイトオーダーマークなし
++   entry .utf16BeCodepage   UTF-16 ビッグエンディアン。バイトオーダーマークなし
++   entry .asciiCodepage   US-ASCII。`0x7f` を超える文字は `?` として書く
++   entry .iso88591Codepage   ISO-8859-1（Latin-1）。`0xff` を超える文字は `?` として書く
+
+@ 0 1 0 1bc692221253160f18d8f7ecab39c967
++ entry .encodingSanitizers   エンコードできない文字についてのポリシー。それぞれ名前でインポートする `EncodingSanitizer` の given
+
+% 1 1 0 1ab2e89e538479b9199f81ef40088bc0
+
+@ 0 4 0 055f70e00e9156cf02611047e6f9478c
++       `Codepage` は、エンコーディングが表現できない文字のたびに、召喚された場所のスコープにある `EncodingSanitizer` を参照する。
++       `TextSanitizer` と違って、これは常に利用できる。`EncodingSanitizer` のコンパニオンにあるデフォルトは黙って代替文字に置き換えるので、ここからインポートする必要があるのは厳格にしたいときだけである。
+
+% 2 1 0 0d265841fd66f0660ee65995c72b9c46
+
+% 3 1 0 06005ff627f1186c053afedd24b76537
+
+% 4 1 0 03853ef122c99fb50c5e2b25bfa3e36b
+
+% 0 1 0 0c7b755c69ee0d141ba010d0da8a937c
+
+% 0 1 0 0e6e5d8e1e031ce3087b20699ab0bd3f
+
+% 1 1 0 0c530ade344c65d91c67e27daf40aeaf
+
+% 0 1 0 0baccc87ced1e1611112b9893061fec9
+
+% 1 1 0 01ee8f0601beefb10a5954e97f18f3c5
+
+@ 0 2 0 18d3d243c215bd8109ed481526b17f43
++   entry .strictEncodingSanitizer   エンコードできない文字は `Codepage.Error` を発生させる。`Tactic[Codepage.Error]` が必要である
++   entry .substituteEncodingSanitizer   エンコードできない文字はエンコーディングの代替文字として書かれる。デフォルトを名前で選ぶもの
+
+@ 0 1 0 068c32a217fbcc0805caabeb0770c513
++ entry .EncodingSanitizer   エンコーディングが表現できない文字を `Codepage` がどう扱うか
+
+% 1 1 0 0eb394207208d7b719dec6109c4e1d5d
+
+@ 0 5 0 19d8ad7719c3f5bd16cde99f8119495b
++       `TextSanitizer` のエンコード版である。
++       コードページは、エンコードできない文字のたびに `#unmappable` を呼ぶ。それが戻れば、その文字の位置にエンコーディングの代替文字が書かれる。
++       `#substitutes` が `true` であるインスタンスは決して呼ばれず、置き換えは JDK のエンコーダーに任される。これはデフォルトが取る高速な経路である。
+
+% 0 1 0 14ea65ce9236353e0f565d84047c5f16
+
+@ 0 3 0 0f10f4f4f142417a1415e654ec1b327e
++   entry .substitute   デフォルト。黙って置き換える
++   entry #substitutes   `#unmappable` を呼ばずに、エンコードできない文字を置き換えるかどうか
++   entry #unmappable   エンコードできない文字とエンコーディングを引数に、文字ごとに呼ばれる

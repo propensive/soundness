@@ -1,0 +1,192 @@
+orthant 2 language
+
+@ 0 1 0 051c393d42566eba119e5b64aae230ef
++ # Transições totais
+
+@ 0 8 0 0380acc2c1c669c409574d5022c7634e
++ A segunda regra de ouro, a companheira de tornar
++ [estados impossíveis irrepresentáveis](impossible-states.md): toda operação que leva um valor de
++ um estado a outro deve ser total — definida para toda entrada que possa receber. Quando todos os
++ estados de partida são válidos e toda transição entre eles é total, um programa que começa em um
++ estado correto nunca pode sair de um. A parcialidade — uma operação indefinida para algumas de
++ suas entradas — é a brecha pela qual estados inválidos voltam a entrar, então o Soundness a
++ elimina no design, tipicamente dando a uma operação um tipo de retorno rico o bastante para
++ expressar os casos que ela não conseguiria tratar de outra forma.
+
+@ 0 10 0 17b6a214eb78b1121d83281f08d87667
++ O compilador fiscaliza a totalidade onde quer que lhe seja permitido, e deve ser permitido. Um
++ casamento de padrões que deixa de cobrir um caso é a parcialidade em sua forma mais simples, e o
++ Scala a informa — então os avisos que exigem casamentos exaustivos devem ser ativados e tratados
++ como erros, nunca suprimidos como ruído. Sob esse regime, acrescentar um caso a uma enumeração
++ produz um erro de compilação em todo casamento que não o considerou: o compilador percorre as
++ consequências de uma mudança pelo código, que é exatamente a análise que um programador faria, de
++ outro modo, de memória. Um casamento deliberadamente parcial ainda pode ser expresso — `.absolve`
++ marca a asserção, de forma visível e fácil de encontrar com grep — então a disciplina não custa
++ nada além da parcialidade acidental, que é a que vira bug.
+
+@ 0 1 0 186faf91eec86756167ff2234ad6a710
++ ## Como tornar uma operação total
+
+@ 0 2 0 0f7c1a813497e6b91921a8778bd6ae18
++ Uma operação é parcial quando não tem nada a retornar para algumas de suas entradas. Há três
++ formas honestas de torná-la total, e uma desonesta:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 11cd34bf00dada860d9ffa3b4ec1da02
++ column  Técnica
++ column  Uma entrada indefinida se torna
++ row  alargar o tipo de retorno para admitir a ausência  um `Optional` que é `Unset`
++ row  alargá-lo para admitir a falha  um erro tipado, tratado no local da chamada
++ row  estreitar o tipo de entrada  impossível de passar
++ row  retornar um valor plausível (desonesto)  uma resposta errada que se propaga
+
+% 1 1 0 04ebc07666a7d03b1e4e8030f5006fde
+
+@ 0 2 0 0a7cc2ca1f937e5b1074f693cfade978
++ **Alargar o tipo de retorno para admitir a ausência.** Uma busca que pode não encontrar nada
++ retorna um `Optional`, de modo que “não encontrado” é um valor, e não uma exceção ou um `null`:
+
+% 2 1 0 1e27a3ad23b450a70d81455f0902d3d5
+
+% 3 1 0 136eeee06391e94e12124bd2eb8ef163
+
+% 4 1 0 1eb1be12215045940fcda55cb020b4dc
+
+% 0 1 0 13cadbf6701c1381057c99c4597df9f2
+
+% 0 1 0 1041d81669629afb19bb312d88368372
+
+% 1 1 0 053d737a756613dd089df0355f3b9721
+
+@ 0 2 0 094467dcacc3351001fd37b460f5a1e5
++ **Alargá-lo para admitir a falha.** Onde quem chama deve saber o *porquê*, a operação lança um
++ erro tipado e a resposta é escolhida no local da chamada:
+
+% 2 1 0 149addf7893fb50616946595535e0105
+
+% 3 1 0 1a49b0f846ace2590d31f4cbdc308030
+
+% 4 1 0 0e1b30dbf9d8615b1dae164149c5e9b4
+
+% 0 1 0 0ff2b3869304cefd13b88a89eb9fe0b9
+
+% 1 1 0 1f38698bdca933121d90644d046bac97
+
+@ 0 3 0 02fd346296fe672b0d8854089ae69d7a
++ **Estreitar o tipo de entrada.** O melhor de tudo, onde for possível: se a operação é indefinida
++ para algumas entradas, receba um tipo de entrada que as exclua. `Port` existe justamente para que
++ `connect` não precise ser parcial.
+
+@ 0 3 0 0c3bf664d8bc3615033821d673880749
++ A forma desonesta é retornar um valor plausível para os casos indefinidos — zero, vazio, o
++ primeiro elemento —, o que converte uma falha detectável em uma resposta errada que se propaga.
+
+@ 0 1 0 0716201a1bf874d10e84359af437c926
++ ## A exaustividade como ferramenta de propagação de mudanças
+
+@ 0 2 0 1645cd0a953290680cc933ec113cded0
++ A consequência mais valiosa de tratar avisos de exaustividade como erros não é que os casamentos
++ de hoje estejam completos. É o que acontece amanhã, quando um caso é acrescentado:
+
+% 2 1 0 087ced948740690d0f183b286ae69c26
+
+% 3 1 0 1054819e68b5b56e1cfab6f4be9cfd9d
+
+% 1 1 0 11fbab526cc88d1908b66312e2428bc1
+
+@ 0 1 0 144162adf60bb3700126e9667e75e75a
++   label Ontem
+
+% 1 1 0 1db238813c8893741523d4496e78e115
+
+% 2 1 0 004f6f8d30db98ea1247d8117561101f
+
+% 3 1 0 181540b3ff133c87049bb162330d846a
+
+% 4 1 0 058dacf6b053bbac10e3c9f6064029b3
+
+% 5 1 0 1399081ad157e076174a865f1c60abba
+
+% 1 1 0 0f013ec79b1a40eb11d8f298b69ee2e1
+
+@ 0 1 0 08c3e991d4ce67670566e27a10373c7e
++   label Hoje
+
+% 1 1 0 053be94268513bd70c46f588298eb381
+
+% 2 1 0 1ce289895036543c0d4665ba07d3fc38
+
+% 3 1 0 00b4108b1257bd860cfa120697949318
+
+% 4 1 0 025eae1bb700b67c04dc83b5044a9c09
+
+% 5 1 0 0d72eb09c042ef7d0261ee30083b3a9c
+
+% 0 1 0 0a3988a6d690a31d06d4156ed49e0ec5
+
+% 1 1 0 170184d4a6fd7d170d5258ed1c64e5d1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 4 0 036eb75aa121e08d153665434b4a227e
++ Todo casamento sobre `Connection` que não considerou `Draining` agora deixa de compilar, e o
++ compilador os lista. Essa é exatamente a análise que um programador cuidadoso faria, de outro
++ modo, de memória, em um código que ele talvez não tenha escrito — feita de forma exaustiva, em
++ segundos, a cada build.
+
+@ 0 3 0 13078e2cfa3a6f0211b88f48a041071f
++ É por isso que o aviso deve ser um *erro*. Como aviso, ele é consultivo, e diagnósticos
++ consultivos se acumulam até que ninguém os leia; como erro, ele é uma ferramenta que torna seguro
++ acrescentar um caso.
+
+@ 0 1 0 1cb57f5bd90078ae093730dcd833cd57
++ ## Parcialidade deliberada, marcada
+
+@ 0 3 0 0d24177b9eb217831bfa352a93c93db5
++ Alguns casamentos genuinamente não podem ser exaustivos, em geral porque o compilador não
++ consegue ver um invariante que o código já estabeleceu. Suprimir o aviso esconderia os casos
++ acidentais junto com o deliberado, então, em vez disso, a asserção é marcada:
+
+% 2 1 0 17d758177996e19210f1dbf908b4d30d
+
+% 3 1 0 04c84cbef5319ab9055d474e429d73ef
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 08e467dfc24261961ce28df90932e912
+
+% 0 1 0 0f6feb0aa11db938020f77d8a4c8d410
+
+% 1 1 0 086b0f9fb7d0dbc811f203fd42690c7a
+
+@ 0 4 0 0ef90bbf3427df011fdb039237ae6e8c
++ `absolve` é o `runtimeChecked` do Scala sob um nome que diz o que significa. Ele marca uma única
++ expressão, então nada mais é silenciado; é fácil de encontrar com grep, então toda asserção desse
++ tipo pode ser encontrada e revisada; e é uma afirmação que quem escreve está fazendo, que é
++ exatamente o status que uma asserção assim deve ter.
+
+@ 0 1 0 0844dd3733d39264191e394839efcefa
++ ## Onde a totalidade não é alcançável
+
+@ 0 1 0 11d85fc892e5c591034216e058970788
++ Dois limites, que vale a pena declarar.
+
+@ 0 4 0 1bf77ec00b45c5171c5bb437cb8f07c1
++ **O mundo é parcial.** Abrir um arquivo que existe ainda pode falhar — o disco, as permissões,
++ uma condição de corrida com outro processo. Nenhum tipo de retorno torna isso total; a resposta
++ honesta é um erro tipado, que é a totalidade da *assinatura*, e não da operação.
+
+@ 0 5 0 13b6475dcaf768c70af1931bf991c978
++ **Alguns invariantes superam o sistema de tipos.** Se um hostname é resolvido, se dois valores
++ validados de forma independente são consistentes entre si, se um schema e um documento que foram
++ ambos analisados de fato concordam — essas coisas podem ser verificadas, mas não por construção.
++ A disciplina é fazer a verificação produzir um valor que carregue seu resultado, para que o
++ código a jusante herde a garantia em vez de repetir a verificação.
+
+@ 0 3 0 0f9d9d7ac71c5adc12251665926de193
++ Veja [estados impossíveis](impossible-states.md) para a regra companheira — as duas são inúteis
++ separadas, já que transições totais entre estados sem sentido não preservam nada que valha a pena
++ preservar.

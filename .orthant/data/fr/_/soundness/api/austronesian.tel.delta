@@ -1,0 +1,513 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b8b49a2a021ff5308fb7ad72870f54a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0777a2b74520db161c5f6349cba9564f
++ info
++     toute valeur Scala en `Pojo` neutre vis-à-vis des chargeurs de classes, fait de boîtes du JDK,
++     de chaînes et de tableaux d'objets, et retour
+
+@ 0 8 0 091769c87abba3ed03500d0d501c2ceb
++ detail
++     _Austronesian_ transporte une valeur structurée à travers une frontière que sa classe ne peut
++     pas franchir — vers un autre chargeur de classes, un autre processus, ou un calcul mis en
++     étapes — en l'encodant sous forme de `Pojo` : un arbre construit uniquement à partir des types
++     que partagent tous les contextes JVM, `String`, les primitifs boxés et `Array[Object]`. Un
++     produit devient un tableau de ses champs, une variante une paire de son étiquette et de sa
++     charge utile, une collection un tableau de ses éléments, et un primitif sa propre forme boxée.
++     Le côté récepteur décode par rapport au type qu'il attend, en dérivant le même codec à partir
++     de la même définition : aucun schéma ne voyage donc avec les données.
+
+% 2 1 0 188018541f603ff71814814a19c1e096
+
+% 3 1 0 16775ca7822ece2d1b36e60ee9d0d64f
+
+% 5 1 0 1a0100dae1099ef11d5c5f7084e373ef
+
+% 6 1 0 15d8024e78fdc98d046e3d3f4c83f7ee
+
+% 0 1 0 0a9d721800c0303a1124f1a6a61fafe4
+
+% 0 1 0 19e511027bb6bcd114b5d3c96485b2e1
+
+% 0 1 0 1274fd6ab6d6f571092aa9021a5a8b01
+
+% 1 1 0 0fdd80e794b4ca2a0cc29985677f6929
+
+@ 0 1 0 1508dc7eb8394cc2130421bb041918ec
++     La conversion croît avec la structure de la valeur, une couche du type à la fois :
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+% 0 1 0 06c421a1d9dd28ff0bc45a2dee320aec
+
+% 1 1 0 095c9ddeec80fe7e0004ce16cefe8c23
+
+% 0 1 0 06bef61e13d27143083d080dcf34003d
+
+% 1 1 0 0cc745d0e45c385601c2b5c5e12144f6
+
+% 0 1 0 0b554eff0938c97d0fed9157561912b9
+
+% 1 1 0 14bebd8224a2492a1670ac01c454fcb5
+
+% 0 1 0 06abab8ecfa0276c147810ce479657ab
+
+% 1 1 0 078796ddd7f094361b54fa443008b2b5
+
+% 0 1 0 042919cc89c1a4de053395f59e24ffd5
+
+% 1 1 0 05895d6f448923311a6cbfc16045d829
+
+% 0 1 0 09ef87b5a43b6db4076ed5d3e8262699
+
+% 1 1 0 0ce951b38061b8d115241fce742965f9
+
+% 0 1 0 0353167e8921610f141570c3f600638a
+
+% 1 1 0 12f869f9b87fd5911d6d2f63ea9b3d87
+
+% 0 1 0 03fd9757e0fb00b30a13f4333b10d00d
+
+% 0 1 0 093c7f35ae5bf57906d60a81463d334b
+
+% 0 1 0 1508fe5f66fc060200f1c3832efdfd5f
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 0a6f94ca3a7778ee0b0a36a910a4c50b
++     L'encodage est `pojo`, disponible pour tout type qui est `Encodable in Pojo` : les primitifs,
++     `Text` et `String`, les collections d'éléments encodables, et — par dérivation au moyen de
++     wisteria — tout produit ou somme dont les parties sont encodables. Le décodage est `as[T]` sur
++     un `Pojo`, et lève `Pojo.Error` là où la forme ne correspond pas : il nécessite donc une
++     `Tactic[Pojo.Error]` (par exemple sous `safely` ou `unsafely`). Un type récursif à travers une
++     collection, tel que `case class Tree(value: Text, children: List[Tree])`, se dérive aussi.
+
+@ 0 3 0 11fb6c16f529f34506e9ec8fc5e190ee
++     La bibliothèque a un seul ensemble de sources, `austronesian.core`, et constitue le transport
++     sous-jacent à l'exécution distante de la mise en étapes. `Pojo` et `pojo` sont exportés vers
++     le package parapluie `soundness` ; chaque codec se trouve dans le compagnon de `Pojo`, dans la
++     portée implicite : rien d'autre n'est donc importé.
+
+% 0 1 0 1adca7ac254a1e4d197463810dfe6bfd
+
+% 0 1 0 18b010adecf2d36b00c9efaaef182475
+
+% 0 1 0 1004f83506a2be8513a8e6193b2524a3
+
+@ 0 1 0 03073a13061e052212cb514e10209947
++ entry .Pojo
++   info
++       une valeur sous forme d'arbre composé des seuls types du JDK : chaînes, primitifs boxés
++       et tableaux d'objets
+
+@ 0 6 0 1589930b8c1bfbc918e3652edda3ea6a
++   detail
++       `Pojo` est le type opaque `austronesian.internal.Pojo`, exporté ici. C'est un sous-type
++       d'`Object` dont le type sous-jacent est l'union de `Array[Object]`, `String`,
++       `java.lang.Boolean`, `java.lang.Byte`, `java.lang.Character`, `java.lang.Short`,
++       `java.lang.Integer`, `java.lang.Long`, `java.lang.Float` et `java.lang.Double` : un `Pojo`
++       ne peut donc pas être confondu avec un objet arbitraire et a un sens pour tout chargeur de
++       classes, puisque toutes ces classes viennent du JDK.
+
+@ 2 1 0 0f9d54d275152d5b1f6cf3bd7bbe69a9
++       ```scala
+
+@ 3 1 0 02586693b75929261e6a5303a27390ee
++       import soundness.*
+
+@ 5 1 0 1db9f8795e532fa50a64853de3e79a8d
++       case class Person(name: Text, age: Int)
+
+@ 0 1 0 198e3f863f2dc39113e463a46e16bca9
++       val pojo: Pojo = Person(t"Hamlet", 30).pojo
+
+@ 0 1 0 1c59eed13d307024020a292d4dad51c7
++       unsafely(pojo.as[Person])
+
+@ 1 1 0 0e8bf5d7aa452d681bef27d4f83af1d3
++       ```
+
+@ 0 2 0 1efaddaeb6b8770e1fe54ef7a9abbe09
++       Une valeur devient un `Pojo` avec l'extension `pojo`, et se relit avec `as[T]`, qui lève
++       `Pojo.Error` sur une forme qui ne correspond pas. L'encodage de chaque sorte de valeur :
+
+@ 0 8 0 1c925d699d3e72980eef76b20b9934f0
++       - `Text` et `String` sont le `String`, et `Int`, `Long`, `Float`, `Double`, `Char`,
++         `Boolean` et `Byte` leurs formes boxées.
++       - Une collection (tout `Iterable`, ou une `List`, un `Set` ou une `Sequence`) est un
++         `Array[Object]` des encodages de ses éléments.
++       - Un produit (une case class) est un `Array[Object]` des encodages de ses champs, dans
++         l'ordre de déclaration.
++       - Une somme (un trait scellé ou une énumération) est un tableau à deux éléments formé de
++         l'étiquette de la variante et de l'encodage propre à la variante :
++         `Array("Green", Array())` pour un cas d'énumération sans paramètre.
+
+@ 0 3 0 067dc01b19b6f01007b3cbe1d8dbd4e2
++       Deux `Pojo`s se comparent structurellement avec le `===` de probably, au moyen de l'instance
++       de `Checkable` de `Pojo`, qui compare les tableaux élément par élément là où `==`
++       comparerait leurs identités. `Pojo(value)` enveloppe directement une valeur de l'un des
++       types du JDK permis.
+
+@ 0 1 0 115a6c076cfba6c6133316ddc51f3667
++ entry .pojo
++   info
++       encode une valeur sous forme de `Pojo` neutre vis-à-vis des chargeurs de classes
+
+@ 0 3 0 1acaca11074d36151c1575870cdec180
++   detail
++       Une extension inline sur toute valeur qui est `Encodable in Pojo` : les primitifs, `Text`,
++       `String`, les collections d'éléments encodables, et toute case class, énumération ou trait
++       scellé dont les parties sont encodables, dont le codec est dérivé. L'encodage ne peut pas
++       échouer.
+
+@ 2 1 0 0488f251d41cad9c190cbb03dbb61c7c
++       ```scala
+
+@ 3 1 0 1b327b9b259d79fe0ce40f5657984223
++       import soundness.*
+
+@ 5 1 0 0f1b74118896b3681416a627100cbc20
++       case class Person(name: Text, age: Int)
+
+@ 6 1 0 0b30a8374550b0d7074d38b49cf9b5ee
++       case class Group(persons: List[Person], size: Int)
+
+@ 0 1 0 09158d9ff4ad2d600fc2032c3130fff5
++       Group(List(Person(t"Hamlet", 30)), 1).pojo
+
+@ 0 1 0 1b0b194ad7ed583e048bdab05e61f9c7
++       (List(1L, 99L, 203L): List[Long]).pojo
+
+@ 1 1 0 138b640fa8be4b591b87ee6175bbca5f
++       ```
+
+@ 0 1 0 1f826888a0b0848b050fc873b3cc43ea
++ entry .internal
++   info
++       le type opaque `Pojo`, son compagnon de codecs, et son erreur
+
+% 1 1 0 07f40d269969e960059ee8212f77502a
+
+@ 0 4 0 0d98388e183acbc71641671f077b21f5
++   detail
++       Pas destiné à un usage direct : l'objet contient la définition opaque de `Pojo`, exportée
++       vers le package `austronesian` et vers le package parapluie `soundness`. Son compagnon
++       contient chaque codec : ceux-ci sont donc dans la portée implicite partout où `Pojo` l'est.
+
+@ 0 1 0 04374414ea59c39e0e42676fa3167c9c
++   entry .Pojo
++     info
++         une valeur sous forme d'arbre composé des seuls types du JDK ; voir `austronesian.Pojo`
+
+@ 0 5 0 19018a1e6cc3601518bf45e89c1c70db
++     detail
++         Le type opaque `Pojo <: Object`, et le compagnon contenant sa construction, ses instances
++         d'`Encodable` et de `Decodable` pour les primitifs et les collections, l'extension de
++         décodage `as` et `Pojo.Error`. Les instances dérivées pour les produits et les sommes,
++         ainsi que l'instance de `Checkable`, sont héritées de `Pojo2`.
+
+@ 0 1 0 11ec28da85ef19a909c348776ea91c03
++     entry .apply
++       info
++           enveloppe une chaîne, un primitif boxé ou un tableau d'objets sous forme de `Pojo`
+
+@ 0 2 0 1f617ecba5fbae0901e9c6ae0fac66ea
++       detail
++           Prend une valeur de l'un des types du JDK que permet `Pojo`, et la renvoie inchangée
++           sous forme de `Pojo`. Ne vérifie pas les éléments d'un tableau, qui devraient eux-mêmes
++           être des `Pojo`s.
+
+@ 0 1 0 19289aafa8029c4506c02b5524934fea
++     entry .text
++       info
++           encode `Text` sous forme de son `String`
+
+@ 0 1 0 17ed104b82221a65027f1580fde9a91a
++     entry .string
++       info
++           encode un `String` sous forme de lui-même
+
+@ 0 1 0 1f4d78114a3417ba11ce88b064447e23
++     entry .int
++       info
++           encode un `Int` sous forme de `java.lang.Integer`
+
+@ 0 1 0 1bbfa489042a630e1695e01254f0d5bd
++     entry .long
++       info
++           encode un `Long` sous forme de `java.lang.Long`
+
+@ 0 1 0 0b2a7a6c7c23758119405ae44231ef12
++     entry .float
++       info
++           encode un `Float` sous forme de `java.lang.Float`
+
+@ 0 1 0 030bc8f0e4b7664f1003ee0fcbe6dc34
++     entry .double
++       info
++           encode un `Double` sous forme de `java.lang.Double`
+
+@ 0 1 0 1b92c6b003bf6ad71d5ad30ab638ec78
++     entry .char
++       info
++           encode un `Char` sous forme de `java.lang.Character`
+
+@ 0 1 0 10fc6ae0303a39ea0f2f5c42d1801b7f
++     entry .boolean
++       info
++           encode un `Boolean` sous forme de `java.lang.Boolean`
+
+@ 0 1 0 128f4d1f6975243a0e79420ac4f99924
++     entry .byte
++       info
++           encode un `Byte` sous forme de `java.lang.Byte`
+
+@ 0 1 0 0dcb1d7984090c381356a0e987e45f7a
++     entry .list
++       info
++           encode toute collection `Iterable` d'éléments encodables sous forme de tableau d'objets
+
+@ 0 2 0 1eecea12d35d36630ec7d8347ecd5f72
++       detail
++           Pour toute `collection[element]` dont la `collection` est un sous-type de l'`Iterable`
++           de la bibliothèque standard et dont les éléments sont `Encodable in Pojo`.
+
+@ 0 1 0 039561f7dc66ca420c850ea630e9cd1f
++     entry .listEncodable
++       info
++           encode une `List` de Soundness d'éléments encodables sous forme de tableau d'objets
+
+@ 0 1 0 0a43733930c33c1216649cea0146691b
++     entry .setEncodable
++       info
++           encode un `Set` de Soundness d'éléments encodables sous forme de tableau d'objets
+
+@ 0 1 0 00c3a019edfff65c185c087245f54859
++     entry .seriesEncodable
++       info
++           encode une `Sequence` de Soundness d'éléments encodables sous forme de tableau d'objets
+
+@ 0 2 0 1b1d93fb95e0988e1c9912456ce3dc21
++       detail
++           Les collections propres à Soundness sont opaques et ne se conforment pas à `Iterable` :
++           chacune a donc sa propre instance, qui partage l'implémentation de `.list`.
+
+@ 0 1 0 18b32be5a3acaa2d0990745b0f367cd4
++     entry .text2
++       info
++           décode `Text` à partir d'un `Pojo` contenant un `String`
+
+@ 0 1 0 12f05892364cb9d51b29ee62663ac556
++     entry .string2
++       info
++           décode un `String` à partir d'un `Pojo`
+
+@ 0 1 0 188093cdbfb47b1b1a72e556ff0c5cb6
++     entry .int2
++       info
++           décode un `Int` à partir d'un `Pojo` contenant un `java.lang.Integer`
+
+@ 0 1 0 0116e5f7c7f177d218e8193ee285e813
++     entry .long2
++       info
++           décode un `Long` à partir d'un `Pojo` contenant un `java.lang.Long`
+
+@ 0 1 0 086c82e6ec9370cf03990b390fa56145
++     entry .float2
++       info
++           décode un `Float` à partir d'un `Pojo` contenant un `java.lang.Float`
+
+@ 0 1 0 05f6e945c540314916bdbd3fbf92bc2f
++     entry .double2
++       info
++           décode un `Double` à partir d'un `Pojo` contenant un `java.lang.Double`
+
+@ 0 1 0 0af324e1f89f6a5308fb1b50504086c3
++     entry .char2
++       info
++           décode un `Char` à partir d'un `Pojo` contenant un `java.lang.Character`
+
+@ 0 1 0 162a973e48b7d5bd178ba4b2234b4668
++     entry .boolean2
++       info
++           décode un `Boolean` à partir d'un `Pojo` contenant un `java.lang.Boolean`
+
+@ 0 3 0 09e00a02b218764a0ad34d361d66193e
++       detail
++           Ce décodeur, comme les autres décodeurs de primitifs, convertit sans vérifier : un
++           `Pojo` d'un autre type échoue donc avec une `ClassCastException` plutôt qu'avec une
++           `Pojo.Error` ; seule la forme des tableaux est vérifiée.
+
+@ 0 1 0 0b0adc4a8e6b619e05113c3190703cb2
++     entry .collection
++       info
++           décode une collection `Iterable` à partir d'un tableau d'objets, élément par élément
+
+@ 0 4 0 199f690edd09ae57132531af770bf728
++       detail
++           Pour toute `collection[element]` standard ayant une `Factory`, et nécessitant une
++           `Tactic[Pojo.Error]` lorsque l'instance est résolue ; un `Pojo` qui n'est pas un tableau
++           lève `Pojo.Error`. Le décodeur de l'élément est pris par nom : un type récursif à
++           travers une collection, tel que `case class Tree(value: Text, children: List[Tree])`, se
++           dérive donc.
+
+@ 0 1 0 05b16faf7f6663f31d83fbca73a755f4
++     entry .listDecodable
++       info
++           décode une `List` de Soundness à partir d'un tableau d'objets, en levant `Pojo.Error`
++           sinon
+
+@ 0 1 0 1de7974bc51e922519f6c0ef2f2fca7c
++     entry .setDecodable
++       info
++           décode un `Set` de Soundness à partir d'un tableau d'objets, en levant `Pojo.Error`
++           sinon
+
+@ 0 1 0 1fc16c70587d33a4028541ab67618b2e
++     entry .seriesDecodable
++       info
++           décode une `Sequence` de Soundness à partir d'un tableau d'objets, en levant
++           `Pojo.Error` sinon
+
+@ 0 2 0 09e1bf128099dba916fadc93ab778ba4
++       detail
++           Nécessite une `Tactic[Pojo.Error]` dans la portée lorsqu'il est résolu, et prend le
++           décodeur de l'élément par nom, comme le fait `.collection` : un type récursif se dérive
++           donc.
+
+@ 0 1 0 1bc58ffed1d878330bc5ff0deee1ee41
++     entry .as
++       info
++           décode un `Pojo` en un type choisi par l'appelant
+
+@ 0 3 0 1da22211ed3c606217c49d52f59cc737
++       detail
++           Une extension inline sur `Pojo`, pour tout type qui est `Decodable in Pojo`. Un décodeur
++           de produit ou de somme lève `Pojo.Error` sur une forme qui ne correspond pas, et une
++           étiquette de variante inconnue lève la `Variant.Error` de distillate ; une
++           `Tactic[Pojo.Error]` est nécessaire dans la portée.
+
+@ 0 1 0 136a5f198bdaf3ac1a788e9525f64741
++           ```scala
+
+@ 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
++           import soundness.*
+
+@ 0 1 0 1731d71fd50a08aa19421f43a32417dc
++           enum Color:
+
+@ 0 1 0 1c788b8f2be2eb850fdb78d13387d9b9
++             case Red, Green, Blue
+
+@ 0 1 0 160554dd3e526e051ae3577c4a1522b4
++           unsafely((Color.Green: Color).pojo.as[Color])
+
+@ 0 1 0 02125690b11d560710feb200e65921bd
++           ```
+
+@ 0 1 0 14f76c861c5c3a5007c5ee4f911c310c
++     entry .Error
++       info
++           levée quand un `Pojo` n'a pas la forme du type vers lequel il est décodé
+
+@ 0 5 0 15ffbad93c24e7311c507c99c67e52a6
++       detail
++           Erreur `↯/s.120.1` : _could not deserialize from Java POJO types_. Levée par `as` quand
++           un produit ou une collection est attendu et que le `Pojo` n'est pas un tableau, ou
++           qu'une somme est attendue et qu'il n'est pas un tableau à deux éléments formé d'une
++           étiquette et d'une charge utile. Cela signifie généralement que les deux côtés d'une
++           frontière ne s'accordent pas sur la définition du type.
+
+@ 0 1 0 1c5d0a8cec50eab90009f554d0b1db3c
++   entry .Pojo2
++     info
++         les instances de moindre priorité du compagnon de `Pojo` : codecs dérivés et `Checkable`
+
+@ 0 3 0 1d54bdab81cd032b0d24e5a19a0472d8
++     detail
++         Un trait qu'étend le compagnon de `Pojo` : ses givens sont donc dans la portée implicite
++         partout où `Pojo` l'est, avec une priorité inférieure à celle des givens propres au
++         compagnon.
+
+@ 0 1 0 09a39f00b836232412898fd1f2ca0f59
++     entry #checkable
++       info
++           compare structurellement deux `Pojo`s, pour le `===` de probably
+
+@ 0 2 0 12cdaa24f1f10d851c6fa3e56a05d0e5
++       detail
++           Des tableaux sont égaux quand ils ont la même longueur et des éléments égaux, comparés
++           récursivement ; tout le reste se compare avec `==`.
+
+@ 0 1 0 1b89d3746efce7141e6ab38073cd4ba7
++     entry #encodable
++       info
++           dérive `Encodable in Pojo` pour tout produit ou somme, au moyen de wisteria
+
+@ 0 2 0 00d40910102256b004b2e049e9fb5331
++       detail
++           Un produit s'encode sous forme du tableau de ses champs, une somme sous forme de la
++           paire de l'étiquette et de l'encodage de sa variante.
+
+@ 0 1 0 012603ebb46ed4060b95ddea7e4bc7bc
++     entry #decodable
++       info
++           dérive `Decodable in Pojo` pour tout produit ou somme, au moyen de wisteria
+
+@ 0 1 0 0828a795dda902c013f77bf31ce33251
++       detail
++           L'inverse de `#encodable`, qui lève `Pojo.Error` sur une forme qui ne correspond pas.
+
+@ 0 1 0 1cf67f7da9dc511813a5ccc48b8f664e
++ entry .protointernal
++   info
++       les dérivations wisteria derrière les codecs dérivés de `Pojo`
+
+% 1 1 0 00871abd95ff6d7f1267f1e7c4080d65
+
+@ 0 2 0 0df83ffff5de1ce20eb5fb774382dc1b
++   detail
++       Pas destinées à un usage direct : les dérivations qu'invoquent `Pojo2.encodable` et
++       `Pojo2.decodable`.
+
+@ 0 1 0 03cd1efb9208145d031d449f933a5658
++   entry .EncodableDerivation
++     info
++         dérive `Encodable in Pojo` pour les produits et les sommes
+
+@ 0 1 0 04fbeb3b744bdf591d2cac555b12c542
++     entry .conjunction
++       info
++           un produit sous forme du tableau des encodages de ses champs
+
+@ 0 1 0 073b7fe64f8ab62d0127208d5dbda447
++     entry .disjunction
++       info
++           une somme sous forme d'un tableau à deux éléments formé de l'étiquette et de l'encodage
++           de sa variante
+
+@ 0 1 0 0abeab64b2e8998b0c8ddc0408e5991e
++   entry .DecodableDerivation
++     info
++         dérive `Decodable in Pojo` pour les produits et les sommes
+
+@ 0 1 0 0936d220200bb8fc0226774c74c88d47
++     entry .conjunction
++       info
++           un produit à partir du tableau de ses champs, en levant `Pojo.Error` pour toute autre
++           forme
+
+@ 0 1 0 03009bae0a3e47db0598c18ae71af982
++     entry .disjunction
++       info
++           une somme à partir d'une paire étiquette et charge utile, en levant `Pojo.Error` pour
++           toute autre forme

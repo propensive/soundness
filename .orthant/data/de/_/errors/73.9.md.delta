@@ -1,0 +1,66 @@
+orthant 2 language
+
+% 0 1 0 113a51a0265b242f149c7b4fbd75d0cf
+
+@ 0 1 0 022d53b9c0ce7a0b0463cdcb67b66d38
++ Wird ausgelöst, wenn Aviation einen Zeitstempel-String nicht parsen kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 157653f122d7313214cc2eb4171b21cb
++ Der Zeitstempel-Parser von Aviation erwartet einen Zeitstempel im Stil von ISO 8601.
++ Der Konstruktor hält den fehlerhaften `value` und einen `reason: Reason` fest,
++ der angibt, welcher Schritt des Parsens fehlschlug; die dargestellte Meldung lautet
+
+% 0 1 0 149f699f8a00b67414dcebaad80070a5
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 15942d5a1f413b541d517eb81a1a1b5f
+
+@ 0 2 0 00eeefdae2a273b401010a4cc6a76a0f
++ Die Eingabe entsprach überhaupt nicht dem erwarteten Zeitstempel-Pattern nach
++ ISO 8601.
+
+@ 0 1 0 0a39f76c0f9849071dde88c38d8e251c
++ **Beispiel.** `[↯/s.73.9.1] the time not-a-timestamp could not be parsed because the input did not match the expected timestamp format`
+
+@ 0 2 0 102997522e79412919f3e89f4ed2eb39
++ **Behebung.** Geben Sie den Zeitstempel in der Form nach ISO 8601 an
++ (`YYYY-MM-DD[T ]HH:MM:SS`); bereiten Sie nicht standardisierte Eingaben vorab auf.
+
+% 0 1 0 03e608574f3232ae0a4be5b002480ea7
+
+@ 0 3 0 1f16de59956dbc531d6e9a121dcb8675
++ Die Eingabe entsprach dem Zeitstempel-Pattern, aber eine ihrer numerischen
++ Komponenten ließ sich nicht als Ganzzahl parsen (intern wurde ein `Number.Error`
++ ausgelöst).
+
+@ 0 1 0 0d349958f19f48470f87428053c963b0
++ **Beispiel.** `[↯/s.73.9.2] the time 2024-XX-15T14:30:59 could not be parsed because a numeric component could not be parsed as an integer`
+
+@ 0 2 0 166d3c58c7d41b871ff4db7f31acc6dc
++ **Behebung.** Stellen Sie sicher, dass jede Komponente (Jahr, Monat, Tag, Stunde,
++ Minute, Sekunde) eine einfache dezimale Ganzzahl ist.
+
+% 0 1 0 178c1d9c25626ddb13c59acae65983b8
+
+@ 0 2 0 127e2439b0a3012e0c433e5699c5c650
++ Eine Datums- oder Zeitkomponente lag außerhalb ihres gültigen Bereichs — z. B. Monat
++ 13, Tag 32 oder Stunde 25 (intern wurde ein `Moment.Error` ausgelöst).
+
+@ 0 1 0 00a751945fa005620c40389aff728de8
++ **Beispiel.** `[↯/s.73.9.3] the time 2024-13-15T14:30:59 could not be parsed because a date or time component was outside the valid range`
+
+@ 0 3 0 0ed982eef14ef72d1392930c827c0497
++ **Behebung.** Validieren Sie die Werte der Komponenten vor dem Formatieren,
++ oder berechnen Sie sie aus einem Kalender, der sie auf zulässige
++ Bereiche beschränkt.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1b685d9cf86d9fb51dd03ae5247b6c58
++ - Quelle: `lib/embarcadero/src/containerd/embarcadero.Timestamp.scala`

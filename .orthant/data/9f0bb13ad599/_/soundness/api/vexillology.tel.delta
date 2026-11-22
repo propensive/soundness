@@ -1,0 +1,5 @@
+orthant 2 release
+
+@ 1 0 0 039cbff91af986b716b81adadf48d8a2
++   entry .bits   the flags as their underlying bits, a `B64`: the case of index `n` owns bit `n`
++       Needs no `Enumerable`. A `B64` converts to a `Long` with `.long`.

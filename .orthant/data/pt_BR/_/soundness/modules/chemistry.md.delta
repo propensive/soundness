@@ -1,0 +1,282 @@
+orthant 2 language
+
+@ 0 1 0 0ac964c6ea79e8611c0676681001fa4d
++ ## Química
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 4 0 0d6d3d0c7212c75f07e61e8bc3781f96
++ A [tabela periódica](https://en.wikipedia.org/wiki/Periodic_table), as fórmulas químicas e as
++ equações químicas são modeladas como valores. Todos os 118 elementos estão disponíveis pelos seus
++ símbolos. Os elementos se combinam em moléculas, e as moléculas em fórmulas, com operadores
++ comuns. Uma equação une duas fórmulas com uma seta de reação tipada, e sabe dizer se está
++ balanceada.
+
+@ 0 1 0 06df82e45ad74d22094a21e8e7777be3
++ ### Sobre a notação química
+
+@ 0 4 0 1c5be5334a53791617cf24ac131ba94f
++ A notação química é uma pequena linguagem formal. Uma molécula é uma coleção de átomos, na qual um
++ átomo pode aparecer mais de uma vez, com uma possível carga. Uma fórmula é uma soma de moléculas
++ com coeficientes. Uma equação afirma uma relação entre duas fórmulas, que é direcionada,
++ reversível ou em equilíbrio.
+
+@ 0 2 0 18a374182acd489709bfc978dec6c7eb
++ Escrita como strings, nenhuma dessa estrutura fica disponível. `2H₂ + O₂` são apenas caracteres, e
++ se uma equação está balanceada não é uma pergunta que uma string possa responder.
+
+@ 0 3 0 133dcd40a38c780c133b45fcc84490a4
++ Aqui a estrutura é construída a partir de partes tipadas. As fórmulas são montadas por operadores,
++ e não analisadas a partir de texto. Elas são escritas com subscritos e sobrescritos corretos. E
++ podem ser interrogadas: os dois lados de uma equação são comparados átomo por átomo.
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Tudo vem do pacote `soundness`. O segundo import permite que os exemplos imprimam seus
++ resultados:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 199f7818b30dec3505fd828eed336e39
++ ### Elementos
+
+@ 0 2 0 02eba028e408729d1859f68d8df8279f
++ Todo elemento é um valor em `PeriodicTable`, com seu número atômico, seu símbolo e seu nome. Os
++ elementos também podem ser alcançados por número, ou por símbolo, em [tempo de execução]:
+
+% 2 1 0 069520c723dbcc7c14a9e1a23c4f48c9
+
+% 0 1 0 0050335d536ba0410201356cb03d0027
+
+% 1 1 0 10b4341d76a9de4e081c8134e5cda6b2
+
+% 3 1 0 038d541531dbef29139c466e39dcd0b7
+
+% 4 1 0 1f256957eac7a65306076e7789775c6c
+
+% 5 1 0 166e178eb336ead51364f3a4ada1dd49
+
+% 0 1 0 0226a2183c3315020a62e6badc93746f
+
+% 0 1 0 0a8a749e85583e0e0927ab8a8a4f7efd
+
+% 0 1 0 111f9f23fb2c622801527bed1700ae5b
+
+% 0 1 0 18390ab9d6937bfe027dbc5298ab1e56
+
+% 1 1 0 169841c8894871710f69b01fd95fc7ab
+
+@ 0 2 0 19b13e0bd7bb4cc219b6cc7bff86505e
++ Buscar um elemento pelo número dá um valor [opcional](optional-values.md), já que um número pode
++ não ter elemento.
+
+@ 0 1 0 150972dd9d531cb814b08f0fd3c01eb7
++ ### Moléculas
+
+@ 0 2 0 1c2364abb74cd983015fb2f6ab2f4ffc
++ Os átomos são ligados em uma molécula com `*`, e um átomo repetido recebe seu número como
++ argumento de tipo. Uma molécula é escrita com os subscritos adequados:
+
+% 2 1 0 17a54e1f140a727c011fb293f010f273
+
+% 0 1 0 10227188158730550ebc7db127336f2a
+
+% 1 1 0 10f23883c919c25c15e0d83a19c9808f
+
+% 3 1 0 1468a4d043c6e6110f1be52cc45c01bd
+
+% 4 1 0 1d596266d81f154a09597c4321b6d159
+
+% 5 1 0 0ff47897b3816ebd05cf5f13ade98a17
+
+% 0 1 0 00236d29977178c21c37a85c4f21f907
+
+% 0 1 0 11da4bdc321a2a9a0b8ce7441feaa1e2
+
+% 0 1 0 1131eb54ffb0c6671e674ee7ff98501b
+
+% 1 1 0 1cb99c852dab4f8c0da17d9d029a4256
+
+@ 0 1 0 02811e2b72f4a1ec052241c1448970ca
++ ### Fórmulas e equações
+
+@ 0 2 0 054bc3a547548aff0e8067643e5a1caf
++ Uma molécula com um coeficiente é um termo de uma fórmula. Os termos são somados com `+`, e duas
++ fórmulas são unidas em uma equação com uma seta de reação:
+
+% 2 1 0 01c45b49d610ba2c064f9e923bd09c09
+
+% 0 1 0 0f05a959f60f50951880b6a39474dbfc
+
+% 1 1 0 0acd5e28ee608f6111d847c90c9246af
+
+% 3 1 0 15b4cc4a68fe75fa060fa505ec5254b6
+
+% 4 1 0 1fd1d3e67137bf1e01721b37635e9577
+
+% 5 1 0 107fd8a3878da25d057e70732483f6fb
+
+% 0 1 0 136c54e5e5b7f878073e7029d71efe37
+
+% 1 1 0 0703738eacdd801c00a4652352daec19
+
+@ 0 1 0 19759cf1b34c347617cfdb5e21ffb61f
++ Uma equação sabe se seus dois lados contêm os mesmos átomos:
+
+% 2 1 0 0876aff16e9af0511f32f4c623657c7a
+
+% 3 1 0 1f7f02c5f1a8a5d70e2e10be719c099f
+
+% 4 1 0 1d7f3b7645e0f4910c4e8495f3529ea3
+
+% 0 1 0 189001fb3ca2ccb41e296a0a974550f5
+
+% 0 1 0 154a24df551756b1077964c8666b697f
+
+% 1 1 0 1a51de16e7ec2d7310f165164887db88
+
+@ 0 5 0 0eb19a0c3658eede054d95bc8475f98a
++ Cada lado é uma coleção tipada de átomos, não texto, então o balanceamento é uma verificação real,
++ calculada a partir da estrutura. `atoms` dá essa coleção para qualquer um dos lados. Uma fórmula,
++ assim, informa sua própria composição, como o número de cada elemento em todas as moléculas e
++ coeficientes que contém. É disso que precisa o cálculo de uma massa molar, ou a verificação de uma
++ reação proposta.
+
+@ 0 1 0 0d90904979fb31f80e75c3e977867cef
++ ### As setas de reação
+
+@ 0 1 0 193584fa0b64c5531c5baa9907c861d2
++ Há cinco setas disponíveis. Elas significam coisas diferentes, e não são variantes de estilo:
+
+% 2 1 0 090e58a6b4cc1fde10059d3db2d59162
+
+@ 0 6 0 0e62468bdc7ab6601b3ea3b2662411df
++ column  Seta
++ column  Reação
++ column  Renderizada como
++ row  `-->`  `Reaction.NetForward`, uma reação líquida no sentido direto  `→`
++ row  `<=>`  `Reaction.BothDirections`, uma reação que ocorre nos dois sentidos  `⇄`
++ row  `<~>`  `Reaction.Equilibrium`, uma reação em equilíbrio  `⇋`
+
+% 0 1 0 0c97affb193bbfc00a56e833235f295c
+
+% 0 1 0 17459d55bc7ffce603d88fa3abd63d91
+
+% 1 1 0 0d2b11008b7bc96a0d976d8f4a470757
+
+@ 0 1 0 1330deefb97a31511cfa0a6c0fec14c9
++ A seta que um químico escreve carrega informação, e a equação a preserva.
+
+@ 0 1 0 05c8dc345b1ef01312daa0e12244c86b
++ ### Carga e estado
+
+@ 0 3 0 0b6d973f68a50a3419c8726e2124e114
++ Um íon tem sua carga como parte da molécula. Uma espécie carregada é, portanto, um valor distinto
++ de sua contraparte neutra, e as duas não podem ser confundidas no balanceamento. Uma carga unitária
++ é um prefixo `+` ou `-`, e qualquer outra carga vem de `ion`:
+
+% 2 1 0 0e0276c195e469a4054ebb311a25f17d
+
+% 3 1 0 0e9be5660a3b87e7074651255534452e
+
+% 4 1 0 071b10a197d8ebd8051902beb6a1b55a
+
+% 0 1 0 1476e53fed7e7d1a00111da3f2ccdec5
+
+% 0 1 0 0fa3fd2d5de48f28199d8ab8457595ad
+
+% 0 1 0 191653c05768413113c5e5a910ef3fa9
+
+% 1 1 0 0d562f1d1b8c0d281a03fe4d02e2fd0a
+
+@ 0 3 0 143c71faea2874bc1414bd2f63e6b84f
++ Estes são o cátion sódio, o acetato e o ferro(III). As cargas se somam quando as espécies se
++ combinam, então `+Na*(-Cl)` é neutro. É isso que faz um composto iônico sair correto, sem que sua
++ carga seja declarada separadamente.
+
+@ 0 2 0 1ec2c2523696f7c9118b0d47e946bc71
++ Uma molécula também pode registrar seu estado físico. Há quatro estados, cada um escrito como
++ sufixo:
+
+% 2 1 0 1cbf5920cb625d3813f00634dec7d62f
+
+@ 0 7 0 1ef8bf8f36c71cb61dc786757747d501
++ column  Estado
++ column  Caso
++ column  Renderizado como
++ row  sólido  `PhysicalState.Solid`  `(s)`
++ row  líquido  `PhysicalState.Liquid`  `(l)`
++ row  gasoso  `PhysicalState.Gas`  `(g)`
++ row  aquoso  `PhysicalState.Aqueous`  `(aq)`
+
+% 1 1 0 1ef4a6c54c787b0c18a7bc32c1f24fdd
+
+@ 0 3 0 0e96ff57282c2c261e0dcd949204c37d
++ O estado físico é uma anotação, não parte da identidade. Ele afeta como uma espécie é escrita, não
++ o que ela é, então `H₂O(aq)` e `H₂O(l)` descrevem a mesma substância em condições diferentes.
++ `inState` aplica um estado, e os parênteses importam:
+
+% 2 1 0 1d0f9954de680b94019327f191730185
+
+% 3 1 0 1d3b48ee5bc5148c0e4a0fcd2037aeab
+
+% 4 1 0 04109bc986172cf41e1bc4abf715e295
+
+% 0 1 0 128d45a247924e530f1d56f03dd89f9f
+
+% 0 1 0 1274d11eee9e6e5715512c7c6845e657
+
+% 0 1 0 1aceb9ad34badde10522c9d91f6f746b
+
+% 1 1 0 15e1e2540ec93f751fc380f9936e7f90
+
+@ 0 4 0 0c1dcd12525d183e07b61cdb54b11c24
++ Combinar duas moléculas deixa o estado do resultado indefinido, porque o estado de uma combinação
++ não pode ser inferido dos estados de suas partes. Um estado aplicado antes de formar uma ligação
++ é, portanto, descartado pela ligação, como mostra a última linha, e um estado precisa ser aplicado
++ à espécie já pronta.
+
+@ 0 1 0 0c4223193c188e1514066e1f62323267
++ ### Blocos de construção
+
+@ 0 2 0 15c6f0b1eb74dd3d151bb9ec3dc028cf
++ `Molecular` e `Formulable` são as duas [classes de tipos][classe de tipos] sobre as quais os
++ operadores são definidos:
+
+% 2 1 0 17e2a492536323180bb0ad53f2c35c7f
+
+@ 0 11 0 13e491c8b991b8df0d3df5cab9b11a43
++ column  Operação
++ column  Definida em
++ column  Produz
++ row  `a*b`  `Molecular`  uma molécula que liga os átomos de ambos
++ row  `a*n`  `Molecular`  um termo de fórmula com coeficiente `n`
++ row  `a**n`  `Molecular`  uma molécula com todos os átomos e a carga multiplicados por `n`
++ row  `+a`, `-a`  `Molecular`  a molécula com sua carga aumentada ou diminuída em um
++ row  `a.ion(n)`  `Molecular`  a molécula com carga `n`
++ row  `a.inState(state)`  `Molecular`  a molécula em um estado físico
++ row  `a + b`  `Formulable`  uma fórmula que contém ambos
++ row  `a --> b`, e as outras setas  `Formulable`  uma equação
+
+% 1 1 0 1045429ededd829d02fb70ade4ac02fe
+
+@ 0 3 0 0f4273818593e7eb086b74f9a75adcbe
++ Um elemento é molecular, uma molécula é molecular, e ambos são formuláveis. É por isso que um
++ elemento, uma molécula e uma fórmula completa podem aparecer em qualquer lado de uma equação, sem
++ conversão.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 5 0 0b4cf9fa29e66d450a03b6c9e5293a90
++ - [Grandezas](quantities.md) descreve as unidades, como mols e gramas, em que as quantidades
++   químicas são medidas.
++ - [Notação matemática](mathematical-markup.md) compõe fórmulas de outro tipo.
++ - [Números](numbers.md#overloading-the-operators) explica como `*` e `+` são definidos para tipos
++   que não são números.

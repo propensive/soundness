@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 01b6f26f4940c5060e6022578b446b79
++ # `↯/s.27.1` — Valeur `S16` inférieure à `Short.MinValue`
+
+@ 0 2 0 12238f9265d48ed1094a12e04b8f5d77
++ Levée à la compilation par la macro `s16` d'Hypotenuse lorsque la valeur est
++ inférieure à `-32768`.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 1 0 1477d9946e5b53760dbb52a5e435205c
++ Un `S16` (entier signé sur 16 bits) ne peut pas représenter de valeurs inférieures à `Short.MinValue`.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 08c7964dca0876621bf7ea85b680b625
+
+% 1 1 0 1de36d13fc092534032634b37c29f346
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 1 0 17ccb540fc7f5b6b11388cd4d30a95b3
++ Fournissez une valeur comprise dans l'intervalle `-32768`–`32767`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 1670b5a1d401440e1b2b356791d92b91
++ - Les autres erreurs de littéraux entiers : [Familles](README.md#families)
++ - Source : `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

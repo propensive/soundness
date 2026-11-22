@@ -1,0 +1,8 @@
+orthant 2 release
+
+@ 0 1 0 0b21700064a32ba814d0e293a538be8f
++ Thirty-six currencies are defined, each as a value which constructs amounts. An amount is
+
+@ 0 3 0 05cb60c0250da1a715ac682b3cbc86b3
++ Tax is rounded to the nearest minor unit, with a half rounded up. Twenty per cent of £2.94 is
++ £0.588, which is charged as £0.59:

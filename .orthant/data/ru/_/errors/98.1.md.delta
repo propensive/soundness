@@ -1,0 +1,75 @@
+orthant 2 language
+
+% 0 1 0 186cff16263a518e01138ac682ce1a1f
+
+@ 0 2 0 1766c53c45f026411129851c6e9759a1
++ Порождается, когда Surveillance не может зарегистрировать путь в средстве наблюдения за
++ файловой системой операционной системы.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Причина
+
+@ 0 3 0 195a818b088df9050e8f6a673a5a68e9
++ Surveillance оборачивает API `WatchService` из JDK. Регистрация может не удаться по
++ нескольким разным причинам; конструктор принимает
++ `reason: Reason`. Отображаемое сообщение — `the path could not
+
+% 0 1 0 0449712a8a243b4310bf375b9057f2d2
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Варианты
+
+% 0 1 0 0e5c125ebe6b2f4906e059e60668b48a
+
+@ 0 2 0 00fee907e2b5296d1c5f466b08ba9b13
++ Превышено ограничение операционной системы на число наблюдений inotify (или их аналога)
++ для процесса или пользователя.
+
+@ 0 1 0 080d05d54dbe25b51a6408fb5c28bdd6
++ **Пример.** `[↯/s.98.1.1] the path could not be watched because the operating system's limit on watched paths has been exceeded`
+
+@ 0 2 0 0a99e6a81654852a0d90cbc3130155d1
++ **Решение.** Сократите число наблюдаемых путей или увеличьте ограничение ОС
++ (например, `fs.inotify.max_user_watches` в Linux).
+
+% 0 1 0 1201c3c42f89d0860d6a773d8ccc0026
+
+@ 0 1 0 1c7f0581728b971f13ef812fd1a2f4b0
++ Путь, переданный `watch`, не существует.
+
+@ 0 1 0 1b0272c36394525b08ecc7de5401bbd9
++ **Пример.** `[↯/s.98.1.2] the path could not be watched because the path does not exist`
+
+@ 0 2 0 011c45aef422c10203c919467df06560
++ **Решение.** Проверьте путь перед наблюдением или сначала создайте его.
+
+% 0 1 0 131d41785ac560d6166bbadacf076f32
+
+@ 0 2 0 136f086894ae32680f226a570bf2428c
++ `WatchService` из JDK регистрирует только каталоги; переданный путь был обычным файлом или
++ другим элементом.
+
+@ 0 1 0 19ca71dd59d80e1d0ae71ca1a7e2def5
++ **Пример.** `[↯/s.98.1.3] the path could not be watched because the path is not a directory`
+
+@ 0 3 0 1134e5bf46d9f3f806777debfab027c0
++ **Решение.** Наблюдайте за родительским каталогом и фильтруйте события по имени файла
++ (расширение `watch` в Surveillance делает это, если ему передан путь к файлу).
+
+% 0 1 0 125406178472b99005cd216c4c0a5cd9
+
+@ 0 1 0 1acf71bda4da1ec8074d77615ddd6d45
++ У текущего пользователя нет прав на чтение пути.
+
+@ 0 1 0 0baf9cbf4c37c11d1f1da4348e3ec9bd
++ **Пример.** `[↯/s.98.1.4] the path could not be watched because the user does not have permission to watch the path`
+
+@ 0 2 0 17134ae6df1d1f301f5daad3744a7a3e
++ **Решение.** Измените права в файловой системе или запускайте от имени пользователя,
++ который может читать каталог.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## См. также
+
+@ 0 1 0 14074eee90b6d17217292cd2a26cb1be
++ - Исходник: `lib/surveillance/src/core/surveillance.Watch.scala`

@@ -1,0 +1,46 @@
+orthant 2 language
+
+% 0 1 0 00e330ee60ae4afe1c0f8bfc7985e3c3
+
+@ 0 2 0 0b8660f8e3df04db044d694dc7af3b28
++ Kaleidoscope が正規表現リテラルをパースできないときに発生する。
++ 各バリアントが構文上の問題を正確に指し示す。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 0570416fff1ec5601cec0c11ae65af38
++ `r"…"` 正規表現補間子は、コンパイル時にパターンをパースする。
++ パーサーが入力を受け付けられないとき、問題が検出された文字の `index` と、何が期待されていたかを説明する `Reason` を持つ `Regex.Error` を投げる。
++ 組み立てられるメッセージは `the regular expression could not be parsed because $reason at $index` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 16 0 0e78ad915d67804b0db769ed4b9aca02
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.34.1.1`  `UnclosedGroup`  `(` で捕獲グループが開かれたが、`)` で閉じられなかった。  `[↯/s.34.1.1] the regular expression could not be parsed because a capturing group was not closed at 11`  欠けている `)` を加えるか、リテラルの括弧を意図しているなら `(` をエスケープする。
++ row  `↯/s.34.1.2`  `ExpectedGroup`  後に捕獲グループが続く必要がある文脈で抽出子のパターンが使われたが、グループが見つからなかった。  `[↯/s.34.1.2] the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0`  パターンの抽出される部分を `(…)` で囲む。
++ row  `↯/s.34.1.3`  `BadRepetition`  繰り返しの範囲 `{n,m}` が `m < n` である。  `[↯/s.34.1.3] the regular expression could not be parsed because the maximum number of repetitions is less than the minimum at 5`  上下限を入れ替えるか、上限が不要なら `{n,}` を使う。
++ row  `↯/s.34.1.4`  `Uncapturable`  捕獲グループが繰り返しのグループの中に入れ子になっており、曖昧さなく抽出できない。  `[↯/s.34.1.4] the regular expression could not be parsed because a capturing group inside a repeating group can not be extracted at 7`  非捕獲グループ `(?:…)` に切り替えて捕獲を取り除くか、繰り返しが捕獲の外ではなく内側に来るようにパターンを組み直す。
++ row  `↯/s.34.1.5`  `UnexpectedChar`  繰り返しの範囲に属さない文字が現れた。  `[↯/s.34.1.5] the regular expression could not be parsed because the repetition range contained an unexpected character at 9`  `{` と `}` の間には数字と一つのカンマだけを使う。
++ row  `↯/s.34.1.6`  `NotInGroup`  対応する `(` のない `)` が現れた。  `[↯/s.34.1.6] the regular expression could not be parsed because a closing parenthesis was found without a corresponding opening parenthesis at 4`  欠けている `(` を加えるか、リテラルであるべきなら `)` をエスケープするか、余分な閉じ括弧を取り除く。
++ row  `↯/s.34.1.7`  `IncompleteRepetition`  繰り返しの範囲が `{` で開かれたが、`}` で閉じられなかった。  `[↯/s.34.1.7] the regular expression could not be parsed because the repetition range was not closed at 8`  欠けている `}` を加える。
++ row  `↯/s.34.1.8`  `InvalidPattern`  より具体的などのバリアントにも当てはまらない理由で、下層のパーサーがパターンを拒否した。  `[↯/s.34.1.8] the regular expression could not be parsed because the pattern was invalid at 3`  報告されたインデックスの周辺のパターンを見直し、使っている構文について正規表現の構文を確認する。
++ row  `↯/s.34.1.9`  `UnclosedEscape`  パターンが、エスケープする対象のない `\` で終わっている。  `` [↯/s.34.1.9] the regular expression could not be parsed because nothing followed the escape character `\` at 12 ``  末尾のバックスラッシュを取り除くか、それに続くべき文字をエスケープする。
++ row  `↯/s.34.1.10`  `EmptyCharClass`  文字クラス `[…]` が文字を一つも含んでいなかった。  `[↯/s.34.1.10] the regular expression could not be parsed because the character class is empty at 2`  クラスに少なくとも一つの文字を加えるか、空の `[]` を取り除く。
++ row  `↯/s.34.1.11`  `ZeroMaximum`  繰り返しの範囲の最大値がゼロだった。たとえば `{0,0}` や `{0}` である。  `[↯/s.34.1.11] the regular expression could not be parsed because the maximum number of repetitions must be greater than zero at 6`  ゼロより大きい最大値を使うか、決してマッチすべきでないなら繰り返される部分パターンを完全に取り除く。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 1f8561d54f1107fd1037b1c896bbc860
++ - ソース：`lib/kaleidoscope/src/core/kaleidoscope.Regex.scala`

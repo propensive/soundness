@@ -1,0 +1,49 @@
+orthant 2 language
+
+% 0 1 0 063420d5aec240d501c72e4e3d3ae40b
+
+@ 0 1 0 083020eca8c6a5171484f77bf35c81b9
++ Sollevato quando un messaggio o un nome DNS non può essere decodificato, codificato o risolto.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 13b19148fc74d1aa0cba6a567d2aff52
++ Il vocabolario `Dns` di Urticose decodifica i messaggi di trasmissione RFC 1035
++ (`data.as[Dns.Message]`), analizza i nomi dalla loro forma di presentazione (`Dns.Name.parse`),
++ codifica di nuovo i messaggi in byte, risolve i nomi tramite il resolver della piattaforma
++ (`Dns.resolve`) e, in coaxial, scambia query con un nameserver. Il messaggio è
++ `the DNS message is not valid because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 18 0 01822b2cf49446141e6b21f0e15173a7
++ column  Codice
++ column  Motivo
++ column  Significato
++ column  Messaggio
++ column  Soluzione
++ row  `↯/s.100.1.1`  `Truncated`  Il messaggio è terminato all'interno di un campo: un'intestazione, un nome, una domanda o i dati di un record.  `[↯/s.100.1.1] the DNS message is not valid because the message ends at offset 12, inside a field`  Verificare che l'intero datagramma sia stato ricevuto; una risposta UDP più lunga del buffer di ricezione viene troncata, quindi si aumenti la dimensione del buffer (`Socket.Option.DatagramSize`) o si riprovi su TCP.
++ row  `↯/s.100.1.2`  `BadPointer`  Un nome compresso punta in avanti, a sé stesso, o oltre la fine del messaggio. RFC 1035 ammette un puntatore solo verso un'occorrenza *precedente* di un nome.  `[↯/s.100.1.2] the DNS message is not valid because the name pointer at offset 12 points forward`  La compressione del mittente è difettosa; il messaggio non può essere letto.
++ row  `↯/s.100.1.3`  `BadLabel`  Un byte di etichetta usa uno dei tipi di etichetta riservati (`0x40` o `0x80`) anziché una lunghezza o un puntatore.  `[↯/s.100.1.3] the DNS message is not valid because the label at offset 20 has unsupported type 64`  I tipi di etichetta estesi non sono supportati; il messaggio non può essere letto.
++ row  `↯/s.100.1.4`  `LongLabel`  Un'etichetta supera i 63 ottetti di UTF-8. Viene verificato quando si costruisce un nome (`Dns.Name(…)`, `Dns.Name.parse`, `+`, `prefix`), in modo che la codifica di un messaggio sia totale.  `[↯/s.100.1.4] the DNS message is not valid because the label aaaa… is longer than 63 octets`  Accorciare l'etichetta; un nome di istanza DNS-SD è limitato a 63 byte di UTF-8.
++ row  `↯/s.100.1.5`  `LongName`  Le etichette di un nome, con i loro byte di lunghezza e il terminatore, superano i 255 ottetti.  `[↯/s.100.1.5] the DNS message is not valid because the name a.b.c… is longer than 255 octets`  Accorciare il nome.
++ row  `↯/s.100.1.6`  `EmptyLabel`  Un nome in forma di presentazione contiene un'etichetta vuota, come `a..b` o `.a`.  `[↯/s.100.1.6] the DNS message is not valid because the name a..b contains an empty label`  Rimuovere il punto doppio o iniziale; un punto *finale* è ammesso e indica la radice.
++ row  `↯/s.100.1.7`  `BadEscape`  Una barra rovesciata in un nome in forma di presentazione non è seguita da un carattere o da tre cifre decimali nell'intervallo 0–255.  `[↯/s.100.1.7] the DNS message is not valid because the name a\9b contains a malformed escape sequence`  Scrivere una barra rovesciata letterale come `\\`, un punto letterale come `\.`, e un codice di carattere arbitrario come `\DDD`.
++ row  `↯/s.100.1.8`  `BadRdata`  La lunghezza dei dati di un record non concorda con il suo corpo tipizzato: un record `A` che non è di quattro byte, un `AAAA` che non è di sedici, un nome o campi `SRV` che oltrepassano la lunghezza dichiarata.  `[↯/s.100.1.8] the DNS message is not valid because the A record data at offset 40 is malformed`  Il record del mittente è malformato; il messaggio non può essere letto.
++ row  `↯/s.100.1.9`  `LongString`  Una character-string `TXT` supera i 255 ottetti; viene verificato quando si costruisce `Dns.Rdata.Txt`.  `[↯/s.100.1.9] the DNS message is not valid because a character-string of 300 octets exceeds 255`  Suddividere un contenuto `TXT` lungo in più stringhe.
++ row  `↯/s.100.1.10`  `Trailing`  Restano dei byte dopo l'ultima sezione del messaggio.  `[↯/s.100.1.10] the DNS message is not valid because the message has trailing bytes from offset 60`  Decodificare esattamente i dati di un solo datagramma.
++ row  `↯/s.100.1.11`  `Unresolved`  `Dns.resolve` non è riuscito a risolvere il nome tramite il resolver della piattaforma.  `[↯/s.100.1.11] the DNS message is not valid because the name nonexistent.example could not be resolved`  Verificare il nome e la configurazione DNS della macchina.
++ row  `↯/s.100.1.12`  `Timeout`  Nessuna risposta a una query è arrivata prima del timeout.  `[↯/s.100.1.12] the DNS message is not valid because no response arrived before the timeout`  Verificare che il nameserver sia raggiungibile, o allungare `Socket.Option.Timeout`.
++ row  `↯/s.100.1.13`  `Mismatch`  L'ID o la domanda di una risposta non corrisponde alla query per cui è stata ricevuta.  `[↯/s.100.1.13] the DNS message is not valid because the response with ID 4660 does not answer the query`  È stato ricevuto un datagramma estraneo o contraffatto; riprovare la query.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 0342e1cea7d43c5f105848baa2788885
++ - Sorgente: `lib/urticose/src/dns/urticose.Dns.scala`

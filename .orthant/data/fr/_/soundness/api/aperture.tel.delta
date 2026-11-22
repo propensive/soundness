@@ -1,0 +1,1062 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a2592a6fec741bb0c121348eb0ba60d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 135d707e598580ba1870dcfa7148b0f1
++ info
++     accès délimité aux ressources : `open`, `create`, `archive` et `session`, les modes étant
++     des droits portés par le type de la poignée
+
+@ 0 6 0 09421e28eb27e9471d302da228951967
++ detail
++     _Aperture_ nomme un motif récurrent dans Soundness : une valeur dit *où* se trouve quelque
++     chose — un chemin, une URL, une référence en mémoire — et accéder à son contenu est un acte
++     distinct et **délimité**. Un fichier est ouvert pour être lu en flux, un répertoire comme
++     racine confinée, un dépôt Git pour lire ses refs, une URL pour une session de requêtes ;
++     dans chaque cas, une poignée est prêtée à un bloc, et la fin du bloc marque la fin de
++     l'accès.
+
+@ 0 2 0 18b8db6668f313b216ece9068abb53b3
++     La bibliothèque définit les classes de types derrière quatre verbes, ainsi que les méthodes
++     d'extension qui les invoquent sur n'importe quelle valeur :
+
+@ 0 9 0 06d946103fab05080174051637276594
++     - `open[Form](mode, flags*)`, par `Openable` : l'accès à quelque chose qui existe, avec un
++       `Mode` (`Read`, `Write`, `Exclusive` et leurs combinaisons par `&`) dont les `Grant` sont
++       portés par le type de la poignée, de sorte qu'une écriture par une poignée en lecture
++       seule ne compile pas ;
++     - `create[Form](flags*)`, par `Creatable` : faire exister quelque chose, soit vide, soit en
++       le composant dans une portée qui valide le résultat lorsque le bloc se termine ;
++     - `archive[Form](flags*)`, par `Archivable` : rassembler le contenu de quelque chose dans
++       une valeur d'archive en mémoire ;
++     - `session`, par `Sessional` : une interaction vivante — une connexion, un compilateur
++       chaud, un navigateur — prêtée à un bloc et libérée lorsqu'il se termine.
+
+% 2 1 0 0556ac6c127246f71a8581adaec93966
+
+% 3 1 0 1e785c348084f90b00abfd7d85d26248
+
+% 4 1 0 081a50ccf822248e1908aa7c07eba1d4
+
+% 5 1 0 1fd73833e65f36bf0d333e77e114fb76
+
+% 6 1 0 13af1eba1dde389f03b3086ef6dc2643
+
+% 7 1 0 1aa88a439542a1f30d751191ed2b78f3
+
+% 8 1 0 08f34d97ff165925168f69dd2e3ff052
+
+% 9 1 0 07cf35a107374e4b1f7404c9c1aaabe4
+
+% 10 1 0 13c7f47fb152741812910f23cbc1e112
+
+% 0 1 0 0e1e2392ad24e5291dac8f353b309eaf
+
+% 2 1 0 0b5407e2399ebfe2043e4e51bdeb6a3f
+
+% 0 1 0 03fea899de0394b717fe66a61cd4b9b1
+
+% 0 1 0 076647ca23db91c51d9cdcc255b11ce3
+
+% 1 1 0 073ec21fe327486a18af2ab2d625be14
+
+@ 0 7 0 1d22d298db8293e71138b5e7a5a0071f
++     La *forme* — ce *en tant que* quoi la cible est ouverte, créée ou archivée — est un
++     argument de type, car une même cible peut avoir plusieurs instances : un chemin s'ouvre en
++     tant que `File`, `Directory`, `Zip` ou `Pdf`. Lorsqu'une cible a exactement une instance,
++     la forme peut être omise ; s'il y en a plusieurs, l'erreur d'ambiguïté liste les
++     possibilités. Les indicateurs qui suivent le mode sont du type `Operand` propre à l'instance :
++     ils sont donc spécifiques à ce qui est ouvert, et un indicateur hors de propos ne passe pas la
++     vérification des types. Chaque instance s'écrit dans le style prépositionnel,
++     `target is Openable in Form by Flag to Handle`.
+
+@ 0 3 0 1e13c6b76dacc9350c89d78c05b570e0
++     Les poignées sont des capacités, confinées à leur bloc par le contrôle des captures : ni
++     une poignée, ni une closure qui la capture, ni une collection qui la contient ne peut être
++     le résultat du bloc. `Stale` est l'idée complémentaire pour les valeurs lues *à travers*
++     une poignée à partir d'un état que la poignée ne possède pas.
+
+@ 0 5 0 18b87c5b6cf40a240dbb36ea8dfa1fe8
++     Aperture ne dépend que de `prepositional` ; elle se situe donc sous toutes les
++     bibliothèques qui fournissent des instances : galilei (fichiers, répertoires, espace
++     temporaire), octogenarian (`Git.Repo`, `Git.Worktree`), bitumen et zeppelin (archives),
++     facsimile (documents PDF), telekinesis et coaxial (sessions), et d'autres. Elle a un seul
++     ensemble de sources, `aperture.core`, pour toutes les plateformes, et tout est exporté vers
++     le package parapluie `soundness`.
+
+% 0 1 0 181978ce8813533c0eb06e7e297d768c
+
+% 0 1 0 05f3b958add35e9d1abfebc16b3b4bb6
+
+% 0 1 0 16b63a78e1b0467717697dc8df6d1722
+
+% 0 1 0 129261cde6e86a57124d0d9917fdd0b2
+
+% 0 1 0 02c8b4a252ae08bc12ef30e18c26c9db
+
+% 0 1 0 0737af66c950417e1a9a75b522a7ca77
+
+@ 0 1 0 1b58c1e4deea7932118db4cc21336d79
++ entry .Openable
++   info
++       une classe de types pour les cibles qui peuvent être ouvertes dans une forme, en prêtant à
++       un bloc une poignée dotée de droits
+
+@ 0 6 0 140c0da99a90e07a13d815ee2fae4962
++   detail
++       Une instance s'écrit `target is Openable in Form by Flag to Handle` : `Self` est la cible
++       (un chemin, une référence), `Form` ce en tant que quoi elle est ouverte, `Operand` le type
++       d'indicateur admissible pour ce couple, et `Result` la poignée. L'unique méthode de
++       l'instance, `#open`, reçoit la cible, le `Mode` demandé par l'appelant et les indicateurs,
++       et exécute le bloc avec une poignée de type `Result & Granting[grants]`, où `grants` est le
++       `Grants` du mode.
+
+@ 0 1 0 08c6a22a2868bac80a8e8fa16023feb9
++       Les utilisateurs l'appellent par l'extension `open`, jamais directement :
+
+% 2 1 0 0d2044604667e4bb126c612751500eab
+
+% 3 1 0 0a51ca518da38185013f5eb69ecaff46
+
+% 4 1 0 15da92635f98091800b9612eef66badc
+
+% 5 1 0 0c08f9a1f438c20b172d832bedd721d7
+
+% 6 1 0 1415db7bd8861cda1844cac230287f3e
+
+% 7 1 0 0156216c95035b8a0da95a4ed8714fc8
+
+% 8 1 0 0331eba7a03b995b1bdfe5370e8eb9ca
+
+% 9 1 0 162f0ea68201eec1123600d2a91e30a1
+
+% 10 1 0 0e1fbeef8e76dcfa1b4d83e2b0070ae1
+
+% 12 1 0 08d4d8f4d7146ddb1ec58d3d5696ebb8
+
+% 0 1 0 0819a788a3d64918092d6661a67f2ef2
+
+% 0 1 0 0b8917a87469bcb5186576c656c72dca
+
+% 1 1 0 10770fbb42383d3c172bbbac62c17d7d
+
+@ 0 4 0 1c9ab85ea22966981cd9d2734bfddc25
++       Les opérations d'une instance sur la poignée sont des méthodes d'extension conditionnées
++       par les droits, comme
++       `extension (handle: (DocHandle & Granting[Grant.Write])^) def append(…)` : le mode choisi
++       au point d'appel décide donc de ce qui compile à l'intérieur du bloc. Une instance traduit
++       le mode dans les termes propres à son backend en interrogeant `mode.atoms`
++       (`mode.atoms.has(Read)`).
+
+@ 0 4 0 131fb82c842d42460e0ce37fa155f236
++       Les instances devraient être des classes nommées plutôt que des instances anonymes
++       `given … = new Openable:` : une sous-classe anonyme rafraîchit le type de capacité de la
++       poignée dans le membre `Result` inféré, et la poignée du bloc ne passe alors plus la
++       vérification des types face aux méthodes d'extension conditionnées par elle.
+
+% 1 1 0 1ee0643211de745a035a97ced2b37e8e
+
+% 1 1 0 098d16432d684efa05e81acf7b78e0df
+
+% 2 1 0 0c7cba514165d44c0100e9e7d3d1014e
+
+% 1 1 0 14887555a12e7c6d0c6770c4ba14cd63
+
+@ 0 1 0 19a3e18ad36826ac09180fe2a2430c6b
++   entry #open
++     info
++         ouvre une cible dans un mode, avec des indicateurs, et exécute un bloc avec la poignée
++         dotée de droits
+
+@ 0 4 0 178eb9523a29228e152ba11c1efdf54a
++     detail
++         `open(value, mode, flags)(block)` : l'implémentation que fournit une instance. Le bloc
++         prend la poignée `(Result & Granting[grants])^` comme paramètre contextuel, et son
++         résultat est renvoyé une fois que l'instance a fermé ce qu'elle a ouvert. Appelée par
++         `Opener#apply` ; le code utilisateur écrit plutôt `value.open[Form](mode, flags*)`.
+
+@ 0 1 0 0a12cab23ad351220e82c453e6a7ad08
++ entry .Opener
++   info
++       l'applicateur que renvoie `open[Form]`, qui prend un mode optionnel, les indicateurs et le
++       bloc
+
+@ 0 5 0 0643405cc4a6d4280b12199b846538aa
++   detail
++       `value.open[Form]` résout l'instance `Openable` à partir de la seule forme et renvoie un
++       `Opener` ; son `#apply` surchargé prend ensuite les arguments. Les deux étapes sont
++       délibérées : les méthodes d'extension surchargées ne se résolvent pas à travers plusieurs
++       listes de paramètres, et l'applicateur est donc l'endroit où le mode optionnel peut être
++       surchargé sans risque.
+
+% 2 1 0 15c28de2528e0b94028be9c3f3743de2
+
+% 3 1 0 123f7705c23e5bd7005ea34bc459d8ca
+
+% 4 1 0 1793c93ffa7616a7002fb87c3875f321
+
+% 5 1 0 088b4191947eb00c157cb78ffd4e1b14
+
+% 6 1 0 1327060ce2b7d53b1e114ec7dd4e2809
+
+% 7 1 0 0d605b06948836b5084ffa69a7cc9044
+
+% 8 1 0 12b77035df6a122f19fb5f93888b238b
+
+% 9 1 0 1d85410a067e524c0482b809368a5d73
+
+% 10 1 0 1af0753962c5ca3316e02580222a9dae
+
+% 0 1 0 1efc2c2a82007caf058a8cdc4da418dd
+
+% 0 1 0 03a4a480e578b88215749cf1b1bfdd47
+
+% 0 1 0 0cd66392481b732a193944ababe3156c
+
+% 1 1 0 1fb94de29319005901cf39f49b73dd03
+
+@ 0 2 0 1f7f462dd2c71a07069098773cfca30a
++       Le champ `#openable` est `tracked`, de sorte que les membres `Self`, `Operand` et `Result`
++       de l'instance restent précis dans les types de `#apply`.
+
+% 1 1 0 1c9306a31fa36cb91bfc5d49b668b68f
+
+% 1 1 0 12f7033b964ee2481a8bc8b5ef885f62
+
+@ 0 1 0 1bb0795e63198bab042db4713ac4d04a
++   entry #openable
++     info
++         l'instance `Openable` résolue par la forme
+
+@ 0 1 0 1421c3e876dd8a3e06d0112232ea0ca6
++   entry #value
++     info
++         la cible à ouvrir
+
+@ 0 1 0 0d18bdbc2c87c79007616fcb2da1ffc4
++   entry #apply
++     info
++         ouvre la cible, en lecture seule par défaut ou dans le mode donné, et exécute le bloc
+
+@ 0 4 0 0869fb91ff1f32951a8f31e59ce3fd91
++     detail
++         Deux surcharges. `apply(flags*)(block)` ouvre avec le mode `Read`, de sorte que la poignée
++         est `Granting[Grant.Read]` ; `apply(mode, flags*)(block)` ouvre avec le mode donné, de
++         sorte que la poignée accorde exactement `mode.Grants`. Les indicateurs sont du type
++         `Operand` de l'instance et suivent le mode. La poignée est le paramètre contextuel du bloc
++         (`handle ?=> …`).
+
+@ 0 1 0 0defabb207e604351eae1b426f94cba5
++ entry .open
++   info
++       ouvre une valeur dans une forme : `path.open[File](Read & Write) { handle ?=> … }`
+
+@ 0 5 0 08de2487935edc1f0fe5377ad08cedd4
++   detail
++       Une extension sur toute valeur qui possède une instance `Openable` dans la forme nommée.
++       Elle renvoie un `Opener`, dont l'`apply` prend un `Mode` optionnel (par défaut `Read`), puis
++       des indicateurs du type `Operand` de l'instance, puis un bloc qui reçoit la poignée comme
++       paramètre contextuel.
+
+@ 0 1 0 059b81a56e393b041bca4c94618c5d04
++       Le mode choisi décide du type de la poignée, et donc de celles de ses opérations qui
++       compilent :
+
+% 2 1 0 11c287423517fb591b121fab41113180
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 0e746141282b3f47186118d3bf65966f
+
+% 1 1 0 114eeadb6319c5011a73d732b2ecbc0f
+
+% 0 1 0 1e2beb093dbc0d49086946bc0c79e482
+
+% 1 1 0 05405a2b413dd3241fbdb99680e4b6c4
+
+% 0 1 0 1492935231d11c221d05541011d30757
+
+% 1 1 0 00b266260d2a261b0ea453b977a613f4
+
+% 0 1 0 14664edba34bcfd206fd553d0879cc59
+
+% 1 1 0 0099c8f28dfbdb8b093f8aae2211873b
+
+% 0 1 0 0434ae24e518d0c51b60c80dc824d1ae
+
+% 1 1 0 06dcad5e35b7cdc80c84acff7941580e
+
+% 2 1 0 15a080379b852db31dc568b358bb7069
+
+% 1 1 0 076f96543a83248217815954211e1ef9
+
+% 0 1 0 005e27f5ed8ce4931d7572c59fbf62bc
+
+% 1 1 0 0d31f09ad698429b10c63339e949f142
+
+% 0 1 0 03ffd1ae2db5bec1197fc8101192d0c7
+
+% 1 1 0 13582012d7bbafe81df14a93bd72641d
+
+% 2 1 0 19b394d2c20554491f76d2c3728014f7
+
+% 1 1 0 1ef8c3d9193837f418ae867faff761f3
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1dd7e42510a6282f05edc3ad40497788
++       La forme peut être omise, `value.open()`, lorsque la cible a exactement une instance
++       `Openable` ; s'il y en a plusieurs, l'erreur d'ambiguïté les liste. La poignée est une
++       capacité confinée au bloc : la renvoyer, renvoyer une closure qui la capture ou une
++       collection qui la contient est une erreur de compilation.
+
+% 1 1 0 1fa0a8f620000a0f057bafeb4d477032
+
+% 1 1 0 055579f6e76350050c472186208a9bfc
+
+% 2 1 0 003839e48112b040089bba938ac55401
+
+@ 0 1 0 09352adfff4166660fb5aa01b48bef1a
++ entry .Mode
++   info
++       les droits qu'accorde un appel à `open`, composables avec `&`
+
+@ 0 6 0 02bd3fab89e9f16c09a3640bf2f5ca63
++   detail
++       Un `Mode` est un choix de droits au niveau des termes, porté par son membre de type
++       `#Grants`, de sorte que le mode écrit au point d'appel détermine le type de la poignée à
++       l'intérieur du bloc. Les modes atomiques sont `Read`, `Write` et `Exclusive` (et des
++       bibliothèques ajoutent les leurs, comme `Shared` de galilei) ; `&` les compose de manière
++       dépendante, si bien que `Read & Write` a `Grants = Grant.Read & Grant.Write` sans macro ni
++       expansion inline.
+
+% 2 1 0 15b1b47702ad57aa1e98d83c8a994381
+
+% 3 1 0 1310770e82431dd51330565696bc6c82
+
+% 0 1 0 106e66a541471e091e2525f61194128a
+
+% 0 1 0 1d1115263c7f27501340ff27baa2af01
+
+% 1 1 0 1c77e9dfad9561161f0159fa6bbc61fa
+
+@ 0 4 0 0f41948c8c1f1694106c0751c3a494ea
++       À l'exécution, un mode composite est identifié par `#atoms`, l'ensemble des modes
++       atomiques à partir desquels il a été construit ; c'est ainsi qu'une instance `Openable`
++       traduit un mode en indicateurs du système d'exploitation. Les modes atomiques sont des
++       valeurs globales comparées par référence : une bibliothèque qui en définit un nouveau en
++       fait donc un `object … extends Mode` ou une `val` de premier niveau.
+
+% 0 1 0 187ef6f98ed613170ad91ebd5608759d
+
+% 0 1 0 1e86cd1bee4ea59600f80d3dad909084
+
+@ 0 1 0 018caa75cbd887ab1a9e246b0e35bda6
++   entry #Grants
++     info
++         les droits que confère ce mode, sous forme d'intersection de sous-types de `Grant`
+
+@ 0 1 0 0e750ecffb94d6d505f9b2dd2777a214
++   entry #atoms
++     info
++         les modes atomiques dont ce mode a été composé
+
+@ 0 3 0 0a42f1219aa475820354bf29e2ea25e0
++     detail
++         Les atomes d'un mode atomique se réduisent à lui-même ; `Read & Write` a
++         `Set(Read, Write)`. Une instance `Openable` teste l'appartenance, `mode.atoms.has(Write)`,
++         pour décider comment ouvrir sa cible.
+
+@ 0 1 0 1aefac30c2d1ae640dc256543e4ef22e
++   entry #&
++     info
++         compose deux modes : l'union de leurs atomes, l'intersection de leurs droits
+
+@ 0 3 0 192a075d5b4d4ae20d396ff643548064
++     detail
++         `Read & Write` est un `Mode granting (Grant.Read & Grant.Write)`. L'opération est
++         associative et, dans ses effets, insensible à l'ordre, puisque les droits comme les atomes
++         sont des ensembles.
+
+@ 0 1 0 10c0867fdae569e9155cc4b3ff11a94c
++ entry .Grant
++   info
++       un marqueur fantôme d'une sorte d'opération permise, composé par intersection
+
+@ 0 5 0 0365ea560c1749230867f1b3c980dd9b
++   detail
++       Les droits ne sont jamais instanciés : ils n'existent que sous forme de types, intégrés par
++       intersection au type d'une poignée au moyen de `Granting`, où ils conditionnent les
++       méthodes d'extension applicables. L'intersection fait de davantage de droits un type plus
++       spécifique : une opération exigeant `Grant.Write` accepte donc toute poignée dont le mode
++       incluait `Write`, quoi qu'il inclût d'autre.
+
+@ 0 2 0 07b3866bba0da1bc092740b8101b6f3f
++       La hiérarchie est ouverte : une bibliothèque qui définit une instance `Openable` peut
++       introduire des droits propres à son domaine en étendant `Grant`, avec un `Mode`
++       correspondant.
+
+% 1 1 0 165d4f9e3955f822152de5c1ebd1899f
+
+% 1 1 0 1ca25bf21318963b1fa29bd434f01876
+
+@ 0 1 0 087797440567ebc00e0a200b661eb7cd
++   entry .Read
++     info
++         le droit de lire le contenu d'une poignée, conféré par le mode `Read`
+
+@ 0 1 0 14e72d5488aec72309086a43f637eb45
++   entry .Write
++     info
++         le droit de modifier le contenu d'une poignée, conféré par le mode `Write`
+
+@ 0 2 0 1dd4bef2c59fc857196c65fb710d0be1
++     detail
++         Écrire n'implique pas lire : une poignée ouverte avec `Write` seul n'a aucune opération de
++         lecture, et `Read & Write` est nécessaire pour les deux.
+
+@ 0 1 0 0421d5fae7037a3b0fb51b366d4e26e6
++   entry .Exclusive
++     info
++         la garantie qu'aucune autre poignée sur la même entité n'est ouverte en même temps
+
+@ 0 3 0 124ac4b102808d340049f65480864f8a
++     detail
++         Conféré par le mode `Exclusive`. La manière dont une instance tient cette garantie la
++         regarde : galilei refuse une ouverture concurrente au sein du programme avec une
++         `Io.Error` dont la raison est `Busy`, et, pour un fichier, prend également un verrou du
++         système d'exploitation.
+
+@ 0 1 0 0ee13a21cebcbe9c12a7bc91e4d0fcc1
++ entry .Granting
++   info
++       intégré à une poignée pour lui attacher les droits sélectionnés par son mode
+
+@ 0 4 0 1227fff3ff1c43bd106f4ef5b2d9da7e
++   detail
++       `Granting[+grants <: Grant]` est le marqueur qu'une instance `Openable` ou `Creatable`
++       intègre à la poignée qu'elle prête, sous la forme `new Handle(…) with Granting[grants] {}`.
++       Il est covariant : une poignée `Granting[Grant.Read & Grant.Write]` est donc aussi un
++       `Granting[Grant.Read]`, et une méthode d'extension écrite pour
++       `(Handle & Granting[Grant.Read])^` s'y applique.
+
+@ 2 1 0 06a2d75b09ced9f01907d33071b70273
++       ```scala
+
+@ 3 1 0 19f953e1fd660b090bd1d6403f5c500d
++       import soundness.*
+
+@ 0 1 0 04450b795ec966da13762aabd671c2c0
++       class Notebook extends caps.ExclusiveCapability:
+
+@ 0 1 0 1bcc2e8eac24b96512647bc710a57f4c
++         def text: Text = t"notes"
+
+@ 0 1 0 0d536401313263dd0e0b7742d4e4b1fc
++       extension (notebook: (Notebook & Granting[Grant.Read])^)
+
+@ 0 1 0 0ffe027661a288781fc29f223c630b84
++         def contents: Text = notebook.text
+
+@ 1 1 0 07e4fed5c970253814f278d42264b858
++       ```
+
+@ 0 1 0 06ea22d28075765b1a52c26c8093e1bc
++ entry .granting
++   info
++       `Mode granting Grant.Read` : raffine le membre `Grants` d'un type pour qu'il soit
++       exactement ces droits
+
+@ 0 3 0 1dac872bad89a92f1aaafcbe728643f7
++   detail
++       Un alias de type infixe : `refined granting grants` est `refined { type Grants = grants }`.
++       Il se lit naturellement dans les signatures, `mode: Mode granting grants`, et c'est le type
++       des modes atomiques : `Read` est un `Mode granting Grant.Read`.
+
+@ 0 1 0 0a54a6b548b98cd70353ce78a9043f37
++ entry .Read
++   info
++       le mode qui accorde la lecture : le mode par défaut de `open`
+
+@ 0 2 0 034775905591059401fd3b1dbe0d9387
++   detail
++       Un `Mode granting Grant.Read`. `value.open[Form]()` sans mode l'utilise ; on le passe
++       explicitement pour le combiner, comme `Read & Write` ou `Read & Exclusive`.
+
+@ 0 1 0 1c6723cba7c0f1271e8e769d3bab2930
++ entry .Write
++   info
++       le mode qui accorde l'écriture, sans la lecture
+
+@ 0 2 0 0aaef4e40d7a441f101a856b629fca5e
++   detail
++       Un `Mode granting Grant.Write`. `Write` seul ne confère pas l'accès en lecture : ouvrez
++       avec `Read & Write` pour une poignée qui lit et écrit à la fois.
+
+@ 2 1 0 1b853e0395275c421bb6b49b994a0ffa
++       ```scala
+
+@ 3 1 0 065a485fa95fe0c01b1ad37af1675c0f
++       import soundness.*
+
+@ 4 1 0 0c4c8e8d65f9d81a0fe95e20334da425
++       import filesystemBackends.javaBaseFilesystem
+
+@ 5 1 0 18f6f41b31b45b9313ed7832fc71f2a2
++       import filesystemOptions.dereferenceSymlinks
+
+@ 6 1 0 0c1abd5c66d76abb1627103c805f7547
++       import pathInterfaces.pathOnLinux
+
+@ 7 1 0 1607c66852931b5e14cdd30ef334b82e
++       import strategies.throwUnsafely
+
+@ 8 1 0 0d67c680fe95fa48001033f2e08d0d41
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 9 1 0 0c361341731a59060ed87b2c6e21a9e9
++       import charsets.utf8Charset
+
+@ 10 1 0 1b538f6a857699671db2ba0ea4870606
++       import codepages.utf8Codepage
+
+@ 0 1 0 1c638bba6223ebf012b6454e651b400d
++       val file: Path on Linux = temporaryDirectory[Path on Linux] / "log.txt"
+
+@ 2 1 0 02648135ce19b4871fc91a5fdb4a7326
++       file.open[File](Write, OpenFlag.Create): handle ?=>
+
+@ 0 1 0 0fbce25e81b244721e748f976dd38c35
++         handle.write(Chain(t"entry".in[Data]))
+
+@ 1 1 0 111c38e163141fe600d834184ecc4e8e
++       ```
+
+@ 0 1 0 06ebbd1a6f2bf6e506f03cf36b2cc7e5
++ entry .Exclusive
++   info
++       le mode qui accorde l'exclusivité : aucune autre poignée sur l'entité ne peut être ouverte
++       entre-temps
+
+@ 0 4 0 16350deb23ae907a08b221740d529b2d
++   detail
++       Un `Mode granting Grant.Exclusive`, combiné avec un autre mode, comme `Read & Exclusive`.
++       Une ouverture concurrente pendant la durée de la portée exclusive échoue, dans un ordre
++       comme dans l'autre ; galilei la signale par une `Io.Error` dont la raison est `Busy`, et,
++       pour un fichier, prend également un verrou du système d'exploitation afin que
++       l'exclusivité tienne face aux autres processus.
+
+@ 0 1 0 1d8258fdd239db0b119dbe97f1c96ced
++ entry .Creatable
++   info
++       une classe de types pour les cibles qu'on peut faire exister, vides ou composées dans une
++       portée
+
+@ 0 4 0 0ef240424a4d2ec01c3112184c28ca58
++   detail
++       Le pendant d'`Openable`, pour la création plutôt que l'accès. Une instance s'écrit
++       `target is Creatable in Form by Flag to Handle`, et sert deux sortes de création avec un
++       seul verbe :
+
+@ 0 6 0 00fb26ea002902c6108d951103e322e8
++       - l'**instanciation**, `path.create[Directory]()` : l'artefact est amené à exister, vide,
++         sans portée, et la cible est renvoyée ;
++       - la **composition délimitée**, `path.create[Tar]() { tar ?=> … }` : l'artefact est créé et
++         rempli au moyen d'une poignée dotée des `#Grants` de l'instance — l'accès en écriture dès
++         la naissance, puisqu'un artefact nouveau-né appartient inconditionnellement à son
++         créateur — et validé lorsque le bloc se termine.
+
+@ 0 3 0 0fb21a8867fcd21204a164b0493dba63
++       Une exception qui s'échappe d'une portée de composition ne laisse rien derrière elle : les
++       instances le garantissent en préparant le résultat dans un voisin temporaire puis en le
++       déplaçant atomiquement à sa place, ou en supprimant ce qu'elles ont créé.
+
+% 2 1 0 02256acbef042f8c14eba0795def6c6f
+
+% 3 1 0 0ed080ddf58974d20ebe309f740333aa
+
+% 4 1 0 17a16ab5b03ccd3d1d9b00002105f4fa
+
+% 5 1 0 115b7ab1c4fefc7d167a462b4c9077d7
+
+% 6 1 0 10dfb596508fe8481f97d2bec743bd0a
+
+% 7 1 0 1003ea946aa662af19c7c35668011304
+
+% 8 1 0 0438c6ff1fb6136e1f01791cb261c3ad
+
+% 9 1 0 0a44556f1cb2fba7091e09c9f18462d3
+
+% 10 1 0 1a3f570a795f3ef80fb43270f5c2142c
+
+% 0 1 0 0a62474a8951568014f48b1e17c32758
+
+% 0 1 0 0eb825bb01dcc79a09ab8a71053ac37a
+
+% 0 1 0 05ede16a3ff56b0c085535023a541aa9
+
+% 1 1 0 18fa0b1cf3ef00ad0db3d1d30662e5b4
+
+@ 0 5 0 0019d213db3dd65f150b72c80d1849d9
++       Il n'y a pas de `Mode` : ce que peut faire une portée de création ne relève pas du choix de
++       l'appelant, et les permissions avec lesquelles l'entrée créée persiste relèvent des
++       indicateurs. La création de quelque chose qui existe peut-être déjà est régie par des
++       indicateurs propres à chaque forme (`CreateFlag.Replace` de galilei), et le remplacement
++       n'est jamais le comportement par défaut. C'est différent de l'*ouverture* en écriture d'une
++       entité peut-être absente (`OpenFlag.Create`), qui accède à ce qui s'y trouve.
+
+% 1 1 0 1d0db166e77646f61220ebf51511c362
+
+% 1 1 0 1722fab6aa214b361c0794af5f804d32
+
+% 1 1 0 04ccc16f80b4c1880859a012ff864ba9
+
+@ 0 1 0 1c31f9ef06d0b21415be2d6756412231
++   entry #Grants
++     info
++         les droits que porte la poignée de composition, fixés par l'instance
+
+@ 0 1 0 0fe1a8e6d1f102cb0ed0039aa1c9ef34
++   entry #make
++     info
++         crée l'artefact, vide, sans portée
+
+@ 0 4 0 1100881018e4b36502985488e829f3dd
++     detail
++         L'implémentation par défaut exécute `#create` avec un bloc qui ne fait rien, ce qui
++         convient aux formes de type builder dont la poignée abandonnée ne coûte rien. Une instance
++         détenant des ressources du système d'exploitation la redéfinit pour créer directement —
++         notamment une FIFO, qui ne doit jamais être ouverte dans le seul but d'être créée, puisque
++         l'ouvrir en écriture bloque jusqu'à ce qu'un lecteur apparaisse.
+
+@ 0 1 0 16e77aa079ab07ab15fb6604894b25eb
++   entry #create
++     info
++         crée l'artefact et exécute un bloc avec une poignée pour le composer, en le validant en
++         cas de succès
+
+@ 0 4 0 122b7229093ea75b06ff9ea16a6a548b
++     detail
++         `create(value, flags)(block)` : le bloc prend `(Result & Granting[Grants])^` comme
++         paramètre contextuel ; son résultat est renvoyé après la validation de l'artefact, et une
++         exception qui en provient ne valide rien. Appelée par `Creator#apply` ; le code
++         utilisateur écrit `value.create[Form](flags*) { handle ?=> … }`.
+
+@ 0 1 0 0fa0e42a6788f59c001f094b42cf50da
++ entry .Creator
++   info
++       l'applicateur que renvoie `create[Form]`, pour l'instanciation ou la composition délimitée
+
+@ 0 4 0 149deca50748ca8b04e5fba6d60049b6
++   detail
++       `value.create[Form]` résout l'instance `Creatable` à partir de la forme et renvoie un
++       `Creator`. Son `#apply` surchargé prend soit les indicateurs seuls, pour créer un artefact
++       vide et renvoyer la cible, soit les indicateurs et un bloc, pour composer le contenu de
++       l'artefact.
+
+% 1 1 0 00be9566d0219d160df4740ce8c5ec3a
+
+% 1 1 0 0abf71e29b9268da0ce6dd3a10c9638f
+
+@ 0 1 0 0a935ef1cf7e177f07103a6c45b1886a
++   entry #creatable
++     info
++         l'instance `Creatable` résolue par la forme
+
+@ 0 1 0 0190115945e3ea4914c13f5981c7e59b
++   entry #value
++     info
++         la cible à créer
+
+@ 0 1 0 1a8bdf94172f008409097e601eff3616
++   entry #apply
++     info
++         crée la cible vide et la renvoie, ou la compose dans un bloc
+
+@ 0 3 0 0d8d960f47ab3f0e076dfa8187cd28a4
++     detail
++         `apply(flags*)` appelle `Creatable#make` et renvoie la cible, qui existe désormais ;
++         `apply(flags*)(block)` appelle `Creatable#create`, en prêtant au bloc une poignée dotée
++         des `Grants` de l'instance, et renvoie le résultat du bloc une fois l'artefact validé.
+
+@ 0 1 0 0bd341596f11a5740bd5dabe8b835c71
++ entry .create
++   info
++       crée une valeur dans une forme : `path.create[Directory]()`, ou
++       `path.create[Tar]() { … }`
+
+@ 0 5 0 043f42bd83d7331b11137f488298baee
++   detail
++       Une extension sur toute valeur possédant une instance `Creatable` dans la forme nommée, qui
++       renvoie un `Creator`. Sans bloc, l'artefact est créé vide et la cible renvoyée ; avec un
++       bloc, l'artefact est composé au moyen d'une poignée et validé lorsque le bloc se termine,
++       et reste absent si le bloc lève une exception.
+
+% 2 1 0 0c7014aa252c62571b47129f4ed8b8fb
+
+% 3 1 0 00909420ea410df00d8b1f1c8fad79bc
+
+% 4 1 0 194b14ec460692a809f7769b1cb60b9a
+
+% 5 1 0 1fa2e2c63a8f3fac0b9e1d926e95de37
+
+% 6 1 0 07a88e74bcdb804c1f1680a37e3ce291
+
+% 7 1 0 087994495fadb9840301ca35bd5c4533
+
+% 8 1 0 127252c1de4e75d018783762af348508
+
+% 9 1 0 0040be2b7b08200902f879796bb0a9fb
+
+% 10 1 0 14eda762bc993f130834ef84272d0d48
+
+% 12 1 0 15ef58c8309bc6151539d732c73020d7
+
+% 0 1 0 15bbc3257b9a939a1ed00fb919a2334f
+
+% 0 1 0 082c5857953407ac1b9ef7d8509fd2ca
+
+% 0 1 0 1d3f9e874ebfc5bb0bd6e769ede3abdb
+
+% 1 1 0 16cf1d88cf8b279c136bb6db6a69674e
+
+@ 0 2 0 0673ce55d143e5e10d15c3da53626ee9
++       Les indicateurs sont du type `Operand` de l'instance ; ceux de galilei sont des `CreateFlag`
++       tels que `CreateFlag.Parents` et `CreateFlag.Replace`.
+
+% 1 1 0 0e5b6d4e5676fa7b16b9cbd202de4169
+
+% 1 1 0 1d5fcb6b496a5b8e06c2213c339f432c
+
+@ 0 1 0 1e7688e2862d4a2f10aa5fc7d0d17d2e
++ entry .Archivable
++   info
++       une classe de types pour les valeurs dont le contenu peut être rassemblé dans une valeur
++       d'archive
+
+@ 0 7 0 120c1fd9478cc578127724c7658bb280
++   detail
++       Une instance s'écrit `target is Archivable in Form by Flag to Result` : la forme est le
++       format d'archive (`Tar`, `Zip`, `Ar`), `Operand` le type d'indicateur qui règle l'archivage
++       pour ce couple (une convention pour les noms longs, un propriétaire à enregistrer, une
++       méthode de compression), et `Result` l'archive en mémoire produite. Contrairement à
++       `Creatable`, rien n'est écrit : le résultat est une valeur, et sa destination — envoyée en
++       flux, compressée, écrite dans un fichier — est l'étape suivante de l'appelant.
+
+% 2 1 0 0b0f033543a1939410193d2575153a94
+
+% 3 1 0 1af20fdd953da1e8153264fc3fb413e6
+
+% 4 1 0 0fb5119d4f76b55a105d8c808c96ced5
+
+% 5 1 0 131defd8dc30964112e05e60f5374c96
+
+% 6 1 0 039fd6ac8fd6dde11c7bad95ef48a3eb
+
+% 7 1 0 0143026c9f5039700680913048e983a2
+
+% 8 1 0 1f39d21a1ba5aecf07eb6c321f85c1c3
+
+% 9 1 0 03fa2337dd1d4d49178f8ad86da15efc
+
+% 10 1 0 16bbb16d389e97ef143e3fb9260ca6b4
+
+% 0 1 0 09b9718acd263c610a2247a61caaf1ee
+
+% 0 1 0 0c33f942e6a682440273de07898d23ce
+
+% 1 1 0 111baee4d32e19620401d3251b2a943f
+
+@ 0 3 0 0815f11650ff34020881849f920a815e
++       Les instances pour les répertoires se trouvent dans les compagnons des types de format
++       (`Tar`, `Zip`, `Ar`) et parcourent l'arbre au moyen du backend de système de fichiers de
++       galilei : elles sont donc dans la portée implicite sans aucun import.
+
+% 1 1 0 19d7a20cc85aa93e0eaa42cd354598fb
+
+% 0 1 0 1156c4b2b32b3f030357c98eec790e29
+
+@ 0 1 0 11a658f4bfec613a01ddc5d126a7dd14
++   entry #archive
++     info
++         rassemble le contenu d'une valeur, réglé par des indicateurs, dans la valeur d'archive
+
+@ 0 2 0 13b6b2fe46c1fea607743e479d670bf2
++     detail
++         `archive(value, flags)` : l'implémentation que fournit une instance. Appelée par
++         `Archiver#apply` ; le code utilisateur écrit `value.archive[Form](flags*)`.
+
+@ 0 1 0 18db20637d03a6bc01287459e6e2f4c4
++ entry .Archiver
++   info
++       l'applicateur que renvoie `archive[Form]`, qui prend les indicateurs
+
+@ 0 4 0 1caaea93a120e39509c53120df2985a7
++   detail
++       `value.archive[Form]` résout l'instance `Archivable` à partir de la forme et renvoie un
++       `Archiver`, dont l'`#apply` prend des indicateurs du type `Operand` de l'instance et renvoie
++       l'archive. La forme reproduit celle d'`Opener` et de `Creator`.
+
+% 1 1 0 19a2d3fc5d718ab918151642b2ed76a0
+
+@ 0 1 0 067e92b3c8c90a40029f568e32eacce1
++   entry #archivable
++     info
++         l'instance `Archivable` résolue par la forme
+
+@ 0 1 0 1994dd18e760237e0640d0f23d35687b
++   entry #value
++     info
++         la valeur à archiver
+
+@ 0 1 0 0e77efed5b0943eb081832d0cee2fd08
++   entry #apply
++     info
++         archive la valeur avec les indicateurs donnés, et renvoie l'archive
+
+@ 0 1 0 0905935b2805543c0d8b945d6dc29bd5
++ entry .archive
++   info
++       archive une valeur dans une forme : `directory.archive[Tar]()` donne l'archive tar d'un
++       arbre
+
+@ 0 4 0 15dd7c147ad54c9e0f4fe0c027fa66db
++   detail
++       Une extension sur toute valeur possédant une instance `Archivable` dans la forme nommée,
++       qui renvoie un `Archiver` dont l'`apply` prend des indicateurs du type `Operand` de
++       l'instance. Le résultat est une valeur d'archive en mémoire du type `Result` de
++       l'instance, que la bibliothèque du format sérialise ou compresse ensuite.
+
+@ 2 1 0 13d8266c1722fee00d9efd3be804ca6c
++       ```scala
+
+@ 3 1 0 1b817663108c1e811e4cdca5998504a5
++       import soundness.*
+
+@ 4 1 0 0f6a2bf17921c8cd038c9da2583adda1
++       import filesystemBackends.javaBaseFilesystem
+
+@ 5 1 0 1f0501ae7ee55ed710e3310ec80a7c69
++       import filesystemOptions.dereferenceSymlinks
+
+@ 6 1 0 15599115b52a406904657b08198ded15
++       import pathInterfaces.pathOnLinux
+
+@ 7 1 0 0f442417ed0d248a0b9238ed230c4187
++       import strategies.throwUnsafely
+
+@ 8 1 0 04196fae53d017dd1fadbca785dd45e2
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 9 1 0 19007fd046a68d771b35d20be9c7868c
++       import charsets.utf8Charset
+
+@ 10 1 0 0cd79e6130e722f61ec6bf4254915c86
++       import codepages.utf8Codepage
+
+@ 0 1 0 18db68f2f84aa4da024449ff0a3777c1
++       val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+
+@ 0 1 0 014ee61598ffda2d087cb1ee21512fbf
++       val tar: Tar = source.archive[Tar]()
+
+@ 1 1 0 0ab812532b337a7f030d517004431590
++       ```
+
+@ 0 1 0 0069abde5f6556b115a9c7f93765a5ed
++ entry .Sessional
++   info
++       une classe de types pour les cibles qui prêtent une session vivante à un bloc puis la
++       libèrent
+
+@ 0 6 0 04ae2f4566dc76610e3e690ebce6abe4
++   detail
++       Une session est une portée d'interaction avec état : une connexion réseau, un compilateur
++       chaud, un navigateur piloté à distance, un appareil via SSH. Une instance s'écrit
++       `target is Sessional to Handle` ; son `#session` établit la session avec la cible, prête la
++       poignée au bloc pour sa durée, et la libère lorsque le bloc se termine, qu'il retourne
++       normalement ou qu'il lève une exception.
+
+% 2 1 0 11ddee58a470abcf1298e5d95e2b149b
+
+% 3 1 0 0f5969e1f510e18c1b5f683e1108369c
+
+% 4 1 0 0c23a9bb101a217a198a0b8d6c346639
+
+% 5 1 0 06b853619c27700f0253da452b64d0a0
+
+% 0 1 0 06a007b8ffa0770b0db2af4ea355ee02
+
+% 0 1 0 05a43c9cdd34150916596034aced282b
+
+% 0 1 0 019a06f280175d460b430c4c9402435c
+
+% 0 1 0 017964186291c5070b5fb360cd17bc7f
+
+% 1 1 0 0dc2d84fe896400f13a275bcc693410e
+
+% 1 1 0 057623fdd24f157d095b7df246edaaa6
+
+% 1 1 0 15736583e83c6f8b16e59aea011d082f
+
+@ 0 6 0 1dd547445aa8e3ac1954c7342490be16
++       Le type de résultat du bloc est quantifié hors de celui-ci : une valeur qui emprunte encore
++       la session — la poignée elle-même, une closure qui la capture, une réponse diffusée en flux
++       depuis la connexion vivante — ne peut donc pas être son résultat ; une valeur indépendante
++       de la session, comme une valeur lue en entier, le peut. Les instances au niveau de la
++       couche transport (celle de coaxial pour tout endpoint `Connectable`) prêtent une connexion
++       brute ; les couches plus riches prêtent des poignées conscientes du protocole, comme les
++       sessions HTTP de telekinesis ou les sessions de serveur de langage d'exegesis.
+
+@ 0 2 0 04b44cdd9564b02a1bea98e091dae0f4
++       Les instances dont le sujet appartient à une autre bibliothèque sont des givens de premier
++       niveau aux noms qualifiés par la bibliothèque, importés par leur nom
++       (`import soundness.httpUrlSessional`).
+
+% 0 1 0 0aa2bb590f713fa21aae4aaccefd4fca
+
+% 1 1 0 1bf86935119f00c51d33232aa150c609
+
+@ 0 1 0 16ed70b7e213694c1e2adceb035e229a
++   entry #session
++     info
++         établit une session avec une cible, exécute un bloc avec elle, puis la libère
+
+@ 0 3 0 1bc3be6c6610b1f51bbba744a09f55ce
++     detail
++         `session(target)(lambda)` : l'implémentation que fournit une instance. La poignée est le
++         paramètre contextuel de la lambda, et elle est libérée quelle que soit l'issue. Le code
++         utilisateur écrit `target.session { handle ?=> … }`.
+
+@ 0 1 0 1b279ea97d328be701223a5740355d1c
++ entry .session
++   info
++       ouvre une session sur une valeur et prête sa poignée à un bloc :
++       `url.session { s ?=> … }`
+
+@ 0 6 0 09fa2f19aee8b39d1e3de9465e527500
++   detail
++       Une extension sur toute valeur possédant une instance `Sessional` dans la portée. La
++       poignée — du type que fournit l'instance, quel qu'il soit — est le paramètre contextuel du
++       bloc, et elle est libérée lorsque le bloc se termine. Une valeur qui emprunte la session ne
++       peut pas être le résultat : renvoyer la poignée, une closure qui la capture ou une
++       collection qui la contient, ou l'affecter à une variable hors du bloc, est une erreur de
++       compilation (_… outlives its scope_, _… cannot flow into capture set …_).
+
+@ 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
++       ```scala fuel
+
+@ 0 1 0 1a8ec18672c39e03185024ae675e9c25
++       typecheck
+
+@ 0 1 0 0472326144a49ce71767be845f62f575
++       ##
+
+@ 1 1 0 149c77db45ac644f1a74f205bbafc35a
++       import soundness.*
+
+@ 0 1 0 18c899fbefe1b88d0c673febf0e51517
++       import soundness.httpUrlSessional
+
+@ 0 1 0 14a68bffa6b708411ac2ce37360b6c83
++       import socketBackends.javaBaseSockets
+
+@ 0 1 0 074ab1c2dd3f8ebc031901f844a03d33
++       val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+@ 0 1 0 024567e881f4dd0f1313a9ec1163a9df
++       url"https://example.com".session: session ?=>
+
+@ 0 1 0 18a3d633bca8b02a07d3f001113ecfa3
++         session.fetch(request).status
+
+@ 1 1 0 00313a34bc35abba13ea1fbbf70abcbd
++       ```
+
+@ 0 3 0 0903cfe269e1de5614b492ceaa5f186d
++       L'extension est une méthode ordinaire, non inline, et l'instance et le bloc peuvent
++       partager des capacités (un moniteur, une tactique) : tous deux prennent leurs ensembles de
++       capture en paramètre plutôt que des ensembles nouveaux et séparés.
+
+@ 0 1 0 12cb382735b944121bc842c22c8bef8b
++ entry .Stale
++   info
++       une valeur telle qu'une poignée l'a vue, issue d'un état que d'autres processus ont pu
++       modifier depuis
+
+@ 0 7 0 047a8247f881f5ee0b6ccbcf76617d77
++   detail
++       `Stale[value]` enveloppe une valeur lue à travers une poignée à partir d'un état que la
++       poignée ne possède pas : une ref dans un dépôt où écrivent d'autres processus, la taille
++       d'un fichier, les entrées d'un répertoire. La valeur est immuable et pure, mais ce qu'elle
++       enregistre a pu changer avant même le retour de la lecture. Le type existe pour qu'une
++       signature puisse le dire : une méthode renvoyant `Stale[Git.Hash]` a résolu une ref, et une
++       méthode qui en prend une est conditionnée au fait que la ref ait toujours cette valeur, et
++       échoue avec une erreur typée dans le cas contraire.
+
+% 2 1 0 0f9818b4fd3c2c1802136764045ff651
+
+% 3 1 0 07a9df363e5a54630a58bceae0cf7078
+
+% 4 1 0 0485889e8efa662016dcc49a8fbd0c68
+
+% 5 1 0 1a3227dd1c972459179c8c3f9299fb15
+
+% 2 1 0 0e9435e601f38dba02e2d7fbdae82035
+
+% 3 1 0 0b3f7d56208aa17a0960361fc07523a0
+
+% 4 1 0 0a2489263358c461177f04c2bad37b89
+
+% 5 1 0 04f8bd3693ed2c521d78f675eab151c5
+
+% 6 1 0 0ba1c95fb631e1a80008e0ac6a4f9a2a
+
+% 7 1 0 15a9622bdf2267b1045631b4f07c2f9c
+
+% 8 1 0 0062e075a9a992e81241b9a9a4d9e260
+
+% 0 1 0 025a8cfdc31ec73d18a4e32a66514dfc
+
+% 0 1 0 13b3145d5d77076c0a035a099314247c
+
+% 0 1 0 0ee05dbc473a135a1991c4399441c55a
+
+% 0 1 0 037c13e6234abfc90d63828638fb2299
+
+% 0 1 0 162120ac8677457a05dbdf9313bbdee9
+
+% 0 1 0 1267be16c31a610102dca42374beea2f
+
+% 1 1 0 1b46d202ca01ce5617cc7a4b19680b33
+
+@ 0 2 0 19a73a68348d71d716945dfdcc0e9fc4
++       Si un autre processus a déplacé HEAD entre la lecture et le commit, le commit échoue avec
++       `Git.Error(Moved(…))` plutôt que d'écraser ce travail.
+
+@ 0 3 0 0419a9507b705b721a97e3edf8ea9877
++       Il n'y a délibérément pas d'horodatage : une horloge serait une dépendance, et la
++       fraîcheur n'est pas une propriété sur laquelle raisonner. Le seul usage correct d'une
++       valeur périmée est de la rendre à la poignée qui l'a produite, ou de lire sa `#value` en
++       sachant qu'elle peut être obsolète.
+
+% 0 1 0 071d3ceb5e7915ed12f2868090902787
+
+@ 0 1 0 1db198548d1e61be13f3cc35786e706d
++   entry #value
++     info
++         la valeur telle qu'elle était au moment de sa lecture
+
+@ 0 1 0 1d320a737e7dc80c1d87325ed00da88c
++   entry #let
++     info
++         dérive une valeur d'une valeur périmée, qui reste exactement aussi périmée
+
+@ 0 2 0 1e4ab06aab6281e91ee1729e697e6cd3
++     detail
++         `Stale(1).let(_ + 1) == Stale(2)`. Une méthode plutôt qu'une extension, afin que le `let`
++         de vacuous sur `Optional`, importé partout, ne s'empare pas du receveur.

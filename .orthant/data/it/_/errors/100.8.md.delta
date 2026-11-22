@@ -1,0 +1,59 @@
+orthant 2 language
+
+% 0 1 0 1237f89b8efdb19516a5f5c145fb6286
+
+@ 0 1 0 11d8242c08695a7f13ba48b0626d5891
++ Sollevato quando un valore non può essere analizzato come URL valido.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 5 0 0f3b64d26e07b12616641de5652f4539
++ Urticose valida la sintassi dell'URL rispetto alle componenti che si aspetta: uno schema, un'autorità
++ opzionale (con nome host e porta), un path, una query e un frammento. Ogni variante individua il
++ punto in cui il parsing è fallito. Il messaggio include l'input errato e l'offset del fallimento:
++ `the URL $text is not valid: $reason at $offset`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 1758ee91a5dd424a1b775e08fcbdd9a2
+
+@ 0 3 0 12252119d39c31320939a0661421ee82
++ All'offset era atteso un token specifico, ma ne è comparso un altro. L'aspettativa è una tra
++ `Colon`, `More`, `LowerCaseLetter`, `PortRange` o `Number`.
+
+@ 0 1 0 15d56e3436df08a006e85f6fe6df6abe
++ **Esempio.** `[↯/s.100.8.1] the URL https://example is not valid: a colon was expected at 14`
+
+@ 0 2 0 10c3272aa1562c8915d0c9eaac21931a
++ **Soluzione.** Correggi l'URL in modo che fornisca il token atteso all'offset indicato.
+
+% 0 1 0 18a057767bd575e715da027b50f507ed
+
+@ 0 1 0 00c1c9e14db511f506652c6b0bd2356c
++ La componente nome host dell'URL non è un nome host DNS valido.
+
+@ 0 1 0 0d722ce365183acb04821b7eefdda81b
++ **Esempio.** `[↯/s.100.8.2] the URL http://exa_mple/ is not valid: exa_mple was not valid because the character _ is not allowed in a hostname at 7`
+
+@ 0 2 0 02efea0dff2882eb0a8c5c774661f6fe
++ **Soluzione.** Sostituisci il nome host con uno sintatticamente valido; vedi `↯/s.100.10` per le
++ regole dei nomi host.
+
+% 0 1 0 164c8733ff5d5a2e03de63b52c9f6e7e
+
+@ 0 1 0 1f771bdefda4ce0103a9ab999546ad37
++ Il letterale IPv6 tra parentesi quadre nella componente host non è valido.
+
+@ 0 1 0 0f3989a06481f3a118d88f6dc9e49b92
++ **Esempio.** `[↯/s.100.8.3] the URL http://[::1::]/ is not valid: the IPv6 address is not valid because :: appears more than once at 7`
+
+@ 0 2 0 18b529b604e8db46137bab70f0eb14cd
++ **Soluzione.** Fornisci un letterale IPv6 valido; vedi `↯/s.100.2` per le regole IPv6.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 03ed9d7974daf175016501a1a7064a9d
++ - Sorgente: `lib/urticose/src/url/urticose.Url.scala`

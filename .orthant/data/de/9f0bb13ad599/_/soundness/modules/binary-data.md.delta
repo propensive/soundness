@@ -1,0 +1,118 @@
+orthant 2 language
+
+@ 0 4 0 05eb45037408fb11057e10c2d258b133
++ Eine Case-Klasse aus [numerischen Typen](numbers.md#numeric-types) fester Größe beschreibt ein
++ binäres Layout. Jedes Feld gibt seine genaue Breite an und wie seine Bytes zu lesen sind, sodass
++ die Gestalt des Datensatzes seine Definition ist und das Lesen eines Werts darauf hinausläuft,
++ seinen Typ an einem Offset zu nennen. Das Schreiben eines Werts ist dieselbe Definition, in die
++ andere Richtung verwendet.
+
+@ 0 2 0 01975e84328eeafd011bff4658ef7c51
++ Alles stammt aus dem Paket `soundness`. Der zweite Import lässt die Beispiele ihre Ergebnisse
++ ausgeben, und der dritte lässt sie Bytes lesen, ohne den Fehler zu behandeln, den ein zu kurzer
++ Datensatz auslöst:
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+@ 0 3 0 0978ea4ebe0c10cf13b30da5abfcb4c0
++ Ein binärer Datensatz ist eine Case-Klasse aus Feldern fester Breite, die durch Ableitung eine
++ `Structural`-Instanz erhält. Die Reihenfolge der Bytes innerhalb eines Feldes gehört zum Format,
++ daher wird sie dort gewählt, wo das Layout deklariert wird, indem man sie aus `byteOrders`
++ importiert:
+
+% 0 1 0 0a8651b622749bd0166cad14fbf97d34
+
+% 0 1 0 0f679049a59664ee16c7b65094aa5a6d
+
+@ 0 2 0 121fdababb84873516a123afa2a5743c
++ Die Breite jedes Feldes ergibt sich aus seinem Typ. Hier sind die Breiten vier, zwei, zwei und
++ vier Bytes, sodass der Datensatz zwölf Bytes umfasst. `Structural.width` sagt das, ohne dass ein
++ Wert vorliegen muss:
+
+% 0 1 0 192f2ea9c942ba560b5d0f33c3e229eb
+
+@ 0 4 0 1123519ccc868c4a14358701bdc3d455
++ Datensätze lassen sich verschachteln. Ein Feld, dessen Typ selbst `Structural` ist, trägt seine
++ ganze Breite bei, sodass ein Layout aus kleineren Layouts zusammengesetzt wird und nicht von Hand
++ abgeflacht werden muss. Ein verschachtelter Datensatz behält die Bytereihenfolge, mit der er
++ deklariert wurde; so wird ein Format beschrieben, das beide mischt.
+
+@ 0 2 0 133fd897f6b30b1e161e10884120d899
++ Eine Ableitung ohne Bytereihenfolge im Geltungsbereich kompiliert nicht, ebenso wenig eine, bei
++ der ein Feld einen Typ ohne festes Layout hat.
+
+@ 0 1 0 1a2d3814d3f219c800a048918d540232
++ `unpack` liest einen Wert eines gewählten Typs aus Bytes, an einem Offset:
+
+% 0 1 0 1fb77bda4754774f0d717049ab6cf6de
+
+@ 0 3 0 1921303bc0c82e35039c589101dc7766
++ Der ganze Datensatz wird einmal gegen die Länge der Daten geprüft, bevor irgendein Feld gelesen
++ wird. Ein Datensatz, der über das Ende hinausreichen würde, löst einen `Structural.Error` aus,
++ der den Offset, die Breite des Datensatzes und die Anzahl der vorhandenen Bytes angibt:
+
+% 0 4 0 1c275054af78b2b5039fad57cd82dc6a
+
+@ 0 2 0 1d31d1c6fb4ef67f1452fef38d6ebebe
++ Binärformate bevorzugen wiederholte Abschnitte, und ein Abschnitt von Datensätzen wird anhand
++ seines Offsets und seiner Anzahl als ein Array entpackt:
+
+% 0 1 0 0183ba2bae654924132d91e7c239d9ee
+
+% 0 1 0 12d7d14b458cc4a4087e7805f3b62a4d
+
+% 0 1 0 03526977cd93fab21559afc1f77220cd
+
+@ 0 2 0 1be62d39b4f2f82201a781a907eadb7e
++ Derselbe Aufruf liest einen Datensatz aus einer `Expanse`, etwa einem `Terrain` aus
++ speicherabgebildeten Bytes, an einem `Long`-Offset. Nur die eigenen Bytes des Datensatzes werden
++ daraus gelesen.
+
+@ 0 1 0 031e799c979801b01abdd3555d287aac
++ ### Schreiben
+
+@ 0 2 0 12625a32c9350e1318f814a1dda0e14a
++ `pack` ist die Umkehrung: Es legt einen Wert in genau so vielen Bytes an, wie sein Layout breit
++ ist, mit derselben Instanz, sodass das, was gepackt wird, das ist, was `unpack` zurückliest:
+
+% 0 2 0 038b7938c9a79fa30bdf117f54902562
+
+% 0 5 0 0588620aca8349f90a757086ce8bc2ef
+
+@ 0 1 0 1d40e167098578ad11be08eac45bb0a2
++ ### Die Typklasse
+
+@ 0 4 0 07ca347fd28d05670b8bd3d8c0b63482
++ `Structural` beschreibt einen Typ mit festem Layout, in beide Richtungen. Eine Instanz gibt drei
++ Dinge an: `width`, die Anzahl der Bytes, die der Wert belegt; `load`, das einen Wert aus diesen
++ Bytes an einem Offset liest; und `store`, das einen in ein Byte-Array schreibt. `unpack` und
++ `pack` prüfen, dass die Bytes vorhanden sind, und rufen sie dann auf.
+
+@ 0 4 0 0eff5f1f96c99fb10fd0f2fbaf624011
++ Die Ableitung berechnet jeden Offset zur [Kompilierzeit], wenn das Layout deklariert wird, und
++ expandiert zu einem Ladevorgang je Feld an seinem Offset, in der gewählten Bytereihenfolge. Das
++ Lesen eines Datensatzes ist daher eine einzige Bereichsprüfung und so viele Ladevorgänge, wie es
++ Felder gibt, ohne dass außer dem Datensatz etwas alloziert wird.
+
+@ 0 3 0 03612a23538f3392152fbb45e12d10da
++ Die Typen fester Größe legen fest, wie Bytes *interpretiert* werden, nicht bloß, wie viele es
++ sind. Ein `B32` sind vier rohe Bytes, ein `U32` liest sie als vorzeichenlose Ganzzahl und ein
++ `S32` als vorzeichenbehaftete. Auch die einfachen Scala-Typen können verwendet werden, für
++ Layouts, die sich mit ihnen leichter angeben lassen:
+
+@ 0 3 0 00129bea2dcd95f91e5ab6d723a0a3ff
++ Ein Feld jedes anderen Typs braucht eine eigene `Structural`-Instanz, die die Ableitung dann wie
++ einen verschachtelten Datensatz einfügt. So erhält ein Feld eine Darstellung, die die Typen
++ fester Größe nicht bieten, etwa drei Bytes Farbe:
+
+% 0 1 0 12dfed929269776716973385c9f2f8ad
+
+% 0 4 0 03375ecb7bafac6b0fdbc4bf0dd7a337
+
+% 0 2 0 06d72899db3cc813045940dd54be4864
+
+% 0 4 0 0312126fd12062990f08b39b6798ee97
+
+@ 0 2 0 02da14b1c70e3aa012b5f78d99666356
++ `load` und `store` werden nicht geprüft: Sie werden erst aufgerufen, wenn der Aufrufer
++ festgestellt hat, dass `width` Bytes vorhanden sind.

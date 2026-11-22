@@ -1,0 +1,50 @@
+orthant 2 language
+
+@ 0 1 0 13e2a929818d862e06c7a223ec9e3157
++ # `↯/s.24.1` — el argumento de `recover` debe ser casos de coincidencia
+
+@ 0 2 0 0108b13187fb303415c781af3bfa076c
++ Se lanza en tiempo de compilación cuando el argumento de `recover` no está escrito como un bloque
++ literal de cláusulas `case`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 0061e424b1104c6d18d1a572d989840b
++ `recover` inspecciona los casos al compilarse el código, para saber qué tipos de error se tratan.
++ Una función parcial calculada en otro sitio, o pasada como valor, no puede inspeccionarse.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 072262c68f50f63a1a6740425e813589
+
+% 1 1 0 0d62ec5de55aa9370f8727b956f0535d
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 1 0 04e98f37c29256c6056bc158f30c3666
++ Escribe los casos en línea:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 0e0a6105d4153e270ab6a3c05a3b1643
+
+% 0 1 0 0332bde3012f56720c50243145b8708c
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 0c5b48f9a53ae50d15051c342c618152
+
+% 0 1 0 145e82c115e6b4ba01cd1045f50640e1
+
+% 1 1 0 023e0f516253c92c183782155b90d359
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 0a577f73475efca20b96d2f17614deed
++ - Fuente: `lib/contingency/src/core/contingency.internal.scala`

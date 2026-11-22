@@ -1,0 +1,70 @@
+orthant 2 language
+
+% 0 1 0 19f55fe914eeadec17525714a9ec3013
+
+@ 0 1 0 0f648eab0bfa928903ae79950408bc6b
++ Se lanza cuando un valor no es un nombre de clase completamente cualificado válido.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 141148311e489e130d74cc7e9b13fd6b
++ Digression valida los FQCN como una secuencia de segmentos identificadores separados por puntos,
++ cada uno conforme a las reglas de los identificadores de Java. El mensaje es
+
+% 0 1 0 0306240f5b5201ce0e6cd3abf6554c37
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 1b4f826320b2699419477392504812d2
+
+@ 0 1 0 0836552c4517cd94104bc461743d080a
++ Un carácter de un segmento del nombre no es legal en un identificador de Java.
+
+@ 0 1 0 18b77dd48fe18353179c4a8e3287fd53
++ **Ejemplo.** `[↯/s.63.1.1] the class name globe.st-ge.Hamlet is not valid because a package name may not contain the character -`
+
+@ 0 1 0 1cf229672fd1dbf81eaad111162e603e
++ **Solución.** Elimina o sustituye el carácter problemático.
+
+% 0 1 0 1a7cf45cbf24b6df02678dbbbc6a870e
+
+@ 0 2 0 02ec7cea91ea030b0a9bdccd1ce32c2f
++ Un segmento del nombre empieza por un carácter que no es legal como primer carácter de un
++ identificador (normalmente, un dígito).
+
+@ 0 1 0 0cb0fd00f718e7931e0d132b6b8b1afe
++ **Ejemplo.** `[↯/s.63.1.2] the class name globe.1stage.Hamlet is not valid because a package name may not start with the character 1`
+
+@ 0 1 0 059a35952578e73c02c03518593ba88f
++ **Solución.** Empieza cada segmento por una letra, `_` o `$`.
+
+% 0 1 0 09a4078d14a58bf8073306296d747c9f
+
+@ 0 2 0 0c9a385e0d0ff05f12b9322d4ca8cad9
++ Un segmento del nombre está vacío, normalmente a causa de un `..` en la entrada o de un punto
++ inicial o final.
+
+@ 0 1 0 12b26bd1bacd5dc106c4fc6618ac78da
++ **Ejemplo.** `[↯/s.63.1.3] the class name globe..Hamlet is not valid because a package name cannot be empty`
+
+@ 0 1 0 079412db6cf9d5570ab202055173f159
++ **Solución.** Elimina el segmento vacío.
+
+% 0 1 0 128151f188d690f110d9bc18a436d7a2
+
+@ 0 1 0 0d6d67ec18da442f05715b2394205fcc
++ Un segmento del nombre es una palabra clave reservada de Java.
+
+@ 0 1 0 1f447d923c325a1e0b3a4f8d68fe8ca7
++ **Ejemplo.** `[↯/s.63.1.4] the class name globe.class.Hamlet is not valid because a package name cannot be the Java keyword, class`
+
+@ 0 1 0 046e31ececee127e1c3cffa5ad2a0e74
++ **Solución.** Elige un segmento que no sea una palabra clave.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 1304901fb1c68a31005e1e744580606e
++ - Código fuente: `lib/digression/src/core/digression.Fqcn.scala`

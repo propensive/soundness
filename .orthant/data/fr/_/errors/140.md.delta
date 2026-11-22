@@ -1,0 +1,27 @@
+orthant 2 language
+
+@ 0 1 0 170a8b28ba164bd910af11d212f4e964
++ # `SN-140` — Alignement des lignes de continuation de `given` (retirée)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Cette erreur n'existe plus. La page est conservée pour que le code ne soit pas réutilisé, et
++ pour qu'une référence à celui-ci depuis une version plus ancienne puisse toujours être résolue.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Ce qu'il est devenu
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Le plugin du compilateur Decorum, qui levait cette erreur, a été extrait de Soundness et est
++ désormais [Consequent](https://github.com/propensive/consequent), un vérificateur autonome du
++ Consequent Style. La règle y subsiste sous un nouvel identifiant, dont la lettre nomme le
++ principe dont elle dérive :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Avant
++ column  Désormais
+
+% 0 1 0 12c2e48964283efb1f732bdefe6eea95
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 00d86367a96ef12003dfc89c82494938
+
+@ 0 2 0 17d1045161d1c26a031bb1df94400dae
++ Se lanza cuando Phoenicia no puede leer un fichero de fuente, o cuando se pide un estilo
++ tipográfico a una provisión que no puede componerlo.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 6 0 037e9c87e496846000947f2a0b2c506c
++ Phoenicia analiza ficheros de fuente (normalmente TrueType/OpenType) e informa de este error
++ cuando al fichero le faltan tablas obligatorias, usa un formato desconocido o no supera la
++ comprobación del número mágico. También informa de él cuando se crea una `Font` a partir de un
++ `Face` —un peso, una inclinación, una anchura, una variación o una característica— que la
++ provisión `Typesettable` del tipo de letra no cubre, para que el documento no pase a una
++ representación sintetizada o sustituida. El mensaje es `the font could not be used because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 15 0 0cb32a6fa27d64c719fbb7d376703295
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensaje
++ column  Solución
++ row  `↯/s.89.1.1`  `MissingTable`  No se encontró en el fichero de fuente una tabla obligatoria identificada por `tag`.  `[↯/s.89.1.1] the font could not be used because the table cmap was not found`  Usa una fuente que contenga las tablas obligatorias; muchas herramientas de subconjuntos de fuentes pueden eliminar tablas obligatorias.
++ row  `↯/s.89.1.2`  `UnknownFormat`  Se localizó una tabla, pero su contenido no corresponde a ninguna versión del formato que Phoenicia sabe leer.  `[↯/s.89.1.2] the font could not be used because the table contains data in an unknown format`  Usa una fuente que se ajuste a una versión admitida de la especificación OpenType/TrueType.
++ row  `↯/s.89.1.3`  `MagicNumber`  Los bytes iniciales de la fuente no coincidían con el número mágico esperado, lo que indica que el fichero no es una fuente que Phoenicia reconozca.  `[↯/s.89.1.3] the font could not be used because the font did not contain expected check data`  Confirma que el fichero es una fuente TrueType u OpenType y que no está corrupto; comprueba que el fichero se abrió en modo binario.
++ row  `↯/s.89.1.4`  `MissingEncoding`  La fuente no declara ninguna correspondencia de caracteres a glifos que este lector pueda usar.  `[↯/s.89.1.4] the font contains no usable character encoding`  Usa una fuente con una subtabla `cmap` Unicode. Una fuente que solo lleva una codificación heredada de Macintosh o de símbolos no puede hacer corresponder caracteres con glifos.
++ row  `↯/s.89.1.5`  `UncoveredWeight`  La provisión no ofrece ningún estilo tipográfico con el peso solicitado.  `[↯/s.89.1.5] the font could not be used because Inter is not provided at weight 700`  Incrusta un fichero con ese peso (o una fuente variable cuyo eje `wght` lo abarque), declara el peso en la cobertura de una provisión enlazada, o pide un peso que la provisión tenga.
++ row  `↯/s.89.1.6`  `UncoveredSlant`  La provisión no tiene ningún estilo tipográfico en cursiva (o ninguno vertical).  `[↯/s.89.1.6] the font could not be used because Inter is not provided in an italic face`  Añade el fichero en cursiva a la provisión, o compón el estilo tipográfico en vertical.
++ row  `↯/s.89.1.7`  `UncoveredStretch`  La provisión no ofrece ningún estilo tipográfico con la anchura solicitada.  `[↯/s.89.1.7] the font could not be used because Inter is not provided at a stretch of 75.0%`  Añade un fichero estrecho o ancho, o usa la anchura normal.
++ row  `↯/s.89.1.8`  `UnknownAxis`  El estilo tipográfico varía un eje que la fuente no tiene.  `[↯/s.89.1.8] the font could not be used because Inter has no variation axis opsz`  Consulta en la tabla `fvar` de la fuente los ejes que define; `Sfnt.fvar` los enumera.
++ row  `↯/s.89.1.9`  `AxisOutOfRange`  El estilo tipográfico da a un eje un valor fuera del rango que admite la fuente.  `[↯/s.89.1.9] the font could not be used because Inter does not admit 950.0 on its wght axis`  Mantén el valor entre el mínimo y el máximo del eje.
++ row  `↯/s.89.1.10`  `MissingFeature`  El estilo tipográfico activa una característica de composición que las tablas `GSUB` y `GPOS` de la fuente no implementan.  `[↯/s.89.1.10] the font could not be used because Inter does not implement the layout feature onum`  Usa una fuente que implemente la característica, o elimina el ajuste; `Sfnt.features` enumera lo que implementa un fichero.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 0e86a3df8efdcb251ec31daa5feda606
++ - Fuente: `lib/phoenicia/src/core/phoenicia.Font.scala`

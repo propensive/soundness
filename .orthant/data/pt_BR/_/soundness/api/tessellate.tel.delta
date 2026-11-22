@@ -1,0 +1,533 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1ca5af01992a4c2d137dccab4a4ebebb
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d8650d7eef9da69129a3e0202faee96
++ info   layout de texto em células de largura fixa: quebra de linha, ajuste, alinhamento, dimensionamento de trilhas e caracteres de desenho de caixa
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 1d17cf72ceb75aaa1fe2f5ab1bd1d8d6
++     _Tessellate_ é a camada de layout compartilhada pelas bibliotecas de terminal e de tabelas do
++     Soundness. Ela dispõe conteúdo textual — `Text`, `Teletype` ou qualquer `Textual` cujos
++     elementos sejam `Char`s — em uma grade de células de largura fixa, medindo cada linha por sua
++     largura de exibição e não por seu comprimento, de modo que caracteres largos do leste asiático,
++     marcas combinantes e emojis unidos por joiner ocupam as células que realmente ocupam.
+
+@ 0 1 0 0a0061a28bdd1c91188ac4e02ea5f3d9
++     Suas peças são pequenas e independentes:
+
+@ 0 9 0 170b02b443c7b01b0b4b4dbb8d94f451
++     - `Flow` distribui um parágrafo em linhas (`Flow.wrap`, quebrando em pontos de hifenização e
++       depois em espaços), confina uma linha a uma largura (`Flow.fit`, truncando com reticências
++       ou com preenchimento) e mede as larguras intrínsecas do conteúdo (`Flow.metrics`);
++     - `Alignment` preenche uma linha até uma largura: `Left`, `Right`, `Center` ou `Justify`;
++     - `Metrics` e `Flex` descrevem trilhas — colunas, linhas, painéis — que disputam espaço ao
++       longo de um eixo, e `Flex.solve` reparte o espaço entre elas;
++     - `Reflowable` é a classe de tipos do conteúdo que negocia com um layout retangular;
++     - `BoxLine`, `LineCharset` e `BoxDrawing` escolhem o caractere de desenho de caixa para uma
++       junção de linhas.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 104c16ecb0d1ed140875e1c01ba98db4
+
+% 0 1 0 16990c5d60220e4f07a921cdd4274937
+
+% 0 1 0 162ed997c30df88d06e21009a8cde95e
+
+% 0 1 0 102b30fdce829a2b11a35b4a8fddc3ed
+
+% 0 1 0 0631b048ef4629471bece27cc7916e50
+
+% 0 1 0 0ce018af7c7737600a5a8c1687e69f34
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 6 0 14dc5db4a3b3ce1611921a8838dfc85d
++     Todo método de medição precisa de um `Text is Measurable` no escopo, que vem de um
++     `Char is Measurable` escolhido pelo nome no pacote `textMetrics` (`uniformMetric`,
++     `eastAsianScriptsMetric` ou `wideCharacterWidthMetric`). A quebra de linha também precisa de
++     uma `Hyphenation`: sem nenhuma importada, o fallback do objeto companheiro não hifeniza nada,
++     e importar `hyphenations.englishHyphenation` habilita a hifenização do inglês americano. Ambas
++     são importadas pelo nome, já que `import soundness.*` não importa givens.
+
+@ 0 3 0 0192d3e4f439909912c31fe9e39ed296
++     Posições dentro do conteúdo são offsets de char em seu texto puro, de modo que a indexação
++     do próprio conteúdo precisa concordar com os chars de seu texto puro, o que vale para
++     `Text`, `Ascii` e `Teletype`.
+
+@ 0 3 0 180b02a11b7aafb00dfd7afda448b931
++     A biblioteca tem um source set, `tessellate.core`, que compila para todas as plataformas e é
++     exportado por inteiro para o módulo guarda-chuva `soundness`. Ela é o motor de layout por
++     baixo das tabelas do escritoire e dos quadros e bordas do ultimatum.
+
+% 0 1 0 1b948a3a50eede060c1b3aa064c82351
+
+% 0 1 0 0c451c21fba860d3067162392aee79c5
+
+% 0 1 0 111a60e5189085c80d1bd4d44263a2a4
+
+% 0 1 0 1079f33864b3b39c15229e0e2a220f75
+
+@ 0 1 0 16e78e363ba7e50d091cad38664f40bf
++ entry .Flow   quebra, ajusta, trunca, corta e mede conteúdo textual dentro de uma largura de células
+
+% 1 1 0 09bf9bb6527ca4dd04f6e4a03b1a6c94
+
+@ 0 6 0 14a647f0b5c6280e0fe6fd11cc0be1b7
++       Os métodos de `Flow` funcionam com qualquer `textual` cuja instância de `Textual` tenha
++       elementos `Char` — `Text`, `Teletype` — e retornam o mesmo tipo, de modo que um texto com
++       estilo mantém seus estilos ao longo das linhas em que é quebrado. Toda largura é medida por
++       cluster de grafemas sob o `Text is Measurable` no escopo: um cluster é tão largo quanto seu
++       codepoint mais largo, de modo que uma marca combinante acompanha seu caractere base, e uma
++       bandeira ou uma família de emojis com ZWJ conta uma vez só.
+
+% 2 1 0 088e4a5ada757ff80f11df5227c4ea84
+
+% 3 1 0 078924574db1bfdf1201ee68ae65f2c4
+
+% 4 1 0 19b1572970852b1c0386ad1eb812bdd5
+
+% 1 1 0 16368aa5557f87450bded1d92ef5a5f2
+
+% 0 1 0 016fa8c4b5a419d6039f8c6a5bf50f21
+
+% 0 1 0 1dfa1a5cf83ee41308a94dff5d14c7e6
+
+% 0 1 0 14e0a6a16d6e7c571fc65469829ce606
+
+% 0 1 0 1c58d849d7374f33102bf8799a7fb47c
+
+% 1 1 0 121795a4e9fdc75d0126dea165a48ec2
+
+% 0 1 0 1869af3c902b8c24119f5b944dd8d141
+
+% 1 1 0 1379d456e128239413570fcd3cbe23aa
+
+@ 0 1 0 1a172d77d5ded1211d07c13f8902b639
++   entry .wrap   distribui o conteúdo em linhas não mais largas que uma largura, hifenizando e quebrando em espaços
+
+% 1 1 0 06b7d05c9e91fd4b1c4e214eacbb3e86
+
+@ 0 7 0 1344bb23aae572e61b23e5ecefbc9539
++         `Flow.wrap(content, width)` retorna uma `Sequence` de linhas. Uma quebra forçada (`\n` ou
++         `\r\n`) sempre inicia uma nova linha, e quebras forçadas consecutivas mantêm a linha vazia
++         entre elas. Onde é necessária uma quebra suave, prefere-se o último ponto de hifenização
++         da palavra que transborda que ainda caiba com `hyphen` (por padrão `t"-"`) acrescentado;
++         não havendo, a linha quebra em seu último espaço; não havendo, a palavra longa demais
++         continua além da largura. Uma largura abaixo de 1 retorna o conteúdo como uma única
++         linha. Sem hifenização no escopo, usa-se o fallback do objeto companheiro; a hifenização
++         do inglês é importada pelo nome:
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 14f0710e7497af3e1d47c135b8335adf
+
+% 1 1 0 02e0b940a7be211c115af07758bfd99d
+
+% 2 1 0 1618fc70526034f215246d6a095d66db
+
+% 1 1 0 120a35d616c62913102224e6e2a4655b
+
+% 0 1 0 07afb3147dfac8931c3b4f308374dfae
+
+% 0 1 0 0671c221e7549fc813671f6c083c77c4
+
+% 1 1 0 01a7f74b9b3f9fc10c782ff8cdc33586
+
+% 2 1 0 1734f0383a82a59b0c4506d0ae43b284
+
+% 0 1 0 07438e6a510006150be3e5f03f16393e
+
+% 1 1 0 0b2829929598cdfe07c937df946cc00e
+
+% 0 1 0 18f036a300c7d4b10ddc0ca65f89eb3e
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 1a3a5c948694f14113dbf0fab56114d5
++         Os espaços que uma quebra suave consome são descartados, mas espaços no fim de uma quebra
++         forçada ou no fim do conteúdo são conteúdo — um selo com estilo como
++         `e"$Bg(green)( ✓ )"` precisa das três células — e só são cortados até a largura, já que o
++         preenchimento nunca trunca.
+
+@ 0 6 0 18e9e92c8264b5af1588d8c1f1ad3c16
++         `unbreakable` nomeia trechos do conteúdo (como `Interval`s de offsets de char em seu texto
++         puro) que precisam sobreviver intactos, como um exemplo de código literal no meio da
++         prosa. Os espaços de um trecho não são oportunidades de quebra e seus pontos de
++         hifenização são ignorados, de modo que ele é quebrado como uma só palavra, passando
++         inteiro para a linha seguinte ou continuando além da largura; um espaço na borda de um
++         trecho ainda é uma oportunidade de quebra, e uma quebra forçada dentro de um trecho ainda
++         termina a linha.
+
+% 2 1 0 0484702bdbd828b7057b1bf3c7c70db4
+
+% 3 1 0 07c11ee74a194d5b1aa304110121ff11
+
+% 0 1 0 189b94ecbae7ef3f187dffd9681ce9e7
+
+% 0 1 0 07b3802820aae40f00aa10b1dc7eaad8
+
+% 0 1 0 17b6e6a49ef992ed1c5a5e7e254a88b0
+
+% 0 1 0 0ab4c8c75110030a15411ccdaa5d17c0
+
+% 1 1 0 18a8ce824b7a8ada031caf71aa2fe25a
+
+@ 0 6 0 174280d522c3038706e63c638fe9b794
++         Precisa de um `Text is Measurable` e de uma `Hyphenation` no escopo.
++   entry .fit   confina uma linha a exatamente uma largura: truncada com reticências, ou preenchida conforme o alinhamento
++       `Flow.fit(content, width, alignment, ellipsis, last)` encurta com `.shorten` o conteúdo
++       mais largo que a largura e preenche qualquer coisa mais estreita com `alignment`
++       (`Alignment.Left` por padrão). `last` é passado ao alinhamento e diz a
++       `Alignment.Justify` se a linha termina seu parágrafo.
+
+% 2 1 0 016ad0de0b8bc6e50d8ba48d22a6d172
+
+% 3 1 0 14b55f50fd05ded317a7cc4252c000fe
+
+% 1 1 0 11ca38aa54a01ad013a39af2d7954b01
+
+% 0 1 0 190a9c4d9901e9cd09faddabac6803e4
+
+% 0 1 0 1bc700a6847d559e11a89f1f23e501ca
+
+% 0 1 0 1c53a6018c88d82b05f647d2cd3255fb
+
+% 1 1 0 1be45a585647072311ca962b4a72e057
+
+@ 0 13 0 1d5f69ad4fc6c15500af267e1451fe41
++   entry .shorten   trunca o conteúdo mais largo que uma largura, marcando o corte com reticências
++       O conteúdo que já cabe é retornado sem alteração. Caso contrário, são mantidos tantos
++       clusters de grafemas inteiros quantos couberem com `ellipsis` (por padrão `t"…"`)
++       acrescentado, de modo que um caractere largo nunca fica dividido pelo corte. O resultado
++       pode ser mais estreito que a largura; `.fit` o preenche.
++   entry .chop   corta o conteúdo em linhas de no máximo uma largura, ignorando os limites das palavras
++       Distribuição por caractere, por cluster de grafemas, como o próprio terminal quebra uma
++       linha longa. Uma largura abaixo de 1, ou um conteúdo vazio, dá o conteúdo como uma linha.
++   entry .minContent   a menor largura em que o conteúdo pode ser quebrado sem transbordar: sua palavra mais larga
++       A largura de exibição de sua palavra mais larga, sendo as palavras delimitadas por espaços
++       e por quebras forçadas.
++   entry .natural   a largura que o conteúdo ocupa sem quebra: sua linha forçada mais larga
++   entry .metrics   as duas larguras intrínsecas do conteúdo, `.minContent` e `.natural`, como `Metrics`
+
+% 1 1 0 16b728a9de1780b2127099a429baa09e
+
+% 2 1 0 11f310cb8a8a7ee61c5b7e71587c32b4
+
+% 1 1 0 165b5949d2c22f13043f20c4cc53a096
+
+% 0 1 0 0a010453ee75c4351007f67165598acb
+
+% 0 1 0 1350e98830cf8a17025688d9465b73da
+
+% 1 1 0 1cffa8cc0f4bd67211213075ea0cd275
+
+@ 0 1 0 195a343848f820930fe6d8ebd0d915ec
++ entry .Alignment   posicionamento horizontal de uma linha dentro de uma extensão mais larga: à esquerda, à direita, centralizada ou justificada
+
+% 1 1 0 09c741611f0c79641c50868a68eb03c2
+
+@ 0 2 0 08eb5e380a15ef6402b2b27a8ae3a2db
++       Um `Alignment` preenche o conteúdo até exatamente uma largura com `#pad`; ele nunca trunca,
++       de modo que o conteúdo mais largo que a largura é retornado como está (`Flow.fit` trunca
++       antes).
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0d49790b89b726bd1fc213c44f998a34
+
+% 1 1 0 0288d474bc01005e03a3a63975104178
+
+% 2 1 0 0a53483835a0af831eba7ced157bc23b
+
+% 3 1 0 1f4fe68639ce00d00caba9db2d2a061e
+
+% 0 1 0 151e0d3923c98ee8142265a29c1a6d9e
+
+% 0 1 0 0c15b04651ddef301ef90c9e35f08ed9
+
+% 1 1 0 1f7c7038abed3d13176da1dbe026192e
+
+% 2 1 0 15dca49994c934b91392cbd40052a74e
+
+% 3 1 0 0b312ff188a9578e0a6d3bc092c2b253
+
+% 0 1 0 08122b6fda88c135130a9d4008e4a194
+
+% 0 1 0 145e47c6d2f943f41fc16c99df502282
+
+% 1 1 0 191049cf64676cc7017cd6beaf9e7e7f
+
+% 2 1 0 09f9c5523af501b20dc2d62c0a76ecf2
+
+% 3 1 0 19543f4faf96d7f216336be620b1cbbb
+
+% 0 1 0 0f010bc88be9c56a174601f53251a783
+
+% 0 1 0 014a061d2aa9ea421ef16df5c2566f32
+
+% 1 1 0 1be25715be34af570c1586cb89741348
+
+% 2 1 0 178014a003fff1bd116a1903259d8e17
+
+% 3 1 0 1833291a7c56a5731b5dd0853548d741
+
+% 0 1 0 16024ff58627edb50f28e8ae5c56d624
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 1 1 0 01a8048d60bbce8e0fbfeebae2b28e8c
+
+@ 0 14 0 0a6e10a64265526a0113b2a3d83e859c
++   entry .Left   preenche o conteúdo à direita
++   entry .Right   preenche o conteúdo à esquerda
++   entry .Center   centraliza o conteúdo, pondo à direita uma célula ímpar de espaço sobrando
++       Ao contrário do `center` do gossamer, que põe a célula ímpar à esquerda.
++   entry .Justify   estica os espaços entre as palavras para preencher a largura, exceto na última linha de um parágrafo
++       Quando `last` é verdadeiro, a linha é preenchida à direita, como `Left` a preenche: a linha
++       final de um parágrafo não é esticada. Caso contrário, o espaço sobrando é repartido entre
++       os espaços entre as palavras, e o que restar vai para os espaços mais adiante.
++   entry .Vertical   posicionamento vertical do conteúdo dentro de uma extensão mais alta: `Top`, `Middle` ou `Bottom`
++       Uma enumeração de três casos, usada onde uma célula é mais baixa que a linha em que está
++       — quando outra célula da linha é quebrada em mais linhas.
++   entry #pad   preenche o conteúdo até exatamente uma largura, dado se ele é a última linha de um parágrafo
++       `pad(content, width, last)`, com `last` verdadeiro por padrão; só `Justify` o leva em
++       conta. Precisa de um `Text is Measurable` no escopo.
+
+@ 0 1 0 08a30f37ea3cedd41a66c398ed1da10b
++ entry .Metrics   as larguras intrínsecas do conteúdo ao longo de um eixo: min-content e natural
+
+% 1 1 0 0db412ba6993de9c1b64376c923291ec
+
+@ 0 4 0 0f6eafbcdbb716821f9d4c9c6142dc3b
++       `Metrics(min, natural)`: `min` é a menor extensão em que o conteúdo pode ser disposto sem
++       transbordar (sua palavra mais larga, no caso de texto), e `natural` a extensão que ele ocupa
++       dado espaço ilimitado (sua linha mais larga). `Flow.metrics` mede texto, e
++       `Reflowable#metrics` qualquer conteúdo reorganizável.
+
+% 2 1 0 1c51165431ef41e41c5ece43760dfd65
+
+% 3 1 0 021ad9a57302441d0e548451fcdcef96
+
+% 0 1 0 0a56aced4b09a87a03b5e100cbe6471b
+
+% 0 1 0 0e512f9072c662dd1cb80d26fde63fe5
+
+% 1 1 0 04da57861f3d9d5d1668a8418a00a4de
+
+% 0 1 0 1d07e14aad1f630614e09892321c64f1
+
+@ 0 5 0 0c7d1aceb2e8347b07e0d6cec6886888
++   entry .apply   métricas de uma largura fixa, cujas larguras mínima e natural são iguais
++   entry #min   a menor extensão em que o conteúdo cabe sem transbordar
++   entry #natural   a extensão que o conteúdo ocupa dado espaço ilimitado
++   entry #max   a maior de duas métricas, mínimo com mínimo e natural com natural
++       As métricas de uma coluna que contém ambos os conteúdos.
+
+@ 0 1 0 1b457b847fa627ca087da638fd766e5b
++ entry .Flex   uma trilha que disputa espaço ao longo de um eixo: suas métricas, seu peso, seu limite e seu comportamento ao recolher
+
+% 1 1 0 108c8ec483821ef8161b531a13d7bf20
+
+@ 0 4 0 04388ade9dd4d12b0563fd9fc397e0ab
++       Um `Flex` descreve uma trilha — uma coluna, uma linha, um painel — para `Flex.solve`: as
++       `#metrics` de seu conteúdo, o `#weight` com que ela demanda espaço sobrando (`1.0` por
++       padrão), um limite superior opcional `#max`, e se ela é `#collapsible`: descartada por
++       inteiro, a de menor `#rank` primeiro, quando o eixo não comporta o mínimo de todas as
++       trilhas.
+
+% 2 1 0 0bb6c889319585e717711a430aa90175
+
+% 3 1 0 08acd0f3b329944c1fac91f86f35cf5b
+
+% 0 1 0 01c637cfa68edd571ea46eeabaaf2007
+
+% 0 1 0 1f26e9c2b1f3ba551d52acfbe7e2ec80
+
+% 1 1 0 10f82d775235713909c1a302b6705b42
+
+% 1 1 0 06b995bd37126f8f0c13656b10a03498
+
+@ 0 3 0 1949d6c76205c36415826698624deeb9
++   entry .content   uma trilha cujos limites derivam apenas de seu conteúdo
++       Ela encolhe até seu mínimo, nunca cresce além de sua largura natural, e demanda espaço
++       sobrando na proporção do quanto ela consegue absorver de forma útil, a diferença entre os
++       dois.
+
+% 2 1 0 1869bbfbc18db4bb1defe41d51e75b92
+
+% 3 1 0 0824556dba5952b81cc2ecb75d335a30
+
+% 0 1 0 0765f327bccf246611b68bac79371708
+
+% 1 1 0 056ce065f7a3c1a311e628bb566bbe21
+
+@ 0 1 0 02af86c8f465f58c0bc76a4cc79e9dd0
++   entry .solve   reparte as células de um eixo entre trilhas, dando o tamanho de cada trilha, ou `Unset` se ela foi recolhida
+
+% 1 1 0 11980f0cee2a286411658b23f2468bce
+
+@ 0 1 0 005396deaf361c04040d255c57d314f1
++         `Flex.solve(tracks, available, gap)` trabalha em dois estágios.
+
+@ 0 4 0 0ba155ebefeba2000e1a81e362c8ff1b
++         **Recolhimento.** Enquanto os mínimos das trilhas, mais um `gap` entre cada par, não
++         couberem em `available`, a trilha recolhível de menor rank (a mais à esquerda, em caso de
++         empate) é descartada, e seu tamanho é `Unset`. Se nada mais puder ser recolhido, os
++         mínimos são mantidos e transbordam o espaço, e quem chama decide o que fazer.
+
+@ 0 6 0 003d2b9144e275400438f064a9f38c68
++         **Distribuição.** A parte justa de cada trilha restante no espaço que sobra depois dos
++         espaçamentos é proporcional a seu peso. Uma trilha cuja parte ficaria abaixo de seu mínimo
++         é fixada no mínimo, e uma cuja parte excederia seu `max` é fixada no máximo, com o resto
++         redistribuído entre as outras até que nada mude. As trilhas livres então recebem suas
++         partes com arredondamento pelos maiores restos, de modo que os tamanhos somam exatamente
++         o espaço disponível.
+
+% 2 1 0 05b974d362b9c16000537add85b9c62f
+
+% 3 1 0 06d31775439adf8413da3abc4a066412
+
+% 0 1 0 06062be3c2f177dd1edf4e84d34d07bf
+
+% 0 1 0 0513626a7f4556ce0c7c616b3e5b49cf
+
+% 0 1 0 1585a6a49f82e28307f266f16dc5cb15
+
+% 0 1 0 1de6386e6dd2490e130c0088e5c7d0c7
+
+% 0 1 0 17ffff953f2167c7152d610281b05c96
+
+% 1 1 0 1cf55ac1dd11cef31d06a88900576daa
+
+@ 0 5 0 0cefc36859c626dc1b7e5bdd58cb041c
++   entry #metrics   as larguras intrínsecas do conteúdo da trilha; seu mínimo é um limite inferior
++   entry #weight   a proporção do espaço sobrando que a trilha demanda, em relação às outras
++   entry #max   um limite superior rígido para o tamanho da trilha, ou `Unset` para nenhum
++   entry #rank   a ordem de recolhimento da trilha: entre as trilhas recolhíveis, a de menor rank é descartada primeiro
++   entry #collapsible   se a trilha pode ser descartada por inteiro quando os mínimos não couberem todos
+
+@ 0 1 0 0be4724cc2a81c1b1389ffc219669d7b
++ entry .Reflowable   conteúdo que negocia com um layout retangular: suas larguras, sua altura, suas linhas
+
+% 1 1 0 04aaeffc41a20d0402398d8b7ad549bc
+
+@ 0 4 0 0ccc22652837bdfb094581cec27b3ef7
++       Um `Reflowable` informa as larguras intrínsecas que seu conteúdo quer (`#metrics`), quantas
++       linhas ele ocupa em uma largura candidata (`#height`) e, por fim, dispõe-se em linhas de
++       exatamente a largura acertada (`#flow`). Seu `#Line` é o tipo de uma linha renderizada:
++       para conteúdo que renderiza a si mesmo, como `Text` ou `Teletype`, o próprio tipo do
++       conteúdo.
+
+@ 0 2 0 1b0fea701b2bdb7609b7b34160cf0812
++       Todo `Textual` com elementos `Char` é reorganizável por meio de `.textual`, no escopo
++       implícito, quebrando as linhas com `Flow.wrap` e preenchendo cada linha conforme o
++       alinhamento.
+
+% 2 1 0 132a297b804c5a551b89038adcb78d00
+
+% 3 1 0 14a2fab7a09e29f20958b4604e48475e
+
+% 4 1 0 06bf92b086d17c340bc80ce185930a33
+
+% 1 1 0 11a56a05d75d73021b434c073a37505d
+
+% 0 1 0 1c885e733ae0d352062f77143572401e
+
+% 0 1 0 1ac0b8931052a1c71d0552772fe2c90b
+
+% 0 1 0 085d37a1302da7281cc9ee6876785430
+
+% 1 1 0 1d718a5d44564cf804271778351a7a18
+
+@ 0 2 0 0b24457ef16bd5c0027fd485a2f0694d
++       As células de tabela do escritoire e os painéis do ultimatum recebem seu conteúdo por meio
++       desta classe de tipos.
+
+% 1 1 0 00847ba67a7d86f919acc91e7e20f02f
+
+% 1 1 0 055ee6f92fdf0f0d0d44c32de523a587
+
+@ 0 9 0 03c091a5afa1bd7d06732d5c8acd90d1
++   entry .textual   torna reorganizável qualquer `Textual` de elementos `Char`, com linhas de seu próprio tipo
++       As métricas vêm de `Flow.metrics`; as linhas vêm de `Flow.wrap`, cada uma preenchida até a
++       largura conforme o alinhamento, sendo a linha final tratada como a última de seu
++       parágrafo.
++   entry #Line   o tipo de uma linha renderizada do conteúdo
++   entry #metrics   as larguras intrínsecas do conteúdo, sob o `Text is Measurable` no escopo
++   entry #height   quantas linhas o conteúdo ocupa em uma largura
++       Por padrão, o número de linhas que `#flow` produz nessa largura, alinhadas à esquerda.
++   entry #flow   o conteúdo disposto em linhas de exatamente uma largura, alinhadas como indicado
++       Precisa de um `Text is Measurable` e de uma `Hyphenation` no escopo.
+
+@ 0 4 0 18f22da79a63a9ce0eaf23bcf29f567d
++ entry .BoxLine   o peso de um braço de uma junção de desenho de caixa: `Blank`, `Thin`, `Thick` ou `Double`
++     Uma enumeração de quatro casos. Um caractere de desenho de caixa é escolhido pelos pesos de
++     seus quatro braços — em cima, à direita, embaixo e à esquerda — por meio de
++     `LineCharset#apply`, de modo que `Blank` em todos os braços é um espaço, e `Thin` em cima e
++     embaixo com `Blank` dos dois lados é uma linha vertical.
+
+@ 0 1 0 1d98b3393d96414b129fb5e9c804efa6
++ entry .LineCharset   uma família de caracteres de desenho de caixa: `Default`, `Rounded` ou `Ascii`
+
+% 1 1 0 16cc83c3ab18a468087ecb8c697b20c8
+
+@ 0 4 0 0e62a688a53b587509f4b228852311f9
++       `Default` é o conjunto Unicode de desenho de caixa, com linhas finas, grossas e duplas e as
++       junções entre elas; `Rounded` é o mesmo com cantos arredondados nos quatro cantos finos; e
++       `Ascii` aproxima cada caractere com `-`, `|` e `+`, para um terminal sem Unicode.
+
+% 2 1 0 0eecd8bfec0383c915a58010e75212c6
+
+% 3 1 0 1b0cb5f58c2e8b641432d68361bd9d42
+
+% 0 1 0 0b956adc86b2c9d30ca386eb0046ca69
+
+% 0 1 0 05cdef24b9108ce805d460f3dd547965
+
+% 0 1 0 0ac8984ec326d0db0083cbd7358d5c2c
+
+% 1 1 0 04595142528d037e0244b6dd087c7945
+
+% 0 1 0 134519eb4c1e37410559deb29396e130
+
+% 0 1 0 1205638319d019dc0c3e6f4dcf60b938
+
+@ 0 4 0 0158412b4861e8b1187b3f472b483a13
++   entry #apply   o caractere de junção para quatro braços, ou a tabela inteira de caracteres
++       `charset(top, right, bottom, left)` dá o caractere cujos braços têm esses pesos de
++       `BoxLine`, cada um `Blank` por padrão. `charset()` dá a tabela inteira do charset, como um
++       array congelado de 256 caracteres indexado pelos quatro pesos.
+
+@ 0 1 0 1476229d3cd7c2031fa072d1b4e454de
++ entry .BoxDrawing   as tabelas de caracteres de desenho de caixa por trás de `LineCharset`
+
+% 1 1 0 003294c89a980a1f0b7de85652c2cd7b
+
+@ 0 3 0 07a1dfeea1d568df0683a9c530edb768
++       Cada tabela é um array congelado de 256 caracteres, indexado pelos pesos dos quatro braços
++       de uma junção: `left + 4*bottom + 16*right + 64*top`, cada um o `ordinal` de um `BoxLine`.
++       Uma combinação sem caractere próprio recebe o mais próximo disponível.
+
+% 0 1 0 0e6a7879f149473d174c3dc8b0202509
+
+@ 0 7 0 036eb4fe2f24d13107f9d8249d56a779
++   entry .asciiChars   a tabela de `LineCharset.Ascii`: cada junção como `-`, `|`, `+` ou um espaço
++   entry .defaultChars   a tabela de `LineCharset.Default`: os caracteres Unicode de desenho de caixa
++   entry .roundedChars   a tabela de `LineCharset.Rounded`: como a padrão, com cantos finos arredondados
++   entry .simple   o caractere de uma linha reta ou de um cruzamento, a partir de um peso vertical e um horizontal
++       `BoxDrawing.simple(vertical, horizontal, charset)` é
++       `charset(vertical, horizontal, vertical, horizontal)`: o peso vertical em cima e embaixo,
++       e o peso horizontal dos dois lados.

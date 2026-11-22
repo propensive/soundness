@@ -1,0 +1,658 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14884a8d0543cd58000ca3de7c798178
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12a90e6b1539478a0d0fda808abd94b1
++ info   il TASTy come dati: introspezione di alberi e simboli, e risoluzione degli stack frame nelle definizioni sorgente da cui provengono
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 2 0 0e72e7f78642dad61aa8b8d2e65bd054
++     _Hyperbole_ legge ciò che il compilatore Scala sa di un programma — il suo **TASTy** — e lo
++     rende disponibile come valori, per due scopi.
+
+@ 0 9 0 0646e01d210f3b6015777801c46066f7
++     Il primo è l'**introspezione**. `Introspect.syntax` cattura l'albero tipizzato di qualsiasi
++     espressione, come lo vede il compilatore dopo la tipizzazione e l'inlining, come
++     `Tasty.Tree`; e `Introspect.semantics` cattura un simbolo — quello di un tipo, di un valore,
++     o della definizione che lo racchiude — come `Tasty.Symbol` con i suoi flag, le sue proprietà
++     e i suoi membri. All'interno di una macro, le estensioni `syntax` e `semantics` fanno lo
++     stesso per un `Expr` o un `Symbol` a portata di mano. Entrambi si rendono in un terminale,
++     tramite una `TastyPalette`, come diagramma ad albero o come tabella, il che sostituisce
++     l'archeologia a colpi di `println` quando l'autore di una macro vuole vedere che cosa ha
++     prodotto un'espansione, o quando chiunque vuole vedere che cosa ha ricavato il compilatore
++     da una riga di codice ordinario.
+
+% 2 1 0 188dfa04e3bbbb051892482ebf695a85
+
+% 3 1 0 08bf557526cc52541a65a005bfb7c5c6
+
+% 0 1 0 1d148a1ae60a0f051a182e7fc8d0253e
+
+% 0 1 0 13ecb3587ae717d10bf1bcd7fa83dcc0
+
+% 0 1 0 1f44defb8e5f5a5a13ed3731aea1322b
+
+% 0 1 0 0de6ae8dd618958617e670e193013a69
+
+% 1 1 0 19dcd3bca25b8b7b039b8c893e0e851b
+
+@ 0 9 0 0c5f8af093c87a510de3b9bdb3b135ef
++     Il secondo è la **risoluzione degli stack frame**. Uno stack frame della JVM nomina una
++     classe e un metodo compilati, e il demangling (`StackTrace.rewrite` in
++     digression) può solo ripulire quel nome: `$anonfun$3` diventa `λ₃`, che dice che è stata
++     eseguita una lambda ma non quale. Il compilatore registra l'estensione di ogni definizione
++     nel TASTy che scrive accanto a ogni class file, quindi la riga che un frame porta basta a
++     trovare la definizione a cui appartiene. `StackResolver` esegue questa ricerca, e importare
++     `stackResolutions.tastyStackResolution` fa sì che ogni `StackTrace` catturato nell'ambito
++     porti una `StackTrace.Frame.Source` che nomina il file, la catena delle definizioni che lo
++     racchiudono, il nome sorgente della definizione e il suo `Kind`; `resolved` fa lo stesso
++     con uno stack trace già a portata di mano.
+
+% 2 1 0 189bc8aea053ab67107edb61ef208a79
+
+% 3 1 0 075d4f2905d70098150f731328edcd72
+
+% 0 1 0 109ae64d1f2c3f160b747bcab6438096
+
+% 1 1 0 00596dc2fc8f8fa80ec47580377d1df9
+
+% 2 1 0 0a5a6b136741710a1946369bd8e09f56
+
+% 0 1 0 1f2ae059e1f4bd9a1aca20f622222eac
+
+% 1 1 0 0fabe28fe58874eb045f72bff2788c23
+
+% 0 1 0 1d8d554adda34102077f8d392814ffb5
+
+% 1 1 0 1c0e9dfe8b3068c1167de010f8c643cd
+
+@ 0 1 0 1278f6e005c1db141ac0955b9d6a295a
++     La libreria ha tre source set, secondo ciò che ciascuna piattaforma sa fare:
+
+@ 0 10 0 023edde6800a8e370a1d99ea32fc1dff
++     - `hyperbole.tasty` — il modello di dati `Tasty` (`Symbol`, `Tree`, `Definition`, `File`) e
++       `Tasty.parse`, che legge le definizioni di un file `.tasty` da byte grezzi tramite il solo
++       `tasty-core`: nessun compilatore, nessun classpath, nessun filesystem. Compila per la JVM,
++       Scala.js e Scala Native, così un debugger può analizzare il TASTy ricevuto da una
++       connessione.
++     - `hyperbole.core` — `Introspect`, le macro e le estensioni `syntax` e `semantics`,
++       `TastyPalette` e le rese `Teletypeable`. Solo JVM, poiché dipende dall'evidenziazione
++       della sintassi del compilatore e dal compilatore di staging.
++     - `hyperbole.stacks` — `StackResolver`, il package di scelta `stackResolutions` e
++       l'estensione `resolved`. Solo JVM: legge il TASTy e i class file tramite il given
++       `Classloader` nell'ambito, e i file sorgente dal disco.
+
+@ 0 4 0 0878d48908cee5480f900d88f14fd4b5
++     I given del resolver si importano per nome, poiché `import soundness.*` non importa alcun
++     given: un `Classloader` da `classloaders`, una `WorkingDirectory` da `workingDirectories`,
++     e `stackResolutions.tastyStackResolution` stesso. Tutto viene esportato nell'ombrello
++     `soundness`, e `stackResolutions` si fonde con il package omonimo dell'ombrello stesso.
+
+% 0 1 0 188d5c043f73b7c21d0bdb36a80aa2b8
+
+% 0 1 0 0024bea7c40b97f109d7459e1cc211c8
+
+% 0 1 0 1a633081218ae21b06e35c1a46848027
+
+% 0 1 0 07daa4ef4011608a1ba56e3c26180cc6
+
+@ 0 1 0 155c58d844a2d0c91d43b6c45aed6110
++ entry .Introspect   cattura come valore l'albero di un'espressione, o un simbolo, dal codice ordinario
+
+% 1 1 0 1fcf9d1f26a1df0e192ffc1b5d351916
+
+@ 0 5 0 0fbc0c631bbd0d751ed30f136cfcff88
++       Due macro che funzionano al di fuori di qualsiasi macro, su qualsiasi espressione o tipo
++       del codice ordinario. `Introspect.syntax` dà l'albero tipizzato di un'espressione come
++       `Tasty.Tree`, con il tag, il nome, il tipo e il sorgente di ogni nodo;
++       `Introspect.semantics` dà i flag, le proprietà e i dettagli di un simbolo come
++       `Tasty.Symbol`. Entrambe producono valori semplici che si possono confrontare,
++       attraversare, o rendere come `Teletype` con una `TastyPalette` nell'ambito.
+
+% 2 1 0 0a892b421d2b3ceb040d446bd3e8a008
+
+% 3 1 0 1000dc90e08b374a031296bafad9faec
+
+% 0 1 0 0ea811604853c35e04b2adb2498c1be5
+
+% 2 1 0 1a27a6c18ad6a3f81758de027ec375a3
+
+% 0 1 0 1e51e1b64a46df030f0db3ac601fa186
+
+% 0 1 0 1431fcf3d6904caa0fe258995fc8739e
+
+% 0 1 0 152bc9f0dcd6a45108c7627a1d19421c
+
+% 1 1 0 034e12f2fbbccb1111ee805c117687c4
+
+@ 0 4 0 0a95ebccd1d9a4f2182f6f8aa2f88034
++       L'introspezione di `1 + x` per un `val x = 5` mostra l'`Apply` di un `Select` su un
++       `Literal` e un `Ident`; la stessa per un `val y: 5 = 5` mostra un unico `Literal`, poiché
++       il tipo singleton ha permesso al compilatore di eliminare l'addizione calcolandola — ed è
++       così che le macro rispondono a domande sul linguaggio stesso.
+
+% 1 1 0 19eb37a051e6e15f159dbea8f77111b2
+
+% 0 1 0 0c1383b94e4717511d69840a3c9e5270
+
+% 0 1 0 0d33cbd07fe618701b26520538176965
+
+@ 0 7 0 0015391143ffcd4b17428e660217c0d5
++   entry .syntax   l'albero tipizzato di un'espressione, come `Tasty.Tree`, con o senza il suo inlining
++       `Introspect.syntax(inlining)(expression)` è una macro transparent inline: l'espressione
++       viene tipizzata, e il suo albero viene serializzato in un `Tasty.Tree` i cui nodi portano
++       il tag, il tipo di nodo (`Apply`, `Ident`, `Literal`, …), il suo tipo, il sorgente da cui
++       proviene e i suoi figli. Con `inlining = true` (il valore predefinito è `false`) l'albero
++       è quello dopo l'espansione inline, quindi vi compaiono i corpi dei metodi inline e delle
++       macro; con `false` viene mostrato l'albero proprio dell'espressione e le chiamate inline
++       restano chiamate.
+
+% 2 1 0 1d206b7968fc4cec1f7ce594150e000a
+
+% 3 1 0 1f51ccba1a62241305724373a700af92
+
+% 2 1 0 05558e5e59d79fae16b76a4626810707
+
+% 0 1 0 1534f1104da220971d15fd21bd84e147
+
+% 1 1 0 157f7f31f682d1291076097bd1f206d7
+
+@ 0 10 0 15a159ec671283471eacea034cae6c8d
++       Qui la radice è un `Apply` di tipo `Unit` il cui `expr` è
++       `scala.Predef.println("hello world")`, con un `Ident` (`println`) e un `Literal`
++       (etichettato `a`, di tipo `"hello world"`) come suoi `nodes`.
++   entry .semantics   un simbolo come `Tasty.Symbol`: di un tipo, di un valore, o della definizione che lo racchiude
++       Tre forme. `Introspect.semantics[T]` dà il simbolo del tipo `T`, risolti gli alias;
++       `Introspect.semantics(value)` dà il simbolo del termine a cui si riferisce l'espressione;
++       e `Introspect.semantics()` dà il simbolo della definizione in cui è scritta la chiamata.
++       Ogni `Tasty.Symbol` registra il nome completo del simbolo diviso in `prefix` e `name`, ogni
++       flag del compilatore con l'indicazione se è impostato, le proprietà che il simbolo ha, e
++       dettagli come il suo proprietario, la sua posizione, i suoi membri e le sue annotazioni.
+
+@ 0 6 0 173126accbc57a1a1e344ae42dfaf8af
++ entry .syntax   l'albero di un `Expr`, all'interno di una macro, come `Tasty.Tree`
++     Un'estensione su `Expr[T]`, che richiede un `Quotes`: `expr.syntax` è la controparte lato
++     macro di `Introspect.syntax`, per l'autore di una macro che ispeziona un argomento o
++     l'albero prodotto da un'espansione. L'albero viene preso così com'è, senza ripetere
++     l'inlining. Reso con `tastyTreeTeletypeable` e una `TastyPalette`, si legge come un
++     diagramma indentato con il tipo e il sorgente di ogni nodo accanto.
+
+% 2 1 0 1cc3f5ebf1ae7cd50ab254fce174087a
+
+% 3 1 0 050bf95b55b6fb460bd5d8675c1d6f50
+
+% 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
+
+% 0 1 0 0597ae50d86f683310b14115456876bb
+
+% 1 1 0 18c5df72e5a6cd50134a525d7d5d9534
+
+@ 0 4 0 1becaa9fe95d96040b23fae432f2a788
++ entry .semantics   il `Tasty.Symbol` di un `quotes.reflect.Symbol`, all'interno di una macro
++     Un'estensione su `Symbol`, che richiede un `Quotes`: `symbol.semantics` è la controparte
++     lato macro di `Introspect.semantics`, e riduce un simbolo di reflection a un valore con i
++     suoi flag, le sue proprietà e i suoi dettagli, che una macro può ispezionare, confrontare o
++     rendere.
+
+@ 0 7 0 17b57604dd1a5a0707dd221c1a0b74c3
++ entry .TastyPalette   i colori con cui vengono resi gli alberi e i simboli TASTy
++     Una `Palette` in sRGB con, oltre a `background` e `foreground` che ogni tavolozza possiede:
++     `typeDefinition` e `termDefinition` per i nodi che definiscono un tipo o un termine,
++     `typeReference` e `termReference` per i nodi che vi si riferiscono, `flagOn`/`flagOff` e
++     `propertyOn`/`propertyOff` per i flag e le proprietà di un simbolo, `outline` per i tipi e
++     i valori di dettaglio, e `accented` per i nomi dei parametri. Per rendere un `Tasty.Tree` o
++     un `Tasty.Symbol` come `Teletype` deve esserci una `TastyPalette` nell'ambito; la libreria
++     non ne fornisce alcuna.
+
+% 2 1 0 13796828447a06970ae1d57963a8cdbd
+
+% 3 1 0 13e1187979e0f7cf1f7d2788fe5371fe
+
+% 0 1 0 13fc4b6087da96a60fad17d5dfc8458d
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 1677448d14dc3be404368d1a8bc6b58a
+
+% 0 1 0 1dd8e3e8409139be11ff5050c55a4195
+
+% 0 1 0 03fa095e94b4298d1750c6f593ab609a
+
+% 0 1 0 0846aac4c797f35a034eff40ce6c89cd
+
+% 0 1 0 14b767d1c582cbf714fced4b62c1ccc1
+
+% 0 1 0 0b0e19a3fbf683360abb5c30c6993e60
+
+% 0 1 0 14cce2f1f48df8ff018477cc9e0aa43a
+
+% 0 1 0 0ee70ecbf286cfa2061a68b919c21e76
+
+% 0 1 0 1779c7aca9429874158af067dd8863b0
+
+% 0 1 0 03c207b700949bcb09b6f67abfa737c8
+
+% 0 1 0 01297901af139901183a3984b081de40
+
+% 0 1 0 104bd6fa2b4b8760125f08bb8bbb0def
+
+% 1 1 0 1c5ba0193ae529841b7a585037694574
+
+@ 0 6 0 1596542fa9e7517210a1c426e06abf1c
++ entry .tastySymbolTeletypeable   rende un `Tasty.Symbol` come una tabella a due colonne delle sue proprietà
++     Il given `Teletypeable` per `Tasty.Symbol`, che richiede una `TastyPalette`. La tabella ha
++     una riga per il nome (prefisso attenuato, nome in grassetto), una riga di flag con quelli
++     impostati evidenziati sul colore `flagOff` della tavolozza, una riga di proprietà con quelle
++     impostate su `propertyOn`, e una riga per ogni dettaglio. È un given di primo livello,
++     quindi si risolve senza import all'interno di `hyperbole` e per nome altrove:
+
+% 0 1 0 1f3075a8d42fc66f071a00cd7588da7f
+
+@ 0 7 0 0e447de6496dcb6511ae2662e9afa2e2
++ entry .tastyTreeTeletypeable   rende un `Tasty.Tree` come diagramma indentato con colonne per il tipo e il sorgente
++     Il given `Teletypeable` per `Tasty.Tree`, che richiede una `TastyPalette`. Ogni nodo è una
++     riga: le linee dell'albero, il tag del nodo tra parentesi angolari (o `▪` per un nodo senza
++     tag), il suo nome colorato come definizione o riferimento di termine o di tipo, e un nome di
++     parametro nel colore `accented`; poi il suo tipo, sottoposto a demangling con
++     `StackTrace.rewrite`; poi il sorgente da cui proviene, con l'indentazione comune tagliata.
++     Un given di primo livello, importato per nome fuori da `hyperbole`:
++     `import soundness.tastyTreeTeletypeable`.
+
+@ 0 1 0 1e57ec687abb61c21cdb3aa54cab7e93
++ entry .Tasty   il modello di dati TASTy: alberi, simboli, definizioni e file, leggibili da byte grezzi
+
+% 1 1 0 1f8e67271a88c85c11701bf645176a80
+
+@ 0 7 0 1e44a91812d796bb0ef6d9cf84d6f5d6
++       `Tasty` è un oggetto che contiene i tipi del modello e il lettore. `Tasty.Tree` e
++       `Tasty.Symbol` sono ciò che produce `Introspect`. `Tasty.File` e `Tasty.Definition` sono
++       ciò che `Tasty.parse` legge dai byte di un file `.tasty`: le definizioni che il
++       compilatore ha registrato per una classe di primo livello, ciascuna con il suo nome, la sua
++       catena di proprietari, il suo `Kind` e le righe che copre, e il percorso del file sorgente
++       da cui è stata compilata. La lettura richiede solo `tasty-core`, le costanti e il lettore di
++       byte del formato, quindi questo componente gira sulla JVM, su Scala.js e su Scala Native.
+
+% 2 1 0 0aa7b39722e7fc8610fce1342b931c15
+
+% 3 1 0 0113e71606a720361b5121e4d9d73aae
+
+% 1 1 0 10a14798fc4c8e4b1dce56ee585f8cfc
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0c8f62312d5a06821798fadf933997ca
+
+% 0 1 0 102df740253fb28d0301222c3f28463e
+
+% 0 1 0 117ca5d4da989ff812fd488cc1a5eb3a
+
+% 1 1 0 0c8e0c7e4002bbda15e27949ec066a31
+
+@ 0 3 0 1f6cc52b5ecb61041325ad0a5d5717fd
++       Il TASTy viene scritto una volta per classe di primo livello, quindi le definizioni di una
++       classe annidata, anonima o di modulo si trovano nel file della classe più esterna che la
++       racchiude, e le definizioni di primo livello in `<file>$package.tasty`.
+
+% 0 1 0 04b1ef1ed3f6e3140839d491caf4fa35
+
+% 0 1 0 1d465da45f1b8ec311fdb090187d7222
+
+@ 0 8 0 03c12d864653fd4209de80f3722270da
++   entry .parse   legge le definizioni di un file `.tasty` dai suoi byte, o `Unset` se non ci riesce
++       Qualsiasi cosa inattesa — una versione di TASTy che questo lettore non comprende, un file
++       troncato, una sezione assente — dà `Unset` anziché un errore, poiché il TASTy è sempre e
++       soltanto una fonte di dettagli aggiuntivi. Il risultato è un `Tasty.File` con il percorso
++       sorgente registrato dal compilatore (relativo alla sua `-sourceroot`, se ne è stata data
++       una) e ogni definizione con la sua estensione. I nomi derivati dal compilatore si rendono
++       come lui li scrive: `name$1`, `method$default$2`, `super$name`.
++   entry .Symbol   un simbolo del compilatore ridotto al suo nome, ai suoi flag, alle sue proprietà e ai suoi dettagli
+
+% 1 1 0 1a73e18da41b11830bb004307af2f1af
+
+@ 0 13 0 0568703af4ce40d107e992aa04f8bc94
++         Prodotto da `Introspect.semantics` o dall'estensione `semantics`. `#prefix` e `#name`
++         dividono il nome completo all'ultimo segmento; `#flags` elenca ogni flag del compilatore
++         (`Abstract`, `Case`, `Given`, `Inline`, …) insieme all'indicazione se è impostato, e
++         `#properties` allo stesso modo ogni proprietà (se il simbolo è una classe, un tipo, un
++         termine, un package, …); `#details` è una lista di valori con nome — il proprietario, la
++         posizione, i membri, le annotazioni e simili — ciascuno un testo o una lista di testi. Si
++         rende con `tastySymbolTeletypeable`.
++     entry #prefix   il nome completo fino all'ultimo segmento, con il `.` finale
++     entry #name   il nome proprio del simbolo
++     entry #flags   ogni flag del compilatore, insieme all'indicazione se è impostato su questo simbolo
++     entry #properties   ogni proprietà dei simboli, insieme all'indicazione se questo simbolo la possiede
++     entry #details   dettagli con nome del simbolo: ciascuno un testo o una lista di testi
++   entry .Tree   un nodo di un albero tipizzato, con il suo tag, il suo tipo di nodo, il suo tipo, il suo sorgente e i suoi figli
+
+% 1 1 0 191c7a5d7526d9331fe60336c275ae82
+
+@ 0 8 0 038f1a92ace3fa9a1f0079947b33ee79
++         Prodotto da `Introspect.syntax` o dall'estensione `syntax`, e annidato tramite `#nodes`.
++         `#name` è il tipo di nodo come lo chiama il compilatore (`Apply`, `Select`, `Ident`,
++         `Literal`, `DefDef`, …); `#typeName` il suo tipo, dove ne ha uno; `#expr` il nodo
++         stampato come codice; `#source` la riga sorgente da cui è stato analizzato; `#tag` un
++         marcatore di un carattere per il ruolo di un figlio nel genitore (`a` per un argomento,
++         `' '` per nessuno); `#param` il nome del parametro che un figlio riempie, se c'è; `#term`
++         se il nodo è un termine anziché un tipo; e `#definitional` se definisce anziché
++         riferirsi. Due alberi sono uguali quando lo sono tutti i campi, ed è così che un test
++         fissa un'espansione.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 00c432d5b1fd54710c69a5c0639de8ff
+
+% 0 1 0 165c039be46474c10f5769439b27c20e
+
+% 0 1 0 1e77147963e3f26e020077711da1816d
+
+% 0 1 0 14254e564ee08ac20897f9d03ac1c418
+
+% 0 1 0 08a67e5db6ed0dbb1773747865b460ea
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 13 0 02eb3695ed72e3e6133e658c6bdfe436
++     entry #tag   un marcatore di un carattere per il ruolo del nodo nel genitore; `' '` per nessuno
++     entry #typeName   il tipo del nodo, come testo; vuoto dove il nodo non ne ha
++     entry #name   il tipo di nodo: `Apply`, `Ident`, `Literal`, `DefDef`, …
++     entry #expr   il nodo stampato come codice
++     entry #source   la riga sorgente da cui proviene il nodo, come è stata scritta
++     entry #nodes   i figli del nodo, in ordine
++     entry #param   il nome del parametro che questo nodo riempie nel genitore, se c'è
++     entry #term   se il nodo è un termine; `false` per un tipo
++     entry #definitional   se il nodo definisce qualcosa, anziché riferirvisi
++     entry #shortCode   la prima riga di `#expr`, con `...` se ce n'erano altre
++     entry #typeNode   questo nodo marcato come tipo (`term = false`)
++     entry #definition   questo nodo marcato come definizione (`definitional = true`)
++   entry .Definition   una definizione registrata dal compilatore: il suo nome, i suoi proprietari, il suo tipo e la sua estensione nel sorgente
+
+% 1 1 0 1ea1de6ddbf8010316ed7c70620114a6
+
+@ 0 17 0 1693e14ef52c4c961dc6627dc0ce9561
++         Ciò che la risoluzione di uno stack frame richiede a una definizione. `#name` è il nome
++         sorgente (`<init>` per un costruttore); `#owners` la catena delle definizioni che la
++         racchiudono, dalla più interna, compreso il package; `#kind` uno
++         `StackTrace.Frame.Kind` (`Method`, `Lambda`, `Value`, `Class`, `Constructor`, …);
++         `#start` e `#end` gli offset in caratteri della sua estensione e `#firstLine` e
++         `#lastLine` le righe. Una definizione sintetizzata dal compilatore — il costruttore di un
++         `object` — ha un'estensione vuota in una qualsiasi posizione a portata di mano.
++     entry #name   il nome sorgente della definizione; `<init>` per un costruttore
++     entry #owners   le definizioni che la racchiudono, dalla più interna, terminando con il package
++     entry #kind   che cosa è la definizione, come `StackTrace.Frame.Kind`
++     entry #start   l'offset in caratteri in cui comincia la definizione
++     entry #end   l'offset in caratteri in cui termina
++     entry #firstLine   la prima riga sorgente che copre
++     entry #lastLine   l'ultima riga sorgente che copre
++     entry #span   la lunghezza dell'estensione, `end - start`: `0` per una definizione sintetizzata
++     entry #covers   se una riga cade tra `#firstLine` e `#lastLine`
++   entry .File   le definizioni di una classe di primo livello, e il percorso sorgente da cui sono state compilate
+
+% 1 1 0 166dfae3ece0a8f4192a782911781b32
+
+@ 0 15 0 0a1d953ffe05a97c1d43c138b5eed72b
++         Ciò che restituisce `Tasty.parse`. `#path` è il percorso sorgente come lo ha registrato il
++         compilatore — il percorso completo, o uno relativo a `-sourceroot` — o `Unset` se il file
++         non porta alcun attributo di sorgente; `#definitions` è ogni definizione del file.
++         `#covering` trova le definizioni attorno a una riga, dalla più interna, che è la ricerca
++         fatta dalla riga di uno stack frame.
++     entry #path   il percorso sorgente registrato dal compilatore, se c'è
++     entry #definitions   ogni definizione registrata dal file
++     entry #compiledFrom   se questo file è stato compilato da un dato percorso sorgente
++         Vero quando i percorsi sono uguali o uno dei due è un segmento finale dell'altro, poiché
++         una build con `-sourceroot` registra i suoi percorsi in forma relativa mentre uno SMAP
++         scritto nella stessa compilazione può nominare lo stesso file in forma assoluta.
++     entry #covering   ogni definizione che copre una riga, dalla più interna
++         L'annidamento si misura per estensione — l'estensione di una lambda è più piccola di
++         quella del metodo che la racchiude, quindi viene ordinata prima — e le definizioni con
++         un'estensione vuota vengono ordinate per ultime, per essere raggiunte solo quando un
++         frame è davvero una di esse.
+
+@ 0 1 0 01aa498dc146cc6507b4d533aeb7875d
++ entry .StackResolver   recupera dal TASTy la definizione sorgente dietro ogni frame di uno stack trace
+
+% 1 1 0 0eb636c2d1f9f3581d7ab10b70e0caef
+
+@ 0 7 0 14ba4f729d551d221c3f87b3f0536792
++       Uno `StackResolver` è uno `StackTrace.Resolver` che, per ogni frame, trova il file TASTy
++       della classe di primo livello del frame tramite il `Classloader` nell'ambito, cerca le
++       definizioni che coprono la riga del frame, sceglie quella con cui concorda il tipo del nome
++       compilato, e vi allega una `StackTrace.Frame.Source` che nomina il file, la catena delle
++       definizioni che la racchiudono, il nome sorgente della definizione, il suo `Kind`, e la
++       riga di sorgente stessa quando il file è leggibile. Un frame la cui classe non ha TASTy, o
++       il cui file non ha una riga per esso, viene restituito com'era.
+
+@ 0 3 0 1441d728fc92e85619dcb08220bfa55f
++       Senza un resolver, uno stack trace ha solo i nomi compilati, sottoposti a demangling ma
++       anonimi; con uno importato, ogni stack trace catturato nel suo ambito nomina le proprie
++       definizioni; e uno stack trace già a portata di mano si risolve esplicitamente:
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 11c21768f5faa38e08db5f12392f5fb1
+
+% 1 1 0 1964184faf74d7ac1512a5fcda244870
+
+% 2 1 0 038dbbbff8dc670d0d76b8f05ffd293a
+
+% 2 1 0 0ccb6989fbe4979501036f7d416d5e04
+
+% 3 1 0 157c6af7e0b4e4ea08cf0b556d4f46fc
+
+% 4 1 0 0f828db1eba7ecc50486048c52cf9ca8
+
+% 6 1 0 031e3a501259f2a91ea7306ddab34f03
+
+% 7 1 0 0eebaa51be49cf250fd36e81846d128b
+
+% 8 1 0 01b7bc26dd41d07e0c7b3fa4e61c4b38
+
+% 9 1 0 00d570de19e37ec61c9fb06f2c2b0159
+
+% 10 1 0 1b10a753ce9d6c0e0b743891edd54351
+
+% 12 1 0 188eebe82b326b8413339e17dac8110b
+
+% 0 1 0 086e3c266b62b7961bb28f28b87fd2e1
+
+% 0 1 0 18a12ef0084d926e1308c71ac3d12fe2
+
+% 0 1 0 0546f7942a99b4bb0b1f536fa4a54b11
+
+% 1 1 0 0069cc826ae80a210bc319bfac90fdf6
+
+% 2 1 0 0a828a54bd673419079646acd602ed32
+
+% 0 1 0 1109de1a9f4c73ae071c263fedc28828
+
+% 1 1 0 13b6099dcd42e77d1de06c14160ba497
+
+% 2 1 0 13ee63f83ef8c17614922c1c77a29186
+
+% 4 1 0 09ee7012b7e0392f1dd6630812e88073
+
+% 5 1 0 040ca84ffa9ddb3611e92e04e605320a
+
+% 6 1 0 139b011dc73a69ec014a39549a59fe58
+
+% 8 1 0 1c7c6e99752cbb9a0850af69d9247283
+
+% 9 1 0 017fd27f9a4739d507942e5e3504483f
+
+% 10 1 0 07fdb3868a8fbc8d0411fa28e9806c11
+
+% 11 1 0 0e840c9383acc4ae12b14993c658599b
+
+% 12 1 0 1342a1907fad3c2a0b3212609f4922e5
+
+% 12 1 0 1a16771da252e91400dc616eed6b859a
+
+% 0 1 0 02608e97228470900a8d66723d8d0cdd
+
+% 0 1 0 18ab72e15b326fb90747ed1949ba3649
+
+% 0 1 0 05a75c288b17e8df0026aa26edb998ba
+
+% 0 1 0 1a018619d9ec890b0edf68024fd46d33
+
+% 0 1 0 0626332409697468092801de2da4beb5
+
+% 1 1 0 13f1d8844bb4efb8098a6b33fca32d1d
+
+% 2 1 0 13b93ffeef3501471627bf5a67746410
+
+% 1 1 0 0b73f710986d89e70ac20503df2a7561
+
+% 2 1 0 01686c4f04ceea781de36de4d6f3094f
+
+% 4 1 0 03e0f7b57c9215e21fdb6e894a451389
+
+% 5 1 0 0a17b5590a1793d90cf21a5595aa38f2
+
+% 6 1 0 1f3bbc99059a20660e69fc080f18ceab
+
+% 8 1 0 11ff500d83e6fbe41fe11c32d7750ea9
+
+% 9 1 0 02834202c251344f1ea783a27a077b4c
+
+% 10 1 0 1d888cf3f1648ebc03cd1a61af7bbd0f
+
+% 11 1 0 0bfa5c40aeae9a361f200279bb19444c
+
+% 12 1 0 1f7eafad966cbf1e0ade95ac61794fb7
+
+% 0 1 0 19050127c449871013fc607f878d3446
+
+% 0 1 0 03d2763bad0a8bd6149e781b71e38808
+
+% 0 1 0 16d08b50965c9eab17245c0e8a033a61
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 8 0 10bceb907b3b156506d3dd8a8cd71751
++       La costruzione richiede un `Classloader`, attraverso cui si leggono le risorse `.tasty` e
++       `.class`, e una `WorkingDirectory`, rispetto a cui si risolve un percorso sorgente che il
++       TASTy registra relativo a `-sourceroot`: deve essere la directory in cui il codice è stato
++       compilato, altrimenti il frame conserva tutto tranne la sua riga di sorgente. Un frame la
++       cui riga è una riga sintetica allocata dal compilatore per il codice reso inline viene
++       prima espanso tramite lo SMAP del class file (letto con `Classfile#sourceDebugExtension` di
++       mandible): il frame ottiene la sua vera riga del punto di chiamata, e la sua lista
++       `inlined` i livelli di inlining sotto di esso, ciascuno risolto rispetto al TASTy per
++       nominare il metodo inline in cui cade.
+
+@ 0 4 0 0a53d9b68657931b1a86e5446f5e70a2
++       Il TASTy e i file sorgente vengono letti una volta per classe e messi in cache nel
++       resolver, quindi un solo resolver dovrebbe servire molti stack trace;
++       `stackResolutions.tastyStackResolution` ne costruisce uno per ambito. La risoluzione costa
++       una lettura di file per ogni classe di primo livello nominata in uno stack trace, ed è per
++       questo che è ad adesione volontaria.
+
+% 0 1 0 0efc085c828a23dc1fa61beb83033b55
+
+% 0 1 0 1c741505eff6e5d11ed7da37dde1d57f
+
+% 1 1 0 0187fee7f5ce8c6c060b364696c591fe
+
+@ 0 20 0 01212f9dcd1ae6c102353d24c8b6b256
++   entry .hint   che tipo di definizione tradisce un nome di metodo compilato, se lo tradisce
++       `StackResolver.hint(method)` legge i marcatori che il compilatore conia dopo la scrittura
++       del TASTy, come li elenca con i loro tipi `StackTrace.Marker.all` di digression: `<init>`
++       è un `Constructor`; `<clinit>`, `$init$` e `$lzyINIT` un `Initializer`; `$anonfun` una
++       `Lambda` e `$adapted` un `Bridge`; `super$`, `protected$`, `inline$` e `$accessor` un
++       `Forwarder`; `$_setter_$` e `$retainedBody` `Synthetic`; `$extension` un `Extension`;
++       `$default` un `Default`; `$mc…$sp` uno `Specialized`. Un nome senza marcatore dà `Unset`,
++       e la definizione in cui si risolve il frame parla da sé.
++   entry .matches   se una definizione è quella descritta dal nome compilato di un frame e dall'indizio sul tipo
++       Con un indizio `Constructor` la definizione deve essere `<init>`; con un indizio `Lambda`
++       il suo tipo deve essere `Lambda`; altrimenti il suo nome sorgente deve essere uguale al
++       nome di metodo compilato, come accade per un nome sopravvissuto invariato alla
++       compilazione. È così che il resolver distingue un costruttore dal primo membro dichiarato
++       accanto a esso, e una lambda dal metodo che la racchiude, quando entrambi coprono la
++       stessa riga.
++   entry .display   un nome TASTy come lo mostra un frame: tolto il `$` di modulo, nomi derivati sottoposti a demangling
++       Il `$` finale di una classe di modulo viene rimosso, `<init>` diventa `ⲛ`, e un nome che
++       contiene un `$` — una funzione anonima, un getter di default, un file di package — passa
++       per `StackTrace.rewrite`, così un frame risolto si legge con lo stesso vocabolario di uno
++       non risolto.
++   entry #resolve   il frame con il suo `source` valorizzato, o invariato se non si trova nulla
+
+@ 0 1 0 06cf67091bbaf1470aa47fd311e90e1d
++ entry .stackResolutions   i resolver degli stack frame, ciascuno un given da importare per nome
+
+% 1 1 0 08b30481cd7d79cd11f9dbac04bc4918
+
+@ 0 5 0 1aa1415198f8f4ac00f713baf8d98048
++       Quale `StackTrace.Resolver` usi uno stack trace catturato lo decide il given
++       nell'ambito: quello predefinito, in digression, non fa nulla, e `import soundness.*` non
++       ne porta altri. Importarne uno per nome da questo package fa sì che ogni `StackTrace`
++       catturato nell'ambito che lo racchiude — ogni `error.stackTrace`, e la diagnostica di ogni
++       errore di Soundness — porti le definizioni sorgente dei propri frame.
+
+% 2 1 0 18e009e4c50ef43f1cf5db061906b15d
+
+% 3 1 0 0b385839781ec45604390f1d7b82f7d7
+
+% 0 1 0 16d0e72e209c38f51220547030e5288b
+
+% 1 1 0 12bd8c1c02c46d261c012f6ec8c14dc4
+
+% 0 1 0 0d7f1e4b8b541f5918a614304decdd48
+
+% 1 1 0 1650bc3f29b2f41e06be7deff50afb6c
+
+@ 0 9 0 04f76f5d8487c9e409979555f9fba6e6
++       Il given è una funzione di contesto, quindi va importato dove sono nell'ambito anche i
++       suoi given — un `Classloader` e una `WorkingDirectory`; per questo motivo il
++       `soundness.stackResolutions` dell'ombrello lo riesporta.
++   entry .tastyStackResolution   risolve i frame rispetto al TASTy accanto ai class file, tramite il classloader nell'ambito
++       Una `(Classloader, WorkingDirectory) => StackTrace.Resolver` che costruisce uno
++       `StackResolver` sui due given. Ogni stack trace catturato nell'ambito legge un file TASTy
++       per ogni classe di primo livello che nomina, messo in cache nel resolver; un percorso
++       sorgente registrato relativo a `-sourceroot` viene letto dalla `WorkingDirectory`, che
++       dovrebbe quindi essere la directory in cui il codice è stato compilato.
+
+@ 0 6 0 17a86422b82190af0fe60d5cb90b4c89
++ entry .resolved   uno stack trace con ogni frame risolto rispetto al TASTy, comprese le sue cause
++     Un'estensione su `StackTrace`, che richiede un `Classloader` e una `WorkingDirectory`:
++     costruisce uno `StackResolver` e ricostruisce lo stack trace applicando
++     `StackResolver#resolve` a ogni frame, ricorsivamente lungo la catena di `cause`. Per i
++     chiamanti che hanno già uno stack trace e preferiscono chiedere esplicitamente piuttosto che
++     importare `stackResolutions.tastyStackResolution` nell'ambito che lo cattura.
+
+% 2 1 0 0dd270521504486319b49bacae12b6fe
+
+% 3 1 0 1b5d430335de3614184598e4bca11718
+
+% 1 1 0 00119cf9aec9aaa21eaf31d03a7d481a
+
+% 2 1 0 02ed76744485131d17b91a556b493439
+
+% 0 1 0 043a1e6145bfcb8b09006b74ed58d6c1
+
+% 1 1 0 1697e9ce621fb4581ca4dfc6419e5f3e
+
+% 1 1 0 0e60998a869308cd07ac935d7534279c
+
+@ 0 1 0 19daf74e92d0cb971050a99de753adce
++ entry .internal   le implementazioni delle macro dietro `Introspect` e le estensioni `syntax` e `semantics`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 046b7bce23a98ab41744802614e08f95
++       Non per uso diretto: l'oggetto esiste perché le macro abbiano una sede stabile.
++   entry .introspection   la macro dietro `Introspect.syntax`: costruisce un `Tasty.Tree` e lo inserisce come letterale
++   entry .tastyTree   costruisce un `Tasty.Tree` da un `Expr` al momento dell'espansione della macro, facoltativamente con inlining
++   entry .semantics   le macro dietro le tre forme di `Introspect.semantics`
++   entry .introspect   da un `Symbol` di reflection a un'espressione `Tasty.Symbol` inserita
++   entry .tastySymbol   costruisce un `Tasty.Symbol` da un `Symbol` di reflection al momento dell'espansione della macro
++   entry .serialize   inserisce un valore `Tasty.Symbol` come espressione

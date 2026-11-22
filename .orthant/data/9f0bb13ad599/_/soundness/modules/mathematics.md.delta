@@ -1,0 +1,15 @@
+orthant 2 release
+
+@ 0 2 0 15111669bb3ce8990e7f85d064c600bb
++ [inversion table](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
++ factorial-base form, which is a single integer that uniquely identifies it. That makes permutations compact to store and to
+
+@ 0 2 0 102b80d59a6dfafb123816e10e133f67
++ Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
++ Out.println(shuffle.inversions.inspect)
+
+@ 0 3 0 16b145f038c8973712c7b318b859b796
++ A permutation leaves alone every position after the last one it moves, so `shuffle`, whose
++ sixth index stays in place, is a permutation of five. Applying one to a longer sequence is
++ therefore not an error: it rearranges the leading positions it covers, and leaves the rest
++ where they were. A single index is mapped the same way, with `shuffle(3)`.

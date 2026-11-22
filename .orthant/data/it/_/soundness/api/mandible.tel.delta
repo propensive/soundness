@@ -1,0 +1,884 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1920c2d1eb1b711e11f86530cc5798cd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03c7e18b61ef542106b726a70abea6aa
++ info   i class file della JVM come valori: metodi, bytecode con stack simulati, superfici di dichiarazione e chiusure dei supertipi
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1db668b972be760e13c28d0f76c9e058
++     _Mandible_ legge i class file della JVM — l'output `.class` di `scalac` o di `javac` — in
++     valori immutabili e tipizzati, così che un programma possa ispezionare ciò che il
++     compilatore e l'ottimizzatore hanno effettivamente prodotto invece di presumerlo. Legge i
++     file attraverso l'API `java.lang.classfile` del JDK stesso e presenta tre viste di una
++     classe, ciascuna un valore:
+
+@ 0 10 0 135a1714c18750f41cd4d3fe5c9dc139
++     - `Classfile` è la vista del **bytecode**: i metodi di una classe, ciascuno con il suo
++       `Bytecode`, un elenco di `Bytecode.Instruction` decodificate in un `Bytecode.Opcode`
++       tipizzato, che portano la riga sorgente da cui provengono e una simulazione dello stack
++       degli operandi dopo la loro esecuzione. Si rende come una tabella colorata su un
++       terminale, e `disassemble` compila un blocco quotato e ne rilegge subito il bytecode.
++     - `ClassSurface` è la vista della **dichiarazione**: i nomi, i descrittori, i flag di
++       accesso, i supertipi e le firme generiche con cui si collega un consumatore compilato, e
++       nulla che possa legittimamente differire tra due build dello stesso sorgente.
++     - `ClasspathIndex` risolve i nomi interni delle classi della JVM nelle loro `ClassSurface`
++       su un insieme di classi tenute in memoria più un classpath, e percorre la chiusura dei
++       supertipi di una classe.
+
+% 2 1 0 1d43f5285e1b8aee0306338a1a2e3411
+
+% 3 1 0 054d364bee67c2c01a357a9787bcb359
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 1f983654f665ce53141df93c51bdaf88
+
+% 0 1 0 0241d3a9a95acaa908c9acf176572b87
+
+% 0 1 0 1291bede785a4b991d64c5560f01fcb1
+
+% 0 1 0 17542073aa1c969e02d761693a2945c4
+
+% 1 1 0 161779758abc7fe0134845eb51e2e93d
+
+@ 0 6 0 0ca39a28b286bc7d1cb12bae2628788c
++     Un class file si trova attraverso il `Classloader` given nell'ambito, scelto per nome dal
++     package `classloaders` (`import soundness.*` non importa alcun given), oppure si legge da
++     qualsiasi stream di byte con `read[Classfile]`. La libreria ha un unico source set,
++     `mandible.core`, solo per la JVM: dipende da `java.lang.classfile`, dal compilatore di
++     staging per `disassemble` e dal classpath della JVM. Tutto è esportato nel modulo ombrello
++     `soundness`.
+
+@ 0 3 0 039ac435d8a0dd2713fe2374eb40b8a8
++     Rendere un `Bytecode` su un terminale richiede nell'ambito una `BytecodePalette`, una
++     `Palette` che indica i colori per i riferimenti al sorgente, le righe sorgente e il
++     contorno dello stack; non viene fornita alcuna tavolozza predefinita, quindi un programma
++     definisce la propria.
+
+% 0 1 0 13f6a90709bec59811f8f95538a20c67
+
+% 0 1 0 06fda04bfab89fe80f587a08b948b92f
+
+% 0 1 0 0cdd25c63e91a0931965c8f415d89465
+
+% 0 1 0 14fe61781865c78004a55228c07a7857
+
+@ 0 1 0 0059f7443a7ac1540a03af0e5c3c5f88
++ entry .Classfile   un class file della JVM analizzato: i suoi metodi, il loro bytecode e i suoi attributi di sorgente
+
+% 1 1 0 0a29464758eebd2c08784f72bc91abfe
+
+@ 0 4 0 0e376ef40b3cd6730f32dd97eaa83baa
++       Un `Classfile` avvolge i byte di un file `.class`, analizzati al primo uso attraverso
++       l'API `java.lang.classfile` del JDK. Si trova sul classpath per nome o per tipo,
++       attraverso il `Classloader` given nell'ambito, oppure si legge da qualsiasi sorgente di
++       byte — un file, una risorsa, uno stream — con `read[Classfile]`, poiché è `Aggregable by
++       Data`.
+
+% 2 1 0 1c809734db7b63ef0aa5e93c89dc2adc
+
+% 3 1 0 11873b6197d81c9301941987fc3e7e00
+
+% 4 1 0 1eb184e992b475c20e1ba886d5cd6079
+
+% 0 1 0 0aa67ed5acff682c175168de660c91fc
+
+% 0 1 0 183a0324b0ac44ba06edfe66574ff368
+
+% 1 1 0 11772f6f277968021ad02f925eb33306
+
+@ 0 6 0 19eb552dad69a5ab0bab9e135f83b9dc
++       I suoi membri sono le parti di cui hanno bisogno un disassemblatore e un risolutore di
++       stack trace: `#methods`, ciascuno un `Classfile.Method` il cui `bytecode` viene
++       decodificato su richiesta; `#sourceFile`, l'attributo `SourceFile`; e
++       `#sourceDebugExtension`, la SMAP JSR-45 che riporta i numeri di riga sintetici del codice
++       reso inline a dove è stato scritto. La superficie di dichiarazione di una classe — campi,
++       flag, supertipi, firme — è la vista separata `ClassSurface`.
+
+@ 0 2 0 01bd82d2e693b76007d085202a970f31
++       Un `Classfile` non detiene alcuna capability: i suoi byte vengono copiati alla
++       costruzione, quindi il valore si può conservare, condividere e passare liberamente.
+
+% 1 1 0 185c8fe5dc4d9b481f7b12bd66d341fb
+
+% 1 1 0 0c5192e1f2ae001b0728d25ceea5eabc
+
+% 1 1 0 11d62d6ce8c98b4702fc105ec6175cd0
+
+@ 0 9 0 19e641142038b19b19a0af0566c05f3c
++   entry .Error   sollevato quando un class file non può essere letto
++       Errore `↯/s.88.2`: _there was an error reading the classfile_. Dichiarato perché lo
++       sollevino i lettori di class file; il costruttore di `Classfile` stesso rimanda l'analisi
++       finché un membro non viene usato per la prima volta, e `Classfile.apply` dà `Unset` per
++       una classe che il classloader non ha anziché sollevare un errore.
++   entry .aggregable   legge un `Classfile` da qualsiasi stream di byte, come `read[Classfile]`
++       Il given `Aggregable by Data` che permette di leggere come class file un file, una
++       risorsa del classpath o qualsiasi altra sorgente `Readable`: l'intero stream viene
++       raccolto in un unico `Data` e avvolto. I byte non vengono analizzati finché non si usa un
++       membro del risultato.
+
+% 2 1 0 040aa88d4a78ab3d0d8e4aeb7bf2d722
+
+% 3 1 0 0a9f7ea877b540760aa5dacfa8d39623
+
+% 4 1 0 137cabb64dafeaf31fcaa00485ec9fca
+
+% 5 1 0 1b3d7d88f1e7123b1ad7f27d20eeca6e
+
+% 0 1 0 0fe6d59753759fcd04b7d21dbd7f4761
+
+% 1 1 0 1cb7ed36a2fa38860780db3d8ce26ba2
+
+@ 0 6 0 0a96ebace5d6a15412960394d4084581
++   entry .apply   il class file di un nome di risorsa, o di un tipo, attraverso il `Classloader` nell'ambito
++       `Classfile(name)` legge la risorsa del classpath in `name` — un nome interno della JVM
++       con la sua estensione, `scala/Option.class` — attraverso il `Classloader` given
++       nell'ambito, e `Classfile[T]` trova la classe di `T` tramite il suo `ClassTag` e legge la
++       risorsa denotata dal suo nome binario, così una classe annidata si risolve in
++       `Outer$Nested.class`. Entrambi danno `Unset` quando il classloader non ha tale risorsa.
+
+% 2 1 0 1c8279000b2e18321d357c63df38677a
+
+% 3 1 0 06a2a920726a14d31644e9eb72e1fa2f
+
+% 4 1 0 0e189c0fa199af110e66364e1f55b106
+
+% 0 1 0 0c480d90f6383902082ef5016d54974c
+
+% 0 1 0 17f21b87f593c6d70cd3aa06d63d6455
+
+% 1 1 0 11986e170af019891864e06aad61cef5
+
+@ 0 19 0 0c76b21bd3c43c900f85a708be5eb40b
++       La forma per tipo prende un `ClassTag`, quindi funziona per una classe o per il tipo di
++       un oggetto, ma non per un costruttore di tipo non applicato; `Classloader[T]` in
++       hellenism è l'operazione corrispondente per trovare il classloader stesso.
++   entry #sourceFile   l'attributo `SourceFile`: il nome del sorgente da cui è stata compilata la classe
++       Il solo nome del file, `Option.scala`, senza directory, come lo registra il compilatore;
++       oppure `Unset` quando il class file non porta tale attributo, come accade per alcune
++       classi generate. È il nome di file che riporta uno stack trace, e `Bytecode#sourceFile`
++       lo porta fino al listato reso.
++   entry #sourceDebugExtension   l'attributo JSR-45 `SourceDebugExtension`, come testo, se presente
++       Il corpo dell'attributo è una SMAP, una mappa del sorgente che traduce i numeri di riga
++       sintetici che il compilatore assegna al codice reso inline nel file e nella riga in cui
++       è stato scritto, livello per livello. È `Unset` per una classe senza inlining. Un
++       risolutore di stack trace la legge per dare a uno stack frame reso inline la sua vera
++       riga di chiamata; `Smap.parse` in digression decodifica il testo.
++   entry #methods   i metodi della classe, nell'ordine del class file, ciascuno un `Classfile.Method`
++       I costruttori compaiono come `<init>`, un inizializzatore statico come `<clinit>`, e i
++       metodi sintetici del compilatore — corpi di lambda, bridge, getter predefiniti — sotto i
++       loro nomi compilati. L'elenco viene calcolato una volta, al primo uso, e l'analisi
++       avviene allora.
++   entry #Method   un metodo di un class file, con il suo nome e il suo bytecode decodificato
+
+% 1 1 0 08e1778932544c491db390c8d21c5ca3
+
+@ 0 4 0 17cdbfb757929f900309bbcdccfda5f0
++         Un `Classfile.Method` viene creato da `Classfile#methods` e non si costruisce
++         direttamente. Il suo `#name` è il nome compilato del metodo, e `#bytecode` decodifica
++         il suo attributo `Code` in un valore `Bytecode`: ogni istruzione con il suo offset, la
++         riga sorgente a cui appartiene, e lo stack degli operandi come simulato dagli stack-map
++         frame del metodo.
+
+% 2 1 0 03389adfa4f5b8e70d7e96d582bec0fc
+
+% 3 1 0 062dac09fcb44991069db7b81e36844f
+
+% 0 1 0 066c7de4214f31cd1db1c856202b68b2
+
+% 0 1 0 06d9d2933d6fdd8f021b8f31f35ad741
+
+% 1 1 0 0adc9883aa2c8f190a148f07ac671cc9
+
+@ 0 12 0 1329127a4f67b4e009d1c50bd4b74172
++     entry #name   il nome del metodo come lo scrive il class file
++         Il nome compilato, non il nome nel sorgente: un costruttore è `<init>`, un operatore
++         come `+` è `$plus`, e il corpo di una lambda è `$anonfun$…`. `StackTrace.rewrite` in
++         digression riporta un tale nome verso la sua grafia nel sorgente.
++     entry #bytecode   l'attributo `Code` del metodo decodificato in un `Bytecode`, o `Unset` per un metodo astratto
++         Decodifica ogni istruzione del metodo in un `Bytecode.Opcode`, risolvendo i target dei
++         salti in offset di byte, e fa passare attraverso di esse una simulazione dello stack
++         degli operandi: lo stack dopo ogni istruzione è calcolato da
++         `Bytecode.Opcode#transform`, e reimpostato a ogni etichetta dai frame della
++         `StackMapTable` del metodo, così lo stack al target di un salto è ciò che registra il
++         verificatore, non ciò che ha lasciato il percorso che vi ricade. I numeri di riga della
++         `LineNumberTable` vengono attaccati alla prima istruzione di ogni riga. Un metodo senza
++         codice — astratto o nativo — dà `Unset`.
+
+@ 0 2 0 1c7d035f7e41001c13d668953ab0c2aa
++         Il risultato porta il `sourceFile` della classe, e il `maxStack` e il `maxLocals`
++         dichiarati del metodo.
+
+@ 0 1 0 13b0f6677f9a2d9502c0fc9ab10e55bd
++ entry .Bytecode   le istruzioni di un metodo, ciascuna decodificata, collocata sulla sua riga sorgente, con il suo stack degli operandi simulato
+
+% 1 1 0 073c54f03a31fd0f0c3606655f4c37ad
+
+@ 0 7 0 194935b86ba7ad96131b9431a10945a1
++       Un `Bytecode` è l'attributo `Code` decodificato di un metodo: le sue `#instructions`,
++       ciascuna una `Bytecode.Instruction` che accoppia un `Bytecode.Opcode` tipizzato con il suo
++       `offset` in byte, la `line` sorgente che inizia, e lo `stack` degli operandi — un elenco
++       di `Bytecode.Frame` — come si presenta dopo l'esecuzione dell'istruzione; più il
++       `#maxStack` e il `#maxLocals` dichiarati del metodo e il `#sourceFile` della classe. Viene
++       prodotto da `Classfile.Method#bytecode` a partire da una classe sul classpath, o da
++       `disassemble` a partire da un blocco quotato compilato al momento, e si può anche
++       costruire a mano da delle `Instruction` per l'analisi.
+
+% 2 1 0 0a59f980ac2275cd1a8eba398baa07bc
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1ed208c6190d0771065e9572b432d914
++         label Un class file, trovato attraverso il classloader nell'ambito
+
+% 1 1 0 15ed6fd5776675e613ca09fde5875982
+
+% 2 1 0 0650345239b0591e0d02277badf290a6
+
+% 3 1 0 12aa4bc1a48157c800d3608ac1610637
+
+% 5 1 0 113b93825f6be35306028addbac218fd
+
+% 1 1 0 1668aed0eb07e20209e2f836f53c23aa
+
+@ 0 1 0 0d6d6ad44d9c18cf0fe8b4005798ad57
++         label Uno dei suoi metodi, per nome
+
+% 1 1 0 1818aa0219fbd45f099bcc19b6a63c7d
+
+% 2 1 0 125cf5e9dfb7c2e413e8569c3d9f9c4f
+
+% 3 1 0 12775983f52b2bd21c8746192aa01c7e
+
+% 5 1 0 018c8d2302fe042304aac8422a127b27
+
+% 6 1 0 0c94fb37988a701d051dc92fc7b3d01b
+
+% 7 1 0 1ec000f9e0ab1ad808c797769886a0b4
+
+% 1 1 0 1cf058140e7c1b45199a73397c809e3d
+
+@ 0 1 0 1a1646c18f26db8a1f6b53cbd997dbe2
++         label Il suo bytecode, elencato come opcode
+
+% 1 1 0 007138b856d0d1f819aed33976a3bf16
+
+% 2 1 0 17b81819b84529f0196c0f176c62056f
+
+% 3 1 0 04dfad0fb1623cfc09bd218c252f4b1d
+
+% 5 1 0 111b8fe615b76b8a0013f254ec1134bf
+
+% 6 1 0 114a828d0e2b8e3f135355c6916e8ac3
+
+% 7 1 0 04d7ab91e608ace701a22f612037a384
+
+% 8 1 0 18d3c1801b87d4cb0f06c0b6bd5b4680
+
+% 0 1 0 1f3939f165a06de408c8c330fe7d3093
+
+% 1 1 0 0ec0d46c738358301839e3e9e1f3049e
+
+@ 0 1 0 1b41bc8c7636d36d1e2f64908ffb12dd
++         label Un'istruzione, decodificata: il suo offset, la sua riga e lo stack che lascia
+
+% 1 1 0 1ecd2e923f0265820324c9c236fa7875
+
+% 2 1 0 1f8fbc31543f5d7f025c79d574899dc7
+
+% 3 1 0 1ca8cfaa15f99cf2110c0d21c246c698
+
+% 5 1 0 15b5a02e0bcdbf530bf62ccbe0e726e7
+
+% 6 1 0 16a19c8a9a5b9ff30dbf7bc87d940efe
+
+% 7 1 0 19c63d1ef51570011268d9ae614e9d1a
+
+% 8 1 0 1378dba0875d7491175a7732f5002fca
+
+% 0 1 0 0c0bc6cee4fd6562120fca717d2baf70
+
+% 0 1 0 0691ac112bf824661ffda58d5374d919
+
+% 1 1 0 1b87ae96f783dee9164b9110ce3d80db
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 18cdc2947e7d4d4306bd79a7b666d269
++       Lo stack degli operandi è una simulazione, non una misurazione:
++       `Bytecode.Opcode#transform` inserisce e rimuove ciò che ogni opcode è definito a fare, e
++       la `StackMapTable` del metodo lo reimposta a ogni target di salto. Un riferimento sullo
++       stack è un `Frame.L(className)` dove l'istruzione che lo ha inserito nomina una classe, e
++       `Frame.L(t"?")` dove non lo fa.
+
+@ 0 5 0 1f89ddb201b172ea146083554b46acee
++       Il rendering richiede nell'ambito una `BytecodePalette`: `bytecode.teletype` è una tabella
++       di quattro colonne con posizione nel sorgente, offset, opcode (colorato secondo
++       `Opcode#cost`) e stack, e `bytecode.printable` la stampa. `#linearize` segue le chiamate
++       statiche ed effettivamente statiche che un metodo compie nel bytecode dei metodi
++       chiamati, fino a una profondità limitata, ed è così che si vede in un unico listato la
++       sequenza completa di istruzioni di un percorso caldo.
+
+% 1 1 0 0c3d64caef1b8ebf03167e4686319095
+
+% 1 1 0 0219988a0f395c471eeca045d951f59f
+
+% 0 1 0 135e3219365786e40fc64f2ec5bed0f0
+
+@ 0 8 0 133ca53c9f44b716049975446e057140
++   entry .teletypeable   rende il bytecode come una tabella colorata: riga sorgente, offset, opcode e stack
++       Il given `Teletypeable`, che richiede una `BytecodePalette`. Una riga per istruzione: il
++       file sorgente e la riga (nei colori `bytecode` e `sourceCode` della tavolozza) dove
++       l'istruzione inizia una riga, l'offset in byte come pedici, l'opcode colorato secondo il
++       suo `Opcode#cost`, e lo stack simulato, contornato nel colore `outline` della tavolozza.
++       La tabella è impaginata per 160 colonne.
++   entry .printable   stampa un listato di bytecode, come `Printable`
++       Rende la tabella di `.teletypeable` per il terminale su cui viene stampata; richiede una
+
+% 0 1 0 079260822997a28c1e25511b36c42919
+
+@ 0 4 0 10b8a366dfa967fb1caa819efe562775
++   entry .stack   rende in una riga uno stack degli operandi simulato, un `List[Bytecode.Frame]`
++       Il given `Teletypeable` per uno stack, che richiede una `BytecodePalette`: i frame sono
++       mostrati partendo dal fondo, separati da `┊` e contornati con `┃` nel colore `outline`
++       della tavolozza.
++   entry .Frame   uno slot dello stack degli operandi o un tipo di verifica: un primitivo, un riferimento o un array
+
+% 1 1 0 044e26d387b207eb00f8d4b1748cb5b2
+
+@ 0 1 0 19e22eea0c81884d054a701d51633500
++         I casi sono le lettere dei descrittori della JVM per i primitivi — `Z` (boolean), `B`
+
+% 0 1 0 1a80d7f6c0e4aa14145ad6f7967b49ea
+
+@ 0 4 0 17390f2fc92de7140cdcdcc7b6c11d03
++         con `L(name)` per un riferimento a una classe, tramite il suo nome binario
++         (`java.lang.String`), e `Array(frame)` per un array di un altro frame. Un riferimento la
++         cui classe è sconosciuta è `L(t"?")`; i tipi speciali del verificatore compaiono come
++         `L(t"null")`, `L(t"this")`, `L(t"top")` e `L(t"uninit")`.
+
+% 2 1 0 07b2249edebc56031ca2e5706f7ecc05
+
+% 3 1 0 0f9c5bf51f8e5b721bf4f6f53aa72804
+
+% 0 1 0 10733d2ec5a073f119f92e0544e55759
+
+% 0 1 0 1889a2308e8f03ed02630a3127988365
+
+% 1 1 0 1f367f4307b9933d03677630ab6bce60
+
+@ 0 16 0 018ae1aa61dbb49718a2bafd7146623e
++         Un `Frame` si mostra come la sua lettera, come `*name` per un riferimento e `[frame]`
++         per un array.
++     entry .showable   rende un frame: la lettera di un primitivo, `*name` per un riferimento, `[frame]` per un array
++     entry .parseOne   legge un tipo da un descrittore a una data posizione, dando il frame e la posizione successiva
++         `Frame.parseOne(descriptor, cursor)` decodifica il tipo il cui descrittore inizia in
++         `cursor` — una lettera, un array con prefisso `[` o una classe `L…;` — e lo restituisce
++         con l'indice immediatamente successivo, per un chiamante che percorre l'elenco dei
++         parametri di un descrittore di metodo. Un carattere inatteso provoca un panic, poiché un
++         descrittore proveniente da un class file è ben formato.
++     entry .fromFieldDescriptor   il frame di un descrittore di campo, `I` o `Ljava/lang/String;`
++         Decodifica un intero descrittore di campo in un unico `Frame`, con `/` in un nome di
++         classe riscritto come `.`.
++     entry .fromVerificationType   il frame di un tipo di verifica della `StackMapTable`
++         Associa il `VerificationTypeInfo` del JDK a un `Frame`: i tipi semplici ai loro
++         primitivi, un tipo oggetto a `L(name)` (o a un frame di array quando la classe è una
++         classe array), `null`, `uninitializedThis` e `top` a `L(t"null")`, `L(t"this")` e
++         `L(t"top")`, e un oggetto non inizializzato a `L(t"uninit")`.
++   entry .Descriptor   un descrittore di metodo analizzato nei frame dei suoi parametri e nel suo risultato
+
+% 1 1 0 132d98d04b54df4d13383a47dc2b801c
+
+@ 0 4 0 0f11e8534c75f4a413866507cab74eca
++         `Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")` dà un `Descriptor` i cui
++         `#args` sono i frame `L(java.lang.String)` e `I` e il cui `#result` è `Unset`, poiché
++         `V` è void. Il decodificatore di istruzioni lo usa per sapere quanti operandi rimuove
++         un'invocazione e se inserisce un risultato.
+
+% 2 1 0 172990762da62a3a165c3c855d2016b7
+
+% 3 1 0 080240b85a770de91969ca25af8dc868
+
+% 0 1 0 1ebbb4a65eb9b04a07d7f11dfbe01931
+
+% 0 1 0 0538383d0f1b484d1c1294c70665cb84
+
+% 0 1 0 0b0861542f68fc2901216fb20435459e
+
+% 1 1 0 085379f3d453e151036c9d1c2f1c14d2
+
+@ 0 6 0 0fe0f13431bb7df303b013c64935eb3b
++     entry .parse   legge un descrittore di metodo `(…)R` in un `Descriptor`
++         Il testo deve iniziare con `(`; i tipi dei parametri fino a `)` diventano `#args`, e il
++         tipo di ritorno `#result`, con `V` come `Unset`. Un descrittore malformato provoca un
++         panic.
++     entry #args   i tipi dei parametri, in ordine
++     entry #result   il tipo di ritorno, o `Unset` per `void`
++   entry .Instruction   un'istruzione decodificata: il suo opcode, la riga sorgente, lo stack risultante e l'offset
+
+% 1 1 0 0acca7af543fe03505a3e764276d75f9
+
+@ 0 5 0 0a39c4f2aad7b39d0cc6f70a49ae8e7e
++         L'elemento di `Bytecode#instructions`. `#line` è impostato sulla prima istruzione di
++         ogni riga sorgente e `Unset` sulle altre; `#stack` è lo stack degli operandi simulato
++         dopo l'istruzione, o `Unset` una volta persa la simulazione; `#offset` è la posizione
++         dell'istruzione nel codice del metodo, in byte, ed è ciò a cui fanno riferimento i
++         target dei salti e `Bytecode#effectivelyStaticCalls`.
+
+% 2 1 0 0acd5c45ba53ecf3117ef4b253d67aee
+
+% 3 1 0 172905d2326718e508a162c3e4611c87
+
+% 0 1 0 0eb794703f4b2887195115965d5f746f
+
+% 0 1 0 0d9c7ce7306c99f106052751fcc6a2cc
+
+% 1 1 0 1ec2304a72213dc6197777a0b0a9665e
+
+@ 0 5 0 13f83908bb87a2a3102c826c95072873
++     entry #opcode   l'istruzione, come `Bytecode.Opcode`
++     entry #line   la riga sorgente che questa istruzione inizia, o `Unset` se ne continua una
++     entry #stack   lo stack degli operandi simulato dopo l'istruzione, a partire dalla cima, se noto
++     entry #offset   l'offset in byte dell'istruzione all'interno del codice del metodo
++   entry .Linearized   un'istruzione di un listato linearizzato, con la sua profondità di inlining e il metodo da cui proviene
+
+% 1 1 0 0c8b498c524ae3e9179e85eef2889833
+
+@ 0 13 0 0b83712bc0c07c151f6a6fceccf58540
++         L'elemento dell'elenco restituito da `Bytecode#linearize`. `#depth` è `0` per le
++         istruzioni del metodo stesso e uno in più per ogni chiamata seguita in un metodo
++         chiamato; `#source` nomina il metodo chiamato come `owner.method`, ed è vuoto alla
++         profondità `0`; `#instruction` è l'istruzione stessa. Una `List[Linearized]` si rende,
++         con una `BytecodePalette`, come un listato indentato.
++     entry .teletypeable   rende un listato linearizzato, indentato di due spazi per livello di profondità
++         Il given `Teletypeable` per `List[Bytecode.Linearized]`, che richiede una
++         `BytecodePalette`: ogni riga è indentata secondo la sua profondità, preceduta dal suo
++         metodo sorgente nel colore `bytecode` della tavolozza, e seguita dall'opcode.
++     entry #depth   a quante chiamate di profondità si trova l'istruzione: `0` nel metodo elencato stesso
++     entry #source   l'`owner.method` da cui l'istruzione è stata resa inline, o vuoto alla profondità `0`
++     entry #instruction   l'istruzione
++   entry .Opcode   ogni istruzione della JVM come caso di un enum, con i suoi operandi decodificati
+
+% 1 1 0 12b00d07330c81810f0179c59f37e81d
+
+@ 0 11 0 1af2a1fedc5e1cb5019c4f0a34d3c62b
++         Un caso per ogni opcode del set di istruzioni della JVM, in ordine di opcode, così
++         l'`ordinal` di un caso è il suo numero di opcode: da `Nop` (0) fino a `Jsr`, `GotoW`
++         (200) e `JsrW` (201), con i riservati `Breakpoint`, `Impdep1`, `Impdep2` e i non
++         assegnati `OpCb` … `OpFd` a riempire i vuoti. Gli operandi sono decodificati in campi:
++         un load o uno store porta il suo `slot`; `Bipush`, `Sipush`, `Ldc`, `LdcW` e `Ldc2W` il
++         loro `value`; ogni salto il suo `target` come offset in byte; `Tableswitch` e
++         `Lookupswitch` le loro tabelle; un'istruzione di campo il suo `owner`, `field` e
++         `descriptor`; un'invocazione il suo `owner`, `method` e `descriptor` (`Invokeinterface`
++         anche il suo `count`, e `Invokedynamic` solo `method` e `descriptor`); `New`,
++         `Checkcast`, `Instanceof` e `Anewarray` la loro classe; `Newarray` il `Frame` dei suoi
++         elementi; `Multianewarray` la sua classe e le sue `dimensions`; `Iinc` il suo `slot` e
++         il suo `const`.
+
+@ 0 3 0 0f6e06e27992daa60334be792de4af7d
++         I nomi di classe sono nomi binari con `.`, come `java.lang.String`; il nome di metodo di
++         un `Invokedynamic` viene sottoposto a demangling con `StackTrace.rewrite`, così il punto
++         di chiamata di una lambda si legge come `λ₁` anziché `$anonfun$1`.
+
+% 2 1 0 0578f2e46626a7d908e6e51b97693696
+
+% 3 1 0 04c249bad750aef2136a2945deee0c6e
+
+% 0 1 0 1ea1e5ad81a87c221ea210d0b1e8c9e2
+
+% 0 1 0 0b0504f0023cbf1717545514c5c37609
+
+% 0 1 0 06bb7a36435eaa7f0b3485f0ba9528fe
+
+% 0 1 0 13c21367a0473733000d0ddf7ba4d4b8
+
+% 1 1 0 185254f42342d7ea14965af8164bcc26
+
+@ 0 5 0 1b0279f1bbe2d07305923d3539081391
++         Un opcode è `Showable` come il suo mnemonico, scritto con `·` tra le parti di un nome
++         composto e con pedici per costanti e slot (`a·load₀`, `i·const₋₁`, `dup²∕₁`), seguito
++         dai suoi operandi; ed è `Teletypeable`, che colora il mnemonico secondo `#cost` e mette
++         in corsivo gli operandi. Entrambi i given sono anonimi, nell'oggetto compagno, quindi
++         sono sempre nell'ambito. Un `Opcode` si legge dal modello di istruzioni del JDK con
+
+% 0 1 0 14d40cc950daef500a341d679d5085d9
+
+@ 0 23 0 0469965e57da717d080a5b4ea1d924f2
++     entry .apply   decodifica una `java.lang.classfile.Instruction` in un `Opcode`
++         `Opcode(instruction, labels)` associa l'oggetto istruzione del JDK al caso dell'enum per
++         il suo opcode, decodificandone gli operandi. `labels` associa le `Label` del codice a
++         offset in byte, così che il `target` di un salto sia un offset; un'istruzione la cui
++         etichetta manca dalla mappa riceve `0`. Un opcode che il decodificatore non riconosce
++         provoca un panic.
++     entry #cost   un costo relativo approssimativo dell'istruzione, da `0` a `3`
++         Una classificazione grossolana usata per colorare un listato: `0` per costanti, load,
++         store, rimescolamenti dello stack e conversioni di allargamento; `1` per aritmetica,
++         confronti, salti condizionali e chiamate statiche o speciali; `2` per accessi ad array,
++         accessi a campi, cast, salti incondizionati, return e chiamate virtuali; `3` per
++         switch, allocazioni, monitor, `athrow`, chiamate di interfaccia e dinamiche.
++     entry #describe   una descrizione di una riga di ciò che fa l'istruzione, per gli opcode che conosce
++         Descrive a parole le istruzioni di costante e di push e gli opcode riservati — `push
++         the int constant 1` — e dà `unrecognized` per il resto.
++     entry #highlight   il colore per il `#cost` dell'istruzione, dal verde acqua (`0`) al cremisi (`3`)
++     entry #transform   lo stack degli operandi dopo questa istruzione, dato lo stack prima di essa
++         La simulazione dello stack: rimuove ciò che l'istruzione consuma e inserisce ciò che
++         produce, con `Frame.I` per un risultato `int`, `Frame.L(name)` per un oggetto `new` o un
++         campo caricato di tipo classe, `Frame.L(t"?")` per un riferimento che l'istruzione non
++         sa nominare, e il frame di ritorno di un metodo per un'invocazione (ricavato dal suo
++         descrittore). Lo stack parte dalla cima. Un `Dup` su uno stack vuoto fallisce; un
++         rimescolamento su uno stack più corto del necessario lascia lo stack com'era.
++   entry .Error   sollevato da `disassemble` quando il class file compilato non può essere aperto o letto
+
+% 1 1 0 0b0df258ef9aae231687055ee5199136
+
+@ 0 27 0 03babe12e28e7cb018b6eb51597f592d
++         Errore `↯/s.88.3`, _the bytecode could not be extracted because …_, con un `#reason`:
++         `ClassfileMissing` (295.1, _the generated classfile could not be opened_) quando il
++         compilatore di staging non ha lasciato alcun class file da leggere, e
++         `ClassfileUnreadable` (295.2, _the generated classfile could not be read_) quando il
++         file era troncato o il metodo generato non vi è stato trovato. `disassemble` richiede
++         nell'ambito una `Tactic[Bytecode.Error]`.
++     entry .Reason   perché l'estrazione è fallita: `ClassfileMissing` o `ClassfileUnreadable`
++         Una `Clarification` il cui `number` è il sottonumero dell'errore: `ClassfileMissing` è
++         `1` e `ClassfileUnreadable` è `2`.
++     entry .communicable   rende un `Reason` come il messaggio che l'errore incorpora
++     entry #reason   il motivo
++   entry #sourceFile   il nome del file sorgente da cui è stata compilata la classe del metodo, se registrato
++   entry #instructions   le istruzioni del metodo, in ordine di codice
++   entry #maxStack   la profondità massima dello stack degli operandi dichiarata dal metodo
++   entry #maxLocals   il numero di slot di variabili locali dichiarato dal metodo
++   entry #embed   sposta i numeri di riga del listato su un `Codepoint`, come se il codice fosse stato scritto lì
++       `bytecode.embed(codepoint)` aggiunge la riga del codepoint (meno uno) alla `line` di ogni
++       istruzione, e sostituisce `sourceFile` con l'ultimo segmento del percorso sorgente del
++       codepoint. `disassemble` lo usa così che il bytecode di un blocco compilato in un file
++       temporaneo venga riportato rispetto al file e alla riga in cui il blocco è stato scritto.
++   entry #linearize   segue le chiamate nel bytecode dei metodi chiamati, fino a una profondità e una lunghezza limitate
++       `bytecode.linearize(resolver, maxDepth, maxInstructions)` percorre le istruzioni e, a
++       ogni `Invokestatic` e a ogni `Invokevirtual` o `Invokeinterface` che
++       `#effectivelyStaticCalls` ha mostrato smistare verso una classe nota, chiede a
++       `resolver(owner, method, descriptor)` il `Bytecode` del metodo chiamato ed elenca le sue
++       istruzioni sul posto, un livello più in profondità, dopo l'istruzione di chiamata. Il
++       resolver restituisce `Unset` per un metodo che non riesce a trovare, e la chiamata viene
++       allora elencata da sola. `maxDepth` (predefinito `3`) limita l'annidamento e
++       `maxInstructions` (predefinito `1000`) la lunghezza totale del listato.
+
+% 2 1 0 05d36e433eaabfa61aa08aae7d3b6b8c
+
+% 3 1 0 1abef0dd8fda79c21154ef1e5990afa9
+
+% 0 1 0 04a2c75556fe475c1aaf0964ca749a91
+
+% 0 1 0 1a215e8d89df14ed160fd68af00264ea
+
+% 0 1 0 0b55426606d4529d0fef93dc799f45ce
+
+% 1 1 0 0acd3436adafb1001f88bd212115181a
+
+@ 0 9 0 1c97cdcff354dbec1ac31e53b6cf209a
++       Un resolver sul classpath si scrive con `Classfile`: si trova il class file del
++       proprietario, si cerca il metodo per nome, e se ne prende il `bytecode`.
++   entry #effectivelyStaticCalls   gli offset delle chiamate virtuali e di interfaccia il cui ricevente è un singleton noto
++       Una chiamata attraverso `invokevirtual` o `invokeinterface` il cui ricevente, nello stack
++       simulato prima della chiamata, è un `Frame.L(owner)` esattamente della classe
++       proprietaria della chiamata stessa — come lo è una chiamata sul `MODULE$` di un `object`
++       Scala — può smistare solo verso quella classe, quindi si può seguire come una chiamata
++       statica. Il risultato è l'insieme degli offset in byte di tali chiamate; un ricevente di
++       classe sconosciuta (`L(t"?")`) o di una classe diversa è escluso, così come una chiamata
++       il cui stack simulato è troppo poco profondo per contenere il suo ricevente.
+
+% 2 1 0 1c6ee6b38af9053318ecc87035a642eb
+
+% 3 1 0 0f813fa170d15ee1199d9acd052cb961
+
+% 0 1 0 0c3a76c92cd0350e199ea3d9252c8273
+
+% 0 1 0 126daffedd8154771896783ff889dbc9
+
+% 0 1 0 10865d9d3ad1149c1ed173aabd458e95
+
+% 0 1 0 02e7846a02a361b0198af25947f86c1a
+
+% 0 1 0 1d23daa4520abfe91f6a45ef54789a6d
+
+% 0 1 0 02226bc55860518c018088cccaccbd6b
+
+% 1 1 0 124744871c17df7f15d33de69c0104e4
+
+@ 0 1 0 002d1756b6843d201b8f45220e46169f
++ entry .ClassSurface   la superficie di dichiarazione di una classe: ciò con cui si collega un consumatore compilato, e nient'altro
+
+% 1 1 0 06acd5ee1df57f9e06ccf6131fe9e615
+
+@ 0 9 0 0cf0e61aad9d897c02dd4280957f2930
++       Una `ClassSurface` è un class file ridotto alla sua **superficie di collegamento**: il
++       suo `#name` interno, i `#flags` di accesso, la `#superclass`, le `#interfaces`, la
++       `#signature` generica, e i suoi `#members` — campi e metodi come `ClassSurface.Member`,
++       ciascuno con nome, descrittore, flag, firma generica, eccezioni dichiarate e costante
++       inlinabile. `Code`, `SourceFile`, `LineNumberTable` e le annotazioni vengono scartati
++       deliberatamente: due build dello stesso sorgente possono differire in tutti questi senza
++       cambiare ciò a cui si lega un consumatore. Questa è la vista per confrontare le release
++       ai fini della compatibilità binaria, ed è per questo che i membri sono ordinati per
++       selettore e le interfacce e le eccezioni per nome, invece di essere tenuti nell'ordine
++       del file, che è un artefatto della compilazione.
+
+% 2 1 0 00218b28cefb5fdb01272fc2857b1d72
+
+% 3 1 0 0755e65faeb4a5451b19759e5ac2e6a0
+
+% 4 1 0 06fa97dc687e039307576ac074b01608
+
+% 5 1 0 1284b7d1484bb5711e80b8c30e38f195
+
+% 0 1 0 176a69fb4fea21211c019b20a7f96886
+
+% 0 1 0 07e486c19e15f39e0ff0126bbe581a6f
+
+% 0 1 0 110cef3df8ce92f40e7a0250e6f8dce0
+
+% 0 1 0 0112ae64943fee8e0c32c7f051254b94
+
+% 1 1 0 1eb5e4b35bd39d1a14094cbf4971e265
+
+@ 0 4 0 177236afcfc6c714092001875a42e7ee
++       I nomi sono nomi interni della JVM, `java/lang/String`, come li scrive ogni riferimento
++       dentro un class file. L'accessibilità di una classe annidata si legge dall'attributo
++       `InnerClasses` (`#innerFlags`) dove i flag propri della classe riporterebbero
++       erroneamente come privata di package una classe membro `protected`.
+
+% 0 1 0 1d224511c203446e118366df225969c4
+
+% 1 1 0 12cdd1818224a5b50c978cd7165f0eb1
+
+@ 0 2 0 0948083dd278dbca072a04d1ece9fa40
++   entry .Kind   se un membro è un `Method` o un `Field`
++   entry .Member   un campo o un metodo di una classe, come lo risolve la JVM
+
+% 1 1 0 11be09e0a303b6fd058ac3c0be42f468
+
+@ 0 6 0 1c5b5df7dd1135321dd6aab27aa5d1d6
++         Un membro ha un `#kind`, il suo `#name`, il suo `#descriptor` (come `(I)V` o
++         `Ljava/lang/String;`), i suoi `#flags` di accesso, una `#signature` generica
++         facoltativa, i nomi interni ordinati delle sue `#exceptions` dichiarate (solo per i
++         metodi) e, per un campo `static final`, la `#constant` portata dal suo attributo
++         `ConstantValue`. I predicati leggono i bit dei flag; `#visible` dice se il membro è
++         `public` o `protected`, le sole accessibilità a cui può collegarsi un consumatore esterno
++         al package.
+
+% 2 1 0 14b37f02fe43256a1f7f99f54ff5e6bd
+
+% 3 1 0 05c821760b65fe4f043ebfbe04a4ce2f
+
+% 0 1 0 1490eb792f48dd291bb32b26f895ab12
+
+% 0 1 0 15bbcb3205fd987e0b7b1bbce6ae4351
+
+% 0 1 0 002a53229493bb3615547b7770ae379c
+
+% 1 1 0 042375988f7ceeae06cbe4c7bfd3290f
+
+@ 0 52 0 1fc5e6642d4a0a771965c0b5e94e51fb
++     entry #kind   `Kind.Method` o `Kind.Field`
++     entry #name   il nome del membro, come compilato
++     entry #descriptor   il descrittore JVM: il `(params)result` di un metodo o il tipo di un campo
++     entry #flags   la maschera di bit `access_flags`
++     entry #signature   l'attributo generico `Signature`, conservato perché la cancellazione perde ciò di cui ha bisogno un consumatore che ricompila
++     entry #exceptions   i nomi interni dell'attributo `Exceptions`, ordinati; `Nil` per un campo
++     entry #constant   il `ConstantValue` di un campo `static final`, come `class:value`, per esempio `java.lang.Integer:1`
++         La classe della costante viene incorporata insieme al suo valore, poiché `1` come
++         `Integer` e `"1"` come `String` sono contratti diversi i cui `toString` coincidono.
++     entry #selector   la chiave del membro all'interno della sua classe: nome e descrittore, con prefisso `#` per un metodo o `.` per un campo
++         Il sigillo tiene distinti un metodo e un campo con lo stesso nome, e il descrittore tiene
++         distinti gli overload, così un selettore identifica un solo membro di una classe.
++     entry #public   se `ACC_PUBLIC` è impostato
++     entry #protect   se `ACC_PROTECTED` è impostato
++     entry #priv   se `ACC_PRIVATE` è impostato
++     entry #static   se `ACC_STATIC` è impostato
++     entry #finl   se `ACC_FINAL` è impostato
++     entry #abstrakt   se `ACC_ABSTRACT` è impostato
++     entry #bridge   se `ACC_BRIDGE` è impostato: un metodo bridge generato dal compilatore
++     entry #synthetic   se `ACC_SYNTHETIC` è impostato
++     entry #visible   se il membro è `public` o `protected`: collegabile dall'esterno del suo package
++     entry #inlinable   se il compilatore di un consumatore può aver già copiato il valore di questo campo nel proprio constant pool
++         Vero per un campo `static final` di tipo primitivo o `String` che ha una `#constant`:
++         secondo le regole della JLS un compilatore rende inline una tale costante a ogni uso,
++         quindi cambiarne il valore non rompe il collegamento, ma cambia il comportamento dei
++         consumatori finché non vengono ricompilati. Un `ConstantValue` su qualsiasi altro campo
++         non viene reso inline, quindi l'attributo da solo non è il criterio.
++   entry .apply   analizza i byte di un class file nella sua `ClassSurface`
++       `ClassSurface(data)` legge il class file attraverso `java.lang.classfile` e conserva solo
++       la superficie di collegamento. I campi si leggono con la loro firma e la loro costante, i
++       metodi con la loro firma e le loro eccezioni; i membri sono ordinati per
++       `Member#selector` e le interfacce per nome. I byte non vengono conservati.
++   entry #name   il nome interno della classe, `scala/Option`
++   entry #flags   la maschera di bit `access_flags` della classe, come la registra il class file
++   entry #superclass   il nome interno della superclasse, o `Unset` per `java/lang/Object` stessa
++   entry #interfaces   i nomi interni delle interfacce implementate direttamente, ordinati
++   entry #signature   l'attributo generico `Signature` della classe, se presente
++   entry #members   i campi e i metodi, ordinati per `Member#selector`
++   entry #innerFlags   i flag che l'attributo `InnerClasses` registra per questa classe, se è annidata
++       I `access_flags` propri di una classe annidata mostrano la vista esterna, in cui una
++       classe membro `protected` non è né pubblica né protetta; la sua vera accessibilità si
++       trova nella voce `InnerClasses` della classe che la racchiude, che questo rilegge.
++       `Unset` per una classe di primo livello.
++   entry #interface   se la classe è un'interfaccia (`ACC_INTERFACE`)
++   entry #isFinal   se la classe è final (`ACC_FINAL`)
++   entry #synthetic   se la classe è generata dal compilatore (`ACC_SYNTHETIC`)
++   entry #access   i flag che decidono l'accessibilità: `#innerFlags` dove presenti, altrimenti `#flags`
++   entry #visible   se la classe è `public` o `protected` secondo i suoi flag `#access`
++   entry #supertypes   i supertipi nominati direttamente, prima la superclasse, poi le interfacce
++       L'ordine che percorre la risoluzione della JVM stessa, e l'ordine in cui
++       `ClasspathIndex#closure` indicizza i membri ereditati.
++   entry #member   il membro con un dato `Member#selector`, o `Unset`
+
+@ 0 1 0 1fdeaf7b27a752361bd5211c699607b6
++ entry .ClasspathIndex   risolve i nomi interni delle classi nelle loro superfici, su classi in memoria più un classpath
+
+% 1 1 0 06e341d858b8af650a8e4b66438d8eb2
+
+@ 0 7 0 182ed94836703afd017f81134ee9ad8f
++       Un `ClasspathIndex` risponde a «cosa dichiara la classe `name`?» per ogni classe a cui
++       può fare riferimento un insieme di classi. Conserva subito le superfici delle classi che
++       gli vengono date — quelle di una release stessa, che sono quelle in esame — e risolve
++       tutto il resto in modo pigro leggendo `name.class` da un `URLClassLoader` sulle voci del
++       classpath, con il classloader della piattaforma come genitore, così si risolvono anche
++       le classi del JDK stesso. Ogni risoluzione, compresa una fallita, viene memoizzata, il che
++       mantiene lineare un percorso sui supertipi di molte classi.
+
+% 2 1 0 054002a09b76f2dc023dd4b436fe2e3f
+
+% 3 1 0 085cb7c24c3851c3006e094d637cb326
+
+% 4 1 0 03da222b262deeb914968577b7996868
+
+% 5 1 0 1da5bcbecf2dfbdb0faeb2386b8987f7
+
+% 0 1 0 00ae0d8b35952d2a10f43d261365bdd1
+
+% 0 1 0 1c2652707cb4aa581fe38c93c1e045a7
+
+% 0 1 0 0e4836812a8b6f0912c47d36b467c705
+
+% 0 1 0 0e9f12b5a3c4717a066f0bb311992c58
+
+% 1 1 0 020e3deff035cef709aca679b32329bd
+
+@ 0 2 0 1dc0bec72e67f01413a938a8ead90901
++       Una classe nella mappa in memoria non viene mai oscurata da una classe con lo stesso nome
++       che compare prima nel classpath.
+
+% 1 1 0 1f21c156bb72660015530e2764fe6f57
+
+@ 0 13 0 033b9b12569a696018a4d617534b3ebd
++   entry .apply   un indice su una mappa di superfici per nome interno, più le voci del classpath come testo
++       Ogni voce del classpath è un percorso di directory o di JAR, come testo; una directory
++       deve esistere sul disco perché il loader la tratti come tale. Una voce che non esiste non
++       risolve nulla.
++   entry #own   i nomi interni delle classi tenute in memoria, ordinati
++   entry #apply   la superficie di una classe per nome interno, o `Unset` se nulla può fornirla
++       Cerca prima nella mappa in memoria, poi legge il class file dal classpath, mettendo in
++       cache la risposta in entrambi i casi.
++   entry #closure   i supertipi transitivi di una classe, dal più vicino, e i nomi che non è stato possibile risolvere
++       `index.closure(name)` percorre `ClassSurface#supertypes` in ampiezza a partire da
++       `name`, escluso `name` stesso, e restituisce una coppia: i supertipi trovati, in ordine
++       di scoperta, e i nomi di quelli che nessuna sorgente ha potuto risolvere. Un supertipo
++       non risolvibile viene riportato anziché saltato, perché senza di esso l'insieme dei
++       membri ereditati della classe è sconosciuto.
+
+@ 0 1 0 1f5d17bc75a5e71917755f495ad598d7
++ entry .disassemble   compila un blocco quotato con il compilatore di staging e ne rilegge il bytecode
+
+% 1 1 0 19e5c3a46e445bcb19eaab9e6f5e598b
+
+@ 0 5 0 1626dbf68b358ceb07d6e0297294a858
++       `disassemble(code)` prende un `Quotes ?=> Expr[Any]` — un blocco di codice quotato con
++       `'{…}` — lo avvolge in un metodo, lo compila con il compilatore di staging in una
++       directory temporanea, legge il class file risultante e restituisce il `Bytecode` del
++       metodo, con i numeri di riga spostati da `Bytecode#embed` al `Codepoint` del punto di
++       chiamata, così il listato si legge rispetto al file in cui il blocco è stato scritto.
+
+% 2 1 0 1ebea1f49f4186dc035f62b2df1f0f73
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 0d740c43472456511a55524f839d8892
+
+% 3 1 0 0fb781dee5363c921de992195a62ea9a
+
+% 0 1 0 1f3918a79623b6a81645e18b9fd2c5e4
+
+% 0 1 0 18e4b8ddb94fc31a1dd1aaf921a535cb
+
+% 0 1 0 0a3d17916c429428124db4561ad17fd8
+
+% 1 1 0 10e5244114f9e317002c14f041ef2039
+
+@ 0 7 0 06d85db9398e524d02163ffdf721bf4b
++       Richiede una `TemporaryDirectory` per l'output del compilatore, un `Classloader` su cui
++       il compilatore possa caricare (la sua istanza `java` viene passata al compilatore di
++       staging), e una `Tactic[Bytecode.Error]`, sollevata come `ClassfileMissing` quando non
++       compare alcun class file e come `ClassfileUnreadable` quando non può essere letto o il
++       metodo generato non vi si trova. Il blocco viene compilato con la flag del linguaggio
++       sperimentale attivata, con le impostazioni di Scala 3.6. La compilazione richiede un
++       momento, quindi questo è uno strumento per esaminare ciò che producono il compilatore e il
++       suo ottimizzatore, non per un percorso caldo.
+
+% 1 1 0 164889fa4a4cd77802baa0335fdc34bf
+
+% 1 1 0 1628e7a70d63f47f1c59c27f741b0f74
+
+@ 0 7 0 12d4776dd6b12f2608a12ee3b7212695
++ entry .BytecodePalette   i colori con cui si rende un listato di bytecode
++     Una `Palette` in sRGB con, oltre al `background` e al `foreground` che ha ogni tavolozza,
++     tre colori: `bytecode`, per il riferimento al file sorgente e per il metodo da cui
++     proviene un'istruzione linearizzata; `sourceCode`, per i numeri di riga; e `outline`, per
++     la cornice della colonna dello stack. Una `BytecodePalette` deve essere nell'ambito per
++     rendere come `Teletype` un `Bytecode`, una `List[Bytecode.Frame]` o una
++     `List[Bytecode.Linearized]`; la libreria non ne fornisce una predefinita, quindi un
++     programma ne definisce una. I colori degli opcode non stanno nella tavolozza: vengono da
++     `Bytecode.Opcode#highlight`, in base al costo.
+
+% 2 1 0 194d1b953f289ea403a034cbfdc9db20
+
+% 3 1 0 03b493b5e067e8d10778039f0c7d85c1
+
+% 0 1 0 15262b3c0efc50150dacc737d2489177
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 0a6456c0b2fcca4b02f1660cd5dd6ab5
+
+% 0 1 0 00d17034d10f3ded0d511e6670714786
+
+% 0 1 0 0a4e691ca0c0a1530e8bee20cc5d9987
+
+% 0 1 0 026b6231218d1fc405d618add8e05ef8
+
+% 0 1 0 0350c669f51e6ca4022fe3109f2ef3ce
+
+% 1 1 0 0ddde4d6f5685bcd1f708fbf94c6aa56
+
+@ 0 1 0 120832797b14c9750094e556927f9531
++ entry .internal   la sede di una macro che disassembla un metodo selezionato da una lambda
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 007ce0d31b3a1bf6042bcb045972ea21
++       Non è destinato all'uso diretto. Contiene `disassemble`, un'implementazione di macro che,
++       data una lambda della forma `_.method` su un tipo e un'espressione `Classloader`,
++       inserisce una ricerca del `Bytecode` di quel metodo attraverso `Classfile`; nessun punto
++       di ingresso inline pubblico la invoca attualmente.
++   entry .disassemble   la macro: una `target => Any` che seleziona un metodo, nel bytecode di quel metodo
++       Si arresta con _this type of lambda is not supported_ (codice 91) per una lambda che non
++       è una semplice selezione di membro.

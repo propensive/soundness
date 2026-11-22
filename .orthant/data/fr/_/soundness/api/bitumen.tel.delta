@@ -1,0 +1,3274 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0d86bc6b56dc47ca12ddbc909f94f54f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12ce75bb74dbd80f1b39728a995284f4
++ info
++     les archives tar et ar comme flux d'entrées typées : lues paresseusement, construites comme
++     valeurs, archivées depuis un répertoire
+
+@ 0 7 0 1dd1b2a49b4433300f7073dac13e18de
++ detail
++     _Bitumen_ lit et écrit les deux formats d'archive séquentiels d'Unix — **tar**, le format
++     dans lequel voyage une arborescence de répertoires, et **ar**, le conteneur de chaque
++     package `.deb` et de chaque bibliothèque statique `.a` — sous forme de flux d'entrées
++     typées, sans aucun des objets mutables à accès aléatoire ni des flux bruts d'en-têtes et
++     d'octets que proposent les API standard. Les archives ZIP relèvent de _zeppelin_ ;
++     bitumen partage avec elle l'opération `archive[Format]`, si bien qu'un répertoire
++     s'archive dans l'un quelconque des trois formats en le nommant.
+
+@ 0 9 0 13c6080eeffb4ad91c41ae7697147b68
++     Une archive est une donnée. Un `Tarfile` est une `List` de `Tar.Entry` — un fichier, un
++     répertoire, un lien physique ou symbolique, un périphérique, une FIFO ou un fichier
++     creux, chacun avec son mode Unix, son propriétaire et son horodatage sous forme de
++     valeurs typées — et un `Arfile` une `List` de membres `Ar.Entry`. Chacun se transmet en
++     flux d'octets au moyen d'un given `Streamable` ; ainsi en écrire un sur le disque revient
++     à écrire n'importe quelle autre valeur, et un `Tarfile` se compresse avec `gzip`, `zlib`
++     ou `deflate`. Le nom d'une entrée est un `Tar.Ref`, un chemin `Relative on Tar` qui ne
++     peut être ni absolu ni remonter au-dessus de la racine de l'archive ; ainsi une entrée
++     malveillante échoue à l'analyse plutôt que de s'échapper à l'extraction. Le corps d'une
++     entrée est un `Archive.Body` : des morceaux qui sont tirés paresseusement de la source
++     et mémoïsés ; ainsi une archive de n'importe quelle taille se lit entrée par entrée sans
++     être matérialisée.
+
+% 2 1 0 1d7ca0377eb5fd9e0fb51b66b5c6d199
+
+% 3 1 0 1c84f534cf5709bc106b6c7c12360eb6
+
+% 4 1 0 1bc29301680cb141007359a40ec66599
+
+% 5 1 0 12276541e6b5bb81086b0f3616b37e3a
+
+% 0 1 0 180205bf3713174510fa2c055606d827
+
+% 0 1 0 12c9d001c19e03650084dcd85d4a00c4
+
+% 0 1 0 071c1ca84721fcda0c2c89a534e438dd
+
+% 0 1 0 07afd885e61951d31a7ac88255374f20
+
+% 0 1 0 0853a59150ebaa291add886e22c83190
+
+% 0 1 0 07ef615c5e589fa303bf104af352ae91
+
+% 0 1 0 058929a537b81b0e099e093a48d2c2e5
+
+% 0 1 0 075c2b940bc495ab185a20c2beb176a5
+
+% 0 1 0 06698d38640b5d681363bc667d548d7c
+
+% 0 1 0 0f999ef8d789d2a20f5258df83e0adcb
+
+% 0 1 0 11c57787d356825d08da79844878e6b3
+
+% 1 1 0 1e3f9fd78ef4cf770977e885411ac5e0
+
+@ 0 8 0 0ea713ba200c66a01851ac15a2ebdae3
++     La lecture fonctionne dans l'autre sens : `Tarfile.read` et `Arfile.read` analysent
++     paresseusement les entrées directement depuis un flux d'octets, en absorbant les limites
++     de morceaux, quelles qu'elles soient, dans lesquelles il arrive, et une archive
++     compressée est un flux décompressé lu de la même façon. Une lecture se fait en un seul
++     passage et par un seul propriétaire — consommez les entrées dans l'ordre, sur un seul
++     thread — mais une entrée sautée reste lisible, car son corps est mémoïsé quand
++     l'itérateur avance. Ouvrir une archive avec `open[Tar]` ou `open[Ar]` limite la source à
++     un bloc, dans lequel `tar` ou `ar` est la poignée, et `path.create[Tar]()` prête un
++     `TarBuilder` qui écrit en flux directement sur le disque des entrées de longueur
++     inconnue.
+
+@ 0 5 0 00cc6bb2c33b827c087314ccbb2aa183
++     Une arborescence de répertoires s'archive avec `directory.archive[Tar]()` ou
++     `archive[Ar]()`, au moyen du `FilesystemBackend` de galilei, dans un parcours préfixe
++     trié qui rend deux archivages d'une même arborescence identiques octet pour octet ;
++     `Archive.Flag.Owner` et `Archive.Flag.Mtime` sont les réglages d'un build reproductible,
++     et `extractTo` est l'inverse, qui décompresse un `Tarfile` sur un système de fichiers.
+
+@ 0 1 0 170af30ee833fd7815f6a7596ccb2832
++     La bibliothèque est divisée en deux ensembles de sources :
+
+@ 0 9 0 0f3bfb09cd87fb300689696b88b072b8
++     - `bitumen.core` — les formats eux-mêmes : `Tar`, `Tarfile`, `Ar`, `Arfile`,
++       `Archive.Body`, les `data.open[Tar]()`/`open[Ar]()` en mémoire,
++       `archive[Tar]`/`[Ar]` sur tout `FilesystemBackend`, `Pax`, `TypeFlag`, `UnixMode`,
++       `UnixUser`, `UnixGroup` et `LongNameFormat`. Il n'a besoin que d'une compression en
++       pur Scala et de l'abstraction de système de fichiers de galilei, indépendante de la
++       plateforme ; il compile donc aussi bien pour la JVM que pour Scala.js et WASI.
++     - `bitumen.jvm` — tout ce qui touche un véritable fichier au moyen de `java.io` : ouvrir
++       un chemin comme archive (`tarPathOpenable`, `arPathOpenable`), en créer une sur le
++       disque avec un `TarBuilder` en flux (`tarPathCreatable`), et `extractTo`.
+
+@ 0 6 0 095dfeb21ed2f5301ebe503638ae1ef4
++     Tout est exporté vers le package parapluie `soundness`. Les trois givens de la JVM sont
++     de premier niveau (leur sujet, un type de chemin, appartient à une autre bibliothèque),
++     et sont exportés par leur nom ; ainsi `import soundness.*` les importe ; un programme qui
++     importe seulement `bitumen.*` doit les nommer (`import bitumen.tarPathOpenable`), car un
++     import joker n'importe pas les givens. La politique de `archive[Tar]` pour les liens
++     symboliques est celle de galilei, choisie en important par son nom
++     `filesystemOptions.preserveSymlinks` ou `filesystemOptions.dereferenceSymlinks`.
+
+% 0 1 0 12e3e52b4e7248691fdcb5e37b508fa9
+
+% 0 1 0 03d88ba2af328c720123919f77ecc2e1
+
+% 0 1 0 182df4d98a7df3251a289cc61afded89
+
+% 0 1 0 1b83d01ae6333b2609d39755b4eecd57
+
+% 0 1 0 00fa6e7c74502bfe0d1e062ed604b677
+
+% 0 1 0 1cd53a31d5b382eb0ee52f8e58833f98
+
+@ 0 1 0 1f749a4eadf765d40ef6479ef55f8985
++ entry .Tar
++   info
++       le format tar : un type marqueur, le plan des noms d'entrées, et le foyer de `Tar.Entry`,
++       `Tar.Error` et `Tar.Handle`
+
+@ 0 8 0 0e42428a6c1f363d115c5efcae2a3175
++   detail
++       `Tar` est un trait scellé sans habitant qui nomme le format partout où un format est
++       choisi par type : `path.open[Tar](flags*)`, `data.open[Tar]()`, `path.create[Tar]()` et
++       `directory.archive[Tar]()`. Son compagnon est aussi le **plan** des noms d'entrées — un
++       `Tar.Ref` est un `Relative on Tar`, un chemin relatif séparé par des `/` soumis à
++       `.Rules` — et le foyer des types du format : `Tar.Entry` (les genres d'entrées),
++       `Tar.Header` (l'en-tête USTAR brut de 512 octets), `Tar.Error` et ses raisons,
++       `Tar.Flag` (la compression qui enveloppe une archive) et `Tar.Handle` (la poignée, limitée
++       à une portée, d'une archive ouverte).
+
+% 2 1 0 0d4f3e6a8cdc92e21cfde1e06c6666ad
+
+% 3 1 0 1cfff27b8e6a9f1213104c6ec32e052d
+
+% 4 1 0 17f2529db391a7cb19f31cb05ba2fb65
+
+% 5 1 0 064324f55551ee5a1a91b044cb00ed96
+
+% 7 1 0 01a086c9878b53f113b7cb18ee53b84b
+
+% 0 1 0 13214fd03bf481ec0f5d6ee9b2b6f925
+
+% 0 1 0 0eb156ff34832e351cc959b2e4e11697
+
+% 0 1 0 04abe175988bd84a061c7cea327b6986
+
+% 1 1 0 02d86dcbff2dc0a707d562b314d6856e
+
+% 2 1 0 1b054e85f69e6f2002dec68e0638a62b
+
+@ 0 4 0 12a2c80727173e3917d5a48b8806045e
++       Les givens du compagnon sont dans la portée implicite ; aucun ne nécessite donc d'import :
++       `.filesystem` et `.nominative` rendent les chemins `Relative on Tar` décodables depuis du
++       texte, `.dataOpenable` ouvre des `Data` en mémoire comme archive, et `.archivable`
++       archive un répertoire. Ouvrir un *chemin* sur le disque comme `Tar` nécessite le
++       `tarPathOpenable` de `bitumen.jvm`.
+
+% 1 1 0 1ad4bd650aeac2f106c9093e35a89fe8
+
+% 1 1 0 1a172fdec65a4b360a1f343bc9fa051e
+
+% 1 1 0 12250cfc45989d9d0c377a5fd31aa13b
+
+% 0 1 0 07c6f244fa68c2611719fb74bb81d6ed
+
+@ 0 1 0 1299b19019f1a76a0678bb6a923b2a0d
++   entry .Ref
++     info
++         le type du nom d'une entrée : `Relative on Tar`
+
+@ 0 5 0 1cc16b2107f04184004af06a3676062f
++     detail
++         Un chemin relatif sur le plan `Tar`, décodé depuis du texte avec
++         `t"bin/run".as[Tar.Ref]` (ou `as[Relative on Tar]`). Étant relatif, il ne peut pas
++         désigner un chemin absolu, et ses segments sont soumis à `.Rules` ; ni `.` ni `..` ne
++         peuvent donc y apparaître : une entrée ne peut pas s'échapper du répertoire dans lequel
++         elle est extraite. Le nom d'une entrée de répertoire ne porte pas de `/` final ;
++         `Tar.Entry#entryName` en ajoute un quand l'entrée est sérialisée.
+
+@ 0 1 0 18dc0bacaa4425f003251c0591d4cda0
++   entry .Rules
++     info
++         ce que peut être un segment d'un nom d'entrée
+
+@ 0 3 0 106dc5f046d7478d1161c7c0d71707a5
++     detail
++         Un segment ne doit pas contenir `/`, et ne doit être ni `.`, ni `..`, ni vide. Un texte
++         qui enfreint une règle échoue au décodage avec une `Path.Error` ; un nom lu depuis une
++         archive qui en enfreint une lève `Tar.Error` avec la raison `BadName`.
+
+@ 0 1 0 1deb5cbb860b607a1065c5f42b969de1
++   entry .compliant
++     info
++         les noms valides sur `Tar` sont valides sur `Linux`
+
+@ 0 2 0 1d017a4ddbfd0aff14f23604264c431b
++     detail
++         Le given `Linux is Compliant on Tar` : un `Tar.Ref` peut être joint à un `Path on
++         Linux`, et c'est ainsi que `extractTo` place chaque entrée sous sa racine.
+
+@ 0 1 0 1ba535fc27259bd0080e1e5a9fdc0af0
++   entry .compliant2
++     info
++         les noms valides sur `Tar` sont valides sur `MacOs`
+
+@ 0 1 0 168c91c5e5a5d3c91b12afedcdcf0102
++     detail
++         Le given `MacOs is Compliant on Tar`, le pendant macOS de `.compliant`.
+
+@ 0 1 0 1cc0af504a4afc2c024af6b7a7667b7b
++   entry .nominative
++     info
++         le given qui soumet les noms `Tar` à `.Rules`
+
+@ 0 1 0 1b26cc8bf355432c1338db81c1720f77
++   entry .filesystem
++     info
++         le plan `Tar` comme `Filesystem` : séparé par des `/`, sans racine unique
+
+@ 0 3 0 11cba52611012c740d254bbc9dcc7298
++     detail
++         Nommé `TAR`, avec `/` comme séparateur et `.` et `..` comme segments du répertoire
++         courant et du parent. `UniqueRoot` vaut `false`, car les noms d'entrées sont relatifs.
++         Son séparateur est aussi celui avec lequel `archive[Tar]` et `archive[Ar]` joignent le
++         nom relatif d'un descendant.
+
+@ 0 1 0 10b1c5c3cb1bcbda076c82697a99ce81
++   entry .dataOpenable
++     info
++         ouvre des `Data` en mémoire comme archive tar : `data.open[Tar](flags*)`
+
+@ 0 4 0 1ecf2a28bee6bbe90985eb9400155efc
++     detail
++         Le given qui rend `Data` `Openable` sous la forme `Tar`, dans la portée implicite pour que
++         `bytes.open[Tar]()` se résolve sans import. Il nécessite une `Tactic[Tar.Error]` et une
++         `Tactic[Truncation.Error]`, et c'est un `Tar.DataOpenable`. Ouvrir un chemin sur le
++         disque relève de `tarPathOpenable`, dans `bitumen.jvm`.
+
+@ 0 1 0 11598f4717f691e601b37ff6b640ee51
++   entry .archivable
++     info
++         archive une arborescence de répertoires sous forme de `Tarfile` :
++         `directory.archive[Tar](flags*)`
+
+@ 0 5 0 05a265ef65ad78120da12886ae727955
++     detail
++         Le given qui rend un `Path on plane` `Archivable` sous la forme `Tar`, pour tout plan doté
++         d'un `FilesystemBackend on plane` dans la portée, dans la portée implicite pour que
++         `directory.archive[Tar]()` se résolve sans import. Il nécessite aussi une politique
++         `DereferenceSymlinks` (importée par son nom depuis `filesystemOptions`), une
++         `Tactic[Io.Error]` et une `Tactic[Tar.Error]`, et c'est un `Tar.Archivable[plane]`.
+
+@ 0 1 0 0386e23cade7c7f31494c186246d4cef
++   entry .Archivable
++     info
++         l'instance d'`Archivable` derrière `directory.archive[Tar](flags*)`
+
+@ 0 9 0 0eab6f7df9ef7b4a1d2e74a120e99009
++     detail
++         Archive une arborescence de répertoires sous forme de `Tarfile` au moyen du
++         `FilesystemBackend` de son plan ; ainsi une arborescence s'archive partout où galilei
++         s'exécute. Chaque descendant de la racine — la racine elle-même n'est pas une entrée —
++         devient la `Tar.Entry` de son genre : un fichier avec son contenu, un répertoire, un lien
++         symbolique avec sa cible (sous `filesystemOptions.preserveSymlinks` ;
++         `dereferenceSymlinks` archive plutôt ce vers quoi pointe le lien), une FIFO, ou un
++         périphérique caractère ou bloc avec ses numéros. Chacun enregistre le mode, le
++         propriétaire et la date de modification que signale le système de fichiers, sauf si un
++         `Archive.Flag.Owner` ou un `Archive.Flag.Mtime` les remplace pour chaque entrée.
+
+@ 0 3 0 01f76061fb07e91f18d0ad35e533880c
++         Les entrées sont visitées en parcours préfixe, les enfants de chaque répertoire étant
++         dans l'ordre des points de code ; ainsi l'entrée d'un répertoire précède les entrées
++         situées en dessous, comme l'attend `tar`, et deux archivages d'une même arborescence
++         produisent des octets identiques.
+
+% 2 1 0 0cd5c6b9db1ea9821d31f02bb9b35e5a
+
+% 3 1 0 168e9df388d186bf0299f8584503996e
+
+% 4 1 0 1ea5daa7530a724a0b5f6c006ede2dcb
+
+% 5 1 0 0b4bfd1ec1cd0a0d0a30a9f73e652cff
+
+% 6 1 0 0b31571ff7fa86fe0349b79b598e7209
+
+% 7 1 0 1a8232bd7e502744026bf7beb216fd1d
+
+% 8 1 0 0bec27d3ec3d27cc034d65388ca5ff48
+
+% 9 1 0 09f3d5930acaf37d0b0a6b0edd26b048
+
+% 10 1 0 1a61755a2814f26b1635bd2045b42898
+
+% 11 1 0 0a65ae0ea26289d70e442aebb547d967
+
+% 13 1 0 1286f1dac59fdbfa1a5de5cbd259f5dd
+
+% 0 1 0 18fce9ed084dff0d1c7ca939ee9e5f98
+
+% 0 1 0 1f927c834270653e0e772804d46e7ae9
+
+% 0 1 0 00101c7014b093dc0cbd3e116287e2d1
+
+% 1 1 0 0411d25ba399c8cd099452c8a3f0d237
+
+@ 0 4 0 1deb086235aaa4920c518e41cb9252c0
++         Les options sont un `LongNameFormat` — `Pax` sauf si `Gnu` est donné — et un nombre
++         quelconque d'`Archive.Flag`. Un descendant d'un genre que tar ne peut pas stocker (une
++         socket, par exemple) lève `Tar.Error` avec la raison `DeviceCreationUnsupported` ; une
++         lecture qui échoue lève `Io.Error`.
+
+% 1 1 0 15d31339fc5b1ae402363c634dde2e5f
+
+% 2 1 0 0423dcde2ed953d40b1c12a20897ea66
+
+@ 1 1 0 0001744ed96de2d80802106f01bc7a1b
++     entry #Self
++       info
++           le receveur : un `Path on plane`
+
+@ 1 1 0 00103a5a4a919bf00b54f744ed4ab766
++     entry #Form
++       info
++           le format choisi : `Tar`
+
+@ 0 1 0 0739e11e7e99c27d0a2acc41db099204
++     entry #Operand
++       info
++           le type des options : `LongNameFormat | Archive.Flag`
+
+@ 0 1 0 1c998408d928fd7505a7c94edf72e7bc
++     entry #Result
++       info
++           ce que produit l'archivage : un `Tarfile`
+
+@ 0 1 0 00510e880c89da57069d4fef5146ca42
++     entry #archive
++       info
++           les entrées sous une racine, sous forme de `Tarfile`
+
+@ 0 2 0 0cbfc9e42021dd1a0cbdfb95977151e9
++       detail
++           `archive(root, flags)` est ce qu'appelle `root.archive[Tar](flags*)` : les descendants
++           de `root`, en parcours préfixe trié, avec les options données appliquées.
+
+@ 0 1 0 032dff5c60c3654814571c3f33e4dc26
++   entry .DataOpenable
++     info
++         l'instance d'`Openable` derrière `data.open[Tar](flags*)`
+
+@ 0 5 0 03ef16430bace4e615a195fb0f44c08f
++     detail
++         Ouvre des `Data` en mémoire comme archive tar, en prêtant une `Tar.Handle` au bloc. Les
++         archives s'ouvrent en lecture seule : un mode comprenant `Write` est refusé avec
++         `Tar.Error`, raison `WriteUnsupported`. Les options sont des `Tar.Flag`, qui indiquent
++         quelle compression enveloppe les octets, le cas échéant.
+
+% 2 1 0 13b5c10cef5a2a6c1a3284be48b39240
+
+% 3 1 0 0524373379e9a7cb09e0884a6077ae64
+
+% 4 1 0 194c681a3378380b0e86218a1927cb38
+
+% 5 1 0 12d10887fbd5c5100072308b2bba0b8f
+
+% 0 1 0 1239f13a1d793a7c1cdbb28085aba362
+
+% 0 1 0 1d44db22d1c7a54c186d48eea7a6f62c
+
+% 0 1 0 1fd70eb54c7bd2af0d43b8ba2b5caa4d
+
+% 1 1 0 1d2ca4938ef0d7d3076c72489f841c39
+
+@ 1 1 0 1504e81406a5397b14a800a496213fa3
++     entry #Self
++       info
++           le receveur : `Data`
+
+@ 1 1 0 16258c328179b0e014deaadaf0368b08
++     entry #Form
++       info
++           le format choisi : `Tar`
+
+@ 0 1 0 1d6c5d4f010a34871c3863d786d345af
++     entry #Operand
++       info
++           le type des options : `Tar.Flag`
+
+@ 0 1 0 1b50941e9b018fba18441de72a44f431
++     entry #Result
++       info
++           la poignée prêtée au bloc : `Tar.Handle`
+
+@ 0 1 0 0f816c181c7ead2215d78ebe70b6bdaf
++     entry #open
++       info
++           analyse les données comme archive et exécute le bloc avec une `Tar.Handle`
+
+@ 0 1 0 0ec59fc6e9144f0c07e75d20f9967e2f
++   entry .Header
++     info
++         l'en-tête USTAR de 512 octets, sous forme de tranches brutes de champs, avec les décodeurs
++         de ses champs
+
+@ 0 8 0 05ab7bed4d711cf41b5e1c50a9110067
++     detail
++         Un `Tar.Header` contient les seize champs d'un bloc d'en-tête USTAR sous forme de
++         tranches non décodées de `Data` — rien n'est interprété dans la case class — et son
++         compagnon contient les décodeurs que le lecteur leur applique : `.parse` découpe un bloc,
++         `.verifyChecksum` le vérifie, `.decodeOctal` lit un champ numérique, `.decodeNulText` un
++         champ texte terminé par NUL, et `.isZeroBlock` reconnaît le marqueur de fin d'archive.
++         Ce sont les outils propres du lecteur, publics pour un programme qui doit inspecter ou
++         réparer une archive au niveau des blocs ; un programme qui lit des entrées utilise
++         `Tarfile.read`.
+
+@ 0 1 0 1923ccac8af769a702cfacef067e6aea
++     entry .blockSize
++       info
++           la taille d'un bloc tar, et d'un en-tête : 512 octets
+
+@ 0 1 0 0b2a214a796b7ecd1be8c8b7c035ae5b
++     entry .checksumOffset
++       info
++           l'endroit où commence le champ de somme de contrôle dans un en-tête : l'octet 148
+
+@ 0 1 0 0c3ba719f9445c721814f46351aa849d
++     entry .checksumLength
++       info
++           la longueur du champ de somme de contrôle : 8 octets
+
+@ 0 1 0 077ca767e167cdc60b25967887ed1ffb
++     entry .parse
++       info
++           découpe un bloc de 512 octets en un `Tar.Header`
+
+@ 0 2 0 0a6190450df09b90009457150a81ebaa
++       detail
++           Un bloc plus court que `.blockSize` lève `Tar.Error` avec la raison `TruncatedStream` et
++           est ensuite découpé au mieux, un indicateur de type manquant étant lu comme un fichier
++           ordinaire.
+
+@ 0 1 0 1d509907c92d15940d7935b2c7a47d27
++     entry .verifyChecksum
++       info
++           compare la somme de contrôle enregistrée d'un bloc d'en-tête à la somme de ses octets
+
+@ 0 5 0 1b1591d332288f630b8afe45aeac46a9
++       detail
++           La somme traite les huit octets de la somme de contrôle comme des espaces, comme le
++           prescrit le format ; une non-concordance lève `Tar.Error` avec la raison `BadChecksum`,
++           qui porte les deux valeurs. On ne peut se fier à rien dans un bloc dont la somme de
++           contrôle échoue, y compris à la taille qui situe l'en-tête suivant ; le lecteur arrête
++           donc le parcours à cet endroit plutôt que de fabriquer une cascade d'erreurs à partir
++           d'octets corrompus.
+
+@ 0 1 0 19ce5be151e874081a255b32729ff9e1
++     entry .decodeOctal
++       info
++           un champ numérique : des espaces initiales facultatives, des chiffres octaux, puis NUL
++           ou une espace
+
+@ 0 2 0 10fd5e38c106ef731ec6de510af10bd2
++       detail
++           Renvoie la valeur sous forme de `U32`. Un champ sans chiffre, ou dont le terminateur
++           n'est ni NUL ni une espace, lève `Tar.Error` avec la raison `BadOctal`, en nommant le
++           champ.
+
+@ 0 1 0 18f8354811ad08ab063475912ee5cdb6
++     entry .decodeNulText
++       info
++           un champ texte, jusqu'à son premier octet NUL, en UTF-8
+
+@ 0 1 0 08a4a1eb9c05da77080946db5516ad8c
++     entry .isZeroBlock
++       info
++           si un bloc est entièrement nul : le marqueur de fin d'archive
+
+@ 0 1 0 1d36cf67bbc97fce07f6412d186c6395
++     entry #name
++       info
++           les 100 premiers octets du nom de l'entrée
+
+@ 0 1 0 1b3a6dfa1a632e750d584f9db93f4a5a
++     entry #mode
++       info
++           les bits de permission, en octal
+
+@ 0 1 0 0861fc72d678a2ea0598f8fc6bbbcb5c
++     entry #uid
++       info
++           l'identifiant numérique du propriétaire, en octal
+
+@ 0 1 0 13c25447157762371c11185db24ebe45
++     entry #gid
++       info
++           l'identifiant numérique du groupe, en octal
+
+@ 0 1 0 0f8892208811cb230f2d2694cc5758d6
++     entry #size
++       info
++           la taille de l'entrée en octets, en octal
+
+@ 0 1 0 102468447f01b40a17149a8c4d543921
++     entry #mtime
++       info
++           la date de modification en secondes depuis l'epoch, en octal
+
+@ 0 1 0 196e61cf22e7889c0c04fbbf275cf23e
++     entry #checksum
++       info
++           la somme de contrôle de l'en-tête, en octal
+
+@ 0 1 0 0eb40338628bd8bb11513cc2cdb7c188
++     entry #typeFlag
++       info
++           l'unique octet qui indique de quel genre d'entrée il s'agit
+
+@ 0 2 0 0dd7b953bd7010ca11276d2a05fd65d6
++       detail
++           L'octet en lequel s'encode un `TypeFlag` : `'0'` ou NUL pour un fichier, `'5'` pour un
++           répertoire, `'2'` pour un lien symbolique, `'x'` pour un en-tête étendu pax, et ainsi de
++           suite.
+
+@ 0 1 0 1736457279e5e0af00b392fa71c37562
++     entry #linkName
++       info
++           les 100 premiers octets de la cible d'un lien
+
+@ 0 1 0 1205f9615703ca6b0d61398215b8a418
++     entry #magic
++       info
++           les six octets qui devraient valoir `ustar` et NUL
+
+@ 0 1 0 0b7741743bb9485c0bb5fe76f6e21bcc
++     entry #version
++       info
++           les deux octets qui devraient valoir `00`
+
+@ 0 1 0 1b36cdc29b54132d1165d3c27d69e263
++     entry #uname
++       info
++           le nom du propriétaire, 32 octets au plus
+
+@ 0 1 0 0ac435e811f1905013ed8b6e9f333524
++     entry #gname
++       info
++           le nom du groupe, 32 octets au plus
+
+@ 0 1 0 165d065e7ea61cba11a4f195603293a4
++     entry #devMajor
++       info
++           le numéro majeur d'une entrée de périphérique, en octal
+
+@ 0 1 0 113fc20803920c66036fb46d3373b851
++     entry #devMinor
++       info
++           le numéro mineur d'une entrée de périphérique, en octal
+
+@ 0 1 0 0c80cf4642493daa1068d608ae7b85be
++     entry #prefix
++       info
++           le préfixe USTAR : jusqu'à 155 octets joints avant `#name` avec `/`
+
+@ 0 1 0 0423011cf444dbfa14c443b7600b122c
++   entry .Entry
++     info
++         une entrée d'une archive tar : un fichier, un répertoire, un lien, un périphérique, une
++         FIFO, un fichier creux ou un bloc de métadonnées
+
+@ 0 7 0 0aec013e1ad18ce81d82115f51708d3d
++     detail
++         `Tar.Entry` est une énumération des genres d'entrées que stocke le format, chacun étant
++         une case class qui porte les métadonnées Unix que le format existe pour préserver :
++         `path` (un `Tar.Ref`), `mode` (un `UnixMode`), `user` (un `UnixUser`), `group` (un
++         `UnixGroup`) et `mtime` (des secondes depuis l'epoch, sous forme de `U32`), et une map
++         `pax` des éventuels enregistrements d'en-tête étendu au-delà des enregistrements
++         structurels (`path`, `linkpath`, `uname` et `gname`, qui sont repliés dans les champs
++         qu'ils remplacent), comme `atime`, `ctime` ou un `mtime` inférieur à la seconde.
+
+% 2 1 0 07a83b0cb28af1e81d19b74dd934fe8e
+
+@ 0 12 0 0ca1445e12926d3f083def744efba235
++         column  Cas
++         column  Entrée
++         row  `File(path, mode, user, group, mtime, data, pax)`  un fichier ordinaire, dont le contenu est un `Archive.Body`
++         row  `Directory(path, mode, user, group, mtime, pax)`  un répertoire ; son nom se sérialise avec un `/` final
++         row  `Link(…, target, pax)`  un lien physique vers `target`, un texte nommant une autre entrée
++         row  `Symlink(…, target, pax)`  un lien symbolique vers `target`
++         row  `CharSpecial(…, device, pax)`  un périphérique caractère, `device` étant ses numéros `(major, minor)` sous forme de `U32`
++         row  `BlockSpecial(…, device, pax)`  un périphérique bloc, `device` étant ses numéros `(major, minor)` sous forme de `U32`
++         row  `Fifo(path, mode, user, group, mtime, pax)`  un tube nommé
++         row  `Sparse(…, realSize, segments, data, pax)`  un fichier creux GNU : `realSize` est sa longueur apparente, `segments` les `SparseSegment` qui contiennent des données, et `data` la concaténation de leurs octets
++         row  `Pax(records)`  un en-tête étendu pax, qui précède une entrée réelle
++         row  `GnuLong(typeFlag, content)`  un nom long ou une cible de lien longue GNU, qui précède une entrée réelle
+
+% 1 1 0 08ba17af89f9d8480337684fd92afb6e
+
+@ 0 3 0 0954ed613cb5da04186555f5908e2e3f
++         `Pax` et `GnuLong` sont des pseudo-entrées de métadonnées. `Tarfile` les écrit lui-même à
++         partir des champs d'une entrée, et le lecteur les replie dans l'entrée qui suit ; ainsi
++         un programme n'en voit jamais une provenant de `Tarfile.read`.
+
+@ 0 3 0 026b4112093916b71c4aea03e4127bc2
++         Les `apply` et `at` du compagnon construisent le cas courant, un fichier, avec des
++         valeurs par défaut ; les case classes prennent tout explicitement, et c'est ainsi qu'on
++         fixe un mode, un propriétaire ou un horodatage fixe :
+
+% 2 1 0 098b60b192b7ce5214b1ac052ae08308
+
+% 3 1 0 13c7c1663c125e781cf2c88f61a9e2d9
+
+% 4 1 0 158b48f9f3287a0b1f783fc01fed3764
+
+% 5 1 0 04fd6644b405b6c71e8fd09d10ff51e9
+
+% 0 1 0 083c2194c06a5cc210469469e7132daa
+
+% 0 1 0 0e36addfcbfaf915103d0d38b8196d94
+
+% 0 1 0 095c87465953d6701e0ef307efe364e1
+
+% 0 1 0 10a323915b01ac540ae5a6876f3b8dc4
+
+% 0 1 0 0aee739bee31b926025de5829c0bc506
+
+% 0 1 0 0c694f3484a6e9171c4758a8a32922f9
+
+% 0 1 0 008accfe1a4da5a91faefb3726d6da28
+
+% 0 1 0 13f32a4ac4c6ceb10d03d364e609dbae
+
+% 0 1 0 18a8b0bcaca09f5307db3b851e8bfde4
+
+% 0 1 0 081c1d5a011a2fba0655a90ef1c6b754
+
+% 0 1 0 162b10ae90048cb404a3807e524d395d
+
+% 0 1 0 0434a7e3f62462ab0988664364438f0a
+
+% 0 1 0 04eab01ea42b137804fb811a04a40dcb
+
+% 0 1 0 1b33319986b0262e07fbd6d5cf88d153
+
+% 0 1 0 13c80fb90b10b418089de8f6a7ce0fdb
+
+% 1 1 0 1d48f45e5b4cb9b31b04ecf1c14a04f1
+
+@ 0 1 0 162c0b36bf88cec81af71356cb94619f
++         Un filtrage par motif sur les entrées d'une archive lue distingue les genres :
+
+% 2 1 0 1d586111773085b41552e32f8b766b15
+
+% 3 1 0 1ba7c5d78cdfd8950e9082c566367d1f
+
+% 4 1 0 12be82ea457fe0800720f7d81a2180a5
+
+% 5 1 0 01ee6942b360441301844cfeb09b1a2c
+
+% 0 1 0 151c3502cd64807310be70f0e9b4a710
+
+% 0 1 0 088d64c14fe4a8131bc7905f8d27e2fe
+
+% 0 1 0 10b79ff6e981e36d169013ed3c93012f
+
+% 0 1 0 1a6d14bcce7066790d359e4cee76b6d2
+
+% 0 1 0 1bc34022484acf2f0b7138717b7490d8
+
+% 1 1 0 024517c69b38c4a1112ee4951fe61bb2
+
+@ 0 6 0 18299665205a2e2601715c9fb93e86a5
++         Les méthodes propres d'une entrée donnent sa forme sérialisée : `#header` est son
++         en-tête USTAR de 512 octets, `#dataBlocks` sa charge utile redécoupée en blocs de
++         512 octets, et `#serialize` les deux ensemble. Un nom ou une cible de lien de plus de
++         100 octets, ou un nom de propriétaire ou de groupe de plus de 32, ne tient pas dans
++         l'en-tête : `Tarfile` écrit la valeur complète dans un en-tête pax ou un bloc de nom
++         long GNU avant l'entrée, selon son `LongNameFormat`, et le champ d'en-tête contient le
++         préfixe tronqué.
+
+% 1 1 0 1a97c448f513ac04093b41f47575a518
+
+% 2 1 0 0af5dc94d3cd72a318c7b309e8d7fab6
+
+% 0 1 0 10a3d7f01767a05115baab45ccd2d816
+
+@ 0 1 0 0dcc28daadce86461929e53a00353b5c
++     entry .apply
++       info
++           une entrée de fichier, horodatée à l'instant présent
+
+@ 0 5 0 10db29ff66991da91281a8213a77023c
++       detail
++           `Tar.Entry(name, data, mode, user, group)` crée un `File` à partir de tout ce qui est
++           `Streamable by
++           Data` — des `Data`, du `Text` dans une page de codes, un `Stream` — lu dans un
++           `Archive.Body` et mémoïsé. Le mode vaut par défaut `UnixMode()` (`rw-r--r--`), le
++           propriétaire et le groupe l'identifiant `0`, et la date de modification l'instant de
++           l'appel. Pour un horodatage fixe, comme l'exige une archive reproductible, utilisez
++           `.at`.
+
+@ 2 1 0 1c36b414bde62211085183fdfe7b5661
++           ```scala
+
+@ 3 1 0 04fe6d2663e7704412a3bbb2af89c467
++           import soundness.*
+
+@ 4 1 0 101009ea08d41080165d13605f47342f
++           import codepages.utf8Codepage
+
+@ 5 1 0 097da58814b2dd351df91b9f8fdb3ed5
++           import strategies.throwUnsafely
+
+@ 0 1 0 16cb19c6ad888c660f4e7c5638fef200
++           Tar.Entry(t"README".as[Tar.Ref], t"Read me first".in[Data])
+
+@ 1 1 0 1085df6034677f4c0ce1c8bd4c4addc5
++           ```
+
+@ 0 1 0 1371aa7b20dbe6a116c8c3ddbe332485
++     entry .at
++       info
++           une entrée de fichier à une date de modification explicite, donnée sous la forme de
++           n'importe quel type d'instant
+
+@ 0 5 0 1bf2b4f010b1a83d1f7778a2440c1a44
++       detail
++           Comme `.apply`, avec l'horodatage comme troisième paramètre : tout type
++           `Abstractable across
++           Instants to Long`, comme un `Instant` d'aviation, ou un `Long` de millisecondes depuis
++           l'epoch sous `import abstractables.epochMillisecondsAbstractable`. La date est
++           enregistrée en secondes entières. C'est une méthode distincte plutôt qu'un paramètre
++           facultatif de `.apply`, car un paramètre facultatif d'un type inféré resterait non
++           inféré.
+
+@ 2 1 0 19c7b7b52bd3ac5a1b1376422ef1344d
++           ```scala
+
+@ 3 1 0 0ed128e300d5ace601fed583acc00a31
++           import soundness.*
+
+@ 0 1 0 19940f9abf69810d1d45cc6b4014a99b
++           import abstractables.epochMillisecondsAbstractable
+
+@ 1 1 0 0f44cda2f7c786f20bfef809388eee50
++           import codepages.utf8Codepage
+
+@ 2 1 0 1c1b81c34e69cd791776076163b1dd7b
++           import strategies.throwUnsafely
+
+@ 0 1 0 11a91192bc4cadb30fc0a459963fedec
++           Tar.Entry.at(t"README".as[Tar.Ref], t"Read me first".in[Data], 86400000L)
+
+@ 1 1 0 13cc61c5ec01353d16f82da4468ae2da
++           ```
+
+@ 0 1 0 10b4fc511c1ebcbe085f8db1ca5f7f39
++     entry #size
++       info
++           la longueur de la charge utile en octets, telle qu'enregistrée dans l'en-tête
+
+@ 0 3 0 094c993909c1ac550897c164ad3fc35d
++       detail
++           La longueur du corps d'un fichier, les enregistrements d'une entrée `Pax`, le contenu
++           d'une entrée `GnuLong` plus son NUL, les segments stockés d'une entrée creuse ; zéro
++           pour tout autre genre. Lire la taille d'un fichier vide son `Archive.Body`.
+
+@ 0 1 0 14a9e4c3db9847d91be01de0abcf5876
++     entry #dataBlocks
++       info
++           la charge utile sous forme de blocs de 512 octets, le dernier complété par des zéros
+
+@ 0 2 0 1deb6c962ed7fa3d1d34cde3e4fc4611
++       detail
++           Redécoupe les morceaux du corps sans tenir compte de leurs limites ; vide pour un genre
++           sans charge utile.
+
+@ 0 1 0 11ea7e14ee16b18514e93a80fcc49619
++     entry #typeFlag
++       info
++           le `TypeFlag` qui nomme le genre de cette entrée
+
+@ 0 1 0 1b1bc8be9a336d59043d526bee2539e5
++     entry #entryName
++       info
++           le nom tel qu'il est écrit dans l'en-tête
+
+@ 0 2 0 159036ca3091288e0542708ad52db9cb
++       detail
++           Le texte du chemin, avec un `/` final pour un répertoire ; `PaxHeaders/0` pour une
++           entrée `Pax` et `././@LongLink` pour une entrée `GnuLong`, selon les conventions.
+
+@ 0 1 0 0051e322c5c3b2610c10bc923fa7013f
++     entry #link
++       info
++           la cible d'un lien, ou `Unset` pour une entrée qui n'est ni un `Link` ni un `Symlink`
+
+@ 0 1 0 0d81300a4d73f3bf0badbeaec10145da
++     entry #deviceNumbers
++       info
++           les numéros `(major, minor)` d'un périphérique, ou `Unset` pour une entrée qui n'en est
++           pas un
+
+@ 0 1 0 0d07425d0c39448d1028379947087a90
++     entry #format
++       info
++           un `U32` sous forme de champ d'en-tête octal aligné à droite d'une largeur donnée
+
+@ 0 2 0 15f015100e9e60dc003753dcebad93ba
++       detail
++           Complète les chiffres octaux sur `width - 1` caractères, en laissant le dernier octet
++           pour le terminateur.
+
+@ 0 1 0 0308b9fec93f33e6101f09886230106e
++     entry #formatLong
++       info
++           un `Long` sous forme de champ d'en-tête octal complété par des zéros d'une largeur
++           donnée
+
+@ 0 1 0 197909c1c2037a721ba0733287e49ee1
++       detail
++           La forme utilisée pour les positions et les tailles de la table des segments creux.
+
+@ 0 1 0 1de384e08e1192831525917a4f143d7a
++     entry #header
++       info
++           le bloc d'en-tête USTAR de 512 octets de l'entrée
+
+@ 0 4 0 0c8297e9b8e9d0be0960679a9a565d8f
++       detail
++           Formate chaque champ — le nom tronqué à 100 octets, une cible de lien à 100, un nom de
++           propriétaire ou de groupe à 32, la taille, le mode, les dates, le nombre magique `ustar`
++           et la version, les quatre premiers segments et la taille réelle d'une entrée creuse — et
++           calcule la somme de contrôle en dernier. Le nom ou la cible complets vont dans le
++           préambule qu'écrit `Tarfile`.
+
+@ 0 1 0 139276c146d6fbf705ec7f6018cae088
++     entry #serialize
++       info
++           les blocs d'en-tête et de charge utile, sous forme d'`Iterator[Data]^`
+
+@ 0 3 0 1ae9c54d3c097bab0578acbe3c0b793f
++       detail
++           Pour une entrée creuse de plus de quatre segments, les blocs d'extension se placent
++           entre l'en-tête et la charge utile. Les blocs pax ou de nom long GNU qui précèdent ne
++           sont pas inclus : ils dépendent du `LongNameFormat` de l'archive, que connaît
++           `Tarfile`.
+
+@ 0 1 0 0a2dd7ecdfb581c711caf751e128295f
++   entry .Error
++     info
++         levée quand une archive ne peut être ni lue ni écrite, avec une `Reason` qui indique
++         pourquoi
+
+@ 0 3 0 1cbf4433bebb59931cd316df97eddba7
++     detail
++         Erreur `↯/s.93.1` : _the TAR archive could not be read or written because `reason`_. Sa
++         `#reason` est une `Tar.Error.Reason`, chacune avec son propre numéro et son propre
++         message :
+
+% 2 1 0 03b039046737ec4a1e8a0b974fcbecc3
+
+@ 0 17 0 1a5796f2c786fe420977f49be751b620
++         column  Cas
++         column  Code
++         column  Message
++         column  Remarque
++         row  `NameTooLong(field, length, maximum)`  1  _the `field` field is `length` bytes, exceeding the USTAR limit of `maximum` bytes_
++         row  `BadMagic(actual)`  2  _the USTAR magic bytes are not valid_
++         row  `BadChecksum(expected, actual)`  3  _the header checksum did not match_  le lecteur s'arrête au bloc corrompu plutôt que de poursuivre l'analyse à partir d'octets non fiables
++         row  `UnknownTypeFlag(byte)`  4  _the entry type flag `code` is not recognised_  l'entrée se dégrade en fichier ordinaire, comme le prescrit POSIX, jamais en répertoire
++         row  `TruncatedStream(needed, got)`  5  _the archive stream ended unexpectedly_  un en-tête partiel, un corps trop court, ou aucun bloc nul de terminaison
++         row  `BadOctal(field, data)`  6  _the `field` field did not contain a valid octal value_
++         row  `BadPaxRecord(data)`  7  _a PAX extended-header record could not be parsed_
++         row  `BadName(text)`  8  _the entry name `text` is not a valid POSIX relative path_  un nom absolu, ou un nom comportant un segment `.` ou `..`
++         row  `BadSparseMap(text)`  9  _the GNU sparse map `text` could not be parsed_
++         row  `DeviceCreationUnsupported(path)`  10  _the special device entry at `path` could not be created on this filesystem_  `extractTo` a rencontré une FIFO ou un périphérique, ou `archive[Tar]` un descendant que tar ne peut pas stocker
++         row  `WriteUnsupported`  11  _TAR archives cannot yet be opened for writing_  un `open[Tar]` avec un mode `Write` ; écrivez avec `create[Tar]` ou en écrivant un `Tarfile`
++         row  `AlreadyExists`  12  _an archive already exists at this path_  `create[Tar]` sans `CreateFlag.Replace`
++         row  `CannotWrite(detail)`  13  _the archive could not be written: `detail`_  un échec d'E/S pendant `create[Tar]`
+
+% 1 1 0 19a5a53896b4b6d81e9edd933d3329c7
+
+@ 0 4 0 05cfe601c86f8341038a511d3ae83d56
++         Chaque API de lecture nécessite une `Tactic[Tar.Error]` dans la portée ;
++         `strategies.throwUnsafely` la lève, et `safely` ou `mitigate` la traite. Une lecture qui
++         peut se rétablir — une somme de contrôle fausse, un indicateur de type inconnu, un
++         enregistrement pax mal formé — lève l'erreur plutôt que d'abandonner ; ainsi une
++         tactique cumulative collecte chaque défaut d'une archive.
+
+@ 0 1 0 09a9a5e9451c0d1813340a109b56c9e7
++     entry .Reason
++       info
++           pourquoi une archive n'a pu être ni lue ni écrite : une énumération de treize cas
+
+@ 0 3 0 1e7b1e7def8f960a11c31beaf16b2d23
++       detail
++           Chaque cas est répertorié sur la page de `Tar.Error` avec son numéro et son message. Une
++           `Reason` est une `Clarification` ; elle se lit donc comme la fin du message de l'erreur.
+
+@ 0 1 0 1bfb5ebb84b800120d7ce53b6341f7f8
++       entry #number
++         info
++             le numéro de la raison, de `1` à `13`, qui devient le sous-numéro de l'erreur
+
+@ 1 1 0 115959e60f12e71b1963e3a1b59654dc
++     entry .communicable
++       info
++           rend chaque raison sous forme de son message
+
+@ 2 1 0 109723c8b9fe429713d586a42e789f68
++     entry #reason
++       info
++           pourquoi l'archive n'a pu être ni lue ni écrite
+
+@ 0 1 0 10929a4f2cbade0f0c036ad2bdb13f55
++   entry .Compression
++     info
++         un objet vide réservé à la couche de compression ; `Tar.Flag` nomme les compressions
+
+@ 0 3 0 1fc4ea1ef093dd8a002fb275afbf4b8a
++     detail
++         L'objet n'a aucun membre. La compression qui enveloppe une archive s'indique avec un
++         `Tar.Flag` (`Gzip`, `Zlib` ou `Deflate`) à son ouverture ou à sa création, et se
++         produit avec `Tarfile#gzip`, `#zlib` ou `#deflate`.
+
+@ 0 1 0 1786dd156446293f12715dfd7ce1697e
++   entry .Flag
++     info
++         la compression qui enveloppe une archive : `Gzip`, `Zlib` ou `Deflate`
+
+@ 0 6 0 008f6092ce7573df0389204f2e674e87
++     detail
++         Le type des options de `path.open[Tar](flags*)`, `data.open[Tar](flags*)` et
++         `path.create[Tar](flags*)`. Tar n'a pas de nombre magique identifiant sa couche de
++         compression ; l'appelant l'indique donc — `path.open[Tar](Tar.Flag.Gzip)` lit un
++         `.tar.gz` — et une archive ouverte sans option est lue comme du tar simple. À la
++         création, une option fait compresser l'archive terminée par le builder ; voir
++         `TarBuilder` pour ce que cela coûte en termes de flux.
+
+@ 2 1 0 0d0e665c828a0a8f0fde625ec49fbc7e
++         ```scala
+
+@ 3 1 0 0adaa54b242747fe134a04047cc139a3
++         import soundness.*
+
+@ 4 1 0 09cab98ac68cf7d516e0ea02dd335fa7
++         import codepages.utf8Codepage
+
+@ 5 1 0 0c86fa5958bab75c09bee2cf5da2e523
++         import strategies.throwUnsafely
+
+@ 0 1 0 00f336201473e2290b70f2e7999a79f7
++         val tarball = Tarfile(List(Tar.Entry(t"a".as[Tar.Ref], t"A".in[Data])))
+
+@ 0 1 0 03c45954b35dd5f403ea403ba9f83a29
++         tarball.zlib.memoize.open[Tar](Tar.Flag.Zlib):
+
+@ 1 1 0 16c67e1c36a1d54810e80644ae603f46
++           tar.entries.to[List].map(_.entryName)
+
+@ 2 1 0 1a60680d56c8ff3e1b26be858c3d84d7
++         ```
+
+@ 0 1 0 0df72a1e9e68ad3011a0a2dabd5f8743
++   entry .Handle
++     info
++         la poignée, limitée à une portée, d'une archive tar ouverte : `tar` dans un bloc
++         `open[Tar]`
+
+@ 0 7 0 0c0c5bd6c7e441930bcf9ce3be8317ff
++     detail
++         Ce que `path.open[Tar](flags*)` et `data.open[Tar](flags*)` prêtent à leur bloc, et ce
++         que l'accesseur contextuel `tar` y désigne. Tar est un format séquentiel ; `#entries`
++         analyse donc paresseusement depuis la source sous-jacente, une entrée par étape, et la
++         source ne reste ouverte que pour le bloc : la charge utile d'une entrée doit être
++         consommée dans la portée. La poignée est une capacité exclusive ; ni elle, ni un
++         itérateur ou un corps emprunté à elle ne peuvent donc être renvoyés depuis le bloc.
+
+% 2 1 0 1d3c6a12e017c1d409fe3d3ef2017b49
+
+% 3 1 0 10a814c8afb1f48f1ce1f45770544d50
+
+% 4 1 0 0217dc8cb6be043e0ecc9cb9d22a0440
+
+% 5 1 0 087be71b197947b506900952640975b3
+
+% 6 1 0 0897e8e391b992ac1afc95bf839ffb23
+
+% 7 1 0 0813f26b18b4d32b1d89554bf43f96e6
+
+% 8 1 0 094f911322b7807e1e2d0f278c4519b6
+
+% 9 1 0 01684ac133a9b963059c22a87c16ff74
+
+% 10 1 0 0b8125ff040b1c4f08554d27704576ec
+
+% 0 1 0 021d3858f012340b0782ecb80e223c67
+
+% 0 1 0 0447ae02d6ec2b99131c124716f8bf6c
+
+% 0 1 0 081e0498ce8867ed1035eaa158097aa1
+
+% 1 1 0 0e882e59b4536a69139c34211b02f528
+
+@ 0 4 0 1554f92f4f4bd0ee0c36a8e020479e2b
++         L'itérateur ne fait qu'un seul passage : une entrée sautée reste lisible, car son corps
++         est mémoïsé quand l'itérateur avance, mais la séquence elle-même ne peut pas être rejouée
++         dans la portée. Pour conserver les entrées, convertissez-les avec `to[List]` dans le
++         bloc ; les corps des entrées conservées sont mis en tampon à mesure que la lecture les
++         dépasse.
+
+% 0 1 0 1eaddfa79fe6d8be0348eb7d58225888
+
+% 0 1 0 0f59458af8e8c3811e447cee32784c19
+
+@ 0 1 0 1b0dad03261b431e1ab97b54b67b5c3b
++     entry #entries
++       info
++           les entrées de l'archive, analysées paresseusement à mesure que l'itérateur avance
+
+@ 0 4 0 18d30c67875ad858046f15830138cac6
++       detail
++           Un `Iterator[Tar.Entry]` qui capture la poignée ; il ne peut donc pas survivre au bloc.
++           Le faire avancer vide ce qui n'a pas été lu du corps de l'entrée précédente dans
++           l'`Archive.Body` de cette entrée, si bien que le curseur se trouve sur l'en-tête
++           suivant. Une archive mal formée lève `Tar.Error` quand le défaut est atteint.
+
+@ 0 1 0 1cb99493886bfd861d962a7eb6399b6f
++ entry .SparseSegment
++   info
++       une plage d'un fichier creux GNU qui contient des données : sa position et sa longueur
+
+@ 0 5 0 050b76d4823285bc139191f5171a24e9
++   detail
++       Une `Tar.Entry.Sparse` enregistre quelles plages de sa `realSize` apparente contiennent
++       des données sous forme de liste de `SparseSegment(offset, length)` ; les octets de ces
++       plages, concaténés, forment les `data` de l'entrée. Les quatre premiers segments sont
++       écrits dans l'en-tête et les autres dans des blocs d'extension, que le lecteur
++       réassemble.
+
+% 2 1 0 1c5da436d35c6bd113fdb2cf7a396be8
+
+% 3 1 0 1e154006c18c6d2706642bd3d357f7d2
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 06bc77f97263bd7b0871c5515679624e
+
+% 0 1 0 0f7111145e08473e1a0535f4b55fc812
+
+% 0 1 0 0248386522c60ce01e449d22bc3131da
+
+% 0 1 0 0bf767c37b40ec310ded980889a9a8e8
+
+% 0 1 0 1beed524ac13050112665c00cc5c251d
+
+% 0 1 0 0f81374cad15940f04ae60a46e3ca7af
+
+% 0 1 0 154077b28bf7215c0aa7bd2e698db94f
+
+% 0 1 0 06be98441b4664a71c9233f8b09219c3
+
+% 0 1 0 03613d5ae5f8af060255ab66c826702c
+
+% 0 1 0 106165a3c845de5c1464f935390db5ef
+
+% 0 1 0 1dd5570c3b19addb06a47ea04160b7f8
+
+% 0 1 0 189bbd49a48d42d1106479ff133c11b2
+
+% 1 1 0 03d41c0d452987760aa174b6b8311dac
+
+@ 0 1 0 0f064a9b2026cba41ed7e83f958a4ec0
++   entry #offset
++     info
++         l'endroit où commence la plage dans l'étendue apparente du fichier
+
+@ 0 1 0 0a95f19c00003de41f7ada3eafc5c634
++   entry #length
++     info
++         le nombre d'octets que contient la plage
+
+@ 0 1 0 088f69cd45cd93120df74ce2d67e7f25
++ entry .Tarfile
++   info
++       une archive tar comme valeur : une liste d'entrées qui se transmet en flux de blocs, simple
++       ou compressée
+
+@ 0 9 0 10001a393de3f5aa00fde1f7c482211a
++   detail
++       `Tarfile(entries, longNameFormat)` est la forme en mémoire d'une archive : ses
++       `#entries`, dans l'ordre, et la convention pour les noms trop longs pour un en-tête
++       USTAR (`Pax` sauf si `LongNameFormat.Gnu` est donné). Il est `Streamable by Data`
++       (`.streamable`) ; on l'écrit donc dans un fichier, on l'envoie sur une connexion ou on
++       le hache comme toute autre valeur, les deux blocs nuls de terminaison étant inclus ; et
++       `#gzip`, `#zlib` et `#deflate` sont les flux compressés dans lesquels le format voyage
++       habituellement. Rien n'est assemblé en mémoire : les blocs de chaque entrée sont
++       produits à mesure que le flux est consommé, et le corps d'une entrée n'est ouvert que
++       lorsqu'il est atteint.
+
+% 2 1 0 022e3943bd63a76715a66ebac245e4ae
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 17616af168a72b500ecebe192014d275
+
+% 1 1 0 0d15f0e7a49abde10c6a6a60f91168bd
+
+% 2 1 0 0edafc17e202fb0a1742b0c770e6c984
+
+% 3 1 0 03fc996eeeda721511caea438fdca185
+
+% 4 1 0 078fcb6d40e139bd0a43ac7baee1f072
+
+% 6 1 0 043c71483e2f1231072057a92ae641bd
+
+% 7 1 0 0e8b7e40c837c67d063392c73213d399
+
+% 1 1 0 185e3d8df0d4c1d80afd577656ca4478
+
+% 0 1 0 1b51b3e4ff06ffb005629eaa9391cd0c
+
+% 1 1 0 17b5f57e1d2330dc02b8be9d7fe903ae
+
+% 2 1 0 17f2782305087b0a039dd96bc85f0568
+
+% 3 1 0 1536b429062f96851e40a7b35781c9a1
+
+% 4 1 0 1097d295edc3ad8f10bf2da2e19077e6
+
+% 6 1 0 166b18823a36dc881e090d532e13ae9a
+
+% 7 1 0 117c3852fcfd10b106f5a0dc21a1bf78
+
+% 0 1 0 19f8bece83d8ba76035a916d13701630
+
+% 1 1 0 0eaa6cbf47ba6bb51a270a6ee5edfb38
+
+% 0 1 0 1f5e88ecb4aaa91705cbde97c4d47fcb
+
+% 1 1 0 00b75953641683d31e481656f5e2ad5e
+
+% 2 1 0 01430ac1f3273b54103910413c07625e
+
+% 3 1 0 197a55c98d1717cb12483d5569475181
+
+% 4 1 0 04cfe653c858821d16dbe3e149e722cb
+
+% 6 1 0 01af5ec66cfbc69511d3a19b28d4561b
+
+% 7 1 0 1816ec9502ebf331020b818c0367352e
+
+% 8 1 0 078c74af9a294e6d03109f848559907e
+
+% 1 1 0 045b2b3876cbc7911300a08fe6be00f1
+
+% 0 1 0 0457446e0d5108e90b42dd357037a939
+
+% 1 1 0 014420f0bdc119d808ea4a3ebb359c69
+
+% 2 1 0 07a921eb31a82f5516a50d85744d7a70
+
+% 3 1 0 0fd4c065e2eda87a01959da881945a72
+
+% 4 1 0 049c244af0da3ce4072167f4a29f3ba8
+
+% 6 1 0 081e701c95c0c1851b2d038adbc38900
+
+% 7 1 0 19feef7d041b5ff20d72fe43fcb106a8
+
+% 8 1 0 1203c4e1f8dbb73f112a1e6ea253d16f
+
+% 0 1 0 0b249e59ff9440a40ebc8e71e4dff23d
+
+% 1 1 0 1016e89e89479e1b1e9c25739bee8f8b
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 01ed9e15fd4df2140bfc22bce18c680d
++       La lecture fonctionne dans l'autre sens : `.read` analyse paresseusement des entrées
++       depuis n'importe quel flux d'octets, et `.from` relit une archive entière en un
++       `Tarfile`, qui se resérialise avec les mêmes entrées. Un `Tarfile` provient aussi de
++       `directory.archive[Tar]()`, et se décompresse sur un système de fichiers avec
++       `extractTo` (dans `bitumen.jvm`). Tar autorise les noms en double, les entrées
++       ultérieures remplaçant les précédentes à l'extraction ; rien n'est donc vérifié quand
++       une liste est construite.
+
+% 1 1 0 03c49816dc6d701a19a28349666a2e44
+
+% 2 1 0 1d83a1ed105356711b9c18a8e92d76b3
+
+% 0 1 0 1dd6e063b8dca8340bb70d98f11933e5
+
+% 1 1 0 0d668634b5368239019746d51b891c41
+
+@ 0 1 0 1d7bd1b0dd1059be15a8b2f037b31061
++   entry .zeroBlock
++     info
++         un bloc de 512 octets nuls : deux d'entre eux terminent chaque archive
+
+@ 0 1 0 0956e6932521d6bb0c7d63591933ccc7
++   entry .streamable
++     info
++         transmet en flux un `Tarfile` sous forme de ses blocs tar : `tarfile.source[Data]`,
++         `path.write(tarfile)`
+
+@ 0 4 0 13b9e874ebce65f30b3eccec2ee09838
++     detail
++         Le given qui rend un `Tarfile` `Streamable by Data over Credit`, dans la portée
++         implicite. Le flux se compose, pour chaque entrée, de son préambule (blocs pax ou de nom
++         long GNU, selon ce qu'exige le `longNameFormat`), de son en-tête et de sa charge utile
++         complétée, puis de deux blocs nuls ; le corps de chaque entrée est ouvert quand le flux
++         l'atteint.
+
+@ 0 1 0 1b4d6ecfcd1d47560a8715d13c980693
++   entry .read
++     info
++         analyse un flux d'octets en entrées tar, paresseusement, une entrée par étape
+
+@ 0 5 0 0e13bc6f9a23c9450c520c27baa18083
++     detail
++         `Tarfile.read(stream)` renvoie un `Iterator[Tar.Entry]^` qui analyse directement le
++         flux à mesure qu'il avance, en absorbant les limites de morceaux, quelles qu'elles
++         soient, dans lesquelles arrive le flux : l'archive n'est jamais matérialisée. Il
++         consomme le flux — la propriété du flux passe à l'itérateur — et nécessite une
++         `Tactic[Tar.Error]`. Une archive compressée est un flux décompressé lu de la même façon :
++         `Tarfile.read(stream.decompress[Gzip])`.
+
+@ 2 1 0 04e573095b69a5ba0167a805561ad714
++         ```scala
+
+@ 3 1 0 1838157035056b75124fba15bdbeba81
++         import soundness.*
+
+@ 4 1 0 110743150b2f4c1718eb6e957e3b2221
++         import codepages.utf8Codepage
+
+@ 5 1 0 152219d2b7a312791566258bb1ccb105
++         import strategies.throwUnsafely
+
+@ 7 1 0 0ed1c2607846422d1100f7b126348017
++         val tarball = Tarfile(List(Tar.Entry(t"hello.txt".as[Tar.Ref], t"hello".in[Data])))
+
+@ 0 1 0 18be39cc3d5ef4400366b8bd913f9d63
++         Tarfile.read(tarball.source[Data]).to[List].map:
+
+@ 0 1 0 07650d5779914640024a7c69072f46af
++           case file: Tar.Entry.File => file.data.memoize.utf8   // t"hello"
+
+@ 1 1 0 1903703e355b668e0df4e49fbe7bc3d3
++           case other                => other.entryName
+
+@ 1 1 0 1a6bebdb896476d5041dd4afa3602412
++         ```
+
+@ 0 11 0 1c967f7ba39974081c8bdb13c22a55d5
++         Les entrées ont un seul propriétaire : consommez-les dans l'ordre, sur un seul thread.
++         L'`Archive.Body` d'une entrée de fichier tire du curseur partagé des morceaux bornés à
++         mesure qu'il est lu ; ainsi un consommateur dans l'ordre occupe une mémoire bornée par
++         les entrées qu'il conserve ; avancer à l'entrée suivante vide d'abord ce qui reste du
++         corps précédent dans son mémo ; ainsi une entrée sautée reste lisible, au prix de sa mise
++         en tampon. Les en-têtes étendus pax et les blocs de nom long GNU sont repliés dans
++         l'entrée qu'ils précèdent (un enregistrement `path`, `linkpath`, `uname` ou `gname`
++         remplace le champ d'en-tête ; tout autre enregistrement atterrit dans la map `pax` de
++         l'entrée), et les blocs d'extension d'un fichier creux sont réassemblés. Le parcours
++         s'arrête au premier bloc nul ; un flux qui se termine sans bloc nul lève `Tar.Error`
++         avec la raison `TruncatedStream`, et un bloc dont la somme de contrôle échoue termine le
++         parcours avec `BadChecksum`.
+
+@ 0 1 0 0e18e502b1eb94bb12a39498529cbd05
++   entry .from
++     info
++         relit un flux d'octets entier en un `Tarfile`
+
+@ 0 4 0 15f63f02c127417a0efd44c9b6358594
++     detail
++         `Tarfile.from(stream)` est `.read` dont les entrées sont collectées dans une `List` : un
++         `Tarfile` qui se resérialise avec les mêmes entrées et le `LongNameFormat` par défaut.
++         Il consomme le flux et nécessite une `Tactic[Tar.Error]`. Les corps sont mémoïsés ;
++         l'archive entière est donc conservée en mémoire ; pour une archive trop volumineuse pour
++         cela, itérez sur `.read`.
+
+@ 0 1 0 0e5a219d7b14741b08ccd4d2f9d2bff1
++   entry #entries
++     info
++         les entrées de l'archive, dans l'ordre où elles sont écrites
+
+@ 0 1 0 0ad8624b923fd30f06bae66250a66c6b
++   entry #longNameFormat
++     info
++         comment s'écrit un nom ou une cible de lien de plus de 100 octets : `Pax` ou `Gnu`
+
+@ 0 1 0 0445136788eb2b66118352796d724d4b
++   entry #gzip
++     info
++         l'archive compressée en gzip : un flux `.tar.gz`
+
+@ 0 3 0 1fcdb1f66155e9ea06221831dafb03fe
++     detail
++         Un `Stream[Data] over Credit` qui compresse les blocs à mesure qu'il est consommé ;
++         relisez-le avec `Tarfile.read(stream.decompress[Gzip])`, ou ouvrez ses octets avec
++         `open[Tar](Tar.Flag.Gzip)`.
+
+@ 0 1 0 1cd274c1c9ead4f11e5936f1531c26ff
++   entry #zlib
++     info
++         l'archive compressée au format zlib
+
+@ 0 1 0 033aa1c9575725fb191525eba778e3ed
++     detail
++         Se relit avec `decompress[Zlib]` ou `Tar.Flag.Zlib`.
+
+@ 0 1 0 19cd072e5c2c81b1029280c00bd0cee7
++   entry #deflate
++     info
++         l'archive sous forme de flux deflate brut, sans encapsulation gzip ni zlib
+
+@ 0 1 0 132e4d7cd9e9620b1ea6d6280dcc8ae8
++     detail
++         Se relit avec `decompress[Deflate]` ou `Tar.Flag.Deflate`.
+
+@ 0 1 0 0183eec2ff673c341677c0fd52448baa
++ entry .LongNameFormat
++   info
++       comment s'écrit un nom tar plus long que ce que contient un en-tête USTAR : `Pax` ou `Gnu`
+
+@ 0 9 0 0dcea394956ff8340297bacb4595a246
++   detail
++       Un en-tête USTAR contient 100 octets de nom et 100 de cible de lien, 32 de nom de
++       propriétaire et de groupe. Une valeur qui ne tient pas est écrite en entier dans un bloc
++       avant l'entrée : un en-tête étendu pax POSIX (`Pax`, par défaut, que lit tout `tar`
++       moderne, et qui porte aussi les enregistrements `pax` d'une entrée) ou les
++       pseudo-entrées `././@LongLink` de GNU (`Gnu`, pour une archive destinée à un ancien `tar`
++       GNU). Sous `Gnu`, les enregistrements pax non structurels d'une entrée vont toujours dans
++       un en-tête pax, et seuls `path` et `linkpath` prennent la forme GNU. Le format est
++       choisi à la construction d'une archive — `Tarfile(entries, LongNameFormat.Gnu)`,
++       `directory.archive[Tar](LongNameFormat.Gnu)`, `path.create[Tar](LongNameFormat.Gnu)` —
++       et le lecteur accepte l'un comme l'autre.
+
+@ 0 1 0 19efe7a42fc829221962f4d064ffbd23
++ entry .Archive
++   info
++       ce que partagent les formats séquentiels : le corps d'entrée mémoïsé et les options
++       d'archivage
+
+@ 0 6 0 1698918a9d4278620ec2a77cde101e43
++   detail
++       `Archive` contient les deux choses communes à `Tar` et `Ar` (et au `Zip` de zeppelin,
++       pour les options) : `Archive.Body`, le corps d'une entrée, rejouable et tiré
++       paresseusement, que les deux lecteurs prêtent à leurs consommateurs et à partir duquel
++       les deux écrivains écrivent en flux ; et `Archive.Flag`, les options de
++       `directory.archive[Format](flags*)` qui rendent une archive reproductible en remplaçant
++       le propriétaire et l'horodatage que signale le système de fichiers.
+
+% 1 1 0 1b8171fd1414f288038b773c348e0dd1
+
+% 1 1 0 074296b2e84cf32807ffb5ad866a46c7
+
+@ 0 1 0 0781512040100c83177c933ef9d99c13
++   entry .Flag
++     info
++         une option de `directory.archive[Format](flags*)` : un propriétaire fixe ou un horodatage
++         fixe
+
+@ 0 3 0 145a953bdb9e301211ad9b28a9c09b3f
++     detail
++         Les réglages d'un build reproductible, comme le sont `tar --owner`, `--group` et
++         `--mtime`. Chacun remplace ce que signale le système de fichiers pour *chaque* entrée de
++         l'archive :
+
+@ 0 5 0 107f19df289046b601ef0a33a2615a3a
++         - `Owner(user, group)` — chaque entrée enregistre cet `UnixUser` et ce `UnixGroup`, à
++           la place du propriétaire du fichier.
++         - `Mtime(seconds)` — chaque entrée enregistre cette date de modification, en secondes
++           depuis l'epoch, à la place de celle du fichier. `Archive.Flag.Mtime(instant)` accepte
++           plutôt n'importe quel type d'instant.
+
+@ 0 2 0 155ec6166020aa890aea965059a5edde
++         Elles s'appliquent aussi bien à `archive[Tar]` qu'à `archive[Ar]` et `archive[Zip]`,
++         mêlées aux options propres au format :
+
+% 2 1 0 17954af336b77ca81bc20a482f52124c
+
+% 3 1 0 07f1c91d6c71effa10e92d8baac65817
+
+% 4 1 0 0e83143b1a4ad7a71d862a1a74dff2f2
+
+% 5 1 0 03b7ef0568943ef717d2513c6c8bb73d
+
+% 6 1 0 18780c08a02d612d1380100a63b12a37
+
+% 7 1 0 0bd54086cd07175b04e0e651394a4bf6
+
+% 8 1 0 167425ec69dafa1402e4f2cf785647f7
+
+% 9 1 0 183afb4334701c2d072086f029609bf4
+
+% 10 1 0 0a4f06b16f3e91090d2a01fd4b61edbc
+
+% 11 1 0 0b99089e9cfe76a11c782f2bae064b8f
+
+% 13 1 0 0475f191743501b505cf89b86d042814
+
+% 0 1 0 0fbbdaf9169e00db13b94072f1822b40
+
+% 1 1 0 0bcd51712ed296340e0db5ce2777af72
+
+@ 0 1 0 0d02b76091a2351a042cdee797ead82f
++     entry .Mtime
++       info
++           le compagnon de l'option `Mtime`, qui accepte aussi un instant
+
+@ 0 1 0 0dd3b565c379815010d28157d5493d30
++       entry .apply
++         info
++             `Archive.Flag.Mtime(instant)` : un horodatage fixe à partir de n'importe quel type
++             d'instant
+
+@ 0 4 0 0079d9d4e2d2eb3911d4ceefeef4c237
++         detail
++             Accepte toute valeur `Abstractable across Instants to Long` — un `Instant` d'aviation,
++             ou des millisecondes depuis l'epoch sous
++             `import abstractables.epochMillisecondsAbstractable` — et l'enregistre en secondes
++             entières. `Mtime(seconds: Long)`, le cas lui-même, prend directement les secondes.
+
+@ 0 1 0 1452441a072153d10bc9a8fb4831fd0c
++   entry .Body
++     info
++         le corps rejouable d'une entrée : des morceaux tirés paresseusement de la source et
++         mémoïsés
+
+@ 0 9 0 1026b8484be14b2c1c4a056afdace063
++     detail
++         Un `Archive.Body` est ce que contient une `Tar.Entry.File`, une `Tar.Entry.Sparse` ou
++         une `Ar.Entry` comme contenu. Construit avec `Archive.Body(chunks*)` à partir de données
++         disponibles, il se compose simplement de ces morceaux ; prêté par `Tarfile.read` ou
++         `Arfile.read`, il tire ses morceaux du curseur du lecteur par portions bornées lors de
++         leur première lecture, et les mémoïse ; ainsi la région de la source est lue exactement
++         une fois, quel que soit le nombre de consommateurs qui la lisent en flux, et chaque
++         `#stream` rejoue depuis le premier morceau. Un consommateur dans l'ordre d'une lecture
++         en flux occupe donc une mémoire bornée par les entrées qu'il conserve : les morceaux
++         d'un corps sont récupérés avec son entrée.
+
+% 2 1 0 10ef7b31b8fe62641ab46878f55a5c31
+
+% 3 1 0 1d3d23383c1d27710b2cfdba0db697fb
+
+% 4 1 0 136b45660750ac021ca80cff0076a2ac
+
+% 5 1 0 165530889388072912761b8108050553
+
+% 0 1 0 0a0f27fbcf0c60a31915545422b9366c
+
+% 0 1 0 1d7a687cbc61bac019700bfbfea0826d
+
+% 0 1 0 0379191146d8adfa10f27939d3402a42
+
+% 0 1 0 0cf2f72b6aa4ba85139cc1f77a4d1594
+
+% 1 1 0 17d30f0bf9583d911a508db5f8ea1c43
+
+@ 0 2 0 11638c27834251a31d38ccea1640e38c
++         Un corps prêté est valide tant que la source de son lecteur l'est : dans un bloc
++         `open[Tar]`, ou avant la fermeture du flux qui a été donné à `Tarfile.read`. Lisez-le,
++         ou appliquez-lui `#memoize`, à ce moment-là.
+
+% 0 1 0 08056fd88bb51d681629cb4c565c0968
+
+% 0 1 0 0373ee841c4e34941f07d9119c6e3457
+
+@ 0 1 0 11e20924d27231221594de9f8a4c76cf
++     entry .apply
++       info
++           un corps en mémoire formé des morceaux donnés
+
+@ 0 2 0 12465b4d9af2f8f90c37357f9f9b4c87
++       detail
++           `Archive.Body(chunks*)` prend un nombre quelconque de valeurs `Data`, écarte celles qui
++           sont vides, et ne tire rien paresseusement. `Archive.Body()` est un corps vide.
+
+@ 0 1 0 0b15a3dd74b9c0500c739617e30ef857
++     entry .empty
++       info
++           le corps vide : `Archive.Body()`
+
+@ 1 1 0 067de1de77aa63300a0c4c5acce5b087
++     entry #size
++       info
++           la longueur du corps en octets
+
+@ 0 2 0 1f0be58cb529461c0c63454e07f9b6c0
++       detail
++           Vide d'abord le corps depuis son producteur, s'il a été prêté, si bien qu'il est
++           entièrement mémoïsé.
+
+@ 0 1 0 1d25cce04bc4201f0a64ddddcff1b940
++     entry #chunks
++       info
++           les morceaux du corps, rejoués depuis le début, sous forme d'`Iterator[Data]^`
+
+@ 0 2 0 1bd19f6d84d9633003bba2041a4a4254
++       detail
++           Les morceaux mémoïsés sont rejoués ; les morceaux pas encore lus sont tirés du
++           producteur à mesure que l'itérateur avance. L'itérateur capture le corps.
+
+@ 0 1 0 1425c0004e91ab5206b1d42817eb1094
++     entry #stream
++       info
++           un nouveau `Stream[Data] over Credit` sur les morceaux, depuis le début
+
+@ 0 2 0 1f1cf8e91d52d08e1d690fefbc268ddf
++       detail
++           Ce à partir de quoi `Tar.Entry` est construite et ce qu'un consommateur lit avec
++           `read[Text]` ou `decompress[Gzip]` ; chaque appel recommence au premier morceau.
+
+@ 0 1 0 01e1ddfb932e4e3010fe89c848c233de
++     entry #memoize
++       info
++           le corps entier sous forme d'une seule valeur `Data`
+
+@ 0 3 0 0ab5feca057158141e814e3113a82ee6
++       detail
++           Vide le corps et concatène ses morceaux ; un corps d'un seul morceau le renvoie tel
++           quel. Pour une entrée d'une archive compressée, ce sont les octets propres de l'entrée,
++           et non ceux de l'archive.
+
+@ 0 1 0 1fb5fbbc6247e4c21627e0c3089848cb
++ entry .tar
++   info
++       la poignée de l'archive ouverte dans un bloc `open[Tar]`
+
+@ 0 4 0 03a92b1c56687295193a5343ddd199d9
++   detail
++       Un accesseur inline transparent pour la `Tar.Handle` qui a été donnée au bloc, à la
++       manière du `file` de galilei : `tar.entries` itère sur l'archive. Il conserve le type
++       précis de la poignée ; ce que le bloc peut faire est donc ce pour quoi elle a été ouverte.
++       Sous `import soundness.*`, c'est le `tar` du package parapluie.
+
+@ 2 1 0 0dc9c4fbd430b7fe1056fab76c7c0c60
++       ```scala
+
+@ 3 1 0 055507ab02259db903355aca828b18e0
++       import soundness.*
+
+@ 4 1 0 12ae2a87002d2c550917bb9e7d96e9f2
++       import codepages.utf8Codepage
+
+@ 5 1 0 1cb551bc4656df0a197069d6b908b290
++       import strategies.throwUnsafely
+
+@ 0 1 0 087af4f01a893c080a40e1678dc25dbe
++       val bytes: Data = Tarfile(List(Tar.Entry(t"a".as[Tar.Ref], t"A".in[Data]))).source[Data].memoize
+
+@ 0 1 0 03518c58e7b765cf07d1bf6a5230303d
++       bytes.open[Tar]():
+
+@ 0 1 0 0140940967c2e61508799bcade516c55
++         tar.entries.to[List].map(_.entryName)   // List(t"a")
+
+@ 1 1 0 039441795397f3db19cf113931831b91
++       ```
+
+@ 0 1 0 01173eb6a2534c781acad4cfaabd8c7a
++ entry .ar
++   info
++       la poignée de l'archive ouverte dans un bloc `open[Ar]`
+
+@ 0 2 0 0b67711a33d798b312e7a8e51925a183
++   detail
++       Un accesseur inline transparent pour l'`Ar.Handle` qui a été donnée au bloc :
++       `ar.entries` itère sur les membres de l'archive. Il conserve le type précis de la
++       poignée.
+
+@ 2 1 0 0a0a859bb829fe80047d7273e627f220
++       ```scala
+
+@ 3 1 0 0e4279500a67dbd003cc9e9848f7cb9c
++       import soundness.*
+
+@ 4 1 0 0c7e5bfc4963d1841b48e4fccc70ffe1
++       import codepages.utf8Codepage
+
+@ 5 1 0 072aa390a565452f1721d49ffe259111
++       import strategies.throwUnsafely
+
+@ 0 1 0 072f169c47b4b74c12ae900a2bcb83ad
++       val member = Ar.Entry(t"debian-binary", Archive.Body(t"2.0\n".in[Data]), 0L, UnixUser(0), UnixGroup(0), 33188)
+
+@ 0 1 0 0b949ad8576206da12b778277a9b3895
++       val bytes: Data = Arfile(List(member)).source[Data].memoize
+
+@ 0 1 0 004cb2de51fbddc40a280b3f75af0f18
++       bytes.open[Ar]():
+
+@ 0 1 0 08f714e22fce30b119f50829e8175471
++         ar.entries.to[List].map(_.name)   // List(t"debian-binary")
+
+@ 1 1 0 0f7b8f8b4c56936b14394286c7f2003b
++       ```
+
+@ 0 1 0 188b04ae448d7ca615e2b3dd52807d63
++ entry .Ar
++   info
++       le format ar : un type marqueur et le foyer de `Ar.Entry`, `Ar.Error`, `Ar.Header` et
++       `Ar.Handle`
+
+@ 0 7 0 040eb686984be5b500e06e4f66cb173b
++   detail
++       `ar` est le conteneur de chaque package `.deb` et de chaque bibliothèque statique `.a` :
++       un nombre magique de huit octets, puis une suite plate de membres, chacun étant un
++       en-tête de soixante octets suivi directement de sa charge utile, complétée jusqu'à une
++       position paire. Il ne porte ni index, ni somme de contrôle, ni type d'entrée et —
++       contrairement à tar — aucun marqueur de fin d'archive ; ainsi un membre n'est qu'un nom,
++       ses métadonnées Unix et un corps, l'archive se termine quand le flux se termine, et un
++       membre dont la taille enregistrée dépasse le fichier est la seule corruption que le
++       format puisse signaler.
+
+@ 0 6 0 0f5371c43cc5def704ac63b36f053a61
++       `Ar` est un trait scellé sans habitant qui nomme le format partout où un format est
++       choisi par type : `path.open[Ar]()`, `data.open[Ar]()` et `directory.archive[Ar]()`. Son
++       compagnon contient les constantes et les types du format : `Ar.Entry` (un membre),
++       `Ar.Header` (l'en-tête brut et ses décodeurs), `Ar.Role` (la fonction d'un membre GNU),
++       `Ar.Error` et `Ar.Handle`. Il n'y a pas d'options d'ouverture, car un `.deb` est du `ar`
++       simple : ce sont les membres qu'il contient qui sont compressés.
+
+% 2 1 0 0654962c38d1501417ff3573c6d99176
+
+% 3 1 0 0abc09ee6bac290007509c028ee34039
+
+% 4 1 0 1ef9e87d6a20c046192ecbd581fced63
+
+% 5 1 0 0fde2bffd9e3066d033e3835d3c4aaf8
+
+% 0 1 0 1c043fe2c0195beb087242885d35dbdb
+
+% 0 1 0 126f779d34fa24d4190fa609844a997d
+
+% 0 1 0 043cd61b9b86db25152704aa97766e2e
+
+% 0 1 0 02401a133adb708e01e907f26276514b
+
+% 0 1 0 0f5bb8b50f5a20930238acca5228f747
+
+% 0 1 0 12eb23ff864f961516fb773fc2d2bbed
+
+% 1 1 0 1dd1ef4b004dd55d03d6c83dd2e52f8e
+
+@ 0 3 0 1f1076afeb3d1dd306b8b0c46f10e050
++       Les givens du compagnon sont dans la portée implicite : `.dataOpenable` ouvre des
++       `Data` en mémoire et `.archivable` archive un répertoire. Ouvrir un *chemin* sur le
++       disque comme `Ar` nécessite l'`arPathOpenable` de `bitumen.jvm`.
+
+% 0 1 0 113a1272225b458201bd85317ed07919
+
+% 1 1 0 09149d22e1dbe79b1a77064650829119
+
+% 1 1 0 093afcff9cf7ea991f9f45b6412f20be
+
+% 0 1 0 1ff8ac5af57c99861e0c6d9b86ff1776
+
+@ 0 1 0 091a7fc84dfe01920b8b64fd7dccf17b
++   entry .magic
++     info
++         les huit octets par lesquels commence chaque archive : `!<arch>` et un saut de ligne
+
+@ 0 1 0 0f098cce680a5cb31310fbf3102a3148
++   entry .magicSize
++     info
++         la longueur du nombre magique : 8 octets
+
+@ 0 1 0 0703712ddca63b6213ac028cd224d556
++   entry .headerSize
++     info
++         la longueur d'un en-tête de membre : 60 octets
+
+@ 0 1 0 169877abef4ae9ac151956226e917f4d
++   entry .dataOpenable
++     info
++         ouvre des `Data` en mémoire comme archive ar : `data.open[Ar]()`
+
+@ 0 3 0 0f106c019122f01b1fdedb2246eddaec
++     detail
++         Le given qui rend `Data` `Openable` sous la forme `Ar`, dans la portée implicite pour que
++         `bytes.open[Ar]()` se résolve sans import. Il nécessite une `Tactic[Ar.Error]`, et c'est
++         un `Ar.DataOpenable`. Ouvrir un chemin sur le disque relève d'`arPathOpenable`, dans
++         `bitumen.jvm`.
+
+@ 0 1 0 140699a31bc2b5ef10f54f086e879cdc
++   entry .archivable
++     info
++         archive une arborescence de répertoires sous forme d'`Arfile` :
++         `directory.archive[Ar](flags*)`
+
+@ 0 4 0 1ddfa91c80aa073f1a5acfa33cd64b81
++     detail
++         Le given qui rend un `Path on plane` `Archivable` sous la forme `Ar`, pour tout plan doté
++         d'un `FilesystemBackend on plane` dans la portée, dans la portée implicite pour que
++         `directory.archive[Ar]()` se résolve sans import. Il nécessite une `Tactic[Io.Error]` et
++         une `Tactic[Ar.Error]`, et c'est un `Ar.Archivable[plane]`.
+
+@ 0 1 0 0c1e88d8697cba5e17a2c80f8513727b
++   entry .Archivable
++     info
++         l'instance d'`Archivable` derrière `directory.archive[Ar](flags*)`
+
+@ 0 10 0 06af8560a5acf1a30b1c8e3c6e406161
++     detail
++         Archive une arborescence de répertoires sous forme d'`Arfile` plat au moyen du
++         `FilesystemBackend` de son plan. `ar` n'a pas d'entrées de répertoire ; l'arborescence
++         est donc aplatie : chaque fichier ordinaire sous la racine devient un membre nommé par son
++         chemin relatif joint par des barres obliques (un nom long GNU, au-delà de quinze
++         caractères), les répertoires n'apportent rien, et les liens symboliques sont suivis, car
++         un lien ne peut pas non plus être un membre. Une FIFO ou un périphérique provoque un
++         abandon avec `Ar.Error`, raison `Unrepresentable`. Le `mode` de chaque membre est le
++         `st_mode` entier, bits de type compris, tel que `ar` le stocke, et `Archive.Flag.Owner`
++         et `Archive.Flag.Mtime` remplacent le propriétaire et l'horodatage que signale le
++         système de fichiers. Le parcours est le même parcours préfixe trié que pour
++         `archive[Tar]` ; l'archive est donc reproductible.
+
+% 2 1 0 10d870edd432c2241c104d917f1be541
+
+% 3 1 0 04baf8db502245c51d05029896710bae
+
+% 4 1 0 046fe53b75104bef0a74a0c34e9113b7
+
+% 5 1 0 1ad0b59034b2b38a0f5221b5e63f49ee
+
+% 6 1 0 131ff94973e6f0df158fecb61eb441c3
+
+% 7 1 0 16063951ed29d9ac058be80a591de65c
+
+% 8 1 0 1062709d8647f174071f6d2a4f20a6d8
+
+% 9 1 0 01dc97630d3fb67b1fd920e6e3a1f2e2
+
+% 10 1 0 0c39161c583e37200d670f0205310b73
+
+% 6 1 0 0f61484ece2e2c130f581b99074b8ea5
+
+% 0 1 0 17caa2e4a559eeb407d9388c7c210656
+
+% 1 1 0 03dfd111bef4ac4d0e97105f6d6be106
+
+% 1 1 0 02d62914bb2ee32719e7dfd1e2ae32e1
+
+% 1 1 0 1f62be4ac9fd5bbb1c6ebe575a850277
+
+@ 1 1 0 0183de1405c61b3f184a1bfd9b492071
++     entry #Self
++       info
++           le receveur : un `Path on plane`
+
+@ 1 1 0 1d06e6161795bacc154fea1ebf486200
++     entry #Form
++       info
++           le format choisi : `Ar`
+
+@ 0 1 0 05f9fff9b5f0b13d1f11397b0f9ffba4
++     entry #Operand
++       info
++           le type des options : `Archive.Flag`
+
+@ 0 1 0 0e0a3d6d2cd6457b0a65f31a59a93b19
++     entry #Result
++       info
++           ce que produit l'archivage : un `Arfile`
+
+@ 0 1 0 1f5b0fdc1e3f91d209fc8d158675ea9b
++     entry #archive
++       info
++           les fichiers ordinaires sous une racine, sous forme d'`Arfile`
+
+@ 0 1 0 0648537e5400e99a13e63bc52cbc1151
++   entry .Role
++     info
++         ce qu'est un membre d'archive GNU : `Regular`, `SymbolTable` ou `NameTable`
+
+@ 0 6 0 0c19c0d4f7d099831969970b4a1224c8
++     detail
++         `ar` n'a pas de champ de type ; les genres de membres se distinguent donc par leur seul
++         nom. Un `.deb` ne contient que des membres `Regular` ; les deux autres apparaissent dans
++         les bibliothèques statiques `.a`, qui sont imbriquées dans le `data.tar` de chaque
++         package `-dev`. `SymbolTable` est le membre nommé `/` (ou `/SYM64/`, la table 64 bits
++         qu'écrit GNU quand les positions dépassent 32 bits) et `NameTable` le membre `//` qui
++         contient chaque nom de plus de quinze caractères. `Ar.Entry#role` classe un membre ;
++         ainsi un listage peut ignorer les tables :
+
+@ 2 1 0 1f04ee7fcb2911f80ce312e5973ff964
++         ```scala
+
+@ 3 1 0 1f7687a14f8b53e013b2d2133e1cc36a
++         import soundness.*
+
+@ 4 1 0 1aab8733fba91f311567a7eb082ae266
++         import codepages.utf8Codepage
+
+@ 5 1 0 0adb468b7c3862710ae767295ab8104f
++         import strategies.throwUnsafely
+
+@ 0 1 0 0f49d61d23ee9f27028fefc7631186b3
++         val member = Ar.Entry(t"a.txt", Archive.Body(t"aa".in[Data]), 0L, UnixUser(0), UnixGroup(0), 33188)
+
+@ 0 1 0 02dcd92250ac79a913bc9e55e92632a2
++         Arfile.read(Arfile(List(member)).source[Data]).to[List]
+
+@ 0 1 0 0c8e03b3115a3be506b73a360054c77b
++         . filter(_.role == Ar.Role.Regular)
+
+@ 0 1 0 0474c4d36f86e15d1447dddde9754d0e
++         . map(_.name)
+
+@ 1 1 0 1ee9a8837dfa657f0a4f966abed4c71c
++         ```
+
+@ 0 1 0 082411388ef173581536864b3a72088e
++   entry .Error
++     info
++         levée quand une archive ar ne peut être ni lue ni écrite, avec une `Reason` qui indique
++         pourquoi
+
+@ 0 3 0 0c9d2df69b2eee32128dbc5a9e81230e
++     detail
++         Erreur `↯/s.93.2` : _the ar archive could not be read or written because `reason`_. Sa
++         `#reason` est une `Ar.Error.Reason`, chacune avec son propre numéro et son propre
++         message :
+
+% 2 1 0 02b3356c3bddcca209f95496253b8d46
+
+@ 0 13 0 01cf767a333e071b1dab6d3efb274ee2
++         column  Cas
++         column  Code
++         column  Message
++         column  Remarque
++         row  `BadMagic(actual)`  1  _the archive does not begin with the ar magic bytes_
++         row  `BadTerminator(actual)`  2  _the header is not terminated by the two magic bytes_  le curseur n'est plus sur une limite d'en-tête, la seule vérification structurelle qu'offre un en-tête
++         row  `BadDecimal(field, data)`  3  _the `field` field did not contain a valid decimal value_
++         row  `BadOctal(field, data)`  4  _the `field` field did not contain a valid octal value_  le champ `mode` est octal ; tous les autres champs numériques sont décimaux
++         row  `TruncatedStream(needed, got)`  5  _the archive stream ended unexpectedly_  un en-tête trop court, ou un corps plus court que ce qu'indiquait son en-tête
++         row  `BadLongNameRef(reference)`  6  _the long-name reference `reference` does not resolve in the archive's name table_  un nom préfixé par `/` sans membre `//` avant lui, ou une position hors de la table
++         row  `UnsupportedNameFormat(name)`  7  _the member name `name` uses the BSD length-prefixed form, which is not supported_  la forme `#1/<length>` du `ar` BSD, qui n'apparaît pas dans les archives Debian
++         row  `WriteUnsupported`  8  _ar archives cannot yet be opened for writing_  un `open[Ar]` avec un mode `Write` ; écrivez en écrivant un `Arfile`
++         row  `Unrepresentable(name)`  9  _the entry `name` is neither a regular file nor a directory, which ar cannot store_  `archive[Ar]` a rencontré une FIFO ou un périphérique
+
+% 1 1 0 0a36311e4b31db020e2ebebdbc0ea9fe
+
+@ 0 3 0 18ba56b89eb05dba1d6fa8383a1b1ee1
++         Chaque API de lecture nécessite une `Tactic[Ar.Error]` dans la portée. Comme le format
++         n'a ni somme de contrôle ni marqueur de fin, un en-tête trop court ne peut pas être
++         analysé au mieux : la taille enregistrée est la seule chose qui situe l'en-tête suivant ;
++         une troncature provoque donc un abandon.
+
+@ 0 1 0 0befb3ed40d08bb81e83e4687c2a1483
++     entry .Reason
++       info
++           pourquoi une archive ar n'a pu être ni lue ni écrite : une énumération de neuf cas
+
+@ 0 3 0 1a2b46c6037ad0120f2d927a1dd5a1a5
++       detail
++           Chaque cas est répertorié sur la page d'`Ar.Error` avec son numéro et son message. Une
++           `Reason` est une `Clarification` ; elle se lit donc comme la fin du message de l'erreur.
+
+@ 0 1 0 01fad81dd8d247400c1c1e48a8cea894
++       entry #number
++         info
++             le numéro de la raison, de `1` à `9`, qui devient le sous-numéro de l'erreur
+
+@ 1 1 0 1b183321bfd47edb1282e5bb943b6153
++     entry .communicable
++       info
++           rend chaque raison sous forme de son message
+
+@ 2 1 0 0880ac1558137e880b3dd2145411b981
++     entry #reason
++       info
++           pourquoi l'archive n'a pu être ni lue ni écrite
+
+@ 0 1 0 1f14a0d386d363d20d7da75266062b26
++   entry .Entry
++     info
++         un membre d'une archive ar : son nom, ses métadonnées Unix et son corps
+
+@ 0 9 0 05762a5728d255060beafbd0ae9b9916
++     detail
++         Un membre est un `name`, une date de modification, un propriétaire et un groupe, un
++         `mode` et un `Archive.Body`. `Ar.Entry(name, data, mtime, user, group, mode)` en
++         construit un pour l'écriture : le nom stocké prend le `/` terminal de SysV, ce qui permet
++         à un nom comportant des espaces finales de survivre à un aller-retour. Un membre lu
++         depuis une archive porte deux choses de plus : `#rawName`, le champ littéral de seize
++         octets (une référence de nom long GNU comme `/19`, ou un nom avec son `/`), et
++         `#origin`, l'en-tête tel quel, pour que l'archive se resérialise octet pour octet.
++         `#name` est toujours le nom résolu : un nom long recherché dans la table `//`, un `/`
++         SysV retiré.
+
+% 2 1 0 116c4935b74fb71a15ceb273c6c3e368
+
+% 3 1 0 0214131a9120b8ec0e42dcb192915e67
+
+% 4 1 0 1b5b2435be94006d0b2e3c8d6bc7c05d
+
+% 5 1 0 10687a2acf491daf05277d19ae4e7683
+
+% 0 1 0 12eb2d456597724914a13290f9d65d75
+
+% 0 1 0 1ba6d075572b0e77024118caeaeb0951
+
+% 0 1 0 15cf994290301b3f0bf291b1af91cd92
+
+% 0 1 0 093624a13531cfe7114d521223d5dc59
+
+% 0 1 0 03e1ca543bc5181206e3169c9441c4d7
+
+% 1 1 0 17b504b5863ac65c041d5f86da6c1235
+
+@ 0 3 0 05c311cf0c40f6f40a74dbc83954c944
++         Le `mode` est le champ octal brut — `33188`, c'est-à-dire `100644` — plutôt qu'un
++         `UnixMode`, car `ar` stocke les bits de type de fichier à côté des permissions, ce que
++         `UnixMode` ne représente pas, et les retirer modifierait l'en-tête formaté.
+
+% 1 1 0 00eca408dc54386e0a61b10e724bf621
+
+% 1 1 0 146fed131117f6ae0fbc30c98c592253
+
+@ 0 1 0 02208cd35721749414e54023bd759a61
++     entry .padded
++       info
++           la taille d'une charge utile arrondie au nombre pair supérieur : l'endroit où commence
++           l'en-tête suivant
+
+@ 0 2 0 01e59dcedc48bb780e1fb0c1db5af038
++       detail
++           Un membre dont la taille est impaire est suivi d'un octet de saut de ligne ; ainsi
++           chaque en-tête commence à une position paire.
+
+@ 0 1 0 0674cd1f65559aa80309f23fb10d45ba
++     entry .apply
++       info
++           un membre construit pour l'écriture : `Ar.Entry(name, data, mtime, user, group, mode)`
+
+@ 0 4 0 1947cf99a5d9ec9b079fe087b87b1ff7
++       detail
++           Le `rawName` stocké est `name` avec un `/` terminal, à la manière de SysV ; aucun
++           en-tête tel quel n'est conservé ; l'en-tête est donc formaté à partir des champs.
++           `mtime` est en secondes depuis l'epoch ; `mode` est le `st_mode` entier, `33188`
++           (`100644`) pour un fichier ordinaire.
+
+@ 0 1 0 0f6a279ee7929acc180a50ec3a43b315
++     entry #name
++       info
++           le nom du membre, résolu : un nom long recherché, un `/` final retiré
+
+@ 0 1 0 063f79ae6c79b7940acc1ccb74e8c4ba
++     entry #rawName
++       info
++           le champ littéral de seize octets du nom, tel qu'écrit dans l'archive
+
+@ 0 2 0 0a293c49978cc8e009064b94d0b26c01
++       detail
++           `/`, `//` ou `/SYM64/` pour les tables, `/<offset>` pour une référence de nom long GNU,
++           ou le nom avec son `/` terminal SysV.
+
+@ 0 1 0 05714a7d7964a1440b6feb52de08cca8
++     entry #mtime
++       info
++           la date de modification, en secondes depuis l'epoch
+
+@ 0 1 0 1677b455a2bb8ee00a9d9d69bbd8d5f5
++     entry #user
++       info
++           le propriétaire, sous forme d'`UnixUser` (par identifiant uniquement : `ar` ne stocke
++           aucun nom)
+
+@ 0 1 0 1ad267364251858902fba208e139e771
++     entry #group
++       info
++           le groupe, sous forme d'`UnixGroup`
+
+@ 0 1 0 03b41be55c1ef7241269dbc78b9b9454
++     entry #mode
++       info
++           le `st_mode` entier, bits de type compris, tel que `ar` le stocke
+
+@ 0 1 0 12052d1fac3d5a1d016915969d039bf3
++     entry #data
++       info
++           le corps du membre, un `Archive.Body`
+
+@ 0 1 0 09cb950b75a8e44919aeff6529aef5de
++     entry #origin
++       info
++           l'en-tête tel quel avec lequel ce membre a été analysé, ou `Unset` pour un membre
++           construit dans le code
+
+@ 0 1 0 07c1c89038ea5cdc15584bf8f153268a
++     entry #role
++       info
++           si le membre est `Regular`, la `SymbolTable` ou la `NameTable`
+
+@ 0 2 0 0981e33e30c9c29a1e7dc9cbc8da99b1
++       detail
++           Déterminé par `#rawName` : `/` et `/SYM64/` sont la table des symboles, `//` la table
++           des noms, et tout le reste un membre ordinaire.
+
+@ 1 1 0 0761b626d460ccb80a8202bd5c349fdb
++     entry #size
++       info
++           la longueur du corps en octets
+
+@ 0 1 0 178985f415f480651d54445ccbf24205
++     entry #header
++       info
++           l'en-tête de soixante octets : l'en-tête tel quel s'il a été analysé, sinon un en-tête
++           formaté à partir des champs
+
+@ 0 4 0 05fda114c3c454831368e6a6385096eb
++       detail
++           Réémettre l'original importe pour une reconstruction exacte à l'octet près : GNU écrit
++           la table des noms `//` en laissant vides ses champs `mtime`, `uid`, `gid` et `mode`, et
++           aucun nombre décodé ne permet de distinguer le vide du zéro. Un en-tête formaté écrit
++           `#rawName`, et non le nom résolu ; ainsi une archive à noms longs fait toujours
++           l'aller-retour par rapport à sa propre table.
+
+@ 0 1 0 169905c7ea5c34dc03cd9cebc63cbedf
++     entry #serialize
++       info
++           l'en-tête, les morceaux du corps, et l'octet de complément si la taille est impaire
+
+@ 0 1 0 055431545b99cf7e04fd4f2a6525e9dc
++   entry .Header
++     info
++         l'en-tête de membre de soixante octets, sous forme de tranches brutes de champs, avec les
++         décodeurs de ses champs
+
+@ 0 7 0 1044789363e61f2d1e6965768f6383d4
++     detail
++         Un `Ar.Header` contient les sept champs d'un en-tête de membre sous forme de tranches
++         non décodées de `Data`, comme le fait `Tar.Header` pour tar. Chaque champ est de l'ASCII
++         aligné à gauche et complété par des espaces finales — l'inverse de la forme de tar,
++         alignée à droite et précédée d'espaces — et chaque champ numérique est décimal, sauf
++         `mode`, qui est octal. Le compagnon contient les décodeurs du lecteur et le `.format` de
++         l'écrivain, publics pour un programme qui doit inspecter ou réparer une archive au
++         niveau des en-têtes.
+
+% 2 1 0 18446e584b858203009c310602e57e36
+
+% 3 1 0 059a70dbf42e8c0a0857ee9fa2463481
+
+% 4 1 0 16f77b5f3f0b992404a5d9eaf066fec6
+
+% 5 1 0 07a3c6afda0404ac0401469f82c7db83
+
+% 0 1 0 1316c013de9c300516c90644dfaca294
+
+% 0 1 0 09d6cf25997d402d19d7815de7277b76
+
+% 0 1 0 083adfddbc9059a20f2ddf883c9b08b2
+
+% 0 1 0 0bdd092a7a1269390567ee8d5e7404c8
+
+% 1 1 0 09502c6c3f24aae90f46cd6349822927
+
+@ 0 1 0 003e1eb930761c89175d111928e23594
++     entry .headerSize
++       info
++           la longueur d'un en-tête : 60 octets
+
+@ 0 1 0 10bfe73592a357111c7e109170ccaaa8
++     entry .terminator
++       info
++           les deux octets qui terminent chaque en-tête : un accent grave et un saut de ligne
+
+@ 0 1 0 1cd73e06005f4a0511570130b5629812
++     entry .padByte
++       info
++           le saut de ligne qui suit une charge utile de taille impaire
+
+@ 0 1 0 08fc415b44968d1714e1456f37e8f3f4
++     entry .parse
++       info
++           découpe un bloc de soixante octets en un `Ar.Header`
+
+@ 0 2 0 09bf41cc94089de116f9e20db1d5ace5
++       detail
++           Un bloc plus court que `.headerSize` provoque un abandon avec `Ar.Error`, raison
++           `TruncatedStream` : sans somme de contrôle ni marqueur de fin, un en-tête trop court ne
++           peut pas être analysé au mieux.
+
+@ 0 1 0 100fb8c10ff46c191fe3edc7556d7cba
++     entry .verifyTerminator
++       info
++           vérifie qu'un en-tête se termine par `.terminator`
+
+@ 0 2 0 03f6205666bd39c70314c341bad521c9
++       detail
++           Une non-concordance provoque un abandon avec `Ar.Error`, raison `BadTerminator` : le
++           curseur n'est plus sur une limite d'en-tête.
+
+@ 0 1 0 1893d8593f0f57c10c7121d9eb8ab747
++     entry .decodeDecimal
++       info
++           un champ décimal : des chiffres, puis un remplissage d'espaces ou de NUL
+
+@ 0 3 0 1db262ebbde4936a13485b8ba5fccaa6
++       detail
++           Un champ entièrement vide se décode en zéro, car certains archiveurs laissent `uid` et
++           `gid` vides ; un caractère non numérique, ou un chiffre qui reprend après le
++           remplissage, lève `Ar.Error` avec la raison `BadDecimal`, en nommant le champ.
+
+@ 0 1 0 00a0ff1be3b571b10e53e0119466fa99
++     entry .decodeOctal
++       info
++           un champ octal, lu comme `.decodeDecimal` lit un champ décimal
+
+@ 0 1 0 0fc5374cca736d780d0dc25890c85ce5
++       detail
++           Pour le champ `mode` ; un champ mal formé lève `Ar.Error` avec la raison `BadOctal`.
+
+@ 0 1 0 12dc3edae2a810c31930c2b52ffb1e1d
++     entry .decodeName
++       info
++           le champ du nom sans son remplissage d'espaces finales
+
+@ 0 3 0 10b499f9e25ab3fc1ca2f02a8278a514
++       detail
++           Le `/` terminal de SysV est conservé : `/` et `//` nomment les tables des symboles et
++           des noms, et les distinguer d'un nom terminé est le travail du lecteur, qui a besoin de
++           la forme brute. `Ar.Entry#name` est le nom résolu.
+
+@ 0 1 0 1df92ad1c633c83f0e8a96907fe147e4
++     entry .format
++       info
++           un en-tête à partir de ses champs, chacun aligné à gauche et complété par des espaces
+
+@ 0 2 0 075b75bf46e34e8b035a39d20dcfc69d
++       detail
++           `format(name, mtime, user, group, mode, size)` : une valeur trop large pour son champ
++           est tronquée. Le nom est écrit tel quel ; passez donc la forme brute avec son `/`.
+
+@ 0 1 0 180f8a038dc10b0e1a51388ebb0b0a96
++     entry #name
++       info
++           le champ du nom, sur seize octets
+
+@ 0 1 0 00af1717736763c5013ab565176e8ec1
++     entry #mtime
++       info
++           la date de modification, sur douze octets, en décimal
+
+@ 0 1 0 191968da83803bf00c62381f0a3ff099
++     entry #uid
++       info
++           l'identifiant du propriétaire, sur six octets, en décimal
+
+@ 0 1 0 18d3121196e1c0ed1482e2285c130a45
++     entry #gid
++       info
++           l'identifiant du groupe, sur six octets, en décimal
+
+@ 0 1 0 15c4faef0146a05017f65396590bedd5
++     entry #mode
++       info
++           le mode, sur huit octets, en octal
+
+@ 0 1 0 06da8fa386f4f70906c603c95da3fa36
++     entry #size
++       info
++           la taille de la charge utile, sur dix octets, en décimal
+
+@ 0 1 0 1387890ca61e69cb1ba2c899026eb9a7
++     entry #terminator
++       info
++           les deux octets de terminaison
+
+@ 0 1 0 07e2e5e97b1022df11dd2ee3afc8e55a
++   entry .DataOpenable
++     info
++         l'instance d'`Openable` derrière `data.open[Ar]()`
+
+@ 0 5 0 1e6d3abe681de4bb19991995007ba9e8
++     detail
++         Ouvre des `Data` en mémoire comme archive ar, en prêtant une `Ar.Handle` au bloc. Les
++         archives s'ouvrent en lecture seule : un mode comprenant `Write` est refusé avec
++         `Ar.Error`, raison `WriteUnsupported`. Le type d'opérande est `Nothing` : il n'y a pas
++         d'options, car un `.deb` est du `ar` simple.
+
+@ 1 1 0 0b621d3ebf37ba060dc36686cbaab815
++     entry #Self
++       info
++           le receveur : `Data`
+
+@ 1 1 0 131c37ee4e7dcfbd1ed99db4c23435a2
++     entry #Form
++       info
++           le format choisi : `Ar`
+
+@ 0 1 0 080f62ad709a4a481379e80291cc4140
++     entry #Operand
++       info
++           le type des options : `Nothing`, puisqu'il n'y a pas d'options
+
+@ 0 1 0 183ca3fa2f74728b11dcada59bff0f2d
++     entry #Result
++       info
++           la poignée prêtée au bloc : `Ar.Handle`
+
+@ 0 1 0 163c06263735787603575d85e4316bcf
++     entry #open
++       info
++           analyse les données comme archive et exécute le bloc avec une `Ar.Handle`
+
+@ 0 1 0 051c5eb7f8defc1210e702bf35e03ceb
++   entry .Handle
++     info
++         la poignée, limitée à une portée, d'une archive ar ouverte : `ar` dans un bloc `open[Ar]`
+
+@ 0 7 0 1b0af17733a504d91685bd590c170f14
++     detail
++         Ce que `path.open[Ar]()` et `data.open[Ar]()` prêtent à leur bloc, et ce que
++         l'accesseur contextuel `ar` y désigne. `ar` est un format séquentiel ; `#entries`
++         analyse donc paresseusement depuis la source sous-jacente, un membre par étape, et la
++         source ne reste ouverte que pour le bloc : la charge utile d'un membre doit être
++         consommée dans la portée. La poignée est une capacité exclusive ; ni elle ni rien de ce
++         qui lui est emprunté ne peuvent donc être renvoyés depuis le bloc.
+
+% 2 1 0 026b5b6708931ec807d70bce37f76ef6
+
+% 3 1 0 0ea80826ea516a171bbba943a196e707
+
+% 4 1 0 0af75c27a6566d72074133be4854592d
+
+% 5 1 0 044e4ca476955db315afb4bcda98e353
+
+% 6 1 0 19259b8e6595cf951bd20a51175c07fb
+
+% 7 1 0 094a357ac84db60b00b7a76df4144484
+
+% 8 1 0 100fde3dee6f773c0daa0560762c5576
+
+% 9 1 0 06917d1a6703b7330e405335f21456ba
+
+% 10 1 0 1cad4866d507e43916fe5facc4df82b5
+
+% 0 1 0 0d7fa56135381f831cbf48f4ec8fe0e7
+
+% 0 1 0 1524b5d0d8d4f68e0a538919fec59682
+
+% 0 1 0 02af293efc7ff2cd0f4e8ae839827ca6
+
+% 1 1 0 0f7efbc7d7edb01419590b463bddfd7a
+
+@ 0 3 0 18a897ebc573457b180144adfc158f9f
++         L'itérateur ne fait qu'un seul passage : un membre sauté reste lisible, car son corps
++         est mémoïsé quand l'itérateur avance, mais la séquence ne peut pas être rejouée dans la
++         portée.
+
+% 0 1 0 0b613f94d0af4ef802391ed20a7c9ceb
+
+% 0 1 0 1b06697cdb8923dd01e55b39d2f163ba
+
+@ 0 1 0 035e5c3d399cb242014bb9877cb054ba
++     entry #entries
++       info
++           les membres de l'archive, analysés paresseusement à mesure que l'itérateur avance
+
+@ 0 2 0 10e2102c1260ef961c3e9c8dba73a6b0
++       detail
++           Un `Iterator[Ar.Entry]` qui capture la poignée ; il ne peut donc pas survivre au bloc.
++           Une archive mal formée lève `Ar.Error` quand le défaut est atteint.
+
+@ 0 1 0 091eacb9df682c9c1d0711ca050e70ee
++ entry .Arfile
++   info
++       une archive ar comme valeur : une liste de membres qui se transmet en flux d'octets
+
+@ 0 6 0 1db1c19b4d0afe5b0c92b76c786257c9
++   detail
++       `Arfile(entries)` est la forme en mémoire d'une archive `ar` : ses `#entries`, dans
++       l'ordre. Il est `Streamable by Data` (`.streamable`) ; l'écrire dans un fichier revient
++       donc à écrire n'importe quelle autre valeur : le nombre magique, puis l'en-tête et la
++       charge utile complétée de chaque membre, et rien de plus, puisque le format n'a pas de
++       marqueur final. `.read` analyse paresseusement des membres depuis un flux d'octets et
++       `.from` relit une archive entière, qui se resérialise octet pour octet.
+
+% 2 1 0 19bc14402b466a65021a87c1efea5362
+
+% 3 1 0 02c76127edeadf810a76e390ee4f3b84
+
+% 4 1 0 083f4e9853ef774b180069f466466c0a
+
+% 5 1 0 00c222651fa1b688030522f68f2be2f5
+
+% 0 1 0 09dd004b4f3b55520795f545cf52f6ca
+
+% 0 1 0 06c111141044185f1744a4f320ad3b07
+
+% 0 1 0 020aaa7878759d2c1365165daae6ad47
+
+% 0 1 0 014fcf62d66f8e8f11b5785fb989053a
+
+% 0 1 0 009bcc43871b143f0fe376ed8216f346
+
+% 0 1 0 066595f199c12f6e1947e74e706a67ed
+
+% 1 1 0 00c3a75a41f66bee03224400059fff08
+
+% 1 1 0 12315537bc59926b16bb1837a72257d1
+
+% 1 1 0 06d7d46a1ac8b2240e14c359c55bf4ba
+
+@ 0 1 0 14e431e1f24b42fd1acb15c63e15b170
++   entry .streamable
++     info
++         transmet en flux un `Arfile` sous forme de ses octets : `arfile.source[Data]`,
++         `path.write(arfile)`
+
+@ 0 2 0 1f9d68ab5da85d3b1c1e8bc4e93ecccf
++     detail
++         Le given qui rend un `Arfile` `Streamable by Data over Credit`, dans la portée
++         implicite. Le corps de chaque membre est ouvert quand le flux l'atteint.
+
+@ 0 1 0 08ad8dbe121c500f0c085bc651977e06
++   entry .read
++     info
++         analyse un flux d'octets en membres ar, paresseusement, un membre par étape
+
+@ 0 8 0 1cdb0913ed6ea7530247b5813b9404b3
++     detail
++         `Arfile.read(stream)` renvoie un `Iterator[Ar.Entry]^` qui analyse directement le flux à
++         mesure qu'il avance, en absorbant les limites de morceaux, quelles qu'elles soient, dans
++         lesquelles il arrive. Il consomme le flux et nécessite une `Tactic[Ar.Error]`. Les
++         membres ont un seul propriétaire — consommez-les dans l'ordre, sur un seul thread — et
++         chaque corps tire du curseur partagé des morceaux bornés, en se mémoïsant si l'itérateur
++         le dépasse, comme le fait `Tarfile.read`. Le seul membre lu en entier est la table des
++         noms `//`, car chaque nom long ultérieur se résout par rapport à elle. L'archive se
++         termine quand le flux se termine ; un flux qui ne commence pas par `Ar.magic` provoque
++         un abandon avec `BadMagic`.
+
+@ 0 1 0 1f899e670598dcc01761be63ccd31062
++   entry .from
++     info
++         relit un flux d'octets entier en un `Arfile`
+
+@ 0 3 0 1646cd8ccd75476208f9f7f80df4c9e0
++     detail
++         `Arfile.from(stream)` est `.read` dont les membres sont collectés dans une `List`. Comme
++         chaque membre conserve son en-tête tel quel et son nom brut, le résultat se resérialise
++         octet pour octet : `Arfile.from(stream).source[Data]` reproduit l'original.
+
+@ 0 1 0 0b3b96c1fd2f09da025d82f48d9d34ab
++   entry #entries
++     info
++         les membres de l'archive, dans l'ordre
+
+@ 0 1 0 1725f339d68da963051f316d25a837ed
++ entry .Pax
++   info
++       le format d'enregistrement d'en-tête étendu pax POSIX : des lignes `length key=value`
+
+@ 0 7 0 10ddf8a2fa0acbb5036fae5783ca30de
++   detail
++       Un en-tête étendu pax est une charge utile d'enregistrements, chacun formé d'une
++       longueur décimale (qui se compte elle-même), d'une espace, d'une clé, de `=`, d'une
++       valeur et d'un saut de ligne. `Tarfile` en écrit un avant toute entrée dont le nom, la
++       cible de lien, le nom de propriétaire ou de groupe déborde de l'en-tête USTAR, ou qui
++       porte ses propres enregistrements `pax` ; le lecteur l'analyse et le replie dans
++       l'entrée qui suit. Ces fonctions sont l'encodeur et le décodeur, publics pour un
++       programme qui gère lui-même les enregistrements.
+
+% 2 1 0 0f4758933a7a8e5918b3f9a5660297f6
+
+% 3 1 0 08152177d2e8f3040c8df0a211534068
+
+% 4 1 0 10d043e0ea9eb53c100466c6a75ba3a9
+
+% 5 1 0 191482710c36710f1951197edb17f1d0
+
+% 0 1 0 09de71d7b01e019a129634cdfd0d4363
+
+% 0 1 0 15e9a72d9a5e60050ab204987e20aca4
+
+% 1 1 0 1e8129343c61572b1af60397d3f3c439
+
+% 1 1 0 0b447c6361751a5305dacba047ed30bc
+
+% 2 1 0 1628d8d10fd992f00950a1d321964ff6
+
+@ 0 1 0 066f95e8989a3c2d17de2ae1369e4184
++   entry .record
++     info
++         un enregistrement, `length key=value` et un saut de ligne, sous forme d'octets
+
+@ 0 2 0 047e66aeb67fbee71d258f4a870d7e6a
++     detail
++         La longueur est celle de l'enregistrement entier, ses propres chiffres compris, ce que
++         l'encodeur résout.
+
+@ 0 1 0 0417b9b689b1b9691640409b324d11fe
++   entry .records
++     info
++         plusieurs enregistrements concaténés, comme charge utile d'une entrée pax
+
+@ 0 1 0 0692acde8d4fba3712efbf3b2a176951
++   entry .parse
++     info
++         les enregistrements d'une charge utile pax, sous forme de `Map` de clé vers valeur
+
+@ 0 4 0 190a9938d8b12144123e78fb589f36fd
++     detail
++         Nécessite une `Tactic[Tar.Error]`. Un enregistrement dont le préfixe de longueur est mal
++         formé lève `Tar.Error` avec la raison `BadPaxRecord` et termine le balayage, car on ne
++         peut plus se fier au curseur ; un enregistrement sans `=` lève la même erreur et
++         n'ignore que cet enregistrement ; ainsi chaque enregistrement mal formé s'accumule sous
++         une tactique cumulative.
+
+@ 0 1 0 19d134a1fa01682012fcba7e587ce57a
++ entry .TypeFlag
++   info
++       le genre d'une entrée tar, sous forme de l'indicateur d'un octet qui le nomme dans l'en-tête
+
+@ 0 7 0 0e469439b32357790cf147f80db65f02
++   detail
++       Chaque `Tar.Entry` a un `typeFlag` : `File` (`'0'`), `Link` (`'1'`), `Symlink` (`'2'`),
++       `CharSpecial` (`'3'`), `BlockSpecial` (`'4'`), `Directory` (`'5'`), `Fifo` (`'6'`),
++       `Contiguous` (`'7'`, lu comme un fichier ordinaire), `NextFile` (`'x'`, un en-tête pax
++       pour l'entrée suivante), `GlobalExtension` (`'g'`, un en-tête pax pour toutes les
++       entrées suivantes), `LongLink` (`'K'`) et `LongName` (`'L'`, les blocs de nom long GNU)
++       et `Sparse` (`'S'`, un fichier creux GNU). `#id` est l'octet, sous forme de `Char`.
+
+% 2 1 0 15281c225283637d0f59558f3abf4650
+
+% 3 1 0 03a9b9b4b02d4bff13428d9a5b0b7f4a
+
+% 0 1 0 034cd39f105e10ac0a2007d9db9c963f
+
+% 1 1 0 0b15410de1433ba40bb6c8a4f8289bc2
+
+@ 0 1 0 02c58c768b8e6f27029b2b33b36eabcf
++   entry #id
++     info
++         l'octet écrit à la position 156 de l'en-tête, sous forme de `Char`
+
+@ 0 1 0 1635550cd1a5fe710d3cec8d7b0ac8d8
++ entry .UnixMode
++   info
++       un mode de permission Unix sous forme de douze bits nommés
+
+@ 0 5 0 08e6c4ff35b5d73702fb7b75ef1c88b4
++   detail
++       Les bits de permission d'une entrée tar : `setUid`, `setGid`, et lecture, écriture et
++       exécution pour le propriétaire, le groupe et les autres, chacun un `Boolean`.
++       `UnixMode()` vaut `rw-r--r--` (`0644`) : le propriétaire peut lire et écrire, tous les
++       autres peuvent lire. `.from` décode un mode entier et `#int` en encode un.
+
+% 2 1 0 1911b1188d00811e0e6476b51349613d
+
+% 3 1 0 0d82baf9f704303b0dfd5c9fadd48d36
+
+% 0 1 0 06e35ce503c7ec7814bf12425369aff7
+
+% 0 1 0 14b942ce5ec223fe01fd394dc28659b1
+
+% 0 1 0 0b2a0b81047f017905b932526c257466
+
+% 1 1 0 19348d9e6b9340e300ab681e774a6469
+
+@ 0 2 0 11c76df6f912d07f198d4544f822dd20
++       `Ar.Entry#mode` n'est pas un `UnixMode` mais le `st_mode` entier sous forme d'`Int`, car
++       `ar` stocke aussi les bits de type de fichier.
+
+% 1 1 0 193a6110db3c1c9f04d2b817cb605f76
+
+@ 0 1 0 1a9b213213025ceb06ecd39b70fd0557
++   entry .from
++     info
++         un mode à partir de ses bits entiers : `UnixMode.from(493)` vaut `rwxr-xr-x`
+
+@ 0 1 0 0d101d31e6c7f4981f558184b6622b27
++     detail
++         Seuls les douze bits de poids faible sont lus ; les bits de type de fichier au-dessus
++         sont ignorés.
+
+@ 0 1 0 0d878d7b6aedce931965d62c50e31dfa
++   entry #setUid
++     info
++         le bit set-user-id, `04000`
+
+@ 0 1 0 177fa36f40891c3112c175cb7a75d135
++   entry #setGid
++     info
++         le bit set-group-id, `02000`
+
+@ 0 1 0 06a64e8553b3bc7008f75a5b4547d50e
++   entry #ownerRead
++     info
++         le propriétaire peut lire, `0400` ; `true` par défaut
+
+@ 0 1 0 13a3b734ed2310e70782b16927b59f82
++   entry #ownerWrite
++     info
++         le propriétaire peut écrire, `0200` ; `true` par défaut
+
+@ 0 1 0 103121bde95077d613adf3da4264097c
++   entry #ownerExec
++     info
++         le propriétaire peut exécuter, `0100`
+
+@ 0 1 0 0b614ddfd78767c912bb8d668d553dad
++   entry #groupRead
++     info
++         le groupe peut lire, `040` ; `true` par défaut
+
+@ 0 1 0 1b2edd03c6ba58220e5188162a173b87
++   entry #groupWrite
++     info
++         le groupe peut écrire, `020`
+
+@ 0 1 0 0612fb4f0a78e25d13f02b85762aea92
++   entry #groupExec
++     info
++         le groupe peut exécuter, `010`
+
+@ 0 1 0 1632d4be705cfb2f0fb98e97419be958
++   entry #otherRead
++     info
++         tout le monde peut lire, `04` ; `true` par défaut
+
+@ 0 1 0 17dc8c71e346148a0d2b3e4405b719fe
++   entry #otherWrite
++     info
++         tout le monde peut écrire, `02`
+
+@ 0 1 0 029f59e3100d87c01571d3d455b9286b
++   entry #otherExec
++     info
++         tout le monde peut exécuter, `01`
+
+@ 0 1 0 096aa7fbfcaa06e913aac0c6b905aa66
++   entry #int
++     info
++         le mode sous forme d'entier : la somme de ses bits
+
+@ 0 1 0 07efe470b0f605cc19bb4e9e51995ef1
++ entry .UnixUser
++   info
++       le propriétaire d'une entrée : un identifiant numérique et, s'il est connu, un nom
+
+@ 0 4 0 1634e5d29ac20f7c0a682a61e11cf82c
++   detail
++       `UnixUser(1000, t"hamlet")` ou `UnixUser(0)`. Tar stocke les deux, le nom dans le champ
++       `uname` de 32 octets ou dans un enregistrement pax `uname` s'il est plus long ; `ar` ne
++       stocke que l'identifiant. Un nom vide lu depuis une archive vaut `Unset`.
+
+% 2 1 0 1c06bd6b464ee93502ca6c7ecb3967ca
+
+% 3 1 0 0b6490baaa229f23048e5b3939d0e662
+
+% 0 1 0 097296065bfb942705a0ee0222debc0b
+
+% 0 1 0 09bff6f085f6172a1d0313fc9a43e6ec
+
+% 1 1 0 00ac9a0e3a6c634f0eba9b0fd8cf8288
+
+@ 0 1 0 1c6e5b303b193e4108748dafbdd01cd8
++   entry #value
++     info
++         l'identifiant numérique de l'utilisateur
+
+@ 0 1 0 05e86ab28082aafc0eec88f27daf410a
++   entry #name
++     info
++         le nom de l'utilisateur, ou `Unset` si aucun n'est enregistré
+
+@ 0 1 0 09d762d7cb85ae7b0813a1f23abfdf2c
++ entry .UnixGroup
++   info
++       le groupe d'une entrée : un identifiant numérique et, s'il est connu, un nom
+
+@ 0 4 0 13832dcfaee8ca3715f6f13618eb47a6
++   detail
++       `UnixGroup(1000, t"staff")` ou `UnixGroup(0)`, le pendant d'`UnixUser`. Tar stocke le
++       nom dans le champ `gname` de 32 octets ou dans un enregistrement pax `gname` s'il est
++       plus long ; `ar` ne stocke que l'identifiant.
+
+@ 0 1 0 0f5d6a7b342a4f191d214c29d7493acb
++   entry #value
++     info
++         l'identifiant numérique du groupe
+
+@ 0 1 0 1ace9f95d86ae1d804519480cc78b61d
++   entry #name
++     info
++         le nom du groupe, ou `Unset` si aucun n'est enregistré
+
+@ 0 1 0 00e809fec79f76430900abfde7c6fb47
++ entry .TarBuilder
++   info
++       la poignée de rédaction de `path.create[Tar](flags*)` : les entrées sont écrites en flux sur
++       le disque à mesure qu'elles sont insérées
+
+@ 0 12 0 031590fa797850ea00cb7def69f3c872
++   detail
++       Une classe propre à la JVM, dans `bitumen.jvm`. `path.create[Tar](flags*)` (au moyen de
++       `tarPathCreatable`) prête un `TarBuilder` à son bloc ; le bloc insère des entrées, et
++       quand il se termine, l'archive est complète sur le disque. Le builder est le seul moyen
++       d'écrire de bout en bout une entrée tar de longueur *inconnue* : sur une cible non
++       compressée, il écrit directement dans un fichier temporaire caché voisin à mesure que
++       les entrées sont insérées, un fichier dont la charge utile est paresseuse étant écrit en
++       flux sur le disque par morceaux bornés, son en-tête étant écrit comme espace réservé
++       puis corrigé après coup avec la taille et la somme de contrôle réelles une fois le corps
++       passé. Une cible compressée (un `Tar.Flag` parmi les options) ne peut pas être corrigée
++       après coup à travers le compresseur ; les entrées s'accumulent donc et sont sérialisées
++       à la fermeture de la portée, chaque charge utile étant mise en tampon. Dans les deux
++       cas, la cible apparaît de façon atomique, par un renommage, ou pas du tout : une
++       exception qui s'échappe du bloc ne laisse rien derrière elle.
+
+% 2 1 0 0b38b79ed1a9dc8a00258213d3ef8aa9
+
+% 3 1 0 0f7570c106710eff15a480e862e64a1d
+
+% 4 1 0 1c53dd85373a1a4b18e830184179c9df
+
+% 5 1 0 08aef9030036b1481e36cf9fad080f95
+
+% 6 1 0 102d2baf8daf72cb0a8df3c78461bf9f
+
+% 7 1 0 0fb115461080255c052fa34af5995bad
+
+% 8 1 0 0eefb363864754681937ee62bd6e057c
+
+% 9 1 0 1b89f2e8664e077315b8b86f408bc964
+
+% 10 1 0 15c49b114f276fdd05fd0d4053a086f0
+
+% 11 1 0 141839eda26a91d51a6b105c691c06f8
+
+% 0 1 0 1f39ccd252e9ec021499bfec35c6ff87
+
+% 2 1 0 13d5bd032d38e93f046a8fd613df00b2
+
+% 0 1 0 1853caec0a5df3e61a0dab00bc3df57e
+
+% 0 1 0 156343a78afe8b43188c50c88a737d5c
+
+% 0 1 0 1a5c5ff976791d610540e8ac6c1c6571
+
+% 0 1 0 0ece20644cd94c3a127f64cb8e42fc2b
+
+% 0 1 0 075aa29ae8814c910b2af743c6970e0d
+
+% 0 1 0 01b7da15f8ccc4c6149a9560498f6ffe
+
+% 1 1 0 002be3583b4bf71d132871b741147608
+
+@ 0 6 0 11e74ac2294c29c90b595a96345ad184
++       Les options sont des `CreateFlag` (`Replace` pour écraser un fichier existant, ce qui
++       sinon lève `Tar.Error` avec la raison `AlreadyExists` ; `Parents` pour créer les
++       répertoires manquants), un `Tar.Flag` pour compresser le résultat, et un
++       `LongNameFormat`. Tar autorise les noms en double, les entrées ultérieures remplaçant
++       les précédentes à l'extraction ; rien n'est donc vérifié à l'insertion. Un échec d'E/S
++       lève `Tar.Error` avec la raison `CannotWrite`. Pour une archive dont les entrées sont
++       déjà disponibles, écrire un `Tarfile` dans le chemin est plus simple.
+
+% 0 1 0 0f1a8cb60d9b0a8a0ceffef3e52fa7cf
+
+% 0 1 0 0436f86dfcca0e5a19921f26385536ae
+
+% 1 1 0 1b74fe6ff9be7cac0a9f4e5aac9e56bc
+
+@ 0 1 0 0c742a077151792f18471e65f335fc1f
++   entry .TarCreatable
++     info
++         l'instance de `Creatable` derrière `path.create[Tar](flags*)`
+
+@ 0 4 0 1883a8acb093b55309359b0117b53a60
++     detail
++         Rend tout type de chemin `Abstractable across Paths to Text` `Creatable` sous la forme
++         `Tar`, avec un `TarBuilder` comme poignée, en accordant la lecture et l'écriture.
++         `tarPathCreatable` est le given qui la fournit. Elle nécessite une `Tactic[Tar.Error]`.
+
+@ 0 1 0 15bdd7817754395d005613a06d4e6691
++     entry #Self
++       info
++           le receveur : le type de chemin
+
+@ 1 1 0 05afddfbe0076e521aa3fc4fe60bec8a
++     entry #Form
++       info
++           le format choisi : `Tar`
+
+@ 0 1 0 16c02f97ac1bc84a1696fe6265210436
++     entry #Operand
++       info
++           le type des options : `CreateFlag | Tar.Flag | LongNameFormat`
+
+@ 0 1 0 1f2a01ab001068ea1f0084244bc7178f
++     entry #Grants
++       info
++           ce qui est accordé à la poignée : `Grant.Read & Grant.Write`
+
+@ 0 1 0 1f60edc8870a26b907801073882c81bb
++     entry #Result
++       info
++           la poignée prêtée au bloc : `TarBuilder`
+
+@ 0 1 0 186d2a4c871f0de5189f008a779bffe0
++     entry #create
++       info
++           écrit dans le chemin, de façon atomique, l'archive que rédige le bloc
+
+@ 0 4 0 0b2051f385c2c6921c49c628cbd78709
++       detail
++           Trie les options, refuse une cible existante sans `CreateFlag.Replace`, crée les
++           parents sous `CreateFlag.Parents`, et exécute le bloc avec un builder en mode flux (sans
++           `Tar.Flag`) ou en mode accumulation (avec un `Tar.Flag`), puis déplace le fichier
++           temporaire terminé sur la cible.
+
+@ 0 1 0 0c77e95a2d897e3f092922192cf8beb2
++   entry #insert
++     info
++         ajoute une entrée : une `Tar.Entry` telle quelle, ou un fichier à partir d'un nom et de
++         n'importe quelles données lisibles en flux
+
+@ 0 5 0 07198f4998ebc903103f587a43e410d5
++     detail
++         `insert(entry)` écrit toute `Tar.Entry` — un répertoire, un lien, un fichier avec un mode
++         et un propriétaire fixes — immédiatement sur une cible non compressée, ou la met en file
++         d'attente sur une cible compressée. `insert(name, data)` crée une entrée `File` à partir
++         de tout ce qui est `Streamable by Data`, avec le mode par défaut, le propriétaire `0` et
++         un horodatage nul, dont le corps est lu paresseusement depuis les données à mesure
++         qu'il est écrit : une source volumineuse n'est jamais conservée en mémoire.
+
+@ 0 1 0 12ca289fb1dd48e711659ff8c7a36af2
++   entry #file
++     info
++         rédige une entrée dont le corps, de longueur inconnue, est écrit en flux au moyen d'un
++         `TarEntryWriter`
+
+@ 0 5 0 12bf489742df5d4c0c9360cb91b88d49
++     detail
++         `file(name, mode, user, group, mtime)` exécute son bloc avec un `TarEntryWriter` dont
++         `put` ajoute un morceau au corps de l'entrée. Sur une cible non compressée, les morceaux
++         vont directement sur le disque et l'en-tête est corrigé après coup avec la taille
++         finale ; sur une cible compressée, les morceaux sont mis en tampon et l'entrée est
++         insérée en entier quand le bloc se termine. Le résultat du bloc est renvoyé.
+
+@ 2 1 0 171babc7fdaea80117d2e98797979699
++         ```scala fuel
+
+@ 3 1 0 100aa833d02785411957cfa9660de27d
++         typecheck
+
+@ 4 1 0 1c465b58bef03c591350b4ac8fbeb823
++         ##
+
+@ 5 1 0 17080920a7a446650dd184a368db8221
++         import soundness.*
+
+@ 6 1 0 0fdbe4da3d0972d6155fe469a3cdbebb
++         import codepages.utf8Codepage
+
+@ 7 1 0 1d002f9d64a993bd007820b32e854759
++         import filesystemBackends.javaBaseFilesystem
+
+@ 8 1 0 00b453a1e3d9cd401a12f10f36cd7bea
++         import pathInterfaces.pathOnLinux
+
+@ 9 1 0 07606fdee0aab56902d0a5b609e45d08
++         import strategies.throwUnsafely
+
+@ 10 1 0 121c136cb2837c071c7bf132fa22834d
++         import systems.javaBaseSystem
+
+@ 11 1 0 06c6a51fb48b9f7a0603647e279a92d4
++         import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 0 1 0 03dd2c35137c005907f771fb7df61b3e
++         val target: Path on Linux = temporaryDirectory[Path on Linux] / "streamed.tar"
+
+@ 2 1 0 14095f883cf02ba00c157ddd5c73a44d
++         target.create[Tar](CreateFlag.Replace): builder ?=>
+
+@ 0 1 0 000828cbb6a669ae1f579d4169013f6a
++           builder.file(t"chunks.bin".as[Tar.Ref], mode = UnixMode(ownerExec = true)): entry ?=>
+
+@ 0 1 0 1e7e9a041ba65a1f19f74e96b0f9886c
++             entry.put(t"first chunk\n".in[Data])
+
+@ 0 1 0 105ba7f92137a7f9056185c54f2f605b
++             entry.put(t"second chunk\n".in[Data])
+
+@ 1 1 0 0bc3e5ae65a20a951783ca8bfeaa5fcb
++         ```
+
+@ 0 1 0 00c5abff18809dd50befe568d36ab36d
++ entry .TarEntryWriter
++   info
++       l'écrivain prêté par `TarBuilder#file` : ajoute des morceaux au corps d'une entrée
+
+@ 0 5 0 0ebf2c3231a3970c131f1b4057eaf174
++   detail
++       Une classe propre à la JVM, dans `bitumen.jvm`. Dans `builder.file(name): entry ?=> …`,
++       `entry` est un `TarEntryWriter` : `#put` ajoute un morceau et `#write` écrit en flux
++       toute valeur lisible en flux. C'est une capacité exclusive confinée à son bloc ; elle ne
++       peut donc être ni conservée ni renvoyée ; quand le bloc se termine, l'entrée est
++       complète.
+
+% 1 1 0 197a7d1bc907cdaa14cdb8240111ed39
+
+@ 0 1 0 1c604e03e38f6a90029f0ea8e71ce6f2
++   entry #put
++     info
++         ajoute un morceau de `Data` au corps de l'entrée
+
+@ 0 1 0 0da112863c4490031e6b0d56bc46b38c
++   entry #write
++     info
++         écrit en flux toute valeur `Streamable by Data` dans le corps de l'entrée, morceau par
++         morceau
+
+@ 0 2 0 1322d414cc2bbc5c015d769f71b3b828
++     detail
++         Nécessite un `Buffering` dans la portée ; la valeur est lue au moyen de son given
++         `Streamable` et chaque morceau est ajouté par `put` à mesure qu'il arrive.
+
+@ 0 1 0 09c1fe58764ab118190f8fbcb7f325ea
++ entry .TarOpenable
++   info
++       l'instance d'`Openable` derrière `path.open[Tar](flags*)`
+
+@ 0 9 0 1d186070e8d890a10080d696cf9ecabd
++   detail
++       Une classe propre à la JVM, dans `bitumen.jvm`, qui rend tout type de chemin
++       `Abstractable across
++       Paths to Text` `Openable` sous la forme `Tar`, en prêtant une `Tar.Handle`.
++       `tarPathOpenable` est le given qui la fournit. Le fichier est ouvert avec `java.io` et
++       maintenu ouvert pour le bloc ; les entrées sont analysées paresseusement directement
++       depuis le flux actif, les charges utiles étant lues en flux par morceaux bornés à mesure
++       qu'elles sont lues et vidées quand une entrée ultérieure est forcée. Les archives
++       s'ouvrent en lecture seule : un mode comprenant `Write` est refusé avec `Tar.Error`,
++       raison `WriteUnsupported`. Les options sont des `Tar.Flag`, qui nomment la compression.
++       Elle nécessite une `Tactic[Tar.Error]` et une `Tactic[Truncation.Error]`.
+
+% 1 1 0 1d673e4366945a4903bfd86bf39950c0
+
+% 1 1 0 0f6b4c4760f3cf2e01d73e217e8f983c
+
+@ 1 1 0 13962c41276851b71d0abd461a455fef
++   entry #Self
++     info
++         le receveur : le type de chemin
+
+@ 0 1 0 01f2b74782bbffda0c7140656a1a2cb2
++   entry #Form
++     info
++         le format choisi : `Tar`
+
+@ 0 1 0 021695a980a031ca0f8abae1d14aabb5
++   entry #Operand
++     info
++         le type des options : `Tar.Flag`
+
+@ 0 1 0 1be6887a1074df751e357f9005813689
++   entry #Result
++     info
++         la poignée prêtée au bloc : `Tar.Handle`
+
+@ 0 1 0 0fbd7e4d0fbf066a039ef21450c786bf
++   entry #open
++     info
++         ouvre le fichier, exécute le bloc avec une `Tar.Handle`, puis le ferme
+
+@ 0 1 0 059c07f02f19162b0804ec6ee9aa607b
++ entry .ArOpenable
++   info
++       l'instance d'`Openable` derrière `path.open[Ar]()`
+
+@ 0 8 0 0616d191de21681b0c7ee2c2db50f4e8
++   detail
++       Une classe propre à la JVM, dans `bitumen.jvm`, qui rend tout type de chemin
++       `Abstractable across
++       Paths to Text` `Openable` sous la forme `Ar`, en prêtant une `Ar.Handle`.
++       `arPathOpenable` est le given qui la fournit. Le fichier est ouvert avec `java.io` et
++       maintenu ouvert pour le bloc ; les membres sont analysés paresseusement depuis le flux
++       actif. Les archives s'ouvrent en lecture seule : un mode comprenant `Write` est refusé
++       avec `Ar.Error`, raison `WriteUnsupported`. Il n'y a pas d'options ; le type d'opérande
++       est donc `Nothing`. Elle nécessite une `Tactic[Ar.Error]` et une
++       `Tactic[Truncation.Error]`.
+
+% 1 1 0 0c729462ce3819d1035727771d4d4659
+
+% 1 1 0 1d68d911ef202b8b080e55ff931bbebe
+
+@ 1 1 0 1e4ed66092208699091828e0ac6a4402
++   entry #Self
++     info
++         le receveur : le type de chemin
+
+@ 0 1 0 1ae568c0a2ef115c1e3016655c20dddd
++   entry #Form
++     info
++         le format choisi : `Ar`
+
+@ 0 1 0 024c491f7fc52c1a050bbdc7953eec1f
++   entry #Operand
++     info
++         le type des options : `Nothing`, puisqu'il n'y a pas d'options
+
+@ 0 1 0 04cb84593b349c780ee8ba31e3c583c8
++   entry #Result
++     info
++         la poignée prêtée au bloc : `Ar.Handle`
+
+@ 0 1 0 15ace27442d8dd4b077cd70c53a21342
++   entry #open
++     info
++         ouvre le fichier, exécute le bloc avec une `Ar.Handle`, puis le ferme
+
+@ 0 1 0 0089d8ea376bd8e00a8a4bfd8a90844c
++ entry .tarPathOpenable
++   info
++       ouvre un fichier sur le disque comme archive tar : `path.open[Tar](flags*)`
+
+@ 0 6 0 02a5d8c85414dd33059c6fdf0db6105f
++   detail
++       Un given de premier niveau dans `bitumen.jvm`, pour tout type de chemin
++       `Abstractable across Paths to
++       Text` (un `Path` de galilei, ou du texte), qui fournit un `TarOpenable`. Il nécessite une
++       `Tactic[Tar.Error]` et une `Tactic[Truncation.Error]` dans la portée. Il est de premier
++       niveau car son sujet, le type de chemin, appartient à une autre bibliothèque ;
++       `import soundness.*` l'importe, mais un programme qui importe `bitumen.*` doit le nommer,
++       `import
++       bitumen.tarPathOpenable`, car un import joker n'importe pas les givens.
+
+@ 2 1 0 1fb797c1ddcd8a1e0d1a58a581ca3392
++       ```scala fuel
+
+@ 3 1 0 1445d680a7fb2da30ce4607db9a36f68
++       typecheck
+
+@ 4 1 0 1aaff40b8cd4ecbf1f9761bd6d819a6a
++       ##
+
+@ 5 1 0 0075f819edbd7c3e069d0bc785c7ccbb
++       import soundness.*
+
+@ 6 1 0 06336b2c7c431156096d41e0ad17c10e
++       import filesystemBackends.javaBaseFilesystem
+
+@ 7 1 0 04e7e74cd9161fa815248187efff7f5c
++       import pathInterfaces.pathOnLinux
+
+@ 8 1 0 03b8515aae46d6860e8132c88c5b9a47
++       import strategies.throwUnsafely
+
+@ 9 1 0 1625e905ae28d34a1c96bd8d8ebabe15
++       import systems.javaBaseSystem
+
+@ 10 1 0 0f58bbaf5c7768dd1a4ccb26feda89f4
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 0 1 0 0840acd20901b02d178ca37ad2c04c78
++       val path: Path on Linux = temporaryDirectory[Path on Linux] / "release.tar.gz"
+
+@ 0 1 0 1024492c47bcd92e0b8ba4dc30f7c0a2
++       path.open[Tar](Tar.Flag.Gzip):
+
+@ 0 1 0 193180d67b03f37b1a9b064a13f4d150
++         tar.entries.to[List].map:
+
+@ 0 1 0 15301f938f1f3c6b1d74057743723fcb
++           case file: Tar.Entry.File => t"${file.entryName} (${file.data.size} bytes)"
+
+@ 1 1 0 1f39561569bbc69817e8dc06d61960ed
++           case other                => other.entryName
+
+@ 1 1 0 1c7c9c6185d9d9490bf629cac0b37adf
++       ```
+
+@ 0 1 0 1dd17cf4fbfe33df01df032579ecbdae
++ entry .arPathOpenable
++   info
++       ouvre un fichier sur le disque comme archive ar : `path.open[Ar]()`
+
+@ 0 4 0 01fac9d4e91bd31b1b557c4687ce39fb
++   detail
++       Un given de premier niveau dans `bitumen.jvm`, pour tout type de chemin
++       `Abstractable across Paths to
++       Text`, qui fournit un `ArOpenable`. Il nécessite une `Tactic[Ar.Error]` et une
++       `Tactic[Truncation.Error]` dans la portée. `import soundness.*` l'importe ; un programme
++       qui importe `bitumen.*` le nomme, `import bitumen.arPathOpenable`.
+
+@ 2 1 0 1f010ba6c8d991e518e914fd59008a83
++       ```scala fuel
+
+@ 3 1 0 0f2a4587a089819616a3e2d3bc8515d0
++       typecheck
+
+@ 4 1 0 04d80e9134dcc76c1e97df1c5a6b6a34
++       ##
+
+@ 5 1 0 1940540382a24ea70de1367d7c368415
++       import soundness.*
+
+@ 6 1 0 065e481c6712a0e0065e7efd436cc495
++       import filesystemBackends.javaBaseFilesystem
+
+@ 7 1 0 0c7a135fee24803e12b832acd787f44d
++       import pathInterfaces.pathOnLinux
+
+@ 8 1 0 0269411c37e4ea3015df0f4df5a9d702
++       import strategies.throwUnsafely
+
+@ 9 1 0 002715f50e726d1a05d333f9a95d1a54
++       import systems.javaBaseSystem
+
+@ 10 1 0 11f563f1a98835ce0f178e68c42e8d3b
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 0 1 0 01f23d423d6360eb111819a3763bf840
++       val path: Path on Linux = temporaryDirectory[Path on Linux] / "package.deb"
+
+@ 0 1 0 18761aec88783ea60036cbab354c81bf
++       path.open[Ar]():
+
+@ 0 1 0 0513b6427690d79815b007dd1061e302
++         ar.entries.to[List].map(_.name)
+
+@ 1 1 0 1bc16306149aeace015b6bf0ca26eb89
++       ```
+
+@ 0 1 0 0a9d946f454da852163a2d24497232be
++ entry .tarPathCreatable
++   info
++       crée une archive tar sur le disque, rédigée par un bloc : `path.create[Tar](flags*)`
+
+@ 0 5 0 09bf0daf5e2c1a3204752d47585e1e5b
++   detail
++       Un given de premier niveau dans `bitumen.jvm`, pour tout type de chemin
++       `Abstractable across Paths to
++       Text`, qui fournit un `TarBuilder.TarCreatable`, pour que `path.create[Tar](flags*)`
++       prête un `TarBuilder` à son bloc. Il nécessite une `Tactic[Tar.Error]` dans la portée.
++       `import soundness.*` l'importe ; un programme qui importe `bitumen.*` le nomme,
++       `import
++       bitumen.tarPathCreatable`.
+
+@ 2 1 0 0460144d55e8d1e41883897beb7450a1
++       ```scala fuel
+
+@ 3 1 0 13b3b889e081d5b50485f01edc9a8f7c
++       typecheck
+
+@ 4 1 0 1138e074eed1e7ac167c61148f7a5fa2
++       ##
+
+@ 5 1 0 1abc28b9f24adc460cc9ce4fbb442054
++       import soundness.*
+
+@ 2 1 0 1a879a04f0fa46df0ec440780df3e97d
++       import codepages.utf8Codepage
+
+@ 1 1 0 09c267d03fbd154c133e88f6b7f1fda4
++       import filesystemBackends.javaBaseFilesystem
+
+@ 2 1 0 0ea0b4e66fef9420010e87ce2660b5a8
++       import pathInterfaces.pathOnLinux
+
+@ 3 1 0 0894e7663ba26bb7022dd6c82b473d33
++       import strategies.throwUnsafely
+
+@ 4 1 0 1f0b01126ec1140213d24327b8eae619
++       import systems.javaBaseSystem
+
+@ 5 1 0 07d2c3516b920ed61b8740b17aa2d5dd
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 0 1 0 0abfa2e8482367a2161705ec1ea852f4
++       val target: Path on Linux = temporaryDirectory[Path on Linux] / "made.tar.gz"
+
+@ 0 1 0 18699bf0691fd1ab0a6ecb1d2901b328
++       target.create[Tar](Tar.Flag.Gzip, CreateFlag.Replace): builder ?=>
+
+@ 0 1 0 033b633e7f355f4910a180015260a844
++         builder.insert(t"data.txt".as[Tar.Ref], t"payload".in[Data])
+
+@ 1 1 0 0e8c106dd6a28dab0f9f81649daf44b0
++       ```
+
+@ 0 1 0 0678d900e0a205071d6e758036781e9d
++ entry .extractTo
++   info
++       décompresse un `Tarfile` sur un système de fichiers, sous un répertoire racine
+
+@ 0 8 0 12b38b120b8febbd1c23f10a48566b3b
++   detail
++       Une extension propre à la JVM sur `Tarfile`, dans `bitumen.jvm` : l'inverse de
++       `directory.archive[Tar]()`. Chaque entrée est placée sous `root` selon son `Tar.Ref` —
++       qui, étant relatif et exempt de `..`, ne peut pas atterrir en dehors — sur tout plan
++       `Posix` : un fichier est écrit avec son mode et sa date de modification, un répertoire
++       est créé avec son mode, un lien symbolique est créé avec sa cible (en remplaçant un lien
++       existant), et un lien physique est lié à l'entrée qu'il nomme. Les répertoires parents
++       que l'archive ne répertorie pas sont créés selon les besoins. Une entrée de FIFO ou de
++       périphérique lève `Tar.Error` avec la raison `DeviceCreationUnsupported` ; une
++       pseudo-entrée pax ou de nom long GNU est ignorée.
+
+@ 2 1 0 146ed9f48824bb2811b0bb8f870fec2c
++       ```scala fuel
+
+@ 1 1 0 0a47f914ed53260906bd03717b3d64ff
++       frame
+
+@ 0 1 0 18dbc0a87686682d084dc7c3b11c14b3
++         label A directory, archived
+
+@ 1 1 0 1d631dd56b0c27d4147e2fc55c5a0410
++         code
+
+@ 2 1 0 002dbf268b245a2a1ddcb0b731624775
++             import soundness.*
+
+@ 3 1 0 14c1963efdf4cf1f0d81b4ca1cc82ec7
++             import filesystemBackends.javaBaseFilesystem
+
+@ 4 1 0 1b34fbfe95826bdf1a31c848e8bb5af1
++             import filesystemOptions.createNonexistentParents
+
+@ 5 1 0 1e904f3398964cdc0c5001e984e72009
++             import filesystemOptions.overwritePreexisting
+
+@ 6 1 0 147d7f3d3b13eff40717d709ade4d09b
++             import filesystemOptions.preserveSymlinks
+
+@ 7 1 0 1ea2e128a5195f121ea102890065f312
++             import pathInterfaces.pathOnLinux
+
+@ 8 1 0 00637ab4b2e21aae062ec0386a2aa074
++             import strategies.throwUnsafely
+
+@ 9 1 0 1c87bb0a3b36e6790c14657246fff9f8
++             import systems.javaBaseSystem
+
+@ 10 1 0 0ace3b24bfa79beb0c7c0b17d28d05e5
++             import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 12 1 0 09ab3d11610a4d4708dd7238fb6d70af
++             val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+
+@ 13 1 0 1a31bded71d7d5461b521b81531cb2cf
++             val tarball: Tarfile = source.archive[Tar]()
+
+@ 1 1 0 042ee4111bfc8c9e0bc824256d05a248
++       frame
+
+@ 0 1 0 01aabb79454b2ebf179843b6a47dda85
++         label Compressed and written to disk
+
+@ 1 1 0 1e264f5be4ddea0208eae81c9e45626e
++         code
+
+@ 2 1 0 035573a4c8693f6105013b7709cfcc6d
++             import soundness.*
+
+@ 3 1 0 1167d59c8748ada41fa7948462ede451
++             import filesystemBackends.javaBaseFilesystem
+
+@ 4 1 0 06918f78977e220f1b61e5d7aea3c213
++             import filesystemOptions.createNonexistentParents
+
+@ 5 1 0 0d795adeeef3af590a98d0be0118d4b8
++             import filesystemOptions.overwritePreexisting
+
+@ 6 1 0 0b820061c03aa8921183b1b28b908779
++             import filesystemOptions.preserveSymlinks
+
+@ 7 1 0 19f8c192640c1d181b7dbe7365c8e934
++             import pathInterfaces.pathOnLinux
+
+@ 8 1 0 12ce7830edb8030f0ee63e62fa05372d
++             import strategies.throwUnsafely
+
+@ 9 1 0 108907478f43ff820d8909e125b68c35
++             import systems.javaBaseSystem
+
+@ 10 1 0 030637411ca144c10eeaad392305d812
++             import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 12 1 0 0332b31c3a4a36c00fa6006e580a7d77
++             val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+
+@ 13 1 0 016170fc48e78db407aeb87d6f156875
++             val tarball: Tarfile = source.archive[Tar]()
+
+@ 14 1 0 1c4090b59b838bf916c995048f6c9484
++             val release: Path on Linux = temporaryDirectory[Path on Linux] / "project.tar.gz"
+
+@ 15 1 0 18d641ccf21fc5df1244a60afc4069f8
++             release.create[File](): handle ?=> handle.write(tarball.gzip)
+
+@ 1 1 0 1a2500997dd37b990b5d242294ba7dec
++       frame
+
+@ 0 1 0 1980477a222bcca00bc614d09bd753ae
++         label Unpacked somewhere else
+
+@ 1 1 0 1fa622621415e5b91760b038f9dd79be
++         code
+
+@ 2 1 0 1b1b420ded6f57500cae0b3117afdcee
++             import soundness.*
+
+@ 3 1 0 1f4fac9fa7c4105c008c45782d6ca6fa
++             import filesystemBackends.javaBaseFilesystem
+
+@ 4 1 0 06712395cf8c43da19261f88f22d825a
++             import filesystemOptions.createNonexistentParents
+
+@ 5 1 0 0fff2caa1ecbdd1b02f7517ce290cea7
++             import filesystemOptions.overwritePreexisting
+
+@ 6 1 0 161ca846c5daeff814b8a41cee274573
++             import filesystemOptions.preserveSymlinks
+
+@ 7 1 0 11bd5a58235659390b2a3e4e2566677c
++             import pathInterfaces.pathOnLinux
+
+@ 8 1 0 175f8d8b221893e5150af884ec8b71be
++             import strategies.throwUnsafely
+
+@ 9 1 0 058623ace1bc97801c272ec86bd88275
++             import systems.javaBaseSystem
+
+@ 10 1 0 040e6ec31f91a6e91e1e60f840033062
++             import temporaryDirectories.javaBaseTemporaryDirectory
+
+@ 12 1 0 09d9cf32a00aa8af169b6d28b1546d16
++             val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+
+@ 13 1 0 0876c95b13e4c9ca163d023183f9ed27
++             val tarball: Tarfile = source.archive[Tar]()
+
+@ 14 1 0 1556a4e27801b0d71d2195ccd32fdfd0
++             val release: Path on Linux = temporaryDirectory[Path on Linux] / "project.tar.gz"
+
+@ 15 1 0 0f909ccb3b81d6a70ff27a39ac7adba6
++             release.create[File](): handle ?=> handle.write(tarball.gzip)
+
+@ 0 1 0 02867395f9ec0ca00f79091535394a94
++             val unpacked: Path on Linux = temporaryDirectory[Path on Linux] / "unpacked"
+
+@ 0 1 0 1613c1ff222b2c281b145602b8e0efbb
++             tarball.extractTo(unpacked)
+
+@ 1 1 0 02263bf2b93ee709030869563e884cda
++       ##
+
+@ 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
++       ```
+
+@ 0 6 0 075f8949ff02a5200e8012b8c46df957
++       Elle nécessite les politiques `CreateNonexistentParents` et `OverwritePreexisting` pour
++       le plan (importées par leur nom depuis `filesystemOptions`), une `Tactic[Io.Error]` et
++       une `Tactic[Tar.Error]`. Les modes sont fixés au moyen de l'attribut `unix:mode`, et
++       laissés silencieusement à la valeur par défaut du système de fichiers là où il n'est pas
++       pris en charge. Pour extraire une archive trop volumineuse pour être conservée sous
++       forme de `Tarfile`, itérez sur `Tarfile.read` ou sur un bloc `open[Tar]` et construisez
++       un `Tarfile` d'une seule entrée à la fois.

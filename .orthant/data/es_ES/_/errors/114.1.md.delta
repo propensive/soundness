@@ -1,0 +1,61 @@
+orthant 2 language
+
+% 0 1 0 03b39a17f3fb9a0409fcda5d5b61298a
+
+@ 0 3 0 145ee454bd282db10fb8ef5b2ec42a32
++ Se lanza cuando falla una operación del Language Server Protocol, o lo lanza un manejador para
++ contestar a una petición con una respuesta de error de JSON-RPC. Cada motivo lleva el código de
++ transmisión estándar de JSON-RPC/LSP, que `Lsp.listen` coloca en el miembro `error.code` de la
++ respuesta de error.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 01362123253bc53314617c0e9eae6c37
++ Exegesis implementa el protocolo de transmisión de LSP. Este error abarca un mensaje mal formado,
++ una petición que el servidor no puede satisfacer y cualquier fallo que un manejador decida lanzar:
++ un `LspError` lanzado se adelanta al resultado del manejador y se convierte en una respuesta de
++ error si se trata de una petición, o en una notificación `window/logMessage` en otro caso.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 4 0 071dbd18e15a9f5b10fd3d592f1bc703
++ column  Código
++ column  Motivo
++ column  Código de transmisión
++ column  Mensaje
+
+% 0 1 0 09c51f069fd08f310c9ef8301e2bec58
+
+% 0 1 0 0502f21b65d619b81ddd0a1abe46b659
+
+% 0 1 0 1e2b3edf5f1dee891a614925cde4f4fa
+
+% 0 1 0 14c7451d016421a51fb01f3ba499ddb9
+
+% 0 1 0 1c106cc65cc5d9790e80aae5fb5e7e53
+
+% 0 1 0 11ef8ee6bef543240ed41d8039d49041
+
+% 0 1 0 111b3a20ccd636a21112d2c6935d1b0d
+
+% 0 1 0 1449dc8d64df26ca1cde9e0a910b817b
+
+% 0 1 0 0641aac9691363dc0fad88d61d8c754b
+
+% 0 1 0 04a55e9baca7418603d7596922ef73db
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 5 0 1e00c1aa9db7a5c611a9b35fc5b7868a
++ El motivo distingue un fallo de protocolo de una petición que estaba bien formada pero no se pudo
++ atender. Un fallo de protocolo suele significar que el cliente y el servidor no coinciden en la
++ versión del protocolo o en el entramado de los mensajes; un motivo lanzado por un manejador, como
++ `RequestFailed`, describe la negativa del propio servidor, y sus detalles se reenvían al cliente
++ en el mensaje de la respuesta de error.

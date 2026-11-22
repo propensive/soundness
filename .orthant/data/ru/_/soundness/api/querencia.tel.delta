@@ -1,0 +1,191 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 17bde55d855d7a1306f83bd8e6701d49
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09cbdf0739d5dc5a18a5e0773080f400
++ info   DOM браузера как типизированный внешний интерфейс, навигируемый в Scala и отображаемый в JavaScript
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 12204fe31bc75943085605ea361902dc
++     _Querencia_ позволяет программе на Scala, которая генерирует веб-страницу, писать скрипты
++     страницы — найти элемент, передать ему фокус, прокрутить окно — на Scala, с проверкой член за
++     членом по собственным объявлениям DOM браузера на WebIDL, и отображать их в JavaScript, который
++     выполнит страница. DOM на JVM ничто не выполняет: навигация по `document` или `window` строит
++     типизированное `Foreign.Expression`, которое `Javascript.serialize` превращает в исходный
++     текст и которое атрибут-обработчик событий HTML, такой как `onclick`, принимает напрямую.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0904af1d23c5658c032667b6cf820d6a
+
+% 0 1 0 1292da9c469e3a0a10c90dc559c56c97
+
+% 0 1 0 0d76c2500fd125940475ce46f58f45d1
+
+% 0 1 0 038946c8e684cca1027b8997e10aee6b
+
+% 0 1 0 0dd74a7611bc0d1815d9c354df60fb4a
+
+% 0 1 0 0cd557c9ee20dbac181ee421ad08a489
+
+% 0 1 0 02c426315d4be033078be95dad59a16b
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 0eab6f65a1c5bac718a8cee147badff7
++     Член, который интерфейс WebIDL не объявляет, или аргумент, у которого нет соответствия во
++     внешней системе типов, — ошибка компиляции. Механизм — общий механизм xenophile для внешних
++     интерфейсов; querencia предоставляет экосистему `Browser`, поставляемые вместе с ней
++     определения DOM (`/querencia/dom.idl` на пути классов), преобразования значений Scala в типы
++     WebIDL, два глобальных объекта и отрисовщик JavaScript. Каждый given находится в компаньоне
++     `Browser`, который находится в неявной области видимости везде, где тип упоминает `Browser`,
++     поэтому для навигации по DOM или использования обработчика ничего импортировать не нужно.
+
+@ 0 4 0 0fb6ecefe16c56aa190da1dcaa8b7553
++     У библиотеки один набор исходников, `querencia.core`, для JVM и Scala.js (но не для Scala
++     Native, поскольку HTML-библиотеки, на которых она построена, загружают ресурсы пути классов во
++     время выполнения). Всё экспортируется в зонтичный модуль `soundness`, где `document` и
++     `window` экспортируются как имена верхнего уровня.
+
+% 0 1 0 0689885865f0149708505256e964f8e1
+
+% 0 1 0 1508f737e890089e1734dbb8ec88d94f
+
+% 0 1 0 07f50a3a71ec10c918cfb8a0fc6e8ca9
+
+% 0 1 0 03765ca51188275c0434dd784d55bdc8
+
+@ 0 1 0 147e4684db5e47d7069c65ab3f2edf88
++ entry .Browser   веб-браузер как внешняя экосистема, интерфейсы которой — WebIDL DOM
+
+% 1 1 0 1a87444a8ea9d2f2185e1b9007860a49
+
+@ 0 6 0 01b18561b89079b91be1c6b7e66823c0
++       `Browser` — это `Ecosystem` из xenophile, грамматика которой — `WebIdlDialect`, а
++       определения интерфейсов — определения DOM, читаемые из поставляемого
++       `/querencia/dom.idl`. Значение типа `Foreign of "HTMLElement" from Browser` — это ссылка
++       на объект DOM, интерфейс WebIDL которого — `HTMLElement`; выбор его членов даёт новые
++       внешние значения объявленных типов с развёрнутым наследованием, так что `HTMLElement`
++       предлагает и то, что объявляют `Element` и `Node`.
+
+% 2 1 0 12e7200adf356e9801da44c9bf55ddfa
+
+% 3 1 0 1c51ebc95795f44d0bdcf9f3186df247
+
+% 0 1 0 040ac32ff8285cc20614010e7bbb7458
+
+% 0 1 0 0e02ff846787d3a409572e07bb26c5f8
+
+% 1 1 0 0e2aa4b0c13f878c1814b41e6fe09df9
+
+@ 0 3 0 19e074d2938deee0015f214a603859ac
++       Она отделена от общей экосистемы `WebIdl` из xenophile, чтобы владеть `Interface` DOM и
++       чтобы обработчиком событий HTML (`.scripting`) служил только `Foreign from Browser`, а не
++       значение из TypeScript или WIT.
+
+@ 0 5 0 1ee748ccb182f3fd128d14b84e725fc0
++       Значение Scala передаётся как аргумент только там, где экземпляр `Interoperable in Browser`
++       задаёт его внешний тип: числа фиксированного размера `S8`–`S64`, `U8`–`U64`, `F32` и `F64`
++       — как типы WebIDL той же ширины (так что параметр `long` принимает `S32`, а не `Int`),
++       `Boolean`, `Text` — как строка, `List` — как `sequence`, а `Optional` — как тип,
++       допускающий null, причём `Unset` передаётся как `null`.
+
+% 0 1 0 012d8a527d1333f00262d5140f7330cc
+
+@ 0 4 0 09c7f852a8fc29da09c3a84ee33eb3df
++   entry #Grammar   грамматика экосистемы: `WebIdlDialect` из xenophile
++   entry .document   глобальный объект `document` страницы, внешний `Document`
++       `Foreign of "Document" from Browser`, отображаемый как идентификатор JavaScript
++       `document`. Экспортируется в пакет `soundness` как имя верхнего уровня.
+
+% 2 1 0 1823833769a28cdb03a2b2ea39ff045b
+
+% 3 1 0 0554358df401ad0d1f5b293405a06847
+
+% 0 1 0 1653cedcb7c5be5700cc9f8d4666466e
+
+% 0 1 0 0ee7bbde547bb2d91b6348ad99c14525
+
+% 1 1 0 110f34ce88c1298f162e2b388ef63527
+
+@ 0 4 0 0b6aa62e065eda58062f2c5da2415437
++   entry .window   глобальный объект `window` страницы, внешний `Window`
++       `Foreign of "Window" from Browser`, отображаемый как идентификатор JavaScript `window`.
++       `Window` объявляет атрибут `document`, поэтому `window.document` достигает той же
++       страницы, что и `document`. Экспортируется в пакет `soundness` как имя верхнего уровня.
+
+% 2 1 0 0026ec6aa77fccd5034e5967bcf75369
+
+% 3 1 0 1d1d0cedb1f60d801080104302e77802
+
+% 0 1 0 02cc72cd930025ae13856e66bff6faef
+
+% 1 1 0 142e9f0ecc243acb11b5d039f87849a5
+
+@ 0 26 0 0844277c6a6fe1840b65b729a616711a
++   entry .interface   определения WebIDL DOM, читаемые из `/querencia/dom.idl` на пути классов
++       `Interface in Browser`, который макрос навигации призывает, чтобы найти члены каждого
++       внешнего типа. Он читается через hellenism из собственного JAR querencia.
++   entry .scripting   позволяет `Foreign from Browser` быть значением атрибута скриптинга HTML
++       Экземпляр `Attributive to Whatwg.Scripting`, который делает выражение DOM допустимым
++       значением для `onclick`, `onchange` и других атрибутов-обработчиков событий элементов HTML
++       из honeycomb; при показе страницы оно отображается с помощью `Javascript.serialize`.
++       Простой текст — не скрипт, поэтому `Button(onclick = t"…")` не компилируется.
++   entry .s8   передаёт `S8` как тип WebIDL `s8` (`byte`)
++   entry .s16   передаёт `S16` как тип WebIDL `s16` (`short`)
++   entry .s32   передаёт `S32` как тип WebIDL `s32` (`long`)
++   entry .s64   передаёт `S64` как тип WebIDL `s64` (`long long`)
++   entry .u8   передаёт `U8` как тип WebIDL `u8` (`octet`)
++   entry .u16   передаёт `U16` как тип WebIDL `u16` (`unsigned short`)
++   entry .u32   передаёт `U32` как тип WebIDL `u32` (`unsigned long`)
++   entry .u64   передаёт `U64` как тип WebIDL `u64` (`unsigned long long`)
++   entry .f32   передаёт `F32` как тип WebIDL `f32` (`float`)
++   entry .f64   передаёт `F64` как тип WebIDL `f64` (`double`)
++   entry .boolean   передаёт `Boolean` как тип WebIDL `boolean`
++   entry .string   передаёт `Text` как строку WebIDL: `DOMString`, `USVString` или `ByteString`
++   entry .sequence   передаёт `List` из совместимых значений как `sequence` WebIDL
++   entry .nullable   передаёт `Unset` как `null` WebIDL
++   entry .optional   передаёт `Optional` совместимого типа как тип WebIDL, допускающий null
++       `Optional[T]` соответствует `T?`, причём `Unset` передаётся как `null`. Экземпляр
++       применяется только к типам, у которых есть форма `Mandatable`, поэтому он никогда не
++       конкурирует с экземпляром для самого `T`.
+
+@ 0 1 0 0b01d0f04992a72b00c41fb54c84cb9f
++ entry .Javascript   отображает внешнее выражение DOM в исходный текст JavaScript
+
+% 1 1 0 00d6e0483648510603ae2be4edde9e1d
+
+@ 0 1 0 0b091329288f40361c4a213f74308132
++       Отрисовщик, стоящий за обработчиками событий querencia, доступный для прямого
++       использования.
+
+% 0 1 0 078b2e8a491939e00522306181faed2e
+
+@ 0 6 0 1aeec0127ec476bc06fe369079b2a4dc
++   entry .serialize   отображает `Foreign.Expression` в исходный текст JavaScript
++       `Reference` отображается как его имя, `Select` — как `target.member`, `Apply` — как
++       `target(arguments)`, `Index` — как `target[index]`, а `Literal` — как JavaScript: текст
++       в одинарных кавычках, с экранированием обратных косых черт, кавычек и переводов строк,
++       чтобы вывод вкладывался в двойные кавычки атрибута HTML; булевы значения — как `true` и
++       `false`; числа — дословно.
+
+% 2 1 0 03135ee449f22ba01857b669eefc691e
+
+% 3 1 0 0d21f2f743fce50b00a69005540b2bee
+
+% 0 1 0 069de09ff8d9c56818cdb897ac321612
+
+% 0 1 0 0d28a6c4b5541e671365665a75d68afa
+
+% 0 1 0 15c2dfa18e0481c8188b2cfe84acd3a3
+
+% 0 1 0 10247153158ac9b011f5e7f459978551
+
+% 1 1 0 12445222178d1c500d9f1a56cdf1f798

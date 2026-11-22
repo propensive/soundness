@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0b42ac474d2008a517ba89c7a08c3609
++ # `↯/s.68.8` — Le nom n'est valide dans aucun espace de noms de la portée
+
+@ 0 1 0 1773b96f973b314e04258b05e439f2cb
++ Levée à la compilation lorsqu'un littéral de nom ne satisfait aucun des espaces de noms
++ disponibles.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 1e8d40a9d6b7f1200eaf8f5793ce4ef6
++ Un littéral `n"…"` est résolu d'après les espaces de noms présents dans la portée. Cette erreur
++ signifie qu'aucun espace de noms de la portée ne l'admet.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0d027996b991d5cc1f774b9e646499f7
+
+% 1 1 0 0c474542c0061ef80185f92f4d9c6962
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 1 0 1052c6d15bff0b6405fc02bc1dbe171c
++ Corrigez le nom, ou mettez dans la portée l'espace de noms voulu afin que ses règles
++ s'appliquent.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0e50947c1477812413044192b1714eb2
++ - Source : `lib/nomenclature/src/core/nomenclature.protointernal.scala`

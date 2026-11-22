@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 13eb9bbe576240690752586c7628f1c7
++ # `↯/s.73.8` — O literal de tempo precisa ser um `Double`
+
+@ 0 2 0 14886e82b484a672121b2a19f4189e89
++ Lançado pela macro `validTime` do Aviation quando o argumento não é um `Double` literal.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 015c19b522adc6bd071b8c0c4343d08e
++ A macro faz casamento de padrões sobre `Literal(DoubleConstant(_))`; qualquer outra coisa (uma
++ variável, uma chamada de método, um literal inteiro) não pode ser inspecionada em tempo de
++ compilação.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0ebc16e2650b65780ca459d1cc45378c
+
+% 1 1 0 057eeecf7c9025d70343ad9954824ad4
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 17ea98c8e727efc81e4bb88836471e5f
++ Passe um literal `Double` diretamente para a macro.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 2 0 134e7c69bc3b1f9c187f8ba40d928c64
++ - Os outros erros de literais de tempo: [Famílias](README.md#families)
++ - Código-fonte: `lib/aviation/src/core/aviation.internal.scala`

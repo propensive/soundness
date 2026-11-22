@@ -1,0 +1,207 @@
+orthant 2 language
+
+@ 0 1 0 02b5c4e68591d68a045bed8cc52a1334
++ ## Syntaxhervorhebung
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 104804ad023954de09f99a905afeae02
++ Scala-Quellcode wird vom Scala-Compiler selbst hervorgehoben. Die Sprache wird nicht mit
++ regulären Ausdrücken angenähert. Der echte Tokenizer und, auf Wunsch, das gesamte Frontend des
++ Compilers laufen über den Quelltext, sodass die Hervorhebung genau dem entspricht, wie der
++ Compiler ihn liest.
+
+@ 0 3 0 0b3fcc52cd8e8b8f0e19d32c082bac7c
++ Das Ergebnis ist ein `SourceCode` aus akzentuierten Tokens, der als gestaltete
++ [Terminal](terminal.md#styled-text)-Ausgabe oder als [HTML](html.md) dargestellt wird. Auf den
++ tieferen Stufen kennt er die *Typen* seiner Ausdrücke, die Diagnosen des Compilers und sogar
++ Vervollständigungen.
+
+@ 0 1 0 06b65ff84c0bb4f6083b5428de27fdcc
++ ### Über die Hervorhebung
+
+@ 0 5 0 11ed38018675f7e61f1d251f240000d1
++ Scala widersetzt sich einer beiläufigen Hervorhebung. Seine Soft Keywords sind nur an bestimmten
++ Positionen Schlüsselwörter. Seine Syntax für Givens und seine signifikanten Leerzeichen
++ überfordern Grammatiken, die auf Mustern beruhen. Die Hervorhebungsdateien der Editoren laufen
++ der Sprache hinterher, Release für Release. Das eine Programm, das Scala immer korrekt in Tokens
++ zerlegt, ist der Compiler, und so ist der verlässliche Hervorheber der Compiler, höflich gefragt.
+
+@ 0 2 0 042a8e7f6e47e21903c743d0c86e4156
++ Er wird in drei Tiefen betrieben, von denen jede durch ein Given im Paket `highlighting`
++ gewählt wird:
+
+% 2 1 0 171a3ad92a0e6f5c0e912a0e23743fe9
+
+@ 0 1 0 08e226ae6e3c4913114e5dbdc8f6f98b
++ column  Tiefe
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 6 0 1e71b1a7447a0c7c158dea4b7117315e
++ column  Benötigt
++ column  Liefert
++ row  tokenisiert  `tokenizedScala`, die Vorgabe  nur den Text  klassifizierte Tokens
++ row  typgeprüft  `typecheckedScala`  einen Compiler und einen Klassenpfad  Typen und Diagnosen aus dem Frontend
++ row  typgeprüft  `sessionScala`  eine warme Compiler-Sitzung  dasselbe, innerhalb der Sitzung
++ row  kompiliert  `compiledScala`  einen Compiler und einen Klassenpfad  die Diagnosen, die erst spätere Phasen erzeugen
+
+% 1 1 0 1c5e3d1e4d3a93ab0b47e0a8f0ce9f1e
+
+@ 0 3 0 02bcc09e97520a5a1db04276f6e7cc5e
++ Ein hervorgehobenes Token, das seinen Typ kennt, ist
++ [Komponierbarkeit](../../philosophy/composability.md) zwischen dem Compiler und dem, was den Code
++ anzeigt.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Alles stammt aus dem Paket `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 1 1 0 09a8f67b183dcdd50adab2731fead1e5
+
+@ 0 1 0 114e2dd9ed60151f1bd0af305ab50b7e
++ ### Hervorheben
+
+@ 0 2 0 012bd69f11a905690e8ca1cfd7c7524e
++ `Scala.highlight` zerlegt Quelltext in Zeilen aus akzentuierten Tokens, etwa Schlüsselwörter,
++ Bezeichner, Zahlen, Strings und Modifikatoren, bereit zur Anzeige:
+
+% 2 1 0 1ed338af11b10cc91f87a202c2e33649
+
+% 0 1 0 0ee9faaf14ddabb5116b898574ab190c
+
+% 1 1 0 1d21896b22ed8da602e4ee62999c61aa
+
+@ 0 1 0 19ff25aa2684c8091cb812827eca9a5c
++ Die Akzente sind die Kategorien, denen eine Palette Farben zuweist:
+
+% 2 1 0 0479038c5e0ecce70e4e8601a52affbc
+
+@ 0 9 0 0b6f22caf04995e51131297fe8b27722
++ column  Akzent
++ column  Markiert
++ row  `Keyword`  Schlüsselwörter außer Modifikatoren
++ row  `Modifier`  Modifikator-Schlüsselwörter
++ row  `Term`, `Typal`  Definitionen
++ row  `Symbol`  Operatoren
++ row  `Parens`  Klammern
++ row  `Number`, `String`  Literale, auch interpolierte
++ row  `Error`, `Unparsed`  Tokens, die nicht sauber herauskamen
+
+% 1 1 0 011927ac33a7e05d0ab44dad23d328a2
+
+@ 0 2 0 1545d73b7037a8a30ad4ea6891b5f412
++ Die Standardtiefe ist tokenisiert, die nichts als den Text benötigt. `Java.highlight` tut
++ dasselbe für Java-Quelltext.
+
+@ 0 3 0 0674d25c297fcab114205f7aa16d6131
++ Eine Palette ordnet als Given die Akzente [Farben](colors.md) zu, und die ANSI-Renderer,
++ nummeriert oder schlicht, machen aus einem `SourceCode` eine Terminalausgabe. Umzäunte `scala`-
++ und `java`-Code-Blöcke in einem [Markdown](markdown.md)-Dokument werden über denselben Mechanismus
++ dargestellt.
+
+@ 0 1 0 0911216a77e5b2e20bbf39af20c40a72
++ ### Typen und Diagnosen
+
+@ 0 3 0 11fc70ae788b3a2e14a10210c316aba0
++ Mit einem [Compiler](compiler.md) und einem [Klassenpfad](classpath.md) im Geltungsbereich führt
++ `typecheckedScala` das Frontend aus, und jeder Bezeichner hat den Typ, den der Compiler ihm
++ gegeben hat. Das ist der Unterschied zwischen dem Einfärben von `xs` als Bezeichner und dem
++ Wissen, dass es eine `List[Int]` ist:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 0749446bb3e8240819004b617c4e26b0
+
+% 0 1 0 1e804ef02d58fd58093e38ba542f1190
+
+% 0 1 0 044555dea3bc12de0e1d4878c46292e3
+
+% 0 1 0 1b9581162a71724f01d0cd507c8b5897
+
+% 1 1 0 0fc8b19d5946eea41efedf1cb1033119
+
+@ 0 2 0 102faf44a03408ba08799c135fa2b8f2
++ `typecheckedScala` stammt aus dem Modul `harlequin.typed`, dem einzigen Teil des Hervorhebers,
++ der vom Compiler abhängt.
+
+@ 0 3 0 1e3028571ff7fe6b038d6ba70b5c75ee
++ Quelltext mit Typfehlern scheitert nicht an der Hervorhebung. Er wird *mitsamt seinen Fehlern*
++ hervorgehoben. Jede `Diagnostic` hat ihre Spanne und ihre Meldung, und genau das brauchen
++ Dokumentationswerkzeuge und Editoren:
+
+% 2 1 0 0c6d8894d004321a000b1dc422a88993
+
+% 0 1 0 1ea951da86610c4d06bf32700bb2cf27
+
+% 1 1 0 1959c108744d9de7152c28cf1aff2e6d
+
+@ 0 1 0 12fb9d6403ad24ff1fc8a11ed4f80083
++ ### Vervollständigungen
+
+@ 0 2 0 08843279c52d270b1bcd4a43159e0fb2
++ Eine Position der Einfügemarke macht aus der Hervorhebung eine Vervollständigung. Die eigene
++ interaktive Engine des Compilers schlägt vor, was folgen könnte, mit Arten und Signaturen:
+
+% 2 1 0 089aec4ce3a538c610d827305ef2aa23
+
+% 0 1 0 1af12c2883e0ff1f061b68ae1c7dac73
+
+% 0 1 0 0c03c02c9aefe9bc08261aed1f60bc45
+
+% 1 1 0 0a2d5f1c72405fca18278c7a0e735ed6
+
+@ 0 3 0 19d72e24c4b6539b15b19d9ad85077c1
++ Bei einer typgeprüften Tiefe sind die Vorschläge hier `map`, `max`, `mkString` und die übrigen
++ Member von `List[Int]`, die mit `m` beginnen. Sie stammen von demselben Compiler, der den Code
++ schließlich kompilieren wird, und sind daher nie geraten.
+
+@ 0 6 0 05c8b4224fe6ae510840fbd2f5af3b3a
++ Member nach einem `.` sind der einfache Fall. Ein bloßer Bezeichner, der gerade getippt wird,
++ ist schwieriger, weil die Anweisung, die ihn enthält, die Typprüfung nicht besteht. Genau das
++ ist ihr Zustand, während sie geschrieben wird, und eine Batch-Kompilierung verwirft den Code.
++ Vervollständigungen stammen daher vom interaktiven Treiber des Compilers, der fehlerhaften Code
++ behält. Terme und Typen im Geltungsbereich werden überall vervollständigt, wo die Einfügemarke
++ steht, und an der Position eines Typs werden die Angebote auf Typen, Module und Pakete
++ eingeengt.
+
+@ 0 1 0 15b083b39f1b849a043c9c43ed99a7ec
++ ### Schlüsselwörter und dynamische Member vervollständigen
+
+@ 0 1 0 17c727c18c8c58bf0e77959ccfc6397e
++ Zwei Arten von Vorschlägen, die der Compiler nicht machen kann, werden neben seinen eigenen
++ geliefert.
+
+@ 0 5 0 09c2257f91b1ff80110139b1c233383c
++ *Schlüsselwörter* sind grammatisch, nicht semantisch. Was folgen darf, hängt von den Tokens vor
++ der Einfügemarke ab, nicht von einer Symboltabelle. Ein Trie über umgekehrte Token-Kontexte,
++ abgeleitet aus einem Korpus echten Scala-Codes und nur so weit zurückblickend, wie es relevant
++ bleibt, beantwortet, welche Schlüsselwörter als Nächstes kommen könnten und was die Grammatik
++ dort erwartet. `case ` bietet daher an, womit ein Case beginnen kann, und eine Position, die ein
++ Typ sein muss, bietet überhaupt keine Schlüsselwörter an.
+
+@ 0 5 0 07595c7debf3a28f19287fba358381d4
++ *Dynamische* Member haben überhaupt keine Symbole anzubieten. Wo die Einfügemarke auf einer
++ Selektion steht, deren Qualifizierer von `scala.Dynamic` abgeleitet ist, wird das Begleitobjekt
++ des Typs gefragt, welche Member seine Verfeinerung zulässt, sofern es die Schnittstelle dafür
++ implementiert. So wird ein [fremder](foreign-interop.md) Wert mit den Membern vervollständigt,
++ die seine fremden Deklarationen nennen, und so kann jeder `Dynamic`-Typ ehrliche
++ Vervollständigungen anbieten statt gar keiner.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 4 0 154962b908d4ff2709cb81e953c43f20
++ - [Compiler](compiler.md) beschreibt, wie der Scala-Compiler aus einem Programm heraus
++   ausgeführt wird.
++ - [LSP](lsp.md) liefert Vervollständigungen und Diagnosen an einen Editor.
++ - [Markdown](markdown.md) stellt hervorgehobene Code-Blöcke dar.
++ - [Terminal](terminal.md) und [HTML](html.md) sind die beiden Ausgabeformen.

@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 6 0 1889c953ce024d7f0440aab3316da853
++       *プレーン*とは、値が存在する空間である：パスにとってのファイルシステム（`Path on Linux`、`Path on Classpath`）、クラスローダーの探索空間、あるいはグラフが描かれるノード。
++       型クラスや値の型は、`on` でプレーンを名指せるように `Planar` を継承する。galilei のファイルシステムのポリシー（`CreateParents`、`DeleteRecursively`）は、ファイルシステムごとに一つのポリシーが選ばれるように `Planar` である。
++   entry #Plane   ファイルシステムやクラスパスなど、値が位置する空間

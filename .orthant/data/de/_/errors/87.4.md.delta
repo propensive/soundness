@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 0edd19ffc2682e4206239fa0e323a55a
++ # `↯/s.87.4` — Fehlender `Parametric`-Wert
+
+@ 0 3 0 1334f017606d72de0ddd50f1e4bbe5c2
++ Wird zur Kompilierzeit vom Makro `query` aus Legerdemain ausgelöst, wenn für den inferierten
++ Schlüsseltyp keine kontextuelle `Parametric`-Instanz verfügbar ist.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 0fdc3f40d7b5abdb108ff296bcd942d4
++ Das Makro braucht eine Instanz der Typklasse `Parametric`, um den Schlüssel in einen Query-String
++ zu kodieren. Ist keine im Geltungsbereich, bricht das Makro ab.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 02b725d31caa0ffb06096ca0b9201dd3
+
+% 1 1 0 05b7d32fbe653e31199ba3aae35ddb0f
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 0c0dc62c2ae50a5009324cb0d31583d2
++ Bringen Sie ein passendes `given Parametric` in den Geltungsbereich, oder ändern Sie den
++ Schlüsseltyp in einen, für den es eine `Parametric`-Instanz gibt.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 0a4fea4398cc22eb06d923a346595883
++ - Quelle: `lib/legerdemain/src/query/legerdemain.internal.scala`

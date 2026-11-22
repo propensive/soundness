@@ -1,0 +1,37 @@
+orthant 2 language
+
+% 0 1 0 057a61c7a16113a510a301380e6d6f87
+
+@ 0 2 0 09f1b2f5e9bdd5731e77840daab7b865
++ Wird ausgelöst, wenn ein Ausdruck, von dem erwartet wurde, dass er mit einem `Error`
++ fehlschlägt, stattdessen erfolgreich war.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 1133078568337312129641f7cdf27ef0
++ Wird von den Erwartungswerkzeugen von Contingency verwendet (z. B. Testhelfern, die einen
++ bestimmten Fehler zusichern). Wird der umhüllte Ausdruck ausgewertet, ohne zu werfen, wird
++ `Expectation.Error` mit dem Ergebnis geworfen.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 08ba21eff94f7c580d31301749542920
+
+% 1 1 0 115d91380930eed413038701e8b43567
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 1d90923156f4032614a345b5aa6281c9
++ Passen Sie entweder den Test bzw. die Erwartung an das tatsächliche Verhalten an, oder beheben
++ Sie den Code, sodass er wirklich fehlschlägt.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 10f724901abfec0d169e2ce560a99af3
++ - Quelle: `lib/contingency/src/core/contingency.Expectation.scala`

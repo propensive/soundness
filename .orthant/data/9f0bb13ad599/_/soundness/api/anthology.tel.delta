@@ -1,0 +1,19 @@
+orthant 2 release
+
+@ 0 1 0 1a5e3e374787867d0e3babf29877e364
++   entry .Notice   one diagnostic: its importance, file, message, span, semantic markup and bolt code
+
+@ 1 0 0 0c1175603e5768f41e1e49a890dbd860
++
++         `#code` is only set by `Scalac` under `scalacOptions.boltCodes`, and only for an error or
++         a warning: the bolt code Proscala gives the diagnostic, as a `fulminate.Bolt`, such as
++         `↯/p.1.7` for a type mismatch (upstream's `E007`). Proscala writes the code in the heading
++         of its own report, not in the message, so it is read here from the diagnostic itself.
+
+@ 1 0 0 0bf1916e8158ec611a7a43cf204a33ad
++     entry #code   the diagnostic's bolt code, under `-Zbolt-codes`, else `Unset`
+
+@ 1 0 0 05184c6ba3fce3f2159ca05b76dac80e
++   entry .boltCodes   `-Zbolt-codes`, at 3.9: gives each error and warning notice its bolt code
++       Under this option Proscala gives every error and warning a bolt code, `↯/p.1.7`, and a
++       `Compiler.Notice` carries it as its `code`.

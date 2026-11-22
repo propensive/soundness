@@ -1,0 +1,63 @@
+orthant 2 language
+
+% 0 1 0 0292e2dfdcb7403215d50f7937088a37
+
+@ 0 1 0 18ea679750e0b63e1ac591e5ad022f4d
++ Lançado quando uma operação MCP (Model Context Protocol) falha.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 5 0 1da40d407528f8151f08bdc1000ae14f
++ O tempo de execução MCP do Synesthesia despacha as requisições recebidas para ferramentas,
++ prompts e recursos definidos pelo usuário. Quando o despacho ou o vínculo dos parâmetros falha,
++ este erro é lançado. O construtor recebe um `reason: Reason`; a mensagem renderizada é
++ `the MCP operation failed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0d261b202fafd66c1819ac48206e009b
+
+@ 0 2 0 003f897fd98523f313caf2ca9eacbe13
++ O nome do método na requisição não correspondeu a nenhuma ferramenta ou prompt registrado: é o
++ fallback curinga no dispatcher gerado.
+
+@ 0 1 0 15f7d839cef425ef1c8e7003f24eaf0d
++ **Exemplo.** `[↯/s.124.1.1] the MCP operation failed because the method name does not match any registered tool or prompt`
+
+@ 0 2 0 018dac47dae614dc033a43f70abc6059
++ **Resolução.** Verifique se o nome do método corresponde a um dos declarados na interface do
++ servidor; procure erros de digitação ou diferenças de caixa.
+
+% 0 1 0 151173fdde9da43e049d114e7aabc530
+
+@ 0 2 0 14ec6ac1062967510b093ca9194d005e
++ O URI em uma requisição de recurso não correspondeu a nenhum dos padrões de URI declarados pela
++ interface do servidor.
+
+@ 0 1 0 166c122f7dc9293513cddfa9e59ca3f7
++ **Exemplo.** `[↯/s.124.1.2] the MCP operation failed because the URI does not match any registered resource`
+
+@ 0 2 0 0cd6bb8ca21cccda17d3400908bf2c95
++ **Resolução.** Confirme que o URI corresponde a um dos padrões declarados com `@resource(...)`
++ na interface.
+
+% 0 1 0 1bd74ee9c69bbb43112ca4b13c8f1102
+
+@ 0 2 0 15d16cc4c9e48dd1183fb6b5561887d8
++ Um parâmetro obrigatório de um método de ferramenta não estava presente no mapa de entrada da
++ requisição.
+
+@ 0 1 0 17fb25ff8d0cc2130e2550f8ca2c32cc
++ **Exemplo.** `[↯/s.124.1.3] the MCP operation failed because a required parameter was not present in the input`
+
+@ 0 3 0 17cfd0b3841963e91476d5137830770b
++ **Resolução.** Envie todos os parâmetros obrigatórios no objeto de argumentos JSON-RPC, ou
++ marque o parâmetro como opcional na interface do servidor.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 19d4132abcd44a2619fb7809055aa7ca
++ - Código-fonte: `lib/synesthesia/src/core/synesthesia.Mcp.scala`

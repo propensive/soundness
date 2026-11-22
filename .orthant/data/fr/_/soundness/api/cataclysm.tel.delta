@@ -1,0 +1,2655 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f5833b64febbc391dfd68b455ef5b25
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 07810fa37386b2841145bd095841df34
++ info
++     le CSS sous forme de valeurs typées : feuilles de style, sélecteurs et propriétés vérifiés
++     selon leurs vraies grammaires
+
+@ 0 8 0 1b908a640af777fb0a8e8768e058d170
++ detail
++     _Cataclysm_ représente le CSS — les feuilles de style, leurs règles et leurs sélecteurs,
++     et les valeurs de leurs propriétés — sous forme de valeurs typées, vérifiées selon la
++     grammaire réelle de chaque propriété plutôt que laissées à un navigateur qui les
++     ignorera. Un navigateur ne rejette jamais le CSS : une propriété mal orthographiée ou une
++     valeur mal formée échoue en ne faisant rien. Ici, la même erreur est une `Css.Error`
++     lorsque du texte est lu à l'exécution, et une erreur de compilation lorsqu'elle est
++     écrite dans un littéral `css"…"` ou un constructeur `Css.Style(…)`, tous deux vérifiés
++     selon la syntaxe de définition de valeurs des données MDN pour plus de six cents
++     propriétés.
+
+@ 0 9 0 1dd74f4461c977dd14de6fc8d94343bc
++     Le type central est `Css` : une feuille de style sous forme de liste de `Css.Node` —
++     règles, déclarations et at-rules — lue à partir de texte avec `read[Css]`, écrite avec
++     l'interpolateur `css"…"`, jointe avec `+`, et rendue avec `show` sous un
++     `Css.Formatting` choisi par son nom dans le package `formatting`. Le sélecteur d'une
++     règle est une `SelectorList` de `Selector`, chacun étant un `Selector.Compound` de
++     parties `Selector.Simple` jointes par des `Selector.Combinator`, couvrant l'intégralité
++     de Selectors Level 4. Les valeurs des propriétés sont typées : les longueurs, les
++     angles, les durées et les fractions de grille sont des quantités dans les propres unités
++     du CSS (`4.0*Px`, `90.0*Deg`, `200.0*Ms`, `2.0*Fr`), une couleur se rend sous forme de
++     triplet hexadécimal, et la classe de types `Css.Convertible` indique quel type natif est
++     acceptable pour quel type de définition de valeur.
+
+% 2 1 0 1a257b602f1fee4e0b752b96f1b70b87
+
+% 3 1 0 0aacf5c7c1e2ef2d1ddec05a106f7565
+
+% 4 1 0 1238f33caae5a3c71f32cef7fce1a5f1
+
+% 5 1 0 0359ba011e66231d1a3b756e79ace53b
+
+% 0 1 0 0b014b2c52185b23001af5573e592715
+
+% 0 1 0 1dbeabf7faf35a0207e7efe71a3bb312
+
+% 1 1 0 028065ec59253bd214e476227eea4848
+
+% 0 1 0 03c376ea4340b39b1946e5f08dffe69c
+
+% 0 1 0 12c3817e848da3db000fb963c091dfa1
+
+% 0 1 0 02e3d7ad5804118f18c3d2c26bf57487
+
+% 0 1 0 043231e68ecb1c9e01b3b2150977aa79
+
+% 0 1 0 0d01e097593e8eb8047158bf73bd9ca1
+
+% 1 1 0 12a6040a24546d660d668b8c881464b4
+
+@ 0 4 0 1d6766da4be6647913ec34be27a1c55e
++     La lecture accumule chaque faute — propriétés inconnues, valeurs incorrectes,
++     commentaires non terminés — dans une seule `Css.Errors`, plutôt que de s'arrêter à la
++     première, si bien qu'une feuille de style se corrige en une seule passe. Les erreurs ont
++     besoin d'un `Diagnostics` dans la portée, comme
++     `errorDiagnostics.stackTracesDiagnostics`.
+
+@ 0 1 0 1c2315358367c5db196b18bacc02b83e
++     La bibliothèque est découpée en trois ensembles de sources :
+
+@ 0 13 0 01b86c7132a5e90d1935d62809b2a4fd
++     - `cataclysm.core` — `Css` et ses nœuds, ses erreurs, ses mots-clés et
++       `Css.Convertible` ; le modèle des sélecteurs (`SelectorList`, `Selector`,
++       `Selector.Compound`, `Selector.Simple`, …) ; le jeu de données des propriétés
++       (`PropertyDef`, `Css.Syntax.Matcher`, `Css.Syntax`, `ValueToken`, `Css.Outcome`) ; les
++       unités (`Px`, `Rem`, `Vw`, `Pct`, `Deg`, `Fr`, …) ; l'interpolateur `css"…"` ; les
++       extensions `classes` et `ids` ; et les packages `formatting` et `construables`. Compile
++       pour la JVM, Scala.js et Scala Native.
++     - `cataclysm.fonts` — le support `Web` et ses fournitures de polices (`Web.linked`,
++       `Web.imported`, `Web.local`, les familles génériques), `FontFace`, `Css.fontFace` et
++       `Css.fontFaces`, et l'extension `style` qui transforme une `Face` ou une `Font` de
++       phoenicia en le `Css.Style` qui la sélectionne.
++     - `cataclysm.html` — les liaisons avec honeycomb : `inlineStyle` permet à un `Css.Style`
++       d'être un attribut `style`, et `Styles` avec `cssBindings.checkedBinding` vérifie chaque
++       nom de classe et d'identifiant d'un template par rapport à une feuille de style du
++       classpath, pendant la compilation du code.
+
+@ 0 5 0 02e17f91ed1c8d1913eef9d1ee919f45
++     Tout est exporté vers le package parapluie `soundness`. Les packages `formatting`,
++     `construables` et `cssBindings` fusionnent avec ceux du package parapluie, et leurs
++     givens sont importés par leur nom, puisque `import soundness.*` n'importe pas les
++     givens : un programme écrit `import formatting.indentedCssFormatting` (ou
++     `compactCssFormatting`) avant de rendre une feuille de style, et
++     `import cssBindings.checkedBinding` pour activer la vérification des noms de classes.
+
+% 0 1 0 07ce35ed5adcf912137e4969eb82aa49
+
+% 0 1 0 1e76a5bc6f0eb468009d699aed48f969
+
+% 0 1 0 0dd1f832fb8c066609e118cb295c1e2f
+
+% 0 1 0 1b8b5a251a8376950c2b1b40128db44e
+
+% 0 1 0 127fa8577891928b1c4c2f045c784deb
+
+% 0 1 0 1bd33b1ba6cc0bb10f3bb8f198e4cf9e
+
+% 0 1 0 05d54a31471a1d230b48892305a6d3ce
+
+@ 0 1 0 01bbbd690e12eb2c000782917ac32410
++ entry .Css
++   info
++       une feuille de style : une liste de règles, de déclarations et d'at-rules, lue, écrite,
++       jointe et rendue
+
+@ 0 7 0 060d5a241493446d03801e528c95f325
++   detail
++       Un `Css` est une feuille de style sous forme de valeur : ses `#rules` sont des
++       `Css.Node`, chacun étant une règle avec une `SelectorList` analysée et un corps, une
++       déclaration d'une propriété et de sa valeur, ou une at-rule avec son nom, son prélude et
++       son corps optionnel. On le construit en lisant du texte (`.aggregable`), avec
++       l'interpolateur `css"…"`, avec `Css.fontFace` à partir d'une police, ou directement à
++       partir de nœuds ; deux feuilles de style se joignent avec `+` (`.addable`) en une seule
++       contenant les deux listes de règles.
+
+% 2 1 0 1192de110b3c8e55022837b6be00015a
+
+% 3 1 0 037ba08fce5d53300def16d5525d07f9
+
+% 4 1 0 11ea339f5674227e12ee30f3903320c4
+
+% 5 1 0 0bb9f456f3aefe10058c9f2af9eaf66f
+
+% 1 1 0 08f6eccee8d2c96b1f8e7d0b180960c8
+
+% 0 1 0 1ed2830211ce9d8a004a8e9f2cfe0fab
+
+% 0 1 0 0dee864c9f6372d519615db2552f2fde
+
+% 0 1 0 18f2111631ed00fe0d4cff22198faeec
+
+% 0 1 0 13d5fd7b18071a781219a5be4f3dc8f0
+
+% 1 1 0 01470bc32e860e400e2b8e5fcc272953
+
+@ 0 7 0 1c83e5cb6e6ca54f02bb0d5395786c47
++       La lecture valide chaque déclaration selon la grammaire de la propriété et accumule
++       chaque problème dans une `Css.Errors`, levée une seule fois à la fin. Le rendu passe par
++       le `Css.Formatting` dans la portée — `formatting.indentedCssFormatting` place chaque
++       règle et chaque déclaration sur sa propre ligne indentée,
++       `formatting.compactCssFormatting` supprime tout caractère non essentiel — sous forme de
++       `show` (`.showable`), de `Stream[Text]` paresseux (`.streamable`), ou de corps HTTP
++       `text/css` (`.media`). Dans tous les styles, un `;` suit chaque déclaration, y compris
++       la dernière.
+
+@ 0 4 0 1907c4649b564c571d2efdb8bc8b97ec
++       Le compagnon contient aussi les mots-clés globaux du CSS (`.inherit`, `.initial`,
++       `.unset`, `.revert`, `.revertLayer`) et les mots-clés de couleur (`.transparent`,
++       `.currentColor`) sous forme de valeurs typées pour la substitution, le constructeur
++       `.Style` pour les styles en ligne, la classe de types `.Convertible`, le type de
++       grammaire `.Syntax` et les `.Error`.
+
+% 0 1 0 155d931f148ccac60ccc59a389e97b03
+
+% 1 1 0 11991a81ee71faaf17bb6a7ddc29ba8b
+
+% 0 1 0 1f88529129e197f613ba16389aeb2267
+
+% 0 1 0 11f9dd4bdb9d48741676827e28912b4a
+
+@ 0 1 0 11a25e78d114680316a131ce4bf31a98
++   entry .aggregable
++     info
++         lit une feuille de style à partir de texte, en accumulant chaque `Css.Error` dans une
++         seule `Css.Errors`
+
+@ 0 6 0 0565370b690c9589087ac8b6c7bb428a
++     detail
++         Le given qui permet de lire du texte avec `read[Css]`. L'analyse valide chaque
++         déclaration — la propriété doit être connue, et sa valeur doit satisfaire la grammaire
++         de la propriété — et s'exécute sous un `track`, si bien que chaque `Css.Error` est
++         accumulée plutôt que d'arrêter l'analyse, et qu'une seule `Css.Errors` les contenant
++         toutes est levée à la fin. Une feuille de style entièrement valide donne le `Css` sans
++         rien lever. Il a besoin d'une `Tactic[Css.Errors]` et d'un `Diagnostics` dans la portée.
+
+@ 2 1 0 1b9332c42957904f0b8a52b91ac0fa0e
++         ```scala
+
+@ 3 1 0 021aa0602baf40e31740726eca48e9e2
++         import soundness.*
+
+@ 4 1 0 1b6c37c8e9c750061658a3f80f339956
++         import strategies.throwUnsafely
+
+@ 5 1 0 0490e819ae59e9cb0b9efea8e42aa841
++         import errorDiagnostics.stackTracesDiagnostics
+
+@ 0 1 0 11027fce74fad78903fa89ddaa262c78
++         t"a { color: red }".read[Css]
+
+@ 0 1 0 0b8f2e07d4c19ddc0a13c131ad26c2ae
++         capture[Css.Errors](t"a { colour: red; width: wide }".read[Css]).errors.map(_.reason)
+
+@ 0 1 0 0cb1ef552c2a79fb03dea1870d33cecb
++         // List(Css.Error.Reason.UnknownProperty(t"colour"), Css.Error.Reason.BadValue(t"width", t"wide"))
+
+@ 1 1 0 013e3e092d67b4221e995dfff9b76907
++         ```
+
+@ 0 3 0 0fb521074a6d352c05fdd57730591772
++         Les propriétés personnalisées (`--name`) sont acceptées sans définition. Une valeur
++         dont la grammaire utilise un type que le vérificateur n'implémente pas est signalée comme
++         `UnsupportedValue` plutôt que d'être acceptée en silence.
+
+@ 0 1 0 0d83991cdb67bf7703c6e46bda303374
++   entry .Formatting
++     info
++         la façon dont se rend une feuille de style : avec sauts de ligne et indentation, ou de
++         manière compacte
+
+@ 0 8 0 1c70c8102bd99b661396b2e685895c9f
++     detail
++         Un `Css.Formatting` indique si le rendu place chaque règle et chaque déclaration sur sa
++         propre ligne indentée (`#newlines`) et s'il ajoute les espaces esthétiques après `:` et
++         avant `{` (`#spaces`). Les instances `Showable`, `Streamable` et `Media` de `Css` en
++         prennent chacune un comme valeur contextuelle ; il doit donc y en avoir un dans la
++         portée pour rendre : les deux standard sont `formatting.indentedCssFormatting` (les deux
++         activés) et `formatting.compactCssFormatting` (les deux désactivés), importés par leur
++         nom, et `Css.Formatting(newlines, spaces)` en construit n'importe quel autre.
+
+% 2 1 0 16d8090b072a1659081c318d43984b3a
+
+% 3 1 0 0e5accbf7522106c03ee770545cae12c
+
+% 4 1 0 07da06d43d5ef99f056db17ea60481ad
+
+% 5 1 0 092aa883f49df90d1957174fe543e7a8
+
+% 0 1 0 0795dadc4571c07c10992f14d10d7e93
+
+% 2 1 0 164af54cf5c4578d1e15fa6708660f91
+
+% 0 1 0 185126c59ec9115e040f741858f0fdd6
+
+% 0 1 0 146ddad6baf7650a000763f5d824ad52
+
+% 2 1 0 07dbd12b8e200b930361b5d7b1cd3659
+
+% 0 1 0 036c2537c44262f718d7ae0561bb0e09
+
+% 0 1 0 0bf685bf123631011095e3c27eac8995
+
+% 1 1 0 1a058ef924b516fb19264eb10f3447b9
+
+% 0 1 0 13421b03ae58513a079ac2c7eb922fd2
+
+@ 0 1 0 0543b04a6332d251029003a46eecf736
++     entry .apply
++       info
++           une mise en forme avec les choix de sauts de ligne et d'espacement donnés
+
+@ 0 1 0 0d4fbdefcc3b25560a4bb555e92ab430
++     entry #newlines
++       info
++           indique si chaque règle et chaque déclaration va sur sa propre ligne indentée
+
+@ 0 1 0 0c57a7f2de39349f0f9679edd19ae293
++     entry #spaces
++       info
++           indique si une espace suit chaque `:` et précède chaque `{`
+
+@ 0 1 0 031b3fbbdd7d0e34061ae92c0e3e2f31
++   entry .Node
++     info
++         un nœud d'une feuille de style : une règle, une déclaration ou une at-rule
+
+@ 0 7 0 06eb8f6f0bd8b7d20e419ab83db64350
++     detail
++         Les trois sortes de nœuds que contient une feuille de style, sous forme d'énumération.
++         `Rule(selector, body)` est une règle avec une `SelectorList` analysée et un corps
++         composé d'autres nœuds ; les règles imbriquées sont donc représentées directement.
++         `Declaration(property, value)` est une propriété et sa valeur, toutes deux sous forme de
++         texte, commentaires supprimés et espaces normalisés. `At(name, prelude,
++         body)` est une at-rule, avec son nom (sans le `@`), le texte de son prélude et son
++         corps, qui vaut `Unset` pour une at-rule d'instruction comme `@import url("x.css");` et
++         une liste de nœuds pour une at-rule de bloc comme `@media screen { … }`.
+
+@ 2 1 0 1fdaefcaa7f496721a3cfa6fe2e68850
++         ```scala
+
+@ 3 1 0 16d9e95b9a6a970714a8134eb2b536d4
++         import soundness.*
+
+@ 0 1 0 06a707affab00f8014cd1d73980e3f8e
++         val sheet = Css(List(
+
+@ 0 1 0 09d1e48e204a39571e6f9116092ab652
++           Css.Node.Rule(SelectorList(List(Selector(Unset, Selector.Compound(List(Selector.Simple.Type(Unset, t"a"))), Nil))),
+
+@ 0 1 0 0fedb8efbdb4e9ea092ef59013b0b202
++             List(Css.Node.Declaration(t"color", t"red"))),
+
+@ 0 1 0 15315b59c8776cd11622e421a63d394c
++           Css.Node.At(t"import", t"url(\"x.css\")", Unset)))
+
+@ 1 1 0 1a47bb0d039feb2e00dca2c42ff485b6
++         ```
+
+@ 0 2 0 0071425b7e1220381e28675cc2230a5e
++         Les nœuds construits directement ne sont pas validés ; `read[Css]` et `css"…"` sont les
++         voies vérifiées.
+
+@ 0 1 0 181e668a1188e19c1fbdb6926696fd48
++   entry .streamable
++     info
++         rend une feuille de style paresseusement sous forme de `Stream[Text]`, pour la servir
+
+@ 0 4 0 08da8a02131352e8129f33b97403f1f9
++     detail
++         Le given qui permet de diffuser un `Css` morceau par morceau, si bien qu'une grande
++         feuille de style n'est jamais détenue sous forme d'un seul texte : un producteur écrit le
++         rendu depuis une tâche pendant que le flux est consommé. Il a besoin d'un `Monitor`,
++         d'un `Probate` et d'un `Css.Formatting` dans la portée, et s'associe à `.media` pour
++         servir une feuille de style comme réponse HTTP.
+
+@ 0 1 0 038c3ac7b7e3b59313c93e376f8b2f00
++   entry .showable
++     info
++         rend une feuille de style sous forme de texte, sous le `Css.Formatting` dans la portée
+
+@ 0 5 0 0397260535200ba8068d41aea3b48d4b
++     detail
++         `css.show` écrit toute la feuille de style dans un seul `Text`. La disposition des
++         règles et des déclarations est celle de la mise en forme :
++         `formatting.indentedCssFormatting` donne une règle par bloc avec une indentation de deux
++         espaces et un saut de ligne final, `formatting.compactCssFormatting` donne
++         `a{color:red;}`. Le rendu est réversible : une feuille de style relue à partir de son
++         propre rendu est égale à l'originale.
+
+@ 0 1 0 18da09177ec09db108079c895ec45c39
++   entry .interpolator
++     info
++         l'`Interpolable` derrière `css"…"` ; voir `cataclysm.css`
+
+@ 0 4 0 03a5bb22e1a19e1b1ff9d01ca2886052
++     detail
++         Le given d'interpolateur contextuel qui développe un littéral `css"…"`. Son type de
++         résultat est transparent : un littéral composé de simples déclarations est un
++         `Css.Style`, et un littéral contenant des sélecteurs ou des at-rules est un `Css`. Il
++         n'est pas appelé directement ; l'extension `css` sur `StringContext` en est la surface.
+
+@ 0 1 0 0c6db2be1395423004172b1da6133ae4
++   entry .addable
++     info
++         `css + css` : une feuille de style contenant les deux listes de règles, dans l'ordre
+
+@ 0 2 0 059c34b457e4326e1b8183e1b196b2b5
++     detail
++         Le given `Addable` : `css"a { … }" + css"b { … }"` est une feuille de style contenant
++         les deux règles, et `stylesheet + Css.fontFace(font)` ajoute les at-rules d'une police à
++         la suite des propres styles d'une page.
+
+@ 0 1 0 0e6a4205fb70cb4319c70f976af6b948
++   entry .media
++     info
++         le type de média d'une feuille de style pour HTTP : `text/css; charset=UTF-8`
+
+@ 0 2 0 1ac416b4947ebcf70683f62928d1188e
++     detail
++         Le given `Media`, pour qu'un `Css` serve de corps de réponse avec le bon type de contenu,
++         diffusé au moyen de `.streamable`.
+
+@ 0 1 0 06738195d66f43c01f5bf8aeca8810db
++   entry .Style
++     info
++         un ensemble de déclarations pour un attribut en ligne `style="…"`, vérifié pendant la
++         compilation du code
+
+@ 0 6 0 09d23b322981818a0f46448b1fa48a9c
++     detail
++         Un `Css.Style` est une liste de paires propriété–valeur sans sélecteur, pour l'attribut
++         `style` d'un élément. On le construit avec des arguments nommés, où chaque nom est un
++         nom de propriété en camelCase (converti en kebab-case : `borderWidth` donne
++         `border-width`) et chaque valeur est de n'importe quel type doté d'un `Css.Convertible`
++         dont la propriété accepte le type de définition de valeur — un `4.0*Px` pour une
++         longueur, une couleur pour une couleur, `Css.inherit` partout :
+
+% 2 1 0 052616ee7334d3fe1ab9d356cc877ebe
+
+% 3 1 0 1a7760d08c542f001cff893743e0eb2e
+
+% 0 1 0 16234519696ec00e19150ecf53ccdaa9
+
+% 0 1 0 0dfaedb6e96a5e430fdaf862cca82b47
+
+% 0 1 0 18451809714387020aa23527d0361fc5
+
+% 0 1 0 17bcb3d80c1cb32e1456aecc190233e1
+
+% 0 1 0 0653ac124c80f6d51bc1bc3b0234670c
+
+% 0 1 0 17891a815bc686ad1488bcff35ecdfcb
+
+% 0 1 0 0fd15cbe0f8c1bba0dfb1e0106dde0bd
+
+% 1 1 0 13ac435a43806ee3026e226bf1224557
+
+@ 0 7 0 1293d4cb4743278e0980612f9fbfe003
++         Une propriété que le jeu de données ne connaît pas est une erreur de compilation,
++         _cataclysm: `name` is not
++         a known CSS property_, et une valeur de la mauvaise sorte en est une autre, _cataclysm: a
++         `length` value is not valid for the `color` property_. Un littéral `css"…"` composé de
++         simples déclarations (`css"color: red; width: 4px"`) est aussi un `Css.Style`, et deux
++         styles se joignent avec `+`. Avec `cataclysm.html`, un `Css.Style` est accepté
++         directement comme attribut `style` de honeycomb (`inlineStyle`) ; l'extension `style` de
++         `cataclysm.fonts` en construit un qui sélectionne une `Face` de phoenicia.
+
+% 0 1 0 014b1384a91ba80514911d6179a23d50
+
+% 0 1 0 07ba80a1554ce3471aded571a7f4d248
+
+@ 0 1 0 0a14b338c3b3ed651672b66394c191d5
++     entry .of
++       info
++           un style à partir de paires propriété–valeur déjà rendues, non vérifié
+
+@ 0 3 0 16011979b2f6770d1be6844c8bd62e0a
++       detail
++           `Css.Style.of(List(t"font-family" -> t"\"Inter\""))` construit un style à partir de
++           paires de texte sans vérification ; c'est la fabrique qu'émettent la macro
++           `Css.Style(…)` et l'extension `style` des polices, et le moyen de transporter une
++           déclaration que le jeu de données ne peut pas vérifier.
+
+@ 0 1 0 1412016f2570fe6a08dda3bbbcd46e17
++     entry .applyDynamic
++       info
++           `Css.Style()` : le style vide
+
+@ 0 1 0 05dabc7a2a5ab4cc1b3c410b49300a5b
++     entry .applyDynamicNamed
++       info
++           `Css.Style(property = value, …)` : le constructeur vérifié à arguments nommés
+
+@ 0 4 0 06c7ec842fa0eab5175a25dd54a186e3
++       detail
++           La macro derrière `Css.Style(borderWidth = 2.0*Px, color = red)` : chaque nom est lu
++           comme un littéral, reconverti du camelCase en sa propriété CSS, et le
++           `Css.Convertible` de la valeur est invoqué ; la propriété doit exister dans le jeu de
++           données et doit accepter une valeur du type du convertible, sinon le code ne compile
++           pas.
+
+@ 0 1 0 02ffc95202935a131f7cc44cb1af72c0
++     entry .addable
++       info
++           `style + style` : un style contenant les deux listes de propriétés, dans l'ordre
+
+@ 0 1 0 136cfef8eb115c9117e2b7d1af9721e0
++     entry #properties
++       info
++           les paires propriété–valeur, chacune déjà rendue sous forme de texte
+
+@ 0 1 0 1179f78f983251ed028ede7141fa8740
++     entry #text
++       info
++           les déclarations sous forme de texte d'attribut `style` : `color: #ff0000; width: 4px`
+
+@ 0 1 0 1bcbfe278fc561de13eaf17619a6b6cf
++       detail
++           Chaque paire est rendue sous la forme `name: value`, jointe par `; ` et sans
++           point-virgule final.
+
+@ 0 1 0 1153e74e051c2de90d588474312e32f4
++   entry .Value
++     info
++         une valeur CSS rendue, taguée par son type de définition de valeur,
++         `Css.Value of "length"`
+
+@ 0 7 0 1e26f401082a52f61aef9b74f2e5a799
++     detail
++         Un `Css.Value` est du texte déjà rendu pour le CSS, dont le membre de type `Topic` nomme
++         le type de définition de valeur qu'il satisfait : `"length"`, `"color"`, `"time"`,
++         `"angle"`, `"percentage"`, `"number"`, `"integer"`, `"flex"`, ou `"*"` pour les
++         mots-clés globaux du CSS. Le trait est `into` ; une valeur native dotée d'un
++         `Css.Convertible` — une quantité, une couleur, un `Int` — est donc acceptée partout où un
++         `Css.Value of` son sujet est attendu, relevée par `.converter`. `Css.Value(text)`
++         enveloppe du texte sans sujet.
+
+% 0 1 0 0d1bb26d2146bbbf0944a3085d600fa6
+
+@ 0 1 0 15b0fb065e7fe00b095d862e56f4e7ea
++     entry .apply
++       info
++           enveloppe du texte déjà rendu sous forme de valeur sans sujet
+
+@ 0 1 0 0a11811c44a508fa17208c553ab181ad
++     entry .converter
++       info
++           la `Conversion` qui élève tout type `Css.Convertible` en un `Css.Value of` son sujet
+
+@ 0 2 0 1aa2b929d9e1418219073f2fff5b2afe
++       detail
++           Un seul given générique, de sorte qu'un nouveau type convertible coûte une instance
++           `Css.Convertible` et aucune conversion qui lui soit propre.
+
+@ 0 1 0 082f8934ddf34a5b1e10f3d75e9bf739
++     entry #text
++       info
++           la valeur sous forme de texte CSS
+
+@ 0 1 0 15ed06bf293fad7c125484be671c3632
++   entry .Keyword
++     info
++         les mots-clés globaux du CSS `inherit`, `initial`, `unset`, `revert` et `revert-layer`
+
+@ 0 6 0 012f8aa16f4c463c004b3855b70f71dd
++     detail
++         Une énumération avec les cas `Inherit`, `Initial`, `Unset`, `Revert` et `RevertLayer`,
++         qui sont valides comme valeur unique de toute propriété. On les atteint par les valeurs
++         en minuscules `Css.inherit`, `Css.initial`, `Css.unset`, `Css.revert` et
++         `Css.revertLayer`, qui évitent le conflit qu'aurait un `Unset` nu avec l'`Unset` de
++         vacuous, et leur `Css.Convertible` a pour sujet `"*"` ; l'un d'eux est donc accepté pour
++         toute propriété connue dans `Css.Style(…)` ou `css"…"`.
+
+@ 0 1 0 1d44a3330c57485219d0d57a5b73d609
++   entry .ColorKeyword
++     info
++         les mots-clés de couleur `transparent` et `currentcolor`
+
+@ 0 2 0 1b327e1ede25630c16c66dd1d5e2cda2
++     detail
++         Une énumération avec les cas `Transparent` et `CurrentColor`, atteints par
++         `Css.transparent` et `Css.currentColor`, avec un `Css.Convertible` de sujet `"color"`.
+
+@ 0 1 0 19f6eb12ecd3c2d30b136f011f03c5c3
++   entry .inherit
++     info
++         le mot-clé `inherit`, comme valeur pour toute propriété
+
+@ 0 1 0 1f82a4421b462113003192148570fcf5
++   entry .initial
++     info
++         le mot-clé `initial`, comme valeur pour toute propriété
+
+@ 0 1 0 03dd8af56572de5e05e4141a688b2c9c
++   entry .unset
++     info
++         le mot-clé `unset`, comme valeur pour toute propriété
+
+@ 0 1 0 15b140dc860590ed0e0abae2cb0c6291
++     detail
++         Nommé en minuscules afin de ne pas masquer l'`Unset` de vacuous.
+
+@ 0 1 0 01d0dc83bcb7f13904e9ab5c69dff60e
++   entry .revert
++     info
++         le mot-clé `revert`, comme valeur pour toute propriété
+
+@ 0 1 0 01272dd6d1f767aa14fa9c702fc3219f
++   entry .revertLayer
++     info
++         le mot-clé `revert-layer`, comme valeur pour toute propriété
+
+@ 0 1 0 18a3220dfb6e2f1a09f1c3bc8619e202
++   entry .transparent
++     info
++         le mot-clé de couleur `transparent`
+
+@ 0 1 0 02f1ac7f5eb9bdf3188da436cc619c5b
++   entry .currentColor
++     info
++         le mot-clé de couleur `currentcolor`
+
+@ 0 1 0 0bebdea0980226ef026fb2ed427d60e0
++   entry .Error
++     info
++         une faute dans du texte CSS, avec sa ligne, sa colonne et sa raison
+
+@ 0 7 0 08bc6a7b844ec34506ee4e8d771d9c56
++     detail
++         Erreur `↯/s.90.1` : _invalid CSS at line `n` column `n`: `reason`_, avec le propre numéro
++         de la raison comme sous-code. Une erreur est levée pour chaque problème trouvé lors de la
++         lecture d'une feuille de style ou de l'analyse d'un sélecteur, d'une grammaire ou d'une
++         valeur ; `read[Css]` les rassemble toutes dans une `Css.Errors`, tandis que
++         `SelectorList.parse` et `Css.Syntax.Matcher.check` lèvent une seule `Css.Error` au moyen
++         d'une `Tactic[Css.Error]`. En construire une nécessite un `Diagnostics`.
+
+% 2 1 0 0b47c26dd99ca38b00c23c0d0be03b56
+
+% 3 1 0 0318b808bd7a64da0f21f587e04ec87a
+
+% 4 1 0 17f21349a82b947400acffadb3ffc5e5
+
+% 5 1 0 1aaf28139e72c02c0515b86ace202b69
+
+% 0 1 0 008c4875626e08c00a3d5719dc6185fc
+
+% 0 1 0 0777326cdce2c61100e39c530edf78b4
+
+% 1 1 0 118bbb0ba9aaf01504e69832c9d226ea
+
+% 0 1 0 199d8570e7eb59dc0e0dc55a8037a8e8
+
+@ 0 1 0 197d6754ae7f5c75116d7cc176416a9e
++     entry .Reason
++       info
++           la raison pour laquelle le CSS était invalide : les neuf sortes de fautes, chacune
++           numérotée
+
+@ 0 2 0 17256ddf1134bd3906d871310c61269d
++       detail
++           Une `Reason` est une `Clarification` dotée d'un `#number`, qui devient le sous-code de
++           l'erreur :
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 13 0 0da9ca152cfa7d5f1794877bb24751b9
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `UnterminatedComment`  1  _a comment was not terminated_
++           row  `UnterminatedString`  2  _a string literal was not terminated_
++           row  `UnexpectedEnd`  3  _the input ended before a rule was closed_
++           row  `UnexpectedChar(char)`  4  _the character `char` was not expected here_
++           row  `EmptySelector`  5  _a selector was expected but none was found_  une règle sans rien avant son `{`
++           row  `UnknownProperty(name)`  6  _`name` is not a recognized CSS property_
++           row  `BadValue(property, value)`  7  _`value` is not a valid value for the `property` property_
++           row  `UnsupportedValue(property, types)`  8  _the value of `property` uses an unsupported type_  la grammaire de la propriété utilise des types de valeurs que le vérificateur n'implémente pas, listés dans `types`
++           row  `InvalidName(name)`  9  _`name` is not a valid CSS identifier_  une classe ou un identifiant
+
+% 1 1 0 1f8f5da489b3945f063fc0e11ac04b21
+
+@ 0 1 0 0c0e3478c457ad9105f746e627f597ab
++       entry .communicable
++         info
++             rend chaque raison sous forme de son message
+
+@ 0 1 0 16a122775a43690314a76c360f2bbb62
++       entry #number
++         info
++             le numéro de la raison, de 1 à 9, qui est le sous-code de l'erreur
+
+@ 0 1 0 0f15b39ee135ee87069bc475da9cbd13
++     entry #reason
++       info
++           ce qui n'allait pas
+
+@ 0 1 0 147d6cf033451f571580b5bc72180ed9
++     entry #line
++       info
++           la ligne de la faute, sous forme d'`Ordinal`
+
+@ 0 1 0 196a1321e458b29201cdc9dfd9d2941a
++     entry #column
++       info
++           la colonne de la faute, sous forme d'`Ordinal`
+
+@ 0 1 0 12532b84dbd620fa0f235b903eef8374
++   entry .Errors
++     info
++         chaque `Css.Error` trouvée lors de la lecture d'une feuille de style, levées en une fois
+
+@ 0 6 0 0bb70d0b53f51e8306dd7e657703e315
++     detail
++         _the CSS contained `n` errors_. Levée par `read[Css]` (`Css.aggregable`) après l'analyse
++         de toute la feuille de style, avec chaque faute dans `#errors` dans l'ordre du document,
++         si bien qu'une feuille de style comportant plusieurs déclarations incorrectes les
++         signale toutes à la fois. Le type est au pluriel parce que signaler une faute à la fois
++         pour un document qui en comporte plusieurs n'est pas la forme qui convient à un linter
++         ou à une étape de build.
+
+% 2 1 0 0a6793c37fe781cc0e584a3f231ea530
+
+% 3 1 0 0a94eec2f61942751c3081d407992261
+
+% 4 1 0 010ad11590df81ae06dc7def35fd0eff
+
+% 5 1 0 04f86e3f7925cbe61596c696efbe5b48
+
+% 0 1 0 1761800b0ad8298d04d13d53927462e2
+
+% 1 1 0 1d1920b13ed0c33118d47c289a882c7f
+
+@ 0 1 0 05271a917f597a7004d44f3da9e7674e
++     entry #errors
++       info
++           les fautes, dans l'ordre du document
+
+@ 0 1 0 0961da300cbd64e40e7eadeebebbcf4a
++     entry #+
++       info
++           cet agrégat avec une erreur de plus ajoutée à la fin
+
+@ 0 1 0 1411ff659bba072a01438d4ece53a02b
++   entry .Convertible
++     info
++         les types natifs qui se rendent en valeurs CSS, et de quel type de définition de valeur
+
+@ 0 8 0 0f1eb9c0d409c8d908dbc3259e9c9178
++     detail
++         `T is Css.Convertible of "length"` indique qu'un `T` se rend en texte CSS (`#value`)
++         satisfaisant le type de définition de valeur `<length>`. C'est la classe de types
++         derrière chaque substitution dans `css"…"` et chaque argument de `Css.Style(…)` : la
++         macro invoque l'instance pour le propre type de la valeur, lit son `Topic`, et vérifie
++         que la propriété accepte une valeur de ce type ; `css"a { color: $length }"` ne compile
++         donc pas. Une seule `Conversion` générique (`Css.Value.converter`) élève tout type
++         convertible en un `Css.Value of Topic` ; un nouveau type coûte donc une instance ici.
+
+@ 0 6 0 12b112d9180208491c5a14e8f8c401ca
++         Les instances du compagnon couvrent les unités CSS — toute `Quantity` dans les unités
++         `Pixels`, `Rems`, `Exs`, `Chs`, de zone d'affichage et de pourcentage, et les propres
++         `Ems`, `Metres`, `Inches`, `Points`, `Picas` et `Seconds` de quantitative — les unités
++         d'angle et de fraction, `Int` et `Double`, les mots-clés, et toute couleur dotée d'une
++         instance `Chromatic`. Un nombre se rend sans `.0` redondant (`12px`, et non `12.0px`),
++         arrondi à six décimales pour qu'une longueur physique convertie ne laisse pas fuir de
++         bruit de virgule flottante.
+
+% 2 1 0 0dd59ffc2177ae15191a1f021854832d
+
+% 3 1 0 1f37bb86c8f3d38e121d1cf3260d3787
+
+% 0 1 0 1d1dd5f871464c8418e211e5e71ffd1f
+
+% 0 1 0 1c49fccedb6a18f1181f92c8c2c3a538
+
+% 0 1 0 19b19d14f72935330e83da7dcff433c5
+
+% 0 1 0 13a1763fa87e92f118c57630aa45137a
+
+% 1 1 0 0251985269c0a3a3049d78b4ad74a492
+
+@ 0 4 0 01fac1821cb5ab43154e46b80ef9df22
++         Le sujet d'une instance définie par l'utilisateur doit être un sujet que nomme la
++         grammaire de la propriété : `"length"`, `"color"`, `"percentage"`, `"number"`,
++         `"integer"`, `"time"`, `"angle"` ou `"flex"` sont confrontés à la grammaire ; tout
++         autre sujet est accepté sans vérification.
+
+% 0 1 0 1386a1370919716110b2b850716783a6
+
+% 0 1 0 07a2e320d6a2e7af1b5e1f20fb2bc4a2
+
+@ 0 1 0 12636d34539954da17354c142a2ff20d
++     entry .pixels
++       info
++           une quantité `Pixels` comme `<length>` : `4px`
+
+@ 0 1 0 1db48d80ae0b37170e41825454500126
++     entry .ems
++       info
++           une quantité `Ems` (de quantitative) comme `<length>` : `2em`
+
+@ 0 1 0 1e1e782363398b701e382e1c1b65cf57
++     entry .rems
++       info
++           une quantité `Rems` comme `<length>` : `2rem`
+
+@ 0 1 0 10cd0c0176dd1a1c111f5a58718d120c
++     entry .exs
++       info
++           une quantité `Exs` comme `<length>` : `1ex`
+
+@ 0 1 0 06c1d30c4f7deb281a7a8385644c4799
++     entry .chs
++       info
++           une quantité `Chs` comme `<length>` : `40ch`
+
+@ 0 1 0 01c73e22c5ecc4f81e3eae63dd632a32
++     entry .vws
++       info
++           une quantité `ViewportWidths` comme `<length>` : `100vw`
+
+@ 0 1 0 01c9a268996da34a12d873e871c25c0e
++     entry .vhs
++       info
++           une quantité `ViewportHeights` comme `<length>` : `100vh`
+
+@ 0 1 0 134a30c0f49ae64908f345deaa2d80b1
++     entry .vmins
++       info
++           une quantité `ViewportMins` comme `<length>` : `50vmin`
+
+@ 0 1 0 0724fc9422365db214a7e6b1d7ed4428
++     entry .vmaxes
++       info
++           une quantité `ViewportMaxes` comme `<length>` : `50vmax`
+
+@ 0 1 0 176de6badd4db6861b2350807d7a1d89
++     entry .metres
++       info
++           toute longueur physique (une quantité `Metres`) comme `<length>`, en `mm`
+
+@ 0 3 0 11b1ea44b180e23212aaf53ce8364567
++       detail
++           Une quantité `Distance` — écrite `3.0*Cm`, `10.0*Mm`, `1.0*Metre` ou toute longueur de
++           quantitative — se rend en millimètres, puisque le CSS lit indifféremment `cm`, `mm` et
++           `m` : `3.0*Cm` donne `30mm`. Les pouces, les points et les picas gardent leurs propres
++           unités.
+
+@ 0 1 0 1a8870862085d1da1c8d33eb7d280bcc
++     entry .inches
++       info
++           une quantité `Inches` comme `<length>` : `1in`
+
+@ 0 1 0 1cf2bde74549a9bf0386609ec7fcb915
++     entry .points
++       info
++           une quantité `Points` comme `<length>` : `12pt`
+
+@ 0 1 0 10dbe244fe7ef2b8138c208476cb1d19
++     entry .picas
++       info
++           une quantité `Picas` comme `<length>` : `1pc`
+
+@ 0 1 0 081b0c29951b935d14185b75ef2039f8
++     entry .percents
++       info
++           une quantité `Percents` comme `<percentage>` : `50%`
+
+@ 0 1 0 186f9c6d894514be1e0da4631d343a2d
++     entry .chromatic
++       info
++           toute couleur dotée d'une instance `Chromatic` comme `<color>`, rendue en hexadécimal
+
+@ 0 6 0 018d82727a6b01671b0ef1cccd634b95
++       detail
++           Couvre le `Chroma` d'anticipation et toutes les formes de couleur d'iridescence
++           (`Srgb`, `Hsl`, `Cielab`, …, et le littéral `rgb"#3344ff"`) au moyen de leur instance
++           `Color.chromatic`, chacune rendue sous forme de triplet hexadécimal à six chiffres à
++           partir de ses canaux rouge, vert et bleu, bornés à 0–255. L'instance est recherchée pour
++           tout supertype de la couleur, si bien qu'une classe de couleur qui tient son
++           `Chromatic` de sa forme est trouvée lorsque `Css.Style(…)` demande le type exact de la
++           valeur.
+
+@ 0 1 0 0d455e5209ddf659183e886ad5fcbd6c
++     entry .seconds
++       info
++           toute durée (une quantité `Seconds`) comme `<time>`, en `ms`
+
+@ 0 1 0 09debc74b627d6410b53dbecb0bb9f83
++       detail
++           `200.0*Ms` donne `200ms` ; `1.5*S` donne `1500ms`.
+
+@ 0 1 0 07c3de6b28a1bd371b8e5764c3ee9f0a
++     entry .degrees
++       info
++           une quantité `Degrees` comme `<angle>` : `90deg`
+
+@ 0 1 0 064650f0edd7f739101648cae4b55920
++     entry .radians
++       info
++           une quantité `Radians` comme `<angle>` : `1rad`
+
+@ 0 1 0 18b8759e8664519a1b8fc6643a58fbdc
++     entry .turns
++       info
++           une quantité `Turns` comme `<angle>` : `0.5turn`
+
+@ 0 1 0 0956bfd15a20ca9a003aeb54c5d1b69c
++     entry .flexes
++       info
++           une quantité `Flexes` comme `<flex>` : `2fr`
+
+@ 0 1 0 0775c102537c9c261a5f513b2d301ce3
++     entry .integer
++       info
++           un `Int` comme `<integer>`
+
+@ 0 1 0 0e1dcd0f0bf6aa591e9df843987d7119
++     entry .decimal
++       info
++           un `Double` comme `<number>`, sans `.0` redondant
+
+@ 0 1 0 071fbe2726b6dcba05e3ef5efc471494
++     entry .keyword
++       info
++           un `Css.Keyword` sous sa forme CSS, valide pour toute propriété
+
+@ 0 1 0 0b878149529911850b6166c309bc5b69
++       detail
++           Le sujet est `"*"`, que la vérification des propriétés accepte pour toute propriété
++           connue.
+
+@ 0 1 0 18562c19be313ffd0d674ae7db324a20
++     entry .colorKeyword
++       info
++           un `Css.ColorKeyword` sous la forme `transparent` ou `currentcolor`
+
+@ 0 1 0 0769738dd53b4e0e1765647a845b7abe
++     entry #value
++       info
++           rend une valeur native sous forme de texte CSS
+
+@ 0 1 0 11c3dc4fedf4eb1313c3adac212c84fd
++   entry .Syntax
++     info
++         la grammaire des valeurs d'une propriété, dans la syntaxe de définition de valeurs du CSS,
++         sous forme d'arbre
+
+@ 0 5 0 1c5aeac6cacd989e0949c0d841eb7bd5
++     detail
++         La forme analysée d'une chaîne en syntaxe de définition de valeurs comme `<line-width> ||
++         <line-style> || <color>` — la notation dans laquelle sont décrites les valeurs permises
++         de chaque propriété dans le jeu de données MDN — à laquelle `Css.Syntax.Matcher`
++         confronte une valeur concrète. `PropertyDef#grammar` est la `Css.Syntax` d'une
++         propriété.
+
+@ 0 10 0 05030362c8d802a01cc399a85cb549db
++         Les cas suivent la notation. `Keyword(name)` est un identifiant littéral comme `auto` ;
++         `Literal(token)` un jeton littéral comme `/`, `,` ou un `'+'` entre guillemets ;
++         `Type(name, bounds)` un `<length>` ou un `<integer [1,4]>`, les bornes étant gardées
++         brutes ; `Property(name)` une référence à la grammaire d'une autre propriété,
++         `<'border-width'>` ; `Function(name, body)` une notation fonctionnelle,
++         `rgb( <number>#{3} )` ; `Sequence(terms)` la juxtaposition, dans l'ordre ;
++         `OneOf(options)` le combinateur `|` (exactement un) ; `AnyOf(terms)` le combinateur `||`
++         (un ou plusieurs, dans n'importe quel ordre) ; `AllOf(terms)` le combinateur `&&` (tous,
++         dans n'importe quel ordre) ; `Repeated(term, min, max,
++         separated)` les multiplicateurs `?`, `*`, `+`, `{m,n}` et `#` (séparés par des
++         virgules), `max` valant `Unset` en l'absence de limite ; et `Mandatory(term)` le
++         multiplicateur `!`.
+
+% 2 1 0 10169b8d97ea61760408678017d39302
+
+% 3 1 0 14a6b9e9fcaa1c9a13ee179a4639fdaa
+
+% 0 1 0 1c8a1f422922e8240f1896c3e015d21a
+
+% 1 1 0 1b3dbba6fc98b72a17aeda64f24ddda6
+
+@ 0 2 0 02aa6566c5711204046e89dcb59441fb
++         Il se trouve sous `Css` plutôt qu'au niveau supérieur afin de ne pas entrer en conflit
++         avec le `Syntax` de stenography dans le package parapluie.
+
+% 0 1 0 1d0446be19eb7adf0e482ef490a27b14
+
+% 0 1 0 026b7fb46772449f1ed46aae6ce41462
+
+@ 0 1 0 0c13a2fd7ac59c7b11ae560a824ae162
++   entry #rules
++     info
++         les nœuds de la feuille de style, dans l'ordre
+
+@ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
++     entry .Matcher
++       info
++           vérifie la valeur d'une propriété selon sa grammaire : valide, invalide ou non prise en
++           charge
+
+@ 0 12 0 03ba8c554e9ebdd10a68a94f645d2d28
++       detail
++           `Css.Syntax.Matcher.check(property, value)` découpe la valeur en jetons (`ValueToken`)
++           et la confronte, avec retour arrière, à la `Css.Syntax` de la propriété, en résolvant
++           les `<type>` composites à partir du jeu de données MDN `syntaxes.json` et en vérifiant
++           les primitives feuilles — `<length>`, `<percentage>`, `<number>`, `<integer>`,
++           `<angle>`, `<time>`, `<resolution>`, `<frequency>`, `<flex>`, `<ratio>`, `<string>`,
++           `<url>`, `<hex-color>`, les types d'identifiants — au niveau des jetons. Le résultat est
++           un `Outcome` : `Valid`, `Invalid`, ou `Unsupported(types)` lorsque la grammaire atteint
++           un type que le vérificateur n'implémente ni comme composite ni comme primitive, si bien
++           qu'un recoin non implémenté de la grammaire est signalé plutôt qu'accepté ou rejeté en
++           silence. C'est la vérification qu'appliquent `read[Css]`, `css"…"` et `Css.Style(…)` à
++           chaque déclaration.
+
+@ 0 4 0 1e201df391ff98131a03b939dcca8516
++           Une valeur contenant une fonction de substitution arbitraire, `var()` ou `env()`, est
++           toujours valide, comme l'est une valeur en attente de substitution ; les mots-clés
++           globaux du CSS sont valides comme valeur unique de toute propriété ; et `calc()`,
++           `min()`, `max()`, `clamp()` et les autres fonctions mathématiques sont acceptées partout
++           où une primitive numérique est attendue.
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 1 1 0 06b2b3821b59f61500c87df20de0e769
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1012e0401a4235931db671ec67f92f61
+
+% 0 1 0 03dfaca54a3b71b4088823f8e16f3484
+
+% 0 1 0 19250033e5fa0ece1479d8b37786414a
+
+% 0 1 0 10496e97d0f59c0702e448bf2160c270
+
+% 1 1 0 12c93b2706510cd21872d68bf2ce46d3
+
+% 0 1 0 0efb5e5172f3856800dcc3db18225d0d
+
+% 0 1 0 05d3a9ace20b225011950a8083d8975a
+
+% 0 1 0 086b29a4778fb6be12cac90fea05a216
+
+@ 0 1 0 089745010e6419cc1b79abd9195ac14f
++       entry .check
++         info
++             une valeur selon la grammaire d'une propriété, ou directement selon une `Css.Syntax`
+
+@ 0 4 0 10f024f19b9b65d70e6af0af87e4edce
++         detail
++             Deux surcharges : `check(property: PropertyDef, value)` utilise la grammaire analysée
++             de la propriété, et `check(grammar: Css.Syntax, value)` n'importe quelle grammaire.
++             Toutes deux ont besoin d'une `Tactic[Css.Error]`, levée uniquement lorsque le texte de
++             la valeur ne peut pas être découpé en jetons (une chaîne non terminée).
+
+@ 0 1 0 13116e47336743cb18b9f27a7129b7d1
++   entry .Outcome
++     info
++         le résultat de la vérification d'une valeur selon une grammaire : `Valid`, `Invalid` ou
++         `Unsupported`
+
+@ 0 3 0 1d9f75766db872c0124c66746b6dbc1f
++     detail
++         Une énumération renvoyée par `Css.Syntax.Matcher.check`. `Valid` et `Invalid` sont un
++         verdict définitif ; `Unsupported(types)` nomme les types de définition de valeurs selon
++         lesquels le vérificateur n'a pas pu vérifier, que `read[Css]` signale sous la forme
++         `Css.Error.Reason.UnsupportedValue`.
+
+@ 0 1 0 1645e71e20b8ee2b12a2e43b3916ac35
++ entry .css
++   info
++       l'interpolateur `css"…"` : une feuille de style ou un style en ligne, vérifié pendant la
++       compilation du code
+
+@ 0 6 0 0f4e676d7629b67d1aada88faa0b5acb
++   detail
++       `css"a { color: red }"` est un `Css`, et `css"color: red; width: 4px"` — de simples
++       déclarations sans sélecteur — est un `Css.Style` ; le type de résultat est transparent,
++       et déterminé par le contenu. Le littéral est analysé et validé pendant la compilation du
++       code, avec les mêmes vérifications que `read[Css]` : une propriété inconnue, une valeur
++       qui ne satisfait pas la grammaire de la propriété, un commentaire ou une chaîne non
++       terminés, ou un sélecteur mal formé sont des erreurs de compilation, signalées à la
++       ligne et à la colonne de la faute.
+
+@ 0 8 0 0d3abc69314df2641b6263cac69ae728
++       Les substitutions sont typées. En position de **valeur**, `$value` doit constituer toute
++       la valeur d'une déclaration, et son type doit avoir un `Css.Convertible` dont la
++       propriété accepte le sujet : une couleur pour `color`, une longueur pour `width`, une
++       durée pour `transition-duration`, ou un mot-clé global du CSS pour n'importe quoi. En
++       position de **sélecteur**, `$name` doit être un `Name[CssClass]` ou un `Name[DomId]`, qui
++       se rendent comme un sélecteur de classe (point et nom) ou un sélecteur d'identifiant
++       (dièse et nom) et peuvent être combinés avec du texte littéral (`div$button`). Partout
++       ailleurs — un nom de propriété, un prélude d'at-rule, ou un mélange avec du texte
++       littéral à l'intérieur d'une valeur (`margin: $width 0`) — c'est une erreur de
++       compilation.
+
+@ 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
++       ```scala fuel
+
+@ 1 1 0 0a47f914ed53260906bd03717b3d64ff
++       frame
+
+@ 0 1 0 0c8e70bf2437f7730f7b39c33f6f43ef
++         label A literal stylesheet, checked as it compiles
+
+@ 1 1 0 1b02fab7a85088ee071c98206d7fc438
++         code
+
+@ 2 1 0 019c679383089de2180c18171befb00f
++             import soundness.*
+
+@ 0 1 0 0aa0eda6dcda95d51d762d7fdd376ecf
++             css"a { color: red }"
+
+@ 1 1 0 079ce60b3094a6ef067cf91954446c59
++       frame
+
+@ 0 1 0 1ba70d013b74dbe91501177047a67b91
++         label A colour and a length substituted into values
+
+@ 1 1 0 01cd5ae16189355e013370978d28112d
++         code
+
+@ 2 1 0 17081356650e685d18aaf98e8b46ad93
++             import soundness.*
+
+@ 4 1 0 04a20c70d1b516a90a478028d0067ba0
++             val red = Srgb(1.0, 0.0, 0.0)
+
+@ 5 1 0 01b3ce7c349740b4066f5aa820379279
++             val width = 4.0*Px
+
+@ 0 1 0 05c64818bb601362085cb37a2cda11ef
++             css"a { color: $red; width: $width }"       // a { color: #ff0000; width: 4px }
+
+@ 1 1 0 042c8e31f524000f16473a39107ab498
++       frame
+
+@ 0 1 0 10a7f6ffe295f1050c923b44954285b7
++         label A class name substituted into the selector
+
+@ 1 1 0 18df31a39a8496551273b6f7392aa689
++         code
+
+@ 2 1 0 13942dd81dce9ca917cfb582acb95952
++             import soundness.*
+
+@ 4 1 0 0a72e390a626ebd9023fdc58cfd753f0
++             val red = Srgb(1.0, 0.0, 0.0)
+
+@ 5 1 0 0787760edd216a520b4245fe4031e429
++             val width = 4.0*Px
+
+@ 6 1 0 1ffebc23edc976010b6c3599e1534257
++             val button = Name[CssClass](t"button")
+
+@ 0 1 0 19204601251d48040c6721af4adc99d7
++             css"div$button { color: $red; width: $width }"   // div.button { color: #ff0000; width: 4px }
+
+@ 1 1 0 15f491b954453c0c0925e34efa186009
++       frame
+
+@ 0 1 0 08386460acbc195c0e1ed695734dec0c
++         label A wrong-typed substitution does not compile
+
+@ 1 1 0 0a88442ebea951071bee4e47c6d29c46
++         code
+
+@ 2 1 0 02dff1e227079d8f1379b59924869e92
++             import soundness.*
+
+@ 4 1 0 0d83be61ab054cf01b0d8811f540cc6a
++             val red = Srgb(1.0, 0.0, 0.0)
+
+@ 5 1 0 11acd002cee6fe2b09366a516ad2bad1
++             val width = 4.0*Px
+
+@ 6 1 0 01490461c186a04c01d38abe69b44f3e
++             val button = Name[CssClass](t"button")
+
+@ 0 1 0 1f164169f6b5e1d61a9a5394fe759501
++             css"div$button { color: $red; width: $width }"
+
+@ 0 1 0 0a13e4a3017b1f2b119dab972e32971c
++             css"a { color: $width }"                     // does not compile
+
+@ 0 1 0 0472326144a49ce71767be845f62f575
++       ##
+
+@ 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
++       ```
+
+@ 0 3 0 0dda9743d00fbb9a1d073abb9f300f8e
++       Le résultat est un `Css` construit à partir des nœuds analysés, chaque substitution
++       étant rendue au moyen de son `Css.Convertible` à l'exécution ; `css"a { color: $red }"`
++       est donc égal à `t"a { color: #ff0000 }".read[Css]`. Les feuilles de style se joignent
++       avec `+`, tout comme les styles en ligne.
+
+@ 0 1 0 124451076612c39409e790f399f2cf59
++ entry .classes
++   info
++       les noms de classes que mentionnent les sélecteurs d'une feuille de style, sous forme de
++       `Set[Name[CssClass]]`
+
+@ 0 5 0 05c43ec693eee3510553780f48a55ebb
++   detail
++       Une extension sur `Css`. Parcourt chaque règle, y compris les règles imbriquées dans
++       d'autres règles et dans les corps d'at-rules, ainsi que les arguments de type liste de
++       sélecteurs de `:is()`, `:where()`, `:not()`, `:has()` et `:nth-child(… of …)`, en
++       recueillant chaque `Selector.Simple.Class`. C'est l'ensemble par rapport auquel `Styles`
++       et `cssBindings.checkedBinding` vérifient les noms de classes d'un template HTML.
+
+@ 2 1 0 1bcc9823b4d9ce55004a998a6a99fba0
++       ```scala
+
+@ 3 1 0 14f63afcfde333ac10f348d2ad541331
++       import soundness.*
+
+@ 4 1 0 0374ae47aceb40ea05565c698add238b
++       import strategies.throwUnsafely
+
+@ 5 1 0 1154b2e9c8b4d8740b750ce5acd4e047
++       import errorDiagnostics.stackTracesDiagnostics
+
+@ 0 1 0 0f04776eed85fc821f3a0e662fdf2c73
++       t".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css].classes
+
+@ 0 1 0 142af66c11a50d2e102a01ae90861bee
++       // the names a, c and d
+
+@ 1 1 0 163038994d2627e21013954a94f3995b
++       ```
+
+@ 0 1 0 014386913cee73df17ea5f3bf5f90d0e
++ entry .ids
++   info
++       les noms d'identifiants que mentionnent les sélecteurs d'une feuille de style, sous forme de
++       `Set[Name[DomId]]`
+
+@ 0 2 0 06f2b2eb5ddd1dc60401a3f08ebc16f5
++   detail
++       Une extension sur `Css`, le pendant de `classes` pour les parties `Selector.Simple.Id` :
++       chaque sélecteur d'identifiant de chaque liste de sélecteurs, quelle que soit la
++       profondeur d'imbrication.
+
+@ 0 1 0 0ca9228f0bc7615f1bf516c9e041b5fc
++ entry .formatting
++   info
++       les deux rendus standard d'une feuille de style, chacun un given à importer par son nom
+
+@ 0 4 0 1124ad27670035e20bc57dc1d54005f1
++   detail
++       Rendre un `Css` nécessite un `Css.Formatting` dans la portée, et `import soundness.*`
++       n'en apporte aucun : un programme importe l'un de ceux-ci par son nom, ou lie son propre
++       `Css.Formatting(newlines, spaces)` comme given local.
+
+% 2 1 0 0b725675bf1222831d95207992f983a1
+
+% 0 1 0 111d95d52c2ff33b11ad745df3b0669b
+
+% 1 1 0 0e5468dda34c539e0927db36e44bd2b2
+
+% 2 1 0 124a90d7384ad360019e9671381ff0cb
+
+% 3 1 0 00729481344fc36c0a07ffb9228797d2
+
+% 4 1 0 09dde44d19c9b53f12e393424d3e5fb6
+
+% 6 1 0 02a4d189c6605bc0091a693598962989
+
+% 8 1 0 09acd21a2f6a5b9a0395df8b44e440ec
+
+% 0 1 0 06cd5fa85ead98060d34bda35ddde442
+
+% 0 1 0 08124e87a7d06c741e676479cc61a536
+
+% 0 1 0 0595e598221146b1165c699509e4abe3
+
+% 1 1 0 12b1f2e7519fc2c708515716d18d30a0
+
+% 2 1 0 0308e45cd2f79ed6011e3b3aee16bbab
+
+% 3 1 0 0381fc73316444e908d79e6a12e6afa4
+
+% 4 1 0 04f07c20ced178420b9a6dca9bcc6c7f
+
+% 6 1 0 0439ae00ebaebd61149ecf9be5f532d0
+
+% 8 1 0 1f539e33627c693e051f90cf67680075
+
+% 0 1 0 05f5b9421db7b90b0e9e3f2841dbe9b7
+
+% 0 1 0 016b6c73e667be1813aecb9d2ff07097
+
+% 1 1 0 0281a551ca92c3bb150ff47a16879772
+
+% 2 1 0 098f5efcc745d9ad19bd29efe8133a96
+
+@ 0 1 0 07ed0fd9b7c3d1971817af61d5907d1f
++   entry .indentedCssFormatting
++     info
++         une règle par bloc, les déclarations sur des lignes indentées, un saut de ligne final
+
+@ 0 3 0 0553ea0e3df5b82f0eea3ea48db6da6d
++     detail
++         `Css.Formatting(newlines = true, spaces = true)` : une espace avant chaque `{` et après
++         chaque `:`, une indentation de deux espaces par niveau, une ligne vide entre les règles
++         de niveau supérieur, et un saut de ligne final.
+
+@ 0 1 0 1ddacda0c82ba68f149f24c1f1c9320a
++   entry .compactCssFormatting
++     info
++         ni sauts de ligne ni espaces esthétiques : `a{color:red;}`
+
+@ 0 2 0 1d893c04faf47e3b0d1e139bac20eee1
++     detail
++         `Css.Formatting(newlines = false, spaces = false)`. Un `;` suit toujours chaque
++         déclaration, y compris la dernière d'un bloc.
+
+@ 0 1 0 15ece9bc601c31c510ec7735ec2f0b45
++ entry .construables
++   info
++       la construction par type de média pour les feuilles de style, un given à importer par son
++       nom
+
+@ 0 3 0 16528d7d4ac16c4d0e70e1ad8b646a0a
++   detail
++       Le package `Construable`, que d'autres bibliothèques alimentent aussi : un given ici
++       permet de construire sous forme de valeur un corps d'un type de média donné.
+
+@ 0 1 0 0adf53890a8c27fb155c567a8103ad04
++   entry .cssConstruable
++     info
++         construit un `Css` à partir d'un corps `text/css`
+
+@ 0 2 0 1eb1ea02cf4f7086000869cadcb0f103
++     detail
++         `"text/css" is Construable to Css` : un corps HTTP ou une autre source de texte CSS
++         dotée d'un type de média est lu sous forme de `Css`, au moyen de `Css.aggregable`.
+
+@ 0 1 0 00fe4d4904c3384913885fc06841df9f
++ entry .SelectorList
++   info
++       une liste de sélecteurs séparés par des virgules, le prélude d'une règle
+
+@ 0 6 0 0246793972f84f9b1591e216e1a8bf09
++   detail
++       Le plus lâche des trois niveaux d'un sélecteur CSS : une `SelectorList` contient les
++       alternatives séparées par des virgules, chacune étant un `Selector` (un sélecteur
++       complexe : des composés joints par des combinateurs), dont chaque `Selector.Compound`
++       est une suite de parties `Selector.Simple`. C'est ce que porte un `Css.Node.Rule`, et ce
++       que `:is()`, `:not()`, `:has()` et `:where()` prennent comme argument.
+
+% 2 1 0 13852ea3d821814a052677ed1e978cff
+
+% 3 1 0 1230d45761f386d11577888a246b6067
+
+% 4 1 0 1f6728342b38caea1239a6190135e70a
+
+% 5 1 0 0f0a4ed3d59073e40f9d034e77df79af
+
+% 0 1 0 07dac6a9768e7d3f03b5307a985e74dc
+
+% 0 1 0 11f0e944e021a65b084e64cf12e867f8
+
+% 0 1 0 066e02f0885d2c130c3a404daddea0b7
+
+% 1 1 0 10cfe677a0cdc8710c37d89f2aa51fb3
+
+@ 0 5 0 154e99f52d8c47c50cccc7310ae20fc4
++       L'analyseur suit Selectors Level 4 : les cinq combinateurs, y compris le combinateur de
++       colonne `||`, les sélecteurs de type et d'attribut avec espace de noms, tous les
++       comparateurs d'attributs et le modificateur `i`/`s`, les pseudo-classes fonctionnelles
++       avec des listes de sélecteurs imbriquées, les arguments `An+B` avec `odd`, `even` et une
++       clause `of`, et le sélecteur d'imbrication `&`. Un sélecteur mal formé lève une
++       `Css.Error`.
+
+% 0 1 0 0f4885655bd85e700e6edf26459d456a
+
+% 0 1 0 130cea9ab6bbacd11ba99433a99fee63
+
+% 0 1 0 17c50e0f9e7997960642a37f81c30e3b
+
+@ 0 1 0 0fc6ee70a6970a1f154209c922c66189
++   entry .showable
++     info
++         rend la liste avec `, ` entre les sélecteurs
+
+@ 0 1 0 0447bee7c3a2fc360730adc21546aa37
++   entry .focusable
++     info
++         permet à une liste de sélecteurs d'être un focus de tarantula, avec la stratégie
++         `css selector`
+
+@ 0 2 0 0cf9aee8915f943e04d4dac85500a6cc
++     detail
++         Le given `Focusable`, pour qu'une recherche d'automatisation de navigateur puisse
++         prendre un sélecteur analysé plutôt que du texte.
+
+@ 0 1 0 13d8604b0e1ec6141429bf470d779f63
++   entry .parse
++     info
++         analyse un texte de sélecteur, en levant une `Css.Error` s'il est mal formé
+
+@ 0 4 0 17dbf8ceef6c05f3106a5d1c045d0dee
++     detail
++         Nécessite une `Tactic[Css.Error]`. Le texte est considéré comme dépourvu de
++         commentaires et aux espaces normalisés, comme l'est un prélude de règle une fois que
++         `read[Css]` a supprimé les commentaires ; une entrée restante après une liste de
++         sélecteurs complète donne `UnexpectedChar`, et une liste vide `EmptySelector`.
+
+@ 0 1 0 0196a86841f0fe2811afe84a34b0970c
++   entry .unsafeRead
++     info
++         l'analyse qu'utilise l'expansion de `css"…"`, conditionnée par `Unsafe`
+
+@ 0 3 0 19cd8679a8fb1819177e996ebc0a70e1
++     detail
++         Reconstruit le sélecteur d'une règle à l'exécution à partir d'un texte que
++         l'interpolateur a déjà analysé lors de l'expansion ; elle ne peut donc pas échouer ; le
++         jeton `Unsafe` l'affirme. Un texte arbitraire passe par `.parse`.
+
+@ 0 1 0 06f8452e9223680a137d76c72939ef9e
++   entry #selectors
++     info
++         les alternatives, dans l'ordre
+
+@ 0 1 0 163865b53faef6ef1bac16006c505b2c
++ entry .Selector
++   info
++       un sélecteur complexe : un composé de tête et les étapes combinateur–composé qui le suivent
+
+@ 0 5 0 0e76aea94fa9b8b5188aeb3f7a94ff09
++   detail
++       `Selector(lead, head, rest)` est un sélecteur comme `ul > li a` : son `#head` est le
++       premier `Compound` (`ul`), et `#rest` les étapes qui suivent, chacune un `Combinator` et
++       le `Compound` qu'il atteint (`Child` vers `li`, `Descendant` vers `a`). `#lead` n'est
++       défini que pour un sélecteur relatif, le `>` de `:has(> img)`, et vaut sinon `Unset`.
+
+% 2 1 0 0e48303ae1c7115e168b31776a3fb60b
+
+% 3 1 0 10d6ea5298519fd211100d0e76846ca9
+
+% 0 1 0 08c4f3d812be396e0c3ea6104b05f826
+
+% 0 1 0 04f7b019c1f4522e0436c803e38336ab
+
+% 0 1 0 154952d1ec5d9d4b1c06bcd3e795b943
+
+% 0 1 0 038ff332b3343a151d0deb6e06cecf9f
+
+% 1 1 0 0eaa8a0dcb34c3931df09f7468ffda65
+
+% 1 1 0 09402fd84985227516e549717a8ecba4
+
+% 0 1 0 02614ea18f2de5aa1511a8d05e6f9434
+
+@ 0 1 0 17c3cb5ec0a917280739db8c724b029e
++   entry .showable
++     info
++         rend le sélecteur, avec une espace autour de chaque combinateur sauf celui de descendance
+
+@ 0 1 0 15f1002a5e61abde1d9cbd05bb5aca74
++   entry #lead
++     info
++         le combinateur initial d'un sélecteur relatif, ou `Unset`
+
+@ 0 1 0 19406bc3a97d546c132c23b9bbf09f8e
++   entry #head
++     info
++         le premier composé
+
+@ 0 1 0 128e3e1bc0243b1c0106fd3c4957275e
++   entry #rest
++     info
++         les étapes après la tête, chacune un combinateur et le composé qu'il atteint
+
+@ 0 1 0 09b276293d0406ad0719d6b22611461b
++   entry .Compound
++     info
++         un sélecteur composé : des sélecteurs simples sans rien entre eux, `li.item:hover`
+
+@ 0 5 0 0dc5a837de0b22500a648b3172547aea
++     detail
++         Une suite de parties `Simple` liées sans combinateur ni espace : un sélecteur de type ou
++         universel, s'il y en a un, suivi d'identifiants, de classes, de sélecteurs d'attributs,
++         de pseudo-classes et de pseudo-éléments. `Compound(List(Simple.Type(Unset, t"a"),
++         Simple.PseudoClass(t"hover", Unset)))` donne `a:hover`.
+
+@ 0 1 0 0c54a5a653b94bba1f19ec38b1989e60
++     entry .showable
++       info
++           rend les parties concaténées
+
+@ 0 1 0 137d85b239df22c71ab232275efd89b2
++     entry #parts
++       info
++           les sélecteurs simples, dans l'ordre
+
+@ 0 1 0 09534d57d72efd5705cdeca2de67a85e
++   entry .Simple
++     info
++         un sélecteur simple : un type, une classe, un identifiant, un attribut, une pseudo-classe,
++         un pseudo-élément, `*` ou `&`
+
+@ 0 8 0 0e4c526a8faa92ea1ab26a6b10862a6e
++     detail
++         Les huit sortes de sélecteurs simples, sous forme d'énumération. `Universal(namespace)`
++         est `*`, avec un `Prefix` d'espace de noms optionnel ; `Type(namespace, name)` un nom
++         d'élément comme `div` ou `svg|rect` ; `Id(name)` un sélecteur d'identifiant (dièse et
++         nom), typé `Name[DomId]` ; `Class(name)` un sélecteur de classe (point et nom), typé
++         `Name[CssClass]` ; `Nesting` le `&` d'une règle imbriquée ;
++         `Attribute(namespace, name, test)` un `[name]` avec un `AttributeTest` optionnel comme
++         `^="https" i` ; `PseudoClass(name, argument)` un `:hover` ou un `:nth-child(2n+1)`, avec
++         un `PseudoArgument` optionnel ; et `PseudoElement(name, argument)` un `::before`.
+
+% 2 1 0 11aef3ba7f39f5e6069709031e3cdb94
+
+% 3 1 0 176c176a02168d76187fe48747cff13a
+
+% 0 1 0 0e98122967f320ad065c2370c39c9b71
+
+% 0 1 0 076db4ed83b2322d00d5ceac3ee39cfc
+
+% 0 1 0 185db11603769c830586a7fd79c373c2
+
+% 1 1 0 17fcc179ed92503019c6c650e58cafa4
+
+@ 0 3 0 00bff296fe9ef8df1172d2c44104a08f
++         Les noms de classes et d'identifiants sont des `Name` ; un nom qui n'est pas un
++         identifiant CSS valide est donc rejeté lors de l'analyse
++         (`Css.Error.Reason.InvalidName`), et `classes` et `ids` sur un `Css` les renvoient
++         typés.
+
+% 0 1 0 1cf8a0429ccc56e413f1ddc109bddd26
+
+% 0 1 0 0afef677894ac0751b0157cf520abec2
+
+% 0 1 0 038f1466212e87a01d1927776a52dcc8
+
+@ 0 1 0 194273c00ab782e900e3bce3953e43d9
++     entry .showable
++       info
++           rend chaque sorte en CSS : `*`, `div`, un sélecteur d'identifiant ou de classe, `&`,
++           `[a^=b i]`, `:is(…)`, `::before`
+
+@ 0 2 0 00e80a5699b596c207091fda6dca708a
++       detail
++           Un argument `An+B` est canonicalisé : `1n` se rend sous la forme `n`, `-1n` sous la
++           forme `-n`, et un `a` nul sous la forme du seul `b`. Les valeurs d'attributs se rendent
++           sans guillemets.
+
+@ 0 1 0 1e95796ee619969b152acffa2d3385fd
++   entry .Combinator
++     info
++         la relation entre deux composés : descendant, enfant, frère suivant, frère ultérieur ou
++         colonne
+
+@ 0 4 0 1428b47df26a8a0b0493ebc3053a0e94
++     detail
++         Une énumération des cinq combinateurs de Selectors Level 4 : `Descendant` (espace),
++         `Child` (`>`), `NextSibling` (`+`), `SubsequentSibling` (`~`) et `Column` (`||`). Un
++         `Selector#rest` en associe un à chaque composé après la tête. Le given `showable` du
++         compagnon rend chacun sous forme de son symbole, le descendant sous forme d'une seule
++         espace.
+
+@ 0 1 0 0b8d8168dbcb4b1b16dfe87250fa51ee
++   entry .AttributeTest
++     info
++         le membre droit d'un sélecteur d'attribut : comparateur, valeur et modificateur
+
+@ 0 5 0 0893c81c88fafcff0dd4422e384ad6bb
++     detail
++         `AttributeTest(matcher, value, modifier)` est le `^="https" i` de `[href^="https"
++         i]` : l'`AttributeMatcher`, la valeur comparée (sans guillemets), et le modificateur de
++         sensibilité à la casse optionnel `i` ou `s`. Un `Simple.Attribute` sans test,
++         `[disabled]`, contient `Unset` à la place.
+
+@ 0 1 0 06f2fd7cb92fccb81d00163311bfb4ae
++     entry #matcher
++       info
++           la façon dont la valeur est comparée
+
+@ 0 1 0 1da2c92ab3031f0c15988c64df5556a2
++     entry #value
++       info
++           la valeur comparée, sans ses guillemets
+
+@ 0 1 0 075c8cbd1b727107105fae98e0c467c8
++     entry #modifier
++       info
++           le modificateur de casse `i` ou `s`, ou `Unset`
+
+@ 0 1 0 0cd5b05a8dc643670026e8523076eb0e
++   entry .AttributeMatcher
++     info
++         la façon dont un sélecteur d'attribut compare sa valeur : `=`, `~=`, `|=`, `^=`, `$=` ou
++         `*=`
+
+@ 0 3 0 1be8ec111ce5a6080c2d8ada6b898724
++     detail
++         Une énumération des six comparateurs : `Exact` (`=`), `Includes` (`~=`, un mot parmi
++         des mots séparés par des espaces), `DashMatch` (`|=`, la valeur ou un préfixe
++         `value-`), `Prefix` (`^=`), `Suffix` (`$=`) et `Substring` (`*=`). Un `AttributeTest` en
++         contient un avec la valeur qu'il compare.
+
+@ 0 1 0 12a5b6cd6693970910f7d69c336ceff3
++   entry .Prefix
++     info
++         le préfixe d'espace de noms d'un sélecteur de type, universel ou d'attribut
+
+@ 0 3 0 15801186a620ece81a7b204a5853c90c
++     detail
++         Une énumération des trois formes, qui signifient des choses différentes et sont gardées
++         distinctes : `Any` est `*|` (n'importe quel espace de noms), `Default` est un simple `|`
++         (aucun espace de noms), et `Named(prefix)` est un espace de noms déclaré, `svg|`. Un
++         sélecteur sans aucun préfixe contient `Unset`.
+
+@ 0 1 0 13f5acfbe86fa3d014a749a9fe87cc32
++   entry .PseudoArgument
++     info
++         l'argument d'une pseudo-classe fonctionnelle : une liste de sélecteurs, un `An+B`, ou du
++         texte brut
+
+@ 0 5 0 04f2df81b803577e08753b7401bfa05e
++     detail
++         Une énumération des trois formes. `Selectors(list)` est la `SelectorList` imbriquée de
++         `:is()`, `:where()`, `:not()` et `:has()`, de sorte que leur contenu est lui-même
++         inspectable ; `Nth(a, b, of)` est l'`An+B` de `:nth-child()` et de ses semblables, avec
++         `odd` normalisé en `2n+1` et `even` en `2n`, et la liste de sélecteurs `of` optionnelle
++         conservée à côté ; et `Raw(text)` est l'argument de toute autre fonction, comme
++         `:lang(en)`, conservé sous forme de texte.
+
+@ 0 1 0 1b64f832f7e578e0173277da10afaac5
++ entry .PropertyDef
++   info
++       la définition d'une propriété CSS d'après le jeu de données MDN : son nom et sa grammaire de
++       valeurs
+
+@ 0 6 0 1e6db55753a5f43f1d7f23959b13573f
++   detail
++       Chaque propriété CSS connue — plus de six cents, issues du jeu de données MDN
++       `css/properties.json` (CC0), compilées dans la bibliothèque lors du build — est une
++       `PropertyDef` de son `#name` et de sa `#syntax`, la chaîne brute en syntaxe de
++       définition de valeurs, que `#grammar` analyse à la demande en une `Css.Syntax`.
++       `PropertyDef.of(name)` en recherche une ; `.all` est la table entière et `.list` la même
++       dans l'ordre du jeu de données.
+
+% 2 1 0 08228765f7fcff641cb080b3410a684f
+
+% 3 1 0 1be8dd8431da57420aed9abca240056d
+
+% 4 1 0 12447d1c72aa6b740944f26eb6aca354
+
+% 5 1 0 133cb7a9aa4089f203a5829ce2dd8ffa
+
+% 0 1 0 0b0f81b16134aa9802f93a7bb8f5522c
+
+% 0 1 0 04adf092583363041da1b928e564d9e9
+
+% 0 1 0 031e0eda6d5ceb1509fe20e2154bfa02
+
+% 0 1 0 1042dfed1de4110019d80f925d1c6c41
+
+% 0 1 0 1f431b651d42916502c2a6c263cf0dd1
+
+% 1 1 0 13887cd5746beb7e0f455ca803f15741
+
+@ 0 2 0 13d4c41cee9c4f7a1cd571bf767e3a22
++       Les propriétés personnalisées (`--name`) sont valides sans définition et relèvent de la
++       responsabilité de l'appelant : `of` renvoie `Unset` pour elles.
+
+% 0 1 0 1a8a14ab85f11d760e2380a68041b00a
+
+% 0 1 0 091130df2e046a020e378b26cae4a4a5
+
+@ 0 1 0 1c3cbf9ed843fe9716b1a2ae01899f4b
++   entry .list
++     info
++         chaque propriété connue, dans l'ordre du jeu de données
+
+@ 0 1 0 1578a3b2ba867a600b2df56c43d65e0d
++   entry .all
++     info
++         chaque propriété connue, indexée par nom dans un `Dictionary`
+
+@ 0 1 0 14d531b54fa7c9800af9e913d6e6b699
++   entry .of
++     info
++         la définition d'une propriété nommée, ou `Unset` s'il ne s'agit pas d'une propriété
++         reconnue
+
+@ 0 1 0 0e2217bce488791603e3d5e6a015e2d3
++   entry #name
++     info
++         le nom de la propriété, en kebab-case
+
+@ 0 1 0 1e725a2a3d7c63fb01b9e43d1104afb6
++   entry #syntax
++     info
++         la grammaire de valeurs telle que l'écrit le jeu de données, `<length> | auto`
+
+@ 0 1 0 0fd6108e56babf0e15954d72f3fc8478
++   entry #grammar
++     info
++         la grammaire de valeurs analysée en une `Css.Syntax`, calculée à la première utilisation
+
+@ 0 1 0 1ba080fdb3318de903714cda91507b17
++ entry .ValueToken
++   info
++       un jeton d'une valeur de propriété : identifiant, nombre, dimension, chaîne, fonction, …
+
+@ 0 3 0 05e123bfbac3621d1ec3f32d528d369b
++   detail
++       L'unité en laquelle une valeur de propriété est découpée avant la vérification, suivant
++       l'analyseur lexical de CSS Syntax Module Level 3 pour les jetons qui apparaissent dans
++       les valeurs. `Css.Syntax.Matcher` les consomme ; ils sont exposés pour qu'un outil
++       puisse inspecter la forme lexicale d'une valeur. Les cas :
+
+@ 0 1 0 1b6bea430224b167173b77cbfa415e01
++       ```tabular
+
+@ 0 14 0 12aa74d4b41e63341deebb849bde7a6e
++       column  Cas
++       column  Jeton
++       row  `Whitespace`  espaces
++       row  `Ident(value)`  un identifiant : `auto`, `solid` ou `--my-var`
++       row  `Function(name)`  un identifiant directement suivi de `(`
++       row  `Hash(value)`  `#ff0000`, qui contient `ff0000`
++       row  `Quoted(value)`  le contenu d'une chaîne, sans ses guillemets
++       row  `Url(value)`  un `url(…)` sans guillemets
++       row  `Number(value, integer, raw)`  un nombre
++       row  `Percentage(value, raw)`  un pourcentage
++       row  `Dimension(value, unit, raw)`  un nombre avec une unité : `10px`
++       row  `Comma`  `,`
++       row  `Open`, `Close`  `(` et `)`
++       row  `Delim(char)`  tout autre caractère isolé, comme `/` ou `+`
+
+@ 1 1 0 0ee300beb0cd6cc91b2d4f9583171ec4
++       ```
+
+@ 0 1 0 165b2cb9796c1dac111dc7ea3598b0f3
++ entry .Px
++   info
++       un pixel CSS, `Quantity[Pixels[1]]` : une longueur s'écrit `4.0*Px`
+
+@ 0 8 0 0ae85e09207f3fc808e0f1351f744788
++   detail
++       La valeur unitaire qu'un nombre multiplie pour former une longueur en pixels, rendue
++       sous la forme `4px` au moyen de `Css.Convertible.pixels`. `Px` est une dimension
++       nouvelle sans rapport avec aucune autre ; `2.0*Px + 3.0*Cm` et
++       `(1.0*Px).convert[Metres]` ne compilent donc pas : la taille physique d'un pixel est
++       laissée à l'appréciation du navigateur. Il en va de même pour toutes les unités
++       relatives et de zone d'affichage (`Rem`, `Ex`, `Ch`, `Vw`, `Vh`, `Vmin`, `Vmax`, `Pct`), les
++       angles (`Deg`, `Rad`, `Turn`) et les fractions de grille (`Fr`) ; les unités physiques
++       `Cm`, `Mm`, `Pt`, `Pc` et les propres `Inch` et `Metre` de quantitative partagent la
++       dimension `Distance` et se convertissent entre elles comme d'habitude, et `S` et `Ms`
++       sont des secondes de quantitative.
+
+@ 2 1 0 093c1b33b2e7dc3802cc6979782a60af
++       ```scala
+
+@ 3 1 0 05d0e9e444e6e77d193e71c34770e0f4
++       import soundness.*
+
+@ 1 1 0 10a8cb6a043cf5a2049209bb9d26b579
++       val width = 4.0*Px
+
+@ 0 1 0 1e640e86d47efbfe003fbf990f7947c3
++       val sum = 2.0*Px + 3.0*Px        // 5px
+
+@ 0 1 0 166b78631fb5e7c61211243523a9d42f
++       2.0*Px + 1.0*Vh                  // does not compile
+
+@ 1 1 0 0adb8906cb3d351b0f4b0c829083b6c8
++       ```
+
+@ 0 1 0 161beadaa645ff3d04eafdade98f024d
++ entry .Rem
++   info
++       une taille de police de l'élément racine, `Quantity[Rems[1]]` : `2.0*Rem` se rend sous la
++       forme `2rem`
+
+@ 0 1 0 0f32b1f2439f56660a3149cd9550cb2a
++ entry .Ex
++   info
++       une hauteur d'x de la police de l'élément, `Quantity[Exs[1]]` : se rend sous la forme `ex`
+
+@ 0 1 0 1195e0b7cc79783c1c0a5d13b34c6c1c
++ entry .Ch
++   info
++       une chasse du `0` de la police de l'élément, `Quantity[Chs[1]]` : se rend sous la forme `ch`
+
+@ 0 1 0 0b3c6854b71ddf360f536773c593b0d0
++ entry .Vw
++   info
++       un pour cent de la largeur de la zone d'affichage, `Quantity[ViewportWidths[1]]` : se rend
++       sous la forme `vw`
+
+@ 0 1 0 0c7c5cf2c0ca113d07fe036351e6fe74
++ entry .Vh
++   info
++       un pour cent de la hauteur de la zone d'affichage, `Quantity[ViewportHeights[1]]` : se rend
++       sous la forme `vh`
+
+@ 0 1 0 10fdf4e38a8a09b41650f2c7e2ae8374
++ entry .Vmin
++   info
++       un pour cent du plus petit côté de la zone d'affichage, `Quantity[ViewportMins[1]]` : se
++       rend sous la forme `vmin`
+
+@ 0 1 0 1551fc49540b0750080efcf8e526333e
++ entry .Vmax
++   info
++       un pour cent du plus grand côté de la zone d'affichage, `Quantity[ViewportMaxes[1]]` : se
++       rend sous la forme `vmax`
+
+@ 0 1 0 1acba47466948f5f019e317f64592f30
++ entry .Cm
++   info
++       un centimètre, en `Metres` de quantitative : `3.0*Cm` se rend sous la forme `30mm`
+
+@ 0 2 0 1de97951261ed06d03606f31bc9d814f
++   detail
++       Une grandeur commode de `Metres`, et non un nouveau type : `3.0*Cm == 0.03*Metre`, et
++       toute longueur physique se rend en millimètres au moyen de `Css.Convertible.metres`.
+
+@ 0 1 0 13b254a3515a7eef19b72d9e2d2ec433
++ entry .Mm
++   info
++       un millimètre, en `Metres` de quantitative : `10.0*Mm` se rend sous la forme `10mm`
+
+@ 0 1 0 18c4b1eb469d7646149f4b3b2b8a6f91
++ entry .Pt
++   info
++       un point typographique, `Quantity[Points[1]]` : se rend sous la forme `pt`
+
+@ 0 1 0 0f65751024edde180e9aba3854bc18ea
++   detail
++       Les `Points` de quantitative ; il se convertit donc en pouces, en picas et en mètres.
+
+@ 0 1 0 056af50fb220fbe40c3f0ff019ed3e74
++ entry .Pc
++   info
++       un pica, `Quantity[Picas[1]]` : se rend sous la forme `pc`
+
+@ 0 1 0 1a1da96511252d8f132ce270816c8b8e
++ entry .Pct
++   info
++       un pour cent, `Quantity[Percents[1]]` : `50.0*Pct` se rend sous la forme `50%`
+
+@ 0 2 0 106597192ec11a391b4887c080323e4a
++   detail
++       Une dimension nouvelle, et non un nombre : un pourcentage ne peut pas être ajouté à une
++       longueur ou à un `Double`, et `Css.Convertible.percents` le rend avec le sujet
++       `"percentage"`.
+
+@ 0 1 0 0645c7f88e8aead4088cef8d06dc75f6
++ entry .S
++   info
++       une seconde, en `Seconds` de quantitative : `1.5*S` se rend sous la forme `1500ms`
+
+@ 0 1 0 0abb5d514fbaf6d90cd2851a33a9ca20
++   detail
++       Les durées se rendent en millisecondes, quelle que soit la grandeur dans laquelle elles
++       ont été écrites.
+
+@ 0 1 0 1e34de1f1821faa617bf7087e98b61aa
++ entry .Ms
++   info
++       une milliseconde, en `Seconds` de quantitative : `200.0*Ms` se rend sous la forme `200ms`
+
+@ 0 1 0 1f2adc293384a6bd0173337f22d81aab
++ entry .Deg
++   info
++       un degré, `Quantity[Degrees[1]]` : `90.0*Deg` se rend sous la forme `90deg`
+
+@ 0 2 0 1698a5ee38c48aaf08932a5c04922e86
++   detail
++       Les angles sont des dimensions nouvelles, non convertibles entre elles :
++       `1.0*Deg + 1.0*Rad` ne compile pas.
+
+@ 0 1 0 046365bba0853d3e0a3c09996c034c42
++ entry .Rad
++   info
++       un radian, `Quantity[Radians[1]]` : se rend sous la forme `rad`
+
+@ 0 1 0 178a46ed9c4b0358130e7e5f9e54a6b4
++ entry .Turn
++   info
++       un tour complet, `Quantity[Turns[1]]` : `0.5*Turn` se rend sous la forme `0.5turn`
+
+@ 0 1 0 0c845abde668d3771b8d2d6299de3aaa
++ entry .Fr
++   info
++       une fraction de l'espace libre d'une piste de grille, `Quantity[Flexes[1]]` : `2.0*Fr` se
++       rend sous la forme `2fr`
+
+@ 0 1 0 1f4de649ada76cbb10dbf6da624f791e
++ entry .Pixels
++   info
++       les unités de pixels CSS, `Pixels[1]`, sur la dimension `CssPixel`
+
+@ 0 2 0 0fc860a576fe15e6156d95cace3a7ff9
++   detail
++       Le type d'unités de `Px` ; `Quantity[Pixels[1]]` est une longueur en pixels. Le
++       paramètre de type `Power` est l'exposant, comme dans tout type d'unités de quantitative.
+
+@ 0 1 0 1743c532950a8e191beb2ad1227e2f56
++ entry .Rems
++   info
++       les unités de tailles de police de l'élément racine, sur `CssRootFontSize`
+
+@ 0 1 0 06bdf54d130bc57d0e24f911ef94c28f
++ entry .Exs
++   info
++       les unités de hauteurs d'x, sur `CssXHeight`
+
+@ 0 1 0 1266804e4b6c64e609dc8610ef025e76
++ entry .Chs
++   info
++       les unités de chasses de caractère, sur `CssCharacterWidth`
+
+@ 0 1 0 0b1d3008804f68661e07db25e6a83e0e
++ entry .ViewportWidths
++   info
++       les unités de pourcentages de la largeur du viewport, sur `CssViewportWidth`
+
+@ 0 1 0 09ed611c81ba9d2508184930bab30dc6
++ entry .ViewportHeights
++   info
++       les unités de pourcentages de la hauteur du viewport, sur `CssViewportHeight`
+
+@ 0 1 0 14dc1e9ceab48f6609652fd1d5e1ef5a
++ entry .ViewportMins
++   info
++       les unités de pourcentages du minimum du viewport, sur `CssViewportMin`
+
+@ 0 1 0 0f65b62296d363aa0b606765911db525
++ entry .ViewportMaxes
++   info
++       les unités de pourcentages du maximum du viewport, sur `CssViewportMax`
+
+@ 0 1 0 16bc300bf437a4e319d68dc65f07dff9
++ entry .Percents
++   info
++       les unités de pourcentages, sur `CssRatio`
+
+@ 0 1 0 119aca539ee6fd1d08f1ec29b7f1205a
++ entry .Degrees
++   info
++       les unités de degrés, sur `CssDegree`
+
+@ 0 1 0 14dacb163a21bd571fe9c5fdc911e52e
++ entry .Radians
++   info
++       les unités de radians, sur `CssRadian`
+
+@ 0 1 0 0384dfd9b61d18080a211d6727dad6ac
++ entry .Turns
++   info
++       les unités de tours, sur `CssTurn`
+
+@ 0 1 0 1f4586f5d765bb5e19248d87d47d671e
++ entry .Flexes
++   info
++       les unités de fractions de grille, sur `CssFlex`
+
+@ 0 1 0 1cfe8527542775270b572c3377cf4ee6
++ entry .CssPixel
++   info
++       la dimension des pixels CSS, sans rapport avec aucune autre
+
+@ 0 6 0 166008c30f82efac10d4cd25aca30703
++   detail
++       Une dimension scellée qui lui est propre, si bien qu'une longueur en pixels ne peut ni
++       être ajoutée à une longueur physique ou relative, ni convertie en une telle longueur.
++       Chacune des dimensions propres au CSS — `CssPixel`, `CssRootFontSize`, `CssXHeight`,
++       `CssCharacterWidth`, `CssViewportWidth`, `CssViewportHeight`, `CssViewportMin`,
++       `CssViewportMax`, `CssRatio`, `CssDegree`, `CssRadian`, `CssTurn` et `CssFlex` — est
++       délibérément non convertible, puisque sa taille physique est déterminée par le
++       navigateur, la police ou la zone d'affichage, et non par la feuille de style.
+
+@ 0 1 0 0e79161ff14c986207c00693c242f541
++ entry .CssRootFontSize
++   info
++       la dimension des longueurs `rem`, non convertible
+
+@ 0 1 0 1d20bdfdbb43257007d9001c8fcb7667
++ entry .CssXHeight
++   info
++       la dimension des longueurs `ex`, non convertible
+
+@ 0 1 0 13ab864d03acceb21950fb6729737981
++ entry .CssCharacterWidth
++   info
++       la dimension des longueurs `ch`, non convertible
+
+@ 0 1 0 1e04d49d2cb31cab183d952ccfdb656b
++ entry .CssViewportWidth
++   info
++       la dimension des longueurs `vw`, non convertible
+
+@ 0 1 0 08847ef3147bc64d0ea3441f7fb93426
++ entry .CssViewportHeight
++   info
++       la dimension des longueurs `vh`, non convertible
+
+@ 0 1 0 094ba3c0ccf13d221d207eb5aa4f3eee
++ entry .CssViewportMin
++   info
++       la dimension des longueurs `vmin`, non convertible
+
+@ 0 1 0 16571d6dcebab9cc000a342c61e20134
++ entry .CssViewportMax
++   info
++       la dimension des longueurs `vmax`, non convertible
+
+@ 0 1 0 13fe5eea159c41a60bf699ffec73ddb6
++ entry .CssRatio
++   info
++       la dimension des pourcentages, non convertible en un simple nombre
+
+@ 0 1 0 0f4cdccd8b24bda31542c97ec4cbb2fb
++ entry .CssDegree
++   info
++       la dimension des angles en degrés, non convertible en radians ou en tours
+
+@ 0 1 0 08c1741a39f6acc701c835ba9a757fef
++ entry .CssRadian
++   info
++       la dimension des angles en radians, non convertible
+
+@ 0 1 0 13f94bb887a64a6c1c04ca82535731fe
++ entry .CssTurn
++   info
++       la dimension des angles en tours, non convertible
+
+@ 0 1 0 0d2c84bab3a844c21c71d77909bd109b
++ entry .CssFlex
++   info
++       la dimension des fractions de grille, non convertible
+
+@ 0 1 0 0eb0db0b7aa8f81913033a3ec608564c
++ entry .internal
++   info
++       les implémentations des macros derrière `css"…"` et `Css.Style(…)`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 2 0 1f0be1f26254d90318990b61c7ec8436
++   detail
++       Pas destiné à un usage direct : l'objet existe pour que les macros aient un foyer
++       stable.
+
+@ 0 1 0 09a3d3260e0e7cef0523bcaee609b320
++   entry .expand
++     info
++         la macro derrière `css"…"` : analyse le littéral lors de l'expansion et le reconstruit
++         sous forme de `Css` ou de `Css.Style`
+
+@ 0 5 0 1f86cb31a9d158df1ae661baa41a900a
++     detail
++         Joint les parties littérales avec une sentinelle à chaque substitution, analyse et valide
++         le tout à la compilation (une faute est signalée à sa ligne et à sa colonne), et réinsère
++         les nœuds par splice sous forme d'expression : une valeur de déclaration constituée d'une
++         substitution seule devient la valeur typée, vérifiée par rapport à la propriété au moyen
++         de `propertyIssue` ; une substitution dans un sélecteur doit être un `Name[CssClass]` ou
++         un `Name[DomId]`.
+
+@ 0 1 0 0d5c79038401ae990221a06f8b10d109
++   entry .style
++     info
++         la macro derrière `Css.Style(property = value, …)`
+
+@ 0 2 0 0336b9f6cbcee1100f8cc40da16aea12
++     detail
++         Reconvertit chaque nom littéral du camelCase en sa propriété, invoque le
++         `Css.Convertible` de la valeur, vérifie que la propriété accepte le sujet du
++         convertible, et émet `Css.Style.of`.
+
+@ 0 1 0 10c30bcd58856f050e07e2e2b07f80dc
++   entry .topicOf
++     info
++         le sujet de définition de valeur que porte le type d'une instance `Css.Convertible`, ou
++         vide
+
+@ 0 1 0 1b2b58df32e2c1f118ecddb532386556
++   entry .propertyIssue
++     info
++         `Unset` si une propriété accepte une valeur d'un sujet donné ; sinon le message expliquant
++         pourquoi
+
+@ 0 3 0 14e7a24fce8c835d06ec60ace6c7ef56
++     detail
++         Une propriété inconnue, ou un exemple du sujet (`1px` pour `"length"`, `#000000` pour
++         `"color"`, …) que la grammaire de la propriété rejette. Le sujet `"*"` est accepté pour
++         toute propriété connue, et un sujet sans exemple n'est pas vérifié.
+
+@ 0 1 0 0d8fc098bc89a68c12f621c1e765daf6
++ entry .Web
++   info
++       le web comme support de composition : la façon dont un navigateur obtient une police, et les
++       familles génériques
+
+@ 0 12 0 0abe7703a0afb7eb0d46864c9068886a
++   detail
++       `Web` est un `Medium` de phoenicia : le support du texte composé par un navigateur à
++       partir de CSS, où une police est disponible si la page porte une `@font-face` pour
++       elle, importe une feuille de style qui en porte une, ou nomme une famille générique. Une
++       police est fournie pour le web par un given `(Typeface of "Inter") is Typesettable in
++       Web`, déclaré une seule fois au moyen de l'une des fabriques du compagnon — `.linked`
++       pour un fichier de police à une URL, `.imported` pour la feuille de style d'un service
++       de polices, `.local` pour une police que le lecteur a installée — ou `in
++       Medium` au moyen du `Typesettable.embedded` de phoenicia pour un fichier embarqué dans la
++       page. Les six familles génériques du CSS (`.sansSerif`, `.serif`, `.monospace`,
++       `.cursive`, `.fantasy`, `.systemUi`) sont déjà fournies ici, dans le compagnon du
++       support, qui fait partie de la portée implicite de
++       `(Typeface of "sans-serif") is Typesettable in Web` ; elles ne nécessitent donc ni
++       déclaration ni import.
+
+@ 0 6 0 087d7304d880a6b30aaa9622c79fb182
++       Une `Font in Web` est une fonte associée à la fourniture de sa police dans la portée,
++       construite avec `.font` (ou `Font.of[Web](face)` de phoenicia) ; une police sans
++       fourniture dans la portée ne peut pas être une police web, et une fonte que la
++       couverture de la fourniture ne peut pas composer — une italique tirée d'un fichier
++       déclaré uniquement en romain — est une `Font.Error` lors de l'association. Les
++       at-rules de la police sont alors `Css.fontFace(font)`, et les déclarations qui
++       sélectionnent la fonte sont `font.style`.
+
+% 2 1 0 16bc24922b7cc0f005c86c389635d88d
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 039d619bf9240d3317a4d926c3b5dee6
+
+% 1 1 0 1995340f1fff09f81fbf3514ac0df656
+
+% 2 1 0 18be736f26df1e29079366bc1698fdeb
+
+% 3 1 0 047bf1a07b90d9e709c96c43f7f99607
+
+% 4 1 0 1dbb3ce86cbf5f511bb85d13204e4fbd
+
+% 6 1 0 1ffc32543e9ca51619e5c9ce0a99442c
+
+% 8 1 0 1977fb8e34ca09fa0f0af18da4d2f67d
+
+% 9 1 0 157f79cecc41af3a11430552e97a9333
+
+% 10 1 0 0db124faba3331f30aa0139e59c16009
+
+% 11 1 0 1625278c475ce34a128a8d258c56ad14
+
+% 1 1 0 0ecc045748105a4c00cb4e652d8d9403
+
+% 0 1 0 01f2937430ea5de6122c05929733c097
+
+% 1 1 0 0fa4888c8c1c8c301e3292149a24ca6c
+
+% 2 1 0 07b49417258f2fa7183db4a09381f115
+
+% 3 1 0 0355c22de0cf18721a24bf1d223f1e6f
+
+% 4 1 0 1b59359efbf26fac1c0bb1e489521051
+
+% 6 1 0 06c45e63c9b7820a098dfe4af956abc1
+
+% 8 1 0 173b3a13d38358491442423d6d08fa2a
+
+% 9 1 0 18bf8daf183e86cd061cc4f57504200c
+
+% 10 1 0 015aa60f87df5ea70d8522ae0190fd95
+
+% 11 1 0 1dda46fc4d1c61fc19f884a5ed186f72
+
+% 13 1 0 0bf7be817b9596d104d845e8fcbd5390
+
+% 1 1 0 0731751560ffa31918ec5113b4618166
+
+% 0 1 0 1397335d7b61f07c0620ec6dc1c10af3
+
+% 1 1 0 04467541121d1c89179d54fdd6c2537e
+
+% 2 1 0 188160e468f0979f087e18b5f0cda13f
+
+% 3 1 0 1bbb659c27e3f47f09d61c8f645dbdc3
+
+% 4 1 0 0187659025b78a9009da50a373681598
+
+% 6 1 0 051918f4673063bd09902bb122c748bc
+
+% 8 1 0 08ebe3b5686e762905aecbb6ad3d4de3
+
+% 9 1 0 05cb61d350201bcf15ab67252afb5cba
+
+% 10 1 0 15400704a34161b20adbdef9530a6e11
+
+% 11 1 0 06fae3bb85c9bd24006f7e90c05965d7
+
+% 13 1 0 07b7d6ddd19ca3100c0eef39d6e59400
+
+% 0 1 0 0297529c3ba49bdd01f4e0aff5ee6416
+
+% 0 1 0 1d9867411d8fd2431c5a974d35111095
+
+% 0 1 0 071d5e8ae2bc98d80e1451ec1577285c
+
+% 0 1 0 126cf11fdc25fa7e102948834a335567
+
+% 1 1 0 0980e04a570ab26b1543f93d0127ee06
+
+% 2 1 0 0b4d6e5713a968c51daa7b54de22e564
+
+@ 0 6 0 049bb7a47a646cb60f770042f48e549f
++       Le type d'un given nommé est analysé avec la grammaire restreinte des types de given,
++       dans laquelle un opérande infixe ne peut pas être un type littéral ; la police est donc
++       mise entre parenthèses :
++       `given inter: (Typeface of "Inter") is Typesettable in Web = …`. Une fourniture que
++       d'autres moteurs de rendu que le navigateur peuvent aussi utiliser — le `<style>` d'un
++       SVG, un PDF — demande `Typesettable in (? >: Web)`, que satisfont à la fois une
++       fourniture `Web` et une fourniture `Medium` embarquée.
+
+% 1 1 0 0cce7d9b4eae472b004d432706a25e12
+
+% 0 1 0 05c8cabf634f0b23118d27e69a40cb1b
+
+% 0 1 0 01f127d5f0a0c64c1bdaa3ac9b67c0fd
+
+@ 0 1 0 1cd8e0a12386afb5193d73e99a82a0ba
++   entry .Provision
++     info
++         une fourniture web sous forme de valeur : ses sources et sa couverture déclarée
+
+@ 0 6 0 1daae8cc6c05f7a700fec864040b900e
++     detail
++         La classe que renvoie chaque fabrique de `Web`, pour qu'une fourniture ait un type
++         stable : `Web.Provision[family](sources, coverage)` est un `(Typeface of family) is
++         Typesettable in Web` dont les `#sources` sont les `Typesettable.Source` à partir
++         desquelles le navigateur obtient la police et dont la `#coverage` est la `Coverage` avec
++         laquelle elle a été déclarée. `FontFace.rules` rend une source à la fois.
+
+@ 0 1 0 0b3cef25baaa02f510f9a8dc66e4122e
++     entry #sources
++       info
++           l'endroit où le navigateur obtient la police : liée, importée, locale ou générique
+
+@ 0 1 0 0305c60f1da67c3c0bfcd8aeeb27a734
++     entry #coverage
++       info
++           les graisses, inclinaisons, largeurs et axes que la fourniture a été déclarée offrir
+
+@ 0 1 0 1c1eb7a9dc221e1702a7f849ec3ce6a3
++     entry #Self
++       info
++           la police fournie, `Typeface of family`
+
+@ 0 1 0 0820d1d77dcc4af808da2fc9d7e60b82
++     entry #Form
++       info
++           le support, `Web`
+
+@ 0 1 0 18ea0cac99b3dd8e17433bb3d3d044c5
++   entry .sansSerif
++     info
++         la famille générique `sans-serif`, fournie sur le web sans déclaration
+
+@ 0 3 0 000cdd24cb1bb1f60c8e14a9cf550cc6
++     detail
++         Un navigateur compose chaque famille générique à partir de ce dont il dispose ; la
++         fourniture a donc une seule source `Generic` et `Coverage.Unknown`, qui admet toutes les
++         fontes ; elle ne rend aucune at-rule, et `font-family: sans-serif` sans guillemets.
+
+@ 0 1 0 03e74f05e38096aa138d9a7e2aedc6b0
++   entry .serif
++     info
++         la famille générique `serif`, fournie sans déclaration
+
+@ 0 1 0 146ca68f28d2088802e8d576f4221ce8
++   entry .monospace
++     info
++         la famille générique `monospace`, fournie sans déclaration
+
+@ 0 1 0 0cbd01e79bca9c110fa66452fd625720
++   entry .cursive
++     info
++         la famille générique `cursive`, fournie sans déclaration
+
+@ 0 1 0 0b7d5f00f623c61b047f45d57d9bb74c
++   entry .fantasy
++     info
++         la famille générique `fantasy`, fournie sans déclaration
+
+@ 0 1 0 14bb6adfaf0c5474158de58634f46cbe
++   entry .systemUi
++     info
++         la famille générique `system-ui`, fournie sans déclaration
+
+@ 0 1 0 1466e3fd8f63af87007d7491fb37d7f1
++   entry .linked
++     info
++         une fourniture à partir d'un fichier de police que le navigateur récupère à une URL
+
+@ 0 8 0 13028faa36c2d0ab0d25c5c637fce239
++     detail
++         `Web.linked[family](url, coverage, format)` prend n'importe quel type d'URL
++         `Abstractable across
++         Urls to Text` (un `HttpUrl` issu de `url"…"`, ou du texte), la `Coverage` que le fichier
++         est déclaré avoir — puisque le fichier n'est pas disponible pour être lu, seul ce qui
++         est déclaré est admis, si bien qu'une police déclarée dans une graisse refuse une
++         demande pour une autre plutôt que de laisser le navigateur la synthétiser — et un
++         `Typesettable.Source.Format` optionnel (`Ttf`, `Otf`, `Woff` ou `Woff2`) pour
++         l'indication `format()`. L'argument de type `family` est normalement inféré à partir du
++         type déclaré du given. Il se rend sous forme d'une `@font-face` dont la `src` est
++         `url("…") format("woff2")`.
+
+@ 0 1 0 1963f64204e87bdd15609ed8b4b29277
++   entry .local
++     info
++         une fourniture à partir d'une police que le lecteur est censé avoir installée
+
+@ 0 4 0 07aab7c0f94876cf07d1a36126ea5d22
++     detail
++         `Web.local[family](coverage)` nomme la police dans un `src: local("Name")`, le nom de
++         famille de la police étant le littéral `family`. Rien ne garantit que le lecteur en
++         dispose ; c'est donc la fourniture la plus faible, et sa couverture —
++         `Coverage.Unknown` si elle n'est pas fournie, qui admet toutes les fontes — ne dit que
++         ce qui est déclaré.
+
+@ 2 1 0 17fa1e0d38e4ddd41e39a95e0ff9fa68
++         ```scala
+
+@ 3 1 0 05934999dfd98b76111a09540f8a0931
++         import soundness.*
+
+@ 4 1 0 18149310ec53a6091b035bd6b83a1882
++         import strategies.throwUnsafely
+
+@ 1 1 0 153d7515339ef8d803587bc9d8f544fb
++         import formatting.compactCssFormatting
+
+@ 0 1 0 0237c1b9d179fa560ecd81c7a9693b5b
++         given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+@ 0 1 0 067b11d41706a4ac09dcffb2362d13dc
++         Css.fontFace(Web.font(Typeface["Menlo"].face)).show
+
+@ 0 1 0 1701a766acd79f470d91d1ad6c758cd2
++         // @font-face{font-family:"Menlo";src:local("Menlo");}
+
+@ 1 1 0 1cda5002adab070315a8a7ac1c1e3406
++         ```
+
+@ 0 1 0 19d79e7e578452f80ecf7b7a024e52e4
++   entry .imported
++     info
++         une fourniture à partir d'une feuille de style, comme celle d'un service de polices, qui
++         déclare elle-même la police
+
+@ 0 4 0 083a77ec2f22f5d715259c4beb423683
++     detail
++         `Web.imported[family](url, coverage)` prend l'URL de la feuille de style (de n'importe
++         quel type `Abstractable across Urls to Text`) et la couverture qu'elle est déclarée
++         offrir ; la page porte alors `@import url("…");`, que `Css.fontFaces` place avant toute
++         autre règle, comme l'exige le CSS.
+
+@ 0 1 0 046b5ad646e414a10d3a5af2f625bbe6
++   entry .sansSerifFont
++     info
++         la famille sans-serif générique sous forme de `Font in Web` : une valeur par défaut qui ne
++         peut pas échouer
+
+@ 0 2 0 0f95f23fbc9205d01bb2a7c49864bc16
++     detail
++         `Typeface.SansSerif.face` associé à `.sansSerif` ; puisqu'une famille générique admet
++         toutes les fontes, l'association ne lève jamais d'erreur, et son `Css.fontFace` est
++         vide.
+
+@ 0 1 0 0d5539a16aecf4c20025ed48fba95108
++   entry .font
++     info
++         une fonte associée à sa fourniture dans la portée, sous forme de `Font in Web`
+
+@ 0 8 0 0350199e2e14565b0c126ce32346d7b8
++     detail
++         `Web.font(face)` a besoin d'un given `(Typeface of family) is Typesettable in (? >: Web)`
++         pour la police de la fonte — une fourniture web ou une fourniture embarquée — et d'une
++         `Tactic[Font.Error]`, levée lorsque la couverture de la fourniture ne peut pas composer
++         la fonte. Une police sans fourniture dans la portée est une erreur de compilation. La
++         fonte est un paramètre inline ; une fonte dont la demande figure dans son type
++         (`inter.bold.italic`) et une fourniture dont le fichier de police est sur le classpath
++         sont donc vérifiées pendant la compilation du code, le même refus étant signalé comme
++         erreur de compilation. Là où le type attendu nomme déjà le support, le `Font(face)` de
++         phoenicia suffit.
+
+@ 0 1 0 08d3dfe7bfd653e605c6d296d61bc44d
++ entry .FontFace
++   info
++       les règles `@font-face` et `@import` dont a besoin la fourniture d'une police, sous forme de
++       `Css.Node`
+
+@ 0 11 0 073c97eaf93fc47e06dcb148de93d85d
++   detail
++       Rend les sources d'une fourniture sous forme d'at-rules : une police embarquée devient
++       une `@font-face` dont la `src` est un URI `data:` en base 64 (`font/otf` avec
++       `format("opentype")` pour un `Opentype`, `font/ttf` avec `format("truetype")` sinon),
++       si bien que la feuille de style — ou le SVG qui la porte — est autonome ; une police
++       liée devient une `@font-face` avec son URL et son indication de format ; une police
++       locale une `@font-face` avec `src: local("Name")` ; une feuille de style importée un
++       `@import url("…");` ; et une famille générique rien. Chaque `@font-face` porte
++       `font-weight` (une graisse unique ou une plage `100 900`), ainsi que `font-style` et
++       `font-stretch` là où les fontes de la couverture diffèrent des valeurs par défaut,
++       couvrant chaque entrée de la couverture afin que la sélection de fonte d'un navigateur
++       trouve ce que contient le fichier. `Css.fontFace` et `Css.fontFaces` en sont la surface
++       habituelle.
+
+% 1 1 0 08b5a34a8feb295b1322853ac9330934
+
+% 0 1 0 096695ba1e0fa8e9087b1f0cf918cf86
+
+@ 0 1 0 0b57bf6b351e7b5a18a7cf4bf829dcef
++   entry .rules
++     info
++         les at-rules de la police d'une fonte, sous forme de nœuds
+
+@ 0 1 0 10e774478c916abb151c8b3f0a53fe31
++   entry .stylesheet
++     info
++         une feuille de style des règles de plusieurs polices, chaque police une seule fois, les
++         `@import` en premier
+
+@ 0 2 0 13c05fed7578b5de15d28fe1a67a51dd
++     detail
++         Prend une `List` de polices ; une police qui apparaît plus d'une fois n'obtient ses
++         règles qu'une seule fois, et chaque `@import` est placé avant les `@font-face`, comme
++         l'exige le CSS.
+
+@ 0 1 0 1a422c75a56644fe0826488d7033745b
++ entry .fontFace
++   info
++       `Css.fontFace(font)` : les at-rules dont une page a besoin pour la police d'une fonte, sous
++       forme de `Css`
+
+@ 0 5 0 1174cdb9a1b260060f5df331e6cdf09a
++   detail
++       Une extension sur le compagnon de `Css`, dans `cataclysm.fonts`, qui prend une
++       `Font in (? >:
++       Web)` — une police web, ou une police dont la fourniture est une fourniture `Medium`
++       embarquée — et renvoie la feuille de style de `FontFace.rules` correspondante. Jointe
++       aux propres règles d'une feuille de style avec `+`, si bien qu'une page porte les
++       polices que nomment ses styles ; une famille générique donne une feuille de style vide.
+
+@ 2 1 0 15753ac2e28c248b1d6fa5befee68a03
++       ```scala
+
+@ 3 1 0 07ee49716cd297f90168077063bdc354
++       import soundness.*
+
+@ 4 1 0 1aa65ece10f7b8f40b850adfe7a6421b
++       import strategies.throwUnsafely
+
+@ 5 1 0 16515ab8aa2d6d5312d126545046e705
++       import formatting.compactCssFormatting
+
+@ 7 1 0 0d543fd2827577b81daf3cc749249273
++       given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+@ 0 1 0 1c40f0e944b40b261a3e7dc0c451c068
++       val code: Font in Web = Web.font(Typeface["Menlo"].face)
+
+@ 0 1 0 08d49ac6a1beb64c1ac3ebad0a7323fe
++       Css.fontFace(code) + css"pre { white-space: pre }"
+
+@ 1 1 0 16d5aa23739a1ada034b47d622d2dace
++       ```
+
+@ 0 2 0 1ee968e57ec15d4314e023973273fe4b
++       Les déclarations qui sélectionnent la fonte, `code.style`, sont un `Css.Style` pour
++       l'attribut `style` d'un élément plutôt qu'une règle de la feuille de style.
+
+@ 0 1 0 0f1c977586348fe91185cf6a13918097
++ entry .fontFaces
++   info
++       `Css.fontFaces(fonts*)` : les règles de plusieurs polices, chaque police une seule fois, les
++       `@import` en premier
+
+@ 0 2 0 03690ecda953cc02078b9979db625c5c
++   detail
++       Une extension sur le compagnon de `Css`, dans `cataclysm.fonts` : `FontFace.stylesheet`
++       sur les polices données, si bien qu'une page qui utilise deux fontes d'une même police
++       ne la déclare qu'une fois.
+
+@ 2 1 0 12b4a252b089cdbe0805988b85b7e416
++       ```scala
+
+@ 3 1 0 1fb94814b932b59f14e3686d1c43ab3b
++       import soundness.*
+
+@ 4 1 0 0a10d441308edba70908f3e05a92474c
++       import strategies.throwUnsafely
+
+@ 5 1 0 03b8f0098032cfd81c29e441dda19245
++       import formatting.compactCssFormatting
+
+@ 7 1 0 0c7227874adbdec1177a9d82c5e3b987
++       given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+@ 0 1 0 00bc4a044a70b8f202c55cb40547a199
++       val menlo = Typeface["Menlo"]
+
+@ 0 1 0 05aff051718afb251de9ed7b47f45728
++       Css.fontFaces(Web.font(menlo.face), Web.font(menlo.bold)).show
+
+@ 0 1 0 16787f619320e2120cf6f76bf891c974
++       // @font-face{font-family:"Menlo";src:local("Menlo");}
+
+@ 1 1 0 03f1401c4d689e5618b5e5a5274b37d7
++       ```
+
+@ 0 1 0 104639a7c06e58a90bbf506a7e901b4e
++ entry .style
++   info
++       les déclarations qui sélectionnent une `Face` ou une `Font` de phoenicia, sous forme de
++       `Css.Style`
+
+@ 0 7 0 103048d32a8dc4540908566a9d2a3c80
++   detail
++       Une extension sur `Face`, et sur `Font` (au moyen de sa fonte), dans `cataclysm.fonts`.
++       Le style a toujours `font-family` — une famille générique sans guillemets, tout autre
++       nom entre guillemets — et `font-weight`, et n'ajoute que ce qui diffère des valeurs par
++       défaut : `font-style: italic` ou `oblique 12deg` pour une inclinaison, `font-stretch`
++       pour une largeur, `font-variation-settings` pour des positions sur les propres axes de
++       la police, et `font-feature-settings` pour les fonctionnalités de mise en page activées
++       ou désactivées. Les axes enregistrés de graisse, de largeur et d'italique passent par
++       les propriétés de haut niveau ; une police statique et une police variable sont donc
++       demandées de la même façon.
+
+@ 2 1 0 193ad132b5473c5c06f812c2ad9186d5
++       ```scala
+
+@ 3 1 0 07596f66d01a0e5b0df5155fb6a3271c
++       import soundness.*
+
+@ 0 1 0 16f500912f13cb8f08eeb14977aa4460
++       val inter = Typeface["Inter"]
+
+@ 0 1 0 1e44ca007687b9671aefa04f736f3da2
++       inter.bold.italic.style.text
+
+@ 0 1 0 042d1a899d76748c0c2a8b2c1da6b429
++       // font-family: "Inter"; font-weight: 700; font-style: italic
+
+@ 0 1 0 03fbeec2d686fcf31918aace7b3d14c8
++       Typeface.SansSerif.face.style.text
+
+@ 0 1 0 043a7e5e16719ee5046db5fab897f4f9
++       // font-family: sans-serif; font-weight: 400
+
+@ 0 1 0 18a3778012bf373c0d70cf7630056eea
++       inter.face.varying(Variation.Axis.OpticalSize, 14.0).disabling(Face.Feature.Ligatures).style.text
+
+@ 0 1 0 1043c88bf7f1c7f2122ea4b60b01e2db
++       // font-family: "Inter"; font-weight: 400; font-variation-settings: "opsz" 14.0; font-feature-settings: "liga" 0
+
+@ 1 1 0 07b70998d9bf3f740b631702894a02c3
++       ```
+
+@ 0 2 0 12c2cafaf89d767d0d4d2b85136dbe3c
++       Le résultat est un `Css.Style` ; il se joint donc à un autre par `+` et sert d'attribut
++       `style` de honeycomb au moyen d'`inlineStyle`.
+
+@ 0 1 0 1a33ef216a9d69a619861d2629ddebbd
++ entry .Styles
++   info
++       une feuille de style du classpath, liée de sorte que les noms de classes et d'identifiants
++       HTML soient vérifiés par rapport à elle
+
+@ 0 8 0 15646cb55203b1451d2e6b00d925e2ed
++   detail
++       Un `Styles` est un marqueur qui porte le chemin d'une feuille de style dans le classpath
++       comme son type `Locus` : `Styles(cp"/site.css")` est un `Styles at "/site.css"`. Placé
++       dans la portée comme given, avec `cssBindings.checkedBinding` importé, il fait que
++       chaque attribution honeycomb `Tag.name(…)` résout `name` par rapport aux `classes` et
++       aux `ids` de la feuille de style pendant la compilation du code : un nom de classe
++       attache `class="name"`, un identifiant `id="name"`, un nom que la feuille de style ne
++       mentionne pas est une erreur de compilation, et un nom qui est à la fois une classe et un
++       identifiant en est une aussi ; une classe mal orthographiée dans un template ne peut
++       donc pas atteindre le navigateur.
+
+% 2 1 0 163c4900ecd0f6280499182757ac5fd6
+
+% 3 1 0 1c350d87f0c5287809ba383ce3f69d7c
+
+% 4 1 0 0fb2ce39cb59faa807bb88be92800e4f
+
+% 5 1 0 18c395cda1ce026a0e5f83c9dd5cff58
+
+% 6 1 0 12246ba9326e5c8e08e866b54053e74b
+
+% 8 1 0 0f9f826b5f5b7384070cff8cc4789e58
+
+% 9 1 0 0f956bfbee8acbef037ddba7b36f42be
+
+% 0 1 0 097d654e069ae4d913ecd2a3c2390ff3
+
+% 0 1 0 0dbe63b6552631ff131854da9bd9989f
+
+% 1 1 0 1f81570e6157d4c2089d875a6773ce69
+
+@ 0 5 0 08bf2d2915743c5000e98ac3fc84de24
++       La ressource est lue et analysée pendant l'expansion de la macro (une fois par chemin) ;
++       la feuille de style doit donc se trouver sur le classpath du compilateur, et le type du
++       given nommé est mis entre parenthèses, comme doit l'être un type de given contenant un
++       littéral. Une feuille de style qui ne peut pas être lue ou analysée est une erreur de
++       compilation qui nomme le chemin. Seul `cataclysm.html` offre ceci ; il dépend de
++       hellenism et de honeycomb.
+
+% 0 1 0 1791425329c23fdc127add256328e171
+
+% 0 1 0 0ac410be3847382f1121e42b35ca4a89
+
+% 0 1 0 1e1b26233a2737e40298d059ecf4b437
+
+@ 0 1 0 11f6dded0a3b85791f4459b7b022420d
++   entry .apply
++     info
++         `Styles(cp"/path.css")` : un marqueur dont le `Locus` est le chemin de la ressource
+
+@ 0 3 0 1705d8ac4727a50600904ff715474a0f
++     detail
++         Une macro qui élève le `Locus` de la ressource `cp"…"` dans le type de résultat ;
++         `Styles(cp"/site.css")` est donc typé `Styles at "/site.css"` ; une ressource sans
++         `Locus` est une erreur de compilation.
+
+@ 0 1 0 1f02ce4e69d909fc084b850329760e70
++ entry .attributeFor
++   info
++       l'attribut, `class` ou `id`, que dénote un nom dans la feuille de style `Styles` dans la
++       portée
+
+@ 0 6 0 016fd3f674896c1013953699e6a4b0fa
++   detail
++       `attributeFor["button"]` se développe en `t"class"` ou `t"id"` selon ce que déclare la
++       feuille de style `Styles` dans la portée, et ne compile pas si le nom n'est ni l'un ni
++       l'autre (_cataclysm: `name` is not a class or id in the stylesheet_), s'il est les deux
++       (_… is both a class
++       and an id in the stylesheet; rename one_), ou si aucun given `Styles` n'est dans la
++       portée (_cataclysm: no stylesheet is in scope; add a `given Styles at "/path"`_). Le nom
++       doit être un littéral de chaîne. `cssBindings.checkedBinding` est construit dessus.
+
+@ 0 1 0 15d40bec3d4157430359b7d987dfec31
++ entry .inlineStyle
++   info
++       permet à un `Css.Style` d'être la valeur d'un attribut `style` de honeycomb
+
+@ 0 5 0 1d8229c0daaca16a15e2496a8c8934d4
++   detail
++       Le given `Css.Style is Attributive to Whatwg.Css`, dans `cataclysm.html`, si bien que
++       `Div(style = Css.Style(color = red, width = 4.0*Px))` rend `style="color: #ff0000;
++       width: 4px"`. C'est un given de niveau supérieur, au nom unique, qui n'est dans la
++       portée avec `import soundness.*` que s'il est importé par son nom
++       (`import soundness.inlineStyle`) ou par `import cataclysm.inlineStyle`.
+
+@ 0 1 0 0e4b54c2261fb56f0ef0aeaa949e2ca7
++ entry .cssBindings
++   info
++       des noms de classes et d'identifiants vérifiés pour le HTML, un given à importer par son nom
+
+@ 0 4 0 0c0ee88c8d818d3c0deff224063aa2af
++   detail
++       Le package qui contient `checkedBinding`, qui transforme les attributions
++       `Tag.name(…)` de honeycomb en noms vérifiés par rapport à la feuille de style `Styles`
++       dans la portée. Il est importé par son nom, après la déclaration du given `Styles` :
+
+% 2 1 0 0b05d33ce07b7c6e0b7b36b787c4c7f6
+
+% 3 1 0 01be99e34347bb44159644b595ab3847
+
+% 4 1 0 0b8b2cbb05975afc144256e013793974
+
+% 5 1 0 02e52007ecc784e50682cd33f9d02526
+
+% 6 1 0 124f8aed1f6240d5179d2c40a56a6894
+
+% 8 1 0 17571c125a70863d11183d65ae99ef9b
+
+% 9 1 0 0876acc0da80c5781346c0a2890ed8e2
+
+% 1 1 0 1b3ce83a7a540f331beeaac54a9c71cf
+
+@ 0 1 0 1759015f5b6583371d65fd3c468cd64f
++   entry .checkedBinding
++     info
++         fait que `Tag.name(…)` attache `class="name"` ou `id="name"` selon ce que dit la feuille
++         de style dans la portée
+
+@ 0 5 0 0e8631c0b4d4dbdd0b53f95133bd4390
++     detail
++         Un given inline `Attribution of name` pour chaque nom littéral sauf `apply`, qui se
++         développe au moyen d'`attributeFor` en l'attribut correct, ou en une erreur de
++         compilation pour un nom que la feuille de style `Styles` dans la portée ne déclare pas.
++         Son équivalent non vérifié est `stylesheets.uncheckedClasses` de honeycomb, qui attache
++         `class="name"` pour n'importe quel nom ; les deux sont des alternatives, chacune importée
++         par son nom, et pas les deux à la fois.

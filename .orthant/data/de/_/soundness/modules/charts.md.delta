@@ -1,0 +1,592 @@
+orthant 2 language
+
+@ 0 1 0 0c96663fd6468e6a0d4727729ef491f9
++ ## Diagramme
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 5 0 08ff5d6573125ac9145902f24c990802
++ Ein Diagramm macht aus einer Reihe von Zahlen ein Bild: Balken für Kategorien, eine Linie für einen
++ Trend, Segmente für die Teile eines Ganzen, ein Histogramm für eine Verteilung. Diagramme werden hier
++ als [SVG](svg.md) aus typisierten Daten gezeichnet, in vier trennbaren Schichten: der Gestalt der
++ Daten, der Art des Diagramms, der Anpassung des einen an das andere und dem Stil. Jede lässt sich
++ wählen, ohne die übrigen zu stören, und ein Diagramm lässt sich überarbeiten, wenn neue Daten
++ eintreffen.
+
+@ 0 1 0 03f59cd1461598590bc0266df9006621
++ ### Über Diagramme
+
+@ 0 5 0 1ce739b08b019be501acd7b2c92317bf
++ Diagrammbibliotheken nehmen gewöhnlich einen Sack voll Zahlen und einen Sack voll Optionen und
++ stellen erst zur [Laufzeit] fest, dass beides nicht zusammenpasst: ein Tortendiagramm aus drei
++ Datenreihen, eine Linie durch Kategoriebeschriftungen, eine logarithmische Achse über einen Bereich,
++ der null enthält. Die Entscheidungen, die getrennt sein sollten, nämlich was die Daten sind, wie sie
++ gezeichnet werden, wie ihre Achsen gewählt werden und wie sie aussehen, kommen verknäult in einem
++ einzigen Aufruf an.
+
+@ 0 7 0 0ba4c741ab60fc040d5a6fb7ce19aed4
++ Hier bleiben die vier Entscheidungen getrennt. Die *Gestalt* der Daten steckt in ihren Typen. Eine
++ Datenreihe über `Text` ist kategorial, eine Datenreihe über `Double` oder eine `Duration` ist
++ stetig. Eine Diagramm*art* ist mit manchen Gestalten verträglich und mit anderen nicht, und der
++ Compiler prüft die Paarung. Die *Anpassung* der Daten an die Achsen, linear oder logarithmisch, auf
++ runde Zahlen aufgefüllt oder knapp, bei null verankert oder nicht, ist eine Kalibrierung, die für
++ jeden Achsentyp gewählt oder explizit übergeben wird. Alles, was den *Stil* betrifft, also Größe,
++ Farben, Schrift und Legende, ist ein eigener Wert. Das ist
++ [Entkopplung](../../philosophy/decoupling.md) der Bedeutung von der Darstellung.
+
+@ 0 2 0 0bcbe4c8555c85431339fc36c514f36f
++ Alles stammt aus dem Paket `soundness`. Der zweite Import wählt eine [Strategie] für Fehler, und der
++ dritte lässt die Beispiele ihre Ergebnisse ausgeben:
+
+% 2 1 0 1fae61954e023d26038f4043e06b964b
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0a5bea9cc766c6ff010cb926bcc71c55
++ ### Datenreihen
+
+@ 0 1 0 0019d74d8b44ed2712e747f4815e11b9
++ Eine `Series` ist eine benannte Reihe von Punkten, jeder eine Abszisse gepaart mit einer Ordinate:
+
+% 2 1 0 1c0949b26336a2a1154c75aaf303ebf7
+
+% 0 1 0 05c577267af84d641e80ee73864c95a5
+
+% 0 1 0 13e792d6c381ec9901eaaa5ad79e0510
+
+% 1 1 0 099229e0299c6bc2107cadd647c3f612
+
+@ 0 4 0 0808d78d9b99ff3d0de657adeb3c2b27
++ Der Typ der Abszisse bestimmt die Achse. Ein `Text`, eine [Aufzählung] oder eine `Category` ist
++ `Categorical`: Ihre Werte sind unterschiedliche Beschriftungen, in der Reihenfolge ihres ersten
++ Auftretens. Eine Zahl, eine `Duration`, ein `Instant` oder eine beliebige `Quantity` ist
++ `Continuous`: Ihre Werte haben Positionen auf einer numerischen Achse. Beide [Typklassen][Typklasse]
++ lassen sich für einen eigenen Typ angeben.
+
+@ 0 2 0 1eae6d48ab6af09f1443852b6b9a5336
++ Ein `Chart.Estimate` ist ein stetiger Wert mit dem Intervall, in dem er liegt; ein Diagramm zeichnet
++ ihn als Fehlerbalken oder als Band:
+
+% 2 1 0 0d348e2e435cb1db19e7f9af71be349b
+
+% 0 1 0 1e64d10b4259f7b206f1f3f6da48cefa
+
+% 0 1 0 1a3efbf02f8e35620f38c5b4682d1f46
+
+% 1 1 0 0238e30a2d10a792070c6ce447ada140
+
+@ 0 3 0 01fbc378f63d53fc02871db7fed292fd
++ Ein Wert kann auch eine Notiz tragen, etwa `Noted(3.0, t"Paris")`, die ein Streudiagramm oder ein
++ Liniendiagramm neben den Punkt setzt. Der Name einer Datenreihe ist, wie der einer Stichprobenmenge
++ oder einer `Category`, ein beliebiger anzeigbarer Wert, etwa Text, ein Fall einer Aufzählung oder
++ eine Zahl, und wird einmal bei der Erzeugung dargestellt.
+
+@ 0 4 0 0d23fa25a2bda14e198a1fe0674cf9b5
++ Eine Datenreihe ist [unveränderlich], und `add` hängt einen Punkt in amortisiert konstanter Zeit
++ an; das braucht ein Diagramm, das eine Messung nach der anderen erhält. Mehrere Datenreihen sind eine
++ beliebige Collection davon, etwa eine `List`, eine `Sequence` oder ein `Set`, da die Verträglichkeit
++ für alles angegeben ist, was sich nach Datenreihen durchlaufen lässt.
+
+@ 0 1 0 02d71fa2f3dcf9d204772f975d92abcb
++ ### Diagrammarten
+
+@ 0 1 0 0a6b5cbfc4126e1403b5c97a0876dbb9
++ Eine Diagrammart ist ein Wert, und jede zeichnet Daten ihrer eigenen Gestalt:
+
+% 2 1 0 0865c84c80c49ccc1bb373ff0fbabbce
+
+@ 0 3 0 1f5c5a37230a87920ede019c8ee1dd1e
++ column  Art
++ column  Zeichnet
++ column  Abszisse
+
+% 0 1 0 109876b6ee6b5dd01ec0a352b6de250e
+
+@ 0 9 0 09a0d15a68d6a1c6006c21113a1d7fca
++ column  Stil
++ row  `Bars()`  eine Datenreihe oder eine Collection von Datenreihen  kategorial  stetig  `Bars.Style`
++ row  `StackedBars()`  eine Collection von Datenreihen  kategorial  stetig  `StackedBars.Style`
++ row  `Lines()`  eine Datenreihe oder eine Collection von Datenreihen  stetig  stetig  `Lines.Style`
++ row  `Scatter()`  eine Datenreihe oder eine Collection von Datenreihen  stetig  stetig  `Scatter.Style`
++ row  `Pie()`  genau eine Datenreihe  kategorial  stetig  `Pie.Style`
++ row  `Histogram()`  `Samples` oder eine Collection davon  stetig  Anzahlen  `Histogram.Style`
++ row  `Boxes()`  `Samples` oder eine Collection davon  eine Box pro Menge  stetig  `Boxes.Style`
++ row  `Doughnut()`  ein `Dag` aus `Weighted`-, `Progressive`-Knoten  keine  keine  `Doughnut.Style`
+
+% 1 1 0 15e6a05d8a61cab01842cda25c07048c
+
+@ 0 2 0 1305ec78ed1531fc1837a3a683bfe80d
++ Die Methode `chart` paart Daten mit einer Art und kompiliert nur dort, wo die Art die Gestalt der
++ Daten zeichnen kann:
+
+% 2 1 0 0872adde109405760243a620f54b68db
+
+% 0 1 0 0d268f7fce66118817ed40228b92779d
+
+% 1 1 0 1cc6391d1ab022911fc5eef435e72fa0
+
+@ 0 3 0 036967466ba45f020b3eb0165529a4b9
++ Ein Histogramm und ein Boxplot nehmen `Samples`, also rohe Messwerte, statt Punkten. Eine Paarung
++ ohne Sinn ist ein Kompilierfehler, keine Überraschung zur Laufzeit. Eine kategoriale Datenreihe hat
++ keine numerische Abszisse für eine Linie:
+
+% 2 1 0 0eb0b6370bc0530714cf735a217fd8d7
+
+% 3 1 0 04ec2fba972063400d880eccda0e3695
+
+% 4 1 0 0568b2a7a08c70941c46dfe96197adee
+
+% 5 1 0 082b674df0a3f84200f834b52889c6b2
+
+% 0 1 0 0431ae51bcb20187165538eea7aa0239
+
+% 1 1 0 07ae1407f6a244fc0d6cbeca8ec3b980
+
+@ 0 1 0 0808a411d6e0a16b05ce7510d72cffa1
++ Ein Tortendiagramm ist eine einzige Datenreihe:
+
+% 2 1 0 06420a45d59874b21333c65a9ceb648a
+
+% 3 1 0 1f9ee84f1151b3cb0031e65562bfc4a2
+
+% 4 1 0 002903d75f07c61f02c81201d30f6c68
+
+% 5 1 0 1a71dc5975612d121bce64c2876e7a33
+
+% 0 1 0 1b07f216788204340b09a14da37dc934
+
+% 1 1 0 132f5237bd5dce17075e69d3ebf0b1be
+
+@ 0 2 0 0a6877543df6f55818bd8e87e22c2e9b
++ Die Paarung ist eine `Plottable`-Instanz. Eine neue Diagrammart ist ein neuer Wert mit Instanzen für
++ die Gestalten, die sie zeichnen kann, und sonst muss sich nichts ändern.
+
+@ 0 1 0 1bf734d912b8e09719926501a9b33f5d
++ ### Anpassung
+
+@ 0 4 0 01202d4e65c43f920c626ed65d3d6d58
++ Die Anpassung wählt Bereich und Abstufungen jeder Achse aus den Daten. Die Diagrammart bestimmt, was
++ die Achse zeigen muss. Die Ordinate eines Balkendiagramms ist bei null verankert, die eines
++ Liniendiagramms nicht. Eine `Calibration` bestimmt das Wie: lineare oder logarithmische Positionen,
++ nach außen auf ganze Schritte aufgefüllt oder knapp an den Daten. Die Vorgabe ist linear.
+
+@ 0 2 0 1502b838a90dc67d119389b9d858a87c
++ Eine Kalibrierung ist nach dem Typ der Werte auf der Achse geschlüsselt, sodass ein Given in einem
++ Geltungsbereich jede Achse dieses Typs ändert und ein Import jede Achse:
+
+% 2 1 0 13f397e165896a891f227549c9e370f9
+
+% 0 1 0 11eb99bd787cd2dc0654d6959d24d568
+
+% 1 1 0 1e3cb016af6ff425006a46444ff3515a
+
+% 3 1 0 0e7362370e9a42700aecf0b132aa9f35
+
+% 4 1 0 148572ac3bea0764041167a8c4c6b610
+
+% 5 1 0 1aaa434a18afcf9d1b284b7a76302730
+
+% 0 1 0 19b6403d61741b8404571c9c37e2b647
+
+% 0 1 0 1ea1f64cab316b230c8253a91d0f3fe8
+
+% 0 1 0 064a901684ea100402c530e6e079099a
+
+% 0 1 0 024bdc24d804486a1d104184939e6905
+
+% 0 1 0 1a745a715f559fe515900c5a07f2a61f
+
+% 1 1 0 09fa8ba6a58189de1ae4fd0c5abc1b3a
+
+@ 0 1 0 029d237acb45cb7f09c44d0c02a09a6a
++ Eine Kalibrierung lässt sich auch einer Diagrammart für eine Achse übergeben, wenn beide Achsen
++ denselben Typ haben:
+
+% 2 1 0 0d3c565288bc6a45094b388397c94826
+
+% 0 1 0 12b25e580520e64d0ed4ae008e990c52
+
+% 1 1 0 0cff0272d1f5549a1fbbef84c8a9f4d9
+
+@ 0 1 0 113cc6c9ef9009db1f7afed90c9dd8c4
++ Die Kalibrierungen sind Givens im Paket `calibrations`:
+
+% 2 1 0 01ae43b5f0b29fbf1415becbed99c154
+
+@ 0 7 0 170b318875e04d0715bf239d77a0db16
++ column  Kalibrierung
++ column  Positionen
++ column  Bereich
++ row  `linearCalibration`  linear  nach außen auf ganze Abstufungen aufgefüllt; die Vorgabe
++ row  `logarithmicCalibration`  logarithmisch, oder linear, wenn die Daten null erreichen  ganze Dekaden
++ row  `adaptiveCalibration`  logarithmisch, wenn der Bereich drei Größenordnungen umfasst, sonst linear  aufgefüllt
++ row  `tightCalibration`  linear  genau die Ausdehnung der Daten
+
+% 1 1 0 0c3a15fb0388856204a375294dca2273
+
+@ 0 4 0 0b3d4a464eac82aa0a8dd118cae2a2cf
++ Die adaptive Kalibrierung ist das, was Benchmark-Zeiten über Eingabegrößen gewöhnlich brauchen. Die
++ `Scale`, die eine Anpassung erzeugt, sind schlichte Daten: ihre Grenzen, ihre Transformation und ihre
++ Abstufungen. Abstufungen liegen für Zahlen bei Vielfachen von eins, zwei und fünf und für Zeitdauern
++ und Zeitpunkte bei Uhrschritten wie Sekunden, halben Minuten und Stunden.
+
+@ 0 1 0 0f9da56da06abf8815251102b719ea7f
++ ### Stil
+
+@ 0 8 0 16e8ac4fdd741f900935c8033d17e2b4
++ Alles am Erscheinungsbild eines Diagramms, was keine Daten sind, ist ein *Stil*: ein Trait mit einer
++ Methode für jeden Bestandteil, den das Diagramm zeichnet, etwa einen Teilstrich, eine
++ Teilstrichbeschriftung, einen Balken, ein Segment oder ein Legenden-Farbfeld. Jede Methode nimmt die
++ Geometrie, die das Diagramm berechnet hat, und gibt die zu zeichnenden Figuren zurück. `Chart.Style`
++ enthält, was alle Arten gemeinsam haben: die Zeichenfläche, die Schriftart, die Legende und wie Text
++ gesetzt wird. `Chart.Cartesian` fügt Achsen, Abstufungen, Gitter, Titel, Marker und Fehlerbalken
++ hinzu. Jede Art fügt ihre eigenen hinzu: `Bars.Style` hat `bar`, `Lines.Style` hat `line` und
++ `band`, und `Pie.Style` hat `wedge`. Ein Diagramm verlangt den Stil seiner Art, sodass ein
++ Balkendiagramm gegen `Bars.Style` kompiliert.
+
+@ 0 2 0 13bba648c7097a2d0ca9c6f9f18a2303
++ `Chart.Standard` implementiert sie alle. Es ist eine Case-Klasse, daher sind seine Parameter benannte
++ Argumente, und jeder Bestandteil ist ein Override:
+
+% 2 1 0 12635a4a953ab1500ca45e8416a0e5df
+
+% 0 1 0 13fcfac96f11d9f5060c782ebaab8d48
+
+% 0 1 0 121c274ccbb7b4261681efbf04ed78f3
+
+% 0 1 0 08983f04256a67cc1d9f7efc6c654bd8
+
+% 0 1 0 1ae5bac0326c0c4e1b29e900e072e06c
+
+% 0 1 0 0ba10acfc6bfbbe011306e9c640bb3a9
+
+% 0 1 0 1d295cf1792a44250c496cad7ce36dc6
+
+% 1 1 0 0cfd6a85f8f14e53098ab3898e7dac73
+
+@ 0 1 0 1bd297cff10a3a5d0556f075dd86bbcd
++ Die Hooks decken die Details ab, nach denen ein Diagramm gewöhnlich beurteilt wird:
+
+% 2 1 0 065b2dd1803ae3ed1940cd15cd60a062
+
+% 0 1 0 1798a3663178fcb20e21d7ac388408da
+
+@ 0 19 0 14b4275b39de04971c9bf7682717ad84
++ column  Zeichnet
++ column  Definiert in
++ row  `fontStyle`, `lettering`  Größe und Farbe des Texts; jede Textfolge  `Chart.Style`
++ row  `backdrop`  die Zeichenfläche hinter dem Diagramm  `Chart.Style`
++ row  `swatch`, `legendLabel`  einen Legendeneintrag  `Chart.Style`
++ row  `leader`  die Linie von einer verschobenen Beschriftung zurück zu ihrem Punkt  `Chart.Style`
++ row  `axisLine`  den Strich jeder Achse  `Chart.Cartesian`
++ row  `axisBreak`  eine Bruchmarke, wo eine lineare Achse nicht bei null beginnt  `Chart.Cartesian`
++ row  `arrowhead`  das Ende einer Achse  `Chart.Cartesian`
++ row  `tick`, `gridLine`  eine Abstufung und ihre Gitterlinie  `Chart.Cartesian`
++ row  `tickLabel`  die Beschriftung eines Teilstrichs, wo sie sitzt und ob sie gedreht ist  `Chart.Cartesian`
++ row  `axisTitle`  den Titel einer Achse  `Chart.Cartesian`
++ row  `marker`, `errorBar`  einen Punkt und sein Intervall  `Chart.Cartesian`
++ row  `pointLabel`  die Notiz eines `Noted`-Punkts  `Chart.Cartesian`
++ row  `bar`  einen Balken  `Bars.Style`
++ row  `line`, `band`  die Linie einer Datenreihe und das Band einer Schätzung  `Lines.Style`
++ row  `box`, `whisker`, `median`  die Teile eines Boxplots  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  ein Segment und seinen Prozentwert  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  die Farbe eines Sektors und seine zwei Teile  `Doughnut.Style`
+
+% 1 1 0 154b23be00d128f40403102c283637fe
+
+@ 0 2 0 0c2302e080b7a86d0fdc0b03144c8ea9
++ `labelRoom` teilt dem Layout mit, wie viel Platz die Teilstrichbeschriftungen einnehmen; ein Stil,
++ der sie dreht, überschreibt es daher neben `tickLabel`.
+
+@ 0 2 0 18366fc25794b53a0ba6e01ac5ae76ea
++ Farben sind eine `ChartPalette`, nach Rollen benannt: die Farbreihe der Datenreihen, die Achsen, das
++ Gitter, die Beschriftung. Ein Stil wird daher unter jeder Palette dargestellt, und eine Palette wird
++ gewählt, indem man eine importiert:
+
+% 2 1 0 156fe033f3f729520883ded0b073b061
+
+% 0 1 0 0b4baa4babbe394e0cef4346332c8405
+
+% 1 1 0 0c414f1234d02afa160107762a54815a
+
+@ 0 4 0 08287a1d2475bf4c191d38d5b0b1491b
++ Die `font` eines Stils ist ein `Font in Web`: ein Schriftschnitt, gepaart mit einer Bereitstellung
++ für seine Schriftart, wie [Schriften](fonts.md#providing-a-typeface) beschreibt. Ein Diagramm lässt
++ sich daher nur in einer Schriftart setzen, für die sein SVG ein `@font-face` mitführt, oder in einer
++ generischen Familie, die die Vorgabe ist. Eine Bereitstellung wird einmal deklariert, und die
++ Schrift wird im Stil gewählt:
+
+% 2 1 0 135eb1f741890a571793e0533a2050b7
+
+% 0 1 0 086a108bf83a31bb1110712e206bf3ab
+
+% 0 1 0 19f41b45aa9f01b10700f4faef780fc0
+
+% 1 1 0 06d8ce0a1434fada087db0e64c24cb1a
+
+@ 0 4 0 1ecccf5445ab85f906a113687b454fb1
++ Text wird vermessen, um die Achsenbeschriftungen und die Legende anzuordnen. Die Vorschubbreiten der
++ Glyphen einer eingebetteten Schrift werden verwendet, sodass der vermessene Schriftschnitt der
++ dargestellte ist und die Ränder genau zu ihren Beschriftungen passen. Für eine Schrift, deren Datei
++ nicht zur Hand ist, wird für jedes Zeichen eine durchschnittliche Breite angenommen. Beides lässt
++ sich überschreiben, indem man eine Metrik importiert:
+
+% 2 1 0 1c20b66c3e6179650e6b72f7af7082c6
+
+% 0 1 0 1925dccbc71c725813e5c32d77396476
+
+% 1 1 0 1d3efa5c5b2d392c11fd1bb44d54a259
+
+@ 0 6 0 0861e544045acb140cbd151621ef10bb
++ Eine Achse über einer [Größe](quantities.md) wird mit dem betitelt, was sie misst, und mit ihrer
++ Einheit, beides dem Typ entnommen. Eine Datenreihe aus `Quantity[Metres[1]]`-Werten hat den
++ Ordinatentitel `distance / m`, eine aus `Metre/Second`-Werten `velocity / m·s¯¹`, wobei die Einheiten
++ so dargestellt werden wie überall sonst. Ein im Stil angegebener Titel ersetzt den Namen, behält aber
++ die Einheit. Der oben angegebene Stil betitelt die Ordinate mit `units sold`, daher trägt dieses
++ Diagramm von Höhen in Metern den Titel `units sold / m`:
+
+% 2 1 0 05ecd88f2932fe461252c9108e56c272
+
+% 0 1 0 19af03434c40585b17e1d78e0ea779b5
+
+% 1 1 0 00db0dcf163a090801f7647a301c0cb8
+
+% 3 1 0 05cb28843b301d030a1cb06e718b3cf3
+
+% 4 1 0 0ca8b1cd391d2c0c127b07557bf138ea
+
+% 5 1 0 0e271484733a35021c68c1d2073c2b00
+
+% 0 1 0 0e03e887a0d1f7190086744795a5b58f
+
+% 1 1 0 1df927aed3f7443515c053affa1e4e8f
+
+@ 0 2 0 1e6dd270dcd6e6801ac0f759eea4dc0a
++ Eine `Duration`-Achse trägt den Titel `time`, und ihre Abstufungen führen ihre eigenen Einheiten,
++ etwa `250ms` und `1m30s`, da Uhrschritte nicht dezimal sind.
+
+@ 0 1 0 03287d32f8590fc206c6a987574d4ca1
++ ### Beschriftungen platzieren
+
+@ 0 7 0 195f36632d50b50d1a1c87570cec9a5a
++ Der Text eines Diagramms wird durch die [Platzierung von Beschriftungen](label-placement.md) gesetzt,
++ sodass Beschriftungen nicht kollidieren. Teilstrichbeschriftungen, Achsentitel und Legendeneinträge
++ bleiben, wo sie sind, und eine Teilstrichbeschriftung, die ihre Nachbarin überlappen würde, wird
++ weggelassen. Die Notiz neben einem `Noted`-Punkt und der Prozentwert im Segment eines
++ Tortendiagramms bewegen sich. Die Notiz eines Punkts wird rechts von ihm gesetzt, wenn diese Seite
++ frei von anderen Notizen, Markern und Linien ist, auf einer anderen Seite, wenn nicht, und weiter
++ entfernt, mit einer Führungslinie zurück zum Punkt, wenn jede Seite belegt ist. Der Prozentwert
++ eines Segments sitzt in seinem Segment oder wird mit einer Führungslinie nach außen verschoben, wenn
++ die Beschriftung eines benachbarten Segments im Weg ist.
+
+@ 0 3 0 09f16b0b70851a181379cf9b15f3e2d0
++ Der `Arranger` im Geltungsbereich bestimmt die Anordnung. Die Vorgabe platziert jede Beschriftung
++ der Reihe nach. Für ein dicht gefülltes Diagramm betrachtet simuliertes Abkühlen die Beschriftungen
++ gemeinsam und wird gewählt, indem man es importiert:
+
+% 2 1 0 1e657a9a35ab64631273d1bc5e7ffd0a
+
+% 0 1 0 07df0a12b6dc6fcf13fcb991bfad5d23
+
+% 1 1 0 1ac5dcf69a06ecb01062ba8c55f43b9b
+
+@ 0 3 0 1407a04433753df50b78c668b92049d5
++ Ein Stil zeichnet jede Beschriftung dort, wo die Anordnung sie hingesetzt hat. `tickLabel`,
++ `pointLabel` und `wedgeLabel` nehmen eine `Chart.Anchoring`, also den Punkt und die Ausrichtung, die
++ den Text auf die richtige Seite davon setzt, und `leader` zeichnet die Linie von einer verschobenen
++ Beschriftung zurück zu ihrem Punkt.
+
+@ 0 1 0 0644d0e91014059201012368fc0e7313
++ ### Darstellung
+
+@ 0 1 0 146cf99daf1045a3093e92ce0180d0a1
++ Ein Diagramm wird als `Svg` dargestellt, das sich wie jedes andere zu XML-Text serialisiert:
+
+% 2 1 0 121bb4c062e3bb0b1a35ff607e354dce
+
+% 3 1 0 14ecedfe5c2975470ba8ddc9afc375fd
+
+% 4 1 0 0e03ab8f84a8e32107bb69996b13beaa
+
+% 0 1 0 0dcd73f60caba365012aad73ddb3a147
+
+% 0 1 0 060db6bdad79f96a1639d5d82b0fed44
+
+% 1 1 0 08abc61117f0daad053e847a1856ed80
+
+@ 0 2 0 02da70fa94cb69b614e1bc43e5723183
++ Jeder Teil der Zeichnung ist eine Gruppe mit einem stabilen Bezeichner; das macht das Diagramm
++ überarbeitbar:
+
+% 2 1 0 185b71f255c50f3304ce93070147ed81
+
+@ 0 2 0 0acab34b7b81afbf12a236e258630691
++ column  Bezeichner
++ column  Enthält
+
+% 0 1 0 1116ac56b72335fe08c3022657ba1d20
+
+@ 0 7 0 15d159b8661e7d88192430c02dd54014
++ row  `backdrop`  die Zeichenfläche in der Hintergrundfarbe der Palette  jedem Diagramm
++ row  `grid`  die Gitterlinien  kartesischen Diagrammen
++ row  `abscissa`, `ordinate`  jede Achse, ihre Abstufungen und ihren Titel  kartesischen Diagrammen
++ row  `legend`  die Legende  Diagrammen mit Legende
++ row  `series-0`, `series-1`, …  jede Datenreihe  kartesischen Diagrammen
++ row  `wedges`  jedes Segment und seine Beschriftung  `Pie`
++ row  `rank-0`, `rank-1`, …  jedes Band  `Doughnut`
+
+% 1 1 0 0b90fbb85042aa3e1e23d7c20c4bfcd7
+
+% 0 1 0 0c98c9f6a206185f092e4eaf027c2765
+
+@ 0 3 0 1981bda70016bcd719d1c7fda2da1bb4
++ Ein Diagramm ist unveränderlich. Mit neuen Daten liefert `revise` das nächste Diagramm und eine
++ Liste dessen, was sich auf der Seite geändert hat. Wenn die Anpassung die neuen Daten noch
++ aufnimmt, bleiben die Achsen, wo sie sind, und nur die abweichenden Teile werden ersetzt. Fällt ein
++ Punkt außerhalb, wird das ganze Diagramm neu gezeichnet:
+
+% 2 1 0 16870e1755249f5919e9aaf3a245e923
+
+% 3 1 0 1fe8175879eabc800e05c64e5a454c28
+
+% 4 1 0 0c5f7091344e438f1fb94f3ee2a8f768
+
+% 5 1 0 1d1db7f68e2806030b3adc0718624965
+
+% 0 1 0 05334ec6b66b6b391a19f11b599af89a
+
+% 0 1 0 09f63558bbc040810b78686e8ee9aa40
+
+% 0 1 0 1dc80aa4dd8fc7a816a42d0dcfb3f1cc
+
+% 1 1 0 0098a26f43570b011f6be276b33f0408
+
+@ 0 4 0 1f81d889adc8a1d60f8c2b02b141aafb
++ Die eine Revision ist ein `Chart.Revision.Replace` von `series-0`. Eine Seite, die das SVG enthält,
++ braucht nur zwei Operationen, nämlich ein Element anhand seines Bezeichners zu ersetzen und die ganze
++ Zeichnung zu ersetzen, sodass sich ein Diagramm über einen WebSocket aktuell halten lässt, indem man
++ jede Revision sendet, sobald sie erzeugt wird.
+
+@ 0 1 0 130ec102035b54480bb76ee4e21b3dd4
++ ### Verteilungen
+
+@ 0 3 0 1c15d16bf09255271327b43ece2d4e60
++ Rohe Messwerte sind `Samples`. Ein `Histogram` zerlegt ihren Bereich in gleiche Klassen, nach der
++ Regel von Sturges, sofern keine Klassenanzahl angegeben ist, und zählt die Stichproben in jeder.
++ `Boxes` fasst jede Stichprobenmenge als Box zwischen ihren Quartilen zusammen, mit Whiskern bis zu
++ ihren Extremwerten:
+
+% 2 1 0 11f29b9b17574cf418ce85d39712aa68
+
+% 3 1 0 02e51c5735e45dd3192c75fe8065554f
+
+% 4 1 0 14edd651438a3e69002e5acfa8f67400
+
+% 5 1 0 06997d1615b693500c9859027dce69cd
+
+% 0 1 0 033413227a5a19bc161a20d8abb03a01
+
+% 0 1 0 120641c5ed15b98719881891031cd91d
+
+% 0 1 0 16eaab8e03df40b91564bc83c7d578e4
+
+% 0 1 0 08a4d5eaf52798fb102bf632a7a154e9
+
+% 0 1 0 039e03d91e4f895d1863647075c6d3d5
+
+% 1 1 0 04e091e103d977c91d49843136a78104
+
+@ 0 1 0 06561035a92422101cd7dc5d18ffb45c
++ Beide akzeptieren eine beliebige Collection von Stichprobenmengen, so wie die anderen Arten
++ Collections von Datenreihen akzeptieren.
+
+@ 0 1 0 011d83e381dd7f9214bb8471ad71a2cd
++ ### Ringdiagramme
+
+@ 0 5 0 10c61f40162d8d7803c0b4fe67b283c0
++ Ein `Doughnut` zeichnet einen Abhängigkeitsgraphen, einen [`Dag`](graphs.md), als konzentrische
++ Bänder. Die Knoten, die von nichts abhängen, liegen im innersten Band, und jedes weitere Band enthält
++ die Knoten einen Rang weiter außen, sodass sich ein Build von der Mitte nach außen füllt. Jeder Knoten
++ ist ein Sektor seines Bands, der einen Winkel proportional zu seiner Größe innerhalb des Rangs
++ überstreicht, und ein Band ist so dick, wie es dem Anteil seines Rangs an der Gesamtgröße entspricht.
+
+@ 0 7 0 174d054413f9c42015242617e7d5556d
++ Die Größe eines Knotens und sein Fortschritt, von `0.0` bis `1.0`, stammen aus zwei Typklassen auf
++ dem Knotentyp, `Weighted` und `Progressive`. Der Sektor füllt sich im Uhrzeigersinn so weit, wie der
++ Knoten fertig ist, und der Rest erscheint in einer gedämpften Tönung der Farbe des Sektors. Diese
++ Farbe ist die erste Farbe der Palette, schattiert nach der Lage des Sektors: Ihr Farbton dreht sich
++ von links nach rechts um dreißig Grad, und sie ist unterhalb der Mitte dunkler und oberhalb heller.
++ Ein Ringdiagramm hat keine Beschriftungen und keine Legende. Jedes Band ist eine Gruppe `rank-0`,
++ `rank-1`, …, jeder Sektor ein Pfad `sector-0`, `sector-1`, …, und der unfertige Teil eines Sektors ist
++ `sector-0-rest`.
+
+@ 0 3 0 186d282768e4a38b0e1b4a430a91b85d
++ Ein Knoten trägt seinen Fortschritt, daher wird ein Ringdiagramm wie jedes Diagramm mit neuen Daten
++ überarbeitet. Die Anpassung übersteht jeden Graphen derselben Gestalt und Größen, und nur die Bänder,
++ deren Sektoren sich weiter gefüllt haben, werden ersetzt:
+
+% 2 1 0 18f4b7aff6b0de110e30179153ee763a
+
+% 0 1 0 1c9603d260d4845d0627ad6edabe3b4a
+
+% 0 1 0 16177b4b4491d314047ceb7a82921210
+
+% 0 1 0 09cc65b4500751fe18583ec2678045f9
+
+% 0 1 0 19fbe38972d93a8301629fc4a2d1ada1
+
+% 0 1 0 1d37cb09c68e85f6025ad2b133644a13
+
+% 0 1 0 0df9837846b58da419cb2d50259e7ec0
+
+% 0 1 0 18ceb764a89b38990f901c38d106eee2
+
+% 1 1 0 13cbc4141a3177041f7a4636c73314f0
+
+% 3 1 0 13abf6457ef29e920ca7e7e87e026661
+
+% 4 1 0 1188afa3209114471cb16aa280be7ca9
+
+% 5 1 0 1c89bbe9b2220ba91c446b729f51bf20
+
+% 5 1 0 0af780ea235f9323035be0c8310c8b6a
+
+% 0 1 0 144953e5d6637f7211871894602a275f
+
+% 0 1 0 0ede66e7c1428cd21f0d3a7cce77dfd5
+
+% 0 1 0 1a1a1757fda426f01cd5a437e645ec0e
+
+% 1 1 0 1bb306cc8eda97d4084e5d4752dd8e6d
+
+@ 0 1 0 0b5a150e94b838ff0c05fd0f9cea858d
++ Es gibt drei Bänder, eines für jeden Rang. Das Fertigstellen von `typecheck` ersetzt nur `rank-1`.
+
+@ 0 5 0 0ef8f078864b9b480d7386095e5501ec
++ `Chart.Standard(hole = 0.3)` höhlt die Mitte aus. `sectorGap` und `bandGap` sind die Breiten der
++ Fugen zwischen Sektoren und zwischen Bändern. `Doughnut.Style` hat `shade` für die Farbe eines
++ Sektors nach seiner Position sowie `sector` und `remainder` für seine zwei Teile. Die Rangbildung ist
++ die, die [Graphen](graphs.md#layering) beschreibt: `import rankings.balancedRanking` zeichnet jeden
++ Knoten so nah an den von ihm Abhängigen wie möglich statt so nah an der Mitte.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 8 0 073cfdea2b0f98e207a2a38e223c33c8
++ - [SVG](svg.md) beschreibt die Zeichnung, als die ein Diagramm dargestellt wird.
++ - [Platzierung von Beschriftungen](label-placement.md) beschreibt, wie die Beschriftungen eines
++   Diagramms einander ausweichen.
++ - [Schriften](fonts.md) beschreibt die Schriftarten, in denen ein Diagramm gesetzt werden kann.
++ - [Größen](quantities.md) beschreibt die Einheiten, die eine Achse betiteln.
++ - [Graphen](graphs.md) beschreibt den `Dag`, den ein Ringdiagramm zeichnet.
++ - [Farben](colors.md) beschreibt die Farben der Palette.
++ - [Zeit](time.md) beschreibt die Zeitdauern und Zeitpunkte, die eine stetige Achse enthalten kann.
++ - [Messanzeigen](gauges.md) und [Tabellen](tables.md) präsentieren Werte im Terminal, und
++   [Testen](testing.md) stellt Benchmark-Ergebnisse in Diagrammen dar.

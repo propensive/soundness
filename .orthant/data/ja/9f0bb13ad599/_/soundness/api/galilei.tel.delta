@@ -1,0 +1,196 @@
+orthant 2 language
+
+% 7 1 0 1a1956cb84a7ec440c0f256248e53526
+
+@ 0 5 0 1c0025c9eaaf9fe40e98071d332871be
++     単一のパスを超えるものもある。
++     `Cas` はディレクトリの下に置く、内容でアドレス付けされた blob のストアである。
++     `Searchpaths.Stems` は XDG のサーチパスのプレーン（`Xdg.Data`、`Xdg.Config`）を実際のディレクトリへ解決し、`discover`、`locations`、`listing`、`destination` を提供する。
++     `Umask` と `Fdtable` は、デーモンがクライアントの代わりに与えるコンテキスト値である（作成時に従うマスクと、`/dev/fd/N` のパスを開くときに通る記述子テーブル）。
+
+@ 0 10 0 014f9df73eaa0e1e1ec1313fd4d24eae
++       すでに何かが存在するパスへファイルを移動すると、その何かを破壊するか、移動を拒否するかのどちらかになる。ディレクトリを削除すると、中身を空にするか拒否するかのどちらかになる。シンボリックリンクをコピーすると、それをたどるかリンクをコピーするかのどちらかになる。
++       どちらの答えも一般には正しくないので、galilei は決して黙って選ばない。
++       各問いはポリシーのトレイト（`OverwritePreexisting`、`DeleteRecursively`、`CreateParents`、`DereferenceSymlinks`、`MoveAtomically`、`CopyAttributes`）であり、それに答えなければならない操作はポリシーをコンテキストパラメーターとして取る。
++       `overwritePreexisting` も `failOnPreexisting` もスコープにない状態で `moveTo` を呼ぶとコンパイルエラーになり、欠けているポリシーの名前が示される。
++       ポリシーは寛容なものと厳格なものの対になっていて、名前でインポートする（`import soundness.*` は given をインポートしない）。ファイル全体に対しても、一つのブロックに絞っても使える。
+
+@ 0 10 0 1a97b87d7a53afb71278e8a75042c446
++       - `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo`：`OverwritePreexisting` と `CreateParents`（コピーと移動ではさらに `DereferenceSymlinks`、移動では `MoveAtomically`）。
++       - `copyInto`、`moveInto`、`symlinkInto`：`OverwritePreexisting` と `DereferenceSymlinks`（と `MoveAtomically`）。行き先のディレクトリが指定されているので、親は作成される。
++       - `delete`、`wipe`：`DeleteRecursively`。
++       - `entry()`、`descendants`、`glob`、`hardLinks()`、`checksum`：`DereferenceSymlinks`。
++       - `create[…]`：必要なものはない。`CreateFlag.Parents` と `CreateFlag.Replace` が呼び出し位置で意図を示す。`create` を呼ぶ位置のスコープに `CreateParents` ポリシーがあれば、それにも従う。
+
+% 0 1 0 1abd1fb2681a63ba0899f5a16108fec1
+
+% 0 1 0 0757fee2b534bf971c9e195a7d37d8a0
+
+@ 0 48 0 01453ece02b6183508e6ad33388a35cd
++   entry .dereferenceSymlinks   最後の構成要素であるシンボリックリンクをたどり、それが指すものを操作する
++       寛容な `DereferenceSymlinks` である。
++       `entry()` はリンク先の種類を報告し、`copyTo` はリンク先の内容をコピーし、`descendants` と `checksum` はリンクされたディレクトリの中へたどり、`hardLinks()` はリンク先のリンク数を数える。
++   entry .preserveSymlinks   シンボリックリンクをたどらず、リンクそのものを操作する
++       厳格な `DereferenceSymlinks` である。
++       `entry()` は `Symlink` を報告し、`copyTo` はリンクをコピーし、走査はリンクされたディレクトリの中へ降りない。
++       `filesize()` は常にこれを使うので、リンクのサイズはリンク自身のものである。
++   entry .moveAtomically   `moveTo` はアトミックでなければならず、それができない場合は `Unsupported` になる
++       バックエンドにアトミックな改名（JVM では `ATOMIC_MOVE`）を求める `MoveAtomically` である。
++       読み手が移動途中のエントリーを見ることはない。アトミックにできないボリュームをまたぐ移動は、コピーに切り替えるのではなく、`Unsupported` を伴う `Io.Error` を発生させる。
++   entry .moveNonAtomically   `moveTo` はコピーの後に削除を行うものであってもよい
++       アトミックでない移動を許す `MoveAtomically` である。そのためボリュームをまたぐ移動は成功するが、途中で失敗すると、移動元と不完全な移動先の両方が残りうる。
++   entry .copyAttributes   コピーは移動元の属性（タイムスタンプ、パーミッション）を伴う
++       寛容な `CopyAttributes` である。
++       現在これを参照する操作はない。このポリシーは、バックエンドが従うようになったときにコピーでの属性の扱いが明示されるように存在する。
++   entry .discardAttributes   コピーは内容だけを取り、コピーの属性は新しいものになる
++       厳格な `CopyAttributes` である。現在の位置付けについては `.copyAttributes` を参照。
++   entry .deleteRecursively   ディレクトリに対する `delete` と `wipe` は、まずその下のすべてを削除する
++       寛容な `DeleteRecursively on <plane>` で、`Explorable` とバックエンドを持つ任意のプレーンに使える。
++       守る操作の前に子を深さ優先で削除するので、`wipe()` は木全体を取り除く。
++       これは `overwritePreexisting` が必要とするものでもあり、ディレクトリを置き換えるときにそれを空にできるようにする。
++   entry .deleteOnlyEmpty   `delete` と `wipe` は子を持つディレクトリを拒否する
++       厳格な `DeleteRecursively` である。子を一つでも持つディレクトリは、何かに触れる前に `Operation.Delete` と `Reason.DirectoryNotEmpty` を伴う `Io.Error` を発生させる。
++       一度に二つ以上のエントリーを決して取り除いてはならないプログラムはこれをインポートする。
++   entry .overwritePreexisting   すでに存在する行き先は先に取り除かれる
++       寛容な `OverwritePreexisting on <plane>` で、スコープ内に `DeleteRecursively on <plane>` を必要とする（置き換えるディレクトリを空にするため）。
++       これにより `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo`、`Device.create` は `AlreadyExists` を発生させなくなる。
++   entry .failOnPreexisting   すでに存在する行き先は `Io.Error` になる
++       厳格な `OverwritePreexisting` である。操作は何にも手を付けずに進み、既存のエントリーと衝突したときにバックエンドが `Reason.AlreadyExists` を伴う `Io.Error` を発生させるので、呼び出し側がそれを処理しなければならない。
++   entry .createParents   行き先の存在しない祖先ディレクトリが作成される
++       寛容な `CreateParents on <plane>` で、バックエンドを必要とする。
++       操作の前に、行き先の存在しない祖先が、最も近いものからさかのぼって一つずつ作成される。
++       ディレクトリはプロセス自身のマスクで作成される。
++       `copyInto`、`moveInto`、`symlinkInto` は、行き先のディレクトリが指定されているので、暗黙のうちにこれを使う。
++       これがスコープにあると、`create[…]` も、`CreateFlag.Parents` が与えられたかのように、存在しない祖先を作成する。
++   entry .requireParents   親が存在しない行き先は `Io.Error` になる
++       厳格な `CreateParents` である。何も作成されず、バックエンドは存在しない親に対して `Reason.Nonexistent` を伴う `Io.Error` を発生させる。
+
+@ 0 1 0 1296882510845f1b1289f7a791a2f225
++ entry .CreateParents   宛先の親が存在しないときのポリシー：それを作るか、失敗するか
+
+@ 0 8 0 1d4190ed60324ddb174e9b361d6bd755
++       プレーンごとのポリシー（`CreateParents on Linux`）であり、その `#apply` が操作を包む。
++       `filesystemOptions.createParents` は存在しない祖先をそれぞれ作り、`filesystemOptions.requireParents` はバックエンドが `Nonexistent` を発生させるに任せる。
++       `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo`、`Device.create` が必要とする。
++       `create[…]` の操作はこれを必要としないが、呼び出される場所のスコープにあればそれに従う。
++       `createParents` のもとでは、`CreateFlag.Parents` なしでも存在しない祖先を作る。
++   entry #apply   `path` で操作を実行する。その前に存在しない祖先を作るかどうかはポリシーによる
+
+@ 0 9 0 0a2294adcdf9815c0b76589ef0ac24d3
++       フラグがなければ厳格である。
++       呼び出し側が呼び出しの場で別の指示をしない限り、親が存在しないエントリーを作ると（`filesystemOptions.createParents` がスコープになければ）`Nonexistent` の `Io.Error` が発生し、すでに存在するエントリーを作ると `AlreadyExists` が発生する。
++       `Parents` は存在しない祖先ディレクトリをすべて（スコープ内の `Umask` のもとで）作り、`Replace` はまずそのパスにある既存のエントリーを削除する。
++       それがディレクトリなら再帰的に削除する。
++       フラグは形式のあとの引数として与える：`path.create[Directory](CreateFlag.Parents)`、`path.create[File](CreateFlag.Replace)`。
++       `Replace` は意図して `filesystemOptions` のポリシーにしていない。
++       作成時の破壊的な意図は、それが起こる場所で述べるものだからである。
+
+@ 0 8 0 17a4139b13863d8611fb563a80109d2e
++ entry .copyTo   `path.copyTo(destination)`：スコープ内のポリシーを参照して、エントリーをあるパスへコピーする
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`OverwritePreexisting on plane`、`DereferenceSymlinks`、`CreateParents on plane`、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     `failOnPreexisting` のもとでは、既存の宛先は `AlreadyExists` を発生させ、`overwritePreexisting` のもとでは、先に取り除かれる。
++     `requireParents` のもとでは、親が存在しなければ `Nonexistent` が発生する。
++     ディレクトリは再帰的にではなく、空のディレクトリとしてコピーされる（JVM の `Files.copy`）。
++     `Io.Event.Copy` をログに記録し、宛先を返す。
+
+% 7 1 0 0245801bb2136c841da686b0680d804a
+
+@ 0 8 0 1ab020043205a63e14aceafbbfc0774c
++ entry .moveTo   `path.moveTo(destination)`：スコープ内のポリシーを参照して、エントリーをあるパスへ移動する
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`OverwritePreexisting on plane`、`MoveAtomically`、`DereferenceSymlinks`、`CreateParents on plane`、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     `moveAtomically` のもとでは、移動は単一の名前変更であり、ボリュームをまたぐ移動は `Unsupported` になる。
++     `moveNonAtomically` のもとでは、コピーと削除になることがある。
++     厳格なポリシーのもとでは、`copyTo` と同じく `AlreadyExists` と `Nonexistent` が生じる。
++     `Io.Event.Move` をログに記録し、宛先を返す。
+
+% 7 1 0 15e5d40e31eead1b00c12857e960f691
+
+@ 0 6 0 1bbf9af2231e9434158c38a7e76496d9
++ entry .hardLinkTo   `path.hardLinkTo(link)`：このエントリーへのハードリンクを `link` に作る
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`OverwritePreexisting on plane`、`CreateParents on plane`、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     レシーバが既存のエントリーで、引数が新しい名前である。
++     実行後、両者は同じ `entryIdentity` を持つ。
++     `Io.Event.HardLink` をログに記録し、リンクのパスを返す。
+
+@ 0 6 0 1c6f69fde0af460216c7f82989bfdf38
++ entry .symlinkTo   `path.symlinkTo(link)`：このパスを指すシンボリックリンクを `link` に作る
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`OverwritePreexisting on plane`、`CreateParents on plane`、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     レシーバがターゲットで、引数が作られるリンクである。
++     リンクにはレシーバの完全なテキストが格納される。
++     `Io.Event.Symlink` をログに記録し、リンクのパスを返す。
+
+% 7 1 0 1d0dc59b173b45101e4a5a641f4d9ca0
+
+@ 0 8 0 14255f9cbc7e5a441a48337417dc0a10
++       多くのファイルは、一つの場所ではなく場所のリストに沿って探される：アイコンなら、それを持つ XDG のデータディレクトリのどれか、構成ファイルなら、いくつかの場所のうち最初のものである。
++       ambience の `Searchpath` プレーン（`Xdg.Data`、`Xdg.Config`）は、そうしたリストを一つのナビゲートできるツリーとして見せたものであり、実際のプラットフォームへの解決はコンテキストの `Searchpaths.Stems` を通して行われる：試すべきディレクトリの順序付きのリストであり、先頭のステムが書き込み可能なものである。
++       プレーン上の相対パスは、`discover()` ではそれを持つ最初のステムに、`locations()` ではそれを持つすべてのステムに、`listing()` では統合されたディレクトリの一覧に、`destination()` では先頭のステムの下のその場所に解決される。
+
+% 0 1 0 1ef3712c378c838d0276d43da971c5a5
+
+% 0 1 0 18568f6ddf325ebe0118d8fa232ea4d0
+
+@ 0 5 0 1b3a0d5251df1ee909b8890539b540b6
++ entry .discover   `path.discover()`：パスが存在する、サーチパスの最初の実際のディレクトリ。なければ `Unset`
++     `Path on <plane <: Searchpath>` に対する拡張であり、プレーンのための `Searchpaths.Stems` と、そのターゲットのための `FilesystemBackend` を必要とする。
++     XDG の仕様に従い、最初に一致したものが勝つ。結果は `Path on stems.Target` である。
++     `locate` や `search` ではなく `discover` と名付けられているのは、zephyrine と gossamer がそれらをアンブレラにエクスポートしているからである。
+
+@ 0 4 0 0b310b54a9ef907a1147f3cf8ca85ee0
++ entry .destination   `path.destination()`：先頭のステムの下にあるパスの場所。XDG の仕様が書き込み先として指示する所
++     `Path on <plane <: Searchpath>` に対する拡張である。
++     全域的である：ディスク上では何も検査されない。
++     存在しない中間のディレクトリを作るのは呼び出し側の役目であり、書き込みそのものに対する `filesystemOptions.createParents` を通して行う。
+
+@ 0 4 0 08affb08ea0beeb1106b596931ca7264
++       `galilei.jvm` にある。
++       `Device.create(path, Device.Kind.Block, major, minor)` は `mknod` コマンドを実行し、スコープにある `CreateParents` と `OverwritePreexisting` のポリシーを参照し、コマンドが失敗すれば `PermissionDenied` を伴う `Io.Error` を発生させる。デバイスのノードを作るには、通常 root が必要である。
+
+% 0 1 0 1bfc186d2c6371b41faa2d6a22a08838
+
+@ 0 5 0 0eb553b78dd028881026bb9c909cfbaa
++ entry .mapped   `path.mapped { view => … }`：ファイル全体を読み込み専用でメモリーにマップし、ブロックの間 `Terrain` として与える
++     何もコピーされない。整数はページキャッシュからその場で読み込まれ、一つのファイルをマップするプロセスはその一つのコピーを共有する。
++     ブロックが終わるとファイルのマップは解除され、ビューはそのブロックに閉じ込められたケイパビリティである。
++     JVM と Scala Native のバックエンドはファイルをマップする。WASI は理由 `Unsupported` を伴う `Io.Error` を発生させる。
+
+@ 0 6 0 0319e67535d2aa521b0832ad7f582d74
++ entry .hold   `path.hold(reserve) { holding => … }`：ファイル全体をその場で変更するためにマップし、排他ロックのもとで `Holding` として与える
++     ファイルは、存在しなければ作成され、`reserve` バイトより短ければその長さまで延ばされる。ホールディングの `expand` はさらに延ばす。
++     ロックはファイルそのものにかかり、ブロックの間保持される。そのファイルへの二つ目の `hold` は、このプロセスからであれ別のプロセスからであれ、理由 `Busy` を伴う `Io.Error` を発生させる。
++     書き込んだものは、ブロックが終わったときに永続化されている。
++     ファイルを変更のためにマップするのは JVM と Scala Native のバックエンドだけである。WASI のバックエンドは `Unsupported` を発生させる。
+
+@ 0 5 0 15a3d430ea8c7ec50db26d8e610c81a5
++ entry .claim   `path.claim[record] { owner => … }`：ブロックの間、名前の所有権を得て、その下で `record` のバージョンを公開する
++     兄弟ファイル `<name>.lock` に、その間ずっとオペレーティングシステムの排他ロックがかかるので、その名前の下で公開するのは一度に一つのプロセス、その中の一つのスコープだけである。二つ目は理由 `Busy` を伴う `Io.Error` を発生させる。
++     ロックは勧告ロックであり、ローカルファイルシステム上で協調するプロセスの間で信頼できる。
+
+@ 0 4 0 00e9fb594f49f696182f1a9cda4f790c
++ entry .observe   `path.observe[record] { observer => … }`：名前の下で現在公開されているバージョンをマップし、より新しいバージョンへ移る手段とともに与える
++     ロックは取られないので、オブザーバーが所有者を遅らせることも、所有者がオブザーバーを遅らせることもない。
++     マップされたものは、ブロックが終わるとマップを解除される。
++     何も公開されていない名前は `Io.Error` を発生させる。
+
+@ 0 2 0 16b4996b5b09ee631003a445d8029a27
++ entry .Edition   公開された一つのバージョンの同一性：名前がどのファイルを指していたか、そしてそれがいつ書かれたか
++     二つの版は、同じバージョンであるときにちょうど等しい。版に順序はない。
+
+@ 0 4 0 16c024220c7964ec153f02eb5e566de4
++ entry .Owner   `claim` のブロックの間の名前の所有権：その下で `record` のバージョンを公開するケイパビリティ
++   entry #publish   公開されたファイルを値のエンコードで不可分に置き換え、新しい `Edition` を返す
++       値は一時的な兄弟ファイル `.<name>.part` に同期的に書かれ、名前の上に移動されるので、以前のバージョンをマップしたオブザーバーは影響を受けない。
+
+@ 0 1 0 17f48f2f57de485414f06b97d1cabc9a
++ entry .Observer   `observe` のブロックの間、読み手が公開された名前を保持するもの：マップされた現在のバージョンと、先へ移る手段
+
+% 1 1 0 004ef53efa407ece0a665176c19bce70
+
+@ 0 8 0 1be53bb2b72a06bb1b4200b6b7c0448e
++       共有のケイパビリティである。ロックを取らず、複数のスレッドから使える。
++       マップしたバージョンを、先へ移るかブロックが終わるまで存在させ続ける。
++   entry #edition   マップされているバージョンの版
++   entry #map   ブロックの間、マップされたバージョンの `Terrain` ビューを貸し出す。その間の `refresh` はこれを乱さない
++   entry #refresh   名前が今指しているバージョンが、すでにマップしたものでなければそれをマップし、マップしたかどうかを返す
++   entry #open   ブロックの間、マップされたバージョンを、その `zephyrine.Surveyable` インスタンスを通して `record` として開く
++       オブザーバーに与えた型は、そのバージョンが読まれる形式である。`Ratel of Playbill` のオブザーバーは `Playbill` のイメージを開き、ほかのものは拒否する。

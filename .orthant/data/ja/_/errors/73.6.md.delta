@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 1bc754d2e778c69a15b91caa7fa0a128
+
+@ 0 1 0 0ad69af0389d574605401f25b185d497
++ Aviation がタイムゾーンデータベース（TZDB）のファイルをパースできないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 07ce5f0a5cd88a02010c65bfe68175b9
++ `Tzdb.Error` は IANA TZDB を読み込む間に投げられる。
++ 各バリアントは、破損や予期しない内容の種類を示す。
++ メッセージは行番号を報告する。`the timezone could not be parsed at line $line: $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 05b649f1a707f3a502ab3c4fcb788e15
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.73.6.1`  `CouldNotParseTime`  行の時刻の値がパースできなかった。  `[↯/s.73.6.1] the timezone could not be parsed at line 42: could not parse time 25:00`  元の TZDB ファイルを修復するか、別の写しを使う。
++ row  `↯/s.73.6.2`  `UnexpectedRule`  パーサーが予期していない場所に `Rule` の行が現れた。  `[↯/s.73.6.2] the timezone could not be parsed at line 42: unexpected rule`  ファイルが文書化された TZDB の構造に従っていることを確かめる。
++ row  `↯/s.73.6.3`  `UnexpectedLink`  予期しない位置に `Link` の行が現れた。  `[↯/s.73.6.3] the timezone could not be parsed at line 42: unexpected link`  ファイルが文書化された TZDB の構造に従っていることを確かめる。
++ row  `↯/s.73.6.4`  `UnexpectedZoneInfo`  あるべきでない場所にゾーン情報の行が現れた。  `[↯/s.73.6.4] the timezone could not be parsed at line 42: unexpected zone info`  ファイルが文書化された TZDB の構造に従っていることを確かめる。
++ row  `↯/s.73.6.5`  `UnparsableDate`  行の日付のフィールドがパースできなかった。  `[↯/s.73.6.5] the timezone could not be parsed at line 42: the date could not be parsed`  問題のある行を修復する。
++ row  `↯/s.73.6.6`  `BadZoneInfo`  ゾーン情報の行の内容が構造的に不正だった。  `[↯/s.73.6.6] the timezone could not be parsed at line 42: bad zone information: [ Elsinore Hamlet Yorick ]`  行の列の数と順序が正しいことを確かめる。
++ row  `↯/s.73.6.7`  `BadName`  名前（ゾーンまたはルール）が構文的に不正だった。  `[↯/s.73.6.7] the timezone could not be parsed at line 42: the name verona/Juliet! is not valid`  TZDB の構文が許す文字だけを使う。
++ row  `↯/s.73.6.8`  `NoTzdbFile`  指定された TZDB ファイルがクラスパス上に見つからなかった。  `[↯/s.73.6.8] the timezone could not be parsed at line 0: the zonefile europe could not be found on the classpath`  TZDB のリソースがクラスパスに同梱されていることを確かめる。Aviation のディストリビューションがそれを提供している。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 16d615c5fcec4f8919f3545a78d6afc4
++ - ソース：`lib/aviation/src/core/aviation.Tzdb.scala`

@@ -1,0 +1,378 @@
+orthant 2 language
+
+@ 0 1 0 14f7a4b0968f752d1374b9050643bbef
++ ## Servidor HTTP
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 4 0 1717cb4fe121a05b1342ee527d6e1d13
++ Um servidor HTTP é um handler: uma função de uma requisição para uma resposta, servida em uma
++ porta. Ele é executado com uma única expressão. O handler lê a requisição que está no escopo,
++ faz casamento de padrões com seu método e caminho, e devolve uma resposta tipada, cujo
++ `Content-Type` decorre do valor que ela carrega.
+
+@ 0 3 0 03a230637c800a8d0f7ed167f18ab653
++ O servidor fala HTTP/1.1 moderno, com keep-alive, pipelining, corpos chunked, TLS,
++ `100-continue` e upgrades de protocolo, em uma thread virtual para cada conexão. Ele fala
++ HTTP/2 em qualquer conexão cujo handshake TLS o negocie.
+
+@ 0 4 0 1820331f53d4d8ac06db3e97fe12512b
++ Dois protocolos vizinhos ficam acima do HTTP/1.1.
++ [WebSockets](https://en.wikipedia.org/wiki/WebSocket) fazem o upgrade de uma requisição para
++ um stream de mensagens, que é tratado como uma máquina de estados. O HTTP/2 transporta muitas
++ requisições sobre uma conexão, para navegadores e para os protocolos ao estilo do gRPC que o
++ exigem.
+
+@ 0 1 0 184d8a81202afda80bbc70d25fd52f3b
++ ### Sobre servir HTTP
+
+@ 0 5 0 04a2fb9f54ba16cd012eacc955545b2c
++ Frameworks de servidor costumam chegar como inversão de controle: DSLs de roteamento, classes
++ controladoras, processadores de anotações e um runtime que chama a aplicação, em vez do
++ contrário. O protocolo por baixo é mais simples do que os frameworks sugerem. Uma requisição
++ chega, e uma resposta é calculada. Uma linguagem tipada pode expressar isso diretamente, com o
++ roteamento como casamento de padrões comum, e a negociação de conteúdo como
++ [classes de tipos][classe de tipos].
+
+@ 0 4 0 0e9a7292010422211759160c57bd2138
++ Aqui um handler é um bloco de código, e todo o resto são valores. Um handler que declara do que
++ precisa, e com o que pode falhar, tem uma
++ [assinatura honesta](../../philosophy/honest-signatures.md), e é por isso que um servidor pode
++ ser testado sem um socket.
+
+@ 0 2 0 1389fd265fd7fdf9122e0ac2e854dcf3
++ Tudo vem do pacote `soundness`. O contexto de [concorrência](concurrency.md) sob o qual um
++ servidor é executado está no escopo:
+
+% 2 1 0 195f42fac2b49d891b636c5e9a854c2e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1a5f0810171768050438e8ec953a7a2e
+
+% 1 1 0 19860bffbad0a9f915356f72c7757ae8
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 8 0 0dd2c1bcb90148381293b6a220ac82f7
++ column  Importação
++ column  Decide
++ row  `threads.virtualThreads`, `probates.awaitProbate`  como as tarefas do servidor são executadas, e o que acontece com elas quando seu escopo termina
++ row  `webserverErrorPages.minimalErrorPage`  o que é enviado a um cliente quando um handler falha
++ row  `logging.silentLogging`  que as requisições não são registradas em log; [Logging](logging.md) tem as alternativas
++ row  `formatting.compactJsonFormatting`  como um corpo JSON é escrito
++ row  `charsets`, `codepages`, `textSanitizers`  como bytes se tornam texto, e texto se torna bytes
++ row  `strategies.throwUnsafely`  que um erro é lançado como exceção
+
+% 1 1 0 00d220a17931d83c1076bb5625270c62
+
+@ 0 1 0 04167019274a50a00e83c769460d6a6e
++ Os exemplos desta página vinculam uma porta, então são compilados, mas não executados.
+
+@ 0 1 0 1cdad8bb6b5449a80fc9901b4aec3ec2
++ ### Um servidor
+
+@ 0 4 0 1e889bdc876034311b3f40977ec45146
++ `SocketServer` escuta em uma porta e executa o handler para cada requisição. A porta é
++ vinculada quando `handle` é chamado, e o serviço que `handle` devolve para o servidor quando é
++ cancelado. O serviço é executado em tarefas do `supervise` que o envolve, então o bloco dura
++ tanto quanto o servidor.
+
+@ 0 2 0 131e13cbbc77fba911132c9921e204e7
++ Dentro do handler, `request` é a requisição atual, com seu método, alvo, cabeçalhos, cookies e
++ corpo. O roteamento é, portanto, um `match`:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 1 1 0 0d625f7e41cde2400b295dd6c23b3d7b
+
+@ 0 1 0 049eb9e542367fe1100ef7c9cf0df22f
++   label Uma resposta para toda requisição
+
+% 1 1 0 1a2ddd127c29551918e47c210cf89608
+
+% 0 1 0 05ed98063c4897ff0a93b9f6f6b9a784
+
+% 0 1 0 05db821c52f6f83a0a1923d471246c79
+
+% 0 1 0 189e4987f95bff151c6c460029b5ef35
+
+% 1 1 0 009972d2b60c78ab0c86863f0cbe07c3
+
+@ 0 1 0 0d1ca09b261aaff30fccd459cc73172e
++   label Roteado pelo alvo da requisição
+
+% 1 1 0 0ea0b9701425725e17f4ca75cad0b14d
+
+% 0 1 0 008f68c508fcdda61e77a5f26460212b
+
+% 0 1 0 00a718fa45aed9860374b8b3eb93ad5f
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 0d932cfd06edad330f1f7777e2e1c685
+
+% 0 1 0 06d1c0ece2192af2083df7281d2197a3
+
+% 0 1 0 11240013a30c41e307ff93afe3a66b01
+
+% 0 1 0 00cf5d679d3c93b71aa0caa28d796236
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 1 0 0bb40ce3a12105b00388708edd706b55
++ ### Respostas
+
+@ 0 3 0 12d1c36ea3f078a1152acf04586526e0
++ `Http.Response` recebe um status, cabeçalhos como argumentos nomeados, e um corpo. O corpo pode
++ ser de qualquer tipo com uma instância de `Servable`, como texto, bytes, [HTML](html.md) ou
++ [JSON](json.md). A instância fornece o tipo de mídia, então o que é servido e o modo como é
++ rotulado não podem discordar:
+
+% 2 1 0 036404a69675ac3e1722b354c3164475
+
+% 0 1 0 0d81ff7b5bbd096f1990571f08454930
+
+% 0 1 0 159c4580549f96b5148d048430bd0977
+
+% 1 1 0 107e75f55f5d17a41a274413b97cf36b
+
+@ 0 2 0 1169e89d408c6f6316e97ccddb06a78f
++ Os cabeçalhos são verificados como para uma [requisição](http-client.md#headers): o valor de um
++ cabeçalho deve ter o tipo que esse cabeçalho aceita.
+
+@ 0 1 0 0cb4171ec9d3b1c91da3b3faf2dc80e2
++ Este é o `Content-Type` com que cada categoria de corpo é servida:
+
+% 2 1 0 02dd469dd79e2e6304ccf02818b772b3
+
+@ 0 1 0 15476bd81e07f9b810a8dd6a387a425f
++ column  Corpo
+
+% 0 1 0 105af2c6b13e1ae509d4d944a1546280
+
+% 0 1 0 0f458091bb6b11391962f9dd167fd79d
+
+% 0 1 0 1fdd5a659a9a2bc51077acaba8d31660
+
+% 0 1 0 013eea4f5d271689178f4e8177fa15bf
+
+% 0 1 0 11c352c121752010167e76c519c5b726
+
+% 0 1 0 0f57f548ca52eb660d0f4bfb6ff40a55
+
+% 0 1 0 1df60738087858931dd320b4d1b708ae
+
+% 0 1 0 1505d33848a2f2b300636453fc6f14ed
+
+% 0 1 0 14e9b44cafd919c10e2dc84a332cad1f
+
+% 0 1 0 19803a916dd8cade16ecfd2b641b150a
+
+% 0 1 0 0b64bf21897055751230f81109f096c3
+
+@ 0 1 0 1cb5e6096521495f14d201c58a09d028
++ row  qualquer outro tipo com uma instância de `Media`  o tipo de mídia que ele declara
+
+% 1 1 0 06ff51f5838a3d2b1da4d1f945d67913
+
+@ 0 3 0 1964fcf613c51fc10483fbf9a435a598
++ As instâncias para os tipos de formato estão no pacote `servables`.
++ [Tipos de mídia](media-types.md#types-that-know-their-media-type) descreve como um tipo próprio
++ declara um tipo de mídia.
+
+@ 0 5 0 1fe3a5699dfd48e90abc0353ebe4d350
++ `Redirect`, `NotFound` e `NoCache` envolvem o conteúdo nas formas comuns de resposta. O corpo de
++ uma requisição é lido como um valor tipado com `as`, seja um upload
++ [multipart](media-types.md#multipart) ou um [envio de formulário](forms.md#submissions).
++ `basicAuth` protege uma resposta por trás de credenciais, e o [OAuth](oauth.md#in-a-web-application)
++ protege uma por trás de um token.
+
+@ 0 1 0 184e4e38a8923a1e03a88491eb60916a
++ ### Corpos de requisição e de resposta
+
+@ 0 3 0 0a0105dd164ccd6a172fdbeb6a4f0f5d
++ O corpo de uma requisição é um [stream](streams.md), e não um bloco de bytes que precisa chegar
++ antes de o handler ser executado. Um upload grande é consumido à medida que é recebido, e o
++ corpo de uma resposta é enquadrado a partir de seu stream um bloco por vez, então nenhum dos dois
++ é retido na memória.
+
+@ 0 3 0 145eec82bd3942e0032b205762de4772
++ O corpo pertence ao escopo do handler. Ele é da conexão, e a conexão termina. Um handler que
++ queira manter um corpo além de sua resposta, portanto, o lê para a memória explicitamente, com
++ `memoize`.
+
+% 0 1 0 11b702a92a07c8941d391a6571d0a215
+
+@ 0 4 0 08d1715ef62d17e81893237536dccd01
++ Uma requisição passa por upgrade para um WebSocket quando se devolve um handler `webSocket`, que
++ trata a conexão como uma máquina de estados. Cada mensagem recebida produz uma resposta, uma
++ mudança de estado ou o fim da conversa. As mensagens são tipadas: quadros brutos, texto ou
++ qualquer tipo transportado sobre JSON.
+
+% 2 1 0 1acf9449bc301b360156870b56bdc9b6
+
+% 0 1 0 010b5d7f53d462de03a95bbdce7075c0
+
+% 0 1 0 0ac1e8c71a692db810c1b3a76f2a44e4
+
+% 1 1 0 177cb01156ffd05a112e6bbe962f1a79
+
+% 0 1 0 07f9d8e79e2cc5ed14638af9b2260e82
+
+% 0 1 0 13f167f743d0e6300a6a4ce5830310d7
+
+% 1 1 0 1a7d4f64fbfc2fe91b0c40d1c1826c25
+
+@ 0 1 0 1e919b398d70ad1d073366adf9efbbe0
++ Um handler responde a cada mensagem com um `Control`:
+
+% 2 1 0 0f35e073ced9e1321369c3b61fe4be81
+
+@ 0 7 0 0a6bb327088c2d9b0a7d54cc8cdc0ea6
++ column  Resposta
++ column  Envia uma mensagem
++ column  Depois
++ row  `Control.Reply(message, state)`  sim  continua
++ row  `Control.Continue(state)`  não  continua
++ row  `Control.Conclude(message, state)`  sim  fecha
++ row  `Control.Terminate`  não  fecha imediatamente
+
+% 1 1 0 10964ec1206eb3c61fa47cfdcb39ba22
+
+@ 0 2 0 1f4a6227c767a78e010ba064769c5664
++ O estado do handler, que aqui é `()`, é passado de uma mensagem para a seguinte. Onde um estado
++ é opcional, e é omitido, o anterior é mantido.
+
+@ 0 3 0 003008adfc616df40b4a43fb1f79e318
++ A implementação trata os pontos delicados do protocolo: mascaramento, fragmentação, ping e pong,
++ validação de UTF-8 e códigos de fechamento. Ela está em conformidade com a suíte de testes
++ [Autobahn](https://github.com/crossbario/autobahn-testsuite).
+
+% 0 1 0 037f66e0ef500ad31c647fe59b3467b6
+
+@ 0 2 0 1ca59c731b5df50106ae9fc3f9fb574f
++ Um socket de escuta com TLS oferece `h2`, e depois `http/1.1`, por ALPN. O protocolo que uma
++ conexão fala decorre de como ela chega:
+
+% 2 1 0 02c685511a472b5c1a56be3e3100e1cc
+
+@ 0 6 0 0d35f20d56a7e14009056f35fd935fb5
++ column  Conexão
++ column  Protocolo
++ row  texto puro, para um `SocketServer`  HTTP/1.1
++ row  TLS, negociando `h2`  HTTP/2
++ row  TLS, negociando `http/1.1` ou nada  HTTP/1.1
++ row  h2c em texto puro com conhecimento prévio, sobre um `Http2.Endpoint`  HTTP/2
+
+% 1 1 0 0ce8f591b55f6b920e4194466cc6b61d
+
+@ 0 2 0 062f166fd0fc245e04c1358018576208
++ O contrato do handler não muda, então uma aplicação existente serve HTTP/2 sem nenhuma
++ alteração:
+
+% 2 1 0 1920c4649d69ecd3199d8c7a2ac943b9
+
+% 0 1 0 015d6da35936d6511d5becfe4dcb697f
+
+% 0 1 0 0c590f8110bc40f30701b0ae64390238
+
+% 0 1 0 011cd343e1779fc11a84f6c90e839f2b
+
+% 1 1 0 179923f119b1ee021775079cd1bf7ab9
+
+@ 0 7 0 08a177da851ad9d509b86ccbf98ab5f7
++ Cada stream que um cliente inicia é tratado em uma thread virtual própria, então as requisições
++ que compartilham uma conexão são executadas concorrentemente. O motor implementa controle de
++ fluxo, trailers e compressão [HPACK](https://datatracker.ietf.org/doc/html/rfc7541) completa
++ dos cabeçalhos. Ele tolera os tipos de quadro sobre os quais não age, como `PRIORITY`,
++ `PUSH_PROMISE` e extensões, e não derruba a conexão.
++ [Streams](streams.md#tuning-backpressure) descreve como seu controle de fluxo aplica
++ contrapressão.
+
+@ 0 3 0 066e3a20059edbd70099f0f12eb45edd
++ O h2c em texto puro com conhecimento prévio é a variedade usada entre serviços. Ele é falado
++ sobre um `Http2.Endpoint`, que também é um transporte para o [cliente HTTP](http-client.md), e
++ que transporta o suporte a [gRPC](rpc.md) construído sobre ele.
+
+% 0 1 0 0494b666dd79d8be1ac0fd4b2327e12e
+
+@ 0 2 0 18f975cd7a965f3a0e4ed6db02cdf982
++ As conexões HTTP/1.1 em texto puro são servidas por um de dois front-ends. A escolha é feita por
++ um given `Frontend`, no escopo quando `handle` é chamado:
+
+% 2 1 0 037d6d3a9cd37681038ab691bd946774
+
+% 0 1 0 1d345c7a139f48bd0b2dbc907dbeca25
+
+@ 0 4 0 0e6e709f392840841c3d259792f525eb
++ column  Executa um handler
++ column  Um handler bloqueante trava
++ row  `frontends.threadPerConnectionFrontend`, o padrão  na thread virtual de sua conexão  apenas sua própria conexão
++ row  `frontends.reactiveFrontend`  inline em uma de uma frota fixa de threads seletoras  todas as conexões daquele laço
+
+% 1 1 0 0944fce97e8373c2103c90a229d6dfd1
+
+@ 0 3 0 08600e34fdc581e716cb610dd91185fc
++ No front-end padrão, um handler pode bloquear: em um [banco de dados](database.md), em um
++ arquivo ou em outro serviço. O front-end reativo é um laço de eventos, no qual cada thread
++ seletora serve um lote de conexões prontas cada vez que desperta:
+
+% 2 1 0 028938bb7b8001610a5647bc03208622
+
+% 0 1 0 1c5fa89f3bd3476205a02f1c1fc315bf
+
+% 0 1 0 0238cfddcc431ab11af03ce3bc4ecb8a
+
+% 1 1 0 165d80476a5367860b151e51e87858aa
+
+% 0 1 0 19dd4242bda50d0f137c7dc8eb4d78ad
+
+% 1 1 0 0b8ee5a75411e6d21c31396178a40533
+
+@ 0 3 0 1b68691cc01517b00379552849917a70
++ O front-end reativo serve requisições pequenas a cerca de uma vez e meia a taxa do padrão, e
++ aloca menos para cada requisição, porque nada é agendado para cada requisição. Em um benchmark de
++ loopback, ele fica no mesmo nível do Netty e do Undertow.
+
+@ 0 6 0 1db08eebb6271abe1831ce6fd3944249
++ O preço é o seu contrato. Um handler que bloqueia trava todas as conexões daquele laço. O
++ front-end reativo, portanto, convém a handlers que calculam sua resposta a partir do que já têm,
++ ou que repassam o trabalho a outras tarefas e respondem a partir da memória. As requisições que o
++ laço não consegue servir inline são entregues a uma thread virtual, e servidas pelo caminho
++ padrão: corpos chunked ou grandes demais, `Expect: 100-continue` e upgrades de protocolo. Um
++ handler de WebSocket, portanto, funciona sob qualquer um dos front-ends.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 7 0 1f108b6a2619ed081933c0b95227a35c
++ - [Cliente HTTP](http-client.md) faz requisições com o mesmo vocabulário de métodos, status e
++   cabeçalhos.
++ - [HTML](html.md) e [JSON](json.md#json-over-http) descrevem os corpos servidos com mais
++   frequência.
++ - [Formulários](forms.md) renderiza um formulário HTML e lê seu envio.
++ - [Sockets](sockets.md) é a camada inferior.
++ - [Daemons](daemons.md) mantém um servidor em execução como serviço.
++ - [MCP](mcp.md), [páginas web](pages.md), [padrões](patterns.md) e [criptografia](cryptography.md) descrevem o que um servidor hospeda, casa e protege.

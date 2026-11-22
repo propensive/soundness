@@ -1,0 +1,763 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1406e8f2331fe9a40c2fa9636b68b5be
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 016cf6b6c39264c31d271592342a5310
++ info   構造化された値としてのメディアタイプ。コンパイル時に IANA のレジストリと照合される。そしてマルチパートの本文
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 03f0ab8a1ab8d433165e02771a8b21be
++     _Gesticulate_ は [メディアタイプ](https://www.iana.org/assignments/media-types/)（`application/json`、`text/html; charset=UTF-8`、`image/svg+xml`）を、綴りを誤るとブラウザが黙って誤った扱いをする文字列ではなく、型付きのグループ、サブタイプ、接尾辞、パラメーターを持つ `MediaType` として表す。
++     `media"…"` 補間子は、コードのコンパイル中にリテラルを IANA のレジストリの写しと照合するので、`media"application/jsom"` は、おそらく意図された登録名を示すコンパイルエラーになる。
++     実行時に出会うテキストは `as[MediaType]` でパースし、これは何が誤っていたかを名指す `MediaType.Error` を発生させる。
+
+% 2 1 0 07fc8654ab47a1e213081056104353ab
+
+% 3 1 0 12b200420cc0b856008641cc2a09cd93
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 06fcc986d427b3d81cc42cac5e94f7b5
+
+% 0 1 0 0fbeda00ccd03ac4062167047dc75d5c
+
+% 0 1 0 0c36d982f245d6dd0d73344c3e98e80c
+
+% 0 1 0 18e9f4912b4e4be70fa339ab35a3f63a
+
+% 0 1 0 1069d1faaa6f12c11476d62549fd7d66
+
+% 1 1 0 1f10d421aefdba830eb483c8671fbc3a
+
+@ 0 10 0 01be195b60b3a54909eb802e16084fd8
++     この型の周りに、さらに三つの部品がある。
++     `Media` 型クラスは*型*にそのメディアタイプを与える。
++     テキストは `text/plain` で、ファイル名を持つものは何でも `Extensions` を通じて拡張子から推測する。
++     HTTP のレスポンス、提供されるファイル、添付ファイルが、それが何であるかを述べ直さずに自分にラベルを付けるのはこの方法による。
++     また `ascribe` は、任意のバイトの供給源を明示的なメディアタイプと組にして `Content` にする。
++     `Construable` 型クラスは、シングルトンの文字列としてのメディアタイプを、その型の本文を読み込み、書き出すときの Scala の型に対応付けるので、HTTP クライアントはレスポンスをその `Content-Type` によって解釈できる。
++     それぞれの対応付けは `construables` 選択パッケージにある given で、名前でインポートする。
++     そして `Multipart` は、ファイルのアップロードの `multipart/form-data` 形式を、型付きの `Multipart.Part` へ漸進的にパースする。
++     各パートの本文は、読まれるにつれて入力から貸し出される。
+
+@ 0 7 0 035078a763b17a9707a2630a6e518447
++     ライブラリは単一のソースセット `gesticulate.core` で、JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     `media"…"` の検査が参照するレジストリはビルド時にライブラリにコンパイルされるので、検査にはネットワークもクラスパスのリソースも必要ない。
++     すべてが `soundness` アンブレラにエクスポートされ、`construables` 選択パッケージはアンブレラ自身のものと統合される。
++     それはすべての形式のライブラリが宣言する対応付け（`jsonConstruable`、`xmlConstruable`、`pngConstruable`、…）を集めるので、ユーザーは `import soundness.*` と書いてから、必要な construable を名前でインポートする。
+
+% 0 1 0 0c43e7b6340c3e5b03d8fabf0585e88f
+
+% 0 1 0 03923ab30704b3f813555f16b601c932
+
+% 0 1 0 12d585acc7082e240a753dbc80e2094a
+
+% 0 1 0 15c1b1c4b6e2ac240abc9557159c21b6
+
+@ 0 1 0 12423b63c28c962c1b8c70ef2eb11d27
++ entry .MediaType   値としてのメディアタイプ：そのグループ、サブタイプ、接尾辞、パラメーター
+
+% 1 1 0 1f12bd0bca7bc125168272b41508d810
+
+@ 0 7 0 088692b70aec8d970c04ae5640026624
++       `MediaType` は、RFC 2046 が定義する四つの部分からなり、それぞれ型付きである。
++       `#group` は十一のトップレベルの型の一つ（`Media.Group`）、`#subtype` は登録済み、ベンダー、個人、実験のいずれか（`Media.Subtype`）、`#suffixes` は `+xml`、`+json`、`+zip` のような構造化構文の接尾辞（`Media.Suffix`）、`#parameters` は `key=value` の組で、その中では `charset` が群を抜いて多い。
++       `media"…"` として書いてコンパイル時に検査するか、テキストから `as[MediaType]`（`.decodable` の given）でパースするか、`.unapply` でマッチさせる。
+
+% 2 1 0 1b97e67c9b9b78bb0d38d549f255ac07
+
+% 3 1 0 19d7e2ac831d3e6204db1ec7f54d2c9a
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1eca4141ed698fa718c2abfb7df0daa2
+
+% 0 1 0 157b1bd20847eaf911ce24388e640f16
+
+% 0 1 0 0b5f37d9147f71e2065bf9e79271b18f
+
+% 0 1 0 17aaf5654ba1f1821b2a5ac3505720e2
+
+% 0 1 0 00ae1a5c94075a5f0beeabe0f1f372b6
+
+% 0 1 0 0ada7746917d4cc21c148973f8f16334
+
+% 0 1 0 14cd6cb44698c4ae1c5921c925d36a88
+
+% 1 1 0 042e3d3abcb21212102e2209163fd366
+
+@ 0 5 0 090098d989a554cf0ff3523f4ca3e41c
++       メディアタイプは、ワイヤ上に書かれるとおりに表示され（`.showable`、`.encodable`）、各パラメーターは `; key=value` になる。
++       検査用には、それを作るソース `media"text/html; charset=UTF-8"` として表示される。
++       二つのメディアタイプは部分が等しいときに等しいので、パラメーター付きの `Content-Type` はその `media"…"` リテラルと等しくならない。
++       パラメーターが重要でないときは `#base` か `#basic` を比較すること。
+
+% 0 1 0 14af0427a1b401670ddc01e596f135a6
+
+% 1 1 0 0587a7c69a2996f70bc6c77562dbf689
+
+% 1 1 0 1d3ede4f92323ec1162768c4932ac424
+
+@ 0 23 0 1edabc3b06a3d4b611ece199cd3a6917
++   entry .inspectable   それを作るリテラルとしてのデバッグ用の描画：`media"text/html"`
++   entry .showable   メディアタイプを書かれるとおりに描画する：`type/subtype+suffix; key=value`
++       グループとサブタイプは小文字で、各接尾辞は `+` を付け、その後に各パラメーターを `; key=value` として続ける。
++       `.encodable` と `inspectable` の描画の土台であり、`Content-Type` ヘッダーが運ぶものである。
++       `charset` や `boundary` のパラメーターを持つメディアタイプは、ここではそれを保持する。
++       `#basic` ならそれを落とすところである。
++   entry .encodable   `.showable` が描画するとおりの `MediaType is Encodable in Text`
++   entry .decodable   `text.as[MediaType]`：テキストをメディアタイプとしてパースし、`MediaType.Error` を発生させる
++       任意のテキストを `Media.parse` を通じて `MediaType` としてデコードできるようにする given である。
++       スコープ内に `Tactic[MediaType.Error]` を必要とし、それを保持するので、インスタンスの型は `(MediaType is Decodable in Text)^{tactic}` になる。
++       パースは、登録済み、`vnd.`、`prs.`、`x-`、`x.` のサブタイプの形式、ハイフン付きの接尾辞（`json-seq`）、前後の空白をトリムした `;` 区切りのパラメーターを受け付け、レジストリは参照しない。
++       登録されていない標準のサブタイプもパースされるが、`media"…"` リテラルならコンパイルできないところである。
++   entry .unapply   メディアタイプとしてパースできるテキストに、`Option` としてマッチする
++       `MediaType.unapply(t"text/plain")` は `Some(mediaType)` で、メディアタイプでないテキストには `None` なので、`case MediaType(mediaType) =>` はスコープに戦術がなくてもヘッダーの値にマッチする。
++   entry .interpolable   `media"…"` 補間子の背後にある given
++       `interpolate` がマクロである `Interpolable` である。
++       展開時に、一つのリテラルの部分をレジストリとパーサーで検証し、パースした値をスプライスする。
++       ユーザーはこれに触れず、`media"…"` と書く。
++   entry .Error   テキストがメディアタイプでないときに発生する
+
+% 1 1 0 1bab828ba2bb77780b7aa5045b24ed29
+
+@ 0 4 0 150d9ed154b37f000370c76e1b9caf78
++         エラー `↯/s.81.1`：_the value `value` is not a valid media type; `reason`_。
++         `Media.parse`、したがって `as[MediaType]` によって `Tactic[MediaType.Error]` を通じて発生し、`media"…"` ではコンパイルエラーとして報告される。
++         `.Reason` が何が誤っていたかを述べ、その番号がエラーのサブ番号（353.1 から 353.5）である。
+
+% 2 1 0 16439e438d19609b004ce0407e5fd2df
+
+% 3 1 0 0f27f37b751707e91b11cc0a4ad26859
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 1d56e6b250e5b8320155d67afef17c0d
+
+% 0 1 0 009a1d329c3f0b2210fd7fe07224a81c
+
+% 1 1 0 136a3e18f2f9c2140586dd7813383fee
+
+@ 0 1 0 044d1fcaa8a325121cd144aa648d71a5
++     entry .Reason   テキストがメディアタイプでなかった理由
+
+% 1 1 0 10a0418ce77ded031f6b7869db8fccfa
+
+@ 0 1 0 0dbdc7f7e3e6f76806f5a795b7794872
++           それぞれが `number` と `message` を持つ。
+
+% 1 1 0 05f424c7a32c4c0b0b03863d383d30a5
+
+@ 2 4 0 0e01bf457d22e768016d5c9b67691157
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
+
+% 0 1 0 009fa38d6db444a70bf7d74e0086f2ef
+
+@ 0 1 0 08b9ba8109fe9bd71b332d7f7a46a878
++           row  `MissingParam`  2  _a terminal ';' suggests that a parameter is missing_  `=` のないパラメーターにも
+
+% 0 1 0 1844ac90b7af02ae014233929a0a3c7c
+
+@ 0 2 0 05eb71d0b5a7da2c01edc0e1442d4e02
++           row  `InvalidChar(char)`  4  _the character '`char`' is not allowed_  空白、制御文字、または `tspecials` のいずれか
++           row  `InvalidSuffix(suffix)`  5  _the suffix '`suffix`' is not recognized_  `Media.Suffix` のケースのいずれでもない
+
+% 1 1 0 1db788a82094d08b0b7fbcb608587857
+
+@ 0 29 0 0c69a120839860c90533167949f120f6
++       entry #number   理由の番号。`1` から `5` で、エラーのサブ番号である
++       entry #message   文としての理由
++     entry #value   メディアタイプでなかったテキスト
++     entry #reason   そうでなかった理由
++   entry #group   トップレベルの型：`Media.Group.Application`、`Text`、`Image`、…
++       `type` ではなく `group` と呼ぶのは、`type` が Scala のキーワードだからにすぎない。
++   entry #subtype   サブタイプ。`Media.Subtype.Standard`、`Vendor`、`Personal`、`X` のいずれか
++       サブタイプが四つのツリーのどれに属するかは値の一部であり、接頭辞を読んで判断することではない。
++       `t"application/vnd.api+json".as[MediaType].subtype` は `Media.Subtype.Vendor(t"api")` である。
++   entry #suffixes   構造化構文の接尾辞。順序どおり、`Media.Suffix` として
++       `image/svg+xml` では `List(Media.Suffix.Xml)`、ほとんどのメディアタイプでは `Nil` である。
++       接尾辞は意味を持つ（`svg+xml` は XML である）ので、サブタイプの文字ではなく型付きの部分になっている。
++   entry #parameters   `key=value` のパラメーター。順序どおり、テキストの組として
++       `charset`、`boundary`、`version`、…である。
++       `#at` は名前で一つを検索し、名前付き引数での `apply` はパラメーターを加える。
++   entry #basic   パラメーターを除いたメディアタイプ。テキストとして：`application/json`
++       グループ、サブタイプ、接尾辞を描画したものである。
++       `charset` や `boundary` を比較に加えたくないときに、`Content-Type` を照合する対象である。
++   entry #base   パラメーターを除いたメディアタイプ。`MediaType` として
++       `contentType.base == media"multipart/form-data"` は、リクエストのハンドラが `boundary` パラメーターを読む前に行う比較である。
++   entry #at   名前付きのパラメーターの値。なければ `Unset`
++       `mediaType.at(t"charset")`。その名前のパラメーターが複数あれば最初のもの。
++   entry #applyDynamicNamed   `mediaType(charset = t"UTF-8")`：パラメーターを加えたメディアタイプ
++       パラメーターを名前付き引数として書けるようにする `Dynamic` の適用である：`media"text/html"(charset = t"UTF-8")`。
++       各引数の名前がパラメーターのキーに、その `Text` の値がパラメーターの値になり、既存のパラメーターの後に追加される。
+
+@ 0 8 0 0d5105c822a2cb860adbde7767d29ab7
++ entry .media   `media"…"` 補間子：コンパイル時にレジストリと照合されるメディアタイプのリテラル
++     `media"application/json"` は、コードのコンパイル中に検査される `MediaType` である。
++     グループは十一のトップレベルの型の一つでなければならず、サブタイプは禁止された文字を含んではならず、標準のツリー（`vnd.`、`prs.`、`x-`、`x.` でないもの）のサブタイプは IANA のレジストリになければならない。
++     そうでなければ、リテラルは最も近い登録済みの型を名指すコンパイルエラーになる：_application/jsom is not a registered media type; did you mean application/json?_。
++     接尾辞とパラメーターはその後、`as[MediaType]` がパースするのとまったく同じようにパースされるので、未知の接尾辞や宙に浮いた `;` もコンパイルエラーになる。
+
+% 2 1 0 1fdde50c54d10d9f145041b8f673c51d
+
+% 3 1 0 0fa31fc1c688e52f0bb1d2074c7c6a3f
+
+% 0 1 0 19154ff45a41c8fe0058629af4de32c9
+
+% 0 1 0 123d3b4707f3a7b318768754cdd8ce63
+
+% 0 1 0 1c7acd147b75285704378bddcda54627
+
+% 0 1 0 1f1c3e85febb4e470750e64edc02d10b
+
+% 0 1 0 12f585cd74261ae20420e6b1400958de
+
+% 1 1 0 01c95f9b10b0dc4b17ea5858e9c5b391
+
+@ 0 4 0 1b0b029d08618f35164c379a6b2d7e16
++     レジストリは、IANA が公開する一覧の写しをビルド時にライブラリにコンパイルしたものなので、検査にネットワークは必要ない。
++     リテラルはコンパイル時に検査されるので、補間子は `$` による埋め込みを取らない。
++     実行時にしかわからないメディアタイプは `as[MediaType]` でパースし、これはレジストリを参照しない。
+
+@ 0 1 0 1643ab85f0a0aef615f91b51b84b8ff7
++ entry .Media   型自身のメディアタイプと、メディアタイプの文法：グループ、サブタイプ、接尾辞
+
+% 1 1 0 11030a5d6d5cc2071b31c9077aab59ba
+
+@ 0 6 0 1a36a61aeca313240fa7f9429182f1cf
++       **型クラス**としての `Media` は、型にそのメディアタイプを与える。
++       `is Media` である値は `#mediaType` を持ち、HTTP のレスポンス、提供されるファイル、添付ファイルが、誰もそれが何であるかを述べ直さずに自分にラベルを付けるのはこの方法による。
++       `Text` は `text/plain`（`.text`）である。
++       `Nominable` なもの（ファイル、パス、名前付きのアセット）は、名前の拡張子から推測する（`.nominable`、`Extensions.guess` を通じて）。
++       そして形式のライブラリはそれぞれ、自分のもの（`Json is Media`、`Html is Media`、…）をコンパニオンで宣言する。
+
+% 2 1 0 07e93e9d28a1c7af0ae5db3dbadf1470
+
+% 3 1 0 10cfad739cbb741c1dee4d50fea626d7
+
+% 0 1 0 0869e758209100b9120fcdceae0e9ebc
+
+% 0 1 0 0079e4ce11a799dd1dfec12b075e6e03
+
+% 0 1 0 174e3c3101c0d4bc1c8159d1a44d9896
+
+% 0 1 0 10d93b83352e5903172624f4f16577ca
+
+% 1 1 0 19e5a6366ec0fb9e0c6feb0bd92658e0
+
+@ 0 3 0 1ac9bb86b2f7995318062364861802d9
++       **オブジェクト**としての `Media` は文法を保持する。
++       `MediaType` を構成する列挙型 `.Group`、`.Subtype`、`.Suffix` と、`as[MediaType]`、`MediaType.unapply`、`media"…"` の背後にあるパーサー `.parse` である。
+
+% 1 1 0 0550b489c40e2c7613f0eec9e19538ef
+
+% 1 1 0 104eddbe8c9501a70e66be74a7fd3133
+
+% 1 1 0 09a1f1306408623a02cbce70bd826ccb
+
+@ 0 9 0 101fae8a9db24d9a03f37ddfebb9c805
++   entry .text   `Text is Media`：`text/plain`
++       暗黙のスコープにあるので、提供されたり添付されたりするプレーンテキストは、インポートなしで `text/plain` とラベル付けされる。
++   entry .nominable   `Nominable` なものはすべて、名前の拡張子によって `Media` である
++       名前を持つもの（ファイル、パス、アセット）に、その名前の最後の `.` の後のテキストから `Extensions.guess` を通じて推測したメディアタイプを与える given である。
++       `report.pdf` は `application/pdf` で、拡張子が未知またはない名前は `application/octet-stream` である。
++   entry .Group   トップレベルの型：ちょうど十一のうちの一つ
+
+% 1 1 0 07aad133e7dd42e00e29024355459ad5
+
+@ 0 9 0 13a56ce2f73f229f070e6cc60d903509
++         `Application`、`Audio`、`Image`、`Message`、`Multipart`、`Text`、`Video`、`Font`、`Example`、`Model`、`Haptics` で、IANA が登録するトップレベルの型である。
++         `Haptics` が最も新しい（RFC 9695）。
++         `#name` はメディアタイプに書かれる小文字の形式で、グループはその形で表示され、検査用にもその形で表示される（`.showable`、`.inspectable`）。
++         それ以外のグループを持つテキストは、`MediaType.Error.Reason.InvalidGroup` でパースに失敗する。
++     entry .inspectable   小文字のグループとしてのデバッグ用の描画：`application`
++     entry .showable   グループをメディアタイプに書かれるとおりに描画する：`application`
++     entry #name   メディアタイプに書かれるとおりの、小文字のグループ
++   entry .Subtype   サブタイプと、それが四つの登録ツリーのどれに属するか
+
+% 1 1 0 12317a128e6a361f1d4e30b21764ea02
+
+@ 0 9 0 17be3238b960d5090718a274a0619c5c
++         `Standard(value)` は標準のツリーにあり IANA に登録されたサブタイプ（`json`、`html`）である。
++         `Vendor(value)` はベンダー独自の `vnd.value`、`Personal(value)` は個人独自の `prs.value`、`X(value)` は古い実験用の接頭辞を持つ `x-value` である（`x.value` も同じものにパースされる）。
++         ツリーは値の一部なので、`Media.Subtype.Vendor(_)` に対するマッチは、接頭辞を調べずにベンダーの型を見つける。
++         `#name` はサブタイプを接頭辞付きで描画し、パーサーは各接頭辞を順に受け付ける。
++     entry .showable   サブタイプを書かれるとおりに描画する：`vnd.api`、`prs.thing`、`x-tar`
++     entry #name   メディアタイプに書かれるとおりの、ツリーの接頭辞付きのサブタイプ
++   entry .Suffix   構造化構文の接尾辞：`+xml`、`+json`、`+zip`、…
+
+% 1 1 0 14eb247ec2af5ba71706e8da1979cf91
+
+@ 0 23 0 1b9b5b682a01a4cf06857e665f6b6b01
++         IANA が登録する接尾辞である：`Xml`、`Json`、`Ber`、`Cbor`、`Der`、`FastInfoset`、`Wbxml`、`Zip`、`Tlv`、`JsonSeq`、`Sqlite3`、`Jwt`、`Gzip`、`CborSeq`、`Zstd`。
++         メディアタイプは複数を順に持つことがある（`application/thing+xml+gzip`）。
++         `#name` はメディアタイプに書かれる登録された形式（`json-seq`、`fastinfoset`）で、パーサーはその形式を大文字小文字を区別せずに読み戻す。
++         この一覧にない接尾辞は、`MediaType.Error.Reason.InvalidSuffix` でパースに失敗する。
++     entry .showable   接尾辞をメディアタイプに書かれるとおりに描画する：`JsonSeq` ではなく `json-seq`
++     entry #name   `+` の後に書かれるとおりの、登録された綴りの接尾辞
++   entry .unsafeParse   `media"…"` マクロがすでに検査したリテラルをパースする
++       補間子の展開のためのものである。
++       展開はコンパイル時に検証したテキストを実行時に再びパースするので、戦術の代わりに `Unsafe` トークンを取る。
++       アプリケーションのコード向けではない。
++       `as[MediaType]` か `MediaType.unapply` を使うこと。
++   entry .parse   テキストをメディアタイプとしてパースし、誤りに対して `MediaType.Error` を発生させる
++       `as[MediaType]`、`MediaType.unapply`、`media"…"` の背後にあるパーサーである。
++       パラメーターのために `;` で（空白をトリムして）、グループのために `/` で、接尾辞のために `+` で分割する。
++       グループは（大文字小文字を区別せずに）`Media.Group` でなければならず、各接尾辞はケバブケースの名前による `Media.Suffix`、各パラメーターは `key=value` でなければならない。
++       `Tactic[MediaType.Error]` が必要である。
++       `MissingParam` と `NotOneSlash` の誤りは中断ではなく*発生*させられるので、寛容な戦術のもとではパースは最善の推測（グループとして `text`、パラメーターは捨てる）で続く。
++       それ以外は中断する。
++   entry #mediaType   型が `is Media` である値のメディアタイプ
++       すべての `Media` インスタンスが提供する拡張メソッドである：`t"hello".mediaType`、`path.mediaType`、`json.mediaType`。
+
+@ 0 5 0 1021315cc16045760c309a03d22ab4ea
++ entry .ascribe   `value.ascribe(mediaType)`：任意のバイトの供給源を明示的なメディアタイプと組にした `Content`
++     `is Streamable by Data over Credit` である任意の値（`Data`、ファイル、ストリーム）に対する拡張メソッドで、そのバイトは `Chain[Data]` として読まれ、与えられたメディアタイプと組にされる。
++     固有のメディアタイプを持たず、`Media` が手がかりを持たないバイトのためのものである。
++     スコープ内に `Buffering` が必要である。
+
+% 2 1 0 1b9405ca3fd24f580c5c18203a54aa95
+
+% 3 1 0 1ffbf7b7800f1e5515abd9928924a008
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0873fb5fe3bfa12605c890ab3df743b3
+
+% 0 1 0 0369951fbada24ee14af9fd262b71d5b
+
+% 0 1 0 0b75d3e0abd8cd3e1d477751ba736074
+
+% 0 1 0 1ea4ce02bf1aa96b03e654431edb0a97
+
+% 1 1 0 0b1423fd6eec3ca309e5ee639ad61fa1
+
+@ 0 1 0 0b312aceb4a37562051a3b1a508fe5a0
++ entry .Content   メディアタイプと一緒になったバイト
+
+% 1 1 0 091a0c227253e99b15193931b05b8526
+
+@ 0 3 0 0fa0e3a73871ed8117d64ba5e40684bd
++       `Content` はバイトの `#stream` と、それが何を意味するかを述べる `#media` タイプである。
++       `ascribe` が生成するものであり、バイトが自分のメディアタイプを持たないときに、HTTP のレスポンスや添付ファイルを組み立てる材料である。
++       `#named` は名前を加えて `Asset` にする。
+
+% 1 1 0 18fc272a10ab35b50c19fa3d080b4d8b
+
+% 0 1 0 1d377be3a7a086060cf94f08f104993c
+
+@ 0 3 0 104c05a7d5ab2e3502d3c3270c1baea9
++   entry #media   バイトのメディアタイプ
++   entry #stream   チャンクのチェーンとしてのバイト
++   entry #named   名前を付けたコンテンツ。`Asset` として
+
+@ 0 1 0 19980be4ebdf6dfd0a1ac5e5e414f275
++ entry .Asset   メディアタイプを持つ名前付きのバイトのストリーム：添付ファイル、提供されるファイル
+
+% 1 1 0 090806bd880118be100c17dc963e8afe
+
+@ 0 4 0 061c268133308fbe12026b3fb4108a5f
++       `Asset` は `#name` を持つ `Content` で、メールの添付ファイルやマルチパートのアップロードのファイルが必要とする三つのものを持つ。
++       `Asset(name, value)` は、`is Media` で `is Streamable by Data over Credit` である任意の値から作り、メディアタイプは値自身の `Media` インスタンスから取る。
++       `Content#named` は明示的なコンテンツから作る。
+
+% 2 1 0 17b0a3825ed8f11d0141a461352e71e5
+
+% 3 1 0 006c11f061fd9b2b1c6ae16e45f40e65
+
+% 4 1 0 0f346c3b79d6616519bb9765c1f1ec12
+
+% 0 1 0 1a5a1f9132ae5ffc09ca48cff9797131
+
+% 0 1 0 18b76cacba3f240c0f5bb620f5c04822
+
+% 1 1 0 15e3d9ff8f81ea441cf9d1b60be3587d
+
+% 0 1 0 086c690055f25ae30634b177870f724d
+
+@ 0 7 0 1c1ef8dc001545eb1e18437424c34dfd
++   entry .apply   名前と、`is Media` でありバイトとしてストリーム可能な任意の値から作るアセット
++       メディアタイプは値の `Media` インスタンスから、バイトはその `Streamable` から得て、全体をチャンクのチェーンに読み込む。
++       自分の `Media` を持たないバイトには、代わりに `data.ascribe(mediaType).named(name)` を使う。
++   entry #name   ファイル名などの、アセットの名前
++   entry #media   アセットのメディアタイプ
++   entry #stream   チャンクのチェーンとしてのアセットのバイト
+
+@ 0 1 0 03c824654c43073011eebc4196ad46b5
++ entry .Extensions   ファイル名から推測するための、ファイル拡張子のメディアタイプ
+
+% 1 1 0 0ec08dfe0cb0b1d6173777f286927037
+
+@ 0 3 0 073096cceeb45ae909d3eea2357edf27
++       約八十の一般的な拡張子（`png`、`json`、`pdf`、`docx`、`woff2`、…）と、それぞれが慣例的に意味するメディアタイプの表で、検索には `.guess` を使う。
++       `Media.nominable` がファイルに名前でラベルを付けるのに使うものである。
+
+% 2 1 0 007b5ac542f712e0104a9d6a4e3fb3c0
+
+% 3 1 0 179a132e9348557f02ead2c623480e6d
+
+% 0 1 0 18abd54c8d00a9661f04367caa9d8cf8
+
+% 0 1 0 03054f8e5a20f848136b0c0897ab2157
+
+% 1 1 0 1021a55944e6cc7f0362dd8e6bc223af
+
+% 1 1 0 1eb9dad2656bec890c072d7ddcc9666d
+
+@ 0 4 0 13d8680807fc2b460991d8b17a35d427
++   entry .guess   拡張子のメディアタイプ。未知の拡張子には `application/octet-stream`
++       拡張子はドットなしの小文字で与える：`t".SVG"` ではなく `t"svg"`。
++   entry .mediaTypes   拡張子からメディアタイプへの表そのもの
++       `Map[Text, MediaType]` で、それに追加したり列挙したりしたいプログラムのためのものである。
+
+@ 0 1 0 1916ad3ece8a07371afddbde26aa9793
++ entry .Multipart   パートにパースされた `multipart/form-data` の本文。各パートは読まれるにつれて入力から貸し出される
+
+% 1 1 0 101527417cd53c4f01acb99bc5a5b8b2
+
+@ 0 6 0 110616b01ceaaebf1bf0755b8d908a64
++       ファイルのアップロードの形式である。
++       本文は境界の行で区切られたパートからなり、それぞれが独自のヘッダー（フィールドの名前とファイル名を与える `Content-Disposition`、場合によっては `Content-Type`）と本文を持つ。
++       `Multipart.parse` は任意のバイトの供給源から漸進的にそれを読むので、大きなアップロードは蓄積されずにストリームされ、`#parts` が遅延的な `Chain[Part]` である `Multipart` を返す。
++       `#at` はフィールド名でパートを見つける。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0d508a90503ccaf613425aad8b4244d9
++         label 本文は境界の行で始まる
+
+% 1 1 0 0b925a6fa9c90be4102b63e53892102c
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 193e2b393d0b80a41e2fa33788906d28
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 1 1 0 1f9767d2bb5081bf108daa2ce62a5838
+
+% 1 1 0 0d81887a256b6c680463c153b0c2b834
+
+% 2 1 0 0f3a0eb028cbf99811d6ff6c3d12ae54
+
+@ 0 1 0 00011f3556a3b3a312893f0225e7ba67
++         label パートはヘッダー、空行、本文を持ち、その後に境界の行が続く
+
+% 1 1 0 04fc27cc0607a1241c260ed6457c24ba
+
+% 2 1 0 03e3c5941145fa730288ec88ef67192a
+
+% 3 1 0 004d390f9c7d520f1a79c5ee69e63d38
+
+% 4 1 0 03a36225953d953807d4f690727be626
+
+% 5 1 0 0dd1f10face6be7710b037064f821d86
+
+% 6 1 0 08f34a73dd41c20e1a5169cfeae5199b
+
+% 7 1 0 18e50d0ad38b45290f73e17dc53b7fb1
+
+% 1 1 0 0411ba88be2b7ca908fc10ca447b7f9d
+
+% 2 1 0 0da7d691b510203215aca9788eac9f31
+
+@ 0 1 0 1351f23246b7daf315c83372afe2d864
++         label 二つ目のパートと、末尾に `--` の付いた閉じの境界
+
+% 1 1 0 0c1cb9b031fe6399162144ad49919957
+
+% 2 1 0 0e5b5a39b18213701f40ff0667737363
+
+% 3 1 0 021b78ce4ba6b1f30ab5faa229303257
+
+% 4 1 0 169e011585633c820e392ea1ff6c9d89
+
+% 5 1 0 03f263a14c165dbd16b07b31eb99054f
+
+% 6 1 0 13906cc01ee5502d0201c16bb00d3967
+
+% 7 1 0 0b3ed52031529a3b0c5008b355060f2d
+
+% 1 1 0 0534a362f16fce7e1017e316a83187c8
+
+% 0 1 0 15aa2e8146f90bfd1830b132c9afc592
+
+% 1 1 0 11ba7b156fe32f79011781172681d919
+
+% 0 1 0 07a4de1dcac38cd81b8b5706bce7272f
+
+% 0 1 0 1b3686d590b653e71a61324c20bcb191
+
+% 1 1 0 19b6f4b6213a3d390b5459a6ef525f2d
+
+@ 0 1 0 03ffcc2a5c20c74c1048d69371208699
++         label パースすると、パートは型付きになる
+
+% 1 1 0 196e9675eb71dc441cc7683c0d7b5f2d
+
+% 0 1 0 1d2c845b6867685110f4888eaa078a82
+
+% 0 1 0 19e35886cc0f734e1a18af22c6574210
+
+% 0 1 0 01231ed5dc24861f1d62a31f3b934556
+
+% 0 1 0 04d3d3807a6f201c1d6104963e1d4a64
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 8 0 0d4afcd4152271ba0a01a1808813d894
++       パートの本文は、そのパートが現在のパートである間、ゼロコピーで入力から**貸し出される**。
++       次のパートへ進む前にそれを読む（`part.read[Data]`、またはストリームなら `part.body()`）こと。
++       次のパートを強制すると、このパートの残りは読み飛ばされ、その後は空として読まれるからである。
++       `Chain` はメモ化するので、`parts.size` の後に `parts.head.let(_.read[Data])` を行っても何も読まれない。
++       本文は区切りの一括探索で見つけるので、100 KB のバイナリの本文は、入力のチャンクの分け方にかかわらず、少数の大きな領域として届く。
++       本文は分けて読むこともでき、各 `body()` は前回止まったところから続ける。
+
+@ 0 3 0 1f56e81c979e59240fcc374340d292f1
++       不正な本文は `.Error.Reason` を持つ `Multipart.Error` を発生させる。
++       scintillate の `Acceptable.multipart` は、リクエストの `Content-Type` から境界を読み、これでリクエストの本文をパースする。
+
+% 0 1 0 1644772910d45b1818d5070d44f2ae59
+
+% 1 1 0 1fac569a3d303af406af34df671711e6
+
+@ 0 14 0 03e58311c4eac87e1117727a51adfcb4
++   entry .Disposition   パートをどう提示するか：`Inline`、`Attachment`、`FormData`
++       パートの `Content-Disposition` ヘッダーのトークンである。
++       フォームのアップロードのパートは `FormData` で、`Inline` と `Attachment` はメッセージのパートの配置である。
++       これら以外のトークンは、`Multipart.Error.Reason.BadDisposition` でパースを失敗させる。
++   entry .parse   任意のバイトの供給源からマルチパートの本文をパースし、各パートに到達するとそれを貸し出す
++       `Multipart.parse(input)` は `is Streamable by Data over Credit` である任意の値（`Chain[Data]`、リクエストの本文、ファイル）を取り、その最初の行（`--boundary`）から境界を読むので、境界を前もって知る必要はない。
++       二番目のパラメーター `boundary` は、`Content-Type` ヘッダーからそれを得た呼び出し側のために受け付けるが、参照はされない。
++       `Tactic[Multipart.Error]` が必要で、結果はそれを保持する（パートの本文は、途中で切れた読み込みをそれを通じて発生させる）。
++       最初の不正なバイトで `Multipart.Error` を発生させる。
++       あるべき境界や行末がないときは `Expected(char)`、読めない `Content-Disposition` には `BadDisposition` である。
++       ヘッダーは ASCII として読まれる。
++       `Content-Disposition` のないパートは、名前のない `FormData` である。
+
+% 2 1 0 0adf770630bf152f1e7f689aac6adc0a
+
+% 3 1 0 0bea45737d9bd0210256af8dc0152ef7
+
+% 4 1 0 0826cb8d7cd114f9131a82d86181f019
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 150499dc135980c51db745684b6e2d0b
+
+% 1 1 0 1fbe8e2ef54b5e6d15796d4285c61925
+
+@ 0 1 0 06dd0be5a552094619f2b224ed917661
++   entry .Error   マルチパートの本文を読めないときに発生する
+
+% 1 1 0 0ff2997c0d34cdb515116cb1847ab738
+
+@ 0 5 0 179d794822941be10855f8d1452dbccd
++         エラー `↯/s.81.2`：_multipart data could not be read because `reason`_。
++         `Multipart.parse` によって、誤りに到達した時点で `Tactic[Multipart.Error]` を通じて発生する。
++         パートは遅延的に読まれるので、それは呼び出しの時点ではなく、後のパートが強制されるときかもしれない。
++         `.Reason` の番号がエラーのサブ番号（937.1 から 937.6）である。
++     entry .Reason   マルチパートの本文を読めなかった理由
+
+% 1 1 0 0dbad9a64e1db7180c2a3d8de250b184
+
+% 1 1 0 183d5f11254e8518154a3b6c2f0be0bd
+
+@ 0 5 0 08667e1a12645e6217699f6c95bfaad6
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
++           row  `Expected(char)`  1  _the character '`char`' was expected_  `--` のない境界、`\r\n` のないヘッダー行や境界の行、`: ` のないヘッダー
+
+% 0 1 0 11fc15d67a1950fd08f9e2bda0ea8647
+
+% 0 1 0 1a895bcc3be76cb81f2431de466fea1b
+
+@ 0 1 0 07e73a4935603b04152d611a9c615926
++           row  `MediaType`  4  _the media type is invalid_  `Content-Type` が `boundary` 付きの `multipart/form-data` でないリクエストに対して scintillate の `Acceptable.multipart` が発生させる
+
+% 0 1 0 0df41820c77b80610df5264f38f02b7e
+
+@ 0 1 0 193b928c2830ecd70383249def0b74aa
++           row  `Truncated`  6  _the body ended before its closing boundary_  途中で切れたリクエストの本文に対して `Acceptable.multipart` が発生させる
+
+% 1 1 0 0f21f812b59f04001baf9c7b9c9c95c0
+
+@ 0 11 0 16cd389063e166db077e5e1777917ecf
++       entry #number   理由の番号。`1` から `6` で、エラーのサブ番号である
++     entry .communicable   各理由をそのメッセージとして描画する
++     entry #reason   本文を読めなかった理由
++   entry #parts   パート。順序どおり、遅延的なチェーンとして
++       各パートはチェーンが強制されるにつれてパースされ、パートの後続を強制すると、そのパートの本文は読み飛ばされて閉じられる。
++       チェーンはメモ化するので、複数回たどれるが、本文はそのパートが最後に強制されたものである間しか読めない。
++   entry #at   フィールド名を持つパート。なければ `Unset`
++       `upload.at(t"avatar")` は、`Content-Disposition` がそのフィールドを名指す最初のパートを見つける。
++       見つけるにはそこまでのすべてのパートを強制するので、それより前のパートの本文は閉じられる。
+
+@ 0 1 0 0b7e57735239ef9f021f85a8c3d9dd55
++   entry .Part   マルチパートの本文の一つのパート：その配置、ヘッダー、名前、ファイル名、貸し出された本文
+
+% 1 1 0 1f0c315d6a1183980347e93b6789c24e
+
+@ 0 6 0 14ab41f53eee19d912a8343d1fa332cb
++         `Part` は、`Multipart.parse` が本文の各セクションについて返すものである。
++         `#disposition` と、`Content-Disposition` ヘッダーからの `#name` と `#filename` のパラメーター、名前によるすべての `#headers`、そして入力から貸し出される `Spring[Data]` である `#body` を持つ。
++         パートは `is Streamable by Data over Credit`（`.streamable`）なので、本文はいつもの動詞で読む。
++         `part.read[Data]`、スコープに `Charset` があれば `part.read[Text]`、ストリームそのものなら `part.body()` である。
+
+% 2 1 0 1017a456e792cf360d875ef9bbd0cc1e
+
+% 3 1 0 03178dcf4fd37764111a300e89d5e1b6
+
+% 0 1 0 1549dce1def0d2b3146a423ec9cc1b2e
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1a6f5a1f7a5690220c481081ac7cba79
+
+% 0 1 0 093409fa6e38e01213a6d23546a15161
+
+% 0 1 0 1adda9edbe8570ca0d20cbdab56ca48a
+
+% 0 1 0 1db9f39ec60c9d900fad1c8b08e78df4
+
+% 0 1 0 00bd1acbb971814d03327bf04b8b8781
+
+% 0 1 0 14027876fc8d86a51fa2e0c4da157aab
+
+% 0 1 0 085729ca9d4c37d60b067e3712c93f45
+
+% 0 1 0 15a3ca28166db6b804dbc4fb515f82f2
+
+% 0 1 0 1ae135bbca7e864917b01336d757852f
+
+% 0 1 0 04c609138fd8efba1479048ebdd19703
+
+% 0 1 0 04c2fb4da3ba8e6704247fdbf0100f70
+
+% 0 1 0 1f9c78ed3ddfa32a09e88b5da676b83b
+
+% 1 1 0 0a77c55a1395b36900c4a31b725e83a0
+
+@ 0 4 0 09b6c5e57ec203aa1c946bd24ea30294
++         本文はゼロコピーである。
++         次のパートが強制されるまで読むことができ、強制されるとその残りは読み飛ばされ、その後は空として読まれる。
++         各 `body()` は前回の読み込みが止まったところから続けるので、本文は二つに分けて取り出せるが、二度は読めない。
++         後で本文が必要なパートは、先に `Data` へ読み込まなければならない。
+
+% 0 1 0 19b5ab3c13f6fc2d1d1e8d2adb38695e
+
+@ 0 14 0 0ca2c8ed92d572fd08506e0c5df83995
++     entry .streamable   `Part is Streamable by Data over Credit`：`read[Data]` やその他のストリームの動詞のための、パートの本文
++         暗黙のスコープにある。
++         入力が閉じの境界の前に終わる本文のために `Tactic[Truncation.Error]` を必要とし、インスタンスはそれを保持する。
++     entry #disposition   `Inline`、`Attachment`、`FormData`。パートに `Content-Disposition` がなければ `Unset`
++     entry #headers   パートのすべてのヘッダー。書かれたとおりの名前で
++         ヘッダー名は、本文に現れるとおりに正確に照合される。
++         `content-type` ではなく `Content-Type` である。
++     entry #name   `Content-Disposition` ヘッダーからのフィールド名。なければ `Unset`
++     entry #filename   `Content-Disposition` ヘッダーからのファイル名。なければ `Unset`
++         フォームのファイルのフィールドにはあり、テキストのフィールドにはない。
++     entry #body   入力から貸し出されたパートのバイト：`body()` がストリームである
++         `Spring[Data]` である。
++         `body()` は前回の読み込みが止まったところからの `Stream[Data] over Credit` を返し、`Tactic[Truncation.Error]` を必要とする。
++         次のパートが強制されると、空として読まれる。
+
+@ 0 1 0 1dc9c026048598e502831533550ba27b
++ entry .Construable   HTTP クライアントが使う、メディアタイプを読み込み、書き出すときの Scala の型
+
+% 1 1 0 186fbc1b766c0e161890574544ddb48e
+
+@ 0 9 0 17749643447ceaf21fead70b6c928ee1
++       `("image/png" is Construable to (Raster in Png))` は、`image/png` の本文が `Raster in Png` として読まれ、そこから書き出されることを述べる。
++       `Self` はパラメーターを除いたメディアタイプをシングルトンの文字列型にしたものなので、仕様（たとえば OpenAPI の文書）からメディアタイプを知るクライアントは、その型のレスポンスを何として解釈するかをコンパイル時に問える。
++       トレイト自体は操作を持たない。
++       結果の型自身の `Aggregable` が本文を読み、その `Postable` が本文を書く。
++       `Construable()` は、二つの型を引数としてインスタンスを作る。
++       その `Result`、つまりそのメディアタイプの本文を読み込み、書き出すときの Scala の型は、`prepositional.Resultant` から継承される。
+
+@ 0 7 0 1d6450523c7870e706f8b5b312fb9da7
++       それぞれの対応付けは `construables` 選択パッケージにある given で、名前でインポートするので、意図的な選択なしに何かが解釈されることはない。
++       このライブラリは `plainTextConstruable` と `octetStreamConstruable` を宣言し、各形式のライブラリは自分のもの（jacinta の HTTP モジュールの `jsonConstruable`、xylophone の `xmlConstruable` と `textXmlConstruable`、hallucination の `pngConstruable` など）を宣言し、すべてアンブレラの `construables` パッケージに統合される。
++       適切なものがスコープになければ、レスポンスをその `Content-Type` によって読むクライアントは生の本文に戻る。
+
+% 2 1 0 0b85f968427f21770d03995343194262
+
+% 3 1 0 0eb8249bd8734cd9159f66eda3d8dc91
+
+% 0 1 0 1a8ae180d330639b0d69b7587e00b58b
+
+% 0 1 0 0154c4ee596e6ac8093fb450d1ad5840
+
+% 1 1 0 0c4a02b566c9ebef02df7c72ad28cc7f
+
+% 0 1 0 14db365ec07defc208ea083764937212
+
+% 1 1 0 1f129a61c605659f042b32d890d808e9
+
+@ 0 1 0 168b412107a89f6c194981bfd50cac77
++   entry .Bound   メディアタイプと結果を型引数として固定した `Construable`
+
+% 1 1 0 19f8b595dd8a3f191476523a58de6c52
+
+@ 0 8 0 0cd70441843b1cd8040f61966ac55552
++         `Construable.Bound[media, result]` は `Construable()` がインスタンス化するクラスで、`Self` が `media`、`Result` が `result` である `Construable` である。
++     entry #Self   シングルトンの文字列としてのメディアタイプ
++     entry #Result   メディアタイプが解釈される Scala の型
++   entry .apply   `Construable[media, result]()`：メディアタイプのリテラルから型への対応付け
++       given の型として `is … to …` の構文で書けば、型引数は推論される：`given csvConstruable: ("text/csv" is Construable to Sheet) = Construable()`。
++   entry #Self   パラメーターを除いたメディアタイプ。シングルトンの文字列型として
+
+@ 0 1 0 0a62746d23937f840ee044f8e43775e8
++ entry .construables   メディアタイプから Scala の型への対応付け。それぞれ名前でインポートする given
+
+% 1 1 0 0a993ef82afe78730c01b41972aa8012
+
+@ 0 4 0 0b414dced7b3c0a915264668a1513250
++       あるメディアタイプの本文がどの型として解釈されるかは、スコープ内の `Construable` の given で決まり、`import soundness.*` はそのどれも持ち込まない。
++       それぞれ名前でインポートする。
++       このパッケージは形式のライブラリを必要としない二つの対応付けを保持し、アンブレラの `construables` パッケージがそれらを各形式のライブラリのものと統合する。
+
+% 2 1 0 041f6e34f533f38614356abcb0412e1f
+
+% 3 1 0 061367d99b9ed3fe04189068ede208d6
+
+% 0 1 0 142b1a6763432687163e7af464eedc5c
+
+% 1 1 0 08f5bc81ab4757090ee09e272974a829
+
+@ 0 3 0 124298333698f1fc009e6482e61bf95f
++   entry .plainTextConstruable   `text/plain` は `Text` として解釈される
++       本文をテキストとして読むにはスコープに `Charset` が、書くには `Codepage` が必要である。
++   entry .octetStreamConstruable   `application/octet-stream` は `Data` として解釈される
+
+@ 0 1 0 0511845060c7585e1c981b7e6a33cfd9
++ entry .internal   `media"…"` とそのレジストリの検査の背後にあるマクロ
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 1441c5176d05279214e9eb861c3a3a03
++       直接使うためのものではない。
++       このオブジェクトはマクロに安定した置き場所を与えるためにあり、展開時に実行できるよう自己完結に保たれている。
++   entry .validateLiteral   メディアタイプのリテラルのグループ、サブタイプの文字、登録を検査し、メッセージか `Unset` を返す
++       コンパイル時の検査である。
++       グループは十一のうちの一つでなければならず、サブタイプのセグメントは禁止された文字を含んではならず、標準のツリーのサブタイプはレジストリになければならない。
++       そうでなければ、レーベンシュタイン距離で最も近い登録済みの型を名指すメッセージを返す。
++       接尾辞とパラメーターはパーサーに任される。
++   entry .mediaInterpolator   マクロ：一つのリテラルの部分を検証し、パースしたメディアタイプをスプライスする
++       埋め込みを持つリテラル、`validateLiteral` のメッセージ、パーサーからの `MediaType.Error` に対して停止する。

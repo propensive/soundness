@@ -1,0 +1,161 @@
+orthant 2 language
+
+@ 0 1 0 106a4523943e569304e25e3ed1a03c55
++ # Tipos infixos
+
+@ 0 12 0 1b187bd43a1fdc9307a82dd2c06605f0
++ O Soundness usa tipos infixos em toda parte, para que um tipo se leia como uma frase, e não como
++ um emaranhado de colchetes. Escritos como preposições e verbos — `Path on Linux`, `Html of
++ "br"`, `Text is Decodable in Json`, `Quantity is Multiplicable by Duration`, um método que
++ `raises HttpError` ou `logs ExecEvent` —, eles permitem que uma assinatura diga em palavras
++ simples o que um valor é e do que uma operação precisa, o que é parte de fazer o código se ler
++ como [prosa elegante](elegant-prose.md). Seu verdadeiro poder está em que eles se
++ [compõem](composability.md): cada um acrescenta mais uma cláusula a um tipo sem aninhamento,
++ então `Html.Element of "ul" over "li" in Whatwg` se constrói exatamente como uma descrição em
++ inglês se construiria, e o mesmo `of`, `in`, `by` ou `over` carrega o mesmo significado onde quer
++ que apareça. Um leitor que entendeu um tipo desses consegue ler o seguinte por analogia, e quem
++ escreve pode descrever um tipo preciso nomeando suas partes uma a uma, em vez de montar um tipo
++ profundamente parametrizado.
+
+@ 0 1 0 1c7bd5f570572279183fcbc50c97ddec
++ ## Como funcionam
+
+@ 0 2 0 1e1bf1adafa25b550e5e5d27378ffac2
++ Cada preposição é um alias de tipo que refina um membro de tipo. `in` define `Form`, `on` define
++ `Plane`, `by` define `Operand`, `to` define `Result`:
+
+% 2 1 0 0a3df684de560fff0d4b8eb2b00c0562
+
+% 3 1 0 0f3a125fff11041918dd93bbf3878ae9
+
+% 4 1 0 030c16e6e39be4991a9fdaab5e4afb5d
+
+% 0 1 0 1d5d9e707fe0ada50cf575c783e452c4
+
+% 0 1 0 05efabe8b7e73b2503618d9a2ca651aa
+
+% 0 1 0 080bd845c627aa000c78c57eceee71a0
+
+% 0 1 0 14a7a79b32edc6600882c9bb36df5e8a
+
+% 1 1 0 0d83cb08ce19efe112195f97b969972f
+
+@ 0 2 0 1e0987335cab534b05380b1fbf31d327
++ Esse é o mecanismo inteiro. Como cada uma refina um membro *diferente*, elas podem ser aplicadas
++ em sequência sem aninhamento, e a ordem não importa:
+
+% 2 1 0 030a110766d416d610571db6d2994c25
+
+% 3 1 0 0ff3ee90f6f72488084d6dccd7b000de
+
+% 4 1 0 0af939135b405f2801f67018b84da68c
+
+% 0 1 0 0fb6a82d35c6d65e08ba5ec18939021e
+
+% 0 1 0 15554d82c81fd691118c9a77e608b965
+
+% 0 1 0 0a2a2f80e83aef561494cc52ab2ef156
+
+% 1 1 0 11d2afd3e28e6048128c0d794dce417b
+
+@ 0 2 0 012a8ed522fb026a13adfb3e4c9eb2f1
++ O conjunto é pequeno e fixo, e cada preposição mantém seu significado em toda parte: `over` é
++ sempre o transporte, `by` é sempre o operando, `on` é sempre o plano.
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 16 0 0b7c4fed747e3de7077648114648e0b8
++ column  Preposição
++ column  Refina
++ column  Nomeia
++ column  Exemplo
++ row  `in`  `Form`  a forma ou o formato  `Text is Decodable in Json`
++ row  `on`  `Plane`  o plano  `Path on Linux`
++ row  `of`  `Topic`  o tópico  `Html of "br"`
++ row  `by`  `Operand`  o operando  `Quantity is Multiplicable by Duration`
++ row  `to`  `Result`  o resultado  `Text is Extractable to Int`
++ row  `from`  `Origin`  a origem  `Ordinal is Optical from Yaml`
++ row  `over`  `Transport`  o transporte  `value is Streamable by Data over Credit`
++ row  `across`  `Domain`  o domínio  `Xml is Instantiable across HttpRequests`
++ row  `onto`  `Target`  o alvo  `Http.Client onto Origin["http"]`
++ row  `against`  `Contrast`  o contraste  `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`
++ row  `under`  `Limit`  o limite  `Tar is Nominative under Rules`
++ row  `at`  `Locus`  o locus  `value is Decodable in Json at Json.Focus`
+
+% 1 1 0 13386474ce3c48a51bf7497908e7fef5
+
+@ 0 1 0 0167c0eab2af1f2f086d3e4a8aa69241
++ ## Quanto custa a alternativa
+
+@ 0 1 0 1130aa6323a3cd741e708c998c351e09
++ Os mesmos tipos, escritos da maneira convencional:
+
+% 2 1 0 12447cf3f3ecad87049cea40e2a465e8
+
+% 3 1 0 18f7e451aba2759d009736ff874b1898
+
+% 4 1 0 0737e30e6ccac50a145dd3d85123f82c
+
+% 0 1 0 0898652a95445ba01ad78444cd9d30c6
+
+% 0 1 0 1a47321b8fd4c1a012a8a33f07bd7861
+
+% 0 1 0 10432b0bcb872a860db1c35c8ee27e5e
+
+% 1 1 0 1a76458bf0c8c55f1e3402c338afbf2b
+
+@ 0 1 0 0b18e533ee96d8ee0a3bb95bcf8ee0ec
++ Três problemas, e a forma infixa evita cada um deles.
+
+@ 0 3 0 003e2395844199371045b7eb102bed34
++ **A posição carrega o significado.** Em `Element["ul", "li", Whatwg]`, um leitor precisa saber
++ que o primeiro parâmetro é a tag, o segundo os filhos permitidos e o terceiro a especificação.
++ Em `Html.Element of "ul" over "li" in Whatwg`, as preposições dizem isso.
+
+@ 0 4 0 086393719a25e98504d3774758b0d3bd
++ **Todo parâmetro precisa ser fornecido.** Um construtor de tipos convencional recebe todos os
++ seus argumentos ou nenhum, então um tipo parcialmente especificado precisa de um curinga para
++ cada posição não mencionada. A forma infixa menciona apenas o que restringe:
++ `Text is Decodable` é um tipo perfeitamente válido, e `in Json` o estreita.
+
+@ 0 3 0 18d9ba4ea4717eeb181835e936c861cf
++ **Estender é uma mudança incompatível.** Acrescentar um quarto parâmetro de tipo a `Element[…]`
++ invalida todos os usos. Acrescentar um quarto refinamento acrescenta uma preposição que o código
++ existente não precisa mencionar.
+
+@ 0 1 0 0adc6f59495157dc008d9185c67e66b0
++ ## Onde se leem mal
+
+@ 0 1 0 0e8c224a0b726c420d0a3f7e71ac6c1c
++ A convenção não está livre de modos de falha, e vale a pena conhecer dois deles.
+
+@ 0 4 0 17b184d0f01ac7da02100a58fd1cc6a9
++ Um tipo com muitas cláusulas pode ficar longo, e um tipo infixo longo quebra de forma
++ desajeitada entre linhas — `(value is Streamable by Data over Credit) { type Transport = Credit }`
++ não é prosa por critério nenhum. Onde isso acontece, a resposta geralmente é um alias com nome,
++ e não uma frase mais longa.
+
+@ 0 5 0 101a2de97981623e0ecbaae479028550
++ E uma preposição só é tão boa quanto a analogia que convida. `over` no sentido de “transporte”
++ se lê com naturalidade em `Stream[Data] over Credit` e com menos naturalidade em
++ `Instant over Unix`, em que a linha do tempo não transporta nada. O vocabulário é pequeno o
++ bastante para que essas tensões fiquem visíveis, e elas são aceitas em vez de escondidas — a
++ alternativa é um vocabulário maior, em que cada palavra é usada com menos frequência e lembrada
++ com menos facilidade.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto custa
+
+@ 0 3 0 11d65db4c15472f90399495df585913a
++ Os tipos infixos não são familiares. Um leitor vindo do Scala comum já viu `A => B` e `A & B` e
++ pouca coisa além disso em posição infixa, então `Text is Decodable in Json` parece várias coisas
++ antes de parecer um tipo. Esse custo é pago no início, e uma única vez.
+
+@ 0 4 0 12066019a77a9fcb1a29e4ccc64d4ddf
++ As mensagens de erro são o custo mais persistente: o compilador relata o refinamento
++ *desaçucarado*, então uma incompatibilidade é descrita em termos de `{ type Form = Json }`, e não
++ de `in Json`, e o leitor precisa fazer a tradução que a sintaxe deveria lhe poupar.
+
+@ 0 2 0 1156763ef15ece801ae39e250cccb9e9
++ Veja [componibilidade](composability.md) para a propriedade a que isso serve, e
++ [prosa elegante](elegant-prose.md) para a experiência de leitura que se busca.

@@ -1,4 +1,0 @@
-orthant 1 release
-
-- - [Binary Data](binary-data.md) — describing and reading a binary layout
-+ - [Binary Data](binary-data.md) — describing, reading and writing a binary layout

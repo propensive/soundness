@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 1dd2bb7feeed61801477839a742c257c
+
+@ 0 1 0 02607d2ebeb108410436155d8eca4869
++ 値を正当な電子メールアドレスとしてパースできないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 14c5458202433ee60ff4bff9ad8a583d
++ Urticose は電子メールアドレスを、RFC 5321 / 5322 の構文規則（実用的な緩和を加えたもの）と照合して検証する。
++ メッセージは `the email address is not valid because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 17 0 168bdc38eea7e66504b996bfce9ba948
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.100.4.1`  `Empty`  値が空である。  `[↯/s.100.4.1] the email address is not valid because it is empty`  空でないアドレスを与える。
++ row  `↯/s.100.4.2`  `InvalidDomain`  ドメイン部が、正当なホスト名でも正当な IP リテラルでもない。  `[↯/s.100.4.2] the email address is not valid because the domain is not a valid hostname: the character _ is not allowed in a hostname`  ドメインの構文を修正する。詳細は内側の `HostnameError`/`IpAddress.Error` のバリアントを参照する。
++ row  `↯/s.100.4.3`  `LongLocalPart`  ローカル部が 64 文字を超えている。  `[↯/s.100.4.3] the email address is not valid because the local part is more than 64 characters long`  ローカル部を 64 文字以内に短くする。
++ row  `↯/s.100.4.4`  `TerminalPeriod`  ローカル部がピリオドで終わっている。  `[↯/s.100.4.4] the email address is not valid because the local part ends in a period, which is not allowed`  末尾のピリオドを取り除く。
++ row  `↯/s.100.4.5`  `SuccessivePeriods`  ローカル部に隣接する二つのピリオドがある。  `[↯/s.100.4.5] the email address is not valid because the local part contains two adjacent periods`  ピリオドの一つを取り除くか、連続するピリオドが必要ならローカル部を引用符で囲む。
++ row  `↯/s.100.4.6`  `InitialPeriod`  ローカル部がピリオドで始まっている。  `[↯/s.100.4.6] the email address is not valid because the local part starts with a period, which is not allowed`  先頭のピリオドを取り除く。
++ row  `↯/s.100.4.7`  `UnescapedQuote`  ローカル部の二重引用符がエスケープされていない。  `[↯/s.100.4.7] the email address is not valid because the local part contains a quote character which is not escaped`  引用符をバックスラッシュでエスケープするか、正しく引用符で囲んだローカル部を使う。
++ row  `↯/s.100.4.8`  `UnclosedQuote`  引用符で囲んだローカル部に閉じる引用符がない。  `[↯/s.100.4.8] the email address is not valid because the quoted local part has no closing quote`  足りない `"` を加える。
++ row  `↯/s.100.4.9`  `MissingDomain`  アドレスにドメイン部がない。  `[↯/s.100.4.9] the email address is not valid because the domain is missing`  `@` とそれに続くドメインを末尾に加える。
++ row  `↯/s.100.4.10`  `MissingAtSymbol`  アドレスに `@` がない。  `[↯/s.100.4.10] the email address is not valid because the at-symbol is missing`  ローカル部とドメインの間に `@` を挿入する。
++ row  `↯/s.100.4.11`  `UnclosedIpAddress`  ドメインが `[` で始まっているが `]` で終わっていない。  `[↯/s.100.4.11] the email address is not valid because the domain begins with [ but does not end with ]`  IP リテラルを `]` で閉じる。
++ row  `↯/s.100.4.12`  `InvalidChar`  ローカル部に許されない文字がある。  `[↯/s.100.4.12] the email address is not valid because the local part contains the character > which is not allowed`  問題の文字を取り除くか、それを許すためにローカル部を引用符で囲む。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 3 0 080ee2477f0e9ce21a2538138076467e
++ - ソース：`lib/urticose/src/core/urticose.EmailAddress.scala`
++ - `↯/s.100.10` — ホスト名の検証
++ - `↯/s.100.2` — IP アドレスの検証

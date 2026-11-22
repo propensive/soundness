@@ -1,0 +1,67 @@
+orthant 2 language
+
+% 0 1 0 152a3268725bfdb5131eaa03ad8b46c7
+
+@ 0 2 0 108bf99c39afc7e40f5643e13fb906c3
++ Se lanza cuando Superlunary no puede pasar un valor a través de la frontera hacia dentro o hacia
++ fuera de un `Rig`, el cargador de clases en el que se compila y ejecuta el código preparado por
++ etapas.
+
+@ 0 4 0 13b841432bd976a70a83a480e1074d1f
++ Es un fallo de *serialización*, no del propio código preparado: el valor no pudo escribirse en el
++ `Transport` del montaje (`Json` o `Pojo`), o no pudo leerse de vuelta. Un fallo al compilar el árbol
++ preparado es `Compiler.Error`, que `Rig.dispatch` declara junto a este.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 198fde3d70aa42411c96ae1068d62184
++ Superlunary serializa una llamada a un proceso remoto y lee el resultado de vuelta. Cualquier fallo
++ al serializar la llamada, al deserializar el resultado o al transportarlo de cualquier otro modo
++ produce este error. El mensaje es
+
+% 0 1 0 122635e2b4492f5d087d159fc503eec6
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 01f89e7369c89ec61f48f74f524c1885
+
+@ 0 2 0 0efdb549a573c3120c5e84ab11a5a6b6
++ La salida (la llamada o sus argumentos) no pudo serializarse para su transmisión.
+
+@ 0 1 0 0bf25fa09f7e354e1ee74e762cf2d748
++ **Ejemplo.** `[↯/s.121.1.1] failed to perform a remote operation because the output could not be serialized`
+
+@ 0 2 0 0942437eff87d59d0bf6efef8e5c8c33
++ **Solución.** Confirma que todos los tipos de los argumentos tienen en el ámbito los codificadores y
++ decodificadores necesarios y que producen bytes bien formados.
+
+% 0 1 0 10f1f306c2f11d0803287bf8a5c906f5
+
+@ 0 1 0 089ef0968e514ac8152902ce82a0fd4b
++ La respuesta del proceso remoto no pudo deserializarse.
+
+@ 0 1 0 1215bb8b8f8b918d18fdff241fe5b640
++ **Ejemplo.** `[↯/s.121.1.2] failed to perform a remote operation because the input could not be deserialized`
+
+@ 0 3 0 0861a241b432ed4403e6334928849b8a
++ **Solución.** Comprueba que el proceso remoto produce la forma de carga útil esperada; la causa típica
++ son esquemas que no coinciden entre cliente y servidor.
+
+% 0 1 0 05c1d219e9397353126ec513210fe0e1
+
+@ 0 1 0 0d4f60eff7892e150c475ee50742dd95
++ La causa no coincide con ninguna de las variantes más específicas.
+
+@ 0 1 0 145e4215d51a3f0807cbfdbc858a4a56
++ **Ejemplo.** `[↯/s.121.1.3] failed to perform a remote operation because of an unknown reason`
+
+@ 0 1 0 100bfd3d5cc6c54d13f45d4740eccd8b
++ **Solución.** Inspecciona los registros y cualquier cadena de causas.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 152db8336cdf7fa0073130a8e139874f
++ - Código fuente: `lib/superlunary/src/core/superlunary.Rig.scala`

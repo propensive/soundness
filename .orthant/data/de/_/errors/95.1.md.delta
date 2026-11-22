@@ -1,0 +1,34 @@
+orthant 2 language
+
+% 0 1 0 052fc7482e6549d80796b248d90f3055
+
+@ 0 1 0 090e613d51e17dd41d3b5af914bc5f3d
++ Wird ausgelöst, wenn der Benutzer eine interaktive Abfrage verwirft.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 0b2434a131216b0a1c430e67cd7a659c
++ Profanity wirft diesen Fehler, wenn der Benutzer bei einer Abfrage, die eine Auswahl verlangt,
++ eine Taste drückt, die die Interaktion abbricht (z. B. `Esc`).
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1a0b66c909260f6111395a67f3b2c4f6
+
+% 1 1 0 1416e677f1a6af300cb6cd7dcff9bdb6
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 0aea96071aa0892006aed73e43dc8b0d
++ Behandeln Sie das Verwerfen im aufrufenden Code als geordneten Abbruch.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1d46160f59d16a980c1ed2625fad2154
++ - Quelle: `lib/profanity/src/core/profanity.Question.scala`

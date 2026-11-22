@@ -1,0 +1,63 @@
+orthant 2 language
+
+% 0 1 0 0292e2dfdcb7403215d50f7937088a37
+
+@ 0 1 0 18ea679750e0b63e1ac591e5ad022f4d
++ Wird ausgelöst, wenn eine MCP-Operation (Model Context Protocol) fehlschlägt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 4 0 16d7149e7752d62a008e0b27beb0a762
++ Die MCP-Laufzeit von Synesthesia verteilt eingehende Anfragen an benutzerdefinierte Tools, Prompts
++ und Ressourcen. Schlägt die Verteilung oder die Bindung der Parameter fehl, wird dieser Fehler
++ ausgelöst. Der Konstruktor nimmt einen `reason: Reason`; die dargestellte Meldung lautet `the MCP
+
+% 0 1 0 0a337e3286fa960d1c4fa365be454124
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0d261b202fafd66c1819ac48206e009b
+
+@ 0 2 0 003f897fd98523f313caf2ca9eacbe13
++ Der Methodenname in der Anfrage passte zu keinem registrierten Tool und keinem Prompt – der
++ Wildcard-Rückfall im generierten Verteiler.
+
+@ 0 1 0 15f7d839cef425ef1c8e7003f24eaf0d
++ **Beispiel.** `[↯/s.124.1.1] the MCP operation failed because the method name does not match any registered tool or prompt`
+
+@ 0 2 0 018dac47dae614dc033a43f70abc6059
++ **Behebung.** Prüfen Sie, ob der Methodenname zu einem in der Server-Schnittstelle deklarierten
++ passt; achten Sie auf Tippfehler oder abweichende Groß-/Kleinschreibung.
+
+% 0 1 0 151173fdde9da43e049d114e7aabc530
+
+@ 0 2 0 14ec6ac1062967510b093ca9194d005e
++ Der URI in einer Ressourcenanfrage passte zu keinem der URI-Patterns, die die Server-Schnittstelle
++ deklariert.
+
+@ 0 1 0 166c122f7dc9293513cddfa9e59ca3f7
++ **Beispiel.** `[↯/s.124.1.2] the MCP operation failed because the URI does not match any registered resource`
+
+@ 0 2 0 0cd6bb8ca21cccda17d3400908bf2c95
++ **Behebung.** Vergewissern Sie sich, dass der URI zu einem der Patterns passt, die in der
++ Schnittstelle mit `@resource(...)` deklariert sind.
+
+% 0 1 0 1bd74ee9c69bbb43112ca4b13c8f1102
+
+@ 0 2 0 15d16cc4c9e48dd1183fb6b5561887d8
++ Ein erforderlicher Parameter einer Tool-Methode fehlte in der Eingabe-Map der Anfrage.
+
+@ 0 1 0 17fb25ff8d0cc2130e2550f8ca2c32cc
++ **Beispiel.** `[↯/s.124.1.3] the MCP operation failed because a required parameter was not present in the input`
+
+@ 0 3 0 17cfd0b3841963e91476d5137830770b
++ **Behebung.** Senden Sie alle erforderlichen Parameter im Argumentobjekt von JSON-RPC, oder
++ kennzeichnen Sie den Parameter in der Server-Schnittstelle als optional.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 19d4132abcd44a2619fb7809055aa7ca
++ - Quelle: `lib/synesthesia/src/core/synesthesia.Mcp.scala`

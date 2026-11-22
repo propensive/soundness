@@ -1,0 +1,1401 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 095928856a7b87c9003c19e125c116bf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ab9b4e793d8620f0360221cd123c3d0
++ info   ターミナルのための表：幅に合わせて折り返し、切り詰め、折りたたまれる列を、選んだスタイルで描く
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 07c8ec3f64fbd260183c44fb32c515d5
++     _Escritoire_ は表形式のデータを、ターミナルやログのためのテキストとして描画する。
++     書式文字列にはできない部分、つまり内容の幅がまちまちな列を固定の幅に収めることに真剣に取り組む。
++     それぞれの列は **サイズ決定方式** を宣言する。
++     段落として折り返す、省略記号で切り詰める、固定幅を保つ、場所が足りなくなれば丸ごと折りたたまれる、のいずれかである。
++     レイアウトエンジンは列の間で幅を調停し、折り返しが許される所ではハイフネーションを使って折り返し、結果をスコープ内で選ばれた `Table.Style` の罫線文字で描く。
+
+@ 0 7 0 099bf17699c0603d09f9f104b8a0ed99
++     三つの型が、表を定義からテキストへと運ぶ。
++     `Scaffold` は、行の型をどのように `Column` に分けるか（タイトル、内容、配置、サイズ）を述べ、データは保持しない。
++     `Tabulation` はスカフォールドによって並べられたデータであり、セルのテキストだけを持ち、もはや行の型を参照しない。
++     `Grid` は一つの幅に合わせたタビュレーションであり、列が縮んだり消えたりするのはここである。
++     `Grid#render` がその行の並びになる。
++     `tabulation` 拡張メソッドはケースクラスに対するスカフォールドを導出し（フィールドごとに一列、タイトルはフィールド名から作る）、一度に適用する。
+
+% 2 1 0 1c3c8d7641c3f563143392f9774375fb
+
+% 3 1 0 1be9bf7f82fa416300ecb43cb486e17e
+
+% 4 1 0 1daa686917ff022c1dd36492ec2edf93
+
+% 5 1 0 000ef79821b8cd6d058181be67717b10
+
+% 6 1 0 16990b46201f130f04b8a7638afe083f
+
+% 8 1 0 174949716ea3a4a902ea3a36cf56fd16
+
+% 0 1 0 0a933c99969146971adbeaff0d952e13
+
+% 0 1 0 0bdd87296f72401b14056af9e197f6cc
+
+% 0 1 0 0cb201a1a7e5888c1061dc4977756647
+
+% 0 1 0 0d4cc19e4ed8877a19cc6bbd56648ba5
+
+% 0 1 0 1928acc9c6f2122d1df7445f4aca7428
+
+% 0 1 0 10f6c0240f02f2a705538c8d31fbf9f0
+
+% 0 1 0 1ae9ecd62d2a9feb09e794a025b4d9d1
+
+% 0 1 0 1a08a429a3ab57f71dbcd27abb2979ad
+
+% 1 1 0 18afac828d31cd7a0795ddb0031c5988
+
+@ 0 2 0 1bc6747350bd78f7192800a52cfc8d77
++     表をレイアウトするには四つのコンテキスト値が必要である。
++     `import soundness.*` は given をインポートしないので、そのうち三つは given を名前でインポートして選ぶ。
+
+@ 0 8 0 0d4c11a38e758cb0180f62cb2bc77f82
++     - `tableStyles` パッケージの `Table.Style`：罫線、角、パディング。
++     - `columnAttenuation` の `Attenuation`：列をどう並べても幅に収まらないときに何が起きるか。`ignoreAttenuation` はそれでも描画し、`failAttenuation` は `Table.Error` を発生させる。
++     - hieroglyph の `textMetrics` の `Text is Measurable`：文字の幅。`wideCharacterWidthMetric` は CJK テキストを二セル幅のグリフとして測る。
++     - polysyllabic の `Hyphenation`：`hyphenations.englishHyphenation` をインポートしない限り、ハイフネーションなしになる。
+
+@ 0 4 0 06088f054990026607cb291e9ac59484
++     セルの型は、要素が `Char` である任意の `Textual` である。
++     `Text` か、色やスタイルのための escapade の `Teletype` であり、後者の場合、セルの幅はエスケープコードの長さではなく見た目の幅である。
++     表は `Printable` なので、`Out.println(table)` はターミナル自身の幅で表をレイアウトする。
+
+@ 0 7 0 035a5b3d3f75435310fe574fa344dfe5
++     このライブラリは一つのソースセット `escritoire.core` からなり、JVM、Scala.js、Scala Native 向けにビルドされる。
++     `Layout` と `Cells` を除くすべてが `soundness` アンブレラにエクスポートされる。
++     この二つはインクリメンタルなレイアウトエンジン固有の語彙であり、`escritoire.Layout` と `escritoire.Cells` として名指しする。
++     三つの選択パッケージ `tableStyles`、`columnAttenuation`、`columnar` は、アンブレラの同名のパッケージに統合される（アンブレラの `columnar` は `ParagraphOrBreak` 以外のすべての方式を反映しており、`ParagraphOrBreak` は `escritoire.columnar.ParagraphOrBreak` として名指しする）。
+
+% 0 1 0 1533ba9a29e0837e05db9d84f90e1060
+
+% 0 1 0 0654786614c3936a0ed4b258ec28fe33
+
+% 0 1 0 0714919cbb0535390fb3f75ed5409dac
+
+% 0 1 0 0e190ac85cab1872158b6732c0e5e9f3
+
+% 0 1 0 08aac7f4e8505b5d0a1d38fd36dec3fa
+
+% 0 1 0 0acadc7925c00f6b05e7fb5c71f5da09
+
+% 0 1 0 1fb4685c37dd819d126e4427ef269fc0
+
+@ 0 1 0 186f893db4258575159952949d4cdcb1
++ entry .Scaffold   行の型をどのように列に分けるか：データを保持しない表の定義
+
+% 1 1 0 0ad772aeafca1b3617c541337ccf2dfa
+
+@ 0 5 0 13cf69a209f26bd41947094245e5571e
++       `Scaffold[row, text]` は `Column[row, text]` の順序付きリストであり、`Scaffold[row](columns*)` で作る。
++       行の型は明示し、テキストの型（`Text` または `Teletype`）はタイトルから推論される。
++       これはデータの前の段階である。
++       `#tabulate` はこれを `List[row]` に適用して `Tabulation` を作り、`#layout` はタイトルだけから列の幅を解く。後者は行を一つずつ受け入れる表のためである。
+
+% 2 1 0 0f4149b848f5baf200f30e6d4c9a750f
+
+% 3 1 0 032480b63252201705113db01b1201db
+
+% 4 1 0 1e5bc76c94dbc19a09b80c5279a9497e
+
+% 5 1 0 0a25cac0393d3a9113c6c0e30b8270c7
+
+% 6 1 0 156f791df8f1b80514f9ab3f3d06e044
+
+% 8 1 0 0f7b5df121917c241731d1da2bacc239
+
+% 0 1 0 05dd48c5e8f0a3a2163bdecd6d8b193c
+
+% 0 1 0 09bc0e714a96f3f2010eaac0ef5ae138
+
+% 1 1 0 1f99f7c6115c03371a96a563695153e3
+
+% 0 1 0 13fdd414253f330913c545a2056fb514
+
+% 0 1 0 1597df9ff60f7ac817ffe0247a785546
+
+% 1 1 0 1cc41f59339d113612c4955002f54d81
+
+@ 0 4 0 0803097aa840cfce17637153262cb5e8
++       ある型に対する `Tabulable` インスタンスは、その型のスカフォールドを返す関数である。
++       そのため、列がフィールドではない型（スキーマから読んだレコードや、計算で求める表示用の列など）は、インスタンスを一つ与えれば表にできる。
++       ケースクラスに対して導出されるインスタンスは、フィールドごとに一列のスカフォールドを作る。
+
+% 1 1 0 032a86194560c7860e1141455ac2f106
+
+% 1 1 0 150cf24210914690152e681b3e9aad8e
+
+% 1 1 0 02aadae0a18d7bad17a9a03bf5e40f31
+
+@ 0 24 0 02c8541d9fc4e7bd0f5d25717623c16e
++   entry .apply   `Scaffold[row](columns*)`：与えた列からなる、その順のスカフォールド
++       行の型は唯一の明示的な型引数であり、テキストの型は列から推論され、すべての列がそれを共有する。
++       `t"…"` と書いたタイトルは `Scaffold[row, Text]` を作り、`e"…"` と書いたタイトルは `Scaffold[row, Teletype]` を作る。
++       このメソッドが二つの型パラメーターリストの間に消去された `Void` パラメーターを取るのは、テキストの型を与えずに行の型だけを与えられるようにするためにすぎない。
++   entry #columns0   コンストラクターに与えられたとおりの列
++       スカフォールドの構築に使われた可変長パラメーターである。
++       `#columns` は同じ列を配列にしたもので、レイアウトエンジンはそちらを読む。
++   entry #columns   配列としての列、順序どおり
++   entry #titles   タイトルのセルの一行。各タイトルは行に分けられている
++       タイトルには `\n` を含めることができ、それによって複数行のタイトルになる。
++       タイトルは、他の行と同じように測定し描画できるよう、要素が一つのリストとして保持される。
++   entry #cells   レイアウトの前に、列を通して表現した一行
++       `scaffold.cells(row)` は行からすべての列の内容を読み、それぞれを行に分けて幅を測り、`Cells[text]` を与える。
++       セルはどの幅にも依存しないので、`Layout#accommodates` で `Layout` と照らし合わせ、`Layout#extend` で受け入れ、後でそれに対して描画できる。
++       `Text is Measurable` が必要である。
++   entry #layout   ある幅での、タイトルだけのレイアウト
++       `scaffold.layout(width)` は、タイトルの要求だけから列の幅を解く。
++       これはインクリメンタルに構築する表のためのものである。
++       その後、各行を `#cells` で表現して `Layout#extend` で受け入れる。
++       `Layout#extend` は、行のセルがそのレイアウトの既に見たものを超えるときにだけ幅を解き直す。
++       スコープ内に `Table.Style`、`Text is Measurable`、`Attenuation` が必要である。
+
+% 2 1 0 0a4e0130f39777230b9a5b284669ba00
+
+% 3 1 0 1f9c6d572d99634716a7200b6589a799
+
+% 4 1 0 0ac1f2f5bcaa87321a6cee6aad92ff60
+
+% 5 1 0 019cdfdc7944953d1875ac2f3bdf29b3
+
+% 6 1 0 0fd0126b046b38b10ee4d1385de47f61
+
+% 8 1 0 178d970dc95073b110e79ec24a6354ac
+
+% 9 1 0 12567b76eecab5b31ff61933855e6e54
+
+% 0 1 0 1aabe5dc8dd9c08d08e78dbc28afdf0a
+
+% 0 1 0 065fc42d5e73752e10e305f0a46eb3b1
+
+% 0 1 0 14443d6e4b917b4e0687c7d4091e91b4
+
+% 0 1 0 0bc9a9e06b8026e317e42d57188c9208
+
+% 0 1 0 1c603a6e5fb78e4c159b91a58652087e
+
+% 1 1 0 1b256aedaec410cd1bf1d49fc63afe41
+
+@ 0 4 0 0c33ddfa64a14ade051236ae8e000ba1
++   entry #tabulate   データに適用したスカフォールド：`Tabulation`
++       `scaffold.tabulate(rows)` はすべての行のすべての列を一度にテキストへ読み込み、各行のセルの装飾を記録する。
++       そのため結果は、行の型を `Row` 型メンバーとしてしか参照しない。
++       行数は、タビュレーションを構築したときに一度だけ数えられる。
+
+@ 0 1 0 16e5c43b2c514e561bc0330455edda74
++ entry .Column   表の一列：タイトル、行からセルを読む方法、サイズの決め方
+
+% 1 1 0 0557c6ce0ab8bcb4138503d1f9b19622
+
+@ 0 4 0 15b9300eba125c04110460fbdec7eed6
++       `Column[row, text]` は、タイトル、行からセルのテキストへの関数 `#get`、水平と垂直の配置、`Columnar` のサイズ決定方式、そして描画したセル全体に適用する行ごとの省略可能な `#decorate` からなる。
++       ふつうはファクトリー `Column.apply` で作る。
++       ケースクラスのコンストラクターはすべてのフィールドを明示的に取る。
+
+% 2 1 0 11b1789dad1e720319df90e33df20d3b
+
+% 3 1 0 1e23ffd19478818811fe238001204a40
+
+% 5 1 0 09f467296f15370c14474a4b406b41d6
+
+% 0 1 0 0735403db3d8866212fc89930ee2a1b5
+
+% 0 1 0 0c190945140937950b5334aebd736637
+
+% 0 1 0 085e11c0e92c2c061131cebbc2031e39
+
+% 0 1 0 1d5583d6e492b43e1c71df13ab47ca38
+
+% 0 1 0 1b5878396222e05e048afc64dec266e4
+
+% 1 1 0 03dabe431fce24d207cdad5e7b9d94c1
+
+@ 0 4 0 1fbb6521811ddeb519b3875b4f4b47ef
++       ラムダの結果はテキストでなくてもよい。
++       タイトルがテキストの型を決め、値はその型の `Show` を通して表示されるので、`_.age` はテキストとして表示される `Int` の列になる。
++       `textAlign` や `verticalAlign` を与えない限り、既定の配置は `Column.Alignment[cell]` から来る（数値は右、テキストは左）。
+
+% 1 1 0 0f5ad073c14a9b9112a1cdcf37372a23
+
+% 1 1 0 096d0ba24084c2ef0a29bfce5f8c59ea
+
+% 1 1 0 0cda5ed0e31c2ccd1e7fe3527d953176
+
+@ 0 6 0 07f16acfce9ae77a1102251eabb74558
++   entry .apply   `Column(title, textAlign, verticalAlign, sizing, decorate)(get)`：列を作る
++       最初のパラメーターリストはタイトルと四つの省略可能な設定であり、二つ目は行からセルの値への関数である。
++       セルの値は、タイトルの `Textual` 型の `Show` を通して表示される。
++       `textAlign` と `verticalAlign` の既定値は、セルの型に対して与えられた `Column.Alignment` である（定義がなければ `topLeft`）。
++       `sizing` の既定値は `columnar.Paragraph`、`decorate` の既定値は装飾なしである。
+
+@ 0 3 0 19b3bf3f887550b61ef40c173df847ef
++       `decorate` は、行から、描画したセル（配置の後の、内容とパディングを合わせたもの）に対する省略可能な変換への関数である。
++       そのため `Teletype` の表は、行に応じてセル全体の背景を塗ることができ、パディングも塗られる。
+
+% 2 1 0 059beb5c4ddb65ba1087e86b2a4c6622
+
+% 3 1 0 130d093f823229c80fe45e4dfa4ff64d
+
+% 5 1 0 184f6f4f0e8e74fe098a646fc42b0bcb
+
+% 0 1 0 0cac9ec5634d4f46112fc40f2df5f30c
+
+% 0 1 0 1c94a3eebac7e4091da800c020dd43b0
+
+% 0 1 0 0db6d05ecd08f0650dfe3ea2d3d6f6ef
+
+% 0 1 0 1c7e2b6baf7058fc19c7b67bed0c7a2e
+
+% 0 1 0 1a370630b445212719da4ea3b65218a2
+
+% 1 1 0 0c42fea1f322cf541a4d8bdb3f4c7d2f
+
+@ 0 4 0 05e4621897b799e21c3ef6820b9e555e
++       行の型はラムダから推論されるか、`Column[Person, Text, Text](t"Name")(_.name)` のように明示的に与える。
++       三つの型引数は、行、セルの値、テキストの型である。
++   entry .Alignment   セルの型に対する、既定のテキスト配置と垂直配置
+
+% 1 1 0 16ec30c3096a105b0634eca98d6ad2a0
+
+@ 0 6 0 0b48c95074446f950f26e428d35535fc
++         `Column.Alignment[cell]` は、`Column.apply` に `textAlign` も `verticalAlign` も与えないときに、`cell` の値の列が取る配置である。
++         `Byte`、`Short`、`Int`、`Long` は右揃え、`Text` は左揃えで、いずれも上に寄る。
++         given はコンパニオンにあるので、`Int` の列はインポートなしで右揃えになる。
++         他のすべての型の既定は `topLeft` である。
++         セルの型について反変なので、`Any` に対する配置はすべての型に使える。
+
+% 2 1 0 1ec2d955ba95b00312f4e19a44156de4
+
+% 3 1 0 12053bc4cb4aa54d080c5da5a2c09b9d
+
+% 2 1 0 154bbffdbd406e7e08281b5343c93cce
+
+% 0 1 0 09d91827be7882e51c6b831e0a3b9838
+
+% 0 1 0 01db5c232c2b009a01bf2ee72d19b9d3
+
+% 1 1 0 1058f95304f4d6df1336876734d6f75f
+
+@ 0 25 0 0283022d080cdde10c0ecffdea677e7a
++     entry .topLeft   左揃えで上寄せ：独自の配置を持たない型の既定
++     entry .byte   `Byte` のセルは右揃え
++     entry .short   `Short` のセルは右揃え
++     entry .int   `Int` のセルは右揃え
++     entry .long   `Long` のセルは右揃え
++     entry .text   `Text` のセルは左揃え
++     entry #text   水平配置：`Left`、`Right`、`Center`、`Justify` のいずれか
++     entry #vertical   垂直配置：`Top`、`Middle`、`Bottom` のいずれか
++   entry #title   列の見出し。表のテキストの型で表す
++   entry #get   ある行に対するセルのテキスト
++       行からセルへの関数で、既にテキストとして表示されたものを返す。
++       `Column.apply` で作った列では、これはラムダとセルの型の `Show` を合成したものである。
++   entry #textAlign   セルの各行が列の幅の中でどう収まるか
++   entry #verticalAlign   他のセルによって高くなった行の中で、短いセルがどこに位置するか
++   entry #sizing   列の幅に対する要求を決める `Columnar` 方式
++   entry #decorate   描画したセルに対する行ごとの変換。なければ `Unset`
++       配置とパディングの後に、レンダラーが余白を含むセル全体に適用する。
++       そのため、ここで塗った背景はセルを端から端まで覆い、罫線は装飾されないままである。
++       レンダラーはスタイルについて何も知らず、関数は表自身のテキストの型で書かれる。
++   entry #contramap   別の行の型から読む、同じ列
++       `column.contramap(lambda)` は、ある行の型に対して定義された列を、`lambda` がその行を作り出せる任意の型に適応させる。
++       タイトル、配置、サイズ、装飾は保たれる。
++       こうして、一度定義した列が、その値を供給できるすべての型に使える。
+
+% 2 1 0 1716170d519c666d00426226fd43c0e4
+
+% 3 1 0 118137077992d9750ff3221bc17777da
+
+% 5 1 0 0424ba4d38d02fb817ae0e1d3c184a65
+
+% 0 1 0 1710987aa763233a12f8ea48d417f67a
+
+% 0 1 0 02df3ca5f32b5bd8155d22148c4f3680
+
+% 1 1 0 09f2700158de481f005d7dc115d9bb1c
+
+@ 0 3 0 156bf7bbed29b2a61e22c9d87876fa0e
++   entry #retitle   タイトルだけを変えた同じ列
++       共有された表の定義で、ある呼び出し側だけが別の見出しを望む場合のためのものである。
++       ケースクラスに対して導出される `Tabulable` は、これを使って各フィールドの列にタイトルを付ける。
+
+@ 0 1 0 097cf5f8e7936e9410e5dda4d4d62fc3
++ entry .Columnar   列のサイズ決定方式：列がどのように幅を要求し、セルがどのようにそれに合わせられるか
+
+% 1 1 0 06dd487dc8259f1a013b2b6688529fea
+
+@ 0 5 0 126c4ecca2e4ef5d1dbc709678d76e43
++       `Columnar` は二つの問いに答える。
++       `#flex` は、列が表示するすべての行の集約 `Metrics` から、表の幅に対する列の要求を記述する。
++       つまり、最小幅と自然な幅、余った幅をどれだけ欲しがるか、丸ごと折りたたまれてよいかである。
++       次に `#fit` が、一つのセルの行を表が決めた幅に並べる。
++       折り返す、切り落とす、省略記号で短くする、そのままにする、のいずれかである。
+
+@ 0 7 0 0514a8fe66de1a5905d6084bb09739bb
++       要求は集約メトリクスだけの関数であり、集約メトリクスは各行のメトリクスの最大値を畳み込んだものである。
++       そのためレイアウトは集約を持ち運び、新しい行のセルを畳み込んで受け入れることができ、`#accommodates` によって、ある行が列をまったく動かせない場合を知ることができる。
++       用意されている方式は `columnar` パッケージにある：`Paragraph`、`ParagraphOrBreak`、`Fixed`、`Shortened`、`Collapsible`。
++       この概念は開かれており、独自の方式は `Columnar` を継承し `flex(metrics, maxWidth)` と `fit` を実装するオブジェクトかクラスである。
+
+@ 0 3 0 1e413edd5687623a06499fd664254f18
++       幅は tessellate の `Flex.solve` が解く。
++       列の最小幅の合計が幅に収まらない間は、ランクが最も低い折りたたみ可能な列が取り除かれる。
++       残った列は、その範囲内で、重みに比例して幅を分け合う。
+
+% 1 1 0 03716a0d61bc0e910a6bfb4b2119572d
+
+% 1 1 0 1cda5137271126701c8af3b62e016f5c
+
+@ 0 18 0 167319ef49a50cac0bed215b0a6393aa
++   entry .metrics   いくつかの行の、集約された固有の幅
++       `Columnar.metrics(lines)` は各行の `Flow.metrics` の最大値を畳み込んだものである。
++       その `Metrics` の `min` は分割できない最も広い単語であり、`natural` は最も広い行である。
++       どの方式の要求もここから導かれる。
++       `Text is Measurable` が必要である。
++   entry #flex   内容のメトリクスから求める、幅に対する列の要求
++       抽象形の `flex(metrics, maxWidth)` は tessellate の `Flex` を返す。
++       それは、列の最小幅と自然な幅、余った幅を分け合うときの重み、省略可能な最大幅、そして折りたたまれるかどうかと、その折りたたまれやすさを示すランクからなる。
++       行の配列を取るオーバーロードは、まず `Columnar.metrics` でそれを測る。
++   entry #accommodates   セルが既に列の集約された要求の範囲内にあるかどうか
++       `accommodates(aggregate, cell)` は、固有の幅が `cell` であるセルを受け入れても要求（したがって解かれた幅）が変わらないときに真になる。
++       既定では、セルの最小幅と自然な幅がともに集約の範囲内にあるときである。
++       要求が内容を無視する方式は、`columnar.Fixed` のように、これを `true` にオーバーライドする。
++   entry #fit   列が決めた幅に並べた、一つのセルの行
++       `fit(lines, width, textAlign)` は、セルが `width` で表示する行を与える。
++       方式に応じて、折り返され、切り落とされ、短くされ、あるいはそのままである。
++       `Text is Measurable` と `Hyphenation` が必要であり、折り返す方式はソフトブレークで後者を使う。
+
+@ 0 1 0 0a4015177a533e4608d86863f262e1e9
++ entry .columnar   サイズ決定方式。それぞれが `Column` の `sizing` で名指しする `Columnar` である
+
+% 1 1 0 001c6a9016030d801c5074159e08cad4
+
+@ 0 4 0 015c4ee1d2532c3a0d0aaa94ee0443a5
++       列に与えられる方式で、`sizing = columnar.Paragraph` のように書く。
++       これらは given ではなくオブジェクトやケースクラスなので、`columnar.Paragraph` は列のところで名指しする。
++       このパッケージは五つの名前をまとめておくためにある。
++       どの `Column` も既定は `Paragraph` である。
+
+@ 0 5 0 1fd7e0ca8fee1f150d7ff8a6df87ae62
++       表が狭すぎるとき、どの列が先に譲るかは方式どうしで決まる。
++       `Collapsible` の列は、他の何かが詰められる前に、しきい値の高いものから取り除かれる。
++       `Paragraph` の列は最長の単語まで縮む。
++       `Fixed` の列は決して動かない。
++       最小幅が収まる幅を下回ると、スコープ内の `Attenuation` が何が起きるかを決める。
+
+% 2 1 0 054026c74a041d8f0594813067e0b13f
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0507dbfb6e78679212b4d09427049036
++         label すべてを収められる幅での四つの列
+
+% 1 1 0 1f16c9492479bbfc1d8bb797f4d28dfa
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 005e222dbd25f2d2051a12a129516222
+
+% 0 1 0 10ae11b7cd79fc430a817a2c431e17fa
+
+% 0 1 0 01ab3e628e2569af1d53b50b294be591
+
+% 0 1 0 1d32d0a653503b0617ccfc7fdc17876c
+
+% 0 1 0 0b720ddcee37421b1f6b71fad8964cad
+
+% 0 1 0 1158d1ee4590c91002c1cf394d8458dc
+
+% 0 1 0 0ca047fc40646cfc0d671c109389e25b
+
+% 0 1 0 095d49149687c8840e8dacd9ed2f5b31
+
+% 0 1 0 1e6a62d8ab955360047302060286fee1
+
+% 0 1 0 1c708dddfaa5c7f41fb6619975d05f80
+
+% 0 1 0 1ee50527a28a9b861406f328bfb27e52
+
+% 0 1 0 11d29021897434ea15b2a22261487afb
+
+% 0 1 0 128748c668ca2bd71f3948b5ff2c89b2
+
+% 1 1 0 07dbc942c065af100461933a737fc0c1
+
+@ 0 1 0 0a09a81f3dcbd9e9035b0ec0e04da198
++         label より狭く：最も折りたたまれやすい列である識別子が最初に取り除かれる
+
+% 1 1 0 1ada8590e5d9ce951f38b8798cc3f879
+
+% 0 1 0 1934c501c05d223100702cf5011292c2
+
+% 1 1 0 0ce406f58ae96a31126e7a9299eb6212
+
+@ 0 1 0 1f08d76234bb391509ce642a3ace22a1
++         label さらに狭く：段落はしきい値の低い折りたたみ可能な列が消えるより先に縮むので、説明が折り返される
+
+% 1 1 0 0a2ea88228bcbe0714159f25cb8837aa
+
+% 0 1 0 14c8357ec235a03c073f4ad4f70fb4bd
+
+% 1 1 0 044e78c215e9b0a71f3553355a1f1fa3
+
+@ 0 1 0 1e90a930e0e8e46d0d82deb6b3bf12a4
++         label 最も狭いときには行数も消え、名前と折り返された説明だけが残る
+
+% 1 1 0 1236c97b55ce37a11c976ce308d9abff
+
+% 0 1 0 0338ff5ac3b993b91242835383eba058
+
+% 1 1 0 1bf991069964165518af02c262661706
+
+% 2 1 0 1e077409cb89f9890611e67c37cb31fa
+
+% 1 1 0 044ea6d591bc7a141c88b52f6d5a9f9b
+
+% 1 1 0 0eec5046767cbe731ba2298f19e0086f
+
+@ 0 14 0 114924438bcca27e0f990064751c1335
++   entry .Paragraph   単語の境界で折り返す。最長の単語まで縮むことはあるが、最長の行を超えて広がることはない
++       既定の方式である。
++       その要求は `Flex.content` である。
++       最小幅は分割できない最も広い単語、自然な幅は最も広い行、重みはその差であり、吸収すべきものが多い列ほど余った幅を多く取る。
++       セルは `Flow.wrap` で合わせられる。
++       これは空白と、スコープ内の `Hyphenation` のソフトブレークで改行し、最小幅を下回ることはない。
++       幅より長い単語は、切られるのではなくはみ出す。
++   entry .ParagraphOrBreak   可能なところでは単語の境界で折り返し、はみ出すくらいなら単語の途中で切る
++       一セルから自然な幅までの間で伸縮するので、最長の単語という下限がない。
++       十分な圧力がかかると、最も広い単語より狭いセルは `Flow.chop` で合わせられ、行が幅で切られる。
++       `Paragraph` ならはみ出すところである。
++       うまく折り返せないがはみ出してはならない識別子、URL、ハッシュの列のためのものである。
++       アンブレラの `columnar` パッケージには反映されていないので、`escritoire.columnar.ParagraphOrBreak` と完全な名前で名指しする。
++   entry .Fixed   内容にかかわらずちょうど `fixedWidth` の幅の列。省略記号で短くされる
+
+% 1 1 0 04b3a6e54a31b32816ce612144768a23
+
+@ 0 3 0 19895faf7531634715f3327bedf6eea2
++         列の要求は `fixedWidth` で固定されており、幅が内容に何も依存しないので、どのセルも受け入れる。
++         幅より長いセルは `Flow.shorten` で短くされ、`ellipsis` で終わる（別のものを与えない限り `…`）。
+
+% 2 1 0 0a5c25c6509bc736150b967d5614e2e8
+
+% 3 1 0 1443911d7ee360661b7e130f8c6b6ee4
+
+% 4 1 0 04a9949514b7f4dc101169577292b593
+
+% 5 1 0 1a274662a76c000a11a3cb650316931c
+
+% 6 1 0 07ba6fc13d8b4723176a7ac9cb4be9d3
+
+% 0 1 0 1f34de467f7a85a71bb142beaf713df3
+
+% 0 1 0 1877e07315af70d41f8890f954653e03
+
+% 1 1 0 17e7b11b56fccf401348b255c9462f0e
+
+@ 0 3 0 08d7fc6e80f6961f0a34aee6471203df
++     entry #fixedWidth   セル数で表した幅
++     entry #ellipsis   短くされたセルの末尾に付くテキスト。既定は `…`
++   entry .Shortened   一セルから自然な幅までの間で伸縮し、決まった幅を超える部分は省略記号で切られる
+
+% 1 1 0 1128db5dbeb5872c10f0d02f446d3066
+
+@ 0 7 0 0054b19fac2002d30ca16d24269cf17b
++         `Fixed` と同じく、収まらないセルは省略記号で短くされるが、幅は固定ではなく調停される。
++         列は自然な幅を要求し、一セルまで縮むことができ、余った幅をその差に比例して取る。
++         `fixedWidth` はフィールドの名前であって、要求の上限ではない。
++     entry #fixedWidth   方式の構築に使われたフィールド
++     entry #ellipsis   短くされたセルの末尾に付くテキスト。既定は `…`
++   entry .Collapsible   自然な幅で固定されているが、場所が足りなくなると表から丸ごと取り除かれる
+
+% 1 1 0 04e6f4a8fbd45d1f02e4341cd5e4fa10
+
+@ 0 5 0 00d8bc6178cbd5691b7b91aaea526861
++         列はちょうど自然な幅を要求し、決して折り返さない。
++         列の最小幅が表の幅に収まらないとき、折りたたみ可能な列が、`threshold` の高いものから一つずつ、残りが収まるまで取り除かれる。
++         取り除かれた列は、パディングも罫線も消費しない。
++         しきい値は互いに比べたときにだけ意味を持つので、表の折りたたみ可能な列はしきい値によって順位付けされる。
+
+% 2 1 0 07210a736482574011441052ffb53ea0
+
+% 3 1 0 0fc4c770ec58ca5f0b77a4ac41b94548
+
+% 4 1 0 095ae08837b61744066543167d71f33e
+
+% 5 1 0 09e2ca62c93c29721ba166d81205a9cb
+
+% 6 1 0 0f280dc4db892a3104a69afd2a203c88
+
+% 8 1 0 1819a4da142194c404845b49d46fd620
+
+% 0 1 0 0eee517777d7d4a80ca270d7320ce348
+
+% 1 1 0 082d8a8a18f888e3160c41afb3f89601
+
+% 0 1 0 160cd6177b032e08161b934045eaec10
+
+% 0 1 0 185172cd372f257405ccbaa6fd04a960
+
+% 0 1 0 1320f329659aa52c0d72d83eebf33fc5
+
+% 0 1 0 124ba8310c717c161af266b571b68b2c
+
+% 1 1 0 1d7d4e797b9a8b1d0140e64645386b75
+
+@ 0 1 0 08b23285abf54b7e148b5af9c64a1f43
++     entry #threshold   `0` から `1` の間の値：列の折りたたまれやすさ。高いものが先
+
+@ 0 1 0 1f6137fa530e9ef606d5d2a9341795dd
++ entry .Tabulation   スカフォールドによって並べられたデータ：どの幅でもレイアウトできる、セルのテキスト
+
+% 1 1 0 11345f57ffb54bd31bcbadce0f198614
+
+@ 0 5 0 112d17664124374d0d3afb4bc289704b
++       `Tabulation[text]` は、`Scaffold#tabulate`（または `tabulation` 拡張メソッド）が行のリストから作るものである。
++       すべてのセルは既にテキストへ読み込まれて行に分けられ、タイトルも同様であり、各行の装飾も含まれる。
++       行の型は `#Row` 型メンバーとしてしか残らない。
++       どの幅にも依存しない。
++       `#grid` はそれを一つの幅に合わせ、`#layout` は描画せずに幅を解く。
+
+% 2 1 0 1ecbcdbdc6db018811d8f46ec2e36f97
+
+% 3 1 0 1ca7b69f0bfced04035f1ca0bca69935
+
+% 4 1 0 0dd4820d7cb0fde10b7cd1e59cd6b5ae
+
+% 5 1 0 0ef23bac71bcfcb110640da5c6ab0747
+
+% 6 1 0 1c15b595355a9c0b169d0e5220d257ee
+
+% 8 1 0 00515848cfda9fad1292156fed00b111
+
+% 5 1 0 1f9bd3aaf70f887e0c99225205c32eda
+
+% 0 1 0 1b67d5af736278e513743a77366ff6e0
+
+% 0 1 0 1746775bdd709a191a15be972bb7fea3
+
+% 0 1 0 0bbdabd5b5efcf790eb431c6289c98b0
+
+% 1 1 0 13fa4905c4d736b61189f141d8ab70b5
+
+@ 0 3 0 10d8b4da85e699ae14eae9a58f819416
++       タビュレーションは `.printable` を通して `Printable` なので、`Out.println(tabulation)` は、スコープ内のスタイル、メトリック、減衰、ハイフネーションを使い、ターミナルの幅でそれをレイアウトする。
+
+% 1 1 0 00714b1e281bb8db17c2ced00d3bcd3d
+
+% 0 1 0 1a068b2df139f5b01d502af0b09eac40
+
+% 1 1 0 0536447c4a20415b14970f03d53a54f4
+
+@ 0 23 0 1adbd874e7f0a2410b16350c54f03142
++   entry .printable   タビュレーションをターミナルの幅で出力する
++       表を `termcap.width` でレイアウトし、各行をテキストの型自身の `Printable` を通して出力する `Printable` の given である。
++       スコープ内に `Table.Style`、`Text is Measurable`、`Attenuation`、`Hyphenation` が必要であり、テキストの型の `Printable` も必要である。
++   entry #Row   タビュレーションの元になった行の型
++   entry #columns   スカフォールドの列
++   entry #titles   タイトルの行：各タイトルの行
++   entry #rows   すべてのデータ行：各セルの行
++   entry #dataLength   行数。タビュレーションを構築したときに一度だけ数える
++   entry #decorations   各行の列ごとの装飾。`#rows` と対応し、なければ空
++       タビュレーションを構築するとき、つまり行の値が存在する最後の時点で評価される。
++   entry #layout   ある幅で、タイトルとすべての行の要求から解いた列の幅
++       `tabulation.layout(width)` はすべての行のセルを列の集約された要求に畳み込み、幅を一度だけ解いて `Layout` を与える。
++       その `widths` は、`#grid` が描画に使う幅である。
++       `Table.Style`、`Text is Measurable`、`Attenuation` が必要である。
++   entry #grid   ある幅に合わせたタビュレーション：`render` がその行の並びである `Grid`
++       `tabulation.grid(width)` は、`#layout` と同じようにレイアウトを解き、すべてのセルを列の幅に合わせ、二つのセクション（タイトルと行）からなり同じ幅を共有する `Grid` を構築する。
++       折りたたみ可能な列がすべて消えてもなお列の最小幅が `width` を超える場合は、スコープ内の `Attenuation` に知らされる。
++       `columnAttenuation.failAttenuation` は `Table.Error` を発生させ、`ignoreAttenuation` は表をはみ出させる。
++       `Table.Style`、`Text is Measurable`、`Attenuation`、`Hyphenation` が必要である。
+
+@ 0 1 0 0e22b3ea3c15208c18048050e9a7f69a
++ entry .Grid   ある幅に合わせた表：決まった列の幅で並ぶ行のセクションと、そのスタイル
+
+% 1 1 0 00c501401e9a49c11e10af9d2f8592cd
+
+@ 0 5 0 101774de23f5d44a07e6c14d24e6b20a
++       テキストになる前の最後の段階である。
++       `Grid[text]` は `Table.Section` のリストと、それらを描く `Table.Style` からなる。
++       各セクションは、列の幅を共有する `Table.Row` の連なりである。
++       `Tabulation#grid` はタイトルとデータの二つのセクションからなるグリッドを作る。
++       `#render` はそれを行の `Chain` として描き、セクションの間に罫線を引き、その周りにスタイルの上端と下端の線を置く。
+
+% 2 1 0 092b3d09d4cc014007c1cb4025b904fe
+
+% 3 1 0 09a7ddf98732fe9803281bbb30cd2609
+
+% 4 1 0 11403dd6ee13d8e601440286f6ae596d
+
+% 5 1 0 115841f681753e9f0023da675d56d13a
+
+% 6 1 0 0943881071d320691f3ee1eb4aa52b8a
+
+% 8 1 0 0ad60f9609fa8c4f07acfc6d02603abd
+
+% 0 1 0 1dee97abd17142e21f28c06cb952d17a
+
+% 0 1 0 10c11ccd5a8dea4a062bb23c21c5dfb3
+
+% 0 1 0 0d9e0785fd10999d15ac727c40f55ebb
+
+% 1 1 0 03c5423c9a472566137d46c0232732e1
+
+@ 0 1 0 0cda048cd1c5789b09c450ea6eea8091
++       グリッドは `.printable` を通して `Printable` なので、直接出力できる。
+
+% 1 1 0 11d0fb94e45637fc0a7a7b93d109b719
+
+% 1 1 0 0e9a7ab812d3c8ab126136cb51e2eb9f
+
+% 1 1 0 13a100aa32ae45951227d185f42c9046
+
+@ 0 21 0 1ccb62efffcbbe7f0d43a1fce2e372d3
++   entry .printable   グリッドを、描画した一行をターミナルの一行として出力する
++       `render` を改行でつなぎ、各行をテキストの型自身の `Printable` を通して出力する `Printable` の given である。
++       `Text is Measurable` とテキストの型の `Printable` が必要である。
++   entry .rowLines   列の幅に対する、一行分の見た目上の行
++       `Grid.rowLines(style, widths, row)` は `row.height` 本の行である。
++       各セルは列の幅までパディングされて垂直に配置され、スタイルのパディングで包まれ、装飾があれば装飾され、スタイルの縁のグリフでつながれる。
++       余白のパディングはセルに属するので、装飾はセルを端から端まで覆い、罫線は飾られないままである。
++       `Grid#render` と `Layout#lines` が使う。
++   entry .rule   与えた幅の列をまたぐ水平の罫線
++       `Grid.rule(style, widths, above, below)` は、列とその枠の幅の罫線を引き、列の縁が交わる所には接合のグリフを置く。
++       `above` と `below` は、どちら側に列が接するかを示す。
++       そのため上端の罫線には下向きの突起だけが、下端の罫線には上向きの突起だけがあり、タイトルの下の罫線には両方がある。
++       線の太さは、それに応じてスタイルの `topLine`、`bottomLine`、`titleLine` である。
++   entry #sections   順序どおりのセクション。それぞれが行と、行が共有する幅を持つ
++   entry #style   グリッドを描くスタイル
++   entry #render   テキストの行としてのグリッド
++       `Chain[text]` であり、スタイルの上端の線（あれば）、セクションの間に罫線を挟んだ各セクションの行、下端の線（あれば）からなる。
++       `Text is Measurable` が必要である。
+
+@ 0 1 0 0031ca1d6b9043fd0fd4891f26225cf5
++ entry .Layout   表の決まった列の幅と、それを解いた元の要求
+
+% 1 1 0 0bfe58a789b298cf19974c50a0038367
+
+@ 0 8 0 0a32731d8c18bbdc13d5dad9ccc5959a
++       `Layout[row, text]` は、表を測ってから描画するまでの間にある値である。
++       どの列が残ったか（`#survivors`、その幅とともに）、それを解いた元の集約された要求、そして解いたときの幅とスタイルを持つ。
++       不変でインクリメンタルである。
++       `Cells` として表現した行は `#accommodates` で検査され（すべての列の集約の範囲内なら、どの列も動かせない）、`#extend` で受け入れられる。
++       `#extend` は、何も動かなければ同じレイアウトを与え、そうでなければ解き直したものを与える。
++       その後、行は `#lines` で一つずつ描画され、どのセルも折り返さないなら、行の高さは描画しなくても `#height` で分かる。
+
+@ 0 5 0 16d4adca32d96d9d145ae6f80bd552be
++       これは `Tabulation#grid` の背後にあるエンジンであり、一行ずつ構築または表示する表（伸びていくログ、描き直す画面）のために公開されている。
++       そのような表で一行ごとに表全体をレイアウトし直すのは無駄である。
++       `Scaffold#layout` は、タイトルだけから最初のレイアウトを作る。
++       `Layout` は `soundness` アンブレラにエクスポートされないので、型を書く必要がある所では `escritoire.Layout` として名指しする。
+
+% 2 1 0 0da178ca35c6642d100af13cd380b491
+
+% 3 1 0 0cf69e3a2bfe2408081352c8499c1f15
+
+% 4 1 0 1b19f9ee650f318d12bdf92f08e0acae
+
+% 5 1 0 17c616517b28026d1bc8c08c90bc8451
+
+% 6 1 0 1e44d93c4ef8c1f908c7c250fc60b916
+
+% 8 1 0 0ec55c6d3955d1d203f48ac622b4c47b
+
+% 9 1 0 1b00b63163bf2c8d1d75c37ad66a958f
+
+% 1 1 0 1e44b10e0876b88909392ddcb68bc7de
+
+% 0 1 0 15435f1a707d242708708f2f1db47140
+
+% 0 1 0 096a0f437ab1fe9f021fdd15d6476d5c
+
+% 0 1 0 1f0350717c5fc7840c9101e3e14ca4cb
+
+% 0 1 0 11ec26587e55e3660a7470d55042df43
+
+% 1 1 0 028ac0f034713aa9062abaf1495b1f0a
+
+% 1 1 0 117c261f2f35d258097b705c62845d88
+
+% 0 1 0 07561285f8f13f5e0b4d73a7c5c109e5
+
+% 1 1 0 19c256660f1ee591183e4b390f66793e
+
+@ 0 52 0 0bc5b7315d3eca5410019b731a459f26
++   entry .nothing   まだ何も受け入れていないレイアウトのための、列ごとに一つの空の集約
++   entry .aggregate   一行のセルによって列ごとに広げた集約
++       `Layout.aggregate(aggregates, cells)` は両者の要素ごとの `Metrics.max` なので、結果はどちらかが要求したもの以上を要求する。
++   entry .solve   集約された要求から、ある幅で列の幅を解く
++       `Layout.solve(columns, titles, aggregates, width, style)` は、各列の `Columnar` に集約からその `Flex` を求める。
++       まったく幅を占められない列（たとえばすべてのセルが空の `Paragraph` の列）を取り除き、スタイルの枠を差し引き、残りの折りたたみと分配を tessellate の `Flex.solve` に任せる。
++       残った列の最小幅がそれでも幅を超える場合は、表が必要とした最小幅と実際の幅を引数として、スコープ内の `Attenuation` が呼ばれる。
++       `Text is Measurable` と `Attenuation` が必要である。
++   entry #columns   レイアウトを解いた対象の列
++   entry #titles   タイトル行のセル
++   entry #aggregates   幅を解いた元の、列ごとの集約された要求
++   entry #width   レイアウトを解いたときの幅
++   entry #survivors   残った列。順序どおりの `(index, width)` の組
++       折りたたみで取り除かれた列は含まれない。
++       `#widths` は各組の二番目の要素である。
++   entry #style   枠のコストの計算に使ったパディングと罫線を持つスタイル
++   entry #widths   残った列の幅、順序どおり
++   entry #cells   レイアウトの列を通して表現した一行
++       `Scaffold#cells` と同じであり、行に対する各列の内容を、行に分けて測ったものである。
++   entry #accommodates   行のセルがすべての列の集約された要求の範囲内にあるかどうか
++       各列の `Columnar#accommodates` によって、行を受け入れてもどの列の要求も変わりえないときに真になる。
++       そのとき `#extend` はまさにこのレイアウトを返す。
++   entry #extend   このレイアウト、または行のセルを畳み込んで解き直したレイアウト
++       `layout.extend(cells)` は、`#accommodates` が成り立つなら `layout` そのものであり、そうでなければ、セルで広げた集約に対して同じ幅で `Layout.solve` を行ったものである。
++       解き直しても、すべての幅が元のままのこともある（既に幅で固定されている列に対するより広い要求は何も変えない）。
++       それは `#stable` が検出する。
++       `Text is Measurable` と `Attenuation` が必要である。
++   entry #resize   同じ要求を別の幅で解いたもの
++   entry #stable   二つのレイアウトが同じ列を同じ幅で表示するかどうか
++       `#survivors` を比較する。
++       新しい行で拡張したレイアウトが、既に描いた行を描いたときのレイアウトに対して安定なら、描き直しではそれらの行を飛ばせる。
++   entry #tableRow   残った列の幅に合わせた一行のセル。`TableRow` として
++       `layout.tableRow(cells, decorations)` は、残った各列の行をその `Columnar#fit` で合わせ、それぞれを装飾と組にし（装飾は列の位置で `decorations` から読み、末尾を超えれば `Unset`）、行の高さを測る。
++       `Text is Measurable` と `Hyphenation` が必要である。
++   entry #lines   レイアウトに対して描画した一行：そのテキストの行
++       `layout.lines(cells, decorations)` は `#tableRow` に対する `Grid.rowLines` であり、スタイルの縁を伴う行の見た目上の行を `List` として与える。
++       装飾がなければ `Nil` を渡す。
++   entry #height   行の高さ（行数）。可能なら描画せずに求める
++       自然な幅が列に収まるセルは折り返されないので、持っている行数だけの高さになる。
++       折り返さなければならないセルだけが、高さを知るために合わせられる。
++       行の高さは最も高いセルの高さである。
++   entry #titleLines   レイアウトに対して描画したタイトル行
++   entry #topRule   タイトルの上の罫線。スタイルに上端の線がなければ `Unset`
++   entry #titleRule   タイトルと行の間の罫線
++   entry #bottomRule   最後の行の下の罫線。スタイルに下端の線がなければ `Unset`
+
+@ 0 1 0 0ec157371fdc31dc1ffa4bf99ff75457
++ entry .Cells   各セルが表示する行としての一行のセルと、各セルの固有の幅
+
+% 1 1 0 04459079ac9403a30aa7ed3648a01443
+
+@ 0 5 0 0a60d8a01842c7eb01b879d36cda9d3c
++       `Cells[text]` は、行の値から一度だけ表現した一行である。
++       各列の内容を行に分けたものと、各セルの `Metrics`（最長の単語と最長の行）を持ち、どの幅にも依存しない。
++       そのためレイアウトは、`Layout#accommodates` でそれを検査し、`Layout#extend` で受け入れ、決まったどの幅ででも描画できる。
++       `Scaffold#cells` と `Layout#cells` は行からこれを作り、`Cells.of` は既に分けた行から作る。
+
+@ 0 2 0 01e9484c8b6675831a02c35485539dfc
++       `Cells` は `soundness` アンブレラにエクスポートされない。
++       これはレイアウトエンジン固有の語彙であり、プログラムが `Layout` を直接操作する所では `escritoire.Cells` として参照する。
+
+% 1 1 0 1bf2745827140ca11637086fa357772b
+
+@ 0 5 0 09e26f703a2ed38d1020bf6c69fb2acc
++   entry .of   既に分けた行から、または列を通して行から作るセル
++       `Cells.of(lines)` は各セルの行を測る。
++       `Cells.of(columns, row)` は、まず行から各列の内容を読む。
++       どちらも `Text is Measurable` が必要である。
++   entry #lines   列ごとの、各セルの行
++   entry #metrics   列ごとの、各セルの固有の幅
+
+@ 0 1 0 1afb71c47d68fc9313a5774f964970ce
++ entry .Columnation   `ls` がディレクトリを一覧するように、平らなリストを列に並べる
+
+% 1 1 0 0b5d9690b7fd87ee1d96ee5e3c89b4cc
+
+@ 0 5 0 03755ed03e65aa281c28c0e47b69aa8e
++       テキストを列に並べたものがすべて表であるわけではない。
++       短い項目のリスト（ファイル名や凡例の項目）は、`ls` がディレクトリを並べるように配置すると最も読みやすい。
++       幅が許すだけの列を作り、各項目を一つのセルに置き、罫線もタイトルもない。
++       `Columnation.layout` はテキストの値のリストに対してこれを行い、`columnate` 拡張メソッドは同じ操作をリストのメソッドとして行う。
+
+% 2 1 0 085520feec2df4f81a42503ded675462
+
+% 3 1 0 0ffad1b447eaae590d2bf6580fddfb43
+
+% 4 1 0 03376ea00520011906e1ac5250b25b94
+
+% 0 1 0 0101b07e86b55daa086adea1b4471053
+
+% 0 1 0 0adb5616908bde7b066482567bcb10df
+
+% 1 1 0 05edaf3adca1c7bd0cd142f38b58f1d7
+
+% 0 1 0 1446c8f20319f7a90544060b25fb8aa3
+
+@ 0 12 0 080320126412540f1aa4fe705433c969
++   entry .layout   幅に収まるだけの列に並べた項目。一行が一つの段
++       `Columnation.layout(items, width, gap, uniform, downward, align)` は、すべての列の内容が並んで収まる最大の列数を選ぶ。
++       隣り合う列の間には `gap` セル（既定は二つ）を置く。
++       等幅の列（どれも最も広い項目と同じ幅）が優先されるが、ある列に入る項目がたまたま狭ければ、列を一つ多くしたレイアウトも認められる。
++       そのとき余った幅は等しくなる方向へ分配し直され、どの列も最も広い項目より広くはならない。
++       `uniform = true` は等幅のレイアウトだけを考える。
++       `downward = true` は項目を各行に沿ってではなく各列に沿って下へ読む。
++       `align` は各セルを列の中でパディングし、左揃えの行は最後の項目の後に末尾のパディングを持たない。
++       幅より広い項目もやはり一つの列を占め、項目がなければ行もない。
++       `Text is Measurable` が必要である。
+
+@ 0 4 0 032b6dd650fe0b970a219ebbaad352bf
++ entry .columnate   `items.columnate(width)`：収まるだけの列に並べたテキストのリスト。一行が一つの段
++     要素が `Char` である任意の `Textual` テキストの `List[text]` に対する拡張メソッドで、同じパラメーターで `Columnation.layout` を呼ぶ。
++     パラメーターは `gap`（既定は 2）、`uniform`、`downward`、`align`（既定は `TextAlignment.Left`）である。
++     `Text is Measurable` が必要である。
+
+% 2 1 0 0e7d00ae53db530a1a47ade535d07ded
+
+% 3 1 0 19c8239f1edf0c0c0111a20072503359
+
+% 4 1 0 1b017a3ce5fadea618929e83cf1bf835
+
+% 0 1 0 190a5b6e9007f2e617c1fae1d3b3a2fb
+
+% 0 1 0 1390c8fe0c491cd4046960afb18070e6
+
+% 0 1 0 01a3af942173c13d0d79201d80d95cf2
+
+% 0 1 0 16d5edd67043601e1aac056bfa822d3a
+
+% 1 1 0 0c9e62515a913b061f8c945ca876758d
+
+@ 0 7 0 12d4c1f2a951913117c27896fe20c9a0
++ entry .tabulation   `rows.tabulation`：要素の型の `Tabulable` で表にしたリスト、または `Tabular` で表にした値
++     二つの拡張メソッドがある。
++     `List[row]` に対しては、`rows.tabulation` は `row is Tabulable[text]` を必要とし（任意のケースクラスに対して導出され、`Int`、`Double`、`Text` に対して与えられている）、行にスカフォールドを適用した `Tabulation[text]` を与える。
++     任意の値に対しては、`value.tabulation` は `value is Tabular[text]` を必要とし、これがスカフォールドと行の両方を値そのものから供給する。
++     テキストの型はインスタンスから推論されるか、`rows.tabulation[Text]` のように与える。
+
+% 2 1 0 09103ff98c007bcf12f622df2b10e572
+
+% 3 1 0 14572310d18ddf1e0563fff8a11b7a6e
+
+% 4 1 0 1429e9389e94118d18d2d61c41f1d940
+
+% 5 1 0 1521453040be78e00668c920671bf8b4
+
+% 6 1 0 16baaadfaf46c19a09c82b390deb2da4
+
+% 8 1 0 12e10e68635ad90914af806a9a6745f9
+
+% 0 1 0 153366e790c43c4019b33ebfcf6570b1
+
+% 0 1 0 09fbf520876774db16cf7119b8e37a31
+
+% 1 1 0 0bfcc9d75a6a77d514b44d823c9574d8
+
+@ 0 1 0 0c47fb8f3bdea26a1a72ebe62dcf93dc
++ entry .Tabulable   型クラス：ある型をどのように列に分けるか。それによってその型のリストが表になる
+
+% 1 1 0 03f5dfe5c405d61e1c6d84245fb9ebad
+
+@ 0 8 0 001dc88ebdaf431c044292867d6a8690
++       `row is Tabulable[text]` は、その型の `Scaffold[row, text]` を返す関数 `#table()` である。
++       `#tabulate` はそれをリストに適用する。
++       コンパニオンは任意のケースクラスに対してインスタンスを導出し、フィールドごとに一列を作る。
++       各列のタイトルは、スコープ内にその型に対する `Table.Relabelling` があって別に指定しない限り、フィールド名のキャメルケースを分解して先頭を大文字にしたものである（`linesOfCode` は `Lines Of Code` になる）。
++       また `Int`、`Double`、`Text` に対するインスタンスも与え、それぞれタイトルのない一つの列である。
++       フィールドの列は、フィールドの型自身の `Tabulable` のスカフォールドを `Column#contramap` でレコードに適応させたものなので、ケースクラス型のフィールドは、今度はその型の列をもたらす。
+
+% 2 1 0 00f0833e57cb05540ca8d390d63ae212
+
+% 3 1 0 02665e3c438129761f74d934ba58db04
+
+% 4 1 0 10d6ade31d68f2a60a20b0569223921e
+
+% 5 1 0 00cdc2fedb82eff6112a933d9dc85d18
+
+% 6 1 0 1ba099b59eace20102c3045219dad201
+
+% 8 1 0 036763a341a22bd71e231455266dfa4a
+
+% 0 1 0 0cb87fe46047e4c31f447933b7e952ab
+
+% 1 1 0 1cd5f24293bdd17b1ae2b62c5ca7e766
+
+@ 0 1 0 198e514cf1cfbb6812ffcc9783e17419
++       独自のインスタンスは、列がフィールドではない型のための継ぎ目である。
+
+% 2 1 0 09c864bde7d45a7e1f5f31ee9475acec
+
+% 3 1 0 13b8fce14cda7dcc03c174445fcaf84d
+
+% 5 1 0 11a93fb44c0c63140d65cc0024284657
+
+% 0 1 0 1c5bbb395f608e0808899c97e264ce21
+
+% 0 1 0 18cd771cc8e8dfb30665a18088515510
+
+% 1 1 0 16374e28dd338be4000ae60aef4e8049
+
+@ 0 2 0 1a2891397b70614c18a5a524fc56effc
++       導出されるのは、セルが `Text` のインスタンスだけである。
++       `Teletype` の表は、`Scaffold` として手で書く。
+
+% 1 1 0 1fe79681b46ba7f3151f61be72112e35
+
+% 0 1 0 19471b843a9b1a4313446d19a24a66ff
+
+% 1 1 0 11022a05d60ca920162e754f336802c0
+
+@ 0 1 0 05f17f0a5b58c54513682b1a63108560
++   entry .JoinTabulable   直積型に対して導出されるインスタンス。フィールドの列からなる
+
+% 1 1 0 1d6c5ad79e269a8b074d55726266842d
+
+@ 0 18 0 1d85e65eb2ac618005c8018a8ac0db98
++         導出が構築するクラスであり、スカフォールドが与えられた列である `Tabulable[Text]` である。
++         ふつう利用者が名指しすることはなく、`conjunction` がこれを作る。
++     entry #table   結合した列のスカフォールド
++   entry .conjunction   ケースクラスに対し、フィールドごとに一列のインスタンスを導出する
++       各フィールドの `Tabulable` がその列を与え、それらはレコードに適応され、フィールドのラベルからタイトルを付け直される。
++       スコープ内に `Table.Relabelling[derivation]` があればそれを通し、なければキャメルケースを分解して先頭を大文字にする。
++       これは wisteria の `ProductDerivation` から継承した `derived` given が呼ぶものなので、ケースクラスはアノテーションなしで表にできる。
++   entry .int   タイトルのない、右揃えの、折りたたみ可能な一列としての `Int`
++       列はしきい値 `0.3` で折りたたまれるので、複数のフィールドを持つレコードが詰められると、単独の数値が最初に消える。
++   entry .double   タイトルのない、右揃えの、折りたたみ可能な一列としての `Double`
++       小数点以下を何桁表示するかを決める `Decimalizer` がスコープ内に必要である。
++   entry .text   タイトルのない、左揃えの段落の一列としての `Text`
++   entry #table   その型に対するスカフォールド
++   entry #tabulate   その型のリストに適用したスカフォールド：`Tabulation`
++       スカフォールドは一度だけ遅延して構築され、どの呼び出しでも再利用される。
+
+@ 0 1 0 07fdddede2dd914e1bc8c064f03844f4
++ entry .Tabular   型クラス：それ自身が表である値。列と行の両方を供給する
+
+% 1 1 0 0131919259ce44d6009b765cbe44621c
+
+@ 0 5 0 0bc38037935b732b1bc8b36781298d5b
++       `Tabulable` がある型の*リスト*を表にするのに対し、`value is Tabular[text]` は行を含む単一の値を表にする。
++       `#table` はその `#Element` 型に対するスカフォールドを与え、`#rows` は要素を取り出し、`#tabulate` は一方を他方に適用する。
++       レポートのオブジェクト、クエリの結果、行列は、インスタンスを一つ与えれば、`tabulation` 拡張メソッドを通して `value.tabulation` で表にできる。
+
+% 0 1 0 14cf5b0f7cd386ae154b325859c91b76
+
+% 1 1 0 076129e3dbb377c706a737d356bc0735
+
+@ 0 4 0 11ec415a9f41b87b13762a839f9f1714
++   entry #Element   値の行が持つ行の型
++   entry #table   値の行に対するスカフォールド
++   entry #rows   値の行。`Element` のリストとして
++   entry #tabulate   `Tabulation` としての値：`table(value).tabulate(rows(value))`
+
+@ 0 1 0 121792c0835d63381047c7ab2a1e49d0
++ entry .Table   描画した表の名前空間：セル、行、セクション、スタイル、そして `Table.Error`
+
+% 1 1 0 1d9c2610075da2f1025644e482225de1
+
+@ 0 4 0 080122ef88e152320fa74953abaaeffe
++       `Table` は型ではなく名前空間である。
++       表の定義は `Scaffold`、それによって並べられたデータは `Tabulation`、合わせた結果は `Grid` である。
++       `Table` は、グリッドを描く元になる部品（`Cell`、`Row`、`Section`）、描くときの `Style`、導出された列の名前を変える `Relabelling`、そして表が収まらないときに発生する `Error` を保持する。
+
+% 1 1 0 18245c07c19fc87c025b4eaa570c242f
+
+% 1 1 0 08ac4623f24de3261236ba8714246cde
+
+@ 0 1 0 15efd5fe6440b7f404b22a587de8aaa1
++   entry .Error   表が与えられた幅より多くの幅を必要とした
+
+% 1 1 0 13c64e7422b4aa3b1fe310c77283c596
+
+@ 0 8 0 00811b578b51571c068459730e20db4b
++         _the table required a minimum width of `minimumWidth`, but only `availableWidth` was available_。
++         折りたたみ可能な列をすべて取り除いた後も、残った列の最小幅とスタイルの枠が、グリッドやレイアウトに求められた幅を超えるとき、`columnAttenuation.failAttenuation` を通して発生する。
++         この限界は具体的である。
++         `Paragraph` の列は最長の単語より狭くなれないので、説明の列に `Statically-checked` を含む表は、その単語の幅と残りの分を合わせた幅より狭くは収まらない。
++         `ignoreAttenuation` のもとでは、このエラーは決して発生せず、代わりに表がはみ出す。
+
+% 2 1 0 1678493ba205a3a20f9080eaa791a75e
+
+% 3 1 0 076b4200ea0a8cb209b08fe1f6e114af
+
+% 4 1 0 011f6d213f9a682c0faf0a7119f00436
+
+% 5 1 0 02f17a392685209c10738e4ace138e8d
+
+% 0 1 0 19dca18fec62fa2c0915fdaab9366f6a
+
+% 0 1 0 042c7f5eddbd6eb81fde4c13f24bb080
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 074cb3daeb2bac671b9b9c2132727c65
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 1fe95e04628d69d902bfb9092fe2aa4b
+
+% 1 1 0 19c650f5c79797251faa76176f18cb4f
+
+@ 0 2 0 1b787198aa7d471009d76340f5614bea
++     entry #minimumWidth   表の列がすべて収まりうる最も狭い幅
++     entry #availableWidth   表に収めるよう求められた幅
+
+@ 0 1 0 1414895c1ddb502a1456fd705f93cbbb
++   entry .Cell   描画した一つのセル：合わせた行、幅、配置、装飾
+
+% 1 1 0 0b5b192f1f0494480011d8135555d2e2
+
+@ 0 3 0 0452a5c779584ad70bac5cc01f8b5984
++         `Layout#tableRow` がセルを合わせた後の、レンダラーによるセルの記録である。
++         列の幅で表示する行、その行数、それらの配置、そして装飾を持つ。
++         `Grid` や `Layout` の利用者は、これらを `Row` の中で目にする。
++         他に作るものはない。
+
+% 0 1 0 0a69cc2976d15e111ff6bc44f2184551
+
+@ 0 9 0 1d721a5df34263d01f119498b34a53c2
++     entry #width   列の決まった幅。セル数で表す
++     entry #span   セルがまたぐ列の数。常に `1`
++     entry #lines   合わせた行
++     entry #minHeight   行の数
++     entry #textAlign   各行を幅までどうパディングするか
++     entry #verticalAlign   行が `minHeight` より高いとき、行の並びがどこに位置するか
++     entry #decorate   描画した各行に適用する変換。なければ `Unset`
++     entry #apply   あるインデックスの行。呼び出し側は既に `minHeight` と照合している
++   entry .Row   合わせたセルの一行と、その高さ（行数）
+
+% 1 1 0 01e83dd3cede32ad08989e93b96bd865
+
+@ 0 3 0 1fb3144f25849e38198c4b9a0b85fd4c
++         `Layout#tableRow` が作り、`Grid.rowLines` が描画する。
++         行の高さは最も高いセルの行数であり、それより短いセルはその垂直配置によって行の中に置かれる。
+
+% 0 1 0 116b240365aeef2f161801b468515628
+
+% 1 1 0 19c6bbfca8ad0a6d021a7a733d2fa05d
+
+@ 0 5 0 16cdc910f92ba7be0cab12b34824cc6d
++     entry #cells   合わせたセル。残った列ごとに一つ
++     entry #title   これがタイトル行かどうか
++     entry #height   行が占める見た目上の行数
++     entry #apply   ある列インデックスのセル
++   entry .Section   列の幅を共有する行の連なり
+
+% 1 1 0 1083d41494980b170ad5c2c57d0af3ef
+
+@ 0 3 0 1882c036e97ed7c61f8f2fca8bf2c6db
++         `Grid` はセクションのリストであり、隣り合うセクションの間に罫線を引いて描かれる。
++         `Tabulation#grid` は、タイトルとデータの二つを同じ幅で作る。
++         どのセクションの行も、そのセクション自身の `widths` に対して描画される。
+
+% 1 1 0 1575eaf3883b166b1a099395ea7c99b1
+
+@ 0 3 0 1590c183f9c3a58e06dd7ba2d45b13d0
++     entry #widths   セクションの行を合わせた列の幅
++     entry #rows   行。`Chain` として遅延して与える
++   entry .Style   表を描く罫線、角、パディング
+
+% 1 1 0 197a508a5a57297001599647d4f08502
+
+@ 0 6 0 13d6dd5dba11bd6d055f7c62216179b1
++         `Style` は、各セルの両側にどれだけのパディングがあるかを述べる。
++         また、上端、下端、タイトルの下の罫線、外側の辺、内側の列の縁をどの太さの線（`Blank`、`Thin`、`Thick`、`Double`、または線をまったく引かない `Unset`）で描くか、どの `LineCharset`（`Default`、`Rounded`、`Ascii`）がグリフを供給するかを述べる。
++         `tableStyles` パッケージの六つのスタイルが、よくある選択を網羅している。
++         独自のスタイルは、ローカルに与える `Style` の値である。
+
+@ 0 3 0 003b78a55ef773171593fd24f15b7fab
++         スタイルはコンテキスト値である。
++         `Tabulation#grid`、`Scaffold#layout`、`Printable` の given がそれを取り、`import soundness.*` は何ももたらさないので、`tableStyles` の given の一つを名前でインポートする。
+
+% 2 1 0 128dbd9f2c98837b054971c3baa3a692
+
+% 3 1 0 19c13802f1b329310d9ce34cae072d76
+
+% 0 1 0 1df9e0cdb273238d0289668a0347f8df
+
+% 0 1 0 1ae3d9f893e21b8e07020f237ffcaf7f
+
+% 1 1 0 1670080bce36129e0a50bdcdc22364c6
+
+@ 0 3 0 004f7b32eb8ea83002489ce0fcbd8adb
++         `Blank` と `Unset` は異なる。
++         `Blank` の上端の線は空行として描かれ、表の垂直方向の間隔を保つが、`Unset` は何も描かない。
++         スタイルを付けた `Teletype` の内容は、どのスタイルでも見た目の幅でレイアウトされる。
+
+% 0 1 0 0d3a2cbc8f3d6c5b094da7c81299bf57
+
+% 1 1 0 0ba4d0bdebcb60b613bc4638f35370d9
+
+@ 0 10 0 19e906402cfd8a7205f0fe814106363a
++     entry #padding   各セルの内容の左右に置くセル数
++     entry #topLine   上端の線の太さ。上端がなければ `Unset`
++     entry #bottomLine   下端の線の太さ。下端がなければ `Unset`
++     entry #titleLine   タイトルと行の間の罫線の太さ。なければ `Unset`
++     entry #sideLines   外側の左右の辺の太さ。なければ `Blank`
++     entry #innerLines   列の間の縁の太さ。なければ `Blank`
++     entry #charset   線を描くグリフの集合：`Default`、`Rounded`、`Ascii` のいずれか
++     entry #columnCost   一つの列が加える枠：両側のパディングと一つの縁
++     entry #cost   与えた数の列の枠：それらのコストと閉じる縁
++   entry .Relabelling   導出された表がフィールド名から取る列のタイトルを上書きする
+
+% 1 1 0 11637f8e1f26852519c1d957778011ea
+
+@ 0 5 0 0a7818469f6d8b651f7e492e0c6b7d18
++         `Relabelling[target]` は、フィールド名から代わりに望むタイトルへの関数 `#relabelling()` であり、`target` に対して導出される `Tabulable` が参照する。
++         マップに含まれるフィールドはマップされたタイトルを取り、それ以外のフィールドはキャメルケースを分解し先頭を大文字にした名前を取る。
++         導出の時点でスコープ内に given があれば十分である。
++         このトレイトは対象について共変なので、上位型に対する名前の付け替えはその下位型にも適用される。
+
+% 2 1 0 0998b877742fad331769518095dd6358
+
+% 3 1 0 0606af2da98ed383058b56b8df5ffc9d
+
+% 4 1 0 18fffb517059ddb90d02af10134741d3
+
+% 5 1 0 007592fd79472c551975019da01e4060
+
+% 6 1 0 0bf86d6bb649dd331f3e5d4a77f1e9a0
+
+% 8 1 0 1872d32dc08fa5c30f0923ac6db8a1ff
+
+% 0 1 0 1ea399f97a94e0a215a7ed0446376a78
+
+% 0 1 0 085f4f4bf3dd92bc0be6df7de671526f
+
+% 1 1 0 0d1c317203c3c31a0768a0fbcabfb462
+
+% 0 1 0 161798c74f8e8f74066f72a21cca1ffe
+
+@ 0 3 0 1c20d3c2fe905c3810964c545b05e6fe
++     entry #relabelling   フィールド名からタイトルへのマップ
++         一度だけ呼ばれてキャッシュされる。
++         マップにないフィールドは、導出されたタイトルを保つ。
++     entry #apply   フィールド名に対するタイトル。マップに名前がなければ `Unset`
+
+@ 0 1 0 175531554e2e8f13120cef02c838f6c9
++ entry .Attenuation   表の列が与えられた幅に収まらないときに何が起きるか
+
+% 1 1 0 06a8e325cbbc46ba0dd7ce04cda3a8cf
+
+@ 0 7 0 1cd9b847a9e55c041e098a96e39c02cd
++       `Attenuation` は、折りたたみ可能な列をすべて取り除いた後もなお、表が必要とした最小幅が実際の幅を超えるとき、その二つの幅を引数として `Layout.solve` から呼ばれる。
++       これはライブラリが固定する振る舞いではなく、ポリシーである。
++       列が崩れたことに誰も気づかないファイルに書き出すレポートなら、失敗が望ましい。
++       利用者がウィンドウを広げられる対話的な表示なら、描画が望ましい。
++       二つのポリシーは `columnAttenuation` パッケージの given であり、名前でインポートする。
++       どの `grid`、`layout`、`extend`、`resize` も、スコープ内にその一つを必要とする。
+
+% 1 1 0 098e1dbf0fb6648a08e03fdfa4d3d415
+
+% 1 1 0 05d79cc39dd275a419b9c3b55bc8ff92
+
+@ 0 1 0 09736303e5339f940debcfe184e9fc32
++   entry #apply   表が必要とした最小幅と利用できる幅を引数として呼ばれる
+
+@ 0 1 0 0b7cc8d4da01974118882d16100dca51
++ entry .columnAttenuation   収まらない表に対する二つのポリシー。それぞれ名前でインポートする given である
+
+% 1 1 0 1c60b8536f776713151cfaadb71cfc5e
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 1 1 0 067cf51cd6536cf5114d37a57402baae
+
+% 1 1 0 11e8a22fbadf82c30229d8d2d55d36a4
+
+@ 0 5 0 0a09fcc5df60bee10d178cbeb58ead70
++       `ignoreAttenuation` は、幅が許す限りでともかく表を描画し、失敗しえないので、選んでもエラー処理は要らない。
++       `failAttenuation` は、誤解を招くものを作るよりも `Table.Error` を発生させるので、スコープ内に `Tactic[Table.Error]`（`recover`、`safely`、`strategies.throwUnsafely`）が必要である。
++       `import soundness.*` は given をインポートしないので、どちらもインポートしなければスコープに入らない。
+
+% 0 1 0 12a33ae65ce44b370c91c9f43b59baa7
+
+% 1 1 0 01fe6d3f165dc39b1730ca685925d016
+
+@ 0 7 0 15b5f964e0a741021c4141a5bb244d43
++   entry .failAttenuation   表が収まらないとき `Table.Error` を発生させる
++       `Tactic[Table.Error]` から、それを捕捉する `Attenuation` へのコンテキスト関数である。
++       そのため、この given をインポートすると、表をレイアウトする所で戦術も要求される。
++       エラーは、必要な最小幅と利用できる幅を持つ。
++   entry .ignoreAttenuation   幅をはみ出しても、ともかく表を描画する
++       表が収まらないと知らされても何もしない。
++       残った列は最小幅を保ち、行は求められた幅を越えて伸びる。
+
+@ 0 1 0 023ae57f100c5c371a10eff64c97be3a
++ entry .tableStyles   既製の六つの表スタイル。それぞれ名前でインポートする given である
+
+% 1 1 0 16b2f2af4972eaf518024ac765b83532
+
+@ 0 3 0 1a30d33dbe85af1d04d689c4568e7308
++       罫線の描き方はスコープ内の `Table.Style` の given で選ばれ、この選択が暗黙に行われることはない。
++       `import soundness.*` はこれらを何ももたらさないので、一つを名前でインポートする。
++       六つのスタイルでの同じ表：
+
+% 2 1 0 1af3453ca8730d5f0c26b557e1f321a2
+
+% 3 1 0 1362fc11a94297c40dbd29532fc52714
+
+% 4 1 0 0679ace4905d57a919c3fb0114b6ef9a
+
+% 2 1 0 0a39c0a79a98347209cbd0118637da64
+
+% 4 1 0 09f908ef9a5543ef196a29005ef0547a
+
+% 5 1 0 13eb0ad9d87244530dc55918a7b95778
+
+% 1 1 0 13b6574b0ce8d5cd0db290e720262e46
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 0 1 0 13563984c42cfb9614ebeba62a577d2a
+
+% 1 1 0 1dfeac7ecce8bbeb100e438c5ed4f402
+
+% 2 1 0 0185533d60613d921462c8ca2787d761
+
+% 0 1 0 19553389edd59bcb0640c004cbc6ea56
+
+% 1 1 0 0122fdb9f215c52c083e1853c591f57a
+
+% 0 1 0 0e60d91504b1554f13a77ad5caf7d466
+
+% 0 1 0 07aa1c07de347efb1827c123b90199c6
+
+% 0 1 0 09f18bc181aee3e31fca864317f1064f
+
+% 0 1 0 0b541a8d9e5eea2803aee1f394990811
+
+% 0 1 0 1547473fbc86976c0842ea068851e7f2
+
+% 0 1 0 1e771c0b413f3e210a07fcfd36d599e1
+
+% 0 1 0 17d879d7be8270e10e36028e2eeda5c0
+
+% 1 1 0 10fa8d3ca1d4596c0f517b8e82037ef7
+
+% 2 1 0 1ed51d07c91432d90b3dc5617bfc718e
+
+% 0 1 0 1f8b34474e85522a0a9145f99c2d095a
+
+% 1 1 0 1a9d933ca2dc92ee1b4d7d5efd6caefd
+
+% 0 1 0 0814c6a7953579240497149b8ae10393
+
+% 0 1 0 0b00da2589fdfa2708c3334339f49e4d
+
+% 0 1 0 148b71cfb44202c5122c7cb15e361174
+
+% 0 1 0 0eaad8ab4a286554144a5413158c0c97
+
+% 0 1 0 189e055d6850129818de5c260944ec78
+
+% 0 1 0 156b692f90fb488f11f20accce9516f9
+
+% 0 1 0 09a4571d16ae92d20331184dea6b563d
+
+% 1 1 0 06210e63e5bf5d3704bf758e04809535
+
+% 2 1 0 08e9fc68da2fe9d80f232768f28f2f2c
+
+% 0 1 0 04f1f84475e3bbb31857f0d0d9748c0c
+
+% 1 1 0 074002f0648e052f0c5da28c2ee2abc7
+
+% 1 1 0 1a0557f3cdbfc6c81591cec54facc84f
+
+% 1 1 0 162952dd784305ca11b576f82f02fae5
+
+% 2 1 0 0e73d5549e2300db1daaafa6f1736346
+
+% 3 1 0 1f17c20487eaf32f05a130bcd147d2ba
+
+% 4 1 0 07cdcbabe8dd637f13db551c2a5dafc4
+
+% 1 1 0 14df755ca0c96bed13230f2a8873d2c2
+
+% 0 1 0 1663d25d0c3fdc771fc0613084d608d1
+
+% 1 1 0 052ab5edc1c5a53a1b36c8d3d54c7ed4
+
+% 2 1 0 09424f56406982b31b6a920c388378d4
+
+% 0 1 0 15095dde40d6dbff12352129d2f06538
+
+% 1 1 0 08c97684fab165650d306f7922830b45
+
+% 0 1 0 14ddc487a6feff3c1b5a2bafb3493848
+
+% 1 1 0 0491dd816ec88a4a0284873dcdaf8f52
+
+% 2 1 0 110e4bf5aeca63261edf33b4afd378b5
+
+% 0 1 0 0c631bda6fe23b980501043abb67887a
+
+% 1 1 0 0df106ef07a423fd0733b809ca96aceb
+
+% 0 1 0 0dac36ff7bea52e6153f98fe1f80f62d
+
+% 1 1 0 135ec5837037683c18323f3429d93d17
+
+% 2 1 0 0413200090607bc41fdbe6c4f51a4a69
+
+% 0 1 0 1195dc1266cf29500f9dea72dc7e596e
+
+% 1 1 0 12dde3c08a999ff6060edeb3317be5f6
+
+% 1 1 0 10f5ba6f9852ec3a1bb3d00cf40c6897
+
+% 2 1 0 050c9229527e74bd099910bbfb057d5c
+
+% 3 1 0 1f95c5cdb1a54cdb096eba700d5db4b4
+
+% 4 1 0 040390d3fc3729611a836678906c70b9
+
+% 1 1 0 06ee91f4c98efe8c1cd849b9caf57231
+
+% 2 1 0 0fb3060a8198217c0ccfd1eb4d15db06
+
+@ 0 1 0 0f5e091dfc0c7e7a19d55ee32a305ba2
++       独自のスタイルは、代わりにローカルな given として束縛した `Table.Style` の値である。
+
+% 1 1 0 04cdd2954a74ae4306f31d18cdd77f9a
+
+@ 0 14 0 1a754cf3dea95e3c1253ef9d5f4d9f53
++   entry .thickTableStyle   上端、下端、両辺は太線。タイトルの罫線と列の縁は細線。角は直角
++   entry .thinRoundedTableStyle   すべて細線で、角は丸い
++   entry .horizontalTableStyle   上端、下端、タイトルの罫線は細線。縦線はない
++       セルはパディングを保つので、縁があった所では列が二つの空白で区切られる。
++   entry .midOnlyTableStyle   タイトルの下に細い罫線。表の上と下は空行
++       上端と下端の線は存在しないのではなく `Blank` なので、表は枠を描かずに、枠のある表と同じ垂直方向の間隔を保つ。
++   entry .verticalTableStyle   辺と列の縁は細線。水平の罫線はない
++       水平の罫線は `Blank` なので、それぞれが縁の切れ端の行になる：上は `╷`、下は `╵`。
++   entry .minimalTableStyle   タイトルの下の細い罫線だけ
++       上端と下端の線は `Unset` なので、表はタイトルの行、一本の罫線、そして行からなる。
+
+@ 0 8 0 1427dc48855fcea81e2dc08904f52889
++ entry .TextAlignment   セルの各行が列の幅の中でどう収まるか：tessellate の `Alignment`
++     `TextAlignment` は `tessellate.Alignment` の別名であり、値の `TextAlignment` は `tessellate.Alignment` なので、ケースは `TextAlignment.Left` のように名指しする。
++     `Left` は右側をパディングし、`Right` は左側をパディングする。
++     `Center` はパディングを分け、余りの一セルを右に置く。
++     `Justify` は単語の間の空白を広げて、最後の行以外のすべての行が幅いっぱいに届くようにする。
++     これは新聞の組み方であり、散文の列には合うが、それ以外には合わない。
++     それぞれがパディングを行う `pad(content, width, last)` を持つ。
++     `last` はその行がセルの最後の行かどうかを示し、`Justify` は最後の行を不揃いのままにする。
+
+% 2 1 0 01f41f52f60330951879d5b129b4dfde
+
+% 3 1 0 13b7c178a3752d360fc537edbe43ddec
+
+% 4 1 0 10258df820161faf19ad0c15da42dfa3
+
+% 0 1 0 05c19e16da48abc80f3703ec2316bc1b
+
+% 0 1 0 007fbf1e4cbb9bf21c7368e36bc20247
+
+% 0 1 0 07bfe80b3b763c7c0ecb581be49abb46
+
+% 0 1 0 14ddb12460c63c6f148e06e30e045aae
+
+% 1 1 0 0c68b523c7d2cba00957571a1d7f5a18
+
+@ 0 5 0 0df185897b4a3888029b99aef2733af0
++ entry .VerticalAlignment   他のセルによって高くなった行の中でセルがどこに位置するか：tessellate の `Alignment.Vertical`
++     `tessellate.Alignment.Vertical` の別名であり、ケースは `Top`、`Middle`、`Bottom` である。
++     折り返されたセルは行全体を高くし、その行の他のセルは、列の `verticalAlign` に従って、増えた高さの上、中央、下のいずれかに位置する。
++     `Top` はすべての型の既定である。

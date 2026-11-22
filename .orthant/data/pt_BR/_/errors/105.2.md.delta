@@ -1,0 +1,88 @@
+orthant 2 language
+
+% 0 1 0 1dd3ff184458127015ae1ccf3652f901
+
+@ 0 1 0 124ac3af023a355109edffee6244bdfb
++ Lançado quando o Enigmatic não consegue decodificar dados cifrados.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 0129e0129ab5b46d1d2bf8b64b5f4687
++ A primitiva criptográfica (cifra, assinatura ou MAC) rejeitou a entrada. O construtor recebe um
++ `reason: Reason` que indica por que a operação falhou; a mensagem renderizada é
++ `could not decode the encrypted data because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 12f19e8f03c14d4308be60932eed2510
+
+@ 0 3 0 1fbb23f06adec7d61c68f6492c06516f
++ Os bytes de preenchimento não corresponderam ao que a cifra esperava — em geral porque o texto
++ cifrado foi corrompido ou a chave errada foi fornecida (divergência da tag de autenticação nos
++ modos AEAD).
+
+@ 0 1 0 1739d6e19df659901ee93e8aa56a6fe8
++ **Exemplo.** `[↯/s.105.2.1] could not decode the encrypted data because the ciphertext was corrupted or the key was wrong`
+
+@ 0 3 0 18d6ff2039ddebc11ab7da7730df6f92
++ **Resolução.** Confirme que a chave e o IV correspondem aos usados no momento da cifragem;
++ verifique se o texto cifrado não foi truncado nem modificado em trânsito.
+
+% 0 1 0 0d5d3bc275d259271bdf4903a900601c
+
+@ 0 2 0 1ac8b0e57b4d7c25191149a0a958fd31
++ O comprimento da entrada não era múltiplo do tamanho de bloco da cifra, ou era incompatível de
++ outra forma com o enquadramento da cifra.
+
+@ 0 1 0 030998a246c79ec119f4b4a064e2d636
++ **Exemplo.** `[↯/s.105.2.2] could not decode the encrypted data because the input length was not valid for the cipher`
+
+@ 0 2 0 0e8bd28c57ce4caa1e9b80596ea98e3c
++ **Resolução.** Verifique se o texto cifrado está completo e foi produzido pela mesma cifra e
++ pelo mesmo modo que agora estão sendo usados para decifrá-lo.
+
+% 0 1 0 169cce07803a4a17033792e518b82d17
+
+@ 0 2 0 0b0ab3f02879e1040067b20d58e980e5
++ Os bytes da chave foram rejeitados pela cifra — tamanho errado, formato inválido ou parâmetros
++ não suportados.
+
+@ 0 1 0 03b840945e05f4b2096b23d229a9cc4b
++ **Exemplo.** `[↯/s.105.2.3] could not decode the encrypted data because the key was not valid for the cipher`
+
+@ 0 2 0 0b7b6a6cc3122a1d1dfc629e8c43fdb6
++ **Resolução.** Confirme que a chave foi produzida para a mesma cifra e o mesmo conjunto de
++ parâmetros.
+
+% 0 1 0 1f2c73535fe27d980bfea5daeed9b614
+
+@ 0 2 0 08d33c41a5ad27c505463e0f89a77113
++ O algoritmo ou modo pedido não está disponível nos provedores configurados da JVM.
+
+@ 0 1 0 01e72f0b9cfa5e7a1c0c2ff08284276a
++ **Exemplo.** `[↯/s.105.2.4] could not decode the encrypted data because the algorithm was not available`
+
+@ 0 2 0 0bc734f8dee0286d18fec3497ebb67d8
++ **Resolução.** Instale ou habilite um provedor JCA que suporte o algoritmo; verifique a política
++ de `java.security`.
+
+% 0 1 0 051a0972608a20a409b0c698aa7c2c98
+
+@ 0 2 0 08baa998e193943a0fa1d4eef46d2047
++ A implementação da cifra não conseguiu ler ou escrever os buffers de dados — em geral, uma falha
++ de I/O de baixo nível.
+
+@ 0 1 0 1a6338eabe0ee4f5026a09eea17d4598
++ **Exemplo.** `[↯/s.105.2.5] could not decode the encrypted data because data could not be read or written`
+
+@ 0 1 0 050f887854411c1313d244ed279d6f20
++ **Resolução.** Inspecione a cadeia de causas em busca do erro de I/O subjacente.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 2 0 0388722c1a8ac94308aa18340e8189b1
++ - Código-fonte: `lib/enigmatic/src/core/enigmatic.Crypto.scala`
++ - `↯/s.105.1` — `PemError`, lançado quando chaves codificadas em PEM não podem ser analisadas

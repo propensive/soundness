@@ -1,0 +1,305 @@
+orthant 2 language
+
+% 0 1 0 16f943528d924ef314569aed5c605b37
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 7 0 11ec73c3c858f67018265a6aa746c64e
++ Il [CSS](https://en.wikipedia.org/wiki/CSS) viene analizzato, convalidato e generato come valori
++ tipizzati. Un foglio di stile si analizza in un albero `Css` di regole e dichiarazioni. Ogni
++ proprietà viene verificata rispetto alla sua grammatica reale, che è la sintassi di definizione
++ dei valori dei [dati MDN](https://github.com/mdn/data), per oltre seicento proprietà. Una
++ proprietà scritta male, o un valore malformato, è quindi un errore strutturato, non uno stile che
++ fallisce in silenzio nel browser. L'[interpolatore] `css"…"` scrive un foglio di stile nel codice
++ sorgente, con valori tipizzati sostituiti al suo interno.
+
+@ 0 4 0 06c9da7b67696391181b59e5f5d0ad5a
++ I selettori si analizzano secondo la grammatica completa di
++ [Selectors Level 4](https://www.w3.org/TR/selectors-4/). Lunghezze e angoli sono
++ [grandezze](quantities.md) tipizzate, e i [colori](colors.md) si sostituiscono direttamente,
++ scritti in esadecimale.
+
+@ 0 1 0 02a28abf09dbc299028e63b111621b52
++ ### Sul CSS
+
+@ 0 5 0 06b0785b37e48a8f06d5f94e1a7e4897
++ Il CSS è insolito tra i linguaggi, in quanto chi lo consuma non lo rifiuta mai. Un browser ignora
++ ciò che non comprende. Un refuso nel nome di una proprietà, o un valore non valido, fallisce *non
++ facendo nulla*, e viene scoperto a occhio, oppure mai. Sono nati strumenti che controllano il
++ testo CSS a posteriori. Un sistema di tipi può fare di meglio, controllando gli stili dove vengono
++ scritti.
+
+@ 0 3 0 0c43e967116a52e1118f5b9c28f1ee50
++ Qui il CSS viene verificato rispetto alla grammatica reale di ciascuna proprietà, mentre viene
++ analizzato. È la [sicurezza per costruzione](../../philosophy/safety-by-construction.md),
++ applicata a un linguaggio che di solito viene convalidato in un browser.
+
+@ 0 2 0 13f4c200763762940291fd7acaec96c3
++ Tutto proviene dal package `soundness`. È nell'ambito una scelta di formattazione, per scrivere il
++ CSS, e l'ultimo import permette agli esempi di stampare i loro risultati:
+
+% 2 1 0 19d9c5f87ce18d2e1db07492f5cc4b3c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 03e6b9f4cd3f5ee81c0a71c3bb23f25d
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 012954dbea176622088c64c0e7b6aae1
++ ### Scrivere CSS
+
+@ 0 2 0 0769f94b7233ad8019c42b4d25ad5e01
++ L'interpolatore `css"…"` scrive un foglio di stile. Al suo interno si sostituiscono valori
++ tipizzati: un colore viene scritto in esadecimale, e una lunghezza con la sua unità.
+
+% 2 1 0 0f2dd0375a3e5104092e3dccd54ba34b
+
+% 0 1 0 0e4ba037b1e16c911ac542449d04786c
+
+% 0 1 0 0b80bdb6c3430405004c7010637917ba
+
+% 0 1 0 1d0d097966829ad70f5db268c7445248
+
+% 1 1 0 04600e30e773f48c0d453c32dbfd6f45
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 1db668a981b055c1090be1418122b30a
+
+% 1 1 0 03b62e97330b982110668b5898a0a520
+
+@ 0 2 0 02686e8cdfc2bea500651e750e2da7be
++ Le dichiarazioni nude, senza selettore, formano un `Css.Style`, da usare come attributo `style` in
++ linea. Lo si può costruire ugualmente da argomenti con nome:
+
+% 2 1 0 061be5e625318247129150d0b5a170a8
+
+% 3 1 0 129161328a450a3411a08e82927b0c19
+
+% 4 1 0 1ebfd0c1e87b5c3d015476199adfe1d4
+
+% 0 1 0 10aa49091cf104a111d2e37b355cafd7
+
+% 1 1 0 0c2085ab1f4b926211f46210d84592c5
+
+@ 0 1 0 1faed04e1972e91019dd145ebc0b220e
++ ### Unità
+
+@ 0 2 0 0d830905985d455c1e42ef6558e4fe0c
++ Le unità del CSS sono grandezze tipizzate, così una lunghezza è una lunghezza, e non può essere
++ confusa con un numero o con un angolo:
+
+% 2 1 0 030e500dcb50805e1109c7055ab805ef
+
+% 0 1 0 1a9d18808d381e1a175ea80b1104dc8a
+
+% 0 1 0 193ff9cb339c13c00db1617911dac2f2
+
+% 0 1 0 156ffc0e527622e406e5665c8178e39a
+
+% 1 1 0 01164bebae900b5b186c6896df3d8dad
+
+@ 0 1 0 1439994ff8e797d1150cfda4130c5224
++ Ogni unità appartiene a una dimensione, e solo le unità della stessa dimensione si sommano o si
++ convertono:
+
+% 2 1 0 08cf4841df2430c90ee0eafe676ff145
+
+@ 0 11 0 15fb086be28eaced0d7144b868bcc623
++ column  Unità
++ column  Misura
++ column  Si converte in
++ row  `Px`  pixel  nient'altro
++ row  `Rem`, `Ex`, `Ch`  la dimensione del font radice, l'altezza della x, la larghezza del carattere  nient'altro
++ row  `Vw`, `Vh`, `Vmin`, `Vmax`  frazioni del viewport  nient'altro
++ row  `Pct`  una percentuale  nient'altro
++ row  `Cm`, `Mm`, `Pt`, `Pc`  lunghezza fisica  le une nelle altre, e in ogni altra lunghezza di Soundness
++ row  `S`, `Ms`  tempo  ogni altro tempo di Soundness
++ row  `Deg`, `Rad`, `Turn`  angolo  nient'altro, nemmeno le une nelle altre
++ row  `Fr`  una quota dello spazio libero di una griglia  nient'altro
+
+% 1 1 0 1204c4f8b61c847b193ac1ccd9192b2c
+
+@ 0 2 0 0faea893916b2aeb0a484d5724ffd83f
++ Le unità fisiche che il CSS condivide con il mondo reale sono le stesse
++ [grandezze](quantities.md#mixing-units) usate ovunque altrove.
+
+% 0 1 0 0be7689b9275055a16fd7074497e2d45
+
+@ 0 1 0 11d32cc422cea3f31f4f3b5bd295e39e
++ Il testo CSS si analizza con `read`:
+
+% 2 1 0 08d978cb379e1a9d051b264db00abc68
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 16e53b6a9c1d543d1ebd0449f06e2e3e
+
+% 1 1 0 1ee8100586a516d40e2b68877d123887
+
+@ 0 4 0 19dc9d46199390c70b92dcc1f4407563
++ Ogni dichiarazione viene convalidata, e vengono raccolti *tutti* i problemi, invece di fermarsi al
++ primo, che è ciò di cui hanno bisogno un linter o un passo di una build. Il tipo di errore è
++ plurale, `Css.Errors`, perché segnalare un difetto alla volta, da un documento che ne ha diversi, è
++ la forma sbagliata per il compito:
+
+% 2 1 0 0d8dde37871dc2041ca6f501eb4f46d6
+
+% 3 1 0 14d492429645650c0e2d1a58e50f6123
+
+% 4 1 0 1a6ba08c8c857d7d1cfff221a0801806
+
+% 0 1 0 0ac3b979283942670348d7a527fa504e
+
+% 0 1 0 1db2e7095e6a236019dea03ff304b253
+
+% 0 1 0 12c3289ec387144e01ae2aa24249f96a
+
+% 1 1 0 0d76f774ff02c7f61128fb66ceb088e6
+
+@ 0 3 0 0d1bd1bf29e4e3040b2daaa8609b67be
++ Ogni `Css.Error` ha la sua riga, la sua colonna e il suo motivo, come una proprietà sconosciuta,
++ un valore errato o un selettore malformato, così i difetti di un foglio di stile vengono segnalati
++ con precisione. [Errori](errors.md#accumulating-failures) descrive in generale l'accumulo degli
++ errori.
+
+@ 0 1 0 0644d0e91014059201012368fc0e7313
++ ### Resa
+
+@ 0 3 0 19c1327940ebf0271a1a83e8bd30ad1f
++ Un `Css` viene riscritto come testo attraverso la formattazione nell'ambito. La formattazione
++ standard indenta, per la lettura. La formattazione compatta rimuove ogni carattere non essenziale,
++ per la distribuzione:
+
+% 2 1 0 0c85539392d2a2ff11468ad3d295cae3
+
+% 3 1 0 115434741d80d395003299f3dd8231ae
+
+% 4 1 0 1808fe83d2c91a27034292fb08f74fca
+
+% 0 1 0 06695e8260fc2f230137ec83bd2afb87
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 12fd668f5a66874304b346a14eba9344
+
+% 0 1 0 0d242872bfe31fe30564a73da8341657
+
+% 1 1 0 079c8535e92c4d380279cad3cdf9e63b
+
+@ 0 3 0 160244b547de78c90f26d831b04ab9c8
++ I fogli di stile si uniscono con `+`. Un foglio di stile riporta le classi e gli id che definisce,
++ ed è così che gli attributi di classe dell'[HTML](html.md#attributes) vengono verificati rispetto
++ agli stili esistenti.
+
+@ 0 1 0 106a600478ce87b41d12cbd69473180e
++ ### Selettori
+
+@ 0 4 0 1391f55d313860de10e15e1924502f31
++ I selettori sono valori strutturali, che coprono l'intera grammatica moderna: i combinatori,
++ compreso il combinatore di colonna `||`, i test sugli attributi, `:is`, `:not`, `:has`, le
++ espressioni `An+B`, e il selettore di annidamento `&`. Un selettore si può quindi costruire,
++ ispezionare e scrivere, e non c'è bisogno di comporlo come testo.
+
+@ 0 4 0 1a0ae70e712ddf770be8a82b53fbf76a
++ Un selettore analizzato è un albero, non una stringa. Un selettore composto contiene le sue parti
++ semplici, un selettore complesso contiene composti uniti da combinatori, e un elenco di selettori
++ contiene alternative. Ogni parte è un caso tipizzato, così un programma può chiedere che cosa un
++ selettore seleziona davvero:
+
+% 2 1 0 01fce5878e08c17316141c00ee23d991
+
+% 0 1 0 153201007e4a74a618b9ac07fcc00df5
+
+% 0 1 0 1bf404a14df5a909143a704afc909c01
+
+% 0 1 0 0f7933b9416623de1b1784619d848f5d
+
+% 1 1 0 0bca560d306c4fb30e30868a6371982f
+
+@ 0 2 0 1ab8b6c3748057810dd92a8da369f706
++ I tre sono un combinatore figlio tra due selettori di tipo, un selettore di tipo con una
++ pseudo-classe, e uno pseudo-elemento.
+
+@ 0 2 0 0981122a0eeda36b0e799010193e490d
++ I selettori di attributo hanno il loro matcher, e il modificatore di sensibilità alle maiuscole
++ dove è indicato, così `[href^="https" i]` viene compreso, e non soltanto conservato:
+
+% 2 1 0 05be9d9fd5c65b541d6ba95bde6181f6
+
+@ 0 1 0 11066b3ff01827d60d7634aa8b6bec56
++ column  Sintassi
+
+% 0 1 0 1fe10ffacc763ac3184d704f42ffea32
+
+@ 0 8 0 0e2ae4337229e34e1ea6777bd5d21db6
++ column  Seleziona un attributo il cui valore
++ row  `[a]`  nessuno: presenza  è qualsiasi
++ row  `[a=v]`  `AttributeMatcher.Exact`  è esattamente `v`
++ row  `[a~=v]`  `AttributeMatcher.Includes`  ha `v` tra le sue parole separate da spazi
++ row  `[a|=v]`  `AttributeMatcher.DashMatch`  è `v`, o inizia con `v-`
++ row  `[a^=v]`  `AttributeMatcher.Prefix`  inizia con `v`
++ row  `[a$=v]`  `AttributeMatcher.Suffix`  termina con `v`
++ row  `[a*=v]`  `AttributeMatcher.Substring`  contiene `v`
+
+% 1 1 0 0cf1301ab7f9ecff03cb293e81abe6cf
+
+@ 0 4 0 089337e014f921911ebccccc375eca7e
++ Gli argomenti `An+B`, di `:nth-child` e dei suoi simili, si analizzano nei loro coefficienti.
++ `odd` ed `even` vengono normalizzati in `2n+1` e `2n`, e una clausola `of` viene conservata
++ accanto a essi. `:is`, `:not` e `:has` hanno come argomenti elenchi di selettori, così anche il
++ loro contenuto può essere ispezionato.
+
+@ 0 2 0 16acbad9262586500d2c3336d4a99d80
++ I selettori di tipo con un namespace, cioè `svg|rect`, `*|a`, e `|a` per il namespace
++ predefinito, conservano il loro prefisso in modo distinto, poiché i tre hanno significati diversi.
+
+@ 0 1 0 1f2842dcfb2502870f9f05896d15847c
++ ### Verificare i nomi di classe rispetto a un foglio di stile
+
+@ 0 5 0 180858b492945c7909613b442cc71349
++ Sapere quali classi e quali id un foglio di stile definisce serve a verificare il markup che li
++ usa. Legare una risorsa di foglio di stile rende disponibili i suoi nomi a
++ tempo di compilazione. Un attributo HTML che fa riferimento a un nome si risolve allora in
++ `class` o in `id`, a seconda di quale dei due dichiara il foglio di stile. Un nome di classe
++ scritto male in un template è quindi un errore di compilazione, e si usa l'attributo giusto senza
++ doverlo dire:
+
+% 2 1 0 13d738af909bff421966b44a3cdb5b5e
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 0e7497da964f21ea1d7213e5cfc2cb47
+
+% 0 1 0 0fcc5938a5c3b70c05608b619780104f
+
+% 1 1 0 1c009b35bff48c7719da8cda76d85851
+
+@ 0 3 0 00fec8a3157e57091c67ccaa4c95e780
++ La risorsa viene letta mentre il codice compila, quindi il foglio di stile deve trovarsi nel
++ [classpath](classpath.md) del compilatore, e il tipo del binding nomina la risorsa da cui è stato
++ letto.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 5 0 116555e834c2f1f10415484ec593c20b
++ - [HTML](html.md) costruisce gli elementi a cui un foglio di stile dà stile.
++ - [Colori](colors.md) e [Grandezze](quantities.md) forniscono i valori tipizzati delle proprietà.
++ - [Pagine](pages.md) raccoglie gli stili delle parti di una pagina in un unico foglio di stile.
++ - [Nomi](names.md#built-in-planes) descrive le regole per un nome di classe.
++ - [Font](fonts.md), [moduli](forms.md), [SVG](svg.md) e l'[automazione web](web-automation.md) usano fogli di stile e selettori.

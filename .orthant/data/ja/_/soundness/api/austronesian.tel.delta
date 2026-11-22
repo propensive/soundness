@@ -1,0 +1,252 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b8b49a2a021ff5308fb7ad72870f54a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0777a2b74520db161c5f6349cba9564f
++ info   任意の Scala の値を、JDK のボックス、文字列、オブジェクト配列からなる、クラスローダーに依存しない `Pojo` にし、また元に戻す
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 141bf02df385acdb167edce4b922978f
++     _Austronesian_ は、構造を持つ値を、そのクラスが越えられない境界の向こう（別のクラスローダー、別のプロセス、ステージングされた計算）へ運ぶ。そのために値を `Pojo` としてエンコードする。`Pojo` は、すべての JVM のコンテキストが共有する型、つまり `String`、ボックス化されたプリミティブ、`Array[Object]` だけから作られる木である。
++     直積はそのフィールドの配列に、バリアントはそのラベルとペイロードの組に、コレクションはその要素の配列に、プリミティブはボックス化されたそれ自身になる。
++     受け取る側は、期待する型に照らしてデコードし、同じ定義から同じコーデックを導出するので、データとともにスキーマが運ばれることはない。
+
+% 2 1 0 188018541f603ff71814814a19c1e096
+
+% 3 1 0 16775ca7822ece2d1b36e60ee9d0d64f
+
+% 5 1 0 1a0100dae1099ef11d5c5f7084e373ef
+
+% 6 1 0 15d8024e78fdc98d046e3d3f4c83f7ee
+
+% 0 1 0 0a9d721800c0303a1124f1a6a61fafe4
+
+% 0 1 0 19e511027bb6bcd114b5d3c96485b2e1
+
+% 0 1 0 1274fd6ab6d6f571092aa9021a5a8b01
+
+% 1 1 0 0fdd80e794b4ca2a0cc29985677f6929
+
+@ 0 1 0 1508dc7eb8394cc2130421bb041918ec
++     変換は、値の構造に応じて、型のレイヤーを 1 つずつ増やしていく：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 06c421a1d9dd28ff0bc45a2dee320aec
++       label プリミティブはボックス化されたそれ自身である
+
+% 1 1 0 095c9ddeec80fe7e0004ce16cefe8c23
+
+% 0 1 0 06bef61e13d27143083d080dcf34003d
+
+% 1 1 0 0cc745d0e45c385601c2b5c5e12144f6
+
+@ 0 1 0 0b554eff0938c97d0fed9157561912b9
++       label 直積はそのフィールドの配列である
+
+% 1 1 0 14bebd8224a2492a1670ac01c454fcb5
+
+% 0 1 0 06abab8ecfa0276c147810ce479657ab
+
+% 1 1 0 078796ddd7f094361b54fa443008b2b5
+
+@ 0 1 0 042919cc89c1a4de053395f59e24ffd5
++       label コレクションはその要素の配列である
+
+% 1 1 0 05895d6f448923311a6cbfc16045d829
+
+% 0 1 0 09ef87b5a43b6db4076ed5d3e8262699
+
+% 1 1 0 0ce951b38061b8d115241fce742965f9
+
+@ 0 1 0 0353167e8921610f141570c3f600638a
++       label バリアントはそのラベルとペイロードの組である
+
+% 1 1 0 12f869f9b87fd5911d6d2f63ea9b3d87
+
+% 0 1 0 03fd9757e0fb00b30a13f4333b10d00d
+
+% 0 1 0 093c7f35ae5bf57906d60a81463d334b
+
+% 0 1 0 1508fe5f66fc060200f1c3832efdfd5f
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 0a6f94ca3a7778ee0b0a36a910a4c50b
++     エンコードは `pojo` であり、`Encodable in Pojo` である任意の型に使える。プリミティブ、`Text` と `String`、エンコード可能な要素のコレクション、そして wisteria を通して導出される、各部分がエンコード可能な任意の直積型または直和型である。
++     デコードは `Pojo` に対する `as[T]` であり、形が一致しないところで `Pojo.Error` を発生させるので、`Tactic[Pojo.Error]` を必要とする（たとえば `safely` や `unsafely` のもとで）。
++     `case class Tree(value: Text, children: List[Tree])` のように、コレクションを通して再帰する型も導出できる。
+
+@ 0 3 0 11fb6c16f529f34506e9ec8fc5e190ee
++     このライブラリには 1 つのソースセット `austronesian.core` があり、ステージングのリモート実行の下にある運搬手段である。
++     `Pojo` と `pojo` は `soundness` アンブレラにエクスポートされる。すべてのコーデックは `Pojo` のコンパニオンにあって暗黙のスコープに入るので、ほかには何もインポートしない。
+
+% 0 1 0 1adca7ac254a1e4d197463810dfe6bfd
+
+% 0 1 0 18b010adecf2d36b00c9efaaef182475
+
+% 0 1 0 1004f83506a2be8513a8e6193b2524a3
+
+@ 0 7 0 17ad49125159ebeb1ab7de4faf2c0fd7
++ entry .Pojo   JDK の型だけからなる木としての値：文字列、ボックス化されたプリミティブ、オブジェクト配列
++     `Pojo` は不透明型 `austronesian.internal.Pojo` であり、ここにエクスポートされている。
++     これは `Object` の部分型で、その基底の型は `Array[Object]`、`String`、`java.lang.Boolean`、`java.lang.Byte`、`java.lang.Character`、`java.lang.Short`、`java.lang.Integer`、`java.lang.Long`、`java.lang.Float`、`java.lang.Double` のユニオンである。したがって `Pojo` は任意のオブジェクトと混同されることがなく、これらのクラスはすべて JDK から来るので、どのクラスローダーにとっても意味を持つ。
+
+% 2 1 0 0f9d54d275152d5b1f6cf3bd7bbe69a9
+
+% 3 1 0 02586693b75929261e6a5303a27390ee
+
+% 5 1 0 1db9f8795e532fa50a64853de3e79a8d
+
+% 0 1 0 198e3f863f2dc39113e463a46e16bca9
+
+% 0 1 0 1c59eed13d307024020a292d4dad51c7
+
+% 1 1 0 0e8bf5d7aa452d681bef27d4f83af1d3
+
+@ 0 2 0 1efaddaeb6b8770e1fe54ef7a9abbe09
++     値は `pojo` 拡張で `Pojo` になり、`as[T]` で読み戻される。`as[T]` は形が一致しないと `Pojo.Error` を発生させる。
++     各種類の値のエンコーディング：
+
+@ 0 8 0 1c925d699d3e72980eef76b20b9934f0
++     - `Text` と `String` は `String` であり、`Int`、`Long`、`Float`、`Double`、`Char`、`Boolean`、`Byte` はそれぞれのボックス化された形である。
++     - コレクション（任意の `Iterable`、または `List`、`Set`、`Sequence`）は、その要素のエンコーディングの `Array[Object]` である。
++     - 直積（ケースクラス）は、そのフィールドのエンコーディングを宣言順に並べた `Array[Object]` である。
++     - 直和（シールされたトレイトまたは enum）は、バリアントのラベルとバリアント自身のエンコーディングからなる 2 要素の配列である。パラメーターのない enum のケースなら `Array("Green", Array())` になる。
+
+@ 0 3 0 067dc01b19b6f01007b3cbe1d8dbd4e2
++     2 つの `Pojo` は、`Pojo` の `Checkable` インスタンスを通して、probably の `===` で構造的に比較される。このインスタンスは、`==` なら同一性を比較するところを、配列を要素ごとに比較する。
++     `Pojo(value)` は、許可された JDK の型のどれかの値を直接包む。
+
+@ 0 4 0 11c6237fc5d1e16602911bb170191ce8
++ entry .pojo   値を、クラスローダーに依存しない `Pojo` としてエンコードする
++     `Encodable in Pojo` である任意の値に対するインラインの拡張である。プリミティブ、`Text`、`String`、エンコード可能な要素のコレクション、そして各部分がエンコード可能な任意のケースクラス、enum、シールされたトレイト（そのコーデックは導出される）が対象である。
++     エンコードは失敗しえない。
+
+% 2 1 0 0488f251d41cad9c190cbb03dbb61c7c
+
+% 3 1 0 1b327b9b259d79fe0ce40f5657984223
+
+% 5 1 0 0f1b74118896b3681416a627100cbc20
+
+% 6 1 0 0b30a8374550b0d7074d38b49cf9b5ee
+
+% 0 1 0 09158d9ff4ad2d600fc2032c3130fff5
+
+% 0 1 0 1b0b194ad7ed583e048bdab05e61f9c7
+
+% 1 1 0 138b640fa8be4b591b87ee6175bbca5f
+
+@ 0 1 0 1f826888a0b0848b050fc873b3cc43ea
++ entry .internal   不透明型 `Pojo`、そのコーデックのコンパニオン、そのエラー
+
+% 1 1 0 07f40d269969e960059ee8212f77502a
+
+% 2 1 0 14400b5444cccf540f0dec9bbc9b5799
+
+@ 0 4 0 0d356b7ed72d2eff0f666c27f6caa2f4
++       直接使うためのものではない。このオブジェクトは `Pojo` の不透明な定義を持ち、それは `austronesian` パッケージと `soundness` アンブレラにエクスポートされる。
++       そのコンパニオンはすべてのコーデックを持つので、それらは `Pojo` があるところならどこでも暗黙のスコープに入る。
++   entry .Pojo   JDK の型だけからなる木としての値。`austronesian.Pojo` を参照
+
+% 1 1 0 0df7ec30377845d812fcfbed36b0223c
+
+@ 0 49 0 0c740d05b3d5e95a08b4817cc9428ab5
++         不透明型 `Pojo <: Object` と、その構築、プリミティブとコレクションのための `Encodable` と `Decodable` のインスタンス、`as` デコード拡張、`Pojo.Error` を持つコンパニオンである。
++         直積型と直和型のための導出されたインスタンスと、`Checkable` インスタンスは、`Pojo2` から継承される。
++     entry .apply   文字列、ボックス化されたプリミティブ、オブジェクト配列を `Pojo` として包む
++         `Pojo` が許す JDK の型のどれかの値を取り、それをそのまま `Pojo` として返す。
++         配列の要素は検査しない。要素はそれ自体 `Pojo` であるべきである。
++     entry .text      `Text` をその `String` としてエンコードする
++     entry .string    `String` をそれ自身としてエンコードする
++     entry .int       `Int` を `java.lang.Integer` としてエンコードする
++     entry .long      `Long` を `java.lang.Long` としてエンコードする
++     entry .float     `Float` を `java.lang.Float` としてエンコードする
++     entry .double    `Double` を `java.lang.Double` としてエンコードする
++     entry .char      `Char` を `java.lang.Character` としてエンコードする
++     entry .boolean   `Boolean` を `java.lang.Boolean` としてエンコードする
++     entry .byte      `Byte` を `java.lang.Byte` としてエンコードする
++     entry .list   エンコード可能な要素の任意の `Iterable` コレクションをオブジェクト配列としてエンコードする
++         `collection` が標準ライブラリの `Iterable` の部分型であり、要素が `Encodable in Pojo` である任意の `collection[element]` に使える。
++     entry .listEncodable     エンコード可能な要素の Soundness の `List` をオブジェクト配列としてエンコードする
++     entry .setEncodable      エンコード可能な要素の Soundness の `Set` をオブジェクト配列としてエンコードする
++     entry .seriesEncodable   エンコード可能な要素の Soundness の `Sequence` をオブジェクト配列としてエンコードする
++         Soundness 自身のコレクションは不透明であり、`Iterable` に適合しないので、それぞれが `.list` の実装を共有する独自のインスタンスを持つ。
++     entry .text2      `String` を保持する `Pojo` から `Text` をデコードする
++     entry .string2    `Pojo` から `String` をデコードする
++     entry .int2       `java.lang.Integer` を保持する `Pojo` から `Int` をデコードする
++     entry .long2      `java.lang.Long` を保持する `Pojo` から `Long` をデコードする
++     entry .float2     `java.lang.Float` を保持する `Pojo` から `Float` をデコードする
++     entry .double2    `java.lang.Double` を保持する `Pojo` から `Double` をデコードする
++     entry .char2      `java.lang.Character` を保持する `Pojo` から `Char` をデコードする
++     entry .boolean2   `java.lang.Boolean` を保持する `Pojo` から `Boolean` をデコードする
++         このデコーダーは、ほかのプリミティブのデコーダーと同じく、検査なしでキャストするので、別の型の `Pojo` は `Pojo.Error` ではなく `ClassCastException` で失敗する。検査されるのは配列の形だけである。
++     entry .collection   オブジェクト配列から `Iterable` コレクションを要素ごとにデコードする
++         `Factory` を持つ任意の標準の `collection[element]` に使え、インスタンスが解決されるときに `Tactic[Pojo.Error]` を必要とする。配列でない `Pojo` は `Pojo.Error` を発生させる。
++         要素のデコーダーは名前渡しで取られるので、`case class Tree(value: Text, children: List[Tree])` のように、コレクションを通して再帰する型も導出できる。
++     entry .listDecodable     オブジェクト配列から Soundness の `List` をデコードする。そうでなければ `Pojo.Error` を発生させる
++     entry .setDecodable      オブジェクト配列から Soundness の `Set` をデコードする。そうでなければ `Pojo.Error` を発生させる
++     entry .seriesDecodable   オブジェクト配列から Soundness の `Sequence` をデコードする。そうでなければ `Pojo.Error` を発生させる
++         解決されるときにスコープに `Tactic[Pojo.Error]` を必要とし、`.collection` と同じく要素のデコーダーを名前渡しで取るので、再帰的な型も導出できる。
++     entry .as   `Pojo` を、呼び出し側が選んだ型としてデコードする
++         `Decodable in Pojo` である任意の型のための、`Pojo` に対するインラインの拡張である。
++         直積型や直和型のデコーダーは、形が一致しないと `Pojo.Error` を発生させ、未知のバリアントのラベルは distillate の `Variant.Error` を発生させる。スコープに `Tactic[Pojo.Error]` が必要である。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1731d71fd50a08aa19421f43a32417dc
+
+% 0 1 0 1c788b8f2be2eb850fdb78d13387d9b9
+
+% 0 1 0 160554dd3e526e051ae3577c4a1522b4
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 14f76c861c5c3a5007c5ee4f911c310c
++     entry .Error   `Pojo` が、デコードしようとする型の形を持たないときに発生する
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 5 0 05e576a53bccfaa7127008e04b449840
++           エラー `↯/s.120.1`：_could not deserialize from Java POJO types_。
++           直積やコレクションが期待されているのに `Pojo` が配列でないとき、あるいは直和が期待されているのにラベルとペイロードからなる 2 要素の配列でないときに、`as` が発生させる。
++           たいていは、境界の両側で型の定義が食い違っていることを意味する。
++   entry .Pojo2   `Pojo` のコンパニオンの優先度の低いインスタンス：導出されたコーデックと `Checkable`
+
+% 1 1 0 06dfbb37706613b414492d5ad3c6fe6b
+
+@ 0 10 0 1466c37f3f9f7890135c303b255b94e1
++         `Pojo` のコンパニオンが継承するトレイトであり、その given は `Pojo` があるところならどこでも、コンパニオン自身のものより低い優先度で暗黙のスコープに入る。
++     entry #checkable   probably の `===` のために、2 つの `Pojo` を構造的に比較する
++         配列は、長さが同じで要素が等しいとき等しく、要素は再帰的に比較される。それ以外のものは `==` で比較される。
++     entry #encodable   wisteria を通して、任意の直積型または直和型に対して `Encodable in Pojo` を導出する
++         直積はそのフィールドの配列として、直和はそのバリアントのラベルとエンコーディングの組としてエンコードされる。
++     entry #decodable   wisteria を通して、任意の直積型または直和型に対して `Decodable in Pojo` を導出する
++         `#encodable` の逆であり、形が一致しないと `Pojo.Error` を発生させる。
+
+@ 0 1 0 1cf67f7da9dc511813a5ccc48b8f664e
++ entry .protointernal   `Pojo` の導出されたコーデックの背後にある wisteria の導出
+
+% 1 1 0 00871abd95ff6d7f1267f1e7c4080d65
+
+% 2 1 0 117961863f3af50d0cd5a1b1c23114f5
+
+@ 0 7 0 06590ea98e02722f04c9360a56eb91e8
++       直接使うためのものではない。`Pojo2.encodable` と `Pojo2.decodable` が呼び出す導出である。
++   entry .EncodableDerivation   直積型と直和型に対して `Encodable in Pojo` を導出する
++     entry .conjunction   直積を、そのフィールドのエンコーディングの配列として
++     entry .disjunction   直和を、そのバリアントのラベルとエンコーディングからなる 2 要素の配列として
++   entry .DecodableDerivation   直積型と直和型に対して `Decodable in Pojo` を導出する
++     entry .conjunction   そのフィールドの配列から直積を作る。ほかの形には `Pojo.Error` を発生させる
++     entry .disjunction   ラベルとペイロードの組から直和を作る。ほかの形には `Pojo.Error` を発生させる

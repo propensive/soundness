@@ -1,0 +1,110 @@
+orthant 2 language
+
+@ 0 1 0 15c734f769eadc1f0a57e20a69d2c9c5
++ # 0.66.0 以降の変更
+
+@ 0 3 0 11b9fc9daa6e74e7032e083d78174f95
++ このファイルは、Soundness ライブラリを利用するコードを 0.66.0 から次のリリースへアップグレードするために、LLM エージェントが読むものである。
++ 各エントリーは何が変わったかを正確に述べる。形式については `AGENTS.md` を参照。
++ エントリーはモジュールごとにまとめられ、モジュール内では最後に追加されたものが最後に来る。
+
+% 0 1 0 0136e0d647519dc716274602a4340b64
+
+@ 0 16 0 0033214c2915348b197ce082a590f505
++ - `rudiments.matchable` は `rudiments.unsafeMatchable` に改名された。シグネチャは変わらない：`extension [value](value: value) transparent inline def unsafeMatchable(using erased Unsafe): value & Matchable`。`soundness` アンブレラのエクスポートでも改名された。(#TBD)
++ - `rudiments.mutable` は `rudiments.unsafeMutable` に改名された。シグネチャは変わらない：`extension [element](value: Array[element]^{}) inline def unsafeMutable(using erased Unsafe): scala.Array[element]`。`soundness` アンブレラのエクスポートでも改名された。(#TBD)
++ - `rudiments.immutable` は `rudiments.unsafeImmutable` に改名された。シグネチャは変わらない：`extension [element](array: scala.Array[element]) inline def unsafeImmutable(using erased Unsafe): Array[element]^{}`。`soundness` アンブレラのエクスポートでも改名された。(#TBD)
++ - `rudiments.attested` は、三つのオーバーロードすべてで `rudiments.unsafeAttested` に改名された。区間の形式 `extension (interval: Interval) inline def unsafeAttested[within](within: within)(using erased Unsafe): Interval in within.type`、インデックスの形式 `def unsafeAttested(index: applicable.Operand)(using erased Unsafe)`、そしてラムダの形式 `inline def unsafeAttested[result](index: applicable.Operand)(inline lambda: (applicable.Operand in value.type) => result)(using erased Unsafe)` である。シグネチャは変わらない。(#TBD)
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 16 0 17cb8d32e6e0a5171425ddd348c197df
++ - `zephyrine.Stream#storage(using Unsafe)` は `unsafeStorage` に改名された。シグネチャは変わらない。(#TBD)
++ - `zephyrine.Intake#buffer(using Unsafe)` は `unsafeBuffer` に改名された。シグネチャは変わらない。(#TBD)
++ - `zephyrine.Region#raw(using Unsafe)` は `unsafeRaw` に改名された。シグネチャは変わらない。(#TBD)
++ - `zephyrine.Slate#raw(using Unsafe)` は `unsafeRaw` に改名された。シグネチャは変わらない。(#TBD)
++ - `zephyrine.Cursor#datum(using erased Unsafe)` は `unsafeDatum` に改名された。シグネチャは変わらない。(#TBD)
++ - 型付きのカーソルバッファーの二つの拡張は、以前はどちらも `buffer` という名前でレシーバの要素型によって区別されていたが、改名された。`extension [cap^](cursor: Cursor[Data, cap]) inline def buffer(using erased Unsafe): scala.Array[Byte]` は `unsafeDataBuffer` に（`@targetName("dataBuffer")` は変わらない）、`extension [cap^](cursor: Cursor[Text, cap]) inline def buffer(using erased Unsafe): scala.Array[Char]` は `unsafeTextBuffer` になる（`@targetName("textBuffer")` は変わらない）。呼び出し箇所はカーソルの要素型によって選ばなければならない。`Cursor[Data, ?]` は `unsafeDataBuffer` を、`Cursor[Text, ?]` は `unsafeTextBuffer` を使う。それ以外のシグネチャは変わらない。(#TBD)
+
+% 0 1 0 00b31912d51098c51da90af4b3f83df7
+
+@ 0 2 0 06fd6aaa28e939a709c903bfe0a30127
++ - `serpentine.Path#child(value: Text)(using erased Unsafe)` は `unsafeChild` に改名された。シグネチャは変わらない。(#TBD)
+
+% 0 1 0 1fc810244c2cd3bf14cb7bb4f199169b
+
+@ 0 5 0 0f379d5f2e79bbbf17ec362f19e152fe
++ - `kaleidoscope.Regex.apply(parts: List[String])(using erased Unsafe): Regex` は `kaleidoscope.Regex.unsafeFrom(parts: List[String])(using erased Unsafe): Regex` に改名された。もうひとつのオーバーロード `Regex.apply(text: Text): Regex in JavaBaseRegex raises Regex.Error` は変わらない。`Regex(List(…))(using Unsafe)` という形の呼び出しは `Regex.unsafeFrom(List(…))(using Unsafe)` にしなければならない。(#TBD)
+
+% 0 1 0 18633a2e1ba33aa80852ef15b48ce21d
+
+@ 0 21 0 0f8f17db0d15a367091e3baf453e0031
++ - `geodesy.Location#longitude` は `[-π, π)`（−180° から 180°）の角度を返すようになった。以前は `[0, 2π]` を返していたので、東経 10° は変わらないが、経度 270° で作った位置は −90° として読み戻されるようになる。`Location#encode` と `geo:` URI のエンコーディングもこれに従い、西経を負の数として書く。非負の経度を前提としていたコードは、結果に対して `.principal` を呼ぶべきである。(#TBD)
++ - `geodesy.Location(latitude: Angle, longitude: Angle)` は西経を失わなくなった。以前は負の経度はすべて飽和して 0° として読み戻されていた。`Location(north: Int, east: Int)`（マイクロ度）は以前どの入力に対してもおよそ 0° の緯度を返していたが、与えられた緯度を返すようになった。そのような位置のジオハッシュと `surfaceDistance` もそれに応じて変わる。西経またはマイクロ度の位置から計算して保存したジオハッシュは誤っていたので、再計算すべきである。(#TBD)
++ - `geodesy.Location#bearing` は東と西を区別するようになり（以前は経度の差の絶対値を取っていたので、西向きの方位角がすべて東向きになっていた）、`Directional` インスタンスに届く前に `[0, 2π)` に正規化した方位角を返す。`Compass[n](angle)` は負のものを含む任意の角度を受け付ける。以前は負の角度で `ArrayIndexOutOfBoundsException` を投げていた。(#TBD)
++ - `Geolocation` の `Decodable in Text` インスタンスは `;crs=…`、`;u=…` とその他のパラメーターをパースするようになった。以前はこれらに対して常に理由 `MissingEquals` の `Geolocation.Error` を発生させていた。また、経度の直後のパラメーター（`geo:1,2;u=3`）も受け付ける。以前はこれに対して `UnexpectedSuffix` を発生させていた。`Geolocation` の `Encodable in Text` インスタンスは、以前は落としていた `crs` と `parameters` を、`;crs=…`、`;u=…`、続いて各パラメーターの順で書くようになった。(#TBD)
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 8 0 072a625bde100799028eb6202eb9924e
++ - `gossamer.Decimalizer#decimalize` は、先頭の桁からの丸めの繰り上がりを落とさなくなった。保持されるすべての桁が 9 で、次の桁が切り上がるとき、出力は先頭の `1` を失っていた（`Decimalizer(decimalPlaces = 1).decimalize(9.96)` は `"0.0"` を返していた）。今は同じ精度での次の十の累乗になる（`"10.0"`。`Decimalizer(2).decimalize(9.99)` は `"10"` を返す）。繰り上がりが `exponentThreshold` に達すると、値は指数形式で書かれる（`Decimalizer(4).decimalize(999.96)` は `"1.000×10³"` を返す）。`Decimalizer` を通る `Double` のすべての `Showable` が同じように変わる。以前の切り詰められた出力に一致させていたコードは、修正されたテキストを期待しなければならない。(#TBD)
+
+% 0 1 0 1158a6567f5d98ee0a180931c96339da
+
+@ 0 8 0 18cfc1aec187223b1ab447e8f8044f84
++ - `hieroglyph.Chars.superscript`（`char.superscript` として使う）は、`(`、`)`、`+`、`-`、`=` に対して **下付き添字** の文字 U+208D、U+208E、U+208A、U+208B、U+208C を返していた。今は上付き添字の形 U+207D、U+207E、U+207A、U+207B、U+207C を返す。数字は以前も今も正しい。これら五つの入力に対して以前の（誤った）文字を固定していたコードやテストデータは更新しなければならない。(#TBD)
++ - `hieroglyph.Chars.subscript`（`char.subscript` として使う）は、`(`、`)`、`+`、`-`、`=` を U+208D、U+208E、U+208A、U+208B、U+208C に対応させるようになった。以前は数字だけを対応させ、これら五つに対しては `Unset` を返していた。それらに対する `Unset` に依存していたコードは、値が存在する場合を扱わなければならない。(#TBD)
+
+% 0 1 0 0fa8f427fcee06bf094db708d8d4518a
+
+@ 0 11 0 14453f039a5707c9005b20c7f3ed3494
++ - `Media.Suffix` の `Showable` インスタンスは、`Suffix#name` を使って、接尾辞をメディアタイプの中で書かれるとおりに描画するようになった。`JsonSeq` は `json-seq`（以前は `jsonseq`）、`CborSeq` は `cbor-seq`、`FastInfoset` は `fast-infoset` と表示される。他の十二の接尾辞は変わらない。(#TBD)
++ - `MediaType.parse`（したがって `Text#as[MediaType]` と `media"…"`）は、ハイフンを含む接尾辞 `+json-seq`、`+cbor-seq`、`+fast-infoset` を受け付けるようになった。以前は、列挙型の検索の前にハイフンで区切られた各語ではなく接尾辞全体を大文字で始めていた（`Json-seq`）ため、これらに対して常に理由 `InvalidSuffix` の `MediaType.Error` を発生させていた。`InvalidSuffix` の理由は、接尾辞を大文字で始めた形ではなく、書かれたとおりの小文字で報告するようになった。(#TBD)
++ - `MediaType.parse` は、`=` のないパラメーター（`text/plain; foo`）に対して理由 `MissingParam` の `MediaType.Error` を発生させるようになった。以前は、どの `Tactic` も捕らえられない `IndexOutOfBoundsException` を投げていた。(#TBD)
+
+% 0 1 0 05a039658357a62915cb363c5761cf36
+
+@ 0 6 0 124a57e6dc93d81c0410056e3284c3f5
++ - `gastronomy.Feistel.apply(subkeys, round)(input)` は、ラウンド関数が負の `Int` を返したときに結果を壊さなくなった。上位ワードとラウンドの出力の XOR は符号拡張を行う `Int#toLong` で拡大されていたので、結果の上位 32 ビット（ちょうどシフトで入ってきた半分）が 1 で埋められていた。今は 32 ビットにマスクされる。ラウンド関数が負の数を返しうる `Feistel` ネットワークから導かれた値はすべて変わるので、永続化された値は再計算しなければならない。(#TBD)
+
+% 0 1 0 0cc2d1f372946d701781f2258ebc29ab
+
+@ 0 6 0 03f4c93e0c2f73160e5ba44e8f7c5b96
++ - `scintillate.SocketServer` の待ち受けソケットは、バックログ 1024 でバインドされるようになり（`jn.ServerSocket(port, 1024, address)`、TLS では `createServerSocket(port, 1024, address)`）、`scintillate.Reactor` のものも 1024 になった（以前は 128）。以前の `SocketServer` は `0`、すなわち JDK のデフォルトの 50 を渡していた。カーネルはこの値に上限を設ける（`kern.ipc.somaxconn`、`net.core.somaxconn`）。観察できるのは、SYN が捨てられる前に受け付けられる同時保留接続の数だけである。(#TBD)
+
+% 0 1 0 0297adaaf208f36b050fef6919e7a155
+
+@ 0 10 0 1ab36946e62eec82037963663bd517a3
++ - `sedentary.LocalhostDevice#invoke` は、計測用の JVM を、標準エラーをパイプで受けて捨てるのではなくハーネスから継承して（`ProcessBuilder.Redirect.INHERIT`）起動するので、子の stderr がハーネスの stderr に現れるようになった。子が 0 以外で終了すると `Bench.Error` が発生する。(#TBD)
++ - `sedentary.Stress` では、`OutOfMemoryError` 以外の `Throwable` を投げる本体が、捕らえられない例外でワーカースレッドを終了させることはなくなった。そのウィンドウは失敗として記録され（`ok = false`。SLO の失敗と同様に、スイープや容量の探索を終える）、`sedentary: a worker failed at N=<n>: <throwable>` という一行が stderr に出力される。以前は、そのようなウィンドウは死んだワーカーの操作が欠けたまま完了し、例外はデフォルトの捕捉されない例外のハンドラによってワーカーごとに出力されていた。(#TBD)
+
+% 0 1 0 1ff629affd81c87111d067a62bcc62a1
+
+@ 0 8 0 02e0cf0bbf8c434d1799bfbeac912a62
++ - `snooze(duration)`、したがってその上に作られた `sleep(instant)`、`delay`、`hibernate` は、タスクがキャンセルされない限り、常にその時間を待ち切るようになった。プールされたスーパーバイザー（`threading.pooledThreading`）のもとでは、まだスピンしていたキャリアに渡されたタスクが、引き渡しの際に残ったパークの許可を見つけることがあり、その次の `snooze` はすぐに戻っていた。同じことは、`sleep` が `ThreadSupervisor` から来る JVM のすべての `Supervisor` に当てはまる。`sleep` は期限まで繰り返しパークし、スレッドが割り込まれた場合にのみ早く止まるようになった。キャンセルなしで `snooze` が早く戻ることに依存していたコードは、代わりに `park` と `unpark` を使わなければならない。(#2006)
+
+% 0 1 0 1fbc3e2eb3ac8c1d08a287e2c3a4960b
+
+@ 0 12 0 1be31ea9213d9f2619dd92a3517640f2
++ - `escritoire.Columnar` の抽象メンバーは `def flex(metrics: tessellate.Metrics, maxWidth: Int): Flex` になった。これは列の要求を、その行の固有幅の集約から導く。以前の抽象メソッド `def flex[text: Textual { type Result = Char }](lines: Array[text]^{}, maxWidth: Int)(using Text is Measurable): Flex` は具象になり、`Columnar.metrics(lines)` を通じて新しいほうに委譲する。外部の `Columnar` 実装は、代わりに `flex(metrics, maxWidth)` を実装しなければならず、以前は行に対して `Flow.metrics` を畳み込んでいたところを、その `metrics` パラメーターから計算する。`lines` の形をオーバーライドする必要はなくなった。(#2007)
++ - `Columnar` に `accommodates(aggregate: Metrics, cell: Metrics): Boolean` が加わった。これは、セルが列の要求を変えられないときに true である。デフォルトは `cell.min <= aggregate.min && cell.natural <= aggregate.natural` である。要求がその内容を無視する戦略は、`columnar.Fixed` のように、これを `true` にオーバーライドすべきである。`Columnar.metrics(lines): Metrics` は新しく、各行の `Flow.metrics` の最大値による畳み込みである。(#2007)
+
+% 0 1 0 1308c4aae25b50821be43aace8323e07
+
+@ 0 7 0 08e12c11eec4ad900e3815ade66cf685
++ - `tessellate.Flow.wrap` は、強制改行（`\n` または `\r`）または内容の終わりで終わる行から、末尾の空白を取り除かなくなった。行を `width` 内に収めるのに必要な分だけ落とす。ソフトな改行で終わる行は、改行が吸収した空白を引き続き失う。そのため、折り返されたテキストと、`Flow.wrap` を通じて描画される表（escritoire の `Grid.render` など）は、意味のある末尾の空白を保持する。`e"$Bg(green)( ✓ )"` のようなスタイル付きのセルは、スタイルのない空白で埋め直されるのではなく、スタイル付きの三つ目のセルを保持するようになる。切り詰められた行を期待していたコードやテストのフィクスチャは更新しなければならない。(#2000)
+
+% 0 1 0 0a2330b2780f03b71aba65d339a6e0e3
+
+@ 0 15 0 10e46679c33c039d1241aced93c1cd47
++ - 新しいライブラリ `cartouche`。テキストの配置エンジンである。`def arrange[result](body: (Arranger.Pass^) ?=> result)(using Arranger): result` はその本体を二度実行し、一度目の実行で各 `position(...)` 呼び出しを記録し、二度目に解かれた配置からそれに答える。ほかに `def position(caption: Caption)(using Arranger.Pass^): Caption.Position`、`def position(width: Double, height: Double, x: Double, y: Double, attachments: List[Caption.Attachment] = Caption.Attachment.compass, standoff: Double = 0.0, reach: Double = 0.0, padding: Double = 0.0, priority: Int = 0, fallback: Caption.Fallback = Caption.Fallback.Overlap)(using Arranger.Pass^): Caption.Position`、`def avoid(obstacles: Obstacle*)(using Arranger.Pass^): Unit`、`def canvas(box: Obstacle.Box)(using Arranger.Pass^): Unit`、型 `Caption`（`Caption.Attachment`、`Caption.Fallback`、`Caption.Leader`、`Caption.Position` を含む）、`Obstacle`（`Obstacle.Box`、`Obstacle.Line`、`Obstacle.Disc` を含む）、`Arranger`（`Arranger.Greedy`、`Arranger.Annealing`、`Arranger.Pass` を含む）、そしてインポート可能な given の `arrangers.greedyArranger` と `arrangers.annealingArranger` がある。すべて `soundness` アンブレラからエクスポートされる。追加のみであり、既存のコードは変わらない。(#2012)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 32 0 1d53661842fdd4c2041e38df057b67d9
++ - `tasseomancy.Plottable#draw` に必須の given が加わった：`def draw(form: Form, data: Self, fit: Result)(using Operand, ChartPalette, FontMetric, Arranger): Chart.Drawing`。ここで `Arranger` は `cartouche.Arranger` である。`Chart#drawing`、`Chart#svg`、`Chart#revise` にも同じ `Arranger` の given が加わった。`Arranger` のコンパニオンがデフォルトを提供するので、これらを暗黙に召喚する呼び出し箇所は変更不要である。`Plottable` の実装はパラメーターを追加しなければならない。(#2012)
++ - `tasseomancy.Chart.Cartesian#tickLabel(at: Point, text: Text, axis: Axis, color: Color in Srgb): List[Figure]` は `tickLabel(at: Chart.Anchoring, text: Text, axis: Axis, color: Color in Srgb): List[Figure]` になる。`at` は以前は目盛りの位置であり、メソッドはそこからラベルを `tickLength + gap` だけずらしていた。今はすでにずらされた、ラベル自身のアンカー点とその揃え方である。テキストを `at` に独自のアンカーとベースラインで置いていたオーバーライドは、`at.point` に `at.anchor` と `at.baseline` で置くべきである。ラベルを回転させたり、その他の方法で動かしたりしていたものは、同じ変換を `at.point` に適用する。(#2012)
++ - `tasseomancy.Chart.Cartesian#pointLabel(at: Point, text: Text, color: Color in Srgb): List[Figure]` は `pointLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb): List[Figure]` になる。`at` は以前はマーカーの位置であり、メソッドはそこからラベルを右にずらしていた。今は、配置が選んだ側にある、ラベル自身のアンカー点とその揃え方である。オーバーライドは `tickLabel` と同様に対応させる。(#2012)
++ - `tasseomancy.Pie.Style#wedgeLabel(at: Point, text: Text, color: Color in Srgb): List[Figure]` は `wedgeLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb): List[Figure]` になり、`at` は上と同様にラベルのアンカー点とその揃え方である。以前は扇形の中心であり、テキストはそこを中心に置かれていた。(#2012)
++ - 新しい `case class Chart.Anchoring(point: Point, anchor: Lettering.Anchor, baseline: Lettering.Baseline)` と `Chart.Anchoring.of(position: cartouche.Caption.Position): Chart.Anchoring`、そして新しいフック `Chart.Style#leader(from: Point, to: Point, color: Color in Srgb): List[Figure]` が加わった。後者はデフォルトでは 1 ピクセルの線で描いた折れ線であり、引き出し線にスタイルを付けたり、引き出し線を抑制したりするにはオーバーライドする。(#2012)
++ - 動作の変更：チャートのラベルは cartouche によって配置されるようになった。点の注記は、そうしなければ別の注記、マーカー、線、凡例と重なる場合、右以外の側に置かれたり、引き出し線とともに離れた場所に移されたりする。円グラフのパーセンテージは引き出し線とともに外側に移されることがある。隣と重なる目盛りのラベルは省略される。ラベルが重なっていなかったチャートは以前と同じように描画される。そのため、ラベルが重なるチャートの描画された SVG は変わり、引き出し線のための `polyline` 要素が追加で含まれることがある。(#2012)

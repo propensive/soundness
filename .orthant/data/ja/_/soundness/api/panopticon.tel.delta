@@ -1,0 +1,532 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 10efbdd20e3809211af2be742c6914bb
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f40d2d7170c79531cce01d07ecd11b0
++ info   レンズとオプティクス。パスと代入として書く、不変の値の深い更新
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1ae4f85ca1837062081c1ebc348dc9f5
++     _Panopticon_ は、不変の構造の奥深くにある値を、本来ならその上のすべての層を作り直す入れ子の `copy` の呼び出しなしに更新する。
++     `lens` メソッドは、ただのパスへの代入として書いた更新（`_.troupe.name = t"Athenians"`）を受け取り、新しい値を返す。
++     作り直すのは、更新が触れるパス上の構造だけである。
++     括弧の中のステップはコレクションを走査する。
++     `Ordinal` は一つの要素を選び、`Each` はすべての要素に届き、キーは `Map` を引き、`Filter` は述語で選ぶ。
+
+% 2 1 0 159753f29161479713f4d5b56d9a241a
+
+% 3 1 0 157c2e34d1e6bc920ee14aa955230ff6
+
+% 5 1 0 1ca2fcfa937b7b4b1f0e742dacd8cbfd
+
+% 6 1 0 1036f4e2a5c21bf91441c6bdb3699516
+
+% 7 1 0 006fa8b3a62668c41e09911ca2188fd8
+
+% 9 1 0 0df7836e33baa44008a3374586693243
+
+% 10 1 0 025c619a058ed0130b524c17e07c20b9
+
+% 0 1 0 0804d9f51e11dae90a38b9fa0785e566
+
+% 0 1 0 08544f31381734b71dec5d6bf088ad95
+
+% 0 1 0 136a92ecbb3f777f011df0260d11cc78
+
+% 1 1 0 046ba66d482540581cbbcf74a5b592f5
+
+@ 0 6 0 05a24b116a27022b01bdc5a80cfc7014
++     構文の下にあるのは普通の値である。
++     `Lens` はゲッターとセッターであり、`Optic` はより一般的な形で、変更しかできない。
++     対象は一つの要素のことも、多くのことも、一つもないこともある。
++     任意のケースクラスのフィールドへのレンズは `"field" is Lens from Type` として召喚され、コンパイラが型の構造から生成する（`Optic.deref`）。
++     `Optical` は、`Each` や序数のような走査の値を、特定のコレクションに対するオプティクに変える。
++     そして二つのレンズ、または二つのオプティクは、`compose` で一つにまとめられ、端から端まで届く。
+
+@ 0 6 0 0ec360cc8a0577091153b053790644cd
++     同じ構文で動的なデータフォーマットも更新できる。
++     各フォーマットは、自分の値の型に対するレンズと `Optical` を自分の `optics` パッケージで提供する。
++     JSON には `jsonLens` と `jsonEachOptical`、XML には `xmlLens`、TEL には `telLens`、CSV と DSV には `dsvCellLens` と `dsvRowOptical` がある。
++     `import soundness.*` は given をインポートしないので、これらの given は名前でインポートする。
++     フォーマットの `conversions` パッケージ（`encodableToJson`、`encodableToTel` など）を使うと、エンコード可能な裸の値を `Coercible` を通して `=` の右辺に置ける。
+
+% 2 1 0 0dc8be526a9c50a515916ee76c6693f1
+
+% 3 1 0 0aa5862386e97b59001658fd0f6220f1
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0037aac004db6d471410c533b397137f
+
+% 0 1 0 104f9f1971d042480354a38aead165d8
+
+% 0 1 0 0467d098d584f57108ca2b20d0ab3c42
+
+% 1 1 0 0cc4e0e8f225d1e5134a73c25a653ea5
+
+% 0 1 0 0f8a03eda2655cdb135e393c02d7854b
+
+% 0 1 0 1723ed2741446b5f09046bc9f9c87708
+
+% 0 1 0 03aa343011ffcbf512832a7d1bd53e8a
+
+% 1 1 0 1de2b1d23efb407d1dc795fef3d1bced
+
+@ 0 5 0 06f8f78359b075220cd2c9ff1217f44e
++     接頭辞を共有する更新は `lens` マクロによって融合されるので、共有される構造は一度だけ作り直される。
++     マクロが解析できないパス（オペランドがシングルトンでない `Filter` の走査）は、更新を一つずつ順に適用する方法に切り替わり、結果は同じである。
++     一回の呼び出しの中の後の更新は、前の更新の結果を見る。
++     一つのフィールドへの二つの書き込みでは後のものが勝ち、フィールド全体を書き込んだ後にそのフィールドの中へ書き込むと、それを細かく修正する。
+
+@ 0 2 0 1bd281366295277d0752e2debc7f7fbc
++     このライブラリは一つのソースセット `panopticon.core` からなり、すべてが `soundness` アンブレラにエクスポートされる。
+
+% 0 1 0 04c386209ed80fd008997d80fa8d8d3f
+
+% 0 1 0 06f01d1ed72f5ab20143f1571973d4c8
+
+% 0 1 0 06f872f02d5aa3a5195660342741d7dd
+
+% 0 1 0 00ccb63578bf38ad0738ecf1c4a4d0a3
+
+% 0 1 0 113c48392b88fe7b171752c0b73c780c
+
+@ 0 3 0 120a88f8695361260a9a418f21abdd4a
++ entry .lens   パスへの代入として書いた更新を値に適用し、新しい値を返す
++     `value.lens(update, …)` は一つ以上のラムダを取り、それぞれは値から始まって代入で終わるパスである。
++     それらを順に適用する。
+
+% 2 1 0 16e00a05d70217521325af7f31f0217f
+
+% 3 1 0 1e11c2a36025b99814d42a91497d18c1
+
+% 5 1 0 17896adb2ccf31230f3ffbc19833952e
+
+% 6 1 0 0e5e981e918d727e01239fbab6051971
+
+% 7 1 0 1c3dc7a5fc3acd5b0cfd703b1a0f854f
+
+% 9 1 0 040f242502a5384105e5c152a4aa1d94
+
+% 10 1 0 1651029ff2d96e971a4235634bf430e9
+
+% 0 1 0 02e317ff5ba5a66c1ed351d41c176ee5
+
+% 0 1 0 01e4cedf7052b1080f963f273ca19b40
+
+% 0 1 0 1a2ffbc235b139711b3212ec5d452844
+
+% 0 1 0 17ce339509d36937086ca61bd02e536e
+
+% 0 1 0 12ceb033656c76b719bc6cbd390fa021
+
+% 1 1 0 1a35596c434bd54b0ecc237d479dd89c
+
+@ 0 7 0 199e41e7200dab7e15a90c544f36ba59
++     フィールドのステップには、その名前と型に対する `Lens` が必要である。
++     ケースクラスなら `Optic.deref` がそれを生成し、フォーマットは自分の `optics` パッケージでそれを提供する。
++     括弧の中のステップには、その走査とコレクションに対する `Optical` が必要である。
++     `List` と `Sequence` に対する `Ordinal`、`Map` に対するキーやキーの `Filter`、`List` に対する `Each` と要素の `Filter`、そしてフォーマットが定義するものがある。
++     代入の中では、`prior` が置き換えられる値である。
++     右辺は、対象に `Coercible` である任意の型でよい。
++     その型自身かその部分型、あるいはスコープ内に `Conversion` がある型である。
+
+@ 0 4 0 029debebed4c376a1d0ec58fc5c7d33d
++     マクロはパスの接頭辞を共有する更新をまとめるので、その下でいくつのフィールドが変わっても、接頭辞に沿った構造は一度だけ作り直される。
++     ステップがフィールドでもシングルトンの走査でもない（`Filter`）場合は、代わりに各更新を順に適用する。
++     型が持たないフィールドを名指すパスは、コンパイルエラー _`Type` has no field called `name`_ になる。
+
+@ 0 6 0 038c506e4e8e0350132ed982c206add3
++ entry .compose   二つのレンズ、または二つのオプティクを、両方を通して届く一つにまとめる
++     `left.compose(right)` は `A` から `B` へのレンズと `B` から `C` へのレンズをつなぎ、`A` から `C` へのレンズを与える。
++     それは両方を読むことで読み、両方を作り直すことで書く。
++     二つのオプティクも同じようにオプティクにまとまる。
++     その組に対する `Composable` が必要であり、`Composable` のコンパニオンがレンズとオプティクに対してそれを提供する。
++     結果は二つの部分が捕捉するものをすべて捕捉するので、失敗しうるレンズを合成すると、失敗しうるレンズができる。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1cc04b117558347a12e3d9b0ed63b6ea
++       label 劇の主人公へのレンズ
+
+% 1 1 0 0d583492fdecc46317c15a4b0f08dabd
+
+% 2 1 0 1c03cb7ee26f707f19947645586c8e73
+
+% 4 1 0 011b31b5f12046c0036c181e19c48dc3
+
+% 5 1 0 0fa715ec868d60a91bdea006ce24b111
+
+% 7 1 0 04b98e1c917c71671987fab91e698f43
+
+% 8 1 0 0379ef6cd2f14ae909614148db032b5d
+
+% 0 1 0 1aca6f1b2d6d193816da1616a2c0c595
+
+% 1 1 0 0ffacd5dfeb601d70d4b0086f0ad034c
+
+@ 0 1 0 08aea89d5d125c410c088446151d994c
++       label 人物の名前へのレンズと合成する
+
+% 1 1 0 1fd18e8cfd91699117b6400d3f6d1400
+
+% 2 1 0 05ff6428b6166ad507cd11da9dce8d69
+
+% 4 1 0 0c1ae2f42c67d78017bcf78bd51cfde3
+
+% 5 1 0 1cc7a453dfb8e76d1a80f74e8dce6809
+
+% 7 1 0 0f6e48d08f4e5a791ff0b955794820f4
+
+% 8 1 0 1357ea4a9650e90205210aecfb0132dd
+
+% 9 1 0 1548f12eb14d1df21e75b3590fb1d0c2
+
+% 10 1 0 06efde621dd6321709d5b5ca175d54d8
+
+% 0 1 0 0314bc0e5e8b63f41a7e0ad886c06cd6
+
+% 1 1 0 16fabd09fbb2e7aa1c4b0c894e6a11b1
+
+@ 0 1 0 07e4509cf95bafb6153476e1b15efd16
++       label 適用して主人公の名前を書き込む
+
+% 1 1 0 175df34cd6315e650cf596c0e6ac5968
+
+% 2 1 0 01632377551b731d157a5e15d482f3af
+
+% 4 1 0 0d059e09029fcdf71e9ab1aa6512c3e1
+
+% 5 1 0 0934044ec0e6ba21166203a60123ce00
+
+% 7 1 0 10ad9922d37a4f6c025937416edbe247
+
+% 8 1 0 194b440572f4be941053884616164b64
+
+% 9 1 0 16f053b0296fdd6211138841ce1e71c9
+
+% 10 1 0 1d1530facb163b110e2b41aeaff630c0
+
+% 0 1 0 17c0af4c733bc8c908cac2b6533add3a
+
+% 1 1 0 08b2ca7672eab45206e5c66c59ef8953
+
+@ 0 1 0 0f1069e544cddb33004b81cd6ce4f6ed
++       label 適用してそれを変更する
+
+% 1 1 0 1eff2c19ff1bae051e69e4ebd4630b0e
+
+% 2 1 0 115a6c59688a7846102b72c26bf8a4c9
+
+% 4 1 0 18919065dd3e7a1a00159d3304b6b2bb
+
+% 5 1 0 14663e4646cc5cd00748194389f6f559
+
+% 7 1 0 1f0680e9e55d2397021acd2d08bd0ef0
+
+% 8 1 0 1e41f4e80887aab10b6e383f780dd6ad
+
+% 9 1 0 00b9d0892f8deb640fc2713bcefc7eb5
+
+% 10 1 0 14c8ddf7aae790b707904ee5ecf9f3d9
+
+% 0 1 0 0e126c14797129c3148eeb490cebe85d
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 2 0 140a50d011ecb46301500ae71b91f52a
++     パス全体が一か所で分かっている場合は、`lens` のほうがより直接に言い表せる。
++     合成は、別々に保持された部品から組み立てるパスのためのものである。
+
+@ 0 1 0 09f29d42cef59b0b1d25be0dfcc25b3a
++ entry .Optic   値のうち、フォーカスする部分を変更する方法。レンズの一般的な形
+
+% 1 1 0 09718f88eb66fb0c141e7b0dee871c9e
+
+@ 0 4 0 1005d1077e5ffd461aa17dba264f4245
++       `Optic from Origin onto Target` は、フォーカスする `Target` を変換することで `Origin` を作り直せる。
++       それには `#modify` を使う。
++       `Lens` と違って、ちょうど一つの対象にフォーカスする必要はない。
++       リストの要素に対するオプティクはそのすべてにフォーカスし、存在しないキーに対するものはどれにもフォーカスしないので、変更はできるが読むことはできない。
++       すべての `Lens` は `Optic` である。
+
+% 2 1 0 0ebc4c50b71881d20f20fb9783d1143c
+
+% 3 1 0 02d466da3af871260f0ce706b85d0042
+
+% 0 1 0 0c0919d6fec0590f19752e87c52559ab
+
+% 0 1 0 07dced4c495da3761e079aa9da7e101c
+
+% 1 1 0 11869d858d4ae3ca189ae935b037c790
+
+@ 0 5 0 0d93f15a92e617e91cb24a0f7625e2d1
++       オプティクは自らを動的に延長する。
++       `lens` のパスはこうして型付けされる。
++       `optic.name` は `name` のフィールドのレンズを通して続き、`optic(traversal)` はその走査の `Optical` を通して続く。
++       そして `optic.name = value` や `optic(traversal) = value` はパスを代入で終え、それを行う `Origin` から `Origin` への関数を与える。
++       `lens` メソッドは各パスを `Optic.identity` から始める。
+
+@ 0 3 0 1ff6843c854908b81d17da675b4dd78f
++       `Optic` はキャプチャが追跡される（`Findable`）。
++       失敗しうる変換の上に作ったオプティク、たとえば `Tactic` を必要とするフォーマットのレンズはそれを捕捉し、そこから合成したオプティクも同様である。
+
+% 0 1 0 12dd9d846bbe37f00908b515092c9715
+
+% 1 1 0 168f4773cb5786800c6afdaa8ffcce7f
+
+% 1 1 0 0c44643257a8514d198b85dda66337fa
+
+@ 0 32 0 03d30c3a91a323eb00db3dcd7c1d7f88
++   entry .deref   ケースクラスのフィールドへの、名前によって生成されるレンズ。`"name" is Lens from Type` と書く
++       transparent inline の given なので、`summon["name" is Lens from Person]` は `Target` がそのフィールドの正確な型であるレンズである。
++       フィールドを読み、ほかのフィールドを変えずにコンパニオンの `apply` を通してそれを書く。
++       任意の `Product` 型に適用できる。
++       型にフィールドのない名前はコンパイルエラー _`Person` has no field called `nmae`_ になる。
++       この given はクォート式の中では展開できないので、そのような召喚は普通のメソッドの中に置く。
++   entry .identity   値全体にフォーカスするオプティク。すべての `lens` のパスの始まり
++   entry .apply   変更の関数からオプティクを作る。対象の変換から元の値をどう作り直すかを与える
++       `Optic[Self, Origin, Target]((origin, transform) => …)` は、`modify` がその関数を呼ぶオプティクを作る。
++       結果は関数が捕捉するものをすべて捕捉するので、`Tactic` を必要とする変換に対するオプティクは、その必要を使われる場所まで運ぶ。
++       `Optical` の given はこうしてオプティクを作る。
++   entry .prim   リストの最初の要素へのオプティク。走査 `Prim` のためのもの
++       リストの先頭を変更し、残りはそのままにする。
++       空のリストは変わらない。
++   entry #Self     オプティクのキーとなる型。フィールド名のリテラル型か、走査の型
++   entry #Origin   オプティクが変更する値の型
++   entry #Target   オプティクがフォーカスする部分の型
++   entry #modify   オプティクがフォーカスする対象を変換して値を作り直す
++       `optic.modify(origin)(transform)` はフォーカスした各対象に変換を適用し、作り直した元の値を返す。
++       そこにない対象（存在しないキー、末尾を越えた序数）では、元の値は変わらない。
++   entry #selectDynamic   `optic.name`。フィールド `name` のレンズを通して続けたオプティク
++   entry #updateDynamic   `optic.name = value`。オプティクのフォーカスでフィールド `name` を設定する関数
++       値は置き換える値である `prior` を参照でき、`Coercible` の given によってフィールドの型に強制変換される。
++       `lens` の呼び出しの中の各代入はこの形をとる。
++   entry #update   `optic(traversal) = value`。走査が届くすべての対象を設定する関数
++       オプティクの `Target` に対するその走査の `Optical` が必要であり、値は走査の対象の型に `Coercible` でなければならない。
++   entry #applyDynamic   `optic.name(traversal)`。フィールドを通し、次にその走査を通して続けたオプティク
++   entry #apply   `optic(traversal)`。`Each` や序数のような走査を通して続けたオプティク
++       オプティクの `Target` に対するその走査の型の `Optical` が必要である。
+
+@ 0 1 0 0f0bada81576db6017e089e3d22a49a9
++ entry .Lens   値の一つの部分に対するゲッターとセッター。読むこともできるオプティク
+
+% 1 1 0 1c027f3a16c6a1f80f1d8a1a971ecab3
+
+@ 0 4 0 10b9dabe77f7910b16956bf64e4b40e0
++       `Lens from Origin onto Target` は `#apply` で元の値から対象を読み出し、`#update` で対象を書き戻して新しい元の値を返す。
++       ケースクラスのフィールドへのレンズは名前によって生成され（`Optic.deref`）、フォーマットは自分のフィールドに対するレンズを提供する。
++       それ以外は、二つの関数から `Lens(get, set)` で作る。
+
+% 2 1 0 13a2871fb64122ef0945bdfdfbeb5eed
+
+% 3 1 0 01dab87694d9d2ab0f88ca12474f8deb
+
+% 5 1 0 154e018a6e794e6a1b691fea67b9448e
+
+% 0 1 0 1a38f3cdea664b321f6bcbead332d797
+
+% 0 1 0 01f7a216fc32c0c81e82539f11d75186
+
+% 0 1 0 0a6d3ff23e19c94c1cdcef73a79391b4
+
+% 0 1 0 0ece9e3a1d328d7712caebee37384fbe
+
+% 0 1 0 079123dc1810379f04fba9f1445da005
+
+% 1 1 0 1b588a00a411a23e11c2ccbb25613994
+
+@ 0 1 0 1c69f9a5abd3d04003334d9ce49e3136
++       二つのレンズは `compose` で、両方を通るレンズにまとまる。
+
+% 0 1 0 0df0cb7d418f51310b892fc726d940df
+
+% 1 1 0 0421ab9ead5ce9300bb24756c9ee5e14
+
+@ 0 8 0 048051de85c1a3051dd10d1bc35b973f
++   entry .apply   ゲッターとセッターからレンズを作る
++       `Lens[Self, Origin, Target](get, set)` と書く。
++       `get` は元の値から対象を読み、`set` は元の値と新しい対象を取って作り直した元の値を返す。
++       レンズは二つの関数が捕捉するものをすべて捕捉するので、アクセサーが `Tactic` を閉じ込めるレンズは捕捉するレンズであり、その要件は使われる場所まで届く。
++   entry #apply    値から対象を読み出す
++   entry #update   対象を置き換えた値のコピー。`lens(origin) = target` と書く
++   entry #modify   対象を変換した値のコピー。読み、関数を適用し、書き戻す
+
+@ 0 1 0 0f4eb116d00967fd12d6205943b6681f
++ entry .Optical   `Each` や序数のような走査の値を、コレクションに対するオプティクに変える
+
+% 1 1 0 1f8b4d0891494f411d55b0ddbde630fc
+
+@ 0 4 0 14d3cc7321d512e91f85ee5b0b53f672
++       `Traversal is Optical from Origin onto Target` は、走査の型の値から `Optic from Origin onto Target` を作る。
++       `lens` のパスの括弧の中のステップに意味を与えるのはこれである。
++       `_.players(Each)` は、`players` の型に対する `Each.type` の `Optical` を使う。
++       コンパニオンは次のものを提供する。
+
+@ 0 5 0 09a0b341ba611bec1390b1e5136e7706
++       - `ordinalList` と `ordinalSeries`。`Ordinal` は `List` または `Sequence` の一つの要素を選び、序数が末尾を越えていればそれは変わらない。
++       - `at`。キーは `Map` の一つの値を選び、キーが存在しなければそれは変わらない。
++       - `filter`。キーに対する `Filter` は、キーが一致する `Map` のすべての値を選ぶ。
++       - `filter2`。要素に対する `Filter` は、一致する `List` のすべての要素を選ぶ。
+
+@ 0 2 0 0a915a3fdc8a985e02ccbc5def26f305
++       `Each` は自分のものをそのコンパニオンに持ち、フォーマットは自分の `Optical` を `optics` パッケージで提供するので、名前でインポートする。
+
+% 2 1 0 1fbd6f04378b927005cca6fd19a6bcb7
+
+% 3 1 0 0311f8e1955dbe0b156a799d2151d34d
+
+% 5 1 0 00a7fc6d09cb71ea02ea8f801ace1812
+
+% 0 1 0 1137ab43ee34eec01d873987e0bb0c2c
+
+% 0 1 0 1cfa727a515930b716be02be9dd73c1f
+
+% 0 1 0 05c5d32365c23b98024f85cfca7adb0a
+
+% 0 1 0 1ead02ec3deb64cc10b47830339cbbaf
+
+% 0 1 0 1577b5b0fd6e92d70a74fa3900b079c2
+
+% 1 1 0 05c489fea6c9db6908350015b736c79d
+
+% 0 1 0 17c8bcb46789b7c916b12a6b99e138d9
+
+% 0 1 0 0c538d6c46a068211969a65f1df4ce4a
+
+@ 0 9 0 006110241fd87ff814fd990907a38e0f
++   entry .ordinalList     `Ordinal` を、`List` の一つの要素へのオプティクとして扱う
++   entry .ordinalSeries   `Ordinal` を、`Sequence` の一つの要素へのオプティクとして扱う
++   entry .at              キーを、`Map` の中のその値へのオプティクとして扱う。存在しないキーではマップは変わらない
++   entry .filter          キーに対する `Filter` を、キーが一致する `Map` のすべての値へのオプティクとして扱う
++   entry .filter2         要素に対する `Filter` を、一致する `List` のすべての要素へのオプティクとして扱う
++   entry #Self     走査の型
++   entry #Target   オプティクがフォーカスする部分の型
++   entry #Origin   オプティクが変更するコレクションの型
++   entry #optic    走査の型の値に対するオプティク
+
+@ 0 1 0 0bc059a216c24c840fb05a77af27a1db
++ entry .Each   コレクションのすべての要素に届く走査
+
+% 1 1 0 14d380e4e53393681b8a8d66eb1b958e
+
+@ 0 4 0 0f06255fc675d97a08780e728500e15e
++       `lens` のパスの中の `_.players(Each)` は `players` のすべての要素にフォーカスするので、一つの代入でそのすべてを更新する。
++       `play.lens(_.troupe.players(Each).age = 0)` のように書く。
++       コンパニオンの given は `List` を扱い、フォーマットは自分の配列に対する独自のもの（`jsonEachOptical`、`xmlEachOptical`、`telEachOptical`、`dsvRowEachOptical`）を提供する。
+
+% 1 1 0 174be2064228c1a1195015b0c22798d0
+
+@ 0 1 0 1917770d7db295b31e62f26dde90a4ed
++   entry .optical   `Each` を、`List` のすべての要素へのオプティクとして扱う
+
+@ 0 1 0 101823071de5b8f415bce4854ff981f5
++ entry .Filter   要素またはキーが述語に一致する要素、あるいはマップの値に届く走査
+
+% 1 1 0 1080b5124bf86abf0a95206d8074a78e
+
+@ 0 4 0 1137dcf78377ce9d07198abd5adfa492
++       `lens` のパスの中の `Filter[Person](_.age > 25)` は、述語を満たすリストの要素にフォーカスする。
++       `Map` に対する `Filter[Text](_ == t"villain")` は、キーが述語を満たす値にフォーカスする。
++       述語は純粋な関数である。
++       フィルターはオプティクの一部であり、オプティクは純粋な値なので、述語はケイパビリティや可変の状態を捕捉できない。
+
+% 2 1 0 026bd1660639ed5a17ff6e86374bfe8e
+
+% 3 1 0 040288c0986d97111f94f298c504cd5b
+
+% 5 1 0 0b0a3553e82b7f78151f99bcae870f96
+
+% 0 1 0 05f1ff44f75b82f5079e1ec4a3bdceca
+
+% 0 1 0 00c9321f158eb02d1c74203f5b7e2c33
+
+% 0 1 0 09cacfc0200253b302a970b80ecc0fd6
+
+% 0 1 0 0a49f0c6efd4cb620c0c26af4c90fe1a
+
+% 0 1 0 03752679f4279bf611227b325d7daf14
+
+% 0 1 0 0b49c62a943fb7b317dd1034114dd711
+
+% 1 1 0 0c8fb5f4ed3f43ba0e2d116edb0e9c14
+
+@ 0 2 0 0cc781843ed4d83c07b887371096c4bc
++       `Filter` のステップを持つ `lens` の呼び出しは、オペランドがシングルトンではないので融合できず、更新は一つずつ適用される。
++       結果は同じである。
+
+% 1 1 0 1d7849f3833d713902b308c3822dc56f
+
+@ 0 1 0 1fb04eaa9c25de1f17816c85df23dbda
++   entry #predicate   要素またはマップのキーがフォーカスされるために通らなければならない検査
+
+@ 0 1 0 1390bf743c9a666701c1be414a823a14
++ entry .Coercible   レンズの対象の型が期待される場所に値を代入してよいという証拠
+
+% 1 1 0 198cf77162558a7714b6cc73542236bf
+
+@ 0 8 0 1338b7620f6ff57a15b8803d2b89369e
++       `Source is Coercible to Target` は、`lens` のパスの中の代入の右辺を、それが置き換えるものの型に変換する。
++       対象の型かその部分型の値には強制変換は要らない（`Coercible2` にある、優先度の低い `identity`）。
++       スコープ内に対象への `Conversion` がある値は変換される（`conversion`）。
++       後者によって、フォーマットの `conversions` パッケージ（`encodableToJson`、`encodableToYaml` など）は裸の `Text` やケースクラスを文書の中に代入できるようにし、gossamer の変換は文字列リテラルを `Text` のフィールドに代入できるようにする。
++       `Coercible` のない代入は、コンパイルエラー _cannot coerce `Source` to `Target` in this assignment_ になる。
+
+% 1 1 0 187360d2d4f206b808bfece275a44190
+
+@ 0 4 0 1ed6016c867958af15c4abc15f53b417
++   entry .conversion   スコープ内に対象の型への `Conversion` がある任意の値を強制変換する
++   entry #Self     代入される値の型
++   entry #Result   それが代入される対象の型
++   entry #coerce   代入される値を対象の型に変換する
+
+@ 0 1 0 19f072dd961190b7152d860542ae6750
++ entry .Coercible2   すでに対象の型である値のための、優先度の低い `Coercible` の given
+
+% 1 1 0 171b7919e2b29a131c50a0c5deede63a
+
+@ 0 3 0 080e1b7fd4cabb951ac8597a648de6c6
++       `Coercible` のコンパニオンに混ぜ込まれているので、`Conversion` があればそれが先に試される。
++   entry #identity   対象の型か部分型の値を、そのまま代入する
+
+@ 0 1 0 0e3b088d3f1568220aa4195c4990ad09
++ entry .Composable   二つのレンズやオプティクを、両方を通して届く一つにまとめる方法
+
+% 1 1 0 1b72456bf501e29618c71f1561242802
+
+@ 0 3 0 15eee343e2a8dbf11c39623d1c7747f9
++       `Left is Composable by Right to Result` は `compose` が必要とする型クラスである。
++       コンパニオンは、二つのレンズに対してレンズを与えるものと、二つのオプティクに対してオプティクを与えるものを提供する。
++       合成したものは、その部分が捕捉するものをすべて捕捉する。
+
+% 1 1 0 1db1513adef9ccca1bc3eb938368f50e
+
+@ 0 6 0 19d74cd840a612991849101169f67787
++   entry .optics   `A` から `B` へのオプティクと `B` から `C` へのオプティクを合成する
++   entry .lenses   `A` から `B` へのレンズと `B` から `C` へのレンズを合成し、読み書きできるレンズを与える
++   entry #Self          左辺の型
++   entry #Operand       右辺の型
++   entry #Result        合成したものの型
++   entry #composition   左の値と右の値を合成したもの。両方を捕捉する
+
+@ 0 1 0 05cf5cea1428a41a1a1507d7665897db
++ entry .internal   `lens` と `Optic.deref` の背後にあるマクロ
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 1a2905295a2bd75b1bd946052de065f3
++       直接使うものではない。
++       このオブジェクトは、マクロに安定した置き場所を与えるためにある。
++   entry .lens   `Optic.deref` の背後にあるマクロ。名前によるケースクラスのフィールドへのレンズ
++   entry .fuse   `lens` の背後にあるマクロ。共有する接頭辞で更新をまとめ、各接頭辞を一度だけ作り直す

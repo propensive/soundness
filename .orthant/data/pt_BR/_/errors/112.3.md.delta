@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 0eb888a7ed7e046d0ccf2a4c685a4521
++ # `↯/s.112.3` — Falta uma instância de `Probate`
+
+@ 0 2 0 0b2e676b3c422eae019ab6fa00d230b1
++ Lançado em tempo de compilação pela macro `rpc` do Obligatory quando nenhuma
++ instância contextual de `Probate` está disponível.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 08002dc9b76921dc14fa8becdf59f4b8
++ A macro exige um `Probate` para rastrear e liberar os recursos
++ alocados pela maquinaria de RPC.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0a146d3d20e5df5817e17a244d5c18f7
+
+% 1 1 0 163403ecc173bffd1293527bbc2fcc3b
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 060a52ee90941e7e155077cc741d27f2
++ Traga um `Probate` para o escopo no ponto de chamada (por exemplo, por meio de um `Daemon`
++ ou de um escopo de recursos semelhante).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 1b26732fe62cfa1207b80e721b9a052d
++ - Código-fonte: `lib/obligatory/src/json/obligatory.internal.scala`

@@ -1,0 +1,181 @@
+orthant 2 language
+
+@ 0 9 0 008acd1957c03e4c17f124619041addf
++     上の層は**組版上の要求**である。
++     `Typeface` は名前によるファミリーで、その名前はその型でもある（`Typeface["Inter"]` は `Typeface of "Inter"` である）。`Face` はそれをどう組むかを表す。`Weight`、`Slant`、`Stretch`、さらなる `Variation` 軸上の位置、そして有効または無効にする `Face.Feature` であり、フォントがどこから来るかについては何も言わない。
++     `Typesettable` のプロビジョンは、`Medium`（ウェブ、印刷、あるいはレンダラーが定義する任意のもの）がその書体をどう入手し、その後どのフェイスを組めるかを `Font.Coverage` として表す。
++     `Font` は、フェイスを、あるメディアにおけるその書体に対してスコープ内にあるプロビジョンと組にしたものである。レンダラーがフォントを受け付ける唯一の形なので、文書は持っていない書体を名指すことも、プロビジョンに組めないフェイスを求めることもできない。
+
+@ 0 3 0 106f71e07ee1dc50021075046a65f996
++     すべては `soundness` アンブレラにエクスポートされている：`Face`、`Font`（`Font.Coverage` を含む）、`Glyph`、`Medium`、`Opentype`、`Sfnt`、`Slant`、`Stretch`、`Truetype`、`Typeface`、`Typesettable`、`Variation`、`Weight`。
+
+% 0 1 0 1f5b57c39275a8b706212d467a0bcaa9
+
+@ 0 35 0 1055a95d4dc34c8210182563bae6681f
++   entry #leftSideBearing   フォントのデザイン単位での、文字の左サイドベアリング
++       `hmtx` から得る文字のグリフのベアリングで、メトリクス数を超えるグリフについては専用の配列に続く。
++       必要なテーブルがなければ `Font.Error` を発生させる。
++   entry #head   `head` テーブル：em あたりのユニット数、バウンディングボックス、作成日時、`loca` のフォーマット
++       `HeadTable` として展開される。存在しなければ `MissingTable` を、テーブルの検査定数がフォーマットの `0x5f0f3cf5` でなければ `MagicNumber` を伴う `Font.Error` を発生させる。
++   entry #cmap   `cmap` テーブル：文字からグリフへの対応
++       `CmapTable` として得られる。その `best` サブテーブルは Unicode の優先順位で選ばれ、その `glyph` が文字を解決する。
++       存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #hhea   `hhea` テーブル：アセンダー、ディセンダー、行間、メトリクス数
++       `HheaTable` として展開される。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #hmtx   `hmtx` テーブル：グリフごとの送り幅と左サイドベアリング
++       `hhea.numberOfHMetrics` で大きさが決まる `HmtxTable` として得られる。どちらかのテーブルがなければ `Font.Error` を発生させる。
++   entry #maxp   `maxp` テーブル：グリフ数
++       `MaxpTable` として得られる。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #post   `post` テーブル：イタリックの角度、下線のメトリクス、フォントが等幅かどうか
++       `PostTable` として得られる。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #os2   `OS/2` テーブル：太さと字幅のクラス、組版用メトリクス、埋め込みの権利
++       `Os2Table` として得られる。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #name   `name` テーブル：`Sfnt.NameId` ごとの、フォントのローカライズされた名前
++       `NameTable` として得られる。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #fontName   フォントの PostScript 名、または `Unset`
++       `name(Sfnt.NameId.PostScriptName)` で、`Font.Error` はすべて吸収される。PDF や PostScript の文書がフォントを参照するときの名前である。
++       それを記録していないフォントや `name` テーブルのないフォントでは `Unset` である。
++   entry #familyName   フォントのファミリー名、または `Unset`
++       `name(Sfnt.NameId.Family)` で、`Font.Error` はすべて吸収される。
++   entry #fvar   可変フォントの `fvar` テーブル。静的なフォントでは `Unset`
++       可変フォントのアウトラインが動く軸で、それぞれ範囲を持つ。
++       テーブルがあれば、`Font.Coverage.of` は太さと字幅の範囲をここから読む。
++   entry #features   `GSUB` と `GPOS` から得る、フォントが実装するタグごとのレイアウトのフィーチャー
++       二つのレイアウトテーブルのフィーチャーのリストを、重複を除いて `Face.Feature` としたものである。
++       どちらのテーブルもないフォントは何も実装しない。
++       これは `Font.Coverage.of` が記録するものなので、フォントにないフィーチャーを有効にするフェイスは拒否される。
+
+@ 0 3 0 1f7f25c466bd475a0abd4fbc998db4a2
++         `post` テーブルである。
++         イタリックの角度は固定小数点の度数で、右に傾くときは負である。`Font.Coverage.of` がファイルをイタリックと判断するために読む手がかりの一つである。
+
+@ 0 6 0 138abd00d5ec0ca8165957791bd517a3
++         `OS/2` テーブルを、そのバージョンが定めるオフセットでフィールドごとに読んだものである。
++         太さのクラス（1–1000、`Weight` が使う尺度）と字幅のクラス（1–9、`Stretch.widthClass` が名前を付ける）は、`Font.Coverage.of` が静的なフォントについて記録するものである。選択ビットはフェイスがイタリックかどうかを示す。組版用のアセンダー、ディセンダー、行間、Windows のアセントとディセント、x ハイト、キャップハイトは PDF のフォント記述子が必要とするものである。
++         テーブルのバージョンより後に追加されたフィールドは `Unset` である。
+
+% 2 1 0 1f73c1a5f8923e2b1c025d7bca71e9ef
+
+% 2 1 0 1a756beb42af85831b2aee23afb61f8d
+
+% 1 1 0 150c2fc23330bbfb08b251d0243382d0
+
+@ 0 15 0 001c18f27659e34107e6103281905812
++         名前付きのクラスなので、プロビジョンは安定した型を持つ。
++         これは `in Medium` であり、その入手元はファイルごとに一つの `Source.Embedded` であり、そのカバレッジはファイルの `Font.Coverage.of` に対する `Font.Coverage.combine` である。
++     entry #Self   提供される書体
++     entry #Form   `Medium`：埋め込まれたファイルはすべてのメディアに対応する
++     entry #sources   フォントファイルごとに一つの `Typesettable.Source.Embedded`
++     entry #coverage   ファイルのテーブルから読んだ、ファイルのカバレッジの和集合
++   entry .embedded   フォントファイルから得る `in Medium` のプロビジョン。カバレッジはファイルから読む
++       二つのオーバーロードがある。
++       `Typesettable.embedded[family](sfnts*)` は手元にある任意の数の `Sfnt` を取り、`Typeface of family is Typesettable in Medium` を作る。
++       ファミリーは明示的に与えるか、given の宣言された型から推論される。
++       `Typesettable.embedded (source)` は一つの `Locative` でストリーム可能な入手元（`cp"…"` のリソース）を取ってそれを読み、そのパスをプロビジョンの `Locus` として保持する。
++       したがって、そのプロビジョンから作られた `Font` は、コードのコンパイル時に、コンパイラのクラスパス上のそのパスにあるファイルと照合される。
++       ファイルがコンパイラのクラスパスにない場合、検査は実行時に委ねられる。
+
+@ 0 4 0 1f117e921219aa87022930cd335d0960
++         エラー `↯/s.89.1`、_the font could not be used because …_。
++         番号がエラーのサブコードである `Reason` を持つ。
++         テーブルの読み取りに関する理由は `Sfnt` のアクセサーが発生させる。
++         カバレッジに関する理由は、プロビジョンの `Font.Coverage` がフェイスを拒否したときに `Font(…)`、`Font.of[…](…)`、`Font.paired` が発生させる。
+
+@ 0 88 0 1f4c85e5263b77dc049383139277fd5e
++       entry #number   理由の番号。1 から 10 で、エラーのサブコードである
++     entry .communicable   各理由をそのメッセージとして描画する
++     entry #reason   理由
++   entry .Coverage   プロビジョンが組めるフェイス：太さ、傾き、幅、軸、フィーチャー
++     detail
++         `Font.Coverage` は、`Unknown`（入手元が提供するフェイスについて何もわかっていないので、すべてのフェイスが認められる）か、`Entries(entries)` のどちらかである。
++         後者は `Font.Coverage.Entry` のリストで、それぞれがプロビジョンの提供する一つのフェイス、または可変フォントの提供するフェイスの範囲である。
++         `Font` はカバレッジが認めるフェイスについてのみ作られる。
++         `#complaint` は認められない理由の `Font.Error.Reason` を返し、認められるなら `Unset` を返す。
++
++         カバレッジは、ブラウザが `@font-face` 宣言を照合するのと同じように照合される。
++         まず太さを覆うエントリーを見つけ、次にその中から傾きを持つもの、次に字幅を持つものを選び、残ったものに対してフェイスのバリエーションとフィーチャーを検査する。
++         最初に失敗した段階が拒否の名前を決める：`UncoveredWeight`、`UncoveredSlant`、`UncoveredStretch`、`UnknownAxis`、`AxisOutOfRange`、`MissingFeature`。
++
++         `.of(sfnt)` はフォントファイルのカバレッジをそのテーブルから読む。
++         可変フォントなら `fvar` の軸、そうでなければ `OS/2` テーブルが記録する単一の太さと幅、`OS/2` と `post` のイタリックのビット、そして `GSUB` と `GPOS` のフィーチャーである。
++         `.combine` は複数のファイルのものの和集合を取る。
++         `Font.Coverage(weights = …, italic = …)` は、ファイルが手元にない入手元、つまり URL やインストール済みのフォントのカバレッジを宣言する。
++         宣言されたものだけが認められるので、一つの太さで宣言されたリンクのフォントは、別の太さの要求を、ブラウザに合成させるのではなく拒否する。
++
++         ```scala
++         import soundness.*
++         import strategies.throwUnsafely
++
++         val file: Sfnt = Sfnt(cp"/fonts/Inter-BoldItalic.ttf")
++         Font.Coverage.of(file).complaint(Typeface["Inter"].bold.italic)    // Unset
++         Font.Coverage.of(file).complaint(Typeface["Inter"].light)          // UncoveredWeight("Inter", 300)
++
++         val declared: Font.Coverage = Font.Coverage(weights = Weight.Light to Weight.Bold, italic = true)
++         ```
++     refer phoenicia.Typesettable
++     refer phoenicia.Face
++     entry .Entry   プロビジョンが提供する一つのフェイス、または可変フォントが提供する範囲
++       detail
++           覆う太さと幅、エントリーが直立かイタリックかその両方か、さらなる軸とその範囲、そして実装されたレイアウトのフィーチャーである。
++           ファイルなしで宣言されたフェイスのフィーチャーは `Unset` であり、その場合はどのフィーチャーも認める。
++
++           ```scala
++           import soundness.*
++
++           val boldItalic = Font.Coverage.Entry(Weight.Bold.range, false, true, Stretch.Normal.range, Nil, Nil)
++           ```
++       entry #weights   太さの範囲
++       entry #upright   直立のフェイスが提供されるかどうか
++       entry #italic   イタリックのフェイスが提供されるかどうか
++       entry #stretches   幅の範囲
++       entry #axes   さらなるバリエーションの軸。それぞれ範囲を持つ
++       entry #features   実装されたフィーチャー。不明なら `Unset`
++       entry #sets   エントリーの太さ、傾き、字幅がフェイスを認めるかどうか
++       entry #complaint   エントリーが与えられない最初のバリエーションまたはフィーチャーの設定、あるいは `Unset`
++           `complaint(name, variations, settings)` は、各バリエーションの軸と値を `axes` と照合し（`UnknownAxis`、`AxisOutOfRange`）、各設定のフィーチャーを `features` と照合し（`MissingFeature`）、理由の中で書体を名指す。
++           不明なフィーチャーは何でも認める。
++     entry .apply   宣言されたカバレッジ。ファイルが手元にない入手元のためのもの
++         `Font.Coverage(weights, upright, italic, stretches, axes)` はそれぞれにデフォルト（レギュラー、直立のみ、通常の幅、軸なし）を持ち、フィーチャーが不明な一つの `Entry` を作る。
++         URL やインストール済みのフォントのためのものであり、そのフェイスは宣言が述べるとおりのもので、それ以上ではない。
++     entry .of   テーブルから読んだフォントファイルのカバレッジ
++         可変フォントの `fvar` からは、`wght` 軸を太さの範囲として、`wdth` を幅の範囲として、`ital` または `slnt` の軸を両方の姿勢の提供として、そしてすべての軸を `Variation.Range` として読む。
++         静的なフォントからは、`OS/2` の太さと幅のクラスを単一の太さと幅として読む。
++         `OS/2` のイタリックのビットと、0 でない `post` のイタリック角が、エントリーをイタリックにする。
++         フィーチャーは `Sfnt#features` である。
++         テーブルを読めないファイルは、十分持っているかもしれないフェイスを拒否するのではなく、すべてを認める `Unknown` のカバレッジを持つ。
++     entry .combine   複数のカバレッジの和集合。一つでも `Unknown` があれば全体が `Unknown` になる
++     entry #complaint   このカバレッジからフェイスを組めない理由。組めるなら `Unset`
++         二つのオーバーロードがある。
++         `complaint(face)` はフェイス全体を検査する。
++         `complaint(name, weight, slant, stretch, variations, features)` は与えられたものだけを検査する。
++         `Unset` として渡された部分は検査されない。
++         これは、フェイスの太さや傾きが実行時に決まる場合にコンパイル時の検査が使う形である。
++         `Unknown` のカバレッジは決して文句を言わない。
++   entry .apply   `Font(face)`：期待される型が名指すメディアで、フェイスをスコープにあるプロビジョンと組にする
++       期待される型からメディアを推論するインラインメソッドである。
++       `Form` は型メンバーであり、期待される型がそれを固定するので、`Font in Web` でも `Optional[Font in Web]` でもよい。
++       `Typeface of family is Typesettable in (? >: medium)` と `Tactic[Font.Error]` が必要である。
++       プロビジョンが `Locus` を持つ場合、フェイスの記録された要求はコンパイル時に検査される。
++       その後、実行時の検査はいずれにせよ実行される。
++       期待される型がない場合は `.of` を使う。
++   entry .of   `Font.of[Web](face)`：メディアを名指した同じ組み合わせ
++       `apply` がフェイスを取る `.Of[medium]` を返すので、書く必要があるのはメディアだけで、ファミリーはフェイスから推論される。
++       cataclysm の `Web.font(face)` は `Font.of[Web](face)` である。
++   entry .Of   `.of` が返す補助オブジェクト。その `apply` がフェイスを取る
+
+@ 0 17 0 109cccf83e089ae60844da884dc4852d
++     entry .widthClass   OS/2 の幅のクラス 1 から 9 が名指す字幅。5 または不明な値では `Normal`
++     entry .Range   両端を含む字幅の範囲
++       entry #lower   範囲内で最も狭い字幅
++       entry #upper   範囲内で最も広い字幅
++       entry #contains   字幅が範囲内にあるかどうか
++     entry .showable   字幅をパーセンテージとして表示する：`100.0%`
++     entry .inspectable   字幅を `Stretch(100.0)` として検査する
++     entry .percentage   通常の幅に対するパーセンテージとしての字幅
++     entry .to   `lower to upper`：二つの字幅の間の両端を含む範囲
++     entry .range   この字幅だけからなる範囲
++   entry .id   フォント内でのグリフの ID。0 は欠落グリフである
++   entry .font   `Font(face)` と `Font.of[medium](face)` の背後にあるマクロ
++       プロビジョンの `Locus` をその型から読む。
++       それがコンパイラのクラスパス上のリソースを名指す文字列リテラルであれば、フォントを（パスごとに一度）読み、その `Font.Coverage` を導出し、フェイスの `Weights`、`Slanting`、`Enabled` 型メンバーをそれと照合し、拒否されれば _phoenicia: the font at `path` cannot set this face: …_ で停止する。
++       その後、`Font.paired` に展開される。

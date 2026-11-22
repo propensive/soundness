@@ -1,0 +1,614 @@
+orthant 2 language
+
+% 0 1 0 16f943528d924ef614569aed5c605b3a
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 5 0 090cf2523ccfa5401692495e227ee3fc
++ [CSV](https://en.wikipedia.org/wiki/Comma-separated_values), son cousin TSV séparé par des
++ tabulations, et les autres formats délimités se lisent et s'écrivent d'une seule façon. Le texte
++ s'analyse en une `Sheet`, qui est une suite de lignes. Chaque ligne, un `Dsv`, se décode en une
++ case class dont les champs prennent les colonnes à tour de rôle. Une case class s'encode en une
++ ligne de la même façon. L'encodeur et le décodeur sont [dérivés][dérivation] du type ; il n'y a
++ donc rien à écrire à la main.
+
+@ 0 4 0 06269dbdafd365b60df63a7e7de472c2
++ Le délimiteur, les guillemets et la présence d'une ligne d'en-tête sont fixés par un format,
++ choisi dans la portée ; les mêmes données se lisent donc en CSV ou en TSV par un simple
++ changement d'import. Les case classes imbriquées s'étalent sur plusieurs colonnes, les champs
++ optionnels sont pris en charge, et une colonne peut être désignée par son en-tête plutôt que par
++ sa position.
+
+@ 0 1 0 19a95ca82805771c1edeb1f6a2076039
++ ### Sur les données délimitées
+
+@ 0 1 0 1d18a8b03908081b01386e6cb65d5b9d
++ CSV a l'air trivial, et ne l'est pas :
+
+@ 0 4 0 0e149e8fc78170d30be19aecb4f9519e
++ - Un champ peut contenir le délimiteur, s'il est entre guillemets.
++ - Un guillemet à l'intérieur d'un champ entre guillemets est doublé.
++ - Un fichier peut ou non commencer par une ligne d'en-tête.
++ - Un fichier « CSV » est aussi souvent séparé par des tabulations ou des points-virgules que par
++   des virgules.
+
+@ 0 2 0 03934205491ab33f0e25631518835d50
++ Un code qui découpe aux virgules ne gère rien de tout cela. Et la correspondance des colonnes
++ vers les types propres d'un programme est habituellement écrite à la main, et maintenue en phase
++ à force de discipline.
+
+@ 0 5 0 0e378b1a0724bfdf17ad85e0a0921e24
++ Ici, cette correspondance est dérivée de la case class que les données doivent devenir.
++ L'analyse respecte les guillemets et l'échappement. Le format est une valeur explicite, et non
++ une supposition. Décoder une ligne en un type, ou un type en une ligne, est une opération dérivée
++ unique, par la même dérivation que pour tous les autres formats ; la forme des données est donc
++ vérifiée une seule fois, comme le préfère la
++ [correction](../../philosophy/correctness.md).
+
+@ 0 2 0 1c75a5a8816e40eb00b3f31238b50dac
++ Tout provient du package `soundness`. Un format et une [stratégie] d'erreur sont dans la portée,
++ et le dernier import permet aux exemples d'afficher leurs résultats :
+
+% 2 1 0 0f8dc632a664d4731acc384146b8c787
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 191938421d588de210e90bb5d023d320
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0187392ffc103acc14c597749a2c60b7
++ ### Lire des lignes
+
+@ 0 2 0 04dbd4f4f2eddea212744c0db241d12d
++ `read[Sheet]` analyse un texte en une `Sheet`. Ses `rows` sont des valeurs `Dsv`, une par ligne,
++ découpées en cellules selon le format :
+
+% 2 1 0 151bf2467938cc2e067fdeda91f6cbd3
+
+% 3 1 0 1a68e776b9a0410602b0983f98ac87e0
+
+% 4 1 0 02f965b359c5f3d11284d4b9216f07e6
+
+% 0 1 0 1794f0b61af2d47707268eb6293b34d7
+
+% 1 1 0 171aa9c4059e049b0a058b674a85c0b6
+
+@ 0 1 0 083c741623b90f2619ca2d1580ea631a
++ Le délimiteur à l'intérieur d'une cellule entre guillemets fait partie de la cellule ; cette
++ ligne a donc trois cellules, et non quatre :
+
+% 2 1 0 0b31e140849946a3197e0b8fe6ca75d5
+
+% 3 1 0 168f31867f7cacd903f050c509044f71
+
+% 4 1 0 1189efdac30157e30d11e1da2827687c
+
+% 0 1 0 0a8f559917582d8003bbf73b0e1a8d36
+
+% 1 1 0 07df6a1844a4308e12a9c126e58b2d70
+
+@ 0 5 0 002aec2bbf3ba9860dee207619f42f41
++ Une `Sheet` conserve toutes ses lignes en mémoire, dans un tableau, de sorte qu'elles peuvent
++ être rejouées, indexées et comparées à peu de frais. Un fichier trop grand pour être conservé
++ n'a besoin d'aucune feuille. `rows` sur un [flux](streams.md) de caractères donne les lignes une
++ à une, analysées par le même lecteur ; une cellule entre guillemets qui chevauche la frontière
++ entre deux morceaux, ou entre deux lignes, est donc traitée exactement comme dans une feuille :
+
+% 2 1 0 1a0125917c0a28f31e84b38024f8f3f8
+
+% 0 1 0 1f68a9968f590330194d55712fefaeff
+
+% 0 1 0 0a6a401cf5c3b1af1e3cdd6f09ad3e4a
+
+% 1 1 0 07fbb8a1943149d60aea915065e9da72
+
+@ 0 1 0 1a736aaff562091a067accd98cc981cc
++ ### Décoder en une case class
+
+@ 0 2 0 1bae19cbd6a8676712cf27383dabf501
++ `as` décode une ligne en une case class, en prenant les cellules dans l'ordre. Une case class
++ imbriquée consomme simplement autant de colonnes qu'elle a de champs :
+
+% 2 1 0 1365686368a8551c0e8fcce92fa89442
+
+% 0 1 0 143215878e338d1506428a80c7ded090
+
+% 0 1 0 08a9e2697ed575071afa517a48dcddb2
+
+% 0 1 0 0fc3d74f45cc42450ae6d2bda9f2ae67
+
+% 1 1 0 0c7f08b560e326e9000bd9f409465d3c
+
+% 3 1 0 13680a34428eec210a96b57dc78d75b3
+
+% 4 1 0 1a811f7d5b32b0c30b3cdc3867c3b231
+
+% 5 1 0 14eb3af1657d4b9800cc77f7e1366d0c
+
+% 0 1 0 09b7c76c0813865513b9fea18be1216d
+
+% 1 1 0 18c8ff9044a4f94d02870a1d216caadb
+
+@ 0 2 0 07f0c7a3274a4cee0b8f0a7cdd6c8b32
++ `rows(Prim)` donne une ligne [optionnelle](optional-values.md), puisque la feuille peut être
++ vide ; `let` décode donc la ligne s'il y en a une.
+
+@ 0 1 0 0d6416b20fab507d1881481f737e6fde
++ Lire directement dans un type combine les deux étapes, et décode un enregistrement unique à
++ partir d'un texte :
+
+% 2 1 0 16a140895e3ad6ed1f48ec929a6e928a
+
+% 3 1 0 06742af2bafbc9f90058ec30d03da14a
+
+% 4 1 0 086b785ed6706c9d1927757161cd69e2
+
+% 0 1 0 06c46a7452df822c131a926e4a4954cc
+
+% 1 1 0 18c161f4c9b286a0166d176d668e56bb
+
+@ 0 1 0 188f0bb1d996be3413f1af4494020c0c
++ Une cellule qui ne peut être décodée dans le type de son champ est une erreur :
+
+% 2 1 0 18b6995bdac43db10d4d75045d5ddf9c
+
+% 3 1 0 145bc5654e9f716810b001c33947bed0
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 03ebc4f59728c8a300bb56e1356046e9
+
+% 1 1 0 0a3f4c0b90048fa502a6c7dab78362a2
+
+@ 0 1 0 196677f70196bdf61933b52d135abadd
++ ### Encodage
+
+@ 0 2 0 1c71fc2de9cd4f9013b487f3755fc0bd
++ `dsv` encode une case class en une ligne, et une séquence de case classes en une `Sheet`. `show`
++ écrit le résultat sous forme de texte délimité :
+
+% 2 1 0 046fad25e9bced340435e52747129d60
+
+% 3 1 0 06e2e95b1f3d4d0217ff6a6372667a5c
+
+% 4 1 0 147941f486ac08fc02ee3a49f17559a3
+
+% 0 1 0 179e23ef6607370e06bc7028a78406a4
+
+% 0 1 0 1988603298ae7a8a0179c123db0dad6b
+
+% 1 1 0 15db6c794cb054551f089c0c31832659
+
+@ 0 2 0 16e74e9ec287bbf51400cd0f9eb1a05a
++ `in[Text over Dsv]` encode une valeur en un enregistrement unique en une étape, et
++ `in[Data over Dsv]` écrit le même texte sous forme d'octets, dans la `Codepage` de la portée :
+
+% 2 1 0 09b5d447f3f8658c06ad84022928c96f
+
+% 0 1 0 1f5baa85984b2d43128af2fce696cae1
+
+% 1 1 0 1e63d949dd8d57b508c7d9e6c84da37b
+
+% 3 1 0 1427f3baf2a2f6b117b6a145a0ca3ffa
+
+% 4 1 0 131d525f0a624de609b1449564703bcc
+
+% 5 1 0 18cb1f8f07c1443b04ab7f1c0686b74e
+
+% 0 1 0 120ddd7744c70050033420e57cb2ceed
+
+% 1 1 0 000bc63f0e587d180cc100a3c784e7a0
+
+@ 0 2 0 1e26a2789dc51ed81119aca83b939b54
++ Une cellule n'est mise entre guillemets que lorsqu'elle contient le délimiteur, un guillemet ou
++ un saut de ligne, et un guillemet à l'intérieur d'une cellule est doublé :
+
+% 2 1 0 0cc03f8136cdf556176781e8622a799b
+
+% 0 1 0 0baed302752a5b6517ab3c30b37e9ff9
+
+% 1 1 0 1e13dc78a82d8b800ffe9741346062af
+
+% 3 1 0 0fe058c3a238098f0f706fe9416dd1f1
+
+% 4 1 0 17fae31d218da80e1b2dccef920949a1
+
+% 5 1 0 08cb440ff57aa4a40a7a8680991c42cd
+
+% 0 1 0 0a68e19b00c8f80514149bbbf76631b8
+
+% 1 1 0 0ff0bae7c655094b14f3c702f69da48b
+
+@ 0 1 0 0325d804222f183917eb978379da2555
++ ### En-têtes
+
+@ 0 2 0 1c49979a1f7980201fb0055755ef7e14
++ Les données commencent souvent par une ligne d'en-tête. Un format qui en attend une associe
++ chaque colonne au champ de même nom ; l'ordre des colonnes n'a donc pas à correspondre à l'ordre
++ des champs :
+
+% 2 1 0 04e04bcb708401360fa1074ad02f9048
+
+% 3 1 0 0b1763095853726306f879b56d548e7d
+
+% 4 1 0 06cf6d68385e1fe61593643926fa9aae
+
+% 5 1 0 1add3892ce8d8e880ed2e22a029b5cc4
+
+% 1 1 0 030b8f802cdc77db016db602a4f3b219
+
+% 0 1 0 07569edf6486822207edf74c263708c7
+
+% 1 1 0 17cc6c64104da69f0f983be72eb32809
+
+% 0 1 0 11f24a6ad67b7fd71071c354be7e252f
+
+@ 0 2 0 0c33e3c729a74dd804a6760a4ee6f7d2
++ Le format de la portée détermine le délimiteur et les guillemets. Chaque délimiteur a un format
++ simple et une variante avec en-tête, dans le package `dsvFormats`, et tous utilisent `"` comme
++ guillemet :
+
+% 2 1 0 137e61f7223724c11b543cd81262326e
+
+@ 0 6 0 12f72545c40f35ac051d9a360c12783a
++ column  Format
++ column  Avec en-tête
++ column  Délimiteur
++ row  `csvFormat`  `csvWithHeaderFormat`  virgule
++ row  `tsvFormat`  `tsvWithHeaderFormat`  tabulation
++ row  `ssvFormat`  `ssvWithHeaderFormat`  espace
+
+% 1 1 0 03e078133b1a50f0033e058a46b24dc6
+
+@ 0 1 0 1a8070e0280a0da21da65d8b144fe1b5
++ Importer un autre format dans une portée intérieure change le délimiteur :
+
+% 2 1 0 11e4a20974cafb91058d1e3b9d4b20e0
+
+% 3 1 0 055bcd57f7dfd44502c0c33e780d7c4a
+
+% 4 1 0 1368c42f0bdc0335083593a3e71eb59c
+
+% 5 1 0 0a3b91c29fefdf9a0a5c74cfb969fca0
+
+% 0 1 0 014a841ddc6b1ac6122463b96f916714
+
+% 0 1 0 090cb315c3b779731c11d0c9486a42cd
+
+% 1 1 0 094a094e4dfb6bbe0d7ee6958cfe22a3
+
+@ 0 1 0 03d12966e37c78c90699277b5331c655
++ ### Étendue des colonnes
+
+@ 0 4 0 1a88e2393953788e1f0c0a1dc903f5f5
++ Une case class imbriquée occupe autant de colonnes qu'elle a de champs. Ce nombre est calculé à
++ partir du type, et non découvert pendant l'analyse. L'*étendue* de chaque champ indique combien
++ de colonnes il consomme ; un décodeur sait donc où un champ se termine et où le suivant commence,
++ même quand plusieurs sont imbriqués. `Person` s'étend sur quatre colonnes en tout :
+
+% 2 1 0 0b694c98bb4b28b1045507443be27762
+
+% 3 1 0 0346d4990fa52731144272e4805508bd
+
+% 4 1 0 195fe728ae9e4d6e13b6ebfa29fbf959
+
+% 0 1 0 0ef2753895caca4603e6729752cb8245
+
+% 1 1 0 19ce510101c6e5df13ffc673e2c626ed
+
+@ 0 4 0 1c82aef9ed858e06119217029f3db17f
++ Le décodage par position est fragile par nature. Ajouter un champ à une case class imbriquée
++ décale toutes les colonnes qui la suivent, et rien dans le fichier ne le signale. C'est ainsi que
++ se comportent les données positionnelles, et aucun décodeur n'y peut rien. C'est pourquoi un
++ format avec en-têtes vaut la peine d'être utilisé quand on a le choix, et pourquoi les cellules
++ peuvent être [désignées par leur nom](#addressing-cells-by-name).
+
+@ 0 1 0 05034cb934a33abb1941be82816becd0
++ ### Colonnes optionnelles
+
+@ 0 2 0 05ac43b954809ab51061812cc48a4c78
++ Un champ `Optional` s'étend sur une colonne. Une ligne qui s'arrête avant lui le décode comme
++ `Unset`, ce que signifie une colonne optionnelle finale dans un vrai tableur :
+
+% 2 1 0 1793212bf577f6ac03f72620309f6a28
+
+% 0 1 0 1456d8921f953395104d84c618ba59ce
+
+% 1 1 0 02718b50556755e905a277a2e235dc63
+
+% 3 1 0 0886041a48330a170b87081cc4e4c86a
+
+% 4 1 0 171662713c7b8aff14711f2b3ff9690f
+
+% 5 1 0 1ba7aebd69c8bb97020a17d7d92263c9
+
+% 0 1 0 026ebcc43e4f8fd41020e23031a09efb
+
+% 0 1 0 04f540d505af91af0ffff514765bfbc2
+
+% 1 1 0 1691c1376d5312b30397c4b5192c66b5
+
+@ 0 3 0 14d728eef30f6b5e005995be0e983a78
++ La lecture d'un champ `Optional` suit les politiques que décrit
++ [Décodage](decoding.md#policies-for-optional-fields), chacune modifiable par un given du package
++ `optionalityOptions`. Le texte délimité n'a pas de null :
+
+% 2 1 0 077135260271c81e08360c5f6b949018
+
+@ 0 5 0 01dec2081e59dcad06ef0cc71d5d0396
++ column  Un champ qui est
++ column  Se lit comme
++ column  Sauf si
++ row  dans une colonne absente de la ligne  `Unset`  `strictDsvAbsence` en fait une erreur
++ row  présent mais rejeté par le décodeur interne  une erreur  `lenientDsvFaults` le lit comme `Unset`
+
+% 1 1 0 06c49ab09406a831189d6ed8bd04877c
+
+@ 0 3 0 1dd5a5ace5b595580513f2a45df0f03e
++ Une colonne absente de la ligne est une colonne au-delà de la fin d'une ligne courte, ou une
++ colonne d'en-tête que la ligne n'a pas. L'erreur levée pour elle sous `strictDsvAbsence` a la
++ raison `Dsv.Error.Reason.Absent`. Une cellule vide est une valeur présente, et non un null.
+
+% 2 1 0 06091d345fd766b21e84bf69746feedc
+
+% 0 1 0 1528c823dd1f27e7140501dbf09796f6
+
+% 0 1 0 07ff2c9f0b0eaff2022a98b58d693ac6
+
+% 0 1 0 1704affb859f1d3f0256f7d346b34548
+
+% 0 1 0 0c8ea8c4dbc9703d08e249584714582d
+
+% 1 1 0 1b6d371a171f07e80a7686a4a5ecedd6
+
+% 3 1 0 061dea348523f433045adc99da006969
+
+% 4 1 0 097e4f88005d6b1d10a18cb6b3c097a6
+
+% 5 1 0 1f59e9eab05f2b7b0d5014c4b381e07d
+
+% 0 1 0 141aa914cc85d2ba18f3063adf07bb9c
+
+% 1 1 0 025a8f2a135c61c505e514d4fa7786b8
+
+@ 0 1 0 05dc60ec41354b140fd2bfd91786fcc7
++ ### Désigner les cellules par leur nom
+
+@ 0 3 0 0fbbee0ed1b7dbe10a86f930f1e2cf49
++ Avec l'accès dynamique activé, une cellule d'une ligne dotée d'un en-tête se lit comme un membre
++ nommé, et se décode dans le type demandé. Une *redésignation* dans la portée indique comment le
++ nom d'un membre devient un en-tête. `unchangedRedesignation` utilise le nom tel quel :
+
+% 2 1 0 0deac79546734d8f0e60fc5bbd3b2e50
+
+% 0 1 0 1cc9d33040ca74631c6d1b575b675602
+
+% 0 1 0 13280a4d3f6fa08d17c3b0fe2186374f
+
+% 1 1 0 17f15212be063e6f1cca8b912a970a1c
+
+% 0 1 0 01a9d11531a355801aea02e2245f3cd8
+
+% 0 1 0 1a4b1af0cfcc365708c75c7c3b009aca
+
+% 1 1 0 0e1ee6ca2231f24d07770ba888d37bbb
+
+@ 0 2 0 1c778b687f095be7113d3b7dabcffa7f
++ Les noms de colonnes d'un fichier ressemblent rarement aux noms de Scala. Une autre redésignation
++ fait la correspondance entre les deux conventions ; le membre `targetPerson` lit donc la colonne
++ intitulée `Target Person` :
+
+% 2 1 0 01f21e64c5fc94620b6a56857807d6f4
+
+% 0 1 0 08829e589763b2fa03a4555fdd5a8dda
+
+% 1 1 0 16f10a73063690160eb6788e5c38dca7
+
+% 0 1 0 1c3ae67c4375d3120b992eea5601743b
+
+% 0 1 0 08bd95f71d0e0a3111fb196a1a1d06bb
+
+% 1 1 0 0181ab3ffd27db720bf592033770a72a
+
+% 3 1 0 130076c48e0b91ee010a7186f5399724
+
+% 4 1 0 0fd1991b3cf699590220155ff84af85c
+
+% 5 1 0 1a9f8b602c686d871c0a921bffdab794
+
+% 0 1 0 1f7ae5af0e4335d00927553ae86ec3d8
+
+% 0 1 0 1f404ba1fdd32d24092293c052e19147
+
+% 1 1 0 06d1c761332d23de0130c2e559d0c6c3
+
+@ 0 2 0 1dc88d36729addd90ec2365cd358be88
++ Chaque redésignation du package `dsvRedesignations` donne au membre `targetPerson` cet en-tête :
+
+% 2 1 0 1323c6e426bcc6890bd559acbd167766
+
+@ 0 7 0 00b8f481be88170e0002a2587cd896b1
++ column  Redésignation
++ column  En-tête
++ row  `unchangedRedesignation`  `targetPerson`
++ row  `capitalizedWordsRedesignation`  `Target Person`
++ row  `lowerWordsRedesignation`  `target person`
++ row  `lowerDottedRedesignation`  `target.person`
++ row  `lowerSlashedRedesignation`  `target/person`
+
+% 1 1 0 09f5c00c08d6188f04533c8b6dd19dad
+
+@ 0 1 0 0a6e888821ec6d8311a17ed49f54c531
++ Sans redésignation dans la portée, une cellule ne peut être lue par son nom :
+
+% 2 1 0 18e368a62a713b941990343d3d1c6ab8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1a7943dd627c3c3518a2025aebdffb13
+
+% 1 1 0 015fe53f42fcfd0d182ff88c1f13f196
+
+@ 0 4 0 0df7b898ea2170c1195f43dc4e03047c
++ L'import de `dynamicDsv` accorde l'autorisation `Dsv is Dynamical` au reste de sa portée.
++ `dynamically[Dsv]:` l'accorde plutôt à un seul bloc, comme le décrit
++ [JSON](json.md#fields-as-members). Un champ de case class dont le nom diffère de son en-tête se
++ renomme avec [`@name`](json.md#renaming-fields).
+
+@ 0 1 0 1ef7b8023aacb1780627fa021478ab84
++ ### Signaler chaque cellule incorrecte
+
+@ 0 5 0 1f150d871f4446551ec81fdf1cc9132a
++ Un tableur exporté d'ailleurs est rarement faux à un seul endroit, et un décodeur qui s'arrête à
++ la première cellule incorrecte fait de sa correction une suite de devinettes. Sous une stratégie
++ qui [accumule les échecs](errors.md#accumulating-failures), chaque cellule en échec est signalée,
++ cellules manquantes et inanalysables ensemble. Chacune est identifiée par sa colonne ; une seule
++ passe sur un fichier donne donc la liste complète de ce qu'il faut corriger.
+
+@ 0 3 0 0211b09b88636cf8130cff7fc9f8fa72
++ L'accumulation est une valeur au choix de l'appelant, ici une erreur qui rassemble chaque défaut
++ avec la colonne où il a été trouvé. `Validate` indique comment chaque défaut s'y joint, et se
++ concentre sur la `CellRef` que lisait le décodeur :
+
+% 2 1 0 154c8e75825f779114ddabb26339efa3
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 163375f111fa9a6812c559a4dfa968e3
+
+% 0 1 0 01f8e8ff0b2ce07d1e598d2b9bdfb45c
+
+% 0 1 0 1d3a59e65fcbdf140fa0a72dc1f0c9fd
+
+% 0 1 0 0965f99efea16faf1f803bfe3ab3fdd8
+
+% 0 1 0 033c48d8fe3380f21cf0cf4cb9eca2b6
+
+% 1 1 0 075a94b94442c6e602b102440c7c1150
+
+% 0 1 0 0dfe854eaee6ff300ce52bc585f547f1
+
+% 0 1 0 1274ef776a68ec3e09ff6526edf9bdb9
+
+% 0 1 0 1b7856209f71157f0292ee57c80137ba
+
+% 0 1 0 1c9d6fd014872435089b50dfe962343a
+
+% 0 1 0 02a42cb4274e0f040dfa9e47606ae606
+
+% 0 1 0 19515b4e6e73adb11045115917c906a8
+
+% 0 1 0 01a60fd9533fe87e022fd5e71a9c9a65
+
+% 1 1 0 0af70766c985a44018b4a04cbe0d202d
+
+% 3 1 0 1b2c594c88b742ab15b41ef0a08a3a21
+
+% 4 1 0 1893869b0af0de75140199519c5c9d55
+
+% 5 1 0 0a760e76562031111f2a20236d30dc73
+
+% 0 1 0 1c1a7f182eec9327094a0c8b889127ac
+
+% 0 1 0 08e5a6c24ba00b5c173cf82f0d0c05ac
+
+% 1 1 0 1c1b2078c9d7e8ce11ac20631a43382b
+
+@ 0 1 0 1e17a01edd469f4d1c982026e3272de9
++ ### Analyser directement dans un type
+
+@ 0 3 0 0f60cae25f1399ba00b64de2f9254ea9
++ Construire un `Dsv` pour chaque ligne, seulement pour le décoder et le jeter, est un travail
++ gaspillé. Un type doté d'une instance `Dsv.Parsable` s'analyse directement depuis la source. Ses
++ cellules sont lues sur place, dans le tampon de l'analyseur, et aucune valeur de ligne n'est
++ construite :
+
+% 2 1 0 0b9a7d158553954804b1551e7eaa4f5b
+
+% 0 1 0 059786a217ad99d3090f5e656be728f4
+
+% 0 1 0 1e7afeeb7c69e8a40e6a06a2cf5a5d82
+
+% 1 1 0 03304c8a5fa5e97f0fc4917ebb31169f
+
+% 3 1 0 1a7d859251ba9753174bf12288b868f0
+
+% 4 1 0 07522de2fcc887631ee9b15fc8be34d2
+
+% 5 1 0 0096d91469d60ca80fe2851d37cd46b0
+
+% 0 1 0 01a486e2f3c3c32a112a1e760546064c
+
+% 0 1 0 0652a3d4cb9cc4b60f812260c3f14574
+
+% 1 1 0 1a09716028166b970c119d852a4b87cf
+
+@ 0 1 0 1bb93b9496107af70b1504dd6b4507e6
++ Un flux donne des enregistrements de la même façon, par `rowsOf` :
+
+% 2 1 0 0125f5a2820e99ad077ee75dde3f58da
+
+% 3 1 0 050f8db97618e54419677581b836439a
+
+% 4 1 0 0b45b1ab76521b360b47e1f08bde9664
+
+% 0 1 0 116ce2b3acbf019714ded8f41209e97d
+
+% 1 1 0 110e482bcd7b3fae12ee77bfafd5e000
+
+@ 0 2 0 1a6b07b9a011928a1891c14812bc4cb0
++ Les champs sont associés par nom d'en-tête là où le format a un en-tête, et par position là où il
++ n'en a pas. Un champ `Optional` que la ligne n'atteint pas vaut `Unset`, et ne constitue pas une
++ erreur.
+
+@ 0 2 0 03ea0f1e002e86e30a6f3168a54cdb5a
++ L'import `codecs` qui choisit la voie pour chaque autre format la choisit aussi pour le texte
++ délimité :
+
+% 2 1 0 126717d0af8fede31b43148594b04c9d
+
+@ 0 6 0 0fce7378365ba53215251eeca86ab2d7
++ column  Import
++ column  Pour un produit
++ column  Pour tout autre type
++ row  `codecs.direct`  analysé directement, sans instance déclarée  le décodeur de lignes, sauf s'il a un `Dsv.Parsable`
++ row  `codecs.derived`  le décodeur de lignes, même là où un `Dsv.Parsable` est dans la portée  le décodeur de lignes
++ row  `codecs.strict`  analysé directement, sans instance déclarée  une erreur de compilation nommant le type, sauf s'il a un `Dsv.Parsable`
+
+% 1 1 0 13d199c84d68d92007fe730848f98c36
+
+@ 0 2 0 107a98555161205d03b365cd18fb8db6
++ Les modes sont des alternatives ; importez-en un à la fois. Lire une `List[Play] in Dsv` est
++ direct dans tous les modes, puisque le décodeur de lignes n'a pas d'équivalent pour une feuille
++ entière.
+
+@ 0 4 0 1fcfc44ce8b2102b1f057d6dbe6c71b4
++ Chaque champ d'un produit analysé directement lit une cellule par son instance
++ `Decodable in Text`, ou est lui-même un produit de tels champs. Un champ qui n'a qu'une instance
++ `Decodable in Dsv` maintient son type sur le décodeur de lignes : ne déclarez aucun
++ `Dsv.Parsable` pour le type, et n'importez aucun mode.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 5 0 18774b3c18ad653212b11d2266efe7d1
++ - [Tableaux](tables.md) dispose des lignes de données pour les afficher dans un terminal.
++ - [Décodage](decoding.md) décrit les instances `Decodable in Text` qui lisent chaque cellule.
++ - [JSON](json.md) et [YAML](yaml.md) décodent des documents imbriqués avec la même dérivation.
++ - [Flux](streams.md) couvre les sources depuis lesquelles lisent `rows` et `rowsOf`.
++ - [Dérivation](derivation.md) explique comment une ligne se décode en une case class sans
++   instance écrite à la main.

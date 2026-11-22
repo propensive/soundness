@@ -1,0 +1,52 @@
+orthant 2 language
+
+% 0 1 0 056a74de44515db50a2444c87b2ace96
+
+@ 0 1 0 1e236c8e352393a00f9d6bb179c9d681
++ Sollevato quando un'espressione matematica scritta nella notazione abbreviata Ergo non può
++ essere analizzata.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 094cf0b82ac93db81287e3857d422cf2
++ Ergo è una sintassi compatta per la notazione matematica, espansa in MathML. Questo errore copre
++ un'espressione malformata: raggruppamenti non bilanciati, un operatore sconosciuto o un operando
++ mancante.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+% 0 1 0 06a3f22bea25f0eb04720fd40e78925f
+
+% 0 1 0 05118ade26fb1e0d15c51b1c1beed87e
+
+% 0 1 0 10f72fbb530cd542089f20a11839316c
+
+% 0 1 0 09c9a0badd30297119075f4e1d1d4205
+
+% 0 1 0 1d014dcc71942976192ae5de388a3259
+
+% 0 1 0 013a7136191fa47d18a1d0d00aa87724
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 2 0 110e48681d57e6550db7896ea7883086
++ Il messaggio nomina la posizione e il costrutto difettoso. Dove un'espressione è davvero
++ complessa, l'alternativa è scrivere direttamente il MathML.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 0ce766a35b53b0a7000c3806dcdfe72c
++ - Sorgente: `lib/archimedes/src/core/archimedes.Ergo.scala`

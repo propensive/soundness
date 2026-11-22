@@ -1,0 +1,3467 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14f7aa466e39789e07dd342ef8c79b5e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c5523d30a7fc3671ba9d1752c8af003
++ info   compilatori e linker come valori: Scala, Java e Kotlin in-process, con output per JVM, JavaScript, Wasm, codice nativo e Android
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 09f62f0ec16d9d5e1b340a75a9af44c0
++     _Anthology_ pilota compilatori e linker in modo programmatico, come valori tipizzati e non
++     come righe di comando. Un compilatore — `Scalac`, `Javac` o `Kotlinc` — è un valore che porta
++     opzioni tipizzate, valide solo per le versioni del linguaggio che le accettano; compila una
++     mappa di sorgenti con nome rispetto a un `LocalClasspath` in una directory, e restituisce un
++     `Compiler.Process` i cui diagnostici (dei `Compiler.Notice`, con la loro importanza, il file e il
++     tratto), il cui avanzamento e il cui `Compiler.Result` sono valori, non output della
++     console da rianalizzare. Un crash è un `Compiler.Result.Crash` con il suo stack trace, e una
++     compilazione in corso può essere interrotta.
+
+@ 0 10 0 1428d965ec33213b1ee8fb238c6681cb
++     Il collegamento è la seconda metà. La rappresentazione intermedia che una compilazione emette
++     è un `Toolchain.Universe` — `Classfile`, `Sjsir` o `Nir` — e ciò che una build produce sono
++     nodi `Artifact.Application`: un `Artifact.Jar` eseguibile, un JAR `Library`, JavaScript
++     (`anthology.Js`) sotto un sistema di moduli scelto, Wasm per il browser (`anthology.Wasm`), un
++     componente WASI (`Wasi`), una `OciImage` che ne incapsula uno, un `Artifact.Binary` nativo per
++     ogni `Toolchain.Triple`, un archivio `Dex` e un `Apk` firmato. Universi, linguaggi e
++     applicazioni sono i nodi di una `Toolchain`, un grafo orientato aciclico i cui archi sono
++     strumenti; produrre un formato a partire da un altro è una ricerca di percorso sul grafo, così
++     una build in più stadi (classfile convertiti in dex, poi impacchettati come APK; un componente
++     collegato, poi incapsulato come artefatto OCI) si compone a partire dagli archi senza alcuna
++     pipeline su misura.
+
+% 2 1 0 0a3763b60b4026df09c530ee112265ca
+
+% 3 1 0 19aab03d5d126116047009c66ad81379
+
+% 4 1 0 1b9252ff92e034061ca0aea8595bc220
+
+% 5 1 0 1dc9ef76f0de76ad044c9387739b6b03
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 1 1 0 05a5bc03c943f0e707070d932bb37b69
+
+% 0 1 0 059174723a298f9c186e2cbad03d1515
+
+% 1 1 0 0cfe3034adb5262a0e3d2eb0c3bc8b17
+
+% 2 1 0 1de2dfdc296b7b470c4d7858bd37afc0
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 2 1 0 1c8225d2f6837393147b5f42cfd3bb75
+
+% 0 1 0 1333bc44a24f46261439344aeb1c1f44
+
+% 0 1 0 1365544696e0382616d99992ebd6c6d1
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 115cf8af5d07d6211402ae9bbafe6b7d
+
+% 0 1 0 10b113be7e4c898e0a17cdce1b75f4f5
+
+% 0 1 0 02a4f10577e41fa8130a6cad9d4037af
+
+% 0 1 0 069316fd43d405ae1f375d77714bbdf3
+
+% 0 1 0 0e302c872a805ed409e2355f0ddfdd15
+
+% 0 1 0 117d88c50896774b163adcfb2b4a4020
+
+% 0 1 0 06255cdbc33f329e009de700fec5dd88
+
+% 0 1 0 019855415bc8afad10bb48e865d571b8
+
+% 0 1 0 0c6ade4afe0c9d4218b7e2d61e83adf5
+
+% 0 1 0 1652fc113c1a9ca508484fe844fa2a70
+
+% 0 1 0 1b7b0d95a750e1d417303f22849269d1
+
+% 0 1 0 0059f4cd4f54e0561d9d0f0c2ad43964
+
+% 1 1 0 1dc8f30069a5c8130ed97c8e9a80b7e9
+
+@ 0 2 0 09c20860749775e4111a0113f1a9b744
++     La libreria è divisa in componenti secondo lo strumento che ciascuno incapsula, così che una
++     build assuma solo le dipendenze che usa:
+
+@ 0 26 0 0aab66024295014f0b3993b8d10f0791
++     - `anthology.core` — il vocabolario: `Compiler`, `Compiler.Process`, `Compiler.Notice`,
++       `Importance`, `Compiler.Result`, `Compiler.Event`, `Artifact`, `Toolchain.Universe`,
++       `Deliverable`, `Edge`, `Toolchain.Tool`, `Toolchain`, `EntryPoint`, `Link`, `LinkEvent`,
++       `Toolchain.Triple`, `NirPlugin` e i due nodi senza archi `Component` e `WasmObject`. Solo
++       JVM (ha bisogno del classpath di hellenism).
++     - `anthology.scala` — `Scalac`, le sue `scalacOptions`, le `Scalac.Session` calde, e gli archi
++       di compilazione `scalacEdges`. Il compilatore Scala (`scala3-compiler`) è una dipendenza
++       *solo di compilazione*: il programma che lo pilota mette il compilatore che vuole sul proprio
++       classpath di runtime, e `Scalac.version` riporta quale fosse.
++     - `anthology.java` — `Javac` e `javacEdges`, sul compilatore proprio del JDK in esecuzione.
++     - `anthology.kotlin` — `Kotlinc`, `kotlincOptions` e `kotlincEdges`, su
++       `kotlin-compiler-embeddable`, anch'esso solo di compilazione: il chiamante fornisce il
++       compilatore.
++     - `anthology.linker` — `jarEdges`, `jarOptions`, `Library` e `Bundler`: il confezionamento in
++       JAR, che non ha bisogno di alcuno strumento esterno.
++     - `anthology.link` — `sjsEdges`, `linkerOptions`, `Wasi`, `WasiToolchain` (e i nodi non
++       esportati `anthology.Js` e `anthology.Wasm`), che pilota il linker di Scala.js, una libreria
++       JVM inclusa nel componente. Il collegamento di un componente WASI invoca inoltre dalla shell
++       `wasm-tools` e il fork scala-wasm di `wit-bindgen`, la cui presenza viene sondata da
++       `WasiToolchain()`.
++     - `anthology.nir` — `nativeEdges` e `nativeOptions`, che pilotano la build di Scala Native
++       (`tools_3`, inclusa) attraverso `clang` e `clang++`, che `nativeEdges()` cerca nel `PATH`.
++       Compilare *verso* `Toolchain.Universe.Nir` richiede il plugin del compilatore di Scala
++       Native, indicato da un given `NirPlugin`.
++     - `anthology.dex` — `Dex`, `dexEdges` e `dexOptions`, che pilotano il dexer D8 di R8
++       (incluso).
++     - `anthology.apk` — `Apk`, `apkEdges`, `apkOptions` e `Axml`: un pacchetto Android completo,
++       firmato e allineato per zip, senza alcuno strumento di build dell'Android SDK; serve solo un
++       keystore.
++     - `anthology.oci` — `OciImage`, `ociEdges`, `ociOptions` e `OciConfiguration`: un componente
++       WASI incapsulato come artefatto OCI Wasm.
+
+@ 0 7 0 09384b8fcd14ce56130a085023aef86f
++     Ogni componente è solo JVM, e tutto è esportato nell'ombrello `soundness` tranne tre nomi che
++     lì entrerebbero in collisione: `anthology.Js` e `anthology.Wasm` (i `Js` e `Wasm`
++     dell'ombrello sono quelli di xenophile, le interfacce per funzioni straniere di JavaScript e
++     Wasm) e `anthology.Language` (quello dell'ombrello è di cosmopolite). Sotto
++     `import soundness.*` questi tre si scrivono pienamente qualificati,
++     `anthology.Js(anthology.Js.Module.Es)`. Gli oggetti di opzioni `scalacOptions` e
++     `kotlincOptions` sono rispecchiati come package dell'ombrello, così
++     `scalacOptions.experimental` si legge allo stesso modo da entrambe le parti.
+
+@ 0 7 0 03785cd4e890719900a96deb734dd4ce
++     I valori contestuali di cui una compilazione ha bisogno sono un `System`
++     (`systems.javaBaseSystem`), un `Monitor` (dentro `supervise`, con un given `threads`) e un
++     `Probate` (`probates.cancelProbate`), un `Compiler.Event is Loggable`
++     (`logging.silentLogging` per scartare gli eventi) e una `Tactic[Compiler.Error]`; un
++     `Toolchain#produce` ha bisogno di un `Monitor`, un `System`, una `WorkingDirectory`, una
++     `Tactic[Link.Error]` e un `LinkEvent is Loggable`. Anche i costruttori che sondano gli
++     strumenti, `WasiToolchain()` e `nativeEdges()`, hanno bisogno di una `WorkingDirectory` e di
++     un `Environment`.
+
+% 0 1 0 0e5152cb0a80081d0813ac40ff570a5a
+
+% 0 1 0 112d5899b7f448111d9c9e07371fbd4f
+
+% 0 1 0 0438d508389f00610ac2343ba5984ccb
+
+% 0 1 0 036915c7f1a495321b4eb5654965392f
+
+% 0 1 0 07fa6f2b7258bb0805a0b62a75dbcb9a
+
+% 0 1 0 08073aad6bf47e221d5d5d1e427b7d45
+
+@ 0 1 0 069537f19599add5185e2c67a0309c5d
++ entry .Compiler   la forma di un compilatore in-process: una versione, e sorgenti più classpath verso un `Compiler.Process`
+
+% 1 1 0 141c62780ed717e015fcbbac154028e1
+
+@ 0 6 0 07efbfc398415c6f0d86c125a12115d8
++       `Compiler` è l'interfaccia che presentano `Scalac`, `Javac` e `Kotlinc`: `#version` riporta
++       il compilatore che il valore pilota, così come lo riporta il compilatore stesso, e `#apply`
++       compila una mappa di sorgenti con nome rispetto a un `LocalClasspath` in una directory di
++       output, restituendo un `Process` i cui diagnostici e il cui risultato arrivano come valori.
++       Ogni compilatore prende gli stessi argomenti nello stesso ordine, così uno strumento che
++       orchestra la compilazione non cambia idioma a seconda del linguaggio.
+
+% 2 1 0 0967b3ade6d6057b1542027bc7e7acf9
+
+% 3 1 0 18b3da96c4644c001942c698f66b240e
+
+% 4 1 0 02527c84bb9023c417bf0795f09e048e
+
+% 5 1 0 0c5d19d7bc72796f09d1aa6efd673844
+
+% 6 1 0 1718c4e0b4398acf0aab0c241cc695c2
+
+% 7 1 0 1ae27f0773f6fe520216e8cd1a8e640b
+
+% 8 1 0 06e716b090967240184b66976f3ae6be
+
+% 9 1 0 14f89392bd14605314b4a0d7bae9556b
+
+% 10 1 0 0efb71e6b638651b128a6f25be8101ec
+
+% 12 1 0 171db999561a2d1113cf19f56cea90f6
+
+% 13 1 0 0749ca327acffe3e14e71354e17b0fd5
+
+% 15 1 0 1fc8b1677711c2171c49d66bc3878c3b
+
+% 0 1 0 194678915c6896d1178d0f43e2922dad
+
+% 1 1 0 15edf89c2f6bf2e205c747f82dad1087
+
+% 2 1 0 00daa24ed9a13e100d2f6e6717dec580
+
+@ 0 2 0 17a457035cf8458217865b865ad5de2d
++       L'oggetto compagno contiene `Compiler.Error`, l'unico errore che ogni compilatore solleva
++       quando non può essere configurato affatto, a differenza di una compilazione che viene
++       eseguita e fallisce.
+
+% 1 1 0 0d0fb41b4b8d456d141232c189f4d1b0
+
+% 0 1 0 060c52244f3056531fa561f5f28b29b6
+
+% 1 1 0 11df5025adaafc7c1e899298e77a4fdd
+
+% 1 1 0 1260a6c499a162d8074eff6753677f18
+
+@ 0 1 0 1f7b7bc742428bab10b92ddcec9b0b97
++   entry .Error   sollevato quando un compilatore non può essere preparato a partire dalle sue opzioni
+
+% 1 1 0 0479fd3dfa8873fa1967344cb37db399
+
+@ 0 19 0 1d48c60e8bc8841a0fa3cafaf4062521
++         Errore `↯/s.137.3`: _there was a problem with the compiler configuration_. Sollevato
++         quando il contesto di base del compilatore non può essere costruito a partire dagli
++         argomenti dati allo `Scalac` — un'opzione che il compilatore incorporato rifiuta — il che
++         accade quando viene aperta una `Scalac.Session`. È un difetto di configurazione, non un
++         fallimento di compilazione: sorgenti che non compilano danno un `Result.Failure` con dei
++         `Notice`, e un compilatore che lancia un'eccezione dà un `Result.Crash`; nessuno dei due
++         solleva questo errore.
++   entry #version   la versione del compilatore che questo valore pilota, così come la riporta il compilatore
++       `3.10.0` per un compilatore Scala incorporato, `25.0.4` per il compilatore Java del JDK in
++       esecuzione, `2.4.10` per il compilatore Kotlin sul classpath. Una build la registra come lo
++       strumento che ha prodotto un output, e una chiave di memoizzazione deve includerla, così che
++       una ricostruzione non trovi la cache quando il compilatore cambia. Il `Process` che una
++       compilazione restituisce porta lo stesso testo come propria `version`.
++   entry #apply   compila sorgenti con nome rispetto a un classpath in una directory, come `Compiler.Process`
++       `compiler(classpath)(sources, out)`: i sorgenti sono una `Map` da un nome (che i
++       diagnostici citeranno, `hello.scala`) al suo contenuto, il classpath un `LocalClasspath`
++       rispetto al quale i sorgenti compilano, e `out` un qualsiasi tipo di percorso
++       `Abstractable across Paths to Text`. Ha bisogno di un `System` e di un `Monitor`, registra
++       nel log dei `Compiler.Event`, e solleva `Compiler.Error`. Per `Scalac` la directory di
++       output deve già esistere; gli archi di compilazione di una `Toolchain` la creano, ma una
++       chiamata diretta no.
+
+@ 0 1 0 088c983663b3e2fe13922a915d0b86f4
++   entry .Process   una compilazione in corso o terminata: i suoi diagnostici, l'avanzamento e il risultato come valori
+
+% 1 1 0 1561927ab96f638f0f7702e8d787feaf
+
+@ 0 7 0 1cdbf4f1776fe006196749764bc93672
++         L'`apply` di ogni compilatore restituisce subito un `Process`, mentre la compilazione è
++         in esecuzione in un task proprio (`Scalac`, `Javac`, `Kotlinc`) o è già terminata (una
++         `Scalac.Session.Process`). `#complete()` attende il `Result`; `#notices` è l'elenco dei
++         diagnostici finora, dal più vecchio; `#errors` e `#warnings` li contano; e `#updates` è un
++         flusso dal vivo che alterna diagnostici e tick di avanzamento nell'ordine di arrivo, per
++         uno strumento che mostra una compilazione mentre avviene. `#abort()` chiede al
++         compilatore di fermarsi al suo prossimo tick di avanzamento.
+
+% 2 1 0 1708328d8d6d4d791166ee14307150c3
+
+% 3 1 0 097c2289c4de5e920bbb9cd55b0ee6e3
+
+% 4 1 0 089f6f392efbc1ba03ea6b8da6dd8d7a
+
+% 5 1 0 15ebc65531ad5ae507a4ff63606b8726
+
+% 6 1 0 0ee2b6d23688c5ad1969ae07fd61cf0f
+
+% 7 1 0 04d2551ff72dc51406137cd50d29ccd6
+
+% 8 1 0 009ee397ad7777f016640e60b2a7d7ed
+
+% 9 1 0 00bad761efcea2e71dca866df95d2da7
+
+% 10 1 0 08135abd70c5851517f90db2ab5e1cef
+
+% 12 1 0 06a58ee3905592d6132a70cde7676038
+
+% 13 1 0 0151dd9fdac58056108e4773b1fca530
+
+% 15 1 0 167b21a33a3afc9805e27d38fe26a065
+
+% 0 1 0 01ffb0e476b78c0a1090683d8b731f9c
+
+% 0 1 0 185d4189271be9250591eda7ecbf1b0c
+
+% 0 1 0 0d71d5e30a1ff6690e5b4cb98678329d
+
+% 0 1 0 0c5df8d6c36b94691e24e721874d305d
+
+% 0 1 0 0ffa97939ea79b50104f65e9305b59ea
+
+% 1 1 0 11d92feda25b5c48185f41327786b7a4
+
+@ 0 4 0 071d51b36657a4180535d4ce9d31e4ce
++         Un processo è anche il sink in cui scrivono i compilatori — i tre overload di `#put` — ed
++         è così che uno strumento che incapsula un altro compilatore ne alimenta uno. La sua
++         `#version` è la versione del compilatore che l'ha eseguito, così una compilazione terminata
++         può dire che cosa ha prodotto il suo output senza che il chiamante tenga in mano il
++         compilatore.
+
+% 0 1 0 1f2ea1ed2bd6fcef083747faa9f44468
+
+% 0 1 0 176736af42a4829b1b32edf7a2d69570
+
+% 0 1 0 07921ad559fcf1e9081f569ce51b4adc
+
+@ 0 4 0 169b0eb8cf0d4e1601fb930b6747d63d
++     entry .Update   un elemento del flusso dal vivo: un diagnostico, o un tick di avanzamento
++         `Noticed(notice)` porta un `Notice` così come lo riporta il compilatore e
++         `Progressed(progress)` un `Progress`, nell'ordine in cui sono arrivati; `#updates` li
++         produce. Un consumatore fa pattern matching sui due casi:
+
+% 2 1 0 0f4872edb456157b0d45c68012df6887
+
+% 3 1 0 1e60045c4122aca81d14e43e74d38efe
+
+% 0 1 0 1d4e2cc410e368ec02bdc034f708ebce
+
+% 0 1 0 1ae1064bf1137a4219ed59c91a2dcb91
+
+% 0 1 0 19f55bf95c1472cc15ac2086aa56e43a
+
+% 1 1 0 0fed48038575b7570c53ea8674b97220
+
+@ 0 27 0 1ba005e717319ec1192838a44949376f
++     entry #version   la versione del compilatore che ha eseguito questa compilazione
++     entry #put   registra una notifica, un tick di avanzamento, il risultato, o il task che esegue la compilazione
++         Quattro overload, per i compilatori che alimentano un processo: `put(notice)` accoda un
++         `Notice`, lo conta come errore o avvertimento secondo la sua importanza, e lo offre al
++         flusso; `put(progress)` offre un `Progress` al flusso; `put(result)` completa il processo
++         con un `Result`; e `put(task)` registra il `Task[Unit]` in cui gira la compilazione, così
++         che `#complete()` possa attendere che termini dopo il risultato.
++     entry #errors   il numero di notifiche di livello errore riportate finora
++     entry #warnings   il numero di notifiche di livello avvertimento riportate finora
++     entry #complete   attende il risultato della compilazione, poi ferma il flusso degli aggiornamenti
++         Attende il `Result` — `Success`, `Failure` o `Crash` — poi attende che il task della
++         compilazione termini e ferma il flusso, così che un consumatore di `#updates` ne veda la
++         fine. Ha bisogno di un `Monitor`, di una `Tactic[Async.Error]` (per l'attesa) e di un
++         `Event is Loggable`. Quando ritorna, `#notices` è completo.
++     entry #abort   chiede al compilatore di fermarsi
++         Azzera un flag atomico che il compilatore interroga attraverso la sua callback di
++         avanzamento, così una compilazione interrotta si ferma al suo prossimo tick di avanzamento
++         invece di proseguire fino al termine. Il risultato con cui poi si completa è quello che il
++         compilatore riporta. `#cancelled` rilegge il flag.
++     entry #cancelled   se `#abort()` è stato chiamato
++     entry #updates   il flusso dal vivo dei diagnostici e dei tick di avanzamento, come stream di finestre
++         Uno stream con un unico proprietario sul relay del processo: ogni finestra è un `Array` di
++         `Process.Update`, la prima arriva quando arriva il primo aggiornamento e le altre
++         svuotano tutto ciò che è arrivato nel frattempo. Lo si reclama una volta, e lo si consuma
++         elemento per elemento con `updates.records.each`. Termina quando la compilazione si
++         completa (`#complete()` ferma il relay); un reclamo dopo il completamento riproduce
++         l'intero flusso e poi termina, ed è così che un processo terminato può ancora essere
++         ispezionato. Ha bisogno di un `Buffering` nell'ambito.
+
+% 2 1 0 0ed40a3055c9eefc16be84c3a5650e1d
+
+% 3 1 0 1bc6ffd78c82f231139fa9beb8fbd3cb
+
+% 4 1 0 1523806a8d2906ac1bd4a33f2e9e2d95
+
+% 5 1 0 1d712504714df9da1e69bae083a75d1d
+
+% 6 1 0 1412f9af950f60090f1590fa8ffe08e8
+
+% 7 1 0 11fe73a79c584b260f79093579db904b
+
+% 8 1 0 13481b05fb177d480a63584f6c1d8bce
+
+% 9 1 0 08a3520c7a4c39fb05378c2c26e8f0e3
+
+% 10 1 0 12f992422363bbb417cfc596e7d42dae
+
+% 12 1 0 1431149c19f72ef20dc487dc67a2b196
+
+% 13 1 0 033d66b75b53c6a51191323397cc001f
+
+% 15 1 0 1ef4b0fdf3a003db0c1a1a9f14bead70
+
+% 0 1 0 10fc6d011bc04f991cff4889126b4d82
+
+% 0 1 0 163cc6d22219fefc0df7c00680f2d80c
+
+% 0 1 0 0e414d68fb8182d30f78dfb99a3f05fd
+
+% 0 1 0 1e668aa35349cdb70431aa8a77e9b2c0
+
+% 0 1 0 1b6563f0c153f734194d759870fa0e4b
+
+% 1 1 0 1d95eae59715b7651c081f0991ec2386
+
+@ 0 10 0 1415dd745f73c3fa1e644fc6f2a0aa03
++     entry #notices   i diagnostici riportati finora, dal più vecchio
++         Un'istantanea stretta per l'ispezione a posteriori, completa una volta che `#complete()`
++         è ritornato. Un consumatore dal vivo dovrebbe preferire `#updates`, che porta anche
++         l'avanzamento.
++   entry .Result   come è terminata una compilazione: successo, fallimento, o un crash con il suo stack trace
++       `Success` significa che il compilatore è stato eseguito e non ha riportato errori;
++       `Failure` che è stato eseguito e ne ha riportato almeno uno, descritto dalle `notices` del
++       `Process`; e `Crash(error)` che il compilatore stesso ha lanciato un'eccezione, con lo
++       `StackTrace` che ha lanciato. Un crash arriva come valore e non come eccezione, e dopo un
++       crash i compilatori senza stato sostituiscono la loro istanza di compilatore condivisa
++       (`Scalac.refresh()`, `Javac.refresh()`) e una `Scalac.Session` ricostruisce il suo stato
++       caldo, così la compilazione successiva parte pulita.
+
+% 2 1 0 1214ce4199b597e7153434001c9e191d
+
+% 3 1 0 055f8bd79dbc6e2202581f54521a2eaa
+
+% 0 1 0 0b340abfa9e5f10b1bd42f06c3c64bee
+
+% 0 1 0 0e1879f1353c3b3d095e3a730b568f04
+
+% 0 1 0 190c6de313de9b43080c79183f95716d
+
+% 0 1 0 0c5539a9dc21dab00b01245f506bc6bd
+
+% 1 1 0 084080476a3eedcd0bcd599a1186e1ac
+
+@ 0 1 0 1ce10f99a511ad0f0af723783045b24f
++   entry .Event   ciò che un compilatore registra nel log durante l'esecuzione: avvio, argomenti, ogni diagnostico, un crash
+
+% 1 1 0 04cc29d98413d62a0796cb40bee8f40e
+
+@ 0 7 0 0f81b98d63e3591118c17196cf690907
++         Ogni `Compiler.Event` porta il tag `Log.Compiler`. `Running(arguments)` è registrato a
++         livello `info` con l'elenco completo degli argomenti del compilatore prima che parta;
++         `Notice(diagnostic)` a livello `fine` per ogni diagnostico man mano che viene riportato;
++         `CompilerCrash` a livello `fail` quando il compilatore lancia un'eccezione; e `Start` a
++         livello `info` da `Javac` e `Kotlinc` prima che partano. Un `Compiler.Event is Loggable`
++         deve essere nell'ambito per ogni compilazione; `logging.silentLogging` li scarta, e
++         `Event.relay` li inoltra su un canale di `LinkEvent`.
++     entry .communicable   rende ogni evento come un messaggio
+
+% 0 1 0 15b58f0234bfe27d1d5cb6562bcaac0a
+
+@ 0 9 0 057fcf6e9ccc14fa1d5edb7a0c157592
++         `diagnostic`_ e _running the compiler with arguments `arguments`_.
++     entry .relay   un `Event is Loggable` che inoltra ogni evento come un `LinkEvent.Message`
++         Gli archi di compilazione di una `Toolchain` ricevono il `LinkEvent is Loggable` della
++         toolchain, mentre i compilatori che pilotano parlano `Event`; `Event.relay(using
++         linkEvents)` fa da ponte tra i due per la durata di una compilazione, così una build che
++         osserva gli eventi di un percorso vede allo stesso modo compilazione e collegamento. Ogni
++         evento è reso attraverso `Event.communicable` e registrato allo stesso livello come
++         `LinkEvent.Message`. Cattura tutto ciò che cattura il canale di collegamento.
++   entry .Progress   un tick di avanzamento: la frazione completata e lo stadio corrente del compilatore
+
+% 1 1 0 18eeca25a44c29cd1b5af7ddc689e35c
+
+@ 0 6 0 096c7bc4cc61dde104e5e55c6358ac42
++         `Scalac` riporta un tick per ogni punto percentuale intero, con il nome della fase in cui
++         si trova il compilatore (`typer`, `erasure`, …) come suo `#stage`; `Javac` e `Kotlinc`,
++         che non espongono alcun avanzamento, riportano `0.1` all'avvio e `1.0` in caso di
++         successo, con il nome del compilatore come stadio. I tick arrivano attraverso
++         `Process#updates` come `Update.Progressed`.
++     entry #complete   la frazione della compilazione svolta, da `0.0` a `1.0`
++     entry #stage   la fase corrente del compilatore, come la chiama esso stesso
+
+@ 0 1 0 1a5e3e374787867d0e3babf29877e364
++   entry .Notice   un diagnostico: la sua importanza, il file, il messaggio, il tratto e il markup semantico
+
+% 1 1 0 1b1eda47efba43781a8911f3d0c86cd6
+
+@ 0 6 0 1261d6c225c0fa6009e39ef163c91f89
++         Ciò che un compilatore riporta sui sorgenti, come valore: `#importance` è `Info`,
++         `Warning` o `Error`; `#file` il nome dato al sorgente nella `Map` della compilazione
++         (`hello.scala`), non un percorso su disco; `#message` il testo; e `#span` la regione del
++         sorgente che riguarda, come `Span` di denominative, o `Unset` per un diagnostico senza
++         posizione. Uno strumento può sottolineare il codice incriminato invece di ripetere
++         l'output del compilatore.
+
+% 2 1 0 0812b646c7317998008d744709e46446
+
+% 3 1 0 09187b25bb5c032403f7edce48d6826a
+
+% 0 1 0 14d493e25a69f88c0dcb749c094cc8ad
+
+% 0 1 0 195f7ebe823acfbe09059e1f48c7fa87
+
+% 1 1 0 143c7c85e1cc1b9b084b47c01ffecdbc
+
+@ 0 10 0 1ab603186ef837121676d232b7ce449a
++         `#markup` è impostato solo da `Scalac` sotto `scalacOptions.semanticDiagnostics`: il
++         messaggio grezzo con i marcatori semantici in banda del compilatore (U+E000 e i suoi
++         compagni) preservati, che la libreria delicious analizza in un `SemanticMessage` di
++         tratti stilizzati, segnaposto e tipi serializzati, così che un messaggio "found `A`,
++         required `B`" arrivi come due tipi da rendere e confrontare e non come testo da
++         rianalizzare.
++     entry #importance   se la notifica è informativa, un avvertimento o un errore
++     entry #file   il nome dato al sorgente quando è stato compilato
++     entry #message   il testo del diagnostico, privato di qualsiasi marcatore semantico
++     entry #span   la regione del sorgente che la notifica riguarda, o `Unset`
++     entry #markup   il messaggio grezzo con i marcatori semantici, sotto `-Zsemantic-diagnostics`, altrimenti `Unset`
+
+@ 0 1 0 0dd67d78f06bb78a16e1547a8d57a4a9
++ entry .Compilation   la directory di output e il classpath di una compilazione, marcati con il suo `Universe`
+
+% 1 1 0 025cf6a683a7e3ac1207276bf1602c95
+
+@ 0 5 0 16b829744f7c234603d42d19ce4c8e25
++       Un token che abbina la directory in cui una compilazione ha scritto al `LocalClasspath`
++       rispetto al quale è stata compilata, e che porta l'universo a cui appartiene come parametro
++       di tipo, così che una `Compilation[Toolchain.Universe.Sjsir]` non possa essere passata dove
++       è attesa una `Compilation[Toolchain.Universe.Nir]`: sono due tipi diversi, e la mancata
++       corrispondenza è un errore di compilazione nello strumento di build invece di un
++       fallimento al momento del collegamento.
+
+% 2 1 0 0e89697f7ee6f4a11e2237ee421444b3
+
+% 3 1 0 11e957325721085b1c7005e3235a9e00
+
+% 0 1 0 035b83b2969ca61318513a41f99a62b6
+
+% 0 1 0 1e0282d9f69044fc1fe75ab96becb5d8
+
+% 1 1 0 11fbc502ef86fb8f0cfe4359fd7f2bff
+
+@ 0 4 0 18fb9260c9510b3d12181e8c63ae68bc
++       Il meccanismo della `Toolchain` fa scorrere la stessa coppia senza marcatura, come
++       `Deliverable.Emission`, poiché lì l'universo è un nodo del grafo e non un tipo.
++   entry #out   la directory in cui la compilazione ha scritto il suo output
++   entry #classpath   il classpath rispetto al quale i sorgenti sono stati compilati
+
+@ 0 5 0 068f511ff6f4c51b1e5631253f9e7d2b
++ entry .Importance   il livello di un diagnostico: `Info`, `Warning` o `Error`
++     Ordinati come i livelli propri del compilatore Scala (il suo ordinale è quello del
++     compilatore), così una notifica conta come errore quando la sua importanza è
++     `Importance.Error`. `Link.Error.Reason .CompilationFailed` conta i suoi errori allo stesso
++     modo: `notices.filter(_.importance == Importance.Error).length`.
+
+@ 0 7 0 0f164081aecc301808cd6bc47ef8f631
++ entry .Language   i linguaggi sorgente, come nodi sorgente di una toolchain: `Scala`, `Java`, `Kotlin`
++     Un `Artifact.Source` per ogni linguaggio per cui la libreria ha un compilatore, con id
++     `scala`, `java` e `kotlin`: il nodo in cui si trova un `Deliverable.Sources`, da cui
++     `scalacEdges`, `javacEdges` e `kotlincEdges` portano agli universi che ciascun compilatore
++     può emettere. **Non è esportato** nell'ombrello `soundness`, il cui `Language` è quello di
++     cosmopolite, così sotto `import soundness.*` si scrive `anthology.Language.Scala`.
++     `Artifact.source(t"scala")` è lo stesso nodo.
+
+% 2 1 0 178ec7b8c45f99c30d454dd3b3776479
+
+% 3 1 0 0d839f7b7dcabedf02d6e4d834e879e5
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 09866ebe08e4f9d51cc144ad69591a7c
+
+% 0 1 0 0173b2ad47146740019a1868ff52a795
+
+% 1 1 0 102447f14271f35a0fb55ecc0e5ca14b
+
+@ 0 1 0 0bac91480f5ba1391bb89a94cb91e830
++ entry .NirPlugin   la posizione del plugin del compilatore di Scala Native, come prova che si può emettere NIR
+
+% 1 1 0 1d8ccb6c866ef9751c3444c5256ecd6d
+
+@ 0 6 0 13bb082eaa1f91d91c9a3458e57b0112
++       Il NIR è emesso da un plugin del compilatore (`nscplugin`) e non da un backend integrato
++       nel compilatore Scala, quindi compilare verso `Toolchain.Universe.Nir` richiede di sapere
++       dove si trova il JAR del plugin. Un given `NirPlugin` nell'ambito è questa prova:
++       `Toolchain.Universe.nir` costruisce da esso la
++       `Toolchain.Universe.Emission[Toolchain.Universe.Nir]`, aggiungendo `-Xplugin:<jar>` agli
++       argomenti del compilatore, e `scalacEdges.nir` lo esige. Senza di esso,
++       `Scalac#targeting[Toolchain.Universe.Nir]` non può essere applicato e l'arco non può essere
++       costruito.
+
+% 2 1 0 04db0529a669695512ab95fb2d84f7c2
+
+% 3 1 0 13fc1b0f409549ae1a26e9a5e4d20e1e
+
+% 4 1 0 1e102465f6d389ba0f902e46fd814b82
+
+% 0 1 0 1ada3ecc6a4015280b3387780ef305db
+
+% 0 1 0 01e83936a27cdc72155afe699cb38397
+
+% 1 1 0 0dc7e531bf3e0187062b6f6b1a8eabb2
+
+@ 0 5 0 1b80c844dd1539ce183726a305e3007b
++       Il plugin pubblicato standard (`org.scala-native:nscplugin_<scala version>:0.5.12`)
++       funziona con il compilatore di Soundness; il runtime di Scala Native (`scalalib`,
++       `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib` e `nativelib`) va sul classpath come
++       qualsiasi altra libreria, e la sua assenza si manifesta come normali diagnostici del
++       compilatore.
++   entry #jar   il percorso del JAR del plugin
+
+@ 0 1 0 1cc15878bd757ed91705e89621a4b618
++ entry .Artifact   un nodo di una toolchain: un linguaggio sorgente, una rappresentazione intermedia o un formato di applicazione
+
+% 1 1 0 105f2ed0e9934be10bf862eeb668dfac
+
+@ 0 5 0 11a96319824699aa13c10cc6a177ddc8
++       Ogni nodo di una `Toolchain` è un `Artifact`, in uno di tre livelli: un `.Source` come
++       `anthology.Language.Scala`, che i compilatori consumano; un `.Ir` come un
++       `Toolchain.Universe`, che contiene contenuto a mondo aperto, prima del collegamento, in cui
++       le librerie si compongono; o una `.Application` come `Artifact.Jar` o `Apk`, un formato
++       chiuso che un host esegue. Gli strumenti consumano qualsiasi formato ma producono sempre e
++       solo un `Ir` o una `Application` — `Edge` lo dice nei suoi tipi.
+
+@ 0 7 0 02716b434315460902fd8fbad5202cca
++       L'identità di un formato è il suo `#kind` e il suo `#id`, e nient'altro: `equals` e
++       `hashCode` sono final e confrontano solo questi. Così, ovunque un parametro cambi ciò che
++       un utente riceve — il sistema di moduli di un artefatto JavaScript, la versione
++       dell'interfaccia di un artefatto WASI, la tripletta di destinazione di un binario nativo —
++       esso fa parte dell'`id`, e ogni parametrizzazione è un nodo distinto.
++       `Artifact.Binary(Toolchain.Triple.Arm64MacOs)` è distinto da
++       `Artifact.Binary(Toolchain.Triple.X64Linux)` quanto un JAR lo è da un bundle JavaScript;
++       il fatto che condividano un linker non li rende intercambiabili.
+
+@ 0 5 0 09d79f71c842f73308b3ae189853f3ca
++       L'insieme dei nodi è aperto. Un formato può essere dichiarato come dato, attraverso il suo
++       tipo e il suo nome, con `.apply`, `.source`, `.ir` e `.application`, come fa un registro
++       letto a runtime per dichiarare le forme che nessuna release di Soundness conosce; e un
++       formato dichiarato è *lo stesso nodo* del formato integrato con lo stesso tipo e nome, così
++       `Artifact.ir(t"classfile")` raggiunge ogni arco registrato per
++       `Toolchain.Universe.Classfile`.
+
+% 2 1 0 111bdceda737564a150b2708edef6d62
+
+% 3 1 0 0a2d1c8e7911f8a7097f934806bcc685
+
+% 0 1 0 03a870baaaff7c8f083e4b61f1465d36
+
+% 0 1 0 1681485231a06feb0dc615f736e7b952
+
+% 0 1 0 01ba4a490045f1cc0d5f6234fe5da0b0
+
+% 0 1 0 0676cc91e152dc82104e6a4c12da32f4
+
+% 1 1 0 182307eb95df21f31f83c1791e77ce86
+
+@ 0 4 0 19bcee6c5016528a1fff74d7bfe2b33f
++       Una classe che estende `Artifact` senza passare da uno dei tre trait di livello deve
++       definire `#kind` da sé, e nessuna può ridefinire `equals` o `hashCode`; una case class che
++       lo estende non ha un'uguaglianza strutturale sintetizzata, così un formato i cui parametri
++       distinguono dei nodi deve codificarli nel suo `id`, come fa ogni formato integrato.
+
+% 1 1 0 117d7cb7f5622b42050553e7bfbc2452
+
+% 1 1 0 0cf545747b5ed81c1a70c67e9822655e
+
+% 1 1 0 1f43fe9da9580bf51b1a90b5a686fa66
+
+@ 0 19 0 0d958b6d7530e7c91cc220845df650df
++   entry .Kind   il livello a cui appartiene un formato: `Source`, `Ir` o `Application`
++       Il tipo con cui un formato è dichiarato, come dato. Due formati sono uguali solo quando lo
++       sono i loro tipi, così una sorgente e un'applicazione possono condividere un nome.
++   entry .Source   il livello dei formati che i compilatori consumano: un linguaggio sorgente
++       `kind` è fissato a `Kind.Source`. Le sorgenti integrate sono i casi di
++       `anthology.Language`; `Artifact.source(id)` ne dichiara un'altra.
++   entry .Ir   il livello delle rappresentazioni intermedie: classfile, `.sjsir`, `.nir`, componenti
++       `kind` è fissato a `Kind.Ir`. Le rappresentazioni intermedie integrate sono i
++       `Toolchain.Universe` che una compilazione Scala emette, più i nodi senza archi `Component`
++       e `WasmObject`; `Artifact.ir(id)` ne dichiara un'altra.
++   entry .Application   il livello dei formati chiusi che un host esegue: un JAR, un APK, un bundle, un binario
++       `kind` è fissato a `Kind.Application`. Le applicazioni integrate sono `Artifact.Jar`,
++       `Artifact.Binary`, `Library`, `anthology.Js`, `anthology.Wasm`, `Wasi`, `OciImage`, `Dex`
++       e `Apk`; `Artifact.application(id)` ne dichiara un'altra.
++   entry .Jar   un JAR eseguibile, legato al JDK: il nodo che `jarEdges` raggiunge da `Classfile`
++       Il nodo di applicazione con id `jar`: un JAR eseguibile dell'output di una compilazione
++       insieme al suo intero classpath, con l'unico `EntryPoint` come sua `Main-Class`. È annidato
++       qui come `Artifact.Jar` perché il `Jar` dell'ombrello `soundness` è quello di zeppelin.
++   entry .Binary   un eseguibile in codice macchina per una `Triple` di destinazione: un nodo per tripletta
+
+% 1 1 0 0619c7a1489c5c69146bd6a3eb690aca
+
+@ 0 21 0 000fd10830743dbf1a9f026e64237eae
++         Il nodo di applicazione con id `binary-<triple>`, per esempio
++         `binary-arm64-apple-darwin`, raggiunto da `Toolchain.Universe.Nir` attraverso
++         `nativeEdges`. Un binario è legato alla libreria C di un solo sistema operativo e di una
++         sola architettura, così ogni tripletta è un nodo a sé e una toolchain costruita con
++         `nativeEdges(Toolchain.Triple.X64Linux)` non ha alcun percorso verso
++         `Artifact.Binary(Toolchain.Triple.Arm64MacOs)`. Annidato qui come `Artifact.Binary` perché
++         il `Binary` dell'ombrello è quello di monotonous.
++     entry #triple   la piattaforma di destinazione su cui il binario gira
++   entry .apply   `Artifact(kind, id)`: un formato dichiarato come dato, attraverso il suo tipo e il suo nome
++       Smista sul tipo verso `.source`, `.ir` o `.application`. Il risultato è uguale al formato
++       integrato con quel tipo e quell'id, se esiste, e ha lo stesso hash.
++   entry .source   `Artifact.source(id)`: un formato sorgente dichiarato
++       `Artifact.source(t"proto")`, per un linguaggio che nessun compilatore di Soundness conosce
++       ma che un arco registrato può consumare. Si ispeziona come `Artifact.source(proto)`.
++   entry .ir   `Artifact.ir(id)`: una rappresentazione intermedia dichiarata
++       `Artifact.ir(t"descriptor")`, un universo con il proprio portatore.
++       `Artifact.ir(t"classfile")` è `Toolchain.Universe.Classfile`.
++   entry .application   `Artifact.application(id)`: un formato di applicazione dichiarato
++       `Artifact.application(t"bundle")`, un prodotto finale con il proprio contratto con
++       l'host. `Artifact.application(t"js-es")` è `anthology.Js(anthology.Js.Module.Es)`.
++   entry #id   il nome del formato, che insieme al suo tipo ne costituisce l'intera identità
++   entry #kind   il livello a cui appartiene il formato
+
+@ 0 1 0 0c829b480001570a1fd03c9ac65b7611
++ entry .Deliverable   il valore che scorre lungo un percorso di una toolchain: sorgenti, un'emissione o un prodotto
+
+% 1 1 0 151bc6266ec0044b09ec9a18a1483221
+
+@ 0 7 0 0f3c13b41b61205f190d3d56435acdad
++       Ciò che lo strumento di ogni arco consuma e produce; il suo caso dice in quale punto del
++       grafo si colloca: `Sources(sources, classpath)` — una mappa di sorgenti con nome e il
++       classpath rispetto al quale compilarli — si trova in un nodo di linguaggio sorgente;
++       `Emission(out, classpath)` — la directory di output di una compilazione e il classpath
++       rispetto al quale è stata compilata — in una rappresentazione intermedia; e
++       `Product(file)` — un file collegato o impacchettato — in un'applicazione.
++       `Toolchain#produce` ne prende uno come input, nel nodo che indica come sua sorgente.
+
+% 2 1 0 00d54e188e6812bf0160f8750c9630a6
+
+% 3 1 0 07f0c868c5478d3911de43fd84b1de74
+
+% 4 1 0 13b694e2625b0aac048ee5375bdb75af
+
+% 2 1 0 1d9e30cc6acb539604ba44fbaac23acb
+
+% 3 1 0 0cf8c7f5173ab1961222e335a6ae2776
+
+% 0 1 0 1da197e2b47ddf85135e4849c87502b8
+
+% 0 1 0 093da03dae26d63f1ae5f444c63e8c11
+
+% 0 1 0 1ab626aa629512b01131bf4c6b0a934d
+
+% 1 1 0 1697d2142ef918b10b781d42ad1efa6a
+
+@ 0 4 0 083110e1d1fc41d30d169c33acd3433d
++       Uno strumento sa staticamente quale variante consuma il suo arco, e i tre accessor
++       `#sources`, `#emission` e `#product` sono le sue coercizioni: ciascuno solleva
++       `Link.Error` con motivo `UnexpectedInput(format)` quando riceve un'altra variante,
++       indicando il formato in produzione, ed è così che si diagnostica una toolchain collegata
++       male.
+
+% 1 1 0 1f4d46aacff176b90a64e3e6ac8058be
+
+% 0 1 0 086080c132c88e4409d1d47cf72df74d
+
+@ 0 7 0 14f3d17d73315b1203c3a29e51f2bc45
++   entry #sources   i sorgenti con nome e il classpath, per un arco di compilazione
++       Solleva `Link.Error(UnexpectedInput(target.id))` a meno che questo non sia un `Sources`.
++   entry #emission   la directory di output e il classpath, per un arco di collegamento o di impacchettamento
++       Solleva `Link.Error(UnexpectedInput(target.id))` a meno che questa non sia una
++       `Emission`.
++   entry #product   il file, per un arco che reimpacchetta un prodotto finito
++       Gli strumenti `Apk` e `OciImage` consumano così il prodotto dell'arco che li precede.
++       Solleva `Link.Error(UnexpectedInput(target.id))` a meno che questo non sia un `Product`.
+
+@ 0 1 0 0eed15c837aadf3a079502173a3e56a7
++ entry .Edge   un arco di una toolchain: uno strumento che produce il formato `target` dal formato `source`
+
+% 1 1 0 0feb29f5c70baf6b1f14b4498c9b1f19
+
+@ 0 6 0 0db9eb664159fc24111ec85d3424fafd
++       `Edge(source, target, tool)`. La destinazione è tipizzata
++       `Artifact.Ir | Artifact.Application`, poiché le sorgenti non vengono mai prodotte. I
++       fornitori di archi — `jarEdges()`, `dexEdges()`, `apkEdges()`, `sjsEdges()`,
++       `nativeEdges()`, `ociEdges()`, `scalacEdges.classfile(…)`, `javacEdges(…)`,
++       `kotlincEdges(…)` — restituiscono ciascuno gli archi per il proprio strumento, e
++       `Toolchain(…)` assembla un numero qualsiasi di tali liste; un arco per un nuovo formato si
++       scrive direttamente, con un proprio `Toolchain.Tool`.
+
+% 2 1 0 01c3ea951a307ac1130b01d59454404d
+
+% 0 1 0 07b750cd940b39ca13b1331c684c2c28
+
+% 1 1 0 0c350a5776ffba69126c55b22df55c94
+
+% 2 1 0 164f3912a0e3096a1a3539b6de2a98d8
+
+% 0 1 0 125a0b1fea034da615ceb193786a129d
+
+% 0 1 0 04e093c6a316e443122742045c3bcad9
+
+% 0 1 0 163261c8c2c7e1341ec2576f3eda60db
+
+% 0 1 0 1f4b349e0c1bb195095b9298523b9784
+
+% 1 1 0 091fcbae2c768aaa145901781759efc4
+
+@ 0 3 0 063ecf2775b0706f1125fff3bbe3470e
++   entry #source   il formato che lo strumento consuma
++   entry #target   il formato che lo strumento produce: una rappresentazione intermedia o un'applicazione
++   entry #tool   lo strumento che esegue l'arco
+
+@ 0 1 0 131e1e0e147296581595a88077fbd74c
++ entry .Toolchain   un grafo di formati e strumenti, sul quale produrre un formato da un altro è una ricerca di percorso
+
+% 1 1 0 194196834444fe331dfde7265cdc7692
+
+@ 0 6 0 17f1db0504217bd60731ccfb6e6bb7b2
++       Una `Toolchain` è un grafo orientato aciclico i cui nodi sono `Artifact` e i cui archi sono
++       `Tool`. `#produce` prende ciò che hai, il formato che vuoi e una posizione di output, trova
++       l'unico percorso più breve tra i due nodi, ed esegue a turno ogni strumento lungo di esso;
++       `#path` riporta il tragitto senza eseguire nulla. Il grafo si assembla da liste di archi
++       con `.apply`, che rifiuta un arco duplicato tra la stessa coppia di formati e rifiuta un
++       ciclo.
+
+% 2 1 0 1a77a263c13c7a180afbeb74473b841f
+
+% 3 1 0 1dc5e5eb7773e22e1876c99380688606
+
+@ 0 1 0 0061aaf52951885106ed47248a96fad4
++         label Un JAR eseguibile si collega direttamente dai classfile
+
+% 1 1 0 06d5986612f677d80dffd224833ec580
+
+% 2 1 0 0e97645fcc83886213ead0f26561f166
+
+% 3 1 0 10a7bfe14b36c91f12e61624a59cfc4e
+
+% 0 1 0 0a9d40be72e6d6121f2082917aa968d3
+
+% 0 1 0 030c599ba8c360131de08b1a3df07b19
+
+% 1 1 0 0e92294235d14d9a168de93dfc995e2d
+
+@ 0 1 0 0a4fc41495f8d11a0c171bb6d2c750a8
++         label Aggiungere gli archi dex rende `Dex` raggiungibile, a un passo di distanza
+
+% 1 1 0 08798e8109eeb288141ce050bdc7b0e5
+
+% 2 1 0 1c6aec41e23a4df01fc4c12ff4d50597
+
+% 3 1 0 0da7e97ac78e437a08c324884d9add4f
+
+% 0 1 0 0e081d05f55a111701a48a95c76d4a0b
+
+% 0 1 0 09bee58fd0bdb2fc126a419e39741746
+
+% 1 1 0 13e4c171e7cadaf40724809aa5a0fd37
+
+@ 0 1 0 158e4917699c26131653be7a276b84d6
++         label Aggiungere l'arco APK estende il percorso: i classfile sono convertiti in dex, poi impacchettati
+
+% 1 1 0 0bd5955e16a0a6571c1ba4060ed52a94
+
+% 2 1 0 0a7f53fd08f6960409f5ad5da2bf7bf8
+
+% 3 1 0 17bf905d6821ceb9157f2b17b131d4a4
+
+% 0 1 0 118267e9d00f7dd6080d86d3cdf7c1ff
+
+% 0 1 0 1fdb0c6cf3e3e5961a3bec3808227f9e
+
+% 1 1 0 0c1015352e2387281c28682361e35920
+
+% 2 1 0 11e52f4b93f872301e5f7ac6e3404694
+
+@ 0 5 0 1f8639846a1b06021841b1e7d04c52ab
++       Nulla della sequenza in due stadi è scritto nello strumento APK: è il percorso a
++       comporla. Un formato che non può essere raggiunto solleva `Link.Error` con motivo `NoPath`,
++       indicando i due formati, invece di fallire a metà strada; due tragitti ugualmente brevi
++       sollevano `AmbiguousPath`, che si risolve producendo esplicitamente un formato intermedio
++       in un passo separato, invece che con uno spareggio che il chiamante non può vedere.
+
+@ 0 5 0 0f0e36229080ed850cb910f7ffe58423
++       Gli strumenti sono configurati da `.Setting` indirizzati ai *formati* di cui configurano la
++       produzione, non agli strumenti: `apkOptions.minApi(24)` si applica sia a `Dex` sia ad
++       `Apk`, poiché il livello di API governa sia il modo in cui D8 effettua il desugaring sia ciò
++       che il manifest dichiara, e `linkerOptions.optimize.fast` a ogni formato che il linker di
++       Scala.js produce. Un'impostazione che non corrisponde ad alcun formato sul percorso viene
++       rifiutata prima che parta qualsiasi strumento.
+
+% 1 1 0 076e5fcbe81cb5f304d37ed5465d0c1f
+
+% 0 1 0 076ae5d98fd7e29f196bc19236e47322
+
+% 0 1 0 027fdaa6954674f20c92338b1fb7b79e
+
+@ 0 6 0 13f98e980ce8c13f1093260b4cfab91e
++   entry .apply   assembla una toolchain da un numero qualsiasi di liste di archi, controllando duplicati e cicli
++       `Toolchain(jarEdges(), dexEdges(), apkEdges())`, o `Toolchain(List(edge1, edge2))`.
++       Solleva `Link.Error` con motivo `DuplicateEdge(source, target)` quando due archi
++       congiungono la stessa coppia di formati, e `CyclicToolchain` quando gli archi formano un
++       ciclo; una toolchain che esiste è quindi un DAG in cui ogni coppia di nodi ha al più un
++       arco diretto.
++   entry .Error   sollevato quando uno strumento nativo che una toolchain invoca dalla shell non è nel `PATH`
+
+% 1 1 0 00f42e2da20a3c7f0b2d2a34f1186222
+
+@ 0 8 0 11c07500d3c79b17027d365e12de8fca
++         Errore `↯/s.137.2`: _the native tool `tool` is not available on the PATH_. Sollevato dai
++         costruttori che sondano gli strumenti — `WasiToolchain()` per `wasm-tools` e
++         `wit-bindgen`, `nativeEdges()` per `clang` e `clang++` — così che un arco i cui strumenti
++         mancano non possa essere costruito, e uno strumento mancante venga scoperto quando la
++         toolchain è assemblata, non quando un collegamento fallisce. `nativeEdges()` riporta
++         anche un host di build non riconosciuto, che non può indicare la propria tripletta, come
++         assenza di `clang`.
++     entry #tool   il nome dello strumento mancante
++   entry .Setting   un'impostazione di uno strumento, indirizzata ai formati di cui configura la produzione
+
+% 1 1 0 15e04692eb4a845b0ec4718374dbf04f
+
+@ 0 6 0 07b4951109da55df132398fa53c087b7
++         Una `Toolchain` applica ogni impostazione, nell'ordine dato, alle impostazioni iniziali
++         di ogni arco sul percorso la cui destinazione è accettata da `#appliesTo`; `#edit` poi
++         trasforma le impostazioni di quell'arco. Il contratto è che `appliesTo(format)` implica
++         che `edit(format, _)` accetti e restituisca il tipo di impostazioni di ogni arco che ha
++         come destinazione `format`; un'impostazione che copre formati con tipi di impostazioni
++         diversi — il livello di API di Android configura sia il dexing sia l'impacchettamento —
++         smista sul suo argomento `format`.
+
+@ 0 3 0 1a43aa41468c3b4a0301b45ee6dca5e3
++         Gli oggetti di opzioni (`jarOptions`, `linkerOptions`, `nativeOptions`, `dexOptions`,
++         `apkOptions`, `ociOptions`) sono le impostazioni integrate; `.apply` ne crea una per uno
++         strumento proprio del chiamante.
+
+% 2 1 0 0e2c9cd7433c0fb0118cc4083df2cb05
+
+% 3 1 0 1cba62e45aae209106a890bb66295196
+
+% 0 1 0 1ed0464a715b81921899537ded62f450
+
+% 0 1 0 16005f14cd51f0dd063f4efa109edb98
+
+% 1 1 0 177df02babf9af120d62c99a57cb5cf4
+
+@ 0 14 0 07cb33e211c16efd09c98ed9902fc3ba
++     entry .apply   `Toolchain.Setting[settings](appliesTo)(edit)`: un'impostazione su un unico tipo di impostazioni
++         Il primo argomento dice quali formati l'impostazione configura; il secondo modifica le
++         impostazioni di ogni arco che ha come destinazione uno di essi, tipizzate come
++         `settings`. Un `edit` che lancia un'eccezione fa fallire la produzione con `Link.Error`
++         di motivo `Failed`.
++     entry #appliesTo   se l'impostazione configura la produzione di un formato
++     entry #edit   l'impostazione applicata alle impostazioni di un arco, dato il formato che quell'arco produce
++   entry #edges   gli archi della toolchain
++   entry #path   l'unico percorso più breve tra due formati, come gli archi da eseguire in ordine
++       `toolchain.path(Toolchain.Universe.Classfile, Apk)` è la lista degli `Edge` dal primo al
++       secondo; un formato è un percorso di lunghezza zero da sé stesso. Solleva `Link.Error`
++       con motivo `NoPath(source, target)` quando non esiste alcun tragitto — contro la
++       direzione degli archi, o verso un nodo il cui arco non è mai stato registrato — e
++       `AmbiguousPath(source, target)` quando due o più tragitti sono ugualmente brevi. Un
++       formato dichiarato (`Artifact.ir(t"classfile")`) viene instradato esattamente come
++       l'integrato a cui è uguale.
+
+% 2 1 0 0d047b56f7dc91ba1c977af9d5a797f2
+
+% 3 1 0 1031d2a0e904570006be91a0b871a649
+
+% 4 1 0 125ae66345f238fa1d3a433dd2125d66
+
+% 0 1 0 10f1d822669d2cb71aa3d7b432e952cb
+
+% 0 1 0 10aad8b148fc98c610757b6796b9a26f
+
+% 0 1 0 1459b5d0ca5ec0ad1f89ebaded0c728a
+
+% 0 1 0 0fa1f8081108963f160142b99e497b5c
+
+% 1 1 0 0e24c0741884485d08607f2696067d58
+
+@ 0 7 0 0e5e121e1c03194e0d0a2fa8269c2cba
++   entry #produce   produce il formato di destinazione dall'input eseguendo ogni strumento sul percorso, e restituisce il percorso dell'output
++       `produce(input, source, target, out, settings = Nil, entryPoints = Nil)`: `input` è il
++       `Deliverable` in `source`; ogni prodotto intermedio di un percorso in più stadi viene
++       scritto sotto `out` in una directory che prende il nome dall'`id` del suo formato
++       (l'archivio dex di un APK finisce in `out/dex/`), e il prodotto finale in `out` stesso. Il
++       risultato è il file del `Product` finale o, quando la destinazione è una rappresentazione
++       intermedia come `Toolchain.Universe.Classfile`, la directory dell'`Emission`.
+
+@ 0 5 0 085951d06390c8331ce49fd6c9d41a72
++       Ogni impostazione viene prima confrontata con le destinazioni del percorso, e una che non
++       si applica ad alcuna solleva `Link.Error` con motivo `InapplicableSetting` prima che parta
++       qualsiasi strumento. I punti di ingresso valgono lungo tutto il percorso: un JAR eseguibile
++       ne prende al più uno come sua `Main-Class`, un binario nativo e un APK ne richiedono
++       esattamente uno, e una `Library` o un `Dex` li ignorano.
+
+% 2 1 0 00c221a9d7a3804e1b85c35ef65d99f9
+
+% 3 1 0 14c230b6462b7d74140290de1eb958da
+
+% 4 1 0 11a998e1a2d2503f1d40a25ef8da7c27
+
+% 5 1 0 1d16481b094d1d011deb7923016bd957
+
+% 6 1 0 1ba1d10547447f491d67f842d370200a
+
+% 7 1 0 1645a0cb01faa4f41102cba74049329c
+
+% 8 1 0 17295f3d963b66ac0ffeab57d9799c19
+
+% 9 1 0 1f6d7f6863df885817c8f4d9ff38c278
+
+% 10 1 0 15c31f60958776981c4d6df7e0ee1f51
+
+% 11 1 0 15ff53ae8fe32fa9151f28b091b9f832
+
+% 13 1 0 1bcc016081ea17170bfcb4e121993158
+
+% 14 1 0 0af5450541a0fe5810f74df9fda21dc1
+
+% 15 1 0 051844a652a1b1cd025c62d6d2f1e0a1
+
+% 17 1 0 0b890d294390ec531e1099b6e6799825
+
+% 0 1 0 1443eaec1627e96219fbb9821ce26be2
+
+% 1 1 0 0b252077dcdc00fb153e19b2994ba3c0
+
+% 2 1 0 0991d4b5040f595818c633cb8ce33d1a
+
+% 3 1 0 0e109b573613e56f08f00d9224980052
+
+% 4 1 0 0abb66841659adf91b7d3721568b1f0d
+
+% 0 1 0 1ac93889ed5c9b3b15fb838589d557c5
+
+% 1 1 0 0138846a66c36db1039c8f32acaeb7f7
+
+% 2 1 0 1546060f6ea00e721b586112ebe69098
+
+@ 0 4 0 1c845998e1c7227e02eede3adca71883
++       Ha bisogno di un `Monitor`, un `System` e una `WorkingDirectory`, solleva `Link.Error`, e
++       registra nel log `LinkEvent.Start` prima del primo strumento e `LinkEvent.Linked` con il
++       percorso dell'output dopo l'ultimo; un arco di compilazione sul percorso inoltra i suoi
++       `Compiler.Event` sullo stesso canale.
+
+@ 0 1 0 1d859deced4cc9960548caaeea305c21
++   entry .Universe   la rappresentazione intermedia che una compilazione emette: `Classfile`, `Sjsir` o `Nir`
+
+% 1 1 0 08f425c0f49c8eed1559536764866e9b
+
+@ 0 8 0 16c9844f93b34d850aa61e2c8859e74f
++         Una compilazione emette una sola rappresentazione intermedia, e questa scelta decide con
++         quali artefatti di libreria può essere collegata e quali formati di applicazione può
++         diventare. `Classfile` sono i classfile della JVM, collegabili come `Artifact.Jar`,
++         `Dex` o `Apk`; `Sjsir` è l'IR di Scala.js, la cui forma collegata — JavaScript, Wasm per
++         il browser o un componente WASI — si sceglie al momento del collegamento; `Nir` è l'IR di
++         Scala Native, collegato in codice macchina attraverso LLVM. Ogni universo è un nodo
++         `Artifact.Ir` di una `Toolchain`, con id `classfile`, `sjsir` e `nir`, e ogni universo ha
++         inoltre un JAR `Library` che impacchetta il suo output non collegato.
+
+@ 0 6 0 1038e3eb74e8ccd51ef46f88c3cebaad
++         L'universo è anche un *tipo*, il secondo parametro di tipo di `Scalac`, così un
++         compilatore configurato per uno non può essere usato come un altro:
++         `Scalac[3.8](options)` ha come destinazione `Toolchain.Universe.Classfile`, e
++         `targeting[Toolchain.Universe.Sjsir]` ne cambia la destinazione. Le flag del compilatore
++         di cui ogni universo ha bisogno derivano dal given `.Emission` per esso — nessuna per i
++         classfile, `-scalajs` per Scala.js, e la flag del plugin per Native, che esiste solo
++         quando un `NirPlugin` è nell'ambito — invece di essere fornite a mano.
+
+% 2 1 0 108835822d2a83d21dd309b74cf2ae1d
+
+% 3 1 0 198e9dbbc0a2fd2517fc09df4a747d97
+
+% 0 1 0 0879b33f4c92082b1568ecf8d9b9c55b
+
+% 0 1 0 0fd248cb658c1e3e18a229824bfe1a94
+
+% 1 1 0 13da595c848d46271ec44cfc2867fc69
+
+@ 0 5 0 0df6d241477e41e403611e1f9ae54a99
++         Ogni universo oltre a quello della JVM ha prerequisiti di runtime, forniti sul classpath
++         come qualsiasi altra libreria: `Sjsir` ha bisogno di `scalajs-javalib`,
++         `scalajs-library_2.13`, `scalajs-scalalib_2.13` e `scala3-library_sjs1`, e `Nir` del
++         runtime di Scala Native (`scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`,
++         `posixlib`, `nativelib`). La loro assenza emerge come normali diagnostici del compilatore
++         e non come un fallimento distinto.
+
+% 0 1 0 1ee07b172b0fe65d13fc285421c04121
+
+% 0 1 0 0d81c7104794edc712c161f37d95f0b4
+
+% 0 1 0 065745a6d33313f00d2ed69db7dbc612
+
+@ 0 15 0 01e714e98b2a9cba1a9a1b3bdba2f33a
++     entry .Classfile   classfile della JVM; anche il tipo `Toolchain.Universe.Classfile`, il tipo singleton del caso
++         L'universo che ha come destinazione un semplice `Scalac[version](options)`, e l'unico
++         che `Javac` e `Kotlinc` emettono. Si collega come `Artifact.Jar`, come
++         `Library(Toolchain.Universe.Classfile)`, come `Dex` o come `Apk`. L'alias di tipo
++         `Toolchain.Universe.Classfile` è `Universe.Classfile.type`, così il caso può essere
++         nominato come parametro di tipo: `Compilation[Toolchain.Universe.Classfile]`.
++     entry .Sjsir   IR di Scala.js; anche il tipo `Toolchain.Universe.Sjsir`
++         Si raggiunge con `scalac.targeting[Toolchain.Universe.Sjsir]`, che aggiunge `-scalajs`.
++         Si collega attraverso `sjsEdges` come JavaScript sotto qualsiasi sistema di moduli, come
++         Wasm per il browser, o — dati una `WasiToolchain` e un `Wasi.World` — come componente
++         WASI, e si impacchetta come `Library(Toolchain.Universe.Sjsir)`.
++     entry .Nir   IR di Scala Native; anche il tipo `Toolchain.Universe.Nir`
++         Si raggiunge con `scalac.targeting[Toolchain.Universe.Nir]`, che ha bisogno di un given
++         `NirPlugin` per la sua flag `-Xplugin:`. Si collega attraverso `nativeEdges` a un
++         `Artifact.Binary` per ogni tripletta di destinazione, e si impacchetta come
++         `Library(Toolchain.Universe.Nir)`.
++     entry .Emission   le flag del compilatore di cui l'emissione di un universo ha bisogno, come typeclass sull'universo
+
+% 1 1 0 057dc921ba3e7cbe0d3504cdcc41acb5
+
+@ 0 17 0 1917383e929f89aa18d51aea9519598b
++           `Universe.Emission[universe]` è ciò che `Scalac#apply` e la sessione di `Scalac.Setup`
++           evocano per conoscere le flag da aggiungere per l'universo a cui il compilatore è
++           destinato. I tre given `.classfile`, `.sjsir` e `.nir` si trovano in questo oggetto
++           compagno, così non serve alcun import; l'ultimo esiste solo quando un `NirPlugin` è
++           nell'ambito, ed è questo che rende impossibile compilare per Native senza nominare il
++           plugin.
++       entry #flags   gli argomenti da aggiungere alla riga di comando del compilatore
++     entry .classfile   il given `Emission[Classfile]`: nessuna flag aggiuntiva
++     entry .sjsir   il given `Emission[Sjsir]`: `-scalajs`
++     entry .nir   il given `Emission[Nir]`, costruito dal `NirPlugin` nell'ambito: `-Xplugin:<jar>`
++         Evocarlo senza un given `NirPlugin` è un errore di compilazione, così uno `Scalac` con
++         destinazione cambiata in `Toolchain.Universe.Nir` non può essere applicato finché la
++         posizione del plugin non è nell'ambito.
++     entry #section   l'etichetta della sezione LIRA che contiene il contenuto di questo universo: `jvm`, `sjsir` o `nir`
++     entry #suffixes   i suffissi dei nomi di file delle forme memorizzate di questo universo, con `.tasty`
++         `.class` e `.tasty` per `Classfile`, `.sjsir` e `.tasty` per `Sjsir`, `.nir` e `.tasty`
++         per `Nir`: la forma binaria di ogni universo, più il TASTy che ne porta l'interfaccia.
++   entry .Tool   l'implementazione di un arco di toolchain: un compilatore, un linker o un impacchettatore, con il suo tipo di impostazioni
+
+% 1 1 0 16901b51e2c9525b1e296a269d9c3a1e
+
+@ 0 5 0 10a73d6ed562cc4415b81083884d0245
++         Un `Tool` è un valore inerte: le capability di cui la sua esecuzione ha bisogno — un
++         `Monitor`, un `System`, una `WorkingDirectory` — scorrono attraverso il contesto di
++         `#run` invece di essere catturate quando viene costruito. Dichiara un tipo `#Settings` e
++         una configurazione `#initial` di quel tipo, in cui `Toolchain#produce` incorpora i
++         `Toolchain.Setting` applicabili prima di chiamare `#run`.
+
+% 2 1 0 1b2d2cc938c8239b162ccb7da30893e9
+
+% 3 1 0 123476d8466ba2a507abb2897ba0e542
+
+% 0 1 0 0910f4fc3beb3dce0079016a23e734ee
+
+% 0 1 0 0b317198c6e307071b9c1af5bfcfb938
+
+% 0 1 0 18f58e7e8c1c208210069aaa4b9d4c5d
+
+% 0 1 0 1f0504696923f2f4165425fdfbe7fe46
+
+% 0 1 0 164744d2dd6ec6141de78dea0b8cf765
+
+% 0 1 0 183eb08167ab1ebc0610dc4c5ede3371
+
+% 0 1 0 1f0676876a9e0bc00b0cbdd9025c1120
+
+% 0 1 0 08472d2aa9215f6a0baf8c12ba8b5366
+
+% 0 1 0 1bcd247f1820b7f4052609718236776c
+
+% 0 1 0 18f76edda21d541215878834b1ac3473
+
+% 0 1 0 1a4d2de65a1abe7c0680702582d7ca3a
+
+% 0 1 0 1d0bf88cb6b211d417c249fac5d6f318
+
+% 0 1 0 1484b2546a7aba5a1a2338bf069840fe
+
+% 1 1 0 10521d29af348ec10c42d5a306885caf
+
+@ 0 2 0 122a945c05f8183e140e195c5156074e
++         Gli strumenti integrati sono privati dei loro fornitori di archi; ciò che un utente
++         tiene in mano è l'`Edge`, il cui `tool.name` è ciò che un percorso riporta.
+
+% 0 1 0 08abb907433137ce196aa82b35b75d02
+
+% 0 1 0 09887fcb8b19f2240a9d92d8ad074b83
+
+@ 0 14 0 192d39523706a5591675ba2a261a9713
++     entry #Settings   il tipo di configurazione da cui questo strumento è pilotato
++         `Unit` per gli archi di compilazione (il compilatore porta le proprie opzioni), `Text`
++         per gli archi JAR (il nome del file), lo `StandardConfig` di Scala.js per `sjsEdges`, la
++         `NativeConfig` di Scala Native per `nativeEdges`, `Apk.Configuration` per `apkEdges` e
++         `OciConfiguration` per `ociEdges`.
++     entry #name   il nome dello strumento, come lo riporta un percorso: `scalac`, `jar`, `dex`, `apk`, `oci`, …
++     entry #initial   le impostazioni predefinite, prima che sia applicato qualsiasi `Toolchain.Setting`
++     entry #run   esegue lo strumento su un prodotto, scrivendo in una directory, e restituisce ciò che ha prodotto
++         `run(settings, input, entryPoints, out)`: `input` è il `Deliverable` nel nodo sorgente
++         dell'arco, `entryPoints` valgono lungo tutto il percorso (ogni strumento li applica o li
++         ignora secondo ciò che il suo formato esige), e `out` è la directory in cui scrivere. Ha
++         bisogno di un `Monitor`, un `System` e una `WorkingDirectory`, solleva `Link.Error`, e
++         registra nel log dei `LinkEvent`.
++   entry .Triple   una piattaforma di destinazione per un collegamento nativo, resa come tripletta di destinazione LLVM
+
+% 1 1 0 05069f348205d8a50d67ddca136cb101
+
+@ 0 2 0 0e31d0624e0917ee1b96cf3890d0cf34
++         Sei destinazioni: `Arm64MacOs`, `X64MacOs`, `Arm64Linux`, `X64Linux`, `Arm64Windows` e
++         `X64Windows`, ciascuna resa attraverso `#text` come la tripletta LLVM data a Scala Native
+
+% 0 1 0 1b8603572e03cb2f125bf7516df6c8de
+
+% 0 1 0 01c0d50d5505b7e5090b4c059b56df89
+
+@ 0 3 0 14c7b956efc142191d1728f4b2805749
++         `Artifact.Binary(triple)` è il nodo di applicazione per un binario su quella
++         piattaforma, e `nativeEdges(triples*)` registra un arco per tripletta. Le destinazioni
++         diverse dall'host di build richiedono una toolchain C e un sysroot capaci di compilare
++         in modo incrociato verso di esse.
+
+% 2 1 0 081b578b3103963d0bafd1d7dd31eae6
+
+% 3 1 0 0f63f7a230f0304f1cda122afc52cd70
+
+% 0 1 0 18960e1aab2a5ca3040ac42567b2ae5a
+
+% 0 1 0 02483ba0dca24a3d05f285d7e0292ea3
+
+% 1 1 0 1aa57e0e9ef56f650579e41535a3d8e9
+
+% 0 1 0 0138ccf1a0c4bc230f787c7c1805abaa
+
+@ 0 5 0 01504425488783d8029a1eac82a9f441
++     entry .host   la tripletta dell'host di build, da `os.name` e `os.arch`, o `Unset` se non riconosciuta
++         macOS, Linux e Windows su ARM64 o x86-64 sono riconosciuti; qualsiasi altra piattaforma è
++         `Unset`, e `nativeEdges()` senza triplette esplicite lo riporta come assenza di `clang`,
++         poiché un host simile non ha nemmeno un runtime di Scala Native.
++     entry #text   la tripletta di destinazione LLVM
+
+@ 0 8 0 171a398bd465899506ad84e59d46efa9
++ entry .Component   l'universo dei componenti WebAssembly: un nodo intermedio ancora senza archi
++     Un `Artifact.Ir` con id `component`: componenti di libreria WebAssembly, che si compongono
++     tra loro attraverso interfacce descritte in WIT, come TASTy permette a `sjsir` e `nir` di
++     comporsi. È un `Ir` e non un `Toolchain.Universe`, perché nessuna compilazione Scala lo
++     emette: un componente è un'applicazione (`Wasi`) quando il world che esporta è eseguibile,
++     e contenuto di questo universo quando è composto con altri. Nessun arco predefinito lo
++     produce o lo consuma; il nodo esiste perché gli strumenti di composizione possano
++     registrare i propri, e un percorso verso di esso solleva `NoPath` finché uno non lo fa.
+
+@ 0 1 0 02d80569a85aac6602e7b93135e665ce
++ entry .EntryPoint   una classe il cui `main(args: Array[String])` viene eseguito quando l'artefatto collegato si carica
+
+% 1 1 0 183dab6d473b828c1be627be42ecbdf5
+
+@ 0 9 0 0e9e3328e870d67206e9ad101873b4cd
++       `EntryPoint(Fqcn(t"com.example.Main"))`. I punti di ingresso si passano a
++       `Toolchain#produce` e sono presenti lungo tutto il percorso: ogni strumento li applica o li
++       ignora secondo quanto richiede il suo formato. Un `Artifact.Jar` eseguibile ne accetta al
++       massimo uno, come suo `Main-Class` (nessuno significa un JAR senza classe principale; due
++       sollevano `Link.Error` con motivo `ManyEntryPoints`); un `Artifact.Binary` nativo ne
++       richiede esattamente uno (altrimenti `NoEntryPoint`); un `Apk` ne richiede esattamente uno,
++       che è la sua activity di avvio; i collegamenti JavaScript e Wasm inizializzano ciascuno
++       come inizializzatore di modulo; e un `Library` o un `Dex` li ignorano del tutto, perché
++       nessuno dei due registra un punto di ingresso.
++   entry #mainClass   il nome di classe pienamente qualificato
+
+@ 0 1 0 17a7314c6d909c901cc90860952fd558
++ entry .Link   il namespace di `Link.Error`, il fallimento del collegamento, della ricerca di percorsi o dell'impacchettamento
+
+% 1 1 0 1532d5392e8753ee1b198fc804364aaa
+
+@ 0 7 0 11901c477df2daef0e04096d268414c2
++       Tutto ciò con cui una `Toolchain` può fallire è un `Link.Error` che porta un
++       `Link.Error.Reason`, quindi una sola `Tactic[Link.Error]` copre l'assemblaggio di una
++       toolchain, la ricerca al suo interno e l'esecuzione dei suoi strumenti. Un guasto proprio
++       di uno strumento (un'eccezione lanciata) è `Failed` con il suo stack trace; un guasto
++       strutturale (nessun percorso, un arco duplicato, un'impostazione senza nulla da
++       configurare) ha un motivo proprio; e il fallimento di un arco di compilazione è
++       `CompilationFailed`, che porta ogni `Compiler.Notice` segnalata dal compilatore.
++   entry .Error   sollevato da una toolchain: errore `↯/s.137.1`, _linking failed because `reason`_
+
+% 1 1 0 05ae7d45d2f88fc40a7afc6b82185f70
+
+@ 0 2 0 099422ebabed691218216dd9656911f8
++         `Link.Error(reason)`; la parte di dettaglio del suo numero è il numero del motivo stesso.
++         Si fa pattern matching su `#reason` per distinguere i casi:
+
+% 2 1 0 09b426e2c23ed0941430064a1cd2d80a
+
+% 3 1 0 10c538f61454c48f1ad491268c14a039
+
+% 0 1 0 08a95c731285b88e0c020fc4aa1b64ac
+
+% 0 1 0 11e521e8345140c01c359979bac9c994
+
+% 0 1 0 0d43cc015d8188ee194183ed32a11a75
+
+% 0 1 0 05fd37d2a97e3be20ac16633fe6dcd3f
+
+% 0 1 0 1ac38e0856a5230d099633a5196c2666
+
+% 1 1 0 10a24088556484350e6576e5a3eaadbd
+
+@ 0 1 0 1d02e34a23b9b5000a50285d6039d3bd
++     entry .Reason   perché il collegamento è fallito: quattordici casi numerati, ciascuno con il suo messaggio
+
+% 1 1 0 1895944420d17ba902a8aafe3cb1a254
+
+@ 0 2 0 06f7bdef3270b8ea0d736e11c09ce540
++           Ogni caso porta il suo numero come `#number`, che è la parte di dettaglio del codice
++           dell'errore (`443.5` per `NoPath`):
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 6 0 1f028a62c24f40641410fa901f3a27c0
++           column  Caso
++           column  Codice
++           column  Messaggio
++           column  Nota
++           row  `Failed(trace)`  1  _the linker terminated abnormally_  uno strumento ha lanciato un'eccezione; lo `StackTrace` viene conservato
++           row  `NoEntryPoint`  3  _the artifact requires exactly one entry point_  sollevato per un binario nativo e per un APK, che ha bisogno della sua activity di avvio
+
+% 0 1 0 1a2b3914663ab5330e1d6f1618c6f98f
+
+% 0 1 0 03e55c6b6631602a08476b762fe8b03d
+
+% 0 1 0 12ea113648aadd2812b372c564fc103d
+
+% 0 1 0 19b0b8f8460eaf2e0002957d1f940d6b
+
+% 0 1 0 12c6426b143d860c0c9bab02bb6f4136
+
+% 0 1 0 11f682ee1ba3b0ab0354d5bac9910670
+
+@ 0 2 0 0bf19dfcca24a2650861269fa986d4da
++           row  `UnexpectedInput(format)`  10  _the tool producing `format` cannot consume the content it was given_  un `Deliverable` della variante sbagliata ha raggiunto uno strumento
++           row  `CompilationFailed(notices)`  11  _compilation failed with N errors_  N conta le notifiche la cui importanza è `Error`; la lista contiene ogni diagnostica
+
+% 0 1 0 0ee5b79dacbc82890b3172384be11154
+
+@ 0 3 0 11326b32bac489061e315ab9cfeb7cbd
++           row  `Packaging(detail)`  13  _packaging failed: `detail`_  un guasto di zip, percorso, I/O o nome di file durante il bundling di un JAR, il dexing o l'impacchettamento di un APK, con il messaggio dell'errore sottostante
++           row  `CompilerCrash`  14  _the compiler crashed_  il compilatore di un arco di compilazione ha lanciato un'eccezione
++           row  `CompilerUnusable(detail)`  15  _the compiler could not be run: `detail`_  un arco di compilazione non è riuscito a configurare o ad attendere il suo compilatore (`scalac`, `javac`, `kotlinc`)
+
+% 1 1 0 10196ec02554ec581674e0b0956f75c4
+
+@ 0 3 0 064b7846d2775b97145f03e15e678a4b
++       entry #number   il numero del motivo, la parte di dettaglio del codice dell'errore
++     entry .communicable   rende ogni motivo come il messaggio elencato sotto `Link.Error.Reason`
++     entry #reason   perché il collegamento è fallito
+
+@ 0 1 0 0cefd79cc458dc8c0d237a9356a782f5
++ entry .LinkEvent   ciò che una toolchain registra nel log durante il collegamento: l'avvio, ogni messaggio e il percorso dell'output
+
+% 1 1 0 14f4ed9fa2bd0f9d0e4f68545bea2149
+
+@ 0 8 0 11d88ad6d436d3471916a067b54ccb75
++       Ogni `LinkEvent` porta il tag `Log.Compiler`. `Toolchain#produce` registra `Start` a
++       livello `info` prima del primo strumento e `Linked(path)` a livello `info` dopo l'ultimo;
++       ogni strumento inoltra l'output del proprio linker come `Message(message)`: gli errori e
++       gli avvisi del linker Scala.js a `warn`, le sue informazioni a `info` e il resto a `fine`;
++       gli errori e gli avvisi di D8 a `warn`; e, attraverso `Compiler.Event.relay`, i
++       `Compiler.Event` di un arco di compilazione ai rispettivi livelli. Per ogni `produce` deve
++       esserci nell'ambito un `LinkEvent is Loggable`.
++   entry .communicable   rende ogni evento come un messaggio
++       _starting linking_, _the linker reported: `message`_ e _linked output written to
+
+% 0 1 0 0e37d24bece68b8b065a96ebfe6251d3
+
+@ 0 6 0 00ccf17e17e689a61cdb432280b1b900
++ entry .WasmObject   l'universo degli oggetti WebAssembly rilocabili: un nodo intermedio ancora senza archi
++     Un `Artifact.Ir` con id `wasm-object`: oggetti WebAssembly rilocabili che si compongono
++     attraverso i simboli delle loro sezioni di linking, ciò che emettono `rustc --target wasm32`
++     e clang, collegati da `wasm-ld` in un modulo WASI 0.1 oppure sollevati dagli strumenti per
++     componenti nell'universo `Component`. Nessuna compilazione Scala lo emette e nessun arco
++     predefinito lo produce o lo consuma; il nodo esiste perché i compilatori stranieri e i
++     linker wasm possano registrare i propri.
+
+@ 0 1 0 0b39a2372fe60a2d00f6e65e7e430805
++ entry .Scalac   il compilatore Scala come valore: opzioni tipizzate, una versione del linguaggio e un universo di destinazione
+
+% 1 1 0 0b008520c2c860b20662d9d6bf93771e
+
+@ 0 5 0 1c84a56221b938d01d57a2c61b8663e0
++       Uno `Scalac[version, universe]` porta una lista di `Scalac.Option`, ciascuna tipizzata
++       dalle versioni del linguaggio che la accettano, e il `Toolchain.Universe` che emette.
++       `Scalac[3.8](options)`, la forma con un solo argomento di tipo, ha come destinazione
++       `Toolchain.Universe.Classfile`; `#targeting` ne cambia la destinazione. Applicato a un
++       classpath e a dei sorgenti, compila nel processo stesso, in un task proprio, e restituisce
++       un `Compiler.Process`:
+
+% 2 1 0 094c9d99d8d631921aa54d45d08111e3
+
+% 3 1 0 1d3be146434fd267037c3aac3aaab1ba
+
+% 4 1 0 1352bfee9bf83d9113ac23dc787f9f53
+
+% 5 1 0 0f006428a77ca0da1bd881e6e2e7ebf4
+
+% 6 1 0 19f60f48d398547f0376405c88c5e246
+
+% 7 1 0 0be051becc29460d1bcc79fbdec2e887
+
+% 8 1 0 0d840e7db2d2e53e0a40e9c903d25534
+
+% 9 1 0 0bc67c3750f7e5ab13ed36dc865f729c
+
+% 10 1 0 12094f24dbf9e1cd1561ce49bac4c439
+
+% 12 1 0 13e2d2a1327f226a14f77472f6a0298f
+
+% 13 1 0 0e33727c01dbcb081581a327fcbaaab8
+
+% 15 1 0 02c4c35a953c3242137de956763008fe
+
+% 0 1 0 0afd0b1562317dc809874c317d277aeb
+
+% 0 1 0 10028864858006f40268069fd953fd67
+
+% 1 1 0 0531e8d35fa6737c00c2fc49f4075882
+
+% 2 1 0 113d228b41c5b00c1772825bc5764b07
+
+@ 0 6 0 1de8d96650d11530002901182acf0093
++       Il parametro di versione è una *destinazione di linguaggio dichiarata* che subordina le
++       opzioni staticamente: un'opzione le cui versioni non includono quella del compilatore è
++       un errore di compilazione nello strumento, non una lamentela del compilatore a runtime.
++       Non seleziona un compilatore. Il compilatore che viene effettivamente eseguito è il
++       `scala3-compiler` presente sul classpath di runtime del programma (una dipendenza di sola
++       compilazione di `anthology.scala`, quindi lo sceglie il programma che lo guida), e
++       `.version` indica quale sia.
+
+% 2 1 0 1e4054a6ee9c279e1b8ecb01b58b5fa9
+
+% 3 1 0 1bcda290ac512bef0f017c44b33c6115
+
+@ 0 1 0 1557865e2668c2541d0b72ce7b5d9460
++         label Un'opzione valida in ogni versione
+
+% 1 1 0 1edb019a206b64df1afd3a58a7358c27
+
+% 2 1 0 1b438690a8a7298206617d8ce0c7200d
+
+% 0 1 0 0352ac8321cd33e40d97fefcbd4f9d1f
+
+% 0 1 0 1246eebebd3a8f520c3fcac65455e14e
+
+% 1 1 0 15149d78314b122c1480432930cd1a33
+
+@ 0 1 0 10af12f7c887cd2608db6cfe9f1ba67d
++         label `experimental` è accettata dalla 3.4 alla 3.8, quindi la 3.8 può prenderla
+
+% 1 1 0 01924a6421a11a6f010bf8703ff336f1
+
+% 2 1 0 1bfdc5c3f57a4b6d0b86d5583f8828be
+
+% 4 1 0 0ea758cd51ee510c00f3da80b693a0e3
+
+% 0 1 0 1a938c0521290933168283170d7c4555
+
+% 1 1 0 10728212bbd8d1110b9abae0d1a8b0d1
+
+@ 0 1 0 1b3abc3c67e872831029ad9ed3435b64
++         label `semanticDiagnostics` esiste solo nella 3.9: il compilatore 3.8 la rifiuta
+
+% 1 1 0 02333973931d81e707b1ec0e31c4f56e
+
+% 2 1 0 0cbaaa0eee9626c61ee24c245f5931f2
+
+% 0 1 0 0010b648d3e0fc8502d59bdf2274fd9c
+
+% 1 1 0 1f1987607ea853531a2fb82f62050f39
+
+@ 0 1 0 09e79408322400c210b64cc1c73aadb3
++         label Il cambio di destinazione conserva le opzioni e cambia l'universo
+
+% 1 1 0 0bf4ff12df35a5631f34250dba6b4414
+
+% 2 1 0 05adb88349bbb05d16d76dd32f0e6e63
+
+% 4 1 0 0baf670bb1709722130a4e2c1134b29c
+
+% 0 1 0 0fa699198e7f42f5152e7284bafdbb65
+
+% 0 1 0 1a0c200d1fbf2c1811a38305dc88d004
+
+% 1 1 0 1c954e8e9f00942610209b0c3159937a
+
+% 2 1 0 16f51a4b6d7b540d122411717bece391
+
+@ 0 4 0 0e830c9900f307fb001061b1b568b306
++       Oltre al `#apply` senza stato, un compilatore legato a un classpath con `#on` apre una
++       *sessione calda*, `scalac.on(classpath).session: …`, in cui più compilazioni condividono
++       un'unica tabella dei simboli caricata, e ciascuna vede ciò che hanno definito le
++       precedenti; vedi `Scalac.Session`. Gli archi di compilazione di una `Toolchain`
++       (`scalacEdges`) portano uno `Scalac` allo stesso modo.
+
+@ 0 5 0 08acd1158f4b25620f4c76cd4d3160b8
++       Le compilazioni senza stato condividono un'unica istanza del compilatore in tutto il
++       programma (`.compiler()`), sostituita da `.refresh()` dopo un crash. Le diagnostiche
++       diventano `Compiler.Notice` con i loro tratti; con `scalacOptions.semanticDiagnostics`
++       ciascuna conserva anche il suo markup semantico. L'avanzamento è segnalato per ogni punto
++       percentuale intero, con la fase del compilatore come stadio, e `Compiler.Process#abort()`
++       viene osservato al tick successivo.
+
+% 0 1 0 1426e4bc1b07478b1f38ddab2c1c72db
+
+% 0 1 0 14290c98bd1293a711e89af755795208
+
+% 1 1 0 1bc7629506b6722711f53b58cbc8e767
+
+% 1 1 0 12c3f68a7abacb0c0625108975fc034f
+
+@ 0 5 0 1c7a54083e35fcd50a4bcdeefe8d4e6d
++   entry .Versions   le versioni del linguaggio per cui si può dichiarare uno `Scalac`: da `3.0` a `3.9`
++       L'unione di tipi letterali `3.0 | 3.1 | … | 3.9`, il limite del parametro di versione di
++       uno `Scalac` e la versione più ampia per cui si può dichiarare un `Option`. Una versione è
++       un letterale, `Scalac[3.8]`, mai un valore.
++   entry .Option   un'opzione del compilatore, come le flag che aggiunge, tipizzata dalle versioni che la accettano
+
+% 1 1 0 0a645daa2540c7150edc3a061cfccf0a
+
+@ 0 4 0 117233462df9668f07f76478370e0ec2
++         `Scalac.Option[-version <: Versions](flags*)`: il parametro di versione è
++         *controvariante*, quindi un'opzione dichiarata per `3.4 | 3.5 | 3.6` è accettata da uno
++         `Scalac[3.5]`, e una dichiarata per `Scalac.Versions` da qualsiasi. L'oggetto
++         `scalacOptions` contiene quelle predefinite; un'opzione che l'oggetto non ha si scrive
++         direttamente:
+
+% 2 1 0 01c31c4835d2e5821bc301959d20fb3c
+
+% 3 1 0 1506f365d87646a117799e0c97ec9560
+
+% 0 1 0 0612b2aa1f375bb415c46c72907cacf4
+
+% 0 1 0 15bef381fc7a781c00a9d367bf94f27d
+
+% 1 1 0 0743b4d0786da4d10f29c2aa25a71238
+
+@ 0 13 0 13a431bb524f871916ed2c76a1341d15
++     entry #flags   gli argomenti da riga di comando che l'opzione aggiunge, in ordine
++   entry .refresh   sostituisce l'istanza condivisa del compilatore, come avviene dopo un crash
++       Le compilazioni senza stato condividono un unico `dotty.tools.dotc.Compiler`; un crash lo
++       sostituisce automaticamente, e `refresh()` lo fa su richiesta.
++   entry .compiler   l'istanza condivisa del compilatore su cui girano le compilazioni senza stato
++   entry .version   la versione del compilatore incorporato, come la dichiara esso stesso
++       `dotty.tools.dotc.config.Properties.versionNumberString`: la versione dello
++       `scala3-compiler` sul classpath di runtime, che è ciò che riportano il `#version` di ogni
++       `Scalac` e il `version` di ogni processo.
++   entry .apply   `Scalac[version](options)`: un compilatore per l'universo dei classfile
++       La forma con un solo argomento di tipo, che fissa l'universo a
++       `Toolchain.Universe.Classfile`; `#targeting` lo cambia. Le versioni di ogni opzione devono
++       includere quella indicata.
++   entry .Setup   un compilatore legato a un classpath: il soggetto di una sessione calda
+
+% 1 1 0 05e004c2acac02e5027fd5c706e04f00
+
+@ 0 11 0 03e4838487bced7e1c15aa8a5a6e412e
++         `scalac.on(classpath)` ne crea uno, e `.session` su di esso apre una `Scalac.Session`
++         attraverso il `Sessional` di aperture (il given `.sessional` qui), in cui la tabella dei
++         simboli del classpath, caricata una sola volta, viene conservata tra una compilazione e
++         l'altra. Un `Setup` è solo la coppia; lo stato vive nella sessione.
++     entry .sessional   il given `Sessional` che apre una `Scalac.Session` da un `Setup`
++         Nell'oggetto compagno, quindi non serve alcun import. Richiede un `System`, la
++         `Toolchain.Universe.Emission` per l'universo del setup, una `Tactic[Compiler.Error]` e un
++         `Compiler.Event is Loggable`, ed è ciò a cui si risolve `setup.session: …`.
++     entry #scalac   il compilatore, con le sue opzioni e il suo universo
++     entry #classpath   il classpath su cui la sessione compila
++   entry .Session   una sessione calda del compilatore: un'unica tabella dei simboli conservata attraverso più compilazioni
+
+% 1 1 0 1cb0c0e20a9f3dfe08cd379129c3f436
+
+@ 0 8 0 1b3c8400618e13e501ca3454d50f85a3
++         Si apre con `scalac.on(classpath).session: …`; dentro il blocco la sessione è la
++         `Scalac.Session^` contestuale, raggiunta come `compilation`, e `sources.compile()` o
++         `compilation.compile(sources)` compila al suo interno. Si riutilizzano un unico contesto
++         di base, la cui tabella dei simboli persiste da un'esecuzione all'altra come nel REPL, e
++         un unico compilatore, quindi la seconda compilazione vede le classi della prima e non
++         paga di nuovo nulla del caricamento del classpath. Le compilazioni girano in modo
++         sincrono sul thread del chiamante (il compilatore lega un contesto al thread della sua
++         prima esecuzione), e il `.Process` restituito è completo nel momento in cui viene
++         restituito.
+
+% 2 1 0 15ac4e247adcce3c14f88617c8639a52
+
+% 3 1 0 0687a59b983af7fb064018a40d023b56
+
+% 4 1 0 152960a0d1fe069d0a47eef9c26b6b5f
+
+% 5 1 0 149d054bd98ce12f072d38bfa0f311a7
+
+% 6 1 0 1987f2f3f9fa56a10fe77db25c22af63
+
+% 1 1 0 0ef91427fd5ba7ce1185a09ea5211102
+
+% 2 1 0 031f6a6aa94f1d46191b32975868b6d8
+
+% 2 1 0 0b1701676bd110d20cc69be97473332f
+
+% 0 1 0 110b7e1cc2e5a0ed1056865c3b0e8854
+
+% 0 1 0 11eda7c4544c71420df0899b50cec233
+
+% 0 1 0 18cdeb2fc09830c1092c07b461cdaf5c
+
+% 0 1 0 1a7c118a21be7a651eb25d62b130348c
+
+% 0 1 0 146cc0fbe34373450cc58c93d8951c15
+
+% 0 1 0 0b26043acbf04d7e1f663f426d461b33
+
+% 0 1 0 16e306b1cd9d6fe10bcd2ccb223baf1d
+
+% 1 1 0 065ac7ce3f99d11618d1ba8bfd3e0ca8
+
+@ 0 5 0 1d2e59db2df83ce80f9fa2b678c58290
++         L'output resta in memoria: `Process#classfiles` espone ogni artefatto emesso, indicizzato
++         per il suo percorso nel classpath, e `Process#save(directory)` li scrive su disco solo se
++         lo si vuole. Una compilazione fallita lascia la sessione utilizzabile; un crash ricostruisce
++         insieme il suo compilatore e il suo contesto, quindi la compilazione successiva parte
++         pulita. Aprire una sessione con opzioni che il compilatore rifiuta solleva
++         `Compiler.Error`.
+
+@ 0 7 0 091b589111114bf9061ed4bcd9010c2d
++         Dalla tabella dei simboli conservata in stile REPL derivano due limitazioni: ridefinire un
++         nome di primo livello compilato in precedenza nella stessa sessione non è supportato (nomi
++         di sorgenti e di classi distinti per ogni compilazione, come quelli che genera un REPL, sono
++         sicuri); e una macro definita da una compilazione si carica al suo uso successivo dal
++         *classpath*, non dai simboli conservati, quindi un chiamante che vuole l'espansione delle
++         macro nella stessa sessione deve fare `save` in una directory sul classpath della sessione.
++         L'handle della sessione è una capability fresca ed esclusiva, confinata al blocco, quindi
++         non può esserne restituito.
+
+% 0 1 0 05e277de48eb383a049435f9ea651b05
+
+% 0 1 0 1d472696a8069f5415d7a3fe4e4a77a4
+
+@ 0 1 0 0aacf5ae5940d6e61e5b126515e7a375
++     entry .Frontend   il compilatore, il contesto di base, il classpath e le opzioni della sessione, così come sono
+
+% 1 1 0 0b3c61ce1fdd96fe154dec9e191d861f
+
+@ 0 11 0 04ecb061c442415e05704b5a7518e156
++           Per uno strumento che tipizza sorgenti nella sessione senza compilarli (il given
++           `highlighting.sessionScala` di harlequin ne prende uno) e vede quindi ciò che hanno
++           definito le compilazioni della sessione, senza pagare di nuovo nulla del caricamento.
++           Sono i valori propri del compilatore: validi solo sul thread della sessione, e solo fino
++           al suo prossimo crash (che li sostituisce), quindi un chiamante prende `Session#frontend`
++           di nuovo a ogni uso invece di conservarne uno.
++       entry #compiler   il `dotty.tools.dotc.Compiler` della sessione
++       entry #context   il contesto di base la cui tabella dei simboli la sessione ha caricato e arricchito
++       entry #classpath   il classpath con cui la sessione è stata aperta, come testo
++       entry #options   gli argomenti del compilatore con cui la sessione è stata aperta
++     entry .Process   il processo di una compilazione dentro una sessione, con il suo output tenuto in memoria
+
+% 1 1 0 076231dc755746430b1f8314c7d569c1
+
+@ 0 7 0 0fcc7ece943dfba80a409cd7256ad2ef
++           Un `Compiler.Process` il cui risultato è già completo quando viene restituito, perché le
++           compilazioni di sessione girano in modo sincrono; `complete()` funziona comunque e lo
++           restituisce. `#classfiles` contiene ciò che la compilazione ha emesso e `#save` lo
++           materializza.
++       entry #classfiles   ogni artefatto emesso dalla compilazione, indicizzato per il suo percorso nel classpath
++           Classfile, TASTy, `.sjsir` o `.nir`, come una `Map[Path on Classpath, Data]` indicizzata
++           per la posizione che ciascuno avrebbe su un classpath con radice nell'output
++           (`/Alpha.class`, `/pkg/Name.tasty`). Vuota se la compilazione è fallita prima che
++           girasse il back end.
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 0 1 0 1c2fd15b30390e3506e0f272e8cd0f7d
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 1f3de2f7adc1dab51cbd6eaa5740b17c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1a4dfa2b92355b06107ac50272122c8e
+
+% 0 1 0 1da1174df5658ea10629769fcbb34ce5
+
+% 0 1 0 031eb4897d6fcd7a0e81b13dd3ac6fa8
+
+% 0 1 0 19298100a9451d411fba2a48873684dd
+
+% 0 1 0 1223ec82a4c4441d0c8719e4c5161652
+
+% 1 1 0 0e681e20b37f21d809db0b5112a0122b
+
+@ 0 11 0 199c91bd5b6d34641e8f4c8a78917a6b
++       entry #save   scrive gli artefatti emessi sotto una directory, come `pkg/Name.class`
++           Accetta qualsiasi tipo di percorso `Abstractable across Paths to Text`, creando le
++           directory dei package dove servono. Salvare in una directory sul classpath della
++           sessione è il modo in cui una macro compilata nella sessione diventa espandibile dalle
++           sue compilazioni successive.
++     entry #frontend   il compilatore e il contesto della sessione così come sono, per tipizzare senza compilare
++     entry #compile   compila sorgenti con nome dentro la sessione, in modo sincrono
++         `session.compile(sources)` (oppure, con la sessione contestuale, `sources.compile()`)
++         esegue il compilatore sul thread del chiamante con la tabella dei simboli conservata e
++         restituisce un `Scalac.Session.Process` il cui risultato è già completo. Il processo
++         prende in prestito la sessione, quindi la compilazione successiva aspetta che venga
++         consumato.
++   entry .Sessional   la classe di istanza `aperture.Sessional` che apre una `Scalac.Session` per un `Setup`
+
+% 1 1 0 1221f22b717ac34e0449df4188a54c5e
+
+@ 0 18 0 0df6be18c88976000a40f9a8bc8896ec
++         La classe con nome dietro `Scalac.Setup.sessional`; un utente la raggiunge solo
++         attraverso `setup.session: …`. Il suo `#Self` è `Scalac.Setup[version, universe]` e il
++         suo `#Result` l'handle fresco `Scalac.Session^` che ogni chiamata a `session` confina al
++         suo blocco.
++     entry #Self   il soggetto: `Scalac.Setup[version, universe]`
++     entry #Result   l'handle che riceve un blocco di sessione: una `Scalac.Session^` fresca
++     entry #session   esegue un blocco con una nuova sessione come suo handle contestuale
++         Alla fine del blocco non si smantella nulla a livello di sistema operativo: il contesto
++         caldo è solo memoria, recuperata insieme all'handle.
++   entry #options   le opzioni del compilatore, in ordine
++   entry #commandLineArguments   le flag di ogni opzione, concatenate in ordine
++       Ciò che le opzioni aggiungono; le flag di emissione dell'universo, `-d`, `-classpath` e i
++       sorgenti si aggiungono al momento della chiamata.
++   entry #version   la versione del compilatore incorporato, `Scalac.version`
++   entry #targeting   lo stesso compilatore con un altro universo di destinazione: `scalac.targeting[Toolchain.Universe.Sjsir]`
++       Le opzioni si conservano; cambia solo l'universo, e con esso le flag di emissione che la
++       compilazione aggiunge (`-scalajs`, oppure `-Xplugin:` per Native, che richiede allora un
++       given `NirPlugin` al momento della chiamata).
++   entry #on   lega il compilatore a un classpath, come `Scalac.Setup`, pronto ad aprire una sessione
+
+% 0 1 0 16ff1a8e94d7d15a0f21276c16565932
+
+@ 0 10 0 04f10e1b449122b311def997cc25d958
++   entry #apply   compila sorgenti con nome su un classpath in una directory, in un task proprio
++       `scalac(classpath)(sources, out)`: gli argomenti del compilatore sono le flag di emissione
++       dell'universo, `-d out`, `-classpath`, poi `#commandLineArguments`; li registra nel log
++       come `Compiler.Event.Running`, avvia un task di nome `scalac` che esegue la compilazione sul
++       compilatore condiviso, e restituisce subito il `Compiler.Process`. Richiede un `System`, un
++       `Monitor`, un `Probate`, la `Toolchain.Universe.Emission` per l'universo del compilatore,
++       una `Tactic[Compiler.Error]` e un `Compiler.Event is Loggable`. La directory di output deve
++       già esistere: il compilatore rifiuta un `-d` che non trova, e una chiamata diretta non la
++       crea (gli strumenti di `scalacEdges` sì). Un crash diventa `Compiler.Result.Crash` e
++       sostituisce il compilatore condiviso.
+
+@ 0 3 0 032df2150f83dd5011f5e2b759d0989e
++       Gli stessi sorgenti con lo stesso compilatore producono un output identico byte per byte,
++       di esecuzione in esecuzione e qualunque sia la directory di output: lo UUID di TASTy è un
++       hash delle sezioni del file stesso, e i sorgenti virtuali portano i nomi che sono stati
++       loro dati.
+
+@ 0 1 0 02d283fe39ddc78d018352da8e148e86
++ entry .scalacOptions   le opzioni del compilatore Scala come valori tipizzati, ciascuna valida solo nelle versioni che la accettano
+
+% 1 1 0 014bc52f39c9accc10c2f89c27a57e10
+
+@ 0 7 0 0c0a1d12dfb8341216edf158a8ce98c8
++       Rispecchia la riga di comando del compilatore (sintassi, avvisi, funzionalità del
++       linguaggio, flag interne) come `Scalac.Option` sotto `scalacOptions`, ciascuna tipizzata
++       dalle versioni del linguaggio che la accettano, così che
++       `Scalac[3.8](List(scalacOptions.experimental))` compila e
++       `Scalac[3.9](List(scalacOptions.experimental))` no. Oggetti annidati le raggruppano:
++       `warnings` (con `warnings.lint`), `internal`, `advanced` e `language.experimental`.
++       L'oggetto è rispecchiato come package dell'ombrello `soundness`, quindi
++       `scalacOptions.newSyntax` si legge allo stesso modo da entrambi.
+
+% 2 1 0 0a4f6b3e46ea27020cac81a8a2db5f43
+
+% 3 1 0 18f974eba03693980b1e7a994908d8e4
+
+% 0 1 0 14a01fae496c6f2f14216d88dd93b39e
+
+% 0 1 0 0ae0b16a64b1ec0b049818b0507c8a6e
+
+% 0 1 0 18b2fb50fa8e2023100bf2994920b553
+
+% 0 1 0 1c01abb9a15781500cb839826f82e58b
+
+% 0 1 0 00a19046d3c927dc0faa8be34cee75fb
+
+% 0 1 0 1df7aeea8cbfe82e02b09308cd2ac80d
+
+% 0 1 0 02b48e918a7d59ac10622e3a6b8431b4
+
+% 0 1 0 085e147b0b457365052f988065dfec59
+
+% 1 1 0 07cc25c150b889e613becf4923f31d39
+
+@ 0 1 0 02f7b4a8848ac2c90775a84663260c35
++       Un'opzione che l'oggetto non ha si scrive direttamente come
++       `Scalac.Option[Scalac.Versions](flags*)`.
+
+% 1 1 0 0f5beef8bf304f2d1b8ed5083df34a7b
+
+@ 0 9 0 0412f16e913861d11f0ff40878c6b219
++   entry .newSyntax   `-new-syntax`, in ogni versione
++   entry .sourceFuture   `-source future`, in ogni versione
++   entry .experimental   `-experimental`, dalla 3.4 alla 3.8
++   entry .semanticDiagnostics   `-Zsemantic-diagnostics`, nella 3.9: conserva il markup semantico di ogni notifica
++       Con questa opzione il compilatore marca in banda ogni argomento interpolato di un
++       messaggio, con TASTy serializzato per i tipi tra di essi, e una `Compiler.Notice`
++       conserva questa forma marcata come suo `markup` accanto al `message` semplice, perché la
++       libreria delicious la analizzi in un `SemanticMessage`.
++   entry .warnings   le opzioni di avviso: `-feature`, `-deprecation`, le flag `-W…` e `-Wunused`
+
+% 1 1 0 06af99217caafc5c15c3a4e2f4b459e4
+
+@ 0 14 0 1f29d5baa9189f7014f1ba412f2e145c
++         Ciascuna è un `Scalac.Option` tipizzato dalle versioni in cui esiste; `.unused` prende una
++         selezione `Unused`, e `.lint` contiene le flag `-Wshadow`.
++     entry .feature   `-feature`, in ogni versione
++     entry .deprecation   `-deprecation`, in ogni versione
++     entry .implausiblePatterns   `-Wimplausible-patterns`, dalla 3.3 alla 3.6
++     entry .enumCommentDiscard   `-Wenum-comment-discard`, dalla 3.4 alla 3.6
++     entry .unstableInlineAccessors   `-WunstableInlineAccessors`, dalla 3.4 alla 3.6
++     entry .nonUnitStatement   `-Wnonunit-statement`, dalla 3.4 alla 3.6
++     entry .valueDiscard   `-Wvalue-discard`, dalla 3.4 alla 3.6
++     entry .unused   `-Wunused:…` da una selezione `Unused`: tutte, nessuna o un sottoinsieme di funzionalità
++         `warnings.unused(Unused.All)` è `-Wunused:all`, `Unused.None` è `-Wunused:none`, e
++         `Unused.Subset(List(UnusedFeature.Privates, UnusedFeature.Locals))` è
++         `-Wunused:privates,locals`. La versione dell'opzione è quella della selezione.
++     entry .lint   le flag di lint `-Wshadow`
+
+% 1 1 0 11fff09eaf01ca391174bb3136cfa239
+
+@ 0 1 0 0c92f782c6a0e4370f60a51b43f10e20
++           `privateShadow` e `typeParameterShadow`, dalla 3.4 alla 3.6.
+
+% 0 1 0 035be3d050a219e61fec5495d7176d5b
+
+% 0 1 0 1c1c670b861088ed18c04f7155651825
+
+@ 0 1 0 1cdc0887147d0a161f643c74fe9afcdf
++   entry .internal   le flag `-Y`: nomi di destinazione, safe init, null espliciti, controlli dei pattern, capture checking
+
+% 1 1 0 168683455d6cf9dc004f78d9ad24eca9
+
+@ 0 9 0 0acc7982d1d8f6b409efdb3eb05be046
++         Le opzioni interne del compilatore, come valori.
++     entry .requireTargetName   `-Yrequire-targetName`, in ogni versione
++     entry .safeInit   `-Ysafe-init`, in ogni versione
++     entry .explicitNulls   `-Yexplicit-nulls`, in ogni versione
++     entry .checkPatterns   `-Ycheck-all-patmat`, in ogni versione
++     entry .ccNew   `-Ycc-new`, dalla 3.4 alla 3.6
++     entry .ccDebug   `-Ycc-debug`, nella 3.5 e nella 3.6
++     entry .ccLog   `-Ycc-log`, nella 3.5 e nella 3.6
++   entry .advanced   le flag `-X`
+
+% 1 1 0 1add7cf74d5851a00d37da4246f0a05f
+
+@ 0 3 0 1be80a3bd3c2432c1add120cf4a0a395
++         Per ora solo `maxInlines`; le altre si scrivono direttamente come `Scalac.Option`.
++     entry .maxInlines   `-Xmax-inlines n`, in ogni versione
++   entry .language   le opzioni `-language:`
+
+% 1 1 0 083ed279504b64b7021f673ee8e6495b
+
+@ 0 2 0 10bfac5a00c34fac1a83b094ddcc7099
++         Contiene `experimental`, le funzionalità `-language:experimental.…`.
++     entry .experimental   le funzionalità `-language:experimental.…`, ciascuna nelle versioni che la offrono
+
+% 1 1 0 05474da1a2707970106661f288a5222b
+
+@ 0 24 0 1a81a70536ef4abe127e200abadd176d
++           Un'opzione per ogni funzionalità sperimentale del linguaggio, con lo stesso nome della
++           funzionalità: `clauseInterleaving` (dalla 3.3 alla 3.6), `givenLoopPrevention` (dalla
++           3.4 alla 3.6), `fewerBraces` (dalla 3.1 alla 3.6), `into` (dalla 3.4 alla 3.6),
++           `relaxedExtensionImports` (3.3), `erasedDefinitions` (tutte), `saferExceptions`
++           (dalla 3.2 alla 3.6), `namedTypeArguments` (tutte), `pureFunctions` (dalla 3.3 alla
++           3.6), `captureChecking` (dalla 3.3 alla 3.6), `modularity` (3.5 e 3.6), `namedTuples`
++           (3.5 e 3.6), `genericNumberLiterals` (tutte), `betterMatchTypeExtractors` (3.5 e 3.6),
++           `quotedPatternsWithPolymorphicFunctions` (3.6) e `betterFors` (3.6).
++       entry .clauseInterleaving   `-language:experimental.clauseInterleaving`, dalla 3.3 alla 3.6
++       entry .givenLoopPrevention   `-language:experimental.givenLoopPrevention`, dalla 3.4 alla 3.6
++       entry .fewerBraces   `-language:experimental.fewerBraces`, dalla 3.1 alla 3.6
++       entry .into   `-language:experimental.into`, dalla 3.4 alla 3.6
++       entry .relaxedExtensionImports   `-language:experimental.relaxedExtensionImports`, nella 3.3
++       entry .erasedDefinitions   `-language:experimental.erasedDefinitions`, in ogni versione
++       entry .saferExceptions   `-language:experimental.saferExceptions`, dalla 3.2 alla 3.6
++       entry .namedTypeArguments   `-language:experimental.namedTypeArguments`, in ogni versione
++       entry .pureFunctions   `-language:experimental.pureFunctions`, dalla 3.3 alla 3.6
++       entry .captureChecking   `-language:experimental.captureChecking`, dalla 3.3 alla 3.6
++       entry .modularity   `-language:experimental.modularity`, nella 3.5 e nella 3.6
++       entry .namedTuples   `-language:experimental.namedTuples`, nella 3.5 e nella 3.6
++       entry .genericNumberLiterals   `-language:experimental.genericNumberLiterals`, in ogni versione
++       entry .betterMatchTypeExtractors   `-language:experimental.betterMatchTypeExtractors`, nella 3.5 e nella 3.6
++       entry .quotedPatternsWithPolymorphicFunctions   `-language:experimental.quotedPatternsWithPolymorphicFunctions`, nella 3.6
++       entry .betterFors   `-language:experimental.betterFors`, nella 3.6
+
+@ 0 1 0 031208798f1af983079e653f89a4e5e1
++ entry .scalacEdges   gli archi di compilazione Scala di una toolchain: da `Language.Scala` a ogni universo
+
+% 1 1 0 1540383fb8db3011129c98a68be94275
+
+@ 0 5 0 132bcfe14a47b2db0c0fa0a90d6ffb1c
++       Ogni arco porta lo `Scalac` che guida, con tutte le sue opzioni, così che la configurazione
++       del compilatore resta dove l'ha scritta il chiamante e le impostazioni dell'arco sono vuote
++       (`Unit`). Una toolchain che ne contiene uno può partire da `Deliverable.Sources`, quindi un
++       solo percorso va dal testo `.scala` a un JAR eseguibile, con il compilatore e il bundler
++       entrambi selezionati dal percorso:
+
+% 2 1 0 04401e91251c74791a71c6fc95ec353c
+
+% 3 1 0 09070696289c4cbd19041da10dc84910
+
+% 4 1 0 1442a79ab8ed5e230cace83949a66f08
+
+% 5 1 0 16bc55793823365a03ce41fb5d3828ba
+
+% 6 1 0 1369d898a7423e5412ff38b35ce243e3
+
+% 7 1 0 04feaa5ad1180b85183e968c9ac14bbc
+
+% 8 1 0 1e15819a75025e950f510653c8f6e800
+
+% 9 1 0 01f1d495abb31a3d1ca2a7d608b38d55
+
+% 10 1 0 008f023f739d19f915d0722a8d70e128
+
+% 11 1 0 166b0343fc807a280a632b5a942b416d
+
+% 13 1 0 1e75049d6042a1fe0b2ff7ccf9ab5665
+
+% 1 1 0 1967c7baf710caf8168882ebefd3c6df
+
+% 0 1 0 123839e576b32bfe057b6f4420be2ab6
+
+% 2 1 0 1ebdc4a89653c8500b0b97ccc3391326
+
+% 0 1 0 05a8a29ab98ceda217de13ae95aa4dfe
+
+% 0 1 0 1b5783985d8bcbe6045d48a2a55eedd8
+
+% 0 1 0 05e97918ca8c1c5b0f896aaec23b9635
+
+% 0 1 0 198c434feb4e116302d17cce3bcd83d1
+
+% 1 1 0 0378038f5166f5c10b4b1b1d4fb498ef
+
+% 1 1 0 0c9b8ce8de6443cb13d8e9b76ae504e4
+
+% 0 1 0 124731dbd6fc62b21296ee90346ffd3c
+
+% 1 1 0 1ec19ac0ac5459d61312a5e5acc4824e
+
+% 2 1 0 1896345fc9acf8f00ddb7a3cd9332dab
+
+@ 0 6 0 08cc288befd38254049790f37930c275
++       Lo strumento, di nome `scalac`, crea la directory di output, inoltra i `Compiler.Event` del
++       compilatore sul canale `LinkEvent` della toolchain e traduce il risultato: un fallimento
++       solleva `Link.Error` con motivo `CompilationFailed(notices)` che porta ogni diagnostica,
++       un crash `CompilerCrash`, e un compilatore che non si può configurare o attendere
++       `CompilerUnusable(t"scalac")`. Lo `Scalac` dato viene reindirizzato all'universo
++       dell'arco, qualunque fosse quello per cui era dichiarato.
+
+% 1 1 0 0402d20a57b3eb1d01bb9e8bbf83f0cd
+
+% 1 1 0 059ae2b44f7081e5117dbd193b2feb25
+
+@ 0 5 0 0ad21b520c04a83a111ff4cadfbea84e
++   entry .classfile   l'arco da `Language.Scala` a `Toolchain.Universe.Classfile`, che guida lo `Scalac` dato
++   entry .sjsir   l'arco da `Language.Scala` a `Toolchain.Universe.Sjsir`, che aggiunge `-scalajs`
++   entry .nir   l'arco da `Language.Scala` a `Toolchain.Universe.Nir`; richiede un given `NirPlugin`
++       Il NIR è emesso dal plugin del compilatore di Scala Native, quindi questo arco esiste solo
++       data la prova della posizione del plugin, che fornisce la sua flag `-Xplugin:`.
+
+@ 0 4 0 06542e815eb7c86f12a82431b3cec076
++ entry .compile   `sources.compile()`: compila una mappa di sorgenti con nome nella `Scalac.Session` contestuale
++     Un'estensione su `Map[Text, Text]`, utilizzabile dentro un blocco
++     `scalac.on(classpath).session: …`, dove la sessione è la `Scalac.Session^` contestuale;
++     delega al `compile` della sessione stessa. Il risultato è uno `Scalac.Session.Process`, già
++     completo.
+
+% 2 1 0 19e614465e9b858e0d7d6ef9b04f080c
+
+% 3 1 0 0f5d63539020ada70c421b00fa242390
+
+% 4 1 0 167456c870b426b2024466a32908d318
+
+% 5 1 0 0811cf8a3faf19e3178d28e5a6c01d15
+
+% 1 1 0 0f10f48845cf5f3a0ff95c84f7617e49
+
+% 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
+
+% 2 1 0 186c628c923e452b0be1a299e2f3b006
+
+% 2 1 0 1c0fefe70711057817380fee6a746eef
+
+% 0 1 0 15ced8f030bf173e0a8d327cb91498e7
+
+% 0 1 0 038ad3a8ffba26331c583a19314d3f7b
+
+% 1 1 0 07c07fe6f97ad94c0eb991488333bf92
+
+@ 0 5 0 12643cf45a2675380acabd6c2a79345c
++ entry .compilation   l'handle contestuale `Scalac.Session`, dentro un blocco di sessione
++     Un `transparent inline def` che restituisce la sessione nell'ambito con il suo tipo
++     preciso e delimitato, così che `compilation.compile(sources)` e `compilation.frontend` si
++     possano scrivere dove l'handle non ha nome. Fuori da un blocco `session: …` non c'è alcuna
++     sessione da evocare, e la chiamata non compila.
+
+@ 0 3 0 0e537e9812e323161a1fdf4f79d157b3
++ entry .CompileFlag   un'enumerazione con l'unico caso `Explain`
++     Dichiarata in `anthology.scala` ma non consumata da nulla nella libreria: `-explain` non è
++     tra le `scalacOptions`, e si scriverebbe come `Scalac.Option[Scalac.Versions](t"-explain")`.
+
+@ 0 1 0 080ffb98d2d43d520b9b83a384a7fa07
++ entry .JavaVersion   una release di Java, come JDK o come JRE: `Jdk(version)` o `Jre(version)`
+
+% 1 1 0 05baf19a80f758a8071b90d1944ea6d5
+
+@ 0 4 0 18f17cf53aede13111d4f0585cf7d99e
++       `JavaVersion.Jdk(21)` o `JavaVersion.Jre(17)`, dove la versione è un letterale di
++       `.Version`, da `8` a `26`. È dichiarata in `anthology.scala` ma non è consumata da
++       alcuna opzione nella libreria.
++   entry .Version   i numeri di release di Java, come tipi letterali: `8 | 9 | … | 26`
+
+@ 0 1 0 007ee7449c0598d21a41f1c8d1d054e7
++ entry .LanguageFeature   i nomi delle funzionalità del linguaggio Scala, come enumerazione
+
+% 0 1 0 16712a173aa3eab5076b37e15271ddfa
+
+% 0 1 0 1de3de20b3eee3a218a1793134417cb3
+
+@ 0 3 0 1ee57e21e36c72711c94ade2c66c0383
++     `CaptureChecking`, `GenericNumberLiterals`, `NamedTypeArguments`, `PureFunctions` e
++     `Into`. Dichiarata in `anthology.scala` ma non consumata da nulla nella libreria; le
++     opzioni `-language:` sono i valori di `scalacOptions.language.experimental`.
+
+@ 0 4 0 1f7eee21f3cf3ee00e7ded37f7e3e9e0
++ entry .Unused   una selezione per `-Wunused`: `All`, `None` o un `Subset` di `UnusedFeature`
++     L'argomento di `scalacOptions.warnings.unused`, tipizzato per versione: `All` e `None`
++     esistono dalla 3.1 alla 3.8, e `Subset(features)` dalla 3.3 alla 3.8, con la versione
++     delle funzionalità che nomina. `Unused.None` è il caso di questa enumerazione, non
++     l'`Unset` di vacuous.
+
+% 2 1 0 0196ff061700ccc2108f4005b3c83297
+
+% 3 1 0 02cabef723eab1030e9c2ec8ffe29132
+
+% 0 1 0 1938c7f6cdbd750a13056d0c504ac433
+
+% 0 1 0 02f9f4713e77a39319bb6f93350a3dea
+
+% 1 1 0 16a2287d95ee401b01f676ba0e91e063
+
+@ 0 1 0 0e4d90d4cea9e7460a54ea72c7a4436e
++ entry .UnusedFeature   una categoria che `-Wunused` può controllare: imports, privates, locals, explicits, implicits, params, linted
+
+% 1 1 0 06d6c0cb8db427990242a7ea22ca8998
+
+@ 0 4 0 0eb096eceecc12ec03e195b2091e0313
++       `Imports(strict)` esiste nella 3.3; `Privates`, `Locals`, `Explicits`, `Implicits`,
++       `Params` e `Linted` dalla 3.3 alla 3.6. `#name` è la parola che accetta `-Wunused:`, e
++       una `List` di esse è un `Unused.Subset`.
++   entry #name   la categoria come la scrive `-Wunused`: `imports`, `privates`, `locals`, …
+
+@ 0 3 0 1cdc9bdcf27820e216baf538df3a3cea
++ entry .WarningFlag   un'enumerazione di `Deprecation` e `Feature`
++     Dichiarata in `anthology.scala` ma non consumata da nulla nella libreria; le opzioni
++     corrispondenti sono `scalacOptions.warnings.deprecation` e
++     `scalacOptions.warnings.feature`.
+
+@ 0 1 0 05730931cf41e7fe1b91c6545bf46aba
++ entry .Javac   il compilatore Java come valore, sopra il compilatore proprio del JDK in esecuzione
+
+% 1 1 0 01e08a7ca4c9ba680614a56caaf6b8f1
+
+@ 0 5 0 1da8a677f6d1ec54008232aebfe8b64d
++       `Javac(options)` guida il compilatore Java di sistema (`ToolProvider.getSystemJavaCompiler`)
++       nel processo stesso, attraverso un'API della stessa forma di `Scalac`: una mappa di
++       sorgenti con nome e un classpath si compilano in una directory in un task proprio, e il
++       risultato è un `Compiler.Process`. Java ha un solo backend, quindi l'output è sempre
++       `Toolchain.Universe.Classfile`, e un'applicazione mista Scala e Java si collega in un
++       unico artefatto.
+
+% 2 1 0 194af61c3fbc8dac0d7a0edc8fc3e060
+
+% 3 1 0 1bf9e0dab3bb0e8919abd1121ce3a232
+
+% 4 1 0 173fa0fbdc0720e00e0e75d9eada0d40
+
+% 5 1 0 1b0129f81085a64511e2903db8e693cd
+
+% 6 1 0 1ec0d7971f7bb9cd062ffc50f58ace37
+
+% 7 1 0 0e77da2e807cc7b71691bb9a946d417a
+
+% 8 1 0 19c4c3323e2c6f170daa218d4c1dbe83
+
+% 9 1 0 1f9c265ec0ffa13111e566457e1b9914
+
+% 10 1 0 18e7916b2b0f9ac707e37cbbaa59c844
+
+% 12 1 0 0dd2c399fd8fa079189ce4c1e10b7756
+
+% 13 1 0 0ed9e3e425cff1d618ed9b48f1d0160e
+
+% 15 1 0 12f0ded1722a3bf011529348550535ac
+
+% 0 1 0 1909c6d30ecfe23409f0b6cd7d4c3f85
+
+% 0 1 0 079c8c9de2978bae0a083008e32031a3
+
+% 1 1 0 10510deea89171481af789ef10aaf05a
+
+% 2 1 0 0f92dc4502443bd11af8360d33224c62
+
+@ 0 7 0 0d963ea7348093b50787c970ca6c8c92
++       Le diagnostiche Java diventano `Compiler.Notice`: gli errori come `Error`, gli avvisi e
++       gli avvisi obbligatori come `Warning`, il resto come `Info`, ciascuna con un tratto di una
++       sola riga dove il compilatore fornisce una posizione. Il `file` della notifica attualmente
++       non è il nome dato al sorgente: è il segnaposto `name`, quindi uno strumento che deve
++       attribuire una diagnostica Java al suo sorgente dovrebbe leggere il messaggio.
++       L'avanzamento è di due tick, `0.1` all'avvio e `1.0` al successo. Il compilatore è quello
++       del JDK in esecuzione, quindi non c'è un parametro di versione e `.version` è quella del
++       runtime.
+
+% 1 1 0 08e5a03ddfb0824c1c57e56ec438c061
+
+% 0 1 0 00f3ddcd1542ba2614aff16685efcfc8
+
+@ 0 4 0 1f091ec7e15595f10fff854d36667e1d
++   entry .refresh   sostituisce l'istanza condivisa del compilatore, come avviene dopo un crash
++   entry .compiler   il `javax.tools.JavaCompiler` condiviso su cui girano le compilazioni
++   entry .version   la versione del JDK in esecuzione, `Runtime.version()`: `25.0.4`
++   entry .Option   un'opzione del compilatore Java, come le flag che aggiunge
+
+% 1 1 0 0feb91e8f1c2c9d40c0ed7a8b371d873
+
+@ 0 2 0 0b644df5fc15bbf10576199ae41cae72
++         `Javac.Option(flags*)`: le opzioni Java non sono tipizzate per versione, perché il
++         compilatore è quello del JDK che è in esecuzione. `Javac.Option(t"--release", t"17")` o
+
+% 0 1 0 109e54d5d87a9f9b0e525252eeabcc7e
+
+@ 0 4 0 12188ea39d50e9c5166dbc59cce7b70a
++     entry #flags   gli argomenti da riga di comando che l'opzione aggiunge
++   entry #options   le opzioni del compilatore, in ordine
++   entry #version   la versione del JDK in esecuzione, `Javac.version`
++   entry #JavaSource   un sorgente in memoria con nome, come il `JavaFileObject` che il compilatore legge
+
+% 1 1 0 1e3aeadedbffa65413a418151790b93a
+
+@ 0 11 0 1792ac14466fff211ea9d0b859c60d5a
++         `javac.JavaSource(name, code)`, un `SimpleJavaFileObject` con un URI `string:///name`
++         il cui contenuto è il codice. `#apply` avvolge ogni sorgente in uno di essi; è pubblico
++         per uno strumento che guida direttamente l'API `JavaCompiler`.
++     entry #name   il nome del sorgente
++     entry #code   il contenuto del sorgente
++   entry #apply   compila sorgenti con nome su un classpath in una directory, in un task proprio
++       `javac(classpath)(sources, out)`: esegue il compilatore di sistema con `-classpath`, `-d`
++       e le opzioni, in un task `async`, e restituisce subito il `Compiler.Process`. Richiede un
++       `System`, un `Monitor` e un `Probate`, registra nel log i `Compiler.Event` (`Start`,
++       `Running`, e `CompilerCrash` quando viene lanciata un'eccezione) ed è dichiarato in modo da
++       sollevare `Compiler.Error`. Un crash diventa `Compiler.Result.Crash` e sostituisce il
++       compilatore condiviso.
+
+@ 0 1 0 15a94b907f1d275b1f3b8153caaccc67
++ entry .javacEdges   l'arco di compilazione Java di una toolchain: da `Language.Java` a `Toolchain.Universe.Classfile`
+
+% 1 1 0 14ef23bf815044c70d95f132249bc78c
+
+@ 0 5 0 0d3e9be74350d19a08498b1abcf30f18
++       `javacEdges(javac)` è una lista di un solo arco che porta il `Javac` che guida. Lo
++       strumento, di nome `javac`, crea la directory di output, inoltra gli eventi del
++       compilatore sul canale `LinkEvent` della toolchain, e traduce un fallimento in un
++       `Link.Error` con motivo `CompilationFailed(notices)`, un crash in `CompilerCrash` e un
++       compilatore non configurabile in `CompilerUnusable(t"javac")`.
+
+% 2 1 0 0bf773d8c74203970d3cba67f5a2ce1c
+
+% 3 1 0 0b082cf2259b733816a53f9f5eead8e0
+
+% 4 1 0 1a85f852156ae1991cb3c5989c71e8aa
+
+% 0 1 0 06ab7b773ff7c2990b6b03586028f22b
+
+% 0 1 0 0dd897b4371f88fc17902a224efc5103
+
+% 1 1 0 1dacaa089454467f178128ce5998d031
+
+@ 0 1 0 08b85d45c987b0ca071a8b292d99e313
++   entry .apply   la lista di archi per un `Javac`
+
+@ 0 1 0 0ebd5875d24fa62c18af7adb016eb127
++ entry .Kotlinc   il compilatore Kotlin come valore: opzioni tipizzate e una versione del linguaggio, che emette classfile
+
+% 1 1 0 195f5889ff304c451cefa77035684504
+
+@ 0 6 0 1c5ce0899f0a060502ccabcff7d61107
++       `Kotlinc[version](options)` guida il compilatore Kotlin nel processo stesso, presentando la
++       stessa interfaccia di `Scalac` e `Javac`: una mappa di sorgenti con nome e un classpath si
++       compilano in una directory, e i messaggi del compilatore diventano `Compiler.Notice` sul
++       `Compiler.Process` risultante. Il parametro di versione è una delle `.Versions` (da `1.9` a
++       `2.4`), e ogni valore di `kotlincOptions` è tipizzato dalle versioni che lo accettano,
++       quindi un'opzione che manca a una versione è un errore di compilazione nello strumento.
+
+% 2 1 0 09f22bc432a98a3b0ec7bb20ca4d123c
+
+% 3 1 0 1422c24185a3633105ade1990f7de83a
+
+% 4 1 0 0e60dfcac830f19a0f36ef45a1533a41
+
+% 5 1 0 0a03300a9e63ce3e1b2dce7956e6460c
+
+% 6 1 0 0baa27cb0bea83f60f1d1d036333e17f
+
+% 7 1 0 1579076ae73e47b40d28ee57ab9ad48c
+
+% 8 1 0 17d4657e97620ec8147a0505cfc00f83
+
+% 9 1 0 071df32682cd7ce50e66c87ae52e9fec
+
+% 10 1 0 044f3fe7e2ff6afb07c0bc53b2c9d5a9
+
+% 12 1 0 0fe64466160c60470481fa1dda8dc36e
+
+% 13 1 0 0a105d31201c0723126b5a111518671e
+
+% 0 1 0 152a1de7a14944b6058780800c557985
+
+% 2 1 0 10a38408f0b6a0691f6d4648717c9898
+
+% 0 1 0 1fc242f58cd8aa2a1f057a1b7c8b066e
+
+% 0 1 0 076654d24676b62d16f6a8faa40d9b2f
+
+% 1 1 0 0f7e1b4d009924c6199fe3c5d9c5c89e
+
+% 2 1 0 150b7bef2eddd6c904cfdab6651b9129
+
+@ 0 6 0 18dbef1ac19e12c00d0a03b2a6c641b8
++       Kotlin legge i suoi sorgenti dal disco, quindi questi vengono scritti in una directory
++       temporanea per la durata della compilazione, rimossa quando questa finisce; una
++       diagnostica nomina comunque il sorgente come è stato dato (`demo/Greeting.kt`), non il
++       file in cui è stato scritto. La libreria standard di Kotlin non è mai implicita (il
++       compilatore gira con `-no-stdlib`, quindi `kotlin-stdlib` va sul classpath come ogni altra
++       voce) e l'output è costituito da classfile, collegabili come qualsiasi artefatto di
++       classfile, compresi un `Dex` o un `Apk`.
+
+@ 0 5 0 100848e82d5156be1fc7939812b09b5c
++       Diventa una notifica solo ciò che il compilatore dice dei sorgenti: un messaggio di
++       livello info senza posizione nel sorgente (il logging che `-verbose` rende copioso) viene
++       scartato. Il compilatore stesso (`kotlin-compiler-embeddable`) è una dipendenza di sola
++       compilazione di `anthology.kotlin`: il programma che lo guida mette la versione che vuole
++       sul proprio classpath di runtime, e `.version` indica quale.
+
+% 0 1 0 1d9494e4f90eb71b1b404f85e0e4daf1
+
+% 0 1 0 0f7502748bd40d5700ce55ae14819939
+
+% 1 1 0 05751aea5b43acfd09cad2b65285bdec
+
+@ 0 2 0 0fb7402a4dcde0c017751d5949122cf5
++   entry .Versions   le versioni del linguaggio Kotlin per cui si può dichiarare un `Kotlinc`: da `1.9` a `2.4`
++   entry .Option   un'opzione del compilatore Kotlin, come le flag che aggiunge, tipizzata dalle versioni che la accettano
+
+% 1 1 0 037817dbc2f586ac1f44b6896d08b624
+
+@ 0 3 0 087f99671c8dc8fe042f91d7bb9be4d8
++         `Kotlinc.Option[-version <: Versions](flags*)`, controvariante nella sua versione come
++         lo è `Scalac.Option`, quindi un'opzione dichiarata per `Kotlinc.Versions` va bene per
++         qualsiasi compilatore. Un'opzione che `kotlincOptions` non ha si scrive direttamente:
+
+% 0 1 0 12b196b3fee60c5810eb37d603e6ec8f
+
+@ 0 13 0 1d1b0103935c475d072e12e533dbc8c4
++     entry #flags   gli argomenti da riga di comando che l'opzione aggiunge
++   entry .version   la versione del compilatore incorporato, come la dichiara esso stesso: `2.4.10`
++   entry #options   le opzioni del compilatore, in ordine
++   entry #commandLineArguments   le flag di ogni opzione, concatenate in ordine
++   entry #version   la versione del compilatore incorporato, `Kotlinc.version`
++   entry #apply   compila sorgenti con nome su un classpath in una directory, in un task proprio
++       `kotlinc(classpath)(sources, out)`: scrive i sorgenti in una directory temporanea, esegue
++       il compilatore JVM con `-no-stdlib`, `-classpath`, `-d` e le opzioni, in un task `async`,
++       e restituisce subito il `Compiler.Process`; l'albero temporaneo viene rimosso quando il
++       task finisce. Richiede un `System`, un `Monitor` e un `Probate`, registra nel log i
++       `Compiler.Event`, ed è dichiarato in modo da sollevare `Compiler.Error`. Le diagnostiche
++       portano il tratto che il compilatore segnala, riportato sul nome dato a ciascun
++       sorgente; un crash diventa `Compiler.Result.Crash`.
+
+@ 0 1 0 1e01c8e17533b2ac0c7fb0b057292bdf
++ entry .kotlincOptions   le opzioni del compilatore Kotlin come valori tipizzati
+
+% 1 1 0 01e298e56650b9420c9d354be5b77e86
+
+@ 0 4 0 10d3e1ea8d0e27b913cf803adcad25d9
++       Rispecchia la riga di comando di Kotlin sotto `kotlincOptions`, ciascuna un
++       `Kotlinc.Option` tipizzato dalle versioni che la accettano, con gli oggetti annidati
++       `warnings`, `compatibility`, `explicitApi` e `advanced`. L'oggetto è rispecchiato come
++       package dell'ombrello `soundness`.
+
+% 2 1 0 05ef0915647fcda51500af09e3b03430
+
+% 3 1 0 05b9b297d94216cd01bae46d1cdbbf75
+
+% 0 1 0 1c6c394755b598b304ee1d90cb43eb9f
+
+% 0 1 0 0b5aa0ee5abb0eda156c1b3cf9247940
+
+% 0 1 0 181704fe0c4190c2062183a8780681a9
+
+% 1 1 0 16c784aef3c1f58004b24e3cef5b0521
+
+% 1 1 0 0411c533ffbf07e910e3d50bdf6263e2
+
+@ 0 4 0 052422c06a40ac09051740861a5d253c
++   entry .javaParameters   `-java-parameters`: conserva i nomi dei parametri per la riflessione Java
++   entry .noJdk   `-no-jdk`: non mette il JDK sul classpath
++   entry .progressive   `-progressive`: attiva la modalità progressiva
++   entry .verbose   `-verbose`: logging prolisso del compilatore (i suoi messaggi non sono notifiche)
+
+% 0 1 0 0e2632139563ad36040c1ec90ef208b4
+
+@ 0 3 0 1a08b9e07fa547f415c493334ca46c74
++   entry .jvmTarget   `-jvm-target version`: la versione del bytecode JVM, come numero, ad esempio `17`
++   entry .optIn   `-opt-in marker`: aderisce a un'API annotata
++   entry .warnings   `-nowarn`, `-Werror` e `-Wextra`
+
+% 1 1 0 18a198bdb49e008215d967c5b7f29ca5
+
+@ 0 1 0 1bb9fbb65040afde18c6d44de4a43234
++         `none` e `asErrors` in ogni versione; `extra` dalla 2.0.
+
+% 0 1 0 077d414b8de0e0ca052c9f84a3d206e4
+
+@ 0 3 0 1ec7e53698bd2f441f6d1a9fc535f484
++     entry .asErrors   `-Werror`: gli avvisi fanno fallire la compilazione
++     entry .extra   `-Wextra`, dalla 2.0 alla 2.4
++   entry .compatibility   le versioni dell'API, del linguaggio e della release del JDK su cui compilare
+
+% 1 1 0 0f99178734ac8c900e481bf276345efe
+
+@ 0 1 0 05367f19e21aed8004fc41034c6f4cc7
++         `api` e `language` prendono un letterale di `Kotlinc.Versions`; `jdkRelease` un numero
++         di JDK.
+
+% 0 1 0 1933d9f0a38a8f8609158839f85b80fe
+
+% 0 1 0 1bf3e017cd904ddc0715ba56e52b53cd
+
+% 0 1 0 11bdb0303dab05041e1b382f0f01120c
+
+@ 0 1 0 0f57b4231210efcb0629000c5d079640
++   entry .explicitApi   `-Xexplicit-api=strict` o `=warning`
+
+% 1 1 0 05e6a6c21eae970e1488d4ecd315bd3c
+
+@ 0 2 0 134f01c2df121d5d18f30aab1dd905f7
++         La modalità API esplicita, per gli autori di librerie: ogni dichiarazione pubblica deve
++         indicare la propria visibilità e il proprio tipo di ritorno.
+
+% 0 1 0 0135889d22ade2f6122d7e8f003b04e2
+
+% 0 1 0 1a7f5b8a8c552b5613d371e713128fbc
+
+@ 0 1 0 02181b95065d318309a58a6ffe260739
++   entry .advanced   `-Xno-call-assertions` e `-Xno-param-assertions`
+
+% 1 1 0 043bab3c655062bd197c926855e1327c
+
+@ 0 1 0 134ab047d016d9801ddecf536b78cec1
++         Elimina le asserzioni di controllo dei null che Kotlin emette ai confini con Java.
+
+% 0 1 0 17908a4b5e12dfcd1dcc66575ec4b398
+
+% 0 1 0 1a0c3033e491415d037468d41c778fcb
+
+@ 0 1 0 0fd7226cca69355513b826d3924127eb
++ entry .kotlincEdges   l'arco di compilazione Kotlin di una toolchain: da `Language.Kotlin` a `Toolchain.Universe.Classfile`
+
+% 1 1 0 03666c5dee90bcde03437f1cbd6be0d5
+
+@ 0 6 0 06ce6c02d79c947b13faf53fe31da553
++       `kotlincEdges(kotlinc)` è una lista di un solo arco che porta il `Kotlinc` che guida. È
++       modellato solo il backend JVM: gli altri backend di Kotlin emettono klib anziché un
++       universo che anthology conosca. Lo strumento, di nome `kotlinc`, traduce un fallimento in
++       un `Link.Error` con motivo `CompilationFailed(notices)`, un crash in `CompilerCrash` e un
++       compilatore non configurabile in `CompilerUnusable(t"kotlinc")`, come fa `scalacEdges`.
++   entry .apply   la lista di archi per un `Kotlinc`
+
+@ 0 1 0 1918390493227b810c27fa70b8da2f66
++ entry .Js   JavaScript legato a un host attraverso un sistema di moduli: un nodo applicazione per ogni sistema di moduli
+
+% 1 1 0 0db2eba1395ed8cb082e49799c0f9b18
+
+@ 0 6 0 0a051d80803107960abbcbaaae692022
++       `anthology.Js(module)` è il nodo applicazione con id `js-<module>`: `js-es`,
++       `js-commonjs` o `js-script`. Il sistema di moduli fa parte del contratto di binding
++       dell'artefatto (come lo importa un browser o Node), quindi fa parte dell'identità del
++       nodo, e `sjsEdges()` registra un arco da `Toolchain.Universe.Sjsir` verso ciascuno. **Non
++       è esportato** nell'ombrello `soundness`, il cui `Js` è l'interfaccia per funzioni
++       straniere JavaScript di xenophile, quindi sotto `import soundness.*` si scrive in forma
++       pienamente qualificata.
+
+% 2 1 0 0d35a7d8064a1c1e0b2a0cb386582f98
+
+% 3 1 0 1f7ea5757a18c4610670bb5bb4981d2e
+
+% 4 1 0 0d5e05c12c1f8f9c009e16238076ee13
+
+% 0 1 0 1bc8d57a04c1106e0b61a1636064a80d
+
+% 0 1 0 140ef1e2dd2707971cd4e37397ce2ec7
+
+% 0 1 0 0f7b9cbb0c6861720516a96c21bd10f2
+
+% 1 1 0 14df9a5774f4236b171030482a398140
+
+@ 0 1 0 18e22391882df3ea0bbda5bff09032dd
++       Il collegamento scrive `main.js` nella directory di output.
+
+% 1 1 0 0515e646812691f40e2d0ba214d69d5e
+
+% 1 1 0 0301c32cf39f804b0cc759f053f89720
+
+@ 0 1 0 1ad1d878602b19a21572fc6ccbfb8dc0
++   entry .Module   come un host JavaScript consuma l'artefatto: `Es`, `CommonJs` o `Script`
+
+% 1 1 0 03385c8ce38673f502bb2f048372f7ab
+
+@ 0 4 0 14bae4edd1ed65b30c934d3f5c0926ee
++         Un modulo ECMAScript (`ModuleKind.ESModule`), un modulo CommonJS o uno script semplice
++         senza sistema di moduli, con `#id` rispettivamente `es`, `commonjs` e `script`.
++     entry #id   il nome del sistema di moduli all'interno dell'id del nodo
++   entry #module   il sistema di moduli a cui l'artefatto è legato
+
+@ 0 1 0 1236a68738406caa07cdb84801cc3e5e
++ entry .Wasi   un artefatto WebAssembly autonomo legato a una versione dell'interfaccia WASI: un nodo per versione
+
+% 1 1 0 124612397eba8e39109932e3b972f350
+
+@ 0 9 0 04fcacad43d66c8b1a4929d8023ba584
++       `Wasi(version)` è il nodo applicazione il cui id è quello della versione: `wasip1`,
++       `wasip2` o `wasip3`. Le generazioni di WASI sono nodi separati perché determinano l'ABI
++       dell'artefatto, e solo `Wasi(Wasi.Version.Wasip2)` (un `.wasm` del modello a componenti
++       i cui import ed export sono descritti in WIT) ha un arco che lo produce,
++       `sjsEdges.wasi()`, quindi chiedere `Wasip3` solleva `NoPath` invece di produrre in
++       silenzio qualcos'altro. L'arco del componente ha due prerequisiti oltre al linker,
++       entrambi given: un `WasiToolchain`, ottenibile solo sondando la presenza di `wasm-tools` e
++       `wit-bindgen`, e un `.World` che nomina la directory WIT e il world su cui collegare.
++       `ociEdges()` avvolge poi il componente come `OciImage`.
+
+% 2 1 0 0b3e84c7f5dda4bf0c889e325e4943ba
+
+% 3 1 0 1454b3b135130d700f9dc029e296445c
+
+% 4 1 0 0ff1f4abffce8ff4064b60a5e71a6f68
+
+% 5 1 0 159c5a0c54af082d1b85a928ffa1d9ba
+
+% 6 1 0 1dfd8ba93a9459c71ef95f2db2b3371b
+
+% 7 1 0 0c734a29e59d2dad0270c85bd7d3678c
+
+% 8 1 0 18d5111c1da4e49116589682b07c4089
+
+% 9 1 0 05af5dae904ba1d41e48a42b21ba31a6
+
+% 10 1 0 0f9161bd2106353b1a7ab675208835fe
+
+% 11 1 0 1196deea3e4945411afc460f955d5c92
+
+% 13 1 0 1812610f7f7e4eda05dffab9f575f2e8
+
+% 14 1 0 0c0486d77c2100981ed89de5330d1704
+
+% 15 1 0 0838618d37e1bcfc01635435c698465f
+
+% 2 1 0 0fc76cbee0fddc1c07b6d44ad3f7fb1d
+
+% 0 1 0 173acea7d21a48540263d311d6ea9723
+
+% 2 1 0 0f2bcc40d72629210c7921626be0bc0f
+
+% 0 1 0 0706d703b369efe007f6ce6753230a7b
+
+% 0 1 0 0a9f3345381fcd6c1d6612e81aa7de47
+
+% 1 1 0 1393f7b0e32f1b1412bab4d78faa981a
+
+@ 0 1 0 187d74bcb70b33c01ed5267ed1e693a6
++       Il collegamento scrive `main.wasm` nella directory di output.
+
+% 0 1 0 01df9b0199fe9ff80d02db4267fb0dd1
+
+% 1 1 0 1d49d89da07772651c1010ed054e1297
+
+% 1 1 0 0af70cba11ea949d165527ce1a33b860
+
+@ 0 1 0 1f0255ee3447163d04ee71d0a8894ef2
++   entry .Version   le generazioni di WASI: `Wasip1`, `Wasip2`, `Wasip3`
+
+% 1 1 0 16bccbfaa50ffced1aab2af39a4cbb92
+
+@ 0 5 0 0a09e5465eb478130f445191152d5288
++         `wasip1` (0.1) è un'ABI di syscall piatta, in stile libc, su moduli core; `wasip2` (0.2)
++         è il modello a componenti, con import ed export descritti in WIT; `wasip3` (0.3)
++         aggiunge l'asincronia nativa. `#id` è il nome in minuscolo.
++     entry #id   `wasip1`, `wasip2` o `wasip3`
++   entry .World   le definizioni WIT su cui si risolve il collegamento di un componente: una directory di package e il nome di un world
+
+% 1 1 0 1760cfc3b83a415703df5a92bab9694e
+
+@ 0 7 0 0316d4a1abdcc6750b982b796da2577f
++         `Wasi.World(directory, world)`: la directory contiene package `.wit` (con le loro
++         dipendenze sotto `deps/`), e `world` nomina il world da collegare. `sjsEdges.wasi()` e
++         `ociEdges()` ne prendono entrambi uno come given; lo strumento OCI legge gli import e gli
++         export del world dai file `.wit` di primo livello della directory per descrivere
++         l'artefatto.
++     entry #directory   la directory dei package `.wit`
++     entry #world   il nome del world da collegare
++   entry #version   la generazione di WASI a cui l'artefatto è legato
+
+@ 0 1 0 06536cac64b15db211a7eedc8d88fc26
++ entry .WasiToolchain   la prova che `wasm-tools` e `wit-bindgen` sono installati, ottenuta solo sondandone la presenza
+
+% 1 1 0 044acdc13e78da3a1d56a907cc9a2f3c
+
+@ 0 6 0 04ef5782cc725d331c0671bbf49ed3d6
++       Il collegamento di un componente WASI invoca `wasm-tools` e il fork scala-wasm di
++       `wit-bindgen`; un valore `WasiToolchain` è la prova che sono presenti, e l'unico modo di
++       crearne uno è `.apply`, che esegue ciascuno con `--version`. `sjsEdges.wasi()` ne prende
++       uno come given, quindi un arco di componente i cui strumenti mancano non si può
++       costruire, e uno strumento mancante si scopre quando si assembla la toolchain invece che
++       quando fallisce un collegamento.
+
+% 2 1 0 18078f920668209c0cca14d92e102920
+
+% 3 1 0 10c3348e3e9438ba0195d77fd56cb250
+
+% 4 1 0 11fa46ffa0a347eb1ae8c83ff3fa815f
+
+% 5 1 0 13434c5ce15232fd0e8313214657337d
+
+% 6 1 0 109eb3f980258a0c072c878d2f238e6a
+
+% 1 1 0 13411c2f830bff2c0178e813bb4a80c0
+
+% 1 1 0 06c49b41b7bd78ba0d73dfde718821dd
+
+% 2 1 0 0bcfe51d22bdc3c70444b66095f0ae3e
+
+% 1 1 0 0ff29296da0278f90c768ad642e19c30
+
+@ 0 5 0 09c280bd037e366a0078fb412ce435f6
++   entry .apply   sonda la presenza di `wasm-tools` e `wit-bindgen`, sollevando `Toolchain.Error` se uno dei due manca
++       Esegue `<tool> --version` attraverso guillotine con la `WorkingDirectory` e l'`Environment`
++       nell'ambito (si fornisca l'ambiente che i processi devono ereditare:
++       `environments.javaBaseEnvironment`, o quello proprio di una CLI) e solleva
++       `Toolchain.Error` nominando il primo strumento che non termina con successo.
+
+@ 0 6 0 0c69a16fd9c08f031fb92f2eb2f2f86a
++ entry .Wasm   un modulo WebAssembly core con colla JavaScript, legato a un host JavaScript
++     `anthology.Wasm` è il nodo applicazione con id `wasm`, raggiunto da
++     `Toolchain.Universe.Sjsir` attraverso `sjsEdges()`: il backend WebAssembly del linker
++     Scala.js, emesso come modulo ES2022 che un browser o Node carica con la sua colla. **Non è
++     esportato** nell'ombrello `soundness`, il cui `Wasm` è quello di xenophile, quindi si
++     scrive in forma pienamente qualificata. Il collegamento scrive `main.wasm` nella directory
++     di output, e non richiede strumenti nativi.
+
+@ 0 1 0 18f8eea5c8ff2274036495f9a8db0057
++ entry .linkerOptions   le impostazioni per ogni formato prodotto dal linker Scala.js: controlli dell'IR, source map, versione ES, ottimizzatore
+
+% 1 1 0 0e2586ab2d0d22c007ccde59a9366c08
+
+@ 0 3 0 0c96d05de824786200d190e98f58c643
++       Ciascuna è un `Toolchain.Setting` indirizzato ad `anthology.Js` (qualunque sistema di
++       moduli), ad `anthology.Wasm` e a `Wasi` allo stesso modo, e modifica lo `StandardConfig`
++       del linker; su un percorso che non produce nessuno di questi viene rifiutata come
++       `InapplicableSetting`.
+
+% 2 1 0 007378b96c5128020a470a0f2fd273e8
+
+% 3 1 0 1cfa81cd1a7ac20c0775f8b4e8ddcc70
+
+% 0 1 0 0d750b2488aff2ab068ad399cb99ad80
+
+% 1 1 0 0e1c81840a1c5c411049f52646bde49b
+
+@ 0 3 0 0c7c61612752ee761b1201482d0889da
++   entry .checkIr   controlla l'IR prima del collegamento
++   entry .sourceMaps   emette le source map
++   entry .esVersion   la versione di ECMAScript da emettere: da `es2015` a `es2022`
+
+% 1 1 0 07ca1544701be734075b827121d7145b
+
+@ 0 10 0 0c45db5389ef3a310452b22616a659eb
++         Un'impostazione per versione, ad esempio `linkerOptions.esVersion.es2020`.
++     entry .es2015   ha come destinazione ECMAScript 2015
++     entry .es2016   ha come destinazione ECMAScript 2016
++     entry .es2017   ha come destinazione ECMAScript 2017
++     entry .es2018   ha come destinazione ECMAScript 2018
++     entry .es2019   ha come destinazione ECMAScript 2019
++     entry .es2020   ha come destinazione ECMAScript 2020
++     entry .es2021   ha come destinazione ECMAScript 2021
++     entry .es2022   ha come destinazione ECMAScript 2022
++   entry .optimize   se l'ottimizzatore del linker viene eseguito: `none` o `fast`
+
+% 1 1 0 1586c85452763e27089495ba105e51a6
+
+@ 0 3 0 133a72a0422d88ba130a1fc7647bc00b
++         `fast` attiva l'ottimizzatore, `none` lo disattiva.
++     entry .none   disattiva l'ottimizzatore
++     entry .fast   attiva l'ottimizzatore
+
+@ 0 1 0 042497b0dd1f31710303171d74272a03
++ entry .sjsEdges   gli archi di collegamento di Scala.js: da `Sjsir` a ciascun sistema di moduli JavaScript, a Wasm per browser e a un componente WASI
+
+% 1 1 0 08e26b4e96dbb84b1d27032bee39a8bb
+
+@ 0 8 0 196f3c65b47a140f199e0fc05522d714
++       `sjsEdges()` registra quattro archi da `Toolchain.Universe.Sjsir`: verso `anthology.Js` con i
++       sistemi di moduli ES, CommonJS e script, e verso `anthology.Wasm`; `.wasi()` aggiunge il
++       quinto, verso `Wasi(Wasi.Version.Wasip2)`, ed esiste solo dati un `WasiToolchain` e un
++       `Wasi.World`. Tutti guidano il linker di Scala.js — una libreria JVM inclusa in
++       `anthology.link` — sulla directory di emissione e sulle directory e i JAR del suo
++       classpath, con ogni `EntryPoint` come inizializzatore di modulo che chiama il suo `main`,
++       e scrivono `main.js` o `main.wasm` nella directory di output. I messaggi del linker
++       vengono registrati nel log come `LinkEvent.Message`, e un linker che lancia un'eccezione
++       solleva `Link.Error` con motivo `Failed`.
+
+% 2 1 0 09950cd73ece48d91cc1cb447ade211a
+
+% 3 1 0 1f6ad6b27373de550f11c1db77948e2f
+
+% 4 1 0 0365aeac3507a6f10c671b41715e523f
+
+% 5 1 0 08d0f6eec37514d411f76688e803b0a2
+
+% 6 1 0 1478fa0495fa36b31c63bf3ad18fd426
+
+% 7 1 0 1c312cb0f74036941101499c7aaa8928
+
+% 8 1 0 1ee505ede02156d40454c60d26af40c1
+
+% 9 1 0 0594ba8d92785a2a0166f172a906de54
+
+% 10 1 0 0bd4f900fd22eff410dbc761957a4720
+
+% 11 1 0 028db6dd818a611f02086418a5df7d9c
+
+% 13 1 0 046bda7d69379c6e042182eca19b0b7b
+
+% 14 1 0 15f644ed3b9882061d807f781061d502
+
+% 15 1 0 057f61a0828ef8821a556a2824be23a0
+
+% 17 1 0 1104c9493e5291860269a1cbf5be6b98
+
+% 0 1 0 1197124d30dc6c8701da11dbd65fc0f8
+
+% 1 1 0 047557205e0ab89316217463217eb8fe
+
+% 0 1 0 1c598954c37840ba068bb7ac2f6eae57
+
+% 0 1 0 123e0a0d3a912afe01385c2356406d25
+
+% 1 1 0 032971743b99eca21bafd3b79431a0a9
+
+% 0 1 0 1789d1c554ac11ac00fa6fc5f8bfeab2
+
+% 1 1 0 0bb531d181b1ba66043e393cfc170988
+
+% 2 1 0 0a3aed749845f9c90bc07702faffad22
+
+@ 0 3 0 08efa8b57538dabe1817abbbc62ce005
++       L'emissione deve essere stata compilata con `-scalajs` (uno `Scalac` reindirizzato a
++       `Toolchain.Universe.Sjsir`) rispetto ai JAR di runtime di Scala.js; una compilazione in
++       classfile non ha alcun percorso verso nessuno di questi nodi.
+
+% 1 1 0 0441521a9904ac01180a14fec8344a97
+
+% 1 1 0 011597c60a4f988d0cce026fd83b0561
+
+@ 0 7 0 030959eae3bec77b1576b38a1390db5a
++   entry .apply   i quattro archi che non richiedono strumenti nativi: tre sistemi di moduli JavaScript e Wasm per browser
++       Lo strumento di ciascuno prende il nome dall'id del suo nodo (`js-es`, `js-commonjs`,
++       `js-script`, `wasm`), e l'arco Wasm fissa ES2022 e il backend WebAssembly.
++   entry .wasi   l'arco verso `Wasi(Wasip2)`, dati un `WasiToolchain` sondato e un `Wasi.World`
++       Configura il linker per un modulo `WasmComponent` rispetto alla directory WIT e al nome
++       del mondo; il collegamento esegue `wasm-tools` e `wit-bindgen` man mano. Un collegamento
++       WASI i cui strumenti nativi mancano non è esprimibile, poiché il given non può essere
++       creato.
+
+@ 0 1 0 13967596cd0f90621df76f8cfc7fc8e1
++ entry .Bundler   il classpath dell'applicazione in esecuzione, e l'assemblaggio di un JAR da un classpath
+
+% 1 1 0 153a416b051266e705726a171d5202dc
+
+@ 0 4 0 04b03cbf26fc0f1b01388f21c0f2a684
++       `.applicationClasspath` è il classpath da cui è stato caricato il programma in esecuzione.
++       Un rig di staging che deve incorporare il proprio classpath in esecuzione nei JAR che
++       produce lo abbina al proprio output compilato come `Deliverable.Emission` e impacchetta i
++       due tramite l'arco `Artifact.Jar`, così il JAR porta con sé l'esecutore e le dipendenze
++       del rig stesso:
+
+% 2 1 0 1fe60bc9ddc7112f12749338fef1defe
+
+% 3 1 0 04e0fa1308b32d0c1ddb563095857ddc
+
+% 4 1 0 09c25b0a37ed7917185ffd2ca28549c5
+
+% 5 1 0 12974115ea32b0c90a700bc2c3167bd0
+
+% 6 1 0 1d710eb5a6126874062951bbd695b6fc
+
+% 7 1 0 0a482b5b279372d60144814f35526198
+
+% 8 1 0 0a10037415fdb3750d742bebb9bda887
+
+% 9 1 0 06950b3ae6f7ce65155ea9428eeb96ce
+
+% 10 1 0 0645438ca7b7cbcb023bab3bb4594a08
+
+% 11 1 0 14d7775b913c8fde0297217f53f7c2dc
+
+% 0 1 0 07b49c87e2f5febb021c779dfd9946ec
+
+% 1 1 0 0764c51678fcf8411684a59902ff8044
+
+% 0 1 0 01638f983ab43bc51bcbf9078bdfa268
+
+% 1 1 0 1f2638d8a9695fa902d9414c3e89f32d
+
+% 1 1 0 186f7a4c1ef85c2d173df45010f39b65
+
+% 0 1 0 118c04c921b2c40a0f022775153749bc
+
+% 0 1 0 12afd83aa5bd02d617bd439a2e0be8da
+
+% 0 1 0 0a284ee05bbf4d0d0a6ffe8419d21326
+
+% 1 1 0 0f06efa503abc2c8011c11a72f56e148
+
+@ 0 13 0 1bf641e5a96f6eaf178537965afb2d3a
++       `.assemble` è l'assemblaggio di JAR eseguito dagli strumenti di `jarEdges`, per uno
++       strumento che impacchetta un proprio classpath.
++   entry .assemble   scrive un JAR di tutto ciò che sta su un classpath, con un `Main-Class` se ne viene indicato uno
++       I file di una voce directory vengono aggiunti, senza alcun `MANIFEST.MF` o
++       `plugin.properties`, e le voci di una voce JAR vengono riemesse così come sono, senza il
++       suo manifest; dove due voci hanno lo stesso percorso, si conserva la prima. Il manifest
++       registra `Created-By: Soundness`. È ciò con cui l'arco `Shrunk.Jar` di `Abscission`
++       impacchetta un mondo chiuso.
++   entry .applicationClasspath   il classpath dell'applicazione in esecuzione, letto dal suo stesso classloader
++       `LocalClasspath.of(Classloader[Bundler.type])`: ricavato per introspezione dal classloader
++       che ha caricato questa classe — il suo, anziché il loader di contesto del thread, che un
++       thread di un pool potrebbe aver ereditato da qualunque cosa sia stata eseguita per prima —
++       con ripiego sulla proprietà `java.class.path`. Sotto un host come un runner di test, che
++       isola il codice in un `URLClassLoader`, questo è il classpath da cui il codice proviene
++       davvero.
+
+@ 0 1 0 07ba521275f264d2103473d2d2f581b6
++ entry .Library   un JAR dell'output di compilazione non collegato di un universo, per l'assemblaggio a valle: un nodo per universo
+
+% 1 1 0 117511d71a01e9691c09d5adc0c9ad0a
+
+@ 0 7 0 0cf0490c80d308400e0aef957f16370e
++       `Library(universe)` è il nodo applicativo con id `library-<universe>`
++       (`library-classfile`, `library-sjsir`, `library-nir`), raggiunto dal suo universo tramite
++       `jarEdges()`. Impacchetta solo l'output della compilazione stessa — i classfile, ed
++       eventuali `.sjsir` o `.nir` accanto a essi, con il loro TASTy — non il classpath, e non
++       registra alcun punto di ingresso, quindi i punti di ingresso vengono ignorati.
++       L'universo di una libreria deve corrispondere a quello della sua compilazione:
++       `Toolchain(jarEdges()).path(Toolchain.Universe.Sjsir, Library(Toolchain.Universe.Nir))`
++       solleva `NoPath`.
+
+% 2 1 0 16e9056b76e4370d0251a9f1eebe27eb
+
+% 3 1 0 17cadf9b1c6d44a109243ba4d7260435
+
+% 4 1 0 05e85d2d73b7bf3f1a504d9bdea43451
+
+% 5 1 0 1778f9899950ea9c0c59be29a85f5f6b
+
+% 6 1 0 13bd2161fc24b9780a19ff1c9b06367e
+
+% 7 1 0 028f11721d9029e808784a2707f828c3
+
+% 8 1 0 15a2800451b0bbf903587afd5ebd515a
+
+% 9 1 0 04544301dfc12c400762e8ed19697ba8
+
+% 10 1 0 1d6d0fd17d385df306d53f3626c71d62
+
+% 11 1 0 09989d124070c51317f59e53677f359f
+
+% 13 1 0 1a21405f6824d7ea154d33bed1150769
+
+% 14 1 0 15a89684197114d309e5da2f373713cb
+
+% 15 1 0 124690bcc2f59df1137ac59aa6f5e25e
+
+% 17 1 0 07fd7187ea7c844015cc2d058ae013e8
+
+% 1 1 0 11f0948af202fa07109b1b6459c0d691
+
+% 0 1 0 096e0943ddaa4bb7149c5cb43aa3b593
+
+% 1 1 0 08c544500e7b060e0ac8f293d45de9dd
+
+@ 0 1 0 14377d3b2acdaaf003d9a367743773cd
++       Il JAR si chiama `main.jar`, a meno che `jarOptions.name` non dica altrimenti.
+
+% 0 1 0 1cec89d1243fcb9b169636d0d7d4d79e
+
+@ 0 1 0 0b1b40c9fed912aa0111e943b868c620
++   entry #universe   l'universo di cui la libreria impacchetta l'output
+
+@ 0 1 0 04ee5ffa084c3fb30b4a260bffa06063
++ entry .jarOptions   le impostazioni per gli archi di impacchettamento in JAR
+
+% 1 1 0 090cf8392815041f112cd46e935df412
+
+@ 0 4 0 0497ba20bf0e983d0f6246548967ff02
++       Solo il nome del file: `jarOptions.name(t"app.jar")`, indirizzato sia ad `Artifact.Jar`
++       sia a ogni nodo `Library`.
++   entry .name   il nome del file del JAR nella directory di output, per i nodi `Artifact.Jar` e `Library`
++       Il valore predefinito è `main.jar`.
+
+@ 0 1 0 0eab1549de9b18f506ce10d231d68770
++ entry .jarEdges   gli archi di impacchettamento in JAR: da `Classfile` ad `Artifact.Jar`, e da ogni universo alla sua `Library`
+
+% 1 1 0 1988fc767d6de20d0df8951a61e78924
+
+@ 0 4 0 00af02d6e73085da07abd85be017640a
++       `jarEdges()` registra quattro archi, che non richiedono strumenti esterni: da
++       `Toolchain.Universe.Classfile` ad `Artifact.Jar`, e da ciascuno tra
++       `Toolchain.Universe.Classfile`, `Toolchain.Universe.Sjsir` e `Toolchain.Universe.Nir` alla
++       sua `Library`. Le impostazioni di entrambi gli strumenti sono il nome del file del JAR
++       (`jarOptions.name`, predefinito `main.jar`).
+
+@ 0 8 0 1a63ac3969cb0a180d577e25c6a6709c
++       Lo strumento `jar` include la directory di emissione *e l'intero classpath*: i file di una
++       voce directory vengono aggiunti (omettendo qualsiasi `MANIFEST.MF` e `plugin.properties`),
++       le voci di una voce JAR vengono riemesse alla lettera senza ricompressione (omettendo il
++       suo manifest), e i duplicati per percorso vengono scartati, con la prima occorrenza che
++       prevale. Il manifest registra `Created-By: Soundness` e, dall'unico `EntryPoint`,
++       `Main-Class`; senza punto di ingresso si ottiene un JAR senza di esso, e due sollevano
++       `Link.Error` con motivo `ManyEntryPoints`. Lo strumento `library` include solo la
++       directory di emissione e ignora i punti di ingresso. Un difetto di zip, di percorso, di
++       I/O, di troncamento o di nome di file è un `Link.Error` con motivo `Packaging(detail)`.
+
+% 2 1 0 06ae6aa21f20d4ec14230f24075f6b29
+
+% 3 1 0 0fd18477968c7b5011f9ab9ebdace48b
+
+% 4 1 0 189c7090aeb4c3d8174ebe8de867a05e
+
+% 5 1 0 0eebdb8945ab2d07080779228ea71f3e
+
+% 6 1 0 11f051931f8a21700bd16814b0072a93
+
+% 7 1 0 0f43cafaee83905c0dff34e268a9abe7
+
+% 8 1 0 0fd86d7901f0b1fd1b271e52df127bca
+
+% 9 1 0 0a04dce752762fd70c752fb52f645460
+
+% 10 1 0 111a7a24d6feb30c0fa3dcb62fdfa083
+
+% 11 1 0 0a46608ea85c752d0f29f4fbac3e4897
+
+% 13 1 0 007373394c52e7cd06c2f14f29e41f19
+
+% 14 1 0 086359f581a047a217bb321c863947c6
+
+% 15 1 0 0389e371f7b81d4f0d98ab8caae4a7bb
+
+% 17 1 0 00c51760eacfe38911a3e05f2b3b53a3
+
+% 0 1 0 165e8320bf514c191a1a632c353fbd0b
+
+% 0 1 0 0ed71cad938583411afa0ce138c15c66
+
+% 0 1 0 0faa226560b3b74e1e3f99ff2c58b073
+
+% 0 1 0 08b2e678e0a1abe814cbcc7be90aa66f
+
+% 0 1 0 0f8ef6146b4cfe1c1d49a35b925e467c
+
+% 0 1 0 0538c36499e1c6570dc20ea1101da6d7
+
+% 0 1 0 140613f9e197d9fb19742eb448593864
+
+% 0 1 0 0359070cdf2df9d91c3be443d38d4fd9
+
+% 0 1 0 035b50401f34660801f276a741fabdf6
+
+% 1 1 0 1b7f2c844e9b462e02819ddcd4b8a7ba
+
+% 0 1 0 1911e334ae3c39740d91dd26202ab949
+
+% 0 1 0 13101da96eb979a707021a417c83f6dd
+
+@ 0 1 0 06dbef78737e1a3f125296533afccad5
++   entry .apply   i quattro archi di impacchettamento
+
+@ 0 1 0 10869736d71f52c8089d00c96af44ecb
++ entry .nativeOptions   le impostazioni per i binari nativi: garbage collector, modalità di build e ottimizzazione in fase di collegamento
+
+% 1 1 0 08993f36b5b4e7a1021bc7033d5f064f
+
+@ 0 3 0 02595b06027c37ef0a066022870941e1
++       Ciascuna è un `Toolchain.Setting` indirizzato a ogni nodo `Artifact.Binary`, che modifica
++       il `NativeConfig` di Scala Native; su un percorso che non produce alcun binario viene
++       rifiutata come `InapplicableSetting`. I valori predefiniti sono `gc.immix`, `mode.debug` e
++       `lto.none`.
+
+% 2 1 0 0c10c8a751f3d8c209b78b889e3a7c8c
+
+% 3 1 0 161d2682437c9ea9099aa00374185e77
+
+% 0 1 0 15b1b6d6d33272a31b760a8bfd0f2891
+
+% 1 1 0 000584194cc5388c031318a4973d7eae
+
+@ 0 1 0 1b139e8f2e5373341eb3a8c4d350aa7e
++   entry .gc   il garbage collector: `immix`, `commix`, `boehm` o `none`
+
+% 1 1 0 01e04f0c123121261dbd9cf97c59525c
+
+@ 0 7 0 00f63babad12178b1fe3f5ee2e669637
++         Immix è il predefinito; Commix la sua variante concorrente; Boehm il collector
++         conservativo; `none` alloca senza raccogliere.
++     entry .immix   il collector Immix (il predefinito)
++     entry .commix   il collector concorrente Commix
++     entry .boehm   il collector conservativo Boehm
++     entry .none   nessuna garbage collection
++   entry .mode   la modalità di build: `debug`, `releaseFast` o `releaseFull`
+
+% 1 1 0 0019bb1bf6e9a8011cc8ffab9f09a91f
+
+@ 0 6 0 0646b067fd2a6bf40ee550caaaa240d2
++         `debug` è la predefinita e la più rapida da collegare; le modalità release ottimizzano,
++         `releaseFull` nel modo più aggressivo.
++     entry .debug   una build di debug (la predefinita)
++     entry .releaseFast   una build ottimizzata, che privilegia il tempo di collegamento
++     entry .releaseFull   una build completamente ottimizzata
++   entry .lto   l'ottimizzazione in fase di collegamento: `none`, `thin` o `full`
+
+% 1 1 0 15811db183f7e8f90872c709bfdb07f2
+
+@ 0 2 0 14e9944b7dc9adb50ed58674590fb6f1
++         `none` è il valore predefinito.
++     entry .none   nessuna ottimizzazione in fase di collegamento (il predefinito)
+
+% 0 1 0 09c538363fd3780f09b45c87c65f9491
+
+@ 0 1 0 005240dd54a2946c066573ac1a3a823e
++     entry .full   LTO completa
+
+@ 0 1 0 022a9ddfe7bff2940b033583c07203ef
++ entry .nativeEdges   gli archi di collegamento nativo: da `Nir` a un `Artifact.Binary` per ogni tripletta di destinazione, tramite `clang`
+
+% 1 1 0 1e7648fc9b6334711340525abb644fae
+
+@ 0 9 0 10a48d7032423c9c09bab3c53935d96a
++       `nativeEdges(triples*)` sonda una sola volta la presenza di `clang` e `clang++` nel `PATH`
++       (con la `WorkingDirectory` e l'`Environment` nell'ambito), sollevando `Toolchain.Error` se
++       uno dei due manca, e registra un arco da `Toolchain.Universe.Nir` ad
++       `Artifact.Binary(triple)` per ogni tripletta indicata — o per quella dell'host di build,
++       `Toolchain.Triple.host`, quando non ne viene indicata nessuna. Lo strumento guida la build
++       di Scala Native (inclusa in `anthology.nir`) sulla directory di emissione e sul suo
++       classpath, richiede esattamente un `EntryPoint` come classe principale del binario
++       (altrimenti `NoEntryPoint`), e scrive il binario, chiamato `main`, sotto la directory di
++       output. Destinazioni diverse dall'host di build richiedono una toolchain C e una sysroot
++       in grado di effettuare la compilazione incrociata verso di esse.
+
+% 2 1 0 0239b20b6c7644e40dd9218a2189e004
+
+% 3 1 0 166fa80b43decaa814793d1281e07b8e
+
+% 4 1 0 0e9ae7c6e883e245045dea4d0ad7e7bc
+
+% 5 1 0 1d29fb912dedb8f709fead2e6ed10c19
+
+% 6 1 0 0656b988d84cbb66036367ebd991f803
+
+% 7 1 0 0448eea319bd00980febfc8df06b9067
+
+% 8 1 0 031f24a4c2a2d9600247237ae496dfc2
+
+% 9 1 0 1fb956e875c41842167b96b7c693d44f
+
+% 10 1 0 0a2450bb637785ca05559ca917d0726e
+
+% 11 1 0 1e4aeb2c31b418a503ac450c11407dc9
+
+% 13 1 0 1f39ff01853858551154f2ff87ff9d92
+
+% 14 1 0 04aeb66afa14d2901159cd1846ffc2d4
+
+% 15 1 0 027cd77129f8ed95102e8c9b4e723826
+
+% 17 1 0 0567596fb68aecd31e3fb0dfb554adba
+
+% 0 1 0 07e8d17aff5e42d21dca3041271ea709
+
+% 1 1 0 0787cab354a85dee03fb4c941c101051
+
+% 0 1 0 04245693ec507ffd0950c56eaeee444a
+
+% 0 1 0 046c35ab9be5442a197d41594a7d7e1c
+
+% 1 1 0 1775e012333399910e4419ed1f161df1
+
+% 0 1 0 0e2e0db736ea2e361cfe1bac711789e3
+
+% 1 1 0 034079658edf94c315584e874fbd9b25
+
+% 2 1 0 0738455bf29f29800123aa07ceadcf2c
+
+@ 0 5 0 012d9c2dccb100e50d5853d1442b11bc
++       L'emissione deve essere stata compilata in `Toolchain.Universe.Nir` — uno `Scalac`
++       reindirizzato con un `NirPlugin` dato — rispetto ai JAR di runtime di Scala Native. I JAR
++       del compilatore stesso servono solo al classpath di compilazione e sono irraggiungibili a
++       runtime nativo, ed è per questo che il codice che usa il compilatore solo dentro le macro
++       si collega comunque. Una build che lancia un'eccezione solleva `Link.Error` con motivo
++       `Failed`.
+
+% 0 1 0 03186baae0321f3b1a71aac313e890a2
+
+% 0 1 0 1569ac098ad1c0500228f407bd013965
+
+% 0 1 0 025a4d3ac3d4f28f059fdba52f7e57f9
+
+@ 0 3 0 1d9200de069c81ec11c40347cd770762
++   entry .apply   sonda la presenza di `clang` e `clang++`, poi un arco per tripletta (o per quella dell'host)
++       Solleva `Toolchain.Error(t"clang")` per un compilatore mancante, e lo stesso per un host
++       di build la cui tripletta non è riconosciuta quando non viene indicata alcuna tripletta.
+
+@ 0 1 0 1b523e83825a447909f9ba0d6515e628
++ entry .Dex   bytecode Dalvik legato al runtime Android: un archivio di file `classes*.dex`
+
+% 1 1 0 006a073c21f53f680502a72e59ac7b37
+
+@ 0 5 0 0e073f86eafde74a0c95f91303565f5e
++       Il nodo applicativo con id `dex`, raggiunto da `Toolchain.Universe.Classfile` tramite
++       `dexEdges()`: un archivio zip, `main.dex.jar`, di `classes.dex`, `classes2.dex`, …, che ART
++       e un `DexClassLoader` consumano direttamente, e il nodo intermedio sul percorso dai
++       classfile a un `Apk`. Il DEX non porta metadati sul punto di ingresso — ad ART la classe
++       principale viene indicata all'invocazione — quindi l'arco ignora i punti di ingresso.
+
+% 2 1 0 1fcfa66b728cbdea0e52aae384d01b37
+
+% 3 1 0 13109ffc6140cbe81f027acee0223095
+
+% 4 1 0 1f6cc53a892985d507e4d02932dd80e2
+
+% 5 1 0 1692a6ac044145ab04bedd561d124a2d
+
+% 6 1 0 057fa0f5ce524f5c1ce5e2da81b6b1aa
+
+% 7 1 0 0a8ada0cc023ff4a07f8eec598f3806a
+
+% 8 1 0 17734aadd44a23291b51e9bc94c330bf
+
+% 9 1 0 01d2e126a2d19fde1c948bbcecfff95e
+
+% 10 1 0 165c66ba389897ae05b4278704b1f55b
+
+% 11 1 0 1e5804a98de5530c0d47a362d4520024
+
+% 13 1 0 1be66225120533a0104d1a38c18c9019
+
+% 14 1 0 18bf729c41026e1705b6c42259137467
+
+% 15 1 0 06ed58e649963c87106dcfdf395462a1
+
+% 17 1 0 1117892636e60f810355932a90b8782a
+
+% 0 1 0 098db4a3821f2b610ba3fd8f0871b515
+
+% 1 1 0 017c9008e601cd8d030458ed39a99413
+
+@ 0 4 0 1e090e5e8f0b51f103705ca01eeea97b
++       L'output di Scala 3 si converte in dex senza problemi: il compilatore emette class file
++       Java 17 con le lambda come `invokedynamic` ma senza `ConstantDynamic` e senza attributi
++       nest, quindi le aree di desugaring più deboli di D8 non vengono toccate, e il livello API 26
++       non richiede stub della piattaforma. Le librerie che richiedono Panama o `java.net.http`
++       non hanno un runtime Android su cui girare, convertite in dex o meno.
+
+% 0 1 0 0f17ba6deae1df1d1cf5c283842675f7
+
+% 0 1 0 014cba2b91456dfd0d24eb0c054c3d40
+
+% 1 1 0 19ac69457fda358d07014d1b2b4262b2
+
+@ 0 1 0 1ed49d5448edfba41ca2ae1673969c05
++ entry .dexOptions   le impostazioni per la conversione in dex: il livello API minimo, gli stub della piattaforma e la modalità di D8
+
+% 1 1 0 0e9a0f570f4b35d70503943ebe1bc02b
+
+@ 0 10 0 1b290876090ae54306943d421e5dc154
++       Ciascuna è un `Toolchain.Setting` indirizzato al nodo `Dex`. I valori predefiniti sono il
++       livello API 26, la modalità debug e nessuno stub della piattaforma. `apkOptions.minApi`
++       imposta il livello su `Dex` e `Apk` insieme, ed è preferibile in una build APK.
++   entry .minApi   il livello API Android più basso su cui l'output deve girare (predefinito 26)
++       Livelli più bassi costringono D8 a un desugaring maggiore. I livelli sotto il 24 non hanno
++       i metodi di interfaccia predefiniti nativi, che Scala 3 emette per i membri dei trait,
++       quindi richiedono in più `.platform` su cui effettuare il desugaring.
++   entry .platform   gli stub della piattaforma di un Android SDK, `platforms/android-<n>/android.jar`
++       Necessari solo sotto il livello API 24, o quando il programma fa riferimento a tipi della
++       piattaforma.
++   entry .mode   la modalità di compilazione di D8: `debug` o `release`
+
+% 1 1 0 032d98201509390300c6e5c43702d6f1
+
+@ 0 1 0 1d9c1f196eec60de175e800e966b1ebd
++         `debug` è la predefinita.
+
+% 0 1 0 1d200bd92bb5c9621abe8079fee536c0
+
+% 0 1 0 09388589ab85e056158d4cd7e0bdd0b5
+
+@ 0 1 0 168feab37582220e1b4eef91d4b05435
++ entry .dexEdges   l'arco di conversione in dex: da `Classfile` a `Dex`, guidando il D8 di R8 tramite la sua API
+
+% 1 1 0 119be04b14d9607d095b51f74ed3a7d3
+
+@ 0 7 0 1047cf8a9d54bec0073945ee1d33e1e5
++       `dexEdges()` è un elenco di un solo arco. Lo strumento, chiamato `dex`, fornisce a D8 (una
++       libreria JVM inclusa in `anthology.dex`) i classfile della directory di emissione e
++       l'intero classpath — gli archivi per intero, le directory come i loro file `.class`
++       enumerati, escluso `module-info.class` — e scrive `main.dex.jar` nella directory di
++       output. Gli errori e gli avvisi di D8 vengono registrati nel log come `LinkEvent.Message`
++       a livello `warn`; un'esecuzione che lancia un'eccezione solleva `Link.Error` con motivo
++       `Failed`.
++   entry .apply   l'arco di conversione in dex
+
+@ 0 1 0 0413c9671a0a596b1af40918b24a550e
++ entry .Apk   un pacchetto Android completo e installabile: codice in dex, un manifest binario, allineato e firmato
+
+% 1 1 0 0b7211113ec574e002078a1bbb0456e8
+
+@ 0 7 0 1fce06496d08acc016bc40a6f50f95eb
++       Il nodo applicativo con id `apk`, raggiunto da `Toolchain.Universe.Classfile` tramite `Dex`
++       con `Toolchain(dexEdges(), apkEdges())`. Lo strumento codifica un `AndroidManifest.xml`
++       binario (`Axml`), memorizza i file dex non compressi e allineati a 4 byte così che il
++       runtime possa mapparli in memoria, e firma il pacchetto con l'APK Signature Scheme v2
++       (`.Signer`) — un `app.apk` debuggabile e installabile in un emulatore, prodotto senza
++       alcuno strumento di build dell'Android SDK, solo con un keystore. È richiesto esattamente
++       un `EntryPoint`: la sua classe è l'activity di avvio.
+
+% 2 1 0 01004cd2b2634cab008b6d159a04b555
+
+% 3 1 0 0c6afc49d79e0c4d1bb940b649bf7c27
+
+% 4 1 0 15c311c26775758217a7da513f7f893f
+
+% 5 1 0 0eb4bf06f354b7bd095f1abd328ed7a9
+
+% 6 1 0 03ce822cfe35ab151f5b8e02fd66dc12
+
+% 7 1 0 113c94e53f92564f0ed677561b2f05f8
+
+% 8 1 0 193428311f0bd814169cf1f0f667f2fc
+
+% 9 1 0 0a3a7da38de8ca1016706b7eb0273c80
+
+% 10 1 0 01dc1873ccf0e6a2011f508153dcb61a
+
+% 11 1 0 1b2022e7dd12271006ecbb44d0a37b56
+
+% 13 1 0 0861e781dd7a8f700b29461d1ca08f5b
+
+% 14 1 0 1c603d57cbe4fc74134a4993da5e8275
+
+% 15 1 0 16bedb80f046e5e2066c9acd9a6af601
+
+% 17 1 0 083fe95f978e27ec1ec64232b01b029b
+
+% 0 1 0 1c5a01f751f18f8014c111fba2522140
+
+% 1 1 0 11402526311369451d367eec63435878
+
+% 2 1 0 00b95b4e9465e67111dd6f0a75e0943c
+
+% 3 1 0 138f78d678351f8f032c7054f82788a9
+
+% 4 1 0 16c847c67cf7b63b10639613bf2c3445
+
+% 0 1 0 052e3579021c8f2615f75fe6e2e85751
+
+% 0 1 0 033c22466d29cbaa0ff54c9d3db16aeb
+
+% 0 1 0 15869da06d25118a1f2d400d9b31d798
+
+% 0 1 0 1be25ab62f899ddf00f4cc6c5cc9463b
+
+% 0 1 0 15093b90528ca58e0734f548cc901038
+
+% 1 1 0 17d19cca0c98fbc9123bc55ce559d5bf
+
+% 2 1 0 136f1ad7ff954ab404dd74d5053b4677
+
+@ 0 5 0 07187997c406ba8301cdd555bab906d8
++       I valori predefiniti della configurazione (`Apk.Configuration.default`) firmano con il
++       keystore di debug Android convenzionale, `~/.android/debug.keystore`, condiviso da Android
++       Studio; una build di release indica il proprio con `apkOptions.keystore`. L'archivio dex
++       finisce in `staged/dex/` e il pacchetto in `staged/app.apk`, accanto all'`unsigned.apk` da
++       cui è stato firmato.
+
+% 0 1 0 1c2781edbf4da9621482d3b491530227
+
+% 0 1 0 11a0968b570293fe010b1f16ba9f4dd6
+
+% 0 1 0 086ec2368cb757f306bb2204d51eb388
+
+% 0 1 0 099eb86e8478bdae1119d845afbb6208
+
+@ 0 1 0 0f6724e26a3016ac174a401496946955
++   entry .Configuration   ciò di cui un pacchetto ha bisogno oltre al codice: livelli API, nomi, permessi e la chiave di firma
+
+% 1 1 0 198aef1793cda74609ce39866fcb1abe
+
+@ 0 21 0 1634f4e94c0282610c6459fffce79809
++         Il tipo delle impostazioni dello strumento APK, che `apkOptions` modifica: l'intervallo
++         dei livelli API, il nome del pacchetto e l'etichetta leggibile, il codice e il nome di
++         versione, i permessi di runtime richiesti, e il keystore PKCS#12, la sua password,
++         l'alias della chiave e la password della chiave. L'activity di avvio non è qui: è
++         l'`EntryPoint` del percorso.
++     entry .default   i valori predefiniti: API da 26 a 34, `dev.soundness.app`, versione 1 `1.0`, il keystore di debug Android
++         `minApi` 26, `targetApi` 34, pacchetto `dev.soundness.app`, codice di versione 1 e nome
++         `1.0`, etichetta `Soundness App`, nessun permesso, e il keystore di debug
++         `~/.android/debug.keystore` con password dello store `android`, alias
++         `androiddebugkey` e password della chiave `android`.
++     entry #minApi   il livello API Android più basso su cui gira l'applicazione
++     entry #targetApi   il livello API a cui punta l'applicazione
++     entry #packageName   il nome del pacchetto Android
++     entry #versionCode   il codice di versione intero
++     entry #versionName   la versione leggibile
++     entry #label   l'etichetta dell'applicazione
++     entry #permissions   i permessi di runtime richiesti, per nome
++     entry #keystore   il percorso del keystore PKCS#12 con cui firmare
++     entry #storePass   la password del keystore
++     entry #alias   l'alias della chiave di firma nel keystore
++     entry #keyPass   la password della chiave di firma
++   entry .Manifest   costruisce l'albero `Axml.Element` di un manifest Android
+
+% 1 1 0 192a43b3e367168e0982b9af6e4599cd
+
+% 0 1 0 0b6b28a0b668122c0133fca451ff81aa
+
+@ 0 7 0 17f9f0a1af6d9c0d005009ec3851c177
++         activity, permissions)` restituisce l'elemento `manifest` — `uses-sdk`, un
++         `uses-permission` per ogni permesso, e un `application` che contiene l'`activity` di
++         avvio esportata con il suo intent filter `MAIN`/`LAUNCHER` — pronto per `Axml.encode`.
++         Gli ID di risorsa degli attributi sono le costanti pubbliche e stabili di
++         `android.R.attr`, quindi non si consulta alcun `android.jar` della piattaforma.
++     entry .apply   l'elemento manifest per il pacchetto, le versioni, i livelli API, l'etichetta, l'activity e i permessi indicati
++   entry .Signer   l'APK Signature Scheme v2, su un pacchetto non firmato già completo
+
+% 1 1 0 0ad830875e11a35708e59774d40ae4f1
+
+@ 0 9 0 1b60b72a9a5d29401f7879390f7846b7
++         Firma uno ZIP allineato e non firmato inserendo un APK Signing Block tra le sue voci e la
++         sua directory centrale; la firma copre un digest SHA-256 dell'intero file in chunk da
++         1 MiB, quindi qualsiasi modifica successiva di un byte la invalida, ed è per questo che
++         la firma è l'ultimo passo. La firma RSA (`SHA256withRSA`), il keystore e il certificato
++         usano direttamente `java.security`, quindi la chiave deve essere una chiave RSA in uno
++         store PKCS#12. Non è coinvolto alcuno strumento dell'Android SDK: questo sostituisce
++         `apksigner`.
++     entry .sign   firma i byte del pacchetto non firmato con la chiave e il certificato di un keystore
++         `Apk.Signer.sign(unsigned, keystore, storePass, alias, keyPass)` restituisce i byte del
++         pacchetto firmato.
+
+@ 0 1 0 02ae2524ccd93da702b849bdd0a69982
++ entry .Axml   l'XML binario di Android: la codifica di `AndroidManifest.xml` dentro un pacchetto
+
+% 1 1 0 08376fdfa442cd2607e783df51d9a52a
+
+@ 0 6 0 0e96eae56efdae4d0b32f03d8b768598
++       Android legge il manifest di un pacchetto come XML binario, con un pool di stringhe, una
++       mappa delle risorse e valori di attributo tipizzati, non come testo. `Axml` modella un
++       documento come `.Element` con `.Attribute` i cui valori sono un `.Value` — una stringa, un
++       intero o un booleano, poiché Android legge ogni attributo con un tipo specifico — e
++       `.encode` scrive la forma binaria. `Apk.Manifest` costruisce l'albero di cui ha bisogno
++       un'applicazione; `Axml` è pubblico per un manifest che richiede di più.
+
+% 2 1 0 17873d7d651f6bc7147dfd0188c0d29c
+
+% 3 1 0 0152ab6a72f96f7b1a27d071c84b7756
+
+% 0 1 0 14961cc2dda55942110cd2286cf6b49d
+
+% 0 1 0 0747a5ba53b79ca0097a0ba3878b48e8
+
+% 0 1 0 1b90cfe4e08f52e60d248aef06095987
+
+% 0 1 0 03c249c4079b9cf00c636425a9bf3f8d
+
+% 0 1 0 0b6156dd96c7065d15ce8f8599d1aed5
+
+% 0 1 0 18777be31127c6bd07535d47692f247f
+
+% 1 1 0 16321c51011a981116d5a503c28b4651
+
+% 1 1 0 0d2e85865c1222b116791756f0fab8f0
+
+@ 0 7 0 0ff553e9c112dfc703c5073a09a3469c
++   entry .androidUri   il namespace delle risorse Android, `http://schemas.android.com/apk/res/android`
++   entry .androidPrefix   il prefisso a cui un manifest lega per convenzione il namespace, `android`
++   entry .Value   un valore di attributo tipizzato: `Str(text)`, `Num(value)` o `Bool(flag)`
++       Android legge ogni attributo con un tipo `TypedValue` specifico, quindi il codificatore si
++       impegna su uno anziché emettere ogni valore come stringa: una stringa fa riferimento al
++       pool, un intero o un booleano è memorizzato in linea.
++   entry .Attribute   un attributo: namespace, nome locale, ID di risorsa pubblico e valore tipizzato
+
+% 1 1 0 1c91b315ddc47a0612d8df19cbd26fc8
+
+@ 0 9 0 178f7a9ef4597e211ce67543ea700d4d
++         `Axml.Attribute(namespace, name, resourceId, value)`: il namespace è `.androidUri` per un
++         attributo `android:` o `Unset` per uno senza namespace come `package`; l'ID di risorsa è
++         la costante pubblica `android.R.attr` con cui Android identifica l'attributo, o `Unset`.
++     entry #namespace   l'URI del namespace, o `Unset`
++     entry #name   il nome locale
++     entry #resourceId   l'ID di risorsa pubblico, o `Unset`
++     entry #value   il valore tipizzato
++   entry .Element   un elemento: nome, attributi e figli
+
+% 1 1 0 06c798d95ea57ffc119a8196f77f876d
+
+% 0 1 0 01898fb6dbec30e61bfadacc12610d58
+
+@ 0 7 0 00c5481d3e58190611a0f11e0379c1b8
++     entry #name   il nome dell'elemento
++     entry #attributes   gli attributi dell'elemento, in ordine
++     entry #children   gli elementi figli, in ordine
++   entry .encode   il documento XML binario di un albero di elementi, come `Data`
++       Scrive l'intestazione del chunk, il pool di stringhe (ogni nome, namespace e valore
++       stringa, internati nell'ordine del primo uso), la mappa delle risorse degli ID degli
++       attributi, la dichiarazione del namespace `android` e l'albero degli elementi, ciascun
++       chunk allineato a 4 byte.
+
+@ 0 1 0 1a7a78a9fc7b7b0815359e90e39cc798
++ entry .apkOptions   le impostazioni per un pacchetto Android: livelli API, nome del pacchetto, etichetta, versione, permessi, keystore
+
+% 1 1 0 0ef420562bb2ea6f0269018cdc73f4df
+
+@ 0 4 0 0d85026c3c1c889608d47fcdbf109940
++       Ciascuna è un `Toolchain.Setting` che modifica `Apk.Configuration` sul nodo `Apk`; solo
++       `.minApi` si indirizza anche a `Dex`, poiché il livello determina sia come D8 effettua il
++       desugaring sia ciò che il manifest dichiara. Le impostazioni dex diverse dal livello
++       (`dexOptions.mode`, `dexOptions.platform`) si indirizzano al nodo `Dex`.
+
+% 2 1 0 13230623721467ed1d9a5635fa9d1280
+
+% 3 1 0 1cfcc597af27602c055e7753a4496d78
+
+% 5 1 0 03349d882e3b6d9208a1533ebe79c5b2
+
+% 6 1 0 13a4e59421ca135e1d22c5160b4b9469
+
+% 0 1 0 02651bd544b3afea1ca463f54cc326a0
+
+% 0 1 0 178d396a357c79d70ceb08e953075685
+
+% 0 1 0 03d84b0843568a77056d6d9ee901b518
+
+% 0 1 0 06fd3b5796f6043503c4d827ecdf81c7
+
+% 1 1 0 192a345e67e3abe0070cad31c39ed8b8
+
+@ 0 10 0 02649e1e405fdb6f1ce1bcc689a15ffd
++   entry .minApi   il livello API più basso, applicato sia a `Dex` sia ad `Apk`
++       Smista in base al formato a cui viene applicata: la `DexConfiguration` su `Dex`,
++       l'`Apk.Configuration` su `Apk`.
++   entry .targetApi   il livello API a cui punta l'applicazione
++   entry .packageName   il nome del pacchetto Android
++   entry .label   l'etichetta leggibile dell'applicazione
++   entry .version   il codice di versione e il nome di versione, insieme
++   entry .permission   aggiunge un permesso di runtime richiesto, come `android.permission.VIBRATE`
++       Ripetibile: ogni chiamata ne aggiunge uno.
++   entry .keystore   il percorso del keystore PKCS#12, la sua password, l'alias della chiave e la password della chiave
+
+@ 0 1 0 1f336ca6082230c804406cc28f6f6476
++ entry .apkEdges   l'arco di impacchettamento: da `Dex` ad `Apk`
+
+% 1 1 0 1b95294e04293b2b09828f7f5154d174
+
+@ 0 8 0 028e2d99354b2c770f22ad7cabed49c2
++       `apkEdges()` è un elenco di un solo arco, che consuma l'archivio dex prodotto dall'arco
++       `Dex` che lo precede sul percorso, quindi `Toolchain(dexEdges(), apkEdges())` è
++       l'abbinamento consueto. Lo strumento, chiamato `apk`, richiede esattamente un
++       `EntryPoint` (altrimenti `NoEntryPoint` o `ManyEntryPoints`), codifica il manifest,
++       memorizza ogni `classes*.dex` dell'archivio non compresso e allineato a 4 byte, scrive
++       `unsigned.apk`, lo firma e scrive `app.apk`. Un archivio dex che non si legge, o un
++       pacchetto che non si scrive, è un `Link.Error` con motivo `Packaging(detail)`.
++   entry .apply   l'arco di impacchettamento
+
+@ 0 1 0 0aff9641fc32b56414b1d49a05d7e6c8
++ entry .OciConfiguration   i metadati scritti nella configurazione di un artefatto OCI: architettura, sistema operativo, autore, annotazioni
+
+% 1 1 0 15847d21bdafc0400f12662cc5eab4b0
+
+@ 0 5 0 18aa2cfe4147aa9d1ca1c799fd799e76
++       Il tipo delle impostazioni dello strumento OCI, che `ociOptions` modifica; i valori
++       predefiniti sono l'architettura `wasm`, il sistema operativo `wasip2`, nessun autore e
++       nessuna annotazione. `#os` indica la generazione WASI per cui il componente è stato
++       costruito: è il campo su cui un runtime di container fa lo smistamento, e si muove con
++       WASI — `wasip1` per l'ABI di syscall della preview 1, `wasip2` per il component model,
++       `wasip3` quando arriverà l'async nativo.
+
+% 2 1 0 0c2927b5ea9ac45305a84be23102b852
+
+% 3 1 0 0a6ecd2615cfcf8d1affbdec9693fe0e
+
+% 0 1 0 18a5198cce5a7b7c12552eb2004d4c86
+
+% 0 1 0 097ba3832ef71b5514782c3a03c7e633
+
+% 1 1 0 1ddf5c763a2fced504d7f5a268ed505b
+
+@ 0 4 0 0b5b502a7e9e5737168c978dcc8a8a70
++   entry #architecture   l'architettura della piattaforma, `wasm` per impostazione predefinita
++   entry #os   il sistema operativo della piattaforma, la generazione WASI: `wasip2` per impostazione predefinita
++   entry #author   l'autore dell'artefatto, o `Unset`
++   entry #annotations   le annotazioni OCI, come mappa
+
+@ 0 10 0 1f027631c103c0891f9caed79fcdb102
++ entry .OciImage   un componente WASI impacchettato come artefatto OCI Wasm, scritto come `oci-archive`
++     Il nodo applicativo con id `oci`, raggiunto da `Toolchain.Universe.Sjsir` tramite il
++     componente `wasip2` con `Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())`: la forma
++     che un runtime di container con uno shim Wasm (`io.containerd.wasmtime.v1`) pianifica e che
++     un registro distribuisce. Lo strumento scrive `image.tar` nella directory di output, con il
++     componente in `linked/wasip2/` accanto. I suoi metadati `component` — le interfacce che il
++     carico di lavoro importa ed esporta — vengono letti dal `Wasi.World` rispetto a cui il
++     componente è stato collegato, non dal binario; un mondo che esporta
++     `wasi:http/incoming-handler@0.2.0` viene marcato con la destinazione
++     `wasi:http/proxy@0.2.0`, che è ciò che permette a un host di sapere che il componente può
++     essere servito.
+
+@ 0 1 0 04610546023663ad08dd0f51dfc08e34
++ entry .ociOptions   le impostazioni per un'immagine OCI: architettura, sistema operativo, autore e annotazioni
+
+% 1 1 0 11bd2c1d7073623e1fe59204ac6e57c6
+
+@ 0 1 0 11144e62dd75b6dc0265b3e607fcba95
++       Ciascuna è un `Toolchain.Setting` che modifica `OciConfiguration` sul nodo `OciImage`.
+
+% 2 1 0 1bae4957a291e1be0353cada3b1ce63a
+
+% 3 1 0 1feb58087ca7592d1db1d0fe1b117bf2
+
+% 5 1 0 05b93819edda9dba19938fdeb073fac1
+
+% 6 1 0 1095569b0bcc5db1158eaae6aef6439a
+
+% 0 1 0 1506fe343d5baa6f07d6b53c3647c691
+
+% 0 1 0 19b962048c90c63f0de6234b4e9e38ee
+
+% 1 1 0 03e9f00c7649b4f40d267072a91931e2
+
+@ 0 5 0 0d16c739f81b03df0bc706bbad3ed287
++   entry .architecture   l'architettura della piattaforma (predefinita `wasm`)
++   entry .os   il sistema operativo della piattaforma, la generazione WASI (predefinito `wasip2`)
++   entry .author   l'autore dell'artefatto
++   entry .annotation   aggiunge un'annotazione OCI, per chiave e valore
++       Ripetibile: ogni chiamata definisce una chiave in più.
+
+@ 0 1 0 11ac0c1a0c2a4c8919f93614a2d5a8f5
++ entry .ociEdges   l'arco di incapsulamento: dal componente `wasip2` alla sua `OciImage`
+
+% 1 1 0 1d09cf93fcac8fa30f35e462287207cd
+
+@ 0 10 0 100403ce67ee8708112f950c460b66dc
++       `ociEdges()` è un elenco di un solo arco da `Wasi(Wasi.Version.Wasip2)` a `OciImage`, che
++       prende il `Wasi.World` come given. Lo strumento, chiamato `oci`, consuma il componente
++       collegato dall'arco precedente (`sjsEdges.wasi()`), costruisce l'immagine tramite
++       `Image.wasm` di embarcadero con le importazioni e le esportazioni del mondo lette dai file
++       `.wit` di primo livello della directory del mondo (si cerca solo a quel livello: `deps/`
++       contiene i pacchetti a cui il mondo attinge, e nessuno dichiara il mondo stesso; un mondo
++       che non si trova non fornisce interfacce anziché fallire), e scrive `image.tar`. L'arco in
++       sé richiede solo il mondo — è l'arco del componente quello il cui provider sonda la
++       toolchain WASI — quindi la forma del suo grafo si può verificare senza avere `wasm-tools`
++       installato. Una scrittura che lancia un'eccezione solleva `Link.Error` con motivo
++       `Failed`.
+
+% 2 1 0 10468ae43dbbd49b050862605204ca00
+
+% 3 1 0 0061f3491b12e7950b5e7a727c402a89
+
+% 4 1 0 04ff4e7ff24727e111e62f3c89fe9636
+
+% 0 1 0 077c78bdbf9b3dd40dfc2fcce5e945b7
+
+% 0 1 0 10a7d292ac57b1230f4303a7be5decfb
+
+% 0 1 0 18405e7ebef15e7f12d79cda6de59615
+
+% 1 1 0 1613e4cba1aba10d05b7363b8237d7af
+
+% 1 1 0 1caa4d516486d7d808fdf18095e9bcae
+
+% 1 1 0 0642cb25da4aad2e16615e8be236405d
+
+@ 0 1 0 13d9850eef3bbae705f04e6fdaf2619b
++   entry .apply   l'arco di incapsulamento, dato un `Wasi.World`

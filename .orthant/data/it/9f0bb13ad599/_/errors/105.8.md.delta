@@ -1,0 +1,49 @@
+orthant 2 language
+
+% 0 1 0 0729b85cc118fb240ea8a31d76db9e10
+
+@ 0 1 0 0bb272e5958510f717fb2b6ac8759078
++ Sollevato quando un documento di chiave non può essere letto come chiave pubblica del
++ cifrario richiesto.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 1196e4ec16cfdd9812082b38ff53f622
++ Una chiave pubblica si legge da un `SubjectPublicKeyInfo` X.509 o da un `RSAPublicKey`
++ PKCS#1, nudo o in armatura PEM, come chiave di un cifrario nominato, come
++ `PublicKey[Rsa[2048]]`. Questo errore copre un documento che non è una chiave pubblica, e uno
++ che contiene una chiave di un altro algoritmo o di un'altra dimensione.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+% 0 1 0 0b0c0a891c6f9b9b0838595da393e01f
+
+% 0 1 0 084cf6b424f6716505bf7d5413f3a73e
+
+% 0 1 0 124bb5f13c98da1a179dbd08c8226944
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 3 0 1263efd13e9c80ae0c04abfe84a1c23f
++ Un `Mismatch` nomina ciò che il documento contiene: leggere la chiave come quel cifrario, o
++ fornire la chiave che si intendeva. Una chiave nella forma a riga singola di OpenSSH non è PEM;
++ la si legge con `OpenSsh.publicKey`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 2 0 121e87a662a6bcb50ecbcc1e4364400e
++ - Sorgente: `lib/enigmatic/src/core/enigmatic.PublicKey.scala`
++ - `↯/s.105.7` — `PrivateKey.Error`, lo stesso per una chiave privata

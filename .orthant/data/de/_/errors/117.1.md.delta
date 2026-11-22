@@ -1,0 +1,40 @@
+orthant 2 language
+
+% 0 1 0 1cd264e58d1e637101c36854b3b3702b
+
+@ 0 1 0 0ff2fc062be2430c00dbf785cc67083f
++ Wird ausgelöst, wenn ein OAuth-Flow gegen einen entfernten Provider fehlschlägt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 1227c6afc583442917f248f4428e04a5
++ Orthodoxy vermittelt OAuth-2.0-Austausche. Jeder Fehlschlag, ob Netzwerk, Parsen, Status oder
++ Scope, erscheint als eine der folgenden Varianten. Die Meldung lautet `OAuth failed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 10 0 1f367d80615da26415f7fec09d6ac29a
++ column  Grund
++ column  Bedeutung
++ column  Meldung
++ column  Behebung
++ row  `↯/s.117.1.1`  `Connection`  Eine TCP/TLS-Verbindung zum OAuth-Provider ist fehlgeschlagen.  `[↯/s.117.1.1] OAuth failed because could not connect to the OAuth provider at https://example.com because the connection was refused`  Prüfen Sie die Netzwerkverbindung, die URL des Providers und die TLS-Konfiguration. Einzelheiten zeigt der innere `ConnectError.Reason`.
++ row  `↯/s.117.1.2`  `InvalidJsonResponse`  Der Provider lieferte einen Body, der sich nicht als JSON parsen ließ.  `[↯/s.117.1.2] OAuth failed because Invalid JSON response`  Schlagen Sie das erwartete Response-Format in der Dokumentation des Providers nach; die rohe Response kann Hinweise geben.
++ row  `↯/s.117.1.3`  `UnexpectedHttpStatus`  Der Provider antwortete mit einem Status außerhalb der erwarteten Menge.  `[↯/s.117.1.3] OAuth failed because the provider returne an unexpected HTTP status: 500`  Ziehen Sie die Statusdokumentation des Providers zu Rate; viele Provider liefern bei Clientfehlern 4xx mit diagnostischem JSON im Body.
++ row  `↯/s.117.1.4`  `InsufficientPrivileges`  Der Benutzer hat einen Scope, den die Anwendung angefordert hat, nicht gewährt.  `[↯/s.117.1.4] OAuth failed because the user has not granted access to read:user`  Fragen Sie den Benutzer erneut und schließen Sie den benötigten Scope ein, oder schränken Sie die Funktionalität, die ihn braucht, geordnet ein.
++ row  `↯/s.117.1.5`  `Unauthorized`  Der Benutzer hat die Autorisierung ausdrücklich verweigert, oder der Provider hat die Zugangsdaten abgelehnt.  `[↯/s.117.1.5] OAuth failed because authorization was not granted`  Zeigen Sie dem Benutzer eine klare Meldung und starten Sie den OAuth-Flow gegebenenfalls neu.
++ row  `↯/s.117.1.6`  `Other`  Ein sonstiger Fehler passte in keine der obigen Kategorien.  `[↯/s.117.1.6] OAuth failed because an unexpected error occurred`  Untersuchen Sie die Logs und jede dem Fehler beigefügte Ursache. Diese Variante ist absichtlich allgemein; ein spezifischerer Grund kann künftig hinzukommen.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 03287911e639c5a7105007e6dd07c192
++ - Quelle: `lib/orthodoxy/src/core/orthodoxy.OAuth.scala`

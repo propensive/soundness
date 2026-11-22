@@ -1,0 +1,321 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1fc916799ef1cbf203fbda3104132af4
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0567e3f7199cb3e6152259c15fb8e4c9
++ info   valori multilingue i cui tipi registrano le loro lingue, i locale e l'ordinamento di ogni lingua
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0e8b391b24f6604406d3d2f3f2043164
++     _Cosmopolite_ mette le traduzioni di un programma nel suo codice e l'insieme delle lingue nel
++     tipo. Ogni lingua supportata — `en`, `fr`, `de`, `es`, `pl` — è un valore che solleva una
++     traduzione in un `Polyglot` di una sola lingua, le alternative si combinano con `|`, e il tipo
++     combinato è l'intersezione delle lingue fornite, così un `Polyglot[Text, en & fr]` ha un
++     testo inglese e uno francese. Leggerne uno richiede un `Locale` di una lingua che contiene, e
++     un insieme di traduzioni privo di una lingua richiesta è un errore di compilazione anziché un
++     ripiego a runtime davanti all'unico utente che aveva scelto quella lingua.
+
+% 2 1 0 06928b9882ea310c106426b95a3ad997
+
+% 3 1 0 0978c67f00208b7b1e2bfa6f5bf2f445
+
+% 0 1 0 16c7199e38baff371def840df2225808
+
+% 0 1 0 199ac6db22b1ca9d166dd25357305c97
+
+% 0 1 0 102a84127e9686181fb1607f07d74f0a
+
+% 1 1 0 13fe8aa73375478e0428cf94476b011d
+
+@ 0 4 0 0b13c0572c086e9a081dbc78ba38d427
++     Di solito un `Locale` arriva a runtime, da un'intestazione o da un'impostazione: un codice di
++     lingua si decodifica in `Locale[en & pl & fr & de & es]`, ripiegando sull'inglese per un
++     codice che non conosce. Un `Polyglot` può contenere qualunque tipo, non solo testo — un
++     formato di data, una convenzione di valuta, un'intera pagina.
+
+@ 0 6 0 018fb9355fd576dc163f15ad6c8fa7bd
++     Ogni lingua ha anche un ordinamento, la sua istanza di `Collatable`, secondo CLDR: il
++     polacco e lo spagnolo personalizzano la collazione Unicode (ó dopo o, ñ dopo n), mentre
++     inglese, francese e tedesco usano la tabella radice. Il given di primo livello
++     `localeCollation` trasforma il `Locale` nell'ambito nella `Collation` usata dal confronto
++     di testo di gossamer; poiché è un given di primo livello, si importa per nome
++     (`import soundness.localeCollation`), insieme a `soundness.collationComparable` per
++     ordinare `Text` secondo una collazione.
+
+% 2 1 0 08b11785441b3b0115db90d0cde39d02
+
+% 3 1 0 1ea1f83a71dcaa920f44dddf0d5c5b02
+
+% 4 1 0 125f3b7265e620960e1b214a9a268942
+
+% 5 1 0 16d759693a345a14105e9127010db5bb
+
+% 6 1 0 17d58ba1e99cd1bc166eb6e2560e8029
+
+% 0 1 0 1f07939082561f6b01d157dcbadaca95
+
+% 0 1 0 16e46bff212645670657bbf5fb0ec2a7
+
+% 1 1 0 1202208597f3b6561fc9810588101bf4
+
+@ 0 2 0 1d8a7a73d952a5f414a9dc40f9d088ce
++     La libreria ha un solo insieme di sorgenti, `cosmopolite.core`, che compila per ogni
++     piattaforma. Tutto è esportato nell'ombrello `soundness`.
+
+% 0 1 0 1931403e0d0177791b6b419a347a318a
+
+% 0 1 0 1c2bc6a3c1e9fbaa1f85103eb4350f27
+
+% 0 1 0 18f71fb6cb6d95a408c1bd5950f3af93
+
+% 0 1 0 13807dfd1ef3f3d41527bc52b41e643c
+
+@ 0 1 0 0c08230b60b23a330d967eb87a4f739f
++ entry .Language   una lingua naturale, che solleva una traduzione in un `Polyglot` di una sola lingua
+
+% 1 1 0 06fc8dc7474a9a3b0d324d1b4a721143
+
+@ 0 4 0 0d203c77af57576714d3fc1d6ea1d870
++       `Language` è il genitore degli oggetti lingua `en`, `fr`, `de`, `es` e `pl`. Ciascuno ha
++       un `#code` di due lettere, e un membro di tipo `#Code` che nomina il suo tag di tipo
++       fantasma (il trait con lo stesso nome), così `en.Code` è `en`. Applicare una lingua a un
++       valore crea il `Polyglot` che contiene quel valore in quella lingua:
+
+% 2 1 0 198ae6421ff7079501cdfc1db5e00cd3
+
+% 3 1 0 18ecd1e7e6764285004499d2fa23919d
+
+% 0 1 0 0431e0a3995d79ff0a14135ab6afda81
+
+% 0 1 0 0536fee2a2af1711053e83c8af645ee0
+
+% 1 1 0 12faf559df59d014058b5eccd502a7fc
+
+@ 0 4 0 1358ec724e0edc1704a65ff297336ad7
++       La traduzione è una funzione di contesto di un `Locale` della lingua, così il codice che
++       la calcola — ordinando, formattando — vede il locale di quella lingua, qualunque sia il
++       locale del chiamante. Una nuova lingua è un oggetto che estende `Language(code)` con un
++       `type Code`, abbinato a un trait che le fa da tag.
+
+% 1 1 0 0682b7f6ce299649100be42bc7e87330
+
+@ 0 6 0 00cc7589ce3e289518522f9bfa86113f
++   entry #code   il codice ISO 639-1 della lingua, come `t"fr"`
++   entry #Code   il tipo fantasma che etichetta i valori in questa lingua, come `fr`
++   entry #apply   una traduzione in questa lingua, come `Polyglot` di una sola lingua
++       `fr(t"Bonjour")` è un `Polyglot[Text, fr]`. L'argomento si valuta con un `Locale` di
++       questa lingua nell'ambito, così una traduzione che ordina o formatta testo lo fa nella
++       propria lingua.
+
+@ 0 1 0 02528ea6236facf01f7764566c4ce26e
++ entry .Polyglot   un valore in più lingue, il cui tipo registra esattamente quali
+
+% 1 1 0 0a09fc49c72faa2d031597b34e99f917
+
+@ 0 3 0 0bf8d324157233d0135524e6615ad520
++       Un `Polyglot[V, L]` contiene un `V` per ogni lingua dell'intersezione `L`: uno creato con
++       `en(…) | fr(…)` è un `Polyglot[V, en & fr]`. Richiederne uno con una lingua che non ha
++       non compila, così una traduzione mancante si scopre dove il valore è scritto.
+
+% 2 1 0 1d4c43b78380c5b001cb5583fe7a918b
+
+% 3 1 0 17138392e4e143400312f95467d56145
+
+% 0 1 0 0771a8da371f47f207a4a183aa5c8189
+
+% 0 1 0 17c7812fcebf80cb0f6c8ef49efefbaa
+
+% 0 1 0 04f591eba48517e81ab49d7fe2675380
+
+% 0 1 0 1151969e1558da4211f2cca0e57a2fd1
+
+% 1 1 0 01e8fa7c2ca8ca3e060b4a8ac3da3ddc
+
+@ 0 2 0 1dcb0648f66c74a7093b814833eb8d19
++       `#apply()` legge il valore nella lingua del `Locale` nell'ambito, che deve essere un
++       `Locale` delle lingue del polyglot.
+
+% 0 1 0 051bb2d15ff0c0f613efb6b473de070f
+
+% 0 1 0 02e6909420d0ec6b03b1caf89f3e29f8
+
+@ 0 10 0 01e7647b2750e3fa034d2b02c2e47c2a
++   entry #values   le traduzioni, indicizzate per `Language`
++   entry #|   combina traduzioni, o ne sceglie subito una se nell'ambito c'è un `Locale` per entrambe
++       `a | b` fonde due polyglot in uno il cui tipo di lingua è l'intersezione di entrambi. È
++       transparent e inline: quando un `Locale` che copre entrambi gli insiemi di lingue è già
++       nell'ambito dove l'espressione è scritta, legge subito il valore di quel locale e il
++       risultato è il valore stesso anziché un `Polyglot`. Dove entrambi contengono una lingua,
++       vince la traduzione a destra.
++   entry #apply   il valore nella lingua del `Locale` nell'ambito
++       Richiede un `Locale[L]` per il tipo di lingua `L` del polyglot; poiché quel locale nomina
++       una delle lingue che il valore contiene, la lettura non può fallire.
+
+@ 0 1 0 1fd1a71bbb71f736184e1a9ce0475406
++ entry .Locale   la lingua che un programma sta parlando, come valore contestuale
+
+% 1 1 0 0419b5168d05ceb316621fbe9d2863ed
+
+@ 0 4 0 153a95b3a909f1b719e40ff58a844573
++       Un `Locale` contiene una `Language`, e il suo parametro di tipo stabilisce quali lingue
++       può essere: un `Locale[en & fr]` è inglese o francese, ed è ciò che serve per leggere un
++       `Polyglot[V, en & fr]`. Il parametro è controvariante, così un locale che si sa francese
++       va bene dove se ne chiede uno qualunque di un insieme che include il francese.
+
+% 2 1 0 04ece14564e1bf02053b68d6648247cb
+
+% 3 1 0 0a2d4d27aa124576184e0cb12f000203
+
+% 0 1 0 08b6dab8420797d5104e746179b68987
+
+% 1 1 0 0165929eaac0788e16eb9d202b247d4b
+
+@ 0 1 0 0a63739b6c5de3990375c92080d211e8
++       Un `Locale` nell'ambito seleziona anche l'ordinamento della sua lingua tramite
++       `localeCollation`.
+
+% 1 1 0 0519f8199624fc2f0aee34a837521f96
+
+% 1 1 0 12867a34b95b585c1d86a8acb11d5ad1
+
+@ 0 8 0 1bd1b9520550c3e00586817b6cc3f0e6
++   entry .encodable   scrive un locale come codice della sua lingua, come `t"fr"`
++   entry .inspectable   una resa di debug di un locale, come `Locale(fr)`
++       La forma del costruttore, così non si confonde con il codice nudo che scrive `.encodable`.
++   entry .decodable   legge un locale da un codice di lingua, ripiegando sull'inglese
++       Decodifica in `Locale[en & pl & fr & de & es]`: `t"pl"`, `t"fr"`, `t"de"` e `t"es"` sono
++       le loro lingue, e qualunque altro testo — compresa una forma regionale come `t"fr-CA"`, o
++       le maiuscole — è silenziosamente `en`. Normalizzare prima il codice se il ripiego conta.
++   entry #language   la lingua che questo locale parla
+
+@ 0 1 0 080997ad3f128bca0d13257f5e2bb829
++ entry .Collatable   una typeclass che dà a una lingua il suo ordinamento, come `Collation`
+
+% 1 1 0 0116bdc992bb90cd0e4dd0c51c67a5d9
+
+@ 0 4 0 149693cee96942400e01d24350dc643d
++       `pl is Collatable` fornisce la `Collation` secondo cui si ordina il testo polacco; il
++       soggetto è il tag fantasma della lingua. Ogni oggetto lingua contiene la propria istanza
++       come `collatable`, così è nell'ambito implicito. Di solito il codice non la evoca:
++       `localeCollation` trasforma il `Locale` nell'ambito nella collazione della sua lingua.
+
+% 1 1 0 1b707a12ed8c88e00f9d70567dfb9880
+
+@ 0 1 0 085fa100071b3eac0bc2c3c9b4f01b55
++   entry #collation   la collazione della lingua
+
+@ 0 1 0 0f9cd78d07e161ba16ad318a964f8fd0
++ entry .en   l'inglese, la lingua con codice `en`, e il suo tag di tipo fantasma
+
+% 1 1 0 0bc4d25657ec7f2d0256e0fc6e54a86c
+
+@ 0 5 0 1b2ea24b7ea7a8780a0e661c2f3b07ee
++       Una `Language`: `en(value)` crea un `Polyglot[V, en]`. Come tipo, `en` etichetta valori e
++       locale in inglese. L'inglese si ordina secondo la collazione Unicode radice, che tiene le
++       lettere accentate insieme alle loro basi (`cafe < café < caff`, `año < anzuelo`).
++   entry .Code   il tag fantasma dell'inglese: `en`
++   entry .collatable   la collazione inglese: la tabella di collazione Unicode radice
+
+@ 0 1 0 0f662312d3f1a7530e3aed44b422c69f
++ entry .fr   il francese, la lingua con codice `fr`, e il suo tag di tipo fantasma
+
+% 1 1 0 1c4bf45bfe64fda6168e627c570850e5
+
+@ 0 6 0 0904494f77b6a3251876118b49a5ccfb
++       Una `Language`: `fr(value)` crea un `Polyglot[V, fr]`. Come tipo, `fr` etichetta valori e
++       locale in francese. Il francese si ordina secondo la collazione Unicode radice con accenti
++       secondari in avanti (`cote < coté < côte < côté`), come fa `fr` di CLDR; gli accenti
++       all'indietro del francese tradizionale, oggi canadese, non sono usati.
++   entry .Code   il tag fantasma del francese: `fr`
++   entry .collatable   la collazione francese: la tabella Unicode radice, con accenti secondari in avanti
+
+@ 0 1 0 0be0e3c8d5ba2ddf15a1c58294e48b6a
++ entry .de   il tedesco, la lingua con codice `de`, e il suo tag di tipo fantasma
+
+% 1 1 0 1aca6ab4d287b47a0178fd45a14cfdae
+
+@ 0 6 0 06e6d5fff5f09eaf1a9027a0e9f6c107
++       Una `Language`: `de(value)` crea un `Polyglot[V, de]`. Come tipo, `de` etichetta valori e
++       locale in tedesco. Il tedesco si ordina secondo la collazione Unicode radice, in cui le
++       dieresi differiscono dalle loro basi solo al livello secondario (`ab < äb`, `äa < ab`),
++       come fa il tedesco standard di CLDR; l'ordine da elenco telefonico DIN non è fornito.
++   entry .Code   il tag fantasma del tedesco: `de`
++   entry .collatable   la collazione tedesca: la tabella Unicode radice, con le dieresi che differiscono al livello secondario
+
+@ 0 1 0 0560d1aa74dcb15e1004652cd73f108a
++ entry .es   lo spagnolo, la lingua con codice `es`, e il suo tag di tipo fantasma
+
+% 1 1 0 1ae09c28c7bb15550cb8a267235fe535
+
+@ 0 5 0 132289cf41b58d1212e9858a10d4d1b3
++       Una `Language`: `es(value)` crea un `Polyglot[V, es]`. Come tipo, `es` etichetta valori e
++       locale in spagnolo. Lo spagnolo ordina la ñ come lettera a sé tra n e o, così
++       `ano < anzuelo < año`, con Ñ variante terziaria (di maiuscola) di ñ.
++   entry .Code   il tag fantasma dello spagnolo: `es`
++   entry .collatable   la collazione spagnola: quella di CLDR, con ñ lettera tra n e o
+
+@ 0 1 0 0e6cc2b11f71d92913ec6e22e444252b
++ entry .pl   il polacco, la lingua con codice `pl`, e il suo tag di tipo fantasma
+
+% 1 1 0 1df7588e5510f40705bd1a1ccad38336
+
+@ 0 6 0 1cf9af7d81bbcbe11e6fca931b5feff6
++       Una `Language`: `pl(value)` crea un `Polyglot[V, pl]`. Come tipo, `pl` etichetta valori e
++       locale in polacco. Il polacco ordina le sue nove lettere accentate — ą ć ę ł ń ó ś ź ż —
++       come lettere a pieno titolo, ciascuna dopo la sua base, con ż dopo ź (`z < ź < ż`) e ogni
++       maiuscola variante terziaria della sua minuscola.
++   entry .Code   il tag fantasma del polacco: `pl`
++   entry .collatable   la collazione polacca: quella di CLDR, con nove lettere accentate ordinate dopo le loro basi
+
+@ 0 4 0 02d9913310c6f6111ebf190735236fe0
++ entry .via   un valore calcolato in un locale: `Text via pl` è `Locale[pl] ?=> Text`
++     Un alias di tipo infisso per una funzione di contesto di un `Locale`. Una definizione
++     tipizzata `T via L` si valuta con un `Locale[L]` nell'ambito, così qualunque cosa calcoli —
++     un ordinamento, un numero formattato — segue quel locale, e i suoi chiamanti devono
++     fornirne uno.
+
+% 2 1 0 14e3b5a5676c6d5c0cfe60ceb9eb83a9
+
+% 3 1 0 1a2df9149fcfddaf1948392802a34240
+
+% 4 1 0 061886456fda79f806613e76ecc9a352
+
+% 5 1 0 0b48c9cfe0293aae0713b388967bf941
+
+% 0 1 0 1a0251f7ed8e312b1958ba0eb09ac074
+
+% 2 1 0 00504e50fbb438361d38888d533e58a6
+
+% 0 1 0 17567a2451c351311104988208cd4159
+
+% 1 1 0 02dd38ed8652b8391a3a5b857e672b72
+
+@ 0 6 0 0e375002fec115b41931f9ea88290bb0
++ entry .localeCollation   la `Collation` della lingua del `Locale` nell'ambito, per ordinare e confrontare testo
++     Un given di primo livello, che richiede un `Locale[L]` e un `L is Collatable`: fornisce la
++     `Collation` usata dall'ordinamento di testo di gossamer, così `sort`, `<` e `minimum` su
++     `Text` seguono la lingua del locale. Sta a livello di package perché nessuno dei due
++     compagni può contenerlo — `Collation` appartiene a gossamer, i tag di lingua a cosmopolite
++     — quindi va importato per nome, `import soundness.localeCollation`, insieme a
++     `soundness.collationComparable`.
+
+% 2 1 0 15be0909a012a8640a1b82234d46257b
+
+% 3 1 0 043ad870606d08eb1a6164aad841c256
+
+% 4 1 0 1bd0853bdcfb16db0d6d5eb2906d4f4b
+
+% 5 1 0 0e7bdd2b458dda6906db8169cf97f0ad
+
+% 6 1 0 1ff3eaf9e02f8448041a6f16f08ee03d
+
+% 2 1 0 07aabde1aa40f0b907cc30ea3a90a700
+
+% 0 1 0 0b6839bd9503dafe0b72f54dff52a6e1
+
+% 1 1 0 1a5643b84e9c12cb1d36a9e6fcf61fa2

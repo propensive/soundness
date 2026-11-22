@@ -1,0 +1,393 @@
+orthant 2 language
+
+% 0 1 0 1d840f45fbb16f031609c87d13146ca1
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 2 0 0b47deaceb5f5375094501120b62cb30
++ Die Gestalt mancher Daten wird außerhalb des Programms festgelegt: durch eine Datenbanktabelle,
++ ein JSON Schema oder ein Konfigurationsformat. Das Programm soll ihre Felder trotzdem mit
++ statischen Typen lesen.
+
+@ 0 3 0 111b4b168ef19fe70fe4b225e7b74bec
++ Ein `Record` ist ein Wert, dessen Felder aus einer solchen externen *Spezifikation* stammen, die
++ beim Kompilieren des Codes gelesen wird. So hat `record.name` den Typ `Text`, `record.nope`
++ kompiliert nicht, und keine Klasse wird von Hand geschrieben, um das Schema nachzubilden.
+
+@ 0 4 0 0eec04775ed0dca908ae485e6a0f0d21
++ Die *Provider* für [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) und [TEL](tel.md)
++ bauen darauf auf. Ein JSON Schema, ein XML Schema oder ein TEL-Schemadokument erzeugt typisierte
++ Records. Ebenso das Response-Schema einer Operation, über `record()` im [OpenAPI](openapi.md)-Client.
++ Jede Schemaquelle, die ein Programm zur [Kompilierzeit] lesen kann, kann dasselbe leisten.
+
+@ 0 1 0 16916f4af379805c10863649483879a9
++ ### Über externe Schemas
+
+@ 0 4 0 001b90fa898e50e41d1a04dcf678293b
++ Wenn die maßgebliche Gestalt der Daten anderswo liegt, ist eine von Hand geschriebene Case-Klasse
++ eine Kopie, und Kopien driften auseinander. Das Schema bekommt ein Feld, die Klasse nicht, und die
++ Abweichung zeigt sich zur [Laufzeit]. Die übliche Alternative ist, Felder dynamisch per String zu
++ lesen. Damit gibt man die Prüfung ganz auf.
+
+@ 0 6 0 0af74a7015d4a5cb14fa18d6bc912bb1
++ Ein `Record` vermeidet beides. Das Schema wird einmal gelesen, während das Programm kompiliert.
++ Scalas [strukturelle Typen](https://docs.scala-lang.org/scala3/book/types-structural.html) bauen
++ daraus dann die genaue Schnittstelle des Records, mit jedem Feld in dem Typ, den das Schema
++ deklariert. Das Schema kann nicht vom Code wegdriften, weil die Typen im Code die des Schemas
++ *sind*. Das ist [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md), ohne
++ eine Klasse pflegen zu müssen.
+
+@ 0 2 0 0cffae2607360ad60bcda2026686055f
++ Alles kommt aus dem Paket `soundness`. Die übrigen Imports wählen eine Kodierung und eine
++ [Strategie](errors.md#choosing-a-strategy) für Fehler:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 1de3c5e81966ed9a0a9a478f1ff2f2b8
++ ### Records verwenden
+
+@ 0 4 0 045e17f26ec883ab1ceef8a3bbefc591
++ Ein Provider-Objekt hält ein Schema. Dieses hier ist ein `Json.Provider`, gebaut aus einem
++ JSON-Schema-Dokument. In einem echten Programm wird es in einer eigenen Datei deklariert, aus dem
++ Grund, den die [Kompilierungsreihenfolge](#compilation-order) erklärt. Aus demselben Grund werden
++ die Beispiele auf dieser Seite geprüft, aber nicht ausgeführt:
+
+% 2 1 0 1495e086766d02ac0e49c4cc565a1d96
+
+% 3 1 0 037cbf5a08061e54161d8eea8837b1fa
+
+% 4 1 0 1bf1a6d1e02507bb143060564250fc6d
+
+% 0 1 0 0a87af4d0ec5fbda119ab390fdcbe436
+
+% 0 1 0 10ba014d2254dcd3076d9a543f8c2249
+
+% 0 1 0 168ff146ffda150b0e476e586aafc1e1
+
+% 0 1 0 09f81909fffbe8de1292b168fb564187
+
+% 0 1 0 1362070d19456a6d1ff95300d33f9885
+
+% 0 1 0 1801801a4ba865a909d63b9099a9992b
+
+% 0 1 0 1bc5bcc4ed89e3c3023374c5cfcb26fa
+
+% 0 1 0 0fc9cff73f111a0c12cc06307ef02288
+
+% 0 1 0 0c77b11fd8ee05fc0bb832a353adbbc7
+
+% 0 1 0 149015473f8af5b818332c25647b5a7d
+
+% 0 1 0 1a255adce984755704338ad3cff63d03
+
+% 0 1 0 15b0a682f57e42d110c3ee2a34fe3242
+
+% 0 1 0 1d086cabb9160ecc000956b4641e580d
+
+% 0 1 0 0be86f8d69ffc11606058c9696122812
+
+% 0 1 0 198a6ee6c6d76ce702d2e920fb535def
+
+% 0 1 0 0fc0f10454a7b6240d1b534d7132a368
+
+% 0 1 0 13b304132bf680561a0826cc1dc574d1
+
+% 1 1 0 16359d219418402c0d5966083d89828b
+
+@ 0 3 0 1a431015de2f42aa1b3db70718ab4057
++ Die Methode `record` des Providers macht aus Rohdaten einen typisierten Record. Jedes Feld hat den
++ Typ, den das Schema ihm gibt. `name` ist im Schema ein String, also ist es ein `Text`. `weight`
++ ist eine Zahl, also ein `Double`. Das Schema verlangt `age` nicht, also ist es ein
+
+% 0 1 0 0381810d063407f51fccad7c65227580
+
+% 2 1 0 112fa67ece34020f1a1a758111efd135
+
+% 3 1 0 00f8569c1c4f2f8d1b3af9136f4c5a1e
+
+% 4 1 0 0bc2fa5a9112f36e1f72bf4421b4c700
+
+% 0 1 0 108651c2c97f7f1d0ee01c648046e110
+
+% 0 1 0 1624c445b5cfbd1714b78624b2dece95
+
+% 0 1 0 05099aaa0b26d7820d459bffbf69c43d
+
+% 0 1 0 1654877f489d45260b574b5c5821e7f7
+
+% 1 1 0 092d2da64375bcb01a4984954e2e4d54
+
+@ 0 1 0 1cb8ac1eeedacbd51defa056f0cdf47e
++ Das Schema hat kein Feld namens `nope`, daher kompiliert `record.nope` nicht.
+
+@ 0 3 0 0d7805b9e8231baf023e636ac2a1d6cd
++ Ein verschachteltes Objekt wird zu einem verschachtelten Record, und ein Array wird zu einer
++ Liste. Jeder Zugriff wird gegen die Spezifikation geprüft. Eine von Hand geschriebene Klasse
++ gäbe dieselbe Garantie, aber es gibt keine Klasse.
+
+@ 0 1 0 1297ee29ce312e180c580059c8012a89
++ ### Tupel statt Records
+
+@ 0 3 0 17b87d2b6620cc77109a5c013c523088
++ Derselbe Provider kann statt eines Records ein
++ [benanntes Tupel](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html)
++ erzeugen, über `tuple`, das Gegenstück zu `record`.
+
+@ 0 4 0 0efd3f1eba8e9d4c1280cd02c96a30a0
++ Für das obige Schema hat `Catalogue.tuple(input)` den Typ
++ `(name: Text, age: Optional[Int], children: List[(weight: Double)])`. Es hat ein Element pro Feld,
++ benannt wie im Schema und in der Reihenfolge des Schemas. Verschachtelte Objekte werden zu
++ verschachtelten benannten Tupeln, und Arrays zu Listen davon.
+
+@ 0 2 0 0a42c18029eebbb50ca44ce744c50d3b
++ Ein benanntes Tupel wird wie ein Record nach Namen gelesen. Es ist zugleich ein gewöhnliches
++ Tupel, lässt sich also nach Position zerlegen und in seine unbenannte Form umwandeln:
+
+% 2 1 0 014cf7d06a18e04407802a815ae4df97
+
+% 3 1 0 0fdfb4137ff3146a1ac374e488d30375
+
+% 4 1 0 1439dc20721d88771fce1539b5d99b5c
+
+% 0 1 0 1f6e4dc25c4c376c0626f81f48ac2e29
+
+% 0 1 0 19f05445560f6b0d13dab74dc7bc04e6
+
+% 0 1 0 0ca1c0cc2f3da06409d6932376f118f5
+
+% 0 1 0 02722cb3b490be451ca0580240fb25f8
+
+% 1 1 0 032553bf6fb3351f110fed15570d48d1
+
+@ 0 1 0 0ac4dc1592e56b6f111ca590978a820e
++ #### Eager und lazy
+
+@ 0 1 0 1e696f22220149510810c11e5983c33e
++ Die beiden Formen unterscheiden sich darin, *wann* die Daten gelesen werden.
+
+@ 0 3 0 1352b3a18fa6a8f4062beddb32a145b5
++ Ein Record ist lazy. Er hält die Rohdaten, und jeder Zugriff liest und konvertiert sein Feld aufs
++ Neue. Ein fehlerhaftes Feld wird erst bemerkt, wenn dieses Feld gelesen wird, und ein zweimal
++ gelesenes Feld wird zweimal konvertiert.
+
+@ 0 3 0 17830e587ee7be7d08b53c8597d57aa8
++ Ein Tupel ist eager. Jedes Feld wird einmal gelesen, wenn das Tupel gebaut wird, und das Tupel hält
++ die konvertierten Werte. Ein fehlerhaftes Feld lässt die Konstruktion des Tupels scheitern,
++ unabhängig davon, ob das Programm es jemals liest.
+
+@ 0 4 0 0274cc60b41412d70aea30266f495bc4
++ Das ändert die Typen der Felder. Das Lesen jedes Felds kann scheitern: Ein verlangter Wert kann
++ fehlen, ein Wert kann von der falschen Art sein, oder er kann eine Bedingung des Schemas verletzen.
++ Es scheitert mit dem eigenen Fehler der Spezifikation, etwa `Json.Provider.Error`, über die
++ [Taktik] des Codes, der es liest.
+
+@ 0 4 0 12647dc8cc3fc6ff101ea0a1dadcd658
++ In einem Record hat ein Feld den Typ `Record.Field[Int, Json.Provider.Error]`. Das ist eine
++ Kontextfunktion über die Taktik, die überall angewandt wird, wo das Feld selektiert wird, daher
++ braucht jeder Zugriff einen Handler im Geltungsbereich. In einem Tupel kann ein Fehlschlag nur
++ während der Konstruktion auftreten. Der Typ des Elements ist schlicht `Int`, und der Handler muss
++ dort im Geltungsbereich sein, wo das Tupel gebaut wird.
+
+@ 0 4 0 0ccdeb81c82052fb08c985a0b3632b6e
++ Da jeder Fehlschlag über die Taktik des Aufrufers läuft, wählt ein Leser, wie er ihm begegnet. Ein
++ einzelnes Feld kann in `attempt` oder `recover` eingeschlossen werden. Ein ganzer Record kann mit
++ `validate` und `track` gelesen werden, mit einem `venture` pro Feld, das jedes Problem in einem
++ Dokument sammelt und alle zusammen meldet. [Fehler](errors.md) beschreibt diese.
+
+@ 0 1 0 154878b7202306cc0991d8a35db4942f
++ Zusammengefasst:
+
+% 2 1 0 0a2574fa96d0527e1c294b140e771c53
+
+@ 0 1 0 07ac815ea191e3cc115a610b5ee1b959
++ column  Aspekt
+
+% 0 1 0 14431a20fc68709e0859cf7d4349aaa5
+
+@ 0 6 0 1ea6b7734af2cd191032589bc8d0766b
++ column  Tupel
++ row  Daten werden gelesen  bei jedem Feldzugriff  einmal, wenn das Tupel gebaut wird
++ row  Ein fehlerhaftes Feld lässt scheitern  den Zugriff auf das Feld  die Konstruktion
++ row  Ein Feld vom Schematyp integer hat den Typ  `Record.Field[Int, Json.Provider.Error]`  `Int`
++ row  Die `Tactic` muss im Geltungsbereich sein  überall, wo ein Feld selektiert wird  wo das Tupel gebaut wird
++ row  Positionale Zerlegung  nein  ja
+
+% 1 1 0 0890aedd503880fc1ecf1e4ed13528da
+
+@ 0 1 0 1d1044c1c644821f051efb9aa4f52670
++ ### Eine Spezifikation definieren
+
+@ 0 3 0 0bd933504291edf3031de0abec2320cb
++ Eine neue Schemaquelle wird angeschlossen, indem man `Specification` implementiert. Eine solche
++ Implementierung ist ein *Provider*. Die Quelle könnte aus den Tabellendefinitionen einer Datenbank,
++ einem XML Schema oder einem proprietären Format bestehen.
+
+@ 0 3 0 05be6f171d94ee541d3e3e583564c7d0
++ Ein Provider liefert die Namen und Typen der Felder als geordnete Liste von `Member`-Werten. Die
++ Elemente eines Tupels folgen dieser Reihenfolge. Er liefert außerdem primitive Operationen über
++ den zugrunde liegenden Daten:
+
+% 2 1 0 067ef579623e5b5f1da8b1743822c627
+
+% 0 1 0 1798a3663178fcb20e21d7ac388408da
+
+@ 0 11 0 02a1f577d7754fa913d0b76b97c07b47
++ column  Vorgabe
++ column  Liefert
++ row  `access`  keine: muss implementiert werden  den Wert eines benannten Felds, aus einem Wert geholt
++ row  `absent`  keine: muss implementiert werden  ob ein geholter Wert für ein fehlendes Feld steht
++ row  `repeated`  keine: muss implementiert werden  jeden Wert eines Felds, das mehrfach vorkommt
++ row  `required`  gibt den Wert unverändert zurück  den Wert eines unter `One` gelesenen Felds; überschrieben, um zu scheitern, wenn er fehlt
++ row  `entries`  scheitert  die Werte eines Felds mit Schlüsseln, nach Namen
++ row  `kind`  scheitert  die Art eines Werts, anhand derer eine Union ihre Alternative wählt
++ row  `elements`  scheitert  die Elemente eines Werts, der selbst eine Sequenz ist
++ row  `pairs`  scheitert  die benannten Werte eines Werts, der selbst ein Dictionary ist
++ row  `unoffered`  scheitert  den Fehlschlag für einen Wert einer Art, die keine Alternative einer Union anbietet
+
+% 1 1 0 0c4d4bac0c82dae001c2031378c6ef0d
+
+@ 0 4 0 097693ffac2e622f03d09fbdb911c4c8
++ Die Werte eines wiederholten Felds sind etwa die Elemente eines JSON-Arrays. In einem Format, das
++ ein Feld wiederholt, sind sie jedes Geschwister mit dem Schlüsselwort des Felds. Ein Format mit
++ Unions oder Dictionaries stellt `entries`, `kind`, `elements` und `pairs` bereit. Eines ohne lässt
++ ihre Vorgaben stehen.
+
+@ 0 3 0 10ec7fb16861e7240547d552e5a4c016
++ Ein `Member` ist eines von drei Dingen. Ein `Value` benennt den skalaren Typ, den das Schema
++ deklariert hat. Ein `Record` hält weitere Members. Eine `Union` hält Alternativen, jede unter der
++ *Art* von Wert, die sie auswählt, als Schlüssel. Jedes Member trägt eine `Multiplicity`:
+
+% 2 1 0 12d3d2591838a7c8060e99930ecb4fb6
+
+@ 0 8 0 0b8f7f45e8642f4808b29825da684b87
++ column  Multiplizität
++ column  Liest sich als
++ column  Über
++ row  `One`  der Wert  `access`, dann `required`
++ row  `Optional`  ein `Optional`, `Unset`, wo `absent`  `access` und `absent`
++ row  `Many`  eine `List`  `repeated`
++ row  `Keyed`  eine `Map[Text, _]`  `entries`
++ row  `Series`  die eigene Collection des Providers  `series`
+
+% 1 1 0 11ee20ecc155cca907ecce0332878653
+
+@ 0 3 0 1cd768d1dbd54a87179eed47e14380c2
++ Mehr sagt der Provider über Optionalität oder Wiederholung nicht. Das Makro wendet die
++ Multiplizität selbst an. Eine Alternative einer Union kann ihre eigene tragen, sodass eine Union
++ mit einer einzigen Alternative eine Multiplizität in eine andere verschachtelt.
+
+@ 0 3 0 1d41592a2a0146d01a70b98397cbac41
++ Ein Provider benennt den Fehler, mit dem seine Felder scheitern, als seinen Typ `Failure`. Die
++ Primitive, die scheitern können, sind `access`, `repeated`, `required`, `entries`, `elements`,
++ `pairs` und `unoffered`, und jedes nimmt die Taktik für diesen Fehler entgegen.
+
+@ 0 3 0 14c86b782bee841d103ff66d13abd57a
++ Eine [Typklasse] vervollständigt das Bild. Es gibt eine `Intensional`-Instanz für jeden skalaren
++ Typnamen, den das Schema deklarieren kann. Sie sagt, zu welchem Scala-Typ der Name wird und wie ein
++ einzelner Wert davon gelesen wird. Es gibt drei Wege, eine zu erzeugen:
+
+% 2 1 0 19e67c7afbdc077a1725b97f4a038f86
+
+@ 0 5 0 1fb663572e8024b4120bf6991064f336
++ column  Konstruktor
++ column  Aus
++ row  `Intensional(accessor)`  einer Funktion des Werts
++ row  `Intensional.parametric`  einer Funktion des Werts und der Parameter des Members, für einen Typ wie eine beschränkte Ganzzahl
++ row  `Intensional.Reading`  einer Funktion des Werts, seiner Parameter und einer `Tactic`, für ein Lesen, das scheitern kann
+
+% 1 1 0 1dcbc75308d55a5c03efac495ee4ac66
+
+@ 0 4 0 14be4780ec4863b10789750828d9b1d4
++ Ein Lesen kann scheitern: Der Wert kann von der falschen Art sein oder außerhalb seiner Grenzen
++ liegen, oder ein String passt nicht zu seinem Pattern. Ein solches Lesen ist ein
++ `Intensional.Fallible`, dessen `transform` die Taktik für seinen `Error` entgegennimmt. Dieser
++ `Error` muss der `Failure` des Providers oder ein Subtyp davon sein, sodass jedes Feld auf eine
++ einzige Weise scheitert. Eine Instanz, die etwas anderes auslöst, ist ein Kompilierfehler.
+
+@ 0 3 0 194f71fa8cc7dd2d1467232435ceae45
++ Die Instanzen liegen im Begleitobjekt des Providers, daher werden sie ohne Import gefunden. Ein
++ Provider über XML würde zum Beispiel ein Kindelement anhand seiner Beschriftung holen, ein Feld
++ als fehlend betrachten, wo kein solches Kind existiert, und über jedes Kind mit der Beschriftung
++ wiederholen.
+
+@ 0 8 0 1c99d68021f7e6be0f4e30746f1b30dd
++ Manche Quellen stecken nicht in den Werten, die aus ihnen gelesen werden. Ein Record über einer in
++ den Speicher abgebildeten Datei hält nur, wo nachzusehen ist, und die Datei selbst ist eine Weile
++ geöffnet und wird dann geschlossen. Ein Provider für eine solche Quelle benennt einen `Context` und
++ erzeugt seine Records mit `Specification.recordWith`, wobei er den Typ des Kontexts angibt, in dem
++ jeder gelesen werden soll. Ein Member eines solchen Records wird nur dort gelesen, wo ein Wert
++ dieses Typs als [Given][given] vorliegt, neben seiner Taktik, sodass ein Record nicht mehr gelesen
++ werden kann, wenn seine Quelle verschwunden ist, und der Typ angeben kann, aus welcher von mehreren
++ Quellen ein Record stammt. `accessWith`, `repeatedWith` und `entriesWith` des Providers erhalten
++ den Kontext und stehen für `access`, `repeated` und `entries`.
+
+@ 0 4 0 13ba4505815484a517b75d57c5da1b7c
++ Auch `Series` ist für einen solchen Provider gedacht. Es liest sich als der `Series`-Typ des
++ Providers, eine eigene Collection, die `series` aus einer Funktion erzeugt, die ein Element liest.
++ Die Collection liest ein Element, wenn eines angefordert wird, in dem Kontext, der ihr dann gegeben
++ wird, sodass ein Feld aus hunderttausend Records nichts kostet, bis eines nachgeschlagen wird.
+
+@ 0 4 0 0358996d140f37351c43a6458cba92dd
++ Jedes Spezifikationsobjekt erhält `record` und `tuple` von `Specification` selbst. Im Objekt muss
++ nichts über sein Schema hinaus deklariert werden. Beide Methoden sind `transparent inline`. Sie
++ werden dort expandiert, wo sie aufgerufen werden, mit bekanntem Spezifikationsobjekt, sodass das
++ Makro dieses Objekt anhand seines Typs finden und seine `fields` auswerten kann.
+
+@ 0 2 0 04b58d986e6bd4ab006ddd86147446fe
++ Der deklarierte Rückgabetyp von `record` ist `Record`. Was ein Aufruf tatsächlich hat, ist eine
++ *strukturelle Verfeinerung* davon. Für ein Schema mit drei Feldern ist es ein Typ wie dieser:
+
+% 2 1 0 1c2568f587c9170719fc9b1ad125d6c9
+
+% 3 1 0 1ed21e237cc24fd90e523a12648f71a6
+
+% 4 1 0 0c3816223885b26d1a0c50a562b38883
+
+% 0 1 0 17f2029924debc9c1c0d0353f75c9da4
+
+% 1 1 0 153542cc04765f8d1b04d96f03859948
+
+@ 0 1 0 04a28d1a5cd6e69701578fcf5297c03e
++ Nur eine transparente Methode lässt diesen genaueren Typ die Stelle erreichen, an der sie
++ aufgerufen wird.
+
+@ 0 1 0 0b1a118ce0e154e600cde691e54a3410
++ ### Kompilierungsreihenfolge
+
+@ 0 1 0 1d5f63fe9441d1ca0b48a50e4f874434
++ Das Schemaobjekt muss in einer *anderen Datei* stehen als der Code, der seine Methode `record`
++ aufruft.
+
+@ 0 5 0 1a53a2db9e2eca910df7607bfd39fb3c
++ Das Makro läuft, während der aufrufende Code kompiliert. Es wertet das Schemaobjekt als
++ Laufzeitwert aus, indem es das JSON-Schema-Dokument liest oder die Datenbank abfragt. Daher muss
++ dieses Objekt bereits kompiliert sein. Scala garantiert diese Reihenfolge für ein Makro und seine
++ Verwendung, sofern sie in getrennten Dateien ohne Zyklus zwischen ihnen stehen. Stehen sie in einer
++ Datei, ist das Schema noch nicht verfügbar, wenn das Makro es braucht.
+
+@ 0 2 0 19d654797f5c3ab313b3010bf3ac380f
++ Das macht das Muster auch zu einem Type Provider im Sinne von F#. Der Compiler zieht das
++ maßgebliche Schema heran, und die Typen, gegen die das Programm geprüft wird, werden daraus gebaut.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 9 0 006b2353a026cc6d0aca7d6df2737831
++ - [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) und [TEL](tel.md) beschreiben jeweils
++   den Provider für ihre eigene Schemasprache.
++ - [OpenAPI](openapi.md) baut Records aus den Response-Schemas einer API.
++ - [Fehler](errors.md) beschreibt `attempt`, `recover`, `validate` und `track`, die dem Fehlschlag
++   eines Felds begegnen.
++ - [Optionale Werte](optional-values.md) beschreibt den Typ eines Felds, das das Schema nicht
++   verlangt.
++ - [Metaprogrammierung](metaprogramming.md) beschreibt die Makros, auf die sich ein Provider stützt.
++ - [Kataloge](catalogs.md), [Datenbanken](database.md) und [Tabellen](tables.md) arbeiten mit den Feldern eines Records nach Namen.

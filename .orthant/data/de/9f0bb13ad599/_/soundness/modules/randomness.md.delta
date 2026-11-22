@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 3 0 0513a20313d8da7c1533f1d09c934316
++ Auch Verschachtelung ist deterministisch, aber ein verschachtelter Geltungsbereich setzt die
++ Folge des umschließenden Geltungsbereichs nicht fort. Jeder Geltungsbereich beginnt neu bei der
++ `Randomization` im Geltungsbereich, sodass unter demselben Seed ein innerer Geltungsbereich die
++ ersten Ziehungen des äußeren wiederholt.

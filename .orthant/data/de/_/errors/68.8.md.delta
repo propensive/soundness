@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0b42ac474d2008a517ba89c7a08c3609
++ # `↯/s.68.8` — Der Name ist in keinem Namensraum im Geltungsbereich gültig
+
+@ 0 1 0 1773b96f973b314e04258b05e439f2cb
++ Wird zur Kompilierzeit ausgelöst, wenn ein Namensliteral keinem der verfügbaren Namensräume genügt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 1e8d40a9d6b7f1200eaf8f5793ce4ef6
++ Ein `n"…"`-Literal wird gegen die Namensräume im Geltungsbereich aufgelöst. Dieser Fehler bedeutet,
++ dass kein Namensraum im Geltungsbereich es zulässt.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0d027996b991d5cc1f774b9e646499f7
+
+% 1 1 0 0c474542c0061ef80185f92f4d9c6962
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 1 0 1052c6d15bff0b6405fc02bc1dbe171c
++ Korrigieren Sie den Namen, oder bringen Sie den beabsichtigten Namensraum in den Geltungsbereich,
++ damit seine Regeln gelten.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 0e50947c1477812413044192b1714eb2
++ - Quelle: `lib/nomenclature/src/core/nomenclature.protointernal.scala`

@@ -1,0 +1,82 @@
+orthant 2 language
+
+% 0 1 0 1740bdee53bc767b1b72a01d43746997
+
+@ 0 4 0 08e1548e577fab161ef30d02115ec2ce
++ Levée lorsqu'une opération Git invoquée par Octogenarian échoue. Chaque variante
++ nomme la condition précise que git a signalée, ou qu'Octogenarian a lui-même
++ détectée ; le champ `detail` de l'erreur porte le message propre de git lorsque le
++ backend en ligne de commande en a un.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 058095a8c586935319ee8dce96c61136
++ Un backend (celui en ligne de commande, ou le backend natif) n'a pas pu mener
++ l'opération à bien. Le message est le préfixe fixe suivi de la variante de `Reason` :
+
+% 0 1 0 1f729a0c639124e71c0428fb24c48dd1
+
+@ 0 4 0 1d35d8b9e68ebcc7053bc9f3a77623bd
++ Plusieurs variantes sont l'issue typée d'une opération compare-and-swap : toute
++ opération qui déplace une ref prend la valeur `Stale` dont elle dépend et échoue avec
++ `Moved` si la ref ne la contient plus, ce qui est la seule défense contre un autre
++ processus qui écrit dans le même dépôt.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 0663ad2cc1085314025eed7bb8567a24
++ column  Raison
++ column  Signification
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+@ 0 35 0 186d54844c2bc0340cc2d1a530c9d7c4
++ column  Résolution
++ row  `↯/s.123.1.1`  `CannotExecuteGit`  La commande `git` elle-même n'a pas pu être exécutée : aucun binaire `git` n'a été trouvé dans le chemin de recherche, ou il n'a pas pu être démarré.  `` [↯/s.123.1.1] the Git operation could not be completed because the `git` command could not be executed ``  Installez Git, ou fournissez à `Commandline.Command` le chemin du binaire.
++ row  `↯/s.123.1.2`  `NoRepository`  Le chemin ouvert comme dépôt n'en est pas un : ce n'est ni un dépôt nu, ni un répertoire `.git/`, ni un arbre de travail qui en contient un, ni le fichier `<worktree>/.git` d'un worktree lié.  `[↯/s.123.1.2] the Git operation could not be completed because /tmp/x is not a Git repository`  Ouvrez un chemin que `git rev-parse --git-dir` accepterait, ou initialisez-en un avec `Git.init`.
++ row  `↯/s.123.1.3`  `NoWorktree`  Un dépôt nu a été ouvert comme `Git.Worktree`, qui a besoin d'un index et de fichiers de travail.  `[↯/s.123.1.3] the Git operation could not be completed because the repository has no working tree`  Ouvrez-le plutôt comme `Git.Repo`, ou ouvrez l'un de ses worktrees liés.
++ row  `↯/s.123.1.4`  `Moved`  Un compare-and-swap a échoué : la ref contenait une valeur différente de la valeur `Stale` dont dépendait l'opération. Un autre processus l'a déplacée entre la lecture et l'écriture.  `[↯/s.123.1.4] the Git operation could not be completed because refs/heads/main was 3f2a… when read but is now 9c1d…`  Relisez la ref, décidez si l'opération s'applique toujours, et réessayez avec la valeur fraîche.
++ row  `↯/s.123.1.5`  `NoSuchRef`  Une révision ou une référence nommée dans l'opération n'existe pas.  `[↯/s.123.1.5] the Git operation could not be completed because the reference refs/heads/feature does not exist`  Vérifiez le nom ; pour une simple vérification, `resolve` renvoie `Unset` au lieu de lever une erreur.
++ row  `↯/s.123.1.6`  `NoSuchObject`  Aucun objet portant le hachage donné ne se trouve dans la base d'objets, ou il n'est pas du type demandé.  `[↯/s.123.1.6] the Git operation could not be completed because the object 5c1d… does not exist`  Récupérez l'objet, ou vérifiez le hachage.
++ row  `↯/s.123.1.7`  `RefExists`  Une ref devait être créée, mais il en existe déjà une de ce nom.  `[↯/s.123.1.7] the Git operation could not be completed because the reference refs/tags/v1 already exists`  Choisissez un autre nom, ou supprimez d'abord la ref existante.
++ row  `↯/s.123.1.8`  `Unmerged`  Une branche devait être supprimée sans `force`, mais sa pointe n'est pas atteignable depuis HEAD, si bien que la suppression perdrait des commits.  `[↯/s.123.1.8] the Git operation could not be completed because the branch feature at 3f2a… is not fully merged`  Fusionnez d'abord la branche, ou supprimez-la avec `force = true`.
++ row  `↯/s.123.1.9`  `Conflict`  Une opération qui ne peut pas s'arrêter sur des conflits (un pull en avance rapide uniquement, un stash pop qui doit s'appliquer proprement) a rencontré des modifications en conflit.  `[↯/s.123.1.9] the Git operation could not be completed because there are conflicts in a, b`  Résolvez les conflits par une opération qui peut s'arrêter, comme `merge`, qui les signale par une issue `Stopped`.
++ row  `↯/s.123.1.10`  `NothingToCommit`  Un commit a été demandé dont l'arbre est identique à celui de son parent, et les commits vides n'étaient pas autorisés.  `[↯/s.123.1.10] the Git operation could not be completed because there is nothing to commit`  Indexez une modification, ou passez `allowEmpty = true`.
++ row  `↯/s.123.1.11`  `Detached`  L'opération exige que HEAD soit sur une branche, et HEAD est détaché.  `[↯/s.123.1.11] the Git operation could not be completed because HEAD is detached`  Passez d'abord sur une branche.
++ row  `↯/s.123.1.12`  `Dirty`  Des modifications locales des fichiers listés seraient écrasées par l'opération.  `[↯/s.123.1.12] the Git operation could not be completed because local changes would be overwritten in a, b`  Commitez, mettez de côté ou restaurez d'abord les fichiers.
++ row  `↯/s.123.1.13`  `NotFastForward`  Une avance rapide était exigée (par `FastForward.Only`, ou par un dépôt distant qui refuse un push sans avance rapide) et les historiques ont divergé.  `[↯/s.123.1.13] the Git operation could not be completed because the update is not a fast-forward`  Fusionnez ou rebasez d'abord, ou forcez la mise à jour si c'est bien l'intention.
++ row  `↯/s.123.1.14`  `OutsideWorktree`  Un chemin donné à une opération sur l'arbre de travail se trouve hors de l'arbre de travail.  `[↯/s.123.1.14] the Git operation could not be completed because /etc/passwd is outside the working tree`  Utilisez un chemin formé à partir de la poignée du worktree.
++ row  `↯/s.123.1.15`  `Untracked`  Un chemin donné à une opération sur des fichiers suivis n'est pas suivi.  `[↯/s.123.1.15] the Git operation could not be completed because loose is not tracked`  Ajoutez d'abord le fichier, ou utilisez une opération pour fichiers non suivis, comme `clean`.
++ row  `↯/s.123.1.16`  `NoOperationInProgress`  `continue`, `skip`, `abandon` ou `quit` a été appelé sans merge, rebase, cherry-pick ni revert en cours.  `[↯/s.123.1.16] the Git operation could not be completed because no merge, rebase, cherry-pick or revert is in progress`  Vérifiez `operation()` avant de continuer.
++ row  `↯/s.123.1.17`  `OperationInProgress`  Une nouvelle opération a été démarrée alors qu'un merge, un rebase, un cherry-pick ou un revert était encore arrêté.  `[↯/s.123.1.17] the Git operation could not be completed because an operation is already in progress`  Poursuivez ou abandonnez d'abord l'opération en cours.
++ row  `↯/s.123.1.18`  `NoSuchRemote`  Le dépôt distant nommé n'est pas configuré.  `[↯/s.123.1.18] the Git operation could not be completed because the remote origin does not exist`  Ajoutez-le avec `addRemote`.
++ row  `↯/s.123.1.19`  `RemoteExists`  Un dépôt distant devait être ajouté sous un nom déjà utilisé.  `[↯/s.123.1.19] the Git operation could not be completed because the remote origin already exists`  Choisissez un autre nom, ou utilisez `setRemoteUrl`.
++ row  `↯/s.123.1.20`  `Unauthorized`  Le dépôt distant a refusé les identifiants proposés, ou en a demandé alors qu'aucun n'était disponible.  `[↯/s.123.1.20] the Git operation could not be completed because authentication with origin failed`  Configurez des identifiants pour le dépôt distant.
++ row  `↯/s.123.1.21`  `Unreachable`  Le dépôt distant n'a pas pu être atteint : son hôte ne s'est pas résolu, ou a refusé la connexion ou l'a laissée expirer.  `[↯/s.123.1.21] the Git operation could not be completed because the remote origin could not be reached`  Vérifiez l'URL et le réseau.
++ row  `↯/s.123.1.22`  `RemoteRejected`  Le dépôt distant a accepté la connexion mais a refusé de mettre à jour la ref, pour la raison qu'il a donnée.  `[↯/s.123.1.22] the Git operation could not be completed because the remote rejected refs/heads/main: pre-receive hook declined`  Lisez la raison ; c'est la politique du dépôt distant.
++ row  `↯/s.123.1.23`  `LeaseFailed`  Un push avec `Push.Force.Lease` a trouvé la ref du dépôt distant à une valeur différente de celle attendue.  `[↯/s.123.1.23] the Git operation could not be completed because the remote's refs/heads/main was expected to be 3f2a… but is 9c1d…`  Récupérez, réexaminez, et poussez avec une attente actualisée.
++ row  `↯/s.123.1.24`  `NoteNotFound`  `content` a été appelé sur une référence de note, et aucune note n'est attachée au commit dans cet espace de noms.  `[↯/s.123.1.24] the Git operation could not be completed because no note was attached to the given object`  Utilisez `note`, qui renvoie `Unset` au lieu de lever une erreur.
++ row  `↯/s.123.1.25`  `NoSuchConfig`  Une clé de configuration dont l'opération a besoin n'est définie nulle part où git chercherait ; typiquement `user.name` ou `user.email` pour un commit.  `[↯/s.123.1.25] the Git operation could not be completed because the configuration key user.email is not set`  Définissez-la avec `configure`, ou dans la configuration globale.
++ row  `↯/s.123.1.26`  `InvalidConfig`  Une clé ou une valeur de configuration est malformée : une clé sans section, par exemple.  `[↯/s.123.1.26] the Git operation could not be completed because nosection is not a valid value for `  Utilisez une clé `section.name` ou `section.subsection.name`.
++ row  `↯/s.123.1.27`  `BadSignature`  Une signature sur un commit ou un tag n'a pas été vérifiée.  `[↯/s.123.1.27] the Git operation could not be completed because the signature could not be verified: …`  Vérifiez que la clé du signataire est de confiance, et que l'objet n'a pas été altéré.
++ row  `↯/s.123.1.28`  `SigningFailed`  Le signataire n'a pas pu produire de signature.  `[↯/s.123.1.28] the Git operation could not be completed because the object could not be signed: …`  Vérifiez la clé de signature et le programme de signature.
++ row  `↯/s.123.1.29`  `Unsupported`  Le backend utilisé n'implémente pas l'opération.  `[↯/s.123.1.29] the Git operation could not be completed because skipping is not supported by this backend`  Utilisez l'autre backend, ou une autre opération.
++ row  `↯/s.123.1.30`  `Unexpected`  git a échoué d'une manière que la table des raisons ne reconnaît pas ; le `detail` de l'erreur porte le message propre de git.  `[↯/s.123.1.30] the Git operation could not be completed because git reported an unexpected failure`  Lisez le `detail`.
++ row  `↯/s.123.1.31`  `NoteExists`  Une note devait être ajoutée, sans `force`, à un commit qui en a déjà une dans cet espace de noms.  `[↯/s.123.1.31] the Git operation could not be completed because a note is already attached to 5c1d…`  Passez `force = true` pour la remplacer, ou utilisez `appendNote`.
++ row  `↯/s.123.1.32`  `NoSuchWorktree`  Le chemin donné n'est pas un arbre de travail lié du dépôt.  `[↯/s.123.1.32] the Git operation could not be completed because /tmp/x is not a linked working tree`  Listez les worktrees avec `worktrees()`.
++ row  `↯/s.123.1.33`  `NoSuchStash`  L'entrée de stash n'existe plus : elle a été dépilée ou supprimée depuis qu'elle a été listée.  `[↯/s.123.1.33] the Git operation could not be completed because the stash entry does not exist`  Listez de nouveau les stashs.
++ row  `↯/s.123.1.34`  `Locked`  Un fichier de verrou (`<ref>.lock`, `index.lock` ou `config.lock`) existe : un autre processus écrit la même ref, le même index ou le même fichier de configuration, ou a planté en laissant le verrou derrière lui.  `[↯/s.123.1.34] the Git operation could not be completed because the lock file for refs/heads/main is held by another process`  Réessayez une fois que l'autre processus a terminé ; si aucun processus ne le détient, supprimez à la main le fichier de verrou périmé.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 1943f04f5338005103db4f4e5fc7e818
++ - Source : `lib/octogenarian/src/core/octogenarian.Git.scala`
++ - `↯/s.123.2` — noms de références et hachages malformés

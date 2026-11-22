@@ -1,0 +1,799 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1e8bbf48ecb8ae4b17d80e9572aae0cc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0d1a657f9da0f8ab1bb0692d104ddbe3
++ info   archivos ZIP y JAR como valores inmutables: rutas de entrada tipadas, contenido en flujo, lectura con ámbito
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 0b0a295f7248a9ca1543ebb169ddfae1
++     _Zeppelin_ lee y escribe archivos ZIP, y los ficheros JAR, que son archivos ZIP con un
++     manifiesto, sin los objetos mutables de acceso aleatorio de `java.util.zip`. Un `Zipfile` es
++     una lista inmutable de `Zip.Entry`, cada una con una ruta relativa al archivo validada —un
++     `Path on
++     Zip`, que no puede ser absoluto ni subir por encima de la raíz del archivo, de modo que un
++     nombre de entrada como `../../etc/passwd` se rechaza en lugar de extraerse— y un contenido
++     que se produce como flujo cuando se lee. Un archivo se serializa como un flujo de bytes, así
++     que escribirlo es como escribir cualquier otro valor, y leerlo descomprime cada entrada de
++     forma incremental, en fragmentos acotados, solo cuando se lee esa entrada.
+
+% 2 1 0 1a448366d47d40d70434e60dc1e4bb1a
+
+% 3 1 0 0c514026b44fe92912664c42ba7f454e
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 1 1 0 09c267d03fbd154c133e88f6b7f1fda4
+
+% 0 1 0 1d2af722c8e4b261066c45ab5c60c654
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
+
+% 0 1 0 12c5c459f0fc46b61a922ccc93d29672
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 0 1 0 1bea4071f15eeb820f218f7a33ce6017
+
+% 0 1 0 07d57cd5146c8b3616aa98ff287388ae
+
+% 0 1 0 02bacfd70fe85ef60f817389619d9d23
+
+% 0 1 0 1d9f9d44d85c577f051a097907178a9d
+
+% 1 1 0 1001f2843aa2f9b811ddbf46a0cc52c3
+
+@ 0 6 0 0656958534e0338108c6f61897b02023
++     Un archivo se usa de una de dos maneras. `Zipfile.read` da un `Zipfile` independiente, cuyas
++     entradas vuelven a abrir el fichero en cada lectura y por eso siguen siendo utilizables en
++     cualquier sitio. `path.open[Zip]()` (o `data.open[Zip]()`), en cambio, abre un ámbito en el
++     que `zipfile` es un `Zip.Handle` que lee a través de una única vista del fichero, que se
++     mantiene abierta durante el bloque, así que las entradas deben consumirse dentro de él;
++     `path.open[Jar]()` da un `Jar.JarHandle`, el mismo descriptor con el manifiesto analizado.
++     `directory.archive[Zip]()` archiva un árbol de directorios entero, de forma determinista.
+
+@ 0 6 0 1e8df00c17681147197e6078ec97cad7
++     Una entrada leída de un archivo conserva todos los campos de cabecera que rodean su
++     contenido, de modo que al volver a escribirla se reproduce el original byte a byte, salvo los
++     registros ZIP64, que se reconstruyen; las entradas pueden alinearse para su proyección en
++     memoria, como hace `zipalign` en Android; un archivo puede llevar un `prefix` de bytes
++     iniciales, que es como se hace un archivo autoextraíble o directamente ejecutable; y los
++     archivos que superan los límites de 4 GiB y 65.535 entradas del formato original se escriben
++     y se leen con registros ZIP64.
+
+@ 0 4 0 1d860c69c21c0dcf17bed53b4c0d90c1
++     La compresión es una política contextual `Zip.Compression`: deflación por defecto, mediante
++     el deflactor en Scala puro de pneumatic, con la alternativa de almacenar sin comprimir
++     siempre que la deflación no haga más pequeña una entrada. Todo fallo es un `Zip.Error` cuyo
++     `Zip.Error.Reason` dice qué estaba mal.
+
+@ 0 4 0 0d810cea298ed0b3016139afafeb01cf
++     La biblioteca tiene un único conjunto de fuentes, `zeppelin.core`, que compila allí donde lo
++     hace el `FilesystemBackend` de galilei, puesto que todo fichero se lee a través del backend
++     del ámbito. Por ahora los archivos se abren solo para lectura: se rechaza un modo `Write`.
++     Todo se exporta al paraguas `soundness`.
+
+% 0 1 0 18aabcbb4496be941e25c71009534a0e
+
+% 0 1 0 012a33d9804eb76f1c243a7d444b58d5
+
+% 0 1 0 13daa7adc91d932c0cc858f4a7e49723
+
+% 0 1 0 1804693b49c7c27a174ad557d9dbc257
+
+@ 0 1 0 09a4cee687f134831e159c172205cb22
++ entry .Zip   la forma y el plano ZIP: entradas, compresión, errores y el descriptor del archivo con ámbito
+
+% 1 1 0 13353c89dab52cb2128c08c932ebbc9f
+
+@ 0 6 0 0a96c1a227dd97121b50d34c6d25af3e
++       `Zip` son dos cosas que comparten nombre. Como **tipo**, es la _forma_ del archivo, que se
++       nombra en `path.open[Zip]()` y `directory.archive[Zip]()`, y el **plano** de las rutas
++       dentro de un archivo: la ruta de una entrada es un `Path on Zip`, separado por `/` y
++       relativo a la raíz del archivo, con cada segmento sujeto a `.Rules`. Como **objeto**,
++       contiene los tipos que usa todo archivo —`Entry`, `Compression`, `Method`, `Error`,
++       `Event` y `Handle`— y los givens que hacen funcionar la forma y el plano sin ninguna
++       importación.
+
+% 2 1 0 1ac6c56b08ffcf431d0b13f203c703a8
+
+% 3 1 0 13228830c744fdef0bf066c875f0616b
+
+% 4 1 0 008aa55b73960d2c09d9b27515fdf029
+
+% 5 1 0 035977da03a6b64e1909beebaae088b4
+
+% 1 1 0 032851a103b17b3b10f22217df890ee2
+
+% 0 1 0 07669de67c0de995108800a72ecdeaba
+
+% 0 1 0 1962f3b4d9401952177858ac5562ac2a
+
+% 0 1 0 00c483949672a8770beaf3bf2c44f07a
+
+% 0 1 0 03cf93040e3573620320233fd4821b27
+
+% 0 1 0 001a3686c3052a84139808bc642561cc
+
+% 1 1 0 1b721ea274c782721df4fd666ed3b79a
+
+@ 0 3 0 050b64c25121dd580618e430aa51797b
++       Una ruta en el plano `Zip` se codifica sin `/` inicial, puesto que los nombres de entrada
++       ZIP son relativos y `java -jar` rechaza uno absoluto; un texto que nombra una ruta
++       absoluta, sube con `..` o contiene un carácter que Windows o el formato prohíben no se
++       decodifica.
+
+% 1 1 0 10b43204e6a55c57093a6b12f542bf0a
+
+% 1 1 0 11706be789f004c60c219e20a1fb6d7b
+
+% 2 1 0 19a16cf2a8500ccc04e10250a65e7aa9
+
+@ 0 33 0 14c78ca3aea3b356174b9d1e2247dba5
++   entry .Rules   lo que puede ser un segmento de una ruta dentro de un archivo ZIP
++       Un segmento no debe contener `\`, `"`, `/`, `:`, `*`, `?`, `<`, `>` ni `|`, y no debe ser
++       `.` ni `..`. Las reglas se aplican a todo nombre de entrada con el que se lee un archivo,
++       de modo que un nombre que atraviesa directorios (Zip Slip) lanza `Zip.Error` con el motivo
++       `InvalidName` en lugar de producir una ruta que escapa del archivo.
++   entry .compliant   afirma que un segmento de ruta de Linux es un segmento de entrada ZIP válido
++       El given `Linux is Compliant on Zip`, que permite reinterpretar una ruta de un sistema de
++       ficheros Linux como una ruta dentro de un archivo.
++   entry .compliant2   afirma que un segmento de ruta de macOS es un segmento de entrada ZIP válido
++       El given `MacOs is Compliant on Zip`, como `.compliant` lo es para Linux.
++   entry .nominative   el given que somete los segmentos de ruta ZIP a `.Rules`
++   entry .submissible   acepta la raíz `%` de cualquier ruta que se traslada al plano ZIP con `path.on[Zip]`
++       La raíz de una ruta se comprueba cuando la ruta se traslada a otro plano; la raíz de un
++       archivo es implícita, así que la comprobación siempre se supera.
++   entry .filesystem   el plano ZIP como un `Filesystem`: separado por `/`, sin una raíz única
++       Llamado `ZIP`, con `/` como separador y `.` y `..` como segmentos de sí mismo y del padre.
++   entry .radical   escribe la raíz del archivo como el texto vacío, de modo que una ruta se codifica como `a/b.txt`
++   entry .eradicable   lee la raíz del archivo a partir de texto, lo cual no puede fallar
++       La raíz de un archivo está implícita en el nombre de cada entrada, así que no ocupa ningún
++       carácter y cualquier texto se decodifica como la raíz `%`.
++   entry .openable   abre un archivo en una ruta como `Zip`: `path.open[Zip]()`
++       El given `Openable` para cualquier tipo de ruta en un plano con un `FilesystemBackend` en
++       el ámbito. Necesita ese backend, una `Tactic[Zip.Error]` y una `Tactic[Io.Error]`, y está
++       en el objeto compañero de `Zip`, así que no necesita importación. Su resultado es un
++       `Zip.Handle`, al que se llega en el bloque como `zipfile`.
++   entry .dataOpenable   abre un archivo en memoria como `Zip`: `data.open[Zip]()`
++       El given `Openable` para `Data`, que necesita una `Tactic[Zip.Error]`. No interviene
++       ningún canal, pero el acceso tiene ámbito de todos modos, por coherencia con un archivo
++       abierto desde una ruta.
++   entry .archivable   archiva un árbol de directorios como un `Zipfile`: `directory.archive[Zip]()`
++       Está en el objeto compañero de `Zip`, así que no necesita importación. Necesita un
++       `FilesystemBackend`, una `Tactic[Io.Error]`, una `Tactic[Zip.Error]` y una
++       `Zip.Compression` (la deflación por defecto está en el ámbito implícito). Véase
++       `Zip.Archivable` para saber qué se archiva.
++   entry .Archivable   el archivador detrás de `directory.archive[Zip]()`: todos los descendientes, en un orden fijo
+
+% 1 1 0 07bce91f7192965f0ecfb47021733a90
+
+@ 0 5 0 1746e3ad45796ff0140a51da7ffa8529
++         Todo descendiente del directorio se convierte en una entrada —un directorio como entrada
++         de directorio, un fichero con su contenido y su hora de modificación— en preorden, con
++         los hijos de cada directorio ordenados por punto de código, de modo que el mismo árbol
++         produce siempre el mismo archivo, byte a byte. ZIP, tal como lo escribe zeppelin, no
++         tiene enlaces simbólicos, así que los enlaces se siguen. Se aplica la `Zip.Compression`
++         contextual salvo que se pase una como opción.
+
+% 2 1 0 1a2e5668e97a9b1f13a2aea256138ddc
+
+% 3 1 0 0ef5c8b703113b7a1971dd1ea7462194
+
+% 4 1 0 024d0cb38cfcf8210c8b7a66eb624cc7
+
+% 5 1 0 10f2c2cffd437c2a0c54e5faec466292
+
+% 0 1 0 1fc240acafda73dd16e0bbcd13b68942
+
+% 0 1 0 134eb99f061417b01184bb4cedcc9aba
+
+% 0 1 0 034a7bf5dcaa67e2007122258741e1f3
+
+% 0 1 0 0bac0e053e933caa0a2f8aca728e1848
+
+% 1 1 0 091a4b29c6c3c14105e6d7e825932934
+
+@ 0 4 0 0ac60586bb6559740a0fac6da36eaf5b
++         Un nombre que no puede ser un `Path on Zip` lanza `Zip.Error` con el motivo
++         `InvalidName`, y un fichero ilegible lanza `Io.Error`.
++     entry #archive   archiva el árbol que hay bajo una ruta, con una opción `Zip.Compression` opcional
++   entry .Method   el método de compresión registrado en una entrada: `Stored` o `Deflate`
+
+% 1 1 0 1abce7a9b40c70f807b0bec7b123c5db
+
+@ 0 6 0 03ff912a447de2130bf0cc3c101cc531
++         Lo que son realmente los bytes de una entrada en el archivo, frente a la política
++         `Zip.Compression` que se pidió: una entrada cuya forma deflactada no sería más pequeña
++         que su contenido queda `Stored` sea cual sea la política. Un archivo que use cualquier
++         otro método lanza `Zip.Error` con el motivo `UnsupportedMethod` al leerse.
++     entry #id   el número del método en una cabecera ZIP: `0` para `Stored`, `8` para `Deflate`
++   entry .Compression   la política para comprimir las entradas nuevas: almacenarlas sin más, o deflactarlas
+
+% 1 1 0 0020eec6def441a6081909b1f388391f
+
+@ 0 5 0 1be7479db49a124b1d83bcc51c5b0ac5
++         Se consulta, como valor contextual, cuando se crea una `Zip.Entry` a partir de contenido
++         en bruto, y se pasa como opción a `directory.archive[Zip]`. `Stored` conserva los bytes de
++         cada entrada tal como son; `Deflate(level)` deflacta, con la alternativa de almacenar sin
++         comprimir cualquier entrada que la deflación no haría más pequeña. La deflación es la de
++         pneumatic, que tiene un único nivel de compresión, así que `Deflate(0)` almacena sin
++         comprimir, como haría el nivel 0 de zlib, y todos los demás niveles deflactan igual.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1a6fba7ec3b71bd81f5deb1485204af9
+
+% 1 1 0 0cd1aba26319078c140ac2cb1c113554
+
+% 2 1 0 147a87a87b21c5c4040d47e3c180225c
+
+% 0 1 0 1c78a6f7f43d5ba11f3f8d0ead58c5dd
+
+% 0 1 0 03277e74cabbf3650feacd7afde9a504
+
+% 0 1 0 0f00e7dc253c4a000ef8be9a86d23b3a
+
+% 1 1 0 01d3090a793502d41149cf9101647381
+
+% 2 1 0 1a7baf6b5554e22c1f69cc3447bcd5cc
+
+% 4 1 0 04383e9f3746d6410a35fc2250c3fca4
+
+% 0 1 0 0802c79896e2e59107d65f54d69c8e34
+
+% 1 1 0 0ed9573c86708cb1118a9e13e9ff9c2d
+
+% 2 1 0 0dde70f3a15f360316e4a275ff04d616
+
+% 0 1 0 1f4d6e8610fe8c731e1e0379d9d4d31d
+
+% 1 1 0 1281c1be559e2d791a62fb1771bd5123
+
+% 2 1 0 1d02534c76211bbb116a687110487a27
+
+% 4 1 0 0fdf24510c43849f13fd6bd0aca2eb95
+
+% 0 1 0 050869e88ce8b8311dedc5aad66b4347
+
+% 1 1 0 0fa8148b4d43057a1fe3836eb1289b70
+
+% 2 1 0 0f649d006a58f34d19d06d22de61a7a9
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 0a6eba7c67b3e4751189320a82837c66
++     entry .default   la política por defecto, `Deflate(-1)`, que se encuentra en el ámbito implícito sin importación
++     entry .Deflate   deflacta cada entrada, salvo que la deflación no la haga más pequeña
++       entry #level   el nivel pedido; `0` almacena sin comprimir, y todos los demás niveles deflactan igual
++   entry .Entry   una entrada de un archivo ZIP: su ruta, su contenido comprimido y sus campos de cabecera
+
+% 1 1 0 060056013e5b2b6e170b588431b19a92
+
+@ 0 5 0 1ea0fd054bc474e30a9e771752efbf70
++         Un valor inmutable: un `#ref` relativo al archivo, el `#method` con el que se almacenan
++         sus bytes, su CRC-32 y sus tamaños, un productor de los bytes almacenados, una marca de
++         tiempo DOS, y todos los demás campos de cabecera que puede llevar un archivo. Una entrada
++         se crea a partir de cualquier contenido que sea `Streamable by Data`, comprimido una vez
++         bajo la `Zip.Compression` contextual, y se lee, descomprimiéndose de forma incremental,
++         como cualquier tipo a través del given `.streamable`.
+
+% 2 1 0 1b8b0377d0b08924065604fb7bfe2b4e
+
+% 3 1 0 1a3f2b71ffbbd23f1a1aa45feada48ba
+
+% 4 1 0 196da67c7a875d5904ad04af9abd89ca
+
+% 0 1 0 15c01b294fb63eeb12f214421a322d6b
+
+% 0 1 0 09a207a70e7ba39814ab584185d9547d
+
+% 0 1 0 0cdde7fb0901bfc502360e39466648ea
+
+% 0 1 0 051aed030c7067db0c583232446896a7
+
+% 0 1 0 03c84cd7fcd484cb0bc3348cce4bfdc9
+
+% 1 1 0 060d5a3ef4d9d5dc1fcb2cb3f9f06ac6
+
+@ 0 8 0 0c2cac832d51aeb4199cd625f07fdf71
++         Los campos de cabecera posteriores a `#alignment` existen para que un archivo leído por
++         partes pueda volver a escribirse byte a byte: `Unset` significa el valor que deriva el
++         propio zeppelin (el indicador UTF-8 exactamente cuando el nombre lo necesita; la versión
++         20, o 45 para una entrada ZIP64; el atributo externo `0x10` para un directorio y 0 en
++         otro caso; ningún campo extra), y un valor se escribe literalmente. Se cambian con
++         `#withHeaders`, la alineación con `#aligned` y el indicador de directorio con
++         `#asDirectory`: el `copy` propio de la case class no se puede llamar desde código con
++         comprobación de capturas, puesto que pasaría el productor `#storedBytes` a través de un
++         parámetro puro.
+
+% 0 1 0 171463546db9ece10cc4ddf84f6d2fb6
+
+% 0 1 0 065ddf38b7b25ce11485515cf3f3cde0
+
+@ 0 10 0 0ec81c24b319b3f30ac42b8b2ec58c76
++     entry .apply   una entrada creada a partir de cualquier contenido en flujo, comprimida bajo la política del ámbito
++         `Zip.Entry(ref, content)` lee el contenido una vez, calcula su CRC-32, y lo almacena sin
++         comprimir o lo deflacta según diga la `Zip.Compression` contextual, con la época DOS
++         (1 de enero de 1980) como marca de tiempo. El constructor completo de la case class, que
++         toma explícitamente todos los campos, tiene el mismo nombre.
++     entry .at   una entrada creada a partir de contenido, con una hora de modificación dada como cualquier tipo de instante
++         Como `.apply`, con la hora registrada en los campos de fecha y hora DOS de la entrada, en
++         UTC, puesto que una marca de tiempo ZIP no registra ninguna zona. El instante puede ser de
++         cualquier tipo `Abstractable
++         across Instants to Long`; un instante anterior a 1980, que DOS no puede representar, se
++         registra como el primer segundo de 1980, y las horas DOS se almacenan con una precisión
++         de dos segundos.
+
+% 2 1 0 0830a6e334adf5a40076ce1e8c68dd77
+
+% 3 1 0 0d45bbae3a69ca710185d596c5ddf0c8
+
+% 0 1 0 0c67f2a717400322177809ffaa236967
+
+% 1 1 0 116c96e182f70ef809aa058f34cf18aa
+
+@ 0 43 0 1af734adab5eeb4717fe597d53d200dc
++     entry .streamable   lee el contenido descomprimido de una entrada como bytes, o como cualquier tipo decodificable
++         El given `Streamable by Data over Credit`, de modo que una entrada puede leerse con
++         `read[Text]`, con `read[Data]` o como cualquier cosa decodificable desde un flujo; cada
++         lectura es un flujo nuevo de `#contents`.
++     entry #ref   la ruta de la entrada dentro del archivo
++     entry #method   el método de compresión con el que se almacenan sus bytes, como un `Zip.Method`
++     entry #crc32   el CRC-32 del contenido sin comprimir
++     entry #uncompressedSize   el tamaño del contenido, en bytes
++     entry #compressedSize   el tamaño de los bytes almacenados en el archivo
++     entry #storedBytes   un productor de los bytes almacenados (quizá comprimidos), al que se llama una vez por lectura
++         Se le llama de nuevo en cada lectura, de modo que una entrada leída de un `Zipfile`
++         independiente vuelve a abrir su origen cada vez y sigue siendo reutilizable. `#contents`
++         es la forma descomprimida.
++     entry #dosTime   la hora de modificación, en el formato empaquetado de hora DOS
++     entry #dosDate   la fecha de modificación, en el formato empaquetado de fecha DOS
++     entry #directory   si la entrada es un directorio, que se escribe con una `/` final en su nombre
++     entry #comment   el comentario de la entrada, o `Unset`
++     entry #alignment   el múltiplo de bytes en el que deben empezar los datos de la entrada; `1` para ninguno
++     entry #flags   los indicadores de bits de propósito general, o `Unset` para los que deriva zeppelin
++         El bit 3 marca la entrada como enviada en flujo (`#streamed`): su CRC y sus tamaños se
++         escriben en un descriptor de datos tras la carga útil, que es como se escribe un archivo
++         en un sumidero que no admite desplazamientos. El bit 11, que indica que el nombre está en
++         UTF-8, se activa por defecto exactamente cuando el nombre lo necesita.
++     entry #versionMadeBy   el "version made by" de la cabecera central, o `Unset` para el propio de zeppelin
++     entry #localVersion   el "version needed to extract" de la cabecera local, o `Unset` para el propio de zeppelin
++     entry #centralVersion   el "version needed to extract" de la cabecera central, o `Unset` para el propio de zeppelin
++     entry #internalAttributes   los atributos internos del fichero, o `Unset` para ninguno
++     entry #externalAttributes   los atributos externos del fichero, donde reside un modo Unix, o `Unset` para el valor por defecto
++         El valor por defecto es `0x10`, el atributo de directorio de DOS, para un directorio, y 0
++         en otro caso. Un modo Unix se guarda en los dieciséis bits superiores.
++     entry #localExtra   el campo extra de la cabecera local, sin su registro ZIP64, o `Unset`
++     entry #centralExtra   el campo extra de la cabecera central, sin su registro ZIP64, o `Unset`
++         El registro ZIP64 se deja fuera de ambos campos extra porque el escritor lo reconstruye a
++         partir de los tamaños y el desplazamiento de la entrada.
++     entry #localSizes   si la cabecera local de una entrada enviada en flujo repite su CRC y sus tamaños
++         Los escritores difieren: algunos los repiten, otros los dejan a cero y se fían solo del
++         descriptor de datos. Se ignora para una entrada que no se envía en flujo.
++     entry #streamed   si a la carga útil de la entrada le sigue un descriptor de datos, según el bit 3 de `#flags`
++     entry #contents   el contenido descomprimido de la entrada, como un flujo nuevo en cada llamada
++         Una entrada `Deflate` se descomprime de forma incremental, así que una carga útil de
++         cualquier tamaño, incluida una de más de 2 GiB, se lee, se descomprime y se consume en
++         fragmentos acotados.
++     entry #aligned   la misma entrada, con sus datos obligados a empezar en un múltiplo de un desplazamiento en bytes
++         Se consigue rellenando con bytes a cero el campo extra de la cabecera local, como hace
++         `zipalign`. Solo tiene sentido para una entrada almacenada sin comprimir, cuyos bytes un
++         lector puede proyectar en memoria directamente: un `classes.dex` o un `resources.arsc`
++         alineados, o una biblioteca nativa alineada a página (`4096`), no necesitan copia.
+
+% 2 1 0 1b910724c891c639093b71f62918262e
+
+% 3 1 0 0cfbc21604f5c37e1839b97802068a81
+
+% 4 1 0 14358a597b70e2d106b3bbe05ecc19c7
+
+% 0 1 0 0bcd14ac3af2545219185a5b360c9820
+
+% 0 1 0 1ff27b9257ecc4e217ec9f07a585be08
+
+% 1 1 0 013461966d21e51b012dacdda0f16c01
+
+@ 0 7 0 1365bc334ebe1b420c19c5a60d07a42e
++     entry #asDirectory   la misma entrada, registrada como directorio
++         Su nombre se serializa con una `/` final y se activa el atributo de directorio de DOS.
++     entry #withHeaders   la misma entrada con algunos de sus campos de cabecera sustituidos
++         Cada parámetro —`flags`, `versionMadeBy`, `localVersion`, `centralVersion`,
++         `internalAttributes`, `externalAttributes`, `localExtra`, `centralExtra` y
++         `localSizes`— toma por defecto el valor actual de la entrada, de modo que una llamada
++         solo nombra los campos que fija.
+
+% 2 1 0 14ecc634ccbd903f1202918070364eed
+
+% 3 1 0 06185d486e293e941c0ccb7eca2ada6e
+
+% 4 1 0 12fb9f6a70d9a07b0e02fb46819a4403
+
+% 0 1 0 1414bc1c113341ec1d7137992d78882d
+
+% 0 1 0 1401e9bea5172c7a078d35a08d979aee
+
+% 1 1 0 10d597a2b4981ed50fa5d485c205dde6
+
+@ 0 1 0 086dcc165fe69fb000d5727ffdcec60f
++   entry .Error   un fallo al leer, escribir o abrir un archivo ZIP, con el motivo
+
+% 1 1 0 110d78b99dc114a01b574d1883464cf6
+
+@ 0 4 0 1859a4047b9eaf381569c1b9b9332fd9
++         Error `↯/s.136.1`: _the ZIP operation failed because `reason`_, con el número del
++         `Zip.Error.Reason` como subcódigo. Lo lanzan `Zipfile.read`, `Zipfile#entry`, la
++         serialización de un `Zipfile`, la apertura de un archivo como `Zip` o `Jar`, y
++         `Zipfile.rebase`.
+
+% 2 1 0 1fd4dfd08a6b8e341db528bf0ac6b558
+
+% 3 1 0 0c5622044e6cf7c50df77b4a7a2c5e31
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 0192ef8f5c8f67f2163d849f2e5ab4c4
+
+% 0 1 0 19f616cedf5fd96c1eb49b733b60b39d
+
+% 1 1 0 1b024bb482f12f020ff5eeedee48e2bb
+
+@ 0 1 0 19aa2ea90119289003f3c5f9ccca9d39
++     entry .Reason   qué estaba mal en un archivo u operación ZIP, cada uno con un número estable
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 1dc99bc41c9997701b7c6ca7547e3b49
++           Cada caso tiene un número estable:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 5 0 045dad35057d87ef163dd9869d22cadf
++           column  Caso
++           column  Código
++           column  Mensaje
++           column  Nota
++           row  `DuplicateEntry(path)`  1  _the path `path` is a duplicate entry_  se rechaza antes de serializar ningún byte
+
+% 0 1 0 133d54a35e467a211464d3a9124c88c5
+
+@ 0 3 0 0e3a229cb87bcbe102ecf874290a3aba
++           row  `InvalidName(name)`  3  _the name `name` is not valid for a ZIP entry_  no es un `Path on Zip` válido
++           row  `UnsupportedMethod(method)`  4  _the compression method `method` is not supported_  cualquiera salvo almacenamiento sin comprimir o deflación
++           row  `MissingEocd`  5  _no end-of-central-directory record could be found_  así que los bytes no son un archivo ZIP
+
+% 0 1 0 10cc00bda4dbac7a1e1d21b6ec1f7fe1
+
+% 0 1 0 1910ab939c0cc6181c26bfec0309caae
+
+% 0 1 0 17ab75001486a54a110a31afb0a967d2
+
+@ 0 1 0 1b29a216d3ec3e580b8b8a97deda3bf5
++           row  `WriteUnsupported`  9  _ZIP archives cannot yet be opened for writing_  un archivo abierto en un modo con `Write`
+
+% 0 1 0 1e1142f93520fd4f15bfab13e688393a
+
+% 0 1 0 06eefce5ebc9bdf9143d81cdaad67e8c
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 16 0 1d4a16a2c3cf626b1a534384cd0e5ee3
++       entry .DuplicateEntry   dos entradas de un mismo archivo comparten ruta
++         entry #path   la ruta duplicada
++       entry .NotFound   el archivo no tiene ninguna entrada en la ruta pedida
++         entry #path   la ruta que se pidió
++       entry .InvalidName   un nombre de entrada no es una ruta válida dentro de un archivo
++         entry #name   el nombre, tal como lo escribía el archivo
++       entry .UnsupportedMethod   una entrada usa un método de compresión distinto del almacenamiento sin comprimir o la deflación
++         entry #method   el número del método, tomado de la cabecera de la entrada
++       entry .BadSignature   la firma de un registro no es la que se esperaba en esa posición
++         entry #expected   la firma que se esperaba
++       entry .CannotWrite   no se pudo escribir un archivo
++         entry #detail   qué salió mal
++       entry #number   el subcódigo del motivo, de 1 a 11
++     entry .communicable   representa cada `Zip.Error.Reason` como una frase, por ejemplo _the ZIP archive ended unexpectedly_
++     entry #reason   qué estaba mal, como un `Zip.Error.Reason`
++   entry .Event   lo que registra la lectura de un archivo ZIP
+
+% 1 1 0 078b72eed5bccc321c02bc337c0d88ca
+
+@ 0 8 0 0d370e517fb84fbd15ef8174de2aa148
++         `Zipfile.read` desde una ruta registra `Read` en el nivel `info`, con la etiqueta
++         `Log.Serialization`. Para esa lectura debe haber un `Zip.Event is Loggable` en el ámbito;
++         `logging.silentLogging` lo descarta.
++     entry .communicable   representa cada evento como un mensaje
++     entry .Read   se leyó un archivo: _read `entries` entries from the zip archive `path`_
++       entry #path   la ruta del archivo, como texto
++       entry #entries   el número de entradas que contenía
++   entry .Handle   un archivo abierto mientras dura un bloque, al que se llega como `zipfile`
+
+% 1 1 0 12c958ba9ea3ee8000258b12e0172abd
+
+@ 0 5 0 15ea76fa7f4921ad01b7a5787c0e9c46
++         El descriptor con ámbito que proporcionan `path.open[Zip]()` y `data.open[Zip]()`, y que
++         `zipfile` nombra dentro del bloque. A diferencia de un `Zipfile` independiente, cuyas
++         entradas vuelven a abrir el fichero en cada lectura, un `Zip.Handle` lee a través de una
++         única vista del fichero, que el backend del sistema de ficheros mantiene abierta mientras
++         dura el bloque, de modo que las entradas se leen sin abrir y cerrar en cada lectura y, en
++         consecuencia, deben consumirse dentro del bloque.
+
+% 2 1 0 0c08b6e60940bc8d0448fa40f0be5578
+
+% 3 1 0 075f5224f7690df801afb4aa4864e425
+
+% 4 1 0 09f61b59ca1fb8991de5e3a86e5b7307
+
+% 5 1 0 1d0e2bbf007d91cf080bbea4ba128071
+
+% 1 1 0 1df72dbc1dce8f6407bf7b8e5628418d
+
+% 0 1 0 0ce457194c18199d0a664f021fe2a429
+
+% 0 1 0 0ff4261ea2b89eb30e4e1c9af76c72a3
+
+% 0 1 0 167de41d58746bc719076025ec9d0fa8
+
+% 0 1 0 12d9f97331248bd71fb79675402ce514
+
+% 1 1 0 1bb7b8c50a4e2fe010aca076dd6a0642
+
+@ 0 2 0 0d3fc781ab6f5a2319f185aa126d4680
++         Es una capacidad, así que, para quien llama desde código compilado con comprobación de
++         capturas, el descriptor y las entradas que produce quedan confinados al bloque.
+
+% 0 1 0 05b78bb8bce360c70daa5fa4c47c4629
+
+% 0 1 0 02598879ef218ece01db3985c3f0735a
+
+@ 0 4 0 13ba76083714c01e07326f507f0dfe40
++     entry #entries   las entradas del archivo, en el orden de su directorio central
++     entry #entry   la entrada en una ruta, que lanza `Zip.Error` con el motivo `NotFound` si no hay ninguna
++     entry #comment   el comentario del archivo, o `Unset`
++   entry .Openable   el abridor detrás de `path.open[Zip]()`, para una ruta en cualquier plano con un backend de sistema de ficheros
+
+% 1 1 0 1986abdca09a669d083309930d9fdfa8
+
+@ 0 4 0 1c8158d0d386abc10188cfe4a8135c07
++         Lo construye el given `Zip.openable`; quien llama nunca nombra la clase. Un modo con
++         `Write` lanza `Zip.Error` con el motivo `WriteUnsupported`, puesto que por ahora los
++         archivos se abren solo para lectura.
++     entry #open   analiza el archivo a través de la vista del fichero del backend, y ejecuta el bloque
++   entry .DataOpenable   el abridor detrás de `data.open[Zip]()`, para un archivo que ya está en memoria
+
+% 1 1 0 0c6d618b6bee5be5054451f1a3f1e335
+
+@ 0 3 0 0957840be91c536b07c05fba15506441
++         Lo construye el given `Zip.dataOpenable`. Un modo con `Write` lanza `Zip.Error` con el
++         motivo `WriteUnsupported`.
++     entry #open   analiza el archivo a partir de los bytes, y ejecuta el bloque con su descriptor
+
+@ 0 1 0 05f315dc490d349f078e29dc482b0793
++ entry .Zipfile   un archivo ZIP como valor inmutable: sus entradas, su comentario y sus bytes iniciales
+
+% 1 1 0 133736b562abd07f12c853da278e6731
+
+@ 0 5 0 0cb81c70b78e75890be3a4dc88b55dff
++       Un `Zipfile` es el archivo entero en la mano: una `List` de `Zip.Entry`, un comentario de
++       archivo opcional, y un `prefix` opcional de bytes en bruto que se colocan antes del archivo
++       propiamente dicho. Se crea directamente a partir de entradas, se lee de una ruta o de bytes
++       con `.read`, o lo produce `directory.archive[Zip]()`, y se serializa como un flujo, así que
++       se escribe en cualquier destino con `write`.
+
+% 2 1 0 128d018e3eced88b14642f855795377c
+
+% 3 1 0 15381a93ddc6e8a0095551b1cf498501
+
+% 4 1 0 0a5085fb407d2284176445729e8cbc87
+
+% 5 1 0 13df7869f2c0e00c061047eceb55aa46
+
+% 6 1 0 1ce3d14f3ef38ae10bc1cfe5b845204c
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 2 1 0 0be81e5794b1ee14108c0284f63e7871
+
+% 0 1 0 1c0776b8e34a019e0658cd09129183c4
+
+% 0 1 0 0e4e84be3dad8958021eba426c1ae340
+
+% 0 1 0 0493806620a27ab903a45370e2590736
+
+% 0 1 0 1c19913b0acf881b1050932e304f238b
+
+% 0 1 0 0f9802a621b9fcd915b974e515a98840
+
+% 0 1 0 10d7d3e3e15d6777141a49f0ce1f29c9
+
+% 1 1 0 0f078e4e5eac7d311809ad5f92ac5810
+
+@ 0 3 0 0c67c64b9f93d06317107c3fbf942d68
++       Las entradas de un `Zipfile` leído desde una ruta son independientes: cada lectura vuelve a
++       abrir el fichero a través del backend, así que el valor se puede usar en cualquier sitio, a
++       costa de una apertura por lectura. `path.open[Zip]()`, en cambio, lee a través de una única
++       vista abierta, mientras dura un bloque.
+
+@ 0 5 0 13e3dd5612e983250edc1bfd71ac2287
++       Un lector ZIP localiza el directorio del archivo desde el final del fichero, no desde el
++       principio, y todo desplazamiento que registra es relativo, así que un archivo concatenado
++       tras unos bytes iniciales arbitrarios sigue pudiéndose leer. Para eso sirve el `prefix`: un
++       archivo autoextraíble o directamente ejecutable es un lanzador seguido de un ZIP. Al leer un
++       archivo con bytes iniciales, estos se devuelven como su `prefix`.
+
+% 1 1 0 166c77553d0abd5619d549a5acfe5d78
+
+% 2 1 0 0f092eb3504f211f022695f81be2f8a2
+
+@ 0 7 0 17a6f13b79e8aee711e0018884dabd5a
++   entry .read   lee un archivo desde una ruta, o desde bytes en memoria
++       `Zipfile.read(path)` lee el directorio central a través del `FilesystemBackend` del ámbito,
++       necesita una `Tactic[Io.Error]` y una `Tactic[Zip.Error]`, y registra `Zip.Event.Read`, así
++       que también debe haber un `Zip.Event is Loggable` en el ámbito. `Zipfile.read(data)` lee a
++       partir de bytes y no registra nada. Aquí solo se leen el directorio y la cabecera local de
++       cada entrada; las cargas útiles se leen a medida que se leen las entradas. Lanza
++       `Zip.Error` con el motivo `MissingEocd` para unos bytes que no son un archivo ZIP, e
++       `InvalidName` para un nombre de entrada que escaparía del archivo.
+
+% 2 1 0 1dd3b76c34af240a14d497ce3a078a6d
+
+% 3 1 0 05e8e2a67a921b5d10bd9bb7142c84f3
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 1196fba2dd8f4bfd10ac74e8e9957175
+
+% 1 1 0 1061ce2d980c10d10d8cc7f9e9ce55aa
+
+@ 0 10 0 1902e1fc5787a7260878ba30a130cf07
++   entry .rebase   desplaza el único desplazamiento físico de un archivo ZIP64, tras anteponerle bytes
++       Todo desplazamiento que registra un archivo ZIP es relativo a su directorio central, con
++       una excepción: el puntero del localizador ZIP64 al registro ZIP64 de fin de directorio
++       central es un desplazamiento físico dentro del fichero. Anteponer un prefijo a un archivo
++       por concatenación, o recortarle bytes, invalida exactamente ese campo. El lector de
++       Zeppelin lo tolera, pero el del JDK sigue el puntero y después se niega a abrir el archivo,
++       sin ningún diagnóstico. `Zipfile.rebase(path, delta)` desplaza el puntero `delta` bytes, in
++       situ, a través del `FilesystemBackend` del ámbito; un archivo sin localizador ZIP64
++       —cualquiera de menos de 65.535 entradas y 4 GiB, que es casi todo— se deja intacto. Un
++       puntero que quedaría fuera del fichero lanza `Zip.Error` con el motivo `Zip64Error`.
+
+@ 0 17 0 00c985ea42edd9960a44e96a0076ab34
++       Un `Zipfile` escrito con un `prefix` no necesita reubicación, puesto que sus
++       desplazamientos se calculan con el prefijo ya colocado.
++   entry .streamable   serializa un `Zipfile` como un flujo de bytes, para que pueda escribirse en cualquier sitio
++       El given `Streamable by Data over Credit`, que necesita una `Tactic[Zip.Error]` puesto que
++       la serialización rechaza los nombres de entrada duplicados. Está en el objeto compañero de
++       `Zipfile`, así que `path.write(zipfile)` no necesita importación.
++   entry #entries   las entradas del archivo, en el orden en que se escriben
++   entry #comment   el comentario del archivo, o `Unset`
++   entry #prefix   bytes en bruto colocados antes del archivo propiamente dicho, o `Unset`
++   entry #entry   la entrada en una ruta, que lanza `Zip.Error` con el motivo `NotFound` si no hay ninguna
++   entry #serialize   el archivo como un flujo perezoso de bytes, con las cargas útiles de sus entradas abiertas por turno
++       Lanza `Zip.Error` con el motivo `DuplicateEntry` antes de producir ningún byte si dos
++       entradas comparten ruta, puesto que ningún lector podría resolverlas. Primero va el
++       prefijo, después la cabecera local, la carga útil y el descriptor de datos de cada entrada
++       —cada carga útil se abre solo cuando el flujo llega a ella, y se vacía en fragmentos
++       acotados—, y después el directorio central y los registros finales, con registros ZIP64
++       allí donde una entrada, un desplazamiento o el número de entradas desborda el formato
++       original.
+
+@ 0 1 0 181845abf83ae2b51af592b209e1c946
++ entry .Jar   la forma para los archivos de Java: `path.open[Jar]()` da un descriptor ZIP con el manifiesto analizado
+
+% 1 1 0 1fd6bd6bf6dc9c7b1ddb4350b5d3dee3
+
+@ 0 4 0 11a64dcfc709cf1d015adb33ec7fc9d4
++       Un JAR es un ZIP, así que abrirlo como `Jar` da un `Jar.JarHandle`, un `Zip.Handle`
++       refinado con los atributos principales de `META-INF/MANIFEST.MF`; las entradas y su
++       contenido se comportan exactamente igual que con la forma `Zip`. Un JAR se escribe como
++       cualquier otro `Zipfile`, con la entrada que crea `Jar.manifest` en primer lugar.
+
+% 2 1 0 1aacd1083e7d329d0a9df3137e2281da
+
+% 3 1 0 1903f8e0bf945b251680fbd494de3546
+
+% 4 1 0 10e9e30f6c5ca83810768e9fbbbd79e2
+
+% 5 1 0 12f235b16154c3a414cfff25e78f7476
+
+% 6 1 0 1c13324f10efa80317b18932d3152765
+
+% 1 1 0 09b61aaf44ce2be11b600e13eb868346
+
+% 2 1 0 1048afc7b48242b60b74171c696ebe01
+
+% 0 1 0 1d9dba871db33e261045fd93bd8a9c54
+
+% 0 1 0 01f4842cf4f321aa12bb2c4e1f60ef5f
+
+% 0 1 0 009b058abbc575c6004ef491e6a7d1b2
+
+% 0 1 0 0ca07f862bff4ebc0efa056d5cdc19e2
+
+% 0 1 0 07a36df3657642d80750581d3bbd0857
+
+% 1 1 0 0d46e106fdf179c81fda7e1239a320f5
+
+% 1 1 0 11cd4683cd52e9b6136115739f4d3e32
+
+% 1 1 0 18397302048da7ed0147a291589430b2
+
+@ 0 6 0 17bf4c589d7529ea15b9fcdcbac270a8
++   entry .manifest   la entrada `META-INF/MANIFEST.MF` para una lista de atributos principales
++       Cada atributo se escribe como `Key: value`, con las líneas ajustadas a los 72 bytes de la
++       especificación JAR mediante líneas de continuación que empiezan por un espacio, finales de
++       línea `\r\n`, y una línea en blanco que termina la sección principal. La entrada se
++       comprime bajo la `Zip.Compression` del ámbito, y por convención se prefiere en primer
++       lugar en el `Zipfile`.
++   entry .JarHandle   un JAR abierto: un `Zip.Handle` con los atributos principales de su manifiesto
+
+% 1 1 0 05e94faea536d34c07514d505fc36c61
+
+@ 0 7 0 104e6021f622271406e605171275f9cf
++         Lo que nombra `zipfile` dentro de un bloque `path.open[Jar]()` o `data.open[Jar]()`. Sus
++         entradas, y su lectura, son las de un `Zip.Handle`.
++     entry #manifest   los atributos principales del manifiesto, o un mapa vacío si el archivo no tiene ninguno
++         Se leen de `META-INF/MANIFEST.MF`: las líneas de continuación (que empiezan por un
++         espacio) se vuelven a unir al atributo que las precede, como exige la especificación, y el
++         análisis se detiene en la primera línea en blanco, que termina la sección principal, así
++         que no se incluyen las secciones por entrada.
++   entry .JarOpenable   el abridor detrás de `path.open[Jar]()`, para una ruta en cualquier plano con un backend de sistema de ficheros
+
+% 1 1 0 1d010e583ae55e9a0073bc5e84050080
+
+@ 0 1 0 058c27b2211fe2c71224fe6cb5aae315
++         Lo construye el given `Jar.openable`. Un modo con `Write` lanza `Zip.Error` con el motivo
+
+% 1 1 0 1ce4dc0c114b5e1a00ff1f1a6d36856d
+
+@ 0 2 0 130961d4ef64458d060ed41af9555b32
++     entry #open   analiza el archivo a través de la vista del fichero del backend, y ejecuta el bloque
++   entry .JarDataOpenable   el abridor detrás de `data.open[Jar]()`, para un JAR que ya está en memoria
+
+% 1 1 0 05deddc83025555b03c3f80f6064b941
+
+@ 0 7 0 0939113282c865220d799a87cab2222c
++         Lo construye el given `Jar.dataOpenable`.
++     entry #open   analiza el archivo a partir de los bytes, y ejecuta el bloque con su descriptor
++   entry .openable   abre un JAR en una ruta como `Jar`: `path.open[Jar]()`
++       Necesita un `FilesystemBackend` para el plano de la ruta, una `Tactic[Zip.Error]` y una
++       `Tactic[Io.Error]`. Está en el objeto compañero de `Jar`, así que no necesita importación.
++   entry .dataOpenable   abre un JAR en memoria como `Jar`: `data.open[Jar]()`
++       Necesita una `Tactic[Zip.Error]`. Está en el objeto compañero de `Jar`, así que no necesita
++       importación.
+
+@ 0 4 0 0457a0ae1821056f0440a90e4e93a454
++ entry .zipfile   el descriptor del archivo del ámbito, dentro de un bloque `path.open[Zip]()` u `open[Jar]`
++     Nombra el `Zip.Handle` contextual, como el `file` de galilei nombra un fichero abierto. Es
++     transparente, así que su tipo es el tipo preciso del propio descriptor: un `Jar.JarHandle`,
++     con `manifest`, dentro de un bloque `open[Jar]`.
+
+% 2 1 0 05d096a49379936c1bd44a6010244f15
+
+% 3 1 0 1cfbe987c1d0012707a3ab56d49eadcc
+
+% 1 1 0 0131c69c6998e20b073cb77c91c7dfbd
+
+% 1 1 0 07780dfd83bc4a2306ed804b6de043b1
+
+% 0 1 0 0bf6db96624e2cda0e2f2ce05bb912a3
+
+% 0 1 0 105a46f3f55eb1f617c3717ba8e2564f
+
+% 0 1 0 1d14c913af4e82a11ef36885e9790056
+
+% 0 1 0 134a594970cb4c031733a19a40b45e13
+
+% 1 1 0 078bc06d88eacf88186e10b746cc98dd

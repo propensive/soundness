@@ -1,0 +1,377 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 17ce6dd5de3773731bddabb274f25ef1
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 01a13deee3ab393f0b4a3b3fb331e59c
++ info
++     un plugin de compilateur qui indexe givens, suites de tests et tests à la compilation,
++     pour que des outils les trouvent ensuite
+
+@ 0 5 0 05d283b3b64d6d31195ed6181c28797e
++ detail
++     _Beneficence_ est un plugin de compilateur Scala 3 doté d'une petite moitié d'exécution. À la
++     compilation de chaque module, le plugin parcourt les arbres typés et écrit trois index dans le
++     répertoire de sortie du module, pour qu'un outil puisse ensuite savoir ce qu'offre un
++     classpath sans rien en charger ni en exécuter :
+
+@ 0 11 0 1e0d7e0fe1d394880e4a114440339458
++     - `META-INF/givens/<typeclass>` — chaque given nommé d'un type `Findable`, sous le nom
++       pleinement qualifié par lequel un programmeur l'importerait. L'explication d'une valeur
++       contextuelle manquante par la bibliothèque `frontier` lit cet index (au moyen de `givens`)
++       pour proposer les givens qui la fourniraient, comme `systems.javaBaseSystem` pour un
++       `System` manquant.
++     - `META-INF/services/probably.Suite` — chaque objet `probably.Suite`, selon l'organisation
++       standard de `ServiceLoader`. Une suite n'a pas de classe principale : le lanceur de tests
++       fume découvre les suites à partir de ce seul index, de sorte qu'un module de tests compilé
++       sans le plugin n'a aucun test exécutable.
++     - `META-INF/probably/tests/<source>-<hash>` — un fichier par source, énumérant chaque test,
++       groupe et suite, sa place dans la hiérarchie, sa sorte, son appellation, ses tags et sa
++       ligne, pour qu'un lanceur puisse énumérer et sélectionner les tests sans exécuter de suite.
+
+@ 0 1 0 13d32ba7caccf15701bca3230e2de867
++     Un type participe à l'index des givens en étendant `Findable` :
+
+% 2 1 0 1ba2836ac564cfd61c93a4ec9eb07d58
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 1e02286af3c0250a00297434acd2e40d
+
+% 0 1 0 055395efa336d90506acb78519d15f05
+
+% 0 1 0 055ea710e1e1b1b7082beeed05137e76
+
+% 0 1 0 0efc6cea83328dfe012c6ecbb9f67b1f
+
+% 1 1 0 00682fd81fe6065f082577d6ccbc25f5
+
+@ 0 2 0 077d8eea7032b6331f0655fda3b73844
++     Compilé avec le plugin, ceci écrit `renderers.plainRenderer` dans `META-INF/givens/Renderer`,
++     sous une ligne `# source:` qui nomme le fichier d'où il provient.
+
+@ 0 7 0 19537c386c656be614b927d611f257ce
++     Le plugin s'active avec `-Xplugin:` pointant vers le jar `beneficence.plugin`, et ne fait
++     absolument rien si `beneficence.Findable` n'est pas dans le classpath de la compilation. Il
++     n'écrit que dans une sortie de type répertoire ; compiler directement vers un JAR n'écrit
++     aucun index. La compilation est sûre en mode incrémental : les entrées apportées par les
++     sources en cours de recompilation sont remplacées, et celles de toutes les autres sources sont
++     conservées, et chaque fichier est écrit dans un fichier temporaire unique à côté de lui puis
++     déplacé atomiquement en place : des compilations concurrentes dans le même répertoire ne se
++     corrompent donc pas mutuellement.
+
+@ 0 3 0 04f40904be8db8611da633857564511f
++     Comme chaque module écrit son propre fragment de chaque index, un build qui fusionne des
++     modules en un seul JAR (un assembly, un fat jar) doit concaténer les fichiers sous
++     `META-INF/givens/`, `META-INF/services/` et `META-INF/probably/` au lieu de n'en conserver
++     qu'un seul.
+
+@ 0 1 0 1f464efe1917bf091a914ec7f5969566
++     La bibliothèque a deux composants :
+
+@ 0 5 0 0d8d409e1878683b12346a3a5cd41282
++     - `beneficence.core` — `Findable` et la recherche `givens`, une dépendance de presque toutes
++       les bibliothèques Soundness. Exporté vers le package parapluie `soundness`.
++     - `beneficence.plugin` — `BeneficencePlugin` et sa phase, construits contre le compilateur et
++       publiés sous forme d'artefact autonome, puisqu'un jar `-Xplugin:` déclare exactement un
++       plugin.
+
+% 0 1 0 0d1e1293c0f484560e6c09d2a0704e43
+
+% 0 1 0 1f163f1f18d047531b0c3e039aed5092
+
+% 0 1 0 152e77a6c4f4f6450203edc7b547674c
+
+@ 0 1 0 1b82343d5dc2225502afd3c304e54213
++ entry .Findable
++   info
++       marque un type dont les givens nommés sont enregistrés dans l'index `META-INF/givens`
+
+@ 0 7 0 08bf3c138d991a4e1cc77297eff112e7
++   detail
++       `Findable` est un trait marqueur vide. Un `given` dont le type compte `Findable` parmi ses
++       classes de base est enregistré par le plugin beneficence sous `META-INF/givens/<typeclass>`,
++       où la classe de types est la première classe de base propre du given : pour
++       `given javaBaseSystem: System`, le fichier est `META-INF/givens/ambience.System`, et la
++       ligne est `ambience.systems.javaBaseSystem`. Un given déclaré avec un corps raffinant
++       (`given puck: T: …`), que le compilateur implémente comme une classe à part, est enregistré
++       sous `T`.
+
+@ 0 1 0 017b61ef16ff3b1a013538d5094f8fcb
++       Ce qu'enregistre le plugin, selon la déclaration :
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 0b22bee2fda1bd370dd8e3fdbd920c93
+
+% 1 1 0 03e897c4528b77c30bed803fc3e66695
+
+% 0 1 0 02c215b05dd756770a79fbf36090cb53
+
+% 1 1 0 126933c6f538104d15dab1270095001d
+
+% 3 1 0 1009a52b5439023608d71b134808f736
+
+% 4 1 0 0f03d28f0eac691415b55f372bf6e2ff
+
+% 5 1 0 1ce1cad46ea882351f2d779dbe0e6b8f
+
+% 6 1 0 16f8b90f8bdd7c651acfbe6a45d5c638
+
+% 0 1 0 0b247098c05502a20677b2f3c3e2f428
+
+% 1 1 0 04214016c1349ec31a166f6ba242c1e1
+
+% 2 1 0 0057b2b1bed2e2111bf11fc3095d0c5c
+
+% 3 1 0 1377c9f8d90f979a17790504417136ab
+
+% 3 1 0 1d11306c0c1ab2f6080eae67cab3f62b
+
+% 4 1 0 1479e0b48df865631325b3c4230d474b
+
+% 5 1 0 12efd14edb82022112f034422a200221
+
+% 6 1 0 09fd5c97eafd046115ebe6192b037af7
+
+% 0 1 0 144db3b3a1101b5617168bbbd3f5c4bb
+
+% 1 1 0 0cebea128d9683d11fd899414b9521ef
+
+% 2 1 0 0c5ff96a61810b460064e1298c565d56
+
+% 3 1 0 0afc1735bdd775210ff93a3300a7544e
+
+% 0 1 0 07e4e070a805fd440f40f740f1a194fd
+
+% 1 1 0 14929716d901f05e0b99bac072363ecb
+
+% 2 1 0 037f6ef91a56357f0eec26c2bcec0c0a
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 6 0 1edeb576be638d9a06ec8dd80275c02a
++       Seuls les givens qu'un simple `import` pourrait atteindre sont enregistrés : chaque portée
++       englobante doit être un package ou un objet. Un given dans le corps d'une classe, d'un trait
++       ou d'une méthode est ignoré, de même qu'un given anonyme, qui n'a pas de nom à importer. De
++       nombreux contextes de Soundness sont `Findable` (`System`, `Clock`, `Random`, `Timezone`,
++       `Environment`, `Serializable`, `Deserializable`, …), ce qui permet à une erreur de
++       compilation pour un contexte manquant de suggérer l'import qui le fournirait.
+
+% 0 1 0 05d1090f77b738141f38f8bd85f66b62
+
+@ 0 1 0 1ad59d7b162ad6eb19a15afc3a97ccab
++ entry .givens
++   info
++       les givens enregistrés dans le classpath du compilateur pour une classe de types, à utiliser
++       dans une macro
+
+@ 0 6 0 1fd8f9cae94f9170164ac09b417d3c8a
++   detail
++       `givens(typeRepr)` est une recherche au moment de l'expansion des macros : étant donné un
++       `TypeRepr` dans un contexte `Quotes`, elle lit chaque ressource
++       `META-INF/givens/<typeclass>` du classpath du propre chargeur de classes de la macro (la
++       classe du type désaliasé nomme le fichier), ignore les lignes vides et les commentaires `#`,
++       supprime les doublons, et résout chaque nom pleinement qualifié en le `Symbol` du given, en
++       tant que méthode ou champ de l'objet ou de la classe qui le possède. Un nom qui ne se résout
++       plus est abandonné en silence, et un type sans symbole de classe donne `Nil`.
+
+@ 2 1 0 0a0362e75b01ff1f11cb73c82479e5c0
++       ```scala
+
+@ 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
++       import scala.quoted.*
+
+@ 1 1 0 03683557f751aba6066aa7200860680a
++       import soundness.*
+
+@ 0 1 0 0722b7ad7eeb5eb608ce2a35db51be12
++       def candidates[typeclass: Type](using Quotes): scala.collection.immutable.List[Text] =
+
+@ 0 1 0 0d1371cb9127a4db0b4b8071b6c7c3d9
++         import quotes.reflect.*
+
+@ 0 1 0 1ac5afcf3b11c11b04c7a84dec0656a0
++         givens(TypeRepr.of[typeclass]).map(_.fullName.tt)
+
+@ 1 1 0 0791f32dd3968cf50e2c732b3a08e7eb
++       ```
+
+@ 0 3 0 0eae0ca7c9a0d605111ed4daed8924c6
++       Le résultat est la `List` de la bibliothèque standard de `quotes.reflect.Symbol`, puisqu'il
++       n'est utilisé que par du code de macro. `frontier` l'utilise pour proposer les givens qui
++       satisferaient un paramètre contextuel manquant.
+
+@ 0 1 0 0ce38bb8dbf72cc81e5db8c379fd4d7a
++ entry .internal
++   info
++       le lecteur de classpath derrière `givens`
+
+% 1 1 0 030b78ab957466920386b1f7d058de82
+
+@ 0 2 0 0fe712f24c00ef4507e9fb3914d924fe
++   detail
++       Pas destiné à un usage direct : `givens` lui délègue.
+
+@ 0 1 0 029a8198de0d8f5d05b54c324d0dd5a1
++   entry .givens
++     info
++         lit et résout les entrées `META-INF/givens` d'un type ; voir `beneficence.givens`
+
+@ 0 1 0 1d60c13ce82abe4a06d650bf901da23c
++ entry .BeneficencePlugin
++   info
++       le plugin de compilateur qui écrit les index des givens, des suites et des tests
+
+@ 0 6 0 136998663c09133a1aef0ec9e8023ae3
++   detail
++       Le `StandardPlugin` nommé `beneficence`, qui installe une phase, `GivensPhase`. Il s'active
++       en passant le jar `beneficence.plugin` au compilateur sous la forme
++       `-Xplugin:<path to the jar>`, et ne prend aucune option. Le plugin n'écrit d'index que dans
++       une sortie de type répertoire, et n'enregistre les givens que lorsque `beneficence.Findable`
++       est dans le classpath ; les suites et les tests ne sont indexés que lorsque `probably.Suite`
++       (et `probably.Testable`) y sont.
+
+% 0 1 0 1fc086a56d77b8e1066428b52cc00c5e
+
+@ 0 1 0 1898b7dc8aa31aea035e2e77082bbf0e
++   entry #name
++     info
++         le nom du plugin : `beneficence`
+
+@ 0 1 0 1d7cd6ffb4748af8030a2ad5c0dcf901
++ entry .GivensPhase
++   info
++       la phase du plugin qui collecte les givens, les suites et les tests et écrit leurs index
+
+@ 0 3 0 1f5e8043bf2d95610d4a91086079bfac
++   detail
++       S'exécute après `typer` et avant `pickler`, sur toutes les unités de compilation d'une
++       exécution à la fois. Elle enregistre :
+
+@ 0 4 0 11807bc52c6be9f71376e96651105dcc
++       - chaque given nommé, accessible de façon stable, d'un type `Findable`, sous sa classe de
++         types ;
++       - chaque `object` de premier niveau ou imbriqué dans un objet qui étend `probably.Suite`,
++         dans `META-INF/services/probably.Suite` ;
++       - les tests de chaque source, au moyen de `TestsIndex`, dans `META-INF/probably/tests`.
+
+@ 0 7 0 16e48c92a07c7c5610ab98347130ce75
++       Elle fusionne ensuite ce qu'elle a trouvé dans le répertoire de sortie avec `GivensWriter`.
++       La phase peut aussi signaler deux erreurs de compilation pendant l'indexation des tests :
++       _the suite id "…" must be a letter or `_` followed by letters, digits, `_` or `-`, so that
++       it can be typed on a command line_, pour une suite dont le `Topic` n'est pas un tel
++       identifiant, et _this Testable has no topic, so a test declared in this method would not be
++       declared for it_, pour une méthode prenant un `Testable` dont le `Topic` n'est pas fixé
++       (écrivez `Testable of "<suite>"`, ou `Testable of topic` pour un paramètre de type
++       `topic <: Label`).
+
+% 0 1 0 1a96ad76e95a860f01f60bf3f59d7a99
+
+% 0 1 0 17bed36861bb978a0cd69d58a2cf0b1f
+
+@ 0 1 0 1110d9c12a487a850beb620616068f84
++   entry #phaseName
++     info
++         le nom de la phase : `beneficenceGivens`
+
+@ 0 1 0 02d5d4d6bd360b911a512a74b0b2514a
++ entry .Entry
++   info
++       un nom enregistré et le fichier source qui l'a déclaré
+
+% 1 1 0 0d698321c1e27c3a1ebd25b7a94d8d49
+
+@ 0 3 0 11d1ac530d9d851c1b8ad0ba0f35e6ff
++   detail
++       L'enregistrement de travail du plugin, regroupé par source lors de la fusion d'un index. Pas
++       destiné à un usage direct.
+
+@ 0 1 0 0d959064ec81cd2603278cc0defe0695
++   entry #fqn
++     info
++         le nom pleinement qualifié du given ou de la suite
+
+@ 0 1 0 069317d6629698a70fcf6fd0406b7829
++   entry #sourceFile
++     info
++         le chemin du fichier source qui l'a déclaré
+
+@ 0 1 0 0fae77d68ab3274a0794f40541d5b943
++ entry .GivensWriter
++   info
++       fusionne les entrées collectées par le plugin dans les fichiers d'index du répertoire de
++       sortie
+
+% 1 1 0 113881db28822ad7136834e971719b3e
+
+@ 0 6 0 08895fe17cba460e0bf634061c2394f2
++   detail
++       Pas destiné à un usage direct. Chaque fichier d'index est une suite de blocs, un par fichier
++       source, chacun intitulé `# source: <path>` et suivi d'un nom pleinement qualifié par ligne.
++       Une fusion abandonne les blocs des sources en cours de recompilation, conserve les autres
++       dans leur ordre, et ajoute les nouveaux, puis écrit un fichier temporaire unique à côté de
++       la cible et le déplace atomiquement en place. Avec une sortie JAR, rien n'est écrit.
+
+@ 0 1 0 15c7cdd3b8a964cd114f5a320ace831c
++   entry .merge
++     info
++         fusionne les givens collectés dans `META-INF/givens/<typeclass>`, un fichier par classe de
++         types
+
+@ 0 1 0 13b4aaa24bafce040b6ed0e79229555f
++   entry .mergeSuites
++     info
++         fusionne les suites collectées dans `META-INF/services/probably.Suite`
+
+@ 0 1 0 198a702f72e3927d0a63011defe709c3
++     detail
++         Entièrement ignoré quand la compilation n'a trouvé aucune suite, ce qui laisse tout
++         fichier antérieur tel qu'il était.
+
+@ 0 1 0 0fa3218ccd7dfacf1061bfaf25b5f163
++   entry .writeTests
++     info
++         écrit l'index des tests de chaque source dans `META-INF/probably/tests`
+
+@ 0 3 0 1850e93a891ef7ed0a2f8e69d660502c
++     detail
++         Un fichier par source, nommé d'après le nom de fichier de la source et les six premiers
++         octets du SHA-256 de son chemin : deux modules d'un assembly n'écrivent donc jamais le
++         même fichier. Une source qui ne déclare plus aucun test voit son fichier supprimé.
+
+@ 0 1 0 1d6caede2b3985a31118cf4f7e09e8c3
++ entry .TestsIndex
++   info
++       l'index statique des tests Probably qu'écrit le plugin pour chaque fichier source
+
+% 1 1 0 1818a2a62282b3ca0c68779b89f5f788
+
+@ 0 9 0 172cc724838b992e0282196e16797711
++   detail
++       Pas destiné à un usage direct ; le format est lu par des lanceurs de tests tels que fume.
++       Chaque fichier commence par `# probably tests <version>` et `# source: <path>`, suivis de
++       lignes séparées par des tabulations de six sortes — `suite`, `group`, `test`, `nest`, `call`
++       et `open` — qui placent chaque déclaration de test dans la hiérarchie de sa suite selon le
++       `probably.Testable` que le compilateur a choisi pour elle, plutôt que selon sa place dans le
++       code source. Un test déclaré dans un bloc `impromptu` est omis, et une ligne `open` marque
++       l'endroit comme ayant plus de tests que ceux énumérés. Les barres obliques inverses, les
++       tabulations et les sauts de ligne dans un champ sont échappés par une barre oblique inverse,
++       et `\*` représente une partie d'un nom connue seulement à l'exécution.
+
+@ 0 1 0 06f11d0c3fc784eb062a1eb3e2ba1054
++   entry .version
++     info
++         la version du format d'index, écrite sur la première ligne de chaque fichier
+
+@ 0 1 0 176a5429708169190b4af1359ed58bae
++   entry .index
++     info
++         les lignes d'index d'une unité de compilation

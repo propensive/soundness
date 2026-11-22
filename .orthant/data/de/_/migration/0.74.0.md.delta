@@ -1,0 +1,447 @@
+orthant 2 language
+
+@ 0 1 0 0f9605c40e4378380357a36720b1001e
++ # Änderungen seit 0.73.0
+
+@ 0 3 0 09549872f327b9bb02346ab9a4497b1d
++ Diese Datei wird von einem LLM-Agenten gelesen, um Code, der Soundness-Bibliotheken verwendet, von
++ 0.73.0 auf das nächste Release zu aktualisieren. Jeder Eintrag gibt genau an, was sich geändert hat;
++ das Format beschreibt `AGENTS.md`. Die Einträge sind nach Modul gruppiert, innerhalb eines Moduls
++ steht der zuletzt hinzugefügte am Ende.
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 28 0 1c2e5864fb97e8dc1551621de8d6cfa4
++ - Der Konstruktor von `stenography.Bindings`, `Bindings(pureFuns: Boolean = true, infixAliases:
++   scala.collection.immutable.Map[String, Text] = Map())`, ist jetzt `Bindings()`, und seine Member
++   `pureFuns` und `infixAliases` sind entfernt. Ein `Syntax`-Baum hängt von keinem der beiden mehr
++   ab: Die Reinheit wird `Syntax#text` als neues letztes Feld von `stenography.Imports`, `pureFuns: Boolean =
++   true`, übergeben, und Infix-Aliase als `Imports#aliases`, das bereits berücksichtigt wurde.
++   Code, der `Bindings(false)` baute, um `=>`-Pfeile darzustellen, muss jetzt mit
++   `Imports(…, pureFuns = false)` darstellen. (#2320)
++ - `stenography.Syntax.apply` schreibt keinen Infix-Typalias mehr in den Baum: Eine Verfeinerung
++   `Foo { type Form = Bar }` wird immer als `Syntax.Structural` gebaut, und `Syntax#text` schreibt
++   sie als `Foo in Bar`, wenn `Imports#aliases` `Form` auf `in` abbildet. Ein Typ-Member, das ein
++   Alias ist (`type Form = Bar`), wird jetzt im `types`-Verzeichnis des `Structural` als bloße
++   `Syntax` von `Bar` gespeichert, nicht als `Syntax.Declaration(false, Nil, …)`; ein beschränktes
++   Member ist weiterhin eine `Declaration`. Code, der per Musterabgleich `Structural`-Member auf
++   `Declaration` prüft, muss für Alias-Member eine bloße `Syntax` akzeptieren. (#2320)
++ - `stenography.Syntax.apply` wählt den Pfeil eines Funktionstyps oder By-Name-Typs nicht mehr
++   nach der Aufrufstelle: Das `impure` einer `Syntax.Function` ist jetzt `false` für ein bloßes
++   `FunctionN` und für einen Methodentyp, selbst wo reine Funktionen ausgeschaltet sind, und ein
++   nicht annotierter By-Name-Typ ist immer `Syntax.Prefix("->", …)`. `Syntax#text` schreibt
++   beide mit `=>`, wenn `Imports#pureFuns` `false` ist, sodass der dargestellte Text unverändert
++   bleibt. Code, der `Function#impure` oder den Operator eines `Prefix` direkt untersucht, muss
++   `Imports#pureFuns` berücksichtigen. (#2320)
++ - `stenography.internal.name` teilt jetzt ein einziges `Bindings` über alle Aufrufe in einem
++   Kompilierungslauf, sodass der Binder eines rekursiven Typs (`RecursiveThis`) nummeriert
++   werden kann (`x2`, …), wo ein früher im selben Lauf dargestellter Typ denselben Kandidatennamen
++   verwendet hat; zuvor begann die Nummerierung bei jedem Aufruf von vorn. (#2320)
++ - `stenography.Designator` definiert `equals` und `hashCode` jetzt selbst (strukturell, mit
++   zwischengespeichertem Hash), und `Designator.apply(text)`, `Designator#child`,
++   `Designator#companionObject` und `Designator#companionType` geben internalisierte Instanzen
++   zurück, sodass gleiche, über sie erzeugte Designatoren `eq` sind. Die Gleichheit ist
++   unverändert. (#2320)
+
+% 0 1 0 1aa1711c33dc078f11fd7629dab81114
+
+@ 0 8 0 08e0a00fc4ddd7691c263ada1620a541
++ - `frontier.Diagnostic.render(diagnostic: Diagnostic, headline: Text = …): Text` ist jetzt
++   `render(diagnostic: Diagnostic, headline: Text = …, limit: Int = 100): Text`. Es schreibt
++   höchstens `limit` Zeilen des Baums, gefolgt von einer Zeile `… n more`, wenn `n` Zeilen
++   ausgelassen wurden, und schreibt einen Teilbaum, der kein Blatt ist und einem bereits
++   geschriebenen gleicht, nur als dessen erste Zeile, mit der Beschriftung `as above` (oder
++   `<label>, as above`, wo er eine Beschriftung hat). (#2320)
++ - Der Catch-all `explainMissingContext` rechnet jetzt jede Expansion von Klassenpfad-Vorschlägen
++   auf dasselbe Budget von 256 an wie seine impliziten Suchen, sodass eine Erklärung in einem
++   großen Geltungsbereich weniger Vorschläge auflisten kann als zuvor. (#2320)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 40 0 0a773baa89c40d391b165c49bc8f9c57
++ - `Tels.tels[value](name)` benennt die Record- und Select-Definitionen eines abgeleiteten
++   Schemas jetzt nach *Typ*, nicht nach einfachem Namen. Ein Typ, dessen einfachen Namen kein
++   anderer Typ im Schema teilt, behält ihn, sodass das Schema eines Typs ohne Kollisionen
++   unverändert ist (dieselben Definitionen, derselbe Hash, dasselbe BinTEL-Layout). Wo zwei oder
++   mehr verschiedene Typen einen einfachen Namen teilen — `Phrase.Code` und `Element.Code` —,
++   wird jedes Mitglied der Gruppe nach seinen umschließenden Typen als TypeName benannt,
++   `PhraseCode` und `ElementCode`, und nur so weit vertieft (`PkgPhraseCode`), bis sich die Namen
++   unterscheiden. Zuvor wurde die erste gefundene solche Definition behalten und die anderen
++   stillschweigend verworfen, sodass das Schreiben eines Werts unter dem Schema mit `SN-605.217`
++   fehlschlug (eine Referenz, die zu einer Definition der falschen Art aufgelöst wird) oder gegen
++   die falsche Definition geprüft wurde. Ein handgeschriebenes Schema oder TEL-Text, der eine
++   abgeleitete Definition eines kollidierenden Typs benennt, muss den qualifizierten Namen
++   verwenden. (#2321)
++ - `Tels.tels` deklariert jetzt `raises Tel.Error`: Eine Kollision, die die Qualifizierung nicht
++   auflösen kann (zwei Typen, die sich zu einem Namen qualifizieren, oder ein Typ, dessen eigener
++   Name einer ist, zu dem sich die kollidierende Gruppe qualifiziert), wird beim Ableiten des
++   Schemas als E210 (`Tel.Error.Reason.DuplicateDefinition`) gemeldet, und das
++   zusammengesetzte Schema wird geprüft wie ein handgeschriebenes (die Basisprüfungen von
++   `Tels.Validation`: E202, E207, E210, E216, E222). Aufrufer ohne `Tactic[Tel.Error]` im
++   Geltungsbereich müssen eine bereitstellen (ein `import strategies.throwUnsafely`, einen
++   `safely`/`unsafely`-Block oder `raises Tel.Error` an der umschließenden Methode).
++   `Tel.Acceptance.lineage` und `Tel.Acceptance.lineages` nehmen dieselbe `Tactic[Tel.Error]`;
++   `Tel.Acceptance.apply`, `otherwise`, `fulfil`, `Bintel.read`, `value.bintel` und
++   `Duplex#framed` taten das bereits. (#2321)
++ - Das Ableitungsprotokoll von `TelSchematic` ist an `TelSchematic.Identity` geschlüsselt und
++   reicht ein `TelSchematic.Naming` durch: `fieldType`, `selectDefinitions` und `rootLayers`
++   nehmen einen Parameter `naming`; `definitions` und `layers` nehmen
++   `(seen: Set[TelSchematic.Identity], naming)` anstelle von `(seen: Set[Text])`; `schema(naming)`
++   kommt neben dem parameterlosen `schema()` hinzu (das jeden Typ nach seinem einfachen Namen
++   benennt); und `identities(seen)` ist neu. Die Hilfsfunktionen `TelSchematic.fieldTypeOf`,
++   `definitionsOf` und `layersOf` nehmen die zusätzlichen Parameter, und `TelSchematic.schemaOf`
++   und `identitiesOf` kommen hinzu. Ein handgeschriebenes `TelSchematic`, das eine davon
++   überschrieben hat, muss die neuen Signaturen übernehmen; eines, das nur `schema()`
++   implementiert (die skalare Form, `() => Tels.Scalar(…)`), ist nicht betroffen. (#2321)
++ - Felder von `stratiform.Tel.Provider`-Datensätzen schlagen jetzt mit dem neuen
++   `stratiform.Tel.Provider.Error(reason: Tel.Provider.Error.Reason)` (`SN-614`) fehl, ausgelöst über
++   die `Tactic` des Codes, der das Feld liest. `Tel.Provider.Error.Reason` hat `Absent(name: Text)`
++   (1) und `NotSigil(value: Text)` (2). Ein erforderliches Feld, das fehlt, löst jetzt
++   `Tel.Provider.Error(Absent(name))` aus, wo es `Tel.Error(Tel.Error.Reason.Absent)` auslöste;
++   Handler und `capture`s von `Tel.Error` für ein fehlendes Feld müssen `Tel.Provider.Error`
++   abfangen. `Tel.Provider#Failure` ist `Tel.Provider.Error`, und `Tel.Provider#access`,
++   `Tel.Provider#required` und `Tel.Provider#repeated` nehmen `(using Tactic[Tel.Provider.Error])`.
+
+% 1 1 0 08389b12937a117a012a5636be04d393
+
+@ 0 10 0 0d8f4ebe3f01e58f0c8be399facc6eb6
++ - Der `"sigil"`-Reader von `Tel.Provider` (`Tel.Provider.sigil`) ist jetzt ein
++   `Intensional.Reading["sigil", Tel.Provider, Tel, Char, Tel.Provider.Error]`, und ein Atom aus
++   mehr oder weniger als einem Zeichen löst `Tel.Provider.Error(NotSigil(atom))` aus, wo es als
++   `'#'` gelesen wurde. (#2325)
++ - Ein Feld (oder ein Element von `List`, `Set`, `Optional` oder `Map` oder eine Select-Variante),
++   dessen Typ ein Summentyp ist, wird in `Tels.tels` und `TelSchematic` jetzt als
++   `Tels.Reference` auf eine neue Record-Definition namens `<Sum>Value` abgeleitet
++   (`FigurineValue` für `Figurine`, qualifiziert wie der eigene Name des Summentyps), die ein
++   `Tels.SelectRef(Implicit, Implicit, <Sum>)` enthält, wo es als `Tels.Reference(<Sum>)` auf den
++   Select des Summentyps abgeleitet wurde, was ungültig ist (E217) und nicht als BinTEL
++   geschrieben werden konnte. Der Select behält den Namen des Summentyps. Das abgeleitete Schema
++   jedes Typs mit einem summentypisierten Member erhält diese Records, sodass sich sein Hash und
++   seine BinTEL-Signatur ändern; ein Schema, dessen einziger Summentyp seine Wurzel ist (ein
++   `SelectRef` an der Dokumentwurzel), ist unverändert. Ein handgeschriebenes Schema oder eine
++   `Tels.Reference`, die für ein solches Member den Summentyp benennt, muss `<Sum>Value`
++   benennen. Ein Benutzertyp namens `<Sum>Value` neben einem Summentyp `<Sum>` kollidiert jetzt,
++   als E210. (#2327)
+
+% 0 1 0 1828e4d97834300a121cab8d2d6afc7f
+
+@ 0 4 0 05b65df01febfd8a0d323f4b602a5d4c
++ - `polyvinyl.Specification` hat ein neues abstraktes Typ-Member, `type Failure <: Hazard`: der
++   Fehler, den jedes Feld seiner Datensätze auslösen kann. Jede Implementierung muss es
++   deklarieren. (#2325)
++ - Diese Hooks von `polyvinyl.Specification` erhalten eine Klausel `(using Tactic[Failure])`, die
++   jede Überschreibung hinzufügen muss: `access(name: Text, value: Origin): Origin`, `repeated(name: Text, value:
+
+% 0 1 0 0746c8c1761ea5e9159d19acf09d7ced
+
+@ 0 2 0 1ac68c8c97a448830682e24b96988274
++   value: Origin): List[(Text, Origin)]`, `elements(value: Origin): List[Origin]` und
++   `pairs(value: Origin): List[(Text, Origin)]`. `absent`, `kind` und `build` sind unverändert.
+
+% 1 1 0 04141510c63de6ad03496e66c9aae0b5
+
+@ 0 24 0 1c19f4af74babd531f1f7118e9e7ecb6
++ - Neuer Hook `polyvinyl.Specification#unoffered(kind: Text, offered: List[Text])(using
++   Tactic[Failure]): Nothing`, angewandt auf einen Wert einer Union, dessen Art keine Alternative
++   anbietet. Seine Vorgabe löst eine Panic aus, wie es die Verteilung zuvor tat. (#2325)
++ - Jedes Feld eines Datensatzes, den eine `Specification` baut, hat jetzt den Typ `polyvinyl.Record.Field[T,
++   Failure]` (ein neuer Alias, `Tactic[failure]^ ?-> result`), wo es den Typ `T` hatte (oder `T raises
++   E` für ein Feld, das von einem `Intensional.Fallible` gelesen wird). Die Auswahl des Felds
++   wendet es auf die `Tactic[Failure]` im Geltungsbereich an, sodass Code, der ein Feld liest,
++   eine braucht (`strategies.throwUnsafely` stellt das alte werfende Verhalten wieder her). Ein
++   Feldwert vom Typ `Optional[T]`, `List[T]` oder `Map[Text, T]` behält seine Gestalt innerhalb
++   des `Field`. (#2325)
++ - `polyvinyl.Record#selectDynamic(name)` gibt jetzt den Lesewert des Felds zurück, die
++   Kontextfunktion `Tactic[Failure] ?-> T`, wo es den Wert zurückgab; Code, der ein Feld nach
++   Namen auswählt, muss das Ergebnis auf `Record.Field[T, Failure]` (oder `T raises Failure`)
++   casten und auf eine `Tactic` anwenden. (#2325)
++ - `Specification#tuple` ruft jetzt für jedes Feld eine `Tactic[Failure]` dort herbei, wo das
++   Tupel gebaut wird, und kompiliert ohne eine nicht; zuvor brauchten nur Tupel mit fehlbaren
++   Feldern eine, für ihre eigenen Fehlertypen. (#2325)
++ - Eine `Intensional.Fallible`-Instanz, deren `Error` nicht zum `Failure` der Spezifikation
++   passt, ist jetzt ein Kompilierfehler am Aufruf von `record` oder `tuple` ("the instance for
++   <label> raises <error>, not the specification's <failure>"). (#2325)
++ - Die Makro-Einstiegspunkte nehmen den Fehlertyp als neuen letzten Typparameter: `Specification.record`
++   und `Specification.tuple` sind `[self, origin, form, failure <: Hazard]`, und
++   `Specification.recordExpansion` und `Specification.tupleExpansion` sind `[origin, form, failure
++   <: Hazard]`, mit `target: Expr[Specification.Raising[form, origin, failure]]` (ein neuer Alias für
++   `(Specification in form from origin) { type Failure = failure }`) anstelle von `Expr[Specification
+
+% 0 1 0 04eac7df516f3acd15a1fd9d6148e5a7
+
+% 2 1 0 0c4beffa1f71f0671037a21131736014
+
+@ 0 16 0 0d93953b9b38243b1ee9d5dfdd02c7df
++ - Felder von `jacinta.Json.Provider`-Datensätzen lösen jetzt für jeden Fehlschlag
++   `Json.Provider.Error` über die `Tactic` des Codes aus, der das Feld liest, wo
++   Schemaverletzungen unabhängig von der Taktik im Geltungsbereich geworfen wurden, sodass
++   `attempt`, `recover`, `validate` und `track` sie jetzt sehen. Eine erforderliche Eigenschaft,
++   die fehlt, löst `Json.Provider.Error(MissingValue(name))` aus, wo sie
++   `Json.Error(Json.Error.Reason.Absent)` auslöste; ein Wert des falschen JSON-Typs löst
++   `Json.Provider.Error(JsonType(expected, found))` aus, wo er
++   `Json.Error(Json.Error.Reason.NotType(found, expected))` auslöste. Handler und `capture`s von
++   `Json.Error` um Datensatzfelder müssen stattdessen `Json.Provider.Error` abfangen. (#2325)
++ - `Json.Provider.Error.Reason.MissingValue` ist jetzt `MissingValue(name: Optional[Text])`, der
++   Name des fehlenden Felds, wo er bekannt ist. Neue Gründe: `UnexpectedKind(found: Text, offered:
++   List[Text])` (`SN-624.8`) für einen Union-Wert einer Art, die keine seiner Alternativen
++   anbietet, was zuvor eine Panic auslöste; und `Unparsable(value: Text, format: Text)`
++   (`SN-624.9`) für einen `json-pointer`- oder `regex`-String, der sich nicht parsen lässt, was
++   zuvor `JsonPointer.Error` oder `Regex.Error` warf. (#2325)
++ - `Json.Provider.Primitives#Failure` ist `Json.Provider.Error`. Die `Json.Provider`-Reader
++   `boolean`, `string`, `integer`, `long`, `number` und jeder Format-Reader (`dateTime`, `date`,
+
+% 0 1 0 0999b75e0629c4cc04321de76d43c035
+
+@ 0 3 0 1afb42c5318788bd04e31193b7c5560f
++   `iri`, `iriReference`, `uuid`, `uriTemplate`, `jsonPointer`, `regex`) sind jetzt Givens des
++   neuen `Json.Provider.Reader[label, result]` (ein Alias von `Intensional.Reading[label, Json.Provider,
++   Json, result, Json.Provider.Error]`), wo sie einfache `Intensional`-Instanzen waren. (#2325)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 7 0 1827f3569ec458b81adb0d1c873b144f
++ - Felder von `xylophone.Xml.Provider`-Datensätzen lösen jetzt für jeden Fehlschlag
++   `Xml.Provider.Error` über die `Tactic` des Codes aus, der das Feld liest: ein fehlendes
++   erforderliches Element oder Attribut (`Absent`, das geworfen wurde) und ein Wert, den sein Typ
++   nicht lesen kann, der `Xml.Error` auslöste und jetzt das neue
++   `Xml.Provider.Error.Reason.Malformed(value: Optional[Text], expected:
++   Text)` (`SN-993.7`) auslöst. Handler von `Xml.Error` um Datensatzfelder müssen stattdessen
++   `Xml.Provider.Error` abfangen. (#2325)
++ - `Xml.Provider#Failure` ist `Xml.Provider.Error`. Die Reader der eingebauten Typen (`string`,
+
+% 0 1 0 1020817fd49fd8ce11ab468375aa0ee5
+
+@ 0 3 0 04ec17401b92e4911217802778fc589b
++   `time`, `duration`, `anyUri` und die `Text`-Rückfälle `dateTimeText`, `dateText`, `timeText`,
++   `durationText`, `anyUriText`) sind jetzt Givens des neuen `Xml.Provider.Reader[label, result]`
++   (ein Alias von `Intensional.Reading[label, Xml.Provider, Xml, result, Xml.Provider.Error]`).
+
+% 1 1 0 15eb0b7907d63e4d1553bf19b6dabbc4
+
+% 0 1 0 0f65516622e01f5401b594a2ce4c1b1b
+
+@ 0 5 0 0a8bf40366efd55d0092e39052bbbc15
++ - `apoplexy.Api.Records.list(json, transform)` nimmt jetzt `(using Tactic[Json.Provider.Error])`,
++   und eine mit `record()` oder `tuple()` gelesene Response, deren Schema ein Array ist, braucht
++   eine `Tactic[Json.Provider.Error]` dort, wo das Makro expandiert wird, und kompiliert ohne eine
++   nicht. Die Felder von Response-Datensätzen und von Datensätzen für Fehler-Nutzdaten sind
++   `Record.Field`s wie die jedes anderen `Json.Provider`-Datensatzes. (#2325)
+
+% 0 1 0 13897a5b469c56bc058ae094048dac5d
+
+@ 0 6 0 0e12bc9fa1d57df5060ab10fc50e38d2
++ - `List.prepend` und `List.append` geben jetzt `List[element] & Populated` statt
++   `List[element]` zurück: Das Hinzufügen eines Elements macht die Liste nicht leer, sodass das
++   Ergebnis den Beweis trägt und `head`, `last` und `reduce` darauf total sind, wie sie es auf
++   `List(a, b)`-Literalen bereits waren. Das Infix `head :: tail` ist unverändert (eine
++   rechtsassoziative Kette kann ihren Elementtyp nicht aus einem markierten rechten Operanden
++   inferieren), daher sollte Code, der den Beweis aus einem Cons braucht,
++   `List.prepend(tail, head)` aufrufen. (#2326)
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 11 0 1bad148bff66329809465c0ff4ee7bd2
++ - `Text#cut` (und `cut` auf jedem `Cuttable`-Textual) gibt `List[textual] { type Occupied =
++   true }` zurück — eine `Populated`-Liste, als Verfeinerung geschrieben, damit
++   `case List(a, b) =>` weiterhin den Elementtyp bindet — statt `List[textual]`: Ein Schnitt ergibt
++   immer mindestens ein Stück (den Text nach dem letzten Trennzeichen oder den ganzen Text), daher
++   sind `text.cut(t",").head` und `.last` total; das partielle `text.cut(t",").stdlib.head` kann
++   zu `.head` werden. Ein `limit` von null oder weniger wird jetzt als unbegrenzt
++   (`Int.MaxValue`) gelesen; zuvor hatte ein Limit von null bei einem `Text`, der per `Regex`
++   geschnitten wurde, die Semantik von `String.split`, die abschließende leere Stücke verwarf und
++   womöglich nichts ergab. Die generische Instanz `textual is Cuttable by Regex` (jedes `Textual`
++   mit `Countable` außer `Text` selbst) gibt jetzt die Stücke *zwischen* Treffern zurück,
++   einschließlich des Texts nach dem letzten Treffer, wie jede andere Instanz; zuvor gab sie die
++   getroffenen Bereiche zurück und eine leere Liste, wenn es keinen Treffer gab. (#2326)
+
+% 0 1 0 027a003138628fc617497a87b3252999
+
+@ 0 5 0 1d51d8b4aae3de32093a9fa1ab763a6e
++ - `Fqcn#parts` ist als `Array[Text]^{} & Populated` statt `Array[Text]^{}` typisiert, und der
++   Konstruktor von `Fqcn` nimmt diesen Typ: Ein vollqualifizierter Klassenname hat mindestens
++   einen Teil, und das macht `className` total. `Fqcn.apply(name)` ist unverändert (es beweist den
++   Typ mit `occupied` und bricht wie zuvor mit `Fqcn.Error.Reason.EmptyName` ab); Code, der
++   `new Fqcn(array)` direkt aufruft, muss ein `Populated`-Array übergeben —
++   `array.occupied.or(…)`. (#2326)
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 5 0 136a4f24ade677a8041278ea2ed9871b
++ - `Searchpaths.Stems#stems` ist als `List[Path on Target] & Populated` statt
++   `List[Path on Target]` deklariert: Der erste Stamm ist der, wohin Schreibvorgänge gehen, daher
++   war Nichtleere bereits Teil des Vertrags. Eine Implementierung, die die Liste mit `::` oder
++   einem `List(…)`-Literal baut, typprüft unverändert; eine, die eine beliebige `List` zurückgibt,
++   muss dies mit `list.occupied.or(…)` beweisen. (#2326)
+
+% 0 1 0 1d07d5aa528e552a1b45fc9f19fb6b51
+
+@ 0 4 0 1c0ce100d5ae4e7611f4f43a6cdadabc
++ - `ult` ist jetzt `transparent inline` und passt sich einem `Populated`-Empfänger an, wie es
++   `last` aus rudiments tut: Auf `xs: List[T] & Populated` gibt es `Ordinal in xs.type` statt
++   `Optional[Ordinal in xs.type]` zurück, sodass `xs(xs.ult)` ohne `let` total ist. Auf anderen
++   Empfängern ist es unverändert. (#2326)
+
+% 2 1 0 1985c40ecd17315f0f06983213853cbd
+
+@ 0 13 0 0d9b22afdcb1ebc10785f989745dcfd4
++ - `head`, `lead` und `tail` *passen sich* jetzt dem an, was der Typ des Empfängers beweist, wie
++   es `last` bereits tat: Auf einem als `& Populated` typisierten Empfänger (ein
++   `List(a, b)`-Literal, ein `cut`, ein `List.prepend`, ein `occupied`-Ergebnis) sind sie total
++   und geben das Element, das vordere Segment oder das hintere Segment zurück; auf jedem anderen
++   Empfänger geben sie `Optional[…]` zurück, `Unset`, wenn der Wert leer ist. Zuvor existierten
++   `head` und `lead` nur für `Populated`-Empfänger, und `tail` war überall total (der Tail eines
++   leeren Werts war leer). Code, der `xs.tail` auf einem unbewiesenen Empfänger aufrief und das
++   Ergebnis als Collection verwendete, muss jetzt das `Optional` auflösen (`xs.tail.or(Nil)`
++   behält das alte Verhalten) oder den Empfänger als nicht leer beweisen. (#2326)
++ - `prim`, `sec` und `ter` (auf `List`, `Chain` und jedem `Applicable` nach `Ordinal`, in
++   `rudiments` und im Umbrella) sind entfernt. `xs.prim` ist `xs.head`, das jetzt auf einem
++   unbewiesenen Empfänger genau seinen Typ hat (`Optional[element]`) und auf einem
++   `Populated`-Empfänger total ist; `xs.sec` und `xs.ter` sind `xs.at(Sec)` und `xs.at(Ter)` (auf
++   einer `List` öffnen diese die Sperre `linearAccess`, was die beschränkten Sonderfälle nicht
++   taten). (#2326)
+
+% 0 1 0 0ad41fe5ea8e9b861b437699bae61d12
+
+@ 0 15 0 01d0487c2481bd0a1e4677397ba428ac
++ - Neu: `proscenium.Sized[length <: Int]`, ein Phantom-Längenbeweis (`Any { type Length = length }`)
++   im Stil von `Populated`. `Array.fill(n)(…)`, `Array.tabulate(n)(…)` und `Data.fill(n)(…)`
++   mit einem *literalen* `n` geben jetzt `… & Sized[n]` zurück; mit einer Variablen oder einem
++   `val` sind sie unverändert (nur eine Kompilierzeitkonstante markiert). Die Collection-Instanzen
++   für das eingefrorene Array und `Data` — `Traversable` (also `to[List]`), `Encodable in Data`,
++   `Streamable` — erhalten eine `Sized`-Instanz (`sizedFrozenArray`, `sizedBytes`), damit der
++   markierte Wert aufgelöst wird (#2330), ebenso `Countable`, `Applicable` und `Terminable`
++   (`size`, `at`, `last`; `denominative.Countable
++   .sizedFrozenArray` und Geschwister) sowie die `Data`-Instanzen von `telekinesis.Postable` und
++   `Servable`, `coaxial.Transmissible`, `turbulence.Readable` (zu `Data` und zu `Text`) und
++   `Encodable in Protobuf` aus `locomotion` (`sizedData`, `sizedBytes`, `sizedDataData`,
++   `sizedDataText`, `sizedDataEncodable`), sodass ein bewiesener Block genauso gepostet,
++   bereitgestellt, übertragen, gelesen und kodiert wird wie der einfache. (#2332)
++ - `proscenium.Sized` wird jetzt vom Umbrella `soundness` exportiert, sodass `Sized[512]` unter
++   `import soundness.*` aufgelöst wird; das war nicht der Fall, und der Name wurde zur
++   Knotenumfangs-Typklasse von tasseomancy aufgelöst. (#2332)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 17 0 1688826b7c020dd60d626e1fb747bdad
++ - Die Knoten-Typklasse für Doughnuts, `tasseomancy.Sized` (`def size(value: Self): Double`),
++   wird in `tasseomancy.Weighted` umbenannt, mit ihrer Methode `weight`: Ein
++   `given Step is Sized = _.size` wird zu `given Step is Weighted = _.size`, und eine
++   Kontextschranke `Sized as sized` in einem `Doughnut`-Given wird zu `Weighted as weighted`. Der
++   Name gehört jetzt `proscenium.Sized`, dem Längenbeweis. (#2332) Die *Medium*-Typklassen
++   werden nicht erweitert:
++   `Addressable` (hinter `stream`, `Cursor(…)`, `Stream(…)`) benennt das Medium, über dem ein
++   Cursor oder Stream liegt, und eine Marke auf einem Medium ist bedeutungslos, daher benennt ein
++   als Medium gedachtes `Data` seinen Typ: `val payload: Data = Data.fill(100)(_.toByte)`,
++   `Cursor(Data.fill(10)(_.toByte): Data)`. Neu: `Array.concat(left, right)` (eingefrorenes
++   Ergebnis), dessen Überladung auf zwei `Sized`-Arrays `Sized[left + right]` zurückgibt. Neu:
++   `xs.sized[n]: Optional[xs.type & Sized[n]]` (rudiments) prüft die Länge eines
++   `Countable`-Werts einmal und zeichnet sie auf, wie es `occupied` für Nichtleere tut. (#2330)
++ - Auf einem `Sized[n]`-Array ist `xs(i)` mit einer *literalen* Ordinalzahl — `156.z` oder eine
++   von `Prim`, `Sec`, `Ter`, `Quat`, `Quin`, `Sen`, `Sept` — total (das Element, nicht
++   `Optional`), und ein Literal bei oder jenseits von `n` ist ein Kompilierfehler ("the ordinal …
++   is beyond the array's proven length"); eine variable Ordinalzahl auf einem `Sized`-Array
++   ergibt `Optional`, wie es `at` tut. Die Ordinaltypen und die Literale selbst sind
++   unverändert. (#2330)
+
+% 0 1 0 05ae2e565038e46506b8cc852c20137f
+
+@ 0 6 0 065693e5f12ce23b000a1a389bec2696
++ - Die partielle Grenzzelle eines `Bar.Filled`-Designs (eine von `Bar.Glyphs#partials`, wie in
++   `▏▎▍▌▋▊▉` von `bars.smoothBar`) wird jetzt in `GaugePalette#fill` gezeichnet (bei einem
++   Verlaufsdesign in `GaugePalette#lengthwise` an der Position der Zelle) statt in
++   `GaugePalette#leadingEdge`, sodass sie zu den vollen Zellen links von ihr passt. Ein Design mit
++   einem `Bar.Glyphs#tip` zeichnet seine Spitze weiterhin in `leadingEdge`, ebenso der Kopf eines
++   `Bar.Marker` und `Standing.Running`. Ausgaben, die die Vordergrundfarbe der Grenzzelle
++   zusicherten, ändern sich. (PR-Nummer folgt)
+
+@ 0 1 0 1cf85612c798776b17d0a26d77983a3c
++ ## soundness (Umbrella)
+
+@ 0 17 0 18f9098c5854e693008e6da1322ef300
++ - Das Umbrella leitet die opaken Collections als *stabile* Pfade weiter — `type List[+element] =
++   proscenium.List[element]` mit `val List: proscenium.List.type` (und dasselbe für `Sequence`,
++   `Set`, `Map` und `Chain`) —, wo es sie exportierte. Über den `def`-Weiterleiter, den ein
++   `export` erzeugt, sah ein über `soundness.List` ausgewähltes Member des Begleitobjekts die
++   rechte Seite des opaken Alias, sodass `List(1, 2).mkString`, `Sequence.empty[Int].toVector`,
++   `xs.iterator`, `xs.take(n)`, `xs.foldLeft`, `xs.length` und der Rest der Stdlib-API auf einem
++   über das Umbrella gebauten Wert kompilierten, was sie jetzt nicht mehr tun: Verwenden Sie die
++   nativen Namen (`join`, `keep`, `fold`, `size` hinter der Sperre `linearSize`,
++   `List.iterator(xs)`/`Chain.iterator(xs)`, `all`, `has`, `nil`, `List.concat`) oder
++   `xs.stdlib`, wo es um die Stdlib geht. Ein Stdlib-Wert wird mit `List.from(xs)` umgewandelt
++   (nicht mit `.to[List]`, das auf einem Stdlib-Empfänger Scalas `to[C](factory)` ist).
++   `xs.to[List]` auf einem nativen Wert ist unverändert. (#2333)
++ - Die Begleitobjekte `proscenium.List`, `Sequence`, `Set`, `Map` und `Chain` erweitern
++   `scala.caps.Pure`. (#2333)
++ - Gleichheit zwischen einer mit `Populated` markierten Collection und einer einfachen
++   (`xs == List(1, 2)`) wird jetzt von `CanEqual`-Givens in jedem Collection-Begleitobjekt
++   bereitgestellt (`List.populatedEquality` und `…Reversed`, ebenso für `Sequence`, `Set` und
++   `Chain`), sodass sie in jedem Paket aufgelöst wird; zuvor funktionierte sie nur, wo
++   `rudiments.populatedEquality` lexikalisch sichtbar war. (#2333)
+
+% 0 1 0 162a56290f24431a07a20450d4c6e0dd
+
+@ 0 5 0 084d0f6d5620dfc60cb027ebbb5dce57
++ - `demilitarize` und `procrastinate` geben `proscenium.List[CompileError]` statt `scala.List`
++   zurück: `demilitarize(…).nonEmpty` ist `!demilitarize(…).nil`, `errors.isEmpty` ist
++   `errors.nil`, `.length`/`.size` brauchen die Sperre `linearSize`, `.headOption.exists(f)` ist
++   `.head.lay(false)(f)`, `.exists(f)` ist `.seek(f).present`, und `.map(_.message) == List("…")`
++   vergleicht nativ. (#2333)
+
+% 2 1 0 0c0c1551b9800f4d1925ce72a6621e7f
+
+@ 0 3 0 09fb85e3c2f386a10516bae826815015
++ - Zwillinge der `Iterable`-Erweiterungen mit `Traversable`-Empfänger: `sift`, `bi`, `tri`,
++   `longestTrain`, `mean`, `variance` und `std` werden jetzt auf einer nativen `List`, `Sequence`
++   oder `Set` aufgelöst wie auf einem `Iterable`; `sift` gibt dort eine `List` zurück, und
++   `bi`/`tri` behalten die Gestalt des Empfängers. (#2333)
+
+% 0 1 0 10336422395755bf1e478ba611fcc433
+
+@ 0 1 0 1adad2a86bc05ac506c648ceedf6378e
++ - `median` wird auf einer nativen Collection aufgelöst (ein Zwilling mit
++   `Traversable`-Empfänger). (#2333)
+
+% 0 1 0 1ff629affd81c87111d067a62bcc62a1
+
+@ 0 2 0 1c70463a546750de1e64175e477d94bb
++ - `race()` wird auf einer nativen Collection von Aufgaben aufgelöst (`Sequence(a, b).race()`),
++   wie auf einem `Iterable[Task[result]]`. (#2333)
+
+% 0 1 0 07cbf3671591ab0617673a498a92a7dd
+
+@ 0 1 0 01e0c4a5425e9c7513b0ddcb5f41525a
++ - `survive` wird auf einer nativen Collection aufgelöst und gibt eine `List[result]` zurück.
++   (#2333)
+
+% 2 1 0 1a2704dda11cfee71872a191d41ba2e1
+
+@ 0 2 0 16a3a3a3631c29f20ca018379b6e8133
++ - Ein `*`-Spread in einer `j"…"`-Interpolation akzeptiert eine markierte Collection
++   (`List[Json] & Populated`, wie es ein `List(…)`-Literal ist) ebenso wie ein `Iterable`. (#2333)
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 2 0 1f758307ac1388400aa3efcb9277b1c4
++ - `Holidays(holidays)` nimmt jede `Traversable`-Collection von `Holiday` (`Holidays(List(…))`),
++   wo es ein `Iterable[Holiday]` nahm. (#2333)
+
+% 0 1 0 1b8a4df21a24e9b507d1dd74e6543c8d
+
+@ 0 2 0 0e22fad0de357ca40f8921a34c0a68b2
++ - `Watch(paths)` nimmt jede `Traversable`-Collection von Pfaden, wo es ein `Iterable` nahm;
++   seine Typparameter sind jetzt `[paths, path]`. (#2333)
+
+% 0 1 0 15965c13323b4da117df6152721cd841
+
+@ 0 2 0 10b9a2aef283c54e001a45b7abdd20c5
++ - `LaneDagDiagram#render` und `LayeredDagDiagram#render` geben `proscenium.List[line]` statt
++   `scala.List[line]` zurück. (#2333)
+
+% 0 1 0 1fbc3e2eb3ac8c1d08a287e2c3a4960b
+
+% 0 1 0 0c4ca0de69a254c902caf8bf0cb723b4
+
+% 0 1 0 14b6244e508b8d8111960b45846d0236
+
+@ 0 1 0 0739c3133dd57ebd195c221ee22ce686
++   umbenannt in `tableRow`; `row` entfernt. Verhalten unverändert. (#2334)

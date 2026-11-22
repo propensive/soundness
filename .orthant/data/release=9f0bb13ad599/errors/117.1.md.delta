@@ -1,5 +1,0 @@
-orthant 1 release
-
-= row  `↯/s.117.1.6`  `Other`  A miscellaneous error did not fit the categories above.  `[↯/s.117.1.6] OAuth failed because an unexpected error occurred`  Inspect logs and any cause attached to the error. This variant is intentionally generic; a more specific reason may be added in future.
-+ row  `↯/s.117.1.7`  `Misconfigured`  The issuer lacks something the operation needs, such as an authorization endpoint or a redirect URI.  `[↯/s.117.1.7] OAuth failed because the issuer is not configured for this: the flow needs a redirect URI`  Give the `Issuer` the endpoint or URI the message names.
-+ row  `↯/s.117.1.8`  `Identity`  An OpenID Connect ID token was absent, did not verify, or was not issued by the provider for this client and this request.  `[↯/s.117.1.8] OAuth failed because the ID token was not acceptable: it does not answer this client's request`  Do not treat the user as identified. Check that the issuer, the client identifier and the nonce passed to `Oidc.identify` are those of the authorization request, and that the keys are the provider's current ones.

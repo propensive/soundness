@@ -1,0 +1,36 @@
+orthant 2 language
+
+% 0 1 0 01db7bdd46d441d70de3ebf99e36b883
+
+@ 0 1 0 1c1137f9960862a617f190a29e7d603b
++ Lançado quando o Sedentary não consegue executar um benchmark.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 169e4bd311435e8a118b2e92aef24e45
++ O erro é genérico; causas comuns incluem problemas de
++ configuração, a impossibilidade de iniciar o harness de benchmark ou
++ falhas durante o aquecimento.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1049c28df172b90b13afe34fd92308d4
+
+% 1 1 0 1bdd6a2e1994720e1d87a4e0e4d7d2d2
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 00c55fd97e8f06fd1ef73dd9fccfbca1
++ Inspecione a cadeia de causas ou os logs do harness. Motivos mais específicos
++ poderão ser acrescentados no futuro.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 0c93135968b57db40a6468089a34c09c
++ - Código-fonte: `lib/sedentary/src/core/sedentary.Bench.scala`

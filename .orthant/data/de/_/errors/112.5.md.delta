@@ -1,0 +1,79 @@
+orthant 2 language
+
+% 0 1 0 080b4fc45ae284021f7ec018323e5702
+
+@ 0 1 0 0fe43f337cde852a0182f4aabd4804b4
++ Wird ausgelöst, wenn Obligatory ein Server-Sent Event nicht parsen kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 5 0 1e2dd0ab16a60a760d2f6fa03774ab31
++ SSE-Nachrichten sind als `field: value`-Zeilen gerahmt, wobei `field`
++ auf `event`, `data`, `id` oder `retry` beschränkt ist. Die Klasse
++ `SseSource` erzwingt außerdem eine Kapazität des Replay-Puffers. Wird
++ eine dieser Erwartungen verletzt, wird dieser Fehler ausgelöst. Der
++ Konstruktor nimmt einen `reason: Reason`; die dargestellte Meldung lautet `the
+
+% 0 1 0 1a0198ade33e4a671f46b00a37ff56b2
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 1b494aa4128a8a550ae2f3d0a98128e6
+
+@ 0 2 0 1e23d74af4daa8811b395debb5232aa2
++ Eine Zeile im SSE-Stream enthielt nicht das verlangte Trennzeichen `:`
++ zwischen Feldname und Wert.
+
+@ 0 1 0 07685edf8206835805cfa90d33d7d5ed
++ **Beispiel.** `[↯/s.112.5.1] the server-sent event was not valid because a line did not contain the expected field: value separator`
+
+@ 0 2 0 1cab30f0ac2a77910faa6a857aa898d8
++ **Behebung.** Prüfen Sie, ob der Produzent gültige SSE-Frames ausgibt;
++ jede nicht leere Zeile muss einen Doppelpunkt enthalten.
+
+% 0 1 0 13b9fceb1eec12fc0917f8a8a4226409
+
+@ 0 2 0 08dc52f33b9a9bea1585599c5794bf9c
++ Ein anderer Feldname als `event`, `data`, `id` oder `retry` ist
++ aufgetreten.
+
+@ 0 1 0 0c0983c09f798b3308738abe1b19b6d8
++ **Beispiel.** `[↯/s.112.5.2] the server-sent event was not valid because the field name was not one of event, data, id, or retry`
+
+@ 0 2 0 0c64cb42d17b5f161443c6f672898874
++ **Behebung.** Entfernen Sie nicht standardisierte Felder vor dem Parsen, oder
++ erweitern Sie den Parser, damit er das Feld akzeptiert.
+
+% 0 1 0 1e02ebf47236f5fe1b71d327deac89a8
+
+@ 0 1 0 1967777770a882e11c0674bab229f1ed
++ Der Wert des Felds `retry` war keine parsebare Ganzzahl.
+
+@ 0 1 0 0d40865121f7c2201ad2af4048c7182b
++ **Beispiel.** `[↯/s.112.5.3] the server-sent event was not valid because the retry field value could not be parsed as an integer`
+
+@ 0 2 0 11429d2b592c210108201a65fd6f0349
++ **Behebung.** Der `retry`-Wert muss eine einfache dezimale Ganzzahl sein
++ (Millisekunden).
+
+% 0 1 0 004de77ada8d47e719ae368885460348
+
+@ 0 3 0 1b97b45025e432f00a5cdefb322a7354
++ Der von `SseSource.stream(start)` angeforderte Replay-Bereich war
++ größer als die Kapazität des Ringpuffers der Quelle, sodass ältere
++ Ereignisse überschrieben wurden.
+
+@ 0 1 0 062325f57fe7bc790a87fcf04948d78e
++ **Beispiel.** `[↯/s.112.5.4] the server-sent event was not valid because the requested replay range exceeded the source buffer capacity`
+
+@ 0 2 0 1e8de2cd70d74c3300c299e3be8af29c
++ **Behebung.** Erhöhen Sie die `capacity` der Quelle, oder fordern Sie einen
++ jüngeren `start`-Index an.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 04a190c5fac0e16513671c57fd2d7080
++ - Quelle: `lib/obligatory/src/json/obligatory.Sse.scala`

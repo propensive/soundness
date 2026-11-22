@@ -1,0 +1,46 @@
+orthant 2 language
+
+% 0 1 0 1db61383370d56d11fe1357f0f096a48
+
+@ 0 1 0 03be594d7e3eae9a0b4703d7a05b332e
++ Sollevato quando un'espressione di percorso YAML è malformata.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 01d2b4b0a17ca43001d4fa3057a12bb7
++ Un percorso YAML nomina una posizione all'interno di un documento. La sua sintassi viene controllata,
++ dallo stesso parser, quando è scritto come letterale e quando viene analizzato a runtime.
+
+@ 0 3 0 0a534239e2aae04a06bea069ae544316
++ ## Varianti
++ (`↯/s.134.2.1`, `UnknownDocument`, è stato ritirato quando `YamlPath` ha perso il suo URL di
++ documento, mai valorizzato, e `YamlPath.Registry`; i numeri restanti sono invariati.)
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+% 0 1 0 1da20c55b1980c491fb75ddb407b62f3
+
+% 0 1 0 0c1634627ec31f6f1a847a8c258c71f2
+
+% 0 1 0 0e25860be06e6a121e118c881aba1d55
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 2 0 1dba1c18a4aa68e30bb67b01f4861f54
++ Il motivo nomina il carattere o il costrutto responsabile. Un percorso deve iniziare dalla radice, e
++ ogni passo deve essere una chiave o un indice.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 07d67378f3bffaeb1a2234896cb1800b
++ - Sorgente: `lib/ypsiloid/src/core/ypsiloid.YamlPath.scala`

@@ -1,0 +1,39 @@
+orthant 2 language
+
+@ 0 1 0 166f5d14550c32b801e370eea947bae8
++ # `SN-947` — `BoundsError`（廃止）
+
+@ 0 4 0 0c1b1660dac2cb6a00d5dbfd1fdfd895
++ **このコードは現在は発生せず、この型ももう存在しない。**
++ `BoundsError` は、`Json.Provider.Error`（当時は `JsonBlueprint.Error`）の `IntOutOfRange` という理由と重複していた。同じ失敗で、同じ三つのフィールドを持ち、同じオブジェクトから発生していた。そのため `"integer!"` のブループリントは、今は代わりに `↯/s.106.3.3` を発生させる。
++ これは gossamer で宣言されていたが、gossamer はそれを一度も使わなかった。
+
+@ 0 1 0 12bed0aabaa306d918a8a3e4ce13e416
++ これは、数値が許される範囲の外にあるときに発生していた。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 135627bef3c459d8020e7712ef1dfc88
++ Gossamer は、値が宣言された最小値と最大値の範囲内にないことを示すために `BoundsError` を使う。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## メッセージの例
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 08279c6035a06cbf1b3f9116353e18db
+
+% 1 1 0 1b01ef7fc8e3fb160efdb542f450ccb7
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解決方法
+
+@ 0 2 0 1be94dded5a1e37b12d931ba21a3567c
++ 値を文書化された範囲に制限するか、より広い範囲が意図的なものであれば範囲を緩める。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 01a1eb5f08348d4f1d4334394c4c8022
++ - 後継：`↯/s.106.3.3`（`Json.Provider.Error`、`IntOutOfRange`）

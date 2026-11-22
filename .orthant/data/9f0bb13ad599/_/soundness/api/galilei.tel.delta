@@ -1,0 +1,146 @@
+orthant 2 release
+
+@ 7 1 0 12ffb7f51da12cc002189e1f9a33bb76
++     import filesystemOptions.createParents
+
+@ 0 1 0 1a50813509d3888c1dfa1246bf1b703b
++     directories with `discover`, `locations`, `listing` and `destination`; `Umask` and `Fdtable`
+
+@ 0 1 0 162e5c6b11280e831459e16ebaaed5b8
++       `DeleteRecursively`, `CreateParents`, `DereferenceSymlinks`, `MoveAtomically`,
+
+@ 0 1 0 199149e17d6d0cdd03b11262ed7a626e
++         `CreateParents` (and `DereferenceSymlinks` for copy and move,
+
+@ 0 2 0 0b448dc405f7a35b15d2a4c3167aaaa3
++       - `create[…]`: none is required. `CreateFlag.Parents` and `CreateFlag.Replace` state the
++         intent at the call site; a `CreateParents` policy, if one is in scope where
++         `create` is called, is honoured too.
+
+@ 0 1 0 0d4691dbaae0d8f80a9909bcc7770e33
++             import filesystemOptions.createParents
+
+@ 0 1 0 0d89ee07b80f00390695714cccab6c0a
++   refer galilei.CreateParents
+
+@ 0 2 0 0ec2bedf3f152e5c16e7c43e696d5ca0
++   entry .createParents   a destination's missing ancestor directories are created
++       The permissive `CreateParents on <plane>`, needing a backend. Before the
+
+@ 0 1 0 1a40c281115b28901461a999e04e83b7
++       named. With it in scope, `create[…]` makes missing ancestors too, as if
++       `CreateFlag.Parents` had been given.
+
+@ 0 1 0 1c3c6426bff9d29e0370664875c3e966
++       The strict `CreateParents`: nothing is created, and the backend raises
+
+@ 0 1 0 1bdc2bfe6fc05d090cb30cad36eacfe5
++ entry .CreateParents   the policy for a destination whose parent is missing: create it, or fail
+
+@ 0 2 0 05dee84622138e2b08c4ed76cb8cb29b
++       A planar policy (`CreateParents on Linux`) whose `#apply` wraps the
++       operation. `filesystemOptions.createParents` makes each missing ancestor;
+
+@ 0 1 0 1296537517cbc75d1c654ed3e9d3899b
++       operations do not need one, but honour one which is in scope where they are called:
++       under `createParents` they make missing ancestors without
++       `CreateFlag.Parents`.
+
+@ 0 2 0 1daf1436737b03bd18ef5da85a1e9cf0
++       `Io.Error` with `Nonexistent` (unless `filesystemOptions.createParents` is
++       in scope), and creating one which already exists raises `AlreadyExists`, unless the
++       caller says otherwise at the call site. `Parents` creates
+
+@ 0 1 0 1daac6407a88375c1008588355760b31
++       `path.create[File](CreateFlag.Replace)`. `Replace` is deliberately not a policy from
+
+@ 0 1 0 03cca3503d80ef9f16e50c5c555006d2
++     plane`, a `DereferenceSymlinks`, a `CreateParents on plane`, a backend, a
+
+@ 7 1 0 1b2be1454b0cacff13afff6db95c069a
++     import filesystemOptions.createParents
+
+@ 0 1 0 0b694458921c0a0d1cf2fe51848b9c64
++     plane`, a `MoveAtomically`, a `DereferenceSymlinks`, a `CreateParents on
+
+@ 7 1 0 0ecc3537cae7ed9716caa1153aaf7ce0
++     import filesystemOptions.createParents
+
+@ 2 1 0 1f4612451a4d9cbe0dd833d0ea0657b6
++     plane`, a `CreateParents on plane`, a backend, a `Tactic[Io.Error]` and an
+
+@ 2 1 0 073ce4c77d87d3610ea48b7639dc1de6
++     plane`, a `CreateParents on plane`, a backend, a `Tactic[Io.Error]` and an
+
+@ 7 1 0 15f426c4b034858c1453d321709c22f0
++     import filesystemOptions.createParents
+
+@ 0 1 0 157132592bdb83aa0b5a14dc3864c8bf
++       writable one. A relative path on the plane then resolves with `discover()` to the first
+
+@ 0 1 0 14ff65f2c9146c90189fe0cb1c603126
++       (% / "icons" / "app.png").on[Xdg.Data].discover()        // the first stem's copy, or Unset
+
+@ 0 1 0 0b3404a5cfadb2a50a0bd05c8d620a4c
++   refer galilei.discover
+
+@ 0 1 0 076f93bb4ff7ebb11369c6c649357b67
++ entry .discover   `path.discover()`: the first real directory of a searchpath in which the path exists, or `Unset`
+
+@ 0 2 0 0ec8fe3ff55508f103aa9ca243c510ee
++     specification; the result is a `Path on stems.Target`. Named `discover` rather than
++     `locate` or `search`, which zephyrine and gossamer export at the umbrella.
+
+@ 0 1 0 1096b8114cbea810027595905ef4a468
++     `filesystemOptions.createParents` on the write itself.
+
+@ 0 1 0 1402f7e9e51b56700f4bf3c75211614d
++       `mknod` command, consulting the `CreateParents` and `OverwritePreexisting`
+
+@ 0 1 0 045e18a59784ef971d75c27066a4a63f
++       import filesystemOptions.createParents
+
+@ 1 0 0 120d7770cbaee2ba0572c0b626e962fd
++
++ entry .mapped   `path.mapped { view => … }`: the whole file mapped into memory, read-only, as a `Terrain` for the length of a block
++     Nothing is copied: integers are loaded from the page cache in place, and processes which
++     map one file share one copy of it. The file is unmapped when the block ends, and the view
++     is a capability which is confined to it. The JVM and Scala Native backends map files;
++     WASI raises `Io.Error` with the reason `Unsupported`.
++
++ entry .hold   `path.hold(reserve) { holding => … }`: the whole file mapped for changing in place, as a `Holding`, under an exclusive lock
++     The file is created if it is not there, and extended to `reserve` bytes if it is
++     shorter; the holding's `expand` extends it further. The lock is on the file itself, and is
++     held for the block: a second `hold` of the file, in this process or another, raises
++     `Io.Error` with the reason `Busy`. What was stored is durable when the block ends. Only
++     the JVM and Scala Native backends map a file for changing; WASI's raises `Unsupported`.
++
++ entry .claim   `path.claim[record] { owner => … }`: ownership of a name for the length of a block, to publish versions of `record` under it
++     An exclusive operating-system lock is held on the sibling `<name>.lock` throughout, so
++     one process, and one scope within it, publishes under the name at a time; a second
++     raises `Io.Error` with the reason `Busy`. The lock is advisory, and dependable between
++     cooperating processes on a local filesystem.
++
++ entry .observe   `path.observe[record] { observer => … }`: the version of a name which is now published, mapped, with the means to move on to a newer one
++     No lock is taken, so an observer never delays the owner, nor the owner an observer.
++     Whatever is mapped is unmapped when the block ends. A name under which nothing has been
++     published raises `Io.Error`.
++
++ entry .Edition   the identity of one published version: which file the name led to, and when it was written
++     Two editions are the same version exactly when they are equal; they have no order.
++
++ entry .Owner   ownership of a name, for the block of `claim`: the capability to publish versions of `record` under it
++   entry #publish   replaces the published file with the encoding of a value, atomically, and answers the new `Edition`
++       The value is written to the temporary sibling `.<name>.part`, synchronously, and moved
++       over the name, so an observer which has mapped an earlier version is undisturbed.
++
++ entry .Observer   a reader's hold on a published name, for the block of `observe`: the current version, mapped, and the means to move on
++   detail
++       A shared capability: it takes no lock, and may be used from several threads. It keeps
++       the version it has mapped in existence until it moves on, or its block ends.
++   entry #edition   the edition of the version which is mapped
++   entry #map   lends a `Terrain` view of the mapped version for the length of a block, which a `refresh` meanwhile does not disturb
++   entry #refresh   maps the version the name now leads to, if it is not the one already mapped, and answers whether it did
++   entry #open   opens the mapped version as `record`, through its `zephyrine.Surveyable` instance, for the length of a block
++       The type the observer was given is the form its version is read in: an observer of a
++       `Ratel of Playbill` opens an image of a `Playbill`, and refuses any other.

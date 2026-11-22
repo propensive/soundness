@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 3 0 148a30337b22668a138439c53376660b
++ # Índice legível por máquina dos itens do roadmap. Um registro `item` por item, ao longo dos
++ # nove arquivos de trilha em doc/work/roadmap/. Este arquivo é a única fonte do status:
++ # os arquivos em prosa nunca declaram conclusão; eles apontam para cá.
+
+@ 0 2 0 1150a678e12de40b1108079fd587f3ad
++   baseline  1669 laços while, 993 readUnchecked, 514 charAt no core de lib (2026-10-21, depois que #2274 fez do Array congelado o único array imutável; 1606, 476, 507 em 2026-09-25)
++   criterion  nenhuma coleção expõe um apply indexado parcial (issue #1666); cada while restante tem uma forma que doc/work/standards/loops.md sanciona, com um comentário que nomeia seu invariante
+
+@ 0 1 0 00b880a91082413204e9196c41d2f096
++   criterion  doc/work/standards/capabilities.md existe, define cada tag que o censo reconhece, e as seções de receitas de rep/DECISIONS.md apontam para ele
+
+@ 0 2 0 0dc0dcbd00f7c47016ed4ce89be1e923
++   baseline  104 de 145 linhas compilam para JavaScript, 108 para Native, 34 exclusões de JavaScript com motivos; etc/check-compatibility.py regenera e verifica o arquivo em make build (2026-10-21; 101 de 144 em 2026-09-25; 94 de 132 em 2026-08-01)
++   criterion  a CI regenera etc/compatibility.tsv, falha em caso de divergência, e nenhuma exclusão carece de motivo
+
+@ 0 1 0 1d5dac460d0144ed0e9ce85ab7f751a9
++   criterion  todo motivo de exclusão em etc/compatibility.tsv é inerente; uma verificação de vocabulário de motivos o impõe na CI
+
+@ 0 2 0 173a4b08b8f1520e09515e59d4878c6f
++   baseline  4 nomes renomeados ainda no nível superior; 61 famílias de prefixos com 210 nomes, mais 216 nomes isolados listados (2026-09-25)
++   criterion  a tabela de renomeações em etc/api-nesting-proposal.md está totalmente aplicada, e a seção 'Remaining names by prefix family' de etc/api-reduction-candidates.md não lista nenhum nome fora de 'Reviewed items which should not be moved'
+
+@ 0 2 0 0675b33ae36d6a561117a05e02987c2d
++   baseline  3 abreviações C2 listadas (2026-09-25)
++   criterion  a seção C2 de etc/api-reduction-candidates.md está vazia (C3 e C3b foram substituídas por etc/api-nesting-proposal.md e fechadas com ele)
+
+@ 0 1 0 06c6c31327182c871e92b37f5e2c26af
++   criterion  etc/api-reduction-candidates.md não existe mais
+
+@ 0 2 0 0051b6e0c43f7f740580661bc8f6c07d
++   baseline  0 nomes exportados por duas bibliotecas; 19 de 22 linhas R8 de alta confiança concluídas; Tag/Renderable ainda @unexported (2026-11-12, mais tarde; 6 nomes, 2 homônimos @unexported, ~110 candidatos R8 mais cedo no mesmo dia)
++   criterion  nenhum nome é exportado por mais de uma biblioteca, nenhum @unexported esquiva um conflito, e cada linha das tabelas R8 em etc/api-nesting-proposal.md está aplicada ou foi revisada e mantida
+
+% 0 1 0 131794d631e522870773aff16ae8aac7
+
+@ 0 2 0 07a6b381d30a92cb023b924906e9d974
++   baseline  101 tópicos em doc/work/soundness/modules/; 145 de 145 bibliotecas cobertas (2026-10-21; 1 de 144 sem cobertura em 2026-09-25; 91 tópicos e 35 sem cobertura em 2026-08-01)
++   criterion  python3 etc/check-doc-coverage.py relata todas as bibliotecas cobertas e sai com 0
+
+@ 0 2 0 1154d170629482bb139ba48e21c12602
++   baseline  a suíte DAP roteirizada para em breakpoints, avança e inspeciona valores por meio de suas instâncias Inspectable; tópico doc/work/soundness/modules/debugging.md (2026-10-21; objetos inspecionados como nomes de classes da JVM e nenhum tópico em 2026-09-25)
++   criterion  uma sessão DAP roteirizada (breakpoint, passo, inspeção com valores renderizados por Soundness) passa contra uma aplicação em execução na CI
+
+@ 0 2 0 07448ba163d12a581789fe21f1724c6c
++   baseline  doc/work/migration.md e 0.65.0.md–0.73.0.md existem; a diretiva de migração em etc/release condiciona a release; nenhuma verificação de pull request (2026-10-21; notas até 0.68.0 em 2026-09-25)
++   criterion  doc/work/migration.md existe; a release (a diretiva de migração em etc/release) se recusa a criar a tag sem doc/work/migration/<version>.md; uma verificação de CI reprova todo pull request que altera lib/**/src sem tocar no doc/work/migration/<version>.md ainda não lançado
+
+@ 0 2 0 196b66a1e2f12f001fec8234a42c1ee3
++   baseline  lib/reliquary (7387 linhas) mais anthology.lira, degustation.lira, mandible.lira, xenophile.lira e seus testes (2026-09-25)
++   criterion  lib/reliquary não existe, não resta nenhum diretório lib/*/src/lira, e build.mill, etc/ e doc/work/soundness/modules não mencionam reliquary
+
+@ 0 3 0 1022043b4940d100089e5ec885e64e12
++   status done
++   done  #2530 (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk e Jwt, com os componentes `http` e `server`; 95 testes, que tomam os seus vetores das RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 e RFC 8037; `↯/s.147.1`; doc/work/soundness/modules/jose.md (2026-11-20)
+
+@ 0 1 0 0b21a7d8349a92fd16fa9db438708eef
++   baseline  lib/chatelaine: WebAuthn.registration/register e authentication/authenticate, atestação `none` e `packed`, com um componente `server`; as cerimônias de registro e de autenticação dos vetores de teste da especificação do W3C (§16.2–16.11) passam, assim como cerimônias roteirizadas contra um autenticador em software nos fontes de teste; nenhum autenticador virtual de navegador foi acionado; `↯/s.148.1`; doc/work/soundness/modules/webauthn.md (2026-11-20)

@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 3 0 057cb6a0b5366b3706bfd474a63e20a4
++ entry .toss   ein fairer Münzwurf: `true` oder `false`, gleich verteilt
++     `toss()` zieht aus dem `Random` im Geltungsbereich, nach derselben Regel wie
++     `arbitrary[Boolean]()` (dem Vorzeichen eines `Long`), sodass ein Wurf aus einem `Seed`
++     reproduzierbar ist.
+
+@ 0 9 0 0c63b6d6a010510f0f4d8dc6bca26ab7
++   entry .global   ein `Random` über einem gemeinsamen Generator ohne Seed, zur Verwendung ohne Geltungsbereich
++       Jeder Aufruf umhüllt denselben prozessweiten Generator, der lazy von
++       `randomization.unseededRandomization` erzeugt wird, sodass Ziehungen daraus nie
++       reproduzierbar sind. `random` verwendet ihn.
++   entry .apply   ein neues `Random` aus der `Randomization` im Geltungsbereich, mit dem angegebenen `Seed` initialisiert
++       `Random(seed)` initialisiert einen Generator aus der kontextuellen `Randomization`, die mit
++       `seed` im Geltungsbereich aufgelöst wird: Unter `seededRandomization` beginnt der Generator
++       bei `seed`, wie in `Seed#stochastic`, und eine Randomisierung ohne Seed ignoriert ihn.
++   entry .Size   wie viele Elemente eine zufällige Collection hat, als Kontextwert
+
+@ 0 24 0 04a55a33bab0309b039431791e6f182e
++   entry #randomize   zieht einen Wert aus einem `Random`
++   entry #apply   zieht einen Wert aus dem kontextuellen `Random`: `summon[Int is Randomizable]()`
++   entry #map   eine Instanz für einen anderen Typ, die jeden gezogenen Wert transformiert
++       `randomizable.map(lambda)` zieht über diese Instanz und wendet das Lambda an; das Ergebnis
++       fängt beide ein.
++   entry .long   zieht einen gleichverteilten zufälligen `Long`
++   entry .byte   zieht ein `Byte`, die niederwertigen acht Bits eines zufälligen `Long`
++   entry .short   zieht einen `Short`, die niederwertigen sechzehn Bits eines zufälligen `Long`
++   entry .int   zieht einen `Int`, die niederwertigen zweiunddreißig Bits eines zufälligen `Long`
++   entry .char   zieht einen `Char`, die niederwertigen sechzehn Bits eines zufälligen `Long`
++       Jede UTF-16-Codeeinheit, einschließlich unpaariger Surrogate und Steuerzeichen.
++   entry .seed   zieht einen `Seed` von vierundsechzig Bits, aus einem zufälligen `Long`
++   entry .boolean   zieht einen `Boolean`: `true`, wenn ein zufälliger `Long` negativ ist
++   entry .list   zieht eine `List`, deren Größe aus der `Random.Size` im Geltungsbereich stammt
++   entry .set   zieht ein `Set` von bis zur `Random.Size` im Geltungsbereich, wobei Duplikate zusammenfallen
++   entry .frozenArray   zieht ein eingefrorenes `Array[element]^{}`, bemessen durch die `Random.Size` im Geltungsbereich
++       Braucht neben einer `Random.Size` ein `ClassTag` für den Elementtyp.
++   entry .double   zieht einen `Double` über die `Distribution` im Geltungsbereich
++       Es gibt keine Vorgabeverteilung: Ein `Double` kann erst gezogen werden, wenn der Code
++       sagt, welche Art von `Double` er meint, was verhindert, dass eine gleichverteilte Ziehung
++       behandelt wird, als wäre sie normalverteilt. Importieren Sie eine aus
++       `randomDistributions` oder deklarieren Sie eine `Gaussian`, `PolarGaussian`,
++       `UniformDistribution` oder `Gamma` als Given.
++   entry .conjunction   die abgeleitete Instanz eines Produkts: jedes Feld der Reihe nach aus demselben `Random` gezogen
++   entry .disjunction   die abgeleitete Instanz einer Summe: eine Variante gleichverteilt gewählt, dann aus demselben `Random` gezogen

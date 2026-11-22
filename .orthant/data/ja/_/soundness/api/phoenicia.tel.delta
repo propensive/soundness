@@ -1,0 +1,1565 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1866150ecbc5dda91e755367aeb0d04c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1cd8dc1c0400040d07ec64e45739db0b
++ info   値としての TrueType と OpenType のフォント、およびテキストを組むための型付きの書体、フェイス、プロビジョン
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 2 0 14bfe67a88d84b3400f8977d0802f9c7
++     _Phoenicia_ はフォントファイルを読み、文書がフォントを名指して使うやり方に型を与える。
++     二つの層があり、中央で出会う。
+
+@ 0 9 0 1742c8e63e946a03011664ee56254400
++     下の層は**フォントファイル**である。
++     `Sfnt` は TrueType と OpenType が共有するテーブルのコンテナで、任意のバイト列のソースから読まれる。`Truetype` はアウトラインが二次曲線（`glyf` と `loca`）のもの、`Opentype` はアウトラインが PostScript（`CFF `）のものであり、`Sfnt(data)` は存在するテーブルによって両者を区別する。
++     テーブルはそれぞれ値として遅延してパースされる。`cmap` は文字をその `Glyph` に対応づけ、`hmtx` は送り幅とサイドベアリングを、`head` は em あたりのユニット数とバウンディングボックスを、`name` はファミリー名と PostScript 名を、`OS/2` は太さ、字幅、埋め込みの権利を、`fvar` は可変フォントの軸を、`GSUB`/`GPOS` はフォントが実装するレイアウトのフィーチャーを与える。
++     `Sfnt#width` はテキストを em 単位で測り、`Truetype#subset` はあるテキストが必要とするグリフだけからなる新しいフォントを構築する。
+
+@ 0 9 0 1970f43a040cecbd022bec103d031176
++     上の層は**組版上の要求**である。
++     `Typeface` は名前によるファミリーで、その名前はその型でもある（`Typeface["Inter"]` は `Typeface of "Inter"` である）。`Face` はそれをどう組むかを表す。`Weight`、`Slant`、`Stretch`、さらなる `Variation` 軸上の位置、そして有効または無効にする `Face.Feature` であり、フォントがどこから来るかについては何も言わない。
++     `Typesettable` のプロビジョンは、`Medium`（ウェブ、印刷、あるいはレンダラーが定義する任意のもの）がその書体をどう入手し、その後どのフェイスを組めるかを `Coverage` として表す。
++     `Font` は、フェイスを、あるメディアにおけるその書体に対してスコープ内にあるプロビジョンと組にしたものである。レンダラーがフォントを受け付ける唯一の形なので、文書は持っていない書体を名指すことも、プロビジョンに組めないフェイスを求めることもできない。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 14aa36c394dcafe60d01e835074ba4f2
+
+% 0 1 0 10891421cbed82481ae8fac7a21e8b9e
+
+% 1 1 0 1e2995190281206e1fe9d76dbddc58fd
+
+% 2 1 0 04c585ec192223b016fd40b1dd3724e2
+
+% 0 1 0 0d350c7e5e66a51f113866595e1f5456
+
+% 0 1 0 16f500912f13cb8f08eeb14977aa4460
+
+% 0 1 0 0c402fde44414bad06248bef18d0d589
+
+% 0 1 0 13ab6dde57221b8e0ddfd7a0c7b91d14
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 8 0 12ae2323372107d50640764eeefc1216
++     要求は二回検査される。
++     一回目は常に実行時、フォントが作られるときである。プロビジョンにない太さ、持っていないイタリック、テーブルが実装していないフィーチャー、フォントの範囲外の軸の値は、書体と問題を名指す `Font.Error` を発生させる。
++     そして、プロビジョンがクラスパスのファイルから作られ（`Typesettable.embedded (cp"/fonts/Inter.ttf")`。そのパスはプロビジョンの `Locus` になる）、フェイスの要求がその型に記録されている（`inter.bold.italic` は `Weights = 700` と `Slanting = "italic"` を持つ）場合には、コンパイラがファイルを読み、コードのコンパイル時に同じメッセージでその組み合わせを拒否する。
+
+@ 0 7 0 03b29709a6290b771a7b1635b1608754
++     このライブラリは一つのソースセット `phoenicia.core` からなり、JVM、Scala.js、Scala Native 向けにコンパイルされ、プラットフォーム固有のものには何も依存しない。`Sfnt(source)` は `Streamable by Data` であるあらゆるものから読む。
++     メディアとそのプロビジョンはレンダラーの側にある。cataclysm の `Web` は CSS の総称ファミリーと、`Web.linked`、`Web.imported`、`Web.local` のファクトリーを持ち、facsimile の `Print` は PDF の標準 14 フォントを持つ。
++     これらの given はメディアのコンパニオンにあるので、インポートは不要である。
++     プロジェクト自身のプロビジョンは、そのプロジェクトが宣言し名前でインポートする given である。`import pkg.*` は given をインポートしないからである。
+
+@ 0 3 0 012e1b7c32c785c9065f36ae71793b3b
++     すべては `soundness` アンブレラにエクスポートされている：`Coverage`、`Face`、`Font`、`Glyph`、`Medium`、`Opentype`、`Sfnt`、`Slant`、`Stretch`、`Truetype`、`Typeface`、`Typesettable`、`Variation`、`Weight`。
+
+% 0 1 0 109fa47ff5f3bd6d0571fce426a43e07
+
+% 0 1 0 0f0b1d6064528d4c10db460412c24385
+
+% 0 1 0 15104d77b892450111a9fd20a13773cc
+
+% 0 1 0 0b3ddc8123ae0d7208516ef15515dab8
+
+% 0 1 0 17e121497a8530891227fd00ebb19157
+
+% 0 1 0 0e23135c50c6b3041b84a24f166220ba
+
+% 0 1 0 028d54a33b69a0541369b63c2b9a0532
+
+@ 0 1 0 0001bfb9f303302f0c82f773be6bf1c9
++ entry .Sfnt   値としてのフォントファイル：TrueType と OpenType が共有する sfnt テーブルコンテナ
+
+% 1 1 0 078ca577aad2f05307ec65aa94722b04
+
+@ 0 6 0 11e925aa775bb68a14d1d7b26a7e6ee5
++       `Sfnt` はフォントファイルであり、その `#data` として保持され、テーブルごとに遅延して読まれる。
++       この名前はフォーマット自身のものである。_sfnt_ はコンテナ（ヘッダー、タグ付きテーブルのディレクトリ、そしてテーブル）で、TrueType と OpenType の両方が使い、違いはアウトラインの格納方法だけである。
++       両者が共有するものはすべてここで定義される。文字マップ、水平メトリクス、ヘッダー、命名テーブル、OS/2 メトリクス、PostScript のメタデータ、可変フォントの軸、レイアウトのフィーチャーである。
+
+@ 0 4 0 116690128ed80f251b3d5f1099aaf80f
++       `Sfnt(source)` は `Streamable by Data` であるあらゆるもの（galilei のパス、クラスパスのリソース、URL）からフォントを読み、`Sfnt(data)` は手元にあるバイト列を包む。
++       どちらも、ディレクトリに `CFF ` テーブルがあれば `Opentype` を、なければ `Truetype` を返すので、マッチによって、TrueType だけの操作を適用できるところで使える。
+
+% 2 1 0 0458cfbdd150f22b1eeaa197f93ea748
+
+% 3 1 0 0b015a9bc7599c141f3e57e33903e4de
+
+% 4 1 0 01e824b796eff2cb0d05fce3b09fc212
+
+% 0 1 0 01d582a488c5c4e40e69712408c1d2b1
+
+% 0 1 0 02c7ff65c19d25490413248f952c3c41
+
+% 0 1 0 0c02291d1d8f9ce9044d9909f8d08ccf
+
+% 0 1 0 0b1f30df551bfc2414ad1a957135dfc5
+
+% 1 1 0 14b781944cb7957905c51c4b02739cc6
+
+@ 0 9 0 18fb08e1af16ad3516a3336e3df6fa73
++       構築は全域的である。バイト列を包むことは決して失敗せず、読めないディレクトリは `Truetype` になる。
++       各テーブルは最初に求められたときにパースされるので、フォントでないファイルや、操作に必要なテーブルを欠くファイルは、その読み取りの時点で `Font.Error` を発生させる。テーブルを名指す `Font.Error.Reason.MissingTable`、検査定数が誤っている `head` テーブルに対する `MagicNumber`、ライブラリが読まない `cmap` サブテーブルのフォーマットに対する `UnknownFormat`、使える文字マップを持たないフォントに対する `MissingEncoding` を伴う。
++       アクセサー `#head`、`#cmap`、`#hhea`、`#hmtx`、`#maxp`、`#post`、`#os2`、`#name` はすべて `Tactic[Font.Error]` を受け取る。`#fontName`、`#familyName`、`#fvar`、`#features` はエラーを吸収して `Unset` または `Nil` を返す。
+
+@ 0 4 0 013338be52c1b7bb1e6138e37bd4648d
++       組版のコードが最もよく尋ねる問いには直接答えられる。`#glyph` は優先される文字マップを通じて文字を解決し、`#advanceWidth` と `#leftSideBearing` は文字のメトリクスをデザイン単位で与え、`#width` はテキストを em 単位で測る。これは型付きの量で、ポイントサイズを掛けると物理的な幅になる。
+
+% 2 1 0 13e7f947d5185997005d214326523a8d
+
+% 3 1 0 11778af9a091cadf1f1d4173eaa3cc04
+
+% 4 1 0 08eb928478cb23820b277272794d517f
+
+% 0 1 0 1a335216f558fc410addc81ce8e31847
+
+% 0 1 0 0f591fdb6abba76918920f53298cd19b
+
+% 1 1 0 0f313be179f64f2b0b87f8e4e15ad751
+
+@ 0 4 0 139f3bbe5d90c86a18835bce616f7318
++       フォントのテーブルは `#tables` を通じて読む。これは `Sfnt.Table.Tag` からテーブルの `TableOffset` への `Map` で、ライブラリが名前を持たないタグはそこから除かれる。
++       `Sfnt.assemble` はその逆で、テーブルの集合をフォントファイルとして直列化する。`Truetype#subset` はこうして結果を書く。
+
+% 1 1 0 184de4136bd9bd84034cea2723fbfe38
+
+% 1 1 0 1eadeb55b32c6dbf0417cfc30bec68ab
+
+% 1 1 0 0f766614488e070f0f031dc9a8c8fbd2
+
+% 0 1 0 08f5437fa29f893b030c74eca9fc87ff
+
+@ 0 24 0 1f47efafc0cdd4640e25b6bbffbed509
++   entry .apply   バイト列または任意のストリーム可能なソースからフォントを読み、`Truetype` または `Opentype` とする
++       `Sfnt(data)` は `Data` 値を包み、`Sfnt(source)` は任意の `Streamable by Data over Credit` なソースを丸ごと読んで結果を包む。
++       どちらもテーブルのディレクトリに `CFF ` テーブル（PostScript のアウトライン）があるかを調べ、あれば `Opentype` を、なければ `Truetype` を返す。
++       この調査は `safely` で包まれているので、読めないディレクトリを持つバイト列は失敗せずに `Truetype` になる。構築は常に全域的であり、誤りはテーブルが最初に読まれるときに `Font.Error` として表面化する。
++   entry .PlatformId   `cmap` または `name` のレコードのプラットフォーム：Unicode、Macintosh、Windows、またはカスタム
++       序数が OpenType のプラットフォーム識別子 0 から 3 である enum である。
++       ライブラリは `CmapTable.GlyphEncoding` と `NameTable.Record` でプラットフォーム識別子を単なる `Int` として読み、Windows と Unicode のレコードを Macintosh のものより上位に置く。enum はその値に名前を付ける。
++   entry .EncodingId   `cmap` レコードの Unicode エンコーディング識別子
++       `Unicode1`、`Unicode1_1`、`IsoIec10646`、`Unicode2Bmp`、`Unicode2Full`、`UnicodeVariation`、`UnicodeFull` で、その序数は Unicode プラットフォームのエンコーディング識別子 0 から 6 である。
++       `CmapTable#best` は BMP のみのエンコーディングより完全な Unicode のエンコーディング（4 と 6）を優先する。
++   entry .NameId   命名テーブルの文字列の識別子。各 case の序数がその name id である
++       `Copyright`、`Family`、`Subfamily`、`UniqueId`、`FullName`、`Version`、`PostScriptName`、`Trademark`、`Manufacturer`、`Designer`、`Description`、`VendorUrl`、`DesignerUrl`、`License`、`LicenseUrl`、`Reserved`、`TypographicFamily`、`TypographicSubfamily`、`CompatibleFullName`、`SampleText`、`PostScriptCidName`、`WwsFamily`、`WwsSubfamily`、`LightBackgroundPalette`、`DarkBackgroundPalette`、`VariationsPostScriptNamePrefix` で、OpenType の `name` テーブルの id 0 から 25 の順である。
++       `NameTable#apply` はその一つを受け取り、それに対する最良のレコードを返す。
+
+% 2 1 0 0de3995b31de4a100ca7cd2d234cfafc
+
+% 3 1 0 13d2c235fd4698d50e0194aec7f96766
+
+% 4 1 0 14f4c9f3f21e2804123d1ae31deb93f7
+
+% 0 1 0 157aa9d18c6cf6e60b0a1a0e831174ee
+
+% 1 1 0 14389f33fc5b3ef7099c7a757357e55c
+
+@ 0 1 0 0646bfdbf9cdc8c11f65cf95da95f936
++   entry .Table   フォントが持ちうるテーブルのタグで、`Ttf`（TrueType）と `Otf`（OpenType）の enum として表す
+
+% 1 1 0 1c5fa3dac41df3d4111caa166a9ed6b4
+
+@ 0 12 0 1328713b5ea681db15f3c00cda3bcd5a
++         テーブルの 4 文字のタグは、ディレクトリ内でそのテーブルを識別する。
++         タグは TrueType の集合（`Sfnt.Table.Ttf`：`cmap`、`head`、`hhea`、`hmtx`、`maxp`、`name`、`post`、`glyf`、`loca`、`fvar`、…）と OpenType の集合（`Sfnt.Table.Otf`：`CFF `、`OS/2`、`GSUB`、`GPOS`、`GDEF`、`STAT`、…）に分かれ、どちらも `Sfnt.Table.Tag` であり、`Sfnt#tables` のキーである。
++         各コンパニオンはタグのテキストからの抽出子なので、ディレクトリの項目は `Sfnt.Table.Otf(tag)` と `Sfnt.Table.Ttf (tag)` との照合によって分類される。どちらも名指さないタグはテーブルのマップから除かれる。
++     entry .Tag   `Ttf` と `Otf` のタグに共通の型
++       entry #text   ファイル内での綴りのままのタグ：`cmap`、`OS/2`、`CFF `、`cvt `
++           `CFF ` と `cvt ` の末尾の空白を含めて 4 文字である。
++           TrueType のタグは小文字、OpenType のタグは大文字で、`OS/2` と `CFF ` が例外である。
++     entry .Ttf   TrueType のテーブル：`avar`、`cmap`、`cvar`、`cvt `、`fpgm`、`fvar`、`gasp`、`glyf`、…
+
+% 1 1 0 01fcbbf4cd79c79702882760a3ed10fb
+
+@ 0 6 0 1b40d8a6bffe2aa213b6729ce4bdd66c
++           `Avar`、`Cmap`、`Cvar`、`Cvt`、`Fpgm`、`Fvar`、`Gasp`、`Glyf`、`Gvar`、`Hdmx`、`Head`、`Hhea`、`Hmtx`、`Kern`、`Loca`、`Maxp`、`Meta`、`Name`、`Post`、`Prep`、`Sbix`、`Vhea`、`Vmtx`。
++           コンパニオンはテキストから case を抽出し（`Sfnt.Table.Ttf(t"cmap")`）、`cvt ` は末尾の空白付きで綴る。
++       entry .extract   4 文字のテキストに対する `Ttf` のタグ、または `Unset`
++     entry .Otf   OpenType のテーブル：`BASE`、`CFF `、`CFF2`、`COLR`、`GDEF`、`GPOS`、`GSUB`、`OS/2`、…
+
+% 1 1 0 1cafae1a72627da906a3b22aad2f218d
+
+@ 0 15 0 0b108eb99c7e65851b4ce66cfa40716f
++           `Base`、`Cbdt`、`Cblc`、`Cff`、`Cff2`、`Colr`、`Cpal`、`Dsig`、`Ebdt`、`Eblc`、`Ebsc`、`Gdef`、`Gpos`、`Gsub`、`Hvar`、`Jstf`、`Ltsh`、`Math`、`Merg`、`Mvar`、`Os2`、`Pclt`、`Stat`、`Svg`、`Vdmx`、`Vorg`、`Vvar`。
++           コンパニオンはテキストから case を抽出し（`Sfnt.Table.Otf(t"OS/2")`）、`OS/2` と `CFF ` はファイルでの綴りのままにする。
++       entry .extract   4 文字のテキストに対する `Otf` のタグ、または `Unset`
++   entry .assemble   タグ付きのテーブルを、チェックサム付きの完全な sfnt ファイルとして直列化する
++       `Sfnt.assemble(version, tables)` は 4 バイトのバージョン（フォントの最初の 4 バイトで、TrueType では `0x00010000`）と `(tag, bytes)` の組のリストを受け取り、ヘッダー、フォーマットが要求する探索用フィールドを持つタグ順に並んだディレクトリ、そして 4 バイト境界に揃えゼロでパディングしたテーブルを書く。
++       各ディレクトリ項目はそのテーブルのチェックサムを持ち、`head` テーブルが含まれていれば、ファイル全体の合計がフォーマットの定数になるようにそのチェックサム調整値が設定される。
++       `head` テーブルは調整値をゼロにして渡さなければならない。
++       `Truetype#subset` はこうして結果を構築する。
++   entry #data   フォントファイルのバイト列
++   entry #TableOffset   ディレクトリの項目：テーブルのタグ、チェックサム、オフセット、長さ
+
+% 1 1 0 107201dc06eb1e6f1edcf48d2e5a7e6d
+
+@ 0 20 0 1a4b769cdd4b1bf016f8c4a94b36a283
++         `#tables` の値である。
++         オフセットと長さは `#data` 内でのテーブルの位置を示す。チェックサムはファイルが記録しているもので、ライブラリは記録するが検証はしない。
++     entry #id   テーブルの `Sfnt.Table.Tag`
++     entry #checksum   ディレクトリが記録するチェックサム、`B32` として
++     entry #offset   ファイルの先頭からのテーブルのオフセット
++     entry #length   テーブルのバイト単位の長さ
++   entry #numTables   ディレクトリが宣言するテーブルの数
++   entry #searchRange   ディレクトリの `searchRange` フィールド：数を超えない最大の 2 の累乗に 16 を掛けたもの
++   entry #entrySelector   ディレクトリの `entrySelector` フィールド：`searchRange` を 16 で割ったものの対数
++   entry #rangeShift   ディレクトリの `rangeShift` フィールド：数に 16 を掛けたものから `searchRange` を引いたもの
++   entry #tables   ライブラリが名前を持つすべてのテーブルを、タグごとにオフセットと長さとともに
++       ディレクトリから読んだ `Map[Sfnt.Table.Tag, TableOffset]` である。
++       `Ttf` の case でも `Otf` の case でもないタグは除かれるので、フォントの独自のテーブルは表されない。
++       マップの読み取りは全域的である。不正な形式のディレクトリでは空になり、その後すべてのテーブルアクセサーが `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #glyph   フォントの優先される文字マップを通じた、文字のグリフ
++       `cmap.glyph(char)`：グリフは `Glyph[this.type]` で、このフォントに型付けされているので、あるフォントのグリフを別のフォントで使うことはできない。
++       フォントが対応づけていない文字は、エラーではなくグリフ 0、つまり欠落グリフになる。
++       使える `cmap` サブテーブルがなければ `MissingEncoding` を、`cmap` がなければ `MissingTable` を伴う `Font.Error` を発生させる。
+
+% 2 1 0 01589e61a9a43eec1b77923bdba4c157
+
+% 3 1 0 1111d550203a46b20ab7a8e3b96581f0
+
+% 4 1 0 1a8292b8723b295f14f4af7248ee7121
+
+% 0 1 0 12322af46b5987e801e328e66d6e8761
+
+% 1 1 0 0f31409e14edba8d1979ce961e592b60
+
+@ 0 9 0 105b0c978c0885e118f08a40d070d393
++   entry #advanceWidth   フォントのデザイン単位での、文字の送り幅
++       `hmtx` から得る文字のグリフの水平方向の送りで、単位は em あたり `head.unitsPerEm` である。
++       テーブルのメトリクス数を超えるグリフは、等幅の末尾に対してフォーマットが定めるとおり、最後の送り幅を繰り返す。
++       `cmap`、`hhea`、`hmtx` のいずれかがなければ `Font.Error` を発生させる。
++   entry #width   このフォントでのテキストの幅を、em 単位の量として
++       文字の送り幅の合計を em あたりのユニット数で割ったもので、`Quantity[Ems[1]]` である。
++       em 幅は型付きの量なので、ピクセルやポイントの尺度と取り違えることはない。フォントサイズによる拡大縮小は明示的な算術である。
+
+% 2 1 0 1b8562d593ca5ac817abd5e390e20023
+
+% 3 1 0 18bb21b93b6fcb741ac84c181afdbede
+
+% 4 1 0 0c43af336724a6f71b688c0b2a045484
+
+% 0 1 0 080d990923bb95ff1e2cdabed7295ca8
+
+% 1 1 0 0b954aa3d20c99cf128da7a0a2d4456d
+
+@ 0 35 0 13de57935fd2f2e20c85dd3a665fe9f0
++   entry #leftSideBearing   フォントのデザイン単位での、文字の左サイドベアリング
++       `hmtx` から得る文字のグリフのベアリングで、メトリクス数を超えるグリフについては専用の配列に続く。
++       必要なテーブルがなければ `Font.Error` を発生させる。
++   entry #head   `head` テーブル：em あたりのユニット数、バウンディングボックス、作成日時、`loca` のフォーマット
++       `HeadTable` として展開される。存在しなければ `MissingTable` を、テーブルの検査定数がフォーマットの `0x5f0f3cf5` でなければ `MagicNumber` を伴う `Font.Error` を発生させる。
++   entry #cmap   `cmap` テーブル：文字からグリフへの対応
++       `CmapTable` として得られる。その `best` サブテーブルは Unicode の優先順位で選ばれ、その `glyph` が文字を解決する。
++       存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #hhea   `hhea` テーブル：アセンダー、ディセンダー、行間、メトリクス数
++       `HheaTable` として展開される。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #hmtx   `hmtx` テーブル：グリフごとの送り幅と左サイドベアリング
++       `hhea.numberOfHMetrics` で大きさが決まる `HmtxTable` として得られる。どちらかのテーブルがなければ `Font.Error` を発生させる。
++   entry #maxp   `maxp` テーブル：グリフ数
++       `MaxpTable` として得られる。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #post   `post` テーブル：イタリックの角度、下線のメトリクス、フォントが等幅かどうか
++       `PostTable` として得られる。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #os2   `OS/2` テーブル：太さと字幅のクラス、組版用メトリクス、埋め込みの権利
++       `Os2Table` として得られる。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #name   `name` テーブル：`Sfnt.NameId` ごとの、フォントのローカライズされた名前
++       `NameTable` として得られる。存在しなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #fontName   フォントの PostScript 名、または `Unset`
++       `name(Sfnt.NameId.PostScriptName)` で、`Font.Error` はすべて吸収される。PDF や PostScript の文書がフォントを参照するときの名前である。
++       それを記録していないフォントや `name` テーブルのないフォントでは `Unset` である。
++   entry #familyName   フォントのファミリー名、または `Unset`
++       `name(Sfnt.NameId.Family)` で、`Font.Error` はすべて吸収される。
++   entry #fvar   可変フォントの `fvar` テーブル。静的なフォントでは `Unset`
++       可変フォントのアウトラインが動く軸で、それぞれ範囲を持つ。
++       テーブルがあれば、`Coverage.of` は太さと字幅の範囲をここから読む。
++   entry #features   `GSUB` と `GPOS` から得る、フォントが実装するタグごとのレイアウトのフィーチャー
++       二つのレイアウトテーブルのフィーチャーのリストを、重複を除いて `Face.Feature` としたものである。
++       どちらのテーブルもないフォントは何も実装しない。
++       これは `Coverage.of` が記録するものなので、フォントにないフィーチャーを有効にするフェイスは拒否される。
+
+% 2 1 0 193d7615390939c91c14cf3b7557fde9
+
+% 3 1 0 0dd9d82342add75d0a21f3be962c06f7
+
+% 0 1 0 023e88caee675ae30c25145143d93c9a
+
+% 1 1 0 1d390aee43c25ddb1d7c5e94c8854bdc
+
+@ 0 1 0 195baa6fd3d260a41f10e2833dcc78e7
++   entry #FvarTable   可変フォントのフォントバリエーションテーブル
+
+% 1 1 0 193c9eb7e84c685a06375c7310a770d7
+
+@ 0 13 0 1cec7e728098abc10359e7f5cc9beff4
++         可変フォントの軸（`wght`、`wdth`、`ital`、`slnt`、`opsz`、あるいはフォント独自のもの）で、それぞれ受け入れる最小値、デフォルト値、最大値を持つ `Axis` レコードとして表される。
++         `Sfnt#fvar` を通じて到達する。
++     entry #axisCount   軸の数
++     entry #axisSize   各軸レコードのバイト単位の大きさ
++     entry #axes   軸。それぞれタグ、範囲、name id を持つ
++     entry #Axis   一つの軸：4 文字のタグ、最小値、デフォルト値、最大値、そして `name` の id
++       entry #tag   軸のタグ、`wght` など
++       entry #minimum   軸が受け入れる最小の値
++       entry #default   軸のデフォルト値
++       entry #maximum   軸が受け入れる最大の値
++       entry #nameId   軸の表示名の `name` テーブルでの id
++   entry #HeadTable   フォントヘッダー：バージョン、検査定数、em あたりのユニット数、バウンディングボックス、フラグ
+
+% 1 1 0 058934154e9eb90e16d06afbd0c00de6
+
+@ 0 5 0 0f9bc475c4f5e1900f083d2b341898a6
++         `head` テーブルを、フォーマット自身の固定幅の型（`U16`、`S16`、`B16`、`B32`、`S64`）でフィールドごとに展開したものなので、各フィールドはフォーマットが定める整数またはビットパターンとして読める。
++         `unitsPerEm` はデザイン単位と em を関係づける尺度である。`xMin`、`yMin`、`xMax`、`yMax` はすべてのグリフのバウンディングボックスである。`indexToLocFormat` は `loca` が短いオフセットと長いオフセットのどちらを使うかを示す。
+
+% 2 1 0 19ef62565b2fbbd91c8080ba024d0dda
+
+% 3 1 0 0680a632c9ae5d021dcf479880fd454e
+
+% 4 1 0 00113718cebb877a0e98c5151b7e892a
+
+% 0 1 0 128237ade6865a061c6406d0ecfac66b
+
+% 0 1 0 0d4ac6149dae80b7144afc32d0ad1439
+
+% 1 1 0 143d68e7cb1492be1b527236566bed52
+
+@ 0 20 0 067b8f3359954acc1fbc2d2cdfac26e8
++     entry #majorVersion   テーブルのメジャーバージョン、1
++     entry #minorVersion   テーブルのマイナーバージョン、0
++     entry #fontRevisionHigh   フォントのリビジョン番号の整数部
++     entry #fontRevisionLow   フォントのリビジョン番号の小数部
++     entry #checksumAdjustment   ファイル全体の合計をフォーマットの定数にする値
++     entry #magicNumber   検査定数 `0x5f0f3cf5`。異なれば `Sfnt#head` は `MagicNumber` を発生させる
++     entry #flags   ヘッダーのフラグビット
++     entry #unitsPerEm   一 em あたりのデザイン単位の数で、送り幅をこれで割ると em 幅になる
++     entry #created   1904 年からの秒数での作成日時
++     entry #modified   1904 年からの秒数での変更日時
++     entry #xMin   すべてのグリフのバウンディングボックスの左端
++     entry #yMin   すべてのグリフのバウンディングボックスの下端
++     entry #xMax   すべてのグリフのバウンディングボックスの右端
++     entry #yMax   すべてのグリフのバウンディングボックスの上端
++     entry #macStyle   Macintosh のスタイルビット：ボールド、イタリック、下線、…
++     entry #lowestRecPpem   em あたりのピクセル数で表した、読める最小のサイズ
++     entry #fontDirectionHint   非推奨の方向ヒント
++     entry #indexToLocFormat   短い `loca` オフセット（半分にした 16 ビット）なら 0、長いオフセット（32 ビット）なら 1
++     entry #glyphDataFormat   グリフデータのフォーマット、0
++   entry #HheaTable   水平ヘッダー：アセンダー、ディセンダー、行間、キャレットの傾き、メトリクス数
+
+% 1 1 0 0812011019a2943e0fc02883d7f1f15f
+
+@ 0 22 0 15978ae2ea5331de124a4f86fe5cb256
++         `hhea` テーブルをフィールドごとに展開したものである。
++         `ascender`、`descender`、`lineGap` は行のレイアウトに必要な垂直方向のメトリクスで、単位はデザイン単位である。`numberOfHMetrics` は、等幅の末尾の前に `hmtx` が持つ完全な（送り幅、ベアリング）の組の数である。
++     entry #majorVersion   テーブルのメジャーバージョン
++     entry #minorVersion   テーブルのマイナーバージョン
++     entry #ascender   組版用のアセンダー、デザイン単位
++     entry #descender   組版用のディセンダー、デザイン単位で、ベースラインより下では負
++     entry #lineGap   組版用の行間
++     entry #advanceWidthMax   `hmtx` の中で最大の送り幅
++     entry #minLeftSideBearing   最小の左サイドベアリング
++     entry #minRightSideBearing   最小の右サイドベアリング
++     entry #xMaxExtent   グリフの水平方向の最大の広がり
++     entry #caretSlopeRise   キャレットの傾きの縦方向の成分。直立したキャレットでは 1
++     entry #caretSlopeRun   キャレットの傾きの横方向の成分。直立したキャレットでは 0
++     entry #caretOffset   キャレットの水平方向のオフセット
++     entry #reserved0   予約フィールド
++     entry #reserved1   予約フィールド
++     entry #reserved2   予約フィールド
++     entry #reserved4   予約フィールド
++     entry #metricDataFormat   メトリクスデータのフォーマット、0
++     entry #numberOfHMetrics   `hmtx` 内の完全なメトリクスの組の数
++   entry #HmtxTable   水平メトリクス：グリフごとの送り幅と左サイドベアリング
+
+% 1 1 0 169e15ebf15bef1011b21e0c483050f3
+
+@ 0 12 0 010a1181545e1c16093a9184b8a4e237
++         `hhea` が宣言する数まではグリフごとに `HMetrics` の組が一つずつあり、その後は最後の送り幅が繰り返され（等幅の末尾）、ベアリングは専用の配列に続く。
++         `Sfnt#advanceWidth` と `Sfnt#leftSideBearing` は、文字のグリフをここで調べる。
++     entry #offset   ファイル内でのテーブルのオフセット
++     entry #count   `hhea` から得る、完全なメトリクスの組の数
++     entry #metrics   一度だけ読まれる、完全なメトリクスの組
++     entry #advanceWidth   id によるグリフの送り幅で、末尾では最後のものを繰り返す
++     entry #leftSideBearing   id によるグリフの左サイドベアリングで、組またはベアリングの末尾から得る
++     entry #HMetrics   一つのグリフの送り幅と左サイドベアリング
++       entry #advanceWidth   デザイン単位での水平方向の送り
++       entry #leftSideBearing   デザイン単位での左サイドベアリング
++   entry #MaxpTable   最大プロファイル。グリフ数だけが読まれる
+
+% 1 1 0 1de1a7a9f010e8211f95070062b6bf56
+
+@ 0 4 0 177eae10948580a4178b06534de28ea8
++         `maxp` テーブルである。
++         `glyphCount` は `loca` テーブルの大きさを決め、すべてのグリフ id の上限となる。
++     entry #offset   ファイル内でのテーブルのオフセット
++     entry #glyphCount   フォント内のグリフの数
++   entry #PostTable   PostScript のメタデータ：イタリックの角度、下線の位置と太さ、固定ピッチ
+
+% 1 1 0 0819608ec2d75535020ea0466c14e933
+
+@ 0 3 0 1655c1ee0592f93209aa21d44bcc7f3f
++         `post` テーブルである。
++         イタリックの角度は固定小数点の度数で、右に傾くときは負である。`Coverage.of` がファイルをイタリックと判断するために読む手がかりの一つである。
+
+% 2 1 0 0d8007feb17c29d80633110110991d13
+
+% 3 1 0 1bb832052ec26fed1ca18ace09d9b8d0
+
+% 4 1 0 12910f6aa4bb4a0612b49f226e185336
+
+% 0 1 0 182cc677406fb3f9005bca4610f62a92
+
+% 1 1 0 0ed542def9e6811d027eeeea8067746e
+
+@ 0 6 0 02506cc09eb384340182fef0f64db8a6
++     entry #offset   ファイル内でのテーブルのオフセット
++     entry #italicAngle   度数でのイタリックの角度で、直立なら 0。16.16 固定小数点からデコードされる
++     entry #underlinePosition   ベースラインに対する下線の位置
++     entry #underlineThickness   下線の太さ
++     entry #monospaced   フォントが固定ピッチかどうか
++   entry #Os2Table   OS/2 と Windows のメトリクス：太さと字幅のクラス、埋め込みの権利、組版用メトリクス
+
+% 1 1 0 0a9dfe56abbc4d430b4744ccb143107f
+
+@ 0 6 0 0af574572a7fa3f51b6d8c1be46edc09
++         `OS/2` テーブルを、そのバージョンが定めるオフセットでフィールドごとに読んだものである。
++         太さのクラス（1–1000、`Weight` が使う尺度）と字幅のクラス（1–9、`Stretch.widthClass` が名前を付ける）は、`Coverage.of` が静的なフォントについて記録するものである。選択ビットはフェイスがイタリックかどうかを示す。組版用のアセンダー、ディセンダー、行間、Windows のアセントとディセント、x ハイト、キャップハイトは PDF のフォント記述子が必要とするものである。
++         テーブルのバージョンより後に追加されたフィールドは `Unset` である。
+
+% 2 1 0 1f3c26e404c5056811b71529abc83609
+
+% 3 1 0 0b41dfb5ba5754301cf4906be14f8b2d
+
+% 4 1 0 1faaf41055f072b810686fd5f69f36dc
+
+% 0 1 0 0d9556c6db19f57c0f556392467fc482
+
+% 1 1 0 19d674a81db981d4004d720453dc7c2b
+
+@ 0 20 0 1407cbc0b9127c3113b64c62ab6e40bd
++     entry #offset   ファイル内でのテーブルのオフセット
++     entry #version   テーブルのバージョンで、後のどのフィールドが存在するかを決める
++     entry #weightClass   1–1000 の尺度での太さ。`Weight(weightClass)` がその `Weight` である
++     entry #widthClass   1 から 9 の字幅のクラス。`Stretch.widthClass` が名前を付ける
++     entry #fsType   埋め込みの権利のビット
++     entry #familyClass   IBM のフォントクラスとサブクラス
++     entry #selection   `fsSelection` のビット：イタリック、下線、反転、袋文字、取り消し線、ボールド、…
++     entry #typoAscender   組版用のアセンダー
++     entry #typoDescender   組版用のディセンダー
++     entry #typoLineGap   組版用の行間
++     entry #winAscent   Windows のアセント：クリッピング領域の上端
++     entry #winDescent   Windows のディセント：クリッピング領域の下端
++     entry #xHeight   テーブルのバージョン 2 からの x ハイト。それより前は `Unset`
++     entry #capHeight   テーブルのバージョン 2 からのキャップハイト。それより前は `Unset`
++     entry #embeddable   フォントを文書に埋め込んでよいかどうか
++         インストール可能な埋め込みは 0 であり、制限ビットのうち埋め込みを全面的に禁じるのは `0x0002` だけなので、プレビューと印刷のみのフォントや編集可能なフォントは埋め込み可能とみなされる。
++     entry #italic   選択ビットがフェイスをイタリックまたは斜体としているかどうか
++         `fsSelection` のビット 0 はイタリックのフェイスを、ビット 9 は斜体のフェイスを示す。どちらも傾いている。
++   entry #NameTable   命名テーブル：ファミリー名や PostScript 名などの、ローカライズされたプラットフォームごとの文字列
+
+% 1 1 0 13e7def6a423940d08436c3fb8de6172
+
+@ 0 9 0 1e995057357f21b71e5c520cfc59d7a3
++         `name` テーブルのレコードで、それぞれ一つのプラットフォーム、エンコーディング、言語における一つの name id の文字列である。
++         `apply` は `Sfnt.NameId` に対する最良のレコードを選ぶ。まず Windows の米国英語、次に他の Windows と Unicode のレコード、最後に旧来の Macintosh である。
++         Windows と Unicode の文字列は UTF-16BE から、Macintosh の文字列は MacRoman から（代替として ISO-8859-1 から）デコードされる。
++     entry #offset   ファイル内でのテーブルのオフセット
++     entry #count   名前レコードの数
++     entry #records   すべてのレコードで、それぞれプラットフォーム、エンコーディング、言語、name id、範囲を持つ
++     entry #apply   name id に対する最良の文字列。フォントが何も記録していなければ `Unset`
+
+% 1 1 0 09199ca52fc79c1f06aff5a8509d8145
+
+% 2 1 0 128d011e463d04bf0778473a555495e8
+
+% 3 1 0 118501d041d753f11774bc8293c2de4c
+
+% 0 1 0 17fe423f4b6b726e1936f006fdbeb132
+
+% 1 1 0 19ec48fa56284abc0067fe5fb53d3124
+
+@ 0 9 0 038cb873360cfb9b1701bcf053a6c547
++     entry #Record   一つの名前レコード：プラットフォーム、エンコーディング、言語、name id、そして文字列の位置
++       entry #platformId   プラットフォーム：0 は Unicode、1 は Macintosh、3 は Windows
++       entry #encodingId   プラットフォーム内のエンコーディング
++       entry #languageId   言語。`0x409` は Windows の米国英語である
++       entry #nameId   `Sfnt.NameId#ordinal` と照合される name id
++       entry #length   バイト単位の文字列の長さ
++       entry #start   ファイル内での文字列のオフセット
++       entry #decode   プラットフォームのエンコーディングでデコードした文字列
++   entry #CmapTable   文字からグリフへの対応で、いくつかのフォーマットのエンコーディングサブテーブルとして表す
+
+% 1 1 0 01b72f255071c2a511efcddc775cace6
+
+@ 0 20 0 117d6773ea55655908939344d0b24f49
++         `cmap` テーブルは一つ以上の `GlyphEncoding` サブテーブルを持ち、それぞれ一つのプラットフォームとエンコーディングに対応し、ライブラリが読むフォーマットのいずれかで書かれている。0（バイトで添字づけられた配列）、4（基本多言語面に対する区分された範囲）、6（密な連続）、12（Unicode 全体を覆うグループ）である。
++         `best` は優先されるサブテーブルを選び（BMP より完全な Unicode を、Windows のシンボルや Macintosh より Unicode を優先する）、`glyph` はそれを通じて文字を解決する。
++         それ以外のフォーマットのサブテーブルは、その `format` が最初に読まれるときに `UnknownFormat` を伴う `Font.Error` を発生させる。
++     entry #offset   ファイル内でのテーブルのオフセット
++     entry #version   テーブルのバージョン
++     entry #numTables   エンコーディングサブテーブルの数
++     entry #glyphEncodings   すべてのエンコーディングサブテーブルで、それぞれプラットフォーム、エンコーディング、オフセットを持つ
++     entry #best   優先されるサブテーブル。一つもなければ `Unset`
++         （プラットフォーム、エンコーディング）によって順位づけられる。Windows の完全な Unicode (3, 10) が最初で、次に Unicode の完全なもの (0, 4) と (0, 6)、Windows の BMP (3, 1)、Unicode の BMP (0, 3)、その他の Unicode、Windows のシンボル (3, 0) と続き、Macintosh Roman (1, 0) が最後である。
++     entry #glyph   最良のサブテーブルを通じた、文字のグリフ
++         サブテーブルがなければ `MissingEncoding` を、最良のものがライブラリの読まないフォーマットであれば `UnknownFormat` を伴う `Font.Error` を発生させる。
++         対応づけられていない文字はグリフ 0 である。
++     entry #GlyphEncoding   一つのエンコーディングサブテーブル：プラットフォーム、エンコーディング、オフセット、パースされたフォーマット
+
+% 1 1 0 0d8f14ce80a70db50682924a774aff90
+
+@ 0 30 0 1ab351025f728ec2004e474f1fc98f35
++           サブテーブルの `format` は最初の使用時に一度だけパースされ、`glyph` が検索を行う `Format` になる。パースはミューテックスの下でメモ化されるので、並行する読み取りはそれを共有する。
++       entry #platformId   サブテーブルのプラットフォーム
++       entry #encodingId   サブテーブルのエンコーディング
++       entry #offset   ファイル内でのサブテーブルのオフセット
++       entry #formatId   先行して読まれる、サブテーブルのフォーマット番号
++       entry #format   パースされたサブテーブル。読まないフォーマットに対しては `UnknownFormat` を伴う `Font.Error` を発生させる
++       entry #Segment   フォーマット 4 のセグメント：差分と範囲オフセットを持つ文字の範囲
++         entry #start   セグメントの最初の文字
++         entry #end   セグメントの最後の文字
++         entry #delta   範囲オフセットがゼロのとき、文字に足すとそのグリフになる値
++         entry #rangeOffset   セグメントがグリフ id の配列を介して間接参照するときにゼロでない値
++       entry #Format   パースされたすべてのサブテーブルができること：文字をこのフォントのグリフに対応づける
++         entry #glyph   文字のグリフ。対応づけられていなければグリフ 0
++       entry #Format0   最初の 256 個の文字コードだけを対象とする、バイトで添字づけられたグリフ id の配列
++         entry #start   配列のオフセット
++         entry #glyph   256 未満の文字のグリフ。それ以外はグリフ 0
++       entry #Format4   基本多言語面に対する区分された範囲で、差分または間接参照による
++         entry #idRangeOffsetsStart   範囲オフセットの配列のオフセットで、間接参照はこれに対する相対位置である
++         entry #segments   終わりの文字の順に並んだセグメント
++         entry #glyph   文字のグリフ：セグメントで見つけ、差分によって、あるいはグリフ id の配列を通じて得る
++       entry #Format6   連続した文字コードの範囲に対するグリフ id の密な連続
++         entry #first   連続の最初の文字コード
++         entry #count   連続の中のコードの数
++         entry #start   グリフ id の配列のオフセット
++         entry #glyph   連続の範囲内にある文字のグリフ。それ以外はグリフ 0
++       entry #Format12   Unicode 全体を覆う連続した対応のグループで、二分探索される
++         entry #groupCount   グループの数
++         entry #start   グループの配列のオフセット
++         entry #glyph   グループに対する二分探索による、文字のグリフ
+
+@ 0 1 0 0cdf83def44c05a011e576661ed7a75c
++ entry .Truetype   TrueType フォント：アウトラインが二次曲線で `glyf` と `loca` にあり、サブセット化できる sfnt
+
+% 1 1 0 0f6d0daaef38c31b1efd2708c5640e10
+
+@ 0 5 0 1f7bfbe93ca6fbe41c407a88cb99acaf
++       `Truetype` は、二つのアウトラインテーブル（各グリフのデータの位置を示す索引 `loca` と、データそのものである `glyf`）を持つ `Sfnt` であり、それらを必要とする操作を持つ。
++       `Truetype(source)` は、フォーマットを調べずに任意のストリーム可能なソースから読む。`CFF ` テーブルのないフォントに対しては `Truetype` を返すので、通常の入口は `Sfnt(source)` である。
+
+@ 0 2 0 0b3dbde7ac8f3f2f191501b4e258ddf1
++       重要な操作は `#subset` である。文書に埋め込むために、いくつかの文字が必要とするアウトラインだけを含む新しいフォントを作る。
+
+% 2 1 0 01e34357d1b1ace312bda73e1eccb3bd
+
+% 3 1 0 082f214d778838a10b376348fbbcb81e
+
+% 4 1 0 04bf0752aa0731c81b0a8592033ab19f
+
+% 0 1 0 085ef5989bf2586711352803bcfe1585
+
+% 1 1 0 1f43393010905c2c00b0d29c9ed4bca2
+
+@ 0 7 0 13e15d547801325a1014f3b5778f991d
++       サブセット化は元のグリフ番号を保つ（使われないグリフは番号を保ったままアウトラインが空になる）ので、文字マップ、メトリクス、グリフ間のすべての参照は書き換えなしで有効なままであり、他のすべてのテーブルは変更されずに引き継がれる。
++       複合グリフはたどられる。保持される集合は合成についての推移閉包（`#glyphClosure`）なので、アクセント付きの文字はそれを描く部品を保つ。
++       結果はチェックサムを含む完全なファイルで、`head` は長い `loca` オフセットに切り替えられる。
+
+% 1 1 0 0d0668d2963a5cac1d77311fe281e317
+
+% 1 1 0 03b9109a5c4a70e80bd1193965612465
+
+@ 0 17 0 13d55e93ad58c91418e67185942eebf9
++   entry .apply   任意のストリーム可能なソースから TrueType フォントを読む
++       `Truetype(source)` は `Streamable by Data over Credit` なソースを丸ごと読み、`Truetype(data)` はバイト列に対するケースクラスのコンストラクターである。
++       どちらもアウトラインのフォーマットを検査しない。検査するのは `Sfnt(…)` であり、ファイルが OpenType かもしれないときはそれを使う。
++   entry #data   フォントファイルのバイト列
++   entry #loca   `loca` テーブル：`glyf` 内での各グリフのオフセット
++       `maxp.glyphCount` で大きさが決まり、`head.indexToLocFormat` が示すフォーマットで読まれる。
++       `loca`、`maxp`、`head` のいずれかがなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #glyf   `glyf` テーブル：`loca` を通じて添字づけられるグリフのアウトライン
++       `glyf` または `loca` がなければ `MissingTable` を伴う `Font.Error` を発生させる。
++   entry #subset   いくつかの文字が必要とするグリフだけからなる新しいフォントで、番号は保たれる
++       `subset(chars: Set[Char])` または `subset(text: Text)`。
++       保持されるグリフは、文字が対応づけられるもの、グリフ 0、そして複合グリフの部品についての推移閉包である。
++       他のすべてのグリフは番号を保ったままアウトラインを失う。`glyf` と `loca` は再構築され（後者は常に長いフォーマットで、`head` もそれを示すように調整される）、他のすべてのテーブルはバイト単位でそのままコピーされる。
++       ファイル全体は `Sfnt.assemble` で組み立て直されるので、チェックサムは有効である。
++       再構築に必要なテーブルがなければ `Font.Error` を発生させる。
+
+% 2 1 0 1491c2eb7077bb6f113ebac8c10128e5
+
+% 3 1 0 1c43205d7c84a62d0aabcf5c7ffebea0
+
+% 4 1 0 128150f0a8e57f601696e138a75cc2b1
+
+% 0 1 0 1e54c0e3d5f664e215a06352159ec437
+
+% 1 1 0 094218539787af3605ca9832dcd856d7
+
+@ 0 5 0 1e05bac3a07e98391176986ca47d9db8
++   entry #glyphClosure   複合グリフの部品をたどって得る、グリフの集合を描画するのに必要なグリフ
++       グリフ id の集合の `GlyphRecord#components` についての推移閉包である。複合グリフは他のグリフから描かれ、それらもまた複合でありうる。
++       `#subset` は何を保持するかを決めるためにこれを使う。
++       `glyf` または `loca` がなければ `Font.Error` を発生させる。
++   entry #LocaTable   グリフ位置の索引：各グリフについて、`glyf` 内でそのデータが始まる位置
+
+% 1 1 0 0be39871a176076307e815a4cf7c3890
+
+@ 0 8 0 1dad3bbcb148a6791533d1c867acfae6
++         グリフごとに一つ、さらにもう一つのオフセットがあるので、グリフの範囲はそのオフセットと次のオフセットの差である。
++         短いフォーマットではオフセットは半分にして 16 ビットで格納され、長いフォーマットではそのまま格納される。
++     entry #offset   ファイル内でのテーブルのオフセット
++     entry #glyphCount   `maxp` から得るグリフの数
++     entry #longFormat   オフセットが 32 ビット（`true`）か、半分にした 16 ビット（`false`）か
++     entry #offsets   一度だけ読まれる、半分にされていないオフセット
++   entry #GlyfTable   グリフのアウトラインで、それぞれ id によって `GlyphRecord` として到達する
+
+% 1 1 0 16647e7ae6ed233e183495ec885cdeda
+
+@ 0 7 0 1ae66e92beb693900dc31769f9409964
++         `glyf(id)` は `loca` を通じてグリフのデータの位置を求める。
++         レコードは生のバイト列、輪郭の数、グリフが複合かどうか、そして複合であればそれを描く部品を公開する。アウトライン自体はこれ以上デコードされない。
++     entry #offset   ファイル内でのテーブルのオフセット
++     entry #loca   アウトラインの添字づけに使う `loca` テーブル
++     entry #apply   グリフ id に対するレコード
++     entry #GlyphRecord   一つのグリフの生のデータ：範囲、輪郭の数、複合グリフの部品
+
+% 1 1 0 0e216b8083a71b041f7fc195c58820d0
+
+@ 0 12 0 0a069cfa24b5049c0797d2d3d93fbc72
++           アウトラインのないグリフ（空白や、`#subset` によって捨てられたグリフ）の範囲はゼロである。複合グリフは輪郭の数が負で、それを組み立てるグリフを列挙する。
++       entry #start   ファイル内でのグリフデータのオフセット
++       entry #length   グリフデータの長さ。アウトラインのないグリフでは 0
++       entry #empty   グリフがアウトラインを持たないかどうか
++       entry #bytes   グリフの生のデータ
++       entry #contourCount   輪郭の数。複合グリフでは負の値
++       entry #composite   グリフが他のグリフから組み立てられているかどうか
++       entry #components   複合グリフを描くグリフの id。単純なグリフでは `Nil`
++           フラグに従って部品レコードをたどり、一度だけ読まれる。引数はワードまたはバイトで、拡大率は単一、x と y で別々、または 2×2 の変換行列である。
+
+@ 0 1 0 182d0e6aa3d51277062e20b4752d43d4
++ entry .Opentype   OpenType フォント：アウトラインが PostScript で `CFF ` テーブルにある sfnt
+
+% 1 1 0 1dd00472635714ef1561a03d7f211472
+
+@ 0 5 0 121ca1c72fd327a202a59853e1987736
++       グリフのアウトラインが `CFF ` に格納されている `Sfnt` である。
++       共有されるテーブル（文字の対応、メトリクス、名前、`OS/2`、`fvar`、レイアウトのフィーチャー）はすべて動作するが、アウトラインのデータはまだパースされないので、`Truetype#glyf` に相当するものもサブセット化もない。
++       `Sfnt(source)` は `CFF ` テーブルを見つけると `Opentype` を返す。`Opentype(source)` は検査せずに読む。
+
+% 1 1 0 0c4c215b71ade75b0b6d56ebb8f467cc
+
+% 1 1 0 09b149d3fc254bef09ba8abba6758304
+
+@ 0 2 0 0c91981056ea5ecc1f041c6f3a788ea9
++   entry .apply   任意のストリーム可能なソースから OpenType フォントを読む
++   entry #data   フォントファイルのバイト列
+
+@ 0 1 0 0c5db2110664c2570b4ab363baa721e7
++ entry .Glyph   ある特定のフォントのグリフを、その id によって表す
+
+% 1 1 0 11b918146ab2279108f4a4429996976c
+
+@ 0 5 0 18e1d59210ffb7b8181885211bffd32d
++       `Glyph[font.type]` はグリフ id を包む不透明なラッパーで、それが解決されたフォントに型付けされているので、あるフォントのグリフを別のフォントの添字に使うことはできない。
++       グリフを得る方法は `Sfnt#glyph(char)` である。`internal` で宣言された拡張 `glyph.id` が id を読み戻す（0 は欠落グリフである）。
++       `Glyph(font, id)` は既知の id を包む。
++       型は `phoenicia.internal.Glyph` で、ここにエクスポートされている。
+
+% 2 1 0 052a7e1e06e94e0f056f2e0594b80f82
+
+% 3 1 0 0b8aa9def61b663a1feb47bce5956c14
+
+% 4 1 0 0437f580ddb9394b0e7e2814ea5147d5
+
+% 0 1 0 1ea461913e74a44f1c6eba2654932309
+
+% 1 1 0 06a9444b0df9015216b804848f2c4e9c
+
+@ 0 2 0 07dd1ebec1967310045a30e568b0ac77
++       そのコンパニオンのメンバーは、型のエクスポート元である `internal.Glyph` で宣言され、そこで文書化されている。
+
+% 1 1 0 12674fa921ae801c1856518f6b62ffa3
+
+@ 0 1 0 0d00cde479db274807a554a0b3bcdf7a
++ entry .Typeface   名前によるフォントファミリーで、その名前はその型でもある：`Typeface["Inter"]` は `Typeface of "Inter"`
+
+% 1 1 0 00c18c298fa0541d0f3401adfe263f02
+
+@ 0 5 0 1857563d580f4d3d1b4c12f772e2d551
++       `Typeface` はファミリーを名指す。文書が書体を参照するときに書く名前で、CSS の `font-family` や PDF の `/BaseFont` にあたる。その名前を `Topic` として持つので、`Typeface["Inter"]` の型は `Typeface of "Inter"` となり、ある書体に対するプロビジョンと別の書体に対するプロビジョンはコンパイル時に区別できる。
++       フォントがどこから来るかについては何も言わない。それは `Typesettable` のプロビジョンが担う。
+
+@ 0 3 0 02b07e962b0b2fe902a1e75a96489591
++       書体のフェイスには流れるように到達する。
++       `#face`（または `#regular`）は標準の直立したフェイスで、`#bold`、`#light`、`#italic` などはそこから選ぶ。どれも `Face of "Inter"` であり、コンパイル時の検査のためにその要求を型に持つ。
+
+% 2 1 0 0e3de47e2ccd08a110fee7d5c02ccfdc
+
+% 3 1 0 0f0502210be118600c016a683d7b3c63
+
+% 0 1 0 1fd77387225ee42216a80fae5635289c
+
+% 0 1 0 0569c5651bd2d5710d79c49a6d57b445
+
+% 0 1 0 0591e0ad8475396a07feb7f5d602e53f
+
+% 0 1 0 042ea1d71f2fedc109f39a620eaa62dc
+
+% 1 1 0 044bc9cfdfb4316c007f6287f5b8305e
+
+@ 0 4 0 07a8f6deb7d9484b0ff0751aa6c41618
++       CSS の総称ファミリー（`.SansSerif`、`.Serif`、`.Monospace`、`.Cursive`、`.Fantasy`、`.SystemUi`）も書体である。ブラウザは手持ちのもので各ファミリーを組むので、cataclysm の `Web` コンパニオンは何も宣言せずにそれらを提供する。
++       二つの書体は名前が等しければ等しく、書体はその名前として表示される。
+
+% 1 1 0 029191e12616d51d011f5bcee30664ad
+
+% 2 1 0 0c8cd626203e4d7f1cfb92633fa45ddf
+
+% 2 1 0 16b416dfa30cbdec108782ef3340319b
+
+@ 0 25 0 0af5d7232768e72d03175cc37e6dcdc8
++   entry .apply   `Typeface["Inter"]`：リテラル型としての名前から得る、ファミリーの書体
++       型引数がファミリー名を `Label` として表す inline メソッドである。名前は `constValue` で型から読まれるので、リテラルでなければならない。
++       結果は `Typeface of family` で、名前を値と型の両方として持つ。
++   entry .SansSerif   CSS の総称ファミリー `sans-serif`、`Typeface of "sans-serif"`
++   entry .Serif   CSS の総称ファミリー `serif`、`Typeface of "serif"`
++   entry .Monospace   CSS の総称ファミリー `monospace`、`Typeface of "monospace"`
++   entry .Cursive   CSS の総称ファミリー `cursive`、`Typeface of "cursive"`
++   entry .Fantasy   CSS の総称ファミリー `fantasy`、`Typeface of "fantasy"`
++   entry .SystemUi   CSS の総称ファミリー `system-ui`、`Typeface of "system-ui"`
++   entry .showable   書体をそのファミリー名として表示する
++   entry .inspectable   書体を `Typeface["Inter"]` として検査する
++   entry #name   テキストとしてのファミリー名
++   entry #Topic   リテラル型としてのファミリー名：`Typeface["Inter"]` では `"Inter"`
++   entry #face   書体の標準の直立したフェイスで、他のフェイスはここから選ぶ
++       `Weight.Regular`、`Slant.Upright`、`Stretch.Normal` で、バリエーションもフィーチャーもない `Face of Topic` であり、その型は `Weights = 400`、`Slanting = "upright"`、`Enabled = Nothing` を記録する。
++       `#regular` は同じフェイスである。
++   entry #regular   標準の直立したフェイス。`#face` と同じ
++   entry #light   ライト（300）の直立したフェイス
++   entry #medium   ミディアム（500）の直立したフェイス
++   entry #semibold   セミボールド（600）の直立したフェイス
++   entry #bold   ボールド（700）の直立したフェイス
++   entry #black   ブラック（900）の直立したフェイス
++   entry #italic   標準のイタリックのフェイス
+
+@ 0 1 0 0772c9b9f4dc08981eb17598a0b450d6
++ entry .Face   書体をどう組むか：太さ、傾き、字幅、バリエーションの軸、レイアウトのフィーチャー
+
+% 1 1 0 1b60a2357a29fbf918a49303d16ead1b
+
+@ 0 5 0 017d643ec3b2880b0eaf3c19bd9c3756
++       `Face` は要求を記述する。`#weight`、`#slant`、`#stretch` での `#typeface` に、可変フォントのさらなる軸上の `#variations` と、有効または無効にする `#features` を加えたものである。
++       フォントがどこから来るかについては何も言わない。`Typesettable` のプロビジョンと組にすると `Font` になる。
++       書体のファミリーはフェイスの `Topic` なので、`Typeface["Inter"].bold` は `Face of "Inter"` である。
+
+@ 0 2 0 07ba8bacd63b51dd049fe305f1f7e347
++       フェイスは書体の `face` から流れるように構築され、各メソッドは一部分を変え、それに合わせて型を更新した新しいフェイスを返す。
+
+% 2 1 0 150083330a06980c148330eaf92b6044
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 04554ff5aa7fbff011575f4fe320ecd7
++         label 標準のフェイス
+
+% 1 1 0 04c62758f4f83ac1153f9fb7ce33b9af
+
+% 0 1 0 0184f8be8bf7a3db003c5c0054d7f08e
+
+% 0 1 0 02de0783f879a54910f30064330e8f62
+
+% 1 1 0 1f7fca2031e3261912e5430dd89e41fb
+
+@ 0 1 0 121c3c927674ac221315e5bd29a3a62c
++         label ボールド
+
+% 1 1 0 1d6e75103b2ce451138ae63de30a7210
+
+% 0 1 0 0d71b14ffd26e3501840c43492c7d6de
+
+% 0 1 0 1be8535929107ef8169e964b530d3074
+
+% 1 1 0 08893dbd810f73c5080ae887ef94bdb8
+
+@ 0 1 0 1effa55a791cc2561b59e3931df954f0
++         label ボールドイタリック
+
+% 1 1 0 128ae89ae0a17a080c53be56ca133ec4
+
+% 0 1 0 1d1d0436b816aece0cf422f0fd200839
+
+% 0 1 0 030cb1b67323f5581aeefb5daa8d3223
+
+% 1 1 0 17abffee9f19b9b51227bb572eb61f84
+
+@ 0 1 0 19c61af23a6d01220888c182f086757a
++         label オールドスタイル数字を加えて
+
+% 1 1 0 066baf3fbf40be5e0ec41ef05a4d2ae9
+
+% 0 1 0 0338895b0ad0be5110a2fb002bedd872
+
+% 0 1 0 18a5affb21db0d8306e71d1bbc44b9da
+
+% 1 1 0 03208a2d69f8707a1db07b7af8ea612d
+
+@ 0 1 0 0cf795cd3ff681c00ca1e60da84e84aa
++         label 実行時に決まる太さ
+
+% 1 1 0 0565070e99edbd38189dd18933ec865d
+
+% 0 1 0 0b2fdbff1fe44bc207c1115b13aa6ce6
+
+% 0 1 0 0c0aa6b929b0c0130b682ec920d3f242
+
+% 0 1 0 054a0417a0857ac20b9419f2045bb890
+
+% 1 1 0 0d91bb94e3a6bdc806259c1d088a6784
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 9 0 07345358dec714fe1c5b999b31194c92
++       三つの型メンバーが、コードが求めたものを、コンパイル時に分かる場合に記録する。
++       `#Weights` はリテラルとしての太さ（`700`）、`#Slanting` は `"upright"` または `"italic"`、`#Enabled` は有効にしたフィーチャーのタグの合併型（`"onum" | "tnum"`、なければ `Nothing`）である。
++       実行時に決まる部分（計算された太さでの `#weighing`、`#slanted`、タグによるフィーチャーでの `#featuring`）は `Face.Runtime` として記録される。
++       ファイルがクラスパス上にあるプロビジョンから `Font` を作ると、記録された要求はコードのコンパイル時にファイルと照合され、残りはフォントが作られるときに検査される。
++       単なる `Face of "Inter"` と注釈されたフェイスは記録を失い、実行時にのみ検査される。
+
+@ 0 2 0 135a63b7af107b8a18c5ad4a75c104f0
++       `Face(typeface, weight, slant, …)` は実行時の値からフェイスを構築し、すべての型メンバーは `Runtime` になる。
++       フェイスは `Inter 700 italic` のように表示される。
+
+% 1 1 0 15b5badb1ec0839e10188b1b40403207
+
+% 2 1 0 0daf18bbbf36f6ac13c4eb7e509d7b5c
+
+% 0 1 0 011566bfdd640c841186f1c1dc58fad3
+
+% 0 1 0 0d8247cc4d067a2e1e25d2357ce87338
+
+% 0 1 0 1d813bd53f13f3d308064c2d493b6b86
+
+% 0 1 0 0c8caa14dfa91dfb1ad3ca2bd89b8599
+
+@ 0 14 0 0678009e746a07e804e795f88c2bae3b
++   entry .Runtime   要求のうち実行時に決まる部分を示すマーカー型
++       型としてのみ使われるシールされたトレイトである。`Weights = Face.Runtime` は、太さが名前で選ばれたのではなく計算されたことを示すので、コンパイル時の検査はそれを実行時の検査に委ねる。
++   entry .Shape   `Face.Shape[family, weights, slanting, enabled]`：要求全体を型に持つフェイス
++       細分化 `Face { type Topic = family; type Weights = weights; type Slanting = slanting; type Enabled = enabled }` で、流れるように使うすべてのメソッドがこれを返す。
++   entry .apply   実行時の値から作るフェイス：`Face(typeface, weight, slant, stretch, variations, features)`
++       書体より後のすべてのパラメーターにはデフォルト値（標準、直立、通常、なし、なし）があり、結果は `Face.Shape[family, Runtime, Runtime, Runtime]` なので、これから作ったフォントは実行時にのみ検査される。
++   entry .showable   フェイスを書体、太さ、傾きとして表示する：`Inter 700 italic`
++       直立のときは傾きを省く：`Inter 400`。
++   entry .inspectable   フェイスを `Face("Inter", Weight(700), Slant.Italic)` として検査する
++   entry .Feature   4 文字のタグによる OpenType のレイアウトのフィーチャーで、そのタグはその型でもある
+
+% 1 1 0 1d47b1870b7424bf15c82c46d7213a4f
+
+@ 0 5 0 07689c5ef1a1d5751aee5512b31599d2
++         `Face.Feature.OldstyleNumerals` は `Feature of "onum"` である。タグはフィーチャーの `Topic` なので、それを有効にするフェイスは `Enabled` 型に `"onum"` を記録する。
++         よく使われる登録済みのフィーチャーには名前がある。スタイルセットと文字バリアントは番号で表され（`.stylisticSet(3)` は `ss03`）、`Face.Feature(t"…")` は他の任意のタグを受け入れ、それは実行時にのみ分かる `Feature of Runtime` となる。
+
+@ 0 3 0 1c22c6c81c286f7c1af81b9bf9082b2b
++         フィーチャーは `#enabled`、`#disabled`、`#set(value)` によって `Setting` になり、フェイスは `Face#enabling`、`Face#disabling`、`Face#featuring` を通じて設定を受け取る。
++         二つのフィーチャーはタグが等しければ等しく、フィーチャーはそのタグとして表示される。
+
+% 2 1 0 0889b0e1d22969a71d0e9aefaa7b6c96
+
+% 3 1 0 08d077412ca15afc1a461d852a13b098
+
+% 0 1 0 1769430724898de31be42a7827eae01f
+
+% 0 1 0 10b86447a4f855c910404542c7ca3e48
+
+% 0 1 0 065936e7b4611481136f34010d2ff993
+
+% 0 1 0 119715f7bd03c72a0612a8019b4c38ec
+
+% 1 1 0 02f032f2bd8bcc581c50b694c13481d9
+
+@ 0 25 0 013630e430d8277c0bcd6e5b1b59aa92
++     entry .apply   `Face.Feature(tag)`：任意のタグによるフィーチャーで、実行時にのみ分かる
++         結果は `Feature of Runtime` なので、それを有効にするとフェイスの `Enabled` 型にはタグではなく `Face.Runtime` が加わり、コンパイル時の検査はそれを飛ばす。
++     entry .Ligatures   標準の合字、`liga`
++     entry .DiscretionaryLigatures   任意の合字、`dlig`
++     entry .HistoricalLigatures   歴史的な合字、`hlig`
++     entry .ContextualAlternates   文脈依存の代替字形、`calt`
++     entry .Kerning   カーニング、`kern`
++     entry .OldstyleNumerals   オールドスタイル数字、`onum`
++     entry .LiningNumerals   ライニング数字、`lnum`
++     entry .TabularNumerals   等幅数字、`tnum`
++     entry .ProportionalNumerals   プロポーショナル数字、`pnum`
++     entry .SlashedZero   スラッシュ付きのゼロ、`zero`
++     entry .Fractions   分数、`frac`
++     entry .Ordinals   序数標識、`ordn`
++     entry .SmallCapitals   小文字からのスモールキャピタル、`smcp`
++     entry .CapitalSmallCapitals   大文字からのスモールキャピタル、`c2sc`
++     entry .Swashes   スワッシュ字形、`swsh`
++     entry .Superscript   上付き字形、`sups`
++     entry .Subscript   下付き字形、`subs`
++     entry .stylisticSet   スタイルセット _n_、`ss01` から `ss20`、実行時のフィーチャーとして
++         番号は 2 桁にゼロ埋めされる。
++         タグは実行時に作られるので、結果は `Feature of Runtime` である。
++     entry .characterVariant   文字バリアント _n_、`cv01` から `cv99`、実行時のフィーチャーとして
++     entry .Setting   設定された値を伴うフィーチャー：0 で無効、1 で有効、それより大きい値で代替字形を選ぶ
+
+% 1 1 0 023ef310e079b2031585c9aa0cdb1ac0
+
+@ 0 58 0 0021f1bbcce04e6b187ed3366d466d0c
++           フェイスが `features` リストに保持するものである。
++           ほとんどのフィーチャーはオンかオフだが、文字バリアントなど一部のものは、より大きい値で代替字形の中から選ぶ。
++       entry #feature   フィーチャー
++       entry #value   値：0 はオフ、1 はオン、あるいは代替字形の番号
++     entry .showable   フィーチャーをそのタグとして表示する
++     entry .inspectable   フィーチャーを `Face.Feature("onum")` として検査する
++     entry #tag   4 文字のタグ
++     entry #enabled   フィーチャーをオンにする設定、値 1
++     entry #disabled   フィーチャーをオフにする設定、値 0
++     entry #set   選んだ値による設定で、代替字形の中から選ぶフィーチャーのためのもの
++   entry #typeface   フェイスが属する書体
++   entry #weight   1–1000 の尺度での太さ
++   entry #slant   直立、イタリック、またはある角度の斜体
++   entry #stretch   通常に対する百分率での字幅
++   entry #variations   可変フォントのさらなる軸上の位置
++   entry #features   加えられた順の、レイアウトのフィーチャーの設定
++   entry #Topic   リテラル型としてのファミリー名
++   entry #Weights   リテラル型としての要求された太さ（`700`）、または `Face.Runtime`
++   entry #Slanting   `"upright"` または `"italic"` としての要求された傾き、または `Face.Runtime`
++   entry #Enabled   有効にしたフィーチャーのタグの合併型。なければ `Nothing`、または `Face.Runtime` を含む
++   entry #weighing   実行時に決まる任意の太さでのフェイス
++       `Weights` は `Face.Runtime` になるので、太さはフォントが作られるときにのみ検査される。
++       名前付きの太さ（`#bold`、`#light`、…）は代わりにそのリテラルを記録する。
++   entry #thin   太さ 100 のフェイス
++   entry #light   太さ 300 のフェイス
++   entry #regular   太さ 400 のフェイス
++   entry #medium   太さ 500 のフェイス
++   entry #semibold   太さ 600 のフェイス
++   entry #bold   太さ 700 のフェイス
++   entry #black   太さ 900 のフェイス
++   entry #slanted   実行時に決まる任意の傾きでのフェイス
++       `Slanting` は `Face.Runtime` になる。
++       `#italic`、`#upright`、`#oblique` は代わりにその傾きを記録する。
++   entry #italic   イタリックのフェイス。`Slanting` は `"italic"` になる
++   entry #upright   直立したフェイス。`Slanting` は `"upright"` になる
++   entry #oblique   度数で表した角度で傾けたフェイスで、正のときは右に傾く
++       斜体は別に描かれたイタリックではなく直立体を傾けたものだが、それを組むのはイタリックのフェイスを提供するプロビジョンなので、カバレッジの検査のためには `"italic"` として記録される。
++   entry #stretched   任意の字幅でのフェイス
++       字幅は型に記録されないので、フォントが作られるときにのみ検査される。
++   entry #condensed   通常の 75% の幅のフェイス
++   entry #expanded   通常の 125% の幅のフェイス
++   entry #varying   可変フォントのさらなる軸上の位置を持つフェイス
++       `varying(Variation.Axis.OpticalSize, 24.0)` は `Variation` を加える。
++       登録済みの太さ、字幅、イタリック、傾きの軸は、代わりに太さ、字幅、傾きを通じて設定されるので、静的なフォントと可変フォントは同じように求められる。`varying` は光学サイズとフォント独自の軸のためのものである。
++       フォントにない軸や範囲外の値は、フォントが作られるときに拒否される。
++   entry #featuring   実行時に作られたフィーチャーの設定を持つフェイス
++       `Face.Feature.Setting` を加える。
++       設定は何でも有効にしうるので、`Enabled` には `Face.Runtime` が加わり、コンパイル時の検査は見えないものを飛ばす。
++   entry #enabling   フィーチャーを有効にし、そのタグを型に記録したフェイス
++       `enabling(Face.Feature.OldstyleNumerals)` は `Enabled` に `"onum"` を加えるので、ファイルにそのフィーチャーがないプロビジョンは、コードのコンパイル時にそのフォントを拒否する。
++   entry #disabling   フィーチャーを無効にしたフェイス
++       フォントにないフィーチャーを無効にしても何も変わらないので、要件は加わらず、型も変わらない。
+
+@ 0 1 0 0d049b2356a65e1b1ccc5e0e48ecf6f3
++ entry .Weight   CSS と OpenType が共有する 1–1000 の尺度上の太さ。慣用の名前を持つ
+
+% 1 1 0 09eff044f2ccc99f0e9efc84d3c2f83d
+
+@ 0 6 0 1d9f6627f944869015753bd166fddcbd
++       不透明型の `Int`（`phoenicia.internal.Weight`、ここにエクスポートされる）。
++       `Weight(value)` は尺度の外の値を拒否せず、近い方の端に寄せる。
++       九つの名前付きの太さは `.Thin`（100）、`.ExtraLight`（200）、`.Light`（300）、`.Regular`（400）、`.Medium`（500）、`.Semibold`（600）、`.Bold`（700）、`.ExtraBold`（800）、`.Black`（900）である。
++       `.Range` は、可変フォントの `wght` 軸や `@font-face` 宣言が提供するような、両端を含む範囲であり、`lower to upper` または `weight.range` で作る。
+
+% 2 1 0 1ecd1e6b0efe3c8f11f6db5270a8fb8b
+
+% 3 1 0 132e69f2d79997410c2fcf7ca434e4e7
+
+% 0 1 0 042644f2a8dfa05b0810f3ab0e6b7700
+
+% 0 1 0 0eb743b5eedaf65a09612bc077dd7dd1
+
+% 1 1 0 043e0da8ea1c9ec11dc0fdb1ba05b93b
+
+@ 0 2 0 08188797f03da00117d84e37e501b492
++       コンパニオンのメンバーは、型のエクスポート元である `internal.Weight` で宣言されており、そこに文書がある。
+
+% 2 1 0 1bec525c99cc39040bd1063941c247cc
+
+% 2 1 0 067d5b52c2dc79e0025d4cb595104d4e
+
+@ 0 1 0 1c9672acf789b333099c1f2a3a5b6499
++ entry .Slant   フェイスが傾いているかどうか：直立、真のイタリック、またはある角度の斜体
+
+% 1 1 0 1c8d022b8beb5c8617eb7646050514a3
+
+@ 0 6 0 094430f8c55a14c504f606c7b5255625
++       `Upright` と `Italic` は描かれた二つのフェイスである。
++       `Oblique(angle)` は直立を度単位の角度で傾けたものであり、正のときは右に傾く。
++       カバレッジにおいては、斜体はイタリックとして扱われる。
++       傾きは `upright`、`italic`、`oblique 11.5°` として表示される。
++   entry .showable   傾きを `upright`、`italic`、`oblique 11.5°` として表示する
++   entry .inspectable   傾きを `Slant.Upright`、`Slant.Italic`、`Slant.Oblique(11.5)` として検査する
++   entry #upright   傾きが `Upright` かどうか
+
+@ 0 1 0 1d6f08e8fab9fee5172a95132721e8b0
++ entry .Stretch   通常の幅に対するパーセンテージで表したフェイスの幅。50% から 200% まで
+
+% 1 1 0 1b67957a969d3982049c622769fb225a
+
+@ 0 5 0 16e4978ed37437800d16a707a051e10e
++       CSS の `font-stretch` が測るとおりの、不透明型の `Double`（`phoenicia.internal.Stretch`、ここにエクスポートされる）。
++       `Stretch(percentage)` は 50–200 に収める。
++       `.UltraCondensed`（50%）から `.Normal`（100%）を経て `.UltraExpanded`（200%）までの九つの名前付きの幅は、OS/2 テーブルの `usWidthClass` が 1 から 9 で番号付けするものであり、`.widthClass` がそれを対応付ける。
++       `.Range` は、可変フォントの `wdth` 軸が提供するような、両端を含む範囲である。
+
+@ 0 2 0 05b6503d0bee3df803580d5fba17aa62
++       コンパニオンのメンバーは、型のエクスポート元である `internal.Stretch` で宣言されており、そこに文書がある。
+
+% 2 1 0 08e77ae33884235d0b9f361cfeed72b0
+
+@ 0 1 0 0ff5cf9aad030ea61eff1bfb01e2cdc0
++ entry .Variation   可変フォントの一つの軸上の位置
+
+% 1 1 0 0c18be9fb183f9ea03ab208313f9e44f
+
+@ 0 5 0 0cb7e82dcfbd31091b26cbc372a23707
++       `Variation(axis, value)` は `Face#varying` がフェイスに加えるものである。
++       登録済みの太さ、幅、イタリック、傾きの軸はフェイスの `Weight`、`Stretch`、`Slant` を通じて設定されるので、`Variation` はオプティカルサイズとフォント独自の軸のためのものである。
++       プロビジョンは各バリエーションをフォントの `fvar` の範囲と照合する。
++       フォントにない軸は `Font.Error.Reason.UnknownAxis` で、範囲外の値は `AxisOutOfRange` で拒否される。
+
+% 2 1 0 0f3c1498ec3ec97c070d06e66ac5f1dd
+
+% 3 1 0 1125ea5ffc3d4f091ac851150b05e94f
+
+% 0 1 0 18d424417af5566f138a0ee981ac6578
+
+% 1 1 0 09545358c386809e14b15dac95bc09ee
+
+% 1 1 0 1b1a18c5db142b161c1b4d29ad292f67
+
+% 2 1 0 017f05980cf9c1380185dd5d7a5482ec
+
+@ 0 1 0 067ae38ffb01d2d40f8525953387402a
++   entry .Axis   4 文字のタグで表したバリエーションの軸
+
+% 1 1 0 145f4148020c60a70e49df43c0c48061
+
+@ 0 19 0 04f3aeea0a009413154872e0e0e354eb
++         不透明型の `Text`。
++         登録済みの五つの軸には名前がある。
++         `.Weight`（`wght`）、`.Width`（`wdth`）、`.Italic`（`ital`）、`.Slant`（`slnt`）、`.OpticalSize`（`opsz`）である。
++         フォント独自の軸は、そのタグから `Variation.Axis(tag)` で作る。
++     entry .apply   タグから得る軸
++     entry .Weight   `wght` 軸
++     entry .Width   `wdth` 軸
++     entry .Italic   `ital` 軸
++     entry .Slant   `slnt` 軸
++     entry .OpticalSize   `opsz` 軸
++     entry .showable   軸をそのタグとして表示する
++     entry .inspectable   軸を `Variation.Axis("opsz")` として検査する
++     entry .tag   4 文字のタグ
++   entry .Range   フォントが一つの軸上で認める値。その `fvar` テーブルから得る
++     entry #axis   軸
++     entry #lower   認められる最小の値
++     entry #upper   認められる最大の値
++     entry #contains   値が範囲内にあるかどうか
++   entry #axis   軸
++   entry #value   軸上の位置
+
+@ 0 1 0 17d8a4db9386a541179f33b124c20c1a
++ entry .Medium   テキストが組まれるメディア：ウェブ、印刷、あるいはレンダラーが定義する任意のもの
+
+% 1 1 0 164f3733010e4fa016b730f0fcf058a4
+
+@ 0 5 0 061927d782f5affe0023df31f3f4caab
++       開いたトレイトである。
++       `Typesettable` のプロビジョンは、自らが対応するメディアを自身の `Form` として名指す。
++       `Font in Web` はブラウザのためのフォントであり、`Font in Print` は PDF のためのフォントである。
++       `in Medium` そのものであるプロビジョン、すなわち埋め込まれたフォントファイルは、すべてのメディアに対応する。
++       ファイルはどこにでも運べるからである。
++       これが、要求する側が `in medium` ではなく `in (? >: medium)` のプロビジョンを求める理由である。
+
+@ 0 4 0 1236a77117f0bec41a71e19796f1eb59
++       各レンダラーは自身のメディアをコンパニオン付きのトレイトとして宣言し、そのメディアが常に応えられるプロビジョンはそのコンパニオン、すなわち暗黙のスコープに置かれる。
++       cataclysm の `object Web` は CSS の総称ファミリーを持ち、facsimile の `object Print` は PDF の標準 14 フォントを持つ。
++       テストや独自のレンダラーは、一行でメディアを宣言する。
+
+% 2 1 0 0fd58c4c51e6fcda11c18ba0aaf2cddf
+
+% 3 1 0 136953f30898647d05e0420401af0f1e
+
+% 2 1 0 0c1bd193120172b21ae02cb9f3afbb62
+
+% 1 1 0 12b201685371fa2914380c76084cfdbc
+
+% 2 1 0 1d2357269924b1ac19facc48518da793
+
+% 3 1 0 1df29d565a498ccd057f13efef4f36f5
+
+@ 0 1 0 1afdf3ca45c6c1801cf558ff1403188c
++ entry .Typesettable   メディアにおける書体のプロビジョン：フォントがどこから来るか、そしてどのフェイスを組めるか
+
+% 1 1 0 16d61dd86bf58055027cfc83fa9ec0d5
+
+@ 0 8 0 0677e2c93a40a4ed01c605619d4df30b
++       `Typeface of "Inter" is Typesettable in Web` は、ウェブが Inter をどう入手するかをその `#sources` として表す。
++       フォントファイルそのもの、URL、読者がインストールしたフォント、スタイルシート、あるいは総称ファミリーなら何もなし、である。
++       そして、その後どのフェイスを組めるかをその `#coverage` として表す。
++       対応するメディアはその `Form` であり、これは `Formal` から継承した型メンバーである。
++       すべてのメディアなら `Medium`、あるいは `Web` のような一つのメディアである。
++       これは given として一度だけ宣言される。
++       `Font` は、そのメディアにおけるその書体のプロビジョンがスコープにある場所でしか作れない。
++       これによって、文書は名指すすべての書体について、そのメディアが必要とするものを持っていることが保証される。
+
+% 2 1 0 0e69cfb0089c1e8f0a228523858934ad
+
+% 3 1 0 0694d98170217235132d82443eb6c934
+
+% 4 1 0 09b0dc000b8165860246e3300eceb64d
+
+% 0 1 0 0ec3b16c63b240e905072027e08983c3
+
+% 0 1 0 1d71b97489d920e306751232a49a3683
+
+% 0 1 0 1d66122d61624ee41d9b9d5338d43fdd
+
+% 0 1 0 187acf8f10fb57de0db00dd08059b2a8
+
+% 1 1 0 1fb8b47aa69b73b9092133b6ce155499
+
+@ 0 7 0 04590d238ceedadb161bfee666e5abdd
++       `.embedded` はフォントファイルからプロビジョンを作る。
++       フォントファイルはどのメディアでも運べるので、これは `in Medium` である。
++       そのカバレッジはファイルから読まれ、複数のファイル（レギュラー、ボールド、イタリック）は、カバレッジがそれらの和集合である一つのプロビジョンになる。
++       一つのメディアに属するプロビジョンは、そのメディアを通じて宣言される。
++       URL にあるファイルには `Web.linked`、スタイルシートには `Web.imported`、インストール済みのフォントには `Web.local` であり、読むファイルがないので、それぞれ宣言されたとおりのカバレッジを持つ。
++       `Print` の標準 14 フォントは宣言を必要とせず、ウェブの総称ファミリーも同様である。
+
+@ 0 4 0 17b876113cfb0ebe01ddce3f02b2a577
++       要求する側は `in (? >: medium)` のプロビジョンを求める。
++       `in Medium` のインスタンスはすべてのメディアに対応するが、`in Web` のものはウェブにしか対応しない。
++       `Web` のプロビジョンしかスコープにないところで `Font.of[Print](face)` と書くとコンパイルエラーになる。
++       `@missingContext` のメッセージがそのことを告げ、プロビジョンを宣言する二つの方法を挙げる。
+
+@ 0 5 0 0825728665a9f59503055d809b0fd5c6
++       プロビジョンは `Locative` である。
++       クラスパスのリソースから作られたもの（`Typesettable.embedded (cp"/fonts/Inter.ttf")`）はそのパスを自身の `Locus` として保持し、そこから作られた `Font` はコードのコンパイル時にファイルと照合される。
++       このとき、名前付きの given では型全体を括弧で囲む。
++       そうしなければ、リテラル型を含む中置の連鎖は given の型に認められないからである。
+
+% 2 1 0 1c6a5435bb0d273f0f3029ff3131fcb7
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 18d07e8a352d11ed1ecd461c9345d31b
+
+% 0 1 0 088e390e17f4c8ae01c149c44fd1bbad
+
+% 1 1 0 17cf565af6301afc1f1e0ae3951de9b6
+
+@ 0 3 0 0fc6ab032dd5443917bc0b01cf86eed3
++       プロビジョンは純粋なデータであり、メディアのあるところに置かれる。
++       メディアが常に持つものは `Web` や `Print` のコンパニオンに、プロジェクト独自のものはプロジェクトが名前でインポートするオブジェクトに置く。
++       `import fonts.*` は given をインポートしないので、`import fonts.inter` とする。
+
+% 1 1 0 1616cca3f7c6e3c30048ed2e32dd91ba
+
+% 2 1 0 14afe8ec5325a26e037ce8b0dee74556
+
+% 1 1 0 1c15c96efd7af7af0f0d4109eed1e62e
+
+% 1 1 0 020f1537fe2ce5260d5314a53ad64b86
+
+@ 0 1 0 0a8830c6adfc80e306051fc6c45d10d1
++   entry .Source   メディアが書体を入手する方法：埋め込み、リンク、ローカル、インポート、総称
+
+% 1 1 0 1901000c13a44ec3033defaa75ef7923
+
+@ 0 10 0 1fd60cdfa8c2e8fb029380c0deb87318
++         `Embedded(sfnt)` はフォントファイルそのものを文書の中に運ぶ。
++         `Linked(url, format)` は取得するファイルを、わかっていればその `Format` とともに名指す。
++         `Local(name)` は読者がすでにインストールしているフォントを名指す。
++         `Imported(url)` はその書体を宣言するスタイルシートを名指す。
++         そして `Generic` はどのメディアでも組めるファミリーである。
++         文書は自身のフォントの入手元を集め、そのメディアが必要とするもの、つまり `@font-face` 規則や埋め込みのプログラムを出力する。
++     entry .Format   リンクされたフォントファイルの形式：`Ttf`、`Otf`、`Woff`、`Woff2`
++         `@font-face` の `src` が `format(…)` で宣言するものであり、これによってブラウザは読めないファイルを飛ばせる。
++   entry .Embedding   `.embedded` が返すプロビジョン：文書の中に運ばれるファイル
+
+% 1 1 0 181b1776bf92744e1720a756da1949e9
+
+@ 0 15 0 074ef594c183338e0acb30d11a181a46
++         名前付きのクラスなので、プロビジョンは安定した型を持つ。
++         これは `in Medium` であり、その入手元はファイルごとに一つの `Source.Embedded` であり、そのカバレッジはファイルの `Coverage.of` に対する `Coverage.combine` である。
++     entry #Self   提供される書体
++     entry #Form   `Medium`：埋め込まれたファイルはすべてのメディアに対応する
++     entry #sources   フォントファイルごとに一つの `Typesettable.Source.Embedded`
++     entry #coverage   ファイルのテーブルから読んだ、ファイルのカバレッジの和集合
++   entry .embedded   フォントファイルから得る `in Medium` のプロビジョン。カバレッジはファイルから読む
++       二つのオーバーロードがある。
++       `Typesettable.embedded[family](sfnts*)` は手元にある任意の数の `Sfnt` を取り、`Typeface of family is Typesettable in Medium` を作る。
++       ファミリーは明示的に与えるか、given の宣言された型から推論される。
++       `Typesettable.embedded (source)` は一つの `Locative` でストリーム可能な入手元（`cp"…"` のリソース）を取ってそれを読み、そのパスをプロビジョンの `Locus` として保持する。
++       したがって、そのプロビジョンから作られた `Font` は、コードのコンパイル時に、コンパイラのクラスパス上のそのパスにあるファイルと照合される。
++       ファイルがコンパイラのクラスパスにない場合、検査は実行時に委ねられる。
+
+% 2 1 0 0ed84d5ccb4d89541ac59b9d374e518d
+
+% 3 1 0 1fca932335e3697a10a2d869321f9a3c
+
+% 4 1 0 1c7a7410d73bf6090737e55738130c5e
+
+% 2 1 0 03264539c79d32080a9a95ea147082e5
+
+% 0 1 0 0f44654b5b4588f20d270017fe412b5f
+
+% 1 1 0 0224dd887c2f602d1dea1aeb2dbc4396
+
+@ 0 3 0 0b351250db6feb9e0f4bff0eb75ee79a
++   entry #Self   提供される書体。`Typeface of family`
++   entry #sources   メディアが書体を入手する方法。部分ごとに一つの `Typesettable.Source`
++   entry #coverage   プロビジョンが組めるフェイス
+
+@ 0 1 0 0741e81772fb52580e0e4c00487490cf
++ entry .Coverage   プロビジョンが組めるフェイス：太さ、傾き、幅、軸、フィーチャー
+
+% 1 1 0 1dc12cc4f9f755c5191d516aa4454bba
+
+@ 0 5 0 17d692121e37018d0d2447b7c54e5053
++       `Coverage` は、`Unknown`（入手元が提供するフェイスについて何もわかっていないので、すべてのフェイスが認められる）か、`Entries(entries)` のどちらかである。
++       後者は `Coverage.Entry` のリストで、それぞれがプロビジョンの提供する一つのフェイス、または可変フォントの提供するフェイスの範囲である。
++       `Font` はカバレッジが認めるフェイスについてのみ作られる。
++       `#complaint` は認められない理由の `Font.Error.Reason` を返し、認められるなら `Unset` を返す。
+
+@ 0 5 0 00e0279350c4ccb00988c4cac78247ed
++       カバレッジは、ブラウザが `@font-face` 宣言を照合するのと同じように照合される。
++       まず太さを覆うエントリーを見つけ、次にその中から傾きを持つもの、次に字幅を持つものを選び、残ったものに対してフェイスのバリエーションとフィーチャーを検査する。
++       最初に失敗した段階が拒否の名前を決める：`UncoveredWeight`、`UncoveredSlant`、`UncoveredStretch`、`UnknownAxis`、`AxisOutOfRange`、`MissingFeature`。
+
+@ 0 7 0 1d1206267dd7c32a1e979523926d98c2
++       `.of(sfnt)` はフォントファイルのカバレッジをそのテーブルから読む。
++       可変フォントなら `fvar` の軸、そうでなければ `OS/2` テーブルが記録する単一の太さと幅、`OS/2` と `post` のイタリックのビット、そして `GSUB` と `GPOS` のフィーチャーである。
++       `.combine` は複数のファイルのものの和集合を取る。
++       `Coverage(weights = …, italic = …)` は、ファイルが手元にない入手元、つまり URL やインストール済みのフォントのカバレッジを宣言する。
++       宣言されたものだけが認められるので、一つの太さで宣言されたリンクのフォントは、別の太さの要求を、ブラウザに合成させるのではなく拒否する。
+
+% 2 1 0 16c1a2cb7e038d260c2fbcb205da06a5
+
+% 3 1 0 197e3704e71f89490385220e29001fd9
+
+% 4 1 0 19caa94135d6b4d31be3128fcca52010
+
+% 0 1 0 041f7ba406b014f41225266f45670872
+
+% 0 1 0 08f91640e7fe16f40c5fec30f9807291
+
+% 0 1 0 18e643efdc9e3b621ee9ab0dc2340cc6
+
+% 0 1 0 0d339d4c183b840704c68660060df84c
+
+% 1 1 0 140583bcad764f6d1a3d3c13f772dde3
+
+% 2 1 0 188700662bb987f0195d0088bf2f59b2
+
+% 3 1 0 1db9a2eef0be519f09285df32996ebaf
+
+% 1 1 0 13c1c9b3c3007e6917b22ce0f7264ca5
+
+@ 0 1 0 0d272a16e1e60a9000c19a3fe7cd534c
++   entry .Entry   プロビジョンが提供する一つのフェイス、または可変フォントが提供する範囲
+
+% 1 1 0 1f9051b251db0cb107afda4d1ac13807
+
+@ 0 3 0 044eb7edef18a5b212155c15f5e8b920
++         覆う太さと幅、エントリーが直立かイタリックかその両方か、さらなる軸とその範囲、そして実装されたレイアウトのフィーチャーである。
++         ファイルなしで宣言されたフェイスのフィーチャーは `Unset` であり、その場合はどのフィーチャーも認める。
+
+% 2 1 0 18ecba61dae7a5fd17bc504d0149b329
+
+% 3 1 0 159383fb6c6da50318a93ba85fa293e3
+
+% 0 1 0 07fae3b532d799d9037ccf21f667ddde
+
+% 1 1 0 0e1cb3e9d8454f7c0ccb8da1d26aec57
+
+@ 0 29 0 0b3adea0af96d1871ca133ea626f3092
++     entry #weights   太さの範囲
++     entry #upright   直立のフェイスが提供されるかどうか
++     entry #italic   イタリックのフェイスが提供されるかどうか
++     entry #stretches   幅の範囲
++     entry #axes   さらなるバリエーションの軸。それぞれ範囲を持つ
++     entry #features   実装されたフィーチャー。不明なら `Unset`
++     entry #sets   エントリーの太さ、傾き、字幅がフェイスを認めるかどうか
++     entry #complaint   エントリーが与えられない最初のバリエーションまたはフィーチャーの設定、あるいは `Unset`
++         `complaint(name, variations, settings)` は、各バリエーションの軸と値を `axes` と照合し（`UnknownAxis`、`AxisOutOfRange`）、各設定のフィーチャーを `features` と照合し（`MissingFeature`）、理由の中で書体を名指す。
++         不明なフィーチャーは何でも認める。
++   entry .apply   宣言されたカバレッジ。ファイルが手元にない入手元のためのもの
++       `Coverage(weights, upright, italic, stretches, axes)` はそれぞれにデフォルト（レギュラー、直立のみ、通常の幅、軸なし）を持ち、フィーチャーが不明な一つの `Entry` を作る。
++       URL やインストール済みのフォントのためのものであり、そのフェイスは宣言が述べるとおりのもので、それ以上ではない。
++   entry .of   テーブルから読んだフォントファイルのカバレッジ
++       可変フォントの `fvar` からは、`wght` 軸を太さの範囲として、`wdth` を幅の範囲として、`ital` または `slnt` の軸を両方の姿勢の提供として、そしてすべての軸を `Variation.Range` として読む。
++       静的なフォントからは、`OS/2` の太さと幅のクラスを単一の太さと幅として読む。
++       `OS/2` のイタリックのビットと、0 でない `post` のイタリック角が、エントリーをイタリックにする。
++       フィーチャーは `Sfnt#features` である。
++       テーブルを読めないファイルは、十分持っているかもしれないフェイスを拒否するのではなく、すべてを認める `Unknown` のカバレッジを持つ。
++   entry .combine   複数のカバレッジの和集合。一つでも `Unknown` があれば全体が `Unknown` になる
++   entry #complaint   このカバレッジからフェイスを組めない理由。組めるなら `Unset`
++       二つのオーバーロードがある。
++       `complaint(face)` はフェイス全体を検査する。
++       `complaint(name, weight, slant, stretch, variations, features)` は与えられたものだけを検査する。
++       `Unset` として渡された部分は検査されない。
++       これは、フェイスの太さや傾きが実行時に決まる場合にコンパイル時の検査が使う形である。
++       `Unknown` のカバレッジは決して文句を言わない。
+
+@ 0 1 0 0c2244085e8284e712a00e43ffb4b3fe
++ entry .Font   メディアにおける書体のプロビジョンと組にしたフェイス：レンダラーが受け付けるもの
+
+% 1 1 0 14a85fce5520f1a102b1beb993b35da8
+
+@ 0 6 0 05e009981d69a23c0e13cf49b47f7482
++       `Font in Web` は、フェイスと、その書体をウェブで利用可能にする `Typesettable` のプロビジョンを合わせたものである。
++       `Font in Print` は PDF について同じものである。
++       メディアはフォントの `Form` であり、これは `Formal` から継承した型メンバーである。
++       `Web`、`Print`、あるいはフォントが作られたメディアである。
++       レンダラーはこの形のフォントしか受け付けないので、文書はプロビジョンを持たない書体を名指すことができない。
++       文書はその後、自身のフォントのプロビジョンを集め、そのメディアが必要とするものを出力する。
+
+@ 0 6 0 1f7fe236ec8c62b5160fd2efcc19b6eb
++       フォントは二つの方法のいずれかで作る。
++       `Font(face)` は期待される型からメディアを推論する。
++       これは `Font in Web` だけでなく `Optional[Font in Web]` でも働くので、`Lettering(…, font = Font(inter.bold))` のようなフィールドには型注釈が要らない。
++       `Font.of[Web](face)` はメディアを名指す。
++       推論の元になる期待される型がない場合のためのものである。
++       どちらも、スコープに `Typeface of family is Typesettable in (? >: medium)`（そのメディアにおける、あるいはすべてのメディアにおける書体のプロビジョン）と `Tactic[Font.Error]` が必要である。
+
+% 2 1 0 125b0bfe28a0eede002b202ace4c0f87
+
+% 3 1 0 1c42b24180ede9de1085b38050d7843d
+
+% 4 1 0 006abfe38fd8410709484402f4cdebf4
+
+% 2 1 0 125872f2f7be30ac107700393afdc178
+
+% 2 1 0 1e3a5fdd1f8219d51307ddf394a88d12
+
+% 2 1 0 101eac0fbc3bb91801c2f7ac6ba22696
+
+% 0 1 0 17dd2c034102d2ee03de10456ee197f4
+
+% 0 1 0 0f155b072f013bfc0a04ba245c6cf25e
+
+% 1 1 0 10f3136a5247606614fcf2298db18f20
+
+@ 0 8 0 0e1f9edb6d01993d0012d3c2e1a7df29
++       プロビジョンが組めないフェイス、すなわち持っていない太さ、持っていないイタリック、ファイルが実装していないフィーチャー、範囲外の軸の値は、合成されたり黙って無視されたりするのではなく拒否される。
++       拒否は、フォントが作られるときに、書体と問題を名指す `Font.Error` になる。
++       そして、プロビジョンのファイルがクラスパスにあり（`Typesettable.embedded(cp"…")` による `Locus`）、フェイスの要求がその型にある場合には、拒否は同じメッセージのコンパイルエラーになる：_phoenicia: the font at /fonts/Inter.ttf cannot set this face: Inter is not provided at weight 300_。
++       静的にわかることだけが静的に検査される。
++       実行時の検査は常に実行される。
+
+@ 0 1 0 004b61c62a504e291c549425b71844d4
++       フォントはそのフェイスとして表示される：`Inter 700 italic`。
+
+% 1 1 0 16037dbbbd1d1b5b0f3d596d4cee9c6f
+
+% 2 1 0 0709d8ac5eba537702ba4141abd86bbc
+
+% 1 1 0 022c7470f76563fe1d1b1998f8a8a4ab
+
+% 1 1 0 00c6d790ce27ec4507d47e05e616c43a
+
+@ 0 1 0 1aa7a474aec88e3b11877786d7fa877c
++   entry .Error   フォントを読めないとき、またはフェイスを組めないときに発生する
+
+% 1 1 0 070c11b9b382a52f10ac0012a60c942e
+
+@ 0 4 0 019da1316175b04302682a8c61d77367
++         エラー `↯/s.89.1`、_the font could not be used because …_。
++         番号がエラーのサブコードである `Reason` を持つ。
++         テーブルの読み取りに関する理由は `Sfnt` のアクセサーが発生させる。
++         カバレッジに関する理由は、プロビジョンの `Coverage` がフェイスを拒否したときに `Font(…)`、`Font.of[…](…)`、`Font.paired` が発生させる。
+
+% 2 1 0 1e93e1320fd6713e034c6a69dc493bab
+
+% 3 1 0 0dc8c28f47c5da4f07a3b401b1624d6a
+
+% 0 1 0 0d375dffa5cb104510e1e4be880d77cc
+
+% 0 1 0 107914071670bd261df9fbb8862d6e87
+
+% 0 1 0 0e179f043036efa40dfa965b9dec8eda
+
+% 0 1 0 035922082b4c447c1dcc12eb85a072db
+
+% 1 1 0 03e7fc7e0387bcef0889a2a6c9912504
+
+@ 0 1 0 07b4985405fcfd22113ad33f4438b4cc
++     entry .Reason   理由：テーブルがないか読めない、またはプロビジョンが組めないフェイス
+
+% 1 1 0 0638f6b27c63fd7616ecf253b017f3ec
+
+@ 0 2 0 0e564163af85634f02392d43a498ec5f
++           ケース 1 から 4 はフォントの誤りであり、5 から 10 はカバレッジに関する理由で、それぞれ書体を名指す。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
+
+% 0 1 0 1c4ad983f4b5fa30181d9ad19cc706a5
+
+@ 0 2 0 0054814f03f3d5fb1a93dd1bb214f017
++           row  `UnknownFormat(format)`  2  _the table contains data in unknown format `format`_  ライブラリが読まない `cmap` サブテーブルの形式
++           row  `MagicNumber`  3  _the font did not contain expected check data_  定数が誤っている `head` テーブル
+
+% 0 1 0 1ddf15d6fbb89b70090a67d9323b6f17
+
+% 0 1 0 13f42d1e7aee81791c845d0381cda9a9
+
+% 0 1 0 1a5ab34546c5197f1220c337f331eb81
+
+% 0 1 0 00ab2183a62de84f0a289632e92f0b2d
+
+% 0 1 0 18b39f7e79dfe7e41b5ae69629822f24
+
+% 0 1 0 0c065683cdd6b3ef11b4bc4dbed67f87
+
+% 0 1 0 1e923beff40363a4089e955ee33b00c7
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 14 0 1fff80839d9997da13f14f30e649ef04
++       entry #number   理由の番号。1 から 10 で、エラーのサブコードである
++     entry .communicable   各理由をそのメッセージとして描画する
++     entry #reason   理由
++   entry .apply   `Font(face)`：期待される型が名指すメディアで、フェイスをスコープにあるプロビジョンと組にする
++       期待される型からメディアを推論するインラインメソッドである。
++       `Form` は型メンバーであり、期待される型がそれを固定するので、`Font in Web` でも `Optional[Font in Web]` でもよい。
++       `Typeface of family is Typesettable in (? >: medium)` と `Tactic[Font.Error]` が必要である。
++       プロビジョンが `Locus` を持つ場合、フェイスの記録された要求はコンパイル時に検査される。
++       その後、実行時の検査はいずれにせよ実行される。
++       期待される型がない場合は `.of` を使う。
++   entry .of   `Font.of[Web](face)`：メディアを名指した同じ組み合わせ
++       `apply` がフェイスを取る `.Of[medium]` を返すので、書く必要があるのはメディアだけで、ファミリーはフェイスから推論される。
++       cataclysm の `Web.font(face)` は `Font.of[Web](face)` である。
++   entry .Of   `.of` が返す補助オブジェクト。その `apply` がフェイスを取る
+
+% 1 1 0 0af5c9210c2d09dd1d95629e46ab13fb
+
+@ 0 14 0 16a55c120b9a73f40a6110c65d862239
++         `Font.of[medium]` は `Of[medium]` であり、`Font.of[medium](face)` はその `apply` である。
++         二つの節が分かれているので、ファミリーなしでメディアを名指すことができる。
++     entry #apply   名指されたメディアで、フェイスをその書体のためにスコープにあるプロビジョンと組にする
++   entry .paired   インラインの形が展開される先の実行時の組み合わせ：カバレッジの検査、次にフォント
++       `Font.paired[family, medium](face)` は `provision.coverage.complaint(face)` を検査し、理由があればそれを付けて `Font.Error` を発生させ、なければ `Font in medium` を作る。
++       インラインの `.apply` と `.of` はその前にコンパイル時の検査を加える。
++       静的な検査を必要としないコードや、要求が型にないフェイスを持つコードは、これを直接呼んでよい。
++   entry .showable   フォントをそのフェイスとして表示する：`Inter 700 italic`
++   entry .inspectable   フォントを `Font(Face("Inter", Weight(700), Slant.Italic))` として検査する
++   entry #face   フェイス
++   entry #provision   その書体をメディアで利用可能にするプロビジョン
++   entry #typeface   フェイスの書体
+
+@ 0 1 0 0cf5baab85f731440b64b372aa49e5a7
++ entry .internal   不透明型 `Glyph`、`Weight`、`Stretch`、そして `Font(…)` の背後にあるマクロ
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 086e18a9ada832a01cf705c32199716d
++       直接使うためのものではない。
++       `Glyph`、`Weight`、`Stretch` はここでコンパニオンとともに不透明型として宣言され、`phoenicia` パッケージにエクスポートされる。
++       それらのページはそちらにある。
++       このオブジェクトは、不透明型と `Font` のマクロに安定した置き場所を与えるために存在する。
++   entry .Glyph   一つのフォントのグリフ。`phoenicia.Glyph` を参照
+
+% 1 1 0 1d627a11a94314041be65e496f9e5129
+
+@ 0 3 0 14da46e639e336d4174ab61b53f0904b
++         不透明型 `Glyph` のコンパニオンであり、型とともに `phoenicia` パッケージにエクスポートされる。
++     entry .apply   `Glyph(font, id)`：グリフ ID をそのフォントのグリフとして包む
++   entry .Weight   1–1000 の尺度上の太さ。`phoenicia.Weight` を参照
+
+% 1 1 0 0ef8f8b9044d280e0bf5f1b0c09c9cc4
+
+@ 0 22 0 0b5ebd34e20d2eb2165fc00ac6091f2b
++         不透明型 `Weight` のコンパニオンであり、型とともに `phoenicia` パッケージにエクスポートされる。
++     entry .apply   整数から得る太さ。1–1000 に収める
++     entry .Thin   太さ 100
++     entry .ExtraLight   太さ 200
++     entry .Light   太さ 300
++     entry .Regular   太さ 400
++     entry .Medium   太さ 500
++     entry .Semibold   太さ 600
++     entry .Bold   太さ 700
++     entry .ExtraBold   太さ 800
++     entry .Black   太さ 900
++     entry .Range   両端を含む太さの範囲
++       entry #lower   範囲内で最も細い太さ
++       entry #upper   範囲内で最も太い太さ
++       entry #contains   太さが範囲内にあるかどうか
++     entry .showable   太さをその数値として表示する：`700`
++     entry .inspectable   太さを `Weight(700)` として検査する
++     entry .value   整数としての太さ
++     entry .to   `lower to upper`：二つの太さの間の両端を含む範囲
++     entry .range   この太さだけからなる範囲
++   entry .Stretch   パーセンテージで表した幅。`phoenicia.Stretch` を参照
+
+% 1 1 0 0428f2bee5250dd801e6371b89b5e1a5
+
+@ 0 3 0 1710d841929ea8b410f97e4d2dbec662
++         不透明型 `Stretch` のコンパニオンであり、型とともに `phoenicia` パッケージにエクスポートされる。
++     entry .apply   パーセンテージから得る字幅。50–200 に収める
+
+% 0 1 0 1dc6dc90d21fdf010aa6f9dc5f69d397
+
+% 0 1 0 08d469758f6dd4f91daffd39af248e4f
+
+% 0 1 0 0699a8c2c79ef89f0c27fd14b400230c
+
+% 0 1 0 080b3c0ef8d044b20869433ee9bca0cd
+
+% 0 1 0 147375e30489178d02b8d2e2cd24749d
+
+% 0 1 0 1f20daa655ed25b60a1ec7cecf62ff6f
+
+% 0 1 0 13b3369dc384fd1c1229c72b91260d22
+
+% 0 1 0 167d2d2478be0668074a24f23cee198b
+
+% 0 1 0 08cf05b3dc43292807e370548b988b71
+
+@ 0 17 0 1cd9f63e8eb7f66103b9ab3bcc973586
++     entry .widthClass   OS/2 の幅のクラス 1 から 9 が名指す字幅。5 または不明な値では `Normal`
++     entry .Range   両端を含む字幅の範囲
++       entry #lower   範囲内で最も狭い字幅
++       entry #upper   範囲内で最も広い字幅
++       entry #contains   字幅が範囲内にあるかどうか
++     entry .showable   字幅をパーセンテージとして表示する：`100.0%`
++     entry .inspectable   字幅を `Stretch(100.0)` として検査する
++     entry .percentage   通常の幅に対するパーセンテージとしての字幅
++     entry .to   `lower to upper`：二つの字幅の間の両端を含む範囲
++     entry .range   この字幅だけからなる範囲
++   entry .id   フォント内でのグリフの ID。0 は欠落グリフである
++   entry .font   `Font(face)` と `Font.of[medium](face)` の背後にあるマクロ
++       プロビジョンの `Locus` をその型から読む。
++       それがコンパイラのクラスパス上のリソースを名指す文字列リテラルであれば、フォントを（パスごとに一度）読み、その `Coverage` を導出し、フェイスの `Weights`、`Slanting`、`Enabled` 型メンバーをそれと照合し、拒否されれば _phoenicia: the font at `path` cannot set this face: …_ で停止する。
++       その後、`Font.paired` に展開される。

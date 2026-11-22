@@ -1,0 +1,14 @@
+orthant 2 release
+
+@ 0 1 0 192f76a6c5156586131e417dd782493b
++ import pathInterfaces.pathOnLocal
+
+@ 0 3 0 1f576bb2c29d1ddc1001ce2c9d231f83
++ val config = Xdg.configHome[Path on Local]
++ val cache = Xdg.cacheHome[Path on Local]
++ val search = Xdg.dataDirs[Path on Local]
+
+@ 0 3 0 0e7290f94e8069d100a9662b58680313
++ val userConfig = Home.Config[Path on Local]()
++ val share = Home.Local.Share[Path on Local]()
++ val logs = Base.Var.Log[Path on Local]()

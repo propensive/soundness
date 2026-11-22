@@ -1,0 +1,125 @@
+orthant 2 language
+
+@ 0 4 0 05eb45037408fb11057e10c2d258b133
++ Une case class de [types numériques](numbers.md#numeric-types) dimensionnés décrit une
++ disposition binaire. Chaque champ indique sa largeur exacte et la façon dont ses octets doivent
++ être lus : la forme de l'enregistrement est donc sa définition, et lire une valeur revient à
++ nommer son type à un décalage donné. En écrire une, c'est la même définition, employée dans
++ l'autre sens.
+
+@ 0 2 0 01975e84328eeafd011bff4658ef7c51
++ Tout provient du package `soundness`. Le deuxième import permet aux exemples d'afficher leurs
++ résultats, et le troisième leur permet de lire des octets sans traiter l'erreur que lève un
++ enregistrement trop court :
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+@ 0 3 0 0978ea4ebe0c10cf13b30da5abfcb4c0
++ Un enregistrement binaire est une case class de champs de largeur fixe, à laquelle la
++ dérivation donne une instance de `Structural`. L'ordre des octets au sein d'un champ appartient
++ au format : on le choisit donc là où la disposition est déclarée, en l'important depuis
++ `byteOrders` :
+
+% 0 1 0 0a8651b622749bd0166cad14fbf97d34
+
+% 0 1 0 0f679049a59664ee16c7b65094aa5a6d
+
+@ 0 2 0 121fdababb84873516a123afa2a5743c
++ La largeur de chaque champ découle de son type. Ici, les largeurs sont de quatre, deux, deux et
++ quatre octets : l'enregistrement fait donc douze octets. `Structural.width` le dit, sans qu'il
++ faille une valeur sous la main :
+
+% 0 1 0 192f2ea9c942ba560b5d0f33c3e229eb
+
+@ 0 4 0 1123519ccc868c4a14358701bdc3d455
++ Les enregistrements s'imbriquent. Un champ dont le type est lui-même `Structural` apporte toute
++ sa largeur : une disposition se compose donc de dispositions plus petites, et n'a pas besoin
++ d'être aplatie à la main. Un enregistrement imbriqué garde l'ordre des octets avec lequel il a
++ été déclaré, et c'est ainsi que se décrit un format qui mélange les deux.
+
+@ 0 2 0 133fd897f6b30b1e161e10884120d899
++ Une dérivation sans ordre des octets dans la portée ne compile pas, pas plus qu'une dérivation
++ dont un champ a un type sans disposition fixe.
+
+@ 0 1 0 1a2d3814d3f219c800a048918d540232
++ `unpack` lit une valeur d'un type choisi à partir d'octets, à un décalage donné :
+
+% 0 1 0 1fb77bda4754774f0d717049ab6cf6de
+
+@ 0 9 0 0c723c359a95584c0ecf2cc46b2ee815
++
++ L'enregistrement entier est vérifié une seule fois par rapport à la longueur des données, avant
++ la lecture de tout champ. Un enregistrement qui dépasserait la fin lève une `Structural.Error`,
++ qui indique le décalage, la largeur de l'enregistrement et le nombre d'octets disponibles :
++
++ ```scala fuel
++ run
++ ##
++ Out.println(safely(data.unpack[Header](4)).absent.inspect)
+
+@ 0 2 0 1d31d1c6fb4ef67f1452fef38d6ebebe
++ Les formats binaires affectionnent les sections répétées, et une section d'enregistrements se
++ décompacte d'après son décalage et son nombre d'éléments, sous forme d'un seul tableau :
+
+% 0 1 0 0183ba2bae654924132d91e7c239d9ee
+
+% 0 1 0 12d7d14b458cc4a4087e7805f3b62a4d
+
+% 0 1 0 03526977cd93fab21559afc1f77220cd
+
+@ 0 2 0 1be62d39b4f2f82201a781a907eadb7e
++ Le même appel lit un enregistrement depuis un `Expanse`, tel qu'un `Terrain` d'octets mappés en
++ mémoire, à un décalage `Long`. Seuls les octets propres à l'enregistrement y sont lus.
+
+@ 0 1 0 031e799c979801b01abdd3555d287aac
++ ### Écriture
+
+@ 0 2 0 12625a32c9350e1318f814a1dda0e14a
++ `pack` fait l'inverse : il dispose une valeur sur exactement autant d'octets que sa disposition
++ est large, avec la même instance ; ce qui est compacté est donc ce que `unpack` relit :
+
+% 0 2 0 038b7938c9a79fa30bdf117f54902562
+
+% 0 5 0 0588620aca8349f90a757086ce8bc2ef
+
+@ 0 13 0 1ab50cd0255da88e08290c177fc25595
++
++ ### La classe de types
++
++ `Structural` décrit un type de disposition fixe, dans les deux sens. Une instance indique trois
++ choses : `width`, le nombre d'octets qu'occupe la valeur ; `load`, qui lit une valeur depuis
++ ces octets à un décalage donné ; et `store`, qui en écrit une dans un tableau d'octets.
++ `unpack` et `pack` vérifient que les octets sont présents, puis les appellent.
++
++ La dérivation calcule chaque décalage [à la compilation][compilation], lorsque la disposition
++ est déclarée, et se développe en une lecture par champ à son décalage, dans l'ordre des octets
++ choisi. Lire un enregistrement se résume donc à une seule vérification de bornes et à autant de
++ lectures qu'il y a de champs, sans rien allouer d'autre que l'enregistrement.
++
+
+@ 0 3 0 03612a23538f3392152fbb45e12d10da
++ Les types dimensionnés fixent la façon dont les octets sont *interprétés*, et pas seulement leur
++ nombre. Un `B32` est quatre octets bruts, un `U32` les lit comme un entier non signé, et un
++ `S32` comme un entier signé. Les types Scala ordinaires peuvent aussi servir, pour les
++ dispositions qu'il est plus facile d'énoncer avec eux :
+
+@ 0 5 0 1b5bc866fc38995a1899544a142c10bf
++
++ Un champ de tout autre type exige une instance de `Structural` qui lui soit propre, que la
++ dérivation compose ensuite comme un enregistrement imbriqué. C'est ainsi qu'on donne à un champ
++ une représentation que les types dimensionnés n'offrent pas, comme trois octets de couleur :
++
+
+% 0 1 0 12dfed929269776716973385c9f2f8ad
+
+% 0 4 0 03375ecb7bafac6b0fdbc4bf0dd7a337
+
+% 0 2 0 06d72899db3cc813045940dd54be4864
+
+% 0 4 0 0312126fd12062990f08b39b6798ee97
+
+@ 0 4 0 046c11d63976540d069e54d13555cb11
++
++ `load` et `store` ne sont pas vérifiés : ils ne sont appelés qu'une fois que l'appelant a
++ établi que `width` octets sont présents.
++

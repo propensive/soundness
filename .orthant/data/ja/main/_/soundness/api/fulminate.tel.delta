@@ -1,0 +1,38 @@
+orthant 2 language
+
+@ 0 6 0 180f15359b93ca3d06aed49479fd5a4b
++     エラー型にはボルトコードがある。
++     `Error(25, 1, 0)`、つまり 25 番目のモジュールの最初のエラーは `↯/s.25.1` であり、このコードはリリースをまたいで安定し、再利用されることはなく、`doc/work/errors/25.1.md` に文書化される。
++     エラーの個々の原因は `Clarification` を継承する `Reason` 列挙型のケースであり、それぞれエラーの中で番号が付けられ（`↯/s.25.1.1`）、それぞれ自身の `Communicable` を通して描画される。
++     完全なエラーを一段階ずつ組み立てると次のようになる（900 はエラーがあるモジュールの番号の代わりである）。
+
+@ 0 11 0 00754b8c838935451e83a02692b7a2af
++       エラーは三つの番号で識別され、それがボルトコードになる。
++       `module` はエラーがあるライブラリの番号で、`bolt` レジストリの `s.tel` が記録しているものである。
++       `number` はそのライブラリの中でのエラー自身の番号で、エラー型を書いたときに次に空いているものが使われ、決して再利用されない（廃止された番号はそうと印を付けてレジストリに残る）。
++       `variant` はエラーの理由の番号、つまり `Clarification` を継承する列挙型である `Reason` のケースの `number` であり、エラーに理由がなければ 0 である。
++       エラーは `doc/work/errors/<module>.<number>.md` に、その原因と通常の対処法とともに文書化されるので、ユーザーの報告にある `↯/s.25.1` は推測するのではなく調べられる。
++       `Error(message)` と書かれたエラーは `module = 0` であり、コードを持たず、`getMessage` は代わりにそのコンポーネントを接頭辞とする。
++       コードは `#labelled`、`getMessage`、コンパイル時の `halt` の接頭辞 `[↯/s.25.1.2]` に描画される。
+
+@ 0 4 0 09841ddff78e3e0f1470142376faa577
++       メッセージの書き方の流儀は `doc/work/standards/messages.md` にある。小文字で書き、末尾にピリオドを付けず、現在時制で書き、問題のある特定のリソースを型付きの値として埋め込み、述部全体を *invalid* や *bad* にすることは決してない。
++       エラーはマッチされることを意図している。ハンドラはケースクラスとその `Reason` を分解するのであって、テキストを分解するのではない。
+
+@ 0 1 0 1b00085c23cb817210b7e86018390e25
++     メッセージが何を述べるかの流儀は `doc/work/standards/messages.md` にある。
+
+@ 0 8 0 0a1b5cee94d0e9b919081a6989fc0ce7
++ entry .Clarification   `Reason` 列挙型が継承するトレイト：エラーの個々の原因に対する番号
++     `trait Clarification { def number: Int }`。
++     エラーの個々の原因は `Clarification` を継承する `Reason` 列挙型のケースであり、それぞれエラーの中で一意な番号を持つ。そのため `Error(25, 1, reason.number)` は `↯/s.25.1.1`、`↯/s.25.1.2`… と描画され、それぞれが `doc/work/errors` にあるエラーのページの小節を持つ。
++     `Reason` は診断に必要なところでは独自のデータを持ち（`Ipv4ByteOutOfRange(byte: Int)`）、各ケースを言い表す独自の `Communicable` インスタンスを与え、エラーのメッセージがそれを埋め込む。
++     `Clarification` を渡された `halt` や `warn` は、その番号を診断の接頭辞に入れる。
+
+@ 0 12 0 1dbf1624ea54f120159469e4d76409eb
++ entry .halt   マクロからコンパイルエラーを報告し、展開を中止する
++     マクロの実装用で、`Quotes` がスコープにあるときに使う。
++     `halt(message)` は `Message` のテキストを（コンパイラの `-color` 設定が有効なときは `Message#colorText` を通して色付きで）`report.errorAndAbort` で報告し、`halt(message, position)` は位置を添える。
++     番号付きのオーバーロードは、診断の接頭辞にエラーのコードを `[↯/s.25.1] ` として付けるか（`halt(module, number, message)`、`halt(module, number, message, position)`）、その理由の番号を `[↯/s.25.1.2] ` として付ける（`halt(module, number, reason, message)` と `halt(module, number, reason, message, position)`。ここで `reason` は `Clarification` である）。
++     番号付きの形の位置パラメーターは `Matchable` であり、`quotes.reflect.Position` でない値（または `null`）では位置なしで報告する。
++     マクロが発生させるすべてのコードは、実行時のエラーと同じく `doc/work/errors` にページを持つ。

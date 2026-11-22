@@ -1,0 +1,427 @@
+orthant 2 language
+
+@ 0 183 0 1f56d7427f29527100570711de66847e
++   entry .globalAttribute   создаёт given для атрибута, допустимого на любом элементе
++       `globalAttribute["title", Textual]()` строит `"title" is Attribute of Textual in
++       Whatwg` без набора элементов и с `global`, равным true, так что он `targets` любой элемент.
++       Глобальные атрибуты спецификации (`id`, `class`, `style`, `title`, `lang`, `dir`,
++       `hidden`, `tabindex`, `accesskey` и прочие) все определены с его помощью.
++   entry .AccessKeys   маркер значения `accesskey`: упорядоченный набор меток клавиш
++   entry .Affirmation   маркер значения `translate`: `yes` или `no`
++   entry .Autocapitalization   маркер значения `autocapitalize`: `off`, `none`, `on`, `sentences`, `words` или `characters`
++   entry .ButtonType   маркер значения `type` у `<button>`: `submit`, `reset` или `button`
++   entry .Closedby   маркер значения `closedby` у `<dialog>`: `any`, `closerequest` или `none`
++   entry .Color   маркер значения цвета CSS, который принимает `<link color>`
++   entry .Colorspace   маркер значения `colorspace` у `<input type="color">`
++   entry .Command   маркер значения `command` у `<button>`: имя встроенной команды или пользовательское `--name`
++   entry .ContentEditable   маркер значения `contenteditable`: `true`, `false`, `plaintext-only` или пусто
++   entry .Coords   маркер значения `coords` у `<area>`: список чисел через запятую
++   entry .Crossorigin   маркер значения `crossorigin`: `anonymous` или `use-credentials`
++       Только маркер; у перечисления `honeycomb.Crossorigin` есть оба значения, но нет
++       собственного `Attributive`, поэтому оно передаётся как `.show` при
++       `attributives.textAttributive` в области видимости.
++   entry .CustomElementName   маркер значения `is`: имя пользовательского элемента, содержащее дефис
++   entry .Css   маркер значения `style`: встроенные объявления CSS
++       `Attributive.style` принимает для него `Text`.
++   entry .CssClassList   маркер значения `class`: имена классов CSS через пробел
++       Принимает `Name[CssClass]`, `List[Name[CssClass]]` или `ClassList`
++       (`Attributive.cssClass`, `.cssClassList` и `.classList`); пустой список полностью
++       опускает атрибут.
++   entry .Datetime   маркер значения `datetime` у `<del>` или `<ins>`: дата или дата и время
++   entry .Decimal   маркер значения атрибута с плавающей точкой: `step`, `min`, `max` и `value` у `<meter>`, `high`, `low`, `optimum`
++       `Attributive.double` принимает для него `Double`.
++   entry .Decoding   маркер значения `decoding` у `<img>`: `sync`, `async` или `auto`
++   entry .Dir   маркер значения `dir`: `ltr`, `rtl` или `auto`
++       `HDir` — перечисление его значений, и у него есть собственный `Attributive`, поэтому
++       `Body(dir = HDir.Rtl)` компилируется без дополнительного импорта.
++   entry .Enctype   маркер значения `enctype` и `formenctype`: MIME-тип кодирования формы
++   entry .EnterKeyHint   маркер значения `enterkeyhint`: `enter`, `done`, `go`, `next`, `previous`, `search` или `send`
++   entry .FetchPriority   маркер значения `fetchpriority`: `high`, `low` или `auto`
++   entry .HashName   маркер значения `usemap`: ссылка на имя `<map>` с префиксом `#`
++   entry .Hidden   маркер значения `hidden`: присутствует или `until-found`
++   entry .HttpEquiv   маркер значения `http-equiv` у `<meta>`: имя директивы-прагмы
++       У перечисления `honeycomb.HttpEquiv` есть четыре директивы, передаваемые как `.show`.
++   entry .Id   маркер значения `id` и атрибутов, называющих один элемент по его id
++       `for`, `form`, `list`, `commandfor` и `popovertarget` все принимают `Id`.
++       `Attributive.domId` принимает для него `Name[DomId]`.
++   entry .Ids   маркер значения списка id через пробел: `headers`, `itemref`, `for` у `<output>`
++       `Attributive.domIds` принимает `List[Name[DomId]]` и опускает атрибут, если список
++       пуст.
++   entry .ImageSizes   маркер значения `imagesizes` у `<link>`: список размеров источника для предзагружаемого изображения
++   entry .ImageSrcSet   маркер значения `imagesrcset` у `<link>`: srcset для предзагружаемого изображения
++   entry .InputMode   маркер значения `inputmode`: `none`, `text`, `tel`, `url`, `email`, `numeric`, `decimal` или `search`
++   entry .InputType   маркер значения `type` у `<input>`
++       Объект `#Input` предлагает каждый тип как предустановленный тег (`Input.Email`,
++       `Input.Checkbox`, …), поэтому сам атрибут пишется редко.
++   entry .InputValue   маркер значения `value` у `<input>`, чья форма зависит от типа поля ввода
++   entry .Integral   маркер значения атрибута со знаковым целым: `tabindex`, `start`, `value` у `<li>`
++       `Attributive.int` принимает для него `Int`.
++   entry .ItemProp   маркер значения `itemprop`: имена свойств микроданных
++   entry .Kind   маркер значения `kind` у `<track>`: `subtitles`, `captions`, `descriptions`, `chapters` или `metadata`
++       Объект `#Track` предлагает каждый вид как предустановленный тег; у перечисления
++       `honeycomb.Kind` есть эти значения.
++   entry .Language   маркер значения `lang`, `hreflang` и `srclang`: языковой тег BCP 47
++   entry .Laziness   маркер значения `loading`: `lazy` или `eager`
++   entry .MediaQueryList   маркер значения `media`: список медиазапросов CSS
++   entry .Method   маркер значения `method` и `formmethod`: `get`, `post` или `dialog`
++       У перечисления `honeycomb.Method` есть три значения, передаваемые как `.show`.
++   entry .Minmax   маркер значения `min` и `max` у `<input>`, чья форма зависит от типа поля ввода
++   entry .MimeList   маркер значения `accept`: список MIME-типов и расширений через запятую
++   entry .Mime   маркер значения одного MIME-типа: `type` у `<a>`, `<link>`, `<embed>`, `<object>` и `<source>`
++   entry .Name   маркер значения `name`: имя элемента управления формы, формы, карты, meta или слота
++   entry .OlType   маркер значения `type` у `<ol>`: `1`, `a`, `A`, `i` или `I`
++   entry .Openness   маркер значения `shadowrootmode` у `<template>`: `open` или `closed`
++   entry .PermissionsPolicy   маркер значения `allow` у `<iframe>`: политика разрешений
++   entry .Popover   маркер значения `popover`: `auto`, `manual` или `hint`
++   entry .PopoverAction   маркер значения `popovertargetaction`: `toggle`, `show` или `hide`
++   entry .PositiveInt   маркер значения атрибута с неотрицательным целым: `width`, `height`, `rows`, `cols`, `colspan`, `span`, `size`, …
++       `Attributive.posInt` принимает для него `Int`; знак значения не проверяется.
++   entry .Presence   маркер значения булева атрибута: присутствует или отсутствует, без значения
++       `disabled`, `checked`, простая форма `hidden`, `required`, `autofocus`, `controls`,
++       `open` и любой другой атрибут, смысл которого — само его присутствие.
++       `Attributive.boolean` принимает `Boolean`: `true` записывает атрибут без значения
++       (`<input disabled>`), а `false` его опускает.
++   entry .Preload   маркер значения `preload`: `none`, `metadata` или `auto`
++       У перечисления `honeycomb.Preload` есть эти значения, передаваемые как `.show`.
++   entry .ReferrerPolicy   маркер значения `referrerpolicy`: имя политики referrer
++   entry .Regex   маркер значения `pattern` у `<input>`: регулярное выражение JavaScript
++   entry .Sandbox   маркер значения `sandbox` у `<iframe>`: токены `allow-…` через пробел
++       У перечисления `honeycomb.Sandbox` есть эти токены, передаваемые как `.show`.
++   entry .ScriptType   маркер значения `type` у `<script>`: `module`, `importmap`, MIME-тип или тип блока данных
++   entry .Scripting   маркер значения атрибута-обработчика событий, который принимает сценарий, а не текст
++       `Attributive` для `Text` для него намеренно нет: обработчик передаётся как
++       типизированное значение сценария, например внешнее выражение DOM из querencia, для
++       которого библиотека сценариев предоставляет `Attributive to Whatwg.Scripting`. Словарь
++       WHATWG сам не объявляет givens атрибутов `on…`; `Html4Transitional` объявляет.
++   entry .Shape   маркер значения `shape` у `<area>`: `circle`, `default`, `poly` или `rect`
++   entry .Sizes   маркер значения `sizes` у `<link rel="icon">`: `any` или токены `WxH`
++   entry .Softness   маркер значения `wrap` у `<textarea>`: `soft` или `hard`
++       У перечисления `honeycomb.Wrap` есть два значения, передаваемые как `.show`.
++   entry .SourceSizeList   маркер значения `sizes` у `<img>` или `<source>`
++   entry .Srcdoc   маркер значения `srcdoc` у `<iframe>`: целый документ HTML в виде текста
++   entry .SrcSet   маркер значения `srcset`: источники-кандидаты изображения с их дескрипторами
++   entry .Switch   маркер значения `autocomplete`: `on` или `off`
++       `Attributive.switch` принимает `Boolean`, записываемый как `on` или `off`; у
++       перечисления `honeycomb.Autocomplete` те же два значения.
++   entry .Target   маркер значения `target` и `formtarget`: имя или ключевое слово контекста просмотра
++       У перечисления `honeycomb.Target` есть `_self`, `_blank`, `_parent`, `_top` и
++       именованный контекст, передаваемые как `.show`.
++   entry .Temporal   маркер значения `datetime` у `<time>`: любая из форм даты, времени и длительности из спецификации
++   entry .Textual   маркер значения атрибута, принимающего любой текст
++       `alt`, `title`, `placeholder`, `content`, `label`, `slot`, `nonce`, `integrity` и
++       прочие. `Attributive.textTextual` и `.stringTextual` принимают для него `Text` или
++       `String` без всякого импорта; given выбора `attributives.textAttributive` распространяет
++       то же на все остальные маркеры.
++   entry .ThScope   маркер значения `scope` у `<th>`: `row`, `col`, `rowgroup` или `colgroup`
++   entry .Tokens   маркер значения списка токенов через пробел: `rel`, `blocking`
++       У перечисления `honeycomb.Rel` есть типы ссылок, передаваемые как `.show`.
++   entry .Truth   маркер значения атрибута, записываемого как `true` или `false`: `draggable`, `spellcheck`, `writingsuggestions`
++       `Attributive.truth` принимает `Boolean`, записываемый словом `true` или `false`, в
++       отличие от атрибута `Presence`, который либо записывается, либо опускается.
++   entry .Upto8   маркер значения `headingoffset`: целое число от 0 до 8
++   entry .Url   маркер значения атрибута со значением URL: `href`, `src`, `action`, `cite`, `poster`, `data`, `itemid`, …
++       `Attributive.url` принимает любое значение, являющееся `Abstractable across Urls to Text`
++       (`HttpUrl` или любой типизированный URL), а также `Text`, когда
++       `attributives.textAttributive` в области видимости.
++   entry .Urls   маркер значения списка URL через пробел: `ping`, `itemtype`
++   entry .Utf8   маркер значения `charset` и `accept-charset`, единственное допустимое значение которых — `utf-8`
++   entry .abbr   `abbr` на `<th>`: сокращённый заголовок, как `Textual`
++   entry .accept   `accept` на `<input>`: принимаемые типы файлов, как `MimeList`
++   entry .acceptCharset   `accept-charset` на `<form>`: принимаемая формой кодировка, как `Utf8`
++       Given называется `acceptCharset`; атрибут, который он регистрирует, — `accept-charset`.
++   entry .accesskey   `accesskey` на любом элементе: метки клавиатурных сокращений, как `AccessKeys`
++   entry .action   `action` на `<form>`: URL, на который отправляется форма, как `Url`
++   entry .allow   `allow` на `<iframe>`: политика разрешений фрейма, как `PermissionsPolicy`
++   entry .allowfullscreen   `allowfullscreen` на `<iframe>`: `Presence`
++   entry .alpha   `alpha` на `<input>`: есть ли у поля ввода цвета альфа-канал, как `Presence`
++   entry .alt   `alt` на `<area>`, `<img>` и `<input>`: замещающий текст, как `Textual`
++   entry .as   `as` на `<link>`: тип назначения предзагрузки, как `Textual`
++   entry .async   `async` на `<script>`: `Presence`
++   entry .autocapitalize   `autocapitalize` на любом элементе, как `Autocapitalization`
++   entry .autocomplete   `autocomplete` на `<form>`: `on` или `off`, как `Switch`
++   entry .autocomplete2   `autocomplete` на `<input>`, `<select>` и `<textarea>`, как `Switch`
++   entry .autocorrect   `autocorrect` на любом элементе, как `Textual`
++   entry .autofocus   `autofocus` на любом элементе: `Presence`
++   entry .autoplay   `autoplay` на `<audio>` и `<video>`: `Presence`
++   entry .blocking   `blocking` на `<link>`, `<script>` и `<style>`: токены блокировки отрисовки, как `Tokens`
++   entry .charset   `charset` на `<meta>`: кодировка документа, как `Utf8`
++   entry .checked   `checked` на `<input>`: `Presence`
++   entry .cite   `cite` на `<blockquote>`, `<del>`, `<ins>` и `<q>`: URL источника, как `Url`
++   entry .class   `class` на любом элементе: имена классов CSS, как `CssClassList`
++       Пишется как `` `class` = … ``, поскольку `class` — ключевое слово; обычно используется
++       форма `Tag.name(children)` (`Div.panel(…)`), которую допускает `Attribution` в области
++       видимости.
++   entry .closedby   `closedby` на `<dialog>`, как `Closedby`
++   entry .color   `color` на `<link>`: цвет иконки-маски, как `Color`
++   entry .colorspace   `colorspace` на `<input>`, как `Colorspace`
++   entry .cols   `cols` на `<textarea>`: видимая ширина в символах, как `PositiveInt`
++   entry .colspan   `colspan` на `<td>` и `<th>`, как `PositiveInt`
++   entry .command   `command` на `<button>`: вызываемая команда, как `Command`
++   entry .commandfor   `commandfor` на `<button>`: id целевого элемента, как `Id`
++   entry .content   `content` на `<meta>`: значение метаданных, как `Textual`
++   entry .contenteditable   `contenteditable` на любом элементе, как `ContentEditable`
++   entry .controls   `controls` на `<audio>` и `<video>`: `Presence`
++   entry .coords   `coords` на `<area>`, как `Coords`
++   entry .crossorigin   `crossorigin` на `<audio>`, `<img>`, `<link>`, `<script>` и `<video>`, как `Crossorigin`
++   entry .data   `data` на `<object>`: URL ресурса, как `Url`
++   entry .datetime   `datetime` на `<del>` и `<ins>`: когда было внесено изменение, как `Datetime`
++   entry .datetime2   `datetime` на `<time>`: машиночитаемая форма, как `Temporal`
++   entry .decoding   `decoding` на `<img>`, как `Decoding`
++   entry .default   `default` на `<track>`: `Presence`
++   entry .defer   `defer` на `<script>`: `Presence`
++   entry .dir   `dir` на любом элементе: направление текста, как `Dir`
++       `Body(dir = HDir.Rtl)` компилируется без импорта благодаря `HDir.attributive`.
++   entry .dirname   `dirname` на `<input>` и `<textarea>`: имя поля для направления, как `Textual`
++   entry .disabled   `disabled` на `<button>`, `<input>`, `<optgroup>`, `<option>`, `<select>` и `<textarea>`: `Presence`
++   entry .disabled2   `disabled` на `<fieldset>`: `Presence`
++   entry .disabled3   `disabled` на `<link>`: `Presence`
++   entry .download4   `download` на `<a>` и `<area>`: предлагаемое имя файла, как `Textual`
++   entry .draggable   `draggable` на любом элементе: `true` или `false`, как `Truth`
++   entry .enctype   `enctype` на `<form>`, как `Enctype`
++   entry .enterkeyhint   `enterkeyhint` на любом элементе, как `EnterKeyHint`
++   entry .fetchpriority   `fetchpriority` на `<img>`, `<link>` и `<script>`, как `FetchPriority`
++   entry .for   `for` на `<label>`: id подписываемого элемента управления, как `Id`
++       Пишется как `` `for` = … ``, поскольку `for` — ключевое слово.
++   entry .for2   `for` на `<output>`: id элементов управления, дающих вклад, как `Ids`
++   entry .form   `form` на элементе управления формы: id формы, к которой он относится, как `Id`
++       На `<button>`, `<fieldset>`, `<input>`, `<object>`, `<output>`, `<select>` и
+
+@ 0 22 0 036adf9cd75ce805082fded2a986bb1c
++   entry .formaction   `formaction` на `<input>` и `<button>`, как `Url`
++   entry .formenctype   `formenctype` на `<input>` и `<button>`, как `Enctype`
++   entry .formmethod   `formmethod` на `<input>` и `<button>`, как `Method`
++   entry .formnovalidate   `formnovalidate` на `<input>` и `<button>`: `Presence`
++   entry .formtarget   `formtarget` на `<input>` и `<button>`, как `Target`
++   entry .headers   `headers` на `<td>` и `<th>`: id ячеек-заголовков данной ячейки, как `Ids`
++   entry .headingoffset   `headingoffset` на любом элементе: от 0 до 8, как `Upto8`
++   entry .headingreset   `headingreset` на любом элементе, как `Presence`
++   entry .height   `height` на `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<object>`, `<video>` и `<svg>`, как `PositiveInt`
++   entry .hidden   `hidden` на любом элементе: присутствует или `until-found`, как `Hidden`
++       Его маркер — `Hidden`, а не `Presence`, поэтому для `hidden = true` нужен given из
++       `Boolean` в `Hidden`, которого библиотека не предоставляет; при
++       `attributives.textAttributive` в области видимости `hidden = t""` записывает атрибут без
++       значения.
++   entry .high   `high` на `<meter>`, как `Decimal`
++   entry .href   `href` на `<a>` и `<area>`: цель ссылки, как `Url`
++   entry .href2   `href` на `<base>`: базовый URL документа, как `Url`
++   entry .href3   `href` на `<link>`: связанный ресурс, как `Url`
++   entry .hreflang   `hreflang` на `<a>` и `<link>`, как `Language`
++   entry .httpEquiv   `http-equiv` на `<meta>`: директива-прагма, как `HttpEquiv`
++       Пишется как `httpEquiv = …`; атрибут сериализуется как `http-equiv`.
++   entry .id   `id` на любом элементе, как `Id`
++       Принимает `Name[DomId]` через `Attributive.domId` или `Text` при
+
+@ 0 112 0 09577490892f666e1139ccf22dec22e9
++   entry .imagesizes   `imagesizes` на `<link>`, как `ImageSizes`
++   entry .imagesrcset   `imagesrcset` на `<link>`, как `ImageSrcSet`
++   entry .inert   `inert` на любом элементе: `Presence`
++   entry .inputmode   `inputmode` на любом элементе, как `InputMode`
++   entry .integrity   `integrity` на `<link>` и `<script>`: хеш целостности подресурса, как `Textual`
++   entry .is   `is` на любом элементе: имя пользовательского элемента, как `CustomElementName`
++   entry .ismap   `ismap` на `<img>`: `Presence`
++   entry .itemid   `itemid` на любом элементе: глобальный идентификатор элемента микроданных, как `Url`
++   entry .itemprop   `itemprop` на любом элементе, как `ItemProp`
++   entry .itemref   `itemref` на любом элементе, как `Ids`
++   entry .itemscope   `itemscope` на любом элементе: `Presence`
++   entry .itemtype   `itemtype` на любом элементе, как `Urls`
++   entry .kind   `kind` на `<track>`, как `Kind`
++   entry .label   `label` на `<optgroup>`, `<option>` и `<track>`: видимая пользователю подпись, как `Textual`
++       Given с именем `label` экспортируют и другие библиотеки Soundness, поэтому в зонтичном
++       модуле `soundness` к этому имени обращаются через `Whatwg.label` там, где простая ссылка
++       была бы неоднозначной; самому разрешению атрибутов имя никогда не нужно.
++   entry .lang   `lang` на любом элементе, как `Language`
++   entry .list   `list` на `<input>`: id элемента `<datalist>`, как `Id`
++   entry .loading   `loading` на `<img>` и `<iframe>`: `lazy` или `eager`, как `Laziness`
++   entry .loop   `loop` на `<audio>` и `<video>`: `Presence`
++   entry .low   `low` на `<meter>`, как `Decimal`
++   entry .max   `max` на `<input>`, как `Minmax`
++   entry .max2   `max` на `<meter>` и `<progress>`, как `Decimal`
++   entry .maxlength   `maxlength` на `<input>` и `<textarea>`, как `PositiveInt`
++   entry .media   `media` на `<a>`, `<area>`, `<link>`, `<source>` и `<style>`, как `MediaQueryList`
++   entry .method   `method` на `<form>`: `get`, `post` или `dialog`, как `Method`
++   entry .min   `min` на `<input>`, как `Minmax`
++   entry .min2   `min` на `<meter>`, как `Decimal`
++   entry .minlength   `minlength` на `<input>` и `<textarea>`, как `PositiveInt`
++   entry .multiple   `multiple` на `<input>` и `<select>`: `Presence`
++   entry .muted   `muted` на `<audio>` и `<video>`: `Presence`
++   entry .name   `name` на `<button>`, `<fieldset>`, `<input>`, `<output>`, `<select>` и `<textarea>`, как `Name`
++   entry .name2   `name` на `<details>`: группа эксклюзивного аккордеона, как `Name`
++   entry .name3   `name` на `<form>`, как `Name`
++   entry .name4   `name` на `<iframe>` и `<object>`: имя контекста просмотра, как `Target`
++   entry .name5   `name` на `<map>`, как `Name`
++   entry .name6   `name` на `<meta>`: имя метаданных, как `Name`
++       Объект `#Meta` предлагает стандартные имена как предустановленные теги
++       (`Meta.Viewport`, `Meta.Description`, …).
++   entry .name7   `name` на `<slot>`, как `Name`
++   entry .nomodule   `nomodule` на `<script>`: `Presence`
++   entry .nonce   `nonce` на любом элементе: криптографический nonce, как `Textual`
++   entry .novalidate   `novalidate` на `<form>`: `Presence`
++   entry .open   `open` на `<details>` и `<dialog>`: `Presence`
++   entry .optimum   `optimum` на `<meter>`, как `Decimal`
++   entry .pattern   `pattern` на `<input>`, как `Regex`
++   entry .ping   `ping` на `<a>` и `<area>`: URL для уведомления, как `Urls`
++   entry .placeholder   `placeholder` на `<input>` и `<textarea>`, как `Textual`
++   entry .playsinline   `playsinline` на `<video>`: `Presence`
++   entry .popover   `popover` на любом элементе, как `Popover`
++   entry .popovertarget   `popovertarget` на `<button>` и `<input>`: id всплывающего элемента, как `Id`
++   entry .pta   `popovertargetaction` на `<button>` и `<input>`, как `PopoverAction`
++   entry .poster   `poster` на `<video>`: изображение-заставка, как `Url`
++   entry .preload   `preload` на `<audio>` и `<video>`, как `Preload`
++   entry .readonly   `readonly` на `<input>` и `<textarea>`: `Presence`
++   entry .referrerpolicy   `referrerpolicy` на `<a>`, `<area>`, `<iframe>`, `<img>`, `<link>` и `<script>`, как `ReferrerPolicy`
++   entry .rel   `rel` на `<a>` и `<area>`: типы ссылок, как `Tokens`
++   entry .rel2   `rel` на `<link>`: типы ссылок, как `Tokens`
++       Объект `#Link` предлагает каждый тип ссылки как предустановленный тег
++       (`Link.Stylesheet`, `Link.Icon`, …).
++   entry .required   `required` на `<input>`, `<select>` и `<textarea>`: `Presence`
++   entry .reversed   `reversed` на `<ol>`: `Presence`
++   entry .rows   `rows` на `<textarea>`, как `PositiveInt`
++   entry .rowspan   `rowspan` на `<td>` и `<th>`, как `PositiveInt`
++   entry .sandbox   `sandbox` на `<iframe>`, как `Sandbox`
++   entry .scope   `scope` на `<th>`, как `ThScope`
++   entry .selected   `selected` на `<option>`: `Presence`
++   entry .shadowrootclonable   `shadowrootclonable` на `<template>`: `Presence`
++   entry .srcer   `shadowrootcustomelementregistry` на `<template>`: `Presence`
++   entry .srdf   `shadowrootdelegatesfocus` на `<template>`: `Presence`
++   entry .shadowrootmode   `shadowrootmode` на `<template>`: `open` или `closed`, как `Openness`
++   entry .shadowrootserializable   `shadowrootserializable` на `<template>`: `Presence`
++   entry .shape   `shape` на `<area>`, как `Shape`
++   entry .size   `size` на `<input>` и `<select>`, как `PositiveInt`
++   entry .sizes   `sizes` на `<img>` и `<source>`, как `SourceSizeList`
++   entry .sizes2   `sizes` на `<link>`: размеры иконок, как `Sizes`
++   entry .slot   `slot` на любом элементе: имя слота теневого дерева, как `Textual`
++   entry .span   `span` на `<col>` и `<colgroup>`, как `PositiveInt`
++   entry .spellcheck   `spellcheck` на любом элементе: `true` или `false`, как `Truth`
++   entry .src   `src` на `<audio>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<script>`, `<source>`, `<track>` и `<video>`, как `Url`
++   entry .srcdoc   `srcdoc` на `<iframe>`: встроенный документ, как `Srcdoc`
++   entry .srclang   `srclang` на `<track>`, как `Language`
++   entry .srcset   `srcset` на `<img>` и `<source>`, как `SrcSet`
++   entry .start   `start` на `<ol>`: номер первого пункта, как `Integral`
++   entry .step   `step` на `<input>`, как `Decimal`
++   entry .style   `style` на любом элементе: встроенный CSS, как `Css`
++   entry .tabindex   `tabindex` на любом элементе, как `Integral`
++   entry .target   `target` на `<a>` и `<area>`, как `Target`
++   entry .target2   `target` на `<base>`: контекст просмотра по умолчанию, как `Target`
++   entry .target3   `target` на `<form>`, как `Target`
++   entry .title   `title` на любом элементе: поясняющий текст, как `Textual`
++   entry .translate   `translate` на любом элементе: `yes` или `no`, как `Affirmation`
++   entry .type   `type` на `<a>` и `<link>`: MIME-тип связанного ресурса, как `Mime`
++       Пишется как `` `type` = … ``, поскольку `type` — ключевое слово.
++   entry .type2   `type` на `<button>`: `submit`, `reset` или `button`, как `ButtonType`
++   entry .type3   `type` на `<embed>`, `<object>` и `<source>`, как `Mime`
++   entry .type4   `type` на `<input>`, как `InputType`
++       Пишется редко: у `#Input` есть предустановленный тег для каждого типа (`Input.Email`,
++       `Input.Range`, …).
++   entry .type5   `type` на `<ol>`: стиль нумерации, как `OlType`
++   entry .type6   `type` на `<script>`, как `ScriptType`
++   entry .usemap   `usemap` на `<img>`, `<input>` и `<object>`: ссылка на карту изображения, как `HashName`
++   entry .value   `value` на `<button>` и `<option>`, как `Textual`
++   entry .value2   `value` на `<data>`: машиночитаемое значение, как `Textual`
++   entry .value3   `value` на `<input>`, как `InputValue`
++   entry .value4   `value` на `<li>`: порядковый номер пункта, как `Integral`
++   entry .value5   `value` на `<meter>` и `<progress>`, как `Decimal`
++   entry .width   `width` на `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<object>`, `<video>` и `<svg>`, как `PositiveInt`
++   entry .wrap   `wrap` на `<textarea>`: `soft` или `hard`, как `Softness`
++   entry .writingsuggestions   `writingsuggestions` на любом элементе: `true` или `false`, как `Truth`
++   entry #doctype   doctype `<!doctype html>`, который несёт `Document[Html]` этого диалекта
++   entry #Interactive   категория интерактивного содержимого как объединение имён тегов
+
+@ 0 7 0 181c3465c6090587095e9838c9b441ba
++         `Tag.Void`, чей `Topic` — `"area"`; принимает `alt`, `coords`, `shape`, `href`,
++         `target`, `download`, `ping`, `rel` и `referrerpolicy`. Четыре его члена
++         предустанавливают атрибут `shape`, поэтому `Area.Rect` сериализуется как
++         `<area shape="rect">`.
++     entry .Default   область `shape="default"`: всё изображение
++     entry .Rect   область `shape="rect"`, где `coords` — левая, верхняя, правая, нижняя границы
++     entry .Circle   область `shape="circle"`, где `coords` — x центра, y центра, радиус
++     entry .Poly   область `shape="poly"`, где `coords` — список пар вершин
+
+@ 0 76 0 1588255d16cf93c81266ea56e71c998b
++   entry #Article   `<article>`: самостоятельная композиция, над потоковым содержимым
++   entry #Aside   `<aside>`: побочное содержимое, над потоковым содержимым
++   entry #Audio   `<audio>`: звук; прозрачен, плюс дочерние `<source>` и `<track>`
++       Принимает `src`, `crossorigin`, `preload`, `autoplay`, `loop`, `muted` и `controls`.
++       Правило спецификации, по которому его дочерние элементы зависят от наличия `src`, не
++       выражено типом: компилируются обе формы.
++   entry #B   `<b>`: текст, привлекающий внимание без придания важности, над фразовым содержимым
++   entry #Base   `<base>`: базовый URL документа и цель ссылок по умолчанию; пустой, в `<head>`
++       Принимает `href` и `target`; спецификация требует хотя бы одного из них, но это не
++       проверяется.
++   entry #Bdi   `<bdi>`: текст, изолированный для двунаправленного форматирования, над фразовым содержимым
++   entry #Bdo   `<bdo>`: текст с явным направлением, над фразовым содержимым; `dir` обязателен
++   entry #Blockquote   `<blockquote>`: цитируемый раздел, над потоковым содержимым; `cite` указывает источник
++   entry #Body   `<body>`: содержимое документа, над потоковым содержимым
++       Автозакрываемый и вставляемый: парсер добавляет его вокруг содержимого, прочитанного как
++       целый документ, и закрывает его в конце входных данных.
++   entry #Br   `<br>`: разрыв строки; пустой
++   entry #Button   `<button>`: кнопка, над фразовым содержимым
++       Граничный тег: парсер не позволяет элементу форматирования, открытому снаружи,
++       продолжаться внутри него. Принимает `type`, `disabled`, `form`, `formaction`,
++       `formenctype`, `formmethod`, `formnovalidate`, `formtarget`, `name`, `value`, `command`,
++       `commandfor`, `popovertarget` и `popovertargetaction`.
++   entry #Canvas   `<canvas>`: программируемое растровое изображение; прозрачен, поэтому содержит запасное содержимое
++       Принимает `width` и `height`.
++   entry #Caption   `<caption>`: заголовок таблицы, над потоковым содержимым; первый дочерний элемент `<table>`
++   entry #Cite   `<cite>`: название произведения, над фразовым содержимым
++   entry #Code   `<code>`: фрагмент компьютерного кода, над фразовым содержимым
++   entry #Col   `<col>`: столбец таблицы; пустой, внутри `<colgroup>`; `span` охватывает несколько
++   entry #Colgroup   `<colgroup>`: группа столбцов, над элементами `<col>`
++       Между его дочерними элементами могут быть только пробельные символы
++       (`Html.Mode.Whitespace`), и он вставляемый, поэтому `<col>`, встреченный прямо в
++       `<table>`, получает его.
++   entry #Data   `<data>`: содержимое с машиночитаемым `value`, над фразовым содержимым
++   entry #Datalist   `<datalist>`: предопределённые варианты для `<input list=…>`, над фразовым содержимым и элементами `<option>`
++   entry #Dd   `<dd>`: описание в `<dl>`, над потоковым содержимым; автозакрываемый
++   entry #Del   `<del>`: удалённый текст; прозрачен, с `cite` и `datetime`
++   entry #Details   `<details>`: раскрывающийся виджет: `<summary>`, затем потоковое содержимое
++       Принимает `open` и `name`; последний объединяет несколько таких виджетов в эксклюзивный
++       аккордеон.
++   entry #Dfn   `<dfn>`: определяющее вхождение термина, над фразовым содержимым
++   entry #Dialog   `<dialog>`: диалоговое окно, над потоковым содержимым; принимает `open` и `closedby`
++   entry #Div   `<div>`: универсальный контейнер, над потоковым содержимым
++   entry #Dl   `<dl>`: список описаний, над группами `<dt>`, `<dd>` и `<div>`
++       Между его дочерними элементами могут быть только пробельные символы, и он
++       автозакрываемый.
++   entry #Dt   `<dt>`: термин в `<dl>`, над потоковым содержимым; автозакрываемый
++   entry #Em   `<em>`: логическое ударение, над фразовым содержимым
++   entry #Embed   `<embed>`: внешнее приложение или интерактивное содержимое; пустой
++       Принимает `src`, `type`, `width` и `height`.
++   entry #Fieldset   `<fieldset>`: группа элементов управления формы: необязательный `<legend>`, затем потоковое содержимое
++       Принимает `disabled`, `form` и `name`.
++   entry #Figcaption   `<figcaption>`: подпись к иллюстрации, над потоковым содержимым
++   entry #Figure   `<figure>`: самостоятельное содержимое с необязательным `<figcaption>`, над потоковым содержимым
++   entry #Footer   `<footer>`: нижний колонтитул ближайшего раздела-предка, над потоковым содержимым
++   entry #Form   `<form>`: форма, над потоковым содержимым
++       Принимает `action`, `method`, `enctype`, `accept-charset` (как `acceptCharset`),
++       `autocomplete`, `name`, `novalidate` и `target`.
++   entry #H1   `<h1>`: заголовок первого уровня, над фразовым содержимым
++   entry #H2   `<h2>`: заголовок второго уровня, над фразовым содержимым
++   entry #H3   `<h3>`: заголовок третьего уровня, над фразовым содержимым
++   entry #H4   `<h4>`: заголовок четвёртого уровня, над фразовым содержимым
++   entry #H5   `<h5>`: заголовок пятого уровня, над фразовым содержимым
++   entry #H6   `<h6>`: заголовок шестого уровня, над фразовым содержимым
++   entry #Head   `<head>`: метаданные документа, над содержимым `#Metadata`
++       Между его дочерними элементами могут быть только пробельные символы; он
++       автозакрываемый и вставляемый, поэтому `<title>`, встреченный в начале документа,
++       получает вокруг себя `<head>`.
++   entry #Header   `<header>`: вводное содержимое ближайшего раздела-предка, над потоковым содержимым; автозакрываемый
++   entry #Hgroup   `<hgroup>`: заголовок с подзаголовками, над `<p>` и от `<h1>` до `<h6>`
++   entry #Hr   `<hr>`: тематический разрыв; пустой
++   entry #I   `<i>`: текст другим голосом, над фразовым содержимым
++   entry #Iframe   `<iframe>`: вложенный контекст просмотра, без содержимого
++       Принимает `src`, `srcdoc`, `name`, `sandbox`, `allow`, `allowfullscreen`, `width`,
++       `height`, `referrerpolicy` и `loading`. Он не принимает дочерних элементов, но не
++       является пустым элементом: он сериализуется как `<iframe …></iframe>`, с закрывающим тегом,
++       которого требует спецификация.
++   entry #Img   `<img>`: изображение; пустой
++       Принимает `src`, `alt`, `srcset`, `sizes`, `crossorigin`, `usemap`, `ismap`, `width`,
++       `height`, `referrerpolicy`, `decoding`, `loading` и `fetchpriority`. `alt` читается
++       обратно через `img.alt`, а `width` — через `img.width` (`Optional[Int]`), посредством
+
+@ 0 6 0 05d1a780c5a956330487759043b38ec8
++   entry #Ins   `<ins>`: вставленный текст; прозрачен, с `cite` и `datetime`
++   entry #Kbd   `<kbd>`: пользовательский ввод, над фразовым содержимым
++   entry #Label   `<label>`: подпись к элементу управления формы, над фразовым содержимым; `for` называет элемент управления
++   entry #Legend   `<legend>`: подпись к `<fieldset>`, над фразовым содержимым и заголовками
++   entry #Li   `<li>`: пункт списка, над потоковым содержимым; автозакрываемый; `value` задаёт его порядковый номер в `<ol>`
++   entry #Link   `<link>`: ссылка на внешний ресурс; пустой тег с предустановкой для каждого `rel`

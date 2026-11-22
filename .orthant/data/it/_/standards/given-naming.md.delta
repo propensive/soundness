@@ -1,0 +1,228 @@
+orthant 2 language
+
+@ 0 1 0 07a548547464ca600d35aef5aeaaa6a0
++ # Standard di denominazione dei valori contestuali
+
+@ 0 8 0 1ef4fa18394e7f2716140265dc3a2349
++ Questo standard definisce come si nominano e si raggruppano i valori `given` importabili.
++ Riguarda i valori contestuali *orfani*: quelli che un utente porta nell'ambito per nome, da un
++ package di scelta (`import strategies.throwUnsafely`) oppure, per i pochi che non si possono
++ ancorare a un oggetto compagno, dal primo livello di una libreria
++ (`import bitumen.tarPathOpenable`). Dove un given *vive* lo decidono le regole di collocazione in
++ `.claude/CLAUDE.md`; questo documento decide come si *chiama*. Sul perché il nome conti, vedi
++ [contesto dichiarativo](../philosophy/declarative-context.md) e
++ [denominazione](../philosophy/naming.md).
+
+@ 0 2 0 15645943122e4b9a1b1327518ee67571
++ I given negli oggetti compagni (`Tui.Block.Anchoring.default`, `Buffering.standard`) sono fuori
++ da questo standard: si risolvono per tipo e non vengono mai scritti in un punto di import.
+
+@ 0 1 0 0fbdab94d49e82a80a6eb1224785e7ff
++ ## La prova
+
+@ 0 5 0 1e60420e02642bd11e88f7fcc8cef509
++ Un lettore che conosce tutto ciò che Soundness sa fare, ma niente di come chiama le cose,
++ dovrebbe poter dire che cosa fa un given dal solo nome, tolto il package. `throwUnsafely`
++ supera la prova: è una strategia, e lancia. `enabled` e `native` non la superano: abilitato
++ *che cosa*, e nativo *rispetto a che cosa*? Il nome è l'unica cosa visibile nella riga di
++ import, e spesso l'unica cosa visibile ovunque, quindi porta tutto il significato.
+
+@ 0 1 0 0de87de1a87905fa110cb8b248d3e561
++ ## Regole
+
+@ 0 1 0 0f4b042a6d42ee7c16ab1e4978c5d7eb
++ ### 1. La famiglia è il ruolo, come package
+
+@ 0 6 0 1bee6eff7d22e55e07145a3d0832c899
++ Un package di scelta prende il nome dal ruolo che i suoi membri ricoprono: un nome numerabile
++ al plurale (`strategies`, `stdios`, `filesystemBackends`, `probates`) o un nome di massa
++ (`formatting`, `threading`, `logging`). Mai un nome numerabile al singolare:
++ `blockCipherModes`, non `blockCipherMode`. I nomi delle famiglie sono globali — blocchi con lo
++ stesso nome di librerie diverse si fondono nell'ombrello `soundness` — quindi una famiglia deve
++ significare un solo ruolo ovunque.
+
+@ 0 5 0 0a8137c7a4bd2d811f4682875640e690
++ Le famiglie non si annidano mai. Una libreria dichiara ogni famiglia come un unico blocco di
++ primo livello `package <family>:`, e l'ombrello lo rispecchia con lo stesso nome, quindi
++ `import aviation.monthFormats.englishMonths` e
++ `import soundness.monthFormats.englishMonths` sono lo stesso percorso. Una famiglia che starebbe
++ naturalmente dentro un'altra prende invece come prefisso la parola del genitore
++ (`dateSeparators`, `timeSeparators`, `randomSizes`, `pathInterfaces`).
+
+@ 0 1 0 1c37b1ac4b8889eb075a6efc3ba53810
++ ### 2. Il nome è la scelta, poi il ruolo
+
+@ 0 2 0 19cc64c0ba168d90067e1d0c96c34ee8
++ La parola della scelta viene per prima, e si aggiunge il singolare del ruolo a meno che la
++ scelta non lo implichi già:
+
+% 2 1 0 1506cd82fa98740a12deb7c4bd6dbbb6
+
+% 0 1 0 1bf570676b9440b3071af989a2ca102c
+
+% 0 1 0 0764277469c043000d5aa018959677d6
+
+% 0 1 0 1856c23de59d15e217bdb8ad6263667c
+
+% 0 1 0 0e63de87faf4ee840460673274f85e76
+
+% 0 1 0 051c46980e4aa3a91dd122afe5b378a5
+
+% 1 1 0 1939f1afc1b4857b1001bcba900d726f
+
+@ 0 2 0 193bf0ff34c9b1311db3300eb079efb5
++ Il suffisso è la parola propria del ruolo (`…Probate`, `…Stdio`, `…Formatting`), non un suo
++ sinonimo, così che ogni membro di una famiglia finisca allo stesso modo.
+
+@ 0 1 0 063ee01d01bee40f1e950864a7ce7ce7
++ ### 3. Unico una volta tolto il package
+
+@ 0 3 0 1abed31c3438c84400e2dda97ceb76a3
++ Ogni given orfano è unico in tutto Soundness, giudicato come se il package non ci fosse. Sono
++ tutti esportati in `soundness`, e due qualsiasi possono dover coesistere in un solo ambito,
++ quindi `import x.enabled` e `import y.enabled` non possono esistere entrambi.
+
+@ 0 2 0 112593cb81ec4fcc08b0487fd4fd2a53
++ Il corollario è che non ci sono membri interruttore. Un interruttore prende il nome dal
++ comportamento che seleziona, da entrambi i lati:
+
+% 2 1 0 066a624f25953eee0518f70d156f1bdc
+
+% 0 1 0 1d973ea894f06ea405a4df0983f6e8e7
+
+% 0 1 0 0f49116ac9427e4b02d11d8883b1fd89
+
+% 0 1 0 06ebb99e9fd46a2014724d2a241d7890
+
+% 0 1 0 08313dddbc1df0070d67bb38330b71b0
+
+% 1 1 0 112b34bc27b8b8d919ffb350879d5a10
+
+@ 0 1 0 07b3925c8c4876211456174832465e14
++ ### 4. Solo vocabolario esistente
+
+@ 0 4 0 148463d6936ddb4809333963efda160a
++ Un nome riusa il tipo o il termine che seleziona, così che l'import e la dichiarazione che esso
++ abilita si leggano con le stesse parole: `cancelProbate` seleziona un `Probate`;
++ `taiChronometry` seleziona la scala temporale `Tai`; `offHeapCloak` è
++ l'`OffHeapCloak`. Un nome non conia mai un termine che non compaia in nessun altro punto di
++ Soundness.
+
+@ 0 6 0 1d01aa31e48507ce03a8405d7839ef3b
++ `default`, `standard`, `basic` e `simple` non sono parole di scelta: dicono che una scelta è
++ comune, non che cosa sia. `indentedCssFormatting`, `thickTableStyle` e `timestampedLogFormat`
++ dicono ciascuno che cosa fanno; `standardCssFormatting` diceva solo che qualcuno lo preferiva.
++ L'eccezione è quando una tale parola *è* il nome stesso del tipo (`standardKeyboard` seleziona
++ `Keyboard.Standard`; gli alfabeti della RFC 4648 sono chiamati «standard» dalla loro
++ specifica).
+
+@ 0 2 0 17d57bd88271cf7113e589021c0b09e0
++ I numerali appartengono a un nome solo quando fanno parte della scelta (`sha256Signature`,
++ `xterm256Termcap`, `iso8601DateFormat`), mai per distinguere due given
+
+% 0 1 0 1b5fc591e555a98f0fae4e5fc13752aa
+
+@ 0 1 0 1222d32e4eafb4390a22acdc9405b0f5
++ ### 5. Parole di provenienza per i backend
+
+@ 0 2 0 01cf2ca4b294bd9f0bb9fafbcc4d9b6b
++ Quando la scelta è *quale implementazione*, la parola della scelta nomina da dove proviene
++ l'implementazione. Una parola per ogni sorgente, usata allo stesso modo ovunque:
+
+% 2 1 0 0e78d680688a73f21d8eb2294144d910
+
+@ 0 6 0 09aaa2d07b69dbc00e1f44fcc9a6c2fc
++ column  Sorgente
++ column  Parola
++ column  Esempi
++ row  Un modulo Java  il nome del modulo  `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver`
++ row  Un'interfaccia WASI  `wasi` + l'interfaccia  `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets`
++ row  Scala Native, su libc/POSIX  `scalaNative`  `scalaNativeFilesystem`, `scalaNativeSockets`
+
+% 0 1 0 11ff93a2626c5475196a1ec38fb9a402
+
+@ 0 2 0 147eb58ae6b3d21f16ec165eb76e051d
++ row  Il codice Scala puro di Soundness  `soundness`  `soundnessHttp`, `soundnessHttpd`, `soundnessProvider`
++ row  Una terza parte  il suo nome  `opensslProvider`, `re2`, `resendCourier`
+
+% 1 1 0 18e70806ffec447e0648d309f51e03fa
+
+@ 0 7 0 012bc4a5855a31ed1bdfdf174c45ec9e
++ I moduli Java vengono nominati perché è ciò che nomina una clausola `requires`: Soundness
++ intende dichiarare, modulo per modulo, da quali moduli Java dipende, e il given che seleziona
++ un'implementazione basata su Java dovrebbe dire a quale modulo attinge. `java.base` ne fornisce
++ la maggior parte, quindi `javaBase…` è il caso comune; dove due scelte di `java.base`
++ differiscono, il nome dice come (`fileDescriptorStdio` avvolge i descrittori di file del
++ processo; `javaLangSystemStdio` avvolge gli stream reindirizzabili di `java.lang.System`).
+
+@ 0 6 0 0da981de98dd37100aea8eb67ae8735e
++ Due cose sembrano provenienza e non lo sono. Un *tipo* Java adottato come rappresentante
++ mantiene il nome con il percorso del tipo che ha già altrove in Soundness (`javaNioPath`,
++ `javaUtilDate`, `javaNetUrl`): lì la scelta è il tipo, non il modulo. E le parole dei concetti
++ propri di Java restano di Java dove nominano il concetto anziché la sorgente:
++ `platformThreads` e `virtualThreads` sono i platform thread e i virtual thread;
++ `systemClassloader` e `platformClassloader` sono i nomi che il JDK dà a quei loader.
+
+@ 0 2 0 0284a2480e82b21705b86d0184c54b07
++ `native` non compare mai da solo. Ha significato in tempi diversi Scala Native, il
++ `WatchService` del JDK e lo stack HTTP proprio di Soundness, cioè tre significati di troppo.
+
+@ 0 1 0 16ed697ccf8f543712f5321b4b87ea0d
++ ### 6. Gli orfani di primo livello prendono il nome dalla loro libreria
+
+@ 0 5 0 1ec5581f3b49bc84166c7364961f1863
++ Un given che non può vivere in un oggetto compagno (il suo soggetto appartiene ad altri, oppure
++ è un'unione o un alias, oppure la libreria è un componente di piattaforma di un tipo neutro
++ rispetto alla piattaforma) resta al primo livello della libreria con un nome qualificato da ciò
++ a cui serve: `tarPathOpenable`, `terminalStdio`, `collationComparable`. Non è mai anonimo,
++ perché un given senza nome non si può importare selettivamente né disambiguare, e mai una
++ parola generica isolata.
+
+@ 0 1 0 0e16d20ec40e4f520f7723d987bab54f
++ ## Ammessi senza suffisso
+
+@ 0 2 0 0531d653b29a96ff00cf534943d010d5
++ Questi superano la regola 2 perché la scelta nomina già il ruolo, e sono elencati perché
++ nessuno li rimetta in discussione:
+
+% 2 1 0 07774e4b6ccf388e0403c5af7d9bbb95
+
+@ 0 4 0 093e8fede7284d1311fe26aa6dc5546a
++ column  Famiglia
++ column  Membri ammessi
++ row  `sortingAlgorithms`  tutti
++ row  `alphabets`  tutti
+
+% 0 1 0 0df41455002774cb0dbef724a949e8fe
+
+% 0 1 0 0befcb494045d6a505622c4e02a4fb09
+
+% 0 1 0 13b7dac1ada084b515f4a2ac1ca9933c
+
+% 0 1 0 089be0668036df01187f0f05e02fa8b9
+
+@ 0 1 0 09fcc98a30b78b9314ea16d43c6a0119
++ row  `endianness`  tutti
+
+% 0 1 0 155393a15a33208a15d5762e6b004d05
+
+@ 0 6 0 1b664aad9e5215701279428942ad0070
++ row  `currencies`  `Usd`… (codici ISO, usati come termini)
++ row  `strategies`  tutti
++ row  `calendars`  tutti
++ row  `highlighting`  tutti
++ row  `caseSensitivity`  tutti
++ row  `dysasymptotics`  tutti
+
+% 0 1 0 0eb34f125b24256b1b953c1f063028a8
+
+% 1 1 0 09221ec3b58b232b106041b1a37e86ee
+
+@ 0 1 0 1c16794117f821210e2672db11bd501e
++ ## Verifica
+
+@ 0 4 0 057e2082369756c409f09ad69e2ce33a
++ `make build` esegue `etc/check-given-uniqueness.py`, che legge ogni package di scelta nelle
++ librerie e nei loro specchi di esportazione `soundness_*` e fallisce su un nome duplicato o su
++ una famiglia non rispecchiata. Un nuovo given orfano viene verificato rispetto all'intero
++ namespace quando viene aggiunto, non quando un utente incontra il conflitto.

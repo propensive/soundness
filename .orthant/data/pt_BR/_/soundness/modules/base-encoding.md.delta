@@ -1,0 +1,302 @@
+orthant 2 language
+
+@ 0 1 0 1d143e919d57047115dbef2b115f5242
++ ## Codificação em base
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 4 0 12fcee1183d020e3026936582562ab48
++ Dados binários muitas vezes precisam passar por um canal que só transporta texto: uma URL, uma
++ string JSON, um cabeçalho de email. Uma
++ [codificação em base](https://en.wikipedia.org/wiki/Binary-to-text_encoding) mapeia bytes para um
++ conjunto seguro de caracteres, para que sobrevivam à viagem.
+
+@ 0 3 0 063696cad69e2cd91f0816d99d92a793
++ Bytes são serializados para texto, e de volta, em Base64, Base32, hexadecimal e nas bases
++ menores. A codificação é nomeada como um tipo, e seu conjunto de caracteres, chamado de seu
++ *alfabeto*, é escolhido em escopo.
+
+@ 0 1 0 09e76515746de7641cf678f4df5f8080
++ ### Sobre a codificação em base
+
+@ 0 5 0 16a0e512ac8e33d01b231299f0e4110a
++ “Base64” não é uma coisa só. O alfabeto padrão, o alfabeto seguro para URLs e as variantes usadas
++ pelo MIME, pelo bcrypt e pelo IMAP codificam os mesmos bytes em caracteres diferentes, e
++ misturá-los corrompe o resultado. A decodificação levanta mais uma questão: o que fazer com um
++ caractere que nem está no alfabeto. A maioria das APIs enterra essas escolhas em flags, ou as fixa
++ silenciosamente.
+
+@ 0 1 0 0423f9127da4e9d41bb7ba02abd7d851
++ Aqui, a codificação é um tipo, e o alfabeto é um valor explícito:
+
+@ 0 5 0 1addbfd2093b122118d92ddcc75fc6a1
++ - A base, que é quantos bits cada caractere carrega, é um parâmetro de tipo.
++ - O alfabeto é um [given], trazido ao escopo por import, de modo que as formas padrão e segura
++   para URLs do Base64 diferem por uma linha.
++ - A decodificação valida cada caractere e informa um que esteja fora do alfabeto como um erro
++   tipado.
+
+@ 0 2 0 1e92bbe01a610f6f0d6a3469fd0198ff
++ Nomear o alfabeto por import, em vez de passar uma flag, é o estilo de
++ [contexto declarativo](../../philosophy/declarative-context.md) usado em toda parte.
+
+@ 0 6 0 0d83c56e1eb3ea611a93f68990123b43
++ A palavra “codificação” é usada para dois trabalhos diferentes, e vale a pena ser preciso sobre
++ qual é este. O que acontece aqui é *serialização*. Bytes se tornam texto, e nada sobre o
++ significado dos bytes é consultado ou preservado: os mesmos bytes são serializados de forma
++ idêntica, quer fossem uma imagem, quer uma assinatura. Transformar um *valor* em JSON ou XML é o
++ outro trabalho. Isso é [codificação](json.md), e precisa saber o que o valor é. As operações aqui
++ são nomeadas de acordo: `serialize` e `deserialize`.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Tudo vem do pacote `soundness`. O último import permite que os exemplos imprimam seus
++ resultados:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0a42bec28543a29a1272a565021a68bf
++ ### Serialização de bytes
+
+@ 0 2 0 165c043848ab7121026a63d39c5d712a
++ `serialize` escreve bytes como texto em uma codificação nomeada. Os caracteres vêm do alfabeto em
++ escopo:
+
+% 2 1 0 0d919a20bffba2cf15cc2b949d276bf3
+
+% 0 1 0 1921fb6b9141e2261014d1e74d1c48f0
+
+% 0 1 0 03c3d5f384c61d251fab7a59dc745ba3
+
+% 1 1 0 17c11bfa83fd16d00a697beb7820127e
+
+% 3 1 0 12cf486fa04b835b1cb2e75891c56841
+
+% 4 1 0 1746fa7dcaa2ecbe02ad5b6637838229
+
+% 5 1 0 0d281da3536257be047d350336aea041
+
+% 0 1 0 0686837be74895480ad4f5489ab297c3
+
+% 1 1 0 1dd107db3c84a13413af0e823cdcbd79
+
+@ 0 2 0 1eb8235562bcc7be10cb928ea2e57bf8
++ `serialize` funciona sobre qualquer valor que se codifica em bytes, não só sobre bytes brutos. Um
++ valor com uma instância `Encodable in Data`, como um [digest](hashing.md), é serializado
++ diretamente.
+
+@ 0 1 0 07c314cfd56dc0941cea46136cc69cd3
++ Sem um alfabeto para a base em escopo, não há com que serializar:
+
+% 2 1 0 0e63aee57abb9e480054fc9b4def4916
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 17042211b66dd8a816680bb5b4b60884
+
+% 1 1 0 169994fda9c950d017e05f24d5c1c688
+
+@ 0 1 0 11056ce85ea6d02d09ae1c8a011aba0e
++ ### Desserialização
+
+@ 0 2 0 1049c1279791cac104c7d01414e65000
++ `deserialize` lê texto de volta para bytes, na mesma codificação. Um caractere fora do alfabeto
++ lança um `Serialization.Error`, então a desserialização precisa de uma [estratégia] em escopo:
+
+% 2 1 0 19d39811b5931b0a06c79a90fbb1e95b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 3 1 0 042e73bdc0550b5d19298413dd7d0b7b
+
+% 4 1 0 19c9b9965081e8b50118a06e4b3ee733
+
+% 5 1 0 025e7ee7206dd45e16ff93ea93595efb
+
+% 0 1 0 0dd062ae6276e45e0808f944c4eb3713
+
+% 1 1 0 01c89d42f81aed9010d03fc0c95852d6
+
+% 3 1 0 0c5a9711940bdd4d02c4942285101dc3
+
+% 4 1 0 0d0e806e88af423b193018ed1e2f2eee
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0a87743c9a8dea4b17c5aecd30c5f88e
+
+% 1 1 0 147931322a1d829b1756c133b063db44
+
+@ 0 1 0 0ee7a62c0f742ae60ae06e3e852f9287
++ ### Escolha de um alfabeto
+
+@ 0 3 0 00a46f646055eb140bb4992945eb0fa3
++ O alfabeto em escopo decide os caracteres exatos. `base64Standard` e `base64Url` são as escolhas
++ comuns. A forma segura para URLs não tem preenchimento e evita `+` e `/`, que têm um significado
++ em uma URL:
+
+% 2 1 0 1f87b918ccaa3ea512cee0a63ad83242
+
+% 3 1 0 08a2685e5535eee7006cc2e92984c13b
+
+% 4 1 0 01b872764d9049071d934cc72d65f167
+
+% 1 1 0 0aec10e0e6434631069d840d20311d4e
+
+% 0 1 0 068968989e5227490fd0ab43d0543684
+
+% 0 1 0 0900b58e7b42f2b10af9a396ab1362cd
+
+% 1 1 0 123e132970abea3302dded92da3277af
+
+% 0 1 0 0e050b7bce38fa3510acc39b2a36a0bf
+
+% 0 1 0 1c24a70cd02a3c6905c81e8ef0fa93ed
+
+% 1 1 0 10d3db50ab97fbdb05729532cf6cee9f
+
+@ 0 4 0 121a13fd2ff15dfd07e54e93ebcd354e
++ Um alfabeto *estrito* aceita apenas seus próprios caracteres ao decodificar. Um flexível também
++ aceita equivalentes reconhecidos, como hexadecimal em maiúsculas ou minúsculas. O rigor de uma
++ decodificação é, portanto, uma escolha entre imports: `hexLowerCase` lê as duas caixas, e
++ `hexStrictLowerCase` só a sua.
+
+@ 0 1 0 1e588572ec612396020807a8ff37a582
++ O conjunto completo está no pacote `alphabets`:
+
+% 2 1 0 1c78fb5d3df47eac1cc7f0c37d30faad
+
+% 0 1 0 1714f8ed59bfbc0d176a5806fb4a40b2
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 33 0 1c76c1b18d1abb3f0755b3f55a17e17f
++ column  Variante
++ column  Com preenchimento
++ column  Também aceita
++ row  `Base64`  `base64Standard`  padrão  sim
++ row  `Base64`  `base64Unpadded`  padrão, sem preenchimento  não
++ row  `Base64`  `base64Url`  segura para URLs, com `-` e `_`  não
++ row  `Base64`  `base64Xml`  XML, com `+` e `-`, preenchida com `.`  sim
++ row  `Base64`  `base64Imap`  IMAP, com `+` e `,`  não
++ row  `Base64`  `base64Yui`  YUI, com `.` e `_`  não
++ row  `Base64`  `base64Radix64`  Radix-64  sim
++ row  `Base64`  `base64Bcrypt`  bcrypt, com `.` e `/` primeiro  não
++ row  `Base64`  `base64Sasl`  SASL, com `+` e `,`  não
++ row  `Base64`  `base64Uuencoding`  uuencoding  não
++ row  `Base32`  `base32StrictUpperCase`  padrão, maiúsculas  sim
++ row  `Base32`  `base32StrictLowerCase`  padrão, minúsculas  sim
++ row  `Base32`  `base32UpperCase`  padrão, maiúsculas  sim  minúsculas
++ row  `Base32`  `base32LowerCase`  padrão, minúsculas  sim  maiúsculas
++ row  `Base32`  `base32ExtendedHexUpperCase`  hex estendido, maiúsculas  sim  minúsculas
++ row  `Base32`  `base32ExtendedHexLowerCase`  hex estendido, minúsculas  sim  maiúsculas
++ row  `Base32`  `base32ZBase32`  z-base-32  sim
++ row  `Base32`  `base32ZBase32Unpadded`  z-base-32, sem preenchimento  não
++ row  `Base32`  `base32Geohash`  Geohash  não
++ row  `Base32`  `base32WordSafe`  word-safe  não
++ row  `Base32`  `base32Crockford`  Crockford  não  minúsculas; `o` e `O` como `0`; `i`, `I`, `l` e `L` como `1`
++ row  `Hex`  `hexStrictUpperCase`  maiúsculas  não
++ row  `Hex`  `hexStrictLowerCase`  minúsculas  não
++ row  `Hex`  `hexUpperCase`  maiúsculas  não  minúsculas
++ row  `Hex`  `hexLowerCase`  minúsculas  não  maiúsculas
++ row  `Hex`  `hexBioctal`  bioctal  não
++ row  `Octal`  `octalStandard`  padrão  não
++ row  `Quaternary`  `quaternaryStandard`  `0123`  não
++ row  `Quaternary`  `quaternaryDnaNucleotide`  nucleotídeos de DNA, `ATCG`  não
++ row  `Binary`  `binaryStandard`  `01`  não
+
+% 1 1 0 0bc6cb7489d20bb81aa2f868b1f3642f
+
+@ 0 1 0 1c06c44e232d760a0f1f735162752e13
++ ### Outras bases
+
+@ 0 2 0 191a6b41bfc6eacb01fa643302b81b17
++ Os mesmos `serialize` e `deserialize` tratam todas as bases, cada uma com alfabetos próprios. A
++ base é o número de bits que cada caractere carrega:
+
+% 2 1 0 1aa40a76328d955f00c11a941f7f7c89
+
+@ 0 2 0 068fe886bc2d186115b465ece0cbc04f
++ column  Codificação
++ column  Bits por caractere
+
+% 0 1 0 1bc07f3c58023cb701f85b19585b9dc5
+
+% 0 1 0 16667b48b178c8980c1b18acbca7875a
+
+% 0 1 0 12c0623181158c2116ceed89c10ae6eb
+
+% 0 1 0 11a7ca1744415e6d0e62c89ac950a630
+
+% 0 1 0 0374135d4834c576008ff9e33f3d7497
+
+% 0 1 0 07eaa86b232259ee0920c5539dab1998
+
+% 1 1 0 03603ab54ccf5dea1e4b952d8af5a6fe
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 175587a7f960cb7209bf0fbbdbcd86e0
+
+% 1 1 0 10bf12a5d86b358605b1ba259c8f2c99
+
+% 3 1 0 1fa55c843d35ca2e1ae5296a148f765a
+
+% 4 1 0 06a33d62794cd3d70f1eebfd2aa4fc20
+
+% 5 1 0 1bd3d4da63c9f4971ef07e80970319e3
+
+% 0 1 0 13423416dcdf23d6180ec02a126fafb0
+
+% 0 1 0 168ded439e6f2e19111a8a44510a87ca
+
+% 0 1 0 02352bd34e90060f103449014d4a4e57
+
+% 1 1 0 026239180dcb727c1447b624d2df5f01
+
+@ 0 2 0 00381214a04edfb51f73e23de5acc380
++ Um literal hexadecimal para bytes é escrito com o interpolador `hex"…"`, como mostra
++ [dados binários](binary-data.md#reading).
+
+@ 0 1 0 1c12cb6a3eb5951802149028c1042a35
++ ### Codificação de um stream
+
+@ 0 3 0 09c269883b41bdc417a3da892936884b
++ Um alfabeto também é um estágio de um [stream](streams.md#composing-a-pipeline). Os bytes são
++ codificados à medida que fluem, sem serem reunidos antes, que é o que exige um corpo codificado
++ em base escrito em um socket, ou um arquivo grande preparado para transporte como texto:
+
+% 2 1 0 1f4acc7b6d62e2930fa649986a117bac
+
+% 0 1 0 004f3a2e35d34d3a062a60ef6d77d50d
+
+% 1 1 0 089343e7e4993a700a034166a3a33e4d
+
+@ 0 4 0 03524f69fb472243051667a9e5d62766
++ A forma em streaming e a forma de valor inteiro concordam byte a byte. Isso inclui as fronteiras
++ em que um grupo Base64 de três bytes, ou um grupo Base32 de cinco, fica dividido entre dois
++ chunks. A decodificação funciona da mesma maneira, de modo que um stream pode ser codificado de um
++ lado e decodificado do outro, sem que nenhum dos lados guarde o todo.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 1 0 0125843c5adce93e1aaec3c194677576
++ - [CBOR](cbor.md), [criptografia](cryptography.md), [SSH](ssh.md), [geografia](geography.md) e
++   [texto](text.md) codificam bytes e coordenadas nesses alfabetos.

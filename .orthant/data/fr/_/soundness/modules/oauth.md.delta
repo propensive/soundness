@@ -1,0 +1,201 @@
+orthant 2 language
+
+% 0 1 0 0e3b2f29cf37f35a1f8f63eefacb6fb8
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 3 0 031bf46529c0164816d880cdba390c01
++ [OAuth 2](https://www.rfc-editor.org/rfc/rfc6749) est la manière dont un client est autorisé à
++ appeler une API, au nom d'un utilisateur ou pour son propre compte. Le client obtient un jeton
++ d'accès auprès du serveur d'autorisation de l'API, et le présente avec chaque requête.
+
+@ 0 4 0 0e7de8bd1e6ebaae030c5be78229d819
++ Le côté client de ce mécanisme est fourni ici : les droits qui obtiennent un jeton, PKCE pour
++ le flux par code d'autorisation, et le `Credential` par lequel le jeton ou la clé d'un schéma
++ parvient à un client typé. Pour une application web, le flux par code d'autorisation est
++ aussi fourni sous forme de middleware pour un [serveur HTTP](http-server.md).
+
+@ 0 1 0 1a588ef54116e2d2121b8367d0849d1c
++ ### À propos des jetons
+
+@ 0 3 0 094a537c5c3895841e1407f24e0856da
++ Un jeton est plus qu'une chaîne. Il accorde des portées particulières, il expire, et il peut
++ être accompagné d'un jeton de rafraîchissement. Une `Authorization` contient ces quatre
++ éléments, afin que ce que permet un jeton soit connu, et qu'un `Scope` puisse être vérifié
++ par rapport à lui.
+
+@ 0 3 0 060ee6004fd5e0fa0f08bf1040db9840
++ Tout provient du package `soundness`. Obtenir un jeton suppose d'effectuer des
++ [requêtes HTTP](http-client.md#what-a-request-needs-in-scope) ; les imports dont elles ont
++ besoin sont donc dans la portée :
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 1 1 0 10a6a1b53a3234051acece4438dda764
+
+@ 0 1 0 185619aa4d397e5b115d9275c6e8173e
++ Les exemples de cette page contactent un serveur d'autorisation ; ils sont donc compilés mais
++ pas exécutés.
+
+@ 0 1 0 008a108ca37ff5ed1b9115f22cb8f27c
++ ### Obtenir un jeton
+
+@ 0 3 0 19219ead17cce23b0f379055f040d7bc
++ Un `Issuer` est un serveur d'autorisation, tel que le voit un client. Il possède l'endpoint de
++ jetons du serveur, ainsi que l'identité et le secret du client. Pour le flux par code
++ d'autorisation, il possède aussi l'endpoint d'autorisation du serveur, et l'URI de
++ redirection du client.
+
+@ 0 2 0 048fae321ebf693612eaa9f94657be34
++ Chaque droit envoie une requête POST à l'endpoint de jetons, et lit l'`Authorization` qui
++ revient. Un refus lève une `OAuth.Error`.
+
+% 2 1 0 1154d8e5ef10e2230fb5e058dd812ca8
+
+@ 0 7 0 15d5c0996b8b77551e2d5fa38873b4fa
++ column  Méthode
++ column  Droit
++ column  Donne
++ row  `clientCredentials`  identifiants client (RFC 6749 §4.4)  l'autorisation propre au client, pour les portées nommées
++ row  `refresh`  rafraîchissement (RFC 6749 §6)  une nouvelle autorisation, depuis un jeton de rafraîchissement ou une `Authorization` qui en porte un
++ row  `authorizationUrl`  code d'autorisation, première étape (RFC 6749 §4.1.1)  l'URL où envoyer un utilisateur
++ row  `exchangeCode`  code d'autorisation, seconde étape (RFC 6749 §4.1.3)  l'autorisation, pour le code que rapporte l'utilisateur
+
+% 1 1 0 1ebdc4c7779aca7107810dee5042b93d
+
+@ 0 1 0 1ac5e62bf1fb84fb1b8a0aaf7983902b
++ Un service qui agit pour son propre compte utilise le droit par identifiants client :
+
+% 2 1 0 0c2d561344d4ccd7071bc4a89765e625
+
+% 3 1 0 0004cb5bcadc2ba11839c63a6bf80674
+
+% 4 1 0 10afa786b85505f60813d4007e9145f4
+
+% 0 1 0 1e980b6a0a3dbd71080a01901e24976e
+
+% 0 1 0 1fb3cd4d956c01150b47de3432210573
+
+% 0 1 0 1b4f5bd9bf399ea118cbd8f2aafddc04
+
+% 0 1 0 00287db35f27f7f11d378a4848ff0015
+
+% 0 1 0 094d5cb11cd865971b519ac019de2179
+
+% 1 1 0 1e60997700f787cb0917c50bb8cf1e13
+
+@ 0 2 0 1bac8e1c8145a5d40d94557bd877af3d
++ `key` est le jeton d'accès lui-même. `grants` indique si le jeton couvre les portées nommées,
++ et `refresh` obtient une nouvelle autorisation au moyen du jeton de rafraîchissement du
++ jeton.
+
+@ 0 4 0 0fcd2a66554489f4031b547e14185e5a
++ Une application qui agit pour un utilisateur utilise le flux par code d'autorisation, qui
++ comporte deux étapes. `authorizationUrl` construit l'URL vers laquelle l'utilisateur est
++ envoyé. Elle contient les portées, un `state` à vérifier au retour et, avec un `Pkce`, le
++ défi S256. `exchangeCode` échange ensuite le code que rapporte l'utilisateur :
+
+% 2 1 0 1888ff083337a37a1d8564a918a07e23
+
+% 3 1 0 018105fb8c4f3a4216219b27321ccd1a
+
+% 4 1 0 10608f6a3c3deeed0ee5e14a0dbd744c
+
+% 0 1 0 0e9eb7726cb1284e056f489a1121dd70
+
+% 0 1 0 0a3070abcfa46c59067d40fb57be4648
+
+% 0 1 0 0b3ba159c576cfbb1e04c243765f4e73
+
+% 0 1 0 08f053f07404ca3d171161767b55af84
+
+% 0 1 0 113baa5b3f7ad9a618760f4e2e92a241
+
+% 0 1 0 10c1fa79a26d320c15403f761762713c
+
+% 0 1 0 0b5dd8b06d4eca2b1fe6092ec209edb3
+
+% 1 1 0 0a278a5d0d64f1fd06e6e61bcecf8a5c
+
+@ 0 1 0 1051ee65cabaeb6002d0d424954f4353
++ Le secret vaut ici `Unset`, puisqu'un client qui utilise PKCE n'a pas besoin d'en détenir un.
+
+@ 0 1 0 0f83bb5585f7b8a305502594231d74b1
++ ### Identifiants pour un client typé
+
+@ 0 2 0 1d86ca433ef4264f1bb66229f32e7efc
++ Un `Credential` nomme un schéma de sécurité, tel que le nomme la spécification d'une API, et
++ contient la valeur qu'exige le schéma :
+
+% 2 1 0 124ab15e023f5e3004616f6933816cea
+
+@ 0 5 0 0a527cd77d59516b00dc4d9d2eee7154
++ column  Schéma
++ column  Valeur
++ row  une clé d'API  `Text`
++ row  l'authentification HTTP  `Auth`
++ row  OAuth 2  `Authorization`
+
+% 1 1 0 1e1b075017ec97b0116c6c0e4c528d98
+
+@ 0 2 0 1cf70dadff69f1571af0a01188549886
++ Le [client OpenAPI](openapi.md) trouve, par son nom, l'identifiant pour chaque schéma
++ qu'exige une opération, et le présente comme le prescrit le schéma :
+
+% 2 1 0 1a4304e6dad38bef136aa863808902a7
+
+% 3 1 0 0fcab2a78de2ef9f1195927fc31ef862
+
+% 4 1 0 0cbc2bfa9357f2c40c4d1f1a1750e8c2
+
+% 0 1 0 02ce7f585e7323f517423dc7f4f475fb
+
+% 0 1 0 1d961b670e75eaee03c2fd32dfbcdbce
+
+% 0 1 0 0e0dc7f80a18b3ba06c808dfbd6ac151
+
+% 1 1 0 0bc372780edfc2901d7ed25eb3e765f7
+
+@ 0 2 0 16fd525a1f83086d02b7f488741449ba
++ Le nom du schéma fait partie du type de l'identifiant ; un identifiant ne peut donc pas être
++ présenté pour un autre schéma que le sien.
+
+@ 0 1 0 0ad5b8c446edfdd208ed4de3044b0525
++ ### Dans une application web
+
+@ 0 2 0 1743685ecd5581d919799e3dc28debf0
++ Pour une application qui agit pour ses utilisateurs, le module `orthodoxy.server` enveloppe
++ un gestionnaire de requêtes dans le flux par code d'autorisation :
+
+% 2 1 0 13839e92905af9590c112bae0b068969
+
+@ 0 4 0 17d6de979159c9dd123d5314597b8fd6
++ column  Enveloppe
++ column  Effet
++ row  `issuer.oauth { … }`  traite la redirection de retour depuis l'émetteur, en échangeant le code, ou rafraîchit un jeton expiré
++ row  `issuer.require(scope) { … }`  envoie vers l'émetteur un utilisateur qui n'a pas encore autorisé l'application, et sinon exécute le gestionnaire avec une `Authorization of scope` dans la portée
+
+% 1 1 0 18066d45585bf93a07f99a91d444db33
+
+@ 0 1 0 09bdc47cfd4c27e70040ca5b53f08df8
++ Un `Authorizations` contient l'état de chaque session.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 4 0 19a72f7b2121f48f05750740b0270904
++ - [Client HTTP](http-client.md) effectue les requêtes qu'autorise un jeton.
++ - [OpenAPI](openapi.md) génère un client typé qui présente lui-même ses identifiants.
++ - [Cryptographie](cryptography.md) couvre les clés et signatures sous-jacentes à d'autres
++   schémas d'authentification.

@@ -1,0 +1,1080 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05ae0722c90c6237148bcb0a16790148
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0325dc246f6294d401080ab1c59d6889
++ info   プログラムの周囲（環境変数、システムプロパティ、ディレクトリ、プラットフォーム）を型付きのコンテキスト値として表す
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 1d7e76ad8678c89b1327d577f137253a
++     _Ambience_ は、プログラムが起動された場所から受け継ぐもの、つまり**環境変数**、JVM の**システムプロパティ**、**作業ディレクトリ**、**一時ディレクトリ**、**端末**のケイパビリティ、それが動く**オペレーティングシステム**と**プロセッサ**を、型付きのコンテキスト値として表す。これは、グローバルな静的呼び出しで得る、生のプラットフォームの null になりうる文字列に代わるものである。
+
+@ 0 9 0 0f450a662a51d902142490ee73988668
++     各ソースは小さなトレイトである。
++     `Environment` は変数の名前に対してオプショナルなテキストを答え、`System` はプロパティの名前に答え、`WorkingDirectory` と `TemporaryDirectory` はそれぞれ一つのディレクトリを示す。
++     これらの一つから読むメソッドはそれを `using` パラメーターとして取るので、周囲への依存がシグネチャに現れ、テストやサンドボックスや多くのシェルに応えるデーモンは別のものを与えられる。
++     読み取りは型付きである。
++     変数は `Environment` のメンバーとして（`Environment.editor[Text]`。キャメルケースの名前は `EDITOR` になる）、プロパティは `System.properties` のドット区切りのメンバーパスとして（`System.properties.user.home[Text]()`）読まれ、それぞれ求められた型にデコードされる。値が設定されていなければ `Environment.Error` または `Property.Error` を発生させる。
+
+% 2 1 0 198d39ceea5367d8138fd92793819f97
+
+% 3 1 0 1a5f85489df042c40e68cdeec815a5bc
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 0b7cb11b02bb3caa18ba79acd2078896
+
+% 0 1 0 0ace4261ef6d4a551809f4e58e68044d
+
+% 0 1 0 1964e0c0ab2318060bc72be6ef63c5e4
+
+% 0 1 0 1416e8b10accf58c0b7b1a98ad9aba13
+
+% 1 1 0 096f4d52568a0a7b0741fb04ac0ec519
+
+@ 0 7 0 0c693c224ca3dce2081471a32afd8b29
++     本物の環境とプロパティがひとりでにスコープに入ることはない。`import soundness.*` は given をインポートしないので、それぞれ選択パッケージの given として名前でインポートする。
++     パッケージは `environments`（`javaBaseEnvironment`、`emptyEnvironment`、そして他のライブラリが加えるデーモンや WASI のもの）、`systems`（`javaBaseSystem`、`emptySystem`）、`workingDirectories`、`temporaryDirectories`、`termcaps`、`wasiApis` である。
++     `Environment` は名前から `Optional[Text]` への一つの関数なので、ブロックのために作るものはラムダであり、`variables(name = value)` はスコープ内の環境の上に変数を一つ重ねる。
+
+@ 0 5 0 16face481582b2c6188e92421662a828
++     生のソースの上に、`Xdg` と `Directories` は XDG Base Directory 仕様の標準ディレクトリ（と Windows での相当物）を任意の型のパスとして与え、`Configurator` はアプリケーションの設定を一つの接頭辞のもとでプロパティと変数から読み、`Searchpath` は XDG のデータディレクトリや設定ディレクトリのような、ディレクトリのリストを検索するパスのプレーンの目印である。
+
+@ 0 7 0 15c2bef8503b6fcd164c436d0982811d
++     ライブラリには二つのソースセットがある。
++     `ambience.core` は上記のすべてを持ち、JVM、Scala.js、Scala Native 向けにコンパイルされる。そこでは `javaBase…` の given が `java.lang.System` を読む。
++     `ambience.wasi` は `environments.wasiEnvironment` と `workingDirectories.wasiWorkingDirectory` を加え、これらは Wasm コンポーネントの `wasi:cli/environment` インターフェースを読む。
++     他のライブラリも選択パッケージに加える。`ethereal` は `environments.daemonEnvironment` と `workingDirectories.daemonClientWorkingDirectory` を、`exoskeleton` は `environments.daemonClientEnvironment` を提供する。
+
+@ 0 5 0 134710ff87567b211304a28aa09c083e
++     すべては `soundness` アンブレラにエクスポートされるが、これには知っておくべき帰結が一つある。
++     `soundness.System` はこのライブラリの `System` であり、`soundness.*` をインポートするファイルでは `java.lang.System` を覆い隠す。
++     そのようなファイルで裸の `System.nanoTime`、`System.out`、`System.arraycopy` を書くと _value nanoTime is not a member of object ambience.System_ で失敗する。`java.lang.System.nanoTime` と書くか、`import java.lang as jl` として `jl.System.nanoTime` と書く。
+
+% 0 1 0 1a3e04a0feab57591fd3a69458462447
+
+% 0 1 0 0a62f8c2677f33ff12490bfd7d7217b0
+
+% 0 1 0 1a367ad8479398ab0f0d2f22876aaafd
+
+% 0 1 0 10bd8e9a57aa9a3417d6f0d432db7fe6
+
+% 0 1 0 0dfdd4c5d9d24c6a0f5632a6ff364be8
+
+% 0 1 0 0c729b8dc575319f1fcb051812e6a706
+
+% 0 1 0 163d836e9113ed981f93e3bffc3da373
+
+@ 0 1 0 09e7b1df389424e6118c7bb6a9b9c3ca
++ entry .Environment   環境変数を、型付きのメンバーアクセスで読むコンテキスト値として表したもの
+
+% 1 1 0 1d7c12e5f839d8e915e148d784b541ce
+
+@ 0 6 0 0bf46fdebd4aa7f30ec809e67ec051a4
++       `Environment` はプログラムの環境変数のソースである。
++       `#variable` は名前に対してそのテキストを答え、定義されていなければ `Unset` を答える。`#entries` は、環境ができる場合にすべての変数を列挙する。
++       本物の環境は名前でインポートする `environments.javaBaseEnvironment` であり、`environments.emptyEnvironment` は何も定義しない。そしてこのトレイトは抽象メソッドを一つしか持たないので、名前から `Optional[Text]` へのラムダが、テストやブロックのための環境になる。
+
+@ 0 8 0 1e739b7d7b2632b3169737ff52f8aa90
++       変数を読む手段はコンパニオンである。
++       `Environment.editor[Text]` は `EDITOR` を読む。キャメルケースのメンバー名は慣習的な大文字スネークケースの変数名になり（`xdgConfigHome` は `XDG_CONFIG_HOME`）、型引数は、その名前と型に対する `Variable` インスタンスを通じて、値を何にデコードすべきかを示す。
++       `Variable` のコンパニオンには、よく知られた変数（`home`、`path`、`shell`、XDG の変数）をパスとして型付けするインスタンス、`columns` を `Int` とするインスタンス、そして任意の名前を `Text` として、あるいは `Decodable in Text` である任意の型として読む汎用の代替がある。
++       有効な識別子でない名前や、実行時にしか分からない名前は `Environment[Text](t"NAME")` で読む。
+
+% 2 1 0 1a1989673cd679fe02b089a5cb6ffb4f
+
+% 3 1 0 002f5a1fbcf42e91176ba40fdbf1ea5e
+
+% 4 1 0 00975588de2a7386148c7bfb23c374f9
+
+% 5 1 0 0343515aba20356c055947912966fbe1
+
+% 0 1 0 0b476c8febecfeb40bf175c6fdd1fb12
+
+% 0 1 0 00c56a8c4b2f54d019e0a85925b6d794
+
+% 0 1 0 08885577ed81330510e9f1c8c6000711
+
+% 1 1 0 185d36df378f82b902055d4639d1d5c0
+
+@ 0 2 0 0b7c4ddc7001a15008ee4f87e7124b2b
++       どちらの形式もスコープ内に `Environment` を必要とし、変数が定義されていなければ `Environment.Error` を発生させる。読み取りを `safely(…)` で囲むと、存在しない変数は `Unset` になる。
+
+@ 0 2 0 1b7cd15d2b9dd31212305eedfea3f2f9
++       環境はケイパビリティなので、ブロックを別の環境に対して実行でき、より狭いスコープの given が勝つ。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0256ac8744d8fca8148b67cc8fc2f4f9
+
+% 1 1 0 001a4d3c1d78540507e27a538e330405
+
+% 2 1 0 02b4ece742652eea1e5ac5553e56a9ef
+
+% 3 1 0 1f76e06923a71b1107ca9d81390692ff
+
+% 0 1 0 0c4919636905be9c0089637c4e456fcf
+
+% 0 1 0 0e9d74ebf196ec1f01b58969a6749a96
+
+% 1 1 0 028151b6884edbe402fff473921963fd
+
+% 2 1 0 12c41b2fa36a0ecd11d190ace3b77b4e
+
+% 0 1 0 05fdee043c624cce18f502be09e782de
+
+% 0 1 0 1d768113772db8ca0ebef4ccddea05c3
+
+% 0 1 0 0952fe6a1d85d5b918e2e6115e54e9b3
+
+% 1 1 0 064c9cda3160844a058ec426b6e81e70
+
+% 2 1 0 07cc003ab7efbfbf14868d78eaaa01b0
+
+% 0 1 0 041099fe0e9195c519c9f6106e1e5c54
+
+% 0 1 0 0d675e9872832c8b1aa563846e2fca1d
+
+% 0 1 0 19b9917ea74aa5ff0aa2d119bfafe8d9
+
+% 1 1 0 05d7a7ce5155b71d031a4b4130c7bd99
+
+% 2 1 0 03a6e6d368e6cd00128e2061eda029ef
+
+% 3 1 0 1f6f245a38d0557508c45fd1eb8bd6fc
+
+% 0 1 0 15874479aae17c2c023c3693c414396c
+
+% 0 1 0 0343df635c53915f0e840f2ab59c92c3
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1e7726e78bf941d709ddfd59b31f80fb
++       常駐するデーモンは多くのシェルからの呼び出しに応え、それぞれが独自の環境を持つ。JVM のグローバルな環境は、デーモンを起動したシェルのものである。
++       デーモンの中では、呼び出しの環境は `environments.daemonClientEnvironment`（`exoskeleton` から）であり、起動したシェルの環境は `environments.daemonEnvironment`（`ethereal` から）である。
+
+@ 0 2 0 149d0af039019efa15eb0716ecce9da4
++       `Environment` は `Findable` なので、ファイルシステムのライブラリがそれを提供する場合、`Path` をこれに対する相対パスとして解決できる。
+
+% 0 1 0 11c98e954ae661ec0e8837f5842581a9
+
+% 0 1 0 014d10d2df187ba61a52410e3badc3ca
+
+% 0 1 0 106f93f9d4d35300075a00109b441520
+
+% 1 1 0 02d842228f65ee861020024dae3faff3
+
+@ 0 20 0 1bd9d7f3355a5dc91d5509efc647b8e0
++   entry .apply   実行時の名前で変数を読み、求められた型にデコードする
++       `Environment[Text](t"HOME")` はテキストが示す変数を、その型（`Text`、または `Decodable in Text` である任意の型）に対する `Variable[Label, T]` インスタンスを通じて読み、定義されていなければ `Environment.Error` を発生させる。
++       スコープ内に `Environment` が必要である。
++       これは実行時まで分からない名前や識別子でない名前のための形式である。よく知られた変数は、メンバーアクセス `Environment.home[Text]` のほうが簡単である。
++   entry .selectDynamic   メンバーアクセスの形式：`Environment.xdgConfigHome[Text]` は `XDG_CONFIG_HOME` を読む
++       任意の識別子が `Environment` のメンバーである。
++       キャメルケースの名前は `Variable` インスタンスの `defaultName` によって大文字スネークケースに変換され（`xdgConfigHome` は `XDG_CONFIG_HOME` に、`term` は `TERM` に）、変数はスコープ内の `Environment` から読まれ、そのテキストは名前と型引数に対するインスタンスによってデコードされる。
++       変数が定義されていなければ、スコープ内の `Tactic` を通じて `Environment.Error` が発生する。
++       型引数はたいてい必要である。`Environment.home[Text]`、あるいは `Environment.home[Path on Linux]` のように書く。後者では `Variable.home` インスタンスが `Instantiable across Paths from Text` である任意の型のパスを読む。
++   entry .provided   スコープ内の任意の `Environment.Provider` から得る `Environment`
++       コンパニオンにある given なので、インポートは要らない。`Provider`（呼び出し元の環境を運ぶ CLI の呼び出しなど）が given であるところではどこでも、`Environment` を直接召喚できる。
++   entry .Provider   CLI の呼び出しなど、正規の環境を運ぶもの
+
+% 1 1 0 0770fb226302a92809c54bc7a17ab4dd
+
+@ 0 5 0 1ff3ab2fcb8928fd13cb58210bfa994a
++         メンバーを一つ、`#environment` だけ持つトレイトである。
++         独自の環境を持つ型（たとえばデーモンの呼び出し）はこれを継承し、`Environment.provided` は、そのプロバイダーが given であるところではどこでも、その環境をスコープ内の環境にする。
++     entry #environment   このプロバイダーが運ぶ環境
++   entry .Error   読もうとした変数が定義されていないときに発生する
+
+% 1 1 0 00116a48cc56ffeb16975691b148aeb7
+
+@ 0 12 0 127669a81ef344010da7ff623f3e6438
++         エラー `↯/s.62.2`：_the environment variable `variable` was not defined_。
++         `Environment.apply` とメンバーアクセスの形式が、スコープ内の `Tactic[Environment.Error]` を通じて発生させる。`safely(Environment.editor[Text])` なら代わりに `Unset` として読める。
++     entry #variable   定義されていなかった変数の名前で、検索したとおりのもの（`EDITOR`）
++   entry #variable   名前による変数の値。定義されていなければ `Unset`
++       唯一の抽象メソッドで、デコードされていない変数の生のテキストを返す。
++       `Environment.apply` とメンバーアクセスの形式はこれを呼び、結果をデコードする。
++   entry #entries   環境が列挙できる場合はすべての変数、できない場合は `Unset`
++       JVM の環境と空の環境は自身を一覧できるが、ラムダから作った環境はできず、`Unset` を答える。
++       列挙できる環境のもとで起動された子プロセスにはまさにこれらの変数が与えられる。`variables(…)` が上書きを検索だけでなくエントリーにも加えるのはそのためである。
+
+@ 0 1 0 0a1020ce0ac9a869098200ce734f8ad6
++ entry .Variable   一つの環境変数をキャメルケースのラベルによってどう名付け、どうデコードするか
+
+% 1 1 0 0d114563a5fbfabc0eea851c42b618e9
+
+@ 0 4 0 0567fbbaf893434d0aa6f3287f893c7d
++       `Variable[alias, T]` は `Environment.alias[T]` の背後にある型クラスである。
++       `"xdgConfigHome"` のようなラベルに対して、変数の本当の名前（`#defaultName`。インスタンスが `#name` を上書きしていればそれ、そうでなければ大文字スネークケースにしたラベル）と、そのテキストを `T` として `#read` する方法を知っている。
+
+@ 0 9 0 05aeafe2fb3c426f1f948de53c70aeee
++       コンパニオンには、よく知られた変数に対するインスタンスがあり、それぞれラベルをキーとする。
++       `home`、`mail`、`shell`、`oldpwd`、`windowid`、`editor`、`pager`、`manpager`、`sshAuthSock`、`xdgDataHome`、`xdgConfigHome`、`xdgBinHome`、`xdgStateHome`、`xdgCacheHome`、`xdgRuntimeDir` は、`Instantiable across Paths from Text` である任意の型のパスを一つ読む。`path`、`xdgDataDirs`、`xdgConfigDirs` は、スコープ内の `System` の `path.separator` プロパティ（なければ `:`）で分割したパスのリストを読む。`columns` は `Int` を読み、`lang`、`display`、`term` は `Text` を読む。
++       親の `Protovariable` からは、任意のラベルに対する二つの代替が来る。`generic` はテキストをそのまま読み、`decoder` は `Decodable in Text` である任意の型として読む。
+
+% 2 1 0 1affe5879f8eb62a0ab9982977b5828e
+
+% 3 1 0 1233e51fae1678dc1c0e6e0c9b810488
+
+% 4 1 0 072f8d0ec777510709bb8c8633e748fd
+
+% 5 1 0 17e73b5504ec236319883e6ce0a27d57
+
+% 2 1 0 1db942de6b944095175375276bc01e9f
+
+% 0 1 0 158269893f0dd576004514aecc25e00b
+
+% 0 1 0 029553d59986e24208b8a7a40b1e3f2c
+
+% 0 1 0 14e05c31469a27a01cde3b7ee9c72f3d
+
+% 1 1 0 076371086a8acb520bc597e3510a21ed
+
+@ 0 2 0 0fb1a05c1dfb7225158a7b154f738095
++       プログラムは変数に対する独自のインスタンスを given `Variable["myVar", MyType]` として宣言でき、`Environment.myVar[MyType]` がそれを読む。
+
+% 1 1 0 1fa89e911652bccb0d7df2a47b920aa8
+
+% 0 1 0 16a5743014b6cd080d83baf50e4ce7de
+
+@ 0 27 0 1efce0b365ae2b840378b051ea3f7a65
++   entry .path   `PATH` を、プラットフォームのパス区切り文字で分割したパスのリストとして
++       `path.separator` プロパティのために `System` が必要で、なければ `:` を使う。
++   entry .xdgDataDirs   `XDG_DATA_DIRS` を、パスのリストとして
++   entry .xdgConfigDirs   `XDG_CONFIG_DIRS` を、パスのリストとして
++   entry .xdgDataHome   `XDG_DATA_HOME` を、パスとして
++   entry .xdgConfigHome   `XDG_CONFIG_HOME` を、パスとして
++   entry .xdgBinHome   `XDG_BIN_HOME` を、パスとして
++   entry .xdgStateHome   `XDG_STATE_HOME` を、パスとして
++   entry .xdgCacheHome   `XDG_CACHE_HOME` を、パスとして
++   entry .xdgRuntimeDir   `XDG_RUNTIME_DIR` を、パスとして
++   entry .home   `HOME` を、パスとして
++   entry .mail   `MAIL` を、パスとして
++   entry .shell   `SHELL` を、パスとして
++   entry .oldpwd   `OLDPWD` を、パスとして
++   entry .windowid   `WINDOWID` を、パスとして
++   entry .editor   `EDITOR` を、パスとして
++   entry .pager   `PAGER` を、パスとして
++   entry .manpager   `MANPAGER` を、パスとして
++   entry .sshAuthSock   `SSH_AUTH_SOCK` を、パスとして
++   entry .columns   `COLUMNS` を、`Int` として
++   entry .lang   `LANG` を、テキストとして
++   entry .display   `DISPLAY` を、テキストとして
++   entry .term   `TERM` を、テキストとして
++   entry #defaultName   変数の本当の名前：設定されていれば `#name`、そうでなければ大文字スネークケースにしたラベル
++       `"xdgDataHome"` は `XDG_DATA_HOME` に、`"term"` は `TERM` になる。
++   entry #name   導出された名前を上書きする明示的な変数名。既定では `Unset`
++   entry #read   変数のテキストをインスタンスの型にデコードする
+
+@ 0 1 0 0f83ea4835cfdc30086862bcb919c01a
++ entry .Protovariable   任意のラベルに対する代替の `Variable` インスタンス：テキストとして、または任意のデコード可能な型として
+
+% 1 1 0 194f85c634f85aae02792332c85b3763
+
+@ 0 7 0 17b9882047c7229c1eebfaa1456c43f4
++       `Variable` のコンパニオンの親で、すべてのラベルに適用される二つのインスタンスを、`Variable` 自身にある名前付きのものより低い優先度で持つ。
++       そのため `Environment.anything[Text]` は任意の変数をテキストとして読み、`Environment.anything[Int]` は `Int is Decodable in Text` インスタンスでそれをデコードする。
++       通常は直接参照しない。
++   entry #generic   任意の変数を、生のテキストとして
++   entry #decoder   任意の変数を、`Decodable in Text` である型にデコードしたもの
+
+@ 0 1 0 1e95c5e7fb844ef702db36ac540a0a44
++ entry .variables   スコープ内の環境の上に名前付きの変数を重ねてブロックを実行する
+
+% 1 1 0 03b9973a9eb7a9cb1a65f8e28263487e
+
+@ 0 6 0 1de2ad24be9a060809fa892119680a05
++       `variables(name = value, …)(block)` は各変数をキャメルケースで名付け、ブロックの間、スコープ内の `Environment` の上に慣習的な大文字スネークケースの形で設定する（`gitIndexFile` は `GIT_INDEX_FILE`）。ブロックは新しい環境をコンテキストパラメーターとして受け取る。
++       他の名前の検索は外側の環境へ落ちていき、上書きは `Environment#entries` にも加えられるので、ブロック内で起動されたサブプロセスはそれらを受け継ぐ。
+
+% 2 1 0 1414ae2358a23dba0a6b655478ec52b5
+
+% 3 1 0 1448e1d2ec6b8b2a1bbbf2d00cd55f76
+
+% 4 1 0 05393be4fef8b3700331a9de5540c914
+
+% 5 1 0 198ec65b9b7565a30ee96bca53156f80
+
+% 0 1 0 16ce3674082ca7c1008b4d3830316240
+
+% 0 1 0 0cdde077800b59d303517d825b887fa4
+
+% 1 1 0 054d5dfd2f270dad007de0004eb7593e
+
+@ 0 5 0 1182492daddec909020f04285da1bd6c
++       値は `Text` である。外側の `Environment` が必要である。
++   entry .applyDynamicNamed   `variables(name = value)(block)` の背後にある名前付き引数の適用
++       名前で呼ぶものではない。コンパイラが `variables(gitIndexFile = t"…")` をこれに書き換える。
++       各引数名はキャメルケースから大文字スネークケースに変換され、ブロックは拡張された `Environment` をコンテキストパラメーターとして受け取る。
+
+@ 0 1 0 094804a0177fb1da0803d726eb986741
++ entry .System   システムプロパティをコンテキスト値として表したもの、そしてそこから読むプラットフォーム
+
+% 1 1 0 1bb25ce51598f9ba0c0700aaa0d1862f
+
+@ 0 3 0 02301ebd09c52d8512dbf2f351dce777
++       `System` はプロパティの名前に対してそのテキストか `Unset` を答える。
++       JVM 自身のものは名前でインポートする `systems.javaBaseSystem` であり、`systems.emptySystem` は何も定義しない。
++       名前から `Optional[Text]` へのラムダは、テストのための `System` になる。
+
+@ 0 7 0 1469945d832d587a0b4ad707f0d2d336
++       プロパティは `.properties` を通じて読む。ドット区切りの名前をメンバーのパスとして書き、最後に適用を置く。その型引数が値のデコード先を示す。
++       `System.properties.user.home[Text]()`、`System.properties.file.separator[Char]()` のように書く。
++       コンパニオンの `Property` インスタンスは標準のプロパティの型を知っている（`java.home` と `user.home` はパス、`os.arch` は `Architecture`、`java.class.version` は `Int`）。それ以外のプロパティは `Text` として、または `Decodable in Text` である任意の型として読む。
++       定義されていないプロパティは `Property.Error` を発生させる。
+
+% 2 1 0 19956707363a88110a0990b3a39cc3a2
+
+% 3 1 0 1c845264d8b077eb0d8e728d3be855d2
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 2 1 0 087b335af072e54313f73e94aaa91dfd
+
+% 0 1 0 1f54db1f7aab7b201b30e4478a3d1616
+
+% 0 1 0 06b1d9e830c3722c1be85b8459e97bf3
+
+% 0 1 0 16f80f6518dde20a0751fedf1730d626
+
+% 0 1 0 1f17ae85827c54680c0fe828fa43b3ba
+
+% 1 1 0 0d286dea9c6b29971ab1091cc3088b05
+
+@ 0 4 0 02453407a24e860215fdf4e5474104b1
++       プロパティと環境変数は、テキストのキーと値のデータである点で似ており、どこから来るかで異なる。
++       プロパティは JVM に `-D` 引数として渡され、ドット区切りの小文字で名付けられる。変数はシェルから受け継がれ、大文字スネークケースで名付けられる。
++       どちらも、テキストとして内側へ渡されるのではなく、読む時点でデコードされる。
+
+@ 0 2 0 1ea8c3bb606158320b7dc47f24471932
++       `soundness.*` をインポートするファイルでは、この `System` が `java.lang.System` を覆い隠す。Java のものには `java.lang.System.nanoTime` と書く。
+
+% 0 1 0 1b38210a2abcbdf40bdf0d2d20009f4a
+
+% 0 1 0 1d35dbfba5489b2411c6b352fbd50c75
+
+% 1 1 0 0849b07617ed304f1ce0bd2f8c5ac46f
+
+% 1 1 0 012039e2d429496d0ec7b8ab7f3a1cd8
+
+@ 0 9 0 0ac70d5e5807efac072737c98d6f84df
++   entry .os   実行中のオペレーティングシステムで、`os.name` プロパティからデコードしたもの
++       `System.os` はスコープ内の `System` から `os.name` を読み、`Os` としてデコードするので、プログラムはプロパティが取る多くの綴りではなく `Os.MacOs` で照合する。
++       型付きのプロパティの読み取りと同じく、プロパティが定義されていなければエラーを発生させるのではなくパニックする。寛容な検査は `system(t"os.name").let(_.as[Os])` である。
++   entry .architecture   実行中のプロセッサアーキテクチャで、`os.arch` プロパティからデコードしたもの
++       `System.architecture` は `os.arch` を読み、`Architecture` としてデコードする。`aarch64` や `arm64` なら `Arm(64)` である。
++       プロパティが定義されていなければパニックする。
++   entry .properties   プロパティを読むためのドット区切りの名前のパスの根
+
+% 1 1 0 1f555c67d2e24e2318538377a349c3ee
+
+@ 0 4 0 008f1a4d072d26e115ab986484b67189
++         `System.properties.a.b.c[T]()` はプロパティ `a.b.c` を読む。
++         各メンバーアクセスは `Property.Access` をセグメント一つ分延ばし、最後の適用が、その名前と型に対する `Property` インスタンスを通じて、スコープ内の `System` からプロパティを読む。
++         `System.properties[T](t"a.b.c")` は実行時の名前でプロパティを読む。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 0c768c6e82769c890f2f559fbfa153a3
+
+% 0 1 0 0f424c3bd82258290ca5264e02688012
+
+% 0 1 0 01fee8fb56043e7b06894305cef3b4ca
+
+% 0 1 0 1fa8088dd27ac886097738cc33374440
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 6 0 1767b6a2284e073d1a985bd50f37a5d0
++     entry .apply   実行時の名前でプロパティを読み、求められた型にデコードする
++         `System` と、その型（`Text`、または `Decodable in Text` である任意の型）に対する `Property` インスタンスが必要である。
++         プロパティが定義されていなければ `Property.Error` を発生させる。
++     entry .selectDynamic   ドット区切りのプロパティ名を始める：`System.properties.user` は `Property.Access["user"]` である
++   entry #apply   名前によるプロパティの値。定義されていなければ `Unset`
++       唯一の抽象メソッドで、生のテキストを返す。
++       型付きの読み取りはこれを呼び、結果をデコードする。
+
+@ 0 1 0 1f071c669121416502dd5fc668aa0c0a
++ entry .Property   一つのシステムプロパティを、ドット区切りの名前によって型にどうデコードするか
+
+% 1 1 0 01bfb6185fa03a97182bb9f0a52c5b58
+
+@ 0 11 0 13fc4425408a450e087e0eb470e135b5
++       `name is Property of T` は `System.properties.<name>[T]()` の背後にある型クラスである。
++       リテラルのプロパティ名に対して、オプショナルなテキストを `T` として `#read` する方法と、プロパティが存在しないときにどうするかを知っている。
++       コンパニオンには標準の JVM プロパティに対するインスタンスがあるので、それぞれ自然な型として読める。`java.home`、`user.home`、`user.dir` は `Instantiable across Paths from Text` である任意の型のパスとして、`file.separator` と `path.separator` は `Char` として、`os.arch` は `Architecture` として、`java.class.version` は `Int`（Java 21 では `65`）として、`java.version`、`java.vendor`、`java.vendor.url`、`java.runtime.version`、`line.separator`、`user.name`、`os.name`、`os.version` は `Text` として読む。
++       それ以外のプロパティは `Text`（`.generic`）として、または `Decodable in Text` である任意の型（`.decoder`）として読み、どちらも定義されていなければスコープ内の `Tactic` を通じて `Property.Error` を発生させる。
+
+@ 0 3 0 125d677733cb047e0bf299add87317d8
++       型が固定された標準のインスタンスは、JVM が常にそれらを定義するので、プロパティが存在しなければエラーを発生させるのではなくパニックする。汎用のインスタンスと、`javaRuntimeVersion` および `javaClassVersion` は `Tactic[Property.Error]` を必要とする。
+
+% 2 1 0 11deb9504159bb8d04d6106817561c8a
+
+% 3 1 0 1ac7f8570ab6e2b01dc3e249cd474a87
+
+% 4 1 0 00a630d33852e98b179711b72ec812b2
+
+% 2 1 0 1e118d80a98b6e58146e844ea4a69a16
+
+% 2 1 0 1c6f19df4592e92f0505f9dabfe33a55
+
+% 0 1 0 1a36588bd13bc7761b5f272d62408ca5
+
+% 0 1 0 154a33a426ce4bea1cd581ec48bca12f
+
+% 0 1 0 03e9248d87d000ab17e56961da312e01
+
+% 1 1 0 007e75e469a97f9d026d06260729f01f
+
+@ 0 2 0 0dfaba1eb2b4d651131a59ba0fc1c0da
++       `java.class.path` の `class` のように Scala のキーワードであるプロパティ名は、バッククォートで囲んで書く。
+
+% 1 1 0 14e9fa31ecbfc4370518c70bb12caa2f
+
+@ 0 24 0 1dd13fa3288ba26f17f6f871363a713c
++   entry .apply   プロパティのテキストに対する関数から `Property` インスタンスを作る
++       `Property[name, T](text => …)` は、定義されたプロパティをその関数でデコードし、定義されていなければパニックするインスタンスである。
++       コンパニオンの型が固定されたインスタンスはこの方法で書かれており、プログラムが独自のプロパティの型を宣言するのもこの方法である。
++   entry .generic   任意のプロパティを、生のテキストとして。定義されていなければ `Property.Error` を発生させる
++   entry .decoder   任意のプロパティを、`Decodable in Text` である型にデコードしたもの。定義されていなければ `Property.Error` を発生させる
++   entry .javaHome   `java.home` を、任意の型のパスとして
++   entry .javaVersion   `java.version` を、テキストとして
++   entry .javaVendor   `java.vendor` を、テキストとして
++   entry .javaVendorUrl   `java.vendor.url` を、テキストとして
++   entry .javaRuntimeVersion   `java.runtime.version` を、テキストとして（`21.0.2+13-LTS`）。定義されていなければ `Property.Error` を発生させる
++   entry .javaClassVersion   `java.class.version` を、クラスファイルのメジャーバージョンとして（Java 21 では `65`）
++       プロパティは `65.0` のような 10 進数で、求められるのはその整数部である。
++       プロパティが定義されていないかパースできなければ `Property.Error` を発生させる。
++   entry .fileSeparator   `file.separator` を、`Char` として
++   entry .pathSeparator   `path.separator` を、`Char` として
++   entry .lineSeparator   `line.separator` を、テキストとして
++   entry .userName   `user.name` を、テキストとして
++   entry .userHome   `user.home` を、任意の型のパスとして
++   entry .userDir   `user.dir` を、任意の型のパスとして
++   entry .osName   `os.name` を、テキストとして。`System.os` はそれを `Os` としてデコードする
++   entry .osVersion   `os.version` を、テキストとして
++   entry .osArch   `os.arch` を、`Architecture` として
++   entry .Access   書きかけのドット区切りのプロパティ名で、メンバーアクセスで延ばし、適用で読む
+
+% 1 1 0 14c9825ca80392e700962be76ebbb942
+
+@ 0 8 0 0ef522fa16c1ae2d00ffb807b82d7e00
++         `System.properties.user` は `Property.Access["user"]` であり、`.home` はそれを `Property.Access["user.home"]` へ延ばし、`[Text]()` がそれを読む。
++         名前は型に運ばれるので、`Property` インスタンスはコンパイル時に完全なドット区切りの名前によって選ばれる。
++     entry #selectDynamic   名前をドット区切りのセグメント一つ分延ばす
++     entry #applyDynamic   名前をセグメント一つ分延ばし、一度にプロパティを読む
++     entry #property   ここまでに書かれたドット区切りのプロパティ名の文字列
++     entry #apply   名前の付いたプロパティをスコープ内の `System` から読み、型引数にデコードする
++   entry .Error   読もうとしたプロパティが定義されていないときに発生する
+
+% 1 1 0 18b579df03306f341c3d064d42215466
+
+@ 0 7 0 1407dcb62b7edd2713de2a33e0857912
++         エラー `↯/s.62.1`：_the system property `property` was not defined_。
++         `generic` と `decoder` のインスタンス、そして `javaRuntimeVersion` と `javaClassVersion` が、スコープ内の `Tactic[Property.Error]` を通じて発生させる。必要なプロパティを読む他のライブラリ（`path.separator` を読む `LocalClasspath` など）も発生させる。
++     entry #property   定義されていなかったプロパティのドット区切りの名前
++   entry #read   名前を与えられて、プロパティのオプショナルなテキストをインスタンスの型にデコードする
++   entry #Self   プロパティの名前を、リテラルの文字列型として
+
+@ 0 1 0 0c0ffe09742f3bec05963b9aeedd57b0
++ entry .Os   プログラムが動くオペレーティングシステムで、`os.name` からデコードした値
+
+% 1 1 0 05b2ee11de9c0ca41f2a713a89c626d5
+
+@ 0 5 0 08585d286048eb04071a66e6b09c28ba
++       JVM が報告するオペレーティングシステム（`Linux`、`MacOs`、`Windows`、`FreeBsd`、`OpenBsd`、`NetBsd`、`Solaris`、`Aix`）と、知らないものに対して名前を保持する `Other(name)` からなる列挙型である。
++       `System.os` はスコープ内の `System` から実行中のものを読み、`text.as[Os]` は任意の `os.name` のテキストをデコードする。小文字にした接頭辞で照合するので、`Mac OS X`、`Windows Server 2022`、`SunOS` はいずれも期待どおりにデコードされる。
+
+% 2 1 0 01195e2fdfbe5db315124042bbb46fd7
+
+% 3 1 0 014c928cd6d53f720fa64e832b635487
+
+% 4 1 0 187952b2457681741c9a4d346fdc03f3
+
+% 0 1 0 1220e20f34579bf212c889064351e978
+
+% 0 1 0 1cbf715806d4298901ba7e70d5264e7e
+
+% 0 1 0 136340b1f787c34717a33394e4fddfc8
+
+% 0 1 0 1edeb008775f795c01c0befbf6d824fc
+
+% 0 1 0 078b75a71c5f865a1d0de5b4fc6d7534
+
+% 0 1 0 0a9e8869826248051d375545acf80354
+
+% 0 1 0 0ca450fa96fece13019541dce60d30ef
+
+% 1 1 0 16264cb2f124b9ed1bd596359b3fb918
+
+@ 0 2 0 175331663abcc8131cbd091e909c15e3
++       `Os` は `Vm.intercept` の対象ではない。仮想マシンのイベントは `Vm` を通じて捕らえる。
+
+% 1 1 0 1e6cddd58a414e77147e9a39aee1fd4c
+
+% 1 1 0 1444876cb50919f113c779a702a8c765
+
+@ 0 3 0 0f42c4f286e74fca1c64b79c814a907f
++   entry .decodable   `os.name` のテキストを、小文字にした接頭辞によって `Os` として読む
++       `linux`、`mac` または `darwin`、`windows`、`freebsd`、`openbsd`、`netbsd`、`sunos` または `solaris`、`aix` がある。それ以外はすべて `Other(name)` である。
++       デコードが失敗することはない。
+
+@ 0 1 0 12b57ffc905b7ce40bd6e1a7dc886da2
++ entry .Architecture   プロセッサアーキテクチャで、`os.arch` からデコードした値
+
+% 1 1 0 15331d44f8d6658614f397de8fd9425e
+
+@ 0 6 0 013fb02147d0c562088602b33b3275c3
++       プロセッサファミリーとそのワードサイズからなる列挙型である。`X86(32 | 64)`、`Arm(32 | 64)`、`Ppc(32 | 64, littleEndian)`、`Sparc(32 | 64)`、`Mips(32 | 64)`、`S390(31 | 64)`、`RiscV`、そして知らないものに対する `Other(name)` がある。
++       `System.architecture` はスコープ内の `System` から実行中のものを読むので、アーキテクチャによってネイティブライブラリやコードの経路を選ぶコードは、プラットフォームによって綴りが変わる文字列ではなく値で照合する。
+
+% 2 1 0 1e51da224403fa8a1493b14d693873f0
+
+% 3 1 0 0b52713bae955a4807935bbc15724a89
+
+% 0 1 0 080a4de4179f6d0b1ae8480a6d4b0338
+
+% 0 1 0 0d00e155056ed7c00dc60bb188137a1e
+
+% 0 1 0 13b2b22fd4e8504608b26b97b361ca2c
+
+% 1 1 0 07999a09aabfdc361ee891209fafe515
+
+% 1 1 0 10767315774c248615edc017fb5c82eb
+
+% 1 1 0 007fe401b42c65c3016f696874bb2165
+
+@ 0 2 0 0a4537fbffbcd8f211b47bded4a48631
++   entry .decodable   `os.arch` のテキストを `Architecture` として読む
++       デコードが失敗することはない。認識できない名前は `Other(name)` として保持される。
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+% 0 1 0 0bb3d2f9ecf5719e1030ff89f146c273
+
+@ 0 3 0 0195150da10ce3550b165ad208297c7c
++       column  アーキテクチャ
++       row  `x86`、`i386`  `X86(32)`
++       row  `x86_64`、`amd64`  `X86(64)`
+
+% 0 1 0 17f1beda082592a314be602788e3e539
+
+@ 0 1 0 0b0955c91e2ebc8c19a79fcb437fe8a0
++       row  `aarch64`、`arm64`  `Arm(64)`
+
+% 0 1 0 1edd57828f6229451d25c9b9c7bea453
+
+% 0 1 0 15e6459a87081ec807eb921f319c01b7
+
+@ 0 1 0 1efb3b7db1ccc9ca0dedfac6b8842270
++       row  `ppc64le`  `Ppc(64, true)`、リトルエンディアン
+
+% 0 1 0 07ccb0649395579e0fbc9e94364eb01d
+
+% 0 1 0 0f264fb83952242b03a0e79df7511262
+
+% 0 1 0 1bc4a759e74bfa500f58137070c0084e
+
+% 0 1 0 0477af65dc1641dc1da4989d20afe196
+
+% 0 1 0 139345cb9ce11e581d2b9cb4f2c9a31e
+
+% 0 1 0 089794724002307b1bd99c2ff71ef626
+
+% 0 1 0 10992186dd28f66a0d009fcfe4e91280
+
+@ 0 1 0 117e71103d41fd7100c41e7bfc0a0071
++       row  その他の名前  `Other(name)`
+
+% 1 1 0 16cb0dc7fe44f38d1ba13441370ad6ee
+
+@ 0 7 0 02550e117b84ec981ff2895dba2086cd
++ entry .Vm   プログラムが動く仮想マシン：`Vm.intercept` の対象
++     独自のメンバーを持たないオブジェクトである。
++     仮想マシンが発生させるイベント（シャットダウン、捕捉されない例外、ガベージコレクション）を捕らえる場所であり、`parasite` ライブラリの `Vm.intercept[Shutdown]`、`Vm.intercept[Fault]`、`Vm.intercept[GarbageCollection]` を通じて行う。`parasite` はこれらのイベントをこの対象で捕らえられるものとして宣言している。
++     現在これらのイベントを提供するのは JVM だけだが、原理的にはどれも JVM に固有のものではない。対象がステージング用の仕組みである `Jvm` ではなく `Vm` であるのはそのためである。
+
+% 2 1 0 06aff328f3d275d50c1367dbcc480db4
+
+% 3 1 0 13f4b4dadf37bfbf18ea07af5f51bf5b
+
+% 0 1 0 165462afad97f91204a9c33272297e1b
+
+% 0 1 0 1334ebfb7f1c19870ee5acdbaefefb39
+
+% 1 1 0 1a6a52a25899c6ca078ad125828d4a05
+
+@ 0 1 0 0afc52d4b273fe2f0f81f51707adbf88
++ entry .WorkingDirectory   プログラムが起動されたディレクトリを、コンテキスト値として表したもの
+
+% 1 1 0 09001a04b14f07da17c0d5812b91f678
+
+@ 0 9 0 0b3f4424ca8527701540a9845dbda81d
++       `WorkingDirectory` は一つのディレクトリを `#directory()` のテキストとして示す。
++       相対パスを作業ディレクトリに対して解決するメソッドは、グローバルな `user.dir` を読むのではなく、これを `using` パラメーターとして取る。
++       名前でインポートするものは `workingDirectories` パッケージにある。`javaBaseWorkingDirectory` は JVM の `user.dir`、`systemWorkingDirectory` はスコープ内の `System` から読む `user.dir`、`wasiWorkingDirectory` は Wasm コンポーネントの初期ディレクトリ、`daemonClientWorkingDirectory`（`ethereal` から）はデーモンの各呼び出しが行われたディレクトリである。
++       `WorkingDirectory(path)` は任意のパスの値から作業ディレクトリを作り、トップレベルの `workingDirectory[Path on Linux]` はスコープ内のものをパスの型へ解決する。
+
+% 2 1 0 01b033a4b739d5ad011265a97418ff46
+
+% 3 1 0 054b9ff855c313650b66c7fd507f5831
+
+% 4 1 0 1ad427f18900ed511ccf4688e2e3a152
+
+% 1 1 0 06a942ff3853a560118ebcb82d23fca2
+
+% 0 1 0 02ab150339f5b3121d8aa703e8ffadb7
+
+% 0 1 0 07d1673df12056240cdd99dc28a89592
+
+% 0 1 0 0f1640e4ec19692916b0da9338a2acb9
+
+% 1 1 0 175b8efdcbbe57e71f0cd95e5fc54e5b
+
+% 0 1 0 07653f6d3bf18c5f08320d45a283d1fc
+
+% 0 1 0 01ba52eeeb1156d418e416e22d0e88ac
+
+@ 0 5 0 02d56471e87cd93f01befbe441e3f981
++   entry .apply   `Abstractable across Paths to Text` である任意のパスの型から作る作業ディレクトリ
++   entry .provided   スコープ内の任意の `WorkingDirectory.Provider` から得る `WorkingDirectory`
++       コンパニオンにある given なので、インポートは要らない。CLI の呼び出しのようなプロバイダーが given であるところではどこでも、その作業ディレクトリを直接召喚できる。
++   entry .Provider   CLI の呼び出しなど、正規の作業ディレクトリを運ぶもの
+
+% 1 1 0 0e470651f2a5735a13ef093fa94639bf
+
+@ 0 5 0 0c4ba2d9e366c8ec06c68e4374000925
++         メンバーを一つ、`#workingDirectory` だけ持つトレイトである。
++         デーモンのクライアントはそれぞれ独自の作業ディレクトリを持つので、呼び出しの型がそれを提供し、`WorkingDirectory.provided` がそれをスコープ内のものにする。
++     entry #workingDirectory   このプロバイダーが運ぶ作業ディレクトリ
++   entry .Error   作業ディレクトリが必要なのに存在しないときに発生する
+
+% 1 1 0 1db732683ab7fbc50039d7b02136fe5c
+
+@ 0 4 0 05ced1bf6ec5a2bc023d6ff764848317
++         エラー `↯/s.62.3`：_there is no working directory_。
++         相対パスを解決しなければならないのに、それを解決する基準となる `WorkingDirectory` を持たないコードが発生させる。クライアントが作業ディレクトリを報告できなかったデーモンの呼び出しなどである。
++   entry #directory   作業ディレクトリのテキスト
+
+@ 0 1 0 173421742de01ad212fd4754558baba1
++ entry .TemporaryDirectory   一時ファイルのためのディレクトリを、コンテキスト値として表したもの
+
+% 1 1 0 1e9b6f8f4feda3c2179e8e601420e056
+
+@ 0 7 0 123bf059d50b55c315c4d575916012d8
++       `TemporaryDirectory` は一つのディレクトリを `#directory()` のテキストとして示し、`#path[T]` はそれを任意のパスの型としてインスタンス化する。
++       名前でインポートするものは `temporaryDirectories` パッケージにある。`javaBaseTemporaryDirectory` は JVM の `java.io.tmpdir` を読み、`systemTemporaryDirectory` は同じプロパティをスコープ内の `System` から読み、`environmentTemporaryDirectory` はスコープ内の `Environment` から `TMPDIR`、`TMP`、`TEMP` のうち最初のものを読む。
++       トップレベルの `temporaryDirectory[Path on Linux]` はスコープ内のものをパスの型へ解決する。
+
+% 2 1 0 1331aab65dd429ce058084c66f1de237
+
+% 3 1 0 0c308ee9b93d428612a8c6f67e8fba93
+
+% 4 1 0 14feef47ac7ab656165a42a4ddca494e
+
+% 1 1 0 1d2f89ca805c77dc1ae07a68ba3ee9a6
+
+% 0 1 0 024a9a989c160a771559e8ae038c8e65
+
+% 1 1 0 19d0f14375d19684068264ca45199c1b
+
+% 0 1 0 184f2bb714060bc80993d6ed18bcbb2c
+
+% 0 1 0 066ea94f4552b7c3070d2bdde9078ad3
+
+@ 0 2 0 0ce9262043a90a1b14ea413bb0e52020
++   entry #directory   一時ディレクトリのテキスト
++   entry #path   一時ディレクトリを、`Instantiable across Paths from Text` である任意の型のパスとして
+
+@ 0 5 0 0d05d317f9d6a2851e7e3ba7a550e2f6
++ entry .workingDirectory   スコープ内の `WorkingDirectory` をパスの型へ解決したもの：`workingDirectory[Path on Linux]`
++     `WorkingDirectory` と、`Representative of Paths` であるパスの型が必要である。
++     テキストは、その型が信頼されたインスタンス化を持てばそれを通じて（作業ディレクトリはオペレーティングシステムから来るので検証されない）、持たなければ素のテキストからインスタンス化される。
++     このメソッドは `inline` なので、デーモンの `cli` ブロックの中で展開できる。
+
+% 2 1 0 078856e95be189021eb62f49ce3054ac
+
+% 3 1 0 12eb4f531cc93eca07fc4199959a0dee
+
+% 4 1 0 0721ebfb25f9111c008e5b5960c64e2d
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 0e659f2b8aacbd33091432e0917fd237
+
+% 1 1 0 1e6d856f1f4cf30a1fe12c664648e9b8
+
+@ 0 3 0 166e9a132d46ab7603dad8d47b7f7c65
++ entry .temporaryDirectory   スコープ内の `TemporaryDirectory` をパスの型へ解決したもの：`temporaryDirectory[Path on Linux]`
++     `TemporaryDirectory` と、`Representative of Paths` であるパスの型が必要である。テキストは、`workingDirectory` と同じく、その型の信頼されたインスタンス化を通じてインスタンス化される。
+
+% 2 1 0 146e1fb118e898c0154087cd98ab2e3c
+
+% 3 1 0 08114d4895a2e535130aabf79de230ca
+
+% 4 1 0 15214bff81f30ea11ba959cd8b78fec5
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 0 1 0 18110d55acc0a0fe1014aea42bb09efa
+
+% 1 1 0 054151ef2fc37d7214dc4d0294d55ad4
+
+@ 0 1 0 0b0dde005d4773cd00e6a841b27c0a31
++ entry .Xdg   XDG の基本ディレクトリ：設定されていれば環境から、されていなければ仕様の既定値から
+
+% 1 1 0 0dbfe5cdb1ad6b551cb808954931907a
+
+@ 0 7 0 1bc8b197fe20eb68104e604656cd8626
++       XDG Base Directory 仕様は、プログラムのデータ、設定、キャッシュ、状態がどこに置かれるべきかを定める。ユーザーの環境（`XDG_DATA_HOME`、`XDG_CONFIG_DIRS`、…）が設定されていればそれに従い、設定されていなければ（`user.home` プロパティから得る）ホームディレクトリの下にある仕様の既定値を使う。
++       各メソッドは返すパスの型を型引数として取り、スコープ内に `Environment` と `System` を必要とする。
++       `Directories` は同じディレクトリの集合で、Windows では Windows の場所に置き換えたものである。
+
+% 2 1 0 01175245239c855b0967dd4e55519a3d
+
+% 3 1 0 1d847361c1b15f4b16eeff0963f9902c
+
+% 4 1 0 085afba393a9f33e1501ae27a25cb222
+
+% 5 1 0 00c4d62322d494581730e29925e3482c
+
+% 6 1 0 0225916e262914c61f589d7ede78b504
+
+% 0 1 0 0539575999d841d41d4bb44d725b6f85
+
+% 0 1 0 1554a67897f2fc6b08d630da33ddbebd
+
+% 0 1 0 17510b5afba3525d0532d48b8897c418
+
+% 1 1 0 0ee376145b5a5f0e046025f684c81b87
+
+@ 0 2 0 1197680b12499580026ee0fd03dd963e
++       ハードコードした `~/.myapp` ではなくこれらを使うことで、プログラムのファイルは、ユーザーのバックアップ、同期、片付けのツールが期待する場所に置かれる。
+
+@ 0 4 0 0fb364795bee41fa087646c7eeb1aa92
++       `Xdg.Data` と `Xdg.Config` は二つの XDG のサーチパスのプレーンである。
++       `Path on Xdg.Data` は、`dataHome` と `dataDirs` の各エントリーをこの優先順で検索する部分パスを表し、`Path on Xdg.Config` も同様に `configHome` と `configDirs` を検索する。
++       検索そのものは `galilei` ライブラリにある。
+
+% 0 1 0 023f67cec20ed9f4125a58a5f411ef34
+
+% 0 1 0 06046212a76742f008400e63f2f842c2
+
+% 1 1 0 14ab07b5603d38a7075d9a95f75b3a5c
+
+@ 0 12 0 1909db4f66579187024b95f3daad609f
++   entry .Data   `dataHome` と `dataDirs` の上のサーチパスのプレーンで、`Searchpath` である
++       `Path on Xdg.Data` は `myapp/schema.json` のような部分パスで、データのホームを、次に各データディレクトリを検索して解決される。
++       解決は `galilei` にある。
++   entry .Config   `configHome` と `configDirs` の上のサーチパスのプレーンで、`Searchpath` である
++   entry .dataHome   `$XDG_DATA_HOME`、または `~/.local/share`
++   entry .configHome   `$XDG_CONFIG_HOME`、または `~/.config`
++   entry .cacheHome   `$XDG_CACHE_HOME`、または `~/.cache`
++   entry .stateHome   `$XDG_STATE_HOME`、または `~/.local/state`
++   entry .runtimeDir   `$XDG_RUNTIME_DIR`、または `Unset`：仕様は既定値を与えていない
++   entry .bin   `$XDG_BIN_HOME`、または `~/.local/bin`
++   entry .dataDirs   パス区切り文字で分割した `$XDG_DATA_DIRS`、または `/usr/local/share` と `/usr/share`
++   entry .configDirs   パス区切り文字で分割した `$XDG_CONFIG_DIRS`、または `/etc/xdg`
+
+@ 0 1 0 1743797024c97a9a0f96c8e47c353712
++ entry .Directories   標準のユーザーディレクトリ。Windows では Windows の場所、それ以外では XDG の場所
+
+% 1 1 0 10f049cf462dbcbd0244508e41418353
+
+@ 0 8 0 07caa6fd7f80c57d12e168f3fff5c586
++       `Xdg` と同じディレクトリを、プラットフォームによって選んだものである。
++       スコープ内の `System` が `Os.Windows` とデコードされる `os.name` を報告する場合、データ、設定、キャッシュ、状態のホームはローミングまたはローカルの `AppData` ディレクトリ（`APPDATA` と `LOCALAPPDATA` から。設定されていなければホームディレクトリの下の慣習的な既定値）になり、ランタイムディレクトリと `bin` はローカルの `AppData` の下に置かれ、データと設定のディレクトリは `PROGRAMDATA` になる。他のすべてのプラットフォームで、あるいは `os.name` がない場合は、それぞれ同じ名前の `Xdg` のディレクトリである。
++       各メソッドはパスの型を型引数として取り、`Environment` と `System` を必要とする。
+
+% 2 1 0 0f7b5a0d3cd65d2e1af24410cb9ebbc1
+
+% 3 1 0 1aba79a7c819a3200c6455ca8e7891b1
+
+% 4 1 0 16cab6c210e738da018746555d1430e0
+
+% 5 1 0 0607ccf1380205f90cd444f4117e2d24
+
+% 6 1 0 09662ba56456b4bb13a8f561ba1456a6
+
+% 0 1 0 110340846c4383ca0c4088c52ba7329a
+
+% 0 1 0 05addcb1e6fdb0f1191e1afade21d28a
+
+% 1 1 0 16b84b03aab0beb6116f1c8164d7be37
+
+% 1 1 0 138c61ed304315240f62d43a10e57a4a
+
+@ 0 11 0 156ec816009ebf611f014423ce581bbf
++   entry .home   `user.home` から得るユーザーのホームディレクトリを、任意の型のパスとして
++       `System` だけが必要である。JVM は常に `user.home` を設定するので、設定されていなければパニックする。
++   entry .homeText   `user.home` から得るユーザーのホームディレクトリを、テキストとして
++   entry .dataHome   Windows ではローミングの `AppData`、それ以外では `Xdg.dataHome`
++   entry .configHome   Windows ではローミングの `AppData`、それ以外では `Xdg.configHome`
++   entry .cacheHome   Windows ではローカルの `AppData`、それ以外では `Xdg.cacheHome`
++   entry .stateHome   Windows ではローカルの `AppData`、それ以外では `Xdg.stateHome`
++   entry .runtimeDir   Windows ではローカルの `AppData` の下の `Temp`、それ以外では `Xdg.runtimeDir` で、`Unset` のこともある
++   entry .bin   Windows ではローカルの `AppData` の下の `Programs`、それ以外では `Xdg.bin`
++   entry .dataDirs   Windows では `PROGRAMDATA`（または `C:\ProgramData`）、それ以外では `Xdg.dataDirs`
++   entry .configDirs   Windows では `PROGRAMDATA`（または `C:\ProgramData`）、それ以外では `Xdg.configDirs`
+
+@ 0 1 0 1debff874c1a76dc0f8380b0da7eb661
++ entry .Searchpath   実在するディレクトリの順序付きリストを検索するパスのプレーンの目印
+
+% 1 1 0 104dfb73990e8b9916d12f01a37f29b4
+
+@ 0 6 0 08541c818e4ddbb5029d8566b1cbe17e
++       _サーチパスのプレーン_ は、ディレクトリの順序付きリスト（XDG のデータディレクトリや `$PATH`）を一つの検索可能なビューにまとめる。そのため `Path on Xdg.Data` は、それを最初に持つディレクトリで見つかる部分パスを指す。
++       プレーンは `Searchpath` を継承することでこれに参加する。`Xdg.Data` と `Xdg.Config` がそうしている。するとコンパニオンが、そのようなプレーンが必要とする `serpentine` の given を暗黙のスコープに与える。パスは `%` をルートとし、ルートは何もない形にエンコードされ（そのためパスは `myapp/config.json` と読める）、各セグメントは `.Rules` を守らされる。
+
+@ 0 5 0 162f10410f58be291a2d57117e3e6d1f
++       サーチパスのプレーンは、意図して `Filesystem` インスタンスを持たない。`Filesystem` で制限される `galilei` の絶対パスの操作は、仮想のパスに適用されてはならない。適用されれば、それをそのままプラットフォームのパスとして解決してしまうからである。
++       まとめる仕組み（プレーンが解決される順序付きのステム、最初の一致による解決、統合され覆い隠しを伴う一覧）は `galilei` の `Searchpaths` である。
+
+% 1 1 0 157cee268583eb6d1a25bd04d3b4b61e
+
+@ 0 9 0 199394f4df31560e041f31c45ae2a025
++   entry .Rules   サーチパスのパスのセグメントが何であってよいか
++       セグメントは `/` を含んではならず、`.`、`..`、空であってもならない。
++   entry .nominative   サーチパスのパスに `.Rules` を守らせる given
++   entry .submissible   任意のサーチパスのプレーン上のパスをルート `%` から組み立てられるようにする given
++   entry .radical   サーチパスのプレーンのルート `%` をどう書くか：何も書かない
++       ルートはすべてのエントリーのテキストに暗黙に含まれるので、プレーン上のパスはセグメントだけにエンコードされる。
++   entry .eradicable   サーチパスのプレーンのルート `%` をどう読むか：常に `%` で、テキストを消費しない
++       ルートの読み取りは失敗しえないので、この given は純粋で、戦術を取らない。
+
+@ 0 1 0 13eaf2a7388dd4ef187f556bbb90c739
++ entry .Configurator   アプリケーションの設定のソースで、キャメルケースの名前をキーとし、優先度によって合成する
+
+% 1 1 0 16fd9a701e799ca90c0b2ecad87b16b6
+
+@ 0 7 0 1d97d6ae803b9a210741e473cb6bf15d
++       `Configurator` は設定を正規のキャメルケースの名前（`logLevel`）で一つのソースから読み、そのソースが自身のネイティブな名前空間への対応付けを受け持つ。
++       `Configurator.environment` はスコープ内の `Environment` から `MYAPP_LOG_LEVEL` を読み、`Configurator.properties` は `System` から `myapp.log.level` を読む。どちらもアプリケーションの `Configurator.Prefix` のもとで行う。
++       コンフィギュレーターは `#++` で合成でき、合成の順序が優先の順序である。左のソースが先に参照され、それが持たない名前は右へ落ちていく。
+
+@ 0 5 0 01bbbf532f66a658078c8571f80d9cce
++       `Prefix` の given を宣言すると、標準の連鎖 `.default` が有効になる。システムプロパティが環境変数より優先され、その両方に勝るコマンドラインは、コンフィギュレーターを参照する型が扱う。
++       レキシカルスコープにある `Configurator` の given は既定のものを上書きするので、どの形式の設定ファイルも、名前から `Optional[Text]` へのラムダとして連鎖に加わる。
+
+% 2 1 0 0a4c54f7c0138df607a99177d029a3f9
+
+% 3 1 0 126666be8523138f0b19bd51e20cce74
+
+% 4 1 0 1af5ed6893cdb6c90aa0da839cd5de97
+
+% 1 1 0 1d8f69c74a89a2bc051c7f337ce8df6c
+
+% 0 1 0 02944b0aaca1d06c01145f8c66b251c5
+
+% 0 1 0 0f3070a45a4a607b0451cb3741a55674
+
+% 0 1 0 054c318487834e5402d24c96de9e7baa
+
+% 1 1 0 00bbddae21571ae71b0086eacde0501a
+
+@ 0 3 0 0895963e51418e8417763cd3544951fa
++       コンフィギュレーターはケイパビリティである。プログラムの外へ手を伸ばすので、その型は現れるところすべてで追跡され、設定を読むメソッドは `using Configurator` を取る。
++       読み取りには副作用がないので、排他的ではなく共有される。
+
+% 1 1 0 0ce892106d1df1761ae5a77d96a05387
+
+% 1 1 0 0b1d72277dcebbb00b9d1e9e45969349
+
+@ 0 1 0 15f550a5b8112471009b453c780e79c5
++   entry .Prefix   アプリケーションの名前で、その変数（`MYAPP_`）とプロパティ（`myapp.`）の接頭辞になる
+
+% 1 1 0 1cdcdec98d7ba1d70d341ff3ce7dc7cd
+
+@ 0 17 0 131854d4c1fca8711ee1fddd075761ff
++         `given Configurator.Prefix = Configurator.Prefix(t"myapp")` として given で一度だけ宣言する。
++         環境では大文字に、プロパティでは小文字にされる。
++     entry #name   アプリケーションの名前
++   entry .environment   スコープ内の `Environment` の上のコンフィギュレーター：`logLevel` は `MYAPP_LOG_LEVEL` を読む
++       キャメルケースの名前は大文字スネークケースに変換され、大文字にした `Prefix` とアンダースコアが前に付く。
++       `Prefix` と `Environment` が必要である。
++   entry .properties   スコープ内の `System` の上のコンフィギュレーター：`logLevel` は `myapp.log.level` を読む
++       キャメルケースの名前はドット区切りの小文字に変換され、小文字にした `Prefix` とドットが前に付く。
++       `Prefix` と `System` が必要である。
++   entry .default   標準の連鎖で、プロパティを環境より先に参照する。`Prefix` の given によって有効になる
++       `properties ++ environment` である。
++       コンパニオンにある given なので、`Prefix`、`Environment`、`System` がスコープ内にあるところではどこでも召喚される。レキシカルスコープにある `Configurator` の given はこれより優先される。
++   entry #read   キャメルケースの名前による設定のテキスト。このソースが持たなければ `Unset`
++   entry #++   二つのコンフィギュレーターを合成し、こちらを優先する
++       `this ++ that` は `this` から読み、それが持たない名前については `that` へ落ちていく。
++       結果は両方を捕捉する新しいコンフィギュレーターである。
+
+@ 0 5 0 1365510f230a20241f1184d7facb902a
++ entry .WasiEnvironmentApi   `ambience.wasi` が結び付ける、`wasi:cli/environment` の WIT インターフェースの型
++     `Interface in Wit at "/ambience/environment.wit"`：`wasiApis.wasiEnvironmentApi` の given の型で、`environments.wasiEnvironment` と `workingDirectories.wasiWorkingDirectory` はこれに対して型検査される。
++     `ambience.wasi` のソースセットにだけある。
+
+@ 0 1 0 108d3bec66d5225b1c83ae2a6864c5ce
++ entry .environments   名前でインポートする環境：JVM のもの、空のもの、デーモンのもの、Wasm コンポーネントのもの
+
+% 1 1 0 0807c36e69d237a20584db6417a9b77a
+
+@ 0 3 0 1a407e7a0933acbf17eced75b38be3f4
++       `Environment.editor[Text]` がどの環境から読むかはスコープ内の `Environment` の given で決まり、その選択は決して暗黙にされない。`import soundness.*` はどれも持ち込まないので、一つを名前でインポートする。
+
+% 2 1 0 10340a0175b049291595da3c79e806ab
+
+% 3 1 0 00bbefa6701b340f0a9ed1bd7b9d1e2b
+
+% 4 1 0 0aac264ffd36bf281e1a9ba44fa27711
+
+% 1 1 0 18be41699109ab5d1232b7933ec23fab
+
+@ 0 27 0 0d550f6dffb8ce9218d8f02ff5d869fc
++       `javaBaseEnvironment` は通常のプログラムに向く。
++       `emptyEnvironment` はテストとサンドボックスのためのものである。
++       他のライブラリが提供する二つのデーモンの環境は、呼び出しの環境とデーモンが起動されたときの環境を区別する。
++       `Environment` は名前から `Optional[Text]` への一つの関数なので、独自の環境はローカルの given として束縛したラムダである。
++   entry .javaBaseEnvironment   JVM が起動されたときの環境で、`java.lang.System.getenv` から得る
++       列挙できる。`entries` は環境全体である。
++       デーモンの中では、これはどの呼び出しの環境でもない。ランチャーはデーモンを消毒した環境で起動し、各呼び出し自身の環境はそれとともに `daemonClientEnvironment` として届く。
++   entry .emptyEnvironment   何も定義しない環境。`entries` は空のマップである
++       テストやサンドボックスのためのものである。すべての読み取りは `Unset` なので、すべての型付きの読み取りは `Environment.Error` を発生させる。
++   entry .wasiEnvironment   Wasm コンポーネントの環境で、`wasi:cli/environment` の `get-environment` から得る
++       `ambience.wasi` のソースセットにある。
++       `inline` の given なので、Wasm Component のインポートは、それを召喚する場所で、Wasm を対象にコンパイルされたコードの中で実体化する。WASI にリンクされたアプリケーションはこれを一度召喚する。
++       列挙はできず、`entries` は `Unset` である。
++   entry .daemonEnvironment   デーモンを起動した呼び出しの環境。`ethereal` が提供する
++       ランチャーはデーモンを独自の消毒した環境で起動し、デーモンの状態がたまたま誰が起動したかに左右されないようにする。そしてランチャー自身が起動されたときの環境をデーモンの標準入力に送る。
++       この given は、メモリに保持したその環境である。
++       現在の呼び出しの環境（`daemonClientEnvironment`）ではなくこれを求めるものは少ない。ランチャーがない場合（JVM を直接実行した場合）、これは JVM 自身の環境である。
++   entry .daemonClientEnvironment   デーモンの現在の呼び出しの環境。`exoskeleton` が提供する
++       スコープ内に呼び出しである `Cli` を必要とし、その環境である。つまり、デーモンを起動したシェルではなく、コマンドを実行したシェルの変数である。
++       デーモンのコマンドハンドラが読むべき環境はこれである。
+
+@ 0 1 0 088f696d1a9ef99507612b46fb37a6d3
++ entry .systems   名前でインポートするシステムプロパティのソース：JVM のもの、または空のもの
+
+% 1 1 0 14289a3b4141987c0b56d6712c2f3839
+
+@ 0 4 0 019ad472de358c790b2f3b145b221543
++       スコープ内の `System` は、`System.properties.user.home[Text]()`、`System.os`、標準ディレクトリが読む先である。
++       `import soundness.*` はどれも持ち込まないので、一つを名前でインポートするか、テストでは名前から `Optional[Text]` へのラムダをローカルの given として束縛する。
+
+% 2 1 0 19152476ffc093c407fa0dde68e53073
+
+% 3 1 0 02dccd6c703bbf9b0b422900c907afba
+
+% 4 1 0 0aa91e08461bdd2617793da40ba5e5ed
+
+% 1 1 0 09edd48417069cc1186a47efbecc2f9a
+
+@ 0 5 0 1b41a1cc95e091e01e78be9eb36cfc8b
++   entry .javaBaseSystem   JVM のプロパティで、`java.lang.System.getProperty` から得る
++   entry .emptySystem   プロパティを何も定義しないシステム
++       実行される JVM に依存してはならないテストのためのものである。すべての読み取りは `Unset` なので、すべての型付きの読み取りは `Property.Error` を発生させるか、型が固定された標準のプロパティではパニックする。
+
+@ 0 1 0 128dbafcc9b281c01b24da0cc2438165
++ entry .workingDirectories   名前でインポートする作業ディレクトリ：JVM のもの、`System` のもの、デーモンのクライアントのもの、Wasm コンポーネントのもの
+
+% 1 1 0 08d666635422cfb01e52abd0c924c77d
+
+@ 0 2 0 1a06965150b8422c0866c960ae0e76f7
++       スコープ内の `WorkingDirectory` は、`workingDirectory[Path on Linux]` が解決するものであり、相対パスを解決する基準である。
++       一つを名前でインポートする。
+
+% 2 1 0 1c6b1cbea4e849df185c344da890592f
+
+% 3 1 0 0da9faba7317361505f737b9f165d0ab
+
+% 1 1 0 02f0a1de411ca3650fe6699dd43a745b
+
+% 1 1 0 1650bc3f29b2f41e06be7deff50afb6c
+
+@ 0 14 0 14d5e0437875341a0d5853cf900fc29c
++       デーモンの中では、各呼び出しが行われたディレクトリは JVM のものではなく `daemonClientWorkingDirectory` である。
++   entry .javaBaseWorkingDirectory   JVM の `user.dir` プロパティ
++       `systems.javaBaseSystem` に特化した `systemWorkingDirectory` である。
++   entry .systemWorkingDirectory   スコープ内の `System` から読む `user.dir`
++       `System` が必要なので、テストはシステムを固定することで作業ディレクトリを固定できる。
++       プロパティが設定されていなければパニックする。
++   entry .wasiWorkingDirectory   Wasm コンポーネントの初期ディレクトリで、`wasi:cli/environment` の `initial-cwd` から得る
++       `ambience.wasi` のソースセットにあり、召喚された場所で実体化する `inline` の given である。
++       初期ディレクトリを持たないコンポーネントでは `/` になる。
++   entry .daemonClientWorkingDirectory   現在のデーモンの呼び出しが行われたディレクトリ。`ethereal` が提供する
++       スコープ内に呼び出しである `Cli` を必要とし、その作業ディレクトリである。
++       デーモンのクライアントはそれぞれ独自の作業ディレクトリを持ち、JVM の `user.dir`（デーモンが起動されたディレクトリ）はそれについて何も教えない。
+
+@ 0 1 0 0fd42a0252d1dc05195ad7b0abb975c9
++ entry .temporaryDirectories   名前でインポートする一時ディレクトリ：プロパティによるもの、`System` によるもの、環境によるもの
+
+% 1 1 0 16b4f42220052eab0b9810a5f9a2fe4a
+
+@ 0 2 0 0f83f653ad41200c1619f033b0646408
++       スコープ内の `TemporaryDirectory` は、`temporaryDirectory[Path on Linux]` が解決するものである。
++       一つを名前でインポートする。
+
+% 2 1 0 02e22c2aabccebba08bf747b7a3ed8ac
+
+% 3 1 0 00cd0373596019fd09fe4e13597c5758
+
+% 1 1 0 1976e8a9892575e11938274e6155615f
+
+% 1 1 0 162cabfc523420a919f00deeafc51756
+
+@ 0 7 0 1c2a2bd7736ef7a70b1473f5078c9b6d
++   entry .javaBaseTemporaryDirectory   JVM の `java.io.tmpdir` プロパティ
++       プロパティが設定されていなければパニックするが、JVM は常にそれを設定する。
++   entry .systemTemporaryDirectory   スコープ内に `System` を必要とする `java.io.tmpdir`
++       依存を宣言するために `System` を取るが、読む値は JVM 自身の `java.io.tmpdir` プロパティである。
++   entry .environmentTemporaryDirectory   スコープ内の `Environment` にある `TMPDIR`、`TMP`、`TEMP` のうち最初のもの
++       `Environment` が必要である。三つの変数のどれも設定されていなければパニックする。
+
+@ 0 1 0 0f2cf028a00cd76f16e2eea138518715
++ entry .termcaps   環境から読む端末のケイパビリティで、名前でインポートする given
+
+% 1 1 0 08652e9a778fe49e1835bc2137d24c68
+
+@ 0 5 0 02e523c06549f6e9033ae02db5a38dab
++       `Termcap` は端末に何ができるか（ANSI エスケープを受け付けるか、色深度、幅と高さ）を示し、スタイル付きの出力はそれに合わせて描画される。
++       固定されたもの（`basicTermcap`、`xterm256Termcap`、`xtermTrueColorTermcap`）は `anticipation` ライブラリの `termcapDefinitions` パッケージにある。このパッケージの `environmentTermcap` は環境からケイパビリティを割り出す。
+
+% 2 1 0 02ed90dc2f7e1a6d0f62e7d5b3597452
+
+% 3 1 0 00b8c50e6e36f2dc0b962964a58aeaad
+
+% 4 1 0 1adc803990b18f3a198caafeff5c4fd0
+
+% 0 1 0 165058a3772bd3eb1204a3645a2b08e1
+
+% 1 1 0 02409bb69148b234133155bcfe2bf791
+
+@ 0 7 0 0c2b566dc9e2778c1f220122ff07c431
++   entry .environmentTermcap   `COLUMNS` と `COLORTERM`、または `tput colors` によって記述される端末
++       `Environment` が必要である。
++       ANSI エスケープは使えるものとみなす。
++       幅は、呼び出し元の文脈が設定していれば `COLUMNS` である。それがないか不正な場合（たとえば出力がファイルやパイプへリダイレクトされている場合）、幅は無制限になり、何も折り返されない。
++       色深度は、`COLORTERM` が `truecolor` なら `TrueColor` であり、そうでなければ `tput colors` を実行して読み、それが失敗すれば `NoColor` になる。
++       どちらも最初に求められたときに一度だけ遅延して計算される。
+
+@ 0 1 0 1e7a2f5c2998491c1ba876aca0281577
++ entry .wasiApis   `ambience.wasi` の WIT インターフェース定義で、名前でインポートする given
+
+% 1 1 0 1cb12a0ff555ebaf07c86a3076488d48
+
+@ 0 5 0 1ff18f5dc0fe4c0709667bbaa7dae494
++       WASI のインポートの `call` の実体化処理は、関数のモジュール ID を求めてスコープ内のインターフェースを参照する。
++       `ambience.wasi` のソースセットにだけある。
++   entry .wasiEnvironmentApi   同梱の `/ambience/environment.wit` から得る `wasi:cli/environment` インターフェース
++       クラスパスのリソースから読む `WasiEnvironmentApi` である。
++       `environments.wasiEnvironment` または `workingDirectories.wasiWorkingDirectory` を使うところで名前でインポートする。

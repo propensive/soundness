@@ -1,0 +1,2009 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d0d8ca941a31ee70408ad32cbc2dc15
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0214c8453750cfed17af47e6d60e67d9
++ info   YAML analizado en valores tipados y representado de nuevo: documentos, rutas, códecs y literales `y"…"`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0128a72293a0d31703cb49c464d77029
++     _Ypsiloid_ trata YAML como Soundness trata JSON: el texto se analiza en un valor `Yaml`,
++     un `Yaml` se decodifica en una case class (o en cualquier tipo con un `Decodable in Yaml`)
++     y se codifica de vuelta a partir de ella, y el interpolador `y"…"` escribe YAML que se
++     comprueba mientras se compila el código. El analizador cubre el lenguaje tal como se usa
++     realmente —los estilos de bloque y de flujo, los tres entrecomillados de escalares, los
++     escalares de bloque con sus indicadores de recorte, las etiquetas, los anclajes y los
++     alias, las directivas y los flujos de varios documentos— y un `Yaml` se representa de
++     nuevo como texto limpio en estilo de bloque, que se puede volver a analizar, con `show`.
+
+@ 0 5 0 18eb69c022983355006b86281def88e9
++     El tipo central es `Yaml`, un documento: un árbol inmutable (`Yaml.Ast`) más, cuando el
++     documento se analizó con el seguimiento de posiciones activado, un índice a partir del
++     cual pueden recuperarse la línea y la columna de cualquier nodo. Un nodo dentro de un
++     documento se direcciona con un `YamlPath` (con el mismo escape del RFC 6901 que un JSON
++     Pointer, escrito `#/a/b`), que es como un error de decodificación dice _dónde_ ocurrió, y
++     como `locate` encuentra la posición de un nodo en el código fuente.
+
+% 2 1 0 10b088ef36c5bd93168e18f2f616e1b2
+
+% 3 1 0 12e7f0036e7d3fb41f07f4afb744d5e5
+
+% 4 1 0 05a392bbea2c8ddc0e73ca91cac5eddf
+
+% 0 1 0 11c5e85304224b291919158842bfcc37
+
+% 2 1 0 07369ca7273e357d12f70de4115af217
+
+% 0 1 0 12f48d4397330d0e1830511436b2f200
+
+% 0 1 0 1d2f5ba770af861417eadb0f93db5c41
+
+% 0 1 0 018df32a66755b81072501e976745a09
+
+% 1 1 0 1e289d3441566c0b0b0ffdecd97892d3
+
+@ 0 8 0 03451fdf9c3e4e750dc67e75aed5838e
++     La decodificación es la derivación que usan todos los demás formatos (la de wisteria,
++     sobre `Decodable in Yaml` y `Encodable in Yaml`), así que un registro no necesita
++     anotaciones: `@name` cambia el nombre de un campo o de una variante en la forma de
++     transmisión, una enumeración se codifica con un campo discriminador cuyo nombre fija el
++     given `discriminables` del ámbito, y un campo `Optional` u `Option` lee una clave ausente
++     o un `null` como `Unset`/`None` según políticas que varía el paquete
++     `optionalityOptions`. Con una estrategia acumulativa (`validate`), una decodificación
++     reúne todos los fallos del documento, cada uno etiquetado con un `Yaml.Focus` —su ruta y,
++     en un documento con seguimiento, su posición— en lugar de detenerse en el primero.
+
+@ 0 5 0 17c547bc817ecd3307371a524bf2b0e1
++     Un registro también puede llevar un analizador y un impresor _directos_ (`Yaml.Parsable`
++     y `Yaml.Printable`), que leen los campos directamente del árbol analizado y escriben texto
++     sin construir ningún árbol: `derives Yaml.Direct` deriva ambos en el objeto compañero, e
++     `import codecs.direct` selecciona la vía directa para todos los registros del ámbito
++     (`codecs.derived` y `codecs.strict` son los otros modos).
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     La biblioteca tiene dos conjuntos de fuentes:
+
+@ 0 6 0 030f6dd187537efb0bb9921d0311a5d6
++     - `ypsiloid.core`: `Yaml` y todo lo que contiene, `YamlPath`, los interpoladores `y"…"` e
++       `yp"…"`, y los paquetes de elección `formatting`, `optionalityOptions`,
++       `discriminables`, `dynamicAccess` y `conversions`. Compila para la JVM, Scala.js y
++       Scala Native.
++     - `ypsiloid.http`: los given `postables`, `servables` y `construables`, que permiten que
++       un `Yaml` viaje como cuerpo de una petición o de una respuesta `application/yaml`.
+
+@ 0 7 0 0e51d3c6b3c40e3018400f84c3183729
++     Varios given son elecciones y deben importarse por nombre, ya que `import soundness.*` no
++     importa los given: `formatting.blockYamlFormatting` habilita `show` y la codificación
++     HTTP, `dynamicAccess.dynamicYaml` habilita el acceso `yaml.field` y las actualizaciones
++     `yaml.field = value`, `discriminables.yamlByTypeDiscriminable` (o `…ByKind…`) es necesario
++     para codificar o decodificar un tipo suma, y `parsing.trackPositions` (de zephyrine) activa
++     el seguimiento de posiciones. Todo se exporta al paraguas `soundness`, donde los paquetes
++     de elección se fusionan con los de los demás formatos.
+
+% 0 1 0 085bf2d0276d003f0660c91fe77fcc54
+
+% 0 1 0 12c3866784f7c7c417874414782cf51c
+
+% 0 1 0 1c8e84636d7bb7281d87a4ca699f575d
+
+% 0 1 0 042a927df2aa0d9b048d0ace9ac048e4
+
+% 0 1 0 0e265cd0376176bb1cb8c20c86a5204e
+
+@ 0 1 0 044f4bb1f2be96e11bf61b1a2aa131ed
++ entry .Yaml   un documento YAML: un árbol inmutable, decodificado con `as`, actualizado mediante lentes, representado con `show`
+
+% 1 1 0 1f7d324046f346dd12b77385e4c612b8
+
+@ 0 5 0 1338d267587be13b1d906e1d217886f6
++       Un `Yaml` envuelve el árbol analizado (`#root`, un `Yaml.Ast`) y, cuando se analizó con
++       `parsing.trackPositions` en el ámbito, un `#positionIndex` a partir del cual
++       `locate(path)` encuentra la línea y la columna de cualquier nodo. Lo producen
++       `text.read[Yaml]`, `data.read[Yaml]`, un literal `y"…"`, `value.in[Yaml]` o
++       `Yaml.make(field = …)`, y lo consume `#as`, que lo decodifica como cualquier tipo con un
++       `Decodable in Yaml`.
+
+% 2 1 0 1cd4cbfa57671f1511601280a48b779c
+
+% 3 1 0 0e2c6ad7f613f45b153823017bd740d2
+
+% 4 1 0 1ad245904164345812ca45acba6eb126
+
+% 5 1 0 113a9ada597ed58a032d1a8a95f83c33
+
+% 1 1 0 18e48abd5d11822406275060e2c54a4e
+
+% 2 1 0 09621152b30aaf7c1f9157e21c2240a5
+
+% 0 1 0 130a7ec3f188c872100f2979b6c6548c
+
+% 0 1 0 131b807994bfd51811b98fa4b2adf1a2
+
+% 0 1 0 05784f9e48fdd56e07082a1bffe5a351
+
+% 0 1 0 0846fa03d2a4d886085d80c38b3098fd
+
+% 0 1 0 084ddf1c12b224b113af4f95f3c9c707
+
+% 0 1 0 08207439c1c43e141c75f1faf502a3a1
+
+% 1 1 0 0207864e7070362d0dece850b3d66535
+
+@ 0 3 0 10ab3fb3c6a8fca70ece824a386a3a18
++       Un documento es un valor: cada actualización (`#update`, `#updateDynamic`, una `lens`)
++       construye un `Yaml` nuevo y deja el anterior como estaba. Dos documentos son iguales
++       cuando sus árboles son estructuralmente iguales (`Yaml.Ast.deepEquals`), sean cuales
++       sean sus posiciones.
+
+@ 0 5 0 0e4f116c4d3bbab014d87392905b7eb6
++       Lectura: `.decodable` y `.aggregable` analizan texto, `.aggregableData` analiza bytes sin
++       transcodificar, y `.aggregableAll` lee un flujo separado por `---` como una
++       `List[Yaml]`. Un origen en flujo se analiza a medida que llega, nunca se concatena antes,
++       así que un fichero grande se analiza sin tenerlo entero en memoria. El análisis lanza
++       `Parse.Error`, cuyo problema es un `Yaml.Ast.Issue` que indica qué estaba mal y dónde.
+
+@ 0 5 0 1d5529f08fbd18480bb9bb8ada9fc6b4
++       Decodificación: `#as` y los códecs de primitivos, de colecciones, de `Option`/`Optional`
++       y derivados lanzan `Yaml.Error` —`Reason.NotType(found, expected)` para un valor con la
++       forma equivocada, `Reason.Absent` para un campo que falta— y siguen un `Yaml.Focus`, de
++       modo que una estrategia acumulativa notifica cada fallo en su ruta. Atajos:
++       `text.read[Person in Yaml]` lee y decodifica en un solo paso, y
++       `person.in[Text over Yaml]` codifica y representa en uno.
+
+@ 0 5 0 0d05d6c50cd38cc1010a61d5d51424f0
++       Representación: `show` necesita un `Yaml.Formatting` en el ámbito
++       (`formatting.blockYamlFormatting`, el único) y emite estilo de bloque —sangría de dos
++       espacios, `{}` y `[]` para las colecciones vacías, una cadena sin comillas solo cuando no
++       puede confundirse con un número, un booleano o un nulo, y entre comillas dobles en caso
++       contrario—, elegido para que el texto se vuelva a analizar en el mismo árbol. `.emit`
++       representa un bloque cada vez, y `.streamable` hace de un `Yaml` un `Stream[Text]`.
+
+@ 0 4 0 157573ea90f91a2c1bed74e53922464e
++       El acceso dinámico (`#selectDynamic`, `#applyDynamic`, `#updateDynamic`, `#update` y el
++       given `.lens`) depende de un `Yaml is Dynamical`, que `dynamicAccess.dynamicYaml`
++       concede a un ámbito y `dynamically[Yaml]:` a un bloque, para que `doc.name` nunca se
++       confunda por accidente con un miembro de `Yaml`.
+
+@ 0 5 0 0b8dfdc8b2d07efd033580bf75a89fff
++       Los códecs alternativos a los que llega todo tipo —`decodable`, `encodable`, `optional`,
++       `optionalEncodable`, `encodableOver` y `aggregableIn`— se heredan de la capa de
++       prioridad `Yaml2`, y los puntos de entrada de los códecs directos (`aggregableParsed`,
++       `encodableOverPrinted` y los dos fallos de `codecs.strict`) de `Yaml1`; se documentan en
++       esos traits.
+
+% 0 1 0 1f2cb2afea28e87f1e5592d38c60d312
+
+% 0 1 0 0b7a15c9748b21171f2074cd664c8c1d
+
+% 1 1 0 0b2c93c8349311d801ccf433bf8d3aa6
+
+% 0 1 0 13c52c996820ed0d1459221f10c2e969
+
+% 0 1 0 064d04157cc1492c0c4ced497604ed1e
+
+@ 0 17 0 052f4e94fc3d9bbe02f93d73a7db3ba7
++   entry #root   el árbol del documento, un `Yaml.Ast`
++       El árbol analizado, para los accesores del objeto compañero de `Yaml.Ast` (`isObject`,
++       `objectKey`, `arrayElement`, `string`, …) y para los puentes hacia otros formatos de
++       árbol. `Yaml.unseal` es el mismo nodo, como acto explícito de atravesar la abstracción.
++   entry #positionIndex   el índice de posiciones construido por un análisis con seguimiento, o `Unset`
++       Solo se rellena cuando el documento se analizó con `parsing.trackPositions` en el
++       ámbito; es `Unset` en un análisis sin seguimiento y en todo `Yaml` construido a partir de
++       un valor. Es lo que recorren `locate(path)` y `locateKey(path)` (las extensiones
++       `Positionable` de zephyrine, a través de `.positionable`) para encontrar la
++       `Yaml.Ast.Position` de un nodo.
++   entry #as   decodifica el documento como cualquier tipo con un `Decodable in Yaml`
++       `doc.as[Person]` decodifica a través del `Person is Decodable in Yaml` del ámbito
++       —derivado para una case class o una enumeración, o uno de los given del objeto
++       compañero para los primitivos, `Text`, `List`, `Set`, `Map[Text, _]`, `Option` y
++       `Optional`—. Lanza `Yaml.Error` y sigue un `Yaml.Focus`: con `strategies.throwUnsafely`
++       el primer fallo lanza una excepción; en un bloque `validate[Yaml.Focus]` se acumulan
++       todos los fallos, y cada foco lleva la ruta del campo (`#/address/city`) y, en un
++       documento con seguimiento, su posición en el código fuente, que `#as` rellena para cada
++       foco registrado antes de devolver.
+
+% 2 1 0 15015301203c1eec06cf06c75728c778
+
+% 3 1 0 0966984aa2158aa91b129e2fbc70eb0b
+
+% 4 1 0 05ca27befdc997ad1788fef807d83659
+
+% 0 1 0 0708fc4f50b5ca920d184bac07ff48d1
+
+% 0 1 0 1a2d0f72970e49d01ca3795f4ae9f3c1
+
+% 0 1 0 06fff591b2b92c8b168cc33d7ff098a4
+
+% 0 1 0 1c944975948c07eb0be2701fece91a6a
+
+% 1 1 0 1ab25955b9f1064c14b79b6f0b143ea0
+
+@ 0 6 0 0eb9f644e3d62a080272eaf3be6d3c00
++   entry #apply   `doc(index)` es un elemento de una secuencia; `doc(field)` es el valor de un mapeo, o ausente
++       `doc(1)` es el segundo elemento de una secuencia, y lanza `Yaml.Error` con
++       `Reason.NotType(found, Sequence)` cuando la raíz no lo es. `doc(t"name")` es el valor
++       bajo una clave de cadena, o un `Yaml` ausente (uno cuya raíz cumple `isAbsent`) cuando
++       falta la clave o la raíz no es un mapeo; decodificar un documento ausente como `Option` u
++       `Optional` da `None`/`Unset`, y como cualquier otra cosa lanza `Reason.Absent`.
+
+% 2 1 0 02e65292817fd45a0d774b1afd6c1721
+
+% 3 1 0 1d83e45764321d8804895c7bb59b0611
+
+% 4 1 0 1076452ed6d981d419ea1fd46e69dbc0
+
+% 0 1 0 07c761273c729c2e035958882bc45aa2
+
+% 0 1 0 0af26c38cd44da040100d7bd4e775b9b
+
+% 1 1 0 0254d975c6c4095f11bc80bf20d2e1b7
+
+@ 0 18 0 12001cb827a3f6a718f689ec79965f78
++   entry #selectDynamic   `doc.field`: el valor de un mapeo por nombre, con el acceso dinámico habilitado
++       `doc.name` se desazucara en `selectDynamic("name")` y es `#apply` con una clave de texto,
++       así que una clave que falta da un documento ausente en lugar de un error. Necesita un
++       `Yaml is Dynamical` en el ámbito: `import dynamicAccess.dynamicYaml`, o un bloque
++       `dynamically[Yaml]:`.
++   entry #applyDynamic   `doc.field(index)`: un elemento de un campo cuyo valor es una secuencia
++       `doc.items(1)` es `doc(t"items")(1)`: el campo por nombre y después el elemento por
++       índice, y lanza `Yaml.Error` cuando el campo no es una secuencia. Necesita un
++       `Yaml is Dynamical`.
++   entry #update   `doc(index) = value`: un documento nuevo con un elemento de la secuencia sustituido
++       Codifica `value` a través de su `Encodable in Yaml` y devuelve una copia del documento
++       con el elemento de `index` sustituido; un índice más allá del final deja la secuencia
++       como estaba. Una raíz que no es una secuencia lanza `Yaml.Error`. Necesita un
++       `Yaml is Dynamical`.
++   entry #updateDynamic   `doc.field = value` añade o sustituye una entrada de un mapeo; `= Unset` la elimina
++       `doc.age = 31` se desazucara en `updateDynamic("age")(31)`: el valor se codifica a través
++       de su `Encodable in Yaml`, y el resultado es un documento nuevo en el que `age` se
++       sustituye si está presente y se añade al final en caso contrario. `doc.age = Unset`
++       borra la entrada, y no hace nada para una clave que no está presente. Una raíz que no es
++       un mapeo lanza `Yaml.Error`. Necesita un `Yaml is Dynamical`.
+
+% 2 1 0 1a1419b4b02fcb8c0b23cd75170cf4bc
+
+% 3 1 0 0aa893ffae4205400d1be53437f3b2ce
+
+% 4 1 0 052aedb7f4d9272d13e2f1fee39e2cde
+
+% 5 1 0 135fd59a43b3ecf404659f82867f564c
+
+% 0 1 0 05b423974bb715c51847ca7349fe613c
+
+% 0 1 0 17dee4b2bf04f7df0b860854726758a0
+
+% 0 1 0 0307b8544db4e72506e1dc18519dd40f
+
+% 1 1 0 1ec50315ae200b5516725702bc760eab
+
+@ 0 8 0 180f456d6ee9e5da0a7052e0e7c6d0d5
++   entry .apply   envuelve un árbol como documento: `Yaml(ast)` o `Yaml(ast, positions)`
++       Construye un `Yaml` sobre un nodo, opcionalmente con el `Yaml.PositionIndex` de un
++       análisis con seguimiento. El parámetro tiene el tipo `Any` porque `object Yaml` extiende
++       `Dynamic` (para `.make`), lo que suprime el proxy del constructor; el valor debe ser
++       realmente un `Yaml.Ast`. `.ast` es la forma tipada para un nodo que ya se tiene.
++   entry .ast   envuelve un nodo `Yaml.Ast` como documento
++       `Yaml.ast(node)` es `Yaml(node)` con el tipo del nodo comprobado: la forma en que las
++       ópticas y los códecs reconstruyen un documento después de sustituir parte de su árbol.
+
+% 2 1 0 11ecc29c0aed7aac157415062c853869
+
+% 3 1 0 0ad8d3327b5c0758037b26b72b1a9389
+
+% 0 1 0 19a4c74648573bbf02fa8ae66012f864
+
+% 1 1 0 080135330bb01d230ad23ba64c470976
+
+@ 0 4 0 17ef56c6a4d975460dec8c7018496fe2
++   entry .unseal   el árbol que hay dentro de un documento, como acto explícito de romper la abstracción
++       `Yaml.unseal(doc)` es `doc.root`: el `Yaml.Ast`, para hacer coincidencia de patrones con
++       los extractores `Yaml.Ast.Sequence`, `Mapping`, `Str`, …, o para comparar dos análisis
++       con `Yaml.Ast.deepEquals`.
+
+% 2 1 0 1239461f34d35bf000bf7f6bd8ae57fe
+
+% 3 1 0 13991127ed72613b162710bb3b943f82
+
+% 4 1 0 002212948307c1c21718b40b2da0dbbb
+
+% 0 1 0 0258461e74211c1c19e7021345efd19f
+
+% 0 1 0 089b53a8636118b302f3ffa43a055baa
+
+% 0 1 0 190dc2e37be2c8810919d531930a90af
+
+% 1 1 0 136d2eb7a34391ee1f94f941e0fa7fea
+
+@ 0 5 0 1765ab25193035520e2cff4bab092c56
++   entry .applyDynamicNamed   `Yaml.make(field = yaml, …)`: un documento de mapeo a partir de argumentos con nombre
++       `Yaml.make(name = t"Kate".in[Yaml], age = 30.in[Yaml])` se desazucara en
++       `applyDynamicNamed("make")(("name", …), ("age", …))` y construye un mapeo con las
++       entradas en el orden en que se escriben; cada argumento ya es un `Yaml`, así que se
++       anidan llamadas a `Yaml.make` para los mapeos anidados. El único nombre de método que se
++       acepta es `make`.
+
+% 2 1 0 003871fc4905414f0eec05e7cac9778d
+
+% 3 1 0 13bc82a8dd0fb66b15ea6c16947f8289
+
+% 4 1 0 075947571faa8dba1b543ae125671723
+
+% 2 1 0 06d49e6868c23b361b2e008133c9245e
+
+% 0 1 0 19843350e1e735c70bb99714ae082d0f
+
+% 1 1 0 0c794dda82f6f3bd0829f4489819c0cb
+
+@ 0 10 0 078cccef73611a881084415c4ca49725
++   entry .showable   representa un documento como texto YAML en estilo de bloque, dado un `Yaml.Formatting`
++       El `Showable` del objeto compañero de `Yaml`, así que `doc.show` funciona dondequiera que
++       haya un `Yaml.Formatting` en el ámbito (`import formatting.blockYamlFormatting`). La
++       salida es un estilo de bloque conservador, elegido para que se vuelva a analizar en un
++       árbol estructuralmente idéntico: los enteros como dígitos sin más, los decimales a través
++       de `Double.toString` o `.inf`, `-.inf`, `.nan`, los booleanos como `true`/`false`, el
++       nulo como `null`, una cadena sin comillas solo cuando es una serie de letras, dígitos,
++       `_` y `-` que empieza por una letra y no forma un booleano ni un nulo, y entre comillas
++       dobles (con los escapes `\"`, `\\`, `\n`, `\r`, `\t` y `\uXXXX`) en caso contrario; los
++       mapeos y las secuencias son colecciones de bloque con sangría de dos espacios, y los
++       vacíos `{}` y `[]`. El texto siempre termina con un salto de línea.
+
+% 2 1 0 11e37f7c9553bdaf123befec2a19032f
+
+% 3 1 0 0a70fdb68c3c569d1526d31aaec1b2c5
+
+% 4 1 0 13a6ebd6bc66d1fa1e8f52027bff7b77
+
+% 5 1 0 1bede710b434a43d1a831b536d69c307
+
+% 0 1 0 06abb0e796672d971420d824ae360190
+
+% 0 1 0 05128144eefb843c00791e3e06024593
+
+% 0 1 0 05304d35f2d69e6501f62360dc399bec
+
+% 0 1 0 03b2ce708b11c5580705a2e49c65b36b
+
+% 0 1 0 03b2ce708b11c5590705a2e49c65b36c
+
+% 0 1 0 0bfc3b0e7ea5ea1b0c829df367b24a10
+
+% 1 1 0 025f36634efffd30095f97cf4f9c49e6
+
+@ 0 11 0 1a105a387a26d638181ea4c395888c7e
++   entry .inspectable   una representación de depuración de un documento en una línea: `yaml"name: Percy\nage: 30\n"`
++       No necesita ningún `Formatting`, así que un depurador o un fallo de prueba siempre pueden
++       mostrar un documento: el texto en estilo de bloque con sus saltos de línea escapados,
++       envuelto como `yaml"…"`, de modo que un documento se distingue del `Text` que contiene
++       los mismos caracteres.
++   entry .emit   representa un documento un bloque cada vez, extraído como iterador o empujado a una función
++       `Yaml.emit(doc)` es un `Iterator[Text]` que representa las siguientes entradas del árbol
++       cada vez que se extrae de él, y se detiene entre dos entradas en cuanto un bloque alcanza
++       la capacidad de `Buffering` del ámbito (un escalar largo puede rebasarla).
++       `Yaml.emit(doc, deliver)` es la forma de empuje: representa en el hilo del llamador y
++       entrega cada bloque a `deliver` a medida que se llena, la forma adecuada para escribir en
++       un fichero, un socket o un `OutputStream`. Los bloques unidos son exactamente lo que
++       representa `show`. Ambas necesitan un `Yaml.Formatting` y un `Buffering`.
+
+% 2 1 0 0f04110ac9ca92370adccf1ab61043e3
+
+% 3 1 0 0d2e4f8458139bda1910133d976e665e
+
+% 4 1 0 1bd2da3c4cae3ee012ff93d7830af7e9
+
+% 5 1 0 13ddb60a6c089faa07a3407fb3f0fe81
+
+% 0 1 0 1cfe894df37d86cc0ad108bef861a2fa
+
+% 0 1 0 086e4e85c767a6e71bc0243e66c0789a
+
+% 1 1 0 0447032ca98b05500e7f0a1279667eb1
+
+@ 0 27 0 0ad22f65cfeaca4c17b9888f7306695c
++   entry .streamable   un documento como `Stream[Text] over Credit`, representado a medida que se extrae
++       Se construye sobre `.emit`, así que los fragmentos del flujo son los bloques del
++       emisor; necesita un `Yaml.Formatting` y un `Buffering`. Es lo que permite escribir un
++       `Yaml` en cualquier sumidero de texto que acepte un flujo.
++   entry .Formatting   las opciones con las que se representa un documento: por ahora solo el estilo de bloque
++       Debe haber un `Yaml.Formatting` (un `zephyrine.Formatting`) en el ámbito para `show`,
++       `in[Text over Yaml]`, `.emit`, `.streamable`, `.abstractable` y los given HTTP. El
++       estilo de bloque de YAML es fijo y está restringido por la ida y vuelta, así que el trait
++       aún no lleva opciones; `formatting.blockYamlFormatting` es la única instancia, que se
++       importa por nombre.
++   entry .decodable   `Yaml is Decodable in Text`: `text.as[Yaml]` analiza todo el texto como un documento
++       Como `Yaml is Decodable in Text`, esto es `text.as[Yaml]`: analiza todo el texto con
++       `Yaml.Parser`, con el `PositionTracking` del ámbito (las posiciones solo se registran con
++       `parsing.trackPositions` importado), y lanza `Parse.Error` ante una entrada mal formada.
++   entry .aggregable   analiza un flujo de texto como un documento, a medida que llega
++       El `Yaml is Aggregable by Text` que hay detrás de `text.read[Yaml]` y de
++       `stream.read[Yaml]`: una `Chain[Text]` se une y se analiza entera, pero un
++       `Stream[Text] over Credit` se transcodifica a UTF-8 y se pasa al cursor del analizador a
++       medida que se extrae, de modo que un documento grande nunca se tiene entero en memoria y
++       un marcador `---` partido entre dos fragmentos sigue siendo un límite. Necesita una
++       `Tactic[Parse.Error]` y respeta el `PositionTracking` del ámbito.
++   entry .aggregableData   analiza un flujo de bytes como un documento, sin transcodificar
++       El `Yaml is Aggregable by Data` que hay detrás de `data.read[Yaml]` y de la lectura de un
++       fichero o de un cuerpo HTTP: el analizador trabaja sobre bytes UTF-8, así que los bytes se
++       leen tal como llegan, y una marca de orden de bytes inicial se absorbe. Necesita una
++       `Tactic[Parse.Error]`.
++   entry .aggregableAll   lee un flujo separado por `---` como una `List[Yaml]`, una por documento
++       `text.read[List[Yaml]]`: todos los documentos de un flujo YAML, en orden. Las directivas
++       (`%YAML`, `%TAG`) se aplican solo al documento que les sigue, como dice la
++       especificación, y un texto vacío da una lista vacía. Respeta `PositionTracking` igual que
++       `.aggregable`.
+
+% 2 1 0 18d1959754dc1dcf13b664e748065c0c
+
+% 3 1 0 088b6555b5714cb01aeea86d5690194a
+
+% 4 1 0 11af3eec742ca04d1e6bf443587a3e87
+
+% 0 1 0 1134632dfcc627970d5873de1f24332a
+
+% 1 1 0 1e30276c1245d76e1cd77a414c361898
+
+@ 0 2 0 0a64c404afdea94f0e6333ecf50d9db3
++   entry .aggregableDerived   `import codecs.derived`: la vía del árbol incluso donde hay un analizador directo en el ámbito
++       Supera a `.aggregableParsed` solo con `Codecs.Derived`, y envía la lectura a través de
+
+% 0 1 0 1d13da1cb70a56061530b7cca49bddd7
+
+@ 0 68 0 15a185635b86871c07ea10ee900c288f
++   entry .aggregableStrict   `import codecs.strict`: el analizador directo, o un error de compilación
++       Con `Codecs.Strict`, un tipo con un `Yaml.Parsable` se lee directamente a través de
++       esto, y uno sin él da con `.aggregableStrictFailure`, que notifica _has no direct codec_
++       nombrando el tipo en el lugar de uso en lugar de recurrir al árbol.
++   entry .encodableOverDerived   `import codecs.derived`: la vía del árbol incluso donde hay un impresor directo en el ámbito
++   entry .encodableOverStrict   `import codecs.strict`: el impresor directo, o un error de compilación
++       Va emparejado con `.encodableOverStrictFailure`, que hace fallar la compilación para un
++       tipo sin `Yaml.Printable` —por ejemplo, una enumeración, que no tiene reflexión de
++       producto y, por tanto, tampoco impresor derivado—.
++   entry .encodableOverData   `person.in[Data over Yaml]`: el texto YAML como bytes en la `Codepage` del ámbito
++       Codifica a través de `in[Text over Yaml]` y después de la `Codepage` (como
++       `codepages.utf8Codepage`); `data.read[Person in Yaml]` lo vuelve a leer.
++   entry .abstractable   un documento como cuerpo HTTP, con el tipo de contenido `application/yaml`
++       `Yaml is Abstractable across HttpStreams to HttpStreams.Content`: el cuerpo es el texto
++       representado en la `Codepage` del ámbito, con el tipo de contenido
++       `application/yaml; charset=<encoding>`. Necesita un `Yaml.Formatting`; los given
++       `postables` y `servables` de `ypsiloid.http` son las instancias de telekinesis
++       construidas a partir de la misma representación.
++   entry .instantiable   vuelve a leer como documento el cuerpo de una petición o de una respuesta HTTP
++       `Yaml is Instantiable across HttpRequests from Text`: el texto del cuerpo se analiza como
++       `text.read[Yaml]`, lanzando `Parse.Error`, con el `PositionTracking` del ámbito.
++   entry .yaml   `Yaml is Decodable in Yaml`: `doc.as[Yaml]` es el propio documento
++       El decodificador identidad, de modo que un campo de tipo `Yaml` en una case class
++       conserva esa parte del árbol sin decodificar, para inspeccionarla o decodificarla más
++       tarde.
++   entry .yamlEncodable   `Yaml is Encodable in Yaml`: un documento se codifica como sí mismo
++       El codificador identidad, la contrapartida de `.yaml`: un campo de tipo `Yaml` se
++       inserta en el mapeo tal como está, y `Yaml.make` recibe sus argumentos a través de él.
++   entry .int   `Int is Decodable in Yaml`: un escalar entero o decimal, truncado a `Int`
++       Un entero YAML (`42`, `0x2A`, `0o17`) o un decimal (truncado) se lee como `Int`;
++       cualquier otro nodo registra `Yaml.Error` con `Reason.NotType(found, Integer)` —o
++       `Reason.Absent` para un campo que falta— y continúa con `0` para que los campos hermanos
++       puedan acumular sus propios fallos en un bloque `validate`. Con `throwUnsafely` el primer
++       fallo lanza una excepción.
++   entry .long   `Long is Decodable in Yaml`: un escalar entero o decimal como `Long`
++       Como `.int`. Un entero más allá del rango de un `Long` se guarda en el árbol como `Bcd` y
++       aquí se trunca; para obtener su precisión completa, se lee como `Yaml.Ast#bcd` a través
++       de `Yaml.unseal`.
++   entry .double   `Double is Decodable in Yaml`: un escalar decimal o entero como `Double`
++       `.inf`, `-.inf` y `.nan` se leen como los valores IEEE. Un nodo con la forma equivocada
++       registra `Reason.NotType(found, Decimal)` y continúa con `0.0`.
++   entry .float   `Float is Decodable in Yaml`: un escalar decimal o entero como `Float`
++   entry .boolean   `Boolean is Decodable in Yaml`: un escalar booleano
++       Solo `true`/`false` (en cualquiera de las grafías de YAML) se resuelven como booleanos;
++       un `"true"` entre comillas es una cadena y registra `Reason.NotType(Str, Bool)`.
++   entry .text   `Text is Decodable in Yaml`: un escalar de cadena
++       Un escalar entre comillas, un escalar de bloque, un escalar sin comillas que no se
++       resuelve como número, booleano ni nulo, o cualquier escalar etiquetado `!!str`. Un
++       número no se convierte a la fuerza: `42` registra `Reason.NotType(Integer, Str)`; para el
++       texto, se escribe `!!str 42` o `"42"`.
++   entry .string   `String is Decodable in Yaml`: un escalar de cadena, como `String` de Java
++   entry .unit   `Unit is Decodable in Yaml`: un escalar nulo
++       `null`, `~`, un valor vacío o cualquier cosa etiquetada `!!null`; cualquier otro nodo
++       registra `Reason.NotType(found, Null)`.
++   entry .memory   `Memory is Decodable in Yaml`: un número de bytes a partir de un escalar entero
++       Lee el nodo como `Long` y hace de él un `Memory` (el número de bytes de rudiments).
++   entry .listDecodable   `List[T] is Decodable in Yaml` para cualquier elemento con decodificador
++       Lee una secuencia, enfocando cada elemento por su ordinal para que el fallo de un
++       elemento se notifique en `#/items/2`. Un nodo que no es una secuencia registra
++       `Reason.NotType(found, Sequence)`. `List` es la lista propia (opaca) de Soundness, así
++       que este es un given distinto de `.iterable`, que cubre las colecciones de la stdlib.
++   entry .setDecodable   `Set[T] is Decodable in Yaml`: una secuencia leída en un `Set`
++   entry .seriesDecodable   `Sequence[T] is Decodable in Yaml`: una secuencia leída en una `Sequence`
++   entry .iterable   cualquier `Iterable` de la stdlib con una `Factory` puede decodificarse a partir de una secuencia
++       El given general para los tipos de `scala.collection` (`Vector`, `scala.List`, …)
++       construidos a través de su `Factory`; `.listDecodable`, `.setDecodable` y
++       `.seriesDecodable` son sus instancias para las colecciones propias de Soundness.
++   entry .map   `Map[Text, T] is Decodable in Yaml`: un mapeo leído con sus claves como texto
++       Cada clave debe ser un escalar: una cadena se toma tal cual, una clave numérica o
++       booleana se representa como texto, y una clave `null` pasa a ser `t"null"`; una clave que
++       sea una colección aborta con `Reason.NotType(found, Str)`. Un nodo que no es un mapeo
++       registra `Reason.NotType(found, Mapping)` y continúa con un mapa vacío.
+
+% 2 1 0 187dd25b5bffbf5e03054c437db9f063
+
+% 3 1 0 07129a6f3c13100412378b1989c3a29d
+
+% 4 1 0 0419986cbdd77ebf011d08c981586a22
+
+% 0 1 0 0b50139662f54c161324b6b6448037cd
+
+% 1 1 0 109fe04cf50bbb9e1d9628856966d65a
+
+@ 0 34 0 19b3de8f579b5e0314ba5b937ed53138
++   entry .option   `Option[T] is Decodable in Yaml`, según las políticas de `optionalityOptions`
++       Una clave que falta se lee como `None` salvo que `strictYamlAbsence` esté en el ámbito
++       (entonces `Yaml.Error(Absent)`); un `null` de YAML se lee como `None` salvo que
++       `strictYamlNulls` esté en el ámbito (entonces lo ve el decodificador interno, que falla
++       para todo salvo `Unit`); y un valor que el decodificador interno rechaza es un error
++       salvo que `lenientYamlFaults` esté en el ámbito (entonces `None`). Las tres políticas son
++       `Decodable.Absence`, `Nullity` y `Fault` `in Yaml`, con los valores por defecto de
++       ausencia permisiva, nulo permisivo y fallo estricto en distillate.
++   entry .optionEncodable   `Option[T] is Encodable in Yaml`: `None` se codifica como ausente
++   entry .intEncodable   `Int is Encodable in Yaml`: un escalar entero
++   entry .longEncodable   `Long is Encodable in Yaml`: un escalar entero
++   entry .integralEncodable   cualquier tipo `Integral` se codifica como escalar entero, a través de `toLong`
++   entry .doubleEncodable   `Double is Encodable in Yaml`: un escalar decimal, con `.inf` y `.nan` escritos como en YAML
++   entry .floatEncodable   `Float is Encodable in Yaml`: un escalar decimal
++   entry .booleanEncodable   `Boolean is Encodable in Yaml`: `true` o `false`
++   entry .textEncodable   `Text is Encodable in Yaml`: un escalar de cadena, entre comillas cuando la representación lo exige
++       El árbol guarda el texto tal cual; `show` decide si puede ser un escalar sin comillas o
++       debe ir entre comillas dobles, así que `t"42"` hace la ida y vuelta como la cadena
++       `"42"` y no como el número.
++   entry .stringEncodable   `String is Encodable in Yaml`: un escalar de cadena
++   entry .unitEncodable   `Unit is Encodable in Yaml`: un escalar `null`
++   entry .listEncodable   `List[T] is Encodable in Yaml`: una secuencia de las codificaciones de los elementos
++   entry .setAliasEncodable   `Set[T] is Encodable in Yaml`: una secuencia, en el orden de iteración del conjunto
++   entry .seriesAliasEncodable   `Sequence[T] is Encodable in Yaml`: una secuencia
++   entry .iterableEncodable   cualquier `Iterable` de la stdlib se codifica como secuencia
++   entry .mapEncodable   `Map[K, V] is Encodable in Yaml` para cualquier clave con un `Encodable in Text`
++       Las claves se representan como texto a través de su `Encodable in Text` y pasan a ser
++       escalares de cadena; los valores se codifican a través de su `Encodable in Yaml`. Las
++       entradas siguen el orden de iteración del mapa.
++   entry .discriminatedUnion   un `Discriminable in Yaml` cuya clave es un campo de mapeo con cualquier nombre
++       `Yaml.discriminatedUnion[Shape](t"kind")` es como se nombra la variante de un tipo suma
++       en la forma de transmisión: `discriminate` lee la cadena bajo `kind`, `rewrite` añade o
++       sustituye el campo con el nombre de la variante al codificar, y `variant` lo quita antes
++       de que se ejecute el decodificador propio de la variante. El paquete `discriminables`
++       contiene las dos elecciones habituales, `type` y `kind`, como given importables; para
++       cualquier otro nombre de campo, se llama a esto y se liga el resultado como given local.
+
+% 2 1 0 184b182b6e258f470a12ec0275a8ca8b
+
+% 3 1 0 1906a9ce531cbcdf1c80af49da1fdf3e
+
+% 4 1 0 0726afee39ff4dad07dbe8defcfb5568
+
+% 2 1 0 000bab8c145243510224c7e43c8eee95
+
+% 3 1 0 0adf95eb4b3275f704c512680b2081b4
+
+% 4 1 0 05950d897e2bf8500339ccf8c6482f02
+
+% 0 1 0 09c7f57a2d63104e0e71ddd2e8b09669
+
+% 0 1 0 1cf46dd188d3407405f2945b937a4c79
+
+% 1 1 0 05b23888426263c604a474b03fc2b8f6
+
+@ 0 6 0 050715945b4436040b5ab697ea44fe98
++   entry .positionable   `doc.locate(path)` y `doc.locateKey(path)`: la posición de un nodo en el código fuente
++       El `Yaml is Positionable by YamlPath to Yaml.Ast.Position` que hay detrás de las
++       extensiones `locate` de zephyrine. `locate` da la posición del valor en un `YamlPath` y
++       `locateKey` la de la clave del mapeo que lo contiene; ambas son `Unset` para un
++       documento sin seguimiento (analizado sin `parsing.trackPositions`), para una ruta que no
++       se resuelve, y `locateKey` para la raíz. Las líneas y las columnas empiezan en 1.
+
+% 2 1 0 1ec83dfd65b0fd570309cac6abd00636
+
+% 3 1 0 10fa4a71e1fe878606cb2719890710ef
+
+% 4 1 0 0f7cff86875458d61ad32b239f4e724f
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 05f98e0bb0f14cdb1f237a9160991405
+
+% 0 1 0 110f751c8ce651890d616782501a6f05
+
+% 0 1 0 06f1c5193a09e6a51141c3d4dcf735a7
+
+% 1 1 0 08b5cb5221a1c36117c95831f9408c29
+
+@ 0 13 0 04cd522bbd9896e61e7229e5bcd67641
++   entry .interpolator   el given que hay detrás de `y"…"`: un literal YAML analizado mientras se compila el código
++       `Yaml is Interpolable`, con `Yaml` como resultado. Véase `ypsiloid.y` para lo que acepta
++       el interpolador.
++   entry .extrapolator   el given que hay detrás de `case y"…" =>`: un literal YAML como patrón
++       `Yaml is Extrapolable`: un patrón `y"…"` coincide estructuralmente con un documento, y un
++       hueco `$x` en él liga el nodo de esa posición como `Yaml`. Véase `ypsiloid.y`.
++   entry .lens   `"field" is Lens from Yaml onto Yaml`: una entrada de un mapeo como lente, por su rótulo
++       El given que hace funcionar `doc.lens(_.inner.n = value)`: cada rótulo de la ruta es una
++       lente cuyo getter es `#selectDynamic` y cuyo setter sustituye (o inserta) la entrada, de
++       modo que una actualización anidada reconstruye el mapeo en cada nivel y devuelve un
++       documento nuevo. Depende de un `Yaml is Dynamical` (`dynamicAccess.dynamicYaml`) y
++       necesita una `Tactic[Yaml.Error]`. El valor asignado debe ser un `Yaml`: se codifica con
++       `in[Yaml]`, o se importa `conversions.encodableToYaml` para asignar directamente
++       cualquier valor codificable.
+
+% 2 1 0 139b4c5b6637a64013f26f9ad3681e2f
+
+% 3 1 0 164b6a1b84ceef510ac185ac0deb76e9
+
+% 4 1 0 07168ea46f30457403dabc7ae8ef348a
+
+% 5 1 0 0a06584cbca6af3c06868f47c8a3c950
+
+% 6 1 0 146481280e455f151b1582830ad1d712
+
+% 0 1 0 0d5ccecbbce63eb0005561572df9b843
+
+% 0 1 0 0c2b61eb37bed9ac0a5a4a2c5432f55e
+
+% 0 1 0 01d011873b3e634a0c2b9f2b3564f811
+
+% 0 1 0 13a77b3b4aa789d10db3ef0594ed6ea0
+
+% 0 1 0 0bbf50a6e7fdf0f51ba990be532b2b73
+
+% 1 1 0 1f5e5f42300658d61616cc7ab2d45669
+
+@ 0 10 0 06193cb5ec8a98880f716ef094fcf36b
++   entry .ordinalOptical   `Ordinal is Optical from Yaml onto Yaml`: un elemento de una secuencia, por posición
++       Hace que `doc.lens(_.items(Prim) = value)` actualice el primer elemento de un campo cuyo
++       valor es una secuencia; un ordinal más allá del final, o un nodo que no es una
++       secuencia, deja el documento sin cambios.
++   entry .eachOptical   `Each is Optical from Yaml onto Yaml`: todos los elementos de una secuencia
++       `doc.lens(_.items(Each) = 0)` aplica la actualización a todos los elementos de la
++       secuencia, y no hace nada sobre lo que no sea una.
++   entry .filterOptical   `Filter[Yaml] is Optical from Yaml onto Yaml`: los elementos que selecciona un predicado
++       `doc.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0)` actualiza solo los elementos para
++       los que se cumple el predicado y deja el resto como está.
+
+% 2 1 0 162138cc8e17f8041181792bd3251fc1
+
+% 3 1 0 0ceb13c6bb9c86310da4a8c589b8efc2
+
+% 4 1 0 126871836a9aaa121bdb1a18d903c8cc
+
+% 5 1 0 14dcf9053d61302d04a9381b93b951d6
+
+% 6 1 0 099105aa768d57011e50c8f070d15bbd
+
+% 0 1 0 0d7cc3952bcaf225025db1ccf7e3fea3
+
+% 0 1 0 1f27403983e982870fd9c93d1919cd56
+
+% 1 1 0 15698275119db0230c5f537f11e85f0b
+
+@ 0 27 0 1dd524c08b840b580a5cf1bdc8941e11
++   entry .primitive   el tipo `Yaml.Primitive` de un nodo: lo que un error notifica como _found_
++       `Yaml.primitive(ast)` clasifica un nodo como `Null`, `Bool`, `Integer`, `Decimal`, `Str`,
++       `Sequence` o `Mapping`; un número `Bcd` de alta precisión se notifica como `Decimal`, y
++       el nodo ausente como `Null`.
++   entry .YamlString   la representación en la JVM de un escalar de cadena en el árbol: `String`
++   entry .YamlInteger   la representación de un escalar entero: `Long`, o `Bcd` más allá del rango de un `Long`
++   entry .YamlDecimal   la representación de un escalar decimal: `Double`, o `Bcd` más allá de 17 cifras significativas
++   entry .YamlBoolean   la representación de un escalar booleano: `Boolean`
++   entry .YamlNull   el centinela de un `null` de YAML en el árbol, distinto del nodo ausente
++       El objeto y su tipo singleton. Un `null` de YAML y un valor ausente (un campo que falta,
++       representado como `Unset`) deben seguir siendo distintos —un campo `Optional` los trata
++       con políticas diferentes—, así que el nulo es este centinela y no el `null` de la JVM.
++       `Yaml.Ast.Null` es el nodo, e `isNull` la prueba.
++   entry .YamlSequence   la representación de una secuencia: un `Array[Any]` congelado de longitud impar
++       Las secuencias y los mapeos comparten una misma representación de array y se distinguen
++       por la paridad de la longitud: un array de secuencia siempre tiene longitud impar, y se
++       rellena con un centinela cuando el número de elementos es par.
++       `Yaml.Ast.sequenceLength` da el número real.
++   entry .YamlMapping   la representación de un mapeo: un `Array[Any]` congelado de claves y valores alternos
++       Siempre de longitud par, `[k0, v0, k1, v1, …]`, en el orden del documento. Las claves son
++       nodos, y solo las claves de cadena son direccionables por `Yaml#apply`, `YamlPath` y los
++       decodificadores derivados.
++   entry .PositionIndex   el índice plano de posiciones en el código fuente que un análisis con seguimiento registra junto al árbol
++       Un `Array[Int]` opaco y congelado de descriptores de posición, uno por nodo, dispuestos
++       de modo que el tramo que empieza en cualquier límite de descriptor es a su vez un índice
++       válido. Solo se construye cuando `parsing.trackPositions` está en el ámbito, se lleva
++       como `Yaml#positionIndex` y lo recorre `.positionable` para responder a `locate` y a
++       `locateKey`; no hay ninguna forma pública de leerlo directamente.
++   entry .Focus   dónde ocurrió un fallo de decodificación: su `YamlPath`, y su posición si el documento tenía seguimiento
+
+% 1 1 0 1bd46c3a967d0b9015549a78035fdced
+
+@ 0 4 0 14ffc6efe7012f370362650ea02f7bc0
++         El foco que sigue `Yaml#as`, para que una estrategia acumulativa pueda notificar cada
++         fallo en su lugar: `pointer` es la ruta al campo (`#/address/city`, desde la raíz), y
++         `position` es su línea y columna, que `#withPosition` rellena para cada foco registrado
++         cuando el documento tiene un `positionIndex`, y que es `Unset` en caso contrario.
+
+% 2 1 0 127151345d3d955812bb9ae005bd3d4d
+
+% 3 1 0 06f27788d97735bf0a55b09649774a2d
+
+% 4 1 0 0d613a8f3fd16b1e0d41447f509ad8b3
+
+% 0 1 0 0c5e7da21545287f0200475c5c26fe72
+
+% 0 1 0 079224546a6c87c70db325ed7be30c2f
+
+% 0 1 0 0b45670b200971d0029006fbbde5e807
+
+% 0 1 0 0c76e6da84827bd1029b9d73ed16aeb7
+
+% 0 1 0 056661f221c689760705c0a04124abb1
+
+% 0 1 0 1bec820d92b8ed9c061b1cb2911abb6c
+
+% 0 1 0 1ccb69a10bd7dcf614719dbef4d0dc7c
+
+% 0 1 0 1b1514e39c4cd0891d2117d2f1181f36
+
+% 0 1 0 0d61d5cc56fb87080a7c852d06fed419
+
+% 1 1 0 133e3cddd4242a5b1596e27a71a3583f
+
+@ 0 6 0 1fc06564ac1ca5e813ad6f083dd904ea
++     entry #pointer   la ruta del nodo que falla, desde la raíz
++     entry #position   la posición del nodo en el código fuente, o `Unset` para un documento sin seguimiento
++     entry #withPosition   una copia con `position` resuelta frente al índice de un documento
++         `focus.withPosition(doc)` es `focus` con `position` fijada en `doc.locate(pointer)`;
++         `Yaml#as` la aplica a cada foco registrado, así que un manejador rara vez lo necesita.
++   entry .Ast   un nodo del árbol: un escalar sin boxing, una secuencia o un mapeo, inspeccionado mediante extensiones
+
+% 1 1 0 07fc6f7d4e57c0e6013f7b0aeed820a7
+
+@ 0 8 0 1b168ada4ce061320470e283be4da4a8
++         `Yaml.Ast` es un tipo opaco sobre las representaciones en la JVM de los valores de YAML
++         —un escalar `String`, `Long`, `Double`, `Boolean` o `Bcd`, el centinela `YamlNull`, un
++         array congelado para una secuencia o un mapeo, y `Unset` para un valor ausente—, de
++         modo que un escalar se almacena sin envoltorio. El objeto compañero es toda la API:
++         constructores (`Str`, `Integer`, `Sequence`, …) que sirven también de extractores para
++         la coincidencia de patrones, predicados (`isString`, `isObject`, …) y accesores
++         (`string`, `arrayElement`, `objectIndexOf`, …) como métodos de extensión, `deepEquals`
++         para la comparación estructural, y los tipos `Position` e `Issue` que notifica un
++         análisis.
+
+% 2 1 0 12f91a919dbdb998182858bddfb54c89
+
+% 3 1 0 125472d507e8d3c9187ec5c8673e7214
+
+% 4 1 0 134abc7d4f817db6113fc2c0023126c3
+
+% 0 1 0 1676aada3da7f5ee14a6d61366e7771a
+
+% 0 1 0 17afc517ae3eb63e19b508574616c426
+
+% 0 1 0 021e82497336572e12f0a89aa9021240
+
+% 0 1 0 0f07c1f573ab1aa61d9a8ef3a68eb3ff
+
+% 0 1 0 06af713f955fe5500df007cd82b916cc
+
+% 0 1 0 0decc8ae50b06f401c98cf70ff4a8e6a
+
+% 0 1 0 1a12fc32ecb0f8e114b58c6cfe378f0f
+
+% 0 1 0 01eaf633481877090f646482e7e75c3d
+
+% 1 1 0 0b5896b535cb06a61623af9e0896adc2
+
+@ 0 4 0 1aec19c4def2d80d02fbb44a4947cfc8
++         Un documento (`Yaml`) envuelve un nodo; la mayor parte del código trabaja a través del
++         documento y sus códecs, y solo llega al nodo para hacer coincidencias sobre la
++         estructura o para leer un número de alta precisión como `Bcd`. El objeto compañero es
++         también el `Format` de un análisis YAML, llamado `YAML`, cuyos `Parse.Error` llevan un
++         `Yaml.Ast.Issue` y una `Yaml.Ast.Position`.
+
+% 0 1 0 0b3060986179f3db1a547ce673d9103b
+
+% 0 1 0 1f3cf91c242f7b15103b43655ce639d6
+
+% 0 1 0 07878f1aaec1bf3b1c743feef0aaa515
+
+@ 0 74 0 1a4495f701a10fbd09b2a1aa42ffe122
++     entry .name   el nombre del formato, `YAML`, tal como lo notifican los mensajes de `Parse.Error`
++     entry .showable   representa un nodo como texto YAML en estilo de bloque, dado un `Yaml.Formatting`
++         El mismo emisor que el `showable` de `Yaml`, sobre un nodo suelto.
++     entry .inspectable   una representación de depuración de un nodo en una línea, con el sufijo `ᵃˢᵗ`
++         Como se inspecciona un documento, con sus saltos de línea escapados, más un `ᵃˢᵗ`
++         volado para que un nodo suelto se distinga del `Yaml` que lo envolvería.
++     entry .apply   envuelve cualquier valor de la representación como nodo
++         `Yaml.Ast(value)` para un `Long`, `Double`, `Bcd`, `Boolean`, `String`, `Array[Any]`
++         congelado, `YamlNull` o `Unset`; los constructores tipados `.Str`, `.Integer`, … son
++         más claros cuando se conoce el tipo.
++     entry .Null   el nodo `null`
++     entry .Bool   `Yaml.Ast.Bool(true)` crea un nodo booleano; `case Yaml.Ast.Bool(b)` coincide con uno
++     entry .Integer   `Yaml.Ast.Integer(42L)` crea un nodo entero; `case Yaml.Ast.Integer(n)` coincide con uno
++         El extractor solo coincide con un entero dentro del rango de `Long`; un entero guardado
++         como `Bcd` coincide con `.BcdValue`.
++     entry .Decimal   `Yaml.Ast.Decimal(3.14)` crea un nodo decimal; `case Yaml.Ast.Decimal(d)` coincide con uno
++     entry .BcdValue   un nodo numérico de alta precisión, guardado como `Bcd`; coincide con uno en un patrón
++         Un entero más allá del rango de un `Long`, o un decimal con más de 17 cifras
++         significativas, se analiza en un `Bcd` en lugar de redondearse; esto construye o extrae
++         uno.
++     entry .Str   `Yaml.Ast.Str(t"x")` crea un nodo de cadena; `case Yaml.Ast.Str(text)` coincide con uno
++     entry .Sequence   `Yaml.Ast.Sequence(items)` crea una secuencia a partir de un array congelado de nodos; coincide con una
++         El extractor produce los elementos como un `Array[Yaml.Ast]` congelado, sin el
++         centinela de relleno que puede llevar la representación; tanto el constructor como el
++         extractor copian cuando el número de elementos es par.
++     entry .Mapping   `Yaml.Ast.Mapping(entries)` crea un mapeo a partir de pares clave-valor; coincide con uno
++         El constructor recibe un `Array[(Yaml.Ast, Yaml.Ast)]` congelado y lo aplana; el
++         extractor produce los pares, en el orden del documento.
++     entry .sequenceLength   el número de elementos de un array de secuencia, sin contar el centinela de relleno
++         Un accesor de bajo nivel sobre la representación (`Array[Any]`); `arrayLength` es lo
++         mismo sobre un nodo.
++     entry .mappingSize   el número de entradas de un array de mapeo: la mitad de su longitud
++     entry .foreachItem   aplica un cuerpo inline a cada elemento de un array de secuencia
++         Un bucle de ruta crítica para los decodificadores de colecciones, sin iterador y sin
++         boxing del índice.
++     entry .foreachEntry   aplica un cuerpo inline a cada clave y valor de un array de mapeo
++     entry .deepEquals   igualdad estructural de dos nodos, recorriendo secuencias y mapeos
++         Dos análisis del mismo texto son instancias de array distintas; esto los compara por
++         contenido, y es lo que usa `Yaml#equals`. Los números se comparan por tipo y valor, así
++         que `Integer(1)` y `Decimal(1.0)` no son iguales.
++     entry .deepHash   un hash coherente con `.deepEquals`, que usa `Yaml#hashCode`
++     entry .isAbsent   si el nodo es el centinela de ausencia: un campo que falta, o `Yaml#apply` sobre una clave que falta
++     entry .isNull   si el nodo es un `null` de YAML
++     entry .isLong   si el nodo es un entero dentro del rango de un `Long`
++     entry .isDouble   si el nodo es un decimal guardado como `Double`
++     entry .isBcd   si el nodo es un número de alta precisión guardado como `Bcd`
++     entry .isNumber   si el nodo es un entero o un decimal de cualquier precisión
++     entry .isString   si el nodo es un escalar de cadena
++     entry .isBoolean   si el nodo es un escalar booleano
++     entry .isObject   si el nodo es un mapeo
++     entry .isArray   si el nodo es una secuencia
++     entry .arrayLength   el número de elementos de un nodo de secuencia; indefinido sobre cualquier otro nodo
++         Los accesores `arrayLength`, `arrayElement`, `objectSize`, `objectKey` y
++         `objectValue` no comprueban nada, por velocidad: primero se prueba `isArray` o
++         `isObject`, o se usan los comprobados `array`, `string`, `long`, …, que registran un
++         `Yaml.Error`.
++     entry .arrayElement   el elemento en un índice de un nodo de secuencia, sin comprobar
++     entry .objectSize   el número de entradas de un nodo de mapeo, sin comprobar
++     entry .objectKey   la clave en un índice de par de un nodo de mapeo, como `String`, sin comprobar
++         El `String` de la clave; una clave que no es de cadena hace fallar la conversión, así
++         que para un mapeo que pueda tener claves escalares de otros tipos se usa
++         `objectIndexOf` o se hace coincidencia con `.Mapping`.
++     entry .objectValue   el valor en un índice de par de un nodo de mapeo, sin comprobar
++     entry .objectIndexOf   el índice de par de una clave de cadena en un mapeo, o `-1`
++         Un recorrido lineal que solo coincide con claves de cadena; `-1` para una clave que
++         falta y para un nodo que no es un mapeo. El índice alimenta a `objectKey` y a
++         `objectValue`.
++     entry .array   los elementos de un nodo de secuencia, o un `Yaml.Error` registrado y un array vacío
++         Necesita una `Tactic[Yaml.Error]`: un nodo que no es una secuencia registra
++         `Reason.NotType(found, Sequence)` (o `Reason.Absent`) y continúa sin elementos.
++     entry .double   el nodo como `Double`, a partir de un decimal, un entero o un `Bcd`; si no, un `Yaml.Error` registrado
++     entry .long   el nodo como `Long`, a partir de un entero, un decimal o un `Bcd`; si no, un `Yaml.Error` registrado
++     entry .bcd   el nodo como `Bcd`, con precisión completa, a partir de cualquier número; si no, un `Yaml.Error` registrado
++         La forma de leer sin pérdida un número demasiado grande para un `Long` o demasiado
++         preciso para un `Double`: `Yaml.unseal(doc).bcd.toBigDecimal`.
++     entry .string   el nodo como `Text`, a partir de un escalar de cadena; si no, un `Yaml.Error` registrado
++     entry .boolean   el nodo como `Boolean`; si no, un `Yaml.Error` registrado
++     entry .primitive   el tipo `Yaml.Primitive` del nodo
++     entry .Position   una posición en el código fuente: línea y columna (desde 1), con el desplazamiento y la longitud del nodo
+
+% 1 1 0 16517a3fc7b9680f1bf5ce50bec124b5
+
+@ 0 10 0 134bbee2ed4b6b921189bb78c1998691
++           La `Format.Position` de un análisis YAML, que lleva todo `Parse.Error` y que devuelve
++           `locate`. `line` y `column` empiezan en 1, como las muestra un editor; `span` es el
++           rango desde 0 que resalta un diagnóstico. `describe` representa `line 2, column 10`.
++       entry #line   la línea, desde 1
++       entry #column   la columna, desde 1
++       entry #offset   el desplazamiento en caracteres desde el principio del código fuente, si se conoce
++       entry #length   la longitud del texto fuente del nodo, si se conoce
++       entry #describe   la posición como texto: `line 2, column 10`
++       entry #span   la posición como un `Span` desde 0 de `length` caracteres
++     entry .Issue   lo que un análisis puede encontrar mal, cada cosa con su mensaje
+
+% 1 1 0 152f15f51715856518b9bde543a2978b
+
+@ 0 18 0 1154a15b7fc10b59190d86ad4ed57828
++           El `Format.Issue` de un análisis YAML: el `issue` de un `Parse.Error` es uno de
++           estos, y `describe` da su mensaje. Los casos cubren la estructura del documento (un
++           `---` que falta entre documentos, contenido después de `...`, una directiva fuera de
++           lugar o mal formada, `%YAML` repetida o sin versión `major.minor`, `%TAG` sin
++           descriptor y prefijo), las propiedades de los nodos (dos anclajes o dos etiquetas en
++           un nodo, un anclaje en un alias, una etiqueta literal sin terminar,
++           `UndefinedTagHandle(handle)`, `UnknownAlias(name)`, un indicador reservado al
++           principio de un nodo), la estructura de bloque (un tabulador en la sangría, un mapeo
++           que empieza en la línea `---`, una secuencia en la línea de una clave, una clave sin
++           su `:`, una clave implícita de varias líneas, un valor encadenado en una sola línea,
++           una continuación con sangría insuficiente), los escalares entre comillas (comillas
++           simples o dobles sin cerrar, un escape sin terminar, no válido o truncado, un dígito
++           hexadecimal incorrecto, contenido detrás de la comilla de cierre, un marcador de
++           documento dentro de un escalar de varias líneas), las colecciones de flujo (`[` o
++           `{` sin cerrar, una entrada vacía, se esperaba `,` o el cierre, una clave y su `:` en
++           líneas distintas, contenido con sangría insuficiente, un marcador de documento en
++           contexto de flujo), los escalares de bloque (una cabecera no válida, un indicador de
++           sangría fuera de 1–9 o repetido, un indicador de recorte repetido, líneas en blanco
++           iniciales con exceso de sangría, un comentario de cabecera sin espacio en blanco
++           delante), y un comentario sin espacio en blanco delante.
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 045412dfde465a9c01b6523a99947589
+
+% 0 1 0 0d86740dc839cbc21d228ae5723842cd
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 2 0 129c79489b6abbff15c7d5ddcd138abb
++       entry #describe   el mensaje del problema, como _the alias *name does not refer to a known anchor_
++     entry .Byte   las constantes de bytes ASCII sobre las que conmuta el analizador
+
+% 0 1 0 1dbd995455f497aa1e6b704af81ae91c
+
+% 1 1 0 0cfae82a36adc9830abbf88f939f135b
+
+@ 0 3 0 0a4d454ddd19342e0e989ad501b29fa7
++           No es para uso directo: constantes con nombre (`Colon`, `Minus`, `OpenBracket`, …)
++           para los valores de byte con los que comparan las tablas de despacho del analizador.
++   entry .Error   se lanza cuando un documento no puede decodificarse como el tipo pedido
+
+% 1 1 0 1083fe3b0cf7f553168ac5d0aeb681e2
+
+@ 0 9 0 0515ca665a6c951e01968543635ba6f1
++         Error `↯/s.134.1`: _could not access the YAML value because `reason`_. Lo lanzan
++         `Yaml#as`, `Yaml#apply`, las actualizaciones y todo `Decodable in Yaml` cuando un nodo
++         tiene la forma equivocada o falta un campo obligatorio. El motivo es uno de dos:
++         `Reason.NotType(found, expected)` —_the YAML value had type `found` instead of
++         `expected`_, ambos `Yaml.Primitive`— y `Reason.Absent` —_the YAML value was not
++         present_—. Los decodificadores de primitivos registran el error y continúan con un
++         centinela, de modo que con una estrategia acumulativa un registro con tres campos
++         incorrectos notifica tres errores, cada uno enfocado en su campo; la construcción
++         condicionada nunca ejecuta el constructor del registro sobre valores centinela.
+
+@ 0 2 0 052feaaa0124c1a716e8494568b5faf8
++         Un fallo de análisis no es un `Yaml.Error`: un texto mal formado lanza el `Parse.Error`
++         de zephyrine, con un `Yaml.Ast.Issue` y una `Yaml.Ast.Position`.
+
+% 0 1 0 0109a0417f4887e2035fb6c53fa01b33
+
+% 0 1 0 009656fc58dc334e0f89f24549e288e7
+
+@ 0 2 0 037e92a72eb8b1b21f1cbf1d14a712e6
++     entry #reason   por qué no pudo leerse el valor: `NotType(found, expected)` o `Absent`
++     entry .Reason   los dos motivos: un nodo del tipo equivocado, o un valor que falta
+
+% 1 1 0 03e277bae24edb6e1f350eef62208f9e
+
+@ 0 7 0 0e936ae9c9875e91037681f65d232770
++           `NotType(found: Yaml.Primitive, expected: Yaml.Primitive)` (número 1) es un nodo del
++           tipo equivocado, como una cadena donde tocaba un entero; `Absent` (número 2) es un
++           campo que el mapeo no tiene, o un `null` o un valor que falta con una política de
++           opcionalidad estricta. Ambos son `Clarification`, así que el número de un error es
++           `31.1` o `31.2`.
++       entry .communicable   representa un motivo como su mensaje
++   entry .Primitive   los siete tipos de nodo, tal como un error nombra lo que encontró y lo que esperaba
+
+% 1 1 0 08ca8cca139f2a2a11d1c0f423738faf
+
+@ 0 5 0 1e0cc947306fdb140d914e2341183d21
++         `Null`, `Bool`, `Integer`, `Decimal`, `Str`, `Sequence` y `Mapping`.
++         `Yaml.primitive(node)` clasifica un nodo; un número `Bcd` es `Decimal`, y el nodo
++         ausente es `Null`.
++     entry .communicable   representa el nombre de un primitivo en un mensaje
++   entry .Direct   el portador de `derives` para el analizador y el impresor directos de un registro
+
+% 1 1 0 009789d88eabde241dee1b50d096bd88
+
+@ 0 7 0 008f7e321d7228d21b7e8c3cf13d879c
++         `case class Config(…) derives Yaml.Direct` deriva una sola vez el `Yaml.Parsable` y el
++         `Yaml.Printable` de `Config` en su objeto compañero, donde sirven a todo
++         `read[Config in Yaml]` e `in[Text over Yaml]` —con o sin `import codecs.direct`, que de
++         otro modo los derivaría de nuevo en cada uso, y por delante de él, ya que una instancia
++         del objeto compañero supera a la importación—. Una clase de tipos con tipo `Self` no
++         puede aparecer por sí misma en una cláusula `derives`, y por eso existe este portador
++         parametrizado; `.declared` en `Parsable` y `Printable` lo desempaquetan.
+
+% 2 1 0 05cb1563abaadfaa15e202bac203291f
+
+% 3 1 0 116f853c75c6539b1a42b14d0ee85920
+
+% 4 1 0 184b3cd584ffeb78148ef3b3a77eaaa7
+
+% 0 1 0 14227f9931bcb39c051f8bb27a242664
+
+% 0 1 0 1549984e4ca98bd403d825711ccbe19d
+
+% 0 1 0 09cedd63fe9f39ca1488f87cb9cb5d76
+
+% 1 1 0 0e898c958af186c612e17f25fadd11aa
+
+@ 0 4 0 0c591c821103ad60175af6e3f76cc321
++     entry .derived   deriva un `Direct` para un producto: su analizador y su impresor, campo a campo
++     entry #parsable   el analizador directo del registro
++     entry #printable   el impresor directo del registro
++   entry .Parsable   un tipo leído directamente del árbol analizado, sin construir un `Yaml` alrededor de cada nodo
+
+% 1 1 0 0ef3e74adfc8042e0a301301531b1e68
+
+@ 0 10 0 1e7c4ce63990b77d19697fcdf2880f60
++         La superficie opcional de la lectura directa: un tipo con un `Yaml.Parsable` lo lee
++         `read[T in Yaml]` a través de `.aggregableParsed` y no de un `Decodable in Yaml`. Una
++         instancia procede de `derives Yaml.Direct`, de `Parsable.derived[T]` ligado como given,
++         de `import codecs.direct` (todo producto, derivado en el lugar de uso), o de los puentes
++         `fromField` y `fromDecodable`. Un `Parsable` es un `Yaml.Field`, así que el analizador
++         de un registro sirve también de analizador de campo dentro de otro registro. Un
++         analizador directo da los mismos resultados y los mismos errores enfocados que la vía
++         del árbol, y respeta `@name`, los valores por defecto y las políticas de
++         `optionalityOptions`.
++         El given `generated` se hereda de la capa de prioridad `Parsable2`, y se documenta
++         allí.
+
+% 0 1 0 14a1c4c16860b2260aebc2e25693a016
+
+% 1 1 0 18340ec162d509fc0d295b5dda850726
+
+% 1 1 0 1997a5954cd3841d067eef03b8e5f237
+
+@ 0 7 0 1832eb99da023202018c9e0179d61fc9
++     entry .derived   deriva un analizador directo para un producto a partir de su `ProductReflection`
++     entry .fromField   un `Parsable` a partir de un `Yaml.Field`: la superficie opcional a partir de la que siempre se resuelve
++     entry .fromDecodable   un `Parsable` que decodifica el nodo como un `Yaml` a través de un `Decodable in Yaml`
++         El puente desde el mundo del árbol, completo: para un tipo cuya lectura no puede ser
++         directa pero que debe satisfacer `codecs.strict`.
++     entry .declared   el analizador de un tipo que `derives Yaml.Direct`, a partir del `Direct` de su objeto compañero
++   entry .Field   un valor leído de un nodo del árbol, como lee cada campo un analizador derivado
+
+% 1 1 0 061e54ce96924d3802ba1c9d1804c5ab
+
+@ 0 8 0 0ddb4164275674ca08295c030e5f63cd
++         El supertipo de `Yaml.Parsable` que siempre se resuelve: todo tipo tiene un
++         `Yaml.Field` —los given del objeto compañero para los primitivos, `Text`, `Unit`,
++         `Option`, `Optional`, `List`, `Set`, `Sequence`, `Map[Text, _]` y cualquier `Iterable`
++         de la stdlib, uno derivado para cualquier producto (`.product`), y un puente desde
++         cualquier `Decodable in Yaml` (`.decodable`)—, de modo que un analizador derivado
++         puede leer cualquier tipo de campo. Un `Field` lee a partir de `(reader, node)`, donde
++         el nodo es el centinela de ausencia para una clave que el mapeo no tiene.
++         Los given `product` y `decodable` se heredan de las capas de prioridad `Field1` y
++         `Field2`, y se documentan allí.
+
+% 0 1 0 0d9faa42677074af08476f8e3bd1a3bb
+
+% 1 1 0 0c82b4dd7259d53604ad2f70523e8b2b
+
+@ 0 11 0 1f1b1eff0ac7d6231f1454250ab7ab9d
++     entry #Transport   el formato del que se lee un campo: `Yaml`
++     entry #Reader   el lector a través del cual lee un campo: `Yaml.Reader`
++     entry #parse   lee el valor de un nodo, o del nodo ausente cuando se llama solo con el lector
++     entry .parseField   lee un campo a través de su `Field`, del lector llevado como `AnyRef`
++         Un punto de llamada de borde para el código derivado, que no puede guardar el lector,
++         tipado con capacidades, en un parámetro de función.
++     entry .readerOf   el lector, a partir de su portador `AnyRef`
++     entry .lookup   el valor bajo una clave de cadena en un nodo de mapeo, o `null`
++         `null` también para un nodo que no es un mapeo. Solo coinciden las claves de cadena,
++         como en la búsqueda del decodificador del árbol.
++     entry .int   `Int is Yaml.Field`: un nodo entero o decimal
+
+% 0 1 0 09c3e518abc980dd1cf6eb5754cee75b
+
+% 0 1 0 1ecfd89eab23d9ac1cbe27d293f4dc43
+
+% 0 1 0 136f9d666b32f8fa1361ac4b9a437fa9
+
+% 0 1 0 02364c9b9de7248f0c05ff23d9a80027
+
+@ 0 1 0 07b844636b6d8c51011453b7304cb985
++     entry .text   `Text is Yaml.Field`: un nodo de cadena
+
+% 0 1 0 1a8fec41bfa5c82f1854d66aefb18451
+
+@ 0 12 0 1d5fc1c2015181a2055b8971222ac550
++     entry .unit   `Unit is Yaml.Field`: un nodo nulo
++     entry .optional   `Optional[T] is Yaml.Field`, según las políticas de `optionalityOptions`
++         Como `Yaml.optional` del decodificador del árbol: lo ausente y `null` se leen como
++         `Unset` salvo que `strictYamlAbsence` o `strictYamlNulls` estén en el ámbito, y un
++         valor rechazado es un fallo salvo que lo esté `lenientYamlFaults`.
++     entry .option   `Option[T] is Yaml.Field`, según las mismas políticas, y produce `None`
++     entry .iterable   cualquier `Iterable` de la stdlib con una `Factory`, a partir de un nodo de secuencia, con cada elemento enfocado por su ordinal
++     entry .list   `List[T] is Yaml.Field`: un nodo de secuencia
++     entry .set   `Set[T] is Yaml.Field`: un nodo de secuencia
++     entry .series   `Sequence[T] is Yaml.Field`: un nodo de secuencia
++     entry .map   `Map[Text, T] is Yaml.Field`: un nodo de mapeo con claves de cadena
++   entry .Reader   el contexto en que lee un analizador directo: la táctica y los focos de la lectura
+
+% 1 1 0 02582c3dce9e1db6183ed09fa70118e9
+
+@ 0 15 0 03ac89965a128a0d0059f9b82c9c291c
++         Un `Yaml.Parsable` lee sus nodos a través de un `Reader`, que contiene la
++         `Tactic[Yaml.Error]` y los `Foci[Yaml.Focus]` de la lectura, de modo que las instancias
++         no requieren construcción y el mismo analizador sirve a todas las lecturas. Sus métodos
++         de escalares registran un fallo de tipo equivocado o de ausencia a través de la táctica
++         y continúan con un centinela, como hacen los decodificadores del árbol, para que los
++         campos hermanos acumulen sus propios errores. Solo `.aggregableParsed` crea uno; un
++         `Parsable` escrito a mano lo recibe.
++     entry #int   un nodo entero o decimal como `Int`, o un fallo registrado y `0`
++     entry #long   un nodo entero o decimal como `Long`, o un fallo registrado y `0`
++     entry #double   un nodo decimal o entero como `Double`, o un fallo registrado y `0.0`
++     entry #float   un nodo decimal o entero como `Float`, o un fallo registrado y `0.0f`
++     entry #boolean   un nodo booleano, o un fallo registrado y `false`
++     entry #string   un nodo de cadena como `String`, o un fallo registrado y `""`
++     entry #unit   comprueba que el nodo sea `null`, y registra un fallo en caso contrario
++     entry #shape   registra un nodo con la forma equivocada —un escalar donde tocaba una secuencia o un mapeo— y continúa
++   entry .Printable   un tipo escrito directamente como texto YAML a partir de sus campos, sin construir ningún árbol
+
+% 1 1 0 0c3134bbcf41336a0911e47aa75a42eb
+
+@ 0 8 0 0d2fe23ca3e7f6ef129728e49eec9954
++         La superficie opcional de la escritura directa: un tipo con un `Yaml.Printable` lo
++         escribe `in[Text over Yaml]` a través de `.encodableOverPrinted`, y `Printable.print`
++         y `Printable.emit`, en lugar de un `Encodable in Yaml` y `show`. Una instancia procede
++         de `derives Yaml.Direct`, de `Printable.derived[T]`, de `import codecs.direct`, o de
++         los puentes `fromWritable` y `fromEncodable`. El texto es exactamente lo que `show`
++         representa para el árbol del valor.
++         El given `generated` se hereda de la capa de prioridad `Printable2`, y se documenta
++         allí.
+
+% 0 1 0 0aed4b9c9c3d5e150620104efac7f396
+
+% 1 1 0 16ede631f73c075703ad81af65df57dd
+
+% 1 1 0 0641919829278e3e17b3f0ef9498a8bc
+
+@ 0 5 0 11adc020b90c7b6314f66aa6918bd4b3
++     entry .derived   deriva un impresor directo para un producto a partir de su `ProductReflection`
++     entry .fromWritable   un `Printable` a partir de un `Yaml.Writable`
++     entry .fromEncodable   un `Printable` que codifica el valor en un árbol y lo escribe en su lugar
++     entry .declared   el impresor de un tipo que `derives Yaml.Direct`, a partir del `Direct` de su objeto compañero
++     entry .print   todo el texto YAML de un valor a través de su `Printable`
+
+% 1 1 0 126d1845504fe2400da4ff9323f5cb68
+
+% 2 1 0 0c7bc8fe78286e70020f1c4a1cb4cca9
+
+% 0 1 0 0e3ea85a8a7d33b90596b0f230e7ff82
+
+% 0 1 0 082aa163bac3d4221e7ddc601aa143d9
+
+% 1 1 0 061735f34cb0755c05f361ffb8e321aa
+
+@ 0 4 0 169c319a7e8c08900543372c8adb2c44
++     entry .emit   escribe el texto de un valor en bloques de la capacidad de `Buffering`, entregando cada uno a una función
++         La forma de empuje para un valor grande: cada línea completada se entrega a `deliver`
++         en cuanto el texto alcanza la capacidad, así que nunca se construye el texto del valor
++         entero.
++   entry .Writable   un valor escrito como valor de un mapeo, elemento de una secuencia o documento, como escribe cada campo un impresor derivado
+
+% 1 1 0 1b0f65fba968df581291bb24f6b621b0
+
+@ 0 8 0 1e5574a77f6b90e01bfd226ff1e85541
++         El supertipo de `Yaml.Printable` que siempre se resuelve: todo tipo tiene un
++         `Yaml.Writable` —los given del objeto compañero para los primitivos, `Text`, `Unit`,
++         `Option`, `Optional`, `List`, `Set`, `Sequence`, `Map` y cualquier `Iterable` de la
++         stdlib, uno derivado para cualquier producto (`.product`), y un puente desde cualquier
++         `Encodable in Yaml` (`.encodable`)—. Un `Writable` escribe en un `Yaml.Out` como el
++         valor que corresponde tras un marcador `key:` o `-`, y dice mediante `#absent` si debe
++         omitirse por completo de un mapeo.
++         Los given `product` y `encodable` se heredan de las capas de prioridad `Writable1` y
++         `Writable2`, y se documentan allí.
+
+% 0 1 0 0e18938cdda29ce00a3267e3d20c4cfe
+
+% 1 1 0 0b7b2e17c59ddda80c9e891ae8209019
+
+@ 0 4 0 02328be6ca2a56481fc25c6baf1e99ac
++     entry #absent   si un valor se omite de un mapeo: un campo `Unset` o `None`
++     entry #write   escribe el valor en un `Yaml.Out`, como el valor que corresponde tras un marcador o como el documento
++     entry .writeField   escribe un campo a través de su `Writable`, en el escritor llevado como `AnyRef`
++     entry .keyOf   escribe un marcador `key:` en el escritor llevado como `AnyRef`
+
+% 0 1 0 11259f7017a6e8d00fdd22978ac02243
+
+% 0 1 0 1c70a13b9e21bd1d0e95f5172f23deec
+
+% 0 1 0 1c206b4ef28661e51d72df995aaa872c
+
+% 0 1 0 1731fbd2a0bd81890bb4f7873f12cc54
+
+% 0 1 0 0dba5689e8e07f060e27314a5c31cf58
+
+@ 0 1 0 1d874e236ecbb1ff08f6881dc72eb50a
++     entry .text   `Text is Yaml.Writable`: sin comillas o entre comillas dobles, según decida `show`
+
+% 0 1 0 11380873112f7d221979410356c691d3
+
+@ 0 9 0 0e2fd59c9cba919f0c4271a5078fab11
++     entry .unit   `Unit is Yaml.Writable`: escribe `null`
++     entry .optional   `Optional[T] is Yaml.Writable`: `Unset` es ausente, y se omite de un mapeo
++     entry .option   `Option[T] is Yaml.Writable`: `None` es ausente
++     entry .iterable   cualquier `Iterable` de la stdlib se escribe como secuencia de bloque, `[]` si está vacío
++     entry .list   `List[T] is Yaml.Writable`: una secuencia de bloque
++     entry .set   `Set[T] is Yaml.Writable`: una secuencia de bloque
++     entry .series   `Sequence[T] is Yaml.Writable`: una secuencia de bloque
++     entry .map   `Map[K, V] is Yaml.Writable` para cualquier clave con un `Encodable in Text`: un mapeo de bloque, `{}` si está vacío
++   entry .Out   el escritor en el que escribe un impresor directo: el texto hasta el momento, la sangría y el marcador que espera su valor
+
+% 1 1 0 0b0132399818568707550de650037b55
+
+@ 0 7 0 18f2cd9f1ab39fb10e1b912ee71cd453
++         Dispone el texto exactamente como el emisor de bloques dispone un árbol: `#key` o
++         `#item` escribe un marcador `key:` o `-` y deja pendiente el valor que le sigue;
++         entonces un escalar se escribe en la misma línea, y una colección no vacía en las
++         líneas de debajo, un nivel más adentro, entre `#open` y `#close`. Cada línea completada
++         se entrega en cuanto el texto alcanza el límite del escritor, así que `Printable.emit`
++         puede escribir un valor un bloque cada vez. Solo `Printable.print` y `Printable.emit`
++         crean uno; un `Writable` escrito a mano lo recibe.
+
+% 2 1 0 0e9c179f18881ded0ec31413e50a86c6
+
+% 3 1 0 1c7f592ae4d507cc1b7e8c9fef2752f4
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 02ba4bca7ed46a51079322d4dc2410f5
+
+% 0 1 0 0e2d452d7fcfda58037b122277fa65e2
+
+% 0 1 0 09269c94ea3dcf0108769b249fbbafe1
+
+% 0 1 0 0324789defe21dfd128feb74e3a5dcf6
+
+% 0 1 0 1a8dc7550d7c1b7c0453af00c2b9c6b0
+
+% 0 1 0 0b3e0df251be8bce05fc10d52b4ecc1f
+
+% 0 1 0 0c1ecb925b292114168010d1c1fce27b
+
+% 1 1 0 167d11cbc293fdb8148c0f7773988e1a
+
+@ 0 13 0 03a636442b32cc27033a052eca91a2a5
++     entry #long   escribe un entero como el valor que corresponde
++     entry #double   escribe un decimal como el valor que corresponde, con `.inf`, `-.inf` y `.nan` tal como los escribe YAML
++     entry #boolean   escribe `true` o `false` como el valor que corresponde
++     entry #string   escribe una cadena como el valor que corresponde, sin comillas o entre comillas dobles según decida `show`
++     entry #nullValue   escribe `null` como el valor que corresponde
++     entry #empty   escribe `{}` o `[]` como el valor que corresponde
++     entry #key   escribe el marcador `key:` de una entrada de mapeo, con la sangría actual
++     entry #item   escribe el marcador `-` de un elemento de secuencia
++     entry #open   abre una colección no vacía en las líneas de debajo de su marcador, y devuelve lo que restaura `#close`
++         En lo alto del documento no corresponde ningún valor, y las entradas se escriben en el
++         margen.
++     entry #close   restaura la sangría que devolvió `#open`
++     entry #tree   escribe un `Yaml.Ast` como el valor que corresponde, como lo haría el emisor de bloques
++   entry .FieldDerivation   la derivación del `Yaml.Field` de un producto, detrás del análisis directo
+
+% 1 1 0 109300d85ad823d102be755760c94cae
+
+% 2 1 0 1737c542fa263b4710620f953a0dad98
+
+@ 0 4 0 000cdbf73abcdb49131e670f8d20cd8e
++         No es para uso directo: `Yaml.Field.product` y `Yaml.Parsable.derived` llegan a ella.
++     entry .conjunction   el analizador de campos de un producto: cada campo leído de los nodos del mapeo
++     entry .FieldProductParser   el `Field` en que se convierte un analizador derivado, sobre una lambda que recibe el lector como `AnyRef`
++   entry .WritableDerivation   la derivación del `Yaml.Writable` de un producto, detrás de la impresión directa
+
+% 1 1 0 0a56dfadd90b740e088051de8b93cbb1
+
+% 2 1 0 1d8cf9b56ade53050f13136ee02663d9
+
+@ 0 4 0 09c4a19102e0768e139259b1f4b3da98
++         No es para uso directo: `Yaml.Writable.product` y `Yaml.Printable.derived` llegan a
++         ella.
++     entry .conjunction   el escritor de campos de un producto: cada campo presente escrito tras su marcador `key:`
++     entry .WritableProductPrinter   el `Writable` en que se convierte un impresor derivado, sobre una lambda que recibe el escritor como `AnyRef`
++   entry .Field1   la capa de prioridad que contiene `Yaml.Field.product`
+
+% 1 1 0 1c987de824baee6b1573690c96c8885d
+
+% 2 1 0 121fdcc180d8cbcf1f15b69307c39088
+
+@ 0 6 0 09292b45e0ef47031ed806fe76fd9552
++         No es para uso directo: un padre de `object Yaml.Field`, para que el analizador de
++         productos derivado quede por debajo de los given propios del objeto compañero y por
++         encima del puente `Decodable`.
++     entry #product   un analizador de campos derivado para cualquier producto, a partir de su `ProductReflection`
++         Inline, en `Yaml.Field1`, de modo que un registro anidado dentro de un analizador
++         directo se lee también directamente, sin despachar ningún códec para él.
++   entry .Field2   la capa de prioridad que contiene `Yaml.Field.decodable`
+
+% 1 1 0 0dbe4a55b1686ff512bce85bddde5d54
+
+% 2 1 0 17e4eda90d502c1f0f701fdbeef7da1f
+
+@ 0 6 0 152a69a5c40a343c11aafeea19be9f8f
++         No es para uso directo: el padre más bajo de `object Yaml.Field`.
++     entry #decodable   el puente: cualquier `Decodable in Yaml` lee el nodo envuelto como `Yaml`
++         En `Yaml.Field2`, la prioridad más baja, de modo que un tipo sin analizador de campos
++         directo propio —una enumeración, o un tipo con un decodificador escrito a mano— se
++         sigue leyendo dentro de un analizador directo, por la vía del árbol para ese campo.
++   entry .Writable1   la capa de prioridad que contiene `Yaml.Writable.product`
+
+% 1 1 0 196216b99d2c0bc716b9d2d3e256edaa
+
+% 2 1 0 17d6575882ee87dc1e67823e76d055c4
+
+@ 0 3 0 1b7241ebd65e9b4f173009f8bb3c0414
++         No es para uso directo: un padre de `object Yaml.Writable`.
++     entry #product   un escritor de campos derivado para cualquier producto, en `Yaml.Writable1`
++   entry .Writable2   la capa de prioridad que contiene `Yaml.Writable.encodable`
+
+% 1 1 0 01c9c31ff8d666f30c24c7d61477ae5c
+
+% 2 1 0 0e771ea0ca88db600dca7701b1969e17
+
+@ 0 3 0 12ef5bd140c15eb615ca1a801896c333
++         No es para uso directo: el padre más bajo de `object Yaml.Writable`.
++     entry #encodable   el puente: cualquier `Encodable in Yaml` escribe su árbol en su lugar, en `Yaml.Writable2`
++   entry .Parsable2   la capa de prioridad que contiene `Yaml.Parsable.generated`
+
+% 1 1 0 0177ffee425a2caa078a719809d5f8a5
+
+% 2 1 0 19b6c02a506eefd20693e06879ed97ab
+
+@ 0 7 0 0ef4d36ca17f83580161dd32b3d4655d
++         No es para uso directo: el padre de `object Yaml.Parsable`, para que
++         `import codecs.direct` quede por debajo de una instancia del objeto compañero o de
++         `derives Yaml.Direct`.
++     entry #generated   `import codecs.direct`: un analizador derivado para cada producto, en el lugar de uso
++         Solo se resuelve con `Codecs.Direct`, y solo para un tipo con una
++         `ProductReflection`; una enumeración conserva la vía del árbol. Una instancia del objeto
++         compañero o un `derives Yaml.Direct` lo superan.
++   entry .Printable2   la capa de prioridad que contiene `Yaml.Printable.generated`
+
+% 1 1 0 0edce4bcb896248e0a949548de54b074
+
+% 2 1 0 138c7b3f5c180e861c8b6bf3bd1dabdb
+
+@ 0 2 0 1cc486da5448a9ab0b80290d5753898b
++         No es para uso directo: el padre de `object Yaml.Printable`.
++     entry #generated   `import codecs.direct`: un impresor derivado para cada producto, en el lugar de uso
+
+@ 0 1 0 176fcd50d53705ae0adae45fe355bfc3
++ entry .Yaml1   la capa de prioridad de `object Yaml` que contiene los puntos de entrada de los códecs directos
+
+% 1 1 0 0d3593f206208f8813ee72ce1180cdcf
+
+% 2 1 0 0db8cc48c90030d400d2524178e58a37
+
+@ 0 17 0 05bb7e528574a97603eb2bfbbffddc5d
++       No es para uso directo: es un padre de `object Yaml` que contiene `aggregableParsed`,
++       `encodableOverPrinted` y los dos fallos de `codecs.strict`, para que un tipo con un
++       códec directo lo tome por delante de los códecs de árbol de `Yaml2`.
++   entry #aggregableParsed   `text.read[Person in Yaml]` mediante un analizador directo, donde lo haya
++       Para un tipo con un `Yaml.Parsable` —uno que hace `derives Yaml.Direct`, tiene una
++       instancia en su objeto compañero o es un producto bajo `import codecs.direct`—, el
++       documento se sigue analizando entero (los alias de YAML pueden remitir a cualquier nodo
++       anterior, así que no puede leerse ningún registro antes de tener el documento), pero
++       después los campos del registro se leen directamente de los nodos del árbol, sin
++       construir un `Yaml` alrededor de ninguno de ellos y sin despachar un códec por campo.
++       Los errores llevan el mismo foco y la misma posición que los del camino del árbol.
++   entry #encodableOverPrinted   `in[Text over Yaml]` mediante un impresor directo, donde lo haya
++       Para un tipo con un `Yaml.Printable`, el texto se escribe directamente a partir de los
++       campos, sin construir ningún árbol, mediante `Yaml.Printable.print`; el texto es el
++       mismo que el del camino del árbol.
++   entry #aggregableStrictFailure   el error de compilación que lanza `codecs.strict` para un tipo sin analizador directo
++       Es inline y está por encima de las entradas de árbol, así que bajo `Codecs.Strict`
++       cualquier tipo que `.aggregableStrict` no tome llega a él y no compila, con un mensaje
++       que nombra el tipo.
++   entry #encodableOverStrictFailure   el error de compilación que lanza `codecs.strict` para un tipo sin impresor directo
+
+@ 0 1 0 1b879b89b8fce12b1a3cee3d92e9729f
++ entry .Yaml2   la capa de prioridad más baja de `object Yaml`: los códecs de árbol y las derivaciones
+
+% 1 1 0 1509d40f7183251a0ecb0ae3b0f52b2f
+
+% 2 1 0 11d998c2b101b0030cd57c84b5cbef8c
+
+@ 0 21 0 0154ded40a29c9b208723117f7132e04
++       No es para uso directo: es el padre más bajo de `object Yaml` y contiene los givens
++       `decodable` y `encodable` de alternativa para todo tipo, `optional`,
++       `optionalEncodable`, `encodableOver`, `aggregableIn` y los dos objetos de derivación.
++   entry #decodable   el `Decodable in Yaml` de cualquier tipo, a partir de su decodificador de texto o por derivación
++       Como `[value] => value is Decodable in Yaml`, inline y con la prioridad más baja, da un
++       decodificador a todo tipo: un tipo con un `Decodable in Text` se lee de un escalar de
++       cadena YAML (así, una enumeración con un decodificador de texto se lee de su nombre), y
++       un tipo con una `Reflection` de wisteria —una case class o una jerarquía sellada— se
++       deriva mediante `#DecodableDerivation`. Una case class se lee de un mapeo, campo a
++       campo, y toma el valor por defecto de un campo para una clave que falte en el mapeo, o
++       lanza `Yaml.Error(Absent)` si el campo no tiene valor por defecto; un tipo suma lee su
++       variante del campo discriminador que nombra el `Discriminable in Yaml` en el ámbito
++       (`discriminables.yamlByTypeDiscriminable`). Las anotaciones
++       `@name[Yaml](t"full_name")` y `@name` a secas renombran un campo o una variante en la
++       transmisión.
++   entry #encodable   el `Encodable in Yaml` de cualquier tipo, a partir de su codificador de texto o por derivación
++       Inline y con la prioridad más baja: un tipo con un `Encodable in Text` se codifica como
++       un escalar de cadena, y un tipo con una `Reflection` se deriva mediante
++       `#EncodableDerivation`: una case class, como un mapeo en el orden de sus campos,
++       omitiendo un campo cuya codificación esté ausente (un `Unset` o un `None`), y un tipo
++       suma, como el mapeo de su variante con el campo discriminador que añade el
++       `Discriminable in Yaml` en el ámbito. Los renombramientos de `@name` se aplican a la
++       salida igual que a la entrada.
+
+% 2 1 0 05df8af5104270d90b2bc030f3725221
+
+% 3 1 0 0ecbfae7a90d8bc019bac405a1dccabd
+
+% 4 1 0 0959c93c082228cb184b8aa6aa625c4d
+
+% 5 1 0 0e98daca6ee3531d140c4ee2c24a416c
+
+% 1 1 0 10ac75edd6ea97b11ccd8697a9fcd66d
+
+% 3 1 0 05a8496a680bfa950bd3cbd6606594f8
+
+% 4 1 0 1db08ff0d85f884a1c1c9415880d6d89
+
+% 5 1 0 0b934b0e4f1bcea817020a95c536f86a
+
+% 0 1 0 19185b83d136147d072c28bad180e8a9
+
+% 1 1 0 060bc4d3042b7b8c12a3d5c7dbefdeec
+
+@ 0 4 0 03d36fea4262c3f704d77576dfde04c8
++   entry #optional   `Optional[T] is Decodable in Yaml`: como `.option`, pero da `Unset`
++       Las mismas tres políticas, para un campo de tipo `Optional[Int]` (o cualquier
++       `value >: Unset.type` que sea `Mandatable to inner`): un valor ausente y `null` se leen
++       como `Unset` por defecto, y un valor del tipo equivocado es un fallo salvo que se
++       importe `lenientYamlFaults`.
+
+% 2 1 0 01a8c8fed174cbf41a829ac4ecedcd46
+
+% 3 1 0 0b37423985f93b8c1aa57f32eab93d89
+
+% 4 1 0 14deb678b4c14f3d0fbba6254e51f918
+
+% 0 1 0 044c487d699586481700b3ec44ca98de
+
+% 0 1 0 18aae1ca0f3c449608756a0d57516cc8
+
+% 0 1 0 007382f27533bf6f1f4528acb2cf6a0e
+
+% 0 1 0 0cb407862da8a7350ffade9d65c64e68
+
+% 0 1 0 0c394ec49b4955470a094a00da593eda
+
+% 0 1 0 00a44b73b5e1e64516e3c24f9618b497
+
+% 1 1 0 13f23cd646f7645211501a4c18bd4a81
+
+@ 0 13 0 1d3880370ca1756916ffa8e2c0829afe
++   entry #optionalEncodable   `Optional[T] is Encodable in Yaml`: `Unset` se codifica como ausente
++       Un campo `Unset` se codifica como el nodo ausente, que un mapeo derivado omite por
++       completo; un valor presente se codifica mediante el `Encodable in Yaml` interior.
++   entry #encodableOver   `person.in[Text over Yaml]`: codificar al árbol y representar, en un solo paso
++       El reflejo, en el lado de la escritura, de `read[Person in Yaml]`: el
++       `Encodable in Yaml` del valor construye el árbol y el `Yaml.Formatting` en el ámbito
++       lo representa, lo que da exactamente el texto que representa `show`. Un tipo con un
++       `Yaml.Printable` toma `.encodableOverPrinted` en su lugar.
++   entry #aggregableIn   `text.read[Person in Yaml]`: analizar y decodificar en un solo paso, mediante el árbol
++       El `(value in Yaml) is Aggregable by Text` de cualquier tipo con un
++       `Decodable in Yaml`: el texto (o el flujo) se analiza a un `Yaml` y se decodifica con
++       `as`, así que necesita una `Tactic[Parse.Error]` y una `Tactic[Yaml.Error]`. Un tipo
++       con un `Yaml.Parsable` toma `.aggregableParsed` en su lugar, que tiene prioridad
++       sobre este.
++   entry #DecodableDerivation   la derivación de wisteria de `Decodable in Yaml` para productos y sumas
+
+% 1 1 0 0fa01dae0cb9e7110ba0e0ff2ef59c15
+
+% 2 1 0 166e098dfe330e2504cb833079930b0f
+
+@ 0 9 0 015067784390e789043882f083db539f
++         No es para uso directo: `Yaml.decodable` llega a ella para cualquier tipo con una
++         `Reflection`. `conjunction` deriva el decodificador de un producto —cada campo se lee
++         en su propio foco, un campo que falta toma su valor por defecto o registra `Absent`,
++         y la construcción está protegida por una compuerta para que el constructor nunca se
++         ejecute sobre valores centinela— y `disjunction` el de una suma, mediante el
++         `Discriminable in Yaml` en el ámbito, con un `Variant.Error` para un discriminador
++         desconocido o ausente incorporado a un único `Yaml.Error` en el foco de la suma.
++     entry .conjunction   el decodificador de un producto, a partir de un mapeo, campo a campo
++     entry .disjunction   el decodificador de una suma, por el campo discriminador
++   entry #EncodableDerivation   la derivación de wisteria de `Encodable in Yaml` para productos y sumas
+
+% 1 1 0 1b47f030c1619ded1aa4c4452798a271
+
+% 2 1 0 09abe7f65c50ebac0faa56ae6332199d
+
+@ 0 5 0 101eac54384b01370d5d079f79033f45
++         No es para uso directo: `Yaml.encodable` llega a ella para cualquier tipo con una
++         `Reflection`. `conjunction` escribe un producto como un mapeo en el orden de sus
++         campos, omitiendo las codificaciones ausentes; `disjunction` escribe la variante de
++         una suma y añade el campo discriminador.
++     entry .conjunction   el codificador de un producto, a un mapeo
++     entry .disjunction   el codificador de una suma, con el discriminador añadido
+
+@ 0 1 0 1edcd51b9cce269a0f055b2cd3ca99ce
++ entry .YamlPath   la dirección de un nodo dentro de un documento, escrita `#/a/0/b` con el escapado de JSON Pointer
+
+% 1 1 0 01031578375f970d1db08b7308dfffa7
+
+@ 0 8 0 05b97668bb0c90aa066cd43c9e4e4625
++       Un `YamlPath` nombra un nodo por las claves y los índices desde la raíz: `YamlPath()`
++       es el documento entero (`#`), y `YamlPath()(t"servers")(Prim)(t"port")` es el `port`
++       del primer servidor (`#/servers/0/port`). Es una ruta de serpentine en su propio plano,
++       así que se construye con `/` o con los métodos `apply`, se escribe con el interpolador
++       `yp"…"` (comprobado al compilar el código), se decodifica a partir de texto con
++       `as[YamlPath]` y se codifica con `encode`. Los segmentos usan el escapado de la
++       RFC 6901 —`~0` para `~` y `~1` para `/`—, así que una ruta es el JSON Pointer del mismo
++       nodo cuando el documento se trata como JSON. Solo son direccionables las claves de
++       mapeo que son cadenas.
+
+@ 0 2 0 1497faae67820ea41a54451afb5ddc3c
++       Una ruta es lo que lleva un `Yaml.Focus`, así que un error de decodificación acumulado
++       dice `#/age`; y es lo que toma `locate` para encontrar la posición de un nodo en la
++       fuente de un documento con posiciones registradas.
+
+% 2 1 0 0455933ce53f230a1178df5b92256e50
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0e37a6e02fcaceea05257b0a4130b121
++         label Un documento, analizado registrando las posiciones
+
+% 1 1 0 1999497d5f290cac14f8b78b370002a5
+
+% 2 1 0 18412c62fe15cc0319c6b7b21d60b19a
+
+% 3 1 0 00e84ab971127b9418c2d7b9b1fdf42b
+
+% 4 1 0 1774477afe03bd981701d1b999139009
+
+% 6 1 0 0af0eb0269b74554110087ffa3979ae6
+
+% 1 1 0 05e8aac36550572611c7a53b89cbbc1c
+
+@ 0 1 0 1bea6d4c71ed304c19eb454f2ee6cb46
++         label Una ruta al port del primer servidor
+
+% 1 1 0 0ab4792faf524ebe09e8f1d5d365bd97
+
+% 2 1 0 05bf45b0519617400b75f7e725927047
+
+% 3 1 0 11e9d38809f882130b83e315f064e1ff
+
+% 4 1 0 1b4584bec4698dc01ad0c582912f90fb
+
+% 6 1 0 132d862d69890f4519f9834723616ed7
+
+% 7 1 0 1b9bd2086f622606005952fb59bdb992
+
+% 0 1 0 17e219426ef9234d0cd15e6ccabca21b
+
+% 1 1 0 01c3daaf242b7e5e10d7349787af8137
+
+@ 0 1 0 05a4642e2969e48d090477d2a7fe9e68
++         label Dónde está ese nodo en la fuente
+
+% 1 1 0 041a30bf4f982cbe1d8359daeb5b94fb
+
+% 2 1 0 0268effb54fe220c17e8a50f47a1796c
+
+% 3 1 0 046da1b9b8bd481e0f403a87bf336230
+
+% 4 1 0 08d1ec25a931228604617eb503606905
+
+% 6 1 0 0105204f691e902f1b794a526ca58f8d
+
+% 7 1 0 00544635c6916c331c2a09166c0a0792
+
+% 8 1 0 063a6b4c6cbb7d271233cdbd641234bd
+
+% 1 1 0 1fbfad3ad03e115907ec86174328f528
+
+@ 0 1 0 0b98dd5305f9605318f37a3358a724b3
++         label El propio nodo, recorrido y decodificado
+
+% 1 1 0 0bfcab7f6e47afcd0a7fb8c19bbd9888
+
+% 2 1 0 16a8e1d0f49217ac1007d562f60495fc
+
+% 3 1 0 1478450f1edd4fc41330b621bd93e676
+
+% 4 1 0 0ae8d0cb759145eb13b5e3c97823ec2e
+
+% 6 1 0 1f44852f41eb0bd814f76d895ad69b94
+
+% 7 1 0 1ddc835584a16408084dcd536837cfb8
+
+% 8 1 0 0f52cf210d410a3e1d9452bb87a3fbd3
+
+% 0 1 0 1271967b918e326415d259c3c733ef57
+
+% 1 1 0 081977c35b1369791e2a67c11e25e83e
+
+% 2 1 0 0a999c6a39654932041442241184edf8
+
+@ 0 2 0 025713f4c0a71e77040b47c3604ea05c
++       Decodificar texto lanza `YamlPath.Error` cuando no empieza por `#`, cuando el fragmento
++       no empieza por `/` o cuando un `~` no va seguido de `0` o `1`.
+
+% 0 1 0 04f7ad819037c3f8164d522f86e7e86a
+
+% 1 1 0 10af99ba747cc2e910203e58f3cd433c
+
+% 0 1 0 071aa137f3f0031f05b0b4770db576ed
+
+@ 0 23 0 12ebbd1c0cc150a71d6dcf2bf66a0356
++   entry .Plane   el plano de las rutas YAML: el propio `YamlPath`
++   entry .navigable   un `Ordinal` como segmento de ruta: su índice, empezando por cero, como texto
++       `YamlPath()(Prim)` se codifica como `#/0`, de modo que un índice se escribe como lo
++       escribe un JSON Pointer.
++   entry .admissible   cualquier `Ordinal` es un segmento aceptable
++   entry .admissible2   cualquier `Text` es un segmento aceptable; el escapado se hace al codificar
++   entry .filesystem   la gramática de las rutas: separadas por `/`, `#` como la ruta actual, `..` como padre, escapado de la RFC 6901
++       Se llama `YAML`. `escape` convierte `~` en `~0` y `/` en `~1`, y `unescape` lo
++       deshace, así que una clave que contenga cualquiera de los dos caracteres es
++       direccionable.
++   entry .interpolable   el given detrás de `yp"…"`; véase `ypsiloid.yp`
++   entry .decodable   lee una ruta a partir de texto: `#`, `#/` o `#/a/b`
++       `t"#/a/b".as[YamlPath]`, que lanza `YamlPath.Error` con el desplazamiento en
++       caracteres del fallo: `ExpectedHash` en 0 para un texto que no empieza por `#`,
++       `ExpectedSlash` en 1 para un fragmento que no empieza por `/`, y `BadEscape` en el `~`
++       de un escapado mal formado. Los segmentos se desescapan a medida que se leen, y los
++       segmentos vacíos se descartan. La ruta tiene también un given anónimo
++       `Encodable in Text` en su objeto compañero, así que `path.encode` representa `#/a/b`
++       (y `#` para la raíz) con los segmentos escapados.
++   entry .unsafeParse   decodifica una ruta ya demostrada válida, sin táctica
++       Para el interpolador `yp"…"`, que ha analizado el literal al compilar: el token
++       `Unsafe` asegura que el nuevo análisis en tiempo de ejecución no puede fallar.
++   entry .divisible   `path / t"key"`: una ruta ampliada con un segmento de texto
++   entry .divisible2   `path / ordinal`: una ruta ampliada con un segmento de índice
++   entry .Error   se lanza cuando un texto no es una ruta YAML válida
+
+% 1 1 0 1d26370fe0f033aa19f94a8850ac95e1
+
+@ 0 6 0 1403027d7c47376f1e530ab5254a5489
++         Error `↯/s.134.2`: _the YAML path was not valid because `reason`_. Lo lanza
++         `.decodable` y lo notifica, en el carácter exacto, el interpolador `yp"…"` al
++         compilar el código. `offset` es el índice dentro del texto donde se encontró el
++         fallo.
++     entry #reason   `ExpectedHash`, `ExpectedSlash` o `BadEscape`
++     entry #offset   el índice del carácter del fallo dentro del texto
++     entry .Reason   las tres maneras en que una ruta puede estar mal formada
+
+% 1 1 0 1bddb00d6511c2dd0f0babcc48b248f9
+
+@ 0 7 0 0e97bd65abbd7b340e746d9a350f723a
++           `ExpectedHash` (número 2): _a YAML path must begin with '#'_. `ExpectedSlash`
++           (número 3): _a YAML path fragment must begin with '/'_. `BadEscape` (número 4):
++           _a '~' in a YAML path must be followed by '0' or '1'_.
++     entry .communicable   representa un motivo como su mensaje
++   entry #path   la ruta de serpentine subyacente, `Path on YamlPath`
++   entry #apply   `path(t"key")` o `path(ordinal)`: la ruta ampliada con un segmento
++       Lo mismo que `/`, como método: `YamlPath()(t"servers")(Prim)(t"port")`.
+
+@ 0 10 0 0edba9a5b77f8c2f15cd1f25c8a3d527
++ entry .y   el interpolador `y"…"`: un literal YAML, comprobado al compilar el código, con huecos `$`; también un patrón
++     `y"name: $name\nage: $age"` es un documento `Yaml` cuyo texto se analiza al compilar el
++     código —un literal mal formado es un error de compilación cuyo resaltado es el tramo
++     erróneo exacto de la plantilla— y cuyos huecos `$` se rellenan en tiempo de ejecución.
++     Un hueco en posición de valor toma cualquier `Yaml` (o un valor con un
++     `Encodable in Yaml`, codificado mediante él); un hueco dentro de un escalar plano
++     (`greeting: hello $name`) inserta el texto del valor en la cadena; y `$xs*`, como último
++     elemento de una secuencia, despliega en ella los elementos de un `Iterable` (cada uno
++     codificado mediante su `Encodable in Yaml`). Un valor sin codificador, o un despliegue
++     que no esté al final o no sea un `Iterable`, es un error de compilación resaltado en el
++     hueco. El resultado no lleva posiciones.
+
+% 2 1 0 069e84a59d82eea61bb37d8edc91d5ab
+
+% 3 1 0 0a72ff7ff4ccc46411c710c62336bfa2
+
+% 4 1 0 192636d81c283ccb0b62db76c1faf00c
+
+% 2 1 0 00f505b5977fdfc716086145bdee8b14
+
+% 0 1 0 1ad7cdac55026673175edc020ebc20e7
+
+% 0 1 0 09de2ddcbeaf2a7e086d95a6ebb563f6
+
+% 0 1 0 1651633ab1be7c9f1ec5d7c65fc78bef
+
+% 0 1 0 004cbdb6de44020e077742172c6e549d
+
+% 0 1 0 0cf6363626a940a20bbd081b74ff0b02
+
+% 0 1 0 0d5c45be77eb80c61cc22f1e5ddaeade
+
+% 0 1 0 0e647005598b6313055dc8fd6c75ccd4
+
+% 0 1 0 096ac16adb8a9fa00682330d9776fac2
+
+% 1 1 0 07a259e5997241bd1fb37843d61e26b4
+
+@ 0 3 0 04072fcca866b7580c4fdddc934aecaf
++     En un patrón, `case y"name: $n" =>` coincide con un documento cuya estructura es la del
++     literal y liga `n` al nodo del hueco, como un `Yaml`; un literal sin huecos coincide
++     por igualdad estructural.
+
+% 2 1 0 0a74c3ad605febc30803409d2c4870f9
+
+% 3 1 0 01d6f69d28488b4509aa896c1513529e
+
+% 4 1 0 0fd207f016a6c1511241ca449df9f93d
+
+% 0 1 0 1337a2a542ed3adb126c4d141148a3f2
+
+% 0 1 0 00ce88689107a696023b065dd42432e7
+
+% 0 1 0 12d7ff39898546740606521632477dd0
+
+% 1 1 0 14e13ba9f512de0e0604e7bc22c8b556
+
+@ 0 5 0 0059857b850a1f5a06a019bfc47f0892
++ entry .yp   el interpolador `yp"…"`: un literal `YamlPath`, comprobado al compilar el código
++     `yp"#/servers/0/port"` es el `YamlPath` de ese texto, decodificado al compilar el
++     código mediante el propio decodificador de `YamlPath`, así que una ruta mal formada es
++     un error de compilación que señala el carácter culpable: `yp"/servers"` se rechaza en
++     la `/` (_a YAML path must begin with '#'_), y `yp"#/a~2b"` en el `~`. El interpolador no
++     admite sustituciones `$`.
+
+% 2 1 0 0cd1dd6b32e8783b017cc6b31eff1549
+
+% 3 1 0 086810ef3b64821b04515d4c4b563079
+
+% 0 1 0 17f5a684a426b18c0c0883e23778ba43
+
+% 0 1 0 165f094f69277ac10d4b6a1c1288270a
+
+% 1 1 0 0a112d042d85d5c412963de3fe85aac2
+
+@ 0 1 0 01509f6e2ded94240c6a516906383dad
++ entry .formatting   cómo se representa un documento: un solo given, importado por nombre
+
+% 1 1 0 0f9a23bf979b91f601f6a41b1bcec9b8
+
+@ 0 2 0 1bdd09da5c14eb321dfa5ba8dfc2f49c
++       `show`, `in[Text over Yaml]`, `Yaml.emit` y los givens HTTP necesitan un
++       `Yaml.Formatting` en el ámbito, e `import soundness.*` no trae ninguno, así que la
++       elección siempre es explícita:
+
+% 2 1 0 027756a3ca1a5acf0e6d2786827d5149
+
+% 3 1 0 1079ccdcd3b8b45e10fc92d2e5562f39
+
+% 4 1 0 18416278aaaffad512c0a60ada1ea058
+
+% 5 1 0 0acef7a8988726911b989e0b6f5fe46e
+
+% 0 1 0 0988ef323304845104dfe8b8a5385fd1
+
+% 1 1 0 171fc357231024a3133dadd38028bad9
+
+@ 0 8 0 01ee872303904f0c1d58b81e4780be37
++       El estilo de bloque es, por ahora, el único formato; el paquete existe para que pueda
++       añadirse a su lado un formato de estilo de flujo o con opciones sin cambiar ningún
++       punto de llamada. En el paraguas `soundness` el paquete se fusiona con los paquetes
++       `formatting` de los demás formatos (`indentedJsonFormatting`, …).
++   entry .blockYamlFormatting   estilo de bloque con sangría de dos espacios, con `{}` y `[]` para las colecciones vacías
++       El `Yaml.Formatting` por defecto y el único. Su salida está elegida para que, al
++       analizarla de nuevo, dé el mismo árbol: los escalares se escriben de modo que el
++       analizador los resuelva de vuelta a la misma clase, y una cadena es plana solo cuando
++       no puede confundirse con ninguna otra cosa.
+
+@ 0 1 0 00750fd5d246e3e312b2b3246f557d30
++ entry .optionalityOptions   cómo lee un campo `Optional` u `Option` una clave ausente, un `null` o un valor erróneo
+
+% 1 1 0 07545dd1c31188b51077f4abaa970aaa
+
+@ 0 5 0 1e1ed2ff01cb446109d5efdb6dad7724
++       Tres políticas independientes, cada una un par de givens de los que se importa uno por
++       nombre; los valores por defecto (de distillate) son ausencia permisiva, nulos
++       permisivos y fallos estrictos. Rigen por igual `Yaml.optional`, `Yaml.option` y los
++       directos `Yaml.Field.optional` y `Yaml.Field.option`. En el paraguas el paquete se
++       fusiona con los `optionalityOptions` de los demás formatos, así que los nombres llevan
++       `Yaml` para seguir siendo distintos.
+
+% 2 1 0 08539d7b39f9fac6158a688a23033235
+
+% 0 1 0 1a64040dc63845e7121043dd67139bee
+
+% 1 1 0 18e1e17281ab535916c544b433820b5e
+
+% 2 1 0 10daf487394b362d0a7dfc1520c696de
+
+% 3 1 0 18028c8a797c631f0db117c5d6113570
+
+% 2 1 0 17c7e518b8b9df410c77e6bddcf66cd7
+
+% 0 1 0 1ca27e4057528e84133eb07a179322c6
+
+% 0 1 0 0f13b2d297538a76178b238c0f2d8947
+
+% 0 1 0 0309e14355e7383005ab8e7b0248e95a
+
+% 0 1 0 03c61282620ea78616295d7c855a951c
+
+% 0 1 0 07e253f3624b8da30eab6cc67e48a7b8
+
+% 1 1 0 07efe15c21df60c115ea8ae4dbd88690
+
+% 2 1 0 1756d680ec28f6a5077c212f83658f9d
+
+% 3 1 0 133db89c7e21d089012a04b69db5bd15
+
+% 0 1 0 1b304068ed8d2ddc192028286ab334d4
+
+% 2 1 0 12db348d5077cd141fe405d0edf3a1ef
+
+% 0 1 0 1c4594c3e0ccc4b80a0547246696c293
+
+% 0 1 0 10b09172fb6555b616dfbf7322563850
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 06d67c447ad5ffea1029911f8d975292
+
+% 2 1 0 1a79e624038858391fb5bb84944d175e
+
+% 0 1 0 09cf5e054fd09c5c0abf8cb4bf48a985
+
+% 0 1 0 0793af297d81d277159e0c3a0cacd25b
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 01bb6839ede799f81d9bc9317563e368
+
+% 3 1 0 1e4557722bdaad6707a253e01f9c9655
+
+% 0 1 0 004553ec98f23fbc12835eae2aced976
+
+% 2 1 0 0ceb24e9b899ed1006ff9754fbd46dec
+
+% 0 1 0 1ccf92c7773f6ccd12dbd6c294138d38
+
+% 1 1 0 05fe7decfc6399eb0e19d97ff82fcc5e
+
+% 2 1 0 1c8b034f77e2398a00a72c690b074459
+
+@ 0 8 0 07e0521a7613f480015a1905f0bd5fbd
++   entry .strictYamlAbsence   una clave ausente es `Yaml.Error(Absent)`, incluso para un campo `Optional`
++   entry .lenientYamlAbsence   una clave ausente se lee como `Unset` o `None`: el comportamiento por defecto
++   entry .strictYamlNulls   un `null` se pasa al decodificador interior, que falla para todo salvo `Unit`
++   entry .lenientYamlNulls   un `null` se lee como `Unset` o `None`: el comportamiento por defecto
++   entry .strictYamlFaults   un valor que el decodificador interior rechaza es un error: el comportamiento por defecto
++   entry .lenientYamlFaults   un valor que el decodificador interior rechaza se lee como `Unset` o `None`
++       La decodificación interior se ejecuta bajo `tactic.tolerate`, así que con una
++       estrategia acumulativa el fallo tampoco se registra.
+
+@ 0 1 0 1d7d94b304b9fc5718c75151300ea5dd
++ entry .discriminables   cómo se nombra la variante de un tipo suma en la transmisión: con un campo `type` o `kind`
+
+% 1 1 0 028579f07827cb730fd6135b7ea40b3a
+
+@ 0 6 0 06e959c6caef313607543db7a6699337
++       Codificar o decodificar una enumeración o una jerarquía sellada necesita un
++       `Discriminable in Yaml` en el ámbito, que `import soundness.*` no trae; importa uno de
++       estos por nombre, o construye uno para otro campo con `Yaml.discriminatedUnion`. El
++       nombre de la variante (o su `@name`) se escribe como un escalar de cadena bajo el
++       campo, junto a los campos propios de la variante; al decodificar, el campo se lee y
++       después se elimina antes de que se ejecute el decodificador de la variante. El paraguas
++       fusiona este paquete con los de los demás formatos.
+
+% 2 1 0 1e5f9366842461bb02cdcb5a52a9c3d1
+
+% 3 1 0 1633353ba32ccb7d1ff7ebbc3c846b5d
+
+% 4 1 0 1d46735e8c60663810b88d76ea9495c5
+
+% 1 1 0 03ef21726064b27d151a0e22f05c7b44
+
+% 3 1 0 1b6a0d1d6d7b809d1cf61cf18fd75b75
+
+% 4 1 0 10cc1c5ade49260205f2734cffe0bf51
+
+% 5 1 0 1600afcf722ced4a099a04050887cca2
+
+% 0 1 0 0068d7efa3baacb61021362bc885c659
+
+% 1 1 0 1cbd1eea153a0f0c1ee35990bdfca9c5
+
+@ 0 2 0 02164e2c66e89931033f549fc591905f
++   entry .yamlByTypeDiscriminable   el nombre de la variante bajo un campo `type`
++   entry .yamlByKindDiscriminable   el nombre de la variante bajo un campo `kind`
+
+@ 0 1 0 1149eb61152317351925088cf20f5f4f
++ entry .dynamicAccess   el given que habilita las lecturas `doc.field` y las actualizaciones `doc.field = value`
+
+% 1 1 0 1ffa6779dd83afc61e73867075c3b527
+
+@ 0 5 0 0c38f8c5fba2ce4914cdf1628a45d4fb
++       `Yaml#selectDynamic`, `#applyDynamic`, `#update`, `#updateDynamic` y el given
++       `Yaml.lens` están todos protegidos por una compuerta que exige un `Yaml is Dynamical`,
++       para que un nombre de miembro mal escrito sea un error de compilación en lugar de una
++       búsqueda silenciosa de un campo. Importa `dynamicYaml` para concederlo a un ámbito, o
++       envuelve un bloque en `dynamically[Yaml]:` (o `dynamically:` para todos los formatos)
++       para concederlo solo allí.
+
+% 2 1 0 0cae3c1356df26a504043263326de904
+
+% 3 1 0 1f5c34c630a49c911ccd13ae3abd79d7
+
+% 4 1 0 19b78f1f337df27700dd73fafafd15b4
+
+% 5 1 0 073cb8fe28f10fb516f8158b5ce55036
+
+% 0 1 0 1f0c443514ea8eb11e01017913ac87bb
+
+% 0 1 0 05670f506d953e4411dd43afd4381828
+
+% 1 1 0 0ed2a04af3d55e091ca6861be0641cdf
+
+@ 0 2 0 1fa126fcb69b2e8a0508855818efc040
++   entry .dynamicYaml   `Yaml is Dynamical`: acceso dinámico a miembros de los documentos, para el ámbito al que se importa
++       Un given borrado: no cuesta nada en tiempo de ejecución y solo existe para estar en el
++       ámbito.
+
+@ 0 1 0 138c4197261fceef04019abf4c5f36c6
++ entry .conversions   una conversión que permite asignar cualquier valor codificable mediante una lente
+
+% 1 1 0 0441db24722861b41490612ec462b95c
+
+@ 0 5 0 170c10ce55073f7e0bfdf0e8e347fe72
++       `doc.lens(_.field = value)` espera un `Yaml` a la derecha; con `encodableToYaml`
++       importado, cualquier valor con un `Encodable in Yaml` se convierte en el acto, así que
++       `doc.lens(_.age = 31)` se lee como debe en lugar de `doc.lens(_.age = 31.in[Yaml])`.
++       La conversión se limita al ámbito de la importación.
++   entry .encodableToYaml   `Conversion[T, Yaml]` para cualquier `T` con un `Encodable in Yaml`
+
+@ 0 1 0 1c0794cfd3b44eb716f03002a20e8cbb
++ entry .postables   un documento como cuerpo de una petición HTTP, para el conjunto de fuentes `ypsiloid.http`
+
+% 1 1 0 102a7ea4a9d4ae8703a22509718916d6
+
+@ 0 5 0 15cde5173f9cfc650c025966a739f7ed
++       Se importa por nombre, como toda elección de `Postable` de telekinesis:
++       `import postables.yamlPostable` permite que un `Yaml` sea el cuerpo de un `post` o un
++       `put`.
++   entry .yamlPostable   `Yaml is Postable` con el tipo de medio `application/yaml; charset=UTF-8`
++       El cuerpo es el texto representado (`show`) en el `Codepage` en el ámbito, así que se
++       necesitan tanto un `Codepage` como un `Yaml.Formatting`.
+
+@ 0 1 0 1277a2ec1182c86f042c82f74cbbb8cb
++ entry .servables   un documento como cuerpo de una respuesta HTTP, para el conjunto de fuentes `ypsiloid.http`
+
+% 1 1 0 0da97d18db27677319bab95e0a1d761e
+
+@ 0 5 0 0e0a0de1299a16ca140fb42be12ce4e4
++       `import servables.yamlServable` permite que un manejador responda con un valor `Yaml`;
++       la respuesta es el texto representado como un cuerpo de longitud fija con el tipo de
++       medio `application/yaml; charset=UTF-8`.
++   entry .yamlServable   `Yaml is Servable` con el tipo de medio `application/yaml; charset=UTF-8`
++       Necesita un `Codepage` y un `Yaml.Formatting` en el ámbito.
+
+@ 0 1 0 0c8da4dd9ffc5de6151f7a1882986f5b
++ entry .construables   leer un cuerpo `application/yaml` como un `Yaml`, para el conjunto de fuentes `ypsiloid.http`
+
+% 1 1 0 1c0b31f2b84c74a20d5383b011473ef1
+
+@ 0 3 0 04c309dd72f19bf6077e1063c209e658
++       `import construables.yamlConstruable` indica a la negociación de contenido de
++       gesticulate que un cuerpo del tipo de medio `application/yaml` se construye como un
++       `Yaml`, de modo que el cuerpo de una petición o de una respuesta de ese tipo se analiza
++       al llegar. No está disponible en Scala.js.
+
+% 0 1 0 1ea759b6169f018700c45ee2c15be266
+
+@ 0 1 0 04c92de5aa4c4f530f6e54aeac8819ca
++ entry .internal   las implementaciones de macro detrás de `y"…"` y `yp"…"`
+
+% 1 1 0 1143f714a9375f9f1bf06031bca54bb2
+
+% 2 1 0 0ce38ebf4ed3f1f80994db9290a5e9b4
+
+@ 0 7 0 0747efa0d4b0d4501a76a15942b4389a
++       No es para uso directo: el objeto existe para que las macros tengan un hogar estable.
++       `y"…"` une las partes del literal con un marcador centinela, analiza el resultado con
++       el analizador real y reconoce el centinela en el árbol como un hueco; el
++       desplazamiento de un error de análisis se traslada, a través de las partes, al tramo
++       de fuente de la plantilla.
++   entry .interpolator   la macro detrás de `y"…"` como expresión
++   entry .extractor   la macro detrás de `y"…"` como patrón
++   entry .yamlPath   la macro detrás de `yp"…"`: decodifica el literal al compilar y notifica el carácter del fallo

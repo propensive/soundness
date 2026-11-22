@@ -1,0 +1,62 @@
+orthant 2 language
+
+% 0 1 0 1b20ccfadbfed0500d96cfd162acb9cd
+
+@ 0 1 0 1ed6ee8637ae50810a4aaf966372439e
++ Levée lorsque Cacophony ne peut pas enregistrer depuis une source audio.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 1260e6a6efd9e5de114814780cb4eebf
++ Cacophony ouvre une ligne de capture audio et y lit des échantillons. Cette
++ erreur signale un problème de la ligne elle-même, de la configuration
++ demandée, ou d'opérations effectuées après l'arrêt de l'enregistrement.
++ Le message est `could not record from feed $feed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 1ec234f5d6b936cb078edc535e66f43a
+
+@ 0 3 0 119987e16bd6e26c01ba47eb0cd8160f
++ La ligne audio demandée n'a pas pu être ouverte — en général parce qu'aucun
++ périphérique d'entrée n'est connecté, ou qu'un autre processus en a l'usage
++ exclusif.
+
+@ 0 1 0 1ae3a649be3e11c117d2dc71becb6cf1
++ **Exemple.** `[↯/s.82.2.1] could not record from feed default because the audio line could not be opened`
+
+@ 0 2 0 0a10bcc644f2110819ae012c0fef4a2e
++ **Résolution.** Vérifiez qu'un périphérique d'entrée est connecté et que le
++ processus a le droit de l'utiliser.
+
+% 0 1 0 17a89aeecb2adaf11df666e3e6d95a15
+
+@ 0 2 0 10a144670334fe270f186c4d12c25b3b
++ La combinaison de fréquence d'échantillonnage, de nombre de canaux et de taille
++ d'échantillon n'est pas prise en charge par le périphérique.
+
+@ 0 1 0 169ac148e6a2000e14290360dcc9e904
++ **Exemple.** `[↯/s.82.2.2] could not record from feed default because the requested configuration is not supported`
+
+@ 0 2 0 07c3168e3c7dad8208346ff928cd990c
++ **Résolution.** Choisissez une configuration que le périphérique prend en
++ charge ; interrogez ses possibilités et choisissez un format compatible.
+
+% 0 1 0 00984a0c1c2dde020c24e67e75e3eb12
+
+@ 0 1 0 101e052d0bb1c9c711ed493b2a965ade
++ Une opération a été tentée après l'arrêt de l'enregistrement.
+
+@ 0 1 0 1980b764b112e78a171f0eee0f986cd9
++ **Exemple.** `[↯/s.82.2.3] could not record from feed default because the recording has already been stopped`
+
+@ 0 2 0 008b1787c228ffcf12a5df7e017ff113
++ **Résolution.** Ouvrez un nouvel enregistrement plutôt que de réutiliser un
++ enregistrement arrêté.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 06e02ba3712ad3c4132026a245feb3ae
++ - Source : `lib/cacophony/src/core/cacophony.Feed.scala`

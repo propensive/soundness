@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 12 0 01becbfee9c75a7014a280a00d20f9d7
++         El tipo opaco sobre `Long`. Su página en el paquete `vexillology` tiene la explicación
++         completa.
++     entry .apply   el conjunto vacío de indicadores sobre una enumeración, sin ningún bit activo, `Flags[Color]()`
++   entry .apply   si un caso está activo en unos indicadores, `flags(case)`
++       Necesita que la enumeración sea `Enumerable`, para hallar el ordinal del caso.
++   entry .update   una copia de unos indicadores con un caso activado o desactivado, `flags(case) = enabled`
++       Devuelve el `Flags` nuevo en lugar de modificar el receptor, así que una variable que
++       contenga los indicadores se reasigna: `flags = flags(Orange) = true`.
++   entry .bits   los indicadores como sus bits subyacentes, un `B64`: el caso de índice `n` posee el bit `n`
++       No necesita `Enumerable`. Un `B64` se convierte en un `Long` con `.long`.
++   entry .set   los casos activos en unos indicadores, como un `Set` de la enumeración
++       Recorre solo los bits activos, empezando por el más bajo.

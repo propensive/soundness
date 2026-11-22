@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 5 0 00347af4a10aaba916a72e149b1c8348
++ L'élément clé de voûte : `doc/work/migration.md` définit le format des instructions de migration
++ exécutables par un agent — ce qui a changé, comment détecter le code concerné, la réécriture exacte
++ et la manière de la vérifier — et la CI impose que les pull requests marquées comme incompatibles
++ portent des instructions dans ce format. Plusieurs chantiers aboutissent ici : c'est par lui que
++ passe `api-6`, et c'est lui que `tool-5` sert aux agents.
+
+@ 0 8 0 1fe93c35d555a65e0825091d1355b30e
++ Terminé lorsque : `doc/work/migration.md` définit la convention, la publication refuse de s'exécuter
++ sans `doc/work/migration/<version>.md`, et une vérification de la CI fait échouer toute pull request qui
++ modifie `lib/**/src` sans toucher aux notes de migration non publiées. Les deux premières
++ conditions sont remplies : la convention est rédigée, les fichiers à partir de `0.65.0.md` existent,
++ et la directive `migration` d'`etc/release` refuse une étiquette tant que les notes de la version
++ manquent ou que celles d'une autre version ne sont pas publiées. Reste la vérification des pull
++ requests : `main.yml` vérifie l'attestation et rien d'autre. La convention ne repose pas sur des
++ labels : chaque changement significatif se consigne lui-même dans le
++ `doc/work/migration/<version>.md` de la publication suivante, nommé d'après cette publication dès le
++ départ.
+
+% 0 1 0 1737f7af088689a90b003adb8b963063

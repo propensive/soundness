@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 5 0 12f616587e1d40261eaad5c40b24f46b
++     Una struttura dice anche se è destinata a essere scritta: `readOnly` è `true` per `/boot`,
++     `/efi`, `/sys`, `/usr` e tutto ciò che sta sotto, e per le directory per processo sotto
++     `/proc`. Le cinque strutture `Home` che la specifica XDG Base Directory permette a un utente
++     di spostare seguono le sue variabili: `Home.Config` è `$HOME/.config`, a meno che
++     `XDG_CONFIG_HOME` non sia impostata a un percorso assoluto, nel qual caso è quel percorso.
+
+@ 0 24 0 14cf3883801275e111a4d6e9e704a313
++         Il `BaseLayout.Dir` di una struttura viene passato alle strutture annidate come valore
++         contestuale, ed è così che un oggetto annidato conosce la directory in cui si trova. I
++         segmenti sono conservati dal più interno.
++     entry #home   se il percorso è relativo alla home directory dell'utente
++     entry #path   i segmenti del percorso, dal più interno
++     entry #/   la directory di un figlio, dato il suo nome
++     entry #render   il percorso assoluto come testo, dato il percorso della home directory
++         Un `Dir` che non è relativo alla home e non ha segmenti viene reso come `/`.
++   entry #readOnly   se la directory è per convenzione non scritta dai programmi
++       `true` per `/boot`, `/efi`, `/sys`, `/usr` e tutto ciò che sta sotto, e per le directory
++       di `/proc`; `false` per ogni struttura sotto `Home`.
++   entry #Topic   i nomi delle directory da questo nodo fino alla radice, come tipo tupla
++   entry #absolutePath   il percorso assoluto della struttura, come testo
++       Richiede un `Environment` e un `System`. Una struttura che nomina una `#variable` è il
++       valore di quella variabile, se è un percorso assoluto. Altrimenti una struttura sotto
++       `Home` legge la variabile d'ambiente `HOME`, senza `/` finale, e solleva
++       `Environment.Error` se non è impostata.
++   entry #variable   la variabile d'ambiente che sposta la struttura, se ce n'è una
++   entry #relocation   dove `#variable` colloca la struttura: il suo valore, se impostato a un percorso assoluto
++   entry #dir   il `BaseLayout.Dir` di questa struttura, dato alle strutture annidate in essa
++   entry #apply   il percorso assoluto della struttura, come tipo di percorso scelto dal chiamante
++       `layout[Path on Linux]()` crea da `#absolutePath` un valore di qualsiasi tipo che sia
++       `Instantiable across Paths from Text`. Richiede un `Environment` e un `System`, e
++       solleva `Environment.Error` (per una struttura `Home` il cui `HOME` non è impostato) e
+
+@ 0 5 0 01aa2e748611aecf137de178c7d6d652
++       `Cache`, `Config`, `Local.Bin`, `Local.Share` e `Local.State` sono le directory che la
++       specifica XDG Base Directory permette a un utente di spostare, e ciascuna si trova dove
++       dice la sua variabile quando questa è impostata a un percorso assoluto: `Home.Config` è
++       `$XDG_CONFIG_HOME`, e altrimenti `$HOME/.config`. Un valore relativo o vuoto viene ignorato,
++       come richiede la specifica. Le altre strutture sono fisse.
+
+@ 0 3 0 11d0e7a0fc4ed11505d86722fbaebfdd
++   entry .Cache   la directory di cache dell'utente, `$XDG_CACHE_HOME` o `~/.cache`
++   entry .Config   la directory di configurazione dell'utente, `$XDG_CONFIG_HOME` o `~/.config`
++   entry .Local   il prefisso di installazione locale dell'utente, `~/.local`
+
+@ 0 6 0 12bb298788522c6106cc24f983f11dce
++         La controparte per utente di `/usr`, che contiene programmi, librerie, dati e stato
++         propri dell'utente.
++     entry .Bin   gli eseguibili propri dell'utente, `$XDG_BIN_HOME` o `~/.local/bin`
++     entry .Lib   le librerie proprie dell'utente, `~/.local/lib`
++     entry .Share   i dati applicativi propri dell'utente, `$XDG_DATA_HOME` o `~/.local/share`
++     entry .State   lo stato applicativo dell'utente, `$XDG_STATE_HOME` o `~/.local/state`

@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0b479c850f95b33e0942232a9a2f769d
++ # `↯/s.17.8` — `Identity` manquant pour la dérivation d'un foncteur
+
+@ 0 2 0 041c946a8872363a13618ff01d553a1f
++ Levée à la compilation par la macro `functor` de Mercator lorsqu'aucune
++ instance d'`Identity` ne peut être invoquée pour le type.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 0a1705557357478d1cc45c8cd7347c43
++ La dérivation de `Functor` par Mercator repose sur une instance sous-jacente
++ d'`Identity`.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1cfbf7237c0c8bfd1d0b24e34a32b748
+
+% 1 1 0 077b5ea3d3816c59131841cde242e27d
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 1c12af94dfe41af103e32fa3b9d62cb9
++ Mettez une instance d'`Identity` dans la portée (ou fournissez-en une), puis
++ dérivez de nouveau le `Functor`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1cb104d057b8971f1427e232956fe585
++ - Source : `lib/mercator/src/core/mercator.internal.scala`

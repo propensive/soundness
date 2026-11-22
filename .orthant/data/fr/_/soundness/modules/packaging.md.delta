@@ -1,0 +1,204 @@
+orthant 2 language
+
+@ 0 1 0 1b0daa41894eebb60b141f4b1a00beab
++ ## Empaquetage
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 14c51e664a414f8219ceff17526464f2
++ Une application construite avec ces bibliothèques est un JAR, et un JAR qui transporte
++ toutes les dépendances dont il a besoin est volumineux. Un outil en ligne de commande de
++ quelques centaines de lignes embarque des dizaines de mégaoctets de code de bibliothèques,
++ dont l'essentiel est déjà publié quelque part publiquement. Burdock rend ce JAR *allégé*,
++ sans le rendre fragile, en trois étapes :
+
+% 2 1 0 14230c6cb7c210f11a5a165d650cee1e
+
+@ 0 6 0 1cb9b19d19c31b8c1219693b03342423
++ column  Quand
++ column  Étape
++ column  Rôle
++ row  à la compilation  `externalize`  enregistre les dépendances avec lesquelles l'application a été construite, sous forme d'empreintes de contenu plutôt que de coordonnées
++ row  après le build  `repackage`  réécrit le JAR, en remplaçant chaque dépendance qui a un emplacement public par une référence à celui-ci, et en conservant tout ce qui n'en a pas
++ row  à l'exécution  le chargeur d'amorçage  récupère les dépendances référencées, vérifie chacune par rapport à son empreinte, la met en cache, et démarre l'application
+
+% 1 1 0 16555012e229a10a05448c95cad92d25
+
+@ 0 2 0 04a0d0d3b5d6878810e5bd7095ec2f9d
++ Ainsi, le premier lancement télécharge, chaque lancement ultérieur est instantané, et une
++ dépendance qui a changé depuis le build ne peut pas être chargée.
+
+@ 0 1 0 0d19f320e2d0d2620a52941822eb4c9c
++ ### À propos des empreintes de contenu
+
+@ 0 6 0 10cf97c561130af41976a159c6e3b898
++ Les outils de build identifient une dépendance par des coordonnées, qui sont un groupe, un
++ nom et une version, et font confiance au fait que les mêmes coordonnées se résolvent partout
++ en les mêmes octets. Burdock l'identifie par le SHA-256 du JAR que le compilateur a
++ réellement lu. C'est l'affirmation la plus forte. Une référence dans un JAR réempaqueté
++ nomme les octets exacts, et l'amorçage refuse tout le reste, qu'un registre ait servi un
++ build différent sous la même version, ou qu'un téléchargement ait été altéré en chemin.
+
+@ 0 6 0 02fa5a079449d24b1a0994ec2ede1e1c
++ L'empreinte sépare aussi l'endroit *où* se trouve une dépendance de ce *qu'elle est*. Le
++ réempaqueteur demande à [deps.dev](https://deps.dev/) quel artefact Maven a cette empreinte,
++ et consulte les fichiers de version de tous les dépôts GitHub indiqués comme pistes. Une
++ dépendance trouvée dans aucun des deux est intégrée à partir du cache local. L'invariant de
++ complétude est donc respecté : chaque dépendance est soit référencée, soit présente. Une
++ empreinte qui n'est ni l'une ni l'autre arrête le réempaquetage avec une erreur, et ne
++ produit pas un JAR qui échouera plus tard.
+
+@ 0 1 0 0bba43e332729c3b196875394a062140
++ ### Externaliser une application
+
+@ 0 5 0 1f3541be5335c0a81b5d8db805f62a61
++ L'application enveloppe son point d'entrée dans `externalize`. [À l'exécution][exécution],
++ la macro laisse le corps intact. [À la compilation][compilation], elle capture le classpath
++ du build, calcule l'empreinte de chaque JAR de dépendance, crée un lien physique vers lui dans
++ le cache de Burdock à `~/.cache/soundness/jars/<sha256>.jar`, afin que les octets restent
++ récupérables par empreinte sur la machine de build, et intègre la liste des empreintes comme
++ ressource `META-INF/burdock.deps` dans la sortie compilée :
+
+% 0 1 0 0647b574ba405a220c6097163df25100
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 16e3cb87267665ba0c4fcb222abd3350
+
+% 0 1 0 069065b92fc2f0791e5da167e0dd364f
+
+% 0 1 0 105555d1194126fb1d16e5cc7cf5e7d5
+
+% 1 1 0 037343ccca56c0231345cf72d35c1a77
+
+@ 0 2 0 06760153eb9b24d015468b3853df424c
++ Rien d'autre ne change dans l'application. Elle est toujours construite, testée et exécutée
++ comme un JAR ordinaire, et la ressource intégrée reste inerte jusqu'à ce que le
++ réempaqueteur la lise.
+
+@ 0 1 0 0c38defe50d79b5d049c0720d2f06f55
++ ### Réempaquetage
+
+@ 0 3 0 059a71266612d0eb1c8be089cc937792
++ Le point d'entrée `soundness.repackage` est lancé sur le JAR de l'application. Il localise le
++ JAR en trouvant la ressource `META-INF/burdock.deps` dans son propre classpath, et le réécrit
++ sur place :
+
+% 0 1 0 15a5f1f7e49cceab1ba03bc009fa86b5
+
+% 0 1 0 0acc1b6ee82e24010c5e73c2e658d1cc
+
+% 1 1 0 1244ad88a31f11cf040180aabb4fe2cb
+
+@ 0 6 0 0f80287225b88ea21681ef380db91aec
++ Chaque piste `--github owner/repo` nomme un dépôt dont les fichiers de version sont une
++ source de téléchargements. L'option peut être répétée, ou ses valeurs séparées par des
++ virgules. GitHub ne tient aucun index global par empreinte ; les pistes sont donc indexées
++ au préalable, avec quelques requêtes par dépôt, en tenant compte d'une variable
++ d'environnement `GITHUB_TOKEN` si elle est définie. Elles sont consultées avant deps.dev,
++ puisqu'un dépôt nommé par l'utilisateur a priorité sur l'index global. Dans le JAR réécrit,
++ chaque classe connaît l'un de trois sorts :
+
+% 2 1 0 18319e59cbae003d08f8712c7f829971
+
+@ 0 5 0 1f9795c7f46832720aaa14f5665010a5
++ column  Classes de
++ column  Sont
++ row  l'application  conservées
++ row  une dépendance qu'il a pu résoudre  retirées, et référencées à la place
++ row  une dépendance qu'il n'a pas pu résoudre  intégrées
+
+% 1 1 0 190ca61ee517f40b0019590a1fe52ed7
+
+@ 0 2 0 00a9ca4d7968cb9f1bd5196f9cb8380e
++ Il porte exactement une classe supplémentaire, `burdock.Bootstrap`, qui est le chargeur
++ d'exécution. Le manifeste enregistre l'arrangement :
+
+% 2 1 0 02c089334ab5b7ac1160e14e6911203c
+
+@ 0 6 0 1c5ff17cbdc744b00497c8f34b43280e
++ column  Attribut
++ column  Contient
++ row  `Main-Class`  `burdock.Bootstrap`
++ row  `Burdock-Main`  le point d'entrée propre à l'application, que l'amorçage démarre une fois le classpath assemblé
++ row  `Burdock-Require`  chaque dépendance externalisée sous la forme `<sha256>:<url>`, dans l'ordre du classpath
++ row  `Burdock-Verbosity`  ce qu'affiche l'amorçage pendant les récupérations : `silent`, tel que l'écrit le réempaqueteur, ou `error`, `info` ou `debug`
+
+% 1 1 0 18003f635349f7941247abb38da0ad66
+
+@ 0 3 0 07102712227a7234180a15743d9e732b
++ La commande affiche un résumé, avec les entrées lues et écrites, les classes conservées,
++ intégrées et retirées, et chaque exigence externalisée. Elle dessine une barre de progression
++ pendant la résolution, uniquement sur un vrai terminal, afin qu'une sortie redirigée reste
++ propre.
+
+@ 0 6 0 1a07fe67f310e6511400d8dcca75b306
++ Le même travail est disponible sous forme d'appel de bibliothèque, `Repackager.repackage`. Il
++ prend les chemins d'entrée et de sortie, un `Repackager.Resolver` de l'empreinte vers l'URL,
++ un `Repackager.CacheReader` pour le cache local, les octets de la classe d'amorçage et un
++ callback de progression, et renvoie un `Repackager.Summary` plutôt que d'afficher quoi que ce
++ soit. Le point d'entrée en ligne de commande est une mince mise en forme de cet appel, et
++ `DepsDev.mavenUrl` et `GitHub.index` sont les deux résolveurs qu'il compose.
+
+@ 0 1 0 05dc6fafc04f6a6b1aecf946de1c9304
++ ### Exécuter un JAR réempaqueté
+
+@ 0 6 0 18e7bde3f55af00002ab7c2c83a9da7c
++ Un JAR réempaqueté s'exécute avec `java -jar app.jar`, exactement comme avant. L'amorçage lit
++ `Burdock-Require`, et télécharge chaque exigence qui n'est pas déjà dans
++ `~/.cache/soundness/jars/`, en parallèle, avec au plus quelques connexions par hôte. Il
++ vérifie le SHA-256 de chaque téléchargement par rapport à l'empreinte du manifeste, construit
++ le classpath dans l'ordre du manifeste, et invoque `Burdock-Main`. Une somme de contrôle
++ discordante arrête le lancement. L'application ne démarre jamais sur d'autres octets que
++ ceux avec lesquels elle a été construite.
+
+@ 0 4 0 003aff3be9ee4b4d1aeadaeb2dd32062
++ Un lanceur qui supervise le démarrage, comme le fait le lanceur des [démons](daemons.md),
++ peut suivre la progression du téléchargement en définissant la propriété système
++ `burdock.progress` sur un chemin de fichier. L'amorçage y écrit atomiquement
++ `<completed> <total> <bytes>` au fur et à mesure. Un lanceur qui ne peut pas lire le fichier
++ se replie sur son délai fixe.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Erreurs
+
+@ 0 1 0 0f63fc85c4e5152d02f32e91b9b452e7
++ Le réempaquetage signale ses échecs par deux erreurs, et une recherche qui ne trouve rien par
++ une troisième :
+
+% 2 1 0 0fcbd9c7a4a9b4ee09a50c0abc72d8da
+
+@ 0 5 0 14eb225712cef7a0089e226236b9612e
++ column  Erreur
++ column  Levée lorsque
++ row  `Repackager.UserError`  le JAR n'a pas été construit avec Burdock, est un répertoire plutôt qu'un fichier, un argument est mal formé, ou les versions d'un dépôt GitHub ne peuvent pas être listées
++ row  `Repackager.RepackageError`  le JAR ne peut pas être réécrit : il n'a pas de manifeste ou pas de `Main-Class`, ou une dépendance n'est ni publiée ni en cache
++ row  `DepsDev.Unresolved`  une recherche sur deps.dev ne trouve rien, ce que le réempaqueteur traite comme « non publiée » plutôt que comme un échec
+
+% 1 1 0 1ccbc407bde80021149bb8ce9ce1ae99
+
+@ 0 2 0 088c01e63b0a1abd12fcd42b0fa0820b
++ La résolution est journalisée au moyen de `DepsEvent`, avec un événement pour chaque
++ empreinte résolue ; une exécution peut donc être auditée après coup.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 8 0 1c481219ae82588b1d1d8261e53dbff3
++ - [Archives](archives.md) décrit le format ZIP qu'est un JAR, et le préfixe qui le rend
++   exécutable.
++ - [Compilateur](compiler.md#producing-artifacts) construit le JAR qui est ensuite
++   réempaqueté.
++ - [Démons](daemons.md) et [LSP](lsp.md#a-thin-launcher) décrivent les lanceurs distribués
++   sous forme de JAR allégés.
++ - [Hachage](hashing.md) décrit les condensés SHA-256 qui identifient chaque dépendance.
++ - [Classpath](classpath.md) décrit le classpath qu'assemble l'amorçage.
++ - [CLI](cli.md) et [versions](versioning.md) décrivent les applications et les manifestes
++   qui sont empaquetés.

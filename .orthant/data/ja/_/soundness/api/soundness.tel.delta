@@ -1,0 +1,535 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1db213c190fed19215fd6243300d601f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1ac7afa3d9bd82550a707a3898a19b3f
++ info   アンブレラパッケージ：一つの `import soundness.*` ですべての Soundness ライブラリに届く
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 008b538b5ff63612125fabab9b2b446c
++     _Soundness_ は百をはるかに超えるライブラリの集まりであり、それぞれが独自のパッケージにある（テキストの `gossamer`、ファイルシステムの `galilei`、JSON の `jacinta`、…）。`soundness` はそれらを集めるパッケージである。
++     プログラムはワイルドカードのインポートを一つ書き、あとは必要なものを、どのライブラリから来たかを知らずに、どのライブラリからでも名前で呼べる。
+
+% 2 1 0 1f27894bfa5ee96700974cf2315ab044
+
+% 3 1 0 07d03e053d6dbfa412e64f480fa525ea
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 0d23fdfe469a9fb009d07926302e05d2
+
+% 0 1 0 1ea7b92cf800b6e9050c075d7a5aa5a4
+
+% 0 1 0 160d215c046410ab0b4670a71dceb6ad
+
+% 1 1 0 1ad70419275fbe121262246c7ad0e029
+
+@ 0 10 0 109e7b7d381ebf8d195aca70c8bdb572
++     このパッケージはそれ自身のものをほとんど持たない。
++     各ライブラリは、そのコンポーネントごとに `soundness_<library>_<component>.scala` という名前のファイルを持ち、それがそのコンポーネントの公開名を `package soundness` に `export` する。したがってアンブレラはクラスパス上のコンポーネントとともに大きくなる。`galilei.jvm` に依存するプログラムはそこに galilei のファイルシステムバックエンドを見るが、依存しないプログラムは見ない。
++     これらのフォワーダーは、定義された場所、すなわち各ライブラリ自身のページで説明されており（`Classloader` は hellenism のページ、`Json` は jacinta のページ）、ここでは説明しない。
++     このページは、アンブレラ自身が*宣言する*ものだけを説明する。すなわち `export` では表現できない少数の手書きのフォワーダー、コレクションの別名、二つのアノテーション型、包括的な `explainMissingContext`、そして `repackage` のエントリーポイントである。
+
+@ 0 10 0 0503dd47d3c1b0171be895e5f5e242e2
++     **選択パッケージ。**
++     実装を選ぶ given（エラー処理の戦略、クラスローダー、コードページ、ログの形式、ファイルシステムのバックエンド）は、その役割にちなんで名付けられた小さなパッケージに置かれる。`strategies`、`classloaders`、`codepages`、`logFormats`、`filesystemBackends` である。
++     アンブレラはそれぞれを同じ名前の `package` として映し出し、異なるライブラリの同名のブロックは統合される。したがって `soundness.construables` は jacinta、xylophone、honeycomb、caesura ほか十数個の `Construable` の given を保持し、`soundness.wasiApis` は WASI バックエンドを持つすべてのライブラリのものを保持する。
++     アンブレラを通る経路とライブラリを通る経路は同じ given である。`import soundness.monthFormats.englishMonths` と `import aviation.monthFormats.englishMonths` は交換可能である。
+
+@ 0 7 0 1eaa53881dd3ea8014c4656499ec1423
++     選択パッケージの given は常に**名前でインポートする**。`import strategies.*` は given をインポートしないからである。Scala のワイルドカードは普通のメンバーだけを選び、given にはそれ自身の名前か `given` セレクターが必要である。
++     そしてレキシカルスコープにインポートされた given はコンパニオンオブジェクトのどの given よりも優先され、これによって選択パッケージがライブラリの既定を上書きできる。
++     したがって `import soundness.*` 自体は選択をスコープに持ち込まない。ただ一つ意図的な例外があり、それが `explainMissingContext` である。これはまさにワイルドカードに含まれるように、古いスタイルの `implicit def` になっている。
+
+@ 0 5 0 15d4e9f0dccd02c11e5356472f4f7c41
++     **除外された名前。**
++     型と項は別々の名前空間にあるので、型の `via` とメソッドの `via` は共存する。しかし一つの*項*（あるいは一つの*型*）を `package soundness` にエクスポートする二つのライブラリはオーバーロードにならず、コンパイラは一方を残して他方を黙って捨てる。
++     そのような衝突はそれぞれ裁定されており、負けた側はそれ自身のパッケージを通じて、名前を保ったまま参照できる。
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 15 0 192a359268eec99603e43374202f6470
++     column  名前
++     column  アンブレラにあるもの
++     column  もう一方の参照の仕方
++     row  `Channel`  perihelion の WebSocket  `anticipation.Channel`（ピクセルのチャンネル）
++     row  `Completion`, `Completions`  exoskeleton のもの  `harlequin.Completion`, `prophesy.Completion`
++     row  `Fragment`  honeycomb のもの  `harlequin.Fragment`
++     row  `Descriptor`  embarcadero の OCI  `hallucination.Descriptor`
++     row  `Diagnostic`  harlequin のもの  `frontier.Diagnostic`
++     row  `Message`  fulminate のもの  `perihelion.Websocket.Message`（WebSocket のフレーム）
++     row  `Tag`  honeycomb の HTML タグ  `probably.Tag`, `xylophone.Tag`
++     row  `Attributive`, `Renderable`  honeycomb のもの  `xylophone.Attributive`, `xylophone.Renderable`
++     row  `Universe`, `Classfile`  anthology のもの、mandible のもの  `degustation.Universe`, `degustation.Classfile`
++     row  `as`  distillate のデコード  `scintillate.as`（リクエストの本文）
++     row  `teletype`  escapade の描画  `delicious.teletype`
++     row  `apply` としての `Kelvin(…)`  rudiments のインデックス解除の `apply`  `import quantitative.*`
+
+% 1 1 0 1fe05398f31a392a1e01412394c85d10
+
+@ 0 8 0 155650acff16a34118650e7be0c1ea5f
++     少数の名前は別の理由で存在しない。`export` ではそれらを忠実に転送できないのである。
++     rudiments の `Scribe`/`scribe` と `Surveyor`/`survey`、そして zephyrine の `Region` と `Slate` は、`rudiments` と `zephyrine` から直接参照する。perihelion の `wsClient` と `wsSessional` は `perihelion` から名前でインポートする。
++     意図的にアンブレラから外された定義はソースに `unexported` アノテーションを持ち、各ライブラリのページはその名前のうちどれがエクスポートされないかを述べる。
++     MathML の要素型はトップレベルではなく `Mathml` の中にあるので、MathML を手で書くところでは `import soundness.Mathml.*` で裸の要素名が得られる。
+
+@ 0 3 0 052eca2412609c460d0a286f753eaa7d
++     知っておくべき覆い隠しが一つある。
++     ambience の `System` はエクスポートされるので、`import soundness.*` のもとでは裸の `System` は Soundness のものであり、JDK のものは `java.lang.System` と書かなければならない（`System.nanoTime`、`System.arraycopy`、… のため）。
+
+@ 0 3 0 1834630768f344ab010764d96f42bec5
++     **一部のフォワーダーが手書きである理由。**
++     合成された `export` のフォワーダーは普通のメソッドであり、その過程を生き延びない定義があるので、アンブレラはそれらを宣言し直し、それぞれがライブラリの元の定義に委譲する。
+
+@ 0 15 0 1d44b880508c497410578124839d3134
++     - *オーバーロードされた*拡張の `export` は一つのオーバーロードしか転送しないので、`thru`、`till`、`tabulate`、区間の `each` はここで宣言され、すべてのオーバーロードが一つのコンパイル単位にある。
++     - 型クラスの証拠が依存的な先頭の `using` 節である拡張（インデックス解除のグループ `apply`、`at`、`defines`、`confine`、`pick`、`unsafeAttested`、そして `define`、`omit`、`keep`、`skip`）は、召喚が失敗したときに候補が捨てられるようにその節を必要とし、フォワーダーはそれを持てない。
++     - フォワーダーはキャプチャアノテーション付きの細分化を失うので、zephyrine の `via` と `accepting`、contingency の `throwUnsafely`、scintillate の四つの `httpServers` の given は、キャプチャ集合とともに書き下される。
++     - オブジェクトの `export` は `def` であり、不透明型が透けて見える不安定な接頭辞なので、コレクションのコンパニオンは、パラメーター付きの型の別名（`List`、`Sequence`、`Set`、`Map`、`Chain`）と並んで、安定した `val` として転送される。
++     - ケースクラスの `export` はそのコンストラクタープロキシ、つまり項を持ち込むので、`assign` と `attribute` は型の別名だけであり、項の名前は anamnesis と galilei に残される。
+
+@ 0 6 0 053af8d316cfaf4c12acf92ee06ec896
++     **ドキュメントの構成。**
++     各パッケージにはその名前の付いた独自のページがある。`soundness` を通じて参照される名前は、それを定義するパッケージのページで説明され、各ライブラリのページは、どのコンポーネントが何を寄与するか、どの選択パッケージをアンブレラに映し出すか、どの given を名前でインポートするかを述べる。
++     このページには、アンブレラ自身の宣言のそれぞれと、given がエクスポートされずにここで宣言されている二つの選択パッケージのエントリーがある。
+
+% 0 1 0 1fc842fa91f423f6194eba67aa7a2420
+
+% 0 1 0 13c80a33ef99f3ba0c85db502606332c
+
+% 0 1 0 07e938e88f794de21ee4aef72c4e5da2
+
+% 0 1 0 1dc77c0a102f9b9615298ea68f15e5ec
+
+@ 0 8 0 0d748645130d011b08255a6e39cf8254
++ entry .List   不透明な連結リスト `proscenium.List`。コンパニオンは安定した値として
++     `type List[+element] = proscenium.List[element]` と `val List = proscenium.List`：proscenium のページで説明される Soundness のリストを、アンブレラが名付けたものである。
++     型はパラメーター付きの別名である。不透明なコンストラクターの裸の別名は透けて見えない（`::`、`CanEqual`、拡張メソッドがそれを別の `List` として扱ってしまう）からである。そしてコンパニオンは `export` された `def` ではなく `val` である。`def` の接頭辞を通じて選ばれたコンパニオンのメンバーは不透明型の右辺を見てしまい、標準ライブラリの API 全体を晒すからである。
++     `Nil`、`::`、`#::` もその横に転送される。
+
+% 2 1 0 1d5458575237339e0b6192668054763e
+
+% 3 1 0 1ba0ccdc08437c4b0602f78537064c92
+
+% 0 1 0 01ed19fed8a88b98057ae194a159bfd5
+
+% 0 1 0 1a2f01312c8454d91137e5ff1bb475d1
+
+% 1 1 0 1c5c4fcaef4011461409f42f2de5e821
+
+@ 0 2 0 0f712a82afe1aaf30255142b969231b3
++     標準ライブラリのコレクションから作るリストは `xs.to[List]` ではなく `List.from(xs)` である。前者は stdlib のレシーバでは Scala 自身の `to` に至り、ファクトリーがないために失敗する。
+
+@ 0 5 0 078e1935f7885ee811241073ea0350f6
++ entry .Sequence   不透明な添字付きシーケンス `proscenium.Sequence`。コンパニオンは安定した値として
++     `type Sequence[+element] = proscenium.Sequence[element]` と `val Sequence = proscenium.Sequence`：proscenium のページが説明するとおり、不透明型の背後にある不変の `Vector` である。
++     `List` と同じ理由で、パラメーター付きの別名と安定した `val` として転送される。
+
+% 2 1 0 00b717e417ffaf26110da6700f447778
+
+% 3 1 0 1a7495fb577f9dd91bcf3e6c76edba7a
+
+% 5 1 0 1a6908132ae54f4b04243fac558fdc41
+
+% 0 1 0 1ee0190c84e7cd800c449cbed5d20051
+
+% 1 1 0 1e458d3b85a3cc8e1575b92ebed5826c
+
+@ 0 4 0 0dde3ee6e89b5ca205ca1edc6487460c
++ entry .Set   不透明なハッシュ集合 `proscenium.Set`。コンパニオンは安定した値として
++     `type Set[element] = proscenium.Set[element]` と `val Set = proscenium.Set` であり、`List` と同じ理由で別名と安定した `val` として転送される。
++     `Set` は `Reshapable` だが安定した順序を持たないので、`sort` しない。
+
+@ 0 5 0 0a5ebff2da2aaa770652fd051598ffcd
++ entry .Map   不透明なハッシュマップ `proscenium.Map`。コンパニオンは安定した値として
++     `type Map[key, +value] = proscenium.Map[key, value]` と `val Map = proscenium.Map` であり、`List` と同じ理由で別名と安定した `val` として転送される。
++     `map.confine(key)`、`map(key)`、`map.define(key, value)`、`map.omit(key)` はアンブレラのインデックス解除の拡張である。
+
+% 2 1 0 1dd28fc07ae889150132fb540e89861f
+
+% 3 1 0 1c1bed034ffe626203a924908af8295b
+
+% 5 1 0 1f21e0fb0c508d94064fdff9c530322e
+
+% 6 1 0 15529da984c51c1011b8100801ae3ba3
+
+% 7 1 0 0fa034f4c263ac3f006dd7c9d12a0513
+
+@ 0 5 0 1b7dc9a57d807a2e1de50f1a4cb07b2a
++ entry .Chain   不透明な遅延シーケンス `proscenium.Chain`。コンパニオンは安定した値として
++     `type Chain[+element] = proscenium.Chain[element]` と `val Chain = proscenium.Chain`：不透明型の背後にある `LazyList` であり、`List` と同じ理由で別名と安定した `val` として転送される。
++     その遅延的な `keep` と `skip` はコンパニオンにあり、アンブレラ自身の `keep` と `skip` は、`Chain` のレシーバがそれでもそちらに届くような形になっている。
+
+@ 0 5 0 1facdda4504812290b96edeb704db533
++ entry .infer   `infer[context]`：インライン展開の位置でコンテキスト値を召喚する
++     `transparent inline def infer[context]: context = summonInline[context]` であり、`import soundness.*` に対して書かれたコードが proscenium のものと同じ綴りを持つように、アンブレラで宣言されている。
++     インラインメソッドの中では、探索はメソッドが定義された場所ではなく展開される場所で行われる。`summon` はインラインでない形である。
+
+@ 0 7 0 082797ce229aa68a1a18215ef8aeae99
++ entry .explainMissingContext   失敗したすべての暗黙の探索を説明する。`import soundness.*` で持ち込まれる
++     frontier の包括的な `frontier.context.explainMissingContext` のアンブレラでの形である。
++     これはすべての暗黙の探索の候補になる。探索が失敗すると、コンパイラは自身の簡潔なメッセージの代わりに、試した候補、それぞれが必要としたもの、そしてクラスパス上のどのインスタンスがそれを満たすかを描画した木を報告する。
++     これがなくても探索が成功する場合は、身を引いて何も寄与しないので、プログラムが使うインスタンスを変えることは決してない。
+
+% 2 1 0 0d68f2da6f39c8281aea57d204f30184
+
+% 3 1 0 1eb3c5d85c95e3591b3497e278632098
+
+% 0 1 0 12921236bce385d40855562298c83f0e
+
+% 1 1 0 1ce8b8e2cc9e49dd052da87a9b8e52e8
+
+@ 0 5 0 1c568bb050982a781591a1f3f59cdab9
++     これは `given` ではなく古いスタイルの `transparent inline implicit def` である。ワイルドカードのインポートは given を除外し、これは `import soundness.*` と書く誰にとってもスコープになければならないからである。
++     `@scala.annotation.internal.diagnostic` のアノテーションが付いており、Proscala コンパイラはそれを尊重する。その限界と木の形は frontier のページが説明する。
+
+@ 0 3 0 11e92bcc2ac0b75c1d150d4d557f3cec
++ entry .repackage   burdock のリパッケージャーの `@main` エントリーポイント：`java -cp app.jar soundness.repackage`
++     コマンドラインのエントリーポイントであり、すべての Soundness アプリケーションが持つ完全修飾名で起動できるように `soundness` パッケージにある。
+
+% 0 1 0 04b53e90373db9ee0dcbb0c2bab35fe3
+
+% 0 1 0 131a1acda8fe5890080ba4c51a9b9971
+
+% 1 1 0 08f7cc58abbb6dca1d9632309e2fd5cd
+
+@ 0 3 0 1b370e4a62f24f2c1aaf9295df56de63
++     引数を `List[Text]` として `burdock.repackage` に渡し、これは実行中のアプリケーションの JAR をその場で書き換えて、公開された依存関係を外部化する。引数と出力は burdock のページが説明する。
+
+@ 0 6 0 0d82d376197d09ee04a32dd17d0918d6
++ entry .assign   stratiform の `@assign(layer)` アノテーション。型だけとして転送される
++     `type assign = stratiform.assign`：stratiform のページが説明するとおり、ケースクラスのフィールドを TEL スキーマのレイヤーに置くフィールドのアノテーションである。
++     `export` ではなく型の別名である。クラスをエクスポートするとそのコンストラクタープロキシ、つまり項の `assign` もエクスポートされ、それが anamnesis の `assign` メソッドを隠してしまうからである。アノテーション `@assign(…)` はどちらでも同じように読める。
+
+% 2 1 0 014572436a4986eb154e88c593d9552c
+
+% 3 1 0 11cce612f15effe81e9ff5e6ace44106
+
+% 0 1 0 19bfc4712dbfb1a2148c364ad3079f76
+
+% 0 1 0 1f9ac28a530652d90ffc8d9231c55124
+
+% 1 1 0 1cf7f8ffbe45ff4519ec94c093e0a0b0
+
+@ 0 6 0 1ccbfd64dc4c8501039edc772535c03e
++ entry .attribute   xylophone の `@attribute` アノテーション。型として。項は galilei のもの
++     `type attribute = xylophone.Xml.attribute`：ケースクラスのフィールドを子要素ではなく XML の属性として印すアノテーションである。
++     `export` ではなく型の別名である。galilei と tarantula がすでに `attribute` という名前の*項*（パスの拡張属性や要素の属性を読むもの）をアンブレラにエクスポートしており、ケースクラスのコンパニオンがそれと衝突するからである。アノテーションには型だけがあればよい。
+
+% 2 1 0 16da3c51bf20479d1f2c8b988d1173c4
+
+% 3 1 0 0f823ecd35b01a7d12b0bc9d96343149
+
+% 0 1 0 045ceb6de96059cf17c04afedd43b60d
+
+% 1 1 0 19acb75380c33efa083d5bad022668bc
+
+@ 0 7 0 0d7bf49eee93caa50570c13229d582c9
++ entry .thru   `start thru end`：二つの序数の間の区間。終端を含み、両端が限定されていれば限定される
++     `Ter thru Sen` は `Ter`、`Quat`、`Quin`、`Sen` の区間である。
++     二つのオーバーロードがあり、どちらもアンブレラで宣言されている。素の `Ordinal` に対しては結果は素の `Interval` であり、同じ値に限定された二つの序数（`Ordinal in form`）に対しては `Interval in form` であって、そのすべての序数はその値を全域的に読む。
++     denominative からエクスポートされずにここで宣言されているのは、`export` が一つのオーバーロードしか転送せず、そうすると素の `Ordinal` のレシーバに限定されたものが提示されて失敗するからである。
+
+% 2 1 0 09adc7dc5bfc1a1a0d062f6a5f03f247
+
+% 3 1 0 1b48bb1f32a3fc5c0b2c407213f78f92
+
+% 0 1 0 0fd6950ebf8822c90139575f9997b12f
+
+% 1 1 0 12ab99a5f4e041c91dca18df18ddee2d
+
+@ 0 4 0 1f9bdf784bbf10ee087ed62d821eb97c
++ entry .till   `start till end`：二つの序数の間の区間。終端を含まず、両端が限定されていれば限定される
++     `Ter till Sen` は `Ter`、`Quat`、`Quin` であり、`Sec till Sec` は空である。
++     `thru` と同様に、二つのオーバーロード（素のものと限定されたもの）はアンブレラで一緒に宣言されている。`export` では一つしか転送されないからである。
+
+@ 0 6 0 1694799cd12ffffd11363a2c547e845a
++ entry .tabulate   `xs.tabulate { i => … }`：値または区間の序数ごとに一つの要素を持つ `Sequence`
++     `each` の収集版であり、位置ごとに一つの要素を順に持つ `Sequence` を作る。
++     三つのオーバーロードがあり、`thru` と同じ理由でアンブレラで一緒に宣言されている。`Countable` な値に対してはラムダは `Ordinal in value.type` を受け取るので、値の読み取りは裸になる。素の `Interval` に対しては素の `Ordinal` を、`Interval in form` に対しては `Ordinal in form` を受け取る。
++     それぞれ `denominative.tabulate` に委譲する。
+
+% 2 1 0 1880c967d758dd5c1b4f264f577117b0
+
+% 3 1 0 0aa22d41fc34640f03054059b855fa9a
+
+% 5 1 0 136b082868d7a2aa097853d9bf2f0997
+
+% 0 1 0 16ef06ec0a46527c08432d64a386e767
+
+% 1 1 0 0f9ef1d86bc0edfe03e0faa3de45675c
+
+@ 0 9 0 033400a6c2a7cff111e67a5d163477f6
++ entry .each   `interval.each { i => … }`：区間のすべての序数を順に訪れる
++     アンブレラは、rudiments からエクスポートするコレクションの `each` の横に、`each` の二つの区間のオーバーロードを宣言する。素の `Interval` に対してはラムダは `Ordinal` を受け取り、限定された `Interval in form` に対しては `Ordinal in form` を受け取るので、中での読み取りは全域的である。
++     これらはすべて一つのスコープを共有しなければならない。`package soundness` での同名の二つのトップレベル定義はオーバーロードにならず、一方が黙って捨てられるからである。そして限定されたオーバーロードは素のものの横になければならない。さもないと限定されたレシーバに対して素のものが勝ち、エラーなしにそのブランドを剥がしてしまう。
++     コレクションの形 `xs.each { x => … }` は rudiments のページで説明されている。
+
+% 2 1 0 153b3d3649416408196da30b52bc4f27
+
+% 3 1 0 19bba5ce688cc672029f37f307b43b45
+
+% 0 1 0 161651618b79a789158fce49c3020b76
+
+% 0 1 0 0552678106cff1b81283dcaf10ddd11d
+
+% 1 1 0 0ad4724f5a7c13b40d1558b0f8946e14
+
+@ 0 9 0 1d45363e228532f700af66460a323ed0
++ entry .apply   `xs(index)`：ある添字の要素。限定された添字なら裸で、それ以外は `Optional`
++     `Applicable` インスタンスを持つあらゆる値（`Ordinal` によるコレクション、キーによる `Map`、`Ordinal` による `Text`）に対する汎用のインデックス解除の読み取りであり、エクスポートではなくここで宣言し直されている。その証拠が、フォワーダーの持てない依存的な先頭の `using` 節だからである。
++     `rudiments.apply` にインラインで委譲するので、`Operand in xs.type` と型付けされた添字（`confine`、`pick`、`each`、… から得たもの）は要素を裸で読み、それ以外の添字は検査されて `Optional` を与える。
++     二つ目のオーバーロードは、`& Sized[n]` と型付けされた凍結済みの配列をリテラルの序数で読み、コンパイル時に `n` に対して検査する。
++     詳しい説明は rudiments のページにある。
+
+% 2 1 0 112d22a355f79f5c033fb41a8ff74223
+
+% 3 1 0 0393554810a2c50a123a191180104efc
+
+% 5 1 0 14f679673800de550134491034f80566
+
+% 0 1 0 148f7bab0c2baa491d476cf8cc91a95d
+
+% 0 1 0 123c90370b7f934f053a53c5a0039953
+
+% 1 1 0 0149e2b7178398530a10c24f23e59ace
+
+@ 0 4 0 1178d2323c6133bf140fd133c730e7fc
++ entry .at   `xs.at(index)`：`xs(index)` と同じ読み取り。限定された添字なら裸で、それ以外は `Optional`
++     `apply` と同一であり、それとともにアンブレラで宣言し直され、`rudiments.at` に委譲する。位置によるアクセスを `xs.at(Sec)`、キーによるアクセスを `map.at(key)` と綴るコードのために残されている。
+
+@ 0 4 0 152b5822d57a6b740c71fa1adae7f186
++ entry .defines   `xs.defines(index)`：ある添字またはキーが値に対して定義されているかどうか
++     値の `Applicable` インスタンスがその添字を含むとき、すなわちコレクションの範囲内の序数か、`Map` に存在するキーであるとき真である。
++     インデックス解除のグループの他のものとともにアンブレラで宣言し直されており、一行の本体は委譲されずに複製されている。
+
+@ 0 5 0 173813604391eafe13ccab6fb6caeaa3
++ entry .confine   `xs.confine(index)`：添字を値に対して検査し、その値のブランドを付けて返す
++     添字が値に対して定義されていなければ `Unset` であり、そうでなければ `Operand in xs.type` と型付けされた添字そのものなので、続く `xs(i)` は裸になり、何も再び検査しない。
++     序数だけでなくキーにも使える。
++     インデックス解除のグループの他のものとともにアンブレラで宣言し直されている。
+
+% 2 1 0 0a69ac665b168dac0f60c7859eb0aabb
+
+% 3 1 0 19467f19d12a97791cf4ae1fa3af3587
+
+% 5 1 0 0a63bf4f20e90a390ec170ebe81048b6
+
+% 6 1 0 0e9e786f724e62d31b38f7bbed843f38
+
+% 7 1 0 11d3f7a712ac1de5042ab5324ddb80b2
+
+@ 0 4 0 0f9b2944b23b47330eb03233f88a82d6
++ entry .pick   `xs.pick(index) { i => … }`：添字を検査し、それを限定してラムダを実行する。または `Unset` を与える
++     `confine` と `let` を融合した形である。ラムダは `Operand in xs.type` と型付けされた添字を受け取るので `xs` の読み取りは裸になり、結果は `Optional` で、添字が定義されていなければ `Unset` である。
++     インデックス解除のグループの他のものとともにアンブレラで宣言し直されている。
+
+% 2 1 0 1882bca90340f1271d5d8411fdfcde9b
+
+% 3 1 0 089403dade3bbb32091b5b789207fc3a
+
+% 5 1 0 13c41bfc069f06ca1311ab8bba544ce8
+
+% 0 1 0 071c6ed34526443800e7693becbb5d88
+
+% 1 1 0 12ae67c410a162c302a71da2584a3f2d
+
+@ 0 7 0 166762606bb1a6260b0c1a19ab194671
++ entry .unsafeAttested   呼び出し側の言葉を信じて、添字または区間に値に対して有効であるというブランドを付ける
++     `xs.unsafeAttested(index)` は検査のない `confine` であり、`Operand in xs.type` を直接作り出す。`xs.unsafeAttested(index) { i => … }` は証明をラムダにスコープを限る。`interval.unsafeAttested(xs)` は `Interval` に `Interval in xs.type` のブランドを付ける。
++     どの形も消去される `Unsafe` トークンを取るので、呼び出しは `unsafely` の中に置かれ、どの呼び出しにも範囲を証明する構成を名指すコメントが付く。
++     インデックス解除のグループの他のものとともにアンブレラで宣言し直されている。
+
+% 2 1 0 0e5a676a895e3c8b1169f4cb608a62b6
+
+% 3 1 0 09c8b47f128664fe0b7cbfa99e5856c8
+
+% 0 1 0 11ffb27e0432af721657799d6bedaaa1
+
+% 0 1 0 1ee937620fd36ed00be4b497beef38db
+
+% 0 1 0 04533c7bf32cb0ae13438b2019f825fc
+
+% 0 1 0 1f4851f735ca7cdf1d5f6948c7c02ac4
+
+% 1 1 0 10cd1a69ef614cbe000df8a84294e013
+
+@ 0 5 0 02d835c8cb8d3612059e2466926bff48
++ entry .define   `xs.define(index, value)`：一つの位置またはキーを設定したコンテナーのコピー
++     レシーバの `Definable` インスタンスを通じて行う。`Sequence` では `xs.define(Sec, 9)`、`Map` では `map.define(key, value)` である。
++     範囲外の序数はコンテナーを変えず、存在しないキーはエントリーを加える。
++     その証拠が依存的な先頭の `using` 節なので、アンブレラで宣言し直されている。
+
+% 2 1 0 0cd3d68fce8db45b002f1e228b3f1e1f
+
+% 3 1 0 1395deafe5e342661f281454d25ab356
+
+% 0 1 0 0b6ee581a3070a66071a154659e36e50
+
+% 1 1 0 15197378eb781c3511dad2148f8e13a4
+
+@ 0 4 0 16051de06086b83c0f553d7fd5345114
++ entry .omit   `xs.omit(index)`：一つのキーまたは位置を除いたコンテナーのコピー
++     レシーバの `Omissible` インスタンスを通じて行う。`map.omit(key)` はエントリーを取り除き、存在しないキーはマップを元のままにする。
++     その証拠が依存的な先頭の `using` 節なので、アンブレラで宣言し直されている。
+
+@ 0 7 0 03ac612c6442982f00fe9c2cdc933261
++ entry .keep   最初の（`Bidi.Rtl` なら最後の）`count` 個の要素、または述語に一致する先頭の連続部分
++     `xs.keep(3)` は三つの要素を取り、`xs.keep(3, Bidi.Rtl)` は最後の三つを、`xs.keep(_ < 4)` は一致する先頭の連続部分を取る。これは接頭辞であって、フィルターではない。
++     `Segmentable` を通じて形を保つので、`Text` は `Text` のままである。
++     エクスポートではなくアンブレラで宣言し直されているのは、`Segmentable` インスタンスを持たない `Chain` のレシーバがこの候補を捨てて `Chain` のコンパニオンにある遅延的な `keep` に届くようにするためである。フォワーダーだと呼び出しを引き受けて失敗してしまう。
+
+% 2 1 0 17b4f6f0f71d13971f720d4fd284c764
+
+% 3 1 0 17e4fa1be447729b076fa0b1fd5558b8
+
+% 0 1 0 1c5b47f448c8732b01e88325ac9eb147
+
+% 0 1 0 09e4677c6ad2b13c1ec42e243423942a
+
+% 1 1 0 0214fbb2069a22511571fccf1abbe021
+
+@ 0 4 0 144b7daa5c4f40601509e367a39e657a
++ entry .skip   最初の（`Bidi.Rtl` なら最後の）`count` 個を除くすべての要素、または一致する先頭の連続部分より後のすべて
++     `keep` の補集合である。`xs.skip(2)` は二つの要素を捨て、`xs.skip(2, Bidi.Rtl)` は最後の二つを、`xs.skip(_ == ' ')` は先頭の空白の連続部分を捨てる。
++     `keep` と同じ理由でアンブレラで宣言し直されており、`Chain` はコンパニオンの遅延的な `skip` に届く。
+
+@ 0 7 0 0556083e6b9a8bcb03fbc875faf6d68e
++ entry .via   `stream.via(stage)`：`Ductile` インスタンスを持つ段階を通して引き出されるストリーム
++     zephyrine のプルによる合成に対するアンブレラの手書きのフォワーダーである。ストリームと段階を消費し、`Buffering` を必要として、段階の `Transport` 上の、段階の `Result` 型のストリームを与える。
++     合成されたフォワーダーはキャプチャ検査のもとで依存的な `ductile.Result` の細分化を失うので、これは書き下されて `zephyrine.via` に委譲する。振る舞いは同一である。
++     *型*の `via`（ロケールで計算される値）は cosmopolite のものであり、型の名前空間にあるので衝突しない。
+
+% 2 1 0 0583191f97c4728c024a71a148c11579
+
+% 3 1 0 11edfdc66cfa1bff01c176d2a9e8673e
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0fa7d1ff594903310b01de83c23aa37e
+
+% 0 1 0 1fe95cbfb72bd37419a1f42d10c935b2
+
+% 1 1 0 0f2697f1eaf1876e0eff40de9d842df4
+
+@ 0 5 0 14b048d2340666bb055d68765460f79c
++ entry .accepting   `intake.accepting(stage)`：`Ductile` インスタンスを持つ段階を通して押し出すインテーク
++     zephyrine のプッシュによる合成に対するアンブレラの手書きのフォワーダーである。インテークと段階を消費し、`Buffering` を必要として、段階の `Upstream` 上の、段階の `Operand` 型のインテークを与える。
++     `via` と同じ理由でエクスポートされずに書き下され、`zephyrine.accepting` に委譲する。
+
+@ 0 6 0 0e705eff31b104850a9a5dc4229c23c1
++ entry .dispose   `handle.dispose()`：Wasm にコンパイルされたコードで WIT のリソースハンドルを解放する
++     `xenophile.Wasm.Handle` へのインラインの拡張であり、xenophile の `wasm` コンポーネントにのみある。
++     `WasmInvoke.dispose` に展開され、これはリソースの `[resource-drop]` の Component Model のインポートを出力する。`invoke` と同様に普通の `inline` なので、インポートは下流の Wasm にリンクされる呼び出し位置で実体化する。
++     プログラムは、得たハンドルを使い終えたらすべて破棄すべきであり、典型的には `finally` の中で行う。
+
+@ 0 5 0 110cfbfd7ba1761d0023aeafdea35d19
++ entry .threads   parasite のスレッドモデル。それぞれ名前でインポートする `Threading` の given
++     `parasite.threads` へのフォワーダーのオブジェクトである。`platformThreads`、`virtualThreads`、`adaptiveThreads`、`pooledThreads`、`javascriptThreads` があり、parasite のページで説明されている。
++     parasite 自身のものと同じく、パッケージではなくオブジェクトである。その given はケイパビリティであり、オブジェクトの中になければならないからである。
+
+% 2 1 0 040e53f4eb6fc992064f626e9cfd3198
+
+% 3 1 0 1d07e33a8606e3ee03f423aa8a04e042
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 1 1 0 1fbd7da930f7d31d0fab2066905f33c7
+
+@ 0 4 0 08fc25de57db6c121570dfee4ddd34de
++ entry .supervisors   parasite のグローバルなスーパーバイザー。名前でインポートする given として
++     `parasite.supervisors.globalSupervisor` を転送するオブジェクトであり、`PlatformSupervisor` を `Supervisor` の given として与える。`Threading` ではなくスーパーバイザーを直接必要とするコードのためのものである。
+
+@ 0 5 0 0ee708c3c0504ce603a16ee9fe99f8b3
++ entry .unsupervised   parasite のプロセスの寿命にわたるモニター。どの `supervise` スコープの外でもブロックするため
++     `parasite.unsupervised.orphanMonitor` を転送するオブジェクトである。これは呼び出したプラットフォームスレッドをパークし、何も監督しない `Monitor` であり、デーモンのライフサイクルやプロセスの寿命にわたる待機のための意図的な逃げ道である。
++     ブロックする領域がすでにスコープを持つところでは、`supervise` を優先すること。
+
+@ 0 1 0 1ad2761431b3688b08d662095e7e8bf6
++ entry .strategies   すべてのライブラリから統合されたエラー処理の戦略。`throwUnsafely` はここで宣言される
+
+% 1 1 0 0878aa0482e67db11b706d924e0bd498
+
+@ 0 6 0 095d21e12446cde8039b2e76f50467b9
++       アンブレラの `strategies` 選択パッケージである。
++       その given は `Tactic` であり、エラーが発生したときに何が起こるかを決める。`import strategies.*` は given をインポートしないので、それぞれ名前でインポートする。
++       ほとんどは `contingency.strategies` へのフォワーダー（`fatalErrors`、`mitigation`、`throwSafely`、`uncheckedErrors`）であり、contingency のページで説明されている。`throwUnsafely` だけがここで宣言されている。
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 1 1 0 06e1f9e27e2e381a09e64b718299b319
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 19afb8e95c25a4f5044a33e4074e9c21
+
+% 1 1 0 0ef047122ef6aa300ace3e4f0699c88f
+
+% 0 1 0 0e3ef618e488455508792ae085ee09a9
+
+@ 0 7 0 00f18026316b86631c7962cf211dea2e
++   entry .throwUnsafely   ケイパビリティを要求せずに、すべてのエラーを普通の例外として投げる
++       `contingency.strategies.throwUnsafely` に委譲する純粋な `ThrowTactic[Hazard]^{}` であり、反変性によってすべての `Tactic[error]` を一度に満たす。
++       エクスポートのフォワーダーではなく委譲する given である。フォワーダーはメソッドであり、値の given のアンブレラでの名前は、それを通じて召喚されたすべての `^{tactic}` インスタンスのキャプチャ集合に入ることになるが、メソッドはキャプチャの参照として正当でないからである。
++       スクリプトやプログラムの最も外側の層に向いている。ライブラリは代わりに何を発生させるかを明示すべきである。
+
+@ 0 1 0 008339a2089dfa9c058050e907dde547
++ entry .httpServers   scintillate の HTTP サーバー。それぞれ名前でインポートする `Protocolic` の given
+
+% 1 1 0 086c62bf7392c7701cfad8130309328a
+
+@ 0 7 0 1b76d5e422e43862142131dc1af0c40e
++       アンブレラの `httpServers` 選択パッケージである。`tcp"8080".serve[Http]` にどのサーバーが応えるかは、これらの一つを名前でインポートすることで選ぶ。
++       合成されたエクスポートのフォワーダーは given のキャプチャアノテーション付きの細分化された型を失うので、四つすべてが `scintillate.httpServers` への手書きのフォワーダーとしてここで宣言されている。
++       それぞれ 80、443、8080、8000 のいずれかのポートに対する `scintillate.httpServers.HttpdFor[port]` と型付けされ、与えられた `Tactic[Httpd.Error]` と `Monitor` をキャプチャし、スコープに `Probate`、`Httpd.Event is Loggable`、`WebserverErrorPage` を必要とする。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 11738106f6d88b28149224b62d875beb
+
+% 0 1 0 07aee3a963c81e41082d67adafd250ef
+
+% 0 1 0 1e5e0a61e64bc2840669a827caf48567
+
+% 0 1 0 116b1bd0a8b68ab10d6b03f914f29df8
+
+% 0 1 0 0a2c389b0309ea7915422e5e13a19957
+
+% 1 1 0 04cf7290391dc935025305928ede3a56
+
+% 0 1 0 1f3234416814a8c9156c65143687a776
+
+% 0 1 0 0a31d44dd24d71231cf170324d917bac
+
+% 0 1 0 0db19d4bf145a35613d9ff6dc6aba3c6
+
+@ 0 12 0 0247a1e7202fb7f61cdd06cde7c1af74
++   entry .jdkHttpserver   `localhost` 上で JDK の `Httpd` が提供する `Http`
++       `scintillate.httpServers.jdkHttpserver` を転送する。JDK の `com.sun.net.httpserver` の上に作られたサーバーであり、ループバックインターフェースにのみバインドされる。
++   entry .jdkHttpserverPublic   すべてのインターフェース上で JDK の `Httpd` が提供する `Http`
++       `scintillate.httpServers.jdkHttpserverPublic` を転送する。`jdkHttpserver` と同様だが、すべてのネットワークインターフェースにバインドされるので、他のマシンから到達できる。
++   entry .soundnessHttpd   `localhost` 上で scintillate 自身の `SocketServer` が提供する `Http`
++       `scintillate.httpServers.soundnessHttpd` を転送する。Soundness 自身のサーバーであり、TLS 上の HTTP/2 も話し、ループバックインターフェースにのみバインドされる。
++   entry .soundnessHttpdPublic   すべてのインターフェース上で scintillate 自身の `SocketServer` が提供する `Http`
++       `scintillate.httpServers.soundnessHttpdPublic` を転送する。`soundnessHttpd` と同様だが、すべてのネットワークインターフェースにバインドされる。

@@ -1,0 +1,584 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 10e669029b2ac30c082b52eb1c4f5fea
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03d576093bc755b307da376dc3391b3f
++ info   los diagnósticos semánticos del compilador como árboles, con sus tipos reificados y representados como los escribiría el usuario
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1d2a2e7c1f93ebbf13bcef370c324884
++     _Delicious_ lee los **diagnósticos semánticos** que emite el compilador proscala con
++     `-Zsemantic-diagnostics` (el `scalacOptions.semanticDiagnostics` de anthology): mensajes
++     del compilador en los que cada tipo, símbolo, nombre y fragmento de código está marcado con
++     marcadores de caracteres de uso privado, y cada tipo lleva además su forma empaquetada en
++     TASTy. Un mensaje simple del compilador es texto en el que `List[Int]` son nueve
++     caracteres; uno semántico sabe que `List[Int]` es un tipo, qué tipo es, y que `List` es
+
+% 0 1 0 15b623c1783cd0650ccdd2d9e9e15009
+
+@ 0 7 0 05b678f89ec603f9034991e78d81944f
++     `Markup.parse` convierte el texto marcado en un árbol de nodos `Markup` —`Textual`,
++     `Typed`, `Symbolic`, `Named`, `Code` y `Spanned`—, y `SemanticMessage` envuelve un mensaje
++     entero. Un `Reifier`, dado un classpath, desempaqueta la carga útil TASTy de cada nodo
++     `Typed` de vuelta a un `Syntax` de stenography, de modo que el tipo puede representarse
++     abreviado respecto de un conjunto de importaciones, exactamente como lo escribiría el
++     usuario; `render` hace esto para un mensaje entero como texto, y `teletype` como salida de
++     terminal con estilo, con cada fragmento de código y cada tipo resaltados sintácticamente
++     por harlequin.
+
+% 2 1 0 1ecef6f26d4c3e7e089ec5ccf1c49810
+
+% 1 1 0 0d439f278d701a4f174ee816c0a57fd2
+
+% 2 1 0 0529ee19d740d90219dbbae4fcda7edf
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1c65036f2fdab0ad1f81bd7f049017d3
+
+% 0 1 0 0fa7f5534cbdfbd716ba6a33625e1d39
+
+% 0 1 0 0849888e78e7ca071f5f38cfc87090dc
+
+% 0 1 0 0a73a5e2eccc41891e4b4fc38f3f27ad
+
+% 1 1 0 0f621344fe04df0a1d55fea7d58d0e38
+
+% 2 1 0 083ed2ebb7561b4f08f4cdf69394aac1
+
+% 3 1 0 16f70afb08d15f5a03629ebd1a2ad01c
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 0 1 0 0fd73a1d639ff0ed034a42ef5e5bc682
+
+% 0 1 0 0c832a4892374eca05c67a8e6c216bb0
+
+% 1 1 0 01a46fa427d68ae3155d0ec406295164
+
+% 0 1 0 0af70759b1a1829e00f3cbaf4e7eba7e
+
+% 0 1 0 12c8baac562b76870cf4fe54abb5580e
+
+% 0 1 0 0f9ab65a4332d7900cd759785612d0f6
+
+% 1 1 0 1d9236868ad2408c0664593a322e9aa0
+
+@ 0 5 0 06bd7f6ab5157a400c3696486a5a8777
++     Todo lo que el compilador no pudo empaquetar —un tipo local, un skolem, una variable de
++     tipo, un tipo de error— se sustituyó por un `Placeholder` antes de empaquetar, y se vuelve a
++     poner en la representación con el nombre que el compilador imprimió para ello, así que un
++     diagnóstico nunca se convierte en un fallo: una carga útil que no puede desempaquetarse
++     recurre como alternativa al propio texto del compilador. La biblioteca se divide en tres
++     conjuntos de fuentes:
+
+@ 0 9 0 10f766f74bab0f3b033005bbc2166607
++     - `delicious.core`: `Markup`, `SemanticMessage`, `Placeholder`, `PlaceholderKind` y
++       `Rendition`; análisis puro, que no depende más que de texto y está disponible en todas
++       las plataformas.
++     - `delicious.scala`: `Reifier` y la extensión `render`, que incrustan el compilador de
++       Scala para desempaquetar TASTy, y por tanto son solo para la JVM.
++     - `delicious.ansi`: la extensión `teletype`, que representa un mensaje con el resaltado
++       sintáctico de harlequin; solo para la JVM.
++     - `delicious.compiler`: el `Shim` sobre el único constructor interno del compilador que
++       difiere entre las líneas de Scala 3.9 y 3.10; no está pensado para usarse directamente.
+
+@ 0 2 0 15ebed86febd599909712501e4e0335e
++     Todo se exporta al paraguas `soundness` excepto `teletype`, que allí entra en conflicto con
++     la representación `Teletypeable` de escapade, y por eso se invoca como
+
+% 0 1 0 058554b06b18a2a21b7f77fb5e3636bf
+
+% 0 1 0 096b211c26be9d17100ab892a9103365
+
+% 0 1 0 00f550bc174eb1151a9ef8c5a9356e0b
+
+% 0 1 0 1eb56ce52ae13ed11e4f94f1d593996a
+
+% 0 1 0 0c940c957c8175210eb6497ce49aed8f
+
+@ 0 1 0 05cdfd43c86b3ca20001a02163e233f7
++ entry .SemanticMessage   un mensaje del compilador analizado en su árbol de marcado
+
+% 1 1 0 18603f8045da362e0b38e1103cbbb3fc
+
+@ 0 6 0 015a6d99e58d1e581c300f75a0176fee
++       Un `SemanticMessage` son los nodos `Markup` de un mensaje marcado del compilador, creados
++       por `SemanticMessage.parse` a partir del texto que lleva un `Compiler.Notice#markup` de
++       anthology cuando el compilador se ejecutó con `scalacOptions.semanticDiagnostics`. A
++       partir de él, `#plain` es el mensaje sin sus marcadores (el mismo texto que el propio
++       `message` del aviso), `#types` los nodos `Markup.Typed` que menciona, y `render` y
++       `teletype` (con un `Reifier`) sus representaciones con cada tipo reificado.
+
+% 2 1 0 188cb46e1d00a6b21acd304bde346cf1
+
+% 1 1 0 02e77927d71f2d6f11c9e39a53fe776f
+
+% 2 1 0 0a010bfe4e9f3a5301637f19e5c27f8c
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0044fc7e7f6b42ab01676e50edfcde10
+
+% 0 1 0 1de352ceb677a4d815dcbbf392272771
+
+% 0 1 0 00e706a65af7e2760080004bd1653f11
+
+% 1 1 0 0ebbb6c323402d600a77dd7896c5a5db
+
+% 0 1 0 07eda9492b835ea10cd1c858a8ccd70d
+
+% 1 1 0 077077e93dfb9cb411cafc110a74d828
+
+% 1 1 0 03b5b500c9e0a9c913ad0be1a1f299ec
+
+@ 0 12 0 00a44b3079ebbdec196daa84202eed85
++   entry .marked   si un texto contiene marcadores de diagnóstico semántico
++       Verdadero cuando está presente algún carácter del rango de uso privado que usan los
++       marcadores, así que un mensaje de un compilador sin diagnósticos semánticos se distingue
++       sin coste de uno que los tiene. La misma prueba que `Markup.marked`.
++   entry .parse   analiza un mensaje marcado y lo convierte en un `SemanticMessage`
++       `Markup.parse` aplicado al texto entero: un mensaje sin marcadores da como resultado un
++       único nodo `Markup.Textual`, así que puede invocarse sin riesgo sobre cualquier mensaje.
++   entry #markup   los nodos del mensaje, en orden
++   entry #plain   el mensaje sin ningún marcador, dejando solo el texto visible
++   entry #types   cada nodo `Markup.Typed` del mensaje, del más externo al más interno, incluidos los anidados
++       Se encuentran tanto a través de nodos `Named` como `Symbolic`, `Code` y `Spanned`, y los
++       hijos `Typed` de un nodo `Typed` van a continuación de él.
+
+@ 0 1 0 10392efc6327aea10a17ff757bb6f292
++ entry .Markup   un nodo de un diagnóstico semántico: texto, un tipo, un símbolo, un nombre, código o un tramo
+
+% 1 1 0 0bab96ea7ae1c71815e3b2acc1940bd2
+
+@ 0 3 0 16603c32f21febe9040169b5fd75091e
++       Un enum de las clases de nodo de las que se compone un mensaje marcado del compilador, con
++       `Markup.parse` para leer un árbol a partir del texto del compilador y `Markup.plain` para
++       quitarle el marcado. Un nodo es uno de:
+
+% 2 1 0 189953c96a082d95014e8052d0abe099
+
+@ 0 8 0 036b0bf1a1d53ddc0d3731d9c93d9824
++       column  Caso
++       column  Nodo
++       row  `Textual(text)`  texto simple entre marcadores
++       row  `Typed(tasty, placeholders, rendition, children)`  un tipo: `tasty` es su forma empaquetada en TASTy como texto Base64 (`Unset` cuando el compilador no proporcionó ninguna), reificada por `Reifier#syntax`; `placeholders` ocupan el lugar de las partes que no pudieron empaquetarse; `children` son la representación impresa por el compilador, la alternativa
++       row  `Symbolic(name, full, rendition, children)`  una referencia a un símbolo, por su `name` y su nombre completamente cualificado (`full`)
++       row  `Named(isType, rendition, children)`  un nombre, con la indicación de si es un nombre de tipo
++       row  `Code(rendition, children)`  un fragmento de código, que `teletype` resalta sintácticamente
++       row  `Spanned(kind, rendition, children)`  un marcador de una clase (`kind`) que esta biblioteca no conoce, conservado con sus hijos
+
+% 1 1 0 0fc614ff67c9f0c814daac95ad5f0506
+
+@ 0 2 0 0907561eef7316610e666c7c0d565014
++       Todo nodo salvo `Textual` tiene una `Rendition`, la forma en la que lo presentó el
++       compilador, y `children`, los nodos que contiene; `#plain` sobre cualquier nodo es su
++       texto visible.
+
+% 2 1 0 1a6d062472b7d03705fe5602b9406e0a
+
+% 3 1 0 04dfec268351b6841812df3b0170c41f
+
+% 0 1 0 182d52ab7845d8ac0888b05262c852c7
+
+% 0 1 0 0bd4b1e20aa9d53e13fd554fe64dc938
+
+% 0 1 0 0668d36d19c770671bb0c91ab1200e53
+
+% 0 1 0 112a44bc3f93a5a905236a4f37d783e1
+
+% 0 1 0 146acacfe9c26fa400ea0a1f7cd4311c
+
+% 1 1 0 16e21531c49f39d4183881ab794162d6
+
+% 1 1 0 1020f9a6ad7df1290df3021be28024fd
+
+% 2 1 0 1061d10216ec014f0935cf14b47ceda5
+
+% 0 1 0 090271f39425e3e2178b3b4106b3f9b4
+
+@ 0 15 0 0dbcc134f3d373a1003f570cc3543d3d
++   entry .marked   si un texto contiene alguno de los marcadores que lee `parse`
++       Un carácter del rango de uso privado de `U+E000` a `U+E003`.
++   entry .parse   analiza texto marcado y lo convierte en una lista de nodos, como lo haría el propio analizador del compilador
++       Sigue exactamente el `DiagnosticMarkup.parse` del compilador: un marcador se abre con un
++       carácter de inicio, su clase, un separador de atributos, atributos `key=value`
++       (codificados con porcentajes donde un valor contiene un carácter reservado, y
++       decodificados aquí) y un separador de texto, y se cierra con un carácter de fin. Todo lo
++       que no forma un marcador completo se descarta y el contenido que lo rodea se conserva
++       como texto —un carácter de inicio o de fin suelto desaparece, una cabecera truncada se
++       lee como texto simple—, y los hijos de un marcador que nunca se cierra se insertan en su
++       padre, así que un mensaje cortado sigue pudiendo analizarse. La clase decide el nodo:
++       `type`, `sym`, `name` y `code` tienen sus propios casos, y cualquier otra clase es
++       `Spanned`.
++   entry .plain   el texto sin ningún marcador, conservando solo el contenido visible
++       El texto sin marcadores se devuelve tal cual, sin analizarlo.
++   entry #plain   el texto visible de este nodo: su propio texto, o el de sus hijos unido
+
+@ 0 1 0 083d2679dab4cc4d12476d36f144cd9f
++ entry .Placeholder   lo que ocupó el lugar de una parte de un tipo que el compilador no pudo empaquetar
+
+% 1 1 0 199c4e074f36f5241d764565078cca99
+
+@ 0 7 0 040d2bb923ab551517f3bd1ac5c6d928
++       El empaquetador que da a un nodo `Markup.Typed` su carga útil TASTy solo puede empaquetar
++       lo que se resuelve únicamente contra el classpath; un tipo o término local, un skolem, una
++       variable de tipo o un tipo de error se sustituye, como un subárbol maximal completo, por un
++       tipo literal de cadena centinela `⟨scala-diag:N⟩` y se registra como un `Placeholder` con
++       el número `N`, con su `#kind`, su `#name`, su `#arity`, dónde se definió y el texto que el
++       compilador imprimió para él (`#printed`). `Reifier.substitute` vuelve a poner el texto
++       impreso donde está cada centinela, así que `List[Bad.Local]` se representa con
++       `Bad.Local` aunque `Local` no esté en ningún classpath.
+
+% 2 1 0 1c592e04cc0ca21911cb733e123a0117
+
+% 3 1 0 0f65b79e773d586a146c596d685e6233
+
+% 0 1 0 131d0ae923e93e9615dddbcca2d5ad74
+
+% 0 1 0 06c02171d2c33f1a1eb422e2f67b23c3
+
+% 0 1 0 1a03b0be906bf49b1c04edec021be777
+
+% 0 1 0 0ec9f9ae299e503b136e72a162582fe6
+
+% 1 1 0 0562b756f05dbd8e1e8dae86782e00c5
+
+% 0 1 0 05c392df7bfdb1300324997d7f675aa7
+
+% 1 1 0 1342f732be9187f306dd4eb5c20da7a4
+
+@ 0 19 0 04285066a53954e4015a95ce4b14e557
++   entry .Prefix   el prefijo reservado de un centinela de placeholder, `⟨scala-diag:`
++       Un tipo literal de cadena genuino que da la casualidad de que empieza por él lo escapa el
++       compilador con la forma `esc:`, que `escaped` vuelve a leer.
++   entry .text   el texto centinela para un número de placeholder: `⟨scala-diag:N⟩`
++   entry .reference   el número de placeholder, si un texto es una referencia centinela
++       `Unset` para cualquier otro texto, incluido un literal escapado.
++   entry .escaped   el literal original, si un texto es un literal de cadena genuino escapado
++       `⟨scala-diag:esc:…⟩` devuelve el `…`.
++   entry .decode   un placeholder a partir de sus seis campos separados por `|`, o `Unset`
++       Los campos son el número, la clase, el nombre, la aridad, dónde se definió (que puede estar
++       vacío) y el texto impreso, cada uno codificado con porcentajes donde de otro modo
++       contendría un `|`. Un número no numérico, o demasiados o demasiado pocos campos, da
++       `Unset`; una clase desconocida se conserva como `PlaceholderKind.Other`.
++   entry #id   el número del placeholder, tal como se refiere a él el centinela
++   entry #kind   lo que se sustituyó: un tipo o término local, un error, una variable de tipo o un skolem
++   entry #name   el nombre de lo que se sustituyó
++   entry #arity   el número de parámetros de tipo de lo que se sustituyó
++   entry #definedAt   dónde se definió, tal como lo registró el compilador, o `Unset`
++   entry #printed   el texto que el compilador imprimió para ello, que se usa en su lugar al representar
+
+@ 0 1 0 0e45e5faaf73b15b0c5f8db3a89d90a7
++ entry .PlaceholderKind   la clase de cosa que sustituyó un placeholder
+
+% 1 1 0 0a2c9583ecf498401630efa18aae6967
+
+@ 0 1 0 0c6aec073574691a02ec37c219c0a4fc
++       `PlaceholderKind(text)` lee una clase a partir de su nombre en la transmisión:
+
+% 2 1 0 0b07d6136ce5552200b7146aabcfee94
+
+@ 0 9 0 1ccdf9c72b5cbc8e1aa3c226febaf73f
++       column  Caso
++       column  Nombre en la transmisión
++       column  Sustituido
++       row  `LocalType`  `local-type`  una definición de tipo local a la compilación
++       row  `LocalTerm`  `local-term`  una definición de término local a la compilación
++       row  `Error`  `error`  un tipo de error
++       row  `Typevar`  `typevar`  una variable de tipo sin instanciar
++       row  `Skolem`  `skolem`  un skolem
++       row  `Other(kind)`  cualquier otro  una clase que esta biblioteca no conoce, conservando el texto del compilador
+
+% 1 1 0 1c1697438e05b1df132dce798357ffae
+
+@ 0 1 0 156f9152bc9cc2781fae2e28d2073ed7
++   entry .apply   una clase a partir de su nombre en la transmisión; un nombre desconocido se conserva como `Other`
+
+@ 0 1 0 11f9ac386941d5dd032ce2013fe107ed
++ entry .Rendition   la forma en la que se presenta una referencia a un símbolo: por defecto, declaración, localizada o completa
+
+% 1 1 0 0eaeb636df82922c0f7d133f96cb75ff
+
+@ 0 2 0 17b9b776e3c1790400806d6e54675a0a
++       La lleva todo nodo `Markup` salvo `Textual`. Se analiza a partir del atributo `style` del
++       marcador, pero no es un estilo visual; `Rendition(text)` la lee a partir de su nombre en la
++       transmisión:
+
+% 2 1 0 153960f7c34ab80213c4359539ae8b7c
+
+@ 0 7 0 0c4d8716df583cf506e34b5ded0edbd4
++       column  Caso
++       column  Nombre en la transmisión
++       column  El símbolo se muestra
++       row  `Declaration`  `dcl`  como su declaración: `def act: Int`
++       row  `Located`  `located`  como su nombre localizado
++       row  `Full`  `full`  como su nombre completo
++       row  `Default`  cualquier otro, o `Unset`  como se imprime normalmente
+
+% 1 1 0 1b787c8d9a237ba513edc990cc2421d9
+
+@ 0 1 0 086366e63624d78702a7dbb6059a8de5
++   entry .apply   una forma de presentación a partir de un nombre en la transmisión opcional; `Default` cuando falta o es desconocido
+
+@ 0 1 0 07e98667f8ac752d14ce28189d8f014f
++ entry .Reifier   desempaqueta los tipos TASTy de los diagnósticos semánticos de vuelta a `Syntax` de stenography
+
+% 1 1 0 0362fbbfe0344a3d16cc57c93ecd808f
+
+@ 0 6 0 1eb90a6f0cb5949c042cb3b79b539a63
++       Un `Reifier(classpath)` contiene un contexto del compilador sobre un `LocalClasspath` de
++       hellenism, creado de forma perezosa en el primer uso, contra el que la carga útil TASTy de
++       cada nodo `Markup.Typed` se desempaqueta en un tipo y se representa como un `Syntax` de
++       stenography. El classpath debe ser aquel contra el que se compiló el código diagnosticado:
++       el empaquetador garantiza que una carga útil se resuelve únicamente contra el classpath,
++       porque todo lo demás se ha sustituido por un `Placeholder`, que `Reifier.substitute`
++       vuelve a poner mediante su texto impreso.
+
+% 2 1 0 12d1904dca711d4700390a2a1f0d79b2
+
+% 3 1 0 13dda6292de5c3de1263ee0c7ed948f9
+
+% 1 1 0 137597125b21f63c186261e669985a5b
+
+% 2 1 0 1e96b9abc0fcba340070a39287452576
+
+% 0 1 0 195cd0173d523ce2111e41aa1fca939b
+
+% 0 1 0 1e2355df2af30ca113f56b995457e3a0
+
+% 0 1 0 0f1c50ba9254b1911afb162fdf1ac8f7
+
+% 0 1 0 1545b2f815f548860975fa87e9745a61
+
+% 0 1 0 0ff9de39011e863f1462a00e5bf36349
+
+% 1 1 0 16ecbd5479ba18e50a10ba6b2ee829d0
+
+@ 0 3 0 05a4b6115b48251214f7a529a32c1cf1
++       Un reificador es un valor que se conserva, no que se crea para cada mensaje: su contexto
++       carga una sola vez la tabla de símbolos del classpath. `render` y `teletype` toman uno, e
++       `#imports` construye los `Imports` respecto de los cuales abrevia una representación. En
++       `delicious.scala`.
+
+% 1 1 0 1c0735ad49f621ae0dde793edb408b41
+
+% 1 1 0 0f60779434b6b2910b50bb3b29932007
+
+% 2 1 0 08a9d4330436429c0f109c550354d8ab
+
+@ 0 6 0 0eb55383ef37e104176c8dd71aeae3c0
++   entry .substitute   reescribe los centinelas de placeholder de un `Syntax` como su texto impreso
++       Recorre un `Syntax` y sustituye cada primitiva cuyo texto es un centinela
++       `⟨scala-diag:N⟩` entre comillas por `Syntax.Symbolic` del texto impreso del placeholder
++       `N`, y cada literal genuino escapado `⟨scala-diag:esc:…⟩` por el literal al que
++       representaba. Es correcto porque el empaquetador sustituye subárboles maximales
++       completos, así que un centinela es siempre un tipo completo, nunca un constructor ni un
++       prefijo. Cualquier otra primitiva se deja como está.
+
+% 2 1 0 0ed588a31e11140b06fcfb7f522b7f3d
+
+% 3 1 0 0a9105b2f3e04f3b00e26e657b2701ad
+
+% 0 1 0 10481c013d965c211e512b4f0987d478
+
+% 0 1 0 12b3513a81ea8f6d1f36f999290ec088
+
+% 0 1 0 19c6a115b3c0368009f7313a8bea8395
+
+% 0 1 0 0989867aa0f4996610d3998ab37a7d66
+
+% 0 1 0 0c569ad83d9a41ea14aa8667a33d4405
+
+% 1 1 0 0800bb2e9b9f94ec1dd3e8b9cae448d9
+
+@ 0 10 0 112ae7e59446139a1f5518baac639ab3
++   entry #imports   unos `Imports` para representar contra este classpath, con los `export` resueltos
++       `reifier.imports(designators, direct)` es `Imports.resolve` en el contexto del
++       reificador: unos `Imports` cuyos ámbitos con comodín son `designators` y cuyos nombres
++       importados directamente son `direct`, ampliados con los destinos (el tipo y el objeto
++       compañero) de cada alias `export` declarado en cada uno de los `designators`. Esto es lo
++       que hace que un tipo al que se llega a través de un preludio importado con comodín
++       —`jacinta.Json` con `import soundness.*`— se represente por su nombre final, `Json`, como
++       lo escribiría el usuario, mientras que unos `Imports` construidos a mano lo representan
++       cualificado. Un ámbito que no declara ningún export, o que no puede resolverse, no añade
++       nada y no lanza ninguna excepción. Ambos conjuntos son
++       `scala.collection.immutable.Set[Designator]` de la biblioteca estándar, tal como los
++       contiene el propio `Imports`.
+
+% 2 1 0 108105e6ffc401a71c4add3135b9ea37
+
+% 3 1 0 19ae83a5658d68b6155d15d7c99551f3
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 10b704fe52bb6dee1f18ea5b12009793
+
+% 0 1 0 0f868c383c2afcbe1d0b597309c15d47
+
+% 0 1 0 1df60d62fdbecea91a7a49c2dcd8a040
+
+% 0 1 0 1fa71ac0b0bb1d170dd8174b1e5a2017
+
+% 1 1 0 13077f144c7aad810cae270f077295d2
+
+@ 0 7 0 08cea3b13a3fca9318808eed926b0ad9
++   entry #syntax   el `Syntax` de la carga útil de un nodo `Markup.Typed`, o `Unset` si no puede desempaquetarse
++       Decodifica el TASTy en Base64 del nodo, lo desempaqueta como un árbol de tipo en el
++       contexto del reificador, convierte el tipo en un `Syntax` de stenography y aplica
++       `Reifier.substitute` con los placeholders del nodo. Un nodo sin carga útil, o uno cuya
++       carga útil no puede desempaquetarse (empaquetada por otra versión del compilador, o contra
++       otro classpath), da `Unset` en lugar de un error, así que quien llama recurre a los hijos
++       impresos del nodo.
+
+@ 0 8 0 104d454ca16141bd1a54695b5aba3c1a
++ entry .render   un mensaje semántico como texto, con cada tipo representado de nuevo mediante stenography
++     Una extensión sobre `SemanticMessage`, en `delicious.scala`:
++     `message.render(reifier)(using Imports)` une los nodos del mensaje, representando cada nodo
++     `Markup.Typed` como el `Syntax#text` de `reifier.syntax(node)` —abreviado según los
++     `Imports` del ámbito, de modo que `List[Int]` se lee como `List[Int]` con una importación
++     de `scala.*` y como `scala.collection.immutable.List[scala.Int]` con `Imports.empty`—, y
++     cada uno de los demás nodos como su texto visible. Un tipo que no puede reificarse recurre
++     como alternativa al texto impreso por el compilador, así que el resultado nunca es peor que
++     `SemanticMessage#plain`.
+
+% 2 1 0 1b7485af4daa45d5134d2a485752597b
+
+% 0 1 0 08f225166e68361705acb5dcc1e7e2be
+
+% 1 1 0 0a0ea2de9a05df011d64223ddb917928
+
+% 2 1 0 1754ae32105eed9a12f190ac4cd0232e
+
+% 0 1 0 0f4d5c6b3daf24ef0a83e2fd2e1eda07
+
+% 0 1 0 07af79ab4f9a50800e235710fa93f5f0
+
+% 0 1 0 18f167d6b882391f0514f14b61cf37e6
+
+% 1 1 0 0bf289308be305f003e966b06a846e7a
+
+% 2 1 0 06be9f9b3ae47e9a01deb44e0f56c2cf
+
+% 3 1 0 136879d3ebd4bc2505af849ddcfda1eb
+
+% 4 1 0 0a4bc5437cc8088405cb1f154094c80b
+
+% 0 1 0 0292c53d6b9facfb083437abf8e55e4d
+
+% 1 1 0 08b9d33086c6b7a51fdebb42dda4a2bc
+
+% 0 1 0 1327d12ef7f16c220d8e1add77a2793f
+
+% 0 1 0 009f567177c2f1451c570616f775c979
+
+% 1 1 0 0bd3ad58a779fb3906763955d706bf7a
+
+% 2 1 0 1a2da4d7a0e4dbbc15a9760d4f966e4c
+
+% 3 1 0 1b87fc0d3634d4c80f39cbac8961b2d4
+
+% 4 1 0 0b3955b7512895240c6644555eda4ac4
+
+% 0 1 0 01bfbc019f831d16179a311ca587130a
+
+% 1 1 0 0a3cb561e8020c2212906907c5fb95d1
+
+% 0 1 0 1422cdf8f4c1c07209d70bd006942562
+
+% 1 1 0 0959e5a974f123191283828c2f663165
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 10 0 1bd89306f11969c6124d04ec4aa038df
++ entry .teletype   un mensaje semántico como texto de terminal con estilo, con el código y los tipos resaltados sintácticamente
++     Una extensión sobre `SemanticMessage`, en `delicious.ansi`, que se invoca como
++     `delicious.teletype(message)(reifier)`: no se exporta al paraguas, donde `teletype` es la
++     representación `Teletypeable` de escapade. Necesita unos `Imports`, una
++     `ScalaSyntaxPalette` y un `Highlight` en el ámbito (`Highlight.default`, tokenizado, se
++     encuentra sin ninguna importación). Cada nodo `Markup.Code` lo resalta harlequin como un
++     término de Scala, y cada nodo `Markup.Typed` se reifica mediante el `Reifier`, se representa
++     respecto de los `Imports` y se resalta en posición de tipo; un tipo que no puede reificarse
++     se resalta en su lugar a partir del texto impreso por el compilador. Cualquier estilo ANSI
++     que el propio compilador haya puesto en el texto se elimina primero, así que el resaltado
++     se hace desde cero.
+
+% 2 1 0 02a363100a696c5100a56ada7739d6e7
+
+% 3 1 0 02c6f418f1aa06240a45a058ab83c53e
+
+% 1 1 0 0ea062f168fab3031f31d3875dd50b06
+
+% 2 1 0 18dad787821159e5025eb2fa9c86c403
+
+% 0 1 0 077749de4e6b83e1063dc8ed9e357a72
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 0d545189ad4bcdc80b75e86e9b2c7856
+
+% 0 1 0 16ed73310fd01ea417e78b58a524b3cb
+
+% 0 1 0 14c0ffec95a94f360596baac5450968a
+
+% 0 1 0 14e6d1d56a0552390c9137daf72bee47
+
+% 0 1 0 0c9a0d1bde7ffcc915b9a6695ce25e96
+
+% 0 1 0 00c4e3ca5bc9383204aac10905120d1f
+
+% 0 1 0 118fb17f1caf098918184c1d6c93ae00
+
+% 0 1 0 15dd2babbd84a4c90944ab37c1a8abef
+
+% 0 1 0 05278e039bf9d64f00722c5f62fd5de3
+
+% 0 1 0 0d90b6038e246a4b1921011701c01ff1
+
+% 0 1 0 1042c10eb6cdab760947b72144b2dac4
+
+% 0 1 0 0413921d2621b6490e9735fb408ab1d7
+
+% 0 1 0 162e7b79aecaa52800616c39be3cf672
+
+% 0 1 0 1753044b6845d15418eede5a99d422ca
+
+% 0 1 0 062c59b8d875ec261ce4b99c9cfe00dd
+
+% 0 1 0 1cdd72dd4df554520b96e8d4e6782f5e
+
+% 1 1 0 0da0658abe450d250c0bd0f46a90d6bf
+
+% 0 1 0 09eae7e79421fb3c052f2f5b5e3d6378
+
+% 0 1 0 1ea2a0c5d02d95de122077dbea9f8dd8
+
+% 0 1 0 0ce90d10d03eeb7916a3b4500345d00d
+
+% 1 1 0 1a99c6a08f9cc5b1107d21462d2e25e8
+
+@ 0 2 0 111699e3c2a541580a1c44d66bcfc99d
++     Ninguna biblioteca incluye una `ScalaSyntaxPalette`, puesto que una paleta es una elección
++     de colores: un programa define una como given, como hace el ejemplo, con un color para cada
++     acento.
+
+@ 0 1 0 009b7ab22dca918404eb284fcbf03aba
++ entry .Shim   la forma de escribir la API interna del compilador que envuelve delicious, para cada línea del compilador
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 0c614c333d6a3455102d04de83a2a369
++       No está pensado para usarse directamente. `delicious.compiler` contiene un `Shim` para la
++       línea de Scala 3.9 y otro para la 3.10, que definen el mismo nombre según las formas de
++       cada línea, para que nada más en delicious sepa cuál está en juego.
++   entry .compilationUnitInfo   un `CompilationUnitInfo` sobre un fichero virtual y su `TastyInfo`
++       La 3.9 toma el `TastyInfo` por valor y la 3.10 como un cargador perezoso; el shim lo
++       proporciona como espera cada línea, siempre presente, puesto que el desempaquetador de
++       árboles lo lee incondicionalmente.

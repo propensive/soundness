@@ -1,5 +1,0 @@
-orthant 1 release
-
-=       flags is reassigned: `flags = flags(Orange) = true`.
-+   entry .bits   the flags as their underlying bits, a `B64`: the case of index `n` owns bit `n`
-+       Needs no `Enumerable`. A `B64` converts to a `Long` with `.long`.

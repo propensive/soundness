@@ -1,0 +1,146 @@
+orthant 2 language
+
+@ 0 1 0 0347f2f17bafdb50062aa78671957587
++ # Padrões de testes do Soundness
+
+@ 0 4 0 180093f96fd176021b81726097449021
++ Este documento define como os testes são escritos e organizados nas bibliotecas
++ do Soundness. Os testes usam o [Probably](https://github.com/propensive/probably/).
++ Ele complementa `syntax.md` (espaços em branco e formatação) e `benchmarking.md`
++ (medição de desempenho). Os exemplos são tirados de `lib/*/src/test/*.scala`.
+
+@ 0 1 0 128121213fd1bbc803c5506b0f37a470
++ ## 1. Localização e nomenclatura
+
+@ 0 2 0 124fa5e2f4941d520e30c1d16e903188
++ Os testes ficam no diretório `src/test` de um módulo. O objeto de teste estende
++ `Suite` e implementa `run()`:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 18044bee7505f5bf1ce827a4102a630d
+
+% 0 1 0 05b21312d4476d490bedde74e2206bb2
+
+% 1 1 0 176ab5997d1a33eb01209ac7d07807b2
+
+@ 0 4 0 06149e7724a0030112a6316081df5f95
++ O título da suíte é uma `Message`, que nomeia o módulo sob teste. Antes dele vem
++ o id da suíte, um literal de string pelo qual uma seleção a endereça:
++ `fume run logging`. O id nomeia para que serve o módulo, não o módulo. Mantenha-o
++ curto, e com uma só palavra a menos que sejam necessárias duas:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 0a63bb414baca57611071104030a64c7
++ column  Suíte
+
+% 0 1 0 1116ac56b72335f408c3022657ba1d16
+
+@ 0 4 0 0b42b0e9944df0d81aa65b66c02c18eb
++ column  Exemplo
++ row  a suíte de um módulo  para que serve o módulo  `logging`, não `eucalyptus`; `html`, não `honeycomb`
++ row  a suíte de uma área, em `<module>.<Area>Tests.scala`  o id do módulo e a área  `json-parser`, `json-records`
++ row  uma suíte declarada apenas pelo seu título  derivado do título; um fallback, não a convenção  `eucalyptus-tests`
+
+% 1 1 0 19131d8fbd3b873c1ff62a940a6261bf
+
+@ 0 1 0 1c24d5d3914f8b0a14464d659202d909
++ Um método fora de `run()` que declara testes para a suíte a nomeia pelo mesmo id:
+
+% 0 1 0 07985ca9314478fd079741853340b0f1
+
+@ 0 1 0 0061313c865e5a150c82da9f02a2b1b8
++ ## 2. Estrutura
+
+@ 0 2 0 0f8bd52461a72d8e1915ccb9e902b2c4
++ Agrupe testes relacionados com `suite`, e escreva cada teste individual com
++ `test`, ambos recebendo uma `Message`:
+
+% 2 1 0 144d93b1cccb8a680fe040b3ab5d5c48
+
+% 0 1 0 08d8de7dbf1cc98c049469de2e9093da
+
+% 0 1 0 0197b8799e87450007239635f36ada27
+
+% 0 1 0 07dd18d8e9cc763a0b80c686049aa059
+
+% 0 1 0 14ec7224cc90e62c14f570d31d599f84
+
+% 1 1 0 0a11c3e11d36e44607d976454a563117
+
+@ 0 3 0 14ae5fdc7767086913c23013f0c4366e
++ Um bloco `test` é avaliado como o valor sob exame; o `assert` (ou `check`) que o
++ segue declara o que deve valer para ele. Mantenha uma asserção lógica por teste,
++ para que uma falha nomeie exatamente o que quebrou.
+
+@ 0 1 0 173d5eecb643b08607fe9647174bede1
++ ## 3. Nomes de testes
+
+@ 0 3 0 10c5c51761cebeb3112f0f6a88d0d5d8
++ Um nome de teste é uma frase `m"..."` curta e descritiva, **com menos de 70
++ caracteres**, que declara a propriedade sendo verificada e não o método sendo
++ chamado. Prefira `m"a malformed pointer fails to parse"` a `m"test parse"`.
+
+@ 0 1 0 17187bfaa3a48f95101f451f63dc7fc8
++ ## 4. Asserções
+
+@ 0 2 0 0c7a58f97e3ff6d91fc47657120852e2
++ As asserções são escritas no estilo fluente, com o predicado aplicado ao
++ resultado do bloco:
+
+% 2 1 0 0322f92bdd85cf66122c7a47c4405425
+
+% 0 1 0 109cb27fc4219ebc0253866de87830ed
+
+% 0 1 0 06afe6fa56576f9c040c3a5e785e977b
+
+% 0 1 0 0c43bc8b58ae90dd00f2f33b9c7eb612
+
+% 1 1 0 14c66cf341f6d87f0507548f432f9f89
+
+@ 0 2 0 094e9caa128f18a418baba832f717d25
++ Compare com um valor esperado usando `_ == expected`; use um predicado para
++ verificações mais frouxas. Não lance exceções nem use `require`/`assert` da
++ biblioteca padrão.
+
+@ 0 1 0 1b6a6722be2eafb20c9dbafbaaec5898
++ ## 5. Estratégia de erros
+
+@ 0 3 0 0a3e882742e9a6c110d4517f32f1d2f0
++ Um teste que exercita código falível escolhe explicitamente uma estratégia de
++ erros, geralmente importando `strategies.throwUnsafely`, para que uma falha
++ inesperada apareça como um teste reprovado e não como um erro engolido:
+
+% 2 1 0 06b6f0785ac9e27200a98f376348778b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 199604dd69404d1c072e5c78d6e478c1
++ Para testar que uma falha *de fato* ocorre, capture-a e faça a asserção sobre o
++ seu motivo, em vez de deixá-la se propagar.
+
+@ 0 1 0 0b7bb768997e6f391ef13cb91e531c71
++ ## 6. Testes em tempo de compilação
+
+@ 0 4 0 0bb78481e4b927c717d8d59ab7ae96a3
++ Para afirmar que um código é *rejeitado* pelo compilador — que um estado
++ impossível realmente não pode ser escrito —, use o
++ [Larceny](https://github.com/propensive/larceny/), que captura erros de
++ compilação como valores que um teste pode inspecionar. Um exemplo
++ `// does not compile` na documentação deve ter um teste Larceny correspondente.
+
+@ 0 1 0 0f0b43066f3a0ee80a85f91378ec5c13
++ ## 7. O que testar
+
+@ 0 4 0 07f06ddba67f12f819f5e00fad6c73aa
++ Teste o comportamento de que um usuário depende: o resultado de cada operação
++ pública, os casos de fronteira (vazio, ausente, máximo) e as falhas que devem ser
++ lançadas. Teste que construções inválidas não compilam. Não teste diretamente os
++ detalhes internos privados; alcance-os pela superfície pública.

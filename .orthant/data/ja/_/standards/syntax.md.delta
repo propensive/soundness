@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 0d6d6d025a4c26c218abe8bfc5ac466a
++ # 構文と書式
+
+@ 0 3 0 05d86f7334209ede177626cace9c4378
++ この標準は移転した。
++ Soundness が従う構文と空白の慣習は、今では **Consequent Style** であり、それを検査するコンパイラプラグインとともに、独自のリポジトリで保守されている。
+
+@ 0 2 0 0715c40fcada2461199996ad2bb2c166
++ - [標準](https://github.com/propensive/consequent/blob/main/doc/consequent-style.md)
++ - [規則のリファレンス](https://github.com/propensive/consequent/tree/main/doc/rules)
+
+@ 0 7 0 0d1229575730595100548598dd909b37
++ 移転で慣習は何も変わっていない。文書は、Soundness に特化したものではなく、それを採用するどのプロジェクトも律するように一般化された。
++ プロジェクトが定めるパラメーターは二つである。ライセンスヘッダーの正確なテキスト（したがってその行数）と、任意で、アンブレラの再エクスポートのパッケージの名前である。それ以外のすべての慣習はそのまま適用される。
++ どちらもオプションとして検査器に与える。[Consequent の README](https://github.com/propensive/consequent#options) を参照のこと。
+
+@ 0 1 0 1e9bcf4f25048f74149e03fed04fcd99
++ ## 規則の識別子
+
+@ 0 4 0 0ca40c7b8515a84e1f8b375c03e15400
++ 規則は同時に番号が振り直された。
++ このプロジェクトの文書や履歴が規則を `SN-nnn` と呼んでいるところでは、対応する Consequent の規則は `<principle><number>` という形の識別子を持つ。それが導かれる原則を表す文字と、その原則の中での番号である。
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0645384643181aec081f2c5a748380df
++ column  旧
++ column  新
++ row  `SN-799`  `F1` — ライセンスヘッダーのブロックコメント
++ row  `SN-230`  `F4` — 行の長さ
++ row  `SN-302`  `L1` — トップレベルの import の規則
++ row  `SN-742`  `L4` — アンブレラの再エクスポート
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0e3c7c7dfb4f85750ea21880445a76ea
++ 完全な表は [規則のリファレンス](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers) にある。
++ [`doc/errors/`](../errors/) の下にある廃止された `SN-nnn` の各ページもその後継を名指ししているので、古い参照も解決される。
+
+@ 0 1 0 1103950f2a90e826114007849099bb96
++ ## 検査器
+
+@ 0 3 0 1a3d97f69f2c8039198c2fbacf5b70b3
++ この標準を強制するプラグインは、このリポジトリの `lib/decorum` だった。
++ 今では `dev.propensive:consequent_<scala-version>` として別に公開され、`build.mill` の `consequentToolchain` を通して適用される。

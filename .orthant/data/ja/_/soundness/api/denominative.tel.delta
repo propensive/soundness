@@ -1,0 +1,1196 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e6a18700ede5e9c11fb68d4cd364ecc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 00df30d91596154d01a0c47f5cdf92d9
++ info   序数、区間、限定されたインデックス：整数ではなく証明による数え上げとインデックス付け
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 010b0999f812869310c3b52ae4d039e7
++     _Denominative_ は Soundness における数え方とインデックスの付け方である。
++     中心となる型は `Ordinal` であり、これは位置（一番目、二番目、三番目）を表す、`Int` とはまったく異なる型である。
++     そのため off-by-one エラーは型エラーになる。
++     零番目の序数は存在せず、最初は `Prim`、続いて `Sec`、`Ter`、`Quat`、`Quin`、`Sen`、`Sept` であり、数値が序数になるのは、それがどの慣習から来たかを明示したときだけである（`0.z` は 0 始まりのインデックス、`1.u` は 1 始まりの個数として読み、どちらも `Prim` になる）。
++     序数の範囲は `Interval`（`Ter thru Sen`、`Ter till Sen`、`Ter span 3`）であり、ソース中の位置を持つ文字の範囲は `Span` である。
+
+@ 0 7 0 071e39193d913dcf09655bfdf33a7226
++     第二の考え方は*限定された*序数 `Ordinal in xs.type` である。
++     これは、インデックスとして有効だと証明されたコレクションを型に記録した序数である。
++     これを生成できるのは、すでに境界を確立したコンビネーターだけである。
++     `xs.extent`（ブランド付きの全範囲）、`ordinal .within(xs)`、`xs.spot(p)`、`xs.prefix(p)`、rudiments の `confine` と `pick` がそれにあたる。
++     限定された序数による読み取りは全域的な `apply` を通り、裸の要素を返す。
++     証明のないインデックスは `Optional` を返す。
++     したがって、数え上げのループはカウンターなしで、どちら側にも境界検査なしで書ける。
+
+% 2 1 0 14e6afde004b59000aa8994881f7d3e7
+
+% 3 1 0 120c4e6fcafd5a270af171c92f905608
+
+% 0 1 0 0b2de6d833d1760f0f6091831ca20116
+
+% 1 1 0 03f7be57838835f00bf129ea0b35af3d
+
+% 0 1 0 0ab76ac32925e6c7060738753e0f5fc5
+
+% 1 1 0 1754da86067bea880adfcb28706059f8
+
+@ 0 8 0 15d4d9b82939d7ae1735cec1cdda1fea
++     値を数えられるものにし、インデックス付け可能にする型クラスはここにある。
++     `Countable`（その `size` と、そこから導かれる序数 `gamut`、`extent`、`limit`、`ult`、`pen`、`ant`）、`Vacuiscible`（空であることだけを扱う `nil`。どこでも O(1)）、`Applicable`（インデックスやキーによる `contains` と `access`。rudiments の `apply`、`at`、`defines`、`confine`、`pick` の背後にある）、`Definable` と `Omissible`（コピーオンライトの `define` と `omit`）、そして `Terminable` と `Truncable`（`last` と `lead`）である。
++     これらのインスタンスは、凍結済みの `Array[e]^{}` と `Data`、`Sequence`、`Text`、`Set`、`Map`、`Ledger`、標準ライブラリの `IndexedSeq`、いくつかの可変バッファを対象とし、承認があれば `List` と `Chain` も対象とする。
+
+@ 0 10 0 14f9198757ea9a1d06159c03db4824be
++     その承認が第三の考え方である。
++     演算のコストがその対象の外にあるデータに応じて増えるとき、その演算は*漸近外*（dysasymptotic）である。
++     `size` は `Sequence` では無償だが `List` では走査になり、`List` の `last` は末尾まで辿り、`List` の `at` は先頭から辿り、`Chain` の `size` はストリーム全体を強制評価するので戻らないこともある。
++     このようなインスタンスは `using` の位置で単純なマーカー型（`Dysasymptotic.LinearSize`、`LinearAccess`、`UnboundedSize`、`LinearScan`）を受け取る。
++     ファイルは、対応する given を `dysasymptotics` パッケージから*名前で*インポートすることでこれを選択する（`import dysasymptotics.linearSize`。ワイルドカードのインポートは given をスコープに持ち込まない）。
++     インポートは、なるべくコストを受け入れるブロックの中で、それが許容できる理由を述べるコメントとともに行う。
++     すべての承認は grep で探せ、`nil` は決してゲートされない。
++     ゲートを回避する `.stdlib.length` はコストを隠してしまう。
++     代わりにゲートを開くこと。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 13c815945e7d47ba0eab1f4334a845be
++       label リストのサイズは走査なので、単純には得られない
+
+% 1 1 0 1f567df21a737c880037aadc4a8edc8d
+
+% 2 1 0 0ad6aba74b02c0cb160437a87ba3640e
+
+% 1 1 0 163100e11903eb2f1a9a0adb30e5978c
+
+% 0 1 0 0a563b4c95824e4b18938395ae2933c8
+
+% 1 1 0 0e06259b50475e25162c1172c0066835
+
+@ 0 1 0 05a70fbda2bf94aa0065a2ce0c0c563d
++       label 線形のコストを名前で承認する
+
+% 1 1 0 123e2e1d1e90d58a0616015e9e6bff11
+
+% 2 1 0 0cf7be5a412d713c1bbe818cdb5d9d4e
+
+% 0 1 0 115309b089989daa1e3a1b6760047f5a
+
+% 1 1 0 0d308c06a0a59f8f08d17af79ae3dc63
+
+% 0 1 0 0715c1ef4eb2e72d1927295d3d9d956b
+
+% 1 1 0 02913bf12330089c020fe23815a19145
+
+@ 0 1 0 0869aa5ac88d46871759bd909a82e306
++       label 位置によるアクセスは別の承認である
+
+% 1 1 0 1bf46486b3da58a5027bb42eedda2b98
+
+% 2 1 0 17888d0a1d94aadf128941fe49fe1b81
+
+% 0 1 0 052f7c2ab1a2b2de0c688803ab7c55ed
+
+% 1 1 0 1fc5ac85e053ca471b3b6a662e53d0af
+
+% 0 1 0 191b56b0552c67981c67631645a4fb6d
+
+% 0 1 0 1488521b886b63050ef83ac3b04a3954
+
+% 0 1 0 07395a684bb81f3a002df3ecff1d0f89
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 11 0 178365be5c54a48411737795995c0fe4
++     このライブラリは単一のソースセット `denominative.core` であり、JVM、Scala.js、Scala Native 向けにコンパイルされ、vacuous と prepositional のすぐ上、rudiments の下に位置する。
++     `Optional` を返す読み取り（`at`、`apply`、`pick`、`confine`、`head`、`last`）は、これらの型クラスに対する rudiments と concordance の拡張である。
++     すべては `soundness` アンブレラにエクスポートされ、`dysasymptotics` と `ordinalTextualizables` の選択パッケージはアンブレラ自身のものと統合される。
++     `thru`、`till`、`tabulate` はエクスポートではなくアンブレラで再宣言されている（`each` は rudiments のアンブレラファイルで再宣言されている）。
++     エクスポートは拡張の一つのオーバーロードしか転送せず、通常のオーバーロードと限定されたオーバーロードの両方に到達できなければならないからである。
++     `denominative.*` を直接インポートするファイルは、同じ名前のために `rudiments.*` をまるごとインポートしてはならない。
+
+% 0 1 0 0d543012a96a5b79082b13071e349205
+
+% 0 1 0 19ceb655aa5e355a0260a4bb658a8f06
+
+% 0 1 0 0020385201e25d0101bf57ffd069e1e3
+
+% 0 1 0 1e652ce139c6bbfc0d8a31b5d83b32e9
+
+% 0 1 0 1937552efbee812107700684c6af4a56
+
+@ 0 5 0 1db78b33ec9e1db719a5566ad12f99f0
++ entry .Prim   最初の序数
++     `Ordinal.zerary(0)`。`0.z` や `1.u` とも書く。
++     「primary」に由来する。
++     名前を持つ七つの序数は `Prim`、`Sec`、`Ter`、`Quat`、`Quin`、`Sen`、`Sept` であり、それより先の序数は `7.z`（八番目）や `8.u` と書く。
++     これらは inline 定義ではなく安定した値なので、パターンとして使える（`case Prim => …`）。
+
+@ 0 8 0 1733466253f6bb8800b938318c278ac1
++ entry .Sec   二番目の序数、`1.z`
++ entry .Ter   三番目の序数、`2.z`
++ entry .Quat   四番目の序数、`3.z`
++ entry .Quin   五番目の序数、`4.z`
++ entry .Sen   六番目の序数、`5.z`
++ entry .Sept   七番目の序数、`6.z`
++     名前を持つ序数の最後であり、八番目は `7.z` である。
++     `7.z` は*八番目*の位置（インデックス 7）であり、`Sept` は七番目（インデックス 6）であることに注意する。
+
+@ 0 3 0 1d4e4c77fc40934112cb9264917d128a
++ entry .z   `n.z`：0 始まりのインデックス `n` にある序数。`0.z` は `Prim` である
++     `Int` に対する inline 拡張であり、その数値が 0 始まりの慣習（ワイヤプロトコル、JVM の配列インデックス）から来たことを、序数に入るその地点で記録する。
++     `n.z.n0` は再び `n` になる。
+
+@ 0 3 0 140187907f339caa084b680938d726c4
++ entry .u   `n.u`：1 始まりの個数 `n` にある序数。`1.u` は `Prim` である
++     1 始まりの慣習（仕様書の「3 番目のフィールド」、行番号）のための `z` の対である。
++     `n.u.n1` は再び `n` になる。
+
+@ 0 5 0 08c606b4774cb5a901413ba135f6e0b3
++ entry .nil   `xs.nil`：値が空かどうか。どの形でも O(1)
++     `Vacuiscible` に基づき、すべての `Countable` がこれを継承する。
++     `List`、`Chain`、`Set`、`Map`、`Text`、凍結済みの配列、`Option`、`StringBuilder`、… が対象である。
++     決してゲートされない。
++     `List` が空かどうかはポインター一つの検査なので、`list.size` には承認が必要でも `list.nil` には必要ない。
++     標準ライブラリの `nonEmpty` は `!xs.nil` という慣用句になる。
+
+@ 0 6 0 0d6d378eb8d2da270442395d28235f96
++ entry .size   `xs.size`：任意の `Countable` な値の要素数
++     `Sequence`、`Set`、`Map`、`Ledger`、`Text`、凍結済みの配列、標準ライブラリの `IndexedSeq` では O(1) である。
++     `List` では走査であり、`import dysasymptotics.linearSize` のもとでのみ解決される。
++     `Chain` ではストリーム全体を強制評価し、`unboundedSize` のもとでのみ解決される。
++     `Int` は自分自身を数え（`5.size` は `5`）、`Option` のサイズは 0 か 1 である。
+
+@ 0 4 0 1faf34f890a73cc10f52596c83d4809b
++ entry .gamut   `xs.gamut`：数えられる値の全範囲を `Prim` から始まる `Interval` として返す
++     `Interval.initial(xs.size)`、すなわち `Prim` から `xs.limit` の手前までの序数である。
++     ブランドのない区間である。
++     `extent` は同じ範囲をその値に限定したものであり、ループが必要とするのはそちらである。
++     `List` や `Chain` では `size` と同様にゲートされる。
+
+@ 0 8 0 0770b03d95b24a82049352ad69886b40
++ entry .extent   `xs.extent`：値の全範囲を、その値に限定された区間 `Interval in xs.type` として返す
++     ブランド付きの `gamut` である。
++     これを反復すると（`xs.extent.each`、`xs.extent.tabulate`、`xs.extent.all`）、ラムダには `Ordinal in xs.type` 型の序数が渡され、そのような序数に対する `xs(ordinal)` は全域的である。
++     裸の要素を返し、境界検査も `Optional` もない。
++     `capped(n)`、`beyond(n)`、そして二つの限定された序数からの `start thru end` は、ブランドを失わずに範囲を狭める。
++     安定したパス（`val`）上の不変なレシーバに対して健全である。
++     ブランドの生成後に縮む可変の数えられる値はブランドを無効にし、`val` ではなく式であるレシーバにはブランドを付ける安定したパスがない。
+
+% 2 1 0 1bc5a71b6f2ad390056c761835f2cfbe
+
+% 3 1 0 06dd3acb941babf60e5f38ebd2fa78ab
+
+% 0 1 0 0b296445d076e13d0ec3a9f2035b4461
+
+% 0 1 0 0c9f20bb747c390f0da236c540a56c00
+
+% 0 1 0 0b3faaf702e39f0613c9780da68932e5
+
+% 0 1 0 16c195155da9b68f1b0e22040a9852a1
+
+% 0 1 0 1275e2316f74c31717fb48e06af39866
+
+% 1 1 0 0427188cd9aa4cea0bc816545ce56f0a
+
+@ 0 5 0 1dfa57916717d9881fd61744e2a229e3
++ entry .iterate   `xs.iterate { i => … }`：値の、または限定された部分区間の、限定された序数をすべて訪れる
++     `xs.extent.each` の古い書き方であり、区間ではなくレシーバを通じてブランドを付ける。
++     両者は等価であり、`xs.iterate(range)` は `Interval in xs.type`（`extent.capped`、`prefix`、`thru` から得る）を受け取って、その一部を訪れる。
++     ラムダの序数は `Ordinal in xs.type` なので、内部の `xs(i)` は全域的である。
++     密な整数ループにコンパイルされる。
+
+@ 0 8 0 0c63076a1febf61818212a8d152eac69
++ entry .tabulate   `xs.tabulate { i => … }` または `range.tabulate { i => … }`：序数ごとに一つの要素を `Sequence` として返す
++     `iterate` と `each` に対応する収集版である。
++     位置ごとに一つの要素を順に持つ `Sequence` を構築し、ラムダの序数はその値（またはブランド付き区間の値）に限定されるので、内部の読み取りは裸の要素を返す。
++     `Array(10, 20, 30)` に対する `array.tabulate { i => array(i) + i.n0 }` は `Sequence(10, 21, 32)` であり、`Interval.initial(3).tabulate (_.n1)` は `Sequence(1, 2, 3)` である。
++     `zipWithIndex`（生の `Int`）と可変のビルダーを置き換える。
++     オーバーロードは三つある。
++     `Countable` に対するもの、通常の `Interval` に対するもの、`Interval in form` に対するものである。
+
+@ 0 6 0 1c9cae470cfa632b0f5e930f9fffbf8d
++ entry .spot   `xs.spot(p)`：述語を満たす最初の限定された序数、または `Unset`
++     停止したインデックスを呼び出し元が使う、ガード付きの前方走査の安全な形である。
++     述語は `Ordinal in xs.type` を受け取り、結果は `Optional[Ordinal in xs.type]` なので、`let` の内部での読み取りは全域的である。
++     `xs.spot(after)(p)` は、すでに走査したブランド付き区間の上限から走査を再開する。
++     これは二段階走査の第二段階である。
++     `spot(…).or(…)` から保存された `Ordinal in xs.type` はブランドを保つので、`xs(index)` は全域的なままである。
+
+@ 0 6 0 1f63998ec5b2f01e02ce770186ab6abc
++ entry .prefix   `xs.prefix(p)`：述語を満たすインデックスの最長の先頭部分を、限定された区間として返す
++     結果の `limit` は停止したインデックスである。
++     そのため `xs.prefix(p)` は、呼び出し元が `i` から切り出したり再開したりする `while i < size && p(i) do i += 1` のループを置き換える。
++     二引数の形 `xs.prefix(after)(p)` は、`after` を次の連続部分で*延長*する。
++     これは累積的なので、空の連続部分がアンカーを失うことはなく（空の `Interval` はすべて位置 0 に正規化される）、上限は常に再開地点になる。
++     多段階の走査は、連続する段階として読める。
+
+% 2 1 0 13319c558f233a5e1ba7d80921a56f78
+
+% 3 1 0 0060fb36f29897041d4eb858a447bc23
+
+% 0 1 0 14025024d404c8ab1cb89da7cb029776
+
+% 0 1 0 158ee10b450971b817c5fed1ef5cbf6d
+
+% 0 1 0 15fb443ff731c335150779f83102a566
+
+% 0 1 0 181e160eeb8db6a913011172c69fba7d
+
+% 1 1 0 079fa4dec8e1868419f3a055f064c922
+
+@ 0 1 0 09836af96632632d15ffbb4af56383f2
++     `lead` ではなく `prefix` という名前なのは、`lead` が `last` の補だからである。
+
+@ 0 4 0 0b4a2e00c4b33ca61addd033f034aba5
++ entry .pare   `xs.pare(floor)(p)`：末尾の連続部分を削ったあとに残る区間。`floor` 個の要素を下回ることはない
++     末尾を削る形である。
++     `while count > 1 && xs(count - 1) == 0 do count -= 1` は `xs.pare(1)(xs(_) == 0)` になり、`Prim` から削られた長さまでの限定された `Interval in xs.type` を返す。
+
+@ 0 1 0 1e45556610cf9f871eb9e7e602112af2
++ entry .retrace   `xs.retrace { i => … }`：逆順の `iterate`。最後の限定された序数から最初の序数まで
+
+@ 0 9 0 05b25086fccde4d908278bfbbac960bf
++ entry .each   `interval.each { i => … }`：区間のすべての序数を順に訪れる
++     オーバーロードは二つある。
++     通常の `Interval` に対しては、ラムダは通常の `Ordinal` を受け取る。
++     限定された `Interval in form`（`extent`、`capped`、`beyond`、`prefix`、または限定された端点に対する `thru`/`till` から得る）に対しては `Ordinal in form` を受け取るので、内部の読み取りは全域的であり、裸の要素を返す。
++     これは `var i = 0; while i < xs.length do … i += 1` を置き換えるコンビネーターであり、同じ密なループにコンパイルされる。
++     ファイルがインポートしたコンパニオンを通じて届く、無関係な型に対する同名の `each` は、限定されたオーバーロードより優先されることがあり、ブランドを黙って剥がしてしまう（読み取りはエラーなしに再び `Optional` になる）。
++     そのため、この名前は他のレシーバでは使わないようにしている。
+
+@ 0 3 0 0746fe2a4b443ca9165930c577c85b4c
++ entry .all   `interval.all(p)`：すべての序数が述語を満たすかどうか。満たさない最初の序数で止まる
++     `each` と同じ二つのオーバーロードを持つので、`xs.extent.all { i => xs(i) == ys.readUnchecked (i.n0) }` は全域的に読める。
++     `xs.stdlib.indices.forall` の代わりとなる。
+
+@ 0 6 0 10206d02eda87617075f6937cf24e00a
++ entry .thru   `start thru end`：ある序数から別の序数までの区間。終端を含む
++     `Ter thru Sen` は `Ter, Quat, Quin, Sen` である。
++     同じ値に限定された二つの序数は、その値に限定された区間を境界づける。
++     二つの有効なインデックスの間にある序数はどれも有効だからである。
++     これが、`Prim` から始まらない限定された区間を作る唯一の方法である。
++     どちらのオーバーロードもパッケージレベルにあるので、不透明型の暗黙のスコープを通じて一方が他方より優先されることはない。
+
+@ 0 3 0 0c22989d8a108fef0372254d2dda017b
++ entry .till   `start till end`：ある序数から別の序数までの区間。終端を含まない
++     `Ter till Sen` は `Ter, Quat, Quin` であり、`Sec till Sec` は空である。
++     `thru` と同様に、限定された端点からは限定された区間が得られる。
+
+@ 0 4 0 0f84b88d376747f41deba701ca5ee74a
++ entry .capped   `range.capped(n)`：限定された区間の最初の高々 `n` 個の序数。ブランドは保たれる
++     有効な範囲の部分区間はそれ自体有効なので、切り詰めても証明は保たれる。
++     `array.extent.capped(2).each { i => … array(i) … }` は最初の二つの位置を全域的に読む。
++     負の `n` は 0 として扱われる。
+
+@ 0 4 0 0a808624751b978e027cb78abeba01c9
++ entry .beyond   `range.beyond(n)`：最初の `n` 個の序数を除いた限定された区間。ブランドは保たれる
++     `capped` の補であり、両者を組み合わせると、`Optional` に邪魔されずに窓の両端を境界づけられる。
++     `beyond` という名前なのは、`skip`、`keep`、`after` が rudiments の区分の語彙であり、アンブレラのトップレベルの名前は一つのモジュールしか所有できないからである。
+
+@ 0 3 0 1960c6458179a9cb0ea36780eb041f9e
++ entry .limit   `xs.limit`：数えられる値の、上限を含まない境界。最後の要素の一つ先の序数
++     `xs.size.z` である。
++     `List` や `Chain` では `size` と同様にゲートされる。
++     限定されてはいない。
++     有効なインデックスではないが、走査を*始める*には安全な位置である。
+
+@ 0 6 0 0a79089402a557dd0e216b3d7cd59f4c
++ entry .ult   `xs.ult`：最後の（「ultimate」の）要素の序数。値に限定されるか、`Unset`
++     `Optional[Ordinal in xs.type]` なので、`xs.ult.let(xs(_))` は最後の要素を全域的に読む。
++     `& Populated` と型付けされたレシーバ（`List(a, b)` のリテラル、`occupied` の結果）では適応して裸の `Ordinal in xs.type` を返すので、`xs(xs.ult)` に `let` は要らない。
++     要素ではなく序数であり、要素のほうは rudiments の `last` である。
++     `List` や `Chain` では `size` と同様にゲートされる。
+
+@ 0 1 0 090432a4172ad91c06376838eb006433
++ entry .pen   `xs.pen`：最後から二番目の要素の序数。限定されるか、二つ未満なら `Unset`
+
+@ 0 1 0 057c43137645545b1f4271d527f52af2
++ entry .ant   `xs.ant`：最後から三番目の要素の序数。限定されるか、三つ未満なら `Unset`
+
+@ 0 6 0 0a00e793f086409c08762ef6bfdff4f5
++ entry .coextent   `xs.coextent(ys)`：二つの値のサイズが同じなら `Coextent` トークン、そうでなければ `Unset`
++     一つのブランドは二つのレシーバに使えない（`Ordinal in xs.type & Ordinal in ys.type` はどちらの部分型でもない）。
++     そのため並行した読み取りは代わりにトークンを通る。
++     トークンは一度のサイズ検査を担い、ブランド間で序数を移す。
++     `shared(i)` は `Ordinal in xs.type` を `Ordinal in ys.type` に変え、`shared.each { (i, j) => … }` は両方に対して証明されたインデックスで反復する。
+
+% 2 1 0 1eae585346817fdb125ff587edf79389
+
+% 3 1 0 1b38bf784add09c31bf26521726e45b5
+
+% 5 1 0 02881b7187d161ac175c5c1a0ba3c26f
+
+% 6 1 0 16a4f2af078fa0f4088869f03be3eb0d
+
+% 7 1 0 106f6ce3067d4f2d09e259b58bad223f
+
+% 9 1 0 18910db3ec7f5ebc088d276521b583ba
+
+% 0 1 0 1f1198080af868730b24ff6af063b127
+
+% 1 1 0 1526c5cac34673d20175f764190f627d
+
+@ 0 6 0 0835e8d67813a8961c5bf385f33b1ea5
++ entry .aka   `value.aka["label"]`：ラベル型でタグ付けされた値。名前付きのコンテキストパラメーターのためのもの
++     中置型 `subject aka "label"` と、それを作る拡張である。
++     `(state aka "state", next aka "next") ?=> …` と書いたラムダは、引数をコンテキスト値として受け取り、名前 `state` と `next` がそれを選ぶ。
++     `Interval#fuse` や rudiments の `fuse` と `each` は、こうしてパラメーターリストなしに `state`、`next`、`ordinal` を提供する。
++     `()` で取り出す。
+
+@ 0 8 0 0b495a3e578784cb03d14f2e01b5300f
++ entry .Ordinal   位置（一番目、二番目、三番目）を、`Int` とは別の型として表す。零番目はない
++     `Ordinal` はここでエクスポートされる不透明型 `denominative.internal.Ordinal` である。
++     それが表す 0 始まりの `Int` で表現されるが、決して `Int` と交換可能ではない。
++     `Int` が序数になるのは慣習を明示したときだけであり（0 始まりのインデックスなら `n.z`、1 始まりの個数なら `n.u`、または `Ordinal.zerary(n)` と `Ordinal.uniary(n)`）、序数が再び `Int` になるのは `n0` か `n1` を通したときだけである。
++     そのため、両方の境界で慣習が書かれ、off-by-one エラーが隠れる場所はない。
++     最初の七つには名前がある。
++     `Prim`、`Sec`、`Ter`、`Quat`、`Quin`、`Sen`、`Sept` である。
+
+% 2 1 0 0d52d03299645b091b0f1c8ca12f541f
+
+% 3 1 0 00476eb079d326710723a162fab644e3
+
+% 0 1 0 021cf0238c36bb4b1dae2ab7a1a60d8e
+
+% 0 1 0 0224c7338109200e1db39d4dc3621daf
+
+% 0 1 0 000291893b38fdd307a5bf76ad2a6453
+
+% 0 1 0 0e2bd832391db2a6170d38fd11a791b3
+
+% 0 1 0 10b40a14c75705ea1457c8a1dd12414e
+
+% 0 1 0 0f29eeebe4e02df81fe9bd476b4ac534
+
+% 0 1 0 1049bdc376f84bc70bd62a3578489e51
+
+% 1 1 0 037fb0d1a78b14e90a90e539f37e6fcf
+
+@ 0 5 0 046423fc6dfaa854038ea9f15efb6e5d
++     算術は symbolism の `+` と `-` による。
++     `Int` を足したり引いたりすると `Ordinal` になり、序数から序数を引くと `Int` の距離になる。
++     序数は `Comparable` を通じて `<`、`<=` などで比較される（型クラスが邪魔なら inline の `le`、`lt`、`ge`、`gt` を使う）。
++     これらはすべて不透明型自身の暗黙のスコープにあるので、インポートは要らない。
+
+@ 0 5 0 09464e6f2f2408b80de5249431611648
++     *限定された*序数 `Ordinal in xs.type` は、`xs` のインデックスとして有効だと証明されたことを型に記録した `Ordinal` である。
++     `extent`、`spot`、`prefix`、`ult`、`within`、rudiments の `confine` がこれを生成し、それによる `xs` の読み取りは全域的である。
++     限定された序数に対する算術は許される（ブランド付きの `+` と `-` もコンパニオンにある）が、結果は通常の `Ordinal` になる。
++     証明された範囲から出たかもしれないからである。
++     `within` で再び限定できる。
+
+@ 0 3 0 045983dc392443e60ff1d54cda50829c
++     序数をテキストとして描画するには、`ordinalTextualizables` パッケージから名前で選んだ `Textualizable` を使うしかない。
++     `3rd`、`ter`、`2♯` のどの描画も、あらゆる場面で正しいわけではないからである。
+
+@ 0 7 0 187a8644dbd840641e240782a3ee2acf
++ entry .Interval   序数の連続した範囲。開始の序数から、ある数の位置にわたる
++     `Interval` はここでエクスポートされる不透明型 `denominative.internal.Interval` である。
++     開始の `Ordinal` とサイズを一つの `Long` に詰めたものなので、区間にはアロケーションのコストがかからない。
++     `Ter thru Sen`（終端を含む）、`Ter till Sen`（終端を含まない）、`Ter span 3`（開始とサイズ）と書くか、整数から `Interval.zerary(start, end)`、`Interval.sized(start, count)`、`Interval.initial(size)` で構築する。
++     空の区間は、どの開始位置を求められても、位置 0、サイズ 0 に正規化される。
+
+% 2 1 0 11486eeb13fb4ccc177053eb99dab545
+
+% 3 1 0 14b9a0471ef2210a0d3bddb2874eabc2
+
+% 0 1 0 12dcfe4e337d785417f3f2c5a6973025
+
+% 0 1 0 187383ccaeb0ffdd1408b584bbbd92c3
+
+% 0 1 0 02fc6c62808fab1801ba8bc3ed73fca5
+
+% 0 1 0 0cc9b510e1238cc706d546afc70aa785
+
+% 0 1 0 0130edd2163366831ac40b3660d37eb3
+
+% 0 1 0 027d640bce5d85271bcc4fa2b66d0973
+
+% 1 1 0 02f874359a36fdda17d23a2d95713d7b
+
+% 0 1 0 196cff232d04662c10581b3569d9847c
+
+% 1 1 0 1457c5b44195281c0a23c85041dee704
+
+@ 0 5 0 03971a41da1836c51e9fe7b3facdd861
++     区間のすべての序数が `xs` の有効なインデックスであるとき、その区間は*限定*されうる（`Interval in xs.type`）。
++     `xs.extent`、`xs.prefix(…)`、`xs.pare(…)(…)`、`capped`、`beyond`、そして二つの限定された序数の間の `thru` や `till` がこれを作る。
++     限定された区間を `each`、`all`、`tabulate` で反復すると、ラムダには限定された序数が渡されるので、内部の読み取りはすべて全域的である。
++     通常の `xs.gamut` は、同じ範囲をブランドなしで表したものである。
+
+@ 0 8 0 11fe6f7321e226bc086ef35a0127d891
++ entry .Span   ソース中の位置を持つ文字の範囲（オフセット、行、複数行、領域）を一つの `Long` で表す
++     `Span` はここでエクスポートされる不透明型 `denominative.internal.Span` である。
++     ソーステキスト中の位置を、上位 3 ビットの `Span.Mode` でタグ付けした一つの `Long` に詰めたものであり、パーサーは構築するすべてのノードに、アロケーションのコストなしで位置を記録できる。
++     モードは五つある。
++     `Empty`（位置なし。`Span.empty` はすべて 0 なので、存在しないスパンに `Optional` は要らない）、`Offset`（文字オフセットと長さ。行のないソース向け）、`Line`（行、列、その行の中での長さ）、`Lines`（行全体）、`Area`（開始の行と列から終了の行と列まで）である。
+
+% 2 1 0 0dfe2020b8004e06045b084f0131bd96
+
+% 3 1 0 0a6929be63be90770ff6c1cf59023789
+
+% 0 1 0 0ce99909bc69a1e71aa90153da020b6f
+
+% 0 1 0 1fc0976654b579b818c98baac3176691
+
+% 0 1 0 0c25b762362fa2ee05cfec6ad75e1fae
+
+% 0 1 0 0e7dce8d4b052ca10e0fe216721f9b3b
+
+% 0 1 0 172b386e1a1352f0156b0f2e852209d8
+
+% 0 1 0 0ceda8ec65ddf4041f290e7907a65bc1
+
+% 1 1 0 1a66f61780ed253108b2991d256856da
+
+@ 0 4 0 1c6c73935332911b0bd2bfc700de7a50
++     モードが持たないアクセサーはすべて `Unset` を返す。
++     行、列、オフセットは 0 始まりの序数である。
++     フィールドの幅により、`Offset` スパンは 2³¹ 未満のオフセット、`Line` スパンは 2²³ 行と 2¹⁹ 列、`Area` は 2²² 行、2¹⁴ 列、2¹¹ 行の広がりに制限される。
++     XML、TEL、YAML、ソースコードのパーサーは、ノードの位置をスパンとして記録する。
+
+@ 0 9 0 0b0a689d0d346ba0135e4454d1ab6ac0
++ entry .Coextent   二つの値のサイズが同じであることの証拠。限定された序数をその間で移す
++     `Coextent[form1, form2]` はここでエクスポートされる不透明型 `denominative.internal.Coextent` であり、共通のサイズで表現される。
++     これを生成するのは `xs.coextent(ys)` だけであり、一度のサイズ検査を行い、サイズが異なれば `Unset` を返す。
++     限定された序数は一つの値のブランドしか持てない（`Ordinal in xs.type & Ordinal in ys.type` はどちらの部分型でもない）ので、二つの値の並行した読み取りはトークンを通る。
++     トークンを `Ordinal in xs.type` に適用すると `Ordinal in ys.type` が得られ、`invert` は逆向きのトークンを返し、その `each` は共通の範囲を、それぞれの値に対して証明された序数で反復する。
+
+% 2 1 0 19caaf096b47292d1da4313cd89cba33
+
+% 3 1 0 106b1e81d41f39520554fc15296a1f25
+
+% 5 1 0 1954d2891d40ac7d1ff478d4ed933c67
+
+% 6 1 0 03f8acc4b900e23f07577d116da4d821
+
+% 7 1 0 0494484a1330d6131c1cebcd1c72a6b5
+
+% 9 1 0 166866b05a0a0b321a9cd901e1e2cb23
+
+% 0 1 0 1b84ed22db5e798117fa07d754798485
+
+% 1 1 0 1f828e4cc99cd1cb07db35c4c5dbddb2
+
+@ 0 1 0 0719b6cbd643bcd413bdf6be0cd26ebc
++ entry .internal   `Ordinal`、`Interval`、`Span`、`Coextent` の不透明な表現と、その演算
+
+% 1 1 0 06da1c18ae2b967f037f9774e28bd82d
+
+@ 0 5 0 0a417b2deb1bf15318643a6aab837573
++       四つの不透明型を定義するオブジェクトであり、その表現（`Int`、`Long`、`Long`、`Int`）はここでしか見えない。
++       型は `denominative` パッケージにエクスポートされ、演算はこのオブジェクトの拡張メソッドである。
++       このオブジェクトは各不透明型の暗黙のスコープの一部なので、ユーザーが `internal` を名指すことはなく、`ordinal.n0`、`interval.size`、`span.mode` はインポートなしに解決される。
+
+@ 0 4 0 17906f7664c6487f021f6c08c8addb89
++       ブランド付きの拡張（`Ordinal in form` や `Interval in form` を受け取るもの）は、意図的にここには*置かない*。
++       このオブジェクトの内部では不透明型はその表現そのものなので、その細分化は潰れてしまうからである。
++       そのため、`thru`、`till`、`capped`、`beyond`、`each`、`all`、`tabulate` は `denominative` のパッケージレベルにある。
+
+% 0 1 0 1978c32d3ded86ca13590c62411ee981
+
+% 0 1 0 1dcbaec1b9bc56bb09ef9fb3ede7fd1f
+
+% 0 1 0 1fa09e9f459adf540bd607037afd43e8
+
+% 0 1 0 00387bfea269910112522000c9329338
+
+@ 0 1 0 12fde04fa7e7232c0335eea98b97f2d0
++   entry .Ordinal   不透明な序数。0 始まりのインデックスで表現される
+
+% 1 1 0 139e4f7900add711112a98a5d6ac98a6
+
+@ 0 18 0 0b22d6178d808a5e0a46a2e2529dcf42
++         `denominative.Ordinal` がエクスポートする型と、そのコンパニオンである。
++         整数からのコンストラクターと、算術と順序のインスタンスがあり、すべて暗黙のスコープにある。
++     entry .zerary   `Ordinal.zerary(n)`：0 始まりのインデックス `n` にある序数。`n.z` と同じ
++     entry .uniary   `Ordinal.uniary(n)`：1 始まりの個数 `n` にある序数。`n.u` と同じ
++     entry .addable   `ordinal + n`：`Int` の数の位置だけ前に進めた `Ordinal`
++     entry .subtractable   `ordinal - other`：ある序数から別の序数までの `Int` の距離
++     entry .subtractable2   `ordinal - n`：`Int` の数の位置だけ後ろに戻した `Ordinal`
++         結果は切り詰められない。
++         `Prim - 1` は最初より前の序数であり、どのコレクションもインデックスとして受け付けない。
++         `previous` は代わりに `Prim` で切り詰める。
++     entry .comparable   序数は、0 始まりのインデックスと同様に位置で比較される
++         序数に対して `<`、`<=`、`>`、`>=`、`max`、`min`、ソートを使えるようにする。
++     entry .brandedAddable   限定された `Ordinal in form` に対する `ordinal + n`。通常の `Ordinal` を返す
++         型クラスの `Self` は厳密なので、限定されたレシーバに対してはブランドのない `.addable` が見つからない。
++         こちらの対は見つかり、ブランドを捨てる。
++         算術によって証明された範囲から出るかもしれないからである。
++         結果は `within` で再び限定する。
++     entry .brandedSubtractable   限定された序数どうしの `ordinal - other`。`Int` の距離を返す
++     entry .brandedSubtractable2   限定された `Ordinal in form` に対する `ordinal - n`。通常の `Ordinal` を返す
++   entry .Interval   不透明な区間。開始とサイズを一つの `Long` に詰めたもの
+
+% 1 1 0 1a64cf30ef80158f0d6bef8c4db5b396
+
+@ 0 7 0 16dfa358b6b640a91e4a0871db9e9523
++         `denominative.Interval` がエクスポートする型と、そのコンストラクターのコンパニオンである。
++     entry .sized   `Interval.sized(start, count)`：0 始まりの `start` から `count` 個の位置。`count` ≤ 0 なら空
++     entry .initial   `Interval.initial(size)`：最初の `size` 個の位置。`Prim` から始まる
++         そのサイズの値のすべての有効なインデックスの範囲であり、`gamut` はこうして作られる。
++     entry .apply   二つの序数からの `Interval(start, end)`。終端を含む。`Interval()` は空
++     entry .zerary   `Interval.zerary(start, end)`：0 始まりの `start` から 0 始まりの `end` まで。終端を含まない
++   entry .Span   不透明なソーススパン。モードとそのフィールドを一つの `Long` に詰めたもの
+
+% 1 1 0 0292bc7fc0ed5d0017bf3102b3705aa7
+
+@ 0 16 0 1fd1804df83a5bc7149a3101365103e0
++         `denominative.Span` がエクスポートする型と、そのコンストラクターのコンパニオンである。
++         各コンストラクターはフィールドをその幅でマスクするので、範囲外の行や列は拒否されるのではなく切り捨てられる。
++     entry .Mode   `Span` が持つフィールドの種類：`Empty`、`Offset`、`Line`、`Lines`、`Area`
++         `==` で比較できる列挙型である。
++         `Empty` は位置がないこと、`Offset` は文字オフセットと長さ、`Line` は行、列、長さ、`Lines` は開始行と行数、`Area` は開始の行と列と、終了の行と列である。
++     entry .equality   `CanEqual[Span, Span]`。二つのスパンを `==` で比較できる
++     entry .empty   位置を記録しないスパン。すべてのビットが 0
++     entry .offset   `Span.offset(start, length)`：オフセット `start` から `length` 文字。行のないソース向け
++     entry .line   `Span.line(line, column, length)`：一行の中の `length` 文字
++     entry .lines   `Span.lines(startLine, lineCount)`：連続した行全体
++     entry .area   `Span.area(startLine, startColumn, endLine, endColumn)`：複数行にわたる領域
++         終了行は開始行からの差分として保存されるので、開始より前の終了行は開始行として扱われる。
++   entry .Coextent   不透明な同サイズのトークン。共通のサイズで表現される
+
+% 1 1 0 090f35c658a671d8062873febf750c1c
+
+@ 0 33 0 19240578858f24030454740ee6a7646d
++         `denominative.Coextent` がエクスポートする型である。
++         その演算はパッケージレベルではなくコンパニオンの拡張である。
++         `each` と `size` はすでに `denominative` のパッケージレベルの名前だからである。
++     entry .apply   `shared(ordinal)`：`Ordinal in form1` を `Ordinal in form2` に移したもの
++     entry .invert   二つのブランドを入れ替えた同じトークン。逆向きに移すためのもの
++     entry .size   二つの値に共通のサイズ
++     entry .each   `shared.each { (i, j) => … }`：共通のすべての位置。両方の値に対して証明される
++         密な整数ループである。
++         ラムダは同じ位置を値ごとに一度ずつ型付けして受け取るので、`left(i)` と `right(j)` はどちらも全域的である。
++   entry .span   `start span size`：`start` から始まる `size` 個の位置の区間
++       `Ter span 3` は `Ter thru Quin` である。
++       中置で使う。
++   entry .le   この序数が別の序数と同じ位置かそれより前かどうか。型クラスを使わない
++   entry .lt   この序数が別の序数より厳密に前かどうか。型クラスを使わない
++   entry .ge   この序数が別の序数と同じ位置かそれより後かどうか。型クラスを使わない
++   entry .gt   この序数が別の序数より厳密に後かどうか。型クラスを使わない
++       四つの比較は一つの整数比較にコンパイルされる inline 拡張であり、通常の序数にも限定された序数にも使える。
++   entry .next   この序数の次の序数。区間では、その終端の次の序数（`limit`）
++   entry .previous   この序数の前の序数。`Prim` で切り詰める。区間では、その開始の前の序数
++   entry .n0   序数を 0 始まりの `Int` インデックスとして返す：`Prim.n0` は `0`
++       0 から数える API（JVM の配列、`String` のオフセット、ワイヤ形式）のために整数へ戻る境界である。
++       `n.z.n0 == n` である。
++   entry .n1   序数を 1 始まりの `Int` の個数として返す：`Prim.n1` は `1`
++       人間向けの数（行番号、「3 番目のフィールド」）のために整数へ戻る境界である。
++       `n.u.n1 == n` である。
++   entry .subsequent   序数の直後、または区間の終端の直後にある `size` 個の位置の区間
++       `Prim.subsequent(3)` は `Sec thru Quat` である。
++   entry .preceding   序数または区間の直前にある、高々 `size` 個の位置の区間
++       `Prim` で切り詰められる。
++       `Sec.preceding(5)` は `Prim` だけである。
++   entry .within   `ordinal.within(xs)`：序数が `xs` のインデックスとして有効なら `xs` に限定した序数、そうでなければ `Unset`
++       通常の `Ordinal` を `Ordinal in xs.type` に変える唯一の境界検査であり、それ以降、その序数での `xs` の読み取りは全域的である。
++       `xs` には `Countable` インスタンスと安定したパス（`val`）が必要である。
++       限定された序数に対しては、別の値に限定し直す。
+
+% 2 1 0 0a7fb44eb5e88b0d04888f6a8dba2efe
+
+% 3 1 0 15416e0bb3cb2d1c0ff7a2e62efb8274
+
+% 0 1 0 141059ce271c8ea21d19efe7fb2ce552
+
+% 0 1 0 1915086738f909d407c7e0d7b2c9318c
+
+% 0 1 0 000a6a0ead29da11182bbe452adaff9c
+
+% 1 1 0 0d9c78661a919fdc1cf1494e39eb64ed
+
+@ 0 25 0 150a5573b1b070321f538c3cab0e0f11
++   entry .start   区間の最初の序数
++   entry .size   区間の序数の個数
++   entry .end   区間の最後の序数。終端を含む
++       空の区間では `Prim` の前の序数になるので、先に `nil` を検査すること。
++   entry .limit   区間の終端の一つ先の序数。終端を含まない
++   entry .contains   序数が区間の中にあるかどうか
++   entry .fuse   `interval.fuse(initial)(…)`：`state` と `next` をコンテキストの名前とする区間上の畳み込み
++       ラムダは `state`（累積値）と `next`（現在の序数）のコンテキスト関数であり、それぞれ `aka` でタグ付けされているので、パラメーターリストなしに名前で選べる。
++       `(Sec span 3).fuse(0)(state + next.n0)` は `1 + 2 + 3`、すなわち `6` である。
++   entry .nil   区間が空かどうか
++   entry .bits   スパンの生の `Long` エンコーディング。保存や送信のためのもの
++   entry .vacant   スパンが位置を記録しない `Span.empty` かどうか
++   entry .exists   スパンがいずれかのモードで位置を記録しているかどうか
++   entry .mode   スパンが五つの `Span.Mode` のどれであるか
++   entry .startLine   スパンが始まる 0 始まりの行。`Offset` や `Empty` のスパンでは `Unset`
++   entry .startColumn   スパンが始まる 0 始まりの列。`Line` か `Area` のスパンでなければ `Unset`
++   entry .endLine   スパンが終わる 0 始まりの行（その行を含む）。`Offset` や `Empty` のスパンでは `Unset`
++   entry .endColumn   スパンが終わる列。`Line` か `Area` のスパンでなければ `Unset`
++       `Line` スパンでは開始列に長さを足したもの、つまり最後の文字の直後の列である。
++   entry .length   スパンの文字数での長さ。`Offset` か `Line` のスパンでなければ `Unset`
++   entry .offset   スパンの 0 始まりの文字オフセット。`Offset` スパンでなければ `Unset`
++   entry .lineCount   スパンが覆う行数。`Offset` や `Empty` のスパンでは `Unset`
++   entry .singleLine   スパンが一行に収まっているかどうか：`Line` スパン、または一行内の `Area`
+
+@ 0 1 0 005ddd47620431bb1a9411d3b8e32b07
++ entry .protointernal   `aka` の背後にある不透明型 `Tagged`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 0c4f9fa5d54c7c720f21f13328531929
++       直接使うものではない。
++       `subject aka label` は `Tagged[subject, label]` の別名であり、タグ付きの値は `value.aka["label"]` で作り、`()` で取り出す。
++   entry .Tagged   型レベルでラベルをタグ付けされた値。`aka` の表現
+
+% 1 1 0 104bc4658e5b6e3219ed00eb59c4df93
+
+@ 0 3 0 06bce9e857ab773d0be71530688161a1
++         値自身の型の不透明な別名なので、タグ付けに実行時のコストはかからない。
++     entry .apply   値を、与えられたラベルを持つ `Tagged` として包む。`aka` が呼ぶもの
++   entry .apply   `tagged()`：`Tagged` の中の値。その値自身の純粋性が復元される
+
+@ 0 1 0 17ec7173ed18c62f1104ad3a608cb8db
++ entry .Zerary   `Int` にマッチし、それを 0 始まりの `Ordinal` として束縛するパターン
+
+% 1 1 0 0683940ca321d3790642e8c0470c76b8
+
+@ 0 4 0 05c9216a7f2b6d7d1ee07e9e801a035b
++       `case Zerary(ordinal) =>` は任意の `Int` にマッチし、`ordinal` を `int.z` として束縛する。
++       これにより、整数の結果（たとえば検索が返したインデックス）に対するマッチは、case の本体ではなくパターンの時点で序数に移る。
++       マッチは常に成功するので、`Optional[Int]` に対するマッチで `Unset` と並ぶ一つの case として使うのが最も有用である。
+
+% 2 1 0 18af995aede6dc1f0f8fcc88771c5fd6
+
+% 3 1 0 1380280204bbb7e51685879c19973695
+
+% 0 1 0 0eb8a4f59348e7050e9967323008c433
+
+% 0 1 0 04b8da1954f5ffb114f357a74e3c41b6
+
+% 0 1 0 0151b68f415deaec08039dac1e05db4c
+
+% 0 1 0 02b915bcfcb1b72a132b4783a927c859
+
+% 1 1 0 0904eba7aa49ff711d5faa2cfdc5c446
+
+@ 0 1 0 13218d978bbf2b5d02f3fcc6b5c592c8
++   entry .Match   `Zerary.unapply` の、常に成功しアロケーションのない結果
+
+% 1 1 0 1a23476db73c48460367ab632dbbc879
+
+@ 0 5 0 0cfff91224adf0160472548105dae173
++         値クラスなので、成功したマッチは何もアロケーションしない。
++     entry #int   マッチした整数
++     entry #isEmpty   常に `false`：マッチは決して失敗しない
++     entry #get   マッチした整数を 0 始まりの `Ordinal` として返す
++   entry .unapply   `Int` にマッチし、それを 0 始まりの `Ordinal` として返す
+
+@ 0 1 0 17f72b7e237e0307196fd7727ac47376
++ entry .Dysasymptotic   対象の外にあるデータに応じてコストが増える演算をゲートするマーカー型
+
+% 1 1 0 0e3f5f6a02e20cd21202d967bd1026e0
+
+@ 0 8 0 00e3e1cc072358060bba77be2f5bb168
++       データ構造に対する演算は、対象自体は有界なまま、対象ではないデータ（それを含む構造のサイズや、アクセス地点から対象までの距離）に応じてコストが（対数的より速く）増えるとき、*漸近外*（dysasymptotic）である。
++       `List` の `size`（対象は一つの数だが、コストはリスト全体）、`List` の `at(n)`（一つの要素だが、`n` だけ辿る）、`Chain` の `size`（一つの数だが、ストリームを末尾まで強制評価する）は漸近外である。
++       `List` に対する `fold` はそうではない。
++       どれほど大きくても、そのコストは対象に比例するからである。
++       これは*表現*に対する演算の性質であり、`Sequence` では `size` は無償である。
+
+@ 0 5 0 0b66946d5f1568561cb3670c0a7c5125
++       そのため、このような演算の型クラスインスタンスは、これらのマーカー型のいずれかを `using` パラメーターとして受け取り、プログラムは対応する given を `dysasymptotics` パッケージから名前でインポートすることでこれを選択する。
++       これらは単純なマーカーであり、ケイパビリティではない。
++       何の権限も持たず、解決以外には何も制約しないので、隠れたコストの承認はすべて grep で探せるインポートになる。
++       インポートは、なるべくブロックのスコープに限定し、コメントを添える。
+
+% 2 1 0 0b4433b324515b8302bd99bc7b80dfbf
+
+% 3 1 0 0a1ecd78eae7fb3607ac63eb283adda6
+
+% 0 1 0 0dda7cf4052c4d9b0a8306bf742a9dcb
+
+% 0 1 0 03bd7cd25f1d86291b40d00fdbf26901
+
+% 0 1 0 1b08bc52fcaa9e0119e6f4a198a6359f
+
+% 1 1 0 13f57a8309334e5c1ad380d80e6c7211
+
+% 0 1 0 0219c824ef3999b5152964e9a53a2e92
+
+@ 0 17 0 1a10eaaf69f59cbe09eb052dabcad563
++   entry .LinearSize   正格な連結構造の長さのコスト、または有界な変更に対する全体の再構築のコスト
++       `List` の `size` とそこから導かれるすべて（`gamut`、`limit`、`ult`、`pen`、`ant`、`extent`、`iterate`、`retrace`）、`List` の `last` と `lead`、そして凍結済み配列のコピーオンライトの編集（`define`、`omit`、`lead`、要素の末尾への追加や先頭への追加）をゲートする。
++       これらの編集はどれも配列全体をコピーする。
++       `dysasymptotics.linearSize` で有効になる。
++   entry .LinearAccess   正格な連結構造のある位置に、先頭から辿って到達するコスト
++       `List` の位置による読み取り（序数による `at`、`apply`、`confine`）と、プレフィックスを再構築する `List` の `define` をゲートする。
++       先頭は無償である。
++       それを読むのは有界な辿りだからである。
++       `dysasymptotics.linearAccess` で有効になる。
++   entry .UnboundedSize   遅延構造を末尾まで強制評価するコスト。無限の構造では決して戻らない
++       `Chain` の `size`、`last`、`lead` をゲートする。
++       `dysasymptotics.unboundedSize` で有効になる。
++       空であるかどうか（`nil`）は最初のセルしか強制評価せず、決してゲートされない。
++   entry .LinearScan   対象のための索引を持たない構造を走査して対象を見つけるコスト
++       たとえば、後続ノードだけを保存するグラフにおけるノードの先行ノードである。
++       先行ノードがどれほど少なくても、グラフ全体に対して線形である。
++       `dysasymptotics.linearScan` で有効になる。
+
+@ 0 1 0 16291bbac70fd3280263d044383a63bc
++ entry .dysasymptotics   隠れたコストの四つの承認。それぞれ名前でインポートする given
+
+% 1 1 0 057db32dfc51137615761f01a15065ec
+
+@ 0 7 0 03d814a8f52568c918114c1af043f4c0
++       これらの given のいずれかをインポートすると、そのインポートのスコープ内で、対応する `Dysasymptotic` マーカーでゲートされたすべての演算が開かれる。
++       名前でインポートしなければならない（`import dysasymptotics.linearSize`）。
++       ワイルドカードの `import dysasymptotics.*` は given をスコープに持ち込まないからである。
++       このパッケージはアンブレラ自身のものと統合されるので、`import soundness.*` に続けて名前でインポートすれば足りる。
++       インポートはコストを受け入れるブロックのスコープに限定し、それが許容できる理由を述べるコメントを添える。
++       また、`.stdlib.length` などでゲートを回避してはならない。
++       それは同じコストを誰にも見つけられない場所に隠すだけである。
+
+% 2 1 0 1c4b6d0038fe7cc9149645224c02f467
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 18820354cd6bd0b217ed8692da71eb0d
++         label ゲートなし：空かどうかはどの形でも O(1)
+
+% 1 1 0 047da9c8193b0465164bc9394aef80b4
+
+% 2 1 0 18c891f5180a72231aca9824859532e6
+
+% 3 1 0 133057d4e3e2514f1db30d95d0960665
+
+% 0 1 0 1d5b3e32dba17a731bbc5af3cb53a329
+
+% 1 1 0 0170f0ad25e89cde09d3a221a8a35ead
+
+@ 0 1 0 076dbd4fc515f9f21f2767e4ff01d526
++         label ゲートあり：リストのサイズは走査である
+
+% 1 1 0 05dfe879bb6290711a76523b1a2974a3
+
+% 2 1 0 166375cd8f8f4fa8019439ff22e8c5e2
+
+% 3 1 0 02b69917f4d96c651386a36872bf074f
+
+% 0 1 0 078b7a0b4f5f43b40e29ca31bc676861
+
+% 1 1 0 11d2f838eef484200f5d31e738752a21
+
+@ 0 1 0 1d2f9fee97401b7f01e9a02ebbbfa0eb
++         label コストを支払うブロックで承認する
+
+% 1 1 0 05b885091770902d0c37063bd34386fd
+
+% 2 1 0 1686a4bed667b65e066f573618be1891
+
+% 0 1 0 15c8012edc25dc9f1dd358885bb6076e
+
+% 1 1 0 15384b54c774c2ab1a9f4877c752f51a
+
+% 0 1 0 13a5a08c5a3427f61b2f8289e8dbde15
+
+% 1 1 0 06e9769b55dfc9c70ffc582b7584f70d
+
+% 2 1 0 017d05e4d1d9de9d1a45a446d628db7f
+
+% 0 1 0 14c5992ad5b24cc2093a41162fd31f46
+
+@ 0 4 0 1858080fca084f7f0f6f30753b9712e3
++   entry .linearSize   `List` の `size` とサイズから導かれる演算、そして凍結済み配列のコピーする編集を開く
++   entry .linearAccess   `List` への位置によるアクセスを開く：`at`、序数による `apply`、`define`
++   entry .unboundedSize   `Chain` の `size`、`last`、`lead` を開く。無限の `Chain` では決して戻らない
++   entry .linearScan   索引のない構造を走査して対象を見つける演算を開く
+
+@ 0 1 0 154d5f75b068cf1b0836e80a2bad3090
++ entry .ordinalTextualizables   `Ordinal` のテキストとしての描画。それぞれ名前でインポートする given
+
+% 1 1 0 00bf97c2f9724d0113f95553d99a9b70
+
+@ 0 5 0 0a9ba704e4d0aec7069e606eb97457ec
++       `Ordinal` の描画は暗黙のスコープにない。
++       どれもあらゆる場面で正しいわけではないからである。
++       ユーザー向けのメッセージは `3rd` を、デバッグ用のトレースは両方のインデックスを、プロトコルは裸の数値を求める。
++       これらの given のうち一つだけを名前でインポートすれば（`import ordinalTextualizables.englishOrdinal`）、`ordinal.textual` がそれを使う。
++       ワイルドカードのインポートは given をスコープに持ち込まない。
+
+% 2 1 0 169c63687e8a0f0a1b844c8747a9433f
+
+% 0 1 0 044f508a5d3d64370ba73cf12cf7d38a
+
+% 1 1 0 029c113f1d5f4f02124d4849f93a72f7
+
+% 2 1 0 064c4ffa113ba0a51d0e9c306c2b8528
+
+% 0 1 0 0c7d67f168bb9bcc02b63498a9f1050c
+
+% 0 1 0 0504d1f24970953613a1a045c254cb55
+
+% 0 1 0 148c1246d51b5ad60688008c722d9e76
+
+% 1 1 0 1b605b955660ddd9196bc50d9703cea5
+
+% 2 1 0 00d48b49779ca51d003e09639b5f5221
+
+% 0 1 0 19895ab56945a75d117e7a92720cdc3c
+
+% 0 1 0 12dda54915b58c8b0c984e6b1afec7a3
+
+% 0 1 0 01afd7c27d606e8106492957d97f7f32
+
+% 1 1 0 071a1cb0585bc4f01606552f968c3158
+
+% 2 1 0 17ef20536cc24d3c025a29d4f76ce6b3
+
+% 0 1 0 1d07644dc58c93040a004a7ed0b336d4
+
+% 0 1 0 01995c974e9741dc0e07ccb0079570e4
+
+% 0 1 0 0b86c627a465fabd1dd2cf634be1d98a
+
+% 1 1 0 1233beba25a7813d1e2116c75c07aa56
+
+% 2 1 0 04198cf183d19f930dd243aac1dd0691
+
+% 0 1 0 03c2b1c90530108d123e63954924f03a
+
+% 0 1 0 061adc2cbd86a9cb140a4eec62fb739f
+
+% 1 1 0 0f3d19ee18df295101a55b788eedf6f8
+
+% 2 1 0 010e4e3f1c809f7b00da1e3040cf1398
+
+@ 0 12 0 1298d52c9a30c4591394a93b6f3f33af
++   entry .nominalOrdinal   序数の名前（`prim`、`sec`、… `sept`）。七番目より先は `7.z`
++   entry .uniaryOrdinal   `♭` を付けた 1 始まりの個数：`Prim` は `1♭`
++   entry .zeraryOrdinal   `♯` を付けた 0 始まりのインデックス：`Prim` は `0♯`
++   entry .unmarkedUniaryOrdinal   印のない 1 始まりの個数：`Prim` は `1`
++   entry .unmarkedZeraryOrdinal   印のない 0 始まりのインデックス：`Prim` は `0`
++   entry .intermediateOrdinal   両方のインデックスを同時に、0 始まり、1 始まりの順で：`Prim` は `⌞0⌟|⌞1⌟`
++   entry .englishOrdinal   英語の序数の接尾辞：`1st`、`2nd`、`3rd`、`4th`、`11th`、`21st`
++   entry .englishSuperscriptOrdinal   上付き文字の英語の接尾辞：`1ˢᵗ`、`2ⁿᵈ`、`3ʳᵈ`、`4ᵗʰ`
++   entry .frenchOrdinal   フランス語の形：`1ᵉʳ`、続いて `2ᵉ`、`3ᵉ`、…
++   entry .italianOrdinal   イタリア語の形：`1ᵒ`、`2ᵒ`、…
++   entry .spanishOrdinal   スペイン語の形：`1.ᵒ`、`2.ᵒ`、…
++   entry .russianOrdinal   ロシア語の形：`1-й`、`2-й`、…
+
+@ 0 1 0 0f6b6c2937d39ef908927d323d3aa403
++ entry .Countable   サイズを持ち、したがって序数の範囲を持つ値：`Self is Countable`
+
+% 1 1 0 1d81b8626cd3078e0fc914b9bcfa541c
+
+@ 0 5 0 17b7f79d9ada976c1a35ed04cf74e2e7
++       `Countable` は `size` の背後にある型クラスであり、それを通じて、サイズから序数を導くすべての演算の背後にある。
++       `gamut`、`extent`、`limit`、`ult`、`pen`、`ant`、`iterate`、`retrace`、`tabulate`、`spot`、`prefix`、`pare`、`coextent`、`within`、そして rudiments の区分の演算である。
++       `Vacuiscible` を継承するので、数えられる値は空かどうかも検査でき、既定では `size == 0` として検査される。
+
+% 2 1 0 059eb91216265dc20f564bc02e72c858
+
+% 3 1 0 182e6c276cb3418a0a12ef03d78c10c6
+
+% 0 1 0 04bf20f433268a170a93629761fc256b
+
+% 0 1 0 0afce615c85537e30842024b1bc93118
+
+% 0 1 0 10f377474aa4a9de1d161ae16570e097
+
+% 1 1 0 19fcf93025cf30eb081948455fc745aa
+
+@ 0 7 0 12e00522fb1943de080d5b1317bcc875
++       ゲートなしのインスタンスは、凍結済みの配列（とその `Sized` 形）、`Sequence`、`Set`、`Map`、`Ledger`、`Text`、標準ライブラリの `IndexedSeq` と `Iterable`、`Option`（0 か 1）、`Int`（自分自身を数える）、そして可変の `ArrayBuffer`、`HashMap`、`TrieMap`、`StringBuilder` にある。
++       `List` のサイズは走査なので、`.list` には `import dysasymptotics.linearSize` が必要である。
++       `Chain` のサイズはストリーム全体を強制評価するので、`.chain` には `import dysasymptotics.unboundedSize` が必要である。
++       どちらのゲートも `nil` には適用されず、`Vacuiscible` はどちらに対しても O(1) で答える。
+
+@ 0 3 0 19a98e6d59ed075c0ef900057a7edef2
++       可変の数えられる値（`ArrayBuffer`、`StringBuilder`）に対して生成された限定された序数は、その値が縮まない間だけ有効である。
++       ブランドが健全なのは、`val` に保持された不変な値に対してである。
+
+% 0 1 0 17304e2133633ca20f7c3be60665f325
+
+% 0 1 0 08b09680cdc4900d14cb42a0f9aedcba
+
+% 0 1 0 03ab6f91417113c70fee45085ebf0057
+
+@ 0 29 0 03ad7a5f06405e3c175286a920cbf87a
++   entry #size   値の要素数
++   entry #nil   値が空かどうか。既定では、サイズが 0 かどうか
++   entry .frozenArray   凍結済みの `Array[e]^{}` はその長さを O(1) で数える
++   entry .sizedFrozenArray   `Sized[length]` の凍結済み配列。専用のインスタンスによる
++       `.frozenArray` を拡張したものではなく、別個のインスタンスである。
++       キャプチャする型で上限づけられた型変数は `array^{any.rd}` として展開され、純粋な配列に対して宣言された証拠に合わなくなるからである。
++   entry .int   `Int` は自分自身を数えるので、`5.extent` は最初の五つの序数である
++   entry .arrayBuffer   可変の `ArrayBuffer` は現在の長さを数える
++   entry .option   `Option` のサイズは 0 か 1 である
++   entry .list   走査による `List` のサイズ。スコープに `dysasymptotics.linearSize` が必要
++       `Dysasymptotic.LinearSize` を `using` パラメーターとして受け取るので、`list.size`、`list.gamut`、`list.extent` などは、`import dysasymptotics.linearSize` がスコープに入るまで解決されない。
++       部分型についてパラメトリックなので、`List[e] & Populated` もマッチする。
++   entry .iterable   標準ライブラリの任意の `Iterable` は、自身の `size` のコストでサイズを数える
++   entry .map   `Map` はエントリーを O(1) で数える
++   entry .ledger   `Ledger` はエントリーを O(1) で数える
++   entry .trieMap   並行の `TrieMap` はエントリーを数える
++   entry .hashMap   可変の `HashMap` はエントリーを数える
++   entry .chain   ストリーム全体を強制評価することによる `Chain` のサイズ。スコープに `dysasymptotics.unboundedSize` が必要
++       無限の `Chain` では決して戻らない。
++       そのため、ゲートは `LinearSize` ではなく、より強い `Dysasymptotic.UnboundedSize` である。
++   entry .stringBuilder   `StringBuilder` は現在の長さを数える
++   entry .set   `Set` は要素を O(1) で数える
++   entry .indexedSeq   標準ライブラリの `IndexedSeq` は長さを O(1) で数える
++   entry .sequence   `Sequence` は要素を O(1) で数える
++   entry .text   `Text` は UTF-16 のコードユニットを O(1) で数える
++       `String#length` と同じ数え方であり、基本多言語面の外にある文字は二つと数えられる。
+
+@ 0 1 0 07605388b7e80c17110736e7680ba4d3
++ entry .Vacuiscible   空かどうかを、どの形でも O(1) で検査できる値：`Self is Vacuiscible`
+
+% 1 1 0 1c3a2954fb75bbb71bb1d11c65685de8
+
+@ 0 5 0 1e1e63f96e3708ca1a9208463b30ef09
++       空であることだけを扱い、`Countable` から分離されている。
++       そのため、サイズのコストが高い形（`List`、`Chain`）でも、`nil` には安価に、ゲートなしで答えられる。
++       値が空かどうかだけを知ればよい演算は、`Countable` ではなく `Vacuiscible` を要求すべきである。
++       すべての `Countable` は `.countable` を通じて `Vacuiscible` であり、`List` と `Chain` は専用のインスタンスを持ち、それがゲートされたインスタンスに優先する。
+
+% 2 1 0 1072245cb3b4726511d73c87faa26f8e
+
+% 3 1 0 1a8d6eff997b9b5315b225f6545a75c2
+
+% 0 1 0 05f269bbc6ee4889048099094e5b9313
+
+% 0 1 0 0a57f57867b08e930e257a8f74b67ce0
+
+% 0 1 0 1ed7ee74a5609eca1d1866fc76c499a3
+
+% 1 1 0 1fb7a83c987434a1123c11b0921a228c
+
+% 0 1 0 0cb729766ae573260a115f7052d606d3
+
+% 1 1 0 066f1eb6c70f31781144d4cde7c7cfc0
+
+@ 0 7 0 15f9c8c56f6e59430aeb438a3843caf5
++   entry #nil   値が要素を持たないかどうか
++   entry .countable   すべての `Countable` は `Vacuiscible` であり、自身のインスタンスを通じて `nil` に答える
++       `X is Vacuiscible` の暗黙の探索は `Vacuiscible` とその親のコンパニオンを調べ、その部分型のコンパニオンは決して調べない。
++       そのため、これがなければ `Countable` のインスタンスは見つからない。
++   entry .list   `List` が空かどうか。ポインター一つの検査であり、サイズとは違ってゲートされない
++   entry .chain   `Chain` が空かどうか。最初のセルだけを強制評価し、サイズとは違ってゲートされない
+
+@ 0 1 0 1bee944c74b9f3d51cf15f73f3107339
++ entry .Applicable   インデックスやキーで読み取れる値：`Self is Applicable by Operand to Result`
+
+% 1 1 0 1bdc2f64823e9c4c15e1c95176f19ce3
+
+@ 0 6 0 1e41e4c7171f33e11177067eb887399e
++       `Applicable` はインデックス付けの読み取り側である。
++       `#contains` はインデックスが有効かどうかを答え、`#access` は有効なインデックスで読み取る。
++       rudiments の `xs(index)`、`xs.at(index)`、`xs.defines(key)`、`xs.confine(index)`、`xs.pick(index)` が解決するのはこれであり、それらの読み取りが限定された序数に対しては全域的で、それ以外に対しては `Optional` になる理由もここにある。
++       `access` 自体は、必ず `contains` の後ろか証明の後ろでしか呼ばれない。
++       `Operand` は、位置による形では `Ordinal`、キーによる形ではキーの型である。
+
+% 2 1 0 0b5310cb9ff690cd0c0dc10e117a745e
+
+% 3 1 0 03bb85ec446cf6141b8cdb4b316492d0
+
+% 0 1 0 1051055c947de84100c8ac71ad59d4ff
+
+% 0 1 0 05517cde37325f791a2a72919be8fe0a
+
+% 0 1 0 08532d3db73736e41743997af45b0f16
+
+% 0 1 0 1241ffdc2a352dd6168cf10cf2976832
+
+% 0 1 0 1378d42d2ecf777d15f99674c4ca32e3
+
+% 0 1 0 095e40ca3f15bd581da1268736d9e303
+
+% 1 1 0 0c6b22d9dcd0a02d17418bc02117fb56
+
+@ 0 4 0 0e3c6eae40f67a44029e9ed8cf18f457
++       インスタンスは次のとおりである。
++       凍結済みの配列とその `Sized` 形、`Sequence`、標準ライブラリの `IndexedSeq`、`Text`（`Char` による）は序数による。
++       `Map`、`Ledger`、可変の `HashMap` はキーによる。
++       `List` は序数によるが、`import dysasymptotics.linearAccess` が必要である。
++       位置に到達するには先頭から辿るからである。
+
+% 1 1 0 13e5cf15e820111f007992f454067070
+
+% 1 1 0 124bca232a08373c04fe4fb108ca5476
+
+@ 0 15 0 07e393f1720889c0003e28f90939da9f
++   entry #contains   インデックスがその値に対して有効かどうか：範囲内であるか、存在するキーであるか
++   entry #access   有効だとすでにわかっているインデックスにある要素
++       検査はしない。
++       無効なインデックスで呼ぶと例外を投げることがある。
++       インデックスを先に検査または証明する rudiments の `apply`、`at`、`pick` を通じて使うこと。
++   entry .frozenArray   序数による凍結済みの `Array[e]^{}` の読み取り。境界検査と検査なしの読み取りによる
++   entry .sizedFrozenArray   変数の序数による `Sized[length]` の凍結済み配列の読み取り
++       `Sized` 配列へのリテラルのインデックスはコンパイル時に検査され、このインスタンスには届かない。
++       変数の序数は依然として境界検査される `Optional` の読み取りである。
++   entry .indexedSeq   序数による標準ライブラリの `IndexedSeq` の読み取り
++   entry .sequence   序数による `Sequence` の読み取り。実質的に定数時間
++   entry .list   先頭から辿ることによる、序数での `List` の読み取り。`dysasymptotics.linearAccess` が必要
++   entry .text   序数による `Text` の読み取り。`Char`（UTF-16 のコードユニット）を返す
++   entry .map   キーによる `Map` の読み取り。その値を返す
++   entry .ledger   キーによる `Ledger` の読み取り。その値を返す
++   entry .hashMap   キーによる可変の `HashMap` の読み取り。その値を返す
+
+@ 0 1 0 1a616da724bfbb910e8f754faa78f402
++ entry .Definable   インデックスやキーでのコピーオンライトの更新：`Self is Definable by Operand to Result`
+
+% 1 1 0 142af51097d32ec306fb8f43e69a1929
+
+@ 0 3 0 1427ef8e6e7f9e171b5e77446ee38c3e
++       `Applicable` の書き込み側の対であり、rudiments の `xs.define(index, value)` の背後にある。
++       `index` で読むと `value` が得られる、値のコピーを返す。
++       全域的である。
++       範囲外の序数では値を変えずに返し、存在しないキーではエントリーを追加する。
+
+% 2 1 0 15c24e314b6d5b8c19581b6dd28af51e
+
+% 3 1 0 13a2023b9e9deabc0b0db342f3526972
+
+% 0 1 0 1f55967e841a567c1da032b42b7b7a82
+
+% 0 1 0 0923fa53ce8698e71b912ec68dcfd6ad
+
+% 0 1 0 02abf72de2fd00bb0be7aff61231917b
+
+% 1 1 0 1db2a0aa9ba7bf2c006fea5ded3bd8c9
+
+@ 0 4 0 00f3d2d1aa0048b11d5446ca4a6ae304
++       インスタンスは、`Sequence`、標準ライブラリの `IndexedSeq`、`Map`、`Ledger` にゲートなしで存在する。
++       `List` には `dysasymptotics.linearAccess` のもとで存在する。
++       プレフィックスを再構築するからである。
++       凍結済みの配列には `dysasymptotics.linearSize` のもとで存在する。
++       どの編集も配列全体をコピーするからである。
+
+% 0 1 0 01485a04775768a518a4862baa3424e4
+
+% 0 1 0 0a6eacc9f9812c55023d04a86bea2511
+
+@ 0 8 0 01b4fb3bcdfe9ce40b1357fedeff6f7a
++   entry #define   `index` に `result` を置いた値
++   entry .sequence   一つの位置を置き換えた `Sequence`。序数が範囲外なら変わらない
++   entry .frozenArray   一つの位置を置き換えた新しい凍結済み配列。`dysasymptotics.linearSize` が必要
++       要素の `ClassTag` が必要である。
++       コピーは新しいものなので、凍結するのに証明は要らない。
++   entry .list   一つの位置を置き換えた `List`。プレフィックスを再構築する。`dysasymptotics.linearAccess` が必要
++   entry .indexedSeq   一つの位置を置き換えた標準ライブラリの `IndexedSeq`
++   entry .map   キーに値を設定した `Map`。キーが存在しなければ追加する
++   entry .ledger   キーに値を設定した `Ledger`。新しいキーは順序の末尾に置かれる
+
+@ 0 1 0 09b1733f577df5e013cddd2c3e19dec0
++ entry .Omissible   インデックスやキーでのコピーオンライトの削除：`Self is Omissible by Operand`
+
+% 1 1 0 109ad659ebde880d12c3bf92853203cf
+
+@ 0 7 0 003364045204c8790862cb7e7a1bf7ab
++       `define` の逆であり、rudiments の `xs.omit(index)` の背後にある。
++       独立した型クラスになっているのは、連結した形や連続した形ではこれを正直に提供できないからである。
++       位置を削除すると以降のすべてのインデックスがずれるので、`List` と `Sequence` にはインスタンスがなく、それらに対する `omit` はコンパイルされない。
++       凍結済みの配列は例外である。
++       どの編集もいずれにせよ配列全体をコピーするので、スロットの削除は `define` と同じコストになり、同じ `dysasymptotics.linearSize` でゲートされる。
++       範囲外の序数や存在しないキーでは、値を変えずに返す。
+
+% 2 1 0 192b8e8f56ac0d7d04fcd39a125cb749
+
+% 3 1 0 03d5d2df901069c61ee651b7cc191408
+
+% 0 1 0 02df009b8cf2873d1a4e4512a194500d
+
+% 1 1 0 01ede67bf1b4b89801c6ff1cb56778f4
+
+% 1 1 0 12c2a55abd022c9615989858803446ff
+
+@ 0 4 0 049d1e27814128241c236939b83e915a
++   entry #omit   `index` にある要素を除いた値
++   entry .frozenArray   スロットが一つ少ない新しい凍結済み配列。`dysasymptotics.linearSize` と `ClassTag` が必要
++   entry .map   キーを除いた `Map`
++   entry .ledger   キーを除いた `Ledger`。残りの順序は保たれる
+
+@ 0 1 0 1ebc03d75389507711d806873ced8b28
++ entry .Terminable   最後の要素を読み取れる値：`Self is Terminable by Operand`
+
+% 1 1 0 17ea37a6f21a29530a86a38cd049dd07
+
+@ 0 4 0 14b98afa9ede53040ef606b906912dde
++       値の後端であり、rudiments の `xs.last` の背後にある（空の値では `Unset` を、`& Populated` と型付けされた値では裸の要素を返す）。
++       `Truncable` とは別の型クラスなのは、二つのコストが異なるからである。
++       配列の最後の要素は一度の読み取りだが、それを捨てると配列がコピーされる。
++       `last` は、それが単なる覗き見でない場所ではどこでもゲートされる。
+
+% 2 1 0 0781c3b645adfa2904085848a7a0ef8a
+
+% 3 1 0 135bf61a7d38483a19b6b39b51a901ba
+
+% 0 1 0 022d64aa09c2d11b1697422e0549bd52
+
+% 0 1 0 0a7c92c53206b3ff115b10a5892ac91b
+
+% 1 1 0 007ca953fe9d1eae138ccd627871c947
+
+@ 0 4 0 164efab1e722e9311962933231d123d8
++       インスタンスは次のとおりである。
++       `Sequence`、凍結済みの配列とその `Sized` 形、`Text`（`Char` による）、標準ライブラリの `IndexedSeq` は O(1) である。
++       `List` は `dysasymptotics.linearSize` のもとにある。
++       末尾まで辿るからである。
++       `Chain` は `dysasymptotics.unboundedSize` のもとにある。
++       ストリーム全体を強制評価するからである。
+
+% 0 1 0 0246b2f72ae5a40e1d2c6df7e219bbaf
+
+@ 0 8 0 096464723a11ad681730838c839addbe
++   entry #last   空でない値の最後の要素
++   entry .sequence   `Sequence` の最後の要素。O(1)
++   entry .frozenArray   凍結済み配列の最後のスロット。O(1)
++   entry .sizedFrozenArray   `Sized[length]` の凍結済み配列の最後のスロット。専用のインスタンスによる
++   entry .text   `Text` の最後の `Char`
++   entry .indexedSeq   標準ライブラリの `IndexedSeq` の最後の要素
++   entry .list   末尾まで辿ることによる `List` の最後の要素。`dysasymptotics.linearSize` が必要
++   entry .chain   末尾まで強制評価することによる `Chain` の最後の要素。`dysasymptotics.unboundedSize` が必要
+
+@ 0 1 0 0dd865f278fb29521fe23852c9e9040d
++ entry .Truncable   最後の要素を捨てられる値：`Self is Truncable to Result`
+
+% 1 1 0 1fbd01058c5220321b16840c809e0f4a
+
+@ 0 4 0 006c0e96adb8f3541e830a6cf1c6216b
++       `last` の補であり、rudiments の `xs.lead` の背後にある。
++       最後の要素以外のすべてを返すので、`lead` に `last` を続けると値全体になる。
++       `Result` は `Self` ではなく通常の型である。
++       要素を捨てると値が空になることがあり、`& Populated` のブランドが残ってはならないからである。
+
+% 2 1 0 174271e1b1f712031548881cf4184ed0
+
+% 3 1 0 022339e09c5443961f53818fe34db71f
+
+% 0 1 0 11834529ba72d02e13e9e21ca51ef1bc
+
+% 0 1 0 043bf8b3cc9ae57b16682c1b008f2887
+
+% 1 1 0 1389b6d2508c0b33067bc78db91c5086
+
+@ 0 3 0 1fdb20d4a7cfb74e04b8d937118744b0
++       インスタンスは次のとおりである。
++       `Sequence`（償却 O(1)）、`Text`、標準ライブラリの `IndexedSeq` はゲートなしである。
++       `List` と凍結済みの配列は `dysasymptotics.linearSize` のもとにある。
++       どちらも構造全体をコピーするからである。
++       `Chain` は `dysasymptotics.unboundedSize` のもとにある。
+
+% 0 1 0 0a14733a9edca07804241eb55245d180
+
+@ 0 8 0 09c53a65c2aeaa6006019970eee8e07d
++   entry #lead   最後の要素を除いた値
++   entry .sequence   最後の要素を除いた `Sequence`。償却 O(1)
++   entry .text   最後の `Char` を除いた `Text`
++   entry .indexedSeq   最後の要素を除いた標準ライブラリの `IndexedSeq`
++   entry .list   最後の要素を除いた `List`。その骨格をコピーする。`dysasymptotics.linearSize` が必要
++   entry .frozenArray   スロットが一つ少ない新しい凍結済み配列。`dysasymptotics.linearSize` と `ClassTag` が必要
++       空の配列は空の配列に切り詰められる。
++   entry .chain   最後の要素を除いた `Chain`。`dysasymptotics.unboundedSize` が必要

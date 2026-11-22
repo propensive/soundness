@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 1ce7d49ebce1e98e1165b415a790c7e7
++ Das Modul `cellulose`, das CoDL implementierte, wurde entfernt. Seine Rolle übernimmt
++ [TEL](/doc/soundness/modules/tel.md), eine schematypisierte, durch Einrückung strukturierte Datensprache
++ derselben Art.

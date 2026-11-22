@@ -1,0 +1,38 @@
+orthant 2 language
+
+@ 0 3 0 057cb6a0b5366b3706bfd474a63e20a4
++ entry .toss   公平なコイン投げ：`true` か `false` が等しい確率で出る
++     `toss()` は、スコープにある `Random` から、`arbitrary[Boolean]()` と同じ規則（`Long` の符号）で値を引くので、投げた結果は `Seed` から再現できる。
+
+@ 0 9 0 0c63b6d6a010510f0f4d8dc6bca26ab7
++   entry .global   スコープなしで使うための、一つの共有されたシードなしの生成器に対する `Random`
++       呼び出しのたびに、`randomization.unseededRandomization` によって遅延して作られる同じプロセス全体の生成器を包むので、そこから引いた値は決して再現できない。
++       `random` がこれを使う。
++   entry .apply   スコープにある `Randomization` から作り、与えた `Seed` でシードを与えた新しい `Random`
++       `Random(seed)` は、コンテキストの `Randomization` から生成器を初期化する。
++       この `Randomization` は `seed` をスコープに置いて解決される。
++       `seededRandomization` のもとでは、生成器は `Seed#stochastic` と同じように `seed` から始まり、シードなしのランダム化はそれを無視する。
++   entry .Size   コンテキスト値としての、ランダムなコレクションの要素数
+
+@ 0 24 0 04a55a33bab0309b039431791e6f182e
++   entry #randomize   `Random` から値を引く
++   entry #apply   コンテキストの `Random` から値を引く：`summon[Int is Randomizable]()`
++   entry #map   引いた各値を変換する、別の型のためのインスタンス
++       `randomizable.map(lambda)` はこのインスタンスを通じて値を引き、ラムダを適用する。結果はその両方をキャプチャする。
++   entry .long   一様にランダムな `Long` を引く
++   entry .byte   ランダムな `Long` の下位 8 ビットである `Byte` を引く
++   entry .short   ランダムな `Long` の下位 16 ビットである `Short` を引く
++   entry .int   ランダムな `Long` の下位 32 ビットである `Int` を引く
++   entry .char   ランダムな `Long` の下位 16 ビットである `Char` を引く
++       対になっていないサロゲートや制御文字を含む、任意の UTF-16 コードユニットである。
++   entry .seed   ランダムな `Long` から、64 ビットの `Seed` を引く
++   entry .boolean   `Boolean` を引く：ランダムな `Long` が負のとき `true`
++   entry .list   スコープにある `Random.Size` から大きさを得た `List` を引く
++   entry .set   スコープにある `Random.Size` までの大きさの `Set` を引く。重複はまとめられる
++   entry .frozenArray   スコープにある `Random.Size` によって大きさが決まる、凍結済みの `Array[element]^{}` を引く
++       `Random.Size` に加えて、要素の型に対する `ClassTag` が必要である。
++   entry .double   スコープにある `Distribution` を通じて `Double` を引く
++       既定の分布はない：コードがどのような種類の `Double` を意図しているかを述べるまで `Double` は引けない。これにより、一様分布から引いた値を正規分布であるかのように扱うことが防がれる。
++       `randomDistributions` から一つをインポートするか、`Gaussian`、`PolarGaussian`、`UniformDistribution`、`Gamma` を given として宣言する。
++   entry .conjunction   直積型の導出されたインスタンス：各フィールドを同じ `Random` から順に引く
++   entry .disjunction   直和型の導出されたインスタンス：バリアントを一様に選び、それを同じ `Random` から引く

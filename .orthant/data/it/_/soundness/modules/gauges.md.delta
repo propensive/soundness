@@ -1,0 +1,476 @@
+orthant 2 language
+
+@ 0 1 0 1ca9360ffb82cc3400089069ee86cff8
++ ## Indicatori
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 5 0 1b3f2f30958681f219da5766d857d962
++ Un programma che lavora a lungo ha qualcosa da dire mentre lavora: a che punto è, che è ancora
++ vivo, a che velocità si muovono i byte e quale passo di una pipeline è in esecuzione. Queste
++ informazioni si mostrano come *indicatori*: spinner, barre di avanzamento, misuratori,
++ sparkline, contatori e indicatori di passo. Un indicatore è incorporato in un
++ [layout del terminale](terminal.md#layout), oppure è disegnato da solo, nella posizione del
++ cursore.
+
+@ 0 3 0 1e867cde23502b72136f8f35fc4b5154
++ Un indicatore si sceglie in base al *tipo* di ciò che mostra. Il suo aspetto, i colori che usa e
++ i caratteri con cui può disegnare sono tre decisioni separate. Ciascuna si prende con un import,
++ e nessuna disturba le altre due.
+
+@ 0 1 0 1d38651b6a833ddc0c17beb18afa4876
++ ### Sulla visualizzazione dell'avanzamento
+
+@ 0 4 0 0dbf7375856e6d990ee5802188b7c4de
++ Una visualizzazione dell'avanzamento di solito si scrive due volte: una volta come disegno, e
++ un'altra come l'aritmetica che decide che cosa ci sta. Le due si tengono coerenti a mano. Il
++ risultato è una barra corretta a ottanta colonne e corrotta a trenta, con una riga che sborda,
++ un'etichetta che spinge la barra fuori dal bordo, o una percentuale che contraddice la barra che
++ le sta accanto.
+
+@ 0 6 0 0a1899c6602f196f1061da72505057cb
++ Separare le due cose elimina la duplicazione. Un design dice come disegnare uno stato a
++ qualunque larghezza gli venga data, e fino a che punto può restringersi restando utile. Il
++ layout dice quanto spazio c'è. Nessuno dei due deve sapere che cosa ha deciso l'altro. Una barra
++ a cui si danno sei celle si disegna in sei. Con tre diventa una percentuale, e con una diventa
++ una singola sfumatura. Un design scelto con un import, indipendentemente dallo stato che
++ disegna, è [disaccoppiamento](../../philosophy/decoupling.md) tra significato e aspetto.
+
+@ 0 1 0 094f48da36e316410f71f04785bd2cc9
++ Tutto viene dal package `soundness`, e diverse scelte sono nell'ambito:
+
+% 2 1 0 0e25b189f091ed3d0e1b0b18722581e8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0113ecd3cd2f810810d22a6b0e5b8695
+
+% 0 1 0 19972e70e2570a86112786d91f60abff
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 0dbd0833aa335f231fc5b058c792b15a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1d5fc034e09e470f104bc500108eb3eb
+
+% 1 1 0 14e93cc444c239da0937f1b16866b297
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+% 3 1 0 10f39fd782d85520112a6fdadcf0c46b
+
+@ 0 5 0 18f2a4c2945806930bb0ae34a447bc3a
++ column  Decide
++ row  `textMetrics.uniformMetric`  come si misura la larghezza del testo, poiché un indicatore si dispone in base alla larghezza di ciò che disegna
++ row  `palettes.solarizedDarkGaugePalette`  i colori; senza di esso, la tavolozza si sceglie in base a ciò che il terminale segnala
++ row  `stdios`, `termcapDefinitions`  dove si stampano gli esempi, e che cosa il terminale può visualizzare
++ row  `threads`, `probates`  il contesto di [concorrenza](concurrency.md) in cui un indicatore animato si ridisegna
+
+% 1 1 0 11a5012e38e64c971dd58e0222f515ab
+
+@ 0 1 0 1b9f0c492ddb2513177bee360e6a8ec4
++ ### Stati
+
+@ 0 2 0 10411447a4a1a82218560e9b755e64ef
++ Ciò che un indicatore mostra è un valore di un tipo specifico, ed è quel tipo a selezionare il
++ design. I tipi di stato sono annidati in `Tui`, e sono importati da lì qui sopra:
+
+% 2 1 0 17c843a5525e92ee0c1b39181483d546
+
+@ 0 13 0 16b51295a9406e2e049d2b965d9c774a
++ column  Stato
++ column  Mostra
++ column  Design predefinito
++ row  `Fraction`  una proporzione in `[0, 1]`, limitata all'intervallo  barra a blocchi continua
++ row  `Reckoning`  `done` rispetto a un totale che può essere ignoto  `17/120`
++ row  `Standing`  com'è andata un'unità di lavoro  `✓ ✗ ‑`
++ row  `Duration`  il tempo trascorso  `2m41s`
++ row  `Countdown`  il tempo rimasto, limitato a zero  `2m41s`
++ row  `Captioned`  qualunque stato, con un'etichetta  derivato
++ row  `Transfer`  i byte spostati, con velocità e stima  *nessuno*
++ row  `Meter`  una lettura su una scala limitata  *nessuno*
++ row  `Sequence[Double]`  campioni nel tempo  *nessuno*
++ row  `Sequence[Step]`  una serie ordinata di passi  *nessuno*
+
+% 1 1 0 1b6fa11eff89a1200b2261ee3dc88a45
+
+@ 0 6 0 139ea3180d342da908ff820425995777
++ La maggior parte di questi sono tipi che un programma ha già. Si introduce un tipo nuovo solo
++ dove deve essere *distinto*, perché è la chiave con cui si cerca il design. Una proporzione non
++ può essere un semplice `Double` senza rivendicare per le barre di avanzamento ogni `Double` del
++ programma. Il tempo trascorso è una [`Duration`](time.md#durations-and-timespans), i campioni
++ sono una `Sequence[Double]` e una serie di passi è una `Sequence[Step]`. `Countdown` ha un tipo
++ tutto suo solo per poter stare accanto a un tempo trascorso, con un design diverso.
+
+@ 0 6 0 0f129742016554710906f01c7a101cd8
++ Qualunque stato può essere [`Optional`](optional-values.md), e ogni design viene sollevato
++ automaticamente a quel tipo. `Optional[Fraction]` è un avanzamento che potrebbe non essere
++ ancora noto, così un job che parte non misurabile, e più tardi scopre il suo totale, non cambia
++ tipo a metà strada. Un design dice come disegnare quando non c'è alcun valore. Una barra fa uno
++ scorrimento, perché una barra vuota afferma «nessun avanzamento» dove la verità è «non
++ misurato», e uno spinner disegna i suoi frame. Nulla va scritto due volte per il caso opzionale.
+
+@ 0 7 0 03e2423fc313f60109499d46d5b8df56
++ I quattro stati senza un predefinito sono intenzionali. Un predefinito esiste solo dove ogni
++ design candidato ha la stessa altezza e dice la stessa cosa. Una batteria, un termometro e un
++ quadrante non sono intercambiabili. Le sparkline a blocchi e quelle in braille differiscono in
++ risoluzione verticale, e quindi in ciò che i dati mostrano. Una checklist è una riga per ogni
++ passo, mentre un breadcrumb è una riga in tutto. E se un trasferimento conti in `MB` o in `MiB` è
++ una decisione editoriale. Scegliere in silenzio in questi casi significherebbe scegliere quanta
++ parte del layout del chiamante occupare, o che cosa significano i suoi numeri.
+
+@ 0 1 0 0d586b0e3472bcdc0a6b4ed164c6e508
++ ### Scegliere un design
+
+@ 0 2 0 1dc4e5dbbaccbf421d0bf365b9fc6930
++ Senza alcun design importato, valgono i predefiniti. `gaugeLine` disegna un frame, alla
++ larghezza che sceglie il chiamante:
+
+% 2 1 0 169b604c113de00314483901c48fcc2c
+
+% 3 1 0 04842ff1e34bef70143b48d4e29614ff
+
+% 4 1 0 0e1ab1b786afb8291466a0584b5a2eea
+
+% 0 1 0 1c6e05b64471b4f11772f4f8e4508b18
+
+% 0 1 0 1c9534cc1eee6f280eefce54b947c6d2
+
+% 0 1 0 0a4ba8bb42937f500a7fb35170c7e29c
+
+% 1 1 0 0fffae98cfef26441cebe43a5b6283fa
+
+@ 0 2 0 1db5be2ad3f5f5be08be7185431d7f13
++ Un indicatore ha sempre bisogno di una larghezza. Non esiste un modo di disegnare una barra che
++ non sappia quanto è larga, quindi uno stato non si può stampare da solo.
+
+@ 0 1 0 1fd9f8e9efff0c3900cfe06f82ef13ae
++ Importare un design per nome sostituisce il predefinito, e nient'altro cambia:
+
+% 2 1 0 065f9268398606e80e2aabf2f57157b1
+
+% 3 1 0 158cf8f4e295d9d815f5b933c00fdcbd
+
+% 4 1 0 1a5cdfc1cf37f0671b9bd23c45a92a84
+
+% 5 1 0 1905146bfd71169b1716b27dca20400d
+
+% 0 1 0 1da144fa4a812a0c1d8d8e349bdeda3b
+
+% 1 1 0 1c898d31a3de97d41add9c9b7fbba379
+
+% 1 1 0 095e25e44fb570ee028d6f6397687a59
+
+@ 0 4 0 1cd9c2b91be1364b103f0822f4ba0ba9
++ Uno spinner è ciò che si importa quando la cifra non vale la pena di essere mostrata, o non è
++ nota. Ha come chiave `Fraction`, come una barra, e ignora il valore. Uno spinner e una barra sono
++ quindi due design per lo stesso stato, e se ne può importare solo uno alla volta. Un layout che
++ li vuole entrambi ne prende uno da un [given] in un ambito locale:
+
+% 2 1 0 15c79d4e5e8619a409669be2eb2662dd
+
+% 0 1 0 186ee8d8fbb04199069cf3fe3c14ab4e
+
+% 0 1 0 12aabc4bb465f03d0aace318f5ab4e71
+
+% 0 1 0 1b21ce6864a615411c414de2dd3aed21
+
+% 1 1 0 1f0ed2d3bfbc2927000aa785ac5f9341
+
+@ 0 1 0 0b30898e8c18abe216c434991626e2c0
++ I design sono raggruppati in otto famiglie, ciascuna delle quali è un package da cui importare:
+
+% 2 1 0 07acec64987a00ba0075780a3d911d24
+
+@ 0 12 0 035eedbe447935ae1c082544088dd6d1
++ column  Famiglia
++ column  Per
++ column  Design
++ column  Gamma
++ row  `spinners`  `Fraction`  42  dalle animazioni in braille e a blocchi di una sola cella alle barre rimbalzanti e alle fasi lunari in emoji
++ row  `bars`  `Fraction`  18  dal predefinito continuo a ottavi di blocco, attraverso pallini segmentati e riempimenti sfumati, fino a `[###---]`
++ row  `meters`  `Meter`  6  batteria, termometro, lancetta, bullet, colonna e ASCII
++ row  `sparklines`  `Sequence[Double]`  4  a blocchi, alta, a punti e ASCII
++ row  `counters`  `Reckoning`, `Transfer`  9  conteggi semplici, con riempimento, a parole, in scala e in percentuale; resoconti di trasferimento
++ row  `standings`  `Standing`  5  marcatori ASCII, a spunta, marcati, quadrati e a parole
++ row  `processions`  `Sequence[Step]`  5  checklist, breadcrumb, perline, numerata e nastro
++ row  `timers`  `Duration`, `Countdown`  5  tempi trascorsi compatti e digitali; conti alla rovescia compatti, digitali e urgenti
+
+% 1 1 0 1ffda08cefc080700efedb789b73bd44
+
+@ 0 1 0 11107fa6d152c1a512cb651507270733
++ ### Colori e glifi
+
+@ 0 2 0 106195c3f4db11cd0d153d4f264c2211
++ Il colore è una scelta indipendente. Una `GaugePalette` nomina i suoi colori per *ruolo*, così
++ un design si disegna con qualunque tavolozza:
+
+% 2 1 0 0a675187d4a9f6e71a641f43c7abc146
+
+@ 0 10 0 16c53bfbda70346e05502c674c53cb55
++ column  Ruolo
++ column  Colora
++ row  `fill`  la parte piena di una barra
++ row  `track`  la parte vuota di una barra, i pallini cavi, l'arco percorso dalla lancetta di un quadrante
++ row  `leadingEdge`  la cella di confine di una barra e la testa di un marcatore
++ row  `caption`  etichette e didascalie
++ row  `muted`  passi completati, tempi trascorsi, unità
++ row  `success`  un passo riuscito; l'estremo basso di una scala di gravità
++ row  `warning`  un passo con avvertimento; il centro di una scala di gravità
++ row  `danger`  un passo fallito; l'estremo alto di una scala di gravità
+
+% 1 1 0 1d82aafd8ad7c43013290a2f8180f680
+
+@ 0 5 0 0c07c05ebfc580c51157dd6670e8a820
++ Una tavolozza si sceglie con un import, come `palettes.solarizedDarkGaugePalette` qui sopra. Sono
++ fornite dieci tavolozze. Tra queste c'è `monochromeGaugePalette`, che non ha tinte, e
++ `ansiSixteenGaugePalette`, i cui colori sono i valori canonici che un terminale a sedici colori
++ ha davvero. Senza import, una tavolozza adattiva sceglie in base a ciò che il terminale segnala.
++ [Colori](colors.md#themes-and-palettes) descrive le tavolozze in generale.
+
+@ 0 1 0 122f87d952c90b320b60c177c7698f52
++ Il repertorio di caratteri è una terza scelta, e degrada ogni design in un colpo solo:
+
+% 2 1 0 1bc3c79b28611a3b025244ce2d10bb3e
+
+% 3 1 0 19facb99b66877cb13de34695b2720b2
+
+% 4 1 0 01d600980369b01b11f9bb2b6dac1d96
+
+% 5 1 0 08e60e1b9d621f7e1d4364d05e420065
+
+% 0 1 0 01fcaf82c4c3d17211659e0b519ef1e0
+
+% 1 1 0 0d70f432f7bce62f02fc64b56789b9db
+
+% 0 1 0 13bcfac37192a9c0085408bb3fbba406
+
+% 1 1 0 1daefa159e5bd42314b642414f6927fc
+
+@ 0 5 0 13d19b1d3635c20b0bb60379d4957f30
++ Ogni design ha una forma ASCII, e ogni design che preferisce glifi esotici dichiara a che cosa
++ ripiegare. I design in emoji diventano i loro fratelli più semplici dove il terminale non può
++ mostrarli, e con `asciiGlyphs` tutto emette output a sette bit. Nessun design affida il suo
++ significato al solo colore, così un indicatore scritto in un file, o letto da qualcuno che non
++ distingue il rosso dal verde, dice ancora ciò che significa.
+
+@ 0 1 0 14b01342f86b10160599e5b625842874
++ ### Degradazione
+
+@ 0 3 0 1f03f07d95dbcdf31bec86f51a3ec8d8
++ Ogni design si disegna esattamente alla larghezza che gli viene data, a ogni larghezza, e dice
++ meno man mano che si restringe, invece di sbordare. Una barra perde i terminali sotto le otto
++ celle, diventa una percentuale a quattro, e una singola sfumatura a una:
+
+% 2 1 0 0130427a3fc8a2621db1f8f1c72c0289
+
+% 3 1 0 147ff6e14432d1ae014a6a058c74f896
+
+% 4 1 0 0f4bff5871f7e8740bcfb825575e97b4
+
+% 0 1 0 1da76c662a690b7c11b4b9064eebfa6a
+
+% 0 1 0 1655fa56c249df82045a10231d4c2b47
+
+% 1 1 0 0f93c0ed8ab78b7f07863d01b272ef81
+
+@ 0 2 0 16deec23417febed0e7cf2ccbd9abd1b
++ Una riga composta da più parti le abbandona in un ordine dichiarato. Un trasferimento che a
++ ottanta celle si legge
+
+% 2 1 0 13a9ec0bfc1f3e9e0c77cdbeabd7fb14
+
+% 0 1 0 0cfca92044f240720957c2ab1b4fddc5
+
+% 1 1 0 0a5ef8f8a2f7725310a2bbd73bce654e
+
+@ 0 3 0 0ea787b4c32adb320fe2437029320b2b
++ a trenta conserva solo le cifre. Una didascalia si accorcia prima di comprimere l'indicatore che
++ etichetta, e le è concessa al massimo metà della riga prima che cominci a costare celle
++ all'indicatore.
+
+@ 0 6 0 111f969328e3816a04fd72cccdd15dc0
++ La scala di una sparkline è una scelta di design, non parte dei dati.
++ `Sparkline.Blocks.scaled(0, 100)` la fissa, così che un segnale stabile non sembri irregolare
++ quando i limiti si spostano sotto di esso. Una sparkline più stretta della sua serie viene
++ *decimata*: ogni cella mostra il massimo dei campioni che copre. Non viene troncata. Una
++ sparkline troncata mostrerebbe solo i campioni più vecchi, pur sembrando l'intera serie, il che
++ è peggio che mostrare meno.
+
+@ 0 1 0 03b8c781f39ffa09141f618e52d6feca
++ ### In un layout
+
+@ 0 3 0 03f983a332d223b10a72b1c5be53a6cc
++ `gauge` costruisce un riquadro. Prende una `Reading`, che è una cella mutabile che contiene lo
++ stato corrente. Assegnare alla cella pubblica il valore e ridisegna, così un indicatore guidato da
++ un task in background si aggiorna da sé. La [`Cli`](cli.md) di un'applicazione fornisce la
++ console:
+
+% 2 1 0 1b642273e684ccdf1dfe8fb563bb8d6f
+
+% 3 1 0 1f27f1d8d9e55b130ce6f2895f021316
+
+% 4 1 0 1f3a46c6a1ef74b90011890438feea7c
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1034409fb9d408b2189fa867270f35c9
+
+% 0 1 0 047f5ea6ebc5f79c0d842a994977aa88
+
+% 0 1 0 1340abab4b65dcb51641b8f287ad1f0c
+
+% 1 1 0 15df16b7f55a744e0220efffbb8ffe20
+
+% 0 1 0 137b72c4e68fa23e17f88d0375789994
+
+% 0 1 0 04ef01550872711d0c13bf316bcd6221
+
+% 0 1 0 0338feb7cd10c6621148a6fad2067a9a
+
+% 0 1 0 0e319ba209c276b9040df7664ba91b3f
+
+% 0 1 0 0177f7358b7483b40a8f87b6084f7f76
+
+% 0 1 0 1a1b3b3dc8e3db381c8a5b1ce0ac0d0f
+
+% 1 1 0 1233743a36e9be4a0cc09ac9f896cf40
+
+@ 0 5 0 14d19ab591ce008118c1c7cd021840f6
++ Un indicatore segnala la dimensione intrinseca del suo design ogni volta che il layout viene
++ risolto, così prende parte al layout e non presuppone una larghezza. Un design elastico riempie
++ ciò che gli viene dato. Uno anelastico, come uno spinner o un glifo di stato, è tenuto alla sua
++ larghezza. Un design di più righe, come una checklist, fa crescere il layout fino al numero dei
++ suoi passi. Un indicatore non accetta input, quindi Tab lo salta.
+
+@ 0 3 0 1796f52e514de8501a1c61c51a45ff35
++ Un design che si anima dichiara con che frequenza vuole essere ridisegnato. Il layout prende il
++ periodo più breve tra gli indicatori sullo schermo, ed esegue un solo timer per tutti, e nessuno
++ quando nulla si anima.
+
+@ 0 1 0 13e8ec0eab2820f30a0398615f105fe4
++ ### Da solo
+
+@ 0 3 0 1c7acb4a69b068ed0f239314c6277695
++ Fuori da un layout, `whilst` mostra un indicatore nella posizione del cursore per la durata di
++ un blocco, e poi lo cancella. La sua animazione gira come task in background, quindi lo si
++ chiama dentro `supervise`:
+
+% 2 1 0 0eaedd16eb6f1908002067a3990ca2fd
+
+% 3 1 0 18402175a340dd451ae9132134aa7fba
+
+% 4 1 0 1023f3ac90907ac00b55282947ca8702
+
+% 1 1 0 0e8d146f6af1d04c05e0867a018ea3bf
+
+% 0 1 0 1c141fa5e1fc37a603291b8e6c79e8a5
+
+% 0 1 0 044de3f8a18030b118a5f859aaebf91b
+
+% 1 1 0 005cc173c9d183cf1c77026084d3d322
+
+@ 0 2 0 036c04d5f1ddfc8a1fbeeab04d69ef31
++ `gaugeLine` disegna un singolo frame, per un chiamante che disegna da sé. È la forma da usare
++ quando il ridisegno è già gestito:
+
+% 2 1 0 1b92576c6ec070ff046759eb66c0ab42
+
+% 0 1 0 0a406156ab6931a419aab94842c4a202
+
+% 0 1 0 1815165008fe6f71147718a58e8daa7e
+
+% 1 1 0 0a71d13f8ea4322f0bedde881221827c
+
+@ 0 1 0 0d9e6726a3070ab21e1586fc0e7d84fe
++ ### Comporre
+
+@ 0 2 0 1c1b27c4c1fbc26a045a1741d29f2839
++ `Captioned` etichetta qualunque stato. Deriva il suo design da quello che lo stato sottostante
++ usa già, quindi non è una scelta di stile, e non richiede alcun import:
+
+% 2 1 0 167421d9608a5cf00d6fc024cf6acf5a
+
+% 3 1 0 15f17bd0c4078fcc05bd3d229532f544
+
+% 4 1 0 0d47bc0c704fa9380731f12fa02ba33e
+
+% 0 1 0 005903ca518683a30ff2d8a6ae661bf2
+
+% 1 1 0 17e94a08b278db4c08da48806e3d718d
+
+@ 0 1 0 1ed04d6e249bf8d70125b264f003e43f
++ Una `Sequence[Step]` ha cinque design, che differiscono in altezza:
+
+% 2 1 0 178390b7735057440f9cc8544aba54ef
+
+% 3 1 0 197daebb150d0cad083d2093a693e8b3
+
+@ 0 7 0 0eb36ea0db5a2c5d1fff6557b4e83dd2
++ column  Disegna
++ column  Altezza
++ row  `processions.checklistProcession`  una checklist  una riga per passo
++ row  `processions.breadcrumbProcession`  un breadcrumb  una riga
++ row  `processions.beadProcession`  una catena di perline  una riga
++ row  `processions.numberedProcession`  una posizione numerata  una riga
++ row  `processions.ribbonProcession`  un nastro in stile powerline  una riga
+
+% 1 1 0 0bbce1e8f01d813204a2a330ef7e7211
+
+@ 0 1 0 0065b7d99026eabe02fe58a8f94931c7
++ Una checklist, per esempio, si disegna in tre righe per tre passi:
+
+% 2 1 0 18d26a96f03362f200adf81d9de65192
+
+% 3 1 0 1b3d5eb04e68f3ef1dec6428fe101bf7
+
+% 4 1 0 181a5e54850fa43a16f76e1f80435b14
+
+% 0 1 0 1d111ce04c196fac1c823e06879f42b6
+
+% 0 1 0 113a9fecaafdfa820c3a2241a46df01f
+
+% 0 1 0 085613c616be7c68127994f4d9480866
+
+% 0 1 0 08b834c5c134179a19d22e5d4ee3d2c3
+
+% 0 1 0 0525e1f3575fa3b40808722f8362246c
+
+% 0 1 0 1fdfe39dbeb36c54184b1258e150642e
+
+% 0 1 0 110eedce2319c1dd1cee8b1d271dbe87
+
+% 1 1 0 17c2691994db6628061edd3bfca91777
+
+% 2 1 0 196b351cfd55cf8a09f50e8425670967
+
+% 0 1 0 11246944cc1cc1cb16325acb19bcf6ec
+
+% 0 1 0 16f0952fe8328e930f3edd3adb63a38d
+
+% 0 1 0 085987f736af2d1f1f4d4b87d209244c
+
+% 1 1 0 150f1ef207804dc50939e5ce387c21c4
+
+@ 0 2 0 0634672a250f095110e7bf92b39f4b37
++ Il passo in esecuzione si anima, e il marcatore di ogni passo viene dallo stesso vocabolario di
++ `Standing` che usa un glifo di stato di una sola cella.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 5 0 084ccaf02cd82821184ab6eb14e88614
++ - [Terminale](terminal.md#layout) dispone gli indicatori insieme ad altri riquadri, e gestisce
++   l'input.
++ - [Colori](colors.md) descrive i colori che una tavolozza nomina.
++ - [Concorrenza](concurrency.md) esegue il lavoro su cui un indicatore riferisce.
++ - [Grafici](charts.md) disegna dati già completi, dove un indicatore disegna lavoro in corso.

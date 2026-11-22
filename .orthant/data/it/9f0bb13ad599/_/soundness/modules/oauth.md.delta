@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 05e22d0d0c4c952c1a616480d0d54f00
++ ### Identificare l'utente
+
+@ 0 4 0 0f1186eb9790ecf8040de3bf966f6f31
++ OAuth 2 dice che cosa può fare un client, ma non chi è l'utente.
++ [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) aggiunge questa
++ informazione, sotto forma di *ID token* accanto al token di accesso. È un [JWT](jose.md), firmato
++ dal fornitore, e un `Authorization` lo conserva così come è arrivato, in `identityToken`.
+
+@ 0 2 0 17ee95122d77c51e1b758d53b02e70ec
++ `Oidc.discover` legge gli endpoint di un fornitore, e la posizione delle sue chiavi, dal suo URL
++ well-known. Il fornitore è allora un `Issuer` per un client registrato presso di esso:
+
+% 2 1 0 1676f28cb17211c618c8f10965429eea
+
+% 3 1 0 12416b93396d5f01074ee5e4ff7eacd5
+
+% 4 1 0 02f205f52fb10683093ec652b6425573
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0e420dc0f15b9ffe1bcc5f9461b53f86
+
+% 0 1 0 1493e4beb236334d0483777a1c096a83
+
+% 0 1 0 06684d0c4899b42507981915848f35f1
+
+% 1 1 0 026380f622da0c1a04252c4ad06649dc
+
+@ 0 3 0 017155772118f2530999114569e9903e
++ `Oidc.identify` verifica l'ID token. Le chiavi del fornitore sono un `Jwks`, tra le quali il
++ token ne nomina una. L'argomento di tipo è il cifrario come cui quelle chiavi vengono lette, e
++ quindi l'unico algoritmo di firma accettato:
+
+% 2 1 0 015bcf69810dd9b51b518ff6bc627dd7
+
+% 3 1 0 0c0a6430dffcbe360ff5af91ba0b14ee
+
+% 4 1 0 1f5c2df64601e93815ea77fa019483cc
+
+% 0 1 0 01bf49b20b90b2e100bc44eec75f8da2
+
+% 0 1 0 0e11bb161cac60b512fd6ab7618e844c
+
+% 0 1 0 037312fb8cde11a7171d78bfe5dcc15d
+
+% 1 1 0 034cd2b7dbd9c2dc0010c2fde965e5be
+
+@ 0 4 0 0822b8853f541c4f10d7556f60389df7
++ Il token deve essere firmato dal fornitore, essere emesso per questo client, e rientrare nel suo
++ periodo di validità secondo il `Clock` nell'ambito. Dove con la richiesta di autorizzazione è
++ stato inviato un *nonce*, il token deve portare lo stesso, che lo lega a quella richiesta.
++ Qualsiasi altra cosa solleva un `OAuth.Error`, e l'utente non viene identificato.

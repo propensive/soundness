@@ -1,0 +1,454 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 173a69bcaca401270896697d1732abc0
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 05f655824adb1808171ecd12095a7139
++ info   ein In-Memory-Speicher internalisierter Werte und typisierter Relationen, dessen Schema der Typ der Datenbank ist
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0e7e557ecd0be4780632fc5b5aea3ccf
++     _Anamnesis_ ist eine In-Memory-Datenbank für die Arbeitsdaten eines Programms. Werte werden
++     einmal gespeichert und über typisierte Referenzen identifiziert, und die Relationen, die die
++     Datenbank unterstützt, sind in ihrem Typ deklariert, als Tupel von `A -< B`-Paaren („ein `A`
++     kann `B`s haben“), sodass das Verknüpfen zweier Werte, die das Schema nicht verbindet, ein
++     Kompilierfehler ist statt einer stillen Beschädigung.
+
+% 2 1 0 09b99983a9c3867c108c6ddebbdbb2c8
+
+% 3 1 0 1607aaca2f9284e90f94f5deda09d4b5
+
+% 4 1 0 07c25a43934a5b74020e7fe5267531a2
+
+% 0 1 0 08d3ce257fc5476103a66cb0f2f4dd63
+
+% 1 1 0 1137c88ab018ad6113f529f4c649a1f0
+
+% 2 1 0 122f051aed08cb7814427c5c5e326c34
+
+% 0 1 0 1ac433ac6e8b61120355a636411e30f0
+
+% 2 1 0 0e9955499e6efe2a07838eee4d598bde
+
+% 3 1 0 0645dbdbfe12e6d20ebca4a10cfc68db
+
+% 1 1 0 00bffd138a88850d16195d8d8c9e284a
+
+% 0 1 0 171ebf761203b6521edc24b79cb72efa
+
+% 0 1 0 104cb34c5c8134781263ae42ccebf4bf
+
+% 1 1 0 04fee055964afdc402ec4a94f573bab1
+
+@ 0 7 0 07be55869e3d6769173cc8696fbbb121
++     Eine `Database` ist üblicherweise ein Given, da die Erweiterungsmethoden `store`,
++     `reference`, `assign`, `unassign` und `lookup` sie kontextuell finden. Die Referenz eines
++     gespeicherten Werts ist ein `Ref of Box in db.type`: sowohl durch den Wert als auch durch die
++     Datenbank typisiert, sodass sie weder mit einer Referenz auf einen anderen Typ verwechselt
++     noch gegen eine andere Datenbank verwendet werden kann, und sie wird durch Anwendung
++     dereferenziert, `box()`. Speichern ist *Interning*: Ein gleicher Wert, der zweimal gespeichert
++     wird, ergibt dieselbe Referenz, sodass Identität in der Datenbank über den Wert besteht, und
++     `reference()` findet die Referenz eines bereits gespeicherten Werts und löst
++     `Database.Error` aus, wenn er es nicht ist.
+
+@ 0 2 0 1035cbc752cd13f21d8805de59fc8212
++     Eine Abfrage ist ein gewöhnliches Scala-Prädikat über den Referenzen, die `lookup` liefert,
++     und wird daher wie der Rest des Programms vom Compiler geprüft.
+
+@ 0 4 0 1553ba01cbc3b0081862abb1af140122
++     Die Bibliothek hat ein Source-Set, `anamnesis.core`, das für jede Plattform kompiliert.
++     `Database`, die Relationsoperatoren `-<` und `>-`, `Entity`, `Listable`, `Referenceable`,
++     `enumerate` und die fünf Erweiterungsmethoden werden in den `soundness`-Umbrella exportiert;
++     `Ref` und `Reference` werden aus `anamnesis.internal` in das Paket `anamnesis` exportiert.
+
+% 0 1 0 0f99f8aa80857e0812cce17c5d96784f
+
+% 0 1 0 1681f54abda60b9800c415dbccbe362b
+
+% 0 1 0 18adccb27099ba8c0a1e30beb30347b7
+
+% 0 1 0 009d87d3cdc993d416734d1d9257db1c
+
+% 0 1 0 067041910b3e1456054eba2e23747ac6
+
+% 0 1 0 16d8a0e57ec465d61441770e338898b6
+
+@ 0 1 0 1c376424694dc3c10664414c1bbf3120
++ entry .Database   ein In-Memory-Speicher internalisierter Werte und der typisierten Relationen zwischen ihnen
+
+% 1 1 0 048c6513a17c719a0ff347a0356c59e7
+
+@ 0 4 0 0fb01ead06e84d820cb132add84bb9c3
++       Eine `Database of relations` hält Werte und, für jedes `A -< B` in ihrem Tupel
++       `relations`, eine Eins-zu-viele-Relation von `A`s zu `B`s. Das Tupel ist das `#Topic` der
++       Datenbank, und jede verknüpfende Operation verlangt einen Nachweis (`#Has`), dass ihre
++       Relation darin enthalten ist, sodass das Schema beim Kompilieren des Codes geprüft wird.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0fb4d460c19256c40dd82bf9fae114ef
+
+% 0 1 0 1c801a52c0ae2ac31925c76c3ddc5ab4
+
+% 0 1 0 15bf7531acc310d61cb113e85f09729e
+
+% 0 1 0 184e590cf19c2d65094f9238a250a7d3
+
+% 0 1 0 1209c6996f34498f0c295bbb48ac02a1
+
+% 0 1 0 0142642a3bf77309017e015aa3a66193
+
+% 0 1 0 0294f1838225497b01999d100672835a
+
+% 0 1 0 04a03d5b03dc482901050f08508ef078
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 4 0 1a601935f459683c101f3a1d188911c9
++       Die Methoden der Datenbank nehmen Referenzen vom Typ `in this.type`, daher werden sie am
++       einfachsten über die Erweiterungsmethoden des Pakets (`store`, `reference`, `assign`,
++       `unassign`, `lookup`) aufgerufen, mit der Datenbank als Given. Eine Referenz ist nur für die
++       Datenbank von Bedeutung, die sie alloziert hat.
+
+@ 0 3 0 13908924f3e656f30b822f643543833f
++       `#store` ist durch einen Mutex geschützt, sodass nebenläufige Speichervorgänge konsistent
++       internalisieren; die verknüpfenden Methoden sind es nicht, und eine Datenbank, deren
++       Relationen von mehreren Threads aus geändert werden, braucht eine eigene Synchronisierung.
+
+% 0 1 0 04165fec4bcc6ffe0e4ae1f53680cd2b
+
+% 0 1 0 0d68e2ad632421f60cf305e4695eb7c5
+
+% 0 1 0 0c8b0839625871121e3810db82109d69
+
+@ 0 8 0 1c5f7b410c73c72e169d5e800cb0ed00
++   entry .Relation   der Typ einer Relation, `left -< right`, als Element des Schemas einer Datenbank
++       Ein versiegelter Marker-Trait, der nie instanziiert wird: `Database.Relation[left, right]`
++       ist das, was sowohl `left -< right` als auch `right >- left` bezeichnen, und das `#Topic`
++       einer Datenbank ist ein Tupel davon.
++   entry .apply   eine neue, leere Datenbank der Relationen, die ihr erwarteter Typ deklariert
++       `Database()` ist transparent und entnimmt die Relationen dem Typ, der ihr zugeschrieben
++       wird: `given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()`. Sie alloziert
++       eine Relationstabelle für jedes Element des Tupels.
++   entry .Error   ausgelöst, wenn ein nicht gespeicherter Wert nach seiner Referenz gefragt wird
+
+% 1 1 0 15b4f5570eefab950d56a60d64d8350e
+
+@ 0 3 0 07508e9d770db2670374ad2d952b78f3
++         Fehler `↯/s.26.1`: _the database operation failed because the value has not been stored in the
++         database_. Ausgelöst von `Database#ref` und der Erweiterung `reference`, wenn der Wert nie
++         an `store` übergeben wurde; benötigt eine `Tactic[Database.Error]` im Geltungsbereich.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 03a17dc00326ee161d26751b9ac78943
+
+% 0 1 0 02e33c38d413e5d30009c585eb0ea1e2
+
+% 0 1 0 16a5a288d7f65593181b2583b5ae8f43
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 07771e3e230a81e60cdc4e9aaf06b01d
++     entry .Reason   warum eine Datenbankoperation fehlgeschlagen ist
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 39 0 1fcc943bd76e63b016e3cb9d877b05e2
++           Ein Enum mit dem einzigen Fall `UnknownReference` (Nummer 1): Der Wert wurde nicht in
++           der Datenbank gespeichert.
++       entry #number   die Nummer des Grunds, der zweite Teil des Fehlercodes
++     entry .communicable   beschreibt einen `Database.Error.Reason` als Meldung
++     entry #reason   warum die Operation fehlgeschlagen ist, als `Database.Error.Reason`
++   entry #Topic   die Relationen der Datenbank, als Tupel von `Database.Relation`s
++       Festgelegt durch den Typ, als der die Datenbank erzeugt wird: in
++       `Database of (A -< B, B -< C)` ist es `(A -< B, B -< C)`.
++   entry #AllRelations   die Vereinigung der Relationen der Datenbank, `Tuple.Union[Topic]`
++   entry #Has   Nachweis, dass eine Relation im Schema der Datenbank enthalten ist: `relation <:< AllRelations`
++       Der kontextuelle Nachweis `db.Has[left -< right]`, den `assign`, `unassign` und `lookup`
++       verlangen; wo er sich nicht finden lässt, ist die Relation nicht im Schema, und der Aufruf
++       kompiliert nicht.
++   entry #allocate   eine frische Referenz eines gegebenen Typs, noch an keinen Wert gebunden
++       Erhöht den Zähler der Datenbank und liefert die nächste Referenz, vom Typ `Ref of ref in
++       this.type`. `#store` verwendet sie; eine direkt allozierte Referenz hat keinen Wert, auf den
++       sie dereferenziert werden könnte.
++   entry #dereference   der Wert, den eine Referenz benennt
++       `ref()` ist dasselbe, über die Erweiterung von `Ref`, mit der Datenbank als Given. Eine
++       Referenz, die alloziert, aber nie gespeichert wurde, schlägt mit einer Ausnahme aus der
++       zugrunde liegenden Map fehl.
++   entry #store   internalisiert einen Wert und liefert seine Referenz: eine neue oder die, die er bereits hat
++       Gleiche Werte teilen sich eine Referenz, sodass zweimaliges Speichern eines Werts harmlos
++       ist und Identität über den Wert besteht. Die Erweiterung `store()` ruft dies mit der
++       Datenbank im Geltungsbereich auf.
++   entry #ref   die Referenz eines bereits gespeicherten Werts, mit Auslösen von `Database.Error`, wenn er es nicht war
++       Benötigt eine `Tactic[Database.Error]`. Die Erweiterung `reference()` ruft dies mit der
++       Datenbank im Geltungsbereich auf; so wird ein Wert, der von anderswo kommt, dem zugeordnet,
++       was die Datenbank bereits hält, statt erneut gespeichert zu werden.
++   entry #assign   verknüpft zwei Referenzen über eine der Relationen des Schemas
++       `db.assign(left, right)` fügt `right` zur Menge der `right`s hinzu, die über
++       `left -< right` mit `left` verknüpft sind, was das `#Topic` der Datenbank enthalten muss.
++       Die Erweiterung `assign` ist die übliche Schreibweise.
++   entry #unassign   entfernt eine Relation zwischen zwei Referenzen
++       Die Umkehrung von `#assign`: `right` wird aus der mit `left` verknüpften Menge entfernt,
++       und der Rückwärtsindex der Relation vergisst es. Das Entfernen einer Relation, die nie
++       hergestellt wurde, lässt die Datenbank, wie sie war.
++   entry #lookup   jede Referenz, die über eine Relation mit einer Referenz verknüpft ist, als `Set`
++       `db.lookup[Shelf, Box](shelf)` ist jede `Box`, die `shelf` zugeordnet ist; eine Referenz
++       ohne solche ergibt die leere Menge. Die Erweiterung `lookup` inferiert den linken Typ aus
++       der Referenz.
+
+@ 0 4 0 072e3d466b7e12311938181983a8f8fa
++ entry .-<   eine Relation des Schemas: `left -< right` bedeutet, dass ein `left` `right`s haben kann
++     Ein Infix-Alias von `Database.Relation[left, right]`. Der Typ einer Datenbank ist ein Tupel
++     davon: `Database of (Cabinet -< Shelf, Shelf -< Box)` lässt einen Schrank Regalbretter und
++     ein Regalbrett Kisten haben, und sonst nichts, sodass `box.assign(shelf)` dort nicht
++     kompiliert.
+
+% 2 1 0 0cfd8fc04749264a1eeb467a69f37026
+
+% 3 1 0 019d4bc23ec8d22c0f3c87475779de79
+
+% 2 1 0 0616ed6dec18e2fb07f7da6ff924c53f
+
+% 3 1 0 180e473c12b11e7a044b9a10d33ec344
+
+% 0 1 0 1deec4d78c5bb6531a3ee79162967a81
+
+% 1 1 0 13fdd3de8676e0ff1a132036d8ab1c43
+
+@ 0 4 0 1e4bc7b82e07730b16dcd4a49c899e93
++ entry .>-   eine von rechts nach links geschriebene Relation: `left >- right` bedeutet, dass ein `right` `left`s haben kann
++     Ein Infix-Alias von `Database.Relation[right, left]`, das Spiegelbild von `-<`, für ein
++     Schema, das sich von der besessenen Seite her besser liest: `Text >- Box` ist dieselbe
++     Relation wie `Box -< Text`, sodass eine Kiste Textbeschriftungen haben kann.
+
+@ 0 3 0 02c18be752e2e80015b51a1801a66409
++ entry .store   internalisiert einen Wert in der Datenbank im Geltungsbereich und liefert seine typisierte Referenz
++     Eine Inline-Erweiterung auf jedem Wert, die ein `Database`-Given benötigt. Sie liefert ein
++     `Ref of value in db.type`; ein gleicher, bereits gespeicherter Wert ergibt die Referenz, die
++     er bereits hat.
+
+% 2 1 0 0e7add17634712f207d5d32b35bde0ad
+
+% 3 1 0 05662256fe2771371e4a8501174d54c4
+
+% 5 1 0 08b485897506959b1a053810d5be445a
+
+% 6 1 0 026f6e03382c764b168ae9d1b21297ea
+
+% 0 1 0 12f8dffd07c17d0c020913da1172bb30
+
+% 0 1 0 15213a992e7a61280c067b7a79b29091
+
+% 1 1 0 0d9439649055b6611c104a9bac428984
+
+@ 0 5 0 15a5cce95dcc483315338650bab7ead2
++ entry .reference   die Referenz eines bereits in der Datenbank im Geltungsbereich gespeicherten Werts
++     Eine Inline-Erweiterung auf jedem Wert, die ein `Database`-Given und eine
++     `Tactic[Database.Error]` benötigt, die ausgelöst wird
++     (`Database.Error.Reason.UnknownReference`), wenn der Wert nie gespeichert wurde. Wo
++     `store()` einen neuen Wert internalisieren würde, findet `reference()` nur einen
++     vorhandenen.
+
+% 2 1 0 01bb89eac71e79df004afddf7a669735
+
+% 3 1 0 0f287361d495727e062a48e7c6ce1356
+
+% 4 1 0 142294f509e503221e30ac595770601a
+
+% 2 1 0 035f7f611be6037203624c1e00f0bae8
+
+% 3 1 0 1f6d960cf6bb1b0d031cfb9d3eb3c219
+
+% 0 1 0 1b627ba2857c734a1b432b1c5660a1d1
+
+% 0 1 0 0b944b3b6c38db5805054079f125ab52
+
+% 1 1 0 0a6b01f7e496dcd508d3c4ab318517b9
+
+@ 0 4 0 1fe59f18b9fd70dd0e3f7a81cf4246ff
++ entry .assign   verknüpft eine Referenz mit einer anderen, über eine Relation, die der Typ der Datenbank deklariert
++     Eine Inline-Erweiterung auf einem `Ref of left in db.type`, die das `Database`-Given und
++     `db.Has[left -< right]` benötigt: `shelf.assign(box)` kompiliert nur, wenn `Shelf -< Box` im
++     Schema ist. Dasselbe Paar zweimal zuzuordnen hinterlässt eine einzige Relation.
+
+% 2 1 0 19a8ed2f071b86310d6925b9cfca2713
+
+% 3 1 0 19e0944276bae0460a3689961e14f053
+
+% 4 1 0 03e36d9928190e0305fe0b7c24861b33
+
+% 6 1 0 003b14b26707323600849586e7323f36
+
+% 7 1 0 057c11bdd843e3100c9039b14cbc4090
+
+% 8 1 0 06efd536ef2cd7231ce209afb0b7668c
+
+% 10 1 0 0eebe84a1e64e439123f6085328f83cd
+
+% 3 1 0 0fbc3020753cf01e17344b5e6a12a351
+
+% 1 1 0 199be1fb2f7877c509453f9b165ff7fc
+
+% 0 1 0 18d73f31d9b32cbf1faa698e025f4853
+
+% 1 1 0 0572836c0dd703681f102ee9313ef51f
+
+@ 0 4 0 09c3f30f4ffe0f82106638291cf37ce8
++ entry .unassign   entfernt eine Relation zwischen einer Referenz und einer anderen
++     Eine Inline-Erweiterung auf einem `Ref of left in db.type`, die das `Database`-Given und
++     `db.Has[left -< right]` benötigt; die Umkehrung von `assign`. Andere mit `left` verknüpfte
++     Referenzen bleiben unberührt.
+
+@ 0 5 0 024aec2f206bc8fd165d35de25235287
++ entry .lookup   die Referenzen, die über eine Relation mit einer Referenz verknüpft sind, als `Set`
++     Eine Inline-Erweiterung auf einem `Ref of left in db.type`, die das `Database`-Given und
++     `db.Has[left -< right]` benötigt: `shelf.lookup[Box]` ist jede Kiste, die dem Regalbrett
++     zugeordnet ist. Jedes Ergebnis ist ein `Ref`, das durch Anwendung dereferenziert wird, sodass
++     eine Abfrage ein Prädikat über den Werten ist:
+
+% 2 1 0 12f26b1b00286ebc14da93154cd1345b
+
+% 3 1 0 15c35a03564697850d2ebc1d3743e0e5
+
+% 4 1 0 17ec84de9eac1046184ed9d7f4bb931b
+
+% 6 1 0 19cfa6fe2fb2e8a1174d4168dce036eb
+
+% 7 1 0 0e1b26bf1eb32944075837f3b2fe5f29
+
+% 8 1 0 1655c77c0e7ad0d80ef925be48787c5c
+
+% 10 1 0 14b42fc38411f8571681e3412fed3d55
+
+% 0 1 0 0b7553f64845c6a90dedabf579d6b9cf
+
+% 0 1 0 0c8f70da1fbd577e154e08e8108aad15
+
+% 1 1 0 1935248c46a06ae01fb9bf48feb6bde1
+
+@ 0 3 0 08ae45b3ea358b541863fd5515c0740c
++ entry .enumerate   jede Referenz auf einen Entitätstyp, wie seine `Listable`-Instanz sie auflistet
++     `enumerate[entity]` verlangt, dass `entity` eine `Entity` mit einer `Listable`-Instanz ist,
++     und ist das `list` dieser Instanz mit einem Prädikat, das alles akzeptiert.
+
+@ 0 6 0 0167e303a610bd4a023c028612780a6b
++ entry .Ref   eine Referenz auf einen gespeicherten Wert, typisiert durch den Wert und durch die Datenbank, die ihn hält
++     Der opake Typ `anamnesis.internal.Ref`, hierher exportiert. Eine Referenz aus `store` hat den
++     Typ `Ref of value in db.type`: Das `of` benennt den Typ des Werts und das `in` seine
++     Datenbank, sodass eine Referenz auf eine `Box` weder dort übergeben werden kann, wo eine
++     Referenz auf ein `Shelf` erwartet wird, noch gegen eine andere Datenbank dereferenziert.
++     Darunter ist sie ein `Int`, sodass eine Referenz billig zu halten, zu vergleichen und als
++     Schlüssel zu verwenden ist.
+
+@ 0 1 0 0a3e51848863cb9f1cd0fe20f2961851
++     Eine Referenz wird durch Anwendung dereferenziert, `ref()`, mit ihrer Datenbank als Given:
+
+% 2 1 0 175f41e74ec2e3ce05ae361b2ffa1d22
+
+% 3 1 0 051ae75a80f0cbbf0be99178231729bd
+
+% 5 1 0 119f3f8fb7c439541a94dced7a37e37f
+
+% 6 1 0 18f6b85c742315600e3cd11eac4cd23d
+
+% 1 1 0 05a5323c7d1c942b01bbb756c8ca6f65
+
+% 0 1 0 151c27d960aee7bd1172f36c601ffbdd
+
+% 1 1 0 0b6eb352b66b16d806a29e0920ec71ed
+
+@ 0 5 0 0900c26b7405854708f2e9d9d85d9511
++ entry .Reference   eine Referenz auf eine `Entity`, über den Schlüssel der Entität
++     Der opake Typ `anamnesis.internal.Reference`, hierher exportiert. Während `Ref` von einer
++     Datenbank alloziert wird, ist eine `Reference[entity]` der eigene Schlüssel der Entität (ihr
++     `Operand`), typisiert durch das, worauf sie verweist; ein Entitätstyp, der `Referenceable`
++     ist, löst einen Schlüssel zurück in seine Entität auf, und eine Referenz wird über die
++     eigenen Codecs des Schlüssels als Text kodiert und dekodiert.
+
+@ 0 1 0 06b5e193955fa984091cb98d0c96d4fe
++ entry .Entity   ein Wert mit eigenem Schlüssel, auf den sich über `Reference` verweisen lässt
+
+% 1 1 0 19379d2e5ed3fbc411dd691becf68273
+
+@ 0 3 0 1815476f353a16b60e629bc3ea0e3f76
++       Eine `Entity` ist `Operable`: Ihr Typ-Member `Operand` ist der Typ ihres Schlüssels und
++       `#ref` der Schlüssel selbst. Eine `Referenceable`-Instanz im Begleitobjekt schlägt eine
++       Entität über ihren Schlüssel nach, und eine `Listable`-Instanz zählt sie auf, was
++       `enumerate` verwendet.
+
+% 0 1 0 1c752d312f285b38156e84d6cb6e6a6c
+
+% 0 1 0 129423d3027747140717c0641bbf7764
+
+@ 0 2 0 1bbd08cc560fe3950906d48100f4c9e7
++   entry #ref         der Schlüssel der Entität, von ihrem `Operand`-Typ
++   entry #reference   eine `Reference` auf diese Entität, über ihren Schlüssel
+
+@ 0 1 0 1f85b61f7e7d8c370f97b55be52c4b46
++ entry .Listable   eine Typklasse, die die Referenzen auf jede Entität eines Typs auflistet
+
+% 1 1 0 1bfa0daa6d372129057201fec38cd8d2
+
+@ 0 4 0 048e3d2290ee41d010ccfdee3e52d290
++       Eine Instanz für einen `Entity`-Typ zählt die Referenzen auf seine Entitäten auf, die ein
++       Prädikat akzeptiert; `enumerate[entity]` listet sie alle auf.
++   entry #Self   der Entitätstyp, den die Instanz auflistet
++   entry #list   die Referenzen auf die Entitäten, die ein Prädikat akzeptiert
+
+@ 0 1 0 11a5367e6991faba09594574125d681e
++ entry .Referenceable   eine Typklasse, die eine Entität aus ihrem Schlüssel auflöst
+
+% 1 1 0 097d13223d7b7dcc0064a72d21eb3374
+
+@ 0 5 0 0895a58b71ee360d1eaadb5ae857c4d3
++       Eine Instanz für einen `Entity`-Typ, dessen `Operand` der Schlüsseltyp ist, findet die
++       Entität, die ein Schlüssel benennt; eine `Reference[entity]` mit `()` anzuwenden löst sie
++       über diese Instanz auf. Sie gibt `Reference` außerdem seine Text-Codecs, über die des
++       Schlüsseltyps.
++   entry #Self     der Entitätstyp, dessen `Operand` der Schlüsseltyp der Instanz ist
++   entry #lookup   die Entität, die ein Schlüssel benennt
+
+@ 0 1 0 1fc32e6eaf8e1075068bfa2e8bef11ed
++ entry .internal   die opaken Typen `Ref` und `Reference` sowie ihre Begleitobjekte und Erweiterungen
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 10e1f80c287accfe0a6d2f159cb029bb
++       Nicht zur direkten Verwendung: Das Objekt hält die opaken Definitionen von `Ref` und
++       `Reference`, die in das Paket `anamnesis` exportiert und dort dokumentiert werden.
++   entry .Dereferenceable   die Schranke von `Ref`: ein Wert, dessen `Form` die Datenbank ist, zu der er gehört
++     entry #Form   der Datenbanktyp, zu dem eine Referenz gehört
++   entry .Ref   eine Referenz auf einen gespeicherten Wert; siehe `anamnesis.Ref`
+
+% 1 1 0 1d189c18d3455e8c0a40928fb23d6dd2
+
+@ 0 3 0 0592f3b4a19be56510ca86acca1c3956
++         Der opake Typ `Ref <: Dereferenceable`, darunter ein `Int`.
++     entry .apply   alloziert eine frische Referenz in einer Datenbank, wie `Database#allocate`
++   entry .Reference   eine Referenz auf eine Entität über ihren Schlüssel; siehe `anamnesis.Reference`
+
+% 1 1 0 02b1e566ada5e72f14435e1a6e237a81
+
+@ 0 9 0 0fe03cfee3eaf2af14861d448538c21c
++         Der opake Typ `Reference[+entity <: Entity]`, darunter der Schlüssel.
++     entry .apply        die Referenz auf eine Entität, über ihren Schlüssel
++     entry .encodable    kodiert eine Referenz als Text ihres Schlüssels, für eine `Referenceable`-Entität
++     entry .decodable    dekodiert eine Referenz aus dem Text ihres Schlüssels, für eine `Referenceable`-Entität
++   entry .expose   der Schlüssel, den eine `Reference` hält, als `Operand` ihrer `Referenceable`-Instanz
++   entry .apply   dereferenziert ein `Ref` gegen seine Datenbank oder löst eine `Reference` in ihre Entität auf
++       Zwei Erweiterungen mit gemeinsamem Namen: `ref()` auf einem `Ref of value in database`
++       liefert den Wert, mit der Datenbank als Given; `reference()` auf einer `Reference[entity]`
++       schlägt die Entität über ihre `Referenceable`-Instanz nach.

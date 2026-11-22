@@ -1,0 +1,675 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1db213c190fed19215fd6243300d601f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1ac7afa3d9bd82550a707a3898a19b3f
++ info   el paquete paraguas: un solo `import soundness.*` llega a todas las bibliotecas de Soundness
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 008b538b5ff63612125fabab9b2b446c
++     _Soundness_ es una familia de bastante más de cien bibliotecas, cada una en su propio paquete
++     (`gossamer` para el texto, `galilei` para el sistema de ficheros, `jacinta` para JSON, …), y
++     `soundness` es el paquete que las reúne. Un programa escribe una sola importación con comodín
++     y después nombra lo que necesite, de cualquier biblioteca, sin saber de qué biblioteca
++     procede:
+
+% 2 1 0 1f27894bfa5ee96700974cf2315ab044
+
+% 3 1 0 07d03e053d6dbfa412e64f480fa525ea
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 0d23fdfe469a9fb009d07926302e05d2
+
+% 0 1 0 1ea7b92cf800b6e9050c075d7a5aa5a4
+
+% 0 1 0 160d215c046410ab0b4670a71dceb6ad
+
+% 1 1 0 1ad70419275fbe121262246c7ad0e029
+
+@ 0 10 0 109e7b7d381ebf8d195aca70c8bdb572
++     El paquete apenas contiene nada propio. Cada biblioteca tiene, en cada uno de sus
++     componentes, un fichero llamado `soundness_<library>_<component>.scala` que exporta con
++     `export` los nombres públicos de ese componente a `package soundness`, de modo que el
++     paraguas crece con los componentes que hay en el classpath: un programa que depende de
++     `galilei.jvm` ve en él los backends de sistema de ficheros de galilei, y uno que no depende
++     de él, no. Estos reenviadores se documentan donde se definen, en la página propia de cada
++     biblioteca (`Classloader` en la de hellenism, `Json` en la de jacinta), y no aquí. Esta
++     página documenta solo lo que el paraguas *declara* por sí mismo: un puñado de reenviadores
++     escritos a mano que un `export` no puede expresar, los alias de colecciones, dos tipos de
++     anotación, el comodín `explainMissingContext` y el punto de entrada `repackage`.
+
+@ 0 10 0 0503dd47d3c1b0171be895e5f5e242e2
++     **Paquetes de elección.** Un given que selecciona una implementación (una estrategia de
++     tratamiento de errores, un cargador de clases, una página de códigos, un formato de log, un
++     backend de sistema de ficheros) vive en un pequeño paquete con el nombre de su papel:
++     `strategies`, `classloaders`, `codepages`, `logFormats`, `filesystemBackends`. El paraguas
++     refleja cada uno como un `package` del mismo nombre, y los bloques del mismo nombre de
++     distintas bibliotecas se fusionan, de modo que `soundness.construables` contiene los givens
++     `Construable` de jacinta, xylophone, honeycomb, caesura y una docena más, y
++     `soundness.wasiApis` los de todas las bibliotecas con backend WASI. La ruta a través del
++     paraguas y la ruta a través de la biblioteca son el mismo given:
++     `import soundness.monthFormats.englishMonths` e `import
++     aviation.monthFormats.englishMonths` son intercambiables.
+
+@ 0 7 0 1eaa53881dd3ea8014c4656499ec1423
++     Un given de un paquete de elección se **importa siempre por nombre**, porque
++     `import strategies.*` no importa givens: el comodín de Scala selecciona solo miembros
++     corrientes, y un given necesita su propio nombre o un selector `given`. Además, un given
++     importado en el ámbito léxico tiene prioridad sobre cualquier given de un objeto compañero,
++     y eso es lo que permite que un paquete de elección sustituya el valor por defecto de una
++     biblioteca. Por tanto, `import soundness.*` no pone por sí mismo ninguna elección en el
++     ámbito, con una excepción deliberada, `explainMissingContext`, que es un `implicit
++     def` al estilo antiguo precisamente para que el comodín sí lo incluya.
+
+@ 0 5 0 15d4e9f0dccd02c11e5356472f4f7c41
++     **Nombres que quedan fuera.** Los tipos y los términos viven en espacios de nombres
++     separados, así que un tipo `via` y un método `via` coexisten; pero dos bibliotecas que
++     exportan un mismo *término* (o un mismo *tipo*) a `package soundness` no se sobrecargan: el
++     compilador conserva uno y descarta el otro en silencio. Sobre cada uno de estos conflictos se
++     ha tomado una decisión, y al perdedor se llega a través de su propio paquete, donde conserva
++     su nombre:
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 15 0 192a359268eec99603e43374202f6470
++     column  Nombre
++     column  En el paraguas
++     column  Al otro se llega como
++     row  `Channel`  el WebSocket de perihelion  `anticipation.Channel` (canales de píxel)
++     row  `Completion`, `Completions`  el de exoskeleton  `harlequin.Completion`, `prophesy.Completion`
++     row  `Fragment`  el de honeycomb  `harlequin.Fragment`
++     row  `Descriptor`  el OCI de embarcadero  `hallucination.Descriptor`
++     row  `Diagnostic`  el de harlequin  `frontier.Diagnostic`
++     row  `Message`  el de fulminate  `perihelion.Websocket.Message` (una trama WebSocket)
++     row  `Tag`  la etiqueta HTML de honeycomb  `probably.Tag`, `xylophone.Tag`
++     row  `Attributive`, `Renderable`  los de honeycomb  `xylophone.Attributive`, `xylophone.Renderable`
++     row  `Universe`, `Classfile`  el de anthology, el de mandible  `degustation.Universe`, `degustation.Classfile`
++     row  `as`  la decodificación de distillate  `scintillate.as` (el cuerpo de una petición)
++     row  `teletype`  la representación de escapade  `delicious.teletype`
++     row  `Kelvin(…)` como `apply`  el `apply` de desindexación de rudiments  `import quantitative.*`
+
+% 1 1 0 1fe05398f31a392a1e01412394c85d10
+
+@ 0 8 0 155650acff16a34118650e7be0c1ea5f
++     Unos pocos nombres faltan por otro motivo: un `export` no puede reenviarlos con fidelidad.
++     A `Scribe`/`scribe` y `Surveyor`/`survey` de rudiments, y a `Region` y `Slate` de
++     zephyrine, se llega directamente desde `rudiments` y `zephyrine`; `wsClient` y
++     `wsSessional` de perihelion se importan por nombre desde `perihelion`. Una definición que se
++     deja deliberadamente fuera del paraguas lleva la anotación `unexported` en su código fuente,
++     y la página de cada biblioteca indica cuáles de sus nombres no se exportan. Los tipos de
++     elemento de MathML están dentro de `Mathml` y no en el nivel superior, así que
++     `import soundness.Mathml.*` da los nombres de elemento desnudos donde se escribe MathML a
++     mano.
+
+@ 0 3 0 052eca2412609c460d0a286f753eaa7d
++     Conviene conocer una ocultación: el `System` de ambience se exporta, así que con `import
++     soundness.*` un `System` desnudo es el de Soundness, y el del JDK debe escribirse
++     `java.lang.System` (para `System.nanoTime`, `System.arraycopy`, …).
+
+@ 0 3 0 1834630768f344ab010764d96f42bec5
++     **Por qué algunos reenviadores se escriben a mano.** Un reenviador `export` sintetizado es un
++     método simple, y algunas definiciones no sobreviven al viaje, así que el paraguas las vuelve
++     a declarar, cada una delegando en el original de su biblioteca:
+
+@ 0 15 0 1d44b880508c497410578124839d3134
++     - un `export` de una extensión *sobrecargada* reenvía solo una sobrecarga, así que `thru`,
++       `till`, `tabulate` y el `each` de intervalos se declaran aquí, con todas las sobrecargas
++       en una misma unidad de compilación;
++     - una extensión cuya evidencia de clase de tipos es una cláusula `using` inicial dependiente
++       (el grupo de desindexación `apply`, `at`, `defines`, `confine`, `pick`, `unsafeAttested`,
++       junto con `define`, `omit`, `keep` y `skip`) necesita esa cláusula para que una
++       convocatoria fallida descarte el candidato, y un reenviador no puede llevarla;
++     - un reenviador pierde un refinamiento anotado con capturas, así que `via` y `accepting` de
++       zephyrine, `throwUnsafely` de contingency y los cuatro givens `httpServers` de scintillate
++       se escriben completos con sus conjuntos de captura;
++     - un `export` de un objeto es un `def`, un prefijo inestable a través del cual un tipo opaco
++       es transparente, así que los objetos compañeros de las colecciones se reenvían como `val`
++       estables junto a alias de tipo parametrizados (`List`, `Sequence`, `Set`, `Map`, `Chain`);
++     - un `export` de una case class trae su proxy de constructor, un término, así que `assign` y
++       `attribute` son solo alias de tipo, y dejan los nombres de término a anamnesis y galilei.
+
+@ 0 6 0 053af8d316cfaf4c12acf92ee06ec896
++     **Cómo se organiza la documentación.** Cada paquete tiene su propia página, con su nombre;
++     un nombre al que se llega a través de `soundness` se documenta en la página del paquete que
++     lo define, y la página de cada biblioteca indica qué aporta cada uno de sus componentes, qué
++     paquetes de elección refleja en el paraguas y qué givens se importan por nombre. Esta página
++     tiene una entrada para cada declaración propia del paraguas, y para los dos paquetes de
++     elección cuyos givens se declaran aquí en lugar de exportarse.
+
+% 0 1 0 1fc842fa91f423f6194eba67aa7a2420
+
+% 0 1 0 13c80a33ef99f3ba0c85db502606332c
+
+% 0 1 0 07e938e88f794de21ee4aef72c4e5da2
+
+% 0 1 0 1dc77c0a102f9b9615298ea68f15e5ec
+
+@ 0 8 0 0d748645130d011b08255a6e39cf8254
++ entry .List   la lista enlazada opaca `proscenium.List`, con su objeto compañero como valor estable
++     `type List[+element] = proscenium.List[element]` y `val List = proscenium.List`: la lista de
++     Soundness, documentada en la página de proscenium, tal como la nombra el paraguas. El tipo es
++     un alias parametrizado, ya que a través de un alias desnudo de un constructor opaco no se ve
++     (`::`, `CanEqual` y los métodos de extensión lo tratarían como una `List` distinta); y el
++     objeto compañero es un `val` y no un `def` exportado, ya que un miembro del objeto compañero
++     seleccionado a través de un prefijo `def` ve el lado derecho del tipo opaco y expone toda la
++     API de la biblioteca estándar. `Nil`, `::` y `#::` se reenvían junto a él.
+
+% 2 1 0 1d5458575237339e0b6192668054763e
+
+% 3 1 0 1ba0ccdc08437c4b0602f78537064c92
+
+% 0 1 0 01ed19fed8a88b98057ae194a159bfd5
+
+% 0 1 0 1a2f01312c8454d91137e5ff1bb475d1
+
+% 1 1 0 1c5c4fcaef4011461409f42f2de5e821
+
+@ 0 2 0 0f712a82afe1aaf30255142b969231b3
++     Una lista construida a partir de una colección de la biblioteca estándar es `List.from(xs)`,
++     no `xs.to[List]`, que sobre un receptor de la biblioteca estándar llega al propio `to` de
++     Scala y falla por falta de una factoría.
+
+@ 0 5 0 078e1935f7885ee811241073ea0350f6
++ entry .Sequence   la secuencia indexada opaca `proscenium.Sequence`, con su objeto compañero como valor estable
++     `type Sequence[+element] = proscenium.Sequence[element]` y `val Sequence =
++     proscenium.Sequence`: un `Vector` inmutable tras un tipo opaco, tal como lo describe la página
++     de proscenium. Se reenvía como alias parametrizado y como `val` estable por los mismos motivos
++     que `List`.
+
+% 2 1 0 00b717e417ffaf26110da6700f447778
+
+% 3 1 0 1a7495fb577f9dd91bcf3e6c76edba7a
+
+% 5 1 0 1a6908132ae54f4b04243fac558fdc41
+
+% 0 1 0 1ee0190c84e7cd800c449cbed5d20051
+
+% 1 1 0 1e458d3b85a3cc8e1575b92ebed5826c
+
+@ 0 4 0 0dde3ee6e89b5ca205ca1edc6487460c
++ entry .Set   el conjunto hash opaco `proscenium.Set`, con su objeto compañero como valor estable
++     `type Set[element] = proscenium.Set[element]` y `val Set = proscenium.Set`, reenviados como
++     alias y como `val` estable por los mismos motivos que `List`. Un `Set` es `Reshapable` pero
++     no tiene un orden estable, así que no admite `sort`.
+
+@ 0 5 0 0a5ebff2da2aaa770652fd051598ffcd
++ entry .Map   el mapa hash opaco `proscenium.Map`, con su objeto compañero como valor estable
++     `type Map[key, +value] = proscenium.Map[key, value]` y `val Map = proscenium.Map`,
++     reenviados como alias y como `val` estable por los mismos motivos que `List`.
++     `map.confine(key)`, `map(key)`, `map.define(key, value)` y `map.omit(key)` son las
++     extensiones de desindexación del paraguas.
+
+% 2 1 0 1dd28fc07ae889150132fb540e89861f
+
+% 3 1 0 1c1bed034ffe626203a924908af8295b
+
+% 5 1 0 1f21e0fb0c508d94064fdff9c530322e
+
+% 6 1 0 15529da984c51c1011b8100801ae3ba3
+
+% 7 1 0 0fa034f4c263ac3f006dd7c9d12a0513
+
+@ 0 5 0 1b7dc9a57d807a2e1de50f1a4cb07b2a
++ entry .Chain   la secuencia diferida opaca `proscenium.Chain`, con su objeto compañero como valor estable
++     `type Chain[+element] = proscenium.Chain[element]` y `val Chain = proscenium.Chain`: una
++     `LazyList` tras un tipo opaco, reenviada como alias y como `val` estable por los mismos
++     motivos que `List`. Sus `keep` y `skip` diferidos viven en su objeto compañero, y los propios
++     `keep` y `skip` del paraguas tienen una forma tal que un receptor `Chain` sigue llegando a
++     ellos.
+
+@ 0 5 0 1facdda4504812290b96edeb704db533
++ entry .infer   `infer[context]`: convoca un valor contextual en el punto de expansión inline
++     `transparent inline def infer[context]: context = summonInline[context]`, declarado en el
++     paraguas para que el código escrito con `import soundness.*` tenga la misma grafía que el de
++     proscenium. Dentro de un método inline, la búsqueda se hace donde se expande el método y no
++     donde se define; `summon` es la forma no inline.
+
+@ 0 7 0 082797ce229aa68a1a18215ef8aeae99
++ entry .explainMissingContext   explica toda búsqueda implícita fallida; lo trae `import soundness.*`
++     La forma del paraguas del comodín de frontier `frontier.context.explainMissingContext`. Es
++     candidato en toda búsqueda implícita; cuando una búsqueda falla, el compilador informa, en
++     lugar de su propio mensaje escueto, de un árbol representado con los candidatos probados, lo
++     que requería cada uno y qué instancias del classpath lo satisfarían. Cuando la búsqueda
++     tendría éxito sin él, se aparta y no aporta nada, así que nunca cambia la instancia que usa un
++     programa.
+
+% 2 1 0 0d68f2da6f39c8281aea57d204f30184
+
+% 3 1 0 1eb3c5d85c95e3591b3497e278632098
+
+% 0 1 0 12921236bce385d40855562298c83f0e
+
+% 1 1 0 1ce8b8e2cc9e49dd052da87a9b8e52e8
+
+@ 0 5 0 1c568bb050982a781591a1f3f59cdab9
++     Es un `transparent inline implicit def` al estilo antiguo y no un `given`, porque una
++     importación con comodín excluye los givens y este debe estar en el ámbito para cualquiera que
++     escriba `import soundness.*`. Está anotado con `@scala.annotation.internal.diagnostic`, que el
++     compilador Proscala respeta; la página de frontier explica sus límites y las formas del árbol.
+
+@ 0 3 0 11e92bcc2ac0b75c1d150d4d557f3cec
++ entry .repackage   el punto de entrada `@main` del reempaquetador de burdock: `java -cp app.jar soundness.repackage`
++     Un punto de entrada de línea de comandos, en el paquete `soundness` para que pueda lanzarse
++     por un nombre totalmente cualificado que lleva toda aplicación de Soundness:
+
+% 0 1 0 04b53e90373db9ee0dcbb0c2bab35fe3
+
+% 0 1 0 131a1acda8fe5890080ba4c51a9b9971
+
+% 1 1 0 08f7cc58abbb6dca1d9632309e2fd5cd
+
+@ 0 3 0 1b370e4a62f24f2c1aaf9295df56de63
++     Pasa sus argumentos, como `List[Text]`, a `burdock.repackage`, que reescribe en su sitio el
++     JAR de la aplicación en ejecución, externalizando sus dependencias publicadas; la página de
++     burdock describe los argumentos y la salida.
+
+@ 0 6 0 0d82d376197d09ee04a32dd17d0918d6
++ entry .assign   la anotación `@assign(layer)` de stratiform, reenviada solo como tipo
++     `type assign = stratiform.assign`: una anotación de campo que sitúa un campo de case class en
++     una capa de esquema TEL, tal como lo describe la página de stratiform. Es un alias de tipo y
++     no un `export`, ya que exportar la clase exportaría también su proxy de constructor, un
++     término `assign`, que ocultaría el método `assign` de anamnesis; la anotación `@assign(…)` se
++     lee igual de una forma u otra.
+
+% 2 1 0 014572436a4986eb154e88c593d9552c
+
+% 3 1 0 11cce612f15effe81e9ff5e6ace44106
+
+% 0 1 0 19bfc4712dbfb1a2148c364ad3079f76
+
+% 0 1 0 1f9ac28a530652d90ffc8d9231c55124
+
+% 1 1 0 1cf7f8ffbe45ff4519ec94c093e0a0b0
+
+@ 0 6 0 1ccbfd64dc4c8501039edc772535c03e
++ entry .attribute   la anotación `@attribute` de xylophone, como tipo; el término es el de galilei
++     `type attribute = xylophone.Xml.attribute`: la anotación que marca un campo de case class
++     como atributo XML en lugar de elemento hijo. Es un alias de tipo y no un `export`, porque
++     galilei y tarantula ya exportan al paraguas un *término* llamado `attribute` (que lee un
++     atributo extendido de una ruta, o un atributo de un elemento), con el que chocaría el objeto
++     compañero de la case class; una anotación solo necesita el tipo.
+
+% 2 1 0 16da3c51bf20479d1f2c8b988d1173c4
+
+% 3 1 0 0f823ecd35b01a7d12b0bc9d96343149
+
+% 0 1 0 045ceb6de96059cf17c04afedd43b60d
+
+% 1 1 0 19acb75380c33efa083d5bad022668bc
+
+@ 0 7 0 0d7bf49eee93caa50570c13229d582c9
++ entry .thru   `start thru end`: el intervalo entre dos ordinales, con el final incluido, confinado si lo están ambos extremos
++     `Ter thru Sen` es el intervalo de `Ter`, `Quat`, `Quin` y `Sen`. Dos sobrecargas, ambas
++     declaradas en el paraguas: sobre `Ordinal` simples el resultado es un `Interval` simple, y
++     sobre dos ordinales confinados al mismo valor (`Ordinal in form`) es un `Interval in form`,
++     cada uno de cuyos ordinales lee ese valor de forma total. Se declaran aquí en lugar de
++     exportarse desde denominative porque un `export` reenvía solo una sobrecarga, y a un receptor
++     `Ordinal` simple se le ofrecería entonces la confinada y fallaría.
+
+% 2 1 0 09adc7dc5bfc1a1a0d062f6a5f03f247
+
+% 3 1 0 1b48bb1f32a3fc5c0b2c407213f78f92
+
+% 0 1 0 0fd6950ebf8822c90139575f9997b12f
+
+% 1 1 0 12ab99a5f4e041c91dca18df18ddee2d
+
+@ 0 4 0 1f9bdf784bbf10ee087ed62d821eb97c
++ entry .till   `start till end`: el intervalo entre dos ordinales, con el final excluido, confinado si lo están ambos extremos
++     `Ter till Sen` es `Ter`, `Quat` y `Quin`; `Sec till Sec` está vacío. Como con `thru`, las
++     dos sobrecargas, simple y confinada, se declaran juntas en el paraguas, porque un `export`
++     reenviaría solo una.
+
+@ 0 6 0 1694799cd12ffffd11363a2c547e845a
++ entry .tabulate   `xs.tabulate { i => … }`: una `Sequence` de un elemento por cada ordinal de un valor o intervalo
++     La contrapartida colectora de `each`: construye una `Sequence` con un elemento por posición,
++     en orden. Tres sobrecargas, declaradas juntas en el paraguas por el mismo motivo que `thru`:
++     sobre un valor `Countable` la lambda recibe `Ordinal in value.type`, así que sus lecturas del
++     valor son desnudas; sobre un `Interval` simple recibe un `Ordinal` simple; sobre un
++     `Interval in form`, un `Ordinal in form`. Cada una delega en `denominative.tabulate`.
+
+% 2 1 0 1880c967d758dd5c1b4f264f577117b0
+
+% 3 1 0 0aa22d41fc34640f03054059b855fa9a
+
+% 5 1 0 136b082868d7a2aa097853d9bf2f0997
+
+% 0 1 0 16ef06ec0a46527c08432d64a386e767
+
+% 1 1 0 0f9ef1d86bc0edfe03e0faa3de45675c
+
+@ 0 9 0 033400a6c2a7cff111e67a5d163477f6
++ entry .each   `interval.each { i => … }`: visita cada ordinal de un intervalo, en orden
++     El paraguas declara las dos sobrecargas de intervalo de `each` junto al `each` de colecciones
++     que exporta desde rudiments: sobre un `Interval` simple la lambda recibe un `Ordinal`, y
++     sobre un `Interval in form` confinado recibe `Ordinal in form`, de modo que una lectura en su
++     interior es total. Todas deben compartir un mismo ámbito (dos definiciones de nivel superior
++     con un mismo nombre en `package soundness` no se sobrecargan, y una se descarta en silencio),
++     y la sobrecarga confinada debe estar junto a la simple, o la simple gana para un receptor
++     confinado y le quita su marca sin ningún error. La forma de colecciones,
++     `xs.each { x => … }`, se documenta en la página de rudiments.
+
+% 2 1 0 153b3d3649416408196da30b52bc4f27
+
+% 3 1 0 19bba5ce688cc672029f37f307b43b45
+
+% 0 1 0 161651618b79a789158fce49c3020b76
+
+% 0 1 0 0552678106cff1b81283dcaf10ddd11d
+
+% 1 1 0 0ad4724f5a7c13b40d1558b0f8946e14
+
+@ 0 9 0 1d45363e228532f700af66460a323ed0
++ entry .apply   `xs(index)`: el elemento en un índice, desnudo para un índice confinado y `Optional` en otro caso
++     La lectura de desindexación universal para cualquier valor con una instancia `Applicable`
++     (las colecciones por `Ordinal`, un `Map` por clave, un `Text` por `Ordinal`), declarada de
++     nuevo aquí en lugar de exportarse, ya que su evidencia es una cláusula `using` inicial
++     dependiente que un reenviador no puede llevar. Delega de forma inline en `rudiments.apply`,
++     así que un índice de tipo `Operand in xs.type` (de `confine`, `pick`, `each`, …) lee el
++     elemento desnudo y cualquier otro índice se comprueba y da un `Optional`. Una segunda
++     sobrecarga lee un array congelado de tipo `& Sized[n]` con un ordinal literal, comprobado
++     contra `n` mientras se compila el código. La página de rudiments tiene la explicación
++     completa.
+
+% 2 1 0 112d22a355f79f5c033fb41a8ff74223
+
+% 3 1 0 0393554810a2c50a123a191180104efc
+
+% 5 1 0 14f679673800de550134491034f80566
+
+% 0 1 0 148f7bab0c2baa491d476cf8cc91a95d
+
+% 0 1 0 123c90370b7f934f053a53c5a0039953
+
+% 1 1 0 0149e2b7178398530a10c24f23e59ace
+
+@ 0 4 0 1178d2323c6133bf140fd133c730e7fc
++ entry .at   `xs.at(index)`: la misma lectura que `xs(index)`, desnuda para un índice confinado y `Optional` en otro caso
++     Idéntico a `apply`, declarado de nuevo en el paraguas junto a él y delegando en
++     `rudiments.at`; se conserva para el código que escribe el acceso posicional `xs.at(Sec)` y el
++     acceso por clave `map.at(key)`.
+
+@ 0 4 0 152b5822d57a6b740c71fa1adae7f186
++ entry .defines   `xs.defines(index)`: si un índice o una clave está definido para un valor
++     Verdadero cuando la instancia `Applicable` del valor contiene el índice: un ordinal dentro de
++     la extensión de una colección, o una clave presente en un `Map`. Declarado de nuevo en el
++     paraguas con el resto del grupo de desindexación, con el cuerpo de una línea duplicado en
++     lugar de delegado.
+
+@ 0 5 0 173813604391eafe13ccab6fb6caeaa3
++ entry .confine   `xs.confine(index)`: comprueba un índice contra un valor y lo devuelve con la marca de ese valor
++     `Unset` si el índice no está definido para el valor y, si lo está, el propio índice con tipo
++     `Operand in xs.type`, de modo que un `xs(i)` posterior es desnudo y no vuelve a comprobar
++     nada. Funciona tanto con claves como con ordinales. Declarado de nuevo en el paraguas con el
++     resto del grupo de desindexación.
+
+% 2 1 0 0a69ac665b168dac0f60c7859eb0aabb
+
+% 3 1 0 19467f19d12a97791cf4ae1fa3af3587
+
+% 5 1 0 0a63bf4f20e90a390ec170ebe81048b6
+
+% 6 1 0 0e9e786f724e62d31b38f7bbed843f38
+
+% 7 1 0 11d3f7a712ac1de5042ab5324ddb80b2
+
+@ 0 4 0 0f9b2944b23b47330eb03233f88a82d6
++ entry .pick   `xs.pick(index) { i => … }`: comprueba un índice y ejecuta una lambda con él confinado, o da `Unset`
++     La forma fusionada de `confine` y `let`: la lambda recibe el índice con tipo `Operand in
++     xs.type`, así que sus lecturas de `xs` son desnudas, y el resultado es `Optional`, `Unset`
++     cuando el índice no está definido. Declarado de nuevo en el paraguas con el resto del grupo
++     de desindexación.
+
+% 2 1 0 1882bca90340f1271d5d8411fdfcde9b
+
+% 3 1 0 089403dade3bbb32091b5b789207fc3a
+
+% 5 1 0 13c41bfc069f06ca1311ab8bba544ce8
+
+% 0 1 0 071c6ed34526443800e7693becbb5d88
+
+% 1 1 0 12ae67c410a162c302a71da2584a3f2d
+
+@ 0 7 0 166762606bb1a6260b0c1a19ab194671
++ entry .unsafeAttested   marca un índice, o un intervalo, como válido para un valor bajo la palabra de quien invoca
++     `xs.unsafeAttested(index)` es `confine` sin la comprobación, y acuña `Operand in xs.type`
++     directamente; `xs.unsafeAttested(index) { i => … }` limita la atestación a una lambda; e
++     `interval.unsafeAttested(xs)` marca un `Interval` como `Interval in xs.type`. Todas las
++     formas toman un token `Unsafe` borrado, así que la invocación va dentro de `unsafely`, y toda
++     invocación lleva un comentario que nombra la construcción que prueba la cota. Declarado de
++     nuevo en el paraguas con el resto del grupo de desindexación.
+
+% 2 1 0 0e5a676a895e3c8b1169f4cb608a62b6
+
+% 3 1 0 09c8b47f128664fe0b7cbfa99e5856c8
+
+% 0 1 0 11ffb27e0432af721657799d6bedaaa1
+
+% 0 1 0 1ee937620fd36ed00be4b497beef38db
+
+% 0 1 0 04533c7bf32cb0ae13438b2019f825fc
+
+% 0 1 0 1f4851f735ca7cdf1d5f6948c7c02ac4
+
+% 1 1 0 10cd1a69ef614cbe000df8a84294e013
+
+@ 0 5 0 02d835c8cb8d3612059e2466926bff48
++ entry .define   `xs.define(index, value)`: una copia de un contenedor con una posición o una clave establecida
++     A través de la instancia `Definable` del receptor: `xs.define(Sec, 9)` sobre una `Sequence`,
++     `map.define(key, value)` sobre un `Map`. Los ordinales fuera de rango dejan el contenedor sin
++     cambios, y una clave ausente añade una entrada. Declarado de nuevo en el paraguas porque su
++     evidencia es una cláusula `using` inicial dependiente.
+
+% 2 1 0 0cd3d68fce8db45b002f1e228b3f1e1f
+
+% 3 1 0 1395deafe5e342661f281454d25ab356
+
+% 0 1 0 0b6ee581a3070a66071a154659e36e50
+
+% 1 1 0 15197378eb781c3511dad2148f8e13a4
+
+@ 0 4 0 16051de06086b83c0f553d7fd5345114
++ entry .omit   `xs.omit(index)`: una copia de un contenedor sin una clave o una posición
++     A través de la instancia `Omissible` del receptor: `map.omit(key)` elimina una entrada, y una
++     clave ausente deja el mapa como estaba. Declarado de nuevo en el paraguas porque su evidencia
++     es una cláusula `using` inicial dependiente.
+
+@ 0 7 0 03ac612c6442982f00fe9c2cdc933261
++ entry .keep   los `count` primeros elementos (o, con `Bidi.Rtl`, los últimos), o la racha inicial que cumple un predicado
++     `xs.keep(3)` toma tres elementos, `xs.keep(3, Bidi.Rtl)` los tres últimos, y
++     `xs.keep(_ < 4)` la racha inicial que cumple el predicado: un prefijo, no un filtro.
++     Conserva la forma a través de `Segmentable`, así que un `Text` sigue siendo un `Text`.
++     Declarado de nuevo en el paraguas en lugar de exportarse para que un receptor `Chain`, que no
++     tiene instancia `Segmentable`, descarte este candidato y llegue al `keep` diferido del objeto
++     compañero de `Chain`; un reenviador se quedaría con la invocación y fallaría.
+
+% 2 1 0 17b4f6f0f71d13971f720d4fd284c764
+
+% 3 1 0 17e4fa1be447729b076fa0b1fd5558b8
+
+% 0 1 0 1c5b47f448c8732b01e88325ac9eb147
+
+% 0 1 0 09e4677c6ad2b13c1ec42e243423942a
+
+% 1 1 0 0214fbb2069a22511571fccf1abbe021
+
+@ 0 4 0 144b7daa5c4f40601509e367a39e657a
++ entry .skip   todos menos los `count` primeros elementos (o, con `Bidi.Rtl`, los últimos), o todos tras la racha inicial que cumple el predicado
++     El complemento de `keep`: `xs.skip(2)` descarta dos elementos, `xs.skip(2, Bidi.Rtl)` los
++     dos últimos, y `xs.skip(_ == ' ')` la racha inicial de espacios. Declarado de nuevo en el
++     paraguas por el mismo motivo que `keep`, para que una `Chain` llegue al `skip` diferido de su
++     objeto compañero.
+
+@ 0 7 0 0556083e6b9a8bcb03fbc875faf6d68e
++ entry .via   `stream.via(stage)`: un flujo extraído a través de una etapa con una instancia `Ductile`
++     El reenviador escrito a mano del paraguas para la composición por extracción de zephyrine:
++     consume el flujo y la etapa, y da un flujo del tipo `Result` de la etapa sobre su
++     `Transport`, para lo que necesita un `Buffering`. Un reenviador sintetizado perdería el
++     refinamiento dependiente `ductile.Result` con la comprobación de capturas, así que este se
++     escribe completo y delega en `zephyrine.via`; se comporta de forma idéntica. El *tipo* `via`
++     (un valor calculado en una configuración regional) es el de cosmopolite, en el espacio de
++     nombres de tipos, y no entra en conflicto.
+
+% 2 1 0 0583191f97c4728c024a71a148c11579
+
+% 3 1 0 11edfdc66cfa1bff01c176d2a9e8673e
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0fa7d1ff594903310b01de83c23aa37e
+
+% 0 1 0 1fe95cbfb72bd37419a1f42d10c935b2
+
+% 1 1 0 0f2697f1eaf1876e0eff40de9d842df4
+
+@ 0 5 0 14b048d2340666bb055d68765460f79c
++ entry .accepting   `intake.accepting(stage)`: un intake que inserta a través de una etapa con una instancia `Ductile`
++     El reenviador escrito a mano del paraguas para la composición por inserción de zephyrine:
++     consume el intake y la etapa, y da un intake del tipo `Operand` de la etapa sobre su
++     `Upstream`, para lo que necesita un `Buffering`. Se escribe completo en lugar de exportarse
++     por el mismo motivo que `via`, y delega en `zephyrine.accepting`.
+
+@ 0 6 0 0e705eff31b104850a9a5dc4229c23c1
++ entry .dispose   `handle.dispose()`: libera un descriptor de recurso WIT, en código compilado a Wasm
++     Una extensión inline sobre `xenophile.Wasm.Handle`, solo en el componente `wasm` de
++     xenophile. Se expande a `WasmInvoke.dispose`, que emite la importación `[resource-drop]` del
++     Component Model del recurso; como `invoke`, es un `inline` simple para que la importación se
++     materialice en el punto de invocación enlazado con Wasm, aguas abajo. Un programa debe
++     liberar cada descriptor que obtiene cuando termina con él, normalmente en un `finally`.
+
+@ 0 5 0 110cfbfd7ba1761d0023aeafdea35d19
++ entry .threads   los modelos de hilos de parasite, cada uno un given `Threading` que se importa por nombre
++     Un objeto de reenviadores a `parasite.threads`: `platformThreads`, `virtualThreads`,
++     `adaptiveThreads`, `pooledThreads` y `javascriptThreads`, documentados en la página de
++     parasite. Es un objeto, no un paquete, como lo es el propio de parasite: sus givens son
++     capacidades, que deben vivir en un objeto.
+
+% 2 1 0 040e53f4eb6fc992064f626e9cfd3198
+
+% 3 1 0 1d07e33a8606e3ee03f423aa8a04e042
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 1 1 0 1fbd7da930f7d31d0fab2066905f33c7
+
+@ 0 3 0 03434bdd427319e10f0f0642dd697ec2
++ entry .supervisors   el supervisor global de parasite, como given que se importa por nombre
++     Un objeto que reenvía `parasite.supervisors.globalSupervisor`, el `PlatformSupervisor` como
++     given `Supervisor`, para el código que necesita directamente un supervisor en lugar de un
+
+% 0 1 0 047371b9f797fc9e0c230576c8de0a72
+
+@ 0 5 0 0ee708c3c0504ce603a16ee9fe99f8b3
++ entry .unsupervised   el monitor de toda la vida del proceso de parasite, para bloquear fuera de cualquier ámbito `supervise`
++     Un objeto que reenvía `parasite.unsupervised.orphanMonitor`, un `Monitor` que aparca el hilo
++     de plataforma que lo invoca y no supervisa nada: una vía de escape deliberada para los ciclos
++     de vida de demonios y las esperas de toda la vida del proceso. Es preferible `supervise`
++     allí donde la región que bloquea ya tiene ámbito.
+
+@ 0 1 0 1ad2761431b3688b08d662095e7e8bf6
++ entry .strategies   las estrategias de tratamiento de errores, fusionadas desde todas las bibliotecas; `throwUnsafely` se declara aquí
+
+% 1 1 0 0878aa0482e67db11b706d924e0bd498
+
+@ 0 3 0 10445cc01dda1631063d081391a393a2
++       El paquete de elección `strategies` del paraguas. Sus givens son `Tactic`, que deciden qué
++       ocurre cuando se lanza un error, y cada uno se importa por nombre, ya que
++       `import strategies.*` no importa givens. La mayoría son reenviadores a
+
+% 0 1 0 066b94b7dd9bc73c10a37d9c3acfff34
+
+@ 0 2 0 1619f30045411d481fdb0b40dcb6a05f
++       `uncheckedErrors`), documentados en la página de contingency; solo `throwUnsafely` se
++       declara aquí.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 1 1 0 06e1f9e27e2e381a09e64b718299b319
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 19afb8e95c25a4f5044a33e4074e9c21
+
+% 1 1 0 0ef047122ef6aa300ace3e4f0699c88f
+
+% 0 1 0 0e3ef618e488455508792ae085ee09a9
+
+@ 0 7 0 00f18026316b86631c7962cf211dea2e
++   entry .throwUnsafely   lanza todo error como una excepción corriente, sin requerir ninguna capacidad
++       Un `ThrowTactic[Hazard]^{}` puro que delega en `contingency.strategies.throwUnsafely`, de
++       modo que por contravarianza satisface a la vez toda `Tactic[error]`. Es un given que delega
++       y no un reenviador de exportación: un reenviador es un método, y el nombre en el paraguas de
++       un given de valor acabaría en el conjunto de captura de toda instancia `^{tactic}` convocada
++       a través de él, donde un método no es una referencia de captura válida. Conviene a los
++       scripts y a la capa más externa de un programa; una biblioteca debe indicar en cambio qué
++       lanza.
+
+@ 0 1 0 008339a2089dfa9c058050e907dde547
++ entry .httpServers   los servidores HTTP de scintillate, cada uno un given `Protocolic` que se importa por nombre
+
+% 1 1 0 086c62bf7392c7701cfad8130309328a
+
+@ 0 7 0 1b76d5e422e43862142131dc1af0c40e
++       El paquete de elección `httpServers` del paraguas: qué servidor responde a
++       `tcp"8080".serve[Http]` se elige importando uno de estos por nombre. Los cuatro se declaran
++       aquí como reenviadores escritos a mano a `scintillate.httpServers`, porque un reenviador
++       `export` sintetizado pierde los tipos de refinamiento anotados con capturas de los givens.
++       Cada uno tiene el tipo `scintillate.httpServers.HttpdFor[port]` para un puerto 80, 443,
++       8080 u 8000, captura la `Tactic[Httpd.Error]` y el `Monitor` que se le dan, y necesita en el
++       ámbito una `Probate`, un `Httpd.Event is Loggable` y una `WebserverErrorPage`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 11738106f6d88b28149224b62d875beb
+
+% 0 1 0 07aee3a963c81e41082d67adafd250ef
+
+% 0 1 0 1e5e0a61e64bc2840669a827caf48567
+
+% 0 1 0 116b1bd0a8b68ab10d6b03f914f29df8
+
+% 0 1 0 0a2c389b0309ea7915422e5e13a19957
+
+% 1 1 0 04cf7290391dc935025305928ede3a56
+
+% 0 1 0 1f3234416814a8c9156c65143687a776
+
+% 0 1 0 0a31d44dd24d71231cf170324d917bac
+
+% 0 1 0 0db19d4bf145a35613d9ff6dc6aba3c6
+
+@ 0 12 0 0247a1e7202fb7f61cdd06cde7c1af74
++   entry .jdkHttpserver   `Http` servido por el `Httpd` del JDK en `localhost`
++       Reenvía `scintillate.httpServers.jdkHttpserver`: el servidor construido sobre
++       `com.sun.net.httpserver` del JDK, ligado solo a la interfaz de loopback.
++   entry .jdkHttpserverPublic   `Http` servido por el `Httpd` del JDK en todas las interfaces
++       Reenvía `scintillate.httpServers.jdkHttpserverPublic`: como `jdkHttpserver`, pero ligado a
++       todas las interfaces de red, de modo que es accesible desde otras máquinas.
++   entry .soundnessHttpd   `Http` servido por el propio `SocketServer` de scintillate en `localhost`
++       Reenvía `scintillate.httpServers.soundnessHttpd`: el servidor propio de Soundness, que
++       también habla HTTP/2 sobre TLS, ligado solo a la interfaz de loopback.
++   entry .soundnessHttpdPublic   `Http` servido por el propio `SocketServer` de scintillate en todas las interfaces
++       Reenvía `scintillate.httpServers.soundnessHttpdPublic`: como `soundnessHttpd`, pero ligado
++       a todas las interfaces de red.

@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 2 0 1ce2591c7910df8715cb6ee0ece79b7c
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/en/modules/`, e fa l'andata e ritorno dei vettori di esempio delle RFC 7515/7516.
+
+@ 0 5 0 185e0933a78085f60dda1fb01867e9b3
++ Fatto: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` e `Jwt`, con ogni algoritmo della
++ RFC 7518 tranne la compressione `zip`, ed EdDSA e X25519 dalla RFC 8037; un handler di bearer
++ token per scintillate, e insiemi di chiavi scaricati via HTTP. Gli esempi dell'appendice A della
++ RFC 7515 e dell'appendice A della RFC 7516 sono i suoi test, letti dal testo delle RFC. enigmatic
++ ha acquisito le primitive che gli mancavano: derivazione di chiavi, AES key wrap, AES-CBC con
++ HMAC, RSA-OAEP e RSA-PSS.
+
+@ 0 2 0 19e4d46c5d18ca6c0a3eac1338b276cc
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/en/modules/`, e supera la suite di conformità standard di TOML.
+
+@ 0 4 0 1119703a804af95f1fb4bb604086cc3a
++ Autenticazione senza password per lo stack web, che completa la storia iniziata da OAuth 2 e da
++ JOSE. Il supporto per COSE da cui dipende — le chiavi COSE e gli algoritmi di firma asimmetrica —
++ è arrivato con `brd-1`, così come la lettura e la validazione della catena dei certificati X.509
++ che un'attestazione porta con sé.
+
+@ 0 2 0 1c27de11db8327eb199b7672a17cf0fc
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/en/modules/`, e una cerimonia scriptata di registrazione e asserzione ha esito positivo con un
++ autenticatore di riferimento.
+
+@ 0 7 0 0f072c1e402a18d91bb22643f0148107
++ Fatto: #2530 (2026-11-20). chatelaine: le due cerimonie della relying party, con ogni controllo
++ di WebAuthn Level 2 §7.1 e §7.2, e i formati di attestazione `none` e `packed`. L'autenticatore
++ di riferimento è quello della specifica stessa: gli output di registrazione e di autenticazione
++ dei suoi vettori di test, per credenziali ES256, ES384, ES512, RS256 ed Ed25519, vengono
++ accettati, con le attestazioni packed validate fino alla radice di fiducia dei vettori. Un
++ autenticatore software nei sorgenti dei test esegue cerimonie intere, e i modi in cui vengono
++ rifiutate. L'autenticatore virtuale di un browser non è stato pilotato.
+
+@ 0 2 0 17114dda9db220b1111dfa3e427832ac
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/en/modules/`, e interopera con un server e un client HTTP/3 di riferimento.
+
+@ 0 2 0 0c7008ff6c9ff7ce1e83f47b9ad6f3b1
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/en/modules/`, e una sessione scriptata ha esito positivo con un server IMAP di riferimento.

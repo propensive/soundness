@@ -1,0 +1,247 @@
+orthant 2 language
+
+@ 0 1 0 10cf67f4d230c4bc1339dab9ab441180
++ # La feuille de route
+
+@ 0 4 0 009bd357b87e6b8c032ad38534e6c8ae
++ Soundness est construit en direction d'une destination unique : le point où une équipe sérieuse
++ peut l'adopter pour de vraies applications. Ni un numéro de version, ni une cérémonie — un ensemble
++ de conditions mesurables, énumérées au bas de cette page sous le nom de [seuil](#the-gate). Cette
++ feuille de route décrit l'itinéraire : neuf chantiers parallèles, chacun avec son propre état final,
++ échelonnés sur trois horizons.
+
+@ 0 1 0 1ef0a8d2eac0b4c91cab2edec5e3a52e
++ ## La vision
+
+@ 0 2 0 0c1e202dadd18c50090facdfb2d6e91a
++ Tout ce qui figure sur cette feuille de route sert une seule philosophie, développée dans les pages
++ de [philosophie](../philosophy/composability.md) :
+
+@ 0 34 0 03001ca590145a7e170561687101ee49
++ - **Sûreté.** Il est difficile, voire impossible, d'écrire du code Soundness qui échoue de manière
++   surprenante à l'exécution. Chaque API est totale, ou [déclare les erreurs qu'elle
++   lève](../philosophy/error-handling.md). La mutabilité n'est permise que là où le contrôle de
++   séparation prouve qu'elle est sûre ; le contrôle des captures impose ce que les signatures
++   promettent. La partialité où que ce soit — y compris dans les bibliothèques standard de Java et de
++   Scala sur lesquelles nous reposons — sape tout ; les API partielles sont donc remplacées, et non
++   tolérées.
++ - **Cohérence.** Les API sont prévisibles, claires et généralisées. Des choses semblables partagent
++   une seule API ; la variation est un paramètre, et non un nom. Si deux choses partagent un nom, ce
++   sont la même chose ; si elles ont des noms différents, elles ne le sont pas.
++ - **Tout est fourni.** Une seule plateforme pour les applications en ligne de commande, les
++   applications web (serveur et front-end), les tests, le travail scientifique et l'outillage de
++   développement — construite sur des [standards ouverts](../tags.md), et non sur des inventions
++   propriétaires, et assez modulaire pour que les éléments inutilisés ne coûtent rien.
++ - **Parité des cibles.** La JVM, Android, JavaScript et WASM/WASI sont toutes des cibles viables, pas
++   plus difficiles à viser que la JVM.
++ - **Un monde qui semble natif.** Développer, déboguer et exécuter du code Soundness ne donne jamais
++   l'impression de faire fonctionner un système avancé dans un environnement qui n'a pas été conçu pour
++   lui. Les encodages Java des valeurs ne sont jamais visibles.
++ - **Apprenable, documenté, spécifié.** Chaque API est documentée ; chaque message d'erreur est
++   informatif et a une page documentée ; chaque idée nouvelle a une spécification. La documentation est
++   écrite pour que les personnes comme les agents d'IA puissent s'y fier pour agir.
++ - **La stabilité par la migration.** Les API changent chaque fois qu'une conception meilleure ou plus
++   sûre existe. La stabilité ne vient pas du gel des API, mais d'une migration peu coûteuse : chaque
++   changement incompatible est livré avec des instructions assez précises pour qu'un agent les exécute.
++ - **Une toolchain de confiance.** Construire, tester, déboguer, explorer et distribuer du code
++   Soundness passe par ses propres outils — `fury`, `fume`, `flame`, `fluence`, le serveur LSP
++   `exegesis`, le débogueur `vivisection` et le serveur MCP `synesthesia` —, avec des versions
++   attestées, prévisibles et vérifiables, et des bibliothèques distribuées sous forme de fichiers LIRA
++   dont la composition sûre est garantie. TEL est le langage de configuration partout où une
++   configuration est nécessaire. Les outils qui ne sont pas des modules de ce dépôt — fury, fume,
++   flame, fluence — sont développés dans leurs propres dépôts ; cette feuille de route ne suit que ce
++   que Soundness doit leur fournir. Soundness est construit avec le compilateur Proscala, modifiable
++   chaque fois que la sûreté l'exige, sous une contrainte : les artefacts publiés restent lisibles par
++   le compilateur Scala officiel.
+
+@ 0 1 0 1881c67de85d7e7d0c3140dca8e253ee
++ ## Comment lire cette feuille de route
+
+@ 0 2 0 06805fc179d63314039ec462bd9c82e0
++ Chaque chantier occupe son propre fichier et suit la même forme : un court préambule qui dit pourquoi
++ son état final importe, puis une suite d'éléments numérotés. Chaque élément utilise un même format :
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1df8de5c62c23f7213e387103ebb7ef0
+
+% 0 1 0 1ab880ee5d02c1ea1d60c0cf49f6c644
+
+% 0 1 0 156fbf0f21034042150f6f936d20baa3
+
+% 0 1 0 06c01cf28255b8ef160fc4067e81be1a
+
+% 0 1 0 1ca5b665a6fbadab11eb95e1745e62dc
+
+% 0 1 0 157f55259fa9405e02329e0c993f9b8e
+
+% 0 1 0 0ee067afb466e7061f9713b96c868fdd
+
+% 1 1 0 1c32acd1c7bdba5a1c57fd5d3bb2995d
+
+@ 0 1 0 1298b6497c85551e1663b4fbfeebac51
++ Les règles qui rendent ce document digne de confiance :
+
+@ 0 17 0 0d620841368a409d019723a11f78435f
++ - **Les identifiants des éléments sont permanents.** Ils sont préfixés par leur chantier et
++   séquentiels, et ne sont jamais réutilisés — la même discipline que pour les codes bolt. Un élément
++   terminé garde son titre et gagne une ligne `Done:` qui nomme le commit ou la pull request de
++   clôture. La seule exception est un élément dont le critère *est* la suppression d'un artefact.
++ - **Chaque critère est une commande ou un fait observable.** Un bloc `Done when:` contient une
++   commande exécutable avec sa sortie attendue en commentaire final, ou énonce un fait sur l'existence
++   d'un fichier, sur son caractère vide, ou sur l'état d'une vérification de CI. Rien d'autre n'est
++   admissible. « Presque terminé » et « en grande partie fait » ne sont pas des critères ; ce qui ne
++   peut être compté, cherché par grep ou observé n'a pas sa place ici.
++ - **Les points de départ sont datés.** Les chiffres dérivent à mesure que le travail avance ; un agent
++   qui mesure de nouveau un point de départ doit s'attendre à une dérive et la signaler, et non se fier
++   en silence à un chiffre périmé.
++ - **Les horizons ne sont pas des dates.** *Proche* désigne l'ensemble de travail actuel ; *moyen*, ce
++   que l'horizon proche débloque ; *lointain* s'approche de l'état final du chantier. Les progrès se
++   mesurent par les critères, jamais par le calendrier.
++ - **L'état se trouve dans [`status.tel`](status.tel).** Les fichiers en prose disent quoi et
++   pourquoi ; `status.tel` — un enregistrement par élément, lisible par machine, écrit en TEL — dit où
++   en est chaque élément. La prose ne déclare jamais un élément terminé ; elle renvoie à ce fichier.
+
+@ 0 1 0 15393f6971aeb2b90ab344879e1306b9
++ ## Les chantiers
+
+@ 0 1 0 02cbe41f07ebec010cc47ef522c99fdc
++ Chaque chantier a un fichier, un préfixe d'élément et un état final :
+
+% 2 1 0 097b7a03d28727ea0b448e0404aab8e2
+
+@ 0 12 0 1490b1c9838515651ef448faef92bf68
++ column  Chantier
++ column  Préfixe
++ column  État final
++ row  [Le drainage de la bibliothèque standard](core.md)  `core`  aucun module n'atteint les bibliothèques standard de Java ou de Scala autrement que par la frontière opaque de proscenium ; rien de façonné par Java n'est visible pendant le développement ou le débogage
++ row  [Capacités et effets](safety.md)  `safety`  les échappatoires `caps.unsafe` tombent à zéro ; le contrôle des captures, le contrôle de séparation et les erreurs déclarées tiennent sans exemption ; le fork du compilateur est viable
++ row  [Parité des plateformes](platforms.md)  `plat`  JavaScript, Native, WASI et Android ne sont pas plus difficiles à viser que la JVM, avec seulement des exclusions inhérentes, vérifiées en CI ; le navigateur est une cible d'application de premier plan
++ row  [Cohérence de l'API](api.md)  `api`  un nom signifie une seule chose ; les variations sont des paramètres ; la surface exportée est délibérée
++ row  [Documentation et facilité d'apprentissage](documentation.md)  `doc`  un seul système de documentation, une couverture complète, une documentation d'API publiée, et un chemin de rien jusqu'à une application fonctionnelle qu'un agent peut suivre
++ row  [La toolchain](tooling.md)  `tool`  flame, fury, fume, fluence, le serveur LSP, le débogueur et le serveur MCP remplacent chaque outil de l'ère Maven, avec la couverture et les benchmarks suivis à chaque commit dans des notes git
++ row  [Distribution et publication](distribution.md)  `dist`  des versions attestées et dotées d'un changelog ; la convention des instructions de migration ; LIRA comme canal unique, en retirant Maven Central
++ row  [Étendue des standards](breadth.md)  `brd`  les standards restants qu'une équipe de production attend : JOSE, TOML, WebAuthn, QUIC, IMAP
++ row  [Frontières des modules](modularity.md)  `mod`  chaque module ne sert que l'objectif qu'il annonce ; chaque algorithme a une seule implémentation ; les dépendances fortes deviennent des interfaces de classes de types ; le build est moins profond et plus large
+
+% 1 1 0 044dd158d718b6690bc4c67707af3ec3
+
+@ 0 2 0 0334c3e968d6ae5c1cb51c5dbc436627
++ La cible navigateur est atteinte par des API web derrière des façades typées. Les outils construits
++ ailleurs n'apparaissent dans le chantier de la toolchain que sous la forme de ce que Soundness leur
++ doit.
+
+@ 0 1 0 13ef4faaea9e0e7a10925f7b92c79af0
++ ## Dépendances
+
+@ 0 5 0 0fc1d0ff26bb7f7b00f125cefe222858
++ Une arête `a ← b` signifie *a ne peut être terminé avant b* (il peut être commencé). La ligne
++ `Needs:` d'un élément consigne ses dépendances fortes, y compris celles au sein de son propre
++ chantier ; la liste ci-dessous ne reprend que les arêtes entre chantiers, car ce sont celles qui
++ demandent une coordination. Si cette liste dépasse un jour largement la douzaine d'arêtes, les
++ chantiers sont mal découpés, et les redécouper est la solution.
+
+% 2 1 0 01669367fdc058371091ce3dd449ae7e
+
+@ 0 8 0 1f133a7d27877b200a089baf2e8c76eb
++ column  Élément
++ column  Requiert
++ column  Parce que
++ row  `api-6`  `dist-2`  les changements de surface passent par la convention de migration une fois qu'elle existe
++ row  `doc-8`  `tool-2`, `tool-4`  la démonstration utilise fume et fury
++ row  `tool-7`  `doc-5`  fluence consomme le pipeline d'extraction de l'API
++ row  `dist-4`  `doc-5`  le versionnage dérivé de l'API a besoin de la même extraction
++ row  `dist-5`  `tool-4`  fury doit savoir construire avant de pouvoir publier
+
+% 1 1 0 1e233e36204b98890dffe3d7d3e9f70a
+
+@ 0 3 0 1c767239d2ff283e1cebbaaaf34b9c72
++ **Verrous externes** — des conditions qui bloquent des éléments mais échappent au contrôle de ce
++ projet. Elles sont énumérées ici et n'apparaissent jamais comme éléments, car aucune de nos commandes
++ `Done when:` ne peut les clore.
+
+% 2 1 0 11a5d62c4605358e0cb772bf29be0652
+
+% 0 1 0 0de428dc9f2a6fd0129423e567f22ea0
+
+@ 0 4 0 02f7268149edd52f040577c3a95a73a0
++ column  Bloque
++ row  les interfaces standard de WASI mûrissent assez pour exprimer HTTP et UDP complets  `plat-4`
++ row  fury, développé dans son propre dépôt, devient capable de construire ce dépôt  `tool-4`, et à travers lui `dist-5` et `doc-8`
++ row  l'implémentation de LIRA, désormais dans le dépôt `lira` (`dist-10`), fait l'aller-retour d'une version de Soundness et la publie  `dist-3`, `dist-6`, `dist-7`
+
+% 1 1 0 12b5056f38d42aee1c11694fa17a7f88
+
+@ 0 2 0 1f6a71dd30101e8619a72f7c662e0d73
++ Les progrès de fury et de LIRA ne sont pas suivis ici ; seul l'est ce que Soundness leur doit, y
++ compris la part de Soundness dans l'amorçage de fury.
+
+@ 0 4 0 161ffaede27d8bce162ac93e3c170d3a
++ Le compilateur ne figure délibérément *pas* sur cette liste : Soundness est construit avec Proscala,
++ et la liberté de le modifier — pour des corrections du contrôle des captures, pour le backend Wasm,
++ pour tout ce que la sûreté exige — est supposée tout au long de cette feuille de route, bornée
++ seulement par l'exigence que les artefacts publiés restent lisibles par Scala officiel
++ (`safety-5`).
+
+@ 0 1 0 140a257abe9eca6d11e99659274b1e60
++ ## Le seuil
+
+@ 0 2 0 199b61880e87df0106fffadd30eb6344
++ L'aptitude à la production est la conjonction des critères suivants. Le seuil ne définit rien de
++ nouveau : chaque entrée cite un élément d'un chantier, et la commande `Done when:` de l'élément fait
++ autorité.
+
+% 2 1 0 02750984dfd1129604391de72904b3fc
+
+@ 0 17 0 0bfcf8d9a31200231ef62bc9f222d03e
++ column  Critère
++ column  Éléments
++ row  `proscenium.compat` est vide  `core-2`
++ row  Aucun fichier hors de proscenium n'importe `scala.collection`  `core-3`
++ row  Aucune échappatoire `caps.unsafe` ne subsiste dans `lib/`  `safety-4`
++ row  Le manifeste des plateformes est imposé en CI, ses exclusions portent des raisons, et un APK Android est construit et signé en CI  `plat-1`, `plat-2`, `plat-3`
++ row  `doc/api-reduction-candidates.md` n'existe plus  `api-5`
++ row  Chaque type d'erreur a un code bolt et une page de documentation, vérifiés en CI  `doc-1`
++ row  Chaque module publié est couvert par un sujet de `doc/en/modules/`  `doc-4`
++ row  La documentation d'API est générée et publiée pour chaque composant  `doc-5`
++ row  `fury build` construit Soundness lui-même, avec une attestation égale à celle du build Mill  `tool-4`
++ row  fume exécute la suite de tests complète, et aucune suite n'est désactivée  `tool-2`
++ row  Une session d'éditeur LSP scriptée passe en CI  `tool-3`
++ row  Chaque changement incompatible des dix dernières versions consécutives a été livré avec des instructions de migration exécutables par un agent  `dist-2`
++ row  Chaque version est publiée sous forme de fichiers LIRA attestés  `dist-7`
++ row  JOSE, TOML et WebAuthn sont livrés  `brd-1`, `brd-2`, `brd-3`
++ row  Un agent, en ne suivant que la documentation de `doc/`, mène un nouveau projet de rien jusqu'à une application web JVM et JavaScript testée et déployée, avec les seuls outils de l'écosystème, et cette démonstration est exécutée et consignée en CI  `doc-8`
+
+% 1 1 0 12df550ae6d44d6c1452b7aeb87c09ea
+
+@ 0 1 0 0e2b5a0cfd50a00418c73af3b5ff0461
++ Le dernier critère est le critère intégrateur, et la raison d'être de l'exercice.
+
+@ 0 1 0 11646f90cb61475b0519efacf5607b03
++ ### Au-delà du seuil
+
+@ 0 4 0 0f2943ebd8240c3b183cb4784284134c
++ Le seuil n'est pas l'horizon. Au-delà se trouvent : le retrait de la publication sur Maven Central,
++ qui laisse LIRA comme canal unique (`dist-8`) ; QUIC/HTTP-3 et IMAP (`brd-4`, `brd-5`) ; WASI à
++ parité complète une fois son verrou externe levé (`plat-4`, `plat-5`) ; et la garantie de lisibilité
++ par Scala officiel du fork, imposée en CI (`safety-5`).
+
+@ 0 1 0 1345d18b9264e6c5076e60af88fbb1f0
++ ## Pour les agents d'IA
+
+@ 0 1 0 102b30156d6ae529074bfb8d8e481036
++ Ce document est écrit pour que des agents agissent d'après lui autant que pour être lu par des
++ personnes :
+
+@ 0 10 0 160a63964a7c56b712a93f806fccb15e
++ - Les identifiants des éléments sont des ancres stables ; les citer (`core-3`, `dist-2`) plutôt que
++   de décrire le travail en prose.
++ - Vérifier toute déclaration de progrès en exécutant la commande `Done when:` de l'élément ; ne
++   jamais se fier à la prose ou à la mémoire plutôt qu'à la sortie de la commande. Mesurer de nouveau
++   les points de départ avant de s'y fier, et signaler la dérive.
++ - Lire [`status.tel`](status.tel) pour connaître l'état actuel ; le mettre à jour dans le même commit
++   que le travail qu'il décrit.
++ - Lorsqu'un élément de la feuille de route modifie une API publique, suivre la convention des
++   instructions de migration définie par `dist-2` dans `doc/standards/migration.md` — c'est cette
++   convention qui rend compatibles « les API changent librement » et « le code continue de
++   fonctionner ».

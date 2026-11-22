@@ -1,0 +1,769 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0f341a9bd3354ffd1b0f3348ad413da4
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 159d263d8c66bf6f1869ca8a75e07baf
++ info   OAuth 2 para clientes y aplicaciones web: concesiones, PKCE, tokens con ámbitos y credenciales tipadas
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 1e9abd6c485158681c8b18f0f2751352
++     _Orthodoxy_ implementa [OAuth 2](https://www.rfc-editor.org/rfc/rfc6749), el protocolo
++     mediante el cual un cliente obtiene un token de acceso del servidor de autorización de una API
++     y lo presenta con cada petición, en nombre de un usuario o en el suyo propio. Un token es más
++     que una cadena —concede ámbitos concretos, caduca y puede venir con un token de
++     refresco—, así que es una `Authorization` que lleva los cuatro, contra la que puede
++     comprobarse un `OAuth.Scope`.
+
+@ 0 3 0 04cac4dbdaa826840dc6d413edb11df8
++     Un `Issuer` es un servidor de autorización tal como lo ve un cliente, y cada concesión es un
++     método suyo que hace un POST al endpoint de tokens a través del `Http.Client` del ámbito y
++     lanza `OAuth.Error` en caso de rechazo:
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0871ad9d0e1772ba11d6e0ba11b57642
+
+% 0 1 0 0bdefbcde9e8855e1ea76e16ffbebcd5
+
+% 0 1 0 10800c8a03746d031aa51140db2ad181
+
+% 0 1 0 12aeba0afd478f030f21f265eed7d47a
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 4 0 103706d9f8524e39147d6aca14fe6fc0
++     Para el flujo de código de autorización, `Issuer#authorizationUrl` construye la URL a la que
++     se envía a un usuario, con un desafío `Pkce`, e `Issuer#exchangeCode` canjea el código que
++     trae de vuelta. Una `Credential` nombra un esquema de seguridad tal como lo nombra la
++     especificación de una API, y es la forma en que un cliente OpenAPI de apoplexy encuentra la
++     clave o el token que requiere cada operación.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     La biblioteca tiene dos conjuntos de fuentes:
+
+@ 0 5 0 1309e260f57abbc602e83dc3a57d72b7
++     - `orthodoxy.core`: `Issuer`, `Authorization`, `Pkce`, `OAuth.Scope`, `Credential` y
++       `OAuth.Error`; todo lo que necesita un cliente.
++     - `orthodoxy.server`: el flujo de código de autorización como middleware de scintillate,
++       las extensiones `oauth` y `require` sobre `Issuer`, con `Authorizations` guardando el
++       estado de cada sesión.
+
+@ 0 5 0 12694e0d1962c5bb17d6d2fede08a744
++     Todo se exporta al paraguas `soundness`. No tiene paquetes de elección propios, pero las
++     concesiones necesitan los valores contextuales habituales de otros lugares: un token
++     `Online` (`internetAccess.online`), un backend HTTP (`httpBackends.javaNetHttp`), un
++     `Http.Event is Loggable` (`logging.silentLogging`) y una `Tactic[OAuth.Error]`, cada uno
++     importado por nombre.
+
+% 0 1 0 0077c066b1c1f20c0d8fe83fc9e3b8a0
+
+% 0 1 0 16c96f44d5e39b88157b2889ee00045e
+
+% 0 1 0 1e773f4e90abebd91fb59c6a66218f1b
+
+% 0 1 0 15f37451f3d425b50613d71eb692a7e9
+
+@ 0 1 0 09f768d499554f1300a170ae5feaf169
++ entry .Issuer   un servidor de autorización OAuth 2 tal como lo ve un cliente: sus endpoints y la identidad del cliente
+
+% 1 1 0 05a426e3a74154b418de7e9830c5e256
+
+@ 0 6 0 1125924a8f162ab10f80e6379439e11e
++       Un `Issuer` guarda el endpoint de tokens, `#exchange`; la identidad del cliente,
++       `#client`, y su `#secret` si lo tiene; y, para el flujo de código de autorización, el
++       endpoint de autorización, `#init`, y la URI de redirección `#redirect` registrada para el
++       cliente. Sus métodos de concesión son el lado cliente del RFC 6749: cada uno hace un POST al
++       endpoint de tokens, con la identidad y el secreto del cliente como parámetros de formulario
++       (el `client_secret_post` del §2.3.1 del RFC 6749), y lee la `Authorization` que devuelve el
++       servidor.
+
+% 2 1 0 0a905ad2f631ca1816db56ae2fe27b7c
+
+% 3 1 0 0c10dc5617a52f28019637ff43098c36
+
+% 4 1 0 0082881bf743dc951cf24297bb319ba2
+
+% 5 1 0 128713e936a069d0008475177e2c74ba
+
+% 6 1 0 05e84ecb497163c003cad01c6fc7fbbb
+
+% 7 1 0 0cbfa41971bba9f70400e73de9befca9
+
+% 8 1 0 161e02256711f45b12dff88464714010
+
+% 9 1 0 1875c5200c42ef381451396f8df73e67
+
+% 11 1 0 1c5c8dec24b766ed0674cbba95c605d0
+
+% 0 1 0 16a9fdd43c1eeb8b1bc628f4a5a1d43f
+
+% 0 1 0 19ed29898a72e65c1e986d935574e36f
+
+% 1 1 0 13898aff2ec017f41d90daad38f5b6b7
+
+@ 0 7 0 178c1a14cca5a2eb1bd14827995854a6
++       Toda concesión necesita un token `Online`, un `Http.Event is Loggable`, un `Http.Client`
++       para orígenes `http` o `https` (un backend HTTP como `httpBackends.javaNetHttp`) y una
++       `Tactic[OAuth.Error]`. Un `400` o un `401` del endpoint de tokens es
++       `OAuth.Error.Reason.Unauthorized`, un fallo de conexión es `Connection`, una respuesta que
++       no se puede analizar es `InvalidJsonResponse` y cualquier otro estado es
++       `UnexpectedHttpStatus`. Un método que necesita `#init` o `#redirect` cuando el emisor se
++       construyó sin ellos lanza `Misconfigured`.
+
+% 1 1 0 085e7563297c3df419881b3c2794e7a0
+
+% 0 1 0 0070154e6e04aabf19282e0435f7dbb6
+
+% 0 1 0 027437baa00a0d3b07449762ee7efd35
+
+@ 0 1 0 1e564fe434f3ba0808ffe1e7bd6687e2
++   entry .Context   evidencia, en un manejador de peticiones, de que se ejecuta dentro del middleware `oauth` de un emisor
+
+% 1 1 0 0c858216c5d208ed1aacb37244ce13db
+
+@ 0 14 0 0d1d4a33718941340298a7fd6d3afe79
++         `Issuer.Context of issuer.type` lo proporciona `Issuer#oauth` al manejador que envuelve,
++         y lo requiere `Issuer#require`, de modo que la redirección a la que `require` envía a un
++         usuario sea una que gestionará el `oauth` del mismo emisor cuando el usuario vuelva. No
++         lleva nada salvo su tipo `Topic`.
++     entry .apply   crea el contexto para el tipo singleton de un emisor, como `Issuer.Context[issuer.type]()`
++   entry #exchange   el endpoint de tokens, al que hace POST toda concesión
++   entry #client   el identificador del cliente, enviado como `client_id`
++   entry #secret   el secreto del cliente, enviado como `client_secret`, o `Unset` para un cliente público
++   entry #init   el endpoint de autorización al que se envía a un usuario, o `Unset` si no se usa el flujo de código de autorización
++   entry #redirect   la URI de redirección registrada para el cliente, o `Unset` si no se usa el flujo de código de autorización
++   entry #grant   hace POST de una petición de token con parámetros de concesión arbitrarios y lee la `Authorization`
++       El paso común de toda concesión: la `Query` de parámetros dada se envía por POST a
++       `#exchange` con `client_id`, y con `client_secret` si lo hay. Para un tipo de concesión
++       para el que esta clase no tiene método, pasa aquí sus parámetros.
+
+% 2 1 0 081da998a395ad8910a70e3144966212
+
+% 3 1 0 142f45e7fd995d32196a18763b6cec07
+
+% 4 1 0 16bf9b048e1539951d7bcf0a03989b9f
+
+% 5 1 0 0f568e3c99b591af11b0156e8d51b48e
+
+% 6 1 0 0586adb3d3f8d7891334586b47d940a0
+
+% 7 1 0 1b8b07a8885ee84214d169ceb52de293
+
+% 8 1 0 1fbbdbaa5adb12d107eafc8f0ab7887a
+
+% 9 1 0 0eb3efbabc89d7561623836e244a175d
+
+% 11 1 0 111f61080cfdb416191bca3af60eb060
+
+% 0 1 0 16d4e36550e0e4a0163ca5618cdb4600
+
+% 1 1 0 16e632973c12d76304dbe41e8d17a1f9
+
+@ 0 12 0 080d183a4401a7db0cedcbb32326751c
++   entry #clientCredentials   la concesión de credenciales de cliente: la autorización propia del cliente, para los ámbitos dados
++       RFC 6749 §4.4. Los ámbitos se envían separados por espacios como `scope`, y se omiten
++       cuando no se da ninguno, en cuyo caso el servidor concede los suyos por defecto.
++   entry #refresh   una nueva autorización a partir de un token de refresco, o de una autorización que lleve uno
++       RFC 6749 §6. Toma el token de refresco como `Text`, o una `Authorization`, de la que se
++       usa el token `#refresh`; una autorización sin token de refresco lanza
++       `OAuth.Error.Reason.Unauthorized` sin contactar con el servidor.
++   entry #exchangeCode   canjea un código de autorización por una autorización, con el verificador PKCE si se usó uno
++       RFC 6749 §4.1.3. Envía por POST el `code` que el usuario trajo de vuelta a `#redirect`
++       con la URI de redirección y, cuando se pasa un `Pkce`, su verificador (RFC 7636), que debe
++       ser el mismo `Pkce` cuyo desafío entró en `#authorizationUrl`. Lanza
++       `OAuth.Error.Reason.Misconfigured` si el emisor no tiene `#redirect`.
+
+% 2 1 0 0750544c4bbe40f907c5c0630e3b4c0e
+
+% 3 1 0 10047aef2c6aa86a0c8196e24c878e2c
+
+% 4 1 0 1dc85a92d118bdbd149725f08618a509
+
+% 5 1 0 06df080eafc293f8168183daa1308882
+
+% 6 1 0 10788a84a957529d077b1132653d1d4f
+
+% 7 1 0 09c12d0cc729f77615a1b696048c25b6
+
+% 8 1 0 0914fc4ad2eb75bc0fb48d186ec3e603
+
+% 9 1 0 187a83bb863700400f5edb5ec0c064c2
+
+% 0 1 0 14553023822ab90200e816883dce4520
+
+% 0 1 0 12a8585248528fdc12ccb4465679965e
+
+% 1 1 0 196a6dd84ff095781b0e0f5c6004c132
+
+% 2 1 0 0575b988b8b587290405f82ea29ce1d2
+
+% 0 1 0 1f56841d2f818c8e1d2d9ecc4fc8ec12
+
+% 0 1 0 00d02a436c1b23880fa7c0c04bd31a9a
+
+% 1 1 0 10cfb33ba7c3b0d30865e6986641d861
+
+@ 0 1 0 13d61773e754120d0e45a6381312c515
++   entry #authorizationUrl   la URL a la que se envía a un usuario para que autorice al cliente en algunos ámbitos
+
+% 1 1 0 1e421b0c1b1ab32b05d4dc6afa441db5
+
+@ 0 6 0 18dcd33a139a27fa1e35472568a46903
++         RFC 6749 §4.1.1. La URL es `#init` con `client_id`, `redirect_uri`,
++         `response_type=code`, el `state` (que la redirección de vuelta debe repetir, y que la
++         aplicación debería comprobar), los ámbitos separados por espacios y, cuando se pasa un
++         `Pkce`, su desafío `S256`. No hace ninguna petición, así que solo necesita una
++         `Tactic[OAuth.Error]`, lanzada como `Misconfigured` si el emisor no tiene `#init` o no
++         tiene `#redirect`.
+
+% 2 1 0 18053541d6dc537d1a4c43e53c1b645a
+
+% 0 1 0 123d1ed729de38951af8cf78f70c9ac3
+
+% 1 1 0 04434deff290ddbe1150d570d1351e40
+
+% 2 1 0 13a1c78a47b7cd1703535dee880a5dce
+
+% 3 1 0 0788b74dc9d8e36706d9547b1e534e6e
+
+% 5 1 0 021c2bafb1e224770c9fb6f7d7422564
+
+% 6 1 0 12c7bb00a6c210011c64ed1bcf994702
+
+% 7 1 0 1f92cd918057d288014d9660f19ff3aa
+
+% 0 1 0 1fbe797b5df36a7914bd0eabefb7e69f
+
+% 0 1 0 0fabb5894eb681010a9d7419f99de3a9
+
+% 0 1 0 1280ddcea51a0b34052d7d17c62b2d36
+
+% 0 1 0 1ebe0c450111dc8605a8cc5e90ca4892
+
+% 0 1 0 18ead57db34ade9e08958ad63ce34d46
+
+% 1 1 0 0eb7ff394820065c14adc3ba2c577dc0
+
+% 2 1 0 18667c3a22193bb1167b29a4ded3a24e
+
+% 3 1 0 0e49c2f05afd4d1302f2004a35baa1db
+
+% 5 1 0 1036213858d150d5137f017a2dbde943
+
+% 6 1 0 090821da4bde620c1b5b37748ee03c12
+
+% 7 1 0 1112a8113879bd7b17e7b01ae74ce183
+
+% 0 1 0 0c1ae2afedb6e7e6181cd899aa796cdd
+
+% 0 1 0 199a5582bb8935bd1984f9c6ae556bc0
+
+% 0 1 0 116c16312771e0240c987edd1b807075
+
+% 0 1 0 1db1f47f29f28e85093b82a89df7daa0
+
+% 1 1 0 0b6715475c0a335816084575aceb69e1
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 1 0 10b4fb47411a50670149245650f8de3c
++ entry .Authorization   un token de acceso y lo que concede: sus ámbitos, su caducidad y un token de refresco
+
+% 1 1 0 180a07556b6ff802016c542048167366
+
+@ 0 4 0 004da2ad59cf22af1767a5b591c562bc
++       Lo que concede una respuesta de token (RFC 6749 §5.1): el propio token de acceso, `#key`;
++       los `#scopes` concedidos; el instante `#expiry`; y el token `#refresh`, si se emitió uno.
++       Toda concesión de `Issuer` devuelve una, y `.parse` lee una del JSON de una respuesta de
++       token.
+
+@ 0 2 0 104b1dcb81a1bc22175edf6db3b9c72b
++       Una `Authorization` se pasa directamente como la cabecera `authorization` de una petición
++       HTTP, mediante la directiva `.authorization` del objeto compañero, representada como
++       `Bearer <key>`:
+
+% 2 1 0 16c98cd02bf418ee02b6cdcbab08113e
+
+% 3 1 0 0b1967de0d9bedea0f113cf167e843b8
+
+% 4 1 0 0b31c55fbfbc541205e31198553ce287
+
+% 5 1 0 16b8d49a2a7041e21a16e57e3c07acf0
+
+% 6 1 0 133284c21b9ff525103482baf3facdb9
+
+% 7 1 0 058d3d6cb26488ee1c26df87b7080df3
+
+% 8 1 0 008dfeedf244e7d6036a5c84f83b3df5
+
+% 9 1 0 1c512ff4f1c59259160e8289862fef8b
+
+% 11 1 0 1dc11f4614e2c9871c6239668ae403db
+
+% 0 1 0 06e54a029757e90e04c4c6b0c4cff5d3
+
+% 0 1 0 1638c674dcdee56b0413798be1f93e9a
+
+% 0 1 0 0095950e4e5bd30702ac27d81e21f61f
+
+% 1 1 0 1750e300d67aa009082828dd36dde9fc
+
+@ 0 4 0 15376b281554b17018b8e3a13a6dfa23
++       Se considera que un token cuya respuesta no nombró ningún ámbito concede exactamente los
++       solicitados, como establece el RFC 6749 §5.1, así que `#grants` es `true` para cualquier
++       ámbito cuando `#scopes` está vacío. `Authorization of scope`, un refinamiento de su
++       `Topic`, es una autorización de la que se sabe que concede un `OAuth.Scope`:
++       `OAuth.Scope#apply` e `Issuer#require` producen una.
+
+% 1 1 0 00c0a729596cb210104e1c79bda255a8
+
+% 1 1 0 0ea07c735d9970b10596a3100a25b0b1
+
+@ 0 8 0 0a8c3dbb12064e8d161251eecbb272e7
++   entry .authorization   establece la cabecera `authorization` de una petición a partir de una `Authorization`, como `Bearer <key>`
++       La `Directive` de telekinesis para el argumento con nombre `authorization` de `fetch` y
++       `submit`, en el objeto compañero y, por tanto, en el ámbito implícito.
++   entry .parse   lee una `Authorization` del JSON de una respuesta de token
++       Lee `access_token` (obligatorio), `scope` (dividido por los espacios; su ausencia
++       significa `Nil`), `expires_in` (segundos, convertidos en un instante en milisegundos a
++       partir de ahora) y `refresh_token`. Una respuesta sin `access_token` lanza
++       `OAuth.Error.Reason.InvalidJsonResponse` mediante la `Tactic[OAuth.Error]` del ámbito.
+
+% 2 1 0 088a9b3f5241c3c40ce0f6de81fea848
+
+% 3 1 0 0f3de1c55d33154101f819ea34dd9db0
+
+% 2 1 0 05289edb060c21cd1a54990b4ca41682
+
+% 0 1 0 1d16117ceee3ba3103a7407dd81b4659
+
+% 0 1 0 0c1b62df80cac97506160cba33c68411
+
+% 1 1 0 0266163238997e6f0fe769d7b64f0938
+
+@ 0 9 0 1d5afec8e04a40150bc46e0943bf892f
++   entry #key   el propio token de acceso
++   entry #scopes   los ámbitos concedidos, o `Nil` si la respuesta no los nombró
++   entry #expiry   cuándo caduca el token, en milisegundos desde la época, o `Unset` si no se indicó ninguna duración
++   entry #refresh   el token de refresco, o `Unset` si no se emitió ninguno
++   entry #bearer   el token como un `Auth.Bearer`, tal como lo lleva la cabecera `Authorization`
++   entry #expired   si ha pasado la caducidad del token; un token sin duración indicada nunca caduca
++   entry #grants   si el token concede todos y cada uno de los ámbitos dados
++       `true` cuando `#scopes` los contiene todos, y también siempre que `#scopes` está vacío,
++       ya que una respuesta que no nombró ningún ámbito concedió los solicitados.
+
+@ 0 1 0 1dc94144b34131e50f09be0add210edd
++ entry .Pkce   Proof Key for Code Exchange: un verificador que guarda el cliente y el desafío que envía
+
+% 1 1 0 1b2c587fa6083353045af287faf8adc0
+
+@ 0 5 0 0eb6428441c4ceb71b73cfe1732f9896
++       RFC 7636. Un `Pkce` guarda un `#verifier` aleatorio; su `#challenge`, el resumen SHA-256
++       del verificador en base 64 apta para URL y sin relleno, va con
++       `Issuer#authorizationUrl`, y el verificador con `Issuer#exchangeCode`, de modo que un
++       código de autorización interceptado en su camino de vuelta no puede canjearlo nadie que
++       no tenga el verificador. Un cliente público —uno sin secreto, como una herramienta de
++       línea de órdenes o una aplicación móvil— debería usar siempre uno.
+
+% 2 1 0 11dae3c1c3caa5f71d403cc2f13948e4
+
+% 3 1 0 122e1e7c9b93300e04745f475a3152db
+
+% 2 1 0 029534b07daaf09a17b373cd4fe4c029
+
+% 0 1 0 0957b4df668f633e073b13dfea6e680f
+
+% 0 1 0 04dad05698c8e5a71e594b4e16e3ffde
+
+% 0 1 0 020005680f2e595b198aa145672d747a
+
+% 1 1 0 1767c1b9484e401c097f2e6fc8b029ef
+
+@ 0 1 0 0090c810810a7d7f07a57153eb26d575
++       Debe conservarse el mismo `Pkce` entre los dos pasos del flujo.
+
+% 1 1 0 0eaa584336d6445f17f2cd0ddc134329
+
+@ 0 3 0 0a09eaaade91e62506c44ed2d52a943d
++   entry .apply   un verificador nuevo: 32 octetos de un `SecureRandom`, como 43 caracteres aptos para URL
++   entry #verifier   el secreto que guarda el cliente y envía al canjear el código
++   entry #challenge   el desafío `S256` enviado con la petición de autorización: el SHA-256 del verificador, en base 64 apta para URL
+
+@ 0 1 0 174e9bf786dcc001046adbc44b487f71
++ entry .Credential   una credencial para un esquema de seguridad con nombre, como `("name" is Credential to Result)`
+
+% 1 1 0 06c168de6abdeca2112610c65bdaa314
+
+@ 0 6 0 004abf498b922a0c06475a8d638eb944
++       Una clase de tipos indexada por el nombre que la especificación de una API da a un
++       esquema de seguridad, cuyo `Result` es el valor que pide el esquema: `Text` para una clave
++       de API, `Auth` para la autenticación HTTP, `Authorization` para un token OAuth 2. Un
++       cliente que lee la especificación —el `Api` de apoplexy— encuentra por nombre la
++       credencial para cada esquema que requiere una operación, comprueba que su resultado
++       encaja con la clase del esquema y la presenta como dicta el esquema: una cabecera, un
++       parámetro de consulta o una cookie.
+
+% 2 1 0 19907ae1cfabfc4017cdcb22e0ba25b4
+
+% 3 1 0 0edb249fd87addb40da239fda7bea1ac
+
+% 4 1 0 003a4507e6265a201152ef572f8ce96f
+
+% 5 1 0 1e2a585dc2b2246f12c8cb09e39872d1
+
+% 6 1 0 11b86634d303d6431708c13035862aec
+
+% 7 1 0 0e7b0b0ce750ba210ae870c9e2f4480c
+
+% 8 1 0 1f286ad36d10fea00e04275e12d15183
+
+% 9 1 0 19af10c03a01209a050666cef64be4f0
+
+% 11 1 0 1ccd7cf5ed17438d1f5eb072808343c8
+
+% 0 1 0 19ca3b8e88405e561c89ec5cb7ae6303
+
+% 0 1 0 060c5e8ecc27dc4e0497228de449fa0a
+
+% 1 1 0 06aa324dadf0f8d70f09a88dc15ca906
+
+@ 0 4 0 0b1a1cbb96f2bc890b62a20d59175413
++       Pon nombre a estos givens: dos givens anónimos de distintos tipos de credencial en un
++       mismo ámbito se sintetizan con el mismo nombre y colisionan. Una credencial se indexa solo
++       por el nombre del esquema, así que a dos especificaciones que usan el mismo nombre para
++       esquemas distintos hay que darles sus credenciales en ámbitos separados.
+
+% 1 1 0 04a5cf384e6e085f167150faf0bc0e20
+
+@ 0 1 0 08d15d67279c26511961bff50cb9f7f5
++   entry .Bound   la credencial que crea `Credential(value)`, para un nombre de esquema y un tipo de resultado
+
+% 1 1 0 1d30c51fa74a69280a80da8bfd1e9cb1
+
+@ 0 7 0 192356f97f4a4c7f0c5072950b101152
++         Una `Credential` cuyo `Self` es el nombre del esquema y cuyo `Result` es el tipo del
++         valor; escrita como `"name" is Credential to Result`, es lo que refina el tipo declarado
++         de un given.
++     entry #value   el valor de la credencial
++   entry .apply   crea una credencial a partir de su valor, para el nombre de esquema que da el tipo esperado
++   entry #Self   el nombre del esquema, como un tipo `Label` literal
++   entry #value   el valor que presenta el esquema: una clave, un `Auth` o una `Authorization`
+
+@ 0 1 0 052784827b6f4c750b2deb0aee70f766
++ entry .OAuth   el hogar de `OAuth.Error`, lanzado siempre que falla un intercambio OAuth
+
+% 1 1 0 02f43bbbfa3334c01cd73bf6fde8669b
+
+@ 0 2 0 123e3e981fbb269b0eede797692d8c43
++       Un objeto que contiene `OAuth.Error` y sus motivos.
++   entry .Error   se lanza cuando falla una concesión, una comprobación o una redirección de OAuth 2
+
+% 1 1 0 13a6180fceacb291066f3db7ead38ed6
+
+@ 0 5 0 0fb0bd1851d300ff133df696cee21850
++         Error `↯/s.117.1`: _OAuth failed because `reason`_, donde el segundo número es el del
++         motivo. Lo lanzan todas las concesiones de `Issuer`, `Authorization.parse`,
++         `Scope#apply` y el middleware de servidor, cada uno mediante la `Tactic[OAuth.Error]`
++         del ámbito; los fallos de red, de análisis y de estado HTTP se mitigan todos en él, de
++         modo que quien llama gestiona un único tipo de error.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 1 1 0 11621829530a7bef0191b6af5796467c
+
+% 2 1 0 12e155153954ac4514590ff8b945257a
+
+% 0 1 0 0c42a55ccb08f5cf0a4ae6e95b479614
+
+% 0 1 0 0944683fce54906b02dfa2a34fde444b
+
+% 1 1 0 0108c14a41d4ee91078cc8f1dcc87479
+
+@ 0 1 0 0b492a70d0194528013027793c453a9d
++     entry .Reason   por qué falló un intercambio OAuth, numerado como la segunda parte del error `↯/s.117.1`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 1e1f3ac0ec52780208cbe809db0ef90e
++           Un given `Reason is Communicable` en el objeto compañero representa cada caso:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  Caso
++           column  Código
++           column  Mensaje
++           column  Nota
+
+% 0 1 0 1881500ebfb4446d1ab45c716f56c980
+
+% 0 1 0 1869915bb36c149c0d5af9d5333daa05
+
+% 0 1 0 12975bb2d8fcac4717d206da09dae6b4
+
+% 0 1 0 003344d95e70f45a0a0ddad0d457a71b
+
+@ 0 3 0 111913eb7e104a6400383859748bc942
++           row  `Unauthorized`  5  _authorization was not granted_  un `400` o un `401` del endpoint de tokens
++           row  `Other`  6  _an unexpected error occurred_  lo lanza el middleware de servidor ante una redirección mal formada o falsificada
++           row  `Misconfigured(detail)`  7  _the issuer is not configured for this: `detail`_  a un `Issuer` le falta un endpoint que necesita un flujo
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 2 0 049cc7bd8a0c128400d3c2261099c569
++       entry #number   el número del motivo, la segunda parte del código del error
++     entry #reason   por qué falló el intercambio, como un `OAuth.Error.Reason`
+
+@ 0 1 0 08774685f3804e841230e959bf345bc3
++   entry .Scope   un conjunto con nombre de ámbitos OAuth, que comprueba que una autorización los concede
+
+% 1 1 0 013d624680f81ad4035b5c2c37299956
+
+@ 0 4 0 15e6a438006db6b40acb289c0cdf1ae8
++         Un `Scope(t"read", t"write")` nombra los ámbitos que necesita una operación. Aplicado
++         con `()`, comprueba el given `Authorization of …` del ámbito y lo devuelve refinado como
++         `Authorization of scope.type`, de modo que solo puede llegarse al código que exige ese
++         refinamiento una vez superada la comprobación. Cada ámbito que falta se lanza como
+
+% 0 1 0 16dbe110d8db18e01deac79feb71c737
+
+@ 0 2 0 0406b264e32b142b1cf5616bc0afad22
++         `Issuer#require(read, write)` proporciona una `Authorization of (read.type | write.type)`
++         sin comprobar sus ámbitos; dentro de él, `read()` comprueba y estrecha a
+
+% 0 1 0 1964decb8451af6506ec564b9a7b3761
+
+% 2 1 0 0bf556b5018895fa064354b784578b24
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 1 1 0 1c42636a507cbf0f1903c90f073389c7
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 2 1 0 0fa4331ff26c2bb01f9015f6cb3acddb
+
+% 0 1 0 0a2e252fedb67daa153c82ae9a1e2c86
+
+% 0 1 0 1cc3b0e519c77d4c1c98c05c46dfe672
+
+% 0 1 0 11c9bebfc36e60100ad26ca940377eed
+
+% 0 1 0 1167ae80dd1487041cb28f1d39986ec3
+
+% 0 1 0 198172c020503794161b839e3460d5b3
+
+% 0 1 0 0009852ba1352e680b0dda3f1914aaa3
+
+% 0 1 0 1d2917d69617015e1d4ed9bae5c5535d
+
+% 0 1 0 0f377285715242ef1ac41e4b0c6e6255
+
+% 0 1 0 05c01662bdd3486e04036fd869e22c3f
+
+% 0 1 0 19fbe81acea05dd409366f2365ff4247
+
+% 0 1 0 0461430f9419630f07caa3e055dde03b
+
+% 0 1 0 1fd1092a104834ac029512b13293a33e
+
+% 0 1 0 1159f4e300e2724419f3ccab05de218e
+
+% 1 1 0 04d0de7fcfdcc5bb1b2395cb8d9ee058
+
+@ 0 2 0 03d125f327e8faa503fe5e8103dd3e34
++         Un ámbito debería ser un valor estable (un `val` o un `object`), ya que su tipo singleton
++         es lo que registra el refinamiento; `Issuer#require` toma los ámbitos de esta forma.
+
+% 0 1 0 063c7b051ef588fa029dd62c6b373f04
+
+% 0 1 0 0afff5109fb161db1717d4d76125d49d
+
+@ 0 8 0 065cc3639cc811bb1eedbb1f930d70c9
++     entry #names   los nombres de los ámbitos, tal como los escribe el emisor
++     entry #apply   comprueba que la autorización dada concede todos los ámbitos, y la devuelve refinada a este ámbito
++         Necesita una `Authorization of (? >: this.type)` en el ámbito —una autorización refinada a
++         este ámbito o a una unión que lo incluya, como la que proporciona `Issuer#require`; una
++         `Authorization` simple no lo es— y lanza `OAuth.Error.Reason.InsufficientPrivileges(name)`
++         por cada nombre que no concede. A diferencia de `Authorization#grants`, una autorización
++         sin ámbitos nombrados no supera la comprobación.
++     entry #Check   el tipo de una autorización que este ámbito puede comprobar: `Authorization of (? >: this.type)`
+
+@ 0 1 0 0249d91231d4eead00bea2754d2bb1f9
++ entry .Authorizations   el almacén de una aplicación web con el estado del flujo de código de autorización de cada sesión
+
+% 1 1 0 131845271d8ecd761b387631cf3511b7
+
+@ 0 3 0 1a0a64f4b15431ba124436654b81ba3c
++       El almacén en el que `Issuer#oauth` e `Issuer#require` guardan el
++       `Authorizations.State` de cada `Session`, en `orthodoxy.server`. Es un mapa seguro para
++       hilos guardado en memoria, así que se pierde cuando se reinicia el servidor, y se da una
++       sola vez para la aplicación:
+
+% 2 1 0 045d6dacba85e4440f027041fee18e8c
+
+% 3 1 0 0ca73747caeba23f0618ad5ce44833c8
+
+% 4 1 0 145398bbd0e02b851daec42bfbb47c0d
+
+% 5 1 0 1eac32ae14f5143d1afc9a13cde8e80b
+
+% 2 1 0 16741b6d111510da1840540166c23ca6
+
+% 1 1 0 04ba13638932df5d11deace97a265f96
+
+% 1 1 0 1c06eea503a1163c09b88b39347d1324
+
+% 1 1 0 11ed783a358ac0a71dde6011a53c868d
+
+@ 0 1 0 1bb1d63cd56ec86e15ea071a0d6a7ff2
++   entry .State   el punto del flujo en que está una sesión: adónde iba el usuario, el `state` que comprobar, el token
+
+% 1 1 0 0317e9ff34cfbc001b8c478a1ef0d11a
+
+@ 0 8 0 176a7e7702fce5ea097c24928c2530d7
++         Lo crea `Issuer#require` cuando envía a un usuario al emisor, y lo completa
++         `Issuer#oauth` cuando el usuario vuelve con un código.
++     entry #redirect   la ruta que pidió el usuario, a la que se le devuelve una vez autorizado
++     entry #uuid   el `state` aleatorio que debe repetir la redirección de vuelta desde el emisor
++     entry #access   la autorización de la sesión una vez concedida, o `Unset` mientras el flujo está en curso
++     entry #expired   si la autorización guardada ha caducado; `false` mientras no hay ninguna
++   entry #update   registra el estado de una sesión, como `store(session) = state`
++   entry #apply   el estado registrado para una sesión, o `Unset`
+
+@ 0 1 0 1b38a5856b595e5514315d126129bc5a
++ entry .oauth   middleware de scintillate que completa el flujo de código de autorización en la redirección del emisor
+
+% 1 1 0 0617fcafdf6a478b140301220d632b9b
+
+@ 0 7 0 09fb24fd6a5e7a0719c46281391695f2
++       Una extensión sobre `Issuer`, en `orthodoxy.server`. `issuer.oauth { … }` envuelve un
++       manejador de peticiones: una petición a cualquier ruta salvo el `#redirect` del emisor
++       ejecuta el manejador, con un `Issuer.Context of issuer.type` en el ámbito para
++       `require`. Una petición a la ruta de redirección es el usuario que vuelve del emisor: su
++       parámetro `state` se comprueba contra el `Authorizations.State` de la sesión, su `code`
++       se canjea por una autorización (o, si la sesión guarda una caducada con un token de
++       refresco, esta se refresca en su lugar), el resultado se almacena y se redirige al
++       usuario a la ruta que pidió en primer lugar.
+
+% 2 1 0 1f0dbe991b8323371ce8f3d07639148a
+
+% 3 1 0 070f41116fed8bf61d65df10b60b8459
+
+% 4 1 0 1a8166bfc58e7cbe01c923a4b15f7939
+
+% 5 1 0 1faafe0c0477d44b1b2a873f00b38419
+
+% 6 1 0 135ee012adc054ad11c80401485fac0d
+
+% 7 1 0 1e83d4854c880b77185ca809f0d8392b
+
+% 8 1 0 1d8cd3643bf0f20f1ee0b445f3819867
+
+% 10 1 0 168bd2f88608093b11be4271b60656f2
+
+% 12 1 0 0c420a2a0ae4fdba1b3ef666f333a23b
+
+% 13 1 0 073067508ea657540ac57dd0850ee976
+
+% 14 1 0 088ed2d874e90e1b17553f754990a24f
+
+% 16 1 0 07749bcc44d21d57028252a5c3005f3f
+
+% 18 1 0 1f453b519baa759a01298665faec3682
+
+% 19 1 0 05002cb5762cba2700e53ba1826e79d1
+
+% 20 1 0 018e6e6250fc94441a4781f390a3b1ad
+
+% 21 1 0 129d396da87bce3112ed77699e274ddc
+
+% 22 1 0 06957bb7adee143913ffe98a9f61242d
+
+@ 0 6 0 0707762bb4d0224911796aec89c5950e
++       Necesita la `Http.Request`, un token `Online`, un `Http.Event is Loggable`, el almacén
++       `Authorizations`, la `Session` de la petición y una `Tactic[OAuth.Error]`. Un `state`
++       que no coincide se lanza como `OAuth.Error.Reason.Other`, igual que una redirección mal
++       formada; un emisor sin `#redirect` lanza `Misconfigured`. La petición de token se hace con
++       el backend `java.net.http` sea cual sea el backend HTTP del ámbito. Una redirección para
++       una sesión sin estado registrado ejecuta el manejador.
+
+% 1 1 0 0000557fa95824111f3fa664d2278bc6
+
+% 0 1 0 152b3ac04a44804b1b92767faa87e46b
+
+@ 0 1 0 05e393a2a864e4ab013f1f028d6b4272
++ entry .require   middleware de scintillate que envía al emisor a un usuario sin autorización
+
+% 1 1 0 0abcafa3dd538a88157daf0e213aa44d
+
+@ 0 6 0 09366aa8b17acaf3040f99248fe81993
++       Una extensión sobre `Issuer`, en `orthodoxy.server`, usada dentro del `oauth` del mismo
++       emisor (requiere un `Issuer.Context of issuer.type`). `issuer.require(scopes*) { … }`
++       ejecuta el manejador con una `Authorization of scope` en el ámbito cuando la sesión ya
++       guarda una autorización; si no, registra un `Authorizations.State` para la ruta de la
++       petición y responde con una redirección a `Issuer#authorizationUrl`, pidiendo los nombres
++       de todos los ámbitos, con el UUID del estado como `state`.
+
+% 2 1 0 0102a0b059f3f3660c2d897c0ecba771
+
+% 3 1 0 052022fd8ebd8c8b16e55c7ad12be2b1
+
+% 4 1 0 16ccd5296142688400c267a87cfb25ff
+
+% 5 1 0 15956cfa6a78ea6e1695d4bb0462a777
+
+% 6 1 0 106e29469c821a44145246735f0f6145
+
+% 7 1 0 1755e8c1f98c7a851411d1c360a930d7
+
+% 8 1 0 18fa0e3a207934651fc2fd0a228c26e4
+
+% 10 1 0 135b4dd1977adae50461e8b8ad326b52
+
+% 12 1 0 060c72aa124faef60f35dd9bc401e0be
+
+% 13 1 0 1f9eaf79ac51c73019fe5be4100d9dfd
+
+% 14 1 0 1851036f98c2491c18391536b981ec9c
+
+% 16 1 0 1937e5f744938dbb035961f95487b540
+
+% 18 1 0 1ca3b7efa64e9f7c17c7492bc6dbfbfc
+
+% 19 1 0 0110a16015c57ac708ae1fa5759518a2
+
+% 20 1 0 0057f9d839cfbf010be8efa9768a9ed0
+
+% 21 1 0 1c7864e26e824c6e0f451773442eb6d1
+
+% 22 1 0 0b158536e19633071264288eff270492
+
+@ 0 4 0 0c3a628d1684210914c82b48ecafccca
++       Los ámbitos deben ser valores estables, como `val`s, ya que sus tipos singleton refinan
++       la autorización. La autorización guardada se refina a los ámbitos sin comprobarlos contra
++       sus `#scopes`; un manejador que necesite estar seguro llama a `OAuth.Scope#apply`. No se
++       envía ningún desafío PKCE.
+
+% 1 1 0 1d68a2431267a0d21c6affe0cfb714f9
+
+% 1 1 0 05b492bd366ca3790f38a0a3b7434545

@@ -1,0 +1,78 @@
+orthant 2 language
+
+% 0 1 0 1dd3ff184458127015ae1ccf3652f901
+
+@ 0 1 0 124ac3af023a355109edffee6244bdfb
++ Enigmatic が暗号化されたデータをデコードできないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 0129e0129ab5b46d1d2bf8b64b5f4687
++ 暗号プリミティブ（暗号方式、署名、MAC）が入力を拒否した。
++ コンストラクターは操作が失敗した理由を示す `reason: Reason` を受け取り、描画されるメッセージは `could not decode the encrypted data because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 12f19e8f03c14d4308be60932eed2510
+
+@ 0 3 0 1fbb23f06adec7d61c68f6492c06516f
++ パディングのバイトが暗号方式の期待に一致しなかった。典型的には、暗号文が壊れていたか、誤った鍵が与えられたためである（AEAD モードでの認証タグの不一致）。
+
+@ 0 1 0 1739d6e19df659901ee93e8aa56a6fe8
++ **例。** `[↯/s.105.2.1] could not decode the encrypted data because the ciphertext was corrupted or the key was wrong`
+
+@ 0 3 0 18d6ff2039ddebc11ab7da7730df6f92
++ **解決方法。** 鍵と IV が暗号化の時点で使われたものと一致することを確かめる。暗号文が途中で切れたり、転送中に改変されたりしていないことを検証する。
+
+% 0 1 0 0d5d3bc275d259271bdf4903a900601c
+
+@ 0 2 0 1ac8b0e57b4d7c25191149a0a958fd31
++ 入力の長さが暗号方式のブロックサイズの倍数でなかったか、その他の点で暗号方式のフレーミングと両立しなかった。
+
+@ 0 1 0 030998a246c79ec119f4b4a064e2d636
++ **例。** `[↯/s.105.2.2] could not decode the encrypted data because the input length was not valid for the cipher`
+
+@ 0 2 0 0e8bd28c57ce4caa1e9b80596ea98e3c
++ **解決方法。** 暗号文が完全であり、今それを復号に使っているのと同じ暗号方式とモードで生成されたことを検証する。
+
+% 0 1 0 169cce07803a4a17033792e518b82d17
+
+@ 0 2 0 0b0ab3f02879e1040067b20d58e980e5
++ 鍵のバイトが暗号方式に拒否された。大きさの誤り、不正な形式、またはサポートされないパラメーターである。
+
+@ 0 1 0 03b840945e05f4b2096b23d229a9cc4b
++ **例。** `[↯/s.105.2.3] could not decode the encrypted data because the key was not valid for the cipher`
+
+@ 0 2 0 0b7b6a6cc3122a1d1dfc629e8c43fdb6
++ **解決方法。** 鍵が同じ暗号方式とパラメーターの組のために生成されたことを確かめる。
+
+% 0 1 0 1f2c73535fe27d980bfea5daeed9b614
+
+@ 0 2 0 08d33c41a5ad27c505463e0f89a77113
++ 要求されたアルゴリズムまたはモードが、JVM に構成されたプロバイダーで利用できない。
+
+@ 0 1 0 01e72f0b9cfa5e7a1c0c2ff08284276a
++ **例。** `[↯/s.105.2.4] could not decode the encrypted data because the algorithm was not available`
+
+@ 0 2 0 0bc734f8dee0286d18fec3497ebb67d8
++ **解決方法。** そのアルゴリズムをサポートする JCA プロバイダーをインストールするか有効にする。`java.security` のポリシーを確認する。
+
+% 0 1 0 051a0972608a20a409b0c698aa7c2c98
+
+@ 0 2 0 08baa998e193943a0fa1d4eef46d2047
++ 暗号方式の実装がデータのバッファを読み書きできなかった。典型的には低レベルの I/O の障害である。
+
+@ 0 1 0 1a6338eabe0ee4f5026a09eea17d4598
++ **例。** `[↯/s.105.2.5] could not decode the encrypted data because data could not be read or written`
+
+@ 0 1 0 050f887854411c1313d244ed279d6f20
++ **解決方法。** 原因の連鎖を調べ、根底にある I/O エラーを確認する。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 2 0 0388722c1a8ac94308aa18340e8189b1
++ - ソース：`lib/enigmatic/src/core/enigmatic.Crypto.scala`
++ - `↯/s.105.1` — `PemError`。PEM でエンコードされた鍵をパースできないときに発生する

@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 12d037822589f5ee15bdf784733d0a88
++ # `↯/s.73.1` — Littéral horaire : heure supérieure à 12
+
+@ 0 2 0 06ff666557006ac0060badec88a23c6c
++ Levée par la macro `validTime` d'Aviation lorsqu'une valeur d'heure dépasse 12.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 135a7ab27643386e0c6266e14b970335
++ La syntaxe des littéraux horaires utilise la notation sur 12 heures, précisée par `am`/`pm`. Les
++ heures supérieures à 12 ne peuvent pas être encodées.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 09534c78cbdda680157e04d1edc983c6
+
+% 1 1 0 1f3d867ea85daee60a81bac871ed1349
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 1 0 1c128411eb3e53851e032212a6cd9a9b
++ Utilisez une heure comprise entre 0 et 12 ; précisez `am`/`pm` pour lever l'ambiguïté.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 134e7c69bc3b1f9c187f8ba40d928c64
++ - Les autres erreurs de littéraux horaires : [Familles](README.md#families)
++ - Source : `lib/aviation/src/core/aviation.internal.scala`

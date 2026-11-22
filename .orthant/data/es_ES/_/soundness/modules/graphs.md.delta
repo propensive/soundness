@@ -1,0 +1,671 @@
+orthant 2 language
+
+@ 0 1 0 0db11e361ecfb780193880efdb176490
++ ## Grafos
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 3 0 142ea03aef24e7521f39492960b671e3
++ Un [grafo acíclico dirigido](https://en.wikipedia.org/wiki/Directed_acyclic_graph) es un conjunto
++ de nodos con dependencias entre ellos, y sin ciclos. Los sistemas de compilación, las
++ planificaciones de tareas, las jerarquías de tipos y las dependencias entre paquetes tienen todos
++ esta forma.
+
+@ 0 3 0 0fac6abb934883350d309b5e8fbacd2a
++ Un `Dag` representa uno como un valor [inmutable]. Tiene las operaciones que necesitan
++ estos grafos: ordenación topológica, alcanzabilidad, cierre y reducción transitivos, y una edición
++ que mantiene el grafo acíclico. Junto a él hay otros dos tipos de grafo:
+
+% 2 1 0 14676e7eaa22a2640cd8deff7576bc72
+
+@ 0 8 0 18181333e10a8c8518d5b289a10fe7e0
++ column  Tipo
++ column  Ciclos
++ column  Edición
++ column  Adecuado para
++ row  `Dag`  nunca  devuelve un valor nuevo  estructuras de dependencias como valores
++ row  `Digraph`  permitidos  devuelve un valor nuevo  grafos que pueden contener un ciclo
++ row  `Topology[node]^`  nunca  en el sitio  grafos construidos arista a arista
++ row  `Topology[node]^{}`  nunca  ninguna: congelado  grafos construidos una vez y consultados a menudo
+
+% 1 1 0 09c0b1a3ba0916e60ed94314bf6159c6
+
+@ 0 3 0 06d623cc725135b310e941b1d3ad8dd4
++ Todos ellos comparten un mismo vocabulario mediante la [clase de tipos] `Nodal`, así que las
++ mismas operaciones se aplican a cada uno. Lo mismo ocurre con cualquier otra cosa que tenga forma
++ de grafo, como un diagrama de `Hasse` o un `Map` de nodos a sus sucesores.
+
+@ 0 1 0 0febb7b2b0598d1c1c1ed9ac3743ed89
++ ### Sobre los grafos acíclicos
+
+@ 0 4 0 03eb06479f99d1e31c2fd36095c658bb
++ Las estructuras de dependencias tienen las mismas necesidades dondequiera que aparecen: un orden
++ en el que procesar los nodos, el conjunto al que puede llegar un cambio, la eliminación de las
++ aristas redundantes. Una biblioteca de grafos de propósito general carga con el peso de los grafos
++ arbitrarios, ciclos incluidos. Más a menudo, un proyecto escribe su propia ordenación topológica
++ sobre un `Map` y hereda sus casos límite.
+
+@ 0 3 0 0760ec8e196056e404674330b170219e
++ Un `Dag` no puede construirse con un ciclo. Un grafo de dependencias cíclico es un
++ [estado imposible](../../philosophy/impossible-states.md), descartado allí donde se construye el
++ grafo, y por eso el orden topológico de un `Dag` no tiene manera de fallar.
+
+@ 0 2 0 0c26df5b8b3d470c1f38facb32778ec4
++ Todo procede del paquete `soundness`. Las demás importaciones eligen una
++ [estrategia](errors.md#choosing-a-strategy) para los errores y permiten que los ejemplos impriman
++ sus resultados:
+
+% 2 1 0 0dc8d61cebb007ec1bd8f7a2dab9a5cc
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 061f46f1715a4dd90ed41003438e268c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0fbb43597bc82a6f1d1fc978bc7de373
++ ### Construir un grafo
+
+@ 0 1 0 0c79d0e06b1264a31c0fc0f417904c05
++ Un `Dag` se construye a partir de nodos con sus conjuntos de dependencias:
+
+% 2 1 0 0b53817581aa591d1691675594d712ab
+
+% 0 1 0 06ffbdda74577fad1774face099d59fa
+
+% 1 1 0 0aab111e59061af306b815374f31c8de
+
+@ 0 2 0 194a67481f1397be0d637e6e0fcaa50b
++ Una arista `a -> b` significa que `a` depende de `b`. Un `Dag` también se construye solo a partir
++ de aristas, y los dos extremos de cada arista se convierten en nodos:
+
+% 2 1 0 169c7eafab0c5df4060c0bac36bcf2ae
+
+% 0 1 0 11b3a0a8507857f506ab4f6010e80929
+
+% 1 1 0 08e7c5d5193296bc0b42de5fbaee9df9
+
+@ 0 1 0 19e0de46f186cf7404e70a7072479cb3
++ Una tercera forma recibe un conjunto de nodos y una función que da las dependencias de cada uno.
+
+@ 0 1 0 1b42263e816b24181afd2ff0e40d7530
++ Cada una de ellas comprueba si hay un ciclo, y lanza un `Dag.Error` si encuentra uno:
+
+% 2 1 0 0bbe4c4c226f698d0be176846fc224e2
+
+% 3 1 0 120140adc3b9b1d41de74908ae7199c3
+
+% 4 1 0 12597b38b619f4f10226443777ebc5cf
+
+% 5 1 0 1f68ef3f5fdff28c1d358cbd61ce95f6
+
+% 0 1 0 19103e975dfdd624037df67c15bf88b9
+
+% 1 1 0 0af05db7c64b08e613149ee09e1de9be
+
+@ 0 2 0 088dba6885de3d82079deb70a5616d09
++ Un grafo que puede contener un ciclo es un `Digraph`. Se construye de las mismas maneras, sin la
++ comprobación. `cycle` encuentra un ciclo, como una lista de nodos que termina donde empezó:
+
+% 2 1 0 1dd18ded8058992b1813119f4a19eb46
+
+% 0 1 0 142a28cd78273ceb0a71db423602a401
+
+% 1 1 0 07f9e8426ab88691036d0519eb7b54fd
+
+% 3 1 0 0132b86ed6561078115786dea06303c7
+
+% 4 1 0 03bd85459f810dcf0906b6da1f080081
+
+% 5 1 0 191c35ada8f7f268031f57d682ffc47a
+
+% 0 1 0 09ca21b5ac3fe13c1550f3f752864de1
+
+% 1 1 0 19ea712e6562705b1bcf0fc9ac59eb88
+
+@ 0 1 0 00e9336b88b947161797bc4e5f61d9f0
++ `acyclic` es la única conversión comprobada de un `Digraph` a un `Dag`:
+
+% 2 1 0 004db1c68433ba4a123087107547dc15
+
+% 0 1 0 02d3b3bcf48ae6650d973d3a19b4ed70
+
+% 1 1 0 18663e888f89b67a0f84b99c9422bcb2
+
+@ 0 3 0 0cf73a2fcaaa165e13801b3cb4194fde
++ `explore` construye un `Digraph` siguiendo una función de dependencias hacia fuera desde un nodo.
++ El resultado es un `Digraph` porque la función puede volver sobre sí misma. Este es el grafo de
++ los divisores por debajo de 12:
+
+% 2 1 0 127ea3da8c03f9b504093a91ca19f338
+
+% 3 1 0 06ece727287d049a02543b119114bd08
+
+% 4 1 0 14595d460557953605a24d7f546335df
+
+% 0 1 0 1161842ac332303d04184b76ee11cb3c
+
+% 0 1 0 1434c2dd4b70fab41bee06d6dabc18c8
+
+% 1 1 0 1220a9c32c97040b12ca97c6cae2d39d
+
+@ 0 1 0 102f4f3496ee45f60e089ee8af66c98c
++ ### Ordenación y alcanzabilidad
+
+@ 0 3 0 1c5d91384aecc23a026ce3db8ed4fdbf
++ `linearized` da un [orden topológico](https://en.wikipedia.org/wiki/Topological_sorting). Cada
++ nodo va después de sus dependencias, y por lo demás los nodos siguen el orden en que se dieron:
+
+% 2 1 0 13c9fb63ada5ac9e02e0ffff304507cb
+
+% 3 1 0 196b9470dc859bd61265e58e892d56a6
+
+% 4 1 0 16b7d5dfdcac10e41ced0bd210aeabf5
+
+% 0 1 0 0f6d30bae152f67713bc770dc5d89665
+
+% 1 1 0 12f965490d9053f21cc932b2526fd9a5
+
+@ 0 1 0 16d75bfc5b7a3c3a0c9d621a7b227ed9
++ `reachable` da un nodo y todo aquello de lo que depende, directamente o a través de otros nodos:
+
+% 2 1 0 1fa620cfdd3167990daf7f571a9fe7b9
+
+% 3 1 0 130a46e888ed8fdc05a12f36dd4c4f47
+
+% 4 1 0 195a324d6c699ba00c6b964674fb35fc
+
+% 0 1 0 1bef90574c4b8870150e7e35dfd6f473
+
+% 0 1 0 10e37a3d8c20bf2212d423b5123d0f29
+
+% 1 1 0 0a1670d3cfb476c91f44c4dcb5119896
+
+@ 0 2 0 1a5e35baf90007f90cf8e03aa219b23f
++ `reachable` lanza un `Dag.Error` para un nodo que el grafo no tiene. Está definido tanto en un
++ `Dag` como en un `Digraph`, ya que la alcanzabilidad está bien definida haya o no un ciclo:
+
+% 2 1 0 18dceeb1841e9ecc062299cac666a13b
+
+% 3 1 0 1b60cc64caeedf520e9177481960bf5e
+
+% 4 1 0 1a2e462390dc816205488aef85506b78
+
+% 5 1 0 0d910338dacab97d03847a1bb66b3e1d
+
+% 0 1 0 1efb6bb7a8fe80bf06d0b8423c03b1b3
+
+% 1 1 0 185491cd3bc2b87a100672794ff44dff
+
+@ 0 1 0 0ee35171e2badad117c1cdf11bfa020c
++ Estas son las consultas a las que responde un grafo:
+
+% 2 1 0 0a25b9faab5145b81b108fd2aacb3bbc
+
+@ 0 14 0 174a933785d919fc176fdbf7e34a2d7a
++ column  Consulta
++ column  Responde
++ column  En un `Dag`
++ row  `sources`  los nodos que no dependen de nada, donde empieza una compilación
++ row  `sinks`  los nodos de los que nada depende
++ row  `successors(n)`  las dependencias de `n`
++ row  `predecessors(n)`  los dependientes de `n`  requiere `linearScan`
++ row  `reachable(n)`  `n` y todo aquello de lo que depende, transitivamente
++ row  `descendants(n)`  el subgrafo por debajo de `n`
++ row  `ancestors(n)`  el subgrafo que depende de `n`  requiere `linearScan`
++ row  `lineage(n)`  ancestros y descendientes juntos  requiere `linearScan`
++ row  `linearized`  un orden topológico
++ row  `invert`  el grafo con todas las aristas invertidas
++ row  `reaches(a, b)`  si `a` depende de `b`, transitivamente  solo `Topology` congelada
+
+% 1 1 0 125802b7263bfc050460ea0a63a673c5
+
+@ 0 2 0 0afa46600cd5956305114680c5510a74
++ Como colección, un grafo es sus nodos, y los de un `Dag` están en orden topológico. El
++ vocabulario de las [colecciones](collections.md) se aplica a través de las clases de tipos
++ habituales:
+
+% 2 1 0 05b390e6711a4adc197dcfdf23498b67
+
+% 3 1 0 08d9e0c754c87c071d4cb6b95e30f6dc
+
+% 4 1 0 1d78529913f01aed0b36ddeeed7e77f3
+
+% 0 1 0 15c0731f5d4a38ca1978d8b2c5b8792c
+
+% 0 1 0 15e55a59c85fd612130506f720489975
+
+% 1 1 0 0b28ae5bb596b61511fe01db564a49c0
+
+@ 0 2 0 1749a6c45fda96401410c92721dac363
++ `dag.map(_.toString)` da un `Digraph`, no un `Dag`. Dos nodos pueden transformarse en el mismo
++ valor, y fusionarlos podría cerrar un ciclo.
+
+@ 0 4 0 1011c0900ea224e70b725a6370649342
++ Un `Dag` solo almacena la dirección hacia delante. Encontrar los predecesores de un nodo supone
++ recorrer todas las aristas, un coste desproporcionado respecto a la pregunta. Las operaciones que
++ lo necesitan son `predecessors`, `ancestors`, `lineage`, `bypass` y `-`. Sin un reconocimiento del
++ coste, no compilan:
+
+% 2 1 0 03491b74fc84d0851f60bf8416e9110a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1c52c2d357ba4a540e349e31801eed84
+
+% 1 1 0 0315c33c2ddf51311d34bcbf43de83e0
+
+@ 0 1 0 0a9185a35395ef560b5e3d1916fddf06
++ Una importación da el reconocimiento:
+
+% 2 1 0 13de0ac2e6ae57250ddbe4ab2e276f3b
+
+% 0 1 0 1e42b5a34c3e892418d46748c2ed6448
+
+% 1 1 0 1db34b0ebff8727410bb524ff8c7c639
+
+% 3 1 0 0bc43d7f6a9138f80c37fef50eaecee8
+
+% 4 1 0 1007f6717a3cf6850a5159e8d9bdb08c
+
+% 5 1 0 155611f8bd08619e179105d635a6a50a
+
+% 0 1 0 189c7a02fb405b4c1be6839bcb25acdd
+
+% 0 1 0 00f70e7e5e7aa1ac1b19832b7f5e2859
+
+% 0 1 0 0d01b523056690ab0816dfd0971fc838
+
+% 1 1 0 034e2da8cc7758981b83fd1803190436
+
+@ 0 1 0 0547c036d15db4c90b09580deed69b92
++ ### Plegar un grafo
+
+@ 0 3 0 09c023963720b314196638a1d509eb93
++ Un recorrido calcula un valor para cada nodo a partir de los valores de los nodos de los que
++ depende. Las dependencias siempre se calculan primero. Este recorrido da a cada nodo uno más que
++ la suma de los valores que tiene por debajo:
+
+% 2 1 0 17c751e60bf096d0171a57ed9e6a9f88
+
+% 0 1 0 1ece10bc8a61b84d0ee5b1a3ee1796da
+
+% 1 1 0 1a7e2dd90f1cb61c190ef9232bb7a6c4
+
+@ 0 3 0 0449679f0d59594c11035114c24aa5a6
++ La mayor parte del trabajo real sobre un grafo de dependencias tiene esta forma: el coste de una
++ compilación, una restricción de versión que se transmite, un conjunto transitivo que se va
++ reuniendo. Un recorrido lo expresa una sola vez, sin recursión escrita a mano ni un conjunto de
++ nodos visitados que mantener.
+
+@ 0 1 0 198b37a102b2e1d218d372d315ba83d1
++ ### Cierre y reducción
+
+@ 0 3 0 1bf17fa29d188dc70b1499245a41fb6e
++ El cierre transitivo, `closure`, añade una arista allí donde existe un camino. La reducción
++ transitiva, `reduction`, elimina toda arista que ya está implícita en un camino. La reducción es
++ el grafo más pequeño con la misma alcanzabilidad, y es la forma en que suele dibujarse un grafo de
++ dependencias:
+
+% 2 1 0 0bea20603343a44a083afbfbaa7d7d8f
+
+% 0 1 0 1301b4ed4f67b3480d89c46144078877
+
+% 0 1 0 188b54e7c7ce033d175c64fdf964568c
+
+% 1 1 0 1c6fa4a4c897cc610904e2a238ac5006
+
+@ 0 2 0 01e8261543cd1ef60c948b35d0969177
++ Ambas se responden a partir de la matriz de alcanzabilidad de una topología congelada, que
++ describe la sección siguiente. Un grafo que se consulta así más de una vez conviene congelarlo una
++ sola vez.
+
+@ 0 1 0 16c2dd46118e0231083d78f9905fea31
++ ### Congelación
+
+@ 0 4 0 1ad5a5081c1061531be6cc76c458c9c8
++ Que una `Topology` pueda editarse es cuestión de su conjunto de capturas, igual que con los
++ arrays. Una `Topology[node]^` puede editarse. Una `Topology[node]^{}` no, puesto que los métodos
++ de edición necesitan un descriptor exclusivo. `dag.freeze` da la forma congelada, y también
++ `Topology.freeze`, que consume una topología editable.
+
+@ 0 3 0 0d9d684a50dfd7410dc8321f82216c3f
++ La forma congelada está organizada para consultarla. Guarda ambas direcciones de adyacencia en
++ arrays densos y mantiene sus fuentes y sumideros. Construye una matriz de bits de alcanzabilidad
++ en su primer uso, de modo que saber si un nodo alcanza a otro es un único bit:
+
+% 2 1 0 1c2584e9796718470682d41924eac08f
+
+% 0 1 0 1b1a2d8b80f8b63b13f5c08d5752ad10
+
+% 1 1 0 0062c5c65cb7b4750ad7537166288d43
+
+% 3 1 0 1de0da4dedc86f431314245dcca3fd79
+
+% 4 1 0 10b3a5b7b6ed01170bcdd25c70718592
+
+% 5 1 0 12a1ce72ee207094186796afbca89031
+
+% 0 1 0 1aa2947a4286d397060780c72d22b790
+
+% 0 1 0 0d41981561a570870d2819c50cb4ce03
+
+% 0 1 0 13292cf564e132e00da9b42306513740
+
+% 1 1 0 18ab95ebb7cd1d3d18ee7815237e153f
+
+@ 0 1 0 180dd7994ff1c8230360a110372bdf6e
++ `predecessors` no necesita aquí ningún reconocimiento. `frozen.snapshot` devuelve un `Dag`.
+
+@ 0 3 0 0d61655f48640a7f0008e96da0e7d034
++ `closure`, `reduction` y `reaches` leen la matriz. Solo se ofrecen en la forma congelada, ya que
++ una edición dejaría la matriz desfasada. Para editar, tómese una copia editable con
++ `Topology(frozen)`, edítese y vuélvase a congelar.
+
+@ 0 1 0 05dfe06c565cc7fd173a7eb60bad66cc
++ ### Edición
+
+@ 0 2 0 0acc36450eaa628b0f027dc784c08856
++ Una edición de un `Dag` da un `Dag` nuevo cuando la edición no puede crear un ciclo, y un
++ `Digraph` cuando podría:
+
+% 2 1 0 0ede683ff269a64a0bad8f38dd1b06e7
+
+@ 0 12 0 0ce30a305d952b4a0013fe31f9e40ef2
++ column  Edición
++ column  Devuelve
++ column  Reconocimiento
++ row  `add(a, b)`  un `Dag`, o lanza `Dag.Error`
++ row  `remove(a, b)`  un `Dag`
++ row  `- n`  un `Dag`  `linearScan`
++ row  `bypass(n)`  un `Dag`  `linearScan`
++ row  `bypassAll(nodes)`  un `Dag`  `linearScan`
++ row  `subgraph(nodes)`  un `Dag`  `linearSize`
++ row  `+ (a -> b)`  un `Digraph`
++ row  `++ other`  un `Digraph`
++ row  `map(f)`  un `Digraph`
+
+% 1 1 0 0a9f2c1f5f48b615089ee2a1f75b44e2
+
+@ 0 1 0 10ce7f93b78759b409e4632b56bad0f3
++ `add` añade una dependencia, y `remove` quita una:
+
+% 2 1 0 18b36dbbaadaa6e709b968367f200b65
+
+% 3 1 0 0b27e1a5cebcc90610b39ca83ab73ddf
+
+% 4 1 0 0b44e7b99bc2f98800bffcb1ecce989d
+
+% 0 1 0 0863bf5039b7ca7f0d3d43d6714edb59
+
+% 0 1 0 15410aa8289299101518d1430e7d1782
+
+% 1 1 0 14bb8ba48719ed330bc9ce30ac01ee8c
+
+@ 0 1 0 1e416a16bd7e9ebd0a028c883a7d1c9e
++ `add` rechaza una arista que cerraría un ciclo:
+
+% 2 1 0 04fb3d76e183bd0e08f65628dadb3dab
+
+% 3 1 0 057b4b8a084000e107ba0a1b26807fa3
+
+% 4 1 0 1c6086d31155ceee059b10c33d60f1a7
+
+% 5 1 0 00a138d57603fe5715b5674ff470bb73
+
+% 0 1 0 0da04a3e4cfea6f3190fe1c01a6fb15d
+
+% 1 1 0 08c91571f9e0cee413bc7a4348dd8c88
+
+@ 0 1 0 03c7817e20adb8dd16e445b78074181c
++ `+` añade la misma arista sin protestar, porque su resultado es un `Digraph`:
+
+% 2 1 0 145ea9289fbba0c71eb1bfe33b6b0caa
+
+% 3 1 0 0d6a7c894508560b1656eda83d3c5287
+
+% 4 1 0 0898a96989c46f1408773945e0c5854d
+
+% 0 1 0 1317fa232ad00c4b13e129392095f33c
+
+% 1 1 0 1e225b11b04181df0037858896c502e5
+
+@ 0 2 0 0a424ed066e1d5d90b0bb16a8cdf6456
++ `bypass` elimina un nodo y redirige cada uno de sus dependientes a cada una de sus dependencias.
++ Todo camino que pasaba por el nodo sobrevive. `-` elimina el nodo y sus aristas, y con ellas los
++ caminos:
+
+% 2 1 0 1e0b7871bf9626c107a6899a4b24cfd6
+
+% 3 1 0 195b8dea69fe121b099e5dc210f28776
+
+% 4 1 0 02e3bd349e6227420f9999ba6baa7ec3
+
+% 0 1 0 0b3a9c36d77a352c0edb50322c09d971
+
+% 0 1 0 1105f4115a680b3b09df8dd3ef8500e8
+
+% 1 1 0 05046d5a8b15f34c195f17b9db980f1c
+
+@ 0 2 0 1448e8fd7675b74204134c9d098dde55
++ `bypassAll` puentea un conjunto de nodos, uno tras otro. `subgraph` conserva solo las aristas
++ entre los nodos elegidos. Reconstruye el mapa entero, que es el coste que reconoce `linearSize`:
+
+% 2 1 0 16aa766b02b8b60a029eac5635f0b7e2
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 08a792a51bc83d9e0e2b1f72d1ed01b4
+
+% 1 1 0 19a633fb3173c0ae02a8cd7d2912d635
+
+@ 0 1 0 08b939cc2b16dd8b1dfa4b8277d318e6
++ ### Edición en el sitio
+
+@ 0 3 0 193d5b7bb87a75d612af1e0455bd0cc5
++ A veces un grafo se construye arista a arista, como cuando un sistema de compilación descubre
++ tareas o un planificador acepta jobs. Una `Topology` mantiene válido su orden topológico a medida
++ que llegan aristas. Una arista nueva solo altera los nodos situados entre sus dos extremos.
+
+@ 0 2 0 050d4d040069c9fd17f8f5d1187f0944
++ Una `Topology` es un valor mutable con un único dueño exclusivo. Se edita mediante sus métodos,
++ que no producen valores nuevos:
+
+% 2 1 0 179b9cca6e24b1fa1fa4928ba5280437
+
+% 0 1 0 11dd4af04c13346c1f331660731a2417
+
+% 0 1 0 162d08ce0b4be2a2189c34728371edd4
+
+% 0 1 0 0652b1ef6e6cdf120af39ac6840e734c
+
+% 1 1 0 060a15a6c5f0ebbc0ef87f6b6e138586
+
+% 3 1 0 04f7b83afd90ff9c1e81d2f4363de71a
+
+% 4 1 0 0db995554eb3db8a11b9ea1591650d8d
+
+% 5 1 0 1c5ed3b5b4fda92b0e8c80f117b32ce7
+
+% 0 1 0 078ce4ff497db74f067075a05ae9bfcd
+
+% 1 1 0 1fdf0e909089aec91281236f1562b949
+
+@ 0 2 0 056b4f53824b1f011f7e5c47cad6d8ff
++ Una arista que cerraría un ciclo se rechaza con un `Dag.Error`, y el grafo queda como estaba:
+
+% 2 1 0 1ddde6d8baa98dd308dcf9547d6a229c
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1b016c6113aff7f01a3f1bae766e2ba7
+
+% 1 1 0 0082607d638c394e1200157cd57c9fcd
+
+@ 0 3 0 15a9ce63579e2feb0eafe4b6570a637b
++ Cuando se termina de editar, se renuncia a la topología. `Topology.freeze(topology)` y
++ `Dag(topology)` la consumen ambos, de modo que el resultado nunca puede editarse a sus espaldas.
++ Un `Dag` se descongela en una `Topology` con `thaw`, y `snapshot` toma un `Dag` sin renunciar al
++ descriptor.
+
+@ 0 1 0 0dd188990201453d1b1255fca333ee2e
++ ### Órdenes parciales
+
+@ 0 3 0 0588212c0efbe8fd03e8aee543752a54
++ Un diagrama de `Hasse` recibe un conjunto y una relación de orden, y calcula la estructura de
++ cobertura: para cada elemento, los elementos inmediatamente por encima y por debajo de él, con
++ todas las comparaciones implícitas eliminadas. Estos son los divisores de 12, ordenados por
++ divisibilidad:
+
+% 2 1 0 0afa618f16ab2a7010676b9394bdcbc5
+
+% 0 1 0 1cbb50ac92fbebd709dcb03c0d430784
+
+% 1 1 0 134d33f5a2d559aa04ce3500d0d1590d
+
+% 3 1 0 16b2cd6d82f8d0bd18b8c5dfc22ab24f
+
+% 4 1 0 147672a458656e280d75de87d8aba5f8
+
+% 5 1 0 1ae2d023c4a0e93702af0b9c127f9fe1
+
+% 0 1 0 02bc65f22d7a130f0e08664f1b996432
+
+% 0 1 0 0f7b71ae70f737d70745f9e2df4b9c02
+
+% 0 1 0 1992804873a323a301cacfdc22681a9f
+
+% 1 1 0 0b3c0e6d93d82d78064eae8bbdeae073
+
+@ 0 2 0 01fe8ccacc3d3a1c028470e958e9a32c
++ Un diagrama de `Hasse` es a su vez un grafo, en el que cada elemento apunta a los elementos que
++ cubre. Se linealiza desde su base hasta su cima, y `divisors.dag` es la misma relación como un
++ `Dag`.
+
+@ 0 1 0 1a63d37b0179c5c31b37d18787f8b8b0
++ ### Estratificación
+
+@ 0 4 0 1e29317af449000a1f672221f1b20a99
++ `layered` organiza un `Dag` para dibujarlo. Cada nodo se asigna a una capa, con las dependencias
++ por encima de los dependientes. Los nodos de cada capa se ordenan de modo que las líneas que unen
++ capas adyacentes se crucen lo menos posible. Es el método por capas de Sugiyama, que usa `dot` de
++ Graphviz.
+
+% 2 1 0 0c82ea6363a846910f0893806ceb42c7
+
+% 0 1 0 0000abacee8127bb077055c72c65a6a0
+
+% 1 1 0 0a239ce08d464ce6161910180881e534
+
+@ 0 2 0 02a346b6c4c0110317d6abaf3222ebb5
++ Un nodo sin dependencias está en la primera capa. El nodo `8` está dos capas más abajo, una por
++ cada dependencia de su camino más largo. Ningún enlace de este grafo cruza otro:
+
+% 2 1 0 10b879b1c7e434c01ddfa7a8e2dcd5f6
+
+% 3 1 0 10f9e98f86311b0b0ddb45f18be7e38a
+
+% 4 1 0 18468f0ce1512db8143f3150f374b289
+
+% 0 1 0 044d6fa1773ad690147bfa3de94bbcd5
+
+% 0 1 0 1abe1813a76106c20144fc94e5682b54
+
+% 0 1 0 15492755c09532d006647daca3a617e9
+
+% 1 1 0 0fb55871c5907cb6192f045f096725a9
+
+@ 0 4 0 10ed38228ae59dda14d472a36ffa607a
++ `layering.layers(1)` da los vértices de la segunda capa en el orden en que se dibujan, y
++ `layering.links(0)` da las posiciones unidas entre las dos primeras capas. Una arista que abarca
++ más de una capa pasa por un `Layering.Vertex.Virtual` en cada capa intermedia, de modo que todo
++ enlace une capas adyacentes.
+
+@ 0 2 0 18c333dd408b5aac10ae926d8fcaccd7
++ Por defecto, un nodo se sitúa una capa por debajo de su dependencia más profunda, así que todos
++ los nodos sin dependencias comparten la primera capa:
+
+% 2 1 0 0344d7d0f7b83c430a0c985b73ec39fd
+
+% 0 1 0 1c19ed51768d76d61c154f060e64942b
+
+% 1 1 0 0da2931920b95d6c14a12e6890b2b90d
+
+% 3 1 0 013c447787a39aac0483035df4af5007
+
+% 4 1 0 0b756fb9e81d4592144fe341e0177389
+
+% 5 1 0 040b5a7bfd352b9d1f6feafb2479e7f7
+
+% 0 1 0 0ab684e4846871040dffb0ad9d81c4c7
+
+% 1 1 0 16aa67e689353b5a1879c4d3283b885e
+
+@ 0 3 0 1cc7534f4696e3461cce62dd3980d49c
++ `rankings.balancedRanking`, en cambio, baja cada nodo que tiene dependientes hasta la capa
++ situada por encima de su dependiente menos profundo. Eso acorta la arista larga que sale de una
++ fuente que solo alimenta algo profundo. El nodo `5` solo alimenta al nodo `3`, dos capas más
++ abajo, así que desciende hasta la capa de encima:
+
+% 2 1 0 182d602e210415571158a8bc80cca58d
+
+% 3 1 0 0331103e9e3be9a008aee6469f2ebf6f
+
+% 4 1 0 09371eab37cc42e50d7897089fa6b45f
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 18183d948a497462174addb9a00b605d
+
+% 0 1 0 16114ff5063bbe4e12467bda28b8bbb0
+
+% 1 1 0 0d5a1a71811d944814b47f2795c97c78
+
+@ 0 1 0 1746443811592e500212a6cd945b7e83
++ ### Dibujo
+
+@ 0 1 0 1901200a3a8765b20057597f0459a1e4
++ [Árboles](trees.md#graphs) dibuja un grafo como texto, en carriles, en capas o como una
++ cuadrícula densa.
+
+@ 0 2 0 03a308167fc599f60d0c12e7a1696879
++ Un `Dag` de texto también se representa como
++ [DOT](https://en.wikipedia.org/wiki/DOT_(graph_description_language)), listo para
+
+% 0 1 0 056ddc44a3484455159f3edd2f17f919
+
+% 2 1 0 192b75cf460536d1027308255f9486bc
+
+% 3 1 0 10acd36e2a637af71298aae25290c938
+
+% 4 1 0 04eae264b04d9baf17be9f187ec1bebd
+
+% 0 1 0 0e0edbfa931b7fc41e3885686e0977c2
+
+% 1 1 0 1a58284f146b70710466780ff134bb72
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 7 0 0117b51dacd6e91d1f9a8ae9a284e383
++ - [Árboles](trees.md) dibuja árboles y grafos como texto.
++ - [Colecciones](collections.md) describe el vocabulario que comparte un grafo, y los
++   reconocimientos de coste de `dysasymptotics`.
++ - [Concurrencia](concurrency.md) ejecuta las tareas que ordena un grafo de dependencias.
++ - [Estados imposibles](../../philosophy/impossible-states.md) explica por qué un `Dag` no puede
++   contener un ciclo.
++ - [Gráficos](charts.md) dibuja un grafo como un gráfico de anillo, y [compilador](compiler.md)
++   construye una cadena de herramientas como uno.

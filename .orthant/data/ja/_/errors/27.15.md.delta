@@ -1,0 +1,52 @@
+orthant 2 language
+
+% 0 1 0 1ac284462187383109a09dd0276414ce
+
+@ 0 1 0 045c312c1dcfaa560812fe72fae69766
++ 算術演算が表現可能な結果を生めないときに発生する。
+
+@ 0 2 0 1e445dbeaa96a90810b92ee08e274393
++ これは、表現できない*値*とは別のものであり、後者は型に応じて `Decimal.Error` または `Rational.Error` である。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 000e68e93e3e64bf00e6ce2b65809593
++ Hypotenuse の検査付きの除算は、整数のゼロ除算や `MinValue / -1`（正の範囲をオーバーフローする）のような場合にこのエラーを発生させる。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## メッセージの例
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 139202f658cf802305415a82c62875d3
+
+% 1 1 0 1a6d749e730282fb187a0e8de0844cad
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 16cecf001828935f0cf594fda17190aa
+
+@ 0 2 0 0f68f9e8dcfa842b193e86bfcdc666d0
++ 除数がゼロだった。
++ `import arithmeticOptions.checkedDivision` の下でだけ発生する。検査しないデフォルトでは、プラットフォーム自身の除算の意味がそのまま適用される。
+
+% 0 1 0 011ca2852200d3010e938667025ca930
+
+@ 0 3 0 1d4fa29541cdd4880f2eca5d28f25dc4
++ 結果がその型の範囲を超えた。
++ `import arithmeticOptions.checkedOverflow` の下でだけ発生する。
++ 二つが統合されるまでは、これは `SN-331`（`OverflowError`）だった。
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解決方法
+
+@ 0 2 0 1962d90b53da4c6912aece05fefdbfc0
++ ゼロの除数を防ぐ。`MinValue / -1` の場合は、除算の前に被除数を拡大する。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 058561df40e5f36c17b6a42792798270
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.Arithmetic.scala`

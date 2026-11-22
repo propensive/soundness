@@ -1,0 +1,150 @@
+orthant 2 language
+
+@ 0 1 0 08af2de9a4ac2516115537e8ecb54c57
++ # Direkter Stil
+
+@ 0 7 0 0219a4d0f3c72da50e632f8b8ff960ba
++ Soundness ist im direkten Stil geschrieben: Code liest sich als geradlinige Folge von Schritten,
++ nicht als Kette von Kombinatoren, die einen Wert durch eine Monade fädeln. Effekte wie
++ Fehlschlag, Asynchronität und Kontext werden von Capabilities und Typen getragen, nicht von
++ Wrapper-Typen, die per Map und Flat-Map miteinander verknüpft werden müssen. Das Ergebnis lässt sich
++ so zusammensetzen wie gewöhnlicher Code – mit Aufrufen, Blöcken und lokalen Werten –, sodass die
++ Gestalt eines Programms der Gestalt des Problems folgt und nicht der Gestalt einer darübergelegten
++ Abstraktion.
+
+@ 0 3 0 1995a4a1bacae122105feda8102239e7
++ Der Unterschied zeigt sich bei der Komposition. Ausdrücke im direkten Stil lassen sich
++ verschachteln: Ein fehlbarer Aufruf kann in einer Argumentliste stehen, in einem interpolierten
++ String, in einer Bedingung – überall, wo ein Ausdruck stehen kann –
+
+% 2 1 0 1082cc8907151aa40163ce8a3b515b08
+
+% 3 1 0 138593ef92e3a3f1146e9312130acb47
+
+% 4 1 0 1f1e89ec49e50a691ac72fbe0dd25f36
+
+% 0 1 0 07db6a88bb90f76e0a9c62f2f64e68b7
+
+% 1 1 0 1493ffbb3423bfcc08640caacff3374f
+
+@ 0 2 0 090f340a1195f1dd079514920e930676
++ während monadische Werte sich nur über ihre Kombinatoren zusammensetzen lassen. Dieselbe Zeile,
++ mit dem Fehlschlag als Wrapper-Typ, muss in benannte Zwischenschritte aufgerollt werden:
+
+% 2 1 0 04677b75877140b30c2bd0b11671f073
+
+% 3 1 0 0dd1e2ed93448f431577f5fe26384e30
+
+% 4 1 0 03922e7adafefdbe0723a767b49ea72f
+
+% 0 1 0 11c36e366b28ddad0f59dfebc797db82
+
+% 1 1 0 05cbd6236364aa460eab1b9acbf318c9
+
+@ 0 6 0 048c2da7b64eebe31d405ba1efa84418
++ und jeder weitere Effekt vertieft das Aufrollen. For-Comprehensions mildern die Syntax, aber
++ nicht die Einschränkung: Ein `for` setzt nur Werte *einer* Monade zusammen, sodass die Mischung
++ von Fehlschlag, Asynchronität und Iteration Transformer-Stapel oder Handarbeit verlangt, und
++ gewöhnlicher Kontrollfluss – ein `while`, ein frühes Return, ein `try`/`finally` – hat darin keinen
++ direkten Platz. Zwei monadische Bibliotheken mit verschiedenen Wrapper-Typen lassen sich ohne
++ Adapter überhaupt nicht zusammensetzen.
+
+@ 0 6 0 0a9165603c35497c190441e1af2fd7d6
++ Der direkte Stil löst das Problem auf, statt es zu verwalten. Effekte sind kontextuelle
++ Capabilities, also heißt sie zu kombinieren, beide im Geltungsbereich zu haben, nicht ihre Typen
++ zu verschachteln; jede Kontrollstruktur der Sprache funktioniert unverändert; und der fehlbare,
++ der asynchrone und der reine Aufruf sehen alle wie Aufrufe aus. Wo monadische Werte
++ *aneinandergereiht* werden müssen, *kommen* Ausdrücke im direkten Stil schlicht *vor* – weshalb
++ die Komposition nie aufhört, gewöhnlich zu sein.
+
+@ 0 1 0 1d422644ea2b58c3156169020c169acd
++ ## Gewöhnlicher Kontrollfluss funktioniert weiter
+
+@ 0 2 0 1e01ab0c8ac5af5005f9864272b457a4
++ Die Behauptung lässt sich am leichtesten an den Konstrukten prüfen, die eine monadische Kodierung
++ ersetzen muss. Jedes davon funktioniert unverändert um fehlbaren, asynchronen oder
++ ressourcenhaltenden Code herum:
+
+% 2 1 0 0fc313d262e0bf520cfd70e5317d142e
+
+% 3 1 0 0abfebc0311ec551015ca0738841043b
+
+% 4 1 0 1baac387c8a8ec860258c6733211aedf
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 12a3bb48f477fdf40e7b043dfa98b3d5
+
+% 0 1 0 03b705012a111fc61c16df5225ca2f12
+
+% 0 1 0 0a59478acccec6aa0f5e0144839a371e
+
+% 0 1 0 157980801989006f1ab5011392cf5882
+
+% 1 1 0 1d94616d117336990fcf61fddf23469e
+
+@ 0 3 0 0acbafa0c0300ce419b11e5ae53c6723
++ Kein `traverse`, kein `whenA`, kein Bracket-Kombinator – und keine Frage, über welcher Monade das
++ `for` läuft, denn es läuft über keiner. Eine `while`-Schleife, ein frühes Return, ein `match`,
++ eine verschachtelte Funktionsdefinition: Sie alle bedeuten, was sie in Scala bedeuten.
+
+@ 0 1 0 1ae78d5fd17ed985177b9d1074866960
++ ## Effekte erscheinen weiterhin in den Typen
+
+@ 0 3 0 14b23249c7a8e1b00710a0a4c886b3f8
++ Direkter Stil ist kein Auslöschen von Effekten. Was eine Operation benötigt, steht in ihrer
++ Signatur, genau wie in der monadischen Kodierung – der Unterschied ist, dass es als
++ *Anforderung* erscheint statt als Wrapper um das Ergebnis:
+
+% 2 1 0 0d0dcd288952cb5f1de2bed94f0a6908
+
+% 3 1 0 1b802507986911ce18db06b510632ad6
+
+% 4 1 0 04cf60ebc38fc4bf156e7c3940db6b4d
+
+% 0 1 0 088724f7f3390ae00ffa5549b78cc59d
+
+% 1 1 0 19736e2c820f1ce100eed77c87c43b84
+
+@ 0 4 0 0d47fa452a2848280165187e69145a8f
++ Netzwerkzugriff, Suspendierung und Fehlschlag sind alle sichtbar. Was *nicht* aufgezwungen wird,
++ ist eine Änderung der Gestalt des Werts: Die Methode gibt `Text` zurück, sodass ihr Ergebnis sich
++ mit allem zusammensetzen lässt, was `Text` akzeptiert, und ein Aufrufer, der die Anforderungen
++ erfüllt hat, einen gewöhnlichen Wert in der Hand hält.
+
+@ 0 2 0 08d7f431ac86cc7419cc9b42c49ff1d5
++ Diese Eigenschaft gibt die monadische Kodierung preis. `IO[Either[HttpError, Text]]` trägt
++ dieselbe Information und kann an nichts übergeben werden, das `Text` erwartet.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 4 0 1d338e6efa658f0204ac5be0e57a0fe6
++ **Capabilities müssen im Geltungsbereich sein, und das pflanzt sich fort.** Eine Methode, die
++ etwas aufruft, das `Online` benötigt, muss es entweder bereitstellen oder deklarieren. Es ist
++ dieselbe Fortpflanzung wie bei einer monadischen Kodierung – dort steht sie im Rückgabetyp –,
++ also sind es Kosten der Ehrlichkeit, nicht des direkten Stils, aber sie sind nicht null.
+
+@ 0 5 0 112fa5284c343fce13eb7429279f710d
++ **Der Mechanismus ist kontextuell, und kontextueller Code kann überraschen.** Welche Strategie im
++ Geltungsbereich ist, bestimmt, was ein Fehlschlag bewirkt, und ein Given, das oben in einer
++ Datei importiert wird, beeinflusst Code weit darunter. Das ist die beabsichtigte Stärke – siehe
++ [deklarativer Kontext](declarative-context.md) –, aber ein Leser, der die Importe nicht prüft,
++ kann missverstehen, was ein fehlbarer Aufruf tun wird.
+
+@ 0 5 0 014f3bc97f52a8381c7e84c5423eefb2
++ **Manches Nachdenken fällt mit einem expliziten Wert tatsächlich leichter.** Ein monadischer
++ Wert kann gespeichert, wiederholt oder an einen Kombinator übergeben werden, der ihn dreimal
++ ausführt. Ein fehlbarer Ausdruck im direkten Stil ist nicht in derselben Weise ein Wert –
++ weshalb es `defer` gibt, um eine nicht angewandte fehlbare Berechnung festzuhalten, wo eine
++ solche wirklich gewünscht ist. Dass es dafür überhaupt einen Mechanismus braucht, ist das
++ Eingeständnis, dass der Wrapper einen Nutzen hatte.
+
+@ 0 3 0 1ee093689fa61bb5002adaea87c68e71
++ **Er stützt sich auf neuere Sprachmerkmale.** Kontextfunktionen, Capture-Checking und
++ `transparent inline` leisten die Arbeit, und das zweite davon reift noch. Die monadische
++ Kodierung braucht nichts davon und funktioniert mit jedem Scala.
+
+@ 0 2 0 171ed60b3f90fe701ad9f68ad9668c0f
++ Siehe [begrenzte Geltungsbereiche](delimited-scopes.md) dazu, wie eine Capability eingeführt
++ wird, und [Fehlerbehandlung](error-handling.md) zu dem Effekt, für den das am meisten zählt.

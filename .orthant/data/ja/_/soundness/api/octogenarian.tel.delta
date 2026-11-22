@@ -1,0 +1,3159 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 16fa8e7b6c058e6d1c5383407b0d069f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0e148f9a93d2cee21167af7773698fbe
++ info   スコープの間だけ開いたリポジトリに対する型付き操作としての Git。`git` を実行するバックエンドと、`git` をまったく必要としないバックエンドがある
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 145cbf35e628c04d0c233a2c8f6b6ce1
++     _Octogenarian_ は、手で組み立てたコマンド文字列を実行してテキスト出力を後から解析するのではなく、リポジトリのハンドルに対する型付き操作として、Scala から [Git](https://git-scm.com/) を操作する。
++     ブランチ（`Git.Branch`）、タグ（`Git.Tag`）、コミットハッシュ（`Git.Hash`）はそれぞれ別の型なので、ブランチを期待する操作はタグを受け付けない。
++     結果は再解析すべきテキストではなく値（`Commit`、`Git.Delta`、`Git.Head`、`Git.Merge.Outcome`）として返る。
++     失敗は番号付きの `Git.Error.Reason` を持つ `Git.Error` である。
++     そして API は、あらゆる Git ライブラリが正直であるべき一点について正直である。
++     リポジトリはディスク上にあり、ほかのプロセスもそれに書き込む、という点である。
+
+@ 0 7 0 0d930edafdfe3d890221ee0277a7741f
++     この正直さには二つの面がある。
++     ref、HEAD、インデックス、作業ファイル、reflog、stash、設定、リモート、リンクされたワークツリーを解決する読み取りは、すべて `Stale` 値を返す。
++     その中身は読み取った瞬間には真であったが、その後に変わっているかもしれない。
++     そして ref を動かす書き込みは、すべてその前提となる `Stale` の読み取り結果を受け取り、ref がもはやその値を保持していなければ `Git.Error(Moved(ref, expected, actual))` で失敗する。
++     これは Git 自身の compare-and-swap である `git update-ref ref new old` を避けられないものにしたもので、読み取りと書き込みの間にほかのプロセスがコミットした作業を、コミットが上書きすることはない。
+
+@ 0 5 0 097652b15e4a235e088126593e98fe41
++     リポジトリは `Git.init` で作成し、ブロックの間だけ、二つの形式のいずれかで開く。
++     `Git.Repo` はオブジェクトデータベースとその ref であり、ベアリポジトリが持つものである。
++     `Git.Worktree` はリポジトリの上にあるチェックアウトされたツリーで、インデックスと作業ファイルを持つ。
++     モードはハンドルが持つ権限を指定する。
++     `Read` だけで開いたハンドルは書き込みには使えず、それは実行時エラーではなくコンパイル時エラーになる。
+
+% 2 1 0 1c79b308c03eaa781e696e13199ec0e7
+
+% 3 1 0 03b4e10cbc6c21ec1a0cce9c6744f3b1
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 1 1 0 137145ab5db7c09f181dae39ecbac270
+
+% 0 1 0 1619ecc7ffe347c9086fae87aebae597
+
+% 0 1 0 07e8c33c3bb0b2c312593103dd044c4f
+
+% 1 1 0 18929999bb38f3980d62254ca32e12f5
+
+% 2 1 0 0aba296bea301f6901381f7249dd43ee
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 1 1 0 0429402ebfafdf9c0640a2a85f24ef9d
+
+% 2 1 0 1ef571dc91da5cfe109a49a0476cefb5
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 1 1 0 00bfa1012084695d1c9865dec92eeb7f
+
+% 0 1 0 01dad18e5871fc340bd19a8973f87743
+
+% 0 1 0 0cd9502f884f7b071116b1543b174f13
+
+% 0 1 0 11fb91e46d2dd1070df32d3daafcbb0b
+
+% 2 1 0 05e75ea42e5426f11a31be72adcd98d2
+
+% 0 1 0 0fac618c669d2b620145bac4d88db2bb
+
+% 0 1 0 15980cd0c5582e7f00a974b8a4e3c932
+
+% 0 1 0 09276a51fccb460d02816a6f7cd11cb0
+
+% 0 1 0 016a0d798c9d543a07461225fddd2e87
+
+% 0 1 0 0628f6fd2282c25a1521a63aa682e88f
+
+% 1 1 0 1254d530dad97547151b6ad1c6006545
+
+@ 0 4 0 178fdd1b9a88ff3d1f2bd16b10b0d43f
++     `Git.Worktree.Handle` は `Git.Repo.Handle` でもあるので、リポジトリのすべての操作がその上で使える。
++     また、これは galilei のディレクトリハンドルでもある。
++     `worktree / "notes.txt"` のようにそこから作ったパスはこのハンドルだけに属し、`..` を表現できず、同じ権限のもとでファイルシステム操作によって読み書きできる。
+
+@ 0 2 0 16c94f8d821d40ce08019c69cb2ce6c7
++     内部では、操作は **バックエンド**、すなわち `Git.Backend` が実行する。
++     バックエンドは、`gitBackends` パッケージから given を一つ名前で import して選ぶ。
+
+@ 0 10 0 0d28bdc6d73a789b0db8e7272a3aef41
++     - `gitBackends.commandlineGit` は、`gitCommands.searchpathGitCommand` が見つけた `git` コマンドを、スコープにある `WorkingDirectory` と `Environment` で実行し、呼び出しのたびに `Commandline.Event` としてログに記録する。フック、フィルター、クレデンシャルヘルパー、サブモジュールなど、git 自身の振る舞いをすべて求めるときに選ぶ。
++     - `gitBackends.soundnessGit` は `Native()` で、リポジトリのファイルを git 自身の形式で自ら読み書きするバックエンドである。そのため、リポジトリは常に `git` 自身が理解できるものであり、一方が競合で止まった操作をもう一方が続けられる。`git` バイナリを必要としないので、JVM や Scala Native が動く場所ならどこでも動く。オブジェクト（loose と packed）、ref、インデックス、設定、notes、リンクされたワークツリー、マージ、リベース、stash はすべて独自に実装している。
+
+@ 0 1 0 0ed6d51cadbd97511947ba0f44ea381e
++     どちらのバックエンドがスコープにあっても、それを使うコードは何も変わらない。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 0b8d8e23a6ee28ad1e541c7d1e1399b4
+
+% 1 1 0 132849cfce972ab0093d005b67a4e1b6
+
+% 2 1 0 0692f0c13fe1d492034570732afb651a
+
+% 0 1 0 120131d57b5f2d0e11e2216882e20968
+
+% 0 1 0 04f85e5b3c05a532131d789a3a790ea5
+
+% 0 1 0 13db2575a4f236e90f59c12f01faa995
+
+% 1 1 0 1958e142bca43f361633623b94d14f35
+
+% 3 1 0 1db4ba422adf82aa1717bdae24ac3a1a
+
+% 4 1 0 0e81232918f0b14005395f9d4be137e9
+
+% 5 1 0 0877580c90c96c350da841accbf57973
+
+% 0 1 0 0eaa318c316486d105c40f2a27bdaab1
+
+% 1 1 0 19c7e091aa4b06e314e7adf90d571a8d
+
+% 2 1 0 135f0e6a19d4a1ff1c952631b622e5e7
+
+% 0 1 0 06bf89deb4e19ec61e23f26442744379
+
+% 0 1 0 03579d022b8808861f7885f95bb8cd78
+
+% 1 1 0 19617aa7795372db18ed09d8e9cedd45
+
+% 3 1 0 13a0b415446fa6e410f9cefbc4a1439c
+
+% 4 1 0 1c189485186381601c3025a5370a3d62
+
+% 5 1 0 11e09730668df02d0fc7dc9679217e38
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 1978c9336f966d6004b6f2d543cae99a
++     ネイティブバックエンドは、同じファイルシステム上のリポジトリにはパスで到達する。
++     リモートのリポジトリには **トランスポート** が必要で、`gitTransports` パッケージには、git がサーバーに到達する方法ごとに given が一つずつある。
++     `smartHttp`（スコープにある `Http.Backend` の上で動く git のスマートプロトコル）、`sshCommand`（起動した `ssh`）、`soundnessSsh`（`ssh` バイナリを使わないネイティブの SSH クライアント）である。
++     `Native(List(SmartHttp(), SshCommand()))` は、その両方の上でワイヤプロトコルのバージョン 2 を話す。
++     コマンドラインバックエンドにはこのいずれも必要ない。
++     `git` が自身のトランスポートを持っているからである。
+
+@ 0 6 0 0edca734c1816d24134458458c731f84
++     **署名** はバックエンドとは独立している。
++     コミットやタグは `git commit` で作るのではなく Soundness が組み立てて格納するので、署名がプロセスの外に出ることはない。
++     署名は `Git.Signer` が作り、`Git.Verifier` が検証する。
++     `SshKeygen.Signer(key)` と `SshKeygen.Verifier(allowedSigners)` は、`gpg.format = ssh` のときの git と同じように `ssh-keygen -Y` を動かす。
++     `Gpg.Signer()` と `Gpg.Verifier()` は `gpg` を動かす。
++     どちらで署名したタグも、`git tag -v` が受け付けるものになる。
+
+@ 0 1 0 1380f58a567b2e590d2d589f1948434a
++     ライブラリは、それぞれがプラットフォームに何を必要とするかによって、コンポーネントに分かれている。
+
+@ 0 16 0 18b70f6806ad167117d5558142ae1715
++     - `octogenarian.core` — モデル（`Git` とその中に入れ子になったすべてのもの、`Commit`、`Git.Delta`、`Git.Hunk`、`Git.Patch`、`Git.Remote`、`ReflogEntry`、`Notes`、`NoteRef`）、`Git.Repo` と `Git.Worktree` のハンドル、そしてそれらが操作する `Git.Backend` 型クラス。ここではプロセスを起動しないので、ネイティブバックエンドの利用者が guillotine をコンパイルすることはない。JVM と Scala Native に対応する。Scala Native の javalib には `java.time` がないので、新しいコミットには UTC のタイムスタンプが付く。
++     - `octogenarian.cli` — `git` を実行するバックエンドである `Commandline`（`gitBackends.commandlineGit` として）、`gitCommands.searchpathGitCommand`、`Gpg`。
++     - `octogenarian.native` — リポジトリのファイルを自ら読み書きするバックエンドである `Native`（`gitBackends.soundnessGit` として）、ワイヤプロトコルの両端である `Transport` と `Peer`、`SshAddress`。
++     - `octogenarian.http` — スマート HTTP(S) によるリモートリポジトリ `SmartHttp`（`gitTransports.smartHttp` として）。
++     - `octogenarian.ssh` — 起動した `ssh` によるリモートリポジトリ `SshCommand`（`gitTransports.sshCommand` として）と、`ssh-keygen` による署名 `SshKeygen`。
++     - `octogenarian.sshNative` — ネイティブの SSH クライアントによるリモートリポジトリ `SshNative`（`gitTransports.soundnessSsh` として）。
+
+@ 0 6 0 131a43085c4543231fd696ed74cce2c1
++     ファイルシステムを持たない Scala.js 向けには、どれもコンパイルされない。
++     すべては `soundness` アンブレラにエクスポートされ、選択パッケージ `gitBackends`、`gitCommands`、`gitTransports` はアンブレラ自身のものと統合される。
++     `import soundness.*` は given を import しないので、それらの given は名前で import する。
++     `NoteRef` の拡張メソッド `target`、`namespace`、`content` もエクスポートされるが、`content` はパスに対する汎用の `read` に優先するよう、名前で import する（`import octogenarian.content`）のがよい。
+
+@ 0 3 0 1666c2df7210e66b1b53cab7f6c5629f
++     どのバックエンドを選んでも、`Exclusive` が調停するのはこの JVM 内のハンドルの間だけである。
++     ほかのプロセスを待つことは決してない。
++     だからこそ、ref を動かす操作はすべて、渡された `Stale` の読み取り結果に対する compare-and-swap になっている。
+
+% 0 1 0 0024e45e4a44686100bfb6ed90f8be86
+
+% 0 1 0 0d1aab482c42f51d055f528fc202fca3
+
+% 0 1 0 13e127754c98d8b1072e22ae29357516
+
+% 0 1 0 191fdf3f0feb7f9f0f391c266c575b4c
+
+% 0 1 0 083b87b81140297e1e705964cba55022
+
+% 0 1 0 0d4ae720e749ca6e0e94b1c81247ff9b
+
+% 0 1 0 196c7809c4abd1a00834f921fd5b5d3d
+
+% 0 1 0 0431435a68b4d1670e553f11be790bd9
+
+@ 0 1 0 130285ee21b29e69010dfb3d15ce170d
++ entry .Git   Git のモデルと、リポジトリおよびワークツリーのハンドルの名前空間
+
+% 1 1 0 11d9aa71d664191619c5eef8defb11c6
+
+@ 0 10 0 026ee9d84694d77507f8540498318ca2
++       `Git` は、Git 自身が名前を付けているものをすべて保持する。
++       参照（`Git.Ref`、`Git.Branch`、`Git.Tag`、`Git.Hash`、`Git.Revision`、`Git.Refspec`）、オブジェクト（`Git.Object` とその種類）、誰がいつ（`Git.Identity`、`Git.Timestamp`、`Git.Signature`）、HEAD の状態（`Git.Head`）、作業ファイル（`Git.Status`、`Git.PathStatus`）、設定（`Git.Config`）、マージとシーケンス処理の結果（`Git.Merge`、`Git.Sequence`、`Git.Operation`）、リモート操作（`Git.Push`、`Git.Pull`、`Git.Activity`）、署名（`Git.Signer`、`Git.Verifier`、`Git.Verification`）、エラー（`Git.Error`、`Git.RefError`）、そしてパスを開く二つの形式である `Git.Repo` と `Git.Worktree` である。
++       後の二つは、それぞれブロックの間だけ `Handle` を貸し出す。
++       `Git.Backend` はハンドルが操作する型クラスで、`Commandline` と `Native` が実装している。
+
+@ 0 3 0 114336e9077fd6951e1248dbb30e0413
++       リポジトリを作る操作は三つある。
++       `.init` はリポジトリを新しく作り、`.clone` はパスまたは URL からリポジトリをコピーし、`.cloneCommit` はちょうど一つのコミットを取得する。
++       どれも `Git.Backend^` と `Tactic[Git.Error]` を受け取り、リモートに到達する二つは `Internet` も受け取る。
+
+% 2 1 0 0fee550de16d274311d465f8dc7166e1
+
+% 3 1 0 00fad8fd9e195b2e0b8bb92beca7f383
+
+% 4 1 0 04c5a42310a903250ad7af01a398747b
+
+% 5 1 0 0e4f81c64d1f8fd31503af07b6f298ef
+
+% 6 1 0 07fc5d869bd029561d4600b48e1eeccc
+
+% 7 1 0 05b9227eba5104d51f30bbaa8fcda12f
+
+% 8 1 0 11b47f8fc310db7107e25891c7b2aefc
+
+% 9 1 0 17b2a333fa86067202609ce349029f54
+
+% 11 1 0 152a9161b2c6253310634bc6f974f6e4
+
+% 12 1 0 0f09b9349c84d1800d6b40efce0b850f
+
+% 2 1 0 02dd8c930a9c53c61e490558e2bf18a4
+
+% 0 1 0 15f5bfa13f69418c043144cecc7c0590
+
+% 1 1 0 04cd6c1aa9184a4f03bfe7b1e7fd33dd
+
+% 0 1 0 1117a3b43ba1167e0cee4d884a606abc
+
+% 0 1 0 00710612581a197b09367bdad473bdc0
+
+% 1 1 0 0831d582049dacf90b4bdfa40e986e58
+
+% 0 1 0 103f234d0d4937711f328bb60f7b3177
+
+% 0 1 0 0f6d58b8716105ff16549442ed8ca3d5
+
+@ 0 10 0 0ace0b956014120a0553dd97ecab4f34
++   entry .Ref   `Path on Git.Refs` として表した、`refs/heads/main` のような完全修飾の参照パス
++       `Git.Ref` は `Path on Git.Refs` の別名である。
++       `refs/heads/main`、`refs/tags/v1`、`refs/notes/commits` のような参照を `Git.Refs` 平面上のパスとしてモデル化したもので、`Git.Refs` から `/` で組み立てるか、`Git.Refs.heads`、`Git.Refs.tags`、`Git.Refs.notes`、`Git.Refs.remotes` で組み立てるか、`Git.Refs.parse` でテキストから解析する。
++       後の四つは、それぞれ `git check-ref-format` と同じように各セグメントを検査する。
++       `Git.Branch` と `Git.Tag` は、それぞれ自分の ref を知っている（`branch.ref`、`tag.ref`）。
++       検証済みの ref パスはすでにリビジョンなので、`Git.Ref` は `Git.Revision` が期待される場所でそれに変換される。
++   entry .Error   Git の操作を完了できないときに、番号付きの理由とともに発生する
+
+% 1 1 0 140b9972126d2f36081dd20c4fc8ccc6
+
+@ 0 6 0 11e99a6a967d922515425cb3badf8224
++         エラー `↯/s.123.1`: _the Git operation could not be completed because `reason`_。
++         リポジトリのすべての操作が、スコープにある `Tactic[Git.Error]` を通して発生させる唯一のエラーである。
++         `#reason` は `Git.Error.Reason` で、完全なコードが `685.<n>` になるよう番号が付いている。
++         `#detail` は、バックエンドがそれを持っていれば、git 自身が出力した内容である。
++         `Commandline` のもとでは `git` プロセスの標準エラー出力を整えたもの、`Native` のもとではファイルシステムやネットワークの障害そのもののメッセージである。
+
+% 2 1 0 1c7bf02279182497024fffd5ec8ad1e6
+
+% 3 1 0 193080da2483ed131381effd52585e82
+
+% 4 1 0 0146d227cad7e6c40fd8b755f52cb0df
+
+% 5 1 0 11a0457cda1e31b8136648946ff81558
+
+% 6 1 0 1e5b7de9783e240203a69a4bff52951f
+
+% 7 1 0 1fad79a894d76290074c2b03ac51e26c
+
+% 8 1 0 1ac4259b3a860ded1d7cf939473873e5
+
+% 9 1 0 10668884f05162cc14e7aff689e3e959
+
+% 11 1 0 1f8f0e3805361aba01d3d13a9468aa93
+
+% 13 1 0 1443592792a857e700b2a6f8babec5f8
+
+% 0 1 0 00274a57a11385ee0038a2d64e32d7ee
+
+% 0 1 0 0f3d6090f91e142d0f500666d9f175f2
+
+% 0 1 0 14529a491e893e0d1a60d53adda177bb
+
+% 0 1 0 06fc6e0049c5876c19dfd6cf2b410f6d
+
+% 1 1 0 13c166a307b409bd134cc1faa701e403
+
+@ 0 5 0 05c2a4363c0c72d0017e741ad17c1b9d
++         最も重要な理由は `Moved` である。
++         `Stale` の読み取り結果を前提とした書き込みが、ref が別の場所にあるのを見つけ、何もしなかったことを表す。
++     entry .Reason   操作が失敗した理由。番号付きの 34 のケースのいずれか
++         `Clarification` の enum なので、どのケースも番号（`685.<n>`）を持ち、`.communicable` を通してメッセージとして表示される。
++         ケースを番号順に示す。
+
+% 1 1 0 1a8b918dc7f9969906d6d506b4bfab31
+
+@ 2 4 0 00919b4e47da24a4040f3ec784677ff4
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
+
+% 0 1 0 0becee6df2e2f78b1677b6a44f0d09a2
+
+@ 0 3 0 1b90b3dc6e83544d0905a36b4029ae98
++         row  `NoRepository(path)`  2  _`path` is not a Git repository_  開くときに発生する
++         row  `NoWorktree`  3  _the repository has no working tree_  そのため `Git.Worktree` として開けない
++         row  `Moved(ref, expected, actual)`  4  _`ref` was `expected` when read but is now `actual`_  compare-and-swap が失敗した。どちらのハッシュも `Unset` でありえ、その場合は _nothing_ と表示される。`ref` は git と同じく、呼び出し側が使った名前（`HEAD`）で示される
+
+% 0 1 0 18a3d7ed6b321448163ccfb6aedc74f0
+
+% 0 1 0 0c5bba8ecb94800b0528644c7fb15521
+
+% 0 1 0 1012ded781eec15d1c5db56300b64b6c
+
+@ 0 1 0 072d1453f3899c6c1735a3936b60680a
++         row  `Unmerged(branch, tip)`  8  _the branch `branch` at `tip` is not fully merged_  `force` なしで `deleteBranch` が拒否した
+
+% 0 1 0 02cef223a9c1d0ec135f59ac238f7b5f
+
+@ 0 2 0 144dfa535412ef77031a7917469cc28d
++         row  `NothingToCommit`  10  _there is nothing to commit_  ツリーが変わっておらず、`allowEmpty` が指定されなかった
++         row  `Detached`  11  _HEAD is detached_  ブランチが必要な場所で（`pull`）
+
+% 0 1 0 1942bc43ad4c4cd21f7ca3de88f1646c
+
+% 0 1 0 069454a83cabf60e053df72133eed518
+
+% 0 1 0 1a4fd8ba9e119784158774f7f30015ec
+
+% 0 1 0 01b24e4a390c891102b6ecda1cbfbb3e
+
+% 0 1 0 1385b76cf1bba9970bc6591ba9e00208
+
+% 0 1 0 0e63676db96a97340014182d64de8188
+
+% 0 1 0 00b237ae874faf351453a92fbaea4b9e
+
+% 0 1 0 0379edb0b6923eff07dd0ce71dbacf78
+
+% 0 1 0 04c31fff12b95cd11f30fbd520a8b547
+
+% 0 1 0 0d9c8532d99b1e6214ea728d7fb8f134
+
+% 0 1 0 04de9705246e336a033b2c698f396d7e
+
+@ 0 1 0 0c61ec7e1330ef921d7b5f32d13b92d1
++         row  `LeaseFailed(ref, expected, actual)`  23  _the remote's `ref` was expected to be `expected` but is `actual`_  `Push.Force.Lease` の期待値が誤っていた
+
+% 0 1 0 093ca07dcf25fe191ba8d77df79f2f29
+
+@ 0 1 0 09e0041d894141c816a439338278aa48
++         row  `NoSuchConfig(key)`  25  _the configuration key `key` is not set_  コミットを作るときの、コミッターの `user.name` または `user.email`
+
+% 0 1 0 069802804939a0c2187e53faf1b3e7c1
+
+% 0 1 0 01e13eeaf35e10dc0bb11ac8f491707d
+
+% 0 1 0 03f74a8e35b8ddca14c5521a8f9c89d0
+
+@ 0 2 0 1e53315a9367b85c08d1e0ea7f7338e0
++         row  `Unsupported(operation)`  29  _`operation` is not supported by this backend_  拒否された排他的な同時オープンにも使われる
++         row  `Unexpected`  30  _git reported an unexpected failure_  理由の表が知らない失敗。git のメッセージはエラーの `detail` として保持される
+
+% 0 1 0 1e669f9422e19c781ba157be262629d7
+
+% 0 1 0 0614ca488efe1b8f1b6bf53d8d617a00
+
+% 0 1 0 05f559d11595ce9a041b26f70ceded78
+
+% 0 1 0 0f3566af75830478033f0718f2537211
+
+% 1 1 0 056d392dbe3599951489a10e918cf1f5
+
+@ 0 4 0 1185ac2d7f406a1017cb98e68e48ed36
++     entry .communicable   各理由をメッセージとして表示する
++     entry #reason   操作が失敗した理由
++     entry #detail   バックエンドが持っていれば、git 自身が出力した内容。標準エラー出力を整えたもの
++   entry .RefError   テキストが有効な Git の参照、ハッシュ、refspec でないときに発生する
+
+% 1 1 0 1a2b21bd8f1cad60191caea5bfe8445b
+
+@ 0 6 0 03ea263c647d67c10add1f850ef10d42
++         エラー `↯/s.123.2`: _`value` is not a valid Git reference because `reason`_。
++         名前を git 自身の規則（`git check-ref-format`）に照らして検査するパーサー、すなわち `Git.Branch.parse`、`Git.Tag.parse`、`Git.Revision.parse`、`Git.Refs.parse`、`Git.Refs.heads` とその仲間、`Git.Hash.apply`、`Git.Refspec.parse`、およびそれらから作られた `Decodable in Text` の given が発生させる。
++         `NoteRef#namespace` は、notes の名前空間のセグメントが不正なときにこれを発生させる。
+
+% 2 1 0 0d97f1a0476ca235055356f4c8227f5a
+
+% 3 1 0 12c9ef158a835f8c03f2d7500f09a201
+
+% 0 1 0 06e3bfa9272a8d19156187ba5e02d2f5
+
+% 0 1 0 040c4897fbca83f708617f9518575056
+
+% 1 1 0 11a07d98c9e6f1a11ac12477f352a2b9
+
+@ 0 1 0 0d2cdfc881b99418073cd2869dbe7132
++     entry .Reason   テキストが破った規則
+
+% 1 1 0 05a92b08f66eb14011e8cdd32c6145b4
+
+@ 2 4 0 034d0189feab7189103704dfc3c90164
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
+
+% 0 1 0 1bd5f4ebd50b012d128b5452af8894c3
+
+% 0 1 0 06c0401dfcd320dc0d5cc458865f3bba
+
+% 0 1 0 141c998bde119b1c10cd5efd0ba0c48f
+
+% 0 1 0 03fa4208a9e0628e1dfa042e462fd082
+
+% 0 1 0 0953068e56223e3f087d106715e7b4b0
+
+@ 0 2 0 06ba0e5b54bd706808db5f475ea1effc
++         row  `InvalidCharacter`  6  _the name contains a character forbidden by Git_  `*`、`[`、`\`、空白、`^`、`~`、`:`、`?`
++         row  `BadHash`  7  _the value is not a 40-character hexadecimal hash_  小文字の十六進数のみ
+
+% 0 1 0 196967294709fe4b023ad02a048327ed
+
+% 1 1 0 024474b6088dd83113453bed2b3b030e
+
+@ 0 4 0 0629b6d66ca7cdb10c5ea3354c1c7eac
++     entry .communicable   各理由をメッセージとして表示する
++     entry #value   拒否されたテキスト
++     entry #reason   テキストが破った規則
++   entry .Refs   `refs/` を根とする、完全修飾の参照の平面
+
+% 1 1 0 0a983139a9c61bbc045972d402106073
+
+@ 0 5 0 1af999aa7c654a930f733b1d6ebba165
++         `Git.Refs` は、`Git.Ref` がその上のパスである平面の根である。
++         `Git.Refs / "heads" / "main"` は `refs/heads/main` になる。
++         名前付きのコンストラクターは `git check-ref-format` と同じように各セグメントを検査して `Git.RefError` を発生させ、`.parse` は完全修飾名をテキストから読み戻す。
++         この平面の `Filesystem` は `/` 区切りで、自身のセグメントは `@`、親は `..` であり、有効な ref はそのどちらも含まない。
+
+% 2 1 0 0c0c4b89c145ea8f0df00702e8507f7d
+
+% 3 1 0 1cb68cd9eba8510b0bfb4e10e20586f0
+
+% 4 1 0 0ef442df112c6f8c0c9032f00147bd90
+
+% 0 1 0 097bb54bfac62ae119036395d0347f58
+
+% 0 1 0 1bcbfb064d737d590f0191d45f5034a0
+
+% 0 1 0 105f4a259c9de10416a96cdb5a527559
+
+% 0 1 0 1b1b23db63f601c311ffcc9434d585ad
+
+% 1 1 0 18970a97437c9be50811546d0c3639c1
+
+@ 0 29 0 1920b6eb304d8ecc1ae368bf90d588e4
++         `Git.Ref` は、`.pathIsRevision` を通して、`Git.Revision` を受け付けるあらゆる場所で受け付けられる。
++     entry .Plane   参照パスの平面型。`Git.Refs` そのもの
++     entry .notes   名前空間を検査した `refs/notes/<namespace>`
++         名前空間が参照の規則を破っていれば `Git.RefError` を発生させる。
++     entry .heads   ブランチ名を検査した `refs/heads/<branch>`
++         名前が参照の規則を破っていれば `Git.RefError` を発生させる。
++         `Git.Branch#ref` は、検査をしない同じパスである。
++     entry .tags   タグ名を検査した `refs/tags/<tag>`
++     entry .remotes   両方のセグメントを検査した `refs/remotes/<remote>/<branch>`
++     entry .defaultNotes   `refs/notes/commits`。git 自身の `notes` コマンドが使う名前空間
++         `Git.Repo.Handle` に対するすべての notes 操作の、デフォルトの `ref` である。
++     entry .stash   `refs/stash`。stash のエントリがぶら下がる ref
++     entry .parse   `refs/heads/main` のような完全修飾名を `Git.Ref` として読む
++         テキストは `refs/` で始まり、その後のすべてのセグメントが参照の規則を満たしていなければならない。
++         そうでなければ `Git.RefError` が発生する。
++         完全修飾でない名前（`HEAD`、`main`）は拒否される。
++     entry .validateSegment   セグメントを一つ git の参照の規則に照らして検査し、`Git.RefError` を発生させる
++         セグメントは空であってはならず、`.` で始まったり終わったりしてはならず、`.lock` で終わってはならず、`@{` や `..` を含んではならず、`*`、`[`、`\`、空白、`^`、`~`、`:`、`?`、`/` のいずれも含んではならない。
++     entry .admissible   任意のテキストを参照パスのセグメントとして認める given
++         検査は後回しにされる。
++         `/` がパスを組み立て、名前付きのコンストラクターと `.parse` が検証する。
++     entry .filesystem   `Filesystem` としての参照の平面。`/` 区切りで、自身は `@`、親は `..`
++     entry .pathIsRevision   `Git.Revision` が期待されるあらゆる場所で、`Git.Ref` を `Git.Revision` として扱う
++         暗黙のスコープにある `Conversion` である。
++         検証済みの ref パスは git が課すすべての規則を満たしているので、そのままでリビジョンであり、`repo.resolve(Git.Refs.heads(t"main"))` に包み直しは要らない。
++   entry .Revision   git がリビジョンを期待する場所で受け付けるもの。ハッシュ、ブランチ、タグ、または式
+
+% 1 1 0 119c8c79ee7777791ba6d8e95bbfd0c7
+
+@ 0 5 0 1a58ea1f35a43f140ae3ff59e4995b58
++         `Git.Revision` は、`gitrevisions(7)` がリビジョンと呼ぶものである。
++         `Git.Hash`、`Git.Branch`、`Git.Tag`（どれもこれを継承する）、`Git.Ref`（`Git.Refs.pathIsRevision` を通して）、または `HEAD~2` や `main..feature` のような式である。
++         `.head` は `HEAD` の式を作り、`.unsafe` はそれ以外の式を検査なしで作る。
++         履歴を読む操作やチェックアウトする操作は `Git.Revision` を受け取る。
++         `log`、`resolve`、`checkout`、`merge`、`rebase`、`diffAgainst` である。
+
+% 2 1 0 03a0a2d43091d77004c65cd1b8cfba3e
+
+% 3 1 0 07c0cd7880b2d17b1d5cc907b7ec8140
+
+% 0 1 0 0a2906e215f3b2f8099d6806da9a031d
+
+% 0 1 0 10087810748da1eb00a0225d2ec1cb49
+
+% 0 1 0 15ee941edc42654e03e9d9e0406090c3
+
+% 1 1 0 0032afb53755fe57117a201ae2d0ab5c
+
+@ 0 15 0 1931ae6ae72955de0050a467ea72ab17
++     entry .head   `HEAD`、または正の `n` に対する `HEAD~n`
++     entry .unsafe   任意のテキストを検査なしでリビジョンとして扱う
++         `v1.0^{commit}` や `main..feature` のように、型付きの参照では表現できない式のためのものである。
++         何も検証しない。
++         git が解決できない式は、使ったときに `NoSuchRef` として、あるいは `resolve` からの `Unset` として報告される。
++     entry .parse   参照の *名前* を git の規則に照らして検査し、それを返す
++         式ではなく `feature/sonnets` のような名前を、`Git.Refs.validateSegment` と同じようにセグメントごとに（ただし `/` を許して）検証し、最初に破られた規則で `Git.RefError` を発生させる。
++         `Git.Branch.parse` と `Git.Tag.parse` はこれの上に作られている。
++     entry .encodable   リビジョンはそのテキストとしてエンコードされる
++     entry .showable   リビジョンはそのテキストとして表示される
++     entry .inspectable   リビジョンは `Revision(HEAD~2)` として inspect される
++         ブランチ、タグ、ハッシュはそれぞれ独自のものを持つ。
++         `Branch(main)`、`Tag(v1.0)`、`Hash(…)` である。
++     entry #text   git が受け取る形のリビジョン
++   entry .Refspec   `+refs/heads/*:refs/remotes/origin/*` のような、フェッチまたはプッシュの refspec
+
+% 1 1 0 1c60f4728b2b89c0133d5dfd38c4684c
+
+@ 0 5 0 0669271d1597cf0d08ec323a1657406a
++         refspec は、一方の側の `#source` と他方の側の `#destination`（どちらも `Unset` でありうる）、そして更新を `#force` するかどうか（先頭の `+`）を指定する。
++         ソースがなくデスティネーションがある refspec は、プッシュ時にデスティネーションを削除する。
++         `fetch` と `push` はそのリストを受け取り、`addRemote` はリモートのフェッチ refspec として一つを記録する。
++         そのデフォルトは `+refs/heads/*:refs/remotes/<name>/*` である。
+
+% 2 1 0 1e08bb4aa99b638413c565eb11234905
+
+% 3 1 0 1deca892ece5c14a0d782c6bbd44979d
+
+% 4 1 0 08689bbc8b794a0a1330b619807422ae
+
+% 0 1 0 04f6eec8b91e12870480320e961a8439
+
+% 0 1 0 05179668a14ce83f19c36c214b527722
+
+% 0 1 0 0569d7cb9744961a18e526bbd8588f37
+
+% 0 1 0 14616af65ea5c77713d046808ee0bfcd
+
+% 1 1 0 12474f176338857d1cbc9e46ecf1ab2f
+
+@ 0 11 0 19c011f362a11e5200ff32cf2d74d448
++     entry .parse   テキストから refspec を読む。コロンが二つあれば `Git.RefError(BadRefspec)` を発生させる
++     entry .apply   一つの ref（両側が同じ）から、またはソースとデスティネーションの ref から refspec を作る
++         `Git.Refspec(ref)` は `ref` をそれ自身にプッシュまたはフェッチする。
++         `Git.Refspec(source, destination)` は一方を他方に対応させる。
++         どちらも強制ではない。
++     entry .encodable   refspec はそのテキストとしてエンコードされる
++     entry .showable   refspec はそのテキストとして表示される
++     entry #source   プッシュではローカル側、フェッチではリモート側の ref。あれば
++     entry #destination   もう一方の側の ref。あれば
++     entry #force   更新が非 fast-forward でもよいかどうか。先頭の `+`
++     entry #text   git が受け取る形の refspec。`+source:destination`
++   entry .Tag   名前によるタグ。型の上でブランチやハッシュとは区別される
+
+% 1 1 0 012f92497a827fab03f96a0fafb1245c
+
+@ 0 5 0 12eba1751f35cf6318674a382e76b0e6
++         `Git.Tag(t"v1.0")` はタグ名である。
++         これは `Git.Revision` なので、リビジョンが期待される場所ならどこでも解決され、`#ref` はその完全なパス `refs/tags/v1.0` である。
++         `.parse` は名前を git の規則に照らして検査する。
++         ケースクラスのコンストラクターは検査せず、`.unsafe` はそのことを名前で示す。
++         タグが指すものは `.Target` で、軽量タグか注釈付きタグであり、`Git.Repo.Handle` の `tag` で読む。
++         注釈付きタグのオブジェクトは `.Annotation` である。
+
+% 2 1 0 0fdf3abe27c37fa9161fc2212cfd7249
+
+% 3 1 0 0988a94f0ba119ad098ae76334e0d7d5
+
+% 4 1 0 0d57677b139ae5d41ac5a1d6c7933729
+
+% 5 1 0 0bd6e2a9957601c514700401d7e7978e
+
+% 6 1 0 0280d08efd0acd64156a87bee34eaa0f
+
+% 7 1 0 1b0f23c910a06b2a064a6e6b4b3f0e56
+
+% 8 1 0 091861042e4039dd159280e0e791db4f
+
+% 9 1 0 0af9dc1ab284a4d311a5f4b39453267c
+
+% 11 1 0 09c1843f88a5c56e052642e49b031e83
+
+% 13 1 0 19d6714a9cf116f80277c84a2bd6c127
+
+% 0 1 0 0f08007279d034c00df4ae8d4888e4cc
+
+% 0 1 0 1ac3ef9008e1641919344d2c812a3a18
+
+% 0 1 0 1c6ad46b0738cd4f0fc3a2774937cf47
+
+% 0 1 0 0c633f659c8c80690c54d1d3ff0576b8
+
+% 0 1 0 0fc979cf4bd5f85d00f612894da27941
+
+% 1 1 0 12fd6b1e05d0e08112b66000dccb87df
+
+@ 0 9 0 1cdefffde9c408fc14ad462b16ddd6c9
++     entry .unsafe   検査なしの、名前によるタグ
++     entry .parse   git の参照の規則に照らして検査した、名前によるタグ
++         git が拒否する名前に対しては `Git.RefError` を発生させる。
++     entry .decoder   `.parse` を通してテキストからタグを読む
++         `Git.Tag is Decodable in Text` なので、`Tactic[Git.RefError]` がスコープにある場所では `t"v1".as[Git.Tag]` が使える。
++     entry .showable   タグはその名前として表示される
++     entry .inspectable   タグは `Tag(v1.0)` として inspect される
++     entry .Target   タグ名が指すもの。コミットを直接指すか、コミットを指す注釈を指す
+
+% 1 1 0 00519abfa774ca3b0294185dbd1e83cb
+
+@ 0 6 0 1f0b566061bf641c1cff9d4ce57e7fb0
++           `Lightweight(commit)` はコミットを指すタグの ref である。
++           `Annotated(annotation, commit)` はタグオブジェクトを指し、そのオブジェクト自身のターゲットが `commit` である。
++           どちらの場合も、`#peeled` はそのコミットである。
++           `Git.Repo.Handle` の `tag` はこれを一つ読み、`tags()` はすでにコミットまで剥がしたタグを列挙する。
++       entry #peeled   タグが最終的に指すコミット
++     entry .Annotation   注釈付きタグオブジェクトの内容
+
+% 1 1 0 199de9ba62c823de06a1cbed0510a97f
+
+@ 0 12 0 0f8d8a0ff3cfcb9e0f5b7af2a737158f
++           `annotationAt(hash)` が読み戻すものである。
++           タグ付けされたオブジェクト、その種類、タグの名前、誰がいつタグを付けたか（tagger 行なしで書かれたタグにはない）、メッセージ、そしてタグが署名されていれば ASCII アーマー形式の署名ブロックである。
++       entry #target   タグ付けされたオブジェクトのハッシュ
++       entry #kind   タグ付けされたオブジェクトの種類。通常は `Commit`
++       entry #name   タグの名前
++       entry #tagger   タグを作った人と日時。記録されていれば
++       entry #message   タグのメッセージ。git の末尾の改行は含まない
++       entry #signature   アーマー形式の署名ブロック。タグが署名されていれば
++     entry #text   タグの名前
++     entry #ref   タグの完全な参照。`refs/tags/<name>`
++   entry .Branch   名前によるブランチ。型の上でタグやハッシュとは区別される
+
+% 1 1 0 05e30a46a9a677a41d1511fe7f5c6ae0
+
+@ 0 6 0 021f5b976f9e4d1c192a7163b6461405
++         `Git.Branch(t"main")` はブランチ名である。
++         これは `Git.Revision` なので、リビジョンが期待される場所ならどこでも解決され、`#ref` はその完全なパス `refs/heads/main` である。
++         `.parse` は名前を git の規則に照らして検査する。
++         ケースクラスのコンストラクターは検査せず、`.unsafe` はそのことを名前で示す。
++         ブランチは、ワークツリーでは `switch(branch, head, create = true)` で、リポジトリでは `makeBranch(branch, at)` で作り、`branches()` で列挙し、先端の `Stale` の読み取り結果を前提として削除または名前変更する。
+
+% 2 1 0 1c87257d207308b918128dbc047cc878
+
+% 3 1 0 18cadaf1a6e622170cecdd7f617d9ea8
+
+% 4 1 0 1cfe3f0e1214fc8b014bab0b3e43b420
+
+% 0 1 0 127aafa802159087104c7301c36eab24
+
+% 0 1 0 00f19164a5ecc1c205d3c4a699c7790f
+
+% 0 1 0 19e5d4ca4e78aaf310c5b75368a7dd55
+
+% 1 1 0 1dfd1139a0c654f8176a1ad7b6c28987
+
+@ 0 11 0 0037901b5eec8e1c08163a80a06c6c63
++     entry .unsafe   検査なしの、名前によるブランチ
++     entry .parse   git の参照の規則に照らして検査した、名前によるブランチ
++         git が拒否する名前に対しては `Git.RefError` を発生させる。
++     entry .decoder   `.parse` を通してテキストからブランチを読む
++         `Git.Branch is Decodable in Text` なので、`Tactic[Git.RefError]` がスコープにある場所では `t"main".as[Git.Branch]` が使える。
++     entry .showable   ブランチはその名前として表示される
++     entry .inspectable   ブランチは `Branch(main)` として inspect される
++     entry #text   ブランチの名前
++     entry #ref   ブランチの完全な参照。`refs/heads/<name>`
++   entry .Hash   40 文字のオブジェクトハッシュ。notes のパスの根でもある
+
+% 1 1 0 1cf70c165bb9ce5f1ead3d2a8f878d14
+
+@ 0 5 0 0daa7aab9110acf619fd541840c5c15a
++         `Git.Hash` はオブジェクトの名前で、40 桁の小文字の十六進数である。
++         `.apply` はこれを検査し、`.unsafe` は検査しない。
++         これは `Git.Revision` であり、`Notes` 平面上の serpentine の `Root` でもある。
++         `hash / t"attestations"` は `NoteRef`、すなわち `attestations` 名前空間でそのコミットに付けられた note である。
++         等価性はテキストによるので、別々の場所から読んだ二つのハッシュは等しいと判定される。
+
+% 2 1 0 0bf4bdcd6333333c0c8dc39dfb28b898
+
+% 3 1 0 1fde6f4905e3cee2193b689f1231ee10
+
+% 4 1 0 184af6e1196676db1d03f7814a8b0016
+
+% 0 1 0 14415dddefd634d60805cb2b374b76c9
+
+% 0 1 0 165f346ea9c0d9b21d4544b74f945ca7
+
+% 0 1 0 1d85e8b09197e8110f60009219132deb
+
+% 0 1 0 1ba64701a0f5a6fc1bc9a977df2c1f99
+
+% 1 1 0 190db5a03da81c5b1d5304967a15427f
+
+@ 0 15 0 09da2ef3a7cb19f40421ff7988517cab
++         オブジェクトは不変で、内容によってアドレス付けされるので、ハッシュをキーとする読み取り（`commitAt`、`treeAt`、`blobAt`、`show`）は普通の値であり、決して `Stale` ではない。
++     entry .apply   40 桁の小文字の十六進数からハッシュを作る。そうでなければ `Git.RefError(BadHash)` を発生させる
++     entry .unsafe   検査なしでテキストからハッシュを作る
++     entry .zero   すべてゼロのハッシュ。git が「オブジェクトなし」を表すのに使う
++         未生成のブランチに対して `Git.Head#commit.or(Git.Hash.zero)` が返すものであり、git がどの先端かを言わないときに、コマンドラインバックエンドが `Unmerged(branch, tip)` で報告する先端でもある。
++     entry .decoder   `.apply` を通してテキストからハッシュを読む
++         `Git.Hash is Decodable in Text` であり、`Tactic[Git.RefError]` を必要とする。
++     entry .showable   ハッシュはその 40 桁として表示される
++     entry .inspectable   ハッシュは 40 桁すべてを含む `Hash(5c1d…)` として inspect される
++     entry #text   40 桁の十六進数
++     entry #Plane   ハッシュが根である平面。`Notes`
++     entry #Limit   notes のパスの根の型。`Git.Hash` そのもの
++   entry .Identity   誰か。名前とメールアドレス
+
+% 1 1 0 013fce75532c823719f3c284895b5a00
+
+@ 0 9 0 1d2564b56055ac340dac8a682435fb0a
++         `Git.Identity(t"Hamlet", t"hamlet@example.com")` は、コミットの author 行と committer 行が持つ `user.name` と `user.email` の組である。
++         コミットの committer は常に実効的な設定から読まれる（どちらかのキーが設定されていなければ `NoSuchConfig` を発生させる）。
++         author は、`commit(…, author = identity)` で別のものを指定しない限り committer と同じであり、タグの tagger も同様である。
++     entry #name   その人の名前
++     entry #email   その人のメールアドレス
++     entry #text   git が書く形の ID。`name <email>`
++   entry .Timestamp   git 自身のタイムスタンプ。エポックからの秒数と、分単位の UTC オフセット
+
+% 1 1 0 1967ad31274506651eb60cbf48b4ce3e
+
+@ 0 11 0 0f2c369bf8781eef157a44c365b40133
++         どのカレンダー型とも切り離して保持しているので、読み書きするオブジェクトを通してバイト単位で往復できる。
++         `Git.Timestamp(1700000000, 90).text` は `1700000000 +0130` である。
++         `.now` は実時間の時計を読む。
++         オフセットは、JVM ではローカルのものになり、javalib に `java.time` がない Scala Native では `+0000` になる。
++     entry .now   ローカルの UTC オフセット付きの現在時刻（Scala Native では常に `+0000`）
++     entry .parse   テキストとしての二つのフィールドからタイムスタンプを作る。どちらかが不正なら `Unset`
++     entry #seconds   Unix エポックからの秒数
++     entry #offsetMinutes   分単位の UTC オフセット。グリニッジより西では負
++     entry #offset   git が書く形のオフセット。`+0130`、`-0500`
++     entry #text   git が書く形のタイムスタンプ。`1700000000 +0130`
++   entry .Signature   `author`、`committer`、`tagger` の行。誰がいつ
+
+% 1 1 0 09f0183325fb911811ec4c49effecef7
+
+@ 0 8 0 179162339fd1944a082e3383fb6affa2
++         `Commit#author`、`Commit#committer`、`Git.Tag.Annotation#tagger` が持つ、`Git.Timestamp` 付きの `Git.Identity` である。
++         暗号学的な署名と混同してはならない。
++         そちらは `Git.Signer` の仕事である。
++     entry .parse   `Hamlet <hamlet@example.com> 1700000000 +0100` のようなヘッダー行から署名を作る。できなければ `Unset`
++     entry #identity   誰か
++     entry #timestamp   いつか
++     entry #text   git が書く形の行。`name <email> seconds offset`
++   entry .Object   データベースから読んだ git オブジェクト。blob、tree、commit、tag のいずれか
+
+% 1 1 0 0cd2e4dea94ad71d040f81fda3fcfa60
+
+@ 0 5 0 0160d2b8b1287d3b0eef812b212fa34e
++         `Git.Repo.Handle` の `show(hash)` は、任意のオブジェクトを `Git.Object` として読む。
++         `Blob(data)`、`Tree(entries)`、`Commit(commit)`、`Tag(annotation)` のいずれかで、`#kind` がどれであるかを示す。
++         型付きのリーダー `blobAt`、`treeAt`、`commitAt`、`annotationAt` は一つの種類を読み、別の種類に対しては `NoSuchObject` を発生させる。
++         オブジェクトの名前空間には、git が名付けた四つの種類である `.Kind` と、tree のモードとエントリである `.Tree` もある。
+
+% 2 1 0 0cdfeea73b9b11b21113fdfd0a1a4559
+
+% 3 1 0 1efee362560c089307243ab8bb0c790e
+
+% 4 1 0 0eaba1c7c6f508a001b49b6936673450
+
+% 5 1 0 10b7ec44a54bbbda0615e2de3e0b50ed
+
+% 6 1 0 137934f6cf345958022710b96aef47b0
+
+% 7 1 0 0b16ad2bcbe32df309a47df67f3b99d4
+
+% 8 1 0 195b14b66673ee850f558241b0094c88
+
+% 9 1 0 0e99edc5461705220e04327e23985c30
+
+% 11 1 0 046f3fba9628e8001ca8121fa0a433f7
+
+% 13 1 0 1434efa117a79f8b1df7d159dc204d5f
+
+% 1 1 0 0d851d6337f38e4012af841bf4ae37fe
+
+% 0 1 0 0edb4ec290b43ebb1d80e14f632fbcf1
+
+% 0 1 0 038e24ee19c37ccd07d037ce6241441a
+
+% 0 1 0 0557337489fc969a0ddec7cea1c1c70c
+
+% 1 1 0 11d4bc71b27c77d606baae4e8fc7145b
+
+@ 0 1 0 0278b423a9f7655a1b8bffb173da2816
++     entry .Kind   git が名付けた四つのオブジェクトの種類。`blob`、`tree`、`commit`、`tag`
+
+% 1 1 0 0d7959e5b9b2f3e5063369888bb9d693
+
+@ 0 5 0 02ecd29b689e6368135279b2570faf8e
++           `Blob`、`Tree`、`Commit`、`Tag` である。
++           `.parse` は git の小文字の名前から一つを読み、`#text` はそれを書き戻す。
++           `writeObject(kind, data)` は、生の内容を格納するために一つを受け取る。
++       entry .parse   `blob`、`tree`、`commit`、`tag` から種類を作る。それ以外は `Unset`
++       entry #text   git が名付けた形の種類
++     entry .Tree   tree オブジェクトのモードとエントリ
+
+% 1 1 0 00075a8c835e5145072e08e91140b4a5
+
+@ 0 3 0 1819d7e9ea7a34a21c30080d1b009472
++           tree は `.Entry` のリストで、各エントリは `.Mode`、名前、そしてそれが指すもののハッシュである。
++           `treeAt(hash)` はこれを一つ読む。
++       entry .Mode   tree のエントリのモード。通常ファイル、実行可能ファイル、シンボリックリンク、gitlink、ディレクトリのいずれか
+
+% 1 1 0 0e778c08e38abb93093fbcd6d558ab31
+
+@ 0 7 0 1df9d92ae1fdefc71d7fe5d79ec0430c
++             `Regular`（`100644`）、`Executable`（`100755`）、`Symlink`（`120000`）、`Gitlink`（`160000`、サブモジュールのコミット）、`Directory`（`40000`、サブツリー）である。
++             `.parse` は git が書く八進数のテキストを読み、`100664` を通常ファイル、`040000` をディレクトリとして受け付ける。
++             `#octal` は正規の綴りである。
++         entry .parse   八進数のテキストからモードを作る。git が書かないものなら `Unset`
++         entry #octal   git が tree に書く形のモード
++       entry .Entry   tree のエントリ一つ。モード、名前、そしてそれが指すハッシュ
+
+% 1 1 0 18c4fc2d87db34e615961c46a5587d2a
+
+@ 0 8 0 065cbc886b21011a1f4afff3dac62622
++             `#kind` は、モードから判断したハッシュが指すものである。
++             `Directory` は `Tree` を、`Gitlink` は `Commit` を、それ以外はすべて `Blob` を指す。
++         entry #mode   エントリのモード
++         entry #name   tree の中でのエントリの名前
++         entry #hash   エントリが指すオブジェクトのハッシュ
++         entry #kind   モードから推論した、エントリが指すオブジェクトの種類
++     entry #kind   これがどの種類のオブジェクトか
++   entry .Head   HEAD の位置。ブランチに付いているか、コミットで切り離されているか
+
+% 1 1 0 1e192343aa6c5c351246876b0b002e68
+
+@ 0 5 0 08f6ef57cf4ef990047c236b0c320d86
++         `Attached(branch, tip)` はブランチ上の HEAD で、未生成のブランチ（最初のコミットがまだ作られていない新しいリポジトリ）では `tip` が `Unset` になる。
++         `Detached(at)` はコミット上の HEAD である。
++         `head()` はこれを `Stale[Git.Head]` として読む。
++         HEAD を動かすすべての書き込み（`commit`、`switch`、`checkout`、`reset`、`merge`、`rebase` など）は、この読み取り結果を前提とする。
+
+% 2 1 0 0fee1783d388056a0ccdf73815b2b7e2
+
+% 3 1 0 1a4ce3c9140f6ae60f6199c4f8669018
+
+% 4 1 0 1aa6cb409e327ac40ad443fad23c5fe5
+
+% 5 1 0 182827b70a5685760d67373adbdfe962
+
+% 6 1 0 073af6008a34f01913fe36f8a9b2483a
+
+% 7 1 0 08c08e28e5f5bf5a0eb698afa2fa4de1
+
+% 8 1 0 1c6be6a6a6f973de135a2ea37c4d7bb8
+
+% 9 1 0 1e6c1cc81d438a2d1590c30fcedfb765
+
+% 11 1 0 1845067ba3e37c7f184935c2e211fa80
+
+% 13 1 0 02634e197949aee212e06f2729c81644
+
+% 0 1 0 020f4d222a9143ae1430aeed8f342427
+
+% 0 1 0 08b3bb19e278b4990672ceba61974ca7
+
+% 0 1 0 0dd5d09d7ee3dbbb18f124af09d215bf
+
+% 1 1 0 118416d921dbe12114942c6c1b6d4778
+
+@ 0 3 0 1a63991f8b4ac1c60f6129ead1fdd88d
++     entry #commit   HEAD があるコミット。未生成のブランチでは `Unset`
++     entry #current   チェックアウトされたブランチ。HEAD が切り離されていれば `Unset`
++   entry .Status   `git status` の文字で表した、一つのパスの状態
+
+% 1 1 0 0edeaf41a109b15518939ac6bd079a8e
+
+@ 0 5 0 004db05cbb6bed401cfa16a6b9169dbd
++         `Updated`（`M`）、`Added`（`A`）、`Deleted`（`D`）、`Renamed`（`R`）、`Copied`（`C`）、`Unmerged`（`U`）、`Untracked`（`?`）、`Ignored`（`!`）、`TypeChanged`（`T`）である。
++         `Git.PathStatus` は、インデックスについて一つ、作業ファイルについて一つを持つ。
++     entry .parse   `git status --porcelain` の文字から状態を作る。空白やそれ以外のものなら `Unset`
++   entry .PathStatus   `status` の一行。インデックスと作業ファイルの状態、そしてパス
+
+% 1 1 0 162fdfc481272d2f00a27217c89faf14
+
+@ 0 10 0 134e0c1a04070e021f9a40fee709e7aa
++         `Git.Worktree.Handle` の `status()` がパスごとに一つずつ列挙するものである。
++         HEAD に対するインデックスの状態、インデックスに対する作業ファイルの状態（変わっていなければそれぞれ `Unset`）、パス、そして名前変更やコピーの場合はその元である。
++         パスはワークツリーのハンドルの平面上にあるので、ハンドルより長く生きることはできず、ハンドルを通して読み書きできる。
++     entry #index   HEAD に対するインデックスの状態。変わっていれば
++     entry #worktree   インデックスに対する作業ファイルの状態。変わっていれば
++     entry #path   ワークツリーのハンドルの平面上にあるパス
++     entry #origin   名前変更またはコピーされたパスの元
++   entry .Activity   クローン、フェッチ、プッシュ、プルの進捗。作業する側と見守る側で共有する
+
+% 1 1 0 161c05929559353317d7ae3d9c13ced5
+
+@ 0 7 0 0a1b61170fedbdd012d2011b3031d0ab
++         時間のかかるリモート操作は、終わるまでブロックし、`Activity` を通して進捗を報告する。
++         これはいくつかのアトミックなセル、すなわちフェーズ、リモートがそれを報告しているかどうか、全体のうちどれだけ終わったか、転送したバイト数からなり、それぞれ不可分に更新されるので、ほかのスレッドが途中の状態を見ることはない。
++         更新はアロケーションを伴わない。
++         バックエンドは、サイドバンドの行が届いたりオブジェクトを処理したりするたびにカウンターを進める。
++         ユーザーインターフェースは自分の頻度で `#report` をポーリングするか、リアクティブなものであれば `#updates` を読み出す。
++         `#updates` は要求されて初めて存在する `Relay` なので、ポーリングだけを行う呼び出し側はそのコストを払わない。
+
+@ 0 2 0 075930c530c38be106e6e36aa6739553
++         操作は `activity: Optional[Activity^] = Unset` を受け取り、何も渡されなければ非公開のものを作る。
++         見守りたい呼び出し側は、一つ作って渡す。
+
+% 2 1 0 1904b27810ae75b90ddc4818ca975c73
+
+% 3 1 0 16c2641b6b5816621abdb8a825a8d5bf
+
+% 4 1 0 05bdff54fcae8fc80acf1a137eec3787
+
+% 5 1 0 127fffc42f8a41d8147b2975d6fc534d
+
+% 6 1 0 1fc0f59616a25f5b099833324c70f1be
+
+% 7 1 0 19b5c3f94c6778f6170f04948068026a
+
+% 8 1 0 1a24d717e7ea1f91199352d0d42e8ad6
+
+% 9 1 0 186f5f3f2015167c02928e348f7e5116
+
+% 10 1 0 1767fde085ba13d202c100047d2bf493
+
+% 11 1 0 011a1c97c145ffbd10b560b7f6560094
+
+% 12 1 0 0268f216bbcb5fc50ce4e21cf15d1fe7
+
+% 0 1 0 1f98cbc7a3762ff907317e8e4d607571
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 1df60d93a8a4f5a7099b4ba309ce3cad
+
+% 2 1 0 0de383407d9eb8001d7d22cfaff539e5
+
+% 0 1 0 19fa52058f7e28c81f69aea3104f5346
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 0dc6a618e235447b174bdecee18d2416
+
+% 0 1 0 1872730b807a6a01091e3325be01f328
+
+% 0 1 0 101d32302dc085e4119cd06b8af7bfe6
+
+% 0 1 0 1b6a7c6821420e9c0fda38371e37d010
+
+% 0 1 0 1448261cbfdba35209e925c397a12c9a
+
+% 0 1 0 07717c8d69c00f5012eacf682b3c2fa9
+
+% 1 1 0 027ee89cf4001554093c1b24cb1e3854
+
+@ 0 3 0 15e3bec6f93d986c168b256a15614ae4
++         `Activity` は `Durable` である。
++         操作が戻った後も見守る側のスレッドがそれを保持するので、作ったスコープより長く生きてもよい。
++     entry .Phase   転送のどの段階が進行中か
+
+% 1 1 0 05060183829aefc20dc9e9444ab70c2c
+
+@ 0 5 0 1d2758b98def8a0909297ebbcab9cce4
++           `Idle`、次に git 自身の段階である `Enumerating`、`Counting`、`Compressing`、`Writing`、`Receiving`、`Resolving`、`Unpacking`、そして `Checkout` と `Done` である。
++           `.parse` は git の進捗行の見出し（`Receiving objects`）から一つを読む。
++       entry .parse   `Receiving objects` のような git の進捗の見出しからフェーズを作る。未知のものなら `Unset`
++     entry .Report   アクティビティの観測一回分。純粋なデータで、読んだ時点で古くなる
+
+% 1 1 0 01da77f077c89e821c738613607d84cf
+
+@ 0 23 0 0d1e9070ae1c66bb0d9025718868df77
++           フェーズ、リモート側がそれを報告しているかどうか（`remote:` の行）、終わった項目の数、わかっていれば全体の数、そしてそれまでに転送したバイト数である。
++           `#complete` は終わった割合で、全体の数がわからない間は `Unset` である。
++       entry #phase   進行中の段階
++       entry #remote   報告しているのが転送の相手側かどうか
++       entry #done   このフェーズで終わったオブジェクトまたはファイルの数
++       entry #total   わかった時点での、全体の数
++       entry #bytes   それまでに転送したバイト数
++       entry #complete   割合としての `done/total`。空のフェーズでは `1.0`、全体の数がわからない間は `Unset`
++     entry #report   `Stale[Git.Activity.Report]` としての現在の状態
++         すべてのセルを一度ずつ読む。
++         結果はある瞬間の一貫したスナップショットであり、戻った時点ですでに古くなっている。
++     entry #complete   操作が終わったかどうか
++     entry #updates   変化ごとに一つずつ報告を流す `Relay`。アクティビティが終わると終了する
++         最初に要求されたときに作られ、それ以降に値が送り込まれる。
++         一度も要求しない呼び出し側は何も払わない。
++         そのストリームは別のスレッドから読み出す。
++     entry #begin   フェーズを開始し、カウントをリセットする。バックエンドが呼ぶ
++     entry #measure   フェーズの全体の数を設定する。バックエンドが呼ぶ
++     entry #advance   フェーズの終わった数に加える。バックエンドが呼ぶ
++     entry #progress   終わった数と全体の数を同時に設定する。バックエンドが呼ぶ
++     entry #transferred   転送したバイト数に加える。バックエンドが呼ぶ
++     entry #finish   アクティビティを終了済みにし、`#updates` のリレーを止める。バックエンドが呼ぶ
++   entry .Config   git の設定。キー、スコープ、ソース、そしてそれらを読み書きするハンドル
+
+% 1 1 0 1b750e3a419a32901c12245cd4036a2a
+
+@ 0 6 0 11ec53ce97199d3018094ca8006cd0f0
++         設定は、貸し出された `Git.Config.Handle` を通して、値のコーデックで型付けして読み書きする。
++         `repo.config { config ?=> config.get[Text](key) }` はリポジトリ自身のファイルを読み、`repo.configure { … }` はそれに書き込み、`repo.effectiveConfig { … }` は git が参照するすべてのスコープを通して読む。
++         また、任意のファイル（たとえばグローバルな `~/.gitconfig`）は、`path.open[Git.Config](Read & Write) { config ?=> … }` としてそのパスで開ける。
++         キーは `.Key` で、`section.name` または `section.subsection.name` から解析する。
+
+% 2 1 0 058845846cc7adb10fae92812b4d5b9c
+
+% 3 1 0 01bdea656435882f1f23e7b61ba87842
+
+% 4 1 0 109be130e3cec3a41619c82796f039e5
+
+% 5 1 0 112ca7ce08678fe110e6ef2e93ad3046
+
+% 6 1 0 15cc4dce2895d4c8059f88324bd9427e
+
+% 7 1 0 0a9b27fe7cce855b1970f391963c56f2
+
+% 8 1 0 04ab8e82576f947b0461755f41b1499d
+
+% 9 1 0 0f53dab83655b0a71920b3e84fcc2086
+
+% 11 1 0 0628b75ecc9ef7f40273fd42974d4a47
+
+% 0 1 0 010cf579cb94b70219a9a0538bbbe877
+
+% 2 1 0 1055a5a362133bea1d391ff92d36c715
+
+% 0 1 0 14e17c15c40f054a184e0bf2c8efb33e
+
+% 0 1 0 0ea5c199c1edf72117e951f0571e55a0
+
+% 1 1 0 07089be2f6b6c0db1575f8b0dcb779b9
+
+@ 0 4 0 0f80a74c996d04a20b7437ceed6277ab
++         ファイルはほかのプロセスに書き換えられうるので、読み取りは `Stale` である。
++         設定されていないキーの `get` はエラーではなく `Unset` である。
++     entry .Scope   設定がある場所。`Local`、`Worktree`、`Global`、`System` のいずれか
++     entry .Key   設定のキー。セクション、省略可能なサブセクション、名前
+
+% 1 1 0 0a43e175afeef77801f423dd785d04c3
+
+@ 0 11 0 0a84d7ece2a2560a1541ab9439463ee9
++           `Git.Config.Key(t"remote", t"origin", t"url")` は `remote.origin.url` である。
++           `.parse` はドット区切りの形を読み、セクションと名前を小文字にし（サブセクションは git と同じく大文字と小文字を区別する）、セクションや名前のないテキストに対しては `Git.Error(InvalidConfig)` を発生させる。
++       entry .parse   `section.name` または `section.subsection.name` からキーを作る。そうでなければ `Git.Error(InvalidConfig)` を発生させる
++       entry .showable   キーはドット区切りのテキストとして表示される
++       entry #section   小文字のセクション
++       entry #subsection   サブセクション。あれば
++       entry #name   小文字の名前
++       entry #text   ドット区切りの形のキー
++     entry .Source   ハンドルが読み書きする設定ファイル
+
+% 1 1 0 0ea20233f034649c18c2bbd744eaf96c
+
+@ 0 5 0 0aec286193108c95109aafa356770ace
++           `Repository(gitDir, scope)` は、あるスコープにおけるリポジトリ自身のファイルである。
++           `File(path)` は `~/.gitconfig` のような名前付きのファイルである。
++           `Effective(gitDir)` は、git がそのリポジトリについて参照するすべてのスコープを通して読み、書き込みはできない。
++           ハンドルの `#source` はこれらのいずれかであり、`Git.Backend` の `configRead`、`configWrite`、`configUnset` はこれを一つ受け取る。
++     entry .Handle   貸し出される設定のハンドル。読むには `get`、`all`、`list`、書くには `set`、`add`、`unset`
+
+% 1 1 0 1c03a81cfe3c96bb0921e71a463f6f86
+
+@ 0 16 0 19b81a39b161bf420dbdecee712b2049
++           リポジトリのハンドルに対する `config`、`configure`、`effectiveConfig` によって、またはファイルを `Git.Config` として開くことによって、ブロックの間だけ貸し出される。
++           これは排他的なケイパビリティなので、ブロックの外まで保持することはできない。
++           読み取りには `Grant.Read`、書き込みには `Grant.Write` が必要で、ハンドルを開いたモードがそれを与える。
++           読み取り専用のハンドルを通した書き込みはコンパイルできない。
++       entry .get   キーに対して有効な値をデコードして、`Stale[Optional[value]]` として返す
++           `value is Decodable in Text` が必要である。
++           git はスコープをシステムからローカルの順に並べ、最後の設定が優先される。
++           これが返すのはその値である。
++           設定されていないキーは `Unset` である。
++       entry .all   複数の値を持つキーに設定されたすべての値をデコードして、`Stale[List[value]]` として返す
++       entry .list   すべてのキーとその生の値を `Stale[List[(Git.Config.Key, Text)]]` として返す
++       entry .set   キーに値をエンコードして設定し、それまでの値を置き換える
++           `value is Encodable in Text` と `Grant.Write` が必要である。
++       entry .add   キーに値を追加し、それまでの値も残す
++       entry .unset   キーの値を削除する。`all = true` なら、複数の値を持つキーのすべての値を削除する
++       entry #source   このハンドルが読み書きするファイルまたはスコープ
++     entry .Openable   パスを `Git.Config` として開く方法。そのファイルに対して貸し出されるハンドル
+
+% 1 1 0 16916f4d51139a581492096f4701e7dd
+
+@ 0 12 0 09623aa07a84b5550d0c56fe6abb9dcb
++           `path.open[Git.Config](mode) { config ?=> … }` の背後にある `aperture.Openable` である。
++           ハンドルのソースは `Git.Config.Source.File(path)` である。
++           作るときに `Git.Backend^` と `Tactic[Git.Error]` が必要で、`.openable` がそれらをスコープから供給する。
++       entry #open   パスを開き、モードの権限を持つハンドルをブロックに貸し出す
++       entry #Self   開くパスの型
++       entry #Form   開く形式。`Git.Config`
++       entry #Operand   フラグの型。なし
++       entry #Result   貸し出されるもの。`Git.Config.Handle`
++     entry .openable   任意の `Path on Linux` を `Git.Config` として開けるようにする given
++         暗黙のスコープにあり、（`gitBackends` からの）`Git.Backend^` と `Tactic[Git.Error]` を必要とする。
++   entry .Operation   途中で止まり、競合の解決を待っている操作
+
+% 1 1 0 1e76b6da74225b050507210195695379
+
+@ 0 8 0 14186e62a8b953a91023d54b0d6bf26b
++         止まったマージ、リベース、cherry-pick、revert、または進行中の bisect について `.git` が記録しているものである。
++         `Merging(merging, conflicting)`、`Rebasing(onto, originalHead, done, remaining, conflicting)`、`CherryPicking(commit, conflicting)`、`Reverting(commit, conflicting)`、`Bisecting` がある。
++         `Stopped` という結果はこれを一つ持ち、リポジトリのハンドルに対する `operation()` は進行中のものを読む。
++         `#conflicts` は、`continue()` の前に解決して add しなければならないパスを示す。
++     entry #conflicts   競合したまま残っているパス。操作を続ける前に解決しなければならない
++   entry .Sequence   cherry-pick、revert、リベース、stash の適用の結果と、それを進める動詞
+
+% 1 1 0 10238efcaa87d7fb00f48888b360e1f2
+
+@ 0 5 0 0ca22e979ed66b4b17737df2fd63a2de
++         `.Outcome` は、それらのそれぞれが返すものである。
++         新しい HEAD を持つ `Completed(head)`、または競合時の `Stopped(operation)` で、後者はエラーではない。
++         競合を解決して add したら、`continue()` は操作を完了し、`skip()` は現在のコミットを飛ばし、`abandon()` は開始時の状態に戻し、`quit()` はツリーをそのままにする。
++         これらが、バックエンドの `sequence` が受け取る `.Verb` である。
+
+% 2 1 0 1a3d653efce7a3cb1ac3fad6058e81b8
+
+% 3 1 0 098a0483f1d246590a6eb075384b3bce
+
+% 4 1 0 05f935da74a63fa417e7bb04ddb72ebb
+
+% 5 1 0 0220712bf58159470762b9bf4d619943
+
+% 6 1 0 0de57ba91955b6b31f4b46080584b91e
+
+% 7 1 0 0b8cdc7cab4d92ff0fafa73ea7dd0a2b
+
+% 8 1 0 1f29c201b456fc4d0ae7931d6e60d795
+
+% 9 1 0 06dff8a1a4c1638709b1e4776d57f6ec
+
+% 11 1 0 0291949c865192a806ed1f1b593bc3f1
+
+% 13 1 0 044bd9ddbab3e85b15047f7e2733bba6
+
+% 0 1 0 1c215324fda9ca44192e59d5d44f0da5
+
+% 0 1 0 1ae558517284b3a406b6443bb239b544
+
+% 0 1 0 00943c6302209a7d073c0e72331a607b
+
+% 0 1 0 141a7012da559443175af4cd418b2dbe
+
+% 1 1 0 045ec32de399ae6f02544dbc357c3149
+
+@ 0 3 0 0acecc73d8737de6119ecadd5b27f5ed
++     entry .Outcome   `Completed(head)`、または競合時の `Stopped(operation)`
++     entry .Verb   `Continue`、`Skip`、`Abort`、`Quit` のいずれか。進行中の操作の進め方
++   entry .Merge   マージまたはプルの結果
+
+% 1 1 0 1e84b040dd495cf5187e0db379db357b
+
+@ 0 13 0 13585229c770e4231c321ca9b04c27ca
++         `.Outcome` は、ブランチが単に前進したときは `FastForwarded(head)`、マージコミットを作ったときは `Merged(head)`、何もすることがなかったときは `UpToDate`、競合時には `Stopped(operation)` である。
++         最後のものはエラーではない。
++         パスを解決し、add して、`continue()` する。
++     entry .Outcome   `FastForwarded(head)`、`Merged(head)`、`UpToDate`、`Stopped(operation)` のいずれか
++   entry .Rebase   リベースが受け取るオプション
++     entry .Option   `Autosquash`、`KeepEmpty`、`NoRenames`、`Signoff`、`Autostash` のいずれか
++   entry .Pull   プルが、フェッチしたものをどのように統合するか
++     entry .Mode   `Merge`、`Rebase`、`FastForwardOnly` のいずれか
++         `Merge` は `FETCH_HEAD` を `FastForward.Auto` と同じようにマージする。
++         `FastForwardOnly` は fast-forward 以外をすべて拒否する。
++         `Rebase` はブランチをその上にリベースし、完了したリベースを `Merged` として報告する。
++   entry .Push   プッシュの強制ポリシーと、各 ref に何が起きたか
+
+% 1 1 0 18f707143f09b7d615fbb61a589c5128
+
+@ 0 4 0 0fde217d475a36bd0d94305cdac2ecb9
++         `.Force` は、非 fast-forward の更新を許すかどうかを示す。
++         `Never`、`Always`、または `Lease(expectations)` である。
++         最後のものは git の `--force-with-lease`、すなわちリモート側の compare-and-swap で、プッシュの前提となるリモートの ref の `Stale` の読み取り結果を、`remoteRefs` が返したとおりに持つ。
++         `.Outcome` は、プッシュした各 ref に何が起きたかである。
+
+% 2 1 0 0ea822c8bc6ab8cc14755c89ddc2ec59
+
+% 3 1 0 05b2698c51d46c4408d15e94c7a5f392
+
+% 4 1 0 09ee066e0e6cf76f1d7fc950182a2517
+
+% 5 1 0 1aa7964fd1f902fa0c1d9311d2f3a141
+
+% 6 1 0 11a8039f7167ef2d0a8a2a6ad6fe3018
+
+% 7 1 0 10c7d6963c94f00316f76346975daa76
+
+% 8 1 0 1abdcc5ab909b99a16680bae9cd3962b
+
+% 9 1 0 01ef19c7d8443315167899ee50c4c9d1
+
+% 10 1 0 095b692582dc742b0904853772672b23
+
+% 11 1 0 03ccd7ece10c801b148d8fb33412647d
+
+% 12 1 0 0588b415512fd85d1b250d1359387d90
+
+% 4 1 0 0a13a4eeeb3c27241dfe6efd345c0ec2
+
+% 0 1 0 1f74c685849f332819c760a6e93b651b
+
+% 2 1 0 04293a82910013df173d3143be1e9d0b
+
+% 0 1 0 01fb63c96e95303f0963c9748105adc0
+
+% 0 1 0 05820cef001dda181c6e896c7c60823d
+
+% 0 1 0 0172fcadcec9f90c0e6cf604eeb43ea2
+
+% 1 1 0 0ed72ec189518f9b17a3234c31794269
+
+@ 0 4 0 0e6be77947929eaa186552c877980065
++     entry .Force   `Never`、`Always`、または `--force-with-lease` に当たる `Lease(expectations)`
++     entry .Outcome   `Updated(from, to, forced)`、`Created(to)`、`Deleted(from)`、`UpToDate`、`Rejected(reason)` のいずれか
++         失敗したリースは、エラーを発生させるのではなく、ref ごとに `Rejected` として報告される。
++   entry .Stash   stash のエントリ
+
+% 1 1 0 15aafd4cd694050c1631cb46b2d1b557
+
+@ 0 8 0 1342d7e539ac1e2f0c2e3a09292377c8
++         ワークツリーのハンドルに対する `stashes()` は、それらを新しい順に `Stale[List[Git.Stash.Entry]]` として列挙する。
++         `popStash`、`applyStash`、`dropStash` は `Stale[Git.Stash.Entry]` を受け取り、列挙した後にエントリがなくなったり変わったりしていれば `NoSuchStash` を発生させる。
++     entry .Entry   stash のエントリ一つ。インデックス、コミット、メッセージ
++       entry #index   エントリの位置。最も新しいものは `0`
++       entry #commit   stash した状態を保持するコミット
++       entry #message   エントリのメッセージ
++   entry .Signer   コミットやタグが持つ署名を作る
+
+% 1 1 0 03dc66d1d2aa101f006f74052286d1ba
+
+@ 0 8 0 0fcaeaefd349097b07309c7559cfe8eb
++         `Git.Signer` は、コミットやタグのペイロードに対する ASCII アーマー形式の署名を作る。
++         ハンドルはそれを、コミットでは `gpgsig` ヘッダーとして、タグでは末尾のブロックとして挿入する。
++         `commit(…, signer = …)`、`amend(…, signer = …)`、`annotatedTag(…, signer = …)` として渡す。
++         `SshKeygen.Signer(key)` は `ssh-keygen -Y sign` で、`Gpg.Signer()` は `gpg` で署名する。
++         オブジェクトは `git commit` ではなくここで組み立てられるので、署名がプロセスの外に出ることはない。
++     entry #sign   ペイロードに対するアーマー形式の署名。作れなければ `Git.Error(SigningFailed)` を発生させる
++   entry .Verifier   コミットやタグが持つ署名を検証する
+
+% 1 1 0 1b282d7929fe22ce091af274e424a280
+
+@ 0 10 0 1501d716071e3bf4145f3716b04bb0e4
++         `verifyCommit` と `verifyTag` が使うのは、スコープにある `Git.Verifier` である。
++         `SshKeygen.Verifier(allowedSigners)` は allowed-signers ファイルに照らして、`Gpg.Verifier()` はキーリングに照らして検証する。
++     entry #verify   ペイロードに対する署名の `Git.Verification`
++   entry .Verification   `Good(signer)`、`Bad(detail)`、`Unknown(detail)` のいずれか
++       コミットやタグを検証した結果である。
++       `Good` は署名を作った主体またはユーザー ID を示す。
++       `Bad` は署名が一致しないことを意味する。
++       `Unknown` は検証できなかったこと、すなわちオブジェクトが署名されていない、タグが注釈付きでない、または署名者が許可されたものに含まれていないことを意味する。
++   entry .Backend   リポジトリのハンドルが操作する実装。`Commandline` または `Native`
+
+% 1 1 0 144f05abff2888f4049f0ccc7b343a60
+
+@ 0 7 0 0328df2b0455c1681cb972dc1d457b22
++         `Git.Repo.Handle` や `Git.Worktree.Handle` に対するすべての操作は、このトレイトが宣言するプリミティブの上に一度だけ書かれており、二つのバックエンドはそれらを異なる方法で実装する。
++         ref、オブジェクト、インデックス、設定、notes といった下回りは十分に単純なので、compare-and-swap、オブジェクトの組み立て、署名はハンドルの中にある。
++         アルゴリズム的な動詞（`merge`、`rebase`、`cherryPick`、`stash`、トランスポート）は、それぞれのバックエンド独自のものである。
++         `Git.Backend^` はケイパビリティである。
++         `gitBackends` の given のいずれかを名前で import して選び、すべてのハンドルは開いたときのものを保持する。
+
+% 2 1 0 11526db9268fdeed04136202db50f0bb
+
+% 3 1 0 1625748d1b17f2dd1ac3933da8a62420
+
+% 4 1 0 0d3ba277be9cf183156ae8db0d218c0f
+
+% 5 1 0 0cda0b71aa1212251fa5b43dced8209d
+
+% 6 1 0 0341e7223d7e578215a4079470fc75c8
+
+% 7 1 0 10c0761499afc60d141ba6737d74720a
+
+% 8 1 0 1c6335f12e80878d1fe70877c2f4b591
+
+% 0 1 0 16622465ad0f8220164a15c25a426286
+
+% 1 1 0 151e5770cecf80a901a7a231eeb5787e
+
+@ 0 3 0 14200372d85b2e7103c786f3a1bd4fc1
++         メンバーはハンドルが呼ぶ下回りである。
++         プログラムは、これらではなくハンドル自身の操作を通してリポジトリを操作する。
++         `Unsupported(operation)` は、実装していないプリミティブに対してバックエンドが発生させるものである。
+
+% 0 1 0 1083fdb0ea7b40fa14b2733606335f78
+
+% 0 1 0 1aa26b3c22e75d261a791854c996ecce
+
+% 0 1 0 1f8be20d5e212e921783d69560fd6f90
+
+@ 0 1 0 05505dde2ebb0d4c1b4ee06923917434
++     entry .Location   リポジトリが見つかった場所。その git ディレクトリ、共有のディレクトリ、作業ツリー
+
+% 1 1 0 0ce2c5459c09ba851cbe8a3e0d8fbdef
+
+@ 0 7 0 1fe1f4cb78b83757045ff5119a7cfca9
++           `#locate` が返すものである。
++           `#commonDir` は、パスがリンクされたワークツリー（自身の git ディレクトリが共有のものを指す）でない限り、`#gitDir` と同じである。
++           ベアリポジトリでは `#worktree` は `Unset` である。
++       entry #gitDir   リポジトリ自身の git ディレクトリ
++       entry #commonDir   すべてのワークツリーが共有する git ディレクトリ。オブジェクトと ref がある場所
++       entry #worktree   作業ツリーの根。リポジトリが持っていれば
++     entry .Expectation   更新を進めるために ref が保持していなければならないもの。何でもよいか、何もないか、一つのハッシュか
+
+% 1 1 0 029a324fa51db5cc17a1882577efd2a3
+
+@ 0 90 0 1c1deda6ac9e0d1705eaeb4e1aee2bfe
++           `Unconditional` は ref が何を保持していても上書きする。
++           `Absent` は ref が存在しないことを要求する（ブランチやタグはこれで作る）。
++           `Exactly(hash)` は ref がそのハッシュを保持していることを要求する。
++           `.apply` は `Optional[Git.Hash]`（`Stale` の読み取り結果の値）を `Absent` または `Exactly` に持ち上げる。
++           すべての compare-and-swap はこのように書く。
++           これは、潰れてしまう `Optional[Optional[Git.Hash]]` ではなく enum である。
++       entry .apply   `Unset` なら `Absent`、そうでなければ `Exactly(hash)`
++       entry #expected   要求されるハッシュ、または `Unset`
++     entry .Target   ref の内容。`Direct(hash)` または `Symbolic(ref)`
++     entry .StatusLine   ハンドルの平面に型付けされる前の、パスをテキストとして持つ status の一行
++       entry #index   HEAD に対するインデックスの状態。変わっていれば
++       entry #worktree   インデックスに対する作業ファイルの状態。変わっていれば
++       entry #path   作業ツリーからの相対パス
++       entry #origin   名前変更またはコピーされたパスの元
++     entry .NoteEdit   notes のツリーに対する編集一つ。`Add`、`Append`、`Remove`、`Copy` のいずれか
++         `#editNotes` が適用するものである。
++         `Add(target, body, force)`、`Append(target, body)`、`Remove(target, ignoreMissing)`、`Copy(source, target, force)` がある。
++     entry .WorktreeEntry   バックエンドが列挙する、リンクされたワークツリー一つ。`Git.Worktree.Entry` はハンドルの側の形
++       entry #path   ワークツリーの根
++       entry #head   チェックアウトされたコミット。あれば
++       entry #branch   チェックアウトされたブランチ。HEAD が付いていれば
++       entry #bare   エントリがベアリポジトリそのものかどうか
++       entry #locked   ワークツリーがロックされていれば、ロックの理由
++       entry #prunable   ワークツリーを削除できる場合、その理由
++     entry #locate   パスを含むリポジトリの場所。なければ `Unset`
++     entry #init   パスにリポジトリを、初期ブランチ付きで、ベアかどうかを指定して作る
++     entry #clone   ソース（パスまたは URL）をパスにクローンし、アクティビティを通して報告する
++     entry #head   git ディレクトリにおける HEAD の位置
++     entry #readRef   ref の内容（直接またはシンボリック）。存在しなければ `Unset`
++     entry #listRefs   プレフィックスの下にあるすべての ref とそのハッシュ
++     entry #peel   タグオブジェクトが最終的に指すコミット
++     entry #updateRef   `Expectation` を前提として、reflog のメッセージ付きで ref を動かすか削除する
++         ref を動かすすべての操作が依拠する compare-and-swap である。
++         ref が期待したものを保持していなければ `Moved` を、ほかのプロセスがロックを保持していれば `Locked` を発生させる。
++     entry #updateSymbolicRef   `HEAD` のようなシンボリック ref を別の ref に向ける
++     entry #resolve   リビジョン式が指すハッシュ。なければ `Unset`
++     entry #revList   リビジョンから到達できるコミットを新しい順に返す。範囲、件数、パスで絞り込める
++     entry #reflog   ref または `HEAD` の reflog
++     entry #mergeBase   二つのコミットの最良の共通祖先。あれば
++     entry #isAncestor   一方のコミットが他方から到達できるかどうか
++     entry #readObject   オブジェクトの種類と生の内容。なければ `Unset`
++     entry #readObjects   複数のオブジェクトのハッシュ、種類、内容を一度に返す
++     entry #writeObject   生の内容をある種類のオブジェクトとして格納し、そのハッシュを返す
++     entry #diffTree   二つのツリーの間のファイルの差分
++     entry #status   status の行として表した、インデックスと作業ファイルの状態
++     entry #add   パスをステージする。`all` ならすべてをステージする
++     entry #remove   パスをインデックスから削除し、`cached` でなければ作業ツリーからも削除する
++     entry #move   インデックスと作業ツリーの中でパスの名前を変更する
++     entry #restore   インデックスまたは作業ツリーのパスをソースから復元する
++     entry #clean   追跡されていないファイルを削除し、削除したパスを返す
++     entry #writeTree   インデックスをツリーオブジェクトとして書き込み、そのハッシュを返す
++     entry #readTree   `ResetMode` に従って、インデックスを（`Hard` なら作業ファイルも）HEAD に合わせる
++     entry #diffWorktree   HEAD またはリビジョンに対する、作業ファイルまたはインデックスの差分
++     entry #tracked   インデックスが追跡しているすべてのパス
++     entry #conflicts   競合しているすべてのパス
++     entry #checkout   リビジョンをチェックアウトし、HEAD を切り離す
++     entry #switch   ブランチに切り替える。求められれば先に作る
++     entry #merge   fast-forward のポリシーのもとで、リビジョンを HEAD にマージする
++     entry #cherryPick   コミットを HEAD の上に適用する
++     entry #revert   コミットの逆を HEAD の上に適用する
++     entry #rebase   オプションを指定して、HEAD をリビジョンの上にリベースする
++     entry #sequence   進行中の操作を続ける、飛ばす、中止する、または抜ける
++     entry #operation   進行中の操作。あれば
++     entry #stash   コミットしていない状態を stash のエントリとして保存し、そのコミットを返す。何もなければ `Unset`
++     entry #stashes   stash のエントリを新しい順に返す
++     entry #applyStash   stash のエントリを適用し、求められればインデックスも復元し、求められれば削除する
++     entry #dropStash   stash のエントリを削除する
++     entry #readNote   notes の ref において、ターゲットに付けられた note。あれば
++     entry #listNotes   notes の ref にあるすべての note を、note の blob とターゲットの組として返す
++     entry #editNotes   ベースのコミットと編集から、どの ref にも属さない新しい notes のコミットを作る
++         その後、ハンドルが notes の ref を compare-and-swap でそこへ動かす。
++         これによって、二つの書き手が互いの notes を壊すことがなくなる。
++     entry #configRead   設定のソースのすべてのキーと値
++     entry #configWrite   キーを設定するか、キーに値を追加する
++     entry #configUnset   キーの値、またはそのすべての値を削除する
++     entry #remoteRefs   リモートが公開しているすべての ref とそのハッシュ
++     entry #fetch   リモートから refspec をフェッチし、更新した ref を返す
++     entry #push   強制ポリシーのもとでリモートに refspec をプッシュし、各 ref の結果を返す
++     entry #worktrees   リンクされたすべてのワークツリー
++     entry #addWorktree   パスに、リビジョンをチェックアウトしたリンクされたワークツリーを追加する
++     entry #removeWorktree   リンクされたワークツリーを削除する
++     entry #lockWorktree   理由を付けて、リンクされたワークツリーをロックする
++     entry #unlockWorktree   リンクされたワークツリーのロックを解除する
++     entry #moveWorktree   リンクされたワークツリーを別のパスに移す
++     entry #pruneWorktrees   ディレクトリがなくなったワークツリーの記録を削除し、そのパスを返す
++   entry .OpenFlag   オープン時に指定できるフラグ。`Await`
++       `Await` は、すぐに失敗するのではなく、この JVM 内で競合する排他的なハンドルが閉じるのを待つ。
++       `path.open[Git.Repo](Exclusive & Write, Git.OpenFlag.Await)` として渡す。
++       排他性は、galilei のディレクトリハンドルと同じレジスタを通して、この JVM 内のハンドルの間でだけ調停される。
++       ほかのプロセスを待つことは決してない。
++   entry .Repo   パスをリポジトリとして開く形式。オブジェクトデータベースと ref で、`Handle` を貸し出す
+
+% 1 1 0 0a91e12f75c92f69014791383563e6a6
+
+@ 0 8 0 0aed979250d8c4ad1d56d6818a75e768
++         `path.open[Git.Repo](mode) { repo ?=> … }` は、ベアリポジトリ、`.git` ディレクトリ、それを含む作業ツリー、またはリンクされたワークツリーの `.git` ファイルを開き、`Git.Repo.Handle` をブロックに貸し出す。
++         モードは権限を指定する。
++         `Read`（`open[Git.Repo]()` のときのデフォルト）、`Read & Write`、またはこの JVM 内のほかの排他的なハンドルを拒否する `Exclusive & Write`（代わりにそれらを待つには `Git.OpenFlag.Await` を付ける）である。
++         開くときにそこにリポジトリがあることを検証し、なければ `Git.Error(NoRepository(path))` を発生させる。
++         そのため、ハンドルは与えられた時点では必ずリポジトリを指していた。
++         その後に何が起きるかはほかのプロセスの問題であり、だからこそ ref を解決する読み取りはすべて `Stale` なのである。
+
+% 2 1 0 1dee447d6cfd06c717ecbe7cc5886fef
+
+% 3 1 0 0786d66e00a2929501c1cf5c832d1e9a
+
+% 4 1 0 0a826639e6c86d2213f7d2b091d54011
+
+% 5 1 0 1ce76f6720aa90ca1192f30bcd227f0b
+
+% 6 1 0 0980659a3d03053b0dd3b8a7157a6003
+
+% 7 1 0 141a499fbb2c495315c29dc8d9c4f07a
+
+% 8 1 0 17c666a2a09692dd03865a7718dd962a
+
+% 9 1 0 1af46601ff6427650a52dfd5e48b69ac
+
+% 11 1 0 06a4a5a024e3cca213780ebbfc3624dc
+
+% 0 1 0 1f462709a183eff2176407881e00995d
+
+% 1 1 0 0f932fc97d16228d10ec2456926381cd
+
+% 0 1 0 1b84da3ddf8194510c337295b1b304ef
+
+% 0 1 0 0323a90d9ccaeaa50e701ceb7bbc4e4b
+
+% 1 1 0 1a71ccd4179ec7030671c3c3e088eae6
+
+@ 0 6 0 032e8ba37c88a1300c7a16ceedf2e8fa
++         ハンドルは排他的なケイパビリティである。
++         ハンドルも、そこから派生したものも、ブロックの外まで保持することはできない。
++         すべての操作は権限で制限されたハンドルの拡張メソッドである。
++         読み取りは `Git.Repo.Handle & Granting[Grant.Read]` に、書き込みは `… & Granting[Grant.Write]` に対して定義されているので、`Write` なしで開いたハンドルに対する書き込みはコンパイル時エラーになる。
++         `Git.Worktree.Handle` は `Git.Repo.Handle` なので、これらはすべてワークツリーでも使える。
+
+% 0 1 0 095379084b65320e16efda3fb2fea1fc
+
+% 0 1 0 01685537e926971c057b35f7a6e56aa2
+
+% 0 1 0 00dfde3eb911894f1871fc8087f2209c
+
+@ 0 1 0 1940af628834e91d048e0ebc1227d325
++     entry .Handle   貸し出されるリポジトリのハンドル。リポジトリのすべての操作は、権限で制限されたその拡張メソッドである
+
+% 1 1 0 1e691f55f2440dd91bccbfee765eed29
+
+@ 0 5 0 0d51c8e5a2bf51391a94443390bf58a1
++           ref、HEAD、リビジョン式、reflog、stash、設定、リモート、リンクされたワークツリーを解決する読み取りは `Stale` 値を返す。
++           読み取った瞬間には真であり、その後はそうでないかもしれない。
++           ハッシュをキーとする読み取り（`.show`、`.commitAt`、`.treeAt`、`.blobAt`、`.annotationAt`、`.mergeBase`、`.isAncestor`、`.exists`）は、オブジェクトが不変で内容によってアドレス付けされるので、普通の値である。
+
+@ 0 6 0 083961d7dba2f5a51697c1e4d36f52fa
++           ref を動かすすべての書き込みは、その前提となる `Stale` の読み取り結果を受け取り、ref がもはやそれを保持していなければ `Git.Error(Moved(ref, expected, actual))` を発生させる。
++           これは compare-and-swap であり、同じリポジトリに書き込むほかのプロセスに対する唯一の防御である。
++           ブランチやタグの作成は、代わりにそれが存在しないことを前提とする。
++           そのため、`.makeBranch` と `.makeTag` は読み取り結果を受け取らず、名前が存在すれば `Moved(ref, Unset, actual)` を発生させる。
+
+% 2 1 0 0da767359745e0c6141790c6fc57ac7a
+
+% 3 1 0 0a2afd2583d2148a11e025281143307e
+
+% 4 1 0 12f4e48da986897b0ca8586e43118939
+
+% 5 1 0 06484654b9494d870389af5d83a84c35
+
+% 6 1 0 18cf808d52d59d9d1091819a90fba42d
+
+% 7 1 0 11392004f43f9a5110507c20f3ecdc85
+
+% 8 1 0 08340e001a55f3130f25542007734970
+
+% 9 1 0 13263ac048d931fd0d1fffde93d855bc
+
+% 11 1 0 16646c0af51b4f680cbda0dcb3596897
+
+% 1 1 0 04c8ac3b8bee29f10ec2a461bcd1308d
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 1 1 0 116c5f9cc4d90de401f341c8f8645df5
+
+@ 0 1 0 04c39477f6c84d2509720c20622f84ea
++             label ref の読み取り結果は、何を見たかの証拠になる
+
+% 1 1 0 1be39b3713bfcdd20a3549a0718df8c8
+
+% 2 1 0 08f91bf0223cfd3d0b6c29bf385a154f
+
+% 3 1 0 170f8c90936aea5310cb825fa36608f5
+
+% 1 1 0 09825694e003d5b50d2ca82644420ea0
+
+@ 0 1 0 00160aa3ca2663cf1ef28822c2ca1158
++             label 書き込みはそれを前提とする
+
+% 1 1 0 1c6b83af2732998e143b0d98ee7eeb9b
+
+% 2 1 0 0413c3555a633b5418bf72c100e2250c
+
+% 3 1 0 01782122ea0a1fa1081929701f821261
+
+% 4 1 0 1049467f2604952e0fe1ad1fd73a304a
+
+% 5 1 0 1b8dd1029e0929050d1805131af64972
+
+% 1 1 0 10d16ea0fc800ba4105a33d9b887234e
+
+@ 0 1 0 0b74aaa4780b3fdd00f97cae9b291e36
++             label その間に ref が動いていれば、何も上書きされない
+
+% 1 1 0 10a8b252fb3894b60a6ca4c3ffc53bc0
+
+% 2 1 0 0b1506af46127776004351a612f743f9
+
+% 3 1 0 147d1c5a9d1d1184133be4dc86d1c8e5
+
+% 4 1 0 088030d98068b0f914f0faa1233797dc
+
+% 5 1 0 1e276a64fdd347c7098f21b34c2c6ea2
+
+% 0 1 0 0f280b9bb31727801d9ae87f6d813598
+
+% 0 1 0 0632536aa59207b51c67f22ff5343a50
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 1 1 0 110dbe0df3ce97af1d8f7853eb1178f9
+
+@ 0 22 0 1b9a38f93346c2000bc7be36bb6a6f87
++           リポジトリの場所はハンドル自身のフィールドにある。
++           `#gitDir`、`#commonDir`、`#worktree`、そして開いたときのモードの `#atoms` である。
++       entry .head   HEAD の位置を `Stale[Git.Head]` として返す
++           ワークツリー上で HEAD を動かす書き込みは、すべてこの読み取り結果を条件とする。
++       entry .ref   ref が保持するハッシュを、シンボリック ref をたどって `Stale[Optional[Git.Hash]]` として返す
++           存在しない ref では `Unset` になる。
++           ノートへの書き込みが条件とするのは、`Git.Refs.defaultNotes` の読み取り結果である。
++       entry .refs   接頭辞の下にある（または全部の）ref を、そのハッシュとともに `Stale` なマップとして返す
++           完全修飾の ref でない名前（`HEAD`）は除かれる。
++       entry .symbolicRef   `HEAD` のようなシンボリック ref が指す先をテキストとして返し、シンボリックでなければ `Unset` を返す
++       entry .resolve   リビジョンが指すハッシュを返し、git が解決できなければ `Unset` を返す
++           任意の `Git.Revision` を受け取る。
++           ブランチ、タグ、ハッシュ、`Git.Ref`、あるいは `Git.Revision.head(2)` のような式である。
++           未知のリビジョンはエラーではなく `Unset` になる。
++       entry .branches   すべてのブランチをその先端とともに `Stale` なマップとして返す
++       entry .tags   すべてのタグを、それが指すコミット（剥がしたもの）とともに `Stale` なマップとして返す
++           注釈付きタグは、そのタグオブジェクトが指すコミットまで剥がされる。
++           剥がしていない `Git.Tag.Target` は `.tag` で読む。
++       entry .tag   タグが指す先を、軽量タグでも注釈付きタグでも返し、そのタグがなければ `Unset` を返す
++       entry .log   リビジョンから到達できるコミットを新しい順に `Stale[List[Commit]]` として返す
++           `from` が与えられなければ `HEAD` から始まる。
++           コミットは最大 `limit` 個で、`paths` が指定されていればそれに触れるものだけである。
++           未生成のブランチには履歴がなく `Nil` になる。
++           それ以外の解決できない開始点は `NoSuchRef` を発生させる。
+
+% 2 1 0 1fee8c902642b68e00f44d693254079b
+
+% 3 1 0 08f346abbd77212318a409d45f5ce345
+
+% 4 1 0 0d4362e113e979c405cb4a215d0c7add
+
+% 5 1 0 19a2dafa45d43d831c6a22ad8465143f
+
+% 6 1 0 1070672a32d8b7f007fc65e2ef5c3697
+
+% 7 1 0 117081eb4f1f55890b0d8986db1cc2c5
+
+% 8 1 0 193b10217d547ba20f97d5f4acd1f013
+
+% 9 1 0 0ab1cce25eb28e9b18c03c3c8fff3cd5
+
+% 11 1 0 18df1ce6449a129c0e24167e3a542801
+
+% 0 1 0 1a0754e6a20ac9f106f1962362c9b7e9
+
+% 0 1 0 15551f4eeee152761dc2862b7a2c623f
+
+% 1 1 0 0e629f3ff92bb2631d323a7eec21c376
+
+@ 0 68 0 0c43129ec29b7fda181607d32d5a8f38
++       entry .revList   リビジョンから到達できるハッシュを新しい順に返し、`until` で止めることもでき、`Stale` なリストとして返す
++       entry .reflog   ref が指してきた先のローカルな履歴を新しい順に `Stale[List[ReflogEntry]]` として返す
++           `ref` が与えられなければ `HEAD` のものである。
++           誤った reset を取り戻せるのはこの記録のおかげである。
++       entry .mergeBase   二つのコミットの最良の共通祖先を返し、共通のものがなければ `Unset` を返す
++       entry .isAncestor   一方のコミットが他方から到達できるかどうか
++       entry .exists   あるハッシュのオブジェクトがデータベースにあるかどうか
++       entry .show   任意のオブジェクトをハッシュから `Git.Object` として返す。存在しなければ `NoSuchObject` を発生させる
++       entry .commitAt   あるハッシュのコミットを `Commit` として返す。他の種類のオブジェクトなら `NoSuchObject` を発生させる
++           名前が `commit` ではなく `commitAt` なのは、`commit` がワークツリーの書き込み動詞であり、権限で制御されるハンドルはオーバーロードできないからである。
++       entry .treeAt   あるハッシュのツリーのエントリーを返す。他の種類のオブジェクトなら `NoSuchObject` を発生させる
++       entry .blobAt   あるハッシュの blob の内容を `Data` として返す。他の種類のオブジェクトなら `NoSuchObject` を発生させる
++       entry .annotationAt   あるハッシュの注釈付きタグオブジェクトを返す。他の種類のオブジェクトなら `NoSuchObject` を発生させる
++       entry .verifyCommit   スコープ内の `Git.Verifier` でコミットの署名を検証する
++           署名のないコミットは `Unknown("the commit is not signed")` になり、そうでなければ `Good(signer)` か `Bad(detail)` になる。
++           `SshKeygen.Verifier(allowedSigners)` や `Gpg.Verifier()` のような `Git.Verifier` の given が必要である。
++       entry .verifyTag   スコープ内の `Git.Verifier` でタグの署名を検証し、`Stale[Git.Verification]` として返す
++           タグ名は ref なので `Stale` である。
++           軽量タグや署名のない注釈では `Unknown` になる。
++       entry .config   リポジトリ自身の設定をブロックに読み取り専用で貸し出す
++           `repo.config { config ?=> config.get[Text](key).value }`。
++           グローバルとシステムの設定は、代わりにそのファイルの上で開く。
++           `gitconfig: Path on Linux` がユーザー自身のファイルなら、`gitconfig.open[Git.Config](Read) { config ?=> … }` である。
++       entry .effectiveConfig   このリポジトリについて git が参照するすべてのスコープを読み取り専用で貸し出す
++           システム、グローバル、ローカル、ワークツリーの設定をまとめたもので、git が読むのと同じく最後の設定が優先される。
++           書き込むことはできない。
++       entry .note   ノートの ref でコミットに付けられたノートを `Stale[Optional[Text]]` として返す
++           `ref` が与えられなければ `Git.Refs.defaultNotes`（`refs/notes/commits`）の中を探す。
++           ノートがなければ `Unset` になる。
++       entry .notes   ノートの ref にあるすべてのノートを、注釈されたコミットからノートの blob への `Stale` なマップとして返す
++       entry .remotes   リポジトリの設定から読んだすべてのリモートを `Stale[List[Remote]]` として返す
++       entry .remote   名前で指定した一つのリモートを `Stale[Optional[Remote]]` として返す
++       entry .remoteRefs   リモートが公開するすべての ref を、そのハッシュとともに `Stale` なマップとして返す
++           `Internet` が必要である。
++           この読み取り結果が、`Git.Push.Force.Lease` が運ぶものである。
++       entry .upstream   ブランチが追跡するリモートとブランチを、設定されていれば `Stale` な組として返す
++       entry .worktrees   すべてのリンクされたワークツリーを `Stale[List[Git.Worktree.Entry]]` として返す
++           各エントリーは、ワークツリーへの書き込み（`.removeWorktree`、`.lockWorktree`、`.unlockWorktree`、`.moveWorktree`）が受け取る読み取り結果である。
++       entry .operation   進行中のマージ、リベース、チェリーピック、リバート、二分探索があれば、それを `Stale` として返す
++       entry .updateRef   ref の `Stale` な読み取り結果を条件として、その ref を動かすか削除する
++           `updateRef(ref, to, from, message)` は、`ref` がまだ `from.value` を保持していれば `ref` を `to` に設定し（`Unset` なら削除し）、そうでなければ `Moved` を発生させる。
++           `message` は reflog の行である。
++           `Grant.Write` が必要である。
++       entry .forceRef   ref を無条件に動かすか削除し、保持していたものを上書きする
++       entry .updateSymbolicRef   `HEAD` のようなシンボリック ref を `Git.Ref` に向ける
++       entry .writeObject   生の内容をある種類のオブジェクトとして格納し、そのハッシュを返す
++       entry .makeBranch   チェックアウトせずにコミットにブランチを作る。すでにあれば `Moved` を発生させる
++           作成はブランチが存在しないことを条件とするので、読み取り結果は取らない。
++           作成とチェックアウトを一度に行うには、ワークツリー上で `switch(branch, head, create = true)` を使う。
++       entry .deleteBranch   先端の読み取り結果を条件としてブランチを削除する。強制しない限り、マージされていないものは拒否する
++           先端が HEAD の祖先でなく `force` が false なら `Unmerged(branch, tip)` を発生させ、ブランチがもう `at.value` を保持していなければ `Moved` を発生させる。
++       entry .renameBranch   先端の読み取り結果を条件としてブランチの名前を変える。HEAD が付いていれば HEAD も追従する
++       entry .makeTag   コミットに軽量タグを作る。すでにあれば `Moved` を発生させる
++       entry .annotatedTag   メッセージ付きの注釈付きタグオブジェクトを、必要なら署名して書き込み、そのハッシュを返す
++           `annotatedTag(tag, at, message, tagger, signer)` では、与えられなければタグ付けした者は設定された身元となり、現在時刻が刻まれる。
++           `Git.Signer` はアーマー形式の署名を付け加え、`git tag -v` はそれを受け入れる。
++           タグの ref は、それが存在しないことを条件として作られる。
++       entry .deleteTag   オブジェクト（`tags()` が報告するとおり、注釈付きかどうかを問わない）の読み取り結果を条件としてタグを削除する
++       entry .configure   リポジトリ自身の設定をブロックに読み書き用に貸し出す
++           `repo.configure { config ?=> config.set(key, value) }`。
++           `Grant.Write` が必要である。
++       entry .addNote   ノートの ref の読み取り結果を条件としてコミットにノートを付け、ノートのコミットを返す
++           `addNote(target, body, from, ref, force)` の `from` は `repo.ref(ref)`、つまりノートの ref（`ref` が与えられなければ `Git.Refs.defaultNotes`）の読み取り結果である。
++           すでにノートが付いていて `force` が false なら `NoteExists` を発生させ、`from` を読んだ後にノートの ref が動いていれば `Moved` を発生させる。
++           ビルドの証明書などの帯域外のメタデータが、ある書き手が別の書き手の内容を潰すことなくリポジトリとともに伝わるのは、このしくみによる。
+
+% 2 1 0 1186ab151935f38f1226661f011e954e
+
+% 3 1 0 12bd8e7fc673f1ed1a1c67d8351d7c79
+
+% 4 1 0 0b156d35f2dd2a760cc7e5321fa3aac0
+
+% 5 1 0 13b10772135ad096009e6055425494ea
+
+% 6 1 0 13c16a9f46abf7b717a276bd54179ef7
+
+% 7 1 0 1d3cf4b9416a14d309e45cb31fd91c21
+
+% 8 1 0 05e5c446bb5396d605d5008c5bccdfc6
+
+% 9 1 0 08276a55352e0cf817b8c1137af3d1e8
+
+% 11 1 0 1cdd92de7aaabe7e0d03c56a0ca973eb
+
+% 0 1 0 0807c2ec03678a051df30d621821e58e
+
+% 0 1 0 00e2842f6c2d536516caeeaf586b121c
+
+% 0 1 0 15eb95d1486a894e185dbc0558802f2d
+
+% 0 1 0 1c4e7fd417bab0ad01ba73c08135dde0
+
+% 0 1 0 036cebb1155834371697ca6b02351332
+
+% 1 1 0 07a96ad062ec11b100ad2d7234167da3
+
+@ 0 34 0 1518d0661ec0cc450da08199e92b772e
++       entry .appendNote   ノートの ref の読み取り結果を条件として、コミットのノートに追記する
++       entry .removeNote   ノートの ref の読み取り結果を条件として、コミットのノートを削除する
++           ノートがなければ、`ignoreMissing` が true でない限り `NoteNotFound` を発生させる。
++       entry .copyNote   ノートの ref の読み取り結果を条件として、あるコミットのノートを別のコミットにコピーする
++       entry .addRemote   名前と URL でリモートをフェッチ用 refspec とともに追加する。`RemoteExists` を発生させることがある
++           refspec の既定値は `+refs/heads/*:refs/remotes/<name>/*` である。
++           URL はローカルのパスでもよく、どちらのバックエンドもトランスポートなしでそこに到達する。
++       entry .removeRemote   リモートの設定とその `refs/remotes/<name>/` の ref を削除する。`NoSuchRemote` を発生させることがある
++       entry .renameRemote   リモートの名前を変え、その refspec、追跡 ref、それを追跡するブランチを書き換える
++       entry .setRemoteUrl   リモートのフェッチ URL を設定し、`push = true` ならプッシュ URL を設定する
++       entry .fetch   リモートからフェッチし、更新された ref を `Stale` なマップとして返す
++           `fetch(remote, refspecs, depth, prune, tags, activity)` は、`refspecs` が与えられなければリモートに設定された refspec を使う。
++           `depth` が与えられればその数のコミットまでの浅いフェッチになる。
++           `prune` はリモートにもうない追跡 ref を削除し、`tags` はすべてのタグをフェッチする。
++           `Internet` が必要であり、`activity` が渡されていれば進捗はそこへ送られる。
++       entry .push   強制ポリシーのもとでリモートにプッシュし、各 ref の結果を `Stale` なマップとして返す
++           `push(remote, refspecs, force, tags, setUpstream, activity)` の `force` は、与えられなければ `Git.Push.Force.Never` であり、`Lease(expectations)` はプッシュをリモートの ref の読み取り結果を条件とするものにする。
++           拒否された ref はエラーではなく `Rejected` という結果になる。
++           `Internet` が必要である。
++       entry .addWorktree   パスにリンクされたワークツリーを追加し、リビジョンでチェックアウトして、そのパスを返す
++           `addWorktree(target, revision, detach, newBranch)` の後、返されたパスを `Git.Worktree` として開く。
++           ターゲットはどのパス型でもよい。
++       entry .removeWorktree   エントリーの読み取り結果を条件として、リンクされたワークツリーを削除する
++       entry .lockWorktree   リンクされたワークツリーを、理由を付けて刈り込みから保護するためにロックする
++       entry .unlockWorktree   リンクされたワークツリーのロックを解除する
++       entry .moveWorktree   リンクされたワークツリーを別のパスに移し、新しいパスを返す
++       entry .pruneWorktrees   ディレクトリがなくなったワークツリーの記録を削除し、それらのパスを返す
++       entry #gitDir   リポジトリ自身の git ディレクトリ
++       entry #commonDir   すべてのワークツリーが共有する git ディレクトリで、オブジェクトと ref がある場所
++           ハンドルがリンクされたワークツリーの上で開かれたのでなければ、`#gitDir` と同じである。
++       entry #worktree   リポジトリに作業ツリーがあれば、その根
++       entry #atoms   ハンドルを開いたときのモードのアトム
++     entry .Openable   パスを `Git.Repo` として開く方法。リポジトリを探し、`Handle` を貸し出す
+
+% 1 1 0 139e7240bd55deb9005ee8b028454a89
+
+@ 0 15 0 04271ff55b9fe96100af8d60786a22eb
++           `path.open[Git.Repo](mode, flags) { repo ?=> … }` の背後にある `aperture.Openable` である。
++           バックエンドにリポジトリを探させ（`NoRepository` を発生させることがある）、モードが `Exclusive` なら開いたことを登録し、モードの権限を持つ `Git.Repo.Handle` を貸し出す。
++           `.openable` は、スコープ内の `Git.Backend^` と `Tactic[Git.Error]` から一つ作る。
++       entry #open   パスを開き、モードの権限を持つハンドルをブロックに貸し出す
++       entry #Self   開くパスの型
++       entry #Form   開く形式：`Git.Repo`
++       entry #Operand   フラグの型：`Git.OpenFlag`
++       entry #Result   貸し出されるもの：`Git.Repo.Handle`
++     entry .openable   どの `Path on Linux` も `Git.Repo` として開けるようにする given
++         暗黙のスコープにある。
++         `Git.Backend^`（`gitBackends` からインポートする）と `Tactic[Git.Error]` が必要である。
++         すべての `Path on Linux` はこれを持ち、`Git.Worktree.openable` も持つので、形式は常に `open[Git.Repo]` や `open[Git.Worktree]` のように明示する。
++   entry .Worktree   パスがチェックアウトされたツリーとして開かれるときの形式。リポジトリの上のインデックスと作業ファイル
+
+% 1 1 0 1d4f7bca5072c1011a1847fc752d7437
+
+@ 0 6 0 1071ad25fea0bc241a4d912dfc5162f0
++         `path.open[Git.Worktree](mode) { worktree ?=> … }` は作業ツリー、またはリンクされたワークツリーを開き、`Git.Worktree.Handle` を貸し出す。
++         これは `Git.Repo.Handle` でもあり、リポジトリのすべての操作が経由なしに適用できる。
++         また galilei の `Directory.Handle` でもあるので、そこから作ったパス（`worktree / "src" / "main.scala"`）はこのハンドルだけに型付けされ、そこから逃れられず、`..` を表せず、同じ権限のもとで galilei の操作によって読み書きできる。
++         ベアリポジトリは `Git.Error(NoWorktree)` を発生させる。
+
+% 2 1 0 0521d07e743153270f21d028a61f02cc
+
+% 3 1 0 0fe6149aea14cb70144f656ca97a00e8
+
+% 4 1 0 0c7092c78a31cf7c0aafaa30eaea2d99
+
+% 5 1 0 1f0231dcabd0cdd3048e09dfd40fb5da
+
+% 6 1 0 1ac477fc6d4751b7010d8771a20410f6
+
+% 7 1 0 03fbb38262ecc04d07298d968e414b6a
+
+% 0 1 0 1064203287a1d87409d0c0df4049c164
+
+% 1 1 0 08600b7162f867701718d040c4455696
+
+% 2 1 0 149a6f55dcf216600ac7ed7412566dd1
+
+% 4 1 0 169d0aaf9604d3d211cacff3d654533a
+
+% 6 1 0 1940ec62d7a68cf307ea6a299aa7ecb1
+
+% 0 1 0 1746c028e6965b360d3218654089d3a9
+
+% 0 1 0 09ecbb5f6b48b1181499281129f18a44
+
+% 0 1 0 1176e85206e1483812898888c94478e3
+
+% 0 1 0 03c6a4bfba37bcad134c8850354188b3
+
+% 0 1 0 181df0024b0920aa1f3fcd1b8a1e2906
+
+% 1 1 0 0c2710fed896045b036d024a13f63b98
+
+@ 0 2 0 0822f81793893ee41fcec44bb93dd920
++         `Git.Worktree.Entry` は、`worktrees()` が一覧するリンクされたワークツリーであり、リポジトリのハンドル上でのワークツリーへの書き込みが受け取る読み取り結果である。
+
+% 0 1 0 13fad0d77931c3261808a1fe1c595cb7
+
+% 0 1 0 0a699bf2949b721a097d386d1967ff45
+
+@ 0 1 0 095d76a4710aedb71e6f5dd1c12587e4
++     entry .Entry   リンクされたワークツリー一つ。そのパス、チェックアウトされているもの、ロックされているか刈り込み可能か
+
+% 1 1 0 14ffd7b34af064cb1ac096044cb05799
+
+@ 0 9 0 038b61a0afd788f81bbce3cef7a2f7e5
++           リポジトリのハンドル上の `worktrees()` が `Stale` に包んで一覧するもの。
++           `removeWorktree`、`lockWorktree`、`unlockWorktree`、`moveWorktree` が受け取る読み取り結果である。
++       entry #path   ワークツリーの根
++       entry #head   チェックアウトされているコミットがあれば、そのコミット
++       entry #branch   HEAD が付いていれば、チェックアウトされているブランチ
++       entry #bare   エントリーがベアリポジトリ自身かどうか
++       entry #locked   ワークツリーがロックされていれば、ロックの理由
++       entry #prunable   ワークツリーを刈り込めるなら、その理由
++     entry .Handle   貸し出されたワークツリーのハンドル。リポジトリのすべての操作に加えて、インデックスと作業ファイルの操作を持つ
+
+% 1 1 0 081b920a8af0030a18d0d17d14452c1e
+
+@ 0 8 0 00aa3b9b3338bd410686ec0bc7b97530
++           `Git.Repo.Handle` が提供するすべてに加え、インデックスと作業ファイルを必要とする操作を持つ。
++           ステージング（`.add`、`.addAll`、`.rm`、`.mv`、`.unstage`、`.restore`、`.clean`）、コミット（`.commit`、`.amend`）、HEAD の移動（`.reset`、`.checkout`、`.switch`）、統合（`.merge`、`.cherryPick`、`.revert`、`.rebase`、`.pull`）、進行中の操作の制御（`.continue`、`.skip`、`.abandon`、`.quit`）、スタッシュ（`.stash`、`.popStash`、`.applyStash`、`.dropStash`）、そして作業ファイルを見る読み取り（`.status`、`.diff`、`.diffStaged`、`.diffAgainst`、`.tracked`、`.conflicts`、`.currentBranch`、`.stashes`）である。
+
+@ 0 3 0 191ca825a40b3adc024638946681c3f4
++           HEAD を動かす操作はすべて、`head()` の読み取り結果である `Stale[Git.Head]` を受け取り、HEAD が別の場所にあれば `Moved(HEAD, expected, actual)` を発生させる。
++           パスは `Path on worktree.Plane` であり、ハンドル自身から作られる。
+
+@ 0 75 0 1176ae4ca46d366817a54249d4b7c1be
++           衝突はエラーではない。
++           `merge`、`cherryPick`、`revert`、`rebase`、スタッシュの適用は、衝突しているパスを示す `Stopped(operation)` という結果を返す。
++           それらを解決して追加すれば、`continue()` が操作を完了させる。
++       entry .status   変更されたすべてのパスの状態を `Stale[List[Git.PathStatus[worktree.Plane]]]` として返す
++           `untracked = false` でない限り追跡されていないファイルも含まれる。
++           無視されたファイルは `ignored = true` のときだけ含まれる。
++       entry .diff   作業ファイルとインデックスの差分を `Stale[List[Delta]]` として返す
++       entry .diffStaged   インデックスと HEAD の差分を `Stale[List[Delta]]` として返す
++       entry .diffAgainst   作業ファイルとリビジョンの差分を `Stale[List[Delta]]` として返す
++       entry .diffBetween   二つのコミットのツリーどうしの差分を、ただの `List[Delta]` として返す
++           ハッシュで指定するので、`Stale` ではない。
++       entry .tracked   インデックスが追跡するすべてのパスを、ハンドルのプレーン上で `Stale` なリストとして返す
++       entry .conflicts   衝突しているすべてのパスを、ハンドルのプレーン上で `Stale` なリストとして返す
++       entry .currentBranch   チェックアウトされているブランチを返し、HEAD が切り離されていれば `Unset` を返す。`Stale` として返す
++       entry .stashes   スタッシュのエントリーを新しい順に `Stale[List[Git.Stash.Entry]]` として返す
++       entry .add   パスをステージする
++           `worktree / "name"` のように作った `Path on worktree.Plane` をいくつでも受け取る。
++       entry .addAll   `git add --all` と同じく、すべての変更をステージする
++       entry .rm   パスをインデックスから削除し、`cached` でなければ作業ツリーからも削除する
++           `rm(paths*)(cached, force)` の `force` は、ローカルな変更のあるパスも削除する。
++       entry .mv   インデックスと作業ツリーでパスの名前を変える
++       entry .unstage   作業ファイルはそのままにして、パスをインデックスから外す
++       entry .restore   リビジョンから作業ツリー（`staged` ならインデックス）のパスを復元する
++           `restore(paths*)(source, staged)` は、`source` が与えられなければインデックスから復元する。
++       entry .clean   追跡されていないファイルを削除し、求められればディレクトリや無視されたファイルも削除して、削除したパスを返す
++       entry .commit   HEAD の読み取り結果を条件としてインデックスをコミットし、新しいコミットのハッシュを返す
++           `commit(message, head, author, signer, allowEmpty)` では、ツリーが書き込まれ、コミットオブジェクトがここで組み立てられる。
++           設定された身元がコミッターとなり（`user.name` か `user.email` が未設定なら `NoSuchConfig` を発生させる）、`author` が与えられなければ作者にもなる。
++           `Git.Signer` が与えられていればそれで署名され、格納され、HEAD は compare-and-swap で動かされる。
++           ツリーが親のものから変わっていなければ、`allowEmpty` でない限り `NothingToCommit` を発生させる。
++           オブジェクトは `git commit` で作るのではなく組み立てられるので、署名がプロセスの外に出ることはなく、同じコードが両方のバックエンドに使える。
++           フックは実行されず、`commit.gpgsign` は参照されない。
++       entry .amend   親と作者を保ったまま、先端のコミットを新しいメッセージや署名で書き換える
++           `amend(message, head, signer)` のツリーは、現在のままのインデックスである。
++           未生成のブランチでは `NoSuchRef(HEAD)` を発生させる。
++       entry .reset   HEAD の読み取り結果を条件として、`ResetMode` のもとで HEAD をリビジョンに動かす
++           `Soft` は HEAD だけを動かし、`Mixed` はインデックスもリセットし、`Hard` は作業ファイルもリセットする。
++           `Merge` と `Keep` は git のより安全なバリアントである。
++           移動先のコミットを返し、リビジョンが解決できなければ `NoSuchRef` を発生させる。
++       entry .checkout   HEAD の読み取り結果を条件として、HEAD を切り離してリビジョンをチェックアウトし、新しい読み取り結果を返す
++       entry .switch   HEAD の読み取り結果を条件としてブランチに切り替える。`create` なら先に HEAD にブランチを作る
++           新しい `Stale[Git.Head]` を返す。
++           ローカルな変更が上書きされるなら `Dirty(paths)` を発生させ、`create` が既存のブランチを指していれば `RefExists` を発生させる。
++       entry .merge   HEAD の読み取り結果を条件として、早送りのポリシーのもとでリビジョンを HEAD にマージする
++           `merge(revision, head, ff, message, sign)` では、`FastForward.Auto` はできるときに早送りし、`Only` はそれ以外を拒否し（`NotFastForward`）、`Never` は常にマージコミットを作る。
++           結果は `FastForwarded`、`Merged`、`UpToDate`、または衝突時の `Stopped(operation)` である。
++       entry .cherryPick   HEAD の読み取り結果を条件としてコミットを HEAD の上に適用する。`noCommit` ならインデックスにだけ適用する
++       entry .revert   HEAD の読み取り結果を条件として、コミットの逆を HEAD の上に適用する
++       entry .rebase   HEAD の読み取り結果を条件として、オプション付きで HEAD をリビジョンの上にリベースする
++           `rebase(onto, head, upstream, options)` の `upstream` は、`git rebase --onto` が受け取るのと同じく、再適用するコミットの範囲を区切る。
++           衝突時の `Stopped(operation)` は、完了したコミットと残りのコミットの数を運ぶ。
++       entry .pull   HEAD の読み取り結果を条件として、リモートからブランチをフェッチし、マージまたはリベースする
++           `pull(remote, head, branch, mode, activity)` は、`branch` が与えられなければ現在のブランチを使う（HEAD がどのブランチにもなければ `Detached` を発生させる）。
++           `mode` が別のものを指定しない限り `Git.Pull.Mode.Merge` である。
++           `Internet` が必要である。
++       entry .continue   衝突が解決されて追加された後、進行中の操作を完了させる
++           進行中の操作がなければ `NoOperationInProgress` を発生させる。
++       entry .skip   進行中の操作の現在のコミットを飛ばす
++       entry .abandon   進行中の操作を放棄し、HEAD、インデックス、作業ファイルを開始時の状態に戻す
++           git の `--abort` である。
++           復元された `Stale[Git.Head]` を返す。
++       entry .quit   git の `--quit` と同じく、何も復元せずに進行中の操作から抜ける
++       entry .stash   コミットされていない状態をスタッシュのエントリーとして保存してそのコミットを返し、何もなければ `Unset` を返す
++           `stash(message, includeUntracked, keepIndex)`。
++       entry .popStash   エントリーが一覧されたときのままであることを条件として、スタッシュのエントリーを適用して破棄する
++           エントリーがなくなっているか変わっていれば `NoSuchStash` を発生させる。
++           `index = true` ならインデックスも復元される。
++           衝突は `Stopped` という結果になる。
++       entry .applyStash   エントリーが一覧されたときのままであることを条件として、スタッシュのエントリーを破棄せずに適用する
++       entry .dropStash   エントリーが一覧されたときのままであることを条件として、スタッシュのエントリーを削除する
++       entry #Under   ワークツリーのパスが属するプラットフォーム：`Linux`
++     entry .Openable   パスを `Git.Worktree` として開く方法。リポジトリとそのツリーを探し、`Handle` を貸し出す
+
+% 1 1 0 0fd4d9f2754b914516d9e0ac67359944
+
+@ 0 16 0 07c777ae042fff101b1c110b25f5dc1b
++           `path.open[Git.Worktree](mode, flags) { worktree ?=> … }` の背後にある `aperture.Openable` である。
++           リポジトリを探し（`NoRepository` を発生させることがある）、作業ツリーを要求し（`NoWorktree` を発生させることがある）、モードが `Exclusive` なら共通ディレクトリとツリーの両方を登録し、モードの権限を持つ `Git.Worktree.Handle` を貸し出す。
++       entry #open   パスを開き、モードの権限を持つハンドルをブロックに貸し出す
++       entry #Self   開くパスの型
++       entry #Form   開く形式：`Git.Worktree`
++       entry #Operand   フラグの型：`Git.OpenFlag`
++       entry #Result   貸し出されるもの：`Git.Worktree.Handle`
++     entry .openable   どの `Path on Linux` も `Git.Worktree` として開けるようにする given
++         暗黙のスコープにある。
++         `Git.Backend^`（`gitBackends` からインポートする）と `Tactic[Git.Error]` が必要である。
++   entry .init   パスにリポジトリを作る。初期ブランチを指定でき、ベアにもできる
++       `Git.init(target, initialBranch, bare)` は任意のパス型を受け取る。
++       初期ブランチは、与えられなければ git の既定値（その設定による）になるので、`main` に依存するプログラムはそれを明示するべきである。
++       `Git.Backend^` と `Tactic[Git.Error]` が必要である。
+
+% 2 1 0 1540ff6db2deebd51c22722a83734625
+
+% 3 1 0 16b9d55947e13e07178b6ae8bcc85920
+
+% 4 1 0 0fea6cd0cb1a05af10cded9408d0db17
+
+% 5 1 0 19310a8485126a250d5b58c9933a8538
+
+% 6 1 0 13c6c816d16c9a55128d4ff3d65c6fc6
+
+% 7 1 0 0eaf28fd1094dcd400458d4a27d7dd03
+
+% 8 1 0 167b340b8fa5b19d1feffb7840af8ed6
+
+% 9 1 0 011d295bd3595e61143a86cf27cd62a2
+
+% 11 1 0 15f9c69341553fa012e7f2e89a0a4436
+
+% 12 1 0 18e860b1559ae3b904bc4b53ec71baa8
+
+% 0 1 0 058fdf425886412415d8e6c3428e3242
+
+% 1 1 0 0c32ef78f33629d41b0da17a65a32ef1
+
+@ 0 8 0 15b94684ad2c914e1ecdd19a0e317477
++   entry .clone   パス、URL、または `SshUrl` からパスへリポジトリをクローンする
++       `Git.clone(source, target, branch, depth, bare, recursive, activity)` のソースは、ローカルのパス（任意のパス型）、URL（任意の URL 型、またはテキスト）、または `SshUrl` である。
++       `branch` はリモートの HEAD 以外のブランチをチェックアウトし、`depth` は浅いクローンを作り、`recursive` はサブモジュールをクローンする（コマンドラインのバックエンドのみ）。
++       `Internet`、`Git.Backend^`、`Tactic[Git.Error]` が必要であり、`activity` が渡されていれば進捗はそれを通して報告される。
++       ネイティブのバックエンドでは、リモートの URL には、バックエンドを作ったときに与えた `Transport`（`Native(List(SmartHttp()))`）が必要であり、なければ `Unsupported` になる。
+
+% 2 1 0 00d8bb41fa76cd9610ff2c534b1cb05c
+
+% 3 1 0 020a2801c164ac6e1a0addc521202d61
+
+% 4 1 0 11b7a09688a7b3991cddf25d383e8636
+
+% 5 1 0 1a50d4bc731776690dd9ecb8e82bf6a8
+
+% 6 1 0 170e3b6961b6374b0c510251b5770dd2
+
+% 7 1 0 005f9a7b917a2323163b73a7f3237769
+
+% 3 1 0 17f531e6fbeb82a106af540bb4ce174b
+
+% 4 1 0 06388dd360635c7f0d01b7fbd30755ee
+
+% 5 1 0 0b257ecd4af8aadd0743b7de45052004
+
+% 4 1 0 0eaa97c4318cf44a1f3b265eb769881e
+
+% 0 1 0 12c82d77152673fe164b3269ae38e30c
+
+% 0 1 0 106090ade7ef445f167684226e71c847
+
+% 0 1 0 04051c9e1f5b170d0b9f598f972add0b
+
+% 0 1 0 1ed924f57d0896c10ce8757ca36105cd
+
+% 1 1 0 0eee903418ab90b71cc92f5b15a9f573
+
+@ 0 5 0 1b8a1998c8505db91ccfa95a52864134
++   entry .cloneCommit   ちょうど一つのコミットをクローンする。新しいリポジトリにそれを浅くフェッチし、チェックアウトする
++       `Git.cloneCommit(source, target, commit, activity)` は `target` にリポジトリを初期化し、その一つのコミットを深さ 1 でフェッチして、切り離された状態でチェックアウトする。
++       サーバーはハッシュによるフェッチを許していなければならない（`uploadpack.allowReachableSHA1InWant`、またはプロトコルバージョン 2）。
++       `Internet`、`Git.Backend^`、`Tactic[Git.Error]` が必要である。
+
+@ 0 1 0 084418c196b7fcba077b906640037e43
++   entry .Remote   名前、フェッチ URL、プッシュ URL で表されるリモート
+
+% 1 1 0 1f7466296e8a05e30646a8565a557d8f
+
+@ 0 7 0 1879e266f6bc043a1e34097079ce3e34
++         `remotes()` が一覧し、`addRemote` が返すもので、リポジトリ自身の設定（`remote.<name>.url` と `remote.<name>.pushurl`）から読まれる。
++         URL はテキストであり、git が受け入れるとおり、ローカルのパス、HTTP(S) の URL、SSH のアドレスのいずれかである。
++     entry #name   リモートの名前、`origin`
++     entry #fetchUrl   フェッチ元の URL
++     entry #pushUrl   `#fetchUrl` と異なる場合の、プッシュ先の URL
++   entry .Patch   パッチのテキストを `Delta` として読み、ファイルのハンクを一つの `Diff` に平坦化する
+
+% 1 1 0 175f7771c3a8ad0515882d787f9f52be
+
+@ 0 5 0 15b9188708f9bd131b8b4181c6f2390e
++         `Patch.parse` は `git diff -p --no-color` の出力を、ファイルからでもメールからでも他のどこからでも、`diff --git` ヘッダー一つにつき一つの `Delta` として読む。
++         変更、追加、削除、名前変更、コピーされたファイルを扱い、バイナリの差分やモードだけの変更は、ハンクのない `Delta` になる。
++         これはコマンドラインのバックエンドが git 自身の出力に使うのと同じパーサーである。
++         `Patch(files)` は、パースされたパッチを値として表したものである。
+
+% 2 1 0 19a65318db1412da0e50de8d6a4843c7
+
+% 3 1 0 00de0ea47880e9660cf2ac75d7469c03
+
+% 0 1 0 0b30d1cf4d625fec0f5041960f2bc515
+
+% 0 1 0 0bbda92b4ace6fbf07f18381776f307a
+
+% 0 1 0 1c327a026d63d634006b69da07365a7f
+
+% 0 1 0 0ab2a702d37dbf0c06c95b1f7ec14ee1
+
+% 0 1 0 0d0512669f01f48b0ec84e0fbac1f545
+
+% 0 1 0 18312c42685070fc1ed7971053430eec
+
+% 0 1 0 063bd9cf677f26c31a917418023c02be
+
+% 0 1 0 0c241ea991cb3f3d16c78a7b5bc8c257
+
+% 0 1 0 174f05d794a60c710b465a3219a0cf74
+
+% 0 1 0 13037f1fc3c475e3068cb65a6b3219bd
+
+% 1 1 0 1895fd1f129be9a5161debfad4c3a359
+
+% 0 1 0 12c4f9c99d98a9b41f956d9da845e4fc
+
+@ 0 6 0 0bf901f577fd28861a6c418490cb4abe
++     entry .parse   unified diff のテキストの行に含まれる `Delta`
++     entry .asDiff   ファイルのハンクを平坦化した、一つの dissonance の `Diff[Text] & Retained`
++         ハンクの `Retained` な編集から組み立てられるので、この差分はすべての行のテキストを運び、`redraft` や値を必要とする他の操作に対応する。
++     entry #files   パッチのファイル、順序どおり
++   entry .Hunk   ファイルの差分のハンク一つ。その範囲、セクションの見出し、編集
+
+% 1 1 0 1f48327f3624cb61182d85b3eb1949ab
+
+@ 0 11 0 163fff0fb9247e3717fb7e55e826cc56
++         unified diff の `@@ -oldStart,oldLines +newStart,newLines @@ section` ヘッダーと、その編集を dissonance の `Edit[Text]`（`Ins`、`Del`、`Par`）として持つ。
++         各編集はそのテキストを運ぶので、ハンクは `Retained` であり、`redraft` のような値を必要とする操作に対応する。
++     entry #oldStart   古い側でのハンクの最初の行
++     entry #oldLines   ハンクが古い側で何行にわたるか
++     entry #newStart   新しい側でのハンクの最初の行
++     entry #newLines   ハンクが新しい側で何行にわたるか
++     entry #section   `@@` の後の見出し。git が見つけていれば、囲んでいる関数やクラス
++     entry #edits   挿入、削除、変更のない行、順序どおり
++   entry .Delta   差分のうち一つのファイルの部分。両側のパス、変更の種類、ハンク
+
+% 1 1 0 0890b302ebcc641e0b00547b4e90c902
+
+@ 0 4 0 05460c62a7557c840ff5d041512ae55f
++         `diff()`、`diffStaged()`、`diffAgainst(revision)`、`diffBetween(left, right)` がファイルごとに一つ報告するもので、`Patch.parse` がパッチのテキストから読むものである。
++         バイナリの差分やモードだけの変更にはハンクがない。
++         `Patch.asDiff` はハンクを一つの dissonance の `Diff[Text]` に平坦化する。
+
+% 2 1 0 0538ed758e5244b901ff145c5e5a5a11
+
+% 3 1 0 133e5a3272e4bfe40496c894545226b5
+
+% 4 1 0 191a3d3278a3f82d1a5f2f36125f5b8f
+
+% 5 1 0 12f77c8b9c24a7d01038e0d0e0281d3c
+
+% 6 1 0 0bb3d0eaee2acd4b10cb5b28ecf4e9fd
+
+% 7 1 0 0ccc75b4b4dcc2b1123a4efc43028240
+
+% 8 1 0 1f5d6ccebca5f3b01e9b58c721b03b17
+
+% 9 1 0 1f54d3dc5085085b0c01fd2b3ad77436
+
+% 11 1 0 0755806f385138d4147395c320927e30
+
+% 13 1 0 1c5296ae15d1aea21a5cbc0cc3a359e4
+
+% 0 1 0 1a66aabda1067439182577afebbf9d23
+
+% 0 1 0 012f9e7f01b4f48010950d717df6ee8c
+
+% 0 1 0 057c0aead9ec1a77070ff80457fcb6d4
+
+% 1 1 0 1bbbf4a6cc40392e0c19fb21dc312a36
+
+% 0 1 0 0b7e22dd699fd68e001a61ed80039415
+
+% 0 1 0 1688c2c54eaebaf60c6420e00d3e273d
+
+@ 0 8 0 1ccff358555aebbd199457cdcee68a18
++     entry #oldPath   変更前のパス。追加されたファイルでは `Unset`
++     entry #newPath   変更後のパス。削除されたファイルでは `Unset`
++     entry #status   ファイルがどう変わったか
++     entry #hunks   ハンク、順序どおり。バイナリやモードだけの変更では空
++     entry .Status   ファイルがどう変わったか：`Added`、`Modified`、`Deleted`、`Renamed`、`Copied`、`TypeChanged`
++         各 `Delta` が運ぶ。
++         `Patch.parse` は、パッチのヘッダー（片側の `/dev/null`、`rename from`、`copy from`、`new file mode`、`deleted file mode`）からこれを推測する。
++ entry .Commit   格納されたとおりのコミット。ハッシュ、ツリー、親、作者、コミッター、署名、メッセージ
+
+% 1 1 0 013fc66d5e7690a5182d4ef1475c8805
+
+@ 0 4 0 024a3696130b10500b04b87f573e08e5
++       `log()` が一覧し、`commitAt(hash)` が読むもの。
++       コミット自身のハッシュ、それがスナップショットするツリー、親（ルートコミットではなし、マージでは二つ）、それを書いた者とコミットした者（それぞれタイムスタンプ付きの `Git.Signature`）、`gpgsig` ヘッダーがあればアーマー形式の署名ブロック、そして git が付け加える末尾の改行を除いたメッセージである。
+
+% 2 1 0 010bcc72ce3fc61f06fe61c41f27924a
+
+% 3 1 0 08f79ce61f26a6e9035263667bdbfca9
+
+% 4 1 0 10a1768f7a6aeb881863395828b353a0
+
+% 5 1 0 020761d59d943f6b0619f099c2ff0751
+
+% 6 1 0 1d5f0554517f7e42106cc0479a03cfd0
+
+% 7 1 0 1db82b7cd5774781028b70bed07c2f3b
+
+% 8 1 0 0e8db4735286bfde0ccf1a497ffb7ec4
+
+% 9 1 0 19ac930280e79ca9080229c4e71eecd4
+
+% 11 1 0 0c49a9c00e6ec47c13bacc9e25107945
+
+% 2 1 0 1a821beb91bbe1ee1dbec9304a0ce894
+
+% 0 1 0 06c841f719314fca116d05ae8c8ceb2a
+
+% 0 1 0 03d4bc515c90b9b41cbb18b6d523af17
+
+% 1 1 0 170b3a58e4bae69217385f500b7c2c46
+
+% 0 1 0 1fb2025b17b04b1905c9a2a027edbdde
+
+@ 0 7 0 14993f7377e8457819860f52b78962f1
++   entry #commit   コミット自身のハッシュ
++   entry #tree   それがスナップショットするツリーのハッシュ
++   entry #parents   親。古い履歴が先で、ルートコミットではなし、マージでは二つ
++   entry #author   誰がいつ書いたか
++   entry #committer   誰がいつコミットしたか
++   entry #signature   署名されていれば、`gpgsig` ヘッダーにあるアーマー形式の署名
++   entry #message   git が格納する末尾の改行を除いたメッセージ
+
+@ 0 4 0 0052efc7c3fe702e07383ce3738a5c53
++ entry .FastForward   マージが早送りしてよいか、しなければならないか、してはならないか：`Auto`、`Only`、`Never`
++     `merge` が受け取るポリシーであり、マージコミットが作られるかどうかは設定から引き継がれるのではなく明示される。
++     `Auto` はできるときに早送りし、`Only` はそれ以外を拒否して `NotFastForward` を発生させ、`Never` は常にマージコミットを作る。
+
+@ 0 1 0 08457d3b814920190fc41a7fc63bf548
++ entry .Notes   git のノートのプレーン。コミットのハッシュを根とし、名前空間をたどって下るパス
+
+% 1 1 0 1326e223ff7c64fe0602884a7b6bac56
+
+@ 0 5 0 0cea7f3b1440a0f41a21a96374de87d5
++       git のノートは、コミットを変えずにそれに付けるテキストであり、`refs/notes/` の下の名前空間に置かれる。
++       ノートの住所を serpentine のパスとしてモデル化する。コミットのハッシュが根（`Git.Hash` は `Root`）であり、名前空間のセグメントが下降である。
++       こうすると `hash / t"attestations"` はパス演算子そのもので `NoteRef` を作り、`NoteRef` の拡張メソッド `target`、`namespace`、`content` がそれを読み戻す。
+
+% 2 1 0 184a366863958aff0b5a4a10ca4c3435
+
+% 3 1 0 09abd824905c29f908daf8eb74f5d9cf
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 07cfc6be710f1b18022afb02db77eb9e
+
+% 0 1 0 0ddc3dd8e7b63db50412c342d237fa53
+
+% 0 1 0 037adee62809ecdb0196628b407c115d
+
+% 0 1 0 196ba647771ef08e030c990846ce7fc6
+
+% 0 1 0 0c44f3097c40f0d811ab54834c1390d9
+
+% 1 1 0 08eb7d462b86a42b19e153f79076cfd5
+
+% 0 1 0 03a9af837f2913c7022135a496c3c27f
+
+% 0 1 0 10e14c837c78026a0e30128dc39265d1
+
+@ 0 9 0 11a2919c589cbafc119590922a7d6a91
++   entry .Plane   ノートのパスのプレーン型：`Notes` 自身
++   entry .filesystem   `Filesystem` としてのノートのプレーン。`/` で区切り、自身と親は `@` と `..`
++   entry .admissible   任意のテキストを名前空間のセグメントとして認める given
++       検証は `namespace` まで遅らされ、完全な ref が必要になったときに各セグメントを git の参照の規則に照らして検査する。
++   entry .radical   コミットのハッシュがノートのパスの根としてどうエンコードされるか：`<hash>/`
++   entry .eradicable   ノートのパスの根からコミットのハッシュをどう読み戻すか
++       40 桁の16進数字の後に `/` が続くものをデコードし、それ以外には `Path.Error(InvalidRoot)` を発生させる。
++       `Tactic[Path.Error]` が必要である。
+
+@ 0 5 0 18d1698a0654f2820db61da8b2a1400b
++ entry .NoteRef   ノートの住所：`Path on Notes under Git.Hash`、つまりコミットのハッシュとその下の名前空間
++     `NoteRef` は `hash / t"namespace"` のように作る（`hash / t"ci" / t"attest"` のようにさらに下ることもできる）。
++     その根はノートが付けられたコミット（`target`）であり、下降は `refs/notes/` の下の名前空間（`namespace`）である。
++     `content[value]` は、スコープ内のリポジトリのハンドルを通してノートを読む。
+
+% 2 1 0 02a10f3ee3b1db190349969c85b4aabe
+
+% 3 1 0 1bf9c7cb908c654019b0a19a2edd803b
+
+% 0 1 0 1c73f1e2e2d9bf44035a7350a583c893
+
+% 1 1 0 1d2dfea54918af6d06b01fb4f243adf5
+
+% 2 1 0 1b18b6b68220f92f0cc2d85e32cb542b
+
+% 1 1 0 1546cdc57484ee8913294d0197d43674
+
+% 1 1 0 1f5c94a665f89774161ff69169638ef2
+
+% 1 1 0 02f499499f728ee00abfb50e708a854f
+
+% 2 1 0 1d325dc260c44bb7072438b459c884d5
+
+% 0 1 0 106de4016ee2faf810902935c4b0afc3
+
+% 2 1 0 150863afee890fc0091b0f6671c2238f
+
+% 0 1 0 02beefa91a27220a13f1a6b70a92b929
+
+% 0 1 0 1ec0a45a353d22c41d0e334008f19d03
+
+% 0 1 0 0d5367a1afb795d4076ea0f379ed4b27
+
+% 0 1 0 00a152f2994e1c1d189ef5f98476bf50
+
+% 1 1 0 0101e9968cde831319a677dcccc46cca
+
+@ 0 3 0 13da7aacfe9c972b1f73c46382542a8a
++ entry .target   `NoteRef` が付けられたコミット：その根のハッシュ
++     `NoteRef` の拡張メソッドで、パスの根の 40 桁を `Git.Hash` として読み戻す。
+
+@ 0 4 0 12420105dcc185bc19619f83d754ee7d
++ entry .namespace   `NoteRef` が指す完全修飾のノートの ref：`refs/notes/<segments>`
++     `NoteRef` の拡張メソッドである。
++     パスを作るとき `/` は任意のテキストを認めるので、下降の各セグメントはここで git の参照の規則に照らして検査され、git が拒否するものには `Git.RefError` を発生させる。
+
+@ 0 8 0 04c754492e925e021b495c2bdabc1756
++ entry .content   `NoteRef` が指すノートを、スコープ内のリポジトリのハンドルを通して読み、デコードしたもの
++     `NoteRef` の拡張メソッドである。
++     `(hash / t"ns").content[Text]` はノートの本文を `Stale[Text]` として返し、任意の `value is Decodable in Text` としてデコードすることもできる。
++     スコープ内に `Git.Repo.Handle & Granting[Grant.Read]`（`open` ブロックが貸し出すハンドル）が必要であり、その名前空間にノートが付いていなければ `Git.Error(NoteNotFound)` を発生させる。
++     ノートは別のプロセスが動かしうる ref を通してたどり着くので、結果は `Stale` である。
++     `NoteRef` はパスであり、パスは読み取り可能なので、名前は `read` ではなく `content` である。
++     具体性で優先されるように、名前で（`import octogenarian.content`）インポートする。
+
+@ 0 1 0 084a8c7c1485df5801a217f21204ab76
++ entry .ReflogEntry   reflog の一行。ref がどこを指していたか、いつか、なぜ動いたか
+
+% 1 1 0 0cfda1e15d3ca3291d2758a34a170a52
+
+@ 0 8 0 0609a88fb3dfa12812f9a0ece4616841
++       `reflog()` が新しい順に一覧するもの。
++       移動後に ref が保持していたハッシュ、セレクター（`HEAD@{0}`）、エポックからの秒数で表した移動の時刻、そして操作が記録したメッセージ（`commit: Add notes`、`branch: Created from …`、`reset: moving to main`）である。
++   entry #hash   移動後に ref が保持していたハッシュ
++   entry #selector   エントリーのセレクター、`HEAD@{0}`
++   entry #timestamp   ref が動いた時刻、エポックからの秒数
++   entry #message   操作が記録した、それが動いた理由
+
+@ 0 1 0 1ab2e9933803dd00103de1ae560555c1
++ entry .ResetMode   `reset` が HEAD 以外に何を動かすか：`Soft`、`Mixed`、`Hard`、`Merge`、`Keep`
+
+% 1 1 0 151bb4f1212e4ffb0997cf94f4b38a9a
+
+@ 0 5 0 05e7bdb3263070d6071f5b680139b7f3
++       `Soft` は HEAD だけを動かし、インデックスと作業ファイルはそのままにする。
++       `Mixed` はインデックスもリセットする。
++       `Hard` は作業ファイルもリセットし、ローカルな変更を捨てる。
++       `Merge` と `Keep` は、コミットされていない変更を捨てることを拒否する git のバリアントである。
++       `#flag` はコマンドラインでの綴りである。
++   entry #flag   git がそのモードを知っているフラグ：`--soft`、`--mixed`、`--hard`、`--merge`、`--keep`
+
+@ 0 1 0 0c768447ff160f1b0556b92894397f6e
++ entry .SshUrl   SSH 越しのリポジトリの住所。省略可能なユーザー、検査済みのホスト名、パス
+
+% 1 1 0 175779380519fcb70959a178b71650ed
+
+@ 0 8 0 1712706a5705a1971701294959d2a3c6
++       `SshUrl(user, hostname, path)` は、`Git.clone` と `Git.cloneCommit` がパスと URL のほかに受け入れる唯一のソースの型である。
++       `#text` はそれを git に渡す住所として描画する。
++       ホスト名は urticose の `Hostname` なので、検査済みである。
++       git の二つの SSH 形式のどちらかのテキストとしての住所には、トランスポートが使う読み取り器である `SshAddress.parse` を使う。
++   entry #user   接続するユーザーがあれば、そのユーザー
++   entry #hostname   ホスト
++   entry #path   ホスト上のリポジトリのパス
++   entry #text   git が受け取る形の住所
+
+@ 0 1 0 0ea2c3a3049349e40fcad7ecb4b87dd5
++ entry .Commandline   `git` コマンドを実行するバックエンド。`gitBackends.commandlineGit` として使う
+
+% 1 1 0 15a9c54a19f086530d35d2fe8cf0c314
+
+@ 0 7 0 07848398b65e5d4e041d60cba39f40a7
++       どの操作も git の配管コマンドを一回か数回呼び出す `Git.Backend` である。
++       磁器コマンドの動詞は、その磁器コマンドを実行して結果を読む。
++       子プロセスはすべてスコープ内の `WorkingDirectory` と `Environment` で実行される。
++       メッセージが理由の表の知っている英語のものになるように `LC_ALL=C` のもとで実行され、認証情報のプロンプトが固まらずに失敗するように `GIT_TERMINAL_PROMPT=0` が付けられる。
++       呼び出しはそれぞれ `Commandline.Event` として記録されるので、スコープ内に `Commandline.Event is Loggable` が必要である（`logging.silentLogging` はそれらを捨てる）。
+
+@ 0 3 0 062d4e58782e5c7f012e264cd89314e4
++       git 自身の振る舞いを完全に使いたいとき、つまりフック（ただしオブジェクトを自分で組み立てる `commit` では使われない）、フィルター、認証情報ヘルパー、サブモジュールを使いたいときに選ぶものである。
++       git 自身のトランスポートも持ち込むので、リモートの URL にはそれ以上何も要らない。
+
+% 2 1 0 0760238005158cb603443cd663ce3cf8
+
+% 3 1 0 0515f0789b65380013ee26935d48726c
+
+% 4 1 0 0acf43f3f7e337401c2d0e87248e7dab
+
+% 2 1 0 17d566c47e7eaec41a8d3f0c7bb875f7
+
+% 3 1 0 0aceb588de1a1753069760681b19ee50
+
+% 4 1 0 033a8498cb6a1b960fbed2cffc5b3cee
+
+% 0 1 0 1fbc797e25e6dc6f08149504afa9d302
+
+% 1 1 0 06bbdff19fd86b461563daacbc4238b0
+
+@ 0 3 0 047ab610a8d7e774029a1cca7c5301f5
++       `.reason` は、git の標準エラーを `Git.Error.Reason` として読む表である。
++       認識できないものは `Unexpected` になり、メッセージはエラーの `detail` として保たれるので、何も捨てられない。
++       `git` をそもそも実行できない失敗は `CannotExecuteGit` である。
+
+% 1 1 0 1d0fe28737bf6866136ea5d12b9fdd63
+
+% 0 1 0 0744f20b945fd34b041ff6076985ff6a
+
+% 1 1 0 0a148150baa7810e170137bec226323e
+
+@ 0 1 0 087858f2881ea6320365e082d2ed3be9
++   entry .Command   実行する `git` の実行ファイルを、そのパスで指定したもの
+
+% 1 1 0 1934a50d85fa3a1511611f15c0817266
+
+@ 0 4 0 1bb7e6634fd6163d192a1f9bd52a6712
++         `gitCommands.searchpathGitCommand` は検索パスからそれを見つける。
++         自前の git を同梱するプログラムは、`Commandline.Command(t"/opt/git/bin/git")` のように明示的に指定する。
++     entry #path   実行ファイルのパス、テキストとして
++   entry .Event   バックエンドが記録するもの。各 `git` の呼び出しを guillotine の `Exec.Event` として表す
+
+% 1 1 0 10b9b20cc8f6474f04c7de10bc97a5e0
+
+@ 0 18 0 08168ada031503ba11562093c9d8a224
++         `Exec(event)` は `guillotine.Exec.Event` を包み、`Log.Process` のタグが付く。
++         `.execEvent` が guillotine のイベントをこれに書き写すので、バックエンドに必要なのはスコープ内の `Commandline.Event is Loggable` だけである。
++         `logging.silentLogging` はそれらを捨てる。
++     entry .execEvent   guillotine の `Exec.Event` を `Commandline.Event` に書き写す
++     entry .communicable   イベントを _the git operation did not execute: `reason`_ として描画する
++   entry .Outcome   `git` の一回の呼び出しが生んだもの。終了ステータス、標準出力、標準エラー
++     entry #exit   終了ステータス
++     entry #stdout   標準出力、テキストとして
++     entry #stderr   標準エラー、テキストとして
++     entry #ok   終了ステータスがゼロだったかどうか
++     entry #lines   空でない行としての標準出力
++   entry .reason   git の標準エラーを `Git.Error.Reason` として読む
++       照合できるほど安定した git のメッセージを、`NoRepository`、`Moved`、`RefExists`、`Locked`、`NoSuchRef`、`Unmerged`、`NoSuchObject`、`NothingToCommit`、`Detached`、`Dirty`、`NotFastForward`、`LeaseFailed`、`OutsideWorktree`、`Untracked`、`NoOperationInProgress`、`NoSuchRemote`、`RemoteExists`、`Unauthorized`、`Unreachable`、`RemoteRejected`、`InvalidConfig`、`NoteExists`、`BadSignature`、`SigningFailed`、`NoSuchWorktree`、`Conflict` に照合する。
++       それ以外はすべて `Unexpected` である。
+
+@ 0 1 0 135aaf586a5a51c61f25de086d5628f9
++ entry .Gpg   git と同じく、`gpg` を通して OpenPGP 鍵で署名し検証する
+
+% 1 1 0 0fe0ed84d94fb2f61147758669f7dbc4
+
+@ 0 6 0 02ac2752e9df8e96197ade1db9b7c56e
++       `Gpg.Signer()` は、既定の鍵、または `key`（鍵 ID、フィンガープリント、ユーザー ID）で、コミットやタグのペイロードに対する分離されたアーマー形式の署名を作る。
++       `Gpg.Verifier()` は、gpg の機械可読なステータス行から `GOODSIG`、`BADSIG` などを読み、キーリングに照らしてそれを検証する。
++       どちらもスコープ内の `WorkingDirectory` と `Environment` で `gpg` を実行し、`Exec.Event` として記録し、実行できない失敗を `Git.Error(SigningFailed)` として報告する。
+
+% 2 1 0 1841d28632047325122c387702573cd6
+
+% 3 1 0 1f36bdf35af886b21371908b4d592210
+
+% 4 1 0 0a6a2c53f012791902312700b8d7972b
+
+% 5 1 0 1a594ffc65ab26691f52de1445d16df0
+
+% 6 1 0 0699683981df51c413cdd1901c452ff7
+
+% 7 1 0 1f345b64790b895f1e3163e9a6864e2e
+
+% 8 1 0 19d5c4c56031d7c91f1c52fcd488b698
+
+% 9 1 0 13fd4b532596193219898c7befa0f6c2
+
+% 10 1 0 1eb5b2803a6e6c951ba8b7362f22dc59
+
+% 11 1 0 07f93916269248021795ed66ef62444e
+
+% 13 1 0 1db0d06cc813235d11d7a85cfaa1e7be
+
+% 0 1 0 1ad881bf36d4c3991eb1878cb1bda595
+
+% 2 1 0 019af44e1261192703056cc75f5eae8c
+
+% 0 1 0 1b1cf511db38e1170bba41d4d08f7781
+
+% 0 1 0 1a364bd6cd85c613198abe7d7a89c9bc
+
+% 1 1 0 1f2ad9d324c8e4291ac29900d57245ae
+
+% 1 1 0 1fb9124a6742f5ca059fb53cbb64a541
+
+% 0 1 0 1d528a3dc2b78e581d135371ba3a0e94
+
+@ 0 4 0 042f5045937e2e5116faf46b13697070
++   entry .Signer   既定の OpenPGP 鍵、または `key` で、`gpg -bsa` を通して署名する
++     entry #sign   ペイロードに対するアーマー形式の署名。gpg が失敗すれば `Git.Error(SigningFailed)` を発生させる
++   entry .Verifier   `gpg --verify` を通してキーリングに照らして検証する
++     entry #verify   `GOODSIG` 行なら `Good(userId)`、`BADSIG` なら `Bad`、それ以外は `Unknown`
+
+@ 0 1 0 0568d089d976c302143a080e19e6f36f
++ entry .SmartHttp   git のスマートプロトコルによる HTTP(S) 越しのリモートリポジトリ。`gitTransports.smartHttp` として使う
+
+% 1 1 0 1c1bd661dd1d7fdc0db4da267b8c20cf
+
+@ 0 7 0 07b28cb63c6c178100fabaf10e0086c5
++       ネイティブのバックエンドのための `Transport` である。
++       ケイパビリティの広告は `info/refs?service=…` から読まれ、各コマンドはサービスへの `POST` であり、`Git-Protocol` ヘッダーでプロトコルバージョン 2 を要求する。
++       URL の userinfo にある認証情報（`https://user:token@host/…`）は Basic 認証として送られる。
++       スコープ内にある `Http.Backend` を通して通信するので、`SmartHttp()` にはそれ（たとえば `httpBackends.javaNetHttp`）が必要であり、`Native(List(SmartHttp()))` は HTTP(S) 越しにクローン、フェッチ、プッシュができるバックエンドである。
+
+% 2 1 0 05100fcd03f3e3c60dc8aba6a6215876
+
+% 3 1 0 00cc3fce02a09ff312e0d981eaf5c5fa
+
+% 4 1 0 0ab3151572d874f50cf27f08107c5bc1
+
+% 5 1 0 106e2addc14f33b7007a01a423a0dcc6
+
+% 2 1 0 1fda2995a38796541cbcf8a990d3fd27
+
+% 1 1 0 1f9a6537aed296460eba8acd58b6889b
+
+% 2 1 0 0356fa0b80ebaf860a3af1153e1fc5e3
+
+% 0 1 0 0c893331b656bda61f523c8e0360bd83
+
+% 2 1 0 1633583db54ec20d09756fe8c81f2161
+
+% 0 1 0 16874e5cd7b1e28f026d6709c430824f
+
+% 1 1 0 1b55e9beb3c2dd1d118bfe54011e2d0b
+
+@ 0 3 0 00dbb8f1bea46a720d55bf85632036d7
++       サーバーの応答は `Git.Error` になる。
++       `401` と `403` は `Unauthorized`、`404` は `NoRepository`、接続の失敗は `Unreachable`、それ以外の失敗はステータスコードを詳細とする `Unexpected` である。
+
+% 1 1 0 136251c8fcb4cf8d1b8f51eb2b6ebf96
+
+% 1 1 0 1a2f4d482d74f7e91003f1e5d0c8eaa1
+
+@ 0 1 0 118de4f9c02b68bc1dfbe7e5c7f7bb26
++   entry .Channel   一つのリポジトリの HTTP エンドポイント。広告と、サービスとの各やり取り
+
+% 1 1 0 1738fd8e2016467c1b14d0d8d391f3b7
+
+@ 0 8 0 0f718274d6c1c9b20fe7b70db2c7e961
++         プロトコルが駆動する `Channel` である。
++         `#advertise` は `info/refs` をフェッチし、HTTP 形式が前に付け加える `# service=…` の行を飛ばす。
++         `#exchange` はサービスにリクエストを送り、その packet-line の応答を返す。
++         やり取りの間には何も保持されない。
++     entry #advertise   サービスのケイパビリティの広告を、packet-line の読み取り器として返す
++     entry #exchange   サービスにリクエストを送り、その応答を packet-line の読み取り器として返す
++     entry #close   閉じるものはない。各やり取りがそれぞれ独立したリクエストである
++   entry #accepts   URL が `http://` か `https://` で始まるかどうか
++   entry #connect   その URL 越しの `Peer`。拒否するサーバーや到達できないサーバーには `Git.Error` を発生させる
+
+@ 0 1 0 1dbb4c104c8dceb51a32056e22030df3
++ entry .SshCommand   起動した `ssh` を通したリモートリポジトリ。`gitTransports.sshCommand` として使う
+
+% 1 1 0 15b022ea93e5ba7700dfbfea9f960559
+
+@ 0 6 0 04e7b01ef8385065074a55b4454cd6dd
++       git 自身と同じようにサーバーに到達する、ネイティブのバックエンドのための `Transport` である。
++       サービスごとに一つの `ssh` プロセスを使い、サーバー上で `git-upload-pack` か `git-receive-pack` を実行し、`GIT_PROTOCOL` 変数を通してプロトコルバージョン 2 を要求する（`SendEnv` で送られ、サーバーの `AcceptEnv` が許す場合にサーバーはそれに従う）。
++       `ssh://[user@]host[:port]/path` と、`scp` 風の `[user@]host:path` の両方の形式を、`SshAddress.parse` を通して理解する。
++       シェルでと同じく、ユーザー自身の `ssh` の設定、鍵、エージェントが適用される。
+
+@ 0 3 0 1859b22a63a439851a0e66b214624ad5
++       `SshCommand()` はスコープ内の `WorkingDirectory` と `Environment` で実行され、各プロセスを `Exec.Event` として記録する。
++       やり取りの間には何も保持されないので、フェッチには二つの接続、つまり `ls-refs` のためのものと `fetch` のためのものが要る。
+
+% 2 1 0 1758e6e51576481e0428b231e60858c7
+
+% 3 1 0 029253e71afb2adb07ecb00dc2b64bd2
+
+% 4 1 0 12c34fc35121c6481f53d00f293d765b
+
+% 5 1 0 1be63c4f721a5f0c02ba6bc44c8401a8
+
+% 1 1 0 069934decac3d2d414ff0d652a53dffa
+
+% 2 1 0 005b71f18b5aafd70574dc1188ad758d
+
+% 3 1 0 1b14c0fad3c2cb41120e3348a9e8b967
+
+% 4 1 0 15a3a117f81f53ea0d8c246d1ac30e59
+
+% 5 1 0 0a87b7ba324ebfba14a7d7d1e85e4ebb
+
+% 0 1 0 00cb43fb8277244d107faca856b1001d
+
+% 2 1 0 1009c1da76ea02800eea36efac60ee67
+
+% 0 1 0 1ced413c07d290500fae5fa378695234
+
+% 1 1 0 13ecf94f55e5aee50675eee295ae9f10
+
+% 1 1 0 026166774f3e3d7a15150924c4838b83
+
+% 1 1 0 053a273797aaece71a9c9cc6e9d2bb78
+
+% 1 1 0 058817bd80b002270d63246d9ca54bae
+
+@ 0 1 0 0d3175a2cf84c49e05aa08bd54d3fb24
++   entry .Channel   起動した `ssh` を通して到達する一つのリポジトリ。やり取りごとに一つのプロセス
+
+% 1 1 0 1fa18f855d621a7c0757289b08fd7bc0
+
+@ 0 9 0 02f6193e27d07443176064e0cf5c52a9
++         プロトコルが駆動する `Channel` である。
++         サーバーはすべての接続を広告から始め、`#advertise` はそれを返し、`#exchange` はそれを読み飛ばしてから、書き込んだリクエストへの応答を返す。
++         `ssh` を起動できない失敗や、途中で切れた応答は `Git.Error(Unreachable(host))` である。
++     entry #advertise   サービスを起動し、その広告を packet-line の読み取り器として返す
++     entry #exchange   サービスを起動してリクエストを書き込み、広告の後のその応答を返す
++     entry #close   閉じるものはない。各やり取りがそれぞれ独立したプロセスである
++   entry #accepts   URL がどちらかの形式の SSH アドレスかどうか
++   entry #connect   そのアドレス越しの `Peer`。SSH アドレスでない URL には `Git.Error(Unsupported)` を発生させる
+
+@ 0 1 0 0a03560bde9a29ca1dfb1a4587f9ca9c
++ entry .SshKeygen   `gpg.format = ssh` で git が行うように、`ssh-keygen -Y` を通して OpenSSH の鍵で署名し検証する
+
+% 1 1 0 16961a3dcfc96e4e15fa2f8e68c0960d
+
+@ 0 8 0 16f436d4ab515c930a9714bf7bfa3d8b
++       `SshKeygen.Signer(key)` は、パスにある秘密鍵で、コミットやタグのペイロードに `git` 名前空間で署名する。`SshKeygen.Verifier(allowedSigners)` は、署名の鍵がどのプリンシパルを表すかを allowed-signers ファイル（git の `gpg.ssh.allowedSignersFile` が指すもので、各行は `principal key-type key`）の中から見つけ、それに対して検証する。
++       どちらもスコープ内の `WorkingDirectory` と `Environment` で `ssh-keygen` を実行し、`Exec.Event` としてログを記録し、実行に失敗すると `Git.Error(SigningFailed)` として報告する。
++       このように署名されたコミットやタグは、`git log --show-signature` と `git tag -v` が受け入れるものである。
+
+% 2 1 0 14710ba1f381980405fd643789433e76
+
+% 3 1 0 13c927833b5b00a81b3b801e04fb2c23
+
+% 4 1 0 1ad7a2def129c0670dc60b19d9ca0bd0
+
+% 5 1 0 02fd96cb55076a3302bdb48d922fad1f
+
+% 6 1 0 1cb9fc3e6e788fac129e14ed07207167
+
+% 7 1 0 10cc7a1086e2a5f518cae04678a2eb40
+
+% 8 1 0 1aa924aa894b7b7b0becb6f112502901
+
+% 9 1 0 12930b0d075ec95202b52b23e73aef18
+
+% 10 1 0 0fd12173505e112d03ebb00d54f71100
+
+% 11 1 0 034a26a41d3d936e062f416ef8a8e74e
+
+% 13 1 0 1cd90fec0aa0fe240f8cdf27904acbfa
+
+% 0 1 0 140784e6a19d29391108779a682d16d1
+
+% 0 1 0 052f8cd9730491f4007737e57c39adab
+
+% 0 1 0 158cc5f1b03c362f117dfa6b73fec6f6
+
+% 2 1 0 02072da2e6ed4c881efcdfcbb8d980d1
+
+% 0 1 0 0351ec26c48fef0312fe9bc15c867704
+
+% 0 1 0 0308d92cd7cc4aa91c48ad52defac580
+
+% 1 1 0 1018e4e197023d0807a498ae460562e6
+
+@ 0 2 0 15d78c83ed76f97d1fa6618484f5827b
++       git の設定にある `tag.gpgsign` や `commit.gpgsign` は参照されない。署名は `Git.Signer` が渡されたときにだけ行われ、プロセスの外に出ることはない。
+
+% 1 1 0 1d2a0ee252ad9f7f002af3479f60114e
+
+% 0 1 0 0479ff2ac89ee72d16cd41a9846e6754
+
+% 0 1 0 04d926a705ee53a618a54dc2a8a34e5a
+
+@ 0 4 0 15c0c0b178ad2a0c06e45a2bbaa1d060
++   entry .Signer   `ssh-keygen -Y sign -n git` を通して、パスにある秘密鍵で署名する
++     entry #sign   ペイロードに対するアーマー形式の署名。ssh-keygen が失敗すると `Git.Error(SigningFailed)` を発生させる
++   entry .Verifier   allowed-signers ファイルにあるプリンシパルと鍵に対して検証する
++     entry #verify   鍵が許可されていて署名が正しければ `Good(principal)`、一致するプリンシパルがなければ `Unknown`、それ以外は `Bad`
+
+@ 0 1 0 0bf65b1c94381c7f05c0a815a5d205b9
++ entry .SshNative   `ssh` バイナリを使わず、ネイティブの SSH クライアントを通したリモートリポジトリ。`gitTransports.soundnessSsh` として使う
+
+% 1 1 0 0b2747fe3800c9be0a948bd1d7408521
+
+@ 0 8 0 02d6ed29172d65f311639ca3b1da0515
++       Scala で書かれた SSH クライアントである susurration を通して接続する、ネイティブのバックエンドのための `Transport` である。相手ごとに一つの SSH 接続を持ち、やり取りごとにチャンネルを一つ開き、それぞれが `GIT_PROTOCOL=version=2` で `git-upload-pack` または `git-receive-pack` を実行する。
++       ホスト鍵はスコープ内の `Ssh.HostKeys` のポリシーに対して検査され、ユーザーの ID は `Ssh.Credentials` から得られ（アドレスのユーザー、なければそのホストに対する資格情報のユーザー、それもなければ `git`）、ソケットは `Socket.Backend` から得られる。そのため `SshNative()` はそれらに加えて、`Ssh.Provider`、`Ssh.Algorithms`、TCP のオプション、SHA-256 の `Hash`、`Diagnostics` を受け取る。
++       `SshCommand` が受け入れる両方のアドレスの形を、ここでも受け入れる。
+
+% 2 1 0 14f8661fcfad31c1099a299edbcaa2d5
+
+% 3 1 0 09a55506d65feb070d5f8e6a19705c78
+
+% 4 1 0 1cff62815acfe6ec01a66e0c59e3b55f
+
+% 5 1 0 173367eb424922a40ef645c262f9fa25
+
+% 0 1 0 0e45d61bd94f638418ed324ab416b0b0
+
+% 1 1 0 0c18dbdcce7e681a02c4a890fcde3f26
+
+% 2 1 0 1a2499ede562273516e721442d46205b
+
+% 0 1 0 0266db36ba6bdb1a1c77adf683b3ff44
+
+% 2 1 0 0657db022f7168391bda77931856f212
+
+% 0 1 0 0b3fe5d339b67f2816491fd1acd1578c
+
+% 1 1 0 195b58056193064e0939a0cfa12f3fdb
+
+@ 0 2 0 1eb4841a5882b1fe06670eaea7209054
++       接続、認証、SSH の失敗は `Git.Error(Unreachable(host))` となり、失敗自身のメッセージが詳細として付く。`1`–`65535` の範囲外のポートは `Unsupported` である。
+
+% 1 1 0 1eae9908fba37cbd1361b4d9666912cb
+
+% 1 1 0 1f400f4658f28e6f169d56a6739d2efb
+
+% 0 1 0 026227bba2bfd7871a71b150bd0a7258
+
+@ 0 1 0 11a98706c0ec318810e50235d9c1186d
++   entry .Channel   リポジトリへの一つの SSH 接続。やり取りごとにチャンネルを持つ
+
+% 1 1 0 179a4478b2b3a7c911c881db930250a1
+
+@ 0 8 0 1f894227759951d902855f854def77c3
++         プロトコルが駆動する `Channel` である。
++         トランスポートは一つのスレッドで駆動されるので、次のやり取りの SSH チャンネルを開く前に前のものは閉じられる。接続そのものは `#close` まで開いたままである。
++     entry #advertise   サービスのためのチャンネルを開き、その広告をパケットラインのリーダーとして返す
++     entry #exchange   サービスのためのチャンネルを開き、リクエストを書き込み、広告の後に続く応答を返す
++     entry #close   現在のチャンネル、セッション、ソケットを閉じる
++   entry #accepts   URL が、どちらかの形の SSH アドレスであるかどうか
++   entry #connect   接続して認証し、`Peer` を返す。失敗すると `Git.Error(Unreachable)` を発生させる
+
+@ 0 1 0 0cdb9504e064b5a7078ec8ccbd62973c
++ entry .gitCommands   `git` の実行ファイルの場所。それぞれ名前でインポートする given である
+
+% 1 1 0 12e840229a4f149b032442575808180d
+
+@ 0 3 0 1b910378e41608e41a5a609e9095e137
++       コマンドラインのバックエンドは、実行する `git` を指す `Commandline.Command` を必要とする。
++       `searchpathGitCommand` をインポートすると、それを検索パス上から見つける。独自の git を同梱するプログラムは、代わりに `given Commandline.Command = Commandline.Command(t"/opt/git/bin/git")` を束縛する。
+
+% 2 1 0 1b8befea2cd643f01d40db0ba2dc461b
+
+% 3 1 0 0c5b3553d364e38401685759947478d5
+
+% 4 1 0 0b6d4e6cd2a4427c00ede055c1368808
+
+% 1 1 0 0df41f4bac28f85206c262f2f4699a1c
+
+% 1 1 0 1e3d42e000da21431a3ee99127223867
+
+% 2 1 0 11c03cccad1976ef11c61d51ca3f0fd4
+
+% 3 1 0 09d1e0f8d5692c9d09790254d7c201bb
+
+% 4 1 0 13f0629dd5690fa21f383c5d97d879d0
+
+@ 0 5 0 1f2487603b6be8571567a7d44825723a
++   entry .searchpathGitCommand   `which git` によって検索パス上に見つかった `git`
++       given が最初に使われたときに、スコープ内の `WorkingDirectory` と `Environment` で解決され、`Commandline.Event` としてログに記録される。
++       スコープ内に `Tactic[Exec.Error]`、`Tactic[Path.Error]`、`Tactic[Io.Error]`、`Tactic[Name.Error]`（`strategies.throwUnsafely` はこれらを満たす）と、テキストからインスタンス化できる `Path on Linux` を必要とする。
+
+@ 0 1 0 12a672659170cddc0bf63e5cb0ba27ae
++ entry .gitBackends   `Git.Backend` の二つの実装。それぞれ名前でインポートする given である
+
+% 1 1 0 0f035ce6d6805c4e0ef5312aebbd060f
+
+@ 0 3 0 06b7cd53d84d8d1a0046045168bbce3b
++       どのバックエンドが操作を実行するかはスコープ内の `Git.Backend^` の given が決め、その選択が暗黙に行われることはない。`import soundness.*` はどちらも取り込まないので、一つを名前でインポートする。
++       どちらも恒久的なものであり、同じコードがどちらのもとでも動く。
+
+% 2 1 0 11600634ea8ae37c02994f2e7dd20c12
+
+% 3 1 0 1146c649f47fddf11c0837ddca3ccab2
+
+% 4 1 0 144358cfe280c4bc068e3d0ae5531a1a
+
+% 5 1 0 163d308874fe45710314a607e306482b
+
+% 6 1 0 1963a0e790ed72591440634117f90f56
+
+% 7 1 0 0328a476ad1faa1c04667b2feb439248
+
+% 8 1 0 01d723d9915ef7da18825de8857087c6
+
+% 4 1 0 0f4d055dd1f6f2da1e16bf3fcf750751
+
+@ 0 6 0 132d10e7acb4c68a1bac558210589ab6
++       `commandlineGit` は `git` コマンドを実行するので、git のあらゆる動作、トランスポート、資格情報ヘルパーを備える。
++       `soundnessGit` は `Native()` であり、リポジトリのファイルを自ら読み書きし、`git` を必要としない。その場合、リモートリポジトリには `Transport` が必要なので、ネイティブのバックエンドのもとでネットワーク越しにクローン、フェッチ、プッシュを行うプログラムは、`soundnessGit` をインポートする代わりに、`gitTransports` の given をスコープに置いて独自の `given Git.Backend = Native(List(SmartHttp(), SshCommand()))` を束縛する。
+
+% 1 1 0 0cab0be40081f7bb135244219105413e
+
+% 0 1 0 138107cee06e99d416786aa56cabbe3f
+
+% 1 1 0 1d9383a4011b3dd30cccbad54c0aa2a0
+
+@ 0 6 0 08f3c5fadfbd8f98029c3dd0f3c9e35a
++   entry .commandlineGit   `git` コマンドを実行するバックエンド
++       スコープ内の `Commandline.Command`、`WorkingDirectory`、`Environment`、`Commandline.Event is Loggable` から `Commandline(command)` として作られる `Git.Backend^{loggable, caps.any}` である。そのため、これと一緒に `gitCommands.searchpathGitCommand`（またはコマンドの束縛）、`workingDirectories.javaBaseWorkingDirectory`、`environments.javaBaseEnvironment`、そしてログのポリシーをインポートする。
+
+@ 0 7 0 1ff82bb3e74f6cbc01675a44a3b0c946
++   entry .soundnessGit   ネイティブのバックエンド：`git` バイナリを使わず、リポジトリのファイルを自ら読み書きする
++       トランスポートなしの `Native()` なので、同じファイルシステム上のリポジトリにはパスで到達し、それ以外の URL に対しては `Git.Error(Unsupported(the transport for <url>))` を発生させる。HTTP や SSH 越しにリモートからフェッチしたりリモートへプッシュしたりするプログラムは、代わりに独自の `given Git.Backend = Native(List(SmartHttp(), SshCommand()))` を束縛する。
++       `import soundness.*` は given をインポートしないので、名前でインポートする。`gitBackends.commandlineGit` は `git` コマンドを実行する代替である。
+
+% 2 1 0 162883997921acd606a276cabb148247
+
+% 3 1 0 194e7b96f13c854e092c6bae4b794302
+
+% 4 1 0 08be3df0fd9d755b13ce401118fdf80d
+
+% 5 1 0 16421447b7153d82072dd90e10ccde87
+
+% 6 1 0 1f1bfddfbcd764ad0be4db9a8ea1d1a0
+
+% 7 1 0 1e8ba7a30e42cb4b10be82e77ad2641d
+
+% 8 1 0 1b418fb13035803d1838963251bfce30
+
+% 10 1 0 0acac173004ffbc21c55af9c944569ac
+
+% 11 1 0 07da488b9ba79c071fb5febae8219cc6
+
+% 12 1 0 14e79a03c7f07b201d8e2d7fcba5194e
+
+% 0 1 0 12203875568c65f81bff7501ef31c8ab
+
+% 1 1 0 05d1db2ed4d456351a661dd92dbac43c
+
+@ 0 1 0 1b7c0d631ffd90d6177b08dfeb1a6ad3
++ entry .gitTransports   ネイティブのバックエンドがリモートリポジトリに到達する方法。それぞれ名前でインポートする given である
+
+% 1 1 0 1bcbbc01444659f1129390f0bc0943b2
+
+@ 0 5 0 02be38b289c55c720e58b0a582b07647
++       `Transport` は `Native` が URL に到達する方法である。`SmartHttp` は HTTP(S) 越しに、`SshCommand` は起動した `ssh` を通して、`SshNative` はネイティブの SSH クライアントを通して到達する。
++       ここにある given は、それぞれが必要とするコンテキストからトランスポートを作るので、`Native(List(smartHttp, sshCommand))` のように、トランスポートを構築せずに名前で書ける。
++       コマンドラインのバックエンドはこれらのどれも必要としない。
+
+% 2 1 0 1acd29acc70a2ed51cdfc5d8b4c1d11a
+
+% 3 1 0 1043fd5d3037a4861c7317e22923874f
+
+% 4 1 0 1fad31b30cc358421adc042de6f9b03a
+
+% 5 1 0 05ee239d1e284a9f02163d33cd642498
+
+% 0 1 0 0cd572d9e32b8e910e779c0cb909d64d
+
+% 1 1 0 0c6500e817c9dfe709ea8f3f6a153ef3
+
+% 1 1 0 183d2417d14c5c661ea87f33383ed8bc
+
+% 2 1 0 09646fb4f0ec14990e883f01d078e1ed
+
+% 3 1 0 047acc312dc7913b0e1d6e6738ea6027
+
+% 0 1 0 0a0f4f5eca29fea90e3a32f5adec57e4
+
+% 1 1 0 0f83c3cb89c89593076bde903ec246f5
+
+% 0 1 0 074f15f1525ad02d076931017366168c
+
+% 1 1 0 0f41ddfcd0ef39d11908a557456ede87
+
+% 1 1 0 11c76b7696cf02160ada5d595e7bea03
+
+@ 0 10 0 08cbe1b688eb4efe10509f641316d432
++   entry .smartHttp   スコープ内の `Http.Backend` 上の `SmartHttp()`
++       `httpBackends.javaNetHttp` のような `Http.Backend` を必要とする。
++   entry .sshCommand   スコープ内の `WorkingDirectory` と `Environment` での `SshCommand()`
++       `Transport^{loggable, caps.any}` である。作られたときの `Exec.Event is Loggable` を保持するので、ログのポリシーがスコープ内になければならない。
++   entry .soundnessSsh   スコープ内の susurration のコンテキストから作る `SshNative()`
++       `Socket.Backend`、TCP の `Socket.Option`、`Ssh.Provider`、`Ssh.Algorithms`、`Ssh.HostKeys`、`Ssh.Credentials`、SHA-256 の `Hash`、`Diagnostics`、そしてネットワークを使ってよいことの証拠として `Online` を必要とする（telekinesis の HTTP クライアントが要求するのと同じように要求するが、保持はしない。トランスポートそのものは純粋である）。
+
+@ 0 1 0 175a2f3044d34fc40607d6ab9dc9ce85
++ entry .Native   `git` バイナリを使わず、リポジトリのファイルを自ら読み書きする `Git.Backend`
+
+% 1 1 0 120f922147671452148e5e91376a004f
+
+@ 0 6 0 01e2442cddd9e7191ed540a5bb09ac96
++       `Native` は `Git.Backend` の純粋な Scala による実装である。`Git.Repo` や `Git.Worktree` のハンドルが行うすべての操作は、リポジトリ自身のファイルを git 自身のフォーマットで読み書きすることで実行される。そのため、これが触れたリポジトリは常に `git` 自身が理解できるものであり、一方が衝突で止めた操作をもう一方が続けられる。
++       `gitBackends.soundnessGit` は `Native()` から作られる given で、名前でインポートして選ぶ。`gitBackends.commandlineGit` は `git` コマンドを実行する代替である。
+
+% 2 1 0 08516c3c6fc68b371305b3e7b67c9a33
+
+% 3 1 0 0bff2a692a3eabd91b66951733000051
+
+% 4 1 0 19620cd35aac7b011f88460f9918fc6d
+
+% 5 1 0 079d096a3481439318766e4d714308f2
+
+% 6 1 0 0adda3c29b49d9fe182afcdaa1fb943e
+
+% 7 1 0 105406ded35b2a831c8b622d049245ae
+
+% 8 1 0 1a378b1fd486d867188257c1adc45582
+
+% 10 1 0 08ef7e356385ca3617722acc01b42767
+
+% 11 1 0 109af20903f4c0de14a492697884c207
+
+% 12 1 0 0f71faf774357af607ed3d2d16877347
+
+% 0 1 0 0904de66c991cbcb0cc4c7c1ad31739c
+
+% 0 1 0 00beaae14ec758c81223558941cc6cc7
+
+% 1 1 0 1a56a6ec53c3ae160a4b5ea33329f494
+
+@ 0 1 0 115ea1220a33f955008a997c41a2d00f
++       読み書きするものは次のとおりである。
+
+@ 0 24 0 158bd53abe80375a095bd58442c1dcfd
++       - **オブジェクト**：`objects/` の下のルーズオブジェクト、`objects/pack/` の下のパックファイルとその `.idx` インデックス（オフセットデルタと参照デルタは解決される）、そして `objects/info/alternates` に指定されたストア。書き込むオブジェクトは常にルーズであり、一時的な名前で書かれてから所定の場所へ移動されるので、並行して読む者が不完全なオブジェクトを見ることはない。フェッチやクローンで受け取ったパックは、丸ごとメモリに保持されてからルーズオブジェクトに展開される。
++       - **参照**：ルーズな参照、`packed-refs`、シンボリック参照、reflog。参照を動かす書き込みはすべて、排他的な作成で取得した `<ref>.lock` ファイルのもとでの compare-and-swap である。すでに保持されているロックは `Git.Error(Locked)` となり、呼び出し側の `Stale` の読み取り結果が示した内容をもう保持していない参照は `Git.Error(Moved)` となる。これは git が報告するのと同じく、呼び出し側が使った名前（`HEAD`）で報告される。
++       - **設定**：`/etc/gitconfig`、XDG と `~/.gitconfig` のファイル、リポジトリの `config`、そして `extensions.worktreeconfig` が設定されていれば `config.worktree` を、git の順序で読み、`include.path` のファイルを差し込む。コミッターの ID は `user.name` と `user.email` から得られ、reflog を書くかどうかは `core.logallrefupdates` が決める。
++       - **インデックスとワークツリー**：インデックスファイル（バージョン 2。未知の拡張は保存される）、`.gitignore` ファイルと `info/exclude`、そして status、add、remove、move、restore、clean、checkout、switch。
++       - **一連の操作**：マージ（diff3 による三方向マージと衝突マーカー付き）、cherry-pick、revert、rebase、stash。git と同じ状態ファイル（`MERGE_HEAD`、`CHERRY_PICK_HEAD`、`sequencer/`、`rebase-merge/`、`refs/stash`）を使うので、`Native` が止めた操作を `git` が続行したり中止したりでき、その逆もできる。
++       - 任意のノート参照の下の**ノート**、**リンクされたワークツリー**（`worktrees/` のレジストリ）、そして**転送**：同じファイルシステム上のリポジトリに対してはパスで、それ以外は `Transport` を通したワイヤプロトコルで行う fetch、push、clone、`remoteRefs`。
+
+@ 0 8 0 0547eda913444a8811f85e0b5402b8cd
++       同じファイルシステム上のリポジトリには、そのパス、あるいは `file://`、`./`、`../` の URL によって、トランスポートをまったく使わずに `Peer.Local` として到達する。
++       それ以外の URL には、バックエンドを構築するときの `transports` のリストから、それを受け入れる `Transport` が必要である。`http://` と `https://` には `SmartHttp()`（`http` コンポーネント）、`ssh://` の URL と `scp` 形式の `host:path` のアドレスには `SshCommand()`（`ssh` コンポーネント）または `SshNative()`（`sshNative` コンポーネント）を使う。
++       `gitBackends.soundnessGit` はトランスポートなしの `Native()` なので、ローカルのリポジトリにしか到達しない。どのトランスポートも受け入れない URL は `Git.Error(Unsupported(the transport for <url>))` となる。
+
+% 2 1 0 13254fbf099d3389183584a235edd75a
+
+% 0 1 0 07eda6bd62522bc81ee56960cd77a6b1
+
+% 1 1 0 183a6973f748fa85195225ac8dc46c08
+
+% 0 1 0 1f2eb7265bc00bf104a4ce954355feab
+
+% 0 1 0 0c9b5f76c68d732c1c230132c66c4134
+
+% 1 1 0 0c8726f53dd348e419c557b49020712a
+
+% 2 1 0 179ec46f2e7fbc7c15b8e9d1354dd974
+
+% 0 1 0 044cccdae18f820707a30c7fafdf0665
+
+% 0 1 0 07048c2ed22a4ec9038cb008e9de920d
+
+% 1 1 0 0a661887eac530130c8aac8b738d5f8c
+
+% 2 1 0 0fe184634537db0e1ff2d72bf5399f61
+
+% 0 1 0 19e5a642d4befcc50f034187f2948dc0
+
+% 0 1 0 0c4ca26c4b2b9150098f5c00b9cf93c4
+
+% 0 1 0 0a98ae082f952800010439d6e277a866
+
+% 0 1 0 113169c818238e9d058d67dec6af6bca
+
+% 1 1 0 0757a3fa0dcac1101c5319a08405bb66
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 116afdc7d323a0b804f32785e69c5651
++       URL に対して `accepts` が真になる最初のトランスポートが使われるので、リストは優先順に並べる。
++       トランスポートが何であれ、git と同じく、参照の一覧とフェッチにはプロトコルのバージョン 2 を、プッシュにはバージョン 0 の `receive-pack` のやり取りを使う。
+
+@ 0 6 0 1fc9ea44ad6b79d90b95dd61dd40afb8
++       行わないことは次のとおりで、それぞれ `Git.Error(Unsupported(…))` として報告される。サブモジュールの再帰的なクローン、マージコミットへの署名（コミットとタグへの署名はバックエンドとは独立で、`Git.Signer` を通して行う）、`rebase --autosquash`、`am` 形式の rebase の続行、マージのスキップ、そして soft、mixed、hard 以外のモードでの `reset`。
++       フック、フィルター、資格情報ヘルパーが実行されることはない。
++       どの操作であれ、その下でのファイルシステムの失敗は、失敗自身のメッセージを詳細とする `Git.Error(Unexpected)` として報告される。
+
+@ 0 3 0 0bd2c14de176501312b9d25e590a61f2
++       `Native` は JVM（`native-jvm`。galilei の `java.nio.file` バックエンドの上）と Scala Native（`native-native`。javalib のファイルシステムの上）で使える。
++       これは `Transport`、`Peer`、`SshAddress` と同じく `soundness` アンブレラにエクスポートされている。
+
+% 1 1 0 058a00ef448b93c60269588dda9f36a1
+
+% 1 1 0 19aa45b5fd89cd530f89e16c094b6523
+
+% 1 1 0 0843cc4a2499efe3176f31e268b16838
+
+% 1 1 0 15c5ad53fa8587931821f82bdcefa670
+
+@ 0 176 0 09f0472751d2b6b015a14763b703e6b0
++   entry #locate   パスが属するリポジトリを見つける：その git ディレクトリ、共通ディレクトリ、ワークツリー
++       `.git` ディレクトリを持つディレクトリはワークツリーである。`.git` が `gitdir:` を指すファイルであるディレクトリはリンクされたワークツリーであり、その git ディレクトリ自体が `commondir` で共有のものを指す。`HEAD`、`objects`、`refs` を持つディレクトリはそれ自体が git ディレクトリである（ベアリポジトリ、または親がワークツリーである `.git`）。
++       それ以外のもの、あるいは存在しないパスは `Unset` である。
++       `path.open[Git.Repo]` と `open[Git.Worktree]` が参照するのはこれである。
++   entry #init   リポジトリを作成し、`HEAD` を初期ブランチに置く
++       `objects/`、`refs/heads/`、`refs/tags/`、`info/` などを作り、`HEAD` をブランチ（指定がなければ `main`）へのシンボリック参照として書き、`core.repositoryformatversion`、`core.filemode`、`core.bare`、そしてベアでないリポジトリでは `core.logallrefupdates` を含む `config` と、`description` ファイルを書く。
++       ベアリポジトリは対象そのものに、それ以外はその `.git` に作られる。
++       すでにあるファイルは保持されるので、再初期化しても害はない。
++       入口は `Git.init` である。
++   entry #clone   リポジトリを新しいリポジトリへフェッチし、そのデフォルトのブランチをチェックアウトする
++       ソース（ローカルのパス、またはいずれかのトランスポートが受け入れる URL）に接続し、ブランチの指定がなければ、ブランチを選ぶためにそのシンボリックな `HEAD` を問い合わせ、対象を初期化し、通常のフェッチの refspec（`+refs/heads/*:refs/remotes/origin/*`、ベアのクローンでは `+refs/heads/*:refs/heads/*`）を持つ `origin` のリモートを書き、フェッチする。ベアでないクローンでは、アップストリームを設定したローカルのブランチを作り、ツリーをチェックアウトし、インデックスを書く。
++       `depth` を指定すると、git が尊重する `shallow` ファイルを持つシャロークローンになる。
++       `Internet` の証拠を必要とし、サブモジュールの再帰的なクローンは `Git.Error(Unsupported(cloning submodules recursively))` となる。
++       渡された `Git.Activity` は、`Receiving` と `Checkout` の段階を報告する。
++   entry #head   `HEAD` が何であるか：ブランチに結び付いている（まだ生まれていないこともある）か、ハッシュでデタッチされているか
++       シンボリックな `HEAD` はブランチの先端を持つ `Git.Head.Attached` であり、まだ生まれていないブランチなら `Unset` を持つ。直接の `HEAD` は `Git.Head.Detached` である。
++       読める `HEAD` のないリポジトリは `Git.Error(NoSuchRef(HEAD))` となる。
++   entry #readRef   ルーズなファイルまたは `packed-refs` から読んだ、直接またはシンボリックな参照の内容
++   entry #listRefs   接頭辞の下のすべての参照とそのハッシュ。名前順
++       git と同じく、ルーズな参照は同じ名前のパックされた参照を隠す。
++   entry #peel   注釈付きタグをたどり、最終的に指すオブジェクトを得る
++   entry #updateRef   参照の compare-and-swap：期待どおりの内容を保持していれば、参照を移動または削除する
++       排他的な作成で `<ref>.lock` を取得し（別のプロセスが保持していれば `Git.Error(Locked)`）、参照の現在の値を `Git.Backend.Expectation` と比較し（異なれば `Git.Error(Moved)`）、書き込むか削除し、`core.logallrefupdates` がそう指示すれば、メッセージ付きの行を reflog に追加する。
++       更新されるパックされた参照はルーズとして書かれる。
++       ハンドルにある、参照を動かすすべての動詞はこのプリミティブの上に成り立っている。
++   entry #updateSymbolicRef   シンボリック参照（`HEAD` など）を別の参照に向ける
++   entry #resolve   リビジョンの式をハッシュに解決する。何もマッチしなければ `Unset`
++       完全なハッシュと曖昧でない省略形のハッシュ、`HEAD` と `@`、git の順序（`refs/<name>`、`refs/tags/<name>`、`refs/heads/<name>`、`refs/remotes/<name>`、…）で試す参照の名前、`<ref>@{n}` としての reflog のエントリー、そして右から結合する `~n`、`^n`、`^{}`、`^{commit}`、`^{tree}`、`^{tag}` の接尾辞を理解する。
++   entry #revList   あるリビジョンから到達でき、別のリビジョンからは到達できないコミット。新しい順
++       `from` から親をたどり、`until` と `shallow` の境界で止まり、コミット日時の降順に並べる。`limit` は件数に上限を設け、`paths` はそのいずれかを変更するコミットだけを残す。
++       解決できないリビジョンは `Git.Error(NoSuchRef)` となる。
++   entry #reflog   参照（デフォルトは `HEAD`）の reflog。新しい順
++   entry #mergeBase   二つのコミットの最も近い共通の祖先。なければ `Unset`
++   entry #isAncestor   一方のコミットがもう一方から到達できるかどうか
++   entry #readObject   ルーズなストア、パック、または alternate から読んだオブジェクトの種類とバイト
++       どのストアにもなければ `Unset` である。
++       別のプロセスが再パックしたかもしれないので、ハッシュが見つからなければパックの一覧を取り直す。
++   entry #readObjects   複数のオブジェクトを一度に読む。存在しないものは飛ばす
++   entry #writeObject   オブジェクトをルーズとして格納し、そのハッシュを返す
++       git と同じく、`<kind> <size>\0` のヘッダーとバイトに対してハッシュを計算する。すでに存在するオブジェクトは書き直さない。
++   entry #diffTree   二つのツリーの間のファイルの差分。ハンクを持つ `Delta` として
++   entry #status   すべてのパスのインデックスとワークツリーの状態。`git status --porcelain` が報告するとおり
++       `.gitignore` と `info/exclude` を尊重しながら、`HEAD` のツリー、インデックス、作業中のファイルを比較する。`ignored` と `untracked` は、それらのファイルを一覧に含めるかどうかを示す。
++       git の racy-git の規則が許すとおり、stat のデータがまだファイルと一致するインデックスのエントリーは、ハッシュを計算せずに信頼される。
++   entry #add   パスを、あるいは `all` ならワークツリーの下のすべての変更を、ステージする
++       ファイルの blob を書き、インデックスを更新する。まだステージされていないファイルについては `.gitignore` を尊重する。どのファイルにもマッチせず、ステージもされていないパスは `Git.Error(Untracked(path))` となる。
++   entry #remove   パスをインデックスから、そして `cached` でなければワークツリーからも取り除く
++       インデックスが追跡していないパスは `Git.Error(Untracked(path))` となり、ステージされた内容または作業中の内容が `HEAD` と異なるファイルは、`force` がなければ `Git.Error(Dirty)` となる。
++   entry #move   追跡されているパスの名前を、インデックス上とディスク上で変える
++   entry #restore   インデックスまたはソースのリビジョンから、インデックス、作業中のファイル、あるいはその両方へパスを復元する
++   entry #clean   追跡されていないファイルを削除し、`directories` なら追跡されていないディレクトリも削除して、削除したものを返す
++       無視されたファイルは、`ignored` が設定されているときにだけ削除される。
++   entry #writeTree   インデックスをツリーオブジェクトとして書き、そのハッシュを返す
++       マージされていないエントリーを持つインデックスは `Git.Error(Conflict(paths))` となる。
++   entry #readTree   インデックスを、そして `ResetMode.Hard` なら作業中のファイルも、`HEAD` にリセットする
++       `Soft` は何も変えない。`Mixed` は stat のデータを未検証のままにしてインデックスを `HEAD` から書き直すので、次の status は各ファイルのハッシュを計算する。`Hard` は作業中のファイルも書き直し、インデックスではなくディスク上の内容と比較するので、変更されたファイルは置き換えられる。
++       それ以外のモードは `Git.Error(Unsupported)` となる。
++   entry #diffWorktree   作業中のファイル（`staged` ならインデックス）と、`HEAD` またはあるリビジョンとの差分
++   entry #tracked   インデックスにあるすべてのパス
++   entry #conflicts   マージされていないインデックスのエントリーを持つパス
++   entry #checkout   `HEAD` をあるリビジョンに移してデタッチし、インデックスとファイルを更新する
++       ブランチの名前は結び付いた状態でチェックアウトされ、それ以外はデタッチされる。
++       チェックアウトが上書きしてしまう、インデックスやワークツリーで変更されたパスがあると、`Git.Error(Dirty)` となる。
++   entry #switch   `HEAD` をブランチに移す。`create` なら現在のコミットからブランチを作る
++       `create` がなければ、存在しないブランチは `Git.Error(NoSuchRef)` となり、切り替えはそのブランチを結び付いた状態でチェックアウトすることになる。
++       `create` があれば、ブランチは存在しないことを期待する compare-and-swap によって現在のコミットに作られるので、すでに存在するブランチは `Git.Error(Moved)` となり、`HEAD` はファイルに触れずにそれに向けられる。
++   entry #merge   リビジョンを `HEAD` にマージする：早送り、マージコミット、または衝突による停止
++       `FastForward` のポリシーを尊重し、両側をそのマージベースに対して diff3 でマージして衝突マーカーを書き、衝突があれば `sequence` で続行または中止できるよう `MERGE_HEAD` と `MERGE_MSG` を残す。
++       マージコミットにネイティブで署名することは `Git.Error(Unsupported)` となる。
++   entry #cherryPick   コミットを一つずつ `HEAD` の上に適用し、最初の衝突で止まる
++       git とまったく同じように、`CHERRY_PICK_HEAD` と、現在の項目を保持する `sequencer/` の todo リストを書くので、どちらの側でも続行できる。
++       `noCommit` なら変更はステージされ、コミットは作られない。そうでなければ、何も変えない pick は `Git.Error(NothingToCommit)` となる。
++   entry #revert   コミットの逆を `HEAD` の上に適用する。`cherryPick` を逆向きに行うもの
++   entry #rebase   `upstream` 以降のコミットを `onto` の上に再適用し、衝突で止まる
++       その状態は git が配置するのと同じく `rebase-merge/` に保持され、止まった pick はすでに `done` に入っている。
++       sign-off などのための `Git.Rebase.Option` は尊重される。`--autosquash` は `Git.Error(Unsupported)` となる。
++   entry #sequence   進行中の merge、cherry-pick、revert、rebase を続行、スキップ、または中止する
++       存在する状態ファイルを読んで、それがどの操作であるかを判断する。何もなければ `Git.Error(NoOperationInProgress)` となる。
++       `am` 形式の rebase の続行とマージのスキップは `Git.Error(Unsupported)` となる。
++   entry #operation   進行中の操作があれば、その操作と衝突しているパス
++   entry #stash   インデックスと作業中の変更を stash のエントリーとして保存し、ツリーをリセットする
++       git が書くのと同じ三つのコミット（インデックス、求められれば追跡されていないファイル、そして stash そのもの）を、reflog のエントリーとともに `refs/stash` の下に書く。`keepIndex` はステージされた変更をそのまま残す。
++       クリーンなツリーではエントリーは作られず `Unset` を返す。マージされていないエントリーを持つインデックスは `Git.Error(Unmerged)` となる。
++   entry #stashes   `refs/stash` の reflog から得た stash のエントリー。新しい順
++   entry #applyStash   stash のエントリーをツリーに適用する。`index` ならインデックスも復元し、`drop` ならそれを破棄する
++       存在しないエントリーは `Git.Error(NoSuchStash)` となる。衝突があれば、マージが止まるのと同じように止まる。
++   entry #dropStash   stash のエントリーを reflog から取り除く
++   entry #readNote   ノート参照の下にある、オブジェクトに付いたノート（あれば）
++   entry #listNotes   ノート参照の下のすべてのノート。それぞれ注釈の付いたオブジェクトとノートの blob として
++       平らなノートのツリーも、ファンアウトしたノートのツリーも同じように読む。
++   entry #editNotes   ノートを追加、追記、削除、またはコピーし、新しいノートのコミットを書く
++       ノート参照の現在の先端を `base`（最初のノートなら `Unset`）として受け取り、新しいコミットを返す。参照を動かすのは呼び出し側である。
++       すでにノートがある場合は、編集が強制しない限り `Git.Error(NoteExists)` となり、ノートのないオブジェクトからコピーすると `Git.Error(NoteNotFound)` となる。
++   entry #configRead   一つの設定ファイルのエントリー、あるいは有効なすべてのエントリー
++       `Git.Config.Source.Effective` は、システム、XDG、グローバル、ローカル、ワークツリーのファイルを git の順序で、`include.path` のファイルを（深さ十まで）差し込んで与える。それ以外のソースは一つのファイルとして読まれる。
++   entry #configWrite   設定ファイルのキーを設定する。`add` なら値をさらに追加する
++       `config.lock` のもとで、コメントとファイルの残りを保ったまま書き込む。新しいセクションのキーにはセクションのヘッダーが付く。
++   entry #configUnset   設定ファイルからキーを、あるいは `all` ならその値をすべて取り除く
++   entry #remoteRefs   `ls-remote` と同じくリモートの参照を一覧にする。`HEAD` が最初で、タグにはピールした対象が付く
++       `Internet` の証拠を必要とする。
++       リモートは設定された名前で、その URL は `remote.<name>.url`（プッシュでは、設定されていれば `remote.<name>.pushurl`）である。あるいは、そのまま使う URL かパスである。
++   entry #fetch   リモートからフェッチし、refspec が指すローカルの参照を移動し、`FETCH_HEAD` を書く
++       refspec が与えられなければリモートに設定された refspec を使い、相手の `download` と交渉し、届いたものをルーズとして格納し、履歴を `depth` で切ってその境界を `shallow` に記録し、`tags` なら refspec に `refs/tags/*:refs/tags/*` を加え、`prune` なら、パターンの宛先にマッチするローカルの参照のうちリモート側の対応物がなくなったものを削除する。
++       変更した参照を返す。
++       `Internet` の証拠を必要とする。
++   entry #push   リモートに欠けているオブジェクトを送り、その参照を動かすよう求める
++       各 refspec は `RefUpdate` になり、その期待値は `Git.Push.Force` のポリシーによって決まる。通常のプッシュはリモートの現在の値を期待し、早送りでない移動をローカルで拒否する。`Always` は何も期待せず、`Lease` は自身が持つ読み取り結果を期待する。
++       結果は各参照を、相手の理由とともに `Created`、`Updated`、`Deleted`、`UpToDate`、`Rejected` のいずれかとして示す。`setUpstream` は、ブランチの remote と merge のキーを設定する。
++       `Internet` の証拠を必要とする。
++   entry #worktrees   メインのワークツリーとすべてのリンクされたワークツリー。そのヘッド、ブランチ、ロックの状態とともに
++       `gitdir` がもう存在しないディレクトリを指すリンクされたワークツリーは、削除可能と印を付けられる。
++   entry #addWorktree   リビジョンを新しいリンクされたワークツリーにチェックアウトする。求められれば新しいブランチの上に
++       それを `gitdir`、`commondir`、自身の `HEAD` とともに `worktrees/<name>` の下に登録し、新しいツリーに `.git` ファイルを書き、ファイルをチェックアウトし、インデックスを書く。
++       既存のブランチの名前であるリビジョンは、`detach` が設定されていなければ `HEAD` をそれに結び付ける。`newBranch` は先にそこにブランチを作る（存在すれば `Git.Error(Moved)`）。
++       存在していて空でない対象は `Git.Error(Unexpected)` となる。
++   entry #removeWorktree   リンクされたワークツリーとそのレジストリのエントリーを削除する
++       ロックされたワークツリーは `Git.Error(Locked)` となり、変更のあるワークツリーは `force` がなければ `Git.Error(Dirty)` となる。
++   entry #lockWorktree   理由を付けることもできる `locked` ファイルを書き、ワークツリーが決して削除されないようにする
++       すでにロックされているワークツリーをロックすると `Git.Error(Locked)` となる。
++   entry #unlockWorktree   ワークツリーの `locked` ファイルを取り除く
++       ロックされていないワークツリーは `Git.Error(Unexpected)` となる。
++   entry #moveWorktree   リンクされたワークツリーのディレクトリを移動し、そのレジストリのエントリーを書き直す
++       ロックされたワークツリーは `Git.Error(Locked)` となり、存在する宛先は `Git.Error(Unexpected)` となる。
++   entry #pruneWorktrees   ワークツリーがなくなったレジストリのエントリーを取り除き、そのパスを返す
++       ロックされたエントリーは保持される。
+
+@ 0 1 0 10d26e3ce87998900e6331ec2d6f5ecb
++ entry .Transport   ネイティブのバックエンドのための、ある種類の URL にあるリモートリポジトリへの到達方法
+
+% 1 1 0 113eeeffbac2c5d801f2f74f667db0c1
+
+@ 0 7 0 11aed1d5a564ef86021615f69c025768
++       `Native` は、同じファイルシステム上のリポジトリには助けなしにそのパスで到達する。それ以外の URL（`https://…`、`ssh://…`、`host:path`）には、バックエンドを構築したときのリストから取った、それを `#accepts` する `Transport` が必要である。
++       ライブラリには三つが付属し、プログラムが使うものの分だけ払えばよいよう、それぞれ独自のコンポーネントにある。`SmartHttp()`（`http` コンポーネント）は、スコープ内にある `Http.Backend` を通して git のスマート HTTP プロトコルを話す。`SshCommand()`（`ssh` コンポーネント）は、やり取りごとに `ssh` コマンドを起動する。`SshNative()`（`sshNative` コンポーネント）は純粋な Scala による SSH クライアントを使う。
+
+% 2 1 0 149106cf83790929151aee6b3df6fd15
+
+% 3 1 0 1c12df8c8e86384d0cca44b99a5ec973
+
+% 2 1 0 00186788692ac0901b3242e988efcf65
+
+% 0 1 0 06b3412787d0405a19b1702bff270c7e
+
+% 1 1 0 094d05ed027b7db00751ad3765f3f07f
+
+@ 0 7 0 06b33e890055eb830d8e47196fbc5214
++       トランスポートにはリストの順に問い合わせ、URL を最初に受け入れたものがそれに接続する。それが返す `Peer` はフェッチやプッシュの相手側であり、ワイヤプロトコル（`ls-refs` と `fetch` にはバージョン 2、プッシュにはバージョン 0 の `receive-pack` のやり取り）で駆動される。
++       独自のトランスポートは二つのメソッドを実装する。ワイヤプロトコルで接続するトランスポートは、サービスの広告と各リクエストとレスポンスを運ぶ `Channel` から、その `Peer` を組み立てる。
++       `gitBackends.soundnessGit` はトランスポートをまったく持たない。
+
+% 1 1 0 176e98b415b245c70dbe8bcd3015fad6
+
+% 1 1 0 03d709df51fafa790a62df7ab5e8dc1c
+
+% 0 1 0 16bb82917313b5ba0bb531328ee552d6
+
+% 1 1 0 0d7d21c0f7e0b1dc08e9c8948e69d5ea
+
+@ 0 6 0 198797ce8b1334870ffd17b11c9e2e81
++   entry #accepts   このトランスポートが URL に到達できるかどうか
++       URL の形だけで判断する。`SmartHttp` は `http://` と `https://` を受け入れ、SSH のトランスポートは `SshAddress.parse` が理解するものを何でも受け入れる。
++   entry #connect   URL にあるリポジトリへの接続を `Peer` として開く
++       接続できなければ `Git.Error` を発生させる。URL はすでに受け入れられている。
++       相手は接続を保持するので、ケイパビリティ（`Peer^`）である。
+
+@ 0 1 0 1081b1293c6c20e70edf0759f563b33f
++ entry .Peer   フェッチやプッシュの相手側：参照を一覧にし、オブジェクトを送り、オブジェクトと参照の更新を受け取る
+
+% 1 1 0 00bc7b36b4d4cae11e8dc1bf2a36404b
+
+@ 0 7 0 0c5a9dbb9c3d6aa6149cdd4233a24b47
++       `Peer` は、`Native` がフェッチし、プッシュする相手である。
++       それは自身の参照を一覧にし、求められた参照から到達できるオブジェクトを（求める側がすでに持っているところで止めて）送り、オブジェクトを参照の更新とともに受け取る。更新は一つずつ適用され、その結果が報告される。
++       それがどう行われるかは相手の関心事である。`Peer.Local` はこのファイルシステム上のリポジトリを直接読み書きし、トランスポートの相手は `Channel` 上でワイヤプロトコルを話す。
++       相手は `Transport#connect` を通して得られるか、ローカルのパスであれば `Native` 自身が得る。プログラムが通常それに出会うのは、`Transport` を書くときだけである。
+
+% 1 1 0 186a79eac72649cc1430f9be93da3f53
+
+% 0 1 0 12b06bf9a1bcf34317f4826f5de19c6c
+
+% 1 1 0 06898a86f7993a7d038edf928a293853
+
+@ 0 24 0 0ffa36cc020da59a173ac148d859dfbc
++   entry .Local   このファイルシステム上のリポジトリ。そのファイルを直接読み書きして到達する
++       `Peer.Local(location, identity)` は、リポジトリの `Git.Backend.Location`（`Native#locate` が見つけるもの）と、その reflog に記録する ID を受け取る。
++       これは、パス、あるいは `file://`、`./`、`../` の URL に対して `Native` が使う相手である。
++       その `refs` は、`ls-remote` と同じく、`HEAD` を最初に、続いてすべての参照を一覧にし、注釈付きタグの後にはそのピールした対象を `<name>^{}` として続ける。その `upload` はオブジェクトをルーズとして書き、各 `RefUpdate` を compare-and-swap で適用する。移動していた参照には `failed to update ref`、別のプロセスがロックしている参照には `failed to lock`、ベアでないリポジトリがチェックアウトしているブランチには `branch is currently checked out` を報告し、そのブランチがチェックアウトされたまま更新されることはない。
++   entry #refs   `HEAD` を含むすべての参照とそのハッシュ。`ls-remote` が一覧にするとおり
++       注釈付きタグの後には、そのピールした対象が `<name>^{}` として続く。
++   entry #symbolicHead   相手が示す場合、`HEAD` がシンボリック参照として指す先
++       ブランチが指定されないときに `clone` がチェックアウトする参照である。デタッチされた `HEAD` や不明な `HEAD` では `Unset` となる。
++   entry #download   `wants` から到達でき、`has` が知らないすべてのオブジェクトを `store` へ送る
++       `haves` は求める側が持っているコミットであり、求める側が何を持っているかを問い合わせることができず、伝えてもらうしかない相手のためのものである。
++       `depth` があれば、コミットの履歴はその数だけの深さで切られ、求める側の `shallow` ファイルのために境界のコミットが返される。そうでなければ結果は空である。
++       `Git.Activity` は `Receiving` の段階を進められる。
++   entry #upload   指定されたオブジェクトを `read` を通して読んで受け取り、その後で更新を適用する
++       各更新の参照を、拒否された理由と組にして返す。適用された更新では理由は `Unset` である。
++       `Git.Activity` は、オブジェクトの数で測られる `Writing` の段階を進められる。
+
+@ 0 1 0 1f36130e1f26260a0c84617d272779ae
++ entry .RefUpdate   相手の上で変更する参照：今何を保持していることが期待されるか、そして何を保持すべきか
+
+% 1 1 0 196b9059d58183d4020995db1cc99085
+
+@ 0 5 0 017fa76fa91304d71f0807532d398f31
++       プッシュの一行である。`Native#push` は各 refspec に対して `RefUpdate` を組み立て、それらを `Peer#upload` に渡す。
++       `expected` の値は compare-and-swap の条件である。通常のプッシュではリモートの現在の読み取り結果、強制のプッシュでは `Git.Backend.Expectation.Unconditional`、`Git.Push.Force.Lease` ではリースの読み取り結果となる。参照を削除するには `to` を `Unset` にする。
+
+% 1 1 0 0cafda5c961666fc1b40e066d13dccaa
+
+@ 0 3 0 1ab187cd6850925e1426431dbb480120
++   entry #ref   参照の完全な名前。`refs/heads/main` など
++   entry #expected   更新が適用されるために参照が保持していなければならないもの
++   entry #to   参照を移動する先のハッシュ。削除するなら `Unset`
+
+@ 0 1 0 19a36cb80b28cb7f1092adbffd748b6c
++ entry .Channel   リモートの `git-upload-pack` または `git-receive-pack` への接続。それが何で運ばれるかは問わない
+
+% 1 1 0 18b894747922106b120c8c104ab75528
+
+@ 0 9 0 06852fe1231791b40433593dfadd9132
++       `Transport` とワイヤプロトコルの間の継ぎ目である。チャンネルは、あるサービスに対するサーバーの最初の広告と、リクエストを一つ送ってその返事を読む手段を、pkt-line のフレーミングで提供し、その上に作られたプロトコルのクライアントが残りを行う。
++       付属する三つのトランスポートはそれぞれ一つずつ定義している。`SmartHttp.Channel` は `Git-Protocol: version=2` ヘッダー付きの HTTP リクエストの上に、`SshCommand.Channel` はやり取りごとに一つの `ssh` プロセスの上に、`SshNative.Channel` はやり取りごとにチャンネルを持つ一つの SSH 接続の上に作られている。独自のトランスポートも同様に定義することになる。
++       それが返すリーダーはライブラリ独自の pkt-line のリーダーであり、公開 API の一部ではないので、現時点では `Channel` はライブラリの内部でしか書けない。
+
+% 1 1 0 008e0b81c78ebd2a0d727f1bb35ba8e2
+
+@ 0 5 0 0ecafee4489ad68c004ecbc593589ad4
++   entry #advertise   あるサービスに対するサーバーの最初の広告。pkt-line のリーダーとして
++       サービスは `git-upload-pack` または `git-receive-pack` である。プロトコルのクライアントは、そこからバージョンの行とケイパビリティを読む。
++   entry #exchange   サービスにリクエストを一つ送り、レスポンスに対するリーダーを返す
++   entry #close   チャンネルが保持しているもの（プロセス、接続）を解放する
+
+@ 0 1 0 1e5f1929ffe943421db8e4f440c364c4
++ entry .SshAddress   SSH 越しに到達するリポジトリのアドレス。git が受け入れるどちらの形でもよい
+
+% 1 1 0 1666ba2703883d2b03012dc6be47d3e8
+
+@ 0 5 0 0d3f4f8e298b6c9e04305d422da54dc2
++       git は SSH のリモートを、URL `ssh://[user@]host[:port]/path` として、あるいは `scp` に似た形 `[user@]host:path` として受け取る。後者は、コロンがどのスラッシュよりも前にあれば SSH のアドレスであり（`localhost:/srv/repo.git`）、そうでなければローカルのパスである（`./dir:x`）。
++       `SshAddress` はどちらかをパースした形であり、SSH のトランスポートは `.parse` が理解する URL だけをちょうど受け入れる。
+
+% 2 1 0 1d59271360259a091828e082242a9e23
+
+% 3 1 0 1cef8fc7e4c7949d0bcf7d19d4ccdd68
+
+% 0 1 0 1528054a8964758c11797ef5af264185
+
+% 0 1 0 16407175361b2737139cfee9449fb915
+
+% 0 1 0 031a320b36502ceb160e0586446fa91f
+
+% 0 1 0 01ddaaa090e85fff0df84e7359fdc560
+
+% 0 1 0 0a7decd2c9e4c6f11667773900884df6
+
+% 1 1 0 11bbf230d0d288720157c0aa7fa662fb
+
+@ 0 2 0 0734bc55fb489bf70888a306505fe913
++       URL の形ではパスは先頭の `/` を保つ。`scp` の形ではコロンの後に続くものすべてであり、`/` で始まらない限りサーバー上のユーザーのホームからの相対パスである。
+
+% 1 1 0 11bb19f14dd6ac7312c87e572cd17368
+
+@ 0 8 0 010d06fc248b2ec10024709c0bfa7798
++   entry .parse   テキストから SSH のアドレスを読む。テキストがそうでなければ `Unset`
++       `ssh://` で始まるテキストはオーソリティの後に `/` がなければならず、数字でないポートがあるとアドレス全体が `Unset` になる。
++       それ以外の `://` を持つテキストは SSH のアドレスではなく、最初の `/` が最初の `:` より前にあるテキストや、コロンを持たないテキストもそうではない。
++   entry #user   ログインするユーザー。SSH クライアントのデフォルトなら `Unset`
++   entry #host   ホスト名またはアドレス
++   entry #port   ポート。SSH クライアントのデフォルト（22）なら `Unset`
++   entry #path   サーバー上のリポジトリのパス

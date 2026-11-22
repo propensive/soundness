@@ -1,0 +1,12 @@
+orthant 2 language
+
+% 0 1 0 04edaa4762b37e2b0e385af5f0551258
+
+@ 0 1 0 1ac5cb23e93a044c173a5d922a49a802
++ すべての文字セットは、スコープ内のサニタイザーを使う。
+
+@ 0 4 0 02e014dd225711831e5e0dc01eba7d8d
++ エンコードには逆の問題がある。
++ ASCII における `é` のように、エンコーディングにバイトがない文字である。
++ デフォルトでは、`Codepage` はその代わりにエンコーディングの代替文字 `?` を書く。
++ `encodingSanitizers.strictEncodingSanitizer` をインポートすると、代わりにその文字を名指す `Codepage.Error` を発生させる。

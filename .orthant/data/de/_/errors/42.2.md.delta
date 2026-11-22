@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 106359fb80206db407f6e53312ea7e46
++ # `↯/s.42.2` — Ungültiges ASCII-Zeichenliteral
+
+@ 0 2 0 0027d29bcb732088108cc9a446f7e773
++ Wird zur Kompilierzeit vom ASCII-Literal-Makro von Gossamer ausgelöst, wenn das Zeichen nicht im
++ ASCII-Bereich liegt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 14aa3693de631ff71ddf378489625d85
++ Gossamer beschränkt bestimmte Literalformen (z. B. ASCII-Strings) auf die 7-Bit-Teilmenge ASCII.
++ Nicht-ASCII-Zeichen werden abgelehnt.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1ef3d3b18bb82d370998bd10080a85bd
+
+% 1 1 0 022da1eb7ba2b17917840cae7f1b8e13
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 127ea56ea54749831d80c98e347fbe4f
++ Verwenden Sie im Literal nur ASCII-Zeichen, oder verwenden Sie stattdessen den entsprechenden Typ,
++ der auch Nicht-ASCII-Zeichen kennt.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1302574476bec57e157f14d9b1007e20
++ - Quelle: `lib/gossamer/src/core/gossamer.internal.scala`

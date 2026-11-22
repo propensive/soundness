@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 17222be26c237d9b0d685d44bf67d932
++ # `↯/s.17.3` — Der Typ hat mehrere `flatMap`-Methoden
+
+@ 0 2 0 1f7e9519267c3cd30dca3b05dc014378
++ Wird zur Kompilierzeit vom Makro `monad` von Mercator ausgelöst, wenn der Zieltyp mehr als eine
++ Überladung von `flatMap` hat.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 1 0 140ee65cbcef038b0270bb5dc7a581a0
++ Mehrere Überladungen von `flatMap` sind für die Ableitung mehrdeutig.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1a8da2143086402906e00d6176c3fb0c
+
+% 1 1 0 04c6fa1e32379b73099fb9cf82c92a0f
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 1 0 08318d39875630370c0e182c5cdb480a
++ Entfernen oder benennen Sie Überladungen um, oder stellen Sie eine `Monad`-Instanz von Hand bereit.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1cb104d057b8971f1427e232956fe585
++ - Quelle: `lib/mercator/src/core/mercator.internal.scala`

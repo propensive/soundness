@@ -1,0 +1,583 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06b23605c41af6441e37b1b6371b75e9
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e801473b9d9e33416d5d017c95661fc
++ info   colocación de rótulos: encuentra una posición para cada texto de una imagen, sin tapar lo demás
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1f9a0f08a918a10d0b82fedd5f53b0ed
++     _Cartouche_ decide adónde va cada rótulo de una imagen. El texto se coloca junto a aquello
++     que nombra —una nota junto a un punto, un nombre junto a una ciudad, un porcentaje en un
++     sector— y, cuando dos cosas están cerca, sus rótulos chocan. Cartouche toma cada rótulo (una
++     `Caption`: su tamaño medido, el punto que describe y los lados en los que puede situarse),
++     junto con todo lo que hay en la página y el texto no debe tapar (cada cosa, un `Obstacle`), y
++     encuentra una `Caption.Position` para cada uno. Los gráficos lo usan para sus rótulos; un
++     mapa lo usaría para sus topónimos. El motor solo ve geometría, en un marco con el eje y hacia
++     abajo, como lo tiene SVG: quien dibuja el texto es quien lo mide.
+
+@ 0 5 0 0fa1352abb9f107f012317f530969cbe
++     El código que construye una imagen sabe qué dice cada rótulo, pero no dónde acabarán los
++     demás, así que `arrange` ejecuta ese código dos veces. La primera ejecución registra cada
++     llamada a `position`, `avoid` y `canvas` y responde provisionalmente a cada `position`;
++     después, el `Arranger` del ámbito resuelve toda la colocación; y la segunda ejecución
++     responde a cada `position` con su sitio resuelto. El valor de `arrange` es el de la segunda
++     ejecución.
+
+% 2 1 0 02d2230cc0d0412d0c890f1ddc859355
+
+% 3 1 0 190299e209cc4a061b9cbaf577a652e8
+
+% 0 1 0 0f930d453d5b8fc61a2568d8b2394d74
+
+% 0 1 0 14f7862be4a7ce250e219f0b0ec52154
+
+% 0 1 0 1765cc09e6a1193e1031704c60cb278e
+
+% 0 1 0 0ce2f2da9a3490db14c275a3ad7bee9e
+
+% 1 1 0 1b8b83463b55c0f700785170329c0881
+
+@ 0 3 0 115066fca4d3f3c41017e166ba178f8d
++     Por tanto, el cuerpo debe ser **repetible**: las mismas llamadas a `position` en el mismo
++     orden cada vez, sin hacer nada que no deba ocurrir dos veces. Un contador que numere los
++     rótulos va dentro del cuerpo, donde vuelve a empezar con la segunda ejecución.
+
+@ 0 4 0 1f8ce5ecd81357ff1917d90ab203d6ea
++     El algoritmo que coloca es el `Arranger` del ámbito: el voraz por defecto, del objeto
++     compañero de `Arranger`, o uno importado por nombre del paquete `arrangers`
++     (`import soundness.*` no importa givens), o un `Arranger.Greedy` o un
++     `Arranger.Annealing` configurado y ligado como given local.
+
+@ 0 3 0 12433aabb0e07aff1190255056f25d9a
++     La biblioteca tiene un conjunto de fuentes, `cartouche.core`, que compila para todas las
++     plataformas. Todo se exporta al paraguas `soundness`, y el paquete de elección `arrangers`
++     se fusiona con el del propio paraguas.
+
+% 0 1 0 0f49140743c8c46516706c51e3c4ebca
+
+% 0 1 0 011a27b591ad86660c6bd6fa70c7949d
+
+% 0 1 0 0e155f583a8e620408bc2f8c594677bd
+
+% 0 1 0 11c814630297185a10fc20263a04b722
+
+% 0 1 0 1ba23050185bff670a018354e444bdd2
+
+@ 0 1 0 088c9db08975d1e71060a165abb7d414
++ entry .arrange   ejecuta dos veces un cuerpo que construye una imagen, respondiendo a sus llamadas a `position` con una colocación
+
+% 1 1 0 064289f02572fb3f0e395be9ac9d889a
+
+@ 0 7 0 156389407f21c90100b827399daacc13
++       `arrange(body)` ejecuta `body` una vez con un `Arranger.Pass` que registra, en el que
++       cada `position` responde con `Caption.provisional` —el rótulo donde se pidió, en su lado
++       preferido— y se toma nota de cada `avoid` y `canvas`; el resultado de esa ejecución se
++       descarta. Después, el `Arranger` del ámbito coloca todas las leyendas registradas frente a
++       los obstáculos y el lienzo registrados, y el cuerpo se ejecuta de nuevo, respondiendo a
++       cada llamada a `position` con su `Caption.Position` resuelta, emparejada con las llamadas
++       de la primera ejecución por su orden. El resultado de la segunda ejecución es el de
++       `arrange`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 04c916801aa89a3b15ec6c26b8e2c93a
++         label Nada en medio: el rótulo se sitúa al este
+
+% 1 1 0 15a92bc3bb87672e103b7f3cea7c086c
+
+% 2 1 0 1c5e477129e24c991631139742747a93
+
+% 4 1 0 0bfdd7cdbc3a50841d23838d72c21a25
+
+% 0 1 0 024ae26309597dc1132fa0e6025ea990
+
+% 1 1 0 19501732bd82408f01afd6a17c6edda0
+
+@ 0 1 0 1e4aeb3c6124c33f1ad8d363f6e9159d
++         label Una caja al este: el rótulo pasa al oeste
+
+% 1 1 0 1ae99e4baeea973d0585a67e739dcb58
+
+% 2 1 0 11f2a46fbf625f350be3a827cbfa04b5
+
+% 4 1 0 09c235a31aa8bf0408f2c78a77a9b5c8
+
+% 0 1 0 0a52c19896ca806e1b70520252c07d20
+
+% 0 1 0 17e6db6dec2e9b0c12f3a3c3b135eb37
+
+% 1 1 0 03df8e6176ebd856196354f0944d1ee5
+
+@ 0 1 0 06c991ef2dd2335a0dad8b2ca75d3c57
++         label Solo se permite el sur, y está bloqueado: el rótulo se desplaza, con una línea guía
+
+% 1 1 0 05190a3be9a6716c0d8bfd76705d0e97
+
+% 2 1 0 1953ca498cc6f67e0922f6de3461a5c4
+
+% 4 1 0 037ca9d0a379d737057a30acbae642a2
+
+% 0 1 0 14bc0f114e3faa420883ec1a20784750
+
+% 0 1 0 1a35a1ca383882571429f831f7521c99
+
+% 0 1 0 1a2bcef174fddc5915b2815e805aa5b0
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 00f01867f14a56680b334509962f0ec9
++       El cuerpo debe hacer las mismas llamadas en el mismo orden en ambas ejecuciones y no tener
++       otros efectos. Una llamada de la segunda ejecución que la primera no hizo, o una con otra
++       leyenda, se responde provisionalmente y se registra como `Arranger.Pass#diverged`.
+
+% 1 1 0 1ad9dc1e6300643205bf0417a6d8a61e
+
+% 1 1 0 01cefda173e9a12a1885a3a58888071b
+
+% 2 1 0 0b8171df598b7133022fff274f08136c
+
+% 0 1 0 025cfa407742f0280e2e3e0ecf4dd8a2
+
+@ 0 7 0 027ace35ce26078405f5247a563d155d
++ entry .position   pide un sitio para un rótulo, dentro de un cuerpo de `arrange`
++     Necesita el `Arranger.Pass` que proporciona `arrange`. Toma una `Caption`, o directamente
++     las partes de la leyenda: `width` y `height` (el rótulo medido), `x` e `y` (el punto
++     objetivo) y, opcionalmente, `attachments` (los lados en los que puede situarse, el mejor
++     primero; por defecto `Caption.Attachment.compass`), `standoff`, `reach`, `padding`,
++     `priority` y `fallback`, cada uno tal como lo describe `Caption`. En la primera ejecución
++     del cuerpo la respuesta es provisional; en la segunda es la `Caption.Position` resuelta.
+
+% 2 1 0 16868ee13f6968e11cf54c6b08310250
+
+% 3 1 0 0e55ebf15d4060ef06a39ec8e1ded4c7
+
+% 0 1 0 1c2ed1219e8a168714ed9825fcb15453
+
+% 0 1 0 1f17fcdbb3aa2b3618e2a5e774147ce4
+
+% 1 1 0 0831c7ff13fc88b200f0d3573b1b94b4
+
+@ 0 5 0 1c8bc2c01d655466003dad376aced00e
++ entry .avoid   declara obstáculos sobre los que no puede colocarse ningún rótulo, dentro de un cuerpo de `arrange`
++     Toma cualquier número de `Obstacle`: un `Obstacle.Box` para una barra o una leyenda de
++     gráfico, un `Obstacle.Line` para cada segmento de una línea trazada, un `Obstacle.Disc`
++     para un marcador; y los añade a la colocación. Necesita el `Arranger.Pass` que proporciona
++     `arrange`; solo cuentan las llamadas de la primera ejecución.
+
+% 2 1 0 0b130e656e607d3313434de6863a692f
+
+% 3 1 0 0a37784d9a6887e10075b3ba4fc9d8ca
+
+% 5 1 0 0de1e4035e71e3a10acb53e05456d759
+
+% 0 1 0 0be6ce594f44b4811a115ea865eb0770
+
+% 0 1 0 18b009d6512271f9080e9f25ccebe0e1
+
+% 1 1 0 029893d87378fcd10a35def2574c7038
+
+@ 0 3 0 162cc59949a9ecfc06d384032808ab4a
++ entry .canvas   declara el área dentro de la cual deben quedar los rótulos, dentro de un cuerpo de `arrange`
++     Toma un `Obstacle.Box`; la parte del área de un rótulo que queda fuera cuenta como una
++     colisión. Sin lienzo, la página no tiene límites, y si el cuerpo declara más de uno, gana
++     el último.
+
+% 2 1 0 035598e209e56d3e0109c53ef10893cf
+
+% 3 1 0 0caa193bf7aafbc71d8be4a0052be7f3
+
+% 5 1 0 1d6ed4f7ec4362990ba974ef41c71159
+
+% 0 1 0 0f2e27567938ffac008351017fc1b295
+
+% 0 1 0 1c91111d9ec6993911393bdae4cc85ed
+
+% 1 1 0 06ac1c627bbe9cff166053df7e78313d
+
+@ 0 1 0 0c7c9923b6caadf91c20761053360ac0
++ entry .Caption   una petición para colocar un rótulo: su tamaño, el punto que describe y cómo puede colocarse
+
+% 1 1 0 01b5ee5f13e661aa0e3f2fd0f93ca0c0
+
+@ 0 9 0 1b761a4ed72361b60a17a057fce485f9
++       Una case class con la geometría de un rótulo. `width` y `height` son su tamaño medido;
++       `x` e `y`, el objetivo que describe. `attachments` enumera los lados del objetivo en los
++       que puede situarse, el mejor primero (por defecto `Caption.Attachment.compass`); una
++       leyenda sin ninguno se trata como una que puede situarse al este. `standoff` es la
++       separación entre el objetivo y el borde cercano del rótulo, para un rótulo junto a un
++       marcador y no sobre su centro. `reach` es cuánto puede alejarse el ancla del rótulo de su
++       objetivo cuando todos los lados están bloqueados; el valor por defecto, cero, lo fija.
++       `padding` es el margen libre que se exige alrededor del rótulo. Las leyendas con mayor
++       `priority` se colocan primero, y así conservan sus objetivos. `fallback` dice qué pasa con
++       un rótulo que choca dondequiera que se ponga.
+
+% 2 1 0 0b42f840c2e96de20fac7258fcd5889e
+
+% 3 1 0 04a7881e544ac62e085886e369552e43
+
+% 0 1 0 1cc0d887a5117c5e05ea42fcf912440a
+
+% 0 1 0 0389a70a6e5ad4521b6bac84226b1054
+
+% 1 1 0 01f1689a4f0ca41905d4f4e96a80e7c4
+
+@ 0 3 0 17d93527bb64988711a431f93a7bff76
++       Una leyenda con un solo lado y sin alcance se coloca exactamente donde pide, haya lo que
++       haya, y todo lo que viene después la rodea: así es como los rótulos de las marcas de
++       graduación y la leyenda de un gráfico se quedan quietos mientras se mueven los rótulos de
++       sus puntos.
+
+% 0 1 0 157a37a9e0382c7d1d52bc28a16ad187
+
+% 0 1 0 0899ba996f1a94010ce54b2bca43a7dc
+
+% 1 1 0 1491c192403d00b30fbf08d81707d09a
+
+@ 0 20 0 04b69f0ebfc760e21e8a8f310cba94bb
++   entry #width   la anchura medida del rótulo
++   entry #height   la altura medida del rótulo
++   entry #x   la coordenada horizontal del objetivo que describe el rótulo
++   entry #y   la coordenada vertical del objetivo, que crece hacia abajo
++   entry #attachments   los lados del objetivo en los que puede situarse el rótulo, el mejor primero
++   entry #standoff   la separación entre el objetivo y el borde cercano del rótulo
++   entry #reach   cuánto puede alejarse el rótulo de su objetivo cuando todos los lados están bloqueados
++   entry #padding   el margen libre que se exige alrededor de la caja del rótulo
++   entry #priority   el orden de colocación: una prioridad mayor se coloca antes y conserva su objetivo
++   entry #fallback   si un rótulo que choca en todas partes se dibuja de todos modos o se oculta
++   entry #sides   los lados que se prueban: `#attachments`, o solo `East` si está vacío
++   entry #anchor   el ancla del rótulo en un lado de su objetivo, desplazada por un desfase
++       `caption.anchor(attachment, dx, dy)` es el objetivo desplazado por (`dx`, `dy`) y luego
++       por `#standoff` en la dirección del lado.
++   entry #footprint   la caja que ocupa el rótulo cuando se ancla en un punto de un lado
++       `Obstacle.Box.around` con el tamaño de la leyenda.
++   entry .provisional   la respuesta antes de la colocación: el rótulo en su objetivo, en su primer lado
++       Lo que recibe cada llamada a `position` en la primera ejecución de un cuerpo de
++       `arrange`, y lo que recibe en la segunda una llamada que diverge de la primera ejecución.
++   entry .Attachment   en qué lado de su objetivo se sitúa un rótulo: los ocho puntos de la rosa de los vientos o `Center`
+
+% 1 1 0 058a65202c21bd8d1f2125732a0c9422
+
+@ 0 6 0 05f64defba7d532f1ee37d0e6ba4c40f
++         Una enumeración, en un marco con el eje y hacia abajo, de modo que `North` está encima
++         del objetivo. Sus casos son `North`, `Northeast`, `East`, `Southeast`, `South`,
++         `Southwest`, `West`, `Northwest` y `Center`. El ancla de un rótulo es su borde más
++         cercano al objetivo: para `East`, el centro de su borde izquierdo; para `North`, el
++         centro de su borde inferior; para `Center`, su centro; así, quien representa deduce su
++         propia alineación a partir del lado (el `text-anchor` y el `dominant-baseline` de un
++         elemento `text` de SVG).
+
+% 2 1 0 1ca7bfd0f1c81358134daa2546da1e35
+
+% 3 1 0 1aa13a6f2566c2d61caefe3fcc9e844c
+
+% 0 1 0 13913f8510433f170f081eb52aa4a262
+
+% 0 1 0 1f06db615423af62034f35e6d690bb84
+
+% 1 1 0 1105b6cb7ffe45b70ae1a1a7726588e9
+
+@ 0 8 0 0a7bd5cd2e1e46bc0ca318aac1ac811c
++     entry .compass   la preferencia cartográfica: este, oeste, las cuatro diagonales y después norte y sur
++     entry .cardinal   este, oeste, norte y sur, en ese orden
++     entry #dx   el desfase unitario horizontal del objetivo al borde cercano del rótulo: -1, 0 o 1
++     entry #dy   el desfase unitario vertical del objetivo al borde cercano del rótulo: -1, 0 o 1
++   entry .Fallback   qué pasa con un rótulo que se solapa con algo dondequiera que se ponga
++       Una enumeración de dos casos. `Overlap`, el valor por defecto, dibuja el rótulo en la
++       posición en la que menos se solapa. `Hide` no lo dibuja: su `Caption.Position#visible` es
++       `false`, el cuerpo no dibuja nada para él, y no bloquea nada a los rótulos que se colocan
++       después.
+
+% 2 1 0 03f85aae2c6fa9611442bfc243757931
+
+% 3 1 0 0b1cbd820d120e7d1c1c092640c857a1
+
+% 0 1 0 128ea21b9794b7e60caaf5345577b222
+
+% 0 1 0 0b23cf323a84886d192342cd62167be5
+
+% 0 1 0 1e30ae471fc597f405a06e2c92952e73
+
+% 0 1 0 0e0cc0589c0cbf6b17bd5eb9c3dbbbdd
+
+% 1 1 0 0770ead20c15800d1dfdaab1267fb5de
+
+@ 0 1 0 1c74bdf436404c930a5420ecb7693688
++   entry .Leader   una línea desde el borde de un rótulo desplazado hasta el objetivo que describe
+
+% 1 1 0 035632d8f693394907a7fe3bcc7a6daf
+
+@ 0 9 0 1ea0d0521e995e4b040da8a8cb77b6b9
++         Se dibuja para un rótulo alejado de su objetivo más allá del umbral de línea guía del
++         organizador. Va desde el punto más cercano de la caja del rótulo hasta el objetivo. Los
++         rótulos posteriores evitan una línea guía igual que evitan el rótulo al que pertenece;
++         una línea guía puede cruzar un obstáculo fijo, ya que para eso sirve, para señalar el
++         objetivo más allá de un marcador, pero no otro rótulo.
++     entry #x1   la coordenada horizontal del extremo situado en el borde del rótulo
++     entry #y1   la coordenada vertical del extremo situado en el borde del rótulo
++     entry #x2   la coordenada horizontal del extremo situado en el objetivo
++     entry #y2   la coordenada vertical del extremo situado en el objetivo
++   entry .Position   el sitio asignado a un rótulo: punto de anclaje, lado, huella, línea guía y visibilidad
+
+% 1 1 0 1343b2d4d47668f70e0c6694864a8f39
+
+@ 0 4 0 076aba6b2dbe64f309c6e54fe751f3e2
++         Lo que responde `position`. El texto se coloca en (`#x`, `#y`) con la alineación que
++         implica su `#attachment`, y ocupa `#box`; `#leader` es la línea que hay que dibujar hasta
++         el objetivo, si el rótulo se desplazó lo bastante como para necesitarla; y `#visible` es
++         `false` para un rótulo `Caption.Fallback.Hide` que no pudo colocarse sin choques.
+
+% 2 1 0 0ca1e88253fc6bd41922d08979447fd2
+
+% 3 1 0 0f3826d8103703df1f255e6f7aab7aec
+
+% 0 1 0 0f39e7722fc9b2ab041cd59644012251
+
+% 0 1 0 0ff0de59855274411f5b7436d1f4d934
+
+% 1 1 0 1af780c8ad57dc81151359b5c509f3df
+
+@ 0 6 0 078cd5131a370551095e903c6482ea9d
++     entry #x   la coordenada horizontal del punto de anclaje del rótulo
++     entry #y   la coordenada vertical del punto de anclaje del rótulo
++     entry #attachment   el lado del objetivo en el que se sitúa el rótulo, del que se deduce su alineación
++     entry #box   la caja que ocupa el rótulo
++     entry #leader   la línea guía que hay que dibujar hasta el objetivo, o `Unset` si no hace falta ninguna
++     entry #visible   si el rótulo debe dibujarse siquiera
+
+@ 0 1 0 18c6fa005845f6260aadefcadb06941c
++ entry .Obstacle   algo sobre lo que no puede colocarse ningún rótulo: una caja, una línea trazada o un disco
+
+% 1 1 0 02df2b3c0496ecbd0760cde5d0146b96
+
+@ 0 5 0 07d4aa8a832c50511d888dee9a7b6bd7
++       Un trait sellado de tres formas, cada una de las cuales responde a `#overlap`: cuánto de
++       una caja cubre, en unidades de área. La respuesta es exactamente cero cuando las dos son
++       disjuntas, y su magnitud solo sirve para ordenar las posiciones candidatas entre sí, así
++       que la de un disco es una estimación. Los obstáculos se declaran en un cuerpo de
++       `arrange` con `avoid`, y el lienzo con `canvas`; la huella y la línea guía de cada rótulo
++       colocado se convierten en obstáculos para los rótulos posteriores.
+
+% 1 1 0 1f23fc055b6a8c211cdd6e82a64c75c7
+
+% 2 1 0 1a490104b459cbb40a4b00f8eb80f336
+
+@ 0 2 0 0e370975db9e53a1102789034ad5343a
++   entry #overlap   cuánto de una caja cubre este obstáculo: cero exactamente cuando son disjuntos
++   entry .Box   un rectángulo alineado con los ejes en un marco con el eje y hacia abajo: una barra, una leyenda de gráfico, la huella de un rótulo
+
+% 1 1 0 1d639e5f9966cb1d1579a6ab1b52d2a7
+
+@ 0 2 0 149c4750d09c18e0069edd0ff80db524
++         Se da por sus bordes `#left` y `#top` y su `#width` y `#height`. Como obstáculo, su
++         solapamiento con otra caja es el área que comparten.
+
+% 2 1 0 13a0ddbc5b4d61570e0f162e858367ca
+
+% 3 1 0 02782a06d6b951231e28b77f30ab2eae
+
+% 0 1 0 136c6df93614da980284b54106ea80f1
+
+% 0 1 0 15ccc1392729e2de0b2b48c6930574e4
+
+% 1 1 0 04eedf50127884ae0d1d84f979e538c3
+
+@ 0 17 0 121b44afa6f5b18d1ae2297eba056a3e
++     entry .around   la huella de un rótulo anclado en un punto de un lado de su objetivo
++         `Obstacle.Box.around(x, y, width, height, attachment)`: para `East`, el ancla es el
++         centro del lado izquierdo de la caja; para `North`, el centro del inferior; para
++         `Center`, su centro.
++     entry #left   el borde izquierdo de la caja
++     entry #top   el borde superior de la caja
++     entry #width   la anchura de la caja
++     entry #height   la altura de la caja
++     entry #right   el borde derecho de la caja
++     entry #bottom   el borde inferior de la caja
++     entry #area   el área de la caja
++     entry #centerX   la coordenada horizontal del centro de la caja
++     entry #centerY   la coordenada vertical del centro de la caja
++     entry #pad   la caja agrandada en una cantidad por cada lado
++     entry #excess   cuánto del área de esta caja queda fuera de otra caja, como el lienzo
++     entry #contains   si un punto está dentro de la caja, bordes incluidos
++     entry #nearest   el punto del perímetro de la caja más cercano a un punto dado, donde la toca una línea guía
++   entry .Line   un segmento trazado: una arista de una polilínea dibujada, o una línea guía
+
+% 1 1 0 1f1d0f11642749c4044bf3111d587221
+
+@ 0 11 0 038115e0f767ab5b0f98b981e4289f12
++         De (`#x1`, `#y1`) a (`#x2`, `#y2`), con un `#width` de trazo que por defecto es 1. Su
++         solapamiento con una caja es la longitud del segmento dentro de la caja, hallada por
++         recorte de Liang–Barsky, multiplicada por su anchura, de modo que un rótulo no puede
++         tocarlo. Una polilínea se evita a través de sus segmentos.
++     entry #x1   la coordenada horizontal del inicio del segmento
++     entry #y1   la coordenada vertical del inicio del segmento
++     entry #x2   la coordenada horizontal del final del segmento
++     entry #y2   la coordenada vertical del final del segmento
++     entry #width   la anchura del trazo, por la que se multiplica la longitud recortada
++     entry #length   la longitud del segmento
++   entry .Disc   un círculo relleno, como el marcador de un diagrama de dispersión
+
+% 1 1 0 0d0db0eb1aa12962172c8dc9d423ed54
+
+@ 0 6 0 068f4d383f594da019542adfc65b2a01
++         Centrado en (`#x`, `#y`). Una caja está libre de él exactamente cuando el punto más
++         cercano de la caja está al menos a `#radius` del centro; en otro caso, el solapamiento se
++         estima como el solapamiento de la caja con el cuadrado que delimita el disco, escalado
++         por π/4.
++     entry #x   la coordenada horizontal del centro
++     entry #y   la coordenada vertical del centro
++     entry #radius   el radio del disco
+
+@ 0 1 0 13760589db0496f701311aadc5403328
++ entry .Arranger   un algoritmo que encuentra una posición para cada leyenda, dado todo lo demás que hay en la página
+
+% 1 1 0 1dd3063f2d57ec6f13fdfc6cc6734b28
+
+@ 0 4 0 1dc6a90f6d09b2a80397edadd25e4219
++       Un trait de un solo método: `#arrange` toma las leyendas, los obstáculos y el lienzo
++       opcional, y responde con una `Caption.Position` para cada leyenda, en el orden de las
++       leyendas. `arrange` usa el del ámbito: `.greedy`, del objeto compañero, salvo que se
++       importe otro del paquete `arrangers` o se ligue uno como given local.
+
+% 2 1 0 13f2daf1e43e3d2f1605a10c419eb759
+
+% 3 1 0 01b7c58fb39353f11a1e8cd7bfece576
+
+% 0 1 0 17c3c969b6faf1dc039d64e6e6e04cbc
+
+% 2 1 0 16209625213cd0b9144a0297bbb90010
+
+% 3 1 0 1e7ac317d65570ef139b21dcd6eefe9a
+
+% 1 1 0 082b20d2ddb0adc60711243386e1b1e2
+
+@ 0 6 0 1d901379b58d3d581b5efe014deb4509
++       Los dos organizadores integrados prueban una lista finita de candidatos para cada leyenda,
++       empezando por el menos desplazado: cada lado en el objetivo, luego cada lado en cada una de
++       ocho direcciones a un `step` de distancia, luego a dos pasos, y así hasta el `reach` de la
++       leyenda o hasta `rings` pasos. La colisión de un candidato es el área de su huella con
++       margen bajo cada obstáculo fijo, cada rótulo colocado y cada línea guía colocada, más su
++       área fuera del lienzo y la longitud de su propia línea guía sobre rótulos colocados.
+
+% 0 1 0 14fdc156f5593bb30758bdc18ab590f4
+
+% 0 1 0 104aba3926f1e9ae13424a5c7c5ae017
+
+@ 0 5 0 19c51f01dc600ed00506f4d81fad62d0
++   entry #arrange   posiciones para las leyendas, en su orden, dados los obstáculos y el lienzo
++   entry .greedy   el organizador por defecto: `Arranger.Greedy()` con sus parámetros por defecto
++       Está en el ámbito implícito, así que `arrange` no necesita ninguna importación; un given
++       importado de `arrangers` o declarado localmente tiene precedencia.
++   entry .Pass   una ejecución de un cuerpo de `arrange`: registra peticiones en la primera y responde en la segunda
+
+% 1 1 0 1e5a47432d3d6c8f0d0eb4345873ad91
+
+@ 0 9 0 09ae2163a3e35560134337a50a0d9a03
++         El valor contextual que `arrange` proporciona a su cuerpo, y que necesitan `position`,
++         `avoid` y `canvas`. Es mutable, lo crea `arrange` para una sola ejecución, nunca se
++         comparte y no puede construirse en ningún otro sitio.
++     entry #solved   si esta es la segunda ejecución, cuyas respuestas son las posiciones resueltas
++     entry #diverged   si la segunda ejecución pidió algo que la primera no pidió
++         Una llamada más allá de las registradas, o una cuya leyenda difiere de la de la primera
++         ejecución en la misma posición del orden, se responde provisionalmente y activa este
++         indicador: el cuerpo no era repetible.
++   entry .Greedy   coloca cada leyenda, por orden de prioridad, en su mejor sitio dadas las ya colocadas
+
+% 1 1 0 0c921040432db6da1289f34dd52f0f11
+
+@ 0 6 0 10f69d08da54140e149469ce3f5153ca
++         Cada leyenda, primero la de mayor `priority` y si no por orden, toma el candidato menos
++         desplazado que esté libre de todo lo colocado antes, o el que menos choque si ninguno
++         está libre. Es determinista, y está acotado por el número de candidatos: como mucho
++         1 + 8 × `rings` por lado. Una leyenda colocada pronto nunca se mueve para hacer sitio a
++         una colocada después, lo que en una imagen densa puede dejar colisiones que otro orden
++         habría evitado; `Arranger.Annealing` se ocupa de eso.
+
+@ 0 10 0 030792a73a231d881958801b1ed786de
++         Los parámetros: `step` (por defecto 4) es la distancia entre anillos de candidatos,
++         `rings` (por defecto 8), cuántos anillos hacia fuera se buscan, `leaderThreshold` (por
++         defecto 6), el desplazamiento a partir del cual se dibuja una línea guía, y
++         `leaderWidth` (por defecto 1), el trazo que se da a una línea guía como obstáculo.
++     entry #step   la distancia entre anillos sucesivos de posiciones candidatas
++     entry #rings   cuántos anillos de candidatos se buscan, antes del alcance de la leyenda
++     entry #leaderThreshold   el desplazamiento a partir del cual un rótulo recibe una línea guía
++     entry #leaderWidth   la anchura de trazo de una línea guía, como obstáculo para otros rótulos
++     entry #arrange   coloca las leyendas de forma voraz, ocultando las que chocan y piden ocultarse
++   entry .Annealing   refina la colocación voraz mediante recocido simulado, a partir de una semilla fija
+
+% 1 1 0 02bd1e25185bfd0e0b053f32088b414b
+
+@ 0 7 0 06417e7a803e1bdd1eed1726d8ccb413
++         Parte de la colocación voraz y después mueve repetidamente una leyenda al azar a uno de
++         sus candidatos elegido al azar, aceptando un movimiento que reduce la suma de colisiones y
++         desplazamiento ponderado, y uno que la aumenta con una probabilidad que disminuye a
++         medida que se enfría la temperatura. A diferencia del recorrido voraz, una leyenda
++         colocada pronto puede moverse para hacer sitio a una colocada después. Los movimientos
++         aleatorios se extraen de `seed` mediante capricious, de modo que la misma entrada se
++         coloca siempre de la misma manera, e `iterations` acota exactamente el trabajo. Las
++         leyendas que siguen chocando y piden ocultarse se ocultan, empezando por las menos
++         importantes.
+
+% 2 1 0 11534037e3ba0333139ad269514189c9
+
+% 3 1 0 1e1c36901849cd9c126ae4f35626f097
+
+% 0 1 0 071561058896c7330f34479307214b6a
+
+% 1 1 0 0d9c89185fc59c3e1be3936932313d20
+
+@ 0 14 0 128a545ce22c2dfc1034505cbc2605a2
++         Parámetros, con sus valores por defecto: `seed` (`Seed(0L)`), `iterations` (4000),
++         `temperature` (1.0), `cooling` (0.995, el factor que se aplica en cada movimiento),
++         `displacementWeight` (0.05, cuánto cuenta el desplazamiento frente a la colisión), y
++         `step`, `rings`, `leaderThreshold` y `leaderWidth` como en `Arranger.Greedy`.
++     entry #seed   la semilla de la que se extraen los movimientos aleatorios
++     entry #iterations   el número exacto de movimientos que se prueban
++     entry #temperature   la temperatura inicial, que regula con qué facilidad se acepta un movimiento peor
++     entry #cooling   el factor por el que se multiplica la temperatura tras cada movimiento
++     entry #step   la distancia entre anillos sucesivos de posiciones candidatas
++     entry #rings   cuántos anillos de candidatos se buscan, antes del alcance de la leyenda
++     entry #leaderThreshold   el desplazamiento a partir del cual un rótulo recibe una línea guía
++     entry #leaderWidth   la anchura de trazo de una línea guía, como obstáculo para otros rótulos
++     entry #displacementWeight   cuánto pesa en contra de un rótulo su distancia al objetivo
++     entry #arrange   recuece la colocación a partir del inicio voraz y luego oculta lo que deba ocultarse
+
+@ 0 1 0 12ca3e491d5610661d943d241a8211d5
++ entry .arrangers   los organizadores integrados, cada uno un given que se importa por nombre
+
+% 1 1 0 13bab8bc64ba3d201325ab36ca865455
+
+@ 0 4 0 1c7a808d87f374fb15a9c7e30bf0bbfd
++       El `Arranger` del ámbito decide cómo coloca `arrange` los rótulos. El objeto compañero de
++       `Arranger` proporciona por defecto el voraz; importar uno de estos por nombre, o ligar un
++       `Arranger.Greedy` o un `Arranger.Annealing` configurado como given local, lo sustituye.
++       `import soundness.*` no importa givens, así que cada uno se importa por nombre.
+
+% 2 1 0 12c6069bc5ff53cf022ad836493dc4c3
+
+% 3 1 0 1063f763926a5e0308a5631e6772b492
+
+% 0 1 0 075d39f9c7df0f841fd3f22930e552d6
+
+% 2 1 0 09016133b09127f61d92bf50526f314e
+
+% 3 1 0 0ec34f66b294d11a1a1b7a64939169d4
+
+% 0 1 0 09beca149977b55211cd35e8a8791f0f
+
+% 0 1 0 0295d51219211984050cfc53bbc4e962
+
+% 1 1 0 05de78e533337026038fd62566beb1c2
+
+@ 0 2 0 1ae875e88eb4cb3c0b18c7dddee5382f
++   entry .greedyArranger   `Arranger.Greedy()`: determinista, ordenado por prioridad, nunca vuelve sobre un rótulo
++   entry .annealingArranger   `Arranger.Annealing()`: recocido simulado a partir del inicio voraz, semilla 0

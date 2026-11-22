@@ -1,0 +1,149 @@
+orthant 2 language
+
+@ 0 1 0 0764d003b2d73399122ce3a270fcbfa4
++ # La sûreté par construction
+
+@ 0 5 0 12aadd03548ddd7a097194cf02e95c45
++ Soundness rend les valeurs invalides impossibles à construire dès le départ, en les vérifiant
++ pendant la compilation du code. Une conviction directrice est que toute analyse statique qu'un
++ programmeur peut faire, le compilateur peut la faire mieux — et que toute analyse que le compilateur
++ peut faire, il doit la faire. Une valeur qui existe est donc connue pour être bien formée, et le
++ code qui la reçoit n'a pas à la vérifier de nouveau.
+
+@ 0 5 0 050ba2c0784f05cf10341c2c3b696a0a
++ Les interpolateurs l'expriment le plus clairement. Chaque petit langage incorporé dans un programme —
++ URL, chemins, expressions régulières, dates, types de média, JSON — a une grammaire, et ses
++ littéraux sont analysés selon cette grammaire à la compilation, par le même analyseur qui traitera
++ les entrées à l'exécution. Un littéral mal formé est une erreur de compilation qui désigne le
++ caractère fautif :
+
+% 2 1 0 0bbec91b09000cd81ea0f69c75b4df45
+
+% 3 1 0 0a0239a309474f48171c8acf80f08a8c
+
+% 4 1 0 101ca460ec05283f0fb456c616de83cc
+
+% 0 1 0 1bb57990592a2cd601d4fcc1c8376afc
+
+% 0 1 0 1d56685db19c0b940cc591a734567bf6
+
+% 0 1 0 03b60f1eb8e5e7de025c577b0cc1df4c
+
+% 0 1 0 1354ba3c0bd04d301ed774709e8718ea
+
+% 1 1 0 080f5bd43c4309a716cfd395297700d5
+
+@ 0 7 0 09f886996a0fa8860f134f33e11b3f97
++ Le même principe s'étend au-delà des littéraux. Une date qui ne peut exister — le 31 d'un mois de
++ 30 jours — est rejetée là où elle est écrite ; un `Money in "EUR"` ne peut être additionné à un
++ `Money in "GBP"` ; une relation de base de données que le schéma ne déclare pas ne compile pas ; et
++ une balise HTML `<br>` dotée d'enfants est une erreur de compilation, parce que la spécification le
++ dit. Dans chaque cas, la vérification n'est pas une validation à l'exécution avancée dans le temps,
++ mais une construction qui n'admet que des valeurs valides — l'état invalide n'a donc aucune
++ représentation, et le code en aval hérite gratuitement de la garantie.
+
+@ 0 1 0 009da7f2e145b0bc178e41b0b27b76bb
++ ## Un analyseur, deux moments
+
+@ 0 4 0 1361fb180d65287b1d92cd54283e7703
++ La propriété qui rend cela digne de confiance est que les chemins de la compilation et de
++ l'exécution sont *le même code*. La logique d'analyse d'un interpolateur est du Scala ordinaire ;
++ elle s'exécute à la compilation sur un littéral, ce qui donne une erreur de compilation, et à
++ l'exécution sur une entrée dynamique, ce qui donne une erreur typée :
+
+% 2 1 0 0a7c7d676b83db220b0d4ae7caeabb93
+
+% 3 1 0 1df291f82e0f4d7604485e60a19c2fa7
+
+% 4 1 0 105e313eb329d0e71cefb0330164f720
+
+% 0 1 0 06d43944fce464700b9c4ed728e2836a
+
+% 0 1 0 16c6c267601bf76d03cd63a6600b55ad
+
+% 1 1 0 1b8df6aaa8def2c11618aea93d46bd96
+
+@ 0 3 0 0aeae3130e9fe6121b9133a0bcab7a23
++ Les deux ne peuvent diverger, car il n'y a rien à maintenir en phase. Une macro écrite à la main plus
++ un analyseur distinct pour l'exécution, voilà la disposition que cela évite : deux implémentations
++ d'une même grammaire, qui diffèrent précisément dans les cas limites que personne n'a testés.
+
+@ 0 3 0 024cd703bb1958460b438daae9d71864
++ La convention est donc que chaque littéral vérifié a un équivalent à l'exécution, et qu'une valeur
++ peut passer de l'un à l'autre — une configuration lue dans un fichier et une valeur par défaut
++ écrite dans le source produisent le même type, avec les mêmes garanties.
+
+@ 0 1 0 0db4f7a360e4e5a406d0815ddaface26
++ ## La précision dans le type de retour
+
+@ 0 3 0 1cc38bc23600d848161e5dcdc186f858
++ La méthode de préfixe d'un interpolateur est `transparent inline` ; elle peut donc renvoyer quelque
++ chose de plus précis que son type déclaré. C'est ce qui permet à un littéral de faire entrer ce qu'il
++ *est* dans le système de types, au lieu de seulement se valider lui-même :
+
+% 2 1 0 07a358831606ac57130169022ac844c9
+
+% 3 1 0 13972933396c919f1c4df3b806db7c8f
+
+% 4 1 0 1af7f9b5938a440a0b69921924fc901b
+
+% 0 1 0 0e0e33ffd0034f4819ba4ea80e3177a6
+
+% 0 1 0 0d703fc43ae9608f0b5e0a2fb0cf04ab
+
+% 0 1 0 1698b4f0fc04b3bb1e159d5af11d02c4
+
+% 1 1 0 07d1bc6ef5ec6dd3083a1c2c3992e164
+
+@ 0 4 0 050ad6494fcaf1041d27097ddb74da24
++ Le dernier est la forme la plus forte : les noms des éléments du chemin sont dans son type, si bien
++ que le code qui le reçoit sait exactement où il pointe. Cette précision n'est disponible que pour les
++ littéraux, ce qui est la limite honnête de la technique — un texte obtenu à l'exécution donne le type
++ général, car on n'en sait rien de plus.
+
+@ 0 1 0 078c4179ff580cd81fb18bf30fb78d54
++ ## Ce qui peut et ne peut pas être vérifié ainsi
+
+@ 0 3 0 12ef372b18b956a0095042ab71e587ea
++ La technique s'applique là où la validité est une propriété de la *valeur*, décidable à partir de la
++ seule valeur. La syntaxe d'une URL, l'existence d'une date, l'enregistrement d'un type de média,
++ l'équilibre d'une expression régulière, la forme d'un schéma : tout cela est décidable, et tout cela
++ est vérifié.
+
+@ 0 5 0 1e7304ed291048970a0af9879189cfa0
++ Elle ne s'applique pas là où la validité dépend du monde. Savoir si `example.com` se résout, si un
++ fichier existe, si un port est libre, si un certificat est encore valide — rien de cela ne peut être
++ connu à la compilation du code, et un type qui prétendrait le contraire mentirait. Ces cas deviennent
++ des erreurs typées au point d'utilisation, et ce sont alors les [transitions
++ totales](total-transitions.md) qui font le travail.
+
+@ 0 3 0 07e15608a1ea73aa16a0eb4b49fee918
++ La ligne entre les deux mérite d'être tracée avec soin, car la tentation est d'en promettre trop. Un
++ `Hostname` promet la validité syntaxique et rien de plus, et la documentation le dit, au lieu de
++ laisser un lecteur en déduire qu'un nom d'hôte bien typé est un nom d'hôte joignable.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ce que cela coûte
+
+@ 0 3 0 10c64cbaf3bea6db08a3bf43cf1cce5d
++ **La compilation.** Chaque littéral est analysé par le compilateur, et un fichier qui en contient
++ beaucoup compile sensiblement plus lentement. Le développement des macros est le premier facteur des
++ temps de build de Soundness lui-même.
+
+@ 0 5 0 14e4d8fa704a752b096eefc5f044ae31
++ **Les messages d'erreur sont la responsabilité de la macro.** Une erreur de compilation due à un
++ littéral invalide ne vaut que ce que vaut le message que produit l'interpolateur. Placer un caret sur
++ le caractère fautif — plutôt que de souligner toute l'expression — demande un travail délibéré avec
++ les positions dans le source que reçoit l'interpolateur, et un interpolateur qui le néglige produit
++ de moins bons diagnostics que ne l'aurait fait un analyseur à l'exécution.
+
+@ 0 5 0 0ea35d68ceb20fa1065d2c9acf34fb34
++ **Les littéraux doivent être des littéraux.** Une URL assemblée à partir de parties à la compilation
++ ne peut profiter de la vérification de l'interpolateur que si les parties sont elles-mêmes des
++ littéraux. Le chemin de l'exécution est toujours disponible, mais la garantie est plus faible, et la
++ forme du code diffère — ce qui pousse parfois une conception à garder littéral quelque chose qui,
++ sinon, aurait été calculé.
+
+@ 0 2 0 08deaea14db629dc0fffffd511663b39
++ Voir [les états impossibles](impossible-states.md) pour la règle que cela sert, et
++ [l'interpolation](../en/modules/interpolation.md) pour la façon dont un tel littéral est construit.

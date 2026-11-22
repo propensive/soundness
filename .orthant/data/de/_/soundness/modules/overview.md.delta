@@ -1,0 +1,158 @@
+orthant 2 language
+
+@ 0 1 0 0141ab70aa7784f41e44f694bd889c1c
++ ## Übersicht
+
+@ 0 2 0 1b72ed9ebf92ddcb073c3a303abd44fb
++ Soundness ist eine einzige Bibliothek mit vielen Teilen, und jedes dieser Tutorials behandelt
++ ein Thema. Sie sind hier danach gruppiert, womit ein Leser wahrscheinlich gerade beschäftigt ist.
+
+@ 0 8 0 10a91004d6525a330a00b7c359e5c96b
++ Jedes Tutorial baut seine Beispiele der Reihe nach auf, und die Ausgabe eines Beispiels wird
++ darunter gezeigt, so wie das Beispiel sie erzeugt hat. Wo ein Beispiel fehlschlagen soll, wird
++ stattdessen der Fehler des Compilers oder der geworfene Fehler gezeigt. Ein Wort mit präziser
++ Bedeutung, etwa [Typklasse] oder [Strategie], ist im Glossar definiert, das dort erscheint, wo
++ das Wort verwendet wird. Jedes Tutorial endet mit einer Liste der verwandten Tutorials, und die
++ meisten verweisen auf die Philosophie hinter ihrem Entwurf:
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md),
++ [direkter Stil](../../philosophy/direct-style.md),
++ [ehrliche Signaturen](../../philosophy/honest-signatures.md) und die übrigen.
+
+@ 0 1 0 02a54c7d1934e7ef12fa63a30dec9230
++ ### Grundlagen
+
+@ 0 27 0 072ede9fee7a74810f6bc5556b401006
++ - [Text](text.md) — Text schreiben, ausschneiden, durchsuchen und darstellen, mit den textuellen Typen
++ - [Zeichen](characters.md) — Kodierungen, Unicode-Eigenschaften, Breiten und Graphem-Cluster
++ - [Zahlen](numbers.md) — geprüfte Arithmetik, Bitmanipulation, Genauigkeit, Ordinalzahlen und begrenzte Zahlen
++ - [Mathematik](mathematics.md) — komplexe Zahlen, Vektoren, Matrizen und Permutationen
++ - [Optionale Werte](optional-values.md) — Fehlen ohne `Option`, und was es kostet
++ - [Fehler](errors.md) — angeben, dass Code fehlschlagen kann, eine Strategie wählen und sich erholen
++ - [Collections](collections.md) — die Collection-Typen und wie sie zur Standardbibliothek wechseln
++ - [Patterns](patterns.md) — reguläre Ausdrücke und Globs, beim Kompilieren des Codes geprüft
++ - [Interpolation](interpolation.md) — einen eigenen Interpolator schreiben
++ - [Namen](names.md) — Bezeichner, gegen eine Ebene von Regeln validiert
++ - [Dekodieren](decoding.md) — Text in typisierte Werte umwandeln und sie in Patterns extrahieren
++ - [Anzeige](display.md) — Werte anzeigen und untersuchen
++ - [Ableitung](derivation.md) — Typklasseninstanzen für Produkte und Summen ableiten
++ - [Annotationen](annotations.md) — Annotationen zur Kompilierzeit lesen
++ - [Generische Daten](generic-data.md) — eine Darstellung, über die sich jedes Format umwandeln lässt
++ - [Datensätze](records.md) — typisierte Datensätze aus einer Spezifikation
++ - [Kataloge](catalogs.md) — ein Wert für jedes Feld eines Typs, über einen Pfad adressiert
++ - [Optiken](optics.md) — verschachtelte unveränderliche Werte aktualisieren
++ - [Bit-Flags](flags.md) — Mengen von Flags als Bits
++ - [Bloom-Filter](bloom-filters.md) — probabilistisches Enthaltensein
++ - [Caching](caching.md) — ein LRU-Cache und ablaufende Werte
++ - [UUIDs](uuid.md) — UUIDs erzeugen, parsen und kombinieren
++ - [Zufall](randomness.md) — Zufallswerte, Verteilungen und reproduzierbare Läufe
++ - [Versionierung](versioning.md) — Versionen und Manifeste
++ - [Diffs](diffing.md) — Diffs, Patches und Evolutionen
++ - [Bäume](trees.md) — als Diagramme gezeichnete Bäume und Graphen
++ - [Graphen](graphs.md) — Graphen aufbauen, ordnen, falten und zeichnen
+
+@ 0 1 0 0c3fdb91ee4355d602451db1fcde1d8e
++ ### Datenformate
+
+@ 0 15 0 1b98f74fbd9340c61d016cf949bfc213
++ - [JSON](json.md) — Parsen, typisierter Zugriff, Aufbau, Schemas und Validierung
++ - [YAML](yaml.md) — Parsen, Tags, Anker und Kodierung
++ - [XML](xml.md) — Knoten, Namensräume, XPath und Schemas
++ - [CBOR](cbor.md) — binäre, JSON-ähnliche Kodierung, mit Tags und Diagnosenotation
++ - [CSV](csv.md) — Zeilen, Kopfzeilen und Formate, zu Case-Klassen dekodiert
++ - [TEL](tel.md) — die einrückungsbasierte Datensprache, ihre Schemas und ihre Bearbeitung
++ - [Protocol Buffers](protobuf.md) — Nachrichten, Felder und Kompatibilität
++ - [Markdown](markdown.md) — Parsen, Darstellen und Zurückschreiben
++ - [Base-Kodierung](base-encoding.md) — Base64, Hexadezimal und andere Alphabete
++ - [Binärdaten](binary-data.md) — ein binäres Layout beschreiben und lesen
++ - [Kompression](compression.md) — Werte und Streams komprimieren
++ - [Archive](archives.md) — ZIP, tar und ar
++ - [Hashing](hashing.md) — Hashwerte, Prüfsummen und schnelles Hashing
++ - [Kryptografie](cryptography.md) — Verschlüsselung, Signieren, Schlüssel und Zertifikate
++ - [Medientypen](media-types.md) — Medientypen und Typen, die ihren eigenen kennen
+
+@ 0 1 0 1689e237f50aa752011f26db5b7c1b53
++ ### Zeit, Größen und Locale
+
+@ 0 8 0 070db1ad81efa60c180a73390ca39a2b
++ - [Zeit](time.md) — Datumsangaben, Uhrzeiten, Zeitpunkte, Zonen, Kalender, Wiederholungen und Formatierung
++ - [Größen](quantities.md) — Einheiten, Dimensionen und Umrechnungen, zur Kompilierzeit geprüft
++ - [Geld](money.md) — Beträge, Aufteilung, Preise und Steuern
++ - [Geografie](geography.md) — Winkel, Himmelsrichtungen und Orte
++ - [Chemie](chemistry.md) — Elemente, Moleküle, Formeln und Gleichungen
++ - [Farben](colors.md) — Farbräume, Mischen, Abstand und Paletten
++ - [Internationalisierung](internationalization.md) — Übersetzungen und Locales
++ - [Silbentrennung](hyphenation.md) — Wörter trennen und in Silben zerlegen
+
+@ 0 1 0 0b85f5f5e2adb8710707c5fdcb1e276d
++ ### Dateisystem, Prozesse und Umgebung
+
+@ 0 14 0 1ae832d3e305efd104c4cb1a1210c24b
++ - [Pfade](paths.md) — Pfade aufbauen, in Beziehung setzen und zerlegen
++ - [Dateisystem](filesystem.md) — Dateien, Verzeichnisse, Zugriff und Überwachung
++ - [Umgebung](environment.md) — Variablen, Eigenschaften, Verzeichnisse und die Maschine
++ - [Streams](streams.md) — Datenstreams lesen, schreiben und zusammensetzen
++ - [Prozesse](processes.md) — Befehle definieren, ausführen und verketten
++ - [Nebenläufigkeit](concurrency.md) — überwachte Aufgaben, Abbruch und Promises
++ - [Logging](logging.md) — Logger, Stufen und Weiterleitung
++ - [Klassenpfade](classpath.md) — Ressourcen, Classloader und Dienste
++ - [Paketierung](packaging.md) — schlanke JARs, deren Abhängigkeiten per Hash geholt werden
++ - [Daemons](daemons.md) — langlebige Anwendungen mit schnellen Clients
++ - [Container](docker.md) — Images bauen und lesen und mit einem Daemon sprechen
++ - [Git](git.md) — Repositories, Commits, Branches und Remotes
++ - [SSH](ssh.md) — Host-Schlüssel, Transporte und entfernte Befehle
++ - [Datenbanken](database.md) — deklarieren, speichern und abfragen
+
+@ 0 1 0 166b6a2affdcaab40edc80374b4322dc
++ ### Netzwerk und Web
+
+@ 0 23 0 19a004f0d9fab2d7120c1e0efe071fcd
++ - [Netzwerkadressen](network-addresses.md) — URLs, Hostnamen, IP-Adressen und Ports
++ - [Sockets](sockets.md) — Bereitstellen, Clients, TLS und Konversationen
++ - [HTTP-Client](http-client.md) — Requests, Header, Bodys und Sitzungen
++ - [HTTP-Server](http-server.md) — Server, Responses, WebSockets und HTTP/2
++ - [RPC](rpc.md) — Schnittstellen über JSON-RPC, gRPC und Server-Sent Events
++ - [E-Mail](email.md) — verfassen und senden
++ - [OAuth 2](oauth.md) — Tokens und Zugangsdaten
++ - [OpenAPI](openapi.md) — typisierte Clients aus einem Dokument
++ - [Service-Discovery](service-discovery.md) — Dienste ankündigen und suchen
++ - [Web-Automatisierung](web-automation.md) — einen Browser steuern
++ - [HTML](html.md) — HTML konstruieren, prüfen, darstellen und parsen
++ - [Webseiten](pages.md) — ganze Seiten aus Archetypen
++ - [Das Browser-DOM](dom.md) — typisiertes Scripting der Seite
++ - [CSS](css.md) — Stylesheets schreiben, validieren und darstellen
++ - [Formulare](forms.md) — Formulare darstellen und verarbeiten
++ - [SVG](svg.md) — Formen, Pfade, Transformationen und Dokumente
++ - [Diagramme](charts.md) — Datenreihen, Diagrammarten und Darstellung
++ - [Beschriftungsplatzierung](label-placement.md) — Beschriftungen, die ihren Hindernissen ausweichen
++ - [Bilder](images.md) — Pixel, Leinwände und Umwandlung
++ - [Audio](audio.md) — Lesen, Schreiben, Aufnehmen und Wiedergabe
++ - [Schriften](fonts.md) — Laden, Vermessen und Teilmengenbildung
++ - [PDF](pdf.md) — Dokumente erstellen, lesen und bearbeiten
++ - [Mathematisches Markup](mathematical-markup.md) — MathML-Bäume
+
+@ 0 1 0 047910004af6227e0f33566e3eb383cd
++ ### Kommandozeile und Terminal
+
+@ 0 6 0 1df12b0b26a04bce02517e0107e6933f
++ - [Kommandozeilenanwendungen](cli.md) — Einstiegspunkte, Argumente, Flags, Vervollständigungen und Hilfe
++ - [Terminal](terminal.md) — gestalteter Text, Eingabe, Menüs und Layout
++ - [Terminalemulation](terminal-emulator.md) — ein Terminal füttern und untersuchen
++ - [Tabellen](tables.md) — Werte in jeder Breite tabellieren
++ - [Anzeigen](gauges.md) — Zustände als Anzeigen
++ - [Syntaxhervorhebung](syntax-highlighting.md) — Hervorhebung, Typen und Vervollständigungen
+
+@ 0 1 0 04e11eaca150d9d30c18fcb6b9b52374
++ ### Compiler, Werkzeuge und Agenten
+
+@ 0 11 0 1e99dd85d04d07b1187175207dc4aa24
++ - [Kompilierung](compiler.md) — Compiler konfigurieren und ausführen und Artefakte erzeugen
++ - [Metaprogrammierung](metaprogramming.md) — Givens, Werte auf Typebene und Expansionen
++ - [Staging](staging.md) — Quotes, Splices und Rigs
++ - [Testen](testing.md) — Suiten, Tests, Kontraste und Benchmarks
++ - [Debugging](debugging.md) — Sitzungen, Breakpoints und schrittweise Ausführung
++ - [Stacktraces](stack-traces.md) — Traces erfassen, demangeln und auflösen
++ - [Fremdsprachen-Interoperabilität](foreign-interop.md) — fremde Schnittstellen laden und darin navigieren
++ - [Language Server Protocol](lsp.md) — einen Server definieren und ausführen
++ - [ACP](acp.md) — das Agent Client Protocol
++ - [MCP](mcp.md) — das Model Context Protocol
++ - [Sprachmodelle](llm.md) — Konversationen, Tools und strukturierte Antworten

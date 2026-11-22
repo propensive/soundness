@@ -1,0 +1,489 @@
+orthant 2 language
+
+@ 0 1 0 05cd70bfca7ffb9007b0bc90cbc05e4c
++ ## Arquivos ZIP, tar e ar
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 8 0 0fed22f9e3bbe85603bf10d71d814a13
++ Os dois formatos de arquivo da computação do dia a dia,
++ [ZIP](https://en.wikipedia.org/wiki/ZIP_(file_format)) e
++ [tar](https://en.wikipedia.org/wiki/Tar_(computing)), são lidos e escritos como valores tipados.
++ Um `Zipfile` ou um `Tarfile` é uma sequência de entradas, cada uma com um caminho validado
++ relativo ao arquivo e conteúdo em stream. Um arquivo ZIP ou tar de qualquer tamanho é
++ lido entrada por entrada, e escrito sem ser montado em memória. Uma entrada ZIP é
++ descomprimida à medida que é lida, e uma entrada tar é analisada diretamente da origem
++ subjacente. As entradas tar trazem os metadados Unix que o formato existe para preservar, isto
++ é, modos, proprietários e horários de modificação, como valores tipados.
+
+@ 0 1 0 1f322894d685df2916faeca708b2f14f
++ ### Sobre arquivos ZIP e tar
+
+@ 0 5 0 042f832ec967263a16c3c57796371603
++ Arquivos ZIP e tar são streams que fingem ser sistemas de arquivos, e as APIs para eles
++ costumam expor mal um fingimento ou o outro: ou um objeto mutável de acesso aleatório que
++ precisa ser aberto, modificado e lembrado de fechar, ou um stream bruto de cabeçalhos e bytes.
++ Os nomes das entradas são strings simples, de modo que nada impede os erros clássicos, que são
++ caminhos absolutos e a travessia com `..`, e os metadados são inteiros pensados de última hora.
+
+@ 0 5 0 04c7c43b8b18e8b51bfdc8d4a8447db6
++ Aqui, um arquivo ZIP ou tar é um dado. As entradas são valores [imutáveis][imutável]. Os seus
++ caminhos são [caminhos](paths.md) tipados relativos ao arquivo. Ler, escrever
++ e comprimir são as mesmas operações de stream usadas em todo o resto. Ler um arquivo ZIP ou tar
++ de forma preguiçosa, por meio de um escopo que é dono do arquivo, é a forma descrita
++ em [escopos delimitados](../../philosophy/delimited-scopes.md).
+
+@ 0 4 0 0c6d17384013986c00332734c704a68f
++ Tudo vem do pacote `soundness`. Ler um arquivo ZIP ou tar do disco registra um evento no log, e
++ ler ou escrever um pode falhar, por isso uma [estratégia] de erro e uma escolha de logging
++ estão no escopo. O último import permite que os exemplos imprimam os seus resultados, e os
++ exemplos trabalham num diretório próprio:
+
+% 2 1 0 103643eb178ce0b01bd49add993ac95a
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 022401798934ffd81694ba61e697a094
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 196c8a597bcc2c1b0933e778d81765e3
+
+% 0 1 0 0e29fdb93f7639341f79f55d2ccb9309
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0327a639101f3806141ed98db7255285
+
+% 0 1 0 178b4e793a31e649108ea3f4a409e84b
+
+% 1 1 0 0e11ca250b48eb671528e7881688a247
+
+@ 0 1 0 1eaf15b6bcb7345701fa804e97d95f9f
++ Cada formato tem os seus próprios tipos de arquivo e de entrada, o seu próprio handle
++ quando aberto e o seu próprio erro:
+
+% 2 1 0 017451cb6e6c9b980ea84862d45312f5
+
+@ 0 4 0 07822369173146430c2a68a8884617c0
++ column  Formato
++ column  Arquivo
++ column  Entrada
++ column  Abrir como
+
+% 0 1 0 1f13965b571d7727055b7a82651acd39
+
+@ 0 4 0 02ba2d0af6e4ddb60d0f6ff6f9234cba
++ column  Flags de abertura
++ column  Erro
++ row  ZIP  `Zipfile`  `Zip.Entry`  `Zip`  `zipfile`  nenhuma  `Zip.Error`
++ row  JAR  `Zipfile`  `Zip.Entry`  `Jar`  `zipfile`, com `manifest`  nenhuma  `Zip.Error`
+
+% 0 1 0 1e55bf1575c30d2c041318b49a3f471d
+
+@ 0 1 0 12955d53332ac1db124e7a8e152254c1
++ row  ar  `Arfile`  `Ar.Entry`  `Ar`  `ar`  nenhuma  `Ar.Error`
+
+% 1 1 0 15edff0173d6d60b18709df7afde5844
+
+% 0 1 0 0e0d0c6a318ed9ba040f44553ddbeab7
+
+@ 0 4 0 0095adee3248f4f30ee4df7e3a1c0331
++ Um arquivo ZIP é um `Zipfile` de entradas. Cada entrada é um caminho relativo ao arquivo
++ e uma origem de conteúdo. O arquivo ZIP vira um stream de bytes, de modo que
++ escrever um no disco é como escrever qualquer outro valor. A compressão é uma política no
++ escopo, que por padrão usa deflate, e armazena sem compressão onde o deflate não ajudaria:
+
+% 2 1 0 14274774d02226db0e00af72a44c639e
+
+% 0 1 0 1e19a9d446325c2418599de1be6babbc
+
+% 0 1 0 1777a636647be95e12148d0969a00657
+
+% 0 1 0 165bccbed33307d60e8d42357ca1c79e
+
+% 1 1 0 05aaf01fcedb89130f4750e9f3a8b0f2
+
+@ 0 1 0 0a41709dd612968b0722f6af48cfeee2
++ O caminho de uma entrada é um `Path on Zip`, que é relativo à raiz do arquivo ZIP.
+
+@ 0 2 0 0207d18fb72d872f1d9dd973dfa2755f
++ Um arquivo ZIP é lido a partir de um caminho ou de bytes. Uma entrada é procurada pelo
++ seu caminho, e o seu conteúdo pode ser lido como qualquer tipo:
+
+% 2 1 0 044684dfb3c0f32e026e31c7589f75f5
+
+% 3 1 0 161827be7b03229616dab4a51af10873
+
+% 4 1 0 15336d6fb12979e811dbb83afc642587
+
+% 0 1 0 1892d02d6f5d6b3d116fa18d23f86df3
+
+% 0 1 0 195aa0b67acea0cc02237f6b1e5e4863
+
+% 0 1 0 122e80ce5030443b1b5870ed29c8a3dd
+
+% 1 1 0 17d5a3715e6d593a000f427cc57675fd
+
+@ 0 3 0 146e1f46382cf209097a74a2be8acbbe
++ Uma entrada lida de um arquivo ZIP também traz, em torno do seu conteúdo, os metadados do
++ seu cabeçalho. Escrevê-la de volta reproduz o arquivo original byte a byte, exceto pelos
++ registros ZIP64, que são reconstruídos:
+
+% 2 1 0 0a1bcdbaf82225b20ae3a90acef90f36
+
+@ 0 10 0 0943679e96107f2a17e2bdd1178c16ab
++ column  Campo
++ column  Guarda
++ row  `flags`  as flags de uso geral
++ row  `versionMadeBy`  o “version made by”
++ row  `localVersion`  o “version needed” do cabeçalho local
++ row  `centralVersion`  o “version needed” do diretório central
++ row  `internalAttributes`  os atributos internos
++ row  `externalAttributes`  os atributos externos, onde fica um modo Unix
++ row  `localExtra`  o campo extra do cabeçalho local
++ row  `centralExtra`  o campo extra do diretório central
+
+% 1 1 0 1d523668201dbc3505018224580f6f01
+
+@ 0 4 0 15d4ce1e3aac017c1d8f9cdd2c3f8837
++ Cada um desses campos tem `Unset` como padrão numa entrada nova, o que significa o valor que a
++ própria biblioteca escolheria. O bit 3 de `flags` marca uma entrada como *em stream*. O seu CRC
++ e os seus tamanhos são repetidos num descritor de dados depois do payload, que é como um
++ arquivo ZIP é escrito num sink que não permite seek.
+
+@ 0 6 0 1598c73941f8941402637aedcd9f55e9
++ `Zipfile` também recebe um `prefix` opcional de bytes brutos a colocar antes do arquivo
++ propriamente dito. O formato ZIP localiza o seu próprio diretório a partir do fim do
++ arquivo, e não do início, de modo que um arquivo ZIP concatenado a bytes iniciais
++ arbitrários ainda é lido corretamente. É assim que se faz um arquivo autoextraível ou
++ diretamente executável, e é assim que os launchers [empacotados](packaging.md) carregam o seu
++ próprio JAR. `Zipfile.rebase` corrige o único campo de um arquivo muito grande (ZIP64) que um
++ prefixo de fato invalida.
+
+@ 0 3 0 0b79c909acddb4bb1d558a45752722f8
++ Um arquivo ZIP também pode ser *aberto*, o que torna as suas entradas disponíveis
++ durante um escopo e fecha a origem subjacente ao fim dele, como com um
++ [arquivo](filesystem.md#reading-and-writing). Dentro do escopo, `zipfile` é o handle aberto:
+
+% 2 1 0 1a4a9f93388a65461a5d2a69256154e3
+
+% 3 1 0 11a334b5453e44ff0c64cc9dff52adc9
+
+% 4 1 0 0bd6e8c1965471da137678979b75c2a3
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 05eb5d18e9dc85bc1f784f48b72d31d6
+
+% 0 1 0 04622c3b319e43e516c967703f2f48f2
+
+% 1 1 0 122104a81e1201540df1b3e80e010acd
+
+@ 0 3 0 1e22122973d3a4a31a81833885cebb12
++ Um JAR é um ZIP com um manifesto. Abri-lo como `Jar` dá o mesmo handle, refinado com os
++ atributos principais analisados a partir de `META-INF/MANIFEST.MF`, com as linhas de
++ continuação reunidas como a especificação exige. Um arquivo ZIP sem manifesto
++ simplesmente não tem atributos:
+
+% 2 1 0 113b6b2c4224c7261447367639736bdf
+
+% 3 1 0 1e7d197b662341441720e034b03b440b
+
+% 4 1 0 0da25a3e04f066b50cd14ac381f2290f
+
+% 0 1 0 1f4a1d8aa407f512029028e5c9b73992
+
+% 0 1 0 0431a66deb5b0b4a1a88bcbb333fcec0
+
+% 0 1 0 11142a6c2f0f1f2504019ad85482f4ad
+
+% 0 1 0 19a0fa165affa30313ec0f58babc8159
+
+% 0 1 0 1147f5af79876500176859b72066dea7
+
+% 1 1 0 0ae8b30424c18d4f0a516b2f3b9e7a83
+
+@ 0 3 0 1673e0e53864bc330d069895a71c683d
++ Os erros são `Zip.Error`s cujo motivo diz o que estava errado: `NotFound` para uma entrada que
++ não existe, `DuplicateEntry` quando duas entradas compartilham um caminho, e `MissingEocd`
++ quando os bytes nem sequer são um arquivo ZIP:
+
+% 2 1 0 0082486eb24a4d9e108053e973b0a2d5
+
+% 3 1 0 1b2666f62158aa8a082c06b582d08d5b
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 03aefb2e8b838a6a1d3f4d26b25ece7e
+
+% 1 1 0 1d2728306f0061461d2a7b5b44d9e25d
+
+% 0 1 0 0bbf743fe50e5a8711fe629c60118a71
+
+@ 0 5 0 11e519b05a737eee1f1fd348748e4cec
++ Uma entrada tar é um dos casos tipados do formato: um arquivo comum, um diretório, um hard link
++ ou link simbólico, um dispositivo de caractere ou de bloco, ou um FIFO, com os seus metadados
++ Unix explicitados. `Tar.Entry` constrói o caso comum, um arquivo, com um modo e um proprietário
++ padrão, carimbado com o horário atual. `Tar.Entry.at` recebe o carimbo de tempo como qualquer
++ tipo de instante. As case classes recebem tudo explicitamente:
+
+% 2 1 0 0710286efa77ee4d154ac27dd530c1fe
+
+% 0 1 0 0fe0595a652c7a7817f710f35ccd9910
+
+% 0 1 0 0be9aa7274af355c0ddb8d6a02f3a0af
+
+% 0 1 0 003cdb8bdf5b988907496e495434df70
+
+% 0 1 0 18fba8aae2462aae0f880e43b92b52c5
+
+% 0 1 0 00f7ff4babf544181019c8eac7dc8fbe
+
+% 0 1 0 00d4d024d97fa3681fae8cb7701d79d9
+
+% 0 1 0 026511dbca77ba34050c48b4d4f82a5e
+
+% 0 1 0 1b1f09dce711822b0f9fb91f7f22e5dd
+
+% 1 1 0 19c1f154d45d038a1dbb247fe05e2e93
+
+@ 0 2 0 136d5f702debc3a4052498da2263cb4a
++ Um `Tarfile` de entradas vira um stream de blocos tar, ou das formas comprimidas em que o
++ formato costuma circular:
+
+% 2 1 0 1b69164e1d66cc541e390da6f8fd262a
+
+% 0 1 0 036a7af8d43243e514c4e72ed49b7707
+
+% 0 1 0 172b35e53c865ce019b4a71f3cd2bba7
+
+% 0 1 0 0aa1efabc86048f515304878cf76745b
+
+% 0 1 0 081019d6a917d09b15a3c1fecaeb8bb4
+
+% 1 1 0 1367ce1d8fdba39c0eca6cc5a90de0ea
+
+@ 0 3 0 059c2e4b1e9d95c9098d7345a5ef5399
++ A leitura funciona no sentido inverso. `Tarfile.read` analisa as entradas de forma preguiçosa,
++ diretamente de um stream de bytes. Consumir uma entrada avança a origem para além dela, de
++ modo que um arquivo tar nunca é materializado. Um arquivo comprimido é simplesmente um
++ stream descomprimido, lido da mesma forma:
+
+% 2 1 0 0317e1889ef27b311157ae14d502a742
+
+% 3 1 0 13ce55584f1ffb2b0136fd77f30ecdd7
+
+% 4 1 0 199ec1565bc3e9db1251180e7cabc6ba
+
+% 0 1 0 035c9cb414d33ad10402f761f6839b09
+
+% 0 1 0 0b1b5620bcd5186b029fc8f27c3597b3
+
+% 1 1 0 0fc9dccddf493de208ec781e84163586
+
+@ 0 3 0 0d88209141dc710a16fe4ee415fc8e50
++ Ler um arquivo tar dessa forma é feito numa única passada e com um único dono. Consuma
++ as entradas em ordem, numa thread. Uma entrada que é pulada continua legível, porque o seu
++ corpo é memoizado quando a sequência avança, mas a própria sequência não pode ser reproduzida
++ de novo.
+
+@ 0 2 0 141bedcba46e4a3d1c1d23830cd257df
++ Abrir o arquivo como `Tar` delimita a origem subjacente a um escopo, como acontece
++ com um arquivo ZIP, e recebe a compressão como uma flag. `tar` é o handle aberto:
+
+% 2 1 0 19817a5e2b1fa37c0654f069dfb030f9
+
+% 3 1 0 183718434880087014143a631e97b534
+
+% 4 1 0 1b91977ee29c82cb06f6937bb3ee1fd6
+
+% 0 1 0 1457d728a5aeb6060472e82c5f5537bb
+
+% 0 1 0 1b10022bce8f3bc70db688959101c23a
+
+% 0 1 0 1d87d05a510c91bb0f2146c892d13a32
+
+% 0 1 0 11779ed34044615200cb89b7485c48eb
+
+% 0 1 0 0160047e065365a81af126effa1950d5
+
+% 1 1 0 1743a5a001743ade0fbe2b0715a70ff1
+
+@ 0 1 0 0729cb89f29cf0ad117657e810dee579
++ Um tarball é extraído no [sistema de arquivos](filesystem.md) com `extractTo`:
+
+% 2 1 0 078ae18ccb506dee0b10095f0bcb2fcd
+
+% 3 1 0 10b9fcb4e60766ed02486575ab3b1079
+
+% 4 1 0 1689910103136f0a0e5363045f96b8b5
+
+% 0 1 0 08d16bffb95237a007bc4b7ebbc92606
+
+% 0 1 0 0a3f24b15b3fb74a15358e7f79bb1f65
+
+% 0 1 0 02078f434ebbd4a119e1cafce21df4c1
+
+% 1 1 0 1b1032193773150b0486c71ab49d3bad
+
+@ 0 4 0 0ece488bd73c64fa1a55739428b9191b
++ Os nomes longos são tratados por padrão na forma pax do POSIX, ou na do GNU, escolhida quando o
++ arquivo tar é construído, como `Tarfile(entries, LongNameFormat.Gnu)`. Arquivos esparsos
++ e cabeçalhos estendidos pax fazem a ida e volta fielmente. Um arquivo malformado lança um
++ `Tar.Error` que nomeia a falha: um checksum inválido, um campo de cabeçalho que não pode ser
++ analisado ou um corpo truncado.
+
+@ 0 1 0 1826b3ad35b8b6ac198e67e404a80cf5
++ ### Arquivando um diretório
+
+@ 0 2 0 1a6edf73bbdc1b571a66a579c590d68c
++ Uma árvore de diretórios é arquivada em qualquer um dos formatos com `archive`, com o formato
++ escolhido como um tipo:
+
+% 2 1 0 0f4ab353402319211e288108d3c8046f
+
+% 0 1 0 01b9b7bb3a8b9e6810adbf97a9f6b81a
+
+% 1 1 0 0681481a9a6b0615115f137c67678122
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 06b4e27e45b5bce81077ee7d047385a7
+
+% 0 1 0 0dc8eb85d442cb341a7fef884bee97c9
+
+% 0 1 0 156b2ad9b14d2582022cc37168de4b74
+
+% 1 1 0 044fe2b7f4b1509212297d5a17f44490
+
+@ 0 5 0 1dfee016a8de68ee1e980423aa7ce18b
++ O resultado é o arquivo em memória, um `Tarfile`, `Zipfile` ou `Arfile`, para pôr
++ em stream, comprimir ou escrever onde se quiser. Cada descendente é visitado numa ordem fixa,
++ com os filhos de cada diretório ordenados, de modo que a mesma árvore sempre produz os mesmos
++ bytes. O tar registra cada entrada com a sua própria categoria, com o modo, o proprietário e o
++ carimbo de tempo que o sistema de arquivos informa. Os formatos diferem no que conseguem
++ armazenar:
+
+% 2 1 0 0c0b6bee6a7d65c01e4de5554ccd4031
+
+@ 0 4 0 093a10eb32b03919036ae4299ab51cf0
++ column  Formato
++ column  Resultado
++ column  Links simbólicos
++ column  Diretórios
+
+% 0 1 0 1b92ba8322a2d0b51251c546112f61e0
+
+@ 0 3 0 1ff8fd11f5c6d3b8049ed9e2a610d937
++ row  `Tar`  `Tarfile`  armazenados ou seguidos, conforme a política de links simbólicos de `filesystemOptions`  armazenados como entradas  `Archive.Flag`, `LongNameFormat`
++ row  `Zip`  `Zipfile`  seguidos  armazenados como entradas  `Zip.Compression`
++ row  `Ar`  `Arfile`  seguidos  achatados, cada arquivo nomeado pelo seu caminho relativo unido por barras  `Archive.Flag`
+
+% 1 1 0 0861448f35ceef6a152e8ff65e3ec4ce
+
+@ 0 4 0 16fe5c6c534a73c40477484d9f378ecc
++ As flags ajustam o arquivamento. `Archive.Flag.Owner` e `Archive.Flag.Mtime` substituem o
++ proprietário e o carimbo de tempo de cada entrada. Elas são `tar --owner`, `--group` e
++ `--mtime`, os botões de ajuste de um build reprodutível. Um `LongNameFormat` escolhe a
++ convenção do tar para nomes longos. Um ZIP recebe um `Zip.Compression` em vez disso:
+
+% 2 1 0 157a08108356537a0fc15c75af410b7a
+
+% 0 1 0 06ec5c5417d30940189489764934e7c7
+
+% 0 1 0 12df9e4e1a549a021ac050518894f420
+
+% 1 1 0 03cdb269abe1df4c0c7191bacd50e3ab
+
+% 0 1 0 09875d46d4bd1c4e16e0dd9f71a1c344
+
+@ 0 5 0 0300945c7aedaef20739bd64f5c10d03
++ `ar` é o contêiner de todo pacote `*.deb` e de toda biblioteca estática `*.a`: um número
++ mágico de oito bytes e depois uma sequência plana de membros, cada um com um cabeçalho de
++ sessenta bytes seguido diretamente pelo seu payload. Ele não traz tipos de entrada, nem
++ checksum, nem marcador de fim de arquivo, de modo que um membro é apenas um nome, os seus
++ metadados Unix e um corpo. `Ar.Entry` constrói um. O `mode` é o campo octal bruto, como
++ `100644`, já que `ar` armazena os bits de tipo de arquivo ao lado das permissões:
+
+% 2 1 0 13c9060b5f96adaf10e7597c4b201252
+
+% 0 1 0 1a63300e02a3ebb919e174c3dbc76883
+
+% 0 1 0 1a63f6a756f82a720fbd6eab0d924e05
+
+% 0 1 0 1f485e5d218a344f01f18c95b2a6fded
+
+% 1 1 0 084eb078697603ad1b8aedc6ab92b78b
+
+@ 0 4 0 09a64092282856231aed970c2ab78c8c
++ A leitura espelha `Tarfile.read`. As entradas são analisadas de forma preguiçosa a partir de um
++ stream de bytes, numa única passada e em ordem, com o corpo de cada membro em stream em chunks
++ limitados, e memoizado se a sequência avançar para além dele. Abrir como `Ar` delimita a origem
++ a um escopo como faz `Tar`, com `ar` como handle. Não há flags, porque um `*.deb` é `ar`
++ simples, e só os seus membros são comprimidos:
+
+% 2 1 0 19c29f2e7043b175004fd4d828b79dbb
+
+% 3 1 0 114020c9944f512b0e94028c953fd117
+
+% 4 1 0 1e3a31bcd5cca1710c3d6c16fe3305e8
+
+% 0 1 0 0cf8959b6d3c764306484fa6ec138775
+
+% 0 1 0 140574e7931a83a61fbbaeb58cef30d9
+
+% 0 1 0 066b397a501d1a6614a2ae9edae1e335
+
+% 0 1 0 0fb8522d11b054620066bdc80838da1f
+
+% 0 1 0 06cee4590bd1b2521548888835f0481c
+
+% 0 1 0 06438b523dff86d814ad7cf0be2d31e6
+
+% 1 1 0 0f15b7ba532d08381fdab4f7e8c6a278
+
+@ 0 7 0 1aa8f0e5a934839e1806bcf339efaef8
++ Um arquivo GNU armazena nomes com mais de quinze caracteres num membro de tabela de nomes `//`,
++ e se refere a eles por offset. O leitor os resolve, e remove o `/` terminador do SysV, em
++ `name`. `rawName` mantém o campo literal, de modo que um arquivo analisado é serializado de novo
++ byte a byte, como `Arfile.from(stream).source[Data]`. O `role` de cada entrada diz se ela é um
++ membro `Regular`, a `NameTable` ou uma `SymbolTable`, que é `/` ou `/SYM64/`. Um arquivo
++ malformado lança um `Ar.Error`: um número mágico ausente, um terminador de cabeçalho
++ corrompido, um campo não numérico, um stream truncado ou uma referência a nome longo que não é
++ resolvida.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 9 0 011032db34f1f8290ffa63fce0667681
++ - [Compressão](compression.md) descreve o gzip, o zlib e o deflate em que um tarball
++   circula.
++ - [Sistema de arquivos](filesystem.md) descreve os arquivos, diretórios e handles de onde os
++   arquivos ZIP e tar são lidos, para onde são escritos e onde são extraídos.
++ - [Caminhos](paths.md) descreve os caminhos das entradas relativos ao arquivo.
++ - [Empacotamento](packaging.md) constrói os arquivos JAR e os launchers, que são arquivos ZIP.
++ - [Contêineres](docker.md) constrói camadas de imagem a partir de arquivos tar.
++ - [Streams](streams.md) descreve os streams preguiçosos de onde as entradas são lidas.
++ - [Versionamento](versioning.md) descreve os manifestos que um JAR traz.

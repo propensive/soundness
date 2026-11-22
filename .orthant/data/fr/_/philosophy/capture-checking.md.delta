@@ -1,0 +1,165 @@
+orthant 2 language
+
+@ 0 1 0 1ec603b4c009ad6c0b820afa5985a451
++ # Contrôle des captures
+
+@ 0 5 0 1a4af1972ab96dd91d21a3beaed99770
++ Soundness utilise le contrôle des captures de Scala pour renforcer les garanties
++ qu'expriment déjà ses [capacités délimitées](delimited-scopes.md). Le contrôle des
++ captures suit les capacités dont dépend une valeur, si bien que le compilateur peut
++ prouver qu'une ressource, un gestionnaire d'erreurs ou un contexte de concurrence ne
++ s'échappe pas du bloc qui l'a établi. Ce que la délimitation énonce par la structure,
++ le contrôle des captures l'impose par le type.
+
+@ 0 2 0 191d93ac3c38cba11fa1bb14aaa56518
++ Ce qui devient impossible, c'est la famille des bogues d'échappement que la
++ délimitation seule ne peut arrêter — chacun étant une valeur qui fait sortir en
++ contrebande une capacité morte de son bloc :
+
+% 2 1 0 0e949f74aefc607d01a582ebb86c1fcc
+
+% 3 1 0 0602cc2f4ebfcb0c0c0f11802bbaf3a0
+
+% 4 1 0 07563ccc2c56dbda0f27e98908ead537
+
+% 0 1 0 174f3aa2fbd61afa0d003d618cd1feb9
+
+% 0 1 0 02279e19d37c1c41190b1cd223689e5c
+
+% 0 1 0 1f39cfc5bf5a4f7119ff88659876dba4
+
+% 0 1 0 1dc9835d775f0cc30812caab2b940c85
+
+% 0 1 0 0d4959e40d67cc0c042a3dd4d3ac88a9
+
+% 0 1 0 1a852a3203de96031c01eac9eb135f6b
+
+% 0 1 0 1dd155deee7e04520e6abd1ad539bca1
+
+% 0 1 0 0b2800afe3b094ad104dcb7200a2d807
+
+% 0 1 0 0f627cd31a91080311e777504fda1d73
+
+% 1 1 0 1e0df54e6b038f82143fc957136782d9
+
+@ 0 2 0 07495102508fa60408d681abc8ae484a
++ Sous le contrôle des captures, chacun de ces cas est une erreur de compilation, parce
++ que chaque valeur capture une capacité qui ne doit pas survivre à sa portée. La
++ correction que le compilateur impose est la bonne :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0dfce39898444daa01b904d5694147f5
++ column  Valeur qui s'échappe
++ column  Capture
++ column  La correction
++ row  le flux paresseux  la poignée ouverte  consommer le flux à l'intérieur du bloc
++ row  la fermeture  le `Tactic`  exécuter le code faillible là où vit son gestionnaire
++ row  la tâche  le `Monitor`  attendre la tâche sous son superviseur
+
+% 1 1 0 01d1537675720ad011ec2d0e056c4b7e
+
+@ 0 5 0 191b65bd47c0580c07fbba5b2ee1b959
++ La garantie va plus loin que ne le pourrait la discipline : la paresse, les fermetures
++ et la concurrence sont exactement les fonctionnalités qui mettent en échec le
++ raisonnement à l'œil sur les durées de vie, parce qu'elles détachent le *moment* où le
++ code s'exécute de l'*endroit* où il a été écrit. Le contrôle des captures les rattache
++ — la portée de la capacité voyage dans le type, si bien qu'un échappement est
++ impossible à écrire plutôt que déconseillé.
+
+@ 0 1 0 0dc12f9e6600044719df5f8af9b17362
++ ## Contrôle de séparation
+
+@ 0 3 0 01184c8f50c5d9cf1ace3d0d488420f0
++ Le contrôle des captures répond à la question « cette valeur peut-elle survivre à
++ cette portée ? ». Son compagnon, le contrôle de *séparation*, répond à une seconde
++ question : « deux références à cette valeur peuvent-elles exister en même temps ? »
+
+@ 0 4 0 0ae04412547ba63b1fd8876408ff1bc5
++ Certaines ressources peuvent être partagées sans danger, d'autres non. Un `Stream` du
++ noyau de flux expose une fenêtre mutable sur un tampon sans le copier, ce qui rend le
++ noyau rapide — et qui n'est correct que si un seul consommateur le lit. Deux alias
++ consommeraient chacun des octets que l'autre attendait.
+
+@ 0 1 0 0d917dacbaf7005b0284eb6e3a0a1a34
++ Un `Stream` est donc une capacité *exclusive*, et en créer un alias ne compile pas :
+
+% 2 1 0 03dbbd8d142b264208ad27062ec63eae
+
+% 3 1 0 17f56a3760c0f035139f76c515bd4ae4
+
+% 4 1 0 1797f361dd0c472213a40fcb922c11ce
+
+% 0 1 0 100c9b81efd376d50bcec948e06367ec
+
+% 0 1 0 17581f0eb62f6fab167ed01f3bace403
+
+% 1 1 0 0040b825e65d81ee1d42de0d2dde0f3a
+
+@ 0 4 0 01f34c38e9c594f41e5bdafa6a8be6ae
++ Les modules qui en dépendent — le noyau lui-même et ses consommateurs immédiats — sont
++ compilés avec le contrôle de séparation activé, si bien que la garantie est vérifiée
++ plutôt que documentée. C'est ce qui permet de proposer une conception sans copie comme
++ une API ordinaire, plutôt que comme une API non sûre assortie d'un avertissement.
+
+@ 0 1 0 0b1ebd96643c123e07f2f1d9b6637815
++ ## Ce que le compilateur vous demande
+
+@ 0 2 0 136322f37f253c370d1e16a417acb5aa
++ La partie honnête de ce document. Le contrôle des captures n'est pas gratuit, et les
++ coûts retombent sur la personne qui écrit le code, non sur celle qui le lit.
+
+@ 0 5 0 198da3a89387c2fc0477ea250fba8b05
++ **Des annotations apparaissent dans les signatures.** Une méthode qui renvoie une
++ valeur capturant quelque chose le dit — `(Stream[Data] over Credit)^` — et un
++ paramètre qui sera consommé plutôt qu'emprunté est marqué `consume`. C'est une vraie
++ syntaxe qu'un lecteur doit apprendre, et elle se propage : une signature qui renvoie
++ une valeur capturante force les signatures de ses appelants à en tenir compte.
+
+@ 0 4 0 0ad7131d9e4edb420a2eb2c0a72c002d
++ **Les erreurs sont difficiles.** Une violation de capture est signalée en termes
++ d'ensembles de capture et parfois de variables de Skolem, ce qui est assez éloigné de
++ « ce flux survivrait à son fichier ». Lire couramment une telle erreur demande de la
++ pratique, et cette pratique ne se transfère pas depuis le Scala ordinaire.
+
+@ 0 5 0 12ccb5c51e98ae8c110d97f58dc24b82
++ **Il est encore en cours de maturation.** Le contrôle des captures est une
++ fonctionnalité du compilateur de niveau recherche, et Soundness utilise une version
++ dérivée comportant des corrections pas encore intégrées en amont. Certains idiomes qui
++ devraient fonctionner ne fonctionnent pas encore — le portage de zlib du module de
++ compression, riche en alias, est compilé avec le contrôle des captures mais sans le
++ contrôle de séparation, parce que les règles plus strictes rejettent un portage fidèle
++ d'un code pourtant correct.
+
+@ 0 5 0 1be9382b0b8f0aec0f4a99e89a726b1f
++ **Quelques échappatoires subsistent.** `caps.unsafe.unsafeAssumePure` et
++ `@caps.unsafe.untrackedCaptures` existent pour les endroits où le vérificateur ne voit
++ pas encore ce que l'auteur peut prouver. Chaque utilisation est un petit trou dans la
++ garantie, et chacune est commentée avec l'argument qui la justifie — ce qui est la
++ bonne manière de tenir une telle chose, mais ce n'est pas la même chose que de ne pas
++ en avoir besoin.
+
+@ 0 1 0 1d86f26103aa06bf0a7b45e944a43fc1
++ ## Pourquoi cela vaut son coût
+
+@ 0 2 0 0901d0ef0b2fd2a614a9341c21cb878c
++ Parce que l'alternative n'est pas « aucun coût », mais « le même coût, payé plus tard
++ et par quelqu'un d'autre ».
+
+@ 0 6 0 036252fc0d6e7f681f72b07f1287e367
++ Un flux lu après la fermeture de son fichier est un bogue qui se reproduit de manière
++ intermittente, sous charge, avec une trace de pile qui pointe vers la lecture plutôt
++ que vers l'échappement. Une fermeture qui lève une erreur sans gestionnaire dans la
++ portée échoue à un site d'appel éloigné de l'endroit où la fermeture a été créée. Ce
++ sont parmi les classes de bogues les plus difficiles à diagnostiquer, précisément
++ parce que la cause et le symptôme sont séparés par exactement les mécanismes —
++ paresse, fermetures, concurrence — que le contrôle des captures existe pour suivre.
+
+@ 0 2 0 0d150909ae0bb39f0c92374a50a7744d
++ La plainte du compilateur est précoce, locale, et porte sur l'erreur réelle. C'est un
++ meilleur marché qu'il n'y paraît d'abord.
+
+@ 0 3 0 1c65ab24f2b259c805bdaa9acb73d9a2
++ Voir [les portées délimitées](delimited-scopes.md) pour la structure que cela impose,
++ et [les erreurs expressives](expressive-errors.md) pour savoir pourquoi les erreurs
++ doivent être pures — `throw` étant le seul canal que cette analyse ne peut pas voir.

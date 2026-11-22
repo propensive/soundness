@@ -1,0 +1,236 @@
+orthant 2 language
+
+@ 0 1 0 076508918d43b8df18d2953932cd2e95
++ ## Catálogos
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 3 0 1ff568dc104ab36c0092e97b26986dd7
++ Un *catálogo* guarda un valor por cada campo de un tipo. Eso incluye no solo sus campos
++ inmediatos, sino todos los campos a los que se puede llegar a través de ellos, y el propio valor
++ completo. Cada valor lo calcula una única función, aplicada al valor del campo.
+
+@ 0 4 0 1f89196c1030f130155d8cb2d7770be5
++ Las entradas se direccionan por el *camino* del campo, como `villain.name` y no `name`. Un camino
++ se escribe como una selección a través de un proxy del tipo, de modo que un camino que no existe
++ es un error de compilación. Un catálogo se construye una vez y se lee muchas, y dos catálogos
++ sobre el mismo tipo se combinan entrada a entrada.
+
+@ 0 4 0 001e7a504c1c08fc16bb3405f362b015
++ Los catálogos están a medio camino entre las [ópticas](optics.md), que recorren un camino para
++ actualizar lo que hay al final, y los [registros](records.md), cuyos campos proceden de un
++ esquema ajeno al programa. Un catálogo no recorre ningún camino ni lee ningún esquema. Es la
++ estructura de un tipo, aplanada en valores e indexada por los caminos que define el propio tipo.
+
+@ 0 1 0 09ba81f9681f37e40d368ada357817f4
++ ### Sobre un valor para cada campo
+
+@ 0 6 0 0604c93743ae3bdd1b95604a4b9ebd60
++ Algunas cosas pertenecen de forma natural a cada campo: qué anchura debe tener una columna, con
++ qué rótulo se muestra un campo, si se oculta en un log. Un mapa del nombre de un campo a un valor
++ es la respuesta habitual, y tiene dos puntos débiles. Dos campos con el mismo nombre a distintas
++ profundidades, como el `name` de un `hero` y el de un `villain`, chocan, así que la clave tiene
++ que convertirse en un camino. Y un camino escrito como texto no lo comprueba nadie: una clave mal
++ escrita se descubre cuando una búsqueda vuelve vacía.
+
+@ 0 4 0 17da319ddb3f13a80fee273196348fd2
++ Un catálogo toma el tipo como autoridad sobre qué campos existen. Sus entradas se disponen a
++ partir de la estructura del tipo en [tiempo de compilación]. Una búsqueda nombra su entrada a
++ través de un proxy de la misma estructura, de modo que el compilador ve el camino y rechaza uno
++ que el tipo no tiene.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Todo procede del paquete `soundness`. La última importación permite que los ejemplos impriman sus
++ resultados:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 14b4d4ef071c7a8a1419ce76ba9da483
++ ### Construir un catálogo
+
+@ 0 4 0 1211ebcd2443331c1a6d9ba2be8706d0
++ `catalog` toma un valor y una función polimórfica. Aplica la función al valor y a cada campo que
++ contiene, en profundidad. La función debe aceptar un campo de cualquier tipo, así que lo que puede
++ hacer con él es lo que admite cualquier valor. Aquí cada entrada es la forma textual del campo:
+
+% 2 1 0 0052b7407f931f2b12c4d89e8c8cb5ed
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 13c5dbe80c7a43400a12fa801e4bb4cb
+
+% 0 1 0 099437c2d06a90d7054e1f0509d00afa
+
+% 0 1 0 061f6bfd13240a230c99385272e7e967
+
+% 1 1 0 032a79ab39d941800f9e67981109d9f9
+
+% 3 1 0 11762741729c81ef0d738e6ed388c5f7
+
+% 4 1 0 17fd6f6179e0671c05fd7556265bce76
+
+% 5 1 0 1c952e9ded6cb0be1635deb66847e6e4
+
+% 0 1 0 16ed2160a03392dc1490e5906942dfa7
+
+% 1 1 0 1b0a30acbf06779314438026e284a1e9
+
+@ 0 3 0 1f4c93e03d66d9a800c533e4d09ced14
++ Hay siete entradas: el `Play` completo y, a continuación, `hero`, `hero.name`, `hero.age`,
++ `villain`, `villain.name` y `villain.age`. La primera entrada corresponde al valor completo. Tras
++ ella vienen los campos, en el orden en que se declaran, cada uno seguido de sus propios campos.
+
+@ 0 4 0 18d5cd6d53e14b170d01788de7691e30
++ Un `Catalog[Play, Text]` está indexado por la estructura de `Play` y guarda un `Text` en cada
++ posición. El parámetro de tipo de la clave es lo que permite combinar dos catálogos sobre el mismo
++ tipo, y lo que comprueba cada camino con el que se lee uno.
++ [Derivación](derivation.md#what-a-derivation-can-see) explica la función polimórfica.
+
+@ 0 1 0 154fa3174224a47605d5699a3a64fcc0
++ ### Direccionar una entrada
+
+@ 0 3 0 1fc5b0a94d461d7100bc9c37e3d24bff
++ Un catálogo se lee con un camino, escrito como selecciones sobre un proxy del tipo de la clave. El
++ proxy no tiene campos propios. Cada selección se resuelve en tiempo de compilación en el índice de
++ la entrada que nombra:
+
+% 2 1 0 1042ee281453720f1419c719fcb801ff
+
+% 0 1 0 041f7b3571df039511e8e436eb27fbb0
+
+% 0 1 0 031bc27c2968f5a80266008e57d65585
+
+% 0 1 0 0853048b50826dc40e5775721117f4b6
+
+% 1 1 0 06ba6b6425f026181de2ec9e9a9f4592
+
+@ 0 2 0 02e968da277e1e3714e1d28e84a47f38
++ La primera es el rótulo del nombre del villano, la segunda es la entrada del campo `hero`
++ completo, y la tercera es la entrada del `Play` completo.
+
+@ 0 1 0 129c591533b52749198fe9b55ba09817
++ Una selección que el tipo no tiene se señala allí donde se escribe:
+
+% 2 1 0 12f7271f8e0d486a18d1e80563bdf1b5
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1cd058b1115e025d1e974bbf6c9fdaf0
+
+% 1 1 0 1ea1bd30419cd7c91c81914f50b06940
+
+@ 0 3 0 08929f9252379c55100068a4a6a89bba
++ El camino es la posición del campo, no su nombre. Por tanto, `hero.name` y `villain.name` son
++ entradas distintas, y no hay ninguna cadena en ninguna parte que se pueda escribir mal. El proxy
++ se proporciona para el tipo de la clave del catálogo, y el accesor solo tiene que recorrerlo.
+
+@ 0 1 0 0b24b8cd27cb087f152da2bad3f529c1
++ ### Transformar un catálogo
+
+@ 0 2 0 12d55788367889390f7c4e3eae9b2bef
++ `map` aplica una función a cada entrada. Da un catálogo sobre el mismo tipo, con un nuevo tipo de
++ valor, y los mismos caminos direccionan las nuevas entradas:
+
+% 2 1 0 05f30e753c01d3411424274390851f5c
+
+% 0 1 0 19d2f04f4cdc8e6000cea964b04a3cda
+
+% 1 1 0 1fba25ff063b2d0a1b96dc2c1a9cab18
+
+% 3 1 0 0f93a7df2c67b81006c8337ec303498b
+
+% 0 1 0 05ce4c5b42176e441560f6180f452114
+
+% 0 1 0 142e4f0b371a4e231ebc506f6a8a14f3
+
+% 1 1 0 1d9e621d80e067fc1e4b74c2166ad906
+
+@ 0 2 0 1a3bae6625e5f6e81e2e5456f898e98b
++ La estructura la fija el tipo de la clave, así que nada de los caminos cambia con `map`. Un camino
++ que era válido en `labels` es válido en `widths`.
+
+@ 0 1 0 1e98c43c4111a55611129a316dbcc35c
++ ### Combinar catálogos
+
+@ 0 3 0 1e7e60680911008602639e1fa53e1343
++ `braid` une dos catálogos sobre el mismo tipo de clave, entrada a entrada, con una función de
++ ambos valores. El compilador garantiza que los catálogos comparten la clave, de modo que sus
++ entradas se alinean, posición a posición, sin necesidad de emparejar nombres:
+
+% 2 1 0 0ed5171f7744ed6d08bf066ba18beca4
+
+% 0 1 0 1f4867cfdbb24d6b05e963c04f7a9290
+
+% 1 1 0 1904d5277b5900cd0c971b26952adc1f
+
+% 3 1 0 05e0972b87b41ee4164ae323826733c6
+
+% 0 1 0 1058b0db4b19cab21d7cc13b87f8588b
+
+% 1 1 0 17f00a0c835ad49e18a9659fba21a4f7
+
+@ 0 3 0 0de8245acb436f690e7938711224ae19
++ Así se monta una tabla de ajustes para cada campo: un catálogo de rótulos, un catálogo de
++ anchuras y un catálogo de cualquier otra propiedad que importe, construidos por separado y
++ trenzados, cada uno direccionado por los mismos caminos. [Tablas](tables.md) dispone el resultado.
+
+@ 0 1 0 05bf569082792ed91f883935d04d8a18
++ ### Los mismos caminos en la derivación
+
+@ 0 4 0 1912569734911a4901501c453bb9669c
++ El proxy que direcciona un catálogo también nombra un camino donde no interviene ningún catálogo.
++ Un `Specific` asocia caminos de un tipo a instancias de una [clase de tipos]. Una instancia
++ derivada lo consulta al visitar cada campo, de modo que el comportamiento de un campo puede
++ sobrescribirse por su camino y no por su tipo:
+
+% 2 1 0 140470fdf333cf7608c887fbbade5228
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 17d909b654b1e5ea18f5278ba0d8c9ae
+
+% 1 1 0 07e08c7c485bdd1119793ba089c36b18
+
+% 3 1 0 1b5c504d5164405c0f1146d2743b93f3
+
+% 4 1 0 052b2bedd2c122be1eb329eb88c36554
+
+% 5 1 0 1d731639283525371cea167afcba1f34
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 179634d519da1c20029ac62ea3d16bbd
+
+% 0 1 0 02e5c92ac7e6ac46128e48b7ba4daeff
+
+% 0 1 0 0d09e59ba4a3f98c03157c8c7e489065
+
+% 0 1 0 07030796535be9e413349efd0e3adbf9
+
+% 1 1 0 1e9cb5ac295c99e0195344cc905a1433
+
+@ 0 5 0 1377f6a9c10611530fde81da5c0c01a0
++ Cada caso nombra un camino a través de `root`. Su valor debe ser una instancia para el tipo que hay
++ en ese camino, que aquí es `Text`, o la definición no compila, y un camino desconocido se rechaza
++ igualmente. [Ópticas](optics.md) presenta `Specific` junto a las lentes que usan la misma sintaxis
++ para los caminos, y [JSON](json.md#overriding-one-fields-encoder) lo muestra sobrescribiendo el
++ codificador de un campo.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 1 0 0cbcd1919cf685610fb929134f173334
++ - [Internacionalización](internationalization.md) guarda sus traducciones en un catálogo.

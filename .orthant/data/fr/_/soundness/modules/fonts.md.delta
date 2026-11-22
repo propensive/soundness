@@ -1,0 +1,418 @@
+orthant 2 language
+
+@ 0 1 0 196871f51407b50a0fd9ef561730abb3
++ ## Polices de caractères
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 1c7d09a75befebc9117f416470e2a31b
++ Un fichier de police [TrueType ou OpenType](https://en.wikipedia.org/wiki/TrueType) est une
++ donnée binaire dotée d'une structure interne bien définie : des tables de glyphes, de
++ correspondances et de métriques. Il est lu ici directement. Un `Sfnt` se charge depuis n'importe
++ quelle source d'octets, résout les caractères en glyphes, et répond à la question que le code
++ typographique pose le plus souvent : quelle est la largeur de ce texte dans cette police ?
+
+@ 0 3 0 0bf1ab2597d2fa86020b9adf8d700a42
++ Au-dessus du fichier, une `Typeface` nomme une famille de polices. Une `Face` y choisit une
++ graisse, une inclinaison et des fonctionnalités. Une fourniture `Typesettable` garantit qu'un
++ document qui nomme la famille de polices transporte ce dont son support a besoin pour l'afficher.
+
+@ 0 1 0 01ad52292ddeaf761bbf349bc0bb68d0
++ ### Sur les métriques de police
+
+@ 0 4 0 0acdceb5d8d6cbbf0a1515514cfbc2a7
++ Un texte n'a pas de largeur. Un texte *dans une police* en a une. Mettre en page un titre,
++ dimensionner un bouton ou couper une ligne pour l'ajuster à une justification exige chaque fois
++ les chasses qui résident dans le fichier de police, dans des tables indexées par une
++ correspondance des caractères vers les glyphes. Les atteindre exige habituellement une boîte à
++ outils de rendu, importée pour ce qui n'est, au fond, qu'une consultation de tables dans un
++ format binaire documenté.
+
+@ 0 4 0 1db3d07d92174573130a0aa6990e5f43
++ Ici, le format est analysé directement. La police est une valeur, ses tables sont lues
++ paresseusement, et ses métriques sont des appels de méthode ordinaires. Une police analysée à
++ partir de ses tables, avec chaque valeur typée, suit le principe de
++ [sûreté par construction](../../philosophy/safety-by-construction.md) : une police invalide est
++ rejetée à son chargement, et non à sa première utilisation.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Tout provient du package `soundness` :
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1c12ab31bcd37e111a8d347c926cdc5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 1f7a557352339ef9106bd192f0db9b81
++ Les exemples de cette page lisent des fichiers de police qui ne sont pas fournis avec la
++ documentation ; ils sont donc compilés mais pas exécutés.
+
+@ 0 1 0 184bebeda3a1278a1e94e2cdf9cd45cc
++ ### Charger une police
+
+@ 0 4 0 1d447e8afa7172e415e6293805f248b5
++ `Sfnt` lit une police depuis n'importe quelle source d'octets diffusable en flux : un fichier,
++ une ressource du classpath, une URL. Le nom est celui du format lui-même. Un *sfnt* est le
++ conteneur de tables que partagent TrueType et OpenType. Les deux spécialisations se distinguent
++ par leurs tables. Une table `CFF ` signifie des contours PostScript, et la police est alors une
++ `Opentype`. Sinon, c'est une `Truetype` :
+
+% 2 1 0 14fcdf6e41a644610c80dcff1bb4eb69
+
+% 3 1 0 06dded3e3f2ce79d1b962f4f0ed2cb94
+
+% 4 1 0 096fe8d1ec905e071e4a658fbba52dc8
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 064ac20a457139d007dfe72d72eb75b1
+
+% 0 1 0 0d79efca8497f91c00657e452fec8cf6
+
+% 0 1 0 0a2bdff8d0b9d9c20cb179eff936cf2a
+
+% 0 1 0 0d55aa34b09aefd21380c9b578ecaced
+
+% 1 1 0 0a01288dae5353f4163630af4585cde3
+
+@ 0 3 0 0e1202442ae777d5142aa3cbc72466bc
++ Construire une police à partir d'octets ne peut pas échouer. Les tables sont analysées
++ paresseusement ; un fichier qui n'est pas une police, ou auquel manque une table dont une
++ opération a besoin, lève donc une `Font.Error` qui nomme le problème lors de la première
++ lecture de cette table.
+
+@ 0 1 0 170b6f5a2f39a0b3107a054817024305
++ ### Mesurer un texte
+
+@ 0 2 0 1921db5e070a2da11a71b12fb828d022
++ `width` mesure un texte dans la police. Elle renvoie une [quantité](quantities.md) en `em`,
++ l'unité relative à la police qui, multipliée par la taille en points, donne une largeur physique :
+
+% 2 1 0 1b0107e7d9d7dac30bbb0727e69e66b4
+
+% 0 1 0 033d21904ea611cc1a5f7d5c7562497a
+
+% 1 1 0 178ed71cac591daf109a88465cb99225
+
+@ 0 2 0 16bfd56ca35cc33209f0e38dcd108c76
++ Comme le résultat est une quantité typée, une largeur en em ne peut être confondue avec une
++ mesure en pixels ou en points. La mettre à l'échelle d'une taille de police est une
++ arithmétique explicite.
+
+@ 0 1 0 13b9ea5cb448bc6b094a8fee3bd30e77
++ ### Glyphes
+
+@ 0 2 0 06945081ca7edf3601d9938f306b1613
++ Les questions sur les caractères passent par la mécanique des glyphes. Un caractère se résout
++ en son glyphe, et chaque glyphe porte sa chasse et son approche gauche, dans les unités de
++ conception de la police :
+
+% 2 1 0 04ce6a901eb6a984115dedf6a05b2244
+
+% 0 1 0 083fe5ee2fb372721b2bef84e86fbef0
+
+% 1 1 0 00213769db73c92310ab69977237f8f3
+
+@ 0 1 0 0b8ed80a318b5c51083c75179d2eef82
++ Chaque table que lit la police est une méthode du même nom, analysée à sa première utilisation :
+
+% 2 1 0 09da1ee7c45ed4d30aeb03d5f58fa2d9
+
+@ 0 12 0 083eb089b91ffa6712e178056dfbc2dd
++ column  Table
++ column  Méthode
++ column  Donne
++ row  `head`  `head`  les unités par em, qui relient les unités de conception aux em ; la boîte englobante des glyphes
++ row  `hhea`  `hhea`  les hauteurs de jambage supérieur et inférieur dont la mise en page verticale a besoin
++ row  `hmtx`  `hmtx`  la chasse et l'approche gauche de chaque glyphe
++ row  `cmap`  `cmap`  la correspondance des caractères vers les glyphes
++ row  `maxp`  `maxp`  le nombre de glyphes
++ row  `name`  `name`  les noms et descriptions, sous forme de `fontName` et `familyName`
++ row  `post`  `post`  l'angle d'italique, la position et l'épaisseur du soulignement, la chasse fixe
++ row  `OS/2`  `os2`  les classes de graisse et de largeur, les métriques typographiques, les droits d'incorporation
++ row  `fvar`  `fvar`  les axes d'une police variable, ou `Unset`
+
+% 1 1 0 097657c6cda2ce4c1ea79a59b9c4e404
+
+@ 0 4 0 0858defb23198510128d5191edf0d918
++ La correspondance des caractères vers les glyphes couvre les formats de sous-table `cmap` que
++ les polices utilisent réellement, et la meilleure sous-table est choisie selon une préférence
++ Unicode, et non en prenant la première présente. Un caractère que la police n'associe à rien
++ donne le glyphe manquant, et non une erreur ou un mauvais glyphe.
+
+@ 0 1 0 0ea57ce7cfe5057409beccf90225baf5
++ ### Noms et métadonnées
+
+@ 0 3 0 19b307d0db07a28510cb2d6681911a33
++ Une police se décrit elle-même dans ses tables `name`, `post` et `OS/2`, et ces descriptions
++ sont lues directement plutôt que devinées. Les noms sont des valeurs [optionnelles][optionnel],
++ puisqu'une police n'est pas tenue de les enregistrer :
+
+% 2 1 0 1cdf499e775738301064073102c77ad8
+
+% 0 1 0 1d600548f39d108e047f0fc30f5df4ff
+
+% 0 1 0 0aaccda59c7502cc149f9f4041d7fbca
+
+% 1 1 0 011050679ccddfbe1e0928d1bcd29ede
+
+@ 0 3 0 0100e449390a55851597acc60b99ca1e
++ Les enregistrements sont décodés depuis les encodages UTF-16BE et Macintosh, l'anglais Windows
++ étant préféré là où plusieurs sont présents. La graisse, les métriques typographiques, la
++ hauteur d'x et les droits d'incorporation proviennent de `OS/2`, ce qui est exactement ce dont
++ a besoin la construction d'un descripteur de police [PDF](pdf.md).
+
+@ 0 1 0 13be68ab1d9be39206559812d056a8e2
++ ### Familles et styles de police
+
+@ 0 5 0 170cdb13a80c86df0c6ab5f9c6a40c0e
++ Un fichier de police est une chose. La famille de polices qu'un document *nomme* en est une
++ autre. `Typeface["Inter"]` est une famille désignée par son nom, qui est aussi son type,
++ `Typeface of "Inter"`, de sorte qu'une famille se distingue d'une autre à la compilation du
++ code. Une `Face` dit comment la famille doit être composée : sa graisse, son inclinaison et sa
++ largeur, ses positions sur les autres axes d'une police variable, et les fonctionnalités de
++ mise en page à activer ou désactiver. Elle ne dit rien de la provenance de la police :
+
+% 2 1 0 16eee1665012387a16fdd5c898b973f5
+
+% 0 1 0 0781f4d0e601de1e1bcc03a6fa7309ba
+
+% 0 1 0 00754da6a1d62e9c1a444c8588884403
+
+% 0 1 0 19c490d72ab4977a11f16daead909587
+
+% 0 1 0 07d2ba9e5b268bf8072b62ba4889754c
+
+% 1 1 0 030b195fd7b810331a9a2fa42b711b88
+
+@ 0 1 0 04b627a91f0bea4506d575bd83e435ff
++ Un style a ces attributs :
+
+% 2 1 0 15c7829aae99e3c8100f40990e5a13a1
+
+@ 0 8 0 15df2ecb1aa949a4036d08063704a643
++ column  Attribut
++ column  Valeurs
++ column  Défini avec
++ row  graisse  1–1000, l'échelle commune à CSS et OpenType, de `Weight.Thin` à `Weight.Black`  `thin` … `black`, `weighing(weight)`
++ row  inclinaison  `Upright`, `Italic`, ou `Oblique` selon un angle  `upright`, `italic`, `oblique(angle)`, `slanted(slant)`
++ row  largeur  un pourcentage de la largeur normale  `condensed`, `expanded`, `stretched(stretch)`
++ row  variation  une position sur un axe d'une police variable  `varying(axis, value)`
++ row  fonctionnalités  des fonctionnalités de mise en page OpenType, activées ou non  `enabling`, `disabling`, `featuring`
+
+% 1 1 0 1ca8eef12fe1d5ad12f6975c4432414b
+
+@ 0 5 0 14ba444919346e500cc07e5139d36236
++ Les axes enregistrés de graisse, de largeur et d'italique d'une police variable se règlent par
++ les trois premiers, de sorte qu'on demande de la même façon une police statique et une police
++ variable. Une `Variation` sert à la taille optique et aux axes propres d'une police. Les
++ fonctionnalités sont nommées par leurs tags OpenType. Les jeux stylistiques,
++ `Face.Feature.stylisticSet(n)`, et les variantes de caractères,
++ `Face.Feature.characterVariant(n)`, sont numérotés :
+
+% 2 1 0 1a09f17bbfb130e3091ebf5039cf72ca
+
+@ 0 19 0 180d270409d4217807d2111a4d0955e1
++ column  Fonctionnalité
++ column  Tag
++ row  `Ligatures`  `liga`
++ row  `DiscretionaryLigatures`  `dlig`
++ row  `HistoricalLigatures`  `hlig`
++ row  `ContextualAlternates`  `calt`
++ row  `Kerning`  `kern`
++ row  `OldstyleNumerals`  `onum`
++ row  `LiningNumerals`  `lnum`
++ row  `TabularNumerals`  `tnum`
++ row  `ProportionalNumerals`  `pnum`
++ row  `SlashedZero`  `zero`
++ row  `Fractions`  `frac`
++ row  `Ordinals`  `ordn`
++ row  `SmallCapitals`  `smcp`
++ row  `CapitalSmallCapitals`  `c2sc`
++ row  `Swashes`  `swsh`
++ row  `Superscript`  `sups`
++ row  `Subscript`  `subs`
+
+% 1 1 0 07961875a2a9c6530f742e499a16f22a
+
+@ 0 1 0 063aadf845bfda501f9d231bed212a13
++ ### Fournir une famille de polices
+
+@ 0 4 0 05f751115e67bd770666cd634a3399cb
++ Nommer une famille de polices ne la rend pas disponible là où le document est affiché. Un
++ navigateur dépourvu de la police se replie sur une autre, et un lecteur PDF en substitue une.
++ Une fourniture comble cet écart. C'est une instance de `Typesettable` pour la famille *dans un
++ support*. Elle dit comment ce support obtient la police, et quels styles il peut alors composer.
++ Elle est déclarée une seule fois, comme [given] :
+
+% 2 1 0 13cf1c35ba1d64dd1844d273e72af06e
+
+% 3 1 0 04a3c4b0a590f556090abb6510b1fa46
+
+% 4 1 0 1662daf228b3bf87148c6e31fd322d04
+
+% 0 1 0 0d22a197a63cd0b7167652635f1b106b
+
+% 0 1 0 0e1275326cb60c280165229d583bf6ea
+
+% 0 1 0 1312d3f61315f1391b512e957a956203
+
+% 0 1 0 0ea4f736d80a946402c79fff150d45cc
+
+% 1 1 0 0ef4992aca79be9500513da5ab5aa803
+
+@ 0 6 0 1136259f8a78123301b64c6e9fa590dd
++ Un fichier de police peut être transporté dans n'importe quel document ; une fourniture
++ incorporée est donc `in Medium`, le support de tous les supports. Sa couverture, c'est-à-dire
++ les graisses, inclinaisons et largeurs qu'elle offre, les axes d'une police variable, et les
++ fonctionnalités qu'implémentent ses tables `GSUB` et `GPOS`, est lue dans le fichier. Plusieurs
++ fichiers, comme le romain, le gras et l'italique, forment une seule fourniture dont la
++ couverture est leur union. Les autres sortes de fourniture appartiennent à un seul support, et
++ sont déclarées par lui, chacune avec la couverture qu'on lui déclare, puisqu'il n'y a aucun
++ fichier à lire :
+
+% 2 1 0 1e722494e29bd55d0e9850e80d704b19
+
+@ 0 10 0 1895fd161442933e04fec62152ac92dd
++ column  Fourniture
++ column  Support
++ column  La police provient de
++ column  Couverture
++ row  `Typesettable.embedded(files)`  `Medium`  les fichiers, transportés dans le document  lue dans les fichiers
++ row  `Web.linked(url, coverage)`  `Web`  un fichier de police à une URL  déclarée
++ row  `Web.imported(url, coverage)`  `Web`  une feuille de style qui déclare la famille  déclarée
++ row  `Web.local(coverage)`  `Web`  une police que le lecteur a installée  déclarée, ou inconnue
++ row  les familles génériques CSS  `Web`  le navigateur, sans déclaration  tous les styles
++ row  les quatorze polices standard de PDF  `Print`  le lecteur, sans déclaration  les styles que définit le standard
+
+% 1 1 0 14b02fabf539539c0729e5ac52de9a60
+
+@ 0 1 0 0d9b04873cd1112d0637e18bb170fbdd
++ ### Polices
+
+@ 0 6 0 166c7375d39c73b100cbc41eb494fc8a
++ Une `Font` est un style associé à la fourniture dans la portée pour sa famille, dans un
++ support : une `Font in Web` pour un navigateur, ou une `Font in Print` pour un PDF. C'est la
++ seule forme sous laquelle un moteur de rendu accepte une police. Elle ne peut être créée que là
++ où une fourniture est dans la portée ; un document ne peut donc pas nommer une famille qu'il ne
++ transporte pas. Et elle ne peut être créée que pour un style que la fourniture couvre. Demander
++ de l'italique à un fichier uniquement romain, ou des chiffres elzéviriens à une police sans
++ `onum`, est une `Font.Error` lors de l'association, et non un rendu synthétisé ou silencieusement
++ ignoré :
+
+% 2 1 0 07c0ae2491c31f3e12eae3a0619e37a3
+
+% 3 1 0 0e663ab9a6a3e2b811bbf7336a98fa5c
+
+% 4 1 0 07dc43d2d5ebec4001cb70df98f215f7
+
+% 0 1 0 11420e2d9610430e0b974703e2a09910
+
+% 0 1 0 19fc43e3d8184df012a078602dd4b0b0
+
+% 1 1 0 09c8b09b327284f514e2fca5f7e8f650
+
+@ 0 2 0 1ab724ce3b4f53c00fe14904bc055d65
++ Là où le type attendu nomme déjà le support, comme le fait le champ `font` d'une figure,
++ `Font(face)` suffit. Le document fait alors le reste :
+
+% 2 1 0 00caa8a6a785628a01ad2c3671f97544
+
+@ 0 5 0 1e44f105d9a4d1e51b75f995afba61a7
++ column  Document
++ column  Ce qu'il fait de ses polices
++ row  SVG  écrit des règles `@font-face` pour son lettrage dans ses définitions
++ row  feuille de style  reçoit les règles par `Css.fontFace`
++ row  PDF  incorpore le fichier, ou nomme l'une de ses quatorze polices standard
+
+% 1 1 0 18be5e42853a462506d6e74fdd620acc
+
+@ 0 1 0 1c0755760617a13b1cba487a8c502042
++ ### Vérifier à la compilation du code
+
+@ 0 2 0 02dfa0ef019f355207489b72704f01aa
++ Un fichier de police du classpath peut être vérifié avant toute exécution. Une fourniture créée
++ à partir d'une ressource du classpath conserve le chemin de la ressource comme son `Locus` :
+
+% 2 1 0 1b5dcc4eea9aed971bbc9f224523dfa9
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 050fdae1e4ca202e108898a80eabc864
+
+% 0 1 0 0d6947ede1c4862615f0a5bb3a0870d0
+
+% 1 1 0 1365c3dc533fc1291ddd53f18bfceed5
+
+@ 0 8 0 03212bdebf43229711e5c8e302b63721
++ Un style, quant à lui, enregistre dans son type ce que le code a demandé. `inter.bold.italic` a
++ la graisse `700` et l'inclinaison `"italic"` comme membres de type, et
++ `.enabling(Face.Feature.OldstyleNumerals)` ajoute `"onum"` aux fonctionnalités dont il a besoin.
++ Quand une `Font` est créée à partir d'un tel style et d'une telle fourniture, le compilateur lit
++ le fichier, en dérive la couverture exactement comme le ferait l'exécution, et refuse
++ l'association avec le même message si le fichier ne peut pas composer le style : une graisse
++ qu'il n'a pas, un italique qui lui manque, une fonctionnalité que ses tables n'implémentent pas.
++ L'erreur est alors une erreur de compilation, qui nomme le fichier et la demande, et non un
++ repli dans le navigateur.
+
+@ 0 2 0 03676d3a8be6b6180eeabb22aed45d58
++ Seul ce qui est connu statiquement est vérifié statiquement. Tout le reste laisse la
++ vérification à l'association à l'exécution, qui a toujours lieu :
+
+% 2 1 0 119aa96ccd8073031312939b3f997fc3
+
+@ 0 6 0 16a25886faf29ad607e9bbf50ccffc09
++ column  Vérifié à la compilation du code
++ column  Vérifié seulement à l'exécution
++ row  une graisse nommée, `inter.bold`  une graisse calculée, `inter.weighing(weight)`
++ row  une fonctionnalité nommée, `Face.Feature.OldstyleNumerals`  une fonctionnalité issue d'un tag, `Face.Feature(t"ss03")`
++ row  un style dont le type enregistre sa demande  un style annoté simplement `Face of "Inter"`
++ row  une fourniture issue d'un fichier du classpath  toute autre fourniture
+
+% 1 1 0 05d7bda3cc4501c2089cf797e1801ec4
+
+@ 0 1 0 06542912d221f15b07ee5d9b67b05042
++ ### Sous-ensembles
+
+@ 0 2 0 18cba5cb55b35ae51cac789842ec6517
++ Incorporer une police entière pour rendre une page de texte est un gaspillage, et souvent non
++ autorisé. `subset` construit une nouvelle police TrueType qui ne contient que les glyphes dont
++ a besoin un ensemble donné de caractères :
+
+% 2 1 0 151a6cab32dd27fc16aa9ea93470bd62
+
+% 0 1 0 0c030e5fd7e8f69e0e6cf05bf6dd27f5
+
+% 1 1 0 1e0288c008943af31acb9fb8d48da7cc
+
+@ 0 4 0 0cf204982328682a0d64ba4d7cb47438
++ Extraire un sous-ensemble ne consiste pas simplement à garder les glyphes vers lesquels un texte
++ se résout. Un glyphe composite est assemblé à partir d'autres glyphes ; l'ensemble retenu est
++ donc la fermeture transitive par composition. Elle est calculée à partir des contours des
++ glyphes eux-mêmes, de sorte qu'un caractère accentué conserve les composants dont il est dessiné.
+
+@ 0 5 0 1efba5096bc0255c0e04f220aaad98d4
++ Les glyphes ne sont pas non plus renumérotés. Les glyphes écartés conservent leur numéro, et
++ gardent des contours vides plutôt que d'être supprimés ; la correspondance des caractères, les
++ métriques et chaque référence d'un glyphe à un autre restent donc valides sans réécriture.
++ Toutes les autres tables sont reprises telles quelles. Le résultat est un fichier de police
++ complet et valide, sommes de contrôle comprises, prêt à être incorporé dans un [PDF](pdf.md).
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 6 0 1314f48040956fac1182a96b96409f90
++ - [PDF](pdf.md) incorpore les polices et leurs sous-ensembles dans les documents.
++ - [SVG](svg.md) et [CSS](css.md) transportent les règles `@font-face` d'une fourniture.
++ - [Quantités](quantities.md) décrit l'`em` dans lequel le texte est mesuré.
++ - [Classpath](classpath.md) décrit les ressources depuis lesquelles une police est chargée.
++ - [Texte](text.md) décrit le texte dont la largeur est mesurée.
++ - [Graphiques](charts.md) mesurent leurs étiquettes avec les métriques d'une police.

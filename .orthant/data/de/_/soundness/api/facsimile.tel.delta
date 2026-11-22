@@ -1,0 +1,2264 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1954ec5cbcb9353201bf8bfae011212c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12728080ef384eb31296ccf7ce0d6f79
++ info   PDF-Dokumente, als typisierte Werte gelesen und an Ort und Stelle bearbeitet, direkt gegen das Format implementiert
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 15ed656b7d4c16430fbff6ae5e5736ae
++     _Facsimile_ liest und schreibt [PDF](https://en.wikipedia.org/wiki/PDF)-Dokumente, ohne
++     an eine externe PDF-Bibliothek zu delegieren. Die Objektsyntax eines Dokuments (COS), seine
++     Querverweistabellen, seine Stream-Filter und seine Verschlüsselung sind alle hier
++     implementiert, und was ein Programm sieht, ist typisiert: Seiten und ihre Geometrie als
++     `Page`-Werte mit Boxen in Punkt, der darauf gesetzte Text als `Text` oder positionierte
++     `TextRun`s, Schriften als `Pdf.Font`, das Informationsverzeichnis als `Pdf.Info`,
++     Lesezeichen als Baum von `Bookmark`s, Links und Notizen als `Annotation`s und eingebettete
++     Dateien als `Pdf.Attachment`s.
+
+@ 0 8 0 19820030076fbf2f145a3eaadf27e50c
++     PDF hat zwei Schichten. Die äußere Schicht ist COS, eine kleine Objektsprache aus Zahlen,
++     Namen, Strings, Arrays, Dictionarys und Streams, adressiert durch indirekte Referenzen und
++     indiziert durch eine Querverweistabelle am Ende der Datei; sie ist das Enum `Cos`. Die
++     innere Schicht ist ein Content-Stream: eine Stackmaschine, deren Operatoren Glyphen und
++     Pfade auf einer Seite platzieren; sie ist das Enum `Pdf.Operator`. Beide sind in freier
++     Wildbahn unnachsichtig, daher wird ein Dokument nie als wohlgeformt angenommen: Eine
++     Querverweistabelle, die lügt, wird durch Durchsuchen der Datei nach Objekten neu
++     aufgebaut, ein Stream, dessen deklarierte Länge falsch ist, wird bis zu seinem
++     `endstream` vermessen, und ein fehlerhaftes Datum fehlt einfach.
+
+@ 0 7 0 1930a90b4367e5aa1b2a1a0a0492e420
++     Ein Dokument wird innerhalb eines Geltungsbereichs **geöffnet**. Das Öffnen mappt die
++     Datei und liest ihren Header und ihre Querverweiskette (und prüft bei einer
++     verschlüsselten Datei das Passwort), und der Block läuft mit einem `Pdf` als Kontextwert,
++     erreicht über den Accessor `pdf` auf Paketebene. Das `Pdf` ist eine Capability, die durch
++     Capture-Checking auf den Block beschränkt ist, ebenso wie alles, was noch über sie
++     aufgelöst wird (eine `Page`, ein `Attachment`, eine `Spring` über den Nutzdaten eines
++     Streams), während alles Dekodierte — `Data`, `Cos`-Werte, `Text`, `Pdf.Info`, `Pdf.Font`,
++     `Bookmark`s — rein ist und frei entweicht:
+
+% 2 1 0 1b24394b2179e5820f389bfeb8fe7f3f
+
+% 3 1 0 10b8819165486e0105ab0e2d1dd99e76
+
+% 4 1 0 150fff676a6eba02021517ea22191144
+
+% 5 1 0 116c4e18872547b21d494cb1b4e0115d
+
+% 0 1 0 11940fc83390cb92044b6066111370d3
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 2 1 0 0fc8040959fded99158fb97d0d26fe74
+
+% 3 1 0 1dabf5f2aa44c43a0e27f4866f9d7488
+
+% 4 1 0 16b0cb17ea26800b092ad60bd6a3852e
+
+% 0 1 0 08bff537256137901faf6c245233f87a
+
+% 0 1 0 09bdf88126d0507516408a3a6c2d6cb8
+
+% 0 1 0 0442d134d2ad7a4f1f672ffe7ce030e3
+
+% 0 1 0 1d51078e6cc692e21a837cc138c3fdb1
+
+% 0 1 0 0fe1df472822373e048d8be78de898ac
+
+% 0 1 0 1db6f000ad4d3dda0dd3fffee608a1e8
+
+% 0 1 0 0d71a9b9d327edec1d738d6183014931
+
+% 1 1 0 0b9d3fd54ab9a0fb1c3478177f190197
+
+@ 0 8 0 12bab23a84fa56f80c4b530b98b2c663
++     Das Öffnen mit `Read & Write` liefert ein Handle, auf dem die **Bearbeitungs**erweiterungen
++     — `setContents`, `appendPage`, `removePage`, `setInfo`, `setBookmarks`, `addLink`,
++     `embedFont`, `useFont` und die niedrigstufigen `set`, `allocate`, `newStream` und `free` —
++     verfügbar sind, und die Bearbeitungen werden beim Schließen des Geltungsbereichs als
++     *inkrementelles Update* festgeschrieben: Die ursprünglichen Bytes bleiben, wo sie waren,
++     und die geänderten Objekte werden mit einem neuen Querverweisabschnitt angehängt, sodass
++     ein Leser, der nur die ursprüngliche Datei versteht, weiterhin ein gültiges Dokument sieht.
++     `create[Pdf]` erstellt ein neues Dokument mit derselben Oberfläche und schreibt es
++     vollständig, in eine temporäre Geschwisterdatei, die atomar auf das Ziel verschoben wird.
+
+@ 0 8 0 14d0c114ca31c5ee0fc086685ccee70f
++     Stream-Nutzdaten werden durch die Filterkette dekodiert, die der Stream deklariert —
++     `FlateDecode`, `LZWDecode`, `ASCII85Decode`, `ASCIIHexDecode`, `RunLengthDecode` sowie die
++     PNG- und TIFF-Prädiktoren —, eager mit `Pdf#payload` oder lazy, als Stream von Chunks, mit
++     `Pdf#spring`. Die Bildcodecs (`DCTDecode`, `JPXDecode`, `CCITTFaxDecode`, `JBIG2Decode`)
++     werden nicht dekodiert: Eine Kette hält beim ersten von ihnen an, und die Nutzdaten werden
++     als noch kodiertes Bild zurückgegeben. Der Standard-Security-Handler wird unterstützt, mit
++     RC4, AES-128 und AES-256; ein Passwort ist ein `Password`, daher muss ein `Cloak` (etwa
++     `cloaks.heapCloak`) im Geltungsbereich sein, um eine verschlüsselte Datei zu öffnen.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     Die Bibliothek hat zwei Source-Sets:
+
+@ 0 8 0 0c65e4814392972f19b4115e5ad21213
++     - `facsimile.core` — alles über ein Dokument im Speicher: `Pdf`, `Page`, `Cos`,
++       `Pdf.Operator`, `Pdf.Font`, `Print` und die vierzehn Standardschriften, die
++       Bearbeitungserweiterungen und `winAnsi`. Es kompiliert für die JVM und Scala Native
++       (nicht für Scala.js, da die Verschlüsselungsschicht die JCE verwendet).
++     - `facsimile.file` — die Brücke zum Dateisystem und zu Bytes: `PdfFile`, der Lokator, aus
++       dem ein Dokument geöffnet wird, und die Givens `pdfPathOpenable`, `pdfDataOpenable` und
++       `pdfCreatable`, mit denen ein Pfad oder `Data` als `Pdf` geöffnet und ein Pfad als `Pdf`
++       erstellt werden kann. Nur JVM, da Dokumente auf der Festplatte über ein
++       speichergemapptes `Ram` gelesen werden.
+
+@ 0 7 0 1a2246614f471e3f017d877335185f0c
++     Alles wird in das Umbrella `soundness` exportiert. `PdfFile(…).open(…)` benötigt keinen
++     Import (sein `Openable` liegt im Begleitobjekt von `PdfFile`), aber `path.open[Pdf]()`,
++     `data.open[Pdf]()` und `path.create[Pdf]()` werden über Givens auf oberster Ebene
++     aufgelöst, die per Name importiert werden (`import soundness.pdfCreatable`), weil
++     `import soundness.*` keine Givens importiert. Innerhalb eines Geltungsbereichs ist `pdf`
++     das kontextuelle Dokument; ein mit `doc ?=>` geöffneter Block benennt es stattdessen, was
++     die Bearbeitungserweiterungen benötigen, da sie auf dem Handle mit Schreibberechtigung
++     typisiert sind.
+
+% 0 1 0 12a36b408a35db3f0afb0f5e7390d34b
+
+% 0 1 0 123087e29370a0a318d713fb0dcc0a5c
+
+% 0 1 0 1a2891b22803084304bf5a44b0ad3726
+
+% 0 1 0 1c166263c749f2d21d2a3ac0fbd2f8b8
+
+% 0 1 0 173a953e46e6477b06ad34df44a6840e
+
+@ 0 1 0 1edbf3a378cd38e417258af2faec9cea
++ entry .Pdf   ein geöffnetes PDF-Dokument: die Capability mit Geltungsbereich, über die jedes Lesen und Bearbeiten aufgelöst wird
+
+% 1 1 0 1e3be3b505476b4709dc26b396ac849c
+
+@ 0 6 0 1547f024ba27bbcd06f45b73ecde788f
++       Ein `Pdf` ist ein geöffnetes Dokument: Es besitzt die Bytequelle und einen Cache
++       aufgelöster Objekte, und die Nutzdaten eines Streams werden nie anders als über es
++       dereferenziert. Es existiert nur innerhalb eines Geltungsbereichs, der von
++       `PdfFile#open`, `path.open[Pdf]()`, `data.open[Pdf]()` oder `path.create[Pdf]()` geöffnet
++       wird, wo es der Kontextwert ist, den der Accessor `pdf` auf Paketebene zurückgibt, und es
++       ist eine Capability: Der Compiler beschränkt es und jeden Wert, der noch über es
++       aufgelöst wird, auf den Geltungsbereich.
+
+@ 0 7 0 130af20dc089522e0e6d0e448df4a3a5
++       Lesen ist in jedem Modus verfügbar. Der Seitenbaum wird zu einer ordinal indizierten
++       Folge geglättet (`#page`, `#pageCount`), wobei die vererbbaren Attribute — Ressourcen,
++       Media-Box, Crop-Box, Drehung — entlang jedes Pfads nach unten gesammelt werden. Das
++       Informationsverzeichnis ist `#info`, benannte Ziele sind `#destinations`, die Gliederung
++       `#bookmarks`, eingebettete Dateien `#attachments`, Seitenbeschriftungen `#pageLabel` und
++       XMP-Metadaten `#xmp`. Unterhalb der typisierten Oberfläche löst `#apply` jedes Objekt
++       nach Nummer auf, `#resolved` folgt einer Referenz, und `#payload` und `#spring`
++       dekodieren einen Stream.
+
+% 2 1 0 166fdb2d7b68cee00579703a060c92d2
+
+% 3 1 0 0b9b7bbe6e187c100897fd87938d6c1b
+
+% 4 1 0 16fd253a19883f111a505dbced65d886
+
+% 0 1 0 0ccd4ea8e6d3bf0b193712af94be6a92
+
+% 1 1 0 069b5729ff24b94c18f7a59ed6c47570
+
+% 0 1 0 0cf6873fef46145c1eb4c704000a1519
+
+% 1 1 0 12fd95a0cd207dc317b684180c61ea84
+
+@ 0 7 0 1ceb2920c45608d20859000b303531a4
++       Bearbeiten ist eine Erweiterungsoberfläche auf `(Pdf & Granting[Grant.Write])^`, dem
++       Handle, das ein mit `Read & Write` (oder `create[Pdf]`) geöffneter Geltungsbereich
++       bereitstellt: `set`, `allocate`, `newStream`, `free`, `setContents`, `setRotation`,
++       `setBox`, `setPageEntry`, `setInfo`, `embedFont`, `useFont`, `addResource`,
++       `setAnnotations`, `addLink`, `setBookmarks`, `appendPage` und `removePage`. Bearbeitungen
++       sammeln sich in einem Overlay, das jedes Lesen zuerst befragt, sodass eine Änderung für
++       `#apply` und `#page` sofort sichtbar ist, und werden beim Schließen des
++       Geltungsbereichs als inkrementelles Update geschrieben.
+
+@ 0 9 0 0b8b572cbd0694901331ec688f99678f
++       Robustheit ist eingebaut, nicht zuschaltbar. Der Header `%PDF-` wird überall im ersten
++       Kibibyte akzeptiert. Die Querverweiskette — klassische Tabellen und Querverweis-Streams,
++       über `/Prev`, die neuesten zuerst — wird strikt durchlaufen, und wenn ein Teil davon
++       fehlt oder beschädigt ist, wird stattdessen die ganze Datei nach `N G obj`-Markierungen
++       durchsucht, wobei die jüngste Kopie jedes Objekts gewinnt und der Trailer aus einem
++       erhaltenen `trailer`-Dictionary oder aus dem Katalog wiederhergestellt wird. Ein
++       einzelner Offset, der nicht das Objekt enthält, das er zu enthalten behauptet, fällt auf
++       die gescannte Position zurück. Ein so neu aufgebautes Dokument liest sich wie jedes
++       andere, kann aber nicht an Ort und Stelle bearbeitet werden, da ein inkrementelles Update
++       keinen Abschnitt hat, an den es sich anhängen könnte: Es beschreibbar zu öffnen, löst
++       `Pdf.Error` mit `WriteUnsupported` aus.
+
+@ 0 1 0 0a58e823b4afe8010ab80b0793cec9ff
++       Jede Methode, die fehlschlagen kann, nimmt eine `Tactic[Pdf.Error]`.
+
+% 1 1 0 0223c289ee57b0b705127b239da0bc63
+
+% 0 1 0 110f7f14cd811ea110ee4a4d4d4db8c0
+
+% 0 1 0 1d180895aa73181b19fc18cb9468ed05
+
+% 1 1 0 03cd3279529852491ccf02abce714db8
+
+@ 0 1 0 1f70886283305f7517e0bfacc5df42a6
++   entry .Version   die Version aus dem Header `%PDF-M.m`, als `major` und `minor`
+
+% 1 1 0 14d44cb1e3eb07b80582be003fd6a735
+
+@ 0 6 0 1c2d28c56de8cbd31b3fc1cf35aab857
++         Eine Case-Klasse aus zwei `Int`s. Der Header wird gelesen, bevor irgendetwas anderem
++         vertraut wird, und eine Datei ohne ihn löst `Pdf.Error` mit `NotPdf` aus. Ein mit
++         `create[Pdf]` erstelltes Dokument hat die Version 1.7.
++     entry #major   die Hauptversion, `1` für jedes Dokument, das ISO 32000-1 abdeckt
++     entry #minor   die Nebenversion
++   entry .Attachment   eine eingebettete Datei aus dem Namensbaum `/EmbeddedFiles` des Dokuments
+
+% 1 1 0 19451ea486cc094b0cd17f386e9e7896
+
+@ 0 4 0 0314bb097371ee6506741229020ee261
++         Die Metadaten eines Anhangs — `#name`, `#filename`, `#description`, `#mediaType` —
++         werden materialisiert, wenn `Pdf#attachments` ihn auflistet, aber seine `#data` werden
++         weiterhin über das Dokument gelesen, daher ist ein `Attachment` auf den
++         Geltungsbereich beschränkt, in dem es aufgelistet wurde: `data` innerhalb des
++         Geltungsbereichs aufrufen und das Ergebnis behalten.
+
+% 2 1 0 027af22b730b668e19aa71b1a7b180db
+
+% 3 1 0 0e8540cd83a6bd93003e4970c4bdcc2f
+
+% 4 1 0 0581291516b8eb811a08477dc629b686
+
+% 0 1 0 14face0626ee78880b510d760a5c4b78
+
+% 1 1 0 0492f74e7daae4761fce851969d384e5
+
+% 0 1 0 0788c7cd853132960f9085d939566ee5
+
+% 0 1 0 17afadcfc705818d06bb39a1e1f4027e
+
+% 1 1 0 0404a80f13e974db0acdd6acdbd92cfd
+
+@ 0 9 0 1b9f35961e99663306f7f455255679d3
++     entry #name   der Schlüssel, den der Anhang im Namensbaum hat
++     entry #filename   der Name der Dateispezifikation, aus `/UF` oder `/F`, falls angegeben
++     entry #description   der `/Desc`-Text, falls angegeben
++     entry #mediaType   der `/Subtype` des eingebetteten Streams, der Medientyp, als der die Datei deklariert wurde
++     entry #data   die Bytes der eingebetteten Datei, durch ihre Filter dekodiert
++         Liest den eingebetteten Stream über das Dokument und funktioniert daher nur innerhalb
++         des Geltungsbereichs, in dem der Anhang aufgelistet wurde. Ein Anhang, dessen
++         Dateispezifikation keinen eingebetteten Stream hat, löst `Pdf.Error` mit
++         `MissingEntry(EF)` aus.
++   entry .Error   ausgelöst, wenn ein Dokument nicht gelesen, dekodiert, entschlüsselt oder geschrieben werden kann
+
+% 1 1 0 1f152f9cceefc86218b1a6e00b8b57f8
+
+@ 0 5 0 1b7ae8706ffea6b404bb5bc8bf30ce45
++         Fehler `↯/s.110.1`: _the PDF could not be read because `reason`_, wobei der Grund ein
++         `Pdf.Error.Reason` ist, der seine eigene Nummer und Meldung trägt. Er wird über eine
++         `Tactic[Pdf.Error]` ausgelöst, die jede Lese- und Bearbeitungsmethode nimmt, und er ist
++         der einzige Fehler, den die Bibliothek auslöst: Dateisystemfehler beim Öffnen oder
++         Festschreiben eines Dokuments werden als `Io` in ihn eingegliedert.
+
+% 2 1 0 1734c18d5451fbf91ad6563e8ff102fb
+
+% 3 1 0 1c7e27f7db0b9d7c1b058e8b46aeb366
+
+% 0 1 0 08806c1373a8241d11fb7150bd003c38
+
+% 0 1 0 09917af1550d944409c46d59c1305a5d
+
+% 0 1 0 04d4ca94581c3d6519560eac64cdcceb
+
+% 0 1 0 160feb77a38752af0ab6b10f9840a815
+
+% 1 1 0 1c9167376f59a0091b9dbb7c20ed72f6
+
+@ 0 1 0 05f86b3c2f1531460298e6be0a74a7aa
++         Die Gründe, nach Nummer:
+
+@ 0 4 0 020f4e29df75a0741e00f74292741ca4
++         1. `NotPdf` — _the file does not begin with a PDF header_: kein `%PDF-` im ersten
++             Kibibyte.
++         2. `Truncated` — _the PDF file ended unexpectedly_: Der Parser ist innerhalb eines
++             Objekts über das Ende der Datei hinausgelaufen.
+
+% 0 1 0 18f6cad7e7361bee09b1c263edbb1b69
+
+% 0 1 0 0719bdf58d8d30bb04054143ef3ebc36
+
+% 0 1 0 01ef7ff023600bdf186fa1760a755249
+
+% 0 1 0 0960b1fd6fea23e00424e57a99087251
+
+@ 0 2 0 079b8662496780c210e65d51d162f466
++             ein Syntaxfehler in einem Objekt, der benennt, was der Parser erwartete (ein
++             Objekt, einen Namensschlüssel, das Schlüsselwort `endobj`, ein Stream-Dictionary).
+
+% 0 1 0 01018cd21503d2c500c33f8814000aff
+
+@ 0 2 0 1df5ca40739e8ae11eee9112fe6b6051
++             invalid_: Ein Objekt, das laut Querverweis-Stream komprimiert ist, konnte in seinem
++             Container nicht gefunden werden.
+
+% 0 1 0 180d8a2fa97c30740a2bcf7e715c0e14
+
+% 0 1 0 1eca3af6564c4dbf09c5602439f0dbb2
+
+@ 0 2 0 0403b075b49191ed0db0a4db284cdf12
++         8. `MissingEntry(key)` — _the required dictionary entry `key` was absent_: kein
++             `/Root`, kein `/Pages`, eine Seite ohne `/MediaBox`, ein Anhang ohne `/EF`.
+
+% 0 1 0 06db524313b2588100565a5dd72e7cb6
+
+@ 0 2 0 0ee48d527072a81719e101161f96762e
++             ein `/Filter`, der weder ein Name noch ein Array von Namen ist, `/DecodeParms`, das
++             kein Dictionary ist, ein `/Pages`-Eintrag, der keine Referenz ist.
+
+% 0 1 0 0c1a79db1b0fbd26041567f2e95910d9
+
+% 0 1 0 1a6054541a807e2b1e5392ae186be141
+
+@ 0 2 0 0c30f7a354fe71691e5f4b424472c4c8
++             filter_: Der benannte Codec (`FlateDecode`, `LZWDecode`, `ASCII85Decode`,
++             `ASCIIHexDecode`) hat seine Eingabe abgewiesen.
+
+% 0 1 0 174ef7f7b9d719f91242d7fe60421a34
+
+@ 0 2 0 0374c12570739de1098821e48c68d52c
++             operands_: ein bekannter Operator mit falscher Anzahl oder Art von Operanden (ein
++             unbekannter Operator ist `Pdf.Operator.Unrecognized`, kein Fehler).
+
+% 0 1 0 127cecf66e251488021a864ed3867f47
+
+@ 0 4 0 14eb5d62f877169704f1a3a98022cf22
++             supported_: ein anderer Security-Handler als `Standard` oder ein `/Encrypt`, das
++             kein Dictionary ist.
++         14. `BadPassword` — _the password was incorrect_: beim Öffnen des Dokuments ausgelöst,
++             nicht beim ersten entschlüsselten String.
+
+% 0 1 0 1b6e6eb261be115e0c0eb59bc401ff58
+
+@ 0 3 0 0da659638319fe2401a53e013bac4b57
++         16. `Io(detail)` — _an I/O operation failed: `detail`_: Der Pfad ist ungültig, die
++             Datei konnte nicht geöffnet oder geschrieben werden, oder die Datei existiert
++             bereits und `CreateFlag.Replace` wurde nicht angegeben.
+
+% 0 1 0 17d9ba38191548bd12b835e4a2edfb93
+
+@ 0 6 0 103205fabd353bf80c668d0534cf21a2
++             on-disk file with a valid cross-reference table can be edited in place)_:
++             ausgelöst, wenn speicherinterne `Data` mit `Write` geöffnet werden oder wenn ein
++             Schreib-Geltungsbereich über einer Datei, deren Querverweistabelle durch Scannen
++             neu aufgebaut werden musste, mit Bearbeitungen geschlossen wird.
++         18. `MissingPage(page)` — _the document has no page `N`_: `Pdf#page` hinter der
++             letzten Seite, mit der einsbasierten Nummer.
++     entry .Reason   warum ein Dokument nicht gelesen werden konnte, als nummerierter, kommunizierbarer Fall
+
+% 1 1 0 13ab584fcfcf95ee05fb4475000b073c
+
+@ 0 6 0 054736455fe669771fc4f96e09e38d2e
++           Ein Enum, dessen Fälle auf der Seite `Pdf.Error` aufgeführt sind, jeder mit einer
++           `number` und einer Meldung; `communicable` stellt die Meldung dar.
++       entry #number   die Nummer des Grundes, 1 bis 18, die Unternummer des Fehlers `↯/s.110.1`
++     entry .communicable   stellt jeden Grund als die Meldung in seinem Eintrag unter `Pdf.Error` dar
++     entry #reason   welchen `Pdf.Error.Reason` dieser Fehler trägt
++   entry .Font   eine Schrift, wie die Ressourcen einer Seite sie deklarieren, mit ihren Breiten und ihrer Dekodierung von Codes
+
+% 1 1 0 0453a396ab871b9819184c9419bb7800
+
+@ 0 7 0 1a590bf7bccb5a0a06269821c5925075
++         Ein `Pdf.Font` ist ein reiner, vollständig materialisierter Wert — er überdauert den
++         Geltungsbereich —, von `Page#fonts` aus den `/Font`-Ressourcen einer Seite gelesen,
++         geschlüsselt nach dem Ressourcennamen, auf den ein `SetFont`-Operator (`Tf`) verweist.
++         Er ist ein Enum der Schrift-Subtypen aus ISO 32000-2 §9: `Type1`, `MmType1`,
++         `TrueType`, `Type3` (der auch seine `matrix` trägt, die Transformation vom Glyphenraum
++         in den Textraum) und `Type0` (eine zusammengesetzte Schrift, deren Codes zwei Bytes
++         lang sind). Alle fünf teilen `#baseFont`, `#standard`, `#embedded`, `#descriptor`,
++         `#width`, `#codes` und `#decode`.
+
+% 2 1 0 1316e451933afc9c005abcb408290c82
+
+% 3 1 0 17242da6b888c6e30ec7f2b01489894f
+
+% 4 1 0 034c4e9e011a331c1b15ff82a02e7dff
+
+% 0 1 0 193a3d883127740d15f9d952f9158ad6
+
+% 1 1 0 10a9957d62a129b90f059acd3ac8f1e1
+
+% 0 1 0 07210d0c18ddc42909850affeec1faaf
+
+% 1 1 0 059f6c2f600b1fa30bc81a59e7041196
+
+@ 0 8 0 18075d3d3a12fc8e0695275000937513
++         Das Dekodieren eines Show-Text-Operanden zu Unicode verwendet die beste Information, die
++         die Datei bietet: zuerst die eigene `/ToUnicode`-Map der Schrift, dann ihre
++         `/Differences`, dann ihre deklarierte Basiskodierung (`WinAnsiEncoding`,
++         `MacRomanEncoding` oder `StandardEncoding`) und schließlich, für einen Einzelbyte-Code
++         im druckbaren ASCII-Bereich, den Code selbst. Ein Code, den keine Regel abdeckt, wird
++         als U+FFFD dekodiert. Breiten stammen aus dem `/Widths`-Array (oder `/W` für eine
++         zusammengesetzte Schrift), bei einer Type-3-Schrift durch `/FontMatrix` skaliert, und
++         fallen auf die eingebauten Metriken der vierzehn Standardschriften zurück, wenn die
++         Schrift eine von ihnen ist und keine deklariert.
+
+% 1 1 0 12b722f25e6b08250cb4fc9b1a99dfd5
+
+% 0 1 0 1123f98a50abb0720a4413bfb36d9beb
+
+@ 0 1 0 1e7427b0f49f2cac18009a71476278c7
++     entry .Standard   die vierzehn Standardschriften, die jeder PDF-Reader hat, jede mit ihrem PostScript-Namen
+
+% 1 1 0 1be76c417ff2fa660df9fafe74f4d2ac
+
+% 0 1 0 0f2628a01aae7da912bf56b1cf4fe593
+
+% 0 1 0 0dc80d448310ab6e046ea1b70dda34e6
+
+@ 0 25 0 122cdd1b97f527d001334dd3de89098d
++           `CourierBold`, `CourierOblique`, `CourierBoldOblique`, `Symbol` und `ZapfDingbats`
++           (ISO 32000-2 §9.6.2.2). Eine Schrift, deren `/BaseFont` einer dieser Namen oder einer
++           der metrikkompatiblen Aliase ist (`ArialMT` für Helvetica, `TimesNewRomanPSMT` für
++           Times, `CourierNewPSMT` für Courier, mit ihren fetten und kursiven Varianten), mit
++           oder ohne ein Teilmengen-Tag wie `ABCDEF+`, wird als `#standard` erkannt, und ihre
++           eingebauten Breiten werden verwendet, wenn das Dictionary keine deklariert.
++           `Print.standard` bildet einen `Font in Print` auf eine von ihnen ab.
++       entry #baseFont   der PostScript-Name, den ein `/BaseFont`-Eintrag dieser Schrift gibt, etwa `Helvetica-Bold`
++     entry #baseFont   der `/BaseFont`-Name der Schrift
++     entry #standard   welche der vierzehn Standardschriften dies ist, oder `Unset` für jede andere Schrift
++     entry #embedded   das eingebettete Schriftprogramm als `Sfnt`, falls es eines gibt
++         Das `/FontFile2` (oder ein `/FontFile3` vom Subtyp `OpenType`) des Deskriptors der
++         Schrift, als phoenicia-`Sfnt` geparst: ein `Truetype` für quadratische Umrisse, ein
++         `Opentype` für CFF. Bei einer zusammengesetzten Schrift das Programm des Nachfahren.
++     entry #descriptor   das rohe `/FontDescriptor`-Dictionary oder eine leere Map
++     entry #width   der Vorschub eines Codes, in Tausendstel eines Gevierts
++         Aus dem `/Widths`-Array für eine einfache Schrift, um `/FirstChar` versetzt; aus `/W`
++         (oder `/DW`, standardmäßig 1000) für eine zusammengesetzte Schrift; aus den eingebauten
++         Metriken einer Standardschrift, wenn das Dictionary keine Breite für den Code hat; und
++         sonst `/MissingWidth` oder 500, wenn auch das fehlt.
++     entry #codes   die Zeichencodes eines Show-Text-Operanden: Bytes oder Big-Endian-Paare für eine zusammengesetzte Schrift
++     entry #decode   ein Show-Text-Operand als Unicode-Text, so gut die Schrift es erlaubt
++         Bildet jeden Code durch `/ToUnicode`, `/Differences`, die Basiskodierung und
++         schließlich druckbares ASCII ab, in dieser Reihenfolge, und schreibt U+FFFD für einen
++         Code, den keines abdeckt. Dies ist die Dekodierung, die `Page#text` und `Page#runs`
++         verwenden.
+
+% 2 1 0 14d8979453c366f70e671b8f44caf3f7
+
+% 3 1 0 11eec88d81e302340ce45547285a69f5
+
+% 4 1 0 0f4d452e19b9f1580eeae8ae0d8ec192
+
+% 0 1 0 1bdf1d93f7d3a97915cf6ac02c5928e2
+
+% 1 1 0 0f53f0f515b2b32c0acd295b7776bebf
+
+% 0 1 0 0cca5687dcfdab9412e287a7eb69beda
+
+% 1 1 0 12d9ac1a22de824d0acde9389c664197
+
+@ 0 1 0 1a55840a895abdec1412bff2273c05b6
++   entry .Info   das Informationsverzeichnis des Dokuments, vollständig materialisiert
+
+% 1 1 0 1d39468bca6a00b110bfb1f0db3fb20d
+
+@ 0 1 0 10b6ae7c732233b90d2da44095195f57
++         Die acht Standardeinträge des `/Info`-Dictionarys (ISO 32000-2 §14.3.3), jeder
+
+% 0 1 0 1515930c0cdd7f58107739804805a742
+
+@ 0 2 0 0072453d5e9999cd0b52af8193fc712e
++         `#created` und `#modified`. `Pdf#info` liest es, und `setInfo` schreibt eines zurück,
++         wobei fehlende Felder weggelassen werden. Ein `Info` ist ein reiner Wert und entweicht
++         dem Geltungsbereich.
+
+% 2 1 0 11525ad3811257f81ab8cfdbc6c071f5
+
+% 3 1 0 0b86bac968ae1c7111635fce4f6514a3
+
+% 4 1 0 0f5766403e5f3f3711f1e9d9c63a203c
+
+% 0 1 0 1edba912cebe1ffa1b091f917c8b18a1
+
+% 0 1 0 090b8c825ce99ec11e296ea1c1f75201
+
+% 1 1 0 10a575d2f3be464e090b40797f2596c0
+
+% 0 1 0 182285f818fbaa33091e52d3a5001710
+
+% 1 1 0 1459870ee943ae990b8af35e77f25143
+
+@ 0 4 0 10bcfeb756961b2416640f2652121a84
++         Datumsangaben werden aus der PDF-Form `D:YYYYMMDDHHmmSS±HH'mm'`, in der alles nach dem
++         Jahr optional ist, in ein `Info.Timing` gelesen; ein fehlerhaftes Datum wird als `Unset`
++         gelesen, nie als Fehler, da reale Dateien voller leicht falscher Datumsangaben sind.
++     entry .Timing   ein Datum aus dem Informationsverzeichnis: ein Zeitstempel und, falls angegeben, sein UTC-Offset
+
+% 1 1 0 02ec804d4b4744c518777ab40307496b
+
+@ 0 4 0 117522e6dab032571f3210c74be3470f
++           PDF-Datumsangaben tragen eine optionale Zone, daher paart ein `Timing` einen
++           `Timestamp` mit einem `Optional[Duration]`-Offset zu UTC, statt einen Zeitpunkt zu
++           behaupten. Es mit `setInfo` zurückzuschreiben, erzeugt die `D:`-Form, mit dem Offset
++           als `±HH'mm'`, wenn er vorhanden ist, und nichts, wenn nicht.
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 1 1 0 06b2b3821b59f61500c87df20de0e769
+
+% 0 1 0 0e894c0cf029bc940b3d6f069aaae086
+
+% 0 1 0 180dc6fc817ba0fc1e5ec8e960f8b052
+
+% 0 1 0 084d7c0384eb86f00b5e7e660a57253b
+
+% 0 1 0 1c160f7fe2a53f3a18e64b9cab693f1a
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 11 0 08bf918cc3dee4ea0aadef61b041ec1b
++       entry #timestamp   Datum und Uhrzeit, wie geschrieben
++       entry #offset   der Offset zu UTC oder `Unset`, wenn das Datum keinen angibt
++     entry #title   der `/Title`
++     entry #author   der `/Author`
++     entry #subject   das `/Subject`
++     entry #keywords   die `/Keywords`
++     entry #creator   der `/Creator`, die Anwendung, die das ursprüngliche Dokument erstellt hat
++     entry #producer   der `/Producer`, die Anwendung, die es in PDF konvertiert hat
++     entry #created   das `/CreationDate`, falls vorhanden und wohlgeformt
++     entry #modified   das `/ModDate`, falls vorhanden und wohlgeformt
++   entry .Matrix   eine PDF-Transformationsmatrix: die sechs belegten Einträge, als `Affine[Double]` aus mosquito
+
+% 1 1 0 1bd03b269ae651a2182fc8135d8b7ece
+
+@ 0 6 0 08e483ad3a9a05ba1e2f9c14a4a88aca
++         `Pdf.Matrix` ist der Typalias `Affine[Double]`, gemeinsam mit SVG. PDF dokumentiert das
++         transponierte Zeilenvektor-Layout — `a b 0 / c d 0 / e f 1` —, in dem `this * that`
++         zuerst durch `this` transformiert; diese Komposition ist das `andThen` von `Affine`, und
++         die sechs Zahlen erscheinen in beiden Konventionen in derselben Reihenfolge, sodass eine
++         aus einem `Concat`- oder `SetTextMatrix`-Operator gelesene oder in einen geschriebene
++         Matrix unverändert das Übertragungsformat ist.
+
+% 2 1 0 13aa13e9482298cf13d8d0d1685d939c
+
+% 3 1 0 10d4cd88c1fdc6f70a2895e641cee06c
+
+% 0 1 0 1676e977f8bc8e2f12deec9256db1546
+
+% 0 1 0 157ebc820db46fac10a6229c84015c1d
+
+% 1 1 0 0e3f4b9147b7995b141db5db4b40fdaa
+
+@ 0 3 0 00ba2a4561b5c88f03d1b2cdf334b74d
++     entry .Identity   die Einheitsmatrix, `1 0 0 1 0 0`
++     entry .apply   eine Matrix aus ihren sechs Einträgen, `a b c d e f`, in der Reihenfolge, in der ein Content-Stream sie schreibt
++   entry .Operator   ein Content-Stream-Operator mit typisierten Operanden
+
+% 1 1 0 1c9d74d7a31ddcaf0d24b055896476e1
+
+@ 0 6 0 06a1fb25006a474e0f755a487b086ae7
++         Der Content-Stream einer Seite ist eine Folge von Operatoren (ISO 32000-2 §8–9, §14.6),
++         die `Page#operators` als `List[Pdf.Operator]` liest und aus der `setContents` und
++         `appendPage` zurückschreiben. Koordinaten bleiben `Double`: Sie sind Werte im
++         Benutzerraum, nur unter der aktuellen Transformationsmatrix bedeutsam.
++         Show-Text-Operanden bleiben kodierte `Data`, da ihre Abbildung auf Text die Schrift
++         benötigt (`winAnsi` kodiert Text für eine einfache WinAnsi-Schrift). Das Enum ist
++         symmetrisch genug, um exakt zurückserialisiert zu werden.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 1d1d6d304a038c94003c7ee98766cefc
++           label Ein Textobjekt beginnen und eine Schrift wählen
+
+% 1 1 0 19ae12f78b0457b619e2b0d5f1799214
+
+% 2 1 0 0faa774fcc36a978088a39cd87b228af
+
+% 4 1 0 1983352d50c95f44078ebf6e3671f22e
+
+% 5 1 0 13e1e8f4dc8449aa094385b5988d991f
+
+% 0 1 0 18db30d2a80825540d5a5f382f7c1572
+
+% 1 1 0 114165cce5d3a8a00ed12d8cac3059b5
+
+@ 0 1 0 15a45eb29b32c92705bc11cf42c169c6
++           label Den Text positionieren und anzeigen
+
+% 1 1 0 043d25fc1963cfd80280f83a5b1a7908
+
+% 2 1 0 1aa29b52376194d81045f62dca3e597f
+
+% 4 1 0 0ff2d94cca17754a1d3bdc7d43616765
+
+% 5 1 0 152c91b54350211719bf85c287286f6b
+
+% 1 1 0 08bd97487fbce27005a83033deb351aa
+
+% 2 1 0 144dd63c8eb2a90202c49bd909bb0a5c
+
+% 3 1 0 0747307c8933af4702cac04e8f11cb41
+
+% 4 1 0 1c0a54b032fddbb7115d977baec89380
+
+% 5 1 0 19b04ab2a489a3ac0e41475176e7fc35
+
+@ 0 1 0 09d64e315371e0c301f2815a8d1c468a
++           label Ein Rechteck darunter füllen, in einem gesicherten Grafikzustand
+
+% 1 1 0 0f67a22b818d08f403786131c77120bc
+
+% 2 1 0 15691d4dd089ae921e0909a29d5a0970
+
+% 4 1 0 035920230d7230690c5be285f6f30827
+
+% 5 1 0 14a5074ccbedec6617adb1c7753a877e
+
+% 6 1 0 1a7636ae2cc928b70fbc0e8aa3a418a2
+
+% 7 1 0 000ee4d11ce3135d0d1e2ca5a1eb4bdb
+
+% 8 1 0 1a4985d4f8e420bf072942e375909bf1
+
+% 9 1 0 0efd83a407e898180d5a0929f0f9cbc2
+
+% 10 1 0 0d5ba8f97af13efe1f83d4348aadd15a
+
+% 11 1 0 09047c18a22e2711097b931530844cae
+
+% 12 1 0 1a3d64b05ccfa486199892f25cdf4197
+
+% 13 1 0 1960b07001c05fe90eb64e2927c991fa
+
+% 4 1 0 1d0267814f5e40871e15f51e81e05687
+
+% 5 1 0 128fd87eab77fe7517b5b3bec911678c
+
+@ 0 1 0 17495f0e536ded821d3d29be9250688d
++           label Ein in den Ressourcen der Seite benanntes Bild-XObject zeichnen
+
+% 1 1 0 140eb9bf55d374af1c6c31147065dbf5
+
+% 2 1 0 199420fa1d7a7f0501cc6a136535d63c
+
+% 4 1 0 0ed7662a1947fa30098f23bdea8e718e
+
+% 5 1 0 01e54a3f59f9b5ac1c3e913a3ee27abe
+
+% 6 1 0 1393d259a7632e401c582f56119ded59
+
+% 7 1 0 07aa6f1044a8b4490c0bec2a68f94cc5
+
+% 8 1 0 056cebfdf3aa7ab61a214038ae0143a9
+
+% 9 1 0 1aff4779b7d41f840186ba22efe2fffa
+
+% 10 1 0 1762f39f9999e3301373bd5229c9a3d4
+
+% 11 1 0 11a7879709aa174903d254b0d671936b
+
+% 12 1 0 04101287ea576c9d1e9117c0005b4743
+
+% 13 1 0 0830652dcc32a8870e7509b1e1218ec7
+
+% 0 1 0 02047b8178065ecf1eb53c9fc9f651d1
+
+% 0 1 0 0f5abdfd59582bcb1a788e67ffd83c08
+
+% 0 1 0 01cf81297e3a7e080e0bc396e0dc9180
+
+% 0 1 0 175823aad6b192b5171c121a753d2f94
+
+% 0 1 0 16234a95748a0db700de7dbf412ad799
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 1 0 1b3695ff04ad912d06b7eb168a6acc68
++         Die Fälle, nach dem Operator, den jeder liest und schreibt:
+
+@ 0 1 0 1ddedfda0658fcf601ae8ebbbb29a406
++         - **Grafikzustand** (§8.4.4): `Save` (`q`), `Restore` (`Q`), `Concat(matrix)`
+
+% 0 1 0 18d27bf547aa5376013df4f348abb3f3
+
+% 0 1 0 1e23cd3e0877175f15f0389e1439f04a
+
+% 0 1 0 1e37aa3d4d77d0521d07b0424caf63d4
+
+% 0 1 0 0636c083926d9acf0f667adba9a5ff73
+
+@ 0 1 0 1c0fe8d3b3baa03412fad6f0ed996afa
++         - **Pfadkonstruktion und -zeichnung** (§8.5): `Move(x, y)` (`m`), `Line(x, y)` (`l`),
+
+% 0 1 0 179ba1b78b6484230855514b20229923
+
+% 0 1 0 1b6f1b0dc39735a20a33ecc48521f1c4
+
+% 0 1 0 11901c4cef14547a07bc0054b434029b
+
+% 0 1 0 1544229d600ac20d158647a80c44c1b3
+
+% 0 1 0 17beb308987d461f124551979c72598b
+
+% 0 1 0 19d7519df4ac13cd087778739aeb985e
+
+% 0 1 0 0251788eba725eef06ee2785a5080ecd
+
+% 0 1 0 1295f26515cd71e819fc89804481130e
+
+% 0 1 0 1b5e1f8a4322f62a0fc6305335edfbfd
+
+% 0 1 0 1d65555f5f3d85281bc9629bf0aeb5cf
+
+@ 0 4 0 032d48ad7aa6f27703d77263a8345395
++           (`Tj`), `ShowTexts(elements)` (`TJ`, dessen Elemente `Data`-Strings und
++           `Double`-Korrekturen sind), `NextLineShow(string)` (`'`), `NextLineShowSpaced(word,
++           char, string)` (`"`).
++         - **Farbe** (§8.6.8): `StrokeSpace(name)` (`CS`), `FillSpace(name)` (`cs`),
+
+% 0 1 0 05889c74520afa2310a0faaa599f1b94
+
+% 0 1 0 1b4da962554378e00a250cbbfb42d305
+
+@ 0 1 0 0f5ab5cc852240d412b2e37b97f99cb7
++           (`RG`, ein `Srgb`), `FillRgb(color)` (`rg`), `StrokeCmyk(color)` (`K`, ein `Cmyk`),
+
+% 0 1 0 0466e3ff38e0c54d0ed67638b643eec0
+
+@ 0 1 0 0ba58f6297fb8a0c15cfdb6bfddc504d
++         - **XObjects, Inline-Bilder und Schattierung** (§8.8–8.10): `Draw(name)` (`Do`),
+
+% 0 1 0 1afd9fba3d0e483805a9fe1a5b9f2a4f
+
+@ 0 1 0 0eeff30ecaca1ab51485952bea5b0c04
++         - **Markierter Inhalt und Kompatibilität** (§14.6, §7.8.2): `MarkPoint(tag,
+
+% 0 1 0 192acca9889b3b2403eee69c759a1589
+
+% 0 1 0 0240cef752f101c71d18241b8224a11f
+
+@ 0 6 0 082d981192103fc21fe63d280875eada
++         - **Glyphenmetriken für Type 3** (§9.6.4): `GlyphWidth(wx, wy)` (`d0`),
++           `GlyphMetrics(wx, wy, llx, lly, urx, ury)` (`d1`).
++         - `Unrecognized(operator, operands)`: jeder nicht aufgeführte Operator, mit seinen
++           Operanden beibehalten, statt fehlzuschlagen, wie es ein `BX`/`EX`-Kompatibilitätsabschnitt
++           verlangt. Ein *bekannter* Operator mit fehlerhaften Operanden löst `Pdf.Error` mit
++           `MalformedOperator` aus.
+
+% 1 1 0 03314e6fdf1e278208f9166d3c993e37
+
+% 0 1 0 1ea6f2ef7146b3e70bc1367823bb33d2
+
+@ 0 8 0 1a7ea092d09d482e0068f5b6061d1da1
++     entry .LineCap   die Form der Enden einer gezogenen Linie: `Butt`, `Round` oder `Square`
++         Der Operand von `SetLineCap` (`J`), nach Ordinalzahl: 0, 1 und 2, wie das Format sie
++         nummeriert.
++     entry .LineJoin   die Form der Ecken eines gezogenen Pfads: `Miter`, `Round` oder `Bevel`
++         Der Operand von `SetLineJoin` (`j`), nach Ordinalzahl.
++     entry .FillRule   welche Bereiche ein Pfad umschließt: `NonZero`-Windung oder `EvenOdd`
++         Getragen von `Fill`, `FillStroke`, `CloseFillStroke` und `Clip`, wo das Format für die
++         beiden Regeln zwei Operatoren hat (`f` und `f*`, `W` und `W*`).
++     entry .TextRenderMode   wie Glyphen gezeichnet werden: füllen, ziehen, beides, unsichtbar, jeweils mit oder ohne Clipping
+
+% 0 1 0 0fbc2b7ef9efac731eeb462c5be6f5e6
+
+@ 0 4 0 146662a821c6fcb41fa37c3768062b72
++         `FillStrokeClip` und `Clip`, der Operand von `SetRenderMode` (`Tr`) nach Ordinalzahl,
++         0 bis 7. Text im Modus `Invisible` — die übliche Art, eine OCR-Schicht über eine
++         gescannte Seite zu legen — wird von `Page#text` trotzdem extrahiert.
++   entry .Rect   ein Rechteck im Standard-Benutzerraum, als vier typsichere Längen in Punkt
+
+% 1 1 0 0594fc5f49ead97d1856b46bc5dd5393
+
+@ 0 6 0 1125eef7bfc952570f952bdb3f738350
++         Ein PDF-Punkt ist genau 1/72 Zoll, was die Einheit `Points` aus quantitative ist, daher
++         ist eine Seitenbox, das Rechteck eines Links oder die Ansicht eines Ziels ein `Pdf.Rect`
++         aus vier `Quantity[Points[1]]`s: `#left`, `#bottom`, `#right`, `#top`. Ein aus einer
++         Datei gelesenes Rechteck wird auf unten links und oben rechts normalisiert, gleich in
++         welcher Reihenfolge die Datei seine Ecken angab, und mit der `/UserUnit` der Seite
++         skaliert; eines, das in eine Datei geschrieben wird, wird als
++         `[left bottom right top]` geschrieben.
+
+% 2 1 0 0c4ff3236db2b3b50faa2f5e733029a1
+
+% 3 1 0 18a436fbe1731dfd0569473b1912554a
+
+% 0 1 0 0f3d8023bf34238811b1c5cb55be56ad
+
+% 0 1 0 1faf3c44952edf6a188d24d4fe021692
+
+% 0 1 0 0445b55e5a469f0003102335d0759262
+
+% 0 1 0 0255e38643ccc94b0e78cc2491703b4a
+
+% 0 1 0 184c55335d48c0950bf719ebe30bbf82
+
+% 1 1 0 0b55b2b6ca8bc0b616c317ba727c7765
+
+@ 0 4 0 1ea6ac722314d79810cf01da63154ac2
++     entry #left   die x-Koordinate der unteren linken Ecke
++     entry #bottom   die y-Koordinate der unteren linken Ecke
++     entry #right   die x-Koordinate der oberen rechten Ecke
++     entry #top   die y-Koordinate der oberen rechten Ecke
+
+% 0 1 0 19d8c41773155dd41f5a21b191201b8c
+
+% 0 1 0 1565566b4e3488fc080f5cee1132eed6
+
+@ 0 20 0 08ef7d3c0dd154d813204c431e5f7318
++   entry #version   die Version aus dem Header `%PDF-`
++   entry #trailer   das Trailer-Dictionary, wie der neueste Querverweisabschnitt es hinterlassen hat
++       Die Einträge des neuesten Trailers, mit den Einträgen älterer Abschnitte darunter:
++       `/Root`, `/Info`, `/ID`, `/Encrypt`, `/Size`. Ein Dokument, dessen Tabelle durch Scannen
++       neu aufgebaut wurde, hat den Trailer aus einem erhaltenen `trailer`-Dictionary
++       wiederhergestellt oder aus dem beim Scannen gefundenen Katalog gebildet.
++   entry #encrypted   ob der Trailer einen `/Encrypt`-Eintrag hat
++       Ein verschlüsseltes Dokument ist bereits entsperrt, wenn der Block des
++       Geltungsbereichs läuft — das leere Passwort wird versucht, wenn keines angegeben ist,
++       was eine nur zur Einschränkung von Berechtigungen verschlüsselte Datei abdeckt —, daher
++       sagt dies, was die Datei ist, nicht, ob noch etwas gesperrt ist.
++   entry #catalog   der Dokumentkatalog, das `/Root`-Dictionary
++       Löst `Pdf.Error` mit `MissingEntry(Root)` aus, wenn der Trailer kein `/Root` hat oder es
++       kein Dictionary ist.
++   entry #page   die Seite an einer Ordinalposition im geglätteten Seitenbaum
++       `pdf.page(Prim)` ist die erste Seite. Der Seitenbaum wird in Tiefensuche in
++       Lesereihenfolge durchlaufen, wobei die vererbbaren Attribute — `/Resources`,
++       `/MediaBox`, `/CropBox` und `/Rotate` — gesammelt werden, sodass eine `Page` für sie
++       Auskunft gibt, ob sie am Blatt oder an einem Vorfahren gesetzt wurden. Ein Baum mit
++       einem Zyklus löst `Pdf.Error` mit `CircularPageTree` aus, und eine Ordinalzahl hinter der
++       letzten Seite löst `MissingPage` mit ihrer einsbasierten Nummer aus.
+
+@ 0 2 0 16d05081437e5a200beda0723bbdad00
++       Die `Page` erfasst das Dokument und kann den Geltungsbereich nicht verlassen; ihre
++       Boxen, Texte, Schriften und Annotationen können es.
+
+% 2 1 0 17e3ca5b02ec53930e4686ee4d97a206
+
+% 3 1 0 1d89737030e7b05b05d130dd1ece7b17
+
+% 4 1 0 1c35dd510073214607da8bd79058d182
+
+% 0 1 0 086d3c87ea823cd9127e01e768dd37d5
+
+% 1 1 0 169107fd7fa25f7a0677698089ba4e99
+
+% 2 1 0 1a685ddae0459c4907d33f75cd84607f
+
+% 3 1 0 0917370732a9ec1514a6bbbde76b158d
+
+@ 0 5 0 165437c195bcf8fb075aa8d5bc952fd3
++   entry #pageCount   wie viele Seiten der geglättete Seitenbaum hat
++   entry #destinations   die benannten Ziele des Dokuments, nach Name
++       Liest sowohl den modernen Namensbaum `/Names` → `/Dests` als auch das ältere
++       `/Dests`-Dictionary im Katalog und löst jedes zu einer `Destination` auf, deren Seite als
++       ihre Ordinalzahl in der geglätteten Seitenfolge angegeben ist. Ein Name, dessen Ziel nicht
++       interpretiert werden kann, wird weggelassen.
+
+% 2 1 0 13d40d31123bd24c1b2a417b6e8deb14
+
+% 3 1 0 1d372155dbba8d3519298def01223661
+
+% 4 1 0 1d8d9eed73d44f8c045c01c956b26fd1
+
+% 0 1 0 0b4295b6a5e06ab605b3a3f4c56e8c24
+
+% 1 1 0 07aed022f332648f1d7cca0f13d37bff
+
+% 0 1 0 1c36a25e4c72881415f024e4764e8953
+
+% 1 1 0 1da871e23e44728e1bd535b2109b927b
+
+@ 0 30 0 0c3cbd0317ae961012ff1007f97180b4
++   entry #bookmarks   die Gliederung des Dokuments als Baum von `Bookmark`s
++       Durchläuft den `/Outlines`-Baum über `/First` und `/Next` und materialisiert den Titel
++       jedes Eintrags, sein Ziel (aus `/Dest` oder dem `/D` einer `/GoTo`-Aktion, wobei ein
++       benanntes Ziel nachgeschlagen wird) und seine Kinder. Ein Zyklus in der Geschwister- oder
++       Kindkette beendet den Durchlauf, statt endlos zu laufen. Das Ergebnis ist rein und
++       entweicht dem Geltungsbereich; `setBookmarks` schreibt einen Baum zurück.
++   entry #attachments   die in das Dokument eingebetteten Dateien, aus dem Namensbaum `/EmbeddedFiles`
++       Jede ist ein `Pdf.Attachment`, dessen Metadaten jetzt gelesen werden und dessen `data`
++       weiterhin über das Dokument gelesen werden, daher ist die Liste auf den
++       Geltungsbereich beschränkt.
++   entry #pageLabel   die Beschriftung, die ein Viewer für eine Seite anzeigt, aus `/PageLabels`
++       Die Beschriftung der Seite unter dem Zahlenbaum `/PageLabels` des Katalogs (ISO 32000-2
++       §12.4.2): das Präfix `/P`, dann die nach `/S` gestaltete Zahl — `D` dezimal, `R` und `r`
++       römisch in Groß- und Kleinbuchstaben, `A` und `a` alphabetisch in Groß- und
++       Kleinbuchstaben —, gezählt ab `/St` (standardmäßig 1) am Beginn des Bereichs. Ohne einen
++       `/PageLabels`-Baum oder für eine Seite vor dem ersten Bereich die einfache einsbasierte
++       Seitennummer.
++   entry #xmp   die Bytes des XMP-Metadaten-Streams, falls der Katalog einen hat
++       Die dekodierten Nutzdaten des `/Metadata`-Streams des Katalogs, die XML sind, oder
++       `Unset`, wenn es keinen gibt.
++   entry #info   das Informationsverzeichnis als `Pdf.Info`
++       Liest das `/Info` des Trailers, wobei jeder Texteintrag aus PDFDocEncoding oder UTF-16
++       dekodiert und jedes Datum aus der `D:`-Form geparst wird. Ein Dokument ohne `/Info`
++       ergibt ein `Info`, in dem jedes Feld `Unset` ist.
++   entry #apply   ein Objekt nach Referenz oder nach Nummer und Generation
++       `pdf(ref)` und `pdf(number, generation = 0)` lösen ein indirektes Objekt auf: zuerst aus
++       dem Schreib-Overlay (sodass eine laufende Bearbeitung sichtbar ist), dann aus dem Cache,
++       dann von seinem aufgezeichneten Offset in der Datei oder aus dem Objekt-Stream, in den es
++       komprimiert ist. Ein freigegebener, fehlender oder ungültiger Eintrag oder eine nicht
++       passende Generation ist `Cos.Nil`, wie ISO 32000-2 §7.3.10 es vorsieht, kein Fehler. Ein
++       Objekt, dessen aufgezeichneter Offset etwas anderes enthält, wird stattdessen durch
++       Scannen der Datei gefunden. Ein Objekt, das beim Laden auf sich selbst verweist, löst
++       `Pdf.Error` mit `CircularReference` aus.
+
+% 2 1 0 0fcbfcbeb3bf549105c24ee121133046
+
+% 3 1 0 033a7aa2e1cc75421df5610b3c8a5998
+
+% 4 1 0 037f2733e152f83811329d24535c36ff
+
+% 0 1 0 09b1fe55c14509951e336bb2a0f755a6
+
+% 1 1 0 0331c1e07675ff111dfe476276ce662a
+
+% 0 1 0 090091d7846dec640c48ae79201e641c
+
+% 1 1 0 008ac7f2582629da07d1105316a6c411
+
+@ 0 16 0 0c8ed706f8c2af741fe086b2db07a6ad
++       Strings in einem verschlüsselten Dokument werden beim Laden des Objekts entschlüsselt;
++       die Nutzdaten eines Streams werden entschlüsselt, wenn `#payload` oder `#spring` sie liest.
++   entry #resolved   ein Wert mit einer entfernten Indirektionsebene
++       Eine `Cos.Ref` wird mit `#apply` nachgeschlagen; jeder andere `Cos` wird so
++       zurückgegeben, wie er ist. Der übliche Weg, einen Dictionary-Eintrag zu lesen, der direkt
++       oder indirekt sein kann: `pdf.resolved(dictionary(t"Pages").or(Cos.Nil))`.
++   entry #payload   die dekodierten Bytes eines Streams, vollständig
++       Liest die Rohbytes zwischen `stream` und `endstream` — wobei `/Length` vertraut wird,
++       wenn auf die Bytes, auf die es zeigt, `endstream` folgt, und sonst nach der Markierung
++       gesucht wird —, entschlüsselt sie, wenn das Dokument verschlüsselt ist, und schickt sie
++       durch die Filterkette des Streams: `FlateDecode`, `LZWDecode`, `ASCII85Decode`,
++       `ASCIIHexDecode` und `RunLengthDecode`, jeweils mit seinem PNG- oder TIFF-Prädiktor,
++       wenn `/DecodeParms` einen verlangt. Die Kette hält beim ersten Bildcodec an
++       (`DCTDecode`, `JPXDecode`, `CCITTFaxDecode`, `JBIG2Decode`), dessen Ausgabe das kodierte
++       Bild ist. Ein unbekannter Filter löst `Pdf.Error` mit `UnknownFilter` aus, und ein Codec,
++       der seine Eingabe abweist, löst `CorruptStream` aus.
+
+% 2 1 0 07d1c30439ed8ea505e43ef118e4af54
+
+% 3 1 0 131522e411f508c31dbc033fb6198690
+
+% 4 1 0 0bc074af186400211e68cd2b266b3f61
+
+% 6 1 0 15f9e0ac81e5953c0ec9fd6542ddc98f
+
+% 7 1 0 12f2378b98472bec1baac3df35f160b8
+
+% 8 1 0 0da7e6078cb09784189536e94aa29a43
+
+% 0 1 0 0db6e560c276d7fc0e99d49ba4674b70
+
+% 1 1 0 0861104054aa66991badf38a85bd9021
+
+% 2 1 0 062346fc5b08fe6c0f7700f605a7e38d
+
+@ 0 8 0 1db0896579b26b25114a20b3cc89361a
++   entry #spring   die dekodierten Bytes eines Streams als erneut materialisierbare `Spring` von Chunks
++       Wo `#payload` einen Stream vollständig materialisiert, gibt `spring` eine `Spring[Data]`
++       zurück, deren jedes `apply()` einen neuen Pull-Endpunkt erzeugt, der den Rohbereich in
++       Chunks von 64 KiB liest und durch dieselbe Filterkette als Streaming-Pipeline dekodiert
++       (der Inflater und LZW-Dekompressor aus pneumatic, mit den Prädiktoren und
++       ASCII-Dekodierern dahinter gesammelt), sodass eine große eingebettete Datei oder ein
++       großes Bild nie vollständig gehalten wird. Der Endpunkt liest über das Dokument und kann
++       daher den Geltungsbereich nicht überdauern. Ein verschlüsselter Stream wird vor dem
++       Filtern vollständig entschlüsselt, da die Chiffre die Nutzdaten überspannt.
+
+% 2 1 0 175870a3378d414d05af725d347c3670
+
+% 3 1 0 0c43858b8acc251512704c6ed9712310
+
+% 4 1 0 1b7ab454bfc8fc7709abcc45329e85d5
+
+% 6 1 0 0fcaf6b311fdfb2a09a9bc64bb589619
+
+% 7 1 0 1352ba4214f223881b084a91fa779d91
+
+% 8 1 0 17cd06de3592d4f60c0dd679a4436a48
+
+% 0 1 0 1e8b0a990e23162d1bb7100c7188f33e
+
+% 1 1 0 024802c2fbabb7da13193e4a39d1e435
+
+% 2 1 0 088f62245c7e76951b6a2ad29cf041a6
+
+@ 0 1 0 161634d5398b65b00d1eb0dadd953c10
++   entry .Destination   wo ein Link oder Lesezeichen landet: eine Seite und wie der Viewer sie einpassen soll
+
+% 1 1 0 103ef4ea946ac39f0738891226ed9641
+
+@ 0 4 0 137a6a0a17012abd05e939c86336534f
++         Ein Enum der expliziten Ziele aus ISO 32000-2 §12.3.2.3, mit der Seite als ihrer
++         Ordinalzahl in der geglätteten Seitenfolge (`Prim` ist die erste Seite) und den
++         Ansichtsparametern, die das Format weglassen lässt, als `Optional[Double]`s in Einheiten
++         des Benutzerraums:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 1 0 0c1c263a0de533d10a1161cb385ec376
++         column  Fall
+
+% 0 1 0 1146f4c2a8020cb60a9b179beb6c5f64
+
+@ 0 9 0 086fa1324de069870f27feb01cba0a73
++         column  Zeigt
++         row  `Xyz(page, left, top, zoom)`  `/XYZ`  die Position an der oberen linken Ecke, mit einem Zoom
++         row  `Fit(page)`  `/Fit`  die ganze Seite
++         row  `FitWidth(page, top)`  `/FitH`  die Breite der Seite, mit `top` am oberen Rand des Fensters
++         row  `FitHeight(page, left)`  `/FitV`  die Höhe der Seite, mit `left` am linken Rand
++         row  `FitRect(page, rect)`  `/FitR`  ein Rechteck der Seite, als `Pdf.Rect`
++         row  `FitBox(page)`  `/FitB`  die Bounding-Box der Seite
++         row  `FitBoxWidth(page, top)`  `/FitBH`  die Breite der Bounding-Box
++         row  `FitBoxHeight(page, left)`  `/FitBV`  die Höhe der Bounding-Box
+
+% 1 1 0 0ca462c8466979c902f717c121d52f50
+
+@ 0 4 0 189f3dfe70336ebd0e9686cb0f7ab369
++         Ein Ziel wird aus einem expliziten Array gelesen, aus einem Dictionary, das eines unter
++         `/D` umhüllt, oder aus einem Namen oder String, der unter den benannten Zielen des
++         Dokuments nachgeschlagen wird (einmal befragt, sodass ein selbstreferenzieller Name keine
++         Schleife bilden kann). `Pdf#destinations` liefert die benannten; `Annotation.Link` und
++         `Bookmark` tragen ihre eigenen; `addLink` und `setBookmarks` schreiben sie.
+
+% 0 1 0 0bafc6e12c30055a0a28a12d787a9c1c
+
+% 0 1 0 07c9d8ae29a550400a27e5083886916e
+
+@ 0 2 0 04a70d8509080f621632fd2bb8f4b93b
++     entry .page   die Seite des Ziels, als Ordinalzahl, gleich welcher Fall es ist
++         Eine Erweiterung auf `Destination`, da jeder Fall ein eigenes `page`-Feld deklariert.
+
+@ 0 1 0 1a88a3031731d15c07277d700a0e444f
++ entry .Page   eine Seite des Dokuments, mit angewandten geerbten Attributen
+
+% 1 1 0 0b400273be2ccae80ac458bba039e2fd
+
+@ 0 6 0 006278e3f7cd64bd0b31240f2c44c32a
++       Eine `Page` ist ein Blatt des Seitenbaums, über `Pdf#page` an einer Ordinalposition
++       erreicht, wobei die Attribute, die das Format eine Seite von ihren Vorfahren erben lässt
++       — `/Resources`, `/MediaBox`, `/CropBox`, `/Rotate` —, bereits aufgelöst sind und der
++       eigene Eintrag eines Kindes über den eines Vorfahren gewinnt. Sie wird lazy über das
++       Dokument aufgelöst, erfasst daher das `Pdf` und kann den Geltungsbereich nicht
++       überdauern; alles, was aus ihr extrahiert wird — Boxen, Drehung, Schriften, Text,
++       Annotationen —, ist rein und portabel.
+
+% 2 1 0 005e29228f3cb10f1eb68c053fec1bbf
+
+% 3 1 0 0e07bbc9230f91d014c66132d68b037e
+
+% 4 1 0 1e7650b60f92fb090c703140df0ab532
+
+% 0 1 0 11ea3b10d4d3f93f10e74c41bd44afd7
+
+% 1 1 0 16425d2f72d67c610e189c4c3891127d
+
+% 0 1 0 07e6fb53238b17dd0092a935e64e7f99
+
+% 0 1 0 0cf794271f5811b31b7499705b2590b6
+
+% 1 1 0 0777dde2f40067b2148ed4f571b1e6d3
+
+@ 0 6 0 1c26a154a713a9791912d7761e7a2b73
++       Die Boxen folgen den Standardwerten des Formats: Eine `/MediaBox` ist erforderlich (an
++       der Seite oder einem Vorfahren); die Crop-Box ist standardmäßig die Media-Box; und die
++       Bleed-, Trim- und Art-Boxen, die nicht vererbbar sind, sind standardmäßig die Crop-Box.
++       Jede Box wird mit der `/UserUnit` der Seite skaliert, sodass das Gelesene in Punkt ist.
++       `#width` und `#height` sind die angezeigte Größe: die Crop-Box, mit vertauschten Achsen,
++       wenn die Seite um eine Vierteldrehung in eine der beiden Richtungen gedreht ist.
+
+@ 0 3 0 00b71b848843193306cdcd169a0896b3
++       Die Bearbeitungserweiterungen nehmen eine `Page`, um anzugeben, welche Seite zu ändern
++       ist: `setContents`, `setRotation`, `setBox`, `setPageEntry`, `addResource`, `useFont`,
++       `setAnnotations`, `addLink` und `removePage`.
+
+% 1 1 0 00bf255f6c9b027b1dc1dae3abb7b1ff
+
+% 0 1 0 0f0187f2c69474e102843144d828f7b1
+
+% 0 1 0 06819af656ea477a1903a4be75858ce6
+
+@ 0 23 0 130ae701dcd56f6e0a64c0a9e805671c
++   entry .Rotation   wie eine Seite für die Anzeige gedreht wird: `None`, `Quarter`, `Half` oder `ThreeQuarters`
++       Das `/Rotate` der Seite, das das Format in Grad im Uhrzeigersinn als Vielfaches von 90
++       angibt, normalisiert: `Quarter` ist 90, `Half` 180, `ThreeQuarters` 270, und jeder Wert,
++       der keiner davon ist (oder kein Eintrag), ist `None`. `setRotation` schreibt einen
++       zurück.
++   entry #index   die Ordinalposition der Seite in der geglätteten Seitenfolge
++   entry #dictionary   das eigene Dictionary der Seite, ohne geerbte Einträge
++   entry #userUnit   die Größe einer Einheit des Benutzerraums in Vielfachen von 1/72 Zoll: `/UserUnit`, standardmäßig 1
++       Nicht vererbbar. Jede Box der Seite wird damit multipliziert, sodass eine Seite, die
++       `/UserUnit 2` über einer Media-Box von 300 Punkt deklariert, als 600 Punkt breit gelesen
++       wird.
++   entry #mediaBox   die Media-Box, in Punkt: die eigene der Seite oder eine geerbte
++       Löst `Pdf.Error` mit `MissingEntry(MediaBox)` aus, wenn weder die Seite noch ein
++       Vorfahre eine deklariert.
++   entry #cropBox   die Crop-Box, standardmäßig die Media-Box
++   entry #bleedBox   die Bleed-Box, standardmäßig die Crop-Box
++   entry #trimBox   die Trim-Box, standardmäßig die Crop-Box
++   entry #artBox   die Art-Box, standardmäßig die Crop-Box
++   entry #rotation   die Drehung der Seite, eigene oder geerbte
++   entry #width   die angezeigte Breite: die Breite der Crop-Box oder ihre Höhe, wenn die Seite um eine Vierteldrehung gedreht ist
++   entry #height   die angezeigte Höhe: die Höhe der Crop-Box oder ihre Breite, wenn die Seite um eine Vierteldrehung gedreht ist
++   entry #fonts   die Schriften der Seite, geschlüsselt nach dem Ressourcennamen, auf den ein `Tf`-Operator verweist
++       Liest das `/Font`-Dictionary der Ressourcen der Seite (eigene oder geerbte) in
++       `Pdf.Font`s. Ein Schrift-Dictionary, das nicht interpretiert werden kann, wird
++       ausgelassen, statt fehlzuschlagen, da Schriften bei der Textextraktion nur bei
++       Gelegenheit befragt werden.
+
+% 2 1 0 1f49a0749883a43b1ee7a7fc818e5eb2
+
+% 3 1 0 1fafc5733905e64b0a21dabc6dab735c
+
+% 4 1 0 12bf08691e482fc50094b100113a5b0a
+
+% 0 1 0 06311cc0c7499c010a3a1f4967f12dc7
+
+% 1 1 0 09ba61071ddef3ca12f1da17619af0c2
+
+% 0 1 0 12712960327b8ff8118a125a50df6412
+
+% 1 1 0 05c83ece7dc0787d119b915c387eb883
+
+@ 0 19 0 1f12752695cb36841d0c4c998891e5f2
++   entry #content   der Content-Stream der Seite, dekodiert
++       Die `/Contents` der Seite — ein Stream oder ein Array von Streams, das laut Format als
++       einer zu behandeln ist —, durch die Filter jedes Streams dekodiert und mit einem
++       Zeilenumbruch dazwischen aneinandergehängt, als Bytes.
++   entry #operators   der Content-Stream als typisierte `Pdf.Operator`s
++       Zerlegt `#content` lexikalisch und interpretiert jede Anweisung, wobei es für einen
++       Operator, den die Bibliothek nicht kennt, `Unrecognized` liefert und für einen bekannten
++       mit falschen Operanden `Pdf.Error` mit `MalformedOperator` auslöst.
++   entry #runs   jede Show-Text-Operation, dekodiert und positioniert, als `TextRun`s
++       Führt den Textzustand des Content-Streams — Schriften, Größen, Matrizen, Abstände,
++       Hochstellung, Zeilenabstand — durch `#operators` und liefert jedes `ShowText`,
++       `ShowTexts`, `NextLineShow` und `NextLineShowSpaced` als `TextRun` mit seinem
++       Unicode-Text, seiner Schrift, seiner effektiven Größe, seinem Grundlinienursprung und
++       seinem Vorschub, in Punkt. Für einen Leser, der Koordinaten statt eines Absatzes braucht.
++   entry #text   der reine Text der Seite, in Inhaltsreihenfolge
++       Rekonstruiert die Lesereihenfolge aus den Positionen der Glyphen: Benachbarte
++       Anzeigen laufen zusammen, eine Lücke entlang einer Grundlinie wird zu einem Leerzeichen,
++       und ein Wechsel der Grundlinie wird zu einem Zeilenumbruch — die Genauigkeit von
++       `pdftotext -raw`. Text in einem unsichtbaren Render-Modus (einer OCR-Schicht) ist
++       eingeschlossen.
+
+% 2 1 0 0dce2bcbcc41d27008e91fe036851a1f
+
+% 3 1 0 178588cb3b3c6ab80b317a7595c0eac7
+
+% 4 1 0 19d8801a5e01ea4f158e24db9fc4704d
+
+% 0 1 0 0c28b1aeb1094c330c88da6a7d1f89f3
+
+% 1 1 0 151bceb46ef8de7813a9e8fb4d847c6c
+
+% 2 1 0 1729b26881495bf3119c8fb1e1034d41
+
+% 3 1 0 131980c65b1a315e1771b052bfe88450
+
+@ 0 5 0 1de853f42e444bcd0b82816e376d0ad4
++   entry #annotations   die Annotationen der Seite als typisierte `Annotation`s
++       Liest das `/Annots`-Array der Seite: ein `/Link` mit seinem Ziel (explizit, über eine
++       `/GoTo`-Aktion oder benannt) und seiner URI, eine `/Text`-Notiz mit ihrem Inhalt, ein
++       `/Widget` mit seinem Feldnamen und alles andere als `Annotation.Other` mit seinem Subtyp.
++       Jede trägt ihr Rechteck in Punkt und ihr rohes Dictionary.
+
+@ 0 1 0 16e06cc04b8b78a40279ccdd5a283985
++ entry .Cos   das COS-Objektmodell: die Werte, aus denen eine PDF-Datei besteht
+
+% 1 1 0 0ba8e5bafb13292803db579722216312
+
+@ 0 6 0 01de09fe180c30c70e61a084859ba06e
++       COS (das „Carousel Object System“) ist die Objektsprache unter PDF (ISO 32000-2 §7.3):
++       `Cos` ist ein Enum seiner acht Grundtypen plus Streams und indirekter Referenzen. Jedes
++       Dictionary, das die Bibliothek liest — eine Seite, der Katalog, der Trailer, eine Schrift
++       —, ist eine `Map[Text, Cos]`, und die Erweiterungsmethoden auf `Cos` lesen einen Wert als
++       den Typ, der er hoffentlich ist, und liefern sonst `Unset`, sodass kein Lesen je für eine
++       Gestalt wirft, die es nicht erwartet hat.
+
+% 2 1 0 0d346365fd025fe102e2ed11c90b2e36
+
+@ 0 13 0 184fe887e43338fd1e6afee8b8042c1a
++       column  Fall
++       column  PDF-Objekt
++       column  Anmerkungen
++       row  `Nil`  das `null`-Objekt  ein Dictionary-Eintrag, dessen Wert `Nil` ist, ist einem fehlenden Schlüssel gleichwertig, was `apply` berücksichtigt
++       row  `Truth(value)`  ein Boolean
++       row  `Integral(value)`  eine Ganzzahl  als `Long`
++       row  `Real(value)`  eine reelle Zahl  als `Double`; `double` liest beide numerischen Typen, und die Unterscheidung bleibt fürs Schreiben erhalten
++       row  `Name(text)`  ein Name, etwa `/Type`  ohne seinen Schrägstrich
++       row  `Chars(bytes)`  ein String  als seine Rohbytes; ihre Interpretation (PDFDocEncoding, UTF-16, Datumsangaben) wird `text` und der typisierten Schicht überlassen
++       row  `Sequence(elements)`  ein Array
++       row  `Dictionary(entries)`  ein Dictionary
++       row  `Body(entries, start)`  ein Stream  ein *Lokator*: sein Dictionary und der Datei-Offset seiner rohen Nutzdaten, die nur über `Pdf#payload` oder `Pdf#spring` gelesen werden; ein von `newStream` erzeugter Stream hat einen negativen `start`, der seine Bytes im Schreib-Overlay schlüsselt
++       row  `Ref(number, generation)`  eine indirekte Referenz  aufgelöst durch `Pdf#apply` oder `Pdf#resolved`
+
+% 1 1 0 101fd67c30fe9050188ae723488aa4d2
+
+% 3 1 0 018972576e6d4c000079669df77825bf
+
+% 4 1 0 16c3c8d9cf49051d1f31123164299935
+
+% 5 1 0 125a78711b6478fe103b376941a10dc7
+
+% 0 1 0 013ac2c112313bde10b2ed47e019a07b
+
+% 1 1 0 1065482d4eabb9c710d4eebe154468fd
+
+% 0 1 0 1e48bb152e3eb1b602b4a52786bc585d
+
+% 0 1 0 1b70e84b078d2fa4197240af87e527c7
+
+% 1 1 0 0e8bdd54e9ae80e40e2f011531c4e2b0
+
+@ 0 3 0 021fa2d5f1a8be821f6d7c472d6966cc
++       Das Schreiben verwendet dieselben Werte: `set`, `allocate` und `newStream` nehmen einen
++       `Cos`, und die Ressourcen von `appendPage` und die Dictionarys von `setAnnotations`
++       werden als `Cos`-Werte gebildet. Eine ganze Zahl wird am besten als `Integral`
++       geschrieben.
+
+% 1 1 0 1343163e72027e8e17dc1c162e637ecc
+
+@ 0 20 0 1113f4d687a917a2146cff943ce6941b
++   entry .dictionary   die Einträge eines Dictionarys oder das Dictionary eines Streams; `Unset` für alles andere
++       Eine Erweiterung auf `Cos`. Ein `Body` antwortet mit seinem Dictionary, da ein Stream
++       für Nachschlagezwecke sein Dictionary ist.
++   entry .apply   ein Dictionary-Eintrag nach Schlüssel, wobei ein `Nil`-Wert als fehlend gelesen wird
++       Eine Erweiterung auf `Cos`: `cos(t"Type")` ist `Unset`, wenn der Wert kein Dictionary
++       oder Stream ist, keinen solchen Schlüssel hat oder den Schlüssel mit dem `null`-Objekt
++       als Wert hat (ISO 32000-2 §7.3.9). Das Ergebnis kann eine `Ref` sein, der
++       `Pdf#resolved` folgt.
++   entry .long   ein `Integral`-Wert oder `Unset`
++   entry .double   ein `Integral`- oder `Real`-Wert als `Double` oder `Unset`
++   entry .name   der Text eines `Name` oder `Unset`
++   entry .truth   ein `Truth`-Wert oder `Unset`
++   entry .chars   die Rohbytes eines `Chars`-Strings oder `Unset`
++   entry .text   ein `Chars`-String als Text, nach seinem Byte-Order-Mark oder PDFDocEncoding
++       Ein String, der mit dem UTF-16BE-Mark `FE FF` beginnt, wird als UTF-16BE dekodiert,
++       einer, der mit dem UTF-8-Mark `EF BB BF` beginnt, als UTF-8, und jeder andere als
++       PDFDocEncoding (Latin-1 mit den typografischen Zeichen aus ISO 32000-2 Anhang D.7 bei
++       0x18–0x1F und 0x80–0xA0). Eine fehlerhafte Folge wird als U+FFFD dekodiert. Der von
++       `setInfo`, `addLink` und `setBookmarks` geschriebene Text nimmt den umgekehrten Weg:
++       Latin-1, wenn jedes Zeichen passt, sonst UTF-16BE mit dem Mark.
++   entry .elements   die Elemente einer `Sequence` oder `Unset`
+
+@ 0 1 0 14a9e6de25c7529010f03580ef3634d0
++ entry .Annotation   eine Seitenannotation: ein Link, eine Notiz, ein Formular-Widget oder ein anderer Subtyp mit seinem Dictionary
+
+% 1 1 0 1cdd1339329060b60f7ff01900a00005
+
+@ 0 4 0 09f15738d319d05a010f5a51d5fa86ff
++       Eine Aufzählung dessen, was das `/Annots`-Array einer Seite enthält (ISO 32000-2 §12.5),
++       gelesen von `Page#annotations`. Drei Subtypen sind typisiert, die übrigen gut zwanzig werden
++       als `Other` aufbewahrt; jeder Fall trägt sein Rechteck in Punkt und sein rohes Dictionary
++       als Notausgang.
+
+% 2 1 0 0c81c2ec10ff4cd80f3498b3d4f88d62
+
+@ 0 7 0 193385da52a13d6304b57d19135a5781
++       column  Fall
++       column  Subtyp
++       column  Trägt
++       row  `Link(rect, destination, uri, dictionary)`  `/Link`  sein Ziel: eine `Pdf.Destination` (aus `/Dest` oder dem `/D` einer `/GoTo`-Aktion, mit aufgelösten benannten Zielen), eine `uri` (aus einer `/URI`-Aktion) oder keines von beiden
++       row  `Note(rect, contents, open, dictionary)`  `/Text`, eine Haftnotiz  ihren `/Contents` und ob sie `/Open` angezeigt wird
++       row  `Widget(rect, fieldName, dictionary)`  `/Widget`, das Erscheinungsbild eines Formularfelds  den `/T`-Namen des Felds
++       row  `Other(subtype, rect, dictionary)`  jeder andere `/Subtype`  den Subtyp, nach Namen
+
+% 1 1 0 02606b6d2b0333551f90dedc341e05e8
+
+% 3 1 0 136698eb716f63c603b91d117579228b
+
+% 4 1 0 04efec72913c9228018dc045c10b17e4
+
+% 5 1 0 044e9e96fd512df40c90eb89c6ec68d3
+
+% 0 1 0 02db9f61746cfef100477d434a8705eb
+
+% 1 1 0 0b2776da1be2403814bbf7805a06ca87
+
+% 0 1 0 033be616dac5ffab198bf1cb118325cc
+
+% 0 1 0 1a2c212aa14184ab04cd62367221c716
+
+% 0 1 0 097707e2021f903a044c6c40bcb58b04
+
+% 1 1 0 140bba67d074a7d71e71c42b2a304a68
+
+@ 0 2 0 1d5af7bac3534d1b02c1e598ce9b55b3
++       `addLink` schreibt eine Link-Annotation; `setAnnotations` ersetzt die Annotationen einer
++       Seite durch rohe Dictionaries.
+
+% 1 1 0 1332bfbf90300a550bd2096b6e08cc9b
+
+% 1 1 0 021fbdc6c701e46016bf5ea767a18d05
+
+% 0 1 0 11d472c6e272734d130f9ab957c18e8f
+
+@ 0 4 0 0e7585ba58528a190a22d3a69803b3ce
++   entry .rect   das Rechteck der Annotation in Punkt, welcher Fall es auch ist
++       Eine Erweiterung auf `Annotation`, da jeder Fall ein eigenes Feld `rect` hat.
++   entry .dictionary   das rohe Dictionary der Annotation, welcher Fall es auch ist
++       Eine Erweiterung auf `Annotation`.
+
+@ 0 1 0 0c205e91165f399c146972a438f40fab
++ entry .Bookmark   ein Eintrag der Dokumentgliederung, mit seinem Ziel und seinen Kindern
+
+% 1 1 0 17c2ffe96a4db1f01699417e9e9eb8c4
+
+@ 0 4 0 1761695037540f711cd0e3469b637607
++       Die „Outlines“ von PDF sind das, was jeder Viewer als Lesezeichen darstellt.
++       `Pdf#bookmarks` liest den Baum als `List[Bookmark]`, vollständig materialisiert, also als
++       reinen Wert, der den Geltungsbereich verlassen kann; `setBookmarks` schreibt einen zurück
++       und baut die gesamte Verkettung aus `/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count`
++       neu auf.
+
+% 2 1 0 0bee110e2ae909e20e83b990693be16e
+
+% 3 1 0 12ced40d6dab14c40afe6006f61bfb11
+
+% 0 1 0 04d9fe57d23ce3b8062c5a1842bb6d6e
+
+% 0 1 0 02a723a58c8373751c0bf4d681732680
+
+% 0 1 0 0747e41bbdd344170a8802faade7b24b
+
+% 0 1 0 19f6a3bb372d54f70e82603b56fbd159
+
+% 0 1 0 1837dee3ac13d0b902a6120dd1a0306c
+
+% 1 1 0 0b021e2df33086970b4076deb83a46f9
+
+% 1 1 0 104056dfe680b64d0f9a8e4fd242f252
+
+% 0 1 0 0fa5f9de33252bbe0d198ef538deb427
+
+@ 0 3 0 0de853b41a5753f20af83bbdcada3f9c
++   entry #title   der Text des Lesezeichens
++   entry #destination   wohin es führt, oder `Unset` für eine Überschrift, die nur ihre Kinder gruppiert
++   entry #children   die darunter verschachtelten Lesezeichen
+
+@ 0 1 0 01152ff423e9ad9d0e2852d99b3d25fd
++ entry .TextRun   eine Textanzeige-Operation, dekodiert und in Punkt positioniert
+
+% 1 1 0 10d9b7580a5acda81788f4846b8c404e
+
+@ 0 5 0 1ef3152f783394a609402f1feca570dc
++       `Page#runs` liefert ein `TextRun` pro Operator `ShowText`, `ShowTexts`, `NextLineShow` oder
++       `NextLineShowSpaced`: seinen Unicode-`#text`, den `#font`, in dem er dargestellt wird, die
++       effektive `#size` (die Schriftgröße, skaliert durch Text- und Transformationsmatrix), seinen
++       Grundlinienursprung `#x` und `#y` im nicht gedrehten Seitenraum und seine Vorschubbreite
++       `#width` — alles als `Quantity[Points[1]]`. Ein `TextRun` ist ein reiner Wert und kann den
++       Geltungsbereich verlassen.
+
+% 2 1 0 0a67a170adc9620209bb3135d62e81b5
+
+% 3 1 0 1c5dac68989ba1381b1b678abd1f0833
+
+% 4 1 0 00a5736fe8811d9e1c967bdf9d937a70
+
+% 0 1 0 1d1d2921749ea1de1a6f1fc257500755
+
+% 1 1 0 0ded71ff61783374097562cb213abca8
+
+% 0 1 0 06df3c2d514a0dcf1315756b66003309
+
+% 1 1 0 02332855d77ec0d7000caf1826ea0b6b
+
+% 1 1 0 020cc4274ad6be480ca0f23365df5f0c
+
+@ 0 6 0 0f8714e4dd9db86802577fad20def820
++   entry #text   der Text des Laufs, über seine Schrift dekodiert
++   entry #font   der `Pdf.Font`, in dem der Lauf gesetzt ist
++   entry #size   die effektive Schriftgröße in Punkt
++   entry #x   die x-Koordinate des Grundlinienursprungs in Punkt
++   entry #y   die y-Koordinate des Grundlinienursprungs in Punkt
++   entry #width   der Vorschub des Laufs entlang seiner Grundlinie in Punkt
+
+@ 0 1 0 1043b91eb10a0caa0e99502e4df2f588
++ entry .Print   das Druckmedium: Schriften, die ein PDF-Reader anzeigen kann, einschließlich der vierzehn Standardschriften
+
+% 1 1 0 1168cdd98fc39cfd0f262eb4504ab6a5
+
+@ 0 7 0 0d11c60265e7a0000b0af726d0214698
++       `Print` ist ein phoenicia-`Medium`, das Gegenstück zu `Web` von cataclysm: Eine Schriftart
++       ist *im Druck setzbar*, wenn ein PDF-Reader sie anzeigen kann, also wenn ihr Programm in das
++       Dokument eingebettet ist oder sie eine der vierzehn Standardschriften ist, die jeder Reader
++       hat (ISO 32000-2 §9.6.2.2). Das Begleitobjekt enthält die fünf Standardschriftarten als
++       Werte — `.Helvetica`, `.Times`, `.Courier`, `.Symbol`, `.ZapfDingbats` — und für jede ein
++       `Typesettable
++       in Print`-given, im impliziten Geltungsbereich von `(Typeface of "Helvetica") is
++       Typesettable in Print`, sodass kein Import nötig ist.
+
+@ 0 5 0 0b78ab6b42274616186546a228865d7f
++       `.font` erzeugt aus einem Schriftschnitt einen `Font in Print` und prüft zur Kompilierzeit
++       (wenn die Abdeckung der Bereitstellung bekannt ist), dass die Schriftart eine Bereitstellung
++       für den Druck hat und dass der verlangte Schriftschnitt — eine Stärke, eine Neigung —
++       abgedeckt ist; `useFont` benennt die Schrift dann auf einer Seite, bettet ihr Programm ein,
++       wenn die Bereitstellung eine eingebettete ist, und deklariert sie per Namen, wenn sie eine
++       Standardschrift ist. So nennt ein Dokument nie eine Schrift, die sein Reader nicht anzeigen
++       kann.
+
+% 2 1 0 19f537360896659b11f70082910f6fac
+
+% 3 1 0 088b7e31858448d71ea78d49a296db37
+
+% 4 1 0 1e6bd2d6a48611dc0d0f09eec981dc13
+
+% 0 1 0 041cca09b550a0bc004834017943587b
+
+% 0 1 0 1a99465c4db3deb40f09ddbb58b0b29f
+
+% 0 1 0 12c17d9071f8b76f157a9cdd2d0dcf06
+
+% 1 1 0 19c6c3af387f2e2a077a7b2709bced82
+
+@ 0 2 0 06c0ef02360f6a9b09f1011dd6f6d2c4
++       Eine eigene Schriftart wird im Druck verfügbar, indem man eine Bereitstellung für sie
++       deklariert, eingebettet aus einem `Sfnt`:
+
+% 2 1 0 0435199927a3db660603c94d2a37c68b
+
+% 3 1 0 11449df8a39ae89216ed5618b8753a9d
+
+% 4 1 0 0106d730af09bd7a09ece23f19386488
+
+% 0 1 0 08ffd9b2436737e41843fd536b942f3a
+
+% 0 1 0 0edec2fd658c2917081bfb746082eaf8
+
+% 0 1 0 04a9a6aff3ded05812c5fbd67410e69f
+
+% 1 1 0 0512f9b555567d6811fa40f45511ca8d
+
+@ 0 3 0 0d0eca8cee86dc5007519638dd118ff3
++       Ein `Font in Print` für eine Standardschriftart wird durch `.standard` auf einen
++       `Pdf.Font.Standard` abgebildet — fett ab Stärke 600, der schräge oder kursive
++       Schriftschnitt für jede Neigung —, und eine Schrift aus einer eingebetteten Bereitstellung
++       gibt ihr Programm über `.embedded` heraus.
+
+% 0 1 0 1e4ee1b4e11c503c02d4042f66627c4b
+
+% 0 1 0 19eefff2449a4f5b1e61f1c1d90e013a
+
+@ 0 1 0 17bba2410eb7f0cc0e07c63d6ddc6d12
++   entry .Provision   die `Typesettable`-Instanz, die sich die Standardschriftarten teilen
+
+% 1 1 0 0e40ca16b3fec8a408bccf46df01af35
+
+@ 0 15 0 0fce2eb65e9097d0114618a2ae2de343
++         Eine benannte Klasse, damit die fünf Standardbereitstellungen einen stabilen Typ haben:
++         Jede ist eine lokale Quelle (die eigene Schrift des Readers) mit einer `coverage`, die die
++         vorhandenen Schriftschnitte beschreibt. Die Textschriftarten decken normal und fett ab,
++         jeweils aufrecht und geneigt; `Symbol` und `ZapfDingbats` decken einen aufrechten
++         normalen Schriftschnitt ab. Normalerweise nicht vom Benutzer konstruiert, dessen eigene
++         Bereitstellungen aus `Typesettable.embedded`, `Typesettable.local` und ihren Geschwistern
++         in phoenicia stammen.
++     entry #coverage   welche Schriftschnitte die Schriftart im Druck hat
++     entry #sources   die Quellen der Bereitstellung: eine nach der Schriftart benannte `Typesettable.Source.Local`
++   entry .Helvetica   die Schriftart `Helvetica`, `Typeface of "Helvetica"`
++       Normal und fett, aufrecht und schräg: `Print.Helvetica.bold`, `Print.Helvetica.italic` und
++       `Print.Helvetica.face` wählen zwischen `Pdf.Font.Standard.Helvetica`, `HelveticaBold`,
++       `HelveticaOblique` und `HelveticaBoldOblique`.
++   entry .Times   die Schriftart `Times`, `Typeface of "Times"`
++       Normal und fett, aufrecht und kursiv: `TimesRoman`, `TimesBold`, `TimesItalic` und
+
+% 0 1 0 143976bb9a979c450d4419ab6c3ad54d
+
+@ 0 5 0 112e1ad682dbce600d1611dc89c6aef7
++   entry .Courier   die Schriftart `Courier`, `Typeface of "Courier"`
++       Normal und fett, aufrecht und schräg: `Courier`, `CourierBold`, `CourierOblique` und
++       `CourierBoldOblique`.
++   entry .Symbol   die Schriftart `Symbol`, `Typeface of "Symbol"`
++       Ein Schriftschnitt mit eigener eingebauter Kodierung: `useFont` deklariert ihn ohne
+
+% 0 1 0 02082cc9c8fc667d14da829a9f276a7e
+
+@ 0 26 0 0584abf3d26adad00ac6924e188575ad
++   entry .ZapfDingbats   die Schriftart `ZapfDingbats`, `Typeface of "ZapfDingbats"`
++       Ein Schriftschnitt mit eigener eingebauter Kodierung.
++   entry .helvetica   `Typeface of "Helvetica" is Typesettable in Print`, im impliziten Geltungsbereich
++       Das given, das Helvetica im Druck verfügbar macht, ohne dass etwas eingebettet wird. Es
++       wird über das Begleitobjekt von `Print` gefunden, das im impliziten Geltungsbereich der
++       Verfeinerung liegt, daher ist kein Import nötig.
++   entry .times   `Typeface of "Times" is Typesettable in Print`, im impliziten Geltungsbereich
++   entry .courier   `Typeface of "Courier" is Typesettable in Print`, im impliziten Geltungsbereich
++   entry .symbol   `Typeface of "Symbol" is Typesettable in Print`, im impliziten Geltungsbereich
++   entry .zapfDingbats   `Typeface of "ZapfDingbats" is Typesettable in Print`, im impliziten Geltungsbereich
++   entry .standard   die Standardschrift, die ein `Font in Print` auswählt, oder `Unset` für jede andere Schriftart
++       Fett ab Stärke 600 und der schräge oder kursive Schriftschnitt für jede Neigung:
++       `Print.Helvetica` mit Stärke 700 und einer Neigung ist
++       `Pdf.Font.Standard.HelveticaBoldOblique`. Eine Schriftart, die nicht zu den fünf gehört,
++       ist `Unset`; daran entscheidet `useFont`, eine Schrift stattdessen unter dem eigenen Namen
++       ihrer Schriftart zu deklarieren.
++   entry .embedded   das für eine Schrift einzubettende `Sfnt`, aus den eingebetteten Quellen ihrer Bereitstellung
++       Die erste eingebettete Quelle, deren Abdeckung den Schriftschnitt zulässt, sonst die erste
++       eingebettete Quelle, sonst `Unset` für eine Bereitstellung ohne Dateien (eine
++       Standard- oder lokale Bereitstellung).
++   entry .font   ein `Font in Print` aus einem Schriftschnitt, geprüft gegen die Bereitstellung der Schriftart für den Druck
++       `Print.font(face)` braucht für die Familie des Schriftschnitts ein
++       `Typeface of family is Typesettable in (? >: Print)` — eines der fünf Standard-givens oder
++       eine für `Medium` oder `Print` deklarierte Bereitstellung — und eine `Tactic[Font.Error]`,
++       die ausgelöst wird, wenn die Abdeckung der Bereitstellung den Schriftschnitt nicht zulässt.
++       Es ist inline, damit die Prüfung beim Kompilieren erfolgt, wenn die Bereitstellung eine
++       eingebettete Datei nennt, die der Compiler lesen kann; die Laufzeitprüfung läuft immer.
++       Verwenden Sie es, wo der erwartete Typ das Medium nicht bereits nennt; `Font.of[Print]` ist
++       dasselbe mit ausgeschriebenem Medium.
+
+% 2 1 0 1d47128c9e9985191af200fb336b0de6
+
+% 3 1 0 0dfde23d0c9389780b3e25d18e4d22b3
+
+% 4 1 0 1cd0507ecd1c6baf02108dc5edf04e9c
+
+% 0 1 0 02e1f8b9268a36071b3a6f90ef4184cc
+
+% 1 1 0 0f4c9fd55fc2d8221b16999d9d1ad04c
+
+@ 0 5 0 18fbc11c690f912a1d5e663b1106464a
++ entry .pdf   das kontextuelle Dokument innerhalb eines geöffneten Geltungsbereichs: `pdf.pageCount`, nicht `summon[Pdf]`
++     Ein transparenter Inline-Accessor für das `Pdf^` im Geltungsbereich, nach dem Vorbild von
++     `monitor` aus parasite. Jeder mit `PdfFile#open`, `path.open[Pdf]()` oder
++     `data.open[Pdf]()` geöffnete Geltungsbereich macht das Dokument kontextuell, sodass ein
++     Block, der es nicht benennt, `pdf.page(Prim)` schreibt; einer, der es benennt —
++     `open(Read & Write): doc ?=>` —, kann beides verwenden.
+
+% 2 1 0 1fbb6490d754456200155dbcff07c6fa
+
+% 3 1 0 10ade1bab3d7236d1b5f13c32782ab5f
+
+% 4 1 0 19a554c47355d0c60fc11fbf22ae78c4
+
+% 3 1 0 1bf5df70f7125301122df185d3213f00
+
+% 0 1 0 08f6b8b94087fc4f069e17aecbb08933
+
+% 1 1 0 1c5df1b7e4cd83d90da9e6d2f89769ad
+
+% 2 1 0 1900719ad4448e2d0f19379510c4a807
+
+@ 0 1 0 15cbfaf3f4a8435200d223e8d8c0048b
++     Außerhalb eines Geltungsbereichs gibt es kein `Pdf` im Kontext, und der Accessor
++     kompiliert nicht.
+
+@ 0 7 0 06bf06f19405518c136652683aa4b44c
++ entry .set   ersetzt oder definiert ein Objekt per Referenz
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung `(Pdf & Granting[Grant.Write])^`,
++     verfügbar innerhalb eines mit `Read & Write` oder `create[Pdf]` geöffneten
++     Geltungsbereichs. `doc.set(ref, value)` hält `value` als das Objekt fest, das `ref` nennt,
++     und zwar in dem Overlay, das jeder Lesezugriff zuerst konsultiert, sodass die Änderung für
++     `Pdf#apply` sofort sichtbar ist; sie wird als Teil des inkrementellen Updates geschrieben,
++     wenn der Geltungsbereich schließt. Ein zuvor freigegebenes Objekt wird wieder belegt. (Es
++     heißt `set` statt `update`, dessen Zuweisungs-Syntaxzucker mit anderen `update`s kollidiert.)
+
+% 2 1 0 1fd7ef87678aff73023ad44cd43ea559
+
+% 3 1 0 1949594e9c823b47032d131c10c2609d
+
+% 4 1 0 02ab7a4958a2a669189c38843bf74ba9
+
+% 0 1 0 18d79cde07884f651df865de65b04244
+
+% 1 1 0 105dfc8910a80e3a024c4b33088705b8
+
+% 0 1 0 1f51a40cbc874bd4038b86ae98133734
+
+% 1 1 0 1c001897740fd9fa1c1c8fcdc1531e63
+
+@ 0 5 0 1e8653f0cb2008990c379dce7df5d946
++ entry .allocate   fügt ein neues Objekt hinzu und liefert eine Referenz darauf
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. Das Objekt erhält die nächste freie
++     Nummer — eins über der größten, die die ursprüngliche Datei verwendete — mit Generation 0,
++     und die Referenz kann sofort in anderen Objekten verwendet werden. Der Weg auf niedriger
++     Ebene, um ein Dictionary oder einen Stream (`newStream`) hinzuzufügen, den die typisierten
++     Bearbeitungsoperationen nicht abdecken.
+
+@ 0 6 0 166c9f37094a77490612f6430b178ee0
++ entry .newStream   ein neues Stream-Objekt mit den gegebenen Bytes, unkomprimiert
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. `doc.newStream(data, entries)`
++     erzeugt einen `Cos.Body`, dessen Dictionary `entries` mit auf die Länge der Daten gesetztem
++     `/Length` ist und dessen Bytes im Schreib-Overlay liegen, bis das Update geschrieben wird.
++     Er ist ein Wert, noch kein Objekt: Wenden Sie `allocate` darauf an, oder setzen Sie ihn
++     dort ein, wo ein direkter Stream erwartet wird. Die Bytes werden so geschrieben, wie sie
++     gegeben sind, ohne Filter.
+
+% 2 1 0 12a072d8f19ad6dc17e844db8bc5db01
+
+% 3 1 0 1e57c5e456ad89311190308a9e407569
+
+% 4 1 0 05a4b886a9608c0001b26b9694a32143
+
+% 0 1 0 181d54ab6a874eca0c8a1ada7e97a5ea
+
+% 1 1 0 1ace7b5cb461092c067783bd98ec15ea
+
+% 0 1 0 1c027aa4398f5b0209425923f970cef3
+
+% 0 1 0 1b85b707fc8760a31e659ff0831afdae
+
+% 0 1 0 0ecc002f01e397bc0dae5fcc75742c4a
+
+% 0 1 0 0fec442f7c0ec6b20e1fabbb7d83bdf0
+
+% 0 1 0 109e284955aa1248170c059822fc0884
+
+% 1 1 0 1fe5e130582029ec10a31df2bae99b18
+
+@ 0 5 0 0c48da04b93a74e50d34d2950fbfdaf3
++ entry .free   löscht ein Objekt: Seine Nummer wird zu einem freien Querverweiseintrag
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. Ein in diesem Geltungsbereich
++     hinzugefügtes Objekt wird einfach verworfen; eines aus der ursprünglichen Datei wird als
++     freigegeben festgehalten, sodass das inkrementelle Update einen freien Eintrag dafür
++     schreibt und `Pdf#apply` von da an `Cos.Nil` dafür liefert. (Es heißt `free`, da `delete`
++     zu galilei gehört.)
+
+@ 0 5 0 05d3c5b5fa5e56460e5e3e5e5a37344c
++ entry .setContents   ersetzt den Inhalt einer Seite durch die gegebenen Operatoren
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. Die Operatoren werden in einen
++     frischen, unkomprimierten Content-Stream serialisiert, und `/Contents` der Seite wird darauf
++     gerichtet; die bisherigen Content-Streams bleiben erhalten, werden aber nicht mehr
++     referenziert. Jede Schrift und jedes XObject, das die Operatoren nennen, muss in den
++     Ressourcen der Seite stehen (`useFont`, `addResource`).
+
+% 2 1 0 1b440edcada696871d226d78590baac1
+
+% 3 1 0 0929ba4bb0c541b818000a89259dd2f6
+
+% 4 1 0 173904681961cd4819a36e027faa440b
+
+% 0 1 0 1d037a7bafab04950ba25b15a987c5eb
+
+% 1 1 0 09bb761ecb9167c808ee029bcf555de0
+
+% 0 1 0 072128fd5256a7c3022032dc633c7b41
+
+% 1 1 0 1e361e9352eb5c2b0da8ddf76d5d55d3
+
+% 0 1 0 101475b861d5f0a0083a86ff7075bea9
+
+% 2 1 0 08006e81fd03579401e20c8085b386bd
+
+% 3 1 0 00ffd94da2c8919412eee19e96919f17
+
+% 4 1 0 00c0d52067768c971ee9940b49b9d7c6
+
+% 0 1 0 0d993003d6ee727909c6c0529e839e0c
+
+% 0 1 0 0cf42b09bff8a50e0f6eb8a4f401259a
+
+% 1 1 0 1da52ff07be301760f4743cf4023990f
+
+% 2 1 0 1e2768e07954a0b50be4fd75210660f2
+
+@ 0 3 0 17539cea8576c6fc0d9f6600e6bc53ec
++ entry .setRotation   setzt die Drehung einer Seite
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. Schreibt `/Rotate` der Seite als
++     0, 90, 180 oder 270 für `Page.Rotation.None`, `Quarter`, `Half` und `ThreeQuarters`.
+
+@ 0 5 0 161800dbfec9ae8f0de50a66e618fa64
++ entry .setBox   setzt einen Seitenrahmen, nach Namen, auf ein Rechteck in Punkt
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. `doc.setBox(page, t"CropBox", rect)`
++     schreibt den benannten Rahmen — `MediaBox`, `CropBox`, `BleedBox`, `TrimBox` oder
++     `ArtBox` — als `[left bottom right top]` in das eigene Dictionary der Seite. Das Rechteck
++     wird so in Punkt geschrieben, wie es gegeben ist; eine Seite mit einer `/UserUnit` ungleich
++     1 liest es skaliert zurück.
+
+@ 0 4 0 1840b9c284386c4c0a5cd7e6e6a2b48a
++ entry .setPageEntry   setzt einen beliebigen Eintrag im Dictionary einer Seite
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung: `doc.setPageEntry(page, t"UserUnit",
++     Cos.Real(2.0))`. Der Notausgang für ein Seitenattribut, das die typisierten Operationen
++     nicht abdecken.
+
+@ 0 6 0 09fbdd89827ead6308d67143268cd5ce
++ entry .setInfo   ersetzt das Dokumentinformations-Dictionary
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. Jedes vorhandene Feld des
++     `Pdf.Info` wird als Text-String geschrieben, und jedes `Timing` in der Form
++     `D:YYYYMMDDHHmmSS`, mit seinem Offset als `±HH'mm'`, wenn es einen hat; fehlende Felder
++     werden weggelassen. Das vorhandene `/Info`-Objekt wird ersetzt, wenn der Trailer eines hat;
++     andernfalls wird ein frisches Objekt erzeugt und vom Trailer des inkrementellen Updates
++     verknüpft.
+
+% 2 1 0 09c2153db5a15b290f269dc4656c9758
+
+% 3 1 0 0920dcf3055a929e0b598c5649ac5328
+
+% 4 1 0 05bc969298da206008978a56c275c05c
+
+% 0 1 0 1ff6ce9139c7cdb5111d930d18cf03f2
+
+% 1 1 0 05584584e12bdcf71efd720eeb4561e7
+
+% 0 1 0 16e5700b163066b40eac8b35549a4aa5
+
+% 1 1 0 149de9ca0e8a3cac17e1475d0d6fe15f
+
+@ 0 10 0 14f1be61ec7a99011b05f35fa1e202cd
++ entry .embedFont   bettet ein Schriftprogramm als einfache WinAnsi-TrueType-Schrift ein und liefert seine `/Font`-Referenz
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. `doc.embedFont(sfnt)` schreibt das
++     Programm als `/FontFile2`-Stream, baut aus seinen Tabellen einen `/FontDescriptor` (Oberlänge,
++     Unterlänge, Versalhöhe, Kursivwinkel, Begrenzungsrahmen, mit sinnvollen Vorgaben, wo eine
++     Tabelle fehlt oder unlesbar ist) und ein `/Widths`-Array für die Codes 32 bis 255 unter
++     `WinAnsiEncoding` und alloziert das `/Font`-Dictionary darum herum. Der `name` ist
++     standardmäßig der eigene PostScript-Name des Programms (oder `Embedded`). Mit `subset`
++     werden nur die Glyphen eingebettet, die der gegebene Text braucht, unter dem
++     konventionellen Tag aus sechs Buchstaben (`ABCDEF+Name`, abgeleitet aus Name und Text,
++     sodass identische Teilmengen identisch eingebettet werden); nur ein `Truetype` lässt sich zu
++     einer Teilmenge reduzieren, da ein CFF-`Opentype` kein `glyf` und `loca` zum Umschreiben hat
++     und vollständig eingebettet wird.
+
+@ 0 2 0 147e4b158622bc881cc2c53c97d7b314
++     Die Referenz ist ein Schrift-*Objekt*; `addResource` benennt es auf einer Seite unter dem
++     Ressourcennamen, den der `SetFont`-Operator des Inhalts verwendet.
+
+% 2 1 0 1141f60d4b65031b05c7faf766ebfcae
+
+% 3 1 0 1c26ff0f30ec3704159a947298e81d83
+
+% 4 1 0 0103797e7953b8bb0c926985bb0ab630
+
+% 0 1 0 021c0f8bcfb9b7e01912660b321ec15f
+
+% 1 1 0 1bcd778442f08abf0cba9559d7b67fc0
+
+% 0 1 0 13a0c229041a0bab0d6102ce6553c077
+
+% 0 1 0 04bf6ef78ce08ab6108f291d8a7395e7
+
+% 1 1 0 187577684342f6d20605081fcfd8d9e6
+
+@ 0 9 0 0eb2c933ee470d7d0537ab6d075a172d
++ entry .useFont   macht einen `Font in Print` für den Inhalt einer Seite unter einem Ressourcennamen verfügbar
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. Ein `Font in Print` existiert nur
++     für eine Schriftart mit einer Bereitstellung für den Druck, daher hat
++     `doc.useFont(page, t"F1", font)` immer etwas, das ein Reader anzeigen kann: Eine Schrift aus
++     einer eingebetteten Bereitstellung wird mit `embedFont` eingebettet (auf `subset` reduziert,
++     falls angegeben), und eine Standardschriftart wird unter ihrem `Pdf.Font.Standard`-Namen als
++     `Type1`-Schrift deklariert — mit `WinAnsiEncoding` für die Textschriften und der eingebauten
++     Kodierung für `Symbol` und `ZapfDingbats` —, ohne dass etwas eingebettet wird. Eine lokale
++     Bereitstellung einer anderen Schriftart wird unter dem Namen der Schriftart deklariert. Die
++     Schrift wird dann in den `/Font`-Ressourcen der Seite als `name` registriert, dem Namen, auf
++     den sich `SetFont` bezieht.
+
+% 2 1 0 127b4db6bb352fd11bcfffd7b0b3dd2f
+
+% 3 1 0 17a5b5fd4b380fdf070a2d56bea04203
+
+% 4 1 0 19b8688345a2b2160255ebdfcb607918
+
+% 0 1 0 1a9238e8ad8b31b30fa83ff7447cde30
+
+% 1 1 0 09e752612e1a085f04e301eed4a58b6f
+
+% 1 1 0 08663655cf9e50ee0e081823ff756827
+
+% 0 1 0 1c064f53fee8d814121949dbd8aa1eea
+
+% 2 1 0 08642e4f6ce197a4146de0117a903186
+
+% 3 1 0 0b69acc50577f91f13942aa571890e1f
+
+% 4 1 0 195045777117f7521d11607f20694162
+
+% 0 1 0 18f25248d66ed3d71fd35eb6fda8d0c1
+
+% 0 1 0 0d68832fda9a32a30449e51137d16830
+
+% 1 1 0 09b396567c4de97c0f98d127eecdfb76
+
+% 2 1 0 0985b20dcda04f77110f34736c3e9fb4
+
+@ 0 6 0 104eb2056bae8b2204e7287c20c86133
++ entry .addResource   registriert eine Ressource auf einer Seite unter einer Kategorie und einem Namen
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung.
++     `doc.addResource(page, t"Font", t"F1", ref)` legt `ref` in den `/Resources` der Seite unter
++     dem Kategorie-Dictionary (`Font`, `XObject`, `ExtGState`, …) als `name` ab, erzeugt bei
++     Bedarf das Ressourcen- und das Kategorie-Dictionary und behält die übrigen Einträge. Der
++     Name ist das, worauf sich ein Content-Operator bezieht: `/F1` für `SetFont`, `/Im1` für
++     `Draw`.
+
+@ 0 4 0 0107482c513c90630daa0d039943d5f2
++ entry .setAnnotations   ersetzt die Annotationen einer Seite durch rohe Annotations-Dictionaries
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. Jedes `Cos` wird zu einem
++     indirekten Objekt, und `/Annots` der Seite wird auf das Array ihrer Referenzen gesetzt,
++     wobei verworfen wird, was dort stand. `addLink` fügt einen typisierten Link hinzu, ohne den
++     Rest zu berühren.
+
+@ 0 5 0 0aeb0dca3bdb96fb0d8c1363d8356ccb
++ entry .addLink   fügt eine Link-Annotation über einem Rechteck hinzu, zu einer URI oder einem Ziel im Dokument
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung.
++     `doc.addLink(page, rect, uri = t"https://…")` schreibt eine `/Link`-Annotation mit einer
++     `/URI`-Aktion, und `doc.addLink(page, rect,
++     destination = Destination.Fit(Sec))` eine mit einem expliziten `/Dest`-Array; beides kann
++     angegeben werden. Die Annotation wird an die vorhandenen `/Annots` der Seite angehängt.
+
+% 2 1 0 0bc6f5d75ec075541fef550fa1a76013
+
+% 3 1 0 1339db60978e5af2015c8aca7753bfcb
+
+% 4 1 0 10236587f278e6650b42bf69ab5b09f5
+
+% 0 1 0 0aec58f90534fdcb16ce6ba99cfb415e
+
+% 1 1 0 0f8641ad961aa07208a8f4bde81ebf94
+
+% 0 1 0 04fcaa64a354d9f612eda23977fd1ff7
+
+% 1 1 0 19ff73d70089256615217d993d825499
+
+@ 0 5 0 143956f031049f9e158decc340f6ab74
++ entry .setBookmarks   ersetzt die Dokumentgliederung durch einen Baum von `Bookmark`s
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. Der Baum wird als frische Objekte
++     mit der vollständigen Verkettung aus `/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count` und
++     jedem Ziel als explizitem Array neu aufgebaut, und `/Outlines` des Katalogs wird auf die neue
++     Wurzel gerichtet. Die bisherigen Gliederungsobjekte bleiben unreferenziert zurück.
+
+% 2 1 0 1c011cadd78252c11c368aa0ff28c8c5
+
+% 3 1 0 0d84b5c59e6d25e006aba745f994cc42
+
+% 4 1 0 133bdac147b978051fdbeed8914b1370
+
+% 0 1 0 04f1a09a07bb29e9012a083e7b29cb3a
+
+% 1 1 0 10b3b050a6fa96430a2efb63da63bf48
+
+% 0 1 0 164bc24cb1381f0e1d97e20287ca6912
+
+% 1 1 0 10839e0c2ab622e31fd68109762d617d
+
+@ 0 8 0 16127f7ca128db4b0142d99cbd326461
++ entry .appendPage   hängt eine Seite der gegebenen Größe an, mit optionalem Inhalt und Ressourcen, und liefert ihre Referenz
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. `doc.appendPage(mediaBox, operators,
++     resources)` alloziert eine Seite mit dem Medienrahmen, einem aus den Operatoren
++     serialisierten Content-Stream, falls welche angegeben sind, und `resources` (ein
++     `Cos.Dictionary` oder eine Referenz auf eines) als `/Resources`, fügt sie dann am Ende der
++     `/Kids` des Wurzel-Seitenbaums an und erhöht `/Count`. Ein Dokument mit einem tieferen Baum
++     erhält die Seite an der Wurzel, was gültig ist und sie an die letzte Stelle setzt. Löst
++     `Pdf.Error` mit `MissingEntry(Pages)` oder `TypeMismatch(Pages, a reference)` aus, wenn der
++     Seitenbaum des Katalogs fehlt oder inline ist.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 06244775eb0ce85a1420204a6ca6161f
++       label Eine leere A4-Seite
+
+% 1 1 0 04826c8730c81568171b058eb353cc6c
+
+% 2 1 0 06c14bde0490e18b00aea8f363404d88
+
+% 3 1 0 081f0c89f90d025e00c57f8d209866bd
+
+% 5 1 0 17729b7b6a4cda270c27f3bd0d167898
+
+% 6 1 0 19e7e3dad15074fd084c35c3d94f7af7
+
+% 7 1 0 14f0e8444c99538c04852c3294bfa4b9
+
+% 2 1 0 1422cc5524a6eacf01d6596468d79d31
+
+% 3 1 0 172e37ed5ccf92580895f67b186e5758
+
+% 0 1 0 19917e832f94f3501227907f2b77887e
+
+% 1 1 0 114cb1ec0f22bd0216cd7d0c55cbd5bb
+
+@ 0 1 0 0ee687db02f5f0821c4d52ae1a2782b1
++       label Mit einer in ihren Ressourcen deklarierten Schrift
+
+% 1 1 0 1186e7a4bb6c030c04118fe85b45b640
+
+% 2 1 0 1aad178bf5e2d8e1165642d56b2af4d5
+
+% 3 1 0 1de6b7b9105f92eb06a12946e6566671
+
+% 5 1 0 088bf2d2d8cd8d511821da887eb2712b
+
+% 6 1 0 1f18b1282c0e609b07f4273eead7e1c8
+
+% 7 1 0 0470bfa8611f1f6315cb09fcd0da6304
+
+% 9 1 0 1a89c536d8ed27611d30a20cfc15a6c3
+
+% 10 1 0 0dba7951043d31c81e8619089fd99a50
+
+% 11 1 0 1e641d355d1e7d4c019f040a11647af7
+
+% 12 1 0 1570d40f4530d7520aa758798fcfcebe
+
+% 13 1 0 050aa60dbe9d22c9129b8c6d4c78a92b
+
+% 15 1 0 01d32dfe1e376cff1b0e6636c3acdf09
+
+% 2 1 0 19844fe313a36f0f000eb9c771b1040b
+
+% 3 1 0 126a73d165a9ec6101fde0e81ad46205
+
+% 0 1 0 03e2cf038cd120be1155597665f3b720
+
+% 1 1 0 0c7f3b3900dfeff50c80c4ab0ac1f6c9
+
+@ 0 1 0 001c74fb333862ce0c913de6ecdeccb7
++       label Mit Inhalt, der die Schrift verwendet
+
+% 1 1 0 1315a1911e9b192b016347144adf2885
+
+% 2 1 0 024f8d9d898d5f9f1d0601c1aff46673
+
+% 3 1 0 0bcbc8b47fab69c4074a2f6574cd58c4
+
+% 5 1 0 1d7e8297d7fc2f4d14fc37a09b9a1bcd
+
+% 6 1 0 060c2a5f4e5550a40e9201f23b574eab
+
+% 7 1 0 05488166a751fe4b0fda3b4d294d1ba7
+
+% 9 1 0 0b672cd6cad0ed7a0ec225781f201e7d
+
+% 10 1 0 091717c2a0ded27b0ea6df2a4bba2b71
+
+% 11 1 0 08f2811cef8f56161263eeb9db9846b9
+
+% 12 1 0 1457f3cc2f8018b91be4bdb96886c957
+
+% 13 1 0 13149bd23e9aca0e19af3f366aa35dec
+
+% 15 1 0 0d9e5c9e5164de550d6b531c4998fe6d
+
+% 17 1 0 0c574eff06c3ad1b036459b2895f685b
+
+% 18 1 0 0aad405d432422fe00fd6d3c88a8d52c
+
+% 19 1 0 00f0992da4142d7a07c2ff75391b9e87
+
+% 20 1 0 009c379fc08dcd9908fa4050be3c54bb
+
+% 2 1 0 078301bbdbded1a601b7cdf0a8316a83
+
+% 3 1 0 059918497afec12f0712c3e26f190e6f
+
+% 2 1 0 1e52015671c87acd013d9c3aed0ebb6a
+
+% 1 1 0 06881bce2724d7eb011bbcd6a8519b62
+
+@ 0 1 0 07d665a42142b76413b1aa35fbcaf12c
++       label Zurückgelesen, nachdem der Geltungsbereich das Update geschrieben hat
+
+% 1 1 0 0a6484338262c6d80fef4e34b07335ca
+
+% 2 1 0 0d1efebc36bf6f0315768c3ffd00f333
+
+% 3 1 0 04ae1e10971a773200ecbc439fef98af
+
+% 5 1 0 11ab732cb122d3e11bbebb416af92844
+
+% 6 1 0 0aaea1dc598c1fa10015430e2befb5da
+
+% 7 1 0 15a7beb2d5ee9a3114de5fb8c02a2805
+
+% 9 1 0 00b4d2e186034ab90162f9c494d68891
+
+% 10 1 0 108f2db8e0590f64002bdc89e04f4c12
+
+% 11 1 0 1f85b495232ed78e192f2fc98d0315e5
+
+% 12 1 0 004abc847e81a9d109d47745f0534023
+
+% 13 1 0 1d26624aa767ce8308b5dd2dfe3248a5
+
+% 15 1 0 17f325002beacd7d092e47d59c5ca3ae
+
+% 17 1 0 1fc2533136eb9c9b1d6d4a7de841ec37
+
+% 18 1 0 01f55a34bf5ec51a123f683c1c8995bd
+
+% 19 1 0 1d558b5a0ac3151f002029752bf0731d
+
+% 20 1 0 0d49ed7896cbf1bd075eaf3e406b1fe8
+
+% 0 1 0 14bcb4a037c1daa50d0d54485c84bed7
+
+% 1 1 0 0b059585f8d78444114c8b2f97828354
+
+% 2 1 0 0f21e26eccf691070696b56b8893439d
+
+% 0 1 0 12e37d524f4ddd4616f507d7199d4aaa
+
+% 0 1 0 18967c055db9c259130769197be3ab53
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 1642c3604eb6b29c1e5ab899f7bc1b49
++ entry .removePage   entfernt eine Seite aus den `/Kids` ihres Elternknotens und gibt ihr Objekt frei
++     Eine Erweiterung auf dem Handle mit Schreibberechtigung. Die Seite wird von ihrem
++     Elternknoten getrennt, dessen `/Count` auf die verbleibenden Kinder gesetzt wird, und ihr
++     Objekt wird freigegeben. Behandelt wird nur eine Seite, deren Elternknoten direkt die `/Kids`
++     hält — der einstufige Baum, den die meisten Dokumente haben; eine tiefer verschachtelte Seite
++     oder eine Seite, die der Baum inline statt per Referenz hält, bleibt an ihrem Platz. Die
++     Content-Streams und Ressourcen der Seite werden nicht freigegeben.
+
+@ 0 5 0 1fa3740f925ce150180f97f01421a454
++ entry .winAnsi   kodiert Text für eine einfache WinAnsi-Schrift, als Operand von `ShowText`
++     `winAnsi(t"Hello")` sind die `Data`, die ein `Pdf.Operator.ShowText` für eine mit
++     `WinAnsiEncoding` deklarierte Schrift nimmt — die Schriften, die `useFont` und `embedFont`
++     erzeugen. Jedes Zeichen ist sein WinAnsi-Code (Windows-1252); ein Zeichen außerhalb der
++     Kodierung hat keinen Code und wird als `?` geschrieben.
+
+% 2 1 0 151ecfe0f97f32f512660a660a3592d2
+
+% 3 1 0 07bd965fa1ee1f8904f371a0f1fc0d30
+
+% 0 1 0 12671febe66f291a0be1fecde5c44e37
+
+% 1 1 0 0e83488c1116398610836de8b4e4efec
+
+@ 0 1 0 1e48901167dc56b30a3e3241124232d3
++ entry .PdfFile   ein ungeöffnetes PDF: ein Lokator für einen Pfad oder für Bytes im Speicher, in einem Geltungsbereich geöffnet
+
+% 1 1 0 0ab89488020944cb03b8682b9eaff63e
+
+@ 0 7 0 1fc6fdf5ae6159cf08e9525fe5e74231
++       Ein `PdfFile` benennt ein Dokument, ohne es zu lesen — `PdfFile(path)` für eine Datei auf
++       der Platte, `PdfFile(data)` für bereits im Speicher liegende Bytes —, und `open` (aus
++       aperture, über das `Openable`-given in diesem Begleitobjekt) liest es genau für die Dauer
++       des Blocks. Header, Querverweiskette und bei einem verschlüsselten Dokument die
++       Schlüssel werden beim Öffnen des Geltungsbereichs gelesen, sodass eine fehlerhafte Datei
++       oder ein falsches Passwort dort scheitert und nicht erst beim ersten Zugriff. Der Block
++       läuft mit einem kontextuellen `Pdf`, erreichbar als `pdf` oder gebunden mit `doc ?=>`.
+
+% 2 1 0 190cecfd89e60cca0bbd15b4aa690690
+
+% 3 1 0 05e9a254c8d394e60528f8d9eb854fc9
+
+% 4 1 0 08dfd52ca900361612073d007b3e6f88
+
+% 0 1 0 0f1506dcebeefbd11ecb8cd518148c2e
+
+% 0 1 0 03707192063befd509d25a349c661005
+
+% 1 1 0 04b4445bad0d8f661c4007a648b34bfe
+
+% 0 1 0 13beb6873904a54a129ad5e8d4e63773
+
+% 1 1 0 0fd3b4341b2b597114c01f5d8fa253f6
+
+% 0 1 0 12ebd3ae3646f1d50624f08a24660f8e
+
+% 1 1 0 0c5b4ae48165cc75009625de98a1cb86
+
+@ 0 9 0 14e9f8bf1204b74f1ee973366f6d9a83
++       Das Öffnen mit `Read & Write` liefert das Handle mit Schreibberechtigung, auf dem die
++       Bearbeitungserweiterungen typisiert sind. Die Datei wird als galilei-`Ram` abgebildet und
++       die Sicht des Dokuments auf ihre Größe festgelegt; schließt der Geltungsbereich mit
++       Änderungen, wird das Overlay als inkrementelles Update serialisiert — eine klassische
++       Querverweistabelle nach einer klassischen, ein Querverweis-Stream nach einem Stream, sodass
++       die `/Prev`-Kette verfolgbar bleibt — und angehängt. Ein Geltungsbereich ohne Änderungen
++       hängt nichts an. Daten im Speicher können nirgendwohin zurückgeschrieben werden, daher löst
++       das Öffnen mit `Write` `Pdf.Error` mit `WriteUnsupported` aus, ebenso das Schließen eines
++       Schreib-Geltungsbereichs über einer Datei, deren Tabelle durch Durchsuchen neu aufgebaut
++       werden musste.
+
+% 2 1 0 0e1a64803c44141e042a5ba224c2dd85
+
+% 3 1 0 102278ea8a11068313a2c4d10c53d40d
+
+% 4 1 0 09e930c996aa58ae1a80aac2d8a3f23d
+
+% 0 1 0 1384953ac5f24e8a0062ae9196526844
+
+% 0 1 0 1635906d63839b8d11f84b68f438a474
+
+% 0 1 0 1992c6edef296a691e3b049cf7f861d4
+
+% 1 1 0 183f67b64f295e470f9c46924d7e5bc5
+
+@ 0 3 0 1f0b280f08dd6d6219ee6d11dd230ac7
++       Ein verschlüsseltes Dokument wird geöffnet, indem sein `Password` als Flag übergeben wird;
++       dafür braucht es einen `Cloak` im Geltungsbereich, der angibt, wo das Geheimnis gehalten
++       wird. Ist keines angegeben, wird das leere Passwort versucht, was eine Datei öffnet, die nur
++       zur Einschränkung von Berechtigungen verschlüsselt ist.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 04ea60e84068f7921bdf4ecb54884444
+
+% 0 1 0 15631df66dfa223907ed1b125ded4627
+
+% 0 1 0 1df69b05c3ee6fe51e255776e8a451f4
+
+% 0 1 0 0305e8613fdab04014b059971f070af0
+
+% 0 1 0 1167bc07ba14b97304f19819b9f6fc40
+
+% 1 1 0 0f9227d906e0c26e0b4d5588e162d754
+
+@ 0 3 0 0d6a59f37a0f68920ffcab2e90f67eb0
++       Ein falsches Passwort löst `Pdf.Error` mit `BadPassword` aus; ein anderer Security-Handler
++       als der Standard löst `UnsupportedEncryption` aus. Das Öffnen eines Pfads, der nicht
++       existiert oder nicht gelesen werden kann, löst `Io` aus.
+
+@ 0 3 0 1768caa1f25efda81eadff557558d5ae
++       Dieselben Geltungsbereiche sind auch ohne Nennung von `PdfFile` erreichbar, über die givens
++       auf oberster Ebene `pdfPathOpenable` (`path.open[Pdf]()`), `pdfDataOpenable`
++       (`data.open[Pdf]()`) und `pdfCreatable` (`path.create[Pdf]()`), jeweils per Namen
++       importiert.
+
+% 1 1 0 0606a394e54e00840738927de7f11664
+
+% 1 1 0 1209f5334b3c6b040f1b3d773c09234b
+
+% 0 1 0 02594cf7176201e5107ac90958e0ea59
+
+% 0 1 0 0cde4809d9a3d31d0fdc621459ba9156
+
+@ 0 10 0 10ce980756ee10b314cae133bedeca36
++   entry .apply   ein Lokator für ein Dokument unter einem Pfad oder für Bytes im Speicher
++       `PdfFile(path)` nimmt jeden Wert, der `Abstractable across Paths to Text` ist — einen
++       galilei-`Path` oder Text —, aufgelöst gegen das Arbeitsverzeichnis beim Öffnen.
++       `PdfFile(data)` hält die Bytes, die an Ort und Stelle gelesen werden; ein solches Dokument
++       kann nur zum Lesen geöffnet werden.
++   entry .openable   das `Openable`-given, mit dem `PdfFile#open` einen Block mit einem `Pdf` ausführt
++       Im Begleitobjekt von `PdfFile`, daher im impliziten Geltungsbereich, und `open` braucht
++       keinen Import; und da `PdfFile` ein einziges `Openable` hat, wird die Form `Pdf` inferiert,
++       statt geschrieben zu werden. Es braucht eine `Tactic[Pdf.Error]` im Geltungsbereich, die es
++       einfängt.
++   entry .PdfOpenable   die `Openable`-Klasse hinter `PdfFile#open`
+
+% 1 1 0 1ad61162f0dbdbde0e3533cebb4c53f3
+
+@ 0 6 0 0abd9eac2b1a0d99046b216ef0e3abbd
++         `Self = PdfFile`, `Form = Pdf`, `Operand = Password`, `Result = Pdf`: öffnet ein `PdfFile`
++         in einem Modus, mit einem optionalen `Password`-Flag, und führt den Block mit einem `Pdf`
++         aus, dem gewährt ist, was der Modus gewährt. `.openable` ist ihre Instanz; die Klasse ist
++         öffentlich, damit das given nach Typ benannt werden kann.
++     entry #open   öffnet die Datei im Modus, mit den Passwort-Flags, für den Block
++   entry .PdfPathOpenable   die `Openable`-Klasse hinter `path.open[Pdf]()`
+
+% 1 1 0 1628b6b89ae41ada012c0a142ffdf39a
+
+@ 0 6 0 0af864e38d3af39f15d0dff6bf2d2942
++         `Self` ist jeder Pfadtyp, der `Abstractable across Paths to Text` ist, `Form = Pdf`,
++         `Operand = Password`: `path.open[Pdf]()` ist `PdfFile(path).open()`. Die Form muss
++         geschrieben werden, da ein Pfad in mehreren Formen geöffnet werden kann. Das given auf
++         oberster Ebene `pdfPathOpenable` ist ihre Instanz.
++     entry #open   öffnet den Pfad als PDF im Modus, mit den Passwort-Flags, für den Block
++   entry .PdfDataOpenable   die `Openable`-Klasse hinter `data.open[Pdf]()`
+
+% 1 1 0 1ea32da102b3d59216264a67c701dc13
+
+@ 0 5 0 06505404e2407f0a1b4065cc526cf7d1
++         `Self = Data`, `Form = Pdf`, `Operand = Password`: `data.open[Pdf]()` ist
++         `PdfFile(data).open()`, nur lesend. Das given auf oberster Ebene `pdfDataOpenable` ist
++         ihre Instanz.
++     entry #open   öffnet die Bytes als PDF im Modus, mit den Passwort-Flags, für den Block
++   entry .PdfCreatable   die `Creatable`-Klasse hinter `path.create[Pdf]()`
+
+% 1 1 0 0c1954d8a69f6e291572ca2f1f32ff64
+
+@ 0 10 0 188c06147aceb629049c702fcbe7905c
++         `Self` ist jeder Pfadtyp, der `Abstractable across Paths to Text` ist, `Form = Pdf`,
++         `Operand = CreateFlag`, `Grants = Grant.Read & Grant.Write`: Der Block bearbeitet ein
++         frisches, leeres Dokument — einen Katalog und einen leeren Seitenbaum, Version 1.7 — über
++         dieselbe Schreibschnittstelle wie beim Bearbeiten eines vorhandenen, und wenn er
++         zurückkehrt, wird das Dokument vollständig in ein verborgenes temporäres Geschwister
++         geschrieben und atomar auf das Ziel verschoben, sodass ein Scheitern mittendrin nichts
++         zurücklässt. `CreateFlag.Replace` erlaubt ein vorhandenes Ziel (andernfalls `Pdf.Error`
++         mit `Io`, _the file already exists_), und `CreateFlag.Parents` erzeugt fehlende
++         Elternverzeichnisse. Das given auf oberster Ebene `pdfCreatable` ist ihre Instanz.
++     entry #create   verfasst im Block ein neues Dokument und schreibt es in den Pfad
+
+@ 0 7 0 1ebbcdbac6f2367710bf4992f7130ca4
++ entry .pdfPathOpenable   erlaubt es, einen Pfad als `Pdf` zu öffnen: `path.open[Pdf]()`
++     Ein given auf oberster Ebene in `facsimile.file`, per Namen importiert — `import
++     soundness.pdfPathOpenable` —, da `import soundness.*` keine givens importiert, und
++     `Openable` hat keinen generischen Rückfall, sodass eine Aufrufstelle, die es vergisst, nicht
++     kompiliert. Es ist eine Instanz von `PdfFile.PdfPathOpenable` für jeden Pfadtyp, der
++     `Abstractable across
++     Paths to Text` ist, und braucht eine `Tactic[Pdf.Error]`. `PdfFile(path).open()` ist
++     derselbe Geltungsbereich ohne Import.
+
+% 2 1 0 04d3238b91bd875b06f6ec63fc662c47
+
+% 3 1 0 1fe1207d0be83e001748ebac474bbc70
+
+% 0 1 0 14776516ddba09ab11f7149d0c768fa5
+
+% 1 1 0 1ba07a710056c87018d2304fe87f9276
+
+% 0 1 0 1e1e90f6c681f6f40edfae894b0eec46
+
+% 0 1 0 0f629badb7ab23510f86b17c622f34e0
+
+% 1 1 0 0276b77903df9f5108a1ad7dfee64207
+
+% 2 1 0 1644d04b46aacbe8046a331da2f40155
+
+@ 0 5 0 1d9cd55e7c8be41f07f839aedb038be9
++ entry .pdfDataOpenable   erlaubt es, Bytes im Speicher als `Pdf` zu öffnen: `data.open[Pdf]()`
++     Ein given auf oberster Ebene in `facsimile.file`, per Namen importiert als `import
++     soundness.pdfDataOpenable`. Eine Instanz von `PdfFile.PdfDataOpenable`, die eine
++     `Tactic[Pdf.Error]` braucht; nur lesend, da Bytes im Speicher nirgendwohin
++     zurückgeschrieben werden können. `PdfFile(data).open()` ist derselbe Geltungsbereich ohne
++     Import.
+
+% 2 1 0 1ea65bc1153706d210df653b46ea7166
+
+% 3 1 0 0901f58c0dcb3873121b08bbaa46b5b3
+
+% 0 1 0 0950eca827f6e24f0c364cb02ee6784e
+
+% 1 1 0 1f46ea88d91c375b1a6f77d90809d800
+
+% 3 1 0 1508ada6c7b921b60a7501c4ffa0ff3e
+
+% 0 1 0 0bac349b55aacae51cb7153d6bbf290e
+
+% 1 1 0 1ac44a5ca729a53a10cf7be4606c34a0
+
+% 2 1 0 1c54752e922e1ae01520f5d88aa12c36
+
+@ 0 7 0 1ccc00d6c78ccaa6087e079a8aeab87b
++ entry .pdfCreatable   erlaubt es, einen Pfad als `Pdf` zu erzeugen: `path.create[Pdf](): doc ?=> …`
++     Ein given auf oberster Ebene in `facsimile.file`, per Namen importiert als `import
++     soundness.pdfCreatable`. Eine Instanz von `PdfFile.PdfCreatable` für jeden Pfadtyp, der
++     `Abstractable across Paths to Text` ist, die eine `Tactic[Pdf.Error]` braucht. Der Block
++     erhält ein frisches Dokument mit Lese- und Schreibberechtigung, und das Ergebnis wird
++     vollständig und atomar geschrieben, wenn der Block zurückkehrt; `CreateFlag.Replace` und
++     `CreateFlag.Parents` regeln ein bereits vorhandenes Ziel und seine Verzeichnisse.
+
+% 2 1 0 136b45bccbec4a5310231eecf3242b00
+
+% 3 1 0 0a58527daad45597099a7f9ea5d9cc08
+
+% 4 1 0 0a7f4878b9de26c508e5932d61cbf376
+
+% 5 1 0 1a6a22c95cc631971de735249a75a13e
+
+% 2 1 0 0a54d12639764dd9099914d66e26e10d
+
+% 3 1 0 0ca9078a2fc2ddca0c01ba94f9438b2f
+
+% 4 1 0 1a6bd2d40cc89bcd17c8d645da24a59a
+
+% 0 1 0 1407125b252b997f1532762c38b92374
+
+% 0 1 0 08f1f4b1076d386d0e8c93af27e17f58
+
+% 0 1 0 0afd9b2531946b0f0393eab867e94bb4
+
+% 0 1 0 0735e44ca7889fcb13680c0ecc055ea0
+
+% 1 1 0 074679851e923e9f0054e101af5552e5

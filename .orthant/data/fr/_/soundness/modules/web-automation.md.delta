@@ -1,0 +1,335 @@
+orthant 2 language
+
+@ 0 1 0 1683d3798e6598930c0f174aa56f32a2
++ ## Automatisation web
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 0f591615f6e77b8a0edd57ae264cdc53
++ Piloter un navigateur et scripter une page sont les deux faces de l'automatisation web, et
++ les deux sont couvertes ici. Un navigateur se pilote au moyen du protocole
++ [WebDriver](https://www.w3.org/TR/webdriver2/). Chrome ou Firefox est lancé, une [session]
++ est ouverte, on navigue entre les pages, et on trouve des éléments, on clique dessus et on y
++ saisit du texte : c'est la mécanique des tests de bout en bout.
+
+@ 0 3 0 1fc59d8db8413cdb18664757881ea576
++ Le comportement côté navigateur s'écrit en JavaScript *typé*. Les expressions DOM sont
++ vérifiées par rapport aux propres définitions d'interfaces
++ [WebIDL](https://en.wikipedia.org/wiki/Web_IDL) du navigateur pendant la compilation du
++ code, et rendues en JavaScript pour les gestionnaires d'événements d'une page.
+
+@ 0 1 0 01e33bd4ea64d6e80b098f5b4185ba4e
++ ### À propos de l'automatisation du web
+
+@ 0 4 0 1c31f6cb3b247e83120a503b58af65ed
++ Les scripts d'automatisation de navigateur sont doublement typés par des chaînes. Les
++ éléments sont localisés par des chaînes de sélecteurs, et le comportement injecté est du
++ JavaScript dans des littéraux de chaîne, non vérifié jusqu'à ce que le navigateur
++ l'exécute. Une méthode DOM mal orthographiée, comme `getElementByld`, est exactement le
++ genre d'erreur qu'un compilateur existe pour détecter, et exactement le genre que ces
++ chaînes masquent.
+
+@ 0 6 0 104ae37710c055960725f0c2e0018b20
++ Ici, les deux couches sont typées. Les éléments sont localisés au moyen des mêmes sélecteurs
++ typés et identifiants validés qu'utilisent [CSS](css.md) et [HTML](html.md). Le scripting
++ DOM est vérifié par rapport aux définitions d'interfaces réelles du DOM ; seules les
++ méthodes qui existent, avec des arguments des bons types, peuvent donc être écrites. Une
++ session confinée à son bloc, et des scripts de page vérifiés par rapport aux propres
++ définitions du DOM, suivent les [portées délimitées](../../philosophy/delimited-scopes.md)
++ et la [sûreté par construction](../../philosophy/safety-by-construction.md).
+
+@ 0 2 0 159e7253226fe6d109786f5e34739131
++ Tout provient du package `soundness`, avec dans la portée l'accès à internet, un client HTTP
++ pour dialoguer avec le pilote, et la concurrence pour le processus du pilote :
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 1 0 03ab0efadb174eab0d9be849ee5779d7
++ Les exemples qui pilotent un navigateur sont compilés mais pas exécutés.
+
+@ 0 1 0 082da622afb8974b1563de0d63f6add6
++ ### Piloter un navigateur
+
+@ 0 2 0 1f07a9b2dfb8f251135e40d81f6efb81
++ Une session de navigateur lance le pilote, ouvre une session, et ferme les deux lorsque le
++ bloc se termine, qu'il renvoie une valeur ou lève une exception. À l'intérieur, la session
++ navigue et interroge :
+
+% 2 1 0 1b1c307c2188b9b612a251813584719f
+
+% 3 1 0 09cd9dc7db64c38f1ba16211c3d4f78f
+
+% 4 1 0 17df9d385a03692a0b3df37da6104e04
+
+% 5 1 0 01f9d58fb3986bce13a81eee29ce73c1
+
+% 6 1 0 1cc477e17b71d557097fadcb7b5d358b
+
+% 0 1 0 0c6bc228d82d96011233283748bfd5e0
+
+% 0 1 0 0bb780337a7cf1461316e1346ac661d0
+
+% 1 1 0 083eb6a5f8834bbe0bacb3e90ce4bbb7
+
+@ 0 3 0 06fa3b6233d86b59041437c5898a55f3
++ `WebDriver.Firefox`, `WebDriver.Safari` et `WebDriver.Edge` fonctionnent de façon
++ identique, et chacun pilote l'exécutable de pilote standard correspondant.
++ `WebDriver(url"http://localhost:4444", capabilities)` pilote un pilote déjà en cours
++ d'exécution, y compris une grille distante, au travers de la même interface.
+
+@ 0 5 0 0aa1cb1a2e226d3d0a119edf660d931a
++ La poignée de session est une [capacité], confinée par le contrôle des captures au bloc qui
++ la possède. La renvoyer, ou renvoyer quoi que ce soit qui la capture, est une erreur de
++ compilation, puisqu'une session fermée n'est pas une chose qu'un programme devrait pouvoir
++ détenir. Les poignées d'éléments, en revanche, sont des valeurs pures. Mais chaque opération
++ sur l'une d'elles nécessite la session dans la portée ; elles sont donc inertes en dehors.
+
+@ 0 1 0 0eeba2e8552706e504512797b9ae52d6
++ ### Trouver et utiliser des éléments
+
+@ 0 1 0 02f54ca385b2db3d13c7a69848150edc
++ Les éléments sont localisés par des critères typés. `\` renvoie toutes les correspondances,
++ et `element` exactement une :
+
+% 2 1 0 022d05f4c84c97ea0c23ee750d0bd0df
+
+@ 0 9 0 17fac7d62a276ac60468f70725d4c6dd
++ column  Localisateur
++ column  S'écrit
++ column  Correspond selon
++ row  une balise HTML  `H1`, `Button`  le nom de la balise
++ row  une liste de sélecteurs CSS  `SelectorList.parse(t"nav li")`  un sélecteur CSS
++ row  un identifiant DOM validé  `Name[DomId](t"query")`  un sélecteur CSS, l'identifiant préfixé par `#`
++ row  une liste de classes  `ClassList["checkbox"]()`  un sélecteur CSS, chaque classe préfixée par `.`
++ row  un XPath  `xp"//li"`  XPath
++ row  un `Text`  `t"Sign in"`  le texte du lien
+
+% 1 1 0 1b86897a11eb85fb14f3f78413807be8
+
+@ 0 2 0 1d2cbcae91af76540671034c6ca30b13
++ Les éléments trouvés à l'intérieur d'éléments descendent dans l'arbre, et chacun offre les
++ opérations dont un test a besoin :
+
+% 2 1 0 14a8b54a27d4c1611d5caae6b20bccb4
+
+% 3 1 0 14562c58cce498130a9fafd49ee687ff
+
+% 4 1 0 003fdce09ac5bd2316b874038642a405
+
+% 0 1 0 1842b9c5dc5960d41f15df4cf22b7ce2
+
+% 0 1 0 1fc9838b78d8789711406c3ffe982615
+
+% 2 1 0 02f6338c0aceacd416f7d72f910bb21b
+
+% 3 1 0 1643c3f6be77d43d00447e85634f7cfd
+
+% 0 1 0 142b725252c61a541a20af1ce4eec0b2
+
+% 0 1 0 0f949dd57a77e2f20f2c5a678cc04f6e
+
+% 0 1 0 1705c47398c79dea0ab647719370e736
+
+% 0 1 0 06c1dd2ca393ee0514edb1b4b91f3b7b
+
+% 0 1 0 06447f83973c2ec916832cbfccfea5ab
+
+% 0 1 0 0a2cf4c7c678ebc203c65a0c101b22b8
+
+% 0 1 0 1717ce40cc28f70b1ec750c966a25f42
+
+% 0 1 0 0402c34679e196720eb16e6f3c712a52
+
+% 0 1 0 1400ae6cb3c50b700055d944d87dc299
+
+% 1 1 0 1b168b8d5addf4320de4d518efc2f9a1
+
+@ 0 2 0 093a7b2816df73ae1bfdfff59277f442
++ `property` lit la propriété DOM vivante, et non le balisage. Voici les opérations sur un
++ élément, et toutes nécessitent la session dans la portée :
+
+% 2 1 0 098a45806171da7c15d47d340a0790d2
+
+@ 0 13 0 1b75ebc267eb8af905d75ce46584874f
++ column  Opération
++ column  Rôle
++ row  `click()`, `clear()`  clique sur l'élément, ou vide un champ de saisie
++ row  `value(text)`  saisit du texte dans un champ
++ row  `innerText()`  lit le texte rendu
++ row  `attribute(name)`, `property(name)`  lit un attribut du balisage, ou une propriété DOM vivante, sous forme d'`Optional`
++ row  `cssValue(name)`  lit une valeur CSS calculée
++ row  `tagName()`, `role()`, `label()`  lisent la balise, le rôle accessible et l'étiquette accessible de l'élément
++ row  `enabled()`, `selected()`, `displayed()`  indiquent l'état de l'élément
++ row  `rect()`  lit la position et la taille de l'élément
++ row  `screenshot()`, `screenshotData()`  capturent l'élément sous forme de `Raster in Png`, ou d'octets PNG
++ row  `element(locator)`, `\`  trouvent des éléments à l'intérieur
++ row  `shadowRoot()`  atteint sa racine fantôme ouverte
+
+% 1 1 0 0b0aee203bf2ec8104bfe6498136f9d7
+
+@ 0 5 0 1850cd75c656dc4f0166ec4bf348c45f
++ Tout ce qu'un localisateur ne peut pas exprimer s'atteint avec `execute`, qui exécute du
++ JavaScript dans la page et renvoie son résultat sous forme de `Json`. Les modificateurs,
++ les accords de touches, les survols et les glisser-déposer passent par `perform` et l'API
++ typée des actions. Un échec de quelque nature que ce soit arrive sous forme de
++ `WebDriver.Error`, qui porte le code d'erreur W3C qu'a signalé le pilote, son message, et
++ la trace de pile côté navigateur.
+
+@ 0 1 0 1929ffb4de3748920d5d609e19cbab8e
++ ### Attente
+
+@ 0 2 0 10a34aa8d90d9a170621011ac5aba71e
++ L'essentiel de ce qui rend l'automatisation de navigateur instable tient au timing, et le
++ protocole n'aide que pour une partie. Le délai *implicite* de WebDriver couvre les
++ commandes de recherche, et se définit une fois pour la session :
+
+% 2 1 0 19008e8a8b4a83d5097b5300bef1140f
+
+% 3 1 0 0a0514df068f27d506dba54a8a3556a8
+
+% 4 1 0 101708dbb6a8f12b133a1c53391aa385
+
+% 5 1 0 1db29423a965660a1c4fe90b6f3a5820
+
+% 6 1 0 0b2e90e973596ba91dd6d41062c2a6e6
+
+% 0 1 0 02c5afc32e3d9e3e11bc474e6defb97d
+
+% 1 1 0 01eec85da9c1a1ce1902c1fd5d373878
+
+@ 0 2 0 16ceae27f45a973106e37104de7f9db2
++ Rien d'autre n'a de notion d'attente côté serveur. Pour un bouton qui devient actif, ou un
++ titre dont le texte change, trois méthodes interrogent périodiquement selon la politique de
++ nouvelle tentative dans la portée :
+
+% 2 1 0 0bb5e9dbab69083e01189aa395a4f6b3
+
+@ 0 6 0 16212bb91db7b5750a8bfcd9dfb52f7a
++ column  Méthode
++ column  Attend que
++ column  Renvoie
++ row  `awaitElement(locator)`  un élément corresponde  la première correspondance
++ row  `awaitElements(locator)`  un élément quelconque corresponde  toutes les correspondances
++ row  `awaitUntil(condition)`  une condition soit vraie  rien
+
+% 1 1 0 1f89a33ecd55a2d21ec406c59ff3195c
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 1ba4ca4d3f4f3c581e95b14aed4cf220
+
+% 4 1 0 1ef3f9c56b399d0f1fcb7e5a6eea1603
+
+% 0 1 0 041f58525b124e6a1e2ea54b00b4cad7
+
+% 2 1 0 11d32dba5a0e50df08bd723ed67612ed
+
+% 3 1 0 07bf6983b14664221ee336bc0656964f
+
+% 0 1 0 1735b48893f649a5131e6267fa4ca880
+
+% 0 1 0 158e18e44a64ab61189af8013e15ba4c
+
+% 1 1 0 069f241e40e9aa0a196798d12b032adc
+
+@ 0 6 0 12202d9859fcbe451235aeef8245108c
++ La politique est un `Tenacity`, qui est le même
++ [calendrier de nouvelles tentatives](concurrency.md#retrying) qu'ailleurs ; l'intervalle et
++ le nombre de tentatives appartiennent donc à l'appelant. Les épuiser lève une
++ `Tenacity.Error`. Ces méthodes interrogent l'endpoint au pluriel, qui signale l'absence par
++ une liste vide et non par une erreur. C'est délibéré. La [stratégie] d'erreur d'une session
++ est fixée à son ouverture ; un échec levé à l'intérieur du bloc interrogé ne pourrait donc
++ pas être intercepté ici pour déclencher la tentative suivante.
+
+@ 0 1 0 0ee277fbab855a691cad92900b1e0ace
++ ### Scripting de page typé
+
+@ 0 4 0 02ba42bf86d41b33114324d84db5a6a1
++ Le comportement attaché à une page, comme un `onclick` ou un `onchange`, s'écrit sous forme
++ d'expression DOM typée, et non de chaîne JavaScript. Les valeurs `document` et `window`
++ parcourent les interfaces réelles du DOM, vérifiées par rapport à WebIDL, et se rendent en
++ JavaScript là où un attribut [HTML](html.md) attend un script :
+
+% 2 1 0 09680ae80952cf6f02812324170353a2
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10a015fbb549ff8011f948ce95f0e5d2
+
+% 0 1 0 09473cf9e8f4146b1c839348c664a020
+
+% 1 1 0 029aca4d1d8ac11f1c3a8530e08ebe4b
+
+@ 0 1 0 1d2aad6c43d6316c06f0d35b5f53b3f3
++ Une méthode que le DOM ne définit pas, ou un argument du mauvais type, est une erreur de
++ compilation :
+
+% 2 1 0 18695607f2a3a2390d429a4723942e11
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1825a32e774c34a00d9b21e4eb91a863
+
+% 1 1 0 14cb5e96844c9a1414e0e452e3419bae
+
+@ 0 2 0 1ac568729aa89f0b0ab156d415a0c5c9
++ Le JavaScript qui atteint la page est connu pour être bien formé par rapport aux interfaces
++ qu'il appelle.
+
+@ 0 1 0 1b567a34a312e8bd1837dbd47b0d9d83
++ ### La place de chacun
+
+@ 0 4 0 1c1abcbb952ffa350835f9b63927a7ad
++ Les deux moitiés se rejoignent dans les tests. Une page dont les gestionnaires ont été
++ générés à partir d'expressions vérifiées est exercée par un pilote dont les localisateurs
++ sont des sélecteurs vérifiés. L'aller-retour complet, qui consiste à générer, servir,
++ piloter et vérifier, reste à l'intérieur du système de types, le navigateur étant le seul
++ composant non vérifié.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 8 0 10a35aa49d7a42a21abebc59fa88aebf
++ - [HTML](html.md) et [CSS](css.md) décrivent les documents, sélecteurs et identifiants typés
++   que partagent localisateurs et gestionnaires.
++ - [DOM du navigateur](dom.md) décrit le scripting qui s'exécute dans le navigateur lui-même,
++   sous Scala.js.
++ - [Interopérabilité étrangère](foreign-interop.md) explique comment les définitions WebIDL
++   sont lues.
++ - [Tests](testing.md) accueille les tests de bout en bout qui pilotent un navigateur.
++ - [Concurrence](concurrency.md#retrying) décrit le `Tenacity` qui régit l'attente.
++ - [Images](images.md) décrit le `Raster in Png` que donne une capture d'écran.
++ - [Système de fichiers](filesystem.md), [terminal](terminal.md) et [XML](xml.md) décrivent
++   les poignées, les frappes de touches et les localisateurs XPath qu'utilise une session de
++   navigateur.

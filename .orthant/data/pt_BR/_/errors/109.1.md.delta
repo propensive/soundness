@@ -1,0 +1,71 @@
+orthant 2 language
+
+% 0 1 0 058d43f16a5e3ecf18da47c44d3c9e1b
+
+@ 0 1 0 1e3ca82d892fddae1f6391500c1f8d2f
++ Lançado quando o Exoskeleton não consegue executar o binário `tmux`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 1da77a8e402d8dbd17077325085e8a3f
++ A integração `Tmux` do Exoskeleton invoca `tmux` pelo shell. Se o binário não estiver no `PATH`
++ (ou não for executável), este erro é lançado.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 011ac4e91eb82ef10b81150c3c3cad99
+
+% 1 1 0 0833bef0db2eff3413a91240607dc052
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 043ade3193b878f919abc802da9c4be6
++ Instale o `tmux` e garanta que ele esteja no `PATH` do processo.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0753f07cb10fafad111b0526cd74c9d0
+
+@ 0 1 0 0a3252c6988503f11cb22deb4e80a197
++ O shell que o tmux foi instruído a executar não está no `PATH`.
+
+@ 0 1 0 08916296ac190b2d1ae4f07bbd6dfb89
++ **Exemplo.** `` [↯/s.109.1.1] can't drive tmux: the shell binary `fish` is not installed ``
+
+@ 0 1 0 03e1037dad80d3b2150114c7d6a0c2d2
++ **Resolução.** Instale o shell, ou indique um que esteja presente.
+
+% 0 1 0 1d979ae56af034410775d0b756b1f688
+
+@ 0 1 0 0d41f571a8ce9dca1b86f363370de658
++ A sessão do tmux terminou enquanto o programa a controlava.
+
+@ 0 1 0 0b421c4a1927f3b60238626f0f8d96e6
++ **Exemplo.** `[↯/s.109.1.2] can't drive tmux: the tmux session terminated unexpectedly`
+
+@ 0 1 0 111ce5bce032110b1021275d594d949f
++ **Resolução.** A sessão foi encerrada à força, ou o comando dentro dela terminou. Verifique os logs
++ do próprio servidor tmux.
+
+% 0 1 0 14b2493552c89b4a0a16bf6478d0a4ff
+
+@ 0 1 0 1a92403c3753d7eb15eab8adbd6a1d06
++ O binário `tmux` não pôde ser executado de forma alguma.
+
+@ 0 1 0 029d705545fb12310d31d65c183780db
++ **Exemplo.** `[↯/s.109.1.3] can't drive tmux: could not execute tmux`
+
+@ 0 1 0 1e65d483559313ac145a237281e5dfd0
++ **Resolução.** Instale o tmux, ou garanta que ele esteja no `PATH` do processo.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 15e7999c8ccca650055c23c279685e0a
++ - Código-fonte: `lib/exoskeleton/src/rig/exoskeleton.Tmux.scala`

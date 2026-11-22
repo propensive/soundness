@@ -1,0 +1,151 @@
+orthant 2 language
+
+@ 0 1 0 0bb7406c65f4195e0bb145cab3f9b16f
++ # La concurrence structurée
+
+@ 0 6 0 13f37f2935a89dc50a1d863ca56b1266
++ La concurrence dans Soundness est structurée : les tâches sont lancées au sein d'une portée qui les
++ possède, et cette portée ne se termine pas avant ses tâches. Un échec dans une tâche se propage à ses
++ sœurs et à son parent au lieu de disparaître inaperçu, et annuler une portée annule tout ce qui se
++ trouve en dessous. Les durées de vie concurrentes s'imbriquent comme les blocs du code ordinaire ;
++ le travail parallèle a donc un début et une fin aussi nets que le travail séquentiel, et aucune
++ tâche ne survit à la portée qui l'a lancée.
+
+@ 0 1 0 197386b47088f7c602111ce79f77f5c5
++ ## La portée possède la tâche
+
+@ 0 2 0 122364f1850af72c1a094f00bc0b954f
++ `supervise` ouvre une portée ; `async` lance une tâche en son sein. La portée ne rend pas la main tant
++ que ses enfants ne sont pas réglés, que quelque chose les ait attendus ou non :
+
+% 2 1 0 131b45c65c2cbdbc1cd3332e5f3860b1
+
+% 3 1 0 13522da2bda70d891cb11e255874a32f
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 19151d611c6de0cf17c9d86d2b0e35ea
+
+% 0 1 0 198b0d13abd9393819d2f453eab75e2d
+
+% 0 1 0 01ec73c9ff3d190c083dae6e683c7f49
+
+% 1 1 0 02960e878ef535d4013a8c00daa8e194
+
+@ 0 2 0 18ed9a83de3ba1121fcfec723995cd6b
++ L'équivalent non structuré — démarrer deux threads et espérer — diffère par ce qui se passe quand
++ quelque chose tourne mal, ce qui est le seul cas pour lequel il vaille la peine de concevoir.
+
+@ 0 1 0 0119fd13b3a0abf61f86d235074b75d3
++ ## Ce que la structure apporte
+
+@ 0 5 0 1001e3ca96a6033218604767be661356
++ **Un échec a un endroit où aller.** Un thread qui lance une exception n'a personne à qui la signaler ;
++ son exception est donc affichée, ou avalée, ou remise à un gestionnaire qui n'a aucune idée de ce qui
++ était tenté. L'échec d'une tâche se propage à la portée qui la possède, qui annule les autres enfants
++ de cette portée — car un travail entrepris pour le compte d'un calcul qui a déjà échoué est un
++ travail que personne ne veut voir terminé.
+
+@ 0 3 0 168f36c529a1ddb11c91d4ac1889696f
++ **L'annulation atteint tout le sous-arbre.** Annuler une portée annule ses enfants, qui annulent les
++ leurs. Il n'y a aucun ensemble de références de threads à maintenir, ni aucun risque d'en oublier une,
++ car l'arbre de possession existe déjà.
+
+@ 0 3 0 1734226298b0771d09a734b7d9dce9da
++ **Rien ne survit à sa raison d'être.** Une tâche ne peut survivre à la portée qui l'a lancée ; la
++ question « ce travail d'arrière-plan tourne-t-il encore ? » a donc une réponse structurelle plutôt
++ qu'empirique.
+
+@ 0 1 0 15c104ca12628b581368636687d93c9f
++ ## Ce qui se passe à la frontière
+
+@ 0 2 0 1215a63081f0fec919832f41c30b1a60
++ Une portée doit décider quoi faire d'un enfant encore en cours d'exécution lorsque le corps du parent
++ se termine, et cette décision est explicite plutôt que supposée. L'*homologation* la nomme :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 5 0 02f9eabe5d2a5bd5031f992d73fe91f9
++ column  Un enfant encore en cours lorsque le corps se termine
++ row  `probates.awaitProbate`  est attendu
++ row  `probates.cancelProbate`  est annulé
++ row  `probates.panicProbate`  provoque une panique
++ row  `probates.failProbate`  lève une `Async.Error`
+
+% 1 1 0 02b162bee2ac8c73182faf5b2d29cbe2
+
+@ 0 2 0 0106bf45d998429e1f90765a44b49f8b
++ Chacune se défend quelque part et aucune ne peut être devinée sans risque ; c'est pourquoi il n'y a
++ pas de valeur par défaut.
+
+@ 0 3 0 0f9a271a621e231714e13ca6cbea23f6
++ Un `daemon` est l'exception délibérée : un travail sans suivi que la portée n'attend pas et qu'elle
++ annule lorsqu'elle se termine. Il ne peut pas non plus survivre à sa portée — il n'est non structuré
++ qu'en ce que rien n'attend son résultat.
+
+@ 0 1 0 093a2db087bdf0970effe2c86d222749
++ ## La suspension est visible
+
+@ 0 3 0 0c9ada3a2b11f8c91865b55221b3ef06
++ Attendre est un effet, et cela apparaît dans les types comme tout autre effet. Attendre une tâche ou
++ une promesse, dormir et céder la main exigent tous une capacité `Monitor` ; une méthode qui peut
++ bloquer le dit donc dans sa signature :
+
+% 2 1 0 0a81a6945bdf8f41163183cbc92610d8
+
+% 3 1 0 1119f40b1c8cc0c3084094d7507216fd
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 103ac5c66c4d87620b1e7fa5e43ade81
+
+% 1 1 0 084ebc2b90c46ba60dd5d98eeb6ba0fd
+
+@ 0 3 0 142a85026146b6e618e1104948290a66
++ C'est la même discipline que les [signatures honnêtes](honest-signatures.md) appliquent à l'échec.
++ Un appelant peut voir, d'après le seul type, si une méthode risque de mettre en attente le thread sur
++ lequel elle est appelée.
+
+@ 0 5 0 0592092f3d4016011f6d454c644a7c85
++ En dessous, l'unité d'exécution est un `Strand` plutôt qu'un thread, avec les quatre opérations dont
++ la suspension a besoin : interrompre, joindre, mettre en attente et réveiller. Comme un superviseur
++ fournit les brins et qu'un superviseur est une valeur, un ordonnanceur qui n'est pas construit sur
++ des threads — une boucle d'événements sur les ensembles attendables de WebAssembly — se branche sans
++ changer le moindre code qui lance ou attend des tâches.
+
+@ 0 1 0 1963ce40bed34c001fc6cbad16727a56
++ ## Les erreurs d'un démon ne remontent pas le temps
+
+@ 0 5 0 0ebb9e2b9c61c748166f7639ca2a8937
++ Une subtilité découle du fait de prendre la possession au sérieux. Le corps d'un démon ne peut pas
++ capturer un gestionnaire d'erreurs du code qui l'a lancé, car au moment où le démon échoue, ce code
++ est passé à autre chose — y remettre l'erreur reviendrait à reprendre un calcul déjà terminé. Un
++ démon qui échoue remonte donc sous la forme d'une `Fault`, qu'un programme intercepte là où il traite
++ l'inattendu.
+
+@ 0 3 0 1453cbc75f08509a147270d4cbcb5392
++ C'est le genre de cas que la concurrence non structurée laisse indéfini et que la structure oblige à
++ mettre au jour : la question « où va cette erreur ? » a toujours une réponse, même lorsque cette
++ réponse est « pas là où vous l'auriez supposé ».
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ce que cela coûte
+
+@ 0 6 0 01da9b750294f7371580b6c3a28977e0
++ La structure restreint ce qui peut être exprimé. Un travail qui doit véritablement survivre à la
++ portée qui l'a lancé — un service d'arrière-plan démarré pendant une requête, par exemple — ne peut
++ pas simplement être lancé puis oublié ; il doit être possédé par une portée qui vit assez longtemps,
++ ce qui veut dire en aménager une. C'est plus de travail que de démarrer un thread, et c'est plus de
++ travail pour une raison : un thread sans propriétaire est précisément la chose dont personne ne peut
++ ensuite raisonner sur la durée de vie.
+
+@ 0 3 0 10fa488026cf4af813c5297b417ddcb8
++ Voir [les portées délimitées](delimited-scopes.md) pour la forme générale dont ceci est une instance,
++ et [le contrôle des captures](capture-checking.md) pour la façon dont l'échappement est rendu
++ impossible plutôt que simplement découragé.

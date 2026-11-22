@@ -1,0 +1,2887 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d20724440cb8d66152c646816b18768
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0bea5823ded45c690e110e06b4e7fcef
++ info   型付きの不変な値としての JSON：パース、構築、ナビゲーション、Scala の型との相互変換、ストリーム出力
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 18db12a9416a865d065b5c4d1114bdc0
++     _Jacinta_ は [JSON](https://www.json.org/) を読み書きする。
++     中心となる型は `Json` であり、これは不変なドキュメント（またはその中の任意の値）である。
++     テキストやバイトから `read[Json]` でパースし、`Json.make` や `j"…"` 補間子で構築し、キーとインデックスでナビゲートし、`as[T]` で Scala の型へ、`in[Json]` で Scala の型から変換する。
++     変換は型クラス `Json.Encodable` と `Json.Decodable` によって行われ、コンパイラはケースクラス、列挙型、シールされた階層に対してその形からこれらを導出する。
++     そのため、レコードは手書きのコードなしにオブジェクトへ変換でき、また元に戻せる。
++     データと型が合わない場合は、理由と、可能であればフィールドを示す `Json.Error` が発生する。
+
+% 2 1 0 02bd98843b81ecda1c8dd057466a3618
+
+% 3 1 0 17e2a008020ac8fe1e9f2b6ec287c192
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 098392ca96d9bb94167323c7f9c2a04c
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 19abe2ec09131ec207294a8ced389e79
+
+% 0 1 0 0d38c8e5f3abe58a03dd4cc4ff58f891
+
+% 0 1 0 1cda8a7dd9c0d58509ac67b9987dd424
+
+% 0 1 0 1b66d206664c53581ff58aa5ff96c020
+
+% 0 1 0 14fb1344611ef9d10937f4eb448d1c86
+
+% 1 1 0 1bab4866822c186301e3c020cecb100a
+
+@ 0 8 0 1f60de6f60c44cd71b468fdd33e479e0
++     ドキュメントを構築する必要がまったくない場合もある。
++     `Json.Parsable` を持つ型はトークンストリームから*直接*読み取られ（`Json.Parsable.derived`、`Json.Parsable.staged`、`Inlinable.parsable`、または生成されたパーサーとプリンターを得る `derives Json.Direct`）、`Json.Printable` を持つ型は `in[Text over Json]` と `in[Data over Json]` を通じてテキストやバイトへ直接書き出される。
++     `codecs.direct`、`codecs.derived`、`codecs.strict` のインポートは、スコープ内のすべてのレコードについて、生成された経路とツリーに基づく経路のどちらを使うかを選ぶ。
++     直接のパースと出力により、このライブラリはすべての値を型付きに保ったまま、最速の JVM 向け JSON ライブラリにわずかな差まで迫る。
+
+@ 0 4 0 05a17db2289dfded0a925397fb5655b5
++     大きなドキュメントはストリームで扱う。
++     `Json.emit` はファイバー上でシリアライズし、生成されたテキストを順に渡す。
++     プッシュ形式の `Json.emit[Text]`/`Json.emit[Data]` は呼び出し元のスレッドでブロックを届け、`Json.lend` はライターのバッファをコピーせずに貸し出す。
++     パースもストリームで行える。
++     `Json` は `Aggregable by Data` なので、turbulence がストリームできる任意のソースから読み取れる。
+
+@ 0 7 0 077eefaa9415bc3402ef619ec21f70b8
++     変換以外にも、このライブラリは次のものを提供する。
++     `JsonPointer`（RFC 6901 のパス、`jp"…"` で記述する）、`parsing.trackPositions` がスコープにあるときのすべての値のソース位置（`locate` と `locateKey`）、`dynamicAccess.dynamicJson` または `dynamically[Json]` ブロックで許可される動的なフィールドアクセス（`json.name`）、ドキュメントに対するレンズとオプティクス（`json.lens(_.a.b = …)`、`optics` パッケージの `Each` と `Filter` を使う）、`Long` や `Double` に収まらないほど長い数値をどう扱うかを決める `NumberMode`、そして `Json.Provider` である。
++     `Json.Provider` はコンパイル時に JSON Schema ドキュメントを読み、それに合う JSON から型付きのレコードを得る。
+
+@ 0 1 0 0b20078b7e7ded3518104830a387ab30
++     このライブラリは六つのソースセットに分かれている。
+
+@ 0 16 0 095dee269a5bf03d0a7cc2423bbd1d62
++     - `jacinta.core` — `Json` と上記のすべて。`JsonPointer`、`NumberMode`、`Inlinable`、`j"…"` と `jp"…"` の補間子、そして選択パッケージ `formatting`、`numberModes`、`optionalityOptions`、`discriminables`、`dynamicAccess`、`conversions`。JVM、Scala.js、Scala Native 向けにコンパイルできる。
++     - `jacinta.schema` — `JsonSchema`（Scala の型から導出されるか JSON から読み取られる JSON Schema ドキュメント）、`verify`（ある型のスキーマに照らして `Json` を検査し、フィールドをコンパイル時の検査つきでナビゲートできるよう型付きで返す）、そして `@memo` アノテーション。
++     - `jacinta.optics` — `optics` パッケージ。`json.lens(…)` を動作させる `jsonLens` と、配列に対する `Each`、`Filter`、序数のオプティクス。
++     - `jacinta.http` — JVM のみ。`postables`、`servables`、`construables` パッケージ。`Json` を `application/json` のリクエスト本文として送り、レスポンスとして返し、API の JSON 本文を `Json` として読み取る。
++     - `jacinta.time` — `encodables`、`decodables`、`parsables` パッケージ。aviation の `Instant` と `Duration` をミリ秒単位の整数として扱う。
++     - `jacinta.staged` — `InlinableStager`。ユーザーが書いた `Inlinable` を、生成されたパーサーが埋め込まれる際に評価できるようにするコンパイル時の仕組みであり、その中のものを手で呼び出すことはない。
+
+@ 0 7 0 08346a1d00e5749e19c94b2ae24fee0c
++     すべては `soundness` アンブレラにエクスポートされ、ここにある選択パッケージはそれぞれアンブレラの同名のパッケージと統合される。
++     選択パッケージが保持するのは *given* であり、`import soundness.*` は given をインポートしないので、それぞれを名前でインポートする。
++     `import formatting.indentedJsonFormatting`、`import numberModes.doubleNumberMode`、`import discriminables.jsonByKindDiscriminable`、`import dynamicAccess.dynamicJson` などである。
++     ほとんどのコードが選ばなければならない given は `Json.Formatting` である。
++     `show`、`emit`、HTTP の given のすべてがそれを必要とするからだ。
+
+% 0 1 0 1d2152a3928d9f851691f916cc6f9358
+
+% 0 1 0 061a77203fb7f0240a3078207d9d3e81
+
+% 0 1 0 19df02dd7d7682031f33db288688ee03
+
+% 0 1 0 161234bca78558f1089324f2fd0614f0
+
+% 0 1 0 13ea7e81f5f548760ffa1f837626e2a2
+
+@ 0 1 0 026e41c7fbbd4c96079da36bd92bd6be
++ entry .Json   不変な JSON 値と、それをパース、構築、変換、ストリームするコンパニオン
+
+% 1 1 0 0593cb63538646a51a4cd4b9adc35b5f
+
+@ 0 5 0 0f0923e15d11e54111244b6c15e30f40
++       `Json` は任意の JSON 値 — オブジェクト、配列、文字列、数値、真偽値、`null` — であるか、*存在しない*値である。
++       存在しない値とは、オブジェクトにないキーを参照したときに得られるものである。
++       `Json` は不変であり、更新はすべて新しい `Json` を返す。
++       二つのドキュメントは、キーの順序にかかわらず値が等しければ等しい。
++       また、整数は小数点つきで書かれた同じ値と等しい。
+
+% 2 1 0 0e338a17538aa1b9072a1d79eedecbc7
+
+% 3 1 0 0d2393294ccc2b861a3c21807603dc3c
+
+% 4 1 0 10ad4af30ddd61480332899d417ff923
+
+% 5 1 0 1f871896ac3e75b70fac62482ebb4469
+
+% 0 1 0 1f463dc5dc23ed750b40974831f6ef65
+
+% 0 1 0 1e250b33fa579a461abe8a3c7a79683e
+
+% 0 1 0 19da6d8d7e3ea6ae10eba123d792e8e6
+
+% 0 1 0 15c9518ab06854081173378bbfcda3aa
+
+% 0 1 0 0be1ea50616e25cc06ac3dfe5011253c
+
+% 0 1 0 14d606000a000f871ef4d04fd1397b19
+
+% 1 1 0 1a95b1ca2ee7ef6e09a9d8b9ddb56a0a
+
+@ 0 6 0 1af883f182fea8f3084ad91ec7c1e6ea
++       **読み取り。**
++       `Json` は `Aggregable by Data`（`.aggregable`）なので、turbulence がストリームできる任意のソース — `Text`、`Data`、ファイル、HTTP 本文 — を `read[Json]` で読み取れる。
++       不正な入力に対しては `Tactic[Parse.Error]` を通じて `Parse.Error` が発生する。
++       `parsing.trackPositions` がスコープにあると、パーサーはすべての値の行と列も記録し、それは `locate` と `locateKey` で読み出せる（`.positionable`）。
++       `read[T in Json]` は JSON テキストから `T` 型の値を一度に読み取る。
++       `T` が `Json.Parsable` を持つならトークンから直接読み取り、そうでなければツリーを経由する。
+
+@ 0 7 0 00556aac8a2ca22709ef8e87299a4e44
++       **変換。**
++       `as[T]` は `Json.Decodable` を通じてデコードし（`#as`）、`value.in[Json]` は `Json.Encodable` を通じてエンコードする。
++       コンパニオンはプリミティブ、`Text`、`Unit`（JSON の `null`）、`Optional`、`Option`、`List`、`Set`、`Sequence`、`Map`、そして `Json` 自身のインスタンスを持ち、任意のケースクラス、列挙型、シールされた階層に対してインスタンスを導出する（`.decodable`、`.encodable`）。
++       変換できない場合は `Json.Error` が発生し、蓄積型の戦略のもとでは失敗したすべてのフィールドが、それぞれの JSON ポインターを示す `Json.Focus` とともに報告される。
+
+@ 0 5 0 070d99b6016f09e213bf396c63366ac3
++       **構築。**
++       `Json.make(a = …, b = …)` は名前つきの `Json` 引数からオブジェクトを構築し（`.applyDynamicNamed`）、`Json(value)` はプリミティブをラップする（`.apply`）。
++       `j"…"` 補間子は JSON をそのまま書くもので、コンパイル時に検査され、エンコードされる値、`*` で展開されるコレクション、統合されるマップのための穴を持てる（`.interpolator`）。
++       同じ補間子はパターンとしても使える（`.extrapolator`）。
+
+@ 0 6 0 03cc294f8e9647391fbc138b6d936021
++       **ナビゲーションと更新。**
++       `json(t"key")` と `json(index)` はフィールドまたは要素を選択する（`#apply`）。
++       `dynamicAccess.dynamicJson` をインポートすると、フィールドはメンバー `json.name` として読め、`json.name = value` で設定し、`json.name = Unset` で削除できる（`#selectDynamic`、`#updateDynamic`）。
++       ある型に対して `verify` されたドキュメントは、そのようなインポートなしにコンパイル時の検査つきでフィールドをナビゲートできる。
++       より深い更新は `optics` パッケージの `json.lens(_.a.b = …)` で書く。
+
+@ 0 4 0 12082aebcddcb077125c1c62b592c822
++       **書き出し。**
++       `show` はスコープ内の `Json.Formatting`（`.showable`。`formatting.compactJsonFormatting` または `formatting.indentedJsonFormatting`）でドキュメント全体を `Text` として描画し、`.emit` はそれをストリームし、`.lend` はライターのバッファを貸し出す。
++       `Json` はまた `Streamable by Text` であり、`Encodable in Text` であり、HTTP 本文（`.abstractable`）であり、`Inspectable` でもある。
+
+% 2 1 0 1c81ccba59ca290e17532560a1b61825
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 05f78b0540c9888e15949bbd6615e268
++         label パースされたままのドキュメント
+
+% 1 1 0 13163d984d78fad20fffd303a1806661
+
+% 2 1 0 1e9f29f2a80dc648192d50e654d209c7
+
+% 3 1 0 1c2b018c0cd7c18e1ba94fb1814e0455
+
+% 0 1 0 1a6f88364bcdcf7a12b543fbd0bd45d7
+
+% 1 1 0 1a8f05db56d23fb305523e8b8cea2d68
+
+@ 0 1 0 1c98a8b781dc6cb91250ced123d317a1
++         label キーで到達するフィールド
+
+% 1 1 0 05994c97230ec3b01eeb3eebd244cba3
+
+% 0 1 0 1995af221d664aba0de21e72f1ff054c
+
+% 1 1 0 0e65469fe71e5574013e39a377449f3b
+
+@ 0 1 0 1d09a888a3811b7b100cda332fa5aeeb
++         label 動的アクセスを有効にした同じフィールド
+
+% 1 1 0 0ea15984ea24b27803a0385e73a5f37f
+
+% 0 1 0 077990a899cf9f3116e8bda8edbc7330
+
+% 0 1 0 1464d0bf860f8a4b13dd9af5a4994837
+
+% 1 1 0 1e7a62761b5d12630a8680a423a8c12c
+
+@ 0 1 0 1fdad915d4900a511fb9c3c149a757c6
++         label ケースクラスにデコードしたドキュメント全体
+
+% 1 1 0 0d8c2d6ba3a416450634fa4b7502b490
+
+% 0 1 0 04f0d78cdf7b631415250ce3ec09397d
+
+% 0 1 0 02b8c0faaf9ce7530d5c8e400b449be1
+
+% 1 1 0 163cd9e1f96ef53511bb316a9ebfdf81
+
+@ 0 1 0 18272ab12da8092310e50dd365317d50
++         label 新しいドキュメントとしての更新
+
+% 1 1 0 09457f743a0d6a3f0a371ad775855a09
+
+% 0 1 0 18b2041adec90470127de9ac16c8c488
+
+% 1 1 0 1db5ca88e96858be075a5025fc1de020
+
+% 2 1 0 0db951a1657703761832c655e1d24ee4
+
+@ 0 4 0 146ac517b6688a961b8a2e14d7ef4000
++       コンパニオンはミックスインの連鎖（`Json1` から `Json4`）から組み立てられており、それによって given の優先順位が決まる。
++       直接のパーサーとプリンターは導出されたコーデックより上に、要素ごとのインスタンスは汎用のフォールバックより上に置かれる。
++       それらのメンバーはそれぞれのミックスインの項目で説明しており、`object Json` はそれらを継承する。
++       すべての読み取りの背後にあるトークナイザはトップレベルの `Parser` であり、それには専用のページがある。
+
+% 0 1 0 02bf5e05a46d03f005fa1b11207f5d6c
+
+% 0 1 0 1b316b80f78379141149fb7ef044b574
+
+% 0 1 0 1c75699b95080a3203722bce3a7952bb
+
+% 0 1 0 165ca562a1253f280aad7efcc423e7e8
+
+% 0 1 0 1c6abe5019a5a1b018896581e12b633a
+
+% 0 1 0 0c44697e1c5c27b51796b71895c78b6f
+
+% 0 1 0 083ce8b7c9cf2bb511f05a9b58e1e2bb
+
+% 0 1 0 1ed67cda0c32e92a0787b7204879b260
+
+@ 0 9 0 17f578c3020391320f343826de466282
++   entry .apply   プリミティブ値を `Json` としてラップする：`Json(42)`、`Json(t"text")`、`Json(true)`
++       `Json(value)` は生の値から `Json` を作る。
++       `Int`、`Short`、`Byte`、`Long`、`Float`、`Double` のオーバーロードは、数値をツリー独自の形式（整数は `Long`、`Float` は `Double`）で格納する。
++       ツリー内の生の `Int` は整数ではなく、パックされた小さな十進数として読まれるからである。
++       `apply(value: Any)` はそれ以外のものをそのまま受け取るので、任意の Scala の値ではなく、すでにツリーの表現になっている値（`String`、`Boolean`、`Json.JsonNull`）のためのものである。
++       任意の Scala の値は代わりに `in[Json]` を通すべきである。
++       二引数の形式 `Json(value, positions)` は、追跡つきのパーサーが行うように、値に `Json.PositionIndex` を付加する。
+
+% 2 1 0 1526adeae91fc2bd04312302dc766c81
+
+% 3 1 0 16f6a032f70be83e19ba7f04db83545f
+
+% 0 1 0 1577aa836c7a4cc614620f62b4d9e4f7
+
+% 0 1 0 1c5bc6bf89d957530b50e05f2b9e3bda
+
+% 0 1 0 0e13ff17864fa6581037eba5cddcfb0d
+
+% 1 1 0 0e2b14b8cb5bee891550d8db99c84800
+
+@ 0 8 0 1f4ad3855a99501c0c68b63ed4fb64e3
++   entry .ast   `Json.Ast` ノードを `Json` としてラップする
++       `.unseal` の逆である。
++       `Json.ast(node)` は、与えられたツリーノードを根とするドキュメントである。
++       `Json.ast(Json.Ast(Unset))` は、存在しないキーが返す存在しない値である。
++   entry .applyDynamicNamed   `Json.make(key = json, …)`：名前つきの `Json` 引数から構築されるオブジェクト
++       `Json` は `Dynamic` であり、その唯一の動的メソッドは `make` である。
++       `Json.make(a = 1.in[Json], b = t"two".in[Json])` は引数の順序を保ったまま、オブジェクト `{"a":1,"b":"two"}` を構築する。
++       各引数はすでに `Json` でなければならない。
++       `conversions.encodableToJson` をインポートすると、`Encodable in Json` である任意の値を直接渡せる。
+
+% 2 1 0 1799fb94c86141ea08c53cd737ad79eb
+
+% 3 1 0 1f2f3f6990d88b8b10adad6dd7144ceb
+
+% 1 1 0 1053fd0643bf9b4b1e235d624092d5e3
+
+% 0 1 0 02cb9b144db6714b145837f582d2b7d0
+
+% 0 1 0 00b9a848c01c01f80d98e3340234abfc
+
+% 0 1 0 13ed5eb1dca8ca0c1be1a98a21417ccb
+
+% 1 1 0 0c7c2dfbd87d19151535ff1536311567
+
+@ 0 5 0 0cbcb37d8a99d3581160905c784406a7
++   entry .unseal   `Json` の下にある `Json.Ast` ツリー。その種類を直接調べるためのもの
++       `Json` の抽象を破ることは、意図的で名前のついた操作である。
++       `Json.unseal(json)` は根の `Json.Ast` ノードであり、その上で `Json.Ast` の述語（`isLong`、`isDouble`、`isNumber`、`isString`、`isBoolean`、`isNull`、`isObject`、`isArray`、`isAbsent`）と `primitive` が値の種類を答える。
+
+% 2 1 0 064d4b0cf144983b071ea77770259304
+
+% 3 1 0 11013baa94617e2612467fd56d8b1325
+
+% 4 1 0 12ce1e1a521c71841a5bfbd41a7b1f4e
+
+% 0 1 0 0a69ac88953efa6e0089799f8aeebb6d
+
+% 0 1 0 0e01f635c5e367c3189c674609284571
+
+% 0 1 0 0e4d7b7557b4ec010f51c01ed30750ff
+
+% 1 1 0 1024d4a33083857d17bbb4d3b0af62f3
+
+@ 0 12 0 08421f24e9fdd0df04e9aa28bbd38cd5
++   entry .emit   ドキュメントのテキストをストリームする：ファイバーから引き出すか、関数へブロックごとに押し出す
++       形式は二つある。
++       `Json.emit(json)` はファイバー上でシリアライズし、生成されたテキストを順に渡す `Iterator[Text]` を返す。
++       そのため、大きなドキュメントを、描画し終える前からソケットやファイルに書き出せる。
++       これは `Json.Formatting`、`Monitor`、`Probate` を必要とするので、`supervise` のもとで実行する。
++       プッシュ形式の `Json.emit[medium](json, deliver)` は、ファイバーを使わずに呼び出し元のスレッドでシリアライズし、各ブロックが埋まるごとに `deliver` へ渡す。
++       `emit[Text]` は `Producer[Text]` を通じてテキストを届ける。
++       `emit[Data]` はバイトレベルのシリアライザーが直接書いた UTF-8 のバイトを届ける。このシリアライザーは各文字列のエスケープとエンコードを一度の走査で行い、BCD の数値を `String` を経由せずにそのニブルから描画する。
++       媒体は `Json.Emitter` であり、`deliver` が型のないラムダのときは型引数が必要である。
++       プッシュ形式は `Json.Formatting` と `Buffering` を必要とし、`Buffering` の容量がブロックの大きさを決める。
+
+% 2 1 0 027a867e5a9245ae1e480f5b2e8fb05f
+
+% 3 1 0 1e511c94c551be470f5876ed9796c375
+
+% 4 1 0 085f4f9bc9e38fb013a583e0ceecc20b
+
+% 0 1 0 093ab821d61fba4b078a63210a8e55bc
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 1e48fef646e976e000522bb412f06ee9
+
+% 1 1 0 07459be2e19b007e0292fc3fa49ca394
+
+@ 0 8 0 0d08c10dae0b59341744b15cd5de0f16
++       どの形式も `show` と同じテキストを描画する。
++   entry .lend   プッシュ形式の `emit` の借用版：各 UTF-8 ブロックはコピーされずに貸し出される
++       `Json.lend(json)(lending)` は呼び出し元のスレッドで UTF-8 にシリアライズし、埋まった各ブロックを `Region[Data]` として、すべてのインデックスが範囲内であることを証明するブランドつきの `Interval` とともに `lending` へ貸し出す。
++       これは呼び出しの間だけ有効であり — `Stream.lend` と同じ規律である — 何もコピーされない。
++       バイトを保持しなければならない消費者は、自分でそれを実体化する。
++       よくある場合のそうした消費者が `Json.emit[Data]` である。
++       `Json.Formatting` と `Buffering` を必要とする。
+
+% 2 1 0 1ebd39677b31e1851f3c46cdeee31b7e
+
+% 3 1 0 072f219567bac1c207a66171d22acccd
+
+% 4 1 0 043da4d108508b0c136fc9b0b30edc62
+
+% 0 1 0 090500b811b7c8af0d8e28870bdd76fb
+
+% 0 1 0 026286b741a4d11708de5b3cbeb1bb22
+
+% 1 1 0 050bbeff7f47a1540f4320316c580b48
+
+@ 0 1 0 167bc3a709550b270dea4abc66ea0a4e
++   entry .Emitter   プッシュ形式の `Json.emit` が消費者に届く方法：テキストとして、または UTF-8 のバイトとして
+
+% 1 1 0 03e652d1602ca37b018620dc70ed2cf3
+
+@ 0 7 0 0cd389f4ced3cd5d18f6a167563550e9
++         `Json.Emitter[medium]` は、`Json.emit[medium](json, deliver)` がディスパッチする型クラスである。
++         二つのインスタンスはコンパニオンにある。
++         `Text` のブロックには `.text`、`Data` のブロックには `.data` である。
++         媒体は型引数 `Json.emit[Data](…)` で選ぶ。
++     entry .text   `Producer[Text]` を通じてテキストのブロックを届ける
++     entry .data   バイトレベルのライターが貸し出した領域から実体化した UTF-8 のブロックを届ける
++     entry #emit   ドキュメントをシリアライズし、`Buffering` の容量ごとに各ブロックを `deliver` へ渡す
++   entry .Formatting   ドキュメントの描画方法：インデントの単位（あれば）と、改行で終えるかどうか
+
+% 1 1 0 18a5cda86ddeefb015e369f68eed2550
+
+@ 0 7 0 02b17c62fa0903fa1480894eeb6d305d
++         `Json.Formatting` は `show`、`emit`、`lend`、`Streamable` と `Encodable in Text` の given、`in[Text over Json]`、そして HTTP の given が必要とする。
++         `#indent` は入れ子の一段ごとの空白の単位であり、最小の一行の JSON にするなら `Unset` である。
++         `#trailingNewline` は最後に改行を付け加える。
++         標準の二つの選択肢は `formatting` パッケージの given であり、名前でインポートする。
++         `formatting.compactJsonFormatting`（空白をまったく入れない）と `formatting.indentedJsonFormatting`（一段ごとに二つの空白）である。
++         これは `zephyrine.Formatting` なので、汎用のシリアライザーがこれを受け取れる。
+
+% 2 1 0 0aa9e804b3226c08008b2752cc60b2fa
+
+% 3 1 0 1581b9422710b9e912277bd606bc9136
+
+% 0 1 0 0be6ff261178615b004927e25e323b2a
+
+% 1 1 0 170534067064b5361800660a1122a6cd
+
+@ 0 26 0 03119d430dd14d9802f8b0b2da59e89c
++     entry .apply   与えられたインデントの単位と末尾改行の選択による書式
++     entry #indent   入れ子の一段ごとの空白の単位。一行の出力なら `Unset`
++     entry #trailingNewline   閉じる文字の後に改行を続けるかどうか
++   entry .JsonString   ツリーにおける JSON 文字列の表現：`String`
++   entry .JsonNumber   ツリーにおける JSON 数値の表現：`Long`、`Double`、`Bcd`、またはパックされた `Int`
++       およそ十五桁までの数値は `Long` または `Double` にパースされる。
++       それより長いものは、デフォルトの `NumberMode` のもとでは `Bcd`（すべての桁を保持する）になる。
++       `Int` の形式は整数ではなく、最大七ニブルの*パックされた*小さな二進化十進数である。
++       `Json(int)` が `Int` をそのまま格納せずに `Long` へ拡大するのはこのためである。
++   entry .JsonBoolean   ツリーにおける JSON 真偽値の表現：`Boolean`
++   entry .JsonNull   ツリーにおいて JSON の `null` を表す番兵と、その型
++       JVM の `null` ではなく別のオブジェクトである。
++       そのため、ドキュメント中の明示的な `null` は、存在しないキーが返す*存在しない*値（`Unset`）と区別される。
++       `Json.Ast.isNull` がこれを判定する。
++   entry .JsonObject   ツリーにおけるオブジェクトの表現：キーと値が交互に並ぶ凍結済みの `Array[Any]`
++   entry .JsonArray   ツリーにおける配列の表現：凍結済みの `Array[Any]`、`Array[Long]`、または `Array[Int]`
++       異種の要素を持つ配列は `Array[Any]` であり、オブジェクト（常に偶数長）と区別できるよう奇数長にパディングされる。
++       数値だけの配列は、パックされた BCD の `Long` または `Int` としてボックス化せずに格納される。
++   entry .aggregable   `Data` のストリームから `Json` を読み取る：`source.read[Json]` の背後にある given
++       ストリームされる任意のソース — `Text`、`Data`、ファイル、レスポンス本文 — を `Json` にパースする `Aggregable by Data` インスタンスである。
++       これは `Tactic[Parse.Error]` と `PositionTracking` を必要とする。
++       `Parse.Error` は不正な入力に対して、誤りのある行と列とともに発生する。
++       `parsing.trackPositions` がスコープにあれば、すべての値の位置が `locate` のために記録される。
++       デフォルトでは何も記録せず、何のコストもかからない。
++       メモリ上の単一のブロックはその場でパースされ、ストリームは届くにつれてパースされる。
+
+% 2 1 0 0ed1ec60fe5a2d49096019af2a202419
+
+% 3 1 0 14fbe0023cbd776508b81cf96cb1a709
+
+% 4 1 0 1ec514f9a974cea0177e68f800470088
+
+% 0 1 0 1c30c632d38a561f01deb993f3f6861f
+
+% 1 1 0 1501fc74a8fc4dec0aaf76f3e2aa2da3
+
+@ 0 31 0 0eda654ac2bd4cee0fd855b9760f59bb
++   entry .showable   スコープ内の `Json.Formatting` でドキュメントを `Text` として描画する
++       `json.show` はドキュメントのテキストを得る唯一の経路である。
++       `formatting.compactJsonFormatting` のもとでは簡潔に、`formatting.indentedJsonFormatting` のもとではインデントつきで描画する。
++       数値はパーサーが読んだ桁から書き出されるので、ドキュメントは精度を失わずに往復できる。
++       文字列は RFC 8259 に従ってエスケープされる。
++   entry .streamable   消費されるにつれてファイバー上でシリアライズされる、`Stream[Text]` としてのドキュメント
++       `.emit` のプル形式の上に構築された `Streamable by Text over Credit` インスタンスであり、`Json.Formatting`、`Monitor`、`Probate`（`supervise` ブロック）を必要とする。
++   entry .inspectable   デバッグ用の描画：スコープ内の書式にかかわらず簡潔なテキスト
++       インスペクションは慣例として一行なので、これは呼び出し元から書式を受け取らずに簡潔な書式に固定しており、given をまったく必要としない。
++   entry .abstractable   スコープ内の `Codepage` による `application/json` の HTTP 本文としてのドキュメント
++       `Abstractable across HttpStreams` インスタンスである。
++       コンテンツタイプは `Codepage` の given から得た `application/json; charset=…` であり、本文はそれでエンコードした `show` の結果なので、`Json.Formatting` も必要とする。
++       `jacinta.http` の `postables` と `servables` パッケージが、明示的なリクエストとレスポンスの given である。
++   entry .decodable   テキストからの `Json`：`Text` からドキュメントを読み取り、`Parse.Error` を発生させる
++       `Json is Decodable in Text` は `Text` からドキュメントを読み取り（`t"…".as[Json]`、または別の形式からデコードされるレコード内の `Json` フィールド）、`Parse.Error` を発生させる。
++       superlunary のステージングされた `Json` 値も、これを通じてピクルされる。
++   entry .instantiable   HTTP リクエストのテキストからの `Json`。`Parse.Error` を発生させる
++       `Instantiable across HttpRequests from Text` インスタンスであり、JSON として型付けされたリクエスト本文はこれによってパースされる。
++       スコープ内の `Tactic[Parse.Error]` をキャプチャする。
++   entry .positionable   `json.locate(pointer)` と `json.locateKey(pointer)`：値がソースのどこにあったか
++       `Positionable by JsonPointer to Json.Ast.Position` インスタンスである。
++       `locate` はポインターが指す値の行と列（およびオフセットと長さ）であり、値全体にわたる。負の数は符号を含み、オブジェクトは開き波括弧から閉じ波括弧までにわたる。
++       `locateKey` はポインターの最後のセグメントに一致する*キー*の位置であり、綴りを誤ったフィールド名に下線を引くためのものである。
++       どちらも、ポインターが解決できないとき（存在しないキー、末尾を越えたインデックス）は `Unset` であり、`parsing.trackPositions` がスコープにない状態でパースされたドキュメントでは常に `Unset` である。
+
+% 2 1 0 155d40df14522ece06514ca6a509e412
+
+% 3 1 0 0af69ed423c2d58d1a3cb0d3be6a7084
+
+% 4 1 0 04d85b434aea1a7f00bb7f15111cffd1
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 0f7ea51247475e3b00aa61536dcb6477
+
+% 0 1 0 0d1d9c87286250f8090113673cf1cfbc
+
+% 0 1 0 06fcd6d15ccfc18209aa02541222cff3
+
+% 1 1 0 1af587480080dd360fff995ea95660f9
+
+@ 0 19 0 0f95942142bdd592110e60ef89c422d9
++   entry .interpolator   `j"…"` の背後にあるマクロ：コンパイル時に検査され、型付きの穴を持つ JSON リテラル
++       `Json` の `Interpolable` インスタンスである。
++       リテラルはコンパイル時にパースされ、構文エラーは問題のある文字の位置で報告される。
++       穴 `$x` には `Encodable in Json` である任意の値を代入できる。
++       配列の中の `$xs*` はコレクション（`Iterable`、またはブランドつきの `List(…)` リテラル）のすべての要素を埋め込む。
++       オブジェクトのフィールドの間に置いた `$map` の穴は、`Map[Text, Json]` をそのオブジェクトに統合する。
++       `jacinta.j` を参照のこと。
++   entry .extrapolator   `case j"…" =>` の背後にあるマクロ：穴を束縛する JSON パターン
++       `Json` の `Extrapolable` インスタンスである。
++       `match` の中で、`case j"""{"a": $a}"""` はリテラルのキーを持つオブジェクトに一致し、各穴をそこにある `Json` に束縛する。
++       配列のパターンは長さで一致し、末尾の `$rest*` は残りの要素を `Json` の配列として束縛する。
++       形の異なるドキュメントはその case に一致しない。
++   entry .jsonEncodableInText   スコープ内の書式にかかわらず、簡潔な `Text` としてのドキュメント
++       `Encodable in Text` インスタンス `json.encode` である。
++       常に簡潔なので、別の形式の中に書かれた `Json` フィールドは一行になる。
++   entry .discriminatedUnion   与えられた名前のフィールドでバリアントにタグを付ける `Discriminable`
++       `Json.discriminatedUnion[Shape](t"type")` は、キー `type` のもとの `Json.DiscriminantField` であり、形は `{"radius":1.0,"type":"Circle"}` となる。
++       `discriminables` パッケージの `jsonByTypeDiscriminable` と `jsonByKindDiscriminable` は、これを `type` と `kind` に対して用いたものである。
++   entry .Encodable   値を `Json` に変換し、生成する形を保持する型クラス
+
+% 1 1 0 03c6d4447081bf5816b12413e0ca4c90
+
+@ 0 7 0 018309372929f33603530ca8fd383d07
++         `T is Json.Encodable` は、自分の `Morphology` — 書き出すものの形式に依存しない形 — も知っている `Encodable in Json` である。
++         そのため、型から導出された JSON Schema（`JsonSchema.derived`、`verify`）は構成上コーデックと整合する。
++         `value.in[Json]` が解決するのはこれである。
++         コンパニオンはプリミティブ、`Text`、`Unit`、`Ordinal`、`Optional`、`Option`、`List`、`Set`、`Sequence`、`Map`、`Json` のインスタンスを持ち、任意のケースクラス、列挙型、シールされた階層に対してインスタンスを導出する（`.encodable`）。
++         `Encodable in Text` を持つ型は JSON 文字列としてエンコードされる。
+
+@ 0 2 0 1da1e833213699ba1cdbc528189d3308
++         独自のインスタンスは `.apply` で構築し、形をサンクとして、エンコードをラムダとして与える。
++         これは型のコンパニオンに置く。
+
+% 2 1 0 10f56ba11949f4470b3d11c18f03f6d5
+
+% 3 1 0 0f9d805bdde3c2d410bcd1ab64ec16ac
+
+% 4 1 0 07ef3fb4df9337050756162d18f103c1
+
+% 2 1 0 140cb804efb123b60984d73b0275ce6d
+
+% 4 1 0 123da1c7ab11c1ff11595a04f3af5f23
+
+% 0 1 0 03ed632429cb2e9a1a1a9dc755f5123a
+
+% 0 1 0 0e4d22e2903e23cc047e6fb4ce794bb4
+
+% 0 1 0 1a06e9c65200294e065df30af9349ca4
+
+% 1 1 0 0bd31b4aeaedb1370630d17de5ae3260
+
+@ 0 2 0 0adcf9a52b1ee8e30cd0a7e29ce7ab44
++         導出されたエンコーダーは、各フィールドについてそのフィールドの型に対してスコープにあるインスタンスを使う。
++         一つのフィールドだけを上書きするには、`Specific over Json.Encodable` でそのパスを指定する。
+
+% 1 1 0 0613585f5ab534bb1bfe7497916304d8
+
+% 0 1 0 1783b7ee37e793521ceeeb1ea1c6c8ae
+
+@ 0 7 0 0a651c5bce66b7660f80f75f8e151c27
++     entry .apply   形のサンクとエンコードのラムダから作るエンコーダー
++         `Json.Encodable(() => shape)(value => json)` である。
++         形は明示的なサンクなので、再帰的な導出はそれを後回しにできる。
++         スキーマの仕組みが制約すべきでないものには、`Morphology.Any` が正直な形である。
++     entry #shape   このエンコーダーが書き出すものの `Morphology`
++     entry #Form   このエンコーダーが対象とする形式：`Json`
++   entry .Decodable   `Json` から値を読み取り、期待する形を保持する型クラス
+
+% 1 1 0 190b8d9e790e233814942e87c0d21382
+
+@ 0 8 0 1eadeb2645b62e0b155df081b5bc5261
++         `T is Json.Decodable` は、自分の `Morphology` も知っている `Decodable in Json` である。
++         そのため、`verify` とスキーマの仕組みは、デコーダーが読むものをそのまま検査する。
++         `json.as[T]` と `read[T in Json]` が解決するのはこれである（後者は、`T` が `Json.Parsable` も持つのでなければツリーを経由する）。
++         コンパニオンはプリミティブ、`Text`、`Unit`（`null` だけを受け付ける）、`Ordinal`、`Memory`、`Optional`、`Option`、`List`、`Set`、`Sequence`、`Map`、`Json` のインスタンスを持ち、任意のケースクラス、列挙型、シールされた階層に対してインスタンスを導出する（`.decodable`）。
++         `Decodable in Text` を持つ型は、それを通じて JSON 文字列からデコードされる。
+
+@ 0 4 0 13d92c67e6158a961672ef327688427e
++         どのインスタンスも、スコープ内の `Tactic[Json.Error]` を通じて `Json.Error` を発生させる。
++         種類の違う値は `NotType`、オブジェクトにない必須フィールドは `Absent`、末尾を越えた配列のインデックスは `OutOfRange` である。
++         蓄積型の戦略のもとでは、失敗したすべてのフィールドがその `Json.Focus` とともに報告される。
+
+% 2 1 0 18d65fc29b8664a803c33f0b6db411a7
+
+% 3 1 0 00cd5f8983f244000405fcdfba46a33f
+
+% 4 1 0 1c5627dd70ff57bf06dfde711533f4c5
+
+% 2 1 0 1ef37705db344e9a176aab26b2bc3341
+
+% 4 1 0 1106e977e69c4392161306fb4b02a219
+
+% 0 1 0 1d0c5b3ea5fe81731e5caf5bf5c7b630
+
+% 0 1 0 1dfde200ce9db517104096ecdf52c4b1
+
+% 0 1 0 030c8200786c6086127fde8e96dd023b
+
+% 1 1 0 034cc7ae74d0f8261692bab4e6f1d546
+
+@ 0 4 0 15eac6e12fbe8f6e09843ef4a983a4ad
++         `Reflection` と手書きの `Json.Decodable` の両方を持つケースクラスは、`read[T in Json]` を使うと導出によって*直接*読み取られ、独自のデコーダーとは異なる結果になる。
++         一行で済む対処法は、その横に `given T is Json.Parsable = Json.Parsable.fromDecodable(…)` を置くことである。
+
+% 1 1 0 0fe2ea739bc48d5c0efca54527e1f369
+
+% 1 1 0 0bc581c41a3a3f7c0f82945d81078243
+
+% 0 1 0 1868fc98b0df530602c4b073b8b1e2ec
+
+@ 0 51 0 0c665faa795172280d0464420a399147
++     entry .apply   形とデコード関数から作るデコーダー
++         `Json.Decodable(shape)(json => value)` であり、デコード関数には任意の `Decodable in Json` または `Json` に対するラムダを使える。
++         ラムダは、解決されたときの戦術を通じて `Json.Error` を発生させる。
++     entry #shape   このデコーダーが読むものの `Morphology`
++   entry .boolean   JSON の真偽値を `Boolean` にデコードする
++       それ以外の値に対しては `Json.Error(NotType(…, Boolean))` を発生させる。
++       プリミティブのデコーダーはそれぞれ、解決されたときの `Tactic[Json.Error]` をキャプチャする。
++   entry .double   JSON の数値を、どの数値形式からでも `Double` にデコードする
++   entry .float   JSON の数値を `Float` にデコードする
++   entry .long   JSON の数値を `Long` にデコードする。小数は切り捨てられる
++   entry .int   JSON の数値を、`Long` を経由して `Int` にデコードする
++   entry .ordinalDecodable   JSON の数値を、ゼロから数える `Ordinal` にデコードする
++   entry .text   JSON の文字列を `Text` にデコードする
++       それ以外の値に対しては `Json.Error(NotType(…, String))` を発生させる。
++       数値が黙ってテキストとして描画されることはない。
++   entry .string   JSON の文字列を `String` にデコードする
++   entry .unit   JSON の `null` を `()` にデコードし、それ以外は受け付けない
++       `null` でない値は `NotType(found, Null)` を、存在しない値は `Absent` を発生させる。
++   entry .jsonDecodable   `Json` はそれ自身にデコードされる：`json.as[Json]`
++       distillate の汎用の恒等インスタンスに勝つよう、単なる `Decodable in Json` として型付けされている。
++       コレクションや `Optional` の中に入れ子になった `Json` は、代わりに `.decodable` を通る。
++   entry .option   `.optional` と同様に `Option[T]` のフィールドをデコードし、`None` を返す
++       同じ三つの `optionalityOptions` のポリシーに従い、存在しないキーや `null` には `None` を、それ以外には `Some` を返す。
++   entry .optionEncodable   `Option[T]` をエンコードする：`None` は存在しない値としてエンコードされるので、オブジェクトはそのフィールドを省く
++   entry .integralEncodable   任意の `Integral` 型を JSON の整数としてエンコードする
++   entry .textEncodableInJson   `Text` を JSON の文字列としてエンコードする
++   entry .stringEncodable   `String` を JSON の文字列としてエンコードする
++   entry .doubleEncodable   `Double` を JSON の数値としてエンコードする
++   entry .intEncodable   `Int` を JSON の整数としてエンコードする
++   entry .longEncodable   `Long` を JSON の整数としてエンコードする
++   entry .booleanEncodable   `Boolean` を JSON の真偽値としてエンコードする
++   entry .unitEncodable   `Unit` を JSON の `null` としてエンコードする
++   entry .ordinalEncodable   `Ordinal` をゼロ始まりの JSON の整数としてエンコードする
++   entry .jsonEncodable   `Json` はそれ自身としてエンコードされる
++   entry .listEncodable   `List[T]` をその要素の JSON 配列としてエンコードする
++       `T is Json.Encodable` を必要とし、再帰的な型を導出できるよう名前渡しで受け取る。
++   entry .setEncodable   `Set[T]` をその要素の JSON 配列として、集合の順序でエンコードする
++   entry .seriesEncodable   `Sequence[T]` をその要素の JSON 配列としてエンコードする
++   entry .mapEncodable   `Map[K, V]` を JSON オブジェクトとしてエンコードし、各キーをテキストとしてエンコードする
++       キーの型には `Encodable in Text` が、値には `Json.Encodable` が必要である。
++   entry .array   スコープに `Factory` があれば、JSON 配列を任意の `Iterable` コレクションにデコードする
++       各要素はそれ自身の `Json.Focus`（`#/items/3`）でデコードされるので、蓄積型の戦略のもとでは不正な要素がすべて報告される。
++       `Tactic[Json.Error]` と `Foci[Json.Focus]` を必要とする。
++   entry .listDecodable   JSON 配列を `List[T]` にデコードする
++   entry .setDecodable   JSON 配列を `Set[T]` にデコードする
++   entry .seriesDecodable   JSON 配列を `Sequence[T]` にデコードする
++   entry .map   JSON オブジェクトを `Map[K, V]` にデコードし、各キーをテキストからデコードする
++       キーの型には `Decodable in Text` が必要である。
++       `Map[Text, Int]` は `{"a": 1, "b": 2}` を読み取る。
++   entry .Parsable   ツリーを構築せずに、JSON のトークンから直接値を読み取る型クラス
+
+% 1 1 0 0177bc860a69bd2b1cfeba09546c9500
+
+@ 0 9 0 08d2b2f280ac38bd0baca2ef4022684d
++         `T is Json.Parsable` は `Json` をたどる代わりに `Json.Reader` からトークンを消費する。
++         そのため `read[T in Json]`（および任意のストリームに対する `read[T in Json]`）は、ツリーを実体化せずに `T` をインスタンス化し、アロケーション、ボックス化、二度目の走査を省く。
++         これは直接パースのオプトインの窓口である。
++         型はインスタンスを持てば直接パースされるようになり、それは `.derived`、`.staged`、`Inlinable.parsable`、`derives Json.Direct`、`import codecs.direct` によって得られる。インスタンスを持たない型については何も変わらない。
++         コンパニオンはプリミティブのインスタンス（`Json.booleanParsable` とその仲間）を持ち、要素がオプトインしたコレクションについては `Optional`、`Option`、`List`、`Set`、`Sequence`、`Map`、任意の `Iterable` のインスタンスを持つ。
+
+% 2 1 0 1dd8690f65a998bc0abef6833609141b
+
+% 3 1 0 1ab4cd0029c171d10ecf07ed12fbea85
+
+% 4 1 0 0cb929fd04266d441d8b54bbb1eb5c32
+
+% 6 1 0 089972f66cfab88b1a3ddb0fe531b9b4
+
+% 0 1 0 10698e52d63f7cd81710258d8163f27b
+
+% 0 1 0 137e789fef27efee0a4d695dfe21b34d
+
+% 0 1 0 1670462e3ba9afd617aaf9b148bcc54b
+
+% 1 1 0 0d5a1b3c154f1bd91a2f2c09d21e206d
+
+@ 0 7 0 054e0cd72aa30db61cae6452ea15e3f2
++         手書きのインスタンスは、形とリーダーの関数から `.apply` で構築する。
++         `.fromDecodable` は既存の `Json.Decodable` への橋渡しであり、独自のデコーダーを導出に勝たせる方法でもある。
++         `optionalityOptions` のポリシーはデコーダーと同様に直接のパーサーにも適用されるが、制限が一つある。
++         寛容な扱いで誤りが許されるのは、ワイヤ上の値の*種類*が違う場合だけであり、その場合パーサーは値全体を読み飛ばせる。
++         種類は正しいがその内部で失敗した値は、すでに一部が消費されているので、やはりエラーが発生する。
+
+@ 0 1 0 0c36d19d506018c71f8305c54e65f622
++         コンパニオンは `codecs.direct` の given である `generated` を `Json.Parsable2` から継承する。
+
+% 0 1 0 0b1f59fd93de0d21011ec18ce636bcc7
+
+% 0 1 0 1d93b3249556c2b407010390209b88cb
+
+% 1 1 0 0573ea2643b009e612c46ebd3c68c080
+
+% 1 1 0 1abeb5c89612631815004b89b3be2a08
+
+@ 0 53 0 10ef83d6ee95471d1ed323ec77b193db
++     entry .apply   形と `Json.Reader` の関数から作るパーサー
++         `Json.Parsable(Morphology.Str)(reader => Celsius(reader.string()))` である。
++         リーダーは自分の `Tactic[Parse.Error]` を持つので、本体にはエラーの語彙が要らない。
++         不正な、あるいは型の違うトークンは、読み取り呼び出しの周囲の戦術を通じて中断する。
++     entry .derived   ケースクラスや直和型に対する、wisteria で導出された直接パーサー。一行でオプトインする
++         `given T is Json.Parsable = Json.Parsable.derived` である。
++         フィールドは `Json.Field` のフォールバックの連鎖を通じて読み取られるので、入れ子のレコードも直接パースされる。
++         直和型の `Discriminable in Json` が、トークンレベルのディスパッチを選ぶ。
++     entry .staged   コンパイル時に生成される単相のパーサー。実行時に解釈の仕組みを持たない
++         `.derived` のステージング版であり、意味はまったく同じである。
++         ケースクラスは型付きのローカルなスロットとパックされたリテラルによるキーのディスパッチを通じてパースされ、シールされた直和型はそのタグを比較の連鎖でバリアントごとのパーサーへディスパッチする。
++         ステージングされた直和型には、フィールドで判別する `Discriminable`（`jsonByKindDiscriminable` または別の `DiscriminantField`）が必要であり、それ以外の形はインスタンスの構築時に失敗する。
++         メソッドローカルなクラス、カリー化されたケースクラス、シングルトンのバリアント、ジェネリックな直和型は `.derived` のままにする。
++     entry .fromDecodable   一つの値を実体化して `Json.Decodable` に渡すパーサー
++         ツリーからの汎用の橋渡しである。
++         `Json.Decodable` しか持たないフィールドの型はこれを通じてパースされ、独自のデコーダーが導出された直接パーサーに勝たなければならないときの一行の逃げ道でもある。
++         `given T is Json.Parsable = Json.Parsable.fromDecodable(…)` と書く。
++     entry .fromField   任意の `Json.Parsing` に対する名目的な `Json.Parsable`
++     entry .declared   `derives Json.Direct` で型が生成したパーサー
++         スコープ内の `Json.Direct[T]` — `derives Json.Direct` が生成するコンパニオンのメンバー — を `T` の `Json.Parsable` として読み出す given である。
++     entry .Direct   生成されたパーサーの基底クラス
++         生成されたコードはリーダーを中立なキャリアとして受け取り、ケイパビリティはこの縁で表明される。
++         生成されたパーサーは `parseCarrier` を実装する。
++         手書きのコードのためのものではない。
++     entry .parseField   生成されたコードからフィールドのパーサーを呼び出す
++         生成されたパーサーのための補助点である。
++         生成されたパーサーはユーザーのモジュールに埋め込まれ、公開メンバーしか参照できない。
++         手書きのコードのためのものではない。
++     entry .absentField   生成されたコードから得る、フィールドの存在しない値
++     entry .optionality   `T` のパーサーに対する `Optional[T]` のパーサー。`optionalityOptions` のポリシーを適用する
++         ワイヤ上の `null` と存在しないキーは、スコープ内の `Nullity` または `Absence` のポリシーが厳格でない限り、どちらも `Unset` として読まれる。
++         寛容な `Fault` のもとでは、種類の違う値は丸ごと読み飛ばされて `Unset` として読まれる。
++     entry .boxed   `T` のパーサーに対する `Option[T]` のパーサー。`.optionality` と同様に `None` を返す
++     entry .iterable   要素のパーサーに対する、任意の `Iterable` コレクションのパーサー
++         `Foci` が有効なときは各要素がそれ自身の `Json.Focus` でパースされるので、不正な要素はすべて蓄積される。
++         不活性なデフォルトでは何のコストもかからない。
++     entry .dictionary   値のパーサーに対する `Map[K, V]` のパーサー。各キーをテキストからデコードする
++     entry .discriminantField   ステージングされたパーサーのための、フィールドで判別する直和型のタグフィールド
++         `Json.DiscriminantField` でない `Discriminable` に対してはパニックする。
++         ステージングされた直和型には、それ以外の形に対する単一の先読みの手順がないからである。
++     entry .wireKeys   `@name` による名前の変更を適用した、直積型のワイヤ上のキー
++         ステージングされたパーサーのための補助点である。
++     entry .missing   キーがワイヤ上になかった必須フィールドに対して `Json.Error(Absent)` を発生させる
++     entry .focusing   フィールドの読み取りをその `Json.Focus` で実行する。`Foci` が有効でなければコンパイル時に取り除かれる
++     entry .assemble   埋められた値のバッファから、`Mirror` を通じて位置順に直積型を構築する
++     entry .product   導出された直積型パーサーのエンジン：フィールドのパーサーに対してキーでディスパッチするパースのループ
++         `(wire key, parser, declared default)`（ワイヤ上のキー、パーサー、宣言されたデフォルト）の三つ組のサンクと、埋められたバッファに対するコンストラクターを受け取る。
++         そして `Json.KeyTable` によるディスパッチでオブジェクトを読み取り、未知のキーを読み飛ばし、存在しないキーをデフォルトで埋め、オブジェクトを完全に消費した後で、欠けているすべての必須フィールドをそのフォーカスで蓄積する。
++   entry .Parsing   `Json.Parsable` と `Json.Field` が共有するもの：形を持つトークンパーサー
+
+% 1 1 0 0d903fc2281fd45715b2a544bcfb98b7
+
+@ 0 10 0 03090fde6c4998b21077249f93c88ee7
++         `Json.Reader` を持つ、`Json` に対する `distillate.Parsable` である。
++         二つのサブトレイトは独自のものを何も加えない。
++         どちらももう一方のサブタイプにならないようにするために存在し、名目的なインスタンスとフィールドのフォールバックが競合しないようにしている。
++         `#absent` は、キーが存在しないときにこの型のフィールドが返すものである。上書きされない限りエラーになる（`Optional` なら `Unset`、`Option` なら `None`）。
++         ワイヤ上の `null` がここに届くことはない。
++     entry #Transport   読み取る形式：`Json`
++     entry #Reader   消費するリーダー：`Json.Reader`
++     entry #shape   このパーサーが読むものの `Morphology`
++     entry #absent   存在しないキーに対する値：上書きされない限り `Json.Error(Absent)` を発生させる
++   entry .Field   直接パースの実際の顔：型の*フィールド*がどう読み取られるか
+
+% 1 1 0 156b429437bda8d01ae3d5f143c4c9f3
+
+@ 0 30 0 01740ca750e205ce089770098c6d1980
++         直積型の導出がフィールドごとに解決する型クラスである。
++         `Json.Field(parsing)` は任意の `Json.Parsing` を適合させる（`.apply`）。
++         そのインスタンスは、要素ごとの場合のための `.fieldOptional`、`.fieldOption`、`.fieldArray`、`.fieldList`、`.fieldSet`、`.fieldSeries`、`.fieldMap` と、汎用のフォールバックである `.field` である。
++         そのため、外側の型だけがオプトインしている場合でも、入れ子の直積型は直接パースされる。
++         意図的に `Json.Parsable` のサブタイプにしておらず、フィールドのパーサーを書く以外の用途のためのものではない。
++     entry .apply   `Json.Parsing` をフィールドのパーサーとして適合させる
++   entry .booleanParsable   JSON の真偽値を直接読み取る
++   entry .doubleParsable   JSON の数値を `Double` として直接読み取る
++   entry .floatParsable   JSON の数値を `Float` として直接読み取る
++   entry .longParsable   JSON の数値を `Long` として直接読み取る
++   entry .intParsable   JSON の数値を `Int` として直接読み取る
++   entry .textParsable   JSON の文字列を `Text` として直接読み取る
++   entry .stringParsable   JSON の文字列を `String` として直接読み取る
++   entry .jsonParsable   一つの値全体を `Json` として読み取り、その値だけを実体化する
++   entry .optionParsable   `T` がオプトインしていれば、`Option[T]` は直接パースされる
++   entry .arrayParsable   要素がオプトインしていれば、任意の `Iterable` コレクションは直接パースされる
++   entry .listParsable   `T` がオプトインしていれば、`List[T]` は直接パースされる
++   entry .setParsable   `T` がオプトインしていれば、`Set[T]` は直接パースされる
++   entry .seriesParsable   `T` がオプトインしていれば、`Sequence[T]` は直接パースされる
++   entry .mapParsable   `V` がオプトインしていれば、`Map[K, V]` は直接パースされる
++   entry .aggregableDerived   `import codecs.derived`：直接パーサーがあってもツリーを経由して読み取る
++   entry .readableDerived   `import codecs.derived`：`Data` 全体をツリーを経由して読み取る
++   entry .encodableOverDerived   `import codecs.derived`：プリンターがあってもツリーを経由して書き出す
++   entry .aggregableStrict   `import codecs.strict`：直接読み取るか、さもなければコンパイルに失敗する
++       `.aggregableStrictFailure` と対になる。
++       `Json.Parsable` を持つ型は直接読み取られ、持たない型は、`codecs.direct` ならツリーにフォールバックするところを、その型を示すコンパイルエラーになる。
++   entry .encodableOverStrict   `import codecs.strict`：直接書き出すか、さもなければコンパイルに失敗する
++   entry .Printable   ツリーを使わずに、値の簡潔な JSON テキストをライターへ直接書き出す型クラス
+
+% 1 1 0 094dd22fab0bfe1f1fffa059297e6610
+
+@ 0 5 0 18ee7a6352d523991a33146c925ec5b7
++         `Json.Encodable` の直接出力版である。
++         `T is Json.Printable` は `T` を `Json.Ast.Out` — `show` の背後にあるテキストライター、または `emit[Data]` の背後にあるバイトレベルのライター — へトークンごとに書き出す。
++         書式が簡潔なときは常に `in[Text over Json]` と `in[Data over Json]` を通じて使われ、その窓口は明示的なインスタンス、`Inlinable.printable[T]`、`derives Json.Direct`、`import codecs.direct` である。
+
+% 2 1 0 181bd3b517cdc547003258b66d006733
+
+% 3 1 0 0e0cb30450acfbfc0edf1288426e050d
+
+% 4 1 0 016bf5d8c9570a181f6b5599a6210f32
+
+% 2 1 0 0e3a263ec67d17e411f1e8bb3f77ad65
+
+% 1 1 0 0f616d610914a8e707deb5d93142fb34
+
+% 0 1 0 1b74567aba270b5e1e643035bd50b47c
+
+% 0 1 0 10b0e31d43df4e1812f5695b9fa138aa
+
+% 1 1 0 09ffee23d53893d80c4ed7438fc29477
+
+@ 0 1 0 12535557c8835bb80088535047fb9d68
++         `.print` は値全体を描画し、`.emit` はそのテキストをブロックごとに渡す。
+
+@ 0 1 0 1eec7d6c2576d118128996e5ed695efc
++         コンパニオンは `codecs.direct` の given である `generated` を `Json.Printable2` から継承する。
+
+% 1 1 0 157cd583c9bb938413c9dc60a7953c54
+
+% 1 1 0 05a3378b5c67426d0e1af991e575eb04
+
+@ 0 19 0 1177a2899b238cc31796ef5ef96e7674
++     entry .print   `Json.Printable` を通じて得る、値全体の簡潔な JSON テキスト
++     entry .emit   `Buffering` の容量ごとのブロックに分けた値のテキスト。各ブロックを関数に渡す
++         `Json.Printable.emit(value, deliver)` であり、値全体のテキストが構築されることはない。
++     entry .fromEncodable   ツリーからの橋渡し：値をエンコードし、そのツリーを簡潔に書き出すプリンター
++     entry .declared   `derives Json.Direct` で型が生成したプリンター
++     entry .Direct   生成されたプリンターの基底クラス。中立なキャリアに対して `write` を実装する
++     entry .writeAscii   生成されたコードから ASCII のリテラルを書き出す
++         生成されたプリンターのための補助点である。
++         生成されたプリンターはユーザーのモジュールに埋め込まれる。
++         手書きのコードのためのものではない。
++         `.writeString`、`.writeLong`、`.writeDouble`、`.writeBoolean`、`.writeAst`、`.present`、`.writeField` についても同様である。
++     entry .writeString   生成されたコードから、引用符で囲みエスケープした JSON 文字列を書き出す
++     entry .writeLong   生成されたコードから整数を書き出す
++     entry .writeDouble   生成されたコードから `Double` を書き出す
++     entry .writeBoolean   生成されたコードから `true` または `false` を書き出す
++     entry .writeAst   生成されたコードから `Json.Ast` のツリーを簡潔に書き出す
++     entry .present   フィールドのエンコードされたツリーを書き出すかどうか：存在しないエンコードは省かれる
++     entry .writeField   生成されたコードから、名目的な `Json.Printable` を通じてフィールドを書き出す
++     entry #write   値を `Json.Ast.Out` に書き出す
++   entry .Parsable2   `codecs.direct` のパーサーの given である `Json.Parsable.generated` を保持するミックスイン
+
+% 1 1 0 144cad91252274be1daaa343b4ddcb63
+
+% 2 1 0 13aee5105ddddbe01afb68df3dce16b7
+
+@ 0 7 0 113cec6f02b5c5c4196c091989ce2f88
++         直接使うためのものではない。
++         `Json.Parsable` を参照のこと。
++     entry #generated   `import codecs.direct`：レコードが必要とする場所で生成されるパーサー
++         `Codecs.Direct` のもとでは、`Inlinable.Generates` である型は使用箇所でパーサーが生成され、レコードでない型は導出された経路にフォールバックする。
++         `Json.Parsable.declared` より下位にあるので、`Json.Direct` を導出する型は一度だけ生成したコーデックを使う。
++   entry .Printable2   `codecs.direct` のプリンターの given である `Json.Printable.generated` を保持するミックスイン
+
+% 1 1 0 1a13e1e7f82bbeff1e4811d41e704ed4
+
+% 2 1 0 00c53f007d8fad001504645daf3475a4
+
+@ 0 5 0 007fef51d28c6e3c030a88dbf0642f9f
++         直接使うためのものではない。
++         `Json.Printable` を参照のこと。
++     entry #generated   `import codecs.direct`：レコードが必要とする場所で生成されるプリンター
++         `Codecs.Direct` のもとでは、レコードは使用箇所でプリンターが生成され、レコードでない型は導出された経路をとる。
++   entry .Direct   `derives Json.Direct` のキャリア：一度だけ作られる、型の生成されたパーサーとプリンター
+
+% 1 1 0 0a314529409791941ed6c527b7b7df46
+
+@ 0 4 0 094e6a0b2d3aea530f26c698f6fde51d
++         `case class Play(…) derives Json.Direct` は、`Play` の `Json.Parsable` と `Json.Printable` を一度だけそのコンパニオンに生成し、`Json.Parsable.declared` と `Json.Printable.declared` はインポートなしにそれらを見つける。
++         `Self` で型付けされた型クラスは `derives` 節に現れることができず、このパラメーター化されたキャリアが存在するのはそのためである。
+
+% 2 1 0 17b02b224864878f17432656df6cc6e5
+
+% 3 1 0 07e8ee423beb12a61baa48c9aae292c3
+
+% 4 1 0 1c37d5e5850b6d7f1d2b2721746d8df1
+
+% 1 1 0 09e95ecb3b447b7b14337615ec289628
+
+% 0 1 0 03674de687ae03560c1ca034a44b5075
+
+% 0 1 0 1567144059eeb4500962f15bba2b69dc
+
+% 0 1 0 0a191c1a8e152e281dfa56ad79e1fd10
+
+% 1 1 0 1bb0d27c3539d79a1d9a3633516abac5
+
+@ 0 4 0 0f53c8956bad442f05da84c5ad294391
++     entry .derived   `Inlinable.parsable` と `Inlinable.printable` を通じて、パーサーとプリンターを生成する
++     entry #parsable   生成された `Json.Parsable`
++     entry #printable   生成された `Json.Printable`
++   entry .KeyTable   オブジェクトが期待するキーの事前計算された表。実体化せずにキーでディスパッチするためのもの
+
+% 1 1 0 01ac91bcb2c5ddc90f7b29e0f65f343d
+
+@ 0 10 0 1137b5722c6a99061336bfb976939316
++         レコードごとに、そのワイヤ上のキーから一度だけ構築される。
++         `Json.Reader#keyIndex(table)` は次のキーをこの表に照らして解決し、表のインデックス、`.Unknown`、または `.End` を返す。
++         十六バイトまでの印字可能な ASCII のキーは、二つの `Long` にパックして比較され、それ以外は名前で比較される。
++         手書きのパーサーがキーでディスパッチする最速の方法である。
++     entry .apply   与えられたキーをインデックス順に並べた表
++     entry .Unknown   表にないキーのインデックス：`-1`
++     entry .End   閉じ波括弧が消費された後に返されるインデックス：`-2`
++     entry #indexOf   パックされたキーの、二つのワードによるインデックス
++     entry #indexOfName   名前によるキーのインデックス。なければ `.Unknown`
++   entry .Reader   `Json.Parsable` がトークンを消費するための、トークナイザの制限された縁
+
+% 1 1 0 0c23d90ed3bceabe163fdd65609a8f8b
+
+@ 0 6 0 1d82ac4437f32ace05b2cef83addf515
++         `Json.Parsable#parse` に渡される `Json.Reader` は、入力から直接 JSON を読み取り、一回の呼び出しで一つのトークンまたは一つの構造上の手順を進め、先頭の空白を読み飛ばす。
++         自分の `Tactic[Parse.Error]` を持つので、パーサーの本体にはエラーの語彙が要らない。
++         不正な入力や型の違う値は、期待されていたものを示す `ExpectedNumber` などの `Json.Ast.Issue` とともに、読み取り呼び出しの周囲の戦術を通じて中断する。
++         これは排他的で状態を持つケイパビリティであり、一回の `parse` 呼び出しがその間だけ所有する。
++         そのどの部分も保持してはならない。
+
+% 2 1 0 1aabdced9c33592b0c2a062818cbc86c
+
+% 3 1 0 0d54c47e2813b78417998f6514e0c2c1
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 1979bf26ed5a84e118fb59819b19a259
+
+% 0 1 0 164d2af47ea010b1147c1de892e2e7e5
+
+% 0 1 0 15af009dc4945d531d3e58b61551c606
+
+% 0 1 0 1c2fd9b7da508e94042bfedc379491c8
+
+% 0 1 0 03d2b7a62bab0af40d7042186d840795
+
+% 0 1 0 1b66a53bb4809ff516a3989da26e052b
+
+% 0 1 0 182655fe863aee3b1da8b27b21828335
+
+% 0 1 0 092dcf1d0efb3da01e0379919f39145d
+
+% 0 1 0 05133a0337347beb09a8afc602525aa2
+
+% 0 1 0 0e60855f8b6a9c76044b0f8ae86d7718
+
+% 0 1 0 075512e4963b3c8000e090ed97c84ac1
+
+% 0 1 0 012d6e281740eb610e12709dffd9e6e6
+
+% 0 1 0 18322201cf4bf9c9119064ffd13879d0
+
+% 1 1 0 027c9d65592a75f5050dd089b70337c3
+
+@ 0 5 0 067375b2ec9791ca19564c9e017dbc3b
++         `#openObject` の後、`#key` は各キーを順に返し、閉じ波括弧が消費されると `Unset` を返す。
++         `#openArray` の後、`#element` は次の要素が続く間 true になる。
++         `#value` は一つの値全体を `Json` として実体化し、`#skipValue` は一つの値を読み飛ばす。未知のキーはこれによって読み飛ばされる。
++         数値は `Json.Ast` のアクセサーとまったく同じように変換されるので、直接の読み取りとツリーからの読み取りは等しい値を返す。
+
+% 1 1 0 100d33ce2406f1b204772efcb401f7c6
+
+% 0 1 0 13c45f307dd236b30d9c6a71d9c17361
+
+@ 0 36 0 1d873e18786804c500ae95c11340703d
++     entry .KeyEnd   閉じ波括弧が消費された後の `#keyWord` の番兵
++     entry .KeyOpaque   その場で走査できないキーに対する `#keyWord` の番兵
++     entry .keyNameOf   生成されたパーサーのための、不透明なキーのインターン化された名前
++     entry #string   JSON の文字列を `Text` として消費する
++     entry #boolean   JSON の真偽値を消費する
++     entry #long   JSON の数値を `Long` として消費する
++     entry #int   JSON の数値を `Int` として消費する
++     entry #double   JSON の数値を `Double` として消費する
++     entry #bcd   JSON の数値を、すべての桁を保持した `Bcd` として消費する
++     entry #hasNull   次の値が `null` かどうか。消費はしない
++     entry #primitive   次の値の種類を、その最初のバイトから判断する。消費はしない
++         入力の末尾、またはどの値の始まりでもないバイトでは `Unset` である。
++         オプショナルのラッパーは、パースの前にこれをフィールドの形と比較する。
++     entry #nullValue   `null` を消費する
++     entry #openObject   オブジェクトの開き波括弧を消費する
++     entry #key   開いているオブジェクトの次のキー。閉じ波括弧が消費されると `Unset`
++         区切りとコロンを消費し、リーダーを値の位置に置く。
++     entry #keyIndex   次のキーを、実体化せずに `Json.KeyTable` に照らして解決したもの
++         表のインデックス、`Json.KeyTable.Unknown`、または閉じ波括弧が消費された後の `Json.KeyTable.End` である。
++     entry #keyWord   キーをリテラルの定数と比較するパーサーのための、パックされた形の次のキー
++         パックされた下位ワード（上位ワードは `#keyWordHigh` から得る）、`.KeyEnd`、またはキーをその場で走査できないときの `.KeyOpaque` である。
++         最後の場合、呼び出し元は代わりに `#keyIndex` の手順をとる。
++     entry #keyWordFirst   生成されたパーサーのための分割プロトコルにおける、最初のキーの手順
++     entry #keyWordNext   生成されたパーサーのための分割プロトコルにおける、後続のキーの手順
++     entry #keyWordHigh   `#keyWord` が最後に走査したキーの上位ワード
++     entry #openArray   配列の開き角括弧を消費する
++     entry #element   次の配列要素が続くかどうか：続くならその位置で true、角括弧が消費されたら false
++     entry #value   一つの値全体を消費し、`Json` として実体化する
++     entry #skipValue   一つの値全体を、実体化せずに消費する
++     entry #discriminant   これから来るオブジェクト内のどこかにあるキーの文字列値。リーダーの位置は変えない
++         オブジェクトのどこに現れてもよい判別子フィールドのためのディスパッチの基本操作である。
++         オブジェクトにそのキーがないか、その値が文字列でないときは `Unset` である。
++     entry #fail   現在のオフセットに位置づけた `Json.Ast.Issue` とともに、リーダーの戦術を通じて中断する
++   entry .Focus   デコーダーがドキュメントのどこにいるか：JSON ポインターと、判明したときのソース位置
+
+% 1 1 0 19dddf7aa8f128981caa4b36e27ac9c8
+
+@ 0 5 0 0185ac33250efad008ebb09091d7c0a8
++         Jacinta のデコーダーとパーサーが下っていく際に追跡するフォーカスの型である。
++         そのため、`person.age` の読み取り中に発生したエラーは `#/person/age` で報告される。
++         蓄積型の戦略のもとでは各エラーのフォーカスは `prior` を通じて読み出され、`#withPosition` はソースの `Json.Ast.Position`（`parsing.trackPositions` でパースされたドキュメントの場合）を、エラーが実際に描画されるときにだけ埋める。
++         そのため、成功する経路には何のコストもかからない。
+
+% 2 1 0 13f1f4ca4dd74ff004ee40841f22a169
+
+% 3 1 0 0134ae3a78a54b471631f40dd2740c0e
+
+% 4 1 0 145924dde34db2b2002bdef91b377a9d
+
+% 6 1 0 1e95ae72ddd18fd50fcc8c8511717075
+
+% 0 1 0 189f89963dc28dc10a99fa6314dfb8a2
+
+% 0 1 0 1fb10d99fa04099503e4e9408ac1728f
+
+% 0 1 0 11412dfac4abac620dd4a3a78ae238d4
+
+% 0 1 0 0e4d8c9bd9908bf21996c53c71150c61
+
+% 0 1 0 007acb6de783c4e9081c74990c2bd8ac
+
+% 0 1 0 0db289832fd5c7e508b64ecc4e3c04fa
+
+% 0 1 0 1fc38eb58fce8d740c7009363e0e47d3
+
+% 0 1 0 143203f6adfbba1603ffb0917ce81f32
+
+% 0 1 0 15c566899a03f5c806662f9039b40d9b
+
+% 0 1 0 18b3956083c672ac03e3e936c3d23a21
+
+% 1 1 0 143a3a2e3b17e3390412808c996634cd
+
+@ 0 8 0 140688dc0e45b9a0188543c2d065dd83
++     entry #pointer   読み取り中の値への JSON ポインター
++     entry #position   `#withPosition` が見つけた後の値のソース位置。なければ `Unset`
++     entry #withPosition   追跡されたドキュメントで位置を調べたフォーカス
++   entry .PositionIndex   追跡されたドキュメントにおける、すべての値のソース位置の簡潔な記録
++       不透明な凍結済みの `Array[Int]` であり、`parsing.trackPositions` のもとでパーサーが生成し、`Json#positionIndex` が保持する。
++       `json.locate(pointer)` がこれを読む。
++       その中のものを手で参照することはない。
++   entry .Ast   `Json` の下にあるツリー：述語、アクセサー、パーサーを持つ、JSON の種類の不透明なユニオン
+
+% 1 1 0 004a6b6d5cc3cad6012576eec48136c4
+
+@ 0 9 0 195ea26bab878cc913471fca92d90023
++         `Json.Ast` は `Json` がラップする表現である。
++         `String`、数値（`Long`、`Double`、`Bcd`、またはパックされた `Int`）、`Boolean`、`Json.JsonNull` の番兵、オブジェクト（キーと値が交互に並ぶ凍結済みの `Array[Any]`）、配列、または存在しない値を表す `Unset` のいずれかである。
++         `Json.unseal(json)` はドキュメントの根のノードを公開し、`Json.ast(node)` はノードをラップする。
++         このコンパニオンの拡張メソッド — `isX` の述語、`.primitive`、そしてアクセサー `.string`、`.long`、`.double`、`.bcd`、`.number`、`.boolean`、`.array`、`.obj`、`.arrayLength`、`.arrayElement`、`.objectSize`、`.objectKey`、`.objectValue`、`.objectIndexOf` — は、アンブレラの名前空間に入ることなく、`Json.Ast` が使われるところではどこでも暗黙のスコープにある。
+
+% 2 1 0 16e660fa2c6b744c037a76140a3c23de
+
+% 3 1 0 1c1f123a4b44264c0d9b1e546d2bd223
+
+% 4 1 0 0821da1446b9dadd0f8fa3942016a4a4
+
+% 0 1 0 106f35a7f06c75df136955ff00fb3666
+
+% 0 1 0 17afc517ae3eb63e19b508574616c426
+
+% 0 1 0 0abfd8ddea2847311d3fcb02560d54aa
+
+% 0 1 0 0545369a6464a62e0a86b22470f2c764
+
+% 0 1 0 021560dec0cedf471ec9ceb6a8a281ee
+
+% 0 1 0 07b6b4866c2671ab18399d6d47f1dd95
+
+% 1 1 0 17d6a2c273b7283114d3fa28d1334655
+
+@ 0 7 0 12fa72c9e905164f07fc9797d426cb35
++         述語はプリミティブよりも細かい。
++         `.isLong` と `.isDouble` は二つの数値表現を、`.isBcd` と `.isSmallBcd` は二つのパックされた表現を区別し、`.isNumber` はその四つすべてを含む。
++         アクセサーは、種類の違うノードに対しては `Json.Error(NotType(found, expected))` を、存在しないノードに対しては `Absent` を発生させる。
++         `Json.Ast` は zephyrine の `Format` でもあり、それによってすべてのパースエラーが持つ `Position` 型と `Issue` 型を得る。
++         `.parse` の低レベルのパーサーはバイトからツリーを構築する。
++         通常の読み取りは `read[Json]` を通じて行う。
+
+% 0 1 0 1e402834a9e85f5212a8982919cec48e
+
+% 0 1 0 0ad48ed24b943e171c813c2f780d3821
+
+@ 0 24 0 0418861971fdfb840548b5dcd7e680b5
++     entry .name   形式の名前、`JSON`
++     entry .apply   すでにツリーの表現になっている生の値を `Ast` としてラップする
++     entry .obj   キーと値の並行する配列から作るオブジェクトノード、またはオブジェクトノードのキーと値
++         オーバーロードは二つある。
++         `Json.Ast.obj(keys, values)` は並行する配列からオブジェクトノードを構築する。
++         拡張メソッドの `node.obj` はオブジェクトのキーと値を二つの並行する配列として返し、それ以外の種類に対しては `Json.Error` を発生させる。
++         この拡張メソッドは新しい配列を二つ実体化するので、少数の項目には `.objectKey` と `.objectValue` を使うほうがよい。
++     entry .arr   要素から作る配列ノード
++     entry .bcdArr   パックされた `Long` の BCD 形式による数値の配列
++     entry .smallBcdArr   パックされた `Int` の BCD 形式による数値の配列
++     entry .arrayPad   偶数長の配列をオブジェクトと区別できるようにパディングする番兵
++         配列の見える内容には決して含まれず、`.arrayLength` はこれを除外する。
++     entry .parse   `Data` から、または `Data` のブロックのイテレーターからツリーをパースする
++         オーバーロードは四つあり、どれもスコープ内の `NumberMode` を受け取り、`Parse.Error` を発生させる。
++         単一の `Data` または消費される `Iterator[Data]` に対するもので、それぞれ `holes` の有無がある。`holes` は `j"…"` 補間子の穴のマーカーを受け付ける。
++         `read[Json]` の基盤となるエンジンであり、公開された読み取りは `Aggregable` インスタンスを通じて行う。
++     entry .parserAggregable   `Data` のストリームから素の `Json.Ast` を読み取り、`Parse.Error` を発生させる
++     entry .showable   スコープ内の `Json.Formatting` でノードを JSON テキストとして描画する
++         唯一のシリアライザーであり、`Json.showable` と `Json.emit` はどちらもこれを通る。
++         数値は BCD のニブルから直接書き出されるので、パーサーが読んだすべての桁が保たれる。
++     entry .inspectable   ノードのデバッグ用の描画：`ᵃˢᵗ` の印をつけた簡潔なテキスト
++         素のノードを、それをラップする `Json` ドキュメントと区別する。
++     entry .Out   `Json.Printable` やシリアライザーが書き込むライター：テキストまたは UTF-8 のバイト
+
+% 1 1 0 0fe04a524b44de661295599302302588
+
+@ 0 12 0 055f661740ec0194099295448080b380
++           トークンの種類ごとに一つのメソッドを持つ、排他的で状態を持つケイパビリティである。
++           二つの実装は内部のものであり、`show` とプル形式の `emit` の背後にあるテキストライターと、`emit[Data]` と `lend` の背後にあるバイトレベルのライターである。
++           `Json.Printable#write` の本体はこれを一つ受け取り、これらのメソッドを呼ぶ。
++       entry #ascii   ASCII であることがわかっているリテラルを書き出す：句読記号、キーワード、数字
++       entry #raw   テキストを何もエスケープせずにそのまま書き出す：インデントの単位
++       entry #string   RFC 8259 に従って引用符で囲みエスケープした JSON の文字列リテラルを書き出す
++       entry #long   整数を書き出す
++       entry #bcdInt   パックされた `Int` の BCD 数値を、正規の JSON 数値のテキストとして書き出す
++       entry #bcdLong   パックされた `Long` の BCD 数値を、正規の JSON 数値のテキストとして書き出す
++       entry #bcd   `Bcd` を正規の JSON 数値のテキストとして書き出す
++     entry .Position   ソースにおける値の場所：行と列、およびそのオフセットと長さ
+
+% 1 1 0 035d253a17159bc81cc14822a88e1f96
+
+@ 0 19 0 16697b2a6e59307d0f820aedcc7d26d4
++           JSON の `Format.Position` である。
++           `#line` と `#column` は 1 始まりで、`#span` は 0 始まりの範囲である。
++           `Parse.Error` は誤りの位置としてこれを一つ持ち、`json.locate(pointer)` は追跡されたドキュメントの値に対して、値全体にわたるこれを一つ返す。
++       entry #line   1 始まりの行
++       entry #column   1 始まりの列
++       entry #offset   入力の先頭からの文字オフセット（わかっていれば）
++       entry #length   値のテキストの長さ（わかっていれば）
++       entry #describe   テキストとしての位置：`line 2, column 3`
++       entry #span   値の 0 始まりのスパン
++     entry .Issue   JSON テキストの何が誤りうるか：`Parse.Error` が持つ理由
++         各 case は `#describe` を通じてメッセージを持つ。
++         `EmptyInput`（_the input was empty_）、`UnexpectedChar`、`ExpectedTrue`、`ExpectedFalse`、`ExpectedNull`、`ExpectedSomeValue`、`ExpectedColon`、`InvalidWhitespace`、`ExpectedString`、`ExpectedHexDigit`、`PrematureEnd`（_the content ended prematurely_）、`NumberHasLeadingZero`、`SpuriousContent`（値全体の後に何かがある）、`LeadingDecimalPoint`、`NotEscaped`、`IncorrectEscape`、`MultipleDecimalPoints`、`ExpectedDigit` である。
++         四つは、型付きのリーダーが何を期待しているかを知っている直接パースの経路でのみ生じる。
++         `ExpectedNumber`、`ExpectedBoolean`、`ExpectedObject`、`ExpectedArray` である。
++     entry .AsciiByte   トークナイザが照合するバイト定数
+
+% 1 1 0 14b6334a27ef0cb9014bf345c2755569
+
+% 2 1 0 1000e1b54f1b80dd10efc0a9cce8dc34
+
+@ 0 34 0 071c7d4ce99aa87a13d3c9734b9be197
++           直接使うためのものではない。
++           パーサーのバイトレベルの照合のための、名前のついた ASCII のコードポイント（`Comma`、`Quote`、`OpenBrace`、…）である。
++     entry .isNumber   ノードが、四つの表現のいずれかの数値であるかどうか
++     entry .isAbsent   ノードが、存在しないキーが返す存在しない値であるかどうか
++     entry .isLong   ノードが `Long` として保持された数値であるかどうか
++     entry .isDouble   ノードが `Double` として保持された数値であるかどうか
++     entry .isSmallBcd   ノードが、最大七ニブルのパックされた `Int` として保持された数値であるかどうか
++     entry .isBcd   ノードが、`Bcd` として保持された高精度の数値であるかどうか
++     entry .isString   ノードが文字列であるかどうか
++     entry .isBoolean   ノードが真偽値であるかどうか
++     entry .isNull   ノードが明示的な JSON の `null` であるかどうか
++     entry .isObject   ノードがオブジェクトであるかどうか
++     entry .isArray   ノードが、いずれかの表現の配列であるかどうか
++     entry .isNumberArray   ノードが、パックされた数値としてボックス化せずに格納された配列であるかどうか
++     entry .isBcdIntArray   ノードが、パックされた `Int` の形式の配列であるかどうか
++     entry .isBcdLongArray   ノードが、パックされた `Long` の形式の配列であるかどうか
++     entry .primitive   ノードの `Json.Primitive`：`Number`、`Boolean`、`String`、`Object`、`Array`、または `Null`
++         存在しないノードは `Null` を返す。
++     entry .arrayLength   配列ノードの要素数。パディングは除く
++     entry .arrayElement   インデックスの位置にある要素を、ノードとして実体化したもの
++         パックされた数値は、収まる正確な整数であれば `Long` に、そうでなければ `Double` にデコードされる。
++     entry .objectSize   オブジェクトノードのキーと値の組の数
++     entry .objectKey   組のインデックスの位置にあるキー
++     entry .objectValue   組のインデックスの位置にある値
++     entry .objectIndexOf   線形走査によるキーの組のインデックス。なければ `-1`
++     entry .array   配列ノードの要素。それ以外の種類に対しては `Json.Error` を発生させる
++     entry .double   `Double` としてのノード。数値でなければ `Json.Error` を発生させる
++     entry .bcd   `Bcd` としてのノード。数値でなければ `Json.Error` を発生させる
++     entry .long   `Long` としてのノード。数値でなければ `Json.Error` を発生させる。小数は切り捨てられる
++     entry .number   `Long | Double | Bcd` としてのノード。値を正確に保持できる形式で返す
++     entry .string   `Text` としてのノード。文字列でなければ `Json.Error` を発生させる
++     entry .boolean   `Boolean` としてのノード。真偽値でなければ `Json.Error` を発生させる
++   entry .Error   値を求められたものとして読み取れないときに発生する
+
+% 1 1 0 1968c91e487df5210431d0ed44059a98
+
+@ 0 8 0 04c955a595b45ab41de1761f7319c2e8
++         エラー `↯/s.106.1`：_could not access the value because `reason`_。
++         ここで `#reason` は `Json.Error.Reason` であり、`NotType(found, expected)`（_the JSON value had type `found` instead of `expected`_。それぞれ `Json.Primitive`）、`Absent`（_the JSON value was not present_。オブジェクトにない必須フィールド、または `as` のもとで配列の末尾を越えた値）、`OutOfRange`（_the array index is out of range_。`json(index)` から）のいずれかである。
++         これはすべての `Json.Decodable`、`Json.Parsable`、`Json.Ast` のアクセサーが、スコープ内の `Tactic[Json.Error]` を通じて発生させるものであり、蓄積型の戦略のもとでは、それぞれに失敗したフィールドの `Json.Focus` がタグとして付く。
+
+% 2 1 0 03aa92b955d118b11afdacc1b88dfd23
+
+% 3 1 0 00fefb005b7b7ab10ab2ed708af92dbb
+
+% 4 1 0 0f2a4ce4be461b6c04aa3cb19b7add14
+
+% 6 1 0 169e60c5a8921adf1efbe975c12b5c65
+
+% 0 1 0 1c060c585a34ce42078b84102bba6152
+
+% 0 1 0 187e23c95d5a1c4b049b84ae25aa5d89
+
+% 0 1 0 1d722d76ffad156a13c1eb43d6413247
+
+% 1 1 0 13835ca5be48e6c912d4465d662f56e2
+
+@ 0 3 0 1ef800bfc948271d1f8a700fd0252491
++         不正な JSON の*テキスト*は別のエラーであり、zephyrine の `Parse.Error` が `Json.Ast.Position` と `Json.Ast.Issue` とともに発生する。
++         `Json.Provider` のレコードのフィールドは、代わりに `Json.Provider.Error` を発生させる。
+
+% 0 1 0 0a017b5db32129c002467580199d0498
+
+% 0 1 0 09fb8ea4ac3e98701f74f77309a803e7
+
+@ 0 1 0 0aa883656761c9d41904688a4a2dd031
++     entry .Reason   値を読み取れなかった理由：`OutOfRange`、`NotType(found, expected)`、または `Absent`
+
+% 1 1 0 1b9661a7d975c0ac0f8ffdfa2f4f15e0
+
+@ 0 5 0 1bc8dbfd3271cb5e1c69f99e08fa5ab6
++           case ごとに番号（1、2、3）を持つ列挙型であり、`.communicable` によって描画される。
++       entry .communicable   各理由をメッセージとして描画する
++       entry #number   エラー `↯/s.106.1` における理由の番号
++     entry #reason   `Json.Error.Reason`
++   entry .Primitive   JSON 値の六つの種類：`Array`、`Object`、`Number`、`Null`、`Boolean`、`String`
+
+% 1 1 0 18c06b28ca8535141c960231ee0b2cc0
+
+@ 0 4 0 046f872d835839661713a7eca37e802a
++         `Json.Ast.primitive` が返すものであり、`Json.Error.Reason.NotType` が両側で示すものである。
++         `.communicable` はこれをメッセージとして描画する。
++     entry .communicable   プリミティブの名前をメッセージとして描画する
++   entry .DiscriminantField   タグがバリアント自身のフィールドと並ぶフィールドであるタグ付きユニオンの形
+
+% 1 1 0 12321a66138edc660dfd536c9f206f9b
+
+@ 0 10 0 04c766305992a3fe00501a094a2fadda
++         `{"radius": 1.0, "type": "Circle"}` の形である。
++         タグが、与えられたラベルのもとでバリアント自身のオブジェクトのフィールドとなる `Discriminable in Json` である。
++         `Json.discriminatedUnion(label)` がこれを構築し、`discriminables.jsonByTypeDiscriminable` と `discriminables.jsonByKindDiscriminable` は `type` と `kind` のインスタンスである。
++         直接パースは範囲を限った先読みでタグを見つけるので、タグが先頭にある必要はない。
++         これは `Json.Parsable.staged` が直和型に対してサポートする唯一の形である。
++     entry #rewrite   バリアントのエンコードにタグフィールドを付け加える
++     entry #discriminate   タグフィールドを読み取る。なければ `Unset`
++     entry #variant   タグを取り除いた、バリアント自身のフィールド
++   entry .DiscriminantWrapper   バリアントが、その名前のついた単一キーのオブジェクトの中に入るタグ付きユニオンの形
+
+% 1 1 0 1354b2836009894a1dd05f446299acbe
+
+@ 0 4 0 042318a45c2b8d8b0f6f1d921c359ab1
++         `{"Circle": {"radius": 1.0}}` の形である。
++         タグが常に最初のトークンなので、ストリーム処理に最も適した形である。
++         `discriminables.jsonWrapperDiscriminable` はすべての型に対するインスタンスである。
++         複数のキーを持つオブジェクトは有効なバリアントではなく、どのキーが意図されたのかを推測せずに `Json.Error(Absent)` を発生させる。
+
+% 2 1 0 14657e0db8d4c82d12f04d041f7322bf
+
+% 3 1 0 1f870ab7116189a900fecf478f36f24c
+
+% 4 1 0 00c105ce6329bac417dc9fd9a80058eb
+
+% 0 1 0 01bf1f32dff7d5561b0f416224eaaaf9
+
+% 0 1 0 064d9cf281bffad31da9d6a2a43059d9
+
+% 0 1 0 175d173166d6deb7103c0165a1683d56
+
+% 0 1 0 170832852def38050d0e2797ac9e1a2a
+
+% 0 1 0 15e9182a07f4c6f41c4b26a277833a93
+
+% 1 1 0 15d6688d02e367d317f4f5e4103c772d
+
+@ 0 4 0 14651bb316283e8506975237035308a9
++     entry #rewrite   バリアントのエンコードを、そのタグをキーとするオブジェクトでラップする
++     entry #discriminate   単一のキー。キーが一つのオブジェクト以外では `Unset`
++     entry #variant   単一のキーのもとにある値
++   entry .DiscriminantEnvelope   タグフィールドとペイロードのフィールドが並ぶタグ付きユニオンの形
+
+% 1 1 0 15fe8636aa2b787e02e5e4124f0282be
+
+@ 0 16 0 1cdfe78751ffe4dc18832f1c810ed2ae
++         `{"type": "Circle", "value": {"radius": 1.0}}` の形であり、二つのフィールド名は与えられたものになる。
++         `discriminables.jsonEnvelopeDiscriminable` は `type`/`value` のインスタンスである。
++         直接パースでは、タグが先頭にある必要はない。
++     entry #rewrite   バリアントのエンコードを、そのタグとともにエンベロープで包む
++     entry #discriminate   タグフィールドの文字列値。なければ `Unset`
++     entry #variant   ペイロードのフィールド
++   entry #positionIndex   追跡されたドキュメントの `Json.PositionIndex`。なければ `Unset`
++       `parsing.trackPositions` がスコープにある状態でパースされたドキュメントにだけ存在する。
++       `locate` と `locateKey` がこれを読む。
++   entry #apply   `json(t"key")` はフィールドを、`json(index)` は配列の要素を選択する
++       `json(t"key")` はフィールドの値を返し、オブジェクトにそのフィールドがなければ存在しない `Json`（`Unset` にデコードされ、それ以外に対しては `Absent` を発生させる）を返す。
++       `json(index)` はゼロ始まりのインデックスの位置にある要素を返し、末尾を越えると `Json.Error(OutOfRange)` を、配列でなければ `NotType(…, Array)` を発生させる。
++       どちらも `Tactic[Json.Error]` を受け取る。
++       ある型に対して `verify` されたドキュメントでは、`json(index)` はスキーマによって要素を型付けするマクロである。
+
+% 2 1 0 09ee3e7fbaff7a7c061b1d6175161aec
+
+% 3 1 0 0e08a98c8c2aad1611f274ee56d4b1c6
+
+% 4 1 0 15f49316b97849c20ee786bb2a2ee777
+
+% 0 1 0 1a72f0d92d8c404f108f540d79a5ad34
+
+% 0 1 0 0041163d27bccefc00bbb9127853be2f
+
+% 0 1 0 14483f2f205a19d014ec531ecce88126
+
+% 1 1 0 1dddece4ed1f8f7318fda439bcdfe38b
+
+@ 0 7 0 01994b24482c838c04c28175e7d0031f
++   entry #selectDynamic   `json.field`：動的アクセスを有効にしたときの、メンバーとして読むフィールド
++       マクロである。
++       素の `Json` に対しては、スコープに `Json is Dynamical` — `dynamicAccess.dynamicJson` のインポート、または `dynamically[Json]` ブロック — が必要であり、実行時にフィールドを読み取り、存在しないキーに対しては存在しない `Json` を返す。
++       ある型に対して `verify` されたドキュメントに対しては、その型がフィールドを持つことを検査し、有効化の仕組みを必要とせず、スキーマによって結果を型付けする。
++       有効化の仕組みなしに検証されていないドキュメントのフィールドを読むと、そのことを述べるコンパイルエラーになる。
+
+% 2 1 0 0c15ec755dd49a0a1e56e1e7a287f948
+
+% 3 1 0 1caf1f435a652fb01d1a710a0d0b39e8
+
+% 4 1 0 0ee7ba082ac455851c5d549a8873e7da
+
+% 1 1 0 0c69b0fe979693131d9854b01f8153b9
+
+% 0 1 0 1a61ea502936255417a4247fb74a7040
+
+% 0 1 0 1aec921c36050c781e5e6d1ae036ed3a
+
+% 0 1 0 182fe60298aa60ed06570d62829f8666
+
+% 1 1 0 1b5b66b2c5a4518f0b66dd8298c0c8db
+
+@ 0 11 0 053fd2e274a95341032f175d004e2f47
++   entry #applyDynamic   `json.field(index)`：動的アクセスを有効にしたときの、配列フィールドの要素
++       `json.items(2)` の背後にあるマクロであり、フィールドを選択してから要素を選択する。
++       有効化の規則と検証されたドキュメントでの型付けは `#selectDynamic` と同じである。
++   entry #update   `json(index) = value`：配列の要素を一つ置き換えた新しいドキュメント
++       動的アクセスの有効化、`Json.Error` の戦術（配列でなければ発生する）、そして `Encodable in Json` である値を必要とする。
++   entry #updateDynamic   `json.field = value` はフィールドを設定または置き換え、`json.field = Unset` はフィールドを削除する
++       オーバーロードは二つあり、どちらも動的アクセスの有効化（`dynamicAccess.dynamicJson` または `dynamically[Json]` ブロック）を必要とし、新しいドキュメントを返す。元のドキュメントは変わらない。
++       値には `Encodable in Json` である任意のものを使える。
++       どちらもエラーを発生させない。
++       オブジェクトでない `Json` にどちらかを適用するのはプログラミングの誤りであり、`Json.Error` を発生させるのではなく例外を投げる。
+
+% 2 1 0 1b595f80a6f4c8761cb2491e694c9fe2
+
+% 3 1 0 0360f25227aa808e0c33627a6a508626
+
+% 4 1 0 175ce0d762a5070a09357b2552567a33
+
+% 5 1 0 1fb68b7ee70f241317efbcbab3fda54e
+
+% 1 1 0 0d69abb038e62a4113b3e4efe6e8e15a
+
+% 0 1 0 12fc171415de26ff1806b7e7d685692a
+
+% 0 1 0 07e9cf8804b1a02e09223daa8bf0e63a
+
+% 0 1 0 0ec3583bd81839440074c224b49c209b
+
+% 1 1 0 1284a1fee2a8e5501f66baee1b9f1761
+
+@ 0 6 0 18af94bc7740f8ba1a274236494ccf40
++   entry #as   値を Scala の型にデコードする：`json.as[Person]`
++       その型の `Decodable in Json` — 任意の `Json.Decodable`、つまりプリミティブ、コレクション、`Optional`、そして導出によるすべてのケースクラスと直和型 — を解決し、`Tactic[Json.Error]` と `Foci[Json.Focus]` を必要とする。
++       追跡されたドキュメントでは、デコードの後、蓄積型の戦略のもとで登録されたエラーのフォーカスに値のソース位置が付け加えられる。
++       ソースに対する `read[T in Json]` は、これを一度に行う形式である。
+
+% 2 1 0 04d23bc60579db9516d772ab32a36fdc
+
+% 3 1 0 1211269d579d675a0a31b655e64b6694
+
+% 4 1 0 15aff9e3ffdb6b22043d51670eabb885
+
+% 0 1 0 1a7632430ed1405e1931642babd375e1
+
+% 0 1 0 06aa2af5cb8c4cb6169a62c66e7f410b
+
+% 0 1 0 09510feb718a45bb1c00b7a61a04ea35
+
+% 0 1 0 02dd5e9c8e97319e0ad9aae3197c72b9
+
+% 1 1 0 1b088156da9b48471a07ade198bf7299
+
+@ 0 1 0 0fed892d257d1c1b0d9c7facaf85f422
++ entry .Json1   `Json` のコンパニオンの、直接経路の given を保持するミックスイン
+
+% 1 1 0 161dd79670a4dfeb0a3bed23610cbda6
+
+% 2 1 0 0f5281ddfcad73381cad84e17e22223e
+
+@ 0 16 0 0ef47631e76c3cbe1b95188f57460bf4
++       直接使うものではない。`object Json` の given の優先順位の連鎖のうち、`Json2` の上にある層である。
++       以下で説明する `aggregableParsed`、`readableParsed`、`encodableOverPrinted`、`aggregableStrictFailure`、`encodableOverStrictFailure` を保持し、`object Json` がこれらを継承する。
++   entry #aggregableParsed   `T` が `Json.Parsable` を持つとき、ストリームから直接 `read[T in Json]` する
++       `.aggregableDirect` の上にある直接読み取りの経路である。
++       入力は、単一のブロックでもストリームでも、`Json.Reader` を通じてその場でパースされ、インスタンスが直接読み取る部分についてはツリーを構築しない。
++       `parsing.trackPositions` のもとでは、パースエラーが実際のソース座標を持つ。
++       `Tactic[Parse.Error]` と `PositionTracking` を必要とする。
++   entry #readableParsed   `Data` 全体から、ストリームに包まずに直接 `data.read[T in Json]` する
++   entry #encodableOverPrinted   コンパクトな場合に `Json.Printable` が直接書き出す `value.in[Text over Json]`
++       `.encodableOver` の上にある。
++       `Json.Printable` を持つ型は、スコープ内の `Json.Formatting` がコンパクトである限り、ツリーを経由せずにテキストへ直接書き出される。
++       インデント付きの書式は引き続きツリーを通じて描画される。生成されたプリンターはこれを書き出さないからである。
++   entry #aggregableStrictFailure   直接のパーサーを持たない型に対する `codecs.strict` のコンパイルエラー
++   entry #encodableOverStrictFailure   直接のプリンターを持たない型に対する `codecs.strict` のコンパイルエラー
+
+@ 0 1 0 1949eaa180486f4319d26b58c949da78
++ entry .Json2   `Json` のコンパニオンの、導出経路と要素ごとの given を保持するミックスイン
+
+% 1 1 0 006b4a00cb8e24f81a884040af94de8f
+
+% 2 1 0 1292185f5011bec006e9defbbfd98de0
+
+@ 0 45 0 1ff572a940c1e25c03b46390b63d2141
++       直接使うものではない。`object Json` の given の優先順位の連鎖のうち、`Json3` の上にある層である。
++       以下で説明する `decodable`、`encodable`、`optional`、`optionalEncodable`、`bytes`、`field…` の各インスタンス、`optionalParsable`、`encodableOver`、`encodableOverData`、`aggregableDirect`、および三つの導出オブジェクトを保持し、`object Json` がこれらを継承する。
++   entry #optionalEncodable   `Optional[T]` をエンコードする。`Unset` は存在しないものとしてエンコードされるので、オブジェクトはそのフィールドを省く
++   entry #optional   `Optional[T]` のフィールドをデコードする。スコープ内のポリシーに従い、存在しない値や `null` は `Unset` として読まれる
++       存在しないキーは `Unset` として読まれ、明示的な `null` も `Unset` として読まれ、内側のデコーダーが拒否した値はエラーを発生させる。
++       それぞれがポリシーであり、解決時に given から読み取られる。
++       `Decodable.Absence in Json`、`Decodable.Nullity in Json`、`Decodable.Fault in Json` がそれで、既定値は上の三つである。
++       代わりのものは `optionalityOptions` パッケージの `strictJsonAbsence`（存在しない値は `Absent` を発生させる）、`strictJsonNulls`（`null` は内側のデコーダーに渡される）、`lenientJsonFaults`（拒否された値は、周囲の戦術の `tolerate` のもとで `Unset` として読まれるので、何も蓄積されない）である。
++   entry #memory   JSON の数値を、バイト数である `Memory` にデコードする
++   entry #fieldOptional   スコープ内の `optionalityOptions` のポリシーに従い、`Optional[T]` のフィールドを直接読み取る
++   entry #fieldOption   `Option[T]` のフィールドを直接読み取る
++   entry #fieldArray   スコープ内に `Factory` がある場合に、任意の `Iterable` コレクションのフィールドを直接読み取る
++   entry #fieldList   `List[T]` のフィールドを直接読み取る
++   entry #fieldSet   `Set[T]` のフィールドを直接読み取る
++   entry #fieldSeries   `Sequence[T]` のフィールドを直接読み取る
++   entry #fieldMap   各キーをテキストからデコードして、`Map[K, V]` のフィールドを直接読み取る
++   entry #optionalParsable   `T` がオプトインしているとき、`Optional[T]` は直接パースされる
++   entry #encodableOver   `value.in[Text over Json]`：ツリーを経由した、値の JSON テキスト
++       `read[T in Json]` に対応する書き込み側である。
++       `Json` にエンコードし、`show` と同じように、スコープ内の `Json.Formatting` で描画する。
++       `Json.Printable` が存在し書式がコンパクトである場合には、`.encodableOverPrinted` が優先される。
++   entry #encodableOverData   `value.in[Data over Json]`：同じテキストを、スコープ内の `Codepage` でバイトにしたもの
++   entry #aggregableDirect   ツリーを経由した `read[T in Json]`：入力全体をパースしてからデコードする
++       `Json.Decodable` を持ち `Json.Parsable` を持たない型のための読み取り経路である。
++       入力は `Json` にパースされ、`as[T]` でデコードされる。
++       `Tactic[Parse.Error]`、`Tactic[Json.Error]`、`PositionTracking` を必要とする。
++       型が `Json.Parsable` を持つ場合には、常に `.aggregableParsed` が優先される。
++   entry #decodable   汎用の `Json.Decodable`：`Json` そのもの、テキストのコーデック、または型の形からの導出
++       `[value] => value is Json.Decodable` である。
++       値は `Json` そのものであるか、`Decodable in Text` を持つか（この場合、JSON の文字列がそれを通じてデコードされる）、ケースクラス、列挙型、シールされた階層のいずれかであり、最後の場合は `.DecodableDerivation` によって導出される。
++       型のコンパニオンにある手書きの `Json.Decodable` は、これより優先される。
++   entry #encodable   汎用の `Json.Encodable`：テキストのコーデック、または型の形からの導出
++       `[value] => value is Json.Encodable` である。
++       `Encodable in Text` を持つ型は JSON の文字列としてエンコードされる。
++       ケースクラスはそのフィールドのオブジェクトとしてエンコードされる（名前は `@name` または `@name[Json]` で変更され、`Optional`/`Option` のフィールドは存在しない場合に省かれる）。
++       列挙型やシールされた階層は、そのバリアントとしてエンコードされ、スコープ内の `Discriminable in Json` によってタグ付けされる。
++       型のコンパニオンにある手書きのインスタンスは、これより優先される。
++   entry #DecodableDerivation   wisteria を通じて、ケースクラスまたは直和型の `Json.Decodable` を導出する
+
+% 1 1 0 036e83918b4a31571b4d9080b4557c7d
+
+@ 0 9 0 0960658680a1dce90609d80c958ed7f3
++         直接使うものではない。`.decodable` がこれに到達する。
++         直積型はオブジェクトからデコードされる。各フィールドはそれ自身の `Json.Focus` で読まれるので、欠けたフィールドや型の誤ったフィールドはすべて蓄積される。`@name` による名前の変更が適用され、宣言された既定値が存在しないキーを埋める。
++         直和型はスコープ内の `Discriminable in Json`（`discriminables` パッケージ、または型のコンパニオンにある `Json.DiscriminantField`/`DiscriminantWrapper`/`DiscriminantEnvelope`）を通じて判別子を読み、それが指すバリアントをデコードする。
++     entry .conjunction   直積型の導出：コンストラクターのパラメーターごとに一つのフィールドを持つオブジェクト
++     entry .disjunction   直和型の導出：スコープ内の `Discriminable in Json` によってタグ付けされたバリアント
++   entry #ParsableDerivation   ケースクラスまたは直和型の直接のパーサー（`Json.Field`）を導出する
+
+% 1 1 0 13c4c9db0b4f83061a600c62d5161ea0
+
+@ 0 9 0 1d0a2fe92fe1cc3a1313f239ad7d1958
++         直接使うものではない。`Json.Parsable.derived` と `.field` の代替がこれに到達する。
++         直積型は `Json.Parsable.product` を通じてパースされ、`Json.KeyTable` によってキーで振り分けられる。
++         直和型は `Discriminable in Json` の形によってトークンレベルの戦略を選ぶ。`DiscriminantWrapper` のタグは最初のトークンであり、エンベロープとフィールドのタグは範囲を限った先読みで見つけられ、それ以外の `Discriminable` は値を一つ実体化してデコードする。
++     entry .conjunction   直積型の導出
++     entry .disjunction   直和型の導出
++   entry #EncodableDerivation   wisteria を通じて、ケースクラスまたは直和型の `Json.Encodable` を導出する
+
+% 1 1 0 1c9408075f9ac236016b46f299bfa26a
+
+@ 0 5 0 0d9f03f3482401031aeeeb65a72a4e02
++         直接使うものではない。`.encodable` がこれに到達する。
++         直積型はオブジェクトとしてエンコードされ、エンコード結果が存在しない（`Unset` または `None` である）フィールドは省かれる。
++         直和型はそのバリアントをエンコードし、スコープ内の `Discriminable in Json` でタグ付けする。バリアントの名前は `@name` で変更される。
++     entry .conjunction   直積型の導出
++     entry .disjunction   直和型の導出
+
+@ 0 1 0 12030e526a4e5b020b56873b90b4f620
++ entry .Json3   `Json` のコンパニオンの、最も優先順位の低い代替を保持するミックスイン
+
+% 1 1 0 0c30961b75d5561d1a0498138f05f60d
+
+% 2 1 0 1043de4850346a7302577eb2499e2113
+
+@ 0 13 0 0afbb05cdf365ae3197a5cda5ad3329a
++       直接使うものではない。以下で説明する、汎用の `Json.Field` の代替である `field` と、`Json#as` が解決するアダプターである `decodableAtFocus` を保持し、`object Json` がこれらを継承する。
++   entry #field   汎用のフィールドパーサー：直接のパーサー、テキストのコーデック、導出、またはツリーへの橋渡し
++       `.decodable` と同じ順序をたどるので、フィールドのワイヤ形式はどちらの経路でも同一になる。
++       明示的なまたは導出された `Json.Parsable`、JSON の文字列を読む `Decodable in Text`、`.ParsableDerivation` によって導出されるケースクラスまたは直和型、そして最後に、残りの任意の `Json.Decodable` を `Json.Parsable.fromDecodable` を通じて使う。
++       `Reflection` と独自の `Json.Decodable` の両方を持つ型はここで導出され、そのデコーダーとは異なる結果になる。
++       対処法は、そのコンパニオンに `Json.Parsable.fromDecodable` のインスタンスを置くことである。
++   entry #decodableAtFocus   任意の `Decodable in Json` を、`as[T]` のために `Json.Focus` を持つものへ持ち上げる
++       最も優先順位の低い given であり、`Json#as` が召喚する `at Json.Focus` の形を生成する唯一のものである。
++       そのため、`Decodable in Json` で上限を付けられた汎用の呼び出し元でも解決できる。
+
+@ 0 1 0 02a9ad7300022851052a30431997d5b8
++ entry .Json4   `Json.Provider` を保持するミックスイン
+
+% 1 1 0 1f2e45874a295f250653458d7aa914df
+
+@ 0 4 0 1576d1c29b542ea51d24b3ce9027a1da
++       直接使うものではない。`object Json` のコンパニオンの連鎖のうち、以下で説明する JSON Schema ドキュメント上の型プロバイダーを保持する層である。
++       `object Json` がこれを継承するので、`Json.Provider` として使う。
++   entry #Provider   JSON Schema ドキュメント上の型プロバイダー：一致する JSON から得る型付きのレコード
+
+% 1 1 0 1dbd08e8c568ea4805dc08ee0cbf4dc2
+
+@ 0 7 0 0c91f57d7fb5cc24033b86e7c3dce355
++         `object Catalogue extends Json.Provider(schema)` は、コードのコンパイル時に読み込まれる JSON Schema を、スキーマのルートオブジェクトのプロパティごとに一つのフィールドを持つ構造的に型付けされたレコードに結び付ける。各フィールドは、そのスキーマが宣言する型で読まれる。
++         `Catalogue.record(json)` は `Json` をそのようなレコードに変換し、`Catalogue.tuple(json)` はすべての要素を一度に読んだ名前付きタプルに変換する。
++         スキーマは `into[Json.Provider.Schema]` である。つまり `Json`、または JSON として読めるもの、例えばクラスパスのリソース（`cp"/schemas/x.json"`、スコープ内に `Classloader` が必要）や JSON のテキストである。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 0 1 0 148570702548156d11ae429d8a4dcd87
+
+% 0 1 0 16b286dec9a231491ff30ea03fbffeb7
+
+% 0 1 0 1b0416670fa21d3c171721d1fb5c12de
+
+% 0 1 0 0c08ca4eb4f6c0640d76689a5eb071e0
+
+% 0 1 0 0fbaee85e5db7e6a1aebd2e1cb951217
+
+% 0 1 0 1aa4683cfb21b1570f8af86d2a44d9c3
+
+% 0 1 0 1dd66e09a284bb491d172bf733255752
+
+% 0 1 0 0ae9c347196aec70057dca224f7c025e
+
+% 0 1 0 146c45aebb1aff521ab42c5d9e971758
+
+% 0 1 0 0a228b0b2212401c14a4b73b4554a776
+
+% 0 1 0 0cf14058733fdaaa18b4724b6736862f
+
+% 0 1 0 012505606fa35c621e4e55f96123ac4a
+
+% 0 1 0 0b5b6edd91829e9f16adfd8a0a76cfdc
+
+% 0 1 0 15f9908ba9d6814e1fc2f8134113ee83
+
+% 0 1 0 04e6d4d11ff7aaae105de61e06afb275
+
+% 0 1 0 17b5859336d4af7a1c174d07bc1bfef9
+
+% 0 1 0 16cd3b4a89f4153a0223e014fd6d1373
+
+% 0 1 0 0755e0758c1c42051d22ff59827e1025
+
+% 0 1 0 14d273c1fdf360aa1f5d376e28c577b0
+
+% 0 1 0 1d01165eed3b1a760a21c3bdfecf43f2
+
+% 0 1 0 120137392726cbbc006188b923e66a55
+
+% 1 1 0 1dff330499b789371865684bb4c73248
+
+@ 0 14 0 1e59db7e74b319651513f6efcf6347c6
++         スキーマの `required` リストにあるプロパティはその型で読まれ、ドキュメントがそれを省いている場合は `Json.Provider.Error(MissingValue(name))` を発生させる。それ以外のもの、または型が `null` を許すものは `Optional` として読まれる。
++         `array` はその `items` の型の `List` として、`properties` を持つ `object` は入れ子のレコードとして、値を一つのスキーマが記述するオブジェクト（`additionalProperties`、または一つの型の `patternProperties`）は `Map[Text, T]` として読まれ、名前が識別子でないプロパティはバッククォートで囲んだ名前を通じて読まれる。
++         ローカルの `$ref` はたどられ、オブジェクトの `allOf` はそれらのプロパティを統合し、`anyOf`/`oneOf` の選択肢（または複数を挙げる `type`）は、見つかった値の種類によって選ばれる Scala のユニオンとして読まれる。
++         文字列の `enum`/`const`、`pattern`、`minLength`/`maxLength` と数値の範囲は、リーダー `.boundedInteger`、`.boundedNumber`、`.boundedString`、`.pattern`、`.enumeration` を通じてフィールドを読むときに検査され、JSON の型が誤った値は `JsonType(expected, found)` を発生させる。
++         すべてのエラーはフィールドを読むコードの `Tactic` を通るので、フィールドごとに `venture` を使う `validate` はすべての問題を集める。
+
+@ 0 6 0 03fe5e589c2d16f306bab06d3eccbeb7
++         生の `Json` のまま残るもの：値の種類では区別できない選択肢（`oneOf` の中の二つのオブジェクトの形）、`not` と `if`、`properties` も値のスキーマも持たないオブジェクト、`items` を持たないかタプル形式の `items` を持つ配列、別のドキュメントへの参照、そして再帰する位置にある再帰的な参照である。
++         プロパティを持つオブジェクトでないルートはコンパイルエラーになる。
++         すべての JVM オブジェクトのメソッドの名前を持つプロパティ（`notify`、`toString`、…）は `record.selectDynamic("notify")` を通じて読まれる。
+
+@ 0 5 0 047ffc64f83102f91b1f20356a1ad57d
++         ドメインの型を指すフォーマット — `date-time`、`email`、`hostname`、`ipv4`、`uri`、`uuid`、… — は、呼び出し側でそのドメインを表す型として読まれ、その型はインターフェースをインポートすることで選ばれる。
++         `emailAddressInterfaces.soundnessEmailAddress` は `email` フィールドを `EmailAddress` にし、`uuidInterfaces.soundnessUuid` は `uuid` フィールドを `Uuid` にする、といった具合である。
++         リーダーはこのコンパニオンにある `.Reader` の given である。
+
+% 0 1 0 12be43def6cb9b2b09143400e2a12d26
+
+% 0 1 0 0cbe5fe870e09e150e8e8f3d947c6050
+
+@ 0 38 0 154cb939a8603267058e4f4fa56284d0
++     entry .Reader   プロバイダーの失敗しうるリーダーの型：`Json.Provider.Error` を発生させる `Intensional.Reading`
++         `Json.Provider.Reader[label, result]` は、スキーマの型名またはフォーマット名をラベルとする `Json` の読み取りであり、フィールドを読むコードの `Tactic[Json.Provider.Error]` を通じて行われる。
++         以下のリーダーはすべてこれである。
++     entry .boolean   `boolean` のプロパティを `Boolean` として読む
++     entry .string   `string` のプロパティを `Text` として読む
++     entry .integer   `integer` のプロパティを `Int` として読む
++     entry .long   フォーマット `int64` の `integer` を `Long` として読む
++     entry .number   `number` のプロパティを `Double` として読む
++     entry .json   スキーマが一つの型に制約しないプロパティを、生の `Json` として読む
++     entry .dateTime   スコープ内の `Instantiable across Instants` を通じて `date-time` の文字列を読む
++     entry .date   スコープ内の `Instantiable across Dates` を通じて `date` の文字列を読む
++     entry .time   スコープ内の `Instantiable across Times` を通じて `time` の文字列を読む
++     entry .duration   スコープ内の `Instantiable across Durations` を通じて `duration` の文字列を読む
++     entry .uriReference   `uri-reference` の文字列を `Text` として読む
++     entry .email   スコープ内の `Instantiable across EmailAddresses` を通じて `email` の文字列を読む
++     entry .idnEmail   スコープ内の `Instantiable across EmailAddresses` を通じて `idn-email` の文字列を読む
++     entry .hostname   スコープ内の `Instantiable across Hostnames` を通じて `hostname` の文字列を読む
++     entry .ipv4   スコープ内の `Instantiable across IpAddresses` を通じて `ipv4` の文字列を読む
++     entry .ipv6   スコープ内の `Instantiable across IpAddresses` を通じて `ipv6` の文字列を読む
++     entry .uri   スコープ内の `Instantiable across Urls` を通じて `uri` の文字列を読む
++     entry .iri   スコープ内の `Instantiable across Urls` を通じて `iri` の文字列を読む
++     entry .iriReference   `iri-reference` の文字列を `Text` として読む
++     entry .uuid   スコープ内の `Instantiable across Uuids` を通じて `uuid` の文字列を読む
++     entry .uriTemplate   `uri-template` の文字列を `Text` として読む
++     entry .jsonPointer   `json-pointer` の文字列を `JsonPointer` として読み、パースできなければ `Unparsable` を発生させる
++     entry .regex   `regex` の文字列を `Regex` として読み、コンパイルできなければ `Unparsable` を発生させる
++     entry .BoundedInteger   `minimum`/`maximum` の範囲を持つ `integer` のリーダー。`IntOutOfRange` を発生させる
++     entry .boundedInteger   `BoundedInteger` の given
++     entry .BoundedNumber   排他的または包含的な範囲を持つ `number` のリーダー。`NumberOutOfRange` を発生させる
++     entry .boundedNumber   `BoundedNumber` の given
++     entry .BoundedString   `minLength`/`maxLength` を持つ `string` のリーダー。`LengthOutOfRange` を発生させる
++     entry .boundedString   `BoundedString` の given
++     entry .Pattern   `pattern` を持つ `string` のリーダー。`PatternMismatch` を発生させる
++     entry .pattern   `Pattern` の given
++     entry .Enumeration   `enum` または `const` を持つ `string` のリーダー。`NotPermitted` を発生させる
++     entry .enumeration   `Enumeration` の given
++     entry .Primitives   スキーマなしでのこのフォーマットの読み取りプリミティブ：プロバイダーがフィールドを加える土台
+
+% 1 1 0 152a4252c34eaa990704d58a8b6e9e35
+
+@ 0 23 0 14155eb60f0501f70cf50e45296293b2
++           失敗の型が `Json.Provider.Error` である、`Json` 上の polyvinyl の `Specification` である。
++           `Json.Provider` はこれを継承し、独自のフィールドを持つマクロ（OpenAPI の `record()`）はこの上にレコードを構築する。
++           そのメソッドは、レコードのマクロが JSON の値にアクセスし、検査し、列挙するために呼び出すフックである。
++       entry #access   名前の下にある値。オブジェクトにないキーについては、失敗するのではなく存在しない値になる
++       entry #absent   値が存在しないか `null` であるかどうか。`null` の型はフィールドをオプショナルにする
++       entry #required   名前の下にある値。存在しない場合は `MissingValue(name)` を発生させる
++       entry #kind   値の種類。ユニオンはこれによって選択肢を選ぶ
++       entry #elements   配列の値の要素
++       entry #pairs   オブジェクトの値のキーと値の組
++       entry #entries   名前の下にあるオブジェクトの組
++       entry #repeated   名前の下にある配列の要素。存在しない場合は空
++       entry #unoffered   どの選択肢も提供しない種類のユニオンの値について `UnexpectedKind` を発生させる
++     entry .fieldsOf   プロバイダーの仕様としての、スキーマのルートオブジェクトのフィールド
++         読めないスキーマについては、その戦術を通じて `Json.Error` を発生させる。
++         マクロ時の呼び出し元はこれを `safely(…).or(halt(…))` で包む。
++     entry .memberOf   より大きなドキュメント内のノードが記述する値を読むメンバー
++         その `$ref` はドキュメントに対して解決されるので、ドキュメントに埋め込まれたスキーマ — `#/components/schemas/…` を参照する OpenAPI ドキュメント内のレスポンスのスキーマ — は、単独の場合と同じように読まれる。
++         オブジェクトはレコードとして、オブジェクトの配列は繰り返しのレコードとして読まれる。
++         `limit` は、参照を生の `Json` として読むまでに、たどる参照の深さを制限する。
++     entry .Schema   プロバイダーの構築元となるスキーマ：`Json`、または `Json` として読めるもの
+
+% 1 1 0 0d23e164072c1fbe0c343db0c96e6593
+
+@ 0 8 0 1e20604ed06afca30543f0a45f8d184d
++           `Json.Provider` の `into[Json.Provider.Schema]` パラメーターは、ここにある given を通じて引数を変換する。
++           すでにパースされた `Json` には `.json` を、クラスパスのリソースや JSON のテキストのような `Readable to Json` である任意のソースには `.readable` を使い、後者はコードのコンパイル時に読み込まれる。
++           コンパニオンは `readable` を `.Schema2` から継承する。
++       entry .json   スキーマとしての `Json`
++       entry #json   スキーマのドキュメント
++     entry .Schema2   優先順位の低い `readable` の変換を保持するミックスイン
+
+% 1 1 0 0dd59583433b3f8b1e47313df8394549
+
+% 2 1 0 1de567ba9cf07ccc0afa2c9f48026f79
+
+@ 0 3 0 05b59acf213737370251f37c2f2df0ea
++           直接使うものではない。`Json.Provider.Schema` を参照。
++       entry #readable   `Json` として読める任意のソースを、スキーマとして
++     entry .Error   ドキュメントがプロバイダーのスキーマに適合しないときに発生する
+
+% 1 1 0 05317af05c72480e109c3edcc4ff50ca
+
+@ 0 10 0 0478e78cb7485c501c8640f5534c500d
++           エラー `↯/s.106.3`：_the JSON was not valid according to the schema because `reason`_。
++           レコードのフィールドを読むコードの `Tactic` を通じて発生するので、`attempt`、`recover`、`validate`、`track` のいずれもこれを捕らえる。
++           `#reason` は `Json.Provider.Error.Reason` であり、`JsonType(expected, found)`、`MissingValue(name)`（必須のプロパティが存在しない）、`IntOutOfRange(value, minimum, maximum)`、`PatternMismatch(value, pattern)`、`NumberOutOfRange(value, minimum, maximum)`、`LengthOutOfRange(value, minimum, maximum)`、`NotPermitted(value, permitted)`（`enum` にない）、`UnexpectedKind(found, offered)`（どの選択肢も提供しない種類のユニオンの値）、`Unparsable(value, format)`（パースできない `json-pointer` または `regex`）のいずれかである。
++       entry .Reason   ドキュメントが適合しなかった理由。エラー `↯/s.106.3` の中で 1 から 9 まで番号が付く
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 8 0 0ac9fded9838cecb03dac275f6f3e2ec
++             九つの理由の列挙型であり、コンパニオンの匿名の `Communicable` によってメッセージとして描画される。
++         entry #number   理由の番号
++       entry #reason   `Json.Provider.Error.Reason`
++     entry #schema   プロバイダーの構築元となったスキーマのドキュメント
++     entry #fields   polyvinyl のメンバーとしての、スキーマのルートのプロパティ。`Specification.Error` を発生させる
++         読めないスキーマはエラーとして発生し、`record`/`tuple` のマクロは使用箇所でそのメッセージとともに停止する。
+
+@ 0 1 0 1f8870518c02f26111bf90565011b06c
++ entry .JsonPointer   RFC 6901 の JSON Pointer：ドキュメント内へのパスであり、`jp"#/a/0/b"` と書く
+
+% 1 1 0 06a0c7c688c3a08d0a5c2db9a742c53b
+
+@ 0 6 0 071dfed93e05ee7f18a623266e83327f
++       `JsonPointer` は、ドキュメント内の位置を、`JsonPointer` プレーン上のキーと配列のインデックスのパスとして指す。
++       オブジェクトはプレーンのルートであり、ポインターは `#apply` でセグメントごとに構築するか、コードのコンパイル時に検査される `jp"…"` 補間子で書く。
++       `#/a/b`（空のポインターは `#`）としてエンコードされ、セグメント内の `~` と `/` は `~0` と `~1` にエスケープされる。
++       同じテキストからデコードされ、誤りの位置のオフセットを持つ `JsonPointer.Error` を発生させる。
+
+% 2 1 0 0cd6f7feac55858805af628469bf0d6c
+
+% 3 1 0 14c15e6e4c2f782d03adee02e7445b12
+
+% 4 1 0 1455cf2bfb8da60d125d9aeadb438b9a
+
+% 0 1 0 04339478942393060fdb4e2e412be765
+
+% 0 1 0 06b576b3f0358cd2057f00cf9e242ae9
+
+% 0 1 0 07fcee389214814a161305ff7e60896e
+
+% 0 1 0 19369422d506bcd8141c36c8b825cafd
+
+% 1 1 0 0791132f01ff96bc0338eb312e7eac15
+
+@ 0 3 0 050460148678322d08d45675951ff601
++       ポインターは、`Json.Focus` がエラーの発生したフィールドを指す手段であり、`locate` と `locateKey` が追跡されたドキュメントの位置を指定する手段であり、`Json.Provider` が `$ref` をたどる手段である。
+
+% 0 1 0 1ea1b3f9841651b0131421cf67e695ea
+
+% 0 1 0 1dd6fb8a17bb6d1e1446fe17e6bdac6b
+
+@ 0 18 0 0d86aa3131805ca915315168ddb9b1fb
++   entry .Plane   ポインターのパスのプレーンの型：`JsonPointer` そのもの
++   entry .navigable   ポインターのセグメントとしての `Ordinal`。ゼロ始まりのインデックスとして描画される
++   entry .admissible   任意の `Ordinal` は許されるセグメントである
++   entry .admissible2   任意の `Text` は許されるセグメントである
++   entry .filesystem   `Filesystem` としてのポインターのプレーン：`/` 区切りで、`#` をルートとし、`~0`/`~1` のエスケープを持つ
++   entry .interpolable   `jp"…"` の背後にあるマクロ：コードのコンパイル時にパースされるポインターのリテラル
++       展開時に `.decodable` を再利用するので、不正なリテラルは問題の文字の位置でのコンパイルエラーになる。
++       `jp"#/verona~2capulet"` はコンパイルされない。
++   entry .decodable   テキストからポインターを読み、誤りの位置のオフセットを持つ `JsonPointer.Error` を発生させる
++       テキストは `#` で始まらなければならず（`ExpectedHash`）、空でないポインターは `/` で続かなければならず（`ExpectedSlash`）、すべての `~` の後には `0` か `1` が続かなければならない（`BadEscape`）。
++       URL を含む参照は拒否される。このライブラリがたどるのは同一ドキュメント内の参照だけである。
++   entry .unsafeParse   補間子のために、テキストが有効であるとすでに分かっているポインターをデコードする
++       `Unsafe` トークンを受け取る。`jp"…"` マクロは展開時にリテラルをパースしているので、実行時の再パースが失敗することはない。
++   entry .divisible   `pointer / t"key"`：キーのセグメントで延長されたポインター
++   entry .divisible2   `pointer / ordinal`：配列のインデックスで延長されたポインター
++   entry .Error   テキストが有効な JSON 参照でないときに発生する
+
+% 1 1 0 0133047e45c870f106d2c325ba1b6048
+
+@ 0 6 0 0f6cd7912ff243a619b10b81b7ae4902
++         エラー `↯/s.106.2`：_the JSON reference was not valid because `reason`_。
++         誤りのある文字の `#offset` を持ち、`jp"…"` 補間子はこれを使ってコンパイルエラーの位置を決める。
++         理由は `ExpectedHash`（_a JSON reference must begin with '#'_）、`ExpectedSlash`（_a JSON reference fragment must begin with '/'_）、`BadEscape`（_a '~' in a JSON reference must be followed by '0' or '1'_）である。
++     entry .Reason   参照が無効であった理由：`ExpectedHash`、`ExpectedSlash`、`BadEscape`
+
+% 1 1 0 02ed9eb4b540b1920cc5ac5fe850136a
+
+@ 0 7 0 1146f5636c85ebe30883acf32427ecde
++           エラー `↯/s.106.2` の中で 2、3、4 の番号が付き、`.communicable` によって描画される。
++       entry #number   理由の番号
++     entry .communicable   各理由をメッセージとして描画する
++     entry #reason   `JsonPointer.Error.Reason`
++     entry #offset   エラーが検出された、参照のテキスト内の文字のインデックス
++   entry #path   `Path on JsonPointer` としてのポインター
++   entry #apply   キー（`Text`）またはインデックス（`Ordinal`）で延長されたポインター
+
+@ 0 1 0 06deae85eddb8ff71f576918b193761c
++ entry .NumberMode   パーサーの高速経路には長すぎる JSON の数値がどうなるか
+
+% 1 1 0 05373a88087789c30663b216839dd04d
+
+@ 0 3 0 1665a780bfba12bb0f6bb911ef295bd1
++       約 15 桁までの数値は、モードにかかわらず同じように `Long` または `Double` としてデコードされる。
++       それ以外はモードが決める。モードは given であり、`numberModes` パッケージのものを一つ名前でインポートして選ぶ。`.default` は `Full` である。
+
+@ 0 8 0 1c4f61b742c171fb01a874af21b35360
++       `Full` はすべての桁を保持し、その数値について一回のアロケーションと引き換えに、桁を二進化十進数（`Bcd`）として蓄える。
++       黙って桁を失うのは既定の動作として誤っているので、これが既定である。
++       `Double` はあふれた桁を捨て、先頭の桁から IEEE-754 の `Double` を計算する。これは Jawn、Circe、Jsoniter、Jackson が行うことであり、同じ条件でのスループットの比較や、double の範囲に収まると分かっているデータのためのものである。
++       `Bcd` もあふれた桁を捨てるが、パックされた生のアキュムレーターを、アロケーションを一切行わずに `Long` として出力する。
++       この `Long` は数値の値ではなく BCD のニブルを持つので、そうした数値は不透明なものとして扱わなければならない。
+
+% 2 1 0 0c22387405fb97bb0b904b147ae60d4b
+
+% 0 1 0 0fb1cb441cea031803684f135a2f7439
+
+% 1 1 0 0834f067d532384d05a7ee237f6700bb
+
+% 2 1 0 136ce8ad9c70f7b81d09d9fe391579b5
+
+% 3 1 0 0f9cfdb15b693a311354285b0da41222
+
+% 0 1 0 1892927cc87c82910ed9b4e3935fcca8
+
+% 0 1 0 1c377db432e7559e1ccc28fde4db55f8
+
+% 0 1 0 1075188337b2a3690133bc29e76644b6
+
+% 1 1 0 16d130c4befa20100ea3dc5421bd39cb
+
+% 2 1 0 10cb61b6c05933c516e976ef4e8b09f4
+
+% 3 1 0 071272a9107f2f8501ddd954bc8e276e
+
+% 0 1 0 18551c27c7ec1e450025aa8e0b4f710c
+
+% 0 1 0 14a5a63dfd05de0c1f18e612709fc42f
+
+% 1 1 0 130216e84b61de07035445c617a4777e
+
+% 2 1 0 16c79121bbec9bb61e577c34dced562f
+
+% 0 1 0 100438f3e3ca07ad177b0f3579ad8c25
+
+@ 0 1 0 144f4e1a67a8d7d91ec5944c8dc0250c
++   entry .default   何もインポートしないときにスコープにあるモード：`Full`
+
+@ 0 4 0 16c968d10581a1ad122d5d14fa383478
++ entry .Bcd   ここでエクスポートされる hypotenuse の二進化十進数：長い JSON の数値の正確な形
++     `export hypotenuse.Bcd` である。
++     `Long` や `Double` が保持できるより多くの桁を持つ数値は、既定の `NumberMode` のもとで `Bcd` にパースされ、`Json.Ast.bcd` は任意の数値をこれとして読む。
++     これ自体のページは `hypotenuse` パッケージにある。
+
+@ 0 6 0 0af83277a18079db1a43023f097ffc52
++ entry .j   `j"…"` 補間子：コンパイル時に検査され、穴、展開、統合を持つ JSON リテラル
++     `j"""{"a": $x}"""` は、構文がコードのコンパイル中に検査され（例えば末尾のカンマはその文字の位置で報告される）、穴が実行時に埋められる `Json` である。
++     穴には `Encodable in Json` である任意の値を代入できる。
++     配列の中では、`$xs*` がコレクションのすべての要素を差し込む。
++     オブジェクトのフィールドの間では、`$map` の穴が `Map[Text, Json]` を統合する。
++     `match` の中では、同じ補間子が、その穴を束縛するパターンになる。
+
+% 2 1 0 0feb25d290e467950ee18400550879d9
+
+% 3 1 0 146eee44ba38c38501838c82057ff42c
+
+% 0 1 0 10b3cc7404c7981b04ce6c456331b843
+
+% 0 1 0 09ecb89c41ab418c0aa61168b826d51a
+
+% 0 1 0 057140e12f9972fe130d92f75b7bba52
+
+% 0 1 0 1b61a221916f6d2015ad19f3815dead0
+
+% 0 1 0 184453bdd45202ea06a3e5d20b066443
+
+% 0 1 0 07eb816bd3dc14171d1b085b6297512d
+
+% 0 1 0 14834d871c2853be031ed9df63599bc1
+
+% 0 1 0 1cbb2f4b05f6be0701adf2c35acb9f93
+
+% 0 1 0 03d05e39e035de6f1915b641b9db4c05
+
+% 0 1 0 13bcbf275356fb271e6b2778bb6d83f4
+
+% 1 1 0 1545a159f16981cb09bd554657caa88c
+
+@ 0 4 0 110045075cad50c312ddfdd3af98003d
++ entry .jp   `jp"…"` 補間子：コンパイル時に検査される JSON Pointer のリテラル
++     `jp"#/verona/capulet"` は `JsonPointer` であり、コードのコンパイル中にパースされるので、不正なポインター（`#` で始まらないもの、または誤った `~` のエスケープを持つもの）は問題の文字の位置でのコンパイルエラーになる。
++     この補間子は代入を受け取らない。
+
+% 2 1 0 01330de50b446d7b07dc1463bfa79a73
+
+% 3 1 0 08a0413fbd18d1a5174c05f78143a87d
+
+% 0 1 0 17c0402aeefc23131427996f352bb7f3
+
+% 0 1 0 144e93d4a1ba752c0de661c947ed8330
+
+% 0 1 0 01643e6b54dfeb5813d808241f0f69f4
+
+% 1 1 0 085834c3423828d717e3bc40ec0da7b6
+
+@ 0 1 0 18e06af7b32de902006df1f1ecba6fa8
++ entry .formatting   二つの標準の `Json.Formatting`。それぞれ名前でインポートする given である
+
+% 1 1 0 07087f3caaf4e8490ffdaae0105cc7f3
+
+@ 0 3 0 1f6bfc53a15f741908d22454dee6a789
++       `show`、`emit`、`in[Text over Json]`、HTTP の given はいずれも `Json.Formatting` を必要とし、`import soundness.*` はそれを一つも持ち込まない。名前で一つをインポートする。
++       独自のものは `Json.Formatting(indent, trailingNewline)` である。
+
+% 2 1 0 0f80c8375e5047011b99cced69b2164d
+
+% 0 1 0 0595e598221146b1165c699509e4abe3
+
+% 1 1 0 12b1f2e7519fc2c708515716d18d30a0
+
+% 2 1 0 0308e45cd2f79ed6011e3b3aee16bbab
+
+% 0 1 0 16076a93c42759c712b3abfdd00e89ad
+
+% 0 1 0 094f9f1fdca7e454089eac838d0fb300
+
+% 0 1 0 111d95d52c2ff33b11ad745df3b0669b
+
+% 1 1 0 0e5468dda34c539e0927db36e44bd2b2
+
+% 2 1 0 124a90d7384ad360019e9671381ff0cb
+
+% 0 1 0 04c30a63fd2859fc0136135e1abfa1bd
+
+% 0 1 0 045527b77fa78d66170a7e698386929c
+
+% 1 1 0 11b7ca06068d6ecb0bffa5f9ad97b18e
+
+% 2 1 0 1e51759e245a8ec00ccd5080a6bba20a
+
+@ 0 2 0 0f67f6b0deeba68b1e9c5ac6c343b352
++   entry .compactJsonFormatting   空白なし、末尾の改行なし：`{"a":1}`
++   entry .indentedJsonFormatting   入れ子の段階ごとに二つの空白、メンバーの間に改行、末尾の改行なし
+
+@ 0 1 0 126e1420bfad52a001d00b87c1867b36
++ entry .numberModes   三つの `NumberMode`。それぞれ名前でインポートする given である
+
+% 1 1 0 00c667b1d81867c31c699936b45abdd2
+
+@ 0 5 0 03e902b7cb817259119fb53f46aa0297
++       `Long` や `Double` には長すぎる数値をどうパースするか：`NumberMode` を参照。
++       インポートしない場合の既定は `fullNumberMode` である。
++   entry .fullNumberMode   すべての桁を `Bcd` として保持する。既定
++   entry .doubleNumberMode   Jackson や Circe と同じく、先頭の桁を `Double` として
++   entry .bcdNumberMode   アロケーションなしで、パックされた生のアキュムレーターを不透明な `Long` として
+
+@ 0 1 0 1b6b944cca26b3260269bcd7e72b913f
++ entry .optionalityOptions   `Optional` または `Option` のフィールドが、存在しないキー、`null`、拒否された値をどう読むか
+
+% 1 1 0 0c635436c6735fc21de622e806180e9a
+
+@ 0 11 0 134ac8b18d41b2c51b7d36a22a5dd525
++       `Optional`（または `Option`）のフィールドは三つの問いに答える。それぞれが既定値を持つ別々の given である。
++       存在しないキーは `Unset` として読まれる（既定は `lenientJsonAbsence`。`strictJsonAbsence` は `Json.Error(Absent)` を発生させる）。
++       明示的な `null` は `Unset` として読まれる（既定は `lenientJsonNulls`。`strictJsonNulls` はそれを内側のデコーダーに渡し、デコーダーは他のフィールドと同じようにそれを拒否する）。
++       内側のデコーダーが拒否した値はエラーになる（既定は `strictJsonFaults`。`lenientJsonFaults` は、周囲の戦術の `tolerate` のもとでそれを `Unset` として読むので、何も蓄積されない）。
++       それぞれを単独で変えられる。
++       直接のパーサーとステージングされたパーサーも同じポリシーに従うが、制限が一つある。寛容な誤りが許容されるのは、ワイヤ上の値の種類が誤っていて、パーサーがそれを丸ごと読み飛ばせる場合だけである。種類は正しいがその内部で失敗する値は、やはりエラーを発生させる。
++       `Unset` を宣言された既定値は既定値がないことと区別できないので、厳格な存在の要求を満たさない。
+
+% 2 1 0 163f14948b92f63b19aa9e7bdbb92fa1
+
+% 0 1 0 1a64040dc63845e7121043dd67139bee
+
+% 1 1 0 18e1e17281ab535916c544b433820b5e
+
+% 2 1 0 10daf487394b362d0a7dfc1520c696de
+
+% 3 1 0 18028c8a797c631f0db117c5d6113570
+
+% 2 1 0 1d13c7ec1a8bf31e0014f08d4f0ced3c
+
+% 0 1 0 12b456e126bf3acd09a1191f0899d7e0
+
+% 0 1 0 178cf4adb014fd880bd8ae8e1a269bfa
+
+% 0 1 0 0a2e75481a97b7e31f0b4af842442674
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 0005a1e84f5f49d71a7e315ad826f30f
+
+% 2 1 0 13305fb3c7230d6810bcb68956fd1e1e
+
+% 0 1 0 04a1d41166cf48e210df69e983d9dbf9
+
+% 0 1 0 09bcb0d6853524c7077803a92d1c2a43
+
+% 0 1 0 07e253f3624b8da30eab6cc67e48a7b8
+
+% 1 1 0 07efe15c21df60c115ea8ae4dbd88690
+
+% 2 1 0 1756d680ec28f6a5077c212f83658f9d
+
+% 3 1 0 133db89c7e21d089012a04b69db5bd15
+
+% 0 1 0 02484df4ea0a49621fbcff3bc0953b07
+
+% 2 1 0 110c68d17a10de601f2c31f0c6c5c6e1
+
+% 0 1 0 1b5d8d67bce0d7f1132cd9ee0649cb75
+
+% 0 1 0 01fada15b29248351d001b4e6b308dad
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 01bb6839ede799f81d9bc9317563e368
+
+% 3 1 0 1e4557722bdaad6707a253e01f9c9655
+
+% 0 1 0 1e5b6278577d343009236a4e36b9335c
+
+% 2 1 0 14647245c1be288d15048176fe6ac1e5
+
+% 0 1 0 1619231e6b65d5c416b340edd2510c48
+
+% 1 1 0 19666fbc7f19052f0c2e208e6654a0da
+
+% 2 1 0 157f2552799a9ef206944e3391b3ecc4
+
+@ 0 6 0 1135b8ebeafa2bc506908a04abd420b1
++   entry .strictJsonAbsence   存在しないキーは、`Unset` として読まれるのではなく `Json.Error(Absent)` を発生させる
++   entry .lenientJsonAbsence   存在しないキーは `Unset` として読まれる。既定
++   entry .strictJsonNulls   `null` は内側のデコーダーに渡され、デコーダーはそれを拒否する
++   entry .lenientJsonNulls   `null` は `Unset` として読まれる。既定
++   entry .strictJsonFaults   内側のデコーダーが拒否した値はエラーを発生させる。既定
++   entry .lenientJsonFaults   内側のデコーダーが拒否した値は `Unset` として読まれ、何も蓄積されない
+
+@ 0 1 0 1f77f65868306f47068cda35de0c1b79
++ entry .discriminables   タグ付きユニオンの標準のワイヤ上の形。それぞれ名前でインポートする given である
+
+% 1 1 0 16dbd94d31e3b82f1b1646d743d0383d
+
+@ 0 5 0 071d76a032447ef6133fcdb2bfc11e7a
++       列挙型やシールされた階層は、そのバリアントとタグとしてエンコードされ、スコープ内の `Discriminable in Json` がタグの置き場所を決める。
++       既定ではスコープに何もない。
++       一つを名前でインポートするか、型のコンパニオンに `Json.DiscriminantField`、`Json.DiscriminantWrapper`、`Json.DiscriminantEnvelope` のいずれかを given として置く。
++       どれもツリーを経由しても直接パースでも機能する。`Json.Parsable.staged` が対応するのはフィールドの形だけである。
+
+% 2 1 0 0291a381d7b0f43a14550e9b5f52696c
+
+% 3 1 0 0cfc6a62a0a6f4e01b68ed7df3e4f82e
+
+% 4 1 0 0856bf498a8233b60a3e5e02657ddd59
+
+% 5 1 0 1ce4c6f8fb74bdd309b846ad9047f015
+
+% 0 1 0 1da16eceb39d1fde1b58c775e81e158a
+
+% 0 1 0 038481e8483316b510f11c01e67fb2d5
+
+% 0 1 0 16cb76c7068fad5a1a36161f492a167e
+
+% 0 1 0 0e7aa43b738bc6240282a300c2dd591a
+
+% 0 1 0 1c03ec27c5ccb6b6041f541d8356d7d7
+
+% 0 1 0 007fb93ee0e0224a1bcd1e0ea135643c
+
+% 1 1 0 145f348212bc9e3b0cd199b5005b6b52
+
+@ 0 6 0 1a9b698954e01e830e4651b81ca2b054
++       `@name` は、フィールドの名前を変えるのと同じように、ケースのタグの値を変える。
++   entry .jsonByTypeDiscriminable   バリアント自身のフィールドと並ぶ `type` フィールドにタグを置く：`{"radius":1.0,"type":"Circle"}`
++   entry .jsonByKindDiscriminable   バリアント自身のフィールドと並ぶ `kind` フィールドにタグを置く：`{"radius":1.0,"kind":"Circle"}`
++   entry .jsonWrapperDiscriminable   タグをキーとするオブジェクトの中にバリアントを置く：`{"Circle":{"radius":1.0}}`
++       タグが常に最初のトークンなので、ストリームに最も適した形である。
++   entry .jsonEnvelopeDiscriminable   `type` フィールドと `value` フィールド：`{"type":"Circle","value":{"radius":1.0}}`
+
+@ 0 1 0 11ecd6b32573a13c1bc2e9c4ca060712
++ entry .dynamicAccess   検証されていないドキュメントに対する `json.field` を許可する given
+
+% 1 1 0 1f30c0af9d94601c120d25c59ffcb42e
+
+@ 0 6 0 1c0bf6ea6ee4c3480747978701e63bb8
++       `Json` は動的に型付けされており、コンパイラはそのフィールドについて何も知らない。そのため、フィールドをメンバーとして読むことは検査を実際に失うことであり、既定では有効になっていない。
++       `import dynamicAccess.dynamicJson` は、そのスコープの残りに許可 `Json is Dynamical` を与える。
++       同じ許可を `dynamically[Json]:` でブロックに限定することもでき、`dynamically:` は動的アクセスを持つすべてのフォーマットについてそうする。
++       型に対して `verify` されたドキュメントは、スキーマが許可を与えるので、どちらもなしにフィールドをナビゲートできる。
+
+% 2 1 0 1f53e96830a72f4b080a337e93a0480c
+
+% 3 1 0 11601f0b94a15c5f1b9aea7565c35323
+
+% 4 1 0 00dac38d6c77b9740d00dc2aaddd11ef
+
+% 0 1 0 06069bf80815a8e61a8e9d26187c8704
+
+% 0 1 0 05ccb8d973276bab0bcd9fa2c1846105
+
+% 0 1 0 00c4a12a659f75cf196b0674c805097c
+
+% 1 1 0 1fadaffd4409620802d3e8c899523d91
+
+@ 0 1 0 157f346b91ac7200010b0ce27b81cda3
++   entry .dynamicJson   `Json is Dynamical`：そのスコープで `json.field`、`json.field = value`、`json.lens(…)` を有効にする
+
+@ 0 1 0 050a1fcf2a92e1840f68b7996d4ba226
++ entry .conversions   `Encodable in Json` である任意の値から `Json` への `Conversion`。名前でインポートする
+
+% 1 1 0 0c51f078c5cfdd4c0b20d88f68a4b28e
+
+@ 0 4 0 0a3f97a49d2a495510c2a70945cfe7b4
++       `conversions.encodableToJson` をインポートすると、エンコーダーを持つ値を、`.in[Json]` と書かずに、`Json` が期待される場所 — `Json.make(a = 1)` やレンズの代入 `json.lens(_.name = t"x")` — に与えられる。
++   entry .encodableToJson   `Encodable in Json` である任意の `T` についての `Conversion[T, Json]`
+
+@ 0 1 0 09fbfda1f1ec732904dd783331aece47
++ entry .postables   `Json` を `application/json` のリクエストの本文として送る。JVM のみ
+
+% 1 1 0 0950c52f0dc016411ef82f9a41edb3ba
+
+@ 0 3 0 06ea9ad95dcc65870be5b3c0aaab3b84
++       `jacinta.http` である。
++       この given は `Codepage` と `Json.Formatting` を必要とし、ドキュメントを `show` で描画し、コードページでエンコードし、メディアタイプ `application/json; charset=UTF-8` のもとで送る。
+
+% 2 1 0 135f34d244480be714b07065928e7d8e
+
+% 3 1 0 1fac54737130458e0325e18e28dc3f51
+
+% 4 1 0 13d200c00b3fe02a1307777e5c3504f6
+
+% 0 1 0 1d18ef6e6172b2cc122e3568b3e9c9fc
+
+% 0 1 0 0ecb5c3023f5baa314b248c9dd122458
+
+% 1 1 0 06bb2cb933115d3e0f9c789e2919b656
+
+@ 0 1 0 05b07e21a6a3bfb0010de69a31e33558
++   entry .jsonPostable   `Json is Postable`：ドキュメントのテキストを `application/json` としたリクエストの本文
+
+@ 0 1 0 09a0ed1bb22e93b8197c2ff095663ce3
++ entry .servables   `Json` を `application/json` のレスポンスの本文として提供する。JVM のみ
+
+% 1 1 0 0e75c4e1dfaa4fb80d49de13841c5b14
+
+@ 0 3 0 09f7dda2565cb9410b0d84481b9ad27b
++       `jacinta.http` である。
++       この given は `Codepage` と `Json.Formatting` を必要とし、ドキュメントを `show` で固定長のレスポンスの本文に描画する。
++   entry .jsonServable   `Json is Servable`：ドキュメントのテキストを `application/json` としたレスポンス
+
+@ 0 1 0 0678c6ed6abac20d0424710e04aca69c
++ entry .construables   メディアタイプ `application/json` の API の本文を `Json` として読む。JVM のみ
+
+% 1 1 0 0fafc7c6e2b1f3760d301d89fc345dd6
+
+@ 0 2 0 16c6730876bf322e1f0f02736397652b
++       `jacinta.http` である。
++       API の記述（apoplexy の `Api`）が、メディアタイプが `application/json` であるリクエストまたはレスポンスから `Json` を構築できるようにする given である。
+
+% 0 1 0 198332a92f595922032e9f34dfa0a80a
+
+@ 0 1 0 036bc2557c6123ce14979fa6d6617f60
++ entry .optics   `Json` ドキュメント上のレンズとオプティクス。それぞれ名前でインポートする given である
+
+% 1 1 0 189345c06019766e1cdc3124e5e2bd4f
+
+@ 0 6 0 1ab376bebdd823a11acf1358ad1e4195
++       `jacinta.optics` である。
++       これらが `json.lens(…)` を機能させる。名前付きのフィールドのための panopticon のレンズと、配列の中に届くオプティクスである。
++       これらが `Json` のコンパニオンではなくパッケージにあるのは、インポートし忘れたときに、黙って動作が変わるのではなくコンパイルエラーになるようにするためである。
++       `import optics.*` ですべてを持ち込める（または、すべてのライブラリのオプティクスが統合される `import soundness.optics.*`）。
++       レンズの代入には動的アクセスの有効化も必要であり、普通の値を代入するには `conversions.encodableToJson` も必要である。
+
+% 2 1 0 1c7ab9bb97765601032fe20c83630076
+
+% 3 1 0 1a125d7adacd5137063313a45de617f0
+
+% 4 1 0 1510f7c93239f0210b10081e7df28e81
+
+% 0 1 0 1d0c03267f34cd171a73e16e4cd6801b
+
+% 0 1 0 015b918db1adbea803d43755da82713a
+
+% 0 1 0 071d4bb8a658af7c078621eb7705fb38
+
+% 0 1 0 0d89a0ba07f883ae12b446da80290287
+
+% 0 1 0 0d6cc5788728285306cb5e43d54bcd0f
+
+% 0 1 0 15eb5b188c739ba1002637a4c21e4eae
+
+% 0 1 0 0078f758b43066181163c942e6577065
+
+% 0 1 0 13b364aed23e8f5217ad1e86f9917c6b
+
+% 0 1 0 0ec5cf8932b41c691b6f0c2e41cfed69
+
+% 0 1 0 0e111993eb52492f1eb6939073caba4f
+
+% 1 1 0 10d9dcdfdc1331c803e662eea019d711
+
+@ 0 8 0 1cb8b0f7b86219e61547e20e85fa23a3
++   entry .jsonLens   `Json` から名前付きのフィールドへのレンズ。`json.lens(_.name = …)` のためのもの
++       動的アクセスの有効化（`dynamicAccess.dynamicJson`）と `Tactic[Json.Error]` を必要とする。
++       欠けたフィールドを読むと存在しない `Json` が得られ、書き込むとそのフィールドが加わる。
++   entry .jsonOrdinalOptical   `Ordinal` による配列の一つの要素へのオプティク：`scenes(Prim)`
++       配列を不変のまま再構築する。
++       末尾を越えるインデックスや配列でないものに対しては、ドキュメントは変わらない。
++   entry .jsonEachOptical   `Each` のオプティク：配列のすべての要素に変換を適用する
++   entry .jsonFilterOptical   `Filter[Json](predicate)` のオプティク：述語に一致する要素に変換を適用する
+
+@ 0 1 0 01262333a3b609a41d5ab7579cccd6af
++ entry .encodables   ミリ秒としてエンコードされる aviation の `Instant` と `Duration`。それぞれ名前でインポートする given である
+
+% 1 1 0 029d81485af9066d17787b8a146db886
+
+@ 0 2 0 092ea3a99035e5cb072d5d68698049fd
++       `jacinta.time` である。
++       `Instant over Unix` はエポックからのミリ秒の整数としてエンコードされ、`Duration` はミリ秒の整数としてエンコードされる。
+
+% 2 1 0 0171a44d5c8ad131107464c8731291be
+
+% 3 1 0 07a279ce8925c6781fb06293e6ecad91
+
+% 0 1 0 1040cb96db7e64de129bcf8960d9e85f
+
+% 1 1 0 050e135c25fb4248051a75f0be7427ad
+
+% 0 1 0 174fd610fcf6945e18641991d93e4dc1
+
+% 0 1 0 08e50f3c1ae8d99515f11ab3088ae704
+
+% 1 1 0 1eafd111e3076ce61cf0d5a804d43343
+
+@ 0 2 0 085f6d0f73fdc4470e1a39d769f75898
++   entry .instantJsonEncodable   ミリ秒の JSON の整数としての `Instant over Unix`
++   entry .durationJsonEncodable   ミリ秒の JSON の整数としての `Duration`
+
+@ 0 1 0 171e38abbd1a3527106151889b2f7f2b
++ entry .decodables   ツリーを経由して、ミリ秒からデコードされる aviation の `Instant` と `Duration`
+
+% 1 1 0 0926864cd0bd3fe31a91dc84f6489c2e
+
+@ 0 1 0 198f3621a1127feb1c02b332cb9c7acb
++       `jacinta.time` である。
++       ツリーをたどるデコーダーであり、`parsables` はその直接パース版である。
+
+% 2 1 0 06ec0ea1b11ab06a1b556a9b79cd7a5e
+
+% 3 1 0 0700918512ba78bf06c07bded7919555
+
+% 4 1 0 13643487c62bf7900f41e43718eb32f6
+
+% 0 1 0 1e91d232cf0ae70d0e703f4db5663c21
+
+% 0 1 0 13289e6aa371d55011dabcd0ff387c51
+
+% 1 1 0 05e18a259c827553178eaa5eff06c10d
+
+@ 0 2 0 18db408127923f5e1e80b330e662691c
++   entry .instantJsonDecodable   ミリ秒の JSON の整数からの `Instant over Unix`
++   entry .durationJsonDecodable   ミリ秒の JSON の整数からの `Duration`
+
+@ 0 1 0 12f3a81670fc91321e92b47d7474c136
++ entry .parsables   トークンストリームから直接読まれる aviation の `Instant` と `Duration`
+
+% 1 1 0 1b088fddf6efdfef04de4c9bd6572aeb
+
+@ 0 5 0 0360ed9fdc9f1bab1d9f52237c3e1753
++       `jacinta.time` である。
++       `decodables` に対応する直接パース版である。数値は中間のノードなしにトークンから直接読まれるので、`Instant` のフィールドを持つレコードは、オプトインしていれば直接パースされる。
++   entry .instantJsonParsable   ミリ秒の JSON の整数から直接読まれる `Instant over Unix`
++   entry .durationJsonParsable   ミリ秒の JSON の整数から直接読まれる `Duration`
+
+@ 0 1 0 11cd31be57f15f681ba9ce70288477d2
++ entry .InlinableStager   `Inlinable.parsable` の背後にある、コンパイル時のステージングのコンパイラ
+
+% 1 1 0 1278d4b1c806195b109f0f1a15fedc5d
+
+% 2 1 0 1ca0af1a25b6816d024e380007afe52f
+
+@ 0 9 0 03afceb58ecf38a11dd475307a227d2a
++       直接使うものではない。`jacinta.staged` である。
++       レコードのパーサーが生成されるとき、フィールドの型に対してユーザーが書いた `Inlinable` の given は、展開時に、マクロのクラスローダー上の新しいステージングのコンパイラで評価される（現在の出力ディレクトリは除外される。実行中のコンパイルのクラスには信頼できるクラスファイルがないからである）。こうしてジェネレーターはその `parse` を呼び出せる。
++       内側のコンパイラに渡せない型 — 不透明型、構造的な型、または現在のコンパイルで定義された型 — は、実行時の継ぎ目に格下げされる。
++       `Inlinable.Stager` は `.Implementation` を名前でロードする。
++   entry .evaluate   可能であれば、ステージングのコンパイラで型の `Inlinable` インスタンスを評価する
++   entry .Implementation   `Inlinable.parsable` が名前でロードする `Inlinable.Stager`
+
+% 1 1 0 19eedb816dca6452117f1f68331add6e
+
+@ 0 2 0 10158eda32a95c3e1b64cd253dbbc4b6
++         `summon` を `.evaluate` に委譲する。
++     entry .summon   展開時に評価された型の `Inlinable`、または `None`
+
+@ 0 1 0 1ffad89919342d880600041b89cffff1
++ entry .Inlinable   一つの型の JSON パーサーとプリンターを生成するコンパイル時のコードジェネレーター。一つの平坦なパーサーに合成される
+
+% 1 1 0 198099299fb5d65a1a90567bcbf94bdc
+
+@ 0 10 0 064a20c26da34079040cf5a699d07a6d
++       `Inlinable` は `Json.Parsable` と `Json.Printable` のマクロ時における対応物である。
++       `Json.Parsable` のインスタンスが `Json.Reader` に対して*実行される*のに対し、`Inlinable` のインスタンスはそれを行うコードを `Expr` として*生成する*。
++       `Inlinable.parsable[T]` は、`T` とその下にあるすべてのフィールドの型のインスタンスを一つの単相的なパーサーに合成する。フィールドには型付きのローカル変数が使われ、キーはパックされたワードをリテラルと比較して振り分けられ、入れ子のレコードとコレクションのループはその場にインライン化される。実行時の振り分けも、インスタンスの配列も、合成されたパーサー間のアダプターもない。
++       `Inlinable.printable[T]` は書き込みについて同じことを行う。
++       結果はそれを求めたモジュールに差し込まれるので、すべてのフィールドがトークンストリームから直接読まれ、`Json` のツリーは一度も構築されない。
+
+% 2 1 0 0ea7e636c2cc065a19c70ea778d3ac59
+
+% 3 1 0 14124626735f734e18b8ab0ec05d98fb
+
+% 4 1 0 1774d7384f5fc0d01d4f106f8381a92d
+
+% 5 1 0 09c2768b5bb0e4d01432225bcbd00403
+
+% 1 1 0 10e5dba181c2b4c409406624fe518ffa
+
+% 2 1 0 1b57ab72b70c598c0e3d02af8b5ce210
+
+% 0 1 0 1ab34bfb9a17727c1f2637b1b78246b9
+
+% 0 1 0 04fc31fa311781550f666118336f01d9
+
+% 1 1 0 1c5f35c29c0aa1651d7b856f2499c7a7
+
+% 0 1 0 0f29ef5ed663065c1613650057f4734f
+
+% 0 1 0 1dbc9bb35bbf0b0a14e219f161451630
+
+% 1 1 0 122a749be4c8cefb10a213bf369658d5
+
+@ 0 14 0 1193c7112619bfff01468c59c672730e
++       同じ二つのインスタンスは `derives Json.Direct` によってレコードのコンパニオンに一度だけ生成され、`import codecs.direct` は何も宣言せずに、スコープ内のすべてのレコードについて生成されたパーサーとプリンターを選ぶ。そのため、ほとんどのコードは `Inlinable` を直接呼び出さない。
++       ある型について何が生成されるかは、解決の段階によって、次の順序で決まる。組み込みの葉（`Int`、`Long`、`Double`、`Float`、`Boolean`、`Text`、`String`）、展開時に評価されるユーザーが書いた `Inlinable` の given、ケースクラス（`.derived`）または適用されたコレクション型 — `List`、`Set`、`Sequence`、`Vector` と stdlib の不変なコレクションで、要素ごとにコレクションのビルダーに集められる — のための構造的なジェネレーター、そしてそれ以外の場合は**実行時の継ぎ目**、つまりフィールドの型の `Json.Parsable` または `Json.Field`（出力の場合はその `Encodable in Json`）を差し込んだ呼び出しである。`Optional[…]`、`Map`、列挙型、シールされた直和型はこれによって参加する。
++       再帰的な型 — `Tree(children: List[Tree])` — は、再帰的な出現を、それ自身の名目的な `Json.Parsable` を通じて生成中のインスタンスに結び付けるので、展開は終了する。
+
+@ 0 11 0 194be54d1cb3477f01de9871945ce7f2
++       手書きのインスタンスについては、三つの事実が決め手となる。
++       第一に、`Inlinable` の given は普通の実行時の値なので、ジェネレーターがその `parse` を呼び出すにはマクロの中で given を評価するしかなく、そのためにはマクロ内のステージングのコンパイラが必要である。`jacinta.staged` がそれ（`Inlinable.Stager`）を提供し、それがコンパイルのクラスパスにない場合、ユーザーが書いたインスタンスしか持たない型のフィールドは実行時の継ぎ目を通る。
++       第二に、インスタンスとその型は、展開よりも*前の*コンパイルでコンパイルされていなければならない。同じコンパイルのインスタンスには信頼できるクラスファイルがなく、やはり継ぎ目に格下げされる。
++       第三に、`Inlinable.parsable[T]` そのものは、自身のジェネレーターを持たない `T`（唯一のインスタンスが名目的な `Json.Parsable` である型）を、_jacinta: `T` has no generator of its own; use `Json.Parsable.staged` or `derived` rather than `Inlinable.parsable`_ というエラーで拒否する。結果は何も加えないか、自分自身を呼び出すかのどちらかになるからである。
+
+@ 0 5 0 084e5cb2062685f80565183a4a1ec0c8
++       インスタンスの `#prints` は、それがプリンターを生成するかどうかを示す。既定の `false` はパース専用のインスタンスを正直に保ち、インスタンスが出力しないフィールドはその `Encodable in Json` を通じて書き出される。
++       `#absent` はオブジェクトに欠けているキーのためのコードである。既定では、実行時のインスタンスと同じように、与えられた戦術を通じて `Json.Error` を発生させる。
+
+% 1 1 0 1fefd31920f7188e1eb1145d5eeee4c3
+
+% 0 1 0 03dc3645375f908b0a4e6c9c7875cf20
+
+% 0 1 0 0d1a2447c65c7bfc1074748ea61b4d20
+
+@ 0 7 0 03b8cf6fe664046b139f430a48286885
++   entry .parsable   `Inlinable.parsable[T]`：コードのコンパイル時に生成される、`T` のための単相的な `Json.Parsable`
++       マクロである。
++       `Inlinable` の項で説明した段階を通じて `T` の `Inlinable` を解決し、一つの平坦なパーサーを `Json.Parsable.Direct[T]` として差し込む。これは `Json` を構築せずに、`Json.Reader` の下にある `Parser` から値を読む。
++       インスタンスも構造的なジェネレーターも持たない型はコンパイルエラー _jacinta: no Inlinable instance for `T`, and it is not an inlinable product; use `Json.Parsable.staged` or `derived`_ になる。
++       結果を置く通常の場所は型のコンパニオンである。
+
+% 2 1 0 17b6a87855ae197a0da7ae46820caf4e
+
+% 3 1 0 0df9169765cece5211e3ec7da72c9bdf
+
+% 4 1 0 0ef048efede817751896305082516e4e
+
+% 5 1 0 080be18a5f13736214c2691f7760d686
+
+% 0 1 0 16e7677aa284c8e107d6438b1b0409df
+
+% 0 1 0 149aeeef426fec9f15cd40ecbcc76d27
+
+% 0 1 0 0d06b86acd872a0a11df3e835dd6020c
+
+% 0 1 0 0b75991676b12b8510afcbc115f1961e
+
+% 1 1 0 1a1ee4d9e09255e6079d9334865813c6
+
+@ 0 18 0 1e8b7abf013d0d870e124f7ac30568cc
++       意味は `Json.Parsable.derived` と同じである。欠けたキーには宣言された既定値が使われ、`@name` による名前の変更が適用され、未知のキーは `Parser#directSkipValue` で読み飛ばされ、エラーのフォーカスはフィールドを指す。
++       コレクションは出現ごとにコレクションのビルダーに集められ、要素ごとにインデックスのフォーカスを持つ。
++   entry .printable   `Inlinable.printable[T]`：コードのコンパイル時に生成される、`T` のための単相的な `Json.Printable`
++       マクロであり、`.parsable` に対応する書き込み側である。
++       `Json.Printable.Direct[T]` であり、同じインスタンスを通じて合成され、`T` のコンパクトな JSON テキストをフィールドごとにライターへ直接書き込む。
++       ルートのインスタンスが出力しない型 — テキストとしてエンコードされる型、または唯一のインスタンスが実行時の `Encodable` である型 — はコンパイルエラー _jacinta: `T` has no generated printer; use its `Encodable in Json`_ になる。
++       生成されたプリンターは、スコープ内の `Json.Formatting` がコンパクトである場所では `in[Text over Json]` と `in[Data over Json]` によって使われる。インデント付きの出力は引き続きツリーを通じて描画される。
++   entry .derived   ケースクラスのための構造的な `Inlinable`：すべてのフィールドをそれぞれのインスタンスで扱う
++       `Inlinable.derived[T]` は、ケースクラス `T` のための、値としての直積型のジェネレーターである。
++       `parse` が呼び出されたときに `T` をリフレクションするので、独自のマクロを必要とせず、given として `given Tree is Inlinable = Inlinable.derived` と書ける。
++       パースだけでなく出力も行う。
++   entry .ForJson   ケースクラスが `derives Inlinable.ForJson` と書けるようにするキャリア
+
+% 1 1 0 13f91a10243baf41066a0fc0f30f8ddd
+
+@ 0 12 0 1f4d626c0eecd4761b12221eea289b63
++         `Self` で型付けされた型クラスは型パラメーターを持たないので、`Inlinable` は `derives` 節に現れることができない。
++         `case class Play(…) derives Inlinable.ForJson` は `ForJson[Play]` — これは `Play is Inlinable` *そのもの*であり、すべてのメソッドを `Inlinable.derived[Play]` に委譲する — を `Play` のコンパニオンに合成し、展開時の召喚がそれを見つける。
++         解決の段階は委譲先を取り出すので、構造的なインスタンスはジェネレーターとしての同一性を保つ。
++     entry .derived   `ForJson.derived[T]`：`derives` 節のために `Inlinable.derived[T]` を包む
++     entry #parse   委譲先が生成するパース
++     entry #absent   委譲先の、欠けたキーのためのコード
++     entry #prints   委譲先が出力するかどうか
++     entry #write   委譲先が生成する書き込み
++   entry .Generates   型のコーデックがレコードとして構造的に生成されるという証拠
+
+% 1 1 0 06732068a3942a7604f1cc5a1e91afb4
+
+@ 0 7 0 0d270a7759f784501e08694615f12dbb
++         `Inlinable.Generates[T]` は、`import codecs.direct` が生成するインスタンスの条件である。
++         その given である `.generates` はマクロであり、直積型のジェネレーターが対応し、かつテキストとしてエンコードされないケースクラスについてだけ成功し、それ以外のすべてについては _jacinta: `T` has no generated codec_ で失敗する。そのため、生成されたインスタンスの探索は失敗し、代わりに導出の経路が解決される。
++         直接使うものではない。
++     entry .generates   `Generates[T]` の背後にある transparent inline の given：軽量な形の検査
++   entry .Stager   `jacinta.staged` が、ユーザーが書いたインスタンスを展開時に評価するためのフック
+
+% 1 1 0 0248d3e57e505ecc1660d1182e762e68
+
+@ 0 39 0 1a7454cc1d391eb909182bb55ca6307f
++         `Inlinable` の given は実行時の値なので、ジェネレーターがユーザーの書いたインスタンスの生成するコードに到達するには、その given をマクロの中で、ステージングのコンパイラで実行するしかない。
++         `jacinta.core` はコンパイラの jar に依存しないので、トレイト `Stager` がそのケイパビリティを宣言し、`jacinta.staged` がそれを実装する（`InlinableStager`）。
++         コンパニオンは、`jacinta.staged` がマクロのクラスパスにあるときはその実装をクラス名でロードし、そうでなければすべての型に `None` を返す。この場合、そうしたフィールドは実行時の継ぎ目を通る。
++         召喚の結果は展開の間キャッシュされるので、ある型のステージングの召喚は、その型が何度現れても高々一度しか実行されない。
++     entry .summon   ロードされたステージャーの `summon[field]`。クラスパスに `jacinta.staged` がなければ `None`
++     entry #summon   解決できる場合、`field` の `Inlinable` の given をマクロの中で実際に評価する
++   entry .int   `Int` のフィールドのジェネレーター：`reader.int()`。裸の数値として書き出される
++   entry .long   `Long` のフィールドのジェネレーター：`reader.long()`。裸の数値として書き出される
++   entry .double   `Double` のフィールドのジェネレーター：`reader.double()`。裸の数値として書き出される
++   entry .float   `Float` のフィールドのジェネレーター：`reader.double().toFloat`。パースのみ
++   entry .boolean   `Boolean` のフィールドのジェネレーター：`reader.boolean()`。`true` または `false` として書き出される
++   entry .text   `Text` のフィールドのジェネレーター：`reader.string()`。エスケープされた JSON の文字列として書き出される
++   entry .string   `String` のフィールドのジェネレーター：`reader.string()`。エスケープされた JSON の文字列として書き出される
++   entry .iterable   要素が `Inlinable` である、適用されたコレクションのジェネレーター
++       `element is Inlinable` が与えられたとき、任意の `collection <: Iterable` についての `collection[element] is Inlinable` である。
++       生成されるループは `Parser#directOpenArray` で配列を開き、`Parser#directElementFirst` と `Parser#directElementNext` で進み、各要素をインラインでパースしてコレクションの `Factory` のビルダーに加える。
++       要素が出力する場合は、これも出力する。
++       インスタンスのグラフがステージングのコンパイラの中で解決されるとき、通常の given の解決を通じて合成される。
++   entry #parse   `Json.Reader` から `Self` を読むコードを生成する
++       リーダーの `Expr` と、展開の `Quotes` と `Type[Self]` を受け取り、デコードされた値の `Expr` を返す。導出を行うマクロはそれをその場に差し込む。
++       生成されたコード内のローカルの `def` やラムダは排他的なパーサーを読み取り専用で捕捉するので、生成された本体はパーサーを一度束縛し、それを通じて直接読む。
++   entry #prints   このインスタンスがプリンターも生成するかどうか。上書きしない限り `false`
++   entry #write   `Self` を JSON のライターに書き込むコードを生成する
++       値とライターを受け取り — ライターは、生成されたコードではキャプチャが消去されるので中立的な `AnyRef` のキャリアとして渡され、使うたびに改めて型が主張される — `Expr[Unit]` を返す。
++       既定では _jacinta: the Inlinable for `T` generates no printer_ で展開を中止する。`#prints` を `true` に上書きするインスタンスは、これも上書きする。
++   entry #absent   オブジェクトに欠けているキーのための値を生成する
++       既定は、与えられた戦術を通じた `Json.Parsable.missing[Self]()` であり、`Json.Error` を発生させる。オプショナルなラッパーはこれを上書きして、存在しない値を生成する。
+
+@ 0 1 0 1ea3ffbc51c2e545096d04b5314db242
++ entry .inlining   `Inlinable` の背後にある仕組み：展開時の解決、構造的な生成器、入口のマクロ
+
+% 1 1 0 09ae3379b23807d60c2082ccf2756cf1
+
+% 2 1 0 05d2215676f61f68042934d36b0ee080
+
+@ 0 12 0 1c4985826d234afd05e998721ce78737
++       直接使うためのものではない。
++       このオブジェクトは、`Inlinable.parsable`、`Inlinable.printable`、`Inlinable.Generates` が展開されるマクロの実装、解決の段階（組み込み、ステージングされた召喚、構造的な直積またはコレクション、実行時の継ぎ目）、ステージングの召喚をメモ化して再帰を検出する展開ごとのキャッシュ、そして直積とコレクションの生成器を持つ。
++   entry .fieldSeam   実行時の継ぎ目：フィールドをその名目的な `Json.Parsable` または `Json.Field` を通してパースする
++       生成されたパーサーが、`Inlinable` を持たないフィールドの型に対してスプライスするインラインメソッドである（`summonFrom` はインラインメソッドの中にしか置けない）。
++       名目的な `Json.Parsable` があれば直接呼ばれ、なければフィールドの `Json.Field` が使われる。
++   entry .generates   `Inlinable.Generates.generates` の背後にあるマクロ
++   entry .inlinablePrintable   `Inlinable.printable[T]` の背後にあるマクロ
++   entry .inlinableParsable   `Inlinable.parsable[T]` の背後にあるマクロ
+
+@ 0 1 0 0bb2580f6aeb905b11d42159ad387348
++ entry .internal   `j"…"`、`jp"…"`、スキーマで型付けされたナビゲーション、`Json.Parsable.staged` の背後にあるマクロの実装
+
+% 1 1 0 0517e13bd05bcfcf1cdafb52a7603357
+
+% 2 1 0 0801d48b0eb81d5a0a1240e22fc220cf
+
+@ 0 30 0 0eb04a0cb9d6d6bc16ed5c013cf8f3a3
++       直接使うためのものではない。このオブジェクトは、マクロに安定した置き場所を与えるために存在する。
++   entry .jsonPointer   `jp"…"` 補間子の背後にあるマクロ
++       コードのコンパイル中に、リテラルをポインター自身の `Decodable` を通して `JsonPointer` としてデコードし、`JsonPointer.Error` のオフセットをソースに対応付け直すので、コンパイルエラーは問題のある文字を指す。
++   entry .select   `Json` に対する `json.field` の背後にあるマクロ：スキーマ型があればそれに照らして検査される
++       `Json of P from R`（`verify` が型付けした文書）では、フィールドは `P` の構造の中で探され、結果は `Json of <field type> from R` になる。`P` にないフィールドはコンパイルエラーである。
++       プレーンな `Json` では、アクセスは `dynamicAccess.dynamicJson` という有効化子によって制限され、フィールドを全域的に読む。
++   entry .index   `Json` に対する `json(i)` の背後にあるマクロ：スキーマ型があればそれに照らして検査される
++   entry .applied   `Json` に対する `json.field(i)` の背後にあるマクロ
++   entry .interpolator   `j"…"` リテラルの背後にあるマクロ
++       コードのコンパイル中に、各置換の位置に目印を置いてリテラルの部分をパースするので、不正な JSON はその位置でのコンパイルエラーになる。そして、置換された値を埋めた `Json.Ast` をスプライスする。
++   entry .extractor   パターンとしての `j"…"` の背後にあるマクロ
++       `$name` の穴を持つ JSON リテラルを、`Json` をそれに照らしてマッチし、穴を `Boolean`、単一の値、またはそれらのタプルとして束縛する抽出子にコンパイルする。
++   entry .stagedParsable   ケースクラスに対する `Json.Parsable.staged` の背後にあるマクロ
++       単相のパーサーを生成する。フィールドの値は型付きのローカル変数に置かれ、キーはあらかじめ計算された `Json.KeyTable` を通して整数の switch に振り分けられ、組み込みのプリミティブはトークンストリームからインラインで読まれ、レコードはコンストラクターの直接呼び出しで組み立てられる。
++       組み込み以外のフィールドの型は `Json.Field` インスタンスを通るので、デフォルト値、`@name`、欠落と null、未知のキー、重複、エラーのフォーカスは、`Json.Parsable.derived` とまったく同じに振る舞う。
++   entry .stagedSum   シールされた直和型に対する `Json.Parsable.staged` の背後にあるマクロ
++       巻き戻す、範囲を限った先読み走査で判別子を見つけ、ワイヤ上のバリアント名との文字列比較で振り分け、選ばれたバリアントをその `Json.Field` を通してパースする。
++       導出のエンジンと同じく、タグがなければ `Json.Error(Absent)` を、未知のタグには wisteria の `Variant.Error` を発生させる。
+
+@ 0 1 0 14e80d32de791fea0037f00a559e17a2
++ entry .jsonSchematics   読み書きするスキーマと融合したコーデックのコンストラクター：`Decodable & Schematic`
+
+% 1 1 0 01a06c61a493730b0e7ed7144f91aafa
+
+@ 0 8 0 17661cf9aabc5cc01bc67e880e36fad4
++       `Json.Encodable` と `Json.Decodable` は、それぞれ書くものと読むものの `Morphology` を持つ。`jsonSchematics.encodable[T]` と `jsonSchematics.decodable[T]` はその形を `JsonSchema` として実体化し、一つのインスタンス `T is Encodable & Schematic in Json over JsonSchema`（または `Decodable & Schematic`）の中でコーデックと組にする。
++       スキーマはコーデック自身から得られ、別に導出されることは決してないので、この組は構成上一貫している。JSON コーデックがその `Encodable in Text` を経由する型（文字列として書かれる列挙型）は `JsonSchema.String` を得るが、単独の `Schematic` の導出ではその構造をオブジェクトとして記述してしまう。
+
+% 2 1 0 13ea3c6416a3ecaa0b936af10521b68d
+
+% 3 1 0 0b9384495cec80ea17c8db4a8de9819b
+
+% 4 1 0 05924c02737f6f4f1dc8c13a326c83fa
+
+% 5 1 0 04f80ab30f7eb3df10fc4873ec139b62
+
+% 0 1 0 0e8f9b9e37857b7a09aebafd0d92762e
+
+% 0 1 0 126a738502af624903ff15d87ee75a15
+
+% 0 1 0 0a8359486732e850025748367e685f36
+
+% 0 1 0 08540d815aa32ffa116ab8b6c12d891f
+
+% 1 1 0 02e15e85f84de8ac1d9887754ebde49d
+
+@ 0 5 0 0f6001903ddf3370137ee5bd86293948
++       これらは意図して given ではなくメソッドにしてある。`Decodable & Schematic` の given はそのコーデックの型クラスと `Schematic` の両方の部分型なので、given にすると裸の `Schematic` の召喚に対して曖昧になる。
++       融合したインスタンスが欲しいところで呼ぶか、ローカルな given として束縛する：`given (Contact is Decodable & Schematic in Json over JsonSchema) = jsonSchematics.decodable[Contact]`。
+
+% 1 1 0 15978586e46c4f7313042332cac9c676
+
+@ 0 6 0 0faba517862868840b23860bd6774433
++   entry .encodable   `T` に対する `Json.Encodable` を、それが書くものの `JsonSchema` と融合したもの
++       スコープに `T is Json.Encodable` が必要である。`encoded` はそれに委譲し、`schema()` はその `shape()` の `JsonSchema.reify` である。
++   entry .decodable   `T` に対する `Json.Decodable` を、それが読むものの `JsonSchema` と融合したもの
++       スコープに `T is Json.Decodable` が必要である。`decoded` はそれに委譲し、`schema()` はその `shape()` の `JsonSchema.reify` である。
+
+@ 0 1 0 019501f78e0aced310b9130dd4d81c39
++ entry .JsonSchema   値としての JSON Schema：Scala の型から導出し、文書から読み、文書として書く
+
+% 1 1 0 06a5929399607b52050300d36f37afe1
+
+@ 0 10 0 1f22e8e677ceccfa1f92a6189fe518f6
++       `JsonSchema` は、スキーマのノードの種類（`Object`、`Array`、`String`、`Number`、`Integer`、`Boolean`、`Null`、`Ref`）をケースとする列挙型である。各ケースは、JSON Schema がそれに許すキーワード、省略可能な `description`、そしてノードが `null` または欠落を許すことを記録する `optional` フラグ（`type` の中の `"null"`、OpenAPI の `nullable`、導出されたスキーマにおける `Optional` なフィールド）を持つ。
++       これは JSON に対する `Schematic` の運び手である。`T is Schematic over JsonSchema` は `T` のスキーマを与え、コンパニオンは任意のケースクラスやシールされた階層に対してスキーマを導出し（wisteria の `Derivable` による `JsonSchema.derived[T]` と、リフレクション可能な任意の型に対してそれを解決するインライン given `.schematic`）、`JsonSchema` は標準的な JSON Schema 文書にエンコードされ、そこからデコードされる。
+
+% 2 1 0 1bb8ce533d77f04a0c99bab221a0f79b
+
+% 3 1 0 08a97c932363929212c861c059129440
+
+% 4 1 0 08c47d22c19433f30965e96828f09a37
+
+% 5 1 0 0caa25edfa2b5bd1103130533249a3f1
+
+% 0 1 0 021366bdd725b08b1901918e0d0c1ebf
+
+% 0 1 0 11b522624f1396eb18612da25cc7d34b
+
+% 0 1 0 0d6be4e494791348091ed4acaccb5e54
+
+% 1 1 0 100ae03d43a50e401095bbe4b5ee150e
+
+% 0 1 0 0d18bfafd5f50271007c6e5c1e6a50b0
+
+% 0 1 0 07445028f940a2531be59e031f1894cf
+
+% 0 1 0 0561f9555e513d241caed3499e6f484a
+
+% 1 1 0 03b38c81391335d7054dcbf627674f4d
+
+@ 0 1 0 090802b4f428a4e61eb4397c902a4b94
++       ケースは次のとおりで、それぞれすべてのパラメーターにデフォルト値を持つケースクラスである。
+
+@ 0 23 0 1e6488a066e558510908015f2f39a827
++       - `Object(description, properties: Map[Text, JsonSchema], optional, required: Optional[List[Text]], enum: Optional[List[Json]], additionalProperties: Boolean, oneOf, additionalSchema: Optional[JsonSchema], allOf, anyOf, not, const)`。導出されたスキーマの `required` は `Optional` でないフィールドを列挙する。シールされた階層は、`oneOf` にバリアントごとに一つのスキーマを持ち、`kind` を必須とする `Object` として導出される。`additionalProperties` は、裸の `true` によってであれ、それらに対するスキーマ（そのとき `additionalSchema` がそれを持つ）によってであれ、スキーマがさらなるプロパティを許すときに `true` である。真偽値のスキーマ `true` は `Object(additionalProperties = true)` として読まれる。
++       - `Array(description, items: Optional[JsonSchema], minItems, maxItems, optional, maxContains, minContains)`：`List` や `Set` は、その要素のスキーマの `Array` として導出される。
++       - `String(description, minLength, maxLength, pattern: Optional[Text], format: Optional[JsonSchema.Format], optional)`：`Text` と `EmailAddress` は `String` として導出される。
++       - `Number(description, multipleOf, maximum, minimum, exclusiveMinimum, exclusiveMaximum, optional)`。境界はすべて `Optional[Double]` である。`Float` と `Double` は `Number` として導出される。
++       - `Integer(description, maximum, minimum, exclusiveMinimum, exclusiveMaximum, optional, format)`。境界はすべて `Optional[Long]` である。`Byte`、`Short`、`Int`、`Long` は `Integer` として導出される。
++       - `Boolean(description, optional)` と `Null(description, optional)`。
++       - `Ref(pointer: JsonPointer, description, optional)`：`{"$ref": "#/…"}` という参照であり、循環するスキーマのグラフが有限に保たれるよう、解決されずに保たれる。`verify` は `Ref` ノードを検査しないまま残す。
+
+@ 0 4 0 1dd44f38bfaa4fcf006ae18a8828db80
++       スキーマのケース `Array`、`String`、`Number`、`Boolean` がプレリュードの名前を覆い隠すのは `object JsonSchema` の中だけである。外からは `JsonSchema.Array(…)` とプレリュードの `Array` は共存する。
++       導出されたスキーマにおけるフィールドの説明はフィールドに付いた `@memo` アノテーションから、バリアントの説明はバリアントに付いた `@memo` から得られる。
+
+% 0 1 0 19c09abbbc05077409d38929a6799169
+
+% 0 1 0 13691869747c083e047302ed5a05c028
+
+% 0 1 0 152c95810e78aed31c0165603950d105
+
+% 1 1 0 12366fd777f813af1894edece5f7dfc8
+
+@ 0 39 0 153e3ca57b1c3aab0d10f9a8549fc6d0
++   entry .byteSchematic   `Byte` は `Integer()` として導出される
++   entry .shortSchematic   `Short` は `Integer()` として導出される
++   entry .intSchematic   `Int` は `Integer()` として導出される
++   entry .longSchematic   `Long` は `Integer()` として導出される
++   entry .floatSchematic   `Float` は `Number()` として導出される
++   entry .doubleSchematic   `Double` は `Number()` として導出される
++   entry .textSchematic   `Text` は `String()` として導出される
++   entry .emailSchematic   `EmailAddress` は `String()` として導出される
++       スキーマは `format` を記録しない。`format: "email"` が解釈されるのは、融合した `jsonSchematics` インスタンスと `Json.Provider` においてである。
++   entry .booleanSchematic   `Boolean` は `Boolean()` として導出される
++   entry .optionalSchematic   `Optional[T]`（または任意の `Mandatable` なラッパー）は、optional の印を付けた `T` のスキーマとして導出される
++       内側の型のスキーマを取り、`.optional` を通してその `optional` フラグを立てるので、導出された `Object` はそのフィールドを `required` から省く。
++   entry .listSchematic   `List[T]` は `Array(items = T's schema)` として導出される
++   entry .setSchematic   `Set[T]` は `Array(items = T's schema)` として導出される
++   entry .mapSchematic   テキストにエンコードできるキーを持つ `Map[K, V]` は `Object(additionalProperties = true)` として導出される
++       値のスキーマは記録されない。JSON Schema の `additionalProperties` キーワードはそれを持つことができ、文書からスキーマを読むときには実際に持つ（`additionalSchema`）が、導出はまだそれを書かない。
++   entry .schematic   リフレクション可能な任意の型に対してスキーマを導出するインライン given
++       `[value: Reflection] => value is Schematic over JsonSchema` であり、`derived` に展開される。ケースクラスはフィールドごとにプロパティを持ち、optional でないフィールドを `required` とする `Object` になり、シールされた階層はバリアントごとの `oneOf` を持つ `Object` になる。
++       各フィールドと各バリアントの `@memo` アノテーションはその `description` になり、複数あるときは改行で連結される。
++   entry .jsonSchemaSchematic   `JsonSchema` 自身は寛容な `Object()` として導出される
++       `.schematic` より優先して見つかる手書きのインスタンスである。これにより、`JsonSchema` のフィールドを持つ型のスキーマの導出は、スキーマのスキーマを通して永遠に再帰するのではなく、終了する。
++   entry .pointerEncodable   `JsonPointer` はそのテキストとしてエンコードされるので、`Ref` は文字列として直列化される
++       汎用の導出がポインターのパス構造を導出するのではなくポインターを葉として扱うよう、`Json.Encodable` として明示的に提供される。
++   entry .encodable   `JsonSchema` を JSON Schema 文書として書く
++       `JsonSchema` に対する `Json.Encodable` である。各ケースは、`type` で判別される導出を通して、その `type`（`"object"`、`"array"`、`"string"`、…）とキーワードを持つオブジェクトになる。`Ref` は裸の `{"$ref": "…"}` になる。
++       プレーンなコーデックではなく `Json.Encodable` であるからこそ、コレクションとマップのコーデックは入れ子の `JsonSchema` を、発散するスキーマのスキーマを導出するのではなく、このインスタンスに解決できる。
+
+% 2 1 0 1d6772b133518cc20b0c4e31da1f2708
+
+% 3 1 0 184fe9be563937de15beb53deaa654ac
+
+% 0 1 0 18552f7e79b98f441a67f8a18fa53bb6
+
+% 0 1 0 0c6c313bb91c224e19fa5d9c1876ffff
+
+% 1 1 0 15c1df8dccd9f8aa0686a8be3cbc3064
+
+@ 0 7 0 0335c53fc5905e9f0ce86d96b4ad634c
++   entry .decodable   JSON Schema 文書から `JsonSchema` を読む
++       `JsonSchema` に対する `Json.Decodable` である。スキーマのノードはその `type` フィールドの*値*で判別され、それは名前、名前のリスト（draft 2019-09 と OpenAPI 3.1）、または `$ref` や型のないオブジェクトでは欠落でありうるので、手で書かれている。
++       `Tactic[Json.Error]` と（不正な `$ref` のための）`Tactic[JsonPointer.Error]` を必要とし、インスタンスは両方を捕捉するので、その型を名指す召喚はキャプチャを許さなければならない：`summon[(JsonSchema is Json.Decodable)^]`。`as[JsonSchema]` には特別なものは要らない。
+
+@ 0 6 0 14ee8f80d43f45df0d344ca70aa34c9f
++       受け付けるものは次のとおりである。真偽値のスキーマ（`true` は `Object(additionalProperties = true)`、`false` は何も許さない）。`type` の中の `"null"` または OpenAPI 3.0 の `nullable: true`。これは `optional` として記録される。後の数値の形に加えて、`minimum` を修飾する draft 4 の `exclusiveMinimum: true`。どちらも同じモデルに読まれる。真偽値またはスキーマとしての `additionalProperties`。任意の名前の `format`。未知のものは `JsonSchema.Format.Other` として保たれる。そして、認識される `type` を持たないノードは `Object` として読まれる。
+
+% 2 1 0 1ce23233946f57e613b4caaaad56d19c
+
+% 3 1 0 1cd39ba24b5d85d60a649c37a7ab96a1
+
+% 4 1 0 0f18be6fee0e2a710bef6a503b6e74f6
+
+% 5 1 0 1605ca11f2ff614c0f3b3d7c9b4e0106
+
+% 0 1 0 12ec883e3bf139e71dbed151eae57bae
+
+% 0 1 0 07f8296cbbb83b1e1bbe889bd484ae79
+
+% 1 1 0 1ec18a00a4fcd7d804cfd6f6063d0424
+
+@ 0 6 0 106bb9ac5262fb561d8c03dc03799593
++   entry .discriminatedUnion   `JsonSchema` 文書がどのケースであるかを示す方法：その `type` フィールドによる
++       導出されたエンコーダーが使う `Discriminable` インスタンスである。判別子は小文字にした `type` キーワード（`"object"`、`"integer"`、…）であり、読むときは先頭を大文字にしてケース名に戻す。
++       これにより `{"type": "integer"}` は `kind` のラッパーなしでエンコードされる。
++   entry .reify   形式に依存しない `Morphology` を `JsonSchema` として
++       コーデックが宣言する形からスキーマへの橋渡しである。
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+% 0 1 0 0153be1d41a877db10642c9eea64676f
+
+% 0 1 0 0764477653d9043115c2a4ce8dd9be69
+
+% 0 1 0 057f4ced034825e71ac16a64bd2ffbd1
+
+% 0 1 0 0fceab894344bd8a195b9f9cd0c74cf8
+
+% 0 1 0 11ac2742c5cd69420a9180bcd92717fd
+
+% 0 1 0 11b151bf3fb31f12138db61f7ba2ce0c
+
+% 0 1 0 1b08ed9cbe78f01715c77be199e92248
+
+% 0 1 0 1141726130aecc9a1a0a3c09de35db53
+
+@ 0 4 0 042cca7961b0505516131e58acf6a0cd
++       row  `Opt(inner)`  optional の印を付けた内側のスキーマ
++       row  `Arr(items)`  `Array`
++       row  `Obj(fields, required)`  それらのプロパティを持つ `Object`
++       row  `OneOf(variants)`  `oneOf` にそれらを列挙し、`kind` を必須とする `Object`
+
+% 1 1 0 0add4f02e4f39b1d15e1379d58abea80
+
+@ 0 15 0 0d938692aef0602f12a933795dcdd2f9
++       `verify` と `jsonSchematics` はこれの上に築かれており、そのおかげで `jacinta.core` はスキーマへの依存を一切持たずに済む。
++   entry .optional   `optional` フラグを立てた同じスキーマ
++       任意のケースを `optional = true` でコピーする。`.optionalSchematic` と、`Optional` および `Option` のフィールドのコーデックがこれを使う。
++   entry .conjunction   ケースクラスのスキーマの導出：そのフィールドの `Object`
++       `Derivable` のフックである。フィールドの型の `Schematic` を通してフィールドごとにプロパティを作り、スキーマが optional でないフィールドを `required` として列挙し、各フィールドの `@memo` の説明を連結してその `description` とする。
++       直接は呼ばれない。`.schematic` と `derived` がこれに到達する。
++   entry .disjunction   シールされた階層のスキーマの導出：バリアントごとの `oneOf` を持つ `Object`
++       `Derivable` のフックである。バリアントごとに一つのスキーマを、バリアントの `@memo` をその説明として `oneOf` の下に置き、`kind`（`jsonByKindDiscriminable` のエンコーディングが書く判別子のフィールド）を必須とする。
++       直接は呼ばれない。
++   entry .Format   文字列または整数のスキーマの `format` キーワード：既知の名前をケースとする開いた語彙
+
+% 1 1 0 063c75f1a2eae6df0a32791e2ec9b949
+
+@ 0 7 0 1986b7e519e6ce9413a888b991e9a8d3
++         ケースは JSON Schema 自身のフォーマット（`DateTime`、`Date`、`Time`、`Duration`、`Email`、`Hostname`、`Ipv4`、`Ipv6`、`Uri`、`UriReference`、`UriTemplate`、`Uuid`、`JsonPointer`、`RelativeJsonPointer`、`Regex`）と、OpenAPI が追加した `Int32`、`Int64`、`Float`、`Double`、`Byte`、`Binary`、`Password` である。文書が考案したそれ以外のもの（`snowflake`、`unix-time`）は `Other(name)` になるので、デコードは全域的である。
++         `Json.Provider` は `format` をそれが名指す型として読む。`email` はメールアドレスとして、`uuid` は `Uuid` として、といった具合である。
+
+% 2 1 0 0ccca4a829054dc0150a90f21162c2df
+
+% 3 1 0 087d053b94677908122e2483cb454c69
+
+% 4 1 0 1969d2a3ea1330d8005085633cb732f2
+
+% 0 1 0 0b46519939f7212f1083a7854f046e0a
+
+% 0 1 0 16782249826edbe01add01fb5167a964
+
+% 0 1 0 1510a99a20e6702b03a512e52e812eaf
+
+% 1 1 0 1d616fbab2e3d50411acfd225a34acc6
+
+@ 0 9 0 0190c150c26597f51dffb1b6e642ef95
++     entry .encodable   フォーマットをそのケバブケースの名前として書く：`DateTime` は `date-time`、`Other(name)` は `name`
++     entry .decodable   名前からフォーマットを読む。未知の名前は `Other(name)` であり、失敗することはない
++   entry #optional   ノードが `null` または欠落を許すかどうか
++       導出されたスキーマにおける `Optional` なフィールド、文書の `type` の中の `"null"`、またはその `nullable: true` で立てられる。導出された `Object` は optional なプロパティを `required` から省き、`verify` はスキーマが optional であるところでのみ欠落した値を受け入れる。
++   entry #description   ノードの `description`、または `Unset`
++   entry #description_=   説明を付けた同じノード：`schema.description = t"…"`
++       任意のケースを説明を置き換えてコピーする。導出のときには `@memo` がこれを設定する。
+
+@ 0 1 0 0c9d6ade29b7479b0f1fbee32e4d3d7f
++ entry .memo   導出されたスキーマで、フィールドやバリアントに `description` を与えるアノテーション
+
+% 1 1 0 17784699f806ec3d0e21a3b137a62f70
+
+@ 0 3 0 134c61750bc204a4088dc769928b2fb7
++       ケースクラスのフィールド、またはシールされた階層のバリアントに付けた `@memo(t"…")` は、コンパニオンが導出する `JsonSchema` における、そのプロパティまたは選択肢の `description` になる。
++       一つのフィールドに複数の `@memo` があれば改行で連結される。
+
+% 2 1 0 1709ba6a4333350d07cc11eeee894cfa
+
+% 3 1 0 19fed2a7780e4d0b1a1c54308c2fdad8
+
+% 0 1 0 19186705c564daa705a05b413d3484d0
+
+% 0 1 0 1e66d4a5a593727e05d1cb92ea78cb90
+
+% 0 1 0 0cc1bc9d02fdf7e319c036424c46590e
+
+% 1 1 0 0e5a2eec8c2fcc6502454fe8bfe4202b
+
+% 0 1 0 17005df1b298165b1e934cce95720140
+
+% 1 1 0 1e53a9c7d027d98904fea55c8e5579fd
+
+% 1 1 0 1abfc6bb579b860c1f40863effc3b1c1
+
+@ 0 1 0 120773dcd338ddb30edc565bf7ec4a8d
++   entry #description   アノテーションのテキスト
+
+@ 0 9 0 0d6fd08d0627d7841c6deaf9f043651e
++ entry .verify   文書を型のスキーマに照らして検査して型付けし直し、そのフィールドをコンパイル時の検査付きでナビゲートできるようにする
++     `Json` に対する拡張である。
++     `json.verify[T]` は、`T` の `Json.Decodable` が宣言するスキーマを（その `shape()` の `JsonSchema.reify` を通して）実体化し、文書をそれに照らしてたどり、成功すれば同じ文書を `Json of T from T` と型付けして返す。これは、幻の型 `Topic` がスキーマの中での位置であり、`Origin` がルートである `Json` である。
++     最初の不一致で `Json.Error` を発生させる（誤った種類の値には `Reason.NotType`、文書にない必須のフィールドには `Reason.Absent`）ので、`Tactic[Json.Error]` が必要であり、適合しない文書に対する `safely(json.verify[T])` は `Unset` である。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0d909c0e8898d3c312beea729ffa2f25
++       label 必須のフィールドが欠けている：検証は失敗する
+
+% 1 1 0 18728b4c6127f0910807b8f967c08904
+
+% 2 1 0 009745c72746fff004145d772c827bc6
+
+% 3 1 0 00c78d9b652792b3188172863da095a7
+
+% 4 1 0 19d31047c74b5f6600c7b6225e21b518
+
+% 6 1 0 15532f3ff376dc011ab286c42c0606c8
+
+% 0 1 0 076510b1fe5295f70e8454fa9863d7d9
+
+% 0 1 0 0be0348b737a9cc6016469e9b6cb51c1
+
+% 1 1 0 111857f5b0a66b450b0a033fc8c2d2d6
+
+@ 0 1 0 04b9d2cb1bd4b6be14e014ae48cd15b2
++       label 種類の誤ったフィールドもやはり失敗する
+
+% 1 1 0 0d6dce824cad4be50fa85b8cdc035121
+
+% 2 1 0 1e119404ce2413fb13f90ec240013a6e
+
+% 3 1 0 1efed181b6dbe6ac0f3a8d9659a16f38
+
+% 4 1 0 11be2d9b925f1c410ca2beb268e299eb
+
+% 6 1 0 01e25ea9a687f09011ae164faee53ef2
+
+% 0 1 0 07c3f607baeb47730aecbcc79a3431a3
+
+% 0 1 0 151fead40e4903a91b23ff606994bb07
+
+% 1 1 0 1fb48054f2862e301629c9955d765e58
+
+@ 0 1 0 1428803bd2b9d65c1eb82ff54d231fec
++       label 適合する文書は検証され、デコードされ、検査されたフィールド名でナビゲートできる
+
+% 1 1 0 0cb2a254bac66aa90976bf0767854cef
+
+% 2 1 0 18bab82e1cfc8ea40fd9834ad261c530
+
+% 3 1 0 027a9c6e17b7018402b208720bfdd75b
+
+% 4 1 0 15759e6f48d4e815066b30c4ea24ff53
+
+% 6 1 0 110f830efe216b4b02adf7a775ca3083
+
+% 0 1 0 1da790cc6ef5fe46000c4afe5f8e67c5
+
+% 0 1 0 1888c083c572bc0c0e284f4253c0e362
+
+% 0 1 0 17e4ec359e3217160ea3ca0621cdbe6c
+
+% 0 1 0 03e4f85a3d43ad3b140110b9dc26b145
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 7 0 0eb267edde423a8618a21cc0ac6b6ee5
++     ナビゲーションを許すのは、検証された文書の型である。
++     `verified.name`、`verified.workplace.city`、`verified.members(1).name` は、それぞれコードのコンパイル中にスキーマの構造に照らして検査される。型にないフィールド、配列でないフィールドへのインデックス、スカラーのフィールドは、問題を名指すコンパイルエラーになり、`dynamicAccess.dynamicJson` のインポートは要らない。
++     検証されていないプレーンな `Json` には依然として有効化子が必要であり、エラーもそう述べるので、二種類のアクセスが混同されることはない。
+
+@ 0 6 0 077e3930e9da8476148ab614ae883464
++     検査が扱うものは次のとおりである。スキーマが名指す各プロパティは再帰的に検査され、そのスキーマが optional であるところでのみ欠落してよい。スキーマが名指さないプロパティは許される。配列のすべての要素は `items` に照らして検査される。`oneOf` はいずれかのバリアントが通れば通る。`Ref` ノードは、ルートの文書なしには参照を解決できないので、検査されないまま残される。
++     導出された `Optional[T]` のフィールドは欠落してよいが、その位置にある JSON の `null` は欠落ではなく、内側のスキーマに照らした検査に失敗する。
+
+@ 0 1 0 000d78aa6ce356f512c624830965a5b6
++ entry .Parser   すべての `read[Json]` の背後にあるストリーミング JSON トークナイザ：スレッドごとにプールされた排他的なインスタンス一つ
+
+% 1 1 0 1d917967065f372508d14405b047ec76
+
+@ 0 7 0 0eb2c97eed12411d02d6dfc1d79d25ea
++       `Parser` は、すべての `read[Json]`、`Json.Ast.parse`、`j"…"` リテラル、直接の `read[T in Json]` が通る、一回の走査で済む JSON パーサーである。
++       これは `Data` の `zephyrine.Cursor` の上にある、状態を持つ排他的なケイパビリティ（`caps.ExclusiveCapability, caps.Stateful`）なので、入力の中を進むすべてのメソッドは `update def` であり、排他的な `Parser^` 参照を通してのみ呼べる。インスタンスはスレッドごとのプールに一つあり、パースのたびにリセットされるので、パースはパーサーをアロケートせず、作業領域のバッファーとキーのキャッシュを文書から文書へと温かいまま保つ。
+
+@ 0 4 0 1063bee80db08a100a7fdaedf2b0752b
++       普通のコードがこれを名指すことはない。
++       ユーザー向けの入口は、`read[Json]`（と、入力を先に連結せずにブロックごとにパースする、`Stream[Data]` または `Iterator[Data]` の上の `read[Json]`）、`Json.Ast.parse`、そして `Json.Reader` を通してトークンストリームから値を直接読む `Json.Parsable` インスタンスである。
+
+% 2 1 0 1076eb8d0aa2e9ac0ddf56fd80f176d5
+
+% 3 1 0 00c4afd4c64ed0771a9785a5f9c40322
+
+% 4 1 0 0560004b10f2744b08bd5172bfd2ea38
+
+% 5 1 0 052113960352db0f0cb24d72a38a4902
+
+% 2 1 0 1561d4f6954518f517d834f4208ed13a
+
+% 0 1 0 14e7fdf40a6f035305834c6eb1167555
+
+% 0 1 0 120ba75bcf3dfb81082d993092e48385
+
+% 0 1 0 178c9cc64570d359035ad4214d13c4ea
+
+% 1 1 0 00f9ab7aee0197891010262f590524fb
+
+@ 0 8 0 0efe30f819d5f12603ec4f86731332f3
++       このクラスが*型*として公開されているのは、`Inlinable.parsable[T]` と `Json.Parsable.staged` が生成するパーサーがユーザー自身のモジュールにスプライスされ、その直接の縁（`#directString`、`#directLong`、`#directElementFirst`、…）を通して読むからである。これは `Json.Reader` のトークンごとのフォワーダーを通るより数パーセント速い。
++       手で書く `Json.Parsable` は代わりに `Json.Reader` を使うべきである。リーダーは自身の `Tactic[Parse.Error]` を持ち、進行中の読み取りの背後にあるパーサーに到達する唯一の方法は jacinta の中に封じられている。
++       `new Parser` も可能だが、意図された経路ではない。プールを持たず、`#parse` の前に `#resetData` を呼ばなければならない。
+
+@ 0 7 0 10d4c9be5740e9510a88c4edd02bb04d
++       生成されるのは `Json.Ast` である。`String`、`Long`、`Double`、`Bcd`（スコープにある `NumberMode` に従い、15 桁を超える数に対して）、`true`/`false`、`Json.JsonNull`、オブジェクトや混在した配列に対する `Array[Any]`、そして小さな数だけからなる配列に対するパックされた `Array[Int]` または `Array[Long]` である。後者はボックス化された形と同じ値にデコードされるが、アロケーションは一回で済む。
++       16 ASCII バイトまでのオブジェクトのキーはスレッドごとのキャッシュを通してインターン化されるので、文書をまたいで繰り返されるレコードの形はキーの文字列を再利用する。
+
+@ 0 10 0 015947a9abc3261d0c38cfd9abb9a648
++       `Long` または `Double` にちょうど収まる数は高速な経路でデコードされる。それより長い、あるいはより精密な数は、何も失われないよう `Bcd` の桁として保たれる。ただし、`numberModes.doubleNumberMode` または `numberModes.bcdNumberMode` をインポートすれば、その精度をスループットと引き換えにできる。
++       先頭の UTF-8 のバイトオーダーマークは読み飛ばされる。
++       文字列は UTF-8 からデコードされ、すべてのエスケープが尊重される。有効な JSON でない入力は、その誤りを名指す `Json.Ast.Issue`（`EmptyInput`、値の後の `SpuriousContent`、`ExpectedColon`、`NumberHasLeadingZero`、`IncorrectEscape`、`PrematureEnd` など）をそのバイト位置とともに持つ `Parse.Error` で中断する。
++       `parsing.trackPositions` のもとでは同じパースが `Json.PositionIndex` も組み立てるので、`locate` はノードをその行と列に対応付けられる。
+
+@ 0 3 0 05135bea71eb17111211fc9845df6066
++       性能：ベンチマークのコーパスの文書では、ストリーミングのパースは Jackson との差がおよそ 15 パーセント以内で動き、生成された `Json.Parsable` を通した直接の読み取りは木をまったく作らない。
+
+% 1 1 0 192beb85fef2cbfc0da7eda141f06e57
+
+% 0 1 0 1713daee8aae7e3a056502fd959c093d
+
+% 0 1 0 1aa5487254dc39361426da3d612ffd72
+
+@ 0 88 0 1c954ec661d563ca0c01e872832734b5
++   entry #Region   入力中の印を付けた位置 `Cursor.Mark` に対する、パーサー自身の別名
++       `Region` は入力中の絶対位置であり、トークンが始まるときに取られ、トークンが終わったときにそのバイトを切り出すため、またはエラーの範囲を報告するために使われる。
++       zephyrine の `Cursor.Mark` であり、それを生んだ保持の中でのみ意味を持つ。
++   entry #resetData   メモリに保持された文書全体をパーサーの対象とする
++       `input: Data` の上にカーソルを作り直し、パースごとの状態（文字列バッファー、作業領域の配列、位置のインデックス）をすべて消去する。
++       プールの入口は各 `#parse` の前にこれを呼ぶ。手で持つパーサーも同じことをしなければならない。
++   entry #resetIterator   バイトのブロックとして届く文書をパーサーの対象とする
++       `#resetData` と同じだが、パーサーが消費する `Iterator[Data]` の上で働く（パラメーターは `consume` されるので、呼び出し側はイテレーターを手放す）。
++       ブロックはパースが進むにつれてリフィルされ、二つのブロックにまたがるトークン（数、文字列、キーワード）はカーソルによって連続にされるので、結果は連結したバイトをパースしたものと同一である。
++   entry #resetStream   `Stream[Data] over Credit` をパーサーの対象とする
++       `#resetIterator` と同じだが、クレジットで計量される `Stream[Data]` の上で働く。ソケットやファイルからの `read[Json]` は、こうして入力全体を連結した後ではなく、バイトが届くにつれて、限られたメモリでパースする。
++   entry #parse   一つの完全な JSON 文書をパースし、その `Json.Ast` を返す
++       バイトオーダーマークと先頭の空白を読み飛ばし、ちょうど一つの値をパースし、その後は入力の終わりまで空白だけを要求する。それ以外のものがあれば `Json.Ast.Issue.SpuriousContent` で、空の入力は `Json.Ast.Issue.EmptyInput` で中断する。
++       `Tactic[Parse.Error]` が必要であり、不正な入力のすべての誤りはそれを通してバイト位置とともに発生させられる。
++       パーサーが位置を追跡しているときは、ルートの `Json.PositionIndex` が木と並行して組み立てられる。
++   entry #directSkipValue   何も組み立てずに値を一つまるごと消費する
++       直接の縁の読み飛ばしである。一つの値（スカラー、配列、オブジェクト、任意の深さ）に対する検証付きの走査で、`#parse` と同じ文法を強制して同じ `Json.Ast.Issue` を発生させるが、ノードもバッファーもキーの文字列もアロケートしない。
++       生成されたパーサーは認識しないすべてのキーにこれを使うので、未知のフィールドのコストはそれが占めるバイトだけである。
++   entry #directString   JSON の文字列トークンを一つ消費し、`String` として返す
++       空白を読み飛ばし、`"` を要求する。それ以外のものは `Json.Ast.Issue.ExpectedString` で中断する。
++       現在のバッファーの中で閉じるプレーンな ASCII の文字列はそのままコピーされる。エスケープや非 ASCII のバイトを含むもの、またはブロックの境界をまたぐものは一般の経路でデコードされ、結果は同じである。
++   entry #directBoolean   `true` または `false` を消費する
++       空白を読み飛ばしてからキーワードを読み、バイトがちょうどそのキーワードでなければ `Json.Ast.Issue.ExpectedTrue` または `ExpectedFalse` で中断する。
++   entry #directLong   整数のトークンを一つ `Long` として消費する
++       空白を読み飛ばしてから、バッファーを決してリフィルしない高速な経路で、省略可能なマイナス記号付きの 18 桁までの数字を読む。
++       小数部、指数部、19 桁目、先頭のゼロ（`NumberHasLeadingZero` として拒否しなければならない）、またはウィンドウの終わりに触れる数は一般の数のパーサーに切り替わるので、どちらの経路が動いても値は同じである。
++       `Json.Reader#long` と `Json.Reader#int` はこの呼び出しである。
++   entry #directDouble   数のトークンを一つ `Double` として消費する
++       空白を読み飛ばしてから、有効数字 15 桁までで、仮数と 10 の累乗がどちらも正確である範囲内の指数を持つ数を読むので、高速な経路は一般の経路とビット単位で同一である。それ以外のもの（16 桁目、数字の前の先頭のゼロ、大きな指数、ウィンドウの終わり）は一般の経路を通る。
++       `Json.Reader#double` はこの呼び出しである。
++   entry #directOpenObject   `{` を消費してオブジェクトに入る
++       空白を読み飛ばしてから `{` を要求し（そうでなければ `Json.Ast.Issue.ExpectedObject`）、入れ子のレベルを一つ積む。そのレベルの区切りの状態はキーを進めるメソッドが維持するので、欠けたカンマや重複したカンマは `#parse` が拒否するのとまったく同じに拒否される。
++   entry #directKeyWordFirst   オブジェクトの最初のキーを `Long` にパックしたもの、または番兵
++       オブジェクトの最初のキーを読んでいることを静的に知っている生成されたパーサーのためのものであり、区切りのカンマを期待しない。
++       エスケープのない 1 から 16 個の印字可能な ASCII バイトからなるキーはパックされて返される。最初の 8 バイトが結果に、残りが `#directKeyWordHigh` に入るので、生成されたパーサーはキーを実体化せずにリテラルの定数との比較で振り分けられる。
++       パックされたキーとしてありえない二つの値が番兵として使われる。閉じの `}` を消費した後の `-1`（`Json.Reader.KeyEnd`）と、高速な経路がここで判断できないとき（キーがエスケープされている、16 バイトより長い、空である、ウィンドウの端にある、または不正である）の `-2`（`Json.Reader.KeyOpaque`）である。後者の場合、呼び出し側は一般の、インターン化された名前を使う段階（`Json.Reader.keyNameOf`）を通してそれを解決する。
++   entry #directKeyWordNext   オブジェクトの後続のキーを `Long` にパックしたもの、または番兵
++       最初の後のすべてのキーに対する `#directKeyWordFirst` である。キーの前に `,`（または閉じの `}`）を期待し、キーごとの状態は参照しない。
++       同じ番兵が適用される。
++   entry #directKeyWordHigh   直前にパックされたキーの 9 バイト目から 16 バイト目
++       `#directKeyWordFirst` または `#directKeyWordNext` が走査したばかりのキーの上位ワードであり、8 バイト以下のキーではゼロである。
++       下位ワードの直後、次のキーが走査される前に読むこと。
++   entry #directOpenArray   `[` を消費して配列に入る
++       空白を読み飛ばしてから `[` を要求し（そうでなければ `Json.Ast.Issue.ExpectedArray`）、要素を進めるメソッドのために入れ子のレベルを一つ積む。
++   entry #directElement   開いている配列の次の要素に進むか、配列を閉じる
++       区切りのカンマがあれば消費して次の要素に位置したところで `true` を返し、閉じの `]` を消費した後は `false` を返す。
++       現在のレベルがまだ要素を出したかどうかを追跡するので、要素の間の欠けたカンマや最初の要素の前のカンマは、`#parse` が拒否するのと同じに拒否される。
++   entry #directElementFirst   配列のループの最初の段階：要素または閉じの `]`
++       これが最初の段階であることを静的に知っているループのための `#directElement` である。値または `]` を期待し、カンマは決して期待せず、レベルを開始済みとして印を付ける。
++       生成されたコレクションのパーサーは、これを `#directElementNext` と組にする。
++   entry #directElementNext   配列のループの後の段階：`,` の後の要素、または閉じの `]`
++       最初の要素の後の `#directElement` である。`,` または `]` を期待し、要素ごとの状態は参照しない。
++       `,` の後に `]` が続くと `Json.Ast.Issue.ExpectedSomeValue` で中断する。

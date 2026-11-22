@@ -1,9 +1,0 @@
-orthant 1 language
-
-- import pathInterfaces.pathOnLocal
-- import systems.javaBaseSystem
-+ import pathInterfaces.pathOnLocal
-+ import systems.javaBaseSystem
-
-- val path = temporaryDirectory[Path on Local] / "tutorial.pdf"
-+ val path = temporaryDirectory[Path on Local] / "tutorial.pdf"

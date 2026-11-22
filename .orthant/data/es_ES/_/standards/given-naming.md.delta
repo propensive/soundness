@@ -1,0 +1,226 @@
+orthant 2 language
+
+@ 0 1 0 07a548547464ca600d35aef5aeaaa6a0
++ # Normas de nomenclatura de valores contextuales
+
+@ 0 8 0 1ef4fa18394e7f2716140265dc3a2349
++ Esta norma define cómo se nombran y agrupan los valores `given` importables. Abarca los valores
++ contextuales *huérfanos*: aquellos que un usuario trae al ámbito por su nombre, ya sea desde un
++ paquete de elección (`import strategies.throwUnsafely`) o, para los pocos que no pueden anclarse
++ a un objeto compañero, desde el nivel superior de una biblioteca
++ (`import bitumen.tarPathOpenable`). Dónde *vive* un given lo deciden las reglas de ubicación de
++ `.claude/CLAUDE.md`; este documento decide cómo se *llama*. Para saber por qué importa el nombre,
++ véanse [contexto declarativo](../philosophy/declarative-context.md) y
++ [nomenclatura](../philosophy/naming.md).
+
+@ 0 2 0 15645943122e4b9a1b1327518ee67571
++ Los givens de los objetos compañeros (`Tui.Block.Anchoring.default`, `Buffering.standard`) quedan
++ fuera de esta norma: se resuelven por tipo y nunca se escriben en un punto de importación.
+
+@ 0 1 0 0fbdab94d49e82a80a6eb1224785e7ff
++ ## La prueba
+
+@ 0 5 0 1e60420e02642bd11e88f7fcc8cef509
++ Un lector que sabe todo lo que Soundness puede hacer, pero nada de cómo llama a las cosas, debería
++ poder decir qué hace un given solo por su nombre, quitándole el paquete. `throwUnsafely` la
++ supera: es una estrategia, y lanza excepciones. `enabled` y `native` no la superan: ¿habilitado
++ *qué*, y nativo *de qué*? El nombre es lo único visible en la línea de importación, y a menudo lo
++ único visible en cualquier parte, así que transporta todo el significado.
+
+@ 0 1 0 0de87de1a87905fa110cb8b248d3e561
++ ## Reglas
+
+@ 0 1 0 0f4b042a6d42ee7c16ab1e4978c5d7eb
++ ### 1. La familia es el papel, como paquete
+
+@ 0 6 0 1bee6eff7d22e55e07145a3d0832c899
++ Un paquete de elección se nombra según el papel que desempeñan sus miembros: un sustantivo
++ contable en plural (`strategies`, `stdios`, `filesystemBackends`, `probates`) o un sustantivo
++ incontable (`formatting`, `threading`, `logging`). Nunca un sustantivo contable en singular:
++ `blockCipherModes`, no `blockCipherMode`. Los nombres de familia son globales —los bloques con el
++ mismo nombre de bibliotecas distintas se fusionan en el paraguas `soundness`—, así que una familia
++ debe significar un mismo papel en todas partes.
+
+@ 0 5 0 0a8137c7a4bd2d811f4682875640e690
++ Las familias nunca se anidan. Una biblioteca declara cada familia como un único bloque
++ `package <family>:` de nivel superior, y el paraguas lo refleja con el mismo nombre, de modo que
++ `import aviation.monthFormats.englishMonths` e `import soundness.monthFormats.englishMonths` son la
++ misma ruta. Una familia que de forma natural estaría dentro de otra toma en su lugar la palabra de
++ su madre como prefijo (`dateSeparators`, `timeSeparators`, `randomSizes`, `pathInterfaces`).
+
+@ 0 1 0 1c37b1ac4b8889eb075a6efc3ba53810
++ ### 2. El nombre es la elección y luego el papel
+
+@ 0 2 0 19cc64c0ba168d90067e1d0c96c34ee8
++ La palabra de elección va primero, y se añade el singular del papel salvo que la elección ya lo
++ implique:
+
+% 2 1 0 1506cd82fa98740a12deb7c4bd6dbbb6
+
+% 0 1 0 1bf570676b9440b3071af989a2ca102c
+
+% 0 1 0 0764277469c043000d5aa018959677d6
+
+% 0 1 0 1856c23de59d15e217bdb8ad6263667c
+
+% 0 1 0 0e63de87faf4ee840460673274f85e76
+
+% 0 1 0 051c46980e4aa3a91dd122afe5b378a5
+
+% 1 1 0 1939f1afc1b4857b1001bcba900d726f
+
+@ 0 2 0 193bf0ff34c9b1311db3300eb079efb5
++ El sufijo es la propia palabra del papel (`…Probate`, `…Stdio`, `…Formatting`), no un sinónimo,
++ para que todos los miembros de una familia terminen igual.
+
+@ 0 1 0 063ee01d01bee40f1e950864a7ce7ce7
++ ### 3. Único sin el paquete
+
+@ 0 3 0 1abed31c3438c84400e2dda97ceb76a3
++ Cada given huérfano es único en todo Soundness, juzgado como si el paquete no estuviera. Todos se
++ exportan a `soundness`, y dos cualesquiera pueden tener que coexistir en un mismo ámbito, así que
++ `import x.enabled` e `import y.enabled` no pueden existir a la vez.
+
+@ 0 2 0 112593cb81ec4fcc08b0487fd4fd2a53
++ El corolario es que no hay miembros conmutadores. Un interruptor se nombra según el comportamiento
++ que selecciona, en ambos lados:
+
+% 2 1 0 066a624f25953eee0518f70d156f1bdc
+
+% 0 1 0 1d973ea894f06ea405a4df0983f6e8e7
+
+% 0 1 0 0f49116ac9427e4b02d11d8883b1fd89
+
+% 0 1 0 06ebb99e9fd46a2014724d2a241d7890
+
+% 0 1 0 08313dddbc1df0070d67bb38330b71b0
+
+% 1 1 0 112b34bc27b8b8d919ffb350879d5a10
+
+@ 0 1 0 07b3925c8c4876211456174832465e14
++ ### 4. Solo vocabulario existente
+
+@ 0 4 0 148463d6936ddb4809333963efda160a
++ Un nombre reutiliza el tipo o el término que selecciona, de modo que la importación y la
++ declaración que habilita se leen con las mismas palabras: `cancelProbate` selecciona un
++ `Probate`; `taiChronometry` selecciona la línea temporal `Tai`; `offHeapCloak` es el
++ `OffHeapCloak`. Un nombre nunca acuña un término que no aparezca en ninguna otra parte de
++ Soundness.
+
+@ 0 6 0 1d01aa31e48507ce03a8405d7839ef3b
++ `default`, `standard`, `basic` y `simple` no son palabras de elección: dicen que una elección es
++ común, no qué es. `indentedCssFormatting`, `thickTableStyle` y `timestampedLogFormat` dicen cada
++ uno lo que hacen; `standardCssFormatting` solo decía que alguien lo prefería. La excepción es
++ cuando esa palabra *es* el propio nombre del tipo (`standardKeyboard` selecciona
++ `Keyboard.Standard`; su especificación llama «standard» a los alfabetos del RFC 4648).
+
+@ 0 2 0 17d57bd88271cf7113e589021c0b09e0
++ Los numerales solo pertenecen a un nombre cuando forman parte de la elección (`sha256Signature`,
++ `xterm256Termcap`, `iso8601DateFormat`), nunca para distinguir dos givens
+
+% 0 1 0 1b5fc591e555a98f0fae4e5fc13752aa
+
+@ 0 1 0 1222d32e4eafb4390a22acdc9405b0f5
++ ### 5. Palabras de procedencia para los backends
+
+@ 0 2 0 01cf2ca4b294bd9f0bb9fafbcc4d9b6b
++ Cuando la elección es *qué implementación*, la palabra de elección nombra de dónde procede la
++ implementación. Una palabra por fuente, usada de la misma forma en todas partes:
+
+% 2 1 0 0e78d680688a73f21d8eb2294144d910
+
+@ 0 6 0 09aaa2d07b69dbc00e1f44fcc9a6c2fc
++ column  Fuente
++ column  Palabra
++ column  Ejemplos
++ row  Un módulo de Java  el nombre del módulo  `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver`
++ row  Una interfaz WASI  `wasi` + la interfaz  `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets`
++ row  Scala Native, sobre libc/POSIX  `scalaNative`  `scalaNativeFilesystem`, `scalaNativeSockets`
+
+% 0 1 0 11ff93a2626c5475196a1ec38fb9a402
+
+@ 0 2 0 147eb58ae6b3d21f16ec165eb76e051d
++ row  El propio código en Scala puro de Soundness  `soundness`  `soundnessHttp`, `soundnessHttpd`, `soundnessProvider`
++ row  Un tercero  su propio nombre  `opensslProvider`, `re2`, `resendCourier`
+
+% 1 1 0 18e70806ffec447e0648d309f51e03fa
+
+@ 0 7 0 012bc4a5855a31ed1bdfdf174c45ec9e
++ Los módulos de Java se nombran porque eso es lo que nombra una cláusula `requires`: Soundness
++ pretende declarar, por módulo, de qué módulos de Java depende, y el given que selecciona una
++ implementación respaldada por Java debería decir de qué módulo se sirve. `java.base` proporciona
++ la mayoría, así que `javaBase…` es el caso común; donde dos elecciones de `java.base` difieren, el
++ nombre dice en qué (`fileDescriptorStdio` envuelve los descriptores de fichero del proceso;
++ `javaLangSystemStdio` envuelve los flujos redirigibles de `java.lang.System`).
+
+@ 0 6 0 0da981de98dd37100aea8eb67ae8735e
++ Hay dos cosas que parecen procedencia y no lo son. Un *tipo* de Java adoptado como representante
++ conserva el nombre de ruta de tipo que ya tiene en otras partes de Soundness (`javaNioPath`,
++ `javaUtilDate`, `javaNetUrl`): ahí la elección es el tipo, no el módulo. Y las propias palabras
++ conceptuales de Java siguen siendo de Java cuando nombran el concepto y no la fuente:
++ `platformThreads` y `virtualThreads` son hilos de plataforma e hilos virtuales;
++ `systemClassloader` y `platformClassloader` son los nombres que da el JDK a esos cargadores.
+
+@ 0 2 0 0284a2480e82b21705b86d0184c54b07
++ `native` nunca aparece solo. Ha significado Scala Native, el `WatchService` del JDK y la propia
++ pila HTTP de Soundness en distintos momentos, lo que supone tres significados de más.
+
+@ 0 1 0 16ed697ccf8f543712f5321b4b87ea0d
++ ### 6. Los huérfanos de nivel superior se nombran según su biblioteca
+
+@ 0 5 0 1ec5581f3b49bc84166c7364961f1863
++ Un given que no puede vivir en un objeto compañero (su sujeto pertenece a otro sitio, o es una
++ unión o un alias, o la biblioteca es un componente de plataforma de un tipo neutral respecto a la
++ plataforma) se queda en el nivel superior de la biblioteca con un nombre cualificado por aquello
++ para lo que sirve: `tarPathOpenable`, `terminalStdio`, `collationComparable`. Nunca es anónimo, ya
++ que un given sin nombre no puede importarse selectivamente ni desambiguarse, y nunca es una
++ palabra genérica sin más.
+
+@ 0 1 0 0e16d20ec40e4f520f7723d987bab54f
++ ## Admitidos sin sufijo
+
+@ 0 2 0 0531d653b29a96ff00cf534943d010d5
++ Estos superan la regla 2 porque la elección ya nombra el papel, y se enumeran para que nadie
++ vuelva a discutirlos:
+
+% 2 1 0 07774e4b6ccf388e0403c5af7d9bbb95
+
+@ 0 4 0 093e8fede7284d1311fe26aa6dc5546a
++ column  Familia
++ column  Miembros admitidos
++ row  `sortingAlgorithms`  todos
++ row  `alphabets`  todos
+
+% 0 1 0 0df41455002774cb0dbef724a949e8fe
+
+% 0 1 0 0befcb494045d6a505622c4e02a4fb09
+
+% 0 1 0 13b7dac1ada084b515f4a2ac1ca9933c
+
+% 0 1 0 089be0668036df01187f0f05e02fa8b9
+
+@ 0 1 0 09fcc98a30b78b9314ea16d43c6a0119
++ row  `endianness`  todos
+
+% 0 1 0 155393a15a33208a15d5762e6b004d05
+
+@ 0 6 0 1b664aad9e5215701279428942ad0070
++ row  `currencies`  `Usd`… (códigos ISO, usados como términos)
++ row  `strategies`  todos
++ row  `calendars`  todos
++ row  `highlighting`  todos
++ row  `caseSensitivity`  todos
++ row  `dysasymptotics`  todos
+
+% 0 1 0 0eb34f125b24256b1b953c1f063028a8
+
+% 1 1 0 09221ec3b58b232b106041b1a37e86ee
+
+@ 0 1 0 1c16794117f821210e2672db11bd501e
++ ## Comprobación
+
+@ 0 4 0 057e2082369756c409f09ad69e2ce33a
++ `make build` ejecuta `etc/check-given-uniqueness.py`, que lee todos los paquetes de elección de
++ las bibliotecas y sus reflejos de exportación `soundness_*`, y falla ante un nombre duplicado o una
++ familia no reflejada. Un nuevo given huérfano se comprueba contra todo el espacio de nombres
++ cuando se añade, no cuando un usuario se topa con el choque.

@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 10357e0c62e6e1200866a1f3c9ac2ce6
+
+@ 0 2 0 13e4bc388b2bd611002d062e3022d7e9
++ Levée lorsqu'une opération désigne un processus par son PID et que ce processus n'est pas en
++ cours d'exécution.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 0443ccb8929275770f8d2a9e14bc8479
++ Envoyer un signal à un PID absent, ou interagir autrement avec lui (par exemple parce que le
++ processus s'est déjà terminé), produit cette erreur.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 08ffee521eb876e50db83449e64c3e81
+
+% 1 1 0 00e362d5e97bd61618e89a78880ea0dc
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 07ef9dbe9c3a82251e7e7d078a97b315
++ Vérifiez que le processus est toujours en vie (par exemple avec `ps`) avant d'interagir avec lui ;
++ traitez l'erreur si des situations de concurrence sont possibles.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1250529857d718500b3ace03c37eabb5
++ - Source : `lib/guillotine/src/core/guillotine.Pid.scala`

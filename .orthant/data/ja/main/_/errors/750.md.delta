@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 198496c7999977bd08ee9e3009a45d42
++ CoDL とそのバイナリ形式である BCoDL を実装していた `cellulose` モジュールは削除された。
++ その役割は [TEL](/doc/soundness/modules/tel.md) が担っており、そのバイナリエンコーディングは BinTEL である。

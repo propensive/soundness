@@ -1,0 +1,1280 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0fcb99d21a940cb6118d872a3ad61432
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 08e8215a62763f6a0ffdb4232f803df6
++ info
++     l'audio comme valeurs PCM typées et immuables : lire et écrire WAV, AIFF, AIFC, AU et SND ;
++     enregistrer et jouer sur des périphériques
+
+@ 0 8 0 09dcd42db3427c58015870fc32ef9595
++ detail
++     _Cacophony_ lit et écrit l'audio sous forme de valeurs typées, enregistre depuis les entrées
++     de la machine, et joue par ses sorties. Lire un fichier WAV, AIFF, AIFC, AU ou SND donne un
++     `Audio` — un bloc immuable d'échantillons PCM qui connaît sa fréquence d'échantillonnage
++     (une véritable quantité en hertz), son nombre de canaux, sa profondeur de bits et chaque
++     échantillon qu'il contient — et le format de fichier vit dans le type : un `Audio in Wave`
++     est distinct d'un `Audio in Aiff`, la conversion de l'un à l'autre s'écrit `to[Aiff]`, et
++     les octets encodés d'une valeur audio se lisent sous forme de `Data`, avec le même `read`
++     que n'importe quelle autre source.
+
+% 2 1 0 0e3680c87ea1bd121d192dab07c24fa7
+
+% 3 1 0 12ea840c9ef7c3ac1f700a107ee2824e
+
+% 4 1 0 116671e4be77eb690da3c30c7c521bc5
+
+% 0 1 0 1ed027e852a54088071e3dbc93cd640e
+
+% 1 1 0 07bc271aa800be5216353ae2a362b35e
+
+% 2 1 0 107364b6d342526d135c52b3256ae2ec
+
+% 0 1 0 00a33526333526991eb14ecc5a1e6f9f
+
+% 0 1 0 16b9838ed2ac40ed0250d7676c67d52b
+
+% 0 1 0 18541d770fa4f4dd1595f9978b3953dd
+
+% 0 1 0 17142d159bea29cf07cd8c2d0bf488e8
+
+% 0 1 0 0f9193b8fcc30b1b078ad783597a0a35
+
+% 0 1 0 1fac60acbb3be05507c611da6c6bf141
+
+% 0 1 0 0a62a232130cdd8f09791ba7291c2187
+
+% 0 1 0 146ed6025a96ed7602b72bbb0c4908d0
+
+% 0 1 0 021efc2d44b23dc90400748a2b779c82
+
+% 1 1 0 0f495c99dc0768fd067c2be94417f207
+
+@ 0 7 0 0fd153e22c4533860fe1ea439175a4ad
++     Au fond, l'audio non compressé est une grille de nombres joués à une fréquence fixe, et les
++     formats diffèrent davantage par leurs en-têtes que par leur substance ; la bibliothèque son
++     de Java l'expose par des objets mutables et des formats non typés, où un nombre de canaux
++     erroné se manifeste sous forme de bruit. Ici, le format est une instance de la classe de
++     types `Audible` (`Wave`, `Aiff`, `Aifc`, `Au`, `Snd`), la disposition des canaux un
++     `ChannelLayout` optionnel porté dans le type sous la forme `across Stereo` ou
++     `across Surround[6]`, et l'audio qui n'est pas déjà en PCM est converti en PCM signé 16 bits
++     à la lecture, si bien que chaque `Audio` a la même forme interne.
+
+@ 0 1 0 0d9fa578cb7220d219b15242df0766f8
++     Suivre une valeur audio à travers le pipeline montre comment les pièces s'articulent :
+
+% 2 1 0 18eb9110b481d71211f7f3e7b98eab1d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+% 0 1 0 18562670bae2508f05fc8ae875a9ee5b
+
+% 1 1 0 0b11c62ee06d4686021e5ed98cd5c0d4
+
+% 2 1 0 0e45c721aa1b94a300c58c435a8e592a
+
+% 1 1 0 14d4bc26671c934208af0fe55e6371f8
+
+% 0 1 0 093dba8d827bd41719f314675595073d
+
+% 1 1 0 0974ff694f75d97205beda13540584a3
+
+% 2 1 0 1d4adf4ae390996306927216436ae369
+
+% 3 1 0 08a2efaadd5181730050f1a25ea7bd64
+
+% 0 1 0 0c6152412151b98506fb4a55b42e497e
+
+% 1 1 0 010190561c388f340409b374e4a4358c
+
+% 0 1 0 153d16024695a9a3163e2d14c7bf0001
+
+% 1 1 0 0ff2f3f4a499e90e1a9026a56d25f44c
+
+% 2 1 0 021eb3cb31cbee8a108dd71270c7df25
+
+% 3 1 0 1e17bc086a841f32007c7a8bd186893c
+
+% 4 1 0 18c82db5c3aacb2713ef888127cb5711
+
+% 1 1 0 1990e87054bfecfd03c74bf58cec36cd
+
+% 0 1 0 15df879f97324ef00ec8047c428332cc
+
+% 1 1 0 0b0cd132b1e883411e924384415c3398
+
+% 2 1 0 017fa662013ff9ee0c182d7f1c39d0a1
+
+% 3 1 0 048776f4592b295911c25d886198d3ce
+
+% 4 1 0 08a6ab957e50f9450e32ffed41739854
+
+% 0 1 0 1c9e00c50826eb3c05b1b97965f92ef4
+
+% 1 1 0 1cff3193f46fd0391fdcf406f72701ac
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 8 0 17b3bd77590b1b9a1816390c7a444835
++     Les périphériques sont des `Audio.Feed` (entrées, listées par `Audio.Feed.list`) et des
++     `Audio.Outlet` (sorties, listées par `Audio.Outlet.list`), chacun étant un `Audio.Device`
++     doté d'un nom, d'un fabricant, d'une description et des `configurations` qu'il propose.
++     `Audio.Feed#record` et `Audio.Outlet#play` retiennent un périphérique aussi longtemps que le
++     programme le souhaite, en renvoyant un `Recording` ou un `Playback` ; pour un périphérique
++     retenu pendant exactement un bloc, une ligne s'*ouvre* comme un fichier, avec la forme
++     `Pcm` — `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` et
++     `outlet.open[Pcm](Write)` — et se libère à la fin du bloc, la lecture étant conditionnée
++     par l'autorisation `Write`, si bien que c'est le compilateur, et non le pilote, qui refuse
++     de jouer vers une ligne de capture.
+
+@ 0 6 0 19bae215314e585008def4932c1c34a2
++     La lecture lève une `Audio.Error` par la `Tactic` dans la portée ; l'enregistrement lève une
++     `Audio.Feed.Error` et la lecture audio une `Audio.Outlet.Error`. La bibliothèque est un seul
++     ensemble de sources, `cacophony.core`, pour la JVM, au-dessus de `javax.sound.sampled` ; sur
++     macOS, la JVM doit avoir reçu l'autorisation d'accès au microphone, sans quoi aucune entrée
++     n'est listée. Tout est exporté vers le package parapluie `soundness` sauf `Audio.Device`, le
++     parent commun d'`Audio.Feed` et d'`Audio.Outlet`, qui s'atteint sous le nom
++     `cacophony.Device`.
+
+% 0 1 0 06345c2b4e037c1b1cda2e2a0d1e52aa
+
+% 0 1 0 18eeff539dff79ca1d989456cbd700dc
+
+% 0 1 0 18e3d8c484a92dc50fceef6143b9f1e1
+
+% 0 1 0 12ae337614b0fb9f04540ba7e335f755
+
+% 0 1 0 1d9604d0ae9ae2f01769f58413265140
+
+@ 0 1 0 1d33018ec3005f5c15d1399e8652439a
++ entry .Audio
++   info
++       un bloc immuable d'échantillons PCM qui connaît sa fréquence, ses canaux, sa profondeur et
++       chaque échantillon
+
+@ 0 8 0 027376b57aa4f41b0eb54e09bfb020fc
++   detail
++       Un `Audio` est pur et immuable : ses échantillons forment un tableau gelé, si bien qu'une
++       valeur peut être partagée librement. Son membre de type `Form` est le format de fichier dans
++       lequel il a été lu ou vers lequel il a été converti (`Audio in Wave`), et son `Domain` la
++       disposition des canaux, si elle est connue (`Audio across Stereo`) ; un `Audio` simple n'a
++       ni l'un ni l'autre. Il se crée en lisant des octets — `data.read[Audio in Wave]` par
++       `.aggregable`, ou `data.read[Audio]` par `.aggregable2` lorsque le format doit être détecté
++       — ou se construit à partir d'échantillons avec `Audio[Wave](format, samples)`.
+
+% 2 1 0 16e285bd263f74af0a19a57926e504a7
+
+% 3 1 0 021fcfe487757cf00171195c9066820c
+
+% 4 1 0 118f61cacecd0ac30a076fe5eb87d151
+
+% 4 1 0 1202d6305c9f2d3819a053895dfe589d
+
+% 5 1 0 0af187d59970fd3b0dff321fc81c48e9
+
+% 1 1 0 07776dcb9a46318e12af56213247943a
+
+% 0 1 0 1057617750f807d30d6d0cc4175a710d
+
+% 0 1 0 06381bbfab2d901f1f4d31fb1b60ece9
+
+% 0 1 0 0104e5452296b8cb1408f0cc4bec716c
+
+% 0 1 0 1c8b8206809f985b0f6c11d441cd632d
+
+% 1 1 0 135661f88deef4c50f56c52466ff312b
+
+@ 0 5 0 0a0f642b53bb181200629bcfef237dbc
++       L'audio qui n'est pas déjà en PCM signé ou non signé (du µ-law dans un fichier AU, par
++       exemple) est converti en PCM signé 16 bits à la lecture, si bien que `#apply` indexe
++       toujours des échantillons simples. Un `Audio in form` est `Streamable` (`.streamable`), si
++       bien qu'il se lit sous forme de `Data` et s'écrit directement vers une poignée de fichier,
++       et `Abstractable` en un corps de réponse HTTP avec le type de média du format
++       (`.abstractable`). `#to` l'exprime dans un autre format.
+
+% 0 1 0 19f0a58581289f131a6a7261646cf529
+
+% 1 1 0 0f5e5cd02504e9c7038d6d0543005434
+
+% 0 1 0 0d59affbc0d3bab91ddf6accf995bc6a
+
+@ 0 1 0 148086bb26e23bcb06e6deac70eb6afb
++   entry .apply
++     info
++         lit de l'audio à partir de toute source d'octets en détectant le format, ou construit de
++         l'audio à partir d'un format et d'échantillons
+
+@ 0 4 0 0e4b84e90c116d0617d9c30949165735
++     detail
++         `Audio(source)`, pour toute source `Streamable by Data over Credit`, laisse
++         `javax.sound.sampled` détecter le format de fichier, convertit en PCM signé 16 bits si
++         l'encodage n'est pas du PCM, et renvoie un `Audio` simple sans `Form` ; il lève
++         `Audio.Error(Unset)` si les octets ne sont de l'audio dans aucun format que connaît la
++         JVM.
+
+@ 0 4 0 1b9231942c76f6391986c988ac162485
++         `Audio[form](format: javax.sound.sampled.AudioFormat, data: Array[Byte]^{})` construit un
++         `Audio in form` à partir d'échantillons PCM bruts et du format Java qui les décrit, pour
++         de l'audio généré dans le programme. Les échantillons doivent former un tableau gelé :
++         gelez un tableau exclusif avec `Array.freeze`, ou construisez-les avec `Array.tabulate`.
+
+@ 2 1 0 16d64694c77469be0fdce4cf03273244
++         ```scala
+
+@ 3 1 0 06fda8a7f5e7bf060c62024b682c04c4
++         import soundness.*
+
+@ 4 1 0 1f638737ce190f900db244e71d9fdcd0
++         import strategies.throwUnsafely
+
+@ 0 1 0 1b740aac1b6dda22149e7d1dbe832f69
++         import javax.sound.sampled as jss
+
+@ 0 1 0 01b69c59475684111eba4f18481ef196
++         // One second of a 440 Hz sine: 16-bit signed little-endian, mono, 8 kHz.
+
+@ 0 1 0 09d316738321b71e0c38a32048ef3a52
++         val rate = 8000
+
+@ 0 1 0 10b522de70a160e718e0850d4e99c8dc
++         val format = jss.AudioFormat(jss.AudioFormat.Encoding.PCM_SIGNED, rate, 16, 1, 2, rate, false)
+
+@ 0 1 0 1f9a25f68beaf5a80a53c6c0fa6d042b
++         val samples: Data = Array.tabulate[Byte](2*rate): index =>
+
+@ 0 1 0 0dfac313459f81860da1639110050ffe
++           val value = (Math.sin(2*Math.PI*440*(index/2)/rate)*32767).toInt
+
+@ 0 1 0 198d0efd1f07f2721737097c8585e59c
++           (if index%2 == 0 then value else value >> 8).toByte
+
+@ 0 1 0 0b86bea59ad8a991084f3b56d78533f9
++         val tone: Audio in Wave = Audio[Wave](format, samples)
+
+@ 0 1 0 0ab6dc27f773d83c16b90c6784fd52cc
++         tone.duration   // 1.0*Second
+
+@ 0 1 0 0574d3a365e552000d15138b48b3ff5e
++         tone.read[Data].length   // the bytes of a WAV file
+
+@ 1 1 0 16748d9b2313ee81014c01668cf5c1e6
++         ```
+
+@ 0 1 0 0f3f02c9b682ac2e00704df1b43c3b35
++   entry .streamable
++     info
++         un `Audio in form` se lit sous forme de ses octets encodés, et s'écrit donc vers toute
++         destination
+
+@ 0 4 0 1ee28ec3bb2c12bc02b797522a0a586d
++     detail
++         Le given `Streamable by Data over Credit` pour tout `Audio` dont la `Form` a un
++         `Audible` : `audio.read[Data]` est le fichier complet, en-têtes compris, et
++         `handle.write(audio)` l'écrit. L'encodage est fait par l'écrivain de la JVM correspondant
++         au nom du format, si bien qu'un format que la JVM ne sait pas écrire lance une exception
++         plutôt que de lever une erreur.
+
+@ 0 1 0 008b8e77af81adc111bd7a2f8b13a55e
++   entry .streamableAcross
++     info
++         comme `.streamable`, pour un `Audio in form across layout`
+
+@ 0 2 0 12da4e1948cc3066116e9589148bd4a5
++     detail
++         Un given distinct, car le type raffiné doté des deux membres ne correspond pas à celui qui
++         n'a que `Form`.
+
+@ 0 1 0 039ec9ddbef12b0e035fa6b59ebc1cbc
++   entry .abstractable
++     info
++         un `Audio in form` comme corps de réponse HTTP, avec le type de média de son format
+
+@ 0 2 0 01a65b5dc4f422b80169ff80a8448268
++     detail
++         `audio/x-wav`, `audio/x-aiff`, `audio/x-aifc` ou `audio/basic`, et les octets encodés
++         comme corps, si bien qu'une valeur audio peut être servie directement.
+
+@ 0 1 0 1fef5810df9de2521f87bbbe2d88ff00
++   entry .aggregable
++     info
++         `data.read[Audio in form]` : des octets lus comme de l'audio dans un format nommé
+
+@ 0 4 0 0349c363ed765d4b1d6cb71226df682f
++     detail
++         Le given `Aggregable by Data` pour `Audio in form`, pour toute `form` dotée d'un
++         `Audible`. Nécessite une `Tactic[Audio.Error]`, levée avec le format si les octets ne sont
++         pas de l'audio de ce type : lire un WAV comme `Audio in Aiff` échoue, puisque le format
++         est une affirmation sur les octets, et non une demande de conversion.
+
+@ 0 1 0 07801b85d3445ff61842eae5ead2221a
++   entry .aggregable2
++     info
++         `data.read[Audio]` : des octets lus comme de l'audio en détectant le format
+
+@ 0 2 0 1521e72ff25bcf0d17633ccef2541371
++     detail
++         Le given `Aggregable by Data` pour un `Audio` simple, par `Audio.apply` ; l'erreur ne
++         nomme aucun format.
+
+@ 0 1 0 0c2c6404261c2d83011a24ed81c6cab9
++   entry .Error
++     info
++         levée lorsque des octets ne sont pas de l'audio dans le format attendu
+
+@ 0 5 0 02c9ebd6a2822b5816848fdd9b13ca3e
++     detail
++         _unable to read the audio in `format` format_, avec `unspecified` lorsque le format devait
++         être détecté. Levée par `.aggregable` et `Audible#read` lorsque la JVM ne sait pas
++         analyser les octets, lorsqu'elle les analyse comme un format différent de celui qui est
++         nommé, ou lorsqu'elle ne sait pas convertir leur encodage en PCM.
+
+% 2 1 0 169b45c88857a96606acf4504cc20b41
+
+% 3 1 0 0ea5aa1dbc41322204a530b69188234e
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 0f588bdc8322926a04812435f747299b
+
+% 0 1 0 0574f563d7594a0118bffb96681bbfa7
+
+% 1 1 0 1b571e7ce03ed52e15a64c6611625d0d
+
+@ 0 1 0 138ba905f238531a14990de83e2e12ca
++     entry #audible
++       info
++           le format attendu, ou `Unset` si le format devait être détecté
+
+@ 0 1 0 1c74c00870b30c391242fd5c30cc2d4d
++   entry #channels
++     info
++         le nombre de canaux : 1 pour mono, 2 pour stéréo
+
+@ 0 1 0 1f51cdf6b66fedda07b1968e867aef6d
++   entry #bitsPerSample
++     info
++         la profondeur de bits de chaque échantillon : 8, 16, 24 ou 32
+
+@ 0 1 0 0db36927e2c8bd120d35091168909bfc
++   entry #frames
++     info
++         le nombre de trames, chacune contenant un échantillon par canal
+
+@ 0 1 0 1aab2be5e2d8b4a2017fa141d0250c25
++   entry #sampleRate
++     info
++         la fréquence d'échantillonnage sous forme de fréquence : `8000.0*Hertz`
+
+@ 0 2 0 15500e3b65d6a1f8030a4eb83d074e0d
++     detail
++         Une `Quantity[Seconds[-1]]`, si bien qu'elle participe à l'arithmétique avec d'autres
++         quantités plutôt que d'être un simple nombre.
+
+@ 0 1 0 11c60f4fe46509b8018b51a0cda2bf5e
++   entry #duration
++     info
++         la durée de l'audio en secondes : le nombre de trames divisé par la fréquence
++         d'échantillonnage
+
+@ 0 1 0 08eb869395bf793b0495308a39efd1f7
++     detail
++         Une `Quantity[Seconds[1]]`.
+
+@ 0 1 0 18d7a931fed5e96a10ebeeba37ee7d1e
++   entry #apply
++     info
++         l'échantillon situé à un canal et une trame, sous forme d'entier signé
+
+@ 0 3 0 0b10fd0ba164ebf8009bd77fbabb84fd
++     detail
++         `audio(channel, frame)` décode un échantillon à partir des octets, en respectant l'ordre
++         des octets et le caractère signé du format, et étend son signe, si bien qu'un échantillon
++         de 16 bits est compris entre −32768 et 32767. Les indices ne sont pas vérifiés par rapport
++         à `#channels` et `#frames`.
+
+@ 0 1 0 0d290040c80e749712899be4d830d4a0
++   entry #to
++     info
++         le même audio exprimé dans un autre format : `audio.to[Aiff]`
+
+@ 0 2 0 071b326dd82413b40e1d895d3dd7be71
++     detail
++         Les échantillons sont partagés, et non copiés, et la disposition des canaux est
++         conservée ; seule la `Form` change, et avec elle les octets sous lesquels se lit la valeur
++         et le type de média avec lequel elle est servie.
+
+@ 0 1 0 105c541a4c1c8cfb077d3d75f4af9fca
++   entry .Configuration
++     info
++         un format que proposent les lignes d'un périphérique : canaux, fréquence, profondeur de
++         bits, encodage et ordre des octets
+
+@ 0 4 0 128999b81071ca70162d12319d298844
++     detail
++         Renvoyée par `Device#configurations`, une par format que signalent les lignes du mixeur.
++         La fréquence d'échantillonnage vaut `Unset` lorsque la ligne accepte n'importe quelle
++         fréquence (la JVM signale −1), ce qui est courant.
+
+% 2 1 0 1bdaceba0a959bb808f99f819d251ea4
+
+% 3 1 0 1e1e8ba38b15ce50072a2bdff07b1a0b
+
+% 0 1 0 1b34324b3aee9bd2089a01a7db2b6c35
+
+% 1 1 0 0edc69b3979ed670087a56e7f6746dee
+
+% 1 1 0 17f746b3d5a333440dbd60774e0e3294
+
+@ 0 1 0 1a5ae2c2211dee3f09dc794d0675e4d6
++     entry #channels
++       info
++           le nombre de canaux du format
+
+@ 0 1 0 092b744435c1789a04b5341f47a96111
++     entry #sampleRate
++       info
++           la fréquence d'échantillonnage, ou `Unset` si la ligne accepte n'importe quelle
++           fréquence
+
+@ 0 1 0 1d492bdbc521eb260429268b81d5230f
++     entry #bitsPerSample
++       info
++           la profondeur de bits : 8, 16, 24 ou 32
+
+@ 0 1 0 0606cd70f132c74f0f9fac46ec97e6e1
++     entry #encoding
++       info
++           `Sonation.PcmSigned` ou `Sonation.PcmUnsigned`
+
+@ 0 1 0 0026c8842de5280716b931813f2fbd1d
++     entry #bigEndian
++       info
++           si les échantillons de plusieurs octets sont gros-boutistes
+
+@ 0 1 0 18eaf52d0832ff121bd5130cacc2bc34
++   entry .Device
++     info
++         ce que partagent un `Feed` et un `Outlet` : un mixeur que décrit le système, et les lignes
++         qu'il propose
+
+@ 0 6 0 15d53c0e65b770430676b8dd6bf9b009
++     detail
++         Un `Device` enveloppe un `javax.sound.sampled.Mixer.Info`, donnant son `#name`, son
++         `#vendor` et sa `#description`, les `#configurations` que signalent ses lignes du bon type
++         (lignes cibles pour un `Feed`, lignes sources pour un `Outlet`), et `#supports` pour
++         s'enquérir d'une configuration avant de s'y engager. Il n'est pas exporté vers le package
++         parapluie `soundness` : un programme nomme `Feed` ou `Outlet`, ou `cacophony.Device` pour
++         du code qui porte sur les deux.
+
+% 2 1 0 0729d027795547771639f466978a5259
+
+% 3 1 0 1d6ba3c5b97854230d80c97e72067005
+
+% 0 1 0 075ca76d45f5549405336426ebf2552c
+
+% 0 1 0 02eaa1faabe7b3fe07c37a142da8410e
+
+% 1 1 0 1a6170f6cc206b250a471fedd71bbc0b
+
+% 0 1 0 0650a996ebe761dd0c21290629a54de5
+
+% 0 1 0 151d83b97e2e588f07b9b81383d9dca3
+
+@ 0 1 0 029633620a2decb605dc9c8b9bff7b91
++     entry #name
++       info
++           le nom du périphérique, tel que le système le signale
+
+@ 0 1 0 04fda77e1154e0a7165d0fe177b09094
++     entry #vendor
++       info
++           le fabricant du périphérique
+
+@ 0 1 0 0016f84b7f29e0a112c317a3333b2631
++     entry #description
++       info
++           la description du périphérique
+
+@ 0 1 0 19676e68eb0d13cf07f90014ea632eaa
++     entry #configurations
++       info
++           chaque format que signalent les lignes du périphérique, sous forme de `Configuration`
+
+@ 0 1 0 0921ead6d92f4f021098e888da49cf27
++     entry #supports
++       info
++           si le périphérique peut ouvrir une ligne dans une disposition, à une fréquence et une
++           profondeur données, en PCM signé petit-boutiste
+
+@ 0 3 0 184c4dc8fb21dda11009db08c4b280ba
++       detail
++           `device.supports[Stereo](44100.0*Hertz, 16)` demande au mixeur si une telle ligne est
++           prise en charge, sans en ouvrir une ; `record` et `play` lèvent
++           `UnsupportedConfiguration` là où cette méthode renvoie `false`.
+
+@ 0 1 0 10a8adb93c809ff31f44fb282b06bd07
++   entry .Feed
++     info
++         un périphérique d'entrée : enregistre de l'audio dans une disposition, une fréquence et
++         une profondeur de bits choisies
+
+@ 0 7 0 0619a8fb24f4432f1ece0affe846fa35
++     detail
++         Les entrées de la machine sont `Feed.list` ; une machine peut n'en avoir aucune, si bien
++         que la première est un `Optional`. Une entrée est un `Device`, doté d'un nom, d'un
++         fabricant, d'une description et de `configurations`, et de `supports` pour s'enquérir d'un
++         format avant d'enregistrer. `#record` ouvre une ligne et renvoie un `Recording` dont le
++         `stream` produit des morceaux d'`Audio` jusqu'à ce qu'il soit arrêté ; pour une ligne
++         retenue pendant exactement un bloc,
++         `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` prête plutôt un `Pcm.PcmInput`
++         (voir `Pcm`).
+
+% 2 1 0 15e3aebd0a953209144c3bc0f498d56c
+
+% 3 1 0 1d5735d5db8268bd12cea5715676f1ff
+
+% 4 1 0 1339df75b2833fb3017d6e9229bfeeb6
+
+% 5 1 0 182d8023d549123516279b58440b7651
+
+% 6 1 0 190055e95813e819164fe03dfb6a9225
+
+% 0 1 0 17adefb3fe3bef5d1d2de6928c84cb51
+
+% 0 1 0 15a87c0e6606dee10292b4727c9c995a
+
+% 0 1 0 105ad19a26510c7812074c334006750f
+
+% 0 1 0 1ce0330ca9625c420b59f41d8b34b6f2
+
+% 0 1 0 1b1774f597c507000175259b86e8d5ff
+
+% 1 1 0 0079dc64a16c396f01bab1fdb93e97fc
+
+@ 0 3 0 0d99884adfa0562e1ec05110e8b2b0a2
++         Enregistrer depuis une entrée indisponible ou incapable d'honorer la configuration lève
++         une `Feed.Error`. Sur macOS, la JVM doit avoir reçu l'autorisation d'accès au microphone,
++         sans quoi `Feed.list` est vide.
+
+% 0 1 0 1b582573d7b96ff50a67df2a0a246b8b
+
+% 1 1 0 05e21817ea3b09e4138b546edb617b06
+
+% 2 1 0 0c7bee6b0200d47912d63f9d54931af1
+
+@ 0 1 0 1db0fd5a705ca9bd07649cf3bbbe292c
++     entry .list
++       info
++           chaque mixeur doté d'une ligne depuis laquelle enregistrer, sous forme de `Feed`
+
+@ 0 2 0 129f9922e1bb68b61b9d8d8f77776a88
++       detail
++           Énumère les mixeurs de la JVM et garde ceux qui proposent une `TargetDataLine`. La liste
++           est recalculée à chaque appel, si bien qu'un périphérique branché entre-temps est vu.
+
+@ 0 1 0 0ea961015b0aac7603dea74ecf0ec01e
++     entry .Error
++       info
++           levée lorsqu'une entrée ne peut pas enregistrer
+
+@ 0 3 0 1066e9d46e1c7eb707776504b96630ca
++       detail
++           Erreur `↯/s.82.2` : _could not record from feed `name` because …_, suivi du numéro et du
++           message de la raison. Levée par `Feed#record` et par l'ouverture d'une entrée en tant
++           que `Pcm`.
+
+@ 1 1 0 06ffb9bd531619f81d082af0154cabd2
++       entry .Reason
++         info
++             `Unavailable`, `UnsupportedConfiguration` ou `Closed`
+
+@ 0 4 0 0fdbc9e9d5acdf66003d600b2fb6c0e9
++         detail
++             `Unavailable` (1), _the audio line could not be opened_ : un autre programme la
++             retient, ou le système a refusé ; `UnsupportedConfiguration` (2), _the requested
++             configuration is not supported_, ce que prédit `Device#supports` ; et `Closed` (3),
++             _the recording has already been stopped_.
+
+@ 0 1 0 0411557668e6fec00a7f775cf231b198
++       entry #feed
++         info
++             le nom de l'entrée
+
+@ 0 1 0 11346e978180193814b09c5908e1c397
++       entry #reason
++         info
++             pourquoi elle n'a pas pu enregistrer
+
+@ 0 1 0 077a6e4302a63b6b0f40e35b8bc92ee7
++     entry #record
++       info
++           ouvre une ligne et enregistre dans une disposition, à une fréquence et une profondeur
++           données, sous forme de `Recording` de morceaux
+
+@ 0 5 0 163940e1f33524f50303b844a5b93ab5
++       detail
++           `feed.record[Stereo](44100.0*Hertz, 16, chunkBytes = 65536)` : une ligne est ouverte
++           pour du PCM signé petit-boutiste dans les canaux de la disposition, puis démarrée ; le
++           `stream` du `Recording` en lit des morceaux d'au plus `chunkBytes`, chacun étant un
++           `Audio across layout`, jusqu'à ce que `stop` ferme la ligne. Lève une `Feed.Error` avec
++           `UnsupportedConfiguration` ou `Unavailable`. La ligne est retenue jusqu'à l'appel de
++           `stop`.
+
+@ 0 1 0 0d8c941d8fe9dfe709431967aede7109
++   entry .Outlet
++     info
++         un périphérique de sortie : joue une valeur audio en arrière-plan, ou de façon synchrone
++         dans une portée
+
+@ 0 6 0 11c8696ad8ecf89b16058641de3d4475
++     detail
++         Les sorties de la machine sont `Outlet.list`. Une sortie est un `Device`, doté d'un nom,
++         d'un fabricant, d'une description, de `configurations` et de `supports`. `#play` ouvre une
++         ligne pour le format propre de l'audio et renvoie un `Playback` qui s'exécute sur son
++         propre thread, à attendre ou à arrêter ; pour une ligne retenue pendant exactement un
++         bloc, `outlet.open[Pcm](Write)` prête un `Pcm.PcmOutput` dont le `play` est synchrone et
++         nécessite l'autorisation `Write` (voir `Pcm`).
+
+% 2 1 0 1bd187d13b8f2a9115c84d4bf5c7f9f9
+
+% 3 1 0 119f1a2ac7c39cf10a73177854886cb7
+
+% 4 1 0 035abea604eb3e03101852a6f8be628c
+
+% 5 1 0 1a11bd6bd9e60c6214d2033be96af7bd
+
+% 6 1 0 1e0a1005677eb1331d4ee5d9f0d36ce7
+
+% 0 1 0 180e7ef2edb31136028d971550c4b693
+
+% 0 1 0 0a8574a748560c241d7cc7f2db09d7a4
+
+% 0 1 0 146be646a7240c850616ed85bcdae359
+
+% 2 1 0 0e48eae2a2a28a000b700adc0f796ca9
+
+% 0 1 0 0cbc23b84b7b51600960aea2e2a943cc
+
+% 0 1 0 14336e750f7ed20d176f7682b9f5e216
+
+% 2 1 0 0a34fc55bc70ba5a12f8aa72f32db753
+
+% 0 1 0 0a88a99d198f2b3913764f0632f32621
+
+% 0 1 0 0c77e66cba0976a119a24673ba939944
+
+% 1 1 0 165bfc2ba831cacf01e7bee9e23a5309
+
+@ 0 2 0 0a7a89b8f68f5d8214097ebde2ae643f
++         Jouer vers une sortie indisponible ou incapable d'accepter la configuration de l'audio
++         lève une `Outlet.Error`.
+
+% 0 1 0 02cae70c6c2ac762080df6dfe574ae97
+
+% 1 1 0 1da1abc21c02742b07b526f07c564d88
+
+% 2 1 0 134ec6886b6908890d2c58c8ea6b3e8f
+
+@ 0 1 0 0c25ba253bba6c48026bf8aae40a8de0
++     entry .list
++       info
++           chaque mixeur doté d'une ligne vers laquelle jouer, sous forme d'`Outlet`
+
+@ 0 1 0 01225c0c018b4027054771b054393d1d
++       detail
++           Énumère les mixeurs de la JVM et garde ceux qui proposent une `SourceDataLine`.
+
+@ 0 1 0 0b881cfb2f771acc15a9ecff221b665d
++     entry .Error
++       info
++           levée lorsqu'une sortie ne peut pas jouer
+
+@ 0 3 0 17e5b85022143c0802c76d1b01c3ec7c
++       detail
++           Erreur `↯/s.82.1` : _could not play to outlet `name` because …_, suivi du numéro et du
++           message de la raison. Levée par `Outlet#play` et par `Pcm.play` sur une sortie ouverte.
+
+@ 1 1 0 0f4b8f501842d85d1aa9c30783f8d6df
++       entry .Reason
++         info
++             `Unavailable`, `UnsupportedConfiguration` ou `Closed`
+
+@ 0 4 0 0a998ba7f6e273b8195ba09853152d9f
++         detail
++             `Unavailable` (1), _the audio line could not be opened_ ; `UnsupportedConfiguration`
++             (2), _the requested configuration is not supported_ : la fréquence, la profondeur ou
++             les canaux de l'audio ne sont pas quelque chose que la sortie peut jouer, ce que
++             prédit `Device#supports` ; et `Closed` (3), _the playback has already been stopped_.
+
+@ 0 1 0 1d95f8e10040332014b57333e2dc42b7
++       entry #outlet
++         info
++             le nom de la sortie
+
+@ 0 1 0 01b93ed8791b565411fe2efacd360aec
++       entry #reason
++         info
++             pourquoi elle n'a pas pu jouer
+
+@ 0 1 0 1d7008cf496e12e7124a17345abd0184
++     entry #play
++       info
++           joue une valeur audio sur un thread virtuel, sous forme de `Playback` à attendre ou à
++           arrêter
+
+@ 0 6 0 02f1cb087ce83d9012cccf7442278a86
++       detail
++           `outlet.play(audio, chunkBytes = 65536)` ouvre une ligne pour le format de l'audio
++           (`UnsupportedConfiguration` ou `Unavailable` sinon), la démarre, et écrit les
++           échantillons par morceaux depuis un thread d'arrière-plan, en vidant la ligne et en la
++           fermant lorsque l'audio se termine. `Playback#stop` est pris en compte entre deux
++           morceaux et ferme aussitôt la ligne ; `await` attend la fin du thread. N'importe quel
++           `Audio` se joue, quelle que soit sa `Form` : les échantillons sont déjà en PCM.
+
+@ 0 1 0 166ca25857cbfcd00e184439dd378ab1
++ entry .Audible
++   info
++       un format de fichier dans lequel l'audio peut être lu et écrit : son nom et son type de
++       média
+
+@ 0 6 0 13422997f6fa8c7602078429862289da
++   detail
++       La classe de types derrière `Audio in form` : `Wave`, `Aiff`, `Aifc`, `Au` et `Snd` ont
++       chacun une instance dans leur compagnon. `#name` est le nom de type sous lequel
++       `javax.sound.sampled` connaît le format (`WAVE`, `AIFF`, `AIFC`, `AU`, `SND`), qui doit
++       correspondre à ce que détecte la JVM pour qu'une lecture réussisse, et `#mediaType` est ce
++       sous quoi une valeur audio est servie. `#read` est la lecture elle-même, à laquelle
++       `Audio.aggregable` délègue.
+
+% 2 1 0 114353bcece870940546bacd0f781ccf
+
+% 3 1 0 08c59f8fba03869d1e6af8951d67eb50
+
+% 4 1 0 105bcc90dc37c0260667ee6859bccedf
+
+% 0 1 0 1dbfe1e9e0003e840b312b656705c9f7
+
+% 0 1 0 02ab94689303877510e5b97525032f51
+
+% 0 1 0 02252b30738579810a0e43c08fe0f3c0
+
+% 1 1 0 1d4f5a7b6087e73b130511ac594701db
+
+% 0 1 0 1221dc90e2925959049ef1e7fcd714f8
+
+% 1 1 0 19d3a78720e4e3251aa8e39512955718
+
+@ 0 1 0 1cfb6979449d699d03bd4acd9f5e7deb
++   entry #name
++     info
++         le nom de type du format tel que le signale le système audio de la JVM
+
+@ 0 1 0 1c209cc39efcd19c174c4049e7ae047f
++   entry #mediaType
++     info
++         le type de média du format, pour servir de l'audio par HTTP
+
+@ 0 1 0 0ac2b520bb4284281d3b51e9e7bdc438
++   entry #read
++     info
++         lit une source d'octets comme `Audio in Self`, en levant une `Audio.Error` si elle n'est
++         pas dans ce format
+
+@ 0 2 0 1262f9046f9d35ab11a119cb6598d964
++     detail
++         Analyse le format de fichier, vérifie que c'est bien celui-ci, convertit un encodage non
++         PCM en PCM signé 16 bits, et lit chaque échantillon en mémoire. Nécessite une
++         `Tactic[Audio.Error]`.
+
+@ 0 1 0 1a971aba0e3924271342ba36502660d9
++ entry .Wave
++   info
++       le format WAV (RIFF), sous la forme `Audio in Wave`
+
+@ 0 4 0 19815617f72034ab1b2914684209ec38
++   detail
++       Un type scellé sans valeurs, utilisé comme argument de type ; son compagnon contient
++       l'instance `Audible`, `audibility`, avec le nom `WAVE` et le type de média `audio/x-wav`.
++       `Wave()` renvoie cette instance en tant qu'`Audible`, ce qui permet à `Audio.Error` de
++       nommer un format.
+
+@ 2 1 0 086cd88d8bfc50640a88687c8a47cabf
++       ```scala
+
+@ 3 1 0 03cdf98dad962a631ff6ccda7a1f819c
++       import soundness.*
+
+@ 4 1 0 083bd1d7254444690ac637ed34626d11
++       import strategies.throwUnsafely
+
+@ 1 1 0 03be7709bec89e3f0374256e41bde08a
++       val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+
+@ 2 1 0 0621fc74c7f575c90add07fba7b5f5b2
++                       617461080000006400c8002c019001"""
+
+@ 0 1 0 1dd473d0423e6cf4132338b9a0d6499a
++       wav.read[Audio in Wave].frames   // 4
+
+@ 1 1 0 0669077e0d697f3814f3590bb5453c91
++       ```
+
+@ 0 1 0 01a20d66cb552d83100429c1eb8958b9
++ entry .Aiff
++   info
++       le format AIFF, sous la forme `Audio in Aiff`
+
+@ 0 3 0 01013383e7f7a7f50e23b6b9896ccb9e
++   detail
++       Un type scellé dont le compagnon contient l'instance `Audible`, `audibility`, avec le nom
++       `AIFF` et le type de média `audio/x-aiff` ; `Aiff()` la renvoie. Un fichier AIFF est
++       gros-boutiste, ce que `Audio#apply` respecte lorsqu'il indexe un échantillon.
+
+@ 0 1 0 16a4ad24351ad831074944faa9daf1d8
++ entry .Aifc
++   info
++       le format AIFF-C, sous la forme `Audio in Aifc`
+
+@ 0 2 0 0ff2b350d231215107f1ee47c1164a5c
++   detail
++       Un type scellé dont le compagnon contient l'instance `Audible`, `audibility`, avec le nom
++       `AIFC` et le type de média `audio/x-aifc` ; `Aifc()` la renvoie.
+
+@ 0 1 0 1b8866fdc24d251a150be9435338c0ed
++ entry .Au
++   info
++       le format AU de Sun, sous la forme `Audio in Au`
+
+@ 0 3 0 1083760ce11e181e0f4ed0ce17238e27
++   detail
++       Un type scellé dont le compagnon contient l'instance `Audible`, `audibility`, avec le nom
++       `AU` et le type de média `audio/basic` ; `Au()` la renvoie. Un fichier AU contenant de
++       l'audio µ-law ou A-law est converti en PCM signé 16 bits à la lecture.
+
+@ 0 1 0 052b4a671f4acd8e1f2aa0eb9dd62b34
++ entry .Snd
++   info
++       le format SND de NeXT, sous la forme `Audio in Snd`
+
+@ 0 2 0 0cc266157af3a08706ebdee92f664739
++   detail
++       Un type scellé dont le compagnon contient l'instance `Audible`, `audibility`, avec le nom
++       `SND` et le type de média `audio/basic` ; `Snd()` la renvoie.
+
+@ 0 1 0 19a774277bca07cc0d4f2f2dc0ed1580
++ entry .ChannelLayout
++   info
++       une disposition des canaux portée dans le type : combien de canaux, connu statiquement
+
+@ 0 5 0 1a478793b93db58c0b38e84691540d51
++   detail
++       La classe de types derrière `Audio across layout`, `Recording across layout` et
++       `Pcm across layout` : `Monaural` a un canal, `Stereo` deux, et `Surround[n]` le littéral
++       `n`. Une entrée enregistre dans une disposition — `feed.record[Stereo](…)` — si bien que le
++       nombre de canaux de ce qu'elle produit figure dans le type, et n'est pas un nombre à
++       vérifier.
+
+% 2 1 0 17f2fd6bfb5716241833092312e1c057
+
+% 3 1 0 15d50e43ad5d775210fa5f35640e54f7
+
+% 0 1 0 00fb6699272b12e4093702877f679579
+
+% 0 1 0 0dcf407256487a5600f5133194a96a7a
+
+% 0 1 0 089eec5da2f281e21281ff99573a4de6
+
+% 1 1 0 1c694af77b73c851041b233202dd4a6d
+
+% 0 1 0 17f6923aac7c56400e36bbef8a255805
+
+% 0 1 0 0e1f2747f628dd4d037ef76a912b8554
+
+@ 0 1 0 1655181ad5715650086d94f2a4247b4c
++   entry #channels
++     info
++         le nombre de canaux de la disposition
+
+@ 0 1 0 1919024e643eebf10e93eb54c2fe46c4
++ entry .Monaural
++   info
++       la disposition à un canal, sous la forme `Audio across Monaural`
+
+@ 0 2 0 01dbedba4e91da1d14c952f99e145891
++   detail
++       Un type scellé dont le compagnon contient son instance `ChannelLayout`, `channelLayout`,
++       avec un canal.
+
+@ 0 1 0 05fa04810165d1d91f75a0e701f5ed3b
++ entry .Stereo
++   info
++       la disposition à deux canaux, sous la forme `Audio across Stereo`
+
+@ 0 2 0 0249266565e98bdc0cd512da50107d1a
++   detail
++       Un type scellé dont le compagnon contient son instance `ChannelLayout`, `channelLayout`,
++       avec deux canaux.
+
+@ 0 1 0 123de00d400d2c580719ac7f65f7c52d
++ entry .Surround
++   info
++       une disposition surround d'un nombre littéral de canaux, sous la forme
++       `Audio across Surround[6]`
+
+@ 0 3 0 0cf3d167a3818cc20b4207bfbc8a389a
++   detail
++       `Surround[N]` prend un `Int` littéral, et le given `channelLayout` de son compagnon donne
++       ce nombre de canaux pour tout `N` doté d'un `ValueOf`, si bien que `Surround[6]` et
++       `Surround[8]` sont des dispositions distinctes sans qu'aucune instance soit écrite pour
++       l'une ou l'autre.
+
+@ 0 1 0 0dc69459c8ee06c1055190611d972bc8
++ entry .Sonation
++   info
++       comment les échantillons sont encodés : `PcmSigned` ou `PcmUnsigned`
+
+@ 0 2 0 1694614f00cc4ffc10f251c080d37d24
++   detail
++       L'encodage que signale l'`Audio.Configuration` d'un périphérique. Chaque valeur `Audio` est
++       en PCM signé après lecture, si bien que `PcmUnsigned` n'apparaît que dans ce qu'un
++       périphérique déclare prendre en charge.
+
+@ 0 1 0 0aed9c9e3b13fa8c1cc93d81f3b53cee
++ entry .Recording
++   info
++       un enregistrement ouvert : un flux de morceaux audio jusqu'à ce qu'il soit arrêté
+
+@ 0 5 0 0823daefdefec4ad1a31697add309f2f
++   detail
++       Renvoyé par `Audio.Feed#record`. `#stream` est une chaîne paresseuse de morceaux
++       `Audio across Domain`, chacun d'au plus la taille de morceau avec laquelle l'enregistrement
++       a été démarré, lus depuis la ligne à mesure que la chaîne est forcée ; elle se termine
++       lorsque `#stop` ferme la ligne, ou lorsque la ligne ne délivre plus rien. Le membre de type
++       `Domain` est la disposition dans laquelle on enregistre.
+
+% 2 1 0 0daac62b92f831800e5e3f26602af195
+
+% 3 1 0 193dde3c24b76a871e85a44d1364aa24
+
+% 4 1 0 05d43bfc49100f32000c0ea51c1a5857
+
+% 5 1 0 12257b67a08ff053086d3543003a7db9
+
+% 6 1 0 0cb1f64f70e2bc261e88bccc0f2378be
+
+% 2 1 0 1e1838bd7bff2c8505e7a0ded6408e02
+
+% 0 1 0 16ec1df34977084f1d8febf03d1a3307
+
+% 0 1 0 0bad92424ae632e811892cf8757116c0
+
+% 0 1 0 083817eaa45aeaef121a718678f563b2
+
+% 0 1 0 0b89f729c908c9da1ab626c6a266b385
+
+% 1 1 0 162265011af69ee213e9bcc5cd38980e
+
+% 2 1 0 079028b1741a8b1001deb4086213548c
+
+@ 0 1 0 1870de6d8c1219141ee33278ca14f3f9
++   entry #active
++     info
++         si l'enregistrement n'a pas encore été arrêté
+
+@ 0 1 0 0c758e21de8bd3bf11ab9e6d042b7ba7
++   entry #stop
++     info
++         arrête la ligne et la ferme ; le flux se termine
+
+@ 0 3 0 14b4dc7b475f667b014612bd2c5769da
++     detail
++         Idempotent. La ligne est retenue jusqu'à cet appel, si bien qu'un enregistrement devrait
++         toujours être arrêté ; la forme délimitée d'`Audio.Feed`, `open[Pcm across layout]`, le
++         fait à la fin du bloc.
+
+@ 0 1 0 1978a6346a7f26e818ef9afb8bcc9eed
++   entry #stream
++     info
++         les morceaux enregistrés jusqu'ici et à venir, sous forme de chaîne paresseuse
+
+@ 0 2 0 037982526a0c7d2f0525ddbf7af11e83
++     detail
++         Chaque forçage lit un morceau depuis la ligne, en bloquant jusqu'à ce qu'il soit plein, si
++         bien que la chaîne est consommée au rythme auquel le périphérique produit des
++         échantillons.
+
+@ 0 1 0 19d461773f958568179c75e453c3297a
++ entry .Playback
++   info
++       de l'audio joué en arrière-plan : attendre sa fin, ou l'arrêter plus tôt
+
+@ 0 5 0 1634d238114ef389072a657d3e824390
++   detail
++       Renvoyé par `Audio.Outlet#play`. Les échantillons sont écrits depuis un thread virtuel ;
++       `#await` bloque jusqu'à ce que l'audio ait été joué jusqu'au bout (ou arrêté), et `#stop`
++       y met fin plus tôt, en vidant ce qui n'a pas encore retenti. Le premier qui survient de
++       `stop` et de la fin de l'audio ferme la ligne, exactement une fois.
+
+% 1 1 0 0b3cab0910a7312006f2fd869a7156d1
+
+@ 0 1 0 0236863421eacebb03a61fd14b3ca42b
++   entry #active
++     info
++         si l'audio est toujours en cours de lecture
+
+@ 0 1 0 160bd232b2a2bef71d0169f2cd5ab15b
++   entry #stop
++     info
++         arrête aussitôt la lecture, en abandonnant ce qui n'a pas encore retenti, et ferme la
++         ligne
+
+@ 0 2 0 1400bdce7d72695f111d1a5ca2b7f83e
++     detail
++         Idempotent, et sûr à appeler depuis un autre thread que celui qui a démarré la lecture :
++         l'écrivain le prend en compte entre deux morceaux.
+
+@ 0 1 0 1fb6a13bc574a7fb1995314fd9911a60
++   entry #await
++     info
++         bloque jusqu'à ce que la lecture soit terminée, parce qu'elle a atteint la fin ou a été
++         arrêtée
+
+@ 0 1 0 0c9c5f3d6819086212a9ff7d8f40fc24
++ entry .Pcm
++   info
++       la forme pour un accès délimité aux lignes audio : une entrée s'ouvre en tant que
++       `Pcm across layout`, une sortie en tant que `Pcm`
+
+@ 0 9 0 174bfd872c652d4c1b49e4f0e7bcf406
++   detail
++       Là où `Audio.Feed#record` et `Audio.Outlet#play` retiennent un périphérique aussi longtemps
++       que le programme le souhaite, une ligne peut plutôt être *ouverte* pendant exactement un
++       bloc, comme un fichier : la ligne du système d'exploitation dure précisément aussi
++       longtemps que la portée et se libère quelle que soit la façon dont celle-ci se termine.
++       `Pcm` est la forme nommée lors de l'`open` : une `Audio.Feed` s'ouvre en tant que
++       `Pcm across layout` pour la capture, en prêtant un `.PcmInput` dont le `stream` produit des
++       morceaux `Audio across layout` ; un `Audio.Outlet` s'ouvre en tant que simple `Pcm` pour la
++       lecture, en prêtant un `.PcmOutput` dont le `.play` joue chaque `Audio` de façon
++       synchrone. Les instances `Openable`, `.feedOpenable` et `.outletOpenable`, se trouvent dans
++       le compagnon, si bien qu'aucun import n'est nécessaire.
+
+% 2 1 0 00d9726939cf46651bc74ccb1d80eb26
+
+% 3 1 0 1bb6b1c7aa3bf6ce087c1f23fea38698
+
+% 4 1 0 09a0f3e2a86ec7d706f1889c4093769b
+
+% 5 1 0 0a49b3622f56f3820910617560b682e5
+
+% 6 1 0 151cebf919ec9d3c098e23be1cb2f7c9
+
+% 4 1 0 1574f128893e90711a38994eb58bea54
+
+% 5 1 0 1a6a16fb16a14a6d0f2724c8907154e7
+
+% 1 1 0 1af38e5cb5bb05e30560b35776dae0ae
+
+% 2 1 0 0b8f0e08872834f31cb86ecd5fe8a27b
+
+% 0 1 0 111980fcecb024721b36d228724cd028
+
+% 0 1 0 1488370d56a2d7f61cde5b79c67804f7
+
+% 0 1 0 06a76e43cdc347481b1530003cf25b52
+
+% 0 1 0 0e87ce67f66c12720cf95aaf633e7b38
+
+% 0 1 0 0a5574d52ff23b1011e263f8df4ef50a
+
+% 1 1 0 1dfa8d15f57a45021f633c40ea2b2e29
+
+@ 0 6 0 169358ca8cd6c622067569c35139a564
++       La configuration se donne sous forme de `PcmFlag` : `PcmFlag.Rate(hertz)` (44100 par
++       défaut), `PcmFlag.Bits(bits)` (16) et `PcmFlag.Chunk(bytes)` (65536) ; une sortie ne lit
++       que `Chunk`, puisque chaque `play` ouvre une ligne pour le format propre de l'audio. Jouer
++       nécessite l'autorisation `Write` : `outlet.open[Pcm]()` sans autorisation prête un
++       `PcmOutput` sur lequel `play` ne compile pas, si bien qu'on ne peut pas jouer vers une
++       ligne ouverte pour la capture, et c'est le compilateur, et non le pilote audio, qui le
++       dit.
+
+% 2 1 0 11a4f9d52a75283c0d811a67aa708940
+
+% 3 1 0 1da2700eae44b5b511c500b38275245c
+
+% 4 1 0 1914c37217f4dafc01e99b72a62af9d5
+
+% 0 1 0 124e4f6452686961064f6c63fbcb45d0
+
+% 0 1 0 0a8d4920c2cb177313ec7fcc79f1d5ec
+
+% 0 1 0 1f5cf575b1e035c81d64714ae9fb189a
+
+% 0 1 0 13e653c085a438d91ccafd3ba7bee35c
+
+% 1 1 0 05abfcfa51e32f73105d6e25ec744deb
+
+% 2 1 0 0d17b6d97abbc425028d41955628bdd1
+
+% 1 1 0 0bdee4d032f44aad0fd4481074c4d25b
+
+% 0 1 0 18d43a086abc8ded077e1c6f93f400f2
+
+@ 0 1 0 06c1059374ae989e1e64451232ef9a46
++   entry .PcmInput
++     info
++         la poignée prêtée par l'ouverture d'un `Feed` en tant que `Pcm across layout` : un flux de
++         morceaux audio
+
+@ 0 4 0 19b9e59e59460b09167b7246caaf5bd1
++     detail
++         Une capacité exclusive sur une ligne ouverte et démarrée, valide pour le bloc auquel elle
++         est prêtée. `#stream` lit des morceaux à mesure qu'il est forcé, chacun étant un
++         `Audio across layout` d'au plus la taille `PcmFlag.Chunk` ; la ligne est arrêtée et fermée
++         à la fin du bloc.
+
+@ 0 1 0 1a59ed6eb160c17108d8f34178361c5c
++     entry #stream
++       info
++           les morceaux capturés, sous forme de chaîne paresseuse, aussi longtemps que dure la
++           portée
+
+@ 0 1 0 1b4509b35592b3191a3c6fc7fc5102dd
++   entry .PcmOutput
++     info
++         la poignée prêtée par l'ouverture d'un `Outlet` en tant que `Pcm` : joue des valeurs
++         audio, avec l'autorisation `Write`
+
+@ 0 5 0 0418ae6f49cd9df6195f1242c6d67fb9
++     detail
++         Une capacité exclusive sur la sortie, valide pour le bloc auquel elle est prêtée. Chaque
++         `Pcm.play` (l'extension conditionnée par l'autorisation) ou `#playAudio` ouvre une ligne
++         pour le format propre de l'audio, le joue jusqu'au bout et la ferme ; le suivant peut
++         avoir un format différent.
+
+@ 0 1 0 1f1255ceabef24ce1b796185392e2c01
++     entry #playAudio
++       info
++           ouvre une ligne pour le format de l'audio, le joue jusqu'à la fin, et ferme la ligne
+
+@ 0 3 0 1748e78f13aa35af197bf95b68599e52
++       detail
++           Publique pour que l'extension `play` conditionnée par l'autorisation puisse
++           l'atteindre ; utilisez `play`, qui vérifie l'autorisation `Write`, plutôt que celle-ci.
++           Lève une `Audio.Outlet.Error` avec `UnsupportedConfiguration` ou `Unavailable`.
+
+@ 0 1 0 03800f532d8e37e90a9af28c703f1935
++   entry .play
++     info
++         `out.play(audio)` sur un `PcmOutput` ouvert avec l'autorisation `Write` : lecture
++         synchrone
+
+@ 0 3 0 15475f37eb454256170941d1c25660ef
++     detail
++         Une extension sur `PcmOutput & Granting[Grant.Write]`, si bien qu'elle n'est disponible
++         qu'à l'intérieur de `outlet.open[Pcm](Write)`. Bloque jusqu'à ce que l'audio ait retenti,
++         et lève une `Audio.Outlet.Error` si la sortie ne peut pas le jouer.
+
+@ 0 1 0 1ba769d0fec2947c13d8585f333ece8b
++   entry .FeedOpenable
++     info
++         l'`Openable` qui ouvre un `Feed` en tant que `Pcm across layout`, en prêtant un `PcmInput`
+
+@ 0 5 0 156ddb9d5ad90a4605c8f74c6e6b2d43
++     detail
++         Une classe nommée plutôt qu'un given anonyme, pour que ses membres de type soient
++         stables : `Self = Audio.Feed`, `Form = Pcm across layout`, `Operand = PcmFlag`,
++         `Result = PcmInput[layout]`. Créée par `.feedOpenable` à partir du `ChannelLayout` et de
++         la `Tactic[Audio.Feed.Error]` dans la portée.
+
+@ 0 1 0 011d5184657dc5170d1340d585bae5f1
++     entry #open
++       info
++           ouvre une ligne selon la fréquence, la profondeur et la taille de morceau des options,
++           dans les canaux de la disposition, pour le bloc
+
+@ 0 3 0 01b05faa04d6332c081dda2aac3e5ae8
++       detail
++           Du PCM signé petit-boutiste à `PcmFlag.Rate` (44100 par défaut) et `PcmFlag.Bits` (16) ;
++           la ligne est démarrée avant le bloc, puis arrêtée et fermée après lui. Lève une
++           `Audio.Feed.Error` avec `UnsupportedConfiguration` ou `Unavailable`.
+
+@ 0 1 0 15cf445a6094a8f00bac97820d6e7372
++   entry .OutletOpenable
++     info
++         l'`Openable` qui ouvre un `Outlet` en tant que `Pcm`, en prêtant un `PcmOutput`
+
+@ 0 4 0 04b62f640bcd4058105cc9dcea997765
++     detail
++         `Self = Audio.Outlet`, `Form = Pcm`, `Operand = PcmFlag`, `Result = PcmOutput`. Créée par
++         `.outletOpenable` à partir de la `Tactic[Audio.Outlet.Error]` dans la portée. L'ouverture
++         elle-même ne touche aucune ligne : chaque `play` à l'intérieur du bloc en ouvre une pour
++         son audio.
+
+@ 0 1 0 1673c802046c8ffb010e6487d45dad45
++     entry #open
++       info
++           prête au bloc un `PcmOutput` avec la taille de morceau des options
+
+@ 0 1 0 03cdec7a104a0aa5187ca9a36055ea19
++   entry .feedOpenable
++     info
++         le given qui rend `feed.open[Pcm across layout](…)` disponible
+
+@ 0 2 0 18da0db56492c56217abb785d0e054e2
++     detail
++         Nécessite un `ChannelLayout` pour la disposition et une `Tactic[Audio.Feed.Error]`, qu'il
++         capture. Dans la portée implicite par le compagnon.
+
+@ 0 1 0 1aedda15dd73c8eb1e281f0f6e84264a
++   entry .outletOpenable
++     info
++         le given qui rend `outlet.open[Pcm](…)` disponible
+
+@ 0 2 0 0d6c6a623965006c196e34b19a3487d3
++     detail
++         Nécessite une `Tactic[Audio.Outlet.Error]`, qu'il capture. Dans la portée implicite par le
++         compagnon.
+
+@ 0 1 0 0d19bc437f1ddf4b1765970def7441f4
++ entry .PcmFlag
++   info
++       les options d'une ligne délimitée : `Rate(hertz)`, `Bits(bits)` et `Chunk(bytes)`
+
+@ 0 4 0 0f8f6f0077774f701473cfec20232bcf
++   detail
++       Passées à `open[Pcm …]` après le mode. `Rate(hertz)` est la fréquence d'échantillonnage en
++       hertz (44100 en son absence), `Bits(bits)` la profondeur de bits (16), et `Chunk(bytes)` la
++       taille de chaque morceau lu depuis une entrée ou écrit vers une sortie (65536). Une entrée
++       lit les trois ; une sortie ne lit que `Chunk`, puisque ses lignes prennent le format de
++       l'audio joué.
+
+@ 2 1 0 1dc95472a7debd3c1a087f47d583c281
++       ```scala fuel
+
+@ 0 1 0 1a8ec18672c39e03185024ae675e9c25
++       typecheck
+
+@ 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
++       ##
+
+@ 1 1 0 149c77db45ac644f1a74f205bbafc35a
++       import soundness.*
+
+@ 2 1 0 00c648c4451d3840102b5a9ac5af6427
++       import strategies.throwUnsafely
+
+@ 0 1 0 13b9a15ca021416c13688599cdc07957
++       Audio.Feed.list.head.let: feed =>
+
+@ 0 1 0 12fb334e8ad0a83d03a97142adbf913b
++         feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000), PcmFlag.Bits(16), PcmFlag.Chunk(1024)):
+
+@ 0 1 0 03757c1de6a74e3e05d9a9cb22a3fef2
++           input ?=> input.stream.head.let(_.channels)   // 1
+
+@ 1 1 0 1ae1302a2e6ce2ee0eee24c0131d3877
++       ```

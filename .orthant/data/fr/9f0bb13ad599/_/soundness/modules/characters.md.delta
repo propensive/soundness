@@ -1,0 +1,21 @@
+orthant 2 language
+
+@ 0 9 0 1b5210dfb4785d300a88d392b2f36705
++ column  Encodage
++ column  Codepage, pour encoder
++ column  Charset, pour décoder
++ row  UTF-8  `utf8Codepage`  `utf8Charset`
++ row  UTF-16  `utf16Codepage`  `utf16Charset`
++ row  UTF-16, petit-boutiste  `utf16LeCodepage`  `utf16LeCharset`
++ row  UTF-16, gros-boutiste  `utf16BeCodepage`  `utf16BeCharset`
++ row  ASCII  `asciiCodepage`  `asciiCharset`
++ row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`
+
+@ 0 1 0 1ac5cb23e93a044c173a5d922a49a802
++ Tous les jeux de caractères utilisent l'assainisseur dans la portée.
+
+@ 0 4 0 02e014dd225711831e5e0dc01eba7d8d
++ L'encodage pose le problème inverse : un caractère pour lequel l'encodage n'a pas d'octets, comme
++ `é` en ASCII. Par défaut, un `Codepage` écrit à sa place le substitut de l'encodage, `?`. Avec
++ `encodingSanitizers.strictEncodingSanitizer` importé, il lève à la place une `Codepage.Error` qui
++ nomme le caractère.

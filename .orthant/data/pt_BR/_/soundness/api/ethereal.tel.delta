@@ -1,0 +1,1609 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 056c57bc4ef7bf5506a0d19322e2ba39
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1cd070e7e6856e821e25c6f6561fc98c
++ info   aplicações de linha de comando como daemons: uma JVM aquecida atendendo a toda invocação por meio de um launcher nativo
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 094b1663d30bbd2106dc2822098a8983
++     _Ethereal_ transforma uma aplicação de linha de comando em um **daemon**: uma JVM que inicia
++     na primeira invocação e permanece residente, de modo que toda invocação posterior é
++     despachada para ela por um pequeno **launcher** nativo e retorna na velocidade de uma
++     ferramenta nativa, com o custo de inicialização da JVM e o aquecimento de seu compilador
++     just-in-time pagos uma vez, e não a cada execução. O código da aplicação é o mesmo de uma
++     CLI comum: o corpo de um bloco `application`, envolvido em `cli` em vez disso.
+
+% 2 1 0 1dd141755db302680a80b90fcbf43d75
+
+% 3 1 0 09ba168a1aa797dc0ad97e45fd22a0dc
+
+% 4 1 0 0370b28a3281ffcc0db58d694d6d9575
+
+% 5 1 0 1466603a795504f006a7c95689d1905c
+
+% 7 1 0 1187a29642ba00cf00485f2af9d470ca
+
+% 8 1 0 138f34899bd26cbb1394297dd19133ce
+
+% 9 1 0 192f59ba094d137916b61d42409da0de
+
+% 10 1 0 17bb1afae4ea1b7d0fb8f3e22abd56ce
+
+% 12 1 0 066bbd17daaa269e0a955b019af44fcc
+
+% 13 1 0 0f8e0627f0ee786c0ec5ff12a74cd3ab
+
+% 14 1 0 0a29c91b98467a37109c6b43db6de4c8
+
+% 0 1 0 1135438ce87c7c5f098050a294733649
+
+% 1 1 0 1186081b12d6a74a1622b23bd12c83d9
+
+% 2 1 0 1e66fc695cf9d6eb1952e4953757c3d6
+
+@ 0 11 0 0447c687c3b9ba981688a3c0dae838a4
++     O que difere é o modelo de processos. Uma `application` comum é um processo por invocação,
++     e seus argumentos, ambiente, diretório de trabalho, streams padrão e sinais são os do
++     próprio processo. Sob `cli`, um processo — o daemon — atende a muitas invocações ao mesmo
++     tempo, e *nenhuma* dessas coisas é global: cada invocação chega em sua própria conexão, com
++     seus próprios argumentos, seu próprio `Environment`, seu próprio diretório de trabalho, seus
++     próprios stdin, stdout e stderr, seu próprio status de saída e seus próprios sinais, todos
++     encaminhados pelo launcher e todos lidos por meio dos mesmos `arguments`, `Out`, `Err`,
++     `Exit`, `trap` e `Environment` que uma aplicação comum usa. O próprio `println` do Scala
++     escreve no `System.out` do daemon, que não chega a nenhum usuário: a saída passa por `Out`
++     e `Err`, que resolvem o `Stdio` da invocação, e uma biblioteca que escreve em `System.out` é
++     redirecionada com `Stdio.divert`, que acompanha a thread e as tarefas criadas sob ela, e não
++     a JVM.
+
+@ 0 13 0 1b04aee981e01c531655ac7a21b4ed85
++     O launcher é o executor em Rust publicado por `propensive/xek`
++     (`curl -fsSL https://propensive.dev/xek | sh` o instala), e `xek build mytool.jar` junta o
++     stub da plataforma, um registro de configuração e o JAR da aplicação em um único
++     executável. Uma invocação desse executável é uma conexão com o daemon por um socket de
++     domínio Unix, que transporta documentos BinTEL do schema TEL `ethereal-launcher`
++     (`Launcher.schemaText`, o recurso `ethereal/ethereal-launcher.tel`): um documento `init`
++     com os argumentos, o ambiente, o diretório de trabalho, o usuário, as flags de terminal e
++     os descritores da invocação, depois chunks `data` de cada stream sob crédito por stream,
++     `signal`/`signal-ack`, `mode`, `run`/`exited` e `closed`, até que o `exit-status` do daemon
++     encerre a sessão. Todo documento carrega a assinatura de 33 bytes do schema, de modo que um
++     launcher e um daemon construídos com contratos diferentes se recusam mutuamente no primeiro
++     documento em vez de se interpretarem mal; `Launcher.Message` é o enum que espelha o schema,
++     e `Launcher.encode`/`Launcher.decode`, seu codec.
+
+@ 0 16 0 1417c38defe346dc06c6fae205e131b7
++     O **daemon** é iniciado pelo launcher com um ambiente sanitizado próprio, em `/`, sob umask
++     `077`, de modo que nada no estado do daemon depende de quem por acaso o iniciou: código que
++     lê `environments.javaBaseEnvironment` ou `workingDirectories.javaBaseWorkingDirectory` vê
++     esse estado, não o da invocação. O ambiente e o diretório de trabalho próprios da invocação
++     são os givens `environments.daemonClientEnvironment` e
++     `workingDirectories.daemonClientWorkingDirectory` (importados pelo nome —
++     `import soundness.*` não importa givens), e o ambiente com o qual o próprio daemon foi
++     lançado é `DaemonEnvironment`, o given `environments.daemonEnvironment`. O daemon mantém
++     seu estado em `$XDG_RUNTIME_DIR/<name>/` (ou no diretório de estado): um `socket`, um
++     arquivo `pid`, um arquivo `build` que registra o launcher a partir do qual foi iniciado e
++     um arquivo `acceptance` que nomeia o schema que ele fala; ele registra `DaemonLogEvent`s no
++     syslog sob `ethereal`, se aposenta após seis horas ocioso, quando um arquivo de estado é
++     removido, quando seu launcher é reconstruído ou quando solicitado, e o subcomando embutido
++     `'{admin}'` informa seu pid (`pid`), o encerra (`kill`) ou o drena (`shutdown`: nenhuma
++     invocação adicional é atendida, as que estão em andamento terminam e então ele sai). Defina
++     `ETHEREAL_DEBUG=1` no shell para que o launcher registre o que faz no stderr.
+
+@ 0 8 0 058b0cdab6938a88148db22f10be6d9a
++     Dentro do bloco, `resident` é o handle da invocação para o daemon, um `Resident`: quais
++     streams são terminais (`cliInput`, `cliOutput`, `cliError`), o nome pelo qual o executável
++     foi invocado, a umask, o tamanho atual do terminal, um `bus` de mensagens tipadas entre
++     invocações concorrentes, blocos `cooked` e `concealed`, que pedem ao launcher o modo
++     canônico do terminal, `terminal` para executar um editor ou `sudo` no terminal do cliente, e
++     `retire()` para drenar o daemon. `Installer.install` copia o executável para o `PATH`, e
++     `Upgrade` prepara uma substituição assinada que o launcher verifica e coloca no lugar no
++     início da próxima invocação, sem perturbar os clientes do daemon em execução.
+
+@ 0 7 0 19b1a5d1c0b794a01f7a3870089a9403
++     A biblioteca é um único source set, `ethereal.core`, para a JVM; ela se baseia em
++     `exoskeleton` (a maquinaria de CLI: `Cli`, `Executive`, `arguments`, `execute`, `Help`),
++     `coaxial` (o socket de domínio), `stratiform` (o protocolo BinTEL), `surveillance` (que
++     observa os arquivos de estado), `galilei`, `guillotine`, `profanity` e `turbulence`. Um
++     segundo source set, `ethereal.example`, contém os pontos de entrada `run` e `fixture` que os
++     testes e o tutorial usam. Tudo é exportado para o guarda-chuva `soundness`, e os pacotes de
++     escolhas `environments` e `workingDirectories` se fundem com os do próprio guarda-chuva.
+
+% 0 1 0 0e061a3fa7b2d06d12605d986a235875
+
+% 0 1 0 0a62337f801f53a70065f038ab643aa2
+
+% 0 1 0 0cbbe490b6f76ec9138d91f21a26c8b6
+
+% 0 1 0 0617736c3b31639710ab6ae532f58561
+
+% 0 1 0 19d85e7a1e11b43604e88c751eb60ee6
+
+@ 0 1 0 0b4be2c42650d47e01e5828838903a6f
++ entry .cli   executa o corpo como um daemon: uma JVM residente, atendendo a cada invocação do launcher em sua própria conexão
+
+% 1 1 0 1a7ffda3d67aed571cc66d0a9b511394
+
+@ 0 9 0 1ed23e248120447e1705aadf77f8e035
++       `cli` é a contraparte em daemon de `application`: o mesmo corpo, a mesma estrutura de
++       conclusões e os mesmos `execute`, `arguments`, `Out` e `Exit`, mas executados por um
++       processo que permanece residente e atende a toda invocação do executável até se
++       aposentar. Não recebe argumentos próprios — o launcher encaminha os argumentos, o
++       ambiente, o diretório de trabalho, os streams padrão, o tamanho do terminal e os sinais da
++       invocação — e o bloco é executado uma vez por conexão de cliente, com o
++       `Resident over bus` da invocação, a `Interface` do executivo (o `Cli`), seu `Environment`
++       e um `Monitor` como valores contextuais, de modo que `resident`, `arguments`, `execute`,
++       `Environment[Text](t"HOME")` e `task` são todos resolvidos dentro dele.
+
+% 2 1 0 113a1387f163c5b91f60067f2c94c579
+
+% 3 1 0 10235eb385f2eab201268197cb12fb3c
+
+% 1 1 0 196763793b32db02032b83bb4b7efc71
+
+@ 0 1 0 0bc35960eb1a6b281828c532651f8200
++         label Uma aplicação de linha de comando comum
+
+% 1 1 0 14d81defea7e368c1113f8119bedec4e
+
+% 2 1 0 082bef5c54688db81863e54023fc7d6f
+
+% 4 1 0 0dc6f67ee07c27c21512b9d8a8872e01
+
+% 5 1 0 06ebe32c52b9dda7007d5f68eb9ba191
+
+% 6 1 0 0bef36cbefe69c59098bed7bfacee5e5
+
+% 7 1 0 19de36845bec704702ba56534f625a38
+
+% 9 1 0 061b41740448234306fc4a82d62078c7
+
+% 0 1 0 14b9227aa498132317b3b55d44cd55bd
+
+% 1 1 0 136a1a9266ba28f20d03424d2ef88689
+
+% 2 1 0 16f9ded4702b3b7512bc117caaded41d
+
+% 3 1 0 07bb325edd1c28f41dabab0fb41c8cae
+
+% 4 1 0 0cfb7a90e1cba44b15869fecc46389ef
+
+@ 0 1 0 141cffdc7d8cecd80fbe63aa20c84852
++         label O mesmo corpo, residente: `cli` no lugar de `application`
+
+% 1 1 0 0792ab4ea12f514c06f1ef0aab818e0e
+
+% 2 1 0 1e56ceeced7f829e042322ab01a16aac
+
+% 4 1 0 17092bc4c5951c8d14a62a237454a151
+
+% 5 1 0 0c2eb30042d9fa08014c588380887921
+
+% 6 1 0 10a2c753d3d244950401b60d99079e6e
+
+% 7 1 0 1f2239a5a467004a1bb145d1ddb7f27f
+
+% 9 1 0 0a1169af22ccdc2311d65b178f856ead
+
+% 10 1 0 13022d9f3a67e66703a95d156504974a
+
+% 11 1 0 0a9a0fd8b626dca40f110e883b11f4d6
+
+% 2 1 0 020c52e3298a905e1f508018ec71e9df
+
+% 3 1 0 168f3c8e3655688c067c4df22137bd1e
+
+% 4 1 0 15a3dff6dbc2c7ff131be1a28f9be02b
+
+@ 0 1 0 192b25e0b0c43fd21dd5ecaf0a40b9fc
++         label O que a invocação sabe sobre seu cliente, por meio de `resident`
+
+% 1 1 0 1c14f6f9c802ed5204bc94072e752696
+
+% 2 1 0 0a3d48b66e8bae970c4f37e29ab61579
+
+% 4 1 0 170db18c8b6d10f20ef1bc4a5f7aacea
+
+% 5 1 0 12ec38e4d7af24c51ffb842aeec86448
+
+% 6 1 0 11368cbe75ed4f801f43c597ee43de97
+
+% 7 1 0 117d8b5203e964421c1820f7872bb628
+
+% 9 1 0 1862a5de0200678e093407f0a68d29be
+
+% 10 1 0 044d227767c427b411350221f7a6a62b
+
+% 11 1 0 1449f90b78e446a204151ee322256cc8
+
+% 0 1 0 16a3fb1b0d8ed65b080f95ed50589537
+
+% 0 1 0 0d95e6b69489f05e17c83923d9ef94bc
+
+% 0 1 0 0680d2fcf2b97e811fee575a94d6203e
+
+% 1 1 0 1b16da8b0cefb45804d54fb997330962
+
+% 2 1 0 134a955fb5bcae2212831bda88afea82
+
+@ 0 1 0 0e0db99c8b4b10141954340f4f578fd3
++         label Um bus tipado entre as invocações concorrentes do daemon
+
+% 1 1 0 06817cfabb5dccb316515f84d53ab8e3
+
+% 2 1 0 1840479683d14c181d5325b82c51ac13
+
+% 4 1 0 06869070e8589a7e0511f80eacede402
+
+% 5 1 0 0bb7b500632b5fa201a7d6fd86aa2ae6
+
+% 6 1 0 1ffbb5dd479822961a4222ffb05bd23e
+
+% 7 1 0 04c62ed1e94e258c1b0f1a3e345482fa
+
+% 0 1 0 179a94d0634727f80468eeb81fa8e565
+
+% 0 1 0 0f64eee0d043e81a14dc61009cccb155
+
+% 2 1 0 0dff69b1286239941680e2f33dd8a7d7
+
+% 0 1 0 1f1920d750b6da0611198783873a6dfe
+
+% 1 1 0 171a66ec35fd809802815031a5ae8c8b
+
+% 0 1 0 0744bf5df021563a0f6fb35083300322
+
+% 1 1 0 0d322f2feeb557f91bd4d387397e80ad
+
+% 2 1 0 00f298891c0e70d00a013f732fcaa511
+
+% 1 1 0 1d0872aa195bc1e90f7bf2c14e2bf418
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 9 0 059e22eb0633b1a20fd1b4c9e3cfda43
++       O argumento de tipo `bus` é o tipo das mensagens que as invocações do daemon trocam por
++       meio de `resident.bus` e `resident.broadcast`; ele é `Matchable` e fica sem aplicação para
++       um daemon que não troca nenhuma. Os valores contextuais de que `cli` precisa são os mesmos
++       de `application` — um `Executive` (`executives.completionsExecutive` para conclusões com
++       tab, o único executivo capaz de produzir a árvore de `resident.help()`), um `Interpreter`,
++       um `Threading` e um `Backstop` — mais um `Watcher`, com o qual ele observa seus arquivos de
++       estado (o padrão vem do objeto companheiro de `Watcher`). O bloco é executado na tarefa da
++       conexão, então só pode capturar capabilities *duráveis* — o monitor, o logger e os streams
++       padrão do daemon; um recurso exclusivo é aberto e possuído dentro do bloco.
+
+@ 0 11 0 0db5f04d04ae9af2113b893e80b30ff3
++       A primeira invocação inicia o daemon: o launcher inicia a JVM com as propriedades
++       `ethereal.name` (o nome do executável), `ethereal.script` (seu caminho),
++       `ethereal.user.id`/`ethereal.user.name`, `ethereal.startTime`, `build.id` e
++       `ethereal.environment=stdin`, e `cli` lê `DaemonEnvironment` de sua entrada padrão,
++       escreve seu arquivo `acceptance`, vincula o socket, escreve os arquivos `build` e `pid` (o
++       launcher espera por eles antes de se conectar) e inicia uma tarefa que observa esses
++       arquivos e o próprio launcher, de modo que um arquivo de estado apagado ou um executável
++       reescrito encerra o daemon prontamente, em vez de deixá-lo atendendo com no-ops quebrados.
++       Uma JVM executada sem launcher — `java -jar mytool.jar` — não tem `ethereal.name`, imprime
++       _This application must be invoked through its XEK launcher_ com a linha `xek build` a
++       executar, e sai com status 1.
+
+@ 0 7 0 1f86507955f52d8c17c218df09db895d
++       Cada conexão então começa com um `Launcher.Message`: um `Init` inicia uma `Session` e
++       executa o bloco com um `Resident` construído para ela; `Shutdown` drena o daemon; `Verify`
++       responde se o arquivo do launcher ainda tem o conteúdo a partir do qual o daemon foi
++       iniciado, e o drena caso contrário; um documento de outro schema é registrado como
++       `DaemonLogEvent.ProtocolMismatch` e a conexão é fechada, e um par que não é o proprietário
++       do socket, ou um `Init` de outro usuário, é recusado (`PeerRefused`). Uma invocação que
++       chega enquanto o daemon está sendo drenado é recusada com status de saída 2.
+
+@ 0 11 0 0a9fedaab3db1b000636f2d73719e4cc
++       Faça o bloco o que fizer, a sessão termina com um status de saída: um `Egress.Error` (uma
++       escrita em um stream cujo leitor se foi, `mytool | head -1` depois que `head` saiu)
++       encerra a invocação com status 141, como `SIGPIPE` encerraria um processo; qualquer outro
++       throwable — inclusive um `java.lang.Error` — é registrado como `DaemonLogEvent.Failure` e
++       entregue ao `Backstop`, que o reporta no stderr da invocação e escolhe o status. O daemon
++       se aposenta após seis horas ocioso (`DaemonLogEvent.IdleTimeout`), e uma drenagem — por
++       `'{admin}' shutdown`, por um veredito de desatualização ou por `resident.retire()` —
++       espera pelas invocações em andamento e por no máximo trinta segundos, e então sai.
++       Argumentos e entradas de ambiente que não são UTF-8 válido chegam com U+FFFD no lugar dos
++       bytes problemáticos, como a própria JVM os entregaria, e seus bytes originais são
++       `resident.rawArgument` e `resident.rawEnvironment`.
+
+% 1 1 0 16de7a40dc1091ed1ca1b1e7d9ab30ed
+
+% 1 1 0 0125474b7720626e1bc8d67de743cd7e
+
+% 1 1 0 1590f76bfd6415920e07ae1041e4f4a6
+
+% 0 1 0 1cbb8b9d5ba260de1002e0eaf0af00e1
+
+% 0 1 0 0fbbebc6556549f00bd2c4fc280257ef
+
+@ 0 5 0 08935edc7d73836e052222c701e7c44e
++ entry .resident   o `Resident` da invocação, o handle para o daemon que a atende, dentro de um bloco `cli`
++     `resident` convoca o `Resident over bus` que `cli` fornece para a invocação atual, de modo
++     que `resident.cliInput`, `resident.invokedAs`, `resident.cooked`, `resident.broadcast` e o
++     resto se leem naturalmente dentro do bloco. É uma capability, então o resultado a retém:
++     não pode ser armazenado além da invocação nem passado para outra.
+
+% 2 1 0 19d1fd7b2f5bf9451dd8ee6173f7c126
+
+% 3 1 0 143651ed23ea923808c2670a504852e1
+
+% 4 1 0 0ef54f73748fbfcd0c9cc4bfd99aec3d
+
+% 5 1 0 0ff35aeed836a3f11aa873f9d197c27b
+
+% 7 1 0 124f72a6669fc9d909c5a30836e20b51
+
+% 8 1 0 0673885743aab533099acabf9cbce21e
+
+% 9 1 0 087f5485e47570920f9efa6ba7ef1371
+
+% 10 1 0 19ee806eadf3e4ab1e5abadae15e87a9
+
+% 12 1 0 00d25f3b303935b21f24fd58f288b351
+
+% 13 1 0 03ec2b7a0e9d3f0c1bed44c3a80e5c3c
+
+% 14 1 0 17600cdc40b0cae31c59d9264b905bb5
+
+% 0 1 0 193d8d4eefb4ddbc1ce55eaf523b30af
+
+% 1 1 0 1d1c3cbd2cd922db0c88ca1ba0aa7169
+
+% 2 1 0 0c4892d63c514f6f1bb0814d81fdbacd
+
+@ 0 1 0 0ee2c3d0b9ddfe6d00ca1bd34874452c
++ entry .Resident   o handle de uma invocação para o daemon: o que o launcher lhe disse sobre o cliente, e os controles do daemon
+
+% 1 1 0 00623f18cd702eaa14ddaac7959e2de7
+
+@ 0 6 0 01c9296b594530b00edc5b9bc605b283
++       Um `Resident` é a capability que `cli` constrói para cada invocação e que `resident`
++       convoca dentro do bloco. Ele contém tudo o que o daemon sabe sobre o cliente — o que ele
++       só pode saber pelo documento `init` do launcher, já que o daemon detém um socket e não o
++       processo do cliente — junto com os controles do próprio daemon: um bus de mensagens
++       tipadas entre invocações concorrentes, as requisições de modo de terminal e de execução no
++       terminal que viajam de volta pela sessão, e `retire()`, que drena o daemon.
+
+% 2 1 0 16337afc43092d48129d0ba9504d3030
+
+% 3 1 0 012d88f32567d757061588819f013db7
+
+% 4 1 0 0e84a0f82013872d1c498136e840f725
+
+% 5 1 0 08463a5c8e639e7610851e03fec52329
+
+% 7 1 0 0418033a46c7f8330884745830c44060
+
+% 8 1 0 1ba67e9fc7fc4de7089bb0a700796073
+
+% 9 1 0 10858e52f991d002115584fdcd4ba906
+
+% 10 1 0 164a16e5c7a6a87b0e751e41c2b199eb
+
+% 12 1 0 196cbbc986aea47a1e7c3e31ce5692cc
+
+% 13 1 0 0c29253214d6cf7c1733344363d956d8
+
+% 14 1 0 0272f7dd9c4f29b216a8c62c679fd588
+
+% 0 1 0 111060f4a0fe5ea91c0bfb0fb441e5fe
+
+% 0 1 0 1bbfd5271465aba31abc1e9907c21813
+
+% 0 1 0 08cf5df4c74e4fe60c49b739ca5790ef
+
+% 0 1 0 0620f51defe09c881f52abf435b6b5bf
+
+% 0 1 0 15dcf910ff8972d31c3ebef3a9cc775c
+
+% 0 1 0 11b4fbb3cbac28de1a806ae03dd7b834
+
+% 2 1 0 15f87bc34c9b870a1997aa843275a295
+
+% 3 1 0 039b2eb04fe0e76f15a72cc7099b4036
+
+@ 0 7 0 199902a238edcbdd0fa6223920fc193e
++       Ele é um `Entrypoint` (`#script`, `#executable`, `#retire`), um `Umask.Provider` (sua
++       `#umask` é o que a biblioteca de sistema de arquivos aplica a tudo o que a invocação cria)
++       e um `Fdtable.Provider` (sua `#fdtable` é como `/dev/stdin` ou `/dev/fd/63` de
++       `mytool <(…)` abre o descritor *do cliente*, transportado pela sessão, e não o do próprio
++       daemon). O membro de tipo `#Transport` é o tipo de mensagem do bus, escrito
++       `Resident over Message`; o tipo que `cli[Message]` fornece. Como capability exclusiva, não
++       pode ser armazenado além da invocação.
+
+@ 0 4 0 01d62b568191a569171b3ee6e413a0f8
++       A maioria de seus parâmetros de construtor são `val`s públicos que o daemon preenche a
++       partir do documento `init`; os thunks entre eles (`#shutdown`, `#helpThunk`, `#setMode`,
++       `#run`, `#sizeThunk`) são os ganchos brutos por trás de `#retire`, `#help`, `#cooked`,
++       `#terminal` e `#windowSize`, que são os métodos a chamar.
+
+% 1 1 0 1d0b26d6244456a2008fa24576efa349
+
+% 1 1 0 1869cb6cdb87dcf20e71c8116e0be18e
+
+% 0 1 0 048901eb78408994046451246fbe4a6e
+
+% 0 1 0 06cb0d549e867cb71832c928104f8307
+
+@ 0 7 0 06ce493e0628ea0b02ac7b2dce655f1a
++   entry #Transport   o tipo das mensagens que as invocações deste daemon trocam pelo bus
++       Abstrato, limitado por `Matchable` e fixado pelo argumento de tipo de `cli`: dentro de
++       `cli[Message]` o residente é um `Resident over Message`, então `#broadcast` recebe uma
++       `Message` e `#bus` as produz. Um daemon sem argumento de tipo não troca nada.
++   entry #bus   as mensagens difundidas pelas outras invocações do daemon, à medida que chegam
++       Um `Chain[Transport]` que cresce conforme outras invocações chamam `#broadcast`: lê-lo
++       bloqueia até a próxima mensagem. As próprias difusões de uma invocação não são entregues a
++       ela.
+
+% 2 1 0 1b76ba48a25eaada0161b9864c53af7c
+
+% 3 1 0 024105e7fe0b8f1d0fc641cb774be860
+
+% 4 1 0 001442c655f8b4f20dc353a6ba7d4c43
+
+% 5 1 0 09354f5a6a6f4da019fe8d3354d8a97d
+
+% 7 1 0 15f9370095ce9ce505f70c6e8488d0fc
+
+% 8 1 0 0fc8c7319a40c9201c6e5687e7e5db72
+
+% 9 1 0 0911b1c98d7bb9be1a5381570ff9f283
+
+% 10 1 0 1624780318500f391b8435d5e6584650
+
+% 0 1 0 13c480d646110f1313a35ce6fab9ad30
+
+% 0 1 0 00d10b82d2435fd90648bb39d93e748b
+
+% 2 1 0 0029d6d2a696fcc9176f502de28b6fc4
+
+% 0 1 0 162188eb6b41edaa11e6d65aaec04127
+
+% 1 1 0 18024a47fb045499101570c204cbab72
+
+% 0 1 0 1a275177d219fa5d1cfaabca4d5782ff
+
+% 0 1 0 14aee964dc17e2cf1ca13474cf7a8c6c
+
+% 2 1 0 02ec42a43d28b8b11935c50391332c1e
+
+% 3 1 0 0d0ef454b26f0c6e09f519b230c33e0a
+
+@ 0 74 0 1be0a5ef0f7766300b755f97b5499dc0
++   entry #broadcast   envia uma mensagem a todas as outras invocações do daemon
++       Entrega a mensagem ao `#bus` de toda invocação conectada no momento, exceto a do
++       remetente. É assim que um `watch` em execução fica sabendo que outra invocação acabou de
++       alterar a configuração.
++   entry #retire   pede ao daemon que saia assim que esta invocação terminar
++       O daemon para de aceitar invocações, deixa as que estão em andamento terminarem (por no
++       máximo trinta segundos) e sai; a próxima invocação inicia um daemon novo. O subcomando
++       `'{admin}' shutdown` faz o mesmo a partir do shell. Sobrescreve `Entrypoint#retire`, que
++       não faz nada em uma aplicação comum, de modo que uma ferramenta escrita com base em
++       `Entrypoint` funciona sob ambos.
++   entry #shutdown   o thunk que `#retire` chama: a drenagem do daemon
++   entry #pid   o pid do processo cliente, tal como o launcher o informou
++       O pid do processo *launcher* que atende o shell do usuário, não o do daemon; ele é a chave
++       da tabela de clientes conectados do daemon, e `DaemonLogEvent.Init` e `CloseConnection` o
++       carregam.
++   entry #cliInput   se o stdin do cliente é um terminal ou um pipe
++       Um `Terminus`: `Terminal` quando o launcher informou que o stdin está ligado a um terminal,
++       `Pipe` caso contrário. O daemon não consegue saber por si só — seus streams são o socket do
++       launcher —, então isto é o relato do launcher e nada mais. `#cooked` e `#concealed` são
++       no-ops a menos que isto seja `Terminal`.
++   entry #cliOutput   se o stdout do cliente é um terminal ou um pipe
++       Informado separadamente do stdin, já que os dois de fato diferem: `mytool > file`
++       executado em um terminal tem o stdin no terminal e o stdout em um arquivo. Quando o stdout
++       não é um terminal, o `Termcap` da invocação não tem largura, então nada é quebrado.
++   entry #cliError   se o stderr do cliente é um terminal ou um pipe
++   entry #executable   o caminho do executável do launcher que a invocação executou
++       O campo `script` do documento `init`, como um `Path on Local`: o caminho canônico do
++       executável. `Installer.install` copia este arquivo para o `PATH`.
++   entry #script   o nome do executável, tal como o daemon o recebeu
++       A propriedade `ethereal.name` com a qual o launcher inicia o daemon: o nome do comando, que
++       também nomeia o diretório de estado do daemon e seu diretório de dados.
++   entry #startTime   quando o daemon foi iniciado, em milissegundos desde a época
++       Da propriedade `ethereal.startTime`, ou do relógio da JVM quando não há launcher.
++       `#started` e `#uptime` o leem como valores tipados.
++   entry #helpThunk   o thunk por trás de `#help`: a árvore de ajuda do executivo, ou `Unset`
++   entry #setMode   o gancho por trás de `#cooked` e `#concealed`: pede ao launcher um modo `Tty`
++       Envia um `Launcher.Message.Mode` pela sessão. Só o launcher pode alterar o terminal do
++       cliente, e um launcher cujo stdin não é um terminal que ele possui ignora a requisição.
++       Prefira `#cooked` e `#concealed`, que restauram o modo raw depois.
++   entry #run   o gancho por trás de `#terminal`: um comando, seus argumentos e um diretório, para o status com que terminou
++   entry #invokedAs   o nome pelo qual o executável foi invocado: `argv[0]` tal como quem chama o forneceu
++       `Unset` sob um launcher que não o informou. Um executável instalado sob vários nomes por
++       links simbólicos pode despachar com base nisto, enquanto todos os aliases compartilham um
++       único daemon aquecido; o caminho é como quem chama o escreveu, então tome seu último
++       segmento para obter o nome simples.
++   entry #sizeThunk   o thunk por trás de `#windowSize`: o tamanho do terminal na última medição
++   entry #umask   a máscara de criação de arquivos da invocação, se o launcher a informou
++       Uma `Umask` do galilei, analisada a partir do campo octal `umask` do documento `init`. Por
++       meio de `Umask.Provider`, a biblioteca de sistema de arquivos a aplica a tudo o que a
++       invocação cria, de modo que um arquivo criado pelo daemon tem o modo que o shell do cliente
++       lhe teria dado, e não o `077` do próprio daemon.
++   entry #fdtable   a tabela de descritores do cliente, para caminhos que nomeiam um descritor
++       Uma `Fdtable` que a biblioteca de sistema de arquivos consulta antes de abrir qualquer
++       coisa: `/dev/stdin`, `/dev/stdout`, `/dev/stderr`, `/dev/fd/N` e `/proc/self/fd/N` nomeiam
++       os descritores *do cliente* — os próprios streams da sessão para 0, 1 e 2; um arquivo
++       comum por trás de um descritor, pelo seu caminho real; um pipe como `mytool <(…)`,
++       transportado como stream assim que o launcher é solicitado — e um descritor que o cliente
++       não anunciou não nomeia nada, seja o que for que a tabela do próprio daemon contenha nesse
++       número. `Unset` sem launcher.
++   entry #raws   os bytes nativos de cada argumento, entrada de ambiente ou diretório de trabalho cujo texto perdeu algo
++       Os registros `Launcher.Raw` do documento `init`: vazios no caso comum, em que todo valor
++       era UTF-8 válido. `#rawArgument`, `#rawEnvironment` e `#rawWorkingDirectory` os consultam.
++   entry #windowSize   o tamanho do terminal do cliente como (colunas, linhas), conforme a última medição do launcher
++       Medido na conexão e de novo a cada `WINCH` e `CONT`, então é atual; o `Termcap` da
++       invocação lê a mesma medição, de modo que tabelas e texto quebrado cabem no terminal tal
++       como ele está agora. `Unset` quando o stdout do cliente não é um terminal, ou quando nenhum
++       tamanho foi informado.
++   entry #cooked   executa um bloco com o terminal do cliente em modo canônico, com eco
++       O launcher coloca o terminal em modo raw antes de se conectar, para que pressionamentos de
++       tecla possam ser encaminhados a uma sessão interativa; isso é errado para um comando que só
++       quer uma linha de entrada, já que não há eco e o Backspace chega como um byte dentro da
++       linha. `cooked` pede ao launcher o modo canônico durante o bloco — o driver do terminal
++       então fornece eco e edição de linha — e restaura o modo raw depois, em um `finally`. É um
++       no-op quando `#cliInput` não é um terminal, e silenciosamente ineficaz sob um launcher
++       antigo demais para oferecer o canal de controle.
+
+% 2 1 0 15e324fb2d682549032fa0d4d813d76a
+
+% 3 1 0 0b2a3fdeb2608e0205a0286646c9ebbe
+
+% 4 1 0 1affdc3ce9ce74751183cec0a915815b
+
+% 5 1 0 1e9d0b7d64daa0fb1348f927a8a84c5f
+
+% 7 1 0 162d789a7dc434ef195131f5f67cca98
+
+% 8 1 0 07cae91c76fb2ccd156cb1ad3dc9bcd1
+
+% 9 1 0 0c2632634853399d18202bb6709f6710
+
+% 10 1 0 11a427ddd6d161c00ae86ecb1b3bd8c0
+
+% 12 1 0 1f78bdb23125e3fe0cf6cdfe0b62e4a6
+
+% 0 1 0 0c88ac1c1f2fef7e0fa77c260c1d4924
+
+% 1 1 0 06dcd2230c4ac5410014d8af6376b9a5
+
+% 0 1 0 14ff90ba9d3e658b0402cba3ef272a61
+
+% 0 1 0 1aec06132a346e4e057c751053ff8852
+
+% 0 1 0 138bff2b59c8e5cd1dd5a46f79562c32
+
+% 0 1 0 1002a9c25a85f1a11ebca16707cc4429
+
+% 1 1 0 1f869170c6ceba800150eb133b1b6710
+
+% 2 1 0 0eed422ce40344f10ac5f7f7af8001c0
+
+@ 0 13 0 0ba6d801fe3ac0270423ba231f7d4bc8
++   entry #concealed   executa um bloco em modo canônico sem eco: como uma senha é lida
++       Como `#cooked`, com a edição de linha do driver do terminal mas sem eco, durante o bloco; o
++       modo raw é restaurado depois. Um no-op quando o stdin não é um terminal.
++   entry #terminal   executa um comando no terminal do cliente e fornece o status com que terminou
++       Para um editor, um pager, `ssh` ou `sudo`: programas que precisam do terminal, que o
++       processo do daemon, desligado de qualquer terminal, não alcança. O launcher para de
++       encaminhar a entrada do terminal e retém a saída da invocação, restaura o estado salvo do
++       terminal, executa o comando com o ambiente e os streams padrão do cliente — em `pwd`, se
++       fornecido — e, quando ele termina, devolve o terminal e informa o status: o código de
++       saída, 128 mais o sinal do qual morreu, ou 127 se não pôde ser executado, que também é a
++       resposta quando o stdin do cliente não é um terminal. Um comando é executado por vez. Sua
++       saída vai para o terminal, não para a invocação; para capturar a saída de um programa,
++       execute-o neste processo com `sh"…".exec`.
+
+% 2 1 0 0d1abdd88af359c613a81c8491e6beb7
+
+% 3 1 0 1d52f3708c472f9e00485c24defb5520
+
+% 4 1 0 0eaedc0acf634125003a4f3bfba193ff
+
+% 5 1 0 1195bae3826cda0e093f824d805a789a
+
+% 7 1 0 0a8d4ee15eb9f3e507411dbe13a3aa68
+
+% 8 1 0 0d5175fdb6bc11490c8a7e1e369f63b0
+
+% 9 1 0 0034259de9ce65b90ec046dca30c9424
+
+% 10 1 0 1d4b4f11e556dfe61435a5baedaa5ebe
+
+% 12 1 0 0eee76151e3b31620243d77aa81cd984
+
+% 0 1 0 173649a6212830dc00cc31d3d26c52c4
+
+% 1 1 0 19083e0a9b00ecd21c6a0024b1fa1dfa
+
+% 0 1 0 1f3e4cbf24c0c8cc06dd2b892f716046
+
+% 0 1 0 1489c10d10263cb20ad75173a5645514
+
+% 1 1 0 13eae29cdf9fb2950523dbce53e2297d
+
+@ 0 28 0 136b5667a06a4f241688adf53c5e7bae
++   entry #rawArgument   os bytes do próprio sistema operacional para o argumento em um índice, onde seu texto perdeu algo
++       Um argumento que não é UTF-8 válido chega a `arguments` com U+FFFD no lugar dos bytes
++       problemáticos, como a JVM o entregaria; isto fornece os bytes tal como foram dados — no
++       Unix, os próprios bytes, no Windows, as unidades de código UTF-16, little-endian — para o
++       argumento em `index`, contado a partir de 0. `Unset` para um argumento que seu texto
++       carrega exatamente, que é o caso comum, de modo que quem chama recorre ao texto.
++   entry #rawEnvironment   os bytes do próprio sistema operacional para a entrada de ambiente (`NAME=value`) em um índice
++       Como `#rawArgument`, para a entrada em `index` do ambiente que o launcher encaminhou;
++       `Unset` para uma entrada cujo texto é exato.
++   entry #rawWorkingDirectory   os bytes do diretório de trabalho, onde seu texto não pôde carregá-los
++   entry #help   a árvore de ajuda estruturada deste comando, a partir do executivo de conclusões
++       Gerada sob demanda e memoizada pelo daemon: a porção pura da aplicação é executada de novo
++       em modo de conclusão com tab para descobrir sua árvore de subcomandos e flags. Só
++       `executives.completionsExecutive` pode produzir a árvore; sob outro executivo, isto é um
++       `Help` raiz com o nome do comando e nada abaixo dele.
++   entry #localHelp   a árvore de ajuda reduzida aos subcomandos que esta invocação casou até agora
++       Precisa do `Cli` da invocação: `help().local(cli.matches)`, de modo que uma seção da
++       aplicação documenta apenas a si mesma, recorrendo à árvore completa quando nada foi casado
++       ou o caminho casado não está nela.
++   entry #buildId   o id de build do executável a partir do qual o daemon foi iniciado; zero sem launcher
++       A propriedade de 64 bits `build.id` que o launcher passa (`--build-id` do xek), ou um
++       recurso de classpath `build.id` quando não há launcher, ou zero. Compare-o com o id de
++       build de uma versão oferecida antes de preparar um `Upgrade`.
++   entry #started   quando o daemon foi iniciado, como qualquer tipo de instante feito a partir de milissegundos desde a época
++       `resident.started[Instant]`, para qualquer `Instantiable across Instants from Long`.
++   entry #uptime   há quanto tempo o daemon está em execução, como qualquer tipo de duração feito a partir de nanossegundos
++       `resident.uptime[Duration]`, para qualquer `Instantiable across Durations from Long`;
++       nunca negativo.
+
+@ 0 1 0 131e47acbb0a92ef03cf720d02d88522
++ entry .Launcher   o protocolo do launcher para o daemon: o schema TEL `ethereal-launcher`, suas mensagens e seu codec BinTEL
+
+% 1 1 0 00522e759a580c73117a5ac368148636
+
+@ 0 14 0 1fcb7480f7308aee058b0a7d69184ed8
++       `Launcher` é o contrato entre um launcher do Ethereal — o executor em Rust publicado por
++       `propensive/xek` — e seu daemon. Uma invocação é uma conexão: começa com um documento
++       `init` e então transporta, nas duas direções, os documentos de uma sessão — chunks `data`
++       de cada stream, `end`, `credit`, `open`, `signal`/`signal-ack`, `mode`, `run`/`exited` e
++       `closed` — até que o `exit-status` do daemon a encerre; `verify` e `shutdown` são
++       solicitados em conexões curtas próprias. O schema TEL é a especificação: seu texto é o
++       recurso `ethereal/ethereal-launcher.tel` no próprio jar do ethereal, byte a byte igual ao
++       `spec/ethereal-launcher.tel` do xek, e `.Message` o espelha variante por variante. Cada
++       documento transmitido é um documento BinTEL enquadrado — magic, comprimento, a
++       `.signature` de 33 bytes do schema, corpo — e os dois lados comparam a assinatura antes de
++       ler qualquer campo, de modo que um launcher e um daemon construídos com schemas diferentes
++       se recusam mutuamente no primeiro documento (`DaemonLogEvent.ProtocolMismatch`) em vez de
++       interpretarem campos de forma errada. O daemon lê de um par não confiável, então um
++       comprimento declarado acima de `.maximumLength` é recusado antes de ser usado.
+
+% 2 1 0 094dd935b9eb1b48187b02752fcd74c2
+
+% 3 1 0 12c0048936a7c4f81bcb90047bf2cd44
+
+% 0 1 0 15197dcf0196e01b079447687171f2d6
+
+% 0 1 0 0abad2860619fc471fbd13fc658fa1ea
+
+% 0 1 0 169ec0141778a3f41243c7207b6f24db
+
+% 1 1 0 18718fa4de8a1ce404caa60f6143050d
+
+@ 0 3 0 0d1dd33cfb6e674b172d9ced1f4dabe8
++       Uma aplicação nunca fala o protocolo ela mesma: `cli` e `Session` o fazem. O objeto é
++       público para que uma ferramenta que controla um daemon diretamente, ou um teste que fixa
++       os bytes transmitidos em relação aos do executor, possa construir e ler os mesmos
++       documentos.
+
+% 1 1 0 1c5f318544675c6412d5bb8bbf74c4dd
+
+% 0 1 0 1832d31b21f1cfa70bae914e70f57824
+
+@ 0 25 0 18ccefedc3055e040a87536cae7520de
++   entry .schemaText   o texto do schema TEL `ethereal-launcher`, lido do próprio jar do ethereal
++       O recurso `ethereal/ethereal-launcher.tel`, lido uma vez pelo próprio classloader do
++       ethereal (`Classloader[Launcher.type]`), de modo que a primeira thread que precisar dele
++       pode ter qualquer classloader de contexto. Sua ausência é um erro de empacotamento e lança
++       uma exceção.
++   entry .schema   o schema `Tels` analisado e validado com o qual o codec codifica
++       Analisado uma vez a partir de `.schemaText`; um schema malformado é um erro de
++       programação, não uma condição de tempo de execução.
++   entry .signature   a assinatura palimpsesto de 33 bytes do schema, carregada por todo documento
++       Comparada byte a byte no recebimento: `.decode` fornece `Unset` para um documento que
++       carrega outra assinatura. O daemon também a escreve em seu arquivo de estado
++       `acceptance`, para que um launcher a consulte antes de se conectar.
++   entry .maximumLength   o documento mais longo que o daemon lerá: um mebibyte
++       Um comprimento declarado além dele faz `.readDocument` fornecer `Unset` sem ler o corpo.
++       Um chunk tem no máximo `.maximumChunk`, e o ambiente e os argumentos de uma invocação
++       cabem com folga.
++   entry .maximumChunk   o máximo de bytes que um documento `data` carrega: 65536
++       É também o crédito com que cada stream começa em cada direção (`Session.window`).
++   entry .encode   uma mensagem como um documento BinTEL enquadrado
++       Magic, varint de comprimento, `.signature`, corpo. Uma mensagem `Data` é enquadrada à
++       mão, com seus bytes indo direto para o quadro sem texto BASE-256 no meio, já que todo
++       chunk de todo stream passa por aqui. Não pode falhar: os elementos são construídos com
++       base no próprio schema da biblioteca.
++   entry .decode   a mensagem que um documento enquadrado carrega, ou `Unset`
++       `Unset` quando o documento está malformado, carrega a assinatura de outro schema ou não
++       se encaixa em `.Message`; um documento `Data` é lido à mão, como `.encode` o escreve.
+
+% 2 1 0 1407a8db742030040a6e87d65ebdf2b0
+
+% 3 1 0 00c4cd1e6429af2f153664e53cbc88c4
+
+% 0 1 0 05273ff249c4eab8071c612c7cc57733
+
+% 1 1 0 112ebe47a4a7816b0f36be0a11955485
+
+@ 0 6 0 0c4e80291795c88706809d60722baa91
++   entry .readDocument   lê exatamente um documento enquadrado de um `java.io.InputStream`
++       Lê o magic de quatro bytes, o varint de comprimento e então o número declarado de bytes,
++       deixando sem ler o que vier depois, e fornece o quadro inteiro para `.decode`. `Unset` no
++       fim da entrada, em um cabeçalho malformado, em um comprimento acima de `.maximumLength`, ou
++       quando o stream termina antes do comprimento declarado.
++   entry .Descriptor   um descritor de arquivo que o cliente detém, tal como o documento `init` o anuncia
+
+% 1 1 0 191554fd0930a4990a2b463178c1488b
+
+@ 0 10 0 0d34264539d0a28b14624dab6dc1a260
++         Os descritores do cliente são numerados como o cliente os vê (0, 1 e 2 entre eles),
++         cada um com sua direção, sua categoria e, para um arquivo comum, o caminho real que o
++         daemon pode abrir diretamente; qualquer outro é acessado abrindo o descritor como um
++         stream nomeado pelo seu número, com um `Launcher.Message.Open`. `Resident#fdtable` os
++         consulta.
++     entry #fd   o número do descritor, tal como o cliente o detém
++     entry #direction   `r`, `w` ou `rw`, conforme o descritor foi aberto
++     entry #kind   `file`, `pipe`, `tty`, `socket` ou `other`
++     entry #path   o caminho real, para um arquivo comum; `Unset` caso contrário
++   entry .Raw   um valor do documento `init` tal como o sistema operacional o forneceu, onde seu texto perdeu algo
+
+% 1 1 0 1d7297d5ea0f8c570c93d63e041c613e
+
+@ 0 9 0 08d5f861866b854e02de0a6b49637b29
++         Um argumento ou entrada de ambiente que não é UTF-8 válido (ou que, no Windows, contém um
++         substituto não pareado), ou o diretório de trabalho, é enviado como texto com U+FFFD no
++         lugar do que não pôde ser transportado, e de novo como um `Raw`: os próprios bytes da
++         plataforma — bytes no Unix, unidades de código UTF-16, little-endian, no Windows.
++         `Resident#rawArgument`, `Resident#rawEnvironment` e `Resident#rawWorkingDirectory` os
++         consultam.
++     entry #kind   `argument`, `environment` ou `pwd`
++     entry #index   a posição entre os argumentos ou as entradas de ambiente, a partir de 0; `Unset` para `pwd`
++     entry #bytes   os próprios bytes da plataforma para o valor
++   entry .Message   os documentos do protocolo, um caso por variante do schema
+
+% 1 1 0 18c5b78d5c48089215dacab4c6b67594
+
+@ 0 5 0 1d4a575b04a262c20e8213717b9c44d7
++         As quinze variantes do `select` raiz do schema, na sua ordem, de modo que o índice de
++         cada caso é seu índice de variante na transmissão. O launcher envia `Init`, `Data`,
++         `End`, `Credit`, `Signal`, `Closed`, `Exited`, `Verify` e `Shutdown`; o daemon envia
++         `Data`, `End`, `Credit`, `Open`, `SignalAck`, `Mode`, `Closed`, `Run`, `ExitStatus` e
++         `Verdict`. `Verify` e `Shutdown` não carregam campos.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1ea55570eda2a0d91aad24856340d0d2
+
+% 0 1 0 09f52cc11c8467c10f3d885a12ab3805
+
+% 0 1 0 1422f0b7fb29dd3f0aab36f019e9b412
+
+% 0 1 0 0ccb4f5ad6e7bf6610ed93fe129fb64e
+
+% 0 1 0 03833d4a5c8a68261da19d95a13e2276
+
+% 0 1 0 14bd6dfebf2c4e9d1b07527e9dd6cc24
+
+% 0 1 0 1140b2a5cf4b69680b8e2f6e7bf0e937
+
+% 0 1 0 05f6a2c155c6ee4d0192f811ed5d989d
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 7 0 16377d3c38c810e5178ce1a14644b7f2
++         `Verify` pergunta, em uma conexão própria, se o arquivo do launcher a partir do qual o
++         daemon foi iniciado ainda tem o conteúdo de que ele se lembra (enviado quando o mtime do
++         arquivo discorda do arquivo `build` do daemon); o daemon responde com um `Verdict` e, se
++         desatualizado, drena a si mesmo para que o daemon novo do launcher possa tomar seu lugar.
++         `Shutdown` pede ao daemon que não aceite mais invocações, deixe as que estão em andamento
++         terminarem e encerre; não recebe resposta.
++     entry .Init   uma nova invocação, abrindo a sessão que a transporta
+
+% 1 1 0 0e78c49ef3e12ebd1ee4d27be946e710
+
+@ 0 24 0 01214a4ca54881ef075a5c314ae92a44
++           O primeiro documento da conexão de toda invocação. As três flags de tty dizem quais
++           dos streams do cliente estão ligados a um terminal, o que o daemon não consegue
++           determinar por si só; o usuário é o identificador da plataforma (numérico no Unix, um
++           SID no Windows), e um `Init` de um usuário diferente do próprio daemon é recusado com
++           status de saída 2. Um daemon que está sendo drenado o recusa da mesma forma.
++       entry #pid   o pid do processo cliente
++       entry #uid   o identificador da plataforma para o usuário: numérico no Unix, um SID no Windows
++       entry #username   o nome de login do usuário
++       entry #script   o caminho canônico do executável
++       entry #pwd   o diretório de trabalho da invocação
++       entry #stdinTty   se o stdin do cliente é um terminal
++       entry #stdoutTty   se o stdout do cliente é um terminal
++       entry #stderrTty   se o stderr do cliente é um terminal
++       entry #arguments   os argumentos da invocação, como texto
++       entry #environment   o ambiente da invocação, cada entrada como `NAME=value`
++       entry #invokedAs   `argv[0]` tal como quem chama o forneceu, para que um binário multichamada despache com base nele
++       entry #umask   a umask da invocação, em octal, se informada
++       entry #columns   a largura do terminal quando o stdout é um terminal
++       entry #rows   a altura do terminal quando o stdout é um terminal
++       entry #inputCodepage   a página de código de entrada do console do Windows, se houver
++       entry #outputCodepage   a página de código de saída do console do Windows, se houver
++       entry #descriptors   os descritores que o cliente detém, que o daemon pode abrir como streams
++       entry #raws   os valores cuja forma de texto perdeu algo, tal como o sistema operacional os forneceu
++     entry .Data   um chunk de um stream, de no máximo `Launcher.maximumChunk` bytes
+
+% 1 1 0 0def5007e78c5ace04c30da62b29f12d
+
+@ 0 6 0 1131e25ae2c859aa1affde4d3e0773a4
++           Enviado nas duas direções. O stream é `stdin`, `stdout`, `stderr` ou o número de um
++           descritor aberto, e um remetente nunca tem mais bytes pendentes em um stream do que o
++           crédito que detém para ele.
++       entry #stream   `stdin`, `stdout`, `stderr` ou o número de um descritor
++       entry #bytes   os bytes do chunk
++     entry .End   o stream nomeado terminou, depois de todo chunk enviado antes dele
+
+% 1 1 0 1bb398c87792bfe70161c82f7cb01a76
+
+@ 0 5 0 12be1476df2506d713ffdf0623a6223a
++           Fim de arquivo para o leitor do daemon do stdin ou de um descritor aberto para
++           leitura, ou o fechamento, pelo daemon, de um descritor aberto para escrita. Nada mais é
++           enviado no stream.
++       entry #stream   o stream que terminou
++     entry .Credit   o receptor de um stream pode receber mais esta quantidade de bytes dele
+
+% 1 1 0 08fc86de210c1958077bbc9b44b7fed6
+
+@ 0 7 0 1bb733cb4a7b600706ceaa509430b0e4
++           Controle de fluxo: cada stream começa com 65536 bytes de crédito em cada direção, e um
++           receptor concede mais à medida que consome, em metades da janela e não por chunk. Um
++           produtor cujo cliente é lento para esgotar o stream trava apenas o próprio stream,
++           então `mytool | less`, pausado, ainda recebe um sinal.
++       entry #stream   o stream ao qual o crédito se refere
++       entry #bytes   quantos bytes a mais podem ser enviados, além de qualquer crédito concedido antes
++     entry .Open   pede ao launcher que comece a transportar um descritor que o cliente anunciou
+
+% 1 1 0 179b26300910df7c06f2fd8d73228bd9
+
+@ 0 6 0 0384960b49afb9ea1782ecb33d425efe
++           Enviado pelo daemon quando a invocação abre `/dev/fd/N`: como documentos `Data` vindos
++           do cliente se o descritor foi aberto para leitura, ou escrevendo os documentos `Data`
++           que o daemon envia se foi aberto para escrita. Não recebe resposta; o stream
++           simplesmente começa. Um descritor que o daemon não anunciou, ou que é aberto de novo
++           enquanto está aberto, é ignorado.
++       entry #stream   o número do descritor
++     entry .Signal   um sinal que o cliente recebeu, ou um evento de controle do console do Windows
+
+% 1 1 0 12b25603ba2f63651323b931db442265
+
+@ 0 10 0 1bb793b497fa582b024175b174990b10
++           Nomeado sem seu prefixo `SIG`. `WINCH` e `CONT` carregam o tamanho atual do terminal;
++           um close, logoff ou shutdown do Windows carrega os milissegundos que o sistema permite
++           antes de encerrar o cliente de qualquer forma. O daemon o despacha para os traps da
++           invocação como um `Signal` do profanity e responde com `SignalAck`; o launcher não
++           envia outro sinal até ter a resposta.
++       entry #name   o nome do sinal sem seu prefixo `SIG`, ou o evento do Windows
++       entry #columns   a largura do terminal, com `WINCH` e `CONT`
++       entry #rows   a altura do terminal, com `WINCH` e `CONT`
++       entry #deadline   os milissegundos que um close, logoff ou shutdown do Windows permite
++     entry .SignalAck   se a invocação aceitou o último sinal enviado
+
+% 1 1 0 06e3b463ac7f9814137a2005141b407d
+
+@ 0 5 0 0125cd8670c905dc18cc33b13ef22808
++           `accept` é verdadeiro quando um trap respondeu `SignalResponse.Accept`; falso — um
++           trap que o rejeitou ou adiou, nenhum trap, ou um trap lento demais para responder —
++           permite que o launcher recorra ao comportamento padrão do sistema operacional para o
++           sinal.
++       entry #accept   se a invocação aceitou o sinal
++     entry .Mode   pede ao launcher que coloque o terminal do cliente em modo canônico ou raw
+
+% 1 1 0 165ad5937bb059930d315cd890ce88da
+
+@ 0 7 0 00a8b2fe995ec39e18080a86f7599ed4
++           `canonical` pede o modo canônico, com eco se `echo` também estiver definido; canônico
++           sem eco é como uma senha é lida; nenhuma das flags é o modo raw. O launcher não
++           responde nada, e deixa como está um terminal que não possui. `Resident#cooked` e
++           `Resident#concealed` o enviam.
++       entry #canonical   modo canônico, ou raw quando falso
++       entry #echo   se o terminal ecoa o que é digitado
++     entry .Closed   o stream nomeado perdeu seu leitor
+
+% 1 1 0 156161a9d5e727fe09ad954d7631df0e
+
+@ 0 7 0 187aa1e611852ea0005d2dc60e663ab3
++           Vindo do launcher: não foi possível escrever no stdout ou stderr do cliente, ou em um
++           descritor aberto para escrita; as escritas seguintes da invocação nesse stream lançam
++           `Egress.Error`, como um pipe quebrado faria. Vindo do daemon: a invocação fechou um
++           descritor que abriu para leitura antes de lê-lo até o fim, e o launcher para de
++           transportá-lo.
++       entry #stream   o stream cujo leitor se foi
++     entry .ExitStatus   o status de saída da invocação, que encerra a sessão
+
+% 1 1 0 12190c840639a7cf1002e590935a758a
+
+@ 0 4 0 15d1f5eb7815e0ea0db9a7149d927692
++           O último documento que o daemon escreve, depois de todo chunk de todo stream; a
++           conexão é fechada assim que o launcher o recebe.
++       entry #code   o status de saída
++     entry .Verdict   a resposta do daemon a `Verify`: se seu arquivo de launcher está inalterado
+
+% 1 1 0 16b2d7d2729673ff0ff30ceb78cceadf
+
+@ 0 6 0 017cca875e3c57b80e308cf20002794d
++           `fresh` quando o conteúdo do arquivo do launcher é aquele a partir do qual o daemon
++           foi iniciado (uma alteração apenas de metadados, como `touch`, que o daemon memoriza
++           para que o hash não seja repetido); caso contrário, o daemon drena a si mesmo e o
++           launcher, aguardando sua morte, inicia um novo.
++       entry #fresh   se o arquivo do launcher ainda tem o conteúdo de que o daemon se lembra
++     entry .Run   pede ao launcher que execute um comando no terminal do cliente
+
+% 1 1 0 0222fc517ae0b4e60f8ef39fc55db1da
+
+@ 0 9 0 067cac8609d5f89a0785c4155cccccc0
++           Para um editor, um pager, `ssh` ou `sudo`. O launcher para de transportar a entrada do
++           terminal, retém a saída da invocação, restaura o estado salvo do terminal, executa o
++           comando com o ambiente e os streams do cliente — em `pwd`, se fornecido — e responde
++           com `Exited` quando ele termina. Um cliente cujo stdin não é um terminal que ele possui
++           responde `Exited(127)` imediatamente. `Resident#terminal` o envia.
++       entry #command   o comando a executar
++       entry #arguments   seus argumentos
++       entry #pwd   o diretório em que executá-lo, se não for o da invocação
++     entry .Exited   o status com que terminou o comando que o daemon pediu para executar
+
+% 1 1 0 06c9800360d7d73a0bcb4d71ce441479
+
+@ 0 3 0 01467809d8f46f1b073567784c91bc68
++           O código de saída, 128 mais o sinal do qual morreu, ou 127 se o comando não pôde ser
++           executado.
++       entry #code   o status
+
+@ 0 1 0 10d1a488772dfc7c1df0431dde18943e
++ entry .Session   a metade do daemon na sessão de uma invocação: uma conexão, uma thread leitora e uma thread escritora
+
+% 1 1 0 0896673bcfd7675b018df2636d4631d6
+
+% 2 1 0 0c4cc088ac8235b0128da9acca2a7081
+
+@ 0 10 0 00826d135bb4ac9e03e6c21c477f1bc1
++       Não é para uso direto: `cli` cria uma por `Init`, e o `Stdio` da invocação é construído
++       sobre seus streams. Ela transporta todo stream da invocação como documentos
++       `Launcher.Message.Data` sob crédito por stream, com o tráfego de controle no meio: o
++       leitor nunca espera por nada além do socket — deposita cada chunk em seu stream, age sobre
++       cada documento de controle imediatamente e entrega um sinal a uma thread própria, já que
++       um trap pode dormir — e o escritor é a única thread que escreve na conexão, com os
++       documentos de controle à frente dos dados. O produtor de um stream espera por crédito fora
++       de qualquer lock, então um stream que o cliente demora a esgotar trava apenas seu próprio
++       produtor. Seu objeto companheiro contém os números do protocolo, `.window` e `.chunk`, e
++       `.governed`, que diz quais dos caminhos de descritor do próprio processo nomeiam um
++       descritor.
+
+% 1 1 0 08d458f20bc48dd61a6041f78ec623d8
+
+@ 0 18 0 06c212de1abd4a350e8891a7ffc20367
++   entry .window   o crédito com que cada stream começa em cada direção: 65536 bytes
++   entry .chunk   o máximo de bytes que um documento `data` carrega: `Launcher.maximumChunk`
++   entry .governed   o número de descritor que um caminho como `/dev/stdin` ou `/dev/fd/63` nomeia, se nomear algum
++       `/dev/stdin`, `/dev/stdout` e `/dev/stderr` são 0, 1 e 2; `/dev/fd/N` e `/proc/self/fd/N`
++       são `N`, para um decimal de menos de oito dígitos; qualquer outro caminho é `Unset`.
++       Qualquer caminho desses cabe à tabela do cliente responder, quer o cliente detenha o
++       descritor ou não, de modo que a tabela do próprio daemon nunca é alcançada por ele.
++   entry #send   enfileira um documento de controle para o escritor, à frente de quaisquer dados
++   entry #finish   encerra a sessão deste lado: `exit-status` atrás de tudo o que foi enfileirado antes dele
++   entry #awaitWritten   espera a fila do escritor se esvaziar após `#finish`, para que o status chegue ao launcher
++   entry #stdin   o stdin da invocação, um `SessionInput` alimentado pelos documentos `data` do launcher
++   entry #stdout   o stdout da invocação, um `SessionOutput` enviado sob crédito
++   entry #stderr   o stderr da invocação, um `SessionOutput` enviado sob crédito
++   entry #windowSize   o tamanho do terminal do cliente conforme a última medição do launcher, como um `Atomic.Ref`
++   entry #terminal   executa um comando no terminal do cliente com um documento `Run` e espera por `Exited`
++       Um de cada vez; 127 se o launcher se foi ou nunca responde.
++   entry #start   inicia as threads escritora e leitora
++   entry #fdtable   os descritores do cliente como uma `Fdtable`, consultada para caminhos no estilo de `/dev/stdin`
+
+@ 0 1 0 00e4f62b3c104d1404f61fc5c841844c
++ entry .SessionInput   os chunks de um stream que o launcher envia, como um `java.io.InputStream`
+
+% 1 1 0 0b8f32879c9ec1de12abf51ca9e96011
+
+% 2 1 0 067d2fa0a0108ab4041ddfa00aa4691c
+
+@ 0 10 0 183bcb19dd5a12391bb3aa78fa8f896a
++       Não é para uso direto: o stream por trás do stdin de uma invocação, ou de um descritor
++       aberto para leitura. Os chunks são depositados pelo leitor da sessão com `#push` e tomados
++       por quem quer que leia o stdin da invocação; o stream concede ao launcher mais crédito em
++       metades da janela à medida que consome, de modo que não se toma mais da entrada do
++       cliente do que a invocação pediu.
++   entry #push   deposita um chunk; ignorado depois que o stream terminou
++   entry #end   marca o stream como terminado: uma leitura além dos chunks depositados fornece fim de arquivo
++   entry #isEnded   se o launcher enviou `end` para o stream
++   entry #read   bloqueia até que um chunk esteja disponível ou o stream tenha terminado
++   entry #available   os bytes depositados e ainda não lidos
+
+@ 0 1 0 0674b31ba9e20a0719dca2105b6d0e85
++ entry .SessionOutput   um stream que o daemon envia, com buffer de até um chunk e enviado mediante crédito
+
+% 1 1 0 16dc597fee12397c1dd02b3f1f0b8f5d
+
+% 2 1 0 1463cf3a95cd59c114ce4b76331169d2
+
+@ 0 9 0 13a411787ef4b00c0e7f30d9e1caf45c
++       Não é para uso direto: o stream por trás do stdout ou do stderr de uma invocação, ou de
++       um descritor aberto para escrita. Os bytes ficam em buffer até `Session.chunk` e são
++       enviados no `flush` — que os `PrintStream`s da invocação fazem depois de cada escrita —
++       ou quando o buffer enche, cada chunk assim que o launcher concede crédito para ele.
++       Quando o launcher informa que o stream foi fechado, ou deixa de existir, uma escrita
++       lança `Egress.Error`.
++   entry #severed   definido quando o leitor do stream no cliente deixa de existir: toda escrita posterior lança `Egress.Error`
++   entry #write   coloca bytes no buffer, fazendo flush de cada chunk cheio
++   entry #flush   envia os bytes do buffer como chunks, esperando crédito para cada um
++   entry #close   faz flush; a conexão é fechada pela sessão, não pelo stream
+
+@ 0 1 0 1fbedda9791939ce1873e11aa4b79d7c
++ entry .Client   o que o daemon guarda de uma invocação fora da sua sessão: seu barramento e seu `Cli`
+
+% 1 1 0 1e7f0a47e29a875e17f425fb21240eb8
+
+% 2 1 0 0fd0bde47fc8e2971ad2e460dee9e2fa
+
+@ 0 10 0 09df864e6e072cc3141bc876e1fc1122
++       Não é para uso direto: o registro que o daemon mantém de um cliente conectado, indexado
++       pelo pid do cliente, que guarda o lugar do cliente no barramento de mensagens e a
++       promessa do seu `Cli`, de que o despacho de sinais da sessão pode precisar antes de a
++       invocação tê-lo criado. `Client[bus](pid)` cria um cujo `Topic` é o tipo de mensagem do
++       barramento.
++   entry .apply   um registro de cliente para um pid, tipado conforme o barramento do daemon
++   entry #pid   o pid do processo cliente
++   entry #Topic   o tipo de mensagem do barramento
++   entry #invocation   a promessa do `Cli` da invocação, completada assim que a invocação o cria
++   entry #bus   o relé pelo qual chegam as mensagens difundidas ao cliente por outras invocações
++   entry #receive   entrega uma mensagem difundida por outra invocação
+
+@ 0 1 0 18977be9a59f7a7f0e4fed805e4c38da
++ entry .DaemonEnvironment   o ambiente com o qual o daemon foi lançado, como o launcher o enviou
+
+% 1 1 0 1862cfc4d7dbf93211b98c0ecbdea097
+
+@ 0 9 0 0663fbd71dc982431fa4f69c540c9b2b
++       O launcher inicia um daemon com um ambiente sanitizado próprio — apenas `PATH`,
++       `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`, `TMPDIR`, os diretórios base
++       `XDG_*`, as variáveis de opções da JVM e `ETHEREAL_DEBUG` — para que o estado do daemon
++       não dependa de quem por acaso o iniciou, e envia o ambiente com o qual ele próprio foi
++       iniciado pela entrada padrão do daemon, cada entrada `NAME=value` terminada por um byte
++       NUL, como anuncia a propriedade `ethereal.environment=stdin`. `DaemonEnvironment` é esse
++       ambiente, mantido em memória e nunca gravado em lugar nenhum; sem a propriedade (um
++       launcher mais antigo, ou uma JVM executada diretamente), é o próprio ambiente da JVM,
++       que é então o de quem a lançou.
+
+@ 0 4 0 0b01f9824816aa6c05475e5182c25ad2
++       Poucas coisas querem este em vez do ambiente da *invocação*, que chega com cada
++       invocação e é o `Environment` dado dentro de um bloco `cli` (e a escolha
++       `environments.daemonClientEnvironment`); ele é escolhido explicitamente, como o given
++       `environments.daemonEnvironment`, importado pelo nome.
+
+% 2 1 0 19727fb8699efa7b1fc23571f7e2cb34
+
+% 3 1 0 0f4f92e56247173c0a850f42b90d925b
+
+% 4 1 0 07bd8b5a689eb4cb1440317281e60b3c
+
+% 5 1 0 02349b4058dff59d1b65d4f144ed1701
+
+% 0 1 0 1e3d671d52d999f118e925f5619ad808
+
+% 0 1 0 012e2f36a656344304416be99d61addc
+
+% 1 1 0 0daae3e855d308df0c05c8e95684901c
+
+% 1 1 0 1394a766fe239927126cff2b7bd286d7
+
+% 0 1 0 176091ba11bc41320dc4bf4a486273ec
+
+@ 0 6 0 18c60c2fe2acd84a1c685e39a9c09899
++   entry .capture   lê o ambiente que o launcher enviou, se ainda não tiver sido lido
++       `cli` o chama quando o daemon inicia, antes de o socket ser vinculado: o launcher envia
++       o ambiente apenas enquanto espera o socket aparecer, e a entrada padrão do daemon é lida
++       até o fim.
++   entry .variable   o valor de uma variável, ou `Unset`
++   entry .entries   todas as variáveis, como um `Map`
+
+@ 0 1 0 0f67165628a3a51c1bf3a2354ac79e4f
++ entry .LazyEnvironment   um `Environment` sobre uma lista de entradas `NAME=value`, analisadas no primeiro uso
+
+% 1 1 0 0a3c65d931ad43e9188ed68f4fa6a7dc
+
+@ 0 5 0 02788ef1a9c4e6cf04f32e3e4bee43e5
++       O `Environment` de uma invocação dentro de um bloco `cli`: as entradas que o launcher
++       encaminhou no documento `init`, divididas no primeiro `=` quando o ambiente é consultado
++       pela primeira vez (uma entrada sem `=` é descartada). É aquilo a que o given
++       `environments.daemonClientEnvironment` se resolve, e o que `Environment[Text](name)` lê
++       dentro do bloco.
+
+% 2 1 0 0eb016d3d79c38670ba88c546f421475
+
+% 3 1 0 0afca2400dc8ae081def8fd0d0cd981f
+
+% 0 1 0 0cd771d84b3e4491050fa49ddb6ab2fb
+
+% 0 1 0 10af1c9d629871e6043d45dc26a6a331
+
+% 1 1 0 11c9673525b5e22a1dfcbfa871abb4b7
+
+@ 0 2 0 090308664b46a5360d12eb4883fb8cb7
++   entry #variable   o valor de uma variável, ou `Unset`
++   entry #entries   todas as variáveis, como um `Map`
+
+@ 0 1 0 09e53f357b45af3b0c2b7a2711e303f8
++ entry .DaemonLogEvent   o que o daemon registra no syslog enquanto atende, drena e se aposenta
+
+% 1 1 0 1fa1ef6ce912677906a38406eace3740
+
+@ 0 5 0 1f6b81ebc3b0c2f91bfc9c3a760fc660
++       Todo evento que o daemon registra sob a identidade de syslog `ethereal`, cada um marcado
++       com a categoria de `Log` a que pertence (`Log.Process`, `Log.Network`, `Log.Protocol`,
++       `Log.Filesystem`, `Log.Scheduler` ou `Log.Runtime`). O objeto companheiro fornece o
++       `Communicable` que renderiza cada um como uma mensagem e o `Message transcribes
++       DaemonLogEvent` que permite a um logger recebê-los, ambos no escopo implícito.
+
+@ 0 9 0 175bd018307ce7ae1fe34db619eebeb9
++       Os casos singleton: `Shutdown` (encerrando); `Termination` (encerrando a conexão do
++       cliente: o launcher foi reescrito ou foi dado um veredito de desatualização, registrado
++       como aviso antes de o daemon sair); `IdleTimeout` (encerrando depois de seis horas
++       ocioso); `NewCli` (instanciando uma nova CLI, em `fine`); `UnrecognizedMessage` (um
++       documento que não é uma mensagem do launcher, ou uma que pertence ao interior de uma
++       sessão chegando fora de uma); `ProtocolMismatch` (um documento de outro schema de
++       protocolo do launcher: um launcher construído segundo um contrato diferente); e
++       `Draining` (não aceitando mais invocações; saindo quando as que estão em andamento
++       terminarem). `Installer.install` registra `WriteExecutable`, e `cli` registra o resto.
+
+% 1 1 0 089232da6cd7b92e128d9e74d070941f
+
+@ 0 5 0 1844b6fa4c3f5461044686b1ffc52768
++   entry .transcribable   permite a um `Logger` receber eventos do daemon como `Message`s
++   entry .communicable   renderiza cada evento como uma mensagem
++   entry .WriteExecutable   o instalador está gravando o executável: _writing the executable to `location`_
++     entry #location   o caminho sendo gravado
++   entry .Failure   uma invocação lançou uma exceção: _the invocation failed: `error`_
+
+% 1 1 0 0796f4e6bc7240e31800675085553fe7
+
+@ 0 10 0 1e5d2ef430ab36da17dbff1ddc78ff81
++         Registrado como falha antes de o throwable ser entregue ao `Backstop`, que o informa
++         no stderr da invocação e escolhe o status de saída.
++     entry #error   o throwable, renderizado como texto
++   entry .ReceivedSignal   o launcher encaminhou um sinal: _received signal `signal`_
++     entry #signal   o `UnixSignal` ou `WindowsSignal` recebido
++   entry .CloseConnection   uma invocação terminou: _closing the connection from `pid`_
++     entry #pid   o pid do cliente
++   entry .Init   uma invocação começou: _initialising `pid`_
++     entry #pid   o pid do cliente
++   entry .PeerRefused   uma conexão de outro usuário foi recusada: _refusing a connection from another user: `user`_
+
+% 1 1 0 13912359eeec09620faf45cc92b74b84
+
+@ 0 7 0 15b8ed65afcb49a312d1367a833e9b0d
++         O socket admite apenas seu dono: um par cujo usuário informado pelo kernel não é o
++         do daemon, ou um `Init` que alega outro id de usuário, é recusado sem ser lido.
++     entry #user   o usuário do par
++   entry .Refused   uma invocação chegou enquanto o daemon estava drenando: _refusing invocation `pid`: the daemon is shutting down_
++     entry #pid   o pid do cliente
++   entry .Closed   o leitor de um stream no cliente deixou de existir: _the invocation's `stream` has no reader_
++     entry #stream   `stdout`, `stderr` ou o número de um descritor
+
+@ 0 1 0 1f62adacdea5fdbb10b94099feb45979
++ entry .Egress   o stdout ou o stderr de uma invocação: um stream que falha quando o launcher informa que seu leitor deixou de existir
+
+% 1 1 0 1bedfb9ec862975b1fb335b6520f6431
+
+@ 0 6 0 0b0c7d0cb2db47d9101a89cc051abb4b
++       O `java.io.OutputStream` por trás de `Out` e `Err` de uma invocação: ele delega ao
++       stream da sessão até que o launcher envie `closed` para ele — `mytool | head -1`, depois
++       que `head` tiver saído — e a partir daí toda escrita lança `.Error`, para que um
++       programa que escreve até não conseguir mais termine, como terminaria se estivesse
++       escrevendo em um pipe. `cli` captura o erro e termina a invocação com status 141, como
++       `SIGPIPE` terminaria um processo (128 mais 13), sem consultar o `Backstop`, que
++       escreveria no mesmo stream.
+
+% 1 1 0 1d448f571a733b9a0ba05e4782ec04d7
+
+@ 0 1 0 1a430acc810f50871fa70e1934531df7
++   entry .Error   lançado por uma escrita no stdout ou no stderr de uma invocação cujo leitor deixou de existir
+
+% 1 1 0 01a4b54c3c149f131e1739c1fe942100
+
+@ 0 7 0 16d3155091f585260d346754a28a52a5
++         _the invocation's `stream` has no reader_: o equivalente, no daemon, ao `EPIPE` que
++         um processo escrevendo em um pipe receberia. Deliberadamente, não é uma
++         `IOException`, que `java.io.PrintStream` engoliria: ele precisa chegar à invocação,
++         que `cli` termina com status de saída 141. Uma invocação que quer sobreviver à perda
++         da sua saída o captura como `case error: Egress.Error`.
++     entry #stream   `stdout` ou `stderr`
++   entry #write   escreve no stream subjacente, ou lança `Egress.Error` quando o leitor deixou de existir
+
+@ 0 1 0 07b1e5db1caddcd30e01b3d64499adcf
++ entry .Installer   copia o executável em execução para o `PATH`, de dentro do daemon
+
+% 1 1 0 1d68399e04d2235e142b32d134098690
+
+@ 0 6 0 13e51abe33cd6da01217d94499cd63a6
++       Uma aplicação construída com `xek build` é um único arquivo — o stub nativo do
++       launcher, um registro de configuração e o JAR — e `Installer.install` coloca uma cópia
++       dele onde o shell o encontrará: o primeiro diretório gravável do `PATH`, preferindo o
++       diretório `bin` do XDG, `/usr/local/bin` e `/usr/bin`, ou um `target` à escolha de quem
++       chama. É o que o subcomando embutido `'{admin}' install` executa, e uma aplicação pode
++       oferecê-lo sob um nome próprio.
+
+% 2 1 0 0e44827552716d79110504f2906715d0
+
+% 3 1 0 17b6219ae6a7e2ec00447da0a7768638
+
+% 4 1 0 1cfbc0b575ccb2811636b2ca1abd7ee3
+
+% 5 1 0 1b4f578d8432ce7817d974c72de98593
+
+% 6 1 0 108606e2ee731e001a6d4bd91c677c28
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 2 1 0 1ff9c31895a143dc01e69d28a1f55dd7
+
+% 3 1 0 105dfb4013424fe70cd7c43b02a35f57
+
+% 4 1 0 18626929ebb33fcd10bd0bad41a99e44
+
+% 5 1 0 0bece7c829df61e80caf7497fa374ea1
+
+% 7 1 0 1a41178c8717f6cb1342a81431ecd57e
+
+% 8 1 0 186495b85eaa7022084ccb2bc2c2409b
+
+% 0 1 0 0fdc8129bb44091518883861c5fd576f
+
+% 0 1 0 15ab98637993c0dc03ff720448c6c0c0
+
+% 0 1 0 0deb762eb28b035101e67765529e6b7f
+
+% 0 1 0 00fa9843221a5d021f6dd3d77ed8ead9
+
+% 0 1 0 1b697ea6f3a606bb1634db7cdf91f26a
+
+% 0 1 0 10475d1d38be3b820246e1a78a983146
+
+% 0 1 0 0f35258e106b05761ce8ff1ae77a1d74
+
+% 0 1 0 187dbbfc1f6b1a1211adf117c6aee03c
+
+% 0 1 0 14090552b70065da168291e95a15a78f
+
+% 0 1 0 15663324a500adc3018351365ee97a19
+
+% 0 1 0 0ec7fb98364197ce0613d9bdaf88b485
+
+% 0 1 0 07310c69e5abba8103b3401453d54b16
+
+% 1 1 0 03f7f08584cec25e172027ab6d8af63e
+
+@ 0 8 0 098e4a724e141bca0ec7bce5520fe0bb
++       A cópia omite o payload embutido do launcher (os stubs de executor para outras
++       plataformas, cujos tamanhos o launcher passa como `ethereal.payloadSize` e
++       `ethereal.jarSize`) e reposiciona o localizador ZIP64 do JAR para o seu novo
++       deslocamento, de modo que o arquivo instalado é um launcher simples para a plataforma
++       em que roda. Ele é gravado em um irmão oculto e renomeado por cima do alvo, o que dá ao
++       alvo um inode novo: no macOS, o cache de assinatura de código é por vnode, e
++       sobrescrever no lugar o conteúdo de um binário já executado o envenena, de modo que todo
++       exec posterior é morto com `SIGKILL` — a mesma armadilha espera um `cp new old` feito à
++       mão por cima de um launcher instalado; use `mv`, ou remova-o antes.
+
+% 1 1 0 189fe3347ac481a9024bada5a372a092
+
+@ 0 1 0 0f1b79d549c805f50153984cac3374bf
++   entry .Result   o que `Installer.install` fez
+
+% 1 1 0 0507da6d2786c9fa0e0db0112e74102a
+
+% 0 1 0 03795321c6d9e6691ad86278e297ea72
+
+% 0 1 0 1cb11e77c7ca1ae501a0c588dc9481ac
+
+@ 0 18 0 0c798e66aee8a0071826fc270cfc0051
++         `path`._, quando `command -v` já resolve o nome para o executável em execução e
++         `force` não foi dado; e `PathNotWritable` — _No directory on the PATH environment
++         variable was writable_, quando o arquivo temporário não pôde ser criado. O
++         `Communicable` do objeto companheiro renderiza cada um como uma mensagem.
++     entry .communicable   renderiza um resultado como uma mensagem
++     entry .AlreadyOnPath   o comando já se resolve para o executável em execução
++       entry #script   o nome do comando
++       entry #path   o caminho em que ele está instalado
++     entry .Installed   o executável foi copiado para um diretório do `PATH`
++       entry #script   o nome do comando
++       entry #path   o caminho para o qual ele foi instalado
++   entry .candidateTargets   os diretórios graváveis do `PATH`, do melhor para o pior
++       Todo diretório existente e gravável da variável `PATH` (lida do `Environment` no
++       escopo — o da invocação, dentro de um bloco `cli`), ordenados com o diretório `bin` do
++       XDG primeiro, depois `/usr/local/bin`, `/usr/bin`, `/usr/local/sbin`, `/opt/bin` e
++       `/bin`, e quaisquer outros, na ordem do `PATH`, depois deles. Precisa de um `Resident`,
++       um `System`, uma `Tactic[Install.Error]` (lançado com o motivo `Environment` para um
++       `PATH` ilegível ou um caminho inválido nele, ou `Io` para uma falha do sistema de
++       arquivos) e um `DaemonLogEvent is
+
+% 0 1 0 00f9ad8546111c7d06faba929a71faa6
+
+@ 0 10 0 17d6c40768f322bc09458f4aa9214e55
++   entry .install   instala o executável em execução no `PATH`, ou em um diretório escolhido
++       `install(force, target)`: `target` é o diretório em que instalar, por padrão o primeiro
++       de `.candidateTargets`; `force` instala mesmo quando o comando já se resolve para o
++       executável em execução. Precisa de um `Resident` (para `executable` e `script`), do
++       `Environment` de onde ler o `PATH`, de um `Effectful` (é um efeito colateral sobre o
++       sistema de arquivos), de `Diagnostics`, de uma `Tactic[Install.Error]` e de um
++       `DaemonLogEvent is Loggable`, e registra `DaemonLogEvent.WriteExecutable` enquanto
++       grava. `Install.Error` é lançado com o motivo `Environment` quando o nome, o caminho, o
++       `PATH` ou as propriedades de tamanho do launcher não podem ser lidos, e `Io` quando a
++       cópia, o reposicionamento do ZIP ou a renomeação falham.
+
+@ 0 1 0 01a1fb6f8fbc103f1e5e46b7d38f5cbb
++ entry .Upgrade   prepara um executável substituto assinado para o launcher verificar e aplicar
+
+% 1 1 0 1366a03dc161e3bf157a80002b41506d
+
+@ 0 12 0 0034488e204c5cba1deafac674ced45f
++       Autoatualização, do lado do daemon. Uma aplicação prepara os bytes de um executável
++       assinado completo — uma release construída com `xek build --build-id … --public-key …
++       --app-id …` e assinada com `xek sign` — como `.pending` no seu diretório de dados
++       (`$XDG_DATA_HOME/<name>/`, ou `~/.local/share/<name>/`; `%LOCALAPPDATA%\<name>\` no
++       Windows), e o launcher faz o resto no início da **próxima** invocação do comando: ele
++       verifica o candidato contra as chaves e o identificador de aplicação no registro do
++       executável *em execução*, exige que seu build id seja mais novo, coloca-o no lugar,
++       mantém o executável substituído ao lado dele, faz re-exec e registra o que fez em
++       `.upgrade-result`. Sua verificação de desatualização então desloca o daemon em execução
++       por conta própria, de modo que nada aqui sai ou recria coisa alguma, e os clientes que o
++       daemon está atendendo continuam sem perturbação. O lado Scala não verifica nada: a
++       verificação acontece no launcher, antes de a JVM iniciar, de modo que nenhum código de
++       aplicação fica na fronteira de confiança.
+
+% 2 1 0 1edd9eb2a10a13281dbbbdad37495a0f
+
+% 3 1 0 03f247c12dd739390a43eb96c5947f83
+
+% 4 1 0 0db5ffe5f73ac0640454faa6e251bd45
+
+% 5 1 0 074b5cf42fb05f3d1f9a96737ce5e3c6
+
+% 6 1 0 1d4dbee9ca0a1da91749212af1e380b8
+
+% 7 1 0 10b2707fddf6366c1fbc7623ae5e9d8d
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1c32320d2604466d0639d7a7b6f55d2f
+
+% 0 1 0 1501b6df3804c4840ff4d33b251f778e
+
+% 0 1 0 01fc928ffa17d5480ce3ed1836b2fe6a
+
+% 0 1 0 09c891a3bbe5157a025fff54c6539899
+
+% 0 1 0 10e5e04cfa4e120f0aac1b871a151223
+
+% 0 1 0 07c40df96ae514d2190cffa088d8f11b
+
+% 1 1 0 017add060fb14f900b35914c1f4b79ab
+
+@ 0 7 0 072fa0d37c3673c804299fc04446d1b9
++       Todo método precisa de um `Environment` e de um `System` (o ambiente da invocação,
++       `environments.daemonClientEnvironment`, dentro de um bloco `cli`) para encontrar o
++       diretório de dados e a propriedade `ethereal.name`. `.outcome` lê o que o launcher fez
++       com o último candidato, e `.acknowledge` o apaga para que cada desfecho seja informado
++       uma única vez; `.enabled` diz se o launcher do executável em execução aceitaria algum
++       candidato assinado, e `Resident#buildId` é o identificador do build em execução, para
++       comparar com uma release oferecida.
+
+% 1 1 0 04c2afc3706a350b0fdf10c5943cfa5f
+
+% 1 1 0 01421a22e629075f14354ce27cc9158c
+
+@ 0 16 0 15d13f747b16ca920dfc9c6e19ef4223
++   entry .stage   grava um executável candidato como `.pending`, para o launcher aplicar na próxima vez
++       Recebe qualquer origem que seja `Readable to Data` — um arquivo, uma resposta HTTP, um
++       stream —, lê-a inteira, grava-a em um arquivo temporário ao lado de `.pending` e o
++       renomeia para o lugar, de modo que um launcher que inicie concorrentemente nunca lê um
++       candidato parcial. Ele retorna normalmente: a atualização entra em vigor na próxima vez
++       que o comando for executado, o que a aplicação deve dizer ao usuário. Lança
++       `Upgrade.Error` com o motivo `CannotResolveName` quando o daemon não recebeu seu nome de
++       um launcher, `CannotWritePending` quando o diretório de dados ou o arquivo não podem ser
++       gravados, e `CannotReadSource` quando a origem não pode ser lida.
++   entry .pending   se há um candidato preparado esperando pelo launcher
++       Se `.pending` existe no diretório de dados; falso quando o diretório não pode ser
++       resolvido.
++   entry .outcome   o que o launcher fez por último com um candidato preparado, até ser reconhecido
++       Lê `.upgrade-result` do diretório de dados: a palavra do resultado, os build ids do
++       candidato e do executável anterior e quando aconteceu. `Unset` quando não há registro,
++       ele não pode ser lido, ou nomeia um desfecho que esta versão não conhece.
+
+% 2 1 0 0869379b5f06112b1d572a098d4cb7fd
+
+% 3 1 0 0eeccbcc70fb07a115f9a5a777b00772
+
+% 4 1 0 0039843ae483513f1364f9c8e70e6768
+
+% 5 1 0 0e8dd59a80b76e3403d7277feed43887
+
+% 6 1 0 007d7ba6a028bfe113919c24533a7c31
+
+% 7 1 0 161349d4e4179a53082376a93f43c13c
+
+% 0 1 0 0df44814831ba12603ea0f5db931fbd6
+
+% 0 1 0 091e4a60da0e612718de5f2fded4e2be
+
+% 0 1 0 073218ebef3804371da5d8973e63e9ee
+
+% 0 1 0 0029f2db5afd66f00b108564ad94586c
+
+% 1 1 0 1c261bba6a47a6f9064ba62cff7d0d90
+
+@ 0 8 0 12602106ddc831d30f3073ad7616979c
++   entry .acknowledge   esquece o último desfecho, para que uma aplicação informe cada um uma única vez
++       Remove `.upgrade-result`; uma falha ao fazê-lo é ignorada.
++   entry .enabled   se o launcher do executável em execução aceitaria alguma atualização assinada
++       A propriedade `ethereal.upgradable` que o launcher define: falsa para um executável
++       construído sem chave de release e identificador de aplicação — um build de
++       desenvolvimento, cujo launcher recusa todo candidato — e falsa quando a propriedade
++       está ausente (um launcher mais antigo, ou nenhum launcher). Precisa de um `System`.
++   entry .Outcome   o que o launcher fez com um candidato preparado: o resultado, os build ids e quando
+
+% 1 1 0 0bdce2fa8884300119844dca284eee9b
+
+@ 0 4 0 12bd85d4b15d39361d924821f7995ba4
++         Lido de volta por `Upgrade.outcome` a partir do registro que o launcher grava.
++         `candidate` é o build id do executável preparado (zero se ele não tinha registro) e
++         `previous` o do executável que o verificou, de modo que um relatório pode dizer qual
++         build substituiu qual.
++     entry .Result   o veredito do launcher sobre um candidato
+
+% 1 1 0 14248996274bd89d1f273be1b9ac9f92
+
+% 0 1 0 153978e317e497e918913b2752abbc49
+
+@ 0 1 0 039a54bd6ea67884145f6f66a2cff405
++           not accept upgrades_ (nenhuma chave ou id de aplicação embutido); `NoRecord` — _the
+
+% 0 1 0 0bb1339c0e8726ec037c067e828f1ee0
+
+@ 0 8 0 0c33029defc076ee1e48708198d5314b
++           for another application_, mesmo se assinado com a mesma chave; `BadSignature` —
++           _the candidate's signature does not verify_, o que um arquivo não assinado ou
++           adulterado dá; `NotNewer` — _the candidate is not newer than the running
++           executable_, a menos que a release tenha sido assinada com `--allow-downgrade`;
++           `SwapFailed` — _the candidate could not be swapped into place_. Uma release
++           assinada com a chave de recuperação é aplicada como uma assinada com a chave de
++           release.
++       entry .communicable   renderiza cada resultado como uma mensagem
++       entry .parse   o resultado que a palavra do launcher nomeia, ou `Unset` para uma palavra que esta versão não conhece
+
+% 0 1 0 19f4f121ea702b3a070f29e26898e519
+
+@ 0 8 0 0960eb52be4b5d50087f4732d5ca5d53
++           `not-newer` e `swap-failed`.
++     entry #result   o veredito do launcher
++     entry #candidate   o build id do executável preparado, ou zero se ele não tinha registro
++     entry #previous   o build id do executável que verificou o candidato
++     entry #time   quando aconteceu, em milissegundos desde a época
++     entry #when   quando aconteceu, como qualquer tipo de instante construído a partir de milissegundos desde a época
++         `outcome.when[Instant]`, para qualquer `Instantiable across Instants from Long`.
++   entry .Error   lançado quando um candidato não pode ser preparado
+
+% 1 1 0 114447d4942a7522146a13d672c59ae8
+
+@ 0 7 0 1307c8eff37ef6af16edece447d2a72d
++         Erro `↯/s.140.1`: _could not stage the upgrade because `reason`_, lançado por
++         `Upgrade.stage`. O motivo é uma `Clarification`, então o código completo vai de
++         `↯/s.140.1.1` a `↯/s.140.1.3`: `CannotReadSource` (1) — _the upgrade source could
++         not be read_; `CannotWritePending` (2) — _the .pending file could not be written_;
++         `CannotResolveName` (3) — _the running application's name is not available_, que é o
++         caso de uma JVM executada sem launcher.
++     entry .Reason   por que o candidato não pôde ser preparado
+
+% 1 1 0 1690d163d4862fce1792f6660bc47fe7
+
+@ 0 5 0 0d9309b46db27f24135d9fd222220549
++           `CannotReadSource`, `CannotWritePending` ou `CannotResolveName`, numerados de 1 a
++           3; o `Communicable` do objeto companheiro renderiza cada um.
++       entry .communicable   renderiza cada motivo como uma mensagem
++       entry #number   o número do motivo dentro do erro `↯/s.140.1`
++     entry #reason   por que o candidato não pôde ser preparado
+
+@ 0 1 0 1dc02c91de0e7a361cba8fca521c012a
++ entry .Terminus   aquilo a que um dos streams padrão do cliente está ligado: um terminal ou um pipe
+
+% 1 1 0 1d8af006801c661c139a50b8770f61eb
+
+@ 0 7 0 0e6ca6ca72d48f94026ca3b307f51b42
++       `Terminal` ou `Pipe`. O daemon não consegue saber por si mesmo — seus streams são o
++       socket do launcher, não o terminal do cliente —, então cada um de `Resident#cliInput`,
++       `Resident#cliOutput` e `Resident#cliError` é o que o launcher informou no documento
++       `init`, e os três de fato diferem: `mytool > file` executado a partir de um terminal tem
++       o stdin no terminal e o stdout em um arquivo. Um arquivo, um socket ou o dispositivo
++       nulo contam como `Pipe`. Ele é codificado para e decodificado a partir do texto em
++       minúsculas `terminal` e `pipe`.
+
+% 2 1 0 0d57ac00aba9908d1c875f33faf5ca05
+
+% 3 1 0 0dc92000c69b468a0272a6be1ff78262
+
+% 4 1 0 14ab552f1bddd2d00f463ccf1402f261
+
+% 5 1 0 139c45d6cbe844161597b58b1b813801
+
+% 7 1 0 04654627ee76ff011f8f2201e572c86f
+
+% 8 1 0 09b64098cdd9cd6d03f2196b3695d401
+
+% 9 1 0 09d1fdc7e8ce3edf10811e39529eb003
+
+% 10 1 0 10defd038c9286f717d94bcc4d25da47
+
+% 12 1 0 0a75bf29d839c8490a42c7900582bdeb
+
+% 13 1 0 03b71b6a259d192312b3cfeeb43d0bb1
+
+% 14 1 0 05ae8da65bd611fa0c1d9b477f98ee46
+
+% 0 1 0 1dc100b8dea0d1b5055bc4f1d3b04b65
+
+% 0 1 0 059792989eed65001336b077420e3136
+
+% 0 1 0 082d58cb682c34d1127d2f2059e657a0
+
+% 2 1 0 0978c4cfc33050bf1795fe6d63692bb8
+
+% 3 1 0 1d39378daa00fede18a21f7d4ab2ca5c
+
+% 1 1 0 0589d39ede868c391917be9fd22bd7dc
+
+@ 0 2 0 1019260ea467f316052696fcc71d8f18
++   entry .decoder   lê `terminal` ou `pipe` (em qualquer caixa) como um `Terminus`
++   entry .encodable   escreve um `Terminus` como `terminal` ou `pipe`
+
+@ 0 1 0 054397a2c6f411d91a0e5b542f8d215e
++ entry .Tty   o modo pedido ao terminal do cliente: raw, canônico com eco, ou canônico sem eco
+
+% 1 1 0 19ebc14406eeeaa818bd165c60017992
+
+@ 0 7 0 1b4614e676d4f91014377652ad86d0a9
++       O launcher põe em modo raw um stdin de terminal antes de se conectar, para que
++       pressionamentos de tecla individuais possam ser encaminhados a uma sessão interativa.
++       Um comando que quer entrada de linha comum pede, pela sessão, `Canonical` — o driver do
++       terminal então fornece ele mesmo o eco e a edição de linha — ou `Concealed`, o modo
++       canônico sem nenhum eco, que é como se lê uma senha; `Raw` o restaura. `Resident#cooked`
++       e `Resident#concealed` fazem os pedidos e restauram `Raw` depois; `#canonical` e
++       `#echo` são as duas flags do documento `Launcher.Message.Mode` em que cada um se torna.
+
+% 1 1 0 1c4535dc6f7145991438f2d0a4dc13e0
+
+@ 0 2 0 1f0976c8097bf409056f22a9636d61b3
++   entry #canonical   se o modo é canônico: verdadeiro para `Canonical` e `Concealed`
++   entry #echo   se o terminal ecoa o que é digitado: verdadeiro apenas para `Canonical`
+
+@ 0 8 0 1da828f6fc5584f10ec95eb386f2fafd
++ entry .Transcoder   recodifica a entrada de um console do Windows da sua página de código para UTF-8, um caractere de cada vez
++     Um `java.io.InputStream` sobre outro, que decodifica bytes na página de código de
++     entrada do console (que o documento `init` informa como `inputCodepage`, quando não é
++     65001, UTF-8) e entrega sua codificação em UTF-8, para que o resto do daemon leia a
++     entrada da invocação como UTF-8. Ele lê um caractere de cada vez — um par substituto como
++     um só — para que não se tome da conexão mais entrada do cliente do que a invocação pediu.
++     `cli` envolve o stdin da sessão em um deles quando a página de código o exige;
++     `available()` são os bytes pendentes do último caractere, e `close()` fecha o leitor
++     subjacente.

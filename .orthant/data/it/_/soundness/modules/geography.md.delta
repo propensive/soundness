@@ -1,0 +1,240 @@
+orthant 2 language
+
+@ 0 1 0 1cb1c9e7190f4e44031b7c5e901edb35
++ ## Geografia
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 1 0 191eb9e7a78ad17d17f8a15a9983699c
++ Gli angoli, le posizioni sulla Terra e la bussola sono valori tipizzati.
+
+@ 0 3 0 0611b8e9eade1568081e0c491c25c398
++ Un `Angle` è una vera grandezza angolare. Si costruisce in gradi o in radianti, si somma e si
++ scala con riavvolgimento, e si normalizza a un valore principale. Non è un numero nudo la cui
++ unità è affidata alla memoria.
+
+@ 0 4 0 136c6b6ea18825111297d3b18fe7d912
++ Una `Location` è una latitudine e una longitudine, impacchettate in un unico valore. Da essa si
++ calcolano rilevamenti, distanze angolari e [geohash](https://en.wikipedia.org/wiki/Geohash), e
++ un rilevamento si mostra come un punto di una
++ [rosa dei venti](https://en.wikipedia.org/wiki/Compass_rose) con 4, 8 o 16 punte.
+
+@ 0 1 0 0047251cb32ed50301413b63f211f3e3
++ ### Su angoli e posizioni
+
+@ 0 5 0 0d9002be5f478b980278138be258d343
++ Il bug più antico del codice geometrico è l'unità di un angolo: un `Double` che una funzione
++ tratta come gradi, e un'altra come radianti, senza niente nel tipo che decida tra i due. Gli
++ angoli inoltre si riavvolgono, dato che 370° è 10°, e il codice che lo dimentica accumula
++ rotazioni che risultano diverse quando non dovrebbero. Le posizioni ereditano entrambi i
++ problemi due volte, una per ciascuna coordinata.
+
+@ 0 5 0 1e50e73294f56581165e2e5d4c907e32
++ Qui l'angolo è un tipo a sé. Si costruisce attraverso la sua unità, e la sua aritmetica si
++ riavvolge, quindi un numero nudo non sta mai per un angolo. Angoli e posizioni che sono valori
++ dimensionati, non semplici double, escludono gli
++ [stati impossibili](../../philosophy/impossible-states.md): una latitudine non si può sommare a
++ una distanza.
+
+@ 0 3 0 01cea1987c83e0661fd726adb5b61e98
++ Tutto proviene dal package `soundness`. La forma testuale di un angolo, cioè i gradi con un
++ `°`, è un given con nome, importato accanto, e l'ultimo import permette agli esempi di stampare
++ i loro risultati:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1914c57b5f7a7a7700823cf0d609cd72
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0db0c06d75e0c3f10e114e9218d30cb6
++ ### Angoli
+
+@ 0 2 0 0ccfae428d28bcba0616ad7ff278ecb0
++ Un angolo si scrive attraverso la sua unità, moltiplicando la costante `Degree`, oppure con
++ l'estensione `.deg`, oppure con `.rad` per i radianti. Si rilegge nell'una o nell'altra unità:
+
+% 2 1 0 1b62a73832d79e8617e7c7520af5a530
+
+% 0 1 0 187ffba8884a33521fb9653a5ebfc4ff
+
+% 1 1 0 176c034b42b7463909ae12eaadc0d624
+
+% 3 1 0 153e1ef292b4dc640cd75b700f5678df
+
+% 4 1 0 1fa31d6ceb5186850ec561841979c337
+
+% 5 1 0 075669a18f859f9a12b1026b7fd50ef5
+
+% 0 1 0 1933b2b6b42a3d0a1a88828efaea77e4
+
+% 0 1 0 0b4603ea2ed205e40f34499746c32411
+
+% 1 1 0 05ea5182b1fdb68412d5c640788910fd
+
+@ 0 2 0 132478bb06a3146f0f682384a372508d
++ L'aritmetica si riavvolge, come fanno gli angoli. Sono disponibili due forme normali:
++ `principal`, in `[0°, 360°)`, e `canonical`, in `[−180°, 180°)`:
+
+% 2 1 0 194c4ba51272945d1f7f64ae5de37813
+
+% 3 1 0 0ebd29f62f0e8167050c3c101dcc1b33
+
+% 4 1 0 1bcc5af2042a3d4f15100957ea4df389
+
+% 0 1 0 1ed82d01ad7eb66f12d18d916e31cd29
+
+% 0 1 0 0cd79d4084a63f570281b757088a4b1e
+
+% 1 1 0 1eed2a3d8aef6e1a1c1ba35302141eca
+
+@ 0 2 0 19b178b5b39c26cb0af7ecbddf350bcc
++ [SVG](svg.md#transforms) ruota le figure di questi angoli, e [Colori](colors.md#adjusting)
++ ruota le tinte di questi angoli.
+
+@ 0 1 0 16712b195ef57cfe0fe951347dc8c788
++ ### Punti cardinali
+
+@ 0 2 0 0483fb5b3a5cbd7a0380812ea25ec635
++ Un angolo si risolve nel punto più vicino di una rosa dei venti. Il numero di punte si sceglie
++ come argomento di tipo:
+
+% 2 1 0 163ddbc336a9850f0b6d051d4b92c3ae
+
+% 3 1 0 17ef8a49e6375d2004721b5a16807231
+
+% 4 1 0 17a68b8048d1f119101c0c5b394e9dd9
+
+% 0 1 0 128d4a0e4742a197108843ce58d89127
+
+% 0 1 0 025c3e7890a942801a45ebe28af13e7c
+
+% 0 1 0 0b4a9553b72323801ad96596de0e2022
+
+% 1 1 0 1492f4ae74863b7f021172b6416b615e
+
+@ 0 2 0 116dc166fdb5089f05983b30c234307f
++ I venti sono normali enumerazioni, quindi un rilevamento si può confrontare con un pattern,
++ memorizzare e mostrare come qualsiasi altro valore:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 028180626bb64a6202e393f77a93e441
++ column  Rosa
++ column  Si risolve in
++ column  Given del rilevamento
+
+% 0 1 0 15f299da648688b61ff420774ebbeaee
+
+@ 0 2 0 1eeb28b008f14c771c3cffb4d93ef4b7
++ row  `Compass[8]`  `CardinalWind` o `IntercardinalWind`, che aggiunge `Northeast`, `Southeast`, `Southwest`, `Northwest`  `compassBearings.eightPointCompassBearing`
++ row  `Compass[16]`  uno qualsiasi di questi o un `HalfWind`, che aggiunge `NorthNortheast`, `EastNortheast` e gli altri sei  `compassBearings.sixteenPointCompassBearing`
+
+% 1 1 0 065f2ffd842ce19a0b830bb5531b575f
+
+@ 0 4 0 0d5083dc72f991f612c4ac0b7925765e
++ Il numero di punte è un argomento di tipo, non un parametro a runtime, quindi il *tipo* di un
++ rilevamento risolto dice da quale rosa proviene. Un `CardinalWind` non si può passare dove ci si
++ aspetta un `HalfWind` a sedici punte, e un pattern matching su un rilevamento a quattro punte è
++ esaustivo su quattro casi, non su sedici.
+
+@ 0 4 0 1fb7baa6f9d260f11e9a566092a61a78
++ Una rosa con un numero diverso di punte si aggiunge implementando `Directional`, che ha un solo
++ metodo, da un angolo a un valore. Un dominio con settori propri, come una rosa dei venti a
++ dodici punte, o un radar con sessanta, usa quindi lo stesso meccanismo di `Compass`.
+
+@ 0 1 0 0a972ece765649510296f96c154598f1
++ ### Posizioni
+
+@ 0 4 0 13320a44f36096270135c1107987db9e
++ Una `Location` accoppia una latitudine e una longitudine, costruite da angoli. Risponde a
++ domande geografiche: il rilevamento iniziale verso un'altra posizione, sulla bussola che si
++ chiede, la distanza angolare tra due punti lungo il cerchio massimo, e il geohash della
++ posizione, a una precisione scelta:
+
+% 2 1 0 078c63a1efce3add1db7e5279b3ddf4a
+
+% 0 1 0 053c063dc083b683099b9d5ef9ca2f48
+
+% 0 1 0 06b90e2526d7f72b175f7491d9275bec
+
+% 0 1 0 01a19e5c90c194c406108a9b13a3325b
+
+% 1 1 0 055c8ac47b95d4b31c1b8a63ac56f03c
+
+% 3 1 0 0f2010fac39e8515009568d0203b5fb9
+
+% 4 1 0 16d9bd297978fbaf095ab59a76d46d42
+
+% 5 1 0 0968f1ced10abcfa056f8df2de2bb902
+
+% 0 1 0 1891db9a6cb390bf0484eadc64046aa5
+
+% 0 1 0 17505cf38dad704c01f31972241b2f0f
+
+% 0 1 0 0e9c0387e8523ae1190a5a8e9f815eb4
+
+% 1 1 0 175208e00d06c7f910bd8fd8f87c2acf
+
+@ 0 5 0 167c2f46d097985213a3679a77dc2ff5
++ La distanza in superficie è a sua volta un `Angle`: la frazione del cerchio massimo che sta tra
++ i punti. Moltiplicata per il raggio di un pianeta dà una [lunghezza](quantities.md), il che
++ tiene la geometria separata dalla scelta della sfera. Un calcolo sulla Terra, e lo stesso
++ calcolo su Marte, differiscono solo per il raggio per cui vengono moltiplicati.
+
+@ 0 5 0 0e24379a0c6f4ade042e71312b1645b9
++ Una `Location` è memorizzata come una coppia impacchettata di angoli in virgola fissa, non come
++ due double sottoposti a boxing, quindi una collezione di posizioni costa una parola macchina
++ ciascuna. Un tipo che ha una posizione, come una città, una stazione o una fotografia, fornisce
++ un'istanza di `Locatable`, ed è quindi accettato ovunque lo sia una posizione. Le operazioni
++ geografiche si applicano quindi direttamente ai valori del dominio, senza che se ne debbano
++ prima estrarre le coordinate.
+
+@ 0 5 0 12eb353d738bc611188fb59aad9f4479
++ I geohash sono la consueta codifica in base 32, e ne condividono la proprietà che conta. Due
++ posizioni vicine di solito condividono un prefisso, quindi una ricerca per prefisso è una
++ ricerca approssimativa per prossimità. «Di solito» è la parola onesta. I confini delle celle
++ della codifica fanno sì che due punti ai due lati di uno di essi non condividano nulla, ed è per
++ questo che un prefisso di geohash è un primo filtro, non una risposta.
+
+@ 0 1 0 023fdae3f55e53900edbc0854f7a58a6
++ ### URI geo
+
+@ 0 4 0 17c6eb1b46e5d82e1b89c10d062b0cf2
++ Una posizione viaggia nel testo come URI `geo:`, secondo la
++ [RFC 5870](https://datatracker.ietf.org/doc/html/rfc5870), con un'altitudine e un'incertezza
++ facoltative. Una `Geolocation` si decodifica da un testo del genere, e si codifica di nuovo. Un
++ URI malformato solleva un errore tipizzato che indica il guasto:
+
+% 2 1 0 1fc2d0218e20a79203a95fdfb7cda523
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1e7348613aea8898049d11d66a5bc69d
+
+% 1 1 0 1e45168b0c914e2518410249240bb445
+
+% 3 1 0 0f65a35b4730d36f044a3870086d35b5
+
+% 4 1 0 032e2979bb4414341645c30efec28c5c
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0ab818b831970cfe1797e9e9f05cdcd4
+
+% 1 1 0 128ca919e2c4e64f04362ff9b21613d6
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 3 0 0332d5fac5b807221a2758112c6e35f0
++ - [Grandezze](quantities.md) descrive le lunghezze in cui si misura una distanza.
++ - [Indirizzi di rete](network-addresses.md) descrive gli altri tipi di URI.
++ - [Codifica in base](base-encoding.md) elenca l'alfabeto Geohash tra i suoi alfabeti Base32.

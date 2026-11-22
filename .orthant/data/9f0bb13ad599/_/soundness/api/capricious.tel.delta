@@ -1,0 +1,15 @@
+orthant 2 release
+
+@ 0 3 0 0e0e33a5f1d720840930227e82d08c75
++     `toss()` draws from the `Random` in scope, by the same rule as `arbitrary[Boolean]()`
++     (the sign of a `Long`), so a toss is reproducible from a `Seed`.
+
+@ 0 5 0 1cf5ffd2619c613303a7d58d4fb2e563
++   entry .apply   a new `Random` from the `Randomization` in scope, seeded with the given `Seed`
++       `Random(seed)` initializes a generator from the contextual `Randomization`, which is
++       resolved with `seed` in scope: under `seededRandomization` the generator starts from
++       `seed`, as it does in `Seed#stochastic`, and an unseeded randomization ignores it.
+
+@ 0 2 0 0474d8a57d244cec1423a94fb7bd1d9a
++   entry .conjunction   the derived instance of a product: each field drawn in turn from the same `Random`
++   entry .disjunction   the derived instance of a sum: a variant chosen uniformly, then drawn from the same `Random`

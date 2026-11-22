@@ -1,0 +1,140 @@
+orthant 2 language
+
+@ 0 1 0 106a4523943e569304e25e3ed1a03c55
++ # 中置型
+
+@ 0 12 0 1b187bd43a1fdc9307a82dd2c06605f0
++ Soundness は全体を通じて中置型を使うので、型は括弧のもつれではなく句として読める。
++ 前置詞と動詞として書かれた型（`Path on Linux`、`Html of "br"`、`Text is Decodable in Json`、`Quantity is Multiplicable by Duration`、`raises HttpError` や `logs ExecEvent` するメソッド）によって、シグネチャは値が何であり、操作が何を必要とするかを平易な言葉で述べられる。これはコードを[優雅な散文](elegant-prose.md)のように読めるようにすることの一部である。
++ その本当の力は、[合成できる](composability.md)ことにある。それぞれが入れ子なしに型に節を一つ加えるので、`Html.Element of "ul" over "li" in Whatwg` はちょうど英語の記述と同じように組み上がり、同じ `of`、`in`、`by`、`over` は現れる場所にかかわらず同じ意味を運ぶ。
++ そのような型を一つ理解した読み手は、次の型を類推で読めるし、書き手は深くパラメーター化された型を組み立てるのではなく、その部分を順に名指すことで正確な型を記述できる。
+
+@ 0 1 0 1c7bd5f570572279183fcbc50c97ddec
++ ## 仕組み
+
+@ 0 2 0 1e1bf1adafa25b550e5e5d27378ffac2
++ 各前置詞は、一つの型メンバーを細分化する型エイリアスである。
++ `in` は `Form` を、`on` は `Plane` を、`by` は `Operand` を、`to` は `Result` を設定する。
+
+% 2 1 0 0a3df684de560fff0d4b8eb2b00c0562
+
+% 3 1 0 0f3a125fff11041918dd93bbf3878ae9
+
+% 4 1 0 030c16e6e39be4991a9fdaab5e4afb5d
+
+% 0 1 0 1d5d9e707fe0ada50cf575c783e452c4
+
+% 0 1 0 05efabe8b7e73b2503618d9a2ca651aa
+
+% 0 1 0 080bd845c627aa000c78c57eceee71a0
+
+% 0 1 0 14a7a79b32edc6600882c9bb36df5e8a
+
+% 1 1 0 0d83cb08ce19efe112195f97b969972f
+
+@ 0 2 0 1e0987335cab534b05380b1fbf31d327
++ 仕組みはそれだけである。
++ それぞれが*異なる*メンバーを細分化するので、入れ子なしに続けて適用でき、順序は問題にならない。
+
+% 2 1 0 030a110766d416d610571db6d2994c25
+
+% 3 1 0 0ff3ee90f6f72488084d6dccd7b000de
+
+% 4 1 0 0af939135b405f2801f67018b84da68c
+
+% 0 1 0 0fb6a82d35c6d65e08ba5ec18939021e
+
+% 0 1 0 15554d82c81fd691118c9a77e608b965
+
+% 0 1 0 0a2a2f80e83aef561494cc52ab2ef156
+
+% 1 1 0 11d2afd3e28e6048128c0d794dce417b
+
+@ 0 2 0 012a8ed522fb026a13adfb3e4c9eb2f1
++ その集合は小さく固定されており、各前置詞はどこでも意味を保つ。`over` は常にトランスポートであり、`by` は常にオペランドであり、`on` は常にプレーンである。
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 16 0 0b7c4fed747e3de7077648114648e0b8
++ column  前置詞
++ column  細分化するもの
++ column  名指すもの
++ column  例
++ row  `in`  `Form`  形式またはフォーマット  `Text is Decodable in Json`
++ row  `on`  `Plane`  プレーン  `Path on Linux`
++ row  `of`  `Topic`  トピック  `Html of "br"`
++ row  `by`  `Operand`  オペランド  `Quantity is Multiplicable by Duration`
++ row  `to`  `Result`  結果  `Text is Extractable to Int`
++ row  `from`  `Origin`  起点  `Ordinal is Optical from Yaml`
++ row  `over`  `Transport`  トランスポート  `value is Streamable by Data over Credit`
++ row  `across`  `Domain`  ドメイン  `Xml is Instantiable across HttpRequests`
++ row  `onto`  `Target`  ターゲット  `Http.Client onto Origin["http"]`
++ row  `against`  `Contrast`  対照  `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`
++ row  `under`  `Limit`  制限  `Tar is Nominative under Rules`
++ row  `at`  `Locus`  位置  `value is Decodable in Json at Json.Focus`
+
+% 1 1 0 13386474ce3c48a51bf7497908e7fef5
+
+@ 0 1 0 0167c0eab2af1f2f086d3e4a8aa69241
++ ## 代わりの方法のコスト
+
+@ 0 1 0 1130aa6323a3cd741e708c998c351e09
++ 同じ型を、慣習的に書くとこうなる。
+
+% 2 1 0 12447cf3f3ecad87049cea40e2a465e8
+
+% 3 1 0 18f7e451aba2759d009736ff874b1898
+
+% 4 1 0 0737e30e6ccac50a145dd3d85123f82c
+
+% 0 1 0 0898652a95445ba01ad78444cd9d30c6
+
+% 0 1 0 1a47321b8fd4c1a012a8a33f07bd7861
+
+% 0 1 0 10432b0bcb872a860db1c35c8ee27e5e
+
+% 1 1 0 1a76458bf0c8c55f1e3402c338afbf2b
+
+@ 0 1 0 0b18e533ee96d8ee0a3bb95bcf8ee0ec
++ 三つの問題があり、中置の形式はそのそれぞれを避ける。
+
+@ 0 3 0 003e2395844199371045b7eb102bed34
++ **位置が意味を運ぶ。** `Element["ul", "li", Whatwg]` では、読み手は最初のパラメーターがタグであり、二番目が許される子であり、三番目が仕様であることを知っていなければならない。
++ `Html.Element of "ul" over "li" in Whatwg` では、前置詞がそう述べる。
+
+@ 0 4 0 086393719a25e98504d3774758b0d3bd
++ **すべてのパラメーターを与えなければならない。** 慣習的な型コンストラクターはすべての引数を取るか、何も取らないかのどちらかなので、部分的に指定された型には、言及しない位置ごとにワイルドカードが必要になる。
++ 中置の形式は、制約するものだけに言及する。`Text is Decodable` はまったく正当な型であり、`in Json` がそれを絞り込む。
+
+@ 0 3 0 18d9ba4ea4717eeb181835e936c861cf
++ **拡張は破壊的な変更になる。** `Element[…]` に四番目の型パラメーターを加えると、すべての使用箇所が無効になる。
++ 四番目の細分化を加えることは、既存のコードが言及する必要のない前置詞を一つ加えることである。
+
+@ 0 1 0 0adc6f59495157dc008d9185c67e66b0
++ ## 読みにくくなる場所
+
+@ 0 1 0 0e8c224a0b726c420d0a3f7e71ac6c1c
++ この慣習にも失敗の仕方がないわけではなく、知っておく価値のあるものが二つある。
+
+@ 0 4 0 17b184d0f01ac7da02100a58fd1cc6a9
++ 多くの節を持つ型は長くなることがあり、長い中置型は行をまたいでぎこちなく折り返される。`(value is Streamable by Data over Credit) { type Transport = Credit }` は、誰の基準でも散文ではない。
++ そうなる場所では、たいていの場合、より長い句ではなく名前付きのエイリアスが答えになる。
+
+@ 0 5 0 101a2de97981623e0ecbaae479028550
++ また、前置詞はそれが誘う類推と同じ程度にしか良くない。
++ 「トランスポート」を意味する `over` は、`Stream[Data] over Credit` では自然に読めるが、時刻系が何も運んでいない `Instant over Unix` ではそれほど自然ではない。
++ 語彙は十分に小さいので、そのような無理は目に見え、隠されるのではなく受け入れられている。代わりの方法は、各語が使われる頻度が低く、覚えられにくい、より大きな語彙である。
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## コスト
+
+@ 0 3 0 11d65db4c15472f90399495df585913a
++ 中置型はなじみがない。
++ 普通の Scala から来た読み手は、中置の位置にあるものとしては `A => B` と `A & B` くらいしか見たことがないので、`Text is Decodable in Json` は型に見える前にいくつもの別のものに見える。
++ そのコストは最初に集中しており、一度払えば済む。
+
+@ 0 4 0 12066019a77a9fcb1a29e4ccc64d4ddf
++ エラーメッセージはより持続的なコストである。コンパイラは*脱糖された*細分化を報告するので、不一致は `in Json` ではなく `{ type Form = Json }` によって記述され、読み手は構文が省くはずだった翻訳を自分で行わなければならない。
+
+@ 0 2 0 1156763ef15ece801ae39e250cccb9e9
++ これが奉仕する性質については[合成可能性](composability.md)を、目指す読書体験については[優雅な散文](elegant-prose.md)を参照すること。

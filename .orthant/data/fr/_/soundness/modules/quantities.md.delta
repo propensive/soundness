@@ -1,0 +1,1064 @@
+orthant 2 language
+
+@ 0 1 0 125b92d15292ae1206f313da0afdfda8
++ ## Quantités
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 2 0 052c1f8c7a10edda1e65db5eb99bf473
++ Les grandeurs physiques, comme une distance, une masse ou une vitesse, sont des valeurs qui
++ portent leurs [unités](https://en.wikipedia.org/wiki/Units_of_measurement) dans leur type :
+
+@ 0 4 0 0808668e2c9474491a0863d069eeecee
++ - Ajouter une distance à une durée est une erreur de compilation.
++ - Multiplier une distance par une force donne une quantité dont les unités sont calculées
++   automatiquement.
++ - Une quantité ne coûte rien [à l'exécution][exécution] au-delà du `Double` qu'elle enveloppe.
+
+@ 0 2 0 159d7eb3d0b6d4d615be479f13b65a65
++ Cette dernière propriété est une contrainte de conception, et non une optimisation, comme
++ l'explique [coût nul](../../philosophy/zero-cost.md).
+
+@ 0 1 0 1ea8ee302bae9ddd13e0ae3a74652fbb
++ ### À propos des quantités
+
+@ 0 6 0 16019373113d723d028d87b2fa02397d
++ Un nombre seul n'a pas d'unités. Le chiffre `5` ne dit rien de ce qu'il compte : des mètres,
++ des pieds, des secondes ou des kilogrammes. Du code qui perd le fil de la réponse a causé de
++ vraies catastrophes. La
++ [perte d'un orbiteur martien](https://en.wikipedia.org/wiki/Mars_Climate_Orbiter#Cause_of_failure)
++ en est une : un composant travaillait en newtons, et un autre en livres-force. Les défenses
++ habituelles sont les conventions de nommage, les commentaires et une classe enveloppe pour
++ chaque unité. Elles reposent sur la discipline, et ne détectent rien automatiquement.
+
+@ 0 6 0 150c625f7ee8ed0119b5ed6893d47a76
++ Ici, les unités de chaque quantité sont enregistrées dans son type, et
++ l'[analyse dimensionnelle](https://en.wikipedia.org/wiki/Dimensional_analysis) est effectuée
++ [à la compilation][compilation]. Une `Quantity` a un paramètre de type pour ses unités, de
++ sorte qu'une longueur et une durée sont des types différents, et que le compilateur refuse
++ de les additionner. L'arithmétique combine correctement les unités : diviser une longueur
++ par une durée donne une vitesse. Les quantités d'unités compatibles se convertissent
++ automatiquement les unes dans les autres.
+
+@ 0 2 0 1c191e0a4f3c750413b08b039490d760
++ Rien de tout cela n'existe à l'exécution. Une `Quantity` est un [type opaque] sur un
++ `Double`, et ses opérations sont inlinées ; la sûreté est donc entièrement payée à la
++ compilation.
+
+@ 0 5 0 130020d1b6c23b6e19c86372c05bbf32
++ Les unités, les préfixes et les opérations sur les quantités viennent tous du package
++ `soundness`. L'arithmétique entre un nombre simple et une quantité repose sur les
++ conversions *into* du compilateur ; cette fonctionnalité du langage est donc également
++ activée. Un `Decimalizer` dans la portée fixe le nombre de chiffres significatifs avec
++ lequel une quantité est affichée, et le dernier import permet aux exemples d'afficher leurs
++ résultats :
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1983cda2abcdd53d0362a0ccc635b790
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 1 1 0 094aca692f9a6d410ad91b7490aef935
+
+@ 0 1 0 1faa2f5ba90a678f18d6515627504b21
++ ### Quantités et unités
+
+@ 0 2 0 1eea59371441c373028be1eec4a1a794
++ Une quantité est un nombre multiplié par une unité. Les unités de base du SI sont des
++ valeurs : `Metre`, `Second`, `Gram`, `Kelvin`, `Ampere`, `Candela` et `Mole`. Bien d'autres
++ unités le sont aussi.
+
+% 2 1 0 0acc9bcc8d4bf9d40927ac0a4af11eaa
+
+% 0 1 0 0cd4c3c42e1f8cd10a04f94c64dca0ec
+
+% 0 1 0 17a5fd00c104fbaa0a25d334c506ba8b
+
+% 1 1 0 130e80faa302798c143f1691ea678018
+
+@ 0 1 0 028ba1b63f60fba610c4c5c3f49f75fa
++ `show` écrit une quantité avec son unité :
+
+% 2 1 0 1ec9518b28d62d19039ae72394124b2c
+
+% 3 1 0 07e179027ac9be3715c7db17b177224c
+
+% 4 1 0 13d01926750a132e064018b18e6fa01d
+
+% 0 1 0 0229260b2ca7e93c0aaa984e08783356
+
+% 0 1 0 08cdb05d28d076491944cefc7654dfff
+
+% 1 1 0 0539ba9b2a47761302079a594b9e824c
+
+@ 0 4 0 16854c28f530bc721cf9c845e03b9d43
++ L'unité réside dans le type. `5*Metre` est une `Quantity[Metres[1]]`, dans laquelle le `1`
++ est la puissance à laquelle l'unité est élevée. Une aire serait `Metres[2]`, et une
++ fréquence `Seconds[-1]`. Ces types sont inférés ; il est donc rarement nécessaire de les
++ écrire, mais c'est eux que le compilateur vérifie.
+
+@ 0 1 0 0d759fc38f9356f60c1ac8290b4a1094
++ ### Arithmétique et dimensions
+
+@ 0 2 0 1348b04eee293a6b0727359def8dd138
++ Les quantités de même unité s'additionnent et se soustraient. La multiplication et la
++ division combinent les unités, et donnent une quantité dont le type enregistre les
++ nouvelles dimensions :
+
+% 2 1 0 155f38f0274104900be348be9e1b852c
+
+% 3 1 0 0ec29d0182ec52131e6bc0e3c1c4e344
+
+% 4 1 0 1edea32f18f92ad7197f3b53980b1914
+
+% 0 1 0 1a24e13b68843f9400f2014b1a1ccb72
+
+% 0 1 0 15e79071ba1cb51813d4868059bf1959
+
+% 0 1 0 052e36d1e2a207831f9497af5f19ca13
+
+% 0 1 0 0565e9af0bfc4ec012f9f40571e5d423
+
+% 1 1 0 160ceb54c04aca350996a7454144d454
+
+@ 0 2 0 06aa56a187e702591892783b08b21e90
++ Additionner des quantités dont les dimensions ne concordent pas est une erreur de
++ compilation. Le message nomme la discordance en termes simples, et non en termes de types :
+
+% 2 1 0 1fb285c4b6d268e01b7efe3a605bac3a
+
+% 3 1 0 0076956ac7456bad0ec9ad5ff946026e
+
+% 4 1 0 017ddaa994b8d4121868f3642bb1c8a5
+
+% 5 1 0 09ee56f22379b13712a17d7d9c0ffa9c
+
+% 0 1 0 0b16cf3167dacdee1f3abe13e2114fef
+
+% 1 1 0 0f17beecd42085351fd00c6c3284ac83
+
+@ 0 1 0 1a7ba65ecd3dc36a0de07d91fa833e38
++ La vérification porte sur la dimension, et pas seulement sur l'unité ; une longueur ne peut
++ donc pas être ajoutée à une énergie :
+
+% 2 1 0 0c72806a9256923f13018c99c6227c29
+
+% 3 1 0 171b3713fb3c3fa7127d7050e785bacf
+
+% 4 1 0 0f6856c5a37ad4370529d3f4b137d868
+
+% 5 1 0 0ad937dee546ec4506d2a90002733146
+
+% 0 1 0 0b5975422ad2515210ae222d3547c22d
+
+% 1 1 0 12d458dff357a7d50488b6c2d9a3df10
+
+@ 0 1 0 09bf1df64f1bbf6b1afc9dfe697a6190
++ Même deux puissances d'une même dimension restent distinctes. Une longueur n'est pas une
++ aire :
+
+% 2 1 0 07112ab7295b997102f583716d3c13a1
+
+% 3 1 0 10b2059a83c74471148293a4ef3e3733
+
+% 4 1 0 06b2ca237c075be219095f7a53f0f599
+
+% 5 1 0 16a5245f8ec3398b1d592e6da426c935
+
+% 0 1 0 10d11c7d252c2df4044c534c4617c79e
+
+% 1 1 0 0d5daa862cfaf8641bd7f3af8448f9b3
+
+@ 0 1 0 07d352c4e9e39f02086808c15a67b7a3
++ ### Mélanger les unités
+
+@ 0 2 0 1d3095cc2d72c3c006919c37777c8703
++ Des unités différentes de la *même* dimension se combinent librement, et sont converties
++ automatiquement. Le résultat prend l'unité de l'opérande principal, qui est ici celle du
++ SI :
+
+% 2 1 0 02505400f2638f861f4d978afd247ff8
+
+% 3 1 0 1a086ead2d3e035e0d4e95fa8f069163
+
+% 4 1 0 0351a5f9e4346979152f3761230517e1
+
+% 0 1 0 0b14815a09f3dc03066d85dd21d6f543
+
+% 0 1 0 04ab92c4a4e3ead00065f497c0e5762a
+
+% 1 1 0 03493891316fb005128d2e3794e9b2a7
+
+@ 0 2 0 1bc4f110a502381f0e795a14e695c8ca
++ La conversion s'applique aussi à la multiplication et à la division. Une expression peut
++ être écrite dans les unités qui sont naturelles, et donner tout de même un résultat
++ cohérent :
+
+% 2 1 0 0bc5d6278b72f25a1712bbdf39fd4a5c
+
+% 0 1 0 17cce91f79ab28de152168e740d3b68f
+
+% 0 1 0 1ba94482539270ca17ad737a417355aa
+
+% 1 1 0 07653412fcd68e45185159bb28a92730
+
+% 3 1 0 13d1a30ddc93831f0c86fdf5f5410e02
+
+% 4 1 0 0bff4b1142426f340e36548e8f361755
+
+% 5 1 0 0888951c94d83a4e1d9ba22cf9dada1a
+
+% 0 1 0 17c29443884b9c0a1ba1c93610578ea5
+
+% 1 1 0 157b2bd317a2cb2e1975bb3fde982585
+
+@ 0 1 0 0006b947aa5d92a60dc48cd773afd0f3
++ ### Conversion
+
+@ 0 2 0 1120f389beccad9f0fdd738da9bbeb50
++ `convert` convertit explicitement une quantité dans une autre unité compatible, en nommant
++ la famille de l'unité cible :
+
+% 2 1 0 112461bbe6b8407f10cae10360d24a18
+
+% 3 1 0 0dc970b9db52fd2817898e9379f9ed78
+
+% 4 1 0 13452e84b1935968059da4e024e24dba
+
+% 0 1 0 1827a910160705841b66a266b0645c26
+
+% 0 1 0 103f78634b1d9b101574cca9d4fb80c5
+
+% 1 1 0 067cdd739a39ccd2135b2b27797bcddc
+
+@ 0 3 0 05a7f47283e186771ba9e4179f36b046
++ `normalize` fait de même, avec le type d'unité écrit avec sa puissance. Une heure ne fait
++ pas partie des valeurs d'unités prédéfinies, mais une unité n'est qu'une quantité valant un ;
++ elle se définit donc en une ligne :
+
+% 2 1 0 1454df2400a5fd40161b95b14ab93f0e
+
+% 0 1 0 19b6d3d7caefe9f51d25ddcf13c080d4
+
+% 1 1 0 1c3bc2d9a75a09541740089b128dc887
+
+% 3 1 0 1a810abd76a926c515ff33971fdb0eb2
+
+% 4 1 0 1f7436f4076dada412b436338fc60e15
+
+% 5 1 0 05e60b55d94154bb010df597b8c7f9d8
+
+% 0 1 0 01fa12c6a7a9e2db08765962c78186c9
+
+% 0 1 0 100da813196aa32c02d53452e7b420c6
+
+% 1 1 0 1456a6407e42ef5a07be9d89800f8978
+
+@ 0 6 0 06ee29d89337c29b1b3eafa46e95134a
++ `normalize` n'agit que sur la dimension de l'unité qu'elle nomme. Les composantes mesurées
++ dans cette dimension sont converties vers la cible, et les composantes de toute autre
++ dimension sont laissées exactement telles qu'elles étaient. Normaliser une vitesse en
++ secondes met donc à l'échelle son temps, et laisse sa distance intacte. Il s'ensuit que
++ convertir vers une unité d'une dimension que la quantité ne possède pas n'est pas une
++ erreur. Cela ne fait simplement rien, car il n'y a aucune composante correspondante à
++ mettre à l'échelle.
+
+@ 0 1 0 063a24c0d51ecad4192853b0b2c3579d
++ ### Préfixes métriques
+
+@ 0 4 0 1c6cfcdaf7dc164c086f930eda8b4836
++ Un [préfixe métrique](https://en.wikipedia.org/wiki/Metric_prefix) met une unité à
++ l'échelle. `Kilo`, `Mega`, `Giga`, `Milli`, `Micro`, `Nano` et les autres s'appliquent à une
++ unité pour en donner une plus grande ou plus petite. Les préfixes binaires, `Kibi`, `Mebi`
++ et `Gibi`, mettent à l'échelle par puissances de deux plutôt que de dix, pour les quantités
++ d'information :
+
+% 2 1 0 14f954f1476eca5b09a536380b8b1c1f
+
+% 3 1 0 179eb94b0f9fda1c1207670e79fbc5ac
+
+% 4 1 0 0f5ff15883a34abc09f09d5686153f2c
+
+% 0 1 0 16803c1613d12dbd1c35ea03f2e2fce0
+
+% 0 1 0 122d7701f0c430cf1de61ad1fa5f5a61
+
+% 0 1 0 097c0733f90f50d1021bc43bcc6cfe01
+
+% 1 1 0 1f49922f002e6cce03418ab496617f1a
+
+@ 0 1 0 0763ae30a2a806401bbf723255a9c8ac
++ L'ensemble complet, décimal et binaire :
+
+% 2 1 0 05506478624c58d40dd8688c28804ef7
+
+@ 0 35 0 0a22083015d05ac014ffb1fcefe30928
++ column  Préfixe
++ column  Symbole
++ column  Facteur
++ row  `Quetta`  Q  10³⁰
++ row  `Ronna`  R  10²⁷
++ row  `Yotta`  Y  10²⁴
++ row  `Zetta`  Z  10²¹
++ row  `Exa`  E  10¹⁸
++ row  `Peta`  P  10¹⁵
++ row  `Tera`  T  10¹²
++ row  `Giga`  G  10⁹
++ row  `Mega`  M  10⁶
++ row  `Kilo`  k  10³
++ row  `Hecto`  h  10²
++ row  `Deka`  da  10¹
++ row  `Deci`  d  10⁻¹
++ row  `Centi`  c  10⁻²
++ row  `Milli`  m  10⁻³
++ row  `Micro`  µ  10⁻⁶
++ row  `Nano`  n  10⁻⁹
++ row  `Pico`  p  10⁻¹²
++ row  `Femto`  f  10⁻¹⁵
++ row  `Atto`  a  10⁻¹⁸
++ row  `Zepto`  z  10⁻²¹
++ row  `Yocto`  y  10⁻²⁴
++ row  `Ronto`  r  10⁻²⁷
++ row  `Quecto`  q  10⁻³⁰
++ row  `Kibi`  Ki  2¹⁰
++ row  `Mebi`  Mi  2²⁰
++ row  `Gibi`  Gi  2³⁰
++ row  `Tebi`  Ti  2⁴⁰
++ row  `Pebi`  Pi  2⁵⁰
++ row  `Exbi`  Ei  2⁶⁰
++ row  `Zebi`  Zi  2⁷⁰
++ row  `Yobi`  Yi  2⁸⁰
+
+% 1 1 0 1f3bf28ac2bfecf517c5b4a748a2c342
+
+@ 0 5 0 18725d2d80fec0ce09926f7eda94df32
++ La masse est le seul cas délicat parmi les unités de base, car son unité de base SI est
++ elle-même une unité préfixée : le kilogramme, et non le gramme. L'unité s'appelle tout de
++ même `Gram`, par cohérence avec toutes les autres unités, et l'unité de base s'écrit avec
++ le préfixe, `Kilo(Gram)`. Mais la dimension est `Kilograms`, et les masses sont toujours
++ normalisées et affichées en kilogrammes. Ainsi, `Kilo(Gram)` vaut un `kg` entier, tandis
++ qu'un simple `Gram` en vaut un millième :
+
+% 2 1 0 166504e4a430dc8a1f595b3303ca7e17
+
+% 3 1 0 0362863e4532d7c61bc665238a7ea3fb
+
+% 4 1 0 0cc35ae60baff40d117859b15895e8a8
+
+% 0 1 0 068f1b0f71747da707cfd96a99748aa3
+
+% 0 1 0 045898685c58dcfe1ae27b680b6a532f
+
+% 1 1 0 05189307e9a40bfb04a08474c5275bc2
+
+@ 0 1 0 14a3ec71647f137805dbc484dfcd92aa
++ ### Comparaison
+
+@ 0 2 0 047bf0c9d1a8d2470a653be8b32bacad
++ Les quantités d'unités compatibles se comparent avec les opérateurs habituels, et la
++ comparaison convertit les unités comme le fait l'arithmétique :
+
+% 2 1 0 170db8a0c58102f6066fb918e5385b5d
+
+% 3 1 0 18f819d2d677be9a0dbe59d19da0f74f
+
+% 4 1 0 19e6e8b676bb5e80085419cc3d748071
+
+% 0 1 0 0df449ec08a0cc8119e91a69cf70a577
+
+% 0 1 0 1c4f5c4fe3e4b44600afe5719b2824e8
+
+% 1 1 0 06d1bcea83700e590fc529dda4efd352
+
+@ 0 2 0 06ff798e32ada1eb0bc10cd4a7d22580
++ L'égalité entre différentes unités d'une même dimension utilise `===`, qui demande si deux
++ quantités mesurent la même quantité :
+
+% 2 1 0 17b8fdbef906f39e193cf6c65f118907
+
+% 3 1 0 0ac9ce405d6fb9b503aeebf567578dc4
+
+% 4 1 0 1c7d660427d708350a60276c534d4d11
+
+% 0 1 0 027344f1f7dd7a621bad7de1724d41cf
+
+% 0 1 0 156f05e1526c43551ba40939c684e82f
+
+% 1 1 0 13fcf75f7570395e15e95fb2906e2e75
+
+@ 0 1 0 1f0ede3735e153930707317680d125cc
++ Comme pour l'arithmétique, comparer des dimensions incompatibles ne compile pas.
+
+@ 0 5 0 0deb7d6afb0341b90561ad09484c0646
++ L'égalité est exacte, que ce soit avec `===` ou avec `==`. Deux quantités ne sont
++ considérées comme égales que lorsque leurs valeurs sous-jacentes concordent jusqu'au
++ dernier bit. Une conversion qui introduit une
++ [différence d'arrondi](https://en.wikipedia.org/wiki/Floating-point_arithmetic) peut donc
++ faire que des quantités égales sur le papier se comparent comme inégales. Pour des valeurs
++ converties, `<` et `>`, ou une tolérance explicite, constituent généralement un meilleur
++ test.
+
+@ 0 4 0 029eab75da67450c1828d9aac529c122
++ Le simple `==` est réservé aux quantités qui partagent déjà un type d'unité, où il compare
++ directement ces valeurs sous-jacentes. Deux quantités d'unités différentes n'ont pas de
++ `==` entre elles. Avec l'égalité stricte, `import language.strictEquality`, une telle
++ comparaison ne compile pas, et c'est exactement ce manque que comble `===`.
+
+@ 0 1 0 059ac6f91abca671084070e79be6f895
++ ### Unités dérivées
+
+@ 0 4 0 0ef3a7a51430c4da07a693b34c60a8ea
++ Les unités SI nommées, telles que `Newton`, `Joule`, `Watt`, `Pascal` et `Volt`, sont
++ définies en fonction des unités de base ; elles fonctionnent donc avec elles. Une force en
++ newtons et une longueur en mètres se multiplient pour donner une énergie. Chaque quantité
++ peut aussi nommer sa propre dimension, calculée à partir de ses unités, et même une
++ combinaison inhabituelle se résout en son nom physique :
+
+% 2 1 0 15eac769ecfdaac408d1b96fffde9394
+
+% 3 1 0 0407c280ef9882660b85b86c1eb0d526
+
+% 4 1 0 0cc7b189af3b743a0a1d1ec76019c117
+
+% 0 1 0 1bf6f28d8c3d73c7055c06791c66c528
+
+% 0 1 0 1cf4890fd53978ab054962f0be8f30d5
+
+% 0 1 0 1998d3c159d02cfd0cc1d2407c77a8cb
+
+% 0 1 0 1bda75b2ddb2e2fe03e7020941ee23d8
+
+% 1 1 0 1231319ee0df64f61cbf06c74a2aa97b
+
+@ 0 1 0 0addb500a3cd39291580cb6c64ee2316
++ ### Les unités SI
+
+@ 0 2 0 0b44092fb7cffb9410d0df7510089bb0
++ Sept dimensions de base sont définies, chacune avec son type d'unités, et la valeur qui
++ nomme l'une d'elles :
+
+% 2 1 0 086fa737e04bd6e316027bdc2391c190
+
+@ 0 10 0 0946139d6f27b8121d027d42b353d711
++ column  Dimension
++ column  Unités
++ column  Unité
++ row  `Distance`  `Metres`  `Metre`
++ row  `Mass`  `Kilograms`  `Gram`
++ row  `Time`  `Seconds`  `Second`
++ row  `Current`  `Amperes`  `Ampere`
++ row  `Luminosity`  `Candelas`  `Candela`
++ row  `AmountOfSubstance`  `Moles`  `Mole`
++ row  `Heat`  `Kelvins`  `Kelvin`
+
+% 1 1 0 02e90b8114ccb53808934fc9583019af
+
+@ 0 2 0 1cf3526ed5628154158219578230f584
++ Les unités dérivées nommées sont définies en fonction de celles-ci ; chacune a donc ses
++ dimensions complètes, et n'est pas une sorte de chose distincte. La dernière colonne est
++ le nom que rapporte sa `dimension` :
+
+% 2 1 0 08dfb5713eab7a3e0e1c4d0795526c55
+
+@ 0 21 0 0a57f01e1a6e42241f21c33dffdb3df6
++ column  Unité
++ column  Définition
++ column  Dimension
++ row  `Hertz`  un par seconde  fréquence
++ row  `Newton`  mètre-kilogramme par seconde carrée  force
++ row  `Pascal`  newton par mètre carré  pression
++ row  `Joule`  newton-mètre  énergie
++ row  `Watt`  joule par seconde  puissance
++ row  `Coulomb`  seconde-ampère  charge électrique
++ row  `Volt`  watt par ampère  potentiel électrique
++ row  `Farad`  coulomb par volt  capacité
++ row  `Ohm`  volt par ampère  impédance
++ row  `Siemens`  ampère par volt  conductance électrique
++ row  `Weber`  volt-seconde  flux magnétique
++ row  `Tesla`  weber par mètre carré  densité de flux magnétique
++ row  `Henry`  weber par ampère  inductance
++ row  `Lux`  candela par mètre carré  éclairement
++ row  `Becquerel`  un par seconde  fréquence
++ row  `Gray`  joule par kilogramme  énergie massique
++ row  `Sievert`  joule par kilogramme  énergie massique
++ row  `Katal`  mole par seconde
+
+% 1 1 0 02f53505e0b78f58073c6760a70c101c
+
+@ 0 2 0 1a281808d14c4acd0acef301cb2336e6
++ Les systèmes CGS et impérial sont fournis à côté : `Dyne`, `Erg`, `Gauss`, `Poise`, `Foot`,
++ `Furlong`, `Stone` et les autres.
+
+@ 0 1 0 00b009db04f77122087a225fd1ba3662
++ ### Affichage
+
+@ 0 3 0 08bec867ed67e3ff1f6593fd106aba33
++ `show` écrit une quantité, et requiert un `Decimalizer` dans la portée pour fixer le nombre
++ de chiffres significatifs. Les unités composées s'écrivent avec un point médian et des
++ puissances en exposant, et les valeurs très grandes ou très petites passent en notation
++ scientifique :
+
+% 2 1 0 1b48af1c7aa102911edcb0c10b584366
+
+% 3 1 0 100b1c37319700431c5283b28d5e3f7a
+
+% 4 1 0 0e0f280e490cb7871b263baba730e273
+
+% 0 1 0 1ad5efe10f13764c0f4f48569ab4c4de
+
+% 0 1 0 002690e0eda88e911ca6b35f9cd245d4
+
+% 0 1 0 17a9852c5033b6c81b005808509a779f
+
+% 0 1 0 1156a5ec078ce69e05992cf2bde4a9a6
+
+% 0 1 0 12d0f1c7d98141cc0ad46fd240444973
+
+% 1 1 0 17d25591114be0d11953b4962c831449
+
+@ 0 4 0 1b319f77c62f7ee3074cdd347993b2aa
++ `show` est la seule façon correcte d'écrire une quantité. Une `Quantity` est un type opaque
++ sur un `Double` ; son `toString` est donc celui du `Double` : le nombre seul, sans aucune
++ unité. Une quantité substituée dans une chaîne ordinaire perd donc silencieusement ce qui
++ précisément la distingue. [Texte](text.md#rendering-numbers) décrit le `Decimalizer`.
+
+@ 0 3 0 13ffed21503096da139dc27ac9200df9
++ Plutôt que la notation scientifique, une quantité peut se mettre à l'échelle d'un préfixe
++ métrique pour l'affichage. Une instance `Prefixes` liste les préfixes parmi lesquels
++ choisir, et `show` choisit celui qui garde le nombre lisible :
+
+% 2 1 0 1c82c094f2cef7541e7b1c955c5c1726
+
+% 0 1 0 17013c27adad6cda0c63d9dc0cb69560
+
+% 0 1 0 0b6dc8096767510712863b8ceac213f0
+
+% 0 1 0 09d6ec8522ad0b360a4d2ae08154ead1
+
+% 0 1 0 06d108c1a25948261b99efe9fc0136ca
+
+% 0 1 0 0fa6930cb94cec5917ce74e4e0ab7016
+
+% 1 1 0 13cc7396d56caef90265eb58cf9b33ee
+
+% 3 1 0 146f4208aff703d71e4a9dd0964640c8
+
+% 4 1 0 1f0ded76087b010a1b2f74ba94882bed
+
+% 5 1 0 002f7db08a47f4ba124bb3fa64e1fdc4
+
+% 0 1 0 1d6fb25b99b8cc4808c0bfa2adea09dc
+
+% 0 1 0 07a37eb441e8641a1ff5ce2b4cfd61a7
+
+% 1 1 0 0bf429c4266e8ab50121ca38f0714372
+
+@ 0 2 0 0793483cff0ddbeb1d00f493a72c3406
++ Cet exemple montre aussi comment déclarer une nouvelle dimension et une nouvelle unité :
++ une `Dimension`, un type `Units` indexé par sa puissance, une valeur d'unité, et une
++ `Designation` qui donne son symbole.
+
+@ 0 1 0 1a73507de4d6c47c0d1015eb9535cf83
++ ### Définir sa propre unité
+
+@ 0 3 0 0b117ba073db12a9192cf600ec12cdb9
++ Une unité qui mesure quelque chose pour lequel le SI n'a pas de dimension requiert à la
++ fois une dimension et un type d'unités. Prenons les FLOPS, le nombre d'instructions en
++ virgule flottante qu'un processeur exécute par seconde. La définition se construit en
++ quatre étapes :
+
+% 2 1 0 17b7d8f374e4d4630b97d7db9403ee0c
+
+% 1 1 0 0d625f7e41cde2400b295dd6c23b3d7b
+
+% 0 1 0 13ff0eac4c184efa0985eda35b3efc51
+
+% 1 1 0 13fd971515b9b3c8003f1e74231fd4cc
+
+% 0 1 0 0fb466695bd7db040788c1974df5f257
+
+% 1 1 0 09b0bee2ca5d310004360042e598e0f1
+
+% 0 1 0 13ebec7334854ea713c2055b619a42f2
+
+% 1 1 0 1c230f03f95a6302190ebd98794521b7
+
+% 0 1 0 143ef0bee1964b981ec4a2345aeb9b94
+
+% 0 1 0 0d8d8d91ff751147033a76672a9b7f89
+
+% 1 1 0 01e686a6106f04be016611d091dbe92b
+
+% 0 1 0 02b339a3d16da8060e745f9a839b8f57
+
+% 1 1 0 06be5947d5f92054095405ee27491498
+
+% 2 1 0 0571bf5c0d3766771dec34176585e2d5
+
+% 3 1 0 0111a236644865a40e2f29b494afdc78
+
+% 5 1 0 1c50872cb944d3ac1ea5fded315602a7
+
+% 2 1 0 155a4646aa65fd4b188b0ef3aa9f6223
+
+% 1 1 0 0abeb98ddb1b4f700e9e7ba4d4dcb2b2
+
+% 0 1 0 0061ea59b31c98e00bbb8f2ccb92e975
+
+% 1 1 0 13e7c597dcd039c01ef8c0bc37c55cf0
+
+% 2 1 0 0837bcfadff837f901a88d203f699ee5
+
+% 3 1 0 0e3cb06d1b9cc449159fc149e87c4395
+
+% 5 1 0 173ad6b781c4eb8e1ec8b0560da56919
+
+% 0 1 0 1dcb828646f7ae2712ae16370e6a3b2c
+
+% 2 1 0 08a28894e1f003011a7f134ff84e1b2f
+
+% 1 1 0 0efefccfe7e4584d0a13eeb37717a4a2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 7 0 1d1bb0cd450a25e110e51873e9af3555
++ Écrit comme une simple valeur, `1.0/Second` peut servir dans l'arithmétique, mais ne dit
++ rien de ce qu'il compte. L'envelopper dans une `MetricUnit` permet au moins d'appliquer
++ les préfixes métriques, de sorte que l'on peut écrire `Mega(Flop)`, mais le résultat n'est
++ toujours qu'un nombre en secondes inverses. Lui donner sa propre dimension le distingue de
++ toute fréquence. Le paramètre `power` est obligatoire, et est borné par `Nat`, qui est un
++ alias de `Int & Singleton`. `Mega(Flop)*Second` a alors le type
++ `Quantity[Flops[1] & Seconds[1]]`, et une `Designation` lui donne un symbole pour
++ l'affichage.
+
+@ 0 1 0 04f2a0661bae244400b33ab623ba9d88
++ Les deux traits peuvent être `sealed`, puisque rien ne les implémente à l'exécution.
+
+@ 0 1 0 137fd9654fd1b166065731a1a2f80e40
++ ### Rapports de conversion
+
+@ 0 3 0 1c3dda7ee359a0690943ab23353b7d5f
++ Convertir entre deux unités requiert le rapport entre elles. Celui-ci provient d'un
++ `Ratio` contextuel pour la paire, avec une unité à la puissance `1` et l'autre à la
++ puissance `-1`, et le taux sous forme de `Double` littéral de type singleton :
+
+% 2 1 0 0b4d6483f00cc7e615342732625b83d7
+
+% 0 1 0 01e257112d1091e70ee78cf2e063b667
+
+% 1 1 0 1ea35b6a7c9e8a1003578c2815018c6f
+
+@ 0 4 0 0076f7cbe759a86c1db16e85a109bb5a
++ Le taux est un *type*, et non une valeur, et c'est ce qui rend une conversion gratuite. Sa
++ valeur est connue à la compilation ; l'arithmétique qui le concerne est donc effectuée
++ pendant la compilation du code, et le given lui-même peut être effacé. Une conversion
++ entre deux unités n'ajoute donc aucun travail à l'exécution au-delà de la multiplication
++ qu'elle dénote effectivement.
+
+@ 0 1 0 0fd83346cf99ed4309ee08334b815512
++ ### Bases mixtes et non décimales
+
+@ 0 4 0 0f04acec8333c28d04a8b7d6507b8f80
++ Toute mesure n'est pas un nombre unique dans une unité unique. Avant le système métrique,
++ les quantités s'exprimaient comme une *cascade* d'unités, en multiples exacts qui
++ n'étaient pas des puissances de dix : pieds et pouces, ou stones, livres et onces.
++ Certaines le sont encore. Les heures, minutes et secondes sont exactement cela, tout comme
++ la taille d'une personne dans la majeure partie du monde anglophone.
+
+@ 0 3 0 1c21a1f16a81e7500d307e05f6bb8031
++ Une `Quanta` représente une telle valeur : un nombre entier de chaque unité dans une
++ cascade descendante, avec les retenues effectuées automatiquement. Le type énonce la
++ cascade, avec la plus petite unité comme paramètre de type, et les plus grandes après
++ `in` :
+
+% 2 1 0 0314890159e35089143d55574e0d1da3
+
+% 0 1 0 137767fe222a195d0c18aa5478e69409
+
+% 0 1 0 1fea3cd9b21363d10e2e93befa650ffc
+
+% 1 1 0 123034de860537711440d9f575f5f2f6
+
+@ 0 2 0 0a34008f51a20a161b885f0cf4fee89f
++ Une valeur s'écrit avec la plus grande unité en premier, comme on la prononce, et chaque
++ composante se relit en nommant son unité. Ce poids est de 1 stone, 3 livres et 2 onces :
+
+% 2 1 0 1ad7bd52a25319c509e5fcff7421122b
+
+% 0 1 0 002b52707875dc8e1e02a4f157a3dc3c
+
+% 1 1 0 1cbff642be5ed9cb1799a1c6d07fefae
+
+% 3 1 0 01b3f997fbcb1d2e0de57b6de310b2ed
+
+% 4 1 0 18932729b55abdf70566fed0678564ab
+
+% 5 1 0 1850b0c709ac9c1215c2acb75616bd87
+
+% 0 1 0 1fe92e63ccf3c1a810b8e40a819e6def
+
+% 0 1 0 1172917018f99eb30004a0e9c547c887
+
+% 0 1 0 12926216140764090dff0fb5784e50e3
+
+% 1 1 0 18dd633cf2c873941da28b47b0c01a67
+
+@ 0 2 0 06d2b96d753408fa0bd2ea769c6edc81
++ L'arithmétique effectue les retenues entre les unités comme l'exigent les rapports.
++ Ajouter quinze onces à 3 livres 2 onces donne 4 livres 1 once, et non 3 livres 17 onces :
+
+% 2 1 0 1b73981a6b31b8510c6dea16a7f2a188
+
+% 0 1 0 12170067d03527170efdbc6bcac81fb4
+
+% 1 1 0 1700476e4dd807680879569327f06753
+
+% 3 1 0 137b6c8b55b7cfc20975470b5be2d0f1
+
+% 4 1 0 081f090475a90902164511f9cb6a635e
+
+% 5 1 0 07fd2a23bc83b72c1c903efa7b36ed0a
+
+% 0 1 0 16cadc23e48c339508e1fb6915892cb1
+
+% 0 1 0 17eaacc9df99f8eb16dc6a34c88fb50d
+
+% 1 1 0 06d432bbc63ffb0f038142b611c6d8b1
+
+@ 0 4 0 1bec9720034db7321d06062754047f3c
++ La cascade est vérifiée telle qu'elle est écrite. Chaque unité qui la compose doit avoir
++ la même dimension ; mélanger des secondes dans une cascade de longueurs ne compile donc
++ pas, et la base doit être une unité, et non un type arbitraire. `TimeSeconds` et
++ `TimeMinutes` sont fournis, pour les deux cascades dont tout le monde a besoin.
+
+@ 0 2 0 0510dc339d4e36700d25ef830fdfdbb7
++ Les unités sont de vraies unités ; une `Quanta` se convertit donc vers et depuis une
++ `Quantity` ordinaire, et c'est ainsi qu'une mesure passe d'un monde à l'autre :
+
+% 2 1 0 01c94a2a8e2b9d84106b3effdf951c8f
+
+% 0 1 0 1977b87a7eb9f92300e3ee8f6a9c825a
+
+% 0 1 0 0d8e47ee69416e09173e54cfc5e11a60
+
+% 1 1 0 00cd24bfaab2627415ebac6a2747e1e0
+
+% 3 1 0 02f738ca06d32c17142c56a8303d998a
+
+% 4 1 0 06d6f04cd99bb9f41666fee2ec69f78e
+
+% 5 1 0 0beef0af9d33ec1a073d95ace17dfab1
+
+% 0 1 0 03922bd66be8137c0eb1f890d8990139
+
+% 0 1 0 0cdf91c36938045c09a5b5d23d3e2b62
+
+% 0 1 0 0c166ac4fbff583b163fa15af82a904f
+
+% 1 1 0 0ae0b6590046e3530027b0578aa7ac37
+
+@ 0 3 0 1b6c8cf6d28599040e4923103f05fb03
++ Montrer une `Quanta` utilise le symbole de chaque unité, comme dans `1st 3lb 2oz`. Un given
++ `UnitsNames` remplace les symboles là où une cascade s'écrit conventionnellement autrement,
++ de sorte qu'une taille peut être montrée sous la forme `5' 9"`.
+
+@ 0 1 0 0388133111f1e7f418b60af6f2d2bcd4
++ ### Température
+
+@ 0 5 0 031475e044d29f0806a0dee25d6aad91
++ La température se mesure à partir d'un zéro arbitraire, et non à partir de rien ; elle se
++ comporte donc autrement qu'une longueur ou une masse. Trente degrés plus trente degrés ne
++ font pas soixante degrés de quoi que ce soit de significatif. Elle est modélisée par un
++ type distinct, `Temperature`, et les échelles à zéro arbitraire sont tenues à part de la
++ quantité absolue en Kelvin, qui sert pour les différences.
+
+@ 0 5 0 15aade46fc8391ed0dcb2eb6b5d96a79
++ Quatre échelles apparaissent, et elles se répartissent en deux sortes. Kelvin et Rankine
++ mesurent à partir du zéro absolu ; ce sont donc des quantités ordinaires en même temps que
++ des échelles. Celsius et Fahrenheit placent leur zéro ailleurs, au point de congélation de
++ l'eau et plus bas encore ; une lecture sur l'une ou l'autre n'a donc de sens qu'en tant
++ que `Temperature`. Multiplier ou additionner directement deux telles lectures n'aurait
++ aucun sens, et les types ne le permettent pas.
+
+@ 0 1 0 18aa2a0fda1fd5150438cc8a294068e1
++ Une température se crée sur une échelle nommée, et s'affiche sur l'échelle qui est dans la
++ portée :
+
+% 2 1 0 0aae5bc6dba2502108d65aba16f68b87
+
+@ 0 9 0 10c7ce94b6e9db720ee0160c1a384d34
++ column  Échelle
++ column  Zéro
++ column  Lecture
++ column  En tant que quantité
++ column  Import d'affichage
++ row  Kelvin  zéro absolu  `Kelvin(…)`  l'unité `Kelvin`  `temperatureScales.kelvinScale`
++ row  Rankine  zéro absolu  `Rankine(…)`  unités `Rankines`  `temperatureScales.rankineScale`
++ row  Celsius  gel de l'eau  `Celsius(…)`  aucune  `temperatureScales.celsiusScale`
++ row  Fahrenheit  sous le gel  `Fahrenheit(…)`  aucune  `temperatureScales.fahrenheitScale`
+
+% 1 1 0 179b6da80db02ea201a7cbec703e4862
+
+% 3 1 0 112e636a1db928241897ed31b74a3c56
+
+% 4 1 0 0bd99478d2600ab90628a36ba03a395f
+
+% 5 1 0 08f44a1cab9c73ce0a06d333981fbfd7
+
+% 5 1 0 0878aa023d7892ac0b4217f1d5b2c1c7
+
+% 6 1 0 027b99c641b38bcb012438dbbf367b0d
+
+% 1 1 0 1576df5793c1633816a6a51cc01de81c
+
+% 2 1 0 1be0e0d4c67f1e2b1d2d459aee24126f
+
+% 1 1 0 123e132970abea3302dded92da3277af
+
+% 0 1 0 1cf3c3ef00ed8c011e7a7d7ad1ca813f
+
+% 1 1 0 0973406e28f9a397008e9b8cd3aed0c0
+
+% 2 1 0 0fd230a5f1f5df0e1782d3dd80c4ddd7
+
+% 1 1 0 03e0e3063a05da9d1feefe53ff65d801
+
+@ 0 2 0 08cd632a205bb4d5111218957ac31fa7
++ Lire la même température sur une autre échelle revient donc à en importer une autre, sans
++ écrire de conversion à la main.
+
+@ 0 3 0 00eb6a2427af3e650114490ea4ca047b
++ Une `Temperature` additionne et soustrait des *quantités* en Kelvin ou en Rankine, pour
++ donner une autre température. La différence de deux températures est une quantité, qui se
++ convertit comme n'importe quelle autre :
+
+% 2 1 0 0c79f337e425d72b1aa00428dbe0db22
+
+% 3 1 0 18ba52150d074a1b14e3b3cde73e0c83
+
+% 4 1 0 116c1fd14d1ffcb10928214caf9348c6
+
+% 5 1 0 16709ba44911e44300de70550b42696c
+
+% 6 1 0 08f89671ea2aa69406b4a250dc8a362b
+
+% 0 1 0 16c232f85778a9da1b3da0987af1af4e
+
+% 0 1 0 18d4f776e4753c2d12588b455e1dc8c2
+
+% 1 1 0 15fe0acba657e65410c75bf2c41743fe
+
+@ 0 1 0 130315e87e7d8f0d1ae0bad49cfbe777
++ ### Agrégation
+
+@ 0 2 0 1d0ff3429e41154c193b0d523d4c646c
++ Une collection de quantités qui partagent une unité se réduit à une quantité, et chaque
++ réduction comprend les unités :
+
+% 2 1 0 018dc278759f22f713bd62a7d45282be
+
+@ 0 7 0 061ef0781b9719bd1cb11d5a2744f293
++ column  Méthode
++ column  Résultat
++ column  Pour une collection vide
++ row  `total`  la somme, dans la même unité  zéro
++ row  `mean`  la moyenne, dans la même unité  `Unset`
++ row  `variance`  la variance, dans l'unité au carré  `Unset`
++ row  `std`  l'écart type, dans la même unité  `Unset`
+
+% 1 1 0 01582840014d0a1a1044af9a13f5fabc
+
+@ 0 2 0 1c0e2f30a543cfe806c2e39227a206ea
++ Ainsi, la variance d'une liste de secondes est en secondes carrées, et l'écart type est de
++ nouveau en secondes :
+
+% 2 1 0 178e6425bbd4da5217836e1c4ea537f2
+
+% 0 1 0 1a11e6a5a63bf1cd0cc1025ee19819f7
+
+% 1 1 0 034299d6a13a9edb15ee8fd253e26fe0
+
+% 3 1 0 0527e0293bb99e910d4bd875d8a51cfb
+
+% 4 1 0 103984e5095d73890f4d22af3a63b7ff
+
+% 5 1 0 0863c212f96e13f01e58a7ab595836d0
+
+% 0 1 0 061602812d2e5cc506e7c9b4d3712fa4
+
+% 0 1 0 061ba6b92cb5105206cf58ec2bfffbc4
+
+% 0 1 0 1c8844df5acfb57404c10f04aac15bd3
+
+% 1 1 0 1ad60bf7621fd194118ccfe70c5b03b3
+
+@ 0 2 0 10c53ca3feef0a640339d6f77c83d740
++ [Mathématiques](mathematics.md#elements-that-are-not-numbers) construit des vecteurs et des
++ matrices de quantités, dont les produits portent aussi des unités.
+
+@ 0 1 0 11ffedd4f536784d0c259c2b51d7f223
++ ### Quantifier ses propres types
+
+@ 0 3 0 010ef99a83b03380114df2aa99f167eb
++ Un type qui représente une mesure peut apprendre à donner une quantité, au moyen d'une
++ instance `Quantifiable`. Il prend alors part à la même arithmétique dimensionnelle. Un
++ point typographique, qui vaut un soixante-douzième de pouce, devient une vraie longueur :
+
+% 2 1 0 0c6fc5722791cfb70572642f822a61a8
+
+% 0 1 0 1967a2dd4f5b5c3e0d8aa099fb824bd6
+
+% 0 1 0 0395cf5704ae267607d30c61aeb65699
+
+% 1 1 0 0e0e899573e0602a15c4f2fb22ce0a11
+
+% 3 1 0 06bb25a0462e40f60bec7d2023cf1af5
+
+% 4 1 0 0e8d7158b7d1e7b01771cc3cc4229c13
+
+% 5 1 0 15a8fccb70a16b73075b1faefb9fecd3
+
+% 0 1 0 0b7c5800c2bcdeaa19db4d9e92b0a158
+
+% 0 1 0 112ab2723535b3d80a97bf8b8ffd9c3c
+
+% 1 1 0 1a3edae6a8f2cf4e17609b5a35fe6341
+
+@ 0 1 0 0761642a4e636df201fd5b7c544fb323
++ ### Calculs
+
+@ 0 5 0 089d08f0e947af8d10b2b3d8ae722880
++ Une formule écrite en quantités est vérifiée telle qu'elle est écrite. Chaque étape doit combiner
++ ses unités de façon cohérente, et les unités du résultat sont calculées à partir des unités des
++ entrées ; les dimensions d'un calcul sont donc vérifiées avant même qu'il ne s'exécute. Le
++ [déplacement d'un corps sous accélération
++ constante](https://en.wikipedia.org/wiki/Equations_of_motion#Constant_translational_acceleration_in_a_straight_line),
++ `s = ut + ½at²`, se lit directement :
+
+% 2 1 0 04893c539957a4f21f801cf86d4adcd0
+
+% 0 1 0 08587b413de912fb1740e01b0fa905db
+
+% 0 1 0 0bd72fd524f01ded0f3e6a25a450609c
+
+% 0 1 0 12dcaa370104ae7e14b6f895080175d7
+
+% 0 1 0 192c7b6a32bb589010fb608001ab5eb5
+
+% 0 1 0 0cdae38f35fcf74316d1a9e7c74d8b1f
+
+% 0 1 0 0315ed95e1726869115c6f6ac3045972
+
+% 1 1 0 04507a954e90e7bd1c16d5945eb9c06b
+
+% 3 1 0 0bea8511ee39271704afd8012ea47981
+
+% 4 1 0 016b0f370b4b9fe911357167f98f02ce
+
+% 5 1 0 1035011c1bcf1d4f03d852cee81168e0
+
+% 0 1 0 0ea6d35721b6a6a91035eeaa7c98e75c
+
+% 1 1 0 14bab3843121d4d81735c574dd23d4eb
+
+@ 0 4 0 1da64dc7b477131b1d4d4ba5236f23aa
++ Les deux termes de la somme donnent une distance : une vitesse multipliée par un temps, et
++ une accélération multipliée par un temps au carré. L'addition passe donc la vérification
++ de types, et le résultat est une distance. Passer un argument dans les mauvaises unités
++ est une erreur de compilation, et non un nombre discrètement faux :
+
+% 2 1 0 037a2ef0696a76950a6333e1ee334eb4
+
+% 3 1 0 02ceea93cff41412079ca149f88a3a46
+
+% 4 1 0 04517120ff2763c31ed729d9995fadbe
+
+% 5 1 0 0d8e53cee97014bb00975608ed11eefb
+
+% 0 1 0 085163819b39d61618ddf185a2b5df9d
+
+% 1 1 0 009415b785e8555911c3a91ce4061a14
+
+@ 0 5 0 0094d2bd281f7f591d0e4752b7504b39
++ Le même calcul peut être écrit une seule fois pour tout choix cohérent d'unités, au lieu
++ d'être figé en mètres et en secondes. Une `transparent inline def` résout ses unités à
++ chaque appel ; ses paramètres peuvent donc rester abstraits. Les relations sur lesquelles
++ repose la formule sont alors énoncées sous forme de contraintes : qu'une vitesse
++ multipliée par un temps, et une accélération multipliée par un temps au carré, puissent
++ chacune être formées, et que les deux résultats puissent être additionnés.
+
+% 2 1 0 0bbb84ce65ac1a970ff70bb79037948f
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 114ee0f3c2aa797213a52a37d8385329
+
+% 0 1 0 02a69aeff057dbc00ace7c1ce232e7a1
+
+% 0 1 0 1783fe5a7b56d0d21053140479de08d3
+
+% 0 1 0 074615e9ca593afc0722aba603742a27
+
+% 0 1 0 0796d7561e9642f001c4e2f101b4dc21
+
+% 0 1 0 1856ea22288a4b121d1c724d46b22855
+
+% 0 1 0 1cbf45b7b58016f31b7b08822d4c6494
+
+% 0 1 0 020c9b62c922fca419e75cd04c6ec601
+
+% 0 1 0 1f027e2097a1c6f40ac1066d33d1c260
+
+% 0 1 0 06cc37d6c30fe5350f84b8bb320b9383
+
+% 0 1 0 195a73ad5456986609b4f6afae0fcc1d
+
+% 0 1 0 100d0532e46c8cbc1476464bfac803c3
+
+% 0 1 0 1c40418a091eae191ee6ea832dde7f96
+
+% 1 1 0 1a41f3a10e70cdcc03c6f99c09cd6ee1
+
+@ 0 3 0 054553f2f4d0495d11a627268cd85438
++ Ces contraintes ne sont rien de plus que l'énoncé, exprimé en types, de la cohérence des
++ dimensions de l'équation. Un appel dont les unités ne peuvent pas les satisfaire ne
++ compile pas. [Nombres](numbers.md#overloading-the-operators) décrit `Multiplicable` et
++ `Addable`.
+
+@ 0 1 0 0255b9d1642f19d6147782131a972905
++ ### Ce que cela coûte à l'exécution
+
+@ 0 4 0 0b66312746709984140b851d84b202d5
++ Rien de tout cela ne subsiste dans le bytecode. Une `Quantity` est un type opaque sur un
++ `Double`, ses unités n'existent que dans le type, et chaque opération est `inline`. Un
++ calcul dimensionnel se compile donc en les mêmes instructions arithmétiques que
++ l'arithmétique équivalente sur de simples `Double`s, sans boxing, sans objets enveloppes
++ et sans répartition virtuelle vers une classe de types.
+
+@ 0 4 0 1ed7d695123d161819944509d6b859d4
++ C'est une propriété qui mérite d'être vérifiée, et pas seulement affirmée, et elle est
++ vérifiée. La suite de tests inspecte le bytecode compilé de calculs représentatifs, et
++ échoue si une répartition vers une classe de types apparaît là où devrait se trouver de
++ l'arithmétique inlinée. Une garantie de performance qui n'est qu'affirmée tend à cesser
++ d'être vraie.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 5 0 068bd71c847c53f304e0b0265e2bfae0
++ - [Nombres](numbers.md) décrit les types numériques et les opérateurs qu'utilisent les
++   quantités.
++ - [Temps](time.md#durations-and-timespans) mesure une `Duration` comme une quantité de
++   secondes.
++ - [Mathématiques](mathematics.md) fait passer les unités à travers les vecteurs, les
++   matrices et les nombres complexes.
++ - [Monnaie](money.md) applique la même idée, d'une unité dans le type, aux devises.
++ - [Géographie](geography.md) et [Chimie](chemistry.md) s'appuient sur les quantités.

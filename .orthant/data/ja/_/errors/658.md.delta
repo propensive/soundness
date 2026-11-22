@@ -1,0 +1,25 @@
+orthant 2 language
+
+@ 0 1 0 0a1da507f750bd861ad55b0b2b57103f
++ # `SN-658` — `package` の後の空行（廃止）
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ このエラーはもう存在しない。
++ このページは、コードが再利用されないように、また古いリリースからの参照が引き続き解決できるように残されている。
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## その後
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ このエラーを発生させていた Decorum コンパイラプラグインは Soundness から切り出され、現在は Consequent Style のための単独のチェッカーである [Consequent](https://github.com/propensive/consequent) になっている。
++ 規則はそこで新しい識別子のもとに残っており、その文字は規則の由来となった原則を名指しする。
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  旧
++ column  新
+
+% 0 1 0 08b6e9f634241e2c1f19fccd40eb6927
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

@@ -1,0 +1,358 @@
+orthant 2 language
+
+@ 0 1 0 1d008cc0ff8693ed0229956a30cd6510
++ # 0.75.0 からの変更
+
+@ 0 3 0 0972e5418f586730140d290f3edcf136
++ このファイルは、Soundness のライブラリを利用するコードを 0.75.0 から次のリリースへアップグレードする LLM エージェントが読むものである。
++ 各エントリーは何が変わったかを正確に述べる。形式については `AGENTS.md` を参照。
++ エントリーはモジュールごとにまとめられ、モジュール内では最も新しく追加されたものが最後にある。
+
+% 0 1 0 0709addc77995521151ea74263edf6fe
+
+@ 0 5 0 0bba235b021c8105174de52dd74a897a
++ - `caesura.dsvRedesignations.lowerDottedRedesignation` はフィールド名の小文字化した単語を `.` で連結するようになり（`targetPerson` → `target.person`）、`caesura.dsvRedesignations.lowerSlashedRedesignation` は `/` で連結するようになった（`targetPerson` → `target/person`）。以前はどちらも、`lowerWordsRedesignation` と同じく空白で連結していた。どちらかの given のもとで読み書きするファイルは、ドット区切りまたはスラッシュ区切りのヘッダーを使わなければならない。(#2439)
+
+% 2 1 0 03efc212dcfae9921d54f61e4e5ee244
+
+@ 0 3 0 0dcd5e96db7d4a380e356f59b0a40114
++ - `perihelion.Websocket.Error.Reason.Truncated` は "the connection closed before the frame was complete" と描画されるようになった。以前はその `Communicable` インスタンスにこのケースがなく、そのようなエラーを説明すると `MatchError` が投げられた。(#2439)
+
+% 0 1 0 07cbf3671591ab0617673a498a92a7dd
+
+@ 0 6 0 0856714fe65a55f7012b01d6e7f1bcd0
++ - `scala.collection.Iterable[element]` をレシーバとする `contingency.survive`（`extension [element](sequence: Iterable[element]) transparent inline def survive[result](using erased Void)[error <: Hazard](lambda): Iterable[result]`）は削除された。任意の `self is murmuration.Traversable by element`（stdlib のすべての `Iterable` を含む）に対する残りの `contingency.survive` が適用され、`Iterable[result]` の代わりに `proscenium.List[result]` を返す。(#2442)
+
+% 0 1 0 0370a3eea40039ca144eb5e325204513
+
+@ 0 20 0 0349efedfffb7ef60d79c03c9818eadb
++ - `mercator.sequence` は `extension [monad[_], collection[element] <: Iterable[element], element](elems: collection[monad[element]])(using Monad[monad]) def sequence(using BuildFrom[scala.collection.immutable.List[element], element, collection[element]]): monad[collection[element]]` から `extension [self](self: self)(using traversable: self is murmuration.Traversable) def sequence[monad[_], element, result](using traversable.Operand <:< monad[element], Monad[monad], self is murmuration.Reshapable by element to result): monad[result]` に変わった。`proscenium.List`、`Set`、`Sequence`、`Chain`、凍結済みの `Array`、その他 `Reshapable` インスタンスを持つすべての `Traversable` に適用され、同じ形を再構築するようになった。`Reshapable` を持たない stdlib のコレクション（`scala.collection.immutable.List`、`Seq`、`Set`、…）には、`scala.collection.immutable.IndexedSeq` を除いて適用されなくなった。先に `proscenium.List.from(…)` で変換すること。(#2442)
++ - `mercator.traverse` も同じように、`extension [collection[element] <: Iterable[element], element](elems: collection[element]) def traverse[element2, monad[_]](lambda: element => monad[element2])(using Monad[monad], BuildFrom[scala.collection.immutable.List[element2], element2, collection[element2]]): monad[collection[element2]]` から `extension [self](self: self)(using traversable: self is murmuration.Traversable) def traverse[element2, monad[_], result](lambda: traversable.Operand => monad[element2])(using Monad[monad], self is murmuration.Reshapable by element2 to result): monad[result]` に変わった。レシーバは `sequence` と同じであり、`scala.collection.immutable.IndexedSeq` 以外の stdlib のコレクションには適用されなくなった。(#2442)
+
+% 0 1 0 096c9a5d6239be660ef05a2862eacc3c
+
+@ 0 4 0 197ce9a1874b2b681697f2fe00c0db7b
++ - `polysyllabic.Hyphenation#extending(patterns: Iterable[Text] = Iterable(), exceptions: Iterable[Text] = Iterable(), leftMin: Optional[Int] = Unset, rightMin: Optional[Int] = Unset)` は `patterns: proscenium.List[Text] = List()` と `exceptions: proscenium.List[Text] = List()` を取るようになった。動作は変わらない。(#2442)
+
+% 0 1 0 0c011b4728d05fac197d7cb43b472d78
+
+@ 0 16 0 1a30ab5b31ea97e80f0de11eb489f3a7
++ - `Iterable[Optional[value]]` に対する `vacuous.compact`（`transparent inline def compact: Iterable[value]`）は `extension [self](self: self)(using traversable: self is murmuration.Traversable) def compact[value, result](using traversable.Operand <:< Optional[value], self is murmuration.Reshapable by value to result): result` に置き換えられた。`proscenium.List`、`Set`、`Sequence`、`Chain`、凍結済みの `Array`、その他 `Reshapable` を持つ `Traversable` に適用され、同じ形を返す（`List[Optional[Text]]` → `List[Text]`）。可変長引数の `Seq` を含め、`scala.collection.immutable.IndexedSeq` 以外の stdlib のコレクションには適用されなくなった。先に `.to(proscenium.List)`（または `proscenium.List.from(…)`）で変換すること。`.stdlib.compact` を呼び出すコードは `.stdlib` を取り除くこと。`murmuration.Iterator[Optional[value]]^` に対する `compact` は変わらない。(#2442)
++ - `Iterable[Optional[value]]` に対する `vacuous.entire`（`def entire: Optional[proscenium.List[value]]`）は `extension [self](self: self)(using traversable: self is murmuration.Traversable) def entire[value, result](using traversable.Operand <:< Optional[value], self is murmuration.Reshapable by value to result): Optional[result]` に置き換えられた。結果は常に `List` になるのではなく、レシーバの形を持つ。`scala.collection.immutable.IndexedSeq` のレシーバ（`(0 until n).map(…)` など）は `Optional[IndexedSeq[value]]` を生じるようになり、その他の stdlib のコレクションには適用されなくなった。(#2442)
+
+% 0 1 0 027a003138628fc617497a87b3252999
+
+@ 0 24 0 1fcfdddc50dd068d099fe127c48a7659
++ - `digression.StackTrace.legend: Map[Text, Text]` は、二文字にパディングしたグリフ（`λₙ`、`ⲛ `、`δ `）ではなく、裸のグリフ（`λ`、`ⲛ`、`δ`、`⁅⁆`）をキーとするようになった。これは新しい `digression.StackTrace.Marker.all` から導出される。`ⲛ` は "constructor" と説明される（以前は "class initializer"）。`Σ` は以前と同じく載り、`ζ` は生成されなくなり、`Ξ`、`Λ`、`ι`、`ℓ`、`⇢`、`≔`、`∂`、`⊡`、`⊙` が載るようになった。(#2442)
++ - `digression.StackTrace.rewrite(name: String, method: Boolean = false): Text` は、次の入力に対する出力が変わる。`$adapted` は直前の `λ` を `Λ` にする（`lam$$anonfun$1$adapted` → `lam.Λ₁()`、以前は `lam.λ₁.adapted()`）。`<clinit>` と `$init$` → `ι`（以前はそれぞれ変換なしと `.init.`）。`$lzyINIT`、`$lzy`、`$lzyHandle` → `ℓ`（以前は `#ℓ`、`#lzy`、`#lzyHandle`）。`protected$`、`inline$`、`$accessor` → `⇢`。`$_setter_$` → `≔`。`$retainedBody` → `⊡`。`$outer` → `⊙`。`$$Lambda` → `#λ`/`.λ`。`$uXXXX` → その文字。`$mc…$sp` はタグを消費するので、`apply$mcII$sp` → `applyΣ(Int -> Int)()`（以前は `applyΣ(Int -> Int)IIζ()`）となり、引数の数が二つ以上の特殊化されたメソッドのパラメーターは、結果を最後にした順序になった（`apply$mcJII$sp` → `applyΣ((Int, Int) -> Long)()`、同様に `scala.runtime.java8.JFunction2$mcJII$sp` → `((Int, Int) => Long)`）。裸の `$sp` は `ζ` にならなくなった。`Play$$cue`（展開された private な名前）→ 区切りが一つの `Play.cue()`（以前は `Play..cue()`）。ただし、演算子のエンコーディングが続く `$$` は引き続き演算子として復号される。コンパイラがもう出力しない `initial$` と `$_avoid_name_clash_$` は、`ι` と `′` に書き換えられなくなった。`$` の後の数字、演算子、`$anonfun`、`$anon`、`<init>`、`super$`、`$extension`、`$direct`、`$default`、`$package`、モジュールクラスは変わらない。(#2442)
++ - `digression.StackTrace.Marker` が追加された。`case class Marker(jvm: Text, glyph: Text, meaning: Text, kind: Optional[StackTrace.Frame.Kind] = Unset)` であり、`Marker.all: List[Marker]` と `Marker.operators: List[(Text, Char)]` を持つ。(#2442)
+
+% 0 1 0 17f94539b937dacb1c8f57fb7f04ec71
+
+@ 0 5 0 11d6821c3bca25030878f40fa3433112
++ - `hyperbole.StackResolver.hint(method: Text): Optional[StackTrace.Frame.Kind]` は `digression.StackTrace.Marker.all` を読むようになった。`$adapted` を含む名前は、`$anonfun` も含む場合でも `Bridge` になる（以前は `Lambda`）。`super$`、`protected$`、`inline$`、`$accessor` は `Forwarder` に、`$_setter_$` と `$retainedBody` は `Synthetic` になる（以前は `Unset`）。`INIT` のない `$lzy` は `Initializer` にならなくなった。(#2442)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 3 0 15ce7b91445b0ef61619bae723804316
++ - `jacinta.JsonSchema.requiredLabels(labels: proscenium.Array[Optional[Text]]^{}): proscenium.List[Text]` が追加された。導出されたスキーマのフィールドのうち存在するラベルを返すもので、`jacinta.JsonSchema.conjunction` がこれを呼び出す。既存のものは何も変わらない。(#2442)
+
+% 0 1 0 0f922ec341ccae34075ef751ece930db
+
+@ 0 10 0 0cb0e5537109ab410225e90b67d51132
++ - 固定されたコンパイラは Proscala `1.1.4`（`3.10.0-pro-1.1.4`、以前は `3.10.0-pro-1.0.7`）である。Soundness の公開されたアーティファクトはこれでコンパイルされているので、それに対してコンパイルする利用者は同じビルドに固定する。(#2443, #2489, #2505)
++ - `proscenium` より上のすべての Soundness モジュールは Proscala の `-Zgatherable-varargs` でコンパイルされる。メソッドの中では、可変長パラメーター（`parts: Text*`）は `scala.collection.immutable.Seq[Text]` ではなく `proscenium.List[Text]` である。シグネチャは変わらず、呼び出し側にも影響はない。呼び出し側は以前とまったく同じように引数を渡し、展開する。自分のコードでも同じようにしたい利用者は、コンパイラオプションに `-Zgatherable-varargs` と `-experimental` を加え、`proscenium.listGatherable` をスコープに入れる（`-Yimports:java.lang,proscenium` または `import proscenium.listGatherable`）。このフラグがなければ何も変わらない。(#2443)
+
+% 0 1 0 13897a5b469c56bc058ae094048dac5d
+
+@ 0 3 0 17b4fdc9295d5b84119e0b5e224841a9
++ - `proscenium.listGatherable` が追加された。`given listGatherable: [element] => (scala.Gatherable[element] { type Out = proscenium.List[element] })` であり、`-Zgatherable-varargs` が可変長パラメーターを受け取る際に使うインスタンスである。(#2443)
+
+% 0 1 0 1115251217de079e0fce250e124d6a13
+
+@ 0 23 0 08728a6a9b2d0f341d6dcf18f039c358
++ - `adversaria.relabelling[self, format]: Map[Text, Text]` と `adversaria.variantRelabelling[self, format]: Map[Text, Text]` は、呼び出す側の導出が展開されるときに解決されるマクロになった。シグネチャと結果は同じである。リテラルとして書かれた `@name` の引数（`@name(t"…")`、`@name("…")`）は生成されるコードの中で文字列定数になり、それ以外の引数は、導出されたインスタンスが実行されるたびにではなく、展開の場所で一度だけ再構築されて読まれる。呼び出し側の変更は必要ない。(#2475)
++ - `adversaria.annotatedFields[self, annotation <: StaticAnnotation]: Set[Text]` が追加された。`self` のフィールドのうち `annotation` を持つものの名前を、リテラルの `Set` として返す。フィールドにアノテーションが*あるかどうか*だけが重要な場合は、`fieldAnnotations[self, annotation].defines(label)` の代わりにこれを使うこと。`fieldAnnotations` は変わらない。(#2475)
++ - `adversaria.typeAnnotation[self, annotation <: StaticAnnotation]: Optional[annotation]` が追加された。型 `self` 自体に付いた `annotation`（最後に宣言されたもの）、または `Unset` を返す。`summonInline[self is Annotated by annotation]` の後に `.annotations.head` と続ける代わりにこれを使うこと。(#2475)
++ - アノテーションは書かれたとおりに展開へスプライスされるようになった。以前はノードごとに再構築され、その木が識別子、選択、リテラル、名前付き引数、およびそれらの入れ子の適用からなるコンストラクターの適用でなければ、黙って省かれていた。したがって、引数がそれ以外の形（ラムダ、ブロック、型の帰属、`if`、定数でない文字列補間）を持つアノテーションは、`Annotated#annotations`、`Annotated#fields`、`Annotated#subtypes`、`adversaria.relabelling`、`adversaria.variantRelabelling`、`adversaria.typeAnnotation`、`fieldAnnotations`、`subtypeAnnotations` において、以前はなかったところに現れるようになった。そのようなアノテーションが飛ばされることに依存していたコードは、それを除外しなければならない。コンパイラが付け加える `scala.annotation.experimental` は、以前と同じく `Annotated` が報告することはない。(#2487)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 4 0 191467b4b4cbf83d124fc6d895720988
++ - `Xml.DecodableDerivation` と `Xml.EncodableDerivation` は、型の `@attribute`、`@unqualified`、`@xmlns`、`@name[Xml]` アノテーションを、`adversaria.annotatedFields`、`adversaria.typeAnnotation`、マクロ `adversaria.relabelling` を通じて読むようになった。ワイヤ上の名前と、属性および名前空間についての判断は変わらない。(#2475)
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 35 0 07c487cdc1d14c800726684dc28bcfdd
++ - `soundness.Arithmetic` と `soundness.Geometric` は probably の `Baseline.Mode` のケースを指さなくなり、`probably.Arithmetic`/`probably.Geometric` は削除された。`Baseline.Mode.Arithmetic` と `Baseline.Mode.Geometric` と書くこと。`soundness.Arithmetic` は曖昧さなく hypotenuse の `Arithmetic`（`Arithmetic.Error` を持つ）になった。
++ - テストの軸の上の座標である `Value` は `Axis.Value` に名前が変わった。`Value.Discrete(label)` は `Axis.Value.Discrete(label)` になる。
++ - `probably.Autopsy`（`type Analyse <: Boolean` を持つトレイト）、そのコンパニオンの given `probably.Autopsy.contrastByDefault`、パッケージ `probably.autopsies` とその given `contrastAutopsy` と `noAutopsy`（`soundness.Autopsy` と `soundness.autopsies.{contrastAutopsy, noAutopsy}` としてもエクスポートされていた）は削除された。それらの import はすべて削除すること。アサーションはコンパイル時に `Contrastable` や `Decomposable` を解決しなくなった。失敗したアサーションは代わりに実行時に診断される。スイートが選択の項 `--diagnose=<presentations>`（`inspect`、`show`、`contrast`、`dissect` のカンマ区切りのリスト）付きで起動され、`probably.Diagnostician` がインストールされているときである。
++ - 新しいコンポーネント `probably-diagnosis`（JVM のみ。`scala3-compiler` と `scala3-staging` に依存する）が追加され、`probably.Diagnostician` である `probably.Dissector` を持つ。失敗を診断するには、テストのクラスパスにこれを含めなければならない。これが存在すれば `probably.Streamer.stream` がインストールする。これがなければ、診断された失敗は値の `toString` を伴う `TestEvent.DetailMessage` を記録する。
++ - `probably-core` に新しく追加されたもの：`probably.Diagnosis`（`Presentation`、`Request`、`Site`）、`probably.Diagnostician`（`install`、`apply`、`#diagnose`）、`probably.Runner#diagnosis`（抽象メンバーであり、独自の `Runner` はこれを定義しなければならない）、`probably.Selection#diagnosis`（コンストラクターの新しい最後のパラメーターで、デフォルトは `Diagnosis.Request.none`）、`probably.Verdict.Detail.Dissection(source, rows, reproducible)`、`probably.TestEvent.DissectRow(depth, code, start, end, value, kind)`、`probably.TestEvent.DetailDissection(test, source, rows, reproducible)`、`probably.Streamer.diagnostic`。
++ - `TestEvent` のワイヤ上のスキーマに `DetailDissection` のケースが加わったので、`probably.Streamer.fingerprint` が変わった。0.75.0 に対してビルドされたホストは、このリリースに対してビルドされたスイートを互換性がないと報告する。ホストをこのリリースに対して再ビルドすること。
++ - `probably.internal.assertion` は `[test, test2 <: test, report, result](runner, test, predicate, result, expectation, inc, inc2, decomposable, coordinates, discard, verified)` から `[test, report, result](runner, test, predicate, result, inc, inc2, coordinates, discard, verified, owner, start, end, source, names, captures)` に変わった。これを呼び出すのは `assert`/`check` マクロと `Spread` だけである。再コンパイルすること。
+
+% 0 1 0 05ae2e565038e46506b8cc852c20137f
+
+@ 0 25 0 024abd4ea5eca7a20d4b284fade9ba0f
++ - ultimatum のレイアウトの型は新しい `object Tui` の中に入れ子になり、個別にはエクスポートされなくなった。`Pane`、`Panes`、`Frame`、`Placement`、`Sizing`、`Limits`、`Arrangement`、`Occupancy` は `Tui.Pane`、`Tui.Panes`、`Tui.Frame`、`Tui.Placement`、`Tui.Sizing`、`Tui.Limits`、`Tui.Arrangement`、`Tui.Occupancy` になる。修飾名を書くか、`import ultimatum.Tui.{Pane, Sizing}`（使うものだけを挙げる）とすること。たとえば、`conduct(Occupancy.Inline)(…)` は `conduct(Tui.Occupancy.Inline)(…)` に、`val body: Pane = …` は `val body: Tui.Pane = …` になる。
++ - `ultimatum.Rect` は `Tui.Region` に名前が変わり、`rect` という名前のメンバーはすべて `region` に名前が変わった：`Tui.Placement#region`、`Extent#region`、`FlowExtent#region`、`Form.Entry#region`。`Rect(left, top, width, height)` は `Tui.Region(left, top, width, height)` になる。
++ - ルートのボードは `Tui` の中に入れ子になった。インラインモードのボードである `InlineRoot` は `Tui.Block` に、フルスクリーンモードのボードである `ScreenRoot` は `Tui.Screen` になる。インラインの描画のポリシーはブロックの中に入れ子になった。`InlineAnchoring`、`InlineGrowth`、`InlineShrink` は `Tui.Block.Anchoring`、`Tui.Block.Growth`、`Tui.Block.Shrink` になる。given の `inlineAnchoring`、`inlineGrowth`、`inlineShrink` は変わらない。
++ - `ultimatum.gauges` コンポーネントは `ultimatum.core` に統合され、`ultimatum.core` は `aviation` と `quantitative` に依存するようになった。`ultimatum.gauges` に依存するビルドは `ultimatum.core` に依存すること。
++ - ゲージの型は `Tui` の中に入れ子になった。`Bar`、`Dial`、`Meter`、`Spinner`、`Sparkline`、`Checklist`、`Stopwatch`、`Facet`、`Gradient`、`Inlay`、`Magnitude`、`CaptionLayout`、`Captioned`、`Reading`、`Reckoning`、`Standing`、`Step`、`Transfer`、`Tick`、`Fraction`、`Countdown` は `Tui.Bar` などになる。`gauge`、`gaugeLine`、`gaugeRows`、`whilst`、`Gaugeable`、`Gauging`、`GaugePalette` は変わらない。いくつかを使うコードはそれらを import できる：`import ultimatum.Tui.{Fraction, Reading}`。
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 9 0 1104322e8cbf70b61ca1a4fae48b4ed2
++ - `soundness.Commandline` と `soundness.Native` は octogenarian の git バックエンドを指さなくなった。これらの名前は exoskeleton のパースされたコマンドラインと xenophile の C インターフェースである。以前と同じく `gitBackends.commandlineGit` または `gitBackends.soundnessGit` でバックエンドを選ぶか、クラスを修飾して書くこと：`octogenarian.Native(List(SmartHttp(), SshCommand()))`、`octogenarian.Commandline.Event`。
++ - パッチとリモートの型は `Git` の中に入れ子になった。`Remote`、`Patch`、`Hunk` は `Git.Remote`、`Git.Patch`、`Git.Hunk` になり、`Patch.parse(text)` は `Git.Patch.parse(text)` になる。差分のうち一つのファイルの部分である `FileDiff` は `Git.Delta`（libgit2 の用語）に名前が変わり、その `ChangeKind` は同じケースを持つ `Git.Delta.Status` になった。フィールド `changeKind` は `status` になった。
+
+% 0 1 0 1fe0a5d6b3e78e9f191005621d380881
+
+@ 0 13 0 0189c62d1a56178d097818d6b4c4b71f
++ - containerd の protobuf レコードは `object Containerd` の中に入れ子になり、個別にはエクスポートされなくなった。`Container`、`Mount`、`Namespace`、`Runtime`、`Empty`、`AnyMessage`、`ContentDescriptor`、`ImageRecord`、`ProcessStatus`、`Timestamp`、そしてすべてのサービスのリクエストとレスポンス（`ListContainersRequest`、`CreateTaskResponse`、`WaitResponse`、…）は `Containerd.Container`、`Containerd.Mount` などになる。`embarcadero.Timestamp` は `Containerd.Timestamp` になる。修飾名を書くか、使うメンバーを import すること。例：`import embarcadero.Containerd.{Container, Mount}`。
++ - `DockerEvent` は `Containerd.Event` に名前が変わった。given の `DockerEvent is Loggable` は `Containerd.Event is Loggable` になる。そのケースは変わらない。
++ - OCI のドキュメントの型は `Oci` の中に入れ子になり、個別にはエクスポートされなくなった。`Image`、`Index`、`Layer`、`Descriptor`、`History`、`RootFs`、`ContainerConfig`、`WasmConfig`、`WasmComponent` は `Oci.Image`、`Oci.Index` などになる。`path.open[Image]()` は `path.open[Oci.Image]()` に、`Image.wasm(…)` は `Oci.Image.wasm(…)` になる。
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 4 0 079fae89ab1d567e02cf067d839dde8b
++ - `coaxial.DomainSocket` は `Uds`（UNIX ドメインソケット）に名前が変わり、`DomainSocket.Endpoint` は `Uds.Endpoint` になった。`DomainSocket(% / "var" / "run" / "docker.sock")` は `Uds(% / "var" / "run" / "docker.sock")` になる。コンパニオンの given `Bindable.domainSocket`、`Connectable.domainSocket`、`Serviceable.domainSocket` は `uds` に名前が変わった。
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 3 0 10de7fe8168a59cd05874105da4f7b3a
++ - `telekinesis.domainSocketFetchable` と `telekinesis.domainSocketHttpClient` は `udsFetchable` と `udsHttpClient` に名前が変わった。それらを名前で import している箇所を更新すること（`import soundness.{udsFetchable, udsHttpClient}`）。
+
+% 0 1 0 0136e0d647519dc716274602a4340b64
+
+@ 0 6 0 1007b0c16c2848bf1740f7212e6e6c4e
++ - `4.b`、`8.kib`、`data.bytes` などで作られる不透明なバイト数である `rudiments.Bytes` は `Memory` に名前が変わった。`Bytes(1024L)` は `Memory(1024L)` になり、型の帰属の `Bytes` は `Memory` になる。その演算は変わらない。この型にちなんで名付けられた given は `memory` に名前が変わった：`hypotenuse.Commensurable.memory`（`Memory is Orderable`）、`spectacular.Showable.memory`、`spectacular.Inspectable.memory`、jacinta の `Json.memory` と ypsiloid の `Yaml.memory` のデコーダー。
+
+% 0 1 0 0b62431f4ac242a0138ee9746bc81b2b
+
+@ 0 7 0 183f23cf12db672c14bc0b5f16f0e6e0
++ - 次元 `Information`、その単位 `Bytes[power]`、`MetricUnit` の `Byte`、そして `B` という呼称（`Designation.bytes`）は quantitative に属するようになった。これらは ultimatum のもの（`ultimatum.Information`、`ultimatum.Bytes`、`ultimatum.Byte`、`ultimatum.informationDesignation`）であったが、それらは削除された。`soundness.*` を使うコードは変更不要だが、名前による `import soundness.informationDesignation` は削除すること。呼称は今では `Designation` のコンパニオンで見つかるからである。`Information`、`Bytes`、`Byte` をローカルで再宣言している場合は、それを削除してこれらを使ってよい。
+
+% 0 1 0 10d5740d33bd672200a59ac24b495f6e
+
+@ 0 9 0 0d85b4313bf9727c0e7719c5b0adc09e
++ - エージェントの所在を表す列挙型 `Acp.Agent` は `Acp.Endpoint` に名前が変わった。`Acp.connect(Acp.Agent(sh"…"))` は `Acp.connect(Acp.Endpoint(sh"…"))` に、`Acp.Agent.streams(input, output)` は `Acp.Endpoint.streams(input, output)` になり、ケースは `Acp.Endpoint.Process` と `Acp.Endpoint.Streams` である。
++ - `@rpc` のワイヤ上のトレイトは `Acp` の中に入れ子になり、個別にはエクスポートされなくなった。`AcpAgent` は `Acp.Agent` に、`AcpAgentLifecycle` と `AcpAgentSession` は `Acp.Agent.Lifecycle` と `Acp.Agent.Session` に、`AcpClient` は `Acp.Client` に、`AcpClientSession`、`AcpClientFs`、`AcpClientTerminal` は `Acp.Client.Session`、`Acp.Client.Fs`、`Acp.Client.Terminal` になる。
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 7 0 1ead9af88f461deb09e2189712015e55
++ - ブロック暗号のモードとパディングは `BlockCipher` の中に入れ子になり、個別にはエクスポートされなくなった。`Cbc`、`Ecb`、`Ctr`、`Cfb`、`Ofb`、`Pkcs7`、`Iso10126`、`NoPadding` は `BlockCipher.Cbc` などになり、型クラス `BlockCipherMode` と `BlockCipherPadding` は `BlockCipher.Mode` と `BlockCipher.Padding` になる。`Aes[256] over Cbc against Pkcs7` は `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7` になる。またはメンバーを import すること：`import enigmatic.BlockCipher.{Cbc, Pkcs7}`。given の `blockCipherModes` と `blockCipherPaddings` は変わらない。
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 10 0 0bc05cec8d5b159011d2ebf39faca110
++ - コンパイルの型は `Compiler` の中に入れ子になり、個別にはエクスポートされなくなった。`CompileProcess`、`CompileResult`、`CompileEvent`、`CompileProgress` は `Compiler.Process`、`Compiler.Result`、`Compiler.Event`、`Compiler.Progress` になり、`CompileEvents.relay` は `Compiler.Event.relay` になる。`given (CompileEvent is Loggable)` は `given (Compiler.Event is Loggable)` になる。
++ - `Notice` は `Compiler.Notice` に名前が変わり、`Universe`、`Tool`、`Triple` は `Toolchain` の中に入れ子になった。`Scalac[3.8, Universe.Classfile]` は `Scalac[3.8, Toolchain.Universe.Classfile]` に、`extends Tool` は `extends Toolchain.Tool` に、`Triple.X64Linux` は `Toolchain.Triple.X64Linux` になる。またはメンバーを import すること：`import anthology.Toolchain.{Tool, Universe}`。
+
+% 0 1 0 1fbc3e2eb3ac8c1d08a287e2c3a4960b
+
+@ 0 5 0 11156a746e60a0390520ba8d17abc0b2
++ - 表の型は `Table` の中に入れ子になり、個別にはエクスポートされなくなった。`TableCell`、`TableRow`、`TableSection`、`TableStyle`、`TableRelabelling` は `Table.Cell`、`Table.Row`、`Table.Section`、`Table.Style`、`Table.Relabelling` になる。`given TableRelabelling[Codebase]` は `given Table.Relabelling[Codebase]` になる。given の `tableStyles` は変わらない。
+
+% 0 1 0 15965c13323b4da117df6152721cd841
+
+@ 0 7 0 0c9c13ae65709be10973afb0dbd821e6
++ - 図のタイルとスタイルはそれぞれの図の中に入れ子になり、個別にはエクスポートされなくなった。`TreeTile`、`TreeStyle`、`TextualTreeStyle` は `TreeDiagram.Tile`、`TreeDiagram.Style`、`TreeDiagram.TextualStyle` に、`DagTile`、`DagStyle`、`TextualDagStyle` は `DagDiagram.Tile`、`DagDiagram.Style`、`DagDiagram.TextualStyle` に、`LaneDagStyle` と `TextualLaneDagStyle` は `LaneDagDiagram.Style` と `LaneDagDiagram.TextualStyle` になる。given の `treeStyles`、`dagStyles`、`laneDagStyles` は変わらない。
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 5 0 189acdb0d87aa5d61113718356d9b54b
++ - `MissingFlagError` と `InvalidFlagError` は `Flag.Error(flag, reason)` に統合された。その `reason` は `Flag.Error.Reason.Missing` または `Flag.Error.Reason.Invalid(detail)` である（以前の `InvalidFlagError#reason` は `detail` になった）。`catch case error: MissingFlagError =>` は `catch case error: Flag.Error =>` になり、区別が重要なら `error.reason` を調べる。`Tactic[MissingFlagError]` や `Tactic[InvalidFlagError]` は `Tactic[Flag.Error]` になる。
+
+% 0 1 0 1fc810244c2cd3bf14cb7bb4f199169b
+
+@ 0 2 0 1ea63357770ee18f1ab316e338db9897
++ - `RegexBackend` は `Regex.Backend` に名前が変わった。型 `RegexBackend[Re2]` は `Regex.Backend[Re2]` になる。given の `regexBackends` は変わらない。
+
+% 0 1 0 1ff629affd81c87111d067a62bcc62a1
+
+@ 0 2 0 12501d8494e8d7511771c05bd42c532a
++ - `SharedProbate` は `Probate.Shared` に名前が変わった。パラメーター `using SharedProbate` は `using Probate.Shared` になる。同じエイリアス `Probate^{caps.any.only[Durable]}` である。
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 1 0 0d5970a84e8c70d501083dcb63902c5c
++ - `rec"…"` リテラルの型である `RecurrenceLiteral` は `Recurrence.Literal` に名前が変わった。
+
+% 0 1 0 02c92e6303dfc9ad1a801cd1587ac61f
+
+@ 0 7 0 1edc8743f06f7e410e306571a3929051
++ - `SyntaxMatcher` は `Css.Syntax.Matcher` に名前が変わった。`SyntaxMatcher.check(grammar, value)` は `Css.Syntax.Matcher.check(grammar, value)` になる。
++ - セレクターの文法は `Selector` の中に入れ子になった。`Compound`、`Simple`、`Combinator`、`AttributeTest`、`AttributeMatcher`、`Prefix`、`PseudoArgument` は `Selector.Compound`、`Selector.Simple` などになる。
++ - `Css.Syntax.Matcher.check` の結果である `Outcome` は `Css.Outcome` に名前が変わった。`Outcome.Valid` は `Css.Outcome.Valid` になる。
+
+% 2 1 0 12b30a3574eb14f9012dfe1722a13bdd
+
+@ 0 3 0 11a07c4a3683b84118f8fe91420acd01
++ - JDK の例外を包む `Error` である `UncheckedError` は `Error.Unchecked` に名前が変わった。引き続き `Error(throwable)` で作られる。パターン `case error: UncheckedError` は `case error: Error.Unchecked` になる。
+
+% 0 1 0 07f33a1bf4fa2505029751dde4102879
+
+@ 0 3 0 19cd54aa3f38b29f1869db7f52153278
++ - `degustation.Universe` は `soundness.Universe` としてエクスポートされるようになり（anthology のコンパイラのユニバースは `Toolchain.Universe`）、`ClassSource` と `ClassInfo` はその中に入れ子になった。`ClassSource` は `Universe.Source` に、`ClassInfo` は `Universe.ClassInfo` になる。
+
+% 2 1 0 1468f76113d9c8db0a7bd1e00a80db53
+
+@ 0 4 0 050d88d4028713e208125a12e458eb5e
++ - 編集の分類は `Diff` の中に入れ子になり、個別にはエクスポートされなくなった。`Change`、`Edit`、`Ins`、`Del`、`Par`、`Sub`、`Chunk` は `Diff.Change`、`Diff.Edit`、`Diff.Ins`、`Diff.Del`、`Diff.Par`、`Diff.Sub`、`Diff.Chunk` になる。編集に対してマッチするコードはそれらを import できる：`import dissonance.Diff.{Del, Ins, Par}`。
+
+% 2 1 0 051ad4da5fa2641112250c89753a6d4a
+
+@ 0 1 0 0c504040537724981b1cf852542b8dc3
++ - マルチパートの本文の一つの部分である `Part` は `Multipart.Part` に名前が変わった。
+
+% 2 1 0 1adb4a3e319cbaf21bd78fbd9a02fa76
+
+@ 0 1 0 187f2898ddb8e25305c711155c0c58cf
++ - WebSocket のフレームのマスキングのポリシーである `Masking` は `Websocket.Masking` に名前が変わった。
+
+% 0 1 0 12a5154887295d701791e765afcca89e
+
+@ 0 1 0 16ee0affaa390164036fa6476f4daf8a
++ - OAuth のスコープである `Scope` は `OAuth.Scope` に名前が変わった。
+
+% 0 1 0 1cc5e70970ad42a51e424017e29c8c25
+
+@ 0 1 0 1a1242d4974dd9ff013c2b2ad4dc6f99
++ - PDF のリンク先である `Destination` は `Pdf.Destination` に名前が変わった。
+
+% 2 1 0 03943a5df63d4aba12d2bc574da32be9
+
+@ 0 2 0 0789baafeec7e9ab0e4eeaa438c34365
++ - §22.2 の編集操作とそれを合成できるログである `Mutation` と `Revision` は `Tel.Mutation` と `Tel.Revision` に名前が変わった。`Mutation.Error` は `Tel.Mutation.Error` になる。
+
+% 0 1 0 110b77734cfed03a118adecece7f9e5b
+
+@ 0 2 0 191d70bb98812bf31e23c9f609c83fe6
++ - コンパイルされた正規表現のプログラムとその文字の範囲である `Program` と `Ranges` は `Motif.Program` と `Motif.Ranges` に名前が変わった。
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 1 0 114fc0dd850bc5dc14b3d792f2fbe8a3
++ - `Category` と `Estimate` は `Chart.Category` と `Chart.Estimate` に名前が変わった。
+
+% 0 1 0 133c947ece881a290e103b473d617f2c
+
+@ 0 4 0 139bd765835c38a118b684776202071b
++ - デバイスの型は `Audio` の中に入れ子になった。`Feed`、`Outlet`、`Device`、`Configuration` は `Audio.Feed`、`Audio.Outlet`、`Audio.Device`、`Audio.Configuration` になり、`Feed.list` は `Audio.Feed.list` に、`Feed.Error` と `Outlet.Error` は `Audio.Feed.Error` と `Audio.Outlet.Error` になる。
+
+% 0 1 0 07409a9b4226d59e0356189f39895ad5
+
+@ 0 1 0 1335736455a04d4c138f47919c1cabe7
++ - `Display` と `Cell` は `Mathml.Display` と `Mathml.Cell` に名前が変わった。
+
+% 2 1 0 01dfd51c7bee78921c0d528f7c1c72c2
+
+@ 0 3 0 0e0068bcbfcf5b1709789d57fa1caacd
++ - 仕様のフィールドの記述と多重度である `Member` と `Multiplicity` は `Specification.Member` と `Specification.Multiplicity` に名前が変わった。プロバイダーの実装はそれらを import できる：`import polyvinyl.Specification.{Member, Multiplicity}`。
+
+% 0 1 0 0aebba901602cb461334bf128bd66cd1
+
+@ 0 2 0 013cdb609a4a9b1509eb8cab6a74723d
++ - ハイライトされたソースの一つのトークンである `Token` は `SourceCode.Token` に名前が変わり、`Role`（トークンが名前を束縛するか、名前を参照するか）は `SourceCode.Token.Role` に名前が変わった。
+
+% 0 1 0 0edeca1688ed1712094917bf1cb39981
+
+@ 0 2 0 0250b487e0e529be08268bbe303196a5
++ - `Discourse` の二つの種類である `Human` と `Agent` は `Discourse.Human` と `Discourse.Agent` に名前が変わった。
+
+% 2 1 0 10ad56dc867b044b14494de584bf8968
+
+@ 0 6 0 0b65ae76d9abef6e082299d3e7812c98
++ - 単位方向の `Up`、`Down`、`Left`、`Right` は `Delta` の中に移った。`7*Up + 3*Right` は `7*Delta.Up + 3*Delta.Right` になる。裸の `Left` と `Right` が `Either` のコンストラクターを覆い隠すことはなくなった。
++ - 描画できる図形は `Svg` の中に入れ子になった。`Figure`、`Rectangle`、`Outline`、`Ellipse`、`Group`、`Polyline`、`Lettering` は `Svg.Figure`、`Svg.Rectangle` などになる。描画のコードはそれらを import できる：`import savagery.Svg.{Group, Rectangle}`。
+
+% 0 1 0 1eecc11d4eed23d30cc8cf10b4de468a
+
+@ 0 7 0 1d59f278a1d2258206d0b13c1c79f1d0
++ - ログイベントの重大度である `Level` は `Log.Level` に名前が変わった。`Logger(out, level = Level.Warn)` は `Logger(out, level = Log.Level.Warn)` になり、`Loggable` の実装の `def log(level: Level, …)` は `def log(level: Log.Level, …)` になる。
++ - ピクセルのチャンネルは `Channel` の中に入れ子になり、`Channel` はエクスポートされるようになった。`Red`、`Green`、`Blue`、`Alpha`、`Cyan`、`Magenta`、`Yellow`、`Key`、`Grey` は `Channel.Red` などになる。`type Rgb565 = (Red[5], Green[6], Blue[5])` には `import Channel.{Blue, Green, Red}` か修飾名が必要である。
+
+% 2 1 0 09849afe61e467ab080fe28038f858f0
+
+@ 0 2 0 19d49af61af7a5b50c1a9a0f1e305a73
++ - `soundness` にエクスポートされていなかった perihelion の `Message`、`Channel`、`Reader` は `Websocket` の中に入れ子になった。`perihelion.Message` は `perihelion.Websocket.Message` になる。
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 10 0 0c0145cc0639966909e5b9987bd7898c
++ - `galilei.FilesystemBackend` に抽象メンバー `def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^` が加わった。これはファイルを読み取り専用でメモリーにマップする。`FilesystemBackend` を実装するクラスはこれを定義しなければならない。メモリーマッピングを持たないクラスは、これを `abort(Io.Error(path, Io.Error.Operation.Open, Io.Error.Reason.Unsupported))` と定義する。(#2474)
++ - `path.open[galilei.Ram](…)` と `path.create[galilei.Ram](RamFlag.Size(n))` は、`Int.MaxValue` バイトを超えるファイルや大きさに対して `Reason.Unsupported` の `Io.Error` を発生させなくなった。ファイルは大きさにかかわらずマップされる。マッピングは、ガベージコレクターが回収したときではなく、ブロックが終わったときに解放されるようになった。したがって、ブロックの外まで保持された `ram.expanse` は、以前は動き続けていたが、読まれると `IllegalStateException` で失敗する。(#2474)
+
+% 2 1 0 06d1e8068f027163150bda127fb55e00
+
+@ 0 16 0 1a4e4b2525e3b8cf0de25690c7f13764
++ - `stratiform.Tels.Field` に八番目のパラメーター `indexes: List[Tels.Index] = Nil` が、`stratiform.Tels.Scalar` に四番目と五番目のパラメーター `width: Optional[Int] = Unset` と `intern: Boolean = false` が加わった。構築には影響しない。位置によるパターンには、追加されたワイルドカードが必要である：`case Tels.Field(_, _, keyword, _, _, _, _)` は `case Tels.Field(_, _, keyword, _, _, _, _, _)` に、`case Tels.Scalar(_, encoding, _)` は `case Tels.Scalar(_, encoding, _, _, _)` になる。`stratiform.Tels.ScalarDefinition` にも同様に、`patterns` の後に `width` と `intern` が加わった。(#2477)
++ - `stratiform.Tel.Pragma.Reference.tels` は `specification.tel/tels:2.1.0`（以前は `tels:2.0.0`）になり、`stratiform.SchemaResolver.telsSignature` はその版の署名になった。以前の値は `Tel.Pragma.Reference.telsEarlier` と `SchemaResolver.telsEarlierSignature` である。どちらかに固定したドキュメントも、引き続き組み込みのスキーマに解決される。それに伴って `Tels.Axiom.tels` の値のハッシュが変わった。`Tels.Axiom.acceptance` の署名と、既存のすべてのスキーマのドキュメントの署名は変わっていない。(#2477)
++ - `stratiform.Tel.Error.Reason` に、225 から 231 の番号を持つ七つのケースが加わった：`WidthNotDecimal`、`WidthConflict`、`WidthWithoutEncoding`、`IndexNotApplicable`、`IndexPathInvalid`、`IndexPathUnresolved`、`WidthWithIntern`。`Reason` に対する網羅的なマッチにはこれらが必要である。(#2477)
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 6 0 0b1eb35f24683e8217d6775e127fc93f
++ - `Expanse` は追跡されるケイパビリティとして貸し出されるようになった。`path.expanse { … }` と `FilesystemBackend#expanse` のラムダは、`zephyrine.Expanse` を取っていたところで `zephyrine.Expanse^` を取る。キャプチャ検査されるモジュールでは、その expanse を渡されるメソッドはパラメーターを `Expanse^` と宣言し、それを保持する値はブロックから返せない。`FilesystemBackend` を実装するキャプチャ検査されたクラスは、それに合わせて `expanse` の `lambda` パラメーターの型を変える。キャプチャ検査なしでコンパイルされるコードには影響しない。(#2489)
+
+% 2 1 0 19692626886f6c8c06b82dac91c1a369
+
+@ 0 4 0 18c5353df08f9865004792eb21d9fca1
++ - `Diff#chunks`（したがって `Diff#serialize`）は、間に `Par` を挟まずに別のチャンクの直後に続くチャンクについて、正しい右側の位置を返すようになった。以前は左側の位置から計算されていたので、そのようなチャンクの `a`/`d`/`c` コマンドが誤った右側の行を指すことがあった。(#2401)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 5 0 11baa2f67ec5e22416a3f36930042eae
++ - `lineSeparation.strictLinefeedsLineSeparation` は、裸の LF で行を終え、CR をテキストとして残すようになった。`strictCarriageReturnLineSeparation` の鏡像である。以前はそのポリシーの表を持っていたので、CR で行を終え、LF を残していた。以前の動作のためにこれを import していたコードは `lineSeparation.strictCarriageReturnLineSeparation` を import すること。違いは CR を書き出すことだけである。(#2408)
+
+% 0 1 0 08aeb0597d80bda715e9265307be8d6a
+
+@ 0 3 0 1130fa22571bee111fd4e302f86fa44e
++ - `imperial.Base.Root` の型レベルのパスのラベルは、名前の付いたディレクトリに合わせて `"root"`（以前は綴りを誤った `"roto"`）になった。影響を受けるのは、レイアウトの `Topic` 型を明示的に名指しするコードだけである。(#2411)
+
+% 2 1 0 0b4b34aa258c305b075f843829952a75
+
+@ 0 7 0 0ce0e56f50f9c0630b317e2880766459
++ - `alphabets.base32ExtendedHexUpperCase` は復号の際に小文字の拡張 16 進の数字も受け付けるようになり、`alphabets.base32ExtendedHexLowerCase` は大文字のものを受け付けるようになった。それぞれ、自身の大文字小文字での同じ文字の値を持つ。以前は代わりに、もう一方の大文字小文字の*標準*の Base32 アルファベットを許容していたので、`a` は 10 ではなく 0 として復号され、`w`–`z`（または `W`–`Z`）が受け付けられていた。それら四文字は今では `Serialization.Error` を発生させる。(#2434)
++ - `alphabets.base32Crockford` は、すでに `L`、`i`、`I` をそうしていたように、小文字の `l` を 1 として復号するようになった。以前は `Serialization.Error` を発生させていた。(#2434)
+
+% 2 1 0 0d0edfe5338da73d011c44515138d92e
+
+@ 0 6 0 0887b0d1be27872c12165d4fd1f3436a
++ - `alphabets.base64Uuencoding` は、`` ` ``（ゼロ）から `!` を経て `_` までの、uuencoding の 64 文字を持つようになった。以前は 63 文字で、それぞれが一つずつ低い位置にあったので、値全体をこれで直列化すると `StringIndexOutOfBoundsException` が投げられ、ストリームは一文字あたり五ビットで符号化されていた。古いアルファベットで書かれたテキストは同じバイトに復号されない。(#2412)
++ - `alphabets.octalStandard` は復号の際に `=` を受け付けなくなった。以前は九番目の数字として読まれていたが、今では他の異質な文字と同じく `Serialization.Error` を発生させる。(#2412)
+
+% 2 1 0 17434c8dd612a71409986d30e6c866e1
+
+@ 0 5 0 0842a056948fdc1812e744144ff8696f
++ - `Media.Suffix.FastInfoset` は、`Suffix#name`、その `Showable`、表示またはエンコードされた `MediaType` において、IANA が登録している綴り（RFC 6839）である `fastinfoset` と書かれるようになった。以前は `fast-infoset` であった。`MediaType.parse`（したがって `Text#as[MediaType]` と `media"…"`）は、以前は `InvalidSuffix` の `MediaType.Error` を発生させていた `+fastinfoset` を受け付けるようになった。ハイフン付きの `+fast-infoset` も引き続き読まれる。(#2437)
+
+% 2 1 0 19a008753f9fb92a09e72f5fd530051a
+
+@ 0 8 0 034d5979d3f944521a9222ce74692e0a
++ - `Svg.Outline` の方向付きのステップは、SVG の軸（`y` は下向きに増える）において、名前の示す方向に動くようになった：`lineUp(n)` は `Draw(Delta(0, -n))`、`lineDown(n)` は `Draw(Delta(0, n))`、`lineLeft(n)` は `Draw(Delta(-n, 0))`、`lineRight(n)` は `Draw(Delta(n, 0))` であり、`moveUp`/`moveDown`/`moveLeft`/`moveRight` も同様に `Move` を使う。以前は四分の一回転していた：`lineUp(n)` は `Delta(n, 0)`、`lineDown(n)` は `Delta(-n, 0)`、`lineLeft(n)` は `Delta(0, -n)`、`lineRight(n)` は `Delta(0, n)` を描いていた。パスの既存の形を保つには、`lineUp` を `lineRight` に、`lineDown` を `lineLeft` に、`lineLeft` を `lineUp` に、`lineRight` を `lineDown` に置き換える（`move…` メソッドも同じように置き換える）。(#2449)
+
+% 0 1 0 14802db87637bb240c0e50c6611271aa
+
+@ 0 5 0 0afc6769ff59c0d1163d16ec7a5e55a2
++ - `Uuid.parse`、`Uuid.extract`、`Uuid` の抽出子、`Text` からの `Uuid` の復号、`uuid"…"` リテラルは、正準形（8、4、4、4、12 桁の 16 進数の五つのグループ）だけを受け付けるようになった。31 桁の UUID のように短いグループを持つテキストは、以前はそのグループがゼロでパディングされているかのように読まれていた。今では `Uuid.Error` を発生させる（または `Unset` になり、リテラルではコンパイルエラーになる）。(#2462)
+
+% 2 1 0 0ca3f4393939622a1625460f46785c43
+
+@ 0 3 0 1ba3b77799c104da0be00e016d9c7049
++ - `polyvinyl.Specification.Multiplicity` にケース `Series` が加わった。仕様自身のもののコレクションとして読まれるメンバーである。`Multiplicity` に対するマッチを網羅的にするには、これに対するケースが必要である。既存の仕様がこれを生じることはない。(#2491)
+
+% 2 1 0 0d61d12e5d0aafca063e30861b67ff7d
+
+@ 0 26 0 0f05b796e660ee8c14b44b43304842ad
++ - `fulminate.Error` のプライマリコンストラクターは `Error(val d: Int, val e: Int)(val message: Message, private val cause: Throwable | Null)(using val diagnostics: Diagnostics)` から `Error(val module: Int, val number: Int, val variant: Int)(val message: Message, private val cause: Throwable | Null)(using val diagnostics: Diagnostics)` に、セカンダリコンストラクターは `this(d: Int, e: Int)(message: Message)(using Diagnostics)` から `this(module: Int, number: Int, variant: Int)(message: Message)(using Diagnostics)` に変わった。`this(message: Message, cause: Throwable | Null = null)(using Diagnostics)` は変わらない。メンバー `d` と `e` は削除された。`e` は `variant` になり、`d` に相当するものはない。エラーは `module`（そのライブラリの番号）と `number`（ライブラリ内でのそのエラーの番号）で識別される。`extends Error(d, e)(…)` と書かれたサブクラスには、モジュール番号とその中での番号を与えるか、番号なしの `extends Error(…)` と書かなければならない。(#2493)
++ - 番号の付いたすべてのエラーのコードは、`SN-ddd` または `SN-ddd.e` から、ボルトコード `↯/s.m.n` または `↯/s.m.n.e` に変わった。`m` はエラーのライブラリの番号、`n` はライブラリ内でのエラーの番号であり、`e` は変わらない。`doc/errors/sn.md` に、以前のすべての `SN-` コードの新しいコードが載っている。これにより、`fulminate.Error#errorCode`（`t"SN-077.3"` → `t"↯/s.100.2.3"`）、`fulminate.Error#colourCode`、`fulminate.Error#labelled`、`fulminate.Error#getMessage`（`"[↯SN-077.3] …"` → `"[↯/s.100.2.3] …"`）の結果と、Soundness のマクロが番号付きで報告するすべてのコンパイルエラーの接頭辞が変わる。エラーのメッセージを接頭辞付きで照合するテキストは更新しなければならない。新しいメンバー `fulminate.Error#bolt`（`fulminate.Bolt`）は、コードを値として与える。(#2493)
++ - `fulminate.halt` と `fulminate.warn`：エラー番号を取るオーバーロード `(d: Int, message: Message)`、`(d: Int, message: Message, position: Matchable)`、`(d: Int, reason: Clarification, message: Message)`、`(d: Int, reason: Clarification, message: Message, position: Matchable)` は、`d: Int` を `module: Int, number: Int` に置き換えた同じものに変わった。オーバーロード `(message: Message, position: quotes.reflect.Position | Null = null)` は変わらない。(#2493)
+
+% 2 1 0 0fde2b217fd9d5090c59bca4f8da3ec0
+
+@ 0 6 0 140e30e5b66647841720e914546bdd53
++ - TEL、BinTEL、RaTEL の仕様が番号を付けている理由に対する `stratiform.Tel.Error`、`stratiform.Bintel.Error`、`stratiform.Ratel.Error` のコードは、仕様自身のコードを含む複合ボルトコードになった：`SN-605.107` → `↯/s.118.1/t.1.7`、`SN-609.5`（BinTEL）→ `↯/s.118.5/t.4.5`、`SN-615.12`（RaTEL）→ `↯/s.118.11/t.5.12`。実装自身の理由は、以前と同じくバリアントである：`SN-605.402` → `↯/s.118.1.402`。理由自身の番号は変わらない。(#2493)

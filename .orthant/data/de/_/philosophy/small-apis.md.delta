@@ -1,0 +1,153 @@
+orthant 2 language
+
+@ 0 1 0 1cc5ff58e471b2fd09d11693e581e23a
++ # Kleine APIs
+
+@ 0 6 0 01311b0182939be61727a44823f2b8ab
++ Soundness hält seine APIs klein, indem es einer Operation einen Namen gibt. Eine einzige
++ polymorphe Methode — `read`, `as`, `show` — dient jedem Typ, der sie unterstützt, statt einer
++ Familie von Beinahe-Duplikaten, die sich nur darin unterscheiden, worauf sie angewandt werden.
++ Es gibt einen offensichtlichen Weg, etwas zu tun, also gibt es weniger zu lernen, weniger zu
++ behalten und weniger Gelegenheit, zur falschen Variante zu greifen. Die Breite dessen, was eine
++ API kann, ergibt sich aus der Bandbreite der Typen, über die sie sich erstreckt, nicht aus der
++ Anzahl der Methoden, die sie anbietet.
+
+@ 0 1 0 0d30399c06d6856204c8d7189762eab5
++ ## Ein Verb, viele Typen
+
+@ 0 3 0 107b380f3c36090312f6bc3c016fdbaf
++ `read` parst eine Quelle in den angeforderten Typ. Es gibt kein `readJson`, kein `parseXml`,
++ kein `fromCsv` — das Typargument sagt, was gewollt ist, und eine Instanz für diesen Typ erledigt
++ die Arbeit:
+
+% 2 1 0 0ab6c2fb4fe0c0471d6f602823cbbea6
+
+% 3 1 0 03d4ffa3067cef1b13ff4a405580ef37
+
+% 4 1 0 028851f4ec4b00340c1f25950fbba6a7
+
+% 0 1 0 0261343a2962e2231f24d866c7504c5d
+
+% 0 1 0 1808423e236c36a918c2826532301366
+
+% 0 1 0 0de5058c5d45be430527e7563a86f1f8
+
+% 0 1 0 1551c54be0c1836e0d7f5cd5fa90b7a2
+
+% 0 1 0 05ae9cd73b3dbbdd12585f9d98bda8ac
+
+% 1 1 0 118d025405b1b36b02d5e2cd7f05b8bc
+
+@ 0 2 0 053717c18e5707400ddaa47fa8f2d4b9
++ Ein neues Format fügt Instanzen hinzu, keine Methoden. Das Vokabular, das ein Leser lernen
++ muss, wächst nicht, wenn die Bibliothek wächst.
+
+@ 0 2 0 01a156f68551adf71d7f2e09373c2987
++ Dasselbe gilt durchgehend. Jedes Verb ist eine Methode, deren Bedeutung für einen gegebenen Typ
++ aus einer Typklasse kommt:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 044ebdffd36c5bd5128a297944c2aa99
+
+@ 0 10 0 05f97aa396649ea2004c9fd218d76b92
++ column  Wirkung
++ column  Typklasse
++ row  `read`  liest eine Quelle als Wert  `Readable`
++ row  `as`  dekodiert  `Decodable`
++ row  `show`  stellt für einen Menschen dar  `Showable`
++ row  `inspect`  stellt für einen Programmierer dar  `Inspectable`
++ row  `in`  kodiert in ein Format  `Encodable`
++ row  `stream`  stellt einen Wert als Stream bereit  `Streamable`
++ row  `digest`  hasht  `Digestible`
++ row  `serialize`  stellt Bytes in einer Basiskodierung dar  `Serializable`
+
+% 1 1 0 19c07f33761a42a90e29bc43a1483b6a
+
+@ 0 1 0 179d16208dec4c761513e9b993eba171
++ Daher lesen sich Dekodieren, Kodieren, Hashen und Serialisieren gleich, was immer der Typ ist:
+
+% 2 1 0 0f3685e6299c7da419b59efb88d49a90
+
+% 3 1 0 05e06199f001764214c239e2036faa8a
+
+% 4 1 0 1b14ee70bae375500aeecd48ea6583ed
+
+% 0 1 0 0e78beea83e2d85a0be34afd232fe0d8
+
+% 0 1 0 00406b51bea419fc10e4e04f56142936
+
+% 0 1 0 0d56ae6a2bd7b292037a7d215f0e220e
+
+% 0 1 0 13f6190cb82cdcde147ba8583d66b2d8
+
+% 0 1 0 1ef0595261088b231389c5da1a9da219
+
+% 1 1 0 1c80026de68621a81c05d0c9b1f274e4
+
+@ 0 1 0 090d9c4d4337b992189b18b3b6697412
++ ## Was es möglich macht
+
+@ 0 1 0 0268b1a5380386160c326bb81758f73d
++ Drei Dinge, und keines davon ist bloß Disziplin bei der Benennung.
+
+@ 0 3 0 1adfa566dde23ab20e2af4e53e7454b9
++ **Typklassen liefern die Bedeutung.** `read` ist eine Methode, deren Verhalten aus einer
++ `Readable`-Instanz kommt; `as` aus einem `Decodable`; `show` aus einem `Showable`. Die Methode
++ ist ein Name für eine *Beziehung*, nicht für eine Implementierung.
+
+@ 0 3 0 1c68c9e74e50a81f08631e450caa188b
++ **Das Typargument trägt die Absicht**, die sonst ein längerer Name tragen würde. `read[Json]`
++ sagt so viel wie `readJson` mit derselben Anzahl von Zeichen und lässt sich komponieren:
++ `read[Person in Json]` hätte im anderen Schema überhaupt keinen vernünftigen Namen.
+
+@ 0 5 0 14b37f7b9527a9bd0b139eb58d4fd6fd
++ **Die Eindeutigkeit der Namen macht den Umbrella-Import sicher.** Weil es in ganz `soundness`
++ ein `Path` und ein `Error` gibt, erzwingt ein einziges `import soundness.*` nie die Wahl
++ zwischen zwei gleichnamigen Dingen — und das erlaubt es, dass ein Verb wirklich ein Verb ist
++ statt mehrerer, die einander verdecken. Siehe
++ [Benennung](naming.md).
+
+@ 0 1 0 16e9ec46d2f5e3bd1a5e5960b4606347
++ ## Der Gegendruck
+
+@ 0 3 0 0790b3848c2af75e12be50a58502aa4c
++ Eine kleine API ist keine API mit wenigen Fähigkeiten, und das Prinzip lautet nicht „füge keine
++ Methoden hinzu“. Es ist eine Einschränkung, *wie* Fähigkeiten hinzukommen: indem die Bandbreite
++ der Typen, die eine bestehende Operation abdeckt, erweitert wird, bevor eine Operation
++ hinzukommt.
+
+@ 0 1 0 03fea144dd230b3b00665c61eb5ffcfe
++ Zwei Kräfte drücken in die andere Richtung, und beide sind an ihrem Platz berechtigt.
+
+@ 0 4 0 190657699331960a0f3d141a72fe52d8
++ Die erste: wenn sich eine Operation wirklich unterscheidet. `read` und `load` sind zwei Verben
++ für [XML](../en/modules/xml.md), weil Lesen den Inhalt liefert und Laden das Dokument mit seinem
++ Header — eine echte Unterscheidung, keine Variante. Sie zusammenzulegen würde ein Flag-Argument
++ erzwingen, was ein schlechterer Weg ist, dasselbe zu sagen.
+
+@ 0 4 0 086c1ae4cc94573908f0dd34f83edb12
++ Die zweite: wenn eine Domäne ihr eigenes Vokabular hat, das ein allgemeines Verb verschleiern
++ würde. Ein `Tarfile` hat `gzip`, nicht `in[Gzip]`, weil „ein gzip-komprimierter Tarball“ das ist,
++ was die Domäne benennt. Überall auf dem allgemeinen Verb zu bestehen macht eine API einheitlich
++ und unlesbar, was eine Art von Lernaufwand gegen eine andere tauscht.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 4 0 07cf3277aa5a5ff211d422017883c037
++ Polymorphe Methoden belasten die Inferenz und die Fehlermeldungen. Schlägt
++ `source.read[Person in Json]` fehl, weil eine Instanz fehlt, beklagt sich der Compiler
++ standardmäßig über eine implizite Suche, nicht über einen fehlenden Codec — was weiter vom
++ Problem entfernt ist, als „keine Methode `readPerson`“ es gewesen wäre.
+
+@ 0 4 0 1bf192d8902421401593a60f3c451742
++ Diese Kosten werden abgetragen statt geleugnet: Der Import von `explainMissingContext` macht
++ aus dem bloßen impliziten Fehler eine Diagnose, die den Import benennt, der ihn beheben würde.
++ Der Tausch — ein etwas schlechterer Fehlerfall für ein viel kleineres Vokabular — lohnt sich
++ nur, wenn der Fehlerfall repariert wird, also wird er es.
+
+@ 0 2 0 00cdc4d4a773a9ea1f03cd64143c4bff
++ Siehe [elegante Prosa](elegant-prose.md) dazu, warum ein durch Analogie erlernbares Vokabular
++ der eigentliche Gewinn ist, und [Komponierbarkeit](composability.md) dazu, was die
++ Einheitlichkeit einbringt.

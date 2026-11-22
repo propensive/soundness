@@ -1,0 +1,334 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0acd985fca7d839c13845c8c9a4936f2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1015a776fc6b793b06a9a32c9c806981
++ info   números complejos sobre cualquier tipo de componente numérico, magnitudes incluidas, con doubles sin boxing
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 08c85e3aae820eda0fed53c726d6b53b
++     _Baroque_ proporciona `Complex`, un número complejo cuyas partes real e imaginaria pueden ser de
++     cualquier tipo con la aritmética que necesite una operación: `Int`, `Double`, un racional `Q64`
++     o una magnitud, de modo que una impedancia o una velocidad complejas conservan sus unidades en
++     cada suma y cada producto. `i` es la unidad imaginaria, como `Complex[Double]`.
+
+% 2 1 0 16d3af3012851a871a34ddcf0563aac1
+
+% 3 1 0 105d725a584aea14130cac19b7ff1f1b
+
+% 0 1 0 0b76cac599b366c61f87578fd49502ff
+
+% 0 1 0 0edcd0fe5fb031d21d36bf4b03dc2b44
+
+% 0 1 0 1eedcb1fb8a95eff0501e1721f96116a
+
+% 0 1 0 1c50227687bcd83f0df938ba3167f7a2
+
+% 1 1 0 056fd88217c5d65b1d7cff18466d0006
+
+@ 0 7 0 11be897b92902a4a001e0cc9aa4aded3
++     La aritmética no se define en el propio `Complex`, sino mediante las clases de tipos de
++     symbolism: el objeto compañero de `Complex` contiene givens `Addable`, `Subtractable`,
++     `Multiplicable`, `Divisible` y `Negatable` que existen exactamente cuando los componentes tienen
++     las operaciones correspondientes, y cuyos resultados son números complejos de los tipos de
++     resultado de los componentes. El producto de dos longitudes complejas es un área compleja; la
++     suma de pulgadas y pies es una longitud compleja en metros. Todos los givens están en el ámbito
++     implícito, así que no hace falta importar nada aparte de `soundness.*`.
+
+@ 0 6 0 0f54cab076181aba086386d1220e9c2b
++     El constructor, los accesores y la aritmética son todos `inline`, y resuelven las operaciones
++     de los componentes en el punto de llamada: un `Complex` cuyo componente es en el fondo un
++     `Double` —el propio `Double`, una magnitud, un `F64`— se almacena como dos doubles primitivos
++     (`Complex.Doubles`), y cualquier otro como dos referencias (`Complex.Boxed`). Así, `c*d` sobre
++     dos `Complex[Double]` se compila a cuatro multiplicaciones, una suma, una resta y una única
++     reserva de memoria, sin boxing.
+
+@ 0 2 0 117252b61533f9821dc5d28c6ec96f54
++     La biblioteca tiene un único conjunto de fuentes, `baroque.core`, que compila para todas las
++     plataformas, y sus dos nombres se exportan al paraguas `soundness`.
+
+% 0 1 0 07f6671b83868ae906ae120ec739bb85
+
+% 0 1 0 18531ac1d3356e520b6001814c7ff7d0
+
+% 0 1 0 1746e6085ecbcd3601cd60f091689818
+
+@ 0 1 0 0d76a5a26a77de7408e64bee4e737bb2
++ entry .Complex   un número complejo de dos componentes de cualquier tipo, con la aritmética que permitan los componentes
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 6 0 070f0707a86cf63c0885f06ba92b7f41
++       `Complex[component]` contiene una parte real y una imaginaria del mismo tipo. Es una clase
++       abstracta sellada con dos representaciones, elegidas según la clase en tiempo de ejecución
++       del componente: `Complex.Doubles`, dos campos `Double` primitivos, para cualquier componente
++       que sea en el fondo un `Double`, y `Complex.Boxed`, dos referencias, para todo lo demás. La
++       elección la hace `.apply` y la leen `.real` y `.imaginary`, de modo que el código genérico y
++       el específico de doubles siempre coinciden; el usuario nunca necesita nombrar ninguna de las
++       dos subclases.
+
+% 2 1 0 11fdd9f6956df17f07326eb3383c21ee
+
+% 3 1 0 1819d1f5106c764a189b87a48430ff7f
+
+% 0 1 0 1cea18ad8d6d0dd60b93ba374fe3662b
+
+% 0 1 0 1eb8986fdeb704541c9b430509e80426
+
+% 0 1 0 1f71786e104a9dd40a909c5d498ed39e
+
+% 0 1 0 0fe01996149186f809f78441f47cd474
+
+% 0 1 0 068b6a6033d53c8501626866aef16478
+
+% 0 1 0 01ab83c04a624bc00932b90204f3f864
+
+% 0 1 0 0417aa0789429c4c18fe718b047a5e2a
+
+% 0 1 0 1702c648f0b6465702da700b84847b6d
+
+% 1 1 0 17c15b31b2d9fbd70e2ba8c82c52419d
+
+@ 0 5 0 10b88bcb096469b30ddf315ec6c1bd5c
++       La aritmética se hace con los operadores de symbolism, cuyos givens están en este objeto
++       compañero: `.addable`, `.subtractable`, `.multiplicable`, `.divisible` y `.negatable`, además
++       de `.multiplicableByDouble` y `.doubleMultiplicable` para escalar por un número real por
++       cualquiera de los dos lados. Cada uno exige de los componentes solo lo que necesita su
++       fórmula, y los tipos de los componentes pueden diferir, siempre que sus operaciones estén
++       definidas:
+
+% 2 1 0 0edf486869404d6c1186301e6be7e5e4
+
+% 3 1 0 1e02ed92f35e3ee60b860a7ca6f12095
+
+% 0 1 0 1f762de9e3afd13c1ea327c2ae57f6f2
+
+% 0 1 0 0b9646b8535197551d667cf73ed71d37
+
+% 1 1 0 08fd9d3d8195189b144e483fc6017c01
+
+@ 0 3 0 0c531911405132341ca10b86050d84d0
++       Un número complejo se muestra como `1 + 3ℐ` (`.showable`) y se inspecciona como `1+3i`
++       (`.inspectable`); la forma polar es `.modulus` y `.argument`, y a partir de ella se construye
++       un número con el `.apply` de dos argumentos que recibe un `Angle`.
+
+% 0 1 0 0657aefa113a029318e7a46ec62091aa
+
+% 0 1 0 19bc8308e6c6c1820f6e37a338b37b2c
+
+% 0 1 0 041b0ec338ca52a10a6e38c6ab592acd
+
+% 0 1 0 1e3f3e9573007ac21400308391000119
+
+@ 0 1 0 053621ce4251d95a19d78e8d0d625105
++   entry .Doubles   la representación de un número complejo cuyo componente es en el fondo un `Double`
+
+% 1 1 0 1221134b643219f51b8c91aacb52da03
+
+@ 0 8 0 19f0cf458704afa705876d319e60fb2f
++         Dos campos `Double` primitivos, usados para `Complex[Double]`, para una magnitud compleja y
++         para cualquier otro tipo de componente con evidencia `Underlying[component, Double]` o
++         cuyos valores en tiempo de ejecución sean doubles. Aquí el tipo del componente es un
++         fantasma: `.real` e `.imaginary` convierten los campos de vuelta a él. La igualdad y el hash
++         comparan los dos doubles. Lo construye `Complex.apply`, nunca directamente.
++     entry #real        la parte real, como `Double` primitivo
++     entry #imaginary   la parte imaginaria, como `Double` primitivo
++   entry .Boxed   la representación de un número complejo cuyo componente no es en el fondo un `Double`
+
+% 1 1 0 0ed8aaf4431570d81254989d6da5a72a
+
+@ 0 10 0 09901bc89681b2ca16816fd0b1c62521
++         Dos referencias a valores del componente, usadas para `Int`, `Q64` y cualquier otro tipo de
++         componente. La igualdad y el hash comparan los dos componentes. Lo construye
++         `Complex.apply`, nunca directamente.
++     entry #real        la parte real
++     entry #imaginary   la parte imaginaria
++   entry .apply   un número complejo a partir de sus partes real e imaginaria, o de un módulo y un `Angle`
++       `Complex(real, imaginary)` recibe dos componentes del mismo tipo y elige la representación:
++       `Complex.Doubles` cuando se sabe que el componente es en el fondo un `Double` (por evidencia
++       `Underlying`, o por ser `Double`); si no, por una comprobación de tipo sobre el valor, con
++       `Complex.Boxed` como alternativa.
+
+@ 0 3 0 096dd5ae4b1d5a961645fa4306b69c60
++       `Complex(modulus, argument)` es la forma polar: el módulo es cualquier componente que pueda
++       multiplicarse por un `Double`, y el argumento un `Angle` de `hypotenuse`. El resultado es un
++       complejo del tipo del producto, `modulus*cos(argument)` más `modulus*sin(argument)ℐ`.
+
+% 2 1 0 0a2a3636dfe415311dbb6acb6f4bd83a
+
+% 3 1 0 156d37751c94aba6052db4368ad0d10d
+
+% 0 1 0 158f83fb3eea4eee1e840468310626a5
+
+% 0 1 0 126dfade298138ad090b137a125a24cf
+
+% 1 1 0 1f1c7f47229441f0190d77784eea6e9e
+
+@ 0 14 0 0192dad667a20c42047a84d8e141e185
++   entry .unapply   descompone un número complejo en sus partes real e imaginaria
++       Siempre coincide, así que `val Complex(re, im) = z` y `case Complex(re, im) =>` funcionan con
++       cualquiera de las dos representaciones.
++   entry .real   la parte real de un número complejo, en el tipo de su componente
++       Una extensión inline sobre `Complex[component]`. Donde el componente es estáticamente un
++       `Double` en el fondo, es una única lectura de campo sin comprobación de tipo; en otro caso,
++       hace una coincidencia de patrones sobre la representación.
++   entry .imaginary   la parte imaginaria de un número complejo, en el tipo de su componente
++       Una extensión inline sobre `Complex[component]`, que se lee como `.real`: una lectura de campo
++       donde el componente es estáticamente un `Double` en el fondo y, si no, una coincidencia de
++       patrones sobre la representación.
++   entry .modulus   el valor absoluto de un número complejo, √(re² + im²), en las unidades de los componentes
++       Una extensión inline. Necesita que el componente sea `Multiplicable` por sí mismo, que el
++       producto sea `Addable` a sí mismo y que la suma sea `Rootable[2]`, y su tipo es el resultado
++       de la raíz cuadrada: el módulo de una longitud compleja es una longitud.
+
+% 2 1 0 0d4c0a23d99d5da507cfc61e3b62f839
+
+% 3 1 0 1d95ab62d2c9f05b1d29f0009ab6ba47
+
+% 0 1 0 0be8bb25a8f03a43023c7b5679d4596b
+
+% 0 1 0 09506d337ca3809a17ba7f60f0ef1203
+
+% 1 1 0 00c2eccb3e9d4fbc0727c0fdf2ba6d8e
+
+@ 0 5 0 121bb0ef6e704e3c1206038a2704d600
++   entry .argument   el ángulo de un número complejo respecto al semieje real positivo, como `Angle`
++       Una extensión inline, calculada como el `atan2` de las partes divididas cada una por
++       `.modulus`, así que necesita todo lo que necesita `.modulus`, y además que un componente
++       dividido por el módulo sea un `Double` simple, lo cual se cumple tanto para números como para
++       magnitudes, ya que las unidades se cancelan.
+
+% 2 1 0 13ec3799d2197ff500faf3ba4581dcbb
+
+% 3 1 0 0723635f84817932167e2201c7118816
+
+% 0 1 0 0c680d44a7d4c64a0e0c943459cfc764
+
+% 1 1 0 0b8a953a0cc4b26b0a77ed0a5a498b37
+
+@ 0 9 0 13e7cff8f4ace1cd15453b91f74c2d04
++   entry .sqrt   la raíz cuadrada principal de un número complejo, a partir de su forma polar
++       Una extensión inline: la raíz cuadrada de `.modulus` con la mitad de `.argument`, construida
++       con el `Complex.apply` polar. Necesita todo lo que necesita `.argument`, y además que el
++       propio módulo tenga una raíz cuadrada que pueda multiplicarse por un `Double`; la raíz de un
++       área compleja es una longitud compleja.
++   entry .unary_~   el conjugado complejo, `~z`: la misma parte real con la parte imaginaria negada
++       Un operador prefijo, compilado con el nombre `conjugate`. Necesita que el componente sea
++       `Negatable`, y el tipo del componente del resultado es la unión del componente y del
++       resultado de la negación, que para números y magnitudes es el propio componente.
+
+% 2 1 0 0b92b9a0aee3ed7d09747a7a85ef47f6
+
+% 3 1 0 0c829afa5e8adcee08ccf60b2be1d60c
+
+% 0 1 0 03e0b0e6549b161f1801c60b467be897
+
+% 1 1 0 102e5e5353faa42c11b67f254da6a024
+
+@ 0 4 0 0cb6f6436989bad9186380063c3f53e5
++   entry .showable   muestra un número complejo como `1 + 3ℐ`, omitiendo una parte nula
++       Un given inline para cualquier componente que sea `Showable`, `Zeroic`, `Commensurable`
++       consigo mismo y `Negatable`. Si la parte imaginaria es cero, se muestra solo la parte real;
++       si la parte real es cero, se muestra `3ℐ`, y una parte imaginaria negativa se escribe con un
++       signo menos: `1 - 3ℐ`.
+
+@ 0 4 0 09a969d5a8c1a28e073707a389f276a3
++       Un componente que es `Distributive` —una magnitud, cuyas unidades siguen al número, o un
++       `Quanta` de unidades mixtas, como pies y pulgadas— muestra sus partes juntas dentro de las
++       unidades: `(1.00 + 9.00ℐ) m·s¯¹`, o `(1 + 2ℐ) yd, 2 ft, (6ℐ) in`. Mostrar un componente
++       `Double` requiere un `Decimalizer` en el ámbito.
+
+% 2 1 0 1228bb424c9f0f4f19772215a3b29f81
+
+% 3 1 0 1dcee0f62f76cfd8102d22764962bc51
+
+% 0 1 0 12c5bd5ff86b4f601c8977cee6888885
+
+% 0 1 0 0ca15c10ee71f5b80cc147c7aa82fb1e
+
+% 0 1 0 0f8ae8a286f7074c0d5ec7d5915a6fd5
+
+% 1 1 0 1e2030e260958d2a04843c208b6b2fa7
+
+@ 0 9 0 0dc7b4f912e2e49d1d7c0345739e9e7e
++   entry .inspectable   inspecciona un número complejo como `1+3i`, cada parte tal como se inspecciona
++       Para cualquier componente que sea `Inspectable`. Las partes se unen con `+`, o con `-` cuando
++       la inspección de la parte imaginaria empieza por uno, y van seguidas de `i`: `1.0-3.0i`.
++   entry .addable   suma dos números complejos parte a parte, cuando sus componentes pueden sumarse
++       Un given inline: `Complex[a] + Complex[b]` es un `Complex[r]` siempre que `a is Addable by b
++       to r`, así que longitudes complejas en unidades distintas se suman en una longitud compleja.
++       El `AddOp` generado por macro de un componente (como el que tienen las magnitudes) tiene
++       preferencia sobre su `Addable`.
++   entry .subtractable   resta dos números complejos parte a parte, cuando sus componentes pueden restarse
++       Un given inline: `Complex[a] - Complex[b]` es un `Complex[r]` siempre que `a is Subtractable
+
+% 0 1 0 0f3f341470a9e8760611c415b1d804f6
+
+@ 0 5 0 0a930de2aee1355e00ee70e0607b9583
++   entry .multiplicable   multiplica dos números complejos, (a + bℐ)(c + dℐ) = (ac − bd) + (ad + bc)ℐ
++       Un given inline. Necesita que los componentes sean `Multiplicable` a un tipo producto, y que
++       ese producto sea `Addable` y `Subtractable` a sí mismo; el resultado es un complejo de los
++       tipos de la suma y la diferencia del producto, así que metros complejos por segundos
++       complejos dan un complejo de metros-segundo.
+
+% 2 1 0 0db57c121874efcf153a0bac86d94a42
+
+% 3 1 0 193c4b7c71d07d0902b705381d0f2ea7
+
+% 0 1 0 1b09df9b0dd5debc02ffb2143b854f31
+
+% 1 1 0 11a02d285840030905e0ddb48b0a6d0e
+
+@ 0 6 0 0fc42a7ddad679ce0a3827c3fa4c76c6
++   entry .multiplicableByDouble   escala un número complejo por un `Double` real por la derecha, como en `i*1.8`
++       Un given inline para cualquier componente `Multiplicable` por `Double`; cada parte se
++       multiplica por el escalar.
++   entry .doubleMultiplicable   escala un número complejo por un `Double` real por la izquierda, como en `2.0*z`
++       Un given inline para cualquier componente tal que `Double` sea `Multiplicable` por él; cada
++       parte se multiplica por el escalar.
+
+% 2 1 0 008a168bbeaef25d0291cf648562c474
+
+% 3 1 0 1650ce7195b7a4fd11229b467fb39832
+
+% 0 1 0 1c297b0dc414cb4c1e7c31369a9505bd
+
+% 1 1 0 1ccde5a10636e6140b076f660edcb26f
+
+@ 0 5 0 05a9e121b8cf48e41ffa83193c71702c
++   entry .divisible   divide dos números complejos, multiplicando ambos términos por el conjugado del divisor
++       Un given inline. El cociente es `(ac + bd)/(c² + d²) + (bc − ad)/(c² + d²)ℐ`, así que necesita
++       que ambos tipos de componente se multipliquen, que el componente del dividendo sea
++       `Negatable`, que los productos se sumen y que la suma del dividendo se divida por la del
++       divisor. Dividir metros complejos por pies complejos da un complejo adimensional.
+
+% 2 1 0 06917ea097a5c4631a7516e8c71c5f46
+
+% 3 1 0 0ca5844fcb05dcea020fb26862949c3d
+
+% 0 1 0 17b284f5531f46a7061cc6c077cb913a
+
+% 1 1 0 1fc8eb7338ff346315d29049b487a84b
+
+@ 0 3 0 1f00bda28ac86dbd1238f6b889ea38b0
++   entry .negatable   niega ambas partes de un número complejo, `-z`
++       Un given inline para cualquier componente `Negatable`; el resultado es un complejo del tipo
++       del resultado de la negación.
+
+@ 0 3 0 0042a4f5c986401a0f3e1a60a0c54830
++ entry .i   la unidad imaginaria, `Complex(0.0, 1.0)`, para escribir números complejos como `a + b*i`
++     Un `Complex[Double]`, así que `i*1.8` es `Complex(0.0, 1.8)` mediante
++     `Complex.multiplicableByDouble`, y un número puede escribirse como una suma:
+
+% 2 1 0 07829b18cd73abd81a7ec140c833c160
+
+% 3 1 0 0684733f51d8bc1e1d162c2a41971fcd
+
+% 0 1 0 00cc1e258790df0c19d7cd7b7aa4d837
+
+% 1 1 0 076500bad941afb7160a8195bb5dcd91

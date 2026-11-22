@@ -1,0 +1,56 @@
+orthant 2 language
+
+% 0 1 0 1ac284462187383109a09dd0276414ce
+
+@ 0 1 0 045c312c1dcfaa560812fe72fae69766
++ Se lanza cuando una operación aritmética no puede producir un resultado representable.
+
+@ 0 2 0 1e445dbeaa96a90810b92ee08e274393
++ Esto es distinto de un *valor* que no se puede representar, que es `Decimal.Error` o
++ `Rational.Error` según el tipo.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 000e68e93e3e64bf00e6ce2b65809593
++ La división comprobada de Hypotenuse lanza este error en casos como la división entera por cero
++ o `MinValue / -1` (que desborda el rango positivo).
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 139202f658cf802305415a82c62875d3
+
+% 1 1 0 1a6d749e730282fb187a0e8de0844cad
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 16cecf001828935f0cf594fda17190aa
+
+@ 0 2 0 0f68f9e8dcfa842b193e86bfcdc666d0
++ El divisor era cero. Solo se lanza con `import arithmeticOptions.checkedDivision`; el
++ comportamiento predeterminado, sin comprobación, deja que se aplique la semántica de división
++ propia de la plataforma.
+
+% 0 1 0 011ca2852200d3010e938667025ca930
+
+@ 0 3 0 1d4fa29541cdd4880f2eca5d28f25dc4
++ El resultado superó el rango de su tipo. Solo se lanza con
++ `import arithmeticOptions.checkedOverflow`. Era `SN-331` (`OverflowError`) hasta que ambos se
++ unificaron.
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 2 0 1962d90b53da4c6912aece05fefdbfc0
++ Protégete frente a los divisores nulos; para el caso `MinValue / -1`, amplía el dividendo antes
++ de dividir.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 058561df40e5f36c17b6a42792798270
++ - Código fuente: `lib/hypotenuse/src/core/hypotenuse.Arithmetic.scala`

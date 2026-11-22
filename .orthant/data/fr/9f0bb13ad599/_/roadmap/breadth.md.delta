@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 2 0 1ce2591c7910df8715cb6ee0ece79b7c
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/en/modules/`, et fait l'aller-retour des vecteurs d'exemple des RFC 7515/7516.
+
+@ 0 5 0 185e0933a78085f60dda1fb01867e9b3
++ Terminé : #2530 (2026-11-20). sigillate : `Jws`, `Jwe`, `Jwk` et `Jwt`, avec tous les
++ algorithmes de la RFC 7518 sauf la compression `zip`, ainsi qu'EdDSA et X25519 de la RFC 8037 ;
++ un gestionnaire de jetons bearer pour scintillate, et des jeux de clés récupérés par HTTP. Les
++ exemples de l'annexe A de la RFC 7515 et de l'annexe A de la RFC 7516 constituent ses tests, lus
++ dans le texte des RFC. enigmatic a gagné les primitives qui lui manquaient : dérivation de clés,
++ enveloppement de clés AES, AES-CBC avec HMAC, RSA-OAEP et RSA-PSS.
+
+@ 0 2 0 19e4d46c5d18ca6c0a3eac1338b276cc
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/en/modules/`, et passe la suite de conformité TOML standard.
+
+@ 0 4 0 1119703a804af95f1fb4bb604086cc3a
++ L'authentification sans mot de passe pour la pile web, qui complète l'histoire qu'OAuth 2 et JOSE
++ commencent. La prise en charge de COSE dont elle dépend — les clés COSE et les algorithmes de
++ signature asymétrique — est arrivée avec `brd-1`, de même que la lecture et la validation de
++ chaîne des certificats X.509 que porte une attestation.
+
+@ 0 2 0 1c27de11db8327eb199b7672a17cf0fc
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/en/modules/`, et qu'une cérémonie scriptée d'enregistrement et d'assertion réussit face à un
++ authentificateur de référence.
+
+@ 0 7 0 0f072c1e402a18d91bb22643f0148107
++ Terminé : #2530 (2026-11-20). chatelaine : les deux cérémonies de la partie de confiance, avec
++ toutes les vérifications des §7.1 et §7.2 de WebAuthn Level 2, et les formats d'attestation
++ `none` et `packed`. L'authentificateur de référence est celui de la spécification elle-même : les
++ sorties d'enregistrement et d'authentification de ses vecteurs de test, pour des justificatifs
++ ES256, ES384, ES512, RS256 et Ed25519, sont acceptées, les attestations packed étant validées
++ jusqu'à la racine de confiance des vecteurs. Un authentificateur logiciel dans les sources de test
++ scripte des cérémonies entières, ainsi que les manières dont elles sont refusées.
++ L'authentificateur virtuel d'un navigateur n'a pas été piloté.
+
+@ 0 2 0 17114dda9db220b1111dfa3e427832ac
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/en/modules/`, et interopère avec un serveur et un client HTTP/3 de référence.
+
+@ 0 2 0 0c7008ff6c9ff7ce1e83f47b9ad6f3b1
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/en/modules/`, et qu'une session scriptée réussit face à un serveur IMAP de référence.

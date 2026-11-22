@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 1 0 0edd48f78270438f08c8372f5eaf60fa
++ Ein `U8` (vorzeichenlos, 8 Bit) ist nach oben durch `255` begrenzt.
+
+% 0 1 0 174075f95a166e871775dcfe41b33922

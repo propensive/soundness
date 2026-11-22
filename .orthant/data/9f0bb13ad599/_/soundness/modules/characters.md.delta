@@ -1,0 +1,14 @@
+orthant 2 release
+
+@ 0 1 0 055f9b25d879100c10e3318ab6002254
++ row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`
+
+@ 0 1 0 05cb83fe09c9402d06b87bac709680c5
++ Every charset uses the sanitizer in scope.
+
+@ 2 0 0 1d0ca76ec12e0e951376cf0edf0b2937
++ Encoding has the opposite problem: a character which the encoding has no bytes for, such as `é`
++ in ASCII. By default a `Codepage` writes the encoding's substitute, `?`, in its place. With
++ `encodingSanitizers.strictEncodingSanitizer` imported, it raises a `Codepage.Error` which names
++ the character instead.
++

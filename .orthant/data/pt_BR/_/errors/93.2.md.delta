@@ -1,0 +1,64 @@
+orthant 2 language
+
+% 0 1 0 006a2062b68ca4431d830ab60ecca11c
+
+@ 0 2 0 17e613b265198b5106e21ef8b293c60a
++ Lançado quando um arquivo `ar` (o formato contêiner dos pacotes `*.deb` e das bibliotecas
++ estáticas `*.a`) não pode ser lido nem escrito.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 105ec851f588c1a616ca43987e52689e
++ O Bitumen analisa os membros de um `ar` de forma preguiçosa a partir de um stream de bytes, então
++ uma falha é informada quando a estrutura malformada é alcançada, e não quando o arquivo é aberto.
++ O formato não carrega checksum nem marcador de fim de arquivo, então o terminador de cabeçalho de
++ dois bytes e o tamanho de membro registrado são as únicas verificações estruturais disponíveis.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+% 0 1 0 09a6122dbd4c4f7f02319e1a120cdc19
+
+% 0 1 0 18b8cbcd4827beb8078a98b3b752642c
+
+% 0 1 0 12ac43d61f30b7af1b8acf843e61d0b6
+
+% 0 1 0 1455fbed3ad83ddd0a256f6c6b3151f9
+
+% 0 1 0 0c846c6231f82b4b13853bc4df1b96f0
+
+% 0 1 0 17cce69921df5ad418a43e0c361c1a25
+
+% 0 1 0 152a00c5a7d1930604c65beaac09c8b5
+
+% 0 1 0 1241533bf8baac0605e2e6344fced27d
+
+% 0 1 0 0f383a77df797fdc0551a945cfb35eb2
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 5 0 06fb2bfe2cd3357b04358cd179db78a1
++ Um arquivo truncado em geral significa um download incompleto ou um stream que terminou cedo
++ demais; um terminador inválido significa que o leitor perdeu a fronteira do cabeçalho, tipicamente
++ porque o campo de tamanho de um membro anterior estava corrompido. Uma referência de nome longo
++ que não é resolvida significa um arquivo GNU cuja tabela de nomes `//` está faltando ou precede os
++ membros errados. Nomes `#1/<length>` no estilo BSD não são produzidos pelas ferramentas do Debian
++ nem do GNU, e são rejeitados em vez de lidos de forma errada.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 2 0 0af96f2b28ea05cb149ad568dcf04ac4
++ - Código-fonte: `lib/bitumen/src/core/bitumen.Ar.scala`
++ - `↯/s.93.1` (`Tar.Error`), o leitor TAR irmão

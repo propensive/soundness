@@ -1,0 +1,65 @@
+orthant 2 language
+
+% 0 1 0 0a773a1f504e12ed11f4cccd7277b164
+
+@ 0 1 0 18b81db333a7538004e66bbaf00a1de3
++ Ausgelöst, wenn eine Kette von Zertifikaten nicht zu einem vertrauenswürdigen führt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 4 0 073fac0ba00e72c20a916b2a65f7cd1f
++ `Certificate.validate` nimmt eine Kette — das Zertifikat, auf das man sich verlässt, dann das
++ Zertifikat jeder Stelle, die das vorige ausgestellt hat — und eine Menge vertrauenswürdiger
++ Anker. Jedes Zertifikat muss innerhalb seines Gültigkeitszeitraums liegen, das nächste als seinen
++ Aussteller nennen und von ihm signiert sein; jeder Aussteller muss eine Zertifizierungsstelle
++ sein; und das letzte muss ein Anker sein oder von einem ausgestellt worden sein.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 0b745c851d8d43b703f6a219ce20dcd4
+
+% 0 1 0 1a3396ebf4e2d7dd08d08bc5edd6c61b
+
+% 0 1 0 09b46eda137db3e418be747201f64dbc
+
+% 0 1 0 0c6abdd5572afa3a01fe682ca8cff1b7
+
+% 0 1 0 093a5795e552d0601156fd6c9c1ce475
+
+% 0 1 0 0339a7738bff62920a27bae9485085c9
+
+% 0 1 0 149c852b8d0d71f318679572a72ff562
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 4 0 0e2cd7e8ae8997db192f6bad13394d85
++ `Untrusted` bedeutet, dass die Kette, so weit sie reicht, stimmig ist, aber an einer Stelle endet,
++ die nicht unter den Ankern ist: Ein Zwischenzertifikat fehlt in der Kette, oder die richtige
++ Wurzel fehlt unter den Ankern. `Unlinked` bedeutet meist, dass die Kette in der falschen
++ Reihenfolge ist; sie verläuft vom Blattzertifikat zur Wurzel. Über `Expired` entscheidet die
++ `Clock` im Geltungsbereich.
+
+@ 0 2 0 03a306b8964b988712845afa9c97db74
++ Widerruf, Namenseinschränkungen, Richtlinien und Pfadlängenbegrenzungen werden nicht geprüft,
++ daher eignet sich diese Validierung für eine geschlossene Menge von Ankern, die für einen Zweck
++ gewählt wurden, nicht für die des öffentlichen Webs.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 2 0 18ffec7b063e692e1b483a9c082d9888
++ - Quelle: `lib/enigmatic/src/x509/enigmatic.Certificate.scala`
++ - `↯/s.105.5` — `Certificate.Error`, ausgelöst, wenn ein Zertifikat nicht gebaut werden kann

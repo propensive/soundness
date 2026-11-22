@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 2 0 07fe400905129e5c09ca3a130de28d35
++ Trente-six devises sont définies, chacune comme une valeur qui construit des montants. Un
++ montant s'écrit avec son symbole ou avec son code ISO, selon ce que décide un style dans la
++ portée.
+
+@ 0 2 0 0521150f08d80306145fc8161d1d3d86
++ La taxe est arrondie à l'unité mineure la plus proche, une demi-unité étant arrondie vers le
++ haut. Vingt pour cent de 2,94 £ font 0,588 £, facturés 0,59 £ :

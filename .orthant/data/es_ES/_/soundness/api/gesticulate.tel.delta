@@ -1,0 +1,851 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1406e8f2331fe9a40c2fa9636b68b5be
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 016cf6b6c39264c31d271592342a5310
++ info   los tipos de medio como valores estructurados, comprobados contra el registro de la IANA mientras se compila el código, y los cuerpos multiparte
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 03f0ab8a1ab8d433165e02771a8b21be
++     _Gesticulate_ representa un [tipo de medio](https://www.iana.org/assignments/media-types/)
++     (`application/json`, `text/html; charset=UTF-8`, `image/svg+xml`) como un `MediaType` con
++     un grupo, un subtipo, unos sufijos y unos parámetros tipados, en lugar de una cadena cuyo
++     error tipográfico un navegador gestiona mal sin decir nada. El interpolador `media"…"`
++     comprueba un literal contra una copia del registro de la IANA mientras se compila el
++     código, de modo que `media"application/jsom"` es un error de compilación que indica el
++     nombre registrado que probablemente se quería escribir; el texto que se encuentra en tiempo
++     de ejecución se analiza con `as[MediaType]`, que lanza `MediaType.Error` indicando qué
++     estaba mal.
+
+% 2 1 0 07fc8654ab47a1e213081056104353ab
+
+% 3 1 0 12b200420cc0b856008641cc2a09cd93
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 06fcc986d427b3d81cc42cac5e94f7b5
+
+% 0 1 0 0fbeda00ccd03ac4062167047dc75d5c
+
+% 0 1 0 0c36d982f245d6dd0d73344c3e98e80c
+
+% 0 1 0 18e9f4912b4e4be70fa339ab35a3f63a
+
+% 0 1 0 1069d1faaa6f12c11476d62549fd7d66
+
+% 1 1 0 1f10d421aefdba830eb483c8671fbc3a
+
+@ 0 10 0 01be195b60b3a54909eb802e16084fd8
++     En torno al tipo hay tres piezas más. La clase de tipos `Media` da a un *tipo* su tipo de
++     medio (el texto es `text/plain`, y todo lo que tiene un nombre de fichero se deduce de su
++     extensión mediante `Extensions`), que es como una respuesta HTTP, un fichero servido o un
++     adjunto se etiqueta sin tener que repetir lo que es, y `ascribe` empareja cualquier fuente
++     de bytes con un tipo de medio explícito en forma de `Content`. La clase de tipos
++     `Construable` asocia un tipo de medio, como cadena singleton, al tipo de Scala como el que
++     se lee y desde el que se escribe un cuerpo de ese tipo, para que un cliente HTTP pueda
++     interpretar una respuesta por su `Content-Type`: cada asociación es un given del paquete de
++     elección `construables`, que se importa por nombre. Y `Multipart` analiza el formato
++     `multipart/form-data` de las subidas de ficheros en partes `Multipart.Part` tipadas, de
++     forma incremental, y el cuerpo de cada parte se presta desde la entrada a medida que se lee.
+
+@ 0 7 0 035078a763b17a9707a2630a6e518447
++     La biblioteca es un único conjunto de fuentes, `gesticulate.core`, que compila para la JVM,
++     Scala.js y Scala Native; el registro que consulta la comprobación de `media"…"` se compila
++     dentro de la biblioteca al construirla, así que la comprobación no necesita red ni ningún
++     recurso del classpath. Todo se exporta al paraguas `soundness`, y el paquete de elección
++     `construables` se fusiona con el propio del paraguas, que reúne las asociaciones que declara
++     cada biblioteca de formato (`jsonConstruable`, `xmlConstruable`, `pngConstruable`, …), de
++     modo que el usuario escribe `import soundness.*` y después importa por nombre los
++     construables que quiere.
+
+% 0 1 0 0c43e7b6340c3e5b03d8fabf0585e88f
+
+% 0 1 0 03923ab30704b3f813555f16b601c932
+
+% 0 1 0 12d585acc7082e240a753dbc80e2094a
+
+% 0 1 0 15c1b1c4b6e2ac240abc9557159c21b6
+
+@ 0 1 0 12423b63c28c962c1b8c70ef2eb11d27
++ entry .MediaType   un tipo de medio como valor: su grupo, su subtipo, sus sufijos y sus parámetros
+
+% 1 1 0 1f12bd0bca7bc125168272b41508d810
+
+@ 0 7 0 088692b70aec8d970c04ae5640026624
++       Un `MediaType` son las cuatro partes que define el RFC 2046, cada una tipada: `#group` es
++       uno de los once tipos de nivel superior (`Media.Group`), `#subtype` es registrado, de
++       fabricante, personal o experimental (`Media.Subtype`), `#suffixes` son los sufijos de
++       sintaxis estructurada `+xml`, `+json` o `+zip` (`Media.Suffix`), y `#parameters` son los
++       pares `key=value`, de los cuales `charset` es con mucho el más común. Se escribe como
++       `media"…"`, que se comprueba al compilar el código, o se analiza a partir de texto con
++       `as[MediaType]` (el given `.decodable`) o se reconoce con `.unapply`.
+
+% 2 1 0 1b97e67c9b9b78bb0d38d549f255ac07
+
+% 3 1 0 19d7e2ac831d3e6204db1ec7f54d2c9a
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1eca4141ed698fa718c2abfb7df0daa2
+
+% 0 1 0 157b1bd20847eaf911ce24388e640f16
+
+% 0 1 0 0b5f37d9147f71e2065bf9e79271b18f
+
+% 0 1 0 17aaf5654ba1f1821b2a5ac3505720e2
+
+% 0 1 0 00ae1a5c94075a5f0beeabe0f1f372b6
+
+% 0 1 0 0ada7746917d4cc21c148973f8f16334
+
+% 0 1 0 14cd6cb44698c4ae1c5921c925d36a88
+
+% 1 1 0 042e3d3abcb21212102e2209163fd366
+
+@ 0 5 0 090098d989a554cf0ff3523f4ca3e41c
++       Un tipo de medio se muestra tal como se escribe en la transmisión (`.showable`,
++       `.encodable`), con cada parámetro como `; key=value`, y se inspecciona como el código
++       fuente que lo construiría, `media"text/html; charset=UTF-8"`. Dos tipos de medio son
++       iguales cuando lo son sus partes, así que un `Content-Type` con parámetros no es igual a
++       su literal `media"…"`: compárense `#base` o `#basic` cuando los parámetros no importen.
+
+% 0 1 0 14af0427a1b401670ddc01e596f135a6
+
+% 1 1 0 0587a7c69a2996f70bc6c77562dbf689
+
+% 1 1 0 1d3ede4f92323ec1162768c4932ac424
+
+@ 0 23 0 1edabc3b06a3d4b611ece199cd3a6917
++   entry .inspectable   una representación de depuración como el literal que lo construiría: `media"text/html"`
++   entry .showable   representa un tipo de medio tal como se escribe: `type/subtype+suffix; key=value`
++       El grupo y el subtipo en minúsculas, cada sufijo con su `+` y después cada parámetro como
++       `; key=value`. Es la base de `.encodable` y de la representación `inspectable`, y lo que
++       lleva una cabecera `Content-Type`: un tipo de medio con un parámetro `charset` o
++       `boundary` lo conserva aquí, mientras que `#basic` lo descartaría.
++   entry .encodable   `MediaType is Encodable in Text`, tal como lo representa `.showable`
++   entry .decodable   `text.as[MediaType]`: analiza texto como tipo de medio, lanzando `MediaType.Error`
++       El given que permite decodificar cualquier texto como `MediaType`, mediante `Media.parse`.
++       Necesita una `Tactic[MediaType.Error]` en el ámbito, que retiene, de modo que la instancia
++       tiene el tipo `(MediaType is Decodable in Text)^{tactic}`. El análisis acepta las formas
++       de subtipo registrada, `vnd.`, `prs.`, `x-` y `x.`, los sufijos con guion (`json-seq`) y
++       los parámetros separados por `;`, eliminando el espacio en blanco circundante, y no
++       consulta el registro: un subtipo estándar no registrado se analiza sin problemas, mientras
++       que el literal `media"…"` no compilaría.
++   entry .unapply   reconoce el texto que se analiza como tipo de medio, como un `Option`
++       `MediaType.unapply(t"text/plain")` es `Some(mediaType)`, y `None` para un texto que no es
++       un tipo de medio, de modo que `case MediaType(mediaType) =>` reconoce el valor de una
++       cabecera sin una táctica en el ámbito.
++   entry .interpolable   el given que hay detrás del interpolador `media"…"`
++       El `Interpolable` cuyo `interpolate` es la macro: valida la única parte literal contra el
++       registro y el analizador en el momento de la expansión e inserta el valor analizado. El
++       usuario escribe `media"…"` en lugar de tocar esto.
++   entry .Error   se lanza cuando un texto no es un tipo de medio
+
+% 1 1 0 1bab828ba2bb77780b7aa5045b24ed29
+
+@ 0 4 0 150d9ed154b37f000370c76e1b9caf78
++         Error `↯/s.81.1`: _the value `value` is not a valid media type; `reason`_. Se lanza a
++         través de una `Tactic[MediaType.Error]` desde `Media.parse`, y por tanto desde
++         `as[MediaType]`, y `media"…"` lo notifica como error de compilación. El `.Reason` dice
++         qué estaba mal, y su número es el subnúmero del error (353.1 a 353.5).
+
+% 2 1 0 16439e438d19609b004ce0407e5fd2df
+
+% 3 1 0 0f27f37b751707e91b11cc0a4ad26859
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 1d56e6b250e5b8320155d67afef17c0d
+
+% 0 1 0 009a1d329c3f0b2210fd7fe07224a81c
+
+% 1 1 0 136a3e18f2f9c2140586dd7813383fee
+
+@ 0 1 0 044d1fcaa8a325121cd144aa648d71a5
++     entry .Reason   por qué un texto no era un tipo de medio
+
+% 1 1 0 10a0418ce77ded031f6b7869db8fccfa
+
+@ 0 1 0 0dbdc7f7e3e6f76806f5a795b7794872
++           Cada uno tiene un `number` y un `message`:
+
+% 1 1 0 05f424c7a32c4c0b0b03863d383d30a5
+
+@ 2 4 0 0e01bf457d22e768016d5c9b67691157
++           column  Caso
++           column  Código
++           column  Mensaje
++           column  Nota
+
+% 0 1 0 009fa38d6db444a70bf7d74e0086f2ef
+
+@ 0 1 0 08b9ba8109fe9bd71b332d7f7a46a878
++           row  `MissingParam`  2  _a terminal ';' suggests that a parameter is missing_  también para un parámetro sin `=`
+
+% 0 1 0 1844ac90b7af02ae014233929a0a3c7c
+
+@ 0 2 0 05eb71d0b5a7da2c01edc0e1442d4e02
++           row  `InvalidChar(char)`  4  _the character '`char`' is not allowed_  espacio en blanco, un carácter de control o uno de los `tspecials`
++           row  `InvalidSuffix(suffix)`  5  _the suffix '`suffix`' is not recognized_  no es uno de los casos de `Media.Suffix`
+
+% 1 1 0 1db788a82094d08b0b7fbcb608587857
+
+@ 0 9 0 146238c39ef710ed1999f39c49dd3eef
++       entry #number   el número del motivo, de `1` a `5`, que es el subnúmero del error
++       entry #message   el motivo como frase
++     entry #value   el texto que no era un tipo de medio
++     entry #reason   por qué no lo era
++   entry #group   el tipo de nivel superior: `Media.Group.Application`, `Text`, `Image`, …
++       Se llama `group` en lugar de `type` solo porque `type` es una palabra clave de Scala.
++   entry #subtype   el subtipo, como `Media.Subtype.Standard`, `Vendor`, `Personal` o `X`
++       En cuál de los cuatro árboles está un subtipo forma parte del valor, no es cuestión de
++       leer su prefijo: `t"application/vnd.api+json".as[MediaType].subtype` es
+
+% 0 1 0 0f7606dcb515a5021ed13f536ddb7c26
+
+@ 0 19 0 1406a9dbe0c0c51311b25e38adde1634
++   entry #suffixes   los sufijos de sintaxis estructurada, en orden, como valores `Media.Suffix`
++       `List(Media.Suffix.Xml)` para `image/svg+xml`; `Nil` para la mayoría de los tipos de
++       medio. Un sufijo tiene significado (`svg+xml` es XML), y por eso es una parte tipada y no
++       un carácter más del subtipo.
++   entry #parameters   los parámetros `key=value`, en orden, como pares de texto
++       `charset`, `boundary`, `version`, …. `#at` busca uno por su nombre; `apply` con argumentos
++       con nombre añade algunos.
++   entry #basic   el tipo de medio sin sus parámetros, como texto: `application/json`
++       El grupo, el subtipo y los sufijos representados; aquello con lo que se compara un
++       `Content-Type` cuando su `charset` o su `boundary` no deben intervenir en la comparación.
++   entry #base   el tipo de medio sin sus parámetros, como `MediaType`
++       `contentType.base == media"multipart/form-data"` es la comparación que hace un manejador
++       de peticiones antes de leer el parámetro `boundary`.
++   entry #at   el valor de un parámetro con nombre, o `Unset`
++       `mediaType.at(t"charset")`; el primer parámetro con ese nombre si hay varios.
++   entry #applyDynamicNamed   `mediaType(charset = t"UTF-8")`: el tipo de medio con parámetros añadidos
++       La aplicación `Dynamic` que permite escribir los parámetros como argumentos con nombre:
++       `media"text/html"(charset = t"UTF-8")`. El nombre de cada argumento es la clave del
++       parámetro y su valor `Text` el valor del parámetro, que se añade tras los parámetros
++       existentes.
+
+@ 0 8 0 0d5105c822a2cb860adbde7767d29ab7
++ entry .media   el interpolador `media"…"`: un literal de tipo de medio, comprobado contra el registro mientras se compila el código
++     `media"application/json"` es un `MediaType`, comprobado mientras se compila el código: el
++     grupo debe ser uno de los once tipos de nivel superior, el subtipo no debe contener ningún
++     carácter prohibido y un subtipo del árbol estándar (no `vnd.`, `prs.`, `x-` ni `x.`) debe
++     estar en el registro de la IANA, o el literal es un error de compilación que indica el tipo
++     registrado más próximo, _application/jsom is not a registered media type; did you mean
++     application/json?_. Después, los sufijos y los parámetros se analizan exactamente como los
++     analiza `as[MediaType]`, así que un sufijo desconocido o un `;` colgante también son un
++     error de compilación.
+
+% 2 1 0 1fdde50c54d10d9f145041b8f673c51d
+
+% 3 1 0 0fa31fc1c688e52f0bb1d2074c7c6a3f
+
+% 0 1 0 19154ff45a41c8fe0058629af4de32c9
+
+% 0 1 0 123d3b4707f3a7b318768754cdd8ce63
+
+% 0 1 0 1c7acd147b75285704378bddcda54627
+
+% 0 1 0 1f1c3e85febb4e470750e64edc02d10b
+
+% 0 1 0 12f585cd74261ae20420e6b1400958de
+
+% 1 1 0 01c95f9b10b0dc4b17ea5858e9c5b391
+
+@ 0 4 0 1b0b029d08618f35164c379a6b2d7e16
++     El registro es una copia de la lista publicada por la IANA, compilada dentro de la
++     biblioteca al construirla, así que la comprobación no necesita red. El interpolador no
++     admite sustituciones con `$`, ya que el literal se comprueba en tiempo de compilación; un
++     tipo de medio que solo se conoce en tiempo de ejecución se analiza con `as[MediaType]`, que
++     no consulta el registro.
+
+@ 0 1 0 1643ab85f0a0aef615f91b51b84b8ff7
++ entry .Media   el tipo de medio propio de un tipo, y la gramática de los tipos de medio: grupos, subtipos, sufijos
+
+% 1 1 0 11030a5d6d5cc2071b31c9077aab59ba
+
+@ 0 6 0 1a36a61aeca313240fa7f9429182f1cf
++       Como **clase de tipos**, `Media` da a un tipo su tipo de medio: un valor que `is Media`
++       tiene `#mediaType`, que es como una respuesta HTTP, un fichero servido o un adjunto se
++       etiqueta sin que nadie tenga que repetir lo que es. `Text` es `text/plain` (`.text`);
++       todo lo que es `Nominable` (un fichero, una ruta, un recurso con nombre) se deduce de la
++       extensión de su nombre (`.nominable`, mediante `Extensions.guess`); y cada biblioteca de
++       formato declara el suyo (`Json is Media`, `Html is Media`, …) en sus objetos compañeros.
+
+% 2 1 0 07e93e9d28a1c7af0ae5db3dbadf1470
+
+% 3 1 0 10cfad739cbb741c1dee4d50fea626d7
+
+% 0 1 0 0869e758209100b9120fcdceae0e9ebc
+
+% 0 1 0 0079e4ce11a799dd1dfec12b075e6e03
+
+% 0 1 0 174e3c3101c0d4bc1c8159d1a44d9896
+
+% 0 1 0 10d93b83352e5903172624f4f16577ca
+
+% 1 1 0 19e5a6366ec0fb9e0c6feb0bd92658e0
+
+@ 0 3 0 1ac9bb86b2f7995318062364861802d9
++       Como **objeto**, `Media` contiene la gramática: las enumeraciones `.Group`, `.Subtype` y
++       `.Suffix` de las que se compone un `MediaType`, y `.parse`, el analizador que hay detrás de
++       `as[MediaType]`, `MediaType.unapply` y `media"…"`.
+
+% 1 1 0 0550b489c40e2c7613f0eec9e19538ef
+
+% 1 1 0 104eddbe8c9501a70e66be74a7fd3133
+
+% 1 1 0 09a1f1306408623a02cbce70bd826ccb
+
+% 0 1 0 094c6ce4f95e769d09e6e34f13c18928
+
+@ 0 8 0 0d4d7ebfdaa141f5161c435c3c1905b5
++       Está en el ámbito implícito, así que el texto plano que se sirve o se adjunta se etiqueta
++       como `text/plain` sin ninguna importación.
++   entry .nominable   todo lo que es `Nominable` es `Media`, por la extensión de su nombre
++       El given que da a una cosa con nombre (un fichero, una ruta, un recurso) un tipo de medio
++       deducido del texto que sigue al último `.` de su nombre, mediante `Extensions.guess`:
++       `report.pdf` es `application/pdf`, y un nombre con una extensión desconocida o sin
++       extensión es `application/octet-stream`.
++   entry .Group   el tipo de nivel superior: uno de exactamente once
+
+% 1 1 0 07aad133e7dd42e00e29024355459ad5
+
+% 0 1 0 0891f79be7ae4b5d0c288cebe0778ee4
+
+@ 0 8 0 0d2f79abe162f83613d5952a0c30c477
++         `Example`, `Model` y `Haptics`: los tipos de nivel superior que registra la IANA, de los
++         cuales `Haptics` es el más reciente (RFC 9695). `#name` es la forma en minúsculas que se
++         escribe en un tipo de medio, y un grupo se muestra y se inspecciona así (`.showable`,
++         `.inspectable`).
++         Un texto con cualquier otro grupo no se analiza y da `MediaType.Error.Reason.InvalidGroup`.
++     entry .inspectable   una representación de depuración como el grupo en minúsculas: `application`
++     entry .showable   representa un grupo tal como se escribe en un tipo de medio: `application`
++     entry #name   el grupo en minúsculas, tal como se escribe en un tipo de medio
++   entry .Subtype   un subtipo, y en cuál de los cuatro árboles de registro está
+
+% 1 1 0 12317a128e6a361f1d4e30b21764ea02
+
+@ 0 9 0 17be3238b960d5090718a274a0619c5c
++         `Standard(value)` es un subtipo del árbol de estándares, registrado en la IANA
++         (`json`, `html`); `Vendor(value)` es `vnd.value`, propio de un fabricante;
++         `Personal(value)` es `prs.value`, propio de una persona; y `X(value)` es `x-value`, el
++         antiguo prefijo experimental (`x.value` se analiza igual). El árbol forma parte del
++         valor, así que un `match` sobre `Media.Subtype.Vendor(_)` encuentra los tipos de
++         fabricante sin inspeccionar ningún prefijo. `#name` representa el subtipo con su
++         prefijo, y el analizador acepta cada prefijo por turno.
++     entry .showable   representa un subtipo tal como se escribe: `vnd.api`, `prs.thing`, `x-tar`
++     entry #name   el subtipo con el prefijo de su árbol, tal como se escribe en un tipo de medio
++   entry .Suffix   un sufijo de sintaxis estructurada: `+xml`, `+json`, `+zip`, …
+
+% 1 1 0 14eb247ec2af5ba71706e8da1979cf91
+
+@ 0 22 0 093ee60d9973f8c8119514c9bfbb1e71
++         Los sufijos que registra la IANA: `Xml`, `Json`, `Ber`, `Cbor`, `Der`, `FastInfoset`,
++         `Wbxml`, `Zip`, `Tlv`, `JsonSeq`, `Sqlite3`, `Jwt`, `Gzip`, `CborSeq` y `Zstd`. Un tipo
++         de medio puede llevar varios, en orden (`application/thing+xml+gzip`). `#name` es la
++         forma registrada que se escribe en un tipo de medio (`json-seq`, `fastinfoset`), y el
++         analizador vuelve a leer esa forma sin distinguir mayúsculas de minúsculas; un sufijo que
++         no está en esta lista no se analiza y da `MediaType.Error.Reason.InvalidSuffix`.
++     entry .showable   representa un sufijo tal como se escribe en un tipo de medio: `json-seq`, no `JsonSeq`
++     entry #name   el sufijo con su grafía registrada, tal como se escribe tras el `+`
++   entry .unsafeParse   analiza un literal que la macro `media"…"` ya ha comprobado
++       Para la expansión del interpolador, que vuelve a analizar en tiempo de ejecución un texto
++       verificado en tiempo de compilación, y por eso recibe el token `Unsafe` en lugar de una
++       táctica. No es para el código de aplicación: úsese `as[MediaType]` o `MediaType.unapply`.
++   entry .parse   analiza texto como tipo de medio, lanzando `MediaType.Error` por lo que esté mal
++       El analizador que hay detrás de `as[MediaType]`, `MediaType.unapply` y `media"…"`. Divide
++       por `;` para los parámetros (eliminando el espacio en blanco), por `/` para el grupo y por
++       `+` para los sufijos; el grupo debe ser un `Media.Group` (sin distinguir mayúsculas de
++       minúsculas), cada sufijo un `Media.Suffix` por su nombre en kebab-case y cada parámetro un
++       `key=value`. Necesita una `Tactic[MediaType.Error]`. Un fallo `MissingParam` o
++       `NotOneSlash` se *lanza* en lugar de abortar, de modo que con una táctica tolerante el
++       análisis continúa con la mejor suposición (`text` como grupo, el parámetro descartado);
++       los demás abortan.
++   entry #mediaType   el tipo de medio de un valor cuyo tipo `is Media`
++       La extensión que proporciona toda instancia de `Media`: `t"hello".mediaType`,
+
+% 0 1 0 1e6ca2e2647cc1ed0f1dd42f56ae9766
+
+@ 0 5 0 1021315cc16045760c309a03d22ab4ea
++ entry .ascribe   `value.ascribe(mediaType)`: cualquier fuente de bytes emparejada con un tipo de medio explícito, como un `Content`
++     Una extensión sobre cualquier valor que `is Streamable by Data over Credit` (un `Data`, un
++     fichero, un flujo), cuyos bytes se leen como `Chain[Data]` y se emparejan con el tipo de
++     medio dado. Para bytes sin tipo de medio intrínseco, donde `Media` no tendría en qué
++     basarse. Necesita un `Buffering` en el ámbito.
+
+% 2 1 0 1b9405ca3fd24f580c5c18203a54aa95
+
+% 3 1 0 1ffbf7b7800f1e5515abd9928924a008
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0873fb5fe3bfa12605c890ab3df743b3
+
+% 0 1 0 0369951fbada24ee14af9fd262b71d5b
+
+% 0 1 0 0b75d3e0abd8cd3e1d477751ba736074
+
+% 0 1 0 1ea4ce02bf1aa96b03e654431edb0a97
+
+% 1 1 0 0b1423fd6eec3ca309e5ee639ad61fa1
+
+@ 0 1 0 0b312aceb4a37562051a3b1a508fe5a0
++ entry .Content   unos bytes junto con su tipo de medio
+
+% 1 1 0 091a0c227253e99b15193931b05b8526
+
+@ 0 3 0 0fa0e3a73871ed8117d64ba5e40684bd
++       Un `Content` es un `#stream` de bytes y el tipo `#media` que dice qué significan: lo que
++       produce `ascribe`, y aquello a partir de lo que se construye una respuesta HTTP o un
++       adjunto cuando los bytes no tienen tipo de medio propio. `#named` añade un nombre, y
++       resulta un `Asset`.
+
+% 1 1 0 18fc272a10ab35b50c19fa3d080b4d8b
+
+% 0 1 0 1d377be3a7a086060cf94f08f104993c
+
+@ 0 3 0 104c05a7d5ab2e3502d3c3270c1baea9
++   entry #media   el tipo de medio de los bytes
++   entry #stream   los bytes, como una cadena de fragmentos
++   entry #named   el contenido con un nombre, como `Asset`
+
+@ 0 1 0 19980be4ebdf6dfd0a1ac5e5e414f275
++ entry .Asset   un flujo de bytes con nombre y con su tipo de medio: un adjunto, un fichero servido
+
+% 1 1 0 090806bd880118be100c17dc963e8afe
+
+@ 0 4 0 061c268133308fbe12026b3fb4108a5f
++       Un `Asset` es un `Content` con un `#name`: las tres cosas que necesita un adjunto de
++       correo electrónico o un fichero de una subida multiparte. `Asset(name, value)` construye
++       uno a partir de cualquier valor que `is Media` y `is Streamable by Data over Credit`,
++       tomando el tipo de medio de la propia instancia `Media` del valor; `Content#named`
++       construye uno a partir de un contenido explícito.
+
+% 2 1 0 17b0a3825ed8f11d0141a461352e71e5
+
+% 3 1 0 006c11f061fd9b2b1c6ae16e45f40e65
+
+% 4 1 0 0f346c3b79d6616519bb9765c1f1ec12
+
+% 0 1 0 1a5a1f9132ae5ffc09ca48cff9797131
+
+% 0 1 0 18b76cacba3f240c0f5bb620f5c04822
+
+% 1 1 0 15e3d9ff8f81ea441cf9d1b60be3587d
+
+% 0 1 0 086c690055f25ae30634b177870f724d
+
+@ 0 7 0 1c1ef8dc001545eb1e18437424c34dfd
++   entry .apply   un recurso a partir de un nombre y de cualquier valor que `is Media` y se pueda leer como flujo de bytes
++       El tipo de medio procede de la instancia `Media` del valor, y los bytes de su
++       `Streamable`, leídos enteros en una cadena de fragmentos. Para bytes sin `Media` propio,
++       úsese en su lugar `data.ascribe(mediaType).named(name)`.
++   entry #name   el nombre del recurso, como un nombre de fichero
++   entry #media   el tipo de medio del recurso
++   entry #stream   los bytes del recurso, como una cadena de fragmentos
+
+@ 0 1 0 03c824654c43073011eebc4196ad46b5
++ entry .Extensions   los tipos de medio de las extensiones de fichero, para deducirlos a partir de un nombre de fichero
+
+% 1 1 0 0ec08dfe0cb0b1d6173777f286927037
+
+@ 0 3 0 073096cceeb45ae909d3eea2357edf27
++       Una tabla de unas ochenta extensiones comunes (`png`, `json`, `pdf`, `docx`, `woff2`, …)
++       y el tipo de medio que cada una significa por convención, con `.guess` para la búsqueda.
++       Es lo que usa `Media.nominable` para etiquetar un fichero por su nombre.
+
+% 2 1 0 007b5ac542f712e0104a9d6a4e3fb3c0
+
+% 3 1 0 179a132e9348557f02ead2c623480e6d
+
+% 0 1 0 18abd54c8d00a9661f04367caa9d8cf8
+
+% 0 1 0 03054f8e5a20f848136b0c0897ab2157
+
+% 1 1 0 1021a55944e6cc7f0362dd8e6bc223af
+
+% 1 1 0 1eb9dad2656bec890c072d7ddcc9666d
+
+@ 0 4 0 13d8680807fc2b460991d8b17a35d427
++   entry .guess   el tipo de medio de una extensión, o `application/octet-stream` para una desconocida
++       La extensión se da sin su punto y en minúsculas: `t"svg"`, no `t".SVG"`.
++   entry .mediaTypes   la tabla en sí, de extensión a tipo de medio
++       Un `Map[Text, MediaType]`, para un programa que quiera ampliarla o enumerarla.
+
+@ 0 1 0 1916ad3ece8a07371afddbde26aa9793
++ entry .Multipart   un cuerpo `multipart/form-data` analizado en sus partes, cada una prestada desde la entrada a medida que se lee
+
+% 1 1 0 101527417cd53c4f01acb99bc5a5b8b2
+
+@ 0 6 0 110616b01ceaaebf1bf0755b8d908a64
++       El formato de una subida de ficheros: un cuerpo de partes separadas por una línea de
++       frontera, cada una con sus propias cabeceras (un `Content-Disposition` que da el nombre y
++       el nombre de fichero del campo, quizá un `Content-Type`) y un cuerpo. `Multipart.parse` lee
++       uno de forma incremental desde cualquier fuente de bytes, de modo que una subida grande se
++       procesa como flujo en lugar de acumularse, y devuelve un `Multipart` cuyas `#parts` son una
++       `Chain[Part]` perezosa; `#at` encuentra una parte por el nombre de su campo.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0d508a90503ccaf613425aad8b4244d9
++         label Un cuerpo empieza por la línea de frontera
+
+% 1 1 0 0b925a6fa9c90be4102b63e53892102c
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 193e2b393d0b80a41e2fa33788906d28
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 1 1 0 1f9767d2bb5081bf108daa2ce62a5838
+
+% 1 1 0 0d81887a256b6c680463c153b0c2b834
+
+% 2 1 0 0f3a0eb028cbf99811d6ff6c3d12ae54
+
+@ 0 1 0 00011f3556a3b3a312893f0225e7ba67
++         label Una parte tiene cabeceras, una línea en blanco y un cuerpo, y la sigue la línea de frontera
+
+% 1 1 0 04fc27cc0607a1241c260ed6457c24ba
+
+% 2 1 0 03e3c5941145fa730288ec88ef67192a
+
+% 3 1 0 004d390f9c7d520f1a79c5ee69e63d38
+
+% 4 1 0 03a36225953d953807d4f690727be626
+
+% 5 1 0 0dd1f10face6be7710b037064f821d86
+
+% 6 1 0 08f34a73dd41c20e1a5169cfeae5199b
+
+% 7 1 0 18e50d0ad38b45290f73e17dc53b7fb1
+
+% 1 1 0 0411ba88be2b7ca908fc10ca447b7f9d
+
+% 2 1 0 0da7d691b510203215aca9788eac9f31
+
+@ 0 1 0 1351f23246b7daf315c83372afe2d864
++         label Una segunda parte, y la frontera de cierre con su `--` final
+
+% 1 1 0 0c1cb9b031fe6399162144ad49919957
+
+% 2 1 0 0e5b5a39b18213701f40ff0667737363
+
+% 3 1 0 021b78ce4ba6b1f30ab5faa229303257
+
+% 4 1 0 169e011585633c820e392ea1ff6c9d89
+
+% 5 1 0 03f263a14c165dbd16b07b31eb99054f
+
+% 6 1 0 13906cc01ee5502d0201c16bb00d3967
+
+% 7 1 0 0b3ed52031529a3b0c5008b355060f2d
+
+% 1 1 0 0534a362f16fce7e1017e316a83187c8
+
+% 0 1 0 15aa2e8146f90bfd1830b132c9afc592
+
+% 1 1 0 11ba7b156fe32f79011781172681d919
+
+% 0 1 0 07a4de1dcac38cd81b8b5706bce7272f
+
+% 0 1 0 1b3686d590b653e71a61324c20bcb191
+
+% 1 1 0 19b6f4b6213a3d390b5459a6ef525f2d
+
+@ 0 1 0 03ffcc2a5c20c74c1048d69371208699
++         label Una vez analizadas, las partes están tipadas
+
+% 1 1 0 196e9675eb71dc441cc7683c0d7b5f2d
+
+% 0 1 0 1d2c845b6867685110f4888eaa078a82
+
+% 0 1 0 19e35886cc0f734e1a18af22c6574210
+
+% 0 1 0 01231ed5dc24861f1d62a31f3b934556
+
+% 0 1 0 04d3d3807a6f201c1d6104963e1d4a64
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 8 0 0d4afcd4152271ba0a01a1808813d894
++       El cuerpo de una parte se **presta** desde la entrada, sin copia, mientras esa parte sea la
++       actual: hay que leerlo (`part.read[Data]`, o `part.body()` para obtener el flujo) antes de
++       pasar a la parte siguiente, porque forzar la parte siguiente salta lo que quedara de esta,
++       que a partir de entonces se lee como vacía. Una `Chain` memoiza, así que `parts.size`
++       seguido de `parts.head.let(_.read[Data])` no lee nada. Los cuerpos se encuentran mediante
++       una búsqueda masiva del delimitador, así que un cuerpo binario de 100 KB llega como unas
++       pocas regiones grandes sea cual sea la fragmentación de la entrada, y un cuerpo se puede
++       leer por partes, continuando cada `body()` donde se detuvo el anterior.
+
+@ 0 3 0 1f56e81c979e59240fcc374340d292f1
++       Un cuerpo mal formado lanza `Multipart.Error` con un `.Error.Reason`; el
++       `Acceptable.multipart` de scintillate lee el `Content-Type` de una petición para obtener la
++       frontera y analiza el cuerpo de la petición con esto.
+
+% 0 1 0 1644772910d45b1818d5070d44f2ae59
+
+% 1 1 0 1fac569a3d303af406af34df671711e6
+
+@ 0 14 0 03e58311c4eac87e1117727a51adfcb4
++   entry .Disposition   cómo se pretende presentar una parte: `Inline`, `Attachment` o `FormData`
++       El token de la cabecera `Content-Disposition` de la parte. Las partes de una subida de
++       formulario son `FormData`; `Inline` y `Attachment` son las disposiciones de las partes de
++       un mensaje. Un token distinto de estos hace fallar el análisis con
++       `Multipart.Error.Reason.BadDisposition`.
++   entry .parse   analiza un cuerpo multiparte desde cualquier fuente de bytes, prestando cada parte cuando se llega a ella
++       `Multipart.parse(input)` recibe cualquier valor que `is Streamable by Data over Credit`
++       (una `Chain[Data]`, el cuerpo de una petición, un fichero) y lee la frontera de su primera
++       línea (`--boundary`), así que no hace falta conocer la frontera de antemano; el segundo
++       parámetro, `boundary`, se acepta para quien la tenga de una cabecera `Content-Type`, pero
++       no se consulta. Necesita una `Tactic[Multipart.Error]`, que el resultado retiene (el
++       cuerpo de una parte lanza a través de ella una lectura interrumpida), y lanza
++       `Multipart.Error` en el primer byte mal formado: `Expected(char)` para una frontera o un
++       final de línea que no está, `BadDisposition` para un `Content-Disposition` ilegible. Las
++       cabeceras se leen como ASCII; una parte sin `Content-Disposition` es `FormData` sin nombre.
+
+% 2 1 0 0adf770630bf152f1e7f689aac6adc0a
+
+% 3 1 0 0bea45737d9bd0210256af8dc0152ef7
+
+% 4 1 0 0826cb8d7cd114f9131a82d86181f019
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 150499dc135980c51db745684b6e2d0b
+
+% 1 1 0 1fbe8e2ef54b5e6d15796d4285c61925
+
+@ 0 1 0 06dd0be5a552094619f2b224ed917661
++   entry .Error   se lanza cuando no se puede leer un cuerpo multiparte
+
+% 1 1 0 0ff2997c0d34cdb515116cb1847ab738
+
+@ 0 5 0 179d794822941be10855f8d1452dbccd
++         Error `↯/s.81.2`: _multipart data could not be read because `reason`_. Se lanza a
++         través de una `Tactic[Multipart.Error]` desde `Multipart.parse` cuando llega al fallo,
++         lo que, como las partes se leen de forma perezosa, puede ocurrir al forzar una parte
++         posterior y no en la llamada. El número del `.Reason` es el subnúmero del error (937.1
++         a 937.6).
++     entry .Reason   por qué no se pudo leer un cuerpo multiparte
+
+% 1 1 0 0dbad9a64e1db7180c2a3d8de250b184
+
+% 1 1 0 183d5f11254e8518154a3b6c2f0be0bd
+
+@ 0 5 0 08667e1a12645e6217699f6c95bfaad6
++           column  Caso
++           column  Código
++           column  Mensaje
++           column  Nota
++           row  `Expected(char)`  1  _the character '`char`' was expected_  una frontera sin su `--`, una línea de cabecera o de frontera sin su `\r\n`, una cabecera sin `: `
+
+% 0 1 0 11fc15d67a1950fd08f9e2bda0ea8647
+
+% 0 1 0 1a895bcc3be76cb81f2431de466fea1b
+
+@ 0 1 0 07e73a4935603b04152d611a9c615926
++           row  `MediaType`  4  _the media type is invalid_  lo lanza el `Acceptable.multipart` de scintillate para una petición cuyo `Content-Type` no es `multipart/form-data` con un `boundary`
+
+% 0 1 0 0df41820c77b80610df5264f38f02b7e
+
+@ 0 1 0 193b928c2830ecd70383249def0b74aa
++           row  `Truncated`  6  _the body ended before its closing boundary_  que `Acceptable.multipart` lanza para un cuerpo de petición interrumpido
+
+% 1 1 0 0f21f812b59f04001baf9c7b9c9c95c0
+
+@ 0 11 0 16cd389063e166db077e5e1777917ecf
++       entry #number   el número del motivo, de `1` a `6`, que es el subnúmero del error
++     entry .communicable   representa cada motivo como su mensaje
++     entry #reason   por qué no se pudo leer el cuerpo
++   entry #parts   las partes, en orden, como una cadena perezosa
++       Cada parte se analiza a medida que se fuerza la cadena, y forzar la sucesora de una parte
++       salta y cierra el cuerpo de esa parte. La cadena memoiza, así que se puede recorrer más de
++       una vez, pero un cuerpo solo se puede leer mientras su parte sea la última forzada.
++   entry #at   la parte con un nombre de campo dado, o `Unset`
++       `upload.at(t"avatar")` encuentra la primera parte cuyo `Content-Disposition` nombra el
++       campo. Encontrarla fuerza todas las partes hasta ella, y por tanto cierra los cuerpos de
++       las partes anteriores.
+
+@ 0 1 0 0b7e57735239ef9f021f85a8c3d9dd55
++   entry .Part   una parte de un cuerpo multiparte: su disposición, sus cabeceras, su nombre, su nombre de fichero y su cuerpo prestado
+
+% 1 1 0 1f0c315d6a1183980347e93b6789c24e
+
+@ 0 6 0 14ab41f53eee19d912a8343d1fa332cb
++         Una `Part` es lo que `Multipart.parse` produce para cada sección del cuerpo: la
++         `#disposition` y los parámetros `#name` y `#filename` de su cabecera
++         `Content-Disposition`, todas sus `#headers` por nombre, y su `#body`, un `Spring[Data]`
++         prestado desde la entrada. Una parte `is Streamable by Data over Credit` (`.streamable`),
++         así que su cuerpo se lee con los verbos habituales: `part.read[Data]`, `part.read[Text]`
++         con un `Charset` en el ámbito, o `part.body()` para el flujo en sí.
+
+% 2 1 0 1017a456e792cf360d875ef9bbd0cc1e
+
+% 3 1 0 03178dcf4fd37764111a300e89d5e1b6
+
+% 0 1 0 1549dce1def0d2b3146a423ec9cc1b2e
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1a6f5a1f7a5690220c481081ac7cba79
+
+% 0 1 0 093409fa6e38e01213a6d23546a15161
+
+% 0 1 0 1adda9edbe8570ca0d20cbdab56ca48a
+
+% 0 1 0 1db9f39ec60c9d900fad1c8b08e78df4
+
+% 0 1 0 00bd1acbb971814d03327bf04b8b8781
+
+% 0 1 0 14027876fc8d86a51fa2e0c4da157aab
+
+% 0 1 0 085729ca9d4c37d60b067e3712c93f45
+
+% 0 1 0 15a3ca28166db6b804dbc4fb515f82f2
+
+% 0 1 0 1ae135bbca7e864917b01336d757852f
+
+% 0 1 0 04c609138fd8efba1479048ebdd19703
+
+% 0 1 0 04c2fb4da3ba8e6704247fdbf0100f70
+
+% 0 1 0 1f9c78ed3ddfa32a09e88b5da676b83b
+
+% 1 1 0 0a77c55a1395b36900c4a31b725e83a0
+
+@ 0 4 0 09b6c5e57ec203aa1c946bd24ea30294
++         El cuerpo no se copia: se puede leer hasta que se fuerza la parte siguiente, que salta lo
++         que quede de él, y a partir de entonces se lee como vacío. Cada `body()` continúa desde
++         donde se detuvo la lectura anterior, así que un cuerpo se puede tomar en dos trozos, pero
++         no se puede leer dos veces: una parte cuyo cuerpo se quiera más tarde debe leerse antes
++         en un `Data`.
+
+% 0 1 0 19b5ab3c13f6fc2d1d1e8d2adb38695e
+
+@ 0 14 0 0ca2c8ed92d572fd08506e0c5df83995
++     entry .streamable   `Part is Streamable by Data over Credit`: el cuerpo de una parte, para `read[Data]` y los demás verbos de flujo
++         Está en el ámbito implícito. Necesita una `Tactic[Truncation.Error]`, que la instancia
++         retiene, para un cuerpo cuya entrada termina antes de la frontera de cierre.
++     entry #disposition   `Inline`, `Attachment` o `FormData`, o `Unset` si la parte no tenía `Content-Disposition`
++     entry #headers   todas las cabeceras de la parte, por su nombre tal como se escribió
++         Los nombres de cabecera se comparan exactamente como aparecen en el cuerpo:
++         `Content-Type` y no `content-type`.
++     entry #name   el nombre del campo de la cabecera `Content-Disposition`, o `Unset`
++     entry #filename   el nombre de fichero de la cabecera `Content-Disposition`, o `Unset`
++         Presente en un campo de fichero de un formulario; ausente en un campo de texto.
++     entry #body   los bytes de la parte, prestados desde la entrada: `body()` es el flujo
++         Un `Spring[Data]`: `body()` da el `Stream[Data] over Credit` desde donde se detuvo la
++         lectura anterior, y necesita una `Tactic[Truncation.Error]`. Se lee como vacío una vez
++         forzada la parte siguiente.
+
+@ 0 1 0 1dc9c026048598e502831533550ba27b
++ entry .Construable   el tipo de Scala como el que se lee un tipo de medio y desde el que se escribe, para uso de un cliente HTTP
+
+% 1 1 0 186fbc1b766c0e161890574544ddb48e
+
+@ 0 9 0 17749643447ceaf21fead70b6c928ee1
++       `("image/png" is Construable to (Raster in Png))` dice que un cuerpo `image/png` se lee
++       como un `Raster in Png` y se escribe a partir de él. El `Self` es el tipo de medio sin sus
++       parámetros, como tipo de cadena singleton, para que un cliente que conoce un tipo de medio
++       a partir de una especificación (un documento OpenAPI, por ejemplo) pueda preguntar,
++       mientras se compila el código, como qué interpretar una respuesta de ese tipo. El trait en
++       sí no tiene operaciones: el propio `Aggregable` del tipo del resultado lee el cuerpo y su
++       `Postable` lo escribe. `Construable()` construye una instancia, con los dos tipos como
++       argumentos.
++       Su `Result`, el tipo de Scala como el que se lee y desde el que se escribe un cuerpo de ese
++       tipo de medio, se hereda de `prepositional.Resultant`.
+
+@ 0 7 0 1d6450523c7870e706f8b5b312fb9da7
++       Cada asociación es un given del paquete de elección `construables`, que se importa por
++       nombre, de modo que nada se interpreta sin una elección deliberada: esta biblioteca
++       declara `plainTextConstruable` y `octetStreamConstruable`, y cada biblioteca de formato
++       declara las suyas (`jsonConstruable` en el módulo HTTP de jacinta, `xmlConstruable` y
++       `textXmlConstruable` en el de xylophone, `pngConstruable` en el de hallucination, etc.),
++       todas fusionadas en el paquete `construables` del paraguas. Sin la adecuada en el ámbito,
++       un cliente que lee las respuestas por su `Content-Type` recurre como alternativa al cuerpo
++       en bruto.
+
+% 2 1 0 0b85f968427f21770d03995343194262
+
+% 3 1 0 0eb8249bd8734cd9159f66eda3d8dc91
+
+% 0 1 0 1a8ae180d330639b0d69b7587e00b58b
+
+% 0 1 0 0154c4ee596e6ac8093fb450d1ad5840
+
+% 1 1 0 0c4a02b566c9ebef02df7c72ad28cc7f
+
+% 0 1 0 14db365ec07defc208ea083764937212
+
+% 1 1 0 1f129a61c605659f042b32d890d808e9
+
+@ 0 1 0 168b412107a89f6c194981bfd50cac77
++   entry .Bound   un `Construable` con su tipo de medio y su resultado fijados como argumentos de tipo
+
+% 1 1 0 19f8b595dd8a3f191476523a58de6c52
+
+@ 0 8 0 0cd70441843b1cd8040f61966ac55552
++         `Construable.Bound[media, result]` es la clase que instancia `Construable()`: un
++         `Construable` cuyo `Self` es `media` y cuyo `Result` es `result`.
++     entry #Self   el tipo de medio, como cadena singleton
++     entry #Result   el tipo de Scala como el que se interpreta el tipo de medio
++   entry .apply   `Construable[media, result]()`: una asociación de un literal de tipo de medio a un tipo
++       Escrito con la sintaxis `is … to …` como tipo de un given, los argumentos de tipo se
++       infieren: `given csvConstruable: ("text/csv" is Construable to Sheet) = Construable()`.
++   entry #Self   el tipo de medio, sin parámetros, como tipo de cadena singleton
+
+@ 0 1 0 0a62746d23937f840ee044f8e43775e8
++ entry .construables   las asociaciones de tipos de medio a tipos de Scala, cada una un given que se importa por nombre
+
+% 1 1 0 0a993ef82afe78730c01b41972aa8012
+
+@ 0 4 0 0b414dced7b3c0a915264668a1513250
++       Como qué tipo se interpreta un cuerpo de cierto tipo de medio lo decide un given
++       `Construable` en el ámbito, e `import soundness.*` no trae ninguno: cada uno se importa por
++       nombre. Este paquete contiene las dos asociaciones que no necesitan ninguna biblioteca de
++       formato, y el paquete `construables` del paraguas las fusiona con las de cada biblioteca
++       de formato.
+
+% 2 1 0 041f6e34f533f38614356abcb0412e1f
+
+% 3 1 0 061367d99b9ed3fe04189068ede208d6
+
+% 0 1 0 142b1a6763432687163e7af464eedc5c
+
+% 1 1 0 08f5bc81ab4757090ee09e272974a829
+
+@ 0 3 0 124298333698f1fc009e6482e61bf95f
++   entry .plainTextConstruable   `text/plain` se interpreta como `Text`
++       Leer el cuerpo como texto necesita un `Charset` en el ámbito, y escribirlo, un `Codepage`.
++   entry .octetStreamConstruable   `application/octet-stream` se interpreta como `Data`
+
+@ 0 1 0 0511845060c7585e1c981b7e6a33cfd9
++ entry .internal   la macro que hay detrás de `media"…"` y su comprobación del registro
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 1441c5176d05279214e9eb861c3a3a03
++       No es para uso directo: el objeto existe para que la macro tenga un lugar estable, y se
++       mantiene autocontenido para que pueda ejecutarse en el momento de la expansión.
++   entry .validateLiteral   comprueba el grupo, los caracteres del subtipo y el registro de un literal de tipo de medio, como un mensaje o `Unset`
++       La comprobación en tiempo de compilación: el grupo debe ser uno de los once, los
++       segmentos del subtipo no deben contener ningún carácter prohibido y un subtipo del árbol
++       estándar debe estar en el registro; si no, un mensaje que indica el tipo registrado más
++       próximo por distancia de Levenshtein. Los sufijos y los parámetros se dejan al analizador.
++   entry .mediaInterpolator   la macro: valida la única parte literal e inserta el tipo de medio analizado
++       Se detiene ante un literal con sustituciones, ante un mensaje de `validateLiteral` o ante
++       un `MediaType.Error` del analizador.

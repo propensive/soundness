@@ -1,0 +1,467 @@
+orthant 2 language
+
+@ 0 1 0 16e00b884fcdf5b80bfcfde70015a2d9
++ ## Páginas web
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 6 0 0161681e2a94f24115d095dcaaa26e79
++ Una página web se ensambla a partir de partes reutilizables: un masthead, un banner de cabecera,
++ unas migas de pan, un panel lateral, un pie de página. Cada una aporta su propio marcado, sus
++ propias reglas CSS y sus propios metadatos de `<head>`. Una página es una clase que incorpora las
++ partes que quiere y proporciona su contenido central. Todo lo demás, desde el `<title>` hasta la
++ hoja de estilo, se compone a partir de lo que aportan las partes. El resultado es un documento
++ completo, tipado como [HTML](html.md), que se representa como texto, se transmite como flujo o se
++ sirve directamente como respuesta HTTP.
+
+@ 0 1 0 091dc63b5e0a97800070b4aac0679c58
++ ### Sobre la composición de páginas
+
+@ 0 4 0 11f362e7dc064e0a15d346504b188003
++ Los sistemas de plantillas tratan una página como un fichero de texto con huecos, y la
++ reutilización consiste en incluir un fichero en otro. La estructura de la página, es decir, qué
++ envuelve a qué, vive en los ficheros, donde el compilador no la ve y donde es frágil ante los
++ cambios. Añadir una barra lateral obliga a editar todas las plantillas que deban tenerla, y el
++ CSS que necesita se guarda en otro sitio distinto.
+
+@ 0 6 0 09ba0cec6e4687430cfece9172e9d57f
++ Aquí, una página es una composición de *arquetipos*: traits que añaden cada uno una
++ característica a la página. Un arquetipo puede enmarcar el contenido en una disposición, poner
++ una región antes o después de él, añadir reglas a la hoja de estilo o añadir elementos a la
++ cabecera del documento. Lo hace envolviendo lo que produjeron los arquetipos anteriores.
++ Combinar arquetipos los anida, de modo que el orden en que se enumeran es el orden en que se
++ enmarcan unos a otros, y las características independientes, como un panel izquierdo y uno
++ derecho, nunca chocan.
+
+@ 0 3 0 0003ee50089aeeab0b95a399ddb259d0
++ Como la página es una clase, el compilador ve su estructura. Una página que omite su contenido no
++ compila, y dos arquetipos en conflicto, porque cada uno define el mismo hueco, se notifican allí
++ donde se combinan.
+
+@ 0 2 0 15078c31c0e34fe81175147e830cb278
++ Todo procede del paquete `soundness`, con las elecciones que necesitan los ejemplos en el ámbito,
++ y la última importación permite que los ejemplos impriman sus resultados:
+
+% 2 1 0 10457af93b23597406967e33d8f92a8b
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1842b9c5dc5960d41f15df4cf22b7ce2
+
+% 0 1 0 063d62ac99dc8a1107f7e9b5f3cf49f6
+
+% 0 1 0 1bf4f23a599362431712492df187a0c1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 03e6b9f4cd3f5ee81c0a71c3bb23f25d
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1a5f0810171768050438e8ec953a7a2e
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 111c7c32f0c57f011608500bb9ba1bc4
++ ### Definir una página
+
+@ 0 3 0 000574ed50f845451371c2fd726a66bb
++ Toda página extiende `Archetype`, y su única obligación es `content`, la materia central de la
++ página. Cada característica que se incorpora junto a él introduce un *hueco*, como `masthead`,
++ `colophon`, `hero` o `verso`, que está vacío por defecto y se rellena sobrescribiéndolo:
+
+% 2 1 0 0fbf38bebba796e514394509b7dd85d1
+
+% 0 1 0 11560b19a19226731e0801eb5db5911b
+
+% 0 1 0 01700d8a5da46f3410b1b62a8bc159f9
+
+% 1 1 0 1cf54e31a437dc480943d3f6aded0303
+
+% 0 1 0 1aa456ca398a2fbe11cc55af6e2c6053
+
+% 1 1 0 0380277b599fea401ed98282d9d2f9e3
+
+% 3 1 0 00e14c0bd27b0b4c1abd504a05fa0e70
+
+% 4 1 0 13ea735f9e4c9fec08b59ea4c31b49fd
+
+% 5 1 0 1b33860826f6d57e05eca2a3f3c06109
+
+% 0 1 0 0dc224e8b93f622d19c9c610934e9e5f
+
+% 1 1 0 00f0cb9d159a2cba01d829e824b6a040
+
+@ 0 1 0 124a68870e100f0c01746d8ccb547051
++ Una página que omite su contenido no compila:
+
+% 2 1 0 18682838e75673c9148c2a09235d5839
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1a1a0988512df3230f1bfd465f495dac
+
+% 1 1 0 192b475fdd61d01f055f5e9573641936
+
+@ 0 1 0 1797ebbe2eb4347a0ddb503477c3547e
++ Estas son las características y los huecos que introducen:
+
+% 2 1 0 1977bb4eb20098321dc4b056046a8dc1
+
+@ 0 3 0 14bf89e8e413f01909e78ba015b2bcfd
++ column  Característica
++ column  Añade
++ column  Hueco
+
+% 1 1 0 1600b6ecaa0c710508bc340667e798a2
+
+% 0 1 0 05655b1a6462a1d80065040d59dec5a8
+
+@ 0 1 0 12406582b1f9deb3005455603130436e
++   cell  el título del documento, y un `<h1>` sobre el contenido
+
+% 1 1 0 1fc27ff61957f7de0b7f27148cf65ac4
+
+@ 0 2 0 0256e80052c602b91a76c0d625d3a068
++ row  `Masthead`  un `<header>` antes del contenido  `masthead`
++ row  `Colophon`  un `<footer>` después del contenido  `colophon`
+
+% 1 1 0 00c17cec8a4bea0916e8d0282aa30de2
+
+% 0 1 0 121d2282e65483d916f1aa21c893d08a
+
+@ 0 1 0 08601f5c9cae5f3d1b0f455eab7fc137
++   cell  un punto de referencia `<main>` alrededor del contenido
+
+% 1 1 0 14be46cbc50bbb7c1810716ff67f69a5
+
+% 1 1 0 1304aad1104fb8a40ee96c870a0eef2b
+
+% 0 1 0 0c99fc6c616e1ccc03a9e19fd5822b6c
+
+@ 0 1 0 11b328c870a27d441bf74ad283a3fc05
++   cell  unas migas de pan, como un `<nav>`
+
+% 1 1 0 0457e538e026153f0344e92b8969dc60
+
+@ 0 5 0 11e606a3945c44ac06e048125984df9a
++ row  `TopMenu`  una barra `<nav>` de enlaces, también disponible como `menu`  `menuItems`
++ row  `Hero(headline)`  un banner encabezado por su parámetro  `hero`
++ row  `VersoPanel`  un panel lateral en el borde de inicio en línea  `verso`
++ row  `RectoPanel`  un panel lateral en el borde de fin en línea  `recto`
++ row  `FoldableRectoPanel`  un panel recto que se pliega  `recto`
+
+% 1 1 0 02e464ed21add0a91ec7aeb362d038b6
+
+% 0 1 0 0452a813b82d05ae0e6e0842add8b4c3
+
+@ 0 1 0 1055363fbe2d3ec60946c76c1efe382c
++   cell  una marca `logo`, con el texto de `logoText`, para que otras características la coloquen
+
+% 1 1 0 01430e4c46e242de1bf026113698b29a
+
+% 1 1 0 1a8eadecc0663acd1b08d1b94578a18d
+
+@ 0 4 0 023c4e0b20b70df80fe93a50033304b6
++ `html` es el documento completo: un `<head>` que lleva el título, la hoja de estilo y los
++ metadatos que haya, y un `<body>` que contiene el contenido enmarcado. Los tipos de los huecos son
++ los mismos tipos que rigen cualquier otro valor HTML, así que dar a un hueco algo que no le
++ corresponde es un error de compilación.
+
+@ 0 3 0 149c8a060cacfe5b0c5432de0d3ad7e3
++ La dirección de escritura es `direction`, que es `HDir.Ltr` salvo que se sobrescriba. Cambiarla a
++ `HDir.Rtl` establece `dir` en el cuerpo, y nada más. Las disposiciones solo usan propiedades
++ lógicas, así que el navegador las refleja, y la hoja de estilo es idéntica en ambos casos.
+
+@ 0 1 0 048c3adf2c8977ff1cfa218e1348bfa5
++ ### Orden de enmarcado
+
+@ 0 4 0 170e209bbb997fcd11188ee4877f634b
++ Cada arquetipo envuelve el marco construido por los arquetipos enumerados antes que él. Enumerar
++ `Mainstay` antes que `Masthead` pone el contenido dentro de `<main>` y, después, el masthead
++ fuera de él. Enumerarlos al revés pondría el masthead dentro del punto de referencia. El orden de
++ los mixins es el orden de anidamiento, leído de dentro hacia fuera:
+
+% 2 1 0 05ca40eabffe925116a5ff87a617252b
+
+% 0 1 0 10fc25e9724a4f4a065621b1d16d4646
+
+% 0 1 0 1b655ea4f0284f251c3ec6ccedeb3339
+
+% 1 1 0 1f050346c30bc20d123470b3d6c124a8
+
+% 1 1 0 04a658d34ea7aa6e0e2979ec7c467cb8
+
+% 2 1 0 0db6177a47a821d40c0977b5d286b6b7
+
+@ 0 2 0 042dd5e9237e2ac9011321755a6592b3
++ La página enlaza su hoja de estilo en vez de incrustarla, como se [describe más
++ abajo](#stylesheets), de modo que la salida es lo bastante corta para leerla:
+
+% 2 1 0 057be34297f3df7411c10134692b8f07
+
+% 3 1 0 178d5f7730e0c9ba10fb945febea79aa
+
+% 4 1 0 1967a807e83de8ff0a746b9a55dff90d
+
+% 0 1 0 19b03dee1e82d96003deddec96d48e68
+
+% 1 1 0 00160b2a985e23a90d6db437514a773d
+
+@ 0 5 0 024faa248072fa0c00b24aee5713d8a8
++ Las características que no se anidan, sino que se sitúan una junto a otra, como los paneles
++ laterales, no dependen de su orden. `VersoPanel` coloca un panel en el borde de inicio en línea,
++ y `RectoPanel` en el borde de fin en línea, y una página puede incorporar ambos en cualquier
++ orden. Cada uno expone sus propios ganchos de configuración, como una anchura o una separación,
++ de modo que una página ajusta una característica sin tocar su marcado ni su CSS:
+
+% 2 1 0 17ff311fd251d478089c3cf183b8a5cf
+
+% 0 1 0 06f3948c3351e53503906d688255b436
+
+% 0 1 0 0cb577f62ae8136808f882de0c3298a4
+
+% 0 1 0 072bf10b80f5f7b0002037eaad10a60d
+
+% 0 1 0 1dd339e3b03326871eab2eab9d0dee6e
+
+% 0 1 0 122692b4fdd9b1ba0d3452a1d82892a9
+
+% 1 1 0 12d1a7b2345f093e04f40e01405c9be1
+
+@ 0 3 0 1098ed2240cbbd9c1f19e957a23e741f
++ `TopMenu` representa sus elementos como un `<nav>` y deja el resultado disponible como `menu`,
++ que la página coloca aquí en el panel lateral. Una utilidad aportada por una característica puede
++ rellenar el hueco de otra.
+
+@ 0 1 0 143bc86fd0da581a14357346136bb6b7
++ ### Metadatos
+
+@ 0 3 0 1f14682c3c69ac7e18382a9c6bbd5395
++ Una característica que contribuye al `<head>` toma su valor como parámetro del trait y no añade
++ nada al cuerpo. `StandardMetadata` proporciona lo que quiere casi cualquier página, y las demás
++ añaden cada una un elemento más:
+
+% 2 1 0 0161c8701bb5c204052b25cee89771ee
+
+@ 0 3 0 1bb4db4b5a19b9a81cc671c3e03730c4
++ column  Característica
++ column  Añade a la cabecera
++ row  `StandardMetadata(description)`  una descripción y un viewport adaptable
+
+% 0 1 0 11a91e8b19ffe7a9042eb930d80f9220
+
+@ 0 1 0 163739cb86ae94b80cd2baa4caba76c2
++ row  `Viewport`  `<meta name="viewport">`, a partir de `viewport`
+
+% 0 1 0 0393df4615d992201ca54a6d697bf5a2
+
+@ 0 1 0 04c63149e6867b9a0a68ba82d5df5c97
++ row  `Keywords(keywords*)`  `<meta name="keywords">`, las palabras clave separadas por comas
+
+% 0 1 0 09674d4dcc72eedf1a7ddfdcd012681b
+
+% 0 1 0 1bad03699a8795050451fedadbcd5ec1
+
+% 0 1 0 1cacf21c60fe5cd1119826c8aea6f86f
+
+% 1 1 0 19c7fe15de15bc4312960a1878c2ad08
+
+@ 0 2 0 1291fc4b93bfb3381209956695cfc6fe
++ `Hero` antepone un banner encabezado por su parámetro, con cualquier material adicional en el
++ hueco `hero`, y el título del documento es `pageTitle`:
+
+% 2 1 0 17c6380985cb068a0d694ea7170fa3ad
+
+% 0 1 0 1d02ab2287f85f1808fa1c3ddc27b150
+
+% 0 1 0 08fbbe9c81182dcc1fa40e7033efec1c
+
+% 0 1 0 08de49f589169d7318bbdc1ebd653147
+
+% 0 1 0 074b3a1cab2face8016587494a960dd6
+
+% 0 1 0 1625efbf237f64e20c7e5fed6534c5be
+
+% 1 1 0 0d919a0e076879fe1b87306420cd51aa
+
+% 0 1 0 0a2ae3a74bae0c3209ca03f5e0895cc5
+
+% 0 1 0 0e68404cc29d58d31e457c2c2baffae1
+
+% 0 1 0 1a4398e9b24353d100269c33f7a87fe6
+
+% 1 1 0 058947d82722756b067870d95fa97dca
+
+% 3 1 0 11c2a5cfeca52a9000086ec26b2f25a0
+
+% 4 1 0 1222fa2064a5ee1308b5b647c6f19497
+
+% 5 1 0 0885de693547d9c00ee97c0b9038defd
+
+% 0 1 0 0b85e5a8a6a762600c5be7161de55992
+
+% 1 1 0 117a419f8edd39f317772045436e293d
+
+@ 0 1 0 1e6ec3b3abd988ce0e72fe92cfb7a14c
++ Un favicon o una dirección canónica es una ruta, así que estas características toman `Text`
++ directamente, y no una URL analizada.
+
+@ 0 1 0 19d16acc6260e13f1d2df4fb23bdfc3e
++ ### Hojas de estilo
+
+@ 0 3 0 1b08a7b4339df78c0de5c07407de17ed
++ Cada característica lleva sus propias reglas [CSS](css.md), y la página las acumula en una única
++ hoja de estilo, disponible como `css`. Por defecto se incrusta en un elemento `<style>` de la
++ cabecera, de modo que la página es autónoma:
+
+% 2 1 0 0c42dae78a8c998a098c1805647299f7
+
+% 3 1 0 0d88a44e548ff0151d8099d3683a4431
+
+% 4 1 0 15a9816019cb281f165836a57320cb46
+
+% 0 1 0 1f81883ed45ab7b21e9b966a31fc5d56
+
+% 1 1 0 1787b07a55a9e4f300e11de35bf491a8
+
+@ 0 3 0 1051a36a2a4079220339d21cf57c0267
++ Las reglas de una característica son un gancho como cualquier otro, como `mastheadStyles`,
++ `menuStyles` o `heroStyles`, así que una página cambia el estilo de una característica
++ sobrescribiendo sus reglas y deja intactas las demás. Las reglas se comprueban al compilar el
++ código, como cualquier literal `css"…"`:
+
+% 2 1 0 1fe64b183957343511db000c9088de47
+
+% 0 1 0 0f1f38a2fb21de9d102399345e39a72a
+
+% 0 1 0 0497d1fbc64840a4148756797645497a
+
+% 0 1 0 152361e256e9ab051b7c1f0622cce49a
+
+% 1 1 0 16fa84a303973f1e1d83e401b66f68e7
+
+@ 0 3 0 0d1b00063a1dd45e0e3ac573e0c2169f
++ Un sitio con muchas páginas sirve una única hoja de estilo, en lugar de incrustar una copia en
++ cada una. Establecer `stylesheetUrl` hace que la cabecera se refiera a ella con
++ `<link rel="stylesheet">` en lugar del `<style>` en línea, y la aplicación sirve `css` en esa
++ dirección:
+
+% 2 1 0 03c53dd383cc6de418052229a3ab9ab5
+
+% 0 1 0 1f034a3d2b3561f7016f11c2ef0b891c
+
+% 1 1 0 13a39d66b73f73de1fdc2904462c5c6a
+
+% 2 1 0 17f986c64c3c85fa1159efca492cec8b
+
+% 4 1 0 1eebba81a4b5f4d60a08b9f4ab1dc497
+
+% 5 1 0 05eeec19fa74a50506b2f6978ae6d8e6
+
+% 6 1 0 1cfe9be701c1411d0f8a6e63d98c3580
+
+% 0 1 0 1bf8c115d025c01b1a3872326c76ea8e
+
+% 1 1 0 102de52d8aefce2f07134f8f7e5acc67
+
+@ 0 1 0 1f1e10e523cc04890a9b121c7cc17f53
++ ### Paneles de control
+
+@ 0 3 0 157ebcdcdcd8e3f51f895f7f7cac5735
++ Los arquetipos se componen en arquetipos mayores. `Dashboard` se construye a partir de `Mainstay`
++ y `Masthead`. Titula el documento según una `brand`, muestra la marca en el masthead y dispone
++ como contenido unas `cards` en una cuadrícula adaptable. Un panel de control concreto solo
++ proporciona esos dos detalles:
+
+% 2 1 0 1b7bc564f764734a0a3c461a4b34823e
+
+% 0 1 0 08dee39a8d0e6d71131438910cd3c6ac
+
+% 0 1 0 093615643a23785e0e65d416080c1a5f
+
+% 0 1 0 142221f6f39dfcec06cb68daad251f37
+
+% 0 1 0 089b298caaae77130875421d5047a22b
+
+% 1 1 0 1fc4084ec1fa866214344d93f806260c
+
+% 2 1 0 07ae4ecd36aac2681007eeb6846a0cae
+
+% 4 1 0 10c30019c8442e911a64c2ff5f0963d9
+
+% 5 1 0 17a7da58188aafcd1a5c63b17a45e0b6
+
+% 6 1 0 08cdb0fdb7a47586104448b617858bf0
+
+% 0 1 0 118879051bf35ee4171ddaf962bd1907
+
+% 1 1 0 0bb72c0d4f05b89a01b49baa634ea623
+
+@ 0 2 0 1eb9e79547fcef5e1d06982acec10bb9
++ Cada `Dashboard.Card` es un encabezado y su propio contenido de flujo, representado mediante
++ `card`, que un panel de control sobrescribe para reestructurar una tarjeta, mientras que
++ `dashboardStyles` cambia el estilo de la cuadrícula.
+
+@ 0 1 0 0375a5bbcf345a6404a0e6995d88a021
++ ### Servir una página
+
+@ 0 4 0 0065db9242fb7d1205089b7bcf97901d
++ Una página declara su tipo de medio, `text/html`, y transmite como flujo su documento
++ representado, así que es por sí misma el cuerpo de una respuesta. Un manejador de un
++ [servidor](http-server.md) la devuelve directamente, y la cabecera `Content-Type` se deduce del
++ valor. Un valor `Css` se sirve de la misma forma, como `text/css`, que es todo lo que necesita una
++ hoja de estilo enlazada:
+
+% 2 1 0 0af9eb16c66aa3e4029e997d1362e086
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1c3d641093e8220d0d3ba74195470ec2
+
+% 0 1 0 04b189a6b3d427501c9b37e59a2ea0c0
+
+% 0 1 0 196b923a40c8885b0ea0831911ed4fb1
+
+% 0 1 0 0b1ac7187f0870900ef98c54bd806f87
+
+% 0 1 0 0834372525688bfd1ce1783af6949cce
+
+% 0 1 0 1ef2102adb55dc5d1de88c2368afab31
+
+% 1 1 0 19020acf4ce5a1841f41061a53831d9b
+
+@ 0 2 0 0714abba365dbf5015ba11863488a7b1
++ La página se representa cuando se transmite la respuesta, dentro del ámbito `supervise` en el que
++ se ejecuta el servidor, y no se almacena nada en búfer. El documento fluye hacia el cliente a
++ medida que se produce.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 7 0 0928843d852d62bd08bbbd6aba8a23c6
++ - [HTML](html.md) describe los elementos tipados que rellenan cada hueco.
++ - [CSS](css.md) describe los literales `css"…"` que cambian el estilo de una característica.
++ - [Servidor HTTP](http-server.md) sirve una página como respuesta.
++ - [Markdown](markdown.md) representa el contenido escrito como el HTML que contiene una página.
++ - [Internacionalización](internationalization.md) describe las direcciones de escritura entre las
++   que elige `direction`.
++ - [Separación silábica](hyphenation.md) describe los guiones blandos que puede llevar el texto de
++   una página.

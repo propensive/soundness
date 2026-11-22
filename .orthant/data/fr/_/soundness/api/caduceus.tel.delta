@@ -1,0 +1,752 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 07e53f3de3fd2d2c0bd6471728e693c3
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 02038a9ec49aa55d1a80d0aef80afd20
++ info
++     des e-mails composés de parties typées et envoyés par un transporteur choisi selon ce qui est
++     dans la portée
+
+@ 0 7 0 15314c14a8df18030db84669062a7530
++ detail
++     _Caduceus_ compose un e-mail à partir de parties typées — un corps en texte, en HTML ou les
++     deux, du contenu en ligne et des pièces jointes — et l'envoie par un `Courier`, le service
++     de distribution, qui est une valeur contextuelle. La structure MIME découle du contenu
++     (`multipart/alternative` pour du texte accompagné de HTML, `multipart/related` avec du
++     contenu en ligne, `multipart/mixed` avec des pièces jointes), et les adresses sont des
++     `EmailAddress` d'urticose, vérifiées à la compilation du code lorsqu'elles sont écrites sous
++     forme de littéraux `email"…"`.
+
+@ 0 3 0 1e452a5de5abce540cb4270080aed1b0
++     Tout ce qui est `Sendable` — un `Text`, un document doté d'un type de média, comme une page
++     HTML, ou un `Email` composé — s'envoie avec `send`, qui prend l'objet et les destinataires
++     et nécessite un `Courier` et un `Sender` dans la portée :
+
+% 2 1 0 19131b85c88bf3dc11aba0e458545462
+
+% 3 1 0 0d63d29b8b9158f206a4e322f6fa6a7b
+
+% 4 1 0 17c82306264d1bb6124677c13495db0e
+
+% 5 1 0 03e120a31c951a44097d81d54d5f86fc
+
+% 6 1 0 08c73028ce0bdd321fc8a6d8829a39ab
+
+% 7 1 0 0b9e1d765ba1f3f805b0bd9605b5cafa
+
+% 8 1 0 016ef003097081eb08952e01981ce485
+
+% 9 1 0 126b5c62da9f38900b02fa192014f014
+
+% 0 1 0 055bee1611938ddc0e54e567c7ffef73
+
+% 1 1 0 0fe7a29ee0f5170700e823f985719b0c
+
+% 0 1 0 0b4ee182bacbc5d915f88aa97ff9e12f
+
+% 0 1 0 0ae1e022b087dbfd0cce418b43b2112f
+
+% 1 1 0 0ce1033e2711eaa301c335d7c91a7db3
+
+@ 0 2 0 1bd9ce2956662af50950766cfb01c3cc
++     Le résultat de `send` est le type `Result` propre au transporteur : le transporteur Resend
++     renvoie un `Resend.Receipt`, et un autre transporteur peut renvoyer autre chose, ou `Unit`.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     La bibliothèque compte deux ensembles de sources :
+
+@ 0 5 0 1a160b5a2c63e2171b0c06a7ed7c3a0b
++     - `caduceus.core` — `Email`, `Envelope`, `Sender`, `Courier`, les classes de types
++       `Sendable` et `Attachable` et l'extension `send`. Elle a besoin d'un transporteur pour
++       faire quoi que ce soit.
++     - `caduceus.resend` — `Resend` et le given `couriers.resendCourier`, qui distribue par
++       l'API HTTP de [Resend](https://resend.com/). JVM seulement, puisqu'il nécessite un client
++       HTTP.
+
+@ 0 3 0 03432ec8e08b97bb097df4449282112d
++     Tout est exporté vers le package parapluie `soundness`. Un transporteur se sélectionne en
++     l'important par son nom depuis le package de choix `couriers`, puisque `import couriers.*`
++     n'importe pas les givens ; le package fusionne avec celui du package parapluie.
+
+% 0 1 0 14796e252ed6e26c1b77dad1df6a7eea
+
+% 0 1 0 067bb704e114285301e73353f6c80976
+
+% 0 1 0 19e47db073b361d11d987303c5cbed6f
+
+% 0 1 0 1edaa5787b66fe1911389bf194dc2f8a
+
+% 0 1 0 0293a070f9126adc157138b1dc4d75b4
+
+@ 0 1 0 0ff3f338a15ccc230a428c69a12f735f
++ entry .send
++   info
++       envoie toute valeur `Sendable` comme e-mail, avec un objet et des destinataires, par le
++       `Courier` dans la portée
+
+@ 0 4 0 1e84cbf264c9ef39037219a96c79ddd6
++   detail
++       `value.send(subject, to, cc, bcc, replyTo)` transforme la valeur en `Email` grâce à son
++       `Sendable`, construit une `Envelope` à partir du `Sender` dans la portée et des arguments,
++       et confie les deux au `Courier` dans la portée. Chacun de `to`, `cc`, `bcc` et `replyTo`
++       prend soit une `EmailAddress`, soit une `List` d'adresses ; tous sauf `to` valent par défaut
++       aucune.
+
+@ 2 1 0 10681245943b095602255db22008ecab
++       ```scala fuel
+
+@ 3 1 0 008b3a593bebdf0c1f566ce4757d2d62
++       typecheck
+
+@ 4 1 0 195d7c9259c4b7f01cc7db60d4d20949
++       ##
+
+@ 5 1 0 1bfc6763e8024ade13484d041710d26d
++       import soundness.*
+
+@ 6 1 0 1164e8994e8521a712f83da14b5dc6d3
++       import couriers.resendCourier
+
+@ 7 1 0 02cc9acf5b300c750de48af358571c8a
++       import internetAccess.online
+
+@ 8 1 0 0dea2a4a6c79972804f563b0ea941c5a
++       import httpBackends.javaNetHttp
+
+@ 9 1 0 067781534e8ff7e21f3e97513e9f6596
++       import strategies.throwUnsafely
+
+@ 0 1 0 0e3f0fcc8256783d0bb95f5dfc1002e6
++       given Sender = Sender(email"reports@example.com")
+
+@ 1 1 0 09f67f9a2ab97bb912ad1a4f7d0ecb4d
++       given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+
+@ 0 1 0 017fe614f93018621488e05762be9243
++       t"Sales rose 4% in August.".send
+
+@ 0 1 0 15f4ae15d0abb29d16ab954696802106
++         ( subject = t"Monthly report",
+
+@ 0 1 0 0624eed76b04e9cb07a173998d870840
++           to      = List(email"romeo@example.com", email"juliet@example.com"),
+
+@ 0 1 0 03949c3479c5054b141c22a2b5faa942
++           cc      = email"archive@example.com" )
+
+@ 1 1 0 025acb249ecd472104cb589f3090f11b
++       ```
+
+@ 0 2 0 098e389bc6970c4810d31f1903aa2597
++       Le type du résultat est le `Result` du transporteur, et c'est à lui de signaler les échecs :
++       le transporteur Resend lève une `Courier.Error`.
+
+@ 0 1 0 0537c7925b3332e709cdc14f7b43bb0f
++ entry .Sender
++   info
++       l'adresse depuis laquelle les e-mails sont envoyés, comme valeur contextuelle
+
+@ 0 4 0 0a758ca468d4d27003b4c4cb1651a650
++   detail
++       `given Sender = Sender(email"noreply@example.com")` : `send` prend l'adresse `from` de
++       l'enveloppe dans le `Sender` dans la portée, si bien qu'elle se choisit une fois pour un
++       programme ou une portée plutôt que d'être répétée à chaque envoi.
+
+@ 0 1 0 1e9b594bf0015b900d250b9a05c26f55
++   entry #email
++     info
++         l'adresse de l'expéditeur
+
+@ 0 1 0 09e12d46a7e1dc150efc367d783aadb7
++ entry .Envelope
++   info
++       de qui provient un e-mail et à qui il s'adresse, et son objet : ce dont a besoin un
++       transporteur à côté du message
+
+@ 0 4 0 07122b0244b2b7de1e131ee10e6db784
++   detail
++       Les métadonnées d'un `Document[Email]` : l'expéditeur, les destinataires `to`, `cc`, `bcc`
++       et `replyTo`, et l'objet. `send` les construit à partir de ses arguments et du `Sender`
++       dans la portée ; un `Courier` les lit dans les `metadata` du document.
+
+@ 0 1 0 00c8e08f54c794730e99e3776e7195f8
++   entry .many
++     info
++         une valeur ou une liste de valeurs, sous forme de liste
+
+@ 0 2 0 0ddb13e81da0a4a518b055ec27ed3151
++     detail
++         `Envelope.many(address)` vaut `List(address)`, et `Envelope.many(addresses)` est la liste
++         elle-même. C'est ainsi que `send` accepte l'une ou l'autre forme pour chaque champ de
++         destinataires.
+
+@ 0 1 0 136cd15098a66c7f0ce2a63ec2c4d977
++   entry #from
++     info
++         l'adresse de l'expéditeur
+
+@ 0 1 0 0de80e8b317f39e813d3476cd5e311bd
++   entry #to
++     info
++         les destinataires principaux
+
+@ 0 1 0 0718e9b5cb8958070a5b05f61f42f20e
++   entry #cc
++     info
++         les destinataires d'une copie
+
+@ 0 1 0 00c606bf131ccd3715ce8715ee4b739e
++   entry #bcc
++     info
++         les destinataires d'une copie cachée, non montrés aux autres
+
+@ 0 1 0 0ca48ce8ca0ab12d1ec697f1012c427b
++   entry #replyTo
++     info
++         les adresses auxquelles une réponse doit être envoyée, si ce n'est pas l'expéditeur
+
+@ 0 1 0 09a44ecbb17156b415868927e4016a52
++   entry #subject
++     info
++         la ligne d'objet
+
+@ 0 1 0 18a1633c8c316d040bac363387f5cdc0
++ entry .Email
++   info
++       un message électronique : en-têtes, corps en texte, en HTML ou les deux, contenu en ligne et
++       pièces jointes
+
+@ 0 6 0 005119643591779b1445bb266faba199
++   detail
++       Un `Email` est une map d'en-têtes supplémentaires et un `Email.Message`, qui imbrique un
++       `Email.Content` (un `Email.Body` et d'éventuels `Email.Inline`) dans une liste de pièces
++       jointes, chacune étant un `Asset`. Chaque couche indique son propre type de contenu MIME,
++       dérivé de ce qu'elle contient. Un e-mail est `Documentary` avec une `Envelope` comme
++       métadonnées, si bien qu'un transporteur reçoit un `Document[Email]`.
+
+% 2 1 0 1670be706feada051e138bd40b621e7a
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 188bcd9e354a606f0f55a6c0819e8f10
+
+% 1 1 0 0e0ae5c3e10b232b17a2153169e2645c
+
+% 2 1 0 080629a45b31ad8d0adf208962eac9e3
+
+% 0 1 0 0d6ec7600c40e0b203ad68d7f5aab751
+
+% 0 1 0 0aba77f389a48d4b127444835f4b4d3e
+
+% 1 1 0 032e9a7981207afb1b7b71319b7397c2
+
+% 0 1 0 1f2c9d645d5f2ff21e36ac6b3d1412c4
+
+% 1 1 0 199018d2fedd3ca419d1ac254b796dcb
+
+% 2 1 0 1b5e8853a5c4dc9217b0e01c3d08634f
+
+% 4 1 0 0b4d23b2270dbd3e1198a9d536751188
+
+% 0 1 0 169554eba9f06c7b1862b182b25d1e33
+
+% 0 1 0 059eaf49bbed3f670ac7ac1a49bd884b
+
+% 1 1 0 1ebec5aba4e068ea03cba084cdcda264
+
+% 0 1 0 0261c7ad1f0c7a06045a9cc46bf8ef60
+
+% 1 1 0 1459fce406f884a613988a9ff5f1ffdc
+
+% 2 1 0 1fb93c9b849c50650332afeaea196f22
+
+% 4 1 0 0531a84d5cdf432c1e4843edd019a6f8
+
+% 0 1 0 105342b7b9425f541a306be932dfebe6
+
+% 0 1 0 17ccd87eb66850940df22c7d406f9979
+
+% 0 1 0 162ccfe9a01cb0ac13eb35974412ebf2
+
+% 1 1 0 1d730ea3f4cbc3e70a35a73edbecd25e
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 0655973d78a05cc2042d9c85fcdb72b5
++       Un e-mail restitue ses parties avec `#text`, `#html`, `#inlines` et `#attachments`, si bien
++       qu'un message composé peut être vérifié avant d'être envoyé.
+
+% 0 1 0 074e17cc3a2215cf0b1455194bd451bb
+
+% 0 1 0 110fdbcbdad69e970b9ee010fc5d89c4
+
+% 0 1 0 11a23e0551e024510784d2c9437d0488
+
+@ 0 1 0 1a4e5705fbd9b5d80c4e20b1eec35092
++   entry .apply
++     info
++         un e-mail créé à partir de toute valeur `Sendable` : `Email(t"hello")`
+
+@ 0 3 0 0a3f7310ab8a628e1f617560b69bf597
++     detail
++         Utilise le `Sendable` de la valeur : un texte devient un corps en texte brut, un document
++         HTML un corps uniquement HTML, et un `Email` reste lui-même. Le résultat n'a ni en-têtes,
++         ni contenu en ligne, ni pièces jointes.
+
+@ 0 1 0 06312f6a41e01cd9109593baffec0340
++   entry .Body
++     info
++         le corps d'un e-mail : texte, HTML, ou les deux comme alternatives
+
+@ 0 5 0 0761dbe2b35c7d280b304093823a0682
++     detail
++         Une énumération de trois cas : `TextOnly(content)`, `HtmlOnly(content)` et
++         `Alternatives(textContent, htmlContent)`. Le dernier est envoyé en
++         `multipart/alternative`, si bien qu'un client capable d'afficher du HTML l'affiche et que
++         tout autre affiche le texte.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 15027c01b2f1e1f41c0d709fa1c6b4c1
+
+% 0 1 0 010b11b3d8c3c96317e7fecfffac221d
+
+% 0 1 0 196b9977168da0fb18655f347d1bdd70
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 0fb4e907b68fec55146968aaf60d5e56
++     entry .apply
++       info
++           un corps en texte, ou des alternatives texte et HTML : `Email.Body(text, html)`
+
+@ 0 1 0 040131e34dda3a0b0dabdc7adeb1e8db
++     entry #html
++       info
++           la version HTML, ou `Unset` pour un corps uniquement textuel
+
+@ 0 1 0 027625576b104b0a057e8b9755895e49
++     entry #text
++       info
++           la version texte, ou `Unset` pour un corps uniquement HTML
+
+@ 0 1 0 01c852efa205a5b21770f690ea499fc7
++     entry #contentType
++       info
++           `text/plain`, `text/html` ou `multipart/alternative`, selon les versions que possède le
++           corps
+
+@ 0 1 0 112a8f53c6c527751c0a2093c1deecbd
++   entry .Inline
++     info
++         un contenu auquel un corps HTML fait référence par son identifiant de contenu, comme une
++         image intégrée
+
+@ 0 4 0 049221202233886f0901b55993669939
++     detail
++         Une partie en ligne a un identifiant de contenu, `cid`, auquel le HTML fait référence sous
++         la forme `cid:…`, un type de média, et un corps. Sa présence rend le contenu
++         `multipart/related`. Le transporteur Resend n'envoie pas les parties en ligne.
+
+@ 0 1 0 1427a91ba0d6c8d906e1aac859c6fa25
++     entry #cid
++       info
++           l'identifiant de contenu auquel fait référence le HTML
+
+@ 0 1 0 1ad735bec5d757311d8406d7934c9b5e
++     entry #contentType
++       info
++           le type de média du contenu en ligne
+
+@ 0 1 0 0e3e40dbec94693a11c2054a200cac94
++     entry #body
++       info
++           le contenu en ligne
+
+@ 0 1 0 1dccfa668836a93a18013dadf2d8b526
++   entry .Content
++     info
++         un corps avec le contenu en ligne auquel il fait référence
+
+% 0 2 0 16ae4baca752d04d12552f2b2b949dca
+
+@ 0 1 0 1444fe3db39326d1155580426bc52a44
++     entry #body
++       info
++           le corps en texte ou en HTML
+
+@ 0 1 0 01b0c6b9b0985cc8078642c79489091a
++     entry #inlines
++       info
++           les parties en ligne auxquelles le corps fait référence
+
+@ 0 1 0 1e5fa6d0b70f78bc1b1027e194a97550
++     entry #contentType
++       info
++           `multipart/related` s'il y a du contenu en ligne, et sinon le type du corps
+
+@ 0 1 0 1ff7551f8a55493004fe49d19ad8288c
++   entry .Message
++     info
++         le contenu d'un e-mail avec ses pièces jointes
+
+@ 0 1 0 1416c4446eaa875c049d5fd09fba2da7
++     entry #content
++       info
++           le corps et ses parties en ligne
+
+@ 0 1 0 00e2d5070a933a3c0da6e03ca0a88266
++     entry #attachments
++       info
++           les fichiers joints, dans l'ordre
+
+@ 0 1 0 1850673346474e670693eafb23d99220
++     entry #contentType
++       info
++           `multipart/mixed` s'il y a des pièces jointes, et sinon le type du contenu
+
+@ 0 1 0 00f385adbfebee82151fb4bd72e8e252
++   entry #headers
++     info
++         des en-têtes supplémentaires, par nom
+
+@ 0 1 0 0ffa4c62c8512e1f08c18e6603d7f9ab
++   entry #message
++     info
++         le corps, le contenu en ligne et les pièces jointes
+
+@ 0 1 0 0792e23c3522025e1af4caaf7429cad6
++   entry #Self
++     info
++         le type documentaire, `Email` lui-même
+
+@ 0 1 0 1f89526e178a5791165958d53659111a
++   entry #Metadata
++     info
++         les métadonnées d'un document e-mail : une `Envelope`
+
+@ 0 1 0 105b7bff478868b51a8fc0f1e02f06d8
++   entry #html
++     info
++         la version HTML du corps, ou `Unset` s'il n'y en a pas
+
+@ 0 1 0 04c3a989db1832c40cd9a79e57feee47
++   entry #text
++     info
++         la version texte du corps, ou `Unset` s'il n'y en a pas
+
+@ 0 1 0 11676694a28e128f120bedfd1dcdd1a7
++   entry #inlines
++     info
++         les parties en ligne du contenu
+
+@ 0 1 0 06584acb6c6ae67408c386237cb6f401
++   entry #attachments
++     info
++         les fichiers joints, dans l'ordre où ils ont été joints
+
+@ 0 1 0 065feb788075cd3c11aac2235a270a3f
++   entry #attach
++     info
++         l'e-mail avec une pièce jointe ajoutée à la fin
+
+@ 0 2 0 0328fe5cb5d601c314b54df4092de5e2
++     detail
++         Prend toute valeur `Attachable` : un `Asset`, ou tout ce qui a un nom, un type de média et
++         un flux d'octets. L'e-mail est immuable, si bien que `attach` en renvoie un nouveau.
+
+@ 2 1 0 0ff9829287cc373a08b1e3f5ec011c83
++         ```scala
+
+@ 3 1 0 019d56ed747f519e0c2823efb12164e1
++         import soundness.*
+
+@ 0 1 0 1ef7996c4e3931960b260a7edfb87b14
++         val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales".in[Data]))
+
+@ 0 1 0 0d0083e3e5984721030f99dd3363160c
++         Email(t"The report is attached.").attach(report).attachments.map(_.name)
+
+@ 1 1 0 1fb37cccd2ac5af01b26ab0b39087c38
++         ```
+
+@ 0 1 0 0e6868dee12c87381c751ec1a5aec3ad
++ entry .Sendable
++   info
++       une classe de types pour les valeurs qui peuvent être envoyées comme e-mail
+
+@ 0 5 0 059b173604a785380644aa21b39daaa6
++   detail
++       `value.send(…)` et `Email(value)` acceptent toute valeur dotée d'un `Sendable`, qui la
++       transforme en `Email`. Des instances sont fournies pour `Text`, pour `Email` lui-même, et
++       pour tout document doté d'un type de média qui se diffuse sous forme de texte, comme une
++       page HTML de honeycomb. Un nouveau type devient envoyable en le convertissant en un type
++       qui l'est déjà :
+
+% 2 1 0 01caba7933f461751b035902f67370d9
+
+% 3 1 0 1e00d9cc3eedf0971d1d2dc6f01bebd3
+
+% 0 1 0 1ccc7f7c4179ab711cb96aa5a2a978a5
+
+% 0 1 0 0d7598ec7a95c78c0307734bbee43cb6
+
+% 1 1 0 05a095e0aa856b7e05c91e613ac6f712
+
+@ 0 1 0 1d7f6ecd1bd2b644185cd759666f5ee4
++   entry .text
++     info
++         un texte est envoyé comme corps en texte brut
+
+@ 0 1 0 080358b695d5425b09b5578a0f0247f9
++   entry .document
++     info
++         un document doté d'un type de média est envoyé sous forme de son texte, uniquement en HTML
++         s'il est `text/html`
+
+@ 0 3 0 15657dc486f59105047eb612ff5cc7c9
++     detail
++         Pour tout type doté d'un `Media` et d'un `Streamable by Text` : un document dont le type
++         de média est `text/html` devient un corps `HtmlOnly`, et tout autre un corps en texte. Le
++         document est lu en entier lorsque l'e-mail est créé.
+
+@ 0 1 0 19f7bf4421071bd21d8ce56542e040a4
++   entry .email
++     info
++         un e-mail est envoyé tel quel
+
+@ 0 1 0 136dee5708b4c94e1c1d8d6a6451aada
++   entry #email
++     info
++         la valeur sous forme d'e-mail
+
+@ 0 1 0 19bc7dc00dfd49c50c7671f4bbc341e6
++   entry #contramap
++     info
++         un `Sendable` pour un autre type, qui le convertit d'abord en celui-ci
+
+@ 0 1 0 00befc19f7e1e0f61d1995b69a40c75a
++ entry .Attachable
++   info
++       une classe de types pour les valeurs qui peuvent être jointes à un e-mail
+
+@ 0 5 0 0a1a14e7c251b19d13822eb7e81b7dec
++   detail
++       `Email#attach` prend toute valeur dotée d'un `Attachable`, qui la transforme en `Asset` :
++       un nom, un type de média et les octets. Un `Asset` peut être joint tel quel, et toute
++       valeur qui a un nom (`Nominable`), un type de média (`Media`) et un flux d'octets peut être
++       jointe sans autre travail.
+
+@ 0 1 0 03c5affe511de97f03e7f01ecfdf56fe
++   entry .generic
++     info
++         joint toute valeur qui a un nom, un type de média et un flux d'octets
+
+@ 0 2 0 14573bf86955cbb1135f3d72f30be05a
++     detail
++         Pour les types dotés d'un `Nominable`, d'un `Media` et d'un `Streamable by Data` : l'asset
++         prend le nom de la valeur comme nom de fichier, son type de média, et ses octets sous
++         forme de flux.
+
+@ 0 1 0 0ac8a60aa5f388140a86c2584c0db4e0
++   entry .asset
++     info
++         un `Asset` est joint tel quel
+
+@ 0 1 0 0d04cf5c5d48641115b21c71841cfce9
++   entry #attachment
++     info
++         la valeur sous forme d'asset à joindre
+
+@ 0 1 0 14832921664c4c0a12a0ff6cc635df7e
++   entry #contramap
++     info
++         un `Attachable` pour un autre type, qui le convertit d'abord en celui-ci
+
+@ 0 1 0 158da013069726a21334ee785ebdf672
++ entry .Courier
++   info
++       un service de distribution d'e-mails, choisi comme valeur contextuelle
+
+@ 0 4 0 1aec062d13c0caf21417fafb92f908c4
++   detail
++       Un `Courier` envoie un `Document[Email]` — l'e-mail et son `Envelope` — et renvoie un
++       `Result` de son choix. Celui qui est fourni est `couriers.resendCourier` ; un autre service
++       se branche en implémentant l'unique méthode :
+
+% 2 1 0 1dbe9805e9072660039cfcca6150d699
+
+% 3 1 0 084c5b80683655e2110a96644de8fc63
+
+% 0 1 0 1fe4bfb356b3bce90f1149b1baac6357
+
+% 0 1 0 19f448fc1bd758f0103f0ad6892c4995
+
+% 0 1 0 061863b080fbea9c03c375486deb7d32
+
+% 0 1 0 0390482d9817f18f1c5a1993b023e38a
+
+% 1 1 0 075b5674b15cd15814c490682f32dfe1
+
+@ 0 2 0 08eb07dc3a004749160b821967bb2a13
++       Un transporteur est une capacité : il est construit à partir d'autres capacités (un client
++       HTTP, une `Tactic`) et les conserve.
+
+% 0 1 0 1fdc4baa5e9023620e0a79fc2d7223d7
+
+@ 0 1 0 0b0a3722d1061f2f12ef76e2e3b1d8ba
++   entry .Error
++     info
++         levée lorsqu'un transporteur ne peut pas distribuer un e-mail
+
+@ 0 4 0 0f68fc45890e903911921a7fed2bdc41
++     detail
++         Erreur `↯/s.107.1` : _unable to send email from `from` to `to` with subject `subject`_. Le
++         transporteur Resend la lève pour tout échec de connexion, tout statut d'erreur HTTP, ou
++         toute réponse qu'il ne sait pas lire. Le `to` est le premier des destinataires principaux
++         de l'enveloppe.
+
+@ 0 1 0 15e703632ca0c9e80d07548cd325a481
++     entry #from
++       info
++           l'adresse de l'expéditeur
+
+@ 0 1 0 0de277804cf75cfe16a9509d000e361d
++     entry #to
++       info
++           l'adresse du premier destinataire principal
+
+@ 0 1 0 1873eca62e10bdbf000a22527b193c6c
++     entry #subject
++       info
++           l'objet de l'e-mail
+
+@ 0 1 0 0cee0826f4a56b000af1d03ed54a4894
++   entry #send
++     info
++         distribue un e-mail avec son enveloppe, en renvoyant le `Result` du transporteur
+
+@ 0 1 0 1b7dc90d177140b903ffae4b777fa6a3
++ entry .Resend
++   info
++       les réglages et les résultats du transporteur Resend
+
+@ 0 4 0 181359e86db23f5a195080c29ef6ac6b
++   detail
++       [Resend](https://resend.com/) est un service de distribution d'e-mails doté d'une API HTTP.
++       Son transporteur, `couriers.resendCourier`, prend sa clé d'API dans un given
++       `Resend.ApiKey` et renvoie un `Resend.Receipt` pour chaque e-mail envoyé.
+
+% 0 1 0 08cb027500f1a5ee0802a6fba8af4b2a
+
+@ 0 1 0 1a49cd5ae364e9e905c3b69c268221da
++   entry .ApiKey
++     info
++         la clé d'API Resend, comme valeur contextuelle
+
+@ 0 4 0 17a62d7fbc07056219782658407da8bd
++     detail
++         `given Resend.ApiKey = Resend.ApiKey(t"re_…")`. Elle est envoyée comme jeton bearer avec
++         chaque requête. Lisez-la dans l'environnement ou dans un coffre de secrets plutôt que de
++         l'écrire dans le code source.
+
+@ 0 1 0 1ff5656d1deb30b203c3ffd81e4bc6ff
++     entry #key
++       info
++           la clé, sous forme de texte
+
+@ 0 1 0 01cc10d6fbb0904d1658bca7a7bef9f8
++   entry .Receipt
++     info
++         l'accusé de réception de Resend pour un e-mail qu'il a accepté
+
+@ 0 3 0 00e73a7ac833741c00fcb6e94c353d66
++     detail
++         Décodé à partir de la réponse JSON à un envoi. L'identifiant identifie l'e-mail dans l'API
++         et le tableau de bord de Resend.
+
+@ 0 1 0 1873ce07b4522f211ba97f9b70b6cc86
++     entry #id
++       info
++           l'identifiant de l'e-mail chez Resend
+
+@ 0 1 0 014d67d3b3ef54f71c829509d6f082d1
++ entry .couriers
++   info
++       les transporteurs d'e-mails fournis, chacun étant un given à importer par son nom
+
+@ 0 4 0 1dcfab13804ad57d149675d3c673c7dd
++   detail
++       Un package de choix, fusionné avec le `couriers` du package parapluie. Le service qui
++       distribue les e-mails est déterminé par le given `Courier` dans la portée, et
++       `import soundness.*` n'en apporte aucun : on en importe un par son nom.
+
+% 2 1 0 001d2d2d6ac8b83516bd1bbfd3e82d17
+
+% 3 1 0 0b5ff29358ffac9a0291a46f30ee5d98
+
+% 2 1 0 1ab22b42e16385d1083cf8240e6bd996
+
+% 1 1 0 120479115a50a4761f5d05ddf97e909f
+
+@ 0 1 0 025560583abc37dc0cd2f7031d39bd7d
++   entry .resendCourier
++     info
++         distribue les e-mails par l'API HTTP de Resend, en renvoyant un `Resend.Receipt`
+
+@ 0 5 0 10c022c16d49d54511e15d68b633d86d
++     detail
++         Poste chaque e-mail, avec ses corps en texte et en HTML, ses en-têtes supplémentaires et
++         ses pièces jointes (encodées en Base64), vers `https://api.resend.com/emails`, avec
++         l'autorisation de la `Resend.ApiKey` dans la portée. Il nécessite une
++         `Tactic[Courier.Error]`, `Online` (issu d'`internetAccess`), un `Http.Client` (comme
++         `httpBackends.javaNetHttp`) et la clé d'API, et journalise ses requêtes HTTP sous forme
++         d'`Http.Event`.
+
+@ 2 1 0 1f18be80eaf84f1015f33f92007d3379
++         ```scala fuel
+
+@ 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
++         typecheck
+
+@ 1 1 0 10f090fe19e7ee750458b0e6da583f6b
++         ##
+
+@ 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
++         import soundness.*
+
+@ 2 1 0 1a73ed501bc05b9609c7ade416500758
++         import couriers.resendCourier
+
+@ 0 1 0 1884f26bf28188a80dd0c391c47df8c6
++         import internetAccess.online
+
+@ 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
++         import httpBackends.javaNetHttp
+
+@ 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
++         import strategies.throwUnsafely
+
+@ 0 1 0 01d1437f6d67cab0197176d451a04963
++         given Sender = Sender(email"noreply@example.com")
+
+@ 0 1 0 1687bf0756babc9e1c45ad2e22eaf34f
++         given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+
+@ 0 1 0 003d1a042ee935141a0456949a47f253
++         Email(t"hello").send(subject = t"Greetings", to = email"friend@example.com").id
+
+@ 1 1 0 1c30cc213fa31402001a60513fcddf7c
++         ```
+
+@ 0 3 0 171fac63a3e3461601065f5db5ae0e24
++         Une connexion échouée, un statut d'erreur ou une réponse illisible lève une
++         `Courier.Error` ; la raison sous-jacente est d'abord affichée sur la sortie standard. Les
++         parties en ligne ne sont pas envoyées, et un e-mail sans destinataire `to` échoue plutôt
++         que de lever une erreur.

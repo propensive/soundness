@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 1c5d06c046089a3c18bde1312a5fa62f
++ # `SN-728` — Fehlende `Tactic[JsonRpcError]` (ausgemustert)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Diesen Fehler gibt es nicht mehr. Die Seite bleibt erhalten, damit der Code nicht wiederverwendet
++ wird und damit ein Verweis darauf aus einem älteren Release weiterhin aufgelöst werden kann.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Was daraus wurde
+
+@ 0 2 0 1e35e17e81266d34118aa4bbfe3aa93a
++ Das Makro `rpc` von Obligatory löst diesen Fehler nicht mehr aus: Als Soundness die Bolt-Codes
++ einführte, meldete ihn nichts im Quelltext, daher erhielt er keinen.

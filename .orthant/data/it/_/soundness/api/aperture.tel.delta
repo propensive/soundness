@@ -1,0 +1,848 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a2592a6fec741bb0c121348eb0ba60d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 135d707e598580ba1870dcfa7148b0f1
++ info   accesso con ambito alle risorse: `open`, `create`, `archive` e `session`, con le modalità portate come permessi nel tipo dell'handle
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 18b9ebdace29c0750e76f39f52b09d2b
++     _Aperture_ dà un nome a un pattern che ricorre in tutto Soundness: un valore dice *dove* si
++     trova qualcosa — un percorso, un URL, un riferimento in memoria — e accedere al suo
++     contenuto è un atto distinto, **con ambito**. Un file si apre per lo streaming, una
++     directory come radice confinata, un repository Git per leggerne i ref, un URL per una
++     sessione di richieste; in ogni caso un handle viene prestato a un blocco, e la fine del
++     blocco è la fine dell'accesso.
+
+@ 0 2 0 18b8db6668f313b216ece9068abb53b3
++     La libreria definisce le typeclass dietro quattro verbi, e i metodi di estensione che li
++     invocano su qualsiasi valore:
+
+@ 0 9 0 06d946103fab05080174051637276594
++     - `open[Form](mode, flags*)`, tramite `Openable`: l'accesso a qualcosa che esiste, con una
++       `Mode` (`Read`, `Write`, `Exclusive` e le loro combinazioni con `&`) i cui `Grant` sono
++       portati nel tipo dell'handle, così una scrittura tramite un handle di sola lettura non
++       compila;
++     - `create[Form](flags*)`, tramite `Creatable`: portare qualcosa all'esistenza, vuoto oppure
++       componendolo in un ambito che si conferma quando il blocco termina;
++     - `archive[Form](flags*)`, tramite `Archivable`: raccogliere il contenuto di qualcosa in un
++       valore archivio in memoria;
++     - `session`, tramite `Sessional`: un'interazione dal vivo — una connessione, un compilatore
++       caldo, un browser — prestata a un blocco ed eliminata quando esso termina.
+
+% 2 1 0 0556ac6c127246f71a8581adaec93966
+
+% 3 1 0 1e785c348084f90b00abfd7d85d26248
+
+% 4 1 0 081a50ccf822248e1908aa7c07eba1d4
+
+% 5 1 0 1fd73833e65f36bf0d333e77e114fb76
+
+% 6 1 0 13af1eba1dde389f03b3086ef6dc2643
+
+% 7 1 0 1aa88a439542a1f30d751191ed2b78f3
+
+% 8 1 0 08f34d97ff165925168f69dd2e3ff052
+
+% 9 1 0 07cf35a107374e4b1f7404c9c1aaabe4
+
+% 10 1 0 13c7f47fb152741812910f23cbc1e112
+
+% 0 1 0 0e1e2392ad24e5291dac8f353b309eaf
+
+% 2 1 0 0b5407e2399ebfe2043e4e51bdeb6a3f
+
+% 0 1 0 03fea899de0394b717fe66a61cd4b9b1
+
+% 0 1 0 076647ca23db91c51d9cdcc255b11ce3
+
+% 1 1 0 073ec21fe327486a18af2ab2d625be14
+
+@ 0 7 0 1d22d298db8293e71138b5e7a5a0071f
++     La *forma* — ciò *come* cui il bersaglio viene aperto, creato o archiviato — è un argomento
++     di tipo, perché un bersaglio può avere più istanze: un percorso si apre come `File`,
++     `Directory`, `Zip` o `Pdf`. Dove un bersaglio ha esattamente un'istanza la forma si può
++     omettere; con più istanze, l'errore di ambiguità elenca le alternative. Le flag dopo la
++     modalità sono del tipo `Operand` proprio dell'istanza, quindi sono specifiche di ciò che si
++     apre e una flag non pertinente non supera il controllo dei tipi. Ogni istanza è scritta in
++     stile preposizionale, `target is Openable in Form by Flag to Handle`.
+
+@ 0 3 0 1e13c6b76dacc9350c89d78c05b570e0
++     Gli handle sono capability, confinate al loro blocco dal capture checking: né un handle, né
++     una closure su di esso, né una collezione che lo contiene possono essere il risultato del
++     blocco. `Stale` è l'idea complementare per i valori letti *tramite* un handle da uno stato
++     che l'handle non possiede.
+
+@ 0 5 0 18b87c5b6cf40a240dbb36ea8dfa1fe8
++     Aperture dipende solo da `prepositional`, quindi sta al di sotto di ogni libreria che
++     fornisce istanze: galilei (file, directory, spazio temporaneo), octogenarian (`Git.Repo`,
++     `Git.Worktree`), bitumen e zeppelin (archivi), facsimile (documenti PDF), telekinesis e
++     coaxial (sessioni), e altre. Ha un unico insieme di sorgenti, `aperture.core`, per ogni
++     piattaforma, e tutto è esportato nel modulo ombrello `soundness`.
+
+% 0 1 0 181978ce8813533c0eb06e7e297d768c
+
+% 0 1 0 05f3b958add35e9d1abfebc16b3b4bb6
+
+% 0 1 0 16b63a78e1b0467717697dc8df6d1722
+
+% 0 1 0 129261cde6e86a57124d0d9917fdd0b2
+
+% 0 1 0 02c8b4a252ae08bc12ef30e18c26c9db
+
+% 0 1 0 0737af66c950417e1a9a75b522a7ca77
+
+@ 0 1 0 1b58c1e4deea7932118db4cc21336d79
++ entry .Openable   una typeclass per i bersagli che si possono aprire in una forma, prestando a un blocco un handle con permessi
+
+% 1 1 0 0b5749efdcf100081eb06933d042f120
+
+@ 0 5 0 099e7d1ce3ed3bcd07adbfda7f27b039
++       Un'istanza si scrive `target is Openable in Form by Flag to Handle`: `Self` è il bersaglio
++       (un percorso, un riferimento), `Form` è ciò come cui viene aperto, `Operand` il tipo di
++       flag ammissibile per quella coppia, e `Result` l'handle. L'unico metodo dell'istanza,
++       `#open`, riceve il bersaglio, la `Mode` richiesta dal chiamante e le flag, ed esegue il
++       blocco con un handle tipizzato `Result & Granting[grants]`, dove `grants` sono i `Grants`
++       della modalità.
+
+@ 0 1 0 08c6a22a2868bac80a8e8fa16023feb9
++       Gli utenti lo chiamano tramite l'estensione `open`, mai direttamente:
+
+% 2 1 0 0d2044604667e4bb126c612751500eab
+
+% 3 1 0 0a51ca518da38185013f5eb69ecaff46
+
+% 4 1 0 15da92635f98091800b9612eef66badc
+
+% 5 1 0 0c08f9a1f438c20b172d832bedd721d7
+
+% 6 1 0 1415db7bd8861cda1844cac230287f3e
+
+% 7 1 0 0156216c95035b8a0da95a4ed8714fc8
+
+% 8 1 0 0331eba7a03b995b1bdfe5370e8eb9ca
+
+% 9 1 0 162f0ea68201eec1123600d2a91e30a1
+
+% 10 1 0 0e1fbeef8e76dcfa1b4d83e2b0070ae1
+
+% 12 1 0 08d4d8f4d7146ddb1ec58d3d5696ebb8
+
+% 0 1 0 0819a788a3d64918092d6661a67f2ef2
+
+% 0 1 0 0b8917a87469bcb5186576c656c72dca
+
+% 1 1 0 10770fbb42383d3c172bbbac62c17d7d
+
+@ 0 4 0 1c9ab85ea22966981cd9d2734bfddc25
++       Le operazioni di un'istanza sull'handle sono metodi di estensione subordinati ai permessi,
++       come `extension (handle: (DocHandle & Granting[Grant.Write])^) def append(…)`, così la
++       modalità scelta nel punto di chiamata decide che cosa compila dentro il blocco. Un'istanza
++       traduce la modalità nei termini propri del suo backend interrogando `mode.atoms`
++       (`mode.atoms.has(Read)`).
+
+@ 0 4 0 131fb82c842d42460e0ce37fa155f236
++       Le istanze dovrebbero essere classi con nome anziché istanze anonime `given … = new
++       Openable:`: una sottoclasse anonima rende fresco il tipo capability dell'handle nel membro
++       `Result` inferito, e l'handle del blocco allora non supera il controllo dei tipi rispetto
++       ai metodi di estensione subordinati a esso.
+
+% 1 1 0 1ee0643211de745a035a97ced2b37e8e
+
+% 1 1 0 098d16432d684efa05e81acf7b78e0df
+
+% 2 1 0 0c7cba514165d44c0100e9e7d3d1014e
+
+% 1 1 0 14887555a12e7c6d0c6770c4ba14cd63
+
+@ 0 5 0 05d359d078dabc78181114e317d5933f
++   entry #open   apre un bersaglio in una modalità, con delle flag, ed esegue un blocco con l'handle con permessi
++       `open(value, mode, flags)(block)`: l'implementazione fornita da un'istanza. Il blocco
++       riceve l'handle `(Result & Granting[grants])^` come parametro contestuale, e il suo
++       risultato viene restituito dopo che l'istanza ha chiuso ciò che aveva aperto. Chiamato da
++       `Opener#apply`; il codice utente scrive invece `value.open[Form](mode, flags*)`.
+
+@ 0 1 0 0a12cab23ad351220e82c453e6a7ad08
++ entry .Opener   l'applicatore restituito da `open[Form]`, che riceve una modalità opzionale, le flag e il blocco
+
+% 1 1 0 12dd9494ed5d7f4b0bca8368fb4a88ba
+
+@ 0 4 0 0285405fbfb9017e0d5e9b31611c2c25
++       `value.open[Form]` risolve l'istanza di `Openable` dalla sola forma e restituisce un
++       `Opener`; il suo `#apply` con overload riceve poi gli argomenti. I due passi sono
++       intenzionali: i metodi di estensione con overload non si risolvono attraverso più liste di
++       parametri, quindi l'applicatore è il punto in cui la modalità opzionale può avere un
++       overload in sicurezza.
+
+% 2 1 0 15c28de2528e0b94028be9c3f3743de2
+
+% 3 1 0 123f7705c23e5bd7005ea34bc459d8ca
+
+% 4 1 0 1793c93ffa7616a7002fb87c3875f321
+
+% 5 1 0 088b4191947eb00c157cb78ffd4e1b14
+
+% 6 1 0 1327060ce2b7d53b1e114ec7dd4e2809
+
+% 7 1 0 0d605b06948836b5084ffa69a7cc9044
+
+% 8 1 0 12b77035df6a122f19fb5f93888b238b
+
+% 9 1 0 1d85410a067e524c0482b809368a5d73
+
+% 10 1 0 1af0753962c5ca3316e02580222a9dae
+
+% 0 1 0 1efc2c2a82007caf058a8cdc4da418dd
+
+% 0 1 0 03a4a480e578b88215749cf1b1bfdd47
+
+% 0 1 0 0cd66392481b732a193944ababe3156c
+
+% 1 1 0 1fb94de29319005901cf39f49b73dd03
+
+@ 0 2 0 1f7f462dd2c71a07069098773cfca30a
++       Il campo `#openable` è `tracked`, così i membri `Self`, `Operand` e `Result` dell'istanza
++       restano precisi nei tipi di `#apply`.
+
+% 1 1 0 1c9306a31fa36cb91bfc5d49b668b68f
+
+% 1 1 0 12f7033b964ee2481a8bc8b5ef885f62
+
+@ 0 7 0 0557582cc73f49b7124ff48bfb42bae0
++   entry #openable   l'istanza di `Openable` risolta dalla forma
++   entry #value   il bersaglio da aprire
++   entry #apply   apre il bersaglio, in sola lettura per impostazione predefinita o nella modalità data, ed esegue il blocco
++       Due overload. `apply(flags*)(block)` apre con la modalità `Read`, quindi l'handle è
++       `Granting[Grant.Read]`; `apply(mode, flags*)(block)` apre con la modalità data, quindi
++       l'handle concede esattamente `mode.Grants`. Le flag sono del tipo `Operand` dell'istanza
++       e seguono la modalità. L'handle è il parametro contestuale del blocco (`handle ?=> …`).
+
+@ 0 1 0 0defabb207e604351eae1b426f94cba5
++ entry .open   apre un valore in una forma: `path.open[File](Read & Write) { handle ?=> … }`
+
+% 1 1 0 1fed61834fab93d307990d2cd07bffa4
+
+@ 0 4 0 0520248a8e7109751231b910ad43e14f
++       Un'estensione su qualsiasi valore che abbia un'istanza di `Openable` nella forma nominata.
++       Restituisce un `Opener`, il cui `apply` riceve una `Mode` opzionale (quella predefinita è
++       `Read`), poi flag del tipo `Operand` dell'istanza, poi un blocco che riceve l'handle come
++       parametro contestuale.
+
+@ 0 1 0 059b81a56e393b041bca4c94618c5d04
++       La modalità scelta decide il tipo dell'handle, e quindi quali delle sue operazioni
++       compilano:
+
+% 2 1 0 11c287423517fb591b121fab41113180
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0e746141282b3f47186118d3bf65966f
++         label Aperto senza modalità: l'handle concede solo la lettura
+
+% 1 1 0 114eeadb6319c5011a73d732b2ecbc0f
+
+% 0 1 0 1e2beb093dbc0d49086946bc0c79e482
+
+% 1 1 0 05405a2b413dd3241fbdb99680e4b6c4
+
+% 0 1 0 1492935231d11c221d05541011d30757
+
+% 1 1 0 00b266260d2a261b0ea453b977a613f4
+
+@ 0 1 0 14664edba34bcfd206fd553d0879cc59
++         label `Read & Write`: compilano entrambi i tipi di operazione
+
+% 1 1 0 0099c8f28dfbdb8b093f8aae2211873b
+
+% 0 1 0 0434ae24e518d0c51b60c80dc824d1ae
+
+% 1 1 0 06dcad5e35b7cdc80c84acff7941580e
+
+% 2 1 0 15a080379b852db31dc568b358bb7069
+
+% 1 1 0 076f96543a83248217815954211e1ef9
+
+@ 0 1 0 005e27f5ed8ce4931d7572c59fbf62bc
++         label `Read & Write & Exclusive`: e nessun altro handle può sovrapporvisi
+
+% 1 1 0 0d31f09ad698429b10c63339e949f142
+
+% 0 1 0 03ffd1ae2db5bec1197fc8101192d0c7
+
+% 1 1 0 13582012d7bbafe81df14a93bd72641d
+
+% 2 1 0 19b394d2c20554491f76d2c3728014f7
+
+% 1 1 0 1ef8c3d9193837f418ae867faff761f3
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1dd7e42510a6282f05edc3ad40497788
++       La forma si può omettere, `value.open()`, quando il bersaglio ha esattamente un'istanza di
++       `Openable`; con più istanze, l'errore di ambiguità le elenca. L'handle è una capability
++       confinata al blocco: restituirlo, restituire una closure su di esso o una sua collezione è
++       un errore di compilazione.
+
+% 1 1 0 1fa0a8f620000a0f057bafeb4d477032
+
+% 1 1 0 055579f6e76350050c472186208a9bfc
+
+% 2 1 0 003839e48112b040089bba938ac55401
+
+@ 0 1 0 09352adfff4166660fb5aa01b48bef1a
++ entry .Mode   quali permessi conferisce una chiamata `open`, componibili con `&`
+
+% 1 1 0 1ea4dd58b33fd13a154733662a19a51b
+
+@ 0 5 0 184faf1ed3464cbe1d790df8426f3139
++       Una `Mode` è una scelta di permessi a livello di termini, portata come suo type member
++       `#Grants`, così che la modalità scritta nel punto di chiamata determini il tipo dell'handle
++       dentro il blocco. Le modalità atomiche sono `Read`, `Write` ed `Exclusive` (e le librerie
++       ne aggiungono di proprie, come lo `Shared` di galilei); `&` le compone in modo dipendente,
++       così `Read & Write` ha `Grants = Grant.Read & Grant.Write` senza macro né espansione
++       inline.
+
+% 2 1 0 15b1b47702ad57aa1e98d83c8a994381
+
+% 3 1 0 1310770e82431dd51330565696bc6c82
+
+% 0 1 0 106e66a541471e091e2525f61194128a
+
+% 0 1 0 1d1115263c7f27501340ff27baa2af01
+
+% 1 1 0 1c77e9dfad9561161f0159fa6bbc61fa
+
+@ 0 4 0 0f41948c8c1f1694106c0751c3a494ea
++       A runtime una modalità composta è identificata da `#atoms`, l'insieme delle modalità
++       atomiche da cui è stata costruita, ed è così che un'istanza di `Openable` traduce una
++       modalità in flag del sistema operativo. Le modalità atomiche sono valori globali confrontati
++       per riferimento, quindi una libreria che ne definisce una nuova la rende un
++       `object … extends Mode` o un `val` di primo livello.
+
+% 0 1 0 187ef6f98ed613170ad91ebd5608759d
+
+% 0 1 0 1e86cd1bee4ea59600f80d3dad909084
+
+@ 0 9 0 1f182e176eb5ed301323bed4eb42cc5d
++   entry #Grants   i permessi che questa modalità conferisce, come intersezione di sottotipi di `Grant`
++   entry #atoms   le modalità atomiche da cui è composta questa modalità
++       Gli atomi di una modalità atomica sono essa sola; `Read & Write` ha `Set(Read, Write)`.
++       Un'istanza di `Openable` verifica l'appartenenza, `mode.atoms.has(Write)`, per decidere
++       come aprire il suo bersaglio.
++   entry #&   compone due modalità: l'unione dei loro atomi, l'intersezione dei loro permessi
++       `Read & Write` è una `Mode granting (Grant.Read & Grant.Write)`. L'operazione è
++       associativa e, nell'effetto, indipendente dall'ordine, poiché sia i permessi sia gli atomi
++       sono insiemi.
+
+@ 0 1 0 10c0867fdae569e9155cc4b3ff11a94c
++ entry .Grant   un marcatore fantasma di un tipo di operazione consentito, composto per intersezione
+
+% 1 1 0 07fb4efb652f350717a7257cc06de51c
+
+@ 0 4 0 1fa7ea59072976780ab47349a637d116
++       I permessi non vengono mai istanziati: esistono solo come tipi, intersecati nel tipo di un
++       handle tramite `Granting`, dove determinano quali metodi di estensione si applicano.
++       L'intersezione rende più permessi un tipo più specifico, quindi un'operazione che richiede
++       `Grant.Write` accetta qualsiasi handle la cui modalità includeva `Write`, qualunque altra
++       cosa includesse.
+
+@ 0 2 0 07b3866bba0da1bc092740b8101b6f3f
++       La gerarchia è aperta: una libreria che definisce un'istanza di `Openable` può introdurre
++       permessi specifici del suo dominio estendendo `Grant`, con una `Mode` corrispondente.
+
+% 1 1 0 165d4f9e3955f822152de5c1ebd1899f
+
+% 1 1 0 1ca25bf21318963b1fa29bd434f01876
+
+@ 0 8 0 0dc632214a9bf0d102b045021ba6963a
++   entry .Read   il permesso di leggere il contenuto di un handle, conferito dalla modalità `Read`
++   entry .Write   il permesso di modificare il contenuto di un handle, conferito dalla modalità `Write`
++       Scrivere non implica leggere: un handle aperto con il solo `Write` non ha operazioni di
++       lettura, e per entrambe serve `Read & Write`.
++   entry .Exclusive   la garanzia che nessun altro handle sulla stessa entità sia aperto nello stesso momento
++       Conferito dalla modalità `Exclusive`. Come un'istanza mantenga la garanzia è affar suo:
++       galilei rifiuta un'apertura sovrapposta all'interno del programma con un `Io.Error` il cui
++       motivo è `Busy`, e per un file acquisisce anche un lock del sistema operativo.
+
+@ 0 5 0 19da3fd6c40de929187ed2e4b24de490
++ entry .Granting   incorporato in un handle per associargli i permessi selezionati dalla sua modalità
++     `Granting[+grants <: Grant]` è il marcatore che un'istanza di `Openable` o di `Creatable`
++     incorpora nell'handle che presta, come `new Handle(…) with Granting[grants] {}`. È
++     covariante, quindi un handle `Granting[Grant.Read & Grant.Write]` è anche un
++     `Granting[Grant.Read]`, e un metodo di estensione scritto per
++     `(Handle & Granting[Grant.Read])^` vi si applica.
+
+% 2 1 0 06a2d75b09ced9f01907d33071b70273
+
+% 3 1 0 19f953e1fd660b090bd1d6403f5c500d
+
+% 0 1 0 04450b795ec966da13762aabd671c2c0
+
+% 0 1 0 1bcc2e8eac24b96512647bc710a57f4c
+
+% 0 1 0 0d536401313263dd0e0b7742d4e4b1fc
+
+% 0 1 0 0ffe027661a288781fc29f223c630b84
+
+% 1 1 0 07e4fed5c970253814f278d42264b858
+
+@ 0 4 0 05be6781234b4d8c1daa88c2d088e605
++ entry .granting   `Mode granting Grant.Read`: raffina il membro `Grants` di un tipo esattamente a quei permessi
++     Un alias di tipo infisso: `refined granting grants` è `refined { type Grants = grants }`. Si
++     legge in modo naturale nelle firme, `mode: Mode granting grants`, ed è il tipo delle
++     modalità atomiche: `Read` è una `Mode granting Grant.Read`.
+
+@ 0 3 0 1c47c445f3abcf2804aa6f4cb7d62fa6
++ entry .Read   la modalità che concede la lettura: quella predefinita per `open`
++     Una `Mode granting Grant.Read`. `value.open[Form]()` senza modalità la usa; la si passa
++     esplicitamente per combinarla, come `Read & Write` o `Read & Exclusive`.
+
+@ 0 3 0 08728399fedc7c1a16134db657eba3e1
++ entry .Write   la modalità che concede la scrittura, senza la lettura
++     Una `Mode granting Grant.Write`. `Write` da sola non conferisce l'accesso in lettura: si
++     apre con `Read & Write` per un handle che legge e scrive.
+
+% 2 1 0 1b853e0395275c421bb6b49b994a0ffa
+
+% 3 1 0 065a485fa95fe0c01b1ad37af1675c0f
+
+% 4 1 0 0c4c8e8d65f9d81a0fe95e20334da425
+
+% 5 1 0 18f6f41b31b45b9313ed7832fc71f2a2
+
+% 6 1 0 0c1abd5c66d76abb1627103c805f7547
+
+% 7 1 0 1607c66852931b5e14cdd30ef334b82e
+
+% 8 1 0 0d67c680fe95fa48001033f2e08d0d41
+
+% 9 1 0 0c361341731a59060ed87b2c6e21a9e9
+
+% 10 1 0 1b538f6a857699671db2ba0ea4870606
+
+% 0 1 0 1c638bba6223ebf012b6454e651b400d
+
+% 2 1 0 02648135ce19b4871fc91a5fdb4a7326
+
+% 0 1 0 0fbce25e81b244721e748f976dd38c35
+
+% 1 1 0 111c38e163141fe600d834184ecc4e8e
+
+@ 0 5 0 175562f7b8b1cd051969cdc8da86982e
++ entry .Exclusive   la modalità che concede l'esclusività: nessun altro handle sull'entità può essere aperto nel frattempo
++     Una `Mode granting Grant.Exclusive`, combinata con un'altra modalità, come
++     `Read & Exclusive`. Un'apertura sovrapposta mentre dura l'ambito esclusivo fallisce, in
++     qualunque ordine; galilei la riporta come un `Io.Error` il cui motivo è `Busy`, e per un
++     file acquisisce anche un lock del sistema operativo, così che l'esclusività valga anche
++     rispetto ad altri processi.
+
+@ 0 1 0 1d8258fdd239db0b119dbe97f1c96ced
++ entry .Creatable   una typeclass per i bersagli che si possono portare all'esistenza, vuoti o composti in un ambito
+
+% 1 1 0 1d5df2f3facca3d0072e87571ff432f1
+
+@ 0 3 0 17b6a2f4648b73ea18dd3c3db9e831e8
++       La controparte di `Openable`, per creare anziché accedere. Un'istanza si scrive
++       `target is Creatable in Form by Flag to Handle`, e serve due tipi di creazione con un
++       solo verbo:
+
+@ 0 6 0 00fb26ea002902c6108d951103e322e8
++       - **istanziazione**, `path.create[Directory]()`: si fa esistere l'artefatto, vuoto, senza
++         ambito, e si restituisce il bersaglio;
++       - **composizione con ambito**, `path.create[Tar]() { tar ?=> … }`: l'artefatto viene
++         creato e popolato tramite un handle a cui sono concessi i `#Grants` dell'istanza —
++         accesso in scrittura fin dalla nascita, poiché un artefatto appena nato appartiene
++         incondizionatamente a chi lo crea — e confermato quando il blocco termina.
+
+@ 0 3 0 0fb21a8867fcd21204a164b0493dba63
++       Un'eccezione che sfugge a un ambito di composizione non lascia nulla dietro di sé: le
++       istanze lo garantiscono preparando il risultato in un fratello temporaneo e spostandolo al
++       suo posto in modo atomico, oppure rimuovendo ciò che hanno creato.
+
+% 2 1 0 02256acbef042f8c14eba0795def6c6f
+
+% 3 1 0 0ed080ddf58974d20ebe309f740333aa
+
+% 4 1 0 17a16ab5b03ccd3d1d9b00002105f4fa
+
+% 5 1 0 115b7ab1c4fefc7d167a462b4c9077d7
+
+% 6 1 0 10dfb596508fe8481f97d2bec743bd0a
+
+% 7 1 0 1003ea946aa662af19c7c35668011304
+
+% 8 1 0 0438c6ff1fb6136e1f01791cb261c3ad
+
+% 9 1 0 0a44556f1cb2fba7091e09c9f18462d3
+
+% 10 1 0 1a3f570a795f3ef80fb43270f5c2142c
+
+% 0 1 0 0a62474a8951568014f48b1e17c32758
+
+% 0 1 0 0eb825bb01dcc79a09ab8a71053ac37a
+
+% 0 1 0 05ede16a3ff56b0c085535023a541aa9
+
+% 1 1 0 18fa0b1cf3ef00ad0db3d1d30662e5b4
+
+@ 0 5 0 0019d213db3dd65f150b72c80d1849d9
++       Non c'è alcuna `Mode`: ciò che un ambito di creazione può fare non è una scelta del
++       chiamante, e i diritti di accesso con cui la voce creata persiste sono una questione di
++       flag. Creare qualcosa che potrebbe già esistere è regolato da flag specifiche della forma
++       (il `CreateFlag.Replace` di galilei), e la sostituzione non è mai il comportamento
++       predefinito. Ciò differisce dall'*aprire* in scrittura un'entità forse assente
++       (`OpenFlag.Create`), che accede a qualunque cosa ci sia.
+
+% 1 1 0 1d0db166e77646f61220ebf51511c362
+
+% 1 1 0 1722fab6aa214b361c0794af5f804d32
+
+% 1 1 0 04ccc16f80b4c1880859a012ff864ba9
+
+@ 0 11 0 14bcd73946fae2a200bf2415e4a4d41b
++   entry #Grants   i permessi portati dall'handle di composizione, fissati dall'istanza
++   entry #make   crea l'artefatto, vuoto, senza ambito
++       Il comportamento predefinito esegue `#create` con un blocco che non fa nulla, il che si
++       addice alle forme builder il cui handle scartato non costa nulla. Un'istanza che detiene
++       risorse del sistema operativo lo ridefinisce per creare direttamente — in particolare una
++       FIFO, che non va mai aperta solo per crearla, poiché aprirne una in scrittura si blocca
++       finché non compare un lettore.
++   entry #create   crea l'artefatto ed esegue un blocco con un handle per comporlo, confermandolo in caso di successo
++       `create(value, flags)(block)`: il blocco riceve `(Result & Granting[Grants])^` come
++       parametro contestuale; il suo risultato viene restituito dopo che l'artefatto è stato
++       confermato, e un'eccezione lanciata dal blocco non conferma nulla. Chiamato da
++       `Creator#apply`; il codice utente scrive `value.create[Form](flags*) { handle ?=> … }`.
+
+@ 0 1 0 0fa0e42a6788f59c001f094b42cf50da
++ entry .Creator   l'applicatore restituito da `create[Form]`, per l'istanziazione o per la composizione con ambito
+
+% 1 1 0 17170809815ed5541b68afa499097db1
+
+@ 0 3 0 1d624f5721870fb5019225cc43bfb146
++       `value.create[Form]` risolve l'istanza di `Creatable` dalla forma e restituisce un
++       `Creator`. Il suo `#apply` con overload riceve le sole flag, per creare un artefatto vuoto
++       e restituire il bersaglio, oppure le flag e un blocco, per comporre il contenuto
++       dell'artefatto.
+
+% 1 1 0 00be9566d0219d160df4740ce8c5ec3a
+
+% 1 1 0 0abf71e29b9268da0ce6dd3a10c9638f
+
+@ 0 6 0 049258e25d6d4ef8106c86f73d3ec28c
++   entry #creatable   l'istanza di `Creatable` risolta dalla forma
++   entry #value   il bersaglio da creare
++   entry #apply   crea il bersaglio vuoto e lo restituisce, oppure lo compone all'interno di un blocco
++       `apply(flags*)` chiama `Creatable#make` e restituisce il bersaglio, che ora esiste;
++       `apply(flags*)(block)` chiama `Creatable#create`, prestando al blocco un handle a cui sono
++       concessi i `Grants` dell'istanza, e restituisce il risultato del blocco dopo che
++       l'artefatto è stato confermato.
+
+@ 0 1 0 0bd341596f11a5740bd5dabe8b835c71
++ entry .create   crea un valore in una forma: `path.create[Directory]()`, oppure `path.create[Tar]() { … }`
+
+% 1 1 0 00ff1e93c30c2c20071ac91b596774db
+
+@ 0 4 0 008142c07ee96071136000de5f4fae69
++       Un'estensione su qualsiasi valore con un'istanza di `Creatable` nella forma nominata, che
++       restituisce un `Creator`. Senza blocco, l'artefatto viene creato vuoto e si restituisce il
++       bersaglio; con un blocco, l'artefatto viene composto tramite un handle e confermato quando
++       il blocco termina, e lasciato assente se il blocco lancia un'eccezione.
+
+% 2 1 0 0c7014aa252c62571b47129f4ed8b8fb
+
+% 3 1 0 00909420ea410df00d8b1f1c8fad79bc
+
+% 4 1 0 194b14ec460692a809f7769b1cb60b9a
+
+% 5 1 0 1fa2e2c63a8f3fac0b9e1d926e95de37
+
+% 6 1 0 07a88e74bcdb804c1f1680a37e3ce291
+
+% 7 1 0 087994495fadb9840301ca35bd5c4533
+
+% 8 1 0 127252c1de4e75d018783762af348508
+
+% 9 1 0 0040be2b7b08200902f879796bb0a9fb
+
+% 10 1 0 14eda762bc993f130834ef84272d0d48
+
+% 12 1 0 15ef58c8309bc6151539d732c73020d7
+
+% 0 1 0 15bbc3257b9a939a1ed00fb919a2334f
+
+% 0 1 0 082c5857953407ac1b9ef7d8509fd2ca
+
+% 0 1 0 1d3f9e874ebfc5bb0bd6e769ede3abdb
+
+% 1 1 0 16cf1d88cf8b279c136bb6db6a69674e
+
+@ 0 2 0 0673ce55d143e5e10d15c3da53626ee9
++       Le flag sono del tipo `Operand` dell'istanza; quelle di galilei sono `CreateFlag` come
++       `CreateFlag.Parents` e `CreateFlag.Replace`.
+
+% 1 1 0 0e5b6d4e5676fa7b16b9cbd202de4169
+
+% 1 1 0 1d5fcb6b496a5b8e06c2213c339f432c
+
+@ 0 1 0 1e7688e2862d4a2f10aa5fc7d0d17d2e
++ entry .Archivable   una typeclass per i valori il cui contenuto si può raccogliere in un valore archivio
+
+% 1 1 0 1fd4d354fb8a997c173b43178ebf6384
+
+@ 0 6 0 028eaf657646f25600cb7b9322904be1
++       Un'istanza si scrive `target is Archivable in Form by Flag to Result`: la forma è il
++       formato d'archivio (`Tar`, `Zip`, `Ar`), `Operand` il tipo di flag che regola
++       l'archiviazione per quella coppia (una convenzione per i nomi lunghi, un proprietario da
++       registrare, un metodo di compressione), e `Result` l'archivio in memoria prodotto. A
++       differenza di `Creatable`, non si scrive nulla: il risultato è un valore, e dove vada —
++       in streaming, compresso, scritto su un file — è il passo successivo del chiamante.
+
+% 2 1 0 0b0f033543a1939410193d2575153a94
+
+% 3 1 0 1af20fdd953da1e8153264fc3fb413e6
+
+% 4 1 0 0fb5119d4f76b55a105d8c808c96ced5
+
+% 5 1 0 131defd8dc30964112e05e60f5374c96
+
+% 6 1 0 039fd6ac8fd6dde11c7bad95ef48a3eb
+
+% 7 1 0 0143026c9f5039700680913048e983a2
+
+% 8 1 0 1f39d21a1ba5aecf07eb6c321f85c1c3
+
+% 9 1 0 03fa2337dd1d4d49178f8ad86da15efc
+
+% 10 1 0 16bbb16d389e97ef143e3fb9260ca6b4
+
+% 0 1 0 09b9718acd263c610a2247a61caaf1ee
+
+% 0 1 0 0c33f942e6a682440273de07898d23ce
+
+% 1 1 0 111baee4d32e19620401d3251b2a943f
+
+@ 0 3 0 0815f11650ff34020881849f920a815e
++       Le istanze per le directory vivono negli oggetti compagni dei tipi di formato (`Tar`,
++       `Zip`, `Ar`) e percorrono l'albero tramite il backend del filesystem di galilei, quindi
++       sono nell'ambito implicito senza alcun import.
+
+% 1 1 0 19d7a20cc85aa93e0eaa42cd354598fb
+
+% 0 1 0 1156c4b2b32b3f030357c98eec790e29
+
+@ 0 3 0 1f2443cb7a08e71b1560d9a6d60d70a4
++   entry #archive   raccoglie il contenuto di un valore, regolato dalle flag, nel valore archivio
++       `archive(value, flags)`: l'implementazione fornita da un'istanza. Chiamato da
++       `Archiver#apply`; il codice utente scrive `value.archive[Form](flags*)`.
+
+@ 0 1 0 18db20637d03a6bc01287459e6e2f4c4
++ entry .Archiver   l'applicatore restituito da `archive[Form]`, che riceve le flag
+
+% 1 1 0 1428577169d7a7191e60f82670d69a8b
+
+@ 0 3 0 056f4d45bb5f28c006715b464ce8ed37
++       `value.archive[Form]` risolve l'istanza di `Archivable` dalla forma e restituisce un
++       `Archiver`, il cui `#apply` riceve flag del tipo `Operand` dell'istanza e restituisce
++       l'archivio. La struttura rispecchia `Opener` e `Creator`.
+
+% 1 1 0 19a2d3fc5d718ab918151642b2ed76a0
+
+@ 0 3 0 09bb34086577ad08044e17099226319e
++   entry #archivable   l'istanza di `Archivable` risolta dalla forma
++   entry #value   il valore da archiviare
++   entry #apply   archivia il valore con le flag date, restituendo l'archivio
+
+@ 0 5 0 1dbb537141c80df81f99d3e11c2c8f5a
++ entry .archive   archivia un valore in una forma: `directory.archive[Tar]()` fornisce il tarball di un albero
++     Un'estensione su qualsiasi valore con un'istanza di `Archivable` nella forma nominata, che
++     restituisce un `Archiver` il cui `apply` riceve flag del tipo `Operand` dell'istanza. Il
++     risultato è un valore archivio in memoria del tipo `Result` dell'istanza, che la libreria
++     del formato poi serializza o comprime.
+
+% 2 1 0 13d8266c1722fee00d9efd3be804ca6c
+
+% 3 1 0 1b817663108c1e811e4cdca5998504a5
+
+% 4 1 0 0f6a2bf17921c8cd038c9da2583adda1
+
+% 5 1 0 1f0501ae7ee55ed710e3310ec80a7c69
+
+% 6 1 0 15599115b52a406904657b08198ded15
+
+% 7 1 0 0f442417ed0d248a0b9238ed230c4187
+
+% 8 1 0 04196fae53d017dd1fadbca785dd45e2
+
+% 9 1 0 19007fd046a68d771b35d20be9c7868c
+
+% 10 1 0 0cd79e6130e722f61ec6bf4254915c86
+
+% 0 1 0 18db68f2f84aa4da024449ff0a3777c1
+
+% 0 1 0 014ee61598ffda2d087cb1ee21512fbf
+
+% 1 1 0 0ab812532b337a7f030d517004431590
+
+@ 0 1 0 0069abde5f6556b115a9c7f93765a5ed
++ entry .Sessional   una typeclass per i bersagli che prestano una sessione dal vivo a un blocco e poi la eliminano
+
+% 1 1 0 003f2da884abac4b10d89b3fd42d00e0
+
+@ 0 5 0 1a409eb8b038d1b3021412fb0c6012bb
++       Una sessione è un ambito di interazione con stato: una connessione di rete, un compilatore
++       caldo, un browser pilotato da remoto, un dispositivo via SSH. Un'istanza si scrive
++       `target is Sessional to Handle`; il suo `#session` stabilisce la sessione con il
++       bersaglio, presta l'handle al blocco per la sua durata, e lo elimina quando il blocco
++       termina, sia che restituisca un valore sia che lanci un'eccezione.
+
+% 2 1 0 11ddee58a470abcf1298e5d95e2b149b
+
+% 3 1 0 0f5969e1f510e18c1b5f683e1108369c
+
+% 4 1 0 0c23a9bb101a217a198a0b8d6c346639
+
+% 5 1 0 06b853619c27700f0253da452b64d0a0
+
+% 0 1 0 06a007b8ffa0770b0db2af4ea355ee02
+
+% 0 1 0 05a43c9cdd34150916596034aced282b
+
+% 0 1 0 019a06f280175d460b430c4c9402435c
+
+% 0 1 0 017964186291c5070b5fb360cd17bc7f
+
+% 1 1 0 0dc2d84fe896400f13a275bcc693410e
+
+% 1 1 0 057623fdd24f157d095b7df246edaaa6
+
+% 1 1 0 15736583e83c6f8b16e59aea011d082f
+
+@ 0 6 0 1dd547445aa8e3ac1954c7342490be16
++       Il tipo del risultato del blocco è quantificato al suo esterno, quindi un valore che ha
++       ancora in prestito la sessione — l'handle stesso, una closure su di esso, una risposta in
++       streaming dalla connessione attiva — non può esserne il risultato; un valore indipendente
++       dalla sessione, come uno letto per intero, sì. Le istanze a livello di trasporto (quella
++       di coaxial per qualsiasi endpoint `Connectable`) prestano una connessione grezza; gli
++       strati più ricchi prestano handle consapevoli del protocollo, come le sessioni HTTP di
++       telekinesis o le sessioni language server di exegesis.
+
+@ 0 2 0 04b44cdd9564b02a1bea98e091dae0f4
++       Le istanze il cui soggetto appartiene a un'altra libreria sono given di primo livello con
++       nomi qualificati dalla libreria, importati per nome (`import soundness.httpUrlSessional`).
+
+% 0 1 0 0aa2bb590f713fa21aae4aaccefd4fca
+
+% 1 1 0 1bf86935119f00c51d33232aa150c609
+
+@ 0 4 0 1949bd123dbb5a1e166e3ec76010d490
++   entry #session   stabilisce una sessione con un bersaglio, vi esegue un blocco e la elimina
++       `session(target)(lambda)`: l'implementazione fornita da un'istanza. L'handle è il
++       parametro contestuale della lambda, e viene eliminato in ogni esito. Il codice utente
++       scrive `target.session { handle ?=> … }`.
+
+@ 0 7 0 0f4f5b8fd82aa0d91a2e51a50307c415
++ entry .session   apre una sessione su un valore e ne presta l'handle a un blocco: `url.session { s ?=> … }`
++     Un'estensione su qualsiasi valore con un'istanza di `Sessional` nell'ambito. L'handle — di
++     qualunque tipo fornisca l'istanza — è il parametro contestuale del blocco, e viene
++     eliminato quando il blocco termina. Un valore che ha in prestito la sessione non può essere
++     il risultato: restituire l'handle, una closure su di esso o una collezione che lo contiene,
++     o assegnarlo a una variabile esterna al blocco, è un errore di compilazione (_… outlives
++     its scope_, _… cannot flow into capture set …_).
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 18c899fbefe1b88d0c673febf0e51517
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 0 1 0 074ab1c2dd3f8ebc031901f844a03d33
+
+% 0 1 0 024567e881f4dd0f1313a9ec1163a9df
+
+% 0 1 0 18a3d633bca8b02a07d3f001113ecfa3
+
+% 1 1 0 00313a34bc35abba13ea1fbbf70abcbd
+
+@ 0 3 0 0903cfe269e1de5614b492ceaa5f186d
++     L'estensione è un metodo semplice, non inline, e l'istanza e il blocco possono condividere
++     capability (un monitor, una tattica): entrambi ricevono i loro insiemi di cattura come
++     parametri anziché come insiemi freschi e separati.
+
+@ 0 1 0 12cb382735b944121bc842c22c8bef8b
++ entry .Stale   un valore come lo ha visto un handle, su uno stato che altri processi potrebbero aver modificato da allora
+
+% 1 1 0 18b8e51a95ded2e31cc3b1fd5e40063d
+
+@ 0 6 0 14fd11d4273c22cb19c1229b336616d7
++       `Stale[value]` avvolge un valore letto tramite un handle da uno stato che l'handle non
++       possiede: un ref in un repository in cui scrivono altri processi, la dimensione di un
++       file, le voci di una directory. Il valore è immutabile e puro, ma ciò che registra potrebbe
++       essere cambiato prima ancora che la lettura restituisse. Il tipo esiste perché una firma
++       possa dirlo: un metodo che restituisce `Stale[Git.Hash]` ha risolto un ref, e un metodo che
++       ne riceve uno è condizionato al fatto che il ref abbia ancora quel valore, e fallisce con
++       un errore tipizzato se non è così.
+
+% 2 1 0 0f9818b4fd3c2c1802136764045ff651
+
+% 3 1 0 07a9df363e5a54630a58bceae0cf7078
+
+% 4 1 0 0485889e8efa662016dcc49a8fbd0c68
+
+% 5 1 0 1a3227dd1c972459179c8c3f9299fb15
+
+% 2 1 0 0e9435e601f38dba02e2d7fbdae82035
+
+% 3 1 0 0b3f7d56208aa17a0960361fc07523a0
+
+% 4 1 0 0a2489263358c461177f04c2bad37b89
+
+% 5 1 0 04f8bd3693ed2c521d78f675eab151c5
+
+% 6 1 0 0ba1c95fb631e1a80008e0ac6a4f9a2a
+
+% 7 1 0 15a9622bdf2267b1045631b4f07c2f9c
+
+% 8 1 0 0062e075a9a992e81241b9a9a4d9e260
+
+% 0 1 0 025a8cfdc31ec73d18a4e32a66514dfc
+
+% 0 1 0 13b3145d5d77076c0a035a099314247c
+
+% 0 1 0 0ee05dbc473a135a1991c4399441c55a
+
+% 0 1 0 037c13e6234abfc90d63828638fb2299
+
+% 0 1 0 162120ac8677457a05dbdf9313bbdee9
+
+% 0 1 0 1267be16c31a610102dca42374beea2f
+
+% 1 1 0 1b46d202ca01ce5617cc7a4b19680b33
+
+@ 0 2 0 19a73a68348d71d716945dfdcc0e9fc4
++       Se un altro processo ha spostato HEAD tra la lettura e il commit, il commit fallisce con
++       `Git.Error(Moved(…))` invece di sovrascrivere quel lavoro.
+
+@ 0 3 0 0419a9507b705b721a97e3edf8ea9877
++       Di proposito non c'è alcun timestamp: un orologio sarebbe una dipendenza, e la recenza non
++       è una proprietà su cui ragionare. L'unico uso corretto di un valore stantio è restituirlo
++       all'handle che lo ha prodotto, oppure leggerne il `#value` sapendo che potrebbe non essere
++       aggiornato.
+
+% 0 1 0 071d3ceb5e7915ed12f2868090902787
+
+@ 0 4 0 1f506d79ed00d17d112e44598e3bebb6
++   entry #value   il valore com'era quando è stato letto
++   entry #let   deriva un valore da uno stantio, che resta esattamente altrettanto stantio
++       `Stale(1).let(_ + 1) == Stale(2)`. Un metodo anziché un'estensione, così che il `let` di
++       vacuous su `Optional`, importato ovunque, non si appropri del ricevente.

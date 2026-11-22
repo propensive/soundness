@@ -1,0 +1,179 @@
+orthant 2 language
+
+@ 0 1 0 0358872660e6faa409dcd901a28eaf0f
++ # Documentation et facilité d'apprentissage
+
+@ 0 5 0 1aa4b69c31a4451302d427c9d596b1d5
++ La documentation fait partie de la sûreté. Une API non documentée invite aux suppositions, et
++ c'est par les suppositions que surviennent les échecs surprenants — pour les personnes et, de
++ façon plus aiguë, pour les agents d'IA, qui synthétisent avec assurance tout ce que la
++ documentation omet de dire. La norme est une couverture totale : chaque module documenté, chaque
++ code d'erreur expliqué, chaque idée nouvelle spécifiée, et chaque message conforme à une
++ convention écrite.
+
+@ 0 9 0 1723ba1cd99058ba0fdd50aaa077dd16
++ La prose existe aujourd'hui dans trois systèmes parallèles : les guides thématiques de
++ `doc/en/modules/` — la direction suivie, et l'endroit où s'écrit l'essentiel —, les anciens
++ modèles par module de `lib/*/doc/`, hérités de l'époque où chaque module avait son propre dépôt,
++ et une copie séparée des textes de philosophie sous `web/res/content/`. Trois systèmes signifient
++ des divergences, et une divergence signifie que l'un d'eux ment. Ce chantier les réduit à un seul,
++ complète la couverture et ajoute la couche que la prose ne peut pas fournir : une documentation
++ d'API générée et consultable — une infrastructure dont dépendent aussi fluence et le versionnage
++ de LIRA dérivé de l'API. Il se termine par le test de facilité d'apprentissage le plus exigeant
++ qui soit : un agent, muni de la seule documentation, construit et déploie une application qui
++ fonctionne.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Les éléments du chantier, avec leurs horizons et leurs dépendances fortes ; [`status.tel`](status.tel) indique où en est chacun :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 19713a418b5f653b07d58e9a0583f064
++ column  Élément
++ column  Titre
+
+% 0 1 0 1d660ee4e7a7cab803a3c88e3fac2fde
+
+@ 0 9 0 1ce6cf6087aa92f50856244ff2ce403b
++ column  Prérequis
++ row  doc-1  chaque type d'erreur a un code et une page  proche
++ row  doc-2  la norme des messages est rédigée  proche
++ row  doc-3  les anciens systèmes de documentation sont retirés  proche
++ row  doc-4  chaque module est couvert par un sujet  moyen
++ row  doc-5  la documentation d'API est générée et publiée  moyen
++ row  doc-6  le site web dérive de `doc/`  moyen
++ row  doc-7  les idées nouvelles sont à un saut  lointain
++ row  doc-8  le parcours guidé  lointain  tool-2, tool-4
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 088d38de12cb74151b1461e9ac2f6ca0
++ ## doc-1 : chaque type d'erreur a un code et une page
+
+@ 0 2 0 17d7c44780401f8b1f8c498157714b45
++ Horizon : proche
++ Référence : 41 types d'erreurs ne portent aucun code bolt ; 247 pages d'erreurs existent (mesuré le 2026-10-21 ; 40 et 241 le 2026-09-25 ; 39 et 233 le 2026-08-01)
+
+@ 0 3 0 1e3b6eb02bb2fb540217d4d349a13903
++ Les codes bolt couvrent les erreurs de compilation levées par les macros ; les types d'erreurs
++ d'exécution restants reçoivent des codes et des pages selon la même discipline de non-réutilisation,
++ et la parité entre types, codes et pages devient une vérification de la CI, pour ne pas pouvoir
++ dériver. Rien dans `etc/` ne vérifie encore cette parité.
+
+@ 0 1 0 1e10bdcf95bed4aa128a9f1ce07e87ce
++ Terminé lorsque : la vérification de parité s'exécute dans la CI et
+
+% 0 1 0 1bdf33953eae45dc1c2f5b884dbb8f33
+
+@ 0 1 0 0c7a7d2a401bbbd21b0119d42a3bc1bb
++ ## doc-2 : la norme des messages est rédigée
+
+@ 2 1 0 17ab2720867ae8111d9d599f47d28d50
++ Terminé : #2306 (2026-10-21)
+
+@ 0 3 0 1428b21c265c30b913cda163dc81d49d
++ `doc/standards/messages.md` se déclarait lui-même comme une ébauche, alors que la convention des
++ messages est porteuse dans tous les modules. La norme est désormais rédigée : registre, structure,
++ vocabulaire, ce qu'un message ne doit pas contenir, composition par `Communicable`, et événements
++ de journal.
+
+@ 2 1 0 03f202f8bf010c101dd08021ad543252
++ Terminé lorsque :
+
+% 0 1 0 0dba55afda5b5758005ab4659f4df53c
+
+@ 0 1 0 0c9927a8b037ae271c8e087c8ab10f12
++ ## doc-3 : les anciens systèmes de documentation sont retirés
+
+@ 0 5 0 1093e7c0e6b946dd05516daccac71e83
++ Terminé : #1791 (2026-08-14)
++ La référence était de 92 fichiers de readme passe-partout par module, et de 98 répertoires
++ `lib/*/doc/` (mesuré le 2026-08-01). Ce texte passe-partout était antérieur au monodépôt ; ce
++ qui, dans `lib/*/doc/`, valait d'être conservé est passé dans les sujets de `doc/modules/`, et le
++ reste a été supprimé plutôt que laissé là pour induire en erreur. Il ne reste aucun répertoire
++ `lib/*/doc/`, et la phrase passe-partout ne correspond plus à rien.
+
+@ 0 1 0 0900a5ddb113209d1354b00d82edbee4
++ ## doc-4 : chaque module est couvert par un sujet
+
+@ 0 2 0 197393089856cb5c0f2509c3bbcd6fd5
++ Terminé : #2306 (2026-10-21)
++ La référence était de 99 sujets dans `doc/modules/` et d'une bibliothèque sur 144 non couverte (mesuré le 2026-09-25 ; 91 sujets et 35 non couvertes le 2026-08-01) ; 101 sujets couvrent 145 bibliothèques sur 145 le 2026-10-21
+
+@ 0 5 0 10c607d670b62b8101dae541037747a8
++ Chaque module publié est couvert par au moins un sujet de `doc/modules/`, et un script de
++ couverture associe les modules aux sujets pour rendre visibles les orphelins :
++ `etc/check-doc-coverage.py`, lancé par `make build`, se termine avec un code non nul en présence
++ d'un orphelin. Le dernier, burdock, est couvert par `packaging.md` ; l'entrée `COVERED_BY` qui
++ nommait ce sujet pour ziggurat (une bibliothèque que #1973 a supprimée) nomme désormais burdock.
+
+@ 2 1 0 13a1375cd0328fbe1525b12456615af8
++ Terminé lorsque :
+
+% 0 1 0 1ba62d2089bad9d41967ba24204a3f6c
+
+@ 0 1 0 1cc798e6e2c1e8c61aa3cdb9cfd3b3f5
++ ## doc-5 : la documentation d'API est générée et publiée
+
+@ 0 2 0 03ba7b62e48036560475cb2eba36751b
++ Horizon : moyen
++ Référence : chaque `docJar` publié est vide — `build.mill` redéfinit la tâche pour écrire un jar vide (mesuré le 2026-09-25, inchangé depuis le 2026-08-01)
+
+@ 0 3 0 0c7f063f00f74dd013697a3434dc1109
++ Le pipeline d'extraction est le socle commun : fluence y fait ses recherches (`tool-7`) et le
++ versionnage dérivé de l'API en calcule les différences (`dist-4`). La documentation d'API publiée
++ en est le livrable immédiat.
+
+@ 0 2 0 1d7cd2efcc0c94871a130646ff65da22
++ Terminé lorsque : l'artefact de documentation de chaque composant publié n'est pas vide, et la
++ documentation d'API est publiée pour chaque publication.
+
+@ 0 1 0 02251824a373debc15f49bd28471c2b0
++ ## doc-6 : le site web dérive de `doc/`
+
+@ 2 1 0 145e5b98677ee68d1071327f412959a9
++ Horizon : moyen
+
+@ 0 3 0 0c895d7ebf2623bb11579fc074f5b2ef
++ La prose sous `web/res/content/` duplique à la main les textes de philosophie : dix pages,
++ modifiées pour la dernière fois dans #801, chacune étant une copie plus ancienne et plus courte
++ d'une page de `doc/philosophy/`. Le site web est rendu à partir de `doc/` — une seule source, sans
++ copies parallèles.
+
+@ 0 1 0 1c13dd5d72371e8b1044905d160d2cb9
++ Terminé lorsque : `web/res/content/` ne contient aucun doublon maintenu à la main d'une page de
++ `doc/`.
+
+@ 0 1 0 05112a75a76d057a037f86af8ebaf9cb
++ ## doc-7 : les idées nouvelles sont à un saut
+
+@ 2 1 0 1da71cc8a3d2501102512a3a7983010d
++ Horizon : lointain
+
+@ 0 3 0 1c487f6f26957dc41d1705e960be1b65
++ Chaque idée nouvelle de Soundness — le contrôle des captures en pratique, la mutabilité soumise au
++ contrôle de séparation, les portées délimitées, les erreurs déclarées — a une page de philosophie,
++ et chaque API qui incarne l'idée renvoie vers elle. Un lecteur n'est jamais à plus d'un saut de
++ l'explication.
+
+@ 0 2 0 036ddf33fefdc5fc01e4c723c46ef4d0
++ Terminé lorsque : une vérification des liens s'assure que chaque page de philosophie est
++ référencée depuis les guides thématiques des modules qui l'incarnent, et elle s'exécute dans le
++ build ordinaire.
+
+@ 0 1 0 094c970e32420b4017ae996cd8ad2bb0
++ ## doc-8 : le parcours guidé
+
+@ 0 2 0 12f719b526ca670611e64c8611bfb812
++ Horizon : lointain
++ Prérequis : tool-2, tool-4
+
+@ 0 3 0 011ab0612ca4077f0673854c02ada675
++ Le test intégrateur de la facilité d'apprentissage, et le dernier critère du seuil : un tutoriel
++ partant de rien qu'un agent peut exécuter de bout en bout — nouveau projet, build avec fury,
++ tests avec fume, déploiement d'une application web JVM et JavaScript — en utilisant uniquement
++ `doc/` et les outils de l'écosystème.
+
+@ 0 2 0 087239e290d576c213d6e958e2895253
++ Terminé lorsque : le parcours guidé est exécuté par un agent dans la CI, et l'exécution est
++ consignée avec chaque publication.

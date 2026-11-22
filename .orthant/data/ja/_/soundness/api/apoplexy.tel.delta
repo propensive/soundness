@@ -1,0 +1,1278 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0cfdb3519356eea91b1c45598f44d38f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03bc31ea70f9b62311eb2862b4e634bf
++ info   コンパイル時に OpenAPI 仕様から導出される、型付きの HTTP クライアント
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 07a064638f9600ef11042836d20e29e9
++     _Apoplexy_ は、[OpenAPI](https://www.openapis.org/) ドキュメント、すなわち REST API のパス、パラメーター、リクエストとレスポンスのスキーマ、セキュリティスキームを、コードを一切生成せずに **型付きのクライアント** に変える。
++     `Api(cp"/spec.json")` はコードのコンパイル中にクラスパスから仕様を読み、それが返す値はパスによってたどれる。
++     各セグメント、各パスパラメーター、各クエリパラメーターやヘッダーパラメーター、各リクエスト本文、各レスポンスの型がドキュメントに照らして検査されるので、API が提供しない呼び出しや、型の誤ったパラメーターは、呼び出しを書いた場所でコンパイルエラーになる。
++     クライアントは、コンパイラが解釈した仕様 *そのもの* であり、コードと契約のずれはリクエストではなくビルドを失敗させる。
+
+% 2 1 0 14d1f9abe89e11b1162b5ef7ea856557
+
+% 3 1 0 110adced9c7bca2f084eec061dae2492
+
+% 4 1 0 0c5d5995bfc9612f0324ee3f76731a04
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 0ce8cde1ff9b0e2a18dad81c1fac9bf2
+
+% 0 1 0 14367c786e279a390474d703d55ee5c0
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 098392ca96d9bb94167323c7f9c2a04c
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 0 1 0 153b22363fcd680c07868dd2050167ea
+
+% 0 1 0 13fd51fc254d98431a3500ba8aa90e10
+
+% 0 1 0 1d3ab3e0abafb2641a7c0ddba7d34126
+
+% 0 1 0 0bbb97ed6571082e120791fcb7c7541b
+
+% 0 1 0 143eebcb0657f2680e2270c9a5c4a4a4
+
+% 0 1 0 1e9af5d44ec24f5a1f3a1618b016c82b
+
+% 0 1 0 10d90a2642483a7911db2314f90c77c5
+
+% 0 1 0 0a7e182ad29e6cc811de67d604b59465
+
+% 1 1 0 16cceecc5a47ceb6097d65ce6ac23d64
+
+@ 0 11 0 12e881cb725c469605e2b655e7b43fd5
++     このライブラリは三つのグループの型からなる。
++     `Api` はたどれるクライアントである。
++     API 内での位置（`Api at "/pets/{petId}"`）と仕様が宣言するワイヤ形式（`Api over Json`）で細分化された値で、その `Dynamic` メンバーをコンパイラがドキュメントに照らして解決する。
++     その上で動詞を呼び出すと `Api.Response` が得られ、その `call`、`attempt`、`record`、`tuple` がリクエストを実行する。
++     `Api.Error` は、成功の範囲外のレスポンスが発生させるエラーの族で、ステータスごとに一つのクラスがある。
++     `Api.Violation` は、仕様が一度も宣言しなかったステータスである。
++     `OpenApi` はドキュメントそのものを値として表したもので、info、サーバー、パス、操作、パラメーター、本文、レスポンス、コンポーネント、セキュリティスキームからなり、API を呼び出すのではなく調べるツールのために、`read[OpenApi]` で JSON または YAML からデコードする。
++     `OpenApi.Error` は、読み込めないドキュメントの何が誤っているかを示す。
+
+@ 0 13 0 1da70653bf38f94613b78f4e81235a8e
++     レスポンス本文がどのように値になるかは、その **メディアタイプ** によって決まる。
++     仕様は各本文のメディアタイプを指定し、`gesticulate.Construable` の given（`("application/json" is Construable to Json)`、`("image/png" is Construable to (Raster in Png))`）が、それを運ぶ Soundness の型を指定する。
++     このような対応づけはすべて `construables` 族の given で、そのフォーマット自身のライブラリ（JSON なら `jacinta.http`、XML なら `xylophone.http`、ラスター形式なら `hallucination`、プレーンテキストとオクテットストリームなら `gesticulate`、…）が宣言する。
++     `import soundness.*` は given を import しないので、これらは **名前で import する**。
++     意図的に選ばない限り何も解釈されず、スコープにあるどの given も解釈しないメディアタイプのレスポンスは、コンパイル時の警告とともに生の `Http.Response` として読まれる。
++     リクエスト本文はキャリアの `telekinesis.Postable` が書き、これも同様に `postables` から名前で import する。
++     `Conformant` 型クラスはこの二つをつなぐ。
++     `call[T]()` はキャリアを読み、そこから `T` をデコードするので、`Decodable in Json` を持つ任意の `T` を JSON のレスポンスに求めることができる。
+
+@ 0 6 0 0d1ffb53832af57e105876f75b09c81c
++     クレデンシャルは `orthodoxy` から来る。
++     セキュリティスキームの名前を持つ `Credential` の given（`("api_key" is Credential to Text)`、`("basicAuth" is Credential to Auth)`、`("petstore_auth" is Credential to Authorization)`）が、呼び出しを書いた場所で召喚され、スキームが指定するとおりに、ヘッダー、クエリパラメーター、クッキー、または `Bearer` 認可として提示される。
++     スコープにあるどのクレデンシャルも要件を満たさない操作はコンパイルできず、エラーはそれを満たすはずの given の名前を示す。
+
+@ 0 6 0 0b63db0ba6be65370ca8e9d55447a0e5
++     このライブラリには、JVM 専用のソースセット `apoplexy.core` が一つだけある。
++     そのマクロはコンパイラのクラスローダーを通して仕様を読むので、ドキュメントは、リテラルしか受け付けない `cp"…"` 補間子で指定したクラスパスリソースでなければならない。
++     `Api`、`Conformant`、`OpenApi` は `soundness` アンブレラにエクスポートされる。
++     トップレベルの given `yamlEncodableInJson` はエクスポートされず、YAML ドキュメントを手で JSON として読む場所では `apoplexy.yamlEncodableInJson` として import する。
+
+% 0 1 0 1ded61d524e211450c4dd671553c9282
+
+% 0 1 0 0c1d449a434652e307697961dac7f82c
+
+% 0 1 0 01d0b09fceaf81b11b9008c8cb92ec2e
+
+% 0 1 0 15c1b1c4b6e2ac240abc9557159c21b6
+
+% 0 1 0 195ed1605aa4dad0163115ae591e4c48
+
+@ 0 1 0 061a9b059d10a6420d6512f2c2ef98ba
++ entry .Api   パスによってたどるクライアント。各段階が仕様に照らして検査される
+
+% 1 1 0 0b00c862eece9d43041dbc7889d2387e
+
+@ 0 8 0 09ebb654f63a7ebf0f8fec5baa771613
++       `Api` は API 内の位置である。
++       それまでのリクエスト（`#request`。メソッド、ベース URL、パスのテンプレート、置換、クエリ、ヘッダー、本文、`accept` のメディアタイプを保持する `Api.Request`）と、細分化された型からなる。
++       その型は、位置をリテラルの `Locus`（`Api at "/pets/{petId}"`）として、仕様のリソースを `Source` として、ドキュメントのレスポンスが共有するワイヤ形式を `Transport`（`Api over Json`、または `over Xml`）として記録する。
++       メンバーへのアクセスはすべて `Dynamic` である。
++       `#selectDynamic`、`#applyDynamic`、`#applyDynamicNamed` はマクロで、仕様を読み直し、パス、パラメーター、動詞がそこになければコンパイルを止める。
+
+% 2 1 0 0ceeecdd17ab7b7d017815db83025c50
+
+% 3 1 0 1c449c85a857b43c0477e13771d91031
+
+% 0 1 0 0c82f0938af751140b554df1f10c14f3
+
+% 0 1 0 1954188ad5f14e5e1e9c96522a8da2d9
+
+% 0 1 0 16b234eb69c6171715611513af5ed9f0
+
+% 0 1 0 08a402c6ed0ceb9401fb94ac02e87bb8
+
+% 0 1 0 0f179ec955908fff057617933675be82
+
+% 0 1 0 0c62bb0574b802311903a0ff62f66bca
+
+% 1 1 0 10701fafd98eb40e1cfeeba64cf53815
+
+@ 0 15 0 04b7b33b6a8de108059afc58b569eee3
++       たどり方には四つの規則がある。
++       **セグメント** はメンバーへのアクセス `api.pets` である。
++       Scala が識別子に許さない文字を含めて仕様が書いたセグメントは、`` api.`museum-hours` `` や `` api.users.`@me` `` のようにバッククォートで囲む。
++       **パスパラメーター** は、その前のセグメントに対する位置引数 `api.pets(42)` で、パラメーターのスキーマによって型付けされる。
++       `type: integer` は `Int`、`format: int64` は `Long`（`Int` も受け付ける）、`number` は `Double`、`boolean` は `Boolean`、それ以外は `Text` である。
++       完全なパスに対する **動詞**（`get`、`put`、`post`、`delete`、`patch`、`head`、`options`、`trace`）は操作を呼び出す。
++       クエリパラメーターとヘッダーパラメーターは名前付き引数、リクエスト本文はただ一つの位置引数であり、結果は `Api.Response` になる。
++       `DELETE` 以外の操作をちょうど一つだけ持つエンドポイントは、`api.pets(42).photos(width = 10)` や `api.login(credentials)` のように、セグメントに直接引数を適用することで、動詞なしで呼び出せる。
++       複数の操作を持つエンドポイントには動詞が必要で、`DELETE` は常に明示する。
++       必須のパラメーターの省略、型の誤ったパラメーター、その動詞を持たないパス項目、複数の操作を持つエンドポイントへの動詞なしの適用は、それぞれコンパイルエラーになる。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0dbda40102bd8bc21591dc12f30aa694
++         label 仕様の根
+
+% 1 1 0 162b12b86101316b167caddc00596a22
+
+% 0 1 0 05cb51ced590344e15c26b2438d9deaf
+
+% 1 1 0 154001026953d89c1800c98cc18e10d2
+
+@ 0 1 0 039c4367cef149f40c95314374dfb0e0
++         label パスの始まりとして検査されるセグメント
+
+% 1 1 0 16117c55ca414b911595a8d43c0e0c43
+
+% 0 1 0 0f43ebfab4b39cd402750df091a23849
+
+% 1 1 0 0c34ecb2e0d1d3221f95c7c68548957e
+
+@ 0 1 0 1870ef30e6618ad11a37a02e936c3418
++         label スキーマによって型付けされるパスパラメーター
+
+% 1 1 0 07e3a17edd4e77b9073a4692dc1607b4
+
+% 0 1 0 1b8c90dd368632e0031a096e919ca081
+
+% 1 1 0 0506c797b5bca20d1b071ee68da5d6e4
+
+@ 0 1 0 0fc45af9f0f7986a0dbf165224b86d90
++         label パラメーター付きの動詞。`Api.Response` になる
+
+% 1 1 0 100c7f484eb29c2a0f18e8f55272d41c
+
+% 0 1 0 03a1ae6d26f0ccae065dbfeaf6abb1eb
+
+% 1 1 0 07c5fb70b25457dc1c2684360bd9f0fc
+
+@ 0 1 0 00097a78f13bcb141b03eebd320dbd58
++         label 求めた型としてデコードされる呼び出し
+
+% 1 1 0 0c4b825b2d3ef088090bf92542affa49
+
+% 0 1 0 0641cb9fce68cae305a6cce06c25e46b
+
+% 0 1 0 03bdd43102ca49c504fb0a38882b3975
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 1f40225b8492f4a20b0e3d9512cbef14
++       パス項目に宣言されたパラメーターはその上のすべての操作に適用される。
++       ドキュメントのコンポーネントへの `$ref` として書かれたパラメーター、レスポンス、リクエスト本文はたどられる。
++       クエリパラメーターとヘッダーパラメーターは、引数の `Showable` で描画される。
++       操作が複数の成功レスポンスを宣言しているときは、`200` が優先され、次に `201`、次に最も小さいものが選ばれる。
+
+@ 0 7 0 12360fde90677287156662b29f2ce986
++       ベース URL は仕様の最初のサーバーから取られ、その `{variables}` はデフォルト値になり、コンパイル時に URL として解析される。
++       相対的なサーバー（`/api/v3`）やサーバーがまったくない場合は、`Api(resource, base)` が必要である。
++       仕様はコンパイラのコンテキストクラスローダーを通してクラスパスから読まれるので、リソースはコンパイラのクラスパス上にある `cp"…"` リテラルで、OpenAPI 3.0 または 3.1 の JSON または YAML でなければならない。
++       クッキーパラメーター、`callbacks`、`links`、`webhooks`、ほかのドキュメントへの参照は扱われず、`multipart/form-data` の本文は解釈されない。
+
+% 1 1 0 1e4e0d24b73b9cf61ada2c8a544e54b5
+
+% 0 1 0 1a4776226d3646ef1251a869afd4b5ad
+
+% 0 1 0 19b6567619ee68a10303f618d656ba4c
+
+% 0 1 0 13159d27577b006f199c48f4da5f612d
+
+% 1 1 0 0e78a905f03861fb1f5607c88d59a520
+
+@ 0 8 0 0951acb9537c2238086ae6ec8cdf0d9c
++   entry .apply   `Api(cp"/spec.json")` または `Api(resource, base)`。仕様のクライアントの根
++       `Resource` の `Locus` を読むマクロである。
++       そのため引数は、`cp` 補間子がすでに存在を検査した `cp"…"` リテラルでなければならない。
++       コードのコンパイル中にドキュメントを読み込んで検証し、たどるマクロが読み直せるようリソースのパスを `Source` 型に持つ `Api at "/"` を返す。
++       その `Transport` は、呼び出し時にスコープにある `Construable` の given を通して、すべての操作の成功レスポンスが共有するキャリアの型であり、ドキュメントがフォーマットを混在させている場合は `Json` である。
++       各操作は自身のものを計算し直す。
+
+@ 0 6 0 17212cd848649d070623ba291a890a8a
++       引数一つの形式は、各 `{variable}` をデフォルト値にして（`OpenApi.Server#resolved`）、仕様の最初のサーバーからベース URL を取り、それが絶対的な `http` または `https` の URL でなければコンパイルを止める。
++       _apoplexy: the server URL `/api/v3` is relative; supply a base URL_。
++       引数二つの形式は、呼び出し側からベースを取る。
++       相対的なサーバー URL は `Api.extend` でそれに付け加えられ、絶対的なものはそれで丸ごと置き換えられる。
+
+% 2 1 0 0e73088e66e6913b0ef0d4d1bc906ffe
+
+% 3 1 0 08321f710916ed3f1f0408d25b737908
+
+% 0 1 0 0b2bd616e6a5f10f04ce2b7c933f8a1a
+
+% 0 1 0 045b85fd37e70cf701c4a8fe4364d1fc
+
+% 0 1 0 0f31e28dda02ebe602ab5dc68f15802b
+
+% 1 1 0 080b990651892ce804d506087ba845d8
+
+@ 0 14 0 0eca3131b95c143f06b2f5727ae106d8
++       解析できないドキュメント、3.x 以外のバージョンを宣言するドキュメント、`path`、`query`、`header`、`cookie` 以外のパラメーターの場所を指定するドキュメントは、`OpenApi.Error` のメッセージを持つコンパイルエラーになる。
++   entry .extend   呼び出し側のベースに付け加えた、相対的なサーバー URL
++       `Api.extend(base, server)` は、オリジン、クエリ、フラグメントが `base` のもので、ロケーションが `base` のものに `server` を続けたものである `HttpUrl` である。
++       これは、サーバーが `/api/v3` である仕様に対して `Api(resource, base)` が行うことである。
++       サーバーのテキストはそのまま付け加えられるので、`/` で終わるベースと `/` で始まるサーバーからはスラッシュが二重になる。
++   entry .make   与えられた `Api.Request` の上の `Api`
++       たどるマクロが出力するコンストラクターである。
++       `#request` が与えられたものである普通の `Api` で、後でその細分化された型にキャストされる。
++       それ自体は細分化を持たないので、手で作った `Api` はたどれない（マクロは _apoplexy: the receiver has no spec `Source`_ で止まる）が、`Api.send` で送ることはできる。
++   entry .Records   `record()` と `tuple()` が値を組み立てる土台となる、JSON を読むプリミティブ
+
+% 0 1 0 1d67946842fbefea114a1c07674d3027
+
+% 1 1 0 02a2f799681a6c9808fd96975d2255e2
+
+@ 0 29 0 1142c2fc2d0fa4f619bbc8ee7079a9ea
++         自身のフィールドを持たない `Json.Provider.Primitives` である。
++         `record()` と `tuple()` のマクロが各レスポンスのスキーマのフィールドを供給し、各メンバーをこれらのプリミティブを通してレスポンスの JSON から読む。
++         直接使うものではない。
++     entry .fields   自身のフィールドはない。マクロが各レスポンスのフィールドをそのスキーマから供給する
++     entry .list   配列のレスポンスのレコード。要素ごとに一つ
++         `Api.Records.list(json, transform)` は JSON 配列を要素ごとに一つのレコードに分け、それぞれを同じプリミティブの上に組み立てる。
++         `record()` がオブジェクトの配列のレスポンスをレコードの `List` として読むのはこの方法による。
++         配列でないものに対しては `Json.Provider.Error` を発生させる。
++   entry .apiKey   スキームが指定するヘッダーとしての API キー
++       `Api.apiKey(credential, name)` は `Http.Header(name, credential.value)` である。
++       呼び出すマクロは、`in` が `header` である `apiKey` スキームに対して、`Credential to Text` をこのように提示する。
++       `in` が `query` であるスキームのものは代わりにクエリパラメーターになり、`cookie` は `.cookieKey` が扱う。
++   entry .cookieKey   `name=value` という `cookie` ヘッダーとしての API キー
++       `Api.cookieKey(credential, name)` は `Http.Header(t"cookie", t"$name=${credential.value}")` で、`in` が `cookie` である `apiKey` スキームに対する `Credential to Text` の提示である。
++       `Api.send` は、RFC 6265 が求めるとおり、すべての `cookie` ヘッダーを `; ` で一つにつなげる。
++   entry .httpAuth   `authorization` ヘッダーとしての HTTP 認証
++       `Api.httpAuth(credential)` は、`http` スキームのために、`Credential to Auth`（`Auth.Basic(user, password)`、`Auth.Bearer(token)`）を `authorization` ヘッダーとして描画する。
++       クレデンシャルが `Authorization` ではなく `Auth` であれば、別の場所で得たトークンを `oauth2` や `openIdConnect` のスキームに対してこの方法で提示してもよい。
++   entry .tokenAuth   必要なスコープに照らして検査した、`Bearer` ヘッダーとしての OAuth 2 の `Authorization`
++       `Api.tokenAuth(credential, scopes)` は、`Credential to Authorization` と、セキュリティ要件が指定するスコープを受け取る。
++       リクエストを送る前に、トークンが与えない最初のスコープについて `Reason.InsufficientPrivileges(scope)` を持つ `OAuth.Error` を発生させる。
++       そうでなければ、トークンの `bearer` の描画による `Http.Header(t"authorization", …)` になる。
++       スコープに `Tactic[OAuth.Error]` と `Diagnostics` が必要で、呼び出すマクロが呼び出しを書いた場所でそれらを召喚する。
+
+% 2 1 0 1f4fd8103feb3a5200fed53e7ff9a34a
+
+% 3 1 0 14450f21f8dad8650c9e5ef58d9801fe
+
+% 4 1 0 181ecfc4e7a104d51953064fc542cf47
+
+% 0 1 0 08f4de0df4c722d41424191245bca85a
+
+% 0 1 0 16a6c08b1bb39aae017c05a509d88cf0
+
+% 0 1 0 0b2f61399237056703a8b86383d33e46
+
+% 0 1 0 0e1e8e8edae435d617af39b87b472cfe
+
+% 0 1 0 1a517df994be55dd04c424d4ecbcf218
+
+% 1 1 0 0a72c04da62dfd4a1e94decbc4e85650
+
+@ 0 18 0 102c01cecb9e39d104a475cbd5920e97
++   entry .jsonOf   `Json` として読んだレスポンス本文
++       `Api.jsonOf(response)` は本文のストリームをメモ化して `Json` として集約し、不正な JSON に対しては `Parse.Error` を、途中で切れた本文に対しては `Truncation.Error` を発生させる。
++       `record()` と `tuple()` はこれを通してレスポンスを読み、レコードであるエラーのペイロードも同様である。
++   entry .dataOf   メモ化した、レスポンス本文のバイト列
++       `Api.dataOf(response)` は本文全体を `Data` として返し、`Tactic[Truncation.Error]` を必要とする。
++       呼び出すコードは、どのスキーマも本文を記述していない `Api.Violation` のペイロードにこれを使う。
++   entry .send   スコープにある `Http.Client` を通して `Api.Request` を実行し、生のレスポンスを返す
++       `Api.Response#call`、`#attempt`、`#record`、`#tuple` が出力する実行時の送信である。
++       URL は、リクエストのベースに、パスのテンプレートの `{name}` プレースホルダーをその置換で置き換えたもの（それぞれパスセグメントとしてパーセントエンコードされ、空白は `%20` になる）を続け、クエリを付けたものである。
++       リクエストにクエリがなければ、ベース自身のクエリが付く。
++       ヘッダーは、仕様がレスポンスについて宣言する `accept` のメディアタイプ、本文の `content-type`、リクエスト自身のヘッダー、そして `; ` で一つにつなげたすべての `cookie` ヘッダーである。
++       リクエストはその後、スコープにある `Http.Client onto Origin["http" | "https"]` を通して HTTP/1.1 として送られる。
++       これはスコープにある `Http.Backend` を使うので、テストではネットワークの代わりに記録用のバックエンドを使える。
+
+@ 0 4 0 1cfb5ee9ce67b31a0aa51141d1b9f092
++       `Online`（`internetAccess.online` を import する）、`Http.Event is Loggable`（`logging.silentLogging` など）、接続の失敗に対する `Tactic[Connect.Error]`、そしてクライアントが必要である。
++       ここでは何も仕様に照らして検査しない。
++       手で組み立てたリクエストはそのまま送られる。
+
+% 2 1 0 0e36688e17b6d8830f00d33699008374
+
+% 3 1 0 1c31cee7faf7fdba099d1706799305c5
+
+% 4 1 0 1887efe275a8e43c05b5d1af03e176b4
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 0 1 0 0a9ee7c57fdf311716b4c39b2c6207f4
+
+% 0 1 0 177cfec3e554680516c2881a8a6a9105
+
+% 0 1 0 1f08e53d8dd54a4307bc4b2ef43d52a1
+
+% 1 1 0 0b081aeb16ee223c07c7832626a19455
+
+@ 0 1 0 08a41000af4b8dce00e54755654d7852
++   entry .Body   リクエスト本文。何もないか、メディアタイプと送信ごとに新たに生み出されるバイト列
+
+% 1 1 0 0bf6023ab89406061365e221b4c1802e
+
+@ 0 4 0 0ed215c7f03722790b9447b70bb87d86
++         `Api.Body` は二つのケースを持つ enum である。
++         `Empty` は本文のないリクエストで、`Api.Request` のデフォルトである。
++         `Content(mediaType, spring)` は、仕様が宣言する `MediaType` と `Spring[Data]` からなる本文である。
++         `Spring[Data]` はリクエストを送るたびにバイト列を新たに生み出すので、再試行したリクエストが読み尽くされたストリームから送られることはない。
+
+@ 0 8 0 11e7d830f6be0c0c0ea7b045a961efc6
++         呼び出すマクロは、呼び出しの位置引数から `Content` を組み立てる。
++         引数はその `Encodable in Carrier` を通してメディアタイプのキャリアにエンコードされるか（`NewPet` は `jsonEncodable` によって `Json` に）、すでにキャリアであればそのまま送られる（`application/x-www-form-urlencoded` なら `Query`、`application/octet-stream` なら `Data`）。
++         そして、`postables` から名前で import したキャリアの `Postable` がバイト列を書く。
++         `Postable` 自身のメディアパラメーターは仕様のメディアタイプにコピーされるので、`jsonPostable` で送った JSON の本文は、スコープにある `Codepage` が与える charset を持つ。
+
+% 2 1 0 17b2cb15c31096340ecce4dc74bec0a7
+
+% 3 1 0 07629c706287034d08626d0d0fd5f119
+
+% 0 1 0 1308235da0d482ac17f72c3f15b9b366
+
+% 0 1 0 1e4719757030870f193f738649285767
+
+% 0 1 0 1377a07c80d9ad57123e02d286c5430e
+
+% 0 1 0 057704536a8ea39d063bda377c94c7b5
+
+% 0 1 0 1913dcc316693d9b00be63e512e36554
+
+% 1 1 0 04499e5a2368af58037d109e18abe2e5
+
+@ 0 11 0 053a921fb6863d8413b70629bf07c751
++     entry .content   キャリアの値とその `Postable` から作る本文
++         `Api.Body.content[Carrier](mediaType, value)` は、取り出されるたびにスコープにある `Carrier is Postable` を `value` に対して実行する spring を持つ `Content` を作る。
++         これは呼び出すマクロが呼ぶヘルパーで、ストリームが呼び出し位置のキャプチャ検査の外で組み立てられるようにする。
++     entry .data   `application/octet-stream` の本文のような、凍結済みの `Data` の本文
++         `Api.Body.data(mediaType, value)` は、普通のコードの中で `Data` を名指すシグネチャを持つメソッドによる `content[Data](mediaType, value)` である。
++         クォートを通してスプライスされた凍結済みの型は新しい読み取りケイパビリティ付きで作り直されるので、マクロは `content[Data]` を自分で書けない。
++   entry .Request   たどった `Api` や `Api.Response` が送るリクエストを、値として表したもの
+
+% 1 1 0 0fc4ae28a15e282714aca943586add96
+
+@ 0 7 0 1f10ef49478d8fdf1803c02665bc41f2
++         任意の `Api` や `Api.Response` に対する `request` が保持するものである。
++         HTTP メソッド、仕様のサーバー（または呼び出し側）からのベース `HttpUrl`、まだテンプレートのままのパス、各 `{name}` を描画した引数に結び付ける置換、`Query`、本文、ヘッダー（`in: header` と宣言されたパラメーターと、ヘッダーやクッキーとして提示されたクレデンシャル）、そして仕様がレスポンスについて宣言する `accept` のメディアタイプである。
++         たどるたびにフィールドを一つずつコピーして細分化するので、これから送られるものを、送る前に調べたりテストしたりできる。
+
+% 2 1 0 1a9bfc5df0993a0001f7ba16ffcb9be7
+
+% 3 1 0 14ecffd80463f6ad0c400077292c057e
+
+% 2 1 0 0256659f6ead2ff50670b507f8854b22
+
+% 0 1 0 0f068c3f0e57f63c1a245bfa64fc8477
+
+% 0 1 0 014ebdffa0eef1310f4fb8fbae6f6479
+
+% 0 1 0 057ff7747cddcfe61dd7576bc467f2ff
+
+% 0 1 0 021707c6977389130d83e9d0d16291c1
+
+% 0 1 0 0e22debfda555c660c21ae05020b03fb
+
+% 0 1 0 1a9cc4b7450aa5ed112680189bcdaa2e
+
+% 1 1 0 1761fab6d4553f4816b9777055d2ad5f
+
+@ 0 12 0 16a826076fc35f930bcccdf88bc01aaf
++     entry #method   HTTP メソッド。動詞を呼び出すまでは `Http.Get`
++     entry #base   ベース URL。デフォルト値にした仕様の最初のサーバー、または呼び出し側のもの
++     entry #path   仕様が書いたとおりのパスのテンプレート。`/pets/{petId}`
++     entry #substitutions   パスの `{name}` テンプレートに結び付けた値。それぞれテキストとして描画される
++     entry #query   名前付き引数と、クエリで送る `apiKey` スキームからのクエリパラメーター
++     entry #body   リクエスト本文。操作が受け取らない限り `Api.Body.Empty`
++     entry #headers   ヘッダーパラメーターと、ヘッダーやクッキーとして提示されたクレデンシャル
++     entry #accept   レスポンスに期待するメディアタイプ。宣言されていなければ `Unset`
++         仕様が成功レスポンスについて宣言するメディアタイプのうち、スコープにある `Construable` の given が最初に解釈するもの（まず `application/json`、次に名前順）が選ばれ、`accept` ヘッダーとして送られる。
++   entry .Response   送信の準備ができた操作。`call`、`attempt`、`record`、`tuple` がそれを実行する
+
+% 1 1 0 01f0882c9be7ba0c03379e2914b675c0
+
+@ 0 10 0 12bd78f8e812c30c1ff73b1a299a5707
++         `Api` に対して動詞を呼び出すと `Api.Response` が得られる。
++         これは `#request` と、操作を記録する細分化された型を保持する。
++         `#Result` はドキュメント内の成功レスポンスのスキーマへの JSON ポインター、`#Form` は仕様のリソース、`#Locus` と `#Verb` はパスとメソッド、`Transport` は成功レスポンスのメディアタイプが解釈されるキャリアの型、`#Failure` は操作が宣言したエラーレスポンスが発生させる `Api.Error` の型のユニオンである。
++         この時点ではまだ何も送られていない。
++         `#call`、`#attempt`、`#record`、`#tuple` がリクエストを実行し、それぞれ `Online`（`internetAccess.online`）、`Http.Event is Loggable`、`Tactic[Connect.Error]`、`Tactic[Api.Violation]`、`Failure` の各メンバーに対する `Tactic`、そしてスコープにある `Http.Client` を必要とする。
+
+% 2 1 0 0e0521c550ccabce0fd705445b924074
+
+% 3 1 0 0282dbf3b5d115b51c690acf616965d9
+
+% 4 1 0 1598da4d8979509f0772e67bcd94cad7
+
+% 5 1 0 1964fd0a05fc2dd1112bf2c5ec9fcd80
+
+% 6 1 0 10800d7c6bf80b6904efcc95cffca1a0
+
+% 7 1 0 126b2c55acff00441ccab917d530c16d
+
+% 8 1 0 0e8ca1418441c785196a57fc0ac670cc
+
+% 1 1 0 0fdd28033ca0dd77040f95d7bae36ce2
+
+% 1 1 0 090d8e8c23c3adbe1876f917f2e5d77a
+
+% 0 1 0 099ab4c6d7ada0c909d49b27c850f244
+
+% 0 1 0 17572f6560a33b500cbb1351ed52d0b4
+
+% 0 1 0 1427bcd5d0d78dde1842ff54613acc14
+
+% 0 1 0 0fe4fba37a20ab681d0029daa9dff586
+
+% 0 1 0 06987ac8794dc83a0522a7edb080b8c8
+
+% 1 1 0 1e67828d42aa6c8e0ea682ff72691452
+
+% 0 1 0 05dae990ae7193f30e31ef73f94111c8
+
+% 0 1 0 07f01aa36824dea30adee63c2f34fe82
+
+@ 0 33 0 1683882b6a651fb40a567f5f3e296255
++     entry .make   与えられた `Api.Request` の上の `Api.Response`
++         呼び出すマクロが出力するコンストラクターで、後でその細分化された型にキャストされる。
++         手で作ったレスポンスは細分化を持たないので、それに対する `call`、`record`、`tuple` はコンパイルを止める。
++         `Api.send(response.request)` は検査なしでそれを送る。
++     entry #Result   仕様内の成功レスポンスのスキーマへの JSON ポインター
++         `#/paths/~1pets~1{petId}/get/responses/200/content/application~1json/schema`、またはレスポンスが `$ref` であればコンポーネントへのポインターである。
++         `call[T]()` は `T` をそれが指すスキーマに照らして検査し、`record()` はそこからフィールドを組み立てる。
++     entry #Form   リテラル型としての、仕様のリソースのクラスパス上のパス
++     entry #Locus   仕様がキーとする操作のパス。`/pets/{petId}`
++     entry #Verb   小文字の、操作のメソッド。`get`、`post`、…
++     entry #Failure   操作が宣言したエラーレスポンスが発生させる `Api.Error` の型のユニオン
++         `Hazard` のサブタイプで、たとえば `Api.NotFound[Unit] | Api.BadRequest[Problem]` である。
++         各ペイロードは、仕様がそのレスポンスについて宣言する型である。
++         `#attempt` はちょうどこのユニオンの上の `Attempt` を返し、`#call` は各メンバーに対する `Tactic` を要求する。
++     entry #request   このレスポンスが送るリクエスト。`Api.Request` として
++     entry #ensure   成功の範囲外のレスポンスに対して、宣言されたエラーを発生させる
++         `Http.Response` のステータスを調べるマクロである。
++         `2xx` のステータスは通過する。
++         仕様が宣言するステータスは、そのステータスの `Api.Error` を発生させ（まず完全に一致するステータス、次に `4XX` のような範囲、次に `Api.OtherError` としての `default`）、本文は仕様が与えるペイロードの型として解釈される。
++         それ以外のステータスは、本文のバイト列を持つ `Api.Violation` を発生させる。
++         宣言された各エラーと `Violation` に対する `Tactic` は、呼び出しを書いた場所で召喚される。
++         これによって処理が網羅的になる。
++         一つを欠いたハンドラは、それを名指すコンパイルエラーになる。
++         `#call`、`#record`、`#tuple` は、すべてのレスポンスを読む前にこれを実行する。
++     entry #call   リクエストを実行し、レスポンスを求めた型として読む
++         `call[T]()` はまず、コードのコンパイル時に、`T` がレスポンスのスキーマに適合することを検査する。
++         スキーマのプロパティに一致するフィールドを持つケースクラス、配列なら `List[T]`、あるいは何の検査もない `Json` か生の `Http.Response` である。
++         次にリクエストを送り、レスポンスに対して `#ensure` を実行し、スコープにある `(T is Conformant) over Transport`、すなわちキャリア自身の `Aggregable` と、`T` のキャリアに対する `Decodable in` を通して `T` を読む。
++         そのため `List[Pet]` は、ほかの `Decodable` と同じようにデコーダーを解決する。
++         スキーマがサポートしない `T` はコンパイルエラーになる。
+
+@ 0 4 0 0802b207aa0e52391f3742d670fb4eef
++         引数なしの `call()` は型を `Defaulting to Transport` に任せ、それはレスポンス自身のキャリア（`Json`、`Raster in Png`、`text/plain` のレスポンスの `Text`）になる。
++         `204` のように本文を宣言しないレスポンスなら `Unit` に、スコープにある何もメディアタイプを解釈しなければ生の `Http.Response` になる。
+
+% 2 1 0 15a03b8bb032b0300bc964e8acedf4f2
+
+% 3 1 0 14dcf5a7c1ec15cf0ad9bbcb7f1da0bf
+
+% 4 1 0 19534ae4c550490609fd266fa41b7fbc
+
+% 5 1 0 07ebe966632821db1ca1eb27e405da61
+
+% 6 1 0 01061ceb317ca7a1124e335f8fbee457
+
+% 0 1 0 1b29067dfd7f6b0904c0880b0c2c025a
+
+% 1 1 0 11eeb07156a7023503153b4a851111bb
+
+% 3 1 0 119b251c2e05338c17b53658e188385a
+
+% 4 1 0 18302b0276fa868c1190152358a95285
+
+% 5 1 0 05f2c7c230a607480e6cd2180d684251
+
+% 0 1 0 1e23f5816342329c134f65134d587993
+
+% 0 1 0 198db9708289360d1b9fc18b58d02d77
+
+% 0 1 0 10e42ae77a34026c19e06bd3c2aaf7bb
+
+% 1 1 0 0360113b10c5e37b17387628f7e4413c
+
+@ 0 13 0 1c3cf3d850ffb2bb1f0082daa5b0aa9d
++         空の括弧は副作用を表す。
++         `#request` の送信のための given（`Online`、`Http.Event is Loggable`、`Tactic[Connect.Error]`、`Http.Client`）に加えて、`Api.Violation` と `#Failure` の各エラーに対する `Tactic` がスコープになければならず、`Conformant` は `Charset` と `Tactic[Truncation.Error]` を必要とすることがある。
++     entry #attempt   網羅的な `match` のための、宣言されたエラーの上の `Attempt` としての呼び出し
++         `attempt[T]()` は `contingency.attempt[Failure]` の中で `call[T]()` を実行するので、結果は `Attempt[T, Failure]` になる。
++         `Attempt.Success(value)` か、`error` が操作の宣言した `Api.Error` のいずれかである `Attempt.Failure(error)` である。
++         これに対する `match` はコンパイラが網羅性を検査し、仕様が宣言しないステータスのケースはコンパイルできない。
++         `recover` は部分関数を受け取り、網羅性は検査されない。
++         `Api.Violation` はユニオンに含まれない。
++         これは契約のケースの一つではなく契約違反として、独自の `Tactic` を通して発生する。
++         トランスポートがレコードを持つレスポンスであるときは、型引数を明示する必要がある。
+
+% 2 1 0 15a264398e56f5bc050b37ae24ab57d4
+
+% 3 1 0 0eec3468c4d1b2cc1471e18b515b2a1b
+
+% 4 1 0 090c2f5635ff34d7104296127fc9f039
+
+% 5 1 0 067cb24ef944731b128489e42f3c3fd4
+
+% 6 1 0 12381d0bb6888a250db3fe7d130afd30
+
+% 7 1 0 17a027c4f812a965052d9195a41caf63
+
+% 8 1 0 074bce3283dcc926095d6336a36f53b8
+
+% 10 1 0 01851f0abb7dd7350c6dd7461da8056e
+
+% 11 1 0 0fb067539d1f7e0a1fd4d1640348ae67
+
+% 12 1 0 1099f20599a7b32f0e3b21bce4822ec4
+
+% 0 1 0 13f579f838d4b3970e95e05123972fb8
+
+% 0 1 0 0e452f8318cb0423054e0a1ae5f13698
+
+% 0 1 0 1386b4d668996e3a020bc40709950424
+
+% 0 1 0 0f4e1eadb6a7d1b315f7e6eb13d0394f
+
+% 1 1 0 0af204e9861127621f61d77911b72fde
+
+@ 0 10 0 1fdf24e43563912e1c91d21e6cbcf1bf
++     entry #record   リクエストを実行し、JSON のレスポンスをそのスキーマで型付けしたレコードとして読む
++         `record()` には対応するクラスが要らない。
++         結果は polyvinyl のレコードで、レスポンスのスキーマのプロパティごとに一つのメンバーを、スキーマが宣言する型で持つ。
++         `Text`、`Int`、`int64` なら `Long`、`Double`、`Boolean`、入れ子のオブジェクトとコンポーネントのスキーマへの `$ref` は入れ子のレコード、配列は `List` である。
++         オブジェクトの配列のレスポンスは、そのようなレコードの `List` になる。
++         スキーマがオブジェクトかオブジェクトの配列を記述する JSON のレスポンスにのみ使える。
++         ほかのものとして解釈されるレスポンスや、別の形のスキーマは、`call[T]()` を勧めるコンパイルエラーになる。
++         送信のための given に加えて `Tactic[Parse.Error]` と `Tactic[Truncation.Error]` が必要で、読んだメンバーがスキーマに合わなければ `Json.Provider.Error` を発生させる。
+
+% 2 1 0 176a834fa2ef7e5e1cec4b421b69f7a3
+
+% 3 1 0 178d05b91fa784dc0d410d93f6a5ca62
+
+% 4 1 0 0d3b481c873735400877b1965ab4e750
+
+% 5 1 0 086c507665d442550b7c350a222d0139
+
+% 6 1 0 1ec456a03f9b31bd0a219da2811f42f6
+
+% 7 1 0 1cda24f3e5b302d61ab4b4835fb4ef82
+
+% 8 1 0 10921edc0fd5649b12e29f10a6cd0a06
+
+% 10 1 0 172c0accccdb71ab12317b2b4fa4b11e
+
+% 0 1 0 0039cc087d0fd6a5193ccab3c6ea5767
+
+% 0 1 0 1e3beeb01e9c458d0358df1d2bb50297
+
+% 0 1 0 0315182cf586ecaf1583b8f4afd9cd89
+
+% 1 1 0 1251ee66a9ccc8c60b569c64c1957eb9
+
+@ 0 6 0 1fce78b03f1c61d519252caf17a0c52c
++     entry #tuple   リクエストを実行し、JSON のレスポンスを名前付きタプルとして先行評価で読む
++         `#record` と同じだが、スキーマのプロパティはスキーマの順に名前付きタプルのフィールドになり、どれもアクセス時ではなくレスポンスの到着時に読まれる。
++         `api.pets(42).get.tuple().name` のように使う。
++         同じ制約が適用される。
++         スキーマがオブジェクトかオブジェクトの配列である JSON のレスポンスでなければならない。
++   entry .Error   成功の範囲外のレスポンス。そのステータスのエラークラスとして発生する
+
+% 1 1 0 015e8ddf2c948b87117e8dd37a98791e
+
+@ 0 10 0 1b26c33be2e7257100095df4736d88d5
++         エラー `↯/s.135.2.1`: _the server responded with an unsuccessful status, `status`_。
++         telekinesis が名前を付けているステータスごとに一つあるケースクラス（`Api.NotFound`、`Api.BadRequest`、`Api.TooManyRequests`、…）のシールされた親である。
++         `1XX`–`5XX` の範囲のキー（および telekinesis が名前を付けていない番号付きのステータス）には `Api.Informational`、`Api.Redirection`、`Api.ClientError`、`Api.ServerError` があり、`default` のレスポンスには `Api.OtherError` がある。
++         それぞれ `#status` と `#payload` を持つ。
++         ペイロードは、仕様がそのレスポンスについて宣言する型として解釈したエラー本文である。
++         JSON オブジェクトならエラーのスキーマで型付けしたレコード、そうでなければメディアタイプのキャリア、それでもなければ `Text`、本文が宣言されていなければ `Unit` である。
++         そのため、`Api.NotFound(())` は本文のない `404` に一致し、`Api.NotFound(problem)` はスキーマを持つものに一致して、その `problem.message` は型付けされている。
+
+@ 0 7 0 18baeef6a78acd570cf924ccda9ac3ea
++         操作が宣言したエラーレスポンスは、これらのクラスのユニオンを形づくり、それがその `Api.Response` の `Failure` になる。
++         `attempt` はちょうどそのユニオンの上の `Attempt` を返し、`call` はメンバーごとに一つの `Tactic` を要求するので、宣言されたエラーはすべて処理されるか、さもなければコードはコンパイルできない。
++         Contingency はクラスをペイロードの型ではなくクラスによって区別するので、ステータスごとに専用のクラスがある。
++         ペイロードは共変である。
++         エラーのペイロードのレコードにある制約付きのメンバー（`string!`、`enum`、`pattern`）は、普通の型に緩められる。
++         エラーを発生させるメンバーがあると、エラーがケイパビリティになってしまうからである。
+
+% 2 1 0 0e95db2e5025ece90f069853c4deae24
+
+% 3 1 0 0ad04c752afd1bd700977c29ae909ff2
+
+% 4 1 0 14a73129a08ddfd8142b01f5cd8a63a6
+
+% 5 1 0 030253cad24da41f03ec18c8050dd940
+
+% 6 1 0 130761f8efe28af912e2fa54e542150c
+
+% 7 1 0 1f703a02e2d142eb17fc99444676ca2f
+
+% 8 1 0 107dc3b4e04136cc1f693443c50b6616
+
+% 10 1 0 1e38e55a808d6ff70f0a421f331def3f
+
+% 11 1 0 1cbf2879a6fb8ac7011cb0328224c825
+
+% 12 1 0 08112ad3bfdf28021ba9bdd13acfd669
+
+% 0 1 0 09e28b7d30dc3ae5043f2b24cfe59730
+
+% 0 1 0 1fe71464b30193680aa1b1a22de7fbf5
+
+% 0 1 0 0579e3cc8c66b5c11f8e4d9d81b59b68
+
+% 1 1 0 0e1d66880395b08308cf5b72a5f70c20
+
+@ 0 2 0 154657b809f5593915d76d476cbb6d32
++         仕様が宣言しないステータスは、そもそも `Api.Error` ではなく `Api.Violation` である。
+
+% 0 1 0 0688eb8e97ab94e10bd292f7e69c24e6
+
+% 0 1 0 15a5912f0c3bb6930c782770b2b5fbbc
+
+@ 0 3 0 133a2c43157680e21999c04ee6e1fdc4
++     entry #status   サーバーが返した HTTP ステータス
++     entry #payload   仕様がそのレスポンスについて宣言する型として解釈したエラー本文
++   entry .Violation   仕様が宣言しないステータスを持つレスポンス
+
+% 1 1 0 12fa91b968d139070078f5220aed3e1f
+
+@ 0 5 0 0b040fd0acd37a8d0097c76214b45df3
++         エラー `↯/s.135.2.2`: _the server responded with an undeclared status, `status`_。
++         サーバーが契約を破ったのであり、どの呼び出しもこれに出会いうるので、宣言されたエラーとは別に処理しなければならない。
++         これは独自の `Tactic[Api.Violation]` を通して発生し、レスポンスの `Failure` のメンバーになることは決してなく、どのスキーマも記述していないので、ステータスと本文の生のバイト列を持つ。
+
+% 2 1 0 1a4876477d19d9b51b3b80ab7b62a0d7
+
+% 3 1 0 114be42cf14f9196128c220e94735e84
+
+% 4 1 0 0c41c1fa1e7398d9154eada9f5ffa951
+
+% 5 1 0 18ec9293771743fb1b525fdfffaeb0b6
+
+% 6 1 0 07a063c2013c12701210dda35d585530
+
+% 7 1 0 1607240f89fb41820a28f4919af5a5d5
+
+% 8 1 0 03ede6168109992f1d3cb24e80593935
+
+% 10 1 0 09ae3d3d86b9728b0b5324f017b7222a
+
+% 1 1 0 00595ed0339064fc16204767daff7f9f
+
+% 0 1 0 131404d991b5371a05ec9cd6e98f75bd
+
+% 1 1 0 0b2c72c31d062c8b0f3709c08dac0298
+
+@ 0 89 0 0903caf1b7b3ca061bb4a7129453418c
++     entry #status   宣言されていないステータス
++     entry #body   レスポンス本文のバイト列
++   entry .Continue   宣言された `100 Continue` のレスポンス。ペイロードは解釈される
++   entry .SwitchingProtocols   宣言された `101 Switching Protocols` のレスポンス。ペイロードは解釈される
++   entry .EarlyHints   宣言された `103 Early Hints` のレスポンス。ペイロードは解釈される
++   entry .MultipleChoices   宣言された `300 Multiple Choices` のレスポンス。ペイロードは解釈される
++   entry .MovedPermanently   宣言された `301 Moved Permanently` のレスポンス。ペイロードは解釈される
++   entry .Found   宣言された `302 Found` のレスポンス。ペイロードは解釈される
++   entry .SeeOther   宣言された `303 See Other` のレスポンス。ペイロードは解釈される
++   entry .NotModified   宣言された `304 Not Modified` のレスポンス。ペイロードは解釈される
++   entry .TemporaryRedirect   宣言された `307 Temporary Redirect` のレスポンス。ペイロードは解釈される
++   entry .PermanentRedirect   宣言された `308 Permanent Redirect` のレスポンス。ペイロードは解釈される
++   entry .BadRequest   宣言された `400 Bad Request` のレスポンス。ペイロードは解釈される
++   entry .Unauthorized   宣言された `401 Unauthorized` のレスポンス。ペイロードは解釈される
++   entry .PaymentRequired   宣言された `402 Payment Required` のレスポンス。ペイロードは解釈される
++   entry .Forbidden   宣言された `403 Forbidden` のレスポンス。ペイロードは解釈される
++   entry .NotFound   宣言された `404 Not Found` のレスポンス。ペイロードは解釈される
++       操作の `Failure` の最もよくあるメンバーである。
++       `Api.NotFound(())` は、仕様が本文なしで宣言した `404` である。
++       `Api.NotFound(problem)` は、宣言されたスキーマが本文を型付けするものである。
++   entry .MethodNotAllowed   宣言された `405 Method Not Allowed` のレスポンス。ペイロードは解釈される
++   entry .NotAcceptable   宣言された `406 Not Acceptable` のレスポンス。ペイロードは解釈される
++   entry .ProxyAuthenticationRequired   宣言された `407 Proxy Authentication Required` のレスポンス
++   entry .RequestTimeout   宣言された `408 Request Timeout` のレスポンス。ペイロードは解釈される
++   entry .Conflict   宣言された `409 Conflict` のレスポンス。ペイロードは解釈される
++   entry .Gone   宣言された `410 Gone` のレスポンス。ペイロードは解釈される
++   entry .LengthRequired   宣言された `411 Length Required` のレスポンス。ペイロードは解釈される
++   entry .PreconditionFailed   宣言された `412 Precondition Failed` のレスポンス。ペイロードは解釈される
++   entry .PayloadTooLarge   宣言された `413 Payload Too Large` のレスポンス。ペイロードは解釈される
++   entry .UriTooLong   宣言された `414 URI Too Long` のレスポンス。ペイロードは解釈される
++   entry .UnsupportedMediaType   宣言された `415 Unsupported Media Type` のレスポンス。ペイロードは解釈される
++   entry .RangeNotSatisfiable   宣言された `416 Range Not Satisfiable` のレスポンス。ペイロードは解釈される
++   entry .ExpectationFailed   宣言された `417 Expectation Failed` のレスポンス。ペイロードは解釈される
++   entry .UnprocessableEntity   宣言された `422 Unprocessable Entity` のレスポンス。ペイロードは解釈される
++   entry .TooEarly   宣言された `425 Too Early` のレスポンス。ペイロードは解釈される
++   entry .UpgradeRequired   宣言された `426 Upgrade Required` のレスポンス。ペイロードは解釈される
++   entry .PreconditionRequired   宣言された `428 Precondition Required` のレスポンス。ペイロードは解釈される
++   entry .TooManyRequests   宣言された `429 Too Many Requests` のレスポンス。ペイロードは解釈される
++   entry .RequestHeaderFieldsTooLarge   宣言された `431 Request Header Fields Too Large` のレスポンス
++   entry .UnavailableForLegalReasons   宣言された `451 Unavailable For Legal Reasons` のレスポンス
++   entry .InternalServerError   宣言された `500 Internal Server Error` のレスポンス。ペイロードは解釈される
++   entry .NotImplemented   宣言された `501 Not Implemented` のレスポンス。ペイロードは解釈される
++   entry .BadGateway   宣言された `502 Bad Gateway` のレスポンス。ペイロードは解釈される
++   entry .ServiceUnavailable   宣言された `503 Service Unavailable` のレスポンス。ペイロードは解釈される
++   entry .GatewayTimeout   宣言された `504 Gateway Timeout` のレスポンス。ペイロードは解釈される
++   entry .HttpVersionNotSupported   宣言された `505 HTTP Version Not Supported` のレスポンス
++   entry .VariantAlsoNegotiates   宣言された `506 Variant Also Negotiates` のレスポンス。ペイロードは解釈される
++   entry .InsufficientStorage   宣言された `507 Insufficient Storage` のレスポンス。ペイロードは解釈される
++   entry .LoopDetected   宣言された `508 Loop Detected` のレスポンス。ペイロードは解釈される
++   entry .NotExtended   宣言された `510 Not Extended` のレスポンス。ペイロードは解釈される
++   entry .NetworkAuthenticationRequired   宣言された `511 Network Authentication Required` のレスポンス
++   entry .Informational   宣言された `1XX` の範囲のレスポンス、または telekinesis が名前を付けていない `1xx` のステータス
++       ステータスごとのクラスと異なり、範囲のクラスは実際のステータスを最初のフィールドとして受け取る。
++       `Api.Informational(status, payload)` である。
++   entry .Redirection   宣言された `3XX` の範囲のレスポンス、または telekinesis が名前を付けていない `3xx` のステータス
++       `Api.Redirection(status, payload)` である。
++       実際のステータスが最初のフィールドである。
++   entry .ClientError   宣言された `4XX` の範囲のレスポンス、または telekinesis が名前を付けていない `4xx` のステータス
++       `Api.ClientError(status, payload)` である。
++       実際のステータスが最初のフィールドである。
++       完全に一致する形で宣言された `404` は、`4XX` も宣言されていても、これではなく `Api.NotFound` になる。
++       完全に一致するステータスは、その範囲より先に照合されるからである。
++   entry .ServerError   宣言された `5XX` の範囲のレスポンス、または telekinesis が名前を付けていない `5xx` のステータス
++       `Api.ServerError(status, payload)` である。
++       実際のステータスが最初のフィールドである。
++   entry .OtherError   宣言された `default` のレスポンス。宣言されたほかのどのレスポンスも扱わない任意のステータス
++       `Api.OtherError(status, payload)` で、実際のステータスが最初のフィールドである。
++       たとえば Stripe の仕様はすべてのエラーを `default` として宣言しているので、そこからのエラーはすべて、ペイロードが `error` スキーマのレコードである `OtherError` になる。
++   entry #request   `Api.Request` としての、それまでのリクエスト
++       たどる過程で蓄積したメソッド、ベース URL、パスのテンプレート、置換、クエリ、ヘッダー、本文、`accept` のメディアタイプである。
++       何かを送る前に調べられる。
++   entry #selectDynamic   `api.segment`。仕様のいずれかのパスの始まりとして検査されるパスセグメント
++       マクロである。
++       `api.pets` は現在の `Locus` に `pets` を付け加え、仕様のどのパスもその結果で始まらなければコンパイルを止める（_apoplexy: no path begins with /unicorns_）。
++       結果は新しい位置に細分化された `Api` である。
++       現在のパス項目が定義する動詞の名前（`get`、`put`、`post`、`delete`、`patch`、`head`、`options`、`trace`）は、代わりにその操作を引数なしで呼び出し、`Api.Response` を返す。
++   entry #applyDynamic   `api.segment(x)`。パスパラメーター、または位置引数による呼び出し
++       マクロである。
++       `segment` がパス項目の定義する動詞であれば、位置引数はリクエスト本文で、結果は `Api.Response` である。
++       そうでなければ `segment` は `#selectDynamic` と同じようにたどられ、より深いいずれかのパスの次のセグメントが `{template}` であれば、引数がそれを埋める。
++       引数はパラメーターのスキーマによって型付けされ、その `Showable` で描画されて、`Api at "/pets/{petId}"` になる。
++       それもできなければ、`api.login(credentials)` のように、引数はエンドポイントの `DELETE` 以外の唯一の操作を呼び出す。
++   entry #applyDynamicNamed   `api.segment(name = x)`。クエリパラメーターとヘッダーパラメーターによる呼び出し
++       マクロである。
++       名前付き引数はそれぞれ、操作またはそのパス項目に宣言されたその名前のクエリパラメーターまたはヘッダーパラメーターを埋め、パラメーターのスキーマに照らして型検査され、その `Showable` で描画される。
++       その中の位置引数はリクエスト本文である。
++       動詞はその操作を呼び出し、`DELETE` 以外の操作を一つだけ持つセグメントはその操作を呼び出す。
++       未知の名前、誤った型、必須のパラメーターの欠落は、コンパイルを止める。
+
+@ 0 1 0 0b26d21d82dc67f81a298efad8230df2
++ entry .OpenApi   値として表した OpenAPI 3.x のドキュメント。info、サーバー、パス、コンポーネント、セキュリティ
+
+% 1 1 0 0696ffb659e10f5505f3922b4c5f93bb
+
+@ 0 6 0 17c9234bed5b95900bf81a0d869e2023
++       仕様そのものを、API を呼び出すのではなく調べるツールのために、`read[OpenApi]` で JSON または YAML から型付きの部分にデコードしたものである。
++       `#info`、（変数を持つ）`#servers`、`OpenApi.Operation` を保持する `OpenApi.PathItem` の `#paths`、`#components`（スキーマ、パラメーター、レスポンス、リクエスト本文、セキュリティスキーム）、そしてドキュメント全体の `#security` の要件からなる。
++       `Api` のマクロは、各呼び出しを検査するために同じモデルを読む。
+
+% 2 1 0 1a2c12a5fcc181a90e7d1953e75a6b26
+
+% 3 1 0 1e237a40c4323e26155b709491a778c7
+
+% 4 1 0 1eed692db3ae864305aaf24ee6c3b045
+
+% 5 1 0 01acd58361e8d946068d6571320b94c4
+
+% 6 1 0 1fe3c077466c2ba514b1ad2b98832450
+
+% 0 1 0 011187671dc999341046f5d27424a486
+
+% 0 1 0 13149c062a299ae8009c8a5bfe9d33b7
+
+% 0 1 0 0db457fc9b0cd59a0d84b6618099bbc8
+
+% 0 1 0 1aa4808b6bb4031f07cca53b42d26692
+
+% 1 1 0 0f48874812f37b0e1a05a44deb3bc826
+
+@ 0 10 0 0f94d04b5dc17424153506f26deccb4f
++       YAML のドキュメントは JSON に変換され（`yamlEncodableInJson`）、同じ一つのデコーダーで読まれるので、二つの形式がずれることはない。
++       テキストがどちらの形式かは最初の文字で判断し、JSON なら `{` である。
++       `$ref` として書かれたパラメーター、レスポンス、リクエスト本文は、`OpenApi.Referable` の位置に `OpenApi.Ref` として保持され、ドキュメントを与えた `apply()` によって必要に応じて解決される。
++       `JsonSchema.Ref` も同じように一段ずつ解決されるので、循環するスキーマも有限のままである。
++       操作の `responses` のマップはステータスのテキスト（`200`、`4XX`、`default`）をキーとし、`response` がそれを具体的なステータスについて解釈する。
++       解析できないドキュメント、3.x 以外のバージョンを宣言するドキュメント、`path`、`query`、`header`、`cookie` 以外のパラメーターの場所を使うドキュメントは `OpenApi.Error` を発生させる。
+
+@ 0 5 0 1b3fe0aed7d3cd0b17c99698f1cb1bd6
++       このモデルは、公開された記述のコーパス、すなわち OpenAPI Initiative の例、Swagger の Petstore、Redocly の Museum、Twilio、Kubernetes、Discord、Box、Stripe（1,538 のスキーマ）に対して検証されており、GitHub、OpenAI、Cloudflare のものも読み込める。
++       `callbacks`、`links`、`webhooks`、ほかのドキュメントへの参照はモデル化されていない。
+
+% 0 1 0 0955f50f0014c6b7107a87a7d8ba17f6
+
+% 0 1 0 1cc7dd3d8c19d0901c068539a1f14cf8
+
+% 0 1 0 0099cccddc5d72c4036095e2719208d4
+
+@ 0 11 0 1fc941042c6e912d1fd7da59a8cfb7a0
++   entry .decodable   `Json` から `OpenApi` を読む。入れ子の各部分はそれぞれ固有のデコーダーを通す
++       コンパニオンにある given `OpenApi is Json.Decodable` で、`as[OpenApi]` が呼び出し位置ごとにドキュメントのグラフ全体をインライン化しないよう、ここで一度だけ導出される。
++       `Tactic[Json.Error]`、`Tactic[JsonPointer.Error]`、`Tactic[OpenApi.Error]` が必要である。
++   entry .aggregable   JSON または YAML のテキストから `OpenApi` を読み、バージョンが 3.x であることを検査する
++       `text.read[OpenApi]` と `url.fetch().receive[Text].read[OpenApi]` の背後にある `OpenApi is Aggregable by Text` の given である。
++       `{` で始まるテキストは JSON として、それ以外は YAML として解析して変換する。
++       解析、JSON、YAML、ポインターの失敗は `OpenApi.Error(Reason.Malformed)` になり、`openapi` が `3.` で始まらないドキュメントは `OpenApi.Error(Reason.UnsupportedVersion(version))` を発生させる。
++       `Tactic[OpenApi.Error]` が必要である。
+
+% 2 1 0 031ec4d120ccc5c408a73454c2c2ab36
+
+% 3 1 0 176f55c971785df913a6d480544d2765
+
+% 4 1 0 1311ba15e3f68c9c024b3edc3cf25816
+
+% 0 1 0 093b92bb1a20e9820734fa95037e82a7
+
+% 0 1 0 0cdda8f257d2f18f1e2b23583a2fc44d
+
+% 1 1 0 02aa01556b42a97312f38696497bcd47
+
+@ 0 10 0 01748f881ac2e440119ab4c21e0ec60e
++   entry .Info   ドキュメントのタイトル、バージョン、説明
++     entry #title   API のタイトル
++     entry #version   OpenAPI ではなく、ドキュメントが記述する API のバージョン
++     entry #description   説明、または `Unset`
++   entry .ServerVariable   サーバー URL の `{variable}`。デフォルト値、許される値、説明
++     entry .decodable   JSON からサーバー変数を読む
++     entry #default   `OpenApi.Server#resolved` が代入する値
++     entry #enum   変数がとりうる値。制約がなければ `Unset`
++     entry #description   説明、または `Unset`
++   entry .Server   API のサーバー。テンプレートを含みうる URL と、その変数
+
+% 1 1 0 09294f5c2d3b736805b42b80dc8e19c9
+
+@ 0 12 0 028489f8a270013110eb76cfea945815
++         サーバー URL は、絶対的なもの（`https://api.example.com/v1`）、ドキュメントの提供元からの相対的なもの（`/api/v3`）、または `{name}` ごとに `OpenApi.ServerVariable` を持つテンプレート（`/v{version}`）でありうる。
++         `Api` はベース URL を最初のサーバーの `#resolved` の形から取り、それが絶対的でなければ呼び出し側のベースを必要とする。
++     entry .decodable   JSON からサーバーを読む
++     entry #url   テンプレートも含めて、書かれたとおりの URL
++     entry #description   説明、または `Unset`
++     entry #variables   URL のテンプレートが参照する変数。名前ごとに
++     entry #resolved   すべての `{variable}` をデフォルト値で置き換えた URL
++         `version` のデフォルトが `2` なら、`/v{version}` は `/v2` になる。
++         その名前の変数がないテンプレートはそのまま残る。
++   entry .Ref   JSON ポインターによるコンポーネントへの `$ref`。モデルの中では解決されずに残る
+
+% 1 1 0 16bb0625c461546119d865f3d2b34d7e
+
+@ 0 12 0 14371486110c885f0c922c08e239329b
++         `OpenApi.Ref(pointer)` は、ドキュメントがコンポーネントそのものではなく `{"$ref": "#/components/parameters/limit"}` と書いた場所で、`Referable[value]` の位置が保持するものである。
++         referable に対する `apply()` は、スコープにあるドキュメントに照らしてそれを解決する。
++         解決できるのは、ドキュメント自身の `components` を指すポインターだけである。
++     entry #pointer   参照が指す JSON ポインター
++   entry .Referable   その場に書かれたコンポーネント、または `$ref` で参照されたもの。`value | OpenApi.Ref`
++       OpenAPI が `$ref` を許すすべての位置の型である。
++       操作のパラメーター、リクエスト本文、レスポンス、パス項目のパラメーター、コンポーネントのマップがそれに当たる。
++       パターンマッチでは両方を扱わなければならない。
++       `case OpenApi.Ref(pointer) => …` と `case parameter: OpenApi.Parameter => …` である。
++       あるいは、`OpenApi` を与えれば、`referable()` がどちらもコンポーネントに解決する。
++   entry .Componental   `OpenApi.Components` のどのマップが、どの名前のもとで、ある種類のコンポーネントを保持するか
+
+% 1 1 0 0b6e7ba86eb880530c39637db6030c3f
+
+@ 0 20 0 099cec54d02035860b95054bb322a86b
++         `referable()` の背後にある型クラスである。
++         `Parameter`、`Response`、`RequestBody` について、コンポーネントのマップ（`parameters`、`responses`、`requestBodies`）を指定し、その中でコンポーネントを探す。
++         三つの given はコンパニオンにあるので、参照の解決に import は要らない。
++     entry .parameter   パラメーターは `components.parameters` にある
++     entry .response   レスポンスは `components.responses` にある
++     entry .requestBody   リクエスト本文は `components.requestBodies` にある
++     entry .apply   マップの名前と `OpenApi.Components` に対するセレクターから `Componental` を作る
++     entry #kind   ポインターに現れる形の、コンポーネントのマップの名前。`parameters`、`responses`、…
++     entry #lookup   コンポーネントの中のその名前のコンポーネント。存在しないか、それ自体が `Ref` であれば `Unset`
++   entry .apply   `Referable` なコンポーネントや `JsonSchema` を、スコープにあるドキュメントに照らして解決する
++       二つの拡張メソッドで、どちらも `given OpenApi` を必要とし、`OpenApi.Error` を発生させる。
++       `Referable[Parameter | Response | RequestBody]` に対する `referable()` は、その場に書かれていればコンポーネントそのもの、そうでなければそのポインターが `#/components/parameters/`、`responses/`、`requestBodies/` の下で指すものである。
++       `JsonSchema` に対する `schema()` は、`JsonSchema.Ref` を `#/components/schemas/` に照らして一段だけ解決し、ほかのスキーマはそのまま返す。
++       決してインライン化せず一段ずつ解決することで、循環するスキーマのグラフも有限のままになり、たどるのは利用者が行う。
++       それ以外を指すポインターは `Reason.UnsupportedRef(pointer)` を、ドキュメントにないコンポーネントを指すものは `Reason.UnresolvableRef(pointer)` を発生させる。
+
+% 2 1 0 013d407f8c901b3518e617c18e3bff66
+
+% 3 1 0 15d5c2e07aa07d501502b71f6114209b
+
+% 4 1 0 06fc6baf81dfc03609df9d2d9bd09d88
+
+% 5 1 0 1fbb7f1ce2668a13181384d0760692a4
+
+% 6 1 0 048caf70026b0d8f08157f3934b55acc
+
+% 0 1 0 16e6c578e1bea3061ca8013a199e39d2
+
+% 0 1 0 0b207c7bb2020465002b7fcfa69e358e
+
+% 0 1 0 0fc5ae6b61a27d9d1b09b9d719c909c1
+
+% 0 1 0 025df99b30ab57261f957210acc06363
+
+% 1 1 0 1de7bc8270bd80241b684afdece5775e
+
+@ 0 1 0 1b2580b6c2f7e2980691235246f6bfa2
++   entry .Parameter   操作またはパス項目のパラメーター。名前、場所、必須かどうか、スキーマ
+
+% 1 1 0 1ad0375470ccf379023bdcf0919b0fe1
+
+@ 0 8 0 024321ac575d42350220ac28b9efd454
++         `in` は `OpenApi.Parameter.In` の `Path`、`Query`、`Header`、`Cookie` のいずれかで、ドキュメントのテキストからデコードされる。
++         Swagger 2 の `body` という場所は `OpenApi.Error(Reason.BadParameterLocation(t"body"))` を発生させる。
++         パスパラメーターは常に必須である。
++         ドキュメントが省略している場所では `required` は `Unset` である。
++         `Api` のマクロは、パスパラメーターの引数を `#schema` によって型付けし（`integer` は `Int`、`int64` は `Long`、`number` は `Double`、`boolean` は `Boolean`、それ以外は `Text`）、クエリパラメーターとヘッダーパラメーターも同じように型付けする。
++         スキーマがなければ `Text` である。
++     entry .In   パラメーターを送る場所。パス、クエリ、ヘッダー、クッキーのいずれか
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 12 0 1d732ed84f019372176ef7d1bf809c0f
++           `Path`、`Query`、`Header`、`Cookie` からなる enum で、コンパニオンにある `.decodable` がドキュメントの小文字のテキストからデコードする。
++           `Api` クライアントはパス、クエリ、ヘッダーのパラメーターを送る。
++           クッキーパラメーターはモデルには読み込まれるが、送られない。
++       entry .decodable   テキストから `path`、`query`、`header`、`cookie` を読む。それ以外は `OpenApi.Error` を発生させる
++     entry .decodableJson   JSON からパラメーターを読む。パス項目と操作が共有できるよう固定されている
++     entry .referable   パラメーターまたは `$ref` の位置を読む。`$ref` キーは `OpenApi.Ref` を表す
++     entry #name   API が期待する形の、パラメーターの名前
++     entry #in   送る場所。`OpenApi.Parameter.In`
++     entry #required   必ず渡さなければならないかどうか。ドキュメントが何も言っていなければ `Unset`
++     entry #description   説明、または `Unset`
++     entry #schema   値の `JsonSchema`、または `Unset`
++   entry .MediaTypeObject   `content` のエントリの値。あるメディアタイプでの本文のスキーマ
+
+% 1 1 0 149f8c234f2f36c901cf6ce58d88fdc9
+
+@ 0 16 0 13391d094eaee9b20251fae284347696
++         `content` のマップはメディアタイプのテキスト（`application/json`、`image/png`）をキーとし、各値は、宣言されていれば本文のスキーマを保持する `MediaTypeObject` である。
++         そのデコーダーはコンパニオンにある匿名の given である。
++     entry #schema   本文の `JsonSchema`、または `Unset`
++   entry .RequestBody   操作のリクエスト本文。メディアタイプごとの内容と、必須かどうか
++     entry .decodable   JSON からリクエスト本文を読む
++     entry .referable   リクエスト本文または `$ref` の位置を読む。`$ref` キーは `OpenApi.Ref` を表す
++     entry #description   説明、または `Unset`
++     entry #required   本文を必ず送らなければならないかどうか。ドキュメントが何も言っていなければ `Unset`
++     entry #content   送りうる各メディアタイプでの本文のスキーマ
++   entry .Response   宣言されたレスポンス。説明と、メディアタイプごとの内容
++     entry .decodable   JSON からレスポンスを読む
++     entry .referable   レスポンスまたは `$ref` の位置を読む。`$ref` キーは `OpenApi.Ref` を表す
++     entry #description   レスポンスの説明、または `Unset`
++     entry #content   返りうる各メディアタイプでの本文のスキーマ。本文のないレスポンスでは空
++   entry .Operation   パス上の一つの HTTP メソッド。パラメーター、リクエスト本文、レスポンス、セキュリティ
+
+% 1 1 0 1b3cf4cbe965eeed100f8e0ba8fe5d97
+
+@ 0 18 0 1ec21d74518834bd04ac33534b725589
++         `responses` のマップは、ドキュメントが書いたとおりのステータスのテキスト（`200`、`201`、`4XX`、`default`）をキーとし、操作に対する `response(status)` は具体的な `Http.Status` をそれらのキーに照らして解釈する。
++         `Api` クライアントは、成功レスポンスとして `200`、次に `201`、次に最も小さい `2xx` のキーを優先し、ほかの各キーに対して別々の `Api.Error` を発生させる。
++         `security` があれば、ドキュメント自身の要件を上書きする。
++         空のリストは、操作がクレデンシャルを必要としないことを意味する。
++     entry .decodableJson   JSON から操作を読む。パス項目の八つの動詞が共有できるよう一度だけ固定されている
++     entry #operationId   操作の識別子、または `Unset`
++     entry #summary   短い要約、または `Unset`
++     entry #description   説明、または `Unset`
++     entry #parameters   操作自身のパラメーター。それぞれその場に書かれたものか `OpenApi.Ref`
++     entry #requestBody   リクエスト本文。その場に書かれたものか `OpenApi.Ref`、または `Unset`
++     entry #responses   ステータスのテキストごとの宣言されたレスポンス。それぞれその場に書かれたものか `OpenApi.Ref`
++     entry #security   操作自身のセキュリティ要件。ドキュメントのものを引き継ぐなら `Unset`
++   entry .response   具体的なステータスに対する宣言されたレスポンス。完全一致、次に範囲、次に `default`
++       `OpenApi.Operation` に対する拡張メソッドである。
++       `operation.response(Http.NotFound)` は、`404` をキーとするエントリ、なければ `4XX`、なければ `default`、それもなければ `Unset` を、`Referable[Response]` として返す。
++   entry .PathItem   API のパス。動詞ごとの操作と、それらが共有するパラメーター
+
+% 1 1 0 1c5156510b9dd8e7110a02a4859832d6
+
+@ 0 18 0 1b692d01c62931bc10517a969a43af0a
++         パス項目は HTTP メソッドのキーと `summary`、`description`、`parameters` を混在させるので、各動詞はそれぞれ独自の `Optional[Operation]` フィールドになっている。
++         `#operations` は `Http.Method` ごとのマップを組み立て直す。
++         ここで宣言されたパラメーターはパス上のすべての操作に適用され、同じ名前と場所を持つ操作自身のパラメーターがそれを上書きする。
++         そのデコーダーはコンパニオンにある匿名の given である。
++     entry #summary   短い要約、または `Unset`
++     entry #description   説明、または `Unset`
++     entry #get   `GET` の操作、または `Unset`
++     entry #put   `PUT` の操作、または `Unset`
++     entry #post   `POST` の操作、または `Unset`
++     entry #delete   `DELETE` の操作、または `Unset`
++     entry #options   `OPTIONS` の操作、または `Unset`
++     entry #head   `HEAD` の操作、または `Unset`
++     entry #patch   `PATCH` の操作、または `Unset`
++     entry #trace   `TRACE` の操作、または `Unset`
++     entry #parameters   パス上のすべての操作が共有するパラメーター。それぞれその場に書かれたものか `OpenApi.Ref`
++     entry #operations   存在する操作。`Map[Http.Method, OpenApi.Operation]` として
++   entry .Components   ドキュメントの再利用できる部分。スキーマ、パラメーター、レスポンス、リクエスト本文、セキュリティスキーム
+
+% 1 1 0 0f66ebe2bdf7492d179e9b7e25031443
+
+@ 0 11 0 06577e99a5b00d4e07bc989c0d5eb84e
++         `#/components/…` のポインターが解決される先である。
++         `schemas` は `JsonSchema` を保持し、`JsonSchema.Ref` は `schema()` でそれに照らして解決される。
++         `parameters`、`responses`、`requestBodies` は、それ自体が参照でありうるコンポーネントを保持し、`referable()` で解決される。
++         `securitySchemes` は、`OpenApi.Requirement` が参照するスキームに名前を付ける。
++         そのデコーダーはコンパニオンにある匿名の given である。
++     entry #schemas   名前ごとのコンポーネントのスキーマ。`#/components/schemas/…` の参照先
++     entry #parameters   名前ごとのコンポーネントのパラメーター。それぞれその場に書かれたものか `OpenApi.Ref`
++     entry #responses   名前ごとのコンポーネントのレスポンス。それぞれその場に書かれたものか `OpenApi.Ref`
++     entry #requestBodies   名前ごとのコンポーネントのリクエスト本文。それぞれその場に書かれたものか `OpenApi.Ref`
++     entry #securitySchemes   要件が使う名前ごとのセキュリティスキーム
++   entry .SecurityScheme   API の認証方法。API キー、HTTP 認証、OAuth 2、OpenID Connect、相互 TLS のいずれか
+
+% 1 1 0 1be12f7740e60119089351e217198f03
+
+@ 0 4 0 133a502cd2c2fe301e0b03c955877e0c
++         フィールドは OpenAPI 3 §4.8.27 が定義するもので、スキームの `type` に属するものだけが存在する。
++         `apiKey` なら `name` と `in`、`http` なら `scheme` と `bearerFormat`、`oauth2` なら `flows`、`openIdConnect` なら `openIdConnectUrl` である。
++         `#kind` は `type` を `OpenApi.SecurityScheme.Kind` として読む。
+
+@ 0 39 0 1ce55626281d6701066c63de62f9a2ee
++         `Api` クライアントは、スキームの名前を持つ `orthodoxy.Credential` の given でスキームを満たす。
++         API キーには `("api_key" is Credential to Text)` で、`in` が指定するヘッダー、クエリパラメーター、クッキーで送る。
++         HTTP 認証には `("basicAuth" is Credential to Auth)` で、`authorization` ヘッダーとして送る。
++         OAuth 2 や OpenID Connect には `("petstore_auth" is Credential to Authorization)` で、`Bearer` トークンとして送り、要件のスコープに照らして検査する（別の場所で得たトークンには `Auth` を使える）。
++         スキームに対して種類の誤ったクレデンシャルはコンパイルエラーになる。
++         相互 TLS はサポートされず、OpenID Connect のディスカバリーは行わない。
++     entry .decodable   JSON からセキュリティスキームを読む
++     entry .Kind   enum としてのスキームの型。`ApiKey`、`Http`、`OAuth2`、`OpenIdConnect`、`MutualTls`、`Unknown` のいずれか
++         `Unknown` は、仕様が定義しない任意の `type` のテキストである。
++         `Api` クライアントはそのようなスキームを満たせない。
++     entry .Flow   OAuth 2 のフロー一つ。そのエンドポイントと、与えうるスコープ
++       entry .decodable   JSON からフローを読む
++       entry #authorizationUrl   インプリシットフローと認可コードフローのための認可エンドポイント
++       entry #tokenUrl   インプリシットフロー以外のすべてのフローのためのトークンエンドポイント
++       entry #refreshUrl   リフレッシュエンドポイント、または `Unset`
++       entry #scopes   フローが与えるスコープ。それぞれ説明付き
++     entry .Flows   スキームが提供する OAuth 2 のフロー。インプリシット、パスワード、クライアントクレデンシャル、認可コード
++       entry .decodable   JSON からフローを読む
++       entry #implicit   インプリシットフロー、または `Unset`
++       entry #password   リソースオーナーパスワードフロー、または `Unset`
++       entry #clientCredentials   クライアントクレデンシャルフロー、または `Unset`
++       entry #authorizationCode   認可コードフロー、または `Unset`
++     entry #type   書かれたとおりのスキームの型。`apiKey`、`http`、`oauth2`、`openIdConnect`、`mutualTLS` のいずれか
++     entry #description   説明、または `Unset`
++     entry #name   `apiKey` の場合、ヘッダー、クエリパラメーター、クッキーの名前
++     entry #in   `apiKey` の場合、送る場所。`header`、`query`、`cookie` のいずれか
++     entry #scheme   `http` の場合、認証スキーム。`basic`、`bearer`、…
++     entry #bearerFormat   `http` の bearer スキームの場合、トークンの形式についてのヒント
++     entry #flows   `oauth2` の場合、スキームが提供するフロー
++     entry #openIdConnectUrl   `openIdConnect` の場合、ディスカバリーの URL
++     entry #kind   `OpenApi.SecurityScheme.Kind` としての `type` のテキスト。定義されていないものは `Unknown`
++   entry .Requirement   セキュリティ要件。すべて満たさなければならないスキームと、それぞれのスコープ
++       `Map[Text, List[Text]]` で、スキームの名前から必要なスコープへの対応である。
++       操作の（またはドキュメントの）`security` は要件のリストで、どれか一つで足りる *選択肢* である。
++       空の要件は、クレデンシャルが必要ないことを意味する。
++       `Api` クライアントは、すべてのスキームについてスコープに `Credential` がある最初の選択肢を使う。
++   entry .Error   ドキュメントが有効な OpenAPI 3 でないとき、または参照をたどれないときに発生する
+
+% 1 1 0 1cfcf1d86bdbdde9186df140ef327920
+
+@ 0 2 0 034e7af6b3c8d1e9100c965e4f9c467a
++         エラー `↯/s.135.1`: _the OpenAPI document was not valid because `reason`_。
++         理由は五つのうちの一つで、`846.1` から `846.5` までの番号が付いている。
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 8 0 0b351047b2c190fb0d587069f3672f62
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
++         row  `Malformed`  1  _the OpenAPI document could not be parsed_  テキストが JSON でも YAML でもなかったか、モデルに合わなかった
++         row  `UnsupportedVersion(version)`  2  _the OpenAPI version `version` is not supported; only 3.x is supported_  たとえば Swagger 2 のドキュメント
++         row  `UnresolvableRef(pointer)`  3  _the reference `pointer` could not be resolved_  ドキュメントにないコンポーネントへの `$ref`
++         row  `UnsupportedRef(pointer)`  4  _the reference `pointer` is not supported; only #/components/schemas references work_  `#/paths` や別のファイルなど、ドキュメントのコンポーネントの外への `$ref`
+
+% 0 1 0 00c24ec212d4a56e08d0d58719ce0750
+
+% 1 1 0 1df7c4db5113b89915e35fd2f8f8e293
+
+@ 0 12 0 11e875e69b96b7170dc0eff775e4cb18
++         `read[OpenApi]` は最初の二つと最後のものを発生させ、`referable()` と `schema()` は参照に関するものを発生させる。
++         `Api(…)` では、どれもコンパイルエラーになる。
++     entry .Reason   ドキュメントが拒否された理由。`Malformed`、`UnsupportedVersion`、`UnresolvableRef`、`UnsupportedRef`、`BadParameterLocation` のいずれか
++         enum で、各ケースがエラーの番号を持ち、コンパニオンにある匿名の `Communicable` の given によって描画される。
++     entry #reason   `OpenApi.Error.Reason`
++   entry #openapi   ドキュメントが宣言する OpenAPI のバージョン。`3.0.3` または `3.1.0`
++   entry #info   ドキュメントの `OpenApi.Info`。タイトル、バージョン、説明
++   entry #servers   ドキュメントの順に並んだサーバー。`Api` は最初のものを使う
++   entry #paths   パスのテンプレートごとのパス項目。`/pets/{petId}`
++   entry #components   再利用できるコンポーネント。ドキュメントが何も宣言していなければ `Unset`
++   entry #security   ドキュメント全体のセキュリティ要件。操作自身のものがこれを上書きする
+
+@ 0 1 0 0feaf46f48be49dc0eea0f71ffeeaacf
++ entry .Conformant   `Http.Response` を、そのメディアタイプが解釈するキャリアを通じて、値としてどう読むか
+
+% 1 1 0 0d07619860a3b3750112fd57a60b1d4e
+
+@ 0 13 0 1438ee40b144bff9113ebef3ca919260
++       `(T is Conformant) over Carrier` は、本文が `Carrier`（レスポンスのメディアタイプが解釈する型で、`application/json` なら `Json`、あるいは `Xml`、`Text`、`Raster in Png`）である `Http.Response` を `T` として読む。
++       これは読むだけである。`#read` が走る前に、`Api.Response#call` がステータスを検査し、`T` をスキーマと照合している。
++       given は優先度によって層をなしているので、結果が曖昧になることはない。まず生の `Http.Response` と `Unit`（`.response`、`.unit`、どのキャリアにも使える）、次にバイトから読むキャリアそのもの（`.carrier`）、次に `Xml` のような `Aggregable by Text` であるキャリアのための、テキストから読むキャリア（`Conformant2#carrierText`）、そしてキャリアにおいて `Decodable in` である任意の値で、バイトによるもの（`Conformant2#decodable`）とテキストによるもの（`Conformant3#decodableText`）である。
++       この順序によって、（`Text` のように）`Aggregable by Data` でも `by Text` でもあるキャリアが曖昧にならず、キャリアが自身の恒等の `Decodable` を通じてデコードされることもない。
++       コンパニオンは、それが継承する `Conformant2` と `Conformant3` から、それらの優先度の低い given を受け継ぐ。
+
+% 2 1 0 106785101361ca9f0eb867d5d418b7ef
+
+% 3 1 0 158496939687cd4e0833e0cb03d72823
+
+% 4 1 0 1d6008d75a8fea31096b7a9958b5c61c
+
+% 5 1 0 186dfe5f57bd60830078331fc7d46544
+
+% 0 1 0 0c0218cda5b1b1850bbb411d7f7460a2
+
+% 0 1 0 152a2833f798356c1aebd16c36204c17
+
+% 0 1 0 1f1b7a04c57a8be31f537d543a5fe73e
+
+% 0 1 0 146572b66e8cea1b05f6fb0d38e61347
+
+% 0 1 0 1a0f5b67fa326dfa1b963d8c8fbd2c1a
+
+% 1 1 0 0d979adcfcc39f0e0ca3dd797d6c0dbc
+
+@ 0 5 0 1833c9f52f28159715a50f03e0fff4c1
++       `call[T]()` は、呼び出しが書かれた場所で `T` が具体的な状態で `Conformant` を召喚するので、`List[Pet]` は他のデコードと同じようにその `Decodable in Json` を解決し、要求される given はキャリア自身の `Aggregable` と `T` の `Decodable` だけである。テキストの経路ではバイトのための `Charset` も必要であり、どの経路でも途中で切れた本文のための `Tactic[Truncation.Error]` が必要である。
+
+% 1 1 0 19346da35c5486e11683bdd64d8e6629
+
+% 1 1 0 17ae992c3b733d8f0a79225f5a867ae8
+
+% 0 1 0 0513750615724a521c1bb2f74e2d8412
+
+@ 0 7 0 17f4cd36e7bbbc921bc10d655d3ba916
++   entry .response   どのキャリアにも使える生の `Http.Response`。何も読まない逃げ道
++   entry .unit   どのキャリアにも使える `Unit`。`204` や `DELETE` に対する素の `call()` のように、本文は捨てられる
++   entry .carrier   キャリアそのもの。その `Aggregable by Data` を通じて本文のバイトから読む
++       `(Json is Conformant) over Json`、`(Raster in Png is Conformant) over (Raster in Png)`。本文はメモ化され、キャリア自身のリーダーによって集約される。
++       `Tactic[Truncation.Error]` が必要である。
++   entry #read   レスポンスを `Self` として読む
+
+@ 0 1 0 123404ffa1a0a44f0ff1454fb0474ae1
++ entry .Conformant2   `Conformant` の given の中間の優先度：テキストから読むキャリアと、バイトから読むキャリアからデコードされる値
+
+% 1 1 0 07537572f022627a19c3917f21bb4dbf
+
+% 2 1 0 1edc52259666290e00057fd5530e5b2e
+
+@ 0 10 0 1131bf2afa09b8e41443d1ac1d1f59c0
++       `Conformant` のコンパニオンの親であり、その given を `Conformant.response`、`.unit`、`.carrier` より下に順位付けるためだけに存在する。そのメンバーはコンパニオンを通じて見つかり、インポートは要らない。
++   entry #decodable   `Aggregable by Data` であるキャリアから得る、`Decodable in Carrier` を持つ任意の `T`
++       `call[Pet]()` が JSON のレスポンスを読む方法である。バイトを `Json` として集約し、それから `Pet` としてデコードする。
++       `Tactic[Truncation.Error]` が必要である。
++   entry #carrierText   キャリアそのもの。その `Aggregable by Text` を通じて本文をテキストとして読む
++       リーダーがテキストを受け取る `Xml` のようなキャリアのためのものである。バイトは、パーサーが見る前に、スコープにある `Charset` でデコードされる。
++       `Charset` と `Tactic[Truncation.Error]` が必要である。
+
+@ 0 1 0 0d2987bd1ce675250bff7b5badd9dc8f
++ entry .Conformant3   `Conformant` の given の最も低い優先度：テキストから読むキャリアからデコードされる値
+
+% 1 1 0 0d197bc7288a68b00f221c3552e35cd3
+
+% 2 1 0 121c54c2d95ef6310c5903625064fd12
+
+@ 0 6 0 02e9cd46d18cc78f00dad1d7ca12edc3
++       `Conformant` のコンパニオンの優先度の連鎖の根である。その一つの given はコンパニオンを通じて見つかり、インポートは要らない。
++   entry #decodableText   `Aggregable by Text` であるキャリアから得る、`Decodable in Carrier` を持つ任意の `T`
++       `call[Note]()` が XML のレスポンスを読む方法である。バイトをスコープにある `Charset` でデコードし、`Xml` として集約し、それから `Note` としてデコードする。
++       `Charset` と `Tactic[Truncation.Error]` が必要である。
+
+@ 0 1 0 041836b7bca37ad0172c0270def12183
++ entry .Executor   トランスポートの継ぎ目：`Api.Request` を生の `Http.Response` に変える
+
+% 1 1 0 0f48eb842c57cf7c05f6a517da0dca9a
+
+@ 0 7 0 1e960c093177acf306dc1c4d06890872
++       テストの記録用バックエンドのように、ネットワークなしで `Api.Request` に応える実装のための、メソッド `#execute` を一つ持つトレイト。
++       `soundness` アンブレラにはエクスポートされない。そこではその名前が superlunary の `Executor` と衝突するからであり、`apoplexy.Executor` として参照する。
++       クライアント自身は `Api.send` とスコープにある `Http.Client` を通じて送信するので、リクエストを横取りする通常の方法は `Http.Backend` の given を差し替えることである。
++   entry #execute   リクエストに対するレスポンス
+
+@ 0 8 0 1b2842f975b6567f14c5d3c12026802f
++ entry .yamlEncodableInJson   JSON としての YAML ドキュメント。`yaml.in[Json]` と同じ
++     トップレベルの given `Yaml is Encodable in Json`。YAML で書かれた OpenAPI ドキュメントが、モデルの唯一のデコーダーに至る途中で通る変換である。
++     両方の木がノードごとにたどられる。YAML が数値や真偽値として書いたマッピングのキー（`200:`）は、JSON が要求する文字列になる。
++     `jacinta` と `ypsiloid` のどちらも他方に依存しないので、`Yaml` も `Json` もこれを固定する場所になれない。そのため、ライブラリ名で修飾された名前でパッケージのトップレベルに置かれている。`soundness` アンブレラにはエクスポートされないので、`import apoplexy.yamlEncodableInJson` としてインポートする。
+
+% 2 1 0 14ea6737f474c2b115c595aa678354cc
+
+% 3 1 0 0bfb00676c7404171810141b18f86956
+
+% 4 1 0 056269b7668cb6df16f8eaf219e1d595
+
+% 0 1 0 1f58f2001601d2ff1433745f3bada8b5
+
+% 0 1 0 1dfc155e0824c96c006ded0f7fa8dc6f
+
+% 0 1 0 09e7b0122c1b94d20ecdbba5a0f76243
+
+% 0 1 0 009fff120ccf112e0018ec00f6f9d543
+
+% 0 1 0 16c6dc36a08108881934264001614a83
+
+% 0 1 0 120c70449f5bfb34100cdc65e7d2e52f
+
+% 0 1 0 09518f93c7c9d3d118441ee4119eef5c
+
+% 1 1 0 076603ffd025469118bd637711342108
+
+@ 0 6 0 0b637fee940a50bc09474ee9557ab968
++ entry .unsafeHttpUrl   `Api` マクロがすでに URL として検証したテキストをパースする。`Unsafe` で関門が設けられている
++     `unsafeHttpUrl(text)(using Unsafe)` は、`Url.Error` を解消した `text.as[HttpUrl]` である。
++     `Api(resource)` が出力するコードは、マクロが展開時にすでにパースしたサーバーの URL に対してこれを呼ぶ。関門は、スプライスされた `unsafely` ではなく、マクロが供給する `Unsafe` である。`unsafely` のコンテキスト関数は、キャプチャ検査の下ではクォートがマッチできないからである。
++     直接使うためのものではない。検査されていない URL は `text.as[HttpUrl]` でパースし、エラーを処理すること。
+
+@ 0 1 0 0c805f15fd2afed612644bc4cc25638a
++ entry .Apoplexy   `Api`、そのナビゲーション、`Api.Response` の呼び出しの背後にあるマクロの実装
+
+% 1 1 0 015b673a4dd01f44045cb2d0f3b347e8
+
+% 2 1 0 0024780503ba8b5f05f2dc91ba88b98d
+
+@ 0 24 0 1cf02df1fbc4b8481013d448a8d20024
++       直接使うためのものではない。このオブジェクトは、マクロに安定した置き場所を与えるために存在する。
++       読み込んだ各仕様を、リソースと内容をキーとして、コンパイルの間キャッシュする。
++   entry .root   `Api(resource)` の背後にあるマクロ：ドキュメントを読み込み、ルートを型付けする
++   entry .rootAt   `Api(resource, base)` の背後にあるマクロ：`.root` と同じだが、呼び出し側のベース URL を使う
++   entry .select   `Api#selectDynamic` の背後にあるマクロ：セグメント、または引数のない動詞
++   entry .applied   `Api#applyDynamic` の背後にあるマクロ：パスパラメーター、本文、または動詞のない呼び出し
++   entry .appliedNamed   `Api#applyDynamicNamed` の背後にあるマクロ：クエリとヘッダーのパラメーター、および本文
++   entry .ensure   `Api.Response#ensure` のインラインのエントリーポイント
++   entry .ensureMacro   成功の範囲外のステータスに対して宣言されたエラー、または `Api.Violation` を発生させる
++       呼び出しが書かれた場所で、レスポンスの `Failure` の各メンバーに対する `Tactic` と、`Api.Violation` に対する `Tactic` を一つ召喚する。正確なステータス、次に宣言された範囲、次に `default` の順でディスパッチし、各ペイロードを仕様が宣言するとおりに解釈する。
++   entry .record   `Api.Response#record` のインラインのエントリーポイント。本文はすでに JSON として読まれている
++   entry .tuple   `Api.Response#tuple` のインラインのエントリーポイント。本文はすでに JSON として読まれている
++   entry .recordMacro   レスポンスの JSON から、`Api.Records` 上のスキーマで型付けされたレコードを構築する
++   entry .tupleMacro   レスポンスの JSON から、`Api.Records` 上のスキーマで型付けされた名前付きタプルを構築する
++   entry .check   `call[T]()` の `T` をレスポンスのスキーマと照合するインラインのエントリーポイント
++   entry .conform   `T` がレスポンスのスキーマに適合しなければコンパイルを停止する
++       `Json` と `Http.Response` は検査なしで通る。ケースクラスはオブジェクトスキーマのプロパティとフィールドごとに照合され、`List[T]` は配列の要素と、プリミティブはその型と照合される。`int64` には `Int` が、`number` には整数型が受け入れられる。

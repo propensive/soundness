@@ -1,0 +1,190 @@
+orthant 2 language
+
+@ 0 1 0 07a548547464ca600d35aef5aeaaa6a0
++ # コンテキスト値の命名規約
+
+@ 0 8 0 1ef4fa18394e7f2716140265dc3a2349
++ この規約は、インポートできる `given` 値の命名とグループ分けの方法を定める。
++ 対象は*孤児の*コンテキスト値である。ユーザーが名前でスコープに入れるもので、選択パッケージから（`import strategies.throwUnsafely`）、あるいはコンパニオンに固定できない少数のものについてはライブラリのトップレベルから（`import bitumen.tarPathOpenable`）入れる。
++ given がどこに*置かれる*かは `.claude/CLAUDE.md` の配置規則が決める。この文書は、それが何と*呼ばれる*かを決める。
++ そもそもなぜ名前が重要なのかについては、[宣言的なコンテキスト](../philosophy/declarative-context.md)と[命名](../philosophy/naming.md)を参照。
+
+@ 0 2 0 15645943122e4b9a1b1327518ee67571
++ コンパニオンオブジェクトの中の given（`Tui.Block.Anchoring.default`、`Buffering.standard`）は、この規約の対象外である。それらは型で解決され、インポートの箇所に書かれることはない。
+
+@ 0 1 0 0fbdab94d49e82a80a6eb1224785e7ff
++ ## 試金石
+
+@ 0 5 0 1e60420e02642bd11e88f7fcc8cef509
++ Soundness にできることはすべて知っているが、それが物事を何と呼ぶかは何も知らない読み手が、パッケージを取り除いた名前だけから、given が何をするかを言えなければならない。
++ `throwUnsafely` は合格である。それは戦略であり、例外を投げる。
++ `enabled` と `native` は不合格である。*何を*有効にするのか、*何に*とってネイティブなのか。
++ インポートの行で見えるのは名前だけであり、しばしばどこを見ても見えるのは名前だけなので、名前が意味のすべてを担う。
+
+@ 0 1 0 0de87de1a87905fa110cb8b248d3e561
++ ## 規則
+
+@ 0 1 0 0f4b042a6d42ee7c16ab1e4978c5d7eb
++ ### 1. ファミリーは役割であり、パッケージとなる
+
+@ 0 6 0 1bee6eff7d22e55e07145a3d0832c899
++ 選択パッケージは、そのメンバーが果たす役割にちなんで名付ける。複数形の可算名詞（`strategies`、`stdios`、`filesystemBackends`、`probates`）か、不可算名詞（`formatting`、`threading`、`logging`）である。
++ 単数形の可算名詞には決してしない。`blockCipherMode` ではなく `blockCipherModes` である。
++ ファミリーの名前はグローバルである。別々のライブラリの同じ名前のブロックは `soundness` アンブレラで併合されるので、ファミリーはどこでも一つの役割を意味しなければならない。
+
+@ 0 5 0 0a8137c7a4bd2d811f4682875640e690
++ ファミリーは決して入れ子にしない。
++ ライブラリはそれぞれのファミリーをトップレベルの `package <family>:` ブロック一つとして宣言し、アンブレラはそれを同じ名前で写すので、`import aviation.monthFormats.englishMonths` と `import soundness.monthFormats.englishMonths` は同じパスである。
++ 本来なら別のファミリーの中に収まるはずのファミリーは、代わりに親の語を接頭辞として取る（`dateSeparators`、`timeSeparators`、`randomSizes`、`pathInterfaces`）。
+
+@ 0 1 0 1c37b1ac4b8889eb075a6efc3ba53810
++ ### 2. 名前は選択、次に役割
+
+@ 0 2 0 19cc64c0ba168d90067e1d0c96c34ee8
++ 選択の語を先に置き、選択がすでにそれを含意していない限り、役割の単数形を付け加える。
+
+% 2 1 0 1506cd82fa98740a12deb7c4bd6dbbb6
+
+% 0 1 0 1bf570676b9440b3071af989a2ca102c
+
+% 0 1 0 0764277469c043000d5aa018959677d6
+
+% 0 1 0 1856c23de59d15e217bdb8ad6263667c
+
+% 0 1 0 0e63de87faf4ee840460673274f85e76
+
+% 0 1 0 051c46980e4aa3a91dd122afe5b378a5
+
+% 1 1 0 1939f1afc1b4857b1001bcba900d726f
+
+@ 0 2 0 193bf0ff34c9b1311db3300eb079efb5
++ 接尾辞は役割自身の語（`…Probate`、`…Stdio`、`…Formatting`）であり、その同義語ではない。こうすれば、ファミリーのすべてのメンバーが同じ形で終わる。
+
+@ 0 1 0 063ee01d01bee40f1e950864a7ce7ce7
++ ### 3. パッケージを除いても一意
+
+@ 0 3 0 1abed31c3438c84400e2dda97ceb76a3
++ 孤児の given はすべて、パッケージがないものとして判断して、Soundness 全体で一意である。
++ それらはすべて `soundness` にエクスポートされ、どの二つも一つのスコープに共存しなければならないことがあるので、`import x.enabled` と `import y.enabled` が両方存在することはできない。
+
+@ 0 2 0 112593cb81ec4fcc08b0487fd4fd2a53
++ その帰結として、切り替え用のメンバーは存在しない。
++ スイッチは、どちらの側も、それが選ぶ振る舞いにちなんで名付ける。
+
+% 2 1 0 066a624f25953eee0518f70d156f1bdc
+
+% 0 1 0 1d973ea894f06ea405a4df0983f6e8e7
+
+% 0 1 0 0f49116ac9427e4b02d11d8883b1fd89
+
+% 0 1 0 06ebb99e9fd46a2014724d2a241d7890
+
+% 0 1 0 08313dddbc1df0070d67bb38330b71b0
+
+% 1 1 0 112b34bc27b8b8d919ffb350879d5a10
+
+@ 0 1 0 07b3925c8c4876211456174832465e14
++ ### 4. 既存の語彙のみ
+
+@ 0 4 0 148463d6936ddb4809333963efda160a
++ 名前は、それが選ぶ型や用語を再利用する。そうすれば、インポートとそれが有効にする宣言が同じ言葉で読める。`cancelProbate` は `Probate` を選び、`taiChronometry` は `Tai` の時刻系を選び、`offHeapCloak` は `OffHeapCloak` である。
++ 名前が、Soundness の他のどこにも現れない用語を新たに作ることは決してない。
+
+@ 0 6 0 1d01aa31e48507ce03a8405d7839ef3b
++ `default`、`standard`、`basic`、`simple` は選択の語ではない。それらは選択がよくあるものだと言うだけで、それが何であるかは言わない。
++ `indentedCssFormatting`、`thickTableStyle`、`timestampedLogFormat` はそれぞれ何をするかを言っている。`standardCssFormatting` は、誰かがそれを好んだということしか言っていなかった。
++ 例外は、そうした語がその型自身の名前*である*場合である（`standardKeyboard` は `Keyboard.Standard` を選ぶ。RFC 4648 のアルファベットは、その仕様によって「standard」と呼ばれている）。
+
+@ 0 3 0 185ee7b38a735328155971d2bb2e0865
++ 数字が名前に入るのは、それが選択の一部である場合（`sha256Signature`、`xterm256Termcap`、`iso8601DateFormat`）だけであり、二つの given を区別するため（`populatedEquality2`）では決してない。
+
+@ 0 1 0 1222d32e4eafb4390a22acdc9405b0f5
++ ### 5. バックエンドの出自を示す語
+
+@ 0 2 0 01cf2ca4b294bd9f0bb9fafbcc4d9b6b
++ 選択が*どの実装か*である場合、選択の語は実装がどこから来るかを名指しする。
++ 出所ごとに一つの語を、どこでも同じように使う。
+
+% 2 1 0 0e78d680688a73f21d8eb2294144d910
+
+@ 0 6 0 09aaa2d07b69dbc00e1f44fcc9a6c2fc
++ column  出所
++ column  語
++ column  例
++ row  Java モジュール  モジュールの名前  `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver`
++ row  WASI インターフェース  `wasi` ＋インターフェース  `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets`
++ row  libc/POSIX 上の Scala Native  `scalaNative`  `scalaNativeFilesystem`, `scalaNativeSockets`
+
+% 0 1 0 11ff93a2626c5475196a1ec38fb9a402
+
+@ 0 2 0 147eb58ae6b3d21f16ec165eb76e051d
++ row  Soundness 自身の純粋な Scala のコード  `soundness`  `soundnessHttp`, `soundnessHttpd`, `soundnessProvider`
++ row  サードパーティー  それ自身の名前  `opensslProvider`, `re2`, `resendCourier`
+
+% 1 1 0 18e70806ffec447e0648d309f51e03fa
+
+@ 0 7 0 012bc4a5855a31ed1bdfdf174c45ec9e
++ Java モジュールを名指しするのは、それが `requires` 節の名指しするものだからである。Soundness はモジュールごとに、どの Java モジュールに依存するかを宣言するつもりであり、Java に支えられた実装を選ぶ given は、どのモジュールを利用しているかを言うべきである。
++ そのほとんどは `java.base` が提供するので、`javaBase…` がよくある場合である。二つの `java.base` の選択が異なる場合は、名前がその違いを言う（`fileDescriptorStdio` はプロセスのファイルディスクリプタを包み、`javaLangSystemStdio` は `java.lang.System` のリダイレクト可能なストリームを包む）。
+
+@ 0 6 0 0da981de98dd37100aea8eb67ae8735e
++ 出自のように見えて、そうでないものが二つある。
++ 代表として採用された Java の*型*は、Soundness の他の場所ですでに持っている型のパスの名前を保つ（`javaNioPath`、`javaUtilDate`、`javaNetUrl`）。そこでの選択はモジュールではなく型である。
++ また Java 自身の概念を表す語は、出所ではなく概念を名指しする場合には Java のものを使う。`platformThreads` と `virtualThreads` はプラットフォームスレッドと仮想スレッドであり、`systemClassloader` と `platformClassloader` はそれらのローダーに対する JDK の名前である。
+
+@ 0 2 0 0284a2480e82b21705b86d0184c54b07
++ `native` は単独では決して現れない。
++ それは時によって Scala Native、JDK の `WatchService`、Soundness 自身の HTTP スタックを意味してきた。意味が三つも多すぎる。
+
+@ 0 1 0 16ed697ccf8f543712f5321b4b87ea0d
++ ### 6. トップレベルの孤児はライブラリにちなんで名付ける
+
+@ 0 5 0 1ec5581f3b49bc84166c7364961f1863
++ コンパニオンに置けない given（その主題が別の場所に属している、ユニオンやエイリアスである、あるいはライブラリがプラットフォーム中立な型のプラットフォーム別コンポーネントである）は、ライブラリのトップレベルにとどまり、何のためのものかで修飾された名前を持つ。`tarPathOpenable`、`terminalStdio`、`collationComparable` である。
++ 名前のない given は選択的にインポートすることも曖昧さを解消することもできないので、決して匿名にはしない。また、むき出しの汎用的な語にも決してしない。
+
+@ 0 1 0 0e16d20ec40e4f520f7723d987bab54f
++ ## 接尾辞なしで認められるもの
+
+@ 0 2 0 0531d653b29a96ff00cf534943d010d5
++ これらは選択がすでに役割を名指ししているので規則 2 に合格する。誰も再び議論を蒸し返さないよう、ここに列挙する。
+
+% 2 1 0 07774e4b6ccf388e0403c5af7d9bbb95
+
+@ 0 4 0 093e8fede7284d1311fe26aa6dc5546a
++ column  ファミリー
++ column  認められるメンバー
++ row  `sortingAlgorithms`  すべて
++ row  `alphabets`  すべて
+
+% 0 1 0 0df41455002774cb0dbef724a949e8fe
+
+% 0 1 0 0befcb494045d6a505622c4e02a4fb09
+
+% 0 1 0 13b7dac1ada084b515f4a2ac1ca9933c
+
+% 0 1 0 089be0668036df01187f0f05e02fa8b9
+
+@ 0 1 0 09fcc98a30b78b9314ea16d43c6a0119
++ row  `endianness`  すべて
+
+% 0 1 0 155393a15a33208a15d5762e6b004d05
+
+@ 0 6 0 1b664aad9e5215701279428942ad0070
++ row  `currencies`  `Usd`…（ISO コード、項として使う）
++ row  `strategies`  すべて
++ row  `calendars`  すべて
++ row  `highlighting`  すべて
++ row  `caseSensitivity`  すべて
++ row  `dysasymptotics`  すべて
+
+% 0 1 0 0eb34f125b24256b1b953c1f063028a8
+
+% 1 1 0 09221ec3b58b232b106041b1a37e86ee
+
+@ 0 1 0 1c16794117f821210e2672db11bd501e
++ ## 検査
+
+@ 0 4 0 057e2082369756c409f09ad69e2ce33a
++ `make build` は `etc/check-given-uniqueness.py` を実行する。これはライブラリとその `soundness_*` のエクスポートの写しにあるすべての選択パッケージを読み、名前の重複や写されていないファミリーがあれば失敗する。
++ 新しい孤児の given は、ユーザーが衝突に出会ったときではなく、追加されたときに名前空間全体に照らして検査される。

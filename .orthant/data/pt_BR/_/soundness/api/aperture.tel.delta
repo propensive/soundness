@@ -1,0 +1,845 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a2592a6fec741bb0c121348eb0ba60d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 135d707e598580ba1870dcfa7148b0f1
++ info   acesso com escopo a recursos: `open`, `create`, `archive` e `session`, com os modos levados como concessões no tipo do handle
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 18b9ebdace29c0750e76f39f52b09d2b
++     _Aperture_ dá nome a um padrão que se repete em todo o Soundness: um valor diz *onde* algo
++     está — um caminho, uma URL, uma referência em memória — e chegar ao seu conteúdo é um ato
++     distinto, **com escopo**. Um arquivo é aberto para streaming, um diretório como raiz
++     confinada, um repositório Git para ler suas refs, uma URL para uma sessão de requisições; em
++     cada caso, um handle é emprestado a um bloco, e o fim do bloco é o fim do acesso.
+
+@ 0 2 0 18b8db6668f313b216ece9068abb53b3
++     A biblioteca define as classes de tipos por trás de quatro verbos e os métodos de extensão
++     que os invocam sobre qualquer valor:
+
+@ 0 9 0 06d946103fab05080174051637276594
++     - `open[Form](mode, flags*)`, por meio de `Openable`: acesso a algo que existe, com um
++       `Mode` (`Read`, `Write`, `Exclusive` e suas combinações com `&`) cujas `Grant`s são
++       levadas no tipo do handle, de modo que uma escrita por um handle somente leitura não
++       compila;
++     - `create[Form](flags*)`, por meio de `Creatable`: trazer algo à existência, vazio ou
++       compondo-o em um escopo que é efetivado quando o bloco termina;
++     - `archive[Form](flags*)`, por meio de `Archivable`: reunir o conteúdo de algo em um valor
++       de arquivo em memória;
++     - `session`, por meio de `Sessional`: uma interação ativa — uma conexão, um compilador
++       aquecido, um navegador — emprestada a um bloco e descartada quando ele termina.
+
+% 2 1 0 0556ac6c127246f71a8581adaec93966
+
+% 3 1 0 1e785c348084f90b00abfd7d85d26248
+
+% 4 1 0 081a50ccf822248e1908aa7c07eba1d4
+
+% 5 1 0 1fd73833e65f36bf0d333e77e114fb76
+
+% 6 1 0 13af1eba1dde389f03b3086ef6dc2643
+
+% 7 1 0 1aa88a439542a1f30d751191ed2b78f3
+
+% 8 1 0 08f34d97ff165925168f69dd2e3ff052
+
+% 9 1 0 07cf35a107374e4b1f7404c9c1aaabe4
+
+% 10 1 0 13c7f47fb152741812910f23cbc1e112
+
+% 0 1 0 0e1e2392ad24e5291dac8f353b309eaf
+
+% 2 1 0 0b5407e2399ebfe2043e4e51bdeb6a3f
+
+% 0 1 0 03fea899de0394b717fe66a61cd4b9b1
+
+% 0 1 0 076647ca23db91c51d9cdcc255b11ce3
+
+% 1 1 0 073ec21fe327486a18af2ab2d625be14
+
+@ 0 7 0 1d22d298db8293e71138b5e7a5a0071f
++     A *forma* — aquilo *como* o alvo é aberto, criado ou arquivado — é um argumento de tipo,
++     porque um alvo pode ter várias instâncias: um caminho abre como `File`, `Directory`, `Zip`
++     ou `Pdf`. Quando um alvo tem exatamente uma instância, a forma pode ser omitida; com várias,
++     o erro de ambiguidade lista as alternativas. As flags depois do modo são do tipo `Operand`
++     da própria instância, então são específicas daquilo que está sendo aberto, e uma flag
++     irrelevante não passa na verificação de tipos. Toda instância é escrita no estilo
++     preposicional, `target is Openable in Form by Flag to Handle`.
+
+@ 0 3 0 1e13c6b76dacc9350c89d78c05b570e0
++     Handles são capabilities, confinadas ao seu bloco pela verificação de capturas: nem um
++     handle, nem uma closure sobre ele, nem uma coleção que o contenha pode ser o resultado do
++     bloco. `Stale` é a ideia complementar para valores lidos *por meio de* um handle a partir de
++     um estado que o handle não possui.
+
+@ 0 5 0 18b87c5b6cf40a240dbb36ea8dfa1fe8
++     Aperture depende apenas de `prepositional`, então fica abaixo de toda biblioteca que fornece
++     instâncias: galilei (arquivos, diretórios, espaço temporário), octogenarian (`Git.Repo`,
++     `Git.Worktree`), bitumen e zeppelin (arquivamento), facsimile (documentos PDF),
++     telekinesis e coaxial (sessões), entre outras. Ela tem um único source set,
++     `aperture.core`, para todas as plataformas, e tudo é exportado para o guarda-chuva
++     `soundness`.
+
+% 0 1 0 181978ce8813533c0eb06e7e297d768c
+
+% 0 1 0 05f3b958add35e9d1abfebc16b3b4bb6
+
+% 0 1 0 16b63a78e1b0467717697dc8df6d1722
+
+% 0 1 0 129261cde6e86a57124d0d9917fdd0b2
+
+% 0 1 0 02c8b4a252ae08bc12ef30e18c26c9db
+
+% 0 1 0 0737af66c950417e1a9a75b522a7ca77
+
+@ 0 1 0 1b58c1e4deea7932118db4cc21336d79
++ entry .Openable   uma classe de tipos para alvos que podem ser abertos em uma forma, emprestando um handle com concessões a um bloco
+
+% 1 1 0 0b5749efdcf100081eb06933d042f120
+
+@ 0 5 0 099e7d1ce3ed3bcd07adbfda7f27b039
++       Uma instância é escrita `target is Openable in Form by Flag to Handle`: `Self` é o alvo
++       (um caminho, uma referência), `Form` é aquilo como ele é aberto, `Operand` o tipo de flag
++       admissível para esse par, e `Result` o handle. O único método da instância, `#open`,
++       recebe o alvo, o `Mode` que quem chama pediu e as flags, e executa o bloco com um handle
++       do tipo `Result & Granting[grants]`, em que `grants` são as `Grants` do modo.
+
+@ 0 1 0 08c6a22a2868bac80a8e8fa16023feb9
++       Os usuários o chamam pela extensão `open`, nunca diretamente:
+
+% 2 1 0 0d2044604667e4bb126c612751500eab
+
+% 3 1 0 0a51ca518da38185013f5eb69ecaff46
+
+% 4 1 0 15da92635f98091800b9612eef66badc
+
+% 5 1 0 0c08f9a1f438c20b172d832bedd721d7
+
+% 6 1 0 1415db7bd8861cda1844cac230287f3e
+
+% 7 1 0 0156216c95035b8a0da95a4ed8714fc8
+
+% 8 1 0 0331eba7a03b995b1bdfe5370e8eb9ca
+
+% 9 1 0 162f0ea68201eec1123600d2a91e30a1
+
+% 10 1 0 0e1fbeef8e76dcfa1b4d83e2b0070ae1
+
+% 12 1 0 08d4d8f4d7146ddb1ec58d3d5696ebb8
+
+% 0 1 0 0819a788a3d64918092d6661a67f2ef2
+
+% 0 1 0 0b8917a87469bcb5186576c656c72dca
+
+% 1 1 0 10770fbb42383d3c172bbbac62c17d7d
+
+@ 0 4 0 1c9ab85ea22966981cd9d2734bfddc25
++       As operações de uma instância sobre o handle são métodos de extensão restritos pelas
++       concessões, como `extension (handle: (DocHandle & Granting[Grant.Write])^) def append(…)`,
++       de modo que o modo escolhido no ponto de chamada decide o que compila dentro do bloco. Uma
++       instância traduz o modo para os termos do seu backend interrogando `mode.atoms`
++       (`mode.atoms.has(Read)`).
+
+@ 0 4 0 131fb82c842d42460e0ce37fa155f236
++       As instâncias devem ser classes nomeadas, e não instâncias anônimas
++       `given … = new Openable:`: uma subclasse anônima renova o tipo de capability do handle no
++       membro `Result` inferido, e o handle do bloco então falha na verificação de tipos contra
++       os métodos de extensão que dependem dele.
+
+% 1 1 0 1ee0643211de745a035a97ced2b37e8e
+
+% 1 1 0 098d16432d684efa05e81acf7b78e0df
+
+% 2 1 0 0c7cba514165d44c0100e9e7d3d1014e
+
+% 1 1 0 14887555a12e7c6d0c6770c4ba14cd63
+
+@ 0 5 0 05d359d078dabc78181114e317d5933f
++   entry #open   abre um alvo em um modo, com flags, e executa um bloco com o handle com concessões
++       `open(value, mode, flags)(block)`: a implementação que uma instância fornece. O bloco
++       recebe o handle `(Result & Granting[grants])^` como parâmetro contextual, e seu resultado
++       é devolvido depois que a instância fecha o que tiver aberto. Chamado por `Opener#apply`;
++       o código do usuário escreve `value.open[Form](mode, flags*)` em vez disso.
+
+@ 0 1 0 0a12cab23ad351220e82c453e6a7ad08
++ entry .Opener   o aplicador que `open[Form]` devolve, que recebe um modo opcional, as flags e o bloco
+
+% 1 1 0 12dd9494ed5d7f4b0bca8368fb4a88ba
+
+@ 0 4 0 0285405fbfb9017e0d5e9b31611c2c25
++       `value.open[Form]` resolve a instância de `Openable` apenas pela forma e devolve um
++       `Opener`; seu `#apply` sobrecarregado recebe então os argumentos. As duas etapas são
++       deliberadas: métodos de extensão sobrecarregados não são resolvidos através de várias
++       listas de parâmetros, então o aplicador é o lugar onde o modo opcional pode ser
++       sobrecarregado com segurança.
+
+% 2 1 0 15c28de2528e0b94028be9c3f3743de2
+
+% 3 1 0 123f7705c23e5bd7005ea34bc459d8ca
+
+% 4 1 0 1793c93ffa7616a7002fb87c3875f321
+
+% 5 1 0 088b4191947eb00c157cb78ffd4e1b14
+
+% 6 1 0 1327060ce2b7d53b1e114ec7dd4e2809
+
+% 7 1 0 0d605b06948836b5084ffa69a7cc9044
+
+% 8 1 0 12b77035df6a122f19fb5f93888b238b
+
+% 9 1 0 1d85410a067e524c0482b809368a5d73
+
+% 10 1 0 1af0753962c5ca3316e02580222a9dae
+
+% 0 1 0 1efc2c2a82007caf058a8cdc4da418dd
+
+% 0 1 0 03a4a480e578b88215749cf1b1bfdd47
+
+% 0 1 0 0cd66392481b732a193944ababe3156c
+
+% 1 1 0 1fb94de29319005901cf39f49b73dd03
+
+@ 0 2 0 1f7f462dd2c71a07069098773cfca30a
++       O campo `#openable` é `tracked`, então os membros `Self`, `Operand` e `Result` da
++       instância permanecem precisos nos tipos de `#apply`.
+
+% 1 1 0 1c9306a31fa36cb91bfc5d49b668b68f
+
+% 1 1 0 12f7033b964ee2481a8bc8b5ef885f62
+
+@ 0 7 0 0557582cc73f49b7124ff48bfb42bae0
++   entry #openable   a instância de `Openable` que a forma resolveu
++   entry #value   o alvo a ser aberto
++   entry #apply   abre o alvo, somente para leitura por padrão ou no modo dado, e executa o bloco
++       Duas sobrecargas. `apply(flags*)(block)` abre com o modo `Read`, então o handle é
++       `Granting[Grant.Read]`; `apply(mode, flags*)(block)` abre com o modo dado, então o handle
++       concede exatamente `mode.Grants`. As flags são do tipo `Operand` da instância e vêm
++       depois do modo. O handle é o parâmetro contextual do bloco (`handle ?=> …`).
+
+@ 0 1 0 0defabb207e604351eae1b426f94cba5
++ entry .open   abre um valor em uma forma: `path.open[File](Read & Write) { handle ?=> … }`
+
+% 1 1 0 1fed61834fab93d307990d2cd07bffa4
+
+@ 0 4 0 0520248a8e7109751231b910ad43e14f
++       Uma extensão sobre qualquer valor que tenha uma instância de `Openable` na forma
++       indicada. Ela devolve um `Opener`, cujo `apply` recebe um `Mode` opcional (o padrão é
++       `Read`), depois flags do tipo `Operand` da instância, depois um bloco que recebe o handle
++       como parâmetro contextual.
+
+@ 0 1 0 059b81a56e393b041bca4c94618c5d04
++       O modo escolhido decide o tipo do handle e, portanto, quais de suas operações compilam:
+
+% 2 1 0 11c287423517fb591b121fab41113180
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0e746141282b3f47186118d3bf65966f
++         label Aberto sem modo: o handle concede apenas leitura
+
+% 1 1 0 114eeadb6319c5011a73d732b2ecbc0f
+
+% 0 1 0 1e2beb093dbc0d49086946bc0c79e482
+
+% 1 1 0 05405a2b413dd3241fbdb99680e4b6c4
+
+% 0 1 0 1492935231d11c221d05541011d30757
+
+% 1 1 0 00b266260d2a261b0ea453b977a613f4
+
+@ 0 1 0 14664edba34bcfd206fd553d0879cc59
++         label `Read & Write`: os dois tipos de operação compilam
+
+% 1 1 0 0099c8f28dfbdb8b093f8aae2211873b
+
+% 0 1 0 0434ae24e518d0c51b60c80dc824d1ae
+
+% 1 1 0 06dcad5e35b7cdc80c84acff7941580e
+
+% 2 1 0 15a080379b852db31dc568b358bb7069
+
+% 1 1 0 076f96543a83248217815954211e1ef9
+
+@ 0 1 0 005e27f5ed8ce4931d7572c59fbf62bc
++         label `Read & Write & Exclusive`: e nenhum outro handle pode se sobrepor a ele
+
+% 1 1 0 0d31f09ad698429b10c63339e949f142
+
+% 0 1 0 03ffd1ae2db5bec1197fc8101192d0c7
+
+% 1 1 0 13582012d7bbafe81df14a93bd72641d
+
+% 2 1 0 19b394d2c20554491f76d2c3728014f7
+
+% 1 1 0 1ef8c3d9193837f418ae867faff761f3
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1dd7e42510a6282f05edc3ad40497788
++       A forma pode ser omitida, `value.open()`, quando o alvo tem exatamente uma instância de
++       `Openable`; com várias, o erro de ambiguidade as lista. O handle é uma capability
++       confinada ao bloco: devolvê-lo, uma closure sobre ele ou uma coleção dele é um erro de
++       compilação.
+
+% 1 1 0 1fa0a8f620000a0f057bafeb4d477032
+
+% 1 1 0 055579f6e76350050c472186208a9bfc
+
+% 2 1 0 003839e48112b040089bba938ac55401
+
+@ 0 1 0 09352adfff4166660fb5aa01b48bef1a
++ entry .Mode   quais concessões uma chamada a `open` confere, combináveis com `&`
+
+% 1 1 0 1ea4dd58b33fd13a154733662a19a51b
+
+@ 0 5 0 184faf1ed3464cbe1d790df8426f3139
++       Um `Mode` é uma escolha de concessões no nível dos termos, levada como seu membro de tipo
++       `#Grants`, para que o modo escrito no ponto de chamada determine o tipo do handle dentro
++       do bloco. Os modos atômicos são `Read`, `Write` e `Exclusive` (e as bibliotecas
++       acrescentam os seus, como o `Shared` de galilei); `&` os combina de forma dependente,
++       então `Read & Write` tem `Grants = Grant.Read & Grant.Write`, sem macros nem expansão
++       inline.
+
+% 2 1 0 15b1b47702ad57aa1e98d83c8a994381
+
+% 3 1 0 1310770e82431dd51330565696bc6c82
+
+% 0 1 0 106e66a541471e091e2525f61194128a
+
+% 0 1 0 1d1115263c7f27501340ff27baa2af01
+
+% 1 1 0 1c77e9dfad9561161f0159fa6bbc61fa
+
+@ 0 4 0 0f41948c8c1f1694106c0751c3a494ea
++       Em tempo de execução, um modo composto é identificado por `#atoms`, o conjunto de modos
++       atômicos a partir do qual foi construído, e é assim que uma instância de `Openable`
++       traduz um modo em flags do sistema operacional. Os modos atômicos são valores globais
++       comparados por referência, então uma biblioteca que define um novo o torna um
++       `object … extends Mode` ou um `val` de nível superior.
+
+% 0 1 0 187ef6f98ed613170ad91ebd5608759d
+
+% 0 1 0 1e86cd1bee4ea59600f80d3dad909084
+
+@ 0 9 0 1f182e176eb5ed301323bed4eb42cc5d
++   entry #Grants   as concessões que este modo confere, como uma interseção de subtipos de `Grant`
++   entry #atoms   os modos atômicos a partir dos quais este modo foi composto
++       Os átomos de um modo atômico são apenas ele mesmo; `Read & Write` tem `Set(Read, Write)`.
++       Uma instância de `Openable` testa a pertinência, `mode.atoms.has(Write)`, para decidir
++       como abrir seu alvo.
++   entry #&   combina dois modos: a união de seus átomos, a interseção de suas concessões
++       `Read & Write` é um `Mode granting (Grant.Read & Grant.Write)`. A operação é associativa
++       e, em efeito, indiferente à ordem, já que tanto as concessões quanto os átomos são
++       conjuntos.
+
+@ 0 1 0 10c0867fdae569e9155cc4b3ff11a94c
++ entry .Grant   um marcador fantasma de um tipo de operação permitido, combinado por interseção
+
+% 1 1 0 07fb4efb652f350717a7257cc06de51c
+
+@ 0 4 0 1fa7ea59072976780ab47349a637d116
++       Concessões nunca são instanciadas: existem apenas como tipos, intersectadas no tipo de
++       um handle por meio de `Granting`, onde restringem quais métodos de extensão se aplicam.
++       A interseção torna mais concessões um tipo mais específico, então uma operação que exige
++       `Grant.Write` aceita qualquer handle cujo modo incluiu `Write`, seja o que for que mais
++       ele tenha incluído.
+
+@ 0 2 0 07b3866bba0da1bc092740b8101b6f3f
++       A hierarquia é aberta: uma biblioteca que define uma instância de `Openable` pode
++       introduzir concessões próprias do seu domínio estendendo `Grant`, com um `Mode`
++       correspondente.
+
+% 1 1 0 165d4f9e3955f822152de5c1ebd1899f
+
+% 1 1 0 1ca25bf21318963b1fa29bd434f01876
+
+@ 0 8 0 0dc632214a9bf0d102b045021ba6963a
++   entry .Read   a concessão de ler o conteúdo de um handle, conferida pelo modo `Read`
++   entry .Write   a concessão de modificar o conteúdo de um handle, conferida pelo modo `Write`
++       Escrever não implica ler: um handle aberto apenas com `Write` não tem operações de
++       leitura, e `Read & Write` é necessário para ambas.
++   entry .Exclusive   a garantia de que nenhum outro handle sobre a mesma entidade está aberto ao mesmo tempo
++       Conferida pelo modo `Exclusive`. Como uma instância mantém a garantia é assunto dela:
++       galilei recusa uma abertura sobreposta dentro do programa com um `Io.Error` cujo motivo
++       é `Busy` e, para um arquivo, também obtém um lock do sistema operacional.
+
+@ 0 5 0 19da3fd6c40de929187ed2e4b24de490
++ entry .Granting   misturado a um handle para anexar as concessões que seu modo selecionou
++     `Granting[+grants <: Grant]` é o marcador que uma instância de `Openable` ou `Creatable`
++     mistura ao handle que empresta, como `new Handle(…) with Granting[grants] {}`. Ele é
++     covariante, então um handle `Granting[Grant.Read & Grant.Write]` também é um
++     `Granting[Grant.Read]`, e um método de extensão escrito para
++     `(Handle & Granting[Grant.Read])^` se aplica a ele.
+
+% 2 1 0 06a2d75b09ced9f01907d33071b70273
+
+% 3 1 0 19f953e1fd660b090bd1d6403f5c500d
+
+% 0 1 0 04450b795ec966da13762aabd671c2c0
+
+% 0 1 0 1bcc2e8eac24b96512647bc710a57f4c
+
+% 0 1 0 0d536401313263dd0e0b7742d4e4b1fc
+
+% 0 1 0 0ffe027661a288781fc29f223c630b84
+
+% 1 1 0 07e4fed5c970253814f278d42264b858
+
+@ 0 4 0 05be6781234b4d8c1daa88c2d088e605
++ entry .granting   `Mode granting Grant.Read`: refina o membro `Grants` de um tipo para exatamente essas concessões
++     Um alias de tipo infixo: `refined granting grants` é `refined { type Grants = grants }`.
++     Ele se lê naturalmente em assinaturas, `mode: Mode granting grants`, e é o tipo dos modos
++     atômicos: `Read` é um `Mode granting Grant.Read`.
+
+@ 0 3 0 1c47c445f3abcf2804aa6f4cb7d62fa6
++ entry .Read   o modo que concede leitura: o padrão para `open`
++     Um `Mode granting Grant.Read`. `value.open[Form]()` sem modo o usa; passe-o
++     explicitamente para combiná-lo, como `Read & Write` ou `Read & Exclusive`.
+
+@ 0 3 0 08728399fedc7c1a16134db657eba3e1
++ entry .Write   o modo que concede escrita, sem leitura
++     Um `Mode granting Grant.Write`. `Write` sozinho não confere acesso de leitura: abra com
++     `Read & Write` para obter um handle que tanto lê quanto escreve.
+
+% 2 1 0 1b853e0395275c421bb6b49b994a0ffa
+
+% 3 1 0 065a485fa95fe0c01b1ad37af1675c0f
+
+% 4 1 0 0c4c8e8d65f9d81a0fe95e20334da425
+
+% 5 1 0 18f6f41b31b45b9313ed7832fc71f2a2
+
+% 6 1 0 0c1abd5c66d76abb1627103c805f7547
+
+% 7 1 0 1607c66852931b5e14cdd30ef334b82e
+
+% 8 1 0 0d67c680fe95fa48001033f2e08d0d41
+
+% 9 1 0 0c361341731a59060ed87b2c6e21a9e9
+
+% 10 1 0 1b538f6a857699671db2ba0ea4870606
+
+% 0 1 0 1c638bba6223ebf012b6454e651b400d
+
+% 2 1 0 02648135ce19b4871fc91a5fdb4a7326
+
+% 0 1 0 0fbce25e81b244721e748f976dd38c35
+
+% 1 1 0 111c38e163141fe600d834184ecc4e8e
+
+@ 0 5 0 175562f7b8b1cd051969cdc8da86982e
++ entry .Exclusive   o modo que concede exclusividade: nenhum outro handle sobre a entidade pode estar aberto enquanto isso
++     Um `Mode granting Grant.Exclusive`, combinado com outro modo, como `Read & Exclusive`. Uma
++     abertura sobreposta enquanto dura o escopo exclusivo falha, em qualquer ordem; galilei a
++     informa como um `Io.Error` cujo motivo é `Busy` e, para um arquivo, também obtém um lock
++     do sistema operacional, para que a exclusividade valha contra outros processos.
+
+@ 0 1 0 1d8258fdd239db0b119dbe97f1c96ced
++ entry .Creatable   uma classe de tipos para alvos que podem ser trazidos à existência, vazios ou compostos em um escopo
+
+% 1 1 0 1d5df2f3facca3d0072e87571ff432f1
+
+@ 0 3 0 17b6a2f4648b73ea18dd3c3db9e831e8
++       A contraparte de `Openable`, para criar em vez de acessar. Uma instância é escrita
++       `target is Creatable in Form by Flag to Handle` e atende a dois tipos de criação com um
++       único verbo:
+
+@ 0 6 0 00fb26ea002902c6108d951103e322e8
++       - **instanciação**, `path.create[Directory]()`: o artefato passa a existir, vazio, sem
++         escopo, e o alvo é devolvido;
++       - **composição com escopo**, `path.create[Tar]() { tar ?=> … }`: o artefato é criado e
++         preenchido por meio de um handle com as `#Grants` da instância — acesso de escrita
++         desde o nascimento, já que um artefato recém-nascido pertence incondicionalmente a
++         quem o criou — e efetivado quando o bloco termina.
+
+@ 0 3 0 0fb21a8867fcd21204a164b0493dba63
++       Uma exceção que escapa de um escopo de composição não deixa nada para trás: as
++       instâncias garantem isso preparando o resultado em um irmão temporário e movendo-o para
++       o lugar atomicamente, ou removendo o que fizeram.
+
+% 2 1 0 02256acbef042f8c14eba0795def6c6f
+
+% 3 1 0 0ed080ddf58974d20ebe309f740333aa
+
+% 4 1 0 17a16ab5b03ccd3d1d9b00002105f4fa
+
+% 5 1 0 115b7ab1c4fefc7d167a462b4c9077d7
+
+% 6 1 0 10dfb596508fe8481f97d2bec743bd0a
+
+% 7 1 0 1003ea946aa662af19c7c35668011304
+
+% 8 1 0 0438c6ff1fb6136e1f01791cb261c3ad
+
+% 9 1 0 0a44556f1cb2fba7091e09c9f18462d3
+
+% 10 1 0 1a3f570a795f3ef80fb43270f5c2142c
+
+% 0 1 0 0a62474a8951568014f48b1e17c32758
+
+% 0 1 0 0eb825bb01dcc79a09ab8a71053ac37a
+
+% 0 1 0 05ede16a3ff56b0c085535023a541aa9
+
+% 1 1 0 18fa0b1cf3ef00ad0db3d1d30662e5b4
+
+@ 0 5 0 0019d213db3dd65f150b72c80d1849d9
++       Não há `Mode`: o que um escopo de criação pode fazer não é escolha de quem chama, e as
++       permissões com que a entrada criada persiste são assunto das flags. Criar algo que pode
++       já existir é regido por flags por forma (o `CreateFlag.Replace` de galilei), e a
++       substituição nunca é o padrão. Isso difere de *abrir* para escrita uma entidade
++       possivelmente ausente (`OpenFlag.Create`), que acessa o que estiver lá.
+
+% 1 1 0 1d0db166e77646f61220ebf51511c362
+
+% 1 1 0 1722fab6aa214b361c0794af5f804d32
+
+% 1 1 0 04ccc16f80b4c1880859a012ff864ba9
+
+@ 0 11 0 14bcd73946fae2a200bf2415e4a4d41b
++   entry #Grants   as concessões que o handle de composição leva, fixadas pela instância
++   entry #make   cria o artefato, vazio, sem escopo
++       O padrão executa `#create` com um bloco que não faz nada, o que serve a formas de
++       builder cujo handle descartado não custa nada. Uma instância que detém recursos do
++       sistema operacional o sobrescreve para criar diretamente — notadamente um FIFO, que
++       nunca deve ser aberto apenas para ser criado, já que abrir um para escrita bloqueia até
++       que apareça um leitor.
++   entry #create   cria o artefato e executa um bloco com um handle para compô-lo, efetivando em caso de sucesso
++       `create(value, flags)(block)`: o bloco recebe `(Result & Granting[Grants])^` como
++       parâmetro contextual; seu resultado é devolvido depois que o artefato é efetivado, e uma
++       exceção vinda dele não efetiva nada. Chamado por `Creator#apply`; o código do usuário
++       escreve `value.create[Form](flags*) { handle ?=> … }`.
+
+@ 0 1 0 0fa0e42a6788f59c001f094b42cf50da
++ entry .Creator   o aplicador que `create[Form]` devolve, para instanciação ou para composição com escopo
+
+% 1 1 0 17170809815ed5541b68afa499097db1
+
+@ 0 3 0 1d624f5721870fb5019225cc43bfb146
++       `value.create[Form]` resolve a instância de `Creatable` pela forma e devolve um
++       `Creator`. Seu `#apply` sobrecarregado recebe apenas as flags, para fazer um artefato
++       vazio e devolver o alvo, ou as flags e um bloco, para compor o conteúdo do artefato.
+
+% 1 1 0 00be9566d0219d160df4740ce8c5ec3a
+
+% 1 1 0 0abf71e29b9268da0ce6dd3a10c9638f
+
+@ 0 6 0 049258e25d6d4ef8106c86f73d3ec28c
++   entry #creatable   a instância de `Creatable` que a forma resolveu
++   entry #value   o alvo a ser criado
++   entry #apply   cria o alvo vazio e o devolve, ou o compõe dentro de um bloco
++       `apply(flags*)` chama `Creatable#make` e devolve o alvo, que agora existe;
++       `apply(flags*)(block)` chama `Creatable#create`, emprestando ao bloco um handle com as
++       `Grants` da instância, e devolve o resultado do bloco depois que o artefato é efetivado.
+
+@ 0 1 0 0bd341596f11a5740bd5dabe8b835c71
++ entry .create   cria um valor em uma forma: `path.create[Directory]()`, ou `path.create[Tar]() { … }`
+
+% 1 1 0 00ff1e93c30c2c20071ac91b596774db
+
+@ 0 4 0 008142c07ee96071136000de5f4fae69
++       Uma extensão sobre qualquer valor com uma instância de `Creatable` na forma indicada,
++       que devolve um `Creator`. Sem bloco, o artefato é feito vazio e o alvo é devolvido; com
++       um bloco, o artefato é composto por meio de um handle e efetivado quando o bloco
++       termina, e fica ausente se o bloco lançar uma exceção.
+
+% 2 1 0 0c7014aa252c62571b47129f4ed8b8fb
+
+% 3 1 0 00909420ea410df00d8b1f1c8fad79bc
+
+% 4 1 0 194b14ec460692a809f7769b1cb60b9a
+
+% 5 1 0 1fa2e2c63a8f3fac0b9e1d926e95de37
+
+% 6 1 0 07a88e74bcdb804c1f1680a37e3ce291
+
+% 7 1 0 087994495fadb9840301ca35bd5c4533
+
+% 8 1 0 127252c1de4e75d018783762af348508
+
+% 9 1 0 0040be2b7b08200902f879796bb0a9fb
+
+% 10 1 0 14eda762bc993f130834ef84272d0d48
+
+% 12 1 0 15ef58c8309bc6151539d732c73020d7
+
+% 0 1 0 15bbc3257b9a939a1ed00fb919a2334f
+
+% 0 1 0 082c5857953407ac1b9ef7d8509fd2ca
+
+% 0 1 0 1d3f9e874ebfc5bb0bd6e769ede3abdb
+
+% 1 1 0 16cf1d88cf8b279c136bb6db6a69674e
+
+@ 0 2 0 0673ce55d143e5e10d15c3da53626ee9
++       As flags são do tipo `Operand` da instância; as de galilei são `CreateFlag`s como
++       `CreateFlag.Parents` e `CreateFlag.Replace`.
+
+% 1 1 0 0e5b6d4e5676fa7b16b9cbd202de4169
+
+% 1 1 0 1d5fcb6b496a5b8e06c2213c339f432c
+
+@ 0 1 0 1e7688e2862d4a2f10aa5fc7d0d17d2e
++ entry .Archivable   uma classe de tipos para valores cujo conteúdo pode ser reunido em um valor de arquivo
+
+% 1 1 0 1fd4d354fb8a997c173b43178ebf6384
+
+@ 0 6 0 028eaf657646f25600cb7b9322904be1
++       Uma instância é escrita `target is Archivable in Form by Flag to Result`: a forma é o
++       formato de arquivo (`Tar`, `Zip`, `Ar`), `Operand` o tipo de flag que ajusta o
++       arquivamento para esse par (uma convenção de nomes longos, um proprietário a registrar,
++       um método de compressão), e `Result` o arquivo em memória produzido. Ao contrário de
++       `Creatable`, nada é escrito: o resultado é um valor, e para onde ele vai — transmitido
++       em stream, comprimido, gravado em um arquivo comum — é o próximo passo de quem chama.
+
+% 2 1 0 0b0f033543a1939410193d2575153a94
+
+% 3 1 0 1af20fdd953da1e8153264fc3fb413e6
+
+% 4 1 0 0fb5119d4f76b55a105d8c808c96ced5
+
+% 5 1 0 131defd8dc30964112e05e60f5374c96
+
+% 6 1 0 039fd6ac8fd6dde11c7bad95ef48a3eb
+
+% 7 1 0 0143026c9f5039700680913048e983a2
+
+% 8 1 0 1f39d21a1ba5aecf07eb6c321f85c1c3
+
+% 9 1 0 03fa2337dd1d4d49178f8ad86da15efc
+
+% 10 1 0 16bbb16d389e97ef143e3fb9260ca6b4
+
+% 0 1 0 09b9718acd263c610a2247a61caaf1ee
+
+% 0 1 0 0c33f942e6a682440273de07898d23ce
+
+% 1 1 0 111baee4d32e19620401d3251b2a943f
+
+@ 0 3 0 0815f11650ff34020881849f920a815e
++       As instâncias para diretórios ficam nos objetos companheiros dos tipos de formato
++       (`Tar`, `Zip`, `Ar`) e percorrem a árvore pelo backend de sistema de arquivos de
++       galilei, então estão no escopo implícito sem nenhum import.
+
+% 1 1 0 19d7a20cc85aa93e0eaa42cd354598fb
+
+% 0 1 0 1156c4b2b32b3f030357c98eec790e29
+
+@ 0 3 0 1f2443cb7a08e71b1560d9a6d60d70a4
++   entry #archive   reúne o conteúdo de um valor, ajustado por flags, no valor de arquivo
++       `archive(value, flags)`: a implementação que uma instância fornece. Chamado por
++       `Archiver#apply`; o código do usuário escreve `value.archive[Form](flags*)`.
+
+@ 0 1 0 18db20637d03a6bc01287459e6e2f4c4
++ entry .Archiver   o aplicador que `archive[Form]` devolve, que recebe as flags
+
+% 1 1 0 1428577169d7a7191e60f82670d69a8b
+
+@ 0 3 0 056f4d45bb5f28c006715b464ce8ed37
++       `value.archive[Form]` resolve a instância de `Archivable` pela forma e devolve um
++       `Archiver`, cujo `#apply` recebe flags do tipo `Operand` da instância e devolve o
++       arquivo. A forma espelha `Opener` e `Creator`.
+
+% 1 1 0 19a2d3fc5d718ab918151642b2ed76a0
+
+@ 0 3 0 09bb34086577ad08044e17099226319e
++   entry #archivable   a instância de `Archivable` que a forma resolveu
++   entry #value   o valor a ser arquivado
++   entry #apply   arquiva o valor com as flags dadas, devolvendo o arquivo
+
+@ 0 5 0 1dbb537141c80df81f99d3e11c2c8f5a
++ entry .archive   arquiva um valor em uma forma: `directory.archive[Tar]()` dá o tarball de uma árvore
++     Uma extensão sobre qualquer valor com uma instância de `Archivable` na forma indicada,
++     que devolve um `Archiver` cujo `apply` recebe flags do tipo `Operand` da instância. O
++     resultado é um valor de arquivo em memória do tipo `Result` da instância, que a
++     biblioteca do formato então serializa ou comprime.
+
+% 2 1 0 13d8266c1722fee00d9efd3be804ca6c
+
+% 3 1 0 1b817663108c1e811e4cdca5998504a5
+
+% 4 1 0 0f6a2bf17921c8cd038c9da2583adda1
+
+% 5 1 0 1f0501ae7ee55ed710e3310ec80a7c69
+
+% 6 1 0 15599115b52a406904657b08198ded15
+
+% 7 1 0 0f442417ed0d248a0b9238ed230c4187
+
+% 8 1 0 04196fae53d017dd1fadbca785dd45e2
+
+% 9 1 0 19007fd046a68d771b35d20be9c7868c
+
+% 10 1 0 0cd79e6130e722f61ec6bf4254915c86
+
+% 0 1 0 18db68f2f84aa4da024449ff0a3777c1
+
+% 0 1 0 014ee61598ffda2d087cb1ee21512fbf
+
+% 1 1 0 0ab812532b337a7f030d517004431590
+
+@ 0 1 0 0069abde5f6556b115a9c7f93765a5ed
++ entry .Sessional   uma classe de tipos para alvos que emprestam uma sessão ativa a um bloco e a descartam depois
+
+% 1 1 0 003f2da884abac4b10d89b3fd42d00e0
+
+@ 0 5 0 1a409eb8b038d1b3021412fb0c6012bb
++       Uma sessão é um escopo de interação com estado: uma conexão de rede, um compilador
++       aquecido, um navegador controlado remotamente, um dispositivo via SSH. Uma instância é
++       escrita `target is Sessional to Handle`; seu `#session` estabelece a sessão com o alvo,
++       empresta o handle ao bloco durante sua execução e o descarta quando o bloco termina,
++       seja retornando, seja lançando uma exceção.
+
+% 2 1 0 11ddee58a470abcf1298e5d95e2b149b
+
+% 3 1 0 0f5969e1f510e18c1b5f683e1108369c
+
+% 4 1 0 0c23a9bb101a217a198a0b8d6c346639
+
+% 5 1 0 06b853619c27700f0253da452b64d0a0
+
+% 0 1 0 06a007b8ffa0770b0db2af4ea355ee02
+
+% 0 1 0 05a43c9cdd34150916596034aced282b
+
+% 0 1 0 019a06f280175d460b430c4c9402435c
+
+% 0 1 0 017964186291c5070b5fb360cd17bc7f
+
+% 1 1 0 0dc2d84fe896400f13a275bcc693410e
+
+% 1 1 0 057623fdd24f157d095b7df246edaaa6
+
+% 1 1 0 15736583e83c6f8b16e59aea011d082f
+
+@ 0 6 0 1dd547445aa8e3ac1954c7342490be16
++       O tipo do resultado do bloco é quantificado fora dele, então um valor que ainda toma a
++       sessão emprestada — o próprio handle, uma closure sobre ele, uma resposta transmitida em
++       stream a partir da conexão ativa — não pode ser seu resultado; um valor independente da
++       sessão, como um que foi lido por inteiro, pode. Instâncias em uma camada de transporte
++       (a de coaxial, para qualquer endpoint `Connectable`) emprestam uma conexão crua;
++       camadas mais ricas emprestam handles cientes do protocolo, como as sessões HTTP de
++       telekinesis ou as sessões de servidor de linguagem de exegesis.
+
+@ 0 2 0 04b44cdd9564b02a1bea98e091dae0f4
++       Instâncias cujo sujeito pertence a outra biblioteca são givens de nível superior com
++       nomes qualificados pela biblioteca, importados pelo nome
++       (`import soundness.httpUrlSessional`).
+
+% 0 1 0 0aa2bb590f713fa21aae4aaccefd4fca
+
+% 1 1 0 1bf86935119f00c51d33232aa150c609
+
+@ 0 4 0 1949bd123dbb5a1e166e3ec76010d490
++   entry #session   estabelece uma sessão com um alvo, executa um bloco com ela e a descarta
++       `session(target)(lambda)`: a implementação que uma instância fornece. O handle é o
++       parâmetro contextual do lambda e é descartado em todos os desfechos. O código do usuário
++       escreve `target.session { handle ?=> … }`.
+
+@ 0 6 0 0181c07e87cdc94b00dcae64614f805f
++ entry .session   abre uma sessão sobre um valor e empresta seu handle a um bloco: `url.session { s ?=> … }`
++     Uma extensão sobre qualquer valor com uma instância de `Sessional` no escopo. O handle —
++     do tipo que a instância fornecer — é o parâmetro contextual do bloco e é descartado
++     quando o bloco termina. Um valor que toma a sessão emprestada não pode ser o resultado:
++     devolver o handle, uma closure sobre ele ou uma coleção que o contenha, ou atribuí-lo a
++     uma variável fora do bloco, é um erro de compilação (_… outlives its scope_, _… cannot flow into
+
+% 0 1 0 0083a38d739b1c180a5c4652bab802d9
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 18c899fbefe1b88d0c673febf0e51517
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 0 1 0 074ab1c2dd3f8ebc031901f844a03d33
+
+% 0 1 0 024567e881f4dd0f1313a9ec1163a9df
+
+% 0 1 0 18a3d633bca8b02a07d3f001113ecfa3
+
+% 1 1 0 00313a34bc35abba13ea1fbbf70abcbd
+
+@ 0 3 0 0903cfe269e1de5614b492ceaa5f186d
++     A extensão é um método comum, não inline, e a instância e o bloco podem compartilhar
++     capabilities (um monitor, uma tática): ambos recebem seus conjuntos de captura como
++     parâmetros, e não como conjuntos novos e separados.
+
+@ 0 1 0 12cb382735b944121bc842c22c8bef8b
++ entry .Stale   um valor como um handle o viu, sobre um estado que outros processos podem ter alterado desde então
+
+% 1 1 0 18b8e51a95ded2e31cc3b1fd5e40063d
+
+@ 0 6 0 14fd11d4273c22cb19c1229b336616d7
++       `Stale[value]` envolve um valor lido por meio de um handle a partir de um estado que o
++       handle não possui: uma ref em um repositório no qual outros processos escrevem, o tamanho
++       de um arquivo, as entradas de um diretório. O valor é imutável e puro, mas o que ele
++       registra pode ter mudado antes de a leitura retornar. O tipo existe para que uma
++       assinatura possa dizê-lo: um método que devolve `Stale[Git.Hash]` resolveu uma ref, e um
++       método que recebe um está condicionado a que a ref ainda tenha esse valor, e falha com um
++       erro tipado se não tiver.
+
+% 2 1 0 0f9818b4fd3c2c1802136764045ff651
+
+% 3 1 0 07a9df363e5a54630a58bceae0cf7078
+
+% 4 1 0 0485889e8efa662016dcc49a8fbd0c68
+
+% 5 1 0 1a3227dd1c972459179c8c3f9299fb15
+
+% 2 1 0 0e9435e601f38dba02e2d7fbdae82035
+
+% 3 1 0 0b3f7d56208aa17a0960361fc07523a0
+
+% 4 1 0 0a2489263358c461177f04c2bad37b89
+
+% 5 1 0 04f8bd3693ed2c521d78f675eab151c5
+
+% 6 1 0 0ba1c95fb631e1a80008e0ac6a4f9a2a
+
+% 7 1 0 15a9622bdf2267b1045631b4f07c2f9c
+
+% 8 1 0 0062e075a9a992e81241b9a9a4d9e260
+
+% 0 1 0 025a8cfdc31ec73d18a4e32a66514dfc
+
+% 0 1 0 13b3145d5d77076c0a035a099314247c
+
+% 0 1 0 0ee05dbc473a135a1991c4399441c55a
+
+% 0 1 0 037c13e6234abfc90d63828638fb2299
+
+% 0 1 0 162120ac8677457a05dbdf9313bbdee9
+
+% 0 1 0 1267be16c31a610102dca42374beea2f
+
+% 1 1 0 1b46d202ca01ce5617cc7a4b19680b33
+
+@ 0 2 0 19a73a68348d71d716945dfdcc0e9fc4
++       Se outro processo mover HEAD entre a leitura e o commit, o commit falha com
++       `Git.Error(Moved(…))` em vez de sobrescrever esse trabalho.
+
+@ 0 3 0 0419a9507b705b721a97e3edf8ea9877
++       Deliberadamente, não há carimbo de tempo: um relógio seria uma dependência, e a
++       atualidade não é uma propriedade a partir da qual raciocinar. O único uso correto de um
++       valor desatualizado é devolvê-lo ao handle que o produziu, ou ler seu `#value` sabendo
++       que ele pode estar desatualizado.
+
+% 0 1 0 071d3ceb5e7915ed12f2868090902787
+
+@ 0 4 0 1f506d79ed00d17d112e44598e3bebb6
++   entry #value   o valor como era quando foi lido
++   entry #let   deriva um valor de um valor desatualizado, que continua exatamente tão desatualizado quanto
++       `Stale(1).let(_ + 1) == Stale(2)`. Um método em vez de uma extensão, para que o `let` de
++       vacuous sobre `Optional`, que é importado em toda parte, não se apodere do receptor.

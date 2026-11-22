@@ -1,0 +1,167 @@
+orthant 2 language
+
+@ 0 1 0 1de27bad34d972de17dc2bcdab4816dd
++ # Componibilità
+
+@ 0 6 0 0116ef1a43b7e51b06166f6f4e8b3b7f
++ Soundness è costruito per comporsi: piccoli pezzi si combinano in pezzi più grandi senza casi
++ speciali, e la combinazione si comporta come le parti lasciano prevedere. Le API sono progettate
++ in modo che il risultato di un'operazione sia l'input della successiva, i tipi si combinano per
++ descrivere tipi più ricchi, e le capability si annidano dentro altre capability. La componibilità
++ è ciò che permette a un insieme piccolo e coerente di parti di coprire una gamma enorme di usi, ed
++ è trattata come un vincolo di progetto deliberato anziché come una proprietà sperata a cose fatte.
+
+@ 0 1 0 18cebf8a9e35614406a25d325571a6d0
++ ## I valori si compongono
+
+@ 0 3 0 13a4af7241051ec719a8700c906c7907
++ Una pipeline di [stream](../en/modules/streams.md) è il caso più chiaro. Ogni stadio prende uno
++ stream e produce uno stream, così gli stadi si concatenano senza adattatori e in qualsiasi ordine
++ abbia senso:
+
+% 2 1 0 1611a49bc250748e04e1e70396e66cfb
+
+% 3 1 0 0e0a1a44677596cf013ccfa1cab9b4bc
+
+% 4 1 0 16dd2002c90898621dc5b16a9e18da8c
+
+% 0 1 0 0a58e03c0d3e074e1d36fca856358544
+
+% 1 1 0 1424e83528131ff910d7b60056eb7e6f
+
+@ 0 4 0 1514909cebb9bc761ac0e370c2b1947f
++ Niente in quella riga è trattato come caso speciale rispetto ai suoi vicini. La decompressione
++ non sa di leggere da un file; il decodificatore non sa che il suo input era compresso. Poiché ogni
++ stadio è un valore, la catena può essere assemblata a runtime, tenuta in una variabile, o
++ costruita da una funzione che decide di quali stadi ha bisogno un certo lavoro.
+
+@ 0 1 0 10cf03ab70ba272c0de3cf43634f63a6
++ ## I tipi si compongono
+
+@ 0 2 0 0cbb72e2c69cbe510876d3ed39eac3c5
++ Un [tipo infisso](infix-types.md) aggiunge una clausola senza annidare una parentesi, così un
++ tipo preciso si costruisce come si costruisce una descrizione in inglese:
+
+% 2 1 0 11db83543d66241c0bc20617cf575713
+
+% 3 1 0 00b9b163d0eae97c1233d1829e8dd03b
+
+% 4 1 0 0bed26b97b5c7c92127ba1e0a449519b
+
+% 0 1 0 108ef8f08033a2c207c2d54517555e93
+
+% 0 1 0 021d8035f62dd30a0018939b0d7afd8f
+
+% 0 1 0 0fb6a82d35c6d65e08ba5ec18939021e
+
+% 0 1 0 0a2a2f80e83aef561494cc52ab2ef156
+
+% 1 1 0 11d2afd3e28e6048128c0d794dce417b
+
+@ 0 3 0 0abd92290243cba30b4efe943dfc3748
++ Ogni preposizione significa la stessa cosa ovunque compaia, così un lettore che ha capito uno di
++ questi tipi legge il successivo per analogia. L'alternativa, `Element["ul", "li", Whatwg]`, porta
++ la stessa informazione e non dice al lettore nulla su quale parametro sia quale.
+
+@ 0 1 0 0798ad02949405f80320bf7a813e61f7
++ ## Le capability si compongono
+
+@ 0 3 0 0d82d6bb25fda5f712e3f1d8f930e2b1
++ Due capability nell'ambito sono due capability; non c'è un tipo combinato da costruire né un
++ ordine da scegliere. Il codice fallibile, asincrono e che registra nel log si compone scrivendolo
++ uno accanto all'altro:
+
+% 2 1 0 10ebe8f493a2f7fd00f6103de8a72d54
+
+% 3 1 0 071d65707a90e86319d47bce20506d23
+
+% 4 1 0 182a81d7ee98442e1a5aa7fc3136be92
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 13d5befb2d1178cb1ef63455361dd122
+
+% 0 1 0 048b8df7a8940f68003ffcbe2eec68df
+
+% 0 1 0 04b68f13292630100c24d6460f2a1679
+
+% 0 1 0 0211f41b10ea266300ebe5131a2a8e16
+
+% 1 1 0 04c70ecc44c049e41e7cbbdfc95bb262
+
+@ 0 4 0 024cb75c444e978b0c79de3e0fa31fa7
++ È questa la proprietà che lo [stile diretto](direct-style.md) esiste per preservare. Con una
++ codifica monadica la stessa combinazione richiede uno stack di trasformatori, e l'ordine in cui
++ gli effetti vengono impilati diventa una decisione con delle conseguenze. Qui non è affatto una
++ decisione.
+
+@ 0 1 0 1cbb2aa8f0fd5619131f3aea11f28ea7
++ ## Gli ambiti si compongono
+
+@ 0 1 0 1c862c93455cc58f142d23073e368aa4
++ Poiché una capability è introdotta da un blocco, e i blocchi si annidano, le durate delle risorse
++ si annidano:
+
+% 2 1 0 1d27a5510ab52ce003f29162a8686a31
+
+% 3 1 0 08b6ae170b5f6f5e1c0f223856e34316
+
+% 4 1 0 1c3de31e5c288daa1ef8c9792d952ee0
+
+% 0 1 0 04dde33d8f9c709c10a2a6b498ca3c6a
+
+% 0 1 0 0abd480ba69540d51c51797f268e484c
+
+% 0 1 0 066a960f97d387a31fe0c6d71d1b355d
+
+% 1 1 0 0856de1f119eda410c225195ec6f2815
+
+@ 0 4 0 199d9445f2a0233505fef2a05d32743b
++ L'ambito interno vede entrambe le capability; ciascuna viene ritirata al proprio confine,
++ nell'ordine giusto, che il blocco termini o fallisca. Aggiungere una terza risorsa aggiunge una
++ riga anziché ristrutturare le altre due, e il [capture checking](capture-checking.md) dimostra
++ che nulla sfugge verso l'esterno.
+
+@ 0 1 0 1db1141b7511f2cb0193dfe73eebab7a
++ ## Il vincolo che questo pone al progetto
+
+@ 0 4 0 0f2d7e342e0b31cd1f5fdec8f3bd0dfc
++ La componibilità è facile da descrivere e difficile da mantenere, perché la pressione contro di
++ essa è sempre locale. Ogni caso speciale, ogni overload «di comodo» che prende la coppia anziché
++ le parti, ogni operazione che funziona solo se chiamata per prima: ciascuno è una piccola
++ comodità che toglie una combinazione di cui qualcun altro aveva bisogno.
+
+@ 0 2 0 111d8b0f4825949f0c83b2258ab9898d
++ Ne seguono tre regole, ed è per esse che alcune API di Soundness appaiono più austere di quanto
++ potrebbero:
+
+@ 0 2 0 0ecf189696ccdf4101dd7b1a0c1bbbe1
++ **Restituire il tipo che si accetta.** Un'operazione che prende uno stream restituisce uno
++ stream, così può stare in mezzo a una catena anziché solo alla fine.
+
+@ 0 3 0 1ac8f0df3bf6b24916a30be974124898
++ **Non fondere ciò che il chiamante può combinare.** Non esiste `readAndDecompress`, perché
++ `stream.decompress[Gzip].read[Text]` esiste già e la versione fusa andrebbe ripetuta per ogni
++ coppia.
+
+@ 0 3 0 094be0a39832e9a3014e763c01f97248
++ **Fare del caso generale l'unico caso.** Se un'operazione funziona per `List` ma non per uno
++ stream, l'astrazione è sbagliata: ecco perché le operazioni sono definite sulle typeclass anziché
++ su tipi concreti.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto costa
+
+@ 0 3 0 1d3ff4e10d2198c012b445aca35d9d95
++ Un'API componibile è meno comoda nell'immediato di una fusa. `dir.archive[Tar]().gzip` sono due
++ chiamate dove `tarGzip(dir)` ne sarebbe una sola, e un lettore che voleva esattamente
++ l'operazione fusa paga una piccola tassa per una generalità di cui non aveva bisogno.
+
+@ 0 3 0 1b32dba5e99140281b7a410573b80a37
++ Quella tassa si accetta perché è limitata e l'alternativa non lo è: le operazioni fuse si
++ moltiplicano in modo combinatorio, e ognuna che si aggiunge è un punto in cui il percorso
++ generale e la scorciatoia possono divergere.
+
+@ 0 2 0 0393bebcbd23aef718458531895bac8f
++ Vedi [API piccole](small-apis.md) per il vocabolario che questo mantiene piccolo, e
++ [disaccoppiamento](decoupling.md) per come moduli indipendenti riescano a comporsi.

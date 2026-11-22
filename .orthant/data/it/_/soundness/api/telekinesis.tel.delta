@@ -1,0 +1,3875 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e310d55627738e50aa912d11464a66a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 060e63be177a781b0fc5e15ea60246fc
++ info   HTTP come valori tipizzati: richieste, risposte, intestazioni, corpi, cookie e un client il cui trasporto si sceglie con un import
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 1d20aff7ee75397f1336e25ad019c2f1
++     _Telekinesis_ è il modello di HTTP di Soundness e il suo client. Una richiesta viene
++     inviata a un URL verificato durante la compilazione del codice; le intestazioni sono
++     argomenti con nome i cui valori sono verificati rispetto all'intestazione che impostano
++     (`accept` riceve un `MediaType`, `authorization` un `Auth`); il corpo di una richiesta è un
++     valore tipizzato che conosce il proprio tipo di media (`Postable`); e il corpo della
++     risposta si legge come qualunque tipo venga richiesto (`Receivable`). Uno stato di errore è
++     un `Http.Error` e una connessione che non si riesce a stabilire è un `Connect.Error`,
++     ciascuno un errore tipizzato sollevato tramite una `Tactic` invece di un'eccezione da
++     indovinare. Anche il fatto che un pezzo di codice raggiunga la rete è visibile: ogni
++     richiesta esige una capability `Online`, importata come `internetAccess.online`.
+
+% 2 1 0 0777ec0739147fbd1e2b01970af265c0
+
+% 3 1 0 040d18f17a9a6bc6039d7741b9db13a2
+
+% 4 1 0 0e08fe6c88cae32605a16a9dec90dec9
+
+% 5 1 0 06f9972e9dcde6e81b870ef396865b7e
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 1 1 0 012625f543ddacaf1fe60cd4d465b7cc
+
+% 2 1 0 0af2dc0a07df816c0e0c2854140b2a58
+
+% 3 1 0 183ea90f753252ee03a46f2dd90954a6
+
+% 4 1 0 0f0232d489fc52bf0fc6ac21bfb0c724
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0ec02e5ef6717f541a617ea7aa8a933b
+
+% 0 1 0 17e21dbf4e685fa21c1bb0cef36fe3dd
+
+% 0 1 0 03f708f800ea32e8020a1b9ce814a2dc
+
+% 1 1 0 0ab64c13b38ccd1a02d3e7ec3cef0f15
+
+@ 0 7 0 15bed0110efd805200865553617a4c35
++     Lo stesso vocabolario serve la direzione opposta. `Http.Request` è ciò che un server
++     analizza da una connessione (`Http.Request.parse`), `Http.Response` è ciò che un handler
++     restituisce (`Http.Response(Http.Ok)(t"hello")`, o qualsiasi valore `Servable`), `Cookie`,
++     `Parameter` e `Submission` leggono i cookie e i campi di modulo di una richiesta, e
++     `Http.Connection` è uno scambio attivo come lo vede un handler. I server della libreria
++     `scintillate` sono costruiti su questi tipi, e le coppie `Servable`/`Postable` fornite dalle
++     librerie di formati di dati (`postables.jsonPostable`, `servables.xmlServable`, …) si
++     innestano su entrambi i lati.
+
+@ 0 6 0 16257869eca3f1291c58f2eb7a48ca42
++     I tipi centrali sono tutti annidati in `Http`: `Http.Request`, `Http.Response`,
++     `Http.Header`, `Http.Method` (con `Http.Get`, `Http.Post`, …), `Http.Status` (con
++     `Http.Ok`, `Http.NotFound`, …, esportati in modo che `Http.Ok` sia lo stato), `Http.Body`,
++     `Http.Backend`, `Http.Client`, `Http.Session` e `Http.Connection`. Un URL è l'`HttpUrl` di
++     urticose (`url"…"`), una query string è la `Query` di legerdemain, e un tipo di media è il
++     `MediaType` di gesticulate (`media"…"`).
+
+@ 0 1 0 06be053cd855533a17c578f1edbd6b55
++     La libreria è suddivisa in componenti in base a ciò che ogni piattaforma può fare:
+
+@ 0 21 0 083bf0cb566ebd8806753aeb9a66ad60
++     - `telekinesis.core` — il modello (`Http` e tutto ciò che contiene), le typeclass
++       `Postable`, `Receivable`, `Servable`, `Fetchable` e `Directive`, le estensioni `fetch` e
++       `submit`, `Auth`, `Cookie`, `Session`, `Context`, `Parameter`, `Submission`,
++       `Connect.Error`, e i package di scelta `httpRedirections`, `queryParameters` e
++       `construables`. Indipendente dalla piattaforma; la logica del client (redirect, logging)
++       risiede qui e delega la trasmissione a un `Http.Backend`.
++     - `telekinesis.forms` — `Orchestrate`/`orchestrate` e `Submission#form`: un'andata e
++       ritorno di un modulo resa con l'HTML di honeycomb e i widget di legerdemain.
++     - `telekinesis.sockets` — `httpBackends.soundnessHttp`, il backend che parla il codec di
++       trasmissione HTTP/1.1 direttamente sui socket di coaxial (JVM e Scala Native), con
++       connessioni keep-alive in pool; sulla JVM il suo percorso `https` negozia HTTP/2 tramite
++       ALPN.
++     - `telekinesis.jvm` — `httpBackends.javaNetHttp` su `java.net.http`, e il client per socket
++       di dominio Unix (`udsFetchable`, `udsHttpClient`, `requestTransmissible`).
++     - `telekinesis.http2` — lo strato HTTP/2 (solo JVM): `Http2` con i suoi `Connection`,
++       `Stream`, `Frame`, `Event` ed `Error`, i codec `Hpack` e `Huffman`, `FrameReader` e
++       `PseudoHeaders`, le implementazioni di `Http.Session` e il given `httpUrlSessional` che
++       apre una sessione su un URL (`url.session: session ?=> …`). Ciascuno ha la propria
++       pagina.
++     - `telekinesis.wasi` — `httpBackends.wasiHttp`, un backend su `wasi:http` per un componente
++       Wasm, `WasiHttpServer` per servire da uno di essi, e `wasiApis.wasiHttpApi`.
+
+@ 0 7 0 0ed9004fc4124f7700ebb6d229b78cc5
++     Tre scelte si fanno importando un given per nome, poiché `import soundness.*` non importa i
++     given: il **trasporto** da `httpBackends` (`javaNetHttp`, `soundnessHttp`, `wasiHttp`), la
++     **politica di redirect** da `httpRedirections` (`doNotFollowRedirects`; senza di essa, i
++     redirect vengono seguiti fino al limite di dieci di `Http.Redirection`) e, per una `Query`
++     derivata genericamente, `queryParameters.arbitraryQueryParameter`. Una richiesta richiede
++     anche un `Http.Event is Loggable` nell'ambito (`logging.silentLogging` scarta gli eventi),
++     e un `Tactic[Connect.Error]` e un `Tactic[Http.Error]` oppure una strategia come
+
+% 0 1 0 1cfefc910dff99ea1d2286bc2c281ffa
+
+@ 0 2 0 11162e40ba9a8bba0811e74579e794b7
++     Tutto è esportato nell'ombrello `soundness`, dove i package di scelta si fondono con quelli
++     dell'ombrello stesso.
+
+% 0 1 0 18d5e63c64c0207c17373acba4a73b8e
+
+% 0 1 0 0c45b0f3e0cf55d902ff79fe2ec38bd0
+
+% 0 1 0 119fd230649fcff21c8cd33531529de8
+
+% 0 1 0 0af3e578632d373712f36af9b6597270
+
+% 0 1 0 01f2d2e26910251c160e74dd7a7c85c5
+
+% 0 1 0 066cd8e3e3dfcf650bf1d9f7837db24a
+
+% 0 1 0 164362d281f69df60fc75bd4042b84a3
+
+% 0 1 0 0b3f84a95166c67818ffbae91c6f0cf5
+
+@ 0 1 0 12d99fc1293bd5db1126842771dc5919
++ entry .Http   il modello HTTP: metodi, stati, intestazioni, corpi, richieste, risposte, client
+
+% 1 1 0 122dd709d11ec8430c2bf72157170bbf
+
+@ 0 7 0 132522339dbbfa77096811283f4b7fc4
++       `Http` è il namespace dell'intero modello, e un sealed trait senza istanze proprie. I
++       metodi sono `Http.Get`, `Http.Post`, `Http.Head`, `Http.Put`, `Http.Delete`,
++       `Http.Connect`, `Http.Options`, `Http.Trace` e `Http.Patch`, ciascuno un case object di
++       `Http.Method`; gli stati sono i casi di `Http.Status`, esportati in `Http` in modo che
++       `Http.Ok`, `Http.NotFound` e gli altri si raggiungano direttamente. Un messaggio è un
++       `Http.Request` o un `Http.Response`, ciascuno con una `List[Http.Header]` e un
++       `Http.Body`.
+
+% 2 1 0 135a9a32cdcddc621b464f431381ab14
+
+% 3 1 0 04f5c085d504d9fc17234b4306865c26
+
+% 4 1 0 1b3971753db5d75000ae02ce2bd12309
+
+% 0 1 0 191c9c42efc03a9b09ea8b6a3456f8ab
+
+% 0 1 0 07d1eae15d0b17da084ac0b31c597ef4
+
+% 0 1 0 10c05fe2cc7a64c01b11bf76340685e2
+
+% 0 1 0 168e1c3b7b67b4fb0b1404f862ab62b4
+
+% 0 1 0 1c4bed9ed52957560b05d1db7e4833f7
+
+% 1 1 0 0c49c78732205dac0b9472ef69eb94f0
+
+@ 0 6 0 055e281c0063e11215a80e8affa8af7b
++       Il lato client è `Http.Fetch` e `Http.Submit`, i valori che `url.fetch` e `url.submit`
++       restituiscono e il cui `apply` costruisce e invia la richiesta; `Http.Client` esegue il
++       ciclo dei redirect e il logging su un `Http.Backend`, il trasporto scelto da
++       `httpBackends`. Il lato server analizza con `Http.Request.parse`, risponde tramite una
++       `Http.Connection` e serializza con `Http.Response.serialize`. `Http.Session` è una
++       connessione a un'unica origine sulla quale si scambiano diverse richieste.
+
+@ 0 3 0 170733222b6f0c6b1af9cafffbdfa659
++       Gli errori sono `Http.Error` (una risposta fuori dall'intervallo di successo),
++       `Http.Request.Error` e `Http.Response.Error` (un messaggio che non è stato possibile
++       analizzare), e `Connect.Error` (nessuna risposta).
+
+% 1 1 0 1bb8805d9a02c3010125f4b6c28bbdfb
+
+% 1 1 0 0d58a5a6ea1742ef0a5921c15f3251f4
+
+% 1 1 0 0219be65f01c58820f9153959e996e3e
+
+% 1 1 0 14873f9b65329e701ecc452c7b49a94f
+
+% 0 1 0 14b699f6eef25190032461e1411836c0
+
+% 0 1 0 0d61f640db7e020900bf9d63f7b3b130
+
+@ 0 1 0 0b0d0cd9015fbd6600353dd679eb7138
++   entry .Version   la versione del protocollo di un messaggio: una tra `0.9`, `1.0`, `1.1`, `2.0`, `3.0`
+
+% 1 1 0 06e67368a1c21bff17888b3e4ba53d53
+
+@ 0 8 0 0ef2e222437c2ebc0938a147c830ff4e
++         `Http.Version` è l'unione dei tipi letterali `0.9 | 1.0 | 1.1 | 2.0 | 3.0`, quindi una
++         versione si scrive come il numero stesso: `Http.Request(Http.Get, 1.1, …)`. Il
++         compagno la rende e la analizza: `1.1` si mostra come `HTTP/1.1`, `2.0` come `HTTP/2`.
++     entry .showable   rende una versione come `HTTP/1.1`, `HTTP/2`, `HTTP/3`
++     entry .parse   legge `HTTP/1.1`, `HTTP/2` o `HTTP/2.0`, `HTTP/3`; qualsiasi altra cosa è `1.0`
++         Permissivo per scelta: una versione che il parser non riconosce viene presa come `1.0`,
++         la versione che un server deve presumere per un client che non invia niente di meglio.
++   entry .Header   un campo di intestazione: una chiave e un valore, entrambi testo
+
+% 1 1 0 0058f93ce6dc194e15f9166330cb17d4
+
+@ 0 16 0 1d4a54266a13d43f01c7c5a7bd949f52
++         `Http.Header(key, value)`, come letto dalla connessione o costruito da un `Directive`.
++         Le chiavi non distinguono maiuscole e minuscole, e il client le invia in minuscolo in
++         forma kebab (`content-type`) quando provengono da un argomento con nome. Un `Header` è
++         `Encodable in Http.Header` (sé stesso), quindi può essere aggiunto a una risposta con
++         `response + header`.
++     entry .encodable   l'identità: un `Header` si codifica come sé stesso, quindi `response + header` funziona
++     entry .repeatable   se un campo può comparire più di una volta in un messaggio
++         `Http.Header.repeatable(t"set-cookie")` è `true`; `repeatable(t"content-type")` è
++         `false`. I campi basati su liste (`accept`, `cache-control`, `vary`, …) e `Set-Cookie`
++         (che deve essere ripetuto, poiché il valore di un cookie può contenere una virgola) sono
++         ripetibili; ogni altro campo, compreso qualsiasi campo che la libreria non conosce, è
++         singolo, poiché duplicare un campo singolo è un errore di protocollo. La ricerca non
++         distingue maiuscole e minuscole. La regola decide come `Http.Response(…)(body)` fonde
++         un'intestazione indicata nel punto di chiamata con una che il suo `Servable` deriva: un
++         campo singolo viene sovrascritto, un campo ripetibile li mantiene entrambi.
++     entry #key   il nome del campo, così come è scritto
++     entry #value   il valore del campo
++   entry .Method   il metodo della richiesta, come sealed trait con un case object per metodo
+
+% 1 1 0 001e8faa89ae11a11791aa3bd21fc54f
+
+% 0 1 0 0fa7fc70147274441a42d4acf8b93397
+
+@ 0 5 0 0d183e76b45c3bd7130c42d01578fc5d
++         `Http.Options`, `Http.Trace` e `Http.Patch`. Ciascuno indica, a livello di tipo, se ha
++         un corpo della richiesta: `Http.Post.Payload` è `true`, `Http.Get.Payload` è `false`, e
++         `#payload` è la controparte a runtime leggibile attraverso il tipo cancellato `Method`.
++         Un metodo si mostra con il suo nome in maiuscolo e si decodifica dal testo senza
++         distinguere maiuscole e minuscole, e qualsiasi cosa non riconosciuta viene letta come
++         `GET`.
+
+% 2 1 0 146ad4c1b3da19ec17ecc0dfb9d36a7f
+
+% 3 1 0 12c10222a667cfba0135c95236e45c48
+
+% 0 1 0 13854378bb6a33030e48c4dcded53f4f
+
+% 0 1 0 0aa67839fb5d7b831fbee8cfa4787666
+
+% 0 1 0 017a657cc6a647e013349262bdebc235
+
+% 0 1 0 0dee6d404d405b6c10d04a27ce7547a3
+
+% 1 1 0 1d1d48b4bd5c75291362aa961eb5e822
+
+@ 0 19 0 17ab3fa33997a09302eeb562894e5fe8
++         Un metodo è anche un estrattore su una richiesta: `case Http.Post() =>` corrisponde a una
++         richiesta il cui metodo è `Post`.
++     entry .showable   rende un metodo come `GET`, `POST`, …
++     entry .decodable   legge un metodo dal testo, senza distinguere maiuscole e minuscole; un nome sconosciuto è `Get`
++     entry #Payload   se il metodo porta un corpo della richiesta, come tipo `Boolean` letterale
++     entry #payload   se il metodo porta un corpo della richiesta, come valore a runtime
++         Si può chiamare in sicurezza attraverso un valore tipizzato come il tipo cancellato
++         `Http.Method`, a differenza di un `valueOf` a livello di tipo.
++     entry #unapply   `case Http.Post() =>`: corrisponde a una richiesta il cui metodo è questo
++   entry .Get   il metodo `GET`; nessun corpo
++   entry .Head   il metodo `HEAD`; nessun corpo, e nemmeno la risposta ne ha uno
++   entry .Post   il metodo `POST`; il predefinito di `submit`, e quello con un corpo
++   entry .Put   il metodo `PUT`; ha un corpo
++   entry .Delete   il metodo `DELETE`; nessun corpo
++   entry .Connect   il metodo `CONNECT`; da non confondere con `Connect.Error` o `Http.Connection`
++   entry .Options   il metodo `OPTIONS`; nessun corpo
++   entry .Trace   il metodo `TRACE`; nessun corpo
++   entry .Patch   il metodo `PATCH`
++   entry .Status   lo stato di una risposta: il suo codice, la sua frase di motivo e la sua categoria
+
+% 1 1 0 0a53a648dbeb7e6819263426dd0db41f
+
+@ 0 1 0 0e33863a7eed38981a403ce3234719aa
++         Un enum degli stati standard, ciascuno con il suo `#code` e la sua `#description`:
+
+% 0 1 0 122c311db2c8d9fc03e344dfb024ee2e
+
+% 0 1 0 110415a6915cf2470008e591e33cac29
+
+% 0 1 0 08348a3c0a4e59881cef8d65b0ec653a
+
+% 0 1 0 170fb954d402518300bf204f25a35dc0
+
+% 0 1 0 0d49a69333944dba0f6242b1b2393aa3
+
+% 0 1 0 104401bda4d49cae15ac202cc4772c72
+
+% 0 1 0 0225fe19cbd0dff41b70a606ba06376d
+
+% 0 1 0 0bd915eea70f9a1915f148103d1a0fd7
+
+% 0 1 0 157b94c14ea9390e0a822e4ef3ecb650
+
+% 0 1 0 189e8b868c363f4312600e44476926bc
+
+% 0 1 0 16195e2887d5594f1605eb911ac5a4bc
+
+% 0 1 0 1da51ffa2f0887831e0953167573905f
+
+% 0 1 0 129745cf7a6b2a531b3c07cbb5ff5f44
+
+@ 0 1 0 1e5df12d0ec233881b7f0efeebe1d1d1
++         `InsufficientStorage`, `LoopDetected`, `NotExtended` e
+
+% 0 1 0 15929c7dd8a234c301a98ded3d781afe
+
+@ 0 3 0 168d057819a059a61df4512e4a808412
++         I casi sono esportati in `Http`, quindi `Http.Ok` e `Http.Status.Ok` sono lo stesso
++         valore. Uno stato è anche un costruttore di risposte: `Http.Ok(headers, body)` è una
++         risposta con quello stato, ed è così che i given `Servable` costruiscono le loro.
+
+% 2 1 0 1370f64bddfdf3f303f504036f69c392
+
+% 3 1 0 004b97c7adae0e3706cce7890ac48dae
+
+% 0 1 0 13eb43b1f6972c5707d6da55fe25e727
+
+% 0 1 0 02f6f69479410ad518ed2a360391ab38
+
+% 0 1 0 0303fba9e4d0944e05534968bdbbc229
+
+% 0 1 0 1f937082d71288480cae0fb765969991
+
+% 0 1 0 110d06fc4e6337e71fc9169dc691e419
+
+% 1 1 0 0cee614597e7e5150c46236b1d4ba361
+
+@ 0 24 0 159003b69b7a4203189aeca5bdbca836
++         Un codice che l'enum non nomina non ha uno `Status`: `Http.Status.unapply` restituisce
++         `None` per esso, e l'analisi di una risposta che ne porta uno fallisce con
++         `Http.Response.Error`.
++     entry .unapply   lo stato per un codice: `case Http.Status(status) =>` su un `Int`
++         `Http.Status.unapply(200)` è `Some(Http.Ok)`; un codice che l'enum non nomina è `None`.
++     entry .communicable   rende uno stato come messaggio: `404 (Not Found)`
++     entry .Category   le cinque classi di stato: informativo, di successo, di redirect, errore del client, errore del server
++         `Informational` (1xx), `Successful` (2xx), `Redirection` (3xx), `ClientError` (4xx) e
++         `ServerError` (5xx). `Http.Status#category` fornisce la classe di uno stato, che è ciò
++         che `Receivable` verifica prima di leggere un corpo, e ciò che decide il livello a cui
++         `Http.Client` registra nel log una risposta.
++     entry #code   il codice numerico, `200`
++     entry #description   la frase di motivo, `OK`
++     entry #category   la `Http.Status.Category` dello stato, dalla sua prima cifra
++     entry #apply   `Http.Ok(headers, body)`: una risposta con questo stato
++         Una risposta di versione `1.1` con le intestazioni e l'`Http.Body` dati; il risultato
++         conserva ciò che il corpo cattura.
++   entry .Category   `Http.Status.Category`, esportato in `Http`
++       Lo stesso enum di `Http.Status.Category`, raggiunto come `Http.Category` tramite
++       l'esportazione dei membri di `Http.Status`.
++   entry .emptyBody   uno stream di corpo della richiesta nuovo e già vuoto
++       `Http.emptyBody()` è lo `Stream[Data] over Credit` senza nulla dentro, costruito di nuovo
++       a ogni chiamata, così che uno `Spring` di corpo della richiesta che lo restituisce possa
++       essere materializzato di nuovo (per un redirect, o per il logging) come richiede il
++       contratto di `Spring`.
+
+% 2 1 0 153d2d17744e417e08a193518c683c99
+
+% 3 1 0 173d4338627420bb0db1f19750638292
+
+% 4 1 0 062adbedb8aa76181ac90ab1c3373221
+
+% 0 1 0 0210d46f5f8ce55f04b0802f96d29bdd
+
+% 0 1 0 13bdcd5aed94c7420d3e5ec0687b06f4
+
+% 0 1 0 07b340ffed11e0b2107ba1c403141c91
+
+% 1 1 0 19e68cfd98b2cc2915e5367ad7c04391
+
+@ 0 1 0 1aec1377d53bf29b0610edf7f2eaf809
++   entry .Body   il corpo di un messaggio: trasmesso da una sorgente `Spring`, un blocco fisso di byte, o niente
+
+% 1 1 0 0cb431bb6820498012940625761d0ed0
+
+@ 0 6 0 03925e387debc4f10ad8d90dd70ae61a
++         Un enum di tre casi. `Flowing(source: Spring[Data]^)` è un corpo prodotto su richiesta
++         da uno `Spring`, che può creare uno stream nuovo ogni volta che gli viene chiesto (il
++         corpo di una richiesta può essere inviato più di una volta, dopo un redirect) oppure,
++         per una risposta letta da una connessione attiva, prestare di nuovo un unico stream che
++         riprende da dove si è fermato l'ultimo lettore. `Fixed(data)` è un corpo i cui byte
++         sono già disponibili, ed `Empty` non ne ha. Un corpo `Fixed` o `Empty` è puro; uno
++         `Flowing` conserva ciò che il suo spring cattura.
+
+% 2 1 0 0685e1503cee42700a4fd5ebe36047d3
+
+% 3 1 0 0f0b7e870a6361e70283ee4712a98d02
+
+% 4 1 0 1137d9a437f8d92c18c04509ade24a62
+
+% 5 1 0 108f2852c4d1632e149f26f75deffbb8
+
+% 0 1 0 12028d9051813fec1cfadec155086eb7
+
+% 0 1 0 14ee0cc8e0107ca50d300787ee9b05ea
+
+% 0 1 0 181f23c4adb6a62b0a3a02a2b40ac4c3
+
+% 1 1 0 155b81ecc71d5b2d0ee64d9e0d16b9b5
+
+@ 0 8 0 00e5b6460d5eb2491659b636a0f4270e
++         Sulla connessione, `Http.Response.serialize` delimita un corpo `Fixed` o `Empty` con
++         `Content-Length` e uno `Flowing` con la codifica di trasferimento chunked.
++     entry #stream   un nuovo endpoint di pull sui byte del corpo
++         Richiede un `Tactic[Truncation.Error]`, sollevato quando un corpo `Flowing` viene
++         troncato. Per `Fixed` ed `Empty` lo stream può essere creato un numero qualsiasi di
++         volte; per `Flowing` è ciò che lo spring restituisce, che per una risposta del client
++         è un unico stream con un solo proprietario sulla connessione, quindi va letto una sola
++         volta, oppure con `memoize`.
++   entry .Request   una richiesta HTTP: metodo, versione, host, target, intestazioni e corpo
+
+% 1 1 0 0824bbfd39e66e4815c1978fbfd1e205
+
+@ 0 5 0 0205b7ec73218c0e1bbb5574cf7af260
++         Una richiesta come la invia il client e come la riceve il server. Si costruisce
++         direttamente (`Http.Request(method, version, host, target, headers, body)`, dove il
++         corpo è uno `Spring[Data]` che crea uno stream nuovo a ogni chiamata) oppure si analizza
++         da una connessione con `.parse`. Le macro `fetch` e `submit` ne costruiscono una da un
++         URL e dai suoi argomenti di intestazione con nome.
+
+% 2 1 0 11fa475b19be543f170e25aac6880cdc
+
+% 3 1 0 188372c7793922ba0c7b13abcf1925d9
+
+% 4 1 0 0d6232c084c9ddf602e532a9c32e4eb9
+
+% 5 1 0 0e542cc221890fcf0c751ac605dcc7c9
+
+% 0 1 0 12b383ea45a182ae0439a19ef42285c0
+
+% 0 1 0 03a212b53975040d1affd7c55046bea0
+
+% 0 1 0 00b5a9817389cec30b17c3c92496fb0a
+
+% 0 1 0 19df05f27e03b7d70f4027e218532e56
+
+% 0 1 0 0be0add1cc9d03850669eff8dab1ea4e
+
+% 0 1 0 082ab5a1c4b0c90d1860ae539f8076f5
+
+% 0 1 0 1d1827561afec39f02344e3cfd1e1582
+
+% 0 1 0 00ce671de639b769024b1bcde077e79e
+
+% 1 1 0 0b8870725552c5190cf052a0055b6b0c
+
+@ 0 5 0 026fa92e298c3a1b17e99e70ea9be0f6
++         Il parser è permissivo sulla versione, rigoroso sull'intestazione `Host` (una richiesta
++         senza di essa, o con una non valida, solleva `Http.Request.Error`), e limitato: la riga
++         di richiesta non può superare 8 KiB né il blocco delle intestazioni 64 KiB, così un
++         client ostile non può costringere un server a leggere senza fine. Una richiesta è
++         `Showable` come riassunto su una riga (metodo, host, percorso, intestazioni, un
++         campione del corpo) per il logging.
+
+% 0 1 0 1f2039c010e1977919b68e508bb4e20d
+
+% 0 1 0 0b375bcc3bc75fed1ca2f6c169526146
+
+% 0 1 0 162b2c1d0126a71b178fc269428fb1bc
+
+% 0 1 0 0fa85852ec691890115f0f4df2236929
+
+@ 0 9 0 0af0f619ab482a36100fa94d3ca0ddd5
++     entry .showable   un riassunto su una riga della richiesta per i log: tipo di contenuto, metodo, query, host, percorso, campione del corpo, intestazioni
++     entry .serialize   la richiesta come byte di trasmissione HTTP/1.1: riga di richiesta, `Host`, framing, intestazioni, corpo
++         Un nuovo `Stream[Data] over Credit` dell'intero messaggio, per un trasporto che scrive
++         direttamente su un socket (il client per socket di dominio lo avvolge come
++         `requestTransmissible`). Il corpo viene sondato un blocco alla volta: un corpo che
++         termina entro il primo blocco viene delimitato con `Content-Length`; qualsiasi cosa più
++         lunga viene trasmessa con `Transfer-Encoding: chunked`. Richiede un `Buffering` (per la
++         dimensione del blocco) e un `Tactic[Truncation.Error]`.
++     entry .Head   la riga di richiesta e il blocco delle intestazioni analizzati, prima del corpo
+
+% 1 1 0 0cf0d0250a9095c108261a7bb5d4c8be
+
+@ 0 21 0 0197ec9ce60aaebd0e032a6ae0f6a959
++           `Http.Request.Head(method, version, host, target, headers)`: ciò che `.parseHead`
++           restituisce, per un server che delimita il corpo da sé.
++       entry #method   il metodo della richiesta
++       entry #version   la versione del protocollo
++       entry #host   l'intestazione `Host`, analizzata
++       entry #target   il target della richiesta, percorso e query così come sono scritti
++       entry #headers   i campi di intestazione, in ordine
++     entry .parseHead   analizza la riga di richiesta e le intestazioni da un cursore, lasciandolo sul corpo
++         `Http.Request.parseHead(cursor, maxRequestLine = 8192, maxHeaders = 65536)` legge
++         `METHOD SP target SP HTTP-version CRLF` e il blocco delle intestazioni, e si ferma al
++         primo byte del corpo senza leggere oltre, così un `GET` senza corpo non si blocca in
++         attesa di byte che non arriveranno finché il server non ha risposto. Un server che
++         guida un unico cursore su una connessione keep-alive lo usa con `.fixedBody` o
++         `.chunkedBody` per delimitare il corpo. Solleva `Http.Request.Error` con `UriTooLong` o
++         `HeadersTooLarge` una volta superati i limiti, `Host` per un'intestazione `Host`
++         mancante o non valida, ed `Expectation` per una fine riga malformata.
++     entry .parse   una richiesta analizzata da uno stream di byte
++         Due forme. `parse(stream: Chain[Data])` legge da una catena pigra di blocchi;
++         `parse(input: Stream[Data] over Credit)` consuma direttamente un endpoint di pull.
++         Ciascuna restituisce la richiesta con il suo corpo come corpo `Flowing` il cui spring
++         presta il resto dell'input, quindi `request.body().memoize` legge il corpo. Richiede un
+
+% 0 1 0 0390cb0f03b3ed6d1ba2cd1173a6213c
+
+@ 0 9 0 15fa4585d377d8040835af929c15bbd1
++     entry .fixedBody   esattamente `length` byte di corpo, prestati da un cursore che resta aperto dopo di essi
++         Per una richiesta delimitata da `Content-Length`: lo stream termina dopo `length` byte e
++         non legge mai oltre, lasciando il cursore all'inizio della successiva richiesta in
++         pipeline su una connessione keep-alive.
++     entry .chunkedBody   un corpo `Transfer-Encoding: chunked` decodificato da un cursore
++         Restituisce i dati di ciascun chunk, saltando le estensioni dei chunk e i trailer, e
++         lascia il cursore dopo il chunk `0` finale e la sua riga vuota. Permissivo: una lunghezza
++         malformata o uno stream troncato terminano il corpo.
++     entry .Error   sollevato quando una richiesta non può essere analizzata
+
+% 1 1 0 1266e17f40032c4609541fc0b7699c25
+
+@ 0 3 0 00b4b6bf8cbcd7b418462251d20a4810
++           Errore `↯/s.103.2`: _could not parse HTTP request because `reason`_, sollevato da
++           `.parse` e `.parseHead`. I motivi, numerati da `367.1` a `367.5`, sono tabulati sotto
++           `Reason`.
++       entry .Reason   perché la richiesta non è stata analizzata
+
+% 1 1 0 0d2ff26173aabd050a5cf40d93f70b71
+
+@ 0 5 0 122f4aee2160130b0b108b32c433628b
++           column  Caso
++           column  Codice
++           column  Messaggio
++           column  Nota
++           row  `Expectation(expected, found)`  1  _`found` was found when `expected` was expected_  una fine riga malformata; entrambi sono `Char`
+
+% 0 1 0 1de9c4a887ccefdd069f450837a67659
+
+% 0 1 0 1141015b48551bfb163fef61d08ac4f0
+
+@ 0 2 0 0a0d8f85f62d50431d9891e0e5a75dda
++           row  `UriTooLong`  4  _the request line exceeded the maximum length_  `maxRequestLine`; un server risponde con `414`
++           row  `HeadersTooLarge`  5  _the request headers exceeded the maximum size_  `maxHeaders`; un server risponde con `431`
+
+% 1 1 0 1468e4b98244afa80d185ca6edce83c7
+
+@ 0 33 0 0b4c22df4e0abafb0f01a7e6183ca749
++       entry .communicable   rende ogni motivo come messaggio
++       entry #reason   l'`Http.Request.Error.Reason`
++     entry #method   il metodo
++     entry #version   la versione del protocollo
++     entry #host   l'host a cui è indirizzata la richiesta, dalla sua intestazione `Host`
++     entry #target   il target della richiesta così come è scritto: percorso, e query se presente
++     entry #textHeaders   ogni campo di intestazione, in ordine, come `Http.Header`
++     entry #body   il corpo come `Spring[Data]`: lo si chiama per ottenere uno stream nuovo
++         `request.body()` crea uno stream (richiedendo un `Tactic[Truncation.Error]`); per una
++         richiesta analizzata presta il resto dell'input, quindi va letto una sola volta, oppure
++         con `memoize`.
++     entry #request   la richiesta stessa, per il ricevente della funzione contestuale di un handler
++     entry #path   il percorso del target come `Path on Www`, con radice in `%`
++         `location` decodificato come `Path on Www under %.type`, il tipo di percorso degli URL,
++         così che i segmenti possano essere confrontati con pattern `/`.
++     entry #on   l'URL completo della richiesta, data un'origine: `request.on(origin)`
++         `Url[scheme](origin, target)` per un `Origin["http"]` o un `Origin["https"]`; ciò che
++         il client registra nel log in `Http.Event.Send`.
++     entry #query   i parametri della query, dall'URL e da un corpo codificato come modulo insieme
++         Una `Query` della parte `?…` del target, più il corpo decodificato come
++         `application/x-www-form-urlencoded` quando il `Content-Type` dice che lo è. Leggere il
++         corpo richiede un `Tactic[Truncation.Error]`; un `Parameter` ne legge un campo.
++     entry #location   il target senza la sua query: `/path` da `/path?q=1`
++     entry #headers   accesso tipizzato alle intestazioni per nome: `request.headers.contentType`
++         Un selettore dinamico: `request.headers.accept`, `request.headers.cookie`,
++         `request.headers.contentLength` sono ciascuno la `List` dei valori di quel campo,
++         decodificati nel tipo che il `Directive` di quel nome dichiara (un `MediaType`, una
++         `List[Cookie.Value]`, un `Bytes`), tramite il suo `Decodable in Text`. Il nome in
++         camelCase viene trasformato nel nome di campo in kebab-case.
++     entry #contentType   l'intestazione `Content-Type` come `MediaType`, oppure `Unset`
++     entry #textCookies   i cookie della richiesta come `Map` da nome a valore
++         Analizzati dall'intestazione `Cookie`; `Cookie#apply()` ne legge uno decodificato nel
++         suo tipo.
++   entry .Backend   il trasporto che invia una richiesta e ne restituisce la risposta
+
+% 1 1 0 173647f69ec3745611c0718748533226
+
+@ 0 8 0 1577c68874fdba880f9b70aee1f8fb56
++         La trasmissione intercambiabile. Un `Http.Backend` riceve l'URL completamente risolto
++         come testo (così un backend non JVM può analizzarlo da sé), il metodo, le intestazioni e
++         lo spring del corpo, e restituisce la risposta; non gestisce né i redirect né il
++         logging, che `Http.Client` svolge sopra di esso. I backend sono specifici della
++         piattaforma, quindi se ne sceglie sempre uno importando per nome un given da
++         `httpBackends`: `javaNetHttp` (`java.net.http`, in `telekinesis.jvm`), `soundnessHttp`
++         (il codec di trasmissione proprio di Soundness sui socket di coaxial, in
++         `telekinesis.sockets`, JVM e Native) o `wasiHttp` (`wasi:http`, in `telekinesis.wasi`).
+
+% 2 1 0 1ff4e2fb2dead9c703f0026e9568279e
+
+% 3 1 0 09971b69e3e9161f0495e5cf5269f75b
+
+% 4 1 0 1fe429ec5da3acc0139949e9ad7a2a8d
+
+% 5 1 0 191e7510331053551bf9c5021dd982d4
+
+% 6 1 0 055f8f0ebf7d20d2085a40195989f023
+
+% 1 1 0 0bb435fef400c49f14a0e6030fb7b52e
+
+% 0 1 0 19399c733cfebdd50c2131677278ce61
+
+% 1 1 0 0eb31bd45830676f0398f310a3a65e79
+
+% 2 1 0 040d697e29e77b2403e874bea2201672
+
+% 0 1 0 1ede485b5a7d1dd90cca7c3c447eb40e
+
+% 1 1 0 0c6cf7212c3752e71420425b78fd2af2
+
+% 0 1 0 133c5b713c684eb3093584caf0e781c6
+
+% 1 1 0 0ed8866d15c434120fba3e1a2e9179fa
+
+@ 0 2 0 1de037731d82d91f12659c4f028885e1
++     entry #request   invia una richiesta e ne restituisce la risposta, sollevando `Connect.Error` se non ne arriva nessuna
++   entry .Response   una risposta HTTP: versione, stato, intestazioni e corpo
+
+% 1 1 0 1304cd7109aef6440d0cac9f2f8e5b8f
+
+@ 0 5 0 1606738eb88d343711edf951e9ad915b
++         Una risposta si legge da un fetch del client, si costruisce in un handler del server, o
++         si analizza da una connessione. Il suo costruttore è privato: una risposta si crea con
++         l'apply dinamico `Http.Response(…)`, con uno stato (`Http.Ok(headers, body)`), o con un
++         `Servable` (`Http.Response(json)` per qualsiasi valore con un `Servable` nell'ambito,
++         tramite `.conversion`).
+
+% 2 1 0 164b306312dcbdad0162a3759eb0c906
+
+% 3 1 0 043854c78a33679405c96e6ecac4ba58
+
+% 4 1 0 01c60f005824a2990588d6aa8660e874
+
+% 5 1 0 02730fd6bff7b75813d8fe9a0fb979fb
+
+% 0 1 0 10f6946cf3688fc01890d60ac297cd9f
+
+% 0 1 0 0521ae675cc901de0f7d9fc371f2dc7a
+
+% 0 1 0 05d54d7cbb5f41ab07eb08cb2dcbad54
+
+% 0 1 0 025605352746530e0f047e952f998e5e
+
+% 0 1 0 0c7747ab52f92d3116219d1fe2e8ce28
+
+% 1 1 0 0ead06875694b9b500915971714a4f53
+
+@ 0 6 0 124f28e5de2b268a00959f4ac0404d74
++         La prima lista di argomenti riceve, in qualsiasi ordine, al più un `Http.Status` e delle
++         intestazioni con nome (`contentType = media"…"`, `location = t"…"`, ciascuna verificata
++         dal suo `Directive`); la seconda riceve il corpo, come valore `Servable` o come
++         `Http.Body`. Un'intestazione indicata nel punto di chiamata sovrascrive quella che il
++         `Servable` deriverebbe per lo stesso campo singolo (quindi `contentType = …` con un
++         corpo `Text` mette `content-type` sulla connessione una sola volta), mentre un campo
++         ripetibile come `Set-Cookie` li mantiene entrambi.
+
+@ 0 5 0 07401da735cfef8d0c2b7b256eee20ff
++         Sul client, `#receive[Text]` legge il corpo come il tipo richiesto, `#status` esamina
++         lo stato, e `#headers.contentType` legge un'intestazione per nome. Il corpo è un corpo
++         `Flowing` sulla connessione, da leggere una sola volta: `#successBody` o `#body.stream`
++         prestano lo stream con un solo proprietario. Una risposta lato server può conservare la
++         connessione attiva a cui risponde (`Response^{connection}`); una rivolta al client è
++         sempre pura.
+
+% 1 1 0 101f58f5d802f93a0a082e678859c1c2
+
+% 0 1 0 03b033a4e934d20e0c199578ea16e0a7
+
+% 0 1 0 08dc29274d5d2c550f57866324219798
+
+@ 0 15 0 0abfa1829794c987141e9bffc49e1793
++     entry .applyDynamicNamed   `Http.Response(Http.Ok, contentType = …)(body)`: uno stato e intestazioni con nome, poi un corpo
++         La macro dietro `Http.Response(…)`. Con un singolo argomento che ha un `Servable`, è
++         quel valore servito (`Http.Response(t"hello")`). Altrimenti raccoglie un `Http.Status`
++         facoltativo e un numero qualsiasi di intestazioni — con nome (`contentType = …`,
++         codificata dal `Directive` di quel nome) o senza nome (un valore il cui tipo identifica
++         un'intestazione, come un `MediaType` per `accept`) — in un `Protoresponse`, il cui
++         `apply` riceve il corpo. Uno stato dato due volte è un errore di compilazione, così come
++         il valore di un'intestazione del tipo sbagliato: _the header `Content-Type` cannot take
++         a value of type `Int`_.
++     entry .applyDynamic   `Http.Response(Http.Ok)(body)`: solo argomenti posizionali
++         Come `.applyDynamicNamed`, per una chiamata senza argomenti con nome.
++     entry .conversion   qualsiasi valore `Servable` si converte in una `Response`
++         La `Conversion` che permette a un handler di restituire un `Json`, un `Text` o
++         qualsiasi valore con un `Servable` nell'ambito dove ci si aspetta un `Http.Response`.
++     entry .Protoresponse   uno stato e delle intestazioni in attesa di un corpo
+
+% 1 1 0 1f9927b6d2a5d0b91a70b6893b29bfaa
+
+@ 0 23 0 1596027be131b4ed1e0fff44eba56400
++           Ciò che `Http.Response(Http.Ok, contentType = …)` è prima della sua seconda lista di
++           argomenti: `Protoresponse(status0, headers)`, con due `apply` per completarlo.
++       entry #status0   lo stato, oppure `Unset` per `Ok`
++       entry #headers   le intestazioni indicate nel punto di chiamata
++       entry #apply   completa la risposta con un `Http.Body` (predefinito `Empty`), oppure con un valore `Servable`
++           `proto()` è la risposta con un corpo vuoto; `proto(body: Http.Body)` ne allega uno, e
++           il risultato conserva ciò che il corpo cattura; `proto(value)` serve un valore tramite
++           il suo `Servable`, con le intestazioni del punto di chiamata che sovrascrivono quelle
++           servite per i campi singoli. Lo stato, se non impostato, è quello della risposta
++           servita.
++     entry .streamable   una risposta di successo trasmette il suo corpo come stream; qualsiasi altro stato solleva `Http.Error`
++         Il given `Streamable by Data over Credit`, così che una risposta possa essere letta con
++         `read[Data]` o inoltrata. Richiede un `Tactic[Http.Error]`, sollevato quando lo stato
++         non è 2xx, e un `Tactic[Truncation.Error]`.
++     entry .serialize   la risposta come byte di trasmissione HTTP/1.1
++         `Http.Response.serialize(response, includeBody = true, version = 1.1)`: la riga di
++         stato, le intestazioni con un `Content-Length` aggiunto per un corpo `Fixed` o `Empty`
++         e il framing `Transfer-Encoding: chunked` per uno `Flowing` (a meno che le
++         intestazioni non lo delimitino già), la riga vuota e il corpo. `includeBody = false` è
++         per la risposta a una richiesta `HEAD`: le intestazioni di framing vengono scritte, il
++         corpo no. Dopo `101 Switching Protocols` il corpo è lo stream grezzo del protocollo
++         aggiornato e non si aggiunge alcun framing; a un client HTTP/1.0 un corpo in stream
++         viene scritto grezzo, da delimitare chiudendo la connessione. Richiede un `Buffering` e
++         un `Tactic[Truncation.Error]`.
+
+% 2 1 0 1f5150fc08bebfaa0daf45d81fe95074
+
+% 3 1 0 034dfb0afa65e9070f2c6c20000bb6dd
+
+% 4 1 0 04fe9ee917258c9716b16198bdf906e0
+
+% 0 1 0 1d0fe69c17007ff2075aa423d2353293
+
+% 0 1 0 194b14fb5ac274dc0a6bcaa6eaf0a001
+
+% 1 1 0 1e0e53fb2f8c6b4903963314c7ca3526
+
+@ 0 14 0 0693a0638868a9d5058ff01b9f3ef513
++     entry .serializeHead   solo la riga di stato e le intestazioni, come un unico blocco di byte
++         L'intestazione del messaggio esattamente come `.serialize` la scriverebbe, intestazioni
++         di framing comprese, per un server che invia un corpo fisso come secondo buffer
++         direttamente dai byte dell'handler senza copia.
++     entry .parse   una risposta analizzata da uno stream di byte
++         `parse(stream: Chain[Data], bodiless = false)` legge da una catena pigra;
++         `parse(input: Stream[Data] over Credit)` e `parse(input, bodiless)` consumano un
++         endpoint di pull. `bodiless` indica la risposta a una richiesta `HEAD`, che ripete le
++         intestazioni di framing del `GET` ma non porta alcun corpo. Il corpo è delimitato dalle
++         intestazioni: decodifica chunked per `Transfer-Encoding: chunked`, una sequenza fissa
++         per `Content-Length`, niente per `204`, `304`, `1xx` o una risposta senza corpo, tutto il
++         resto per `101`, e altrimenti tutto fino alla chiusura della connessione. Il cursore
++         viene lasciato al primo byte dopo il corpo, così una connessione keep-alive può
++         analizzare la risposta successiva. Richiede un `Tactic[Http.Response.Error]`.
+
+% 2 1 0 10f1f0bff1be36921b308c69690e3cfd
+
+% 3 1 0 0fab65465d9948910bcf2e9e5a91374a
+
+% 4 1 0 1f2241edf13ae9510b33df6fc6d1544f
+
+% 5 1 0 06cc3196811e555e0e762980f09047ee
+
+% 0 1 0 11da24db47b475c31c13f253bedd88b4
+
+% 0 1 0 0c5df723009e2b1018efc376c2e8b277
+
+% 0 1 0 0cbf2f67c6fb740f046053b7e32129fa
+
+% 0 1 0 08d9fb93cf35edc31ac6c8b95f138719
+
+% 1 1 0 137867136d68273b090cec4712c3d6f5
+
+@ 0 1 0 0966b0b12f8cece60b8af2c3146ddd09
++     entry .Head   la riga di stato e il blocco delle intestazioni analizzati, prima del corpo
+
+% 1 1 0 0ac6ed49166e89a6019101bc126f4436
+
+@ 0 13 0 0c64f78dca611bb501ba9f6c663dbaf9
++           `Http.Response.Head(version, status, headers)`: ciò che `.parseHead` restituisce, per
++           un client che delimita il corpo da sé, come fa un `Http.Session`.
++       entry #version   la versione del protocollo
++       entry #status   lo stato
++       entry #headers   i campi di intestazione, in ordine
++     entry .parseHead   analizza la riga di stato e le intestazioni da un cursore, lasciandolo sul corpo
++         Legge `HTTP-version SP code SP reason CRLF` e il blocco delle intestazioni, e si ferma al
++         primo byte del corpo senza leggere oltre, così una risposta senza corpo su una
++         connessione keep-alive non si blocca su un refill che il server non invierà mai.
++         Solleva `Http.Response.Error` con `Status` per un codice che non è di tre cifre con
++         iniziale da 1 a 5, o che l'enum `Http.Status` non nomina, ed `Expectation` per una riga
++         malformata.
++     entry .Error   sollevato quando una risposta non può essere analizzata
+
+% 1 1 0 089742536a15a4b5140706373d891e6d
+
+@ 0 5 0 05741c3ec95ca9850c0da43c0f46e60c
++           Errore `↯/s.103.1`: _could not parse HTTP response because `reason`_, sollevato da
++           `.parse` e `.parseHead`. I motivi sono `Expectation(expected, found)` (366.1,
++           _`found` was found when `expected` was expected_: i byte non iniziavano con `HTTP/`,
++           oppure una riga non terminava con CRLF) e `Status(value)` (366.2, _the HTTP status
++           code `value` was invalid_). I client basati su socket lo traducono in
+
+% 0 1 0 1bc5f4db38ad53b511005e01dbc06582
+
+@ 0 13 0 1a977e9785f072e51649b4768efa0fc2
++       entry .Reason   perché la risposta non è stata analizzata: `Expectation(expected, found)` o `Status(value)`
++       entry .communicable   rende ogni motivo come messaggio
++       entry #reason   l'`Http.Response.Error.Reason`
++     entry #version   la versione del protocollo, `1.1` per ogni risposta che un client costruisce
++     entry #status   l'`Http.Status`
++     entry #textHeaders   ogni campo di intestazione, in ordine, come `Http.Header`
++     entry #body   l'`Http.Body`
++     entry #updateDynamic   `response.contentType = media"…"`: imposta un'intestazione, sostituendo quelle con lo stesso nome
++         Un setter dinamico: `response.location = t"/next"` restituisce una nuova risposta (il
++         ricevente è immutabile) con l'intestazione indicata dal `Directive` di quel nome,
++         codificata da esso, che sostituisce qualsiasi campo esistente con lo stesso nome.
++     entry #successBody   lo stream del corpo se lo stato è di successo, altrimenti `Unset`
++         L'endpoint di pull con un solo proprietario sul corpo per uno stato 2xx; richiede un
+
+% 1 1 0 1d11dd7a49149da7179c685cf8377790
+
+@ 0 5 0 00b35b079d28a6800b7fb36504680ff3
++     entry #receive   legge il corpo come un tipo: `response.receive[Text]`
++         Evoca il `Receivable` per il tipo e lo applica. Quelli standard leggono `Text`,
++         `Http.Status`, qualsiasi tipo `Aggregable by Data` (`Data`, uno stream, un `Json`, …) e
++         qualsiasi tipo `Instantiable across HttpRequests from Text`; uno stato diverso dal
++         successo solleva `Http.Error` prima che si legga qualcosa.
+
+% 2 1 0 17b2c8dfc81246691cced35ef7b7a234
+
+% 3 1 0 0435eeb7d7412e53120fd58324ddb8cb
+
+% 4 1 0 00e9e8faae0667010efbc2c4e1a7274b
+
+% 5 1 0 0e5aeb05028959331809bf77f870b0e4
+
+% 6 1 0 04284c22c64687f2129a2a29685af7d1
+
+% 7 1 0 0ffc5541705ee94c18ad4af645ae09de
+
+% 8 1 0 0a123ca5724bfcfb1d67a495c1431802
+
+% 9 1 0 16815022730315b9003db5377becfd6c
+
+% 10 1 0 114a15d05cc5c6001ce7554bbd83e465
+
+% 0 1 0 1d544e075e5302600468858529771ecc
+
+% 0 1 0 047c56562cdce134080890d756cd5f25
+
+% 1 1 0 025256f60ddba8061bdf638d727ff8e1
+
+@ 0 7 0 092d57f7e78048e71fac119d8bea3b85
++     entry #headers   accesso tipizzato alle intestazioni per nome: `response.headers.contentType`
++         Un selettore dinamico, come su `Http.Request`: `response.headers.setCookie` è la `List`
++         dei valori di quel campo decodificati nel tipo che il suo `Directive` dichiara.
++     entry #+   `response + cookie`: aggiunge un'intestazione codificata da qualsiasi valore `Encodable in Http.Header`
++         Un `Cookie.Value` aggiunge un campo `Set-Cookie`; un `Http.Header` aggiunge sé stesso.
++         L'intestazione viene anteposta; nulla viene sostituito (per questo si usa
++         `#updateDynamic`).
++   entry .Submit   una richiesta con un corpo, pronta a ricevere le sue intestazioni e il suo payload
+
+% 1 1 0 020ce3e96ac50bc318fe041feb406419
+
+@ 0 16 0 09313d1cf7590e0d01cd076537632853
++         Ciò che `url.submit` restituisce: il target della richiesta, l'host e il target
++         `Fetchable` (un `Origin` per un `HttpUrl`, un `Uds` per un endpoint socket). Il suo
++         `apply` è una macro che riceve il metodo e le intestazioni in una prima lista di
++         argomenti e il payload in una seconda, costruisce l'`Http.Request` con un
++         `Content-Type` dal `Postable` del payload, e la invia tramite l'`Http.Client onto
++         target` nell'ambito. Vedi `submit`.
++     entry #originForm   il target della richiesta: il percorso e la query dell'URL
++     entry #target   dove va la richiesta: l'`Origin` dell'URL, oppure un `Uds`
++     entry #host   il valore dell'intestazione `Host`
++     entry #applyDynamicNamed   `url.submit(Http.Put, accept = media"…")(payload)`: metodo, intestazioni con nome, poi il corpo
++         Il metodo, se indicato, compare una volta nella prima lista di argomenti ed è per
++         impostazione predefinita `Http.Post`; il resto sono intestazioni, con o senza nome
++         (vedi `fetch`). Il payload è qualsiasi valore con un `Postable`; il `Content-Type` è il
++         tipo di media del `Postable`. Richiede un `Online`, un `Http.Event is Loggable` e un
++         `Http.Client onto` il target.
++     entry #applyDynamic   `url.submit(Http.Put)(payload)` o `url.submit()(payload)`: solo argomenti posizionali
++   entry .Fetch   una richiesta senza corpo, pronta a ricevere le sue intestazioni
+
+% 1 1 0 133763c55f5f61230d4b52096fee3af9
+
+@ 0 11 0 0631453eaf3baaea14774653e55fc139
++         Ciò che `url.fetch` restituisce; il suo `apply` è una macro che riceve il metodo
++         (predefinito `Http.Get`) e le intestazioni, e invia la richiesta tramite
++         l'`Http.Client onto target` nell'ambito. Vedi `fetch`.
++     entry #originForm   il target della richiesta: il percorso e la query dell'URL
++     entry #target   dove va la richiesta: l'`Origin` dell'URL, oppure un `Uds`
++     entry #host   il valore dell'intestazione `Host`
++     entry #applyDynamicNamed   `url.fetch(accept = media"…", authorization = Auth.Bearer(token))`: intestazioni con nome
++         Richiede un `Online`, un `Http.Event is Loggable` e un `Http.Client onto` il target; il
++         corpo è vuoto.
++     entry #applyDynamic   `url.fetch()` o `url.fetch(Http.Head, media"…")`: solo argomenti posizionali
++   entry .Client   invia una richiesta a un target: redirect, logging e l'`Http.Backend` sottostante
+
+% 1 1 0 14d0fa5706524cdc0361b0dea46b3b15
+
+@ 0 6 0 1692f3691599089210edf17600d89dd4
++         Un `Http.Client onto Target` trasforma un `Http.Request` e un target in una risposta.
++         Per i target `Origin["http" | "https"]`, due given nel compagno sono in competizione,
++         selezionati a seconda che un `Redirects.Disabled` sia nell'ambito: `.http` segue i
++         redirect e `.httpStrict` no. Entrambi richiedono un `Tactic[Connect.Error]`, un
++         `Online` e un `Http.Backend`; la richiesta stessa richiede un `Http.Event is
++         Loggable`. Per un target `Uds` il client è `udsHttpClient`, in `telekinesis.jvm`.
+
+@ 0 3 0 1855822a46388bb00076b6c60209d36e
++         Un client è una capability: è costruito da una tattica, da un token `Online` e da un
++         backend, e li conserva tutti. Raramente lo si evoca a mano; `fetch` e `submit` lo
++         evocano per il target dato dal loro URL.
+
+% 0 1 0 17776523af3bb6170dffbceb4b68a293
+
+% 0 1 0 0f459a754ad6e6ab04c4b398306a6e0c
+
+% 0 1 0 1303902220d344860b433d5b71ae95c9
+
+@ 0 16 0 0792a3c76ac35af603a3c4a522d40582
++     entry .http   il client che segue i redirect per le origini `http` e `https`
++         Scelto quando nessun `Redirects.Disabled` è nell'ambito. Registra `Http.Event.Send` a
++         livello `info`, invia tramite l'`Http.Backend`, e segue le risposte `301`, `302`,
++         `303`, `307` e `308` tramite il loro `Location` (risolto rispetto all'URL corrente),
++         fino al limite di `Http.Redirection` nell'ambito (dieci per impostazione predefinita).
++         Un `301`/`302`/`303` declassa il metodo a `GET` e scarta il corpo; `307`/`308` li
++         mantengono entrambi, ricreando il corpo dal suo spring. Il corpo intermedio scartato
++         viene svuotato per liberare la sua connessione, e ogni passaggio registra
++         `Http.Event.Redirect` a livello `fine`. La risposta finale viene registrata a un livello
++         che dipende dalla sua categoria: `fail` per un 5xx, `warn` per un 4xx, `fine`
++         altrimenti. Un redirect senza `Location`, o uno oltre il limite, viene restituito così
++         com'è.
++     entry .httpStrict   il client che restituisce invariata una risposta 3xx
++         Scelto quando `httpRedirections.doNotFollowRedirects` (un `Redirects.Disabled`) è
++         nell'ambito. Il redirect è allora una risposta ordinaria: `receive` solleva
++         `Http.Error` con lo stato 3xx, e `status` lo esamina.
++     entry #request   invia una richiesta a un target e restituisce la risposta
++   entry .Error   sollevato quando arriva una risposta con uno stato fuori dall'intervallo di successo
+
+% 1 1 0 16aec6ea1536b6f713984c063e910705
+
+@ 0 4 0 1571b3003d83412d19a73afe5fe339cc
++         Errore `↯/s.103.3`: _the HTTP request failed with status `status`_. Sollevato da
++         `Receivable` (`response.receive[T]`) e da `Http.Response.streamable` quando la categoria
++         dello stato non è `Successful`; l'errore porta con sé lo stato e le intestazioni, così
++         il chiamante può reagire a ciò che è andato storto. Esaminare direttamente
++         `response.status` non lo solleva mai.
+
+% 2 1 0 094b698cbba6139a1f52b395cdcb5cfc
+
+% 3 1 0 0cd370c6dbc18a301bfc3f71a229e563
+
+% 4 1 0 12d4867fa61bc9a60bfe0cde16888c29
+
+% 5 1 0 14ed8ba3fdec517d1768cd22286423b0
+
+% 6 1 0 11ed9a55b1bcf25e1b7188ba9a793afd
+
+% 7 1 0 1a24370e282e93ce1e00ff8cf3f7b652
+
+% 8 1 0 13034cf8feb0dac902544c3e42bfa668
+
+% 9 1 0 1f2826f205beba460ac05ee15b554e2a
+
+% 10 1 0 18599520d97679e901bb9d097418e9e4
+
+% 0 1 0 0c6bb037d796ffa20862ce0b2473a278
+
+% 1 1 0 0abeb78bbbf546e10ed208d1476e015b
+
+@ 0 3 0 0d7e6ff0cc8e483110ee361e83024a46
++     entry #status   lo stato della risposta
++     entry #headers   le intestazioni della risposta
++   entry .Event   ciò che il client registra nel log mentre invia richieste e riceve risposte
+
+% 1 1 0 1936736cfcfca21f1549bddeee575e91
+
+@ 0 9 0 0a3b0e26c93af04d1772576f4bc09e4f
++         Ogni `Event` ha il tag `Log.Network`, e `Send` e `Redirect` anche `Log.Protocol`.
++         `Http.Client` registra `Send(method, url, headers)` a livello `info` quando parte una
++         richiesta, `Redirect(from, to)` a livello `fine` per ogni passaggio che segue, e
++         `Response(status)` a livello `fine`, `warn` (4xx) o `fail` (5xx) quando arriva la
++         risposta. `Request(preview)` è un campione del corpo di una richiesta per un trasporto
++         che lo registra. Un `Http.Event is Loggable` deve essere nell'ambito per ogni `fetch` e
++         `submit`; `logging.silentLogging` li scarta.
++     entry .communicable   rende ogni evento come messaggio: _sending a GET request to …_
++   entry .Redirection   il numero massimo di redirect che il client seguirà: dieci se non diversamente indicato
+
+% 1 1 0 1209710041bbae2213d615ff3c1107ec
+
+@ 0 8 0 13c1942e6878f8e718b6672679dfa18e
++         `Http.Client.http` segue al massimo `Http.Redirection#value` passaggi; il `.default`
++         del compagno è dieci (il limite di curl), e un `given Http.Redirection =
++         Http.Redirection(1)` locale lo abbassa. Una volta raggiunto il limite, la risposta 3xx
++         viene restituita così com'è, quindi un `receive` successivo solleva `Http.Error` con lo
++         stato del redirect. Per non seguirne nessuno, si importa invece
++         `httpRedirections.doNotFollowRedirects`.
++     entry .default   il limite di dieci redirect, nell'ambito implicito
++     entry #value   il numero di redirect consentiti
++   entry .Session   una connessione client verso un'unica origine, sulla quale si scambiano diverse richieste
+
+% 1 1 0 0ffcc113b88418551df775041e1344fd
+
+@ 0 6 0 1ee6ea7270e098b304cb3cbc0e387495
++         Una sessione si apre su un URL con `url.session: session ?=> …` (il given
++         `httpUrlSessional`, in `telekinesis.http2`), che si connette una volta, presta la
++         sessione al blocco e la chiude alla fine. Il protocollo è fisso per tutta la durata
++         della sessione: per `https`, ALPN durante l'handshake TLS sceglie una sessione HTTP/2
++         multiplexata, sulla quale i fetch si alternano su un'unica connessione, oppure una
++         sessione HTTP/1.1 sequenziale; `http` in chiaro è sempre sequenziale, con il keep-alive
++         che mantiene un'unica connessione per tutti i fetch.
+
+% 2 1 0 174b5f7dfe165abc044732a7bb3603c8
+
+% 3 1 0 1bc99b732970ad9916b825059843b0ea
+
+% 4 1 0 180d3a92674319c5125704c5ecc0ea1f
+
+% 5 1 0 148bb8d4fa0a5d4918c81802b634b65e
+
+% 0 1 0 1cbce8534dfc667e162ca0e4afa96711
+
+% 1 1 0 175cc84b7680ffdc0c9249ec3bccb31a
+
+% 1 1 0 0972f93f3fc5e790017b3c9975ea599d
+
+% 1 1 0 10ddd3faf13d83971246a2f6537550bb
+
+% 1 1 0 159c32bd045c64a710533b4bde274bc1
+
+% 2 1 0 01fb8c598697677410833b68cc109ef6
+
+% 0 1 0 116f998ff554de2f118768013517f789
+
+% 0 1 0 10c1a0cb41d963b61c38f3771650904b
+
+% 1 1 0 1712c3f8d6a844fe1e0f4fe4b5510206
+
+% 1 1 0 176ece85ca3620fd14fa9ebd1f701e63
+
+% 1 1 0 0383bafa33bbbae4196630d6e7135437
+
+@ 0 6 0 01457cf0c195f17b1fc23fc157d07c5b
++         Una sessione è una capability esclusiva e con stato: `#fetch` è un metodo `update` e la
++         sua risposta prende in prestito la sessione, quindi un corpo di risposta ancora in
++         stream dalla connessione attiva non può sfuggire al blocco; uno memoizzato sì. Lasciare
++         una risposta non consumata non fa deragliare la sessione: il fetch successivo svuota ciò
++         che resta del corpo precedente per raggiungere il confine della risposta. (Il rifiuto
++         statico di un handle che sfugge attende un ulteriore supporto del separation checker; i
++         tipi lo esprimono già.)
+
+% 1 1 0 0cd15986ff8fd53212aad4815ff2441f
+
+@ 0 3 0 04b2dfaf01f5564019d14c59a68c0165
++     entry #fetch   invia una richiesta sulla connessione della sessione e ne restituisce la risposta
++         Richiede un `Tactic[Connect.Error]`. Il risultato conserva la sessione.
++   entry .Connection   uno scambio richiesta/risposta attivo, come lo vede un handler del server
+
+% 1 1 0 1bc22e46718b626317b00a36d8d8a253
+
+@ 0 9 0 014d59b84453e07d09148ce307564cbf
++         Un `Http.Connection` è l'`Http.Request` che porta — estende `Request`, quindi un
++         handler legge direttamente `connection.method`, `connection.query` e
++         `connection.headers` — più i mezzi per rispondere: `#respond`, un sink che scrive una
++         risposta al client e chiude lo scambio, e i dati del trasporto, `#tls` e `#port`. È una
++         capability esclusiva, poiché uno scambio ha un solo proprietario e riceve una sola
++         risposta; la risposta di un handler può conservarla
++         (`(connection: Http.Connection) ?=> Http.Response^{connection}`) quando il suo corpo
++         viene trasmesso dalla richiesta. Un server (quello di scintillate) lo costruisce dal
++         proprio trasporto; il tipo stesso richiede solo la richiesta e il sink.
+
+% 1 1 0 171318645c1f01e607528213dceda3ff
+
+@ 0 1 0 1726985c223c1b410bba3eea4c042013
++     entry .Respond   il sink che scrive una risposta al client e chiude la connessione
+
+% 1 1 0 126cacff33c65bbc04ba6e2b866c376c
+
+@ 0 6 0 02c5d4ecea7bfee3138b5f808e375d1e
++           Un trait con nome e un solo metodo, `apply(response: Response^)(using
++           Tactic[Truncation.Error]): Unit`, invece di un tipo funzione, così che la risposta
++           possa catturare la connessione attiva.
++     entry #tls   se la richiesta è arrivata tramite TLS
++     entry #port   la porta su cui il server ha accettato la connessione
++     entry #respond   il sink `Http.Connection.Respond` per questo scambio
+
+@ 0 4 0 1adcaf019d0799c6134e5522ae56796f
++ entry .Acceptance   l'esito della validazione di un valore inviato: accettato, oppure rifiutato con errori
++     Un enum con due casi: `Accept(value)` porta il valore in cui è stato decodificato l'invio
++     di un modulo, e `Reject(errors)` gli `Errors` che spiegano perché non lo è stato. È la
++     forma che un handler di moduli restituisce quando un invio viene verificato prima di
++     agire di conseguenza.
+
+@ 0 1 0 0caf36c7eae092a70ec1d2386dfc57a8
++ entry .Auth   le credenziali di un'intestazione `Authorization`, per schema
+
+% 1 1 0 07691e6023218f2e017e53ef808a0c7d
+
+@ 0 1 0 198c82360806569d0847fb4aa14f116b
++       Un enum degli schemi di autenticazione: `Basic(username, password)`, `Bearer(token)`,
+
+% 0 1 0 015aa91a2e1d9a001e27d60d2dad0226
+
+@ 0 4 0 1f521d54c80f02f70ceaa10b7f5eeb50
++       `ScramSha1(text)`, `ScramSha256(text)` e `Vapid(text)`. Un `Auth` si mostra come il
++       valore dell'intestazione (`Basic` codifica in base64 `username:password`) e si decodifica
++       da esso, quindi è il tipo che l'intestazione `authorization` riceve in un `fetch` e ciò
++       che `request.headers.authorization` produce.
+
+% 2 1 0 0993c5c114ddd7e21e9cd492aedf58f9
+
+% 3 1 0 00e6cd4dfaca8e19059b5512372f3727
+
+% 4 1 0 1d0c7d12670c908708de70de043c81d5
+
+% 0 1 0 1f00e9f6cbd59ad50ea86f20b9db8bcb
+
+% 0 1 0 1036a45998898f180e12eb5764d9920b
+
+% 0 1 0 0bda60fd53aa8bca0196d60c43ef5980
+
+% 1 1 0 14b34736dc71929f04210eed835fb121
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 3 1 0 1f7f4ea47e4aacba07532d821e374bcf
+
+% 4 1 0 054ab02e63fb37dd1dcca5710d0252c5
+
+% 5 1 0 1e225271d193ea6f1401246f09890bf0
+
+% 6 1 0 1923e5ea430c1d2018d55bf85593032d
+
+% 7 1 0 0d34c5f790420006102cfa2ddef2c6b0
+
+% 8 1 0 0d629c6f034769a4083cd15cbfe986c9
+
+% 9 1 0 1a3c0251317628f806a6889cdfbaacac
+
+% 0 1 0 16e5ec7a9c0b8b931e4b29fc859a9b76
+
+% 1 1 0 0f7aa5d32e138b3e116dd8407ee2f6a9
+
+@ 0 8 0 0d31bede6a0594ca0f84e69d9f23bc92
++   entry .showable   rende qualsiasi caso di `Auth` come il valore della sua intestazione, `Bearer …`, `Basic …`
++       Dichiarato su ogni sottotipo, così che anche un valore tipizzato come `Auth.Bearer` si
++       renda come il valore dell'intestazione, invece di ricadere nella resa generica degli enum.
++   entry .decodable   legge un `Auth` dal valore di un'intestazione, sollevando `Auth.Error` per uno schema sconosciuto
++       Le credenziali `Basic` vengono decodificate dal loro unico testo base64 e divise al primo
++       due punti, quindi una password può contenere due punti; un testo senza due punti dopo la
++       decodifica è un `Auth.Error`. Richiede un `Tactic[Auth.Error]`, che l'istanza conserva.
++   entry .Error   sollevato quando il valore di un'intestazione non è uno schema di autenticazione riconosciuto
+
+% 1 1 0 12046e599fbae7e70552dd6ec203aace
+
+@ 0 3 0 05734b386495b87519f328a7d000d444
++         Errore `↯/s.103.4`: _the authentication value `value` is not valid_, sollevato da
++         `.decodable` per uno schema che non conosce o per credenziali `Basic` malformate.
++     entry #value   il testo che non è stato possibile decodificare
+
+@ 0 1 0 1bef250d794ff1971c1fd568de2ae878
++ entry .Connect   il namespace di `Connect.Error`: un server che non è stato possibile raggiungere
+
+% 1 1 0 08e4d2eb73f54737102fcffe19c9df75
+
+@ 0 5 0 0d3560a644f5687c0601017ec1840866
++       `Connect` contiene l'errore per l'impossibilità di raggiungere del tutto un server — il DNS,
++       la connessione TCP, l'handshake TLS — distinto da `Http.Error`, che segnala una risposta
++       che il server ha effettivamente inviato, e dal `Socket.Error` di coaxial, che segnala una
++       connessione stabilita e poi fallita. I nomi vicini sono diversi di proposito: `Http.Connect`
++       è il metodo `CONNECT` e `Http.Connection` uno scambio già stabilito; nessuno dei due è questo.
+
+% 1 1 0 106cc9c84f30c2ad196963cf441c7101
+
+@ 0 1 0 1fdefc54d0da19d70e89533afad2c9da
++   entry .Error   sollevato quando una richiesta non raggiunge il server: DNS, rifiuto, TLS, timeout
+
+% 1 1 0 0b826d07960b2bc71db3d3387b3d2e83
+
+@ 0 9 0 0033a13251938cef0fbce1d0b2cef286
++         Errore `↯/s.103.5`: _the TCP connection failed because `reason`_, sollevato da ogni
++         `Http.Backend` e `Http.Client`, per cui un `fetch` o un `submit` richiede una
++         `Tactic[Connect.Error]` nell'ambito. I motivi, numerati da `999.1` a `999.5`, sono
++         elencati in tabella sotto `Reason`. Un errore TLS è distinto da uno di rete, e il suo
++         `Connect.Error.Reason.Ssl.Reason` dice in quale fase è fallito; un certificato scaduto,
++         uno per l'host sbagliato, uno revocato o una suite di cifrari difettosa vengono tutti
++         rifiutati durante l'handshake, invece che accettati con un avvertimento. Dove si deve
++         stabilire una connessione con un host il cui certificato non può essere convalidato, una
++         `TlsAcceptance` meno rigida nell'ambito lo consente, esplicitamente.
+
+% 2 1 0 0ed33e7e1242511b0b9070fdfddcf389
+
+% 3 1 0 10266cfca9763bfa1ebcefb6deef008b
+
+% 4 1 0 0d4d93d0941f569f0c09370325179d59
+
+% 5 1 0 1994fbd24bb047de063e3ff812596c46
+
+% 6 1 0 1d93822c4560f850120f61bac552c6dd
+
+% 7 1 0 0a4b71b2c1d71b2f19314a9f1a673dc1
+
+% 8 1 0 085c6aec84f97c1913007a6c3971d886
+
+% 9 1 0 047521347ad8223400347d7b307b175c
+
+% 0 1 0 0af4b1b6afa56c201789ad72edc78da0
+
+% 0 1 0 16ac27e123fb98c212cffffacb17ff1d
+
+% 1 1 0 0fb0410cde47e37a1d57e6edbeb42b20
+
+@ 0 4 0 04ac810f29509e8a0fd10312f467def5
++         I client basati su socket (`soundnessHttp`, il client su socket di dominio e le sessioni)
++         convertono un `Socket.Error` in un `Connect.Error` in base al motivo, e segnalano una
++         risposta malformata (`Http.Response.Error`) come `Unknown`; `javaNetHttp` classifica le
++         eccezioni del JDK.
++     entry .Reason   perché la connessione è fallita: `Dns`, `Refused`, `Ssl(reason)`, `Timeout` o `Unknown`
+
+% 1 1 0 075ce22cdaa7af101293ca1ce3e1731c
+
+% 1 1 0 183d5f11254e8518154a3b6c2f0be0bd
+
+@ 2 4 0 1f8bdbb9b7a7466c0ba15f159ba64a67
++           column  Caso
++           column  Codice
++           column  Messaggio
++           column  Nota
+
+% 0 1 0 0c8d8f9b61f7c72e0b90b3ba6442b061
+
+% 0 1 0 04cf36566083e5111dcc7440a4dbe98f
+
+@ 0 1 0 0582ec369b26c74d10ac5c7dfe6d1a63
++           row  `Ssl(reason)`  3  _the SSL/TLS layer could not be established because `reason`_  un `Connect.Error.Reason.Ssl.Reason`, che dice dove è fallito lo strato TLS
+
+% 0 1 0 1d31fa2e2858edd016619b83d63b0fdf
+
+% 0 1 0 03b7195221a5454e1249fb5eba848ea1
+
+% 1 1 0 0c7af4c083f83f510a6f8a3a28016383
+
+@ 0 1 0 02201d6822283bb61910dcfb25041169
++       entry .Ssl   il namespace dei motivi di errore TLS
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 1 0 0fc869e8497dcb181d2e6697cc6c3844
++             `Connect.Error.Reason.Ssl.Reason` è l'enum non numerato degli errori TLS:
+
+% 0 1 0 17a12efcb5b524961abe798015d06fdd
+
+@ 0 4 0 016b7621a7c24fcf02ccee5ee1a923a6
++             column  Caso
++             column  Messaggio
++             column  Nota
++             row  `Handshake`  _the local and remote peer could not negotiate the desired level of security_  ciò che segnalano ogni problema di certificato e ogni incompatibilità di suite di cifrari
+
+% 0 1 0 1da594ffe08c8cd91fb554899a6fa5e7
+
+% 0 1 0 0bdfb0b46c91ac561b62faef14533227
+
+% 0 1 0 0acfa83a3468bdcd0145784dce158f50
+
+% 0 1 0 0886f09d22a849f8174ec96cea203f24
+
+@ 0 6 0 1252aa250feb944b1b63642e0037ee80
++             I client basati su socket segnalano ogni errore TLS come
++             `Handshake`; `javaNetHttp` distingue i quattro casi a partire dalle eccezioni del JDK.
++         entry .Reason   `Handshake`, `Key`, `Peer` o `Protocol`
++           entry .communicable   rende ciascun motivo TLS come messaggio
++       entry .communicable   rende ciascun motivo come messaggio
++     entry #reason   il `Connect.Error.Reason`
+
+@ 0 1 0 0489f2ab512c96780859ca6842b00cfb
++ entry .Context   un archivio di valori per sessione: uno slot di un tipo per ogni `Session`
+
+% 1 1 0 00f73c0400ca3f5e1c3c1acb47ef6d92
+
+@ 0 6 0 0b3325e88552146f18e601b76ef44c12
++       `Context[value]()` è un archivio con uno slot per sessione, letto e scritto in presenza di
++       un given `Session`: `context()` è l'`Optional[value]` della sessione corrente, e
++       `context() = value` lo imposta. È il modo in cui lo stato lato server (un login, un
++       carrello) viene conservato tra una richiesta e l'altra, indicizzato dalla `Session` del
++       cookie di sessione. È basato su una mappa concorrente; un `Context` è `Findable`, quindi
++       lo si può evocare come valore contestuale.
+
+% 2 1 0 0752fc5cd7b9e8a71177750ce7f2bf43
+
+% 3 1 0 1233d457701f96330d826826c55c5c83
+
+% 0 1 0 0259e76275a2dd451460264c1bb2e4a0
+
+% 0 1 0 13d998f588e00bc41114211e7dcac913
+
+% 0 1 0 1da7557931e18b151646a655f1780d6a
+
+% 0 1 0 0a11f68ec88d8dce06b4e2f0e98d8a41
+
+% 0 1 0 1c2c6e81f8fbff9801f02c817fa14c61
+
+% 1 1 0 0244c68616c5960d1486cd562a742bdb
+
+% 1 1 0 1a09b2e59925a5c50820db4c20dc1fed
+
+% 1 1 0 1d04716766c12f85129f9d16e3ae2f2e
+
+@ 0 3 0 0c9f67c62622aa040339a87f1aec6dc7
++   entry .apply   `Context[value]()`: un nuovo archivio vuoto
++   entry #apply   il valore della sessione corrente, oppure `Unset`
++   entry #update   `context() = value`: imposta il valore della sessione corrente
+
+@ 0 1 0 03822d7a0b3499a5090931db1c0d8ee6
++ entry .Cookie   un modello di cookie: un nome, i suoi attributi e il tipo in cui è codificato il valore
+
+% 1 1 0 164f68688c91efea0fead61e513edbbc
+
+@ 0 6 0 1edc2c9ea7e8d5511ff139da9fb8dfa3
++       Un `Cookie[value]` non è un cookie già inviato, ma il modello in cui se ne scrive uno:
++       `Cookie[Text](t"theme")` nomina un cookie e i suoi attributi di dominio, scadenza,
++       `Secure`, `HttpOnly` e percorso, oltre al tipo da cui e verso cui il suo valore si
++       codifica e decodifica in testo. `cookie(value)` crea il `Cookie.Value` da inviare in
++       un'intestazione `Set-Cookie` (`response + cookie(value)`), e `cookie()` rilegge il valore
++       dall'intestazione `Cookie` della `Http.Request` nell'ambito, decodificato nel suo tipo.
+
+% 2 1 0 072408388ea4698b04f694546c467f22
+
+% 3 1 0 0c69c165f238bcac1d7cf6b230d376db
+
+% 4 1 0 011fc0db1abb3f9611ddfa3674068a5c
+
+% 0 1 0 0c8714067b7d85bc04a7ed423fd393f4
+
+% 0 1 0 04f55ebe006a401f0bb152c4c3c2057b
+
+% 0 1 0 1fdf7d0b350fbaf01827cfcff7acf406
+
+% 1 1 0 0d8de823abec6f891fbcd1d5baad7fc3
+
+@ 0 5 0 15aca34413d96d5616ceda123f7c27c3
++       Un `Cookie[Session]` ha `Cookie.session`, che esegue un blocco sotto la `Session` della
++       richiesta, creandone una e impostando il cookie quando la richiesta non ne ha. Il pattern
++       matching su una richiesta con `cookie.Session` estrae il valore decodificato. Un modello
++       di cookie si ispeziona come `Cookie(t"theme" ╱ secure ╱ httpOnly)`, mostrando solo gli
++       attributi che possiede.
+
+% 1 1 0 0144991564f5dc8f0782b464eeb41577
+
+% 1 1 0 13ae035336289f9709a684962e9715e8
+
+@ 0 7 0 1cebf8bfb9683bb20aa19a22ed78f101
++   entry .apply   `Cookie[value](name, domain, expiry, secure, httpOnly, path)`: un modello
++       Il tipo del valore è dato esplicitamente e deve essere `Encodable in Text` e `Decodable in
++       Text`. `domain` è un `Optional[Hostname]`, `expiry` un qualsiasi tipo di durata
++       `Abstractable across Durations to Long` (memorizzato in secondi), `secure` e `httpOnly`
++       valgono `false` per default, e `path` è un testo opzionale.
++   entry .inspectable   rende un modello come `Cookie(name ╱ domain:… ╱ expiry:… ╱ secure ╱ httpOnly)`, solo con gli attributi presenti
++   entry .Value   un cookie come inviato o ricevuto: nome, valore e attributi
+
+% 1 1 0 023fc629592a3239041d5ce3f9cd1625
+
+@ 0 4 0 0e51ff8ae91d46ac02cfd7ff884e2771
++         `Cookie.Value(name, value, domain, path, expiry, secure, httpOnly)` è il cookie
++         concreto: ciò che crea l'`apply(value)` di un modello, ciò che decodifica
++         `request.headers.cookie`, e ciò che `response + cookieValue` aggiunge come intestazione
++         `Set-Cookie`. La sua `expiry` è un `Max-Age` in secondi.
+
+% 2 1 0 1632e8ab40cdc092069ef6c4b175c0a5
+
+% 3 1 0 0fa26cd3bb6c2b320449bce8cb81c0eb
+
+% 0 1 0 05bf30784907240811af4fe83c6af0c0
+
+% 0 1 0 0f433a6d2260e45019ffab7f986f6fc4
+
+% 1 1 0 16b7312bcdbf0f9709c054f552a25aeb
+
+@ 0 30 0 1890dddc9d671e171201c771e53803e4
++     entry .showable   rende la forma `Set-Cookie`: `name=value; Max-Age=…; Domain=…; Path=…; Secure; HttpOnly`
++     entry .inspectable   rende come `Cookie.Value(…)` attorno alla forma `Set-Cookie`, perché non sia scambiato per testo di intestazione
++     entry .encodable   codifica un cookie come intestazione `Set-Cookie`, per `response + cookie`
++     entry .addable   `response + cookie`: una risposta con un'intestazione `set-cookie` aggiunta
++     entry .decodable   legge l'intestazione di richiesta `Cookie`, `a=1; b=2`, come `List[Cookie.Value]`
++         Ogni coppia `name=value` viene decodificata dall'URL; un frammento senza `=` viene saltato.
++     entry #name   il nome del cookie
++     entry #value   il valore del cookie, come testo
++     entry #domain   l'attributo `Domain`, se impostato
++     entry #path   l'attributo `Path`, se impostato
++     entry #expiry   l'attributo `Max-Age` in secondi, se impostato
++     entry #secure   se l'attributo `Secure` è impostato
++     entry #httpOnly   se l'attributo `HttpOnly` è impostato
++   entry .session   esegue un handler sotto la sessione della richiesta, impostando il cookie di sessione se è nuova
++       Un'estensione su `Cookie[Session]`: `cookie.session { … }` legge la sessione dalla
++       richiesta nell'ambito, o ne crea una nuova da un UUID, esegue il blocco con essa come
++       given, e aggiunge il cookie alla risposta restituita dal blocco.
++   entry #name   il nome del cookie
++   entry #domain   l'attributo `Domain` imposto dal modello, se presente
++   entry #expiry   il `Max-Age` imposto dal modello, in secondi, se presente
++   entry #secure   se il cookie è marcato `Secure`
++   entry #httpOnly   se il cookie è marcato `HttpOnly`
++   entry #path   l'attributo `Path` imposto dal modello, se presente
++   entry #apply   `cookie(value)` crea un `Cookie.Value`; `cookie()` legge il valore dalla richiesta nell'ambito
++       `cookie(value)` codifica il valore in testo e vi associa gli attributi del modello.
++       `cookie()` richiede un given `Http.Request`, ed è l'`Optional[value]` decodificato dal
++       cookie con questo nome di quella richiesta, `Unset` se è assente.
++   entry #Session   un estrattore sulla richiesta nell'ambito: `case cookie.Session(value) =>`
++       Corrisponde quando la richiesta ha questo cookie, ed esegue il blocco dato con il valore
++       decodificato come valore contestuale.
+
+@ 0 1 0 0515ff6d3f2f15931e978fe03a7c8a7e
++ entry .Directive   come il tipo del valore di un'intestazione viene controllato e codificato, in base al nome dell'intestazione
+
+% 1 1 0 08eb6593a20d088814cdf4aae6047e1f
+
+@ 0 9 0 1735cec97873d16212e6d9c4c050adbe
++       Una `Directive` è la typeclass dietro un argomento di intestazione con nome. `("accept" is
++       Directive of MediaType)` dice che l'intestazione scritta come `accept = …` accetta un
++       `MediaType`, e come renderlo; la macro dietro `fetch`, `submit` e `Http.Response(…)` evoca
++       la direttiva per il nome di ogni argomento e controlla il tipo del valore rispetto a essa,
++       per cui `accept = 3` è un errore di compilazione: _the header `Accept` cannot take a value
++       of type `Int`_. Il nome trasmesso è l'etichetta camelCase convertita in kebab case:
++       `contentType` diventa `content-type`. Le stesse direttive tipizzano i lettori dinamici
++       `request.headers.contentType` e `response.headers.setCookie`, decodificando il testo del
++       campo nel tipo della direttiva.
+
+@ 0 4 0 00b02179f55eff89158cddef23c2eebb
++       Un argomento senza nome viene associato solo in base al tipo, per cui un `MediaType` da
++       solo è un `accept`, e un `Auth` un `authorization`; un tipo che è una `Directive` per più
++       di un'intestazione (`Text`) non può essere passato senza nome: _the type `Text` does not
++       uniquely identify a particular HTTP header_.
+
+% 2 1 0 045e4e7e46808a681f084b3e0d6e34d9
+
+% 3 1 0 1cdd1fc06b88eec813ac38e9ca179550
+
+% 4 1 0 1ac30f4b019c39d30b96a0acf3984bdb
+
+% 5 1 0 16541242399439791b7f83b1f507e7f6
+
+% 6 1 0 1a11ef9b3da1f57414525d573605316f
+
+% 7 1 0 15d0496310c4aca30824edf7d357275d
+
+% 8 1 0 14f6e64c87b7062212a7067381996383
+
+% 9 1 0 1a179f0098e476ab096e3882f5eb6b34
+
+% 0 1 0 185db210b192411d1ad2c40ffe3c33c9
+
+% 0 1 0 03e905fb33a32cc2170689361907c615
+
+% 1 1 0 1aae064e68a8bba8147a677466a540f0
+
+@ 0 3 0 11aa93de66fbde2a08346044974c33cc
++       Il companion dichiara una direttiva per ogni intestazione standard: quelle tipizzate sono
++       `accept` (un `MediaType`, o una `List[MediaType]`), `authorization` (`Auth`),
++       `contentType` (`MediaType`), `contentLength` (`Bytes`), `contentEncoding` (un
+
+% 0 1 0 03d1b1ee0a76b60509ed83e564905fd8
+
+@ 0 4 0 088876823d1a2a17062e8c0ed818d3ad
++       `origin` (qualsiasi tipo di URL), `range` (un `Interval`, reso come `bytes=start-end`) e
++       `transferEncoding` (`TransferEncoding`); ogni altra intestazione standard accetta `Text`.
++       Un'intestazione che il companion non nomina richiede un given locale, `given ("xRequestId"
++       is Directive of Text) = identity(_)`, per poter essere passata per nome.
+
+% 1 1 0 0abdc87c13325798175bf99c2e1648e0
+
+% 1 1 0 1488dbcd13dc5fad0006b4d34234f00d
+
+@ 0 73 0 14d23be13bda6d480cf91517c714edad
++   entry #Self   il nome dell'intestazione, come tipo letterale: `"contentType"`
++   entry #encode   rende un valore del tipo dell'intestazione come testo del campo
++   entry #key   il nome dell'intestazione come testo, ricavato da `Self`
++   entry .contentEncoding   `contentEncoding`: un `Encoding`, reso con il suo nome
++   entry .accept   `accept`: un `MediaType`
++   entry .accept2   `accept`: una `List[MediaType]`, unita con virgole
++   entry .authorization   `authorization`: un `Auth`
++   entry .cacheControl   `cacheControl`: testo
++   entry .connection   `connection`: testo
++   entry .contentMd5   `contentMd5`: testo
++   entry .contentType   `contentType`: un `MediaType`, reso senza i suoi parametri
++   entry .contentLength   `contentLength`: una quantità `Bytes`, resa come numero
++   entry .cookie   `cookie`: una `List[Cookie.Value]`, unita con `; `
++   entry .date   `date`: testo
++   entry .expect   `expect`: testo
++   entry .forwarded   `forwarded`: testo
++   entry .from   `from`: testo
++   entry .host   `host`: un `Host`
++   entry .http2Settings   `http2Settings`: testo
++   entry .ifMatch   `ifMatch`: testo
++   entry .ifModifiedSince   `ifModifiedSince`: testo
++   entry .ifNoneMatch   `ifNoneMatch`: testo
++   entry .ifRange   `ifRange`: testo
++   entry .ifUnmodifiedSince   `ifUnmodifiedSince`: testo
++   entry .maxForwards   `maxForwards`: un `Int`
++   entry .origin   `origin`: qualsiasi tipo di URL `Abstractable across Urls to Text`
++   entry .pragma   `pragma`: testo
++   entry .prefer   `prefer`: testo
++   entry .proxyAuthorization   `proxyAuthorization`: testo
++   entry .range   `range`: un `Interval` di ordinali, reso come `bytes=start-end`
++   entry .referer   `referer`: testo
++   entry .te   `te`: testo
++   entry .trailer   `trailer`: testo
++   entry .transferEncoding   `transferEncoding`: un `TransferEncoding`
++   entry .userAgent   `userAgent`: testo
++   entry .upgrade   `upgrade`: testo
++   entry .via   `via`: testo
++   entry .warning   `warning`: testo
++   entry .acceptCharset   `acceptCharset`: testo
++   entry .accessControlAllowOrigin   `accessControlAllowOrigin`: testo
++   entry .accessControlAllowCredentials   `accessControlAllowCredentials`: testo
++   entry .accessControlExposeHeaders   `accessControlExposeHeaders`: testo
++   entry .accessControlMaxAge   `accessControlMaxAge`: testo
++   entry .accessControlAllowMethods   `accessControlAllowMethods`: testo
++   entry .accessControlAllowHeaders   `accessControlAllowHeaders`: testo
++   entry .acceptPatch   `acceptPatch`: testo
++   entry .acceptRanges   `acceptRanges`: testo
++   entry .age   `age`: testo
++   entry .allow   `allow`: testo
++   entry .altSvc   `altSvc`: testo
++   entry .contentDisposition   `contentDisposition`: testo
++   entry .contentLanguage   `contentLanguage`: testo
++   entry .contentLocation   `contentLocation`: testo
++   entry .contentRange   `contentRange`: testo
++   entry .deltaBase   `deltaBase`: testo
++   entry .eTag   `eTag`: testo
++   entry .expires   `expires`: testo
++   entry .im   `im`: testo
++   entry .lastModified   `lastModified`: testo
++   entry .link   `link`: testo
++   entry .location   `location`: testo
++   entry .p3p   `p3p`: testo
++   entry .preferenceApplied   `preferenceApplied`: testo
++   entry .proxyAuthenticate   `proxyAuthenticate`: testo
++   entry .publicKeyPins   `publicKeyPins`: testo
++   entry .retryAfter   `retryAfter`: testo
++   entry .server   `server`: testo
++   entry .setCookie   `setCookie`: testo
++   entry .strictTransportSecurity   `strictTransportSecurity`: testo
++   entry .tk   `tk`: testo
++   entry .vary   `vary`: testo
++   entry .wwwAuthenticate   `wwwAuthenticate`: testo
++   entry .xFrameOptions   `xFrameOptions`: testo
+
+@ 0 1 0 13e2ddb928ad5b960b112f89231e5ee1
++ entry .Fetchable   ciò che `fetch` e `submit` accettano come endpoint, e la destinazione a cui inviano
+
+% 1 1 0 05869d5acf64194d13763fee4238e44f
+
+@ 0 6 0 0db7c501faff175609a3b2a4e51c0963
++       Un valore `Fetchable` fornisce una destinazione della richiesta (il suo percorso e la sua
++       query, come testo), un `Host` e un `Target` per cui viene evocato l'`Http.Client`: un
++       `HttpUrl` ha come destinazione la sua `Origin["http" | "https"]`, e un `Uds.Endpoint` (con
++       `udsFetchable`, in `telekinesis.jvm`) il suo socket. Il `.httpUrl` del companion copre
++       ogni `HttpUrl`, compresi i tipi raffinati per schema che hanno i letterali `url"…"`.
+
+% 1 1 0 1634765dd790c7c300852ca64d8914b3
+
+% 1 1 0 1a3dd8f25ff93f6b1207999cafc87848
+
+@ 0 6 0 19291a42d28c852f0282546e2493f88d
++   entry .httpUrl   ogni `HttpUrl` è fetchable, con destinazione la sua origine
++       La destinazione della richiesta è il percorso e la query dell'URL, l'host il suo hostname;
++       un URL senza hostname è un difetto.
++   entry #target   il `Target` di un endpoint
++   entry #text   il testo della destinazione della richiesta di un endpoint
++   entry #hostname   l'`Host` di un endpoint
+
+@ 0 1 0 02a508bb68fd3b5209d94d10c2e1bf26
++ entry .Parameter   un campo con nome della query o del corpo form di una richiesta, letto come un tipo
+
+% 1 1 0 0f33dea52fb194751bb8d7aa0e91b7f3
+
+@ 0 5 0 05c26f7acf0ab60b121dd7bda3e5c033
++       `Parameter[Int](t"page")` nomina un campo e il tipo da cui si codifica e in cui si
++       decodifica. Con una `Http.Request` nell'ambito, `page()` è il suo valore, decodificato
++       dalla `query` della richiesta (parametri dell'URL e corpo codificato come form allo stesso
++       modo), e solleva `Query.Error` se è assente o malformato; `page(3)` è il frammento di
++       `Query` `page=3`; e `case page(n) =>` corrisponde a una richiesta che lo contiene.
+
+% 2 1 0 0686a933ad57be581747ff6f0c73cad3
+
+% 3 1 0 1ebeaa4853a8bd2c0f521d757e0154f3
+
+% 4 1 0 04b1b83b7ac9270206c1b567fd4e1eb0
+
+% 2 1 0 114e83ce4ced1b6d19322b33b4d3e588
+
+% 0 1 0 0152619c50a620f20d28e66087c0a6d0
+
+% 0 1 0 0635381891b8cfe71cb4087b72141557
+
+% 0 1 0 0ed41a1191ac14ab1f882fe5f971730e
+
+% 0 1 0 0f0c65d9d197fd7f1282cae5b79e99d0
+
+% 1 1 0 138f8a791c1cb60f1629c7344fd07eed
+
+@ 0 2 0 04edaa42a5e5b0801179d47923ad4034
++       Il tipo del valore deve essere `Decodable in Query` e `Encodable in Query`, come lo è ogni
++       tipo primitivo e ogni prodotto di essi.
+
+% 1 1 0 0dc05813934a62481c84f8b846e0f5b7
+
+% 1 1 0 0cebd8bc3325c88204df90ba03db5170
+
+@ 0 9 0 13ff89d38d9e2e7b1cd1ad4559b0aef7
++   entry .apply   `Parameter[value](name)`: un parametro con un nome e un tipo
++   entry #name   il nome del campo
++   entry #decode   il valore ricavato da una `Query`
++   entry #encode   una `Query` ricavata da un valore
++   entry #apply   `parameter(value)` codifica un valore; `parameter()` lo legge dalla richiesta nell'ambito
++       La lettura richiede un given `Http.Request`, una `Tactic[Query.Error]` per un campo
++       assente o malformato, e una `Tactic[Truncation.Error]` per un corpo form troncato
++       (segnalato come assenza del campo).
++   entry #unapply   `case parameter(value) =>` su una `Http.Request`: corrisponde quando il campo si decodifica
+
+@ 0 1 0 1b47c0ce2fe187041badd1f2bbf1d4b7
++ entry .Postable   come un valore diventa il corpo di una richiesta: il suo tipo di media e i suoi byte
+
+% 1 1 0 1d678b842e6e1b770031b6e465d61cbd
+
+@ 0 10 0 0f7e629feb2407cb098a32f325eb891c
++       Un valore `Postable` può essere il payload di `submit`: la typeclass fornisce il suo
++       `MediaType`, che diventa l'intestazione `Content-Type`, e uno `Stream[Data] over Credit`
++       nuovo dei suoi byte ogni volta che viene richiesto (un corpo può essere inviato di nuovo
++       dopo un redirect, e campionato per il logging). Il companion copre `Text` (`text/plain`,
++       codificato dal `Codepage` nell'ambito), `Data` e un `Data & Sized[n]`
++       (`application/octet-stream`), `Chain[Text]` e `Chain[Data]` (in streaming,
++       `application/octet-stream`), `Query` (`application/x-www-form-urlencoded`, l'invio di un
++       form), `Unit` (un corpo `text/plain` vuoto) e qualsiasi tipo `Abstractable across
++       HttpStreams` verso un tipo di media e uno stream; le librerie di formati di dati
++       aggiungono `postables.jsonPostable`, `xmlPostable`, `yamlPostable`, `cborPostable`,
++       `protobufPostable` e il multipart di gesticulate.
+
+% 2 1 0 0d0b96ba0ab3190c05578eda7fa4e817
+
+% 3 1 0 16cd2fe0a8ea3dfb11a9b4328a52850d
+
+% 4 1 0 1307fa0810a6bd3d1630885a18d9dc49
+
+% 5 1 0 03fb09910f1fef5617268daf5514be67
+
+% 6 1 0 04060d78d968eb6d18e7c1b875671bfb
+
+% 7 1 0 0daae30422eb83a006044fac37a9e0c5
+
+% 8 1 0 0efbec31f4a5bfb9082f9d1102d703ec
+
+% 9 1 0 0e19ccf7fe2f144c09a2065bc2795e26
+
+% 10 1 0 07dabd0e8e0fe7d615e36b275bf8c5da
+
+% 0 1 0 05d1d341d162925b1b395172df93d946
+
+% 0 1 0 1ea7b2c0a615da610b8ac50c82bd8f46
+
+% 1 1 0 05cf05ed27633649138c2eddf42c68c5
+
+@ 0 2 0 16676a7b6986b6ad18181cd13fd9d543
++       Un'istanza personalizzata è `Postable(mediaType, streamer)`, dove lo streamer è una
++       funzione dal valore a uno stream; l'istanza trattiene ciò che lo streamer cattura.
+
+% 1 1 0 0115fab32a0facef1346088c4a28eb20
+
+% 0 1 0 0267f5ed1679c9481af5552f2715dc1f
+
+@ 0 1 0 1633f0cc8c1c63d208c8ad22ff8521f9
++   entry .Streamer   la funzione da un valore a un nuovo stream del corpo, come trait a metodo singolo
+
+% 1 1 0 1a467600a48c4dd10c9aa6d858d59240
+
+@ 0 19 0 18b3d9d0fd99cd441a680bdae35e34a1
++         Ha un nome, invece di essere un tipo funzione, perché il suo metodo `stream` possa
++         creare un nuovo stream con ambito; una lambda si converte in esso nel punto di chiamata.
++     entry #stream   un nuovo stream dei byte di un valore
++   entry .apply   `Postable(mediaType, streamer)`: un'istanza da un tipo di media e uno streamer
++   entry .text   `Text` si invia come `text/plain`, codificato dal `Codepage` nell'ambito
++   entry .textStream   una `Chain[Text]` si invia come `application/octet-stream`, codificando ogni blocco
++   entry .unit   `Unit` si invia come corpo `text/plain` vuoto
++   entry .data   `Data` si invia come `application/octet-stream`
++   entry .sizedData   un `Data & Sized[length]` si invia come `Data`
++   entry .byteStream   una `Chain[Data]` si invia come `application/octet-stream`, in streaming
++   entry .query   una `Query` si invia come `application/x-www-form-urlencoded`, l'invio di un form
++   entry .dataStream   qualsiasi valore `Abstractable across HttpStreams` si invia con il tipo di media e lo stream che ne astrae
++       Richiede una `Tactic[MediaType.Error]`, sollevata quando il testo del tipo di media
++       astratto non viene analizzato; l'istanza la trattiene.
++   entry #mediaType   il tipo di media del corpo di un valore
++   entry #stream   un nuovo stream del corpo di un valore
++   entry #preview   un campione esadecimale del primo blocco del corpo, per il logging
++       Al massimo un riempimento limitato, per cui un corpo grande non viene mai esaurito per
++       registrarlo nel log; un campione più lungo di 128 byte termina con `...`.
+
+@ 0 1 0 16330e6c260a444910fcf264719665dc
++ entry .Receivable   come si legge una risposta come tipo: `response.receive[T]`
+
+% 1 1 0 1d936fb9850a86f508b1806c84a7797b
+
+@ 0 8 0 0c8146ab425120d3031bbf6f3e0f0482
++       Un `Receivable` legge una `Http.Response` in un valore. Ogni istanza costruita con
++       `Receivable(reader)` controlla prima lo stato: una risposta fuori dalla categoria
++       `Successful` solleva `Http.Error` con il suo stato e le sue intestazioni, e solo allora
++       lo stream del corpo viene consegnato al lettore. Il companion legge `Text` (l'intero
++       corpo, UTF-8), qualsiasi tipo `Aggregable by Data` (`Data`, un `Json`, una `Chain[Data]`,
++       …), qualsiasi tipo `Instantiable across HttpRequests from Text`, e `Http.Status` — che,
++       unico, non solleva mai, perché non legge alcun corpo. L'istanza `Instantiable`,
++       `instantiable`, è ereditata dal trait `Receivable2`, con priorità inferiore a quelle del
++       companion stesso.
+
+% 2 1 0 015da383054144c70952a4c22f93252e
+
+% 3 1 0 036b0975652620451350bf8e0dd0fe25
+
+% 4 1 0 13111ec3323678da1c90661ffac054bb
+
+% 5 1 0 06b1fa6e453239e219232dffeeefa87b
+
+% 6 1 0 01d1c8c571e2b71f15ccd4eaa5d5e394
+
+% 7 1 0 10c1c230c9654f05140a4657af2ba8fb
+
+% 8 1 0 11498eb8b48251a207b8b37a8f8fcad7
+
+% 9 1 0 1066d9ace9d32f621769f472a69e63df
+
+% 4 1 0 138a62c8f7d6fff800634e5cc95a6a07
+
+% 0 1 0 0930b0d7f3c33c4a1d77276a931e8d23
+
+% 0 1 0 0244e41d87138e7310a6ab6bb0f09307
+
+% 0 1 0 150c605e34ce240705452d3fd4ab6338
+
+% 1 1 0 1fc44fba2bc66518157f5f53c1096d8e
+
+@ 0 3 0 0bcd42575202ee4016b9847425606263
++       Un corpo si legge una volta sola: lo stream è un endpoint a proprietario unico sulla
++       connessione, per cui un secondo `receive[Text]` sulla stessa risposta lo trova esaurito.
++       `#map` ricava un lettore per un altro tipo da uno già disponibile.
+
+% 1 1 0 0c5eea201358f1df0188147987ff9d8c
+
+% 1 1 0 0a224abb675dcb741ed149e9fac1fccd
+
+@ 0 1 0 1d04f119ee9bff660b17fde868934aeb
++   entry .Reader   la funzione da uno stream del corpo a un risultato, come trait a metodo singolo
+
+% 1 1 0 0207425637772179189714db434aada5
+
+@ 0 11 0 029c631451f3173f0bfc70d7979cb202
++         Ha un nome, invece di essere un tipo funzione, perché possa accettare lo stream
++         tipizzato da capability; una lambda si converte in esso nel punto di chiamata.
++     entry #read   il risultato ricavato da uno stream del corpo
++   entry .apply   `Receivable(reader)`: un'istanza che controlla lo stato, poi legge il corpo
++       Richiede una `Tactic[Http.Error]` e una `Tactic[Truncation.Error]`, che l'istanza
++       trattiene insieme al lettore.
++   entry .text   legge il corpo come `Text`, decodificato come UTF-8
++   entry .streamable   legge il corpo attraverso qualsiasi `Aggregable by Data`: `Data`, un `Json`, uno stream
++   entry .httpStatus   `receive[Http.Status]`: lo stato, senza leggere alcun corpo e senza mai sollevare
++   entry #read   legge una risposta, che può avere un corpo che trattiene la connessione attiva
++   entry #map   un `Receivable` per un altro tipo, tramite una funzione sul risultato di questo
+
+@ 0 1 0 0eb3ed84b12ab0ab1b470bf9b9eb36ab
++ entry .Receivable2   l'istanza `Receivable` a priorità inferiore, inclusa nel companion
+
+% 1 1 0 06b85b5f876e0a2e01f6058be384ff1a
+
+% 2 1 0 1d029725260078ad01bbce8879d84fd4
+
+@ 0 4 0 0c3394d3cf7ebdbf1d42e3438ad4b1e2
++       Non va usato direttamente: contiene `instantiable`, il fallback che legge qualsiasi tipo
++       `Instantiable across HttpRequests from Text` dal testo UTF-8 del corpo, con priorità
++       inferiore a `Receivable.text` e `Receivable.streamable`.
++   entry #instantiable   legge il corpo come testo e istanzia qualsiasi `Instantiable across HttpRequests from Text`
+
+@ 0 1 0 1a3dad6c66c391ea0b3629d9cbaa05b1
++ entry .Redirects   il namespace di `Redirects.Disabled`, il marcatore che disattiva il seguire i redirect
+
+% 1 1 0 1aec922d3a68e0e90e09f4e5851650a9
+
+@ 0 3 0 007670e961d7faa70c884c456d16510d
++       Portare un `Redirects.Disabled` nell'ambito seleziona `Http.Client.httpStrict`, che
++       restituisce una risposta 3xx invariata invece di seguirla. Il given che lo fa è
++       `httpRedirections.doNotFollowRedirects`, importato per nome.
+
+% 0 1 0 10895e0f8cd8e71d0b1e8f0d614dcabf
+
+@ 0 1 0 07985b8c0fa07d691cb18ea57f8eb781
++   entry .Disabled   la classe marcatore; un'istanza nell'ambito disattiva il seguire i redirect
+
+@ 0 1 0 1d0fc46ff3643b0610c46c787f8719ef
++ entry .Servable   come un valore diventa una risposta: `Http.Response(value)`, o restituendolo da un handler
+
+% 1 1 0 0d6cae7a5772259e0b097533c42938a6
+
+@ 0 8 0 08c87e94173c0e4c0118b420a1d205dc
++       Un valore `Servable` viene servito come `Http.Response` con il suo tipo di media in
++       un'intestazione `content-type` e i suoi byte come corpo. Il companion copre `Text`
++       (`text/plain`, codificato dal `Codepage` nell'ambito), `Data` e un `Data & Sized[n]`
++       (`application/octet-stream`), il `Content` di gesticulate (un tipo di media e uno stream),
++       qualsiasi tipo `Abstractable across HttpStreams`, e — tramite `.media` — qualsiasi tipo
++       con un'istanza `Media` e un `Encodable in Data` o uno `Streamable by Data` o `by Text`;
++       le librerie di formati di dati aggiungono `servables.jsonServable`, `xmlServable`,
++       `yamlServable`, `cborServable` e `protobufServable`.
+
+% 2 1 0 0b13e11249c480cb0242aa8547aae354
+
+% 3 1 0 07172fbef591d71f0f7437cc32f44500
+
+% 4 1 0 13f89ce7b58693a80a636bd50b2b423a
+
+% 0 1 0 16935585091732ef01d9242c06db6ec8
+
+% 0 1 0 05f79e63c550c96f038228127c79cce5
+
+% 1 1 0 03a939d0b1acaeac17383c7386c25a5b
+
+@ 0 5 0 0edf821df79219bf148c9b97626adb52
++       Un'istanza personalizzata è `Servable(mediaType)(value => body)` o, quando il tipo di media
++       dipende dal valore, `Servable(value => mediaType)(value => body)`. Un corpo `Text` in
++       streaming servito tramite `.media` esegue il `Codepage` come stadio dello stream, che un
++       server deve consumare blocco per blocco (`sweep`), mai con `memoize`, sul percorso di
++       servizio; un corpo `Data` (`Http.Body.Fixed`) evita la questione.
+
+% 1 1 0 172bab0102c783570cee601efd68ae0f
+
+% 1 1 0 1148a9c80ce49d601581973a2eacc850
+
+@ 0 17 0 13de89031fb9bbc30adb1dd317d4fe5c
++   entry .apply   `Servable(mediaType)(value => body)`: un'istanza da un tipo di media e una funzione del corpo
++       Il tipo di media può essere una costante (la sua intestazione viene resa una volta sola) o
++       una funzione del valore. L'istanza trattiene ciò che le funzioni catturano.
++   entry .content   il `Content` di gesticulate si serve con il proprio tipo di media e il proprio stream
++   entry .bytes   qualsiasi valore `Abstractable across HttpStreams` si serve con il tipo di media e lo stream che ne astrae
++       Un testo di tipo di media che non viene analizzato è un difetto dell'istanza
++       `Abstractable`, e va in panic.
++   entry .data   `Data` si serve come `application/octet-stream`, fisso
++   entry .sizedData   un `Data & Sized[length]` si serve come `Data`
++   entry .text   `Text` si serve come `text/plain`, fisso, codificato dal `Codepage` nell'ambito
++   entry .media   qualsiasi tipo `Media` si serve con il suo tipo di media, dal suo `Encodable in Data` o da uno `Streamable`
++       Un given inline che sceglie, nel punto in cui viene evocato, un `Encodable in Data` (un
++       corpo fisso), uno `Streamable by Data over Credit` (un corpo in streaming) o uno
++       `Streamable by Text over Credit` (in streaming attraverso il `Codepage` e il `Buffering`
++       nell'ambito), in quest'ordine.
++   entry #serve   la risposta per un valore
++   entry #contramap   un `Servable` per un altro tipo, tramite una funzione verso questo
+
+@ 0 1 0 10eb6290142f8e371faa1d88ffdbf7b9
++ entry .Session   una chiave di sessione: l'identità che un cookie di sessione porta tra le richieste
+
+% 1 1 0 18baf6354768f8761513c28a5adb486a
+
+@ 0 4 0 0222b3ff41dd25d519b716e6101ee195
++       `Session(key)` è il valore che un `Cookie[Session]` memorizza nel browser e rilegge, e la
++       chiave sotto cui un `Context` conserva lo stato per sessione. Si codifica come la sua
++       chiave nuda e si ispeziona come `Session(t"a3f1")`, così i due si distinguono. È
++       `Findable`, quindi la si può evocare come valore contestuale dentro `Cookie.session`.
+
+% 1 1 0 1aa367f4ad21ba6813eb1a077d4c7515
+
+% 1 1 0 0f95654d2c1af48b1b7b1f9abf97ea14
+
+@ 0 4 0 124a7bb8fc38059000ace29026c52a0f
++   entry .encodable   una sessione si codifica come la sua chiave
++   entry .decodable   una sessione si decodifica dalla sua chiave
++   entry .inspectable   rende come `Session(t"key")`
++   entry #key   la chiave della sessione
+
+@ 0 1 0 18a21cb13e10417c19fa554e887d8a37
++ entry .Submission   lo stato di un form: non ancora inviato, o inviato con una query da decodificare
+
+% 1 1 0 1a9580cb359dfe1003db40b482627401
+
+@ 0 4 0 130f2bb979191473155a84df07e201c7
++       `Submission[content](query)` contiene la `Query` con cui è stato inviato un form, oppure
++       `Unset` quando il form viene mostrato per la prima volta. `#value` la decodifica nel tipo
++       del form, `#valid` dice se si decodifica, e `#fresh`/`#submitted` dicono in quale stato
++       si trova. Con `telekinesis.forms`, `submission.form(…)` lo rende come HTML.
+
+% 0 1 0 07bb4ab1bdb520e61f0a4c62381ede96
+
+% 0 1 0 0109017e26a0240203ba9e8f5bf00e8f
+
+@ 0 6 0 0a3b01ee0f1de5911b7fe71fb22f44ae
++   entry #query   la `Query` inviata, oppure `Unset`
++   entry #fresh   se il form non è stato inviato
++   entry #submitted   se il form è stato inviato
++   entry #optional   il valore decodificato, oppure `Unset` se assente o non valido
++   entry #valid   se la query inviata si decodifica nel tipo del form
++   entry #value   il valore decodificato, oppure `Unset` se non inviato; una query malformata solleva un errore
+
+@ 0 1 0 0b8c0c01a808a95e054c4bd39b3c1527
++ entry .TransferEncoding   i valori dell'intestazione `Transfer-Encoding`
+
+% 1 1 0 1a63a51a58e5220a1732aff8a89f0958
+
+@ 0 3 0 1c5a1012b597b630043156f7c96bbb2d
++       Un enum: `Chunked`, `Compress`, `Deflate` e `Gzip`, ciascuno codificato come il suo nome
++       in minuscolo. È il tipo accettato dall'argomento di intestazione `transferEncoding`.
++   entry .encodable   codifica una codifica di trasferimento come il suo nome in minuscolo
+
+@ 0 1 0 082b51434ff4e9161c7bf95adb90279f
++ entry .internal   le implementazioni delle macro dietro `fetch`, `submit` e `Http.Response(…)`
+
+% 1 1 0 06c6d613445b534e136eb0db9baa2b04
+
+% 2 1 0 1ecb9230fd058d640f19e5bd36c2d294
+
+@ 0 8 0 0f39c2d0513e611e0dbcf3fe497f5709
++       Non va usato direttamente: l'oggetto esiste perché le macro abbiano una sede stabile.
++   entry .expand   smista gli argomenti di una chiamata in metodo, stato e intestazioni codificate
++       Ogni argomento con nome viene controllato rispetto alla `Directive` del suo nome, e ogni
++       argomento senza nome rispetto all'unica `Directive` del suo tipo; un metodo o uno stato
++       dati due volte, o un valore che non corrisponde ad alcuna intestazione, sono un errore di
++       compilazione.
++   entry .submit   la macro dietro `Http.Submit#apply`: costruisce la richiesta con il suo `Content-Type` e la invia
++   entry .fetch   la macro dietro `Http.Fetch#apply`: costruisce la richiesta senza corpo e la invia
++   entry .response   la macro dietro `Http.Response(…)`: un valore servito, o una `Protoresponse`
+
+@ 0 1 0 1ac5e51485bd2d68003b508bea6f7233
++ entry .fetch   `url.fetch(…)`: una richiesta `GET` (o un'altra senza corpo) a un URL, con intestazioni tipizzate
+
+% 1 1 0 014b94928b36c4bb167ebbaa1b904452
+
+@ 0 8 0 0b3cf0475f4a1c0d1fe2c60578dd6142
++       Un'estensione su qualsiasi endpoint `Fetchable` — un `HttpUrl`, o un `Uds.Endpoint`
++       sulla JVM — che restituisce un `Http.Fetch`; il suo `apply` è una macro che accetta un
++       `Http.Method` opzionale (per default `Http.Get`) e qualsiasi intestazione, costruisce la
++       richiesta e la invia attraverso l'`Http.Client` per la destinazione dell'endpoint. Le
++       intestazioni sono argomenti con nome controllati dalla `Directive` del loro nome, o
++       valori senza nome il cui tipo identifica l'intestazione. La chiamata richiede un `Online`
++       (`internetAccess.online`), un `Http.Event is Loggable` (`logging.silentLogging`), un
++       `Http.Backend` da `httpBackends`, e tattiche per `Connect.Error` e, su `receive`,
++       `Http.Error`.
+
+% 2 1 0 1c278bf50b2ecd320f63bbfabd81ecd7
+
+% 3 1 0 0941eda91bac48571d022bbd687fe7b8
+
+% 1 1 0 196763793b32db02032b83bb4b7efc71
+
+@ 0 1 0 1c86316cf3e37a021f3a620f574dff8d
++         label Un fetch semplice: solo lo stato
+
+% 1 1 0 111e75cfd07b3f450d9dcbff2c3ed04a
+
+% 2 1 0 1f96e7a87ff725f71c0be8b68c9f1ba6
+
+% 3 1 0 126d72e6a83189b116985b4c25a455b9
+
+% 4 1 0 1c6008b960490b7505eac183e3de9d3e
+
+% 5 1 0 18c00bb23b2cf40405ed5d5445029811
+
+% 6 1 0 0da8152fc85335491ac2ca30d721e87d
+
+% 0 1 0 12e61943f50013610d92f3575c020f18
+
+% 1 1 0 09f0d45f8d23f2de0bf668adaeeb2d76
+
+@ 0 1 0 10e5e6b7142f5fea1dec42a57d2ac7fc
++         label Un'intestazione, con nome e controllata: `accept` accetta un `MediaType`
+
+% 1 1 0 00db0f2ddcf526dd10a55be5c8f0fda7
+
+% 2 1 0 08bcb023bb626ec016194d2132a4cb76
+
+% 3 1 0 09e8c9fc617ba9390e980b7fed3d9cd6
+
+% 4 1 0 0adfcd9f6fa74540077cbbda5614baca
+
+% 5 1 0 11afb526351150e602d48d59b6aa1373
+
+% 6 1 0 1192702b6fddb03805ed06190059947e
+
+% 0 1 0 1bbfd080469a27ad148a99e18cf3a0b8
+
+% 1 1 0 1121b2b4a6146bb408274c53ac268a0a
+
+@ 0 1 0 10e98339a0894f720ec4a856b92fa83e
++         label Una seconda intestazione: `authorization` accetta un `Auth`
+
+% 1 1 0 0e6ece00565af76a1c90ca4ace7ed0db
+
+% 2 1 0 0248a4f8fe8ca8d4106af9b381df52a9
+
+% 3 1 0 0fe6bcf2dc7967cb03376008ce7b2f89
+
+% 4 1 0 18c6223ea179089d08d7257ab2c304dc
+
+% 5 1 0 157f8eb1af8cd7b80079ca50bf04c5e5
+
+% 6 1 0 1718ab7b6481d065100a27fb43e23d8f
+
+% 0 1 0 1787be7b2bdb6bae046e8da33a008b43
+
+% 1 1 0 06b7f293795e97e41a176d210b314a3e
+
+@ 0 1 0 135e13addf0657ee063e8caa99e4bb9e
++         label Un metodo diverso da `GET`, dato per posizione
+
+% 1 1 0 1620ca0aefed45561755f98f976ce26f
+
+% 2 1 0 060fb5bbde484abf15d99135ec30d97b
+
+% 3 1 0 1acb8c7f3b6701ca0041c6e3201d9c47
+
+% 4 1 0 1e609ef9b136e3ed009744cabfc8f3da
+
+% 5 1 0 184e713ba3c333f900579ffdc007d956
+
+% 6 1 0 1a62a9e9eef0d98f0ca0cb350e2dcc1e
+
+% 0 1 0 1656066d2e2448940fdd343b96257b9a
+
+% 1 1 0 15b3e7bd8394294811271840087402b3
+
+@ 0 1 0 1b40b73ab63793ce15b76337641318ee
++         label Il corpo letto come tipo
+
+% 1 1 0 1805b999e84c52d51dc8fc5b2150edd7
+
+% 2 1 0 0ec7f0287e2ac7510c96ba96848d7db6
+
+% 3 1 0 144c68c7f5cf08b6087452415f4a2210
+
+% 4 1 0 0912bd30c55b39b000b04cd15b0071ee
+
+% 5 1 0 0400098acd3d22b207eaf2c64aa255e0
+
+% 6 1 0 14006112b6e103a9165a029dded78de9
+
+% 0 1 0 1dea07e3942bf4f60d5d2e5e19f27e6c
+
+% 0 1 0 0e50798e48dc9152165c562311f1e671
+
+% 1 1 0 09a94a5f37be7f681753f510b6b73ffb
+
+% 2 1 0 1908a4523cdedfe80205f2fffb550741
+
+@ 0 4 0 0c372bdc3e3d8a461427c73863d0bb4d
++       I redirect vengono seguiti, fino a dieci, a meno che non si importi
++       `httpRedirections.doNotFollowRedirects`; una risposta fuori dall'intervallo di successo
++       viene restituita così com'è, e solleva `Http.Error` solo quando il suo corpo viene letto
++       con `receive`. Una richiesta che non raggiunge il server solleva `Connect.Error`.
+
+% 1 1 0 14497bfbde427bd41e2361a858762c60
+
+% 0 1 0 1fcfcf4ceb332b091fd068197c8d6b1d
+
+% 1 1 0 0774057b0615fbbb04f196b2045d0865
+
+% 0 1 0 194c91364766d9670dbbd409ae5376ca
+
+@ 0 1 0 0bb9b32e5c44ace00921bf566a134694
++ entry .submit   `url.submit(…)(payload)`: una richiesta con corpo, dove il corpo è un valore `Postable` tipizzato
+
+% 1 1 0 12713f12f6774b331a4cdfd25639d0d6
+
+@ 0 5 0 14d6e03029b8904f1d9bfe7bf246e2d2
++       Un'estensione su qualsiasi endpoint `Fetchable` che restituisce un `Http.Submit`; il suo
++       `apply` accetta il metodo (per default `Http.Post`) e le intestazioni in una prima lista
++       di argomenti e il payload in una seconda. Il payload è qualsiasi valore con un `Postable`
++       — `Text`, `Data`, una `Query` (l'invio di un form), un `Json` con
++       `postables.jsonPostable` — e il suo tipo di media diventa l'intestazione `Content-Type`,
++       per cui non si imposta nulla a mano per farli coincidere.
+
+% 2 1 0 03e8ae05eb73ab0b0e37363da11ee5c6
+
+% 3 1 0 11583f77d6ee50b000eb3a26a56a78a1
+
+% 4 1 0 0393b3b9a72b306218857db0d24c23d0
+
+% 5 1 0 0f9600af97d7ae420a0f41f8450e4ceb
+
+% 6 1 0 1d05b85360b4eb1618aaaada1c49b4a9
+
+% 7 1 0 069bd22cf11908650c9ff6ca2fdab30e
+
+% 8 1 0 190234c9a9fd1aed0512142a22cd6764
+
+% 9 1 0 01039a231b0098e41263873a991f5142
+
+% 10 1 0 0c01759a0b3eeb470cccb336ac77565f
+
+% 0 1 0 03df5e91a1fd06e718c57063e389e7bd
+
+% 0 1 0 049dbb6dece84200039f5155eb17e925
+
+% 0 1 0 159c9aa364bccc950e27ccae74dc5fb8
+
+% 1 1 0 0d628809438a6c39165bf404df7bc2e8
+
+@ 0 3 0 12d6c5bd94e327f80dbc319c64923128
++       Richiede gli stessi valori contestuali di `fetch`: un `Online`, un `Http.Event is
++       Loggable`, un `Http.Backend` e una `Tactic[Connect.Error]`, più quelli propri del
++       `Postable` (un `Codepage` per `Text`).
+
+% 1 1 0 1f687f81439cd94812f9a255019d3d07
+
+% 1 1 0 0c627afff3d931341545f3203271cf7d
+
+% 0 1 0 0738377d82dc7d9b003b6b35d0bb07c0
+
+@ 0 3 0 116956c3e38dc1df1ba3d4baff942abc
++ entry .query   `value.query`: un valore come `Query`; `url.query(query)`: un URL con parametri aggiunti
++     Due estensioni condividono il nome. `value.query` codifica qualsiasi valore `Encodable in
++     Query` — una case class, per derivazione generica, con i campi annidati uniti da punti —
++     come una `Query`:
+
+% 2 1 0 13416ce82652d4e0189df5b953b88425
+
+% 3 1 0 0e1bfb76689a3194073813c64246be02
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 1872f392c5dcfbc7158614081e276135
+
+% 0 1 0 14b16cc5ec63d25a180578ec55d8fc22
+
+% 0 1 0 05e552f6ca7d309d1b7896184716dbe2
+
+% 0 1 0 0dbeb67c875bc0ab1f3ac7c33e438f56
+
+% 0 1 0 059d95a53e1f0d0213ca0bc7c46c0c1f
+
+% 1 1 0 05362f149e0d0be3035334392a51f033
+
+@ 0 2 0 01f7fdd1f6c1dc6d0ae1fcc442fd566f
++     `url.query(query)` è un `HttpUrl` con i parametri della query aggiunti a quelli che ha già,
++     per costruire l'URL di una richiesta da parametri tipizzati:
+
+% 2 1 0 1069ef0b4b83324119afac0f5b9172e0
+
+% 3 1 0 059e27b043a2acae0fe1afc035385d16
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 0fd40c4c106c79051f278e920a7bd088
+
+% 1 1 0 1ec549b94f7dcc6912b4a25d65cc035f
+
+@ 0 1 0 03df3a7ab1439c4c15e8db2d7bd6d83a
++ entry .queryParameters   il given che permette di costruire una `Query` con nomi di campo arbitrari
+
+% 1 1 0 09e44214b4079e0517f4551325236e90
+
+@ 0 4 0 0a72a2833ab32eb11b18757eaa27e475
++       `Query.make(key = value, …)` controlla ogni argomento con nome rispetto a un given `key is
++       Parametric to value`, che fissa il nome e il tipo di ogni campo che una query può avere.
++       Il given `arbitraryQueryParameter`, importato per nome, accetta qualsiasi nome e qualsiasi
++       tipo, per cui una query si può costruire ad hoc, con i prodotti annidati appiattiti per
++       derivazione generica.
+
+% 2 1 0 1c95879d73a773cc1ccfa119fe8b3015
+
+% 3 1 0 11fe3ed555735123106bae6dcbb97d34
+
+% 0 1 0 14c26373278c29d604d444929c9eb95a
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 1b39ade6af662af2124fbe05abe477f0
+
+% 0 1 0 0fb1773505302b2d04fbeab2dcfc8874
+
+% 1 1 0 0c4f771e3c44688f0a2e97e179dd7da6
+
+@ 0 1 0 05e334c17318c6c21e1655392bdb2a12
++   entry .arbitraryQueryParameter   qualsiasi etichetta è un parametro di query di qualsiasi tipo
+
+@ 0 1 0 08d6ef8f45b7f38f132c7c082cf28858
++ entry .httpRedirections   la politica sui redirect, come given da importare per nome
+
+% 1 1 0 08e4cd5dcfc223490e07eb7018bf7ec2
+
+@ 0 5 0 18d03d8cad425bef11446a43f46d94fd
++       Senza alcun import l'`Http.Client` segue le risposte `301`, `302`, `303`, `307` e `308`
++       fino al limite di `Http.Redirection`, dieci per default. Importare
++       `doNotFollowRedirects` porta nell'ambito un `Redirects.Disabled`, che seleziona invece
++       `Http.Client.httpStrict`: una risposta di redirect viene allora restituita così com'è, e
++       leggerne il corpo solleva `Http.Error` con lo stato 3xx.
+
+% 2 1 0 034d781f4cc6d83c107f580d7c2fc613
+
+% 3 1 0 0dd939ab7fdf729f168d127454ba29dc
+
+% 4 1 0 04d054653b0444271932f80dcc91c8fb
+
+% 5 1 0 1614a2da274af8e8181dd9993a51aecf
+
+% 6 1 0 08a81d406b75711303c1a09330867b31
+
+% 0 1 0 0de73a01e6bda16814a5ed268337b5a4
+
+% 1 1 0 0a88383eaab8915b16920fd7876f9291
+
+% 2 1 0 1aa60d8a4ab37df40fc0ce9bf1e27a97
+
+% 3 1 0 01583f87be4be18c114a6956c1da9a3b
+
+% 4 1 0 03d5f2b37060aeef1abb5dcf9c3e8bc3
+
+% 0 1 0 195703d77b275e830aadb8d13e060e84
+
+% 1 1 0 15d5c9efed597d350ae918c93a4086a9
+
+% 0 1 0 0ccb6862b6dc894204a0054a2009a302
+
+% 1 1 0 190b2590573572af166e5cdc396ac7dc
+
+@ 0 1 0 0f22407e587b7b300711ad670dee854a
++   entry .doNotFollowRedirects   un `Redirects.Disabled`: le risposte 3xx vengono restituite, non seguite
+
+@ 0 1 0 11271fa9530d2e9d18f5e46abb895b28
++ entry .construables   il given che interpreta `application/x-www-form-urlencoded` come `Query`
+
+% 1 1 0 0659207cde3100081e9bfd11dc061c1a
+
+@ 0 4 0 06369689d32b4ba700c94d1033c5319e
++       Un `Construable` associa a un tipo di media il tipo Scala in cui si legge una risposta di
++       quel tipo, ed è ciò che usano i client di API generati da apoplexy per decodificare il
++       corpo di una risposta. Importare `formConstruable` per nome legge un corpo codificato
++       come form come una `Query`.
++   entry .formConstruable   `application/x-www-form-urlencoded` si interpreta come `Query`
+
+@ 0 1 0 0fc1055f7ae1d2871e8b9d227b3d9848
++ entry .httpBackends   i trasporti HTTP, ciascuno un given `Http.Backend` da importare per nome
+
+% 1 1 0 0a05380e6a92d083064319af789bc948
+
+@ 0 7 0 02544ffa1730b9d213afefcbe842d3cf
++       Quale canale trasporta una richiesta lo decide l'`Http.Backend` nell'ambito, e la scelta
++       non è mai implicita: `import soundness.*` non ne porta nessuno, e se ne importa uno per
++       nome. `javaNetHttp` usa il `java.net.http` della JVM stessa; `soundnessHttp` parla
++       direttamente i codec di trasmissione di Soundness sui socket di coaxial, senza alcun
++       coinvolgimento di `java.net.http`, sulla JVM e su Scala Native; `wasiHttp` chiama
++       `wasi:http` da un componente Wasm. Tutto ciò che sta sopra il backend — redirect,
++       logging, intestazioni e corpi tipizzati — è identico qualunque si scelga.
+
+% 2 1 0 0126f4b866e9ee5a03b6242f1f729951
+
+% 3 1 0 1bf6af5b7ae72af80596c0eb434ff9d7
+
+% 0 1 0 11dde41b9288fd041d994c5dddc6eac4
+
+% 1 1 0 0bcdd568423b29150a1d7758b4c7dec0
+
+% 2 1 0 178e15825ba484cc099ced53021a886c
+
+% 3 1 0 1141a34b40aba61216d4eca37eb4d89f
+
+% 4 1 0 1d36964b3c36510200bfce0830839fc2
+
+% 5 1 0 01c623a32bf3f1d40f74237621b6c2ae
+
+% 2 1 0 1185a8ba286497da1332280a3bd63c2e
+
+% 0 1 0 13e6c6f62e9c60a71ec17efdd57116a5
+
+% 1 1 0 15d87c563bb8b2251dec6bf0ce19e77b
+
+% 0 1 0 179a9a1da797d30d06ff27275bffc9a4
+
+% 1 1 0 0a7734b5678aeb2c1590ce5442de7e76
+
+% 2 1 0 0dfdd335973cb20815b2f54bc625d3b2
+
+% 3 1 0 103ace6b995b79610464962e2a9fbedb
+
+% 4 1 0 176f41c1f6a49d580f451bb761bb04e5
+
+% 5 1 0 14e1012d030c76f017f98ea23729a317
+
+% 6 1 0 1e2efe16572bf5cc0d8fb5e1965abde0
+
+% 8 1 0 06a1bbdbbbbaf9ba1252b95a9ba04813
+
+% 9 1 0 1b853a423deb33a306e2e171449455bd
+
+% 1 1 0 12ac603a4c3d22971a970a873fedf822
+
+% 0 1 0 04e8a0c43e9eb6571c158a8047a9db6a
+
+% 1 1 0 0cab2475bb8fa80e181c8a42cbaa349f
+
+% 2 1 0 1d290734fbd074a61b6981c9d85a2f00
+
+% 3 1 0 1aae405d20d399e707472e0aa9995738
+
+% 4 1 0 04d984971c3773a509465a4c42a9e0fb
+
+% 5 1 0 0e2730efa286f37e04ef426af3589df3
+
+% 6 1 0 1d6e2889dece4e87051384ee8b01abc3
+
+% 8 1 0 193f20bdb9b26d600da2739ecf31a0ee
+
+% 9 1 0 1d1887474d813d6804adb6626bcbd511
+
+% 0 1 0 1493853c0a954c13055573b54c1544b3
+
+% 0 1 0 0c33664209bd619c12bc9ebc2b1b16cc
+
+% 1 1 0 14a26cdc157c8ad6186d5cf2b6031d93
+
+% 2 1 0 041d9b5280f54a0a0bb19564d1cdcdd5
+
+% 1 1 0 0a7bfba3e801060e05deff987caf1cf2
+
+% 1 1 0 15dca428aa72d0020f1810af002ea160
+
+@ 0 36 0 19513b7fff2a4e1719bd79a62c7dbd42
++   entry .javaNetHttp   il trasporto JVM su `java.net.http`
++       In `telekinesis.jvm`. Richiede una `TlsAcceptance` nell'ambito (quella di coaxial: il
++       default rigoroso verifica gli hostname e le catene; `TlsAcceptance().permitSelfSigned` e
++       i suoi affini lo rilassano con un import di `cryptoPermits`), e costruisce un client JDK
++       per ogni accettazione distinta, in cache. Il seguire i redirect è lasciato a
++       `Http.Client`, così il limite di `Http.Redirection` viene rispettato esattamente. Una
++       richiesta verso un'origine `http://` in chiaro viene inviata come HTTP/1.1, senza mai
++       offrire l'upgrade `h2c`; su `https`, ALPN può negoziare HTTP/2 all'interno del JDK. Il
++       corpo viene pubblicato in modo pigro da un nuovo stream a ogni sottoscrizione, per cui un
++       corpo grande non viene mai tenuto per intero in memoria. Le eccezioni del JDK sono
++       classificate nei motivi di `Connect.Error`: `UnknownHostException` è `Dns`, una
++       connessione rifiutata o scaduta è `Refused` o `Timeout`, e le eccezioni SSL sono
++       `Ssl(Handshake)`, `Ssl(Protocol)`, `Ssl(Peer)` o `Ssl(Key)`.
++   entry .soundnessHttp   il trasporto che parla i codec di trasmissione di telekinesis sui socket di coaxial
++       In `telekinesis.sockets`, su ogni piattaforma con un `Socket.Backend`. Richiede un
++       `Online`, un `Socket.Backend` (`socketBackends.javaBaseSockets` sulla JVM), un
++       `Every[Socket.Option.Tcp]`, un `Buffering` e un `Tls`. L'`http` in chiaro è HTTP/1.1 su
++       un socket TCP nudo con keep-alive: quando l'estensione di una risposta era esplicita (un
++       corpo delimitato, o nessun corpo) e nessuna delle due parti ha chiesto di chiudere, la sua
++       connessione torna a un pool per origine (al massimo otto inattive per origine) per la
++       richiesta successiva; un socket del pool che il server ha nel frattempo chiuso viene
++       scoperto all'uso e sostituito con un unico nuovo tentativo su una connessione nuova. Per
++       `https` sulla JVM, ALPN offre `h2` e poi `http/1.1` durante l'handshake, e lo scambio è
++       condotto dal driver HTTP/2 o HTTP/1.1 scelto dal peer, sullo stesso socket, con una
++       connessione per richiesta; su Scala Native è un unico scambio HTTP/1.1 sulla connessione
++       OpenSSL di coaxial, senza ALPN e senza HTTP/2. I corpi delimitati vengono esauriti
++       subito, prima che una connessione venga ceduta o chiusa, per cui le risposte non sono
++       ancora in streaming, e gli upgrade `101` vengono rifiutati (lo stream dopo l'upgrade non
++       finirebbe mai) come `Connect.Error(Unknown)`. Un `Socket.Error` si converte in
++       `Connect.Error` in base al motivo, e una risposta malformata è `Unknown`.
++   entry .wasiHttp   il trasporto su `wasi:http/outgoing-handler`, per un componente Wasm
++       In `telekinesis.wasi`. Un given `inline`: le chiamate `wasi:http/types` si espandono nel
++       punto che lo evoca, che deve avere `wasiApis.wasiHttpApi` nell'ambito, e si
++       materializzano solo nel codice compilato per un target Wasm. La richiesta viene
++       assemblata da una risorsa `fields` e da un `outgoing-request`, con un `outgoing-body`
++       quando il metodo ne prevede uno; la risposta viene attesa tramite il suo pollable e il
++       suo corpo letto per intero dall'`input-stream`, per cui il risultato è un corpo `Fixed`.
++       Qualsiasi errore della chiamata all'host è `Connect.Error(Unknown)`.
+
+@ 0 1 0 10e80bed71db9a081a7cabb9f6664b8e
++ entry .Orchestrate   il ciclo completo di un form: renderlo, oppure su `POST` decodificare, validare e agire
+
+% 1 1 0 19350ab6940f6ca808e3f85369f11435
+
+@ 0 8 0 17d497ec91d2c32b04706a545e85b5ca
++       Un `Orchestrate[value, result]` (costruito con `orchestrate`) gestisce entrambe le metà di
++       un form: su qualsiasi richiesta che non sia un `POST` rende il form, precompilato con
++       `initial` se dato; su un `POST` decodifica la query della richiesta in `value` e, se
++       fallisce, esegue la validazione del chiamante per annotare i campi. In entrambi i casi la
++       funzione `process` del chiamante riceve un renderer `form` (`Text => Html of Flow`, che
++       accetta l'etichetta del pulsante di invio) e l'`Optional[value]` — `Unset` quando il form
++       va mostrato di nuovo, il valore quando si è decodificato — e decide cosa rispondere. È
++       una capability, perché trattiene la funzione del chiamante. In `telekinesis.forms`.
+
+% 2 1 0 1bf4a905904c13681853a59b01159f46
+
+% 3 1 0 1a2cca2219425dd00f43ffaf81b25556
+
+% 4 1 0 0c7377e990ffac1d00875d0963ab980c
+
+% 5 1 0 1022b40547a3798d151e4a323cb97e16
+
+% 6 1 0 1d5905f711c83f69188351c6dd082b3e
+
+% 0 1 0 13dd3bb925d5ffbe099ec022b1a81125
+
+% 0 1 0 02291b758748b49c0fca3af086e777c7
+
+% 0 1 0 0cf998ce877de4a219b68407708f3838
+
+% 0 1 0 18ed8fb2df1d71ce04077e4976cc56ca
+
+% 0 1 0 00b5790c5ebfb4e105c5e5375b485b79
+
+% 0 1 0 06eb47ee87240aa0198a8b3714d175bf
+
+% 1 1 0 1678dd34674fd71318df8c7eef1d4599
+
+% 0 1 0 1969b24c27f66e74158d7295c8bf38df
+
+% 1 1 0 17423039c741a0be1117d41022c0191c
+
+@ 0 5 0 13eb77fa5c1f3b000c6a6d5450e78979
++   entry #otherwise   esegue il ciclo con una validazione da applicare quando un `POST` non si decodifica
++       `otherwise(validate)` richiede una `Formulation` (lo stile dei form di legerdemain), il
++       `Formulaic` del valore (come vengono resi i suoi campi) e `Decodable in Query`,
++       l'`Http.Request` nell'ambito, e tattiche per `Query.Error` e `Truncation.Error`. La
++       validazione è una funzione di contesto sulla `Query` inviata.
+
+@ 0 5 0 0191b42a7b38a0a81ffcd273468e61a0
++ entry .orchestrate   `orchestrate[value](initial)(render)`: costruisce un `Orchestrate` per un tipo di form
++     La funzione `render` riceve il renderer del form come valore contestuale e
++     l'`Optional[value]` — l'invio decodificato, oppure `Unset` quando il form va mostrato — e
++     produce il risultato; `.otherwise(validation)` sul risultato lo esegue poi. Il risultato
++     trattiene ciò che `render` cattura. In `telekinesis.forms`.
+
+@ 0 6 0 15df993db95ca8e21d96e171b67d08af
++ entry .form   `submission.form(…)`: una `Submission` resa come form HTML
++     Un'estensione su `Submission[value]`, in `telekinesis.forms` (perché il modello di base
++     non dipenda da honeycomb e dai widget di legerdemain): rende i campi del form attraverso
++     il `Formulaic` del valore e la `Formulation` nell'ambito, precompilati dalla query
++     inviata, con l'etichetta del pulsante `submit` data e gli eventuali messaggi di
++     `Validation` accanto ai campi. Restituisce un `Html of Flow`.
+
+@ 0 5 0 02e9edf828487b431411e71886202344
++ entry .requestTransmissible   una `Http.Request` si trasmette su un socket nudo nella sua forma di trasmissione HTTP/1.1
++     Il given `Transmissible` di coaxial, in `telekinesis.jvm`, costruito su
++     `Http.Request.serialize`; è ciò che il client su socket di dominio invia con
++     `socket.transmit(request)`. È un given di primo livello, quindi va importato per nome
++     (`import soundness.requestTransmissible`), e richiede una `Tactic[Truncation.Error]`.
+
+@ 0 4 0 1dafec358972c7f00384437577917532
++ entry .udsFetchable   un `Uds.Endpoint` è fetchable: HTTP/1.1 direttamente su un socket di dominio Unix
++     In `telekinesis.jvm`, per un'API servita su un socket locale come quello del demone di
++     Docker. La destinazione della richiesta è il percorso dell'endpoint, l'`Host` è
++     `localhost`, e la destinazione per cui viene evocato il client è l'`Uds`. Un given di
++     primo livello, importato per nome.
+
+% 2 1 0 0485b9f58c7a925b017f7bdd468e764e
+
+% 3 1 0 1ce0175d5de6e8341ec61899b74ecddb
+
+% 4 1 0 0ef3e65289897cfd1ea90dd5cf52db4f
+
+% 5 1 0 09d61c70b90884d903ce5ac820fb0d71
+
+% 0 1 0 085bf4b590a935410d61c4bd3b65f745
+
+% 1 1 0 05574793770b76eb086296b90b98d416
+
+% 2 1 0 0eb6e88b476dcbb3188bd7b1e1ef6a85
+
+% 3 1 0 0f7fcf3f9d805179014f64459d5eef27
+
+% 4 1 0 0270ce1901aaa52a1c31a08ca6d97af8
+
+% 0 1 0 1e54b785d58358c20e9f508babdf10b2
+
+% 0 1 0 039ac17a473f0fda001caa63040dc5bc
+
+% 1 1 0 004b101960e7060a1ce15a13f955c305
+
+@ 0 6 0 060ffe0d2b17935014264ba6d1cc4c61
++ entry .udsHttpClient   l'`Http.Client onto Uds`: una richiesta, una risposta, sul socket
++     In `telekinesis.jvm`. Serializza la richiesta con `requestTransmissible`, analizza la
++     risposta con `Http.Response.parse`, e non segue i redirect. Richiede una
++     `Tactic[Truncation.Error]` e una `Tactic[Connect.Error]`: un `Socket.Error` si converte
++     in `Connect.Error` in base al motivo, e una risposta malformata è
++     `Connect.Error(Connect.Error.Reason.Unknown)`. Un given di primo livello, importato per
++     nome.
+
+@ 0 5 0 1fe75eaefac8b91401d3b4aae8441fca
++ entry .WasiHttpApi   il tipo di interfaccia WIT di `wasi:http`, come lo vede xenophile
++     `Interface in Wit at "/telekinesis/http.wit"`: le definizioni WIT incluse in
++     `telekinesis.wasi`, rispetto a cui vengono controllati i tipi di `httpBackends.wasiHttp` e
++     `WasiHttpServer`, e che le loro `call` consultano nel punto di espansione per gli id dei
++     moduli, i metodi delle risorse e i tipi dei parametri.
+
+@ 0 1 0 0d44da996ecac6fc1330c95d5e954fb9
++ entry .wasiApis   l'interfaccia `wasi:http`, come given da importare per nome
+
+% 1 1 0 1e382e94051511700576a39ca81fd6d5
+
+@ 0 5 0 0771e0069786ebea1025c4137e88baad
++       `wasiHttpApi` deve essere nell'ambito ovunque si evochi `httpBackends.wasiHttp` o si
++       chiami `WasiHttpServer.handle`, perché entrambi sono `inline` e risolvono le loro chiamate
++       WIT in quel punto. Si fonde con il package `wasiApis` dell'umbrella, accanto alle
++       interfacce WASI delle altre librerie.
++   entry .wasiHttpApi   l'interfaccia `WasiHttpApi`, letta dalla risorsa `http.wit` inclusa
+
+@ 0 1 0 0002280171bf1c721d536ced83a3da28
++ entry .WasiHttpServer   serve HTTP da un componente Wasm: da `wasi:http/incoming-handler` a un handler di Soundness
+
+% 1 1 0 1e89f46c0f384d871571cf6556d10306
+
+@ 0 9 0 1c31b6ae66322d451045d1a0262cb165
++       Il ponte dalla funzione `handle` esportata dal componente a una
++       `Http.Request => Http.Response`. L'applicazione fornisce un piccolo shim `@WitExport`,
++       l'unico pezzo che deve esistere, annotato, nell'applicazione compilata per Wasm, e passa
++       le due istanze di facciata senza tipo; `WasiHttpServer.handle` fa il resto: estrae la
++       richiesta (metodo, percorso, intestazioni e corpo intero; l'host è `Localhost`, perché un
++       componente non si indirizza per hostname), chiama l'handler, trasferisce stato,
++       intestazioni e corpo della risposta, e imposta l'outparam prima che il corpo venga
++       scritto, così che l'host possa trasmetterlo in streaming. È `inline`, quindi le chiamate
++       WIT si espandono nel punto di chiamata, che richiede `wasiApis.wasiHttpApi` nell'ambito.
+
+% 0 1 0 180b259b8573eca1043c16eca560e5f1
+
+@ 0 4 0 195ff059ad01c26c09a1c78b60f0f88a
++   entry .handle   `WasiHttpServer.handle(request, responseOut)(handler)`: risponde a una richiesta in arrivo
++       Le due facciate senza tipo sono l'`incoming-request` e il `response-outparam` che l'host
++       ha passato all'export. Un corpo di risposta che l'handler tronca fa andare in trap il
++       componente, come qualsiasi altro errore dell'export.
+
+@ 0 1 0 17866595effdd22c04ce9d4730da0422
++ entry .Http2   il motore HTTP/2: frame, intestazioni codificate con HPACK, e i ruoli client e server di una connessione multiplexata
+
+% 1 1 0 1bcdfe22b3e19e49079317424eb82b0b
+
+@ 0 6 0 096b9df96f362a610bbe5d50cc99bd43
++       `Http2` raggruppa il vocabolario di HTTP/2 (RFC 7540) sotto un unico nome, come `Http`
++       raggruppa il modello indipendente dal trasporto: un `Frame` e il suo `FrameType`, `Flags`,
++       `ErrorCode`, `SettingId` e `Setting`; i due ruoli di una connessione, `Connection` (il
++       client, che apre gli stream) e `ServerConnection` (il server, che li accetta); lo `Stream`
++       che entrambi i ruoli condividono; l'`Endpoint` a cui si connette un client h2c in chiaro,
++       con il suo given `Client` e la sessione `sessional`; e l'`Error` e l'`Event` che il motore
++       solleva e registra nel log.
+
+@ 0 11 0 19fc534278aa469d13015cb79fdab88b
++       Una connessione multiplexa molti stream di richiesta su un unico `Duplex` persistente. Un
++       demone scrittore esaurisce sul socket una coda di frame in uscita, per cui ogni scrittura
++       è serializzata senza lock, e un demone lettore decodifica i frame in arrivo e li smista
++       per id di stream; entrambi girano sotto il `Monitor` di un `supervise` che li racchiude,
++       ed è per questo che una connessione si può creare solo al suo interno. L'handshake è
++       `start()`: i `SETTINGS` di ciascuna parte e un `WINDOW_UPDATE` che porta la finestra della
++       connessione al suo budget di ricezione. Il controllo di flusso è rispettato in entrambe le
++       direzioni — un corpo più grande della finestra del peer parcheggia la fiber che invia
++       finché un `WINDOW_UPDATE` non ne concede di più, e un corpo in arrivo che l'applicazione
++       non ha esaurito trattiene il peer alla finestra annunciata — e i tipi di frame su cui lo
++       stack non agisce (`PRIORITY`, `PUSH_PROMISE`, estensioni) vengono decodificati solo per
++       essere ignorati, come richiede la RFC, invece di far fallire la connessione.
+
+@ 0 5 0 094ac3e183d4a5b3173d3ef0e1b019ca
++       Il motore è il driver HTTP/2 di entrambi i lati dell'HTTP di Soundness: il backend client
++       `https` usa `Connection` su ogni connessione TLS la cui negoziazione ALPN sceglie `h2`, e
++       un `SocketServer` TLS consegna a `ServerConnection` una connessione che ha negoziato `h2`.
++       La forma in chiaro, h2c con conoscenza preventiva (senza upgrade, senza TLS), si
++       raggiunge tramite un `Http2.Endpoint`, che è il trasporto su cui gira gRPC.
+
+@ 0 2 0 1a4d4a39c27c87d918ab21c109694c68
++       La pipeline da una richiesta ai byte trasmessi è una catena di questi valori, ognuno un
++       passo che un programma può compiere a mano:
+
+% 2 1 0 18dc65c47748ce4e1a9d239bad6cd703
+
+% 3 1 0 1d04539a59f753e208d830c83b572350
+
+@ 0 1 0 0ef84d16cef9a6ec1e83ea5f7638e110
++         label La lista di intestazioni di una richiesta, prima le pseudo-intestazioni
+
+% 1 1 0 14ff9592ab9c54700f6ea95b54dbe9a8
+
+% 2 1 0 0eb9e1a94e9ed3af012231089f8f45f9
+
+% 3 1 0 16f8fd5841a353aa1b97702ab9d6a546
+
+% 5 1 0 0d4adbc212c569b517b48f85346e2efb
+
+% 6 1 0 00545ae8ee458153039863d75481421b
+
+% 8 1 0 125b6140f1404f0001e7683070f10cbf
+
+% 1 1 0 18c080caef1c7fce0bf030f572fc569f
+
+@ 0 1 0 163e6222b1b843861d35426493591ae4
++         label Codificata come blocco di intestazioni HPACK
+
+% 1 1 0 1b91a8a7208bc8b01d3f4a15a11cf9b7
+
+% 2 1 0 1bcede802bb0446a0f30a2b5254678f2
+
+% 3 1 0 0079ea69d760b15c08005bd1342abdfc
+
+% 5 1 0 19ca79cdf6ea40691962feadc9f11679
+
+% 6 1 0 1ff515fc236398b50de5cd71febb9618
+
+% 8 1 0 1a1ba99cd68de17b120d2c9205bc31c4
+
+% 9 1 0 03739d38a7f3bae81f5a22347b57d026
+
+% 1 1 0 0273bea03464ff2310e8338ec69542a5
+
+@ 0 1 0 0a65d39080806d7c13af99e704c4742e
++         label Portata da un frame HEADERS sullo stream 1, che termina anche lo stream
+
+% 1 1 0 01903aa7eabb6d8511bc8edfbc1e8bf1
+
+% 2 1 0 060eab59f3e616a10aef451b5932c169
+
+% 3 1 0 012cab7a73c45dd60fe4ad2e732cca7c
+
+% 5 1 0 1fd387228a8428ee01bad48e580e8b30
+
+% 6 1 0 1cc6463fd89585bd10ddb0457d41f7aa
+
+% 8 1 0 18fff18afd5a1bb1008601d2de2d1a3c
+
+% 9 1 0 177134bc6161f722006956ec6849f394
+
+% 10 1 0 0ed4453f5f3add6904d61ee3b1e48d05
+
+% 1 1 0 1f83d02befc86080198f6a36779f4f58
+
+@ 0 1 0 0aeb27d2cbc3fec307d51e31de64d1df
++         label Serializzata: un'intestazione di frame di nove byte, poi il blocco
+
+% 1 1 0 049096887861a0c40a8a893ee89b1442
+
+% 2 1 0 03f7649083ce609d0893bcd96b4139a3
+
+% 3 1 0 16479ee2182f455e07cd77179a5a0c47
+
+% 5 1 0 17a6d931236b0df81194b1ba9c35e3a0
+
+% 6 1 0 1dd25a251df336ee13fc6255923d58f1
+
+% 8 1 0 0cf52b236e0e8e6f056b35cb5676b690
+
+% 9 1 0 1eab10e5ba9c11501c4ed2ddc55bc3f9
+
+% 10 1 0 11eca4c7acf5a94d11a4bf2949b31e6c
+
+% 0 1 0 1a3e58170cb52a59120daa8f00a932a1
+
+% 1 1 0 03d3a196a80039ca1e8d80676675ba18
+
+% 2 1 0 00c02b1dcf77c3b71c6f0c7e64700e43
+
+@ 0 3 0 0bb283de51be934201f596e7dc9ee7f9
++       `Connection#fetch` fa tutto questo per una `Http.Request`, e `FrameReader` e
++       `Hpack#decode` sono l'inverso dal lato ricevente. Il server push non è supportato (i
++       `SETTINGS` del client lo disattivano), e un `PUSH_PROMISE` da un peer viene ignorato.
+
+% 1 1 0 0db3696e179469750e7892115d6bfcf9
+
+% 2 1 0 138231a9ac61221f1d35bf600003058c
+
+% 0 1 0 029bac0122a8b30318a70efe7e9b119d
+
+% 1 1 0 0aa3b80fb8353396087873e5784e139b
+
+% 0 1 0 194f1c0c532cb7f500830253020cea7a
+
+% 0 1 0 0864bc3c29b3875811918dee32f52f15
+
+@ 0 1 0 0498bbcf26524e6c0bd84839cdda8321
++   entry .Connection   il ruolo client: una connessione HTTP/2 multiplexata su un `Duplex`, che apre uno stream per richiesta
+
+% 1 1 0 0403b0fca5604f950616fd9a746ed431
+
+@ 0 7 0 1edc2284e44f2fba14c1df06e3c9af7e
++         `Http2.Connection(duplex)` avvolge un `Duplex` persistente — un socket, o un lato di un
++         `Duplex.pair()` in memoria — come estremità client di una connessione HTTP/2, parlando
++         h2c in chiaro con conoscenza preventiva: invia il preambolo di connessione del client e
++         poi i frame, senza upgrade e senza un TLS proprio (il backend `https` gli consegna un
++         `Duplex` il cui handshake TLS ha già negoziato `h2`). Richiede un `Monitor` e una
++         `Probate` nell'ambito, perché i suoi demoni lettore e scrittore girano sotto di essi,
++         quindi lo si crea dentro un blocco `supervise`, e `#start` va chiamato prima della prima
++         richiesta.
+
+% 2 1 0 1f638067d6defa821c83731c58e7c03d
+
+% 3 1 0 173ac388ffa2d35d1dda87d497510079
+
+% 4 1 0 1fc4c4610b55ec6608bd29749f4a5d3a
+
+% 5 1 0 1fe08552837b67f00726afa8b92c8dc1
+
+% 6 1 0 06529f8381b9827c16b4eb29709d8471
+
+% 7 1 0 00f880efc165c7771c66b0864e47a18a
+
+% 8 1 0 05e3fd125ef8b58d14765b60e79308e6
+
+% 9 1 0 0482cc5cf3fe3d76100c29b502c87c68
+
+% 0 1 0 1cadd0499856c21e18b6c87a2da94c07
+
+% 0 1 0 1546f27ed7d7493105ae3b80ae32ee05
+
+% 0 1 0 13bf2a757245e809080573be5cb4ab5f
+
+% 0 1 0 05c3d5c60d11e0af0c62ef50ffc16a2b
+
+% 0 1 0 1f4077f9f135c8790e035380737fe6ab
+
+% 0 1 0 16bfe79db2b66e4e096f54ae185e86f7
+
+% 0 1 0 10970fab45ba905f1f9e0fbeff9083f0
+
+% 1 1 0 1424a83ad2b9353806e16ff26b36a662
+
+@ 0 8 0 1ec3a46f913ddac4021eeb7da3295d7e
++         Il secondo parametro del costruttore, `window`, è il budget di ricezione che la
++         connessione annuncia per ogni stream e per la connessione nel suo insieme (1 MiB per
++         default): il peer può avere in volo al massimo quel numero di byte oltre a quelli che
++         l'applicazione ha consumato, ed è ciò che limita la memoria che un corpo di risposta non
++         letto può occupare. Il rifornimento è guidato dal consumo e raggruppato: un
++         `WINDOW_UPDATE` parte quando metà del budget è stata esaurita, per cui un consumatore
++         bloccato blocca il mittente del peer invece di accumularne l'output. Un budget inferiore
++         al default della RFC di 65535 lascia la finestra della connessione al default, ed è la
++         finestra dello stream a fare da limite.
+
+@ 0 6 0 093169acdfa1a8401a73eb23866a8e16
++         Gli stream sono numerati 1, 3, 5, …, come devono esserlo quelli di un client. Chiamate
++         concorrenti a `#fetch` vengono multiplexate sull'unica connessione. Un errore di
++         scrittura, di analisi o di HPACK in uno dei due demoni abbatte la connessione — un
++         handshake in sospeso viene sbloccato, ogni stream aperto viene terminato perché nulla
++         resti appeso in attesa delle sue intestazioni, del corpo o dei trailer, e lo scrittore
++         esce — invece di sfuggire al demone o di essere ingoiato; un `GOAWAY` dal peer termina
++         il lettore e registra `Http2.Event.GoAway`.
+
+% 1 1 0 0008b7f2b686621808e4e8396d501fdb
+
+% 0 1 0 1444dec51ddda8040012ce1b543b455e
+
+% 1 1 0 0a7433878a0d43ef163bddce3c8bf752
+
+@ 0 23 0 0dd83f66607c283c060c39411c1fc16c
++     entry #start   esegue l'handshake: invia i `SETTINGS` di questa parte e attende quelli del peer
++         Invia `SETTINGS` che disattivano il server push e annunciano la finestra di ricezione,
++         alza la finestra della connessione oltre il default della RFC con un `WINDOW_UPDATE` se
++         il budget è maggiore, e si blocca finché non arriva il frame `SETTINGS` del peer (che il
++         lettore conferma). Richiede una `Tactic[Async.Error]`, sollevata se la connessione viene
++         abbattuta prima che l'handshake si completi. Nulla può essere inviato prima che ritorni.
++     entry #request   apre uno stream, invia un blocco di intestazioni e un corpo opzionale, e restituisce l'handle dello stream
++         La forma a livello di frame di una richiesta: assegna il successivo id di stream dispari,
++         codifica `headerBlock` (le cui pseudo-intestazioni devono già venire per prime, come
++         dispone `PseudoHeaders.request`) con un nuovo encoder HPACK, e lo invia come frame
++         `HEADERS`, con `END_STREAM` impostato quando `body` è `Unset`. Un corpo viene inviato
++         come frame `DATA` entro le finestre di connessione e di stream del peer e la sua
++         dimensione massima di frame, per cui un upload grande parcheggia la fiber chiamante
++         all'esaurimento della finestra finché i `WINDOW_UPDATE` del peer non ne concedono di più.
++         Lo `Http2.Stream` restituito viene popolato dal demone lettore man mano che arriva la
++         risposta: si attende `#headers`, si consuma `#body`, poi `#trailers`.
++     entry #fetch   emette una `Http.Request` e restituisce il suo stream e la `Http.Response`, bloccandosi solo per le intestazioni della risposta
++         Costruisce il blocco di intestazioni con `PseudoHeaders.request(request, scheme,
++         authority)` — una `Http.Request` non porta né lo schema né la `:authority`, per cui
++         entrambi si danno qui —, memoizza il corpo della richiesta, apre lo stream con
++         `#request` e attende gli `HEADERS` della risposta. La `Http.Response` che restituisce
++         trasmette il suo corpo in modo pigro dai frame `DATA` in arrivo sullo stream, per cui una
++         risposta grande si legge man mano che arriva, e lo stream viene restituito accanto a
++         essa perché i trailer (il `grpc-status` di gRPC, per esempio) si possano attendere dopo
++         il corpo: `stream.trailers.await()`.
+
+@ 0 12 0 1497e270c89082ff0ec91ba017e401a4
++         Registra `Http2.Event.RequestSent` a livello `fine`, per cui serve un `Http2.Event is
++         Loggable` come `logging.silentLogging`, e accetta una `Tactic[Http2.Error]` (un errore
++         di protocollo su questo stream, o una risposta senza un `:status` valido), una
++         `Tactic[Async.Error]` (la connessione abbattuta durante l'attesa) e una
++         `Tactic[Truncation.Error]` (un corpo di richiesta troncato durante la memoizzazione).
++     entry #close   invia `GOAWAY`, ferma i demoni e chiude il `Duplex`
++         Una chiusura pulita: `GOAWAY` con `NoError`, poi la coda in uscita viene fermata, il
++         lettore e lo scrittore vengono cancellati, e il duplex viene chiuso. Una connessione
++         creata dentro un blocco `supervise` va chiusa prima che il blocco termini, altrimenti il
++         blocco attende i demoni. Chiudere il client non ferma una `ServerConnection` dall'altro
++         lato di una coppia in memoria, che va chiusa per conto suo.
++   entry .ServerConnection   il ruolo server: accetta gli stream che un client apre e vi rimanda le risposte
+
+% 1 1 0 0d5e6f30e86c50621586fc1c577ecf80
+
+@ 0 12 0 126c5eb94b638ef4198e8780fbbf79be
++         `Http2.ServerConnection(duplex)` è l'estremità server di una connessione HTTP/2 il cui
++         client è già stato negoziato o parla h2c con conoscenza preventiva. Il suo demone lettore
++         consuma e convalida prima il preambolo di connessione del client di 24 byte (una
++         discrepanza è un `Http2.Error` con motivo `Protocol`), poi decodifica i frame; ogni frame
++         `HEADERS` su un id di stream mai visto crea uno `Stream`, la cui promessa `headers` è il
++         blocco di intestazioni della richiesta, e lo consegna a `#eachStream`; un secondo blocco
++         `HEADERS` su uno stream attivo sono i trailer della richiesta. Il demone scrittore
++         esaurisce la coda in uscita, per cui `#sendHeaders`, `#sendData` e `#sendTrailers` si
++         possono chiamare in modo concorrente per stream diversi — i frame si intercalano per
++         progetto, e ogni blocco di intestazioni viene codificato con un nuovo encoder HPACK, per
++         cui nessuno stato dell'encoder è condiviso tra gli handler. Richiede un `Monitor` e una
++         `Probate`, quindi la si crea dentro un blocco `supervise`, e il `Duplex` che accetta può
++         catturare le sue capability di I/O (`Duplex^`), come fa quello di un socket.
+
+@ 0 1 0 10f4d74ef4852d300ea75333aa367910
++         Una risposta si costruisce su uno stream a partire dal suo blocco di intestazioni:
+
+% 2 1 0 18d37fae892b375210af3b9dd7245477
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 091985a475ed752c19d8385e4c8a0053
++           label Una risposta senza corpo: il solo blocco di intestazioni termina lo stream
+
+% 1 1 0 0d23cd53ffc4b7210f097e1e49724588
+
+% 2 1 0 11b716297cbdd0340d0848db9ecb9ec9
+
+% 3 1 0 1dcbb2e78285572410a9b7ad32d7004a
+
+% 5 1 0 0c2d230c7fa74be51156c030532e009b
+
+% 0 1 0 0970d7fff54b6a2510be0e2fb30bbfd7
+
+% 0 1 0 089447b43cff46ab1a6c8f61a9e9b90c
+
+% 1 1 0 1a1b2c5909a16fff1f40179b6c3842fb
+
+@ 0 1 0 18e6707706bed53207e33588f7e624b3
++           label Un corpo: le intestazioni restano aperte, e l'ultimo frame DATA termina lo stream
+
+% 1 1 0 11929c0d2d87edb20d95dd5113fc88de
+
+% 2 1 0 062d466714ebe7eb0370c1f766d45652
+
+% 3 1 0 0bf936d6cb81459d0d1c08788a32090b
+
+% 5 1 0 111b94297fff297f1d9c5ef4593d03d0
+
+% 6 1 0 0f57c65f11fcbc3a1e2ea7179c5cab76
+
+% 7 1 0 1ee863df9eb267840741a63440714965
+
+% 0 1 0 1a4bf774ce1b2d0f085651f732e390af
+
+% 1 1 0 13aff6cd419549e416dd782602bef630
+
+@ 0 1 0 0e2fd75833f652c715387135ab58a6c2
++           label Trailer: intestazioni e corpo restano aperti, e il blocco finale termina lo stream
+
+% 1 1 0 01baa1bd7f46414c0286a5fd6e58ff5b
+
+% 2 1 0 095e208947e426e6170403a1ee8bdfbd
+
+% 3 1 0 08cbb4978feeeef61d184d842018dd6b
+
+% 5 1 0 084731bf59b69f3d1eb3c4374380b457
+
+% 6 1 0 0292354f979590041fe3f3be0f3dc0b6
+
+% 7 1 0 1f84f56f33d4f10c1091571285f7cea5
+
+% 0 1 0 0b0bed6406e7835b05dbdf7967916d7c
+
+% 0 1 0 0708a7c9b54e707a1c05ceb853a20a04
+
+% 1 1 0 042b355c07e6a9cf1cbdcc63d35aaa8b
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 9 0 09c9ebe9c04d3c6d042f750b1df7588a
++         `PseudoHeaders.requestOf` trasforma il blocco di intestazioni e il corpo di uno stream
++         accettato in una `Http.Request`, e `PseudoHeaders.entries` trasforma una `Http.Response`
++         nel blocco di intestazioni da inviare: è così che un `SocketServer` TLS serve un handler
++         ordinario su h2 senza alcuna modifica all'handler. Due regole per chi guida il motore
++         direttamente: un corpo di risposta che scorre va esaurito sullo stream blocco per blocco,
++         mai memoizzato, perché un corpo che trasforma (quello di un encoder di testo) non termina
++         sotto `memoize`; e la connessione va chiusa con `#close` prima che il blocco `supervise`
++         che la racchiude ritorni, altrimenti il blocco attende per sempre i suoi demoni —
++         chiudere il client dall'altro lato non ferma lo scrittore del server.
+
+@ 0 4 0 1f693f3234c133ae0cb5f9dbe8930ecc
++         Il budget di ricezione (`window`, 1 MiB per default) e il suo rifornimento raggruppato
++         sono come quelli di `Http2.Connection`: un corpo di richiesta che l'handler non ha
++         esaurito trattiene il client alla finestra annunciata. Il
++         `SETTINGS_INITIAL_WINDOW_SIZE` del peer si applica agli stream aperti dopo il suo arrivo;
++         gli stream esistenti non vengono adeguati. Il server push non è implementato.
+
+% 1 1 0 09105479fee055d70f4ea17cdc91130c
+
+% 0 1 0 11472f321cfe9feb1f4aec5311801351
+
+% 1 1 0 0ee28719ee8b81e8045c842c918e230f
+
+@ 0 37 0 1793947a44bfa3a809d6e9e396f7d984
++     entry #start   esegue il lato server dell'handshake: invia `SETTINGS` e attende quelli del client
++         Invia `SETTINGS` che annunciano la finestra di ricezione (un server non invia
++         `ENABLE_PUSH`), alza la finestra della connessione oltre il default della RFC se il
++         budget è maggiore, e si blocca finché il frame `SETTINGS` del client non è arrivato ed è
++         stato confermato. Richiede una `Tactic[Async.Error]`, sollevata se la connessione viene
++         abbattuta prima — per un preambolo errato, per esempio. Il preambolo e i `SETTINGS` del
++         client e i `SETTINGS` del server possono essere inviati in qualsiasi ordine, per cui
++         `start()` su entrambi i lati di una coppia in memoria può girare in modo concorrente.
++     entry #eachStream   esegue un handler per ogni stream che il client apre, in ordine di arrivo, finché la connessione non termina
++         Prende ogni `Http2.Stream` accettato dalla coda che il lettore riempie e chiama `handler`
++         sul ciclo di servizio guidato dal lettore, e ritorna quando la connessione termina (un
++         `GOAWAY`, la chiusura del socket, o `#close`). L'handler riceve lo stream non appena è
++         arrivato il blocco di intestazioni della richiesta — il corpo può essere ancora in
++         arrivo — e dovrebbe avviare una fiber propria per lo stream, così che le richieste
++         multiplexate sull'unica connessione siano servite in modo concorrente invece che una dopo
++         l'altra sul ciclo.
++     entry #sendHeaders   invia un blocco di intestazioni di risposta su uno stream, terminando lo stream se la risposta non ha corpo
++         Codifica `entries` con un nuovo encoder HPACK e li invia come un unico frame `HEADERS` con
++         `END_HEADERS` impostato. `:status` deve venire per primo, come dispone
++         `PseudoHeaders.entries`. `endStream` è `true` per una risposta senza corpo e `false`
++         quando seguiranno `#sendData` o `#sendTrailers`.
++     entry #sendData   invia un corpo come frame `DATA` su uno stream, entro le finestre di controllo di flusso del peer
++         Divide `payload` in chunk limitati dalla finestra della connessione, dalla finestra dello
++         stream e dal `SETTINGS_MAX_FRAME_SIZE` del peer, e blocca la fiber chiamante
++         all'esaurimento della finestra finché un `WINDOW_UPDATE` in arrivo non ne concede di più,
++         per cui una risposta più grande della finestra arriva intatta senza mai superare il
++         credito del peer. `endStream` viaggia con l'ultimo chunk; un payload vuoto non porta dati
++         e viene inviato subito, e il suo unico ruolo è terminare lo stream.
++     entry #sendTrailers   invia un blocco di intestazioni finale, che termina sempre lo stream
++         Un secondo blocco `HEADERS` dopo il corpo, con `END_STREAM` impostato — i trailer della
++         risposta, come il `grpc-status` di gRPC. Una risposta con trailer lascia `endStream` non
++         impostato sui suoi `#sendHeaders` e `#sendData`, così che sia questo blocco a chiudere lo
++         stream. Codificato con un nuovo encoder HPACK.
++     entry #close   invia `GOAWAY`, ferma il ciclo di servizio e i demoni, e chiude il `Duplex`
++         `GOAWAY` con `NoError`, poi la coda in uscita e la coda degli stream accettati vengono
++         fermate (così `#eachStream` ritorna), il lettore e lo scrittore vengono cancellati, e il
++         duplex viene chiuso. Va chiamato prima che il blocco `supervise` che lo racchiude termini.
++   entry .Stream   il lato di ricezione di uno stream HTTP/2: promesse per i suoi blocchi di intestazioni e un corpo con controllo di flusso
+
+% 1 1 0 14ed9436fbba189004164be04360693c
+
+@ 0 9 0 1806f1e5b0f6b5fe1f6358631ff010c0
++         Uno `Stream` è l'aspetto di una richiesta dal lato ricevente di una connessione, in
++         entrambi i ruoli: per `Http2.Connection` è la risposta a una richiesta aperta dal client,
++         e per `Http2.ServerConnection` è una richiesta inviata dal client. Ha un `#id`, una
++         promessa per il suo primo blocco `HEADERS` (`#headers`: le intestazioni della risposta, o
++         quelle della richiesta), una promessa per un secondo blocco di fine stream (`#trailers`),
++         e un `#body` alimentato dai frame `DATA`. Il demone lettore della connessione li popola
++         man mano che arrivano i frame, e risolve tutto ciò che è ancora in sospeso — con `Nil`, e
++         terminando il corpo — quando lo stream termina, viene resettato dal peer, o la
++         connessione viene abbattuta, per cui nulla resta appeso in attesa di uno stream.
+
+% 2 1 0 0aafaed55685e00b17d28cb940704296
+
+% 3 1 0 030c78772047e0d40861047372189add
+
+% 4 1 0 046b47c6ad2cb4b71d22f5980c96c818
+
+% 5 1 0 0f1ae8655dbfc88b0e254572bf0acc22
+
+% 6 1 0 01f07285413a3bab0132a7c0f77453d9
+
+% 0 1 0 0b269f4a4e49a6171adbba2dcdf5dfb3
+
+% 0 1 0 13faee67639211050520644fe8bf0d30
+
+% 0 1 0 1a37f7ddd71bf9d815600777af159307
+
+% 0 1 0 076f4d666b34d7c514b426523b23b7ca
+
+% 1 1 0 0b2eaedcc34a2d211b6ca9e3d68572b6
+
+@ 0 5 0 112a5e7ba81b223408072b26abcdc1e3
++         Il corpo è un relay limitato dal credito di protocollo invece che dalla dimensione di un
++         buffer: il peer può avere in volo al massimo la finestra annunciata dalla connessione
++         oltre a ciò che il consumatore ha esaurito, ed è l'esaurimento del corpo a rifornire la
++         finestra. Uno stream lo crea la connessione, mai la mano; `#acceptHeaders`,
++         `#acceptData` e `#end` sono i punti di ingresso del demone lettore.
+
+% 1 1 0 10ba9d13812e6ba61ffede9a248c83fe
+
+% 1 1 0 0e23570c204debce01e56ae0e52c91dd
+
+% 0 1 0 12b2fccb4a3304fa088a48b02054fddd
+
+@ 0 1 0 151dd685cee6a54b1ae70255362ac0b9
++     entry .Body   il corpo in arrivo di uno stream: un relay di payload `DATA`, misurato dal controllo di flusso
+
+% 1 1 0 05af8e00ab1bf27e121607a2fb0f4ae1
+
+@ 0 32 0 0c9674f8bbc5ed59020a447cddcef8ba
++           Un `Body` raccoglie il payload di ogni frame `DATA` sul suo stream e li serve come
++           stream di blocchi di byte. Il suo buffering è illimitato nella struttura ma limitato
++           dal credito di protocollo — il peer non può inviare più della finestra annunciata
++           senza un `WINDOW_UPDATE` — e l'aggiornamento viene inviato solo man mano che il
++           consumatore supera i record, per cui un corpo non letto trattiene il peer alla finestra
++           invece di accumularsi in memoria. Lo crea `Http2.Stream`, con la callback di consumo
++           della connessione.
++       entry #stream   il corpo come stream di blocchi di byte, il cui consumo rifornisce la finestra del peer
++           Uno `zephyrine.Stream` di record `Data` su `Credit`, che richiede un `Buffering`
++           nell'ambito. Ogni record che il consumatore supera viene contato e segnalato alla
++           connessione, che raggruppa i conteggi in `WINDOW_UPDATE` alla soglia di mezza finestra.
++           Ogni chiamata ripresta lo stesso relay sottostante, per cui una seconda lettura riprende
++           dove la prima si è fermata; `memoize` su di esso raccoglie l'intero corpo in un unico
++           `Data`.
++     entry #id   l'identificatore dello stream: dispari per uno stream aperto dal client, e `0` non è mai uno stream
++     entry #headers   una promessa per il primo blocco di intestazioni: le intestazioni della risposta, o quelle della richiesta
++         Risolta dal demone lettore al primo frame `HEADERS` dello stream, come la lista di
++         `Hpack.Entry` decodificata con le sue pseudo-intestazioni (`:status`, oppure `:method`,
++         `:scheme`, `:authority` e `:path`) prima dei campi normali. Se lo stream termina senza
++         di esso, viene risolta con `Nil`. `await()` richiede una `Tactic[Async.Error]`.
++     entry #trailers   una promessa per un secondo blocco di intestazioni di fine stream: i trailer, o `Nil` se non ce ne sono
++         Risolta a un secondo blocco `HEADERS` sullo stream, che il protocollo richiede termini lo
++         stream — il `grpc-status` di gRPC arriva così — e con `Nil` quando lo stream termina
++         senza un secondo blocco, per cui attenderla dopo il corpo è sempre sicuro. `await()`
++         richiede una `Tactic[Async.Error]`.
++     entry #body   il corpo in arrivo dello stream, un `Http2.Stream.Body`
++     entry #acceptHeaders   registra un blocco di intestazioni in arrivo: il primo come intestazioni, i successivi come trailer
++         Chiamato dal demone lettore della connessione con un blocco decodificato. Non per l'uso
++         da parte dell'applicazione.
++     entry #acceptData   aggiunge al corpo un payload `DATA` in arrivo
++         Chiamato dal demone lettore della connessione. Non per l'uso da parte dell'applicazione.
++     entry #end   chiude il lato di ricezione, risolvendo tutto ciò che è in sospeso perché nessuno resti appeso in attesa
++         Un `#headers` o `#trailers` non risolto viene risolto con `Nil`, e il corpo viene fermato.
++         Chiamato dalla connessione su `END_STREAM`, `RST_STREAM`, `GOAWAY` e all'abbattimento.
++   entry .Endpoint   un endpoint h2c in chiaro: un indirizzo connettibile e la `:authority` da inviare, per `Http.Client` e le sessioni
+
+% 1 1 0 12ab0b422abc884404433f44afc1f5fd
+
+@ 0 7 0 117e7e4d5d546c870b30676785d2e9cf
++         `Http2.Endpoint(endpoint, authority)` nomina un server con cui parlare HTTP/2 in chiaro,
++         con conoscenza preventiva: `endpoint` è qualsiasi valore `Connectable` (e `Showable`) —
++         un `Endpoint(host, port)` di coaxial su TCP, un `Uds`, o il loopback di un test — e
++         `authority` è la pseudo-intestazione `:authority` che ogni richiesta porta, che il solo
++         indirizzo non dice. È il `Target` del given `Http.Client` HTTP/2 (`Client.http2`), dove
++         il client HTTP/1.1 di telekinesis ha come destinazione un URL, e il soggetto di
++         `.sessional`, che presta una connessione attiva a un ambito.
+
+% 2 1 0 1b4c3f45725ce2b2073d2f79e27cbac9
+
+% 3 1 0 15184041a6f0990002e5bce70600531f
+
+% 4 1 0 0c1aca2d34414c6211861977ab874053
+
+% 5 1 0 02df617d7c1d63a902d0a8d9c90ac230
+
+% 6 1 0 0c7880d4d4f0fedc0f594fbca720a6c7
+
+% 7 1 0 0870bcad00bc632108e0c8d014aaa149
+
+% 8 1 0 022c00a528df3afd0d466c95c3d2bf34
+
+% 9 1 0 107c44df57d923df05d764d0564612c7
+
+% 10 1 0 1c8e03421eea60d90dcae7aa0468a88f
+
+% 12 1 0 0a8a48ab8073eaf30de79edd218766f4
+
+% 0 1 0 0c4809ceeab50ae11a2d49c014ebb97f
+
+% 0 1 0 05c0c75cba838acb112183fa923e251d
+
+% 1 1 0 1eb8e531c520ebbc0b9032340d5365eb
+
+% 0 1 0 0b1c1c039deb5ee60bf4e7d436cedc7b
+
+% 0 1 0 150e798b565e04751357f1d3069a5a72
+
+% 0 1 0 14c5657f511faf3d1f86399bc2000732
+
+% 1 1 0 0d41e9065b9b0fd60e854ec10d769fc5
+
+@ 0 1 0 00682da47f1a955b0cfc9252fcab483e
++         Questo è il trasporto su cui gira gRPC: un `Grpc.Channel` si apre su un `Http2.Endpoint`.
+
+% 1 1 0 095ceedaf6a1505c047a358742697547
+
+% 0 1 0 1a0c58d4f9e45e67114b218994f23a5a
+
+% 0 1 0 004668f520281e2c1f786288fb7ced3e
+
+@ 0 13 0 13bcc3900e163d2f09f57ad8d9220327
++     entry #endpoint   l'indirizzo connettibile
++     entry #authority   lo pseudo-header `:authority` inviato con ogni richiesta, come `localhost:50051`
++     entry #connect   apre una connessione multiplexata che vive finché non termina l'ambito `supervise` che la racchiude
++         Si connette all'indirizzo, crea una `Http2.Connection` sul `Duplex`, ne completa
++         l'handshake e la restituisce. La connessione gira su un demone che tiene aperto il
++         duplex, parcheggiato finché l'ambito non viene smantellato, così i corpi di risposta
++         che trasmette in modo pigro restano leggibili per tutta la vita dell'ambito invece di
++         essere chiusi a ogni richiesta; nulla la chiude prima di allora. Richiede un `Monitor` e
++         un `Probate` (quindi si chiama dentro `supervise`), una `Tactic[Socket.Error]` per un
++         indirizzo a cui non ci si può connettere, e una `Tactic[Async.Error]` per una
++         connessione cancellata prima di essere pronta. Il risultato trattiene il monitor.
++         `.sessional` è l'alternativa con ambito, che chiude la connessione quando termina il suo
++         blocco.
++   entry .EndpointSessional   l'istanza di `Sessional` che presta una `Http2.Connection` a un ambito su un `Http2.Endpoint`
+
+% 1 1 0 05f44980cf3049d51cd8bfdd956872dc
+
+@ 0 10 0 13f2664aaae155af193c033a5678becd
++         La classe dietro il given `.sessional`, con nome anziché anonima perché il suo tipo
++         `Result` — una `Http2.Connection` che cattura — sia dichiarato esattamente.
++         `endpoint.session: connection ?=> …` si connette all'endpoint, completa l'handshake,
++         presta la connessione attiva al blocco, e la smantella (reader, writer e trasporto)
++         quando il blocco termina; il prestito e l'ambito coincidono, quindi nessun demone tiene
++         aperta la connessione dopo. Il tipo del risultato del blocco è quantificato al di fuori
++         di esso, così un valore che ancora prende in prestito la connessione — un corpo di
++         risposta trasmesso in modo pigro, un `Http2.Stream` aperto — non può sfuggire, mentre un
++         corpo memoizzato sì. I fetch dentro il blocco si multiplexano sull'unica connessione e
++         possono girare in modo concorrente. Richiede un `Monitor`, un `Probate`, una
++         `Tactic[Async.Error]`, una `Tactic[Socket.Error]` e un `Socket.Event is Loggable`.
+
+% 0 1 0 0df58be1e2e4d89e0d04eb36ba16702c
+
+@ 0 9 0 079217898112135d1b7610e6bedaea5b
++     entry #Result   `Http2.Connection^`: la connessione attiva che riceve il blocco
++     entry #session   si connette, presta la connessione al blocco, e la chiude dopo
++   entry .sessional   il given che fa funzionare `endpoint.session: connection ?=> …` su un `Http2.Endpoint`
++       Un `EndpointSessional` per qualsiasi `Http2.Endpoint` il cui indirizzo è `Connectable` e
++       `Showable`. Si trova nell'ambito del compagno di `Http2`, quindi non serve alcun import,
++       ma viene evocato solo dove sono nell'ambito un `Monitor`, un `Probate`, una
++       `Tactic[Async.Error]`, una `Tactic[Socket.Error]` e un `Socket.Event is Loggable`: dentro
++       un blocco `supervise` con, per esempio, `strategies.throwUnsafely` e
++       `logging.silentLogging`.
++   entry .Client   il given `Http.Client` HTTP/2, che esegue fetch da un `Http2.Endpoint` su h2c
+
+% 1 1 0 1b6aea4009f8581419e23d37eb0d6150
+
+@ 0 13 0 08ab311a5082668901c8743b75c1289e
++         Contiene `.http2`, l'istanza `Http.Client onto Http2.Endpoint[endpoint]`: una
++         `Http.Request` inviata a un `Http2.Endpoint` viene trasportata su una connessione h2c a
++         conoscenza preventiva, con l'`authority` dell'endpoint come suo `:authority` e `http`
++         come suo schema.
++     entry .http2   un `Http.Client` che parla HTTP/2 a un `Http2.Endpoint`; una connessione per richiesta, chiusa con l'ambito
++         Il given cattura il `Monitor` e il `Probate` del contesto in cui viene evocato — ne
++         hanno bisogno i demoni della connessione e il suo smantellamento legato all'ambito —
++         quindi si risolve solo dentro un blocco `supervise`. Ogni richiesta apre una connessione
++         nuova con `Endpoint#connect`, che vive finché l'ambito non termina; non c'è pooling,
++         quindi un programma che fa molte richieste a uno stesso endpoint dovrebbe usare invece
++         `endpoint.session`. Richiede anche una `Tactic[Http2.Error]`, una `Tactic[Async.Error]`,
++         una `Tactic[Socket.Error]` e una `Tactic[Truncation.Error]`, e la richiesta registra i
++         log tramite l'`Http.Event is Loggable` nell'ambito.
+
+% 2 1 0 046d8056f642c30a12eceae164111c74
+
+% 3 1 0 0362d27e852e2ba10b3109b96405936f
+
+% 4 1 0 07c31077bf5bcbc3016bc2807cd8f2c8
+
+% 5 1 0 0cdf51eb28c704e50f5eec0af64205da
+
+% 6 1 0 1461a9b73d034d790724ede8cf71b4d8
+
+% 7 1 0 0a2411ed4f6c9c8f1703e133c7086c26
+
+% 8 1 0 13ca454ac63b7412024725410e7b996e
+
+% 9 1 0 1ffa48c3743484201b21241fda36a067
+
+% 10 1 0 0e564cee848147a00027d248880bbfbe
+
+% 12 1 0 18b1e31b189489aa13b7a5c7d78ae84e
+
+% 0 1 0 1480f135c6a571550348256530adc88d
+
+% 0 1 0 04c402d647da88fd0e3b41acdd71f09c
+
+% 0 1 0 0e1b50a751a96a6e1bc84d9e340dd4a4
+
+% 0 1 0 1a414827e09cac4105eb79a69b57fe78
+
+% 0 1 0 03d8dea1e822ceb70f7cf287fc3b0bd2
+
+% 1 1 0 0c63ac262535d86a136f364bca1a3f32
+
+@ 0 1 0 15ebd2f5ce68ec510a91e3a93e477039
++   entry .Frame   un frame HTTP/2: un'intestazione di nove byte e un payload specifico del tipo, decodificato da byte e serializzato in byte
+
+% 1 1 0 19aa5cf8896b6d7416c9995d32eb57fa
+
+@ 0 3 0 1dbae201e058a63819b0b02acb91d7ae
++         L'unità di trasmissione di HTTP/2 (RFC 7540 §4): una lunghezza di 24 bit, un tipo di 8
++         bit, 8 bit di flag, un id di stream di 31 bit, e un payload la cui forma è decisa dal
++         tipo. `Frame` è un enum dei tipi che il motore modella, e ogni caso contiene i propri
++         campi decodificati anziché i flag grezzi:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 1 0 0c1c263a0de533d10a1161cb385ec376
++         column  Caso
+
+% 0 1 0 012eda9dfcd82e200b0aca6f1e15dcf6
+
+@ 0 9 0 0d5a83a82a06983c02708fbcb91b1aaa
++         row  `Headers(streamId, headerBlock, endStream, endHeaders)`  un blocco HPACK, con padding ed eventuale prefisso `PRIORITY` già rimossi
++         row  `Continuation(streamId, headerBlock, endHeaders)`  il resto di un blocco troppo grande per un solo frame `HEADERS`
++         row  `Data(streamId, payload, endStream)`  byte del corpo, senza padding
++         row  `RstStream(streamId, errorCode)`  il peer che abbandona uno stream
++         row  `Settings(settings, ack)`  un elenco di `Setting`, o una conferma vuota
++         row  `Ping(opaque, ack)`  otto byte opachi, rimandati indietro con `ack`
++         row  `GoAway(lastStreamId, errorCode, debug)`  il peer che chiude la connessione
++         row  `WindowUpdate(streamId, increment)`  credito di controllo del flusso, per la connessione sullo stream `0`
++         row  `Ignored(typeId, streamId)`  un frame in ingresso di un tipo che il motore non modella (`PRIORITY`, `PUSH_PROMISE`, un'estensione), decodificato solo per essere scartato, come richiede il protocollo; non può mai essere serializzato
+
+% 1 1 0 1b19efa941feb47608f8a6b08e0bbade
+
+% 2 1 0 08a1aaa27a33b3d600c40a4777139099
+
+% 3 1 0 15ed7097a93bde601582783fd7b9ecca
+
+% 4 1 0 02ff43e45101e4191eb1e57b7d17f385
+
+% 0 1 0 0a8c08fe9d85ed2215e4be23e25d7f67
+
+% 0 1 0 17ec938e31dd759c1dbfd0563179f00b
+
+% 0 1 0 0f0458fead3d449302d41895471da29f
+
+% 1 1 0 1ac2efe5d07f1708059cd26dc30604a0
+
+@ 0 2 0 027af476cad64ee60937edf4f6d868c9
++         Un programma che parla il protocollo a mano invia `frame.serialize` su un `Duplex` e
++         legge con un `FrameReader`, che riassembla i frame dai chunk arbitrari di un socket.
+
+% 0 1 0 05defaa95eadf8bf028b5b7fad4b3324
+
+% 0 1 0 06433e425984044d0b0b25a27c16e4c4
+
+% 0 1 0 001e3c237f3050c4063004fafcab9f45
+
+@ 0 14 0 10698405e54dd9eb04de1581bbdd4765
++     entry .decode   decodifica un frame da byte a un dato offset, restituendolo insieme all'offset immediatamente successivo
++         `Frame.decode(data, offset)` legge l'intestazione di nove byte in `offset` e il payload
++         che dichiara, che deve essere già interamente presente: un'intestazione o un payload che
++         oltrepassa la fine di `data` solleva `Http2.Error` con motivo `Truncated`, e un padding
++         errato o un payload `SETTINGS` che non è un multiplo di sei byte ne solleva uno con un
++         motivo `Protocol`. Un id di tipo che il motore non conosce diventa `Frame.Ignored`. Il
++         risultato è il frame e l'offset del successivo, così un buffer di più frame si decodifica
++         iterando.
++     entry #stream   lo stream a cui appartiene il frame; `0` per `SETTINGS`, `PING` e `GOAWAY` a livello di connessione
++     entry #serialize   il frame come byte, intestazione inclusa
++         L'intestazione di nove byte — la lunghezza del payload, l'id del tipo, i flag implicati
++         dai campi (`END_STREAM`, `END_HEADERS`, `ACK`) e l'id dello stream — seguita dal
++         payload. Serializzare un frame `Ignored` provoca un panic: esiste solo per essere
++         scartato.
++   entry .FrameType   i tipi di frame che il motore modella, ciascuno con il suo id di trasmissione
+
+% 1 1 0 19ffae81e9ae601217bc7cae0e3fb7f6
+
+@ 0 1 0 03d5d057f14d67801bf235bae96a909b
++         Un enum degli otto tipi che il motore decodifica e invia: `Data` (`0x0`), `Headers`
+
+% 0 1 0 0935015bc2de2aa9138d5ab099dae7bb
+
+@ 0 6 0 1acae5441e1dfeb215c00b2fa4809915
++         `WindowUpdate` (`0x8`) e `Continuation` (`0x9`). `PRIORITY` (`0x2`) e `PUSH_PROMISE`
++         (`0x5`) non hanno un caso: il client disattiva il server push, e la priorità viene
++         saltata dove compare, quindi un frame in ingresso di uno dei due tipi si decodifica come
++         `Frame.Ignored`.
++     entry .fromId   il tipo di frame con un dato id di trasmissione, o `Unset` per uno che il motore non modella
++     entry #id   l'id di trasmissione del tipo, il byte dopo la lunghezza in un'intestazione di frame
++   entry .Flags   i bit di flag di un'intestazione di frame, e un test per uno di essi
+
+% 1 1 0 11a3d4b578754c8f1718cf9f085b98cf
+
+@ 0 13 0 06b1fa1ddbe0fa811c7f07e5497826fc
++         I bit del byte dei flag, come li usano i tipi di frame supportati: `EndStream` (`0x1`,
++         su `DATA` e `HEADERS`), `Ack` (anch'esso `0x1`, su `SETTINGS` e `PING`: lo stesso bit
++         con un significato diverso), `EndHeaders` (`0x4`, su `HEADERS` e `CONTINUATION`),
++         `Padded` (`0x8`, su `DATA` e `HEADERS`) e `Priority` (`0x20`, su `HEADERS`).
++         `Frame.decode` li legge nei campi Boolean dei frame; sono esposti per un programma che
++         esamina intestazioni grezze.
++     entry .EndStream   `0x1`: il frame chiude la metà di invio del suo stream (`DATA`, `HEADERS`)
++     entry .Ack   `0x1`: il frame conferma uno dello stesso tipo (`SETTINGS`, `PING`)
++     entry .EndHeaders   `0x4`: il blocco di intestazioni è completo (`HEADERS`, `CONTINUATION`)
++     entry .Padded   `0x8`: sono presenti un byte di lunghezza del padding e un padding finale (`DATA`, `HEADERS`)
++     entry .Priority   `0x20`: un prefisso di priorità di cinque byte precede il blocco di intestazioni (`HEADERS`)
++     entry .set   se un bit di flag è impostato in un byte di flag: `Flags.set(flags, Flags.EndStream)`
++   entry .ErrorCode   i codici di errore HTTP/2 trasportati da `RST_STREAM` e `GOAWAY`, con i loro codici numerici
+
+% 1 1 0 0f2ac3784c50baec098061da368a3469
+
+@ 0 3 0 139c961c435908c90a7655d6e022729c
++         Un enum dei quattordici codici del §7 di RFC 7540, ciascuno con il suo `#code`:
++         `NoError` (`0x0`), `ProtocolError` (`0x1`), `InternalError` (`0x2`), `FlowControlError`
++         (`0x3`), `SettingsTimeout` (`0x4`), `StreamClosed` (`0x5`), `FrameSizeError` (`0x6`),
+
+% 0 1 0 14ae3d149a8405981431b56e564289e5
+
+@ 0 5 0 196d43c28207da740e2b200a9adf2178
++         (`0xa`), `EnhanceYourCalm` (`0xb`), `InadequateSecurity` (`0xc`) e `Http11Required`
++         (`0xd`). Un `Frame.RstStream` o un `Frame.GoAway` trasporta il `Long` grezzo, poiché un
++         peer può inviare un codice fuori dall'elenco; `ErrorCode.NoError.code` è ciò che invia
++         un `#close` pulito.
++     entry #code   il valore numerico del codice, come `Long`
++   entry .SettingId   gli identificatori dei parametri `SETTINGS`, con i loro id numerici
+
+% 1 1 0 1859d8613e942a8115f009b78f7ac6db
+
+@ 0 1 0 1beb7950f717b57e02b4e6dad28d093b
++         Un enum dei sei parametri del §6.5.2 di RFC 7540, ciascuno con il suo `#id`:
+
+% 0 1 0 109dfb1f9d2c50b100d08d23052cfc21
+
+@ 0 6 0 0b0a49dbf9fadc671462f933cc512984
++         `InitialWindowSize` (`0x4`), `MaxFrameSize` (`0x5`) e `MaxHeaderListSize` (`0x6`). Un
++         `Setting` contiene l'id grezzo anziché un `SettingId`, poiché un identificatore
++         sconosciuto deve essere ignorato anziché rifiutato. Il motore agisce su
++         `InitialWindowSize` e `MaxFrameSize` provenienti da un peer, e invia `EnablePush` (come
++         `0`, dal client) e `InitialWindowSize`.
++     entry #id   l'identificatore di 16 bit del parametro
++   entry .Setting   un parametro `SETTINGS`: un identificatore di 16 bit e un valore di 32 bit
+
+% 1 1 0 0be8a394366190461cc576c6f71c0726
+
+@ 0 2 0 0cba1f8dbb34fbda0557c60de88e390d
++         `Setting(SettingId.InitialWindowSize.id, 65535)`. L'id è grezzo così che un parametro
++         che il motore non conosce venga trasportato e ignorato, come richiede il protocollo.
+
+% 2 1 0 0560bafeaa48fa88090a926c4abbf614
+
+% 3 1 0 1e64ebf33af2e3290856bf5ff4bf539c
+
+% 0 1 0 09957cba6592240e12090bc938554ad4
+
+% 0 1 0 13f17ea41e63da450a6ab95f7e13f48c
+
+% 1 1 0 0446879a26fc4f3f1a1ee34745bb77a7
+
+@ 0 3 0 0de0df583a55864e0f12968650c692ff
++     entry #id   l'identificatore del parametro; `SettingId#id` per uno noto
++     entry #value   il valore del parametro, come numero senza segno di 32 bit in un `Long`
++   entry .Error   sollevato per uno scambio HTTP/2 malformato o che viola il protocollo, con un `Reason`
+
+% 1 1 0 108c080eac29ce0d1f767012fd934e55
+
+@ 0 6 0 1572a8c2fa2df1630433c03876fb26ff
++         _the HTTP/2 operation failed because `reason`_. Sollevato da `Frame.decode`,
++         `FrameReader`, `Hpack#decode`, `Huffman.decode` e `PseudoHeaders` attraverso una
++         `Tactic[Http2.Error]`, e da `Connection#fetch` per lo scambio che conduce. Dentro il
++         demone reader di una connessione l'errore smantella quella sola connessione anziché
++         sfuggire; una sessione `https` lo riporta come `Connect.Error`.
++     entry .Reason   perché un'operazione HTTP/2 è fallita
+
+% 1 1 0 0a7827850760c5b01bee9cd37ec18154
+
+@ 0 1 0 03d1aeb1f05fc3531e37b4d6dd0d83c9
++           Ogni caso si rende come il suo messaggio:
+
+% 1 1 0 05f424c7a32c4c0b0b03863d383d30a5
+
+@ 0 4 0 1c11022252accc3c1fe51bdc2fcd38b5
++           column  Caso
++           column  Messaggio
++           column  Nota
++           row  `Truncated`  _the HTTP/2 data ended unexpectedly_  un frame, un blocco di intestazioni o un intero troncato
+
+% 0 1 0 049882a67c69bbf61e562b90dc596586
+
+@ 0 1 0 14ea7cd4202f24dc1c8a6abaf874aa27
++           row  `BadHuffman`  _the Huffman-coded string was not valid_  un codice più lungo di 30 bit, o un padding non composto di soli uno
+
+% 0 1 0 0bcda516d445cbf80be6085f830631bd
+
+% 0 1 0 139b3921345273181bfffd290468882a
+
+% 0 1 0 001f9051c8b71cdc0bee2b881ecc56a1
+
+% 0 1 0 010e3e9d683682870a0f038c37e519b6
+
+% 0 1 0 167e6a3875fa69a201f2b5d94fc9890a
+
+@ 0 1 0 10c2b3af5a256c0513322d64b0d5704a
++           row  `Protocol(message)`  _a protocol error occurred: `message`_  un preambolo di connessione errato, un padding errato, una lunghezza `SETTINGS` errata, o un blocco di intestazioni privo di `:status`, `:method`, `:path` o `:authority`
+
+% 0 1 0 035cb90b113c4e111414338a9d4ed430
+
+% 1 1 0 1fa48be84477bf2409f9d0ccfd8cf2b2
+
+@ 0 3 0 0111a4a23a498fec10260f8f19ea9f31
++       entry .communicable   rende ogni motivo come il suo messaggio
++     entry #reason   il motivo, un `Http2.Error.Reason`
++   entry .Event   ciò che registra una connessione: una richiesta inviata, e un `GOAWAY` ricevuto
+
+% 1 1 0 14bb0f65507cb146090506b6c49886b1
+
+@ 0 6 0 1eeb54dcbae62e8d0e6e57ad467545ed
++         Ogni `Event` ha i tag `Log.Network` e `Log.Protocol`. `Connection#fetch` registra
++         `RequestSent(authority)` al livello `fine` — _sending an HTTP/2 request to `authority`_
++         — e il reader di una connessione registra `GoAway(lastStream)` come avviso — _received
++         GOAWAY; the last processed stream was `lastStream`_ — prima di fermarsi. Per un fetch
++         deve essere nell'ambito un `Http2.Event is Loggable`; `logging.silentLogging` li scarta.
++     entry .communicable   rende ogni evento come un messaggio
+
+@ 0 1 0 1acb88a8108825961a79014a89489c27
++ entry .Hpack   un codec HPACK: comprime e decomprime i blocchi di intestazioni HTTP/2 con una propria tabella dinamica
+
+% 1 1 0 1aeb2c020352f57f110e78c5892d53e0
+
+@ 0 5 0 185b4590891969bd0ee0dd3aefa80903
++       HPACK (RFC 7541) è il modo in cui HTTP/2 trasporta le intestazioni: ogni campo è un indice
++       in una tabella di campi visti di recente, oppure un nome e un valore letterali, ciascuno
++       codificato con Huffman dove questo è più corto. Un'istanza `Hpack` possiede la tabella
++       dinamica di una direzione, che cambia con ogni blocco che codifica o decodifica, quindi
++       una connessione tiene un codec per decodificare i blocchi in ingresso e uno per
++       codificare quelli in uscita, e i due non si mescolano mai.
+
+% 2 1 0 0656c5fea64821fe07521de2cbf9b00b
+
+% 3 1 0 0fd187f58b9e0c130abceaba6ecddae4
+
+% 4 1 0 05141930faf3750d06df68baeb20cf81
+
+% 0 1 0 01563c0006528d2b1e3c4a10907064e6
+
+% 0 1 0 0dd41eb9643c00d11cbb439382d96a84
+
+% 0 1 0 1c5cf8d26ffd993b0aad6848424ffb33
+
+% 0 1 0 1d71b89d742a990404ce765b8440d51d
+
+% 1 1 0 1e413f44922a500f1e1957b5eb5ea7e5
+
+@ 0 5 0 0e7c8432f11d7b4c11b960c98b00c443
++       Il codec è una capability con stato ed esclusiva: `Hpack()` restituisce `Hpack^`, e
++       `#encode` e `#decode` sono metodi di aggiornamento. Tienilo in una variabile locale o
++       passalo come parametro di tipo `Hpack^`, e non chiamarlo da una closure o da un `def`
++       locale che lo cattura — un riferimento catturato è di sola lettura, e la chiamata viene
++       rifiutata — ed è anche per questo che un codec appartiene esattamente a un solo demone
++       reader o writer.
+
+@ 0 2 0 0f97b0ee6251d5c006c7de256c72b020
++       Alimentata con blocchi successivi, la tabella dinamica di un decodificatore cresce, e ogni
++       blocco può fare riferimento a ciò che ha aggiunto il precedente (l'esempio
++       dell'Appendice C.3 di RFC 7541):
+
+% 2 1 0 05df456e7f2c1fdc0fda390ea174caca
+
+% 3 1 0 1ba8afd3950ad123195d667545936848
+
+@ 0 1 0 171cc0d4b254f7891dd588565f861090
++         label La prima richiesta: quattro campi, con l'authority inviata come letterale
+
+% 1 1 0 0f6dc1dadc70ba7b101935b46636951a
+
+% 2 1 0 039726231c45f5c206aa7cda1a02a6de
+
+% 3 1 0 0b5c91b75c2a64801beb6b952c9067b8
+
+% 5 1 0 15f02fd45c8ca24103b50ac364756c88
+
+% 7 1 0 0ec75e4934a0754416aaaabec68d9aff
+
+% 8 1 0 06739ae4fe0d44da1eb52ae21a4d7cc4
+
+% 0 1 0 1261996de336cf7812427f028557003f
+
+% 1 1 0 082b020ef14d39ef01394c0578fa177d
+
+@ 0 1 0 0f79cfe83ceb5f2f109c2ac1812ecb0d
++         label La seconda: l'authority è ora l'indice 62, un byte, e si aggiunge un nuovo campo
+
+% 1 1 0 13c76bfb98baf3b811f82b5d8b70a828
+
+% 2 1 0 1490e2421ed0f2e80c8faa3878f20970
+
+% 3 1 0 10423bd849d301d5111d2c9506b377c3
+
+% 5 1 0 1148fa0a1c29e2510b30ac68572ca002
+
+% 7 1 0 110609e2df26bcb6146a6f43312a305a
+
+% 8 1 0 19b8c4626af9969c08783751a366efe4
+
+% 9 1 0 0409f67cc8b84aba11be1717fe1cdfda
+
+% 0 1 0 11d456fb5f8d661a121757ab06756d0b
+
+% 1 1 0 178ad23b3f59aec81cd4802c3f3c7cd3
+
+@ 0 1 0 1557af4209cedf7a0592d0cc5f112993
++         label La terza: un campo personalizzato, con le due aggiunte precedenti ancora indicizzate
+
+% 1 1 0 140ba494e3d087600bd85819b8aae854
+
+% 2 1 0 112b44459f55061c17069882d0816b84
+
+% 3 1 0 1c5ac203ca4b63a21fd7c7c4fa808b10
+
+% 5 1 0 1f91c779dc2c5b0a16fef5971ca776a5
+
+% 7 1 0 08af778232cf3cd619c9cafcdcc62026
+
+% 8 1 0 14331200b08f4d0604c3ffdc5234adef
+
+% 9 1 0 0d87a117ffebc03e1514ef89b026ca8e
+
+% 0 1 0 02d7493f68b1d2ac100bcb1a2eb4803b
+
+% 0 1 0 0aa9dbe675eef49719ce9b6a3d0763e5
+
+% 1 1 0 15376927454c7f0f191b63f99607e51b
+
+% 2 1 0 0feeaeddabc27e5a16b4b1f98c69637d
+
+@ 0 6 0 06cb1fe75579ae051a0c79ca987c0c23
++       Il codificatore è deliberatamente semplice: ogni campo esce come letterale con
++       indicizzazione incrementale, con nome e valore ciascuno codificato con Huffman o grezzo, a
++       seconda di quale sia più corto. Questo è corretto e interoperabile con qualsiasi
++       decodificatore, e mantiene allineate le due tabelle, ma non usa ancora le corrispondenze
++       di nome della tabella statica, quindi un blocco è più grande di quanto lo farebbe un
++       codificatore ottimizzato. Gli pseudo-header devono essere ordinati prima dei campi
++       normali da parte del chiamante, come fa `PseudoHeaders`.
+
+% 1 1 0 05fd61defd2975e21f11c0d6270e7a1c
+
+% 0 1 0 1056b5f52e6def0718792b9ecdebf263
+
+% 0 1 0 05a840856c6a73b5008373548dd9e2db
+
+% 0 1 0 0261683ed6c93ce704b3fd9a91bf8836
+
+@ 0 5 0 03bfc99fcdb986c8147df6094314d19b
++   entry .apply   un codec nuovo con una tabella dinamica vuota, come `Hpack()` o `Hpack(maxTableSize)`
++       Il limite in byte della tabella è 4096 per impostazione predefinita, il
++       `SETTINGS_HEADER_TABLE_SIZE` iniziale del protocollo. Un aggiornamento della dimensione
++       della tabella dinamica da parte di un peer, dentro un blocco, la ridimensiona. Il
++       risultato è `Hpack^`: una capability nuova ed esclusiva.
++   entry .Entry   un campo di intestazione: un nome e un valore
+
+% 1 1 0 01c21446f4b5d5240a63c7e91cb92997
+
+@ 0 2 0 138e28927c1d5762101e99cc4b4a1283
++         `Hpack.Entry(t":status", t"200")`. I nomi sono minuscoli sulla connessione, e gli
++         pseudo-header iniziano con `:`; `#size` è il costo del campo nella tabella dinamica.
+
+% 2 1 0 0edef6df0682e4951f91b0e087444b94
+
+% 3 1 0 181583b7a0c2eec41debd3be0718a5db
+
+% 0 1 0 09f9cdd63a162fe0048f743b59a299e7
+
+% 1 1 0 1658ac6d388c81fd0b07ab24c28b5f1c
+
+@ 0 4 0 0b67cde888b8947e19c604490ba0e148
++     entry #name   il nome del campo, minuscolo, come `:path` o `content-type`
++     entry #value   il valore del campo
++     entry #size   la dimensione del campo ai fini del conteggio della tabella dinamica: lunghezza del nome + lunghezza del valore + 32
++   entry .Table   lo spazio di indirizzi HPACK: la tabella statica di 61 voci e una tabella dinamica limitata, dalla più recente
+
+% 1 1 0 061be083dccbd4530f31882b52ba73a7
+
+@ 0 5 0 15d85cde484c90081bbcd681ae7ecf27
++         Un indice da 1 a 61 nomina un campo della tabella statica dell'Appendice A di RFC 7541,
++         contenuta in `.static`; da 62 in su si nomina la tabella dinamica, a partire
++         dall'inserimento più recente. La tabella dinamica è una FIFO limitata da una dimensione
++         in byte (`#capacity`), che espelle le voci più vecchie per rientrarvi. Una `Table`
++         appartiene al suo codec `Hpack`, che a sua volta è confinato a un solo demone; a un
++         programma serve solo per risolvere o ispezionare indici a mano.
+
+% 2 1 0 0e3ddaa915bfc9ad079dbf3c71f76fe2
+
+% 3 1 0 1bafd790815ca3be1a8285a6836aaa6e
+
+% 0 1 0 0ec016d98cb7084e028f1bb48b7d5879
+
+% 0 1 0 0cb5293e9269d9d014e0351dcba887ff
+
+% 0 1 0 0d63eb17609c66670809b476a9dc0f46
+
+% 0 1 0 18f00bceb50c58ec004cd3e02da08776
+
+% 1 1 0 1a488c280ba91f801ebddbd55c7244b0
+
+@ 0 26 0 1264691a604594a908c1a1a900e4146b
++     entry .static   i 61 campi della tabella statica, con l'indice 1 all'elemento 0
++         `:authority`, `:method` `GET` e `POST`, `:path` `/` e `/index.html`, `:scheme` `http` e
++         `https`, i sette valori comuni di `:status`, e i nomi di intestazione standard con
++         valori vuoti, nell'ordine della RFC.
++     entry #size   la dimensione attuale in byte della tabella dinamica, la somma delle dimensioni delle sue voci
++     entry #capacity   il limite in byte della tabella dinamica
++     entry #resize   imposta il limite in byte, espellendo le voci più vecchie per rientrarvi: un aggiornamento della dimensione della tabella dinamica
++     entry #add   inserisce un campo in testa alla tabella dinamica, espellendo le voci più vecchie per restare entro il limite
++         Un campo più grande dell'intera tabella la svuota e non viene a sua volta memorizzato,
++         come specifica la RFC.
++     entry #lookup   il campo a un indice a base 1: statico da 1 a 61, poi dinamico; `Unset` se fuori intervallo
++   entry #decode   decodifica un blocco di intestazioni nei suoi campi, aggiornando la tabella dinamica secondo le indicazioni del blocco
++       Legge un blocco completo — il payload di un frame `HEADERS`, o di uno di essi unito ai
++       suoi `CONTINUATION` — come una `List[Hpack.Entry]` in ordine. I campi indicizzati si
++       risolvono attraverso la tabella, i letterali con indicizzazione incrementale vi vengono
++       aggiunti, i letterali senza indicizzazione e quelli mai indicizzati no, e un
++       aggiornamento della dimensione della tabella dinamica la ridimensiona. Richiede una
++       `Tactic[Http2.Error]`: `BadIndex` per un indice che la tabella non ha, `BadInteger` per un
++       intero di più di 28 bit, `BadHuffman` per una stringa Huffman non valida e `Truncated` per
++       un blocco troncato. Un metodo di aggiornamento: il codec deve essere detenuto in modo
++       esclusivo.
++   entry #encode   codifica dei campi come blocco di intestazioni, ciascuno un letterale con indicizzazione incrementale
++       L'inverso di `#decode`: ogni campo viene scritto come letterale con indicizzazione
++       incrementale, con nome e valore ciascuno codificato con Huffman dove è più corto e grezzo
++       altrimenti, e aggiunto alla tabella dinamica così che la tabella del decodificatore resti
++       allineata. I campi vengono scritti nell'ordine dato, quindi gli pseudo-header devono
++       venire per primi. Un metodo di aggiornamento: il codec deve essere detenuto in modo
++       esclusivo.
+
+@ 0 1 0 0b3700f9a0b9ff261ad0dcd36854c46b
++ entry .Huffman   il codice Huffman di HPACK: comprime e decomprime le stringhe di un blocco di intestazioni
+
+% 1 1 0 01546cbe6059d69d0cdca62ecfe01ee4
+
+@ 0 3 0 016db7990a122974136e7603dc2efd29
++       Il codice canonico dell'Appendice B di RFC 7541, sui 256 valori di byte e su un simbolo di
++       fine stringa. `Hpack` lo usa per ogni nome e valore dove è più corto dei byte grezzi; a un
++       programma serve direttamente solo per parlare HPACK a mano.
+
+% 2 1 0 05ce86e3c14406600922ad56bec019ec
+
+% 3 1 0 0b72cc2c1dc81d15111ae1bbfe5ddbe9
+
+% 4 1 0 0f4b14d73b47e24a1d36139a685de7bd
+
+% 0 1 0 1848af7e17cf49e31e55c5eddfa4cd68
+
+% 0 1 0 08a0426c3cd861ad1fe491387d17c530
+
+% 0 1 0 18b7482142edd09b0f34ac566bafae54
+
+% 1 1 0 1005835a2a07afa119da4927f6a2625b
+
+% 1 1 0 1e2089ba5bcd3fd01692bcfe9e0a60d7
+
+@ 0 8 0 1fbf1115d1311eee1b3e7575a507e159
++   entry .encode   codifica dei byte con Huffman, riempiendo l'ultimo byte con bit a uno
++       Dal bit più significativo, con l'ultimo byte parziale riempito con i bit iniziali del
++       simbolo di fine stringa, come richiede la RFC. Non fallisce mai.
++   entry .decode   decodifica una stringa codificata con Huffman nei suoi byte
++       Percorre i bit confrontandoli con la tabella dei codici, accettando e scartando il
++       padding finale. Richiede una `Tactic[Http2.Error]`, sollevata con motivo `BadHuffman` per
++       una sequenza di più di 30 bit che non corrisponde ad alcun simbolo, o per un padding di
++       otto bit o più o non composto di soli uno. Il decodificatore fa una scansione lineare
++       della tabella per ogni bit, quindi è corretto più che veloce.
+
+@ 0 1 0 17575b073b63b32801d07d77a84c7fdf
++ entry .FrameReader   riassembla frame HTTP/2 interi da uno stream di byte che arriva in chunk arbitrari
+
+% 1 1 0 109651863bd47496110c901134987de8
+
+@ 0 6 0 0e1e2a3f9a85a0960ec6d76e84be5f5c
++       Un socket consegna i byte in qualunque chunk produca la rete, e un frame può estendersi su
++       più chunk o condividerne uno. `FrameReader(source)` prende possesso di uno `Stream[Data]
++       over Credit` — la `source` di un `Duplex` — mette nel buffer ciò che ha letto, e ricarica
++       finché l'intestazione di nove byte di un frame e il payload dichiarato non sono entrambi
++       presenti, così `#next` restituisce un `Frame` decodificato alla volta e `Unset` alla fine
++       pulita dello stream. È l'unico reader della connessione: una capability esclusiva e con
++       stato che consuma l'endpoint che riceve, come un parser.
+
+% 2 1 0 05cc790041ce067a0d309367518b9ee7
+
+% 3 1 0 0cbba1a7e5b072ac1206a2fe5a87059f
+
+% 4 1 0 06d3ab37e3b5454e11c2d49a6e6985a0
+
+% 5 1 0 0ca74decccfe23861842966f02b4e0c7
+
+% 6 1 0 1e3c58a0c81c1b760860f6557c346acc
+
+% 0 1 0 1e7e2265e6a8c7cc10d8a8471834ca1d
+
+% 0 1 0 0aa7fb246c0a61400d7bf09c7b6365f8
+
+% 0 1 0 0f66db0995515a790764e5cf9246854f
+
+% 0 1 0 03e06732f622a1d404fa8c4e7f3e0533
+
+% 0 1 0 176d2a39e0b250b118513c783c1ae850
+
+% 0 1 0 13ffc759c4f27d2f12f8ca1168eb8a51
+
+% 0 1 0 09d036a6f5aea7a709ce49a3b8c7935b
+
+% 0 1 0 0ebdacf2c15da27900fd2efc9e54950c
+
+% 1 1 0 122f533747e988f4073fb33675fc6eb6
+
+@ 0 2 0 0a10e54d0b3f9f89108b205ea0db0859
++       Un server legge il preambolo di connessione di 24 byte del client con `#expectPreface`
++       prima del suo primo `#next`. Deve essere nell'ambito un `Buffering`, che dimensiona le
++       letture.
+
+% 0 1 0 00a28069eaf0e6d50220f32a4044dcbf
+
+% 1 1 0 08dcee32c0a7d4570fb574fde285cd51
+
+@ 0 14 0 06f9390c9b7be27b186e929137a8d42a
++   entry .apply   un reader su un endpoint pull, che consuma: `FrameReader(duplex.source)`
++       Prende l'endpoint tramite `consume`, così il chiamante rinuncia al proprio uso: il reader
++       è ora il suo unico lettore. Richiede un `Buffering` nell'ambito. Il risultato è
++       `FrameReader^`, una capability nuova ed esclusiva.
++   entry #expectPreface   consuma e verifica un preambolo di connessione prima del primo frame
++       `reader.expectPreface(preface)` legge esattamente `preface.length` byte e li confronta:
++       una discrepanza, o la fine dello stream al loro interno, solleva `Http2.Error` con il
++       motivo `Protocol` _bad connection preface_. È la prima lettura del ruolo server su una
++       nuova connessione, con il preambolo del client `PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n`. Un
++       metodo di aggiornamento.
++   entry #next   il prossimo frame intero, o `Unset` alla fine pulita dello stream
++       Si blocca, ricaricando dall'endpoint, finché un'intestazione di frame e il payload
++       dichiarato non sono nel buffer, poi li decodifica con `Http2.Frame.decode`. Uno stream che
++       termina dopo un'intestazione ma prima che il suo payload sia completo solleva
++       `Http2.Error` con motivo `Truncated`; uno stream che termina tra un frame e l'altro dà
++       `Unset`. Richiede una `Tactic[Http2.Error]`. Un metodo di aggiornamento.
+
+@ 0 1 0 050896147a55bf910766a4479332d46a
++ entry .PseudoHeaders   traduce tra `Http.Request`/`Http.Response` e i blocchi di intestazioni HTTP/2, in entrambe le direzioni
+
+% 1 1 0 097130b71a8384881866a260832d6679
+
+@ 0 6 0 051858d1c36516990e5b2d685f799014
++       HTTP/2 trasporta la riga di richiesta e la riga di stato come pseudo-header — `:method`,
++       `:scheme`, `:authority` e `:path` in una richiesta, `:status` in una risposta — prima dei
++       campi normali, che sono minuscoli. `PseudoHeaders` è il ponte tra questo e le
++       `Http.Request` e `Http.Response` di telekinesis, indipendenti dal trasporto: `.request` e
++       `.response` sono le due direzioni del client, e `.requestOf` e `.entries` quelle del
++       server, ciascuna l'inverso dell'altra.
+
+% 2 1 0 18b871f1a6d42dec087c0b14475cfa09
+
+% 3 1 0 02ffac369b847db51237063880571b7f
+
+% 4 1 0 0a0164f5eba2ca680bbe68f583ada97c
+
+% 0 1 0 01ef950e0dcd95611a478de65118acb4
+
+% 0 1 0 036a6ba7e4583c6e0433209985fb5c87
+
+% 0 1 0 1d20373cd5376e5806d68edcee700f7e
+
+% 0 1 0 012749f809c4239a17449b8509102853
+
+% 1 1 0 143bf4975a45bed90adf1e99a09d2a16
+
+% 1 1 0 0049181bb9efd77a0261dfe003485e21
+
+% 1 1 0 0e9fcce47c1366ce065a59e109984c66
+
+% 2 1 0 1bc55ae5ad9c7be804b6ba86c78cde65
+
+@ 0 25 0 1b386ae443ddcee213475e1cab95c96e
++   entry .request   il blocco di intestazioni di una richiesta: i suoi quattro pseudo-header, poi le sue intestazioni in minuscolo
++       `PseudoHeaders.request(request, scheme, authority)`. Una `Http.Request` non porta né il
++       suo schema né l'authority a cui viene inviata, quindi si danno entrambi: `:method` dal
++       metodo della richiesta, `:scheme` come dato, `:authority` come dato (un browser omette
++       una porta predefinita, come `localhost` anziché `localhost:443`), `:path` dal target della
++       richiesta, poi ogni intestazione con il nome in minuscolo. La chiama
++       `Http2.Connection#fetch`.
++   entry .response   una `Http.Response` da un blocco di risposta decodificato e da uno stream di corpo
++       `PseudoHeaders.response(headerBlock, body)`: `:status` seleziona l'`Http.Status`, gli
++       altri pseudo-header vengono scartati, e i campi rimanenti diventano le intestazioni della
++       risposta; il corpo è un `Http.Body` che scorre sulla catena di blocchi di byte data.
++       Solleva `Http2.Error` con un motivo `Protocol`, _missing :status_, quando il blocco non ha
++       `:status` o ne ha uno che non è un codice di stato noto.
++   entry .requestOf   una `Http.Request` da un blocco di richiesta decodificato e da uno spring di corpo
++       `PseudoHeaders.requestOf(headerBlock, body)`: `:method` e `:path` diventano il metodo e
++       il target, `:authority` diventa l'host (rimossa l'eventuale porta, come per
++       un'intestazione `Host` di HTTP/1.1), gli altri pseudo-header vengono scartati, e i campi
++       rimanenti diventano le intestazioni della richiesta; la versione è 2.0. Il corpo è uno
++       `Spring[Data]` di cui la richiesta prende possesso, tipicamente uno sui frame `DATA` in
++       ingresso dello stream. Richiede una `Tactic[Http2.Error]`, sollevata con un motivo
++       `Protocol` per un blocco privo di `:authority`, `:path` o `:method`, o il cui
++       `:authority` non è un host. L'inverso di `.request` per il ruolo server.
++   entry .entries   il blocco di intestazioni di una risposta: prima `:status`, poi le sue intestazioni in minuscolo, tolte quelle specifiche della connessione
++       `PseudoHeaders.entries(response)`: `:status` come cifre del codice di stato, poi ogni
++       intestazione in minuscolo, con `connection`, `keep-alive`, `transfer-encoding`, `upgrade`
++       e `proxy-connection` rimosse, poiché HTTP/2 le vieta. L'inverso di `.response` per il
++       ruolo server; il blocco che invia `ServerConnection#sendHeaders`.
+
+@ 0 1 0 0eb656afaa6563550a3ac566f6e16164
++ entry .FlowWindow   una finestra di invio del controllo del flusso HTTP/2: un budget di byte concesso dal peer, acquisito a pezzi e ricaricato da `WINDOW_UPDATE`
+
+% 1 1 0 0493dfe638378ed20c4feb2e288d313a
+
+@ 0 7 0 07c59d87a9a7d9541de8025f3fa96dcc
++       Il credito lato invio di una connessione o di uno stream (RFC 7540 §6.9), come un
++       contatore da cui attinge una fiber che invia e che un `WINDOW_UPDATE` in ingresso
++       ricarica. `#acquire` si blocca finché non è disponibile almeno un byte e prende fino alla
++       quantità richiesta, così un corpo grande si svuota man mano che la finestra si apre;
++       `#release` aggiunge credito e risveglia ogni attesa. L'attesa avviene su una condizione di
++       lock anziché su un monitor, così un virtual thread bloccato rilascia il suo portatore.
++       `Http2.Connection` e `Http2.ServerConnection` ne tengono una per connessione e una per
++       stream; a un programma la classe serve solo per modellare da sé il controllo del flusso.
+
+% 2 1 0 048de544c8c3f5211f5a779dd241f5cf
+
+% 3 1 0 144fb03220632ec60c3e93d10f34cf31
+
+% 4 1 0 095e300d44e027601f491a4481643a95
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 1ba2d414a663113b1256ac95b5b9fd45
+
+% 0 1 0 0a515b4b3257a76d0fec86d1fd1f6cd7
+
+% 0 1 0 1a172dd5c639acfd06bafb076722b38a
+
+% 0 1 0 02b78276c4b4e69a09ec8a1c716c9d51
+
+% 0 1 0 0f8b443a0e9dcc820eb6dae162694589
+
+% 0 1 0 18f24e4e5bdefa850b7bde4ab7cdd94b
+
+% 0 1 0 0801dbd79ca3cef11a3f54de63eb53fe
+
+% 1 1 0 163c6600a37f43060e7db6667491f504
+
+@ 0 2 0 070a509aa3c5ebae1553aa4d3202fcca
++       La classe è dichiarata nel package `telekinesis` ma non è esportata nel modulo ombrello
++       `soundness`, quindi vi si accede come `telekinesis.FlowWindow`.
+
+% 1 1 0 1c14b37ad8d26cc40714142406480e76
+
+@ 0 7 0 05032988c6f51acc008e27f4aa32aaed
++   entry #acquire   prende fino a `n` byte di credito, bloccandosi mentre la finestra è vuota
++       Restituisce al massimo `n`, e almeno un byte quando `n` è positivo: ciò che la finestra
++       contiene fino a `n`, così un chiamante che invia un corpo ripete finché non ha inviato
++       tutto. Blocca la fiber chiamante mentre la finestra è a zero o sotto, finché `#release`
++       non la risveglia.
++   entry #release   aggiunge credito alla finestra e risveglia ogni fiber in attesa su di essa
++       L'effetto di un `WINDOW_UPDATE` in ingresso. Vengono risvegliati tutti quelli in attesa,
++       e ciascuno prende poi ciò che può, così due mittenti parcheggiati su una finestra vuota
++       procedono entrambi dopo un solo rilascio.
+
+@ 0 1 0 16e24ffd157fdc38002910d6588c3fb0
++ entry .UrlSessional   l'istanza di `Sessional` che apre una connessione verso l'origine di un URL HTTP o HTTPS e la presta a un ambito
+
+% 1 1 0 013b931e37a5052304418da925569036
+
+@ 0 6 0 0b973e3b18adba271e9dd0eff80e3453
++       La classe dietro il given `httpUrlSessional`, con nome anziché anonima perché il suo tipo
++       `Result` — una `Http.Session` che cattura la connessione — sia dichiarato esattamente.
++       `url.session: session ?=> …` si connette una volta all'host e alla porta dell'URL,
++       presta la connessione al blocco come `Http.Session` su cui `session.fetch(request)`
++       esegue uno scambio, e la chiude quando il blocco termina. Lo schema decide la forma della
++       sessione, e la forma resta fissa per tutta la sua vita:
+
+@ 0 10 0 073a60e3df1b241719757022d7d17377
++       - `http` è una sessione HTTP/1.1 sequenziale su un'unica connessione keep-alive: uno
++         scambio alla volta, con il corpo di ogni risposta che termina esattamente dove inizia la
++         risposta successiva. Lasciare una risposta non consumata non la fa deragliare — il fetch
++         successivo svuota ciò che resta del corpo precedente per raggiungere il confine — ma
++         una risposta `101 Switching Protocols` viene rifiutata, poiché il suo corpo sarebbe lo
++         stream senza fine del protocollo aggiornato.
++       - `https` si connette con TLS offrendo `h2` e poi `http/1.1` tramite ALPN. Se il server
++         sceglie `h2`, la sessione viene multiplexata su una `Http2.Connection` dietro lo stesso
++         contratto sequenziale, con il corpo di ogni fetch svuotato dentro il fetch così che la
++         risposta sia un valore semplice; altrimenti è la forma sequenziale. I fallimenti HTTP/2
++         e asincroni vengono riportati come `Connect.Error`.
+
+@ 0 6 0 05bf94c7bd4210ea0543551393b67ef2
++       Il risultato del blocco è quantificato al di fuori di esso, così un valore che ancora
++       prende in prestito la connessione — un corpo di risposta trasmesso da essa — non può
++       sfuggire; uno memoizzato sì. L'istanza richiede un `Online`, un `Socket.Backend`, i
++       `Socket.Option` TCP, un `Buffering`, un `Tls` e una `Tactic[Connect.Error]`, sollevata con
++       motivo `Unknown` per uno schema diverso da `http` o `https`, `Dns` per un URL senza host,
++       e il motivo del socket — `Dns`, `Refused`, `Timeout`, `Ssl(Handshake)` — quando la
++       connessione non può essere stabilita.
+
+% 0 1 0 00ac747d4d5d2ff60a50aa413c377494
+
+% 1 1 0 1bc29fa85d430fb102e6d71f4dffb165
+
+@ 0 3 0 1e22a42438df21fa18689186acac43dc
++   entry #Self   il tipo dell'URL, un sottotipo di `HttpUrl`
++   entry #Result   `Http.Session^`: la sessione che riceve il blocco
++   entry #session   si connette all'origine dell'URL, presta la sessione al blocco, e chiude la connessione dopo
+
+@ 0 6 0 11d10d68ae488bc6079bce017e07af06
++ entry .httpUrlSessional   il given che fa funzionare `url.session: session ?=> …` su un URL HTTP o HTTPS
++     Un `UrlSessional` per qualsiasi `url <: HttpUrl`, limitato così che lo risolva un letterale
++     `url"https://…"`, il cui tipo è un sottotipo raffinato per schema. È un given di primo
++     livello, quindi si importa per nome — `import soundness.httpUrlSessional` — e richiede
++     nell'ambito un `Online`, un `Socket.Backend` (come `socketBackends.javaBaseSockets`), i
++     `Socket.Option` TCP, un `Buffering`, un `Tls` e una `Tactic[Connect.Error]`.
+
+% 2 1 0 1e5c7b745cbed5620aada4332611f8d6
+
+% 3 1 0 05c0963d14a506e2100c9454e2ac9989
+
+% 4 1 0 04044a9c2831c93116aec5e4fe11c369
+
+% 5 1 0 1df49339ebe408be0ee169f64eb6ad72
+
+% 0 1 0 18c899fbefe1b88d0c673febf0e51517
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 1 1 0 1dfe2ed28c40f21602d714af0442cecb
+
+% 1 1 0 035417faa82e78ab19b88c9192c6d9ba
+
+% 1 1 0 05ebbbd4e006f8141b264ef5108a2678
+
+% 0 1 0 03b4f7c37608d6c01029688612adb490
+
+% 0 1 0 1a835caa65b166990a2493b2981e50d0
+
+% 0 1 0 024567e881f4dd0f1313a9ec1163a9df
+
+% 1 1 0 14d5aaf61169d7d81902322fd2ade4b2
+
+% 1 1 0 1ea121fd2ea2a1be1b13ed25c481c50b
+
+% 1 1 0 00313a34bc35abba13ea1fbbf70abcbd
+
+@ 0 3 0 02d93917dc80840d01dd9b314522f634
++     Su `https`, la sessione parla HTTP/2 se l'ALPN del server lo sceglie e HTTP/1.1
++     altrimenti; su `http` è sempre HTTP/1.1 con keep-alive. `UrlSessional` descrive le due
++     forme e gli errori.

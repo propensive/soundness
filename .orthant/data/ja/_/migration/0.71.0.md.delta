@@ -1,0 +1,232 @@
+orthant 2 language
+
+@ 0 1 0 0b763b48a45ecea8051cb862888668b3
++ # 0.70.0 からの変更
+
+@ 0 3 0 1927253d08deb58b176f4d393c6c49f6
++ このファイルは、Soundness のライブラリを利用するコードを 0.70.0 から次のリリースへアップグレードする LLM エージェントが読むものである。
++ 各エントリーは何が変わったかを正確に述べる。形式については `AGENTS.md` を参照。
++ エントリーはモジュールごとにまとめられ、モジュール内では最も新しく追加されたものが最後にある。
+
+% 0 1 0 0815a537589592e21b251a53558048d3
+
+@ 0 9 0 19dcf51e4108b6111da6e25c85bcff1c
++ - `ambience.temporaryDirectories.environmentTemporaryDirectory`（`soundness.temporaryDirectories.environmentTemporaryDirectory` も）は、`TMPDIR`、`TMP`、`TEMP` を与えられた `ambience.Environment` から読むようになった。以前はその given を無視して `java.lang.System.getenv` を読んでいた。型は変わらない。`javaBaseEnvironment` 以外の `Environment` でこれを召喚するコードは、その環境の一時ディレクトリを得るようになる。(#2180)
++ - `ambience.environments.javaBaseEnvironment` は、以前と同じく JVM 自身の環境を読む。xek 1.2.0 のランチャーが起動したデーモンでは、その環境はサニタイズされている（`## ethereal` を参照）。したがって、それを通じてアプリケーションの変数を読むデーモンのコードは、代わりに呼び出しの環境か `environments.daemonEnvironment` を使わなければならない。(#2180)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 14 0 0adcfd612455b75d077822950d289152
++ - `anthology.Format` に抽象メンバー `kind: anthology.Format.Kind`（新しい列挙型：`Source`、`Ir`、`Application`）が加わり、`Format.Source`、`Format.Ir`、`Format.Application` がこれを `final def` として実装する。また `equals` と `hashCode` の `final override` 定義が加わり、二つの形式は `kind` と `id` が等しいとき等しい。三つの層のトレイトのいずれかを通さずに `Format` を継承するクラスは `kind` を定義しなければならない。`equals` や `hashCode` をオーバーライドするクラスはコンパイルできなくなる。`Format` を継承するケースクラスは、合成された構造的な `equals` を持たなくなる。同じ種類で同じ `id` を持つ二つの形式は、他のメンバーが異なっていても等しくなったので、パラメーターでノードを区別する形式は、それを `id` にエンコードしなければならない（組み込みの形式はすべてすでにそうしている）。(#2166)
++ - `anthology.WasiToolchain.apply()` と `anthology.nativeEdges.apply(triples*)`（`nir` コンポーネント）は `(using WorkingDirectory, Environment)` を受け取るようになり、その環境でツールを探す。プロセスが継承すべき `Environment` を与えること。ツールの中では呼び出しの環境（`environments.daemonClientEnvironment`、または `Cli` からの `Environment.provided`）を、以前の動作には `environments.javaBaseEnvironment` を与える。(#2180)
+
+% 0 1 0 0f65516622e01f5401b594a2ce4c1b1b
+
+@ 0 4 0 178b08acf1f899110016b0710d37f321
++ - `apoplexy.OpenApi.json(yaml: Yaml): Json` は削除された。変換は、トップレベルの given `apoplexy.yamlEncodableInJson: Yaml is Encodable in Json`（`soundness` はエクスポートしない）になったので、`OpenApi.json(yaml)` の代わりに、スコープに `import apoplexy.yamlEncodableInJson` を置いて `yaml.in[Json]` と書く。出力は変わらない。(#2176)
+
+% 0 1 0 07409a9b4226d59e0356189f39895ad5
+
+@ 0 18 0 0b8b595e3f4ac02c17014289847000d2
++ - `archimedes.Ergo.Error.Reason.BadOpener(char: Text)`、`Unclosed(expected: Text)`、`MissingBody(char: Text)` は、一文字の `Text` の代わりに `Char` を受け取るようになった：`BadOpener(char: Char)`、`Unclosed(expected: Char)`、`MissingBody(char: Char)`。描画されるメッセージは変わらない。フィールドを束縛して `Text` と比較するパターンは、代わりに `Char` と比較する。(#2167)
++ - `archimedes.Mathml#htmlAttributes: List[(Text, Optional[Text])]` は削除された。`attributes` を使うこと。その `List[(Text, Text)]` は、`(Text, Optional[Text])` の組が期待されるところならどこでも適合する（例えば `honeycomb.Attributes(node.attributes*)`）。(#2167)
++ - `archimedes.Math#xml: Xml` と `archimedes.Mathml#xml: Xml` は削除され、given の `Math.encodableInXml: Math is Encodable in Xml` と `Mathml.encodable: [node <: Mathml] => node is Encodable in Xml` に置き換えられた。`math.xml` の代わりに `math.in[Xml]` を、`element.xml` の代わりに `element.in[Xml]` を書く。`Math` には `Encodable in Math` もあるので、`encode` ではなく `in[Xml]` を使うこと。出力は変わらない。(#2176)
++ - `archimedes.Math#html: Html of "math"` と `archimedes.Mathml#html: Html of "#foreign"` は削除された。`math.html` と `element.html` は、honeycomb の `html` 拡張メソッド（`import soundness.*` または `import honeycomb.*` でスコープに入る）を通じて変更なしでコンパイルでき、既存の `Math.renderable` と新しい `Mathml.renderable: [node <: Mathml] => node is Renderable { type Form = "#foreign" }` によって解決される。(#2176)
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 13 0 131a7c1362cf2b291c939d51a7efd3d9
++ - `aviation.Calendar#Mensual` はコンテキスト境界 `Showable` を持つようになり（`type Mensual: Showable`）、`Calendar#monthName(month: Mensual): Text` は、`month.toString.tt` を描画していたところで `month.show` を描画するようになった。aviation の外で定義された暦は、暦を定義する場所のスコープに、その月の型のための `Showable` を持たなければならない。`enum` の月はすでに `spectacular.Showable.enumeration` を通じてそれを持っており、以前と同じくケース名を描画する。(#2173)
++ - `aviation.AlexandrianCalendar` は `abstract class AlexandrianCalendar()` から `trait AlexandrianCalendar` に変わった。`extends AlexandrianCalendar()` を `extends AlexandrianCalendar` に書き換えること。(#2173)
++ - given の `aviation.CopticMonth.showable`、`aviation.EthiopianMonth.showable`、`aviation.FrenchRepublicanMonth.showable`、`aviation.IndianMonth.showable`、`aviation.PersianMonth.showable` は削除された。それらの代わりに `spectacular.Showable.enumeration` が同じ出力で解決されるので、変更が必要なのはこれらの given を明示的に名指すコードだけである。(#2173)
+
+% 0 1 0 1370790ba805908e18fbb957e25dfabd
+
+@ 0 8 0 021d455e3be5d10c1f2e099d5f7fc861
++ - コンパイラプラグイン（`beneficence-plugin`）は、クラスパスに `probably.Suite` と `probably.Testable` を持つすべてのコンパイルの出力に、新しいリソースディレクトリ `META-INF/probably/tests` を書き込む。スイートまたはテストを宣言するソースファイルごとに一つのファイルがあり、名前は `<source file name>-<12 hex digits of the SHA-256 of its path>` である。形式は `beneficence.TestsIndex` で説明されている。`META-INF/services/probably.Suite` は変わらない。コンパイラの出力をリソースパスの明示的なリストでパッケージするビルドは、ホスト（fume）がテストを実行せずに一覧できるよう、新しいディレクトリを含めなければならない。二つのモジュールが同じエントリーを書くことはないので、マージ規則は必要ない。(#2169)
+
+% 0 1 0 1281cf5693caddee047e57c2960f2348
+
+@ 0 5 0 0e79b09e63b1c66412b7513a95fbf05f
++ - `bitumen.UnixMode#bytes: Data`、`bitumen.UnixUser#bytes: Data`、`bitumen.UnixGroup#bytes: Data` は削除された。これらは USTAR ヘッダーのフィールド（ゼロ埋めした八進数の ASCII 七桁）を生成していたが、それは型の形式ではなく tar の形式であり、今は `Tar.Header` の private になっている。そのフィールドが必要なコードは、`mode.int`、`user.value` または `group.value` から `value.octal.pad(7, Rtl, '0').in[Data]` と書く。(#2176)
+
+% 0 1 0 0f922ec341ccae34075ef751ece930db
+
+@ 0 8 0 11bc7393f68ced2403546e9e64c4b38f
++ - Soundness は Proscala `3.9.1-dev-p17`（以前は `3.9.0-p16`）でコンパイルされる。これはフォークの 3.9 系列で、今は scala/scala3 の `lts-3.9` ブランチを追跡している。`build.mill` の `SOUNDNESS_SCALA_RELEASE`（ダウンロードする proscala のリリースタグ）と `SOUNDNESS_SCALA_VERSION`（座標のバージョン）の既定値はどちらも `3.9.1-dev-p17` であり、すべての `org.scala-lang` の依存関係はその座標に強制される。利用者は同じフォークのバージョンに対してコンパイルする。(#2175)
++ - `etc/tools` のツールは、flare 0.5.0（Soundness のコンパイルに使うコンパイラプラグイン）、fume 0.6.0（テストランナー。0.70.0 以降にスイートが出力するイベントを読む）、flame 0.5.0 である。Soundness のスイートを実行するプロジェクトには fume 0.6.0 以降が必要である。(#2158)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 31 0 00a53c6e37080835155a7a5ca68b638f
++ - `coaxial.Socket.Error.Reason` に `Timeout` (5) が加わった。`Socket.Option.Timeout` で構成したデータグラムソケットでの受信が時間切れになったときに発生する。理由に対する網羅的なマッチにはケースが一つ増える。(#2178)
++ - `coaxial.Socket.Option` に `MulticastLoop`（`IP_MULTICAST_LOOP`）、`MulticastHops(count)`（`IP_MULTICAST_TTL`）、`DatagramSize(bytes)`（データグラムごとの受信バッファー、したがって丸ごと受信できる最大のデータグラム。設定しなければ 1472）が加わり、`socketOptions.multicastLoopSocketOption`、`multicastHops(n)`、`datagramSize(n)` もある。`Socket.Option` に対する網羅的なマッチにはケースが三つ増える。(#2178)
++ - `coaxial.Socket.Backend` に抽象メンバー `exchangeUdp(endpoint, interface, options, data): Packet` が加わった。一時的なポートから一つのデータグラムを送り、一つの返答を受け取るもので、`Option.Timeout` で制限される。また、JVM と Scala Native のバックエンドでのその `DatagramSocket` ハンドル型は、`java.net.DatagramSocket` ではなく private な束縛になった。サードパーティーのバックエンドは `exchangeUdp` を実装しなければならない。ハンドルが `DatagramSocket` であることに依存していたコードは、バックエンドの操作を通さなければならない。(#2178)
++ - `coaxial.Multicast(group: Ipv4 | Ipv6, port: Udp.Port)` が追加された。`Multicast.Reply`（`Ignore`/`Group(data)`/`Unicast(data)`）、`Multicast.Subscription`（グループや一つの宛先へ `send` することもできる `Socket.Service`）、`Multicast` のための given を持つ型クラス `coaxial.Subscribable`（およびその上の `Bindable` の given。したがって `listen` がグループに対して使える）、貸し出し `multicast.subscribe(handler)(block)` もある。`Multicast.interfaces(interface: Optional[MacAddress])` は、購読が参加するインターフェースを一覧する。`Socket.Backend` に抽象メンバー `MulticastSocket`、`joinMulticast`、`receiveMulticast`、`sendGroup`、`sendTo`、`leaveMulticast` が加わる。これらは JVM では実装され（インターフェースごとに参加する `DatagramChannel`）、Scala Native と WASI では `Socket.Error` を発生させる。サードパーティーのバックエンドはこれらを実装しなければならない。(#2178)
++ - 新しいコンポーネント `coaxial.dns`（`soundness-web` バンドル内）：`Endpoint[Udp.Port]` 上の `endpoint.query(message: Dns.Message)` と `endpoint.lookup(name, rtype)` であり、UDP でネームサーバーと DNS メッセージをやり取りする。追加のみ。(#2178)
++ - JVM と Scala Native のバックエンドの `listenUdp` は、ソケットをバインドする*前に*構成するようになったので、`Socket.Option.ReuseAddress` と `ReusePort` が UDP のリスナーで効果を持つ（以前は気づかれないまま効果がなかった）。(#2178)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 3 0 1dfa60000ff174271606f282fe94ac93
++ - `enigmatic.Cose#bytes: Data` は削除され、given の `Cose.encodable: [cose <: Cose] => cose is Encodable in Data` に置き換えられた。`cose.bytes` の代わりに `cose.in[Data]` と書く。ワイヤ形式は変わらない。(#2176)
+
+% 0 1 0 10d5740d33bd672200a59ac24b495f6e
+
+@ 0 6 0 115d1bcb049169af1ea121c9e3729a36
++ - `espionage.Acp.connect` に、`WorkingDirectory` の後に `ambience.Environment` 型の using パラメーターが加わった：`(using Monitor^{capture}, Probate, Diagnostics, WorkingDirectory, Environment, Tactic[Acp.Error])`。`Agent.Process` はその環境で起動される。プロセスが継承すべき `Environment` を与えること。ツールの中では呼び出しの環境（`environments.daemonClientEnvironment`、または `Cli` からの `Environment.provided`）を、以前の動作には `environments.javaBaseEnvironment` を与える。(#2180)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 58 0 0adc8f35cdc36d2a07de3776815c3941
++ - `ethereal.DaemonService` は `ethereal.Resident`（`soundness.Resident` としてもエクスポートされる）に改名され、その型パラメーターは型メンバーに置き換えられた。`case class DaemonService[bus <: Matchable](…)` は `abstract class Resident(…)` になり、`type Transport <: Matchable` を持つ。これはそのクライアントがやり取りするメッセージの型である。`DaemonService[X]` は `Resident over X`（`prepositional.over`）と、`DaemonService[?]` は `Resident` と書く。コンストラクターはもう `deliver: bus => Unit` や `bus: Chain[bus]` を受け取らない。`bus: Chain[Transport]` と `broadcast(message: Transport): Unit` は抽象メンバーであり、デーモンが実装する。ケースクラスではなくなったので、`copy`、`unapply`、構造的な `equals`/`hashCode` を持たない。他のコンストラクターのパラメーターは、同じ名前の public な `val` のままである。(#2163)
++ - `ethereal.service[bus <: Matchable](using DaemonService[bus]): DaemonService[bus]^{service}`（`soundness.service` も）は `ethereal.resident[bus <: Matchable](using Resident over bus): (Resident over bus)^{resident}`（`soundness.resident` も）に改名され、`service` は削除された。`cli` ブロックの中のすべての `service.…` を `resident.…` に書き換えること。`ethereal.cli[bus]` が受け取るコンテキスト関数は、`DaemonService[bus]` の代わりに `Resident over bus` を提供するようになった。(#2163)
++ - `ethereal.Upgrade.apply[source](source: source): Nothing raises Upgrade.Error` と `Upgrade.applyBytes(bytes: Data): Nothing raises Upgrade.Error` は削除された。同じ `Readable to Data` のソースを受け取る `Upgrade.stage[source](source: source): Unit raises Upgrade.Error` を使うこと。これは候補を `<data>/<name>/.pending` として書き込んで*戻る*。ランチャーを起動したり JVM を終了したりはしなくなり、ランチャーはコマンドの次の呼び出しの開始時にアップグレードを適用する。`Upgrade(…)` が戻らないことに依存していたコード（例えば `Nothing` 型のメソッドの最後の式として）は、通常どおり戻らなければならなくなり、アップグレードはコマンドを次に実行したときに有効になることをユーザーに伝えるべきである。(#2171)
++ - `ethereal.Upgrade.Error.Reason.CannotRespawnLauncher` は削除され、`Upgrade.Error.Reason.CannotResolveLauncher` は `CannotResolveName` に改名された（引き続き `SN-631.3` であり、デーモンがランチャーから名前を与えられなかったときに発生する）。どちらに対するマッチもそれに合わせて更新すること。(#2171)
++ - `ethereal.Upgrade` に、`pending: Boolean`（段階的に用意されたアップグレードが次の呼び出しを待っているかどうか）、`outcome: Optional[Upgrade.Outcome]`（ランチャーが最後にそれをどう扱ったか。`<data>/<name>/.upgrade-result` から読む）、`acknowledge(): Unit`（その結果を消去する）、`enabled: Boolean`（`ethereal.upgradable` プロパティから。リリース鍵とアプリケーション id なしでビルドした実行ファイルでは false）が加わった。`Upgrade.Outcome(result: Outcome.Result, candidate: Long, previous: Long, time: Long)` は `when[instant]` を持ち、これは `Instantiable` を通じた `Instant` である。`Outcome.Result` は `Applied`、`Disabled`、`NoRecord`、`WrongApplication`、`BadSignature`、`NotNewer`、`SwapFailed` の列挙型である。追加のみ。(#2171)
++ - `ethereal.Resident` に、実行中の実行ファイルのビルド id である `buildId: Long`（`build.id` プロパティ、またはゼロ）が加わった。デーモンは `build.id` と、その代わりとなる `build.id` クラスパスリソースを、`Int` ではなく 64 ビットの `Long` として読むようになった。追加のみ。(#2171)
++ - `ethereal-sign` の Rust クレート（`lib/ethereal/Cargo.toml`、`src/sign`）は削除された。これは現在のどのランチャーも読まないレコード形式（`ETHRCFG` v2）に署名していた。`xek` 1.1.0 以降で署名すること（`xek keygen --out <prefix>`、`xek sign --key <seed> --in <binary> --out <signed>`。Java 24 以降）。実行ファイルをアップグレード可能にするには xek 1.1.0 以降（`ETHRCFG` v4）が必要であり、`--public-key` に加えて `--app-id <identifier>` を付けてビルドする。xek 1.1.0 からは、すべての `xek` のコマンドラインはサブコマンドで始まる。`xek [options] <app.jar> [<output>]` と書いていたところには、デーモンがランチャーなしで実行されたときに表示する使い方の行も含めて、`xek build [options] <app.jar> [<output>]` と書く。(#2171)
++ - xek 1.2.0 のランチャーが起動したデーモンは、`/`（Windows ではシステムドライブのルート）で、umask `077` のもとで、2 より上の継承されたディスクリプタなしに、サニタイズされた JVM の環境で実行される。その環境が保持するのは `PATH`、`HOME`、`USER`、`LOGNAME`、`SHELL`、`LANG`、`LC_*`、`TZ`、`TMPDIR`、`XDG_*` の基本ディレクトリ、`JAVA_TOOL_OPTIONS`、`JDK_JAVA_OPTIONS`、`_JAVA_OPTIONS`、`ETHEREAL_DEBUG` だけである（xek の `spec/launcher.md`、*The daemon process*）。`workingDirectories.javaBaseWorkingDirectory`、`user.dir`、`environments.javaBaseEnvironment` または `System.getenv` を読むデーモンのコードは、最初の呼び出しの状態ではなくその状態を見るようになる。呼び出しのもの（`daemonClientWorkingDirectory`、`daemonClientEnvironment`）を使うか、デーモンが起動されたときの環境が必要なら新しい `ethereal.DaemonEnvironment`（`environments.daemonEnvironment` として与えられ、`soundness.environments.daemonEnvironment` も）を使わなければならない。後者は、ランチャーがデーモンの標準入力に送る環境（`-Dethereal.environment=stdin` で告知される）をデーモンの起動時に読んで保持し、なければ JVM の環境に戻る。デーモンの標準入力はもうヌルデバイスではない。(#2180)
+
+% 0 1 0 0f2fae5b9c5fe06518c74765d22a1341
+
+@ 0 7 0 0a95f573ec4bb93302216c16d4cb7c02
++ - `exegesis.LspSessional` のコンストラクターに、`WorkingDirectory` の後に using パラメーター `ambience.Environment` が加わった。given の `exegesis.Lsp.Server.sessional` には `working` の後に `environment: Environment` が加わり、`exegesis.Lsp.proxy` と `exegesis.Lsp.Proxy.run` には `WorkingDirectory` の後に `Environment` が加わった。`Lsp.Server.Process` はその環境で起動される。プロセスが継承すべき `Environment` を与えること。ツールの中では呼び出しの環境（`environments.daemonClientEnvironment`、または `Cli` からの `Environment.provided`）を、以前の動作には `environments.javaBaseEnvironment` を与える。(#2180)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 22 0 00c351ad01c509901522e7d6bf768d92
++ - `exoskeleton.Enclave`（`exoskeleton-rig`）は、パッケージングに使うビルダーを `$XEQ` ではなく環境変数 `$XEK` で見つけるようになり、既定値は `dist/xeq` ではなく `dist/xek` になった。`$XEQ` を設定していた、またはビルダーを `dist/xeq` に取得していたテスト環境は、代わりに `$XEK` を設定するか、`dist/xek` に取得する。`$XEQ` はもう読まれない。(#2157)
++ - `exoskeleton.Enclave` の `buildId` パラメーターは `Optional[Long]`（以前は `Optional[Int]`）になった。`Int` の引数はコンパイラが拡大する。`Enclave` はさらに `releaseKey: Optional[Path on Linux]`、`recoveryKey: Optional[Path on Linux]`、`appId: Optional[Text]` を受け取り、いずれも既定値は `Unset` で、`xek` に `--public-key`、`--recovery-key`、`--app-id` として渡される。これらは `buildId` の後に続くので、`buildId` より後の位置引数は影響を受けない。`Enclave.keygen(prefix)` と `Enclave.Launcher#sign(seed, out, foreign = false)` は `xek keygen` と `xek sign` を実行する（Java 24 以降）。`Enclave` は `xek build` を実行するようになったので、`$XEK` または `dist/xek` に xek 1.1.0 以降のビルダーが必要である。`xek` が実行ファイルのパッケージングに失敗すると、`NotImplementedError` を発生させていたところで、メッセージとともにパニックするようになった。(#2171)
++ - `hidden = true` の `Subcommand` は、マッチ、補完、ヘルプでは変わらないが、ある位置のサブコマンドの候補が*すべて*隠されている場合、補完は（bash、fish、PowerShell で）何も提示しないのではなく、フラグも提示するようになった。(#2171)
++ - `exoskeleton.Enclave.Tool#completions` は `(using Monitor, Environment)` を受け取るようになり、`exoskeleton.Enclave.Launcher#sandbox` は最初の using パラメーターとして `Environment` を受け取る。`exoskeleton.Tmux` には `workingDirectory` の後にフィールド `environment: Environment` が加わり、`exoskeleton.tmux`、`Tmux.resize`、`Tmux.screenshot`、`Tmux.attend`、`Tmux.completions`、`Tmux.progress` は `WorkingDirectory` の後に `Environment` を受け取る。ツールと tmux のコマンドはその環境で実行される。(#2180)
+
+% 0 1 0 1cc5e70970ad42a51e424017e29c8c25
+
+@ 0 3 0 02e8e19402a8eb1d078af0e575261111
++ - `facsimile.Print.baseFont(standard: Pdf.Font.Standard): Text` は削除された。PostScript 名は列挙型のフィールド `facsimile.Pdf.Font.Standard#baseFont: Text` になったので、`Print.baseFont(standard)` の代わりに `standard.baseFont` と書く。名前は変わらない。(#2173)
+
+% 0 1 0 1aa1711c33dc078f11fd7629dab81114
+
+@ 0 12 0 10c71e483996dda60826e3ce539a7393
++ - `frontier.context.explainMissingContext` または `soundness.explainMissingContext`（後者は `import soundness.*` で取り込まれる）がスコープにあるとき、`scala.util.NotGiven[X]` は以前、`X` のインスタンスが得られるかどうかにかかわらず解決されていた。今は仕様どおり、`X` の探索が失敗するときに限り解決される。キャッチオールは、`NotGiven[X]` を対象とする候補として試されたとき、中止するのではなく `scala.util.NotGiven.value` を返すようになった。コンパイラの候補ごとの否定がこれを失敗に変えるので、`NotGiven` 自身のインスタンスが決める。アンブレラのもとでコンパイルされる既存のコードへの影響：主題が存在する `NotGiven` で守られた given は適格でなくなるので、曖昧な二つの選択肢（一方は守られ、他方は守られていない）を報告していた探索は、守られていない方を選ぶようになる。例えば `Calendar` のもとでの `date + n*Month` では `dateRegular` より `aviation.Timespan.dateMonths` が選ばれ、`Teletype is Textual` がスコープにあるところでは `escapade.Teletype.add` が適用されなくなる。そのような守りが無効化されていたからこそコンパイルできていたコード（例えば `summon[NotGiven[Ordering[Int]]]`）は、given が見つからないというエラーで失敗するようになる。(#2123, #1955)
+
+% 0 1 0 1566b19ab23a3dd01b479ed03ce8f585
+
+@ 0 5 0 06c7dfc6745283071e64217267891ac6
++ - `graffiti.Archetype#html: Html of "html"`（`final def`）は削除され、given の `Archetype.renderable: [page <: Archetype] => page is Renderable in "html"` に置き換えられた。`page.html` は、honeycomb の `html` 拡張メソッド（`import soundness.*` または `import honeycomb.*` でスコープに入る）を通じて変更なしでコンパイルでき、`Archetype#document` は変わらない。独自の `html` メンバーを定義するページは、コンパイルに失敗するのではなく、その拡張メソッドを隠すようになる。(#2176)
+
+% 0 1 0 052d6af0cb62d1bd1fbc477fa1ee3ea7
+
+@ 0 16 0 16bc9a99d2bc97841d5afcc7ea5228db
++ - `guillotine.Executable#fork[result]()`（したがって `Command#fork` と `Pipeline#fork` も）は `(using working: WorkingDirectory, environment: ambience.Environment)` を受け取るようになった。`Executable#exec[result]()` は `(using computable: (result is Computable)^, working: WorkingDirectory, environment: Environment)` を受け取り、inline の `Executable#apply()` は `working` の後に `environment: Environment` を受け取る。スコープに `Environment` のない呼び出し側はコンパイルできなくなる。プロセスが継承すべき `Environment` を与えること。ツールの中では呼び出しの環境（`environments.daemonClientEnvironment`、または `Cli` からの `Environment.provided`）を、以前の動作には `environments.javaBaseEnvironment` を与える。(#2180)
++ - 意味論：与えられた `Environment` の新しいメンバー `entries` が `Unset` でないとき、プロセスは JVM の変数ではなく、ちょうどそれらの変数で起動される。また、名前に `/` を含まないコマンドは、まずその環境の `PATH` で探され、その絶対パスが `argv[0]` として名前を置き換える。そこで見つからない名前は JDK に任される。`entries` が `Unset` のとき（例えばラムダとして書いた `Environment`）、JVM の環境が以前と同じく継承される。`environments.javaBaseEnvironment` は `entries` を定義しているので、そのもとで起動したプロセスは以前と同じく JVM の環境を得る。(#2180)
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 18 0 137f9e8050b3dfad1c325dd57fdf1d0d
++ - `honeycomb.Node`、`honeycomb.Element`、`honeycomb.Comment`、`honeycomb.Doctype`、`honeycomb.Fragment` は、そのコンパニオンオブジェクトとともに `Html` のコンパニオンの中に移された。これらは今は `honeycomb.Html.Node`、`honeycomb.Html.Element`、`honeycomb.Html.Comment`、`honeycomb.Html.Doctype`、`honeycomb.Html.Fragment` である（したがって `Element.foreign` は `Html.Element.foreign`）。それぞれ `soundness` アンブレラのエクスポートから削除されたので、裸の名前 `Node`、`Element`、`Comment`、`Doctype`、`Fragment` は `import soundness.*` や `import honeycomb.*` を通じては解決されなくなる。型、コンストラクター呼び出し、パターン（`case Html.Element(label, attributes, children, _)`）で、`Html.Element`、`Html.Fragment` などと書くこと。動作は変わらない。(#2167)
++ - `honeycomb.TextNode` は `honeycomb.Html.Text` に、`TextNode.foreign` は `Html.Text.foreign` に改名された。`TextNode` は、`soundness` アンブレラのエクスポートからも含めて削除された。動作は変わらない。`Html.*` を import するスコープの中では、裸の名前 `Text` は `anticipation.Text` ではなくこのノード型を意味するようになる。そのような import は、修飾した参照に置き換えるべきである。(#2167)
++ - `honeycomb.Honeycomb`（`soundness.Honeycomb` としてもエクスポートされていた）は削除された。そのメンバーの `extractor`、`interpolator`、`attributes` は、`h""` 補間子とタグの適用が呼び出す `honeycomb.internal` のマクロ実装の、使われていない複製だった。代わりのものは必要ない。(#2173)
+
+% 0 1 0 17f94539b937dacb1c8f57fb7f04ec71
+
+@ 0 8 0 1288fd6d8e9adc76070722edfedde1c0
++ - `hyperbole.StackResolver` は `(using classloader: Classloader, working: ambience.WorkingDirectory)` を受け取るようになった。given の `hyperbole.stackResolutions.tastyStackResolution`（`soundness.stackResolutions.tastyStackResolution` も）の型は `(Classloader, WorkingDirectory) => StackTrace.Resolver` で、以前は `Classloader => StackTrace.Resolver` だった。拡張メソッド `StackTrace#resolved` は `(using Classloader, WorkingDirectory)` を受け取る。TASTy が `-sourceroot` からの相対で記録するソースパスは、`workingDirectories.javaBaseWorkingDirectory`（`user.dir`）に対して解決されていたところで、与えられた `WorkingDirectory` に対して解決されるようになった。コードをコンパイルしたときのディレクトリを与えること。(#2180)
+
+% 0 1 0 14802db87637bb240c0e50c6611271aa
+
+@ 0 3 0 0bbe004bac5e1292086453d15f57c355
++ - `inimitable.Uuid#bytes: Data` は削除され、given の `Uuid.encodableInData: Uuid is Encodable in Data` に置き換えられた。`uuid.bytes` の代わりに `uuid.in[Data]` と書く。`Uuid` には `Encodable in Text` もあるので、`encode` ではなく `in[Data]` を使うこと。十六個のバイトは変わらない。(#2176)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 2 0 1efbe9c5c9294adc019682a3bcacb63b
++ - `iridescence.Rgb12#hex: Text`（拡張メソッド）は削除された。`rgb12.inspect` は、以前と同じく `#0f8` 形式の同じテキストを描画する。(#2176)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 6 0 178bfc03155cd9b00326f1b93280f67b
++ - `jacinta.Json.apply` に、`apply(value: Any)` と並んで、オーバーロード `apply(value: Int)`、`apply(value: Short)`、`apply(value: Byte)`、`apply(value: Float)`、`apply(value: Long)`、`apply(value: Double)` が加わった。`Int`、`Short`、`Byte` に対する `Json(i)` はその整数を（`Long` として格納して）保持するようになった。以前は `Int` を生のまま保持しており、AST はそれをパックされた小さな十進数として読むので、読み戻した値は誤っていた（たいてい `0`）。`Float` は `Double` として格納される。静的に `Any` と型付けされた値は、変わらず `apply(value: Any)` に行く。(#2162)
+
+% 0 1 0 15ea6feaac12c1f31aef1231a48de2e8
+
+@ 0 3 0 1804c58fcbe4fabd048865be94c54285
++ - `metamorphose.Permutation#bytes: Data` は削除され、given の `Permutation.encodable: Permutation is Encodable in Data` に置き換えられた。`permutation.bytes` の代わりに `permutation.in[Data]` と書く。バイト列は変わらない。(#2176)
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 16 0 02ff9fd16441b9f71a7546bc4e87b125
++ - `git` を実行する `octogenarian` のすべての操作は、`WorkingDirectory` の直後に `ambience.Environment` 型の using パラメーターを受け取るようになり、その環境で `git` を実行する。対象は `Git.init`、`Git.initBare`、`Git.cloneCommit`、`Git.clone`、`Git.cloneBare`、`Git.uncheckedCloneCommit`、`Git.uncheckedClone`、`Git.uncheckedCloneBare`、`Git.Repo#pushTags`、`push`、`fetch`、`config.get`、`tags`、`tag`、`deleteTag`、`deleteBranch`、`renameBranch`、`remotes`、`addRemote`、`removeRemote`、`log`、`diff`、`reflog`、`revParse`、`notes.show`、`notes.add`、`notes.append`、`notes.remove`、`notes.list`、`notes.copy`、`worktrees`、`addWorktree`、`removeWorktree`、`pruneWorktrees`、`Worktree#checkout`（三つのオーバーロードすべて）、`switch`、`pull`、`commit`、`branches`、`branch`、`makeBranch`、`add`、`reset`、`unstage`、`mv`、`diff`、`merge`、`cherryPick`、`revert`、`lock`、`unlock`、`move`、`remove`、`status`、拡張メソッド `NoteRef#content`、そして given の `octogenarian.gitCommands.searchpathGitCommand` であり、最後のもののコンテキストは `(WorkingDirectory, Environment, Git.Event is Loggable, Tactic[Name.Error], Tactic[Path.Error], Tactic[Io.Error], Tactic[Exec.Error])` になった。プロセスが継承すべき `Environment` を与えること。ツールの中では呼び出しの環境（`environments.daemonClientEnvironment`、または `Cli` からの `Environment.provided`）を、以前の動作には `environments.javaBaseEnvironment` を与える。(#2180)
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 68 0 1ecfdd4577449e1c10459bb306ab8ecf
++ - `probably.Suite` は型パラメーターと二つ目のコンストラクターを持つ。`abstract class Suite(suiteName: fulminate.Message)` は `abstract class Suite[topic <: Label]` になり、`type Topic = topic` と、public なコンストラクター `Suite(title: Message)(using Suite.Derivation[topic])` および `Suite(id: topic, title: Message)` を持つ。`object Tests extends Suite(m"Parser tests")` は変更なしでコンパイルでき、`topic` は `probably.Derived`（新規。不透明な `Label`）と推論される。`Suite("parser", m"Parser tests")` はリテラル型 `"parser"` を推論する。型 `Suite` 単独ではコンパイルできなくなったので、`Suite[?]` と書く。(#2169)
++ - すべてのスイートは id を持つ（`Testable#key: Optional[Text]`、新規。`Test.Id#key`、新規。ケースクラスの final なフィールドで、既定値は `Unset`）。これは `Suite(id, title)` に与えた文字列か、`Suite.derive(title.text)`、つまりタイトルの英字と数字を小文字にし、それ以外の文字の連続をそれぞれ一つの `-` にし、先頭と末尾には置かず、空なら `suite` としたものである（`m"Honeycomb Tests"` からは `honeycomb-tests` が得られる）。beneficence プラグインがあれば、`[A-Za-z_][A-Za-z0-9_-]*` にマッチしない与えられた id はコンパイルエラーになる。観察できる影響：スイートとその中のすべてのものの `TestEvent.Ref#path` は、タイトルで始まっていたところで、スイートの id で始まるようになる。スイートの `TestEvent.Ref#moniker` は、`Unset` だったところでその id になる。スイートの id と等しい選択の項、またはそれにマッチするグロブは、スイート内のすべてを受け入れ、パスのグロブは id で始まらなければならない（`honeycomb-tests/**`）。ただし、タイトルだけにマッチするグロブ（`'Honeycomb Tests'`）も引き続きスイートを受け入れる。(#2169)
++ - `probably.Testable` は抽象型メンバー `type Topic` を持ち、宣言が受け取るコンテキスト値は、トピックが `Label` である `Testable of topic`（`prepositional.of`）である。トピックは、それが属する `Suite` のリテラルの id、id を与えられていないスイートでは `probably.Derived`、または `probably.Impromptu`（新規。不透明な `Label`）である。`Suite#testable` は `given testable: Testable of topic` になった。裸の型 `Testable` の `given` や `using` パラメーターは、`test`、`suite`、sedentary の宣言を満たさなくなり、"a test must be declared for a Suite …" で失敗する。スイートのためにテストを宣言するメソッドは、`(using Testable)` の代わりに `(using Testable of "<that suite's id>")` を受け取らなければならず、そのためにスイートに id を与える（`Suite("<id>", title)`）。複数のスイートで共有されるメソッドや、導出された id を持つスイートのためにテストを宣言するメソッドは、型パラメーター `[topic <: Label](using Testable of topic)` を受け取る。(#2169)
++ - 裸の型 `Testable` の `using` パラメーターを持つメソッドは、`probably.Suite` がクラスパスにある状態で beneficence プラグインとともにコンパイルすると、テストを宣言するかどうかにかかわらずコンパイルエラー（"this Testable has no topic …"）になった。プラグインがなければ、テストを宣言する位置のスコープにトピックを持つ別の `Testable`（典型的には外側の `Suite` のもの）があればそのようなメソッドはコンパイルでき、そのテストは以前のようにメソッドが呼び出された場所ではなく、その位置、つまりスイートの根で宣言される。すべての `(using Testable)` を点検しなければならない。(#2169)
++ - `probably.test`（両方のオーバーロード）：使われていない型パラメーター `report` は `topic <: Label` に置き換えられ、パラメーター `suite: Testable` は `suite: Testable of topic` になった。`probably.suite`（両方のオーバーロード）は `suite[topic <: Label, report](name)(using suite: Testable of topic, runner: Runner[report], codepoint: Codepoint)(block: (Testable of topic) ?=> Unit)` になった。`report` の前に型パラメーター `topic` が、そして `Codepoint` パラメーターが加わり、そのブロックは `Testable of topic` を受け取る。グループの `TestEvent.Ref`（`SuiteStarted`、`SuiteEnded`）は、Probably 自身のソース内の位置を運んでいたところで、`suite(…)` 呼び出しのファイルと行を運ぶようになった。(#2169)
++ - `probably.Runner#suite(suite: Testable, block: Testable ?=> Unit): Unit` は `suite[topic](suite: Testable of topic, block: (Testable of topic) ?=> Unit): Unit` になった。`Runner` の実装は、シグネチャをこれに合わせて変えなければならない。(#2169)
++ - `probably.Testable` のコンストラクターは `private[probably]` になり、その二つ目のパラメーターは、`val parent: Optional[Testable]` だったところで `parents: List[Testable]`（メンバーではない）になった。`Testable#parent: Optional[Testable]` はメソッドとして残る。`Testable.of[topic](name: Message, parent: Optional[Testable] = Unset, moniker: Optional[Name[Probing]] = Unset, key: Optional[Text] = Unset)(using Codepoint): Testable of topic`（新規）で構築すること。(#2169)
++ - コンテキストの `Testable` がスイートのものであるところで宣言されたが、そのスイートのテストではないテスト（例えば、プログラム独自の `Runner` や `Selection` を試すために別のテストの本体の中で宣言されたフィクスチャ）は、引き続きコンパイルできるが、beneficence プラグインが書くテストの索引に記録されるようになった。そのような宣言は `probably.impromptu`（新規：`impromptu[result](using parent: Testable = Testable.detached)(block: (Testable of Impromptu) ?=> result): result`、`soundness.impromptu` も）で包むこと。これはテストを階層の同じ位置に保ち、索引からは除外する。(#2169)
++ - `probably.Test.Id#id`、つまりテストやスイートを識別する六桁の十六進数（およびそれを運ぶ `TestEvent.Ref#id`）は計算方法が変わったので、すべての id が変わる。今は `h ^ name.text.s.hashCode` の下位 24 ビットであり、`h` はそのテストを含むスイートにわたる `name.text.s.hashCode` の和、`Testable#hashCode` は自身の名前を含めたその和である。以前は `Message#hashCode` から計算されていたが、これはメッセージのテキストだけでなくその構造にも依存する。保存された id（選択、スクリプト、id をキーとするチャートの中のもの）はもうマッチしない。モニカーと名前は影響を受けない。(#2169)
+
+% 0 1 0 012115d2210015c8084b240aed3fed8f
+
+@ 0 8 0 04c7e5190b9aabfe1feea95959f9c4a5
++ - `savagery.Figure#xml: Xml`（`Rectangle`、`Outline`、`Ellipse`、`Group`、`Polyline`、`Lettering` 上のもの）、`savagery.Stop#xml`、`savagery.Svg.Def#xml`（`LinearGradient` 上のもの）、`savagery.Svg#xml` は削除され、`Encodable in Xml` の given に置き換えられた：`Figure.encodable: [figure <: Figure] => figure is Encodable in Xml`、`Stop.encodable: [color, stop <: Stop[color]] => stop is Encodable in Xml`、`Svg.Def.encodable: [definition <: Svg.Def] => definition is Encodable in Xml`、`Svg.encodable: Svg is Encodable in Xml`。`figure.xml` の代わりに `figure.in[Xml]` と書き、他も同様である。`figure.xml.show` は `figure.in[Xml].show` になる。XML は変わらない。(#2176)
+
+% 0 1 0 0297adaaf208f36b050fef6919e7a155
+
+@ 0 5 0 06940743fb98dc35065b95947a6d57ed
++ - `sedentary.Bench.Plan#apply`、`sedentary.Bench.Plan#over` のすべてのオーバーロード、`sedentary.Stress#apply`、`sedentary.Profile#apply` に、最後の型パラメーター `topic <: Label` が加わり、そのパラメーター `suite: Testable` は `suite: Testable of topic` になった。明示的な型引数を渡さない呼び出しは、トピックを持つコンテキストの `Testable` があれば影響を受けない（probably を参照）。(#2169)
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 4 0 0f89324a1796020b08d412db2390e37e
++ - `stenography.Designator.fromUrl(text: Text): Designator` と `stenography.Designator#url: Text` は、代わりのものなしに削除された。どちらも使われておらず、互いの逆でもなかった（`fromUrl` は URL デコードせずに `~` を `#` に置き換えていた）。`Designator(text)` は `#` 区切りの形式をパースする。(#2176)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 32 0 1698a7bdd93fc5a61d1f733d2d62c762
++ - `stratiform.layer`（`case class layer(name: Text) extends StaticAnnotation`、`soundness.layer` としてもエクスポートされていた）は削除された。代わりは `stratiform.assign`（`final class assign(layer: Tel.Layer[?]) extends StaticAnnotation`。`soundness.assign` はその型の別名であり、項の `soundness.assign` は anamnesis に残す）であり、レイヤーをテキストではなくシングルトンオブジェクトで名指す。フィールド上の `@layer(t"foo")` を `@assign(foo)` に書き換え、トップレベルかオブジェクトの中で一度だけ `object foo extends Tel.Layer("foo")`（同じ名前）を宣言する。レイヤー名を共有するフィールドは、その一つのオブジェクトを共有する。導出されるスキーマは変わらない。`@assign` の引数は、名前が文字列リテラルであるそのようなオブジェクトへの参照でなければならず、それ以外はアノテーションの位置でのコンパイルエラーになった。(#2165)
++ - 新しい `stratiform.Tel.Layer[name <: String & Singleton](val name: name)` は、レイヤーオブジェクトが継承する open なクラスであり、`stratiform.Tel.Name[layer <: Tel.Layer[?]]` は、レイヤーの型からその名前を与えるマッチ型である。新しいアノテーション `stratiform.retract`（`final class retract(layer: Tel.Layer[?]) extends StaticAnnotation`、`soundness.retract` も）は、直和のケースのためのものである。既存のコードには必要ない。(#2165)
++ - レイヤーの合成（`Tels.Layers.compose`、`Tels.Layers.composeComponents`、およびアクセプタンスの提供と読み取り）は、基底の `select` が宣言しているが、より前のレイヤーがすでに除外したバリアントに対するレイヤーの `exclude` を拒否しなくなった。それは何もしない操作である。以前は理由 `ExcludeMissingVariant`（E211）を持つ `Tel.Error` を発生させていた。基底の `select` が一度も宣言していないバリアントの `exclude` は、引き続きそれを発生させる。(#2165)
++ - 値に対する `fulfil(acceptance, codecs)` は、値のエンコードされた文書がどこかで使うバリアントのキーワードを `select` が除外している提示されたレイヤーを、その合成から除外する。以前はすべてのレイヤーを提示していた（そしてそのような値を提供できなかった）。したがって、提供される `Tel.Acceptance.Served#hashes` はそのようなレイヤーを含まないことがある。(#2165)
++ - `stratiform.Tels.Reconstructor.fromTel(tel: Tel): Tels raises Tel.Error` は削除され、given の `Tel.telsDecodable: Tels is Tel.Decodable` に置き換えられた。`Tels.Reconstructor.fromTel(tel)` の代わりに `tel.as[Tels]` と書く。以前と同じく `Tel.Error` を発生させる。`Tels.Reconstructor` は `equivalent` のために残る。(#2176)
++ - `stratiform.Tels.SemanticReconstructor.fromElement(root: Tel.Element): Tels raises Tel.Error` は削除され、given の `Tels.elementDecodable: Tels is Decodable in Tel.Element` に置き換えられた。`Tels.SemanticReconstructor.fromElement(element)` の代わりに `element.as[Tels]` と書く。`Decodable` の形式は厳密なので、部分型 `Tel.Element.Node` と型付けされた値には `(node: Tel.Element).as[Tels]` と型注釈を付けなければならない。(#2176)
+
+% 0 1 0 19751db48a45fac8054f045dab5ba311
+
+@ 0 5 0 132e19cc02d619301a9cd8376b5617db
++ - `tarantula.WebDriver.Local.Sessional` のコンストラクターと、その横の given の `sessional` に、`working: WorkingDirectory` の後に `environment: ambience.Environment` が加わった。ドライバーのプロセスはその環境で起動される。プロセスが継承すべき `Environment` を与えること。ツールの中では呼び出しの環境（`environments.daemonClientEnvironment`、または `Cli` からの `Environment.provided`）を、以前の動作には `environments.javaBaseEnvironment` を与える。(#2180)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 7 0 02530b00bed80f871047336c86f37b4b
++ - `tasseomancy.Chart#svg(using style, ChartPalette, FontMetric, Arranger): Svg` と `tasseomancy.Chart.Drawing#svg: Svg` は削除され、given の `Chart.encodable: [data, form, fit, style <: Chart.Style] => (style, ChartPalette, FontMetric, Arranger) => Chart[data, form, fit, style] is Encodable in Svg` と `Chart.Drawing.encodable: Drawing is Encodable in Svg` に置き換えられた。`chart.svg` の代わりに（同じコンテキスト値をスコープに置いて）`chart.in[Svg]` と、`drawing.svg` の代わりに `drawing.in[Svg]` と書く。`chart.svg.xml.show` は `chart.in[Svg].in[Xml].show` になる。出力は変わらない。(#2176)
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 2 0 1de0e560a701a15e155460a24fb27000
++ - `telekinesis.Http2.SettingId.fromId(id: Int): Optional[SettingId]` は削除された。使われていなかった。代わりに列挙型の `id` フィールドでマッチすること。(#2176)
+
+% 0 1 0 01a924463d4d2ade199e4991ad39d095
+
+@ 0 14 0 0615fce5547e70ce06cff95ab41e4570
++ - 新しいコンポーネント `urticose.dns`（`soundness-web` バンドル内）：型付きの DNS の語彙（`Dns.Name`、`Dns.Question`、`Rdata` 族を持つ `Dns.Record`、`Dns.Message`）、そのワイヤのコーデック（`Encodable`/`Decodable in Data`）、`dns"…"` 補間子、`Dns.resolve`、拡張メソッド `Hostname#dnsName` と `Ipv4 | Ipv6` 上の `reverseName`。追加のみ。(#2178)
++ - `urticose.Ipv4` と `urticose.Ipv6` に、ネットワークバイト順のオクテットによる `Encodable in Data` と `Decodable in Data` の given（`ip.in[Data]`、`data.as[Ipv4]`）が加わり、`Ipv4 | Ipv6` 上の拡張メソッド `bytes: Data` も加わった。データがちょうど四バイトまたは十六バイトでなければ、デコードは新しい理由 `Ipv4WrongNumberOfBytes(count)` (13) と `Ipv6WrongNumberOfBytes(count)` (14) を持つ `IpAddress.Error` を発生させる。`IpAddress.Error.Reason` に対する網羅的なマッチにはケースが二つ増える。`java.net.InetAddress#getAddress`、個々のバイトに対する `Ipv4(b0, b1, b2, b3)`、手でパックした `Ipv6(highBits, lowBits)` の long を通じて変換していたコードは、代わりにこれらを使える。(#2178)
++ - `urticose.MacAddress.apply(byte0: Byte, …, byte5: Byte)` は、`0x80` 以上のバイトを上位のオクテットへ符号拡張しなくなった。そのようなバイトを含むアドレスを持つ `NetworkInterface#hardware` は、以前は描画と比較が正しくなかった。(#2178)
+
+% 0 1 0 0daabac2e02218c20d4f9d914c51325b
+
+@ 0 6 0 0557a2fdfd6c1749093779949ee036fe
++ - `vivisection.Debuggee.Sessional` のコンストラクターと given の `vivisection.Debuggee.sessional` に、`working: WorkingDirectory` の後に `environment: ambience.Environment` が加わり、`vivisection.Dap.listen` には `working` の後に `environment: Environment` が加わった。デバッグ対象はその環境で起動される。プロセスが継承すべき `Environment` を与えること。ツールの中では呼び出しの環境（`environments.daemonClientEnvironment`、または `Cli` からの `Environment.provided`）を、以前の動作には `environments.javaBaseEnvironment` を与える。(#2180)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 15 0 12b69d1e48e81988040c019b8ce67a9c
++ - 拡張メソッド `xylophone.Attributes#toList: scala.collection.immutable.List[(Text, Text)]` は削除された。`Attributes` は文書順の `Traversable by (Text, Text)` になったので、`attributes.to[List]` と書く。これは `proscenium.List[(Text, Text)]` を生む。標準ライブラリの `List` がまだ必要なところでは、`attributes.iterator.toList` と書く。(#2167)
++ - `xylophone.Node`、`xylophone.Element`、`xylophone.Comment`、`xylophone.Doctype`、`xylophone.Cdata`、`xylophone.ProcessingInstruction`、`xylophone.Header`、`xylophone.Fragment` は、そのコンパニオンオブジェクトとともに `Xml` のコンパニオンの中に移された。これらは今は `xylophone.Xml.Node`、`xylophone.Xml.Element`、`xylophone.Xml.Comment`、`xylophone.Xml.Doctype`、`xylophone.Xml.Cdata`、`xylophone.Xml.ProcessingInstruction`、`xylophone.Xml.Header`、`xylophone.Xml.Fragment` である。裸の名前は `import xylophone.*` を通じては解決されなくなったので、型、コンストラクター呼び出し、パターン（`case Xml.Element(label, attributes, children)`）で、`Xml.Element`、`Xml.Fragment` などと書くこと。動作は変わらない。(#2167)
++ - `xylophone.TextNode` は `xylophone.Xml.Text` に改名され、`TextNode` は削除された。動作は変わらない。`Xml.*` を import するスコープの中では、裸の名前 `Text` は `anticipation.Text` ではなくこのノード型を意味するようになる。そのような import は、修飾した参照に置き換えるべきである。(#2167)

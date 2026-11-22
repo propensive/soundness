@@ -1,0 +1,307 @@
+orthant 2 language
+
+% 0 1 0 16f943528d924ef314569aed5c605b37
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 7 0 11ec73c3c858f67018265a6aa746c64e
++ [CSS](https://en.wikipedia.org/wiki/CSS) wird als typisierte Werte geparst, validiert und
++ erzeugt. Ein Stylesheet wird zu einem `Css`-Baum aus Regeln und Deklarationen geparst. Jede
++ Eigenschaft wird gegen ihre tatsächliche Grammatik geprüft, die Wertdefinitionssyntax der
++ [MDN-Daten](https://github.com/mdn/data), für mehr als sechshundert Eigenschaften. Eine falsch
++ geschriebene Eigenschaft oder ein fehlerhafter Wert ist daher ein strukturierter Fehler und kein
++ Stil, der im Browser stillschweigend versagt. Der [Interpolator] `css"…"` schreibt ein
++ Stylesheet im Quellcode, mit eingesetzten typisierten Werten.
+
+@ 0 4 0 06c9da7b67696391181b59e5f5d0ad5a
++ Selektoren werden nach der vollständigen Grammatik von
++ [Selectors Level 4](https://www.w3.org/TR/selectors-4/) geparst. Längen und Winkel sind
++ typisierte [Größen](quantities.md), und [Farben](colors.md) werden direkt eingesetzt und
++ hexadezimal geschrieben.
+
+@ 0 1 0 02a28abf09dbc299028e63b111621b52
++ ### Über CSS
+
+@ 0 5 0 06b0785b37e48a8f06d5f94e1a7e4897
++ CSS ist unter den Sprachen insofern ungewöhnlich, als seine Verwender es nie zurückweisen. Ein
++ Browser ignoriert, was er nicht versteht. Ein Tippfehler im Namen einer Eigenschaft oder ein
++ ungültiger Wert scheitert, indem er *nichts tut*, und wird mit bloßem Auge entdeckt oder gar
++ nicht. Um das nachträgliche Prüfen von CSS-Text herum sind Werkzeuge entstanden. Ein Typsystem
++ kann es besser, indem es Stile dort prüft, wo sie geschrieben werden.
+
+@ 0 3 0 0c43e967116a52e1118f5b9c28f1ee50
++ Hier wird CSS beim Parsen gegen die tatsächliche Grammatik jeder Eigenschaft geprüft. Das ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md), angewendet auf eine
++ Sprache, die gewöhnlich in einem Browser validiert wird.
+
+@ 0 2 0 13f4c200763762940291fd7acaec96c3
++ Alles stammt aus dem Paket `soundness`. Eine Wahl der Formatierung ist im Geltungsbereich, um
++ CSS auszuschreiben, und der letzte Import lässt die Beispiele ihre Ergebnisse ausgeben:
+
+% 2 1 0 19d9c5f87ce18d2e1db07492f5cc4b3c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 03e6b9f4cd3f5ee81c0a71c3bb23f25d
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 012954dbea176622088c64c0e7b6aae1
++ ### CSS schreiben
+
+@ 0 2 0 0769f94b7233ad8019c42b4d25ad5e01
++ Der Interpolator `css"…"` schreibt ein Stylesheet. Typisierte Werte werden darin eingesetzt:
++ Eine Farbe wird hexadezimal geschrieben und eine Länge mit ihrer Einheit.
+
+% 2 1 0 0f2dd0375a3e5104092e3dccd54ba34b
+
+% 0 1 0 0e4ba037b1e16c911ac542449d04786c
+
+% 0 1 0 0b80bdb6c3430405004c7010637917ba
+
+% 0 1 0 1d0d097966829ad70f5db268c7445248
+
+% 1 1 0 04600e30e773f48c0d453c32dbfd6f45
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 1db668a981b055c1090be1418122b30a
+
+% 1 1 0 03b62e97330b982110668b5898a0a520
+
+@ 0 2 0 02686e8cdfc2bea500651e750e2da7be
++ Bloße Deklarationen ohne Selektor bilden einen `Css.Style`, zur Verwendung als
++ Inline-`style`-Attribut. Einer lässt sich ebenso aus benannten Argumenten bauen:
+
+% 2 1 0 061be5e625318247129150d0b5a170a8
+
+% 3 1 0 129161328a450a3411a08e82927b0c19
+
+% 4 1 0 1ebfd0c1e87b5c3d015476199adfe1d4
+
+% 0 1 0 10aa49091cf104a111d2e37b355cafd7
+
+% 1 1 0 0c2085ab1f4b926211f46210d84592c5
+
+@ 0 1 0 1faed04e1972e91019dd145ebc0b220e
++ ### Einheiten
+
+@ 0 2 0 0d830905985d455c1e42ef6558e4fe0c
++ Die Einheiten von CSS sind typisierte Größen, sodass eine Länge eine Länge ist und nicht mit
++ einer Zahl oder einem Winkel verwechselt werden kann:
+
+% 2 1 0 030e500dcb50805e1109c7055ab805ef
+
+% 0 1 0 1a9d18808d381e1a175ea80b1104dc8a
+
+% 0 1 0 193ff9cb339c13c00db1617911dac2f2
+
+% 0 1 0 156ffc0e527622e406e5665c8178e39a
+
+% 1 1 0 01164bebae900b5b186c6896df3d8dad
+
+@ 0 1 0 1439994ff8e797d1150cfda4130c5224
++ Jede Einheit gehört zu einer Dimension, und nur Einheiten derselben Dimension lassen sich
++ addieren oder umrechnen:
+
+% 2 1 0 08cf4841df2430c90ee0eafe676ff145
+
+@ 0 11 0 15fb086be28eaced0d7144b868bcc623
++ column  Einheiten
++ column  Messen
++ column  Umrechenbar in
++ row  `Px`  Pixel  nichts anderes
++ row  `Rem`, `Ex`, `Ch`  die Schriftgröße der Wurzel, die x-Höhe, die Zeichenbreite  nichts anderes
++ row  `Vw`, `Vh`, `Vmin`, `Vmax`  Bruchteile des Viewports  nichts anderes
++ row  `Pct`  einen Prozentsatz  nichts anderes
++ row  `Cm`, `Mm`, `Pt`, `Pc`  physische Länge  einander und jede andere Länge in Soundness
++ row  `S`, `Ms`  Zeit  jede andere Zeit in Soundness
++ row  `Deg`, `Rad`, `Turn`  Winkel  nichts anderes, nicht einmal einander
++ row  `Fr`  einen Anteil am freien Raum eines Grids  nichts anderes
+
+% 1 1 0 1204c4f8b61c847b193ac1ccd9192b2c
+
+@ 0 2 0 0faea893916b2aeb0a484d5724ffd83f
++ Die physischen Einheiten, die CSS mit der realen Welt teilt, sind dieselben
++ [Größen](quantities.md#mixing-units), die überall sonst verwendet werden.
+
+@ 0 1 0 0be7689b9275055a16fd7074497e2d45
++ ### Parsen
+
+@ 0 1 0 11d32cc422cea3f31f4f3b5bd295e39e
++ CSS-Text wird mit `read` geparst:
+
+% 2 1 0 08d978cb379e1a9d051b264db00abc68
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 16e53b6a9c1d543d1ebd0449f06e2e3e
+
+% 1 1 0 1ee8100586a516d40e2b68877d123887
+
+@ 0 4 0 19dc9d46199390c70b92dcc1f4407563
++ Jede Deklaration wird validiert, und *alle* Probleme werden gesammelt, statt beim ersten
++ anzuhalten; das braucht ein Linter oder ein Build-Schritt. Der Fehlertyp steht im Plural,
++ `Css.Errors`, weil es für diese Aufgabe die falsche Gestalt ist, aus einem Dokument mit mehreren
++ Fehlern einen nach dem anderen zu melden:
+
+% 2 1 0 0d8dde37871dc2041ca6f501eb4f46d6
+
+% 3 1 0 14d492429645650c0e2d1a58e50f6123
+
+% 4 1 0 1a6ba08c8c857d7d1cfff221a0801806
+
+% 0 1 0 0ac3b979283942670348d7a527fa504e
+
+% 0 1 0 1db2e7095e6a236019dea03ff304b253
+
+% 0 1 0 12c3289ec387144e01ae2aa24249f96a
+
+% 1 1 0 0d76f774ff02c7f61128fb66ceb088e6
+
+@ 0 3 0 0d1bd1bf29e4e3040b2daaa8609b67be
++ Jeder `Css.Error` hat seine Zeile, seine Spalte und seinen Grund, etwa eine unbekannte
++ Eigenschaft, einen ungültigen Wert oder einen fehlerhaften Selektor, sodass die Fehler eines
++ Stylesheets präzise gemeldet werden. [Fehler](errors.md#accumulating-failures) beschreibt das
++ Sammeln von Fehlern im Allgemeinen.
+
+@ 0 1 0 0644d0e91014059201012368fc0e7313
++ ### Darstellung
+
+@ 0 3 0 19c1327940ebf0271a1a83e8bd30ad1f
++ Ein `Css` wird über die Formatierung im Geltungsbereich zurück in Text geschrieben. Die
++ Standardformatierung rückt ein, zum Lesen. Die kompakte Formatierung entfernt jedes entbehrliche
++ Zeichen, zum Ausliefern:
+
+% 2 1 0 0c85539392d2a2ff11468ad3d295cae3
+
+% 3 1 0 115434741d80d395003299f3dd8231ae
+
+% 4 1 0 1808fe83d2c91a27034292fb08f74fca
+
+% 0 1 0 06695e8260fc2f230137ec83bd2afb87
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 12fd668f5a66874304b346a14eba9344
+
+% 0 1 0 0d242872bfe31fe30564a73da8341657
+
+% 1 1 0 079c8535e92c4d380279cad3cdf9e63b
+
+@ 0 3 0 160244b547de78c90f26d831b04ab9c8
++ Stylesheets werden mit `+` zusammengefügt. Ein Stylesheet meldet die Klassen und IDs, die es
++ definiert; so werden die Klassenattribute von [HTML](html.md#attributes) gegen die vorhandenen
++ Stile geprüft.
+
+@ 0 1 0 106a600478ce87b41d12cbd69473180e
++ ### Selektoren
+
+@ 0 4 0 1391f55d313860de10e15e1924502f31
++ Selektoren sind strukturelle Werte, die die vollständige moderne Grammatik abdecken:
++ Kombinatoren, einschließlich des Spaltenkombinators `||`, Tests auf Attribute, `:is`, `:not`,
++ `:has`, `An+B`-Ausdrücke und den Verschachtelungsselektor `&`. Ein Selektor lässt sich daher
++ bauen, untersuchen und ausschreiben und muss nicht als Text zusammengestückelt werden.
+
+@ 0 4 0 1a0ae70e712ddf770be8a82b53fbf76a
++ Ein geparster Selektor ist ein Baum, kein String. Ein zusammengesetzter Selektor hält seine
++ einfachen Teile, ein komplexer Selektor hält durch Kombinatoren verbundene zusammengesetzte
++ Selektoren, und eine Selektorliste hält Alternativen. Jeder Teil ist ein typisierter Fall, sodass
++ ein Programm fragen kann, worauf ein Selektor tatsächlich passt:
+
+% 2 1 0 01fce5878e08c17316141c00ee23d991
+
+% 0 1 0 153201007e4a74a618b9ac07fcc00df5
+
+% 0 1 0 1bf404a14df5a909143a704afc909c01
+
+% 0 1 0 0f7933b9416623de1b1784619d848f5d
+
+% 1 1 0 0bca560d306c4fb30e30868a6371982f
+
+@ 0 2 0 1ab8b6c3748057810dd92a8da369f706
++ Die drei sind ein Kindkombinator zwischen zwei Typselektoren, ein Typselektor mit einer
++ Pseudoklasse und ein Pseudoelement.
+
+@ 0 2 0 0981122a0eeda36b0e799010193e490d
++ Attributselektoren haben ihren Matcher und, wo einer angegeben ist, den Modifikator für die
++ Groß-/Kleinschreibung, sodass `[href^="https" i]` verstanden und nicht bloß bewahrt wird:
+
+% 2 1 0 05be9d9fd5c65b541d6ba95bde6181f6
+
+% 0 1 0 11066b3ff01827d60d7634aa8b6bec56
+
+% 0 1 0 1fe10ffacc763ac3184d704f42ffea32
+
+@ 0 8 0 0e2ae4337229e34e1ea6777bd5d21db6
++ column  Passt auf ein Attribut, dessen Wert
++ row  `[a]`  keiner: Vorhandensein  beliebig ist
++ row  `[a=v]`  `AttributeMatcher.Exact`  genau `v` ist
++ row  `[a~=v]`  `AttributeMatcher.Includes`  `v` unter seinen durch Leerraum getrennten Wörtern hat
++ row  `[a|=v]`  `AttributeMatcher.DashMatch`  `v` ist oder mit `v-` beginnt
++ row  `[a^=v]`  `AttributeMatcher.Prefix`  mit `v` beginnt
++ row  `[a$=v]`  `AttributeMatcher.Suffix`  mit `v` endet
++ row  `[a*=v]`  `AttributeMatcher.Substring`  `v` enthält
+
+% 1 1 0 0cf1301ab7f9ecff03cb293e81abe6cf
+
+@ 0 4 0 089337e014f921911ebccccc375eca7e
++ `An+B`-Argumente von `:nth-child` und seinen Geschwistern werden zu ihren Koeffizienten geparst.
++ `odd` und `even` werden zu `2n+1` und `2n` normalisiert, und eine `of`-Klausel wird daneben
++ behalten. `:is`, `:not` und `:has` haben Selektorlisten als Argumente, sodass sich ihr Inhalt
++ seinerseits untersuchen lässt.
+
+@ 0 2 0 16acbad9262586500d2c3336d4a99d80
++ Typselektoren mit einem Namensraum, also `svg|rect`, `*|a` und `|a` für den
++ Standardnamensraum, behalten ihr Präfix eigens, da die drei Verschiedenes bedeuten.
+
+@ 0 1 0 1f2842dcfb2502870f9f05896d15847c
++ ### Klassennamen gegen ein Stylesheet prüfen
+
+@ 0 5 0 180858b492945c7909613b442cc71349
++ Zu wissen, welche Klassen und IDs ein Stylesheet definiert, dient dazu, das Markup zu prüfen,
++ das sie verwendet. Das Binden einer Stylesheet-Ressource macht ihre Namen zur Kompilierzeit
++ verfügbar. Ein HTML-Attribut, das auf einen Namen verweist, wird dann zu `class` oder zu `id`
++ aufgelöst, je nachdem, was das Stylesheet deklariert. Ein falsch geschriebener Klassenname in
++ einem Template ist daher ein Kompilierfehler, und das richtige Attribut wird verwendet, ohne
++ dass man es angeben muss:
+
+% 2 1 0 13d738af909bff421966b44a3cdb5b5e
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 0e7497da964f21ea1d7213e5cfc2cb47
+
+% 0 1 0 0fcc5938a5c3b70c05608b619780104f
+
+% 1 1 0 1c009b35bff48c7719da8cda76d85851
+
+@ 0 3 0 00fec8a3157e57091c67ccaa4c95e780
++ Die Ressource wird beim Kompilieren des Codes gelesen, daher muss das Stylesheet im
++ [Klassenpfad](classpath.md) des Compilers liegen, und der Typ der Bindung nennt die Ressource,
++ aus der es gelesen wurde.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 5 0 116555e834c2f1f10415484ec593c20b
++ - [HTML](html.md) baut die Elemente, die ein Stylesheet gestaltet.
++ - [Farben](colors.md) und [Größen](quantities.md) liefern die typisierten Werte von
++   Eigenschaften.
++ - [Seiten](pages.md) sammelt die Stile der Teile einer Seite in einem Stylesheet.
++ - [Namen](names.md#built-in-planes) beschreibt die Regeln für einen Klassennamen.
++ - [Schriften](fonts.md), [Formulare](forms.md), [SVG](svg.md) und
++   [Web-Automatisierung](web-automation.md) verwenden Stylesheets und Selektoren.

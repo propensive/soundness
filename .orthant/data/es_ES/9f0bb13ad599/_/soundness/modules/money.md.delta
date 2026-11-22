@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 2 0 07fe400905129e5c09ca3a130de28d35
++ Hay treinta y seis divisas definidas, cada una como un valor que construye cantidades. Una
++ cantidad se escribe con su símbolo o con su código ISO, según decida un estilo en el ámbito.
+
+@ 0 2 0 0521150f08d80306145fc8161d1d3d86
++ El impuesto se redondea a la unidad menor más cercana, y una mitad se redondea hacia arriba. El
++ veinte por ciento de 2,94 £ es 0,588 £, que se cobra como 0,59 £:

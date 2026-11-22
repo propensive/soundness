@@ -1,0 +1,712 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05d9ebbe7b16e06314c693f4ff3c954b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09bbff7899a68e751ea73e3155021b38
++ info   一度だけ書いた二つの規則による、直積と直和のための型クラスインスタンスの汎用的な導出
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 04c88950aca70f1503c6922ecced67b5
++     _Wisteria_ は、Soundness のあらゆる導出されたコーデックの背後にある導出のエンジンである。ケースクラスから組み立てられる JSON のエンコーダー、フィールドから組み立てられる CSV の行、構造から組み立てられるダイジェストがそうである。
++     型クラスの作者は `Derivation` を継承して二つの規則を書く。`conjunction`（**直積**のフィールドのインスタンスを組み合わせて直積のインスタンスにする方法）と `disjunction`（**直和**のインスタンスがバリアントの中から選ぶ方法）である。そうすれば、すべてのケースクラス、タプル、列挙型、シールされたトレイトがインスタンスを持ち、それは継承された `derived` given を通じて解決されるか、`derives` 節で要求される。
++     書くべきマクロはない。二つの規則は普通のインラインメソッドであり、フィールドごと、バリアントごとの作業は、継承されたコンビネーター `fields`、`contexts`、`build`、`construct`、`variant`、`delegate`、`choices`、`singleton` が行う。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1a79673f0c5fcfdd17ceee814d61943b
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 13147acc52e6cb8103f5ad4510211791
+
+% 0 1 0 13aa9dc6133e6a780636a2b34b76d33f
+
+% 0 1 0 144e1ca9fdf4f4931696760eeab20fb1
+
+% 0 1 0 1d2d3a970d4e705602448891021206a2
+
+% 0 1 0 17c6fd8df148d1511889a248e3654655
+
+% 0 1 0 1b7598531004cacc053a379c93161428
+
+% 1 1 0 06bff56d802acef7080a8e6e573d8128
+
+% 0 1 0 12966690a03c891315a16f87fc9a135f
+
+% 0 1 0 091e5b55970372c10eda8a5a65ed55a9
+
+% 0 1 0 10884fb74a62cc2d069c4fae82279dd8
+
+% 0 1 0 06e8b40b575b59f6094574421acdaee2
+
+% 1 1 0 0e2897de01d03d7003c2b645b75cd43e
+
+% 0 1 0 010530e45e4d14360587e77e503a8f89
+
+% 0 1 0 1a02c00a5ffb01fb0af00159237bb8e0
+
+% 0 1 0 0e85b81ce7d354c317f0db2a797b1549
+
+% 0 1 0 0a754f90293d122716f0a2fa6ccb01e6
+
+% 0 1 0 1c5e4b96e0f6458f01ac4f235999cd22
+
+% 0 1 0 15bcfcc2e868b68507a69dad802884b0
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 11804960e7a7af23155e8abe3c957920
++     各コンビネーターが受け取る多相ラムダの中では、フィールドやバリアントはいくつかのコンテキスト値によって記述され、パッケージのアクセサーを通じて読まれる。`contextual` はフィールド自身の型に対する型クラスインスタンス、`label` は書かれたとおりのその名前、`index` はその位置、`default`（vacuous から）はフィールドの宣言された既定値または `Unset`、`dereference` は直積からフィールドへの関数である。
++     `[field] => field => …` の構文は多相ラムダである。どのフィールドも型が異なり、本体が知っているのは `contextual` がまさにその型に対するインスタンスであることだけだが、それで十分である。
+
+@ 0 7 0 06408db19ed902a0115359ef8f63b748
++     **直積**とは、ケースクラス、タプル、列挙型のケース、またはシングルトン（ケースオブジェクト、またはパラメーターのない列挙型のケースで、フィールドのない直積である）である。その値は**フィールド**であり、固定された型、正準な順序、ラベルを持つ。
++     **直和**とは列挙型またはシールされたトレイトであり、その選択肢は**バリアント**である。
++     エンジンはそれぞれを `scala.deriving.Mirror`（ここでは `Reflection`、`ProductReflection`、`SumReflection` という別名を持つ）を通じて認識するので、ミラーを持たない型（普通のトレイトや、ケースクラスではないクラス）は導出の時点で失敗する。
+
+@ 0 7 0 0330e015d757e2a516941fd7d11afd60
++     `Derivation` は直積と直和の両方について導出する。`ProductDerivation` は直積だけについて導出するので、その型クラスを直和に適用するとコンパイルエラーになる。`SumDerivation` は直和だけについて導出する。
++     `Self` 形式で書かれた型クラス（`value is Display`）には、別名 `Derivable` と `ProductDerivable` が形を合わせる。
++     導出されたインスタンスは、コンパニオン自身の本体に書かれたどの given よりも優先度が低いので、ある型に対して手書きしたインスタンスが常に勝つ。
++     導出は型クラスの利用者からは見えず、利用者にとってはケースクラスを定義すれば十分である。
+
+@ 0 7 0 1979e7b4646fa66a159a1fbe4ed690e1
++     エンジンは**グラフ**全体を一度に導出する。`derived[T]` は `T` のフィールドとバリアントから到達できるすべての型を訪れ、異なる型ごとにインスタンスを一つ出力し、型クラス自身の導出の given を無視しながら実際の暗黙の探索を通じて各フィールドを解決する。そのため、フィールドのインスタンスは手書きのもの、コレクションのコーデック、または同じグラフの兄弟のどれかであり、再帰的な型は導出に再び入るのではなく自分自身に解決される。
++     それでも再帰的な型には、`derives` 節でコンパニオンにインスタンスを与えるのが最善である。
+
+@ 0 5 0 036443b40882673715d41ff0ebe382be
++     コーデック以外にも、`arithmetic` オブジェクトは、任意の直積に対してフィールドごとに `Addable`、`Subtractable`、`Multiplicable`、`Divisible` を導出する。それぞれ名前で import する given である：`import arithmetic.addable`。
++     フィールドごとの上書きは vicarious から来る。`specifically` で組み立てた `derivation is Specific over typeclass` がスコープにあると、名前付きのフィールドパスで別のインスタンスが提供され、すべてのコンビネーターがそれを参照する。
+
+@ 0 4 0 17f3716236e5909a13ae598a2020a7ba
++     このライブラリは一つのソースセット `wisteria.core` であり、JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     すべてが `soundness` アンブレラにエクスポートされるが、注意が一つある。アクセサー `label` は tarantula の `Element#label()` と名前を共有するので、両方を import して `label` が曖昧だと報告されたファイルでは `wisteria.label` と書く。
+
+% 0 1 0 1b16f507f74ef78910d9ae05b9b17bcb
+
+% 0 1 0 1469cdb0563490d407c8700030dd2d3a
+
+% 0 1 0 02520eac0fbae18b1ef1a6378a43a69d
+
+% 0 1 0 16a304ec1cd7ff4000fa6e8070f71c3e
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+@ 0 1 0 0aa0cca7d2547f671c239b055ca2ac7b
++ entry .Derivation   直積と直和の両方について導出する型クラスのコンパニオンの基底
+
+% 1 1 0 17321e16e514a18500e9ce0185ede43c
+
+@ 0 5 0 06cf81340d3c3da100c6eaeaa0f5cdee
++       `object Typeclass extends Derivation[Typeclass]` は型クラスに導出を与える。オブジェクトは `conjunction`（`ProductDerivation.Methods` からの直積の規則）と `disjunction`（`SumDerivation.Methods` からの直和の規則）を実装し、`derived` を継承する。これは、任意の直積型や直和型がインスタンスを解決するための given である。
++       型パラメーターは型クラスの型コンストラクターである。`Self` 形式の型クラスは代わりに `Derivable` を使う。
+
+% 2 1 0 0d0337fa0da76bb5080994e64e520e32
+
+% 3 1 0 138106c240cf290f05f72c91cfdfb2ac
+
+% 4 1 0 1c77c82091b6efab11f641938afedb77
+
+% 0 1 0 067ff7c5e830be870106b98cc0352688
+
+% 0 1 0 0454a91fd21e0b71158bca0b3c6fe5d1
+
+% 0 1 0 05f33a590db72e541882d93454661130
+
+% 0 1 0 07a949f21a3498a30a9a2d75c851539a
+
+% 0 1 0 021eace761ebc7aa06ae5f95006f9c32
+
+% 0 1 0 0625be81730b847003845275b84fe0e3
+
+% 1 1 0 17c3e3b458cf6fce127bbeb3e765beee
+
+% 0 1 0 07bac2604ad319bf05da505554c55a13
+
+% 0 1 0 0f1da7bceb1a62161cfa67fb08e8ee7d
+
+% 0 1 0 1d4e753f9fc49f901cda04ec12c9277f
+
+% 0 1 0 01b5c590dfa035dc143e85c627233416
+
+% 0 1 0 1ca937a34616c150014bc9fc24d86738
+
+% 0 1 0 15350d969a6406161d89fbf9cb3ca286
+
+% 1 1 0 02a196d01ec141f20654fa187771175a
+
+% 0 1 0 032eabbbec06e4df1f7bed37c94f0df3
+
+% 0 1 0 0f4aef81f061039f0c872cef162c552b
+
+% 0 1 0 03526477d1343a2d0b94ac6508df9251
+
+% 2 1 0 02ef9817fd85db8310ce071fe6f0fc39
+
+% 0 1 0 05657e63441db3c016c9822ac7beb72c
+
+% 1 1 0 0b0d1c220e07e5d20e98be66de00532f
+
+@ 0 8 0 1dee106818cc4ef80d42c1440cbbb863
++       どちらの規則も `inline` である。使用箇所で、導出されたグラフの型ごとに一度展開される。それによってラムダの `contextual` が正しいフィールドの型に対するインスタンスになり、`inline if choice[derivation]` が `scala.compiletime.error`（完全修飾で書く）でコンパイル時にある形を拒否できる。
++       名前を挙げる価値があるほどよくある間違いが二つある。_given instance derived in trait Derivation does not match type…_ で終わる長いエラーは、ほとんどの場合、多相ラムダの型変数に上限がないこと（`[variant]` ではなく `[variant <: derivation]`）を意味する。`Product` との不一致は、`conjunction` の型パラメーターに `<: Product` がないことを意味する。
+
+@ 0 4 0 09f69c8bc4a697e10e7a26a7cebb2097
++       このオブジェクトは型クラスのコンパニオンである必要はない。
++       普通のオブジェクトに定義すると、規則は暗黙の探索に公開されずに導出を与え、インスタンスが欲しい所でどこでも `Rules.derived[T]` を呼ぶ。たとえば厳格なパーサーと寛容なパーサーのように、一つの型クラスに二つの導出を用意する方法である。
+
+@ 0 8 0 1f7d4339d29dc5701838eed5a9b5bc6c
++       キャプチャ検査のもとでは、規則の結果の型は `typeclass[derivation]^` である。導出されたインスタンスは、デコーダーの戦術のように、その解決に必要だったケイパビリティを正直にキャプチャしてよく、そのキャプチャは `derivedOne` で一度だけ消去される。
++       導出はそれを使うモジュールの中で展開されるので、導出の中のキャプチャのエラーは型クラス自身のモジュールではなく、そのモジュールで報告される。
++       `delegate` や `singleton` を呼ぶ直和の規則は、展開される所で `Tactic[Variant.Error]` を必要とする。通常の形は、`provide[Tactic[Variant.Error]]` でそれをインスタンスの中に封じ込めるもので、そうすれば導出されたインスタンス自体はケイパビリティにならない。
+
+% 0 1 0 0ee2070c762f0c5a02120dbde3000d4f
+
+% 1 1 0 0dc8e3c3d962d2520a2d79b2f9e5d2c2
+
+% 0 1 0 0790dba7c556641e1a5f3a1b3e9c5d3a
+
+@ 0 16 0 19c013751dd1808916865c7a51841b2a
++   entry #derivedOne   一つの型（直積または直和）に対する、一段の深さのインスタンス
++       型のシンボルを調べて、直和には `disjunction` を、直積には `conjunction` を選び、新しい結果を `typeclass[derivation]` に絞り込む。
++       そのフィールドとバリアントは兄弟のインスタンスに解決される。`derived` はグラフの異なる型ごとにこれを一度呼び、ちょうど一段だけが欲しい導出はこれを直接使う。
++   entry #derived   `Reflection` を持つ任意の型に対してインスタンスを導出する given
++       `Reflection[derivation]`（`scala.deriving.Mirror`）を受け取る `derived[derivation]` は、暗黙の探索があらゆる直積型と直和型に対して見つける given であり、`derives Typeclass` 節が名指しするメソッドである。
++       `derivation` から到達できる型のグラフ全体（すべてのフィールドの型とバリアントの型を再帰的に）を組み立て、異なる型ごとに遅延して束縛されるインスタンスを一つ出力し、ルートのものを返す。
++       型に手書きの given や `List[T]` のようなコーデックがあるフィールドはそれを使い、型がグラフの中の別の直積や直和であるフィールドはその兄弟を使い、自分自身に到達する型は自分の束縛に解決される。
++       インスタンスがまったくないフィールドの型は導出の時点でコンパイルエラーになり、どのフィールドにインスタンスが欠けているかを知る最も手早い方法は、呼び出し箇所で明示的な `Typeclass.derived[T]` をコンパイルすることである。
+
+@ 0 1 0 1c94e7b403abe6171266e748d590d08b
++ entry .ProductDerivation   直積だけについて導出する型クラスのコンパニオンの基底
+
+% 1 1 0 11b4e51329b4b4be142407fd2c4126db
+
+@ 0 7 0 00214da99cfd57b5128591b7afce71e2
++       `object Typeclass extends ProductDerivation[Typeclass]` は型クラスに、ケースクラス、タプル、シングルトンに対する導出を与え、直和に対する導出は与えない。それを列挙型やシールされたトレイトに適用すると、実行時の驚きではなく、不一致を名指しするコンパイルエラーになる。
++       オブジェクトは `conjunction` だけを実装し、`derived` を継承する。
++       直積の規則を書くためのコンビネーター（`fields`、`contexts`、`build`、`construct`、`complement`、`typeName`、`tuple`、`singleton`）は `ProductDerivation.Methods` のメンバーである。
+
+% 2 1 0 0e27187a328433e113a9c8d9b8fa964d
+
+% 3 1 0 1eeb3d1cfef69c4407e9d40206f7d3f9
+
+% 4 1 0 06ba31ef59d885911d9eb992209ac110
+
+% 0 1 0 19a21b97cca651720e895f942ed49233
+
+% 0 1 0 1cb5510700c904bd14478ee8cea3586f
+
+% 0 1 0 10ea6dd3436fda07173d66c8f47f6e7a
+
+% 0 1 0 18a0839b0cc040a71ec9779fa29526e6
+
+% 0 1 0 0d9121c2bb83e4e6036725c5cf74c42e
+
+% 0 1 0 03fad97a20a5fa100ef15bb83295af60
+
+% 0 1 0 095f662d33f43b9e093a571bf641a967
+
+% 0 1 0 136e1115c40308080525bf8d83358e7d
+
+% 0 1 0 1f1363ce5a99e3a2156eb29b107000b8
+
+% 0 1 0 1cc4f93273b759961610bef56f39dc95
+
+% 2 1 0 04533cfb6eee4ddb07d0cbe4d6428d26
+
+% 0 1 0 15f1a6562d1bc5f2006ae18c0508a3bd
+
+% 1 1 0 1b541ae3d6caf959179232a2d821b7cb
+
+% 2 1 0 14b1bea166369d871612d279ec9cf5dc
+
+% 2 1 0 1671d92c922f15ad00af0b0c49093d4a
+
+@ 0 1 0 1d94bd7648cef7f616afab6a61cf3442
++   entry .Methods   直積のコンビネーター：`conjunction` を書くための語彙
+
+% 1 1 0 130fd033f84a2d0f1f5d61c6820d1ed4
+
+@ 0 9 0 07a27ae720f5800b04aee4458bc51f88
++         すべての `Derivation` と `ProductDerivation` が混ぜ込むトレイトである。
++         抽象的な直積の規則 `conjunction` を宣言し、その規則を書くためのインラインのコンビネーターを提供する。
++         それぞれが多相ラムダ `[field] => … => result` を受け取り、フィールドのコンテキスト値をスコープに置いてフィールドごとに一度それを展開する。そのコンテキスト値とは、`typeclass[field]` インスタンスである `contextual`、`Text` としてのフィールドの名前である `label`、`Int & FieldIndex[field]` としての位置である `index`、宣言された既定値または `Unset` を持つ `Default[Optional[field]]` である `default`、そして `contexts` の中では関数 `derivation -> field` である `dereference` である。
++         コンビネーターは `protected` なので、導出するオブジェクトの内側から使う。
+
+@ 0 22 0 068c55fa166a82951f4b6a9644dd3dd6
++         - `fields(value)(lambda)` は値のフィールドを畳み込み、ラムダに各フィールドの値を与え、結果を凍結済みの `Array[result]` として返す。これは**消費者**のコンビネーターであり、描画器、エンコーダー、ハッシュのためのものである。ラムダのパラメーターはフィールドの値である。
++         - `contexts[derivation]()(lambda)` は値のない同じ畳み込みである。ラムダのパラメーターはフィールドのインスタンスであり、値の中に手を伸ばすために `dereference` が使える。値が二つでもよく、等価性が対応するフィールドを、それらを型付けしたラムダから切り離さずに比較するのはこの方法による。スキーマや、直積のラベルのリストには、値はまったく要らない。
++         - `build[derivation](lambda)` は直積の新しい値を組み立てる。ラムダのパラメーターはフィールドのインスタンスであり、ラムダはフィールドの値を返す。これは**生産者**のコンビネーターであり、パーサー、デコーダー、生成器のためのものである。組み立てはミラーの `fromProduct` を経由し、それによってオブジェクトの中に入れ子になったケースクラスやメソッドの中で宣言されたケースクラスにも使える。
++         - `construct[constructor, derivation](bind, pure, lambda)` は、結果が型コンストラクター（`Optional`、`Attempt`、`List`）に包まれたラムダのための `build` である。与えられた多相の `bind` と `pure` を通じてフィールドを順に通すので、失敗したフィールドは直積を失敗させる：`construct[Option, derivation]([in, out] => _.flatMap, [monadic] => Some(_), lambda)`。
++         - `complement(product)` は、どのラムダの中でも、同じ直積の別の値から現在のフィールドを、フィールドの型で型付けして読み出す。`dereference` は同じアクセスを関数として表したものである。
+
+@ 0 7 0 19a2cd4f57ef5fed170aa8f30de6b0f0
++         畳み込みは**すべての**フィールドについて型クラスを召喚するので、末端のインスタンスが自明な型クラス（たとえば `Text` のラベル）でも、それらを提供しなければならない。
++         `index` はブランド付きの `Int` なので、ネイティブの `List` は `Ordinal.zerary(index)` で添字付けし、`Optional` を得る。添字付けのための計算量の関門（`dysasymptotics.linearAccess`）は、導出が展開される所で import しなければならない。
++         キャプチャ検査のもとでは、ラムダが配列型のフィールドから読む値はフィールドのキャプチャのアノテーションを保つので、凍結済みの `Array[Long]^{}` フィールドを持つ直積はすんなり導出される。
+
+@ 0 30 0 167c430cc6e1b76f0f45586460d46274
++         規則が `inline` なので、その中の関門付きのコレクション操作（`.all`、`.to[List]`、序数による `List` の添字付け）は、導出が展開される所で、そこで import されているすべてのものに対して解決される。
++         そうした操作が、同じ行が普通の `def` ではコンパイルできるのに展開の中では解決に失敗するなら、規則が呼ぶ普通のヘルパーメソッドに移す。
++     entry #conjunction   直積の規則：フィールドのインスタンスから直積のインスタンスを作る
++         抽象的で、導出するオブジェクトが実装する。
++         `conjunction[derivation <: Product: ProductReflection]: typeclass[derivation]^` は、導出されたグラフの直積型ごとに、ミラーをスコープに置いて一度呼ばれ、インスタンスを返す。通常は `fields`、`contexts`、`build`、`construct` の上のラムダとしてである。
++         `<: Product` の境界とコンテキスト境界はどちらも必須である。
++         キャプチャ検査のもとでは結果は新しい（`^`）ので、インスタンスは組み立てに必要だったものをキャプチャしてよい。`Derivation#derivedOne` がそのキャプチャを消去する。
++     entry #typeName   導出の対象となる型の名前（`Text` として）
++         `typeName[derivation]` はミラーのラベルである。`case class Person` なら `Person`、対なら `Tuple2` である。
++         どちらの規則でも、またラムダの中でも使え、型やバリアントを名指しする描画のためのものである。
++     entry #tuple   直積がタプルかどうか。コードのコンパイル時に決まる
++         `inline if tuple[derivation] then … else …` によって、描画はタプルの型名を落とせる。タプルのフィールドのラベルは `_1`、`_2`、… である。
++     entry #singleton   直積がシングルトン（ケースオブジェクトまたはパラメーターのないケース）かどうか
++         `inline if singleton[derivation] then typeName[derivation] else …`：シングルトンにはフィールドがないので、描画は名前だけを示し、パーサーにはパースするものがない。
++   entry #derivedOne   一つの直積型に対する、一段の深さのインスタンス
++       ミラーを召喚して型に `conjunction` を適用し、新しい結果を `typeclass[derivation]` に絞り込んだもの。
++       ここでは直和型はコンパイルエラーになる。
++   entry #derived   任意の直積型に対してインスタンスを導出する given
++       `Derivation#derived` と同じく、到達できる型のグラフを組み立ててルートのインスタンスを返す。各型は `derivedOne` で導出される。
++       この導出には `disjunction` がないので、到達できる型の中に直和があるとコンパイルエラーになる。
+
+@ 0 1 0 1caf6de83cb84814068e68711a617ad0
++ entry .SumDerivation   直和だけについて導出する型クラスのコンパニオンの基底
+
+% 1 1 0 01810cd410a6d24301056f654514e1da
+
+@ 0 6 0 07ba64f508aec8951ab9c469aaaf400e
++       `object Typeclass extends SumDerivation[Typeclass]` は型クラスに、列挙型とシールされたトレイトに対する導出を与え、直積に対する導出は与えない。バリアントのインスタンスは他の所から、通常は手書きの given から来なければならない。
++       オブジェクトは `disjunction` だけを実装し、`derived` を継承する。
++       直和の規則を書くためのコンビネーター（`variant`、`delegate`、`choices`、`singleton`、`complement`、`variantLabels`、`choice`）は `SumDerivation.Methods` のメンバーである。
+
+% 2 1 0 0a8e8b92642f3698188154e76a6ba0b4
+
+% 3 1 0 1144e867abc178e6111f9629a60cf035
+
+% 0 1 0 0117438b690aaebc0e0c6bc11cb64147
+
+% 0 1 0 10437ce778870f5203bf37312a79f45b
+
+% 0 1 0 04d009cc9431decb0f72b165fa824997
+
+% 0 1 0 0252d8b3f04aa0b31833ba1dd7c78649
+
+% 0 1 0 0f57a7e08ba1bd1e02215ec4d5951d24
+
+% 0 1 0 04c04b7a2bb4cf7f16ded1b9b6371169
+
+% 0 1 0 114f7a268b59e0e90f18e752b62315c5
+
+% 0 1 0 18bc41b444129aa905caf1ca99a5a2f5
+
+% 0 1 0 1ce79f2a3076093a0842088338f34c87
+
+% 0 1 0 1900295e8914dde01e8ba505a8fd5a7b
+
+% 0 1 0 08e309bef604dd2b1245d60636a495fb
+
+% 0 1 0 125c3c341cb854791f5a9e509cf821bb
+
+% 1 1 0 0918ff7e3958ef0c1c426ff50661fec2
+
+% 2 1 0 1bb121329c0a9bf018fbf20516bc439b
+
+% 0 1 0 1d9b5d79310caccc132d3e13708e853f
+
+@ 0 1 0 1f5868421afbf1af0e73ce49cf4a5dda
++   entry .Methods   直和のコンビネーター：`disjunction` を書くための語彙
+
+% 1 1 0 1b4ff102e436da670dff47d5cea82c90
+
+@ 0 7 0 1aa6cc5971f5fbce0f89608a961cb93c
++         すべての `Derivation` と `SumDerivation` が混ぜ込むトレイトである。
++         抽象的な直和の規則 `disjunction` を宣言し、その規則を書くためのインラインのコンビネーターを提供する。
++         それぞれがバリアントの上の多相ラムダ `[variant <: derivation] => … => result`（上限は必須）を受け取り、バリアントのコンテキスト値をスコープに置いてそれを展開する。そのコンテキスト値とは、`typeclass[variant]` インスタンスである `contextual`、`Text` としてのバリアントの名前である `label`、`Int & Variant.Index[variant]` としての位置である `index` である。
++         コンビネーターは `protected` なので、導出するオブジェクトの内側から使う。
+
+@ 0 16 0 1785478c839190020bd2a5991924f353
++         - `variant(sum)(lambda)` は値の実際のケースで振り分ける。ラムダのパラメーターはそのバリアントに絞り込まれた値なので、本体は直和ではなくケースで型付けされる。これは**消費者**のコンビネーターである。
++         - `delegate(label)(lambda)` は、どのバリアントを生産するかをラベルで告げられ、ラムダにそのバリアントのインスタンスを与える。これは**生産者**のコンビネーターであり、入力が判別子を持つデコーダーのためのものである。どのバリアントも名指ししないラベルは `Variant.Error` を発生させるので、規則が展開される所に `Tactic[Variant.Error]` がなければならない。通常は `provide[Tactic[Variant.Error]]` でインスタンスの中に封じ込める。
++         - `singleton(label)` は、すべてのバリアントがシングルトンである直和について、ラベルをそれが名指しする値に戻す。未知のラベルは同じく `Variant.Error` を発生させる。
++         - `choices(lambda)` は、振り分けるための値なしにすべてのバリアントを畳み込み、ラムダに各バリアントのインスタンス、ラベル、位置を与え、凍結済みの `Array[result]` を返す。インスタンスではなくスキーマを生産する導出が必要とするのはこれである。
++         - `complement(sum)` は、二つの値を取る型クラスのもう一方の値を現在のバリアントに絞り込んで、`Optional` として読む。二つが同じバリアントとは限らないからである。
++         - `variantLabels` はバリアントのラベルを宣言順に並べる。
+
+@ 0 22 0 081c891849bff7021938dae6208313b0
++         `choice[derivation]` は、すべてのバリアントがシングルトンであるかどうか（データを持たない名前の列挙かどうか）を、コードのコンパイル時に報告する。`inline if choice[derivation] then … else scala.compiletime.error("…")` と書き、そうした列挙型にだけ意味のある導出が、それ以外を独自のメッセージで拒否するようにする。
++     entry #disjunction   直和の規則：バリアントのインスタンスから直和のインスタンスを作る
++         抽象的で、導出するオブジェクトが実装する。
++         `disjunction[derivation: SumReflection]: typeclass[derivation]^` は、導出されたグラフの直和型ごとに、ミラーをスコープに置いて一度呼ばれ、インスタンスを返す。通常は `variant` または `delegate` の上のラムダとしてである。
++         `conjunction` と同じく、キャプチャ検査のもとでは新しい（`^`）。
++     entry #choice   直和のすべてのバリアントがシングルトンかどうか。コードのコンパイル時に決まる
++         `transparent inline` なので、`inline if choice[derivation]` はコンパイル時に解決され、取られない分岐は取り除かれる。そうでなければビルドを失敗させる `scala.compiletime.error` もである。
++         むき出しの名前の列挙型やケースオブジェクトのシールされたトレイトでは真であり、一つでもバリアントがデータを持てば偽である。
++         型のシンボルを調べて決めるので、グラフのインライン化の奥深くでも信頼できる。
++   entry #derivedOne   一つの直和型に対する、一段の深さのインスタンス
++       ミラーを召喚して型に `disjunction` を適用し、新しい結果を `typeclass[derivation]` に絞り込んだもの。
++       ここでは直積型はコンパイルエラーになる。
++   entry #derived   任意の直和型に対してインスタンスを導出する given
++       `Derivation#derived` と同じく、到達できる型のグラフを組み立ててルートのインスタンスを返す。
++       この導出には `conjunction` がないので、到達できる型の中の直積（たとえばフィールドを持つバリアント）は自分のインスタンスを持たなければならない。
+
+@ 0 1 0 08d5a3959a151b7a1795105256801bc3
++ entry .Derivable   `Self` 形式で書かれた型クラスのための `Derivation`：`value is Display`
+
+% 1 1 0 041b253fc40796fb19d661276b1f7fcb
+
+@ 0 5 0 09e18473a445b54e1dfeeb7c31312ffb
++       `Derivation` は型コンストラクター `Typeclass[_]` を受け取る。
++       主題が `Self` 型メンバーである型クラス（`trait Display { type Self; def display(value: Self): Text }` を `Text is Display` として使うもの）には与えるべき型コンストラクターがないので、`Derivable[Display]` がそれを綴る。それは `Derivation[[self] =>> Display { type Self = self }]` である。
++       そのうえで規則は結果の型に `is` 構文を使って書かれ、同じコンビネーターが当てはまる。
+
+@ 0 2 0 127bdc10747350561c556081bba6ed11
++       型クラスが成長する様子を見る。`Display` はまず `ProductDerivable` で直積だけに対して書かれ、次に `Derivable` で直和の規則も与えられる。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 176406b3a306ff89139e3c602bb149fb
++         label 直積の規則だけ：ケースクラスは表示されるが、直和は表示されない
+
+% 1 1 0 1928423003c643bc1e03823b75be9fce
+
+% 2 1 0 1dc5692799ac665707efb4c8bcc16100
+
+% 3 1 0 02f87f04dcf5dc0810e62f70cc7f6e20
+
+% 5 1 0 020c357d9b691a0c04bddf468f31a480
+
+% 6 1 0 10597ec20a8e7ead165ca1b77557308f
+
+% 7 1 0 19524aaf3101d02d0c00210e18e318d7
+
+% 0 1 0 01ba80d649231d3b12707e7f3cad11ea
+
+% 1 1 0 19e9566c61abe304139af4ae5adcc057
+
+% 2 1 0 029e18582c092a57057ac0f85d7e249d
+
+% 4 1 0 040b5fcdc834adb30018094a94d3d64e
+
+% 5 1 0 0376d0b2af7744e30298eb75269c7a2c
+
+% 6 1 0 10c9957a2e6097be1da0cf78fcffcc2b
+
+% 7 1 0 1919183200d8c524110b0aac51e64373
+
+% 8 1 0 1de78eec1e9fdd030e1f4f5ae5bd1ec7
+
+% 2 1 0 062feab503460d6d11c9ff71037b3ac5
+
+% 3 1 0 1414dc5277109a3e0afa848a73962d32
+
+% 5 1 0 1cbb61f6f41191b30f79fb2bc679f6f4
+
+% 7 1 0 156d6135e47c89e9095d40979984f584
+
+% 8 1 0 08a01df668387d2c0eccac9fc0323525
+
+% 9 1 0 196b87afe98757bf149c40f2ea1f83fd
+
+% 11 1 0 1a6ebcca001d84ec1d080203a7bcb37e
+
+% 0 1 0 150b77db62817c2c10352cece49c5793
+
+% 1 1 0 058405961cbbfb0b0fb9bc687a8969b8
+
+@ 0 1 0 1e334de49ecf1c540915f636ae5e4ba7
++         label 直和の規則も：バリアント自身のインスタンスがそれを表示する
+
+% 1 1 0 04d1022e6fe227f211e1319f3f3ff076
+
+% 2 1 0 12ec126390744ce8065cd53293a049e9
+
+% 3 1 0 0e41d0503a68a7811a92f25aacdcc299
+
+% 5 1 0 05bfc6513f2f9e0105f9082296d8f52e
+
+% 6 1 0 0ef4d221ae5236141e115242f073fd03
+
+% 7 1 0 0aab4d02da9919781dbeabfd7a9d605d
+
+% 0 1 0 18d1f373c69f5df81461fd9a12fad695
+
+% 1 1 0 1908f87934e8cada16a94720d02bdb2c
+
+% 2 1 0 0d59793153e14f0e182bd626ad9eb67f
+
+% 4 1 0 091ba7af6b85222503b42921a22a1335
+
+% 5 1 0 118d9f7ead7afb1c0f825367af4eda4b
+
+% 6 1 0 176a97e133407c5c1cf47fec8162f884
+
+% 7 1 0 0d479cb383223a771886256eb307d2bf
+
+% 8 1 0 1f36d77071f722e40a7e3a0b530ecf72
+
+% 0 1 0 07921cac7d4701461947e15dc6ddc700
+
+% 1 1 0 0fbd694947311d6215b7bd7c1b26b199
+
+% 0 1 0 1697a6a840d45e9901f972943113dc82
+
+% 0 1 0 13372a1edcd9fcb00b1ced6ad3d9d915
+
+% 2 1 0 1eec1aff6acaf3240b04a56d945f9f49
+
+% 3 1 0 1f791b949d2bafac11abe73c3d129514
+
+% 5 1 0 1466a2563bf4329c1daa3e9bed8794b0
+
+% 7 1 0 1ea2c49e5b4340431d511a9525d5c6d8
+
+% 8 1 0 058ab5bee55ec4ce0379214457972deb
+
+% 9 1 0 0bb479d85adae46e0b66e0eeddaf140e
+
+% 11 1 0 03ddb52fb78a24aa139ef608696874bc
+
+% 0 1 0 0b10a05a0a4bb9cd19aba4b695fc882b
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 042fc9db001732800d7057fe4a99f87e
++       一つのフィールドパスに対する上書きは vicarious を通じて来る。`specifically { case root.opponent.name() => shout }` として組み立てた `Duel is Specific over Display` がスコープにあると、導出されたインスタンスはまさにそのパスで `shout` を使い、他の所では既定のものを使う。
+
+% 1 1 0 17907ba806159e28012ce28565b6810f
+
+% 2 1 0 050a021a2512e9dd0d224f25a89efaae
+
+@ 0 5 0 07d2c9ce493e4a9e1cc6c6381b71c382
++ entry .ProductDerivable   `Self` 形式で書かれた型クラスのための `ProductDerivation`
++     `ProductDerivable[Typeclass]` は `ProductDerivation[[self] =>> Typeclass { type Self = self }]` である。主題が `Self` 型メンバーである型クラスのための直積だけの導出であり、`conjunction` は `derivation is Typeclass` を返す。
++     二つの規則を持つ形については `Derivable` を参照。
+
+@ 0 8 0 184690156361813f1a83743d8a630d89
++ entry .Reflection   型が直積または直和であることの証拠：`scala.deriving.Mirror.Of`
++     `Reflection[derivation]` はコンパイラの `Mirror.Of[derivation]` であり、すべての `derived` given が受け取る証拠である。それはすべてのケースクラス、タプル、列挙型、シールされたトレイト、シングルトンに対して存在し、それ以外には存在しない。普通のトレイトやケースでないクラスに対して導出できないのはそのためである。
++     `Mirror.ProductOf` は `Mirror.Of` なので、`ProductReflection` は `Reflection` の要求を満たす。
++     ミラーは入れ子のコンテキスト境界の探索の中でも解決される。それによって、フォーマットの `read[T]` のような別の型クラス自身の導出の内側から、導出されたインスタンスを召喚できる。
+
+@ 0 4 0 1989230590b0c72a0158d9ea753a4761
++ entry .ProductReflection   型が直積であることの証拠：`scala.deriving.Mirror.ProductOf`
++     `ProductReflection[derivation <: Product]` は `conjunction` が要求するコンテキスト境界である。
++     直積のフィールドのラベルと型を持ち、その `fromProduct` は `build` が値を組み立てる手段である。
+
+@ 0 4 0 0043c123258aaeb01b42f9c76146c021
++ entry .SumReflection   型が直和であることの証拠：`scala.deriving.Mirror.SumOf`
++     `SumReflection[derivation]` は `disjunction` が要求するコンテキスト境界である。
++     バリアントのラベルと型を持ち、その `ordinal` は `variant` が値の実際のケースを見つける手段である。
+
+@ 0 8 0 0312b9f4fb5acd5715f0142872537256
++ entry .contextual   コンビネーターのラムダの中での、現在のフィールドまたはバリアントに対する型クラスインスタンス
++     `fields`、`contexts`、`build`、`construct`、`variant`、`delegate`、`choices` に与えた多相ラムダの中では、`contextual` は現在の要素の型に対する `typeclass[field]`（または `typeclass[variant]`）インスタンスである。手書きの given、コーデック、または同じ導出されたグラフの兄弟のインスタンスであり、本体が、型の見えない値で何かをする唯一の手段である。
++     ほとんどのコンビネーターは同じインスタンスをラムダのパラメーターとしても渡すので、`[field] => parsing => parsing.parse(…)` と `contextual.parse(…)` は同じインスタンスである。
+
+@ 0 6 0 020145a928c20f3214517d79ffefd331
++ entry .label   コンビネーターのラムダの中での、現在のフィールドまたはバリアントの名前（`Text` として）
++     フィールドならケースクラスに書かれたとおりの名前（タプルなら `_1`、`_2`、…）、バリアントならケースの名前である。
++     描画器はそれをキーとして使い、パーサーはそれを判別子と照合する。
++     `soundness` アンブレラでは、この名前は tarantula の `Element#label()` と共有されている。両方を import して `label` が曖昧になったファイルでは `wisteria.label` と書く。
+
+@ 0 7 0 1fc525026d3d1ae5125a9d4575aa070b
++ entry .index   コンビネーターのラムダの中での、現在のフィールドまたはバリアントの位置
++     フィールドなら `Int & FieldIndex[field]`、バリアントなら `Int & Variant.Index[variant]` である。
++     ブランドは数を要素の型に結びつけるので、`complement(product)` は別の値から同じフィールドを読み出し、正しく型付けできる。
++     `Int` として比較や算術ができるが、それでネイティブの `List` を添字付けするには `columns(Ordinal.zerary(index))` と書き、`dysasymptotics.linearAccess` のような計算量の関門を import したうえで `Optional` を得る。
+
+@ 0 6 0 196e69726addc3f613220fa57e2d9b6f
++ entry .dereference   `contexts` のラムダの中での、直積から現在のフィールドへの関数
++     `dereference` は `derivation -> field` である。畳み込む値がないので、`contexts` は各フィールドに、直積の任意の値から、フィールドの型で型付けして読み出される手段を与える。
++     一度束縛し（`val extract: derivation => field = dereference`）、二つの値を取る型クラスが比較する値のそれぞれに適用すれば、両方のフィールドが型を失わずに一つの `contextual` インスタンスに届く。
+
+@ 0 6 0 1ae4f4db720d6e2a145e52db83d6adf2
++ entry .variant   `wisteria.variant` はコンテキストから `"variant"` のタグ付きの値を読む。コンビネーターは `SumDerivation.Methods#variant`
++     パッケージ水準のアクセサー `variant[value]` は、`index` や `label` と同じ流儀で、`"variant"` のタグを付けたコンテキスト値を読む。
++     `disjunction` が `variant(value) { [variant <: derivation] => variant => … }` として呼ぶコンビネーターは `SumDerivation.Methods` の継承されたメソッドで、直和の値の実際のケースで振り分ける。導出するオブジェクトの内側では、メソッドがこのアクセサーを覆い隠す。
+
+@ 0 1 0 08d4e6986e675e4e07abefb6e59368cf
++ entry .arithmetic   任意の直積に対するフィールドごとの `+`、`-`、`*`、`/`。名前で import する given として
+
+% 1 1 0 0d17564d6325a77901a5907d9757b6f7
+
+@ 0 5 0 035807e28a7cb21515182f906eeb5e74
++       symbolism の算術の型クラスの四つの導出で、それぞれ直積の二つの値を、フィールド自身のインスタンスを通じてフィールドごとに足し、引き、掛け、割る。そのため、直積に対してインスタンスを書かなくても、`Text` は連結され、`Int` は合計される。
++       それぞれ名前で import する given である（`import soundness.*` はそれらを取り込まない）。すべてのケースクラスに算術を与えることは既定ではなく選択だからである。
+
+% 2 1 0 14fbe5ab3bac2e62054a38324aac920b
+
+% 3 1 0 1c857d45de85dfa7130746e3dade75df
+
+% 0 1 0 107ee72a262313ce044d407112366029
+
+% 0 1 0 1fdd89478da912871630955ea3d1933c
+
+% 0 1 0 0e59580ad2d89ed70c06a7c8b7ff1e62
+
+% 1 1 0 1bf4ece2f3c845b50bc69524ae6cf69c
+
+@ 0 21 0 00f06bd2925337930328a3d2772a1101
++       導出のオブジェクト（`AddableDerivation` とその兄弟）はそれぞれの型クラスの `ProductDerivation` であり、明示的な `derived[T]` に使える。そして各 given は、`ProductReflection` を持つ任意の `value <: Product` に対する `Derivation.derived[value]` である。
++   entry .AddableDerivation   `value is Addable by value to value` の `ProductDerivation`
++       その `conjunction` は `build` で二つの直積の和を組み立て、対応するフィールドの各対（`complement` で読む）をフィールドの `Addable` を通じて足す。
++   entry .addable   given：任意の直積は、フィールドごとに、自分自身に `Addable by` で、自分自身 `to` になる
++       `ProductReflection` を持つすべての `value <: Product` に対する `AddableDerivation.derived[value]`。すべてのフィールドの型にそれ自身の `Addable` が必要である。名前で import する。
++   entry .SubtractableDerivation   `value is Subtractable by value to value` の `ProductDerivation`
++       `AddableDerivation` と同じで、フィールドの各対を引く。
++   entry .subtractable   given：任意の直積は、フィールドごとに、自分自身に `Subtractable by` で、自分自身 `to` になる
++       `SubtractableDerivation.derived[value]`。名前で import する。
++   entry .MultiplicableDerivation   `value is Multiplicable by value to value` の `ProductDerivation`
++       `AddableDerivation` と同じで、フィールドの各対を掛ける。
++   entry .multiplicable   given：任意の直積は、フィールドごとに、自分自身に `Multiplicable by` で、自分自身 `to` になる
++       `MultiplicableDerivation.derived[value]`。名前で import する。
++   entry .DivisibleDerivation   `value is Divisible by value to value` の `ProductDerivation`
++       `AddableDerivation` と同じで、フィールドの各対を割る。
++   entry .divisible   given：任意の直積は、フィールドごとに、自分自身に `Divisible by` で、自分自身 `to` になる
++       `DivisibleDerivation.derived[value]`。名前で import する。
+
+@ 0 1 0 1245df162608a47810e235b1c72574a5
++ entry .Discriminable   フォーマットのデコーダーのために、直和のバリアントをワイヤ上でどう見分けるか
+
+% 1 1 0 1c5e86f9242e3f0d10af530a28465afb
+
+@ 0 12 0 0f4f32516f1f27aa0f781b214fb1d2c2
++       直和をエンコードするフォーマットは、値がどのバリアントかを示さなければならず、`value is Discriminable in Form` がその方法を示す。`discriminate` はフォーマットの `Form`（たとえば JSON のノード）の値からバリアントのラベルを読み、`variant` は判別子を取り除いてバリアント自身のペイロードを残し、`rewrite` はエンコードのためにペイロードにラベルを加える。
++       この型クラスは、それを参照する導出の隣であるここで定義され、各フォーマットが実装する。jacinta の `discriminables` パッケージは、`type` フィールド、`kind` フィールド、バリアントの名前をキーとするラッパーオブジェクト、`type`/`value` のエンベロープを提供し、それぞれ名前で import する given である。
++       フォーマットの導出されたデコーダーは `discriminate` を呼び、それが名指しするバリアントに `delegate` し、未知のラベルに対しては `Variant.Error` を発生させる。
++   entry #rewrite   バリアントのラベル `kind` を書き込んだ、その形式のペイロード
++   entry #discriminate   その形式の値が持つバリアントのラベル。持たなければ `Unset`
++   entry #variant   判別子を取り除いた、バリアント自身のペイロード
+
+@ 0 5 0 1b47a4c69a5d2c461afcc0933496e710
++ entry .FieldIndex   フィールドの `index` に付くブランド：`Int & FieldIndex[field]`
++     フィールドの位置をその型に結びつけるために `Int` と交差させた、シールされた、値を持たないトレイトである。そのため `complement(product)` は、位置を与えられると、別の値からフィールドを読み出して `field` として返せる。
++     直積のコンビネーターのラムダの中で `index` アクセサーがそれを与える。手で組み立てることはない。
+
+@ 0 1 0 03e9c3d25db31db71ba9d372b0f078cb
++ entry .Variant   直和の導出の語彙：バリアントの `Index` と、未知のラベルに対する `Error`
+
+% 1 1 0 12b282b7bcaabecc188bd2f53b3d7d98
+
+@ 0 3 0 1c52cf9705051b2f0cd66a17f58bac10
++       `Variant` 型はない。バリアントは導出される直和のケースであり、その位置（`Variant.Index`）とラベルで識別される。
++       このオブジェクトは、ラベルがどのバリアントも名指ししないときに生産者が発生させるエラーと、バリアントの位置に付くブランドを持つ。
+
+% 1 1 0 0edd82c51b4122a91b750e8c360bcc4b
+
+@ 0 1 0 06d9387b528b1ffd1a291452557159e2
++   entry .Error   ラベルが直和のどのバリアントも名指ししないときに発生する：_the specified variant (`x`) is not one of the valid variants (…) of sum type `S`_
+
+% 1 1 0 020fc51fad49788e038621bd2ab7da82
+
+@ 0 6 0 190c84ac47523651070ecc45e70f69e9
++         `delegate` と `singleton` が、与えられたラベル（通常はデコーダーの入力から読んだ判別子）が直和のどのバリアントとも一致しないときに、`Tactic[Variant.Error]` を通じて発生させる。
++         メッセージは有効なバリアントを列挙するので、エラーは入力が何を持つべきだったかを示す。
++         どちらかのコンビネーターを呼ぶ導出は、展開される所で戦術をスコープに必要とする。インスタンスの中の `provide[Tactic[Variant.Error]]` によって、導出されたインスタンスが呼び出し元自身の戦術をキャプチャしないようにできる。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1d9f1403dc0472d316185a8cb732004c
+
+% 0 1 0 1f2f831994c36226146c3d36df042379
+
+% 0 1 0 169cd914d43f876e1b467e4a3f411100
+
+% 0 1 0 18ebecd33d57323007adf0f25aabbb17
+
+% 0 1 0 15819c18359b2fb117eb0b8c1d354798
+
+% 0 1 0 02516cfa6f3e56370c61b0067030d02a
+
+% 0 1 0 178b6816c7da10101e2d8c01d218c5ae
+
+% 0 1 0 0c9899ac40be17131e72818c61cb1c87
+
+% 0 1 0 079a0377cbb8fa3f13587c7c34aca18b
+
+% 0 1 0 13234ab85d3cdd4518a01d48f85af207
+
+% 0 1 0 0f88dba06ef7f4da1fdb97a8db1bef46
+
+% 0 1 0 0730cfa4cee3dffd05312a6dd97fc05b
+
+% 0 1 0 04a484f83a3985e00f98eedc6e1f4eeb
+
+% 0 1 0 0624ee964a601b940e0291d147eba6eb
+
+% 0 1 0 145d42098345cf7b1b88e3ec996acd95
+
+% 0 1 0 101137a01f722ec51d804325068f3083
+
+% 0 1 0 164e8be16805f5260d1cf9706c442156
+
+% 0 1 0 0cb4ad237d49f54a1573995dbc80ac2a
+
+% 0 1 0 1568f18160d953a40febdfdf123cc735
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 9 0 06de42572afbd5520ed0e7ac9fa42d57
++         `Variant.Error[derivation](label)` は直和型に対するエラーを組み立て、直和の名前とバリアントのラベルをコンパイル時に埋める。
++     entry .apply   直和型に対するエラーを組み立てる：`Variant.Error[Sum](label)`
++         型のシンボルから `sum` と `validVariants` を埋めるインラインメソッドなので、呼び出し元は問題のラベルだけを与える。
++     entry #inputLabel   どのバリアントも名指ししなかったラベル
++     entry #sum   直和型の名前
++     entry #validVariants   直和のバリアントのラベル（宣言順）
++   entry .Index   バリアントの `index` に付くブランド：`Int & Variant.Index[variant]`
+
+% 1 1 0 07f4a4fb1d2aa2890eabf37b178db54c
+
+@ 0 4 0 01ce2f27954a57ea0890162951be5778
++         バリアントの位置をその型に結びつけるために `Int` と交差させた、シールされた、値を持たないトレイトである。
++         直和のコンビネーターのラムダの中で `index` アクセサーがそれを与え、`complement(sum)` はそれを使って別の値を同じバリアントに絞り込む。
++     entry .apply   `Int` にバリアントの位置としてブランドを付ける：`Variant.Index[variant](int)`
+
+@ 0 1 0 0e60cfadf3b8945d1c62ad07e0d2a86e
++ entry .internal   導出のエンジンとコンビネーターの背後のマクロ
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 31 0 1e9a7b2fc5ca4086014b94c0e8804702
++       直接使うためのものではない。このオブジェクトは、インラインのコンビネーターがスプライスするマクロの実装と、テストやツールが使うアクセサーを収めている。
++       `derived` は `deriveGraph` であり、`fields`、`contexts`、`build`、`construct` は `fieldsProduct`、`contextsProduct`、`buildProduct`、`constructMonadic` であり、`choice` は `isChoice` である。
++       `fieldInstance` は、型クラス自身の導出の given を無視しながらフィールドのインスタンスを解決する暗黙の探索なので、フィールドは手書きの given、コーデック、またはグラフの兄弟に行き着き、導出に再び入ることはない。
++   entry .default   位置によるフィールドの宣言された既定値、または `Unset`
++   entry .sumName   シンボルからの型の名前（`Text` として）
++   entry .variantLabelList   直和のバリアントのラベル（宣言順）
++   entry .fieldLabelList   直積のフィールドのラベル（宣言順）
++   entry .field   導出に再び入らずに解決された、要素に対する型クラスインスタンス
++   entry .overridePaths   スコープ内の `Specific over typeclass` が上書きする、ドットで区切ったフィールドパス、または `Nil`
++   entry .overridePathsMacro   `overridePaths` の背後のマクロ
++   entry .Reentrant   再入の探査の間に与えられる印の given。自分自身に到達する型がその兄弟に解決されるようにする
++   entry .reentrySentinel   再入の探査が返すもの。評価されることはない
++   entry .isSum   型が直和かどうか。コードのコンパイル時に決まる
++   entry .isSumMacro   `isSum` の背後のマクロ
++   entry .fieldLabels   `fieldLabelList` の背後のマクロ
++   entry .isSumType   型の表現が、子を持つシールされたトレイトまたは列挙型かどうか
++   entry .isProductType   型の表現が、エンジンが組み立てられる直積かどうか
++   entry .isChoice   `choice` の背後のマクロ：すべてのバリアントがシングルトンかどうか
++   entry .fieldInstance   `field` の背後のマクロ
++   entry .deriveGraph   `derived` の背後のマクロ：到達できる型ごとに遅延して束縛されるインスタンスを一つ
++   entry .buildProduct   `build` の背後のマクロ
++   entry .contextsProduct   `contexts` の背後のマクロ
++   entry .fieldsProduct   `fields` の背後のマクロ
++   entry .constructMonadic   `construct` の背後のマクロ
++   entry .typeName   `sumName` の背後のマクロ
++   entry .variantLabels   `variantLabelList` の背後のマクロ
++   entry .getDefault   `default` の背後のマクロ：合成された既定引数のメソッドを読む

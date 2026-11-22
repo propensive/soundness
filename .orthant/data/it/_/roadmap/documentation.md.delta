@@ -1,0 +1,171 @@
+orthant 2 language
+
+@ 0 1 0 0358872660e6faa409dcd901a28eaf0f
++ # Documentazione e apprendibilità
+
+@ 0 5 0 1aa4b69c31a4451302d427c9d596b1d5
++ La documentazione fa parte del discorso sulla sicurezza. Un'API non documentata invita a tirare a
++ indovinare, ed è tirando a indovinare che si producono fallimenti sorprendenti: per le persone e,
++ in modo più acuto, per gli agenti di IA, che sintetizzeranno con sicurezza tutto ciò che la
++ documentazione non dice. Lo standard è la copertura totale: ogni modulo documentato, ogni codice di
++ errore spiegato, ogni idea nuova specificata, e ogni messaggio conforme a una convenzione scritta.
+
+@ 0 9 0 1723ba1cd99058ba0fdd50aaa077dd16
++ Oggi la prosa esiste in tre sistemi paralleli: le guide tematiche in `doc/en/modules/` (la
++ direzione di marcia, e dove avviene la scrittura sostanziale), i vecchi modelli per modulo in
++ `lib/*/doc/`, ereditati da quando ogni modulo era un repository a sé, e una copia separata del
++ materiale di filosofia sotto `web/res/content/`. Tre sistemi significano divergenza, e divergenza
++ significa che uno di essi mente. Questo filone li riduce a uno, completa la copertura, e aggiunge lo
++ strato che la prosa non può fornire: documentazione delle API generata e ricercabile,
++ un'infrastruttura da cui dipendono anche fluence e il versionamento di LIRA derivato dalle API.
++ Termina con la prova di apprendibilità più forte che esista: un agente, con la sola documentazione,
++ costruisce e distribuisce un'applicazione funzionante.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Le voci del filone, con i loro orizzonti e le dipendenze rigide; [`status.tel`](status.tel) registra a che punto è ciascuna:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 1e1723c8910fe58608679e2f10af8e11
++ column  Voce
++ column  Titolo
++ column  Orizzonte
++ column  Richiede
++ row  doc-1  ogni tipo di errore ha un codice e una pagina  breve
++ row  doc-2  lo standard dei messaggi è scritto  breve
++ row  doc-3  i vecchi sistemi di documentazione vengono ritirati  breve
++ row  doc-4  ogni modulo è coperto da un argomento  medio
++ row  doc-5  la documentazione delle API è generata e pubblicata  medio
++ row  doc-6  il sito web deriva da `doc/`  medio
++ row  doc-7  le idee nuove sono a un passo  lungo
++ row  doc-8  la guida completa  lungo  tool-2, tool-4
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 088d38de12cb74151b1461e9ac2f6ca0
++ ## doc-1: ogni tipo di errore ha un codice e una pagina
+
+@ 0 2 0 17d7c44780401f8b1f8c498157714b45
++ Orizzonte: breve
++ Linea di base: 41 tipi di errore non hanno un codice bolt; esistono 247 pagine di errore (misurato il 2026-10-21; 40 e 241 il 2026-09-25; 39 e 233 il 2026-08-01)
+
+@ 0 3 0 1e3b6eb02bb2fb540217d4d349a13903
++ I codici bolt coprono gli errori di compilazione sollevati dalle macro; i restanti tipi di errore di
++ runtime ricevono codici e pagine secondo la stessa disciplina del non riutilizzo, e la parità tra
++ tipi, codici e pagine diventa un controllo di CI così che non possa divergere. Niente in `etc/`
++ verifica ancora la parità.
+
+@ 0 1 0 1e10bdcf95bed4aa128a9f1ce07e87ce
++ Fatto quando: il controllo di parità viene eseguito in CI e
+
+% 0 1 0 1bdf33953eae45dc1c2f5b884dbb8f33
+
+@ 0 1 0 0c7a7d2a401bbbd21b0119d42a3bc1bb
++ ## doc-2: lo standard dei messaggi è scritto
+
+@ 2 1 0 17ab2720867ae8111d9d599f47d28d50
++ Fatto: #2306 (2026-10-21)
+
+@ 0 3 0 1428b21c265c30b913cda163dc81d49d
++ `doc/standards/messages.md` si dichiarava da sé un abbozzo, nonostante la convenzione dei messaggi
++ sia portante in ogni modulo. Lo standard ora è scritto: registro, struttura, vocabolario, ciò che un
++ messaggio non deve contenere, la composizione tramite `Communicable` e gli eventi di log.
+
+@ 2 1 0 03f202f8bf010c101dd08021ad543252
++ Fatto quando:
+
+% 0 1 0 0dba55afda5b5758005ab4659f4df53c
+
+@ 0 1 0 0c9927a8b037ae271c8e087c8ab10f12
++ ## doc-3: i vecchi sistemi di documentazione vengono ritirati
+
+@ 0 5 0 1093e7c0e6b946dd05516daccac71e83
++ Fatto: #1791 (2026-08-14)
++ La linea di base era di 92 file di readme standard per modulo e 98 directory `lib/*/doc/`
++ (misurati il 2026-08-01). Il testo standard precedeva il monorepo; quanto in `lib/*/doc/` meritava
++ di essere conservato è passato negli argomenti di `doc/modules/`, e il resto è stato cancellato
++ anziché lasciato a trarre in inganno. Non rimane alcuna directory `lib/*/doc/`, e la frase standard
++ non trova più corrispondenze.
+
+@ 0 1 0 0900a5ddb113209d1354b00d82edbee4
++ ## doc-4: ogni modulo è coperto da un argomento
+
+@ 0 2 0 197393089856cb5c0f2509c3bbcd6fd5
++ Fatto: #2306 (2026-10-21)
++ La linea di base era di 99 argomenti in `doc/modules/` e 1 libreria su 144 non coperta (misurati il 2026-09-25; 91 argomenti e 35 non coperte il 2026-08-01); il 2026-10-21 101 argomenti coprono 145 librerie su 145
+
+@ 0 5 0 10c607d670b62b8101dae541037747a8
++ Ogni modulo pubblicato è coperto da almeno un argomento di `doc/modules/`, e uno script di
++ copertura associa i moduli agli argomenti così che gli orfani siano visibili:
++ `etc/check-doc-coverage.py`, eseguito da `make build`, termina con un codice diverso da zero in
++ presenza di un orfano. L'ultimo, burdock, è coperto da `packaging.md`; la voce `COVERED_BY` che
++ indicava quell'argomento per ziggurat (una libreria rimossa da #1973) ora indica burdock.
+
+@ 2 1 0 13a1375cd0328fbe1525b12456615af8
++ Fatto quando:
+
+% 0 1 0 1ba62d2089bad9d41967ba24204a3f6c
+
+@ 0 1 0 1cc798e6e2c1e8c61aa3cdb9cfd3b3f5
++ ## doc-5: la documentazione delle API è generata e pubblicata
+
+@ 0 2 0 03ba7b62e48036560475cb2eba36751b
++ Orizzonte: medio
++ Linea di base: ogni `docJar` pubblicato è vuoto, perché `build.mill` ridefinisce il task per scrivere un jar vuoto (misurato il 2026-09-25, invariato dal 2026-08-01)
+
+@ 0 3 0 0c7f063f00f74dd013697a3434dc1109
++ La pipeline di estrazione è la base comune: fluence la interroga (`tool-7`) e il versionamento
++ derivato dalle API ne calcola le differenze (`dist-4`). La documentazione delle API pubblicata è il
++ prodotto immediato.
+
+@ 0 2 0 1d7cd2efcc0c94871a130646ff65da22
++ Fatto quando: l'artefatto di documentazione di ogni componente pubblicato non è vuoto, e la
++ documentazione delle API è pubblicata per ogni release.
+
+@ 0 1 0 02251824a373debc15f49bd28471c2b0
++ ## doc-6: il sito web deriva da `doc/`
+
+@ 2 1 0 145e5b98677ee68d1071327f412959a9
++ Orizzonte: medio
+
+@ 0 3 0 0c895d7ebf2623bb11579fc074f5b2ef
++ La prosa sotto `web/res/content/` duplica a mano il materiale di filosofia: dieci pagine, toccate
++ l'ultima volta in #801, ciascuna una copia più vecchia e più breve di una pagina di
++ `doc/philosophy/`. Il sito web viene reso a partire da `doc/`: una sola sorgente, nessuna copia
++ parallela.
+
+@ 0 1 0 1c13dd5d72371e8b1044905d160d2cb9
++ Fatto quando: `web/res/content/` non contiene alcun duplicato mantenuto a mano di una pagina di
++ `doc/`.
+
+@ 0 1 0 05112a75a76d057a037f86af8ebaf9cb
++ ## doc-7: le idee nuove sono a un passo
+
+@ 2 1 0 1da71cc8a3d2501102512a3a7983010d
++ Orizzonte: lungo
+
+@ 0 3 0 1c487f6f26957dc41d1705e960be1b65
++ Ogni idea nuova di Soundness (il capture checking in pratica, la mutabilità sottoposta al controllo
++ di separazione, gli ambiti delimitati, gli errori dichiarati) ha una pagina di filosofia, e ogni API
++ che incarna l'idea vi rimanda. Un lettore non è mai a più di un passo dalla spiegazione.
+
+@ 0 2 0 036ddf33fefdc5fc01e4c723c46ef4d0
++ Fatto quando: un controllo dei link verifica che ogni pagina di filosofia sia citata dalle guide
++ tematiche dei moduli che la incarnano, e viene eseguito nella build ordinaria.
+
+@ 0 1 0 094c970e32420b4017ae996cd8ad2bb0
++ ## doc-8: la guida completa
+
+@ 0 2 0 12f719b526ca670611e64c8611bfb812
++ Orizzonte: lungo
++ Richiede: tool-2, tool-4
+
+@ 0 3 0 011ab0612ca4077f0673854c02ada675
++ La prova integrativa dell'apprendibilità, e il criterio finale del cancello: un tutorial da zero che
++ un agente può eseguire dall'inizio alla fine (nuovo progetto, build con fury, test con fume,
++ distribuzione di un'applicazione web per JVM e JavaScript) usando solo `doc/` e gli strumenti
++ dell'ecosistema.
+
+@ 0 2 0 087239e290d576c213d6e958e2895253
++ Fatto quando: la guida completa viene eseguita da un agente in CI e l'esecuzione viene registrata a
++ ogni release.

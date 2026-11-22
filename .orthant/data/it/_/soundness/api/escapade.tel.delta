@@ -1,0 +1,1633 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12e6ee15bca9573801fbd813c0b7684c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0be3b6862367ee3a1c1e188f3e9c6125
++ info   testo da terminale con stile come valore: l'interpolatore `e"…"`, `Teletype` e il rendering ANSI in base alle capacità
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0110ccde9efada670c51a4ef4f3eef48
++     _Escapade_ fa dell'output da terminale con stile un **valore** anziché uno stream di codici
++     di escape. Un `Teletype` è un testo che porta uno stile — colore, grassetto, sottolineatura,
++     hyperlink — per ogni carattere, costruito con l'interpolatore `e"…"` e reso solo al momento
++     dell'output, con ciò che il terminale ricevente sa mostrare: colore a 24 bit su un terminale
++     capace, il più vicino di 256 colori su uno più vecchio, e testo semplice quando l'output non
++     è affatto un terminale, così un file di log non si riempie mai di sequenze di escape.
+
+% 2 1 0 02b05ff14a5b09fe1fd5286c9840394f
+
+% 3 1 0 06e59ae605cb368d19d4cc728486f9b3
+
+% 0 1 0 1ba47d70455b82081d6c1d958e9c2376
+
+% 0 1 0 1741cdbd47a7e3d31d676356f5258446
+
+% 0 1 0 134293621e3230700df8fc972c91c51c
+
+% 0 1 0 17af18a733920eb91dfbdde294802826
+
+% 0 1 0 0d5301e227c50d560b0d0d0d00096a1f
+
+% 1 1 0 09a1ceaea9b4409805c5103bf349f191
+
+@ 0 9 0 1f2dd018b0e73c8515fff366121094dc
++     Dentro `e"…"`, un marcatore `Bold`, `Italic`, `Underline`, `Strike`, `Reverse`, `Conceal`,
++     `Faint`, `DoubleUnderline`, `BlinkSlow`, `BlinkFast` o `Overline` sostituito, un colore `Fg`
++     o `Bg`, qualsiasi colore `Chromatic`, una coppia `Escape` o un `Hyperlink`, seguiti da un
++     tratto tra parentesi — `(…)`, `[…]`, `{…}`, `<…>` o `«…»` — danno stile a quel tratto, e i
++     tratti si annidano: ogni sostituzione è una *trasformazione* del `TextStyle` prevalente
++     (un'istanza di `Stylize`), messa su uno stack e tolta alla parentesi di chiusura, così un
++     colore interno cede di nuovo il posto a quello esterno dove finisce, cosa che l'ANSI grezzo
++     non sa esprimere. Qualsiasi altro valore è sostituito come testo, tramite la sua istanza
++     `Teletypeable` o `Showable`, e mantiene il proprio stile se è già un `Teletype`. Una
++     parentesi non chiusa è un errore di compilazione.
+
+@ 0 4 0 1aee52d9453e6d2f1c590eaa761a1061
++     Un `Teletype` è `Textual`, quindi tutto ciò che gossamer fa con `Text` — `keep`, `skip`,
++     `pad`, `fit`, `cut`, `join`, `trim`, `upper`, `words`, `lines`, `reverse`, … — funziona su
++     di esso preservando lo stile, ed è `Printable`, quindi `Out.println` lo rende tramite il
++     `Termcap` dello `Stdio` nell'ambito.
+
+@ 0 1 0 02e881c0e2bfbd4a1c37c9b9fc5586eb
++     La libreria è divisa in quattro insiemi di sorgenti:
+
+@ 0 11 0 0a1be32d62d466601a55f51be0a9645a
++     - `escapade.csi` — l'oggetto `csi`, che scrive come `Text` le serie di controllo per il
++       cursore, la cancellazione e SGR, e `unstyled`, che toglie ogni sequenza di controllo da un
++       testo che già le contiene. Dipende solo da gossamer.
++     - `escapade.core` — `Teletype`, l'interpolatore `e"…"` e il suo meccanismo `Ansi`, i
++       marcatori di stile, `Fg`, `Bg`, `TextStyle`, `Stylize`, `Teletypeable`, `Colorable`,
++       `Imprintable`, `Ribbon`, `Hyperlink`, `Escape`, la tabella grezza `escapes` e il package
++       `displayableTypes`.
++     - `escapade.io` — il package `writables`: stream di record `Teletype` scritti su `Out` ed
++       `Err`.
++     - `escapade.graphics` — il package `teletypeables`: qualsiasi immagine `Graphical` resa con
++       caratteri a mezzo blocco.
+
+@ 0 6 0 1873a653de032dc51ebd3ff840d138a5
++     Tutto è esportato nel modulo ombrello `soundness`, e i package di scelta
++     `displayableTypes`, `writables` e `teletypeables` si fondono con quelli dell'ombrello, così
++     un utente scrive `import soundness.*` e importa per nome i given di quei package, dato che
++     `import soundness.*` non importa i given. I cinque marcatori più recenti (`Faint`,
++     `DoubleUnderline`, `BlinkSlow`, `BlinkFast`, `Overline`) e `StyleWord` non sono tra le
++     esportazioni dell'ombrello, e si raggiungono tramite il package `escapade` stesso.
+
+% 0 1 0 0444b9c30814563b1589dd3a224259b9
+
+% 0 1 0 1f1661d4a89015b70efde10a37972828
+
+% 0 1 0 074be95cd05f5c5e0d78e473a58b7f62
+
+% 0 1 0 1d5bff472ab01a471cdd15218bb5cd90
+
+% 0 1 0 1e40dc82965501951d1eab6b90ab727d
+
+% 0 1 0 0d4332607fc8de4910b882b382e9a56b
+
+@ 0 1 0 18b5dac61ae7066406bce8cb43933a56
++ entry .Teletype   testo con uno stile per ogni carattere, reso secondo le capacità di un terminale al momento dell'output
+
+% 1 1 0 1418e333e7177df916330aa96536029c
+
+@ 0 6 0 0f5da005ba2f783e065b6311d201b481
++       Un `Teletype` è il valore che produce l'interpolatore `e"…"`: il suo testo `#plain` e, per
++       ogni carattere, uno `StyleWord` a 64 bit che racchiude primo piano, sfondo e undici flag di
++       attributo, tenuti in forma densa (una parola per carattere) o come serie di stile
++       uguale (`#boundaries` segna dove inizia ciascuna serie). Gli hyperlink (OSC 8) e gli
++       inserimenti di escape grezzi sono tenuti accanto al testo per posizione, così il testo
++       semplice è esattamente ciò che il terminale mostrerà e la sua lunghezza è la larghezza che
++       occupa.
+
+@ 0 4 0 065d12c1af6500b21a9f8381744ea09e
++       Nulla viene reso finché `#render` non è chiamato con un `Termcap`: un terminale senza
++       supporto ANSI riceve il testo semplice, uno con 256 colori riceve il colore più vicino del
++       cubo, e un terminale true-colour riceve colore a 24 bit. Il given `Printable` fa questo per
++       `Out.println`, tramite il `Termcap` indicato dallo `Stdio` nell'ambito.
+
+% 2 1 0 0504c9e0dfa456f1033110b58f77e5bf
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1dee2477bfc5b4d201b717d245700aa0
++         label Testo semplice
+
+% 1 1 0 0bdb923ebadbc59a04da393b231d3fde
+
+% 2 1 0 02a3d2e7a43bfbdd10b4f60027713e29
+
+% 3 1 0 0e4711172956f16b1e29600951cf5db9
+
+% 0 1 0 1f86cba6b547ce4b0cdf13556734f5ba
+
+% 0 1 0 17a87fef7c9b4e91192008ae6019cd99
+
+% 1 1 0 07a632d27e03c95f1c05fe05b3925801
+
+@ 0 1 0 0339c4fb3265f07e1d4df8b2d9c90149
++         label Un tratto in grassetto
+
+% 1 1 0 1e0a50658e1d11fe13c63e00ff751363
+
+% 2 1 0 062785c4ca6d182a00dd78e4b647e9d8
+
+% 3 1 0 04da62e8acf7d52810e4f9180cbf5dd0
+
+% 0 1 0 015ff152a32fe45c048058ffaf919b0e
+
+% 0 1 0 042b2b0809e679bc0d68d136a2be0a3c
+
+% 1 1 0 0aec91136e877155118caeca5b1b8af5
+
+@ 0 1 0 0b14858377d52a5c0dd65cd9de60ef0e
++         label Un tratto colorato, annidato al suo interno
+
+% 1 1 0 159c9f9c2405670408fcb53ff8698b7e
+
+% 2 1 0 0eb51ccaf966beb1108c897daf6e356f
+
+% 3 1 0 0d933f48d6ffa3fd0a93bdb4855ebaff
+
+% 0 1 0 119b1fa47cf4525d103a0530267fbeeb
+
+% 0 1 0 11aa82e89e09cc3d0f509715e042709d
+
+% 1 1 0 016599a98176ef97154ccf16d4dcbc7f
+
+@ 0 1 0 06c407c10190dd6e1cc8bd5e28cec731
++         label Un hyperlink attorno all'intera riga
+
+% 1 1 0 189c3eb1ef4b05720ebd288b13859151
+
+% 2 1 0 1c16dcab7b0bfef20ec415d2d2422488
+
+% 3 1 0 09e6ef058054fa1806eb64c3ed664899
+
+% 0 1 0 0423f7d94a0a83d70dfd23197aae8a39
+
+% 0 1 0 1bfb264b8f0ad35909e13b10f8241872
+
+% 0 1 0 1ae710dd7f50730700eb0668e040be34
+
+% 0 1 0 19cfbd9dc5eabb6c0b43ec8d7a1efaf7
+
+% 1 1 0 1731fe5aeaba4c88053a4bcc588f551d
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 7 0 15c1e9a214e29bb407921686bd8c8225
++       Un `Teletype` è `Textual` (`.textual`), quindi il vocabolario di gossamer si applica
++       preservando lo stile: `keep`, `skip`, `pad`, `fit`, `center`, `trim`, `chomp`, `cut`,
++       `words`, `lines`, `upper`, `lower`, `reverse`, `contains`, `starts`, `offsetOf` e il resto.
++       Due teletype si concatenano con `+` o `#append`, una `List[Teletype]` si unisce con `join`,
++       e `#dropChars` e `#takeChars` tagliano per numero di caratteri da entrambe le estremità.
++       L'uguaglianza è strutturale su ogni campo; il confronto (`.comparable`) è sul testo
++       semplice secondo una `Collation`.
+
+@ 0 5 0 102219b05edfc2f80d3466374ec63c0d
++       Costruzione: `Teletype(text)` per testo senza stile, `Teletype.styled(value)(transform)`
++       per un valore con uno stile uniforme, l'interpolatore `e"…"` per qualsiasi cosa con markup,
++       e `Teletype.Builder` per accumulare pezzi. Il costruttore della case class prende gli array
++       grezzi ed è per il codice che li ha già calcolati, come i given di `teletypeables`.
+
+% 1 1 0 11a17c293b457be90d4e9c06e73a5e3e
+
+% 1 1 0 139fbab0e07542a40b616582f86597bb
+
+% 1 1 0 04d3547c77570d6e09beba3f3adf6c16
+
+% 1 1 0 0fc054638cb1f8261540779a79e67120
+
+@ 0 8 0 1022d42669d86ba30ed9814b833ab071
++   entry .SparseThreshold   il rapporto oltre il quale un array di stili denso è compresso in serie: `2`
++       Un teletype costruito dall'interpolatore o da un `Builder` tiene una parola di stile per
++       carattere, a meno che il testo non sia lungo almeno il doppio del suo numero di serie
++       di stile, nel qual caso sono memorizzate le serie. La scelta incide solo su memoria e
++       velocità, mai sul rendering.
++   entry .add   `left + right`: i due teletype accodati, dove `Teletype` non è visto come `Textual`
++       Il given `Addable`, protetto da `NotGiven[Teletype is Textual]` così da cedere al `+` di
++       gossamer per i valori testuali quando `.textual` è nell'ambito, ed entrambi equivalgono a
+
+% 0 1 0 1cb4f89d40a01b27175461109b882ef7
+
+@ 0 36 0 0688219586d0730509594da46f7ff05d
++   entry .concatenable   il given `Concatenable`: `concat(left, right)` è `left.append(right)`
++   entry .measurable   la larghezza di visualizzazione di un teletype è la larghezza del suo testo semplice
++       Stile e hyperlink non occupano celle, quindi con qualsiasi metrica `Text is Measurable`
++       (come `textMetrics.uniformMetric`, o la metrica di larghezza dell'Asia orientale) un
++       teletype misura quanto il suo `#plain`.
++   entry .reversible   `teletype.reverse`, mantenendo lo stile di ogni carattere
++       Delega a `reversibleTextual` di gossamer, posto qui nell'oggetto compagno così che l'unico
++       `reverse` di `rudiments` lo trovi senza un import.
++   entry .traversable   permette alle forme con predicato di `keep` e `skip` di percorrere un teletype carattere per carattere
++       Delega a `traversableTextual` di gossamer: `e"hello world".keep(_.isLetter)` trova il suo
++       confine percorrendolo e ricostruisce con `segment`, così lo stile sopravvive.
++   entry .textual   il given `Textual`: un `Teletype` è un testo i cui caratteri sono `Char`
++       Ogni estensione di gossamer sui valori testuali si applica a un teletype tramite questa
++       istanza. Il suo membro di tipo `Show` è `Teletypeable`, quindi un valore sostituito in un
++       teletype da un'operazione testuale generica è mostrato tramite il suo `Teletypeable`
++       anziché il suo `Showable`. `map` sui caratteri lascia ogni parola di stile al suo posto, e
++       `segment` è `dropChars` seguito da `takeChars`.
++   entry .empty   il teletype vuoto: nessun testo, lo stile finale predefinito
++   entry .joinable   `parts.join`: molti teletype accodati, in un albero bilanciato anziché con un fold da sinistra
++       Ogni `append` copia entrambi gli operandi, quindi un fold da sinistra su `n` parti
++       copierebbe la prima parte `n` volte, e unire una lunga diagnostica era quadratico; l'unione
++       divide le parti a metà e copia ciascuna solo circa `log n` volte. `append` è associativo e
++       scarta le parti vuote, quindi il risultato è esattamente quello del fold da sinistra.
++   entry .printable   il given `Printable`: `Out.println(teletype)` lo rende tramite il `Termcap` dello `Stdio`
++       `print(teletype, termcap)` è `teletype.render(termcap)`, quindi le serie di escape
++       emesse dipendono dal terminale che lo standard output è davvero.
++   entry .cuttable   `teletype.cut(delimiter)`: divide su un testo, e ogni pezzo mantiene i suoi stili
++       Il given `Cuttable by Text` dietro il `cut` di gossamer, con un limite opzionale sul numero
++       di pezzi. `e"a,b,c".cut(t",")` dà tre pezzi con stile, e `e"".cut(t",")` è una lista di un
++       solo teletype vuoto.
++   entry .comparable   i teletype si ordinano per testo semplice, secondo la `Collation` nell'ambito
++   entry .apply   `Teletype(text)`: il testo, senza stile
++   entry .styled   `Teletype.styled(value)(transform)`: un valore `Showable` in un unico stile uniforme
++       Mostra il valore, poi applica `transform` al `TextStyle` predefinito e dà a ogni carattere
++       lo stile risultante, come fa `Teletype.styled(42.0)(_.copy(fg = Chroma(0xffd600)))` per il
++       rendering del `Double`.
+
+% 2 1 0 099afc25fa63e6a7199b48c54507cba7
+
+% 3 1 0 01904ce269da51270ca22c78a9f76eb0
+
+% 4 1 0 15645a5eb6e28c7c191dead00319eec2
+
+% 0 1 0 164de14e795e71560582a7f13d6e4cd9
+
+% 1 1 0 1ee3db4f6fe74a6e03aa25c0d4847ffc
+
+@ 0 6 0 1bafd1bb4c6f9494020d9714d29dc9d8
++   entry .compressIfBeneficial   converte un array di stili denso in serie quando il testo è abbastanza lungo da giustificarlo
++       Restituisce la coppia `(styles, boundaries)` per il testo: gli array invariati con confini
++       vuoti se le serie non farebbero risparmiare spazio (secondo `.SparseThreshold`), o
++       altrimenti gli stili delle serie con le loro posizioni di inizio. Per il codice che
++       costruisce un teletype dal proprio array di stili e vuole la rappresentazione che avrebbe
++       scelto l'interpolatore.
++   entry .Builder   accumula teletype, testi e caratteri in un unico `Teletype`
+
+% 1 1 0 0c9df2414ddc605a0b627cce27ca1a88
+
+@ 0 5 0 0e2f89dee107380c0a4e0c7e468c89e5
++         Un `gossamer.Builder[Teletype]`, che è ciò che restituisce `Teletype.textual.builder` e
++         ciò che usa la costruzione in stile `Text.build` per i teletype: dentro
++         `Teletype.Builder().build`, `append` aggiunge un `Teletype`, un `Text` (senza stile) o un
++         `Char`, e il risultato è compresso in serie dove conviene. Hyperlink e inserimenti
++         sono spostati nelle nuove posizioni man mano che i pezzi vengono accodati.
+
+% 2 1 0 16bc4a085a14b939059ea1950cad4f71
+
+% 3 1 0 08854d240bcc3445099582f8de767d86
+
+% 0 1 0 1f12969d681da0f50f181188b3cdbede
+
+% 0 1 0 1e956f33e0edf4c01f862af5cbe18116
+
+% 0 1 0 156bfe37f1b522870286e45096cd108e
+
+% 0 1 0 005a4bbfc439d66e05be5edac506ad53
+
+% 0 1 0 06e0e45c04ad73ba0b9ecb9af58210eb
+
+% 1 1 0 012a540dfdb4fd15195c086e7e9418da
+
+@ 0 55 0 05804edce1b1d5cc1fedd33c5734fa8a
++     entry #length   quanti caratteri sono stati accodati finora
++   entry #plain   il testo, senza alcuno stile: esattamente i caratteri che un terminale mostra
++   entry #styles   le parole di stile: una per carattere più una finale, o una per serie
++       Nella forma densa, `styles` ha `plain.length + 1` voci, l'ultima delle quali è lo stile
++       finale (lo stile in vigore dopo l'ultimo carattere); nella forma sparsa ha una voce per
++       serie in `#boundaries` più lo stile finale. Si legge tramite `#styleAt` anziché per
++       indice.
++   entry #hyperlinks   gli hyperlink OSC 8, per la posizione del carattere in cui ciascuno si apre
++       `e"hi ${Hyperlink(t"https://x.test")}[click]".hyperlinks(3)` è `t"https://x.test"`. Il
++       flag `HyperlinkChange` nella parola di stile di quella posizione segna dove si apre il
++       link, e quello di chiusura dove finisce.
++   entry #insertions   sequenze di escape grezze da emettere prima del carattere in ciascuna posizione
++       Ciò che lascia una sostituzione `Escape(on, off)`: la sequenza `on` all'inizio del suo
++       tratto e la sequenza `off` alla fine, ciascuna indicizzata per posizione ed emessa alla
++       lettera da `#render` su un terminale con supporto ANSI.
++   entry #boundaries   la posizione di inizio di ogni serie di stile, o vuoto per la forma densa
++       `boundaries(0)` è sempre `0` quando presente; la serie `i` va da `boundaries(i)` al
++       confine successivo o alla fine del testo. `#isDense` indica se questo è vuoto.
++   entry #isDense   se gli stili sono memorizzati uno per carattere anziché come serie
++   entry #styleAt   la parola di stile del carattere in una posizione, o lo stile finale alla lunghezza
++       `styleAt(p)` per `0 ≤ p ≤ plain.length`: lo `StyleWord` compatto (come `Long`) del
++       carattere in `p`, trovato con una ricerca binaria delle serie nella forma sparsa, o lo
++       stile finale quando `p` è la lunghezza del testo. `(teletype.styleAt(0) & StyleWord.Bold) != 0`
++       verifica se il primo carattere è in grassetto.
++   entry #trailingStyle   lo stile in vigore dopo l'ultimo carattere
++       Lo stile in cui prosegue `#append`, e quello che un'unione porta oltre un confine. Per
++       `e"$Bold(abc)def"` è `0L`, il predefinito, perché il tratto in grassetto si è chiuso.
++   entry #asSparseArrays   gli stili come serie: la coppia `(styles, boundaries)` della forma sparsa
++       Tempo costante per un teletype già sparso, e una scansione dei caratteri per uno denso.
++       `#append` lo usa per fondere due teletype di forme diverse.
++   entry #explicit   il rendering true-colour con ogni carattere di escape scritto come `\e`, per l'ispezione
++       `e"$Bold(x)".explicit` è `t"\e[1mx\e[22m"` come testo visibile: il rendering per un xterm
++       true-colour, con il carattere di controllo sostituito dai due caratteri `\` ed `e`, per i
++       test e l'output di debug.
++   entry #append   questo teletype seguito da un altro, o da testo senza stile
++       `append(that: Teletype)` concatena entrambi, spostando hyperlink e inserimenti del secondo
++       della lunghezza del primo e fondendo serie adiacenti di stile uguale; `append(text:
++       Text)` aggiunge il testo nello `#trailingStyle`. Accodare un operando vuoto restituisce il
++       ricevente invariato. `+` è lo stesso, tramite `.add`.
++   entry #dropChars   il teletype senza i suoi primi `n` caratteri, o senza gli ultimi con `Rtl`
++       `e"abcdef".dropChars(2)` è `e"cdef"`, e `dropChars(2, Rtl)` è `e"abcd"`, ciascuno con gli
++       stili, gli hyperlink e gli inserimenti dei caratteri conservati spostati nelle nuove
++       posizioni. Scartarne più della lunghezza dà `Teletype.empty`; scartare un numero non
++       positivo dà il ricevente.
++   entry #takeChars   i primi `n` caratteri del teletype, o gli ultimi con `Rtl`
++       `e"abcdef".takeChars(3)` è `e"abc"`, e `takeChars(3, Rtl)` è `e"def"`. Lo stile finale del
++       risultato è quello predefinito. Prenderne almeno la lunghezza dà il ricevente.
++   entry #render   il testo con sequenze di escape ANSI per un terminale, come lo descrive un `Termcap`
++       Con `termcap.ansi` falso, il risultato è `#plain`. Altrimenti le parole di stile sono
++       percorse serie per serie e vengono emesse solo le *differenze* tra stili
++       consecutivi, ciascuna come una sequenza SGR (`\e[1;38;2;255;0;0m`), con i colori come
++       `38;2;r;g;b` a 24 bit quando `termcap.color` è `ColorDepth.TrueColor` e come il più vicino
++       del cubo a 256 colori (`38;5;n`) altrimenti; gli hyperlink diventano sequenze OSC 8 e gli
++       inserimenti sono emessi alla lettera nelle loro posizioni. Lo stile finale è emesso alla
++       fine, così un teletype che termina dentro un tratto si azzera comunque.
+
+% 2 1 0 1e769c7463b426c00989fd1e77f4f2f7
+
+% 3 1 0 0f734393a81689c9170e041656f64e35
+
+% 0 1 0 0f2b60008299b0bd103ecfd98862a9f8
+
+% 0 1 0 11834ad8ce51e5d615004429199a7546
+
+% 0 1 0 09d30e833df5e4180b0c04ee0824af57
+
+% 1 1 0 0c78c63c8c34cf5009d573cce5f49c0d
+
+@ 0 3 0 0b9615b2f7e8a3331216e162cc870334
++ entry .e   l'interpolatore `e"…"`: testo con stile come `Teletype`, con le parentesi controllate durante la compilazione
++     `e"…"` costruisce un `Teletype` da testo letterale e sostituzioni. Un valore sostituito è di
++     uno di due tipi, deciso dal given `Insertion[Ansi.Input, T]` trovato per il suo tipo:
+
+@ 0 7 0 1013726fa71cb596154e32ae83d97a14
++     - un valore di **markup** — qualsiasi cosa con un'istanza di `Stylize` (`Bold`, `Italic`,
++       `Fg(…)`, `Bg(…)`, un colore `Chromatic` come `WebColors.Red`, un `Escape`) o un
++       `Hyperlink` — che, quando è seguito subito da `(`, `[`, `{`, `<` o `«`, dà stile al tratto
++       fino alla parentesi di chiusura corrispondente, e altrimenti si applica al resto del
++       tratto che lo racchiude;
++     - un valore di **testo** — un `Teletype`, che mantiene il proprio stile, o qualsiasi valore
++       `Teletypeable` o `Showable`, mostrato come testo. Una parentesi dopo un valore di testo è
++       testo ordinario: `e"${42}(text)"` è `42(text)`.
+
+% 2 1 0 0f3839f7faff06800b23997ecd5ee1eb
+
+% 3 1 0 119e9224db4131f41ca11ffa17342bce
+
+% 0 1 0 16b1e8a699683c2603436a8d3c0e98cb
+
+% 0 1 0 0ce98308a17b89630c0bc20e79ced589
+
+% 0 1 0 170fd1ac079115ef07b8d083ee35ee2e
+
+% 1 1 0 079ff81ee2d0620c1b318f46f642a52f
+
+@ 0 7 0 14ee792157e3e3ef133564d3b190752b
++     I tratti si annidano e ripristinano: ogni sostituzione di markup trasforma il `TextStyle`
++     prevalente e la parentesi di chiusura ripristina lo stile che era in vigore prima, così
++     l'indaco qui sopra cede di nuovo il posto all'oro dove finisce. Una parentesi di chiusura
++     del tipo sbagliato dentro un tratto è testo ordinario (`e"$Bold(a]b)"` mette in grassetto
++     `a]b`). Un tratto lasciato aperto è un errore di compilazione, _the closing brace does not
++     match an opening brace_; un valore che non ha un'istanza di `Stylize`, né di
++     `Teletypeable`, né di `Showable` è l'errore di compilazione _can't substitute T into an
++     e-interpolator_.
+
+@ 0 4 0 1046e94653df871e0eef637be1e6adbe
++     Due barre rovesciate subito prima di una sostituzione di markup la annullano: in
++     `e"x\\${Bold}(text)"` le barre sono consumate, il marcatore non fa nulla, e `(text)` è
++     letterale. Le solite sequenze di escape del testo (`\n`, `\t`, `\\`, `\u…`) e `$$` per un
++     `$` letterale valgono come in `t"…"`.
+
+@ 0 3 0 13f1a93d0f12a869044859b9ab1a77e8
++     L'interpolatore è una macro: a tempo di compilazione esegue sulle parti letterali la stessa
++     macchina a stati `Ansi.Runtime` per trovare errori nelle parentesi, ed emette una sequenza
++     di chiamate `Ansi.Runtime.parse` e `insert` che costruiscono il `Teletype` a runtime.
+
+@ 0 3 0 07a17d1a22c93fa6141566c60a84aace
++ entry .Bold   il marcatore che mette in grassetto un tratto: `e"$Bold(text)"` (SGR 1)
++     Un case object la cui istanza `Stylize[Bold.type]` (`Ansi.bold`) imposta `bold` nel
++     `TextStyle` prevalente. Su un `Termcap` semplice non produce nulla.
+
+@ 0 1 0 125797b5369ccf7e1212abbf4021a173
++ entry .Italic   il marcatore che mette in corsivo un tratto: `e"$Italic(text)"` (SGR 3)
+
+@ 0 1 0 09a38040ef7276dd03bb4fab5d918dc2
++ entry .Underline   il marcatore che sottolinea un tratto: `e"$Underline(text)"` (SGR 4)
+
+@ 0 1 0 130b9979d9e04e821968222b8d07b919
++ entry .Strike   il marcatore che barra un tratto: `e"$Strike(text)"` (SGR 9)
+
+@ 0 1 0 0fc61e6e71f1ab451b414fb924aa7dff
++ entry .Reverse   il marcatore che scambia primo piano e sfondo di un tratto: `e"$Reverse(text)"` (SGR 7)
+
+@ 0 3 0 0a3d079c1ef75f4e1ce7832ea1592654
++ entry .Conceal   il marcatore che nasconde i caratteri di un tratto: `e"$Conceal(text)"` (SGR 8)
++     I caratteri sono ancora in `Teletype#plain` e occupano ancora le loro celle; un terminale
++     che rispetta SGR 8 li disegna invisibili.
+
+@ 0 2 0 01cb24706d6c5c0817631a1d7c329152
++ entry .Faint   il marcatore che attenua un tratto: `e"$Faint(text)"` (SGR 2)
++     Si raggiunge come `escapade.Faint`: non è tra le esportazioni dell'ombrello.
+
+@ 0 2 0 1bbf3ad659f3c84c0d4edc69e6d1865f
++ entry .DoubleUnderline   il marcatore che sottolinea due volte un tratto: `e"$DoubleUnderline(text)"` (SGR 21)
++     Si raggiunge come `escapade.DoubleUnderline`: non è tra le esportazioni dell'ombrello.
+
+@ 0 2 0 0501e787ec711bab0471c4992ff10644
++ entry .BlinkSlow   il marcatore che fa lampeggiare lentamente un tratto: `e"$BlinkSlow(text)"` (SGR 5)
++     Si raggiunge come `escapade.BlinkSlow`: non è tra le esportazioni dell'ombrello.
+
+@ 0 2 0 05ba1e57a4f23bdf06e617b1db635028
++ entry .BlinkFast   il marcatore che fa lampeggiare rapidamente un tratto: `e"$BlinkFast(text)"` (SGR 6)
++     Si raggiunge come `escapade.BlinkFast`: non è tra le esportazioni dell'ombrello.
+
+@ 0 2 0 026d6fae83c247e71c26fe965273c946
++ entry .Overline   il marcatore che sopralinea un tratto: `e"$Overline(text)"` (SGR 53)
++     Si raggiunge come `escapade.Overline`: non è tra le esportazioni dell'ombrello.
+
+@ 0 1 0 0934875f570be20f1dc282fb25c4c3c8
++ entry .Fg   un colore di primo piano, per `e"${Fg(color)}(text)"` e `Colorable`
+
+% 1 1 0 07dda9017860f0381a5d7a16b70669a4
+
+@ 0 6 0 0ee48434103117790cd835a54d407786
++       `Fg(color)` incapsula un `Chroma` — un colore a 24 bit — come primo piano. `Fg.apply`
++       accetta qualsiasi valore `Chromatic` (un `Color in Srgb` di iridescence, una voce di
++       `WebColors`, un letterale `rgb"…"`, un `Chroma`), quindi `Fg(WebColors.Red)` e
++       `Fg(Chroma(255, 0, 0))` sono la stessa cosa. La sua istanza di `Stylize` (`Ansi.fg`)
++       imposta il primo piano dello stile prevalente per un tratto; un valore `Chromatic` nudo
++       sostituito in `e"…"` fa lo stesso tramite `Ansi.chromatic`, quindi
++       `e"${WebColors.Red}(text)"` non ha affatto bisogno di `Fg`.
+
+% 2 1 0 0418e818a153754606597e6fe125016e
+
+% 3 1 0 1c6460fc1f31cbe713a8e94e27c249c4
+
+% 0 1 0 0e6007ad7a3edd0c1a849c33b2529dff
+
+% 0 1 0 0cbf301c4417c7d10ae5cc233867f04b
+
+% 1 1 0 1ef8ab920285c6d01149468f29df04ba
+
+% 2 1 0 1af1100d489ce38e13ea4f727390f3a1
+
+% 1 1 0 0f82e5be2f8e3eb70d68694c8f6719ad
+
+@ 0 7 0 0bf66c0e04b70743029b979f10228765
++   entry .apply   `Fg(color)` per qualsiasi colore `Chromatic`
++   entry #color   il colore, come `Chroma`
++   entry #bg   lo stesso colore come sfondo
++   entry #ansi   la sequenza SGR che imposta questo primo piano, per una profondità di colore
++       `\e[38;2;r;g;bm` per `ColorDepth.TrueColor`, e `\e[38;5;nm` con la voce più vicina del
++       cubo a 256 colori (i grigi sulla rampa a 24 gradini, il nero puro `16` e il bianco `231`)
++       per qualsiasi altra profondità. `Teletype#render` emette gli stessi codici.
+
+@ 0 1 0 04e692bb2d75bbc602c095f6af561aa9
++ entry .Bg   un colore di sfondo, per `e"${Bg(color)}(text)"`
+
+% 1 1 0 04a78d8620cbe2341c76d52e9ab3d3f2
+
+@ 0 4 0 004af1a0606f5ebf1c05efc7fe17e739
++       `Bg(color)` incapsula un `Chroma` come sfondo; `Bg.apply` accetta qualsiasi valore
++       `Chromatic`. La sua istanza di `Stylize` (`Ansi.bg`) imposta lo sfondo dello stile
++       prevalente per un tratto, e `#highContrast` sceglie il primo piano — nero o bianco — che
++       si legge meglio su di esso, ed è così che `Ribbon` colora le sue etichette.
+
+% 2 1 0 03dfee9c200bdee601121c342b7e8457
+
+% 3 1 0 0381ec2eef04dd5b04defe8157226ab9
+
+% 0 1 0 1497dc98274a209a1baed4f6cc3456ff
+
+% 0 1 0 09c4cd1764e261e301b19866811148f4
+
+% 1 1 0 1dac57c4315798461b2758d7f027e803
+
+% 1 1 0 16a173baa957d37f031cc1285d481390
+
+% 0 1 0 0b752ea8107c5fae03e65401cdb00718
+
+@ 0 10 0 0b74bfeb4122d55416c6a8f5df47d832
++   entry .apply   `Bg(color)` per qualsiasi colore `Chromatic`
++   entry #color   il colore, come `Chroma`
++   entry #fg   lo stesso colore come primo piano
++   entry #highContrast   nero o bianco come primo piano, quello che contrasta di più con questo sfondo
++       Bianco (`Chroma(0xffffff)`) quando la luma dello sfondo — `0.21·red + 0.72·green +
++       0.07·blue` — è al massimo 128, e nero altrimenti. `Bg(Chroma(0, 0, 0)).highContrast` è
++       bianco; `Bg(Chroma(255, 255, 255)).highContrast` è nero.
++   entry #ansi   la sequenza SGR che imposta questo sfondo, per una profondità di colore
++       `\e[48;2;r;g;bm` in true colour, e `\e[48;5;nm` con la voce più vicina del cubo a 256
++       colori altrimenti.
+
+@ 0 1 0 1881bc4c203dc01d1b86e1ae70f2a95c
++ entry .TextStyle   lo stile di un carattere: i suoi colori e undici flag di attributo, come record
+
+% 1 1 0 12a28b789364824d19cfabba1f2d91b1
+
+@ 0 5 0 001e186c7e72fe3b164e467c3f6307b1
++       Il record che una trasformazione `Stylize` modifica. Ogni campo ha un valore predefinito —
++       colori `Unset` e flag `false` — quindi una trasformazione si scrive con `copy`:
++       `Stylize(_.copy(bold = true, fg = Chroma(0xff0000)))`. L'interpolatore `e"…"` ne tiene
++       uno stack durante il parsing, uno messo per ogni tratto aperto, e racchiude ciascuno in
++       uno `StyleWord` (`#styleWord`) per i caratteri che copre.
+
+% 2 1 0 05c6b42823578c970b5588f469af5ac5
+
+% 3 1 0 16d193d643da4e680987edfa28d20f9e
+
+% 0 1 0 11cf30fb88e99b36043611b1e3c972ad
+
+% 0 1 0 11709ea418d1b11a1169b1811043f6a1
+
+% 1 1 0 109adb20996a2fb4162b80c076e755f3
+
+% 1 1 0 086a3bd75fd21d331b8ba46333549151
+
+% 1 1 0 0fbbb7dc2a3e4ef5084b138b04fd589d
+
+@ 0 22 0 0e0f12a67606094511601ea4bb2283ea
++   entry .esc   il carattere di escape, `'\u001b'`
++   entry #fg   il colore di primo piano, o `Unset` per quello predefinito del terminale
++   entry #bg   il colore di sfondo, o `Unset` per quello predefinito del terminale
++   entry #italic   se il testo è in corsivo
++   entry #bold   se il testo è in grassetto
++   entry #reverse   se primo piano e sfondo sono scambiati
++   entry #underline   se il testo è sottolineato
++   entry #conceal   se il testo è nascosto
++   entry #strike   se il testo è barrato
++   entry #faint   se il testo è attenuato
++   entry #doubleUnderline   se il testo è sottolineato due volte
++   entry #blinkSlow   se il testo lampeggia lentamente
++   entry #blinkFast   se il testo lampeggia rapidamente
++   entry #overline   se il testo è sopralineato
++   entry #styleWord   lo stile racchiuso in un `Long`, come lo contiene `Teletype#styles`
++       I 24 bit del primo piano nei byte bassi con il flag `FgSet`, i 24 bit dello sfondo sopra di
++       essi con `BgSet`, e un bit per attributo: il layout che documenta `StyleWord`.
++       `TextStyle().styleWord` è `0L`, il predefinito.
++   entry #addChanges   accoda a un buffer la sequenza SGR che trasforma questo stile in un altro
++       `addChanges(buffer, next, colorDepth)` emette solo le differenze tra questo stile e
++       `next`, come fa `StyleWord.emitDiff`; `Teletype#render` lavora allo stesso modo, serie
++       per serie.
+
+@ 0 1 0 0b5d45a651e1ccb91819b360357935a4
++ entry .Stylize   la typeclass che rende un tipo utilizzabile come markup in `e"…"`: una trasformazione dello stile prevalente
+
+% 1 1 0 05a3f7be3016c1d10320147ab34c6935
+
+@ 0 5 0 02ba229e745277d90ce5fcd1ba48eda3
++       `Stylize[T]` è `Substitution[Ansi.Input, T, "esc"]`: un `Insertion` la cui etichetta `esc`
++       dice all'interpolatore che un `T` sostituito prima di una parentesi apre un tratto con
++       stile. Un'istanza si scrive con `Stylize(lambda)`, dove la lambda trasforma il
++       `TextStyle` in vigore nello stile del tratto — una trasformazione anziché
++       un'impostazione assoluta, così un marcatore può dipendere da ciò che trova:
+
+% 2 1 0 135c3445faa9e6781717f58c31b5de68
+
+% 3 1 0 030d109cb9bcb9431fc03c6e826ebe72
+
+% 0 1 0 0dc9060de04b5c3819b0c54b06149312
+
+% 0 1 0 07d07eae133d44a101bacbe3e160f0bf
+
+% 0 1 0 0ebb372f42ac582414961240a9a61e53
+
+% 1 1 0 17235d63c14fa3301d5a7b03fd423016
+
+@ 0 5 0 187c8042aec669701554339071c387a7
++       Il given si scrive come una funzione dal valore al markup (`_ => Stylize(…)`), così i
++       campi di un valore possono determinare lo stile, come `Ansi.fg` legge il colore da un
++       `Fg`. Le istanze per gli undici marcatori, `Fg`, `Bg`, ogni colore `Chromatic` ed
++       `Escape` stanno nell'oggetto compagno di `Ansi`, e un `Hyperlink` è una sostituzione con
++       la stessa etichetta che apre un link OSC 8 anziché uno stile.
+
+@ 0 1 0 1ca436dded4a8ef31c863d9e534bb558
++       `Stylize(lambda)` stesso restituisce l'`Ansi.Input.Markup` che l'interpolatore consuma.
+
+% 1 1 0 1e515d90c92ab42802362b5dc395c0d4
+
+% 0 1 0 169394a0d60add5e1a0ea3b724abdcc7
+
+@ 0 4 0 0cb83adbb1fabb8d05623617273efebc
++   entry .apply   `Stylize(lambda)`: il markup che applica a un tratto una trasformazione `TextStyle -> TextStyle`
++       Incapsula la lambda come `Ansi.Input.Markup`, il valore che un'istanza `Stylize[T]`
++       restituisce per ogni `T` sostituito. La lambda riceve lo stile in vigore dove il tratto si
++       apre, e il suo risultato dà stile ai caratteri del tratto.
+
+@ 0 1 0 1b77d7a9d883fa961d3fe031455ded46
++ entry .Escape   una coppia grezza di sequenze di escape in cui racchiudere un tratto: `Escape(on, off)`
+
+% 1 1 0 004d44c6b26bed401d5e4aa1878363d7
+
+@ 0 7 0 1832640b4af46dad14aa4decfa1bdde6
++       `Escape` è il tipo `Ansi.Input.Escape`, con `Escape(code, reset)` per costruirne uno: il
++       testo dopo il carattere di escape che attiva qualcosa, e il testo che lo disattiva di
++       nuovo (vuoto per impostazione predefinita). Sostituita in `e"…"` prima di una parentesi,
++       la sequenza `on` è inserita dove il tratto si apre e la sequenza `off` dove si chiude,
++       entrambe emesse alla lettera da `Teletype#render` su un terminale con supporto ANSI e
++       scartate su uno semplice; senza parentesi, è inserita solo `on`. L'oggetto `escapes` ha
++       le coppie SGR standard già pronte.
+
+% 2 1 0 04c61fb3ead55c68098638092ddfe1d6
+
+% 3 1 0 0f16b94b9d32258f05f135d5038e265d
+
+% 4 1 0 1d6a302324a341bc0153108d07401e7c
+
+% 0 1 0 0d32f6f6f81de5941047d510255467f9
+
+% 0 1 0 1d12e1409181c22d0e8ccc1f187b630c
+
+% 1 1 0 13f52457acbc04ef1c3073da41ae18fd
+
+@ 0 3 0 0c9e60c81b4166f40738b302f34e7ac9
++       A differenza di un marcatore `Stylize`, un `Escape` è opaco per lo stack degli stili: non
++       aggiorna il `TextStyle`, quindi `Teletype#styleAt` non ne sa nulla e un tratto con stile
++       annidato non lo ripristina.
+
+% 0 1 0 1f37094899b6d96c0dfa03d35bc11478
+
+@ 0 4 0 11b3b0099bb665590b15f1dc284451b4
++   entry .apply   `Escape(code, reset)`: una coppia di escape dal testo dopo ciascun carattere di escape
++       `code` è inserito dove il tratto si apre e `reset`, che per impostazione predefinita è
++       `Unset` (nessuna sequenza), dove si chiude; entrambi si scrivono senza il carattere di
++       escape iniziale, che il parser di `e"…"` aggiunge quando registra l'inserimento.
+
+@ 0 1 0 0c4527b3c19b25f00abab1b39c989665
++ entry .Hyperlink   un URL da associare a un tratto, come hyperlink da terminale OSC 8: `e"${Hyperlink(url)}[text]"`
+
+% 1 1 0 12bb68d1adcfa9c90d6e4243d548e251
+
+@ 0 4 0 02c12902ce24f7f506b4c9826fb80d9c
++       Sostituito prima di una parentesi, il tratto diventa un link cliccabile sui terminali che
++       supportano OSC 8: `#render` emette `\e]8;;url\e\\` dove si apre e `\e]8;;\e\\` dove si
++       chiude, e un `Termcap` semplice mostra solo il testo. La posizione del link è tenuta in
++       `Teletype#hyperlinks`, e un tratto con stile dentro un link mantiene entrambi.
+
+% 2 1 0 0b579daf1c27fe51082677ee730a4fec
+
+% 3 1 0 0ebd9537d673071c109335c14d7f8738
+
+% 0 1 0 1145ccd73894f0221ce3fac7d1bc17f9
+
+% 0 1 0 1b194814da1aafe10d1f788fad6f6e33
+
+% 1 1 0 13b414ddf23f44fd097bdf835f4a8158
+
+@ 0 1 0 1938113036382b0f0164da50358efebb
++   entry #url   la destinazione del link, come testo
+
+@ 0 1 0 010980e168f5d3bc1632a219601fb267
++ entry .Ansi   il meccanismo dietro `e"…"`: le istanze di `Stylize`, lo stato del parser e il suo runtime
+
+% 1 1 0 154f15dc0849a8851e285fb5b0b023ba
+
+@ 0 6 0 1799bcda5256dacc1f38cbfcd4d7f997
++       `Ansi` contiene tutto ciò di cui è fatto l'interpolatore `e"…"`. Il suo oggetto compagno
++       porta i given `Stylize` per i marcatori e i colori (così si risolvono senza import),
++       l'`Input` in cui si trasforma una sostituzione, lo `State` che il parser accumula e il
++       `Runtime` che lo guida, e `Ansi.Error`, l'eccezione che solleva un'interpolazione
++       malformata. Un programma che dà stile al testo tramite `e"…"` non ha bisogno di toccarne
++       nulla; il codice che genera teletype senza l'interpolatore può guidare `Runtime`
++       direttamente.
+
+% 2 1 0 1844206c2b9b0f310069181a3d5272e2
+
+% 3 1 0 014e8c3cdd4b6e4916d1d20123fa270b
+
+% 0 1 0 1124d8ab83d968e014fe678d76b4694f
+
+% 0 1 0 0d4b9639ee70d50c120f6da4fbfa3cda
+
+% 0 1 0 167c769ba8411b641628375e3049e8a3
+
+% 0 1 0 1926ce3308da6b701bed5688101828f5
+
+% 1 1 0 11dee49b1a9f1b6e0923992f5c89b80d
+
+@ 0 3 0 12bc2c2eadcfe4ba1b6089c430e16514
++       `Ansi.strip(text)` rimuove ogni sequenza di escape ANSI da un testo; `unstyled` (in
++       `escapade.csi`) è l'estensione più rigorosa su `Text`, che riconosce solo sequenze CSI
++       complete.
+
+% 1 1 0 15f615ac20e39e0a176f1917b9b56706
+
+% 1 1 0 1faaeb88e18fdd8d0adaeb49f8e01ebe
+
+% 0 1 0 05465ff4eb3d7b84125bbb44bad84e06
+
+@ 0 36 0 068b7d26ae00c1bd034015f6dc60cf08
++   entry .Transform   una funzione `TextStyle -> TextStyle`: ciò che produce un'istanza di `Stylize`
++   entry .strip   il testo con ogni sequenza di escape ANSI rimossa
++       Riconosce `\e[` seguito da parametri e da un byte finale in `@`–`~`, ed elimina ogni
++       corrispondenza, lasciando i caratteri che sarebbero stati stampati. Di solito è
++       preferibile l'estensione `unstyled`: riconosce solo sequenze CSI complete (`csi.pattern`).
++   entry .escape   l'istanza di `Stylize` per `Escape`: la coppia grezza è inserita attorno al tratto
++   entry .chromatic   l'istanza di `Stylize` per qualsiasi colore `Chromatic`: il primo piano del tratto
++       `e"${WebColors.Red}(text)"` colora il testo di rosso senza alcun involucro `Fg`; un
++       letterale `rgb"…"` o un `Chroma` funzionano allo stesso modo.
++   entry .bg   l'istanza di `Stylize` per `Bg`: lo sfondo del tratto
++   entry .fg   l'istanza di `Stylize` per `Fg`: il primo piano del tratto
++   entry .bold   l'istanza di `Stylize` per `Bold`
++   entry .italic   l'istanza di `Stylize` per `Italic`
++   entry .underline   l'istanza di `Stylize` per `Underline`
++   entry .strike   l'istanza di `Stylize` per `Strike`
++   entry .conceal   l'istanza di `Stylize` per `Conceal`
++   entry .reverse   l'istanza di `Stylize` per `Reverse`
++   entry .faint   l'istanza di `Stylize` per `Faint`
++   entry .doubleUnderline   l'istanza di `Stylize` per `DoubleUnderline`
++   entry .blinkSlow   l'istanza di `Stylize` per `BlinkSlow`
++   entry .blinkFast   l'istanza di `Stylize` per `BlinkFast`
++   entry .overline   l'istanza di `Stylize` per `Overline`
++   entry .hyperlink   la sostituzione per `Hyperlink`: il tratto diventa un link OSC 8
++       Ha l'etichetta `esc` come uno `Stylize`, così una parentesi dopo di essa apre un tratto,
++       ma il tratto è un livello di link anziché un livello di stile.
++   entry .Input   ciò in cui si trasforma una sostituzione in `e"…"`: testo, markup, una coppia di escape grezza o un hyperlink
++       Un enum di quattro casi. `TextInput(text: Teletype)` è un valore mostrato come testo,
++       accodato con il suo stile combinato sotto lo stile prevalente; `Markup(transform:
++       Transform)` è un valore `Stylize`, in sospeso finché il carattere successivo non decide
++       se apre un tratto; `Escape(on: Text, off: Text)` — il tipo che nomina l'alias di package
++       `Escape` — è una coppia grezza; `Hyperlink(url: Text)` apre un link. `Runtime.insert` ne
++       passa uno a uno `State`.
++   entry .Pending   una sostituzione di markup, di link o di escape che aspetta di vedere se la segue una parentesi
++       Il lookahead di un token del parser, come enum: `Style(transform)`, `Link(url)` o
++       `Escape(on, off)`. Il carattere successivo lo risolve — una parentesi di apertura mette un
++       livello sullo stack, una barra rovesciata lo annulla, e qualsiasi altra cosa lo applica al
++       resto del tratto che lo racchiude.
++   entry .Frame   un tratto aperto sullo stack del parser, con la parentesi che lo chiuderà
+
+% 1 1 0 0faaddd67729630313dbab3d614552b2
+
+@ 0 6 0 1d348731b3c3ec5d035c151e2342eb2f
++         Un enum: `Style(bracket)` per un tratto con stile, `Link(bracket)` per un hyperlink ed
++         `Escape(bracket, off)` per una coppia di escape grezza, che ricorda la sequenza `off` da
++         inserire quando il tratto si chiude. Ciascuno conosce la parentesi di chiusura che
++         attende, quindi una parentesi di chiusura di un altro tipo è testo ordinario.
++     entry #bracket   la parentesi di chiusura che termina questo tratto: `)`, `]`, `}`, `>` o `»`
++   entry .State   l'accumulatore mutabile che l'interpolatore riempie: testo, stili, link, inserimenti e i tratti aperti
+
+% 1 1 0 0e7a4834c8fb2882195ffc89314aac25
+
+@ 0 26 0 1363609da0e313f001bac08626dfe5ab
++         Un solo `State` è creato per interpolazione da `Runtime.initial`, alimentato da
++         `Runtime.parse` e `Runtime.insert`, e trasformato in un `Teletype` da
++         `Runtime.complete`. È mutabile e monouso: un programma che costruisce teletype a mano
++         dovrebbe preferire `Teletype.Builder`, che è lo stesso accumulatore senza il parsing
++         delle parentesi.
++     entry #plain   i caratteri finora
++     entry #styles   la parola di stile di ogni carattere finora
++     entry #hyperlinks   gli hyperlink aperti finora, per posizione
++     entry #insertions   le sequenze di escape grezze finora, per posizione
++     entry #last   la sostituzione che attende la sua parentesi, se c'è
++     entry #stack   i tratti aperti, dal più interno
++     entry #styleStack   gli stili in vigore fuori da ciascun tratto con stile aperto, dal più interno
++     entry #currentStyle   lo stile che prenderà il prossimo carattere
++     entry #linkArmed   se il prossimo carattere apre o chiude un hyperlink
++     entry #appendChar   aggiunge un carattere nello stile corrente
++     entry #appendChars   aggiunge testo, ogni carattere nello stile corrente
++     entry #appendTeletype   aggiunge un teletype, con lo stile proprio di ogni carattere combinato sotto quello corrente
++         Uno stile interno prevale dove imposta un colore, e i flag di attributo di entrambi sono
++         mantenuti, come definisce `StyleWord.combine`; hyperlink e inserimenti del teletype sono
++         spostati nelle nuove posizioni.
++     entry #addInsertion   registra una sequenza di escape grezza da emettere prima del carattere in una posizione
++     entry #pushStyleFrame   apre un tratto con stile: salva lo stile corrente e applica una trasformazione
++     entry #pushLinkFrame   apre un tratto di hyperlink nella posizione corrente
++     entry #pushEscapeFrame   apre un tratto di escape grezzo, inserendo la sua sequenza `on`
++     entry #popFrame   chiude il tratto più interno, ripristinando lo stile o inserendo la sequenza `off`
++     entry #applyOnce   applica una trasformazione allo stile corrente senza un tratto che la chiuda
++   entry .Runtime   il parser: passa parti letterali e sostituzioni a uno `State`, e lo completa
+
+% 1 1 0 1d46b7d012d93ace10a70709b5db15c7
+
+@ 0 3 0 011802b2d08c496e1b83a708586f97a5
++         Le funzioni a cui la macro `e"…"` emette chiamate, e che esegue anche a tempo di
++         compilazione sulle parti letterali per trovare errori nelle parentesi. Ciascuna prende
++         lo `State`, lo modifica e lo restituisce, così le chiamate si concatenano.
+
+% 2 1 0 17014290f52fc33418984c48e95c14ba
+
+% 3 1 0 1b72fa7c9af232300bdaccf6a8d7986d
+
+% 0 1 0 1b9699fc291896c10ba7cbab9d31393f
+
+% 0 1 0 1ba876f30b86b5ae0f06000e4c1c3fa4
+
+% 0 1 0 0f6d92739e470e7511e564bb2579b8df
+
+% 0 1 0 0552c56a3a7ff755111c2fab759b1cbb
+
+% 0 1 0 0a1e2aff6f0059fd03a85cd5453e9820
+
+% 1 1 0 0f242530f9efd253067c2f88caa70051
+
+@ 0 18 0 04e199e5ea38ee601d13eca4de111a0e
++     entry .initial   uno `State` nuovo e vuoto
++     entry .parse   passa allo stato una parte letterale dell'interpolazione
++         Risolve l'eventuale sostituzione in sospeso rispetto al primo carattere della parte (una
++         parentesi di apertura mette un livello sullo stack; una barra rovesciata la annulla;
++         qualsiasi altra cosa la applica una volta), poi cerca la parentesi di chiusura del
++         livello più interno, accodando il testo fino a essa e togliendo il livello, ripetutamente,
++         decodificando le sequenze di escape del testo (`\n`, `\t`, `\u…`). Una sequenza di escape
++         errata solleva `Ansi.Error`.
++     entry .insert   passa una sostituzione allo stato
++         Un `TextInput` è accodato subito; `Markup`, `Escape` e `Hyperlink` diventano la
++         sostituzione in sospeso che il `parse` successivo risolve.
++     entry .skip   passa un input di testo vuoto, che non risolve nulla e non accoda nulla
++         Ciò che la macro emette per una sostituzione il cui markup è stato annullato da un `\\`
++         che la precede.
++     entry .complete   il `Teletype` finito, o `Ansi.Error` se un tratto è ancora aperto
++         Solleva `Ansi.Error`: _the closing brace does not match an opening brace_ quando lo stack
++         dei livelli non è vuoto; altrimenti accoda lo stile finale, comprime gli stili in serie
++         dove conviene, e restituisce il teletype.
++   entry .Error   l'eccezione per un'interpolazione malformata: un tratto non chiuso o una sequenza di escape del testo errata
+
+% 1 1 0 08fb2eecd5ece8c71b9b97eec5e8caad
+
+@ 0 5 0 03588e2fbefc75df1a64af423638d6b2
++         Un'`Exception` il cui messaggio è `escapade: ` seguito da `#detail`. La macro `e"…"`
++         esegue il parser a tempo di compilazione e riporta lo stesso dettaglio come errore di
++         compilazione, quindi a runtime l'eccezione nasce solo guidando `Runtime` direttamente.
++     entry #detail   che cosa non andava, come `Message`
++   entry .Escapes   come si scrive ogni attributo di stile come sequenza di escape: il trait, e la scrittura SGR `Standard`
+
+% 1 1 0 13a9da9f260278a20ce51abff1138e98
+
+@ 0 14 0 02a236fddb6f5bc0031b5ef51c8db31c
++         Un trait `Findable` con un metodo per attributo, che restituisce la sequenza che lo
++         attiva o disattiva, e uno ciascuno per un primo piano e uno sfondo a 24 bit.
++         `Escapes.Standard` è la scrittura SGR ordinaria (`\e[1m` e `\e[22m` per il grassetto,
++         `\e[38;2;r;g;bm` per un primo piano). `Teletype2#render` ne prende uno come
++         valore contestuale; `Teletype#render` scrive da sé le sequenze a
++         partire dal `Termcap`.
++     entry .Standard   le sequenze SGR standard: `\e[1m`/`\e[22m`, `\e[3m`/`\e[23m` e così via
++     entry #bold   la sequenza che attiva o disattiva il grassetto
++     entry #italic   la sequenza che attiva o disattiva il corsivo
++     entry #underline   la sequenza che attiva o disattiva la sottolineatura
++     entry #reverse   la sequenza che attiva o disattiva il video inverso
++     entry #conceal   la sequenza che attiva o disattiva l'occultamento
++     entry #strike   la sequenza che attiva o disattiva il barrato
++     entry #foreground   la sequenza che imposta un colore di primo piano a 24 bit
++     entry #background   la sequenza che imposta un colore di sfondo a 24 bit
+
+@ 0 1 0 1d54cf96bb95393a0aa67dfdc638a726
++ entry .Ansi2   il genitore a priorità più bassa di `Ansi`, che contiene il given di sostituzione del testo
+
+% 1 1 0 1c79c43919e8499b10633cb7ec1d7cd3
+
+% 2 1 0 0a80b12fc9f389441d0be6b2c4a504d1
+
+@ 0 9 0 03ddbb13c6b8dad8066cad889e4e563f
++       Non per uso diretto: `Ansi` lo estende così che `Ansi.teletype`, la sostituzione che
++       ammette come testo qualsiasi valore `Teletypeable` o `Showable`, abbia priorità più bassa
++       delle sostituzioni di markup dichiarate in `Ansi` stesso. Un valore è mostrato tramite il
++       suo `Teletypeable` se ne ha uno, e altrimenti tramite il suo `Showable`.
++   entry #TeletypeSubstitution   una `Substitution` in `e"…"` con etichetta `t`, da una funzione verso `Teletype`
++     entry #embed   incapsula un valore come `Ansi.Input.TextInput` del suo rendering `Teletype`
++   entry #teletype   ammette in `e"…"` come testo qualsiasi valore `Teletypeable`, o altrimenti `Showable`
++       Ereditato da `Ansi`, quindi si risolve come `Ansi.teletype` dall'ambito implicito senza
++       import, sotto ogni sostituzione di markup.
+
+@ 0 1 0 15194d31384840c701c2e772c5dc839c
++ entry .Teletypeable   la typeclass dei valori che si rendono come `Teletype`: con stile, dove `Showable` è semplice
+
+% 1 1 0 0abdf9ae3fbfc4621d5c4e04e33fa613
+
+@ 0 6 0 1af25b5f504ff39d1dd36bb8a093a258
++       `value.teletype` rende un valore come testo con stile, come `value.show` lo rende come
++       testo semplice. Le istanze nell'oggetto compagno coprono `Teletype` stesso, `Text`, un
++       `Message` (le sue citazioni annidate in corsivo giallo), un `Option`, un `Double` (in
++       giallo, tramite il `Decimalizer` nell'ambito), un `Error` (il suo messaggio) e un
++       `Throwable` (il nome semplice della sua classe in rosso), e ogni valore `Showable` ripiega
++       sul suo rendering semplice; un tipo con un'istanza di `Colorable` si rende in quel colore.
+
+@ 0 3 0 10a3dd1df19216a61fa9a91edcb20a7e
++       Un `Teletypeable` è ciò che l'interpolatore `e"…"` e l'istanza `Teletype.textual` usano
++       per mostrare un valore sostituito, quindi dare a un tipo un'istanza gli dà uno stile
++       ovunque sia interpolato:
+
+% 2 1 0 10d3ef41eec523f31169ec712cbc7aae
+
+% 3 1 0 11c67fc1118cacf91e9dd7952464a2a5
+
+% 0 1 0 1edca8e6fd6da4df14f577715151619b
+
+% 0 1 0 17545a4f8f1b65480324b1cc69a58ef3
+
+% 0 1 0 123327b655a8fb250add690f7bcdb730
+
+% 0 1 0 16ed9912ffa8e0f9190d34f3a940a825
+
+% 0 1 0 1bab3445d010e19700c2e4f824f174b8
+
+% 1 1 0 1f515f557577e15513fbb3a6671c70dc
+
+@ 0 2 0 1045ee6844931abd0f34b31f08b82406
++       Altre librerie aggiungono istanze in package `teletypeables` — qui un'immagine
++       `Graphical`, eccezioni e stack trace in digression, URL in urticose — importate per nome.
+
+% 0 1 0 1cf48d0096b3d1e70be11d14a61a9b53
+
+% 1 1 0 1574710f9d070fc1134e5d1125e828cf
+
+% 0 1 0 06e484c27909c65315b1d92c719f7a9f
+
+@ 0 20 0 082e61fa5e202c3210f2dfcdccbf1238
++   entry .teletype   un `Teletype` è il proprio rendering
++   entry .text   un `Text` si rende senza stile
++   entry .message   un `Message` si rende con le parti citate in corsivo giallo, e le citazioni annidate anche in grassetto
++       Il messaggio è attraversato con un fold livello per livello: testo semplice al livello 0, citazioni di
++       livello 1 (il `$path` di `m"the file $path"`) in corsivo `Chroma(0xefe68b)`, e
++       l'annidamento più profondo in grassetto corsivo `Chroma(0xffd600)`.
++   entry .option   un `Option` rende il suo valore, o il testo `empty`
++   entry .colorable   un valore con istanze sia di `Showable` sia di `Colorable` si rende nel suo colore
++       Un unico given con priorità anziché due pari: come due, un tipo con entrambe le istanze a
++       monte corrispondeva a entrambi, in modo ambiguo. Questo preferisce `Colorable`, e
++       `Teletypeable2#showable` (un contenitore a priorità più bassa) è il ripiego semplice.
++   entry .error   un `Error` si rende come il suo `Message`
++   entry .double   un `Double` si rende in giallo, formattato dal `Decimalizer` nell'ambito
++   entry .throwable   un `Throwable` si rende come il nome semplice della sua classe, in rosso
++       La serie di caratteri dopo l'ultimo `.` del nome binario della classe, in
++       `Chroma(0xdc133b)`; i `teletypeables` di digression hanno il rendering completo dello
++       stack trace.
++   entry #teletype   il rendering di un valore
++   entry #contramap   un'istanza per un altro tipo, tramite una funzione verso questo
++       `summon[Text is Teletypeable].contramap[Int](_.show)` rende un `Int` tramite l'istanza per
++       il testo.
+
+@ 0 1 0 180e0bf02514b5b2019678d6f42dcee8
++ entry .Teletypeable2   il contenitore a priorità più bassa del ripiego semplice `Showable` per `Teletypeable`
+
+% 1 1 0 1aac45806cbdaba41e1bdb94529cd8dc
+
+% 2 1 0 19b8c99effa5cc5d1e2245711231eb89
+
+@ 0 3 0 014249f5d5347aed090c182a36ce44ea
++       Non per uso diretto: l'oggetto compagno di `Teletypeable` lo estende così che `#showable`
++       abbia priorità più bassa di `Teletypeable.colorable`.
++   entry #showable   qualsiasi valore `Showable` si rende senza stile, come `Teletype(value.show)`
+
+@ 0 4 0 18c7d29c2766693116d8a9dc99aee536
++ entry .teletype   `value.teletype`: un valore reso come `Teletype` tramite la sua istanza di `Teletypeable`
++     Un'estensione su qualsiasi valore con un'istanza di `Teletypeable`. `42.teletype` si rende
++     tramite il ripiego `Showable`, `m"…".teletype` nello stile dei messaggi, e un valore con
++     un'istanza di `Colorable` nel suo colore.
+
+@ 0 1 0 0843460f3b5af8121e9f758202d26ec4
++ entry .Colorable   la typeclass che assegna a un valore un colore di primo piano, così che si renda in esso
+
+% 1 1 0 0275e0fdacdd1d3112643befcfffa299
+
+@ 0 3 0 0504fd87728775c71db88f29039bb991
++       Un tipo con un'istanza di `Colorable` si rende tramite `Teletypeable.colorable` come il suo
++       testo `show` nel colore dato da `#color`, senza un `Teletypeable` proprio. Il colore può
++       essere fisso per il tipo o scelto per ogni valore:
+
+% 2 1 0 1e64f1947c2be2871f5bd547eb22277b
+
+% 3 1 0 09352fc1ea1aadb71bc787fc838fa35c
+
+% 0 1 0 15817c99929647b61f0f867d893ecbe1
+
+% 0 1 0 0bf9614bbf65f6cb0ccf80fe9396c6fc
+
+% 0 1 0 0dd8d1f7c537a319027f05e652d9acaf
+
+% 0 1 0 1ef47a8fa92bede6137c137d331540ee
+
+% 0 1 0 0fb8a2bb8b618b6c1d792370c4d00431
+
+% 0 1 0 09a5907cb020ac3c0ba146049be7f5d6
+
+% 0 1 0 0f8e4ae474d3ed1f085110b00b93cf86
+
+% 0 1 0 104d582a449e9a610f5d7c0365eadf3e
+
+% 0 1 0 11af76b90336a64d1fd4d7da12a409e2
+
+% 0 1 0 12a97137edf3b2f413e696085e1f8504
+
+% 1 1 0 1dc574daca7df0b80a411b185a96dd5c
+
+% 1 1 0 1b7ef1a0b54c4ef1004c0076a244e498
+
+% 1 1 0 18d8c6b9657833880bad3b049a9ac109
+
+@ 0 5 0 004952de6301e796125dea944bc26079
++   entry .apply   un'istanza da un colore `Chromatic` fisso, o da una funzione che ne sceglie uno per ogni valore
++       `Colorable[T](color)` colora ogni `T` allo stesso modo; `Colorable[T](chooseColor)` prende
++       una `T -> color` per qualsiasi tipo di colore `Chromatic`. Il parametro di tipo è dato
++       esplicitamente nella seconda forma, perché il tipo del parametro della funzione non si
++       inferisce dal risultato.
++   entry #color   il colore del valore, come `Fg`
+
+@ 0 1 0 0d59a0653ac5449e069bc117aa3e3ae1
++ entry .Imprintable   la typeclass dei contenuti che si scompongono in celle di grafemi, ciascuna con una `StyleWord`
+
+% 1 1 0 1ba873213767a77b02a389652c2fbde5
+
+@ 0 6 0 050e4bd06f88339904c75a445c9da0f0
++       Una superficie di terminale colloca il contenuto cella per cella, e una cella contiene un
++       *grafema* — un glifo CJK largo o un'emoji ZWJ occupa una cella, un segno combinante non
++       ne aggiunge nessuna — non un `Char`. `cells(content)(lambda)` chiama `lambda` una volta
++       per grafema con la parola di stile che gli dà lo stile: lo stile predefinito per `Text`,
++       `Ascii` e `Writing`, e per un `Teletype` lo stile del primo carattere del grafema, così
++       il colore sopravvive alla scomposizione. Le istanze sono nell'oggetto compagno, quindi
++       ciascuno di questi tipi si imprime senza import.
+
+% 2 1 0 0996fa4a9e0a45d41831ef6bd4818216
+
+% 3 1 0 1e6a1224926e04671895da7a1f500032
+
+% 0 1 0 028f056814588a2f1fbead73a3277123
+
+% 0 1 0 19b5611049c47d7e0d1b10f964a7dcc5
+
+% 0 1 0 1ad502b9df11a991175517a537793300
+
+% 0 1 0 0e3749996e7d7fe91c140ac220118e52
+
+% 1 1 0 08c518c5aaefe4cf0a1e39866e8b034a
+
+% 1 1 0 1b128bec802ff8e701844b2f2c8bccf5
+
+@ 0 5 0 1c01f3e11d5e0b0a092f5b0f5502b9a7
++   entry .text   `Text` imprime una cella per grafema, nello stile predefinito
++   entry .writing   una `Writing` geroglifica imprime i suoi grafemi nello stile predefinito
++   entry .ascii   un testo `Ascii` imprime una cella per carattere, nello stile predefinito
++   entry .teletype   un `Teletype` imprime ogni grafema con lo stile del suo primo carattere
++   entry #cells   chiama una funzione per ogni cella di grafema del contenuto, con la sua parola di stile
+
+@ 0 1 0 11ce6afc9408c5f80204d46ded37b165
++ entry .Ribbon   una fila di etichette colorate con giunzioni a forma di freccia, come riga di stato o breadcrumb
+
+% 1 1 0 1a9d06c5750e71981874766462eff2e9
+
+@ 0 5 0 129c7ecc5b0104cf0c6e9ab69cbf295c
++       `Ribbon(colors*)` prende colori di sfondo, e `#fill(parts*)` dispone ogni parte sullo
++       sfondo corrispondente — in nero o bianco secondo `Bg#highContrast` — seguita dal glifo a
++       freccia di powerline (U+E0B0) nel colore di quello sfondo, così ogni segmento sembra
++       puntare nel successivo, alla maniera di un prompt powerline. Il glifo richiede un font
++       con i simboli powerline. Senza colori, le parti vengono unite con uno spazio.
+
+% 2 1 0 062b1bf14555e77c0d3921d4a7958299
+
+% 3 1 0 1a65149d28c732090a56bafee7968a3f
+
+% 0 1 0 1c763ae1224f2cd00feb0e1ee74cd034
+
+% 0 1 0 00ee06fbabd222c915979f6606a3994d
+
+% 1 1 0 1467117ee39a1ca20b9dcfaccb6bc31b
+
+% 2 1 0 06d85c1d2dab5ce2066bbbd68fa1845d
+
+@ 0 5 0 1c06e25afd7c4b7117cd4943fdc9194f
++   entry .apply   `Ribbon(colors*)` da qualsiasi colore `Chromatic`, ciascuno avvolto come `Bg`
++   entry #colors   gli sfondi, uno per segmento
++   entry #fill   le parti disposte sugli sfondi in ordine, unite da glifi a freccia
++       Le parti in eccesso rispetto ai colori vengono scartate (le coppie sono formate con uno
++       zip), e la freccia dell'ultimo segmento punta nello sfondo predefinito del terminale.
+
+@ 0 1 0 1b543e5e1773931d1f9252c32ede35de
++ entry .escapes   le sequenze SGR grezze del terminale a sedici colori, come coppie `Escape`
+
+% 1 1 0 18fafa06046c9887068220d43e13fad9
+
+@ 0 5 0 09c4db8f3481181205748d8de3b886b2
++       I colori e gli attributi del terminale classico, ciascuno una coppia `Escape(on, off)`
++       per un tratto in `e"…"`, per un programma che vuole la tavolozza *propria* del terminale
++       (`escapes.foreground.Red` è qualunque colore il tema dell'utente renda rosso) invece di
++       un `Chroma` scelto da sé. Un `Fg` o un `Bg` con un colore a 24 bit è la scelta
++       consueta; questi servono per adeguarsi alla tavolozza della shell circostante.
+
+% 2 1 0 01f5ec873a734bbe1adf8f21aa6348cf
+
+% 3 1 0 1c20192e9fb2df2d09805556346d8c43
+
+% 0 1 0 06c99da698e8f1771df3240943a1d8d3
+
+% 1 1 0 09e2c1ff6612920403b95a84fbac48b2
+
+% 0 1 0 0e77b46befcb15da1166e480ca42e540
+
+@ 0 1 0 1c0a73ecf205da1e1d1b699acdd7252e
++   entry .foreground   i sedici colori di primo piano, SGR 30–37 e 90–97, ciascuno azzerato da SGR 39
+
+% 1 1 0 1d66b8d655eab7bc0ba4b49e9181edd1
+
+@ 0 3 0 0d58b9f2af81e3220a607b9fcec5e831
++         `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan` e `White` sono SGR da 30
++         a 37; gli otto `Bright…` sono SGR da 90 a 97. Ciascuno si chiude con `[39m`, il primo
++         piano predefinito.
+
+% 0 1 0 1bb6f9f9d65c16261ee67d6f0011660d
+
+% 0 1 0 0384c66e2a118e3b1fecc5862ee07ddc
+
+% 0 1 0 061695692c2bde0b0004de722c7a04ce
+
+% 0 1 0 162c7528fcb821d90a74265d385ea196
+
+% 0 1 0 0dc5506f8191c110135d6f5b374fe5bf
+
+% 0 1 0 15335555bc8ed9780cbc8c91b05a184d
+
+% 0 1 0 005ed933bdc874bc0eaa7ea99cf68fdb
+
+% 0 1 0 147f90588153ea4618b72ce755aca365
+
+% 0 1 0 0e39d86b22d2f00a1fa1dab48f0db137
+
+% 0 1 0 127e19bff8096a1808a7a3a9b163aa16
+
+% 0 1 0 189973da78a2b7ee00c03bb7bb764ff8
+
+% 0 1 0 01c579b74503020c03c210d708b7ad05
+
+% 0 1 0 0c4a861b2970dfdc022e0630c4074596
+
+% 0 1 0 0e4e4c3fcc2781ad05a4f5c71f575017
+
+% 0 1 0 1ee40edf65a793871d7b157f29adefb1
+
+@ 0 2 0 194b6f90a47f58b7135687a614f9d6ff
++     entry .BrightWhite   SGR 97, anche se il suo azzeramento è `[49m` (lo sfondo predefinito) invece di `[39m`
++   entry .background   i sedici colori di sfondo, SGR 40–47 e 100–107, ciascuno azzerato da SGR 49
+
+% 1 1 0 10ce9d8c5c0840f6039ded0cd321f690
+
+@ 0 2 0 060e9ae8532f156b137f9f750a73a322
++         Da `Black` a `White` sono SGR da 40 a 47; gli otto `Bright…` sono SGR da 100 a 107.
++         Ciascuno si chiude con `[49m`, lo sfondo predefinito.
+
+% 0 1 0 1ff664825bff1ef91200079d0381d952
+
+% 0 1 0 07c430f6afb4970e13064fb43250f121
+
+% 0 1 0 0a55fff1b1cee6de131e68a02fea7812
+
+% 0 1 0 1a6bdfb1825b2aac1d8db08b3bcf14da
+
+% 0 1 0 1204baf80734c9e30676f9893ac05904
+
+% 0 1 0 1972bfde4231e24b1fd616bfb3ca8b91
+
+% 0 1 0 049e43bc436b7d8f01c408d7a0670320
+
+% 0 1 0 18befae106f6f3190bd0b715591d16aa
+
+% 0 1 0 17a30b87ce752ecf06c577d79ca80615
+
+% 0 1 0 1af6cfdd3b6dd93a0dcc7b6b49c98ac2
+
+% 0 1 0 09e87f5f984e85750eec31925fe24612
+
+% 0 1 0 0b17075ee2e0e3e6039e1b646baaa2f6
+
+% 0 1 0 13f6e982d9cfc2de01a0590f9fc1adec
+
+% 0 1 0 0f9b688c881a3718064eb04b45faf9d5
+
+% 0 1 0 1d86005f1b37ae6800d6a42149b1b753
+
+% 0 1 0 1d705ad90879ef431bd80ef775bfc30a
+
+@ 0 1 0 0bae50777e43cc3c0e778027ac0ca14f
++   entry .styles   le coppie di attributi: grassetto, leggero, corsivo, sottolineato, lampeggiante, inverso, nascosto, barrato
+
+% 1 1 0 0071f170f57db5b8085eab6f6614fda4
+
+@ 0 25 0 1e957b7d81989c300a05a4a9e4a63772
++         Ciascuno è il codice SGR che attiva l'attributo, abbinato a quello che lo disattiva:
++         `Bold` è `[1m`/`[22m`, `Light` (attenuato) `[2m`/`[22m`, `Italic` `[3m`/`[23m`,
++         `Underline` `[4m`/`[24m`, `SlowBlink` `[5m`/`[25m`, `FastBlink` `[6m`/`[25m`,
++         `Reverse` `[7m`/`[27m`, `Conceal` `[8m`/`[28m` e `Strike` `[9m`/`[29m`. I marcatori
++         `Bold`, `Italic` e gli altri fanno lo stesso tramite lo stack degli stili, e sono la
++         scelta consueta.
++     entry .Bold   SGR 1, azzerato da 22
++     entry .Light   SGR 2 (attenuato), azzerato da 22
++     entry .Italic   SGR 3, azzerato da 23
++     entry .Underline   SGR 4, azzerato da 24
++     entry .SlowBlink   SGR 5, azzerato da 25
++     entry .FastBlink   SGR 6, azzerato da 25
++     entry .Reverse   SGR 7, azzerato da 27
++     entry .Conceal   SGR 8, azzerato da 28
++     entry .Strike   SGR 9, azzerato da 29
++   entry .Reset   SGR 0: ogni attributo e colore torna al valore predefinito
++   entry .EraseLine   `[0K`: cancella dal cursore alla fine della riga
++       La sequenza `off` è `[0m`, quindi usata come tratto azzera anche lo stile dove si chiude.
++   entry .title   la sequenza OSC 0 che imposta il titolo della finestra del terminale
++       `escapes.title(t"build")` è un `Escape` senza azzeramento, quindi si sostituisce senza
++       parentesi: `e"${escapes.title(t"build")}"`.
++   entry .link   testo avvolto in un collegamento ipertestuale OSC 8, come `Text` grezzo
++       `escapes.link(url, text)` prende qualsiasi tipo di URL `Abstractable across Urls to
++       Text` e restituisce il testo con le sequenze di collegamento attorno, già reso. Per un
++       collegamento dentro un `Teletype`, si usa `Hyperlink`, che resta un valore fino alla
++       resa.
+
+@ 0 1 0 0d2469af2e7d1b26141eb64b40c84490
++ entry .csi   le sequenze di controllo ANSI — movimento del cursore, cancellazione, scorrimento, SGR — scritte come `Text`
+
+% 1 1 0 1e037f4bf60396c109faddc44cb853ed
+
+@ 0 7 0 03aa830d65f7199904d91b20ab2cf049
++       `csi` è il Control Sequence Introducer, `\e[`, e questo oggetto scrive ogni sequenza
++       standard con la sua sigla ECMA-48: `csi.cuu(3)` sposta il cursore su di tre righe,
++       `csi.el()` cancella la riga, `csi.sgr(1, 31)` imposta il rosso in grassetto. Ogni
++       risultato è un semplice `Text` che contiene i caratteri di controllo, da scrivere
++       direttamente su un terminale; un `Teletype` rende il proprio stile e non ne ha bisogno.
++       L'insieme di sorgenti `escapade.csi` contiene solo questo oggetto (con `unstyled`), e
++       dipende solo da gossamer, quindi una libreria che sposta il cursore non deve dipendere
++       dal resto di escapade.
+
+% 2 1 0 020e76db8902a8ac01cdee439b184841
+
+% 3 1 0 153be19d389860dd12718c7f051f33a9
+
+% 0 1 0 04082790638bbace1286c52f411053d5
+
+% 0 1 0 11287874a7c3dd1702a9ec3c43983c30
+
+% 0 1 0 14bbcdc629f9f0780a83ef1dfce8b95a
+
+% 0 1 0 17592cf3cd4625210e1d54c62aa22040
+
+% 1 1 0 0a0a2ed3f662272d1cd3ec8a31b246d6
+
+@ 0 2 0 0fb737a1ad698c20146417125f280bf7
++       Un parametro di conteggio è `Optional`: `Unset` (il valore predefinito) lo omette, e il
++       terminale lo legge come `1`.
+
+% 0 1 0 10990aa6c3b0cb640c1377874cbaa8ba
+
+@ 0 23 0 09b71518b2dceece01f995f45a8442b7
++   entry .esc   il carattere di escape, come testo: `\e`
++   entry .csi   il Control Sequence Introducer: `\e[`
++   entry .pattern   una regex che corrisponde a una sequenza di controllo: `\e[`, i parametri e una lettera finale
++       Ogni sequenza CSI, non solo SGR, quindi corrispondono anche il movimento del cursore e
++       la cancellazione. `unstyled` ne cancella le corrispondenze.
++   entry .cuu   cursore su di `n` righe (CUU, byte finale `A`)
++   entry .cud   cursore giù di `n` righe (CUD, `B`)
++   entry .cuf   cursore avanti di `n` colonne (CUF, `C`)
++   entry .cub   cursore indietro di `n` colonne (CUB, `D`)
++   entry .cnl   cursore all'inizio della riga `n` righe più in basso (CNL, `E`)
++   entry .cpl   cursore all'inizio della riga `n` righe più in alto (CPL, `F`)
++   entry .cha   cursore alla colonna `n` della riga corrente (CHA, `G`)
++   entry .cup   cursore alla riga `n`, colonna `m` (CUP, `H`); entrambi predefiniti a `1`
++   entry .ed   cancellazione nello schermo (ED, `J`): `0` fino alla fine, `1` fino all'inizio, `2` tutto, `3` anche lo scrollback
++   entry .el   cancellazione nella riga (EL, `K`): `0` fino alla fine della riga, `1` fino al suo inizio, `2` l'intera riga
++   entry .su   scorre la pagina in su di `n` righe (SU, `S`)
++   entry .sd   scorre la pagina in giù di `n` righe (SD, `T`)
++   entry .hvp   posizione orizzontale e verticale (HVP, `f`): uguale a `cup`, con entrambi gli argomenti obbligatori
++   entry .dsr   segnalazione dello stato del dispositivo (DSR, `6n`): chiede al terminale di segnalare la posizione del cursore
++   entry .scp   salva la posizione del cursore (SCP, `s`)
++   entry .rcp   ripristina la posizione del cursore salvata (RCP, `u`)
++   entry .sgr   seleziona la resa grafica: `csi.sgr(1, 31)` è `\e[1;31m`
++   entry .dectcem   mostra (`true`) o nasconde (`false`, il valore predefinito) il cursore: `\e[?25h` o `\e[?25l`
+
+@ 0 8 0 196107167323b3a31094ff0c031e4727
++ entry .unstyled   `text.unstyled`: il testo senza alcuna sequenza di controllo ANSI
++     Un'estensione su `Text`, in `escapade.csi`, che cancella ogni corrispondenza di
++     `csi.pattern`, lasciando i caratteri che sarebbero stati stampati se gli escape fossero
++     stati rispettati — tutte le sequenze CSI, non solo quelle SGR, quindi un movimento del
++     cursore o una cancellazione di riga emessi in uno stream catturato spariscono insieme
++     allo stile. È la direzione inversa rispetto a `Teletype`: `Teletype#plain` legge il
++     contenuto di un teletype costruito strutturalmente, mentre `unstyled` parte da un testo in
++     cui gli escape sono già caratteri, come l'output di un sottoprocesso.
+
+% 2 1 0 187dac050be52c0a1d4fe86fabc08522
+
+% 3 1 0 047e9e54315dc69315ef214f6c4ddeb5
+
+% 0 1 0 01d5a2669a6f76f2040d3fcefca69e16
+
+% 0 1 0 1d8ad4d0c6ce2e61130fdc4bb9f2371b
+
+% 0 1 0 0f86d660cc56d6c90c4aeba4b65a34cf
+
+% 1 1 0 032e492a772136fd09eeba9dcd60d62d
+
+@ 0 1 0 0e63dadb9961027907ee40009ccd2bcc
++ entry .displayableTypes   given che permettono di stampare più tipi su `Out` ed `Err`, importati per nome
+
+% 1 1 0 08e002a522f372a20e9e823cd0869861
+
+@ 0 6 0 17465899bf3634ef1aad3bf58588a71d
++       Un package di scelta, fuso con il `displayableTypes` dell'ombrello:
++       `import displayableTypes.ansiMessagePrintable` permette a `Out.println(m"…")` di stampare
++       un `Message` con le sue citazioni formattate.
++   entry .ansiMessagePrintable   un `Message` è `Printable`, reso tramite `Teletypeable.message`
++       `Out.println(m"the file $path was not found")` formatta la parte citata in corsivo
++       giallo su un terminale, e stampa in modo semplice dove il `Termcap` non ha ANSI.
+
+% 2 1 0 09be078e5ff90e43003c1b1cba39be10
+
+% 3 1 0 005d9f3e76fa64e106179c68b99e292d
+
+% 4 1 0 08e00eaf6f624539050ffe1587cd9f44
+
+% 5 1 0 12dafef2c578e9be05a9c361602e01df
+
+% 6 1 0 1fdff587f36c4fc809fd8c08d3088333
+
+% 0 1 0 189470332ea0b07e0961fb91d9c719ee
+
+% 0 1 0 0dfe9b66f52db7881f5bf338debde06f
+
+% 1 1 0 1abacbe91ccc4a6b162e8c1c3c849f8b
+
+@ 0 1 0 09946c846ce9454c02511c5e950610bb
++ entry .writables   stream di record `Teletype` scritti sullo standard output e sullo standard error, importati per nome
+
+% 1 1 0 197a981750ae29c512cff6c687433408
+
+@ 0 4 0 133fb495bce642d7112f04c56ccc0d18
++       Un package di scelta in `escapade.io`, fuso con il `writables` dell'ombrello. Uno
++       stream di teletype viaggia sul mezzo inscatolato (finestre di `Array[Teletype]`), e ogni
++       record viene stampato tramite `Out.print` o `Err.print` man mano che arriva, reso dal
++       `Termcap` dello `Stdio`.
+
+% 2 1 0 0ad676887dd3b6f309b04cfefba8b35c
+
+% 3 1 0 07da800aefe93dc10d14c6b293b1f8c5
+
+% 4 1 0 13b6c7274c87268f0b84bc7f7980572f
+
+% 5 1 0 1511c78b6f650ea1192a1d8eea8ca7c8
+
+% 6 1 0 0481902f36a58a7c083b32ae1cecafd2
+
+% 0 1 0 1f5b362253dbea8907db7b747d1958c1
+
+% 0 1 0 058beb76104b39ff1954f7699b833229
+
+% 0 1 0 04f0a3b41e75614f095c374af8918bd5
+
+% 1 1 0 120426dc8ee3cdd91c20c2e0ef45380f
+
+@ 0 2 0 06cebf5a43554e9d0fdb4732facd34b0
++   entry .outTeletypeWritable   `Out` è `Writable` da record teletype, ciascuno stampato man mano che arriva; richiede uno `Stdio`
++   entry .errTeletypeWritable   `Err` è `Writable` da record teletype, ciascuno stampato man mano che arriva; richiede uno `Stdio`
+
+@ 0 1 0 0c48ef500ee8888f06b96aed2e5e9adb
++ entry .teletypeables   istanze di `Teletypeable` per tipi di altre librerie, importate per nome
+
+% 1 1 0 16e945a0534b2bf80aec513010b874e1
+
+@ 0 8 0 1df4fa9b1ccc35bf1bc8f52742dfdd4c
++       Un package di scelta, fuso con il `teletypeables` dell'ombrello, che altre librerie
++       estendono con le proprie (`exceptionTeletype`, `urlTeletype`, `juxtapositionTeletype`).
++       Il membro proprio di Escapade, in `escapade.graphics`, rende qualsiasi immagine.
++   entry .graphicalTeletype   qualsiasi valore `Graphical` si rende come `Teletype` di caratteri a mezzo blocco, due pixel per cella
++       Ogni cella del terminale è un mezzo blocco superiore `▀` il cui primo piano è il pixel di
++       una riga e il cui sfondo è il pixel della riga sottostante, quindi un'immagine di altezza
++       `h` occupa `h/2` righe larghe quanto essa in celle, con un a capo dopo ciascuna. L'ultima
++       riga di un'immagine di altezza dispari viene scartata.
+
+% 2 1 0 08d59863cb20ab8b15756047a545abd7
+
+% 3 1 0 16085ea702b919b41b27565a7389731e
+
+% 4 1 0 0397aec36c6e9ae80c9223db3a3943c0
+
+% 5 1 0 1a801ea33434ca7213b54ad6147ee654
+
+% 6 1 0 06d167795e2ffd2b0ed730b5ffec2d00
+
+% 0 1 0 02f1986fa25dfdca1a0a31a36e565ba9
+
+% 0 1 0 0eec002bfdd2ea441d7f8408f4df7c87
+
+% 1 1 0 126d0457c6c73a8e0e56d5f318dec569
+
+@ 0 8 0 0568958b8650f1010e8723488f2f7450
++ entry .StyleWord   lo stile di un carattere impacchettato in un `Long`: due colori a 24 bit e dodici bit di flag
++     `StyleWord` è il tipo opaco `escapade.internal.StyleWord`, esportato qui. I 24 bit bassi
++     contengono l'RGB del primo piano e i bit da 24 a 47 quello dello sfondo; il bit 48
++     (`FgSet`) e il bit 49 (`BgSet`) dicono se ciascuno è impostato, e i bit da 50 a 61 sono
++     `Bold`, `Faint`, `Italic`, `Underline`, `DoubleUnderline`, `BlinkSlow`, `BlinkFast`,
++     `Reverse`, `Conceal`, `Strike`, `Overline` e `HyperlinkChange`, ciascuno una costante
++     `Long` sull'oggetto compagno da usare come maschera. `StyleWord.Default` è `0L`,
++     `StyleWord(raw)` avvolge un `Long`, e `TextStyle#styleWord` impacchetta un record in una
++     parola.
+
+@ 0 10 0 16d65a178c76a5f8012260b80becb942
++     Poiché si cancella in `Long`, un `Array[StyleWord]` è un `long[]` senza boxing; il given
++     `classTag` dell'oggetto compagno permette a una griglia di celle di allocarne uno. I
++     metodi di estensione la leggono: `raw`, `fgRgb`, `bgRgb`, `hasFg`, `hasBg`, `isBold`,
++     `isFaint`, `isItalic`, `isUnderline`, `isDoubleUnderline`, `isBlinkSlow`, `isBlinkFast`,
++     `isReverse`, `isConceal`, `isStrike`, `isOverline` e `hasHyperlinkChange`; e la
++     modificano: `withFg(rgb)`, `withBg(rgb)`, `clearFg`, `clearBg`, `withBit(bit)`,
++     `withoutBit(bit)` e `applyTransform(mask, bits)`. `StyleWord.combine(outer, inner)` è il
++     modo in cui lo stile di un teletype annidato si fonde sotto quello che lo racchiude — il
++     colore interno vince dove è impostato, e i flag di entrambi vengono mantenuti — e
++     `StyleWord.emitDiff(buffer, prev, next, depth)` scrive la sequenza SGR che trasforma uno
++     stile in un altro, che è ciò che `Teletype#render` emette tra una serie e l'altra.
+
+% 2 1 0 118cfba251edcdce135f9bd893142698
+
+% 3 1 0 019e8fe70ba1696a193c6a05c595b0ae
+
+% 0 1 0 1386cf3abf476abc0583d94daef9c064
+
+% 0 1 0 06bdad0785fa5abc0e388d2d2fee3004
+
+% 0 1 0 0ac0e7b146fde8b30596829af9afdcce
+
+% 1 1 0 030924de2764d3c50333b715508d916d
+
+@ 0 1 0 0f613671d8e577800392dc0ef893b0e3
++     Si raggiunge come `escapade.StyleWord`: non è tra le esportazioni dell'ombrello.
+
+@ 0 8 0 149793b947ce15e6182fac7fc90f5a83
++ entry .CharSpan   un intervallo semiaperto di posizioni di caratteri impacchettato in un `Long`
++     `CharSpan` è il tipo opaco `escapade.internal.CharSpan`, esportato qui.
++     `CharSpan(start, end)` impacchetta i due `Int` in un unico `Long`, ordinato in modo che i
++     tratti si confrontino (`CharSpan.comparable`) prima per inizio; `CharSpan.Nowhere` è il
++     tratto vuoto a `Int.MaxValue`. Le estensioni `start`, `end` e `nil` lo leggono, e
++     `trimLeft(n)`, `takeLeft(n)` e `shift(n)` lo tagliano o lo spostano, ciascuna restituendo
++     `Nowhere` quando non rimane nulla. È un mattone per il codice che tiene traccia delle
++     regioni con stile per posizione; la rappresentazione di `Teletype` usa invece i confini
++     delle serie.
+
+@ 0 1 0 1e3286868bc620591baf21a75e730936
++ entry .internal   la macro `e"…"` e le rappresentazioni impacchettate dietro `Teletype`
+
+% 1 1 0 1d2ce22b7b7118f412b9971e34e3f487
+
+% 2 1 0 1fac81232e1088a20b5470df2d1c52e3
+
+@ 0 9 0 09f01e918e6906af17b7032ed02de9a2
++       Non è destinato all'uso diretto: l'oggetto esiste perché la macro e i tipi opachi
++       abbiano una sede stabile. `CharSpan` e `StyleWord` sono esportati da qui nel package
++       `escapade`, e le loro pagine lì ne danno la descrizione completa.
++   entry .eMacro   la macro dietro `e"…"`: verifica le parentesi a tempo di compilazione ed emette l'analisi a runtime
++       Legge le parti letterali, evoca un `Insertion[Ansi.Input, T]` per il tipo di ogni
++       sostituzione, esegue `Ansi.Runtime` sulle parti a tempo di compilazione in modo che un
++       tratto non chiuso sia un errore di compilazione, e inserisce la catena equivalente di
++       chiamate `parse` e `insert` che termina in `complete`. Un `\\` prima di una sostituzione
++       di markup viene consumato e il markup saltato.
++   entry .CharSpan   un intervallo semiaperto di posizioni in un `Long`; vedi `escapade.CharSpan`
+
+% 1 1 0 13910e2fd28c5cd61d4a9eb508c506f7
+
+@ 0 1 0 0934acbf68360d6a003808a74767abea
++         `CharSpan(start, end)`, `CharSpan.Nowhere` e il given `comparable`.
+
+% 0 1 0 10d906a8607f5e7f18161e81586a051f
+
+@ 0 14 0 19d141eb6453eff5038231ca5f9068d0
++     entry .comparable   i tratti si ordinano come i loro `Long` impacchettati: per inizio, poi prima quello con la fine più avanzata
++     entry .Nowhere   il tratto vuoto a `Int.MaxValue`
++   entry .start   la prima posizione di un `CharSpan`
++   entry .end   la posizione successiva all'ultima di un `CharSpan`
++   entry .nil   se un `CharSpan` è vuoto
++   entry .trimLeft   un `CharSpan` con `n` posizioni tolte dall'inizio del suo frame
++   entry .takeLeft   un `CharSpan` ridotto alle prime `n` posizioni del suo frame
++   entry .shift   un `CharSpan` spostato di `n` posizioni a destra
++   entry .AnsiStyle   uno stile come insieme di 64 bit: per ogni attributo un bit *impostato* e un bit *valore*, più due colori a 24 bit
++       La rappresentazione usata da `Teletype2`, come `B64` di hypotenuse. Ciascuno tra
++       grassetto, corsivo, sottolineato, barrato e nascosto ha un bit che dice se questo stile
++       lo imposta e un bit che dice a che valore, così che `update(changes)` possa applicare
++       solo gli attributi menzionati da una modifica; `indexes` nomina le posizioni dei bit.
++   entry .indexes   le posizioni dei bit dei flag e dei campi di colore di un `AnsiStyle`, come `Interval` e maschere
+
+% 1 1 0 00b78f17f75dde54039317b8faa5a983
+
+@ 0 39 0 0aa18670d5d9514510ad4e13205e7ce0
++         Ogni attributo ha una posizione `Set…`, che dice se uno stile lo menziona, e la
++         posizione successiva per il suo valore; i colori sono `Interval` di 24 bit, ciascuno
++         preceduto dal suo bit `Set…`. Le maschere selezionano gruppi di bit per `update`.
++     entry .SetBold   il bit che dice che uno stile imposta il grassetto
++     entry .Bold   il bit che contiene il valore del grassetto
++     entry .SetItalic   il bit che dice che uno stile imposta il corsivo
++     entry .Italic   il bit che contiene il valore del corsivo
++     entry .SetUnderline   il bit che dice che uno stile imposta la sottolineatura
++     entry .Underline   il bit che contiene il valore della sottolineatura
++     entry .SetStrike   il bit che dice che uno stile imposta il barrato
++     entry .Strike   il bit che contiene il valore del barrato
++     entry .SetConcealed   il bit che dice che uno stile imposta l'occultamento
++     entry .Concealed   il bit che contiene il valore dell'occultamento
++     entry .SetForeground   il bit che dice che uno stile imposta il primo piano
++     entry .Foreground   i 24 bit del colore di primo piano
++     entry .SetBackground   il bit che dice che uno stile imposta lo sfondo
++     entry .Background   i 24 bit del colore di sfondo
++     entry .Changes   ogni bit che dice che uno stile imposta qualcosa
++     entry .FlagChanges   i bit `Set…` dei cinque flag di attributo
++     entry .Mask   i bit di valore dei cinque flag di attributo
++     entry .FgMask   i bit del colore di primo piano
++     entry .BgMask   i bit del colore di sfondo
++   entry .setBold   se un `AnsiStyle` imposta il grassetto
++   entry .bold   il valore del grassetto impostato da un `AnsiStyle`
++   entry .setItalic   se un `AnsiStyle` imposta il corsivo
++   entry .italic   il valore del corsivo impostato da un `AnsiStyle`
++   entry .setUnderline   se un `AnsiStyle` imposta la sottolineatura
++   entry .underline   il valore della sottolineatura impostato da un `AnsiStyle`
++   entry .setStrike   se un `AnsiStyle` imposta il barrato
++   entry .strike   il valore del barrato impostato da un `AnsiStyle`
++   entry .setConcealed   se un `AnsiStyle` imposta l'occultamento
++   entry .concealed   il valore dell'occultamento impostato da un `AnsiStyle`
++   entry .setForeground   se un `AnsiStyle` imposta il primo piano
++   entry .foreground   il primo piano impostato da un `AnsiStyle`, come `Chroma`
++   entry .setBackground   se un `AnsiStyle` imposta lo sfondo
++   entry .background   lo sfondo impostato da un `AnsiStyle`, come `Chroma`
++   entry .changed   se un `AnsiStyle` imposta qualcosa
++   entry .update   un `AnsiStyle` con le modifiche di un altro applicate sopra
++   entry .StyleWord   lo stile di un carattere impacchettato in un `Long`; vedi `escapade.StyleWord`
+
+% 1 1 0 0e20b8de5ba3a2c31d1506859619bf92
+
+@ 0 6 0 0cb32abcd7afdb071336e02360a2f371
++         Il tipo opaco, le sue costanti di maschera di bit, `Default`, il given `classTag`,
++         `apply`, `combine` ed `emitDiff`, e i metodi di estensione che leggono e modificano una
++         parola.
++     entry .FgMask   i 24 bit bassi: l'RGB del primo piano
++     entry .BgMask   i bit da 24 a 47: l'RGB dello sfondo
++     entry .FgSet   bit 48: è impostato un primo piano
++     entry .BgSet   bit 49: è impostato uno sfondo
+
+% 0 1 0 191cf633181bcfe80d4ad7f20663604f
+
+% 0 1 0 040e5d92526213730b09ab60fa5f2414
+
+% 0 1 0 1577a2c25179974814ea068392ad12a8
+
+% 0 1 0 021bf1e4d558ce1b053596e43976cd5a
+
+% 0 1 0 056989e83b52cd1c092cc7347a3b5b01
+
+% 0 1 0 051ca5c0d3bcf1e10a45c562f6ed4603
+
+% 0 1 0 050265f73a1decfb051b23a706cd5986
+
+% 0 1 0 170ba8bd711af8a91576782d12df1476
+
+% 0 1 0 0ff51b628e249f4f138463126552e99c
+
+% 0 1 0 059ca966106b29b214906898cab29ddc
+
+% 0 1 0 180c3d3e4a1dc511049d521e0e473ba4
+
+@ 0 34 0 003d633e2d1444b91a84199bf6a570ae
++     entry .HyperlinkChange   bit 61: un collegamento ipertestuale si apre o si chiude in questo carattere
++     entry .FlagsMask   ogni bit di flag, da `FgSet` a `HyperlinkChange`
++     entry .Default   `0L`: nessun colore, nessun attributo
++     entry .classTag   il `ClassTag` che permette di allocare un `Array[StyleWord]` senza boxing, come `long[]`
++     entry .apply   `StyleWord(raw)`: un `Long` come parola di stile
++     entry .combine   uno stile interno fuso sotto uno esterno: il colore interno dove impostato, altrimenti quello esterno; i flag di entrambi
++     entry .emitDiff   accoda a un buffer l'unica sequenza SGR che trasforma uno stile in un altro, a una profondità di colore
++         Emette `39`/`49` per un colore che è stato rimosso, `38;2;r;g;b` o `38;5;n` (e `48…`)
++         per uno che è cambiato, e il codice di attivazione o disattivazione di ogni flag che si
++         è invertito, uniti con `;` in un unico `\e[…m`. Non viene scritto nulla quando i due
++         sono uguali.
++     entry .raw   la parola come `Long`
++     entry .fgRgb   l'RGB a 24 bit del primo piano
++     entry .bgRgb   l'RGB a 24 bit dello sfondo
++     entry .hasFg   se è impostato un primo piano
++     entry .hasBg   se è impostato uno sfondo
++     entry .isBold   se è impostato il flag del grassetto
++     entry .isFaint   se è impostato il flag dell'attenuato
++     entry .isItalic   se è impostato il flag del corsivo
++     entry .isUnderline   se è impostato il flag della sottolineatura
++     entry .isDoubleUnderline   se è impostato il flag della doppia sottolineatura
++     entry .isBlinkSlow   se è impostato il flag del lampeggio lento
++     entry .isBlinkFast   se è impostato il flag del lampeggio veloce
++     entry .isReverse   se è impostato il flag dell'inverso
++     entry .isConceal   se è impostato il flag del nascosto
++     entry .isStrike   se è impostato il flag del barrato
++     entry .isOverline   se è impostato il flag della sopralineatura
++     entry .hasHyperlinkChange   se un collegamento ipertestuale si apre o si chiude qui
++     entry .withFg   la parola con un primo piano impostato su un valore RGB
++     entry .withBg   la parola con uno sfondo impostato su un valore RGB
++     entry .clearFg   la parola senza primo piano
++     entry .clearBg   la parola senza sfondo
++     entry .withBit   la parola con un bit di flag impostato
++     entry .withoutBit   la parola con un bit di flag azzerato
++     entry .applyTransform   la parola con i bit sotto una maschera sostituiti
+
+@ 0 1 0 03841310746f397c13cea678e63c4a0f
++ entry .Teletype2   una rappresentazione precedente del testo con stile: testo semplice e un `AnsiStyle` per carattere
+
+% 1 1 0 1a128e27182334811e71b34e7d67b3ea
+
+% 2 1 0 1ed190f9b6f01ffe0c38fe2419585460
+
+@ 0 9 0 0d672e87490023cf0ac4bc6a336aa52f
++       Non è destinato all'uso diretto: un `Teletype` è la rappresentazione che la libreria
++       rende e che l'interpolatore costruisce. `Teletype2(plain, ansi)` abbina un testo a un
++       array di insiemi di modifiche `internal.AnsiStyle`, si somma con `+` (`.addable`), e si
++       rende tramite un `Ansi.Escapes` nell'ambito. È un membro di primo livello del package
++       `escapade` ma non è esportato nell'ombrello.
++   entry .addable   `left + right`: i testi e gli array di stili concatenati
++   entry #plain   il testo
++   entry #ansi   l'insieme di modifiche di stile di ogni carattere
++   entry #render   il testo con le sequenze di escape, scritte dall'`Ansi.Escapes` nell'ambito

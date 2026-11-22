@@ -1,0 +1,59 @@
+orthant 2 language
+
+% 0 1 0 020813bb11b2e27814cd769cda49cc45
+
+@ 0 1 0 1b2d55ab6fdcf8410314c6418fdc37f2
++ Wird ausgelöst, wenn ein TELP sich nicht parsen oder nicht auflösen lässt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 1088d60329541a2b0a6824290b98e2b5
++ TELP ist die textuelle Pfadsprache von TEL über dem semantischen Modell eines schematypisierten
++ Dokuments. Ihre Fehlschläge sind Ergebnisse der auflösenden API, keine Dokumentfehler: Sie tragen
++ keine E-Codes von TEL. Jeder Grund trägt den 0-basierten Index der Komponente, bei der das Parsen
++ oder die Auflösung fehlschlug.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 1c0f3818dc36dc7716c2adddd8374250
+
+% 0 1 0 04a522044e543c1d1895b54f998b5f36
+
+% 0 1 0 1007eaf2533b8ac0146bfd772aa627d5
+
+% 0 1 0 1c298d8613f8c500151df3bca847b9c7
+
+% 0 1 0 0b0a5250eda281461c7b56a8b2be9a96
+
+% 0 1 0 07260408b571476b1144c626b4f04af9
+
+% 0 1 0 0892b0a111ef0e5c084b6a94c41d60e8
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 4 0 17869fe77115de7c1b0043ee6706a686
++ Das Trennzeichen eines Pfads ist sein erstes Zeichen: Eine Komponente, die das gewählte
++ Trennzeichen enthält, wird unter einem anderen geschrieben (es gibt keine Escape-Syntax). Eine
++ Komponente, die nur aus Ziffern besteht, ist immer ein Vorkommensindex, daher lässt sich ein
++ Schlüsselwert, der nur aus Ziffern besteht, nur über die Position auswählen. Die Auflösung braucht
++ ein zusammengesetztes Schema; ein untypisiertes Dokument hat kein semantisches Modell und keine
++ TELP-Auflösung.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 00e4ae170022be88025a6dff1b7fd0ff
++ - Quelle: `lib/stratiform/src/core/stratiform.Telp.scala`

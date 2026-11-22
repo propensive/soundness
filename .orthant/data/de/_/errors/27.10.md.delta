@@ -1,0 +1,33 @@
+orthant 2 language
+
+% 0 1 0 1a260160731f23fe0070beef25a48b94
+
+@ 0 1 0 0275e74b4eeb25ef0fb61b1e51dc349f
++ Wird ausgelöst, wenn ein Wert nicht als Dezimalzahl beliebiger Genauigkeit dargestellt werden
++ kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 0d00c1e73a0568ce11abdb823d00b2b5
++ Ein `Decimal` wird aus Text, aus einer Ganzzahl oder aus einem `Double` konstruiert. Bei Text
++ bedeutet dieser Fehler, dass der Text keine Dezimalzahl ist; bei einem `Double`, dass der Double
++ keine exakte Dezimaldarstellung hat.
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 3 0 0507276eec7e26f6190c74e11cddd029
++ Prüfen Sie bei Text die Syntax – ein optionales Vorzeichen, Ziffern, ein optionaler Punkt und ein
++ optionaler Exponent. Bei einem `Double` teilt Ihnen der Fehlschlag mit, dass der Binärwert nicht
++ genau die Dezimalzahl ist, die Sie beabsichtigt haben; konstruieren Sie aus Text oder aus einer
++ unskalierten Ganzzahl und einer Skala.
+
+@ 0 1 0 18661a39c50ebc2f040b88d7d57c4687
++ > Dieser Fehler verwendete früher den Code `↯/s.62.2`, der mit `EnvironmentError` kollidierte.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1ab250dc8c64572218ef347c2694cda1
++ - Quelle: `lib/hypotenuse/src/core/hypotenuse.Decimal.scala`

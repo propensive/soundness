@@ -1,0 +1,50 @@
+orthant 2 language
+
+@ 0 6 0 180f15359b93ca3d06aed49479fd5a4b
++     Un tipo di errore ha un codice bolt — `Error(25, 1, 0)`, il primo errore del
++     venticinquesimo modulo, è `↯/s.25.1` — che è stabile tra le release, non viene mai
++     riutilizzato ed è documentato in `doc/work/errors/25.1.md`; le sue cause distinte sono i casi di
++     un enum `Reason` che estende `Clarification`, ciascuno numerato all'interno dell'errore
++     (`↯/s.25.1.1`), e ciascuno reso tramite il proprio `Communicable`. Un errore completo,
++     costruito passo per passo (900 sta per il numero del modulo in cui si trova l'errore):
+
+@ 0 11 0 00754b8c838935451e83a02692b7a2af
++       Un errore è identificato da tre numeri, che ne formano il codice bolt. `module` è il
++       numero della libreria in cui si trova l'errore, come lo registra l'`s.tel` del registro
++       `bolt`; `number` è il numero proprio dell'errore all'interno di quella libreria, il primo
++       libero quando il tipo di errore viene scritto, e mai riutilizzato (un numero ritirato
++       resta nel registro, contrassegnato come tale); e `variant` è il numero del motivo
++       dell'errore — il `number` del suo caso `Reason`, un enum che estende `Clarification` — o 0
++       quando l'errore non ha motivi. L'errore è documentato in `doc/work/errors/<module>.<number>.md`
++       con la sua causa e i rimedi consueti, così che `↯/s.25.1` nella segnalazione di un utente
++       si possa cercare anziché indovinare. Un errore scritto `Error(message)` ha `module = 0`:
++       nessun codice, e `getMessage` antepone invece il suo componente. Il codice compare nel
++       prefisso `[↯/s.25.1.2]` di `#labelled`, di `getMessage` e di un `halt` a tempo di
++       compilazione.
+
+@ 0 4 0 09841ddff78e3e0f1470142376faa577
++       Lo stile della casa per il messaggio è `doc/work/standards/messages.md`: minuscolo, senza punto
++       finale, al presente, con la specifica risorsa in difetto interpolata come valore
++       tipizzato, e mai *invalid* o *bad* come intero predicato. Gli errori sono fatti per essere
++       sottoposti a match: un handler scompone la case class e il suo `Reason`, mai il suo testo.
+
+@ 0 1 0 1b00085c23cb817210b7e86018390e25
++     Lo stile della casa per ciò che dice un messaggio è `doc/work/standards/messages.md`.
+
+@ 0 8 0 0a1b5cee94d0e9b919081a6989fc0ce7
++ entry .Clarification   il trait che estende un enum `Reason`: un numero per ogni causa distinta di un errore
++     `trait Clarification { def number: Int }`. Le cause distinte di un errore sono i casi di un
++     enum `Reason` che estende `Clarification`, ciascuno con un numero unico all'interno
++     dell'errore, così che `Error(25, 1, reason.number)` si renda come `↯/s.25.1.1`,
++     `↯/s.25.1.2`… e ciascuno abbia una sottosezione della pagina dell'errore in `doc/work/errors`.
++     Un `Reason` porta dati propri dove la diagnosi ne ha bisogno (`Ipv4ByteOutOfRange(byte:
++     Int)`), e fornisce la propria istanza di `Communicable` che formula ogni caso, che il
++     messaggio dell'errore interpola. Un `halt` o un `warn` a cui è data una `Clarification`
++     mette il suo numero nel prefisso della diagnostica.
+
+@ 0 6 0 0c68a17808bb31e102ebadd1ad9bad35
++     position)` — o il numero del suo motivo come `[↯/s.25.1.2] `: `halt(module, number,
++     reason, message)` e `halt(module, number, reason, message, position)`, dove `reason` è una
++     `Clarification`. Il parametro di posizione delle forme numerate è `Matchable`, e un valore
++     che non è una `quotes.reflect.Position` (o `null`) riporta senza posizione. Ogni codice
++     sollevato da una macro ha una pagina in `doc/work/errors`, come quello di un errore a runtime.

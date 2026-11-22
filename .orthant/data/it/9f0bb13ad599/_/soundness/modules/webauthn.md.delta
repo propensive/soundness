@@ -1,0 +1,251 @@
+orthant 2 language
+
+@ 0 1 0 177c95bfd7e6d4861aa4f0bdb5c162f2
++ ## WebAuthn: accesso senza password
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 5 0 16497eabd68821dc088cee4eebc1f6d7
++ [Web Authentication](https://www.w3.org/TR/webauthn-2/) permette a un utente di accedere a un
++ sito con una chiave anziché con una password. Un *autenticatore*, che può essere una chiave di
++ sicurezza, un telefono o l'hardware sicuro di un portatile, crea una coppia di chiavi per il sito,
++ conserva la chiave privata e con essa firma una sfida ogni volta che l'utente accede. Una
++ credenziale di questo tipo sincronizzata tra i dispositivi di un utente è una *passkey*.
+
+@ 0 3 0 080563935e290a310adef989c4330f3a
++ Qui è fornito il lato server, che lo standard chiama *relying party*. Crea le opzioni che una
++ pagina passa al browser e verifica ciò che il browser rimanda indietro. Le chiavi e i
++ certificati sono quelli della [crittografia](cryptography.md).
+
+@ 0 1 0 1a9481beff4842a0096f2aa877fa3ccf
++ ### Sulle cerimonie
+
+@ 0 5 0 06b40272bbd5108d122ca4de66072902
++ Il server non deve ricordare nulla se non una chiave pubblica, e non c'è nulla che un utente
++ possa essere indotto con l'inganno a digitare. Ciò che richiede cura è la verifica. Una risposta
++ deve riferirsi alla sfida inviata, e non a una vecchia. Deve provenire dall'origine del sito
++ stesso, e non da una pagina che gli somiglia. Deve essere fatta per questa relying party, con
++ l'utente presente. La firma deve essere quella della credenziale.
+
+@ 0 2 0 196140154b8c13e6057ad4b55a607909
++ Ciascuna delle due *cerimonie* consiste in una chiamata per creare le opzioni e una per
++ verificare la risposta, e la seconda esegue tutte le verifiche che lo standard richiede.
+
+@ 0 2 0 0df9b9b4721d03bc1624ffeba6255d27
++ Tutto proviene dal package `soundness`. Un provider di algoritmi è nell'ambito, come per
++ qualsiasi crittografia:
+
+% 2 1 0 16ec50c4e77ef0f311ee9dfe7efb3eef
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 142682d0543febc315ab710fcbc1688b
++ Una relying party è identificata da un dominio e indica le origini da cui sono servite le sue
++ pagine:
+
+% 2 1 0 15cbd76ddf715fb51acb4caa5f3633e3
+
+% 0 1 0 17047b08f1770eb202b6e53654d42744
+
+% 1 1 0 0b50bd1717cc85ff0802259052a235a5
+
+@ 0 1 0 19ac6b8d9e0b0273169ace3b7edd4b79
++ ### Registrazione
+
+@ 0 3 0 1f5f4acfc3f7af4014196bb95a3745b9
++ Una credenziale viene registrata per un account, che è un `WebAuthn.User`. Il suo `id` è un
++ handle di al massimo 64 byte che identifica l'account. Un autenticatore lo memorizza, quindi non
++ dovrebbe dire nulla della persona:
+
+% 2 1 0 0e8336fae96af3480289c23e78c16314
+
+% 0 1 0 090dc34ab0567ede0ed4540516fd6e90
+
+% 1 1 0 1c1706c689a3f374176294703eab3f81
+
+@ 0 3 0 1cfd3a375adb2ca714f7391d7eb67075
++ Una cerimonia comincia con una nuova `WebAuthn.Challenge`, che il server conserva finché non
++ arriva la risposta. `WebAuthn.registration` crea le opzioni, come il JSON che una pagina passa a
++ `PublicKeyCredential.parseCreationOptionsFromJSON` e poi a `navigator.credentials.create`:
+
+% 2 1 0 0587bf1ab0d79cad0a5574e7e8fe88dc
+
+% 0 1 0 1421e354c1065a440fb0efc24a00738f
+
+% 0 1 0 0b03d98d6fb2e7b61510adab047014ee
+
+% 1 1 0 03730af1c49d5e2c13fb6a85aad26ed6
+
+@ 0 2 0 0a6798bf00e0d5e600c3c8c2e7dfb277
++ La pagina rimanda il `toJSON()` della credenziale, e `WebAuthn.register` lo verifica. Ciò che
++ restituisce è la `WebAuthn.Credential` da memorizzare per l'account:
+
+% 2 1 0 05c0e31b6f83b2ff131cdc1d2e670169
+
+% 3 1 0 10fa60d358b7ed4d0202089d74356423
+
+% 4 1 0 1f8b36abbcb2b9271fb62fec347ae964
+
+% 0 1 0 0e7d332eecc8758806a1e84cd17f379a
+
+% 0 1 0 11d21d831e19a5cb0795e20cb0280c68
+
+% 1 1 0 1b64a46e9c5b01ad10cf28e201976437
+
+@ 0 3 0 07e59cd0b4b1d63017a2acebf79b36dd
++ Una credenziale ha un `id`, con cui la si ritrova, la `key` pubblica e un `counter` delle firme.
++ Due cose sono lasciate al chiamante, perché solo il chiamante ha i dati: verificare che l'`id`
++ non sia già registrato per un altro account, e memorizzare la credenziale.
+
+@ 0 1 0 0319a41720bd566f18d984c2a645a56b
++ `registration` accetta altri parametri, ciascuno con un default:
+
+% 2 1 0 0f82d2805a0d12141ac77818347a02e4
+
+@ 0 1 0 0e135d4b9e9b8a7407f82db8f076a4f9
++ column  Parametro
+
+% 0 1 0 188cdaf5e9fb68d0027b49f3b2552881
+
+@ 0 5 0 12d6553d871e349a13e3cc7c31e85cbe
++ column  Significato
++ row  `existing`  nessuno  gli identificatori delle credenziali che l'account ha già, così che un autenticatore non venga registrato due volte
++ row  `algorithms`  `WebAuthn.Algorithms`  gli algoritmi COSE accettati, in ordine di preferenza: ES256, EdDSA e RS256
++ row  `verification`  `false`  se l'utente deve essere verificato, con un PIN o un'impronta digitale, e non solo presente
++ row  `attestation`  `none`  la modalità di trasmissione dell'attestazione richiesta all'autenticatore
+
+% 1 1 0 1e846ab014e6f6fc1c80d064a937e453
+
+@ 0 2 0 0c45aaf217b4331e1931d37e7a76a62e
++ Ciò che si richiede in `verification` e `algorithms` va passato anche a `register`, che è ciò
++ che lo fa rispettare.
+
+@ 0 1 0 1b6911e091cca09119565edb21d17b50
++ ### Autenticazione
+
+@ 0 4 0 0b8ddb5c8a8f7f0908a6f6a4edc57890
++ `WebAuthn.authentication` crea le opzioni per l'accesso, per `navigator.credentials.get`. Gli
++ identificatori delle credenziali dell'account si passano dove l'account è già noto, e si
++ omettono dove l'autenticatore deve offrire qualunque credenziale conservi per il sito:
+
+% 2 1 0 1fb9cd8a4d694a670b16cc7b3a164824
+
+% 0 1 0 04a704116af2181d06204a357bda7b90
+
+% 0 1 0 18f5fff085e2dd3d180a15f2c3c4c0d9
+
+% 1 1 0 1739161aecaac13814d7215659924ef3
+
+@ 0 2 0 04db3a8d1e67a93a0238ee3a2cd138de
++ La risposta indica la credenziale da cui proviene. `WebAuthn.identifier` legge quel nome, così
++ che si possa trovare la credenziale memorizzata, e `WebAuthn.authenticate` verifica la risposta
++ rispetto a essa:
+
+% 2 1 0 16c1e252639b91de052f307aa74909df
+
+% 3 1 0 1ac51757ed0b88071d7036bb24980257
+
+% 4 1 0 1001cc32401e95e5123093b6ecd08546
+
+% 0 1 0 18dfc4e7b0e7959a1f07f4d64e620344
+
+% 0 1 0 11c407f619b587b210c111bd3dcdbba5
+
+% 0 1 0 035427129f8e5f4c00ea1df534fa5dd4
+
+% 1 1 0 0687e97ebb693a58038abf70a1bc085a
+
+@ 0 4 0 0ec6a7456f1f8c2b0bc6470df2f7cef5
++ La credenziale restituita ha il contatore avanzato, e va memorizzata al posto di quella vecchia.
++ Un contatore che *non* è avanzato significa che la chiave privata si trova in due posti, quindi
++ la risposta viene rifiutata. Un autenticatore che non conta riporta zero ogni volta, il che è
++ accettato finché anche il contatore memorizzato è zero.
+
+@ 0 2 0 181253d3892d7e1b1d14652e1d31cecd
++ Ogni rifiuto è un `WebAuthn.Error`, il cui motivo dice quale verifica è fallita. Una sfida vale
++ per una sola cerimonia, e viene scartata sia che la risposta venga accettata sia che no.
+
+@ 0 1 0 0ad5b8c446edfdd208ed4de3044b0525
++ ### In un'applicazione web
+
+@ 0 4 0 1e87c40cb666c0c019b4a904611edb32
++ Una sfida va conservata dalla richiesta che crea le opzioni di una cerimonia fino alla richiesta
++ che ne porta la risposta. `Ceremonies` è un deposito per questo scopo, indicizzato per la
++ `Session` dell'utente. `begin` crea la sfida di una sessione e la ricorda. `conclude` la
++ restituisce, una sola volta, e la dimentica:
+
+% 2 1 0 12d6570e591c37591719bfd5e21f2da6
+
+% 0 1 0 148726101117471e1bf41081fdc1a445
+
+% 1 1 0 10d01995ccb52d4906822eea92f074f6
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 1ba4ca4d3f4f3c581e95b14aed4cf220
+
+% 4 1 0 1ef3f9c56b399d0f1fcb7e5a6eea1603
+
+% 0 1 0 0bed94833f58d8e30ba6b69924b42908
+
+% 0 1 0 061ba6891ffc027f0c75b409b982583a
+
+% 0 1 0 165eb20f5e5d6b1b1f7bb926ec88698c
+
+% 0 1 0 05bdd3da375a0ccd06ae897a87313c42
+
+% 0 1 0 0603d59a86ad5c171d91364dbf91e789
+
+% 1 1 0 08fdf4c95ac1142c16486a8d097e1dd3
+
+@ 0 2 0 1c1afee269f245c41d7bea86b288becb
++ Poiché `conclude` restituisce una sfida una sola volta, una risposta presentata una seconda volta
++ non trova alcuna cerimonia in corso, e viene rifiutata.
+
+@ 0 1 0 0555ef1dabc1114f19c56c16706fcd0a
++ ### Attestazione
+
+@ 0 2 0 140743384e5ac2e710db46302483ee3a
++ Un autenticatore può *attestare* la credenziale che crea, cioè fare una dichiarazione
++ sull'autenticatore stesso. L'`attestation` di una credenziale dice che cosa è stato accertato:
+
+% 2 1 0 085168d5d41ede3b01c0bd32b6e22415
+
+@ 0 5 0 13ae08faa07741000043df5a6a3f40ff
++ column  Attestazione
++ column  Significato
++ row  `Unattested`  l'autenticatore non ha fatto alcuna dichiarazione
++ row  `Self`  la dichiarazione è stata firmata con la chiave stessa della credenziale, e non prova nulla sull'autenticatore
++ row  `Certified`  la dichiarazione è stata firmata con una chiave certificata da una catena di certificati
+
+% 1 1 0 1b6d58ac2f1a572213196774a725ec8d
+
+@ 0 5 0 08a94a8a0f2301aa105675b787a5bac7
++ La maggior parte delle relying party accetta qualsiasi autenticatore e non chiede alcuna
++ attestazione. Una che limita i modelli che accetta chiede la trasmissione `direct`, e passa a
++ `register` le radici di cui si fida come `anchors`. Un'attestazione `Certified` viene allora
++ accettata solo se la sua catena conduce a una di esse, e il suo membro `trusted` è `true`.
++ Senza anchor, la catena viene riportata e non convalidata.
+
+@ 0 1 0 00bfe45a2f825b971221280ff698ba8c
++ I formati `none` e `packed` sono compresi. Qualsiasi altro formato solleva un `WebAuthn.Error`.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 4 0 1061b3ab31d011111395e43d7ebf38de
++ - [Crittografia](cryptography.md) fornisce le chiavi e i certificati.
++ - [JOSE](jose.md) fornisce i token, per la sessione che segue un accesso.
++ - [OAuth 2](oauth.md) delega l'accesso a un'altra parte.
++ - [Server HTTP](http-server.md) serve le pagine e riceve le risposte.

@@ -1,0 +1,209 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1043d4992944c3a107bdcffdfc6eb13b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 04ebf6e0cf019db21fb412f8f8051a21
++ info
++     des caches : une map bornée selon l'utilisation la moins récente, et une valeur unique
++     mémoïsée avec une durée de vie
+
+@ 0 4 0 011e20a7bdcae72e14c68e918cd92a20
++ detail
++     _Camouflage_ fournit les deux formes que prend habituellement un cache, afin que les
++     décisions que tout cache artisanal prend implicitement — quand évincer, que faire lorsque
++     deux threads veulent la même valeur manquante, et quand une valeur en cache est trop
++     ancienne pour qu'on s'y fie — soient prises par le type.
+
+@ 0 4 0 135ad60909c56beb176ff8cc696d1af2
++     Un `LruCache` conserve jusqu'à un nombre fixe d'entrées indexées par clé, en évinçant la
++     moins récemment utilisée. Un `Cache` mémoïse une valeur, éventuellement pour une durée de
++     vie limitée, et la calcule sous un verrou ; les appelants concurrents partagent donc un même
++     résultat plutôt que de se ruer tous ensemble. Dans les deux cas, le calcul est passé par
++     nom et ne s'exécute qu'en cas d'absence.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0b1bcecab61ce42205c7944547b54ddd
+
+% 0 1 0 05c9123cea43a11b148cba3ceb338234
+
+% 0 1 0 15e14f970c8613db0a76e47b59908ea7
+
+% 0 1 0 03019a6eba90a1a50e8e057bbf7e6477
+
+% 0 1 0 08eaff9f81cfc4b00e678aaafd94b8f5
+
+% 0 1 0 19415459bd1338f71254dc0166fc2e51
+
+% 0 1 0 0f55897c2d40313b173edc0ec8d0c08e
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 04fea183e416f67d1e624bdbef706e73
++     La bibliothèque a un seul ensemble de sources, `camouflage.core`, et tout est exporté vers
++     le package parapluie `soundness`.
+
+% 0 1 0 0abc09b7e5376fc11d7cd5c2c8de0bce
+
+% 0 1 0 12075e465b2185ce01c91cbd8de9605f
+
+@ 0 1 0 14ab21f2bc201eb71bdfb44c1d4a2f24
++ entry .LruCache
++   info
++       un cache borné indexé par clé qui évince son entrée la moins récemment utilisée lorsqu'il
++       est plein
+
+@ 0 5 0 1d58aa9f4724a9b7103be1e30fa9991a
++   detail
++       `LruCache[Key, Value](maxSize)` contient jusqu'à `maxSize` entrées. L'appliquer avec une clé
++       et un calcul, `cache(key)(computation)`, renvoie la valeur en cache si la clé est présente,
++       et sinon évalue le calcul, stocke son résultat, et évince les entrées les moins récemment
++       utilisées jusqu'à ce que le cache respecte de nouveau sa taille.
+
+@ 0 2 0 0a14e8cdb02d44651f84a3fc70b32a3e
++       Lire ou écrire une entrée la marque comme récente ; les entrées qui survivent sont donc
++       celles auxquelles le programme ne cesse de revenir :
+
+% 2 1 0 0f22a2a9c1fd3e71133ef626ec3daae8
+
+% 3 1 0 09d5bdf4697176a9145561e9cd012bfd
+
+% 5 1 0 1718b2b3e359c21d053be8f65a4d1634
+
+% 6 1 0 16b597839e28f1d4050c19a8bf96f08c
+
+% 0 1 0 1343d58e753d753c0c8419675046645f
+
+% 0 1 0 0ccc0c5b4eb7de6714adc5dbedc385f4
+
+% 0 1 0 0ddb556550837b5405d7ceab812d8825
+
+% 0 1 0 010cc26b34174e6e1088da07ce8c91c8
+
+% 0 1 0 00db33f551dfa7000e6e8121b5d7a594
+
+% 0 1 0 0dfe8aaf5a22e78f15c4ba792e6c3ac5
+
+% 1 1 0 04ecf1da413589ec041b0dee7d077d1e
+
+@ 0 2 0 0c007944816c71e307309ec89593b835
++       Un `LruCache` ne détient aucun verrou : il est destiné à être utilisé par un seul thread à
++       la fois, ou derrière un verrou de l'appelant.
+
+% 0 1 0 18ffb6d36f56335a13fbec508d80c960
+
+@ 0 1 0 044b2aec1a798e2a0ee436efee23760d
++   entry #apply
++     info
++         la valeur pour une clé : celle en cache, ou le résultat du calcul, stocké
+
+@ 0 3 0 1e2b5bc273d67e4a1de233880ffd979f
++     detail
++         Le calcul est passé par nom et n'est évalué qu'en cas d'absence. Une présence marque
++         l'entrée comme la plus récemment utilisée ; une absence l'ajoute comme la plus récente et
++         évince les entrées les moins récentes au-delà de la taille du cache.
+
+@ 0 1 0 0738c48cd5fd00ab0ae2d2c2ea66bcd0
++   entry #contains
++     info
++         si le cache contient une valeur pour une clé
+
+@ 0 1 0 11f9d88e46316bce141129f3ddda3292
++     detail
++         Interroge sans rien calculer et sans marquer l'entrée comme récente.
+
+@ 0 1 0 05b8a765b154737b0884f03cc372091e
++   entry #remove
++     info
++         retire l'entrée d'une clé, si elle est présente
+
+@ 0 2 0 06b028579f7d8cd717d1739c46a10dee
++     detail
++         Pour l'invalidation, lorsque les données sous-jacentes ont changé et que la valeur en
++         cache est connue pour être périmée. Retirer une clé absente ne fait rien.
+
+@ 2 1 0 0c5c617f6fb898f11515c2e352e45cfe
++         ```scala
+
+@ 3 1 0 12a60ae89d02a8d70c01006debea0684
++         import soundness.*
+
+@ 5 1 0 178211d04fb85cc0048e11a0c8189522
++         val cache = LruCache[Int, Text](4)
+
+@ 6 1 0 09b640c51156f11e1bb024771eefdf59
++         cache(1)(t"one")
+
+@ 0 1 0 13516c29434a5f491f00dda5be29953c
++         cache.remove(1)
+
+@ 0 1 0 1b6ef3033cb3f8af0ed4e0d2bcbe729b
++         cache.contains(1)   // false
+
+@ 1 1 0 1e71eab2c1a0f5981e7081f72b32b6ba
++         ```
+
+@ 0 1 0 03624add4049ec54165e98a0e7879731
++ entry .Cache
++   info
++       une valeur mémoïsée unique, calculée une fois sous un verrou et pouvant expirer
+
+@ 0 6 0 16b121ba3d4a0b190198c66159f5d851
++   detail
++       Un `Cache[Value]` contient au plus une valeur. `#establish` la renvoie, en ne la calculant
++       que lorsqu'aucune n'est détenue ou que celle détenue a expiré. Le calcul s'exécute sous un
++       verrou ; lorsque plusieurs threads demandent en même temps une valeur manquante ou expirée,
++       l'un la calcule et les autres reçoivent son résultat : c'est la ruée sur le cache qu'une
++       simple `lazy val` avec un horodatage ne peut pas empêcher.
+
+% 2 1 0 1efcf7cb06c6b45d10ad996fe6286038
+
+% 3 1 0 150d695d01cf40201431bd509c1746d5
+
+% 0 1 0 08510d896ff9d98b1b5ddae155f38275
+
+% 0 1 0 1f07e039d02bb42316e17c4109e83204
+
+% 0 1 0 19ca7c5ed6c9f62c12efb642dadff1af
+
+% 0 1 0 0b018111d960f244111fcfe32f9c955f
+
+% 0 1 0 07bad33630ca28e412523298c75c28a4
+
+% 1 1 0 139dca28ecfb44ce070cc48df05e05c8
+
+@ 0 2 0 175790da809dc2a20cb5d9d6edc6bde6
++       Le type de la valeur est donné comme type attendu, ou comme argument de type,
++       `Cache[Configuration]()`.
+
+% 0 1 0 0cde7b4f6f4eab52053cb83da422b009
+
+@ 0 1 0 0079267f53a8d8cd0027840971bc1135
++   entry .apply
++     info
++         un cache avec une durée de vie, ou sans, `Cache[Value]()`, qui conserve sa valeur pour
++         toujours
+
+@ 0 4 0 18800079c72407d8136bb7bb9a444c51
++     detail
++         La durée de vie est toute durée qui est `Abstractable across Durations to Long` — une
++         `Quantity` aviation de secondes, avec `durationInterfaces.aviationDuration` importé, par
++         exemple — lue avec une précision à la milliseconde. La durée de vie se mesure à partir du
++         moment où la valeur a été calculée pour la dernière fois, et non à partir de sa dernière
++         lecture.
+
+@ 0 1 0 18f2de6bbef12c1f01cf32693709371c
++   entry #establish
++     info
++         la valeur en cache, calculée par le bloc donné s'il n'y en a pas ou si elle a expiré
+
+@ 0 2 0 02a0a7c17d27575b0be91e257471ef3b
++     detail
++         Le bloc est passé par nom et n'est évalué que si nécessaire, pendant que le verrou du
++         cache est détenu ; les autres appelants l'attendent et reçoivent la même valeur.

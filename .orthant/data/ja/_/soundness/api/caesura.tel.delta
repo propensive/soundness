@@ -1,0 +1,1115 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 020e9af13aaabefd037e0c106d73c906
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0122281df872933d11bbbe64e55428e0
++ info   CSV、TSV などの区切り文字形式のテキスト：選んだ形式で行をパースし、ケースクラスとの間でデコード・エンコードする
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0b90bbdc36bec69907e2da5a854f3769
++     _Caesura_ は区切り文字で値を区切ったデータ、つまり CSV、そのタブ区切りの親類である TSV、空白区切りのデータを読み書きする。
++     引用、エスケープ、ヘッダーの規約は推測されるのではなく、スコープ内で選ばれた `Dsv.Format` によって決まる。
++     テキストは `Sheet` にパースされる。
++     これは行の配列を実体化したものである。
++     各行は `Dsv` であり、セルの配列であって、データにヘッダーがあれば列名を知っている。
++     行は型からの導出によってケースクラスにデコードされ、ケースクラスは行にエンコードされるので、列からフィールドへの対応を手で書くことはない。
+
+% 2 1 0 157faad6c82e52c50bf58b529fdeb7b4
+
+% 3 1 0 1db1e66a5d0b97031899cd30ccbcd243
+
+% 4 1 0 160216c1a1e0dcb80dd50ad18540fbfb
+
+% 5 1 0 05c6384ba52fc12e16323a3799a2523f
+
+% 2 1 0 14c39385ba74b21405046ae62c5ce01d
+
+% 0 1 0 17a61f7822ba883218d25c74b7a0ca86
+
+% 0 1 0 055b5394d0d16f731c844c2e2be3a093
+
+% 0 1 0 16a7d9be2959183a011edd33c632f9a9
+
+% 0 1 0 1fe12e8ad6210e681ccc4e41bf354214
+
+% 0 1 0 1eb272f55d9b8c7c1d3977de6d265cbb
+
+% 1 1 0 1f3448ae4af0427603cab0510db1523a
+
+@ 0 4 0 06ae211399ab16a404d1e52b5520b32b
++     入れ子のケースクラスは、フィールドの数だけの列にわたって平坦化される（これがその _スパン_ であり、`Spannable` 型クラスが表す）。
++     `Optional` フィールドは短い行を `Unset` として読む。
++     ヘッダーを持つ形式では、各フィールドは自身の名前の列に対応づけられるので、列の順序がフィールドの順序と一致している必要はない。
+
+@ 0 8 0 16146c939335515d1e5bc9526aeefb1c
++     テキストから値への道は二つある。
++     **行デコーダー** は行ごとに `Dsv` を作り、それを `Decodable in Dsv` でデコードする。
++     `Decodable in Dsv` はすべての直積型が導出する。
++     蓄積型の戦略のもとでは、不正なセルをすべて報告し、それぞれを `CellRef` にフォーカスする。
++     **直接パーサー** は `Dsv.Parsable` を持つ型を、パーサーが再利用する行バッファーから直接読み、`Dsv` を一切作らない。
++     これは大きなファイルのための高速な経路である。
++     `codecs` のモード（`codecs.direct`、`codecs.derived`、`codecs.strict`）は、他のすべての形式と同じように、この二つのどちらを使うかを選ぶ。
++     保持しきれないほど大きなファイルは、文字のストリームに対して `rows` か `rowsOf` で読み、一度に一行ずつ得る。
+
+@ 0 2 0 1d0fdc96dcc78fe1102834540490ffed
++     選択肢はパッケージ内の given であり、それぞれ名前でインポートする。
++     `import soundness.*` は given をインポートしないからである。
+
+@ 0 12 0 11ed7652cc4a67ba007e87faf2b6dd0a
++     - `dsvFormats`：形式。`csvFormat`、`tsvFormat`、`ssvFormat` があり、それぞれに `…WithHeaderFormat` のバリアントがある。これがなければ何もパースも描画もできない。
++     - `dsvRedesignations`：動的アクセスのために、キャメルケースのメンバー名をどのようにヘッダー名に対応づけるか。たとえば `capitalizedWordsRedesignation` は `targetPerson` を `Target Person` に対応づける。
++     - `dynamicAccess`：`dynamicDsv`。行のセルをメンバーとして `row.age[Int]` のように読めるようにする。
++     - `optionalityOptions`：`Optional` フィールドが、欠けたセルや不正なセルを `Unset` として扱うかエラーとして扱うか。
++     - `optics`：`panopticon` の `lens` のための、行のセルとシートの行に対するレンズ。
++     - `construables`：HTTP クライアントのために、メディアタイプ `text/csv` と `text/tab-separated-values` を `Sheet` として解釈するもの。
+
+@ 0 4 0 14a735e060de17a30a39c17ba8fdea89
++     このライブラリには二つのコンポーネントがある。
++     `caesura.core` はメディアタイプの対応づけ以外のすべてを持ち、プラットフォームに依存しない。
++     `caesura.http` は `construables` パッケージを加え、`gesticulate` に依存する。
++     すべてが `soundness` アンブレラにエクスポートされ、選択パッケージはアンブレラ自身の同名のパッケージに統合される。
+
+% 0 1 0 014d286e745d74f914bcc9be0dd95fda
+
+% 0 1 0 16642a3698bb01fb0dd8211931d94a1e
+
+% 0 1 0 1e5fc3d62f56cee60ce69937f7479516
+
+% 0 1 0 0228b5520494dbe50e2865c7ca8a49e8
+
+% 0 1 0 0b9ac194a85040510cf6b6af99485961
+
+% 0 1 0 0fcfd56bf7af14880b149c12eda5f072
+
+@ 0 1 0 04580a743ebd61310a91feab0ee86cac
++ entry .Dsv   区切り文字形式のデータの一行：セルの配列と、データにヘッダーがあった場合の列名
+
+% 1 1 0 1cdddb4d89b044290c456c6c352102f7
+
+@ 0 6 0 027398ee00ef8d81132cac0fc0082d5b
++       `Dsv` は一つの行である。
++       その `#data` は行のセルを順に並べた `Text` であり、`#columns` は、行がヘッダーを持つ形式でパースされた場合に各列名をそのインデックスに対応づける（そうでなければ `Unset` である）。
++       `Sheet` の行はこの値でできており、`rows` がストリームから得るのもこの値であり、すべての行コーデックの `Form` でもある。
++       型は、行から読めるなら `Decodable in Dsv` であり、行として書けるなら `Encodable in Dsv` である。
+
+% 2 1 0 1765863041372b2b1aaa5d6c51c6346d
+
+% 3 1 0 15b383ec5e0e57f20c49028b9883f244
+
+% 4 1 0 187337b17e9510bf09b8495083d4cc79
+
+% 5 1 0 03b2440034291db808f7723a839a129e
+
+% 7 1 0 127aca9201509d670a0233f460bcc869
+
+% 0 1 0 09203616bb9e165d142ffbb5ba4ecb9e
+
+% 0 1 0 0682035aa3b4758b0c1c5be2cf71ceea
+
+% 0 1 0 0811167fe2934f4509162a573d8cd081
+
+% 0 1 0 10f3898c3d36d10a1353813c16f528f7
+
+% 1 1 0 01bdead578251831156519239552625a
+
+@ 0 8 0 1f7a0704a63c1f2b0fc881a719ed4d17
++       コンパニオンがすべてのコーデックを持っているので、どれもインポートを必要としない。
++       `Int`、`Long`、`Double`、`Float`、`Boolean`、`Text`、`String` のセルデコーダー、行の最初のセルを `Decodable in Text` である任意の型として読む代替（`Dsv2` 内）、`Optional` フィールド、`Encodable in Text` である任意の型の一セルの行としてのエンコード、すべての直積型に対する行デコーダーと行エンコーダーの導出、そして `read[Play in Dsv]` と `read[List[Play] in Dsv]` の背後にある `Aggregable` の given（一部は親の `Dsv1` と `Dsv2` にある）である。
++       また `Format`、`Error`、`Redesignation`、直接パースのための型クラス `Parsable` と `Field` も持つ。
+
+@ 0 4 0 1337022ad5e3f6de18db43ece8981125
++       プリミティブなセルデコーダーは、不正なセルで中断しない。
++       `Dsv.Error` を発生させ、仮の値で処理を続ける。
++       そのため、行を蓄積型の戦略（`Validate[…, CellRef]`）のもとで直積にデコードするときには、最初のものだけでなく、不正なセルや欠けたセルがすべて、それぞれ列の `CellRef` にフォーカスされて報告される。
+
+@ 0 2 0 18f53452490d48f5003f1fee965f9ad2
++       `dynamicAccess.dynamicDsv` をインポートし、`Dsv.Redesignation` がスコープ内にあれば、セルは行のメンバーになる。
++       `row.age[Int]` のように書く（`#selectDynamic` を参照）。
+
+% 0 1 0 0d4b17993e3918591a071121ce79cbb8
+
+% 1 1 0 067dc4c3cfd1cbd207b592932154fce8
+
+% 1 1 0 0d33899b04fc59110e9cf1c241ac3412
+
+% 0 1 0 0fd4d7af4eca3bd91377666fbf8322e0
+
+@ 0 34 0 0f4d889be2c6b2e2026d1ae6900e3e0e
++   entry .apply   セルから行を作る。セルは引数として、または `Iterable[Text]` として与える
++       `Dsv(t"a", t"b")` と `Dsv(cells)` は列名のない行を作る。
++       列名のある行は、ヘッダーを持つ形式でのパースか、ケースクラスのコンストラクター `Dsv(data, columns)` から得られる。
++   entry .optionalDecodable   `Optional` フィールドをデコードする：欠けたセルは `Unset` であり、存在するセルは内側の型がデコードする
++       セルのない行、つまり位置による短い行や、行に欠けているヘッダーの列は `Unset` にデコードされる。
++       存在するセルは、たとえ空でも、内側の型の `Decodable in Dsv` がデコードする。
++       どちらの答えも `optionalityOptions` で選ぶポリシーである。
++       厳格な `Decodable.Absence in Dsv` は欠けたセルに対して `Dsv.Error.Reason.Absent` を発生させ、寛容な `Decodable.Fault in Dsv` は内側のデコーダーが拒むセルを `Unset` として読む。
++       デフォルトは、欠如に対しては寛容、誤りに対しては厳格である。
++       `Dsv.Format` と `Tactic[Dsv.Error]` が必要である。
++   entry .encoder   `Encodable in Text` である任意の型を一セルの行として書く
++   entry .int   行の最初のセルを `Int` としてデコードし、できなければ `Dsv.Error` を発生させて処理を続ける
++       プリミティブなセルデコーダーはすべて同じである。
++       欠けたセルは `Dsv.Error.Reason.Absent` を、パースできないセルは `Dsv.Error.Reason.Unparseable(cell, t"Int")` を、それぞれ `raise` によって発生させるので、蓄積型の戦略はエラーを集め、デコードは `0` で続く。
++       `Dsv.Format` と `Tactic[Dsv.Error]` が必要である。
++   entry .long   行の最初のセルを `Long` としてデコードし、できなければ `Dsv.Error` を発生させて処理を続ける
++   entry .double   行の最初のセルを `Double` としてデコードし、できなければ `Dsv.Error` を発生させて処理を続ける
++   entry .float   行の最初のセルを `Float` としてデコードし、できなければ `Dsv.Error` を発生させて処理を続ける
++   entry .boolean   行の最初のセルを `Boolean` としてデコードする：受け付けるのは `true` と `false` だけである
++       `TRUE` や `1` を含む他のテキストはすべて `Dsv.Error.Reason.Unparseable` を発生させ、デコードは `false` で続く。
++   entry .text   行の最初のセルを `Text` としてデコードする。`Dsv.Error` を発生させるのはセルが欠けている場合だけである
++   entry .string   行の最初のセルを `String` としてデコードする。`Dsv.Error` を発生させるのはセルが欠けている場合だけである
++   entry .decodableDerivation   任意の直積型に対して、フィールドのセルを順に取る行デコーダーを導出する
++       各フィールドは、そのスパン（`Spannable`）の数だけセルを取る。
++       `Decodable in Text` であるフィールドなら一つ、入れ子のケースクラスならそのフィールドのスパンの合計である。
++       ヘッダーを持つ形式では、各フィールドは代わりに自身の名前の列で、フィールドの綴りそのままで探される。
++       列が存在しないフィールドは空の行を受け取るので、`Optional` フィールドは `Unset` になる。
++       蓄積型の戦略のもとでは、各フィールドは `focus(CellRef(…))` の内側でデコードされ、レコードはすべてのフィールドが問題なくデコードされたときにだけ構築される。
+
+% 2 1 0 00488595a3a51ca40884ff78214c1662
+
+% 3 1 0 1b846d63d0a3c37a0918cdac167cf329
+
+% 4 1 0 01c029e0a41c687d052761c964781278
+
+% 5 1 0 06d957eef4eebc2f179d276d874c953a
+
+% 7 1 0 01802095551cf21700b11848593c8d8a
+
+% 3 1 0 191e8d1fe301741a04bb0961fc6afae6
+
+% 0 1 0 15e110ebd34f929f014bf88d99401893
+
+% 1 1 0 198bcec437302afb148e60e19f0841ff
+
+@ 0 20 0 12c656c981dfcb9908152ea15da00c1f
++   entry .encodableDerivation   任意の直積型に対して、フィールドのセルを連結する行エンコーダーを導出する
++       入れ子のケースクラスは自身のセルをその場に差し込むので、エンコードは `.decodableDerivation` の位置による読み取りの鏡像である。
++   entry .showable   スコープ内の `Dsv.Format` で、行を区切り文字形式のテキストの一行として描画する
++       セルは形式の区切り文字で結合される。
++       セルが引用されるのは、引用符、区切り文字、改行、復帰のいずれかを含む場合だけであり、引用されたセルの中の引用符は二重にされる。
++   entry .aggregableDerived   `codecs.derived` のもとで、`Play` に `Dsv.Parsable` があっても、`Play in Dsv` を行デコーダーで読む
++       `import codecs.derived` で選ばれ、スコープ内に `Dsv.Parsable` がある型に対して直接の経路より優先される。
++       そのため、プログラムは二つを比較したり、一回の読み取りだけ蓄積型の行デコーダーを使い続けたりできる。
++   entry .aggregableStrict   `codecs.strict` のもとで、スコープ内の `Dsv.Parsable` を通じて `Play in Dsv` を直接読む
++       `Dsv1#aggregableStrictFailure` と対をなす。
++       `import codecs.strict` のもとでは、`Dsv.Parsable` を持つ型は直接パースされ、持たない型は、行デコーダーに頼る代わりに、その型を名指しするコンパイルエラーになる。
++   entry .aggregableParsedList   `read[List[Play] in Dsv]`：`Play` の `Dsv.Parsable` を通じて、すべての行を直接パースする
++       シート全体に対応する行デコーダー版はないので、この読み取りはどの `codecs` モードでも直接であり、要素の型に `Dsv.Parsable` が必要である（`codecs.direct` は任意の直積に対してこれを導出する）。
++       `Dsv.Format`、`Tactic[Dsv.Error]`、`Buffering` が必要である。
+
+% 2 1 0 02dd1ffe816e148e0c6e67d925d3e0d2
+
+% 3 1 0 02f0534548654ae30438d2403850b721
+
+% 4 1 0 148cd4ca52d52fae17f73ec1a0495ac5
+
+% 5 1 0 152f39525e327d1a145dff0260a517e9
+
+% 0 1 0 14e82097fcd5855d1bde4f5045b26a28
+
+% 0 1 0 125b6790ea8071fb0fda2447dc3e0ac7
+
+% 0 1 0 000aa57660abbcc30ef7a39a20048446
+
+% 1 1 0 1b6cf42032db80f0071a1371f08424bc
+
+@ 0 1 0 026f971a1005b2e60487db67fe405655
++   entry .Parsing   `Dsv.Parsable` と `Dsv.Field` の共通の親：`DsvReader` から値を読む
+
+% 1 1 0 0d565a598aa815771904323f722eb84f
+
+@ 0 5 0 00121d9ed0eaa4c007ae4cfd9f449540
++         `#Transport` が `Dsv` であり、`#Reader` が `DsvReader` である `distillate.Parsable`。
++         インスタンスは現在の行の `#width` 個のセルを占め、それを与えられたオフセットから `#parse` で読む。
++         `Parsable` と `Field` はどちらも互いのサブタイプではない。
++         `Parsable` は読み取りを直接の経路に切り替える、自ら選んで使う表面であり、`Field` はすべてのフィールドの型が解決する、実際に動作する側である。
+
+% 1 1 0 1b6fea3da392583c1acea222db5f1bfe
+
+@ 0 5 0 030c9a6b98f83632090390b353c6dd43
++     entry #Transport   転送形式：`Dsv`
++     entry #Reader   インスタンスがパースに使うトークンリーダー：`DsvReader`
++     entry #width   位置による行の中で値が占めるセルの数。オーバーライドされない限り `1`
++     entry #parse   `DsvReader` の現在の行から、セルのオフセット（デフォルトは `0`）を起点に値を読む
++   entry .Parsable2   `codecs.direct` の導出である `Dsv.Parsable.generated` の、優先度の低い置き場所
+
+% 1 1 0 043f73f10d7c484c13cc078f3c222dc7
+
+% 2 1 0 1add02e9fbc850f11d02230e690d0442
+
+@ 0 7 0 0f7bbcac27d705591ba5576f66831a22
++         `Dsv.Parsable` のコンパニオンの親であり、`codecs.direct` が有効にする given を持つ。
++         直接使うためのものではない。
++     entry #generated   `codecs.direct` のもとで、すべての直積型に対して導出される `Dsv.Parsable`
++         独自の `Dsv.Parsable` を持つ型は、代わりにそれを使う。
++         この導出は各フィールドを `Dsv.Field` を通じて読むので、`Decodable in Text` でないフィールドを持つ直積（またはそのようなフィールドからなる直積）は、代替に頼るのではなく導出に失敗する。
++   entry .Parsable   型をソースから直接、行ごとの `Dsv` なしにパースするための、自ら選んで使う型クラス
+
+% 1 1 0 130c991831fbd6f00042c6667a7cd691
+
+@ 0 4 0 1f4db59a85ed474f1c5cfd3c1e4ad41a
++         `Dsv.Parsable` である型は、`read[Play in Dsv]`、`read[List[Play] in Dsv]`、`rowsOf[Play]` によって、パーサーが再利用する行バッファーから直接読まれる。
++         セルはその場で参照されるので、レコードごとに `Dsv` の行の値が作られることはない。
++         これを宣言すると経路が切り替わる。
++         宣言のない型は、`codecs.direct` がインポートされていない限り行デコーダーを使い続ける。
+
+% 2 1 0 19bae06f36a5d40712d700157cd6ef7a
+
+% 3 1 0 0820bb5d8dde7b6f032620c50756ffba
+
+% 4 1 0 052eae230db21f7f0cf8cd9a01d0da29
+
+% 1 1 0 0f4120b9c78c1c640477f4b6e8c52dba
+
+% 0 1 0 0ee076335a2ce1b50dbecfd94e91347a
+
+% 0 1 0 1a420fa516684915025cd96bcf71b983
+
+% 0 1 0 0a6296f1de4ba6b11f6a21b4a8789f79
+
+% 0 1 0 1363b44f2d71f53c10ffde66e7f57b3b
+
+% 0 1 0 0875568724b97aa30ec5c29c342a5a3f
+
+% 1 1 0 0a0c128ae8398bdf1afce9baa8b501cd
+
+@ 0 3 0 10f04dfa4cb680cf037499a0a7060920
++         フィールドは、ヘッダーを持つ形式では見出しによって、そうでなければ位置によって対応づけられ、行が届かない `Optional` フィールドは `Unset` になる。
++         直接パースはすぐに失敗する。
++         行デコーダーのように、不正なセルをすべて蓄積することはしない。
+
+@ 0 2 0 11a99a903b67a58f0d251489c0c8df3a
++         コンパニオンは `codecs.direct` の導出 `generated` を、親の `Dsv.Parsable2` から継承する。
+
+% 0 1 0 0b6b4643cf11d3fd0ffddf9f1ceec9d3
+
+% 1 1 0 153a1942a39a5aa60126f8fb8702b960
+
+@ 0 6 0 04d8754eabd7b8ca01fe8e282d015ab3
++     entry .derived   直積型に対して、各フィールドをその `Dsv.Field` を通じて読む `Dsv.Parsable` を導出する
++         `given Play is Dsv.Parsable = Dsv.Parsable.derived`、または `derives Dsv.Parsable` と書く。
++         すべてのフィールドが `Dsv.Field` を持たなければならない。
++         `Decodable in Text` である任意の型、その `Optional`、そしてそのようなフィールドからなる任意の直積は、これを持つ。
++     entry .fromField   `Dsv.Field` から、その幅を保ったまま `Dsv.Parsable` を作る
++   entry .Field   直接パースされる直積の一つのフィールドが、`DsvReader` からどのようにセルを読むか
+
+% 1 1 0 197c710d8baca0681b6130ac05f958fd
+
+@ 0 17 0 1e493acbd351f5bb1da3a92a7e1a6b09
++         `Dsv.Parsable` の導出がフィールドごとに召喚する型クラス。
++         `Decodable in Text` である型に対しては常に解決され、その型は一つのセルを読む。
++         入れ子の直積は、自身のフィールドの幅の合計を幅とする `Field` であり（`Dsv.ParsableDerivation` による）、`Optional` フィールドもまた `Field` である。
++         欠けたセルは、`.optional` が横取りする場合を除き、リーダーの戦術を通じて `Dsv.Error.Reason.Absent` で中断する。
++     entry .decodable   `Decodable in Text` である任意の型。一つのセルから読む
++     entry .optional   `Optional` フィールド：`optionalityOptions` のポリシーに従い、欠けたセルに対しては `Unset`
++         行デコーダーの `Dsv.optionalDecodable` と同じである。
++         欠けたセルは、欠如が厳格でない限り `Unset` であり、内側のフィールドが拒むセルは、誤りが寛容でない限りエラーを発生させ、寛容なら `Unset` になる。
++     entry .parseField   中立な参照として保持されたリーダーに対して、フィールドの `#parse` を呼ぶ。生成されるコードのためのもの
++         直接使うためのものではない。
++         導出されたパース用ラムダはリーダーのケイパビリティを引数として取れないので、それを `AnyRef` として持ち運び、このメソッドを通じて呼び出す。
++     entry .fieldColumn   中立な参照として保持されたリーダー上での、見出しの列インデックス。生成されるコードのためのもの
++         直接使うためのものではない。
++         位置によるモードでは `Unset` である。
++   entry .ParsableDerivation   `Dsv.Parsable.derived` の背後にある、`Dsv.Field` の直積の導出
+
+% 1 1 0 0317bd52bdd4192d10b6aa4591875375
+
+% 2 1 0 06ad95e4f518f6db0cd3d358817bdfe6
+
+@ 0 8 0 0482e9c34516771b116b8528099f4028
++         直接使うためのものではない。
++         `Dsv.Parsable.derived` がこれを呼ぶ。
++         ヘッダーを持つ形式ではフィールドは列名で探され、そうでなければ各フィールドは進んでいくオフセットから自身のスパンを読む。
++     entry .DsvProductParser   導出が作る `Dsv.Field`：幅とパース関数
++       entry #width   直積のフィールドのスパンの合計
++       entry #parse   現在の行から、セルのオフセットを起点に直積を読む
++     entry .conjunction   直積に対して `Dsv.Field` を導出するマクロ
++   entry .DecodableDerivation   `Dsv.decodableDerivation` の背後にある、`Decodable in Dsv` の直積の導出
+
+% 1 1 0 1a6fa2c1341de2d410c68e7a3db604b7
+
+% 2 1 0 114973f0417b16e71f167160dcec98fc
+
+@ 0 10 0 16efdf4e1997a3e10b120fc094d4086e
++         直接使うためのものではない。
++         given の `Dsv.decodableDerivation` がこれを呼ぶ。
++         フィールドを一度だけ走査し、それぞれを自身のスパン（ヘッダーのもとでは名前のついた列）からデコードする。
++         蓄積型の戦略のもとでは、それぞれを `CellRef` にフォーカスし、すべてのフィールドが成功したときにだけレコードを作る。
++     entry .DsvProductDecoder   導出が作る `Decodable in Dsv`。デコード関数を包む
++       entry #Self   デコードされる直積型
++       entry #Form   デコードの元となる形式：`Dsv`
++       entry #decoded   行を直積にデコードする
++     entry .conjunction   直積に対して行デコーダーを導出するマクロ
++   entry .EncodableDerivation   `Dsv.encodableDerivation` の背後にある、`Encodable in Dsv` の直積の導出
+
+% 1 1 0 021f318b6341b87f044301015fadfcc2
+
+% 2 1 0 00d3e8ff363eac591fba724d3ad4aa23
+
+@ 0 3 0 07ca8c2f086a7852097d9798f2f303c9
++         直接使うためのものではない。
++         given の `Dsv.encodableDerivation` がこれを呼ぶ。
++     entry .conjunction   直積に対して、フィールドのセルを連結する行エンコーダーを導出するマクロ
++   entry .Error   区切り文字形式のテキストをパースできないとき、または行をデコードできないときに発生する
+
+% 1 1 0 0eaef628a277e2dc16d98a64493b878b
+
+@ 0 8 0 093cfd6ca3fea84d0f92e17ed6fb5545
++         エラー `↯/s.83.1` であり、サブコードは `#reason` から決まる。
++         **パース** の失敗、つまり引用されていないセルの開始より後に引用符が見つかった場合は _could not parse row data at row `row`, column `column` because a quote was found after the start of a cell_ と読め、1 から数えた行と列、および入力への文字オフセットを持つ。
++         **デコード** の失敗は _could not decode the cell because the cell was absent_ または _because the value `value` could not be parsed as `expected`_ と読める。
++         その位置はエラー自体にはなく（`#row` と `#column` は `Prim`、`#offset` は `0`）、蓄積型の戦略がエラーとともに記録する `CellRef` のフォーカスにある。
+
+% 2 1 0 033d2bae05b5636f121c39a5c0865243
+
+% 3 1 0 0cd2971282f7001f1a5e4790c8900af1
+
+% 4 1 0 0673b0a7296cf7b4033d7ac8f3503688
+
+% 0 1 0 1beda05b355ecc71182945a9c5f0608f
+
+% 0 1 0 0deca616a9f105d20ed9bf8e6a0e8f16
+
+% 1 1 0 10db13c5b24fcaf801a0b490c4f1e01c
+
+@ 0 7 0 1a101b7e8479d11e19383548a7c0bf14
++         `read[Sheet]`、`read[Play in Dsv]`、`rows`、`rowsOf`、`Dsv#as` が、スコープ内の `Tactic[Dsv.Error]` を通じて発生させる。
++         `Reason` は列挙型であり、`MisplacedQuote`（サブコード 1、パースの失敗）、`Absent`（2、短い行に欠けているセル、または行に欠けているヘッダーの列）、`Unparseable(value, expected)`（3、デコーダーが拒んだセル。セルのテキストと期待された型の名前を持つ）からなる。
++     entry .communicable   `Dsv.Error.Reason` を、エラーのメッセージの末尾にくる節として描画する
++     entry .Reason   区切り文字形式のデータが失敗した理由：`MisplacedQuote`、`Absent`、`Unparseable(value, expected)` のいずれか
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 16 0 049a46177a45dd0d1080474b8da42a2c
++           `MisplacedQuote`（サブコード 1）はパースの失敗であり、引用されていないセルの開始より後に引用符が見つかったことを表す。
++           `Absent`（2）は、行が持たないセルに対するデコードの失敗である。
++           `Unparseable(value, expected)`（3）は、テキスト `value` を `expected` が名指す型として読めなかったセルに対するデコードの失敗である。
++       entry #number   理由のサブコード。エラー番号 364 に続く
++     entry .apply   形式と理由から、位置を持たないデコード段階のエラーを作る
++         位置には仮の値（`Prim`、`Prim`、`0`）が入る。
++         デコーダーの位置は、それがフォーカスされている `CellRef` が運ぶからである。
++     entry #format   データを読んだときの `Dsv.Format`
++     entry #reason   失敗の `Dsv.Error.Reason`
++     entry #row   パースの失敗の、1 から数えた行。デコードの失敗では `Prim`
++     entry #column   パースの失敗の、1 から数えた列。デコードの失敗では `Prim`
++     entry #offset   デコードされたテキストへの、パースの失敗の文字（UTF-16 コード単位）オフセット。デコードの失敗では `0`
++         バイトオフセットは得られない。
++         パーサーは、すでにバイトからデコードされたテキストを読むからである。
++   entry .Format   区切り文字形式の規約：ヘッダー行、区切り文字、引用文字、エスケープ文字
+
+% 1 1 0 09c8b8fa0679f57902b05ae786bd84d1
+
+@ 0 5 0 0a0b9daa9ce0269b1957edb54c6531dc
++         `Dsv.Format` は、データの最初の行がヘッダーかどうか（`#header`）、どの文字がセルを区切るか（`#delimiter`）、どの文字がセルを引用するか（`#quote`）、どの文字が引用符をエスケープするか（`#escape`）を述べる。
++         スコープ内にこれがなければ、何もパースも描画もできない。
++         標準のものは `dsvFormats` にあって名前でインポートし、それ以外のものはローカルな given として束縛した値である。
+
+% 2 1 0 1386790ec791d4a71506647e55ff3cff
+
+% 3 1 0 1366d5230773448c0f19618bb7d7c73d
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 142599fd82657df1155bea3a07d75a89
+
+% 0 1 0 1ebbf2d116d2f8d31903e7360e28fefd
+
+% 1 1 0 1e8529da1a7749d2125c82fe9dcb94be
+
+@ 0 4 0 06030242dba683e41a95a656300a0ee7
++         ヘッダーを持つ形式では、`read[Sheet]` は最初の行を列名として取る。
++         そのため、各行のセルは名前で参照でき、導出されたデコーダーはフィールドを名前で列に対応づける。
++         パーサーと描画器はどちらも、引用されたセルの中の引用符を二重にしてエスケープする。
++         これはすべての標準の形式が使う規約である。
+
+% 0 1 0 1508125cf7fef7f61d8319dcd87dbc34
+
+@ 0 9 0 05f96a31b55a3bf90e96bf37f82813d4
++     entry #header   最初の行が列に名前をつけるかどうか
++     entry #delimiter   セルの間の文字：標準の形式では `,`、タブ、または空白
++     entry #quote   区切り文字、引用符、改行を含むセルを囲む文字
++     entry #escape   引用されたセルの中の引用符をエスケープする文字。すべての標準の形式で `#quote` と同じ
++     entry #Delimiter   パターンで使うための、安定した識別子としての区切り文字
++     entry #Quote   パターンで使うための、安定した識別子としての引用文字
++     entry #Escape   パターンで使うための、安定した識別子としてのエスケープ文字
++     entry #doublingEscapes   引用符を二重にしてエスケープするかどうか：`#escape` が `#quote` であるかどうか
++   entry .Redesignation   行のセルへの動的アクセスのために、キャメルケースのメンバー名をどのようにヘッダー名に対応づけるか
+
+% 1 1 0 11cd38295d1d015c117110509dcb50ec
+
+@ 0 5 0 192670bbe17c5d8d0878b9f66b75c786
++         単一メソッドのトレイトである。
++         `#transform` は `targetPerson` のような Scala の名前を、それが一致すべき `Target Person` のようなヘッダーのテキストに対応づける。
++         `Dsv#selectDynamic` はスコープ内にこれを必要とするので、`row.targetPerson[Text]` は列 `Target Person` を読む。
++         標準のものは `dsvRedesignations` にあって名前でインポートする。
++         デフォルトはなく、`Text` から `Text` へのラムダもこれになる。
+
+% 2 1 0 12019cebb5fdea621250e3893b73b001
+
+% 3 1 0 1036662d75223c0419881d80edb0792a
+
+% 0 1 0 08a16e738ce0b07f01f65c41faa924b3
+
+% 0 1 0 0ec4837b87acc86700c2d1b88ea599ba
+
+% 1 1 0 0ba0b79a0ca1c2eb0d87a700aeea01fb
+
+@ 0 2 0 0d730f68a43a319c165c12d34afa24d6
++         再指定が適用されるのは動的なメンバーアクセスだけである。
++         導出されたデコーダーは、各フィールドをフィールドの名前そのままの列に対応づける。
+
+% 0 1 0 16788863de4161b602ada6917fe546f9
+
+@ 0 6 0 19631abb3598dca9189703a34a565806
++     entry #transform   メンバー名を、それが一致すべきヘッダーのテキストに対応づける
++   entry #data   行のセル。順序どおり
++   entry #columns   データにヘッダーがあった場合の、名前による各列のインデックス。そうでなければ `Unset`
++   entry #as   行を、任意のケースクラスのような `Decodable in Dsv` である型としてデコードする
++       `Tactic[Dsv.Error]` が必要であり、スコープ内の `Foci[CellRef]` を通じて蓄積する。
++       `Validate[…, CellRef]` のような蓄積型の戦略が与えない限り、これはデフォルトのものである。
+
+% 2 1 0 05970c840df65a1211fdaa027e91b053
+
+% 3 1 0 16044d9e5b8964131425d98c26c7a592
+
+% 4 1 0 1e7ccc08fd641dd715b50b689a382515
+
+% 5 1 0 1f7e6312b5e3ef060bb5a0e23562ec96
+
+% 7 1 0 0d8adab957b7c5331fe023d56149815d
+
+% 0 1 0 13e8407d633ef8f1026090b05ae905df
+
+% 1 1 0 17c2ea0fb67613db15d90aa25470a3c0
+
+@ 0 9 0 0785dcaf6d37236a0141d5cb9fe76379
++   entry #header   行が列名を持つ場合の、順に並んだ列名。そうでなければ `Unset`
++   entry #apply   名前のついた列のセルを、`Decodable in Text` である任意の型にデコードして読む
++       `row[Int](t"age")` は、行に列名がないかそのような列がなければ `Unset` である。
++       そうでなければ、その型の `Decodable in Text` がデコードしたセルであり、このデコードは自身の戦術を通じてエラーを発生させうる。
++   entry #selectDynamic   動的アクセスを有効にして、列のセルをメンバーとして `row.age[Int]` のように読む
++       `Dsv is Dynamical`（`import dynamicAccess.dynamicDsv`、または `dynamically[Dsv]:` ブロック）と、メンバー名を列名に対応づける `Dsv.Redesignation` が必要である。
++       結果は `Optional` であり、行にそのような列がなければ `Unset` である。
+
+% 2 1 0 17e458d5e1d65e921c0c121aa9947411
+
+% 3 1 0 11bafae62ee783b7044b8a376b273ae7
+
+% 4 1 0 0fbce4b5001b9e9f19f94b9b161eedfd
+
+% 5 1 0 0ac6fe0c9d69b88800e44575fe6eb673
+
+% 6 1 0 0fa50f3806b9226b18681f9ab43bce81
+
+% 7 1 0 156620f48034ad181908abb65e9722d3
+
+% 0 1 0 0df91fec60d1f5f70c49b13e37b33673
+
+% 0 1 0 14235b01f51171170bb5112bf0b6f865
+
+% 1 1 0 0526d609e51556ff059d1e8427f4a8b3
+
+@ 0 1 0 08f02878ccbc0ad90ad7cda2def8abbe
++ entry .Dsv1   `Dsv` のコンパニオンの中くらいの優先度の given：`Play in Dsv` の直接の読み取りと、`codecs.strict` の失敗
+
+% 1 1 0 0ce44a0378205b25195ad7cea083ed24
+
+% 2 1 0 119bf8f3c54ff5b20d8fbbbb4f3e5a75
+
+@ 0 10 0 1ccf62aefd16c89e0a3590c8b85ec4e1
++       `Dsv` のコンパニオンの親であり、そのため、その given はコンパニオン自身のものより低い優先度で `Dsv` の暗黙のスコープにある。
++       直接参照されることはない。
++   entry #aggregableParsed   `Play` の `Dsv.Parsable` による `read[Play in Dsv]`：最初の行を直接パースする
++       `Dsv2` の行デコーダーより優先されるので、`Dsv.Parsable` を宣言すると経路が切り替わる。
++       データ行のない入力は `Dsv.Error.Reason.Absent` を発生させる。
++       `Dsv.Format`、`Tactic[Dsv.Error]`、`Buffering` が必要である。
++   entry #aggregableStrictFailure   `codecs.strict` のもとで、直接のコーデックがない `Play in Dsv` の読み取りに対するコンパイルエラー
++       選択の後に使用箇所で発生し、エラーの中で型を名指しする inline の given である。
++       これにより `codecs.strict` は、行デコーダーに引き受けさせるのではなく、直接の経路が読めない型を報告する。
+
+@ 0 1 0 18510e87faae352a102428eab697a273
++ entry .Dsv2   `Dsv` のコンパニオンの最も優先度の低い given：テキストの代替、単一レコードの書き込み、行デコーダーによる読み取り
+
+% 1 1 0 1fa65211ffde180e119459a123f0f944
+
+% 2 1 0 1aa5b644b00ed99618c1007834e9e150
+
+@ 0 6 0 0118444651c330ed14fc3fe8298bf5c0
++       `Dsv` のコンパニオンの親であり、`Dsv1` の下にある。
++       より具体的なものが何も当てはまらないときにだけ任意の型が受け取るインスタンスを持つ。
++       直接参照されることはない。
++   entry #decoder   `Decodable in Text` である任意の型。行の最初のセルからデコードする
++       エラーを蓄積するプリミティブなセルデコーダーより下に置かれているので、`Int` などはそちらを使う。
++       こちらは、テキストデコーダーを通じて不正なセルで中断する。
++   entry #encodableOver   `play.in[Text over Dsv]`：値を、スコープ内の `Dsv.Format` のテキストの一レコードとして表す
+
+% 1 1 0 07ae3233eddc7483030a25f8778bf48f
+
+% 2 1 0 0eb63a6b29751e2718c8cfd9d8f1d9ef
+
+% 3 1 0 015a458bf73e25b60ed648a53a043704
+
+% 2 1 0 140bb1e6d6131e840715f8716d009e9f
+
+% 0 1 0 0b4f7e87ead7069f16ba6279e3e1aa44
+
+% 1 1 0 0dff37059cb07f470f9edb7ba5778ed8
+
+@ 0 5 0 122d108e3a2814bd1cbe35b183bb6b88
++   entry #encodableOverData   `play.in[Data over Dsv]`：値を一レコードとして、スコープ内の `Codepage` でバイトにエンコードする
++   entry #aggregableIn   行デコーダーによる `read[Play in Dsv]`：最初の行を、`Play` の `Decodable in Dsv` でデコードする
++       `Dsv.Parsable` を持たない型のための経路であり、`codecs.derived` のもとではすべての型のための経路である。
++       ストリームから読む場合は、最初のレコードが及ぶところまでしかパースしない。
++       `Dsv.Format`、`Tactic[Dsv.Error]`、`Buffering` が必要である。
+
+@ 0 1 0 13536bc052ff43501e350a2c50457b3c
++ entry .Sheet   メモリ上に保持された区切り文字形式のデータ：すべての行と、それを読んだときの形式と列名
+
+% 1 1 0 0f6d2863cc87fc751363ac7b1d72d0ed
+
+@ 0 5 0 1e0f4dff69edede91c5631f7aae92667
++       `Sheet` は区切り文字形式のデータを実体化した形である。
++       その `#rows` は `Dsv` の行の配列であり、再生でき、インデックスで参照でき、比較が安価である。
++       行がパースされたときの `#format` と、ヘッダー行があった場合はそれが名づけた `#columns` も持つ。
++       テキストは `Dsv.Format` のもとで `read[Sheet]` によってシートとして読まれ、シートは形式のもとで `show` によってテキストに描画し直される。
++       エンコード可能な値のリストは `dsv` でシートになる。
+
+% 2 1 0 1158a1154d8f0d801308bcfbfed42de3
+
+% 3 1 0 1c043fa19308c0f31f941d86007a2c3b
+
+% 4 1 0 0f107fca50d42ed5128cc217bc40a733
+
+% 5 1 0 1fee0d22ec33a8aa0da8565ae0c7638e
+
+% 7 1 0 00dee516bc40d1231ca03d8c87fdd3df
+
+% 2 1 0 15c1a2751ab5a203004df30e4a8d19bf
+
+% 0 1 0 08080e3360115f3b1b0bd7f74c746ad0
+
+% 0 1 0 19ee054e69d3539a1cc2d6d5c96a352d
+
+% 0 1 0 08b0e42f537763cf00bac963357c57c3
+
+% 1 1 0 045cd0790bc49a1b0808a947ca62a4ab
+
+@ 0 3 0 1f1ab31e0637677e141ec848e6de6a46
++       同じ行をどのように書き出すかは形式が決め、区切り文字を含むセルを引用する。
++       CSV ではカンマに引用が必要であり、TSV では何も引用を必要とせず、空白区切りの値では空白を引用する。
+
+% 2 1 0 0defa960a51dce610569b7ccb3872c5d
+
+% 0 1 0 01ab4f889598d811064f397710341cb9
+
+% 1 1 0 07e75f02f257fec61b5a384ef8447304
+
+% 2 1 0 15243dae0c5a169f058356bfbae2df1b
+
+% 3 1 0 1862135d2616f7991ffb5e227672322b
+
+% 0 1 0 034a5b5220d489590ed65b54edfcfd7f
+
+% 0 1 0 03b4caee985343971c47c291192576c1
+
+% 1 1 0 1f4512e25051fd1111a773e6a7679fbb
+
+% 2 1 0 08e62befa4060add1c9c57603df77a65
+
+% 0 1 0 0d167756f2131c341a39913ce51e1b4b
+
+% 0 1 0 1a784c8c157e8cd10d6b9fc0ef00df2b
+
+% 0 1 0 177be68b0bac4162093bae7f116dafad
+
+% 1 1 0 05f10c1a154d3d54131e9e0f274ca813
+
+% 2 1 0 021a4f48664b9d5913bbee0bae4642b6
+
+% 0 1 0 0731817d8d62d9a518b6f52d2f0e1911
+
+% 0 1 0 1ce4df4d66962429177cc169f899ade3
+
+% 1 1 0 095601b44a52bd211e55bc3b635febd1
+
+% 2 1 0 16ec5372c633881a165f61c385fb5ac1
+
+@ 0 5 0 18de68e0232c49f70a6c45c8f2265d52
++       保持しきれないほど大きなファイルにシートは要らない。
++       文字のストリームに対する `rows` は、同じパーサーを通じて行を一つずつ得て、`rowsOf` は各行を直接ある型にパースする。
++       シートは `Tabular` でもあるので、`escritoire` はそれを、ヘッダー（または位置）ごとに一列の表として描画する。
++       また HTTP レスポンスの本文にもなり、`text/csv` として、形式の区切り文字がタブなら `text/tab-separated-values` として送られる。
+
+% 0 1 0 1f87c5b90c2233991edaef1e4c4457fe
+
+% 1 1 0 0153037c83c75fea08b2a437adec6ca0
+
+% 0 1 0 1fa04fb8bf3302ff028eba98d45a2b21
+
+@ 0 31 0 054fcf3c4ce0817016dee5292d8bc574
++   entry .aggregable   スコープ内の `Dsv.Format` で、テキストを `Sheet` として読む
++       `read[Sheet]` の背後にある given である。
++       引用されたセルは区切り文字、改行、二重にした引用符を含むことができ、ストリームのチャンクをまたぐこともできる。
++       ヘッダーを持つ形式では、最初の行は列名として取られる。
++       それは `#rows` の一つではなく、各行の `Dsv#columns` が名前をインデックスに対応づけ、シートの `#columns` がそれらを列挙する。
++       `Tactic[Dsv.Error]` が必要であり、引用されていないセルの開始より後に見つかった引用符は、これを通じて `Dsv.Error.Reason.MisplacedQuote` として発生する。
++   entry .showable   スコープ内の `Dsv.Format` で、シートを一行ずつ区切り文字形式のテキストとして描画する
++       行は改行で結合され、末尾に改行はつかない。
++       各行は `Dsv.showable` が描画するとおりに描画され、引用が必要なセルだけが引用される。
++       ヘッダーは書かれない。
++       シートの `#columns` は描画されない。
++   entry .streamable   シートをテキストのストリームとして描画する。チャンクごとに一行と改行
++       `Dsv.Format` が必要である。
++       これにより、シートを `Text` のストリームを受け取る任意のシンクに書き込める。
++   entry .inspectable   シートの形式、列名、セルのデバッグ用の描画。形式は不要
++       `Sheet(format:○ ╱ columns:○ ╱ rows:⟦⟨ t"hello" t"world" ⟩⟧)` のようになる。
++       各セルは `Text` として検査されるので、区切り文字を含むセルを、`show` による描画でありうるように二つのセルと取り違えることはない。
++   entry .tabular   シートを、ヘッダー名ごとまたは位置ごとに一列の `escritoire` の表として描画する
++       列は、シートに `#columns` があればそれであり、なければ最初の行の幅までの番号 `1`、`2`、… である。
++       各列は折りたたみ可能であり、行に欠けているセルは空になる。
++   entry .abstractable   シートを HTTP の本文として、`text/csv` として、区切り文字がタブなら `text/tab-separated-values` として送る
++       テキストをエンコードする `Codepage` と `Dsv.Format` が必要である。
++       メディアタイプは、シート自身の `#format` の区切り文字から選ばれる。
++   entry #rows   行。順序どおりで、それぞれ `Dsv`。ヘッダー行はこれに含まれない
++   entry #format   シートがパースされたときの `Dsv.Format`。手で作ったシートでは `Unset`
++   entry #columns   ヘッダー行の列名。順序どおり。データにヘッダーがなければ `Unset`
++   entry #as   すべての行を `Decodable in Dsv` である型としてデコードし、`List` にする
++       `Tactic[Dsv.Error]` と `Foci[CellRef]` が必要である。
++       後者は、蓄積型の戦略が与えない限り、デフォルトのものである。
+
+@ 0 1 0 139cb53e270976ed1b38478d4e90cb89
++ entry .DsvReader   `Dsv.Parsable` が読むトークンリーダー：一度に一行ずつ進み、セルをその場で参照する
+
+% 1 1 0 0759b9f730f47ddb1434a5f7f0f1884c
+
+@ 0 6 0 00585776e8727ac31cbf49b3d3a07757
++       `DsvReader` は、直接パーサーから見た入力である。
++       `#nextRow` で一度に一つのデータ行ずつ進み、パーサーの再利用されるバッファーに保持された現在の行のセルを、インデックスによって `#cell` で、見出しによって `#column` で公開する。
++       そのため `Dsv.Parsable` は、`Dsv` の行の値を作らずにレコードを読む。
++       形式とエラーの戦術を持ち運ぶので、インスタンスはどちらも必要としない。
++       これは排他的で状態を持つケイパビリティであり、読み取りの間その読み取りが所有する。
++       パースされた値にその一部を保持してはならない。
+
+@ 0 4 0 0b024023b80c3de90f5d3dc9c62d63aa
++       リーダーを作るのは caesura 自身だけであり、`read[Play in Dsv]`、`read[List[Play] in
++       Dsv]`、`rowsOf` のためである。
++       プログラムがリーダーに出会うのは、`Dsv.Parsable` や `Dsv.Field` を導出せずに手で書くときだけである。
++       このクラスは `soundness` アンブレラにエクスポートされず、`caesura.DsvReader` として名指しする。
+
+% 1 1 0 1c136326d7284fa1122de92f5454350a
+
+% 0 1 0 0948d4ac44fa986c083dfd2441aa2599
+
+@ 0 5 0 1f6bb735002ebcde14a097017848dce4
++   entry #absent   行に欠けているセルについて、`Dsv.Error.Reason.Absent` で読み取りを中断する
++   entry #nextRow   次のデータ行に進む。ヘッダーを持つ形式では最初にヘッダー行を消費する。終わりでは `false`
++   entry #cells   現在の行のセルの数
++   entry #cell   現在の行のインデックスの位置にあるセル。行がそれより短ければ `Unset`
++   entry #column   見出しのインデックス。位置によるモードや未知の見出しでは `Unset`
+
+@ 0 1 0 1931793dec8d672b03b2b55089f6fd6b
++ entry .CellRef   デコード中のセルの位置：蓄積された各 `Dsv.Error` がともに記録されるフォーカス
+
+% 1 1 0 1f30695f7697d1c40242750c0b64652b
+
+@ 0 4 0 165da680e10f171013cc9d643576cef2
++       行を蓄積型の戦略のもとで直積にデコードするとき、各フィールドは `focus(CellRef(…))` の内側でデコードされる。
++       そのため、戦略が集める各エラーには、それが見つかった列の `CellRef` がつく。
++       `Validate[…, CellRef]` はこれをフォーカスの型として名指しし、そのハンドラはこれを `prior` として読む。
+
+% 2 1 0 0ff9dbbc069ecef503621642b15b52ab
+
+% 3 1 0 03c85318deb830c0034635b363d0a068
+
+% 4 1 0 0539795e4efb96620e18b4d97423bcaf
+
+% 0 1 0 0bf87a32fe9bce971e59d6ea8c2a0221
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 0ca2412ef5c2001f05dc584802c06612
+
+% 0 1 0 1298b5d778c7614201a05ffed7767653
+
+% 0 1 0 0da089cb780e8f1f06dba8037296c453
+
+% 0 1 0 116dc653125986ba021eae5756b2fd3b
+
+% 0 1 0 1004a4a8589cfa250475be3357ffdd9b
+
+% 0 1 0 10efafb5be8d28cd0cc24230709a1448
+
+% 0 1 0 08dca152ea5077170041192da16dc639
+
+% 0 1 0 15b235bf75e7d4bc04bb90ea6c30447e
+
+% 0 1 0 1c506d8dfe4cc7340ee3e690c0821d1d
+
+% 0 1 0 031ae2d0e8306390179a6a855f2a6122
+
+% 1 1 0 04fe748f63e5a01315ed451888f4c3f6
+
+% 0 1 0 041e1e20608328be0401aa07d9c07fba
+
+@ 0 2 0 165c1de9e975f6fa19b1e889c329d3cf
++   entry #ordinal   セルの行。一つの行しか見ない導出されたデコーダーは、常に `Prim` を記録する
++   entry #column   デコード中のフィールドの名前。ヘッダーのもとでは列の名前である
+
+@ 0 1 0 01de81d3f7d339cf1219c8854b4f889a
++ entry .Spannable   位置による行の中で、型がフィールドごとにいくつのセルを占めるか
+
+% 1 1 0 01980d2628a59e971275facd80ffa23d
+
+@ 0 5 0 09c3b8a250168932144faee5d824c41b
++       `Spannable` は型のフィールドのスパンを与える。
++       `Decodable in Text` であるフィールドなら一セル、`Optional` フィールドなら内側の型のスパン、入れ子のケースクラスなら自身のフィールドのスパンの合計である。
++       行デコーダーと直接パーサーはこれを使って、位置による行の各フィールドがどこから始まるかを、パース中に見つけることなく知る。
++       `Spannable.derived` は任意の直積型に対するインスタンスを与える。
+
+% 2 1 0 004667344b776ea1164d9f9bc26ce8b7
+
+% 3 1 0 1e28fe5f7086e83c001b2b75f9079b45
+
+% 2 1 0 093da510b04cedbd0acf2b1b15087cc2
+
+% 3 1 0 1369de36ee640c7d01b6fb9559bca1af
+
+% 0 1 0 07703d6ec2f03d1c07a217e99199b859
+
+% 1 1 0 0c4d52369903207507494f4bbbe3db85
+
+@ 0 8 0 1bbb74d9a0f844e9006ad0a2d72f1acc
++       位置によるデコードは本質的にもろい。
++       入れ子のケースクラスにフィールドを加えると、その後のすべての列がずれるが、ファイルにはそれを示すものが何もない。
++       フィールドを名前で列に対応づける、ヘッダーを持つ形式なら、これを避けられる。
++   entry .conjunction   直積のスパンを、フィールドごとに一つ導出するマクロ
++   entry .decoder   `Decodable in Text` である任意の型に対する、一セルのスパン
++   entry .optional   `Optional` フィールドは、内側の型とちょうど同じ数のセルにわたる
++       存在する値は内側のスパンを占め、存在しない値はそれらのセルを空のままにする。
++   entry #spans   各フィールドのスパン。順序どおり。単一セルの型では `Array(1)`
+
+@ 0 3 0 0454ceb3db1bb50004c96a3612a8d82f
++ entry .dsv   値を `Dsv` の行として、または値のリストを `Sheet` としてエンコードする
++     `Encodable in Dsv` である任意の値（すべての直積型が導出する）と、その `List` に対する拡張である。
++     結果は `Dsv.Format` のもとで `show` によってテキストとして描画される。
+
+% 2 1 0 030990b77ed369061a54f53af83d0976
+
+% 3 1 0 0f4ea8d1f2a1736618fa534c11a82f83
+
+% 4 1 0 0ba827392f31c7450050d7659975a26f
+
+% 2 1 0 1fda446533af28140dcbbfb059d4c789
+
+% 0 1 0 113f786de134340f1f84189fdc8eb036
+
+% 0 1 0 12970b3f06b32ada1429f4b631d9e1bf
+
+% 0 1 0 1805ed7ee2b7154a0697753c63d176a4
+
+% 1 1 0 0932fe5a4a36552216fb013cc6ab22b1
+
+@ 0 7 0 0e4b93953df60d311fce91ff9c13a478
++ entry .rows   文字のストリームの行を一つずつパースしたもの。一度だけ使える `Iterator[Dsv]`
++     すべての行を保持する `read[Sheet]` に対する、ストリーミング版である。
++     `Stream[Text] over Credit` に対する拡張であり、それを消費して、パースした行を順に得る。
++     パーサーは再充填をまたいで状態を持ち越すので、引用されたセルはチャンクや行の境界をまたいでもよい。
++     ヘッダーを持つ形式では、ヘッダー行は得られないが、各行は自身の列名を知っている。
++     `Dsv.Format`、`Tactic[Dsv.Error]`、`Buffering` が必要である。
+
+% 2 1 0 12fe13ba470fe7591478f8a403b1d4e5
+
+% 3 1 0 1671c95e1823939f08b7371d4d1ba631
+
+% 0 1 0 1b1812d8c43d37cd028fd0909b36432e
+
+% 1 1 0 10548205dea2c975137bb30dde7bcd8b
+
+% 0 1 0 1ef2adb272067c72102c8e0d39e42945
+
+% 0 1 0 0c583d633053fb8b1dd5e78a78d870fd
+
+% 1 1 0 189da9506320136b055b400612e91a28
+
+@ 0 5 0 1ab7c2d6c93b15ed19757138e2c5084b
++ entry .rowsOf   文字のストリームの行を、それぞれ `Dsv.Parsable` を通じて直接ある型にパースしたもの
++     `stream.rowsOf[Play]` はストリームを消費し、データ行ごとに一つの `Play` を得る。
++     これは `Dsv` を作らずにパーサーのバッファーから直接読むもので、大きなファイルを通り抜ける最も速い方法である。
++     `Play` には、宣言された、または（`codecs.direct` のもとで）導出された `Dsv.Parsable` が必要である。
++     `Dsv.Format`、`Tactic[Dsv.Error]`、`Buffering` が必要である。
+
+% 2 1 0 0040e41791771ff3135cf06324929aa7
+
+% 3 1 0 1a9cd7004e47e5f50aeee5336f134f52
+
+% 4 1 0 071ba7be3b426a7608a34e8d7815eb83
+
+% 5 1 0 18838c979750591d03bd0773b788be94
+
+% 0 1 0 038939ef05b829b20b6e6b23852fcba4
+
+% 0 1 0 15e612278eac352704bd92db529db0d7
+
+% 0 1 0 06c8a7c6b17ef6060b319816997e447e
+
+% 1 1 0 03ede130fbe75fbe0a1dc6d6ecebf869
+
+@ 0 1 0 121c3cc575e8f6e7036bd0b7bbdaebf6
++ entry .dsvFormats   標準の区切り文字形式。CSV、TSV、空白区切りの、それぞれヘッダーありとなし。名前でインポートする
+
+% 1 1 0 15dbb7b02ef428991a823afabd794124
+
+@ 0 3 0 1b1d9cb682dc5b6002a451691d5e073c
++       すべてのパースと描画はスコープ内に `Dsv.Format` を必要とし、その選択が暗黙に行われることはない。
++       `import soundness.*` はこれらのどれも持ち込まないので、一つを名前でインポートする。
++       どれも `"` で引用し、引用符を二重にしてエスケープする。
+
+% 2 1 0 0828e7fe4ad6c8a5080b73f1579913a8
+
+% 0 1 0 15baee82b66ca01c0cc2759e1bfb8499
+
+% 1 1 0 05706e03e4e3cb0604e400e3e010c263
+
+% 2 1 0 01fe32038b0aed550012d85c634ce7a9
+
+% 3 1 0 181106b8d20b34cd0de2869f7771dbd2
+
+% 1 1 0 16720c4f54ccae8f09079eaafc42d606
+
+% 0 1 0 112deb5090e0cbbf016672c40d132477
+
+% 0 1 0 16c0380d96e7de8906fe122a62155355
+
+% 1 1 0 1401044f7d6ff1890fb7e344d723ec06
+
+% 2 1 0 0c1a033f829067ef0c619d7665eeef70
+
+% 0 1 0 18999b3f2807e2c81a66eac3e863e836
+
+% 1 1 0 0ce980cd582d348d087a1ff84eabd63e
+
+% 0 1 0 171b428a80a049ad0abf184e98a68f0f
+
+% 1 1 0 191b1eb9611956ca14e3df0b19352edc
+
+% 2 1 0 1d5c641360f2b3e111b1dc01a426c551
+
+@ 0 1 0 0b75032617ebd57813b43350fc0dcbda
++       別の区切り文字を使う形式は、ローカルな given として束縛した `Dsv.Format` の値である。
+
+% 1 1 0 0ef38f4e95b04bc604ac605ba9ea3cbc
+
+@ 0 6 0 0016deded6241ef60f63adf921af07ac
++   entry .csvFormat   カンマ区切りの値。ヘッダー行なし
++   entry .csvWithHeaderFormat   最初の行が列に名前をつける、カンマ区切りの値
++   entry .tsvFormat   タブ区切りの値。ヘッダー行なし
++   entry .tsvWithHeaderFormat   最初の行が列に名前をつける、タブ区切りの値
++   entry .ssvFormat   空白区切りの値。ヘッダー行なし
++   entry .ssvWithHeaderFormat   最初の行が列に名前をつける、空白区切りの値
+
+@ 0 1 0 0f191be03215c3741655db7feb5c2359
++ entry .dsvRedesignations   動的アクセスのための、キャメルケースのメンバー名からヘッダー名への対応づけ。名前でインポートする
+
+% 1 1 0 1308e876ad4fb5a90087e49d3467d4e1
+
+@ 0 4 0 05d2c465af20c50903387e56f6af70cc
++       メンバー形式 `row.targetPerson[Text]` である `Dsv#selectDynamic` は、メンバーが名指す列を見つけるためにスコープ内に `Dsv.Redesignation` を必要とし、デフォルトはない。
++       一つを名前でインポートするか、`Text` から `Text` へのラムダをローカルな given として束縛する。
+
+% 2 1 0 1cf437d0a4c61d5c0386e7cb196d2e67
+
+% 0 1 0 0b1c5ecccbde06fc1cb978cdeada645b
+
+% 1 1 0 0aa61bc8d0956d81147cdf053d62ec89
+
+% 2 1 0 07099bc4a59de9b3138d3976559d95ec
+
+% 0 1 0 1583d89760b8025c1c4f252613bee528
+
+% 0 1 0 0cbfd9e66366fec91f5a14e20ca42e72
+
+% 0 1 0 1a8a19951c50e59c018b467b17a72234
+
+% 1 1 0 11614d7621d245cf049a93fea2003c18
+
+% 2 1 0 1d4979988c6275c90544f51c4a439f5d
+
+% 0 1 0 02b9369023a65146045439d57c443ae7
+
+% 0 1 0 1f2ab3609fef787117fdd28e3f4b940f
+
+% 0 1 0 0fe7cd51128e28e8140ecc3140075280
+
+% 1 1 0 00484666919677250ec9e9f15705d14c
+
+% 2 1 0 028ce89b580e1a0c00a8cdc7a0b67c67
+
+% 0 1 0 05f99a0f9517a7651dae4a7614ad62c4
+
+% 0 1 0 08ea52c8ab28d7221247da3d29981442
+
+% 1 1 0 0f47adc1389072fe07c54198ffb1be59
+
+% 2 1 0 18e5dd43c86cf5ea04cadf84c2af8c8f
+
+% 0 1 0 1acfed3c19209eeb1822be049e9c0a78
+
+@ 0 9 0 0d6bba026558f2d300226bde8ffe5672
++   entry .unchangedRedesignation   メンバー名をそのまま使う：`targetPerson` はヘッダー `targetPerson` に一致する
++   entry .capitalizedWordsRedesignation   空白で区切った、頭文字が大文字の単語：`targetPerson` は `Target Person` に一致する
++   entry .lowerWordsRedesignation   空白で区切った小文字の単語：`targetPerson` は `target person` に一致する
++   entry .lowerDottedRedesignation   小文字の単語。`target.person` のようなドット区切りのヘッダーを意図している
++       実装上は単語が空白で結合されるので、これは `lowerWordsRedesignation` と同じ `target person` を与える。
++   entry .lowerSlashedRedesignation   小文字の単語。`target/person` のようなスラッシュ区切りのヘッダーを意図している
++       実装上は単語が空白で結合されるので、これは `lowerWordsRedesignation` と同じ `target person` を与える。
+
+@ 0 1 0 06bfc2b1399100e51531ea791d69a42e
++ entry .dynamicAccess   行のセルをメンバーとして読めるようにする given。名前でインポートする
+
+% 1 1 0 061f2533603fccca1a7e9395e1731027
+
+@ 0 3 0 01cc9f508d542ea8029f1784b5969702
++       動的なメンバーアクセスは、スコープ内に `Dsv is Dynamical` がない限り無効である。
++       そのため、綴りを誤ったメンバーが黙って列の検索になることはない。
++       `import dynamicAccess.dynamicDsv` はスコープの残りの部分でこれを許し、`dynamically[Dsv]:` は一つのブロックでこれを許す。
+
+% 2 1 0 075bbb1cdd305a8c182b36c1542925d1
+
+% 3 1 0 17a840fcf43a624c11d6a619b8121639
+
+% 4 1 0 165d8cc6691fa74e08dd9797ea79b7d0
+
+% 5 1 0 19892d40cd812a211a75d78c32b5a025
+
+% 6 1 0 0dc61b4e065ae0710abe7c48e79277f3
+
+% 7 1 0 0630f9f820b0b4b808acc33750d3fbfe
+
+% 0 1 0 06a8869839236aca104fdf7742a6a841
+
+% 1 1 0 1c87405818aab70808bbf15552359a39
+
+@ 0 3 0 1356470e9648df5b09892d075ffd9094
++   entry .dynamicDsv   `Dsv is Dynamical`：スコープ内のすべての行に対して `row.column[T]` を有効にする
++       消去される証人であり、実行時のコストはない。
++       `optics.dsvCellLens` の given もこれを必要とする。
+
+@ 0 1 0 07d1c11eda3de78f19012ce9a92eb8b2
++ entry .optionalityOptions   `Optional` フィールドの欠けたセルや不正なセルに対するポリシー。名前でインポートする
+
+% 1 1 0 18cbb7ad67251d181753607ed331a5e1
+
+@ 0 5 0 0fc1bd85d2a6fe8f1ae99667ab600722
++       デコードされる行の `Optional` フィールドは、二つの状況に出会う。
++       セルが **存在しない**（位置による短い行、または行に欠けているヘッダーの列）か、セルは存在するが内側のデコーダーがそれを **拒む** かである。
++       デフォルトでは、存在しないセルは `Unset` であり、拒まれたセルはエラーである。
++       それぞれ、これらの given の一つを名前でインポートすることで変わる。
++       空のセルは存在する値であり、存在しない値ではない。
+
+% 2 1 0 04550645d7799cc11264aa4e6591b383
+
+% 0 1 0 184d48e7399fe047179e0899a9dba6bf
+
+% 1 1 0 0dc5c595e538b6cd19dfdb1c478872c5
+
+% 2 1 0 08bb033480a2a44c0fc67c6001ac56f3
+
+% 3 1 0 13f812eb2dad90891bf95d2ec369d2a4
+
+% 1 1 0 1a716b0e2fb67de1163741fa20a636f0
+
+% 0 1 0 1b2b260396b5378b194f065a2b7011b5
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 10a4fbd25ff64e7b09f4b2c7aef93aea
+
+% 3 1 0 0c77cf296db4ae7e0e2d7a7974ed51dd
+
+% 0 1 0 0ffeae2d400649fe004291da41f91b6d
+
+% 1 1 0 1d8e25ffeb603a3b0fe51a2986770be7
+
+% 0 1 0 02e8ec173f7dc04d06962da03a17219d
+
+% 1 1 0 1b157a04c68531240619097d0ebac7b1
+
+% 2 1 0 10d2d0f3cb7ee63d0b2df1d57e1f8575
+
+@ 0 7 0 1b57f79601c43b941f990820858b3e5e
++       これらは行デコーダー（`Dsv.optionalDecodable`）と直接パーサー（`Dsv.Field.optional`）の両方を支配する。
++   entry .strictDsvAbsence   `Optional` フィールドの存在しないセルは `Dsv.Error.Reason.Absent` を発生させる
++   entry .lenientDsvAbsence   `Optional` フィールドの存在しないセルは `Unset` である。デフォルト
++   entry .strictDsvFaults   内側のデコーダーが拒むセルは、`Optional` フィールドであっても `Dsv.Error` を発生させる。デフォルト
++   entry .lenientDsvFaults   内側のデコーダーが拒むセルは、`Optional` フィールドでは `Unset` である
++       内側のデコードは `tolerate` のもとで実行されるので、そのエラーは発生させられるのではなく破棄される。
+
+@ 0 1 0 024b6476007288d51368465d6af936dd
++ entry .optics   列名による行のセルと、シートの行に対するレンズ。名前でインポートする
+
+% 1 1 0 052b9d8cb2704b7500e5037948f86563
+
+@ 0 4 0 1b6d6a125bffe2be062532233b2e8fca
++       表形式のデータのための `panopticon` のオプティクスであり、行とセルの構造を反映している。
++       ヘッダーを持つ行のセルは列名で参照し、シートの行は位置で、まとめて、または述語で参照する。
++       これらをインポートすれば、`lens` は手書きのコピーの代わりにシートを更新する。
+
+% 2 1 0 19a6aaebd8a4135a19a16a448d9608c7
+
+% 3 1 0 139dab432b4b2f5a099e24429bba4a11
+
+% 4 1 0 119b09b7cbd3a7490b634ebe755fb6c3
+
+% 1 1 0 13c625ff44364bc10ad00fb737250f51
+
+% 0 1 0 1c9505469b96240e06c6eb5f3418f13d
+
+% 1 1 0 096f4a69a56b769b1bf777fc5e54165d
+
+% 2 1 0 0db35588c2151ea91d53e7698935c8c3
+
+% 0 1 0 1123cfa9b6b7a2aa1af514c6cdce3fd7
+
+% 0 1 0 12eefb93f02dbbd41badfc1d137b99df
+
+% 0 1 0 1de68d6c5614ea650ccf818e98af4a10
+
+% 1 1 0 0bfa5b4fb5eff0fd1548b1655ff4507f
+
+@ 0 7 0 005fa9bdf9d9564a1a92779016e2a1ac
++   entry .dsvCellLens   行から、名前のついた列のセルへのレンズ：`_.name`
++       `Dsv is Dynamical`（`dynamicAccess.dynamicDsv`）が必要である。
++       行に欠けている列を読むと空のテキストになり、書き込むと行は変わらない。
++       列名は書かれたとおりのメンバー名であり、`Dsv.Redesignation` は適用されない。
++   entry .dsvRowOptical   シートの `Ordinal` の位置にある行を参照する：`_(Sec)` は二番目の行
++   entry .dsvRowEachOptical   シートのすべての行を参照する：`_(Each)`
++   entry .dsvRowFilterOptical   シートの、述語に一致する行を参照する：`_(Filter[Dsv](…))`
+
+@ 0 1 0 1e55c4c3ef201ba70dac2b2a3c4bda1e
++ entry .construables   メディアタイプ `text/csv` と `text/tab-separated-values` を `Sheet` として解釈するもの。名前でインポートする
+
+% 1 1 0 15c0a1e896c81a5613d5c98cf346586f
+
+@ 0 4 0 1896b27d0878d4aa09e2442211897b4f
++       `caesura.http` コンポーネントにある。
++       `Construable` は、あるメディアタイプのレスポンスの本文をどの型として読むかを HTTP クライアントに伝える。
++       意図的な選択なしには何も解釈されないので、それぞれの対応づけを名前でインポートする。
++       これがスコープ内にあれば、`apoplexy` のクライアントは CSV のレスポンスを `Sheet` として読む。
+
+% 2 1 0 12089d89c4e416cb138af6737850a06e
+
+% 3 1 0 00d33b9fdcd5cd8112c4114dd825dfba
+
+% 0 1 0 10e05a85a698ba8512baa178efd7990c
+
+% 1 1 0 0e5513c9d853c595032fcf9d0f2b31a6
+
+@ 0 2 0 0607b29e4e0b75420cc59b27f5eb5602
++   entry .csvConstruable   `text/csv` の本文は `Sheet` である
++   entry .tsvConstruable   `text/tab-separated-values` の本文は `Sheet` である

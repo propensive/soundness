@@ -1,8 +1,0 @@
-orthant 1 release
-
-- and instructions, and each instruction carries the state of the operand stack, reconstructed:
-+ and instructions, and each instruction carries the state of the operand stack, reconstructed.
-+ Bytes which are not a classfile raise a `Classfile.Error`:
-
-- val methods = Classfile[Exit].let(_.methods.map(_.name))
-+ val methods = safely(Classfile[Exit]).let(_.methods.map(_.name))

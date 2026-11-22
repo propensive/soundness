@@ -1,0 +1,481 @@
+orthant 2 language
+
+% 0 1 0 0f0bbad3a894470c0432c98fe794dc89
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 3 0 1777f132e533ab530a067fea30a8a84f
++ Les dessins [SVG](https://en.wikipedia.org/wiki/SVG) se construisent à partir de valeurs
++ typées : des formes aux coordonnées typées, des tracés assemblés une étape à la fois, des
++ transformations et des dégradés. Ils sont composés en un document `Svg`, qui s'écrit en XML.
+
+@ 0 3 0 041711c6a2b6459c17eaf2d1c197c51d
++ Les outils de dessin conviennent aux illustrations réalisées une seule fois. Générer du SVG
++ depuis un programme, sous forme de graphique, de diagramme, ou d'une figure par point de
++ données, demande des valeurs qui se composent, et des points et des vecteurs typés plutôt que
++ des chaînes de nombres.
+
+@ 0 1 0 09352318428f1bc008770f9b1c457c2d
++ ### Le graphisme vectoriel
+
+@ 0 4 0 12df71e724b885dc0e617d4b4558aaf2
++ Un document SVG est du XML rempli de petits langages. L'attribut `d` d'un tracé est un
++ programme de coordonnées. `transform` est un pipeline de fonctions. Les couleurs et les unités
++ ont leurs propres syntaxes. Un programme qui génère du SVG en concaténant des chaînes doit les
++ réussir toutes à la fois, et une coordonnée mal placée produit un dessin faux sans le moindre
++ signal.
+
+@ 0 6 0 17e7ca94b4579a9b0b876c24ad67faf1
++ Ici, la structure est construite à partir de valeurs. Un `Point` est une position, et un
++ `Delta` est un déplacement. Ce sont des types distincts, avec une arithmétique vectorielle
++ entre eux. Les tracés s'allongent par étapes nommées, et chaque petit langage est écrit par les
++ types qui le comprennent. Des figures qui sont des valeurs typées, dont les coordonnées sont des
++ nombres et non du texte, suivent le principe des
++ [états impossibles](../../philosophy/impossible-states.md) : un dessin mal formé ne peut pas
++ être écrit.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Tout vient du package `soundness`. Le dernier import permet aux exemples d'afficher leurs
++ résultats :
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b72b78aa08d55090e302ee12b0b8801
+
+% 1 1 0 0bfedae606b8462f18c62341082bb178
+
+@ 0 1 0 0e6b61e5127d4861189aeeaa10862c5d
++ Les formes sont imbriquées dans `Svg`, comme `Svg.Rectangle` et ainsi de suite, et importées
++ depuis celui-ci ci-dessus.
+
+@ 0 1 0 1ffafe9762f49b8506cf082d9c5d36e8
++ ### Formes
+
+@ 0 1 0 1df643852e52daa21770aa1516f2b17c
++ Chaque figure s'écrit sous la forme d'un élément SVG :
+
+% 2 1 0 15752727d6824a9d0d7bb08bf9c6050a
+
+@ 0 9 0 10adb14f4dbcdab9077827361bd2fc22
++ column  Figure
++ column  Élément
++ row  `Rectangle`  `<rect>`
++ row  `Circle`  `<circle>`
++ row  `Ellipse`  `<ellipse>`, ou `<circle>` quand ses rayons sont égaux
++ row  `Outline`  `<path>`
++ row  `Polyline`  `<polyline>`, ou `<polygon>` quand elle est `closed`
++ row  `Group`  `<g>`
++ row  `Lettering`  `<text>`
+
+% 1 1 0 0c3507a8508b3f801ac77b7872b3ada2
+
+@ 0 2 0 08deb4c100c62415030de7f528c12ac4
++ Les rectangles, les cercles et les ellipses sont des valeurs, positionnées par des points. Une
++ paire de nombres se convertit en point là où un point est attendu. `in[Xml]` écrit une figure en
++ [XML](xml.md) :
+
+% 2 1 0 014157f9e800c93b0809404143dff3a2
+
+% 3 1 0 15511f538bd3b632168093c671441ae7
+
+% 4 1 0 1c87984811961ca3059844270ff9931a
+
+% 0 1 0 19b5099c6e164ef61a28fc483a6a2168
+
+% 0 1 0 10ea8ef3edf8054f193bd3e8f1a5c19b
+
+% 1 1 0 1f477b4a5953e86e13672439d4ef2072
+
+@ 0 1 0 00dd982bdef617b71d8e4d97bca17853
++ ### Tracés
+
+@ 0 3 0 164d85801ea57007090410d43a8f7ec2
++ Un `Outline` est un tracé construit une étape à la fois. Les étapes absolues ont des noms qui se
++ terminent par `To`, et prennent des `Point`s. Les étapes relatives non, et prennent des
++ `Delta`s. Il y a des courbes, des courbes quadratiques, et une fin `closed` :
+
+% 2 1 0 0ee14824c3ab802510b09b9b7b1d115d
+
+@ 0 21 0 17ed14f77abf6fa912076d87e786661a
++ column  Absolue
++ column  Relative
++ column  Commande de tracé
++ row  `moveTo(point)`  `move(delta)`  `M`, `m`
++ row  `lineTo(point)`  `line(delta)`  `L`, `l`
++ row  `curveTo(control1, control2, point)`  `curve(control1, control2, delta)`  `C`, `c`
++ row  `curveTo(control2, point)`  `curve(control2, delta)`  `S`, `s`
++ row  `quadCurveTo(control, point)`  `quadCurve(control, delta)`  `Q`, `q`
++ row  `quadCurveTo(point)`  `quadCurve(delta)`  `T`, `t`
++ row
++   cell
++   cell  `lineUp(n)`, `lineDown(n)`, `lineLeft(n)`, `lineRight(n)`
++   cell  `l`
++ row
++   cell
++   cell  `moveUp(n)`, `moveDown(n)`, `moveLeft(n)`, `moveRight(n)`
++   cell  `m`
++ row
++   cell  `closed`
++   cell
++   cell  `Z`
+
+% 1 1 0 028d113fbb5f50eb073799a2f3dbf2e3
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 09c144d2142da44f15f57b4fa12c173b
+
+% 0 1 0 17b427cd9d88fff21609b522feb010c6
+
+% 0 1 0 0aa43a1bd902ffc8108ec17b9fd3490f
+
+% 0 1 0 15bec55223e6d54a15aebd98c6f51191
+
+% 1 1 0 08e7e114d934829f1c2db70e4271a648
+
+% 3 1 0 1492d3638bc07cb400f6ee879b02472c
+
+% 4 1 0 1664139c43f135b817ee1d716b1bc579
+
+% 5 1 0 16ffffe615b0480e1aef58c18b738711
+
+% 0 1 0 186078e10669d8e217a05bb099d639b2
+
+% 0 1 0 023244ae2765e81f062fffe3e441fac0
+
+% 1 1 0 16da64da64d585490715a0f5a012a66c
+
+@ 0 1 0 06fe9fe190420f0216113b50c0f13286
++ ### Points et deltas
+
+@ 0 1 0 057b0b1f5141d8341b5c993f7e60bf19
++ Les positions et les déplacements sont des choses différentes, et des types différents :
+
+% 2 1 0 1e343377ec6063531d76ca8811dccb97
+
+% 0 6 0 00a437b7bbe3dfd80a1a6f9f49974a05
+
+% 1 1 0 0d18a3c96ffb54e813f1153e2c66baf1
+
+@ 0 2 0 15c5de56d93042b71ddcdb2c7cbc51e2
++ Les directions nommées `Delta.Up`, `Delta.Down`, `Delta.Left` et `Delta.Right` rendent
++ l'arithmétique des déplacements lisible. L'axe des y de SVG pointe vers le bas : `Up` est donc
++ une variation négative de y :
+
+% 2 1 0 06e6dc51626a38751a2c17bdacfb2e9b
+
+% 0 1 0 1eb6160126d464581051150533e587b7
+
+% 1 1 0 07ed5b86bb8469f21d0313fc7624142f
+
+% 3 1 0 06f712034d95621702de672bcfa1edc8
+
+% 4 1 0 1e4fc0c74fe083cc1e42183173a0f99b
+
+% 5 1 0 13d829c641d781360dc162ea51e27ff2
+
+% 0 1 0 06cb10d3dff5a7100fb49a9acab930d1
+
+% 1 1 0 17f9a3407d1f396313938828fb41f037
+
+@ 0 1 0 0e81713b1bde39770e8f86b61183bfe2
++ Additionner deux positions n'a pas de sens, et ne compile pas :
+
+% 2 1 0 02bd138c350ee4a305c7af93164a4593
+
+% 3 1 0 019b1fd862c3937c031da84803392291
+
+% 4 1 0 178a8d49be3bb0fc141e664b1ffd305e
+
+% 5 1 0 0d4656569e6c0adb18feac8a477a57a7
+
+% 0 1 0 12eefa429946fcda0d8f271e3dd40a7a
+
+% 1 1 0 017c30588fd9137c134bc4bb07b2d208
+
+@ 0 1 0 1155039fb4d2924509f0993eb5e96665
++ ### Transformations
+
+@ 0 2 0 19898d32035bea370af51a577774bab4
++ Une forme se translate, se met à l'échelle, tourne et s'incline. Chaque opération donne une
++ nouvelle figure, et les angles sont des [angles](geography.md) typés :
+
+% 2 1 0 1e666b1eebfb47ec147d19496c60ef55
+
+% 0 1 0 099319046f850e7b1150f6452b3d9f7f
+
+% 1 1 0 0000aa3058f9d8251c350d0c3d9dff53
+
+@ 0 4 0 1082c8e99ac434dc0d8accf8fafa7e19
++ Une transformation est enregistrée sur la figure. Elle n'est pas appliquée aux coordonnées de
++ la figure. La géométrie avec laquelle une figure a été définie est donc celle qu'elle conserve,
++ et l'élément écrit porte un attribut `transform`. C'est ce qui rend la sortie modifiable
++ ensuite dans un logiciel de dessin :
+
+% 2 1 0 109688934361e25e1123ee554abf0b0f
+
+% 3 1 0 08475454e2541c5d08e854d90c33af56
+
+% 4 1 0 1cac33bf49c1fb3714bf052a68edc585
+
+% 0 1 0 068e39da98b219a41efa4739df8ead7b
+
+% 0 1 0 1441d93649604c370cc1a7e85fa97949
+
+% 1 1 0 1d35085446da27a80e5c6bc627e3d7fa
+
+@ 0 3 0 064c11d5f46ea5bc0a16382aa7f785d7
++ Les transformations se composent dans l'ordre où elles sont appliquées, et plusieurs peuvent
++ aussi être fournies à la construction. Un tuple peut tenir lieu de delta, avec un `+` unaire
++ pour se lire comme un déplacement, comme dans `Rectangle((0, 0), 10, 5).translate(+(3, 4))`.
+
+@ 0 1 0 05d0b6b548616d8a0dc858a09587bf00
++ ### Identifiants
+
+@ 0 4 0 013bc1748c6d373d14ad1b5210dccb48
++ Une figure, ou une définition, peut avoir un `Svg.Id`. C'est ce dont ont besoin, pour la
++ nommer, une référence à un dégradé, la cible d'une animation, ou un élément `<use>`.
++ L'identifiant est un type distinct, et non du texte : une référence à une définition
++ inexistante n'est donc pas écrite en silence :
+
+% 2 1 0 06365d56f69a4a051a33dda421be5817
+
+% 0 1 0 0ff48890e5712f2e0c8796995bc4490d
+
+% 1 1 0 0041c217968b43ac064b455900547ea3
+
+@ 0 1 0 0586d0ea3b26d02e113093dacdb7eac1
++ ### Groupes, polylignes et texte
+
+@ 0 3 0 0ad6a276424d335f0912d04ae2716575
++ Un `Group` est un élément `<g>` : des figures qui se déplacent, se stylent et s'identifient
++ ensemble. Les axes d'un [graphique](charts.md), ou l'une de ses séries, forment un groupe, pour
++ que la partie entière puisse être retrouvée et remplacée, par son identifiant, quand elle
++ change :
+
+% 2 1 0 07ac12f79d5590f8082a640fddd8e500
+
+% 0 1 0 09a58c214ba66cf209913ab8709fe73f
+
+% 1 1 0 0c7eb022aadb44300180d8e8f7d86115
+
+@ 0 3 0 1c1442e9db9f93b10b6cb943d53673f8
++ Une `Polyline` relie des points absolus par des segments droits, et devient un `<polygon>`
++ quand elle est `closed`. Une ligne tracée, et l'aire remplie en dessous, sont donc la même
++ figure, à un indicateur près :
+
+% 2 1 0 15aa995a2968ed3214994611c0acf533
+
+% 0 1 0 05aefdc86f9b79a80b2c095be2cc4114
+
+% 0 1 0 10ef19ea35a5a25b1705ad4b299dcf0d
+
+% 1 1 0 16d8e85e1e29366505fc2a3f0b0801e6
+
+% 3 1 0 1c46b63ead5cc30d1db431a94c6f5ddb
+
+% 4 1 0 09b2c2b2a6a2b3e20915c14a81db67b2
+
+% 5 1 0 103363c08543a5e700094f00164a3f26
+
+% 0 1 0 00c4470980114e460d6a391ecea7140d
+
+% 0 1 0 006dde8f9d353b7405f0935057372d45
+
+% 1 1 0 00298de40b7c2c59191d007cf06a81c0
+
+@ 0 3 0 0853ddf7cfdee78f0cf60772344cbaec
++ `Lettering` place du texte à une position. Elle est nommée d'après ce qu'elle est dans un
++ dessin, puisque `Text` est le type d'une chaîne. Son ancre indique si la position est le début,
++ le milieu ou la fin du segment de texte, et sa ligne de base indique quelle ligne des glyphes
++ repose sur la position :
+
+% 2 1 0 051667e2e10ae2120cae505874848984
+
+% 3 1 0 10e000b93b2e022f196c4ce398fd0dd9
+
+% 4 1 0 0af394e2f1a148d11aa307856579b3b9
+
+% 0 1 0 01d78c5971668efb1368b2b1d8d62dff
+
+% 1 1 0 0860525bf1f0011600d2e1e863442fc7
+
+@ 0 5 0 01da1d791cd2ba0c111b7e31f160d83d
++ Une `Lettering` peut aussi nommer sa `font`. C'est une `Font in Web` : une fonte, associée à une
++ fourniture de sa famille de polices, qui n'existe que là où une telle fourniture est dans la
++ portée, comme le décrit [Polices](fonts.md). Les déclarations de la police rejoignent le style
++ en ligne de l'élément. Le SVG écrit dans ses définitions un `<style>` de règles `@font-face`,
++ pour chaque famille de polices que nomme son texte : le dessin a ainsi le même aspect partout
++ où il est affiché :
+
+% 2 1 0 014b360b4cb1df281e968d675310ab9b
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1d548f6727557e0f1a2a310286dcf66c
+
+% 0 1 0 02597362889bc3a904576fa2ec7d8894
+
+% 1 1 0 0d4728158ec5a28a1c9cd29a79bf43a7
+
+@ 0 2 0 0ca5d74441fc3bdc13c3ef8e7efc0843
++ Toute figure peut avoir un `style` en ligne, qui est un ensemble typé de déclarations
++ [CSS](css.md), et un `id` :
+
+% 2 1 0 141cfd590edaf4150919b1cf81e259e3
+
+% 3 1 0 142509eb519be9bb03f25302109685f7
+
+% 4 1 0 1f161f1d96c966c81ccdab973df0d07a
+
+% 0 1 0 166496fc277bd93d025ae936acd64f92
+
+% 1 1 0 02367557bf29d5ed1c45d0f602bc29d7
+
+@ 0 1 0 12a27205885438fa118de181d3792a55
++ ### Dégradés et couleur
+
+@ 0 3 0 19d304ac595863e515a65b6f9605c15d
++ Un dégradé linéaire est une définition avec des arrêts typés. Chaque arrêt a un décalage dans
++ `[0, 1]`, et une [couleur](colors.md). Le décalage est un
++ [nombre borné](numbers.md#bounded-numbers) : un décalage hors de l'intervalle ne compile donc
++ pas :
+
+% 2 1 0 1bdc86aab50bae35148064b4fabf0661
+
+% 0 1 0 1853d99ae12fcd4604ba954bf1f36fa8
+
+% 1 1 0 0c87f8e96ed84a2c1773ba27cfc936da
+
+% 3 1 0 0a6646bad567f4d308d08d6141de60d3
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 1115fcdaa9a62f6e08c33411bd876ff5
+
+% 1 1 0 066c40f83c32a9541a060ea793f26882
+
+% 0 1 0 1b432a885d5c373c11aa89485fee8cf1
+
+@ 0 2 0 161697678cce5043055d963af194224d
++ Les figures et les définitions s'assemblent en un `Svg`, avec une taille. Il s'écrit comme un
++ document autonome, avec son en-tête XML :
+
+% 2 1 0 175b2ecca79c5d4c00a272273ae876d7
+
+% 0 1 0 079d9ee317b2f3221327a034af48f657
+
+% 1 1 0 002381d9584d3ff7114e9728484d4efb
+
+% 3 1 0 1cffe454215f230c1ac8e02e8a8fde4c
+
+% 4 1 0 0a40a1294e31ccd510efc0b5950e8cde
+
+% 5 1 0 12a8340eba50fbcf1c5c3c176364d2d2
+
+% 0 1 0 15cfa6636633942d1be22bf40fc5c170
+
+% 1 1 0 18f9a82d631d9634028302d453f08b53
+
+@ 0 4 0 036cf3ae4ebf457b186c71f55e228c63
++ L'analyse fonctionne dans l'autre sens. Elle relit du texte SVG en figures et définitions
++ typées : un dessin produit ailleurs peut ainsi être inspecté, mesuré ou modifié, et pas seulement
++ incorporé. L'analyseur XML sous-jacent reçoit le schéma libre, puisque le vocabulaire propre de
++ SVG est validé par les types des figures : aucun `XmlSchema` n'est donc nécessaire dans la
++ portée :
+
+% 2 1 0 1464c973e5b929b502ea9dd48d73a712
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 1492957223ccc08b166f35eaa1e627e6
+
+% 0 1 0 14e17d38512df72d086145dd70a80282
+
+% 1 1 0 1f421dc1fb7580e11203c9a869ccb7ac
+
+% 3 1 0 1ed809042920cf9d0b8012c8ea54f41c
+
+% 4 1 0 1e4427779f604c21036f43afe69df353
+
+% 5 1 0 1816ec79eba670931e15206121782c5d
+
+% 0 1 0 0014d3fb7bb51b60092981ed66892a65
+
+% 0 1 0 104dfa2c0824c8a10f3f6d207a6ff0ea
+
+% 0 1 0 0b4fef848b248d3706cbd1d5f62992e5
+
+% 1 1 0 00373adcce5931df02326117f1c3651d
+
+@ 0 4 0 1c708b2209017bd4010ba3c90249bdec
++ Un fichier écrit par un outil de dessin commence par une déclaration XML, et souvent un
++ commentaire, avant l'élément `<svg>`. `read[Svg]` accepte la déclaration, et l'écarte : un
++ fichier se lit donc de la même façon qu'un élément nu. `load[Svg]` la conserve, et donne un
++ `Document[Svg]`, dont les métadonnées contiennent l'encodage.
+
+% 2 1 0 00b69bcb3405a424041117a7c919a67b
+
+% 0 1 0 0dbe591ac80ee2e408461c52de0b79a4
+
+% 0 1 0 17b96fccedcfbff60953e7c7318b759d
+
+% 0 1 0 0597ba8b8d31e27719681a0b04576b5e
+
+% 1 1 0 000996ebbb9d774312a7134a5430cd43
+
+@ 0 3 0 0f20814dd664d3041827bd687d7c82d6
++ La `width` et la `height` de l'élément racine peuvent avoir une unité, telles qu'un outil de
++ dessin les écrit, et un `viewBox` désigne le rectangle de l'espace utilisateur que montre la
++ zone d'affichage. Les deux sont conservés, et réécrits tels qu'ils ont été lus :
+
+% 2 1 0 1bd3150e602e98830796ede380dc81d1
+
+% 0 1 0 15078625a090e5060c6b4401925d16bd
+
+% 1 1 0 02cacc32cb093b7905914b99215a33eb
+
+% 3 1 0 0e953a5202a867e61ae08d91aecf38c0
+
+% 4 1 0 1f731881eb4542ea1931dbbaa7c7d17e
+
+% 5 1 0 018680345e608bce15d2fadf004b06b7
+
+% 0 1 0 150d6eb52952971014bda8f06fd41807
+
+% 0 1 0 0f3d7209754c4558157a51955c530cb7
+
+% 0 1 0 17f800e16afc209618199522f1f9bb69
+
+% 0 1 0 003a221e53f31c6512e9a8be57c03516
+
+% 1 1 0 1ad5bd5442796f4a05546ca45b5adb6a
+
+@ 0 3 0 15a5f2adadb6d9640462871a17cedd8a
++ Un `Svg` est, en dessous, une valeur XML. Un dessin s'incorpore donc directement dans une page
++ [HTML](html.md), sans étape de sérialisation intermédiaire, et le même dessin sert de fichier
++ `*.svg` autonome lorsqu'il est enveloppé dans un `Document`.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 6 0 09171a5e64e475c61fadc13abe2810cb
++ - [Graphiques](charts.md) dessine des tracés en SVG.
++ - [XML](xml.md) est le format sous-jacent d'un document SVG.
++ - [Couleurs](colors.md) et [CSS](css.md) fournissent remplissages, contours et styles.
++ - [Polices](fonts.md) décrit les familles de caractères que nomme le texte.
++ - [Images](images.md) traite des images matricielles.
++ - [Placement des étiquettes](label-placement.md) décide où va le texte d'un dessin.

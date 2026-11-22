@@ -1,0 +1,525 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 08926ec14e05d6290e7fae9d5c65ea19
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 082da890488dbe48049aba06c6b618ec
++ info   versões semânticas verificadas enquanto o código compila, e manifestos JAR como atributos tipados
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0e46a0c24cbc38970540b5295c320fc7
++     _Revolution_ dá tipos adequados a dois tipos de metadados de release. Uma **versão
++     semântica** é uma `Semver`, escrita com o interpolador `v"…"`, que a verifica contra a
++     gramática do SemVer 2.0 enquanto o código compila, ou analisada a partir de texto com um
++     `Semver.Error` tipado; as versões são comparadas pelas regras de precedência da
++     especificação, e não lexicalmente, e um par de versões pode dizer que tipo de
++     `Compatibility` as separa. Um **manifesto JAR** é um `Manifest` cujos atributos padrão são
++     valores nomeados no pacote `manifestAttributes`, cada um lendo e escrevendo seu próprio tipo:
++     um `Main-Class` é um `Fqcn`, e não uma string.
+
+% 2 1 0 04f1c24f2bb420860f8f66bd788660b3
+
+% 3 1 0 17134af42d13dd731e1cfd4762d1af91
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 10663b515a32dfbe0790c682553d03eb
+
+% 0 1 0 13d20654929717351703ea262da09ce2
+
+% 0 1 0 16ee26686adf087003dd8a5e4acd9633
+
+% 0 1 0 119802e22d0df7471930a064333c529d
+
+% 0 1 0 1c83310f85cc4c941e97e63bf82786a1
+
+% 1 1 0 10f0be7f223aab2b15d1be9e0d2cb586
+
+@ 0 1 0 170af30ee833fd7815f6a7596ccb2832
++     A biblioteca é dividida em dois source sets:
+
+@ 0 3 0 06281c0266b856bf19dba42b9c6c2990
++     - `revolution.core` — `Manifest`, suas classes de tipos `EncodableManifest` e
++       `DecodableManifest`, e o pacote `manifestAttributes`;
++     - `revolution.semver` — `Semver`, `Compatibility` e o interpolador `v"…"`.
+
+@ 0 3 0 1b0fe10e0c673e2718e20d9b3582d32c
++     Ambos são exportados para o módulo guarda-chuva `soundness`, e `manifestAttributes` é
++     espelhado lá como um pacote. Seus membros são objetos, e não givens, de modo que
++     `import manifestAttributes.*` traz todos eles.
+
+% 0 1 0 14316f0b4ccfa28419c07cc5020f6d35
+
+% 0 1 0 07e39725eb5d0cab1d4088e2638a47fd
+
+% 0 1 0 07aab2a83bd234a4167429e96c4bdb17
+
+% 0 1 0 13b90fade746e9e60b4a1bc8fd7826b7
+
+% 0 1 0 1e568f110f3886511bc57c65a819821b
+
+@ 0 1 0 1dad7596b954acb20331b37101a3e97a
++ entry .Semver   uma versão semântica: números major, minor e patch, com identificadores de prerelease e de build
+
+% 1 1 0 0b2a18d4a06756421c69d841f08a67fd
+
+@ 0 5 0 1911928398d6ef691190e98b44ce09b6
++       Uma `Semver` é uma versão no sentido do [SemVer 2.0](https://semver.org/): três números, um
++       prerelease opcional (`-rc.1`) e metadados de build opcionais (`+build.5`), cada um uma
++       lista de identificadores, que são números onde podem ser analisados como números e texto
++       nos demais casos. Ela é escrita como um literal verificado com `v"…"`, decodificada a
++       partir de texto com `as[Semver]` e codificada de volta exatamente como foi escrita.
+
+% 2 1 0 0cf355cf1f4879b615589cf59c764c90
+
+% 3 1 0 17f2ddcf6c58ba5c001449ec06677312
+
+% 4 1 0 0d6ba827a3ee3cb60f01888d83bcd5c4
+
+% 0 1 0 1cbe3dd771c4038408fe499fd76f2a9c
+
+% 0 1 0 082439d3fa4b5b4e1ac374ffd88ff318
+
+% 0 1 0 0b4af58fd5f65821074bac485f759d84
+
+% 0 1 0 0df9fbcd53dba1391bbfde14ee722882
+
+% 1 1 0 129b8be09e27f853082e153c273fb643
+
+@ 0 4 0 145bf4d3461b3ae705a382ba65822944
++       As versões são ordenadas pela precedência da especificação (`.comparable`): numericamente
++       por major, minor e patch; uma release depois de todos os seus prereleases; identificadores
++       de prerelease comparados um a um, números numericamente e antes de texto. Os metadados de
++       build não têm papel na ordenação, nem na igualdade: `v"1.0.0+a" == v"1.0.0+b"`.
+
+@ 0 2 0 021aa399dfb40f291e7cd3527fc5082e
++       `#compatibility` classifica a mudança entre duas versões, e `#next` dá a versão que vem
++       em seguida para um dado tipo de mudança.
+
+% 0 1 0 131345e21704ea151aa0db1fefc9608b
+
+% 0 1 0 090aa9b1821f60d50f81f504412d28c4
+
+% 0 1 0 139e04537d31d8aa1da93d97fe024300
+
+@ 0 9 0 02e68d1890c8fe640597dd56d9ffb348
++   entry .encodable   escreve uma versão como texto SemVer: `1.2.3-rc.1+build.5`
++       No objeto companheiro, portanto no escopo implícito: `version.encode`. Uma versão
++       decodificada a partir de texto é codificada no mesmo texto.
++   entry .showable   exibe uma versão como seu texto SemVer, tal como `.encodable` a escreve
++   entry .decodable   lê uma versão a partir de texto SemVer, lançando `Semver.Error` se ele estiver malformado
++       Precisa de um `Tactic[Semver.Error]`. O texto é verificado contra a gramática completa do
++       SemVer 2.0: três números sem zeros à esquerda, e identificadores de prerelease e de build
++       que não são vazios, tirados de `[0-9A-Za-z-]` e (no caso de identificadores numéricos de
++       prerelease) livres de zeros à esquerda. Cada falha é lançada com seu próprio
++       `Semver.Error.Reason`.
+
+% 2 1 0 00f5d284b5890ed2176b1e300839055c
+
+% 3 1 0 1f5a661348e463441ee90b990d71caec
+
+% 0 1 0 0540ec075cd0a72d0626c069f63372ef
+
+% 0 1 0 0b843dc30d71c81414da56d865c43524
+
+% 1 1 0 03bd206ef20c6ddc0c3f5d3f21efe27b
+
+@ 0 1 0 04a5fc0c69b8592912e0e5af95542d30
++   entry .comparable   ordena versões pela precedência do SemVer, de modo que `<` e a ordenação funcionam como diz a especificação
+
+% 1 1 0 11f49644a6c52eb109b8735a1348edc0
+
+% 2 1 0 119b663355d72d92181641685030f9a8
+
+% 0 1 0 03ee7a140ff3ced4029754699ab81ae6
+
+% 0 1 0 1ec95724466a0a6802e32e481687c817
+
+% 0 1 0 1f509cebdeb0b40512cb86e218f04bd4
+
+% 0 1 0 0dd49b8bbc2598b513856b0907efaef4
+
+% 1 1 0 0e14aeca3ee0b05c007171467ef21b18
+
+@ 0 1 0 06d26ba4165a424e185bbd3fd57d10e2
++   entry .Error   lançado quando o texto não é uma versão semântica válida
+
+% 1 1 0 06de591042abab9c0f833812c4aedbcb
+
+@ 0 8 0 18d050a497243d08041c16ce2aa1c492
++         Erro `↯/s.97.1`: _`version` is not a valid semantic version because …_, com um de quatro
++         motivos: `BadFormat` (_the string did not match the SemVer 2.0 grammar_, como `1.2` ou
++         `1.2.3.4`), `EmptyIdentifier` (_a prerelease or build identifier was empty_, como em
++         `1.2.3-`), `LeadingZero` (_a numeric identifier had a leading zero_, como em `01.1.1` ou
++         `1.2.3-0123`) e `InvalidCharacter` (_an identifier contained a character outside
++         `[0-9A-Za-z-]`_). Lançado por `Semver.decodable`; um literal `v"…"` relata os mesmos
++         problemas como um erro de compilação.
++     entry .Reason   por que o texto não é uma versão semântica: formato inválido, um identificador vazio, um zero à esquerda ou um caractere inválido
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 1c5ba06f9a1ff6d9030eec78505296c4
++           O subnúmero de cada caso no erro `↯/s.97.1` é seu `#number`:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  Caso
++           column  Código
++           column  Mensagem
++           column  Observação
+
+% 0 1 0 04fb74599b2a732709d1cd4ac612eb1d
+
+% 0 1 0 0737f3cb9ebd1e381b8ab6c333062789
+
+% 0 1 0 0b39f75b57dcb4051baab677789fed54
+
+% 0 1 0 11dd99274a1a3deb0fd02a1758b29a70
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 14 0 1e860a7bbbc7f683067929856f4d3b89
++       entry #number   o subnúmero do motivo no erro `↯/s.97.1`
++     entry .communicable   renderiza cada motivo como a frase que completa _… is not a valid semantic version because …_
++     entry #version   o texto que não pôde ser analisado
++     entry #reason   por que ele não é uma versão semântica válida
++   entry #major   o número de versão major, cuja mudança sinaliza uma mudança incompatível
++   entry #minor   o número de versão minor, cujo aumento sinaliza acréscimos
++   entry #patch   o número de versão patch, cuja mudança sinaliza correções internas
++   entry #prerelease   os identificadores de prerelease, números como `Long` e o resto como `Text`; vazio para uma release
++   entry #build   os identificadores de metadados de build, números como `Long` e o resto como `Text`; ignorados na ordenação
++   entry #development   se a versão está em desenvolvimento inicial, com versão major zero
++       No SemVer, uma versão `0.x.y` não promete nada: qualquer mudança pode quebrar.
++       `#compatibility` trata todo par que envolva uma delas como `Breaking`, e `#next` incrementa
++       o número minor, e não o major, para uma mudança incompatível.
++   entry #release   a release da qual esta versão é um prerelease ou um build: os mesmos números sem identificadores
+
+% 0 1 0 1b24f8f43ce93a82073072b5d0c9aea0
+
+@ 0 5 0 0a45660355aa61b20fd3f6a951bdaa63
++   entry #compatibility   o tipo de mudança desta versão para outra, como uma `Compatibility`
++       `current.compatibility(other)` é `Breaking` se alguma das duas for um prerelease, se
++       alguma estiver em desenvolvimento inicial, se os números major diferirem ou se o minor da
++       outra for menor; `Additions` se o minor da outra for maior; `Internal` se apenas os
++       números patch diferirem; e `Unchanged` nos demais casos.
+
+% 2 1 0 01094735156184ac1d375feba79d55dd
+
+% 3 1 0 0297f52fb248d36e1de5c513fb862310
+
+% 0 1 0 1f60c548945e306313d641292448d910
+
+% 0 1 0 1bbbe7ff16b3190e0178a5a4a167044f
+
+% 0 1 0 051d0136904315fa134cc113810c2aa2
+
+% 1 1 0 0f14b8826cbb627f1c28ee4df91efeaf
+
+@ 0 6 0 186d8abef568b78802bb29e2763e91f7
++       Um número patch que *diminui* ainda é `Internal`: o método compara, ele não verifica se a
++       outra versão é posterior.
++   entry #next   a versão que vem depois desta para uma mudança do tipo indicado
++       O resultado não tem identificadores de prerelease nem de build. Uma mudança `Breaking`
++       incrementa o número major, ou o número minor durante o desenvolvimento inicial (major
++       zero); `Additions` incrementa o minor; `Internal` e `Unchanged` incrementam ambos o patch.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 1171cd2f0b2a9c0e107147ce6d5f469b
+
+% 1 1 0 048f6b7df73e8d3d1fdde4361668937c
+
+% 0 1 0 1c9ef8f78e0ea8ce1ddf8a1339bb00ec
+
+% 0 1 0 1fb6e8fe3f401b5000abae181d82a97f
+
+% 1 1 0 0de18e41e7809b580f9ed348ee8c546b
+
+% 0 1 0 104eb669bd236a661114eabd2c9fb587
+
+% 0 1 0 0f99c43cca7b82650ee4c59d0a3768f2
+
+% 1 1 0 0074a6dc1049dc2007645e753f4cda2a
+
+% 0 1 0 0e868744b1de14a90cec3cbc4eeb754b
+
+% 0 1 0 19ae88b641742902134b93114ccb0763
+
+% 1 1 0 08b139607ec2e75119b053822f44118c
+
+% 0 1 0 1a90c94c7b912f1800943cdd8c9f99f0
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 12598eaa1d9966eb153a3fc09608f99e
++ entry .Compatibility   que tipo de mudança separa duas versões: incompatível, acréscimos, interna ou nenhuma
++     A classificação que `Semver#compatibility` retorna e que `Semver#next` recebe. `Breaking`
++     significa que um código escrito para uma versão pode não funcionar com a outra;
++     `Additions`, que a versão posterior apenas acrescenta algo à anterior; `Internal`, que só a
++     implementação mudou; e `Unchanged`, que as versões são a mesma release.
+
+% 2 1 0 0ddaa1e3c52593e70ca1062a4ffb70d1
+
+% 3 1 0 16ca15f541d7cf6d1979c1feb24d54f6
+
+% 0 1 0 1099aabcdd40d8331dd05044b484d31f
+
+% 0 1 0 012942c2004002bd18020b72b513d2f5
+
+% 1 1 0 0fede9602fec45f9086a5f2a81a2bc0d
+
+@ 0 5 0 19f47db3cf91460b0d8b3c358952abe6
++ entry .v   o interpolador `v"…"`: uma versão semântica, verificada enquanto o código compila
++     `v"1.4.2"` é uma `Semver`. O literal é analisado pela mesma gramática que
++     `Semver.decodable` enquanto o código compila, e um literal malformado é um erro de
++     compilação, _invalid semantic version_. O interpolador não aceita substituições com `$`;
++     para uma versão calculada em tempo de execução, decodifique o texto com `as[Semver]`.
+
+% 2 1 0 10afd7e0811d19c71cce049fa15e9827
+
+% 3 1 0 06d2f5e44cfb2e39188df79e4748249e
+
+% 0 1 0 07281006ba6ef59f1916bf84893e3c33
+
+% 0 1 0 10cd8c3e3900355511256646c5fe79f4
+
+% 1 1 0 1ea16fa93fb43bf41d55dc6f834ac9d0
+
+@ 0 1 0 1617e35fe993b3fc0783acbf4dc5d244
++ entry .internal   a implementação em macro por trás de `v"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 0414a3c8ccf99d6112934d13900f5288
++       Não é para uso direto: o objeto abriga a macro que valida um literal de versão em tempo de
++       compilação.
++   entry .semver   a macro por trás de `v"…"`: valida o literal e depois o decodifica em tempo de execução
+
+@ 0 1 0 1a3a9168111888f60bc62a302c2d0be0
++ entry .Manifest   os atributos principais de um manifesto JAR, lidos e escritos como valores tipados
+
+% 1 1 0 1c5e6bca5ee8078c0cf52adb6f39c165
+
+@ 0 5 0 1ba259f8eca894300952b21faa4dfbed
++       Um `Manifest` é a seção principal do `META-INF/MANIFEST.MF` de um JAR, mantida como um mapa
++       dos nomes de atributos para seu texto. Os atributos são nomeados pelos objetos do pacote
++       `manifestAttributes`, e ler ou escrever um deles passa pelo próprio tipo do atributo:
++       `manifest(MainClass)` é um `Optional[Fqcn]`, e `MainClass(fqcn"…")` cria a entrada a partir
++       de um `Fqcn`.
+
+% 2 1 0 1f9ca33e6522ff310f251e47bb93ec83
+
+% 3 1 0 0786a30e7f8871660ca73a806a87930b
+
+% 4 1 0 0c24c9c312e8d11f1ce85926ecf9825e
+
+% 5 1 0 1bf20e20a557b0e5159d342cb678be4d
+
+% 7 1 0 083c7d9addfe41b816c0ff0da50f2c2f
+
+% 0 1 0 0187d5edf0d62cf31cc9ea79aad2966d
+
+% 0 1 0 1850e55a38b7f13411c3f87fcb482e84
+
+% 0 1 0 11421236e945d1500c894ec4c6bc8b9b
+
+% 1 1 0 1dd225ce0d61038e1409540e863231db
+
+@ 0 4 0 1c7e002f024f6b4b08cd5d72b2002d1c
++       Um manifesto é `Streamable` e `Aggregable` por `Data`, de modo que é serializado com
++       `#serialize` ou enviado como stream onde quer que se esperem bytes, e lido de volta de
++       qualquer origem de bytes com `read[Manifest]`. A serialização passa por
++       `java.util.jar.Manifest`, de modo que a quebra de linha em 72 bytes do formato e as linhas
++       de continuação são tratadas sem que quem chama precise cuidar delas.
+
+% 0 1 0 0dd8b53c8a68d3ca1f393ce9031fc576
+
+% 1 1 0 0115925e294dcba60397b8543bf343da
+
+% 1 1 0 0f64fdbe6322ad11195d9306650eb109
+
+@ 0 9 0 0f7c98a0aa393de8101f62990fc2e3e3
++   entry .apply   um manifesto com as entradas indicadas
++       `Manifest(entries*)` recebe valores `Manifest.Entry`, normalmente criados aplicando um
++       atributo a seu valor:
++       `Manifest(ManifestVersion(()), MainClass(fqcn"com.example.Main"))`. Uma entrada posterior
++       para o mesmo atributo substitui uma anterior.
++   entry .streamable   envia um manifesto como stream, com os bytes de `MANIFEST.MF`
++   entry .aggregable   lê um manifesto a partir de um stream de bytes, `source.read[Manifest]`
++       Analisa a seção principal por meio de `java.util.jar.Manifest`, mantendo o nome e o texto
++       de cada atributo; as seções por entrada não são mantidas.
++   entry .addable   `manifest + entry`: acrescenta ou substitui um atributo
+
+% 1 1 0 13f5e403476991bd06eaff5a76d3134f
+
+% 2 1 0 1ad8acfde08e86cf08c37ef1fd24fce0
+
+% 1 1 0 12679d811b7ca49300d9751c86c8e3a8
+
+% 0 1 0 19916b9fb1ac3660034a48b336f0c574
+
+% 1 1 0 10e5f346c8f5b9c70af6ef8e9a6b8ff6
+
+@ 0 4 0 00e96d701aa0ca9110fe174f532259be
++   entry .subtractable   `manifest - attribute`: remove um atributo, por seu objeto
++       `manifest - MainClass` é o manifesto sem seu atributo `Main-Class`; remover um atributo
++       ausente deixa o manifesto como estava.
++   entry .Attribute   um atributo de manifesto, nomeado pelo tipo literal de sua chave
+
+% 1 1 0 1d3f9747fa2de5ad0e4c4366a258a29a
+
+@ 0 5 0 0e7c740b56b6d9e21a52e439d3fd4263
++         Os objetos de `manifestAttributes` estendem `Manifest.Attribute["Main-Class"]` e
++         similares. A chave de um atributo é seu parâmetro de tipo literal, e as instâncias de
++         `EncodableManifest` e `DecodableManifest` para esse tipo literal decidem qual é seu valor:
++         `Fqcn` para `"Main-Class"`, `Unit` para `"Manifest-Version"`, `Text` para `"Created-By"`.
+
+@ 0 1 0 1eb588f0a38b5433033dc749ba08f9bd
++         Um novo atributo é um objeto da mesma forma, com instâncias para sua chave:
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 115b736eec875da30479e7773eda7284
+
+% 0 1 0 0fa2c88b87a00cd1134f48463d4e50c5
+
+% 0 1 0 1cb916c035354c9e19d206771b65b998
+
+% 0 1 0 0ca1d71d6db29b64087110e6794d6863
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 4 0 12df73fbb5509eef1b64926a22745d15
++     entry #key   o nome do atributo, tal como aparece no manifesto
++     entry #parse   decodifica texto como o valor deste atributo, por meio de seu `DecodableManifest`
++         `MainClass.parse(t"com.example.Main")` é um `Fqcn`. Precisa da instância de
++         `DecodableManifest` da chave, e do que quer que ela precise (um `Tactic[Fqcn.Error]` para
+
+% 0 1 0 13207f99e09b75ee0d120ddf35636c88
+
+@ 0 5 0 19c5ae9d032174711e35ef8a32493bb6
++     entry #apply   cria a entrada de manifesto para um valor do tipo deste atributo
++         `MainClass(fqcn"com.example.Main")` é um `Manifest.Entry`; o tipo do valor é o `Topic` do
++         `EncodableManifest` da chave, de modo que um atributo sem instância não pode ser aplicado
++         de forma alguma.
++   entry .Entry   um atributo de um manifesto, como sua chave e seu texto codificado
+
+% 1 1 0 17c9bd4742835b3b02c63b838093290e
+
+@ 0 9 0 1998d6788c72e1ef00baff58c3b8b07a
++         Criada por `Manifest.Attribute#apply`, como `MainClass(fqcn"com.example.Main")`, e
++         reunida por `Manifest(entries*)` ou acrescentada com `+`.
++     entry #key     o nome do atributo
++     entry #value   o valor do atributo, codificado como texto
++   entry #entries   o nome e o texto de cada atributo, como um mapa
++   entry #apply   o valor de um atributo, decodificado para seu tipo, ou `Unset` se o manifesto não o tiver
++       `manifest(MainClass)` é um `Optional[Fqcn]`. Precisa da instância de `DecodableManifest`
++       da chave.
++   entry #serialize   o manifesto como os bytes de um arquivo `MANIFEST.MF`, com a quebra de linha que o formato exige
+
+@ 0 1 0 1638bc55b9fa1f89074df56dbbc71d99
++ entry .EncodableManifest   uma classe de tipos para escrever o valor de um atributo de manifesto como texto, indexada pelo nome do atributo
+
+% 1 1 0 185094c9203c6ff80e6543854ebf1858
+
+@ 0 3 0 02128c9a2a15fedf0bc2ad32124c9525
++       Uma instância é escrita `"Main-Class" is EncodableManifest of Fqcn`: `Self` é o nome do
++       atributo como um tipo literal, e `Topic` é o tipo que seu valor tem. É o que permite que
++       `MainClass(fqcn"…")` receba um `Fqcn` e nada mais.
+
+@ 0 4 0 03c4d4cc622a21b31b1d73b96b60eec0
++       Só três chaves têm instâncias no objeto companheiro: `Main-Class` (um `Fqcn`),
++       `Manifest-Version` (`Unit`, sempre escrito como `1.0`) e `Created-By` (`Text`). Um
++       atributo de `manifestAttributes` sem instância, como `ClassPath`, não pode ser aplicado até
++       que uma instância seja fornecida.
+
+% 1 1 0 1e49721e9e7459be06c0ab5f955b17ba
+
+% 1 1 0 1f74f17c13f3ff3b18b2974b61479ae6
+
+@ 0 4 0 03014f6bc088493e0db0cb49dc0e272e
++   entry .mainClass   escreve `Main-Class` a partir de um `Fqcn`
++   entry .manifestVersion   escreve `Manifest-Version` a partir de `()`, sempre como `1.0`
++   entry .createdBy   escreve `Created-By` a partir de texto
++   entry #encode   escreve um valor como o texto do atributo
+
+@ 0 1 0 082ed426ccc9c0fc15a02f078bb9f275
++ entry .DecodableManifest   uma classe de tipos para ler o texto de um atributo de manifesto como um valor tipado, indexada pelo nome do atributo
+
+% 1 1 0 13db33e95a4f857b00830227c7f43960
+
+@ 0 3 0 1ec56832d9fc3bd2141f71efbbccb6dd
++       Uma instância é escrita `"Main-Class" is DecodableManifest of Fqcn`: `Self` é o nome do
++       atributo como um tipo literal, e `Topic` é o tipo para o qual seu texto é decodificado. É o
++       que faz de `manifest(MainClass)` um `Optional[Fqcn]`.
+
+@ 0 4 0 19d1d79112668e951c3da2135d03bafa
++       O objeto companheiro tem instâncias para `Main-Class` (um `Fqcn`, que precisa de um
++       `Tactic[Fqcn.Error]`) e `Created-By` (`Text`). Os outros atributos, incluindo
++       `Manifest-Version`, não têm nenhuma, de modo que lê-los por meio de `Manifest#apply` não
++       compila até que uma seja fornecida; `Manifest#entries` guarda o texto deles de qualquer
++       forma.
+
+% 1 1 0 1f153163e430578a04bb89871c5606ca
+
+% 1 1 0 06523eebaa3b151c0577e6b972e2df1b
+
+@ 0 3 0 0fc44e939a76e667061fd9ea2dd6e973
++   entry .mainClass   lê `Main-Class` como um `Fqcn`, lançando `Fqcn.Error` se não for um nome de classe válido
++   entry .createdBy   lê `Created-By` como texto
++   entry #decoded   decodifica o texto do atributo para seu valor
+
+@ 0 1 0 1b88ce97f70362811f1bf6c185c91e65
++ entry .manifestAttributes   os atributos padrão de manifestos JAR, como objetos com que ler e escrever um `Manifest`
+
+% 1 1 0 0d0d2bd303cefb280aaadbef97f10172
+
+@ 0 3 0 07e41d69168da77606d9cbff349b4fec
++       Cada objeto é um `Manifest.Attribute` indexado por um dos nomes de atributos que a
++       especificação JAR define. São objetos comuns, de modo que `import manifestAttributes.*`
++       traz todos eles para o escopo.
+
+% 2 1 0 1afebf64e735ed450a33e57437c0b49c
+
+% 3 1 0 0e17a0cc5f7eb1a406d75cfb0b436468
+
+% 4 1 0 1c14f262d9d4f8361bf3485633b25994
+
+% 5 1 0 0aadd9971fc715ea0058f11b63c6562f
+
+% 7 1 0 10eb8be110ccd8b614a75762d79e72c6
+
+% 0 1 0 1d84d74168f571dd1b69c44690bd7aee
+
+% 1 1 0 06b4bb366101967f067c7c778015e14b
+
+@ 0 18 0 029bf695f49abfd50e6558ddb56baa1c
++       Só existem valores tipados para `MainClass`, `ManifestVersion` e `CreatedBy`, por meio das
++       instâncias de `EncodableManifest` e `DecodableManifest`; os outros nomeiam seus atributos,
++       para `-` e para instâncias que um programa forneça.
++   entry .ManifestVersion   `Manifest-Version`: a versão do formato do manifesto, escrita como `1.0` a partir de `()`
++   entry .MainClass   `Main-Class`: a classe cujo método `main` é executado por `java -jar`, como um `Fqcn`
++   entry .CreatedBy   `Created-By`: a ferramenta que criou o arquivo, como texto
++   entry .ClassPath   `Class-Path`: outros JARs a pôr no classpath, relativos a este
++   entry .ContentType   `Content-Type`: o tipo MIME de um recurso incluído
++   entry .ExtensionList   `Extension-List`: os pacotes opcionais de que o arquivo precisa
++   entry .ExtensionName   `Extension-Name`: o nome do pacote opcional que o arquivo fornece
++   entry .ImplementationTitle   `Implementation-Title`: o título da implementação
++   entry .ImplementationVendor   `Implementation-Vendor`: a organização que criou a implementação
++   entry .ImplementationVersion   `Implementation-Version`: a versão da implementação
++   entry .Sealed   `Sealed`: se os pacotes do arquivo estão selados contra classes vindas de outro lugar
++   entry .SignatureVersion   `Signature-Version`: a versão do formato de um arquivo de assinatura
++   entry .SpecificationTitle   `Specification-Title`: o título da especificação implementada
++   entry .SpecificationVendor   `Specification-Vendor`: a organização dona da especificação
++   entry .SpecificationVersion   `Specification-Version`: a versão da especificação implementada

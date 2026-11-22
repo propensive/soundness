@@ -1,0 +1,28 @@
+orthant 2 language
+
+@ 0 1 0 0b98bc416933750306dc5714b9265015
++ # `SN-562` — `XPathError` (retirado)
+
+@ 0 6 0 0ffc8a3ca64e935d0755c2cfaef31ad1
++ **Este código ya no se lanza.** Una *expresión* XPath mal formada es ahora un `Parse.Error`
++ (`↯/s.60.2`) sobre el formato `XPath`, como cualquier otro fallo de análisis del código base:
++ `XPath` implementa `zephyrine.Format`, como ya hacía `Xml`, y sus antiguos casos de `Reason` son
++ ahora `XPath.Issue`s. La `Position` sigue llevando el desplazamiento del carácter, así que el
++ interpolador `xp"…"` sigue situando su cursor de inserción exactamente.
+
+@ 0 2 0 024ac7ee7d30b6e61498b9eaa5d86d87
++ El nombre `XPath.Error` pertenece ahora al fallo distinto de *evaluar* una expresión que se analizó
++ correctamente: véase `↯/s.128.2`.
+
+@ 0 4 0 02898dd2a11114941cb4fdb9554a06a5
++ Dos de los antiguos motivos han desaparecido en lugar de traducirse: `ExpectedSlash` y `BadStep`
++ solo los lanzaba el analizador posicional anterior al AST, y se conservaban únicamente para
++ mantener estable la numeración. Los `Issue`s no están numerados, así que nada tenía que guardarles
++ el sitio.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 2 0 0c03179f2199054914477c1304fe2fc3
++ - Sustituido por: `↯/s.60.2` (`Parse.Error`, formato `XPath`)
++ - Relacionado: `↯/s.128.2` (`XPath.Error`, evaluación)

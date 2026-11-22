@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 0c21520be20ec02f153aaebf19bbf61b
+
+@ 0 2 0 01de378e79b9e6e20786ca882372489d
++ JSON の値が、検証に使われているスキーマを満たさないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 1a1a9257451335b51f72027c10e57f4e
++ Jacinta の `Json.Provider` は、レコードのフィールドが読まれるときに JSON の値をスキーマに照らして検証し、不一致のそれぞれを、フィールドを読むコードの `Tactic` を通じてこのエラーで報告する。そのため検証を行うリーダーはそれらをすべて集められる。
++ メッセージは `the JSON was not valid according to the schema because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 14 0 08d296b9302f8492128252de64ce0b1e
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.106.3.1`  `JsonType`  値の型が、スキーマが求めるものと一致しない。  `[↯/s.106.3.1] the JSON was not valid according to the schema because expected JSON type number, but found string`  スキーマが求める型の値を与える。型が本当に柔軟であるなら、スキーマを緩める。
++ row  `↯/s.106.3.2`  `MissingValue`  必須の値が JSON にない。分かっている場合、理由は欠けたフィールドを名指す。  `[↯/s.106.3.2] the JSON was not valid according to the schema because the value of locality was missing`  欠けたフィールドを追加するか、スキーマでそれをオプショナルにする。
++ row  `↯/s.106.3.3`  `IntOutOfRange`  整数の値が、スキーマが許す `minimum`/`maximum` の範囲の外にある。`"integer!"` のプロバイダーの型によって発生する。存在しない境界は番兵ではなく `Unset` である。  `[↯/s.106.3.3] the JSON was not valid according to the schema because the value was not between 1 and 99`  値をスキーマが許す範囲に収める。
++ row  `↯/s.106.3.4`  `PatternMismatch`  文字列の値が、スキーマの `pattern` にある正規表現に一致しない。  `[↯/s.106.3.4] the JSON was not valid according to the schema because the value did not conform to the regular expression [a-z]+`  値をスキーマのパターンに一致するように直すか、パターンを緩める。
++ row  `↯/s.106.3.5`  `NumberOutOfRange`  数が、スキーマが宣言する `minimum`/`maximum`（または排他的な境界）の外にある。`"number!"` のプロバイダーの型によって発生する。  `[↯/s.106.3.5] the JSON was not valid according to the schema because the number was not between -90.0 and 90.0`  値をスキーマが許す範囲に収める。
++ row  `↯/s.106.3.6`  `LengthOutOfRange`  文字列の長さが、スキーマの `minLength`/`maxLength` の外にある。`"string!"` のプロバイダーの型によって発生する。  `[↯/s.106.3.6] the JSON was not valid according to the schema because the string's length was not between 1 and 214`  値を短くするか長くして、スキーマに合わせる。
++ row  `↯/s.106.3.7`  `NotPermitted`  文字列が、スキーマの `enum` の値（またはその `const`）のどれでもない。`"enum"` のプロバイダーの型によって発生する。  `[↯/s.106.3.7] the JSON was not valid according to the schema because the value Polygon was not one of Point`  列挙された値の一つを使うか、スキーマの `enum` を拡張する。
++ row  `↯/s.106.3.8`  `UnexpectedKind`  値の JSON の種類が、その合併（`anyOf`、`oneOf`、または複数を名指す `type`）のどの選択肢にも受け付けられない。  `[↯/s.106.3.8] the JSON was not valid according to the schema because the value was a JSON boolean, which is not one of string, number`  スキーマが列挙する種類の一つの値を与える。
++ row  `↯/s.106.3.9`  `Unparsable`  文字列のテキストが、その `format` として有効でない。パースできない `json-pointer` や `regex` である。  `[↯/s.106.3.9] the JSON was not valid according to the schema because the value a[ is not a valid regex`  その形式でパースできるように値を直す。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 1eacee630aefe77708d9951599b52b0f
++ - ソース：`lib/jacinta/src/core/jacinta.Json4.scala`

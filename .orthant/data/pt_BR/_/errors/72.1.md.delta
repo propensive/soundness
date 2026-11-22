@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 0 1 0 031bf6f195a6f16513ebde79967553e0
+
+@ 0 1 0 12125eb21c9e477710e7d2053d61bca0
++ Lançado quando uma operação de grafo exige um grafo acíclico e o grafo tem um ciclo.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0b93a36b9a1a16710b457bc6c5d1ec9d
++ Uma ordenação topológica, uma consulta de alcançabilidade e uma redução transitiva são todas
++ indefinidas em um grafo cíclico. Em vez de entrar em laço ou retornar uma resposta parcial, a
++ operação relata o ciclo.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+% 0 1 0 11b582b60b2a09df0f4720b8817b10bb
+
+% 0 1 0 0a05773190d32b390953265af3913896
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 0ba47b39873cb28b1dbb502bc9991dda
++ Quebre o ciclo, ou faça uma pergunta que seja definida em grafos cíclicos. `hasCycle` testa a
++ existência de um ciclo sem lançar, para o código que prefere verificar a tratar.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 16bf082de7fbcd3b18b67b39d81eaf87
++ - Código-fonte: `lib/acyclicity/src/core/acyclicity.Dag.scala`

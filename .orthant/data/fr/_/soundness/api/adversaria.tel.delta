@@ -1,0 +1,794 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1ab20f68cead03490767b70c7469eac7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0d12f61c13f3f4761e8e23d0695090a5
++ info
++     des annotations statiques relues comme instances de classes de types, et des champs atteints
++     par leur nom, le tout résolu à la compilation
+
+@ 0 6 0 1b660a063b08aaa312503b7dba6ca8c7
++ detail
++     _Adversaria_ lit les annotations statiques de Scala sans que le consommateur écrive de macro.
++     Invoquer `Annotated` pour un type produit les annotations portées par le type lui-même, par
++     ses champs ou par les variantes d'une hiérarchie scellée, calculées pendant la compilation du
++     code, sans réflexion à l'exécution ; la requête s'écrit dans le style prépositionnel, en
++     restreignant par type d'annotation avec `by`, par champ avec `on`, et aux variantes d'un type
++     somme avec `under`.
+
+% 2 1 0 17409d87417e9fbd1676627049efd4d3
+
+% 3 1 0 1a652ad6abd860e81cfa3984e2eeb970
+
+% 0 1 0 1dc7d242730fc8b105ceb408073084fa
+
+% 0 1 0 062d691f6a3932451ca247b8067de5df
+
+% 0 1 0 0e8a2550102d8cbb16f820e881897ab8
+
+% 0 1 0 1a999fd94f92588905ca91de91227927
+
+% 0 1 0 1709b8b51cb3fac41d1cd5e14aa31d94
+
+% 1 1 0 1b185b476541d2d80e8ccb64a60d250a
+
+@ 0 5 0 1946702c51a4464f169f965eccd35c3c
++     La bibliothèque définit aussi `@name`, l'annotation que respecte chaque format de
++     sérialisation de Soundness pour renommer un champ ou une variante dans la représentation
++     sérialisée, avec `relabelling` et `variantRelabelling`, que lisent les dérivations de format ;
++     et `Dereferenceable`, qui atteint les champs d'un enregistrement par leur nom à l'exécution au
++     moyen d'une table d'accesseurs générée lors de la compilation du code, chacun étant une
++     `Lens` de panopticon.
+
+@ 0 4 0 02a0eb7451d25adc0259797f8eeec046
++     La bibliothèque a un seul ensemble de sources, `adversaria.core`, pour toutes les
++     plateformes ; le composant `adversaria.examples` contient des fixtures de test et n'est pas
++     publié. Tout est exporté vers le package parapluie `soundness`, et les instances sont données
++     dans les compagnons des classes de types ; aucun import au-delà de `soundness.*` n'est donc
++     nécessaire.
+
+% 0 1 0 06764d421883c3a3136579227568f7bc
+
+% 0 1 0 1c6ce453daa642d80ca5a4d3592c2f37
+
+% 0 1 0 19eeb8a244209f1019e103a332e6b71f
+
+% 0 1 0 1d66646cd768ff9510c386df7cc1bba6
+
+% 0 1 0 058eb3e91b28ea7b0bd1f9ed65b2d3aa
+
+% 0 1 0 07e34ab3aff1cba012c2f18bad49357a
+
+% 0 1 0 0855cc034f87a7211dfd2116b901a6d7
+
+@ 0 1 0 1c898b1fc2f535e70366c7ab67b1bcb9
++ entry .Annotated
++   info
++       une classe de types dont les instances contiennent les annotations statiques d'un type, de
++       ses champs ou de ses variantes
+
+@ 0 4 0 1372560950032252038dcb490458f041
++   detail
++       Les instances d'`Annotated` ne s'écrivent jamais à la main : `.annotations`, un given
++       transparent inline du compagnon, en génère une pour tout ce qui est demandé. La demande est
++       un type prépositionnel :
+
+@ 0 6 0 10c9d638cfefa6611b79f1636c08b9d6
++       - `T is Annotated` — chaque annotation portée par le type `T` lui-même, et par ses champs ;
++       - `T is Annotated by A` — seulement celles de type d'annotation `A` (une vérification de
++         sous-type, si bien que `by marker[Person]` exclut un `marker[Play]`) ;
++       - `T is Annotated on "field"` — seulement le champ nommé, dont le nom est vérifié par
++         rapport au constructeur principal de `T` ;
++       - `Annotated under S` — les annotations portées par chaque variante du type scellé ou de
++         l'énumération `S`.
+
+@ 0 5 0 1f74ce350bbc601e19360f8986cacb8b
++       Le type précis de l'instance dépend de la réponse, c'est pourquoi le given est transparent :
++       une requête sur des champs donne un `Annotated.Fields` avec `fields`, `annotations` et
++       `apply()` ; une requête qui correspond à exactement un champ donne un `Annotated.Field`, qui
++       connaît aussi le nom de ce champ et offre une lentille sur lui ; et une requête `under`
++       donne un `Annotated.Subtypes`.
+
+@ 0 1 0 19af3b659ca08f180da898a793587cba
++       La restriction s'observe le mieux une préposition à la fois :
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 0620cf401100f7d2159e95ece44a7ab5
+
+% 1 1 0 07a9fdef0411fb271f81dd0365700e68
+
+% 0 1 0 0372c512018921351b3cb09f7966473a
+
+% 0 1 0 1365e394211dc4f40af11cbfbb357f01
+
+% 1 1 0 0b5f91780017f5301768aff9e6d02891
+
+% 0 1 0 09b7e81fd2dcfc3d1a47a5ef51ba654d
+
+% 1 1 0 1b9d9650bd0a88bd1c69ce9f78ff49c1
+
+% 0 1 0 17251f57382801231b0a46a6f74086f0
+
+% 0 1 0 0f3ed3871c47d8c902e9f22b33cac3af
+
+% 1 1 0 1997eb499f1c3225026db5a70b56cf3f
+
+% 0 1 0 025b3511b81deeb700c48fc876b35421
+
+% 1 1 0 1f0260be5f452b2c06c3eb8de4d5d99e
+
+% 0 1 0 19e5d59cbe71600a09794d3347dabbb4
+
+% 0 1 0 1de7b9c4c5242f2a157279af791deb0b
+
+% 1 1 0 06a6fc45ddced8c815f45e351b0b85d3
+
+% 0 1 0 002e7b3112f795f6016e3bf3872adf03
+
+% 1 1 0 088c6a50dccb200307e30053ca2f45e5
+
+% 0 1 0 1aefca58e8ffa4f319df7aa0a8f2e183
+
+% 0 1 0 066c986c304ad9201c3592b35ed4ed8c
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 0540b947a560e2ba1cc65c9edf533c31
++       Les annotations sont reconstruites dans le code généré à partir de leurs arbres ; les
++       arguments d'une annotation doivent donc être des littéraux, des références à des valeurs
++       stables, ou des appels de constructeurs imbriqués ; une annotation dont les arguments ne
++       peuvent pas être reconstruits est omise silencieusement.
+
+% 0 1 0 0e7126df0e74030e198b5852443db7e6
+
+% 0 1 0 0a730037bdec3496033584b78cb6cb73
+
+% 0 1 0 01c97d97f390103e0fc3db25fc36a2fd
+
+@ 0 1 0 1cd3018d7b325a94124d847e1f5e2351
++   entry .annotations
++     info
++         génère l'instance `Annotated` pour toute demande, lors de la compilation du code
+
+@ 0 5 0 11a8a760a4cf4bb917281e6f8d4ee173
++     detail
++         Un given transparent inline du compagnon, donc dans la portée implicite :
++         `summon[T is Annotated by A on "field"]` l'expanse avec le type d'annotation
++         (`StaticAnnotation` en l'absence de `by`), le sujet, le champ (le `Plane`) et la racine
++         des variantes (la `Limit`). Son type de résultat est le plus précis parmi
++         `Annotated.Fields`, `Annotated.Field` et `Annotated.Subtypes` qui convient à la réponse.
+
+@ 0 1 0 13eb4bd2eabba10609fa056641410b23
++   entry .Fields
++     info
++         l'instance pour une requête sur un type et ses champs : leurs annotations, par nom de
++         champ
+
+@ 0 5 0 033e3e0e6433df441ed30b29dcab2f7d
++     detail
++         Ce que donne `summon[T is Annotated]` ou `summon[T is Annotated by A]` lorsque la réponse
++         n'est pas un champ unique. `#fields` associe chaque champ portant une annotation de type
++         *quelconque* à ses annotations du type demandé ; un champ qui ne porte que d'autres
++         annotations apparaît donc avec un ensemble vide ; `fieldAnnotations` les écarte.
+
+% 2 1 0 14b01588491d20851799c2d600b5018a
+
+% 3 1 0 116c2b1be0f43c6f13587f2df1279ddd
+
+% 0 1 0 1ab3fa13f5baf28a12cfc8340403c0c7
+
+% 0 1 0 0ede700e3ea8fd1b07bf2df2be9f02fe
+
+% 0 1 0 032045589c8ad00d0b11b2ecbfbe4f0d
+
+% 0 1 0 04400c4dd7cfa73916891abdd5fea302
+
+% 1 1 0 10137073963945a41944232c13f6fa00
+
+@ 1 1 0 1f1e7a279d48bfb8106afacc980aa2b6
++     entry #fields
++       info
++           le nom de chaque champ annoté, avec ses annotations du type demandé
+
+@ 0 1 0 0512cd11d0e53a4601c144b929ce0ed5
++   entry .AnnotatedFields
++     info
++         l'`Annotated.Fields` concret que construit la macro
+
+@ 0 4 0 1fc6154ac12119280596162b8d2798ce
++     detail
++         Contient les annotations du type lui-même et celles des champs, telles que la macro les a
++         trouvées. C'est ce que renvoie `summon[T is Annotated]` ; ses membres sont donc ceux
++         qu'utilise un appelant.
+
+@ 1 1 0 141dd127699e01c211edd36251378698
++     entry #fields
++       info
++           le nom de chaque champ annoté, avec ses annotations du type demandé
+
+@ 0 1 0 0eeefe7f774910d30cd78786590fd00d
++     entry #annotations
++       info
++           les annotations du type demandé portées par le type lui-même
+
+@ 0 2 0 194ed536d0f57a460608886ee3bbe5a3
++       detail
++           `summon[Play is Annotated by unique].annotations` est l'ensemble vide si `Play` ne porte
++           pas de `unique`, quoi que portent ses champs.
+
+@ 0 1 0 1814685f20bb91451318a12722a7d3fd
++     entry #apply
++       info
++           les annotations : portées par le type lui-même, ou par le champ nommé avec `on`
+
+@ 0 2 0 0c85d88d3c4c9b5e0f8d15a9fc514c28
++       detail
++           `summon[Play is Annotated]()` donne les annotations propres au type ; pour une requête
++           avec `on "field"`, ou qui correspond à exactement un champ, il donne celles de ce champ.
+
+@ 0 1 0 1a3804b7c64310840c721089f5a3fd2e
++   entry .Field
++     info
++         l'instance pour une requête qui a correspondu à exactement un champ : son nom, et une
++         lentille sur lui
+
+@ 0 6 0 08a759f393864a640411a6d4e3177802
++     detail
++         Lorsque les annotations demandées se trouvent sur exactement un champ —
++         `summon[T is Annotated by A]` où un seul champ porte un `A`, ou toute requête qui nomme un
++         champ avec `on` — l'instance est un `Field`, qui connaît le nom et le type du champ.
++         Trouver « le champ marqué comme identifiant » est généralement le prélude à sa lecture ou
++         à son écriture ; elle offre donc une lentille :
+
+% 2 1 0 0daae4f54dbaea7f1078ff9ace2260e5
+
+% 3 1 0 0b668c46b4add02502614ab37f65c279
+
+% 0 1 0 06432f38bf00ee631d4643e36a75fa0e
+
+% 0 1 0 178ac87c4a799abe0e35c7498d97b93a
+
+% 0 1 0 122f9131109b176e0d5b68730b4d4786
+
+% 0 1 0 12565b64c51d31f20eba98566047b0f5
+
+% 0 1 0 10f59677baff4d8f0503dee7d8786b74
+
+% 0 1 0 17bf2860565557bd05f26b842a4c5f1f
+
+% 1 1 0 14f19afd362c4b8301ad5edf3cbcad23
+
+@ 0 3 0 09105e3c392c7db81d680b6c88c7d002
++         Si plusieurs champs portent l'annotation, l'instance n'est qu'un `Annotated.Fields`, et
++         `field` et `lens` ne compilent pas : le type de l'instance enregistre si la correspondance
++         était unique.
+
+@ 1 1 0 0afa2b4a8fc57a6f1642d20a0b91c5e1
++     entry #field
++       info
++           le nom de l'unique champ annoté
+
+@ 0 1 0 14d5b94f259cec50116815998f1fcbab
++     entry #lens
++       info
++           une `Lens` de panopticon sur le champ annoté, pour le lire ou le mettre à jour
+
+@ 0 3 0 1b0f83fb51db04c611d41944c276c2e7
++       detail
++           Invoquée au site d'utilisation, où l'on sait que le sujet est un produit : le nom du
++           champ, sous forme de type littéral, y est résolu par panopticon. `lens(value)` lit le
++           champ ; `lens.update(value, replacement)` renvoie une copie où il est remplacé.
+
+@ 0 1 0 03743c8b765ee9a51d3f95131907d2d4
++   entry .AnnotatedField
++     info
++         l'`Annotated.Field` concret que construit la macro lorsqu'un seul champ a correspondu
+
+@ 0 3 0 0446949fe195416c0753dcbbc5fae9a0
++     detail
++         Un `Annotated.AnnotatedFields` dont le type `Unique` vaut `true`, dont le `Topic` est le
++         type du champ et dont la `Target` est son nom sous forme de type littéral.
+
+@ 1 1 0 1dc360bfc28b9bab0bcf44c397bc38cd
++     entry #field
++       info
++           le nom de l'unique champ annoté
+
+@ 0 1 0 0158d3b0197af85914cbc4d80b4e16c9
++   entry .Subtypes
++     info
++         l'instance pour une requête `under` : les annotations portées par chaque variante d'un
++         type scellé
+
+@ 0 3 0 0229f5ac6d0494a8072c316f70609221
++     detail
++         `summon[Annotated under S]` associe le nom de chaque sous-type direct du trait scellé ou
++         de l'énumération `S` à ses annotations du type demandé.
+
+% 2 1 0 132084da35a8a4890c3a2bf20d1a9d7b
+
+% 3 1 0 183392130dea2b480c856008174c8493
+
+% 0 1 0 156647999ad5e7ae016e1f213fda6c47
+
+% 0 1 0 1ba4c2b48955459206d19b90af16c26e
+
+% 0 1 0 1b72244dd7120f49179d2e2499d95bfc
+
+% 0 1 0 1de6a7996c2ccda31f085c47c618a59a
+
+% 0 1 0 0752d9de35ad9bf41a4e5a2e14d256af
+
+% 0 1 0 0cef7f688b127c98192ef14459c03dd7
+
+% 0 1 0 1d581c5dc260fa920709f3a63205d029
+
+% 1 1 0 1bfb46816aa4c0da0cc3416685f0915a
+
+@ 1 1 0 1393e03e75d5ecc4173421b43d0b5a5e
++     entry #subtypes
++       info
++           le nom de chaque variante, avec ses annotations du type demandé
+
+@ 0 1 0 1d202cc093c98c8300afcf1a211d22fe
++     entry #apply
++       info
++           le nom de chaque variante, avec ses annotations : la même map que `#subtypes`
+
+@ 0 1 0 185219498f3c83281924efbe2ada5f97
++   entry .AnnotatedSubtypes
++     info
++         l'`Annotated.Subtypes` concret que construit la macro
+
+@ 1 1 0 1707043d6c82110e12ee2cf402161fad
++     entry #subtypes
++       info
++           le nom de chaque variante, avec ses annotations du type demandé
+
+@ 0 1 0 16dd86887e8043fa1ba7f1717dd60203
++     entry #apply
++       info
++           le nom de chaque variante, avec ses annotations
+
+@ 0 1 0 104d0aa143e84fb60012a34a2f6e3f20
++   entry #Operand
++     info
++         le type d'annotation demandé par la requête, `StaticAnnotation` si elle n'en a nommé aucun
+
+@ 0 1 0 1465c22a6ecd5aa2092ce8e4592daaa2
++   entry #Unique
++     info
++         si la requête a correspondu à exactement un champ, sous forme de type booléen littéral
+
+@ 0 1 0 0b2064783d0a619f106624f04d968ffe
++ entry .Dereferenceable
++   info
++       une classe de types pour atteindre les champs d'un enregistrement par leur nom, sous forme
++       de valeurs d'un même type
+
+@ 0 7 0 10f2d70b7b5c0ed109226a42ebac60f6
++   detail
++       `entity is Dereferenceable to value` liste les champs d'`entity` dont le type est conforme à
++       `value`, et en lit, met à jour ou modifie un par son nom, au moyen d'une table d'accesseurs
++       générée lors de la compilation du code plutôt que par réflexion à l'exécution. L'instance
++       est un given inline du compagnon, donc dans la portée implicite pour tout type. Un
++       enregistrement dont tous les champs sont des `Int` se déréférence `to Int` ; tout
++       enregistrement se déréférence `to Any`, ce qui couvre chaque champ.
+
+% 2 1 0 06777103dc7ac9331a3997d3ef0dbcdc
+
+% 3 1 0 15322da2ac18f14e06ad68dd90cee5e1
+
+% 0 1 0 13bf25ce7eff184a03bb4a20c77d2b98
+
+% 0 1 0 0fa9670c1f0d57260d31026b23753845
+
+% 0 1 0 1c5a29edf567b07312d09fad510b750b
+
+% 0 1 0 119beaa9dc11608a0482bf1702c09bf6
+
+% 0 1 0 0d5b5d4b6923ca5a0ce562a90109bcf3
+
+% 0 1 0 15fd74b10435a4931c5b967c5457d46a
+
+% 1 1 0 10172c2bb894fc561cd69e793b4c1f5e
+
+@ 0 6 0 02ef8f7e50fff0d500bb505770e49ba9
++       La lecture couvre chaque membre champ du bon type, y compris les `val` d'un objet.
++       L'écriture exige une lentille, et il n'en existe que pour un paramètre du constructeur
++       principal dont le type accepte toute valeur du type `Result` de l'instance : une `val`
++       calculée dans un corps n'a rien à écrire, et un champ `Long` d'un enregistrement déréférencé
++       `to Any` ne peut pas accepter un `Any` arbitraire ; tous deux sont donc lisibles, mais
++       `#lens`, `#update` et `#modify` donnent `Unset` pour eux.
+
+% 0 1 0 0972479d436bc73c08f3c988e6e86988
+
+@ 0 1 0 120c57a88e6f277e0bec497a137a0bd0
++   entry #names
++     info
++         les noms des champs dont le type est conforme au `Result` de l'instance
+
+@ 0 1 0 1bb489593c6875e403b42c32c64d7dc8
++   entry #select
++     info
++         la valeur du champ nommé
+
+@ 0 3 0 0d507d4bc7a90203078cbe798f8b2d92
++     detail
++         `select(entity, name)` lit le champ au moyen de son accesseur généré. Le nom doit faire
++         partie de `#names` ; tout autre échoue à l'exécution avec une clé manquante ; vérifiez
++         donc `#names` (ou utilisez `#members`) pour un nom venant de l'extérieur du programme.
+
+@ 0 1 0 1eeb7697804bea8212a0996bcae9d3ad
++   entry #values
++     info
++         les valeurs de tous ces champs, dans l'ordre de déclaration
+
+@ 0 1 0 1b363b406d21a26e13016167ed5510bf
++   entry #lens
++     info
++         une `Lens` de panopticon sur le champ nommé, ou `Unset` s'il ne peut pas être écrit
+
+@ 0 3 0 0ee4373a7e6ff48a01fd6fce1a34b271
++     detail
++         `Unset` lorsque le nom n'est pas un champ, n'est pas un paramètre du constructeur
++         principal, ou a un type plus étroit que `Result`. La lentille reconstruit l'enregistrement
++         avec le constructeur principal, en remplaçant un champ. Étant une optique, elle se compose
++         avec n'importe quelle autre.
+
+@ 0 1 0 029caf707726846c175dfa40a5d70cd3
++   entry #update
++     info
++         une copie de l'enregistrement où le champ nommé est remplacé, ou `Unset` s'il ne peut pas
++         être écrit
+
+@ 0 2 0 0fbacf5a9ed63c91178ce3f3a71bf100
++     detail
++         `update(entity, name, value)` est `lens(name)` appliquée ; elle vaut donc `Unset` dans les
++         mêmes cas que `#lens`.
+
+@ 0 1 0 1a37685e018a55021ca635f077ec404d
++   entry #modify
++     info
++         une copie de l'enregistrement où une fonction est appliquée au champ nommé, ou `Unset`
+
+@ 0 2 0 0288ba7b44c33d2406bbf0f78948054c
++     detail
++         `modify(entity, name)(lambda)` : `numbers.modify(letters, t"gamma")(_*10)`. `Unset` dans
++         les mêmes cas que `#lens`.
+
+@ 0 1 0 1a1c1f23232e99311f7bf8417eb81e08
++   entry #members
++     info
++         tous ces champs, sous forme de map associant à chaque nom sa valeur
+
+@ 1 1 0 102cc740627cdc8416bb66e7900b1f5c
++     detail
++         ```scala
+
+@ 2 1 0 02aa246971c6448f16a4f54fa6031ff7
++         import soundness.*
+
+@ 0 1 0 1e4d1b3d47884c59028c90b9da89e869
++         case class Play(title: Text, year: Long)
+
+@ 0 1 0 19d6d21b764701481e6ce9d36bb831f7
++         summon[Play is Dereferenceable to Any].members(Play(t"Hamlet", 1603L))
+
+@ 0 1 0 157e2392e43335a20847600907dd4d00
++         // Map(t"title" -> t"Hamlet", t"year" -> 1603L)
+
+@ 1 1 0 0227b775d455e7a31a3e217dabc2ad8d
++         ```
+
+@ 0 1 0 027fa9cd2d4ed03f057d88f9365cd541
++ entry .membersOfType
++   info
++       les valeurs de chaque champ d'un enregistrement qui a le type demandé
+
+@ 0 3 0 0ff645d7b31b197800e114d76feac973
++   detail
++       Une extension sur n'importe quelle valeur : `record.membersOfType[Int]` est les `values` de
++       son instance `Dereferenceable to Int`, dans l'ordre de déclaration. Elle permet à un moteur
++       de rendu générique ou à un moteur de templates de lire les champs d'une valeur d'un type
++       donné sans conversion forcée.
+
+@ 2 1 0 1a9d40b5c36733f909130497e5549178
++       ```scala
+
+@ 3 1 0 056ff300d42418f500ca91b1d975e022
++       import soundness.*
+
+@ 0 1 0 1b08f1d3d34757af19ee8997683feafc
++       object Settings:
+
+@ 0 1 0 1745ca4081ebb3a801f54fc2b51bec72
++         val width: Int = 80
+
+@ 0 1 0 1f39f96ab1e7638a07e068a8df1779d2
++         val name: Text = t"main"
+
+@ 0 1 0 0e9866d7f499eb301225bbe4c4549f57
++         val height: Int = 24
+
+@ 0 1 0 0bc104bb7c6a270a1795a3793b4dd603
++       Settings.membersOfType[Int]   // List(80, 24)
+
+@ 1 1 0 17c7d292a419875b1e199ef1ded049d8
++       ```
+
+@ 0 1 0 0f3a95741a694a5a0568f4e8594b79c1
++ entry .fieldAnnotations
++   info
++       les annotations d'un type portées par chaque champ d'un type, en omettant les champs qui
++       n'en ont pas
+
+@ 0 3 0 129b0c954f3ec832149cc284238db57d
++   detail
++       `fieldAnnotations[T, A]` est les `fields` de `T is Annotated by A`, sans les champs qui ne
++       portent pas de `A`, indexés par nom de champ sous forme de `Text`. Elle renvoie une map vide
++       pour un type dont l'instance n'est pas fondée sur les champs ; un appelant n'a donc pas à
++       filtrer selon la sorte d'instance.
+
+@ 2 1 0 164ec4c064b173ec0ac399e04fcdf764
++       ```scala
+
+@ 3 1 0 0b39ef053ede20541bf0f9d4fd91ac56
++       import soundness.*
+
+@ 0 1 0 17305efd8249231919ddc8d4dfce8653
++       final case class marker[topic](id: Int) extends StaticAnnotation
+
+@ 0 1 0 065000de2d877f4105123c61cd56dffd
++       case class Tagged(@marker(1) bare: Int, @marker[Text](2) specific: Int, plain: Int)
+
+@ 0 1 0 1e52a81f6146ca2e06088da84f358e06
++       fieldAnnotations[Tagged, marker[Any]]    // Map(t"bare" -> Set(marker(1)))
+
+@ 0 1 0 1a10ff6d07f9bb121b7d65a6a312dbc1
++       fieldAnnotations[Tagged, marker[Text]]   // Map(t"specific" -> Set(marker[Text](2)))
+
+@ 1 1 0 12e8b36caebf467e1e4591702f7acdc5
++       ```
+
+@ 0 2 0 1f4c1905eb8340d5082fabbdea2a1992
++       Une annotation nue infère son argument de type comme `Any` ; une requête `marker[Any]` la
++       voit donc, et une requête `marker[Text]` non.
+
+@ 0 1 0 05391699b14156770a6edeccc89930ae
++ entry .subtypeAnnotations
++   info
++       les annotations d'un type portées par chaque variante d'un type scellé, en omettant les
++       variantes qui n'en ont pas
+
+@ 0 3 0 06fbec5f4d824c351d566bba0a5854b2
++   detail
++       `subtypeAnnotations[S, A]` est les `subtypes` de `Annotated by A under S`, sans les
++       variantes qui ne portent pas de `A`, indexés par nom de variante. C'est sur elle que repose
++       le renommage des cas d'un type somme.
+
+@ 2 1 0 0818e7f36af152c113cee543cfe5a56f
++       ```scala
+
+@ 3 1 0 0dd0c5a4e8b9acb517815638677b6952
++       import soundness.*
+
+@ 5 1 0 05742b208678e5f702fd6b9e76f76f30
++       sealed trait Decision
+
+@ 6 1 0 0b0919f8206b0c740b14231b38d3c293
++       @name[Json](t"yes") case object Accept extends Decision
+
+@ 7 1 0 15ca32bef108a8220d0e46ac6447b7f3
++       @name(t"no") case object Reject extends Decision
+
+@ 8 1 0 07f24bead0f94d100d26ed0e0e94c9a9
++       case object Defer extends Decision
+
+@ 0 1 0 0133178a1dc0adc81033c70664dc888e
++       subtypeAnnotations[Decision, name[Json]]   // Map(t"Accept" -> Set(name[Json](t"yes")))
+
+@ 1 1 0 0e8e64d0e2decd440b38dc066d8dc5cd
++       ```
+
+@ 0 1 0 1ded6cd6851659ca15696d5cc3d7063b
++ entry .relabelling
++   info
++       les noms sérialisés des champs d'un type pour un format, d'après ses annotations `@name`
+
+@ 0 4 0 1d6a2ddf9df2506c178f8002549e7afb
++   detail
++       `relabelling[T, Format]` associe chaque champ de `T` annoté par `@name` au nom qu'il prend
++       dans `Format` : un `@name[Format](…)` l'emporte sur un `@name(…)` nu, qui s'applique à tous
++       les formats. Les champs sans `@name` sont absents, et gardent leur propre nom. La dérivation
++       de chaque format de Soundness la lit ; une même annotation sert donc aussi bien JSON, XML,
++       YAML que les autres.
+
+@ 2 1 0 0b5ea9573fcc93ad07bec257ea0ccddf
++       ```scala
+
+@ 0 1 0 0a2594f7567a506400567644eca60925
++       case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+
+@ 1 1 0 0f58c80c534d8b5f103d58cd312cb56f
++       ```
+
+@ 0 2 0 14358df5cee447600bef1ac4e627189a
++       Sous JSON, le renommage propre à JSON et le renommage nu s'appliquent tous deux ; sous XML,
++       seul le renommage nu :
+
+@ 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
++       ```scala fuel
+
+@ 0 1 0 0144aefbb412cc910cb5e0e8078c5b1a
++       alternative JSON
+
+@ 1 1 0 19f6edb98b6bb3461a9db162f0cb4e31
++         code
+
+@ 0 1 0 0fea5cad7d0cb123138db36d612bdcb0
++             relabelling[Record, Json]   // Map(t"firstName" -> t"first_name", t"year" -> t"yob")
+
+@ 0 1 0 0e266c52b3892fa71b23797a881b0b65
++       alternative XML
+
+@ 1 1 0 175cf261c196cc9d10d55b39e836a90e
++         code
+
+@ 0 1 0 189081ad4fb2333f1772f65e6b68690a
++             relabelling[Record, Xml]    // Map(t"year" -> t"yob")
+
+@ 0 1 0 0472326144a49ce71767be845f62f575
++       ##
+
+@ 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
++       ```
+
+@ 0 1 0 0619a87c7ae060700b922ffa892e7d8a
++ entry .variantRelabelling
++   info
++       les noms sérialisés des variantes d'un type somme pour un format, d'après leurs annotations
++       `@name`
+
+@ 0 3 0 0a931cf25b9af4a00ba8e0b1ac411a55
++   detail
++       Comme `relabelling`, pour les cas d'une énumération ou les sous-types d'un trait scellé : le
++       nom de chaque variante renommée est associé à son discriminant dans `Format`, un
++       `@name[Format](…)` l'emportant sur un `@name(…)` nu.
+
+@ 2 1 0 153f7022d7fddefe19f092c552ab3e22
++       ```scala
+
+@ 3 1 0 0941d0557bfd03f81ceab8c27dd062a8
++       import soundness.*
+
+@ 5 1 0 16360726b34cb29c11b4cc3203b2ae10
++       sealed trait Decision
+
+@ 6 1 0 197c26396a4f50e7153e1872dd4ff6ce
++       @name[Json](t"yes") case object Accept extends Decision
+
+@ 7 1 0 1f26e52ef81b29d80f4e343d14f67e9d
++       @name(t"no") case object Reject extends Decision
+
+@ 8 1 0 0b8a66883833cf8c1774504374224ea7
++       case object Defer extends Decision
+
+@ 0 1 0 0891e925d6486a4b0f6bccc1a00a6936
++       variantRelabelling[Decision, Json]   // Map(t"Accept" -> t"yes", t"Reject" -> t"no")
+
+@ 1 1 0 12c9865a149c47fd0ad78cdec41fa1ae
++       ```
+
+@ 0 1 0 17c924ad82d0a00d0ddd363b1e9d1319
++ entry .annotatedFields
++   info
++       les noms des champs d'un type qui portent une annotation donnée
+
+@ 0 5 0 005db2977caf916b1c38d6bc9f559fcf
++   detail
++       `annotatedFields[T, A]` est le `Set` des noms des champs de `T` annotés par un `A`, sous
++       forme d'un littéral construit lors de la compilation de la dérivation. C'est la forme que
++       veut une dérivation lorsqu'elle a seulement besoin de savoir *quels* champs sont marqués —
++       les `@attribute` et `@unqualified` de xylophone — et elle ne construit aucune instance
++       d'annotation, là où `fieldAnnotations` construit les annotations de chaque champ dans un
++       `Set` à l'intérieur d'une `Map`.
+
+@ 2 1 0 1953583d034b2db01f94838b76ac5d67
++       ```scala
+
+@ 3 1 0 184cbbe896d3106511d56226c1dfcce9
++       import soundness.*
+
+@ 0 1 0 1c2e1b6c4007221a1bcad49eb466dde4
++       case class Book(title: Text, @Xml.attribute isbn: Text)
+
+@ 0 1 0 02dd1dd1f680647e086aa5c1f73a467d
++       annotatedFields[Book, Xml.attribute]   // Set(t"isbn")
+
+@ 1 1 0 1a4762b562c18afe18baa94e0a220d62
++       ```
+
+@ 0 1 0 02230662ee8eb7040aa3b1ae4bdb1cd0
++ entry .typeAnnotation
++   info
++       l'annotation d'un type donné portée par un type lui-même, s'il en a une
+
+@ 0 3 0 0fc0c3da46a4ae98064ec81365cfdeb2
++   detail
++       `typeAnnotation[T, A]` est le `A` qui annote le type `T` — et non ses champs — reconstruit
++       une fois, là où on le demande, ou `Unset`. Elle lit la charge utile d'une annotation sur une
++       classe, comme le `@xmlns("urn:x")` de xylophone.
+
+@ 2 1 0 178f33f827fcf3050b1510004815da17
++       ```scala
+
+@ 3 1 0 16a51f7ea9e114610e4ed5fb0262cc81
++       import soundness.*
+
+@ 0 1 0 10ae4daf2dc79bf9016304a4b99df4dc
++       @Xml.xmlns(t"urn:example") case class Order(id: Int)
+
+@ 0 1 0 0eea18bf11db429e08a9954ba2777d91
++       typeAnnotation[Order, Xml.xmlns].let(_.uri)   // t"urn:example"
+
+@ 1 1 0 06cdc902e1ab52de070fddcd5614856b
++       ```
+
+@ 0 1 0 08c0c46d74f7ed0e1b6a012c7567a8d3
++ entry .name
++   info
++       `@name(t"…")` : renomme un champ ou une variante à la sérialisation, pour tous les formats
++       ou pour un seul
+
+@ 0 6 0 0db58b03b0a068751acb65ac3f8a25f6
++   detail
++       Une annotation statique. `@name(t"first_name")` (inférée comme `name[Any]`) renomme le champ
++       ou la variante dans tous les formats de sérialisation ; `@name[Json](t"first_name")`
++       seulement en JSON. Plusieurs `@name` de formats différents peuvent se trouver sur un même
++       champ, et une annotation propre à un format l'emporte sur l'annotation nue pour ce format.
++       Les dérivations les lisent au moyen de `relabelling` et `variantRelabelling`.
+
+% 2 1 0 1e8662ba4bccbaae016274db45c8d85c
+
+% 3 1 0 17ce87b21baf27851794c8366539c71a
+
+% 0 1 0 0da77e22d5eda0ad1ac7df2c589d7ee8
+
+% 1 1 0 0bc76045a00c62a8011e5529ef9033b0
+
+@ 0 1 0 1735ec2b07c6caea13d3e08569f34773
++   entry #name
++     info
++         le nom que prend le champ ou la variante à la sérialisation
+
+@ 0 1 0 1dab3f56564aaaf9050beea8bb27caf5
++ entry .internal
++   info
++       les macros qui construisent les instances `Annotated` et `Dereferenceable`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 3 0 065e2bb735bd9d3409c397ea00b1388e
++   detail
++       Pas destiné à un usage direct : l'objet abrite les implémentations de macros derrière
++       `Annotated.annotations` et le given `Dereferenceable`.
+
+@ 0 1 0 0d1c09424101dd7810e7d11bfe6dde86
++   entry .general
++     info
++         la macro derrière `Annotated` : recueille les annotations que demande une requête
+
+@ 0 1 0 0ee720d08bfbec7f08bbe9339639ce54
++   entry .dereferenceable
++     info
++         la macro derrière `Dereferenceable` : génère les tables d'accesseurs et de lentilles

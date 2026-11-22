@@ -1,0 +1,1303 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0f3d23bc3a26a1d40d64c83ab97e4fea
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1100799f5b35796d062bdee50e0e4861
++ info   ハッシュ化：あらゆる値やストリームのダイジェスト。アルゴリズムは型で表し、弱い選択肢は許可の背後に置く
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 1de776c63c6e09a90d801d9fec09fb6b
++     _Gastronomy_ はダイジェストを計算する。
++     アルゴリズムは**型**であり、`Sha2[256]`、`Sha1`、`Md5`、`Blake3`、`Murmur3`、あるいは corpuscular のチェックサム `Crc32`、`Crc64`、`Adler32` のいずれかである。
++     そのため `Digest in Sha2[256]` が `Digest in Md5` と取り違えられることはなく、アルゴリズム名の打ち間違いは `NoSuchAlgorithmException` ではなくコンパイルエラーになる。
++     `Digestible` インスタンスを持つ値はすべて、`digest` で直接ハッシュ化される。
++     プリミティブ、`Text`、`Data`、コレクション、そしてすべてのケースクラスと enum がそうであり、後二者のインスタンスはフィールドから導出される。
++     ストリーム、ファイル、ディレクトリは、`checksum` により `Checksummable` を通して、流れるそばから有界のメモリでハッシュ化される。
+
+% 2 1 0 048bb6badde73d1a0dafa7ecd7a4c3b0
+
+% 3 1 0 1491a9b2665b5b6e18b0027a156eba86
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 1a94ea18d9ba3afe12b51cc7d574e969
+
+% 0 1 0 14be6cbd3a3feeb513077878dd31b0ce
+
+% 0 1 0 1d9905fd838e79f3131fb9996f7bc636
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 10e19cb57185554a1aac0c32c267213a
+
+% 1 1 0 0c7a6d8677fbdbf3117ceb8035b6fb99
+
+@ 0 2 0 01febbd81f600f7009d3789851599500
++     三つの決定は常に明示的であり、それぞれ名前による import で行う（ワイルドカード import は given を import しないので、`import soundness.*` はどれも持ち込まない）。
+
+@ 0 18 0 07e8e28c850081740a5a8b004eb4d49e
++     - **プロバイダー。** `Hashing` プロバイダーが各アルゴリズムの実装を供給し、`providers` パッケージから選ぶ。`providers.javaBaseProvider` は JDK の `MessageDigest` と `java.util.zip` である（JVM 以外では Soundness プロバイダーと同じ純 Scala のコードなので、import はどのプラットフォームでも同じに読める）。`providers.soundnessProvider` は純 Scala の `SoundnessHashing` であり、`Blake3`、`Murmur3`、`Crc64` を提供するのはこれだけである。各アルゴリズムの `Hash` given は、そのアルゴリズムのメソッドを持つプロバイダーを構造的に要求する。そのため JDK プロバイダーだけのもとでの `digest[Blake3]` は、実行時の失敗ではなく、欠けている `Hash in Blake3` を名指しするコンパイルエラーになる。両方のプロバイダーを import してもかまわない。その場合はレキシカルに import された `SoundnessHashing` がすべてのアルゴリズムを担う。
++     - **許可。** MD5 と SHA-1 は破られており、チェックサムと `Murmur3` はそもそも暗号学的ではない。そのため `digest[Md5]` には `cryptoPermits.permitDisallowedCrypto`（SHA-1 だけなら `permitDeprecatedCrypto`）が、`digest[Crc32]` には `cryptoPermits.permitNonCryptographicHashes` が必要である。許可は消去された `Permit` の証拠であり、`HashWeakness` によって解決される。SHA-2 と BLAKE3 は `Concession.Acceptable` であり、許可を必要としない。
++     - **アルファベット。** `Digest` はバイト列であり、`alphabets` の import のもとで monotonous の `serialize[Hex]` や `serialize[Base64]` によって描画される。`show` はスコープ内の `Alphabet[Base64]` のもとで Base64 として描画し、`inspect` は常に小文字の16進数で、末尾に `ᴰ` を付ける。
+
+@ 0 2 0 07f41b4fc1b47f7013918948f97a57d6
++     アルゴリズムを示すには `Digest in algorithm` 型だけで足りることが多い。
++     `Digest in Sha2[256]` と宣言されたフィールドは、型引数なしで `payload.digest` が何を計算するかを決める。
+
+@ 0 8 0 03c3abadeb68629b1cb0552fc78a985a
++     ダイジェストのほかに、このライブラリは共有の**暗号の許可の語彙**を持つ。
++     `Concession`、`Permit`、`ProcessingPermit`、そして `cryptoPermits` パッケージであり、enigmatic（暗号方式、HMAC、署名）と telekinesis（TLS）もこれでゲートする。
++     そのため `cryptoPermits.permitDisallowedCrypto` のような一つの import が、弱いハッシュにも弱い暗号方式にも等しく効く。
++     さらに、enigmatic の署名用の暗号方式が実装する `Signing` インターフェース、enigmatic の `hmac[Sha2[256]](key)` が使う JCE 名である `Hash#hmacName`、64 ビット値の上の Feistel ネットワークである `Feistel` を持つ。
++     また `multihash` コンポーネントには、multiformats 仕様の自己記述的な `Multihash` エンベロープと、各アルゴリズムを登録済みのコードに対応させる `Multicodec` がある。
+
+@ 0 1 0 1f1beb75a79fadfc050c016179f3bca2
++     コンポーネントは次のとおりである。
+
+@ 0 6 0 060ee34620ff8345071a0d3bba6cde53
++     - `gastronomy.core` — multihash 以外の上記すべて。JVM、Scala.js、Scala Native 向けにコンパイルされる。BLAKE3、MurmurHash3、MD5、SHA-1、SHA-2 は純 Scala であり、チェックサムは corpuscular のアキュムレーターである。JVM では `JavaBaseHashing` が `MessageDigest` と `java.util.zip` に支えられ、他のプラットフォームでは同じオブジェクトが `SoundnessHashing` に転送するので、プロバイダーの選択はどこでも同じソースになる。
++     - `gastronomy.multihash` — コンテンツアドレッシングを行う呼び出し側のための `Multihash` と `Multicodec`。
+
+@ 0 3 0 1bed0f6db3886bfa051336d655320582
++     すべては `soundness` アンブレラにエクスポートされ、`providers` と `cryptoPermits` の選択パッケージはアンブレラ自身のものと統合される。
++     そのため利用者は `import soundness.*` と書き、次にプロバイダーと必要な許可を名前で import する。
+
+% 0 1 0 1c6c9050beb10c0e049a8d11818fd40d
+
+% 0 1 0 18be7dab9dfafae60f304bb88a4a8a6a
+
+% 0 1 0 1800103d6e0e645e0678f732d821d7eb
+
+% 0 1 0 0e3c4b276c2978580f1782149071fdb6
+
+% 0 1 0 09fc521befbfb88712b00211704e1b65
+
+% 0 1 0 0a862621e96b74fa088e671ee11b9c8c
+
+% 0 1 0 1565a220b779649719d0d91fe2f6a950
+
+% 0 1 0 066a5dfac6ef62110cc5cc654f53465f
+
+@ 0 1 0 1222386a5372efba1d67e1132bbaa122
++ entry .digest   任意の `Digestible` な値のダイジェスト。アルゴリズムは型で指定する
+
+% 1 1 0 18f062cace8eeffd189994558c6b3813
+
+@ 0 7 0 1f7e4ae32540d25806f7731d50229cb5
++       `value.digest[Sha2[256]]` は、値の `Digestible` インスタンスが定めるとおりにその値のバイト列を、そのアルゴリズムの新しい `Digestion` に流し込み、結果を `Digest in Sha2[256]` として返す。
++       これには `Hash in algorithm` が必要である。
++       これは各アルゴリズムのコンパニオンがスコープ内の `Hashing` プロバイダーから導出するので、`import providers.javaBaseProvider` か `providers.soundnessProvider` が欠かせない。
++       また消去された `Permit[HashWeakness[algorithm]]` も必要である。
++       これは SHA-2 と BLAKE3 では常に利用でき、MD5、SHA-1、チェックサム、MurmurHash3 では `cryptoPermits` から import しなければならない。
+
+@ 0 2 0 0662c9694dc664601274f0666afe173c
++       期待される型がアルゴリズムを示しているときは、型引数を推論に任せられる。
++       データモデルではこれが普通の形である。
+
+% 2 1 0 039422bc6c1611580e6ffb2873b30c30
+
+% 3 1 0 127f6535fea7a640076c7522644e2234
+
+% 4 1 0 1c9a9637db29b90d17ae4684dca1f6f8
+
+% 0 1 0 017595c65d7b1f3e03d6a341debdaf7d
+
+% 0 1 0 12e51cd9c719d4760cf522efab9a099a
+
+% 0 1 0 1e8d12137ea7e09d0631d0794c4c3ecd
+
+% 1 1 0 0d69d29901408d9219be1bab0cb7b9b5
+
+@ 0 3 0 02d33e4ee126d64402cdcdcda889942f
++       同じバイト列を各アルゴリズムでダイジェストしたものと、それぞれに必要な import を示す。
++       SHA-256 にはプロバイダーだけが必要である。
++       SHA-1 は非推奨なので許可が必要である。
++       MD5 は禁止されているので、より広い許可が必要である。
++       そして BLAKE3 には、JDK にはない Soundness プロバイダーが必要である。
+
+% 2 1 0 0fb561c485b8ed9a00ae42d62f383bb3
+
+% 0 1 0 0682180745758ffa02c5398259339c13
+
+% 1 1 0 02fcbc0ce2931023149697c071545525
+
+% 2 1 0 19f5ec89c68cd4ea1a99069bc5d935f9
+
+% 3 1 0 102aef6f796634970f68e7305ff82488
+
+% 0 1 0 15f3586e9477dd86192c9dd458a3bb19
+
+% 0 1 0 06bbd88dad10c484171770afc19467b0
+
+% 0 1 0 1d4ef2d9dd260e4716deab642b0ac558
+
+% 1 1 0 0b0f1c3a656b14110017d925b1fa08c8
+
+% 2 1 0 1174d950811fe9f71caa419775342927
+
+% 3 1 0 1a72d870d9605298002192c449cd192a
+
+% 0 1 0 1a71d33236587ff616d14ca261ea120b
+
+% 0 1 0 10993d5d46bc51bf0b168bd30494e798
+
+% 0 1 0 14abc023303b2a6a176ffa83b7cd9263
+
+% 0 1 0 0508b479775ade1c01e9dad42d2b544d
+
+% 1 1 0 19c6a2a98f32f3ab18c851fd6ae29f21
+
+% 2 1 0 1fc3e145d5da878615813c97b5317119
+
+% 3 1 0 1235fd71a813180f046f45ca980423b7
+
+% 0 1 0 116b9db17840920a1715d3d9ff31a35a
+
+% 0 1 0 1ae4a173b47a330c1e3b500b3efb78c6
+
+% 0 1 0 0a18327f5a6b1bb70c4acea9af41ead0
+
+% 0 1 0 1bc537a9038cb2b00f8f6cbba22f68bd
+
+% 1 1 0 113a1a14bfa2e4831a55662891e5dd8e
+
+% 0 1 0 19a2adf273afd6130d5ecbf89a9a9be9
+
+% 1 1 0 1698e130973478c71f0cb912ebdbfd50
+
+% 0 1 0 046d7243f9cd88f71fbe36d37e66f54f
+
+% 1 1 0 1cb863ff25cb531c158c74c3ed957597
+
+% 2 1 0 1068d97d65062845192f2603809ef5f5
+
+@ 0 5 0 0f4fdac221053e5a0a2781cc22e63fd0
++       値は丸ごとダイジェストされる。
++       `checksum` は値の*背後*にあるもの（ストリームのチャンク、ファイルの内容）を保持せずにダイジェストし、`Digester` は複数の値を一つのアキュムレーターにダイジェストする。
++       許可がないと、コンパイルエラーは _this operation uses a sub-optimal algorithm, key length or mode — or a checksum in place of a hash; import the matching permit …_ となる。
++       プロバイダーがないと、欠けている `Hash in algorithm` を名指しする。
+
+% 0 1 0 1bfd08a97d6c85bf0e07f22b607f4604
+
+% 1 1 0 0545231e274d711e1cd9db3a95875c32
+
+% 1 1 0 1c2351c4df4557091c3ca56d49f847b5
+
+% 1 1 0 1b6428ef5f8c76d608658343eef23aa5
+
+% 1 1 0 0ab1c74377b2f3060c372ed3fc894dbe
+
+@ 0 1 0 1d489b9219ac2ddd0c17e6570a5c6876
++ entry .checksum   値の背後にある内容のダイジェスト：ストリームのバイト列、ファイル、ディレクトリ
+
+% 1 1 0 0b63c3f3f579a3951c50f9451349c545
+
+@ 0 8 0 120477d95399690f1a042a13d2bda078
++       `source.checksum[Sha2[256]]` は、ソースの `Checksummable` インスタンスが流し込むものをダイジェストし、`Digest in Sha2[256]` を返す。
++       任意の `Streamable by Data over Credit` なソースでは、そのストリームのすべてのチャンクを順に、ウィンドウごとに取り出すので、ダイジェストは有界のメモリで計算される。
++       galilei の `Path` では、ファイルのバイト列、またはディレクトリの通常ファイルである。
++       `digest` とまったく同じく、スコープ内のプロバイダーが供給する `Hash in algorithm` と、消去された `Permit[HashWeakness[algorithm]]` が必要である。
++       `Digestion` がウィンドウの境界をまたいで部分ブロックを持ち越すので、チャンクがどんな大きさで届いても、たとえ1バイトずつでも、結果は同じである。
+
+% 2 1 0 1766a9175c911e6f041392b409103364
+
+% 3 1 0 0bc6d47b7ca5f2b10a6a9327cc077bed
+
+% 4 1 0 1fe724334ac59c4f0748f46f8c70bed5
+
+% 5 1 0 0744cecd42c543c00e7d53e4f7304bb6
+
+% 0 1 0 0f556ea5641fbdef00cfebd6e16b99ad
+
+% 0 1 0 0c4b4fa434f617691edb7732565c0853
+
+% 1 1 0 05065f892194121211b244b133178ceb
+
+% 1 1 0 19e446626bc2190d065aa4e6f06245c7
+
+@ 0 4 0 05e0be2bb0ae4e960bd366a44586b7a5
++       単一の `Data` 値のストリームはそれ自身なので、そのチェックサムは `digest` に等しい。
++       galilei のパスのインスタンス（`Io.Error` を発生させ、スコープ内の `DereferenceSymlinks` ポリシーを取る）のように、エラーを発生させる `Checksummable` はキャプチャ集合に `Tactic` を持つ。
++       そのため `path.checksum[Blake3]` は `safely`、`unsafely`、またはハンドラの内側に置かなければならない。
+
+% 0 1 0 148fade1d3be9eb10765d90293800289
+
+% 1 1 0 0978700d97b7b6cc023b34fdbed726b1
+
+@ 0 1 0 18719ebd538b6a730f6f9c4637b6a043
++ entry .Checksummable   `checksum` のために、値の根底にある内容をダイジェストへ流し込む方法
+
+% 1 1 0 17ffe6de42d53d530b7163caee65aeec
+
+@ 0 6 0 06abfe55e7fd3bf51600360a9bfa9aac
++       メソッド `#checksum` を一つだけ持つ型クラスである。
++       このメソッドは値の*背後*にあるバイト列を、排他的な `Digestion` に追加する。
++       値そのもののエンコーディングではない。それは `Digestible` の役目である。
++       コンパニオンの `.streamable` インスタンスがあらゆるバイト列のソースを扱い、galilei がパス用のものを加えるので、`checksum[algorithm]` は `Chain[Data]`、ストリーム、ファイル、ディレクトリに使える。
++       `Checksummable` は `Tactic` をキャプチャしうる（galilei のものはそうする）。
++       そのためこの型クラスは `Pure` ではなく、`checksum` はそれをキャプチャするパラメーターとして受け取る。
+
+% 1 1 0 155e484bd36691cb0c9274f85cf80a69
+
+@ 0 5 0 06ef329f50badfdd090d50a64b82dfff
++   entry .streamable   任意の `Streamable by Data over Credit` なソース。ストリームを取り出してチェックサムを計算する
++       ソースのストリームを領域ごとに取り出し、ウィンドウ版の `append` で各ウィンドウを `Digestion` に追加する。
++       そのため再利用されるバッファはその場でハッシュ化され、コピーされることはない。
++       このインスタンスは、元になった `Streamable` をキャプチャする。
++   entry #checksum   値の背後にある内容を排他的な `Digestion` に追加する
+
+@ 0 2 0 1002da69257e74f3190e3df684d8cc7c
++ entry .HashWeakness   アルゴリズムが持つ `Concession`：`digest[algorithm]` が必要とする許可
++     `Algorithm` から、呼び出し側が `Permit` を持たなければならない譲歩への match type である。
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 1 0 08c09ed06b8d1c4a11f94651c7b2ba5f
++     column  アルゴリズム
+
+% 0 1 0 159e728fee2c84e100f3bf3a33a9adf2
+
+% 0 1 0 0f1f8ee1f3c41b211ce8849f1051ec9a
+
+% 0 1 0 0a272c67f0e948ef0c1b70b4842e6972
+
+% 0 1 0 0c86a8101c51be0f070a8bb2d8b81ceb
+
+@ 0 1 0 1de4410911a76e481432bb7bfc71a256
++     row  その他すべて：SHA-2 ファミリー、BLAKE3  `Concession.Acceptable`。その許可 `Permit.acceptable` は常にスコープ内にある
+
+% 1 1 0 093ad4247d11220c000727c16b7a134e
+
+@ 0 3 0 08f5bc9e9177e2d314b14427ace003f8
++     `digest`、`checksum`、そして enigmatic の `hmac` はすべて、消去された `Permit[HashWeakness[algorithm]]` を要求する。
++     これにより、弱いハッシュは `cryptoPermits` の given を名前で import するまでコンパイルできない。
+
+@ 0 1 0 05695b8f2f575a0a1ab9671ff8c20bed
++ entry .Digest   ハッシュが生成したバイト列。`Digest in Sha2[256]` のようにアルゴリズムで型付けされる
+
+% 1 1 0 025fff6e6e92b92f152d1ea010a700e7
+
+@ 0 5 0 09b543c1588436721644b7eca8537e51
++       `Digest` はハッシュの生の `#data` を保持し、その `#Form` 型メンバーはそれを生成した `Algorithm` である。
++       これは prepositional の `in` を使って `Digest in Sha2[256]` と書く。
++       二つのダイジェストはバイト列が等しいときに等しいので、ダイジェストは `Map` のキーとして使える。
++       アルゴリズムは幻の型であり、値の中には格納されない。
++       境界をまたいで自らを記述しなければならないダイジェストのために `Multihash` があるのはそのためである。
+
+@ 0 2 0 105fdbd9d5d61f621dfc5538e786304d
++       ダイジェストは `Encodable in Data` なので、`alphabets` の import のもとで基数エンコーディングを通して描画される。
++       `show` が描画するのも Base64 である。
+
+% 2 1 0 1396ae8329b95e3c16c4b1847bc7177e
+
+% 0 1 0 10cfa796fc7efdee094df760d8310a0a
+
+% 1 1 0 173db88ed92b6d261aa4abd89b50e6d8
+
+% 2 1 0 0c8c7da128ab206a0aa3537c0dd3181c
+
+% 3 1 0 16e0c6d7908b8d8602ab2bde79857fc5
+
+% 0 1 0 07eb822edccd5bc3093e2ea644ac1ea3
+
+% 1 1 0 0f54cdf18860d3c51fd1c2219fcffc0a
+
+% 0 1 0 0413ff6776b9aed617917ee26675038e
+
+% 0 1 0 16b17a459d0e0fb317f7cc0cc21c2115
+
+% 1 1 0 1dc75635d3a2a85719166a10b3479ba9
+
+% 2 1 0 0eb0de291d3081d6092822715e50f84d
+
+% 3 1 0 099b30f3a9cf93181c19fa4873ebba15
+
+% 0 1 0 16d9fa7fc338aca40621bb2274f86ac8
+
+% 1 1 0 17016a91c5b40f5c04bd0c3cd20eebf5
+
+% 0 1 0 04d6332429842d3211314e042b89c515
+
+% 0 1 0 0ba2f7b7ffcf3be11cadea537f3caf16
+
+% 1 1 0 1a675c6b3add2558069dd5645b45293e
+
+% 2 1 0 045277a6d7aee6f0091f1a2c9fb849ae
+
+% 3 1 0 02c05e65f48085d3055d75da73de012c
+
+% 0 1 0 046758c796f39f601916211f28146558
+
+% 0 1 0 03946dcb2e454e510b2edfb3ad032fda
+
+% 0 1 0 0929d256b172ebe9032512491254918b
+
+% 1 1 0 03ea925c4d121c58197eb5e905d8ecbc
+
+% 2 1 0 0e9b0f41789f37ec110c7ae4c0729d9c
+
+@ 0 5 0 18eabc26d86102030d0edf4f5028d00a
++       ダイジェストは、`Hex` アルファベットと `Tactic[Serialization.Error]` のもとで、`.as[Digest in Sha2[256]]` により16進数のテキストから読み戻される。
++       アルゴリズムは幻の型なので、テキストの長さはアルゴリズムに照らして検査されない。
++       `Digest(data)` は手元にあるバイト列からダイジェストを作る。
++       ダイジェスト自身も `Digestible` なので、より大きな値に組み込んで再びハッシュ化できる。
+
+% 1 1 0 0dffc2e74cf11f9609305afda5e22205
+
+% 1 1 0 11238b9d27f43beb1f73ca3f35a23b37
+
+@ 0 17 0 121366e66a42346a0c5ba7c510961924
++   entry .apply   `Digest[Sha2[256]](data)`：計算済みのバイト列からのダイジェスト
++       `data` を `Digest in algorithm` として包む。
++       アルゴリズムは幻の型なので、長さがアルゴリズムに合うかは検査しない。
++       `digest` と `checksum` はこれで結果を組み立てる。
++       呼び出し側は、ストレージから読んだダイジェストや他所から受け取ったダイジェストにこれを使う。
++   entry .showable   スコープ内の `Alphabet[Base64]` のもとで、ダイジェストを Base64 テキストとして描画する
++       `digest.show` は `digest.data.serialize[Base64]` である。
++       そのため名前で import した Base64 アルファベット（`alphabets.base64Standard` か `alphabets.base64Url`）が必要であり、それがなければコンパイルできない。
++       デバッグ用の描画 `.inspectable` には何も必要ない。
++   entry .encodable   バイト列としてのダイジェスト。`Encodable in Data` である
++       `digest.serialize[Hex]`、`serialize[Base64]`、その他 `Data` を消費するすべてのものの背後にあるインスタンスであり、`#data` を返す。
++       ダイジェストが `Digestible.encodable` を通して `Digestible` であるのもこれによる。
++   entry .decodable   `text.as[Digest in Sha2[256]]` のように、16進数のテキストからダイジェストを読む
++       スコープ内の16進数アルファベットのもとでテキストを `Hex` としてデシリアライズし（どちらの大小文字を受け付けるかはアルファベットが決める）、バイト列を `.apply` で包む。
++       `Deserializable in Hex` と、16進数でないテキストに対して発生させる `Tactic[Serialization.Error]` が必要である。
++       長さはアルゴリズムに照らして検査されない。
+
+% 2 1 0 0a20f0506b708d8c0b1f0260cb49f2a6
+
+% 3 1 0 1ee8341ef9ac0ecc130fd92bf36e0e6f
+
+% 4 1 0 003617befc34311f0067b19297776293
+
+% 5 1 0 1fc457759ea0706108cd29ada0ad99f1
+
+% 0 1 0 144b15b3f77f8c2102cfba0e88521a34
+
+% 0 1 0 1f18d64d76616e931bb3a4d4677d4fcd
+
+% 1 1 0 1ba0398ff9da933715ded4a99773d636
+
+@ 0 11 0 1906daa2c5f828d9150c8346ca48db05
++   entry .inspectable   デバッグ用の描画：すべてのバイトを小文字の16進数で表し、末尾に `ᴰ` を付ける
++       スコープにアルファベットがなくても常に利用できるので、`show` が使えない場所でもダイジェストを調べられる：`64ec88ca…7f3cᴰ`。
++       アルゴリズムは実行時に示せないので、この接尾辞が数字をダイジェストとして印付ける。
++   entry #data   ダイジェストのバイト列
++       ハッシュの生の出力であり、アルゴリズムが定める順序で並ぶ。
++       `Sha2[256]` では32バイト、`Sha1` では20、`Md5` と `Murmur3` では16、`Crc32` と `Adler32` では4、`Crc64` では8である。
++   entry #Form   ダイジェストを生成したアルゴリズム。`Algorithm` の部分型である
++       prepositional の `in` が名指しする型メンバーである。
++       `Digest in Sha2[256]` は `Digest { type Form = Sha2[256] }` である。
++       これは幻の型であり、型だけによって運ばれる。
+
+@ 0 1 0 04c5c0357ac96efd0ecbdbbd41437469
++ entry .Digestible   値のバイト列をハッシュに流し込む方法。ケースクラスと enum には導出される
+
+% 1 1 0 144609ea98dfe415131d8108be9e6183
+
+@ 0 7 0 0308f083a805b39711b1b5b6917a3a13
++       `Digestible` な値とは、`Digestion` に追加できる値である。
++       `#digest` は値のバイト列をアキュムレーターに書き込み、そのような任意の値に対する `digest[algorithm]` が `Digest` を組み立てる。
++       コンパニオンは、プリミティブ（`Int` と `Long` はビッグエンディアン、`Double` と `Float` は生のビット列、`Boolean` は1バイト、`Char` と `Short` は2バイト）、`Text`（UTF-8 として）、`Data`、`Digest`、`Encodable in Data` なあらゆるもの、`Optional`、`List`、`Set`、`Sequence`、凍結済みの配列、`Map`、`Chain` のインスタンスを供給する。
++       さらにすべての直積型と直和型に対して導出するので、ケースクラスはシリアライズの手順なしに、フィールドを順に並べたものとしてハッシュ化される。
+
+% 2 1 0 128c69c10d0461901787e2a92462f5d1
+
+% 3 1 0 10855b0a2d62bb461ed4e98fee89a8bb
+
+% 4 1 0 062d33dba265cbe70377fa570f020955
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 038481e8483316b510f11c01e67fb2d5
+
+% 0 1 0 16cb76c7068fad5a1a36161f492a167e
+
+% 0 1 0 0e7aa43b738bc6240282a300c2dd591a
+
+% 0 1 0 0240835e68a2b0f60b1bf05f82e9bfbf
+
+% 0 1 0 114592ed98428fc8057ca7b57c7aa09a
+
+% 1 1 0 193ed83f4df68e9e1e0e0f10f19e353b
+
+@ 0 6 0 0a5062ca15e18d950cbbf6becd4bdf10
++       導出されるエンコーディングは連結である。
++       フィールドは宣言順にバイト列を寄与し、区切りも長さもない。
++       直和型は、ケースのフィールドの前に、そのケースのインデックスを `Int` として寄与する。
++       これは決定的でプラットフォーム間で移植可能だが、単射ではない。
++       `(t"ab", t"c")` と `(t"a", t"bc")` は同じダイジェストになる。
++       したがってこれは値のフィンガープリントであり、直列化ではない。
++       フレーミングのあるエンコーディングが必要なら、代わりに値を `serialize` した形をダイジェストする。
+
+@ 0 3 0 0a609264d1e56f8b0bae25b2890b6cb5
++       この型クラスは `Pure` である。
++       インスタンスには任意の排他的な `Digestion^` を渡してよく、インスタンス自身はケイパビリティを持たない。
++       `#contramap` は、別の型からこの型への関数を通して、その別の型のインスタンスを組み立てる。
++       `Digestible.double` は `Digestible.long` の上にこうして組み立てられている。
+
+% 1 1 0 0ca96b8649bc9d260f48451d29e299c4
+
+% 0 1 0 007afa5b20c3121f0a64ebd95acdee51
+
+@ 0 40 0 0c6c54d5df8193040f9049f1ba50f42a
++   entry .conjunction   直積のインスタンスを導出する：各フィールドを順に、それぞれのインスタンスを通して
++       `ProductReflection` を持つケースクラスやタプルの導出で使われる。
++       各フィールドの型にはそれぞれ `Digestible` が必要であり、再帰的な型も導出できるよう遅延して解決される。
++   entry .disjunction   直和のインスタンスを導出する：ケースのインデックスを `Int` として、次にそのケースを
++       `SumReflection` を持つ enum とシールされたトレイトの導出で使われる。
++       序数により、フィールドがたまたま同じにエンコードされるケースが区別される。
++   entry .optional   `Optional[value]`：設定されていれば値のバイト列、`Unset` なら何もなし
++       `Unset` はバイトを一つも寄与しないので、`Unset` の `Optional[Text]` と `t""` のそれは同じダイジェストになる。
++       型がすでに `Unset.type` を含む場合には適用されない。
++   entry .list   `List[value]`：すべての要素を順に
++   entry .set   `Set[value]`：すべての要素を、集合の反復順に
++       同じ要素の `Set` でも組み立て方が違えば反復順が異なりうるので、これが安定なのは特定の集合の値に対してだけである。
++   entry .sequence   任意の `Sequence[value]`：すべての要素を順に
++   entry .frozenArray   凍結済みの `Array[value]^{}`：すべての要素を順に
++   entry .map   `Map[key, value]`：各キーとそれに続く値を、反復順に
++   entry .stream   `Chain[value]`：すべての要素を順に。ダイジェストしながら評価を強制する
++   entry .int   `Int`。ビッグエンディアンの4バイトとして
++   entry .long   `Long`。ビッグエンディアンの8バイトとして
++   entry .double   `Double`。IEEE 754 の生のビットパターンの8バイトとして
++   entry .float   `Float`。IEEE 754 の生のビットパターンの4バイトとして
++   entry .boolean   `Boolean`。1 か 0 の1バイトとして
++   entry .byte   `Byte`。そのまま
++   entry .short   `Short`。ビッグエンディアンの2バイトとして
++   entry .char   `Char`。その UTF-16 コード単位のビッグエンディアンの2バイトとして
++   entry .text   任意の `Text`。その UTF-8 バイト列として
++       スコープ内に `codepages` の import があっても常に UTF-8 なので、テキストのダイジェストはどこでも同じである。
++   entry .bytes   `Data`。そのまま追加する
++   entry .digest   `Digest`。そのバイト列として。そのためハッシュを再びハッシュ化できる
++   entry .encodable   `Encodable in Data` な任意の値。そのエンコーディングとして
++       `Encodable` 型クラスに対する包括的なインスタンスである。
++       `Encodable in Data` インスタンスを持つ型（`Hmac`、鍵、利用者独自の `Multihash` 形の値）は、それ以上何も宣言せずにダイジェスト可能になる。
++   entry #digest   値のバイト列を排他的な `Digestion` に書き込む
++       `digest(digestion, value)` は `Digestion#append` で値のバイト列を追加する。
++       アキュムレーターは呼び出し側に排他的な `Digestion^` であり、インスタンス自身は純粋である。
++   entry #contramap   この型への純粋な関数を通した、別の型の `Digestible`
++       `textDigestible.contramap[Person](_.name)` は人物をその名前だけでダイジェストする。
++       関数は純粋（`->`）でなければならないので、組み立てられたインスタンスは純粋なままで、導出で使える。
+
+@ 0 1 0 1acc44d631eabfc8127a51a8ba1b1910
++ entry .Digester   一つのアキュムレーター上のダイジェスト手順の並び。アルゴリズムを選んだときに実行される
+
+% 1 1 0 181def30c54127540c276ec67430fc00
+
+@ 0 5 0 064ca7e0eb4489530ff05e465be42ad3
++       `Digester` は新しい `Digestion^` から `Unit` への純粋な関数である。
++       `#digest` で一度に一つの値ずつ組み立てられ、`#apply[algorithm]` で実行される。
++       `#apply` はスコープ内のアルゴリズムの `Hash` のためにアキュムレーターを作り、すべての手順を適用して `Digest` を返す。
++       これにより、まずバイト列を連結することなく、複数の値を一つのハッシュにダイジェストできる。
++       アルゴリズムは最後に選ばれるので、一つのダイジェスターから複数のダイジェストが得られる。
+
+% 2 1 0 100ebde95cfb78520525fe769fc3b4ac
+
+% 3 1 0 16aab8c7c5d649871cfefc4e87421ebb
+
+% 4 1 0 0b50109839a62c0f18a738d17dec6bf4
+
+% 5 1 0 0322cd7819a0de521fc0f67cf248db30
+
+% 0 1 0 1f850b82824a22cb1948ddf5b3c33e46
+
+% 0 1 0 10a3058cf1d5eb5f0f1b5e7e72f6e1c5
+
+% 1 1 0 10330e72dd0c06d90fc7ea28ad3bd10d
+
+% 0 1 0 114c51c8f0dfcd431436cfb8d40f79b9
+
+% 1 1 0 14580b1236da0bb00a1022a76b9dc1fb
+
+@ 0 2 0 0c495c0b1a99c4d71a229d41f4443e1d
++       値に対する `digest[algorithm]` は、手順が一つのダイジェスターである。
++       空のダイジェスターは `Digester(_ => ())` である。
+
+% 1 1 0 181a14914a4aa0e808489c518a437267
+
+@ 0 8 0 11696fbf4dc8afa3187ec036e61caf39
++   entry #run   手順。新しい `Digestion^` から `Unit` への純粋な関数として
++   entry #apply   `algorithm` の新しいアキュムレーターで手順を実行し、`Digest` を返す
++       `digester.apply[Sha2[256]]` には、スコープ内のプロバイダーからの `Hash in Sha2[256]` が必要である。
++       値に対する `digest` とは異なり、許可は取らない。
++       ゲートはここではなく、値の `digest` と `checksum` にある。
++   entry #digest   これらの手順を実行してから別の値をダイジェストする、新しいダイジェスター
++       `digester.digest(value)` は任意の `Digestible` な値のための手順を追加する。
++       元のダイジェスターは変わらない。
+
+@ 0 1 0 0d3330efef98c99d07bde1645b9c1965
++ entry .Hash   値としてのアルゴリズムの実装。スコープ内の `Hashing` プロバイダーから導出される
+
+% 1 1 0 105638f9a2a123970572f960cee8fc4e
+
+@ 0 10 0 03ce92257f1ae773068b25972af92cef
++       `Hash in algorithm` は、`digest`、`checksum`、`Digester#apply` が解決するものである。
++       これはアルゴリズムの JCE 風の `#name`（`SHA-256`）、HMAC の `#hmacName`（`HmacSHA256`。enigmatic の `hmac` が使う）、そしてプロバイダーの `Hashing.Function` から得る新しい排他的な `Digestion` である `#initialize` を知っている。
++       各アルゴリズムのコンパニオンは、スコープ内にある `Hashing` から*構造的に*インスタンスを導出する。
++       `Sha2.hash` には `Hashing { def sha2(bits: Int): Hashing.Function }` が、`Blake3.hash` には `Hashing { def blake3: Hashing.Function }` が必要である。
++       そのため選ばれたプロバイダーが実装していないアルゴリズムには `Hash` がなく、呼び出しの場所でコンパイルに失敗する。
++       corpuscular のチェックサムのインスタンスは、corpuscular からは `Hashing` が見えないので、ここ、`Hash` 自身のコンパニオンにある（`.crc32`、`.crc64`、`.adler32`）。
++       解決のされ方は同じである。
+
+% 2 1 0 064c372c82e337f31324f01f47316ecf
+
+% 3 1 0 18ba4cee6442fdc602e89c8194c39c01
+
+% 4 1 0 0ce43c3eec1ed79115c97da83846e969
+
+% 0 1 0 0350a3ed80b9fa5b0af9839b9577504c
+
+% 0 1 0 01f697d2bcb1a7bb1e5a67a5c26bbddf
+
+% 0 1 0 12c36d9f0c3a67531759a9c624a9bbb2
+
+% 1 1 0 044a69e3a0b3768e05a0dc9e53650726
+
+@ 0 1 0 04d807024f88896c1b4e6843705236f6
++       `Hash(name, hmacName, function)` は独自のプロバイダーのためのインスタンスを組み立てる。
+
+% 0 1 0 1e233913a41da643039e4c7ba320f1ad
+
+% 1 1 0 1a285c74d40179fb115ade062ffe894c
+
+% 1 1 0 10974b89d1cb35fc1d270319b1612ed3
+
+@ 0 22 0 0878581814fafb250d4efa9f2bc9100c
++   entry .crc32   `crc32` を持つプロバイダーからの `Hash in Crc32`：両方のプロバイダーが持つ
++       名前は `CRC32` で、HMAC 名は `HMAC-CRC32` である。
++       これでダイジェストするには `cryptoPermits.permitNonCryptographicHashes` が必要である。
++   entry .crc64   `crc64` を持つプロバイダーからの `Hash in Crc64`：Soundness プロバイダーだけが持つ
++       名前は `CRC64`（CRC-64/ECMA）である。
++       JDK には CRC-64 がないので `JavaBaseHashing` はこれを提供せず、`digest[Crc64]` は `providers.soundnessProvider` のもとでだけ解決される。
++       `cryptoPermits.permitNonCryptographicHashes` が必要である。
++   entry .adler32   `adler32` を持つプロバイダーからの `Hash in Adler32`：両方のプロバイダーが持つ
++       名前は `ADLER32` である。
++       `cryptoPermits.permitNonCryptographicHashes` が必要である。
++   entry .apply   `Hash[algorithm](name, hmacName, function)`：プロバイダーの関数の上のインスタンス
++       `initialize` が `function.digestion()` を呼ぶ `Hash in algorithm` を組み立てる。
++       コンパニオンはこれを使う。
++       利用者がこれを必要とするのは、アルゴリズムやプロバイダーを追加するときだけである。
++   entry #Form   このハッシュが計算するアルゴリズム
++   entry #name   アルゴリズムの JCE 風の名前：`SHA-256`、`SHA1`、`MD5`、`BLAKE3`、`CRC32`
++   entry #hmacName   アルゴリズムの JCE の HMAC 名：`HmacSHA256`、`HmacSHA1`、`HmacMD5`
++       enigmatic の `hmac[algorithm](key)` が暗号プロバイダーに渡すものである。
++       そのため gastronomy のハッシュに対する HMAC は、暗号プロバイダーの MAC が対応するすべてのアルゴリズムで利用できる。
++       BLAKE3、MurmurHash3、チェックサムでは名前は `HMAC-…` であり、これを実装する JCE プロバイダーはない。
++   entry #initialize   一回の計算のための、新しい排他的な `Digestion`
++       呼び出すたびに新しいアキュムレーターが始まる。
++       それにバイト列を `append` し、一度だけ `digest()` する。
++       これは `Digestion^` なので、共有も保存もできない。
+
+@ 0 1 0 1d7df5f7d120808c1723846fb5033a4c
++ entry .Hashing   ハッシュ化のプロバイダー：実装する各アルゴリズムの `Hashing.Function`
+
+% 1 1 0 10503f1d6432e62f184f7684f849c72e
+
+@ 0 6 0 1c009dd631f900c30aefffb7ff4bec2b
++       `Hashing` プロバイダーは、各ハッシュの実装を `Hashing.Function` として供給する。
++       これは新しい `Digestion` を作るファクトリーである。
++       トレイト自体にはメンバーがない。
++       各アルゴリズムの `Hash` given がそれを構造的に細分化する（`Hashing { def sha2(bits: Int): Hashing.Function }`）。
++       そのためプロバイダーは順位付けされるのではなく*互いに素*である。
++       `JavaBaseHashing` は `md5`、`sha1`、`sha2`、`crc32`、`adler32` を持ち、`SoundnessHashing` はそのすべてに加えて `blake3`、`murmur3`、`crc64` を持つ。
++       そして欠けているアルゴリズムは、ダイジェストの場所でコンパイルエラーになる。
+
+@ 0 5 0 1e9c32ef99a340060477717a1dcec9f0
++       プロバイダーは `providers` パッケージから名前で選ぶ。
++       `providers.soundnessProvider` は `SoundnessHashing` オブジェクトそのものである。
++       `providers.javaBaseProvider` はマーカー `Provider.JavaBase` であり、そこから `.javaBaseHashing` が `JavaBaseHashing` を導出する（enigmatic は JDK の暗号を導出する）ので、一つの import で両方が有効になる。
++       独自のプロバイダーは、上に挙げた名前のメソッドを持ち `Hashing` を継承するオブジェクトを、given として束縛したものである。
+
+% 1 1 0 1ed1f85e514a225f004419c4cc4fa0ed
+
+% 0 1 0 042a58813b84eb3316475d0a6b66608b
+
+% 1 1 0 0020829eb9a34f2818e89d1b2bfd72dd
+
+@ 0 1 0 171dc8176b82898d078b39e18aaaded7
++   entry .Function   一つのアルゴリズムの実装：新しい `Digestion` を作るファクトリー
+
+% 1 1 0 13453d33324c47dd18d94c14e28faeb0
+
+@ 0 8 0 1a6ea9e0fc8bb9c31efafb454b61a7cb
++         `function.digestion()` は新しい排他的なアキュムレーターを返す。
++         プロバイダーのアルゴリズムごとのメソッド（`sha2(bits)`、`blake3`、`crc32`）はこれを一つ返し、`Hash` がそれを包む。
++     entry #digestion   一回の計算のための、新しい排他的な `Digestion`
++   entry .javaBaseHashing   `providers.javaBaseProvider` が import されているときの `JavaBaseHashing`
++       `Provider.JavaBase.type` マーカーから導出される、`Hashing` の暗黙のスコープにある given である。
++       そのため JDK プロバイダーを名前で import すれば、二つ目の import なしにハッシュ化が有効になる。
++       JVM では `MessageDigest` と `java.util.zip` であり、他では同じ名前が純 Scala の `SoundnessHashing` に転送する。
+
+@ 0 1 0 0c768c991e1a61331992483c7ab5dd8f
++ entry .Provider   複数のケイパビリティを持つプロバイダーのマーカー。`Provider.JavaBase` は JDK のもの
+
+% 1 1 0 14afdf226a8362fb12ff2e7345bef317
+
+@ 0 6 0 0fe1a86b6ebd2e7311649965465510e7
++       複数のケイパビリティを供給するプロバイダー（JDK はハッシュ化と暗号の両方を供給する）は、マーカーを通して選ばれる。
++       `providers.javaBaseProvider` は `Provider.JavaBase` であり、`Hashing.javaBaseHashing`（ここ）と enigmatic の暗号の given がそれぞれそこから実装を導出する。
++       `SoundnessHashing` のようにケイパビリティが一つだけのプロバイダーにはマーカーがなく、その `providers` の given はケイパビリティのオブジェクトそのものである。
+
+% 1 1 0 09e60e34a0ab5b661ad1489f178775c2
+
+@ 0 2 0 08084299190a4ef21493f9278f061cc1
++   entry .JavaBase   JDK プロバイダー：`MessageDigest` と `java.util.zip` によるハッシュ化、JCE の暗号
++       `providers.javaBaseProvider` が供給するマーカーである。
++       それ自身のメンバーはない。
+
+@ 0 1 0 01ffbd64fd51721108131bc6ffabeeff
++ entry .JavaBaseHashing   JDK に支えられたハッシュ化のプロバイダー：MD5、SHA-1、SHA-2、CRC-32、Adler-32
+
+% 1 1 0 0b5aef387827961712be6e465ca8659f
+
+@ 0 8 0 063fd395549142c911754fdd28f135b1
++       `import providers.javaBaseProvider` で使える既定のプロバイダーである。
++       二つのコンポーネントで宣言される唯一のオブジェクトである。
++       JVM（`core-jvm` のソースを持つ `gastronomy.core`）では、`.md5`、`.sha1`、`.sha2` は `java.security.MessageDigest` に、`.crc32` と `.adler32` は `java.util.zip.CRC32` と `Adler32` に支えられ、いずれもウィンドウをその場で追加する。
++       ライブラリの中で `java.security` を使うのはここだけである。
++       Scala.js と Scala Native（`core-native`）では、同じ五つのメソッドが `SoundnessHashing` の純 Scala の実装に転送する。
++       その実装は JDK のものとバイト単位で照合されているので、JDK プロバイダーを選ぶコードは、ソースを変えずにどのプラットフォームでも同じようにハッシュ化する。
+
+@ 0 2 0 1d41bc05304e7dcf1df8773a2d846676
++       どちらのプラットフォームも `blake3`、`murmur3`、`crc64` を提供しない。
++       JDK にはそのいずれの実装もないので、それらのアルゴリズムの `Hash` は `providers.soundnessProvider` のもとでだけ解決される。
+
+% 1 1 0 132e29b1bc030a5906a234d0acbe776d
+
+% 1 1 0 1eb8cdfa43cef0d203454e2c32264f69
+
+@ 0 9 0 1199221c75ee2d4e01b6487942e9e68e
++   entry .md5   MD5。JVM では `MessageDigest("MD5")`、他では純粋な移植
++   entry .sha1   SHA-1。JVM では `MessageDigest("SHA1")`、他では純粋な移植
++   entry .sha2   ビット数による SHA-224、SHA-256、SHA-384、SHA-512。`MessageDigest("SHA-<bits>")` として
++       `sha2(bits)` は 224、256、384、512 のいずれかを取る。
++       `Sha2.hash` が型 `Sha2[bits]` からその数を供給する。
++   entry .crc32   CRC-32。JVM では `java.util.zip.CRC32`、他では corpuscular のアキュムレーター
++       32 ビットの値はビッグエンディアンの4バイトで書かれる。
++   entry .adler32   Adler-32。JVM では `java.util.zip.Adler32`、他では corpuscular のもの
++       32 ビットの値はビッグエンディアンの4バイトで書かれる。
+
+@ 0 1 0 080e1265f04ce29d1034e7f03a2916cb
++ entry .SoundnessHashing   純 Scala のプロバイダー：BLAKE3、MurmurHash3、CRC-64 を含むすべてのアルゴリズム
+
+% 1 1 0 13797990ea721067015a844458112c16
+
+@ 0 9 0 0f2e8f37a7cd55a310eed2f928d2a720
++       `import providers.soundnessProvider` で選ばれる。
++       MD5、SHA-1、SHA-2 ファミリーを Scala で実装し（RFC 1321 と FIPS 180-4 に従い、ブロックのパディングのすべての境界で JDK と照合済み）、BLAKE3（すべての入力長で公式のベクトルと照合済み）と MurmurHash3（Guava の `murmur3_128()` とバイト単位で一致）も実装し、corpuscular の CRC-32、CRC-64、Adler-32 のアキュムレーターに直接たどり着く。
++       `.blake3`、`.murmur3`、`.crc64` を持つ唯一のプロバイダーなので、これらでダイジェストするプログラムは、単独で、あるいは JDK プロバイダーと並べてこれを import する。
++       両方を import すると、こちらがレキシカルにスコープ内にあるので、すべてのアルゴリズムを担う。
++       JVM の SHA-2 では JDK ネイティブの `MessageDigest` のほうが速いので、そこではそれを使い、かつ BLAKE3 も使いたいプログラムは import のスコープを分けるべきである。
+
+% 1 1 0 15d8bd2ea6140bcb0a6f00f6d12b5b57
+
+% 0 1 0 1637ebd09fbc883e0124b55d202e9b9f
+
+% 0 1 0 0efb0b0cc8f40dfd17780c194d96f619
+
+@ 0 9 0 1552a16471ee58780ce7fd04be6ce4b0
++   entry .blake3   BLAKE3。256 ビットの出力。`Blake3.digestion()` から
++   entry .murmur3   MurmurHash3 x64 128 ビット、シード 0。`Murmur3.digestion()` から
++   entry .md5   純 Scala の MD5
++   entry .sha1   純 Scala の SHA-1
++   entry .sha2   ビット数による純 Scala の SHA-224、SHA-256、SHA-384、SHA-512
++       `sha2(bits)` は 224、256、384、512 のいずれかを取る。
++       それ以外の数は 512 として扱われる。
++   entry .crc32   CRC-32（RFC 1952）。corpuscular のアキュムレーター
++   entry .crc64   CRC-64/ECMA。corpuscular のアキュムレーター。他のプロバイダーは持たない
++   entry .adler32   Adler-32。corpuscular のアキュムレーター
+
+@ 0 1 0 1f5edc203cc99c601bb06d9b9e4e0117
++ entry .Sha2   一つの型としての SHA-2 ファミリー：`Sha2[224]`、`Sha2[256]`、`Sha2[384]`、`Sha2[512]`
+
+% 1 1 0 04aea986d599481c1cb4f880d90cd8b9
+
+@ 0 3 0 1463ee031494be721b18a6bcb7798b2c
++       `Sha2[bits]` は、ビット数 224、256、384、512 の SHA-2 のアルゴリズム型である。
++       それぞれが別の型なので、`Digest in Sha2[256]` と `Digest in Sha2[512]` は混ざらない。
++       `Concession.Acceptable` なので許可は不要であり、両方のプロバイダーが実装している。
+
+% 2 1 0 0a0eee345558fa8d0f4d8772b9fb94e9
+
+% 3 1 0 10a10a91ae6cd6d016a4a6d806453325
+
+% 4 1 0 1b53db967d90c8bb10d06b6eb7af26a5
+
+% 0 1 0 1e16732a0b3e88fb034a49fc31ebb932
+
+% 0 1 0 1023e3b4c0d51d3a085379c804a32213
+
+% 0 1 0 07bcac96915192cd09957fe2db454c69
+
+% 1 1 0 1063c3a8cc8c057b081efe391fb2fa22
+
+@ 0 3 0 1aaeb40374c882b91b7f5668fa19343d
++       普通は SHA-256 を選ぶ。
++       SHA-512 は長い入力では 64 ビットのハードウェア上でより速く、SHA-224 と SHA-384 は初期状態の異なるその切り詰め版である。
++       multihash のコードは `0x12`（256）、`0x13`（512）、`0x20`（384）、`0x1013`（224）である。
+
+% 1 1 0 15aebbfadfa3bb62074492dcf6b3be47
+
+% 1 1 0 18be6614cd3a041f1e5c4a51438f5d5f
+
+@ 0 4 0 0f1f86d201c1c7d318fbef6f83a71c8b
++   entry .hash   `sha2(bits: Int)` を持つ任意のプロバイダーからの `Hash in Sha2[bits]`
++       スコープ内の `Hashing` から暗黙のスコープで導出され、ビット数は型から取られる。
++       名前は `SHA-<bits>` で、HMAC 名は `HmacSHA<bits>` である。
++   entry #Bits   ビット単位の出力長：型自身のパラメーター
+
+@ 0 1 0 1514509b2395288405615906b909751a
++ entry .Sha1   SHA-1、160 ビット：非推奨であり、許可のもとでだけダイジェストされる
+
+% 1 1 0 145cf9bfcdd4856c0068626a1cb3962d
+
+@ 0 5 0 0eeccd45d3253439184c75a9d1de261a
++       SHA-1 は衝突攻撃に対して破られており、Git のオブジェクト名のように今もそれを必要とするフォーマットのために残されている。
++       `HashWeakness[Sha1]` は `Concession.Sha1` なので、`digest[Sha1]` にはスコープ内に `cryptoPermits.permitDeprecatedCrypto`（またはそれを含む許可：`permitDisallowedCrypto`、`permitCryptoThrough2030`）が必要である。
++       両方のプロバイダーが実装しており、multihash のコードは `0x11` である。
+
+% 2 1 0 097388d5131ca7ba1b63f1e8a0ae33c6
+
+% 3 1 0 0891e34c132374fb0425d0db60d5770a
+
+% 4 1 0 0bbe9f7787a0a1f00b8cfd48c7f15df6
+
+% 0 1 0 0f8044e61a9fbc7b028f71aad35cd1af
+
+% 0 1 0 08f8b8dc07cf8439133657af70f81bd2
+
+% 0 1 0 1ff29bca3d16468a162c3ca751b81775
+
+% 1 1 0 06bd201de18f417b0b4d4114222fb830
+
+% 2 1 0 0491bdf34b121201153d241eb0cc4bbb
+
+@ 0 2 0 129418beba5b0bed0807e7df13fc7e60
++   entry .hash   `sha1` を持つ任意のプロバイダーからの `Hash in Sha1`
++       名前は `SHA1` で、HMAC 名は `HmacSHA1` である。
+
+% 0 1 0 021c8cea78d2f2a70d279b6d4ef9767f
+
+@ 0 1 0 093af52c627d9356041f903f0e0cc39e
++ entry .Md5   MD5、128 ビット：禁止されており、許可のもとでだけダイジェストされる
+
+% 1 1 0 0cab52cecbe5d9980511e29620b17993
+
+@ 0 4 0 1481b9c094c96cff1d55a6beb859ee96
++       MD5 は完全に破られており、レガシーなチェックサムと互換性のために残されている。
++       `HashWeakness[Md5]` は `Concession.Md5` なので、`digest[Md5]` にはスコープ内に `cryptoPermits.permitDisallowedCrypto`（または `permitCryptoThrough2014` 以降）が必要である。
++       両方のプロバイダーが実装しており、multihash のコードは `0xd5` である。
+
+% 2 1 0 1db98123ecefad47134629c081826019
+
+% 3 1 0 1f8ffc0442e2eaec00e8e29d03c6b528
+
+% 4 1 0 1c930cf5035c7c9a151b6ab9c6dea28b
+
+% 5 1 0 07b53c10f696213818c263cc615fcdae
+
+% 1 1 0 0e6d5529b0d8e0b10a58091c94f47209
+
+% 0 1 0 04539d2ab2a93ab10e15983fa7b613da
+
+% 1 1 0 055f648d244aad0618e0d6eb8525e6bd
+
+% 2 1 0 1a6eaf021b4ac6e907ba75b5cf6ca9ce
+
+@ 0 2 0 08cc5338f8c1095b04794d112e36dd7b
++   entry .hash   `md5` を持つ任意のプロバイダーからの `Hash in Md5`
++       名前は `MD5` で、HMAC 名は `HmacMD5` である。
+
+% 1 1 0 1181f5f48364377a0062130c1a595540
+
+@ 0 1 0 146e6495cb16ce1f1906392d84a9fb10
++ entry .Blake3   BLAKE3、256 ビット：鍵付きモードと鍵導出モードを持つ純 Scala のハッシュ
+
+% 1 1 0 12b1f5cb4b661f25131a906e4927cfcf
+
+@ 0 7 0 04e389eacfe2198d1ab34e557742038b
++       BLAKE3 は現代的な木構造のハッシュであり、ソフトウェアでは SHA-2 より速く、任意の出力長に拡張できる。
++       JDK には実装がないので、`digest[Blake3]` には `providers.soundnessProvider` が必要である。
++       許可は不要である。
++       アルゴリズムの三つのモードはすべてここにある。
++       通常のハッシュ（`digest` を通して、または出力長を選ぶなら `.hashOf`）、32 バイトの鍵によるメッセージ認証のための鍵付きハッシュ `.keyedHash`、そしてコンテキスト文字列と鍵の素材から鍵を導出する `.deriveKey` である。
++       三つとも、対象とするすべての入力長で公式のテストベクトルと照合されている。
+
+% 2 1 0 062a3fb8686b84711b3032f0869aef71
+
+% 3 1 0 08a9d973f8a2925710c36e0a5766375c
+
+% 4 1 0 1b8cddab5f923f331f270475be061280
+
+% 5 1 0 139c25f98f30913305e2826b230986ff
+
+% 0 1 0 0a347b577b1d4e3e0ac26503c18995b3
+
+% 0 1 0 0dacce37480955b2145bade393e7c0f6
+
+% 1 1 0 1fda78214523c095186231ec0a46fd04
+
+@ 0 1 0 01ac846678ba79900880d6531a5ffaed
++       multihash のコードは `0x1e` である。
+
+% 1 1 0 0baf73bc2a2be2691d561c71319662c9
+
+% 1 1 0 07f99e679131c6c7005ac9a0ac8ba31f
+
+@ 0 18 0 03c6f6e6894c9f260893808fc577f2ce
++   entry .hash   `blake3` を持つプロバイダーからの `Hash in Blake3`：Soundness プロバイダー
++       名前は `BLAKE3` で、HMAC 名は `HMAC-BLAKE3` だが、これを実装する JCE プロバイダーはない。
++       鍵付きの BLAKE3 は HMAC ではなく `.keyedHash` である。
++   entry .digestion   新しい排他的な BLAKE3 の `Digestion`。32 バイトの出力
++       `SoundnessHashing.blake3` が供給するものである。
++       任意のウィンドウでバイト列を追加し、一度だけ `digest()` する。
++   entry .hashOf   凍結済みのバイト配列の BLAKE3 ハッシュ。任意の出力長で
++       `Blake3.hashOf(input, length)`：通常のハッシュであり、`length` が別に指定しない限り 32 バイトである。
++       BLAKE3 の出力は拡張可能なストリームなので、長さを長くすると同じストリームのより長い接頭辞になるのであって、別のハッシュになるわけではない。
++   entry .keyedHash   32 バイトの鍵のもとでの入力の鍵付き BLAKE3 ハッシュ。任意の出力長で
++       `Blake3.keyedHash(key, input, length)`：鍵がアルゴリズムの初期状態に取って代わるメッセージ認証である。
++       鍵はちょうど 32 バイトでなければならず、それ以外の長さはパニック _BLAKE3 key must be 32 bytes_ になる。
++   entry .deriveKey   コンテキスト文字列と入力から鍵の素材を導出する。任意の出力長で
++       `Blake3.deriveKey(context, material, length)`：コンテキスト（`t"myapp 2026-01-01 session key"` のような、一意でアプリケーション固有のテキスト）は鍵導出コンテキストモードでハッシュ化されて鍵となり、そのもとで素材がハッシュ化される。
++       そのため同じ素材から異なる目的のために導出された鍵は、互いに無関係である。
+
+% 0 1 0 149265e06bd177b419770a40d39735b9
+
+@ 0 1 0 1a31fed46c5699ac1f99edf7b421a1f2
++ entry .Murmur3   MurmurHash3、x64 128 ビット：高速な非暗号学的ハッシュ。許可のもとで使う
+
+% 1 1 0 028da0e631ca99531816c02d2c8d635c
+
+@ 0 7 0 1ec4ce6e9bbb09aa114165f60a99135b
++       MurmurHash3 は、Guava のブルームフィルターやハッシュをキーとする構造の背後にあるハッシュである。
++       16 バイトのブロックごとに数回の演算で済み、敵対的でない入力に向く。
++       そのような入力では、暗号学的ダイジェストのラウンドは何倍もの仕事になるのに何の利益もない。
++       攻撃者に対する衝突耐性はないので、`digest[Murmur3]` には `cryptoPermits.permitNonCryptographicHashes`（チェックサムと同じ許可）が必要であり、Soundness プロバイダーだけが実装している。
++       出力は 64 ビットの二つのワード `h₁` と `h₂` をこの順に、それぞれリトルエンディアンで並べたものであり、Guava の `murmur3_128()` が生成するものとバイト単位で一致する。
+
+% 2 1 0 12c9e05f6d44330900e6dc18dd978b85
+
+% 3 1 0 0f8716ef0d42452e04a3a1101f53bb06
+
+% 4 1 0 00942df461dfcbc514c713ad2dcb4ddf
+
+% 1 1 0 0f8eebae756eaee41510bb0673591edf
+
+% 1 1 0 16e7898532c269b1062b0d6d681be60b
+
+% 0 1 0 1b7b6bd17c23add61671457c7667ea91
+
+% 1 1 0 12cd00af12f2ed530a6482fdae592112
+
+@ 0 2 0 18d71c6c4ba956c608b8b3bc82607281
++       シード付きのダイジェストは `.digestion(seed)` であり、プロバイダーのものはシード 0 である。
++       ulysses の `BloomFilter` はこの型を通してダイジェストする。
+
+% 1 1 0 18050e552c2fa30302bcf334c6871f41
+
+% 1 1 0 15fd7ef364df6796015c7b792603bfbc
+
+@ 0 6 0 022536edf163fa6b1306d5b2cf141075
++   entry .hash   `murmur3` を持つプロバイダーからの `Hash in Murmur3`：Soundness プロバイダー
++       名前は `Murmur3-128` で、HMAC 名は `HMAC-Murmur3-128` だが、これを実装するものはない。
++   entry .digestion   新しい排他的な MurmurHash3 の `Digestion`。シードは省略可能
++       `Murmur3.digestion(seed)` は、インスタンスごとのソルトを求めるハッシュテーブルのために、二つの状態ワードをどちらも `seed`（既定は 0）から始める。
++       結果は 16 バイトである。
++       `digest()` までは何もアロケーションされない。
+
+% 1 1 0 188efd7ab4a9dfbd06a9695b36b72a09
+
+@ 0 5 0 1f294d772fa258e513dce9578a93e675
++ entry .Sha384   独立したアルゴリズム型としての SHA-384。multihash のコードを持つが、独自の `Hash` はない
++     384 ビットの `Algorithm` であり、その `Multicodec` インスタンスは同じ関数なので `Sha2[384]` のコード `0x20` を共有する。
++     ダイジェストは `Sha2[384]` を通して行う。
++     `Hash in Sha384` は導出されないので、`digest[Sha384]` はコンパイルできない。
++     この型は、ビット数のパラメーターなしにアルゴリズムを名指しする値のためにある。
+
+@ 0 4 0 0cb26e53643b2e030eb33768e87fc5bd
++ entry .Sha512   独立したアルゴリズム型としての SHA-512。multihash のコードを持つが、独自の `Hash` はない
++     512 ビットの `Algorithm` であり、その `Multicodec` インスタンスは `Sha2[512]` のコード `0x13` を共有する。
++     ダイジェストは `Sha2[512]` を通して行う。
++     `Hash in Sha512` は導出されないので、`digest[Sha512]` はコンパイルできない。
+
+@ 0 9 0 109a581e2a68f91904e6e1df78571d21
++ entry .Feistel   64 ビット値の上の Feistel ネットワーク。サブキーのリストとラウンド関数から作る
++     `Feistel(subkeys, round)(input)` はサブキーごとに一ラウンドを実行する。
++     各ラウンドは、値の下位 32 ビットのワードを上位のワードに移し、下位のワードを古い上位のワードと `round(low, subkey)` の XOR にする。
++     ラウンド関数は負の値を含め任意の `Int` を返してよく、XOR は符号拡張されずに 32 ビットにマスクされる。
++     サブキーがなければ入力はそのまま返される。
++     ラウンドはサブキーを逆順にして逆向きに実行すれば元に戻せる。
++     これにより Feistel ネットワークは 64 ビット値の上の全単射となり、識別子の難読化やキーのシャーディングのための、形式を保つ置換になる。
++     ラウンド関数が暗号学的なものでない限り、これは暗号化ではない。
+
+% 2 1 0 064488eb45e1e24816091cafbe99a322
+
+% 3 1 0 11f10771423f59a80a5673ab82291c04
+
+% 0 1 0 024fa29e51e505d11f75e9022f953a89
+
+% 0 1 0 09f4d5568eff5b9010dd690620f0acb3
+
+% 0 1 0 089944efa9e3de6b0c34e53715a6b48f
+
+% 1 1 0 07c168d4f7b7ff310c8a5149de78ac3c
+
+@ 0 1 0 0f28feb0e24575c20f2519ffe8f77440
++ entry .Permit   弱いアルゴリズム、鍵長、モードを*適用*してよいという消去された証拠
+
+% 1 1 0 0846f436f03de26f1f7daa63a00492f4
+
+@ 0 6 0 1182f76beb3e1c3500b28f1b3b98c92f
++       `Permit[concession]` は、NIST SP 800-131A が非推奨または禁止として挙げるものを使う前に、`digest`、`checksum`、enigmatic の `hmac`、`encrypt`、`sign`、そして telekinesis の TLS 構成が要求するケイパビリティである。
++       `digest[Md5]` には `Permit[Concession.Md5]` が、`digest[Crc32]` には `Permit[Concession.NonCryptographic]` が必要である。
++       これは消去されるので、実行時のコストはない。
++       コンパイル時のゲートである。
++       `Permit` は `ProcessingPermit` でもあるので、検証と復号も扱う。
+
+@ 0 3 0 161d8c1ab71e87371b71658ab8650136
++       `Concession.Acceptable` のための `Permit.acceptable` は常にスコープ内にあり、SHA-2 と BLAKE3 に import が要らないのはそのためである。
++       その他の許可はすべて `cryptoPermits` パッケージから名前で import し、それぞれが与える細かな許可の交差型になっている。
+
+% 2 1 0 0e7653b187a0b5cf1a36b77b91e45cf6
+
+% 3 1 0 013daeb6fa3b09ac1a234263e4600f31
+
+% 4 1 0 06a07f69e51d20ca147241666787d1de
+
+% 5 1 0 16b65526d37a7d7902eae9bdb03b8fee
+
+% 0 1 0 04311b9196855fe3113adf9c913e7571
+
+% 1 1 0 0d0b17f3681e8c9401bf73670e151ea4
+
+@ 0 5 0 14f942d72721b075076fe2201580fba5
++       許可がないと、コンパイルエラーは _this operation uses a sub-optimal algorithm, key length or mode — or a checksum in place of a hash; import the matching permit (`cryptoPermits.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, or `cryptoPermits.permitUnauthenticatedCrypto`, `cryptoPermits.permitDeprecatedCrypto` or `cryptoPermits.permitDisallowedCrypto`) to allow it_ となる。
+
+% 1 1 0 01844ce40b03a74300f2edc2148b4e1f
+
+% 1 1 0 019d3d38df5c082502a37d581713c439
+
+% 0 1 0 0ed11a9a5dc880a204dde93e8e746cba
+
+@ 0 1 0 061cfbb0ed6673ad0ef1e56e67312dd8
++   entry .acceptable   `Permit[Concession.Acceptable]`。常にスコープ内にある：強いアルゴリズムには import が要らない
+
+@ 0 1 0 1d0aa24f0246f65107539e455e6caf5c
++ entry .ProcessingPermit   すでに保護されたデータを弱いアルゴリズムで*処理*してよいという消去された証拠
+
+% 1 1 0 095cd698737c9e851bfe34a85106022c
+
+@ 0 6 0 1b8f9539970fed861ba847879280067a
++       NIST SP 800-131A は、保護を*適用*すること（暗号化、署名、ハッシュ化）と、すでに保護されたデータを*処理*すること（復号、検証）とを区別し、後者をより長く許している。
++       これが「レガシー利用」である。
++       `ProcessingPermit[concession]` は処理だけを許し、`Permit` はそれを継承して両方を許す。
++       `cryptoPermits.permitLegacyCrypto` は純粋に処理だけの唯一の許可であり、Triple-DES と DSA のために enigmatic の `decrypt` と `verify` が使う。
++       gastronomy 自身の操作はすべて保護を適用するものなので、完全な `Permit` が必要である。
+
+@ 0 3 0 0fc6301279b46fdb0d0d470ff5877aea
++       許可がないと、コンパイルエラーは _this operation uses an algorithm whose status is "legacy use" or worse; import a permit (e.g. `cryptoPermits.permitLegacyCrypto` to process existing data, or `cryptoPermits.permitDisallowedCrypto`) to allow it_ となる。
+
+% 1 1 0 1fe2f6d4bb9f90731201244a7184d0d4
+
+% 1 1 0 1eadcc304db81ccd08161016bcb38a0f
+
+@ 0 1 0 1bf2b87e0d7b7e9f1c9c3965a4d8207b
++   entry .acceptable   `ProcessingPermit[Concession.Acceptable]`。常にスコープ内にある
+
+@ 0 1 0 0ecfd2ed30e17f9d18e0ff6823ed3c52
++ entry .Concession   呼び出し側が譲歩しうる弱点：アルゴリズム、モード、鍵サイズ、TLS の緩和ごとに一つのマーカー
+
+% 1 1 0 0007b8adadee7a7302f995bcb4a40287
+
+@ 0 6 0 1398c9635b307f5818ad4421540740cf
++       譲歩とは、プログラムが許可を import することで受け入れる特定の一つのことを名指しするものである。
++       破られたハッシュ、弱い暗号方式、短い鍵、認証のないモード、寛容な TLS 設定などである。
++       マーカーはメンバーのないシールされたトレイトであり、`Permit` と `ProcessingPermit` の型引数としてだけ使われる。
++       これらはすべて最下層の暗号ライブラリであるここにあるので、gastronomy のハッシュ、enigmatic の暗号方式、telekinesis の TLS が一つの語彙と一揃いの `cryptoPermits` の import を共有する。
++       `HashWeakness` は各ハッシュアルゴリズムをその譲歩に対応させる。
+
+@ 0 8 0 1813d1f82cd9bae416b0b8ffd8a558e4
++       ハッシュ化の譲歩は `Md5`、`Sha1`、`NonCryptographic`（チェックサムと MurmurHash3。欠陥があるわけではないが、敵対的な衝突への耐性がない）であり、`Acceptable` は弱点がまったくないことを表す。
++       enigmatic が使う暗号方式の譲歩は、`Des`、`TripleDes`、`Rc2`、`Blowfish`、`SmallRsa`（2048 ビット未満の RSA 鍵）、`Dsa`、`Ecb`、`Unauthenticated`（AEAD でない任意のブロック暗号モード）である。
++       telekinesis が使う TLS の譲歩は、`Tls10`、`Tls11`、`SmallDh`（2048 ビット未満の一時的 DH）、`CbcCipher`、`ExpiredCertificate`、`SelfSignedCertificate`、`UnverifiedHostname`、`UncheckedRevocation` である。
+
+% 1 1 0 037dfa2cf4f30d1702a36b0d2f90f582
+
+% 1 1 0 1ffc6b2a90c931da05f2f96505160c9f
+
+% 0 1 0 0dd16d54dadc80a0145782e2b6b5bb10
+
+@ 0 23 0 0152d5972fa66e7e1b8a754defd8af9a
++   entry .Acceptable   弱点がまったくない：SHA-2、BLAKE3、AES-GCM。その許可は常にスコープ内にある
++   entry .Md5   MD5 によるダイジェスト。`permitDisallowedCrypto` と `permitCryptoThrough2014` 以降が許す
++   entry .Sha1   SHA-1 によるダイジェスト。`permitDeprecatedCrypto`、`permitDisallowedCrypto`、`permitCryptoThrough2030` が許す
++   entry .NonCryptographic   CRC-32、CRC-64、Adler-32、MurmurHash3 によるダイジェスト。`permitNonCryptographicHashes` が許す
++       アルゴリズムの欠陥ではない。チェックサムは主張するとおりのことをする。
++       これは、いずれも意図的な衝突に耐えないので、脅威モデルに敵対者がいないという譲歩である。
++   entry .Tls10   TLS 1.0 を受け入れる。`permitLegacyTls` が許す
++   entry .Tls11   TLS 1.1 を受け入れる。`permitLegacyTls` が許す
++   entry .SmallDh   2048 ビットより短い一時的 Diffie-Hellman を受け入れる。`permitLegacyTls` が許す
++   entry .CbcCipher   CBC モードの TLS 暗号スイートを受け入れる。`permitLegacyTls` が許す
++   entry .ExpiredCertificate   期限切れの相手の証明書を受け入れる。`permitUntrustedCertificates` が許す
++   entry .SelfSignedCertificate   自己署名された相手の証明書を受け入れる。`permitUntrustedCertificates` が許す
++   entry .UnverifiedHostname   名前がホストと一致しない証明書を受け入れる。`permitUntrustedCertificates` が許す
++   entry .UncheckedRevocation   証明書の失効を検査せずに接続する。`permitUncheckedRevocation` が許す
++   entry .Des   DES。`permitDisallowedCrypto` と `permitCryptoThrough2014` 以降が許す
++   entry .TripleDes   Triple-DES。適用は `permitDeprecatedCrypto` のもとで、処理は `permitLegacyCrypto` のもとで
++   entry .Rc2   RC2。`permitDisallowedCrypto` と `permitCryptoThrough2014` 以降が許す
++   entry .Blowfish   Blowfish。`permitDisallowedCrypto` と `permitCryptoThrough2014` 以降が許す
++   entry .SmallRsa   2048 ビットより短い鍵の RSA。`permitDisallowedCrypto`、`permitCryptoThrough2014` 以降が許す
++   entry .Dsa   DSA 署名。適用は `permitDisallowedCrypto` のもとで、処理は `permitLegacyCrypto` のもとで
++   entry .Ecb   ECB モード。`permitDisallowedCrypto` だけが許す
++   entry .Unauthenticated   認証のない（AEAD でない）任意の暗号モード。`permitUnauthenticatedCrypto` が許す
+
+@ 0 1 0 1f619cfcb94cc097005e21dc9bdbb829
++ entry .Signing   署名アルゴリズムが行うこと：秘密鍵でバイト列に署名し、公開鍵で検証する
+
+% 1 1 0 01fe16f60943fe2c1a6d57b08efd608a
+
+@ 0 6 0 006755e94d0e9e8f0b2f06e7fefef66b
++       enigmatic の非対称暗号方式（`Rsa`、`Ecdsa`）とその HMAC アダプターが実装するインターフェースである。
++       enigmatic より下のライブラリが「署名するもの」を値として受け取れるよう、ここで宣言されている。
++       鍵と署名は生の `Data` であり、enigmatic の `PrivateKey#sign` と `PublicKey#verify` が、型付けされ許可でゲートされたその窓口である。
++   entry #sign   `privateKey` のもとでの `data` の署名。バイト列として
++   entry #verify   `signature` が `publicKey` のもとでの `data` の署名かどうか
+
+@ 0 1 0 0bd4628af07e4889072e009a04e3c7d1
++ entry .providers   ハッシュ化のプロバイダー。それぞれ名前で import する given
+
+% 1 1 0 0895be6ddef80c5e1a2e35d8e47925b3
+
+@ 0 5 0 19d2cc4fc914d2ed1a299584b47803fb
++       どの実装がダイジェストを計算するかはスコープ内の `Hashing` given が決め、その選択は決して暗黙的ではない。
++       `import soundness.*` はこれらをどれも持ち込まないので、一つか両方を名前で import する。
++       アンブレラで統合された同じパッケージには enigmatic の `opensslProvider` もあり、`javaBaseProvider` はここでのハッシュ化だけでなく enigmatic の JDK の暗号も有効にする。
+
+% 2 1 0 0af86422ea0451561ca76fea1ae1b7ce
+
+% 3 1 0 1dcd3ee2e264885a02d087c7ef8df630
+
+% 0 1 0 017022d7152b48d30afc99c6aa88cf83
+
+% 1 1 0 132c0eb0450e81080ad8691bc9b47938
+
+@ 0 13 0 0b3b0c108c2b0b57106620622abdf3ad
++       各アルゴリズムの `Hash` は、そのアルゴリズムのメソッドを持つプロバイダーから導出されるので、二つは順位付けされるのではなく補い合う。
++       JDK プロバイダーには `Blake3`、`Murmur3`、`Crc64` がなく、両方を import しても失うものはない。
++       両方がスコープ内にあると、JDK のものが暗黙のスコープで導出されるのに対して Soundness プロバイダーはレキシカルに import されているので、Soundness プロバイダーがすべてのアルゴリズムを担う。
++       JDK ネイティブの SHA-2 と BLAKE3 を並べて使うには、`locally` で import のスコープを分ける。
++   entry .javaBaseProvider   JDK：JVM では `MessageDigest` と `java.util.zip`、他では純粋な移植
++       マーカー `Provider.JavaBase` を供給し、そこから `Hashing.javaBaseHashing` が `JavaBaseHashing` を導出する（enigmatic は `JavaBaseCrypto` を導出する）。
++       MD5、SHA-1、SHA-2、CRC-32、Adler-32 を持ち、BLAKE3、MurmurHash3、CRC-64 は持たない。
++   entry .soundnessProvider   純 Scala の `SoundnessHashing`：すべてのプラットフォームで、すべてのアルゴリズム
++       `SoundnessHashing` を直接供給する。
++       `Blake3`、`Murmur3`、`Crc64` の唯一のプロバイダーである。
+
+@ 0 1 0 1c6824325243d89719ecf06656b8a667
++ entry .cryptoPermits   暗号の許可。それぞれ名前で import する given：プログラムが受け入れる弱点
+
+% 1 1 0 1ca7ee9e7f806c5806b9cf0da7f7c8f3
+
+@ 0 7 0 0e3cd5452367464d07fbf88db6a30d68
++       各 given は細かな `Permit`（または `ProcessingPermit`）の消去された交差型である。
++       NIST SP 800-131A のアルゴリズムの状態（*非推奨*、*レガシー利用*、*禁止*）か年にちなんで名付けられ、ここでのハッシュにも、enigmatic と telekinesis の暗号方式と TLS 設定にも等しく効く。
++       水準は包含によって入れ子になっている。
++       `permitDisallowedCrypto` はすべてのアルゴリズムの許可を含み、各 `permitCryptoThrough<year>` はそれより前の年のものを含む。
++       譲歩が見えるままになるよう、プログラムが必要とするものを認める最も狭いものを import する。
+
+% 2 1 0 17a598f895fa69e81d99e2e7411df47e
+
+% 3 1 0 0dafcb23904c9d450459f4decb750589
+
+% 4 1 0 02d451b7ea25164518bf3f07983c2784
+
+% 1 1 0 034856616298a3c50819c15f1c22cb62
+
+% 0 1 0 11f0efd23d05601c10b5896f7bfaf0f1
+
+% 1 1 0 0423460e9cb44e7d0a14d24a7d7b955e
+
+@ 0 2 0 09f5d9f325f51e7c1c9f456a85f24ebb
++       既定ではどれもスコープ内にない。
++       `import soundness.*` は given を import せず、`locally` でブロックに import した許可のスコープはそのブロックに限られる。
+
+% 1 1 0 14057fabd98a7f5d106fecc003c5c510
+
+% 1 1 0 1f508ebc8dd6f0c804d582e28814ed64
+
+@ 0 34 0 05bc1f731f4f19db1b768c54c3774d82
++   entry .permitNonCryptographicHashes   CRC-32、CRC-64、Adler-32、MurmurHash3 によるダイジェスト
++       `Permit[Concession.NonCryptographic]`：脅威モデルに敵対者がいないこと（破損の検出、ハッシュテーブル、ブルームフィルター）を表明する。
++       これは破られたハッシュとは別の譲歩なので、`permitDisallowedCrypto` には含まれない。
++   entry .permitDeprecatedCrypto   SHA-1 と Triple-DES：使えるが移行期のもの
++       `Permit[Concession.TripleDes] & Permit[Concession.Sha1]`：NIST の「非推奨」の状態である。
++       Git のオブジェクト名のように、今も SHA-1 を計算しなければならないプログラムのための import である。
++   entry .permitDisallowedCrypto   MD5 と SHA-1 を含む、破られたか承認されていないすべてのアルゴリズム、鍵長、モード
++       `Des`、`Rc2`、`Blowfish`、`TripleDes`、`Dsa`、`SmallRsa`、`Ecb`、`Unauthenticated`、`Md5`、`Sha1` の `Permit`：NIST の「禁止」の状態であり、それより弱いすべてのアルゴリズムの許可を包含する。
++       `NonCryptographic` や TLS の許可は含まない。
++   entry .permitLegacyCrypto   Triple-DES や DSA ですでに保護されたデータの処理：復号と検証のみ
++       `ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa]`：NIST の「レガシー利用」である。
++       これは `Permit` ではないので、新たな暗号化も署名も、gastronomy のダイジェストも許さない。
++   entry .permitUnauthenticatedCrypto   認証のない（AEAD でない）任意のブロック暗号モード。enigmatic のため
++       `Permit[Concession.Unauthenticated]`：AEAD のもの以外のすべてのブロック暗号モードであり、enigmatic がゲートする。
++   entry .permitLegacyTls   TLS 1.0 と 1.1、小さな一時的 DH と CBC スイート。telekinesis のため
++       `Tls10`、`Tls11`、`SmallDh`、`CbcCipher` の `Permit` である。
++       JDK でこれらを再び有効にするとプロセス全体に及ぶ。
++   entry .permitUntrustedCertificates   期限切れや自己署名の相手の証明書、ホスト名の不一致。telekinesis のため
++       `ExpiredCertificate`、`SelfSignedCertificate`、`UnverifiedHostname` の `Permit` である。
++   entry .permitUncheckedRevocation   証明書の失効を検査せずに接続する。telekinesis のため
++       `Permit[Concession.UncheckedRevocation]` である。
++   entry .permitCryptoThrough2014   NIST が 2014 年までに禁止したすべてのアルゴリズム：DES、MD5、RC2、Blowfish、小さな RSA
++       `Des`、`Md5`、`Rc2`、`Blowfish`、`SmallRsa` の `Permit`：名前付きの水準に代わる、年に基づく選択肢である。
++       MD5 は認めるが、SHA-1 や Triple-DES は認めない。
++   entry .permitCryptoThrough2024   2014 に加えて Triple-DES と DSA
++       2023 年より後に禁止され、FIPS 186-5 で削除された `Permit[Concession.TripleDes]` と `Permit[Concession.Dsa]` を加える。
++   entry .permitCryptoThrough2030   2024 に加えて SHA-1：NIST が計画している段階的廃止
++       `Permit[Concession.Sha1]` を加えるので、非暗号学的なもの以外のすべてのハッシュアルゴリズムを認める。
+
+@ 0 1 0 0e01d3874a366e8115817d6d708af554
++ entry .Multicodec   ハッシュアルゴリズムの multiformats のコード。そのダイジェストを `Multihash` で包むため
+
+% 1 1 0 1ffda9c07bea55790416fa7daa71ca79
+
+@ 0 2 0 034368327f6bd5f31b72b39059208714
++       `Algorithm` から multiformats の表に登録されたコードと名前への対応*そのもの*である型クラスである。
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 3 0 00dd020b122f811c0483ca706e3f9454
++       column  アルゴリズム
++       column  コード
++       column  名前
+
+% 0 1 0 16e466bc2176019d1ac647512494d89d
+
+% 0 1 0 13c872a4a115562d079d3f93f06712f2
+
+% 0 1 0 167220d316d8779617523ae896c3aeb5
+
+% 0 1 0 040e094eecb2873c1ecd90f1e16907e8
+
+% 0 1 0 067c23cb8a99b6ad08b232d983bb2fa7
+
+% 0 1 0 06f980d42373e3d912538e240aabe414
+
+% 0 1 0 187e3ee681da449d0cb96bf28aac4d05
+
+% 1 1 0 03525ec6ede4c46118ffa26e5a0e75d5
+
+@ 0 7 0 0a979249c6401c97109548c2c2a07ec1
++       `Blake3` と `Md5` は表の中ではドラフトの項目だが、曖昧さがなく広く実装されている。
++       この型クラスは意図的に部分的である。
++       インスタンスのないアルゴリズムは包むことができず、それに対する `Multihash(digest)` はコンパイルできない。
++       チェックサムにはインスタンスがない。
++       Adler-32 は登録されておらず、CRC-32 と CRC-64 は `multihash` ではなく `hash` として登録されている。
++       仕様が multihash を、コンテンツアドレッシングに適した暗号学的関数のために取っておいているからである。
++       それでもチェックサムを包みたい呼び出し側は、そのコードから `Multihash(code, bytes)` を直接組み立てられる。
+
+@ 0 3 0 1143e71dac8a149c145a26e6b1d06a26
++       `gastronomy.multihash` にある。
++       `.name(code)` は、このライブラリが知っているコードの登録名を返す。
++       アルゴリズムを型として復元できない、デコードされたエンベロープを記述するためのものである。
+
+% 1 1 0 08eb6dd55029eb4e19857a673a9c403d
+
+@ 0 15 0 144a66594dd231cb119709d224319c8e
++   entry .sha1   `0x11`、`sha1`
++   entry .sha2_256   `0x12`、`sha2-256`
++   entry .sha2_512   `0x13`、`sha2-512`
++   entry .sha2_384   `0x20`、`sha2-384`
++   entry .sha2_224   `0x1013`、`sha2-224`：エンベロープの中では2バイトの varint
++   entry .sha384   `0x20`、`sha2-384`。`Sha384` 型のため
++   entry .sha512   `0x13`、`sha2-512`。`Sha512` 型のため
++   entry .blake3   `0x1e`、`blake3`：表の中ではドラフトの項目だが、曖昧さがなく広く実装されている
++   entry .md5   `0xd5`、`md5`：表の中ではドラフトの項目
++   entry .name   このライブラリが知っているコードの登録名、または `Unset`
++       `Multicodec.name(0x12)` は `t"sha2-256"` であり、`0x00` は `identity` である。
++       上の集合の外にあるコードも正当であり `Multihash` で表現できるが、ここでは名前を持たない。
++   entry .apply   `Multicodec[algorithm](code, name)`：独自のアルゴリズムのためのインスタンス
++   entry #code   multiformats の表に登録された、アルゴリズムの multicodec コード
++   entry #name   `sha2-256` のような、アルゴリズムの登録された multicodec 名
+
+@ 0 1 0 0e430fec18785ba81edbff3a018af75c
++ entry .Multihash   自己記述的なダイジェストのエンベロープ：varint のコード、varint の長さ、そしてダイジェストのバイト列
+
+% 1 1 0 1c3bf2963f902a52101a4e90c617d361
+
+@ 0 6 0 13e75a94a52afb791a27912caad5d0f2
++       `Multihash` は multiformats のエンベロープ `<varint code><varint length><digest bytes>` である。
++       これに包まれたダイジェストは、当事者がアルゴリズムについて帯域外で合意することなく境界を越える。
++       コンテンツアドレス型のストア、IPFS、IPLD、libp2p、`did:key` がやり取りするのはこれである。
++       型付きのダイジェストから `.apply` で組み立てられ、その `Multicodec` がコードを供給するので、エンベロープがダイジェストを計算したもの以外のアルゴリズムを主張することは決してない。
++       バイト列からは `.parse` で読み戻す。
+
+% 2 1 0 1068647e293210c907edba6e35557941
+
+% 3 1 0 1c58b78c9ce43287048338e421a7943c
+
+% 4 1 0 078b35135240dde50631db12d1de1b37
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0922a227fdd14a120160048e7d9057eb
+
+% 0 1 0 0012f465320673dd11788c6d28d9afc3
+
+% 0 1 0 0b697319f6a2b04e13ed46ad2d3958c9
+
+% 0 1 0 149505c7475cfc6a1ac922fe7ab88942
+
+% 1 1 0 1469907721a99e0a0035f509a64fa72c
+
+@ 0 6 0 1482f0e94bc275f01acd31f062e99a5e
++       `#code` は gastronomy の `Algorithm` ではなく、ただの `Int` である。
++       受け取ったエンベロープはこのライブラリが計算できない関数を名指しすることがあり、そのような値はエラーではなく、表現可能（比較でき、転送できる）である。
++       コードが既知のときは `#algorithm` がそれを名指しする。
++       ダイジェストの長さは明示的なので、切り詰められたダイジェストも正当なエンベロープである。
++       二つの multihash は、コードとバイト列が等しいときに等しい。
++       varint は仕様の符号なし LEB128 であり、9グループが上限である。
++       `gastronomy.multihash` にある。
+
+% 0 1 0 125b14230ef75a221afc63a7bfa8e086
+
+% 1 1 0 1fdb34207719c1011f6d3a71d58a5126
+
+@ 0 17 0 17def87615291044062cfd1901e74f18
++   entry .apply   `Multihash(digest)`：型付きのダイジェストをそのアルゴリズムのコードで包む。`Multihash(code, bytes)` は生の形
++       `Multihash(digest)` は、ダイジェストのアルゴリズムが `Multicodec` であることを必要とし、それは `Digest in algorithm` 型から解決される。
++       そのため登録されたコードのないアルゴリズム（チェックサム）はコンパイルできない。
++       ケースクラスのコンストラクター `Multihash(code, digest)` は、このライブラリが知らないアルゴリズムや切り詰められたダイジェストのために、任意のコードと任意のバイト列を取る。
++   entry .parse   バイト列からエンベロープを読む。不正なものには `Multihash.Error` を発生させる
++       コードと長さの varint をデコードし、その後ろからちょうど `length` バイトを取る。
++       宣言された長さは後続のバイト列と一致しなければならない。
++       少なければ `Reason.Truncated`、多ければ `Reason.Trailing` である。
++       どちらも整った形に見えながら、何とも等しくならないからである。
++       9グループを超えて続く varint は `Reason.Oversize` である。
++       `Tactic[Multihash.Error]` が必要である。
++   entry .Reason   エンベロープを読めなかった理由：`Truncated`、`Trailing`、`Oversize`
++       `Truncated`：_the data end before the declared digest length_（または varint が完結する前）。
++       `Trailing`：_bytes remain after the declared digest length_。
++       `Oversize`：_the varint exceeds the nine groups the specification permits_。
++       この enum はそれらのメッセージを持つ `Communicable` であり、`Multihash.Error` がそれを埋め込む。
++   entry .Error   読めないエンベロープに対して `Multihash.parse` が発生させる
+
+% 1 1 0 026740c0cb3130af14992bcb1eec7ed2
+
+@ 0 12 0 1bc52eb5281e95c211f0945c716c3d60
++         エラー `↯/s.66.1`。詳細番号は `Reason` の序数である：_the multihash could not be read because `reason`_。
++         reason は `Multihash.Reason` のメッセージのいずれかである。
++     entry #reason   `Multihash.Reason` のどれが当てはまるか
++   entry #code   アルゴリズムの multicodec コード。`Int` として
++       このライブラリが知っているかどうかにかかわらず、varint が保持できる任意のコードである。
++       既知のものは `#algorithm` が名指しする。
++   entry #digest   ダイジェストのバイト列。長さはエンベロープが宣言したとおり
++   entry #algorithm   `sha2-256` のようなコードの登録名。未知なら `Unset`
++       `Multicodec.name(code)`：このライブラリが知らない関数を名指しする、デコードされたエンベロープは、コードとバイト列を保ち、単に名前を持たない。
++   entry #serialize   バイト列としてのエンベロープ：varint のコード、varint の長さ、ダイジェスト
++       保存または送信されるものである。
++       `Multihash.parse` がそれを読み戻し、両者は往復する。

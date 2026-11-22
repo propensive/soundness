@@ -1,0 +1,55 @@
+orthant 2 language
+
+% 0 1 0 0bce2f7b5838d1170aee00a2af4f94e3
+
+@ 0 1 0 0bfb679f9dbfa11712bb259b8a1897be
++ Levée lorsqu'Exoskeleton ne parvient pas à installer une application en ligne de
++ commande.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 08858a96e01a12451d987418a73a70cd
++ L'installateur d'Exoskeleton écrit des fichiers de complétion pour le shell et des
++ fichiers de lanceur dans l'environnement de l'utilisateur. Cette erreur signale un
++ échec soit à l'étape de découverte (déterminer où écrire), soit à l'étape d'E/S
++ (écrire effectivement). Le message est `the installation failed because
+
+% 0 1 0 04ca5a28474c5b9905df7261499fb1eb
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 168e1f1fb6dbf43300a9ddd1d7e5e513
+
+@ 0 3 0 05d1e0598770261e00122cc642a56416
++ L'installateur n'a pas pu recueillir assez d'informations sur l'environnement —
++ par exemple, une variable d'environnement ou un fichier de configuration du shell
++ requis est absent.
+
+@ 0 1 0 0945954da965167410505a272eccfb45
++ **Exemple.** `[↯/s.109.3.1] the installation failed because it was not possible to get enough information about the install environment`
+
+@ 0 3 0 132610e500e85f91083a325d098b41ad
++ **Résolution.** Lancez l'installateur dans un environnement où les variables et
++ les fichiers de configuration attendus sont disponibles ; consultez la
++ documentation pour connaître les environnements pris en charge.
+
+% 0 1 0 1000f20a954ee16415a6d1cbf885bacf
+
+@ 0 1 0 0ff515532e84277511eda9a1651e17eb
++ Une erreur d'E/S s'est produite lors de l'écriture de l'un des fichiers
++ d'installation.
+
+@ 0 1 0 04aef35cde3027aa059f92bebe85661d
++ **Exemple.** `[↯/s.109.3.2] the installation failed because an I/O error occurred when trying to write an installation file`
+
+@ 0 2 0 1de6b9de53e9ccae0643961730c75902
++ **Résolution.** Vérifiez les permissions du système de fichiers et l'espace libre
++ aux emplacements cibles.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 0ba58c02050968b61af7168a4d7259d1
++ - Source : `lib/exoskeleton/src/core/exoskeleton.Install.scala`
++ - `↯/s.109.1` — le lanceur tmux ne peut pas être exécuté

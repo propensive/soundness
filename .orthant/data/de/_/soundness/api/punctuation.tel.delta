@@ -1,0 +1,1389 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 163e2256c62e436a130065bf0aabf169
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0d2e51cd5d32e15215fd3e547ae3cbc3
++ info   CommonMark-Markdown als typisierter Syntaxbaum, mit Darstellungen als HTML, für das Terminal und als Markdown-Quelltext
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1d1caf39c7678e6d08bfc5d499dc8c0b
++     _Punctuation_ parst [CommonMark](https://commonmark.org/)-Markdown — das Klartext-Prosaformat
++     von Readmes, Kommentaren und Dokumentation — in einen typisierten Syntaxbaum und stellt
++     diesen Baum auf drei Arten dar: als HTML über honeycomb, zurück als Markdown-Quelltext und als
++     formatierten Text für ein Terminal über escapade. Der Parser besteht jedes Beispiel der
++     CommonMark-Spezifikation, sowohl über einem ganzen Text als auch, wenn derselbe Text als
++     Stream Zeichen für Zeichen ankommt.
+
+@ 0 8 0 196d8f035a7b432115cbe6b531a9883c
++     Der Baum hält die zwei Ebenen von Markdown in den Typen auseinander. Die **Block**-Struktur —
++     Überschriften, Absätze, Listen, Blockzitate, Codeblöcke, thematische Umbrüche und rohe
++     HTML-Blöcke — ist die Aufzählung `Layout`, und die **Inline**-Struktur — Text, Hervorhebung,
++     starke Hervorhebung, Code-Spans, Links, Bilder, Zeilenumbrüche und Inline-HTML — ist die
++     Aufzählung `Prose`. Ein `Markdown`-Wert hält als sein `Topic` fest, welche er enthält: Ein
++     `Markdown of Layout` ist ein ganzes Dokument und ein `Markdown of Prose` eine Folge von
++     Inline-Inhalt, und die beiden können nicht verwechselt werden. Jeder wird zu der Art von HTML
++     dargestellt, die an seiner Stelle gültig ist: Flow-Inhalt für ein Dokument,
++     Phrasing-Inhalt für Prosa.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1cfd4d01eab56c010506e2970721145a
+
+% 0 1 0 014d7960b58e42670a590831d6739cc9
+
+% 0 1 0 1b6facd8afdb8834045e991450da4068
+
+% 0 1 0 0cdd779ece1c6f0905454deef6180f13
+
+% 0 1 0 10c1d7dd9c7e4c100ebd8d5fde93a249
+
+% 0 1 0 006a5b215609fb6c1cec890af24a6f38
+
+% 1 1 0 1fb7d2d0ecb29ffb0e06dae9bbafa158
+
+@ 0 5 0 11da16ddb043baf818585ea96d7f4fa8
++     `Parser.parse` ist der Einstieg, aus einem `Text`, einer `Chain[Text]`, einem
++     `Iterator[Text]` von Chunks oder einem `Stream[Text]` aus zephyrine, und weil
++     `Markdown of Layout` `Aggregable by
++     Text` ist, liest sich ein Dokument auch direkt aus jeder Quelle mit
++     `read[Markdown of Layout]`. Das Parsen ist total: Es gibt keinen Parse-Fehler, da jeder Text
++     irgendein Markdown-Dokument ist und ein Markdown-Dokument keinen Begriff von Syntaxfehlern
++     kennt.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 133c778a98e02623005b8062066358c5
+
+% 1 1 0 1356362cd67f75301892394897711388
+
+% 2 1 0 010f59c0289ac35b0475c68764d71583
+
+% 3 1 0 11ba2fcd656ad67814416ef7130fd28b
+
+% 5 1 0 11c8141074f6ece81f007fdd32edcad0
+
+% 6 1 0 01a58a7507073b751257e95557211f5a
+
+% 0 1 0 0b58d060709c6819145c01a2c7a7ac78
+
+% 0 1 0 1d1e4ef816a233e0180edbfac1d1d6eb
+
+% 0 1 0 0e80fa514942fa0c0f10e272624f1666
+
+% 0 1 0 05cfc9819dc0b08e02f355ca084885c5
+
+% 0 1 0 1eb9bfbccae4270f11693c7478645a38
+
+% 0 1 0 139de6d904f3bd7117766ccaeaa80b80
+
+% 1 1 0 07505e52e43166c706f3433165e48624
+
+% 2 1 0 1d192ed7910a01600fd268a5ab01362e
+
+% 3 1 0 0ed21f15dc3debba11ad67ea99026eb2
+
+% 5 1 0 143fa81993e538f90bf123c05b32ad9e
+
+% 6 1 0 1af46bb26884824817213ce741b5a780
+
+% 0 1 0 13c52e49abd80da604e4ebf74a2d76cf
+
+% 0 1 0 0793583a3df15cde0dc7bda0b3947f67
+
+% 0 1 0 0f6c217ddc16a30918decfcde53010ed
+
+% 0 1 0 1fe7aa168209db4513e35b9ab8cf584f
+
+% 0 1 0 16a791a15c88fc570d2381fbdbe26c4d
+
+% 0 1 0 10526702cb02284c16e3f9b45890d138
+
+% 0 1 0 1baab1c5f74a74b80dfb597d14c855d5
+
+% 0 1 0 14721c54896d45ee0afe785f83e16217
+
+% 1 1 0 006671ce5024abe100b846203ca4dea7
+
+% 2 1 0 192d46ea14d5797f00d31430c6ec2fdb
+
+% 3 1 0 1a41c8dd85dd2b0c021e5c06295db740
+
+% 0 1 0 15d0d3ab74c4e4a80e144675765b1e80
+
+% 2 1 0 0002b31e18584b1201c4729854f4f672
+
+% 3 1 0 171f5a23ad05768a047ee9d90f72f199
+
+% 0 1 0 06c7d239df96ff0a0f58a4e7872ffcbf
+
+% 0 1 0 1dcfb0b61070de6d0078ee90ed5398ff
+
+% 0 1 0 0c4c94039d93a33703371c50808fb6e6
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 1 0 087fd13eaa7cbd931588927c1a85c2f3
++     Die Bibliothek ist danach in Komponenten aufgeteilt, wovon jede abhängt:
+
+@ 0 13 0 1a8356864e7f993606cb5610fde699f9
++     - `punctuation.core` — `Markdown`, `Layout`, `Prose`, `Parser`, `Formattable` und
++       `Translator`, die HTML-`Renderable`-Givens, die `Showable`-Givens, die Markdown-Quelltext
++       zurückschreiben, das `Aggregable`-Given, das ein Dokument aus einem Stream liest, und die
++       Auswahlpakete `formatting` und `construables`. Sie hängt von honeycomb ab und ist
++       plattformneutral.
++     - `punctuation.ansi` — der Terminal-Renderer: `Renderer`, `MarkdownPalette`,
++       `TeletypeFormattable`, die Erweiterung `terminal`, das Given `markdownPrintable` und das
++       Auswahlpaket `teletypeFormattables`. Sie hängt von escapade, polysyllabic (für die
++       Silbentrennung an Umbruchstellen), tessellate (für breitenbewussten Zeilenumbruch) und
++       harlequin (für Codeblöcke mit Syntaxhervorhebung) ab und ist daher nur für die JVM.
++     - `harlequin.md`, Teil der Bibliothek harlequin, steuert diesem Paket das Paket `formattables`
++       bei: `scalaFormattable` und `javaFormattable` heben die Syntax von umzäunten `scala`- und
++       `java`-Codeblöcken hervor, wenn ein Dokument als HTML dargestellt wird.
+
+@ 0 5 0 0c2680c0beda68601f5120bc551e5e28
++     Alles wird in das Umbrella `soundness` exportiert. Die Auswahlpakete — `formatting`,
++     `construables`, `teletypeFormattables` und `formattables` — enthalten Givens, die über den
++     Namen importiert werden, da `import soundness.*` (wie jeder Wildcard-Import) keine Givens
++     importiert; die Givens, die ein Leser ohne Import braucht, etwa
++     `Markdown.Formatting.unbounded` und `MarkdownPalette.default`, liegen in Begleitobjekten und
++     werden über den impliziten Geltungsbereich aufgelöst.
+
+@ 0 5 0 1ead496357f1edec1d3576b91766d253
++     Ein Dokument als HTML darzustellen (`html`), braucht keine Importe; es als Quelltext
++     zurückzuschreiben (`show`), bricht Absätze bei der Breite der `Markdown.Formatting` im
++     Geltungsbereich um, die unbegrenzt ist, sofern nicht `Markdown.Formatting.bounded(columns)`
++     gegeben ist; und es für ein Terminal darzustellen (`terminal`), trennt Wörter am Zeilenende
++     nach der `Hyphenation` im Geltungsbereich, die nichts trennt, sofern nicht eine wie
++     `hyphenations.englishHyphenation` importiert ist.
+
+% 0 1 0 125075ad1466b9bb03be953d478df68b
+
+% 0 1 0 1881a547a0c70ca31d082c924d8e5e96
+
+% 0 1 0 0604450104c2f7a50a4b9b8bdaad96ff
+
+% 0 1 0 1e4f8e15698691601125ff3a2c6afd09
+
+% 0 1 0 048c1865be468d2f095d1b4258f0708b
+
+% 0 1 0 16aefb07b432163d12c25be790a16380
+
+% 0 1 0 1ace33d1615ce6db0e2bbb5380b8da2f
+
+@ 0 1 0 0821979f77af5db714468a68e01d56fe
++ entry .Markdown   ein geparstes Markdown-Dokument oder eine Folge von Inline-Inhalt: eine Liste von Knoten und die Link-Referenzen
+
+% 1 1 0 172e16d54a4210770b01668fb470ff25
+
+@ 0 6 0 0e9594254fc47b4f1fa6511bd731dcb2
++       Ein `Markdown`-Wert ist eine Liste von `#children`, jedes ein `Markdown.Node`, und die
++       `#linkRefs` — die aus der ganzen Eingabe gesammelten Definitionen
++       `[label]: destination "title"` —, die der Parser bereits in die Links aufgelöst hat, die sie
++       verwendet haben. Sein Typ-Member `#Topic` sagt, welche Art von Knoten er enthält, und daran
++       werden die zwei Arten von Markdown unterschieden: Ein `Markdown of Layout` ist ein ganzes
++       Dokument, dessen Kinder Blöcke sind, und ein `Markdown of Prose` ist eine Folge von
++       Inline-Inhalt.
+
+@ 0 3 0 1fe422a985e157d905abdc90a2be3574
++       Dokumente kommen aus `Parser.parse`, aus `read[Markdown of Layout]` auf einer beliebigen
++       streambaren Quelle (`.aggregable`) oder aus `.apply` über von Hand gebauten Knoten;
++       Inline-Folgen kommen aus `Markdown(prose*)`.
+
+% 2 1 0 18290a653716e5ee1587982aa559cdc8
+
+% 3 1 0 0ea7bba2f66afc4104eef6850b436288
+
+% 4 1 0 1f0cd60f58a41bf512d3e5d3988fa721
+
+% 0 1 0 1892fca24b7a22c203ef3243ce16a523
+
+% 0 1 0 1eed2b1ac2a33bca1c559dfdb37572c5
+
+% 0 1 0 190cf8023fbb63b217c5d40fd6120664
+
+% 0 1 0 1e9b8fbaffe7f4930529f9a8656a4fb6
+
+% 0 1 0 021e74f18b05205f16c5882318cdff12
+
+% 0 1 0 1646bfebe31b49c91bb23a15d1cead1b
+
+% 1 1 0 17e0c87320a63d150d76e9dff60667dc
+
+@ 0 7 0 170a337cd00593751ae6dd6851e17b63
++       Auf jedem `Markdown` sind drei Darstellungen verfügbar. `html` (der `Renderable` aus
++       honeycomb, über `.layout` und `.prose`) liefert `Html of Flow` für ein Dokument und `Html of
++       Phrasing` für Prosa, sodass jedes an seiner Stelle wohlgeformt ist; `show`
++       (`.layoutShowable` und `.proseShowable`) schreibt CommonMark-Quelltext, der sich wieder zu
++       einem gleichen Baum parsen lässt, umbrochen bei der Breite der `Markdown.Formatting` im
++       Geltungsbereich; und `inspect` (`.inspectable`) zeigt den Baum selbst, Knoten für Knoten, mit
++       der Zeile, aus der jeder Block stammt. In `punctuation.ansi` stellt `terminal` ein Dokument
++       für ein Terminal dar.
+
+@ 0 2 0 05fcd2d75ba52b1a0e8f427bb45e9014
++       Zwei `Markdown`-Werte sind gleich, wenn ihre Kinder gleich sind: Die Link-Referenzen spielen
++       keine Rolle, da sie bereits in den Baum aufgelöst wurden.
+
+% 1 1 0 15ef6641842cde991c988e3e7fddbdbb
+
+% 1 1 0 0219881f917597520ab5f5cd33db728d
+
+% 0 1 0 050a5805c86d82211552b9f4177417d9
+
+% 1 1 0 0d7eb9ae4133c16b03f248f12675553f
+
+@ 0 1 0 046dc419bbe3f60704fc16f3415a6207
++   entry .Formatting   wie ein Dokument als Quelltext zurückgeschrieben wird: die Spalte, an der Absätze umbrechen
+
+% 1 1 0 0a67acc44161e04b179dc403a5e630a7
+
+@ 0 7 0 0a04af1511b4f64f057d1eb9119ce63b
++         Der Kontextwert, den `show` auf einem `Markdown` heranzieht. Seine eine Einstellung ist
++         `#width`, die Spalte, an der Absatztext wortweise umbrochen wird, oder `Unset`, um jeden
++         Absatz auf einer einzigen Zeile zu lassen. Das Given `.unbounded` des Begleitobjekts ist
++         der Standard, im impliziten Geltungsbereich, sodass `show` ohne Import funktioniert; eine
++         begrenzte Formatierung, `Markdown.Formatting.bounded(columns)`, wird als lokales Given
++         gebunden, wo umbrochene Ausgabe gewünscht ist. Derselbe Standard ist
++         `formatting.unboundedMarkdownFormatting`, zum Import über den Namen, um eine begrenzte in
++         einem umschließenden Geltungsbereich zu überschreiben.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 0c873eaf7edd697d1e942ce792459d64
+
+% 0 1 0 02171808f66c8b19130ea33dd020f46a
+
+% 0 1 0 1bac8baa5acbe6d305ff0039830c895b
+
+% 0 1 0 160a4b682efe8d69167c47b3e27be515
+
+% 0 1 0 154a3a151942b7391720ab81cbadd5ed
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 16 0 107bedf61c2d78641c86e1974e7548e3
++         Der Umbruch ändert nur den Leerraum zwischen Wörtern — ein Softbreak ist für den Parser
++         so oder so ein Leerzeichen —, daher parst ein umbrochenes Dokument zum selben Baum wie
++         sein nicht umbrochener Quelltext. `Markdown.Formatting` ist eine `Formatting` aus
++         zephyrine und steht daher neben den Formatierungswerten der anderen Serialisierer.
++     entry .apply   eine Formatierung mit der gegebenen Breite, oder `Unset` für keinen Umbruch
++     entry .bounded   eine Formatierung, die Absätze an einer Spalte umbricht: `Markdown.Formatting.bounded(80)`
++     entry .unbounded   das Standard-Given der Formatierung: Absätze bleiben auf einer Zeile
++         Über das Begleitobjekt im impliziten Geltungsbereich, sodass `markdown.show` keinen Import
++         braucht. Derselbe Wert ist `formatting.unboundedMarkdownFormatting`, zum Import über den
++         Namen, um eine begrenzte Formatierung in einem umschließenden Geltungsbereich zu
++         überschreiben.
++     entry #width   die Umbruchspalte, oder `Unset` für keinen Umbruch
++   entry .Node   der gemeinsame Obertyp von `Layout` und `Prose`
++       Ein offener Trait, den die zwei Aufzählungen erweitern, und die obere Schranke des `Topic`
++       eines `Markdown`. Ein `Markdown` ist normalerweise ein `Markdown of Layout` oder ein
++       `Markdown of Prose`; ein Knoten, der keines von beiden ist, wird als zitiertes `toString`
++       inspiziert.
++   entry .LinkRef   eine Link-Referenz-Definition: `[label]: destination "title"`
+
+% 1 1 0 1c11433350cbb87513cf1e57be01f797
+
+@ 0 14 0 0a27023d6ffecb1d0cd8974a110d5ae6
++         Eine Link-Definition im Referenzstil, wie der Parser sie aus der Eingabe gesammelt hat.
++         Die Definitionen, die ein Dokument deklariert, werden in `Markdown#linkRefs` aufbewahrt,
++         nachdem die Links, die auf sie verwiesen, aufgelöst wurden — eine Referenz kann vor ihrer
++         Definition erscheinen, weshalb ein gestreamtes Dokument erst am Ende seiner Eingabe
++         vollständig ist —, und `show` schreibt sie am Ende des Dokuments zurück.
++     entry #label   die Beschriftung, unter der die Referenz nachgeschlagen wird, wie geschrieben
++     entry #title   der Titel des Links, oder `Unset`, wenn die Definition keinen angab
++     entry #destination   die URL, für die die Beschriftung steht
++   entry .aggregable   liest ein `Markdown of Layout` aus einem beliebigen Text-Stream
++       Das `Aggregable by Text`-Given, mit dem sich ein Dokument aus einer Datei, einer Ressource
++       oder jeder anderen streambaren Quelle mit `read[Markdown of Layout]` lesen lässt und auf dem
++       `construables.markdownConstruable` aufbaut. Es ist bedingungslos, da das Parsen total ist,
++       und sein Streaming-Pfad parst die Chunks, während sie ankommen, und behält nur den Baum und
++       den Text jedes offenen Absatzes, sodass ein langes Dokument nie als Ganzes gehalten wird.
+
+% 2 1 0 1f102ade59f1841d0a68badf69e10357
+
+% 3 1 0 19a422430451992a13bebade372fe8d7
+
+% 4 1 0 0feef228da931bd61c179a9c24470472
+
+% 5 1 0 170155e6af927390116715c84fc2907e
+
+% 0 1 0 108e06a0979d85d607629d1580942cb9
+
+% 0 1 0 07a0b4a530b94bc9134e57c3cb874ea6
+
+% 1 1 0 04e7e4847406203509f6db2b92519555
+
+@ 0 16 0 1c828b68e4cc4aa3141291606cad72a3
++   entry .layoutShowable   schreibt ein Dokument als CommonMark-Quelltext zurück, umbrochen gemäß `Markdown.Formatting`
++       Das `Showable`-Given für `Markdown of Layout`. Die Ausgabe ist nicht der Text, den der
++       Parser konsumiert hat — sie wird aus dem Baum neu erzeugt, mit vorsichtigen
++       Backslash-Escapes vor jedem Zeichen, das sonst ein Inline- oder Block-Konstrukt eröffnen
++       könnte —, aber sie parst zurück zu einem gleichen Baum. Absatztext wird bei der `#width` der
++       `Markdown.Formatting` im Geltungsbereich umbrochen, standardmäßig unbegrenzt, und
++       Link-Referenzen werden nach den Blöcken geschrieben. Es ist über das Begleitobjekt im
++       impliziten Geltungsbereich.
++   entry .proseShowable   schreibt eine Folge von Inline-Inhalt als CommonMark-Quelltext zurück
++       Das `Showable`-Given für `Markdown of Prose`: wie `.layoutShowable`, nur für Inline-Inhalt,
++       sodass `Markdown(Prose.Strong(Prose.Textual(t"x"))).show` `t"**x**"` ist.
++   entry .inspectable   zeigt ein `Markdown` als seinen Baum, Knoten für Knoten, mit der Zeile jedes Blocks
++       Das `Inspectable`-Given, für jedes `Markdown`. Wo `show` wieder Quelltext liefert, der nichts
++       darüber sagt, wie er geparst wurde, liefert `inspect` den Baum in Produktform, und das ist
++       es, was sich ein Programmierer ansieht, um zu sehen, was der Parser aus einer Eingabe
++       gemacht hat: jeden Knoten mit dem Namen seines Falls, seine Felder durch `╱` getrennt, ein
++       fehlendes `Optional` als `○` und jeden Block mit der `Ordinal`-Zeile, in der er begann.
+
+% 2 1 0 0661d2f5d661e60c19dc2505ba347b65
+
+% 3 1 0 1d50e0127fcb7f9a0e489d1f9589fc74
+
+% 0 1 0 1a0d5d5a15c5bf7c15127fc87e7f06cb
+
+% 0 1 0 12e9051621ffa531176f92a3afa7cc0f
+
+% 1 1 0 08d3e7797a1839d71acaa5e951c70b82
+
+@ 0 13 0 0719020a4deef33d00ddf9baa208003e
++   entry .prose   stellt ein `Markdown of Prose` als HTML-Phrasing-Inhalt dar
++       Das `Renderable`-Given, das `prose.html` als `Html of Phrasing` liefert. Text wird zu einem
++       Textknoten, `Emphasis` zu einem `em`, `Strong` zu einem `strong`, `Code` zu einem `code`,
++       `Link` zu einem `a` mit seinem `href` (und `title`, falls vorhanden), `Image` zu einem `img`
++       mit seinem `src`, `alt` (dem reinen Text seines Inhalts) und `title`, `Linebreak` zu einem
++       `br`, `Softbreak` zu einem Zeilenumbruch, und `HtmlInline` wird so durchgereicht, wie es
++       geschrieben wurde. Das Ziel eines Links wird prozentkodiert, wie es die
++       CommonMark-Spezifikation verlangt.
++   entry .layout   stellt ein `Markdown of Layout` als HTML-Flow-Inhalt dar, mit Codeblöcken, die von den `Formattable`s im Geltungsbereich formatiert werden
++       Das `Renderable`-Given, das `document.html` als `Html of Flow` liefert. Überschriften werden
++       zu `h1` bis `h6`, Absätze zu `p`, Blockzitate zu `blockquote`, Listen zu `ul` oder `ol` (mit
++       einem `start`-Attribut, wenn die Liste nicht bei 1 beginnt), thematische Umbrüche zu `hr`,
++       und HTML-Blöcke werden durchgereicht. Die Einträge einer engen Liste enthalten den
++       Phrasing-Inhalt ihrer Absätze direkt, ohne `p`-Elemente; die einer lockeren Liste behalten
++       sie, wie die Spezifikation es sagt.
+
+@ 0 6 0 002a6e89796d492f1d751907b05598d9
++       Ein Codeblock wird nacheinander jedem an der Aufrufstelle sichtbaren `Formattable`-Given
++       angeboten (zusammen als `Every[Formattable]` herbeigerufen), bis eines seinen Info-String
++       akzeptiert; ohne eines, oder wenn keines akzeptiert, wird er zu `pre` und `code`, mit einer
++       `language-…`-Klasse aus dem ersten Wort des Info-Strings. `formattables.scalaFormattable` und
++       `formattables.javaFormattable` (aus `harlequin.md`) sind die Standard-Formatter und werden über
++       den Namen importiert.
+
+% 2 1 0 11f857dcf67b31d80aafde46cb6da17a
+
+% 3 1 0 0e50ee3938277fe61475e90b065dd7da
+
+% 0 1 0 1e0628804613fc050acf27853468e6a3
+
+% 0 1 0 0c86e896cba480360250fe8439b61ed7
+
+% 1 1 0 17ea3943420ae0491481305e3a2d1c60
+
+@ 0 6 0 143ca59efb61c8a31410adc4addd2a9f
++   entry .apply   ein Dokument aus Link-Referenzen und Blöcken, oder eine Inline-Folge aus Prosa
++       `Markdown(linkRefs, layout*)` baut ein `Markdown of Layout` aus einer Liste von
++       `Markdown.LinkRef`s und beliebig vielen `Layout`-Blöcken; `Markdown(prose*)` baut ein
++       `Markdown of Prose` aus Inline-Knoten, ohne Link-Referenzen. So wird ein Baum von Hand
++       konstruiert — um Markdown mit `show` zu erzeugen oder für eine Transformation, die ein
++       geparstes Dokument aus seinen `#children` neu aufbaut.
+
+% 2 1 0 1005bd00244aa29c07ce8d2367c0b933
+
+% 3 1 0 199b7a7fc753f23d03fcfb59fa006b0c
+
+% 0 1 0 1eace010e3e75aa919cd33fd65720ac5
+
+% 0 1 0 17f127cc04ba1587112bda79530f2bb5
+
+% 1 1 0 0f5acc5107ebaaf31b9913f73a437ab2
+
+@ 0 5 0 0356a124c4a00817087ba0ecc30df756
++   entry .sections   teilt ein Dokument an seinen thematischen Umbrüchen in eine Liste von Dokumenten
++       Eine Erweiterung auf `Markdown of Layout`. Die Blöcke zwischen einem `Layout.ThematicBreak`
++       und dem nächsten werden zu einem eigenen Dokument, ohne den Umbruch; das Ergebnis hat ein
++       Dokument pro Abschnitt, jedes ohne eigene Link-Referenzen. Ein Dokument ohne Umbrüche ist
++       ein Abschnitt.
+
+% 2 1 0 182d9366a78d33c013ad0c8dc2f9c451
+
+% 3 1 0 1896f7989dedd0510b775dd6a2ff8f09
+
+% 0 1 0 072838831ece8513061deec45499cdce
+
+% 1 1 0 141d625cde8339781842cdc450724471
+
+@ 0 9 0 13d9f7367a92decc12f3091577a3f049
++   entry #Topic   die Art von Knoten, die dies enthält: `Layout` für ein Dokument, `Prose` für Inline-Inhalt
++       Das Typ-Member, das `Markdown of Layout` und `Markdown of Prose` verfeinern. Es ist durch
++       `Markdown.Node` beschränkt.
++   entry #Domain   ein Beschriftungs-Typ-Member, vom Parser nicht verfeinert
++   entry #linkRefs   die im Dokument deklarierten Link-Referenz-Definitionen
++       Die Definitionen `[label]: destination "title"`, die der Parser gesammelt hat, bereits in
++       die Links aufgelöst, die sie verwendet haben. `show` schreibt sie am Ende des Dokuments
++       zurück; ein `Markdown of Prose` hat keine.
++   entry #children   die Knoten, der Reihe nach: `Layout`-Blöcke für ein Dokument, `Prose` für Inline-Inhalt
+
+@ 0 1 0 070977b51e5ef0650586b8439516a8fb
++ entry .Layout   die Knoten eines Dokuments auf Blockebene: Überschriften, Absätze, Listen, Zitate, Code, Umbrüche, HTML
+
+% 1 1 0 05ff2948a412ffcc1ef554ef7558b7bc
+
+@ 0 4 0 10451648436740f413b23808d754bca4
++       Die Aufzählung der Blockstruktur von CommonMark. Die Kinder eines `Markdown of Layout` sind
++       `Layout`s, und jeder Fall trägt die `Ordinal`-`#line` der Eingabe, in der er begann, sodass
++       ein Werkzeug die Position eines Blocks melden kann, den es beanstandet. Wo ein Block
++       Inline-Inhalt enthält, enthält er ihn als `Prose`-Knoten; wo er andere Blöcke enthält, als
++       `Layout`s.
+
+% 2 1 0 0614544f2f667a440b9db2e53ff1f8d3
+
+@ 3 1 0 14a47d97d4d76f4f131af70458a3189e
++       column  Fall
+
+% 0 1 0 101c6cb80b711a8410836fcf6c979bb6
+
+@ 0 9 0 14a9e7d796c57abe0fafd5bc6f555336
++       column  Anmerkungen
++       row  `BlockQuote(line, layout*)`  ein `>`-Zitat  enthält Blöcke
++       row  `OrderedList(line, start, tight, delimiter, items*)`  eine nummerierte Liste  `start` ist die Nummer des ersten Eintrags; `tight` gibt an, ob die Einträge ohne Absatzhüllen dargestellt werden (keine Leerzeile zwischen ihnen); `delimiter` ist der `.` oder die `)` nach jeder Nummer; jeder Eintrag ist eine `List[Layout]` von Blöcken
++       row  `BulletList(line, tight, items*)`  eine Liste mit `-`, `*` oder `+`  Einträge wie bei `OrderedList`
++       row  `CodeBlock(line, info, content)`  ein umzäunter oder eingerückter Codeblock  `info` ist der an Leerraum zerlegte Info-String des Zauns (`List(t"scala")` für einen `scala`-Zaun, `Nil` für einen eingerückten Block); `content` ist der rohe Code, mit abschließendem Zeilenumbruch
++       row  `Paragraph(line, prose*)`  ein Absatz mit Inline-Inhalt
++       row  `Heading(line, level, prose*)`  eine ATX- oder Setext-Überschrift  `level` ist als `1 | 2 | 3 | 4 | 5 | 6` typisiert
++       row  `ThematicBreak(line)`  eine Linie aus `---`, `***` oder `___`
++       row  `HtmlBlock(line, html)`  ein Block aus rohem HTML  so aufbewahrt, wie geschrieben
+
+% 1 1 0 004a64aa95ddbd2f0b5db69c78eb471d
+
+% 3 1 0 0b5f5e60e225ea76047a108f6a639b24
+
+% 4 1 0 10bb3f51eb2e53ef165e559b12ac594c
+
+% 0 1 0 06c60a3ad9cd56ab1fc89af16fc6882d
+
+% 0 1 0 0a93959bf9bfa3a1179825f518772f5c
+
+% 0 1 0 1e3cb54be9f113951b32d3bfd500b248
+
+% 1 1 0 01227ac98ca263100b9265518a8e97b6
+
+@ 0 2 0 0a44d33a5352af650b4bfb3bdb5edac9
++       Ein `Layout` wird als Teil eines `Markdown of Layout` (über `Markdown.layout`) zu
++       HTML-Flow-Inhalt dargestellt; innerhalb seines Dokuments wird es als Name seines Falls und
++       seine Felder inspiziert.
+
+% 1 1 0 0365c25a00defcb509acbab1cbe337d9
+
+% 1 1 0 154916bdd9da75011929a562ea4aa420
+
+@ 0 8 0 1da316b6796f5b000f274dbaefee0d64
++   entry #line   die Zeile der Eingabe, in der dieser Block begann, als `Ordinal`
++       `Prim` für die erste Zeile. Zeilen werden allein an `\n` gezählt, und ein `\r` davor bleibt
++       Teil der Zeile. Zwei Bäume, die sich nur in ihren Zeilen unterscheiden, sind gleich, da das
++       `Markdown`, das sie enthält, Kinder nach Wert vergleicht.
++   entry #children   der Inline-Inhalt eines Absatzes, einer Überschrift oder eines Blockzitats; `Nil` für andere Blöcke
++       Ein `Paragraph` oder `Heading` liefert seine eigene `Prose`; ein `BlockQuote` liefert den
++       Inline-Inhalt der Blöcke, die es enthält, abgeflacht; eine Liste, ein Codeblock, ein
++       thematischer Umbruch oder ein HTML-Block liefert `Nil`, da sein Inhalt entweder aus Blöcken
++       besteht oder überhaupt keine Prosa ist.
+
+@ 0 1 0 03827b57afcc1dfc1f419ea2ad761b49
++ entry .Prose   die Inline-Knoten von Markdown: Text, Hervorhebung, Code-Spans, Links, Bilder, Zeilenumbrüche, HTML
+
+% 1 1 0 059d3cac8c8b59920780b0a28cc35534
+
+@ 0 2 0 0d7de7166ed5c0bd130163f81de1a58d
++       Die Aufzählung der Inline-Struktur von CommonMark, die ein `Layout.Paragraph` oder
++       `Layout.Heading` enthält und ein `Markdown of Prose` auflistet. Ihre Fälle sind:
+
+% 2 1 0 1e71c18a17296cb41eeb3b8657b8aee6
+
+@ 3 1 0 1f1914448ed975b40061dbb58c570cff
++       column  Fall
+
+% 0 1 0 0066ff9f5c0d5c6e027be8f64cfcfdcf
+
+@ 0 10 0 1797abe8d5ab4a7c1cfa6464c98c6243
++       column  Anmerkungen
++       row  `Textual(text)`  reiner Text  Escapes und Entity-Referenzen bereits decodiert, sodass `\*` zu `*` und `&amp;` zu `&` wird
++       row  `Softbreak`  ein Zeilenende innerhalb eines Absatzes  wird in HTML als Zeilenumbruch und in einem Terminal als Leerzeichen dargestellt
++       row  `Linebreak`  ein harter Umbruch: zwei abschließende Leerzeichen oder ein Backslash vor dem Zeilenende  wird als `br` dargestellt
++       row  `Code(code)`  ein Code-Span in Backticks
++       row  `Emphasis(prose*)`  `*text*` oder `_text_`
++       row  `Strong(prose*)`  `**text**` oder `__text__`
++       row  `Link(destination, title, prose*)`  ein Inline-, Referenz- oder automatischer Link  die Referenz bereits zu ihrem Ziel und optionalen Titel aufgelöst
++       row  `Image(destination, title, prose*)`  `![alt](src "title")`  sein Inhalt ist der Alternativtext
++       row  `HtmlInline(html)`  ein rohes Inline-HTML-Tag  so aufbewahrt, wie geschrieben
+
+% 1 1 0 00f3794d0050f8cf15a1e497291511ec
+
+% 3 1 0 1b0a8df79ced085409b27c4b8dc83ddb
+
+% 4 1 0 06381a0e6bd9210013d6027663752284
+
+% 0 1 0 0db3f4bd5dc4c2b11a625272e9287a7e
+
+% 0 1 0 1aca8ee6b7e0f063103c5bd318126b4a
+
+% 0 1 0 0e95a8206f713130052d41910c6cea66
+
+% 0 1 0 122d208d308d74a40582fd00c15bce90
+
+% 1 1 0 04dcc4deb839c0840ca72d119c82d948
+
+@ 0 2 0 0409ceb4ac5a915609d71ae425822852
++       Eine Folge von `Prose` wird als `Markdown of Prose` (über `Markdown.prose`) zu
++       HTML-Phrasing-Inhalt dargestellt und mit `show` zu Quelltext.
+
+% 1 1 0 0c3c8de278e8c6cc051d831908e7fb15
+
+% 2 1 0 15bc901c2eed33641329ab536f6efc82
+
+@ 0 3 0 14823812223bbb751efd9696f8f84712
++   entry #children   der Inhalt eines Links oder Bilds; `Nil` für jeden anderen Knoten
++       Nur `Link` und `Image` legen ihren Inhalt hier offen: `Emphasis` und `Strong` halten ihren
++       als Varargs-Feld, abgeglichen als `Prose.Emphasis(prose*)`.
+
+@ 0 1 0 025f74728648dc640220fcc66e4880b2
++ entry .Parser   der CommonMark-Parser: `Parser.parse` aus Text, einer Chain, einem Iterator oder einem Stream
+
+% 1 1 0 00964c9c8488fc2e1ec7b193531a1e62
+
+@ 0 4 0 167f7c9fcf0c25c90ba2fd1b09fe95f7
++       Der Einstiegspunkt zum Parsen. `Parser.parse` nimmt einen ganzen `Text` oder Eingabe in
++       Chunks als `Chain[Text]`, `Iterator[Text]` oder `Stream[Text] over Credit` aus zephyrine
++       (der zusätzlich ein `Buffering` braucht) und gibt ein `Markdown of Layout` zurück. Das Parsen
++       ist total — jeder Text ist irgendein Dokument —, daher wird nichts ausgelöst, und keine
++       `Tactic` wird gebraucht.
+
+% 2 1 0 0f7f3afe063030230ff470fa61d8edc1
+
+% 3 1 0 046cdf2f004e36861bbc6e472a172a49
+
+% 4 1 0 10a6954db0415f7618336edb17b2dc15
+
+% 5 1 0 0d30b557e7198eb31c54452fb4144859
+
+% 0 1 0 01d71f8508e54188026a1e7c0017d4e5
+
+% 0 1 0 161d62f2ad2f10da09dd0898bb343896
+
+% 1 1 0 10ce28879aafd64b0e96d676633c81a5
+
+@ 0 8 0 11b2f17aadf9821a0c6e566e1a725522
++       Die Formen in Chunks konsumieren ihre Eingabe inkrementell, Zeile für Zeile, und behalten
++       nur den Baum und den Text jedes offenen Absatzes, sodass ein langes Dokument geparst wird,
++       ohne als Ganzes gehalten zu werden. Das Ergebnis ist trotzdem ein ganzer Baum: Eine
++       Link-Referenz kann nach dem Link definiert werden, der sie verwendet, daher ist kein Block
++       endgültig, bis die Eingabe endet. Die ganze CommonMark-Konformitätssuite besteht über den
++       Streaming-Einstieg mit einem Zeichen pro Chunk, sodass ein an beliebiger Stelle geteiltes
++       Dokument so geparst wird wie der ganze Text. Ein Dokument mit `read[Markdown of Layout]`
++       (`Markdown.aggregable`) direkt aus einer Quelle zu lesen, verwendet denselben
++       Streaming-Parser.
+
+@ 0 2 0 1e4d412a22b096ed1fd358ff2a3ca476
++       Zeilen werden allein an `\n` geteilt; ein `\r` davor bleibt in der Zeile. Tabulatoren gelten
++       für die Einrückung als Vorrücken zur nächsten Grenze von vier Spalten, wie die
++       Spezifikation es sagt.
+
+% 1 1 0 0424cdca566f39da031d43af3b8002e8
+
+% 2 1 0 01a807ce5cdc72430bfe5dfc71926691
+
+@ 0 6 0 0e521a40d6f21f500418e93bac050e73
++   entry .parse   parst Markdown zu einem `Markdown of Layout`, aus Text oder aus Chunks
++       Vier Überladungen: `parse(text: Text)`, `parse(chain: Chain[Text])`,
++       `parse(iterator: Iterator[Text])` und `parse(stream: Stream[Text] over Credit)(using
++       Buffering)`, deren letzte ihren Stream konsumiert. Die Textform sucht mit der vektorisierten
++       Zeilensuche der JVM und ist für bereits im Speicher liegenden Text am schnellsten; die
++       anderen lesen inkrementell. Alle vier erzeugen für dieselbe Eingabe denselben Baum.
+
+@ 0 1 0 00d0ee77698e59df1f22cd5722a09568
++ entry .Formattable   stellt einen umzäunten Codeblock als HTML dar, für die Sprachen, die es kennt
+
+% 1 1 0 1e61f81cf644ef0303ba92ffdfc4e8d7
+
+@ 0 7 0 14b75fe82e944a4a1c120f325e3c0ec7
++       Eine Typklasse für die Codeblöcke des HTML-Renderers. Wenn ein `Markdown of Layout`
++       dargestellt wird (`Markdown.layout`), wird jedes an der Aufrufstelle sichtbare
++       `Formattable`-Given in einem `Every[Formattable]` gesammelt, und jeder `Layout.CodeBlock`
++       wird ihnen nacheinander angeboten: `#format` erhält den Info-String des Blocks (an Leerraum
++       zerlegt) und seinen Inhalt und gibt das zu verwendende HTML zurück oder `Unset`, um
++       abzulehnen, worauf das nächste gefragt wird, und schließlich wird der Block zu einfachem
++       `pre` und `code`. `Self` ist der Beschriftungstyp der Sprache, sodass ein Given als
++       `"scala" is Formattable` gelesen wird.
+
+@ 0 4 0 18545ba0fa930d3910c09d2c139b5803
++       Die Standardinstanzen liegen im Paket `formattables`, beigesteuert von `harlequin.md`:
++       `scalaFormattable` und `javaFormattable` heben Scala und Java über den Tokenizer von
++       harlequin hervor und werden über den Namen importiert. Ein `Formattable` für eine andere
++       Sprache ist ein Given dieses Traits im Geltungsbereich, wo `html` aufgerufen wird.
+
+% 2 1 0 079e83c6531907df13928ae15b2fb801
+
+% 3 1 0 0e3ad2dd00dbf79215f9230b44c6e79e
+
+% 0 1 0 021a74b94d26ea1b106ad53969623773
+
+% 0 1 0 0105e740c7c7d39d193d13d608755a48
+
+% 0 1 0 1ed9b93ad6fa3f2f05d351571bcb609e
+
+% 1 1 0 111161250b6aa10d1e601566619c3f3b
+
+@ 0 1 0 066a3e06a5965428171f51bfb689d192
++       Das Gegenstück des Terminal-Renderers ist `TeletypeFormattable`, in `punctuation.ansi`.
+
+% 0 1 0 0a5f72de21bf013213391b46f04b22d7
+
+% 1 1 0 1e400b5c5a333a7e11da512a43f04cb2
+
+@ 0 6 0 1eefe6a94b7864b112e971719ff2dd12
++   entry #Self   der Beschriftungstyp der Sprache, die dieses Formattable behandelt
++   entry #format   das HTML für einen Codeblock mit diesem Info-String und Inhalt, oder `Unset`, um abzulehnen
++       `language` ist der an Leerraum zerlegte Info-String, sodass ein mit ` ```scala title `
++       eröffneter Block `List(t"scala", t"title")` liefert und ein eingerückter Block `Nil`;
++       `content` ist der Code mit seinem abschließenden Zeilenumbruch. Eine Implementierung prüft
++       das erste Wort und gibt für eine Sprache, die sie nicht behandelt, `Unset` zurück.
+
+@ 0 1 0 12ec20c97f69e21b1448dc6a6215b572
++ entry .Translator   eine Strategie zum Übersetzen von `Markdown`-Knoten in HTML, für einen eigenen Renderer
+
+% 1 1 0 18f222d44d4ebbcb17ac71bb2ff7d8e6
+
+@ 0 7 0 13785cc1467d27470717ae434bed699e
++       Eine Schnittstelle für einen Renderer, der eine Liste von `Markdown`-Werten auf
++       HTML-Flow-Inhalt (`#translate`) und eine Folge von Inline-Inhalt auf Phrasing-Inhalt
++       (`#phrasing`) abbildet. Nichts in der Bibliothek ruft sie auf: Die Standard-HTML-Darstellung
++       sind die `Renderable`-Givens `Markdown.layout` und `Markdown.prose`, und der Trait ist ein
++       Vertrag, den die eigene Übersetzung eines Programms implementieren kann, damit ihre Aufrufer
++       sie einsetzen können.
++   entry #translate   HTML-Flow-Inhalt für eine Liste von `Markdown`-Werten
++   entry #phrasing   HTML-Phrasing-Inhalt für ein `Markdown of Prose`
+
+@ 0 1 0 010edcf63f720ecc087829350a2e6088
++ entry .formatting   die `Markdown.Formatting` zum Import über den Namen, um Markdown als Quelltext zurückzuschreiben
+
+% 1 1 0 049105a43b00d5fa02bf8a1014c06356
+
+@ 0 7 0 0d4195363da466351c16d8b9033acde9
++       Das Auswahlpaket für `show` auf einem `Markdown`. Sein eines Member formuliert den Standard —
++       kein Umbruch — erneut als benanntes Given, zum Import über eine begrenzte Formatierung, die
++       ein umschließender Geltungsbereich gesetzt hat. Eine begrenzte Breite ist kein Member des
++       Pakets: Sie nimmt einen Parameter und wird daher lokal als
++       `given Markdown.Formatting = Markdown.Formatting.bounded(80)` gebunden.
++   entry .unboundedMarkdownFormatting   Absätze werden jeweils auf eine Zeile geschrieben, wie lang sie auch sind
++       Derselbe Wert wie `Markdown.Formatting.unbounded`, das bereits im impliziten
++       Geltungsbereich ist; dieser Name existiert, um dort importiert zu werden, wo sonst eine
++       begrenzte Formatierung gefunden würde.
+
+@ 0 1 0 13b38d1346703afd0b733ae0cf3e5fbc
++ entry .construables   die Medientyp-Zuordnung, die `text/markdown`-Responses zu einem `Markdown of Layout` macht
+
+% 1 1 0 13bb440d1fe087d61f64b3cf0ca600d4
+
+@ 0 5 0 1ce50ada772719411d8aec2f80a6d9d2
++       Ein Auswahlpaket für den OpenAPI-Client von apoplexy, dessen generierte Operationen einen
++       Response-Body anhand seines Medientyps über die `Construable`-Givens im Geltungsbereich
++       dekodieren. `markdownConstruable` über den Namen zu importieren, ordnet `text/markdown`
++       einem Dokument zu, gelesen über `Markdown.aggregable`.
++   entry .markdownConstruable   `text/markdown` wird als `Markdown of Layout` interpretiert
+
+@ 0 1 0 1cda17469f8c60e80e2bd4835527c88f
++ entry .Renderer   stellt ein Dokument als formatierten Terminal-Text dar: `Renderer.render(markdown, width)`
+
+% 1 1 0 131c21c29a3e7fbd1987e6644f6489e6
+
+@ 0 13 0 1596ada80342d0131bbc33cb0e45e7f7
++       Der Terminal-Renderer in `punctuation.ansi`, den die Erweiterung `terminal` und das Given
++       `markdownPrintable` antreiben. Er macht aus einem `Markdown of Layout` ein `Teletype` aus
++       escapade mit gegebener Spaltenbreite: Überschriften sind fett und farbig, mit einer
++       `━`-Linie unter einer Überschrift der Ebene 1, einer `─`-Linie unter einer Überschrift der
++       Ebene 2 und einem gedämpften `###`-Präfix für die übrigen; Absätze werden bei der Breite
++       umbrochen, wobei breite Zeichen als zwei Zellen gemessen und lange Wörter am Zeilenende
++       über die `Hyphenation` im Geltungsbereich getrennt werden; Hervorhebung ist kursiv und starke
++       Hervorhebung fett; ein Code-Span ist auf einem Hintergrund eingefärbt; ein Link ist
++       unterstrichen, farbig und in einen OSC-8-Hyperlink zu seinem Ziel gehüllt, ebenso ein Bild,
++       das als sein Alternativtext in Klammern gezeigt wird; ein Blockzitat ist hinter einem
++       `▎`-Balken eingerückt; Listeneinträge hängen an einem `•` oder ihrer Nummer; ein
++       thematischer Umbruch ist eine `─`-Linie über die volle Breite; und ein Codeblock ist um zwei
++       Spalten eingerückt, mit Syntaxhervorhebung durch das erste `TeletypeFormattable` im
++       Geltungsbereich, das seine Sprache akzeptiert, oder gedämpft, wenn keines es tut. Blöcke
++       sind durch eine Leerzeile getrennt, die Einträge einer engen Liste nicht.
+
+% 2 1 0 1a88e928a5ab6dd8120acd2cb581bee6
+
+% 3 1 0 1b4382a9850635c50ab71640c41c4c39
+
+% 4 1 0 1fad8e40a257203c11ecd5ae1c0458a6
+
+% 0 1 0 15255cea8bdc7495133393d528ae15ae
+
+% 0 1 0 18d9492a361ec7c316e12c9168e0f11b
+
+% 1 1 0 1458d16819feaa6118d4ba6374be4cd2
+
+@ 0 6 0 1cf93d630124c095031f7babc4fe5a07
++       Die Farben kommen aus der `MarkdownPalette` im Geltungsbereich, deren Standard im
++       Begleitobjekt zu einem True-Color-Terminal auf hellem oder dunklem Hintergrund passt; eine
++       `Hyphenation` ist erforderlich, und der Rückfall des Begleitobjekts trennt nichts, daher wird
++       für englischen Text `hyphenations.englishHyphenation` importiert; und die
++       `TeletypeFormattable`s sind die, die an der Aufrufstelle sichtbar sind, wobei
++       `teletypeFormattables.scalaTeletypeFormattable` und
++       `teletypeFormattables.javaTeletypeFormattable` die beiden Standard-Formatter sind.
+
+% 1 1 0 093e18c2c40d219b1a0b480e986b0ea8
+
+% 1 1 0 1f636b737b305a5a1b47e315b3773f26
+
+% 0 1 0 1175179f3a379bba0841a98adb6ebf8b
+
+% 1 1 0 16b766c2fe22b7e10ea070e1ba789be5
+
+@ 0 1 0 1d1c5feebabc16a510bf89a4a584f4bd
++   entry .render   ein Dokument als `Teletype` der gegebenen Breite, mit Palette, Silbentrennung und Formattables im Geltungsbereich
+
+% 0 1 0 0153df828f5b2bee159fb046c6fd113c
+
+@ 0 4 0 05961a1708ff555803da2be4eda73157
++       MarkdownPalette)`. Die Breite ist in Terminal-Spalten angegeben; der Inhalt eines
++       Blockzitats oder Listeneintrags wird auf das umbrochen, was nach seinem Balken oder Marker
++       bleibt. Das Ergebnis ist ein `Teletype`, dessen `plain` der Text ohne Formatierung ist und
++       dessen `render(termcap)` der Text mit den Escapes ist, die ein Terminal versteht.
+
+@ 0 1 0 13c0d0c57edaf5af073b876076a19eb0
++ entry .terminal   stellt ein Dokument für ein Terminal dar: `markdown.terminal(width = 80)`
+
+% 1 1 0 0e78ebc470b090a1183b87ea2cee97fc
+
+@ 0 5 0 1c092ab47db5f7f203e6e9d32108a6e6
++       Eine Erweiterung auf `Markdown of Layout` in `punctuation.ansi` und der übliche Weg, ein
++       Dokument in einer Konsole zu zeigen: `Renderer.render` mit einer Breite von standardmäßig 80
++       Spalten. Sie braucht eine `Hyphenation` (der Rückfall des Begleitobjekts trennt nichts;
++       für Englisch wird `hyphenations.englishHyphenation` importiert), eine `MarkdownPalette`
++       (vom Begleitobjekt vorbelegt) und die `TeletypeFormattable`s im Geltungsbereich für
++       Codeblöcke.
+
+% 2 1 0 16d1a101b6237c5c184a2529215b1b90
+
+% 3 1 0 1a48b6842a9acb2403c2f267728c6ce2
+
+% 4 1 0 06c629a591d955ba0dcdac38136c3fe9
+
+% 2 1 0 0e180f801c389b92008e87b949c0bda3
+
+% 0 1 0 0a55c2087e3bdd1e009c5ca6ae741001
+
+% 0 1 0 0d3325e1510458cc1566db13c41c9f4a
+
+% 0 1 0 0bb62fce2de1c3eb09ac1c2807aac532
+
+% 1 1 0 1d4cc6c4a9daedb2107ea9d7c9a64516
+
+@ 0 2 0 1787774d7ec2e6b01f8db7f2406d9906
++       Ein Dokument direkt auf das Terminal auszugeben, mit der aus dem `Termcap` des Terminals
++       gelesenen Breite, ist die Aufgabe von `markdownPrintable`.
+
+% 1 1 0 109754ec814619c812648c44a7da04c3
+
+% 1 1 0 083ab43067bd83b00202a5170951a8a5
+
+@ 0 1 0 0f767605befe82150cec68a6e117530e
++ entry .markdownPrintable   gibt ein Dokument auf einem Terminal in der Breite aus, die sein `Termcap` meldet
+
+% 1 1 0 16587193b37e0d2912e6349ceca8daa0
+
+@ 0 7 0 07697856cca0e64807a9897d42d7fd73
++       Das `Printable`-Given für `Markdown of Layout` in `punctuation.ansi`, mit dem ein Dokument
++       direkt auf ein Terminal-`Out` geschrieben werden kann, von `Renderer` in der Breite des
++       `Termcap` im Geltungsbereich dargestellt und durch `Teletype is
++       Printable` aus escapade in ANSI-Escapes umgewandelt. Ein Termcap, das seine Breite nicht
++       kennt (die eingebauten `termcapDefinitions` melden `Int.MaxValue`), stellt mit 80 Spalten
++       dar, statt Linien in der Breite der Ganzzahlen zu zeichnen. Es braucht dieselbe
++       `Hyphenation`, `MarkdownPalette` und dieselben `TeletypeFormattable`s wie `terminal`.
+
+@ 0 3 0 1b8a8a60a476786208fc09ab7f943088
++       Es ist ein Given auf oberster Ebene statt eines Members eines Begleitobjekts, weil sein
++       Subjekt, `Printable`, und sein Thema beide anderswo beheimatet sind; daher wird es über den
++       Namen importiert: `import soundness.markdownPrintable`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 1e68eb373a2ffd470f28c08befbade08
+
+% 1 1 0 18455b578085f0e10295d0b7709162b5
+
+% 2 1 0 01c22748c565f76c0e0ba9a16e1c709c
+
+% 0 1 0 0cdfa7ed1df6857e0042f95ab0f97fad
+
+% 1 1 0 16111dfdef9124f2069d50c81b4d0f35
+
+% 2 1 0 1a13062825d58b710ec4ea52e2563f6b
+
+% 1 1 0 06d4dbf99c41c231049bfe888092bdde
+
+@ 0 1 0 12c23ca9cdb0c6bc1e448ca91575eec1
++ entry .MarkdownPalette   die Farben, die der Terminal-Renderer verwendet, als Case-Klasse mit einem Standard
+
+% 1 1 0 0429fd81a698dac01e08540f1dd76f2f
+
+@ 0 2 0 14e67aea1a08e90e11d70f7be34bef36
++       Sieben 24-Bit-`Chroma`-Farben, jede ein Feld mit einem Standardwert, der so gewählt ist, dass
++       er in einem True-Color-Terminal auf hellem wie auf dunklem Hintergrund lesbar ist:
+
+% 2 1 0 1351be2af8304db8029739b882c0a95f
+
+@ 0 10 0 117d2fdd84ed4ea01154da504b22647e
++       column  Feld
++       column  Färbt
++       column  Standard
++       row  `#heading`  Überschriftentext und die Linien unter Überschriften der Ebenen 1 und 2  `Chroma(0x82, 0xaa, 0xff)`
++       row  `#link`  Linktext  `Chroma(0x80, 0xcb, 0xc4)`
++       row  `#code`  den Vordergrund eines Code-Spans  `Chroma(0xff, 0xcb, 0x6b)`
++       row  `#codeBg`  den Hintergrund eines Code-Spans  `Chroma(0x2a, 0x2a, 0x2a)`
++       row  `#quoteBar`  das `▎` neben einem Blockzitat  `Chroma(0x82, 0xaa, 0xff)`
++       row  `#rule`  einen thematischen Umbruch  `Chroma(0x60, 0x60, 0x60)`
++       row  `#subdued`  Listenmarker, Überschriftenpräfixe, Bildbeschriftungen, Inline- und Block-HTML sowie nicht hervorgehobene Codeblöcke  `Chroma(0x80, 0x80, 0x80)`
+
+% 1 1 0 0097279934781ad51581082cb52c5d5d
+
+@ 0 3 0 0fc0580e5e1fd05b1fb418de0aeeb11d
++       Das Given `.default` des Begleitobjekts ist im impliziten Geltungsbereich, daher braucht
++       `terminal` keinen Import einer Palette; eine andere wird als lokales Given gebunden,
++       gewöhnlich indem der Standard mit einem geänderten Feld kopiert wird.
+
+% 2 1 0 0c0ee11b086020541389e5db8ae919e8
+
+% 3 1 0 0580030e0af28eba172151036db19634
+
+% 4 1 0 0c02d9077e3e164e045f86bc2827b4fd
+
+% 0 1 0 1ee2ae236684dd0814d3bdac88ad6e00
+
+% 0 1 0 0930f99c70c3258612192ff5ea4e657c
+
+% 1 1 0 1aed59b251a50b29080617ee89109d0f
+
+% 2 1 0 02bbb2f46005a72510eccd6d82e62ea1
+
+@ 0 8 0 01d9f19c92a67b4e0eeecb5724742b1d
++   entry .default   die Standardpalette, im impliziten Geltungsbereich
++   entry #heading   Überschriftentext und die Linien unter Überschriften der Ebenen 1 und 2
++   entry #link   Linktext
++   entry #code   der Text eines Code-Spans
++   entry #codeBg   der Hintergrund eines Code-Spans
++   entry #quoteBar   der `▎`-Balken neben einem Blockzitat
++   entry #rule   ein thematischer Umbruch
++   entry #subdued   Listenmarker, Überschriftenpräfixe, Bildbeschriftungen, rohes HTML und nicht hervorgehobener Code
+
+@ 0 1 0 1220608f41646d6d1dac884c0e009e5d
++ entry .TeletypeFormattable   stellt einen umzäunten Codeblock als formatierten Terminal-Text dar, für die Sprachen, die es kennt
+
+% 1 1 0 1b0826b8c56b51f603560fa1f387140b
+
+@ 0 6 0 1659219afdc5c8201392db0a80881b01
++       Das Terminal-Gegenstück zu `Formattable`. Wenn `Renderer` auf einen `Layout.CodeBlock` trifft,
++       wird jedes an der Aufrufstelle sichtbare `TeletypeFormattable`-Given in einem
++       `Every[TeletypeFormattable]` gesammelt, und jedem werden nacheinander der Info-String und der
++       Inhalt des Blocks angeboten; `#format` gibt das anzuzeigende `Teletype` zurück oder `Unset`,
++       um abzulehnen, und ein Block, den kein Formattable akzeptiert, wird in der gedämpften Farbe
++       der Palette gezeigt. `Self` ist der Beschriftungstyp der Sprache, sodass ein Given als
++       `"scala" is TeletypeFormattable` gelesen wird.
+
+@ 0 3 0 01d533dbbc36fa6b1c18fe08b047cc2d
++       Die Standardinstanzen sind `teletypeFormattables.scalaTeletypeFormattable` und
++       `teletypeFormattables.javaTeletypeFormattable`, die über harlequin hervorheben und eine
++       `ScalaSyntaxPalette` im Geltungsbereich brauchen; sie werden über den Namen importiert.
+
+% 2 1 0 1f82f9d11bdc905d0805865ab2e51fb9
+
+% 3 1 0 1491f0035da1c2650087ebd1e48aa51a
+
+% 0 1 0 0a00cc129f570cee0457acec12124cd8
+
+% 0 1 0 05acaa93776c216c184028fa6110f7fe
+
+% 0 1 0 15a061065a82fced1ea81a383369951a
+
+% 1 1 0 0c3e32e4cc3d51b81d2b7e9726230034
+
+% 0 1 0 02b365f9c5bccd2902211791e36204a7
+
+% 1 1 0 03634a76777141a00ce0bccfda83a007
+
+@ 0 5 0 081f57c27772f8a6012e9e484dd11b51
++   entry #Self   der Beschriftungstyp der Sprache, die dieses Formattable behandelt
++   entry #format   der formatierte Text für einen Codeblock mit diesem Info-String und Inhalt, oder `Unset`, um abzulehnen
++       `language` ist der an Leerraum zerlegte Info-String des Zauns (`Nil` für einen eingerückten
++       Block) und `content` der Code mit seinem abschließenden Zeilenumbruch. Eine Implementierung
++       prüft das erste Wort und lehnt jede andere Sprache mit `Unset` ab.
+
+@ 0 1 0 00335077824c8b7e00517b621d272612
++ entry .teletypeFormattables   Syntaxhervorhebung für `scala`- und `java`-Codeblöcke in der Terminal-Ausgabe, zum Import über den Namen
+
+% 1 1 0 13b9eef5d767b3be0d451123dae3079f
+
+@ 0 6 0 113d4b755af7538112c3a4c4a168421b
++       Das Auswahlpaket der `TeletypeFormattable`-Givens für `Renderer` und `terminal`. Jedes
++       beansprucht eine Sprache anhand des ersten Worts des Info-Strings eines Zauns, schickt den
++       Block durch den Tokenizer von harlequin und färbt die Tokens nach dem
++       `ScalaSyntaxPalette`-Given im Geltungsbereich — einer `Palette` aus iridescence mit einer
++       Farbe für jeden Akzent (`scalaKeyword`, `scalaString`, `scalaType`, …) —, daher muss neben
++       dem Import eine Palette bereitgestellt werden. Ohne Import werden Codeblöcke ohne
++       Hervorhebung in der gedämpften Farbe gezeigt.
+
+% 2 1 0 09104c12ea13f54f14c9d0c2e5728f61
+
+% 3 1 0 1826dc50ae74f8a715c9a96f0ce8b5a0
+
+% 0 1 0 1981d85b6a484e5607212536c2cd1a77
+
+% 1 1 0 00f67a14966813b71b5977b472017c7c
+
+% 0 1 0 17a455bb0bde96af017a8be93f37dd11
+
+% 0 1 0 0b4daaf07ee83e5d097c1d72c83a34a8
+
+% 0 1 0 00c5712aa18ba3dc0e69dbe2536603bb
+
+% 0 1 0 0a5e92d2040ff4b81adb7ecc5d5e3f30
+
+% 0 1 0 1e3251f4c4a879a6036b1016234457f4
+
+% 0 1 0 156ff9da83bc0f6e0d2c121c6b0fb1a5
+
+% 0 1 0 1c02d66c88d9b0771810f1d2033182c2
+
+% 0 1 0 002eef6ee655e8771eb95f6029d5cac6
+
+% 0 1 0 00f87acfc708bd381a6f978612e2d22c
+
+% 0 1 0 154737504811550e0353498ee66c6997
+
+% 0 1 0 05b0b608b5b09384010d06a0d6e12141
+
+% 0 1 0 0e19de08a7db278019bbdb5875a3e34f
+
+% 0 1 0 0facccb3415a5bbb035655786976986c
+
+% 0 1 0 0f38ed28169accd0106d5f76d55c646a
+
+% 0 1 0 0153d6849f43bbb0023795b5530ea905
+
+% 0 1 0 0ac423ec5c85a7681be2d1ce520dae2f
+
+% 0 1 0 1151b4c3c8ef02ad1ebae31831cfb370
+
+% 0 1 0 19056e698e8cab351aaa2049f98ccc10
+
+% 1 1 0 023a70fe56ccbdbd08a6965077c1a6bf
+
+@ 0 2 0 0c7ee2048bd63e630c3dd11595ae63c6
++       Mit der Bibliothek wird kein Standard-Given für `ScalaSyntaxPalette` ausgeliefert, daher ist
++       eine Palette immer Sache des Aufrufers.
+
+% 1 1 0 04018cea5e24327412dd75d77ef80878
+
+% 1 1 0 19d5804dcb5486f9184e100cd749a4be
+
+@ 0 6 0 1d8e32b593fc9a6417dd108001184b9f
++   entry .scalaTeletypeFormattable   hebt einen `scala`-Codeblock mit harlequin hervor, gefärbt nach der `ScalaSyntaxPalette` im Geltungsbereich
++       Akzeptiert einen Block, dessen Info-String mit `scala` beginnt, und lehnt jeden anderen ab.
++       Braucht ein `ScalaSyntaxPalette`-Given.
++   entry .javaTeletypeFormattable   hebt einen `java`-Codeblock mit harlequin hervor, gefärbt nach der `ScalaSyntaxPalette` im Geltungsbereich
++       Akzeptiert einen Block, dessen Info-String mit `java` beginnt, und lehnt jeden anderen ab.
++       Braucht ein `ScalaSyntaxPalette`-Given.
+
+@ 0 1 0 00b0edf1519dd95e13d7a85356a900e1
++ entry .formattables   Syntaxhervorhebung für `scala`- und `java`-Codeblöcke in der HTML-Ausgabe, zum Import über den Namen
+
+% 1 1 0 048f2b34f55b3141108463b05e850595
+
+@ 0 9 0 1cc926efdf0b3f99068397cf04dc5b40
++       Das Auswahlpaket der `Formattable`-Givens für `html` auf einem `Markdown of Layout`, diesem
++       Paket von der Komponente `harlequin.md` der Bibliothek harlequin beigesteuert. Jedes
++       beansprucht eine Sprache anhand des ersten Worts des Info-Strings eines Zauns, zerlegt den
++       Block mit harlequin in Tokens und gibt ein `div` der Klasse `amok` aus, das ein `pre` mit
++       einem `span.line` pro Zeile enthält, wobei jedes Token ein `code`-Element ist, dessen Klassen
++       seinen Akzent (`keyword`, `string`, `type`, …) und, bei einem Term oder Typ, seine Rolle
++       (`binding` oder `usage`) benennen, sodass ein Stylesheet über die Farben entscheidet. Beide
++       sind `CommonFormattable`s, die Basis von harlequin für solche HTML-Formattables. Ohne den
++       Import wird ein Codeblock als einfaches `pre` und `code` mit einer Klasse `language-scala`
++       dargestellt.
+
+% 2 1 0 0d8011a435673c431470bc582ae1936b
+
+% 3 1 0 19ce5d3108cc60cb028f9736dccd0a2d
+
+% 0 1 0 140d3025188fe23c1673327f094c0280
+
+% 0 1 0 1bd5a9fed498d08d13bb343f54211fed
+
+% 0 1 0 060f2e9fb1a183830ed4efcdfe3f0cbd
+
+% 1 1 0 0d9ea6265143042112b7c55a97486228
+
+% 1 1 0 13b822186d00d62e19bca0b9f0cbfe69
+
+@ 0 4 0 125d6a32994c8eee02c73dbd1ffb72de
++   entry .scalaFormattable   hebt einen `scala`-Codeblock als `code`-Elemente mit Klassen hervor
++       Akzeptiert einen Block, dessen Info-String mit `scala` beginnt, und lehnt jeden anderen ab.
++   entry .javaFormattable   hebt einen `java`-Codeblock als `code`-Elemente mit Klassen hervor
++       Akzeptiert einen Block, dessen Info-String mit `java` beginnt, und lehnt jeden anderen ab.
+
+@ 0 1 0 1e0230b6478b6673039d9d2f4ddf0f77
++ entry .LeafBuilder   ein parserinterner Builder für einen Block, der Text enthält: Absatz oder Codeblock
+
+% 1 1 0 049f6a728d69fd3c095f0e5c6b8c7d0c
+
+% 2 1 0 17432b352b2dba1a1e6c18d0b2fe0801
+
+@ 0 4 0 0f637888a792c1f51378f01a0e57d6dc
++       Nicht zur direkten Verwendung: Teil des Arbeitszustands des Block-Parsers, der die Zeilen
++       eines Blattblocks sammelt und zu einem `Layout` abschließt. Sein `finish` löst den Block
++       gegen die bisher gesehenen Link-Referenzen auf. `ParagraphBuilder`, `FencedCodeBlockBuilder`
++       und `IndentedCodeBlockBuilder` sind seine Fälle.
+
+@ 0 1 0 1f6f94f1750d210c12d582950d320768
++ entry .ContainerBuilder   ein parserinterner Builder für einen Block, der andere Blöcke enthält
+
+% 1 1 0 18568ed14d62370d0d0768592320aff6
+
+% 2 1 0 0811cfc3a842e9da0e69a0adf4f54a08
+
+@ 0 4 0 094b3e9dd209e6491a324572904e4381
++       Nicht zur direkten Verwendung: der Arbeitszustand des Block-Parsers für das Dokument, ein
++       Blockzitat, eine Liste und einen Listeneintrag. Er hält einen Puffer abgeschlossener
++       `children`; `tryContinue` entscheidet, ob eine Zeile den Container fortsetzt, und entfernt
++       sein Präfix, `finish` erzeugt das `Layout`, und `closesOnBlank` sagt, ob eine Leerzeile ihn
++       beendet.
+
+@ 0 1 0 0924c3d8f7a3980a191eff6fc1fde062
++ entry .DocumentBuilder   der parserinterne Wurzel-Container, offen bis zum Ende der Eingabe
+
+% 1 1 0 055cc6e0313344c70dcb1252ca6f359a
+
+% 2 1 0 1f8001ae56f60f2c1bedd21c8e02d31c
+
+@ 0 2 0 1f196833796b02b61235dce8d5f558fb
++       Nicht zur direkten Verwendung. Setzt sich auf jeder Zeile fort und schließt zu nichts ab:
++       Seine Kinder sind das Dokument.
+
+@ 0 1 0 1ff4b1fd544b6d86013f9a04908dd064
++ entry .BlockQuoteBuilder   der parserinterne Builder eines `Layout.BlockQuote`
+
+% 1 1 0 0f89b251ce990dfb1051c3f7131f2cb9
+
+% 2 1 0 1a7ac161e516a40f1c0af1585c7c74a4
+
+@ 0 3 0 18a9d8d8b77e977500cda224af61d219
++       Nicht zur direkten Verwendung. Setzt sich auf einer Zeile fort, die mit bis zu drei
++       Leerzeichen und `>` beginnt, entfernt den Marker und ein folgendes Leerzeichen und schließt
++       zu einem `Layout.BlockQuote` seiner Kinder ab.
+
+@ 0 1 0 08ba52be2b70ba4618add5c1f633bae3
++ entry .ListItemBuilder   der parserinterne Builder eines Eintrags einer Liste
+
+% 1 1 0 09ac06128a0f433c0b40c639638eaa53
+
+% 2 1 0 0f05f345c6beeb5a107db26d8d06392e
+
+@ 0 4 0 1aa558242c3b3db6043d62d1b47db70c
++       Nicht zur direkten Verwendung. Setzt sich auf einer Zeile fort, die mindestens bis zur
++       Inhaltsspalte des Eintrags (`indent`) eingerückt ist, oder auf einer Leerzeile; `hadBlank`
++       vermerkt eine Leerzeile, nach der ein leerer Eintrag schließt. Sein `finish` ist ein
++       Platzhalter: Der umschließende Listen-Builder sammelt die Kinder eines Eintrags selbst.
+
+@ 0 1 0 166ac8929b5071730e35e9b3bf862585
++ entry .BulletListBuilder   der parserinterne Builder einer `Layout.BulletList`
+
+% 1 1 0 168ce8b95911492c0e40efc4edc9b0bd
+
+% 2 1 0 148309ae60b61701182d195f5042e211
+
+@ 0 4 0 03ce5d19736dd317185adc9e0d80165a
++       Nicht zur direkten Verwendung. Sammelt `items`, jedes eine Liste von Blöcken, für eine Liste
++       mit einem `marker`-Zeichen (`-`, `*` oder `+`); `loose` wird gesetzt, wenn eine Leerzeile
++       Einträge trennt, und `pendingBlank`, solange darüber entschieden wird. Schließt zu einer
++       `Layout.BulletList` ab, die eng ist, sofern sie nicht locker ist.
+
+@ 0 1 0 1bb5c2779b7996d50260236e9bd66f36
++ entry .OrderedListBuilder   der parserinterne Builder einer `Layout.OrderedList`
+
+% 1 1 0 1e4fc4fc08cf43971da797a75ba70ba0
+
+% 2 1 0 0b4f99c3c6c53695001fec0dfd20d0ef
+
+@ 0 2 0 14f096d3c188b4210bde337611c696d7
++       Nicht zur direkten Verwendung. Wie `BulletListBuilder`, für eine nummerierte Liste mit einer
++       `start`-Nummer und einem `delimiter` `.` oder `)`. Schließt zu einer `Layout.OrderedList` ab.
+
+@ 0 1 0 064cab8a42f8170117c6e8545b6d11dd
++ entry .ParagraphBuilder   der parserinterne Builder eines `Layout.Paragraph` oder einer Setext-Überschrift
+
+% 1 1 0 14a258291c01df020b19e6fb9562277f
+
+% 2 1 0 1de76b3dede09b771249a6735d30f70e
+
+@ 0 7 0 1b800c905ce010e019b32fa719b54695
++       Nicht zur direkten Verwendung. Sammelt Zeilen mit `addLine` und entfernt führenden
++       Leerraum; `isEmpty` gibt an, ob er keine hat. Bei `finish` extrahiert er zuerst alle
++       Link-Referenz-Definitionen vom Anfang seines Texts, fügt sie den Referenzen des Dokuments
++       hinzu und erzeugt einen `Layout.Paragraph` aus dem verbleibenden Text — oder nichts, wenn der
++       Absatz nur aus Definitionen bestand. `toHeading(level, refs)` tut dasselbe für eine
++       Setext-Unterstreichung und erzeugt ein `Layout.Heading`. Der Text des Absatzes wird später
++       auf Inline-Inhalt geparst, sobald die Referenzen vollständig sind.
+
+@ 0 1 0 05a2501224674fc40a1d310220df65bc
++ entry .FencedCodeBlockBuilder   der parserinterne Builder eines umzäunten `Layout.CodeBlock`
+
+% 1 1 0 122b924478cea5030144bf0a54cf3319
+
+% 2 1 0 129d42ccf15b8f8e188fe70f5044f232
+
+@ 0 3 0 0a181cb6fe1616951d3dd82f25e786e5
++       Nicht zur direkten Verwendung. Merkt sich Zeichen, Länge und Einrückung des Zauns sowie den
++       an Leerraum zerlegten Info-String, sammelt Zeilen mit `addLine` und schließt zu einem
++       `Layout.CodeBlock` ab, dessen Inhalt die Zeilen sind, jeweils gefolgt von einem
++       Zeilenumbruch.
+
+@ 0 1 0 0b47d69bd56341c508c78cca523b9698
++ entry .IndentedCodeBlockBuilder   der parserinterne Builder eines eingerückten `Layout.CodeBlock`
+
+% 1 1 0 196c30aab5f5cf930b4cd523df4d41ba
+
+% 2 1 0 07381a89c773e3da084b9259c170073c
+
+@ 0 2 0 116037408d0b2ace0562415b605fbd03
++       Nicht zur direkten Verwendung. Sammelt Zeilen mit `addLine`, verwirft bei `finish`
++       abschließende Leerzeilen und erzeugt einen `Layout.CodeBlock` mit leerem Info-String.
+
+@ 0 1 0 1c64e7b384e2530b18d32d908513394b
++ entry .InlineData   die parserinternen Nutzdaten eines Knotens in der Arbeitsliste des Inline-Parsers
+
+% 1 1 0 0a6721d177a3799919cba330d345054b
+
+% 2 1 0 1dee7f5cba0a356601cabf6378762649
+
+@ 0 7 0 13205e4bc4ff02fa08342b855661c562
++       Nicht zur direkten Verwendung: ein versiegelter Trait der Zwischenformen des Inline-Parsers.
++       Der Inline-Parser zerlegt einen Absatz in eine doppelt verkettete Liste von `InlineNode`s,
++       von denen jeder ein `InlineData` enthält — Text, einen Code-Span, Inline-HTML, einen Umbruch,
++       einen Link oder ein Bild, einen Klammermarker oder eine Begrenzerfolge —, löst dann die
++       Hervorhebung nach dem Begrenzer-Algorithmus von CommonMark auf und wandelt die Liste in
++       `Prose` um. `TextData`, `CodeData`, `HtmlInlineData`, `SoftbreakData`, `LinebreakData`,
++       `LinkData`, `ImageData`, `EmphasisData`, `StrongData`, `BracketData` und `DelimData` sind
++       seine Fälle.
+
+@ 0 1 0 00d95a814f22aedf005b41cc6f9f2c57
++ entry .TextData   parserintern: eine Folge literalen Texts in der Inline-Liste
+
+% 1 1 0 0dcfea5a7e24ded604fa5915c0e31f95
+
+% 2 1 0 1f814b23f77e38de08d9cf15b564823f
+
+@ 0 1 0 1457a1077f621c130322e168c3a7afb5
++       Nicht zur direkten Verwendung; wird zu `Prose.Textual`.
+
+@ 0 1 0 1fce4bd07b0f322f1e5059dd16149c00
++ entry .CodeData   parserintern: ein Code-Span in der Inline-Liste
+
+% 1 1 0 1913c4ff48b2922e069ed238e94f31ce
+
+% 2 1 0 09d7c76602a6230617936d19c0b08551
+
+@ 0 1 0 05327157d186a41207475908e1b95775
++       Nicht zur direkten Verwendung; wird zu `Prose.Code`.
+
+@ 0 1 0 1dd58aa4095343c800fb3ca9f2b6a8f6
++ entry .HtmlInlineData   parserintern: ein rohes Inline-HTML-Tag in der Inline-Liste
+
+% 1 1 0 1430b6f706c320021f24d2f63113c420
+
+% 2 1 0 1b0beb091b31e3bb0c0b3700bd045d62
+
+@ 0 1 0 15bd0cf48d986d60072de3bcb6d1ce00
++       Nicht zur direkten Verwendung; wird zu `Prose.HtmlInline`.
+
+@ 0 1 0 08599711858959891433c27b369063f0
++ entry .SoftbreakData   parserintern: ein weicher Zeilenumbruch in der Inline-Liste
+
+% 1 1 0 1fc500690d2a8c0b08dd9ef2e94cbd9c
+
+% 2 1 0 119425d66b824bec0ae05e1f5cccd7f5
+
+@ 0 1 0 189d36dbdd0246cb166a2ca2dfb21ef3
++       Nicht zur direkten Verwendung; wird zu `Prose.Softbreak`.
+
+@ 0 1 0 0ea037f85c9e225d15ffd9ea533c9339
++ entry .LinebreakData   parserintern: ein harter Zeilenumbruch in der Inline-Liste
+
+% 1 1 0 02b58459e0c207c41f3f88381e500f31
+
+% 2 1 0 19bcb7a3e4ffe65701c7e58edeeb0fb4
+
+@ 0 1 0 0c8e3686d97ebc6301f1c71a66899a43
++       Nicht zur direkten Verwendung; wird zu `Prose.Linebreak`.
+
+@ 0 1 0 052a1a20ff9402e71dccb6d0e171d49c
++ entry .LinkData   parserintern: ein aufgelöster Link, mit seinem Ziel, Titel und seinen Inhaltsknoten
+
+% 1 1 0 09cc2903c9fe739d1dad9baed406072a
+
+% 2 1 0 0ead3b5771e4c95707211f701b2e598c
+
+@ 0 1 0 1ac7f5c1227ebd171a7be85b6061461e
++       Nicht zur direkten Verwendung; wird zu `Prose.Link`.
+
+@ 0 1 0 0d91dbd2a3aaa79f1f64b978aa6ac1e2
++ entry .ImageData   parserintern: ein aufgelöstes Bild, mit seinem Ziel, Titel und seinen Inhaltsknoten
+
+% 1 1 0 055a98c672cfe8c4140a1c102eaa155e
+
+% 2 1 0 03fe4f15feb6e3d9142bf150949828e7
+
+@ 0 1 0 1d270e4694be1a3e0eaf8aac45b5442f
++       Nicht zur direkten Verwendung; wird zu `Prose.Image`.
+
+@ 0 1 0 07df411491eda7330b67be2a933fb550
++ entry .EmphasisData   parserintern: Hervorhebung um eine Liste von Inline-Knoten
+
+% 1 1 0 00048d946170103e154d4d167c343077
+
+% 2 1 0 0195201de8f6252b087def08a87befeb
+
+@ 0 2 0 18c6d39e08f5f2c30f3fc291cb1521ba
++       Nicht zur direkten Verwendung; vom Hervorhebungs-Algorithmus anstelle eines passenden Paars
++       von Begrenzerfolgen eingefügt und wird zu `Prose.Emphasis`.
+
+@ 0 1 0 140cfd017f61cb661d94d30107d23fad
++ entry .StrongData   parserintern: starke Hervorhebung um eine Liste von Inline-Knoten
+
+% 1 1 0 1500dcf4b30704201c8376cf35e91c13
+
+% 2 1 0 0ca85185133af0e308f1ecf3bbae7dd6
+
+@ 0 1 0 188fb6d1904e792814e4206244121144
++       Nicht zur direkten Verwendung; wird zu `Prose.Strong`.
+
+@ 0 1 0 1011d0b8f3aeaa3c156f036cff8b90f8
++ entry .BracketData   parserintern: ein Marker `[` oder `![`, der auf seine schließende Klammer wartet
+
+% 1 1 0 15fe67f741a3b8f816c956fb22e45d6e
+
+% 2 1 0 15c9ac4c07d0decb06a7fce91ec99d48
+
+@ 0 3 0 1a2ec64808f1a8ee065cd092b293adba
++       Nicht zur direkten Verwendung. `isImage` gibt an, ob die Klammer ein Bild eröffnet hat;
++       sobald die schließende Klammer gesehen wird, wird der Marker durch einen Link oder ein Bild
++       ersetzt, als literaler Text belassen oder übersprungen, wenn ein umschließender Link ihn
++       deaktiviert hat.
+
+@ 0 1 0 13db23491bb9e0f20a08e7de085805a7
++ entry .DelimData   parserintern: eine Folge von Begrenzern `*` oder `_`, mit ihrer Flankierung
+
+% 1 1 0 1aa7153daa20741407f15c046f0d9905
+
+% 2 1 0 1b8935ee30bcd90c1840e0b6ea3b52c6
+
+@ 0 3 0 129859f4b3a8d43a1864872d1fa97dfd
++       Nicht zur direkten Verwendung. Enthält das Begrenzerzeichen `char`, die verbleibende
++       `length` der Folge (verringert, während der Hervorhebungs-Algorithmus sie verbraucht) und
++       ob die Folge nach den Regeln der Links- und Rechtsflankierung Hervorhebung eröffnen
++       (`canOpen`) oder schließen (`canClose`) kann.
+
+@ 0 1 0 19675bf800290d7c11edcbcfd33f08f3
++ entry .InlineNode   parserintern: ein Knoten der doppelt verketteten Liste des Inline-Parsers
+
+% 1 1 0 0cb386d46cd4be9c1861206697df0112
+
+% 2 1 0 027a58e4a48dca2318f06a635bfac66c
+
+@ 0 2 0 1f964a2914992a900fed0a9d0a0b28f4
++       Nicht zur direkten Verwendung. Enthält veränderliche `data`, `prev` und `next`, die der
++       Hervorhebungs-Algorithmus an Ort und Stelle umschreibt.
+
+@ 0 1 0 07aced0a4fd9ae0d1e776c5ae8716161
++ entry .InlineList   parserintern: die doppelt verkettete Knotenliste des Inline-Parsers
+
+% 1 1 0 1e92513cd5f9920416e6541b346caea8
+
+% 2 1 0 11f8d0b40536c480119a4529213bc8b9
+
+@ 0 3 0 163dd1a8171b62060f5b28eb45bc9f7d
++       Nicht zur direkten Verwendung. `first` und `last` sind ihre Enden; `append` fügt einen
++       Knoten mit einem `InlineData` hinzu, `insertAfter` und `remove` verändern die Verkettung,
++       und `iterator` durchläuft sie vom ersten Knoten an.
+
+@ 0 1 0 01f82dd88a5e6bef0af97de0dc0e314b
++ entry .BulletMarker   parserintern: ein erkannter Aufzählungslisten-Marker auf einer Zeile
+
+% 1 1 0 0df8782086ccf24d0a80dea97c9947f0
+
+% 2 1 0 1ec26a6b15de333713954f1c81462ae2
+
+@ 0 2 0 060673e7d6c048a60bfa49aaed02d88d
++       Nicht zur direkten Verwendung. Das Markerzeichen `char`, die Spalte, an der der Inhalt des
++       Eintrags beginnt (`contentIndent`), und der Rest `rest` der Zeile nach dem Marker.
+
+@ 0 1 0 1ff7ce3e4a43381913cd8ee3b389e85a
++ entry .OrderedMarker   parserintern: ein erkannter Marker einer nummerierten Liste auf einer Zeile
+
+% 1 1 0 089afe79f7c8ae9209dc31aeb8f7e3d8
+
+% 2 1 0 078a0d79b5636eb201ad93ae269f1a39
+
+@ 0 2 0 039b4d978084f4d508084502cc7fe82d
++       Nicht zur direkten Verwendung. Die `start`-Nummer, der `delimiter` `.` oder `)`, die Spalte,
++       an der der Inhalt des Eintrags beginnt (`contentIndent`), und der Rest `rest` der Zeile.
+
+@ 0 1 0 17580ed67b314a150ab2a58bec2a6720
++ entry .EntityMatch   parserintern: eine dekodierte HTML-Entity oder numerische Zeichenreferenz
+
+% 1 1 0 15dc2fba3f2f6f721bd2089ac295da46
+
+% 2 1 0 08adc2922e9e3a9d1e7f4a72d6c9b547
+
+@ 0 1 0 09ab7336038313f00090b288830cff49
++       Nicht zur direkten Verwendung. Der dekodierte Text `decoded` und der Offset `end` nach der
++       Referenz.
+
+@ 0 1 0 1d3eecce990e7d261705e7284a444377
++ entry .CodeSpanMatch   parserintern: ein erkannter Code-Span in Backticks
+
+% 1 1 0 16b40fe40d2d6f720bc352401d42b3a0
+
+% 2 1 0 01c7bdf01f40081c0e9e202e01ab57e6
+
+@ 0 2 0 05b6b499f524e9b31a808142c508e4b0
++       Nicht zur direkten Verwendung. Der Inhalt `content` des Spans, mit dem in der
++       Spezifikation vorgesehenen Entfernen eines umgebenden Leerzeichens, und der Offset `end`
++       nach den schließenden Backticks.
+
+@ 0 1 0 1e5b266793867bf91cbabf0bdfc22066
++ entry .AutolinkMatch   parserintern: ein erkannter Autolink `<…>`
+
+% 1 1 0 1006c5937d0fe81d12aa9ca933f24cf5
+
+% 2 1 0 0a488cda5a0864610bc214757de7e983
+
+@ 0 2 0 043b03e7dc51bd5609a511c7dba31943
++       Nicht zur direkten Verwendung. Der `Prose.Link` für die URL oder E-Mail-Adresse und der
++       Offset `end` nach dem schließenden `>`.

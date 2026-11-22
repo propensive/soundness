@@ -1,0 +1,16 @@
+orthant 2 language
+
+@ 0 1 0 071cd1358721f7621e31e6b1a5a93433
++ # `SN-949` — `CodlError` (ausgemustert)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Diesen Fehler gibt es nicht mehr. Die Seite bleibt erhalten, damit der Code nicht wiederverwendet
++ wird und damit ein Verweis darauf aus einem älteren Release weiterhin aufgelöst werden kann.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Was daraus wurde
+
+@ 0 3 0 07275821160c878617fe4b8e3a078454
++ Das Modul `cellulose`, das CoDL implementierte, wurde entfernt. Seine Rolle übernimmt
++ [TEL](../en/modules/tel.md), eine schematypisierte, durch Einrückung strukturierte Datensprache
++ derselben Art.

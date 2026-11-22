@@ -1,0 +1,44 @@
+orthant 2 language
+
+% 0 1 0 001f90608b7dd22610ab692a46e148e2
+
+@ 0 1 0 0e6a3581b82c83fb0193d29a278f43cb
++ クラスパスを、そのエントリーポイントが到達する閉じた世界に縮小できないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 146fc008d5517a990b24a43854e6709c
++ 縮小は、クラスパスのクラスを、何も到達しないメンバーを除いて TASTy から再コンパイルし、その結果のバイトコードの参照をたどって、他のどのクラスがそれと一緒に残るかを決める。
++ このエラーは、健全でない閉じた世界と、縮小器が異常終了した場合を扱う。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 0445185a914a06611a6ed8aa9e7b31b8
+
+@ 0 1 0 1ea7e942cbda33c20db5d8f6cad70bd9
++ **例。** `[↯/s.146.1.1] the classpath could not be shrunk because a problem was found: example.Main refers to render()Ljava/lang/String; of example.Page, which was removed`
+
+@ 0 5 0 0a6beb09f5addefd16e83673c5aa63bf
++ 残されたものが、残されなかったものを参照している。
++ 理由はそうした参照をすべて `problems` として運ぶ。それぞれは、バイトコードが生成される前にコンパイラの木の中で見つかったものか、その後でバイトコードの中で見つかったものである。
++ これは、再コンパイルできず、その場に固定することもできなかったユニットも扱い、その場合はコンパイラ自身のエラーが問題となる。
+
+@ 0 4 0 054f9ecd59a5c94216c88c08bbb08648
++ **解決方法。** リフレクションだけが行う参照は、解析が見つけられるものではない。それが到達するクラスを、`Shrink` の `keep` か `shrinkOptions.keep` で残す。
++ 解析が見つけるべきだった参照は、解析の欠陥である。参照を行うユニットを `pin` か `shrinkOptions.pin` で固定すると、そのユニットはそのまま写され、それが参照するものはすべて残される。
+
+% 0 1 0 1b762c079bc654b5142014f9af7b1a17
+
+@ 0 1 0 03df6e2c0d24a7d11d98571df5e1a5ff
++ **例。** `[↯/s.146.1.2] the classpath could not be shrunk because the shrinker terminated abnormally`
+
+@ 0 1 0 184f587cfad810a00a1733b948aecece
++ 理由はスタックトレースを運ぶ。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 02e06909ce28d85e05bef9ddc48783d3
++ - ソース：`lib/abscission/src/core/abscission.Shrink.scala`

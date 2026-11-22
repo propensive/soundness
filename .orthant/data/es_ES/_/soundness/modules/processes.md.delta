@@ -1,0 +1,493 @@
+orthant 2 language
+
+@ 0 1 0 1f84de237b8eeae21960dbdfae6c91fc
++ ## Procesos
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 1 0 043ff3d3d37d1cbc0d3515785dfac976
++ Las órdenes de shell y los subprocesos se ejecutan mediante el [interpolador] `sh"…"`:
+
+@ 0 5 0 13a8ba24e691c26208f00610bfc163ef
++ - La orden se analiza en [tiempo de compilación], así que unas comillas desequilibradas no
++   compilan.
++ - Un valor que se sustituye en ella se escapa según el lugar que ocupa, así que un nombre de
++   fichero con un espacio no puede partir la orden.
++ - La salida se convierte en el tipo que se pida: sus líneas como lista, toda ella como texto,
++   los bytes en bruto como flujo, o el estado de salida.
+
+@ 0 1 0 03f5ca22eeafc7ed183c46fbae3647b0
++ Las órdenes se conectan entre sí con tuberías. Una orden se ejecuta y se espera, o se bifurca
++ en un job en segundo plano.
+
+@ 0 1 0 03864c7f2374f9ca1d044d00036db3ea
++ ### Sobre los subprocesos
+
+@ 0 5 0 1f98d10b83c445e11f9dc084e8433b47
++ Ejecutar un subproceso es donde se crían los fallos de inyección. Si se construye la orden como
++ una sola cadena, un valor sustituido puede colar argumentos de más, o un carácter que significa
++ algo para la shell. Si se construye como un array por seguridad, la comodidad desaparece. En
++ ambos casos, la salida vuelve como un flujo en bruto que hay que decodificar, almacenar en búfer
++ y cerrar a mano, y el estado de salida es un entero que alguien debe acordarse de comprobar.
+
+@ 0 7 0 113d1d91040427ba16f1c3b2d33e8b5e
++ Aquí la estructura de la orden se analiza en tiempo de compilación, así que el entrecomillado se
++ entiende antes de que se ejecute el programa. Cada valor sustituido se escapa para su posición
++ exacta: un valor colocado donde se espera un único argumento sigue siendo un argumento, se
++ escriba como se escriba. La salida se interpreta según el tipo pedido, así que leer líneas,
++ bytes o un estado de salida es cuestión de nombrar el tipo, no de analizar un flujo. Un proceso
++ cuyo tipo de resultado y cuyas formas de fallar están en su signatura tiene una
++ [signatura honesta](../../philosophy/honest-signatures.md), para algo que normalmente se maneja
++ por efectos secundarios.
+
+@ 0 2 0 1f54cad100d74d48036c2056207d7031
++ Todo viene del paquete `soundness`. Hay un directorio de trabajo y una [estrategia] de errores
++ en el ámbito, y la última importación permite a los ejemplos imprimir sus resultados:
+
+% 2 1 0 1d6e7ff79859d1e112081cd588ee8fbb
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1a283a543643af1b1d45747955305272
++ ### Definir una orden
+
+@ 0 2 0 0e45a2651c6938291ebdb46fabb5308f
++ `sh"…"` construye un `Command`. Divide el texto por los espacios en blanco y respeta las
++ comillas como lo haría una shell:
+
+% 2 1 0 148b8b23514752a813dc32a7655afbaa
+
+% 3 1 0 12ac3a856768854405fdaea0982baab8
+
+% 4 1 0 0d40832ef2bae1a7187985c9adab91e9
+
+% 0 1 0 1f2ad2ed3658a8591d72813f124889a6
+
+% 0 1 0 1dc1502be9a1e32608e827b2ecf8588f
+
+% 1 1 0 0117bc9b6c8d9c210152ed5a53eda6f9
+
+@ 0 1 0 00a4f2f9adc7bace0b66072eef5787a1
++ Una orden cuyas comillas no están equilibradas no compila:
+
+% 2 1 0 1a3fdd93c0921e6b11eb9f28dc25577a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0a4a6443e52e5a8212ff9cc92980795e
+
+% 1 1 0 020ae3bd51599f8d1a7e367055793315
+
+@ 0 1 0 10b6e596397b54161c0bae68a1ae0f94
++ ### Ejecutar una orden
+
+@ 0 1 0 16ccb37533be09801c8603b116a54a69
++ `exec` ejecuta la orden e interpreta su salida como el tipo nombrado:
+
+% 2 1 0 027e433c67276d8912dd6d7714fa0444
+
+% 3 1 0 1a7b041433c1463013e23c5c933cfbcc
+
+% 4 1 0 0f8916bc56a535af1eea57fa30bf1aa9
+
+% 0 1 0 1ce114e114cb08ce1dfdd419dbc51e1f
+
+% 0 1 0 1279b59fea53aa8b0223fab6ef34948b
+
+% 0 1 0 0048a3bcc6ba161a0a37dd96aec75cf6
+
+% 1 1 0 0fa520086395fdfb17d64c9e162138ef
+
+@ 0 4 0 0a7ba69b0660d2db14904757f670086e
++ El tipo hace algo más que nombrar una conversión. Decide cómo se *interpreta* el resultado. Las
++ órdenes no coinciden en qué flujo lleva la salida importante, ni en lo que significa un estado
++ distinto de cero. Para unas es un fallo, y para otras es una de varias respuestas corrientes. La
++ elección del tipo resuelve ambas cosas. También decide *cuándo* vuelve la llamada:
+
+% 2 1 0 1304244c2a75b7fa02fc09ec52d282ed
+
+@ 0 11 0 1fd2467d99152a051a85a1fe50c4ac24
++ column  Tipo
++ column  Da
++ column  Vuelve
++ row  `Text`  toda la salida estándar  cuando termina el proceso
++ row  `List[Text]`  las líneas de la salida estándar  cuando termina el proceso
++ row  `Chain[Text]`  las líneas de la salida estándar, de forma perezosa  enseguida, leyendo cada línea según llega
++ row  `Stderr`  toda la salida de error estándar  cuando termina el proceso
++ row  `Data`  los bytes en bruto de la salida estándar  cuando termina el proceso
++ row  `Exit`  el estado de salida  cuando termina el proceso
++ row  `Unit`  nada: la salida se descarta  cuando termina el proceso
++ row  un tipo de ruta  la salida recortada, leída como ruta  cuando termina el proceso
+
+% 1 1 0 138a2e3290d0bbc912f4411e620cf15a
+
+@ 0 3 0 172834ad2f33c92015884ddcb218c8c7
++ Una instancia de `Computable` define cada uno de ellos. Un tipo que no está cubierto obtiene una
++ diciendo cómo interpretar un proceso que ha terminado, o que está en ejecución. A menudo eso se
++ hace transformando una instancia existente, ya que `Computable` es un functor.
+
+@ 0 1 0 0e90920bf7a80e8b00109f686ec15685
++ ### Un tipo de salida implícito
+
+@ 0 3 0 01a281b4df30474113c3b15ae499e35f
++ Muchas órdenes tienen un tipo de salida evidente, y las habituales son conocidas. Aplicar una
++ orden directamente, sin nombrar un tipo, usa ese tipo por defecto. `echo` da texto, y `ls` da un
++ flujo de líneas:
+
+% 2 1 0 11f85318b24903711ad2fff67cff3121
+
+% 3 1 0 06e87c9710c18f531173628bd72de08f
+
+% 4 1 0 1104c66beacb78020b957725b352d4f4
+
+% 0 1 0 1542523096738b790464810f133d4bf8
+
+% 1 1 0 12646050a7236c570c485f4c40fcd9a4
+
+@ 0 1 0 1f514927f870d62802def681e93c72e6
++ ### Sustitución y escapado
+
+@ 0 2 0 1389a04d85c773bc1e61c75d9f4e9d4a
++ Un valor que se sustituye en una orden se escapa para su posición. Donde se espera un
++ argumento:
+
+% 2 1 0 05daa0404eef56861567a3acf7f95170
+
+@ 0 6 0 1f91f292920275e40cf8359c6999676a
++ column  Lo sustituido
++ column  Se convierte en
++ row  un valor  exactamente un argumento, sea cual sea su contenido
++ row  una lista  un argumento por cada elemento
++ row  una ruta  un argumento, su texto
++ row  una orden  un argumento, escapado, como se describe más abajo
+
+% 1 1 0 02400bf2447c879d0910305da1b93f44
+
+@ 0 1 0 1ea6e7e484f720341c5b073cbab5efc4
++ Un nombre de fichero que contiene un espacio sigue siendo un argumento, y una lista se convierte
++ en varios:
+
+% 2 1 0 1661f4dbe9e0ed3b1bbb0052e574caf8
+
+% 0 1 0 1f94dce148002df10c6c0cf576de400f
+
+% 0 1 0 13e7a72627daa4df03d955a6f7ae686d
+
+% 1 1 0 107531101cf178ff1633a9f57871def6
+
+% 3 1 0 053cbfc58f5734bc0c3cf655686069bf
+
+% 4 1 0 12c5478456e0375514ae9bf5bde80a97
+
+% 5 1 0 173e4c1d35bea7991b501b2c08c1adaf
+
+% 0 1 0 1d8573b47819c3851d9f87a994426e3f
+
+% 0 1 0 0a353327ddbbeaa919c72185c3ebe525
+
+% 1 1 0 0c84ac7ca6ce04e9059c0dd7ad90b077
+
+@ 0 4 0 10c07af51b2a94271965f772e8b5ffc8
++ Se puede sustituir cualquier tipo que describa cómo se convierte en argumento de una orden, así
++ que un valor del propio dominio de un programa, como una [ruta](paths.md), se coloca en una orden
++ sin convertirlo antes a mano en una cadena. [Interpolación](interpolation.md#substitutions)
++ describe el mecanismo.
+
+@ 0 1 0 1664858239873e761231de7a6f863e48
++ ### Tuberías
+
+@ 0 2 0 0c2b645c0ef17f6908366c08d1be6b7f
++ Las órdenes se conectan con `|`. La salida de una se convierte en la entrada de la siguiente, y
++ el pipeline se ejecuta, y se lee, exactamente igual que una sola orden:
+
+% 2 1 0 1b01d5654f4c5499188414356555750c
+
+% 3 1 0 130b641398e26356104ac631225cd95d
+
+% 4 1 0 18352c71acecaca21024c7c6389f0967
+
+% 0 1 0 00cbbd655f0249f917448a661954cf9e
+
+% 1 1 0 160497e921ff7fa90d6d9cbb3ed5bc23
+
+@ 0 2 0 08c6d3b10d02956d0baa88d085e334b5
++ Los pipelines se aplanan, y no se anidan. Un pipeline de tres etapas es un solo pipeline de tres
++ órdenes, se haya montado como se haya montado, y un pipeline que se conecta a una orden la
++ añade:
+
+% 2 1 0 01345260dacbb8b7145945bcc609d92e
+
+% 3 1 0 0e2edddbb62bf4460c9cfe1c8b1fe141
+
+% 4 1 0 129f2e182aeeab0d09923a62249fe5bb
+
+% 0 1 0 122498cf71d61c5e06902d3d8641ab47
+
+% 1 1 0 0600ee37d03d73e312e6079a34c5c3e3
+
+@ 0 1 0 05035e649fa5882f0f1793c3052e561f
++ ### Órdenes dentro de órdenes
+
+@ 0 2 0 0495f3517290f8fc15bf9acd4e401f1f
++ Una orden que se sustituye en otra se escapa como un único argumento. Eso es lo que requiere
++ invocar una shell, y lo que las cadenas de órdenes construidas a mano hacen mal:
+
+% 2 1 0 163cfebd54d72b150e792bed8402c9af
+
+% 0 1 0 1ff7d71afd2f6558152381d7308f73cc
+
+% 1 1 0 1f279f10e322c6521ee1e649916115e5
+
+% 3 1 0 15c2e12870f7402717486f24607b9f1f
+
+% 4 1 0 0d4a8c5ea40002930cecc71291a6053e
+
+% 5 1 0 0ecfa74124fcff1a045b0e6f9f429f29
+
+% 0 1 0 1cc4907c1cba9a2304431f8744755ac3
+
+% 0 1 0 0ab604a307e41d6607980ea2e1c2dd85
+
+% 1 1 0 13ac671ea996f701079f41b0fb86c6ad
+
+@ 0 3 0 1c10c2e2eca7319c1947c81d6782d7ab
++ Por tanto, un argumento que contiene un espacio, unas comillas o un carácter especial para la
++ shell pasa intacto. No hay ningún punto en el que se convierta en una cadena que una shell
++ pudiera volver a dividir.
+
+@ 0 1 0 058a55e027a9dac4037e22c7e928e846
++ ### Fallos
+
+@ 0 3 0 1dee7631e1a1db8202c3c861bf338b74
++ Una orden que no se puede ejecutar en absoluto, porque falta su binario, o es un directorio, o
++ no es ejecutable, lanza un `Exec.Error`. El error lleva la orden que falló, así que nombra lo que
++ se intentó, en lugar de informar de un número de error del sistema operativo:
+
+% 2 1 0 16b57f91e23f997013b5168371a54257
+
+% 3 1 0 1032d05b0143d6a009bb949fcf175b9a
+
+% 4 1 0 076fdce3ecef694d10c3fb61a0627704
+
+% 0 1 0 1192aae1ace8feec09949c0089b53cfb
+
+% 1 1 0 0eaa906d417cfad20d9eff8529ca46f5
+
+@ 0 4 0 0f9736ad07b18c580c010e5404f3b377
++ Una orden que se ejecuta y *falla* es otra cuestión. Su estado de salida forma parte de su
++ resultado, y lo que significa un estado distinto de cero lo decide quien llama. Pedir un `Exit`
++ da el propio estado. Pedir un `Text`, o un flujo, da la salida, con el estado disponible a su
++ lado.
+
+@ 0 1 0 1242b09b5d3b2e5c0aaaf58a4c3b69c8
++ ### Bifurcación
+
+@ 0 2 0 115c1d7c6ca64e390287b65b2f288b2b
++ `exec` se bloquea hasta que termina la orden. `fork` inicia la orden sin esperar y devuelve un
++ `Job`, que se puede esperar para obtener su resultado, inspeccionar o detener:
+
+% 2 1 0 03e8d7dfc8cd62aa056eeb9f831a9e8f
+
+% 3 1 0 0ba4ca46185e6a0402e2eca959cadb49
+
+% 4 1 0 044de9059d63721a0bb25a426823fc80
+
+% 0 1 0 12c7c7c3246afe800dfc434d091e4976
+
+% 0 1 0 00a77b5ac24312f019eb274f3f2b80e5
+
+% 0 1 0 1bef6ebfa7de470c0771e9e8639bb9ce
+
+% 1 1 0 166081b74411eddd1b8ebbfb3ee938c9
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 8 0 043b9d9a5ac9456e183f4e3554368b00
++ column  Miembro de un `Job`
++ column  Hace
++ row  `alive`  dice si el proceso sigue en ejecución
++ row  `abort()`  pide al proceso que se detenga
++ row  `kill()`  insiste en que se detenga
++ row  `await()`  se bloquea hasta obtener el resultado
++ row  `pid`  da el `Pid` del proceso
++ row  `process`  da el propio proceso del sistema operativo
+
+% 1 1 0 1405baca2e9d27731418c03aac5d51be
+
+@ 0 3 0 1e1eca91505650ed16c342978bc9a665
++ `pid` y `process` son para las ocasiones en que hay que enviar una señal, o inspeccionar un
++ árbol de procesos. Un `Pid` es un tipo distinto, no un número, así que no se puede confundir con
++ un código de salida ni con un descriptor de fichero, y se escribe y se analiza en una forma
++ propia.
+
+@ 0 1 0 06f41a995a7b65c1026b8f00cc3bca65
++ ### Desacoplar
+
+@ 0 4 0 0967839de0c6f78b062d6c9f1fe6586f
++ Un proceso que debe sobrevivir al que lo inicia, como un servidor o un [demonio](daemons.md),
++ se *desacopla*. `detach` lo inicia leyendo del dispositivo nulo, y escribiendo en ninguna
++ parte, o añadiendo a un registro cuyos directorios padre se crean. Da el pid del proceso, y no
++ guarda nada más de él.
+
+@ 0 4 0 08d46ce9eba58c1c1b6ec842b004c4aa
++ Un hijo bifurcado hereda tuberías que nadie vacía, y un servidor que escribe en ellas acaba
++ bloqueándose. Un proceso desacoplado no puede. Su entorno es el
++ [`Environment`](environment.md#overriding-for-a-block) del ámbito, así que `emptyEnvironment`
++ con `variables(…)` le da exactamente las variables nombradas:
+
+% 2 1 0 13f344274ac0e4211f7b6eed702641fe
+
+% 3 1 0 0fd2d1043f85b34e132e75996f8e4d0a
+
+% 4 1 0 04be4619fdcfc6d515158d5bf20a8de8
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 101d38a9f3368d921c60dd1edb09922b
+
+% 0 1 0 11d334ee5f5b05b51e04b4713d112a7e
+
+% 1 1 0 09b8435a19a33fc50ee5ff8bc943d0f5
+
+@ 0 1 0 0751c46d4cc9164608c0f0503cee0572
++ Así, una orden se inicia de una de tres formas o, mediante `pty`, en un terminal:
+
+% 2 1 0 0d782de4dc2a16e50bb88639d42ceb1d
+
+@ 0 7 0 16de78dd2f15c0e304d4497840d8f3a7
++ column  Método
++ column  Espera
++ column  Responde
++ row  `exec`  hasta que termina la orden  su resultado, como el tipo nombrado
++ row  `fork`  solo hasta que se ha iniciado  un `Job`, para esperar, inspeccionar o detener
++ row  `detach`  solo hasta que se ha iniciado  su `Pid`, sin guardar nada más de él
++ row  `pty`  nada en absoluto  una descripción de la orden en un pseudoterminal, para hacer `exec` o abrir una `session` sobre ella
+
+% 1 1 0 1e57dc05578a379403b4e4514870fd22
+
+@ 0 1 0 07364a29556ca08d07ec899851f81e18
++ ### En un terminal
+
+@ 0 5 0 1d1d47f55ccbbf4d043dc49e405c6911
++ Los flujos estándar de una orden son normalmente tuberías, y muchos programas se comportan de
++ otra manera cuando lo notan. Una shell no imprime ningún prompt, `stty` falla y un editor de
++ líneas nunca arranca. `pty` ejecuta en su lugar la orden en un pseudoterminal nuevo del tamaño
++ dado. La orden encuentra entonces un terminal en su entrada, su salida y su salida de error,
++ como si la hubiera tecleado una persona. Aquí `stty` informa del tamaño que se pidió, como 30
++ filas y 100 columnas:
+
+% 2 1 0 0e6ce12a979f4112089e53d870b51015
+
+% 3 1 0 07b00c8d1600b12417e1e91825376c8c
+
+% 4 1 0 0c9695310c33609f0daa8038156c2bb2
+
+% 0 1 0 0261d3ba3e0e0b5007b525e52c44e87c
+
+% 1 1 0 0ac9532adbf3e2281c386a8295a7aa57
+
+@ 0 3 0 0b7b2444d61b9d2519e8a4a3e6c5dd5a
++ Para un programa interactivo, una `session` presta la orden en ejecución a un bloque, como un
++ `Job` al que además se le puede cambiar el tamaño, y termina la orden cuando termina el bloque.
++ Si el programa sigue en ejecución, se le cuelga, como ocurriría al cerrar un terminal real.
+
+@ 0 5 0 07adb213ca4dddc008242aa3c8058ee3
++ La salida de la sesión es todo lo que el programa escribe en el terminal, incluida la salida de
++ error estándar, con sus secuencias de escape, que es lo que recibiría un
++ [emulador de terminal](terminal-emulator.md). Se le puede teclear cualquier cosa que admita
++ flujo, con `writeTo`. Un terminal no tiene un fin de entrada propio, así que a un programa que
++ lee hasta el final se le envía el carácter de fin de fichero, `^D`, en lugar de cerrarle la
++ entrada:
+
+% 2 1 0 080231eda558364f13fdfe5104a48d9d
+
+% 3 1 0 065ae0bf455125090b3ed2aee94cab75
+
+% 4 1 0 07ab5333072043870452026ee8fffb06
+
+% 0 1 0 04c555899d6c557f16f6b54eb834c9f2
+
+% 0 1 0 1d77fad138484a1d029660655745de0a
+
+% 0 1 0 08934c2f48b5dee004f3b2aa296ab36c
+
+% 0 1 0 1567fd0f77301793028c78b4ac31aad3
+
+% 1 1 0 05beb1a0834f966c02371e4dd1c342f2
+
+@ 0 2 0 11e107a78293eb9e1a3e449665b78434
++ Cambiar el tamaño envía al programa la señal `SIGWINCH`, escribir `\r` pulsa Intro, y el texto
++ que vuelve es `50 132`.
+
+@ 0 2 0 09ae18d3a496d08402b3d982613c9961
++ El valor que devuelve `pty` no es en sí un terminal. Describe cómo ejecutar la orden, y cada
++ `session` o `exec` reserva un terminal nuevo, y lo vuelve a liberar.
+
+@ 0 6 0 047d0f0a4c10c90811db6d11d959dab5
++ La *disciplina de línea* de un terminal dice si devuelve el eco de lo que se teclea, si reúne la
++ entrada línea a línea, si convierte `^C` en una señal, etcétera. Es un `Termios`, llamado así
++ por la estructura de POSIX, con un interruptor para cada uno de los indicadores que un programa
++ cambia con más frecuencia. `Termios.raw` los desactiva todos, como hace un programa de pantalla
++ completa antes de dibujar, y `Termios.cooked` los activa todos. Un `Termios` dado a `pty` se
++ fija antes de que se inicie la orden, y el terminal de una orden en ejecución se puede leer y
++ cambiar a través de su `Job`:
+
+% 2 1 0 1b2bcae6fe521f880248fe5044e5a591
+
+% 3 1 0 162e58f2d37d54f105be59531f09edc2
+
+% 4 1 0 04c9577e212fb768127d8d614d34f7dd
+
+% 0 1 0 0f9cf6b26c04c52610f2222bb9957b35
+
+% 0 1 0 038720bf3ef687640ce225521daba2df
+
+% 0 1 0 0d4d0bc4a8d2e1a404b97d70987aec5d
+
+% 0 1 0 0b7aa29ca6db685d1d63f515bd3ccabe
+
+% 0 1 0 177fcfc039061e260cfe1fb07e681f40
+
+% 1 1 0 0a8cfd8edf7374780649494d0f4fa70e
+
+@ 0 2 0 1fca025abeec6adf1fe61d19f2ccb72d
++ En modo crudo, los dos caracteres se entregan a la vez, sin salto de línea, y no se devuelve su
++ eco, así que el texto que vuelve es solo `hi`.
+
+@ 0 3 0 104fdddb59f6c4ec1ecc192a6020a900
++ Los pseudoterminales se reservan mediante la API de funciones foráneas del JDK, en Linux y
++ macOS. Un programa que los usa debe ejecutarse con `--enable-native-access=ALL-UNNAMED`, para
++ que el JDK no avise de ello.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 7 0 023b1c4a02746ebe07e31f08553298e8
++ - [Entorno](environment.md) decide qué variables hereda un subproceso.
++ - [Flujos](streams.md) lee la salida de una orden por partes.
++ - [Git](git.md), [Docker](docker.md) y [SSH](ssh.md) manejan programas concretos con APIs con
++   tipos propias.
++ - [Interfaces de línea de comandos](cli.md) cubre el otro lado: un programa que se ejecuta él
++   mismo desde una shell.
++ - [ACP](acp.md), [depuración](debugging.md), [registro](logging.md), [LSP](lsp.md), [ejecución por etapas](staging.md) y [terminal](terminal.md) lanzan y controlan procesos.

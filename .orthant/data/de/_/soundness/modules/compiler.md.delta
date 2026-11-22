@@ -1,0 +1,673 @@
+orthant 2 language
+
+@ 0 1 0 05ba557e23bb8419068e4bd32fc88fcf
++ ## Kompilierung
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 126bdafe7130c9321e38cfc20801caf6
++ Der Scala-Compiler wird als typisierte API aufgerufen. Quelltexte werden als Werte geliefert.
++ Optionen sind typisierte Flags, gültig nur für die Compilerversionen, die sie unterstützen.
++ Ergebnisse, also Diagnosen mit ihren Positionen, Fortschritt sowie Erfolg oder Fehlschlag, sind
++ [Streams](streams.md) und Werte, keine Konsolenausgabe.
+
+@ 0 3 0 1a540de7ae07df550a4d3758c869676e
++ Dies ist die Maschinerie unter der [gestagten Ausführung](staging.md) und den
++ [Benchmarks](../../standards/benchmarking.md) zur Kompilierzeit, und sie dient jedem Werkzeug, das
++ Scala im Auftrag eines Benutzers kompiliert.
+
+@ 0 4 0 0b6ba3c82fed24091914a261b2c0aef9
++ Kompilieren ist die halbe Arbeit. Die Ausgabe wird anschließend zu einem Artefakt *gelinkt*:
++ einem ausführbaren JAR, JavaScript, einer WebAssembly-Komponente, einem nativen Binary oder einem
++ Android-Paket. Die Zwischendarstellung, die eine Kompilierung ausgibt, und das Artefakt, das ein
++ Linker erzeugt, sind beide Typen. Eine Unstimmigkeit zwischen ihnen ist ein Kompilierfehler im
++ Werkzeug und kein Fehlschlag beim Linken.
+
+@ 0 1 0 171f1a32ad615436022c6d3507b92be3
++ ### Über das Steuern des Compilers
+
+@ 0 4 0 0ad43c5a348a3ebc065a727fc5e3f94b
++ Die Kommandozeile des Compilers ist doppelt stringly typed. Optionen sind Strings, deren
++ Gültigkeit von der Version des Compilers abhängt, und Diagnosen kommen als formatierter Text
++ zurück, der erneut geparst werden muss. Ein Build-Werkzeug, ein Notebook oder ein Code-Runner will
++ das Gegenteil: typisierte Optionen, geprüft gegen die verwendete Version, und strukturierte
++ Diagnosen.
+
+@ 0 3 0 1893ee5a2d30a5560c76ee419c6a6311
++ `Scalac` bietet das. Es ruft den Compiler im selben Prozess auf, über Quelltexte im Speicher.
++ Eine Kompilierung, die als Wert beschrieben und von einer Toolchain ausgeführt wird, ist
++ [direkter Stil](../../philosophy/direct-style.md): Der Build ist Code, geprüft wie jeder andere
++ Code.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Alles stammt aus dem Paket `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 1 0 1f48d7512eb50abf0a1717bc3792790b
++ Die Beispiele auf dieser Seite führen Compiler und Linker aus, daher werden sie kompiliert, aber
++ nicht ausgeführt.
+
+@ 0 1 0 1c8a2960ca9e46920ec9e3ad1b88ec93
++ ### Einen Compiler konfigurieren
+
+@ 0 2 0 1ad12102b46ea295058a9e1d3f625bb0
++ Ein `Scalac` ist mit seiner Sprachversion parametrisiert und trägt seine Optionen. Jede Option
++ ist ein typisierter Wert, verwendbar nur in den Versionen, die sie akzeptieren:
+
+% 2 1 0 19b59f46fd31bcce04dbf76c09ece9f1
+
+% 0 1 0 12159ea07f9199cc164515309d4db551
+
+% 1 1 0 0b300f42df9b42c404a4d8517c1912a6
+
+@ 0 3 0 02bc54412a90cf61188fe9f1f67de781
++ Die Optionen spiegeln die des Compilers selbst wider, für Warnungen, Sprachfeatures und interne
++ Flags, unter `scalacOptions`. Eine Option, die in der gewählten Version nicht existiert, ist ein
++ Kompilierfehler im Werkzeug und keine Beschwerde des Compilers zur [Laufzeit].
+
+@ 0 1 0 15131191bcf0fb8c11e8eb6e17af1e1d
++ ### Kompilieren
+
+@ 0 3 0 1381cfb28b221869199bde2bc1da6c88
++ Quelltexte sind eine Map von Namen auf Inhalte. Sie werden gegen einen
++ [Klassenpfad](classpath.md) in ein Ausgabeverzeichnis kompiliert. Der zurückgegebene Prozess legt
++ seine Diagnosen und seinen Fortschritt als Streams offen und schließt mit einem Ergebnis ab:
+
+% 2 1 0 0ef30e60ab01bcda0345e29cd8aa4b32
+
+% 3 1 0 0b970084b71af9101fd728623184215f
+
+% 0 1 0 0bb61dfbd52ba34f196dd471d6ca2498
+
+% 0 1 0 08e659a6ae11244a14b2e5a9e9bc63dc
+
+% 0 1 0 0e2e7ddbd5589fa20e0a3e8f37ba965c
+
+% 0 1 0 00fbc2efaf33200306cf81fd16ea8879
+
+% 0 1 0 13fc00d1195c387600be8a05d650e07e
+
+% 1 1 0 0fd1b76c462b4df71d14f5323c32a7fa
+
+@ 0 5 0 1e6f21e8b95e079f012bd78d1176292f
++ `complete()` liefert ein `Compiler.Result`, das `Success`, `Failure` oder `Crash` ist. Jede
++ `Compiler.Notice` trägt ihre Wichtigkeit, also Info, Warnung oder Fehler, ihre Datei und ihre
++ Spanne. Ein Werkzeug kann den verursachenden Code unterstreichen und muss die Ausgabe des
++ Compilers nicht wiedergeben. Ein Absturz kommt ebenfalls als Wert an, mit seinem
++ [Stacktrace](stack-traces.md), und der Prozess kann abgebrochen werden, bevor die Kompilierung
++ endet.
+
+@ 0 1 0 0259b420ac5a94cb089d5b38f7ef5729
++ ### Semantische Diagnosen
+
+@ 0 4 0 144308e2001eb240056c95e97fbaa48d
++ Eine Fehlermeldung des Compilers ist normalerweise ein Satz, in den Typen eingespleißt sind. Bis
++ sie ein Werkzeug erreicht, sind diese Typen bloß Wörter. Auf Anfrage nach semantischen Diagnosen
++ markiert der Compiler stattdessen jedes interpolierte Argument im Band, mit gepickeltem TASTy für
++ die Typen darunter, und eine `Compiler.Notice` hält diese markierte Form neben der einfachen
++ fest.
+
+@ 0 5 0 17170543d479f510024c56dd235d3427
++ Das Markup wird zu einer `SemanticMessage` geparst: einem typisierten Baum aus gestalteten
++ Spannen, Platzhaltern und Typen. Jeder Typ wird aus seinem TASTy entpickelt und erneut über
++ dieselbe Maschinerie dargestellt, die Typen anderswo darstellt, sodass sich ein Typ so liest wie
++ im Code, abgekürzt gegenüber dem, was importiert ist. Eine Meldung „found `A`, required `B`“
++ kommt daher als zwei Typen an, die sich darstellen, verlinken und vergleichen lassen, und nicht
++ als String, der erneut geparst werden muss.
+
+@ 0 1 0 0aa27acd6b8911c10b0854129c84b17b
++ ### Universen
+
+@ 0 4 0 089f77aac05b3c950cdbe963b4759ea9
++ Eine Kompilierung gibt eine Zwischendarstellung aus, und diese Wahl entscheidet, gegen welche
++ Bibliotheksartefakte sie linken kann. Das Universum ist ein Typparameter der `Compilation`, sodass
++ eine Scala.js-Kompilierung nicht mit einer nativen verwechselt werden kann. Die Compiler-Flags,
++ die jedes Universum braucht, folgen daraus und werden nicht von Hand geliefert:
+
+% 2 1 0 06cbb163f52adcf10848b8bdb3a8f731
+
+@ 0 7 0 08d8ae7dde56539f063160eddde84522
++ column  Universum
++ column  Gibt aus
++ column  Compiler-Flag
++ column  Laufzeitbibliotheken auf dem Klassenpfad
++ row  `Toolchain.Universe.Classfile`  JVM-Classfiles
++ row  `Toolchain.Universe.Sjsir`  Scala.js-IR  `-scalajs`  `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`, `scala3-library_sjs1`
++ row  `Toolchain.Universe.Nir`  Scala-Native-IR  `-Xplugin:` mit dem `NirPlugin`-JAR  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
+
+% 1 1 0 0eae251f216b35210db5e4a163178b0e
+
+@ 0 2 0 08adf14bfa84571205d9c9e8c5d7b750
++ Die Form mit einem einzigen Typargument zielt auf das Classfile-Universum. `targeting` wählt
++ explizit ein anderes:
+
+% 2 1 0 0710286efa77ee4d154ac27dd530c1fe
+
+% 0 1 0 02c9c16f195c0f681c6c0063e5f535a5
+
+% 1 1 0 1454af0b223f79a412bde38cf1267602
+
+@ 0 4 0 0a229e6cd3967dd31bb787054a7b3ea2
++ Die Laufzeitbibliotheken werden wie jede andere auf dem Klassenpfad geliefert. Ihr Fehlen zeigt
++ sich als gewöhnliche Compilerdiagnosen und nicht als eigene Art von Fehlschlag.
++ `Toolchain.Universe.Nir` braucht außerdem ein `NirPlugin` im Geltungsbereich, einen Nachweis
++ dafür, wo das Compiler-Plugin von Scala Native liegt, da NIR von einem Plugin und nicht von
++ einem in den Compiler eingebauten Backend ausgegeben wird.
+
+@ 0 1 0 0ce64313819c7457124b96cca9376c66
++ ### Artefakte erzeugen
+
+@ 0 4 0 0e25d434e977cffa099c0cb84754ca4b
++ Universen und Anwendungsformate sind die Knoten einer `Toolchain`, eines
++ [gerichteten azyklischen Graphen](graphs.md), dessen Kanten Werkzeuge sind. Ein Artefakt zu
++ erzeugen ist die Suche nach einem Pfad. `produce` nimmt, was Sie haben, das Format, das Sie
++ wollen, und einen Ausgabeort, und führt jedes Werkzeug auf dem Pfad dazwischen aus:
+
+% 2 1 0 09918801d59dc23208968890ad10f1b1
+
+% 3 1 0 15dc58678d7031cd15d506b0f3d2cc9a
+
+% 1 1 0 1c2d87d9877a5a961f91f2779a6a7a4b
+
+% 1 1 0 0c0ac7d95ce74e5a04e790b6b378b00e
+
+% 2 1 0 07ae6509c0480396016edb5818b92cbb
+
+% 2 1 0 0a04fe4e76a9017419f0c11883e357bf
+
+% 1 1 0 0ecbd31fe4b5d76c01f16667d0f22f19
+
+% 0 1 0 12807c05fa81c9a00d58d5a81df2fcaf
+
+% 1 1 0 1ab76c366d19ab600c8fdad881e000cf
+
+% 2 1 0 195f89df7739bf4310a845738cc7f47f
+
+@ 0 1 0 0f5cd41d9d7011cd059f7f45f005cc6c
++ Jedes Universum erreicht seine eigene Menge von Anwendungsformaten:
+
+% 2 1 0 027af26be40c0c540f6e8849c2e49b51
+
+@ 0 1 0 1fdb37517ee31af21de769ee329d04bf
++ column  Von
+
+% 1 1 0 067d9fc95eeb822b031fe1e11505d551
+
+@ 0 12 0 122432ad6f6b86a8023ea07b3b6041c6
++ column  Artefakt
++ row  jedes Universum  `Library`  ungelinkte Ausgabe, verpackt für die weitere Assemblierung
++ row  `Toolchain.Universe.Classfile`  `Artifact.Jar`  ein ausführbares JAR
++ row  `Toolchain.Universe.Classfile`  `Shrunk.Jar`  ein ausführbares JAR mit nur dem, was sein Einstiegspunkt erreicht
++ row  `Toolchain.Universe.Classfile`  `Dex`  ein Archiv aus Dalvik-Bytecode
++ row  `Toolchain.Universe.Classfile`  `Apk`  ein vollständiges, signiertes und ausgerichtetes Android-Paket
++ row  `Toolchain.Universe.Classfile`  `Xeq`  ein Bündel, das direkt aus einer Shell ausführbar ist
++ row  `Toolchain.Universe.Sjsir`  `Js`  ein ECMAScript-Modul, ein CommonJS-Modul oder ein einfaches Skript
++ row  `Toolchain.Universe.Sjsir`  `Wasm`  ein WebAssembly-Modul mit JavaScript-Klebecode
++ row  `Toolchain.Universe.Sjsir`  `Wasi`  eine eigenständige Komponente in einer angegebenen WASI-Generation
++ row  `Toolchain.Universe.Sjsir`  `OciImage`  diese Komponente, verpackt als OCI-Artefakt
++ row  `Toolchain.Universe.Nir`  `Artifact.Binary`  ein natives ausführbares Programm für ein Target-Triple
+
+% 1 1 0 03cea5103215f88a0f10c9faaf296125
+
+@ 0 2 0 1255a5c22a8c5f461a5957d4a4dbc51e
++ Das Modulsystem eines `Js`-Knotens ist Teil seiner Identität, so wie das Target-Triple Teil der
++ Identität eines Binarys ist.
+
+@ 0 5 0 0b0332fdfe4e88dd02587a359a0e0873
++ Ein Format, das mehrere Kanten entfernt ist, braucht keine besondere Behandlung. Ein `Apk` führt
++ das Dexen und dann das Paketieren aus, und ein `OciImage` linkt die Komponente und verpackt sie
++ dann, weil das die Pfade sind. Ein Build, der ein Format nicht erreichen kann, sagt das mit einem
++ `NoPath`, der die beiden Formate nennt, und scheitert nicht auf halbem Weg. Eine Einstellung, die
++ nichts auf dem Pfad konfiguriert, wird abgelehnt, bevor irgendein Werkzeug läuft.
+
+@ 0 3 0 1a71dbeb7b2a69a21900ebea7cccdc01
++ Eine Kante, deren Werkzeug Voraussetzungen hat, stammt von einem Provider, der Nachweise dafür
++ verlangt, sodass eine Kante, deren Werkzeuge fehlen, nicht gebaut werden kann. `sjsEdges.wasi()`
++ braucht eine sondierte `WasiToolchain` und eine `Wasi.World`, und `nativeEdges()` sondiert nach
++ `clang`.
+
+@ 0 7 0 01d1961a9b4229a71c2bcddcfd6def38
++ Die Identität eines Formats ist seine Art, also Quelle, Zwischendarstellung oder Anwendung, und
++ seine `id`. Wo immer ein Parameter ändert, was ein Benutzer erhält, ist er Teil der `id`, und
++ jede Parametrisierung ist ein eigener Knoten: das Modulsystem, über das ein JavaScript-Host
++ importiert, die WASI-Generation, der die ABI eines Artefakts folgt, das Target-Triple, auf dem
++ ein Binary läuft, der Auslieferungsmodus eines Bündels. Ein Binary für `Triple.Arm64MacOs` ist
++ von einem für `Triple.X64Linux` so verschieden wie ein JAR von einem JavaScript-Bündel. Dass sie
++ sich einen Linker teilen, macht sie nicht austauschbar.
+
+@ 0 4 0 0795099dff2520ad0827d8e596951077
++ Die Menge der Knoten ist offen. `Artifact`, `Tool` und `Edge` sind gewöhnliche öffentliche
++ Typen, sodass eine Kante, die für ein Format registriert wird, von dem diese Bibliotheken nie
++ gehört haben, den Graphen erweitert. Ein Format kann als Daten deklariert werden, über seine Art
++ und seinen Namen, und so deklariert eine zur Laufzeit gelesene Registry eines:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1d680c2b556b92ed1072be9d42c404fb
+
+% 0 1 0 17fee84469b3e45b10b95f7a90d005f1
+
+% 1 1 0 11c539aca559bf831ead2df7229701f7
+
+@ 0 2 0 138e4c108ff8add9041f05c630af2213
++ Ein deklariertes Format ist derselbe Knoten wie das eingebaute Format seiner Art und seines
++ Namens, sodass `Artifact.ir(t"classfile")` jede Kante erreicht, die für
++ `Toolchain.Universe.Classfile` registriert ist.
+
+@ 0 1 0 029cfdc37e4f4c980d06210cbcb11a33
++ ### Lieferergebnisse und Pfade
+
+@ 0 2 0 123e0bd85bb3a2621314332b7011fa39
++ Der Wert, der entlang eines Pfads fließt, ist ein `Deliverable`, und sein Fall sagt, wohin im
++ Graphen er gehört:
+
+% 2 1 0 1c6dcfeb7a282a3d1af4042ffffb6636
+
+@ 0 6 0 16957f9b3980fa7d093fa9224304016c
++ column  Fall
++ column  Hält
++ column  Gehört zu
++ row  `Deliverable.Sources`  Quelltexte  einem Quellknoten
++ row  `Deliverable.Emission`  ein Ausgabeverzeichnis und den Klassenpfad, gegen den kompiliert wurde  einer Zwischendarstellung
++ row  `Deliverable.Product`  eine gelinkte oder verpackte Datei  einem Anwendungsformat
+
+% 1 1 0 02120ee06a3fcf2806364ae37b06c4a1
+
+@ 0 1 0 1d7692f65c0d0bb615cf7738902fca66
++ Der Pfad selbst kann direkt erfragt werden, und so meldet ein Werkzeug, was es gleich ausführen
++ wird:
+
+% 2 1 0 0c8c545207de936b0cfac3216f74a31c
+
+% 0 1 0 01045a015eb918650a6cadc0157e4297
+
+% 1 1 0 0017fa6f3f75b02b170c24b0c5c7a027
+
+@ 0 5 0 1e9525f31cb09a1c0f916414d8067086
++ Hier ist `steps` gleich `List(t"dex", t"apk")`. Der Pfad ist der *eindeutige kürzeste*. Wo keiner
++ existiert, löst `path` `NoPath` aus. Wo zwei gleich kurz sind, löst es `AmbiguousPath` aus, was
++ dadurch behoben wird, dass ein Zwischenformat explizit in einem separaten Schritt erzeugt wird,
++ und nicht durch einen Gleichstandsentscheid, den der Aufrufer nicht sehen kann. Der Aufbau wird
++ ebenso streng geprüft. `Toolchain` lehnt eine doppelte Kante zwischen demselben Formatpaar ab
++ und lehnt einen Zyklus ab.
+
+@ 0 4 0 0902ac925980af2c0f2bc2607be57cb0
++ Jedes Zwischenprodukt auf einem Pfad aus mehreren Stufen wird unterhalb des Ziels geschrieben,
++ unter der `id` seines Formats, und das Endprodukt wird in das Ziel selbst geschrieben. Ein APK,
++ dessen Pfad `Classfile → Dex → Apk` verläuft, dext daher nach `dex/` und wird von dort aus
++ paketiert. Nichts an dieser Abfolge ist in das APK-Werkzeug geschrieben.
+
+@ 0 3 0 0dfd68fe4471ea0807c5fe813a46e708
++ Eine Staging-Vorrichtung muss ihren eigenen laufenden Klassenpfad in die JARs einbringen, die
++ sie erzeugt. Sie kombiniert `Bundler.applicationClasspath`, den Klassenpfad der laufenden
++ Anwendung, introspektiert aus dem Classloader, der sie geladen hat, mit ihrer kompilierten
++ Ausgabe:
+
+% 2 1 0 0f2f02f5dc5fb8b11398db8b6bd1faba
+
+% 0 1 0 1d5aa46ac2e542b4145d4785c16c1f39
+
+% 1 1 0 1bc106c3143bee3b17c4e09c21c37254
+
+% 0 1 0 074bc77ba3ee9afe196e1b740a448c34
+
+% 1 1 0 097d40fb9681d44b13c6f3bda0b28760
+
+% 2 1 0 07aca853d16b13b9177f11563e1ff8b3
+
+% 0 1 0 05636782faa22b9e0b53b21a17ce2295
+
+% 0 1 0 17d7a3f1018014aa074fe4e76ebbe7e3
+
+% 0 1 0 0aaa1ef94abcad581e98c5eca89a1d72
+
+% 1 1 0 07151190e86893b90ed0d6489ade454f
+
+@ 0 1 0 0be19ab73c174de518cfc915e1abff1a
++ ### Einstellungen
+
+@ 0 4 0 13ccd8cb705105331e4d7393a82b9007
++ Ein Werkzeug wird über `Setting`s konfiguriert. Eine Einstellung richtet sich an die Formate,
++ deren Erzeugung sie konfiguriert, und nicht direkt an ein Werkzeug. `produce` wendet jede
++ Einstellung der Reihe nach auf jede Kante auf dem Pfad an, auf deren Ziel sie zutrifft. Eine
++ Einstellung, die auf kein Format auf dem Pfad passt, löst `InapplicableSetting` aus, bevor
++ irgendein Werkzeug läuft.
+
+@ 0 4 0 0ab12d1e8ac2c3de1200bb0daabb914d
++ Einstellungen an Formate zu richten lässt eine Einstellung mehrere Stufen konfigurieren. Ein
++ Android-API-Level ist eine Eigenschaft der Anwendung, bestimmt aber sowohl, wie D8 entzuckert,
++ als auch, was das Manifest deklariert. Daher gilt `apkOptions.minApi` gleichermaßen für `Dex`
++ und `Apk` und wird auf den Konfigurationstyp jedes Knotens verteilt. Die anderen Gruppen von
++ Einstellungen sind:
+
+% 2 1 0 076521c9ef69d9880ab6c6fb897e060e
+
+@ 0 7 0 129fcf56dd50a5dd079e89e7ccfdd453
++ column  Einstellungen
++ column  Konfigurieren
++ column  Gelten für
++ row  `linkerOptions.checkIr`, `sourceMaps`, `esVersion.*`, `optimize.*`  den Scala.js-Linker  jedes Format, das der Scala.js-Linker erzeugt
++ row  `nativeOptions.gc.*`  den Garbage Collector  native Binarys
++ row  `nativeOptions.mode.*`  den Build-Modus  native Binarys
++ row  `nativeOptions.lto.*`  die Optimierung zur Linkzeit  native Binarys
+
+% 1 1 0 00c5073ab7a6f31419abb8bed06c25e3
+
+@ 0 2 0 0bc4b1a148567a5e184f4eb9f33844e5
++ Einstiegspunkte sind auf dieselbe Weise entlang des ganzen Pfads ambient, und jedes Werkzeug
++ wendet sie an oder ignoriert sie, wie sein Format es verlangt:
+
+% 2 1 0 0cfbb4e1ac3afced1bcd5430b4c16b26
+
+% 1 1 0 0879672f488bb99b0b24df0e8634226f
+
+@ 0 8 0 1a9b1bbb2f2c463e1b70e8b51e80d1f0
++ column  Einstiegspunkte
++ row  `Artifact.Jar`  höchstens einer, festgehalten als seine `Main-Class`
++ row  `Shrunk`  beliebig viele, jeder eine Wurzel dessen, was behalten wird
++ row  `Shrunk.Jar`  höchstens einer, festgehalten als seine `Main-Class`
++ row  `Artifact.Binary`  genau einer
++ row  `Apk`  genau einer
++ row  `Js`, `Wasm`, `Wasi`  beliebig viele, jeder als Modulinitialisierer ausgeführt
++ row  `Library`, `Dex`  ignoriert, da keines von beiden einen Einstiegspunkt festhält
+
+% 1 1 0 0a6d88949f840503018562e5181f59d9
+
+@ 0 1 0 00e1e667ba8ac71215259d511bfc1887
++ ### Schrumpfen
+
+@ 0 4 0 13334c1ea02e331118c58c5cb1926ca1
++ Ein ausführbares JAR, das über `jarEdges` erstellt wird, enthält den ganzen Klassenpfad: jede
++ Klasse jeder Bibliothek, ob die Anwendung sie erreichen kann oder nicht. `shrinkEdges` fügt einen
++ Pfad hinzu, der nur das enthält, was sie erreichen kann. `Shrunk` ist eine geschlossene Welt aus
++ Classfiles, den Klassen, die die Einstiegspunkte erreichen, und keinen anderen, und `Shrunk.Jar`
++ ist ein ausführbares JAR aus einer solchen:
+
+% 2 1 0 138d05cbc961579703df9ad8790fb2ff
+
+% 3 1 0 0c362cee6644de03186d65fff7c52d91
+
+% 0 1 0 0730bd52f4dce4600ed4cd194424ad7f
+
+% 1 1 0 10940be9b50f47410278f07b5365260e
+
+% 2 1 0 11f508a1dc589c930cfb9bbc536e87e7
+
+% 0 1 0 0c68586cecbfd2eb0275b6e6f30c6210
+
+% 1 1 0 0c06c9464f17384c0e53ff4e747009ae
+
+% 0 1 0 0f6c67afaeef497616c9282890ff6bb7
+
+% 1 1 0 0f735ff2b8ce437813566305dbfe30ec
+
+% 2 1 0 1c7d41a1d3fb09c00b1a090168bcf61e
+
+@ 0 3 0 12eb73885909bea61f19aa333673f683
++ Der Pfad ist `Classfile → Shrunk → Shrunk.Jar`, sodass die geschlossene Welt unterhalb des Ziels
++ unter `shrunk/` geschrieben und das JAR von dort aus paketiert wird. `shrinkEdges` nimmt den
++ `Scalac`, der die Klassen kompiliert hat, weil es sie erneut kompiliert.
+
+@ 0 7 0 1199e09ac4fb49b2035bf1b8e058f7ae
++ Einem Werkzeug, das Bytecode schrumpft, muss alles mitgeteilt werden, was der Compiler generiert
++ hat: die Weiterleiter, die eine Klasse für die Methoden eines Traits hat, die Bridges, die Felder
++ hinter einem lazy Wert, die statische Seite eines Objekts. Das Schrumpfen geschieht hier früher,
++ auf dem TASTy, das der Compiler neben jede Klasse geschrieben hat. Die Klassen, die dieser
++ Compiler kompiliert hat, werden daraus neu kompiliert, und die Member, die nichts erreicht,
++ werden nach dem Inlining und vor den Phasen entfernt, die irgendetwas davon generieren, sodass
++ nichts davon für einen Member generiert wird, der nicht behalten wird. Eine Einheit, die nichts
++ erreicht, wird nie gelesen, und die Makros darin laufen nie.
+
+@ 0 1 0 16647cf285cd8043115e9cea918c916c
++ Drei Arten von Klassen bilden die geschlossene Welt:
+
+% 2 1 0 1b4f21a3e931f92f1c7711c46d45b637
+
+@ 0 5 0 152cdee041f22ffe006b1fdaa061f8f8
++ column  Klasse
++ column  Behandlung
++ row  von diesem Compiler kompiliert und erreicht  aus ihrem TASTy neu kompiliert, mit nur den Membern, die erreicht werden
++ row  von diesem Compiler kompiliert und nur als Typ genannt  als Hülle geschrieben: ein Name, seine Flags und seine Elterntypen
++ row  jede andere: Java, Kotlin, die Standardbibliothek  unverändert kopiert, wenn behaltener Bytecode auf sie verweist
+
+% 1 1 0 15234f9800c066a2057a8b79b468c665
+
+@ 0 3 0 11b0439f3d43f1d9199eb493275dcdcc
++ Die Standardbibliothek und jede andere Scala-Bibliothek werden klassenweise übernommen. Eine
++ Bibliothek ohne TASTy wird vollständig übernommen, sobald eine ihrer Klassen erreicht wird, da
++ eine solche Bibliothek ihre eigenen Klassen über den Namen laden kann, was kein Verweis im
++ Bytecode zeigt.
+
+@ 0 1 0 08060bbf6492927218998d64ad7214bb
++ Was die Analyse nicht sehen kann, ist das, was per Reflection erreicht wird, und das wird ihr
++ mit Einstellungen mitgeteilt:
+
+% 2 1 0 098cdb0529fccd461ed1c7e831aa2e33
+
+@ 0 7 0 1b8ca3fb3ac7fdc603237c3be11c42f1
++ column  Einstellung
++ column  Wirkung
++ row  `shrinkOptions.keep(pattern)`  eine Klasse, die passt, wird mit jedem Member behalten
++ row  `shrinkOptions.pin(pattern)`  eine Einheit, deren Klasse auf oberster Ebene passt, wird unverändert kopiert, mit allem, worauf sie verweist
++ row  `shrinkOptions.services(false)`  die Implementierungen, die `META-INF/services`-Dateien nennen, sind keine Einstiegspunkte mehr
++ row  `shrinkOptions.fine(true)`  auch eine Bibliothek ohne TASTy wird klassenweise übernommen
++ row  `shrinkOptions.name(name)`  der Dateiname des JARs
+
+% 1 1 0 0648bc630bf5b04a1cbb396b3780e552
+
+@ 0 4 0 06eb46f93a5067c112d2d4e52a8a41a4
++ In einem Pattern steht `*` für einen Teil eines Namens und `**` für beliebig viele Pakete,
++ sodass `com.example.plugins.**` auf jede Klasse unterhalb dieses Pakets passt. Eine Klasse, die
++ in einem erreichten literalen `Class.forName`-Aufruf genannt wird, wird behalten, ohne dass
++ danach gefragt wird, und ebenso ein Member, der über einen strukturellen Typ, über seinen Namen,
++ aufgerufen wird.
+
+@ 0 1 0 0beb6d56e5c481c40f206f0d64d6b99f
++ Außerhalb einer Toolchain tut ein `Shrink` dasselbe mit jedem Klassenpfad und meldet, was es
++ getan hat:
+
+% 2 1 0 15aba3d434f49f010d73a9b8d3ad8da0
+
+% 0 1 0 19bc8b2637cfe4261d59d200138434dc
+
+% 1 1 0 064fdea89c35c1910448b864df137649
+
+@ 0 4 0 0e3aa7c3462945a41ff3ad410a94d97a
++ Hier ist `report.kept` die Anzahl der Klassen in der geschlossenen Welt und `report.classes` die
++ Anzahl auf dem Klassenpfad, `report.read` ist die Anzahl der Einheiten, die neu kompiliert
++ wurden, von den `report.units`, die es hätten werden können, und `report.why(fqcn"scala.Option")`
++ ist die Kette von Klassen, jede auf die vorige verweisend, die dazu geführt hat, dass eine Klasse
++ behalten wurde.
+
+@ 0 5 0 109fcbefee4f30860da199cabf24cd9c
++ Eine geschlossene Welt wird geprüft, bevor sie geschrieben wird. Ein Verweis von etwas
++ Behaltenem auf einen entfernten Member wird doppelt gefunden, in den Bäumen des Compilers, bevor
++ irgendein Bytecode generiert wird, und danach im Bytecode, und löst einen `Shrink.Error` aus, der
++ beide Enden nennt; was ein `NoSuchMethodError` gewesen wäre, wenn die Anwendung lief, ist ein
++ Fehler, wenn sie gebaut wird. Eine Einheit, die nicht neu kompiliert werden kann, wird gepinnt,
++ und `report.notes` sagt, warum.
+
+@ 0 5 0 1b5224c8db8189af07cfd52148cf6796
++ Was Reflection von einer Klasse sieht, wird durch ihr Schrumpfen verändert, wie es sein muss.
++ Eine Klasse, die Member verloren hat, hat eine andere vorgegebene `serialVersionUID`, daher
++ sollte eine Klasse, deren Instanzen ein Build schreibt und ein anderer liest, mit
++ `@SerialVersionUID` eine erhalten; innerhalb einer geschlossenen Welt ist die Serialisierung
++ nicht betroffen. Die Klassen und Methoden, die Reflection auflistet, sind die, die behalten
++ wurden, und eine generische Signatur kann eine Klasse nennen, die es nicht wurde.
+
+@ 0 5 0 1afd43078992b7bb10ab11e6ef80aa8b
++ Zwei Dinge liegen jenseits davon. Code, der zur Laufzeit von einem Staging-Compiler kompiliert
++ wird, braucht das TASTy von allem, worauf er verweist, was eine geschlossene Welt nicht enthält,
++ daher müssen die Klassen, die er verwendet, gepinnt und ihr TASTy getrennt geliefert werden. Und
++ die Neukompilierung läuft mit einem einzigen Satz Optionen für den ganzen Klassenpfad: denen von
++ Soundness, ergänzt um die des `Scalac`, wobei aus seinem TASTy gelesen wird, ob jede Einheit dem
++ Capture-Checking unterzogen wurde.
+
+@ 0 1 0 01a5a5745bc1e2061fc4144095fb09d6
++ ### WASI-Komponenten
+
+@ 0 7 0 1faec297f4216ce214db6dd5edbf759b
++ Eine WASI-Komponente ist ein `Wasi(Wasi.Version.Wasip2)`: eine `*.wasm`-Datei nach dem
++ Komponentenmodell, deren Importe und Exporte durch WIT beschrieben sind. Sie hat über den Linker
++ hinaus zwei Voraussetzungen, und der Provider der Kante verlangt beide, sodass eine Kante ohne
++ sie nicht konstruiert werden kann. Eine `WasiToolchain` ist ein Nachweis, dass die nativen
++ Werkzeuge, die das Linken aufruft, `wasm-tools` und der scala-wasm-Fork von `wit-bindgen`,
++ vorhanden sind, und ist nur über den sondierenden Konstruktor `WasiToolchain()` zu bekommen. Eine
++ `Wasi.World` nennt das Verzeichnis der WIT-Pakete und die Welt, gegen die gelinkt wird:
+
+% 2 1 0 1ce69b7caf901814093f7a8f6ae5382d
+
+% 0 1 0 0daaf1540ba5303c04cc1b680558d6fc
+
+% 0 1 0 17099b064064fab80e8eada9e3131d6c
+
+% 0 1 0 1d3efac76d8a78a11ea178644c0b544c
+
+% 0 1 0 11827c6dcd4e11c816c782af0ecdcf0c
+
+% 0 1 0 122be381deb3ea3e071349aa600f4a8c
+
+% 0 1 0 1516e59fa6995b260ab0dcb61db42036
+
+% 0 1 0 0ef9d386219041e1118997911b705766
+
+% 1 1 0 093bf00f9e8f39c60e669ba07eb1726f
+
+@ 0 1 0 0a9d32e8653f852a05bca5d6efb22b44
++ WASI-Generationen sind separate Knoten, weil sie die ABI eines Artefakts bestimmen:
+
+% 2 1 0 08ad8290ed7b146d1999ae56c479f33d
+
+% 0 1 0 0d11993244cadb2d02589735d935aec1
+
+@ 0 5 0 1c166ce9dc3fe611025c136ace9fd4e0
++ column  Schnittstelle
++ column  Erzeugbar
++ row  `Wasi.Version.Wasip1`  eine flache Syscall-Schnittstelle im Stil der libc auf Core-Modulen  nein
++ row  `Wasi.Version.Wasip2`  das Komponentenmodell  ja
++ row  `Wasi.Version.Wasip3`  das Komponentenmodell mit nativer Asynchronität  nein
+
+% 1 1 0 1ffd084c60a1eeb00a9bbc8bebd4e3f2
+
+@ 0 2 0 05d7353a8c9e6d8c0ce2341d56843a86
++ Eine Generation anzufordern, für die keine Kante existiert, die sie erzeugt, löst `NoPath` aus
++ und erzeugt nicht stillschweigend etwas anderes.
+
+@ 0 3 0 1c815e332ac786900b6513387d2022b2
++ Eine Komponente als OCI-Artefakt zu verpacken ist eine weitere Kante, `Wasi(Wasip2) → OciImage`,
++ und nichts, wovon das Linken der Komponente weiß. Der Pfad setzt die beiden zusammen.
++ `Js(module)` und `Wasm` brauchen überhaupt keine nativen Werkzeuge, da der Linker eine
++ gewöhnliche JVM-Bibliothek ist.
+
+@ 0 1 0 002a80955e48dab10d44acf1368cca5d
++ ### Native Binarys
+
+@ 0 3 0 029ffa58de176bcc0048af32a7e6fe24
++ Die nativen Kanten rufen `clang` und `clang++` auf. `nativeEdges` sondiert einmal nach ihnen und
++ löst `Toolchain.Error` aus, wenn eines fehlt. Es nimmt die Triples, auf die gezielt werden soll,
++ und verwendet als Vorgabe das des Build-Hosts selbst:
+
+% 2 1 0 0557d5f000dec0e111eca217b2be3cb8
+
+% 0 1 0 11eb61515f171dc112264d9bc53da98c
+
+% 0 1 0 02d5a70498b737420f483c7f26f79bc1
+
+% 0 1 0 0048018eafa33aea1d9ccfd148f535da
+
+% 0 1 0 0bced7ddaff379f80e74b967532c2568
+
+% 0 1 0 1ad1bd2349d024ea16d5e575b3749768
+
+% 1 1 0 1dfdeee7c251bd170f4d65842be40513
+
+% 0 1 0 0b3be89f7c8960750569d87e2906d9c9
+
+% 1 1 0 0a86fa864997842d0ca5a26ab988e246
+
+% 2 1 0 1b7878d722d63c761a3a0e02fade2ae6
+
+@ 0 3 0 07253a8ee0efdd6b162f5055daf09253
++ Jedes Triple ist ein eigener Knoten, dargestellt als LLVM-Target-Triple wie
++ `aarch64-apple-darwin` oder `x86_64-unknown-linux-gnu`. Ein anderes Ziel als der Build-Host
++ braucht eine C-Toolchain, die dafür cross-kompilieren kann.
+
+@ 0 1 0 11f492d6c84113ae0a11967989712c99
++ ### Andere Sprachen
+
+@ 0 3 0 0626b95806221dd412bf16992e22c795
++ `Javac` kompiliert Java-Quelltexte über dieselbe Gestalt von API. Ein Werkzeug, das die
++ Kompilierung orchestriert, wechselt nicht das Idiom von einer Sprache zur anderen, und eine
++ gemischte Scala- und Java-Anwendung wird zu einem Artefakt gelinkt.
+
+@ 0 3 0 119a952ade3c916a10dc1ea3e517ffb3
++ `Kotlinc` tut dasselbe für Kotlin. Es ist mit der Sprachversion parametrisiert, auf die es zielt,
++ und seine Optionen, etwa `-Werror`, `-jvm-target` und der explizite API-Modus, liegen unter
++ `kotlincOptions` und werden auf dieselbe Weise gegen die Version geprüft:
+
+% 2 1 0 0166d07ffe96e9b71f7ae3a5932e01ca
+
+% 0 1 0 03e8659c168c9a0d1037b5d6d0d0f009
+
+% 0 1 0 07b6c1ffaed6afc915b342bd05d2baf6
+
+% 0 1 0 1b39bdfdff5569ed0f625e4955a7f25f
+
+% 0 1 0 06aecee2de532b0314804e82a98650fc
+
+% 1 1 0 17420239b0bb98a002b0ac481f3bf3c1
+
+@ 0 5 0 0b69c74cab7e93b40888ac033c477da3
++ Der Kotlin-Compiler liest seine Quelltexte von der Platte, daher werden sie in ein temporäres
++ Verzeichnis geschrieben, das entfernt wird, wenn die Kompilierung endet. Eine Diagnose nennt die
++ Quelle trotzdem so, wie sie übergeben wurde, nicht die Datei, in die sie geschrieben wurde. Die
++ Kotlin-Standardbibliothek wird nie stillschweigend vorausgesetzt. Wie jeder andere
++ Klassenpfadeintrag wird sie explizit geliefert. Die Ausgabe sind Classfiles, linkbar wie jedes
++ Classfile-Artefakt, einschließlich eines `Dex` oder eines `Apk`.
+
+@ 0 3 0 1daf64c42f8234be1f77a4d9a402f940
++ Wie beim Scala-Compiler hinter `Scalac` ist auch der Kotlin-Compiler selbst eine Abhängigkeit nur
++ zur Kompilierzeit. Ein Werkzeug, das ihn steuert, legt `kotlin-compiler-embeddable` auf seinen
++ eigenen Laufzeit-Klassenpfad und wählt die Version, die es steuern will, statt eine zu erben.
+
+@ 0 2 0 0e02a785f263902918a70a6087dd21cc
++ *In* eine kompilierte Kotlin-Bibliothek hinein aufzurufen braucht überhaupt keine Kompilierung.
++ Ihre Deklarationen werden aus ihren Classfiles gelesen, wie
++ [Fremdsprachen-Interoperabilität](foreign-interop.md) beschreibt.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 8 0 0552d718685b09f319690869e8208066
++ - [Staging](staging.md) kompiliert zitierten Code mit einem `Scalac` und führt ihn anderswo aus.
++ - [Klassenpfad](classpath.md) beschreibt die Klassenpfade, die eine Kompilierung liest und
++   erzeugt.
++ - [Paketierung](packaging.md) beschreibt die JAR-Dateien und anderen Archive, die eine Toolchain
++   schreibt.
++ - [Graphen](graphs.md) beschreibt den `Dag`, der eine `Toolchain` ist.
++ - [Fremdsprachen-Interoperabilität](foreign-interop.md) ruft in kompiliertes Kotlin und andere
++   Sprachen hinein auf.
++ - [Nebenläufigkeit](concurrency.md) beschreibt `supervise`, innerhalb dessen eine Kompilierung läuft.
++ - [Container](docker.md), [Metaprogrammierung](metaprogramming.md) und [Syntaxhervorhebung](syntax-highlighting.md) verwenden die Ausgabe und das Modell des Compilers.

@@ -1,0 +1,1465 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0cfdb3519356eea91b1c45598f44d38f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03bc31ea70f9b62311eb2862b4e634bf
++ info   clientes HTTP tipados derivados de uma especificação OpenAPI enquanto o código compila
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 07a064638f9600ef11042836d20e29e9
++     _Apoplexy_ transforma um documento [OpenAPI](https://www.openapis.org/) — os caminhos, os
++     parâmetros, os esquemas de requisição e de resposta e os esquemas de segurança de uma API
++     REST — em um **cliente tipado**, sem gerar código algum. `Api(cp"/spec.json")` lê a
++     especificação do classpath enquanto o código compila, e o valor que retorna navega por
++     caminho: cada segmento, cada parâmetro de caminho, cada parâmetro de query ou de cabeçalho,
++     cada corpo de requisição e cada tipo de resposta é verificado contra o documento, de modo
++     que uma chamada que a API não oferece, ou um parâmetro do tipo errado, é um erro de
++     compilação no lugar onde a chamada é escrita. O cliente *é* a especificação, interpretada
++     pelo compilador, e uma divergência entre o código e o contrato faz falhar o build, e não uma
++     requisição.
+
+% 2 1 0 14d1f9abe89e11b1162b5ef7ea856557
+
+% 3 1 0 110adced9c7bca2f084eec061dae2492
+
+% 4 1 0 0c5d5995bfc9612f0324ee3f76731a04
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 0ce8cde1ff9b0e2a18dad81c1fac9bf2
+
+% 0 1 0 14367c786e279a390474d703d55ee5c0
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 098392ca96d9bb94167323c7f9c2a04c
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 0 1 0 153b22363fcd680c07868dd2050167ea
+
+% 0 1 0 13fd51fc254d98431a3500ba8aa90e10
+
+% 0 1 0 1d3ab3e0abafb2641a7c0ddba7d34126
+
+% 0 1 0 0bbb97ed6571082e120791fcb7c7541b
+
+% 0 1 0 143eebcb0657f2680e2270c9a5c4a4a4
+
+% 0 1 0 1e9af5d44ec24f5a1f3a1618b016c82b
+
+% 0 1 0 10d90a2642483a7911db2314f90c77c5
+
+% 0 1 0 0a7e182ad29e6cc811de67d604b59465
+
+% 1 1 0 16cceecc5a47ceb6097d65ce6ac23d64
+
+@ 0 11 0 12e881cb725c469605e2b655e7b43fd5
++     Três grupos de tipos compõem a biblioteca. `Api` é o cliente navegável: um valor refinado
++     com a sua posição na API (`Api at "/pets/{petId}"`) e o formato de transmissão que a
++     especificação declara (`Api over Json`), cujos membros `Dynamic` o compilador resolve contra
++     o documento; invocar um verbo sobre ele dá uma `Api.Response`, cujos `call`, `attempt`,
++     `record` e `tuple` realizam a requisição. `Api.Error` é a família de erros que uma resposta
++     fora da faixa de sucesso lança, uma classe por status, e `Api.Violation` é um status que a
++     especificação nunca declarou. `OpenApi` é o próprio documento como valor — informações,
++     servidores, caminhos, operações, parâmetros, corpos, respostas, componentes e esquemas de
++     segurança —, decodificado de JSON ou YAML com `read[OpenApi]`, para ferramentas que
++     inspecionam uma API em vez de chamá-la; `OpenApi.Error` diz o que há de errado com um
++     documento que não carrega.
+
+@ 0 13 0 1da70653bf38f94613b78f4e81235a8e
++     Como o corpo de uma resposta se torna um valor é decidido pelo seu **tipo de mídia**. A
++     especificação nomeia o tipo de mídia de cada corpo, e um given `gesticulate.Construable` —
++     `("application/json" is Construable to Json)`, `("image/png" is Construable to (Raster in
++     Png))` — nomeia o tipo de Soundness que o carrega. Todo mapeamento desse tipo é um given da
++     família `construables`, declarado pela própria biblioteca do formato (`jacinta.http` para
++     JSON, `xylophone.http` para XML, `hallucination` para os formatos raster, `gesticulate` para
++     texto puro e streams de octetos, …) e **importado por nome**, pois `import soundness.*` não
++     importa givens: nada é interpretado sem uma escolha deliberada, e uma resposta cujo tipo de
++     mídia nada no escopo interpreta é lida como a `Http.Response` crua, com um aviso em tempo de
++     compilação. Um corpo de requisição é escrito pelo `telekinesis.Postable` do portador,
++     também importado por nome de `postables`. A classe de tipos `Conformant` une os dois:
++     `call[T]()` lê o portador e decodifica `T` a partir dele, de modo que qualquer `T` com um
++     `Decodable in Json` pode ser pedido de uma resposta JSON.
+
+@ 0 1 0 174617a6016ee01912beeea91eea1346
++     As credenciais vêm de `orthodoxy`: um given `Credential` nomeado pelo esquema de segurança
+
+% 0 1 0 1dfae64cc511aee4016d81782ad1eaca
+
+@ 0 4 0 15b6c17c096fcdce1e249df54e6a3f57
++     `("petstore_auth" is Credential to Authorization)`) é convocado onde a chamada é escrita e
++     apresentado como o esquema determina — um cabeçalho, um parâmetro de query, um cookie ou uma
++     autorização `Bearer` —, e uma operação cujos requisitos nenhuma credencial no escopo
++     satisfaz não compila, e o erro nomeia os givens que os satisfariam.
+
+@ 0 6 0 0b63db0ba6be65370ca8e9d55447a0e5
++     A biblioteca tem um único conjunto de fontes, `apoplexy.core`, apenas na JVM; as suas macros
++     leem a especificação pelo classloader do compilador, de modo que o documento precisa ser um
++     recurso do classpath nomeado pelo interpolador `cp"…"`, que só aceita literais. `Api`,
++     `Conformant` e `OpenApi` são exportados para o guarda-chuva `soundness`; o given de nível
++     superior `yamlEncodableInJson` não é, e é importado como `apoplexy.yamlEncodableInJson` onde
++     um documento YAML deve ser lido como JSON à mão.
+
+% 0 1 0 1ded61d524e211450c4dd671553c9282
+
+% 0 1 0 0c1d449a434652e307697961dac7f82c
+
+% 0 1 0 01d0b09fceaf81b11b9008c8cb92ec2e
+
+% 0 1 0 15c1b1c4b6e2ac240abc9557159c21b6
+
+% 0 1 0 195ed1605aa4dad0163115ae591e4c48
+
+@ 0 1 0 061a9b059d10a6420d6512f2c2ef98ba
++ entry .Api   um cliente navegado por caminho, com cada passo verificado contra a especificação
+
+% 1 1 0 0b00c862eece9d43041dbc7889d2387e
+
+@ 0 8 0 09ebb654f63a7ebf0f8fec5baa771613
++       Uma `Api` é uma posição em uma API: a requisição até ali (`#request`, uma `Api.Request` que
++       contém o método, a URL base, o modelo de caminho, as substituições, a query, os
++       cabeçalhos, o corpo e o tipo de mídia de `accept`) junto com um tipo refinado que registra
++       a posição como o `Locus` literal (`Api at "/pets/{petId}"`), o recurso da especificação
++       como `Source`, e o formato de transmissão que as respostas do documento compartilham como
++       `Transport` (`Api over Json`, ou `over Xml`). Todo acesso a membro é `Dynamic`:
++       `#selectDynamic`, `#applyDynamic` e `#applyDynamicNamed` são macros que releem a
++       especificação e interrompem a compilação quando o caminho, o parâmetro ou o verbo não
++       estão lá.
+
+% 2 1 0 0ceeecdd17ab7b7d017815db83025c50
+
+% 3 1 0 1c449c85a857b43c0477e13771d91031
+
+% 0 1 0 0c82f0938af751140b554df1f10c14f3
+
+% 0 1 0 1954188ad5f14e5e1e9c96522a8da2d9
+
+% 0 1 0 16b234eb69c6171715611513af5ed9f0
+
+% 0 1 0 08a402c6ed0ceb9401fb94ac02e87bb8
+
+% 0 1 0 0f179ec955908fff057617933675be82
+
+% 0 1 0 0c62bb0574b802311903a0ff62f66bca
+
+% 1 1 0 10701fafd98eb40e1cfeeba64cf53815
+
+@ 0 15 0 04b7b33b6a8de108059afc58b569eee3
++       A navegação segue quatro regras. Um **segmento** é um acesso a membro, `api.pets`; um
++       segmento que a especificação escreve com caracteres que Scala não permite em um
++       identificador vai entre crases, `` api.`museum-hours` `` ou `` api.users.`@me` ``. Um
++       **parâmetro de caminho** é um argumento posicional no segmento anterior a ele,
++       `api.pets(42)`, tipado pelo esquema do parâmetro: `type: integer` é um `Int`,
++       `format: int64` um `Long` (um `Int` também é aceito), `number` um `Double`, `boolean` um
++       `Boolean`, e qualquer outra coisa `Text`. Um **verbo** — `get`, `put`, `post`, `delete`,
++       `patch`, `head`, `options`, `trace` — sobre um caminho completo invoca a operação, com os
++       parâmetros de query e de cabeçalho como argumentos nomeados e o corpo da requisição como o
++       único argumento posicional, e produz uma `Api.Response`. Um endpoint com exatamente uma
++       operação que não seja `DELETE` pode ser invocado sem o seu verbo, aplicando argumentos
++       diretamente ao segmento, `api.pets(42).photos(width = 10)` ou `api.login(credentials)`; um
++       endpoint com várias operações precisa do verbo, e `DELETE` é sempre explícito. Um
++       parâmetro obrigatório omitido, um parâmetro do tipo errado, um item de caminho sem esse
++       verbo e uma aplicação sem verbo a um endpoint com várias operações são, cada um, erros de
++       compilação.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0dbda40102bd8bc21591dc12f30aa694
++         label A raiz da especificação
+
+% 1 1 0 162b12b86101316b167caddc00596a22
+
+% 0 1 0 05cb51ced590344e15c26b2438d9deaf
+
+% 1 1 0 154001026953d89c1800c98cc18e10d2
+
+@ 0 1 0 039c4367cef149f40c95314374dfb0e0
++         label Um segmento, verificado para iniciar um caminho
+
+% 1 1 0 16117c55ca414b911595a8d43c0e0c43
+
+% 0 1 0 0f43ebfab4b39cd402750df091a23849
+
+% 1 1 0 0c34ecb2e0d1d3221f95c7c68548957e
+
+@ 0 1 0 1870ef30e6618ad11a37a02e936c3418
++         label Um parâmetro de caminho, tipado pelo seu esquema
+
+% 1 1 0 07e3a17edd4e77b9073a4692dc1607b4
+
+% 0 1 0 1b8c90dd368632e0031a096e919ca081
+
+% 1 1 0 0506c797b5bca20d1b071ee68da5d6e4
+
+@ 0 1 0 0fc45af9f0f7986a0dbf165224b86d90
++         label Um verbo com os seus parâmetros: uma `Api.Response`
+
+% 1 1 0 100c7f484eb29c2a0f18e8f55272d41c
+
+% 0 1 0 03a1ae6d26f0ccae065dbfeaf6abb1eb
+
+% 1 1 0 07c5fb70b25457dc1c2684360bd9f0fc
+
+@ 0 1 0 00097a78f13bcb141b03eebd320dbd58
++         label A chamada, decodificada como o tipo pedido
+
+% 1 1 0 0c4b825b2d3ef088090bf92542affa49
+
+% 0 1 0 0641cb9fce68cae305a6cce06c25e46b
+
+% 0 1 0 03bdd43102ca49c504fb0a38882b3975
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 1f40225b8492f4a20b0e3d9512cbef14
++       Os parâmetros declarados no item de caminho se aplicam a todas as operações dele; um
++       parâmetro, uma resposta ou um corpo de requisição escrito como `$ref` para os componentes
++       do documento é seguido; e um parâmetro de query ou de cabeçalho é renderizado com o
++       `Showable` do seu argumento. Quando uma operação declara várias respostas de sucesso,
++       `200` é preferida, depois `201`, depois a menor.
+
+@ 0 7 0 12360fde90677287156662b29f2ce986
++       A URL base vem do primeiro servidor da especificação, com as suas `{variables}` nos
++       valores padrão, analisada como URL enquanto o código compila; um servidor relativo
++       (`/api/v3`), ou nenhum servidor, precisa de `Api(resource, base)`. A especificação é lida
++       do classpath pelo classloader de contexto do compilador, de modo que o recurso precisa ser
++       um literal `cp"…"` no classpath do compilador, em JSON ou YAML, OpenAPI 3.0 ou 3.1.
++       Parâmetros de cookie, `callbacks`, `links`, `webhooks` e referências a outros documentos
++       não são tratados, e um corpo `multipart/form-data` não é interpretado.
+
+% 1 1 0 1e4e0d24b73b9cf61ada2c8a544e54b5
+
+% 0 1 0 1a4776226d3646ef1251a869afd4b5ad
+
+% 0 1 0 19b6567619ee68a10303f618d656ba4c
+
+% 0 1 0 13159d27577b006f199c48f4da5f612d
+
+% 1 1 0 0e78a905f03861fb1f5607c88d59a520
+
+@ 0 8 0 0951acb9537c2238086ae6ec8cdf0d9c
++   entry .apply   `Api(cp"/spec.json")`, ou `Api(resource, base)`: a raiz do cliente de uma especificação
++       Uma macro que lê o `Locus` do `Resource` — de modo que o argumento precisa ser um literal
++       `cp"…"`, cuja existência o interpolador `cp` já verificou —, carrega e valida o documento
++       enquanto o código compila, e retorna uma `Api at "/"` que carrega o caminho do recurso no
++       seu tipo `Source`, para que as macros de navegação o releiam. O seu `Transport` é o tipo
++       portador que a resposta de sucesso de toda operação compartilha, por meio dos givens
++       `Construable` no escopo da chamada, ou `Json` quando o documento mistura formatos; cada
++       operação recalcula o seu.
+
+@ 0 6 0 17212cd848649d070623ba291a890a8a
++       A forma de um argumento obtém a URL base do primeiro servidor da especificação, com cada
++       `{variable}` no seu valor padrão (`OpenApi.Server#resolved`), e interrompe a compilação se
++       ela não for uma URL `http` ou `https` absoluta: _apoplexy: the server URL `/api/v3` is
++       relative; supply a base URL_. A forma de dois argumentos obtém a base de quem chama; uma
++       URL de servidor relativa é acrescentada a ela com `Api.extend`, e uma absoluta é
++       substituída por ela por completo.
+
+% 2 1 0 0e73088e66e6913b0ef0d4d1bc906ffe
+
+% 3 1 0 08321f710916ed3f1f0408d25b737908
+
+% 0 1 0 0b2bd616e6a5f10f04ce2b7c933f8a1a
+
+% 0 1 0 045b85fd37e70cf701c4a8fe4364d1fc
+
+% 0 1 0 0f31e28dda02ebe602ab5dc68f15802b
+
+% 1 1 0 080b990651892ce804d506087ba845d8
+
+@ 0 14 0 0eca3131b95c143f06b2f5727ae106d8
++       Um documento que não pode ser analisado, que declara uma versão diferente de 3.x ou que
++       nomeia uma localização de parâmetro diferente de `path`, `query`, `header` ou `cookie` é um
++       erro de compilação que carrega a mensagem de `OpenApi.Error`.
++   entry .extend   uma URL de servidor relativa acrescentada à base de quem chama
++       `Api.extend(base, server)` é a `HttpUrl` cuja origem, query e fragmento são os de `base`, e
++       cuja localização é a de `base` seguida de `server`: o que `Api(resource, base)` faz com uma
++       especificação cujo servidor é `/api/v3`. O texto do servidor é acrescentado como está, de
++       modo que uma base terminada em `/` e um servidor que começa com uma dão uma barra
++       duplicada.
++   entry .make   uma `Api` sobre uma `Api.Request` dada
++       O construtor que as macros de navegação emitem: uma `Api` simples cujo `#request` é o dado,
++       convertida depois para o seu tipo refinado. Ela mesma não carrega refinamento algum, de
++       modo que uma `Api` criada à mão não pode ser navegada — as macros interrompem com
++       _apoplexy: the receiver has no spec `Source`_ —, mas pode ser enviada com `Api.send`.
++   entry .Records   as primitivas de leitura JSON sobre as quais `record()` e `tuple()` constroem os seus valores
+
+% 0 1 0 1d67946842fbefea114a1c07674d3027
+
+% 1 1 0 02a2f799681a6c9808fd96975d2255e2
+
+@ 0 29 0 1142c2fc2d0fa4f619bbc8ee7079a9ea
++         Um `Json.Provider.Primitives` sem campos próprios: as macros `record()` e `tuple()`
++         fornecem os campos do esquema de cada resposta, e leem cada membro do JSON da resposta
++         por meio destas primitivas. Não é para uso direto.
++     entry .fields   nenhum campo próprio: as macros fornecem os de cada resposta a partir do seu esquema
++     entry .list   os registros de uma resposta em array, um por elemento
++         `Api.Records.list(json, transform)` divide um array JSON em um registro por elemento,
++         cada um construído sobre as mesmas primitivas; é assim que `record()` lê uma resposta de
++         array de objetos como uma `List` de registros. Lança `Json.Provider.Error` para algo que
++         não seja array.
++   entry .apiKey   uma chave de API como o cabeçalho que o esquema nomeia
++       `Api.apiKey(credential, name)` é `Http.Header(name, credential.value)`: como a macro de
++       invocação apresenta uma `Credential to Text` para um esquema `apiKey` cujo `in` é
++       `header`. Uma para um esquema cujo `in` é `query` torna-se, em vez disso, um parâmetro de
++       query, e `.cookieKey` trata de `cookie`.
++   entry .cookieKey   uma chave de API como um cabeçalho `cookie`, `name=value`
++       `Api.cookieKey(credential, name)` é `Http.Header(t"cookie", t"$name=${credential.value}")`,
++       a apresentação de uma `Credential to Text` para um esquema `apiKey` cujo `in` é `cookie`.
++       `Api.send` une todos os cabeçalhos `cookie` em um só com `; `, como a RFC 6265 pede.
++   entry .httpAuth   autenticação HTTP como um cabeçalho `authorization`
++       `Api.httpAuth(credential)` renderiza uma `Credential to Auth` — `Auth.Basic(user,
++       password)`, `Auth.Bearer(token)` — como o cabeçalho `authorization`, para um esquema
++       `http`. Um token obtido em outro lugar também pode ser apresentado assim para um esquema
++       `oauth2` ou `openIdConnect`, quando a credencial é um `Auth` e não uma `Authorization`.
++   entry .tokenAuth   uma `Authorization` OAuth 2 como um cabeçalho `Bearer`, verificada contra os escopos exigidos
++       `Api.tokenAuth(credential, scopes)` recebe uma `Credential to Authorization` e os escopos
++       que o requisito de segurança nomeia e, antes que a requisição seja enviada, lança
++       `OAuth.Error` com `Reason.InsufficientPrivileges(scope)` para o primeiro escopo que o token
++       não concede; caso contrário, é `Http.Header(t"authorization", …)` com a renderização
++       `bearer` do token. Precisa de uma `Tactic[OAuth.Error]` e de `Diagnostics` no escopo, que a
++       macro de invocação convoca onde a chamada é escrita.
+
+% 2 1 0 1f4fd8103feb3a5200fed53e7ff9a34a
+
+% 3 1 0 14450f21f8dad8650c9e5ef58d9801fe
+
+% 4 1 0 181ecfc4e7a104d51953064fc542cf47
+
+% 0 1 0 08f4de0df4c722d41424191245bca85a
+
+% 0 1 0 16a6c08b1bb39aae017c05a509d88cf0
+
+% 0 1 0 0b2f61399237056703a8b86383d33e46
+
+% 0 1 0 0e1e8e8edae435d617af39b87b472cfe
+
+% 0 1 0 1a517df994be55dd04c424d4ecbcf218
+
+% 1 1 0 0a72c04da62dfd4a1e94decbc4e85650
+
+@ 0 18 0 102c01cecb9e39d104a475cbd5920e97
++   entry .jsonOf   o corpo de uma resposta lido como `Json`
++       `Api.jsonOf(response)` memoiza o stream do corpo e o agrega como `Json`, lançando
++       `Parse.Error` para JSON malformado e `Truncation.Error` para um corpo cortado antes do fim.
++       `record()` e `tuple()` leem a sua resposta por meio dele, assim como os payloads de erro
++       que são registros.
++   entry .dataOf   os bytes do corpo de uma resposta, memoizados
++       `Api.dataOf(response)` é o corpo inteiro como `Data`, e precisa de uma
++       `Tactic[Truncation.Error]`. O código de invocação o usa para o payload de uma
++       `Api.Violation`, cujo corpo nenhum esquema descreve.
++   entry .send   executa uma `Api.Request` pelo `Http.Client` no escopo, dando a resposta crua
++       O envio em tempo de execução que `Api.Response#call`, `#attempt`, `#record` e `#tuple`
++       emitem. A URL é a base da requisição com os marcadores `{name}` do modelo de caminho
++       substituídos pelas suas substituições — cada uma codificada com percentuais como um
++       segmento de caminho, um espaço como `%20` — e a query anexada, ou a própria query da base
++       quando a requisição não tem nenhuma. Os cabeçalhos são o tipo de mídia de `accept` que a
++       especificação declara para a resposta, o `content-type` do corpo, os próprios cabeçalhos
++       da requisição, e todos os cabeçalhos `cookie` unidos em um só com `; `. A requisição segue
++       então como HTTP/1.1 pelo `Http.Client onto Origin["http" | "https"]` no escopo, que usa
++       qualquer `Http.Backend` que esteja no escopo, de modo que um teste pode substituir a rede
++       por um backend de gravação.
+
+@ 0 4 0 1cfb5ee9ce67b31a0aa51141d1b9f092
++       Precisa de `Online` (importe `internetAccess.online`), de um `Http.Event is Loggable` (como
++       `logging.silentLogging`), de uma `Tactic[Connect.Error]` para uma conexão que falhou, e do
++       cliente. Nada é verificado contra a especificação aqui: uma requisição construída à mão é
++       enviada como está.
+
+% 2 1 0 0e36688e17b6d8830f00d33699008374
+
+% 3 1 0 1c31cee7faf7fdba099d1706799305c5
+
+% 4 1 0 1887efe275a8e43c05b5d1af03e176b4
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 0 1 0 0a9ee7c57fdf311716b4c39b2c6207f4
+
+% 0 1 0 177cfec3e554680516c2881a8a6a9105
+
+% 0 1 0 1f08e53d8dd54a4307bc4b2ef43d52a1
+
+% 1 1 0 0b081aeb16ee223c07c7832626a19455
+
+@ 0 1 0 08a41000af4b8dce00e54755654d7852
++   entry .Body   um corpo de requisição: nada, ou um tipo de mídia com bytes gerados de novo a cada envio
+
+% 1 1 0 0bf6023ab89406061365e221b4c1802e
+
+@ 0 4 0 0ed215c7f03722790b9447b70bb87d86
++         `Api.Body` é um enum de dois casos. `Empty` é uma requisição sem corpo, o padrão de
++         `Api.Request`. `Content(mediaType, spring)` é um corpo do `MediaType` que a especificação
++         declara para ele e de um `Spring[Data]`, que fornece os bytes de novo a cada vez que a
++         requisição é enviada, de modo que uma requisição repetida não é enviada a partir de um
++         stream esgotado.
+
+@ 0 8 0 11e7d830f6be0c0c0ea7b045a961efc6
++         A macro de invocação constrói um `Content` a partir do argumento posicional de uma
++         chamada: o argumento é codificado para o portador do tipo de mídia por meio do seu
++         `Encodable in Carrier` (`NewPet` para `Json` por `jsonEncodable`), ou enviado como está
++         quando já é o portador — uma `Query` para `application/x-www-form-urlencoded`, `Data` para
++         `application/octet-stream` —, e o `Postable` do portador, importado por nome de
++         `postables`, escreve os bytes. Os parâmetros de mídia do próprio `Postable` são copiados
++         para o tipo de mídia da especificação, de modo que um corpo JSON enviado com
++         `jsonPostable` carrega o charset que o `Codepage` no escopo dá.
+
+% 2 1 0 17b2cb15c31096340ecce4dc74bec0a7
+
+% 3 1 0 07629c706287034d08626d0d0fd5f119
+
+% 0 1 0 1308235da0d482ac17f72c3f15b9b366
+
+% 0 1 0 1e4719757030870f193f738649285767
+
+% 0 1 0 1377a07c80d9ad57123e02d286c5430e
+
+% 0 1 0 057704536a8ea39d063bda377c94c7b5
+
+% 0 1 0 1913dcc316693d9b00be63e512e36554
+
+% 1 1 0 04499e5a2368af58037d109e18abe2e5
+
+@ 0 11 0 053a921fb6863d8413b70629bf07c751
++     entry .content   um corpo a partir de um valor portador e do seu `Postable`
++         `Api.Body.content[Carrier](mediaType, value)` cria um `Content` cujo spring executa o
++         `Carrier is Postable` no escopo sobre `value` a cada vez que é sacado. É o auxiliar que a
++         macro de invocação chama, para que o stream seja construído fora da verificação de
++         capturas do ponto de chamada.
++     entry .data   um corpo de `Data` congelado, como são os corpos `application/octet-stream`
++         `Api.Body.data(mediaType, value)` é `content[Data](mediaType, value)` por meio de um
++         método cuja assinatura nomeia `Data` em código comum: a macro não pode escrever
++         `content[Data]` por conta própria, pois um tipo congelado inserido por meio de uma quote
++         é recriado com uma nova capability de leitura.
++   entry .Request   a requisição que uma `Api` navegada ou uma `Api.Response` enviará, como um valor
+
+% 1 1 0 0fc4ae28a15e282714aca943586add96
+
+@ 0 7 0 1f10ef49478d8fdf1803c02665bc41f2
++         O que `request` contém em qualquer `Api` ou `Api.Response`: o método HTTP, a `HttpUrl`
++         base do servidor da especificação (ou a de quem chama), o caminho ainda em modelo, as
++         substituições que associam cada `{name}` ao seu argumento renderizado, a `Query`, o
++         corpo, os cabeçalhos (parâmetros declarados `in: header`, e credenciais apresentadas como
++         cabeçalhos ou cookies) e o tipo de mídia de `accept` que a especificação declara para a
++         resposta. A navegação a copia e a refina um campo por vez, de modo que o que está para ser
++         enviado pode ser inspecionado, ou testado, antes de o ser.
+
+% 2 1 0 1a9bfc5df0993a0001f7ba16ffcb9be7
+
+% 3 1 0 14ecffd80463f6ad0c400077292c057e
+
+% 2 1 0 0256659f6ead2ff50670b507f8854b22
+
+% 0 1 0 0f068c3f0e57f63c1a245bfa64fc8477
+
+% 0 1 0 014ebdffa0eef1310f4fb8fbae6f6479
+
+% 0 1 0 057ff7747cddcfe61dd7576bc467f2ff
+
+% 0 1 0 021707c6977389130d83e9d0d16291c1
+
+% 0 1 0 0e22debfda555c660c21ae05020b03fb
+
+% 0 1 0 1a9cc4b7450aa5ed112680189bcdaa2e
+
+% 1 1 0 1761fab6d4553f4816b9777055d2ad5f
+
+@ 0 12 0 16a826076fc35f930bcccdf88bc01aaf
++     entry #method   o método HTTP: `Http.Get` até que um verbo seja invocado
++     entry #base   a URL base: o primeiro servidor da especificação com os seus valores padrão, ou a de quem chama
++     entry #path   o modelo de caminho como a especificação o escreve, `/pets/{petId}`
++     entry #substitutions   os valores associados aos modelos `{name}` do caminho, cada um renderizado como texto
++     entry #query   os parâmetros de query, vindos de argumentos nomeados e de esquemas `apiKey` enviados na query
++     entry #body   o corpo da requisição, `Api.Body.Empty` a menos que uma operação tenha recebido um
++     entry #headers   parâmetros de cabeçalho e credenciais apresentadas como cabeçalhos ou cookies
++     entry #accept   o tipo de mídia em que a resposta é esperada, ou `Unset` onde nenhum é declarado
++         O tipo de mídia que a especificação declara para a resposta de sucesso, escolhido como o
++         primeiro que os givens `Construable` no escopo interpretam (`application/json` primeiro,
++         depois por nome), e enviado como o cabeçalho `accept`.
++   entry .Response   uma operação pronta para envio: `call`, `attempt`, `record` ou `tuple` a executam
+
+% 1 1 0 01f0882c9be7ba0c03379e2914b675c0
+
+@ 0 10 0 12bd78f8e812c30c1ff73b1a299a5707
++         Invocar um verbo sobre uma `Api` dá uma `Api.Response`, que contém o `#request` e um tipo
++         refinado que registra a operação: `#Result`, um ponteiro JSON para o esquema da resposta
++         de sucesso dentro do documento; `#Form`, o recurso da especificação; `#Locus` e `#Verb`,
++         o caminho e o método; `Transport`, o tipo portador que o tipo de mídia da resposta de
++         sucesso interpreta; e `#Failure`, a união dos tipos `Api.Error` que as respostas de erro
++         declaradas da operação lançam. Nada foi enviado ainda: `#call`, `#attempt`, `#record` e
++         `#tuple` executam a requisição, e cada um precisa de `Online` (`internetAccess.online`),
++         de um `Http.Event is Loggable`, de uma `Tactic[Connect.Error]`, de uma
++         `Tactic[Api.Violation]` e de uma `Tactic` para cada membro de `Failure`, e do
++         `Http.Client` no escopo.
+
+% 2 1 0 0e0521c550ccabce0fd705445b924074
+
+% 3 1 0 0282dbf3b5d115b51c690acf616965d9
+
+% 4 1 0 1598da4d8979509f0772e67bcd94cad7
+
+% 5 1 0 1964fd0a05fc2dd1112bf2c5ec9fcd80
+
+% 6 1 0 10800d7c6bf80b6904efcc95cffca1a0
+
+% 7 1 0 126b2c55acff00441ccab917d530c16d
+
+% 8 1 0 0e8ca1418441c785196a57fc0ac670cc
+
+% 1 1 0 0fdd28033ca0dd77040f95d7bae36ce2
+
+% 1 1 0 090d8e8c23c3adbe1876f917f2e5d77a
+
+% 0 1 0 099ab4c6d7ada0c909d49b27c850f244
+
+% 0 1 0 17572f6560a33b500cbb1351ed52d0b4
+
+% 0 1 0 1427bcd5d0d78dde1842ff54613acc14
+
+% 0 1 0 0fe4fba37a20ab681d0029daa9dff586
+
+% 0 1 0 06987ac8794dc83a0522a7edb080b8c8
+
+% 1 1 0 1e67828d42aa6c8e0ea682ff72691452
+
+% 0 1 0 05dae990ae7193f30e31ef73f94111c8
+
+% 0 1 0 07f01aa36824dea30adee63c2f34fe82
+
+@ 0 33 0 1683882b6a651fb40a567f5f3e296255
++     entry .make   uma `Api.Response` sobre uma `Api.Request` dada
++         O construtor que a macro de invocação emite, convertido depois para o seu tipo refinado.
++         Uma resposta criada à mão não carrega refinamento algum, de modo que `call`, `record` e
++         `tuple` sobre ela interrompem a compilação; `Api.send(response.request)` a envia sem
++         verificação.
++     entry #Result   um ponteiro JSON para o esquema da resposta de sucesso dentro da especificação
++         `#/paths/~1pets~1{petId}/get/responses/200/content/application~1json/schema`, ou um
++         ponteiro para os componentes quando a resposta é um `$ref`; `call[T]()` verifica `T`
++         contra o esquema que ele nomeia, e `record()` constrói os seus campos a partir dele.
++     entry #Form   o caminho no classpath do recurso da especificação, como um tipo literal
++     entry #Locus   o caminho da operação como a especificação o indexa, `/pets/{petId}`
++     entry #Verb   o método da operação, em minúsculas: `get`, `post`, …
++     entry #Failure   a união dos tipos `Api.Error` que as respostas de erro declaradas da operação lançam
++         Um subtipo de `Hazard`: `Api.NotFound[Unit] | Api.BadRequest[Problem]`, por exemplo, em
++         que cada payload é o tipo que a especificação declara para aquela resposta. `#attempt`
++         produz um `Attempt` exatamente sobre esta união, e `#call` exige uma `Tactic` para cada
++         membro.
++     entry #request   a requisição que esta resposta enviará, como uma `Api.Request`
++     entry #ensure   lança o erro declarado para uma resposta fora da faixa de sucesso
++         Uma macro que inspeciona o status da `Http.Response`: um status `2xx` passa; um status
++         que a especificação declara lança o `Api.Error` desse status (primeiro um status exato,
++         depois uma faixa no estilo `4XX`, depois `default` como `Api.OtherError`), com o corpo
++         interpretado como o tipo de payload que a especificação lhe dá; e qualquer outro status
++         lança `Api.Violation` com os bytes do corpo. A `Tactic` de cada erro declarado, e a de
++         `Violation`, é convocada onde a chamada é escrita, e é isso que torna o tratamento
++         exaustivo: um handler a que falte uma é um erro de compilação que a nomeia. `#call`,
++         `#record` e `#tuple` executam isto sobre toda resposta antes de lê-la.
++     entry #call   executa a requisição e lê a resposta como o tipo pedido
++         `call[T]()` primeiro verifica, enquanto o código compila, que `T` é conforme ao esquema
++         da resposta — uma case class cujos campos correspondem às propriedades do esquema, uma
++         `List[T]` para um array, `Json` ou a `Http.Response` crua sem verificação alguma —,
++         depois envia a requisição, executa `#ensure` sobre a resposta e lê `T` por meio do
++         `(T is Conformant) over Transport` no escopo: o próprio `Aggregable` do portador e o
++         `Decodable in` portador de `T`, de modo que `List[Pet]` resolve o seu decodificador como
++         qualquer outro `Decodable`. Um `T` que o esquema não suporta é um erro de compilação.
+
+@ 0 4 0 0802b207aa0e52391f3742d670fb4eef
++         Um `call()` sem tipo deixa o tipo a cargo de `Defaulting to Transport`, que o torna o
++         próprio portador da resposta — o `Json`, o `Raster in Png`, o `Text` de uma resposta
++         `text/plain` —, ou `Unit` para uma resposta que não declara corpo, como um `204`, ou a
++         `Http.Response` crua quando nada no escopo interpreta o tipo de mídia.
+
+% 2 1 0 15a03b8bb032b0300bc964e8acedf4f2
+
+% 3 1 0 14dcf5a7c1ec15cf0ad9bbcb7f1da0bf
+
+% 4 1 0 19534ae4c550490609fd266fa41b7fbc
+
+% 5 1 0 07ebe966632821db1ca1eb27e405da61
+
+% 6 1 0 01061ceb317ca7a1124e335f8fbee457
+
+% 0 1 0 1b29067dfd7f6b0904c0880b0c2c025a
+
+% 1 1 0 11eeb07156a7023503153b4a851111bb
+
+% 3 1 0 119b251c2e05338c17b53658e188385a
+
+% 4 1 0 18302b0276fa868c1190152358a95285
+
+% 5 1 0 05f2c7c230a607480e6cd2180d684251
+
+% 0 1 0 1e23f5816342329c134f65134d587993
+
+% 0 1 0 198db9708289360d1b9fc18b58d02d77
+
+% 0 1 0 10e42ae77a34026c19e06bd3c2aaf7bb
+
+% 1 1 0 0360113b10c5e37b17387628f7e4413c
+
+@ 0 13 0 1c3cf3d850ffb2bb1f0082daa5b0aa9d
++         Os parênteses vazios marcam o efeito colateral. Além dos givens do envio de `#request`
++         (`Online`, `Http.Event is Loggable`, `Tactic[Connect.Error]`, o `Http.Client`), uma
++         `Tactic` para `Api.Violation` e para cada erro em `#Failure` precisa estar no escopo, e o
++         `Conformant` pode precisar de um `Charset` e de uma `Tactic[Truncation.Error]`.
++     entry #attempt   a chamada como um `Attempt` sobre os erros declarados, para um `match` exaustivo
++         `attempt[T]()` executa `call[T]()` dentro de `contingency.attempt[Failure]`, de modo que o
++         resultado é um `Attempt[T, Failure]`: `Attempt.Success(value)` ou `Attempt.Failure(error)`,
++         sendo `error` um dos `Api.Error`s declarados da operação. Um `match` sobre ele tem a
++         exaustividade verificada pelo compilador, e um caso para um status que a especificação
++         não declara não compila; `recover` recebe uma função parcial e não é verificado.
++         `Api.Violation` não está na união: é lançado pela sua própria `Tactic`, como a quebra do
++         contrato e não como um dos seus casos. O argumento de tipo precisa ser explícito quando o
++         transporte é uma resposta que carrega registros.
+
+% 2 1 0 15a264398e56f5bc050b37ae24ab57d4
+
+% 3 1 0 0eec3468c4d1b2cc1471e18b515b2a1b
+
+% 4 1 0 090c2f5635ff34d7104296127fc9f039
+
+% 5 1 0 067cb24ef944731b128489e42f3c3fd4
+
+% 6 1 0 12381d0bb6888a250db3fe7d130afd30
+
+% 7 1 0 17a027c4f812a965052d9195a41caf63
+
+% 8 1 0 074bce3283dcc926095d6336a36f53b8
+
+% 10 1 0 01851f0abb7dd7350c6dd7461da8056e
+
+% 11 1 0 0fb067539d1f7e0a1fd4d1640348ae67
+
+% 12 1 0 1099f20599a7b32f0e3b21bce4822ec4
+
+% 0 1 0 13f579f838d4b3970e95e05123972fb8
+
+% 0 1 0 0e452f8318cb0423054e0a1ae5f13698
+
+% 0 1 0 1386b4d668996e3a020bc40709950424
+
+% 0 1 0 0f4e1eadb6a7d1b315f7e6eb13d0394f
+
+% 1 1 0 0af204e9861127621f61d77911b72fde
+
+@ 0 10 0 1fdf24e43563912e1c91d21e6cbcf1bf
++     entry #record   executa a requisição e lê uma resposta JSON como um registro tipado pelo seu esquema
++         `record()` não precisa de classe espelho: o resultado é um registro de polyvinyl com um
++         membro por propriedade do esquema da resposta, com o tipo que o esquema declara —
++         `Text`, `Int`, `Long` para `int64`, `Double`, `Boolean`, objetos aninhados e `$ref`s para
++         esquemas de componentes como registros aninhados, arrays como `List`s —, e uma resposta
++         de array de objetos é uma `List` desses registros. Apenas para uma resposta JSON cujo
++         esquema descreve um objeto ou um array de objetos: uma resposta interpretada como
++         qualquer outra coisa, ou um esquema de outra forma, é um erro de compilação que sugere
++         `call[T]()`. Precisa de uma `Tactic[Parse.Error]` e de uma `Tactic[Truncation.Error]`
++         além dos givens do envio, e lança `Json.Provider.Error` quando a leitura de um membro
++         não se ajusta ao seu esquema.
+
+% 2 1 0 176a834fa2ef7e5e1cec4b421b69f7a3
+
+% 3 1 0 178d05b91fa784dc0d410d93f6a5ca62
+
+% 4 1 0 0d3b481c873735400877b1965ab4e750
+
+% 5 1 0 086c507665d442550b7c350a222d0139
+
+% 6 1 0 1ec456a03f9b31bd0a219da2811f42f6
+
+% 7 1 0 1cda24f3e5b302d61ab4b4835fb4ef82
+
+% 8 1 0 10921edc0fd5649b12e29f10a6cd0a06
+
+% 10 1 0 172c0accccdb71ab12317b2b4fa4b11e
+
+% 0 1 0 0039cc087d0fd6a5193ccab3c6ea5767
+
+% 0 1 0 1e3beeb01e9c458d0358df1d2bb50297
+
+% 0 1 0 0315182cf586ecaf1583b8f4afd9cd89
+
+% 1 1 0 1251ee66a9ccc8c60b569c64c1957eb9
+
+@ 0 6 0 1fce78b03f1c61d519252caf17a0c52c
++     entry #tuple   executa a requisição e lê uma resposta JSON como uma tupla nomeada, de forma antecipada
++         Como `#record`, mas as propriedades do esquema se tornam os campos de uma tupla nomeada,
++         na ordem do esquema, cada uma lida quando a resposta chega, e não no acesso:
++         `api.pets(42).get.tuple().name`. A mesma restrição se aplica: uma resposta JSON cujo
++         esquema é um objeto ou um array de objetos.
++   entry .Error   uma resposta fora da faixa de sucesso, lançada como a classe de erro do seu status
+
+% 1 1 0 015e8ddf2c948b87117e8dd37a98791e
+
+@ 0 10 0 1b26c33be2e7257100095df4736d88d5
++         Erro `↯/s.135.2.1`: _the server responded with an unsuccessful status, `status`_. O pai
++         selado de uma case class por status que telekinesis nomeia — `Api.NotFound`,
++         `Api.BadRequest`, `Api.TooManyRequests`, … —, com `Api.Informational`,
++         `Api.Redirection`, `Api.ClientError` e `Api.ServerError` para as chaves de faixa
++         `1XX`–`5XX` (e para um status numerado que telekinesis não nomeia) e `Api.OtherError`
++         para uma resposta `default`. Cada uma carrega `#status` e `#payload`: o corpo do erro
++         interpretado como o tipo que a especificação declara para aquela resposta — um registro
++         tipado pelo esquema de erro para um objeto JSON, senão o portador do tipo de mídia,
++         senão `Text`, ou `Unit` onde nenhum corpo é declarado —, de modo que `Api.NotFound(())`
++         casa com um `404` sem corpo e `Api.NotFound(problem)` com um que tenha esquema, cujo
++         `problem.message` é tipado.
+
+@ 0 7 0 18baeef6a78acd570cf924ccda9ac3ea
++         As respostas de erro declaradas de uma operação formam uma união destas classes, o
++         `Failure` da sua `Api.Response`; `attempt` produz um `Attempt` exatamente sobre essa
++         união, e `call` exige uma `Tactic` por membro, de modo que todo erro declarado é tratado
++         ou o código não compila. Contingency distingue as classes pela classe, não pelo tipo do
++         payload, e é por isso que cada status tem uma classe própria. O payload é covariante. Um
++         membro restrito do registro do payload de um erro — `string!`, `enum`, `pattern` — é
++         relaxado para o seu tipo simples, pois um membro que lança erros faria do erro uma
++         capability.
+
+% 2 1 0 0e95db2e5025ece90f069853c4deae24
+
+% 3 1 0 0ad04c752afd1bd700977c29ae909ff2
+
+% 4 1 0 14a73129a08ddfd8142b01f5cd8a63a6
+
+% 5 1 0 030253cad24da41f03ec18c8050dd940
+
+% 6 1 0 130761f8efe28af912e2fa54e542150c
+
+% 7 1 0 1f703a02e2d142eb17fc99444676ca2f
+
+% 8 1 0 107dc3b4e04136cc1f693443c50b6616
+
+% 10 1 0 1e38e55a808d6ff70f0a421f331def3f
+
+% 11 1 0 1cbf2879a6fb8ac7011cb0328224c825
+
+% 12 1 0 08112ad3bfdf28021ba9bdd13acfd669
+
+% 0 1 0 09e28b7d30dc3ae5043f2b24cfe59730
+
+% 0 1 0 1fe71464b30193680aa1b1a22de7fbf5
+
+% 0 1 0 0579e3cc8c66b5c11f8e4d9d81b59b68
+
+% 1 1 0 0e1d66880395b08308cf5b72a5f70c20
+
+@ 0 1 0 1ad80a1631ae2ad6177d15c03b00bae9
++         Um status que a especificação não declara não é um `Api.Error`, mas sim uma
+
+% 0 1 0 0aa8e89c1ec5f05504ecc472fee0ebb3
+
+% 0 1 0 0688eb8e97ab94e10bd292f7e69c24e6
+
+% 0 1 0 15a5912f0c3bb6930c782770b2b5fbbc
+
+@ 0 3 0 133a2c43157680e21999c04ee6e1fdc4
++     entry #status   o status HTTP com que o servidor respondeu
++     entry #payload   o corpo do erro, interpretado como o tipo que a especificação declara para aquela resposta
++   entry .Violation   uma resposta com um status que a especificação não declara
+
+% 1 1 0 12fa91b968d139070078f5220aed3e1f
+
+@ 0 5 0 0b040fd0acd37a8d0097c76214b45df3
++         Erro `↯/s.135.2.2`: _the server responded with an undeclared status, `status`_. O
++         servidor quebrou o seu contrato, algo que toda chamada pode encontrar e precisa tratar à
++         parte dos erros declarados: é lançado pela sua própria `Tactic[Api.Violation]`, nunca é
++         membro do `Failure` de uma resposta, e carrega o status e os bytes crus do corpo, pois
++         nenhum esquema os descreve.
+
+% 2 1 0 1a4876477d19d9b51b3b80ab7b62a0d7
+
+% 3 1 0 114be42cf14f9196128c220e94735e84
+
+% 4 1 0 0c41c1fa1e7398d9154eada9f5ffa951
+
+% 5 1 0 18ec9293771743fb1b525fdfffaeb0b6
+
+% 6 1 0 07a063c2013c12701210dda35d585530
+
+% 7 1 0 1607240f89fb41820a28f4919af5a5d5
+
+% 8 1 0 03ede6168109992f1d3cb24e80593935
+
+% 10 1 0 09ae3d3d86b9728b0b5324f017b7222a
+
+% 1 1 0 00595ed0339064fc16204767daff7f9f
+
+% 0 1 0 131404d991b5371a05ec9cd6e98f75bd
+
+% 1 1 0 0b2c72c31d062c8b0f3709c08dac0298
+
+@ 0 89 0 0903caf1b7b3ca061bb4a7129453418c
++     entry #status   o status não declarado
++     entry #body   os bytes do corpo da resposta
++   entry .Continue   uma resposta `100 Continue` declarada, com o seu payload interpretado
++   entry .SwitchingProtocols   uma resposta `101 Switching Protocols` declarada, com o seu payload interpretado
++   entry .EarlyHints   uma resposta `103 Early Hints` declarada, com o seu payload interpretado
++   entry .MultipleChoices   uma resposta `300 Multiple Choices` declarada, com o seu payload interpretado
++   entry .MovedPermanently   uma resposta `301 Moved Permanently` declarada, com o seu payload interpretado
++   entry .Found   uma resposta `302 Found` declarada, com o seu payload interpretado
++   entry .SeeOther   uma resposta `303 See Other` declarada, com o seu payload interpretado
++   entry .NotModified   uma resposta `304 Not Modified` declarada, com o seu payload interpretado
++   entry .TemporaryRedirect   uma resposta `307 Temporary Redirect` declarada, com o seu payload interpretado
++   entry .PermanentRedirect   uma resposta `308 Permanent Redirect` declarada, com o seu payload interpretado
++   entry .BadRequest   uma resposta `400 Bad Request` declarada, com o seu payload interpretado
++   entry .Unauthorized   uma resposta `401 Unauthorized` declarada, com o seu payload interpretado
++   entry .PaymentRequired   uma resposta `402 Payment Required` declarada, com o seu payload interpretado
++   entry .Forbidden   uma resposta `403 Forbidden` declarada, com o seu payload interpretado
++   entry .NotFound   uma resposta `404 Not Found` declarada, com o seu payload interpretado
++       O membro mais comum do `Failure` de uma operação. `Api.NotFound(())` é um `404` que a
++       especificação declara sem corpo; `Api.NotFound(problem)`, um cujo corpo o esquema
++       declarado tipa.
++   entry .MethodNotAllowed   uma resposta `405 Method Not Allowed` declarada, com o seu payload interpretado
++   entry .NotAcceptable   uma resposta `406 Not Acceptable` declarada, com o seu payload interpretado
++   entry .ProxyAuthenticationRequired   uma resposta `407 Proxy Authentication Required` declarada
++   entry .RequestTimeout   uma resposta `408 Request Timeout` declarada, com o seu payload interpretado
++   entry .Conflict   uma resposta `409 Conflict` declarada, com o seu payload interpretado
++   entry .Gone   uma resposta `410 Gone` declarada, com o seu payload interpretado
++   entry .LengthRequired   uma resposta `411 Length Required` declarada, com o seu payload interpretado
++   entry .PreconditionFailed   uma resposta `412 Precondition Failed` declarada, com o seu payload interpretado
++   entry .PayloadTooLarge   uma resposta `413 Payload Too Large` declarada, com o seu payload interpretado
++   entry .UriTooLong   uma resposta `414 URI Too Long` declarada, com o seu payload interpretado
++   entry .UnsupportedMediaType   uma resposta `415 Unsupported Media Type` declarada, com o seu payload interpretado
++   entry .RangeNotSatisfiable   uma resposta `416 Range Not Satisfiable` declarada, com o seu payload interpretado
++   entry .ExpectationFailed   uma resposta `417 Expectation Failed` declarada, com o seu payload interpretado
++   entry .UnprocessableEntity   uma resposta `422 Unprocessable Entity` declarada, com o seu payload interpretado
++   entry .TooEarly   uma resposta `425 Too Early` declarada, com o seu payload interpretado
++   entry .UpgradeRequired   uma resposta `426 Upgrade Required` declarada, com o seu payload interpretado
++   entry .PreconditionRequired   uma resposta `428 Precondition Required` declarada, com o seu payload interpretado
++   entry .TooManyRequests   uma resposta `429 Too Many Requests` declarada, com o seu payload interpretado
++   entry .RequestHeaderFieldsTooLarge   uma resposta `431 Request Header Fields Too Large` declarada
++   entry .UnavailableForLegalReasons   uma resposta `451 Unavailable For Legal Reasons` declarada
++   entry .InternalServerError   uma resposta `500 Internal Server Error` declarada, com o seu payload interpretado
++   entry .NotImplemented   uma resposta `501 Not Implemented` declarada, com o seu payload interpretado
++   entry .BadGateway   uma resposta `502 Bad Gateway` declarada, com o seu payload interpretado
++   entry .ServiceUnavailable   uma resposta `503 Service Unavailable` declarada, com o seu payload interpretado
++   entry .GatewayTimeout   uma resposta `504 Gateway Timeout` declarada, com o seu payload interpretado
++   entry .HttpVersionNotSupported   uma resposta `505 HTTP Version Not Supported` declarada
++   entry .VariantAlsoNegotiates   uma resposta `506 Variant Also Negotiates` declarada, com o seu payload interpretado
++   entry .InsufficientStorage   uma resposta `507 Insufficient Storage` declarada, com o seu payload interpretado
++   entry .LoopDetected   uma resposta `508 Loop Detected` declarada, com o seu payload interpretado
++   entry .NotExtended   uma resposta `510 Not Extended` declarada, com o seu payload interpretado
++   entry .NetworkAuthenticationRequired   uma resposta `511 Network Authentication Required` declarada
++   entry .Informational   uma resposta de faixa `1XX` declarada, ou um status `1xx` que telekinesis não nomeia
++       Ao contrário das classes por status, as classes de faixa recebem o status real como
++       primeiro campo: `Api.Informational(status, payload)`.
++   entry .Redirection   uma resposta de faixa `3XX` declarada, ou um status `3xx` que telekinesis não nomeia
++       `Api.Redirection(status, payload)`; o status real é o seu primeiro campo.
++   entry .ClientError   uma resposta de faixa `4XX` declarada, ou um status `4xx` que telekinesis não nomeia
++       `Api.ClientError(status, payload)`; o status real é o seu primeiro campo. Um `404`
++       declarado exatamente é `Api.NotFound`, e não este, mesmo quando `4XX` também é declarado:
++       um status exato é casado antes da sua faixa.
++   entry .ServerError   uma resposta de faixa `5XX` declarada, ou um status `5xx` que telekinesis não nomeia
++       `Api.ServerError(status, payload)`; o status real é o seu primeiro campo.
++   entry .OtherError   uma resposta `default` declarada: qualquer status que nenhuma outra resposta declarada cobre
++       `Api.OtherError(status, payload)`, sendo o status real o seu primeiro campo. A
++       especificação do Stripe, por exemplo, declara todo erro como `default`, de modo que todo
++       erro vindo dela é um `OtherError` cujo payload é um registro do esquema `error`.
++   entry #request   a requisição até ali, como uma `Api.Request`
++       O método, a URL base, o modelo de caminho, as substituições, a query, os cabeçalhos, o
++       corpo e o tipo de mídia de `accept` que a navegação acumulou: inspecionável antes que
++       qualquer coisa seja enviada.
++   entry #selectDynamic   `api.segment`: um segmento de caminho, verificado para iniciar algum caminho da especificação
++       Uma macro: `api.pets` junta `pets` ao `Locus` atual e interrompe a compilação, a menos que
++       algum caminho da especificação comece com o resultado (_apoplexy: no path begins with
++       /unicorns_); o resultado é uma `Api` refinada para o novo locus. Um nome de verbo (`get`,
++       `put`, `post`, `delete`, `patch`, `head`, `options`, `trace`) que o item de caminho atual
++       define invoca, em vez disso, essa operação sem argumentos, dando uma `Api.Response`.
++   entry #applyDynamic   `api.segment(x)`: um parâmetro de caminho, ou uma invocação com argumentos posicionais
++       Uma macro. Quando `segment` é um verbo que o item de caminho define, o argumento
++       posicional é o corpo da requisição e o resultado uma `Api.Response`. Caso contrário,
++       `segment` é navegado como `#selectDynamic` o faria e, se o próximo segmento de algum
++       caminho mais profundo for um `{template}`, o argumento o preenche — tipado pelo esquema
++       do parâmetro, renderizado com o seu `Showable` —, dando uma `Api at "/pets/{petId}"`; na
++       falta disso, os argumentos invocam a única operação do endpoint que não é `DELETE`, como
++       `api.login(credentials)` faz.
++   entry #applyDynamicNamed   `api.segment(name = x)`: uma invocação com parâmetros de query e de cabeçalho
++       Uma macro. Cada argumento nomeado preenche o parâmetro de query ou de cabeçalho desse nome
++       declarado na operação ou no seu item de caminho, com o tipo verificado contra o esquema do
++       parâmetro e renderizado com o seu `Showable`; um argumento posicional entre eles é o corpo
++       da requisição. Um verbo invoca essa operação; um segmento com uma única operação que não é
++       `DELETE` invoca essa. Um nome desconhecido, um tipo errado ou um parâmetro obrigatório
++       ausente interrompe a compilação.
+
+@ 0 1 0 0b26d21d82dc67f81a298efad8230df2
++ entry .OpenApi   um documento OpenAPI 3.x como valor: informações, servidores, caminhos, componentes e segurança
+
+% 1 1 0 0696ffb659e10f5505f3922b4c5f93bb
+
+@ 0 6 0 17c9234bed5b95900bf81a0d869e2023
++       A própria especificação, decodificada de JSON ou YAML com `read[OpenApi]` em partes
++       tipadas, para ferramentas que inspecionam uma API em vez de chamá-la: `#info`, `#servers`
++       (com as suas variáveis), `#paths` de `OpenApi.PathItem`s que contêm `OpenApi.Operation`s,
++       `#components` (esquemas, parâmetros, respostas, corpos de requisição e esquemas de
++       segurança) e os requisitos de `#security` válidos para todo o documento. As macros de
++       `Api` leem o mesmo modelo para verificar cada chamada.
+
+% 2 1 0 1a2c12a5fcc181a90e7d1953e75a6b26
+
+% 3 1 0 1e237a40c4323e26155b709491a778c7
+
+% 4 1 0 1eed692db3ae864305aaf24ee6c3b045
+
+% 5 1 0 01acd58361e8d946068d6571320b94c4
+
+% 6 1 0 1fe3c077466c2ba514b1ad2b98832450
+
+% 0 1 0 011187671dc999341046f5d27424a486
+
+% 0 1 0 13149c062a299ae8009c8a5bfe9d33b7
+
+% 0 1 0 0db457fc9b0cd59a0d84b6618099bbc8
+
+% 0 1 0 1aa4808b6bb4031f07cca53b42d26692
+
+% 1 1 0 0f48874812f37b0e1a05a44deb3bc826
+
+@ 0 9 0 0a80ab983fc568b703721f5a19f3441a
++       Um documento YAML é traduzido para JSON (`yamlEncodableInJson`) e lido pelo mesmo
++       decodificador, de modo que as duas formas não podem divergir; em que forma o texto está é
++       dito pelo seu primeiro caractere, `{` para JSON. Um parâmetro, uma resposta ou um corpo de
++       requisição escrito como `$ref` é mantido como uma `OpenApi.Ref` em uma posição
++       `OpenApi.Referable` e resolvido sob demanda por `apply()`, dado o documento; uma
++       `JsonSchema.Ref` é resolvida da mesma forma, um salto por vez, de modo que esquemas
++       cíclicos continuam finitos. O mapa `responses` de uma operação é indexado pelo texto do
++       status (`200`, `4XX`, `default`), que `response` interpreta para um status concreto. Um
++       documento que não pode ser analisado, que declara uma versão diferente de 3.x ou que usa
++       uma localização de parâmetro diferente de `path`, `query`, `header` ou `cookie` lança
+
+% 0 1 0 1d88faa3be33def11408a7918d9d52e0
+
+@ 0 5 0 1b3fe0aed7d3cd0b17c99698f1cb1bd6
++       O modelo é exercitado contra um corpus de descrições publicadas — os exemplos da OpenAPI
++       Initiative, o Petstore do Swagger, o Museum da Redocly, Twilio, Kubernetes, Discord, Box e
++       Stripe (1.538 esquemas) — e carrega as do GitHub, da OpenAI e da Cloudflare. `callbacks`,
++       `links`, `webhooks` e referências a outros documentos não são modelados.
+
+% 0 1 0 0955f50f0014c6b7107a87a7d8ba17f6
+
+% 0 1 0 1cc7dd3d8c19d0901c068539a1f14cf8
+
+% 0 1 0 0099cccddc5d72c4036095e2719208d4
+
+@ 0 10 0 145d81b21edac7270495675413e8b874
++   entry .decodable   lê uma `OpenApi` a partir de `Json`, com cada parte aninhada pelo seu próprio decodificador ancorado
++       O given do objeto companheiro `OpenApi is Json.Decodable`, derivado uma única vez aqui
++       para que `as[OpenApi]` não expanda inline o grafo inteiro do documento em cada ponto de
++       chamada. Precisa de `Tactic[Json.Error]`, `Tactic[JsonPointer.Error]` e
+
+% 0 1 0 05db0b322b92a2550a0099a30380843a
+
+@ 1 0 0 05db0b322b92a2550a0099a30380843a
++   entry .aggregable   lê uma `OpenApi` a partir de texto, JSON ou YAML, verificando que a versão é 3.x
++       O given `OpenApi is Aggregable by Text` por trás de `text.read[OpenApi]` e de
++       `url.fetch().receive[Text].read[OpenApi]`: um texto que começa com `{` é analisado como
++       JSON, qualquer outro como YAML e traduzido; uma falha de análise, de JSON, de YAML ou de
++       ponteiro torna-se `OpenApi.Error(Reason.Malformed)`, e um documento cujo `openapi` não
++       começa com `3.` lança `OpenApi.Error(Reason.UnsupportedVersion(version))`. Precisa de uma
++       `Tactic[OpenApi.Error]`.
+
+% 2 1 0 031ec4d120ccc5c408a73454c2c2ab36
+
+% 3 1 0 176f55c971785df913a6d480544d2765
+
+% 4 1 0 1311ba15e3f68c9c024b3edc3cf25816
+
+% 0 1 0 093b92bb1a20e9820734fa95037e82a7
+
+% 0 1 0 0cdda8f257d2f18f1e2b23583a2fc44d
+
+% 1 1 0 02aa01556b42a97312f38696497bcd47
+
+@ 0 10 0 01748f881ac2e440119ab4c21e0ec60e
++   entry .Info   o título, a versão e a descrição do documento
++     entry #title   o título da API
++     entry #version   a versão da API que o documento descreve, não a do OpenAPI
++     entry #description   uma descrição, ou `Unset`
++   entry .ServerVariable   uma `{variable}` da URL de um servidor: o seu valor padrão, os seus valores permitidos e uma descrição
++     entry .decodable   lê uma variável de servidor a partir de JSON
++     entry #default   o valor que `OpenApi.Server#resolved` substitui
++     entry #enum   os valores que a variável pode assumir, ou `Unset` quando não há restrição
++     entry #description   uma descrição, ou `Unset`
++   entry .Server   um servidor da API: uma URL, possivelmente em modelo, com as suas variáveis
+
+% 1 1 0 09294f5c2d3b736805b42b80dc8e19c9
+
+@ 0 12 0 028489f8a270013110eb76cfea945815
++         A URL de um servidor pode ser absoluta (`https://api.example.com/v1`), relativa ao lugar
++         de onde o documento é servido (`/api/v3`) ou em modelo (`/v{version}`), com uma
++         `OpenApi.ServerVariable` por `{name}`. `Api` obtém a sua URL base da forma `#resolved`
++         do primeiro servidor, e precisa de uma base de quem chama quando ela não é absoluta.
++     entry .decodable   lê um servidor a partir de JSON
++     entry #url   a URL como escrita, com modelos e tudo
++     entry #description   uma descrição, ou `Unset`
++     entry #variables   as variáveis a que os modelos da URL se referem, por nome
++     entry #resolved   a URL com cada `{variable}` substituída pelo seu valor padrão
++         `/v{version}`, com `version` tendo `2` como padrão, é `/v2`. Um modelo sem variável
++         desse nome é deixado como está.
++   entry .Ref   um `$ref` para um componente, por ponteiro JSON, deixado sem resolver no modelo
+
+% 1 1 0 16bb0625c461546119d865f3d2b34d7e
+
+@ 0 12 0 14371486110c885f0c922c08e239329b
++         `OpenApi.Ref(pointer)` é o que uma posição `Referable[value]` contém onde o documento
++         escreveu `{"$ref": "#/components/parameters/limit"}` em vez do próprio componente.
++         `apply()` sobre o referenciável o resolve contra o documento no escopo; apenas
++         ponteiros para os próprios `components` do documento são resolvidos.
++     entry #pointer   o ponteiro JSON que a referência nomeia
++   entry .Referable   um componente escrito no lugar, ou referido por um `$ref`: `value | OpenApi.Ref`
++       O tipo de toda posição onde o OpenAPI permite um `$ref`: os parâmetros de uma operação, o
++       seu corpo de requisição, as suas respostas, os parâmetros de um item de caminho e os
++       mapas de componentes. Um match precisa tratar os dois: `case OpenApi.Ref(pointer) => …` e
++       `case parameter: OpenApi.Parameter => …`; ou `referable()` resolve qualquer um dos dois
++       para o componente, dada uma `OpenApi`.
++   entry .Componental   qual mapa de `OpenApi.Components` contém um tipo de componente, e sob qual nome
+
+% 1 1 0 0b6e7ba86eb880530c39637db6030c3f
+
+@ 0 20 0 099cec54d02035860b95054bb322a86b
++         A classe de tipos por trás de `referable()`: para `Parameter`, `Response` e
++         `RequestBody`, nomeia o mapa de componentes (`parameters`, `responses`,
++         `requestBodies`) e procura um componente nele. Os três givens estão no objeto
++         companheiro, de modo que resolver uma referência não precisa de import.
++     entry .parameter   os parâmetros ficam em `components.parameters`
++     entry .response   as respostas ficam em `components.responses`
++     entry .requestBody   os corpos de requisição ficam em `components.requestBodies`
++     entry .apply   constrói um `Componental` a partir do nome de um mapa e de um seletor sobre `OpenApi.Components`
++     entry #kind   o nome do mapa de componentes, como aparece em um ponteiro: `parameters`, `responses`, …
++     entry #lookup   o componente desse nome nos componentes, ou `Unset` se ausente ou se ele mesmo for uma `Ref`
++   entry .apply   resolve um componente `Referable`, ou um `JsonSchema`, contra o documento no escopo
++       Duas extensões, cada uma precisando de um `given OpenApi` e lançando `OpenApi.Error`.
++       `referable()` sobre um `Referable[Parameter | Response | RequestBody]` é o próprio
++       componente quando escrito no lugar, senão aquele que o seu ponteiro nomeia sob
++       `#/components/parameters/`, `responses/` ou `requestBodies/`. `schema()` sobre um
++       `JsonSchema` resolve uma `JsonSchema.Ref` um salto contra `#/components/schemas/`, e é
++       qualquer outro esquema inalterado; resolver um salto por vez, sem nunca expandir inline,
++       mantém finito um grafo de esquemas cíclico, com o consumidor conduzindo o percurso. Um
++       ponteiro para qualquer outra coisa lança `Reason.UnsupportedRef(pointer)`, e um que nomeia
++       um componente que o documento não tem, `Reason.UnresolvableRef(pointer)`.
+
+% 2 1 0 013d407f8c901b3518e617c18e3bff66
+
+% 3 1 0 15d5c2e07aa07d501502b71f6114209b
+
+% 4 1 0 06fc6baf81dfc03609df9d2d9bd09d88
+
+% 5 1 0 1fbb7f1ce2668a13181384d0760692a4
+
+% 6 1 0 048caf70026b0d8f08157f3934b55acc
+
+% 0 1 0 16e6c578e1bea3061ca8013a199e39d2
+
+% 0 1 0 0b207c7bb2020465002b7fcfa69e358e
+
+% 0 1 0 0fc5ae6b61a27d9d1b09b9d719c909c1
+
+% 0 1 0 025df99b30ab57261f957210acc06363
+
+% 1 1 0 1de7bc8270bd80241b684afdece5775e
+
+@ 0 1 0 1b2580b6c2f7e2980691235246f6bfa2
++   entry .Parameter   um parâmetro de uma operação ou de um item de caminho: o seu nome, a sua localização, a sua obrigatoriedade e o seu esquema
+
+% 1 1 0 1ad0375470ccf379023bdcf0919b0fe1
+
+@ 0 8 0 024321ac575d42350220ac28b9efd454
++         `in` é um dos `Path`, `Query`, `Header` e `Cookie` de `OpenApi.Parameter.In`,
++         decodificado do texto do documento; uma localização `body` do Swagger 2 lança
++         `OpenApi.Error(Reason.BadParameterLocation(t"body"))`. Um parâmetro de caminho é sempre
++         obrigatório; `required` é `Unset` onde o documento o omite. As macros de `Api` tipam o
++         argumento de um parâmetro de caminho pelo `#schema` (`integer` para `Int`, `int64` para
++         `Long`, `number` para `Double`, `boolean` para `Boolean`, senão `Text`), e o de um
++         parâmetro de query ou de cabeçalho da mesma forma, com `Text` onde não há esquema.
++     entry .In   onde um parâmetro é enviado: o caminho, a query, um cabeçalho ou um cookie
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 12 0 1d732ed84f019372176ef7d1bf809c0f
++           Um enum de `Path`, `Query`, `Header` e `Cookie`, decodificado do texto em minúsculas do
++           documento por `.decodable` no seu objeto companheiro. O cliente `Api` envia parâmetros
++           de caminho, de query e de cabeçalho; um parâmetro de cookie é lido para o modelo, mas
++           não é enviado.
++       entry .decodable   lê `path`, `query`, `header` ou `cookie` a partir de texto, lançando `OpenApi.Error` para qualquer outra coisa
++     entry .decodableJson   lê um parâmetro a partir de JSON, ancorado para que itens de caminho e operações o compartilhem
++     entry .referable   lê uma posição de parâmetro ou `$ref`: uma chave `$ref` marca uma `OpenApi.Ref`
++     entry #name   o nome do parâmetro, como a API o espera
++     entry #in   onde ele é enviado, um `OpenApi.Parameter.In`
++     entry #required   se ele precisa ser fornecido, ou `Unset` onde o documento nada diz
++     entry #description   uma descrição, ou `Unset`
++     entry #schema   o `JsonSchema` do seu valor, ou `Unset`
++   entry .MediaTypeObject   o valor de uma entrada `content`: o esquema de um corpo em um tipo de mídia
+
+% 1 1 0 149f8c234f2f36c901cf6ce58d88fdc9
+
+@ 0 16 0 13391d094eaee9b20251fae284347696
++         Um mapa `content` é indexado pelo texto do tipo de mídia (`application/json`,
++         `image/png`), e cada valor é um `MediaTypeObject` que contém o esquema do corpo, quando
++         um é declarado. O seu decodificador é um given anônimo no objeto companheiro.
++     entry #schema   o `JsonSchema` do corpo, ou `Unset`
++   entry .RequestBody   o corpo de requisição de uma operação: o seu conteúdo por tipo de mídia, e se é obrigatório
++     entry .decodable   lê um corpo de requisição a partir de JSON
++     entry .referable   lê uma posição de corpo de requisição ou `$ref`: uma chave `$ref` marca uma `OpenApi.Ref`
++     entry #description   uma descrição, ou `Unset`
++     entry #required   se o corpo precisa ser enviado, ou `Unset` onde o documento nada diz
++     entry #content   o esquema do corpo em cada tipo de mídia em que ele pode ser enviado
++   entry .Response   uma resposta declarada: uma descrição e o seu conteúdo por tipo de mídia
++     entry .decodable   lê uma resposta a partir de JSON
++     entry .referable   lê uma posição de resposta ou `$ref`: uma chave `$ref` marca uma `OpenApi.Ref`
++     entry #description   a descrição da resposta, ou `Unset`
++     entry #content   o esquema do corpo em cada tipo de mídia em que ele pode vir; vazio para uma resposta sem corpo
++   entry .Operation   um método HTTP sobre um caminho: os seus parâmetros, o seu corpo de requisição, as suas respostas e a sua segurança
+
+% 1 1 0 1b3cf4cbe965eeed100f8e0ba8fe5d97
+
+@ 0 18 0 1ec21d74518834bd04ac33534b725589
++         O mapa `responses` é indexado pelo texto do status como o documento o escreve — `200`,
++         `201`, `4XX`, `default` —, e `response(status)` sobre uma operação interpreta um
++         `Http.Status` concreto contra essas chaves. O cliente `Api` prefere `200`, depois `201`,
++         depois a menor chave `2xx` como a resposta de sucesso, e lança um `Api.Error` distinto
++         para cada outra chave. `security`, quando presente, substitui os próprios requisitos do
++         documento; uma lista vazia significa que a operação não precisa de credenciais.
++     entry .decodableJson   lê uma operação a partir de JSON, ancorado uma única vez para que os oito verbos de um item de caminho o compartilhem
++     entry #operationId   o identificador da operação, ou `Unset`
++     entry #summary   um resumo curto, ou `Unset`
++     entry #description   uma descrição, ou `Unset`
++     entry #parameters   os próprios parâmetros da operação, cada um no lugar ou como uma `OpenApi.Ref`
++     entry #requestBody   o corpo de requisição, no lugar ou como uma `OpenApi.Ref`, ou `Unset`
++     entry #responses   as respostas declaradas por texto de status, cada uma no lugar ou como uma `OpenApi.Ref`
++     entry #security   os próprios requisitos de segurança da operação, ou `Unset` para herdar os do documento
++   entry .response   a resposta declarada para um status concreto: exata, depois de faixa, depois `default`
++       Uma extensão sobre `OpenApi.Operation`: `operation.response(Http.NotFound)` é a entrada
++       indexada por `404`, senão por `4XX`, senão por `default`, senão `Unset`, como um
++       `Referable[Response]`.
++   entry .PathItem   um caminho da API: as suas operações por verbo, e os parâmetros que elas compartilham
+
+% 1 1 0 1c5156510b9dd8e7110a02a4859832d6
+
+@ 0 18 0 1b692d01c62931bc10517a969a43af0a
++         Um item de caminho mistura chaves de método HTTP com `summary`, `description` e
++         `parameters`, de modo que cada verbo é o seu próprio campo `Optional[Operation]`;
++         `#operations` reconstrói o mapa por `Http.Method`. Os parâmetros declarados aqui se
++         aplicam a todas as operações do caminho, e o parâmetro próprio de uma operação com o
++         mesmo nome e a mesma localização tem precedência. O seu decodificador é um given anônimo
++         no objeto companheiro.
++     entry #summary   um resumo curto, ou `Unset`
++     entry #description   uma descrição, ou `Unset`
++     entry #get   a operação `GET`, ou `Unset`
++     entry #put   a operação `PUT`, ou `Unset`
++     entry #post   a operação `POST`, ou `Unset`
++     entry #delete   a operação `DELETE`, ou `Unset`
++     entry #options   a operação `OPTIONS`, ou `Unset`
++     entry #head   a operação `HEAD`, ou `Unset`
++     entry #patch   a operação `PATCH`, ou `Unset`
++     entry #trace   a operação `TRACE`, ou `Unset`
++     entry #parameters   parâmetros compartilhados por todas as operações do caminho, cada um no lugar ou como uma `OpenApi.Ref`
++     entry #operations   as operações presentes, como um `Map[Http.Method, OpenApi.Operation]`
++   entry .Components   as partes reutilizáveis do documento: esquemas, parâmetros, respostas, corpos de requisição e esquemas de segurança
+
+% 1 1 0 0f66ebe2bdf7492d179e9b7e25031443
+
+@ 0 11 0 06577e99a5b00d4e07bc989c0d5eb84e
++         Aquilo em que os ponteiros `#/components/…` são resolvidos. `schemas` contém
++         `JsonSchema`s, contra os quais uma `JsonSchema.Ref` é resolvida com `schema()`;
++         `parameters`, `responses` e `requestBodies` contêm componentes que podem eles mesmos ser
++         referências, resolvidas com `referable()`; `securitySchemes` nomeia os esquemas a que um
++         `OpenApi.Requirement` se refere. O seu decodificador é um given anônimo no objeto
++         companheiro.
++     entry #schemas   os esquemas de componentes por nome, os alvos de `#/components/schemas/…`
++     entry #parameters   os parâmetros de componentes por nome, cada um no lugar ou como uma `OpenApi.Ref`
++     entry #responses   as respostas de componentes por nome, cada uma no lugar ou como uma `OpenApi.Ref`
++     entry #requestBodies   os corpos de requisição de componentes por nome, cada um no lugar ou como uma `OpenApi.Ref`
++     entry #securitySchemes   os esquemas de segurança pelos nomes que os requisitos usam
++   entry .SecurityScheme   como uma API autentica: uma chave de API, autenticação HTTP, OAuth 2, OpenID Connect ou TLS mútuo
+
+% 1 1 0 1be12f7740e60119089351e217198f03
+
+@ 0 4 0 133a502cd2c2fe301e0b03c955877e0c
++         Os campos são os que a seção §4.8.27 do OpenAPI 3 define, e apenas os que pertencem ao
++         `type` do esquema estão presentes: `name` e `in` para um `apiKey`, `scheme` e
++         `bearerFormat` para `http`, `flows` para `oauth2`, `openIdConnectUrl` para
++         `openIdConnect`. `#kind` lê `type` como um `OpenApi.SecurityScheme.Kind`.
+
+@ 0 39 0 1ce55626281d6701066c63de62f9a2ee
++         O cliente `Api` satisfaz um esquema com um given `orthodoxy.Credential` nomeado por ele:
++         `("api_key" is Credential to Text)` para uma chave de API, enviada no cabeçalho, no
++         parâmetro de query ou no cookie que `in` nomeia; `("basicAuth" is Credential to Auth)`
++         para autenticação HTTP, enviada como o cabeçalho `authorization`; `("petstore_auth" is
++         Credential to Authorization)` para OAuth 2 ou OpenID Connect, enviada como um token
++         `Bearer` e verificada contra os escopos do requisito (um `Auth` serve para um token
++         obtido em outro lugar). Uma credencial do tipo errado para o esquema é um erro de
++         compilação. O TLS mútuo não é suportado, e nenhuma descoberta do OpenID Connect é
++         realizada.
++     entry .decodable   lê um esquema de segurança a partir de JSON
++     entry .Kind   o tipo do esquema como um enum: `ApiKey`, `Http`, `OAuth2`, `OpenIdConnect`, `MutualTls` ou `Unknown`
++         `Unknown` é qualquer texto de `type` que a especificação não define; o cliente `Api` não
++         consegue satisfazer um esquema desses.
++     entry .Flow   um fluxo OAuth 2: os seus endpoints e os escopos que ele pode conceder
++       entry .decodable   lê um fluxo a partir de JSON
++       entry #authorizationUrl   o endpoint de autorização, para os fluxos implícito e de código de autorização
++       entry #tokenUrl   o endpoint de token, para todos os fluxos exceto o implícito
++       entry #refreshUrl   o endpoint de renovação, ou `Unset`
++       entry #scopes   os escopos que o fluxo concede, cada um com a sua descrição
++     entry .Flows   os fluxos OAuth 2 que um esquema oferece: implícito, senha, credenciais de cliente e código de autorização
++       entry .decodable   lê os fluxos a partir de JSON
++       entry #implicit   o fluxo implícito, ou `Unset`
++       entry #password   o fluxo de senha do dono do recurso, ou `Unset`
++       entry #clientCredentials   o fluxo de credenciais de cliente, ou `Unset`
++       entry #authorizationCode   o fluxo de código de autorização, ou `Unset`
++     entry #type   o tipo do esquema como escrito: `apiKey`, `http`, `oauth2`, `openIdConnect` ou `mutualTLS`
++     entry #description   uma descrição, ou `Unset`
++     entry #name   para um `apiKey`, o nome do cabeçalho, do parâmetro de query ou do cookie
++     entry #in   para um `apiKey`, para onde ele vai: `header`, `query` ou `cookie`
++     entry #scheme   para `http`, o esquema de autenticação: `basic`, `bearer`, …
++     entry #bearerFormat   para um esquema bearer `http`, uma indicação do formato do token
++     entry #flows   para `oauth2`, os fluxos que o esquema oferece
++     entry #openIdConnectUrl   para `openIdConnect`, a URL de descoberta
++     entry #kind   o texto de `type` como um `OpenApi.SecurityScheme.Kind`, `Unknown` para qualquer coisa não definida
++   entry .Requirement   um requisito de segurança: os esquemas que precisam ser todos satisfeitos, cada um com os seus escopos
++       `Map[Text, List[Text]]`: o nome do esquema para os escopos necessários. O `security` de
++       uma operação (ou do documento) é uma lista de requisitos, *alternativas* das quais
++       qualquer uma basta, e um requisito vazio significa que nenhuma credencial é necessária. O
++       cliente `Api` usa a primeira alternativa em que cada esquema tem uma `Credential` no
++       escopo.
++   entry .Error   lançado quando um documento não é OpenAPI 3 válido, ou quando uma referência não pode ser seguida
+
+% 1 1 0 1cfcf1d86bdbdde9186df140ef327920
+
+@ 0 2 0 034e7af6b3c8d1e9100c965e4f9c467a
++         Erro `↯/s.135.1`: _the OpenAPI document was not valid because `reason`_, com um de cinco
++         motivos, numerados de `846.1` a `846.5`:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 8 0 0b351047b2c190fb0d587069f3672f62
++         column  Caso
++         column  Código
++         column  Mensagem
++         column  Observação
++         row  `Malformed`  1  _the OpenAPI document could not be parsed_  o texto não era JSON nem YAML, ou não se ajustava ao modelo
++         row  `UnsupportedVersion(version)`  2  _the OpenAPI version `version` is not supported; only 3.x is supported_  um documento Swagger 2, por exemplo
++         row  `UnresolvableRef(pointer)`  3  _the reference `pointer` could not be resolved_  um `$ref` para um componente que o documento não tem
++         row  `UnsupportedRef(pointer)`  4  _the reference `pointer` is not supported; only #/components/schemas references work_  um `$ref` fora dos componentes do documento, como para `#/paths` ou para outro arquivo
+
+% 0 1 0 00c24ec212d4a56e08d0d58719ce0750
+
+% 1 1 0 1df7c4db5113b89915e35fd2f8f8e293
+
+@ 0 12 0 11e875e69b96b7170dc0eff775e4cb18
++         `read[OpenApi]` lança os dois primeiros e o último; `referable()` e `schema()` lançam os
++         de referência. Em `Api(…)`, qualquer um deles é um erro de compilação.
++     entry .Reason   por que o documento foi rejeitado: `Malformed`, `UnsupportedVersion`, `UnresolvableRef`, `UnsupportedRef` ou `BadParameterLocation`
++         Um enum, em que cada caso numera o seu erro e é renderizado pelo given `Communicable`
++         anônimo no seu objeto companheiro.
++     entry #reason   o `OpenApi.Error.Reason`
++   entry #openapi   a versão do OpenAPI que o documento declara, `3.0.3` ou `3.1.0`
++   entry #info   a `OpenApi.Info` do documento: título, versão e descrição
++   entry #servers   os servidores, na ordem do documento; `Api` usa o primeiro
++   entry #paths   os itens de caminho por modelo de caminho, `/pets/{petId}`
++   entry #components   os componentes reutilizáveis, ou `Unset` quando o documento não declara nenhum
++   entry #security   os requisitos de segurança válidos para todo o documento, que os de uma operação substituem
+
+@ 0 1 0 0feaf46f48be49dc0eea0f71ffeeaacf
++ entry .Conformant   como um `Http.Response` é lido como valor, por meio do portador que seu tipo de mídia interpreta
+
+% 1 1 0 0d07619860a3b3750112fd57a60b1d4e
+
+@ 0 13 0 1438ee40b144bff9113ebef3ca919260
++       `(T is Conformant) over Carrier` lê como um `T` um `Http.Response` cujo corpo é um
++       `Carrier` — o tipo que o tipo de mídia da resposta interpreta, `Json` para
++       `application/json`, `Xml`, `Text`, um `Raster in Png`. Ele apenas lê: `Api.Response#call`
++       já verificou o status, e `T` contra o schema, antes de `#read` ser executado. Os givens são
++       organizados em camadas de prioridade para que o resultado nunca seja ambíguo: o
++       `Http.Response` bruto e `Unit` primeiro (`.response`, `.unit`, para qualquer portador);
++       depois o próprio portador, lido a partir de bytes (`.carrier`); depois o portador lido a
++       partir de texto, para portadores como `Xml` que são `Aggregable by Text`
++       (`Conformant2#carrierText`); depois qualquer valor `Decodable in` o portador, por bytes
++       (`Conformant2#decodable`) e por texto (`Conformant3#decodableText`). A ordenação impede
++       que um portador que é tanto `Aggregable by Data` quanto `by Text` (como `Text` é) seja
++       ambíguo, e impede que um portador seja decodificado pelo seu próprio `Decodable` de
++       identidade. O objeto companheiro herda esses givens de prioridade mais baixa de
++       `Conformant2` e `Conformant3`, que ele estende.
+
+% 2 1 0 106785101361ca9f0eb867d5d418b7ef
+
+% 3 1 0 158496939687cd4e0833e0cb03d72823
+
+% 4 1 0 1d6008d75a8fea31096b7a9958b5c61c
+
+% 5 1 0 186dfe5f57bd60830078331fc7d46544
+
+% 0 1 0 0c0218cda5b1b1850bbb411d7f7460a2
+
+% 0 1 0 152a2833f798356c1aebd16c36204c17
+
+% 0 1 0 1f1b7a04c57a8be31f537d543a5fe73e
+
+% 0 1 0 146572b66e8cea1b05f6fb0d38e61347
+
+% 0 1 0 1a0f5b67fa326dfa1b963d8c8fbd2c1a
+
+% 1 1 0 0d979adcfcc39f0e0ca3dd797d6c0dbc
+
+@ 0 5 0 1833c9f52f28159715a50f03e0fff4c1
++       Como `call[T]()` convoca o `Conformant` onde a chamada é escrita, com `T` concreto, um
++       `List[Pet]` resolve seu `Decodable in Json` como qualquer outra decodificação, e os únicos
++       givens exigidos são o `Aggregable` do próprio portador e o `Decodable` de `T`; os caminhos
++       por texto também precisam de um `Charset` para os bytes, e todos os caminhos de uma
++       `Tactic[Truncation.Error]` para um corpo interrompido.
+
+% 1 1 0 19346da35c5486e11683bdd64d8e6629
+
+% 1 1 0 17ae992c3b733d8f0a79225f5a867ae8
+
+% 0 1 0 0513750615724a521c1bb2f74e2d8412
+
+@ 0 5 0 0330ba7750a4baa11541b21a5785bdc5
++   entry .response   o `Http.Response` bruto, para qualquer portador: a válvula de escape que não lê nada
++   entry .unit   `Unit`, para qualquer portador: o corpo é descartado, como para um `204` ou um `call()` simples em um `DELETE`
++   entry .carrier   o próprio portador, lido a partir dos bytes do corpo por meio do seu `Aggregable by Data`
++       `(Json is Conformant) over Json`, `(Raster in Png is Conformant) over (Raster in Png)`: o
++       corpo memoizado e agregado pelo leitor do próprio portador. Precisa de uma
+
+% 1 1 0 0e6fcd3ba036d251080351855b48a19d
+
+@ 0 1 0 1f2a1ac59d1b5e6d16bc8f34b2d578eb
++   entry #read   lê a resposta como `Self`
+
+@ 0 1 0 123404ffa1a0a44f0ff1454fb0474ae1
++ entry .Conformant2   a prioridade intermediária dos givens de `Conformant`: um portador lido como texto, e um valor decodificado de um portador lido como bytes
+
+% 1 1 0 07537572f022627a19c3917f21bb4dbf
+
+% 2 1 0 1edc52259666290e00057fd5530e5b2e
+
+@ 0 9 0 198ab72cc3de0b8b01df7ea9079221a0
++       Um pai do objeto companheiro de `Conformant`, que existe apenas para classificar seus givens
++       abaixo de `Conformant.response`, `.unit` e `.carrier`; seus membros são encontrados por meio
++       do companheiro e não precisam de import.
++   entry #decodable   qualquer `T` com um `Decodable in Carrier`, a partir de um portador `Aggregable by Data`
++       Como `call[Pet]()` lê uma resposta JSON: os bytes agregados como `Json`, depois
++       decodificados como `Pet`. Precisa de uma `Tactic[Truncation.Error]`.
++   entry #carrierText   o próprio portador, lido a partir do corpo como texto por meio do seu `Aggregable by Text`
++       Para portadores como `Xml`, cujo leitor recebe texto: os bytes são decodificados com o
++       `Charset` no escopo antes que o parser os veja. Precisa de um `Charset` e de uma
+
+% 1 1 0 0d88bb0b6531f5830425805355f3e369
+
+@ 0 1 0 0d2987bd1ce675250bff7b5badd9dc8f
++ entry .Conformant3   a prioridade mais baixa dos givens de `Conformant`: um valor decodificado de um portador lido como texto
+
+% 1 1 0 0d197bc7288a68b00f221c3552e35cd3
+
+% 2 1 0 121c54c2d95ef6310c5903625064fd12
+
+@ 0 5 0 173454eda0be276e10a547f607b498f6
++       A raiz da cadeia de prioridades do objeto companheiro de `Conformant`; seu único given é
++       encontrado por meio do companheiro e não precisa de import.
++   entry #decodableText   qualquer `T` com um `Decodable in Carrier`, a partir de um portador `Aggregable by Text`
++       Como `call[Note]()` lê uma resposta XML: os bytes decodificados com o `Charset` no escopo,
++       agregados como `Xml`, depois decodificados como `Note`. Precisa de um `Charset` e de uma
+
+% 1 1 0 1daa7dc712d79f731d37352fdc3b357e
+
+@ 0 1 0 041836b7bca37ad0172c0270def12183
++ entry .Executor   a costura de transporte: transforma um `Api.Request` em um `Http.Response` bruto
+
+% 1 1 0 0f48eb842c57cf7c05f6a517da0dca9a
+
+@ 0 7 0 1e960c093177acf306dc1c4d06890872
++       Uma trait com um único método, `#execute`, para uma implementação que responde a um
++       `Api.Request` sem a rede, como o backend de gravação de um teste. Ela não é exportada para o
++       guarda-chuva `soundness`, onde seu nome colidiria com o `Executor` do superlunary, e é
++       alcançada como `apoplexy.Executor`. O próprio cliente envia por meio de `Api.send` e do
++       `Http.Client` no escopo, então substituir o given de `Http.Backend` é a forma usual de
++       interceptar uma requisição.
++   entry #execute   a resposta a uma requisição
+
+@ 0 8 0 1b2842f975b6567f14c5d3c12026802f
++ entry .yamlEncodableInJson   um documento YAML como JSON, como `yaml.in[Json]`
++     O given de nível superior `Yaml is Encodable in Json`, a tradução pela qual um documento
++     OpenAPI escrito como YAML passa a caminho do único decodificador do modelo. As duas árvores
++     são percorridas nó a nó; uma chave de mapeamento que o YAML escreveu como número ou booleano
++     (`200:`) se torna a string que o JSON exige. Ele fica no nível superior do pacote com um nome
++     qualificado pela biblioteca porque nem `jacinta` nem `ypsiloid` depende do outro, de modo que
++     nem `Yaml` nem `Json` pode ancorá-lo; ele não é exportado para o guarda-chuva `soundness`,
++     então é importado como `import apoplexy.yamlEncodableInJson`.
+
+% 2 1 0 14ea6737f474c2b115c595aa678354cc
+
+% 3 1 0 0bfb00676c7404171810141b18f86956
+
+% 4 1 0 056269b7668cb6df16f8eaf219e1d595
+
+% 0 1 0 1f58f2001601d2ff1433745f3bada8b5
+
+% 0 1 0 1dfc155e0824c96c006ded0f7fa8dc6f
+
+% 0 1 0 09e7b0122c1b94d20ecdbba5a0f76243
+
+% 0 1 0 009fff120ccf112e0018ec00f6f9d543
+
+% 0 1 0 16c6dc36a08108881934264001614a83
+
+% 0 1 0 120c70449f5bfb34100cdc65e7d2e52f
+
+% 0 1 0 09518f93c7c9d3d118441ee4119eef5c
+
+% 1 1 0 076603ffd025469118bd637711342108
+
+@ 0 6 0 0b637fee940a50bc09474ee9557ab968
++ entry .unsafeHttpUrl   analisa um texto que a macro `Api` já validou como URL, restrito por `Unsafe`
++     `unsafeHttpUrl(text)(using Unsafe)` é `text.as[HttpUrl]` com seu `Url.Error` descartado: o
++     código que `Api(resource)` emite o chama na URL do servidor que a macro já analisou na
++     expansão, restrito por um `Unsafe` que a macro fornece, e não por um `unsafely` inserido por
++     splice, cuja função de contexto um quote não consegue casar sob a verificação de capturas.
++     Não é para uso direto: analise uma URL não verificada com `text.as[HttpUrl]` e trate o erro.
+
+@ 0 1 0 0c805f15fd2afed612644bc4cc25638a
++ entry .Apoplexy   as implementações de macro por trás de `Api`, da sua navegação e das chamadas de `Api.Response`
+
+% 1 1 0 015b673a4dd01f44045cb2d0f3b347e8
+
+% 2 1 0 0024780503ba8b5f05f2dc91ba88b98d
+
+@ 0 23 0 00446edd2eeb8ce9149bdbd714ac1d55
++       Não é para uso direto: o objeto existe para que as macros tenham uma sede estável. Ele
++       guarda em cache cada especificação que carrega, indexada por recurso e conteúdo, durante a
++       compilação.
++   entry .root   a macro por trás de `Api(resource)`: carrega o documento e tipa a raiz
++   entry .rootAt   a macro por trás de `Api(resource, base)`: como `.root`, com a URL base de quem chama
++   entry .select   a macro por trás de `Api#selectDynamic`: um segmento, ou um verbo sem argumentos
++   entry .applied   a macro por trás de `Api#applyDynamic`: um parâmetro de caminho, um corpo ou uma invocação sem verbo
++   entry .appliedNamed   a macro por trás de `Api#applyDynamicNamed`: parâmetros de consulta e de cabeçalho, com um corpo
++   entry .ensure   o ponto de entrada inline de `Api.Response#ensure`
++   entry .ensureMacro   lança o erro declarado para um status fora da faixa de sucesso, ou `Api.Violation`
++       Convoca uma `Tactic` para cada membro do `Failure` da resposta, e uma para `Api.Violation`,
++       onde a chamada é escrita; despacha pelo status exato, depois pelas faixas declaradas, depois
++       por `default`; e interpreta cada payload como a especificação o declara.
++   entry .record   o ponto de entrada inline de `Api.Response#record`, dado o corpo já lido como JSON
++   entry .tuple   o ponto de entrada inline de `Api.Response#tuple`, dado o corpo já lido como JSON
++   entry .recordMacro   constrói o registro tipado pelo schema sobre `Api.Records` a partir do JSON da resposta
++   entry .tupleMacro   constrói a tupla nomeada tipada pelo schema sobre `Api.Records` a partir do JSON da resposta
++   entry .check   o ponto de entrada inline que verifica o `T` de `call[T]()` contra o schema da resposta
++   entry .conform   interrompe a compilação a menos que `T` esteja conforme o schema da resposta
++       `Json` e `Http.Response` passam sem verificação; uma case class é casada campo a campo
++       contra as propriedades de um schema de objeto, um `List[T]` contra os itens de um array, e
++       um primitivo contra o seu tipo, com `Int` aceito para `int64` e tipos inteiros para
+
+% 0 1 0 09e495de118e1e8117f3d51cc4132ca4

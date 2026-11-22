@@ -1,0 +1,19 @@
+orthant 2 language
+
+@ 0 6 0 025b9928ee316f7715befe3316e3475b
++ `complete()` dà un `Compiler.Result`, che è `Success`, `Failure` o `Crash`. Ogni
++ `Compiler.Notice` porta con sé la propria importanza, che è info, avviso o errore, il proprio
++ file e il proprio tratto, e, sotto `scalacOptions.boltCodes`, il codice bolt che Proscala
++ assegna a un errore o a un avviso, come `↯/p.1.7`. Uno strumento può sottolineare il codice
++ incriminato, e non ha bisogno
++ di ripetere l'output del compilatore. Anche un crash arriva come valore, con il suo
++ [stack trace](stack-traces.md), e il processo può essere interrotto prima che la compilazione
++ finisca.
+
+% 0 1 0 16306aa925bb4da218140cd722aa707e
+
+% 0 2 0 1203b193629fc6cd15575e9f69b9a2c0
+
+% 0 1 0 07e806d7417eb8bf078601c4014d7c6a
+
+% 0 1 0 1e24f2f5fc80452819e39d425ab86a6d

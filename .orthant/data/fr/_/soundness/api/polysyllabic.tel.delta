@@ -1,0 +1,465 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1acedd231e89c7d705a5c65e1625afb7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12cf4099ba8dd085122513165ab3907a
++ info
++     la césure par l'algorithme de Liang sur des fichiers de motifs TeX : points de coupure, traits
++     d'union conditionnels et syllabes
+
+@ 0 8 0 129ccfdcb29b675403c619d3da7343f9
++ detail
++     _Polysyllabic_ trouve où un mot peut être coupé en fin de ligne, avec l'algorithme et les
++     fichiers de motifs qu'utilise TeX. L'endroit où un mot se coupe ne se lit pas dans son
++     orthographe : l'algorithme de Liang évalue donc chaque intervalle entre lettres à l'aide d'un
++     dictionnaire de milliers de petits motifs tirés de vrais dictionnaires de césure, et autorise
++     une coupure partout où le score le plus élevé est impair. La langue est une `Hyphenation`
++     contextuelle, et trois extensions de `Text` l'utilisent : `hyphenate` insère un trait d'union
++     à chaque coupure permise, `syllables` découpe un texte en ses parties, et `breakPoints` donne
++     les positions brutes.
+
+% 2 1 0 03723a808ebc72fc07ac196dbdb78556
+
+% 3 1 0 1d19a29c8c119fc01093e47c03ff0179
+
+% 4 1 0 059ecc8b12296a7a144c203de7d5647a
+
+% 0 1 0 13992425f04cc99d0fab42777b11e2eb
+
+% 0 1 0 0e28d4c979ae163c1962e1d5498c80d3
+
+% 0 1 0 19340d047010097a19c2cd4ca90e2b1a
+
+% 1 1 0 1b5c3da20bf8f8541d7e6a841860408e
+
+@ 0 7 0 0f53087ed56686db0586e044844dd34e
++     L'anglais américain est fourni sous la forme de `hyphenations.englishHyphenation`, analysé à
++     partir du fichier de motifs hyph-utf8 du CTAN livré dans le classpath. C'est un given d'un
++     package de choix : il s'importe donc par son nom, car `import hyphenations.*` n'importe pas
++     les givens. Toute autre langue se charge à partir de son fichier de motifs TeX avec
++     `Hyphenation.fromTex`, et tout ensemble se corrige avec des motifs ou des exceptions
++     supplémentaires par `Hyphenation#extending`. Sans langue importée, la `Hyphenation.fallback`
++     du compagnon ne coupe rien : le texte passe donc inchangé au lieu d'être coupé selon des
++     règles dont le programme ne dispose pas.
+
+@ 0 4 0 1c67b1b397824a5d160118c8d038beb7
++     Chaque suite de lettres est coupée indépendamment ; les espaces, la ponctuation et les
++     chiffres passent intacts. La bibliothèque a un seul ensemble de sources, `polysyllabic.core`,
++     pour toutes les plateformes, et tout est exporté vers le package parapluie `soundness`, où le
++     package `hyphenations` fusionne avec celui du package parapluie.
+
+% 0 1 0 137993f06410fb67033c0e5c5eeb0c17
+
+% 0 1 0 1d2517adc1a8137f127a5234448b34c0
+
+% 0 1 0 07972c3deecfa7ac1d4c1405c0309cb9
+
+@ 0 1 0 0a856f6f88e58a5b1ad2fe0202456ce3
++ entry .Hyphenation
++   info
++       les motifs et exceptions de césure d'une langue, avec ses longueurs minimales de fragment
+
+@ 0 6 0 19f0c069fae9d5681d007f1b7fa5d1d5
++   detail
++       Une `Hyphenation` est la valeur contextuelle que lit chaque opération de la bibliothèque :
++       les `#patterns` de notation de la langue, sa liste `#exceptions` de mots dont les coupures
++       sont indiquées explicitement, et les `#leftMin` et `#rightMin` caractères qu'une coupure
++       doit laisser avant et après elle. Elle se choisit sous forme de given — généralement
++       `hyphenations.englishHyphenation`, importé par son nom — et est immuable : `#extending` en
++       crée une nouvelle.
+
+% 2 1 0 16997e4b8fe3e59a070ed76f7a126cfe
+
+% 3 1 0 00802a4835e7ce95112db416ada78fa5
+
+% 4 1 0 1642c7534ec96c6b060dbafae507123a
+
+% 0 1 0 07c696d2e895de0a14efca041998754e
+
+% 0 1 0 037638fb1d31757c075f669236486d27
+
+% 1 1 0 08ce28f651919cc0013a40ff83d49667
+
+@ 0 6 0 006fcca133232503033cd5637adda8e1
++       Une nouvelle langue se construit à partir de motifs bruts avec
++       `Hyphenation(patterns, exceptions)`, ou se lit à partir d'un fichier de motifs TeX entier
++       avec `.fromTex`. Les motifs sont dans la notation de TeX : les lettres d'un fragment avec un
++       chiffre dans n'importe quel intervalle, de sorte que `hy3ph` donne 3 à l'intervalle entre
++       `y` et `p`, et un `.` marque une frontière de mot (`.ach4`, `ion5.`). Les exceptions sont
++       des mots avec des traits d'union à leurs coupures, comme `as-so-ciate`. Seules les lettres
++       ASCII de `a` à `z` participent au trie des motifs ; un mot est mis en minuscules avant
++       d'être recherché.
+
+% 0 1 0 12d3e61bc99acf39146fdadb0e4a0f82
+
+% 0 1 0 1e6d556594631c45039e927e078c3948
+
+@ 0 1 0 1c71cc841d05b6e003ec2eb6ee86fdfa
++   entry .fallback
++     info
++         la césure dans la portée implicite quand aucune n'est importée : elle n'autorise aucune
++         coupure
+
+@ 0 5 0 054cb9ff3ece97a40f32258b6caee3bb
++     detail
++         Le given du compagnon, trouvé quand aucune autre `Hyphenation` n'est dans la portée
++         lexicale. Ses dictionnaires sont vides et ses longueurs minimales de fragment aussi
++         grandes que peut l'être un `Int` : `hyphenate` renvoie donc son texte inchangé,
++         `syllables` ne découpe qu'aux non-lettres, et `breakPoints` est vide. Un algorithme de
++         retour à la ligne se dégrade donc en coupant aux espaces. Un given importé, tel que
++         `hyphenations.englishHyphenation`, a priorité sur lui.
+
+@ 0 1 0 0d4a401302d794781be3ab3c74eb75ba
++   entry .alphabet
++     info
++         l'alphabet du trie des motifs : les lettres ASCII minuscules suivies de la frontière `.`
+
+@ 0 3 0 16e9f819aae0758911878e9310bb221c
++     detail
++         Un `Dictionary.Alphabet` de gossamer composé de `abcdefghijklmnopqrstuvwxyz.`, dans cet
++         ordre. La boucle interne de l'algorithme calcule directement les emplacements pour cet
++         alphabet : chaque `Hyphenation` est donc construite sur lui ; un caractère qui n'en fait
++         pas partie réinitialise le parcours du trie.
+
+@ 0 1 0 0f015705672b065a01e4614df0601f4a
++   entry .apply
++     info
++         construit une césure à partir de motifs et d'exceptions au format TeX
+
+@ 0 4 0 1cfa619f0cc2aace0fb46eb9dc65723b
++     detail
++         Prend les `patterns` (tels que `t"hy3ph"`), des `exceptions` optionnelles (telles que
++         `t"as-so-ciate"`), et les longueurs minimales de fragment `leftMin`, 2 par défaut, et
++         `rightMin`, 3 par défaut. Les motifs sont compilés en un trie d'Aho–Corasick : chaque mot
++         est donc évalué en une seule passe vers l'avant.
+
+@ 2 1 0 0634226245bcbc6e1d99f04cbdc3331d
++         ```scala
+
+@ 3 1 0 05f60505f421d61f07b2b8ace8b5fc9a
++         import soundness.*
+
+@ 0 1 0 1a4eeb69da675b8a0e320c9fcbb32ac7
++         given Hyphenation = Hyphenation(Seq(t"a1b", t"c1d"), Seq(t"ef-gh"), leftMin = 1, rightMin = 1)
+
+@ 0 1 0 097e12bad3508c2f0efc4807cba6415e
++         t"abcd".hyphenate(hyphen = '-')   // t"a-bc-d"
+
+@ 0 1 0 0d85d2dd4191752a0aac57514f537e00
++         t"efgh".hyphenate(hyphen = '-')   // t"ef-gh"
+
+@ 1 1 0 08484f9e81af2d5c1d238a367b9cf041
++         ```
+
+@ 0 1 0 1bafdef06631e90d0ffa786f6a26f93d
++   entry .fromTex
++     info
++         lit une césure à partir du texte d'un fichier de motifs de césure TeX entier
+
+@ 0 5 0 15c28ca150b447bc10962a2a883d85cb
++     detail
++         Lit un fichier au format que publie hyph-utf8 du CTAN : il retire les commentaires `%`,
++         prend les motifs dans le bloc `\patterns{…}` et les exceptions dans le bloc
++         `\hyphenation{…}`, et les longueurs minimales de fragment dans `\lefthyphenmin` et
++         `\righthyphenmin`, qui valent 2 et 3 par défaut quand le fichier ne les définit pas. Les
++         langues publiées pour TeX sont toutes disponibles de cette façon.
+
+@ 2 1 0 1260cd9c9de744c30e03082a49ec9d3a
++         ```scala
+
+@ 3 1 0 0c61ac2aa2f3d1c108298dfbb082e6d8
++         import soundness.*
+
+@ 0 1 0 1b2fc40646840a3f068e0180d211f5ea
++         import classloaders.threadContextClassloader
+
+@ 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
++         import strategies.throwUnsafely
+
+@ 0 1 0 19a0ea94c9f2227808a72baf39f905b0
++         given Hyphenation = Hyphenation.fromTex(cp"/polysyllabic/hyph-en-us.tex".read[Text])
+
+@ 1 1 0 01afd9d2e58dad1a1ccb1553305edf58
++         ```
+
+@ 0 1 0 09f5da2dfd88b42f0c40e7d854c0a612
++   entry .breakPoints
++     info
++         les positions auxquelles un mot peut être coupé, avec des longueurs minimales de fragment
++         explicites
+
+@ 0 7 0 1fbd6a702a2e9f7e007a58ded6059134
++     detail
++         L'algorithme lui-même, sous forme de fonction.
++         `Hyphenation.breakPoints(word, hyphenation, leftMin, rightMin)` renvoie un `Array[Int]`
++         immuable de décalages dans le mot, par ordre croissant : le décalage `p` signifie qu'un
++         trait d'union peut être inséré avant la lettre `p`. Une correspondance exacte dans la
++         liste d'exceptions court-circuite le parcours des motifs. Une surcharge prend un `String`
++         avec un décalage et une longueur, pour travailler sur une tranche sans allouer de
++         sous-chaîne. La plupart du code veut l'extension `breakPoints` sur `Text`, qui lit les
++         longueurs minimales dans la `Hyphenation` given.
+
+@ 0 1 0 0e517176cdd34c1e1242d923347ed1f9
++   entry .breakPointsInto
++     info
++         écrit les positions de coupure d'un mot dans des tampons fournis par l'appelant, sans rien
++         allouer
+
+@ 0 5 0 00e365fc920d826f1b05e8af8177d55c
++     detail
++         La forme sans allocation de `.breakPoints` pour le code qui coupe de nombreux mots, comme
++         le fait l'extension `hyphenate` : elle prend une tranche de `String` et trois tableaux de
++         travail mutables, `padded` (au moins la longueur du mot plus 2), `scores` (longueur plus
++         3) et `breaks` (longueur), écrit les décalages dans `breaks` et renvoie combien elle en a
++         écrit. Les tampons peuvent être réutilisés pour chaque mot d'un texte.
+
+@ 0 1 0 1cc4d65db917fb931a9a90f5d1cdce28
++   entry .Error
++     info
++         levée quand une ressource de césure ne peut pas être chargée depuis le classpath
+
+@ 0 4 0 05d31c0349a7377e019108da1bf09bd1
++     detail
++         _the hyphenation resource `resource` could not be loaded from the classpath_. La
++         `hyphenations.englishHyphenation` livrée ne la lève pas : un fichier de motifs livré
++         manquant est un défaut d'empaquetage, et provoque plutôt une panique.
+
+@ 0 1 0 0db92367bddbe97910c236014c0b9082
++     entry #resource
++       info
++           le chemin dans le classpath de la ressource qui n'a pas pu être chargée
+
+@ 0 1 0 199ad53565321068138445b82edec46b
++   entry #patterns
++     info
++         les motifs de notation, compilés en un trie d'Aho–Corasick indexé par lettres
+
+@ 0 2 0 1fe756ee1c6e5407072f4707aa19e641
++     detail
++         Un `Dictionary` de gossamer associant les lettres de chaque motif (avec `.` pour une
++         frontière de mot) à ses scores, un par intervalle, y compris ceux avant la première et
++         après la dernière lettre.
+
+@ 0 1 0 0256796fe532d4201b030bdd8c33cae0
++   entry #exceptions
++     info
++         les mots dont les coupures sont indiquées explicitement, chacun associé à ses décalages de
++         coupure
+
+@ 0 2 0 1050c240c9c444630a24ada9e4e30265
++     detail
++         Une exception a priorité sur les motifs : un mot que les motifs coupent mal est donc
++         corrigé sans en perturber aucun autre.
+
+@ 0 1 0 1d86363459f60b7f1427746fbcc857dc
++   entry #leftMin
++     info
++         le nombre minimal de caractères qu'une coupure peut laisser avant elle
+
+@ 0 1 0 0c5cae9c90a888f3058e2c10e6fe95ca
++   entry #rightMin
++     info
++         le nombre minimal de caractères qu'une coupure peut laisser après elle
+
+@ 0 1 0 1982fb08c777844b086217b34e33085e
++   entry #extending
++     info
++         une nouvelle césure avec des motifs et des exceptions supplémentaires, et éventuellement
++         de nouvelles longueurs minimales
+
+@ 0 4 0 1c34ab5a4cfb455706e045ca8424698e
++     detail
++         Superpose `patterns` et `exceptions` à ceux de cette césure, et remplace `leftMin` ou
++         `rightMin` si l'un d'eux est fourni. Les motifs sont fusionnés en prenant le score le plus
++         élevé à chaque intervalle : un motif ajouté avec un score impair rétablit donc une coupure
++         qu'un motif standard à score pair interdisait ; une exception indique explicitement les
++         coupures d'un mot.
+
+@ 2 1 0 1b62f3cc50e975a11b1d7407338f0d06
++         ```scala
+
+@ 3 1 0 14a747097c96406d0920d902b0ac7368
++         import soundness.*
+
+@ 4 1 0 121d0a1aa2c11ad011c01d80e81b77da
++         import hyphenations.englishHyphenation
+
+@ 0 1 0 1dc528685ea6d0e012c0583ef67392d7
++         given Hyphenation = englishHyphenation.extending(exceptions = List(t"hy-phenation"))
+
+@ 0 1 0 1c5c3737470eb7e11b853a4918356142
++         t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phenation"
+
+@ 1 1 0 16028378309946cd1ddd538784b3622a
++         ```
+
+@ 0 1 0 0ef8312be51a95301209d979c50d911e
++ entry .hyphenate
++   info
++       insère un trait d'union à chaque coupure permise dans chaque suite de lettres d'un texte
+
+@ 0 7 0 0f74f313879af34c014766e89b9cbdd9
++   detail
++       Une extension sur `Text`, utilisant la `Hyphenation` given dans la portée. Le trait d'union
++       est par défaut le trait d'union conditionnel Unicode, U+00AD, invisible sauf si une ligne se
++       coupe réellement à cet endroit ; passer un caractère visible montre les points de coupure.
++       `leftMin` et `rightMin` remplacent les longueurs minimales de fragment propres à la césure,
++       de sorte qu'une coupure n'isole jamais une ou deux lettres. Chaque suite de lettres est
++       coupée indépendamment, et tout le reste passe inchangé.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 16268dd5aae49ea10b54baea04a7d9b5
+
+% 1 1 0 12654915d74f3d250a2138aa57a11c74
+
+% 2 1 0 1be31981a91dd64517c51681418cac6a
+
+% 3 1 0 14d229424a202cfa138d67c2a003a593
+
+% 0 1 0 1665b2d7fc541cb519a91faa32293826
+
+% 1 1 0 05b8871d91d04a411623c30da2ee88fb
+
+% 0 1 0 0ee6e8b8f169dc771ecd2f303b60c6d8
+
+% 1 1 0 005dc1122d0ea00c1d21e5c2f43e9780
+
+% 2 1 0 091753953f3b2d8f02b7d85921c72220
+
+% 3 1 0 15ccecea0d958a6e16b5d5d67cd4648b
+
+% 0 1 0 125191af62511d8f0a499fff507a4889
+
+% 1 1 0 1512c9ea528ca721140c486586c88148
+
+% 0 1 0 134a10410b89e5421a991f8f4b89ba1d
+
+% 1 1 0 1b148371d7a2069219bef38018138c7e
+
+% 2 1 0 009b96492a27859213b107e9c8ab086f
+
+% 3 1 0 0a13c100f583390c08d15e555c4238af
+
+% 0 1 0 0e972117d9d7ce5e0687dc5a1a4f8b41
+
+% 1 1 0 14707f1653bd26081e6c52ff2e7c0921
+
+% 0 1 0 052be5c84b4c55c303ee9e5b62078681
+
+% 1 1 0 1bd7f4e57f8a0a22195fd76e926b99b8
+
+% 2 1 0 1298f8ae7a7e5aa51dec3cf65aa3e6d7
+
+% 3 1 0 14a8356633ff6bdb0b8b66bef5c11610
+
+% 0 1 0 1a4908707c1b3c030b4682e50652e465
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 112d688775560a7100804852ae7ef208
++       Les tampons de travail sont partagés par chaque mot d'un même appel et ne s'agrandissent que
++       lorsqu'un mot plus long arrive : couper un long texte alloue donc peu de chose au-delà de
++       son résultat.
+
+% 0 1 0 14a0a67bfad34f91157d7a7e3c8decdd
+
+% 0 1 0 00ae6f27e3fa253a0450dac366a481fc
+
+@ 0 1 0 05d1038e994bbca6196ea7f81b85fa46
++ entry .syllables
++   info
++       découpe un texte en syllabes, chaque suite de non-lettres formant un segment à part
+
+@ 0 3 0 08bd226fed43131717346aeed9c2120d
++   detail
++       Une extension sur `Text`, utilisant la `Hyphenation` given dans la portée, qui renvoie une
++       `Sequence[Text]`. Chaque suite de lettres est découpée à ses points de coupure, et chaque
++       suite de non-lettres forme un segment : concaténer les segments reproduit donc exactement le
++       texte d'origine.
+
+@ 2 1 0 04884696ce53db8c1568e6d7f6e6f25f
++       ```scala
+
+@ 3 1 0 0782ea631fbc620e1c20ad1aa72be3c7
++       import soundness.*
+
+@ 4 1 0 0515ff661c3c5b0a1aa833922448138e
++       import hyphenations.englishHyphenation
+
+@ 0 1 0 13d262b70fa3f1811d96c9b3865a44f1
++       t"the algorithm".syllables.to[List]   // List(t"the", t" ", t"al", t"go", t"rithm")
+
+@ 1 1 0 0fe07311044af0d107cd6365aecb3d20
++       ```
+
+@ 0 1 0 0f615bc7902c1e721f81ae9ab96c086f
++ entry .breakPoints
++   info
++       les décalages auxquels un mot peut être coupé, selon la césure dans la portée
+
+@ 0 5 0 02419fbdd94de5af0280bece88f83314
++   detail
++       Une extension sur `Text`, pour du code tel qu'un algorithme de retour à la ligne qui place
++       lui-même les coupures au lieu d'insérer des caractères. Renvoie un `Array[Int]` immuable de
++       décalages par ordre croissant : le décalage `p` signifie qu'un trait d'union peut se placer
++       entre les lettres `p - 1` et `p`. Elle traite le texte entier comme un seul mot, avec les
++       `leftMin` et `rightMin` propres à la `Hyphenation` given ; pour du texte courant, utilisez
++       `syllables` ou `hyphenate`.
+
+@ 2 1 0 032b05fb124b3d310e67d3ce01eea9e0
++       ```scala
+
+@ 3 1 0 0761755d7bade41f02d42462ebe5fce0
++       import soundness.*
+
+@ 4 1 0 0dd5653c3d509c900d6d109ad6ae1f47
++       import hyphenations.englishHyphenation
+
+@ 0 1 0 189ca7324de5f65d1b1feb2adba09e4e
++       t"hyphenation".breakPoints.to[List]   // List(2, 6)
+
+@ 1 1 0 03035af83cee2edb1066057674f7051d
++       ```
+
+@ 0 1 0 1444a2e1ffe13bc500f57881fa33c0ce
++ entry .hyphenations
++   info
++       les langues de césure livrées, chacune un given à importer par son nom
+
+@ 0 4 0 048edf6fa793f24b110ed447f6d48a0f
++   detail
++       Un package de choix : les règles de la langue qui s'appliquent sont déterminées par la
++       `Hyphenation` given dans la portée, et l'on en importe une par son nom, puisque
++       `import hyphenations.*` n'importe pas les givens. Il fusionne avec le package `hyphenations`
++       du package parapluie `soundness`.
+
+% 2 1 0 0f040206f73090f00257a612fca9a2ab
+
+% 3 1 0 09ed33ebc8ddc78c149a8c596300265b
+
+% 4 1 0 1dd50837050f28301f65fc87498adc20
+
+% 1 1 0 0d6ff2d3864c33ef17b1d3fe0f640cf6
+
+@ 0 1 0 11ee7d84aa13886e06d907b8691d66b4
++   entry .englishHyphenation
++     info
++         l'anglais américain, à partir des motifs hyph-utf8 du CTAN et de la liste d'exceptions de
++         TeX
+
+@ 0 5 0 093e248b9b272ec20d5002f6f28192f6
++     detail
++         Analysé à partir de `polysyllabic/hyph-en-us.tex`, livré dans le classpath et redistribué
++         tel quel sous la licence tout-permissive de la FSF figurant dans son en-tête, la première
++         fois que le given est utilisé. Il porte les exceptions que fournit TeX : `associate` se
++         coupe donc en `as-so-ciate` et `table` en `ta-ble`, là où les motifs seuls ne le feraient
++         pas. Si le fichier livré est absent du classpath, le given provoque une panique.

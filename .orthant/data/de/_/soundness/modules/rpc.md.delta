@@ -1,0 +1,347 @@
+orthant 2 language
+
+% 0 1 0 1ed9f8220e20843a1230937a4ae3f670
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 6 0 112b0f4b7fb4521b0a16979cc937182d
++ Ein entfernter Prozeduraufruf gibt vor, dass ein Methodenaufruf das Netzwerk überquert. Hier ist
++ diese Fiktion an beiden Enden typisiert. Eine RPC-Schnittstelle ist ein gewöhnlicher Trait, dessen
++ Methoden mit `@rpc` markiert sind. Aus dieser einen Definition verteilt ein *Server* eingehende
++ Aufrufe an eine Implementierung, und ein *Client*-Stub verwandelt Methodenaufrufe in
++ Übertragungsnachrichten. Das funktioniert für
++ [JSON-RPC 2.0](https://www.jsonrpc.org/specification) über HTTP und für
++ [gRPC](https://grpc.io/) über HTTP/2 mit [Protocol Buffers](protobuf.md).
+
+@ 0 4 0 05d251ef412e92a419abb45ab4f9a68a
++ Unter den Protokollen liegt die gemeinsame Infrastruktur der Nachrichtenstreams:
++ [Server-Sent Events](https://en.wikipedia.org/wiki/Server-sent_events) und das *Framing*, das einen
++ Stream von Bytes oder Text anhand von Längenpräfixen, `Content-Length`-Headern oder Zeilenenden in
++ seine Nachrichten zerlegt.
+
+@ 0 1 0 0e85539c26356abc00570fd462f4991c
++ ### Über entfernte Aufrufe
+
+@ 0 4 0 00c180ef443f963517d97a8a179d175c
++ Das Übertragungsformat eines RPC-Protokolls ist mechanisch: Methodennamen, Kodierungen der
++ Parameter, Zuordnung von IDs, Fehlerumschläge. Es für jede Schnittstelle von Hand zu schreiben,
++ lädt zum üblichen Auseinanderdriften ein, wobei Client und Server sich über den Namen eines
++ Parameters uneinig sind. Ein Codegenerator vermeidet das Auseinanderdriften, bringt aber die
++ Build-Maschinerie zurück, die die [Ableitung] in der Sprache vermeidet.
+
+@ 0 4 0 04868e8f304eb057009698858c3cbe50
++ Hier werden beide Seiten aus dem Trait abgeleitet. Der Trait ist die einzige Quelle der Wahrheit.
++ Ein Makro liest seine `@rpc`-Methoden, ihre Parameternamen und ihre Typen und erzeugt Verteilungs-
++ und Stub-Code, dessen Kodierungen durch Konstruktion übereinstimmen. Client und Server können sich
++ über eine Methode, die sie teilen, nicht uneinig sein, und das ist
++ [Korrektheit](../../philosophy/correctness.md) durch Konstruktion.
+
+@ 0 2 0 0044493e8229c6c90bbd93eca1ec2429
++ Alles stammt aus dem Paket `soundness`, dazu eine Kodierung für die Bytes, die übertragen werden,
++ und der letzte Import erlaubt den Beispielen, ihre Ergebnisse auszugeben:
+
+% 2 1 0 079793f79097ed5710291a47e9771fb8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0e74850a5892ceff0c5a66db76620a81
++ ### Eine Schnittstelle
+
+@ 0 1 0 02078a7832a29a4e065ae848a647017f
++ Eine RPC-Schnittstelle ist ein Trait aus annotierten Methoden, mit Case-Klassen für die Nutzdaten:
+
+% 2 1 0 0483ac200eb828c318443570ca8e98f8
+
+% 0 1 0 0fab1938df50230f128efdb61ef2f135
+
+% 0 1 0 0f04079b5eb86e981af354278d159697
+
+% 0 1 0 1e4d25440edd14881b699ac1475b3d4a
+
+% 0 1 0 076f931dd18fac7f176077f0872a2c00
+
+% 1 1 0 12d32087e2dfe5471e8dfce54e8cc64d
+
+@ 0 2 0 058ba10c74fa12bf07ce844dc1048a74
++ Eine Methode, die `Unit` zurückgibt, ist eine *Benachrichtigung*. Sie ist Fire-and-Forget, ohne
++ dass eine Antwort erwartet wird, wie es die JSON-RPC-Spezifikation unterscheidet.
+
+% 0 1 0 19c254993f82fd3704ecdb3757aa1f6d
+
+@ 0 2 0 1aba60549336ab02079d94306f76bc5c
++ `JsonRpc.serve` verwandelt eine Implementierung in einen Verteiler, bereit, hinter jedem Transport
++ zu sitzen, typischerweise einem [HTTP](http-server.md)-Handler:
+
+% 2 1 0 153673ee5a7b49210b8120af7847a253
+
+% 0 1 0 087428175a8356e40deac13fc8194beb
+
+% 0 1 0 1c9ca5336eb0c09906535868eaead6c6
+
+% 0 1 0 1b340ee4f9d4aa5605cbd0f07ee92f2e
+
+% 1 1 0 000be0858f2f5dd1163803b96a67df10
+
+@ 0 2 0 1e5d948c01b1866c19922c5d636c51d0
++ Der Verteiler ist eine Funktion von einem `Json`-Dokument der Anfrage auf eine [optionale][optional]
++ Antwort. Eine Benachrichtigung erzeugt keine. Ein Routen-Handler ruft ihn mit dem Body des Requests
++ auf:
+
+% 2 1 0 11b7f91fb731994d1a33ea63d313d1cf
+
+% 3 1 0 1bebf01f927ddeda0826da277aef1e60
+
+% 4 1 0 024d17106aa88d9006c0318bdc67a5af
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 0c71c3295d9a8c521734e39d9ae38460
+
+% 0 1 0 02b8916a5bbe062110c29566c0013da2
+
+% 1 1 0 1656bfdf708d97730f3eb3b3fbf3f72e
+
+@ 0 2 0 1e277a633aea3f6317ff65931854c73d
++ Auf der aufrufenden Seite fertigt `remote` aus demselben Trait einen Client. Er sendet jeden Aufruf
++ als Request an die URL:
+
+% 2 1 0 17ae543a9288198112652d4ad2d4cae4
+
+% 3 1 0 1556999c7f5a95f9154ed0433291ad14
+
+% 4 1 0 028fb611ba6816d8064837cee8e314bf
+
+% 0 1 0 0222c0b25d9c91bd0cdaed58cf7da29b
+
+% 0 1 0 1fdff17c321725490f051bf9abc7d833
+
+% 1 1 0 08dcd545b175c3170237148a4f45d786
+
+% 0 1 0 166d528ce6a687e417ad2e1f82d0c2bd
+
+@ 0 4 0 12deeda1c4441c8609ed071cbfcd0e05
++ Dieselbe Gestalt von Trait dient gRPC. Ein `Grpc.Channel` öffnet sich über eine
++ [HTTP/2](http-server.md)-Verbindung, und `Grpc.remote` leitet den Stub ab. Eine Methode, die einen
++ Wert zurückgibt, macht einen unären Aufruf, und eine, die einen `Stream` zurückgibt, einen
++ Server-Streaming-Aufruf. Die Nutzdaten sind Protocol-Buffers-Nachrichten:
+
+% 2 1 0 1331bda66acee3f103a165f0fefc40da
+
+% 3 1 0 09f71529c0d2f84c08d2b7c117e82cb7
+
+% 4 1 0 1fcd138a6f6fd6141d6971735ee0cb5b
+
+% 0 1 0 10d199dc1f673997065b6030312b5591
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 1ee4229ff0327da31782794707d71a55
+
+% 0 1 0 066237b90393a95d0d3e35899c51f8b0
+
+% 0 1 0 041b32b1d11c02fd012fc7965cffa8ab
+
+% 0 1 0 1cb90ba8eef648cd0769fc57409ff7ac
+
+% 1 1 0 07f38762941c7af41d701fa8f2a9e3f6
+
+@ 0 2 0 0ace40869c202a29035bf3c58caa70ab
++ Eine Antwort, die nicht OK ist, löst einen `Grpc.Error` aus, der den kanonischen Statuscode, etwa
++ `NotFound` oder `Unauthenticated`, als typisierten Wert trägt.
+
+@ 0 1 0 171e9e42aaeca50c0ac90b55493019ad
++ ### Server-Sent Events
+
+@ 0 4 0 0dc7d0384d2c41c70011295a730a6c93
++ Ein `Sse`-Wert ist ein Ereignis eines SSE-Streams, mit seinem Ereignisnamen, seinen Datenzeilen,
++ seiner ID und seinem Wiederholungsintervall. Ein Stream davon wird als `text/event-stream`
++ bereitgestellt. Eine `Sse.Source` puffert Ereignisse und spielt sie ab der letzten ID erneut ab,
++ die ein Client gesehen hat, und das ist das Verhalten beim Wiederverbinden, das das Protokoll
++ verlangt. Ein Client, der zuletzt das Ereignis mit der ID `0` gesehen hat, erhält das nächste:
+
+% 2 1 0 119d683d54e0c3cb08192ed5a8bf39a4
+
+% 3 1 0 0b3abbf02456176d093204889d7877f0
+
+% 4 1 0 176388ad730b2b631c321ed4bfaa6216
+
+% 0 1 0 0a36da4aa286f3ac0ac2fc44e153f3e5
+
+% 0 1 0 0fa84890aac9f8920d00e60acf79b85c
+
+% 0 1 0 034540fc98568f3a0cf7695481f2ab4a
+
+% 0 1 0 0f7e367de0e41acb0340e57a1f321cc4
+
+% 1 1 0 1a22b9625aa9740d03db38d41914eebe
+
+% 0 1 0 17e9ce2f834785f50b5a3be4fb0bfc62
+
+@ 0 2 0 051a8c229e536ab0113a6f35e136d62b
++ Die Grenzen der Nachrichten in einem rohen Stream werden mit `frames` wiederhergestellt, das die
++ Konvention benennt:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 038739307b772ec800618e452dd65725
++ column  Konvention
+
+% 0 1 0 06ecb2fa53ad90ce1cd017cfc9102cf1
+
+@ 0 7 0 10a431e2aee025b5111699c28abc9b24
++ column  Jede Nachricht ist
++ row  `LengthPrefix`  `Data`  eine vier Byte lange Big-Endian-Länge, dann ebenso viele Bytes
++ row  `ContentLength`  `Data`  ein `Content-Length`-Headerblock, wie LSP ihn verwendet, dann ebenso viele Bytes
++ row  `CrLf`  `Text`  eine Zeile, die auf CRLF endet
++ row  `Linefeed`  `Text` oder `Data`  eine Zeile, die auf einen bloßen Zeilenvorschub endet
++ row  `CarriageReturn`  `Text`  eine Zeile, die auf ein alleinstehendes CR endet
++ row  `Grpc.Framing`  `Data`  ein Flag-Byte und eine vier Byte lange Länge, dann ebenso viele Bytes
+
+% 1 1 0 068be8d2c303b4991ea7f598e5c5bdb5
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 10433ba4c17f00910151452177ee80fe
+
+% 0 1 0 1754adb1bb1142260a1ca3919f81cb55
+
+% 0 1 0 1083a43622bd99501a903ebbe97b0b12
+
+% 1 1 0 19e6bdbdd95b7a400b805584b1eaaa7f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 04863fe2239de1b41be9cb544b7a3a33
+
+% 0 1 0 0ce96c1771fc060e16184992666cd079
+
+% 0 1 0 1a72e27fde7bd20512d7ded8adff7f8e
+
+% 1 1 0 155b6d5a0682f1ce0403f7b7944b858d
+
+@ 0 1 0 1de935e186b6820e1165f4230c66caed
++ Das eigene Framing von gRPC, `Grpc.Framing`, wird auf dieselbe Weise verwendet.
+
+@ 0 6 0 1e594ebc317a39121acf242f10112498
++ Ein `Duplex`, der BinTEL-Nachrichten trägt, etwa das Protokoll eines Daemons über TLS oder über
++ einen UNIX-Domain-Socket zu einem lokalen Werkzeug, wird mit `framed` versehen, indem man benennt,
++ was er liest und was er sendet. Jedes `send` schreibt einen längenpräfixierten Datensatz, dessen
++ Rumpf die BinTEL-Kodierung des Wertes ist. `messages` liest die Datensätze der Gegenstelle als
++ Werte zurück. Die Schemata werden einmal aus den beiden Typen abgeleitet, wenn die Verbindung mit
++ Framing versehen wird, und nicht für jede Nachricht. Das `Framed from Reply to Request` des einen
++ Endes trifft auf das `Framed from Request to Reply` des anderen:
+
+% 2 1 0 16ae21bdca9e134c016207268a7bde21
+
+% 3 1 0 02acd111fc52af9d1a90ac9689ff0cff
+
+% 4 1 0 0f2f4adf2ecd9eff03a6617feb19d4e1
+
+% 0 1 0 18e20e64f0fa9ff5112a5b04181ee3bd
+
+% 0 1 0 0612585c9771caeb117cd1299ba8ef59
+
+% 0 1 0 10d8428c3d7a1af1003b6ae3a90e56c0
+
+% 0 1 0 0964167350c5f0b10c8c8de78048e884
+
+% 0 1 0 0fc8c1e8576e14df086997fc2e583b52
+
+% 0 1 0 1d19443449768c671c8443518df0c6fc
+
+% 0 1 0 0b33234595abbc9a15ddb0e3f756244f
+
+% 0 1 0 19b29527b09110720cb5905837fda525
+
+% 0 1 0 01116e05178d8d7813c2922f33e7111d
+
+% 0 1 0 16ebc3d39ee965c91bea8dfdfcf75c99
+
+% 1 1 0 1fdc31f62156a3e90665f98552fe622c
+
+@ 0 2 0 19c835d7873852b21852529dea82bb36
++ Ein abgeschnittener Datensatz löst `Framing.Error` aus, und ein Rumpf, der nicht die erwartete
++ Nachricht ist, löst `Bintel.Error` aus, jeweils beim Lesen des Datensatzes.
+
+@ 0 3 0 0c1ccc53a76aef7c076f6dce9c5bae17
++ Das Framing ist unabhängig davon, wie die Bytes ankommen. Eine über drei Chunks verteilte
++ Nachricht, zwei Nachrichten in einem Chunk und eine letzte Nachricht ohne Abschlusszeichen werden
++ alle behandelt, weil der Framer seine eigene Position führt und nichts über die Grenzen der Chunks
++ annimmt:
+
+% 2 1 0 01c205ecb5caf3cb02dc071c7bf103ed
+
+% 3 1 0 19368150f1781a8403de4da95dcb55bb
+
+% 4 1 0 05793a475f874a82196f3ef72eecad96
+
+% 0 1 0 19c47730946efed6150c5d606d8f4a12
+
+% 1 1 0 1f5bb00fa8ec4b9516df626b9f14017e
+
+@ 0 2 0 08352df71f76c2391da28ad86d5dec7f
++ Ein abgeschnittener oder fehlerhafter Frame löst einen `Framing.Error` aus, der benennt, was falsch
++ war, sodass ein Protokollfehler eine Diagnose ist und kein Hängenbleiben.
+
+@ 0 1 0 1b9dd92133c5c1690e1232a54346dbdc
++ ### Ein Übertragungsformat verifizieren
+
+@ 0 5 0 1f27a3907a2d1c8903f10c271c71a027
++ Eine Protokollimplementierung, die den Hin- und Rückweg nur gegen sich selbst besteht, beweist
++ nichts. Zwei zueinander passende Fehler sehen genauso aus wie Korrektheit. Die Codecs für HTTP/2
++ und gRPC werden daher gegen *goldene Bytes* geprüft, die exakten Oktette, zu denen jeder Frame
++ serialisiert werden muss und die in den Tests ausgeschrieben sind, und außerdem auf den Hin- und
++ Rückweg. Das Framing einer gRPC-Nachricht ist ein Flag-Byte und eine vier Byte lange Länge, und es
++ wird geprüft, dass der Encoder genau das erzeugt:
+
+% 2 1 0 0464c6a4a40586221792f03a0aa880c5
+
+% 3 1 0 00e935375d3943000ba55d5dc9a53f00
+
+% 4 1 0 084733291598d0a2058f956987f66a15
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 1b158037ce0151ee0dcf4ebbb7456ee1
+
+% 1 1 0 0b41648e8e767f501e398b971fee1f6b
+
+@ 0 4 0 10b8cbabb93a0a4200138136a94ba72a
++ Die Header-Kompression HPACK wird gegen jedes Beispiel in den Anhängen von
++ [RFC 7541](https://datatracker.ietf.org/doc/html/rfc7541) verifiziert, mit und ohne
++ Huffman-Kodierung, und der `Huffman`-Codec gegen die Strings, die die Spezifikation tabelliert. Wo
++ eine Spezifikation Testvektoren veröffentlicht, wird die Implementierung an ihnen gemessen.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 7 0 107ab3226dabd824037d2e3eaeea929c
++ - [HTTP-Server](http-server.md) beherbergt einen JSON-RPC-Verteiler und das HTTP/2, auf dem gRPC
++   läuft.
++ - [HTTP-Client](http-client.md) trägt die Anfragen eines JSON-RPC-Stubs.
++ - [JSON](json.md) und [Protobuf](protobuf.md) kodieren die Nutzdaten.
++ - [TEL](tel.md) beschreibt BinTEL, das ein mit Framing versehener `Duplex` trägt.
++ - [Sockets](sockets.md) beschreibt `Duplex` und `Endpoint`.
++ - [MCP](mcp.md), [ACP](acp.md) und [LSP](lsp.md) sind Protokolle, die auf JSON-RPC aufbauen.
++ - [Container](docker.md) spricht gRPC mit einem containerd-Daemon.

@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 1287a5d9a239ffa41131b7e453fa0606
++ # `SN-750` — `BcodlError` (ausgemustert)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Diesen Fehler gibt es nicht mehr. Die Seite wird aufbewahrt, damit der Code nicht wiederverwendet
++ wird und damit ein Verweis darauf aus einem älteren Release weiterhin aufgelöst werden kann.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Was daraus wurde
+
+@ 0 2 0 11d21b42fb6a4e05032be3756de116f7
++ Das Modul `cellulose`, das CoDL und dessen Binärform BCoDL implementierte, wurde entfernt. Seine
++ Rolle übernimmt [TEL](../en/modules/tel.md), dessen binäre Kodierung BinTEL ist.

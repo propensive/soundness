@@ -1,0 +1,588 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0327746607af0d4d017246e3ef92dff4
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1fef54c88e7aa6b413c770f1985fe026
++ info   codificaciones en base de bytes como texto: Base64, Base32, hexadecimal, octal, cuaternaria y binaria
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 041f8eaa2e3bc6cd05abf95fddc86001
++     _Monotonous_ serializa bytes a texto, y deserializa texto de vuelta a bytes, en las
++     codificaciones de binario a texto: Base64, Base32, hexadecimal (`Hex`), `Octal`,
++     `Quaternary` y `Binary`. La codificación se nombra como un tipo, y el juego exacto de
++     caracteres —el `Alphabet`— es un given que se elige importándolo por nombre del paquete
++     `alphabets`, de modo que las formas estándar y segura para URL de Base64 se diferencian
++     en una sola línea.
+
+% 2 1 0 17718bfddd19c98f0ac55cc76d761666
+
+% 3 1 0 168bc7db22b549b019549e55d2f8290d
+
+% 4 1 0 194b794db4544dfa07cdf12b1f14f48c
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 1 1 0 16cc6d8804722b8a0f7317e8512d864e
+
+% 0 1 0 1abfbad6ff4729681f28e58b312328fc
+
+% 0 1 0 15772585f9bff79911c339727e6616b6
+
+% 0 1 0 109138fe5c33b8090eecec60aedf49d6
+
+% 1 1 0 0c62cf8e7fb88c0212cc83d314a1cb22
+
+@ 0 5 0 1014dcc6be9089cd095705eaf1a3313c
++     Esto es *serialización*, no codificación en el sentido de JSON o XML: los bytes se
++     convierten en texto sin tener en cuenta lo que significan, y por eso las operaciones son
++     `serialize` y `deserialize`. `serialize` toma cualquier valor que sea
++     `Encodable in Data`; `deserialize` valida cada carácter contra el alfabeto y lanza un
++     `Serialization.Error` por uno que no contenga, así que necesita una
++     `Tactic[Serialization.Error]`.
+
+@ 0 6 0 08d5886aed073b641cf91f837339086a
++     Por defecto no hay ningún alfabeto en el ámbito: los givens del paquete `alphabets` deben
++     importarse por nombre, ya que `import alphabets.*` no importa givens, e
++     `import alphabets.given` trae a la vez todos los alfabetos de cada codificación, lo que
++     resulta ambiguo. Un alfabeto *estricto* solo vuelve a leer sus propios caracteres,
++     mientras que uno *tolerante* acepta también equivalentes reconocidos (la otra caja de
++     las letras hexadecimales, por ejemplo), así que el rigor de una decodificación se elige
++     con la importación.
+
+@ 0 3 0 0ca39e65ab7d04d0023fe1b4deaf6fd7
++     Un `Alphabet` es también una etapa de flujo: un `Stream[Data]` se serializa a medida que
++     fluye, y un `Stream[Text]` se deserializa, con los mismos resultados que las formas de
++     valor completo, sea cual sea la división en fragmentos.
+
+@ 0 3 0 034dd2fdf48f4a0c02e5fab505ae6fb0
++     La biblioteca es el único conjunto de fuentes `monotonous.core`, que compila para la
++     JVM, Scala.js y Scala Native. Todo se exporta al paraguas `soundness`, y su paquete
++     `alphabets` se fusiona con el del propio paraguas.
+
+% 0 1 0 15791d729f3279830a38588c4d50a8db
+
+% 0 1 0 0be7dd9e12e1dcab08304bca93c0ce3c
+
+% 0 1 0 0ad2782591f60d140d6d818658f06074
+
+% 0 1 0 11d744a95c39c8a71bd90d006bb0c8c6
+
+@ 0 5 0 199e9f7e5dff08d506c7f5d4d885bd02
++ entry .serialize   representa bytes, o un flujo de bytes, como texto en una codificación en base
++     `value.serialize[Base64]` toma cualquier valor que sea `Encodable in Data` —el propio
++     `Data`, o cualquier tipo con una instancia— y representa sus bytes con el given
++     `Serializable in Base64`, que toma sus caracteres del `Alphabet[Base64]` en el ámbito.
++     La codificación es el argumento de tipo: `Base64`, `Base32`, `Hex`, `Octal`,
++     `Quaternary` o `Binary`.
+
+% 2 1 0 11d153101cf128d611722288423c16a5
+
+% 0 1 0 04aa9f2aeb9a8e550a7b1ac07fa54615
+
+% 1 1 0 0fb7adc0dbd193ce010934a82736d35c
+
+% 2 1 0 0d6a4f06c551a2f213f950866ed189fa
+
+% 0 1 0 1308721e9fd643b408a63cf26791c6d4
+
+% 0 1 0 1552e7416596c4b31f5d5e5ec233ce93
+
+% 0 1 0 13cacd78d4d5211416f0bf275f449ec2
+
+% 1 1 0 0ff91a5187174e831853eada38985058
+
+% 2 1 0 062265059c0f7bf81c46488cac19c2a2
+
+% 0 1 0 043d811fd97799f61ec772c9b3e4492b
+
+% 0 1 0 0f1a72561a705c280373dca8a88f2e54
+
+% 0 1 0 08c43137b0b925f30ef8ddb259c2b270
+
+% 1 1 0 174031c42525f4d3002161adde210dc2
+
+% 2 1 0 02f178740b82fede0d787a6ea7b5e5ee
+
+% 3 1 0 166c78db06ac943801db709e06e4fc74
+
+% 0 1 0 076b4168cf38fc170c341c1818673f36
+
+% 0 1 0 07104998c1f996680a1b6ccdb4b1d9c1
+
+% 1 1 0 00da2af86b746d140ddda03e5fb0313a
+
+% 2 1 0 0ba92c2d73b7d5d711c5d3ca2b54a135
+
+% 0 1 0 0ca887bff9f67d880734233f28a8f71d
+
+% 0 1 0 1fad99c5e061e4db00bd63b42af35fcd
+
+% 1 1 0 01862e42227681ce06651135b63c02c7
+
+% 2 1 0 013e12b24eb884021a1c7de1b8369896
+
+@ 0 4 0 14e1016bd024e0da03241a1478e85939
++     El alfabeto Base64 seguro para URL escribe `-` y `_` en lugar de `+` y `/`. Un alfabeto
++     con relleno completa la salida hasta un grupo entero (cuatro caracteres para Base64,
++     ocho para Base32), como hace el alfabeto Base64 estándar con `=`; uno sin relleno, como
++     el seguro para URL, se detiene en el último carácter que lleva datos.
+
+@ 0 4 0 0cfbbd85fab95d681d3f04cf978fa5b4
++     El mismo nombre es una extensión sobre un `Stream[Data] over Credit`, que serializa el
++     flujo a medida que fluye en un `Stream[Text] over Credit`, usando el `Alphabet` en el
++     ámbito como etapa de flujo y un `Buffering` (hay uno estándar en su objeto compañero).
++     Los grupos que quedan a caballo entre dos fragmentos se arrastran de uno a otro, así que
++     el texto del flujo es igual a la forma de valor completo.
+
+@ 0 7 0 16b3763b2df564ca1497728a49537b04
++ entry .deserialize   lee texto, o un flujo de texto, de vuelta a bytes en una codificación en base
++     `text.deserialize[Base64]` lee `Text` de vuelta a `Data` con el given
++     `Deserializable in Base64`, que se apoya en el `Alphabet[Base64]` en el ámbito. Cada
++     carácter se comprueba contra el alfabeto, incluidas sus alternativas toleradas, y el
++     primero que no esté en él se lanza como un `Serialization.Error` con su posición; el
++     relleno final se ignora. Necesita una `Tactic[Serialization.Error]`. Un alfabeto
++     tolerante acepta ambas cajas, y uno estricto, solo sus propios caracteres:
+
+% 2 1 0 1181737baa083907044290edd4c1cef0
+
+% 0 1 0 08ee26f810439b7b0c705e123fe53216
+
+% 1 1 0 0f10db0bd285002a08ef84e08442f200
+
+% 2 1 0 1d4be4c411116d3117a112405887374a
+
+% 3 1 0 1a81c24a752a8c57096333b1e6d27668
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 0 1 0 0981ac514ae6fb101412636bdc705e7c
+
+% 0 1 0 063b62b393e46e681d656407b9eb73f9
+
+% 1 1 0 0f498632080902fe1b0b2aa80395a3fb
+
+% 2 1 0 15088b5fd7fc4660112a4506b4265bbd
+
+% 0 1 0 04a436886cee81b01f4f775d062a4d25
+
+% 0 1 0 0fb73bd7d860aebb126dfbc40ec5c7e4
+
+% 0 1 0 09ebe81a86b7351f1fb089bc001636ca
+
+% 1 1 0 16e40de5c5f5242e1d71b9c056d3cc74
+
+% 2 1 0 138c62310dad30220d53b98a9bbabfec
+
+@ 0 4 0 1e9d8f42bb6b1a161526e49992fecab7
++     El mismo nombre es una extensión sobre un `Stream[Text] over Credit`, que deserializa a
++     medida que fluye el texto, en un `Stream[Data] over Credit`. Necesita el `Alphabet` en el
++     ámbito, un `Buffering` y una `Tactic[Serialization.Error]`; los grupos incompletos y el
++     relleno partidos entre fragmentos se arrastran, así que cualquier división en fragmentos
++     da los mismos bytes que la forma de valor completo.
+
+% 2 1 0 12d111da7033c970106ad7aad13f164e
+
+% 3 1 0 101719b909b67b8606632dd829cb219b
+
+% 4 1 0 10c01e0d87ef9389138ec0bd559e54fe
+
+% 1 1 0 19e747950bc9ebb10b491f80514456ba
+
+% 0 1 0 0c5749270dcb646c1f8444e2f8bd7b15
+
+% 0 1 0 138db56aaaf6a6be189bb24ac75d42c1
+
+% 1 1 0 00137dc69f68c0401d4ffa5c872d7dfa
+
+@ 0 1 0 036a95cdb6ba0fc308fd8651f6f41a8f
++ entry .Serialization   el supertipo de las codificaciones, y la sede de `Serialization.Error`
+
+% 1 1 0 0a275e42099b27f408f26364d0b8c88c
+
+@ 0 3 0 03166c5eb9c94e47114540f706bd0b78
++       Cada codificación es un subtrait sellado de `Serialization` —`Base64`, `Base32`, `Hex`,
++       `Octal`, `Quaternary` y `Binary`—, que solo se usa como argumento de tipo, para
++       `serialize[Base64]` o `Alphabet[Hex]`, y nunca se instancia.
+
+% 0 1 0 17b38e8389e4ec64114faef8f9440c91
+
+@ 0 1 0 1faa862aa2236e1c0adc23a99d6494d5
++   entry .Error   se lanza cuando el texto que se va a deserializar contiene un carácter que no está en el alfabeto
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 4 0 0b62d62cd04332730f4aaddf4e06fff9
++         Error `↯/s.61.1`: _the character `char` at `position` was not valid_. Lo lanzan
++         `deserialize` y el deserializador de flujos cuando un carácter no es ni uno de los
++         propios del alfabeto ni una de sus alternativas toleradas. Un alfabeto estricto lo
++         lanza para la otra caja de una letra, que uno tolerante aceptaría.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 08f78e8db000949909e262ba3b2976b0
+
+% 0 1 0 1ba67de784c51935003aea00479115f5
+
+% 0 1 0 0d77071b9678a6ed168e164da2650df9
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 2 0 153ab41a97aeae51051fd13ae1085dfd
++     entry #position   el índice, empezando por cero, del carácter no válido en el texto
++     entry #char       el carácter no válido
+
+@ 0 5 0 08e3ac2ce25065e30661c2202f2e57f4
++ entry .Base64   la codificación Base64: seis bits por carácter, en grupos de cuatro por cada tres bytes
++     Un argumento de tipo para `serialize`, `deserialize` y `Alphabet`, que nunca se
++     instancia. Sus alfabetos en el paquete `alphabets` son `base64Standard` (RFC 4648, con
++     relleno), `base64Unpadded`, `base64Url`, `base64Xml`, `base64Imap`, `base64Yui`,
++     `base64Radix64`, `base64Bcrypt`, `base64Sasl` y `base64Uuencoding`.
+
+% 2 1 0 145603d0a090d740189a249c9f718ddc
+
+% 3 1 0 17f525f123198f951c403777d7e5890b
+
+% 4 1 0 057a63036a1610550e77cde88124c251
+
+% 0 1 0 0dfc58b0a79bc7e30b1d17e92fe642fd
+
+% 1 1 0 0feea18a5b3478a51cf79b8dc199ef47
+
+@ 0 5 0 1b1ae427b73e00aa05e3be50345b563b
++ entry .Base32   la codificación Base32: cinco bits por carácter, en grupos de ocho por cada cinco bytes
++     Un argumento de tipo para `serialize`, `deserialize` y `Alphabet`, que nunca se
++     instancia. Sus alfabetos en el paquete `alphabets` incluyen el de la RFC 4648 en
++     mayúsculas y minúsculas, estrictos y tolerantes (`base32UpperCase`,
++     `base32StrictUpperCase`, …), las formas hexadecimales extendidas, z-base-32, Geohash,
++     word-safe y el de Crockford.
+
+% 2 1 0 123d237920f0624a1d8a57d9f0290e17
+
+% 3 1 0 053618a3e13bb3571d8c51421037f26f
+
+% 0 1 0 0a1109bb809e3ac7025a75bbcfde00e2
+
+% 0 1 0 1a436d8d95f843441588e8b8254e064a
+
+% 1 1 0 1b4dc0e3e024d4ca02e180035d3c07dd
+
+@ 0 1 0 0787e7a1d915d8871251f8de897a6c2d
++ entry .Hex   hexadecimal: cuatro bits por carácter, dos caracteres por cada byte
+
+% 1 1 0 0e69e313d70124900d9b07828ed15251
+
+@ 0 4 0 05df174d7c4df130128f019c01850a26
++       Un argumento de tipo para `serialize`, `deserialize` y `Alphabet`, que nunca se
++       instancia. Sus alfabetos en el paquete `alphabets` son `hexUpperCase` y
++       `hexLowerCase`, que leen ambas cajas, los estrictos `hexStrictUpperCase` y
++       `hexStrictLowerCase`, y `hexBioctal`. El hexadecimal nunca lleva relleno.
+
+% 2 1 0 1892b96c669b36f10bbd9bbea182b3a6
+
+% 3 1 0 018cc473346149d6190c412847c4405d
+
+% 0 1 0 1265d55fb370a4731d5207a8e44c19ca
+
+% 1 1 0 19827d1ebbb69ca915d2d2bb97c56130
+
+% 2 1 0 17f10dd6c2fd6a7c16ed3ec8ad3c1214
+
+@ 0 5 0 1b25d84def5ac98d1db8541f967bbec8
++       El objeto `Hex` es también un extractor para un número hexadecimal escrito como texto
++       (`.unapply`).
++   entry .unapply   coincide con un texto que es un número hexadecimal y da su valor como un `Int`
++       `case Hex(n)` coincide con un texto que `Integer.parseInt(text, 16)` lee —dígitos de
++       cualquier caja, con un signo opcional— y liga su valor; cualquier otro texto, o un
++       número demasiado grande para un `Int`, no coincide.
+
+% 2 1 0 1463ca1b1373b7980ba60d786b106556
+
+% 3 1 0 08055441a840eb390216e1f0c48d75c9
+
+% 0 1 0 18bd61c638979ed10682f82c2807b7fe
+
+% 0 1 0 18523af9c96dc7e90754040e8f6e4dcd
+
+% 0 1 0 16022c53941c7173173820287c178e17
+
+% 1 1 0 1f6ea3052e8d602806f88fe0c88752b8
+
+@ 0 4 0 18752538c045316c1d3040150caf9f57
++ entry .Octal   octal: tres bits por carácter
++     Un argumento de tipo para `serialize`, `deserialize` y `Alphabet`, que nunca se
++     instancia. Su único alfabeto es `alphabets.octalStandard`, los dígitos de `0` a `7`, sin
++     relleno; como tres bits no dividen un byte, el último carácter puede contener menos bits
++     de datos.
+
+@ 0 3 0 186e2e792418007518f54559c85ca671
++ entry .Quaternary   base cuatro: dos bits por carácter, cuatro caracteres por cada byte
++     Un argumento de tipo para `serialize`, `deserialize` y `Alphabet`, que nunca se
++     instancia. Sus alfabetos son `alphabets.quaternaryStandard` (`0123`) y
+
+% 0 1 0 114c7f4ec737e4a21b9c627557933801
+
+% 2 1 0 1a032d918d150a770ed5e6123483d709
+
+% 3 1 0 0cc22f752ebcd47a19009fcfc6acd922
+
+% 0 1 0 1155e234de655baa10f06e4cecaf2b29
+
+% 0 1 0 19b2d4a47d4d39ab1007687308c4f633
+
+% 1 1 0 1f8f33ead6b4f8131a772d6575b5a6f7
+
+@ 0 3 0 04b5ff42a663571009654eebf7dd5f3a
++ entry .Binary   binario: un bit por carácter, ocho caracteres por cada byte
++     Un argumento de tipo para `serialize`, `deserialize` y `Alphabet`, que nunca se
++     instancia. Su único alfabeto es `alphabets.binaryStandard`, los dígitos `0` y `1`.
+
+@ 0 1 0 0fc9e53ce4b513820cc98ebc59456ce4
++ entry .Alphabet   los caracteres que usa una codificación en base, su relleno y las alternativas que tolera
+
+% 1 1 0 1da5b4b39949b26806ab2c1607528339
+
+@ 0 5 0 01b87c074faf0cd218fec5c311a019f7
++       Un `Alphabet[encoding]` contiene los `#chars` de la codificación en orden de valor —dos
++       para `Binary`, dieciséis para `Hex`, sesenta y cuatro para `Base64`— seguidos, si
++       `#padding` está activado, del carácter de relleno. Su `#tolerance` asigna valores a otros
++       caracteres, que la deserialización también acepta: esto es lo que hace que
++       `hexLowerCase` lea dígitos en mayúsculas, y que `base32Crockford` lea `O` como `0` e `I`
++       y `L` como `1`.
+
+@ 0 2 0 09eb0465db99013f1db3400cf28525e8
++       Los alfabetos estándar son givens del paquete `alphabets`, que se importan por nombre.
++       Uno personalizado es un given local:
+
+% 2 1 0 03ccbd77d06786d108c041dfed090fbc
+
+% 3 1 0 1d5b8bcbabee9daa163683a8435c6a04
+
+% 0 1 0 09a7dc3eb0345cf408250cda173d0613
+
+% 1 1 0 1541872469f891af186c72619753f842
+
+% 2 1 0 1d8c96556b9218f808c086f0d2700f2b
+
+@ 0 3 0 10e4c4dfb1aa481a175e2a26d9473d47
++       El texto debe tener exactamente `2^bits` caracteres para la codificación, más uno para
++       el relleno cuando `padding` es `true`; nada lo comprueba, y una longitud equivocada da
++       una salida equivocada. Un alfabeto es puro (`caps.Pure`), así que no puede capturar una
++       capacidad.
+
+@ 0 4 0 01069ccf6ab6da8c0b76a675c9b3fbaf
++       Un alfabeto es también una etapa de flujo, mediante los givens `.serialization` y
++       `.deserialization` del objeto compañero: `stream.via(alphabet)` serializa un
++       `Stream[Data]` o deserializa un `Stream[Text]`, según el tipo de los elementos del
++       flujo. Las extensiones `serialize` y `deserialize` sobre flujos son esto, con el
++       alfabeto convocado.
+
+% 2 1 0 0545c851535ce90e07804710f490ee5c
+
+% 3 1 0 084293d0770d336e1d8e213dd987a26e
+
+% 0 1 0 03775d0ecd055392006e7b2cb3ffcda6
+
+% 0 1 0 06b1bea58736d4870146a033f3901b5d
+
+% 1 1 0 02df7ddaca8004b912e31bf580814adf
+
+% 0 1 0 1dfbd7c3f0bcf3f80707065b8e9b2043
+
+% 1 1 0 1cc10e992055a5ea15a676924977d41b
+
+@ 0 19 0 1c8c11eaa77b8b950dd19d7ac654fe8c
++   entry .serialization     pasa bytes por un alfabeto como etapa de flujo y da texto
++       El given `Ductile` que permite que `via(alphabet)` serialice un `Stream[Data] over Credit`
++       en un `Stream[Text] over Credit`. La demanda se traduce con la aritmética exacta de la
++       base, así que una petición aguas abajo de 1024 caracteres hexadecimales pide 512 bytes
++       aguas arriba; el relleno, si el alfabeto lo tiene, se escribe cuando termina el flujo.
++   entry .deserialization   pasa texto por un alfabeto como etapa de flujo y da bytes
++       El given `Ductile` que permite que `via(alphabet)` deserialice un
++       `Stream[Text] over Credit` en un `Stream[Data] over Credit`. Necesita una
++       `Tactic[Serialization.Error]`, que se lanza por un carácter que no está en el alfabeto,
++       y la instancia captura esa táctica. Los grupos y el relleno partidos entre fragmentos se
++       arrastran de uno a otro.
++   entry #chars        los caracteres de la codificación en orden de valor y, si lo hay, el carácter de relleno
++   entry #padding      si la salida se rellena hasta un grupo entero con el último carácter de `#chars`
++   entry #tolerance    otros caracteres que se aceptan al deserializar, asociados a los valores que representan
++       Vacío para un alfabeto estricto. Para uno tolerante, normalmente el inverso del alfabeto
++       estricto de la otra caja, como el de `hexUpperCase` es `hexStrictLowerCase.inverse`.
++   entry #apply        el carácter de un valor, empezando por cero
++   entry #invert       el valor de un carácter, o un `Serialization.Error` en la posición dada
++       `alphabet.invert(position, char)` busca el carácter en `#inversions`; uno sin valor
++       lanza `Serialization.Error(position, char)`, así que necesita una
+
+% 0 1 0 07a35d0d1d32080804f93db6a645c108
+
+@ 0 6 0 024d0747043c6b9f1315f908913b102d
++   entry #inverse      todos los caracteres que acepta el alfabeto, asociados a su valor
++       Los caracteres propios del alfabeto (con el carácter de relleno, si lo hay, como el
++       valor siguiente al último) y su `#tolerance`, como un único `Map`.
++   entry #inversions   `#inverse` como tabla densa indexada por código de carácter, con `-1` para la ausencia de valor
++       Se calcula una sola vez, de forma perezosa, para que la deserialización lea un array en
++       lugar de un `Map` por cada carácter.
+
+@ 0 1 0 039e84b9529349600064e0347883def2
++ entry .Serializable   representa bytes como texto en una codificación: la clase de tipos detrás de `serialize`
+
+% 1 1 0 175fb857eaf0b85b0e5d8f9e1754830e
+
+@ 0 6 0 0be48b9664f7613a16b3cc2de96e6935
++       Un `Serializable in Base64` convierte `Data` en `Text` con `#encode`. No tiene tipo
++       `Self`, y se selecciona solo por su `#Form`. El objeto compañero tiene un given por cada
++       codificación, cada uno construido a partir del `Alphabet` de esa codificación en el
++       ámbito, así que existe una instancia exactamente cuando se ha importado un alfabeto. Los
++       núcleos de Base64, Base32 y hexadecimal están especializados, y todos escriben bytes
++       ASCII directamente, así que un `Text` serializado se construye sin copiarlo carácter a
++       carácter.
+
+% 2 1 0 0d8dd2ca86b84793195dadd7fc82cb51
+
+% 3 1 0 0dd4dac4b2230ceb0a5783d2e473de2c
+
+% 4 1 0 0f16d09986bbae9206e92c36f14613f7
+
+% 0 1 0 144c3be9f265b7b118f2826e71300cd6
+
+% 1 1 0 0925090354dc13fd1584d6751dfc55e0
+
+@ 0 2 0 0a290453a96855540d70811009dab581
++       Un `Serializable` es `Findable`, así que un error de compilación por la falta de uno
++       puede proponer las importaciones de alfabetos que lo proporcionarían.
+
+% 1 1 0 0da6319d255de44c1cd01816d63573d2
+
+% 0 1 0 0770be41efdaba9e09c6633478ee6eca
+
+@ 0 11 0 0b7a275505c2d866121ebd2dea4d7b4d
++   entry .base         un `Serializable` para una codificación del número de bits por carácter dado, sobre el `Alphabet` en el ámbito
++       `Serializable.base[Base64](6)`, el constructor detrás de los givens del objeto
++       compañero, que un nuevo subtipo de `Serialization` podría usar con su propio alfabeto.
++   entry .binary       serializa `Binary`, con el `Alphabet[Binary]` en el ámbito
++   entry .quaternary   serializa `Quaternary`, con el `Alphabet[Quaternary]` en el ámbito
++   entry .octal        serializa `Octal`, con el `Alphabet[Octal]` en el ámbito
++   entry .hex          serializa `Hex`, con el `Alphabet[Hex]` en el ámbito
++   entry .base32       serializa `Base32`, con el `Alphabet[Base32]` en el ámbito
++   entry .base64       serializa `Base64`, con el `Alphabet[Base64]` en el ámbito
++   entry #Form         la codificación a la que serializa esta instancia
++   entry #encode       los bytes, representados como texto en la codificación
+
+@ 0 1 0 12115f674619b01117dba8730efe075d
++ entry .Deserializable   lee texto de vuelta a bytes en una codificación: la clase de tipos detrás de `deserialize`
+
+% 1 1 0 1ef358b44d9c2027146e392ab9d7c8d6
+
+@ 0 5 0 0cd59c6d2e276c150d85931d712d507e
++       Un `Deserializable in Base64` convierte `Text` en `Data` con `#deserialize`, y lanza un
++       `Serialization.Error` por un carácter que no está en el alfabeto. No tiene tipo `Self`,
++       y se selecciona solo por su `#Form`. El objeto compañero tiene un given por cada
++       codificación, cada uno construido a partir del `Alphabet` de esa codificación en el
++       ámbito. El tratamiento de errores es por llamada, así que las instancias no capturan
++       nada.
+
+% 2 1 0 17751e84719e7a1e0b0ead6c247c9bc0
+
+% 3 1 0 101c9d3524fbfe381c0aab6c5da6eca3
+
+% 4 1 0 116fea0c52788f000955ae11f9efc34c
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 049f461ce6fe415a10fb13700bdf76ce
+
+% 1 1 0 03b98998a6b48ddd0687822383d3d9a0
+
+@ 0 2 0 0cd2d46b2af42db30b13930f116f589c
++       Un `Deserializable` es `Findable`, así que un error de compilación por la falta de uno
++       puede proponer las importaciones de alfabetos que lo proporcionarían.
+
+% 0 1 0 0d301b55e59ce57119548c1456c1d2c3
+
+% 0 1 0 1d5de3750da5170d0bba304e4585fe85
+
+@ 0 14 0 0cb429baaa8a6699163db0ba9c6ab23b
++   entry .base         un `Deserializable` para una codificación del número de bits por carácter dado, sobre el `Alphabet` en el ámbito
++   entry .base64       deserializa `Base64`, con el `Alphabet[Base64]` en el ámbito
++   entry .base32       deserializa `Base32`, con el `Alphabet[Base32]` en el ámbito
++   entry .hex          deserializa `Hex`, con el `Alphabet[Hex]` en el ámbito
++   entry .octal        deserializa `Octal`, con el `Alphabet[Octal]` en el ámbito
++   entry .quaternary   deserializa `Quaternary`, con el `Alphabet[Quaternary]` en el ámbito
++   entry .binary       deserializa `Binary`, con el `Alphabet[Binary]` en el ámbito
++   entry #Form         la codificación desde la que deserializa esta instancia
++   entry #deserialize   lee de vuelta a bytes un texto en la codificación, y lanza `Serialization.Error`
++       `deserialize(text)` lee el texto entero y necesita una `Tactic[Serialization.Error]`. La
++       forma de cuatro parámetros, `deserialize(previous, current, index, last)`, decodifica
++       un fragmento de un texto más largo, con el final del fragmento anterior disponible para
++       un grupo que quede a caballo entre los dos, y `last` activado para el fragmento final,
++       cuyo relleno final se descarta; es la pieza básica de la decodificación incremental.
+
+@ 0 1 0 004c2d505b04c58c11eae37f67be5542
++ entry .alphabets   los alfabetos estándar de todas las codificaciones, cada uno un given que se importa por nombre
+
+% 1 1 0 0742e4fa5200007f16f352b8c31e70c5
+
+@ 0 3 0 186ed42b95fae9ca1225c810f7eb4497
++       El alfabeto en el ámbito decide los caracteres exactos de `serialize` y `deserialize`, y
++       por defecto no hay ninguno en el ámbito: se importa uno por nombre, ya que
++       `import alphabets.*` no importa givens. Importar dos alfabetos de la misma codificación
++       resulta ambiguo.
+
+% 2 1 0 0497db849f9891ff152ea7d509bfdc9d
+
+% 3 1 0 15f51e7f116c716703aef9a5546fd83b
+
+% 0 1 0 08f8b8dc07cf8439133657af70f81bd2
+
+% 1 1 0 05235898f5649801149f46749e6f57be
+
+@ 0 4 0 12b0633e6411262b15014e9a1d567bfe
++       Para la mayoría de las codificaciones hay un alfabeto *estricto*, que solo deserializa
++       sus propios caracteres, y uno *tolerante*, que acepta también la otra caja:
++       `hexLowerCase` escribe en minúsculas y lee ambas, mientras que `hexStrictLowerCase` solo
++       lee minúsculas. Los tolerantes se nombran sin `Strict`, ya que son la elección
++       habitual.
+
+% 0 1 0 0cf4e9bd1c0d48a5152d6401343504ae
+
+@ 0 34 0 10e8c4bbda9449280164271eb4b18041
++   entry .binaryStandard               binario: `0` y `1`
++   entry .quaternaryStandard           base cuatro: `0123`
++   entry .quaternaryDnaNucleotide      base cuatro como nucleótidos de ADN: `ATCG`
++   entry .octalStandard                octal: los dígitos de `0` a `7`, sin relleno
++   entry .hexStrictUpperCase           hexadecimal en mayúsculas, que solo lee mayúsculas
++   entry .hexStrictLowerCase           hexadecimal en minúsculas, que solo lee minúsculas
++   entry .hexUpperCase                 hexadecimal en mayúsculas, que lee ambas cajas
++   entry .hexLowerCase                 hexadecimal en minúsculas, que lee ambas cajas
++   entry .hexBioctal                   hexadecimal «bioctal», con los dígitos `01234567` y las letras `cjzwfsbv`
++   entry .base32StrictUpperCase        Base32 de la RFC 4648 en mayúsculas, con relleno, que solo lee mayúsculas
++   entry .base32StrictLowerCase        Base32 de la RFC 4648 en minúsculas, con relleno, que solo lee minúsculas
++   entry .base32UpperCase              Base32 de la RFC 4648 en mayúsculas, con relleno, que lee ambas cajas
++   entry .base32LowerCase              Base32 de la RFC 4648 en minúsculas, con relleno, que lee ambas cajas
++   entry .base32ExtendedHexUpperCase   «base32hex» de la RFC 4648 (`0`–`9`, `A`–`V`) en mayúsculas, con relleno
++       Escribe en mayúsculas. Su tolerancia es la del alfabeto Base32 estándar en minúsculas,
++       no la del hexadecimal extendido en minúsculas.
++   entry .base32ExtendedHexLowerCase   «base32hex» de la RFC 4648 (`0`–`9`, `a`–`v`) en minúsculas, con relleno
++       Escribe en minúsculas. Su tolerancia es la del alfabeto Base32 estándar en mayúsculas,
++       no la del hexadecimal extendido en mayúsculas.
++   entry .base32ZBase32                z-base-32, la ordenación pensada para personas, con relleno
++   entry .base32ZBase32Unpadded        z-base-32, sin relleno
++   entry .base32Geohash                el alfabeto de Geohash, sin relleno
++   entry .base32WordSafe               el alfabeto word-safe, que evita formar palabras, sin relleno
++   entry .base32Crockford              el Base32 de Crockford, sin relleno, que lee `O` como `0`, `I` y `L` como `1`, y ambas cajas
++   entry .base64Standard               Base64 de la RFC 4648, con `+` y `/`, con relleno `=`
++   entry .base64Unpadded               Base64 de la RFC 4648, con `+` y `/`, sin relleno
++   entry .base64Url                    Base64 seguro para URL y nombres de fichero, con `-` y `_`, sin relleno
++   entry .base64Xml                    Base64 para nombres XML, con `+` y `-`, con relleno `.`
++   entry .base64Imap                   el Base64 modificado de los nombres de buzón IMAP, con `+` y `,`, sin relleno
++   entry .base64Yui                    el Base64 de la biblioteca YUI, con `.` y `_`, sin relleno
++   entry .base64Radix64                el Radix-64 de OpenPGP, el alfabeto estándar, con relleno `=`
++   entry .base64Bcrypt                 el Base64 de bcrypt, con `.` y `/` al principio, sin relleno
++   entry .base64Sasl                   el Base64 de SASL, con `+` y `,`, sin relleno
++   entry .base64Uuencoding             los caracteres de uuencoding, de `!` a `_`, sin relleno

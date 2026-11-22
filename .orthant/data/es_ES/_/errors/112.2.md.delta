@@ -1,0 +1,73 @@
+orthant 2 language
+
+% 0 1 0 1a81f3e3f59aced3026bcb5f80e98a13
+
+@ 0 1 0 08111229421f98810e0e453ea6046f90
++ Se lanza cuando Obligatory no puede desentramar un mensaje entrante.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 5 0 1501c917a46b95cb0ded5e50ab264d6f
++ Los analizadores de entramado de Obligatory (`ContentLength`, `LengthPrefix`, `CrLf`) leen un
++ flujo de bytes y lo dividen en tramas discretas. Cuando los bytes no se ajustan al entramado
++ esperado, se lanza este error. El constructor toma un `reason: Reason`; el mensaje representado
++ es `could not deframe the message because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0b0c7d4858e26aa41b097bb455560614
+
+@ 0 1 0 19bc5ef0e23eadd61a7d2f241e848304
++ La entrada terminó antes de que se hubiera leído una trama completa.
+
+@ 0 1 0 0bd2030ca60c97ae0ecac2c8afd657ae
++ **Ejemplo.** `[↯/s.112.2.1] could not deframe the message because the input ended before a complete frame could be read`
+
+@ 0 2 0 0c2db92b1ed520f90f87d98caa8856d2
++ **Solución.** Confirma que el productor escribió una trama completa; comprueba si la conexión se
++ cerró a mitad de un mensaje.
+
+% 0 1 0 1fa83631eabbef6414bbff68cd70cc1a
+
+@ 0 2 0 165bb3b13a4df8100efad2800c6c73f8
++ Un retorno de carro (`\r`) no iba seguido de un salto de línea (`\n`) donde el entramado exigía
++ CR-LF.
+
+@ 0 1 0 1685d38f67cb281c120f8d57957870f5
++ **Ejemplo.** `[↯/s.112.2.2] could not deframe the message because a carriage return was not followed by a line feed`
+
+@ 0 2 0 1eda4b9838fe3be50483c82794cf5a0a
++ **Solución.** Verifica que el productor usa finales de línea CR-LF; las entradas solo con LF o
++ solo con CR harán fallar este analizador.
+
+% 0 1 0 09dd34b04086092900b3c264234e1584
+
+@ 0 2 0 04fd9f5c5e1e6e8d0acf6c6ea3d88b8b
++ El valor de la cabecera `Content-Length` no pudo analizarse como entero.
+
+@ 0 1 0 1383eb28e26587a300536838c5238cfe
++ **Ejemplo.** `[↯/s.112.2.3] could not deframe the message because the content-length header value could not be parsed`
+
+@ 0 2 0 196ecbfa17758fdb075e3fceb94db35d
++ **Solución.** Examina los bytes de la cabecera; el valor debe ser un entero decimal simple.
+
+% 0 1 0 1d1d57245c2eba441d4c65fa7a9a954d
+
+@ 0 3 0 121246c11f14a76601a5c262d340f0bc
++ Se encontró una cabecera que el analizador de entramado no reconoce (solo se permiten
++ `Content-Type` y `Content-Length`).
+
+@ 0 1 0 102c6e42affdf75c04abda25241bb6d9
++ **Ejemplo.** `[↯/s.112.2.4] could not deframe the message because an unrecognized header was encountered`
+
+@ 0 3 0 14609cb0551f929f1dabc7284aaff823
++ **Solución.** Elimina del mensaje las cabeceras ajenas al entramado antes de pasárselo al
++ analizador, o amplía el analizador para que acepte la cabecera.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 0a77515cdedf6f190c821317fd832271
++ - Fuente: `lib/obligatory/src/core/obligatory.Framing.scala`

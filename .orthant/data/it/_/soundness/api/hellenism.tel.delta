@@ -1,0 +1,830 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12bee2bc3c9838e7158f7917e4396ea9
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ccf5b15834ccf63176d9b066c405314
++ info   il classpath della JVM, i suoi classloader e le sue risorse come valori tipizzati
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1e88f3f4ee9a3bdc1ca106016954b38f
++     _Hellenism_ rappresenta le tre cose che la JVM usa per trovare codice e dati — il
++     **classpath** (un elenco ordinato di directory, file JAR e del runtime Java), i
++     **classloader** che lo esplorano e le **risorse** incluse in esso — come valori immutabili e
++     tipizzati, al posto delle ricerche che restituiscono null e dello stato globale mutabile
++     dell'API standard.
+
+@ 0 6 0 07929de551f728680060dd4391d23acb
++     Una risorsa è un percorso sul piano `Classpath`, letto con lo stesso `read[Data]` o
++     `read[Text]` di qualsiasi altra sorgente, e l'interpolatore `cp"…"` verifica che la risorsa
++     esista mentre il codice viene compilato. Un classpath è un valore le cui `Classpath.Entry`
++     si possono elencare e confrontare con i pattern, e un classloader è un valore `Classloader`,
++     scelto esplicitamente come valore contestuale dal package `classloaders` invece di essere
++     recuperato dallo stato mutabile del thread.
+
+% 2 1 0 03aa92509dfc0a0906d34d354a392eac
+
+% 3 1 0 035379338bf7c4a30c5236e4537d4557
+
+% 4 1 0 0b7fe24ed060d90416738e695ead82c0
+
+% 5 1 0 129cd6499d649b541ce5b0be1ee4c964
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 13e298346889163216f611080899a62b
+
+% 0 1 0 1cb85992eff189790501232be5c7499e
+
+% 0 1 0 0594fce0d21a83801b4fc34524221219
+
+% 1 1 0 0d6edd22290941910a7c6b1a2fcb5a18
+
+@ 0 1 0 1430411caea1447e182d5f36763cd699
++     La libreria è divisa in tre insiemi di sorgenti, secondo ciò che ogni piattaforma sa fare:
+
+@ 0 9 0 15952544993ab684026e1a91f0e73225
++     - `hellenism.core` — `Classpath`, `Resource`, `cp"…"`, `Classloader`, `ClassRef` e il
++       package `classloaders`. Si compila per la JVM, Scala.js e Scala Native; su Native il
++       classpath di un programma è collegato nel suo binario, e le risorse `cp"…"` raggiungono
++       le risorse incorporate nella javalib.
++     - `hellenism.core` sulla JVM e su Scala.js ha in più le estensioni che richiedono
++       `java.net.URL`, `URLClassLoader` e `ServiceLoader`: `classloader`, `services`,
++       `javaUrl` e `classpathEntry`.
++     - `hellenism.jvm` — `LocalClasspath` e tutto ciò che si appoggia al filesystem:
++       `classpathSubstantiable`, `Classloader#classpath` e `Classpath.of`.
+
+@ 0 3 0 0e458ced5d88edc7055229af6b238bdf
++     Tutto è esportato nel modulo ombrello `soundness`, e il package di scelta `classloaders`
++     si fonde con quello dell'ombrello, quindi un utente scrive `import soundness.*` e poi
++     importa un classloader per nome.
+
+% 0 1 0 02b39a942cf16a4d12b965d64d4a97af
+
+% 0 1 0 1cf1a5047f0dad2900f77bcac2f5dc3b
+
+% 0 1 0 1037987792ad1a5a05212c391d28e6d4
+
+@ 0 1 0 0b17977e313272df12b7f020cad7f33f
++ entry .Classloader   un `ClassLoader` Java come valore: risolve nomi, legge risorse, delimita il proprio ambito
+
+% 1 1 0 1ae3fdc91e7c04850db44ac140e89df8
+
+@ 0 5 0 0a1a6f4bb4bc424d170ff9fc2a6a5d3d
++       Un `Classloader` avvolge un `java.lang.ClassLoader`, la cui istanza grezza è `#java`. È
++       il contesto rispetto a cui si risolve ogni lettura di risorsa — i given `Streamable` per
++       `Resource` e per un `Path on Classpath` ne prendono uno come parametro contestuale — e si
++       sceglie importando per nome uno dei given del package `classloaders`, oppure
++       costruendone uno su un `Classpath` con `classloader`.
+
+@ 0 3 0 14c96479dc9a7e7d02421554577648cc
++       Due classloader possono risolvere lo stesso percorso in risorse diverse, o uno in nessuna
++       risorsa, ed è per questo che la scelta non è mai implicita: un `Classloader` è sempre un
++       valore o un given con nome presente nell'ambito.
+
+% 2 1 0 03f9c57ed15ff4471f349154b3349fda
+
+% 3 1 0 0618d426053bd28b17fbbf99a70f7d42
+
+% 4 1 0 0613797362abbf8f0172843200bdcadc
+
+% 0 1 0 1c7a2e5b7be17cff0014da1e74734c93
+
+% 0 1 0 164d8a41094e1794033143704265e0c1
+
+% 0 1 0 0b415d569d4779fb0f3a1087069acf93
+
+% 0 1 0 1e562c5ebf7bb4df08d7df5c87ba1d9d
+
+% 0 1 0 167b457c560c42001e182b5604eb5d7f
+
+% 1 1 0 17808e5d5de8e69c185985281508d6d1
+
+@ 0 2 0 1ac96a009f7fd8f506e5c216b2380a78
++       Un classloader è `Findable`, con il `Classpath` come suo `#Plane`, quindi per un `Path on
++       Classpath` se ne può verificare l'esistenza rispetto a esso (`classpathSubstantiable`, in
+
+% 0 1 0 1224cd56073e9b5b1d2dd00d11a82acd
+
+% 0 1 0 002a81abed4817a5076f50f87c7ee76c
+
+% 1 1 0 03051648c9a892ce1a36fee7a925a45c
+
+@ 0 10 0 11733308221d29bc1331e471c8b03d2c
++   entry .threadContext   il classloader di contesto del thread corrente, come valore
++       Il classloader che `Thread.currentThread.getContextClassLoader` restituisce al momento
++       della chiamata. `classloaders.threadContextClassloader` è il given costruito a partire da
++       esso, e `#use` installa un altro classloader come contesto del thread per la durata di un
++       blocco.
++   entry .apply   il classloader che ha caricato un tipo, come `Classloader[T]`
++       `Classloader[T]` è una macro che trova la classe di `T` tramite `ClassRef[T]` e
++       restituisce il classloader che l'ha caricata. È così che si raggiunge il classloader di
++       un plugin da una delle sue classi, e che un programma trova il classpath da cui esso
++       stesso è stato caricato (`LocalClasspath.of(Classloader[Main.type])`), che sotto un host
++       come un runner di test differisce dalla proprietà `java.class.path`.
+
+@ 0 3 0 011e40be859d0b2d0c242df4e15a9609
++       Il tipo può essere un tipo proprio, il tipo di un oggetto o un costruttore di tipo non
++       applicato, e può essere annidato in un oggetto o in una classe: la macro lo risolve nel
++       suo nome binario JVM (`Outer$Nested`), dove una ricerca per il nome sorgente puntato
++       fallirebbe.
+
+% 2 1 0 1bffadfb2a79baba1c2b77b652518063
+
+% 3 1 0 1dce2a29f0120fb41dfdb2d8ac4dd193
+
+% 0 1 0 15dcef60f4edd56d12548f179a4fe798
+
+% 0 1 0 08897dbf528b1328002c5c6d46a34d56
+
+% 0 1 0 185772a9c5b1565100180284f2f32c6e
+
+% 1 1 0 00983706f262d0d400c5615e951f970b
+
+@ 0 1 0 1832556137a043db1bdd6829d1b58af8
++   entry .Delegation   quale parte vince quando sia un loader sia il suo genitore offrono una classe
+
+% 1 1 0 171e623a0452ad53156cd91a059ae7a0
+
+@ 0 5 0 0bf28dc271a60d491b1939112c21c581
++         Un classloader costruito su un classpath con `classloader` deve dichiarare come risolve
++         un nome che sia esso sia il suo genitore possono caricare. L'ordine della JVM interroga
++         prima il genitore; l'ordine inverso preferisce le voci del loader stesso, il che isola
++         le versioni delle librerie condivise di un plugin da quelle del suo host. La scelta è
++         sempre esplicita, perché le due danno classi diverse per lo stesso nome e nessuna delle
++         due è giusta per ogni uso.
+
+% 2 1 0 0625b5aff3d659db17ef94d26d44a279
+
+% 3 1 0 02f58741c0ab67800052bf95075ec696
+
+% 0 1 0 1fefa01523abd74b132f826dc1bc13e3
+
+% 0 1 0 1c3cc2e80605e5bc1ffb0329a838910f
+
+% 0 1 0 05e39405dfad65ea16b39a889bf2373f
+
+% 0 1 0 102113c6a48f663c12f9a5b531f11512
+
+% 1 1 0 0e0415ef72a159b9058ea37fe63b6a03
+
+@ 0 2 0 1542782908dfa3811a06472e33b1ff70
++         Qui il plugin vede il contratto su cui è stato scritto tramite il suo genitore, mentre
++         tutto il resto che include è suo.
+
+@ 0 21 0 1791944e68150ce019dd057df17cfa26
++         `Deferential` è parent-first, l'ordine standard della JVM: il loader chiede al
++         genitore ogni nome prima di cercare nelle proprie voci, che è ciò che fa un semplice
++         `URLClassLoader`, quindi una classe che il genitore sa caricare è condivisa con il
++         codice caricato. `Preferential` è child-first: il loader cerca prima nelle proprie voci
++         e si rimette al genitore solo per un nome che non trova, quindi le versioni delle
++         librerie condivise del classpath oscurano quelle del genitore. Un loader
++         `Preferential` rispetta comunque il contratto di `ClassLoader`: consulta
++         `findLoadedClass` sotto il lock di caricamento per nome prima di definire una classe,
++         quindi una seconda richiesta per lo stesso nome, o due thread in competizione su di
++         esso, non raggiungono mai `defineClass` due volte.
++   entry #java   il `java.lang.ClassLoader` sottostante
++       Il classloader Java grezzo, per le API Java che ne prendono uno. Due `Classloader` sono
++       lo stesso loader quando lo sono le loro istanze `java`.
++   entry #Plane   il piano su cui questo classloader trova i percorsi: `Classpath`
++   entry #parent   il classloader genitore, o `Unset` per il bootstrap loader
++       Ogni classloader della JVM tranne il bootstrap loader ha un genitore a cui delega; questo
++       risale di un passo lungo la catena, avvolto come `Classloader`.
++   entry #use   esegue un blocco con questo come classloader di contesto del thread
++       Installa questo classloader come classloader di contesto del thread corrente, valuta il
++       blocco e ripristina il precedente in un `finally`, quindi un cambio di classloader è
++       circoscritto esattamente al codice che ne ha bisogno — il caricamento di un plugin, o la
++       chiamata a una libreria Java che legge il loader di contesto — invece di restare
++       impostato per il thread.
+
+% 2 1 0 15954ba5ae7e57eb1b6ea0a3a0334cf3
+
+% 3 1 0 1b82170f335691180bd264930237490d
+
+% 0 1 0 133d2cd3ac8faa4c14b5918c8d16a8a3
+
+% 0 1 0 0197a5dfe7195a821f82baed9fb53e00
+
+% 1 1 0 001d56bcaec738971e7d95d40027371f
+
+@ 0 9 0 1cc4ecb37cf6812f174cd68ba3077867
++   entry #on   carica e inizializza una classe per il suo nome binario, se questo loader la ha
++       `Class.forName(name, true, java)`: la classe viene inizializzata, e il risultato è
++       `Unset` anziché un `ClassNotFoundException` lanciato quando il loader non la trova. Il
++       nome è il nome binario JVM, con `$` tra una classe annidata e la sua proprietaria.
++   entry #resource   i byte di una risorsa, o `Unset` se questo loader non la ha
++       Legge per intero `getResourceAsStream(path)` e chiude lo stream. Il percorso è
++       relativo, senza `/` iniziale, come lo prende l'API Java. Il metodo non prende alcuna
++       capability, quindi il suo risultato non trattiene nulla e la lettura può stare in un
++       blocco `safely`; `#apply` è la stessa lettura con il risultato registrato nel log.
+
+% 2 1 0 171319a60b1357a51bd7e878395362c0
+
+% 3 1 0 10a9b5064ba7b9d901afd20efe3b253b
+
+% 4 1 0 1d6911f7822682280bb5e29eed33bdae
+
+% 0 1 0 08c4c259677d36be104649b59756b7b7
+
+% 1 1 0 10b28c214fa69e881c512adda7e63f12
+
+@ 0 3 0 08581009f7343d11050ef7ce4e09f803
++   entry #apply   i byte di una risorsa, registrati come `Classpath.Event` quando trovata
++       Come `#resource`, e registra `Classpath.Event.ResourceLoaded` a livello `fine` quando la
++       risorsa è presente. Richiede un `Classpath.Event is Loggable` nell'ambito, come
+
+% 0 1 0 024be154dcba3ee50ba2e94dad3fc65f
+
+@ 0 1 0 0f5c228f257ec5191e227196b2455bcf
++ entry .Classpath   la radice del piano del classpath, e un classpath come elenco di voci
+
+% 1 1 0 188e96be514ea8520974c8951367df9e
+
+@ 0 4 0 08d42f384189977c079add2ed2ff429c
++       `Classpath` è due cose che condividono un nome. Come **tipo**, è un classpath: un
++       elenco ordinato di `#entries`, ciascuna una `Classpath.Entry`, che `LocalClasspath` e
++       `OnlineClasspath` implementano. Come **oggetto**, è la radice del **piano** del
++       classpath, quindi una risorsa è un `Path on Classpath` costruito a partire da esso:
+
+% 2 1 0 08650fd1b509410d14ae8725c6efbe14
+
+% 3 1 0 073cca08890ac4501c32a47cfc24fc95
+
+% 4 1 0 0e98a5fd6b9e3be0182f3817c65e0db4
+
+% 5 1 0 19e8e4131e5148f204e569daa2d2530d
+
+% 0 1 0 17ba24f531ff342d0b4c444e501b9719
+
+% 0 1 0 00bf10769997155f1df5ff3d44805085
+
+% 0 1 0 1a5b7236de374db11ef88a6125a7caae
+
+% 1 1 0 1bda7a8a310a6aaf1942dd0d2f328a8f
+
+@ 0 4 0 1ce19ca0c2c38178176e954f2ada5cd5
++       Un percorso sul classpath si codifica come testo separato da `/` senza prefisso di
++       radice, con ogni segmento soggetto a `.Rules`: nessun `/`, nessuna cifra iniziale, e solo
++       lettere, cifre, `_`, `$` e `.`. Il percorso si legge tramite il `Classloader` dato
++       nell'ambito (`.streamable`), e solleva `Classpath.Error` se quel loader non lo ha.
+
+@ 0 2 0 0a44cc1714759bfc0cb373c2f0b50f52
++       Sulla JVM, le estensioni `classloader` e `services` costruiscono un classloader su un
++       classpath ed enumerano i suoi fornitori di servizi; `Classpath.of` ne rilegge uno da un
+
+% 0 1 0 089772145c5fbdd01df8cecc34bf6892
+
+% 1 1 0 0a5413a693be097e1b4acf5fc756125b
+
+% 0 1 0 00043668ea08baf006920fbdee70a118
+
+% 0 1 0 1f2f0d6af614a50602cbf5a2020727d6
+
+@ 0 26 0 156f614fb0240ba90b225aebd5b0bffc
++   entry .Plane   il tipo di piano dei percorsi del classpath: `Classpath` stesso
++   entry .Rules   che cosa può essere un segmento di un percorso del classpath
++       Un segmento non deve contenere `/`, non deve iniziare con una cifra, e deve
++       corrispondere a `[a-zA-Z0-9_$.]+`: i caratteri che può usare il nome di un file di
++       classe o di una directory di package. Un percorso che viola una regola non si decodifica
++       e fallisce con un `Path.Error`.
++   entry .nominative   il given che sottopone i percorsi del classpath a `.Rules`
++   entry .radical   come la radice del classpath si legge dal testo e si scrive nel testo
++       La radice si codifica come testo vuoto, quindi un percorso si legge come
++       `/scala/Option.class`; la decodifica accetta solo testo che inizia con `/`, e altrimenti
++       fallisce con `Path.Error(InvalidRoot)`.
++   entry .filesystem   il classpath come `Filesystem`: separato da `/`, con una sola radice
++       Chiamato `Java classpath`, con `/` come separatore e `.` e `..` come segmenti per sé
++       stesso e per il genitore, e una sola radice, quindi un percorso sul classpath è sempre
++       assoluto.
++   entry .Directory   crea una `Classpath.Entry.Directory` da qualsiasi tipo di percorso
++       `Classpath.Directory(path)` prende qualsiasi valore che sia `Abstractable across Paths to
++       Text` — un `Path` di galilei, o del testo — e crea la voce di directory corrispondente.
++   entry .Jar   crea una `Classpath.Entry.Jar` da qualsiasi tipo di percorso
++       `Classpath.Jar(path)` prende qualsiasi valore che sia `Abstractable across Paths to Text`
++       e crea la voce JAR corrispondente.
++   entry .streamable   legge un `Path on Classpath` come byte, tramite il `Classloader` nell'ambito
++       Il given che permette di leggere un percorso del classpath con `read[Data]` (o
++       `read[Text]`, o come qualsiasi tipo decodificabile da uno stream). Richiede un given
++       `Classloader` e una `Tactic[Classpath.Error]`, che viene sollevato quando il classloader
++       non ha la risorsa.
++   entry .source   legge un `Path on Classpath` come stream regolato da `Credit`
++       Come `.streamable`, con un `Buffering` nell'ambito, per leggere la risorsa pigramente
++       come stream invece che tutta in una volta.
++   entry .Entry   una voce di un classpath: una directory, un JAR, un URL o il runtime Java
+
+% 1 1 0 1da1f5d3032d0aa002243134c0706280
+
+@ 0 3 0 0992a719f2d385f510864801adc496d2
++         Una gerarchia sigillata dei luoghi a cui può puntare una voce del classpath. Un
++         `LocalClasspath` contiene solo voci `Directory`, `Jar` e `JavaRuntime`, quindi un match
++         sulle sue voci non deve gestire `Url`; un `OnlineClasspath` può contenerne di
++         qualsiasi tipo.
+
+% 2 1 0 02c9920afd30b81d0f1bb12cfa8c2c20
+
+% 3 1 0 10d4bebd494138b3116000dc88f2aac2
+
+% 0 1 0 0265570ae0e9aeea0e1a4dcb651a7819
+
+% 0 1 0 15a9d989353d5fe51f9ad5aa2e61ba04
+
+% 0 1 0 069254b5e478fd6f1d097ab8cb7d1e4e
+
+% 0 1 0 1398845fdbe26dcb04423e7a729dd9b3
+
+% 0 1 0 140affb147a221691f0ee960f7d52841
+
+% 0 1 0 019f3ed5f000a0aa04340fcb4e96be6f
+
+% 0 1 0 0577f2b041fd13b7008b98295ccf87c0
+
+% 1 1 0 0d11feb75641c58f087bf8a5bdb3d59c
+
+@ 0 21 0 16e218b8705263e01ea05951b39ed5ad
++         Sulla JVM, `javaUrl` converte qualsiasi voce nel `java.net.URL` che prende un
++         `URLClassLoader`.
++     entry .Directory   una directory di file di classe e risorse, per il suo percorso
++       entry #path    il percorso della directory, come testo
++       entry #apply   la directory come tipo di percorso a scelta del chiamante
++           `entry[Path on Linux]()` (o qualsiasi `Instantiable across Paths from Text`) crea un
++           percorso tipizzato dal testo della voce.
++     entry .Jar   un file JAR, per il suo percorso
++       entry #path    il percorso dell'archivio, come testo
++       entry #apply   l'archivio come tipo di percorso a scelta del chiamante
++     entry .Url   una voce scaricata dalla rete, per il suo URL
++       entry #url     l'URL, come testo
++       entry #apply   la voce come tipo di URL a scelta del chiamante
++           `entry[HttpUrl]()` (o qualsiasi `Instantiable across Urls from Text`) crea un URL
++           tipizzato dal testo della voce.
++     entry .JavaRuntime   i moduli propri del JDK, il filesystem `jrt:/`
++         La voce che fornisce `java.lang.String` e il resto del JDK. Non ha percorso: un
++         `URLClassLoader` non sa caricare da `jrt:/`, quindi `classloader` la omette e si affida
++         al platform loader alla radice di ogni catena di genitori, e `LocalClasspath#apply` la
++         scarta dal testo che produce.
++   entry .Error   sollevato quando una risorsa non è sul classpath
+
+% 1 1 0 18af1ce1d38109de1dcd11bf13392a61
+
+@ 0 7 0 116e986d89ddd6741f7ecfdd571a4198
++         Errore `↯/s.67.1`: _the resource `path` was not on the classpath_. Sollevato dai given
++         `Streamable` per `Resource` e `Path on Classpath` quando il `Classloader` nell'ambito
++         non ha la risorsa. Una risorsa `cp"…"` viene verificata a tempo di compilazione sul
++         classpath del compilatore, quindi questo errore a runtime significa che il programma è
++         stato avviato con un classpath diverso.
++     entry #resource   il percorso richiesto
++   entry .Event   ciò che un classloader registra nel log mentre legge le risorse
+
+% 1 1 0 00ca36c0c7008e7c1bf56b9e3f08fa4f
+
+@ 0 11 0 14aa2e7855a84a9c1dec67948417d962
++         Ogni `Event` ha i tag `Log.Runtime` e `Log.Resource`, quindi una configurazione di
++         logging può selezionarli o silenziarli per tag. `Classloader#apply` registra
++         `ResourceLoaded` a livello `fine`, e una lettura fallita registra `ResourceMissing` come
++         avviso prima di sollevare `Classpath.Error`. Un `Classpath.Event is Loggable` deve
++         essere nell'ambito per le letture registrate; `logging.silentLogging` le scarta.
++     entry .communicable   rende ogni evento come messaggio
++     entry .ResourceLoaded   una risorsa è stata letta: _loaded the classpath resource `path`_
++       entry #path   il percorso della risorsa
++     entry .ResourceMissing   una risorsa non è stata trovata: _the classpath resource `path` was not found_
++       entry #path   il percorso della risorsa
++   entry #entries   le voci del classpath, in ordine di ricerca
+
+@ 0 1 0 11fc2278c1574d2700e46ebb914e382b
++ entry .OnlineClasspath   un classpath le cui voci possono essere scaricate dalla rete
+
+% 1 1 0 07ef981c1c6b8f841e6b2f050818eee0
+
+@ 0 3 0 021039671a32f58111dfa9170ff09cd2
++       Un `Classpath` di qualsiasi `Classpath.Entry`, compresi gli `Url`. `Classpath.of` ne
++       costruisce uno da un `URLClassLoader` i cui URL ne comprendono uno `http` o `https`; un
++       classpath di sole voci locali è un `LocalClasspath`, le cui voci sono tipizzate in modo
++       da escludere gli URL.
+
+% 1 1 0 1455083c2f250d360224d107852e1f61
+
+@ 0 1 0 0eead03e8f9d025804289922c3048b43
++   entry #entries   le voci, in ordine di ricerca
+
+@ 0 1 0 1466f2c2e872930716a15cd30f567fad
++ entry .Resource   una risorsa sul classpath, nominata da `cp"…"` e verificata a tempo di compilazione
+
+% 1 1 0 0cff020abbf6928201fb19bca19e639e
+
+@ 0 4 0 06be223a6f49780f171b228cdbfe09ed
++       Una `Resource` è un `Path on Classpath` di cui il compilatore ha confermato l'esistenza:
++       l'unico modo per crearne una è l'interpolatore `cp"…"`, la cui macro cerca il percorso
++       sul classpath del compilatore stesso. Il suo tipo porta il percorso come tipo letterale
++       `Locus`, quindi `cp"/data/table.csv"` è una
++       `Resource { type Locus = "/data/table.csv" }`.
+
+@ 0 1 0 142223e2f2bee0320cd0b255f027441b
++       Una risorsa si legge come qualsiasi altra sorgente, tramite il `Classloader` dato
++       nell'ambito:
+
+% 2 1 0 00a58fba81d9a6490c9e915c76836128
+
+% 3 1 0 16794289ff608e680eef4f7e7dff47d0
+
+% 4 1 0 0f859d768410e7fc15c027ac74bf6a94
+
+% 5 1 0 00eb8fdabafec4db1ab9cb7413e10e9e
+
+% 0 1 0 06f141b4d3cc184c17a8610c23011e6b
+
+% 1 1 0 00ef7b5969239e65027bef3c525f0684
+
+@ 0 2 0 183157ea633d8b521abb364b43e3ab90
++       Il classloader a runtime può comunque non avere ciò che aveva il classpath del
++       compilatore, nel qual caso la lettura solleva `Classpath.Error`.
+
+% 0 1 0 068759a4a9971d9f06b891ed378e6e22
+
+@ 0 9 0 05de0e03dc806b1714b06b357bd0a0a8
++   entry .streamable   legge una `Resource` come byte, tramite il `Classloader` nell'ambito
++       Il given che permette di leggere una risorsa con `read[Data]`, `read[Text]`, o come
++       qualsiasi tipo decodificabile da uno stream. Il `Classpath.Error` per una risorsa
++       mancante viene lanciato senza ambito invece di essere sollevato tramite una tattica,
++       poiché una risorsa `cp"…"` è stata verificata a tempo di compilazione.
++   entry .source   legge una `Resource` come stream regolato da `Credit`
++       Come `.streamable`, con un `Buffering` nell'ambito, per leggere la risorsa pigramente.
++   entry .nominable   il nome di una risorsa: l'ultimo segmento del suo percorso, o `/` per la radice
++   entry #path   il percorso della risorsa sul piano del classpath
+
+@ 0 8 0 155197d17f75e49b0100f26b606d6521
++ entry .cp   l'interpolatore `cp"…"`: una risorsa del classpath, verificata mentre il codice viene compilato
++     `cp"/path/to/resource"` nomina una risorsa sul classpath e verifica, mentre il codice
++     viene compilato, che esista sul classpath del compilatore (tramite il classloader di
++     contesto del thread del compilatore). Il risultato è una `Resource` il cui membro di tipo
++     `Locus` è il tipo letterale del percorso. Un percorso che non è un percorso valido del
++     classpath è un errore di compilazione, _hellenism: the path `elsinore` is not a valid
++     classpath path_, e uno che non esiste da nessuna parte sul classpath del compilatore è un
++     altro errore, _hellenism: the path `/missing.txt` is not on the classpath_.
+
+% 2 1 0 1e3611f5b8c66a610da73de37c63b0fb
+
+% 3 1 0 1b54f80afb6711671909819193af016f
+
+% 4 1 0 0a236384938b1c640ecaa0be89012f37
+
+% 5 1 0 086516dd3cd6fc2503b999149bf1dd26
+
+% 0 1 0 05c8c07786e9f23711aeccdae94f796d
+
+% 1 1 0 01b7696c7ef4e618114aac027812cab0
+
+@ 0 4 0 136d5a153485d34904b2c8833c844cd3
++     Il percorso dovrebbe iniziare con `/`, poiché un percorso del classpath è sempre assoluto;
++     la macro ne tollera uno senza, ma il piano `Classpath` non decodifica un testo simile.
++     L'interpolatore non accetta sostituzioni `$`: il percorso deve essere un letterale, poiché
++     viene verificato a tempo di compilazione.
+
+@ 0 1 0 1cc934170b7f146a0de8a60867334c18
++ entry .classloaders   i classloader standard, ciascuno un given da importare per nome
+
+% 1 1 0 15b480419c0c515300fcfc148a694547
+
+@ 0 3 0 11d0aafecf6a2b4418b62345ec7e0617
++       Quale classloader risolve una risorsa è deciso dal given `Classloader` nell'ambito, e la
++       scelta non è mai implicita, di proposito: `import soundness.*` non ne porta nessuno, e
++       se ne importa uno per nome.
+
+% 2 1 0 11a1003280b26eea06751e69c3b1f0ab
+
+% 3 1 0 0e1ecc89ba94499f0f3893ddc05f1038
+
+% 4 1 0 1df46ca628ef5b45015bbefe300eecdc
+
+% 1 1 0 10149a22dae1c52e00e52affe77b2295
+
+@ 0 16 0 14218cd1ef2f2fdb04478967e14ae734
++       Il classloader di contesto del thread va bene per la maggior parte delle applicazioni. Il
++       system loader e il platform loader sono quelli propri della JVM, e `scalaClassloader` è
++       quello, qualunque sia, che ha caricato la libreria Scala. Un classloader costruito da un
++       `Classpath` con `classloader` si può invece legare come given locale.
++   entry .threadContextClassloader   il classloader di contesto del thread corrente
++       Costruito da `Classloader.threadContext` quando il given viene usato per la prima volta,
++       quindi è il loader di contesto del thread che lo ha richiesto per primo.
++   entry .systemClassloader   il classloader di sistema (dell'applicazione) della JVM
++       `ClassLoader.getSystemClassLoader`: il loader sulla proprietà `java.class.path`, in cima
++       alla catena di delega dell'applicazione.
++   entry .platformClassloader   il classloader di piattaforma della JVM
++       `ClassLoader.getPlatformClassLoader`: il loader dei moduli propri del JDK, e il genitore
++       predefinito di un classloader costruito con `classloader`.
++   entry .scalaClassloader   il classloader che ha caricato la libreria Scala
++       `Classloader[List]`: il loader da cui proviene la libreria standard di Scala, che è il
++       loader dell'applicazione in un semplice processo `java -cp` e quello dell'host sotto un
++       sistema di plugin.
+
+@ 0 7 0 170237728b04f339085e864a309d63ef
++ entry .ClassRef   una `Class[?]` trovata a partire da un tipo, come `ClassRef[T]`
++     `ClassRef` è il tipo opaco `hellenism.internal.ClassRef`, esportato qui. `ClassRef[T]` è
++     una macro che risolve un tipo nella sua classe a runtime: un tipo proprio viene collegato
++     con `classOf`, legando la classe con cui il chiamante stesso si collega, e un costruttore
++     di tipo non applicato viene cercato per il suo nome binario JVM. Un tipo annidato in un
++     oggetto o in una classe si risolve nel suo nome binario (`Outer$Nested`), dove
++     `Class.forName` sul nome sorgente puntato fallirebbe. `ClassRef(javaClass)` avvolge una
++     classe già disponibile.
+
+% 2 1 0 1f77be7bccc39e600843cb52241dddc6
+
+% 3 1 0 0e5108815fffbc100634ad4cf4d5ef43
+
+% 0 1 0 17a252165d2916cc083669b75be4ef74
+
+% 0 1 0 1d20ea8577585db61bffab36c325c7e1
+
+% 0 1 0 0b923d2077c190c61c41a69d482ae586
+
+% 0 1 0 0384273ebb0d20131b4d8ff2b194f5ba
+
+% 0 1 0 0e560b0daaa3c5db004b606224db1c99
+
+% 1 1 0 0595cf67f0c61706152303628f399502
+
+@ 0 5 0 095568ae3a7166920e8b6778918e9b20
++     Un `ClassRef` è una `Class[?]`, quindi ogni metodo Java di una classe è disponibile su di
++     esso. La sua estensione `classloader` dà il `Classloader` che l'ha caricata, e sulla JVM
++     `classpathEntry` dà la `Classpath.Entry` da cui è stata caricata. Si ispeziona come il
++     codice sorgente che lo produrrebbe, `classOf[java.lang.String]`, invece del
++     `class java.lang.String` di due parole di `Class#toString`.
+
+@ 0 1 0 1aa0905823e1eecd1130233d6c7f711b
++ entry .internal   le implementazioni delle macro dietro `cp"…"`, `ClassRef[T]` e `Classloader[T]`
+
+% 1 1 0 0b7b6d3bea03bf7e17649f853802fef3
+
+% 2 1 0 0d8cd42c5b0cd0ae03e03b060368364c
+
+@ 0 3 0 097bd687b13e87b90aa1a8da51a9b1d3
++       Non è destinato all'uso diretto: l'oggetto esiste perché le macro abbiano una sede
++       stabile. `ClassRef` viene esportato da qui nel package `hellenism`.
++   entry .ClassRef   una `Class[?]` trovata a partire da un tipo; vedi `hellenism.ClassRef`
+
+% 1 1 0 1c536d4a987b4fb70e0a700ca73282ee
+
+@ 0 14 0 16ddc47cd07eb5de1c5fb6932f28180a
++         Il tipo opaco `ClassRef <: Class[?]`, con la macro `ClassRef[T]` e l'involucro
++         `ClassRef(javaClass)`. La sua pagina sotto il package `hellenism` ne dà la descrizione
++         completa.
++     entry .apply   `ClassRef[T]` risolve un tipo nella sua classe; `ClassRef(cls)` ne avvolge una
++         La forma macro prende un tipo di qualsiasi kind: un tipo proprio viene collegato con
++         `classOf`, un costruttore di tipo non applicato viene cercato per il suo nome binario
++         JVM, e un tipo senza alcuna classe è un errore di compilazione, _hellenism: the type
++         `T` does not have a class_.
++     entry .inspectable   rende un riferimento a una classe come `classOf[java.lang.String]`
++   entry .classloader   il classloader che ha caricato la classe di un `ClassRef`
++       Un'estensione su `ClassRef`: `classRef.getClassLoader`, avvolto come `Classloader`.
++       `Classloader[T]` è `ClassRef[T].classloader`.
++   entry .classpath   la macro dietro `cp"…"`
++       Legge l'unica parte letterale dell'interpolatore, la decodifica come `Path on Classpath`,
++       la cerca sul classloader di contesto del compilatore, e inserisce una `Resource` il cui
++       tipo `Locus` è il letterale.
+
+@ 0 1 0 0eff47c4bb3fac3b1aae5323b07a8bb8
++ entry .Hellenism2   il trait che contiene l'implementazione della macro `ClassRef[T]`
+
+% 1 1 0 0585fac59cb86cb60eae34660029567c
+
+% 2 1 0 0976f8dcd1015a3102b36e3db20abec7
+
+@ 0 2 0 19c03f141a89f35505c029d739381b0a
++       Incluso come mixin in `internal`; non è destinato all'uso diretto.
++   entry #makeClass   la macro dietro `ClassRef[T]`: un tipo nella sua classe, tramite `classOf` o il nome binario
+
+@ 0 1 0 06cbd443f11a93da18ec177971879adb
++ entry .classloader   costruisce un classloader su un classpath, con una delega e un genitore scelti
+
+% 1 1 0 1fd92abbcc2b098b187b79914331f888
+
+@ 0 5 0 171ce21172f0ab1b1dce2c1008cc396d
++       Un'estensione solo JVM su `Classpath` (assente su Scala Native, dove il classpath è
++       collegato nel binario). Costruisce un `URLClassLoader` sulle voci del classpath —
++       `JavaRuntime` viene omessa, poiché un `URLClassLoader` non sa caricare da `jrt:/` e il
++       platform loader alla radice di ogni catena fornisce comunque il JDK — delegando a
++       `parent` come stabilisce `delegation`.
+
+% 2 1 0 0b9d02ef1e29c0c300a55f9a55cdb3c9
+
+% 3 1 0 176424a20a6d79030cf8becbd49edad4
+
+% 0 1 0 1171c0e1b3cf7f8f02dc484c025579a6
+
+% 0 1 0 12f603e05c9430201ee332dba1010d1f
+
+% 0 1 0 06f5834fb1ede7e406410705f1b765b0
+
+% 1 1 0 13f62a8eeb6d57dc04a579f89b0820ee
+
+@ 0 5 0 0b270d9d97530fab13890f16379d46aa
++       La delega è obbligatoria: `Deferential` è l'ordine parent-first della JVM, che condivide
++       le classi del genitore con ciò che viene caricato; `Preferential` è child-first, che
++       isola le versioni delle librerie proprie del classpath da quelle del genitore. Vedi
++       `Classloader.Delegation`. Il genitore è il classloader di piattaforma
++       (`classloaders.platformClassloader`) a meno che non ne venga dato un altro.
+
+@ 0 1 0 17fb34dcf98997eb0baccccf0a6f5b60
++ entry .services   i fornitori di un'interfaccia di servizio dichiarati su un classpath
+
+% 1 1 0 1ba11817b3897b5e0f45c88d6c72ac47
+
+@ 0 7 0 1736e64eb9c2389f163a7e58ac039642
++       Un'estensione solo JVM su `Classpath`. `classpath.services[Service]` trova ogni
++       implementazione di `Service` registrata sotto `META-INF/services/<Service>` nelle voci
++       del classpath, tramite `java.util.ServiceLoader`, istanzia ciascuna e le restituisce come
++       un `Set` tipizzato sul servizio. La ricerca usa un nuovo `URLClassLoader` sulle voci, il
++       cui genitore è il loader della classe del servizio stessa (o il system loader, per
++       un'interfaccia del JDK), quindi un fornitore è collegato allo stesso `Service` che il
++       chiamante ha nominato; i fornitori sono deduplicati per classe.
+
+% 2 1 0 040d6c9199fa46f00d746c40b1148c9e
+
+% 3 1 0 125de7e2c41ffd6f1b4f23618cc3cd94
+
+% 0 1 0 078033ed8cc28e4a0aceb695064dafb0
+
+% 0 1 0 170434f2b2cca2c417beebd3db5ca088
+
+% 1 1 0 09a430af649ad82e148854baec33c3d1
+
+@ 0 2 0 07dae88cdfa7a699131a6e3562dd0ca9
++       Il `Set` non è ordinato: un servizio i cui fornitori devono essere classificati ha
++       bisogno di una chiave propria.
+
+@ 0 3 0 19d54eca064ba1990acebb04e3b72bb3
++ entry .javaUrl   una voce del classpath come il `java.net.URL` che prende un `URLClassLoader`
++     Un'estensione solo JVM su `Classpath.Entry`. Una `Directory` o un `Jar` diventa un URL
++     `file:` dal suo percorso, un `Url` viene analizzato così come è scritto, e `JavaRuntime` è
++     `jrt:/`.
+
+@ 0 5 0 1c3811b16d7bc9561ec259cbfc25c4fe
++ entry .classpathEntry   la voce del classpath da cui è stata caricata una classe, se è nota
++     Un'estensione solo JVM su `ClassRef`. Legge la posizione della code source del dominio di
++     protezione della classe e la classifica come `Classpath.Entry`: un URL `file:` che termina
++     con `/` è una `Directory`, qualsiasi altro URL `file:` un `Jar`, `http` e `https` un `Url`,
++     e `jrt` il `JavaRuntime`. Un URL di qualsiasi altro protocollo è `Unset`.
+
+% 2 1 0 006b1ead45b9b40017f1bf81e1e2ffeb
+
+% 3 1 0 18b18c6ad007da6915daf65016db1865
+
+% 0 1 0 11d5dc357ea8c0c61329de5f08363faf
+
+% 1 1 0 1b6a9211dbe34b9811280de85f53807c
+
+@ 0 5 0 1ac5c81bf2c473bf04750db4acae47c1
++ entry .classpathSubstantiable   verifica se un `Path on Classpath` esiste, tramite il `Classloader` nell'ambito
++     Il given `Substantiable` per i percorsi del classpath, in `hellenism.jvm`:
++     `path.existent()` indica se il classloader nell'ambito ha una risorsa a quel percorso,
++     così un programma può verificare la presenza di una risorsa opzionale invece di gestire un
++     `Classpath.Error`. È un given di primo livello, quindi va importato per nome:
++     `import soundness.classpathSubstantiable`.
+
+% 2 1 0 0b502efd57755b87054435135c3e6791
+
+% 3 1 0 0830bfc0e63f64f2043fa468120bb12f
+
+% 0 1 0 1de130a00a2dd39c0598a5ba4248acaf
+
+% 1 1 0 0fe88d0663365a0c0d026d6d83f7d71f
+
+% 0 1 0 17e84de1c4af3a0b1b26ea2d00faf762
+
+% 0 1 0 0aafbb6234f51e000d7a481a62e4c2cc
+
+% 1 1 0 1ecb27fcc8e8e9be1ae41c3016dced85
+
+@ 0 7 0 15cd4d6d0b03da451e00ba426e8cea48
++ entry .classpath   il classpath da cui carica un classloader, se è un `URLClassLoader`
++     Un'estensione su `Classloader` in `hellenism.jvm`. Percorre il loader e i suoi genitori
++     fino al `URLClassLoader` più vicino e ne rilegge gli URL come `Classpath` con
++     `Classpath.of`; una catena senza alcun `URLClassLoader` dà `Unset`. Sotto un host come un
++     runner di test, che isola ogni suite in un proprio `URLClassLoader`, questo è il classpath
++     da cui provengono effettivamente le classi della suite, mentre la proprietà
++     `java.class.path` nomina i jar dell'host; `LocalClasspath.of(classloader)` combina le due
++     cose.
+
+@ 0 6 0 0dd5f76d85237e85079aefb8ad6e7868
++ entry .of   rilegge un `Classpath` dagli URL di un `URLClassLoader`, come `Classpath.of`
++     Un'estensione sull'oggetto `Classpath`, in `hellenism.jvm`. Ogni URL diventa una
++     `Classpath.Entry` secondo il suo protocollo (`file:` in una `Directory` o un `Jar`,
++     `http`/`https` in un `Url`, `jrt` in `JavaRuntime`; qualsiasi altro protocollo viene
++     scartato). Il risultato è un `OnlineClasspath` se una qualsiasi voce è un `Url`, e
++     altrimenti un `LocalClasspath`, le cui voci sono tipizzate in modo da escludere gli URL.
+
+@ 0 1 0 11238e4453b5d21e033e4732c1687dea
++ entry .LocalClasspath   un classpath di sole voci locali: directory, JAR e il runtime Java
+
+% 1 1 0 17b190691e0def84151d087c4e664aa5
+
+@ 0 5 0 1421f9723358be840132be0bac60b2c5
++       Il classpath di un programma in esecuzione, come valore. Le sue `#entries` sono
++       tipizzate come `Directory | Jar | JavaRuntime`, quindi un match su di esse non deve
++       gestire `Url`, e fa l'andata e ritorno con il testo contenuto nella proprietà
++       `java.class.path`: `.decodable` ne legge uno dalla proprietà, e `#apply` ne riscrive uno,
++       ciascuno usando il separatore di percorso della piattaforma e richiedendo quindi un
++       `System` nell'ambito.
+
+% 2 1 0 173bbd750d0e0856116abe3fa38b6e3b
+
+% 3 1 0 121d1d4a369d3ab80a0eb825da609db6
+
+% 4 1 0 093b1b8a758105600d29ef3854879447
+
+% 5 1 0 1aeaaf414164721d109c4b3ff0c2ad4f
+
+% 0 1 0 1b26ac17609118b71cef0098ea3bb72c
+
+% 0 1 0 038b2dafa7f56c891ebde31f3d6eea28
+
+% 0 1 0 1592b6629cb6046305439ea9f3c444a3
+
+% 0 1 0 0dd56ad1eb0d4f9d15d4143f76108491
+
+% 0 1 0 0d9a5837ffa4301a17d943d606dec096
+
+% 0 1 0 13917fe114a9f5db066cb7d44e85bf95
+
+% 1 1 0 1075a9fc03aa9bbb148cd79db91883df
+
+@ 0 4 0 1434295166a353b0072a14a52813409e
++       Un classpath si costruisce da voci con `apply`, da un percorso con `of`, e si estende con
++       `+ path`, che aggiunge una directory o un JAR secondo ciò che c'è sul disco e ignora una
++       voce già presente. Le estensioni `classloader` e `services` costruiscono poi un loader
++       su di esso o ne enumerano i fornitori.
+
+% 0 1 0 04d60c2bb708a5de1a794851288f3be9
+
+% 1 1 0 0fdd5e6c239aa7f51211ee4a2e6cd257
+
+@ 0 11 0 173530ad61fd3bb00021a9ade8ac51a4
++   entry .encodable   rende un classpath come testo `java.class.path`, con il separatore della piattaforma
++       Richiede un `System` nell'ambito per la proprietà `path.separator`. Le voci
++       `JavaRuntime` vengono scartate, poiché la proprietà non ha un modo di scriverle.
++   entry .inspectable   una resa di debug: `classpath⟨/x.jar:/a/b/⟩`, sempre con `:`
++       Sempre disponibile, senza `System`, quindi non può essere scambiata per il testo di
++       piattaforma prodotto da `.encodable`: le voci sono unite con `:` qualunque sia la
++       piattaforma, e `JavaRuntime` appare come `‹jrt›`.
++   entry .decodable   legge un classpath da testo `java.class.path`
++       Divide il testo sul `path.separator` della piattaforma (richiedendo un `System`, e
++       sollevando `Property.Error` se non è impostato). Un elemento che termina con `/` è una
++       `Directory`, uno che corrisponde a `*.jar` un `Jar`, e qualsiasi altra cosa una
++       `Directory`.
+
+% 2 1 0 02e84b279284141a0e3ff1bbfaed4ec1
+
+% 3 1 0 12445cb46146872918f567777170f430
+
+% 4 1 0 173a629a0df123511e954ce1bc729238
+
+% 5 1 0 11b5adc661234ac90145b9b643ef44a6
+
+% 0 1 0 1b16a5c24256e68609a3a312dddf9cc6
+
+% 1 1 0 08a3c9b9ee08a965186347e322a6285b
+
+@ 0 8 0 07d31a7b546e443216cb9b4853eaec74
++   entry .of   il classpath da cui carica un classloader, o quello di un singolo percorso
++       `LocalClasspath.of(classloader)` è il classpath da cui carica un `URLClassLoader` su voci
++       locali, trovato tramite `Classloader#classpath`, e altrimenti la proprietà
++       `java.class.path`. Il codice che avvia una JVM per eseguire le proprie classi dovrebbe
++       prendere il classpath da qui, con il classloader di una delle proprie classi
++       (`LocalClasspath.of(Classloader[Main.type])`): sotto un host come un runner di test, che
++       isola ogni suite in un `URLClassLoader`, la proprietà nomina i jar propri dell'host, non
++       quelli del codice.
+
+@ 0 8 0 01c96b37ab819ac30e233a7ed64e5fbd
++       `LocalClasspath.of(path)` è il classpath di una sola voce, per il suo percorso: una
++       `Directory` o un `Jar` secondo ciò che c'è sul disco (quindi può sollevare `Path.Error`
++       o `Io.Error`, e richiede una politica `DereferenceSymlinks`). Si chiama `of`, non
++       `apply`, perché una singola `Classpath.Entry` è essa stessa un percorso, e
++       `LocalClasspath(entry)` sarebbe ambiguo con l'`apply` delle voci.
++   entry .apply   un classpath delle voci date, in ordine
++       Prende un numero qualsiasi di voci `Classpath.Entry.Directory`, `Classpath.Entry.Jar` e
++       `Classpath.Entry.JavaRuntime`, in ordine di ricerca. Per un singolo percorso, si usa
++       `of`.
+
+% 2 1 0 004d135a5f17ef87120e7fafb319f8a7
+
+% 3 1 0 06ed5262e20176ee052a319c87bbd2c5
+
+% 0 1 0 1e1787fbe203dbc50653bc6511d8af56
+
+% 1 1 0 073bd3f8c389ca75094fc4d753a3eb5b
+
+@ 0 11 0 01b2f42b3c051ddf0fe8343133d7db35
++   entry .paths   `classpath + path`: aggiunge una directory o un JAR, secondo ciò che c'è sul disco
++       Il given `Addable` che estende un classpath con qualsiasi tipo di percorso. Il percorso
++       viene letto come `Path on Linux` e verificato sul disco: una directory diventa una voce
++       `Directory`, qualsiasi altra cosa un `Jar`, e una voce già presente lascia il classpath
++       com'era. Richiede una `Tactic[Path.Error]`, una `Tactic[Io.Error]` e una politica
++       `DereferenceSymlinks` nell'ambito.
++   entry #entries   le voci, in ordine di ricerca, tipizzate in modo da escludere gli URL
++   entry #entrySet   le voci come insieme, per la verifica di appartenenza che fa `+ path`
++   entry #apply   il classpath come testo `java.class.path`, con il separatore della piattaforma
++       Richiede un `System` nell'ambito per la proprietà `path.separator`. Le voci `Directory`
++       e `Jar` vengono unite in ordine; `JavaRuntime` viene scartata, poiché la proprietà non ha
++       un modo di scriverla.

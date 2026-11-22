@@ -1,0 +1,156 @@
+orthant 2 language
+
+@ 0 1 0 15d61a42cfc8ebd90ef3e513b9e3d5f7
++ # Ambiti delimitati
+
+@ 0 7 0 1e4d5aa9ab013e0c0bee47f1362dd0f9
++ Soundness usa le context function per delimitare i blocchi all'interno dei quali è disponibile una
++ capability o un elemento di contesto in più. Entrare in un tale blocco — per gestire gli errori,
++ eseguire task concorrenti, tenere aperta una risorsa — rende disponibili al suo interno i valori
++ contestuali pertinenti e li ritira al suo confine. La portata di una capability è quindi visibile
++ nella struttura stessa del codice: una capability vale esattamente dove il blocco dice che vale, e
++ non oltre. Questo confinamento strutturale è ciò che il [capture checking](capture-checking.md)
++ impone poi nei tipi.
+
+@ 0 1 0 182d61a630d365b00cc707c94117bb0b
++ ## Una forma, ovunque
+
+@ 0 2 0 0949f07ad9e9af50178a6bde4b1b548e
++ Lo stesso schema introduce una risorsa, un handler di errori, un contesto di concorrenza e un
++ segreto prestato. Riconoscerlo una volta significa riconoscerli tutti:
+
+% 2 1 0 150773a18b0dfa7b0633e6b06935a0ed
+
+% 3 1 0 0bcb8136ec1bc4d904183fae567951fb
+
+% 4 1 0 0eca05afe4986a3000831daa72f4fa55
+
+% 0 1 0 140e5dd57243cd3f10ccaa75527863d8
+
+% 0 1 0 15d5d175bff5f9a30f2b42fb44fda259
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 0c5b48f9a53ae50d15051c342c618152
+
+% 0 1 0 1fb74406d1b64bef06148f6d54815341
+
+% 0 1 0 1548ee3ef66c5283179ab1deae8f1167
+
+% 0 1 0 1ad537c6cf1a386b02c70fe6d7907a6d
+
+% 0 1 0 16fd4b340c492b2b167ef521dbaf2235
+
+% 0 1 0 13ba912b44dc874409c867769842ac5d
+
+% 1 1 0 02be1ae0330118a10cf896b480bbbf7c
+
+@ 0 3 0 17a76be72fc445c40d5f2aa421022517
++ In ogni caso la capability esiste dentro le parentesi e da nessun'altra parte, e l'ampiezza del
++ blocco è l'ampiezza della capability — visibile sulla pagina, senza leggere alcuna
++ documentazione sui tempi di vita.
+
+@ 0 1 0 0f845d3e6c5d749516fede9047c25c19
++ ## Perché un blocco invece di un costruttore
+
+@ 0 1 0 161d0e446dbb946619f933d24b8f0118
++ L'alternativa è costruire la capability, usarla e rilasciarla:
+
+% 2 1 0 1c6b6963fc68a89f1883c0f620153564
+
+% 3 1 0 0b4ef4af8c3b99651c8a828b04b9fa86
+
+% 4 1 0 1fd7a04c9824b42d1bf4f74b3f6eb7ea
+
+% 0 1 0 1792013304fc896d06c4fac6ebd73604
+
+% 0 1 0 0bc703a8f20071dd057f8aa66d1607cf
+
+% 1 1 0 08055d312a59260e17c767fa58478372
+
+@ 0 4 0 0f4cffbf8500fac8070aa5767aabda12
++ Questo ha tre difetti che la forma a blocco non ha. Il `close` si può dimenticare, o mettere dove
++ un ritorno anticipato lo salta. L'handle esiste come valore *prima* di essere valido e *dopo* aver
++ smesso di esserlo, quindi il suo tipo non dice nulla su quando può essere usato. E annidarne due
++ raddoppia il cerimoniale, con l'ordine di rilascio indicato a mano.
+
+@ 0 2 0 0bf5c70ab2e60aea1707244877d82982
++ La forma a blocco li corregge tutti: non c'è alcun rilascio da scrivere, la capability è
++ nell'ambito solo dove è valida, e annidare due risorse significa annidare due blocchi.
+
+@ 0 1 0 10cf37bd950e7d9e02d6ef70c530f449
++ ## L'ambito è uno strumento preciso
+
+@ 0 4 0 15a1c922632128d6064cbd239e48f435
++ Poiché il meccanismo è l'ordinario ambito lessicale, la granularità è quella di cui il codice ha
++ bisogno. Un given importato in cima a un file configura il file; uno dichiarato in un metodo
++ configura il metodo, scavalcando la scelta più ampia; un blocco `locally` confina un'eccezione a
++ poche righe:
+
+% 2 1 0 11b350b050bda128113e9a42214b22aa
+
+% 3 1 0 04085bf39e2b3a4a04ee39719f0cd9a8
+
+% 4 1 0 058d9e57e17f74ab0c30811ce28cece8
+
+% 0 1 0 0d2451b6474da3780123f5bcca399f0f
+
+% 0 1 0 1713b723343ad4240a44a0dfaf90cb33
+
+% 0 1 0 1ce56f8149b9021819efd845b2ba91d3
+
+% 0 1 0 02d46d4a051a899110041929ea41bb5e
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 1e37049925fe18571e4e747e84736cf7
+
+% 0 1 0 155ce7bf0c4ba643122956989fd4487c
+
+% 1 1 0 18a60f504236cc0e01b4f68bba4fd17e
+
+@ 0 2 0 032693b2c2b7987e062a0fddd71aa1a7
++ Niente deve supportare questa granularità in modo speciale. Deriva dall'uso dell'ambito proprio del
++ linguaggio invece di un meccanismo di configurazione su misura.
+
+@ 0 1 0 15117289264c368706ba363a9c536dbc
++ ## Che cosa significa davvero «ritirato al confine»
+
+@ 0 5 0 1bd021c390e95f6803b6e9b8037423a8
++ Dal punto di vista strutturale, la capability esce dall'ambito quando il blocco finisce. Questo da
++ solo non impedirebbe a un valore di *portarla* fuori — uno stream lazy che tiene ancora un file
++ aperto, una closure che tiene ancora un handler di errori, un task che tiene ancora il suo
++ supervisore. Queste fughe sono proprio ciò che il ragionamento a occhio non coglie, perché la
++ valutazione lazy, le closure e la concorrenza separano quando il codice viene eseguito da dove è
++ stato scritto.
+
+@ 0 3 0 046fd529cf1ef20c10c260509085c5be
++ Il [capture checking](capture-checking.md) colma lo scarto: l'ambito della capability viaggia nel
++ tipo del valore, quindi una fuga è un errore di compilazione invece che una sorpresa a runtime.
++ Gli ambiti delimitati dichiarano l'intento; il capture checking lo rende una garanzia.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto costa
+
+@ 0 1 0 17a2511765a941c813f0e8f41d2e6936
++ Due costi, entrambi reali.
+
+@ 0 5 0 0fe7d414c896df000e1c825912012eb3
++ **Deriva verso destra.** Ogni capability annidata indenta il codice, e una funzione che ne richiede
++ quattro è a quattro livelli di profondità prima di cominciare. La sintassi delle lambda con i due
++ punti di Scala limita questo a un livello per capability invece che a un livello più una parentesi
++ di chiusura, ma il codice che usa molte capability sembra comunque profondamente annidato — e dove
++ diventa illeggibile, la risposta è spostare il lavoro interno in un metodo che dichiara ciò di cui
++ ha bisogno, non allargare gli ambiti.
+
+@ 0 5 0 0dbd12442f91dada19d427499e0db9ab
++ **La capability non si può semplicemente memorizzare.** Un valore che ha bisogno di un handle di
++ file in un momento successivo e non correlato non può conservarne uno; deve fare il suo lavoro
++ dentro l'ambito oppure prendere una copia memoizzata di ciò che gli serviva. È un vincolo reale, ed
++ è il vincolo a fare il lavoro: «tieni questa risorsa a tempo indeterminato e spera» è proprio lo
++ schema che viene escluso.
+
+@ 0 3 0 024c8c94b0011b82179ff59cd5b4507b
++ Vedi [contesto dichiarativo](declarative-context.md) per ciò che si mette in questi ambiti, e
++ [concorrenza strutturata](structured-concurrency.md) per il caso in cui la cosa delimitata è un
++ insieme di task in esecuzione.

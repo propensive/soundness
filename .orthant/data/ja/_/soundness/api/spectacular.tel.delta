@@ -1,0 +1,486 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 004a1f01fc0dff17145fbd3f35b0816d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09d3d8daeea3f67a102196a137ebbdd2
++ info   値をテキストにする二つの描画：プログラムの利用者のための `show` と、そのプログラマーのための `inspect`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 13b7d55ec18e5adc07acf3146bda6acb
++     _Spectacular_ は、値がテキストになる二つの理由を区別する。
++     `show` は値を**人**のために描画する。メッセージやログの行、画面に載せるべき形であり、`Showable` インスタンスを通して描画され、インスタンスを持たない型に対してはコンパイルエラーになるので、利用者に届くべきでない値には単にインスタンスがない。
++     `inspect` は値を**プログラマー**のために描画する。デバッグやテスト出力のための、曖昧さのない一行のソース風の形であり、`Inspectable` インスタンスを通して描画され、常に成功する。構造的な描画を導出し、最後の手段としては借りた描画に印を付ける。
+
+% 2 1 0 1c5307a8d3f241100045ece9f798b311
+
+% 3 1 0 022ea62af8dd535e0765103bc914457e
+
+% 0 1 0 111ba3b0152c0d27148d3e15fb767da5
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 07798669b2774c5309d45356d7768cd1
+
+% 0 1 0 1bb4cafea7927d1c1dab712eccf8cf72
+
+% 0 1 0 0f4b9db8cbe7051f1986899076d2c414
+
+% 0 1 0 1c265419279a7ef207d00fba71437906
+
+% 1 1 0 02c11d8990e62a2416311f0ac8f6a6e8
+
+@ 0 2 0 0d6b9d2c3781a8750246c510b3508d00
++     同じ `Showable` インスタンスが `t"…"` の補間も動かすので、埋め込まれた値は表示される。
++     また `Showable` は `Communicable` でもあるので、`m"…"` メッセージに埋め込める。
+
+@ 0 3 0 14dff66d5a7c29b90b12738ca7208928
++     `Boolean` には明らかな唯一の描画がないので、それを表示するにはスコープ内に `Affirmation` が必要であり、`affirmations` パッケージの given の一つを名前でインポートして選ぶ。
++     `import soundness.*` は given をインポートせず、既定のものは意図的に用意されていない。
+
+@ 0 2 0 1e132612e159141f18c162501f008922
++     `Inspectable` の描画はすべての Soundness の型にわたって一つの記法に従うので、二つの型が同じように描画されることはない。
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 14 0 10a28f10b2551a33190308cf373d137f
++     column  値
++     column  描画
++     row  `List`  `[a, b]`
++     row  `Set`  `{a, b}`
++     row  `Map`  `{k → v}`
++     row  `Ledger`  `⟦k → v⟧`
++     row  `Sequence`  `⟨ a b ⟩`
++     row  直積  `Name(field:value ╱ …)`
++     row  存在する `Optional`  `｢value｣`
++     row  存在しない `Optional`  `○`
++     row  テキスト  `t"…"`
++     row  文字  `'x'`
++     row  サイズ付きの数  上付きの接尾辞、`42ᵘ⁸`
++     row  序数  上付きの接尾辞、`1ˢᵗ`
+
+% 1 1 0 1de1fa85c90e932302db9c7d8f344aa7
+
+@ 0 3 0 038cf486417fa730022f2a47284a5334
++     ネイティブで*ない*描画には印が付く。
++     `toString` には `“…”`、借りた `Showable` の形には `⸢…⸣`、借りた `Encodable in Text` の形には `⸤…⸥` が付き、`Inspectable.fallbacks` がそれを見つける。
+
+@ 0 3 0 1f51589fab749e030ea649ba67cbb254
++     このライブラリのソースセットは `spectacular.core` 一つであり、すべてのプラットフォーム向けにコンパイルされる。
++     すべてが `soundness` アンブレラにエクスポートされ、`affirmations` 選択パッケージはアンブレラ自身のものと統合される。
+
+% 0 1 0 129c0b8b64cee0420c8e0ea5ad9fcae1
+
+% 0 1 0 0108f75647c456f308c7a66a5d157d69
+
+% 0 1 0 1e51b6b85bca5f8e04623ce95d392494
+
+% 0 1 0 006a2e098fbd5de0107280f0eefa5ac2
+
+% 0 1 0 017db0d687bd1b801350d05a078eccd5
+
+@ 0 5 0 19a4a9bb533c34fc036a607edee8a965
++ entry .show   値を人が読むためのテキストとして、その `Showable` インスタンスを通して描画する
++     `Showable` を持つ型のあらゆる値に対する拡張である。`value.show` は `Showable.text(value)` である。
++     インスタンスのない型は表示できず、それを求めると黙って `toString` に頼るのではなくコンパイルエラーになるので、インスタンスがないことは、その型が表示のためのものではないと示す方法になる。
+
+% 2 1 0 16ace8abc1fc40741064f3342bdd6f07
+
+% 3 1 0 0f37e0ffd67a6d1f142348b1d166df71
+
+% 0 1 0 1a0bd77440a1afcd05a73c67b59e9098
+
+% 0 1 0 1cd80bc7e5a20a6d1c5cff274bfcc198
+
+% 1 1 0 0032e268fd318a4f05cbb1ff5c16465c
+
+@ 0 2 0 13ff6595eb35d10d0dd87272a60f1f6e
++     値を `t"…"` に補間しても、同じように表示される。
++     常に成功するデバッグ用の形には `inspect` を使う。
+
+@ 0 5 0 1dde755339a597ef1c41be5de73f16cc
++ entry .inspect   値をプログラマーのための曖昧さのないテキストとして、その `Inspectable` を通して描画する
++     あらゆる値に対する拡張である。`value.inspect` は `Inspectable.text(value)` であり、`Inspectable.derived` がすべての型を扱うので、コンパイルに失敗することはない。
++     描画は簡潔で一行に収まり、手間がかからない場合は正しいソースに似せられ、値の*静的な*型において意味のあるすべての状態を示す。
+
+% 2 1 0 119dd9d57f4d10de14d355d80cdd53cf
+
+% 3 1 0 16ccddd5d6ba37f9009aeafb974de351
+
+% 0 1 0 03fa5901efb65de71e683184e9d8c495
+
+% 0 1 0 0653ee11dfccbfd516a531cd598c5291
+
+% 0 1 0 105a22e9676c91e516b8b81a043ca0e3
+
+% 1 1 0 08190b77954f25040abb8f5e3f389def
+
+@ 0 2 0 114588057a63ad3115ba291f0d5076d0
++     描画は静的な型に依存する。
++     `Any` と型付けされた値は `toString` にフォールバックし、`“…”` の印が付く。
++     記法とフォールバックの連鎖については `Inspectable` を参照。
+
+@ 0 1 0 06349c54a2554f4b1227467330725e1f
++ entry .Showable   人に表示してよい値の型クラスで、`value is Showable` と書く
+
+% 1 1 0 1fbaf02aa5793e3d0fa2c57da4cc73ca
+
+@ 0 3 0 0abfad0d29408e650f3398a0571837e1
++       メソッドが一つの型クラス `text(value: Self): Text` なので、インスタンスは値からそのテキストへの関数として書く。
++       `Communicable` を継承するので、show できる値はそのテキストの `Message` として `m"…"` メッセージにも埋め込める。
+
+% 2 1 0 1f4bb862fc855677140227f827c58266
+
+% 3 1 0 0e5f4a725071df2e105f97e04da8e047
+
+% 0 1 0 1841ca150a515c480de45042492abd6c
+
+% 0 1 0 19067f76d063d6950b5af7a09323234a
+
+% 0 1 0 1a513ea61155c70f1495dca709b281f6
+
+% 1 1 0 18d7e4237ef2bf97124ff506250319e2
+
+@ 0 6 0 1201d9bed979d90d1618001b2894dc35
++       `Showable` は意図的に厳しい。
++       導出もフォールバックもないので、型が表示できるのは、誰かがその見え方を決めた場合だけである。
++       コンパニオンは、プリミティブ型、`Text`、`String`、`Message`、`Memory`、すべての Scala の `enum`、すべての `Textualizable` な型、Soundness のコレクションに対するインスタンスを持つ。
++       `Double` にはスコープ内の `DecimalConverter` が、`Boolean` には `Affirmation` が必要である。どちらにもコンテキストに依存しない唯一の形がないからである。
+
+@ 0 3 0 077a8dd82832cf5d0d8b2b95373a23c7
++       細分化された型（ブランド付きのリスト、リテラル型）に対するインスタンスは、その対象の部分型にわたって書くべきである（`[self <: Play] => self is Showable`）。
++       `Self` は非変であり、`Play` に対するインスタンスは細分化を伴う `Play` を扱わないからである。
+
+% 0 1 0 054a0f456fff0d1b16950c7c5cd08d95
+
+% 0 1 0 03ec24798555039b13e1fae02f0e6f64
+
+% 0 1 0 0460ddf9c54dc8281e6b24cfd987bed0
+
+@ 0 19 0 0af697bd3d4a2ce016ad7713dbc5ff9f
++   entry #text   値をテキストとして描画する
++   entry #message   `m"…"` 補間のために、値を `Message` として描画する
++       `Message(text(value))` であり、すべての `Showable` を `Communicable` にするメンバーである。
++   entry .showable   あらゆる `Textualizable` な値を、そのテキスト化を通して表示する
++   entry .text   `Text` とそのあらゆる部分型を、そのまま表示する
++   entry .string   `String` をそのテキストとして表示する
++   entry .char   `Char` を一文字のテキストとして表示する
++   entry .long   `Long` を接尾辞なしの十進数で表示する
++   entry .int   `Int` を十進数で表示する
++   entry .short   `Short` を十進数で表示する
++   entry .byte   `Byte` を十進数で表示する
++   entry .message   `Message` をそのテキストとして表示する
++   entry .double   `Double` をスコープ内の `DecimalConverter` を通して表示する
++       `DecimalConverter` が必要であり、それが桁数、表記、丸めを決める。
++       それがなければ、`Double` はまったく表示できない。
++   entry .boolean   `Boolean` をスコープ内の `Affirmation` を通して表示する
++       `affirmations` パッケージから名前でインポートするか、ローカルに定義した `Affirmation` が必要である。
++       それがなければ、`Boolean` はまったく表示できない。`true` と `false` を決めてかかることは、コンテキストを決めてかかることになるからである。
+
+% 2 1 0 0966de77a20430741086d785b4e99957
+
+% 3 1 0 01b6ab3065e045d41aee90c4efe68236
+
+% 0 1 0 04e290179737ee7d1db4efe334260f63
+
+% 0 1 0 0c22667d13e53e261853f5c8672cf960
+
+% 1 1 0 0c7be37ba5e295a70f524c826e7de5b0
+
+@ 0 17 0 1dfd5e1328ddf9cf1a74d7f271ce246a
++   entry .option   Scala の `Option` を、その値か `none` として表示する
++   entry .memory   `Memory` の量を、それ自身の `text` 描画を通して表示する
++   entry .enumeration   あらゆる Scala の `enum` のケースを、その名前で表示する
++       すべての `reflect.Enum` はその `toString`、つまりケースの名前として表示されるので、別の形が欲しい場合を除いて、enum に専用のインスタンスは要らない。
++       パラメーターを持つケースは引数とともに表示されるが、ラベルは付かない。
++   entry .set   `Set` を `{a, b}` として表示し、各要素を表示する
++   entry .list   `List` を `[a, b]` として表示し、各要素を表示する
++       `List[element]` の部分型にわたって書かれているので、ブランド付きのリスト（要素があると分かっている `List`）も表示できる。
++   entry .sequence   `Sequence` を `[ a b ]` として表示し、各要素を表示する
++   entry .none   `None` を `none` として表示する
++   entry .specializable   `Specializable` マーカーを小文字にした名前で表示する
++   entry .zerary   `Ordinal` をゼロ始まりの形 `3.₀` で表示する
++   entry .typeRepr   マクロ内で、マクロの `TypeRepr` をそのソース上の名前として表示する
++       `Quotes` が必要である。名前は stenography が型を描画するように描画される。
++   entry .meta   マクロ内で、マクロの `Type[T]` をそのソース上の名前として表示する
+
+@ 0 1 0 1170b2b48d2e95311042291b2f4b510b
++ entry .Inspectable   すべての値が持つデバッグ用の描画の型クラスで、`value is Inspectable` と書く
+
+% 1 1 0 09ab7b24ba2ec69305bb3b8ceef5505a
+
+@ 0 4 0 0ddff45bb7141f170ac0cef04dac2533
++       メソッドが一つの型クラス `text(value: Self): Text` であり、デバッガーやテスト出力でプログラマーが読むために値を描画する。
++       `Showable` と違って全域的である。型が専用のインスタンスを持たないときは、（`Inspectable2` から継承した）`derived` が次のものを順に試してインスタンスを与える。
+
+@ 0 6 0 1fb818e5fa78f5b413605197cb234ac1
++       1. `Encodable in Text`。借りて `⸤…⸥` の印を付ける。
++       2. `Showable`。借りて `⸢…⸣` の印を付ける。
++       3. `Optional` 型（`Mandatable`）。`｢value｣` または `○` として描画する。
++       4. `Derivation` による構造的な描画。あらゆるケースクラス、enum、シールされた
++           階層に対して使える。
++       5. 値の `toString`。`“…”` の印を付ける。
+
+@ 0 3 0 108bf24c180c100b1fa76ac4dec30250
++       型のコンパニオン、またはここにあるネイティブのインスタンスは、これらすべてに優先する。
++       印は意図的なものである。借りた描画はワイヤ形式か人のための形であってデバッグ用の形ではなく、読み手は型にインスタンスがないことを一目で分かるべきである。
+
+% 2 1 0 070380bf901687a108c3159f1d566bc0
+
+% 3 1 0 01a167ade2b612fa1059c935cb7d746f
+
+% 0 1 0 038481e8483316b510f11c01e67fb2d5
+
+% 0 1 0 1475fadc6b8c1dc11297158ef4566fe2
+
+% 0 1 0 04a0c3e0d6dd71a30a5c2663899a1e3b
+
+% 0 1 0 1c7de876e001e2d30178b0071e0f869c
+
+% 0 1 0 120c0a0b7482f9760b1f695d7a0c41b4
+
+% 0 1 0 0c472f89b5ecfde5140bd594c5feba5a
+
+% 1 1 0 0a5b6c611d6d0b8f0da3f1ddca05a4f6
+
+@ 0 10 0 10ab48c31d52ca761acb54ebf94c8948
++       インスタンスがなくてもコンパイルエラーにはならないので、扱える範囲は黙って後退しうる。型が細分化を得て、その描画が `toString` に落ちるのである。
++       `.fallbacks` は、それを防ぐためにライブラリのテストが検査するものである。
++       インスタンスはその対象の部分型にわたって書くべきである（`[self <: Port] => self is Inspectable`）。`Self` は非変であり、`Port` に対するインスタンスは `Port over Tcp` を扱わないからである。パラメーターを持つ対象では、二つ目の型パラメーターではなくワイルドカードでパラメーターを束縛する（`[self <: Cookie[?]]`）。型パラメーターは黙って解決に失敗することがある。
++       不透明なコレクション `List`、`Set`、`Map`、`Chain` は例外であり、厳密な `Self` を保つ。
++       インスタンスは、インポートなしで見つかるように、トップレベルではなく対象のコンパニオンに置く。
+
+@ 0 1 0 14c0d25300a6ac3210d3be7e8aff6281
++       使われている記法を分類ごとに示す。
+
+@ 0 9 0 0581782c39906d280135a921ac1b6073
++       - コンテナー：`[a, b]` リスト、`{a, b}` 集合、`{k → v}` マップ、`⟦k → v⟧` 台帳、`⟨ a b ⟩`
++         シーケンス、`⦋…⦌` 配列、`⁅…⁆` 凍結済み配列、`a ⋰ b ⋰ ..?` 遅延チェーン
++       - 直積：`Name(field:value ╱ field2:value)`、`(a ╱ b)` タプル、`(name:value ╱ …)`
++         名前付きタプル
++       - オプショナル性：`｢value｣` 存在する、`○` 存在しない
++       - テキスト：エスケープ付きの `t"…"`、文字は `'x'`
++       - 数：`3`、`3L`、`3.1F`、`3.toByte`、`BigInt(42)`。サイズ付きの数は `42ᵘ⁸`、`-7ˢ³²`、`2Fᵇ⁸`、
++         `3.14ᶠ⁶⁴`
++       - 位置：`1ˢᵗ` 序数、`1ˢᵗ‥5ᵗʰ` 区間、`⟪4:8+5⟫` スパン
+
+% 0 1 0 028c9fa119d499711832636bca3efefc
+
+% 0 1 0 0c7de4a9cef4e99c108787751c26e02d
+
+% 0 1 0 1ec09ea5f9520b9317bc0800d08a225d
+
+@ 0 9 0 1c45a5bcb66a916515cb3ec319ace763
++   entry #text   値をプログラマーが読むために描画する
++   entry #contramap   別の型に対するインスタンスで、それをこの型への変換を通して描画する
++       `inspectable.contramap[Celsius](_.degrees)` は `Celsius` を、その度数が描画されるように描画する。
++       ラムダは純粋でなければならない。
++   entry .fallbacks   描画のうちネイティブでなかったもの、つまり `“…”`、`⸢…⸣`、`⸤…⸥` を含むもの
++       借りた描画または `toString` の描画を示す三つの印のいずれかを含む描画を、順に返す。
++       ライブラリのテストは、自身の型がすべてネイティブに inspect されることを検査し、扱われていない型が報告される*こと*を検査するケースと組み合わせるべきである。そうすれば、検査が空虚に通ることはない。
+
+% 2 1 0 1bebacdbbe0026080227a512d07915b9
+
+% 3 1 0 1b812eff558d441f19b36d79cf4e60be
+
+% 0 1 0 1d71d747992e8e1e1ba35accae1a5a78
+
+% 1 1 0 1de19ba0e6b6d4600d09671c9c712d39
+
+@ 0 7 0 0995a3a29476b0ec13312c3ef7495be4
++   entry .marker   文字がフォールバックの印 `“`、`⸢`、`⸤` のいずれかであるかどうか
++   entry .escape   文字を Scala のリテラルに書くようにエスケープする
++       改行、タブ、復帰、バックスラッシュ、二重引用符、アポストロフィ、バックスペース、改ページはバックスラッシュによるエスケープになる。それ以外の印字可能な ASCII の外の文字は
++       `\uXXXX` になる。
++       二つ目のパラメーターが `true` のとき、エスケープ文字は `t"…"` リテラルと同じく `\e` と書かれる。
++   entry .Derivation   直積と直和に対する `Inspectable` の構造的な導出
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 80 0 0569e24877c6fe891be71a3762c98b58
++         wisteria の `Derivable[Inspectable]` である。
++         直積は `Name(field:value ╱ …)` として描画され、各フィールドはその静的な型のインスタンスで描画される。フィールドのないケースオブジェクトは名前だけになる。タプルは名前とラベルを省く。
++         直和は値が該当するバリアントを描画する。
++         `derived` は `Reflection` を持つあらゆる型に対してこれに到達し、`Inspectable.enumeration` はすべての Scala の `enum` に対してこれに到達する。
++     entry .conjunction   直積の描画：その名前とラベル付きのフィールド
++     entry .disjunction   直和の描画：そのバリアントの描画
++   entry .char   `Char` を、引用符で囲みエスケープしたリテラル `'x'` として描画する
++   entry .int   `Int` を十進数で描画する
++   entry .long   `Long` を接尾辞 `L` 付きで `3L` と描画する
++   entry .byte   `Byte` を `3.toByte` として描画する
++   entry .short   `Short` を `3.toShort` として描画する
++   entry .string   `String` を、エスケープした文字列リテラル `"…"` として描画する
++   entry .text   `Text` を、エスケープした `t"…"` リテラルとして描画する
++       すべての制御文字と引用符は Scala がエスケープするようにエスケープされ、エスケープ文字は `\e` となる。そのため、改行を含むテキストは `\` と `n` を含むテキストと区別でき、描画をコードに貼り戻すこともできる。
++   entry .float   `Float` を接尾辞 `F` 付きで描画し、その無限大と NaN は名前で描画する
++   entry .double   `Double` を描画し、その無限大と NaN は名前（`Double.NaN`）で描画する
++   entry .boolean   `Boolean` を `true` または `false` として描画する。`Affirmation` は要らない
++   entry .unit   `()` を描画する
++   entry .bigInt   `BigInt` を `BigInt(42)` として描画する
++   entry .bigDecimal   `BigDecimal` を `BigDecimal(1.5)` として描画する
++   entry .unset   `Unset` を `○` として描画する
++   entry .reflectEnum   静的に `reflect.Enum` と型付けされた値を、その `toString` で描画する
++       リフレクションが得られない、`reflect.Enum` そのものと型付けされた値だけのためのものである。型が分かっている enum の値は、`.enumeration` によって構造的に描画される。
++   entry .enumeration   あらゆる Scala の `enum` の描画を、フィールドのラベル付きで導出する：`Circle(radius:5)`
++       すべての enum が持つ借りた `Showable` の描画（ラベルを失う）よりも優先されるが、専用のインスタンスを定義する enum には譲る。
++   entry .tuple   タプルを `(a ╱ b)` として描画し、各要素はその静的な型のインスタンスで描画する
++       召喚の場所で分かっている要素の型をたどるので、inline である。
++       要素が分からない、ただの `Tuple` と型付けされた値は、`“…”` の印を付けてその `toString` として描画される。
++   entry .namedTuple   名前付きタプルを `(name:a ╱ age:b)` として描画する
++       名前付きタプルは不透明なエイリアスであり、`Derivation` はその中を見通せないので、専用のこのインスタンスを持つ。
++       ネイティブのインスタンスを持たない要素は、その要素だけが劣化する。
++   entry .u8   `U8` を接尾辞 `ᵘ⁸` 付きで描画する：`200ᵘ⁸`
++   entry .u16   `U16` を接尾辞 `ᵘ¹⁶` 付きで描画する
++   entry .u32   `U32` を接尾辞 `ᵘ³²` 付きで描画する
++   entry .u64   `U64` を接尾辞 `ᵘ⁶⁴` 付きで描画する
++   entry .s8   `S8` を接尾辞 `ˢ⁸` 付きで描画する
++   entry .s16   `S16` を接尾辞 `ˢ¹⁶` 付きで描画する
++   entry .s32   `S32` を接尾辞 `ˢ³²` 付きで描画する：`-7ˢ³²`
++   entry .s64   `S64` を接尾辞 `ˢ⁶⁴` 付きで描画する
++   entry .b8   `B8` を大文字の十六進数二桁と接尾辞 `ᵇ⁸` で描画する：`2Fᵇ⁸`
++   entry .b16   `B16` をゼロ埋めした十六進数四桁と接尾辞 `ᵇ¹⁶` で描画する
++   entry .b32   `B32` をゼロ埋めした十六進数八桁と接尾辞 `ᵇ³²` で描画する
++   entry .b64   `B64` を十六進数十六桁と接尾辞 `ᵇ⁶⁴` で描画する
++   entry .f32   `F32` を接尾辞 `ᶠ³²` 付きで描画し、その無限大は `∞` と `-∞` として描画する
++   entry .f64   `F64` を接尾辞 `ᶠ⁶⁴` 付きで描画する：`3.5ᶠ⁶⁴`
++   entry .q32   有理数 `Q32` を分数と接尾辞 `ʳ³²` で描画する：`3/4ʳ³²`
++   entry .q64   有理数 `Q64` を分数と接尾辞 `ʳ⁶⁴` で描画する
++   entry .bcd   十進数 `Bcd` を接尾辞 `ᵇᶜᵈ` 付きで描画する
++   entry .decimal   `Decimal` を接尾辞 `ᵈ` 付きで描画する：`3.14ᵈ`
++   entry .ordinal   `Ordinal` を一始まりで、英語の接尾辞付きで描画する：`1ˢᵗ`、`3ʳᵈ`、`11ᵗʰ`
++       一始まりの数はプログラマーが数えるときの数である。ゼロ始まりの形は実装の詳細であり、それを示すとすべての描画が一つずれてしまう。
++   entry .interval   `Interval` を `1ˢᵗ‥5ᵗʰ` として、空のときは `∅` として描画する
++   entry .span   `Span` をその形に応じて描画する：`⟪∅⟫`、`⟪@4+5⟫`、`⟪4:8+5⟫`、`⟪4‥8⟫`、`⟪4:8‥6:2⟫`
++       `Span` は五つの範囲のいずれかを `Long` に詰め込む。空、オフセットと長さ、行と列と長さ、行全体の範囲、領域である。
++       数は一始まりである。
++   entry .memory   `Memory` の量を丸めずに正確に `4194304B` として描画する
++   entry .digit   `Digit` を接尾辞 `ᵈᵍ` 付きで描画する
++   entry .message   `Message` を `m"…"` として描画する
++   entry .set   `Set` を `{a, b}` として描画する
++   entry .map   `Map` を `{k → v, …}` として描画する。その項目の順序に意味はない
++   entry .ledger   `Ledger` を挿入順に `⟦k → v, …⟧` として描画する
++       `Ledger` の順序には意味があり `Map` の順序には意味がないので、`Map` とは違う括弧を使う。描画は、値がどちらであるかを示さなければならない。
++   entry .sequence   `Sequence` を `⟨ 1 2 3 ⟩` として描画する
++   entry .list   `List` を `[a, b]` として描画する
++   entry .array   Scala の配列を、その要素の種類と下付き添字のインデックス付きで `⦋…⦌` として描画する
++       接頭辞は JVM の要素型（`Int` には `🅸`、オブジェクトには `🅻`、…）と次元を示し、各要素の前には下付きの数字でそのインデックスが付く。
++   entry .arraySeq   可変の `ArraySeq` を配列として描画し、`⦌ₛ` で閉じる
++   entry .stream   `Chain` を遅延的に、決して強制せずに描画する：`1 ⋰ 2 ⋰ 3 ⋰ ..?`
++       強制された要素は最大三つまで示す。強制されていない末尾は `∿∿∿`、終わりは `⯁` となる。
++   entry .frozenArray   凍結済みの `Array[element]^{}` を、下付き添字のインデックス付きで `⁅…⁆` として描画する
++   entry .option   Scala の `Option` を `Some(3)` または `None` として描画する
++   entry .none   `None` を描画する
+
+@ 0 1 0 0b7f9fd99975fa261dfdc16d8d3e0e2e
++ entry .Inspectable2   `Inspectable.derived` の優先度の低い置き場で、全域的なフォールバック
+
+% 1 1 0 099878106ac570f207b86fa846b538bb
+
+@ 0 8 0 1421eb500c42c89607032f3b70a8c30b
++       `Inspectable` のコンパニオンが継承するトレイトであり、`derived` がコンパニオンに書かれたすべてのインスタンスより低い順位になるようにする。
++       直接は使わない。その `derived` はコンパニオンを通して見つかる。
++   entry #derived   インスタンスを持たないあらゆる型のためのインスタンス：借りたもの、導出したもの、または `toString`
++       `Encodable in Text`（`⸤…⸥` の印付き）、`Showable`（`⸢…⸣` の印付き）、`Optional` 型（`｢value｣` または `○`）、`Reflection`（`Inspectable.Derivation` による構造的な描画）を試し、最後に値の `toString`（`“…”` の印付き）を試す。
++       エンコードされた形がエスケープまたはエンコードされている型は、借りた形が誤解を招くので、専用のインスタンスを定義しなければならない。
+
+% 2 1 0 07bd94bab987c04e0c039f20e487ab02
+
+% 3 1 0 10e26d299070d6281cc722d222d5c873
+
+% 0 1 0 11da9e1c35c709420b6404557d3f081e
+
+% 0 1 0 035881435be41cc403fe04226e3aef5e
+
+% 1 1 0 013e7d731d62d9a91a45be4bb9072a4f
+
+@ 0 1 0 15e01e2786c03ac61f5d7ebaa136afb8
++ entry .Affirmation   `Boolean` が表示される一対の語：`yes`/`no`、`on`/`off`、…
+
+% 1 1 0 0681e9a5657a6b65043d2ea736938da4
+
+@ 0 3 0 0a7e0b3da22e475a03c39528a002e595
++       二つのテキストからなるケースクラスで、コンテキスト値として選ばれる。
++       `Showable.boolean` がそれを必要とするので、`Boolean` はコンテキストがその方法を決めてはじめて表示される。
++       `affirmations` パッケージには四つあり、それぞれ名前でインポートする。それ以外の対は一行の given で書ける。
+
+% 2 1 0 1980f91307a0d8bc087bd93315cf6d0a
+
+% 3 1 0 0ffc3b9fc5bcb5361b36f287b3b0c329
+
+% 0 1 0 17ce223a7128eaab1b6a378e3d2ca72b
+
+% 0 1 0 119c1ee8696ed6cf1ec4696b95885c03
+
+% 1 1 0 1f58794f81ee33161442b4ef6ff32cfc
+
+% 0 1 0 05bb0eed180a403f12eb0b5154ea815e
+
+@ 0 3 0 05143ffeca4595da16346ce5396ece6e
++   entry #yes   `true` のテキスト
++   entry #no   `false` のテキスト
++   entry #apply   真偽値に対するテキスト：`true` なら `yes`、そうでなければ `no`
+
+@ 0 1 0 0e15c824007761fc011d54b2f97afaf9
++ entry .affirmations   `Boolean` を表示する標準の方法で、それぞれ名前でインポートする given
+
+% 1 1 0 0dc4c3f64feb2f40053104edef3668a9
+
+@ 0 3 0 08380eadc990ddac1bdea571efc8a23c
++       `Boolean` を表示するには `Affirmation` が必要であり、既定ではスコープに一つもない。
++       `import pkg.*` は given をインポートしないので、`import soundness.*` はこれらのどれも持ち込まず、一つを名前でインポートする。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0f02a63ef8e836b3160cacc04880deba
+
+% 1 1 0 1244e4fbd22b53f61fd25b7dd79e396f
+
+% 2 1 0 1efa81a507656bcc03ecbdc43a65a48f
+
+% 0 1 0 12a13ba3fc421d8200a8972225dcb95b
+
+% 0 1 0 0b45b0bec2b48f970b162d49ca17450a
+
+% 0 1 0 1263596568bf177c1877298821855e71
+
+% 1 1 0 071d924aa51010a3034c6cf34eb42582
+
+% 2 1 0 0c42cc5aed56f36514dd7fed76baa321
+
+% 0 1 0 0a674cd65b2ae611035354988ed7a030
+
+% 0 1 0 1d794d1c13653bee10212b344721eab9
+
+% 0 1 0 0dcada4ae6d2ad8d1b106189afd89927
+
+% 1 1 0 1c0eee80ec20787610b8dbf997cf49dc
+
+% 2 1 0 160f060b8acc1f760743271a89e4010a
+
+% 0 1 0 030eb204fe92383e07beb8d93516f75e
+
+% 0 1 0 08148be00d3bedb1126f4e778f34fe7b
+
+% 0 1 0 04edd3c03071d7dc1e30dde0fe9183c7
+
+% 1 1 0 02ea007cb2fc96c30d34f5d1067fb27e
+
+% 2 1 0 061e993975773ca5156469d02a9000b2
+
+% 0 1 0 1d0f0467c40618f819b4512bc40c636c
+
+% 0 1 0 0c81ff4a29a91fb91ccb297b2c9152d8
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 03ae70631e152b740eafc0592947c617
++   entry .yesNoAffirmation   `true` を `yes`、`false` を `no` として表示する
++   entry .onOffAffirmation   `true` を `on`、`false` を `off` として表示する
++   entry .trueFalseAffirmation   `true` を `true`、`false` を `false` として表示する
++   entry .oneZeroAffirmation   `true` を `1`、`false` を `0` として表示する

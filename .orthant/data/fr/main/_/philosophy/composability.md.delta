@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 13e0f437e82a946314fb7b5ee55f846a
++ Un pipeline de [flux](/doc/soundness/modules/streams.md) en est l'exemple le plus clair. Chaque étape reçoit
++ un flux et produit un flux, si bien que les étapes s'enchaînent sans adaptateurs et dans tout ordre
++ qui a un sens :

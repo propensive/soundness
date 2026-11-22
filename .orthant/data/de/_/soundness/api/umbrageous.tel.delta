@@ -1,0 +1,98 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b32e05725835bca1f985912aa004d7f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 191066454a39ac3c195efbed2f3029ba
++ info   ein Compiler-Plugin, das Pakete shadet, indem es ihre Deklarationen beim Kompilieren unter ein neues Präfix verschiebt
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0551362ea18d00150c8814c990d689f8
++     _Umbrageous_ verlagert („shadet“) Pakete zur Kompilierzeit. Ist eine Abbildung von einem
++     Paket auf ein neues Präfix gegeben, wird jede Deklaration dieses Pakets und seiner
++     Unterpakete so kompiliert, als wäre sie unter dem Präfix geschrieben worden, sodass zwei
++     Versionen einer Bibliothek, oder eine Bibliothek und eine in eine andere eingebettete
++     Kopie, auf einem Klassenpfad leben können, ohne dass ihre Klassen kollidieren. Anders als
++     ein Shading-Werkzeug für Bytecode arbeitet es auf dem Quelltext, während er geparst wird,
++     sodass die geshadeten Namen das sind, was der Typer, das TASTy und jede spätere Phase sehen.
+
+@ 0 3 0 0b306703bd5128f8051ee7e7f374d665
++     Das Plugin wird aktiviert, indem man dem Compiler sein Jar als `-Xplugin:<path to the
++     umbrageous plugin jar>` übergibt (die `plugin.properties` des Jars nennt
++     `umbrageous.ShaderPlugin`), und jede Abbildung als Plugin-Option der Form
++     `<package>:<new-prefix>`:
+
+% 0 1 0 121f5d49fa83450310393c10f05ce4fa
+
+% 0 1 0 158741edf7b88012099d8f5dd584058f
+
+% 0 1 0 0e36e04daf9f65340e86dc80875c0fe3
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 16b13ae65161bc370eb5dc8c384580fb
++     Mit dieser Abbildung wird ein Quelltext, der `package testing.globe` deklariert, zu
++     `shaded.v1.testing.globe` kompiliert. In jedem Quelltext schreibt es drei Dinge um:
+
+@ 0 7 0 0cba03d85b0c4b7410c3d88ae5c5f149
++     - eine `package`-Klausel, deren Name ein abgebildetes Paket ist oder in einem liegt, wird
++       unter das Präfix verschoben; passen mehrere Abbildungen, gewinnt das längste Paket;
++     - jede `package`-Klausel erhält einen Wildcard-Import des Präfixes jeder Abbildung (außer
++       der Abbildung, die diese Klausel verschoben hat), sodass `import testing.globe.*` in
++       einem anderen Paket weiterhin aufgelöst wird, nun zum geshadeten Paket;
++     - eine voll qualifizierte Referenz `_root_.testing.…` auf ein abgebildetes Paket wird auf
++       `_root_.shaded.v1.testing.…` umgeleitet.
+
+@ 0 2 0 0303cc69276c0e611760105d3a526cdb
++     Eine Option, die nicht die Form `<package>:<new-prefix>` hat, wird als Warnung gemeldet
++     und ignoriert. Das Präfix darf Punkte enthalten.
+
+@ 0 4 0 141a643a31119ef60b78c9cf4d1e5624
++     Die Bibliothek ist das einzige, nur für die JVM bestimmte Source-Set `umbrageous.plugin`,
++     das vom Scala-Compiler und von nichts aus Soundness abhängt. Sie wird als eigenständiges
++     Artefakt veröffentlicht statt in einem Soundness-Bündel, da ein `-Xplugin`-Jar genau ein
++     Plugin deklarieren muss. Ihre beiden Klassen werden in das Umbrella `soundness` exportiert,
++     obwohl kein Programm sie zur Laufzeit braucht.
+
+% 0 1 0 0d68011425c7c64e1e7684730e0547a5
+
+% 0 1 0 1aa1b4d5641af56c029971e938ffc7d8
+
+@ 0 1 0 197de56ff3c2265f0de899e612533e27
++ entry .ShaderPlugin   die Klasse des Compiler-Plugins, genannt in der `plugin.properties` von umbrageous
+
+% 1 1 0 1bea3a3b3d3ea755072ff495c799e9f9
+
+@ 0 4 0 1edce66b60f01cb30e3c3d7f47817878
++       Das `StandardPlugin`, das der Compiler instanziiert, wenn das Jar von umbrageous mit
++       `-Xplugin:` übergeben wird. Es installiert eine einzige Phase, `Shader`, und übergibt ihr
++       die Optionen des Plugins, von denen jede eine Abbildung `<package>:<new-prefix>` ist,
++       angegeben als `-P:umbrageous:<package>:<new-prefix>`. Es wird nicht direkt verwendet.
+
+% 0 1 0 1ba35b0747441ab51f6b4ff3d195bc24
+
+@ 0 1 0 0ccd8843369b212b0582c852b8b72235
++   entry #name   der Name des Plugins, `umbrageous`, über den seine Optionen angesprochen werden
+
+@ 0 1 0 026291eff2343af81039b0f18b3f7cd2
++ entry .Shader   die Plugin-Phase, die abgebildete Pakete nach dem Parsen unter ihre Präfixe verschiebt
+
+% 1 1 0 181951bf227ecdd91010a27e799d496d
+
+@ 0 7 0 11dacdf90c70d8b3044ecf394092b093
++       Eine Phase namens `shade`, die nach `parser` und vor `typer` über den untypisierten Baum
++       jeder Kompilierungseinheit läuft. Sie wird von `ShaderPlugin` mit den Optionen des Plugins
++       konstruiert und parst jede als Abbildung `<package>:<new-prefix>`, wobei sie vor jeder
++       anderen warnt und sie überspringt. Dann schreibt sie jede `package`-Klausel eines
++       abgebildeten Pakets unter sein Präfix um, fügt jeder `package`-Klausel einen
++       Wildcard-Import des Präfixes jeder anderen Abbildung hinzu und leitet jede mit `_root_`
++       qualifizierte Referenz in ein abgebildetes Paket um. Sie wird nicht direkt verwendet.
+
+% 0 1 0 104b2e37635872f60990d8e8dffe39a1
+
+@ 0 1 0 128c6c0a5c8bedc50f53676df1495c4e
++   entry #phaseName   der Name der Phase, `shade`

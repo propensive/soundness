@@ -1,0 +1,79 @@
+orthant 2 language
+
+% 0 1 0 1e03424cfee6a5cf08bc0919fa79db82
+
+@ 0 1 0 0f55c16ef5a9281103adce6e91156496
++ Se lanza cuando Aviation no puede determinar un valor de fecha y hora civil.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 5 0 1e4dae32af3d4f640260bed6fd9669a2
++ Un `Moment` es una fecha, una hora de reloj y una zona horaria juntas, y este es el error que
++ lanzan todas las operaciones que construyen uno: analizar texto según un formato, construir una
++ fecha en un calendario, nombrar un mes y anclar una hora de reloj a un instante. El mensaje es
++ `the date was not valid because $reason`.
+
+@ 0 2 0 0c28884dd517f3511d3babbcff4b8dc5
++ Las duraciones no son momentos, así que una duración que no se puede analizar lanza
++ `Timespan.Error` (`↯/s.73.4`) en lugar de una variante de este.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 143decb5d8cc66890779b58410619d72
+
+@ 0 1 0 0b74023595698ef507d92bb3715b1235
++ La entrada no coincidía con el formato de fecha que se estaba analizando.
+
+@ 0 1 0 098ec7ddd50b42b90e3c4e045d72cab1
++ **Ejemplo.** `[↯/s.73.3.1] the date was not valid because 2026-13-01 does not conform to format ISO-8601 (... at ...)`
+
+@ 0 2 0 04af7532ec28053f1e3bc157b88a5aba
++ **Solución.** Pasa una entrada que coincida con el formato, o elige un formato que coincida con
++ la entrada.
+
+% 0 1 0 0b4e9a2038dc3da21a4524c6a7d9a879
+
+@ 0 2 0 1b6c61492ff8e2bb085d50387423eb84
++ Los componentes numéricos forman una fecha que no existe en el calendario elegido (p. ej., el
++ 30 de febrero en el calendario gregoriano).
+
+@ 0 1 0 1415c8f0c512f5921492ade0795defb8
++ **Ejemplo.** `[↯/s.73.3.2] the date was not valid because 2026-2-30 does not exist in the calendar Gregorian`
+
+@ 0 1 0 0acd84d63fc4d9f308f8f3d1a00cfb8f
++ **Solución.** Ajusta el día, el mes o el año a una combinación válida.
+
+% 0 1 0 0bca2e34a8a39f8008f1425a53345f8e
+
+@ 0 2 0 0e379201f30fe08e1d1c370907ced669
++ Un valor textual no nombraba una clase de fecha reconocida (p. ej., nombre de día, nombre de
++ mes).
+
+@ 0 1 0 1a759dca434c61e1015f311f01c39e39
++ **Ejemplo.** `[↯/s.73.3.3] the date was not valid because Ides is not a recognized weekday`
+
+@ 0 1 0 1f607ab27ef2f8b80436f03c8ead87d6
++ **Solución.** Usa uno de los nombres documentados para esa clase.
+
+% 0 1 0 0f020800e09f0ad714b154d2f49a6dc4
+
+@ 0 1 0 1f9ed17356246401118f542cf66ecb80
++ Una hora de reloj nombra un instante que no existe, porque los relojes se adelantaron más allá
++ de él.
+
+@ 0 1 0 0110e99a46dce5bb13b995609521d77f
++ **Ejemplo.** `[↯/s.73.3.4] the date was not valid because the wall-clock time does not exist in its timezone (a spring-forward DST gap)`
+
+@ 0 1 0 13fa12e77d33d62a1395dc3b180aec80
++ **Solución.** Elige una `GapPolicy`: la predeterminada empuja la hora hacia delante, más allá
++ del hueco, y otras la empujan hacia atrás o lanzan este error. Importa la política que convenga a
++ la aplicación.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 2 0 12f3589d8cbf62051ed41b4b1420c332
++ - Código fuente: `lib/aviation/src/core/aviation.Moment.scala`
++ - Relacionado: `↯/s.73.4` (`Timespan.Error`)

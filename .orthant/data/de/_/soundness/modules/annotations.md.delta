@@ -1,0 +1,475 @@
+orthant 2 language
+
+@ 0 1 0 0be26bd1e7f1b04c037738e58aeba05c
++ ## Annotationen
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 00b43f9e9883090116c0b8a11827e7dc
++ Die
++ [statischen Annotationen](https://docs.scala-lang.org/scala3/reference/other-new-features/annotations.html)
++ von Scala versehen Typen und Felder mit Metadaten. Die Sprache bietet keinen gewöhnlichen Weg, sie
++ wieder auszulesen, und dafür muss man normalerweise ein Makro schreiben.
+
+@ 0 3 0 0de229a2cd1ee9fa10c8c25e55868f99
++ Hier werden sie über eine [Typklasse] gelesen. Ruft man `Annotated` für einen Typ herbei, erhält man
++ die Annotationen an ihm, an seinen Feldern oder an den Varianten einer versiegelten Hierarchie. Die
++ Antwort wird zur [Kompilierzeit] ermittelt, ohne Reflection zur [Laufzeit], und der Verwender
++ schreibt kein Makro.
+
+@ 0 2 0 1ac2e182458633991ab6588883d89317
++ Die Annotation `@name`, die Felder in jedem Serialisierungsformat umbenennt, ist hier definiert und
++ wird auf diese Weise gelesen.
+
+@ 0 1 0 0767f0aa57654d0e00737f1e21bc7a8e
++ ### Über Annotationen
+
+@ 0 3 0 0abf6f4b5b80e0f51be1b6893d7661f8
++ Eine Annotation ist der Ort, an den bestimmte Metadaten gehören. Ein Übertragungsname steht an dem
++ Feld, das er umbenennt, und ein Marker an dem Fall, den er kennzeichnet. Die Annotation steht neben
++ dem, was sie beschreibt, und wandert mit ihm.
+
+@ 0 2 0 04d8d700fee5baec18006c2ba0abbce7
++ Annotationen werden in Scala zu wenig genutzt, weil sie schwer zu lesen sind. Reflection zur
++ Laufzeit ist langsam und untypisiert, und der Zugriff zur Kompilierzeit erfordert Erfahrung mit
++ Quotes und Splices.
+
+@ 0 4 0 0a5846638f4b66f11cc278104768cbf8
++ Die Typklasse `Annotated` verbirgt diese Mechanik. Eine Anfrage sagt, was gewünscht ist: welcher
++ Annotationstyp, an welchem Feld, an welchem Typ. Der Compiler liefert die Antwort als Wert. Ein
++ falsch geschriebener Feldname oder ein falscher Typ ist ein Kompilierfehler, und das ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md).
+
+@ 0 2 0 0d4a86d72c7bf8530bee6e539f01ffee
++ Alles stammt aus dem Paket `soundness`, und der zweite Import erlaubt den Beispielen, ihre
++ Ergebnisse auszugeben:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 16a88183e1d10e2210adbcad2b1908e9
++ ### Annotationen lesen
+
+@ 0 2 0 1b4317a04ca6dfe412768be2261675fa
++ Eine Annotation ist eine gewöhnliche Case-Klasse, die `StaticAnnotation` erweitert. Die Beispiele
++ verwenden drei davon und einige Definitionen, die sie tragen:
+
+% 2 1 0 03171844df3c388d10c42552da3af530
+
+% 0 1 0 0f4b995fb32b420a1ca96a7d02439e8d
+
+% 0 1 0 1a6fd7032f1d56c100ac763533a4b823
+
+% 0 1 0 0c1d580858569fcc1cbeadad5d3060c0
+
+% 0 1 0 009332a33ea3ee660d98ede325655db9
+
+% 0 1 0 19915447f0678efa11e8b28cbfc67229
+
+% 0 1 0 14c1a310a765f774167f07a2b058c015
+
+% 0 1 0 0f7a67827f97f5ad03c7960e4848ee84
+
+% 1 1 0 116bd6528ce8e21e007843a645b7d4dd
+
+@ 0 1 0 16424772ff3accfc1becb3a54436e408
++ Die Annotationen eines Feldes werden herbeigerufen, indem man den Typ und das Feld nennt:
+
+% 2 1 0 09ae3f0ea3819b711433f214302d7498
+
+% 3 1 0 0ffdb433ea98ef0919bf8303b84626fd
+
+% 4 1 0 0d4b91adce2b351d1722d46d4dad1f75
+
+% 0 1 0 0af567d1afa10341083931c10ebf0438
+
+% 1 1 0 1619c803dc69e7551d2aedf2285d314a
+
+@ 0 1 0 0a456f3cf649862f1480d9a1e1a6c4ad
++ `by` schränkt die Anfrage auf einen Annotationstyp ein:
+
+% 2 1 0 1ebf9bd56d5f679e1f2d32fcc41e358c
+
+% 3 1 0 0f033c3a393072ea11cba8775f43abe5
+
+% 4 1 0 0b1684cc49824081169717d4a1aa1213
+
+% 0 1 0 0cb570b2bfdd1cac1bc847e3753d4460
+
+% 1 1 0 11bd12c909bf292a18d98b58714662b4
+
+@ 0 1 0 03a867660af53c821683df7d02b1d3d0
++ Die einfache Form liefert die Annotationen am Typ selbst:
+
+% 2 1 0 05f0768ce1880b610afadb7b48c730db
+
+% 3 1 0 16101371c72d2ece039087cd14ea6fb7
+
+% 4 1 0 1c882556b63e7e59091586befbfbc71d
+
+% 0 1 0 0895ffe9bb48c93a1cba3614aa6952b5
+
+% 1 1 0 0f8a38c792344da70e7cf9f082d9c3d4
+
+@ 0 2 0 0ec0823efc26806a0e62724e907aaec3
++ `fields` liefert alle annotierten Felder auf einmal. Ein Feld ohne Annotation des angefragten Typs
++ fehlt in der Map:
+
+% 2 1 0 1182cd7da61377e10d3a5257fc1a273f
+
+% 3 1 0 1ad53cfc0ab153e10ea67be7e77b604f
+
+% 4 1 0 054b8f26063833f204434d8a57c5b4cc
+
+% 0 1 0 1f5ff6b8a7c4ddf2005aec49e42a656a
+
+% 1 1 0 149fec9ed92add8d15feeab7a2877439
+
+@ 0 2 0 00c34e98651d182a1fcc635f504ceddf
++ Die Antwort wird beim Kompilieren des Codes berechnet und ist im kompilierten Programm eine
++ Konstante. Ein Feld ohne Annotationen hat eine leere Menge, und ebenso ein Name, der gar kein Feld
++ ist:
+
+% 2 1 0 1b66dafd320d48b2047aed88968f2aae
+
+% 3 1 0 13cc5ff2259b895c076eb7f7788e39ac
+
+% 4 1 0 18312c2a365785d40790eebef69476df
+
+% 0 1 0 1b62750460e6d47a0f86f9015b5391c6
+
+% 0 1 0 08473e3d548c434a08c4c9f39aa7c842
+
+% 1 1 0 1e22a3b936fe29fa100bc696c9764ff5
+
+@ 0 1 0 0c2fbd66016a17e90db8984a8fdda292
++ ### Das annotierte Feld finden
+
+@ 0 2 0 17e02add7d9836e116eaf018008d4896
++ Oft lautet die Frage umgekehrt: *Welches* Feld trägt die Annotation? Wenn genau ein Feld sie trägt,
++ kennt die herbeigerufene Instanz seinen Namen:
+
+% 2 1 0 0f8058d677286c5c1e70b9348753fca6
+
+% 3 1 0 047e29e053a846be195a78e30dcd9dca
+
+% 4 1 0 163ce027bdecb6a600de76ac6c338e51
+
+% 0 1 0 00fccaebef5159b50d01f7920ffe959a
+
+% 1 1 0 08ba084811ef657d1573306f4bc5ed7e
+
+@ 0 2 0 1d662a401c99646917ab9add761d1449
++ Das Feld zu finden ist meist der erste Schritt, um es zu lesen oder zu schreiben, daher bietet die
++ Instanz auch eine [Linse](optics.md#lenses-as-values) darauf:
+
+% 2 1 0 0b93180978fa058f194f88829fbc589e
+
+% 0 1 0 10faa57fb663289d073643178fdb3d3b
+
+% 1 1 0 0848f93c2693c8870c019ed81a1daf94
+
+% 3 1 0 001674a9f24efd1311010dcaa29b5fb7
+
+% 4 1 0 1c1f7d5e745ca5160de8f74c1dc1dd74
+
+% 5 1 0 1989cefa5301a54319fd1a7fa5816fcb
+
+% 0 1 0 0cbbf9cd315bafc40f99258692bb709e
+
+% 0 1 0 0fd504180ea9f8b11431bd13ee529338
+
+% 0 1 0 12204f5a9827538701ec6c59977febd7
+
+% 1 1 0 095070ea880cef651d097eee5bcf6928
+
+@ 0 3 0 00e9a4761108fc521ca0ce486b959747
++ So findet eine Serialisierungsbibliothek „das als Bezeichner markierte Feld“, ohne dass man ihr
++ seinen Namen nennt. Trägt mehr als ein Feld die Annotation, ist `field` nicht verfügbar, denn der
++ Typ der Instanz hält fest, ob der Treffer eindeutig war.
+
+@ 0 1 0 0aa8af291695b581085ddf1e3ae9d077
++ ### Varianten eines versiegelten Typs
+
+@ 0 2 0 13df3585119b5ab01b906f963c8d7966
++ Die Fälle einer [Aufzählung] oder eines versiegelten Traits werden mit `under` abgefragt. Das
++ Ergebnis bildet den Namen jeder Variante auf ihre Annotationen ab:
+
+% 2 1 0 02ff8da8ec20f81a19c20a998d0c2f29
+
+% 0 1 0 0be42c5e934b3b501e25bca0c26cd4ec
+
+% 0 1 0 0e7a2839191937d71b9d625ac0681ddc
+
+% 0 1 0 0d0adb268a15c68712b7ba2e35c97f21
+
+% 0 1 0 1701c349a32ad66114dd3ee5a70682a8
+
+% 0 1 0 0f0e01927a755c1a007819ce12ac7dc2
+
+% 1 1 0 06871dbe01d6dce016d1fe9eebe752d0
+
+% 3 1 0 025c51a6bd13f49e0c0f41701022640a
+
+% 4 1 0 162695465a78089d03b6260b71bdbd3e
+
+% 5 1 0 0029d6d3b6bf17c10e04161389ce2426
+
+% 0 1 0 1b471124de6f36b40e5032401c4ef872
+
+% 1 1 0 06c345e714c7f29810daf9fc4f3e5e29
+
+@ 0 1 0 14952affebf8f481042969c9165bf436
++ Dies sind die Formen der Anfrage und was jede liefert:
+
+% 2 1 0 1f4a4a0c77055aea1defbb7fa1af868f
+
+@ 0 1 0 1074837ee201b57804ecb0ac6b5ba32d
++ column  Anfrageform
+
+% 1 1 0 09a38f29061d27c60e7afd456dc0e425
+
+@ 0 7 0 16f6c9a7cefd4a691740281c433750f6
++ column  Liefert
++ row  `T is Annotated`  `apply()`  die Annotationen am Typ `T`
++ row  `T is Annotated on "f"`  `apply()`  die Annotationen am Feld `f`
++ row  `T is Annotated by A on "f"`  `apply()`  die Annotationen vom Typ `A` am Feld `f`
++ row  `T is Annotated by A`  `fields`  jedes Feld auf seine Annotationen vom Typ `A`
++ row  `T is Annotated by A`, ein passendes Feld  `field`, `lens`  der Name des Feldes und eine Linse darauf
++ row  `Annotated under T`  `subtypes`  jede Variante von `T` auf ihre Annotationen
+
+% 1 1 0 010ed93be120a541064a69f7b0218e91
+
+@ 0 1 0 008708f7234c96c20f6584d14f57061d
++ ### Parametrisierte Annotationen
+
+@ 0 1 0 176b1dcf8c6cd53610ca554938d221c7
++ Eine Annotation kann ein Typargument nehmen, und eine Anfrage kann danach filtern:
+
+% 2 1 0 003f0e74c47cd4880fd7db21bc567dbe
+
+% 0 1 0 0afc9df64976139c0439f90ef24ac987
+
+% 0 1 0 17514da2d263ee260964fa793e19aa86
+
+% 1 1 0 0c18aef0c6091fed0098a0068f25f8c1
+
+% 3 1 0 10329fa2ec2df4fb0e766c480ac62b6a
+
+% 4 1 0 16ebcd0afb69393111abfde5fa62c482
+
+% 5 1 0 08f0136bbc7e2d0e15113db779694eab
+
+% 0 1 0 17de4d5507723b9c00daa692e616aebc
+
+% 0 1 0 08772ff2fd9368d31b42bb4a88634ecf
+
+% 1 1 0 0340ed58f678660305b6217d0f2f1067
+
+@ 0 2 0 1dc43ba1d7f4cb6506d9017366d40433
++ Das Feld `two` trägt einen Marker, aber keinen für `Person`, daher liefert die erste Anfrage dafür
++ eine leere Menge.
+
+@ 0 2 0 08b1910b0ece35f50c2c4ca40d2af154
++ Ein bloßes `@marker(1)` wird als `marker[Any]` inferiert. Eine Anfrage nach `marker[Any]` sieht es,
++ eine Anfrage nach `marker[Person]` nicht.
+
+@ 0 1 0 129b9ca60bb7ec7c100faba6aa88bdbf
++ ### Die Annotation `@name`
+
+@ 0 3 0 1a302ba7df4373080111c5313e2d18c8
++ Die Annotation `@name` ist hier definiert und wird von jedem Serialisierungsformat beachtet. Sie
++ benennt ein Feld oder eine Variante bei der Übertragung um. Ohne Argument gilt sie für alle Formate.
++ Mit einem Typargument gilt sie für eines:
+
+% 2 1 0 10f351ab4247dac006d89b24822b6fad
+
+% 0 1 0 0136154c7ce32de81f00b5e87d14a633
+
+% 1 1 0 0cc2caf674e3201b136076467ba3d3b6
+
+@ 0 2 0 05bfd561fe5e91f604a5aa3c32c1d1d0
++ Die [Ableitung] eines Formats liest diese über `relabelling`. Es bildet jedes umbenannte Feld auf
++ seinen serialisierten Namen ab, und eine Umbenennung für ein Format hat Vorrang vor der allgemeinen
++ Vorgabe:
+
+% 2 1 0 12b251447a9d95a91a76a51f6526bebc
+
+% 3 1 0 173b7a3f06f496ec13b70db5331dc07f
+
+% 4 1 0 0fa0a8edf10f88b30a2e3ce47213cad9
+
+% 0 1 0 18c4ef056cdcce6a0d2229083b988f63
+
+% 0 1 0 1e937459c98d1ebe1cf0ec31d8a3aee2
+
+% 1 1 0 00d654a3460a8d9c0ce94c61fa6827c9
+
+@ 0 2 0 1527562588c8302516765601ea54bb72
++ Darum dient eine einzige Annotation [JSON](json.md#renaming-fields), [XML](xml.md),
++ [YAML](yaml.md) und den übrigen gleichermaßen.
+
+@ 0 2 0 081f3850474a93b016a99f6c21740075
++ Vier Funktionen lesen Annotationen für eine Ableitung. In jeder enthält die Map nur die Felder oder
++ Varianten, die die betreffende Annotation tragen:
+
+% 2 1 0 124a51c97e96d0f004130050add43472
+
+@ 0 7 0 0a6ba0b7beaabe5b0b7b943849431350
++ column  Funktion
++ column  Liest
++ column  Liefert
++ row  `relabelling[T, F]`  `@name` an den Feldern von `T`  jedes umbenannte Feld auf seinen Namen in `F`
++ row  `variantRelabelling[T, F]`  `@name` an den Varianten von `T`  jede umbenannte Variante auf ihren Namen in `F`
++ row  `fieldAnnotations[T, A]`  Annotationen vom Typ `A` an Feldern  jedes Feld auf seine Menge von `A`
++ row  `subtypeAnnotations[T, A]`  Annotationen vom Typ `A` an Varianten  jede Variante auf ihre Menge von `A`
+
+% 1 1 0 1f768ea30584ece20e868f178e3bbb19
+
+@ 0 1 0 15326abc96bd60860ce5802a72a60488
++ Die letzten beiden sind die allgemeinen Formen hinter den ersten beiden.
+
+@ 0 1 0 0e790e9cbba1d51c186d1fdc2ba6759c
++ ### Felder über ihren Namen erreichen
+
+@ 0 2 0 17afae2b3e8cee3e0cade3e7299001a2
++ Die Felder einer Case-Klasse lassen sich zur Laufzeit auch über ihren Namen erreichen. Die Abbildung
++ wird beim Kompilieren des Codes erzeugt, nicht durch Reflection.
+
+@ 0 4 0 0e01c32eb5eedf600370dcaa4cda486f
++ Ein `Dereferenceable` liefert die Namen der Felder, den Wert eines Feldes anhand seines Namens und
++ den ganzen Datensatz als Map. Die Instanz ist mit dem Typ parametrisiert, den die Felder liefern.
++ Ein Datensatz, dessen Felder alle `Int` sind, dereferenziert zu `Int`. Jeder Datensatz
++ dereferenziert zu `Any`, das jedes Feld abdeckt.
+
+% 2 1 0 1453dd24c5836b2401c7f4db553414a9
+
+% 0 1 0 01d276d0040ec8290e6f64db9543f519
+
+% 0 1 0 15b7be4f4a9d4aa80f83297d1346f52f
+
+% 0 1 0 1f8e82a62403cf791e21390ad53f3c9f
+
+% 1 1 0 1396ccf72b4692bc0834e14df2ae1dac
+
+% 3 1 0 1cdcc00ec6f51c850eee4fe37f76b45c
+
+% 4 1 0 06edeb055c275c4d08f2f9f3a41efc7f
+
+% 5 1 0 054c5718628335080cb0608fa1d92eea
+
+% 0 1 0 1c17d589112169e31ae746da3bb77a02
+
+% 0 1 0 17256a412a367aa607a870afa119b96f
+
+% 0 1 0 12d4561d7cc4f70517d09bc09cab282c
+
+% 1 1 0 0ac275903d194bf511c3c5ce508d51a7
+
+@ 0 1 0 1bcc5a100dcefb761d2ed3763b89e2f6
++ Die Namen und Member stammen aus einer Map und stehen nicht in der Reihenfolge der Deklaration.
+
+@ 0 2 0 0b1dcf78c4eda17e00324cbf021755d2
++ `membersOfType` wählt die Werte eines Typs aus einem beliebigen Datensatz aus. Ein generischer
++ Renderer oder eine Template-Engine kann damit die Felder eines Wertes ohne Cast lesen:
+
+% 2 1 0 1da28bcccf87488c051a337e702a1b7a
+
+% 3 1 0 036ce448caec758f0ba8eff90bbbdfe5
+
+% 4 1 0 1660cb095ddb418e1d439d771ddd8127
+
+% 0 1 0 0df9d6df879a148e00e9c6c9f240ac32
+
+% 1 1 0 0f1941b708c97cc91d0e9253548ebed3
+
+@ 0 3 0 0402aeeb39a92b5f0b9d5636fd14d922
++ Jeder Accessor ist eine [Linse](optics.md), sodass ein über seinen Namen gefundenes Feld
++ geschrieben wie gelesen werden kann. `update` ersetzt das benannte Feld, und `modify` wendet eine
++ Funktion darauf an. Jede liefert einen neuen Datensatz, oder `Unset`, wo der Name kein
++ Konstruktorparameter ist:
+
+% 2 1 0 1d0dd3acc168e3891ec55da2ba5695b4
+
+% 3 1 0 15ddb0389d42e06a103b16f3c14c6e5b
+
+% 4 1 0 02936296aa0195841b03e54dd2918e48
+
+% 0 1 0 1e35b80c9ee11e090731b1b7281ca89b
+
+% 0 1 0 010d33b906ad536e06625b889c5db961
+
+% 0 1 0 17d018923568a0c00d30bb9921e8564c
+
+% 1 1 0 16ab0a4421e39d1c00d839fd16fd0aca
+
+@ 0 3 0 0f8891e3817be9311cf4b360c496bfd0
++ Ein Feld ist nur dort schreibbar, wo sein Typ jeden Wert annimmt, den die Instanz liefert. Die
++ Felder eines Datensatzes, der `to Any` dereferenziert wird, können gelesen, aber nicht geschrieben
++ werden, da ein `Any` nicht in ein `Long` gelegt werden kann:
+
+% 2 1 0 084273d2e9d0cda31a7c591e33d4ed35
+
+% 0 1 0 01b7da61c25f6b5002ad042101756328
+
+% 1 1 0 0dea52613748698511969eeae87b3494
+
+% 3 1 0 049081a39defc4f913c591a0518c49db
+
+% 4 1 0 1e0f934ce4fdcfd30ff26e34552dc1f7
+
+% 5 1 0 1b949efab0a730fb0a5704bfdf306d0d
+
+% 0 1 0 1a6e126cc0ba2de5073ef79b4ed1b567
+
+% 0 1 0 0d427dafb91c9f7c142f449df159207b
+
+% 1 1 0 114cb050f83143b10e369ca8c3e438c4
+
+@ 0 1 0 16c5dd520ff3ea41098fb3dea0d9245b
++ Dies sind die Member eines `Dereferenceable` für einen Datensatz vom Typ `T`, der `to R`
++ dereferenziert wird:
+
+% 2 1 0 1cf6a04bb406c27b1d37b333bf06ebc3
+
+% 1 1 0 01c9bb892ec24f681749b79d4fa8f209
+
+@ 0 7 0 0dd85d05d423bb480dc22ff4f0448640
++ column  Liefert
++ row  `names(record)`  die Feldnamen
++ row  `select(record, name)`  den Wert des benannten Feldes, als `R`
++ row  `members(record)`  jeden Feldnamen auf seinen Wert
++ row  `lens(name)`  eine Linse auf das benannte Feld, oder `Unset`
++ row  `update(record, name, value)`  ein neues `T` mit ersetztem Feld, oder `Unset`
++ row  `modify(record, name)(lambda)`  ein neues `T`, bei dem die Funktion auf das Feld angewandt wurde, oder `Unset`
+
+% 1 1 0 007e0167eac975c40de117ac559db86b
+
+@ 0 3 0 0d3760b73a5e4c5703e167d8858be435
++ Die Abbildung ist eine kompilierte Tabelle von Accessoren. Ein Feld zu erreichen kostet einen
++ Methodenaufruf, und ein Name, den der Typ nicht hat, wird dort entdeckt, wo die Tabelle aufgebaut
++ wird, nicht durch eine reflektive Suche, die zur Laufzeit scheitert.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 1 0 0ba5d0f459983909033bf93564d24c3b
++ - [JSON](json.md#renaming-fields), [XML](xml.md), [YAML](yaml.md) und die anderen Formate beachten
+
+% 0 1 0 17a31a0a43f40e310709fe85e8cc1092
+
+@ 0 7 0 042fc81ed92526de0504975ed5bebc3e
++ - [Optiken](optics.md) beschreibt die Linsen, über die das annotierte Feld und die benannten Felder
++   erreicht werden.
++ - [Ableitung](derivation.md) beschreibt die generierten Typklasseninstanzen, die Annotationen
++   heranziehen.
++ - [Metaprogrammierung](metaprogramming.md) beschreibt die Makros, die diese Typklasse überflüssig
++   macht.
++ - [CBOR](cbor.md), [Protobuf](protobuf.md), [Datenbanken](database.md) und [MCP](mcp.md) lesen
++   Annotationen an Feldern und Methoden.

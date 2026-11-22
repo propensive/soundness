@@ -1,0 +1,158 @@
+orthant 2 language
+
+@ 0 1 0 0bb7406c65f4195e0bb145cab3f9b16f
++ # Strukturierte Nebenläufigkeit
+
+@ 0 6 0 13f37f2935a89dc50a1d863ca56b1266
++ Nebenläufigkeit ist in Soundness strukturiert: Aufgaben werden innerhalb eines
++ Geltungsbereichs gestartet, der sie besitzt, und dieser Geltungsbereich endet erst, wenn seine
++ Aufgaben beendet sind. Ein Fehlschlag in einer Aufgabe pflanzt sich zu ihren Geschwistern und
++ ihrem Elternteil fort, statt unbemerkt zu verschwinden, und das Abbrechen eines
++ Geltungsbereichs bricht alles darunter ab. Nebenläufige Lebensdauern verschachteln sich wie die
++ Blöcke gewöhnlichen Codes, sodass parallele Arbeit denselben klaren Anfang und dasselbe klare
++ Ende hat wie sequenzielle Arbeit, und keine Aufgabe überdauert den Geltungsbereich, der sie
++ gestartet hat.
+
+@ 0 1 0 197386b47088f7c602111ce79f77f5c5
++ ## Der Geltungsbereich besitzt die Aufgabe
+
+@ 0 2 0 122364f1850af72c1a094f00bc0b954f
++ `supervise` öffnet einen Geltungsbereich; `async` startet darin. Der Geltungsbereich kehrt erst
++ zurück, wenn seine Kinder zur Ruhe gekommen sind, unabhängig davon, ob etwas auf sie gewartet
++ hat:
+
+% 2 1 0 131b45c65c2cbdbc1cd3332e5f3860b1
+
+% 3 1 0 13522da2bda70d891cb11e255874a32f
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 19151d611c6de0cf17c9d86d2b0e35ea
+
+% 0 1 0 198b0d13abd9393819d2f453eab75e2d
+
+% 0 1 0 01ec73c9ff3d190c083dae6e683c7f49
+
+% 1 1 0 02960e878ef535d4013a8c00daa8e194
+
+@ 0 2 0 18ed9a83de3ba1121fcfec723995cd6b
++ Das unstrukturierte Gegenstück — zwei Threads starten und hoffen — unterscheidet sich darin,
++ was geschieht, wenn etwas schiefgeht, und das ist der einzige Fall, für den es sich zu
++ entwerfen lohnt.
+
+@ 0 1 0 0119fd13b3a0abf61f86d235074b75d3
++ ## Was die Struktur einbringt
+
+@ 0 5 0 1001e3ca96a6033218604767be661356
++ **Ein Fehlschlag hat ein Ziel.** Ein Thread, der wirft, hat niemanden, dem er berichten
++ könnte, daher wird seine Exception ausgegeben oder verschluckt oder an einen Handler
++ geliefert, der keine Ahnung hat, was versucht wurde. Der Fehlschlag einer Aufgabe pflanzt sich
++ zu dem Geltungsbereich fort, der sie besitzt, und dieser bricht seine übrigen Kinder ab — denn
++ Arbeit, die im Auftrag einer bereits fehlgeschlagenen Berechnung unternommen wird, ist Arbeit,
++ deren Vollendung niemand will.
+
+@ 0 3 0 168f36c529a1ddb11c91d4ac1889696f
++ **Der Abbruch erreicht den ganzen Teilbaum.** Das Abbrechen eines Geltungsbereichs bricht
++ seine Kinder ab, die ihrerseits ihre abbrechen. Es gibt keine Menge von Thread-Referenzen zu
++ pflegen und keine Möglichkeit, eine zu übersehen, weil der Besitzbaum bereits existiert.
+
+@ 0 3 0 1734226298b0771d09a734b7d9dce9da
++ **Nichts überdauert seinen Daseinsgrund.** Eine Aufgabe kann den Geltungsbereich, der sie
++ gestartet hat, nicht überdauern, daher hat die Frage „läuft diese Hintergrundarbeit noch?“
++ eine strukturelle Antwort statt einer empirischen.
+
+@ 0 1 0 15c104ca12628b581368636687d93c9f
++ ## Was an der Grenze geschieht
+
+@ 0 2 0 1215a63081f0fec919832f41c30b1a60
++ Ein Geltungsbereich muss entscheiden, was mit einem Kind geschehen soll, das noch läuft, wenn
++ der Rumpf des Elternteils endet, und diese Entscheidung ist explizit statt angenommen. Die
++ *Nachlassregelung* benennt sie:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 5 0 02f9eabe5d2a5bd5031f992d73fe91f9
++ column  Ein Kind, das noch läuft, wenn der Rumpf endet
++ row  `probates.awaitProbate`  wird abgewartet
++ row  `probates.cancelProbate`  wird abgebrochen
++ row  `probates.panicProbate`  ist eine Panic
++ row  `probates.failProbate`  löst einen `Async.Error` aus
+
+% 1 1 0 02b162bee2ac8c73182faf5b2d29cbe2
+
+@ 0 2 0 0106bf45d998429e1f90765a44b49f8b
++ Jede davon ist irgendwo vertretbar, und keine lässt sich gefahrlos erraten, weshalb es keine
++ Vorgabe gibt.
+
+@ 0 3 0 0f9a271a621e231714e13ca6cbea23f6
++ Ein `daemon` ist die bewusste Ausnahme: Fire-and-Forget-Arbeit, auf die der Geltungsbereich
++ nicht wartet und die er abbricht, wenn er endet. Auch er kann seinen Geltungsbereich nicht
++ überdauern — unstrukturiert ist er nur insofern, als nichts auf sein Ergebnis wartet.
+
+@ 0 1 0 093a2db087bdf0970effe2c86d222749
++ ## Suspendierung ist sichtbar
+
+@ 0 3 0 0c9ada3a2b11f8c91865b55221b3ef06
++ Warten ist ein Effekt und erscheint in den Typen wie jeder andere. Das Warten auf eine Aufgabe
++ oder ein Promise, Schlafen und Nachgeben verlangen alle eine `Monitor`-Capability, sodass eine
++ Methode, die blockieren kann, dies in ihrer Signatur sagt:
+
+% 2 1 0 0a81a6945bdf8f41163183cbc92610d8
+
+% 3 1 0 1119f40b1c8cc0c3084094d7507216fd
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 103ac5c66c4d87620b1e7fa5e43ade81
+
+% 1 1 0 084ebc2b90c46ba60dd5d98eeb6ba0fd
+
+@ 0 3 0 142a85026146b6e618e1104948290a66
++ Dies ist dieselbe Disziplin, die [ehrliche Signaturen](honest-signatures.md) auf Fehlschläge
++ anwenden. Ein Aufrufer kann allein am Typ sehen, ob eine Methode den Thread, auf dem sie
++ aufgerufen wird, parken könnte.
+
+@ 0 5 0 0592092f3d4016011f6d454c644a7c85
++ Darunter ist die Ausführungseinheit ein `Strand` statt eines Threads, mit den vier
++ Operationen, die die Suspendierung braucht: unterbrechen, warten, parken und entparken. Da ein
++ Supervisor Stränge liefert und ein Supervisor ein Wert ist, lässt sich ein Scheduler, der nicht
++ auf Threads aufbaut — eine Ereignisschleife über den Waitable Sets von WebAssembly —, einsetzen,
++ ohne Code zu ändern, der Aufgaben startet oder auf sie wartet.
+
+@ 0 1 0 1963ce40bed34c001fc6cbad16727a56
++ ## Die Fehler eines Daemons wandern nicht rückwärts
+
+@ 0 5 0 0ebb9e2b9c61c748166f7639ca2a8937
++ Eine Feinheit folgt daraus, Besitz ernst zu nehmen. Der Rumpf eines Daemons kann keinen
++ Fehler-Handler aus dem Code erfassen, der ihn gestartet hat, denn bis der Daemon fehlschlägt,
++ ist dieser Code weitergegangen — den Fehler dorthin zu liefern hieße, eine bereits beendete
++ Berechnung fortzusetzen. Ein fehlschlagender Daemon eskaliert daher als `Fault`, den ein
++ Programm dort abfängt, wo es das Unerwartete behandelt.
+
+@ 0 3 0 1453cbc75f08509a147270d4cbcb5392
++ Dies ist die Art Fall, die unstrukturierte Nebenläufigkeit undefiniert lässt und die Struktur
++ ans Licht zwingt: Die Frage „wohin geht dieser Fehler?“ hat immer eine Antwort, selbst wenn die
++ Antwort „nicht dorthin, wo Sie es vielleicht angenommen haben“ lautet.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 6 0 01da9b750294f7371580b6c3a28977e0
++ Struktur schränkt ein, was sich ausdrücken lässt. Arbeit, die ihren auslösenden
++ Geltungsbereich tatsächlich überdauern muss — etwa ein Hintergrunddienst, der während einer
++ Anfrage gestartet wird —, kann nicht einfach gestartet und vergessen werden; sie muss einem
++ Geltungsbereich gehören, der lange genug lebt, und das heißt, einen solchen einzurichten. Das
++ ist mehr Arbeit, als einen Thread zu starten, und es ist aus gutem Grund mehr Arbeit: Ein
++ Thread ohne Besitzer ist genau das, über dessen Lebensdauer danach niemand mehr nachdenken
++ kann.
+
+@ 0 3 0 10fa488026cf4af813c5297b417ddcb8
++ Siehe [abgegrenzte Geltungsbereiche](delimited-scopes.md) für die allgemeine Gestalt, von der
++ dies eine Instanz ist, und [Capture-Checking](capture-checking.md) dafür, wie das Entkommen
++ unmöglich gemacht statt bloß erschwert wird.

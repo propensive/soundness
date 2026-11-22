@@ -1,0 +1,343 @@
+orthant 2 language
+
+@ 0 1 0 1e96ea0f5d5864e21fc04232e6b5a029
++ ## Stack trace
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 3 0 06e2947d07476a06161e897e12bd81aa
++ Uno stack trace della JVM descrive le classi compilate, non lo Scala che le ha prodotte. Una
++ lambda appare come `$anonfun`, un metodo di estensione acquisisce `$extension`, e un operatore
++ si scrive `$plus`.
+
+@ 0 3 0 035a768aadbefb5805c195e7a0abc46b
++ Uno `StackTrace` cattura una traccia come valore [immutabile], con i suoi frame, le sue
++ posizioni e la sua catena di cause. Poi ne fa il *demangling*, così che i nomi che uno
++ sviluppatore legge siano più vicini ai nomi che ha scritto.
+
+@ 0 2 0 1549fd7482849d03034db40079ea8218
++ Accanto a esso ci sono due piccoli strumenti correlati. Un `Codepoint` è la posizione nel
++ sorgente di un punto di chiamata, catturata automaticamente. Un `Fqcn` è un nome di classe
++ pienamente qualificato e validato.
+
+@ 0 1 0 14a7b141559c4132107a8f01da413439
++ ### Sugli stack trace
+
+@ 0 3 0 0c5622f0c8b9f15d1859bc7669cc859f
++ Lo stack trace di un `Throwable` è uno stato mutabile e stampabile. L'idioma standard lo scrive
++ su uno stream. Esaminarlo in un programma significa frugare tra gli `StackTraceElement`, i cui
++ nomi sono quelli del compilatore e non quelli del programmatore.
+
+@ 0 4 0 099f9ef88c9b4b020803f4af337ef4ac
++ Qui gli [errori](errors.md) sono valori. Anche le loro tracce dovrebbero esserlo: confrontabili,
++ trasformabili, e rese dove e come sceglie il programma. Una traccia che si può accorciare,
++ risolvere e rendere come valore porta l'[immutabilità](../../philosophy/immutability.md) nella
++ diagnostica.
+
+@ 0 2 0 0d4a86d72c7bf8530bee6e539f01ffee
++ Tutto proviene dal package `soundness`, e il secondo import permette agli esempi di stampare i
++ loro risultati:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0732179481f356ba1c8d4ea4cf0c876f
++ ### Catturare una traccia
+
+@ 0 2 0 08e2654fe8e16f381615f3da61481db5
++ Qualsiasi `Throwable` si converte in uno `StackTrace`. Il valore contiene la classe
++ dell'eccezione, il suo messaggio, i suoi frame e la sua causa come un altro `StackTrace`:
+
+% 2 1 0 0023f48107075c3011bedd4523c365e3
+
+% 0 1 0 1239eff32dbff65f1ec85be143739def
+
+% 0 1 0 0023b3c844e4c38d1d3929c63231d182
+
+% 1 1 0 0aaf17715e88dde80656703b40c967e4
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 1925dcb6ceccd08715dd847ce69847b4
+
+% 0 1 0 0a282294469711bc1a518d955879ecd4
+
+% 0 1 0 145396a47c8c436e0e0f7b1c5de59ea0
+
+% 1 1 0 1560f6a7cae2a0361c77cb2501f59840
+
+@ 0 4 0 010702f57a590d1b00c11a3679039d1c
++ Ogni frame indica la sua classe e il suo metodo, già sottoposti a demangling. I frame di una
++ traccia catturata qui appartengono al meccanismo che esegue questi esempi, quindi non vengono
++ mostrati. `crop` e `drop` tolgono frame, come il meccanismo sotto il punto di ingresso di un
++ framework di test, così che una traccia resa mostri solo i frame che contano.
+
+% 0 1 0 0b1b96455af93be412cb1921ad306eca
+
+@ 0 3 0 1dbfee19dff0da7e00d624fcf01d1a6c
++ I nomi dei frame vengono riscritti dalla codifica della JVM verso quella di Scala.
++ `StackTrace.rewrite` è la funzione che lo fa, e si può provare su qualsiasi nome compilato. Un
++ operatore diventa il suo simbolo:
+
+% 2 1 0 02ea3766f0d3dad716d7e94e2d4813d8
+
+% 3 1 0 0300dc92cdee91bd1e4adcee68a1f30f
+
+% 4 1 0 13961497a9e6e1a307eb929781c8dadc
+
+% 0 1 0 01e74328f24ff8f40906fd27015e819a
+
+% 1 1 0 099a8c05fab101c318cb8534502f9781
+
+@ 0 3 0 174e519f279bd81a0f056ea5863bccb4
++ I marcatori sintetici del compilatore diventano glifi compatti. Un numero dopo un `$` diventa un
++ pedice, e il `$$` che unisce un membro privato alla classe in cui è stato espanso diventa un
++ unico separatore:
+
+% 2 1 0 138a1c17178c69240518579bce97ea3a
+
+% 3 1 0 19bd8378340ab34509806fe1994ef933
+
+% 4 1 0 165cda3ba602fd430c6fd1f5d6afa5a4
+
+% 0 1 0 1345264fbdb917d20247e6ad1b4402ba
+
+% 0 1 0 1d2a6d3848937584119f7640c9fdaeee
+
+% 0 1 0 0135268a48d1943d006521d947fef3e3
+
+% 0 1 0 0528cd69cb4df9e00a05b3745aa9b7d7
+
+% 1 1 0 15fd9eec6f00418f0ebd2aebade1ad8e
+
+@ 0 1 0 12c1c4b1cf3a87ad02f7b4401d48dbc1
++ Un escape `$uXXXX` diventa il carattere che codifica. Questi sono i glifi:
+
+% 2 1 0 03ad5a985a0924f80d1a5bb37552f1b2
+
+@ 0 3 0 1cd396afacd997b20ff8da94ab359494
++ column  Glifo
++ column  Marcatore JVM
++ column  Significato
+
+% 0 1 0 0386675806182b090d5c977aeb542a81
+
+@ 0 16 0 0cd17957c19a44081dea8485d0cd18a0
++ row  `Λ`  `$adapted`  lambda adattata: il bridge attraverso cui si chiama il metodo di una lambda
++ row  `α`  `$anon`  classe anonima
++ row  `ⲛ`  `<init>`  costruttore
++ row  `ι`  `<clinit>`, `$init$`  inizializzatore, dei membri statici di una classe o di un trait
++ row  `ℓ`  `$lzyINIT`, `$lzy`, `$lzyHandle`  valore lazy: il suo inizializzatore, campo o handle
++ row  `↑`  `super$`  accessor super
++ row  `⇢`  `protected$`, `inline$`, `$accessor`  accessor: protected, inline o di parametro
++ row  `≔`  `$_setter_$`  setter di trait
++ row  `⊢`  `$extension`  metodo di estensione
++ row  `∂`  `$direct`  metodo diretto, la forma cancellata di una funzione contestuale
++ row  `δ`  `$default`  argomento predefinito
++ row  `⊡`  `$retainedBody`  corpo inline conservato
++ row  `⊙`  `$outer`  riferimento esterno
++ row  `⁅⁆`  `$package`  file di package
++ row  `Ξ`  `$` finale  oggetto
++ row  `Σ`  `$mc…$sp`  metodo specializzato, con la sua firma
+
+% 1 1 0 164e74b7e8808a9716a9b19296240e59
+
+@ 0 3 0 0e6442ccdcd8f4930b0e6519a20cd72b
++ I marcatori sono quelli definiti dai `NameKinds` del compilatore Scala. Sono contenuti in
++ `StackTrace.Marker.all`, e `StackTrace.legend` ne è derivata, per essere resa accanto a una
++ traccia:
+
+% 2 1 0 1c2b315e89b66e201aa8a31dde7d9553
+
+% 3 1 0 12f885d67ba14d3d015204e996802639
+
+% 4 1 0 105487b07a60f3841c776690d3037605
+
+% 0 1 0 0e48a4e61af6631205368b1a7be44403
+
+% 0 1 0 178b1245cf831c1118b1a5f8bafe05ca
+
+% 1 1 0 1eeaa4f89261cbd603ccfaedba0dac15
+
+@ 0 1 0 1d22c77cb4778c4a023bf24e47483b83
++ Il risultato è una traccia che si legge come il programma è stato scritto, e non come è stato
++ compilato.
+
+@ 0 3 0 1cddddfe30f69b001409d4ad2bdd6a9d
++ Se un errore catturi o no una traccia è la scelta di `Diagnostics` descritta in
++ [errori](errors.md). Una traccia è adatta al debugging, e viene omessa dove gli errori sono
++ attesi e gestiti.
+
+@ 0 1 0 117c25de3a643f8808767f23148cb13d
++ ### Risolvere i frame nel loro sorgente
+
+@ 0 4 0 0a6330a84e05a343122d4c0ed8d800cb
++ Il demangling può solo riordinare un nome compilato. `$anonfun$3` diventa `λ₃`, che dice che è
++ stata eseguita una lambda, ma non *quale* lambda. I nomi che più hanno bisogno di spiegazione
++ sono proprio quelli che il compilatore conia dopo che il suo output è stato serializzato:
++ funzioni anonime, inizializzatori, bridge, specializzazioni. Nessuna riscrittura li recupera,
++ perché l'informazione non è nel nome.
+
+@ 0 3 0 1c1f166d25110f0e0f25d0dd4bc91e54
++ La posizione fa ciò che il nome non può fare. Il compilatore registra l'estensione di ogni
++ definizione, quindi la riga che un frame già porta basta a trovare la definizione da cui
++ proviene. Importare un risolutore fa sì che ogni traccia catturata nel suo ambito porti questa
++ informazione:
+
+% 2 1 0 16512a025d27a4261dc53e76ab816d09
+
+% 0 1 0 180fdfe8e4e546ef09308c38f27cb203
+
+% 1 1 0 172df2db186a0606193fdc7a3c2a9925
+
+@ 0 4 0 00af348f152cee151e0e5f9f4d18af38
++ Un `Frame` risolto acquisisce un `Source`: il percorso del file, la catena delle definizioni che
++ lo racchiudono, il nome della definizione stessa nel sorgente, e il tipo di definizione.
++ `displayClass` e `displayMethod` danno i nomi risolti dove sono noti, e ripiegano sui nomi
++ sottoposti a demangling dove non lo sono, quindi un renderer non ha bisogno di un ramo proprio:
+
+% 2 1 0 06964c0f346a5103090f84928a45e80f
+
+% 0 1 0 1f68fd1cdb77148d0e057af6883d76c1
+
+% 0 1 0 115cdfaf402ad465195f75e3f97d50d0
+
+% 0 1 0 0aa0a0b135f7ff080f0dfa8dcb79e072
+
+% 0 1 0 1249111cd9cf2dbd1c9afb70378ec5c2
+
+% 1 1 0 1fa0a5a6742ad80f0df1c429e9e628ef
+
+@ 0 2 0 147015f7b3511913059e4d15d5970862
++ Il `Kind` di una definizione dice che cos'è. `plumbing` dice quali tipi sono pura impiantistica
++ sintetizzata dal compilatore, così che un renderer possa attenuarli o scartarli:
+
+% 2 1 0 009d0a3bae6f01b8170fe590bfab74a3
+
+% 0 1 0 04e575bf02c471b304427c98f1d8d004
+
+@ 0 1 0 096b4b77537a53e411db5d6c02ebda10
++ column  Impiantistica
+
+% 0 1 0 187f393fea5793f41529a45e1880a485
+
+% 0 1 0 16b9c0664c3e1b2a06cdfd685ff82431
+
+% 0 1 0 16677b87fb08417f1b56c5b7447a73ee
+
+% 0 1 0 1f1d1489b885fe8f0575217348c6ef58
+
+% 0 1 0 1aa9a3754f7b1fe61b64a6e36c07f5e9
+
+% 0 1 0 1cae2a0a2c374ca202257eb994191d60
+
+% 0 1 0 016973e8ee04f51d1839572c40c74aff
+
+@ 0 5 0 1fa51a2012b4ad0d0434964281424a4f
++ row  `Bridge`  sì
++ row  `Forwarder`  sì
++ row  `Initializer`  sì
++ row  `Specialized`  sì
++ row  `Synthetic`  sì
+
+% 1 1 0 1d414b7719ee0d8a09c4632a634361e9
+
+@ 0 3 0 09397087fc87f4f9166108649b746332
++ La risoluzione costa una lettura di file per ogni classe di primo livello nominata nella
++ traccia, quindi è una scelta e non è automatica. Una traccia che si ha già in mano si risolve
++ esplicitamente, attraverso qualunque [classloader](classpath.md#choosing-a-classloader) sia in
++ grado di trovare le classi compilate:
+
+% 2 1 0 15fa6d890efdedd30908856304819871
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 0 1 0 1f5e84a4a4dca84a1dfed8aafce7aa62
+
+% 1 1 0 0c3c59ffafb6295514b50877ba77d023
+
+@ 0 4 0 1df74e0f181e42551305a3c5b83954f0
++ La [capability] di leggere quei file è una che questo strato volutamente non ha. Il risolutore
++ predefinito non fa nulla, e un'implementazione proviene da un modulo che ha un classpath. È
++ questo che fa funzionare gli stack trace senza modifiche dove una tale capability non esiste: in
++ un browser, in un binario nativo, o dentro un componente WebAssembly.
+
+@ 0 1 0 1c80173d64688bb8112374a1d922df8c
++ ### Codepoint
+
+@ 0 2 0 199366848d68b25c1af5ea1b7127edb1
++ Un `Codepoint` è il file sorgente e la riga di un punto di chiamata. Viene catturato
++ automaticamente ovunque un metodo ne chieda uno come [given]:
+
+% 2 1 0 1915a425d9d09ef41708759e73c8fd15
+
+% 0 1 0 07af0b09e7259bc8159c2e255af51ca8
+
+% 0 1 0 17dd01cc63db361918cde93128a6b871
+
+% 1 1 0 0665ce3554f3cb790c3c13f008566461
+
+@ 0 4 0 0f9642a9487612a11db2e4dc45131ab3
++ Una chiamata come `note(t"checkpoint")` dà un testo come `app.scala:42: checkpoint`, con la
++ posizione della chiamata e non della definizione. È così che i [log](logging.md), i
++ [test](testing.md) e le [cache](caching.md) sanno da dove sono stati chiamati, e nessun
++ chiamante passa una posizione a mano.
+
+@ 0 1 0 076188a2ed97df4114e9694f9004d111
++ ### Nomi di classe
+
+@ 0 2 0 18d3ad47dafe4b241ba26653c565adf2
++ Un `Fqcn` è un nome di classe pienamente qualificato che soddisfa le regole della JVM: ogni
++ segmento è valido, e nessuno è una parola chiave. L'[interpolatore] `fqcn"…"` lo verifica a
++ [tempo di compilazione]:
+
+% 2 1 0 08a102d4d9d0cf3301a0bcc972e048b1
+
+% 0 1 0 0e1f76d8b0f4c9450e50649a09dd7c12
+
+% 1 1 0 10b1ea7eaf1a41d2048212f891c29b73
+
+@ 0 1 0 1c892199d0b7317c0e78d05e4300be62
++ Una parola chiave di Java non è un segmento valido:
+
+% 2 1 0 0141e976b2fed74210d5393c654a311b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 11e73b45602a023a1a8a5ddc2f6a4d7b
+
+% 1 1 0 05c8e06c4ccc04360d90f2e8ddec6c09
+
+@ 0 3 0 0087c012472781a819a2a9e58a0cf7d4
++ A runtime, un nome di classe si verifica analizzandolo. Ovunque viaggi un nome di classe, come
++ il `Main-Class` di un manifest o una ricerca riflessiva, un `Fqcn` porta la garanzia che
++ potrebbe almeno nominare una classe.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 7 0 108df70cb7dbabb213169485f71b79ca
++ - [Errori](errors.md) descrive i valori di errore di cui queste sono le tracce, e la scelta di
++   `Diagnostics`.
++ - [Classpath](classpath.md) descrive i classloader che risolvono un frame nel suo sorgente.
++ - [Debugging](debugging.md) rende tracce e valori per l'ispezione.
++ - [Logging](logging.md) e [test](testing.md) usano i codepoint per dire da dove proviene un
++   messaggio o un controllo.
++ - [Concorrenza](concurrency.md) e [compilatore](compiler.md) riportano i loro fallimenti con
++   tracce come valori.

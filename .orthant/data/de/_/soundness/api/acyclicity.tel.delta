@@ -1,0 +1,1487 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 008e1f784f0ea89e0b486934b5cd6e3e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1383faeae4adb4080e61292bc56ab0aa
++ info   gerichtete Graphen als Werte: azyklisch durch Konstruktion, geordnet, durchsucht, bearbeitet und gezeichnet
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 1d09c200a0743abc1d5a382f99d1081d
++     _Acyclicity_ stellt einen gerichteten Graphen — die Gestalt eines Build-Systems, eines
++     Aufgabenplans, einer Typhierarchie oder der Abhängigkeiten eines Pakets — als
++     unveränderlichen Wert dar, mit den Operationen, die solche Graphen brauchen: eine
++     topologische Ordnung, Erreichbarkeit, transitive Hülle und Reduktion, das Herausschneiden
++     der Umgebung eines Knotens und Bearbeitungen, die den Graphen azyklisch halten. Sein
++     zentraler Typ ist `Dag`, ein Graph, der **keinen Zyklus enthalten kann**: Jede Art, einen
++     zu erzeugen, prüft entweder einmal (und löst `Dag.Error` aus) oder erhält die Azyklizität
++     durch Konstruktion, daher haben `linearized`, `reduction` und `traversal` keinen
++     Fehlerfall. Daneben stehen `Digraph`, der allgemeine gerichtete Graph, der einen Zyklus
++     enthalten darf und durch den einen geprüften Schritt `acyclic` in einen `Dag` umgewandelt
++     wird, und `Topology`, ein an Ort und Stelle bearbeiteter Graph, der seine topologische
++     Ordnung aktuell hält, während Kanten hinzukommen, und der, eingefroren, die Form ist, die
++     für schnelle Abfragen angelegt ist.
+
+@ 0 4 0 0e4f4b05976bf1c71e58f3a8e0b7b471
++     Jede Kante wird als **Abhängigkeit** gelesen: `a -> b` bedeutet, dass `a` von `b` abhängt,
++     daher sind die `successors` eines Knotens seine Abhängigkeiten, seine `predecessors` die
++     von ihm Abhängigen, die `sources` die Knoten, die von nichts abhängen (wo ein Build
++     beginnt), und die `sinks` die Knoten, von denen nichts abhängt. Eine topologische Ordnung
++     listet jeden Knoten *nach* seinen Abhängigkeiten auf.
+
+% 2 1 0 1274911920eac4e90516e5c24d99db2f
+
+% 3 1 0 1d0bbfbb915120701de533c396886dae
+
+% 4 1 0 0fa0866463feaebf1387532d08ee92d3
+
+% 0 1 0 00dc49615b68038b076b440b44ff49e9
+
+% 0 1 0 1efc6000b7ab7f1f17c768ad6344a4e5
+
+% 0 1 0 1054864bcc5cae0e1f4fc16dded9fe31
+
+% 0 1 0 1b0e4a7ab1e5a70a1654e93f014475cf
+
+% 0 1 0 1811c80c432602cd0b19cef7402e54fe
+
+% 0 1 0 17b92fc472a2e25e027d257be1098433
+
+% 1 1 0 1fa13d8ca714123e033408a2752fd1d0
+
+@ 0 8 0 0e1408e577dba0871ff050811c6d722f
++     All dies, und alles andere von Graphengestalt — ein `Hasse`-Diagramm, eine
++     `Map[node, Set[node]]`, ein `Ledger` —, teilt sich ein Vokabular über die Typklasse
++     `Nodal` (eine Knotenmenge und die Nachfolger jedes Knotens), mit `Bidirectional` für eine
++     Darstellung, die auch Vorgänger speichert, `Topological` für eine, deren Werte keinen
++     Zyklus enthalten können, und `Reachable` und `Invertible` für solche mit einer eigenen
++     Suche oder Umkehrung. Die Erweiterungen auf Paketebene (`nodes`, `edges`, `sources`,
++     `sinks`, `cycle`, `acyclic`, `reachable`, `closure`, `invert` und für
++     `Topological`-Graphen `linearized`, `reduction`, `traversal` und `layered`) sind einmal
++     gegen diese Typklassen geschrieben, daher beantwortet ein `Hasse` oder eine `Map` sie
++     genau so wie ein `Dag`.
+
+@ 0 6 0 1d2a54b62fcfe3210fdd95c21566fadb
++     Ein `Dag` oder `Digraph` speichert nur die Vorwärtsrichtung, daher ist das Auffinden der
++     Vorgänger eines Knotens ein Durchsuchen jeder Kante. Die Operationen, die es brauchen —
++     `predecessors`, `ancestors`, `lineage`, `bypass`, `bypassAll` und `-` —, sind durch
++     `Dysasymptotic.LinearScan` gesperrt, bestätigt mit `import dysasymptotics.linearScan`;
++     `subgraph`, das die ganze Map für eine begrenzte Auswahl von Knoten neu aufbaut, ist durch
++     `Dysasymptotic.LinearSize` gesperrt (`import dysasymptotics.linearSize`). Eine
++     eingefrorene `Topology` hält beide Richtungen und braucht keines von beiden.
+
+@ 0 3 0 068a6215d0ecd87d104b3042c676e91d
++     Ein `Dag` wird über `Dot` als GraphViz-DOT-Dokument gezeichnet, mit `dag.dot` auf einem
++     `Dag[Text]`; die Bibliothek `dendrology` zeichnet jeden `Topological`-Graphen im Terminal,
++     und `Dag#layered` ordnet einen dafür in Schichten mit minimierten Kreuzungen an.
+
+@ 0 4 0 1297e7fbab5fc9121e7b684c36985cb7
++     Die Bibliothek besteht aus einem Source-Set, `acyclicity.core`, das für jede Plattform
++     kompiliert und in den `soundness`-Umbrella exportiert wird, wo das Auswahlpaket
++     `rankings` mit dem gleichnamigen des Umbrellas verschmilzt. Das einzige Given, das ein
++     Benutzer namentlich importiert, ist `rankings.balancedRanking`; alles andere wird aus den
++     Begleitobjekten aufgelöst.
+
+% 0 1 0 01c5bf2c3b34e767126003078b82ca17
+
+% 0 1 0 09822351b46e7fcb013aa62611cea364
+
+% 0 1 0 1241e73184f3274a06697282313e5756
+
+% 0 1 0 0077bba20955ca741d3560bf3052e456
+
+% 0 1 0 177a99173680c2511d605cdb4703ecfd
+
+% 0 1 0 1d3d92a38a1f62ff1dc5918bbba917e4
+
+@ 0 1 0 0453b8d2265aaeea124f09a2ee3c2532
++ entry .Dag   ein gerichteter azyklischer Graph als persistenter Wert, mit einer topologischen Ordnung, die nicht scheitern kann
+
+% 1 1 0 078bcc33f02b9c74006f218f688b0339
+
+@ 0 9 0 1d184d73491bbfdf1d526c836787a52c
++       Ein `Dag[node]` ist ein endlicher gerichteter Graph ohne Zyklus, als unveränderlicher
++       Wert: eine Map in Einfügereihenfolge von jedem Knoten auf die Menge der Knoten, auf die er
++       zeigt — in der Abhängigkeitslesart seine Abhängigkeiten. Jedes Kantenziel ist selbst ein
++       Knoten, daher ist eine ins Leere zeigende Kante nicht darstellbar. Das Fehlen eines
++       Zyklus wird einmal festgestellt, wenn der Wert erzeugt wird: Die Fabriken `Dag(…)` prüfen
++       (und lösen `Dag.Error` mit `Reason.Cyclic` aus), `acyclic` wandelt einen `Digraph` mit
++       derselben Prüfung um, und `Dag(topology)` verbraucht eine `Topology`, die per Invariante
++       azyklisch ist. Jede Bearbeitung kann dann entweder keinen Zyklus erzeugen (`-`, `remove`,
++       `bypass`, `subgraph`, `descendants`), prüft den einen Pfad, der es könnte (`add`), oder
++       antwortet mit einem `Digraph`, wo ein Zyklus möglich ist (`+`, `++`, `map`, `flatMap`).
+
+% 2 1 0 0510829b9cd2acfe0f08a039dde547a7
+
+% 3 1 0 0c7372920e835d311b635c66432cb7cf
+
+% 4 1 0 0c8b4ec5b809754c1c959b71d069dcb3
+
+% 2 1 0 12f2d463060d4a720018608e88e5d22d
+
+% 0 1 0 09f1c02660438a961eae4d85d147187d
+
+% 0 1 0 0e7169ab3172885f0bf266c5fb86f1bf
+
+% 0 1 0 0bb74aec98086c951c68682cc636f720
+
+% 0 1 0 19187da2abe90c360b8563ab92bb763b
+
+% 0 1 0 1c221c224d0126e51960efb6ecbf7549
+
+% 1 1 0 03224e52d9ba28780aa25013916809e1
+
+@ 0 5 0 12cf7da2fcb498c416da6c21005dd6cd
++       Was die Azyklizität einbringt, sind `linearized`, `reduction` und `traversal` ohne
++       Fehlerfall sowie die `Topological`-Instanz, die sie auch den generischen Erweiterungen
++       verschafft. Als Collection ist ein `Dag` seine Knoten in topologischer Ordnung
++       (`traversable`), daher gelten `dag.has(n)`, `dag.size`, `dag.each(…)` und `dag.map(…)`;
++       `map` antwortet mit einem `Digraph`, da zwei Knoten in einen umbenannt werden und einen
++       Zyklus schließen können.
+
+@ 0 1 0 1c0b1ad24977e5d4165c840e6c0ef76a
++       Ein `Dag` kann Kante für Kante aufgebaut werden:
+
+% 2 1 0 1632a10a225eb6481d979c4f9e877cea
+
+% 3 1 0 003418e81c4da5da0b01ce908aa448e0
+
+@ 0 1 0 175295e7ea332ca8163b1948421b555f
++         label Die erste Kante: Beide Enden werden zu Knoten
+
+% 1 1 0 151578f181255acd1f41b34167396589
+
+% 0 1 0 12444ca0bfa953041d33ffc1015ae68a
+
+% 0 1 0 1681235dcc22a7e30a27bb096fdb53bc
+
+% 1 1 0 1273b84443a8dba10903d539a7a59b75
+
+@ 0 1 0 1618f06a594638c30c5436fbed626b38
++         label Eine zweite Abhängigkeit, beim Hinzufügen geprüft
+
+% 1 1 0 0c57f87ccfd3733409debd4b44eb5489
+
+% 2 1 0 0c9df9f4686045ed1104d512b4631e8b
+
+% 0 1 0 19bf79bf9341852c0ce45a3c7b258cee
+
+% 1 1 0 11bc5226287162190ab063b5d3d6de04
+
+@ 0 1 0 11cdf5496fe1fdd01b55bbf9f1a77f9e
++         label Eine Kante gegen die Ordnung, verweigert
+
+% 1 1 0 0b3e0618ec0606cd0439306534d1e2e1
+
+% 2 1 0 07dc0a08eefea9ed194fc975720f8243
+
+% 0 1 0 175581fcb7dad0e00ac4ed2b823e9468
+
+% 1 1 0 19fe7d1105bdc63514c5b4833ee82ad2
+
+@ 0 1 0 05347775224b114c01dd575cea874ebf
++         label Eine Kante, die einen Zyklus schließen kann, antwortet stattdessen mit einem Digraph
+
+% 1 1 0 1225af99f70f56b11c82f8682a86599f
+
+% 2 1 0 0e0b3d4f66e39333100c743b25b65dfb
+
+% 0 1 0 055b137a563a483f0789b7b1e174a520
+
+% 1 1 0 1926ba355f229c540a14df1bfee3929c
+
+% 2 1 0 0b8c9b72709e82920485e0d90038209a
+
+@ 0 6 0 021bf427447e71591ac728de9791a566
++       Jedes geprüfte `add` kostet die Reichweite des Ziels der neuen Kante, daher wird ein Graph
++       aus vielen Kanten mit einem einzigen Aufruf `Dag(edges*)` (einer Prüfung in O(n + e))
++       aufgebaut statt mit einer Faltung von `add`s, und ein Graph, der oft bearbeitet wird, wird
++       besser in eine `Topology` aufgetaut, an Ort und Stelle bearbeitet und wieder eingefroren.
++       Abfragen über den ganzen Graphen, die von der Erreichbarkeit abhängen — `closure`,
++       `reduction` —, laufen über die Bitmatrix der eingefrorenen Form, daher wird ein Graph, der
++       mehr als einmal so abgefragt wird, am besten einmal mit `#freeze` eingefroren und
++       aufbewahrt.
+
+@ 0 2 0 1a7d86c1cce9e8be172316aa194a6ca2
++       Zwei `Dag`s sind gleich, wenn ihre Adjazenz gleich ist, in welcher Reihenfolge ihre
++       Knoten auch gegeben wurden; ein `Dag` ist keine `case class`, daher hat er weder
++       `unapply` noch `copy`.
+
+% 0 1 0 103ced421355708b056760dffcd7be34
+
+% 0 1 0 146458c90f0a62db0e2954fd0c82fb90
+
+% 1 1 0 138628e246dd70420ef319e68dc693e2
+
+% 1 1 0 17560cfc915bce6610e3ce52e17ac0e2
+
+@ 0 3 0 052bf73956276a2f04b4e6c7f6107a38
++   entry .apply   ein `Dag` aus Kanten, aus Knoten mit ihren Nachfolgern, aus einer Knotenmenge und einer Funktion, aus einer `Map` oder aus einer `Topology`
++       Fünf Konstruktoren, von denen vier auf einen Zyklus prüfen und `Dag.Error`
++       (`Reason.Cyclic`) auslösen, wenn sie einen finden:
+
+@ 0 10 0 08febf81e8eb56da074c2658f9f1acc2
++       - `Dag(a -> b, a -> c, …)` allein aus Kanten: Beide Enden jeder Kante werden zu Knoten,
++         in der Reihenfolge ihres ersten Auftretens.
++       - `Dag(a -> Set(b, c), b -> Set(), …)` aus jedem Knoten mit seiner Abhängigkeitsmenge; ein
++         Nachfolger ohne eigenen Eintrag wird zu einem Knoten ohne Abhängigkeiten.
++       - `Dag(nodes)(node => dependencies)` aus einer Knotenmenge und einer Funktion; ein
++         Nachfolger außerhalb der Menge wird zu einem Knoten. Dieser nimmt seine
++         `Tactic[Dag.Error]` als gewöhnlichen kontextuellen Parameter statt als
++         `raises`-Klausel.
++       - `Dag(adjacency)` aus einer `Map[node, Set[node]]`, wobei die Knotenmenge über jedes
++         Ziel abgeschlossen wird.
++       - `Dag(topology)` aus einer `Topology[node]^`, die **verbraucht** wird: Die Topologie ist
++         per Invariante azyklisch, daher gibt es keine Prüfung und keinen `Dag.Error`, und das
++         Handle kann nicht wiederverwendet werden.
+
+% 2 1 0 01fab4b7e55be2f0168049757bc2f790
+
+% 3 1 0 18a71727b22985331ab568c260d8ebc1
+
+% 4 1 0 0f95a60d0d3ec0801a698f03d05343f2
+
+% 0 1 0 0224a9f865586c4601ebf71bf6ffd3ff
+
+% 0 1 0 162ddb4c66cc982c03f426d071787f28
+
+% 0 1 0 05fc5cf6bc7b32bf1ca2519a43261a19
+
+% 0 1 0 0a5a12615d506bc814f0a1b657dfc835
+
+% 1 1 0 08d9f46d8158503e0da5dfad7eebdf78
+
+@ 0 7 0 01361f89b63144d80e8a712addbeedb2
++       `Dag(1 -> 2, 2 -> 3, 3 -> 1)` löst `Dag.Error` aus; `Digraph(…)` mit denselben
++       Argumenten erzeugt den zyklischen Graphen, und `cycle` darauf ist der Zeuge.
++   entry .dot   ein `Dag[Text]` als GraphViz-DOT-Digraph, mit dem Text jedes Knotens als Bezeichner
++       Eine Erweiterung auf `Dag[Text]`: ein `Dot.Digraph` mit einer Kantenanweisung `"a" -> "b"`
++       für jede Kante. Der Text eines Knotens benennt seinen DOT-Knoten, daher muss er ein
++       gültiger DOT-Bezeichner sein — nicht leer, ohne doppeltes Anführungszeichen und ohne
++       Zeilenumbruch —, und ein Knoten, der es nicht ist, löst `Name.Error` aus; eine
++       `Tactic[Name.Error]` muss im Geltungsbereich sein.
+
+% 2 1 0 142175d0a418955c10b3b838ef593741
+
+% 3 1 0 1c31ccc38036d0a014cce1eb63bb9761
+
+% 4 1 0 1e5c5ad2648f78c618abe33958e3f965
+
+% 0 1 0 079e9eb45aca5b6103eecb5ad85a41f7
+
+% 1 1 0 082fe2d3fe2d5db213edee3f388becdc
+
+@ 0 3 0 068afed3c42ca5ef157f4f3e4a52d0ac
++       Ein Graph aus anderen Knoten wird über `map(_.show).acyclic.dot` dargestellt (das `map`
++       antwortet mit einem `Digraph`, da zwei Knoten als einer angezeigt werden könnten).
++   entry .Error   ausgelöst, wenn eine Graphoperation einen Zyklus findet oder nach einem Knoten gefragt wird, den der Graph nicht hat
+
+% 1 1 0 1f5dad71370b9c4f1369dd0711865c2e
+
+@ 0 8 0 175206fc8bd72de019afb1a7b13ab524
++         Fehler `↯/s.72.1`, _the DAG operation failed because `reason`_, mit dem Grund darin
++         nummeriert. `Reason.Cyclic` (191.2, _the graph contains a cycle_) wird von den
++         prüfenden Fabriken `Dag(…)` ausgelöst, von `acyclic` auf jedem Graphen, von `Dag#add`
++         für eine Kante, deren Ziel ihre Quelle bereits erreicht, und ebenso von
++         `Topology#add`; der bearbeitete Graph bleibt unverändert. `Reason.NodeMissing(node)`
++         (191.1, _the node `node` is not present in the graph_) wird von `reachable`,
++         `descendants`, `ancestors` und `lineage` für einen Knoten ausgelöst, den der Graph
++         nicht hat — auf einem `Dag`, einem `Digraph` und über die generische Erweiterung
++         gleichermaßen —, wobei der Knoten mit seinem `toString` dargestellt wird.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1c4d260429f2a0a0171138b586d3341f
+
+% 0 1 0 1b9eabd3ccfd9e7305eb11e32f4ce846
+
+% 0 1 0 07163e601f85e5cb1bbef385cdfb273e
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 28 0 1f44c93f2e7a8a7d081e5024c56ef80f
++     entry .Reason   warum die Operation scheiterte: `Cyclic` oder `NodeMissing(node)`
++         Ein Enum mit `number` (1 für `NodeMissing`, 2 für `Cyclic`), jeder Fall eine
++         `Clarification`, die die Meldung des Fehlers zitiert.
++     entry .communicable   stellt einen Grund als seine Meldung dar
++     entry #reason   der `Dag.Error.Reason`: `Cyclic` oder `NodeMissing(node)`
++   entry .nodal   die `Nodal`-Instanz: die Knoten eines `Dag` und die Nachfolger jedes Knotens
++       Im impliziten Geltungsbereich über das Begleitobjekt. `nodes` sind die Knoten in der
++       Reihenfolge, in der sie gegeben wurden, `successors(n)` die Knoten, auf die `n` zeigt
++       (leer für einen Knoten, den der Graph nicht hat), und `has` ist ein Nachschlagen in der
++       Map, nie ein Durchsuchen.
++   entry .bidirectional   die `Bidirectional`-Instanz, gesperrt durch `Dysasymptotic.LinearScan`
++       Ein `Dag` speichert nur die Vorwärtsrichtung, daher kommen seine Vorgänger aus einer
++       Transponierten, die einmal pro Wert durch Durchsuchen jeder Kante berechnet wird. Die
++       Instanz nimmt daher ein `Dysasymptotic.LinearScan`, bestätigt mit
++       `import dysasymptotics.linearScan`, und das braucht die generische Erweiterung
++       `predecessors` auf einem `Dag`. Eine eingefrorene `Topology` beantwortet dieselbe Frage
++       ohne die Sperre.
++   entry .topological   die Markierung, die bescheinigt, dass ein `Dag` keinen Zyklus enthält
++       Die `Topological`-Instanz, im impliziten Geltungsbereich. Sie lässt einen `Dag` über die
++       generischen Erweiterungen zu `linearized`, `reduction`, `traversal` und `layered` zu und
++       zu den Diagrammen von `dendrology`.
++   entry .traversable   ein `Dag` als Collection seiner Knoten, in topologischer Ordnung
++       Die `Traversable`-Instanz, daher sehen `dag.each`, `dag.fold`, `dag.to[List]` und das
++       übrige Collection-Vokabular die Knoten so, dass jeder Knoten nach seinen Abhängigkeiten
++       kommt.
++   entry .inclusive   `dag.has(node)`: ob der Knoten im Graphen ist
++   entry .countable   `dag.size` und `dag.nil`: wie viele Knoten, und ob es keine gibt
++   entry .mappable   `dag.map(lambda)`: benennt die Knoten um und antwortet mit einem `Digraph`
++       Die `Mappable`-Instanz, mit `Result[node2] = Digraph[node2]`: Zwei Knoten können auf
++       einen abgebildet werden, was ihre Kanten vereinigt und einen Zyklus schließen kann,
++       daher ist das Ergebnis kein `Dag`, bis `acyclic` es prüft.
+
+% 2 1 0 1b4c63c32161e80b0d77be0a36a2c5e5
+
+% 3 1 0 192ccc2eb982bb000940ec2edf93574a
+
+% 4 1 0 194dc891aec9795110420587eb6166a7
+
+% 0 1 0 1c1a8f1546929eb51d0e8a3e0b688aae
+
+% 0 1 0 190b3c3d887531d910697bed222292b2
+
+% 1 1 0 072032395a9c145f173cd462bee92bf6
+
+@ 0 12 0 0c7d45739ba5b13f176108ef89f3a446
++   entry #nodes   jeder Knoten, als Menge
++   entry #successors   die Knoten, auf die ein Knoten zeigt: seine Abhängigkeiten, oder die leere Menge für einen fehlenden Knoten
++   entry #edges   jede Kante als Paar `(from, to)`: `from` hängt von `to` ab
++   entry #sources   die Knoten ohne Nachfolger: die, die von nichts abhängen
++       Wo ein Build oder eine Installation beginnt. Bezieht sich auf den ganzen Graphen, daher
++       ist keine Bestätigung nötig.
++   entry #sinks   die Knoten ohne Vorgänger: die, von denen nichts abhängt
++       Ein Durchlauf über die Kanten, ohne dass `Dysasymptotic.LinearScan` nötig ist: Die Frage
++       betrifft den ganzen Graphen, nicht einen Knoten.
++   entry #linearized   die Knoten in topologischer Ordnung: jeder Knoten nach allem, wovon er abhängt
++       Einmal pro Wert berechnet und aufbewahrt. Zwischen Knoten ohne Pfad zwischen ihnen ist
++       die Reihenfolge die, in der die Knoten gegeben wurden, daher ist sie stabil. Sie kann
++       nicht scheitern: Ein `Dag` hat keinen Zyklus.
+
+% 2 1 0 17c9df318ffa30980f1906328f37cb01
+
+% 3 1 0 1daa7491bd5985820be104882202e146
+
+% 4 1 0 03b4ab1ff12a59b00193acec7d0c1311
+
+% 0 1 0 1a6db0c1b43dbb61073f75e7b36d28d1
+
+% 1 1 0 0d333251944c5e28079bca9e2acaaaaa
+
+@ 0 9 0 108ec1f9752a08de1241acf22c58624e
++   entry #invert   derselbe Graph mit jeder Kante umgekehrt, weiterhin ein `Dag`
++       Das Umkehren jeder Kante erhält die Azyklizität, daher ist das Ergebnis ein `Dag`, dessen
++       Quellen die Senken dieses Graphen sind; `invert.invert` ist gleich dem Original.
++   entry #digraph   derselbe Graph als `Digraph`, für die Operationen, die einen Zyklus erzeugen können
++   entry #freeze   die eingefrorene `Topology[node]^{}` dieses Graphen, für Abfragen angelegt
++       Baut eine `Topology` mit den Knoten bereits in topologischer Ordnung und friert sie ein.
++       Die eingefrorene Form hält beide Richtungen der Adjazenz, daher braucht `predecessors`
++       keine Bestätigung, und sie beantwortet `reaches` in O(1), sobald ihre
++       Erreichbarkeitsmatrix aufgebaut ist; `closure` und `reduction` auf einem `Dag` laufen
++       über sie. Ein Graph, der wiederholt so abgefragt wird, sollte einmal eingefroren werden.
+
+% 2 1 0 009a95dccfff6a501d873aff8777f4b8
+
+% 3 1 0 05b093c15a5d24af17d8c03e8ef592e9
+
+% 4 1 0 023a10251e6fee9502492cc39e9e6314
+
+% 0 1 0 02dda2b4568fb31c177351a82b15ca76
+
+% 0 1 0 18743ec22773412e1ba91d89c7fa7210
+
+% 0 1 0 0bce0e93c533b9fd1ba9b2ca407e68bf
+
+% 0 1 0 0bb43092b913781104c8350dc97a0238
+
+% 1 1 0 17886b6487361a890c2cf3d76db75776
+
+@ 0 11 0 00737322962a30f3177da851661d436e
++   entry #thaw   eine bearbeitbare `Topology[node]^`, die die Knoten und Kanten dieses Graphen hält
++       Dasselbe wie `Topology(dag)`: eine frische Topologie in exklusivem Besitz, an Ort und
++       Stelle bearbeitet mit `add`, `remove` und `bypass` und als `Dag` zurückgegeben mit
++       `Dag(topology)` oder `Topology.freeze`. Die richtige Form für viele Bearbeitungen, die
++       dort jeweils etwa eine Mikrosekunde kosten, gegenüber der reichweitengroßen Prüfung von
++       `Dag#add`.
++   entry #including   der Graph mit einem hinzugefügten Knoten ohne Kanten, falls er fehlte
++   entry #add   der Graph mit der hinzugefügten Kante `from -> to`; löst `Dag.Error` aus, wenn sie einen Zyklus schließen würde
++       `from` hängt von `to` ab. Die einzige Art, wie eine Kante einen Zyklus schließen kann,
++       ist, dass `to` `from` bereits erreicht (oder `from == to`), was durch eine Suche in der
++       Reichweite von `to` geprüft wird — daher sind die Kosten die Größe dieser Reichweite,
++       nicht die des Graphen. Ein neues Ziel wird zu einem Knoten. Das Ergebnis ist ein `Dag`;
++       `+` ist die ungeprüfte Form, die mit einem `Digraph` antwortet.
+
+% 2 1 0 07cb1bc2157857a7163705c3d420fb3f
+
+% 3 1 0 0b3675013278b7120d112d6e4fc4c030
+
+% 4 1 0 0d3e5c9946ef1c821b11fdacaa83f696
+
+% 0 1 0 0de0abe1cb6d3a5e14369f9b44de45bf
+
+% 0 1 0 08560fb08c72c5c30b2d6e6170f7afb4
+
+% 0 1 0 1754467b2e184e551048625ad2a22cdb
+
+% 1 1 0 1748dc2b47f1bf4a0682efe64092a415
+
+@ 0 16 0 127f59dd203b173904c654f7aa7e600d
++   entry #+   `dag + (from -> to)`: die Kante ohne Prüfung hinzugefügt, als `Digraph`
++       Das Ergebnis kann einen Zyklus enthalten, daher ist es ein `Digraph`; `acyclic` prüft ihn
++       zurück in einen `Dag`, und `cycle` zeigt den Zeugen, falls es einen gibt. `add` ist die
++       geprüfte Form.
++   entry #++   `dag ++ other`: die Vereinigung der Knoten und Kanten zweier Graphen, als `Digraph`
++       Zwei azyklische Graphen können sich zu einem zyklischen vereinigen, daher ist das
++       Ergebnis ein `Digraph`.
++   entry #remove   der Graph ohne die Kante `from -> to`, wobei beide Knoten erhalten bleiben
++       Unverändert, wenn die Kante nicht vorhanden war. Das Entfernen einer Kante kann keinen
++       Zyklus erzeugen, daher ist das Ergebnis ein `Dag`.
++   entry #-   `dag - node`: der Knoten und jede Kante an einem seiner Enden entfernt
++       Braucht `Dysasymptotic.LinearScan` (`import dysasymptotics.linearScan`), da die Kanten,
++       die auf den Knoten zeigen, über die Transponierte gefunden werden. Die von dem Knoten
++       Abhängigen verlieren diese Abhängigkeit und gewinnen keine andere; `bypass` ist die Form,
++       die sie umleitet.
++   entry #bypass   der Knoten entfernt, wobei jeder von ihm Abhängige auf jede seiner Abhängigkeiten umgeleitet wird
++       Jeder Pfad durch den Knoten bleibt erhalten: Jeder Vorgänger erhält jeden Nachfolger als
++       direkte Abhängigkeit. Das kann keinen Zyklus erzeugen, da jeder Vorgänger jeden
++       Nachfolger bereits über den Knoten erreicht hat. Braucht `Dysasymptotic.LinearScan`.
+
+% 2 1 0 1bb5605e17c2b32801a05bd8e7984de3
+
+% 3 1 0 19e3c991cf90d5ed0ae0668bff72ec1d
+
+% 4 1 0 1dbe153da1025115126649f70469aa31
+
+% 0 1 0 19877de71de69ee10465826305d991a2
+
+% 2 1 0 004c0adadec701491334a77b825aff89
+
+% 0 1 0 0c2d64177b1feaef050d95aed39e9521
+
+% 0 1 0 1404e7af9c3f6acb0ef1a2c74f407ba1
+
+% 1 1 0 020245654d723338085c91dddf538f55
+
+@ 0 33 0 1179639e3e2b49da04a3e23761100d2c
++   entry #bypassAll   mehrere Knoten nacheinander umgangen, sodass ein Pfad durch eine Folge von ihnen erhalten bleibt
++       Nimmt eine `Set` von Knoten statt eines Prädikats — ein Lambda-Argument ließe sich nicht
++       von einem Knoten unterscheiden — und umgeht sie der Reihe nach, sodass
++       `Dag(1 -> 2, 2 -> 3, 3 -> 4).bypassAll(Set(2,
++       3))` die Kante `1 -> 4` behält. Braucht `Dysasymptotic.LinearScan`.
++   entry #subgraph   der von einer Knotenmenge induzierte Teilgraph: diese Knoten und die Kanten zwischen ihnen
++       Braucht `Dysasymptotic.LinearSize` (`import dysasymptotics.linearSize`): Eine begrenzte
++       Auswahl von Knoten baut die ganze Map neu auf. Eine Kante zu einem Knoten außerhalb der
++       Menge wird entfernt, nicht umgeleitet.
++   entry #flatMap   setzt für jeden Knoten einen Graphen ein, als `Digraph`
++       Für jede Kante `a -> b` zeigt jeder Knoten von `lambda(a)` auf jeden Knoten von
++       `lambda(b)`, und die Knoten von `lambda(a)` behalten ihre eigenen Kanten darin. Das
++       Ergebnis kann einen Zyklus enthalten, daher ist es ein `Digraph`.
++   entry #reachable   alles, was ein Knoten erreicht, er selbst eingeschlossen; löst `Dag.Error` für einen fehlenden Knoten aus
++       Die transitiven Abhängigkeiten eines Knotens, als Menge, durch eine iterative Suche mit
++       einer Menge besuchter Knoten, daher läuft bei einer Kette aus hunderttausend Knoten weder
++       der Stack über, noch kostet sie mehr als ihre Reichweite. `Dag.Error(NodeMissing)` wird
++       nur für einen Knoten ausgelöst, den der Graph nicht hat.
++   entry #descendants   der Teilgraph, den ein Knoten erreicht, er selbst eingeschlossen; löst `Dag.Error` für einen fehlenden Knoten aus
++       `subgraph(reachable(node))`, ohne dass eine Bestätigung nötig ist: der induzierte
++       Teilgraph von allem unterhalb des Knotens.
++   entry #ancestors   der Teilgraph, der einen Knoten erreicht, er selbst eingeschlossen; löst `Dag.Error` für einen fehlenden Knoten aus
++       Alles, was transitiv von dem Knoten abhängt, mit den Kanten dazwischen. Braucht
++       `Dysasymptotic.LinearScan`, da es die Transponierte durchläuft.
++   entry #lineage   der Teilgraph aus allem, was ein Knoten erreicht, und allem, was ihn erreicht
++       `ancestors` und `descendants` zusammen, induziert. Braucht `Dysasymptotic.LinearScan` und
++       löst `Dag.Error` für einen fehlenden Knoten aus.
++   entry #closure   jede implizierte Kante explizit gemacht: eine Kante überall, wo ein Pfad existiert
++       Die transitive Hülle, über die Erreichbarkeitsmatrix der eingefrorenen Form, in
++       O(e·n/64) gegenüber der Summe aller Reichweiten, die Mengenvereinigungen kosten würden.
++       `closure.reduction` ist die `reduction` und `reduction.closure` die `closure`.
++   entry #reduction   der minimale Graph mit derselben Erreichbarkeit: jede Kante entfernt, die ein längerer Pfad impliziert
++       Die transitive Reduktion, die Form, in der ein Abhängigkeitsgraph üblicherweise
++       gezeichnet wird. Jede Kante, die von einem Pfad beliebiger Länge impliziert wird, wird
++       entfernt, nicht nur die, die ein Pfad aus zwei Kanten impliziert, und nur Kanten des
++       Graphen werden behalten. Berechnet auf der eingefrorenen Form mit dem Verfahren von Aho,
++       Garey und Ullman über ihrer Bitmatrix.
+
+% 2 1 0 117f1e8eaa1fc4fc0c9fd6f60c67f587
+
+% 3 1 0 0e3e7177482074851da3f00554f14150
+
+% 4 1 0 0902979b0a104f0806ff61ad4bac3fc7
+
+% 0 1 0 08e2d4cd82c99d7a1f659e8e30940e0c
+
+% 1 1 0 1c6484897c9f35fe05027cd95d123fbf
+
+@ 0 14 0 1e297f24c5d79af41b96826d6db106d0
++   entry #layered   der Graph in Schichten zum Zeichnen angeordnet, als `Layering`
++       Jeder Knoten wird einer Schicht zugewiesen, Abhängigkeiten über den von ihnen Abhängigen,
++       und jede Schicht wird so geordnet, dass die Kreuzungen zwischen den Verbindungen zu ihren
++       Nachbarn abnehmen — der Schichtenansatz von Sugiyama, wie `dot` von GraphViz ihn
++       zeichnet. Das `Ranking` im Geltungsbereich entscheidet die Schicht: Der Standard des
++       Begleitobjekts, `Ranking.LongestPath`, setzt jeden Knoten eine Schicht unter seine
++       tiefste Abhängigkeit; `import rankings.balancedRanking` zieht jeden Knoten mit Abhängigen
++       hinunter in die Schicht über seinem flachsten Abhängigen. `LayeredDagDiagram` von
++       `dendrology` stellt das Ergebnis dar.
++   entry #traversal   ein Wert für jeden Knoten, berechnet aus den Werten seiner Abhängigkeiten
++       `dag.traversal[result]((dependencyValues, node) => …)` besucht die Knoten in
++       topologischer Ordnung, sodass jeder Aufruf des Lambdas die bereits berechneten Werte der
++       Nachfolger des Knotens als `Set` sieht, und antwortet mit einer `Map` von jedem Knoten auf
++       seinen Wert. Das ist die Gestalt der meisten Arbeit über einem Abhängigkeitsgraphen — die
++       Kosten eines Builds, eine propagierte Bedingung, eine angesammelte transitive Menge —,
++       ohne handgeschriebene Rekursion oder Buchführung über besuchte Knoten.
+
+% 2 1 0 180a71981f83f3ec0f5a0fadf648c3d2
+
+% 3 1 0 09d9b647c4c3e9e507faab8bbac80069
+
+% 4 1 0 1ffebb7e50dd9621166f31eee98c6f92
+
+% 0 1 0 1104c0ff55edb29a11b3de599a67a60c
+
+% 0 1 0 15bc83114de814cd1ebf55f8b011b9f3
+
+% 1 1 0 12f00919e72f9c491d366648077cb10e
+
+@ 0 1 0 146fe0a8e11f923d0e4e4374c3fb1a4b
++ entry .Digraph   ein gerichteter Graph, der einen Zyklus enthalten darf, als persistenter Wert
+
+% 1 1 0 10274f4b5f87a9b20d98a1ff7a4e2ef0
+
+@ 0 6 0 0aead5b77e0f9b440545fe2d9120a06f
++       Ein `Digraph[node]` ist ein endlicher gerichteter Graph, als Map in Einfügereihenfolge
++       von jedem Knoten auf die Menge der Knoten, auf die er zeigt — in der Abhängigkeitslesart
++       seine Abhängigkeiten. Jedes Kantenziel ist ein Knoten, daher schließen die
++       Konstruktoren die Knotenmenge ab, und eine ins Leere zeigende Kante ist nicht
++       darstellbar. Nichts an einem `Digraph` setzt Azyklizität voraus: Er ist das, womit die
++       ungeprüften Bearbeitungen eines `Dag` (`+`, `++`, `map`, `flatMap`) antworten, was
++       `explore` aus einer Nachfolgerfunktion materialisiert und was ein Graph ist, bevor
++       `acyclic` ihn geprüft hat.
+
+% 2 1 0 0e03941634b58d0e0c2950f554a4dce5
+
+% 3 1 0 0498016ac7a09e2300eef044d9826e38
+
+% 4 1 0 0373615bac3d0eed16335e0b09a63484
+
+% 0 1 0 017a0466c4d7f3270e665a03509a7ac2
+
+% 0 1 0 0634abf204e97ac80dfab06b24b7b604
+
+% 0 1 0 19a800a899bf5668127a6d32ed06d3ad
+
+% 0 1 0 1114713fa73ded8403c6035315692123
+
+% 1 1 0 18b8208684773f9d1046f85de18b798f
+
+@ 0 7 0 0d157504e2493ce6027a74e8cfe4ca38
++       Weil ein Zyklus möglich ist, hat ein `Digraph` weder `linearized`, `reduction`,
++       `traversal` noch `layered`: `acyclic` prüft den Graphen einmal, in O(n + e), und
++       antwortet mit dem `Dag`, der sie hat, und löst sonst `Dag.Error` (`Reason.Cyclic`) aus.
++       Alles andere, was ein `Dag` bietet — die Abfragen zu Knoten und Kanten, die
++       Bearbeitungsmethoden, Erreichbarkeit und Ausschnitte, `closure` und `invert` —, bietet
++       auch ein `Digraph`, wobei `reachable`, `closure` und die Ausschnitte auf einem
++       zyklischen Graphen total sind (eine Menge besuchter Knoten, keine Rekursion). Als
++       Collection ist er seine Knoten in der Reihenfolge, in der sie gegeben wurden.
+
+@ 0 4 0 03104183eb413b5f076d9a916c109485
++       Nur die Vorwärtsrichtung wird gespeichert, daher nehmen `-`, `bypass`, `bypassAll`,
++       `ancestors`, `lineage` und die `Bidirectional`-Instanz ein `Dysasymptotic.LinearScan`
++       (`import dysasymptotics.linearScan`) und `subgraph` ein `Dysasymptotic.LinearSize`. Zwei
++       `Digraph`s sind gleich, wenn ihre Adjazenz gleich ist.
+
+% 1 1 0 019760dfa385a31c14e93d6eb3701d6d
+
+% 0 1 0 1ca38419924f4189004ae5bc9198f51c
+
+@ 0 52 0 067cfa077dc6fac701fd1e35064f136f
++   entry .apply   ein `Digraph` aus Kanten, aus Knoten mit ihren Nachfolgern, aus einer Knotenmenge und einer Funktion oder aus einer `Map`
++       Dieselben vier Gestalten wie `Dag.apply`, ohne Zyklusprüfung und ohne Fehler:
++       `Digraph(a -> b,
++       …)` aus Kanten (beide Enden werden zu Knoten, in der Reihenfolge ihres ersten
++       Auftretens), `Digraph(a ->
++       Set(b, c), …)` aus jedem Knoten mit seinen Nachfolgern (ein Nachfolger ohne Eintrag wird
++       zu einem Knoten), `Digraph(nodes)(node => successors)` aus einer Knotenmenge und einer
++       Funktion und `Digraph(adjacency)` aus einer `Map[node, Set[node]]`, abgeschlossen über
++       jedes Ziel.
++   entry .nodal   die `Nodal`-Instanz: die Knoten eines `Digraph` und die Nachfolger jedes Knotens
++       Im impliziten Geltungsbereich über das Begleitobjekt; `has` ist ein Nachschlagen in der Map.
++   entry .bidirectional   die `Bidirectional`-Instanz, gesperrt durch `Dysasymptotic.LinearScan`
++       Vorgänger kommen aus einer Transponierten, die einmal pro Wert durch Durchsuchen jeder
++       Kante berechnet wird, daher braucht die Instanz `import dysasymptotics.linearScan`, um
++       aufgelöst zu werden.
++   entry .traversable   ein `Digraph` als Collection seiner Knoten, in der Reihenfolge, in der sie gegeben wurden
++   entry .inclusive   `graph.has(node)`: ob der Knoten im Graphen ist
++   entry .countable   `graph.size` und `graph.nil`
++   entry .mappable   `graph.map(lambda)`: benennt die Knoten um und vereinigt die Kanten zweier Knoten, die verschmelzen
++   entry #nodes   jeder Knoten, als Menge
++   entry #successors   die Knoten, auf die ein Knoten zeigt, oder die leere Menge für einen fehlenden Knoten
++   entry #edges   jede Kante als Paar `(from, to)`
++   entry #sources   die Knoten ohne Nachfolger: die, die von nichts abhängen
++   entry #sinks   die Knoten ohne Vorgänger: die, von denen nichts abhängt
++       Ein Durchlauf über die Kanten; keine Bestätigung ist nötig, da die Frage den ganzen
++       Graphen betrifft.
++   entry #invert   derselbe Graph mit jeder Kante umgekehrt
++   entry #digraph   dieser Graph selbst
++       Damit Code, der gegen die Oberfläche von `Dag`/`Digraph` geschrieben ist, jeden der
++       beiden nach seinem `Digraph` fragen kann.
++   entry #including   der Graph mit einem hinzugefügten Knoten ohne Kanten, falls er fehlte
++   entry #add   der Graph mit der hinzugefügten Kante `from -> to`, ungeprüft
++       Ein neues Ziel wird zu einem Knoten. `+` nimmt die Kante als Paar.
++   entry #+   `graph + (from -> to)`: die Kante hinzugefügt
++   entry #++   `graph ++ other`: die Vereinigung der Knoten und Kanten zweier Graphen
++   entry #remove   der Graph ohne die Kante `from -> to`, wobei beide Knoten erhalten bleiben
++   entry #-   `graph - node`: der Knoten und jede Kante an einem seiner Enden entfernt
++       Braucht `Dysasymptotic.LinearScan`.
++   entry #bypass   der Knoten entfernt, wobei jeder seiner Vorgänger auf jeden seiner Nachfolger umgeleitet wird
++       Jeder Pfad durch den Knoten bleibt erhalten. Braucht `Dysasymptotic.LinearScan`.
++   entry #bypassAll   mehrere Knoten nacheinander umgangen
++       Eine `Set` von Knoten, kein Prädikat; die Verbindung durch eine Folge entfernter Knoten
++       bleibt erhalten. Braucht `Dysasymptotic.LinearScan`.
++   entry #subgraph   der von einer Knotenmenge induzierte Teilgraph: diese Knoten und die Kanten zwischen ihnen
++       Braucht `Dysasymptotic.LinearSize`.
++   entry #reachable   alles, was ein Knoten erreicht, er selbst eingeschlossen; löst `Dag.Error` für einen fehlenden Knoten aus
++       Total auf einem zyklischen Graphen: `Digraph(1 -> 2, 2 -> 1).reachable(1)` ist `Set(1, 2)`.
++   entry #descendants   der Teilgraph, den ein Knoten erreicht, er selbst eingeschlossen; löst `Dag.Error` für einen fehlenden Knoten aus
++   entry #ancestors   der Teilgraph, der einen Knoten erreicht, er selbst eingeschlossen; löst `Dag.Error` für einen fehlenden Knoten aus
++       Braucht `Dysasymptotic.LinearScan`.
++   entry #lineage   der Teilgraph aus allem, was ein Knoten erreicht, und allem, was ihn erreicht
++       Braucht `Dysasymptotic.LinearScan`; löst `Dag.Error` für einen fehlenden Knoten aus.
++   entry #cycle   ein Zyklus, falls der Graph einen hat: Knoten, die jeweils auf den nächsten zeigen und dort enden, wo sie begannen
++       `Unset` für einen azyklischen Graphen; sonst eine `List`, deren erster und letzter Knoten
++       gleich sind und deren aufeinanderfolgende Paare jeweils eine Kante sind. Gefunden durch
++       eine Tiefensuche, die auch einen Zyklus erkennt, der über einen Knoten geschlossen wird,
++       den ein früherer Zweig bereits abgeschlossen hatte.
++   entry #acyclic   der Graph als `Dag`, nach der einen Prüfung; löst `Dag.Error` aus, wenn es einen Zyklus gibt
++       O(n + e), einmal: Der `Dag`, mit dem es antwortet, prüft nie wieder.
+
+@ 0 1 0 1399406f0ec3bfa40aed37ffd7de496e
++ entry .Topology   ein an Ort und Stelle bearbeiteter Graph, der seine topologische Ordnung aktuell hält, und, eingefroren, die Form für Abfragen
+
+% 1 1 0 14c0311bcb8109a700e29d7194e8b285
+
+@ 0 6 0 01d8a1c12aee506509063ab8f31ea4ce
++       Eine `Topology[node]` ist ein gerichteter azyklischer Graph, der an Ort und Stelle über
++       ein Handle in exklusivem Besitz bearbeitet wird. Ihr Name steht für das, was nur sie
++       pflegt: eine topologische Ordnung der Knoten, die durch jedes `add` mit dem Algorithmus
++       von Pearce und Kelly gültig gehalten wird, der nur die Knoten zwischen den beiden Enden
++       einer neuen Kante berührt und eine Kante, die einen Zyklus schließen würde,
++       **verweigert**, wobei der Graph unverändert bleibt. Daher ist sie per Invariante
++       azyklisch, und `linearized` ist ein Lesen der Ordnung.
+
+@ 0 8 0 19f43beedd69053f1d30319fb6d52fad
++       Veränderlichkeit ist die Capture-Menge, wie bei einem `Array`: Eine `Topology[node]^` ist
++       bearbeitbar, und `Topology.freeze` verbraucht sie, um eine `Topology[node]^{}` zu
++       liefern, auf der `add`, `remove` und `bypass` nicht aufrufbar sind und sich nie etwas
++       ändern kann. Die eingefrorene Form ist die für Abfragen — sie trägt die Instanzen
++       `Nodal`, `Bidirectional`, `Topological`, `Reachable` und `Invertible` — und hält beide
++       Richtungen der Adjazenz in dichten Arrays, wobei Quellen und Senken gepflegt werden,
++       daher braucht `predecessors` keine `LinearScan`-Bestätigung. Ihre
++       Erreichbarkeitsmatrix, beim ersten Gebrauch in O(e·n/64) aufgebaut, beantwortet
++       `reaches` in O(1) und bedient `closure` und `reduction`.
+
+% 2 1 0 1270d04cd845d3e01c9117ee234fa8ab
+
+% 3 1 0 046121344f8bc6f2016025d6d157147f
+
+@ 0 1 0 00e0ed58b2d20f961a16c69c7a3a5618
++         label Eine leere Topologie in exklusivem Besitz
+
+% 1 1 0 0ceeaf35cf5c928113ae584a29ac1aa0
+
+% 2 1 0 0997af9905a5a45c1b2521f163d60dc5
+
+% 0 1 0 02ce6eba7307d25d02a353deb222e43a
+
+% 1 1 0 117c5c6faa118efa1407762530016796
+
+@ 0 1 0 074b50152e68ada80f05fc30107d4779
++         label Eine Kante: Beide Knoten treten der Ordnung bei, die Abhängigkeit zuerst
+
+% 1 1 0 1726f1c777cd02e30fdb60c6a3b37fbc
+
+% 2 1 0 1cbd9e1b30f7b1ed1c6e35094c63c5a9
+
+% 3 1 0 1b11212fd314cc201a5d06a25cbcd0d6
+
+% 0 1 0 09dd85113ce4971905bdb4f787322a10
+
+% 1 1 0 0d1c079a4dcfd275009a7ee8e99783ec
+
+@ 0 1 0 0223cc3da4cd8a26140430f12b2592dc
++         label Eine Abhängigkeit unter einem vorhandenen Knoten hinzugefügt: Die Ordnung wird repariert, nicht neu aufgebaut
+
+% 1 1 0 104fad5f6afaa416042caaa1187a379e
+
+% 2 1 0 105126f2875fea74087cb84a03396e67
+
+% 3 1 0 1819ca3508dc5a400675545dd7f7b359
+
+% 4 1 0 1c6f09908ec7165902f6e399faf51627
+
+% 1 1 0 14c1f193f3fc4d1d063b73eeae2c5114
+
+% 2 1 0 0c76782d85cfd564092bac86eb01316f
+
+@ 0 1 0 08ce3a4d07f5e84b1e45d5882b604f39
++         label Eine Kante, die einen Zyklus schließen würde, wird mit Dag.Error verweigert, und nichts ändert sich
+
+% 1 1 0 1062eb4d5adb8a5c0f1dcc20523c0499
+
+% 2 1 0 1fb757549f7b350818d0bf799c15b604
+
+% 3 1 0 0a42b5e0021c13a012fdb822dc62c66d
+
+% 4 1 0 018b00e544cc53050926cf22e0918ba7
+
+% 0 1 0 0afcc391fc4391a016accdd21a4cd153
+
+% 1 1 0 1afa32a78154f8480695e36d6b53b636
+
+% 2 1 0 07ec0a2e5e3c5a5e13f3233718d1fe3a
+
+@ 0 1 0 0de69960b282db7c02e16f0e52ad0638
++         label Das Einfrieren verbraucht das Handle: Das Ergebnis kann abgefragt, aber nie bearbeitet werden
+
+% 1 1 0 1f32f79a161e1b6a11549c858014edf4
+
+% 2 1 0 0ab096fccbdb550d00c14471530d22af
+
+% 3 1 0 1fd005add02b3b59068d8b8e0e2cac25
+
+% 4 1 0 1262436c5e1714c508f73f3e3a291487
+
+% 0 1 0 0704f0c450d954bf153d3f2453bb6ff6
+
+% 0 1 0 04aa7e576e3fb64d1b132b1c1b78a1eb
+
+% 0 1 0 128ecf57f2c5baba13b43d2ec13771b6
+
+% 1 1 0 0668bab4398b048514ff321ffc49c0b8
+
+% 2 1 0 170e121bee6bde2c1948b839bb2ccf0e
+
+@ 0 7 0 11bcdf04f8f3c2e418150881a738547b
++       Eine bearbeitbare `Topology` ist für den Graphen gedacht, der inkrementell wächst oder
++       sich ändert — ein Build-System, das Aufgaben entdeckt, ein Scheduler, der Jobs annimmt:
++       Eine Kante kostet deutlich unter einer Mikrosekunde, wo ein geprüftes `Dag#add` die
++       Reichweite seines Ziels kostet. Ist die Bearbeitung abgeschlossen, wird das Handle
++       abgegeben, an `Topology.freeze` oder an `Dag(topology)`, damit das Ergebnis nie hinter
++       seinem Rücken bearbeitet werden kann; `snapshot` nimmt einen `Dag`, ohne das Handle
++       abzugeben, und `Topology(frozen)` oder `dag.thaw` erzeugt eine frische bearbeitbare Kopie.
++       Eine bloße `Topology[node]` in einer Signatur bedeutet die bearbeitbare `^`-Form.
+
+@ 0 5 0 1f3e1062accaafc01547673061cfee32
++       Die Matrix wird gegenüber einer Bearbeitungsrevision zwischengespeichert: Ein
++       eingefrorenes Handle, das nicht bearbeitet werden kann, behält sie, und ein bearbeitbares,
++       das seitdem bearbeitet wurde, berechnet sie für jeden Aufruf neu — weshalb `closure`,
++       `reduction` und `reaches` für die eingefrorene Form gedacht sind. Die Knotenschlüssel
++       werden geboxt und über eine Tabelle mit offener Adressierung gehasht, daher kosten
++       generische Schlüssel so viel, wie eine `HashMap` davon kosten würde.
+
+% 1 1 0 1d103d9f483f2981023b8887603ff5e1
+
+% 1 1 0 0f07103bff2312fb144991f50d51e602
+
+% 2 1 0 0d884a4116c59d0f012c1d936eed5831
+
+@ 0 18 0 0df249dd7190c21f09e181937dc9244d
++   entry .apply   eine neue leere Topologie, eine bearbeitbare Kopie einer eingefrorenen oder eine bearbeitbare Kopie eines `Dag`
++       `Topology[node]()` ist eine leere, bearbeitbare `Topology[node]^`. `Topology(frozen)`
++       kopiert eine `Topology[node]^{}` in eine frische bearbeitbare — der Weg, einen
++       eingefrorenen Graphen zu bearbeiten, der sich selbst nicht ändern kann —, und
++       `Topology(dag)` taut einen `Dag` auf, dasselbe wie `dag.thaw`. Beide Kopien fügen die
++       Knoten in topologischer Ordnung hinzu, daher muss keine Kante umgeordnet werden.
++   entry .freeze   verbraucht eine bearbeitbare Topologie und antwortet mit ihr eingefroren, als `Topology[node]^{}`
++       `Topology.freeze(topology)` ist der einzige Erzeuger einer eingefrorenen Topologie aus
++       einer bearbeitbaren (`Dag#freeze` baut seine eigene). Das Handle wird **verbraucht**:
++       Jeder Schreiber wird statisch stillgelegt, daher verliert die verbleibende Referenz ihre
++       Exklusivität ohne Kopie, und die Bearbeitungsmethoden sind auf ihr nicht mehr aufrufbar.
++   entry .nodal   die `Nodal`-Instanz einer eingefrorenen `Topology[node]^{}`
++       Ihre Knoten in topologischer Ordnung, die Nachfolger jedes Knotens aus seiner
++       Ausgangsliste und `has` durch eine Hash-Abfrage. Die Instanzen gelten nur für die
++       eingefrorene Form: Ein bearbeitbares Handle ist nicht `Nodal`.
++   entry .bidirectional   die `Bidirectional`-Instanz einer eingefrorenen Topologie, ohne Bestätigung
++       Vorgänger werden aus den Eingangslisten gelesen, die die Topologie hält, daher ist anders
++       als bei einem `Dag` kein `Dysasymptotic.LinearScan` nötig.
++   entry .topological   die Markierung, die bescheinigt, dass eine eingefrorene Topologie keinen Zyklus enthält
++   entry .traversable   eine eingefrorene Topologie als Collection ihrer Knoten, in topologischer Ordnung
+
+% 0 1 0 1d76b4c42331b0e90b046320a2d201c5
+
+@ 0 49 0 1eda70ef0cb16e8f0a1f0bf13debe14f
++   entry .countable   `frozen.size` und `frozen.nil`
++   entry .grown   ein `Int`-Array, in ein größeres kopiert; ein Helfer der Implementierung
++       Nicht für die direkte Verwendung. Die Wachstumshelfer leben im Begleitobjekt statt in der
++       Klasse, damit der Separation-Checker nur ihre Argumente sieht.
++   entry .grownLongs   ein `Long`-Array, in ein größeres kopiert; ein Helfer der Implementierung
++   entry .grownRefs   ein `AnyRef`-Array, in ein größeres kopiert; ein Helfer der Implementierung
++   entry .grownFlags   ein `Boolean`-Array, in ein größeres kopiert; ein Helfer der Implementierung
++   entry .hash   der Hash eines Schlüssels, mit seinen hohen Bits in die niedrigen gefaltet; ein Helfer der Implementierung
++   entry #size   wie viele Knoten die Topologie aktuell hat
++   entry #edgeCount   wie viele Kanten die Topologie aktuell hat
++   entry #has   ob ein Knoten in der Topologie ist, durch eine Hash-Abfrage
++   entry #add   fügt einen Knoten oder die Kante `from -> to` hinzu und löst `Dag.Error` aus, wenn sie einen Zyklus schließen würde
++       Nur auf einem bearbeitbaren Handle. `add(node)` fügt einen Knoten am Ende der Ordnung
++       hinzu, falls er fehlt, und antwortet mit seiner internen ID; `add(from, to)` fügt die
++       Kante hinzu (`from` hängt von `to` ab) und dabei jeden der beiden Knoten, falls er fehlt.
++       Steht `to` bereits unter `from`, bewegt sich nichts; andernfalls werden die von `from`
++       Abhängigen und die Abhängigkeiten von `to`, die zwischen den beiden liegen, umgeordnet —
++       und trifft diese Suche unter den von `from` Abhängigen auf `to`, würde die Kante einen
++       Zyklus schließen: `Dag.Error` (`Reason.Cyclic`) wird über die `Tactic[Dag.Error]` im
++       Geltungsbereich ausgelöst, und der Graph bleibt genau so, wie er war. Eine doppelte Kante
++       wird ignoriert.
++   entry #remove   entfernt einen Knoten und jede Kante an einem seiner Enden
++       Nur auf einem bearbeitbaren Handle. Unbekannte Knoten werden ignoriert.
++   entry #bypass   entfernt einen Knoten und leitet jeden von ihm Abhängigen auf jede seiner Abhängigkeiten um
++       Nur auf einem bearbeitbaren Handle. Keine Umordnung kann nötig sein, da jeder Abhängige
++       bereits über jeder Abhängigkeit steht.
++   entry #reachable   alles, was ein Knoten erreicht, er selbst eingeschlossen; die leere Menge für einen fehlenden Knoten
++       Ein Tiefendurchlauf der Ausgangslisten; anders als bei `Dag#reachable` antwortet ein
++       fehlender Knoten mit der leeren Menge, statt auszulösen.
++   entry #reaches   ob ein Knoten einen anderen erreicht, in O(1), sobald die Erreichbarkeitsmatrix existiert
++       `frozen.reaches(from, to)`: ein einzelnes Bit der Matrix, die beim ersten Gebrauch
++       aufgebaut und auf einem eingefrorenen Handle behalten wird. `false`, wenn einer der beiden
++       Knoten fehlt.
++   entry #edges   jede Kante als Paar `(from, to)`
++   entry #successors   die Knoten, auf die ein Knoten zeigt, oder die leere Menge für einen fehlenden Knoten
++   entry #predecessors   die Knoten, die auf einen Knoten zeigen, aus den für ihn gehaltenen Eingangslisten
++       Keine Bestätigung ist nötig: Die Topologie speichert beide Richtungen.
++   entry #sources   die Knoten ohne Nachfolger, gepflegt, während sich der Graph ändert
++   entry #sinks   die Knoten ohne Vorgänger, gepflegt, während sich der Graph ändert
++   entry #linearized   die gepflegte topologische Ordnung, Abhängigkeiten zuerst: ein Lesen, in O(n)
++   entry #nodes   jeder Knoten, als Menge
++   entry #closure   jede implizierte Kante explizit gemacht, als `Dag`, aus der Erreichbarkeitsmatrix
++       Für ein eingefrorenes Handle. Die Zeile jedes Knotens in der Matrix wird zu seiner
++       Nachfolgermenge.
++   entry #reduction   der minimale Graph mit derselben Erreichbarkeit, als `Dag`, aus der Erreichbarkeitsmatrix
++       Für ein eingefrorenes Handle. Das Verfahren von Aho, Garey und Ullman: Die Nachfolger
++       eines Knotens in absteigendem Rang mit einer laufenden Vereinigung ihrer Zeilen zu
++       besuchen, entscheidet jede Kante in O(degree·n/64), daher dauert die Reduktion eines
++       Graphen mit tausend Knoten einen Bruchteil einer Millisekunde.
++   entry #invert   jede Kante umgekehrt, als weitere eingefrorene Topologie
++       Die umgekehrte Ordnung ist eine gültige Ordnung für die umgekehrten Kanten, daher muss
++       die Kopie nicht umgeordnet werden; `frozen.invert.linearized` ist
++       `frozen.linearized.reverse`.
++   entry #snapshot   ein persistenter `Dag` des aktuellen Graphen, ohne das Handle abzugeben
+
+@ 0 1 0 1debea7c1393f1fe01e972a2eb8647bb
++ entry .Nodal   die Typklasse eines endlichen gerichteten Graphen: eine Knotenmenge und die Nachfolger jedes Knotens
+
+% 1 1 0 1b73dd8c614f48911c07a8fcf5832fa6
+
+@ 0 6 0 044ff32276691d5d1dd04519228baa52
++       `graph is Nodal by node` sagt, dass ein Wert vom Typ `graph` ein endlicher gerichteter
++       Graph über `node` ist: Er kann seine `nodes` aufzählen, die `successors` jedes Knotens
++       angeben — die Knoten, auf die er zeigt, was in der in ganz Soundness verwendeten
++       Abhängigkeitslesart (`a -> b` bedeutet, dass `a` `b` benötigt) seine Abhängigkeiten
++       sind — und sagen, ob er einen Knoten `has`, als Primitiv statt als Durchsuchen, sodass
++       eine Prüfung auf einen fehlenden Knoten nie O(n) ist. Die Kantenrichtung ist durch den
++       Vertrag festgelegt, nicht durch die Instanz: Eine topologische Ordnung listet einen
++       Knoten nach seinen Nachfolgern auf.
+
+@ 0 5 0 0615de7f80d8d8270aabeb336e3f09de
++       Instanzen gibt es für `Dag`, `Digraph`, eine eingefrorene `Topology[node]^{}` und `Hasse`
++       (jede in ihrem eigenen Begleitobjekt) und hier für jede `Map[node, Set[node]]` und
++       `Ledger[node,
++       Set[node]]`, daher beantwortet eine schlichte Map von Abhängigkeiten die Erweiterungen
++       auf Paketebene — `nodes`, `edges`, `sources`, `sinks`, `cycle`, `acyclic`, `reachable`,
++       `closure` und `invert` — ohne Umwandlung:
+
+% 2 1 0 0b556780c1fea89a1e68e361a0dd57f2
+
+% 3 1 0 09ab602f365045a11cb1b7a45cfe9abc
+
+% 4 1 0 06188bfff561dd9e05e1ae1ce4138503
+
+% 0 1 0 0ca8fc206c4856b810751b5374ee66e0
+
+% 0 1 0 06cbcf7e46e6e18b1e4ee04665ac613a
+
+% 0 1 0 04e12c93b13f22a10231ac035188d7b1
+
+% 0 1 0 17976642edc6f77e0a44da81b93f5f3c
+
+% 1 1 0 0257d77bbd1d6a330e2fc1cee0963020
+
+@ 0 7 0 0c33c6f898e28765078a7ca5cad95150
++       Die Methoden liefern `murmuration.Iterator`s, das Billigste, was jede Darstellung
++       erzeugen kann; die Erweiterungen machen daraus `Set`s und `List`s. Eine eigene Instanz,
++       die einen Iterator der Standardbibliothek hat, umhüllt ihn mit `Iterator.from(…)`. Eine
++       Nachfolger-*Funktion*, `node =>
++       Iterable[node]`, ist bewusst nicht `Nodal` — sie hat weder eine endliche Knotenmenge noch
++       ein entscheidbares `has` —, und `explore` materialisiert eine solche in einen `Digraph`.
++       Eine Darstellung, die auch Vorgänger speichert, sagt das über `Bidirectional`, und eine,
++       deren Werte keinen Zyklus enthalten können, über `Topological`.
+
+% 0 1 0 1656e9850ca5c5721b1613290655bbab
+
+% 1 1 0 1435e72a355ae7050dcfe00527b97061
+
+% 2 1 0 062ad445da57118e123f2eb789678c5b
+
+% 0 1 0 01b525e1083a34bf00b0675a26b195fa
+
+@ 0 11 0 1f81bdffa7890b3b036327d72005e674
++   entry .map   die `Nodal`-Instanz jeder `Map[node, Set[node]]`
++       Im impliziten Geltungsbereich über das Begleitobjekt der Typklasse, da `Map` zu
++       Proscenium gehört. Ein Ziel, das in der Schlüsselmenge fehlt, ist **kein** Knoten: Die
++       Instanz gibt die Map so wieder, wie sie ist, und `Digraph(adjacency)` ist der
++       Konstruktor, der die Knotenmenge über die Ziele abschließt. Die Instanz ist
++       untertyp-parametrisch, daher passt auch ein verfeinerter Map-Typ.
++   entry .ledger   die `Nodal`-Instanz jedes `Ledger[node, Set[node]]`
++       Wie `.map`, für ein `Ledger`: Seine Schlüssel sind die Knoten, in ihrer Reihenfolge, und
++       ein fehlender Schlüssel hat keine Nachfolger.
++   entry #nodes   jeder Knoten, als Iterator
++   entry #successors   die Knoten, auf die ein Knoten zeigt, als Iterator; leer für einen fehlenden Knoten
++   entry #has   ob der Graph einen Knoten hat, ohne seine Knoten zu durchsuchen
+
+@ 0 1 0 09b9af0e0eb3cda217bde524a10bc9ba
++ entry .Bidirectional   die Typklasse eines Graphen, der die Vorgänger eines Knotens direkt angeben kann
+
+% 1 1 0 05a58afc43e63ba2038369e1353f3428
+
+@ 0 7 0 1078316c8a5be73b139fca8c41f5e902
++       `graph is Bidirectional by node` sagt, dass der Graph angeben kann, welche Knoten *auf*
++       einen Knoten zeigen — in der Abhängigkeitslesart die von ihm Abhängigen —, ohne jede
++       Kante zu durchsuchen. Eine eingefrorene `Topology` und ein `Hasse` speichern beide
++       Richtungen und haben ungesperrte Instanzen. Ein `Dag` oder `Digraph` speichert nur die
++       Vorwärtsrichtung, und seine Instanz ist hinter `Dysasymptotic.LinearScan` gesperrt: Die
++       Vorgänger eines Knotens dort aufzufinden, ist eine Transposition jeder Kante, Kosten
++       außerhalb des Bereichs der Frage, die ein Programm mit
++       `import dysasymptotics.linearScan` bestätigen muss. Die Erweiterung `predecessors` auf
++       Paketebene braucht diese Instanz.
+
+% 1 1 0 1426f86b62a80ffb1eb9b25b8da2df7b
+
+@ 0 1 0 0db7e4ba7759a94b13f1cc0a66c885ca
++   entry #predecessors   die Knoten, die auf einen Knoten zeigen, als Iterator
+
+@ 0 9 0 068840296a747b220a1a1a0e64dfc9d7
++ entry .Topological   die Markierungs-Typklasse eines Graphentyps, dessen Werte keinen Zyklus enthalten können
++     `graph is Topological` bescheinigt, dass ein Wert des Typs eine topologische Ordnung
++     zulässt — dass er keinen gerichteten Zyklus enthält —, und zwar **durch Konstruktion**:
++     `Dag`, eine eingefrorene `Topology[node]^{}` und `Hasse` haben je eine Instanz, da jeder
++     nur über eine Prüfung oder eine Invariante gebaut werden kann. Die Instanz ist eine
++     Markierung, nie das Ergebnis einer Laufzeitprüfung auf einem allgemeinen Typ: Ein
++     `Digraph` wird nur durch `acyclic` `Topological`, das mit einem `Dag` antwortet. Die
++     Erweiterungen `linearized`, `reduction`, `traversal` und `layered` setzen sie voraus,
++     ebenso die Diagramme von `dendrology`, daher hat ein zyklischer Graph keine solchen
++     Operationen statt Operationen, die auslösen.
+
+@ 0 1 0 0d71086775dcea4c03d1c1497c76e6e2
++ entry .Reachable   die Typklasse eines Graphen mit eigener Erreichbarkeitssuche
+
+% 1 1 0 0ef1e4541d6b01b402af770132fc2581
+
+@ 0 7 0 19d9aaaff0350ffd17b315ad4d0cdeb3
++       `graph is Reachable by node` beantwortet alles, was von einem Knoten aus erreichbar ist, den
++       Knoten eingeschlossen, als Menge — total auf zyklischer Eingabe, durch eine Menge besuchter
++       Knoten statt durch Rekursion, sodass sie aus eigenem Anlass nie einen Fehler auslöst; die
++       Erweiterung `reachable`, die sie aufruft, löst `Dag.Error` nur für einen Knoten aus, den der
++       Graph nicht hat. Die native Instanz ist die einer eingefrorenen `Topology`,
++       die ihre Kantenlisten durchläuft; jeder andere `Nodal`-Graph wird generisch über `.generic`
++       durchsucht, das die Erweiterungen als Vorgabe ihres kontextuellen Parameters nehmen, sodass
++       eine `Map` oder ein `Hasse` keine eigene Instanz braucht.
+
+% 1 1 0 001bef3025c9b4ab0e3c076507f6c117
+
+@ 0 7 0 0d6941d6984bc89c0ed414b4c3fcddb6
++   entry .topology   die `Reachable`-Instanz einer eingefrorenen `Topology[node]^{}`
++   entry .generic   ein `Reachable` für jeden `Nodal`-Graphen, durch eine Tiefensuche über seine Nachfolger
++       Eine Methode statt eines Givens: Die Erweiterungen `reachable` und `closure` nehmen sie als
++       Vorgabe ihres `using`-Parameters, sodass sie ohne eine verschachtelte Given-Suche erreicht
++       wird — die bei einem opaken Empfänger wie `Map` den Alias aufgelöst sähe und nichts träfe.
++       Code, der ein `Reachable` für seinen eigenen Graphtyp herbeiruft, kann sie direkt aufrufen.
++   entry #reachable   alles, was ein Knoten erreicht, er selbst eingeschlossen
+
+@ 0 1 0 1088e3fcb002086a067e60742d6e3d7b
++ entry .Invertible   die Typklasse eines Graphen, der jede Kante umkehren kann, und der Typ, in den er sich umkehrt
+
+% 1 1 0 0a515c266fda9f4a13f6806c8b4d779a
+
+@ 0 6 0 1fa5c41987cc5b521d50b8482e18f279
++       `graph is Invertible by node to result` liefert den Graphen mit jeder Kante umgekehrt, als
++       Wert des Typs, der ihn am besten aufnehmen kann: Ein `Dag` kehrt sich zu einem `Dag` um, da
++       das Umkehren jeder Kante die Azyklizität erhält; ein `Hasse` zu einem `Hasse` in O(1), durch
++       Vertauschen der beiden Richtungen, die er speichert; eine eingefrorene `Topology` zu einer
++       anderen eingefrorenen `Topology`; und alles andere, was `Nodal` ist, zu einem `Digraph`,
++       durch eine Faltung über seine Kanten mittels `.generic`, das die Erweiterung `invert` als
++       Vorgabe ihres kontextuellen Parameters nimmt.
+
+% 1 1 0 02da5cb91b3dfc160610a9ebadeea64a
+
+@ 0 8 0 134bf918e22bd9211b0abe0d88000d84
++   entry .digraph   `Digraph` kehrt sich zu `Digraph` um
++   entry .dag   `Dag` kehrt sich zu `Dag` um: Das Umkehren jeder Kante erhält die Azyklizität
++   entry .topology   eine eingefrorene `Topology[node]^{}` kehrt sich zu einer anderen um
++   entry .hasse   `Hasse` kehrt sich zu `Hasse` um, in O(1), durch Vertauschen seiner beiden gespeicherten Richtungen
++   entry .generic   ein `Invertible` für jeden `Nodal`-Graphen, das einen `Digraph` liefert
++       Eine Methode, kein Given, aus demselben Grund wie `Reachable.generic`: Die Erweiterung
++       nimmt sie als Vorgabe und vermeidet so eine verschachtelte Given-Suche, die ein opaker
++       Empfänger vereiteln würde.
++   entry #invert   der Graph mit jeder Kante umgekehrt, als `Result` der Instanz
+
+@ 0 1 0 0a994124a910710d10d9be509c962c3b
++ entry .Hasse   das Hasse-Diagramm einer Halbordnung: die unmittelbaren oberen Nachbarn jedes Elements, ohne implizierte Vergleiche
+
+% 1 1 0 0ff1957d24e40d9a021ab675f35232f9
+
+@ 0 4 0 1951c5ac087eecd61a67c29df0c1ec50
++       `Hasse(elements)(lessOrEqual)` nimmt eine Menge und eine Ordnungsrelation
++       (`lessOrEqual(a, b)` bedeutet `a ≤ b`) und berechnet die Überdeckungsrelation: für jedes
++       Element die Elemente unmittelbar darüber (`parents`) und unmittelbar darunter (`children`),
++       wobei jeder Vergleich, den ein Pfad bereits impliziert, weggelassen wird. Die Teiler von 12,
++       nach Teilbarkeit geordnet:
+
+% 2 1 0 14f34b7f1b0d2bae0a691627461fcb82
+
+% 3 1 0 17593b537489f40b0ddbcfc62b871837
+
+% 0 1 0 168e731b9af96dd606cf98d674faa2a5
+
+% 0 1 0 013cdb2ca6d8ea6b06079f6dcf173faa
+
+% 0 1 0 11b9093ef1a93ae312af4364dcdda11d
+
+% 0 1 0 14500b39e072ded30c5dd54b3a112c14
+
+% 0 1 0 19e6ce6c04dfcc6e0e39e61ad6447660
+
+% 0 1 0 0600e8a0ef8b13bf0582055e83e88962
+
+% 1 1 0 12fc5b47f34389931350f9c880c75d47
+
+@ 0 6 0 10c68232887118211233b265fe8add1c
++       Elemente werden einzeln eingefügt; jede Einfügung findet ihre unmittelbaren oberen Nachbarn,
++       indem sie von den aktuellen Maxima absteigt, und ihre unmittelbaren unteren Nachbarn, indem
++       sie von den aktuellen Minima aufsteigt, wobei ganze Teilbäume beschnitten werden, sobald ein
++       Vergleich sie ausschließt, und jeder Vergleich memoisiert wird, sodass weit weniger als alle
++       geordneten Paare verglichen werden. Zwei unter der Relation äquivalente Elemente (jedes ≤ dem
++       anderen) werden zusammengeführt: Das spätere wird ein Alias des ersten, und Abfragen zu
++       einem der beiden antworten für beide.
+
+@ 0 6 0 19c1e417acb221591fbfa48f21072edb
++       Ein `Hasse` ist selbst ein Graph, in dem jedes Element auf die Elemente zeigt, deren oberer
++       Nachbar es ist; er ist also `Nodal`, `Bidirectional` (beide Richtungen werden gespeichert) und
++       `Topological` (eine Halbordnung hat keinen Zyklus): `divisors.linearized` läuft von unten
++       nach oben, seine `sources` sind seine Minima und seine `sinks` seine Maxima, und die
++       Diagramme von `dendrology` zeichnen ihn direkt. `dag` ist dieselbe Relation als `Dag`, und
++       `Poset#dag` baut einen über eine `PartiallyOrdered`-Instanz.
+
+% 1 1 0 098d97fcc07568990ac6993cdf9a90f8
+
+% 1 1 0 02ad02c8ae13287719703d57e76f83c1
+
+@ 0 24 0 124a42d23fe2ce341b91e988cb44834b
++   entry .apply   das Hasse-Diagramm einer Menge unter einer Relation `lessOrEqual`
++       `Hasse(elements)((a, b) => a ≤ b)`. Die Relation muss eine Halbordnung sein (reflexiv,
++       antisymmetrisch bis auf das Zusammenführen von Äquivalenten, transitiv), damit das Ergebnis
++       eine Überdeckungsrelation ist; sie wird höchstens einmal je geordnetem Paar aufgerufen.
++   entry .nodal   die `Nodal`-Instanz: die Elemente eines `Hasse`, jedes auf die Elemente zeigend, deren oberer Nachbar es ist
++   entry .bidirectional   die `Bidirectional`-Instanz: Die Vorgänger eines Elements sind seine oberen Nachbarn, direkt gelesen
++       Beide Richtungen werden gespeichert, daher wird kein `Dysasymptotic.LinearScan` gebraucht.
++   entry .topological   der Marker, der bescheinigt, dass ein `Hasse` keinen Zyklus enthält: Eine Halbordnung kann keinen haben
++   entry #parents   die Elemente unmittelbar über einem Element: seine oberen Nachbarn
++   entry #children   die Elemente unmittelbar unter einem Element: die, deren oberer Nachbar es ist
++   entry #elements   jedes Element, als Menge
++   entry #maxima   die Elemente, über denen nichts liegt
++   entry #minima   die Elemente, unter denen nichts liegt
++   entry #dag   die Überdeckungsrelation als `Dag`, jedes Element auf die zeigend, deren oberer Nachbar es ist
++       Keine Prüfung ist nötig: Die Überdeckungsrelation einer Halbordnung ist azyklisch.
++       `hasse.dag.edges` ist `hasse.edges`.
++   entry #invert   dieselbe Relation, aufwärts gelesen: jedes Element auf seine oberen Nachbarn zeigend
++       O(1): Die beiden gespeicherten Richtungen werden vertauscht. `invert.children(x)` ist
++       `parents(x)`.
++   entry #bottom   ein neues Element, unter jedem aktuellen Minimum angefügt, in einem Durchlauf ohne Vergleiche
++       Für einen Wert, der durch Konstruktion bekanntermaßen kleiner als alles ist — `Nothing`
++       unter den Typen —, sodass er nicht mit jedem Element verglichen werden muss. Er wird das
++       einzige Minimum, und jedes frühere Minimum ist nun sein oberer Nachbar.
++   entry #top   ein neues Element, über jedem aktuellen Maximum angefügt, in einem Durchlauf ohne Vergleiche
++       Das Gegenstück zu `#bottom`: `Any` unter den Typen. Es wird das einzige Maximum.
+
+@ 0 1 0 1e340dcf1732dd781255bbcb6faed80e
++ entry .PartiallyOrdered   die Typklasse eines Typs mit einer Halbordnung: `compare(left, right)` ist `left ≤ right`
+
+% 1 1 0 0ee8378262e87a7f19297ead0bdc7297
+
+@ 0 3 0 1d9152626944c2980bc55e6a12c70140
++       `element is PartiallyOrdered` liefert für `Poset` `compare(left, right): Boolean`, gelesen
++       als `left ≤
++       right`. Die Relation sollte reflexiv, antisymmetrisch und transitiv sein; sie muss nicht
++       jedes Paar in Beziehung setzen. Ein Given wird als Lambda geschrieben:
+
+% 2 1 0 04b278f0197365e00812914d35f8c6cf
+
+% 3 1 0 04510a37fce13ec909a92bde067c9e91
+
+% 0 1 0 061a99e7c0f79b661bbd3fa21095342a
+
+% 0 1 0 0cdf762b9299282b1dfd9277410c8d1e
+
+% 1 1 0 031f8ed40c28be5703ef64769ebc3d8c
+
+% 1 1 0 14345edbec4460f01cb02cca09384ff9
+
+@ 0 1 0 0f7067c654a86b11078ad4e4f3ce016a
++ entry .Poset   eine Menge von Elementen mit einer `PartiallyOrdered`-Instanz und der `Dag` ihrer Überdeckungsrelation
+
+% 1 1 0 13ab337c5520ecf9116781670655d34b
+
+@ 0 4 0 1c69a211605357aa016081dc2d1f4f97
++       `Poset(elements*)` hält eine Menge von Elementen, deren Typ `PartiallyOrdered` ist, und
++       `dag` ist das Hasse-Diagramm der Ordnung als `Dag`, in dem jedes Element auf die Elemente
++       unmittelbar **über** ihm zeigt (seine oberen Nachbarn), gebaut über `Hasse` mit dem
++       `compare` der Ordnung, das Vergleiche beschneidet und hinterher keine Reduktion braucht.
+
+% 2 1 0 134d23e26ea27bdd0fab566c74481052
+
+% 3 1 0 11a8924604c5ea2706e2d7f5fa1b5525
+
+% 0 1 0 117d4d711593115e0bb3c98a751e02a3
+
+% 0 1 0 0c18a5313278106408138a9156a70973
+
+% 1 1 0 1afe11ce23b95e4a1d0951afac7ae5d7
+
+@ 0 3 0 1216e07a119eae68032f52d656568609
++       Man beachte die Richtung: `Poset#dag` zeigt nach oben (auf die oberen Nachbarn), während
++       `Hasse#dag` nach unten zeigt (auf die überdeckten Elemente); `Hasse` mit derselben Relation
++       ist der reichhaltigere Wert, mit beiden Richtungen, Maxima und Minima.
+
+% 0 1 0 1e72f1a44ab56fdd0f932c6e469b55ff
+
+% 0 1 0 0e8c0d381270e4000e008af3312bc62f
+
+@ 0 3 0 18f48b0e6c35ce281ea93d8aab30a9c8
++   entry .apply   ein `Poset` aus den gegebenen Elementen
++   entry #elements   die Elemente, als Menge
++   entry #dag   die Überdeckungsrelation als `Dag`, jedes Element auf die unmittelbar über ihm zeigend
+
+@ 0 1 0 1422d1b2040d815e03f7b106cf902542
++ entry .Layering   ein in Schichten zum Zeichnen angeordneter Graph, Abhängigkeiten über den Abhängigen, mit verringerten Kreuzungen
+
+% 1 1 0 18faf5cadc99b2a01f9bb633de3ecc4f
+
+@ 0 10 0 1ff7f4e6144eddbd1a55224d3f3e5861
++       Das Ergebnis von `Dag#layered` (und der Erweiterung `layered` auf jedem
++       `Topological`-Graphen). Jeder Knoten wird einer Schicht zugewiesen — durch
++       `Ranking.LongestPath` eine Schicht unter seiner tiefsten Abhängigkeit, sodass die Quellen
++       Schicht 0 teilen; oder, mit `import
++       rankings.balancedRanking`, hinabgezogen auf die Schicht über seinem flachsten Abhängigen —,
++       und eine Kante, die mehr als eine Schicht überspannt, verläuft in jeder Schicht dazwischen
++       durch einen `Layering.Vertex.Virtual`, sodass jede Verbindung im Ergebnis benachbarte
++       Schichten verbindet. Die Ecken jeder Schicht werden dann so geordnet, dass die Kreuzungen
++       zwischen den Verbindungen zu ihren Nachbarschichten abnehmen, durch abwechselnde Durchläufe
++       mit gewichtetem Median und benachbarte Vertauschungen, bis zu vierundzwanzig Durchläufe oder
++       bis die Zeichnung planar ist — Sugiyamas Methode, wie `dot` aus GraphViz sie zeichnet.
+
+% 2 1 0 011fc43eb3bfbcfe11e0d9b1a0fcfc4f
+
+% 3 1 0 1ddd18da55df890917197ec6fc3be282
+
+% 4 1 0 1627a028719e2afa1f66925f4d6eb71f
+
+% 0 1 0 1765edbf8c9a2fb70eaffba3ba435450
+
+% 0 1 0 0e948f0aec81affc1603fb8deff3e36a
+
+% 0 1 0 02c6ec41e9f1471f0a656aa23d1dd259
+
+% 0 1 0 1d16642fd557254813cb289af7cedbb2
+
+% 0 1 0 034cc5718e0b7596040571422d3c4cc0
+
+% 0 1 0 03e7b7e82d629d4b156dfc855cd17eb4
+
+% 0 1 0 135fa14995a0f6a90598eb3e00ef12cc
+
+% 1 1 0 011859498c315a1d190b5bd2635ff884
+
+@ 0 2 0 04293f7e3a01e6301d9ee152031e8c5b
++       `LayeredDagDiagram` aus `dendrology` weist einer Schichtung Spalten zu und stellt sie dar;
++       eine andere Zeichnung nimmt `layers` und `links` direkt.
+
+% 0 1 0 0c339bb1bbac2c4e0e068edb2a68bf97
+
+% 1 1 0 0a259ebc7c9ce0b40699c7f6df823bc2
+
+@ 0 10 0 1ceb9f67a85c604b0c693d1925daedaa
++   entry .Vertex   ein Platz in einer Schicht: ein Knoten des Graphen oder der Punkt, an dem eine längere Kante hindurchläuft
++       Ein Enum: `Real(value)` ist ein Knoten des Graphen, und `Virtual(source, target)` ist die
++       Stelle, an der die Kante von `source` nach `target`, die mehrere Schichten überspannt, durch
++       diese hindurchläuft. Eine Zeichnung gibt einer virtuellen Ecke eine Spalte und zeichnet die
++       Kante durch sie hindurch.
++   entry #layers   die Schichten, von oben nach unten, jede eine Liste von `Layering.Vertex` in gezeichneter Reihenfolge
++   entry #links   `links(i)` verbindet Schicht `i` mit Schicht `i + 1`, als Paare von Positionen innerhalb jeder
++       Jede Verbindung verbindet benachbarte Schichten: Eine Kante, die mehr überspannt, wird an
++       ihren virtuellen Ecken aufgebrochen.
++   entry #rank   die Schicht jedes Knotens, als `Map`
++   entry #position   die Position jedes Knotens innerhalb seiner Schicht, als `Map`
++   entry #crossings   wie viele Paare von Verbindungen sich kreuzen, über die ganze Schichtung
+
+@ 0 1 0 1094fd9276da52ee198bac275abd244b
++ entry .Ranking   wie `layered` jeden Knoten einer Schicht zuweist: `LongestPath` oder `Balanced`
+
+% 1 1 0 0d974163f6826cc712df9bfbaf6bbc6a
+
+@ 0 7 0 03ecf45d4f2796bb121e510f0c201cc3
++       Ein Enum, das `Dag#layered`, die Erweiterung `layered` und `LayeredDagDiagram` aus
++       `dendrology` als Kontextwert nehmen. `LongestPath` legt jeden Knoten eine Schicht unter
++       seine tiefste Abhängigkeit, sodass jeder Knoten, der von nichts abhängt, Schicht 0 teilt.
++       `Balanced` beginnt damit und zieht dann jeden Knoten, der Abhängige hat, auf die Schicht über
++       seinem flachsten Abhängigen hinab, was die lange Kante von einer Quelle verkürzt, die nur
++       etwas Tiefes speist. Das `default` des Begleitobjekts ist `LongestPath`; `import
++       rankings.balancedRanking` hat Vorrang davor.
+
+% 1 1 0 090bb18592fc745818aab1e6b7c707ae
+
+% 1 1 0 03967fc2ccb77ba60dc6f0dbc5fbf4f1
+
+@ 0 1 0 07c6aea46f275721107d26393b1ddf24
++   entry .default   `Ranking.LongestPath`, das Given, das gilt, wenn keines importiert ist
+
+@ 0 1 0 1b6e7a777c3080c013f02823bccb2552
++ entry .rankings   die beiden Richtlinien der Schichtzuweisung für `layered`, als Givens, die namentlich importiert werden
+
+% 1 1 0 1486050ed3913d9813638e506553b2ba
+
+@ 0 3 0 13e91e8e3a6d497b05aa734d9d7ea985
++       `import soundness.*` löst `Ranking.LongestPath` aus dem Begleitobjekt `Ranking` auf; wird
++       eines davon namentlich importiert, wird eine Richtlinie ausdrücklich gewählt, und
++       `balancedRanking` ist die einzige Möglichkeit, `Balanced` zu wählen.
+
+% 2 1 0 01fec0fcd095bf8f01b47613a40856a2
+
+% 3 1 0 0e4e35438cbc81f809b6c526a9d0fb70
+
+% 4 1 0 11df5012ae5c0f6f06a4d360ec311e99
+
+% 0 1 0 107cd6b5f8c4da6e0877fca1d99c87f5
+
+% 0 1 0 0d856b813ae39cf819b0f022a1b1c8cd
+
+% 0 1 0 089291606c717a3d016864dc0e369b01
+
+% 1 1 0 1457b6966938a98b02b875ad3f7d84b1
+
+@ 0 3 0 143a315c5ed3157a0804ee78c1e6a333
++       Ohne den Import ist `deep.layered.rank(5)` 0.
++   entry .longestPathRanking   `Ranking.LongestPath`: jeder Knoten eine Schicht unter seiner tiefsten Abhängigkeit
++   entry .balancedRanking   `Ranking.Balanced`: jeder Knoten mit Abhängigen auf die Schicht über seinem flachsten Abhängigen hinabgezogen
+
+@ 0 1 0 1dec89a7021ce0bd1135703cec9f475e
++ entry .Dot   ein GraphViz-DOT-Dokument als Wert, aus Bezeichnern, Kanten und Attributen gebaut und zu Text serialisiert
+
+% 1 1 0 196b0ed07efe1530144f255c143c453e
+
+@ 0 6 0 18925c26ceb8cc921117a36549d0d547
++       `Dot` ist ein Enum mit zwei Fällen, `Graph` (ungerichtet) und `Digraph` (gerichtet), die
++       jeweils einen optionalen Namen halten, ob er `strict` ist (keine doppelten Kanten), und
++       seine `Dot.Statement`s. `digraph`, `strictDigraph`, `graph`, `strictGraph` und `subgraph`
++       des Begleitobjekts bauen sie, und die Anweisungen werden aus `Name[Dot.Id]`-Bezeichnern mit
++       den Erweiterungsoperatoren `-->` (eine gerichtete Kante), `--` (eine ungerichtete Kante),
++       `:=` (eine Zuweisung) und `id(key -> value, …)` (ein Knoten mit Attributen) gebaut.
++       `serialize` schreibt den DOT-Text.
+
+% 2 1 0 08489056c59de60802c6c65a030fe7f4
+
+% 3 1 0 0ea00241ea4572f808d7dca5c41f9c83
+
+% 4 1 0 057be87d840da39e0b6bb5d9af9f5352
+
+% 0 1 0 13af4cc3af32ed68076e71060a727f50
+
+% 0 1 0 1d8e7470bfcb6fef0581a3656e24283e
+
+% 0 1 0 1c53e12de0a0215c1b99361dffa7f7d1
+
+% 0 1 0 0dcfaffb02554c951144eed8bca4d4a0
+
+% 0 1 0 0e07471248a4d8f31bd87be8e56380ca
+
+% 0 1 0 1d26812238659b7007bc5323e4299c05
+
+% 1 1 0 07895e7a272113e708e54581b1e69977
+
+@ 0 5 0 1cefd2c58c11c9d313a79f6bc7b26a1c
++       Jeder Bezeichner wird in doppelten Anführungszeichen ausgegeben, daher ist die Regel
++       `Dot.Identifier` nachgiebig: jeder nichtleere Text ohne doppeltes Anführungszeichen und ohne
++       Zeilenumbruch. `Name[Dot.Id](text)` löst für alles andere `Name.Error` aus (und braucht dafür
++       eine `Tactic[Name.Error]`), und das Literal `n"…"` wird beim Kompilieren des Codes geprüft.
++       Ein `Dag[Text]` wird über `dag.dot` dargestellt, das einen `Dot.Digraph` mit einer Kante je
++       Abhängigkeit erzeugt.
+
+% 1 1 0 15e53a43261ab90116835f476b6ee3d3
+
+@ 0 15 0 072abebb333756d918a4817841488d7d
++   entry .digraph   ein gerichteter Graph, benannt oder anonym, aus den gegebenen Anweisungen
++       `Dot.digraph(id, statements*)` oder `Dot.digraph(statements*)`; nicht strikt.
++   entry .strictDigraph   ein benannter gerichteter Graph, als `strict` markiert: Doppelte Kanten werden zusammengeführt
++   entry .graph   ein benannter ungerichteter Graph aus den gegebenen Anweisungen
++   entry .strictGraph   ein benannter ungerichteter Graph, als `strict` markiert
++   entry .subgraph   eine Anweisung `subgraph { … }`, benannt oder anonym, in einem Graphen verschachtelt oder als Ziel einer Kante
++       `Dot.subgraph(id, statements*)` oder `Dot.subgraph(statements*)`. Eine Kante kann an einem
++       Teilgraphen enden: `a --> Dot.subgraph(b, c)`.
++   entry .--   `a -- b`: eine Anweisung für eine ungerichtete Kante, von einem Bezeichner zu einem Bezeichner oder einem Teilgraphen
++   entry .-->   `a --> b`: eine Anweisung für eine gerichtete Kante, von einem Bezeichner zu einem Bezeichner oder einem Teilgraphen
++   entry .:=   `a := b`: eine Zuweisungsanweisung, ausgegeben als `"a" = "b"`
++   entry .apply   `id(key -> value, …)`: eine Knotenanweisung, die einen Bezeichner mit Attributen deklariert
++       Eine Erweiterung auf `Name[Dot.Id]`: `a(t"color" -> t"red")` wird als `"a" [ color="red" ]`
++       ausgegeben. Ohne Attribute deklariert sie den bloßen Knoten.
++   entry .Target   die rechte Seite einer Kante: gerichtet oder nicht, ihr Ziel und ein optionales verkettetes Ziel
+
+% 1 1 0 1e380526f22192980cc4ec506685eaed
+
+@ 0 17 0 0b70ed4bad8e84040cb379dd031c1268
++         Eine Case-Klasse mit `directed`, `dest` (einem Bezeichner oder einem `Statement.Subgraph`)
++         und `link`, einem weiteren `Target` für eine Kette wie `a -> b -> c`. Die Operatoren `-->`
++         und `--` bauen eines; von Hand wird es selten geschrieben.
++     entry #directed   ob die Kante mit `->` statt mit `--` gezeichnet wird
++     entry #dest   das Ziel: ein `Name[Dot.Id]` oder ein `Statement.Subgraph`
++     entry #link   ein weiteres Ziel, das an dieses angehängt ist, falls vorhanden
++   entry .Property   ein Attribut `key="value"` eines Knotens
++     entry #key   der Name des Attributs
++     entry #value   der Wert des Attributs, in doppelten Anführungszeichen ausgegeben
++   entry .Statement   eine Anweisung eines Graphen: ein Knoten, eine Kante, eine Zuweisung oder ein Teilgraph
++       Ein Enum: `Node(id, attrs*)`, `Edge(id, rhs: Target, attrs*)`, `Assignment(id, id2)` und
++       `Subgraph(id: Option[Name[Dot.Id]], statements*)`. Die Konstruktoren des Begleitobjekts und
++       die Operatoren auf `Name[Dot.Id]` erzeugen sie; ein `Subgraph` kann auch als Ziel einer Kante
++       stehen.
++   entry .serialize   `Dot.serialize(tokens)`: legt eine Token-Liste als eingerückten DOT-Text an
++       Der Writer auf niedriger Ebene, den die Instanzmethode verwendet: Geschweifte Klammern öffnen
++       und schließen eingerückte Blöcke, `;` beendet eine Zeile, `[` und `]` klammern Attribute ein,
++       und andere Tokens werden durch Leerzeichen getrennt.
++   entry .Id   die Benennungsebene der DOT-Bezeichner: `Name[Dot.Id]`
+
+% 1 1 0 1beeecc130464784191606e3cf685254
+
+@ 0 11 0 0a18ef402a74527d0131840e607cc835
++         Ein versiegelter Markertyp. Ein `Name[Dot.Id]` benennt gleichermaßen einen Knoten, einen
++         Endpunkt einer Kante, eine Seite einer Zuweisung oder einen (Teil-)Graphen und wird durch
++         das Given `nominative` in diesem Objekt an `Dot.Identifier` gehalten:
++         `Name[Dot.Id](text)` prüft zur Laufzeit (und löst `Name.Error` aus), `n"…"` beim
++         Kompilieren des Codes.
++     entry .nominative   das Given, das einen `Name[Dot.Id]` an die Regel `Dot.Identifier` hält
++   entry .Identifier   die Regel, die ein DOT-Bezeichner erfüllen muss: nichtleer, ohne doppeltes Anführungszeichen und ohne Zeilenumbruch
++       Eine Regel aus `nomenclature`. Bezeichner werden immer in doppelten Anführungszeichen
++       ausgegeben, daher muss nichts anderes maskiert werden; ihre Fehlermeldung lautet _must be a
++       valid DOT identifier_.
++   entry #serialize   der Graph als DOT-Text, eingerückt, mit einem Zeilenumbruch beginnend
++       `Dag(t"a" -> t"b").dot.serialize` ist `"\ndigraph {\n  \"a\" -> \"b\"\n}"`.
++   entry #add   der Graph mit weiteren angehängten Anweisungen
+
+@ 0 5 0 0aacba1d0623776b02b020e9fd1ba652
++ entry .explore   `start.explore(dependencies)`: materialisiert eine Nachfolgerfunktion zu einem `Digraph`, indem von einem Knoten aus erkundet wird
++     Eine Erweiterung auf jedem Wert. Eine Funktion `node => Iterable[node]` hat keine eigene
++     endliche Knotenmenge und ist daher nicht `Nodal`; `explore` geht von `start` aus nach außen,
++     ruft die Funktion einmal je erreichtem Knoten auf und liefert den Graphen aus allem, was
++     gefunden wurde. Die Funktion kann auf sich selbst zurückführen, daher ist das Ergebnis ein
++     `Digraph`, und `acyclic` prüft ihn.
+
+% 2 1 0 0b31083e3950a22f09123f352b79f6cd
+
+% 3 1 0 1e6749b3bcb1bf840e201c40effa932b
+
+% 4 1 0 0cffe0d99a0ff75e169902db1d27e718
+
+% 0 1 0 034fcaa2bf30d57303a3fa1642797d5f
+
+% 1 1 0 1d28b99d798fdbbf158e2a4b66d3f2a7
+
+@ 0 4 0 0bffc6af09ac25261fca97930ae0dc45
++ entry .nodes   jeder Knoten eines beliebigen `Nodal`-Graphen, als Menge
++     Die generische Erweiterung, für jeden `graph is Nodal by node`: eine `Map[node, Set[node]]`,
++     ein `Ledger`, ein `Hasse`, eine eingefrorene `Topology` oder einer der beiden Graphtypen (die
++     dieselben Namen als Methoden anbieten, welche Vorrang haben).
+
+@ 0 1 0 1f6c1e97141ab1a40354f6029a5f6abe
++ entry .successors   die Knoten, auf die ein Knoten eines beliebigen `Nodal`-Graphen zeigt: seine Abhängigkeiten, als Menge
+
+@ 0 1 0 1172705babe7f3881c40dd7932ba797d
++ entry .edges   jede Kante eines beliebigen `Nodal`-Graphen, als Paare `(from, to)`
+
+@ 0 2 0 01d576d8ef439190163d9dfa199ff9fa
++ entry .sources   die Knoten eines beliebigen `Nodal`-Graphen ohne Nachfolger: die, die von nichts abhängen
++     Der Geltungsbereich ist der ganze Graph, daher wird auf einer nur vorwärts gerichteten
++     Darstellung keine Bestätigung gebraucht.
+
+@ 0 3 0 11e8390d710aa35b0ae5dfba00bafe37
++ entry .sinks   die Knoten eines beliebigen `Nodal`-Graphen ohne Vorgänger: die, von denen nichts abhängt
++     Ein Durchgang über jede Kante, daher werden keine `Bidirectional`-Instanz und keine
++     Bestätigung gebraucht: Die Frage betrifft den ganzen Graphen, nicht einen Knoten.
+
+@ 0 4 0 046c856d195232c5103d9d33737c0977
++ entry .predecessors   die Knoten, die auf einen Knoten zeigen, für jeden `Bidirectional`-Graphen
++     Braucht einen `graph is Bidirectional by node`: ungesperrt für eine eingefrorene `Topology`
++     oder einen `Hasse`, und gesperrt durch `Dysasymptotic.LinearScan`
++     (`import dysasymptotics.linearScan`) für einen `Dag` oder einen `Digraph`, der jede Kante
++     transponieren muss, um zu antworten.
+
+@ 0 2 0 0c14be402bf0d6ff0e983e9244df94f3
++ entry .cycle   ein Zyklus in einem beliebigen `Nodal`-Graphen, falls er einen hat: Knoten, die jeweils auf den nächsten zeigen und dort enden, wo sie begannen
++     `Unset` für einen azyklischen Graphen. Total auf jedem Graphen, durch eine Tiefensuche.
+
+@ 0 2 0 1409cb2dbbec2e0209f7e90ddb0049f0
++ entry .acyclic   ein beliebiger `Nodal`-Graph als `Dag`, nach der einen Prüfung; löst `Dag.Error` aus, wenn es einen Zyklus gibt
++     O(n + e), einmal; die Knotenmenge wird über jedes Kantenziel abgeschlossen.
+
+% 2 1 0 146511835c1956541dc59e8655ee983a
+
+% 3 1 0 137df9e45d805ca215f857751c8b9a21
+
+% 4 1 0 099a6de0e1aa82100e63ec4ffe5b7d43
+
+% 0 1 0 022f36ed379b9ab6199e3705b1230f7e
+
+% 1 1 0 1a80505f8d1c34da01b7aef3b97f1148
+
+@ 0 1 0 0301a029fe7ff8e203638e2a12141f1b
++ entry .digraph   ein beliebiger `Nodal`-Graph, in einen `Digraph` kopiert, seine Knotenmenge über jedes Kantenziel abgeschlossen
+
+@ 0 5 0 0cc6f0a7d5e170da1554083d1c23b51b
++ entry .reachable   alles, was ein Knoten eines beliebigen `Nodal`-Graphen erreicht, er selbst eingeschlossen
++     Löst `Dag.Error` (`Reason.NodeMissing`) nur für einen Knoten aus, den der Graph nach dem
++     `has` der Instanz nicht hat; die Suche selbst ist auf einem zyklischen Graphen total. Ein
++     Graph mit eigener `Reachable`-Instanz (eine eingefrorene `Topology`) wird nativ durchsucht,
++     jeder andere über `Reachable.generic`.
+
+@ 0 4 0 1acd6f5f7035d25c0da41d19a847e97e
++ entry .closure   jede implizierte Kante eines beliebigen `Nodal`-Graphen ausdrücklich gemacht, als `Digraph`
++     Eine Erreichbarkeitssuche je Knoten, über die `Reachable`-Instanz des Graphen oder die
++     generische Suche; ein Knoten zeigt im Ergebnis nicht auf sich selbst. `Dag#closure` und die
++     einer eingefrorenen `Topology` sind die schnelleren Formen, über die Bitmatrix.
+
+@ 0 3 0 0e9d407af17c304103c93d35de58eec6
++ entry .invert   ein beliebiger `Nodal`-Graph mit jeder Kante umgekehrt, als der Typ, den seine `Invertible`-Instanz benennt
++     Ein `Dag` zu einem `Dag`, ein `Hasse` zu einem `Hasse`, eine eingefrorene `Topology` zu einer
++     anderen und alles andere — eine `Map`, ein `Ledger` — über `Invertible.generic` zu einem
++     `Digraph`.
+
+@ 0 4 0 185eb3adc419b8d117daa2c533937309
++ entry .linearized   die Knoten eines beliebigen `Topological`-Graphen in topologischer Ordnung: jeder Knoten nach seinen Nachfolgern
++     Für einen `Dag`, eine eingefrorene `Topology` oder einen `Hasse`; ein `Digraph` hat keine
++     solche Operation, bis `acyclic` ihn umgewandelt hat. Zwischen unverbundenen Knoten folgt die
++     Reihenfolge den `nodes` der Instanz, sodass eine Darstellung in Einfügereihenfolge eine
++     stabile ergibt.
+
+@ 0 2 0 1bb7dd2a5df7e2d30cf75c64298f044b
++ entry .reduction   der minimale Graph mit derselben Erreichbarkeit wie ein beliebiger `Topological`-Graph, als `Dag`
++     Über die Bitmatrix einer eingefrorenen `Topology`, einmal für den Aufruf gebaut.
+
+@ 0 4 0 0d304768da4d16b01c5df45345da0a26
++ entry .traversal   ein Wert für jeden Knoten eines beliebigen `Topological`-Graphen, aus den Werten seiner Nachfolger
++     `graph.traversal[result]((successorValues, node) => …)`: Die Knoten werden in topologischer
++     Ordnung besucht, sodass jeder Aufruf die Werte sieht, die für die Nachfolger des Knotens
++     bereits berechnet wurden, und das Ergebnis ist eine `Map` von jedem Knoten auf seinen Wert.
+
+@ 0 4 0 056c02855927aa2b00998fafccc2e3ef
++ entry .layered   ein beliebiger `Topological`-Graph, in Schichten mit minimierten Kreuzungen angeordnet, als `Layering`
++     Nimmt das `Ranking` im Geltungsbereich (standardmäßig `Ranking.LongestPath`; `import
++     rankings.balancedRanking`, um es zu ändern). Ein anderer Graph als ein `Dag` wird einmal,
++     ungeprüft, umgewandelt, da `Topological` bescheinigt, dass er keinen Zyklus hat.

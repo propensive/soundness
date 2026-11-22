@@ -1,0 +1,484 @@
+orthant 2 language
+
+@ 0 1 0 1ca9360ffb82cc3400089069ee86cff8
++ ## Jauges
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 5 0 1b3f2f30958681f219da5766d857d962
++ Un programme qui s'exécute longtemps a quelque chose à dire pendant qu'il travaille : où il
++ en est, qu'il est toujours en vie, à quelle vitesse les octets circulent, et quelle étape
++ d'un pipeline est en cours. Ces informations s'affichent sous forme de *jauges* : spinners,
++ barres de progression, indicateurs de niveau, sparklines, compteurs et indicateurs d'étapes.
++ Une jauge est soit intégrée dans une [mise en page de terminal](terminal.md#layout), soit
++ dessinée seule au curseur.
+
+@ 0 3 0 1e867cde23502b72136f8f35fc4b5154
++ Une jauge est choisie selon le *type* de ce qu'elle affiche. Son apparence, les couleurs
++ qu'elle utilise, et les caractères avec lesquels elle peut dessiner sont trois décisions
++ distinctes. Chacune se prend par un import, et aucune ne perturbe les deux autres.
+
+@ 0 1 0 1d38651b6a833ddc0c17beb18afa4876
++ ### À propos de l'affichage de la progression
+
+@ 0 4 0 0dbf7375856e6d990ee5802188b7c4de
++ Un affichage de progression s'écrit généralement deux fois : une fois pour le dessin, et une
++ autre pour l'arithmétique qui décide de ce qui tient. Les deux sont maintenus cohérents à la
++ main. Le résultat est une barre correcte à quatre-vingts colonnes et corrompue à trente, avec
++ une ligne qui déborde, une étiquette qui pousse la barre hors du bord, ou un pourcentage qui
++ contredit la barre d'à côté.
+
+@ 0 6 0 0a1899c6602f196f1061da72505057cb
++ Séparer les deux supprime la duplication. Un design indique comment dessiner un état à la
++ largeur qu'on lui donne, quelle qu'elle soit, et jusqu'à quelle étroitesse il reste utile. La
++ mise en page indique combien de place il y a. Aucun des deux n'a besoin de savoir ce que
++ l'autre a décidé. Une barre à laquelle on donne six cellules est dessinée en six. Avec trois,
++ elle devient un pourcentage, et avec une, une seule nuance. Un design choisi par import,
++ indépendamment de l'état qu'il dessine, relève du
++ [découplage](../../philosophy/decoupling.md) entre le sens et l'apparence.
+
+@ 0 1 0 094f48da36e316410f71f04785bd2cc9
++ Tout provient du package `soundness`, et plusieurs choix sont dans la portée :
+
+% 2 1 0 0e25b189f091ed3d0e1b0b18722581e8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0113ecd3cd2f810810d22a6b0e5b8695
+
+% 0 1 0 19972e70e2570a86112786d91f60abff
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 0dbd0833aa335f231fc5b058c792b15a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1d5fc034e09e470f104bc500108eb3eb
+
+% 1 1 0 14e93cc444c239da0937f1b16866b297
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 6 0 0c5e9dda32e7cb9d1045dd8618a398ef
++ column  Import
++ column  Décide
++ row  `textMetrics.uniformMetric`  la mesure de la largeur du texte, car une jauge se dispose selon la largeur de son dessin
++ row  `palettes.solarizedDarkGaugePalette`  les couleurs ; sans elle, une palette est choisie d'après ce qu'indique le terminal
++ row  `stdios`, `termcapDefinitions`  où écrivent les exemples, et ce que sait afficher le terminal
++ row  `threads`, `probates`  le contexte de [concurrence](concurrency.md) dans lequel une jauge animée se redessine
+
+% 1 1 0 11a5012e38e64c971dd58e0222f515ab
+
+@ 0 1 0 1b9f0c492ddb2513177bee360e6a8ec4
++ ### États
+
+@ 0 2 0 10411447a4a1a82218560e9b755e64ef
++ Ce qu'affiche une jauge est une valeur d'un type précis, et c'est ce type qui sélectionne le
++ design. Les types d'état sont imbriqués dans `Tui`, et importés depuis celui-ci ci-dessus :
+
+% 2 1 0 17c843a5525e92ee0c1b39181483d546
+
+@ 0 13 0 16b51295a9406e2e049d2b965d9c774a
++ column  État
++ column  Affiche
++ column  Design par défaut
++ row  `Fraction`  une proportion dans `[0, 1]`, bornée  barre de blocs lisse
++ row  `Reckoning`  `done` par rapport à un total qui peut être inconnu  `17/120`
++ row  `Standing`  l'issue d'une unité de travail  `✓ ✗ ‑`
++ row  `Duration`  le temps écoulé  `2m41s`
++ row  `Countdown`  le temps restant, borné à zéro  `2m41s`
++ row  `Captioned`  n'importe quel état, avec une étiquette  dérivé
++ row  `Transfer`  les octets transférés, avec débit et estimation  *aucun*
++ row  `Meter`  une mesure sur une échelle bornée  *aucun*
++ row  `Sequence[Double]`  des échantillons au fil du temps  *aucun*
++ row  `Sequence[Step]`  une suite ordonnée d'étapes  *aucun*
+
+% 1 1 0 1b6fa11eff89a1200b2261ee3dc88a45
+
+@ 0 6 0 139ea3180d342da908ff820425995777
++ La plupart de ces types sont des types qu'un programme possède déjà. Un nouveau type n'est
++ introduit que là où il doit être *distinct*, parce que c'est la clé par laquelle le design est
++ recherché. Une proportion ne peut pas être un simple `Double` sans réquisitionner chaque
++ `Double` du programme pour des barres de progression. Le temps écoulé est une
++ [`Duration`](time.md#durations-and-timespans), les échantillons sont une
++ `Sequence[Double]`, et une suite d'étapes est une `Sequence[Step]`. `Countdown` n'a son
++ propre type que pour pouvoir figurer à côté d'un temps écoulé, avec un design différent.
+
+@ 0 6 0 0f129742016554710906f01c7a101cd8
++ N'importe quel état peut être [`Optional`](optional-values.md), et chaque design y est
++ automatiquement étendu. `Optional[Fraction]` est une progression qui peut ne pas encore être
++ connue ; une tâche qui commence sans pouvoir être mesurée, et apprend plus tard son total, ne
++ change donc pas de type en cours de route. Un design indique comment dessiner en l'absence
++ de valeur. Une barre balaie, parce qu'une barre vide affirmerait « aucune progression » là où
++ la vérité est « non mesurée », et un spinner dessine ses images. Rien n'a besoin d'être écrit
++ deux fois pour le cas optionnel.
+
+@ 0 7 0 03e2423fc313f60109499d46d5b8df56
++ Les quatre états sans design par défaut le sont délibérément. Un design par défaut n'existe
++ que là où tous les designs candidats ont la même hauteur et disent la même chose. Une
++ batterie, un thermomètre et un cadran ne sont pas interchangeables. Les sparklines en blocs
++ et en braille diffèrent par leur résolution verticale, et donc par ce que montrent les
++ données. Une liste de contrôle occupe une ligne par étape, là où un fil d'Ariane occupe une
++ seule ligne en tout. Et le fait qu'un transfert compte en `MB` ou en `MiB` est une décision
++ éditoriale. Choisir silencieusement dans ces cas reviendrait à choisir quelle part de la mise
++ en page de l'appelant occuper, ou ce que signifient ses nombres.
+
+@ 0 1 0 0d586b0e3472bcdc0a6b4ed164c6e508
++ ### Choisir un design
+
+@ 0 2 0 1dc4e5dbbaccbf421d0bf365b9fc6930
++ Sans design importé, les valeurs par défaut s'appliquent. `gaugeLine` dessine une image, à
++ une largeur que choisit l'appelant :
+
+% 2 1 0 169b604c113de00314483901c48fcc2c
+
+% 3 1 0 04842ff1e34bef70143b48d4e29614ff
+
+% 4 1 0 0e1ab1b786afb8291466a0584b5a2eea
+
+% 0 1 0 1c6e05b64471b4f11772f4f8e4508b18
+
+% 0 1 0 1c9534cc1eee6f280eefce54b947c6d2
+
+% 0 1 0 0a4ba8bb42937f500a7fb35170c7e29c
+
+% 1 1 0 0fffae98cfef26441cebe43a5b6283fa
+
+@ 0 2 0 1db5be2ad3f5f5be08be7185431d7f13
++ Une jauge a toujours besoin d'une largeur. Il n'existe pas de dessin d'une barre qui ignore
++ sa propre largeur ; un état ne peut donc pas être affiché seul.
+
+@ 0 1 0 1fd9f8e9efff0c3900cfe06f82ef13ae
++ Importer un design par son nom remplace celui par défaut, et rien d'autre ne change :
+
+% 2 1 0 065f9268398606e80e2aabf2f57157b1
+
+% 3 1 0 158cf8f4e295d9d815f5b933c00fdcbd
+
+% 4 1 0 1a5cdfc1cf37f0671b9bd23c45a92a84
+
+% 5 1 0 1905146bfd71169b1716b27dca20400d
+
+% 0 1 0 1da144fa4a812a0c1d8d8e349bdeda3b
+
+% 1 1 0 1c898d31a3de97d41add9c9b7fbba379
+
+% 1 1 0 095e25e44fb570ee028d6f6397687a59
+
+@ 0 4 0 1cd9c2b91be1364b103f0822f4ba0ba9
++ Un spinner est ce qu'il faut importer lorsque le chiffre ne vaut pas la peine d'être montré,
++ ou n'est pas connu. Il est indexé sur `Fraction`, comme une barre, et ignore la valeur. Un
++ spinner et une barre sont donc deux designs pour le même état, et un seul des deux peut être
++ importé à la fois. Une mise en page qui veut les deux en prend un depuis un [given] dans une
++ portée locale :
+
+% 2 1 0 15c79d4e5e8619a409669be2eb2662dd
+
+% 0 1 0 186ee8d8fbb04199069cf3fe3c14ab4e
+
+% 0 1 0 12aabc4bb465f03d0aace318f5ab4e71
+
+% 0 1 0 1b21ce6864a615411c414de2dd3aed21
+
+% 1 1 0 1f0ed2d3bfbc2927000aa785ac5f9341
+
+@ 0 1 0 0b30898e8c18abe216c434991626e2c0
++ Les designs sont regroupés en huit familles, chacune étant un package depuis lequel importer :
+
+% 2 1 0 07acec64987a00ba0075780a3d911d24
+
+@ 0 12 0 035eedbe447935ae1c082544088dd6d1
++ column  Famille
++ column  Pour
++ column  Designs
++ column  Éventail
++ row  `spinners`  `Fraction`  42  de l'animation braille d'une cellule aux barres rebondissantes et aux phases de lune en emoji
++ row  `bars`  `Fraction`  18  du huitième de bloc lisse par défaut aux pastilles segmentées et remplissages en dégradé, jusqu'à `[###---]`
++ row  `meters`  `Meter`  6  batterie, thermomètre, aiguille, puce, colonne et ASCII
++ row  `sparklines`  `Sequence[Double]`  4  blocs, haute, points et ASCII
++ row  `counters`  `Reckoning`, `Transfer`  9  comptes simples, complétés, en lettres, à l'échelle, en pourcentage ; transferts
++ row  `standings`  `Standing`  5  marqueurs ASCII, coche, gras, carré et en mots
++ row  `processions`  `Sequence[Step]`  5  liste de contrôle, fil d'Ariane, perles, numéroté, ruban
++ row  `timers`  `Duration`, `Countdown`  5  temps écoulé compact, numérique ; compte à rebours compact, numérique, urgent
+
+% 1 1 0 1ffda08cefc080700efedb789b73bd44
+
+@ 0 1 0 11107fa6d152c1a512cb651507270733
++ ### Couleurs et glyphes
+
+@ 0 2 0 106195c3f4db11cd0d153d4f264c2211
++ La couleur est un choix indépendant. Une `GaugePalette` nomme ses couleurs par *rôle* ; un
++ même design se dessine donc sous n'importe quelle palette :
+
+% 2 1 0 0a675187d4a9f6e71a641f43c7abc146
+
+@ 0 10 0 16c53bfbda70346e05502c674c53cb55
++ column  Rôle
++ column  Colore
++ row  `fill`  la partie remplie d'une barre
++ row  `track`  le vide d'une barre, les pastilles creuses, l'arc que balaie l'aiguille
++ row  `leadingEdge`  la cellule de bordure d'une barre et la tête d'un marqueur
++ row  `caption`  les étiquettes et légendes
++ row  `muted`  les étapes terminées, les temps écoulés, les unités
++ row  `success`  une étape réussie ; le bas d'une échelle de gravité
++ row  `warning`  une étape avec avertissement ; le milieu d'une échelle de gravité
++ row  `danger`  une étape échouée ; le haut d'une échelle de gravité
+
+% 1 1 0 1d82aafd8ad7c43013290a2f8180f680
+
+@ 0 5 0 0c07c05ebfc580c51157dd6670e8a820
++ Une palette se choisit par import, comme `palettes.solarizedDarkGaugePalette` ci-dessus. Dix
++ palettes sont fournies. Parmi elles figurent `monochromeGaugePalette`, qui n'a pas de
++ teintes, et `ansiSixteenGaugePalette`, dont les couleurs sont les valeurs canoniques que
++ possède réellement un terminal à seize couleurs. Sans import, une palette adaptative choisit
++ d'après ce qu'indique le terminal. [Couleurs](colors.md#themes-and-palettes) décrit les
++ palettes en général.
+
+@ 0 1 0 122f87d952c90b320b60c177c7698f52
++ Le répertoire de caractères est un troisième choix, et il dégrade tous les designs à la
++ fois :
+
+% 2 1 0 1bc3c79b28611a3b025244ce2d10bb3e
+
+% 3 1 0 19facb99b66877cb13de34695b2720b2
+
+% 4 1 0 01d600980369b01b11f9bb2b6dac1d96
+
+% 5 1 0 08e60e1b9d621f7e1d4364d05e420065
+
+% 0 1 0 01fcaf82c4c3d17211659e0b519ef1e0
+
+% 1 1 0 0d70f432f7bce62f02fc64b56789b9db
+
+% 0 1 0 13bcfac37192a9c0085408bb3fbba406
+
+% 1 1 0 1daefa159e5bd42314b642414f6927fc
+
+@ 0 5 0 13d19b1d3635c20b0bb60379d4957f30
++ Chaque design a une forme ASCII, et chaque design qui préfère des glyphes exotiques déclare
++ vers quoi se replier. Les designs en emoji deviennent leurs équivalents plus sobres là où le
++ terminal ne peut pas les afficher, et sous `asciiGlyphs` tout produit une sortie sur sept
++ bits. Aucun design ne porte son sens par la seule couleur ; une jauge écrite dans un fichier,
++ ou lue par quelqu'un qui ne distingue pas le rouge du vert, dit donc toujours ce qu'elle
++ signifie.
+
+@ 0 1 0 14b01342f86b10160599e5b625842874
++ ### Dégradation
+
+@ 0 3 0 1f03f07d95dbcdf31bec86f51a3ec8d8
++ Chaque design est dessiné exactement à la largeur qui lui est donnée, à toute largeur, et en
++ dit moins à mesure qu'il se rétrécit, au lieu de déborder. Une barre perd ses embouts en
++ dessous de huit cellules, devient un pourcentage à quatre, et une seule nuance à une :
+
+% 2 1 0 0130427a3fc8a2621db1f8f1c72c0289
+
+% 3 1 0 147ff6e14432d1ae014a6a058c74f896
+
+% 4 1 0 0f4bff5871f7e8740bcfb825575e97b4
+
+% 0 1 0 1da76c662a690b7c11b4b9064eebfa6a
+
+% 0 1 0 1655fa56c249df82045a10231d4c2b47
+
+% 1 1 0 0f93c0ed8ab78b7f07863d01b272ef81
+
+@ 0 2 0 16deec23417febed0e7cf2ccbd9abd1b
++ Une ligne composée de plusieurs parties s'en défait dans un ordre déclaré. Un transfert qui
++ se lit
+
+% 2 1 0 13a9ec0bfc1f3e9e0c77cdbeabd7fb14
+
+% 0 1 0 0cfca92044f240720957c2ab1b4fddc5
+
+% 1 1 0 0a5ef8f8a2f7725310a2bbd73bce654e
+
+@ 0 3 0 0ea787b4c32adb320fe2437029320b2b
++ à quatre-vingts cellules ne garde que les chiffres à trente. Une légende est raccourcie avant
++ de comprimer la jauge qu'elle étiquette, et a droit à au plus la moitié de la ligne avant de
++ commencer à coûter des cellules à la jauge.
+
+@ 0 6 0 111f969328e3816a04fd72cccdd15dc0
++ L'échelle d'une sparkline est un choix de design, et ne fait pas partie des données.
++ `Sparkline.Blocks.scaled(0, 100)` la fixe, afin qu'un signal stable ne paraisse pas erratique
++ lorsque les bornes bougent sous lui. Une sparkline plus étroite que sa série est *décimée* :
++ chaque cellule montre le maximum des échantillons qu'elle couvre. Elle n'est pas tronquée.
++ Une sparkline tronquée ne montrerait que les échantillons les plus anciens, tout en ayant
++ l'air de représenter toute la série, ce qui est pire que d'en montrer moins.
+
+@ 0 1 0 03b8c781f39ffa09141f618e52d6feca
++ ### Dans une mise en page
+
+@ 0 3 0 03f983a332d223b10a72b1c5be53a6cc
++ `gauge` construit un volet. Il prend un `Reading`, une cellule mutable qui contient l'état
++ courant. Affecter la cellule publie la valeur et redessine ; une jauge pilotée depuis une
++ tâche d'arrière-plan se met donc à jour d'elle-même. Le [`Cli`](cli.md) d'une application
++ fournit la console :
+
+% 2 1 0 1b642273e684ccdf1dfe8fb563bb8d6f
+
+% 3 1 0 1f27f1d8d9e55b130ce6f2895f021316
+
+% 4 1 0 1f3a46c6a1ef74b90011890438feea7c
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1034409fb9d408b2189fa867270f35c9
+
+% 0 1 0 047f5ea6ebc5f79c0d842a994977aa88
+
+% 0 1 0 1340abab4b65dcb51641b8f287ad1f0c
+
+% 1 1 0 15df16b7f55a744e0220efffbb8ffe20
+
+% 0 1 0 137b72c4e68fa23e17f88d0375789994
+
+% 0 1 0 04ef01550872711d0c13bf316bcd6221
+
+% 0 1 0 0338feb7cd10c6621148a6fad2067a9a
+
+% 0 1 0 0e319ba209c276b9040df7664ba91b3f
+
+% 0 1 0 0177f7358b7483b40a8f87b6084f7f76
+
+% 0 1 0 1a1b3b3dc8e3db381c8a5b1ce0ac0d0f
+
+% 1 1 0 1233743a36e9be4a0cc09ac9f896cf40
+
+@ 0 5 0 14d19ab591ce008118c1c7cd021840f6
++ Une jauge indique la taille intrinsèque de son design chaque fois que la mise en page est
++ résolue ; elle participe donc à la mise en page, et ne présume pas d'une largeur. Un design
++ élastique remplit ce qu'on lui donne. Un design inélastique, comme un spinner ou un glyphe
++ d'état, est maintenu à sa propre largeur. Un design de plusieurs lignes, comme une liste de
++ contrôle, agrandit la mise en page jusqu'au nombre de ses étapes. Une jauge n'accepte aucune
++ saisie ; Tab la saute donc.
+
+@ 0 3 0 1796f52e514de8501a1c61c51a45ff35
++ Un design animé déclare à quelle fréquence il veut être redessiné. La mise en page prend la
++ période la plus courte parmi les jauges à l'écran, et exécute un seul minuteur pour toutes,
++ et aucun lorsque rien n'est animé.
+
+@ 0 1 0 13e8ec0eab2820f30a0398615f105fe4
++ ### Jauges autonomes
+
+@ 0 3 0 1c7acb4a69b068ed0f239314c6277695
++ Hors d'une mise en page, `whilst` affiche une jauge au curseur pendant la durée d'un bloc, et
++ l'efface ensuite. Son animation s'exécute comme tâche d'arrière-plan ; elle s'appelle donc
++ sous `supervise` :
+
+% 2 1 0 0eaedd16eb6f1908002067a3990ca2fd
+
+% 3 1 0 18402175a340dd451ae9132134aa7fba
+
+% 4 1 0 1023f3ac90907ac00b55282947ca8702
+
+% 1 1 0 0e8d146f6af1d04c05e0867a018ea3bf
+
+% 0 1 0 1c141fa5e1fc37a603291b8e6c79e8a5
+
+% 0 1 0 044de3f8a18030b118a5f859aaebf91b
+
+% 1 1 0 005cc173c9d183cf1c77026084d3d322
+
+@ 0 2 0 036c04d5f1ddfc8a1fbeeab04d69ef31
++ `gaugeLine` dessine une seule image, pour un appelant qui fait son propre dessin. C'est la
++ forme à utiliser lorsque le redessin est déjà pris en charge :
+
+% 2 1 0 1b92576c6ec070ff046759eb66c0ab42
+
+% 0 1 0 0a406156ab6931a419aab94842c4a202
+
+% 0 1 0 1815165008fe6f71147718a58e8daa7e
+
+% 1 1 0 0a71d13f8ea4322f0bedde881221827c
+
+@ 0 1 0 0d9e6726a3070ab21e1586fc0e7d84fe
++ ### Composer
+
+@ 0 2 0 1c1b27c4c1fbc26a045a1741d29f2839
++ `Captioned` étiquette n'importe quel état. Il dérive son design de celui qu'utilise déjà
++ l'état sous-jacent ; ce n'est donc pas un choix de style, et il n'exige aucun import :
+
+% 2 1 0 167421d9608a5cf00d6fc024cf6acf5a
+
+% 3 1 0 15f17bd0c4078fcc05bd3d229532f544
+
+% 4 1 0 0d47bc0c704fa9380731f12fa02ba33e
+
+% 0 1 0 005903ca518683a30ff2d8a6ae661bf2
+
+% 1 1 0 17e94a08b278db4c08da48806e3d718d
+
+@ 0 1 0 1ed04d6e249bf8d70125b264f003e43f
++ Une `Sequence[Step]` a cinq designs, qui diffèrent par leur hauteur :
+
+% 2 1 0 178390b7735057440f9cc8544aba54ef
+
+@ 0 8 0 0037e488582bb3dc0b1bf13384850a1c
++ column  Import
++ column  Dessine
++ column  Hauteur
++ row  `processions.checklistProcession`  une liste de contrôle  une ligne par étape
++ row  `processions.breadcrumbProcession`  un fil d'Ariane  une ligne
++ row  `processions.beadProcession`  une chaîne de perles  une ligne
++ row  `processions.numberedProcession`  une position numérotée  une ligne
++ row  `processions.ribbonProcession`  un ruban façon powerline  une ligne
+
+% 1 1 0 0bbce1e8f01d813204a2a330ef7e7211
+
+@ 0 1 0 0065b7d99026eabe02fe58a8f94931c7
++ Une liste de contrôle, par exemple, se dessine en trois lignes pour trois étapes :
+
+% 2 1 0 18d26a96f03362f200adf81d9de65192
+
+% 3 1 0 1b3d5eb04e68f3ef1dec6428fe101bf7
+
+% 4 1 0 181a5e54850fa43a16f76e1f80435b14
+
+% 0 1 0 1d111ce04c196fac1c823e06879f42b6
+
+% 0 1 0 113a9fecaafdfa820c3a2241a46df01f
+
+% 0 1 0 085613c616be7c68127994f4d9480866
+
+% 0 1 0 08b834c5c134179a19d22e5d4ee3d2c3
+
+% 0 1 0 0525e1f3575fa3b40808722f8362246c
+
+% 0 1 0 1fdfe39dbeb36c54184b1258e150642e
+
+% 0 1 0 110eedce2319c1dd1cee8b1d271dbe87
+
+% 1 1 0 17c2691994db6628061edd3bfca91777
+
+% 2 1 0 196b351cfd55cf8a09f50e8425670967
+
+% 0 1 0 11246944cc1cc1cb16325acb19bcf6ec
+
+% 0 1 0 16f0952fe8328e930f3edd3adb63a38d
+
+% 0 1 0 085987f736af2d1f1f4d4b87d209244c
+
+% 1 1 0 150f1ef207804dc50939e5ce387c21c4
+
+@ 0 2 0 0634672a250f095110e7bf92b39f4b37
++ L'étape en cours est animée, et le marqueur de chaque étape provient du même vocabulaire
++ `Standing` qu'utilise un glyphe d'état d'une seule cellule.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 5 0 084ccaf02cd82821184ab6eb14e88614
++ - [Terminal](terminal.md#layout) dispose les jauges avec d'autres volets, et gère la
++   saisie.
++ - [Couleurs](colors.md) décrit les couleurs que nomme une palette.
++ - [Concurrence](concurrency.md) exécute le travail dont une jauge rend compte.
++ - [Graphiques](charts.md) dessine des données déjà complètes, là où une jauge dessine un
++   travail en cours.

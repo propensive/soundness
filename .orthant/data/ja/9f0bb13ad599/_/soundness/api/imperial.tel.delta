@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 5 0 12f616587e1d40261eaad5c40b24f46b
++     レイアウトは、書き込むためのものかどうかも示す。
++     `readOnly` は、`/boot`、`/efi`、`/sys`、`/usr` とその下のすべて、そして `/proc` の下のプロセスごとのディレクトリで `true` である。
++     XDG Base Directory 仕様がユーザーに移動を許す五つの `Home` のレイアウトは、その変数に従う。
++     `Home.Config` は、`XDG_CONFIG_HOME` が絶対パスに設定されていればそのパスであり、そうでなければ `$HOME/.config` である。
+
+@ 0 25 0 00cbd246801ef52a1510286dae4d794c
++         レイアウトの `BaseLayout.Dir` は、コンテキスト値として入れ子のレイアウトに渡される。
++         入れ子のオブジェクトは、こうして自身が置かれているディレクトリを知る。
++         セグメントは内側のものから先に保持される。
++     entry #home   パスがユーザーのホームディレクトリからの相対パスかどうか
++     entry #path   パスのセグメント。内側のものから先に並ぶ
++     entry #/   名前で指定した子のディレクトリ
++     entry #render   ホームディレクトリのパスを与えて、絶対パスをテキストとして描画する
++         ホームからの相対ではなく、セグメントを持たない `Dir` は `/` として描画される。
++   entry #readOnly   そのディレクトリに、慣習上プログラムが書き込まないかどうか
++       `/boot`、`/efi`、`/sys`、`/usr` とその下のすべて、そして `/proc` のディレクトリでは `true` であり、`Home` の下のすべてのレイアウトでは `false` である。
++   entry #Topic   このノードからルートまでのディレクトリ名。タプル型として
++   entry #absolutePath   レイアウトの絶対パス。テキストとして
++       `Environment` と `System` を必要とする。
++       `#variable` を指定するレイアウトは、その変数の値が絶対パスであればその値である。
++       そうでなければ、`Home` の下のレイアウトは、末尾の `/` なしで環境変数 `HOME` を読み、設定されていなければ `Environment.Error` を発生させる。
++   entry #variable   レイアウトを移動させる環境変数。あれば
++   entry #relocation   `#variable` がレイアウトを置く場所：絶対パスに設定されていれば、その値
++   entry #dir   このレイアウトの `BaseLayout.Dir`。その中に入れ子にされたレイアウトに与えられる
++   entry #apply   レイアウトの絶対パス。呼び出し側が選んだパスの型として
++       `layout[Path on Linux]()` は、`#absolutePath` から、`Instantiable across Paths from Text` である任意の型の値を作る。
++       `Environment` と `System` を必要とし、`Environment.Error`（`HOME` が設定されていない `Home` のレイアウトの場合）と `Property.Error` を発生させる。
+
+@ 0 5 0 01aa2e748611aecf137de178c7d6d652
++       `Cache`、`Config`、`Local.Bin`、`Local.Share`、`Local.State` は、XDG Base Directory 仕様がユーザーに移動を許すディレクトリであり、それぞれ、その変数が絶対パスに設定されていれば変数が示す場所にある。
++       `Home.Config` は `$XDG_CONFIG_HOME` であり、そうでなければ `$HOME/.config` である。
++       仕様が求めるとおり、相対パスや空の値は無視される。
++       ほかのレイアウトは固定である。
+
+@ 0 3 0 11d0e7a0fc4ed11505d86722fbaebfdd
++   entry .Cache   ユーザーのキャッシュディレクトリ、`$XDG_CACHE_HOME` または `~/.cache`
++   entry .Config   ユーザーの設定ディレクトリ、`$XDG_CONFIG_HOME` または `~/.config`
++   entry .Local   ユーザーのローカルのインストール先の接頭辞、`~/.local`
+
+@ 0 6 0 12bb298788522c6106cc24f983f11dce
++         `/usr` に対応するユーザーごとのディレクトリであり、ユーザー自身のプログラム、ライブラリ、データ、状態を保持する。
++     entry .Bin   ユーザー自身の実行ファイル、`$XDG_BIN_HOME` または `~/.local/bin`
++     entry .Lib   ユーザー自身のライブラリ、`~/.local/lib`
++     entry .Share   ユーザー自身のアプリケーションのデータ、`$XDG_DATA_HOME` または `~/.local/share`
++     entry .State   ユーザーのアプリケーションの状態、`$XDG_STATE_HOME` または `~/.local/state`

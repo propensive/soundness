@@ -1,0 +1,182 @@
+orthant 2 language
+
+@ 0 1 0 06243999aacdebca1046ca79b2e9d7b9
++ # Firme oneste
+
+@ 0 6 0 05a48d9403baa413163dbe62a380a680
++ Una firma in Soundness dice la verità, tutta la verità e nient'altro che la verità su ciò di cui
++ un'operazione ha bisogno. La parte più importante è il *nient'altro che*: una firma non dichiara
++ alcun requisito a meno che non sia sempre necessario. Una typeclass descrive l'unica capability che
++ astrae, senza allargare i propri metodi per accogliere ciò che qualche implementazione potrebbe
++ volere: nessun parametro di contesto «per sicurezza», nessun errore dichiarato perché una
++ implementazione può fallire.
+
+@ 0 8 0 050776059537a5f21ebabb954ea5dcc4
++ I requisiti che hanno solo certe implementazioni appartengono a quelle implementazioni. Un `given`
++ dichiara nella propria firma le capability da cui dipende la sua particolare implementazione
++ (un'istanza basata sulla rete richiede `Online`, una che può fallire un `Tactic`), e il requisito
++ viene assolto dove l'istanza viene scelta, non imposto alla typeclass e a ogni sua altra
++ implementazione. I requisiti effettivi di un metodo sono quindi determinati dalle istanze che usa
++ davvero: lo stesso codice generico è puro con un'istanza pura e collegato alla rete con una
++ collegata alla rete, e la sua firma non dichiara né l'una né l'altra cosa.
+
+@ 0 5 0 19082702522ce140151b159258ce26f0
++ Il risultato sono firme di cui ci si può fidare in entrambe le direzioni. Niente di ciò che
++ un'operazione richiede è nascosto, quindi un chiamante ne vede il costo reale; e niente di ciò che
++ dichiara è inutilizzato, quindi un requisito in una firma ha sempre un significato. Una typeclass
++ minimale è anche più facile da implementare: il divario tra ciò che un'interfaccia pretende e ciò
++ di cui ha bisogno la maggior parte delle implementazioni è esattamente il punto da cui nascono le
++ firme disoneste.
+
+@ 0 1 0 0d28bfa57dc178a50304b9d5357bae5a
++ ## Il requisito viaggia con l'istanza
+
+@ 0 1 0 0e41017bf66db072143a9a63e7e34aa4
++ Una typeclass dice solo ciò che astrae:
+
+% 2 1 0 08511f38946741341bbbf25a2dfb526d
+
+% 3 1 0 190757efa6c1350e0d2c538315b96a61
+
+% 4 1 0 182f0d26b73fd2bf1a4948b33c9a9dd4
+
+% 0 1 0 02c7a26df30c501401305c4e011932e8
+
+% 0 1 0 179e46bbddd58b5718c8476807347cb6
+
+% 1 1 0 09f07a0a8270411015169f9365ad7e85
+
+@ 0 3 0 03b85a07d3ca79261d859371b061b0c8
++ Nessun errore, nessun contesto, nessuna capability, perché mostrare un valore, in generale, non ne
++ richiede. Un'istanza che *invece* ha bisogno di qualcosa lo dichiara nella propria firma, dove è
++ vero:
+
+% 2 1 0 17b9f3afad580fd100610b38255e08fd
+
+% 3 1 0 0e7a270e06526271137ac9dcd3d8f10f
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 0576420aca7e7e5e1922ada5e9e10712
+
+% 1 1 0 0301648f5402448b0e9aaf57d6d004cc
+
+@ 0 3 0 1eb4fbfd17b3a20901a1a04d5eddc357
++ La conseguenza è che i requisiti effettivi del codice generico sono decisi dalle istanze che
++ risolve. La stessa funzione è pura quando riceve un'istanza pura e può fallire quando ne riceve una
++ che può fallire, e la sua firma, onestamente, non dichiara né l'una né l'altra cosa.
+
+@ 0 1 0 14c93dff3f1441dc0bcc6b31b8049d15
++ ## Che aspetto ha una firma disonesta
+
+@ 0 2 0 12cc30a02acc2dec17ef1bd8aee97fe3
++ Il modo in cui si sbaglia è facile da riconoscere una volta che ha un nome. Un'interfaccia viene
++ allargata perché ci stia l'implementazione più esigente:
+
+% 2 1 0 1e7efb761f35b79d1c3c5271c7c51c76
+
+% 3 1 0 14b629fbe10a291d183c2a96bb44aaa5
+
+% 4 1 0 1a6b3e7bf3fe96fe0f953f448acc836a
+
+% 0 1 0 0727f4fb3a23969f0fc305662732b161
+
+% 0 1 0 16e69ac9995d45220388ca90409a8294
+
+% 1 1 0 011286b2edac3720076089c0a7c14268
+
+@ 0 3 0 16d30ec94ef4c4461cc98c4bbf2d793b
++ Un'implementazione recupera uno schema dalla rete; una può fallire; quindi l'*interfaccia* richiede
++ entrambe le cose, e ora ogni chiamante di ogni codec deve fornire una capability `Online` e una
++ strategia per gli errori, che l'istanza che sta usando ne abbia bisogno o no.
+
+@ 0 5 0 0ccd8660e14c807304867b93771297c6
++ Questo è peggio di un fastidio. La firma ha smesso di portare informazione: un lettore che vede
++ `Online` non può più concludere che l'operazione tocchi la rete, perché il requisito è lì per un
++ motivo che potrebbe non valere. Non appena si sa che alcuni requisiti sono spuri, non ci si può più
++ fidare di nessuno, e la disciplina crolla.
+
+@ 0 1 0 1bbf1444ff9ae7e813bfb30914acccaa
++ ## Che cosa portano le firme
+
+@ 0 1 0 09b0b4f11ecac9060fcc8dd1df39d4d2
++ Poiché sono minimali, le clausole che *sono* presenti significano qualcosa:
+
+% 2 1 0 1b9c0c2072582f3313ab390678fd32bb
+
+% 3 1 0 0e43f4f614af615d05cbbf7dbbae4860
+
+% 4 1 0 1ed4edba580ed74604a1f8e82e2785d2
+
+% 0 1 0 018857ea871317110933c6faf344c891
+
+% 0 1 0 1ecb71c330c5f881087473b1f8518e17
+
+% 0 1 0 0e153cc65cba77c11a3d496a51bad7a4
+
+% 0 1 0 1969367c3b0bd78c082ca5e93302bda7
+
+% 1 1 0 12174855fc549fbe0659ccd5b8f2054e
+
+@ 0 1 0 1e03a2962898606107cba51ed2c04eaf
++ Ogni clausola fa una sola affermazione:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 04e35d87f6c057221c6fa6843d9bec8c
++ column  Clausola
++ column  Significa che il metodo
++ row  `using Online`  raggiunge la rete
++ row  `raises`  può fallire, e dice come
++ row  `logs`  emette eventi di quel tipo, così che un chiamante sappia che cosa instradare e dove
++ row  `using Monitor`  può sospendere il trefolo chiamante
+
+% 1 1 0 125abc22c916799009e53ae83ab12207
+
+@ 0 2 0 1c21f921c834a2a917fef31061bc918a
++ Un metodo che non ha nessuna di queste clausole non fa nessuna di quelle cose, ed è
++ un'affermazione che vale la pena poter fare.
+
+@ 0 1 0 1e7d385d16e6fa0f13a6c2a7d4909e82
++ ## Onestà sulla cattura
+
+@ 0 4 0 02148923c21d21470b2aebc16f24e140
++ C'è una disonestà più sottile che una firma può commettere: restituire un valore che dipende di
++ nascosto da qualcosa confinato in un ambito. Uno stream che tiene ancora aperto un file, una
++ chiusura che tiene ancora un handler di errori: il tipo dice `Stream[Text]` e la verità è «uno
++ stream, ma solo finché quel file è aperto».
+
+@ 0 6 0 0a6594ecb32835f4187e2b96e8e5c0a4
++ Il [capture checking](capture-checking.md) rende anche questo parte della firma. Il tipo di un
++ valore registra le capability che cattura, quindi un'operazione non può restituire in silenzio
++ qualcosa la cui validità è più ristretta di quanto il suo tipo suggerisca. Per questo il principio
++ dell'onestà e il capture checking vanno insieme: uno riguarda ciò di cui un'operazione *ha
++ bisogno*, l'altro ciò da cui i suoi risultati *dipendono*, ed entrambi sono casi di una firma che
++ dice tutta la verità.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto costa
+
+@ 0 3 0 074cbc2bef00b976167e30cdcc717a22
++ **Le istanze portano di più.** Spostare i requisiti sulle istanze significa che le istanze li
++ dichiarano, e la firma di un'istanza che può fallire è più lunga di quella della versione ingenua.
++ Il lettore che ne trae beneficio è chi chiama il codice generico, non chi scrive l'istanza.
+
+@ 0 4 0 16b1d044219973741b5eed38ca038ac2
++ **I requisiti si propagano.** Un metodo che chiama qualcosa che ha bisogno di `Online` deve
++ fornirlo oppure dichiararlo. È il meccanismo che funziona (il prezzo di una firma che significa
++ qualcosa è che va mantenuta), ma significa che una modifica in profondità in una catena di chiamate
++ può riemergere in cima.
+
+@ 0 5 0 1c9e03e016d626df186b6663a8c70eca
++ **I fallimenti della risoluzione sono indiretti.** Quando manca un'istanza necessaria, il
++ compilatore segnala una ricerca implicita fallita anziché «questa operazione ha bisogno di
++ `Online`». Importare `explainMissingContext` la trasforma in una diagnosi che nomina l'import che
++ la soddisferebbe, e questo è il rimedio per un costo che altrimenti ricadrebbe proprio sulle
++ persone che l'onestà intende servire.
+
+@ 0 2 0 07287f51d3dceaae098c1fe31ad3aff3
++ Vedi [contesto dichiarativo](declarative-context.md) per come vengono forniti i requisiti, e
++ [gestione degli errori](error-handling.md) per il più comune di essi.

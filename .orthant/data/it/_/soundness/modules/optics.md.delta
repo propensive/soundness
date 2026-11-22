@@ -1,0 +1,366 @@
+orthant 2 language
+
+@ 0 1 0 061e89e46176f7b71eb40e41e874c357
++ ## Ottiche
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 3 0 1a520ac0d6444f8c00d3aa448bd118dc
++ Modificare un valore in profondità in una struttura [immutabile] significa di norma ricostruire a
++ mano ogni livello sopra di esso, con chiamate annidate a `copy` che crescono con la profondità dei
++ dati. Una [lente](https://en.wikipedia.org/wiki/Bidirectional_transformation) si occupa invece della
++ ricostruzione.
+
+@ 0 4 0 00daa61991ad005c1f550b5d97b94def
++ Il metodo `lens` accetta un aggiornamento scritto come una semplice assegnazione a un percorso, come
++ `_.opening.name = t"Act One"`, e restituisce la nuova struttura. Ottiche come `Each` e `Filter`
++ portano un percorso attraverso gli elementi di una collezione, così che una sola assegnazione possa
++ aggiornare molti valori.
+
+@ 0 3 0 039420d5ea2f395f1e0a5d98396896cb
++ La stessa sintassi aggiorna i formati di dati dinamici: [JSON](json.md), [XML](xml.md),
++ [YAML](yaml.md) e [CBOR](cbor.md). Un aggiornamento profondo ha lo stesso aspetto sia che la
++ struttura sia una case class sia che sia un documento analizzato.
+
+@ 0 1 0 1a8bc23bcd6435a01c292609ffb36047
++ ### Sugli aggiornamenti immutabili
+
+@ 0 4 0 13713a18a06f8ce7112a2d22b0186f55
++ Un valore immutabile si condivide in sicurezza, ma si modifica con fatica. Sostituire un campo tre
++ livelli più in basso significa copiare tre valori che lo racchiudono, e nominare ogni campo lungo il
++ cammino. Le lenti funzionali risolvono il problema, ma classicamente con molta cerimonia: un valore
++ lente dichiarato per ogni campo, composto con operatori e applicato con `get` e `set`. Molti
++ programmi rinunciano, e mutano.
+
+@ 0 3 0 1ea8a7c73be433c7137472dc8663f950
++ Qui le lenti sono generate dai tipi, e nascoste dietro la sintassi che l'aggiornamento avrebbe avuto
++ comunque: un percorso e un'assegnazione. È questo che rende praticabile
++ l'[immutabilità](../../philosophy/immutability.md).
+
+@ 0 3 0 08aa286919641a121102266c73c6718f
++ Tutto proviene dal package `soundness`. Il secondo import sceglie una
++ [strategia](errors.md#choosing-a-strategy) per gli errori, e il terzo permette agli esempi di
++ stampare i loro risultati:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 14a8e8c04a5142900712dd4cabbec026
++ ### Aggiornare un campo
+
+@ 0 1 0 173d49d433b236a617c3ba1bd30ab7f9
++ Gli esempi aggiornano una piccola struttura:
+
+% 2 1 0 12d52ff077bad8eb0c030919888f7004
+
+% 0 1 0 18e69a97547fec0b16be3e00ad373594
+
+% 0 1 0 056c9a549708ab9e13a90c60ee855765
+
+% 0 1 0 10e00b2ffdfa7df4061ec3cbc6568f9d
+
+% 0 1 0 08a355cc3fcf249910f08e8af898a292
+
+% 1 1 0 16e7c977caabcc060fcb2f6b5d0352bd
+
+@ 0 2 0 1bbcb4e3729135e91ee49267351ac154
++ `lens` applica un aggiornamento a un valore. L'aggiornamento è un percorso che termina con
++ un'assegnazione. Il risultato è un nuovo `Play`, in cui solo il nome del primo atto è diverso:
+
+% 2 1 0 1f1b8138385968971dcd5bdaa1daf61a
+
+% 3 1 0 0daad0ff8ad85fe80809b7c32205d0aa
+
+% 4 1 0 08425f1afc6cc77808f6f62db6ebac2c
+
+% 0 1 0 07ae937d275107df15455dec095e5ff0
+
+% 1 1 0 1b1afd143c88fa581c0a4fc0c4125491
+
+@ 0 1 0 12f5cf54dc189902140fed62eadec963
++ L'originale resta intatto:
+
+% 2 1 0 1346ac3646e3dacd065365ce6bbd1d30
+
+% 3 1 0 09de8c6a33b7a18912c19fb8033ba201
+
+% 4 1 0 0ba502f5fe7d7e63063a9a9192ba175e
+
+% 0 1 0 02aeddc7cfd591721e14ba9fa9e82cf8
+
+% 1 1 0 14278e77e9bbf2550294f99bf15c35a2
+
+@ 0 2 0 0b33d927579dbccc018d7d4df1210a08
++ Più aggiornamenti si applicano insieme. Gli aggiornamenti che condividono un prefisso ricostruiscono
++ la struttura condivisa una sola volta:
+
+% 2 1 0 1f26c6e1793e9db30d40e2753dd00ea3
+
+% 3 1 0 0eb96d7a2249a87d1466630f5fa7e76b
+
+% 4 1 0 08c58afeb10ccc7a1d2c4dc849cd6aee
+
+% 0 1 0 0770c59bdafd55d11db1394278762469
+
+% 0 1 0 1141dbad5a708014154b83e8177b27a2
+
+% 0 1 0 05179b72b91442e41363af6aade30f95
+
+% 0 1 0 11b587b764b707bd123baa97a92f3eec
+
+% 1 1 0 09185809f62695cc061899487ad7f0b3
+
+@ 0 2 0 0fd06b7d1adfe75717a10028570f3920
++ Un percorso viene verificato rispetto ai tipi durante la compilazione. Un campo che non esiste è un
++ errore di compilazione:
+
+% 2 1 0 09ed0eb84cab11a70d45624caf530547
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0ff82ef1521ab0ed17668a25ba500329
+
+% 1 1 0 0bf88182be7d41b00ccdfca2039624e2
+
+@ 0 1 0 0df530351ae1def906c5f27281eaa37d
++ ### Entrare nelle collezioni
+
+@ 0 1 0 1b33b408ae00b00a137cef79bebffa3a
++ Un percorso è una catena di passi, e un passo tra parentesi entra in una collezione:
+
+% 2 1 0 13de843719cc06b8064da16824ec1e28
+
+@ 0 7 0 0fd1207945ede14006610c597d86dba5
++ column  Passo
++ column  Seleziona
++ row  il nome di un campo, come in `_.opening`  quel campo
++ row  `(Prim)`, o un qualsiasi ordinale  un elemento
++ row  `(Each)`  ogni elemento
++ row  `(key)`  il valore associato a una chiave, in una `Map`
++ row  `(Filter[T](predicate))`  gli elementi che soddisfano un predicato
+
+% 1 1 0 13bde55cf3cc6ac201c99c66caff3741
+
+@ 0 1 0 0ae76f020b7666cd1451a90f3ebbc9db
++ Un ordinale come `Prim` seleziona un elemento:
+
+% 2 1 0 099fcb50ca5f24711b51693bf42abb44
+
+% 3 1 0 05ca514b5a4ddc9417b40049fa99fd91
+
+% 4 1 0 0ea6a4454a92301603c710ffeeabbfa5
+
+% 0 1 0 0aad29bea6111a0f1ee3cb76c76d2abf
+
+% 1 1 0 123fb1c6237df33216034e032cef53d4
+
+@ 0 1 0 024d8967f61d8a2105912a2286911d7b
++ `Each` seleziona ogni elemento:
+
+% 2 1 0 0fdf82370d9eb5780f8b103b70c34991
+
+% 3 1 0 118d80a2c01fe842121591606db76ed1
+
+% 4 1 0 1af11da7b760b7d5044d487907338849
+
+% 0 1 0 0c6d09f84ff17a3b0a8ea511dab30ec5
+
+% 1 1 0 0eb13ececf860805015197f828896805
+
+@ 0 1 0 15b27a53612a731b1bd7a5d0a85053c4
++ `Filter` seleziona gli elementi che soddisfano un predicato:
+
+% 2 1 0 0bad82a0d574099018b530eef2abd85c
+
+% 3 1 0 12c1539d625451f01239c7c6830b41f7
+
+% 4 1 0 1f6c91fcafde3701143af99e79d6825c
+
+% 0 1 0 0e8c2f3d0d15b9900d8683bf3821f131
+
+% 0 1 0 0efc6c45ba7bf2e41a649d9da2cffde0
+
+% 1 1 0 1c33effadde30f6f1c554c33c1272279
+
+@ 0 1 0 1760ddffef428cf81873fc3c9c6413a7
++ ### Aggiornare a partire dal vecchio valore
+
+@ 0 2 0 0d112d738008b5ea079762f3a849d9b6
++ All'interno di un'assegnazione, `prior` è il valore che viene sostituito. Un aggiornamento può quindi
++ modificare un valore, senza doverlo sostituire del tutto:
+
+% 2 1 0 015d15c54b0e24d10e1595857949ffae
+
+% 3 1 0 13776523f4b707e61587dac3608c957c
+
+% 4 1 0 03633d1d0fe096c3095c5e9de446a87e
+
+% 0 1 0 12d3c78eba62680d1688e42c997c4eeb
+
+% 1 1 0 00237b56011aa79708eba6176d24f33e
+
+@ 0 1 0 16907c2794da691d0d5a805a99e459c6
++ ### Anche i documenti
+
+@ 0 2 0 1ee627eecf710b3d0341d848ff3609e3
++ I formati dinamici definiscono le stesse ottiche sulle proprie strutture. Un documento analizzato si
++ aggiorna con la stessa sintassi:
+
+% 2 1 0 006dcfee6eee848b115ee09cd6fbc853
+
+% 0 1 0 05a986646a08a3110fe3504f78763cc0
+
+% 0 1 0 0df307d34435d9d5174e2d60b36d0bab
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 1788fe61149c683f1238000284fb816f
+
+% 1 1 0 1610964a685cf9ec071f2580197d50c6
+
+% 3 1 0 0aa7d2ab25309b670d85cf2dfe4fe9e5
+
+% 4 1 0 180173e6088eae161cddcbc837298c8f
+
+% 5 1 0 075b602a39322011131ffedde8431497
+
+% 0 1 0 1c4bebb57086e47215ffc32becd88550
+
+% 0 1 0 0d2a6762d2cd6e080a03093e5a44569f
+
+% 1 1 0 00632483412d9bd7137c9fa067510b1c
+
+@ 0 4 0 1d799e458363fd330c0efb707555cebe
++ L'import `conversions` permette a un semplice valore codificabile, come un `Text`, un `Int` o una
++ case class, di fare le veci del valore proprio del formato a destra dell'`=`. Ogni formato esporta
++ la propria conversione. Le sue ottiche si importano da `optics`, oppure si trovano nel suo oggetto
++ compagno senza alcun import:
+
+% 2 1 0 0c6d70362a4e6be801f0c48d6d60a780
+
+@ 0 3 0 02739f449ba1d4fc0c486cc5a975a233
++ column  Formato
++ column  Conversione
++ column  Ottiche
+
+% 0 1 0 1c07afdab6d47b5017b0f3d0ce9f3fef
+
+% 0 1 0 134b4c2c8d8f17e0165473ada529fa2e
+
+@ 0 4 0 105578fa259585d103c9f3db2c0c6a51
++ row  [XML](xml.md)  nessuna: si trova nel compagno `Xml`  `optics.xmlLens`, `xmlOrdinalOptical`, `xmlEachOptical`
++ row  YAML  `conversions.encodableToYaml`  nel compagno `Yaml`
++ row  CBOR  `conversions.encodableToCbor`  nel compagno `Cbor`
++ row  Protobuf  `conversions.encodableToProtobuf`  nel compagno `Protobuf`, per numero di campo
+
+% 1 1 0 1fef5a339a31cb8a0e2ef17d3bb5f1dc
+
+@ 0 2 0 10774350c45678ea1f4f4cf618da2bf4
++ Un'assegnazione tramite una lente `Xml` accetta quindi un semplice valore codificabile senza alcun
++ import di conversione.
+
+@ 0 1 0 0c786f6bd6a0d61f1132ee1fff34a5d5
++ ### Le lenti come valori
+
+@ 0 2 0 1af23bf8104ea4ec043d8a28c8953c52
++ Sotto la sintassi, una lente è un valore ordinario: un getter e un setter. Si può evocare, passare
++ in giro e comporre, per i casi in cui l'accesso stesso è l'astrazione:
+
+% 2 1 0 0140ccafd6b39e36134dca1cc4d8da0f
+
+% 0 1 0 075157f245f6133d104f6ed8e5d1a13c
+
+% 1 1 0 0845ce9d303ae286038cefcdcd770023
+
+% 3 1 0 0625e2216b0aeaa11774ae723ac6181b
+
+% 4 1 0 13d4abd3ff40959411f5e875f3d327e8
+
+% 5 1 0 1327961b52f0aa9e0599a597b8a50255
+
+% 0 1 0 0434ff50258c75f0120e7de520ba1b4c
+
+% 1 1 0 0bda8a287c90555d19bbd725068a3c51
+
+@ 0 4 0 0d9692c829c54a4a10f1b83756d5a6c1
++ Due lenti si compongono in una con `compose`, così che un percorso possa essere assemblato da parti
++ tenute separatamente: una lente su un campo e una lente dentro ciò che quel campo contiene, unite in
++ una lente che arriva fino in fondo. Dove l'intero percorso è noto in un solo punto, la sintassi
++ vista sopra lo dice in modo più diretto.
+
+@ 0 1 0 199b8abde45b42550aa2d77aa0917d5b
++ ### Nominare percorsi senza percorrerli
+
+@ 0 3 0 0bbb3445fec34c261ff5ac64ecf910f0
++ La sintassi dei percorsi che scrive un aggiornamento può anche nominare una posizione senza andarci.
++ Uno `Specific` associa percorsi a valori. È così che una [typeclass] derivata viene sovrascritta per
++ un solo campo, e non per un intero tipo:
+
+% 2 1 0 017134a7cf0279ef0d981a3cdcd1f7e0
+
+% 3 1 0 1992d6daa2b8f6f112c8a71566d2f22b
+
+% 4 1 0 197c53706844274c150b30a9d3973097
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 0fee4c49cadb6c650eb4ea9106fabe19
+
+% 0 1 0 17d909b654b1e5ea18f5278ba0d8c9ae
+
+% 0 1 0 19d0b88f53b3b85511bf5510ea5b8614
+
+% 0 1 0 14e134f289e218050506a5ca40ad1525
+
+% 0 1 0 14eedb47a4777ec703a042d85aad210c
+
+% 0 1 0 113b859219f033d4003d01bc90bbb2d1
+
+% 1 1 0 1966aca1ed7bb0df0366321d0ae89251
+
+@ 0 4 0 1e0ffc887d33906404fc31165c735405
++ I percorsi vengono verificati rispetto alla struttura del tipo durante la compilazione, quindi un
++ campo scritto male è un errore di compilazione. Ogni valore deve inoltre avere il tipo giusto per il
++ campo che nomina. Il risultato è una mappa ordinaria da ciascun percorso al suo valore, che una
++ [derivazione] consulta mentre visita ogni campo:
+
+% 2 1 0 170b49aa161165f7105d932753e85651
+
+% 3 1 0 1133734b0117500e09380b91f1ff32fb
+
+% 4 1 0 13d181904eeb6f831fcb1f1a9a5922c1
+
+% 0 1 0 1a3f351509e3443b10fb9a512411613d
+
+% 1 1 0 165f1101e5b0ca3919c1ac1045ade052
+
+@ 0 3 0 1eb1ee10cd56e4160c2ac416af423c47
++ La sovrascrittura dell'encoder per singolo campo di [JSON](json.md) è costruita su questo. Il
++ meccanismo non è specifico dei codec: qualsiasi typeclass la cui derivazione consulti uno
++ `Specific` può essere sovrascritta allo stesso modo.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 8 0 1f5a2bc689903d50096c96702ed53b67
++ - [JSON](json.md), [XML](xml.md), [YAML](yaml.md), [CBOR](cbor.md), [TEL](tel.md) e
++   [Protobuf](protobuf.md) descrivono i documenti che la stessa sintassi delle lenti aggiorna.
++ - [Cataloghi](catalogs.md) usa gli stessi percorsi di campo per cercare valori per posizione.
++ - [Collezioni](collections.md) descrive ordinali come `Prim`.
++ - [Derivazione](derivation.md) spiega come un'istanza di typeclass viene generata dalla struttura di
++   un tipo.
++ - [Immutabilità](../../philosophy/immutability.md) spiega perché i valori non vengono modificati sul
++   posto.
++ - [Annotazioni](annotations.md) trova un campo annotato e offre una lente su di esso.

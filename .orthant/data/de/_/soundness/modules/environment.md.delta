@@ -1,0 +1,375 @@
+orthant 2 language
+
+@ 0 1 0 02ecc937dbb159b71208afd09a136979
++ ## Umgebung
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 5 0 1f4a0217595030e30da9f9c695495c16
++ Die Umgebung eines Programms steht als typisierte [Kontextwerte][Kontextwert] zur Verfügung:
++ seine Umgebungsvariablen, die Systemeigenschaften der JVM und das Arbeitsverzeichnis, in dem es
++ gestartet wurde. Das Lesen einer Variable liefert einen Wert des Typs, den sie enthalten soll.
++ Das ist ein `Int`, wo eine ganze Zahl erwartet wird, und ein Pfad, wo ein Pfad erwartet wird.
++ Eine nicht gesetzte Variable löst einen typisierten Fehler aus. Sie liefert nie ein `null` oder
++ einen leeren String.
+
+@ 0 3 0 015f26dff1bbb7000c829477fb8cc651
++ Jede Quelle ambienter Eingaben ist eine [Capability], bereitgestellt als [given]. Die
++ Abhängigkeit eines Programms von seiner Umgebung ist daher in seinen Signaturen sichtbar, und
++ ein Test kann ihm statt der echten Umgebung eine feste übergeben.
+
+@ 0 1 0 0cd6373e452f926a1c374fa2b2758408
++ ### Über die Umgebung
+
+@ 0 5 0 03075a674c05ac7b1d5716868a67c5b5
++ Die Werte, die ein Programm beim Start erbt, sind im Rohzustand ein Sack untypisierter Strings,
++ die über globale statische Aufrufe erreicht werden. `System.getenv` liefert einen `String` oder
++ `null`. Eine Eigenschaft, die eine Zahl sein sollte, kommt als Text an. Nichts hält fest, dass
++ ein Stück Code davon abhängt, dass eine bestimmte Variable gesetzt ist. Die Abhängigkeit ist
++ unsichtbar, und das Parsen bleibt jedem Aufrufer selbst überlassen.
+
+@ 0 6 0 03b320b4b5d134b2107de4928afb4bf1
++ Hier ist jede Quelle eine Capability. Ein `Environment`, ein `System` und ein
++ `WorkingDirectory` sind Kontextwerte, die eine Methode verlangt, wenn sie daraus liest, sodass
++ die Abhängigkeit im Typ steht, wie es [ehrliche Signaturen](../../philosophy/honest-signatures.md)
++ verlangen. Jeder Lesevorgang wird in den erwarteten Typ dekodiert und schlägt laut fehl, wenn
++ ein benötigter Wert fehlt. Und da die Capability ein Given ist, ist das Einsetzen einer
++ kontrollierten Umgebung, für einen Test oder um eine Komponente abzuschotten, eine Frage eines
++ anderen Imports.
+
+@ 0 2 0 11a1ece0411a31510d2d668c2872ebdb
++ Alles kommt aus dem Paket `soundness`. Die echte Umgebung und die Systemeigenschaften werden
++ durch Importe bereitgestellt, und der letzte Import lässt die Beispiele ihre Ergebnisse
++ ausgeben:
+
+% 2 1 0 14a3807827e8d0921cc320532bb7433e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 059ff7877f398f380499306372d8cd5d
++ ### Umgebungsvariablen
+
+@ 0 3 0 0af32cce4486a0a405e09a36f59aafb2
++ Eine Variable wird als Member von `Environment` gelesen. Ihr Name wird in Camel Case
++ geschrieben und in die übliche Großschreibung mit Unterstrichen übersetzt, sodass
++ `Environment.editor` die Variable `EDITOR` liest. Das Ergebnis hat den Typ, den die Variable
++ bekanntermaßen enthält, aus ihrem Text dekodiert:
+
+% 2 1 0 1622687a52eca0db15555bd26a895da6
+
+% 3 1 0 09dd93c4b093930502c88e3a5e2426fe
+
+% 4 1 0 09db27c50f51f26b13639ad956ca1963
+
+% 0 1 0 01fb7de4eedb635b1e2169faee540e72
+
+% 0 1 0 05875ba84d77f669016a0911ae2b2153
+
+% 1 1 0 1565295db44408190e6645dd8b567bc7
+
+@ 0 2 0 1a4c3cb60f40553603cec9d2753ddaef
++ Eine nicht gesetzte Variable löst einen `Environment.Error` aus. Die [Strategie] im
++ Geltungsbereich macht daraus eine Exception, einen fehlenden Wert oder einen behandelten
++ Fehlschlag, je nach Wahl des Aufrufers:
+
+% 2 1 0 005526aacc341e93070f69f1d603de05
+
+% 3 1 0 1dd9aac1ce5b73e712aaf85c09a7e7b7
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1dd6fbdc73f73ea20de1428bafef190e
+
+% 1 1 0 14159f5d34f7cdc30e5283652bee8098
+
+@ 0 1 0 02498f0f4c0d2bc70bd3a361d1aa1ec7
++ ### Überschreiben für einen Block
+
+@ 0 4 0 09d4af88062f38c30497c62be36a06aa
++ Die Umgebung ist eine Capability, sodass ein Block gegen eine andere ausgeführt werden kann.
++ Ein `Environment` ist eine einzige Funktion, vom Namen einer Variable zu ihrem
++ [optionalen](optional-values.md) Wert. Eine, die für einen Test gebaut ist oder Überschreibungen
++ über die echte Umgebung legt, umfasst wenige Zeilen, und ein Given in einem engeren
++ Geltungsbereich hat Vorrang:
+
+% 2 1 0 138ea1627817115f0332fa7b7787290a
+
+% 3 1 0 147f3b0df5e7948b0ca2474de7eec801
+
+% 4 1 0 1d5f65d053b3ce62149218c65a6fdde0
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 033031f22ce2c04c131b7483cf8efa39
+
+% 0 1 0 0087b51859712c2608cc53ba6fb67a42
+
+% 1 1 0 072cb5b236d114051fc277f608e8ff1f
+
+@ 0 5 0 13ff13aa9c7d67f01032cff008ed98e2
++ Das Einsetzen einer völlig anderen Umgebung ersetzt jede Abfrage in ihrem Geltungsbereich.
++ `environments.emptyEnvironment` ist eine solche, und Code, der die Umgebung liest, lässt sich
++ dann erproben, ohne von der Maschine abzuhängen, auf der er läuft. `systems.emptySystem` tut
++ dasselbe für Systemeigenschaften, sodass ein Test auch nicht von der JVM abhängen muss, die ihn
++ zufällig ausführt. [Testen](testing.md) behandelt den Rest dessen, was ein Test braucht.
+
+@ 0 5 0 1a79c57c68d77d881b37af5256ef852d
++ Tests sind nicht der einzige Fall. Ein residenter [Daemon](daemons.md) bedient über seine
++ Lebensdauer Aufrufe aus vielen verschiedenen Shells, jede mit ihrer eigenen Umgebung, und die
++ globale Umgebung der JVM gehört der Shell, die den Daemon zufällig gestartet hat. Dass die
++ Umgebung als Capability übernommen wird, ermöglicht es, jeden Aufruf gegen die Umgebung zu
++ bedienen, aus der er tatsächlich kam.
+
+@ 0 4 0 129db9435ba56ff2015a28d047e34c3c
++ `variables` setzt eine Variable für einen Block. Die Variable wird in Camel Case benannt und in
++ der üblichen Großschreibung gesetzt, sodass `gitIndexFile` zu `GIT_INDEX_FILE` wird. Sie wird
++ über dem `Environment` im Geltungsbereich gesetzt, sodass ein [Unterprozess](processes.md), der
++ innerhalb des Blocks ausgeführt wird, sie erbt:
+
+% 2 1 0 14e8550b371122631713b6c24a85df20
+
+% 3 1 0 0f67e7573e9ffbc01982fa8b21844203
+
+% 4 1 0 14d9066ba7ff653f1bbaaab438a59449
+
+% 0 1 0 12c41bd8f0a8a87c083c5d2f3853f2d0
+
+% 0 1 0 0197cf45f52c25220823cc6a42dee232
+
+% 1 1 0 0fd3e3b2e98054ab0b2ace85ab89e483
+
+@ 0 1 0 0ed839fb011403a807775b4744f0fa8a
++ ### Systemeigenschaften
+
+@ 0 2 0 09eb88b654cc44b0094ebc3776c88bf8
++ Die beiden Quellen gleichen sich darin, dass sie textuelle Schlüssel-Wert-Paare in eine JVM
++ tragen. Sie unterscheiden sich darin, woher sie kommen und wie sie benannt werden:
+
+% 2 1 0 13f8425e361347c91bed84ca7f8e5658
+
+@ 0 7 0 166f134acec770990b725c61ca0f3bf2
++ column  Quelle
++ column  Stammt aus
++ column  Benannt in
++ column  Zum Beispiel
++ column  Wenn sie fehlt
++ row  Umgebungsvariablen  der Shell, die den Prozess gestartet hat  Großschreibung  `PATH`, `XDG_CONFIG_HOME`  `Environment.Error`
++ row  Systemeigenschaften  `-D`-Argumenten an `java` selbst  gepunktetem Lower Case oder Camel Case  `default.log.directory`  `Property.Error`
+
+% 1 1 0 1d4dcaac7ef68757140a4e8055501f85
+
+@ 0 3 0 1b040e52040c7ea30837920da41841d3
++ Beide kommen als Text an, in einem Format, das nur das lesende Programm kennt. Das spricht
++ dafür, sie dort, wo sie gelesen werden, in strukturierte Typen zu [dekodieren](decoding.md),
++ statt Strings nach innen weiterzureichen.
+
+@ 0 2 0 052c4c47566bf506132320769f497613
++ Eine Systemeigenschaft wird über `System.properties` gelesen. Ihr gepunkteter Name wird als
++ Pfad von Membern geschrieben, der in einer Anwendung endet. Jede Eigenschaft wird in ihren
++ natürlichen Typ dekodiert:
+
+% 2 1 0 0747710122f72776171fe5727905c923
+
+% 3 1 0 060e573a5d07f6dd1a1dffcb54569acc
+
+% 4 1 0 0501bfd203b798c1112f9bae18bec90d
+
+% 0 1 0 12a1e1bc491721630f04516594eeda1f
+
+% 0 1 0 137db50d2b6d4a601342a6b8ec774e03
+
+% 0 1 0 0064dafdba23f7b00b67264a4a43b6f7
+
+% 1 1 0 092aec3eb777c1fb1d15f73594568c0a
+
+@ 0 2 0 0793ace4eafa190e17b4699158e9f8cb
++ Eine nicht definierte Eigenschaft löst einen `Property.Error` aus, der wie jeder andere Fehler
++ behandelt wird.
+
+@ 0 1 0 182fee2537af9aac12dad11599dbe861
++ ### Das Arbeitsverzeichnis
+
+@ 0 4 0 0740a89be5aa137f1f20295a7dc38666
++ Das Verzeichnis, in dem ein Programm gestartet wurde, ist eine `WorkingDirectory`-Capability.
++ Sie wird dort angefordert, wo sie gebraucht wird, und nicht aus einer globalen Variable gelesen.
++ Mit `workingDirectories.javaBaseWorkingDirectory` im Geltungsbereich deklariert eine Methode,
++ die einen relativen [Pfad](paths.md) gegen das Arbeitsverzeichnis auflöst, diesen Bedarf in
++ ihrer Signatur.
+
+@ 0 2 0 12752bb2d3e98e77070575a1ebd23cd8
++ `workingDirectory` liefert das Verzeichnis selbst, und `temporaryDirectory` ein temporäres.
++ Jedes wird zu dem Pfadtyp aufgelöst, der angefordert wird.
+
+@ 0 1 0 0c79b0e645bd89551392f4a70e1320bf
++ ### Standardverzeichnisse
+
+@ 0 5 0 14151918d5c4235110523d5b3dcb48bd
++ Die
++ [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/)
++ legt fest, wohin die Daten, die Konfiguration, der Cache und der Zustand eines Programms
++ gehören. Sie respektiert die Umgebung des Benutzers, wo diese gesetzt ist, und greift sonst auf
++ die Vorgaben der Spezifikation zurück. `Xdg` liefert jedes davon sowie die Suchpfade für Daten
++ und Konfiguration:
+
+% 2 1 0 098de8c5715a23291d6659f73d12e37f
+
+% 3 1 0 057fd012f73d8b7c05d28005b9ab4e17
+
+% 4 1 0 11b54c9161f7ec600dc0d9e5ee21f89d
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 040e2398c7e282e71d27fecdf295b29f
+
+% 0 1 0 158bf2ea191b01f40ad32bdc36d074df
+
+% 0 1 0 1cc5de73f635c2421a290e57eec26083
+
+% 1 1 0 0918ab30f32f7a531043523f2bfd8870
+
+@ 0 3 0 16c7fadb436e4b5a11ae698a0fd51099
++ `configHome` ist `~/.config`, sofern `XDG_CONFIG_HOME` nichts anderes sagt. Werden diese statt
++ eines fest kodierten `~/.myapp` verwendet, landen die Dateien eines Programms dort, wo die
++ Werkzeuge des Benutzers für Sicherung, Synchronisation und Aufräumen sie erwarten.
+
+@ 0 4 0 1ae741f8dc6565dd0e9082fd49c48b6e
++ Auch das übliche Layout eines Unix-Systems ist typisiert. `Home` und `Base` sind jeweils ein
++ `BaseLayout`: ein Baum verschachtelter Objekte, die die Verzeichnisse unter dem Home-Verzeichnis
++ des Benutzers und unter der Wurzel des Dateisystems benennen. Wird eines angewandt, mit dem
++ Pfadtyp als Typargument, wird es gegen das `Environment` und das `System` im Geltungsbereich
++ aufgelöst:
+
+% 2 1 0 16c95cdda096b18f07ac59441a0c185c
+
+% 3 1 0 020f462c8f4d4c4e05dc6d9030fbef08
+
+% 4 1 0 02589c1a23f07d9f11d18552d5b6d7c8
+
+% 0 1 0 1b177e988e78ec5c01f37e110f6724ff
+
+% 0 1 0 18aa5d66544cfcc415815032b469bda7
+
+% 0 1 0 02711bf9ed7c1b7116c2f89e8d76e8f6
+
+% 1 1 0 0bff173fda8d7e340d87154680adaa5d
+
+@ 0 3 0 1537129b03aa494d1ae381b091fc2cea
++ Das sind `~/.config`, `~/.local/share` und `/var/log`. Jedes Layout weiß auch, ob es zum
++ Beschreiben gedacht ist. `readOnly` ist unter anderem für `/usr` und alles darunter `true`,
++ sodass ein Programm prüfen kann, bevor es einen Versuch unternimmt:
+
+% 2 1 0 0b84e0f9201153020ad97e450efd5ab4
+
+% 3 1 0 1587fb5048df5d1c1c93530af99e12ea
+
+% 4 1 0 13c6442abd98870b1e9bcf81e27223b5
+
+% 0 1 0 01e27cf7aa410f7e1a1b5dc22f7bb01e
+
+% 0 1 0 1a5bc83eb82777e80a3ca2ac669c43a9
+
+% 1 1 0 0f03157811fde5630b7e36e4aea0bafc
+
+@ 0 2 0 1959a177ca929bde1a2651b424e44be2
++ Die Layouts sind vollständig, mit ihren `readOnly`-Werten, unter
++ [Standardverzeichnisse](filesystem.md#standard-directories) aufgeführt.
+
+@ 0 1 0 13486d6f9a5b7b740dde3aa3ee6c18d1
++ ### Die Maschine
+
+@ 0 5 0 1cfcc022a80c8dbf1364fe0f6fa71664
++ `Architecture` benennt den Prozessor, auf dem ein Programm läuft. Sie wird aus der eigenen
++ Angabe der Plattform in einen typisierten Wert geparst, etwa `X86(64)`, `Arm(64)` oder
++ `Ppc(64, littleEndian = true)`. Code, der nach Architektur eine native Bibliothek oder einen
++ Weg durch den Code wählen muss, gleicht daher einen Wert ab und nicht einen String, dessen
++ Schreibweise zwischen Plattformen variiert.
+
+@ 0 2 0 17eb266b7d8e03df0326ab3a4b615ca0
++ `Os` tut dasselbe für das Betriebssystem. Es wird aus den vielen Schreibweisen dekodiert, die
++ die Eigenschaft `os.name` annimmt, indem ihr Anfang abgeglichen wird, ohne Rücksicht auf
++ Groß-/Kleinschreibung:
+
+% 2 1 0 1cd02157f38cd6cb1e84b3829323f10c
+
+@ 0 3 0 001d28c96f21a41d11fedc514bba972d
++ column  Fall
++ column  Wenn `os.name` beginnt mit
++ column  Zum Beispiel
+
+% 0 1 0 024196069791c3ff17cd76cd7e5aacb5
+
+@ 0 1 0 0d06f25253aecfc41d8bdbfe7f7efb5e
++ row  `Os.MacOs`  `mac` oder `darwin`  `Mac OS X`
+
+% 0 1 0 0fcdc034bcb2abf104e692e41060fcaa
+
+% 0 1 0 1022241faf4c037f155d24ddc90b373c
+
+% 0 1 0 140ef6718ad3c2f9083e41f3bc5d8927
+
+% 0 1 0 0fe65a713aa341341f76818171a8a466
+
+@ 0 1 0 1e44bd1021c2ff85100b5961ec34dbed
++ row  `Os.Solaris`  `sunos` oder `solaris`  `SunOS`
+
+% 0 1 0 053188984e93bd3d1018cd907db7e46c
+
+@ 0 1 0 04aa89d2b7f5c79014d8911a5748ef7f
++ row  `Os.Other(name)`  alles andere, als `name` beibehalten
+
+% 1 1 0 15f08a2f64092c5a1a6546301aaf8ca6
+
+@ 0 3 0 1d44edf3ba7b445b097c335495c5ca69
++ Beide werden aus dem `System` im Geltungsbereich gelesen, sodass ein Test denselben Code wie auf
++ einer anderen Plattform ausführen kann, indem er ihm ein festes `System` übergibt. Ein Programm,
++ das etwa ein Release zum Herunterladen benennt, gleicht das Paar ab und nicht den rohen Text
++ einer Eigenschaft:
+
+% 2 1 0 17052f3236c1cfcd06bec1fb1882caa4
+
+% 0 1 0 01aee804b461ce5e145cbaa09d16540e
+
+% 0 1 0 06064934c25a5a2b0968cff6ffacb827
+
+% 0 1 0 160922db636a257d18651f073eb95a22
+
+% 0 1 0 14f497c0d0407be51ca8861e7a488e45
+
+% 0 1 0 1674bbfce8add2730c02ae647ff8ca43
+
+% 0 1 0 1c28eeef0e96b6710c212bf3fa90d339
+
+% 1 1 0 16f735493bdba72402ae30a43ed9824e
+
+@ 0 3 0 1e7ae87f5522e3121732680ee020df69
++ Die dritte Facette der Plattform ist die virtuelle Maschine selbst. `Vm` benennt sie, und dort
++ werden die Ereignisse abgefangen, die die VM auslöst: ihr Herunterfahren, eine nicht gefangene
++ Exception, eine Garbage Collection. [Nebenläufigkeit](concurrency.md) beschreibt
++ `Vm.intercept`.
+
+@ 0 3 0 1088402f2d869fb401cbaf32c021fbc2
++ `termcaps.environmentTermcap` meldet, was das [Terminal](terminal.md) kann. Es bestimmt die
++ Farbtiefe aus `COLORTERM`, wo das gesetzt ist, und sonst aus `tput`; so wird gestaltete Ausgabe
++ auf einem Terminal, das sie nicht darstellen kann, korrekt herabgestuft.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 4 0 0b77120f3bb4482b0cac5a6b24ab3926
++ - [Kommandozeilenschnittstellen](cli.md) liest die Argumente eines Programms auf dieselbe typisierte Weise.
++ - [Prozesse](processes.md) startet andere Programme, die die Umgebung im Geltungsbereich erben.
++ - [Dateisystem](filesystem.md) liest und schreibt die Dateien, die diese Verzeichnisse enthalten.
++ - [Klassenpfad](classpath.md) liest den Klassenpfad aus einer Systemeigenschaft, und [Internationalisierung](internationalization.md) das Gebietsschema aus der Umgebung.

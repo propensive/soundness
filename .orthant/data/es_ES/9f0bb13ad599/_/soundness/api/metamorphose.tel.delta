@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 156914880018765e15b73637402051e7
++ info   permutaciones como reordenaciones reversibles, almacenadas de forma compacta como tablas de inversiones en base factorial
+
+@ 0 7 0 0b0b3fa346652b010b400ba0e2dc5136
++     Internamente, una permutación es su
++     [tabla de inversiones](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics))
++     escrita en el sistema de numeración factorial, un `Factoradic`: un entero que la identifica de
++     forma única, de modo que las permutaciones son compactas de almacenar y de enumerar, y
++     `Permutation.bySize(n)` enumera las `n!` en orden. Una permutación de *n* elementos ocupa
++     O(*n* log *n*) bits, el mínimo según la teoría de la información. `Factorial` proporciona los
++     factoriales sobre los que se construye la codificación.
+
+@ 0 1 0 1d26461196f23b53060f7a77f7f68e42
++ entry .Permutation   una reordenación reversible de una secuencia, almacenada como su tabla de inversiones factorádica
+
+% 0 1 0 12f1691e82eb607a119924e35c1f9b25
+
+% 0 3 0 191ec179f21eac24041f768279364dba
+
+@ 0 7 0 15bf6ad78c4a6277137f8ef993e37197
++       Aplicada a una lista, reordena sus elementos (`#apply`); `#inverse` deshace la reordenación.
++       Una permutación no registra la longitud a partir de la que se construyó, solo las
++       posiciones iniciales que reordena, su `#extent`: la identidad de cualquier tamaño es
++       `Permutation(Factoradic(0))`, y `Permutation(Sequence(0, 2, 1))` es igual a
++       `Permutation(Sequence(0, 2, 1, 3, 4))`. Es una permutación de los números naturales que
++       mueve un número finito de ellos. Aplicada a una lista más larga, reordena los primeros
++       `#extent` elementos y deja el resto donde están.
+
+@ 0 8 0 08eefffb16b65507134784a8c70cfbc2
++         column  Caso
++         column  Código
++         column  Mensaje
++         column  Nota
++         row  `BaseRange(value, base)`  1  _the value `value` is too large for its positional base `base`_  un dígito pasado a `Factoradic(List(…))` no es menor que la base de su posición
++         row  `DuplicateIndex(index, element)`  2  _the index `index` was duplicated at `element`_  `Permutation(Sequence(…))` encontró un índice por segunda vez; `element` es la posición en la que reapareció
++         row  `InvalidIndex(last, max)`  3  _the index `last` appears, but every index should be in the range 0-`max`_  un índice pasado a `Permutation(Sequence(…))` es negativo o no es menor que la longitud de la secuencia
++         row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` recibió una lista más corta que la extensión de la permutación
+
+@ 0 23 0 0231e4924be1658c1bc45d381f39ea72
++           Una enumeración de `BaseRange`, `DuplicateIndex`, `InvalidIndex` y `TooShort`, cada uno
++           con los valores que nombra el mensaje; véase `Permutation.Error` para saber cuándo se
++           lanza cada uno. Cada caso tiene un `#number`, del 1 al 4, el código secundario del error.
++       entry #number   el código de error secundario del motivo, del 1 al 4
++     entry .communicable   representa cada `Permutation.Error.Reason` como un mensaje
++     entry #reason   por qué no pudo crearse o aplicarse la permutación
++   entry #factoradic   el número de la permutación, en el sistema de numeración factorial
++   entry #extent   cuántas posiciones iniciales reordena la permutación: una más que la última posición que mueve
++       Cero para la identidad. Toda posición a partir de `#extent` queda fija.
++   entry #inversions   la tabla de inversiones: para cada posición, cuántas posiciones anteriores contienen un índice mayor
++       Una entrada para cada una de las primeras `#extent` posiciones, en orden. La entrada de la
++       posición *i* es como mucho *i*, así que es un dígito en base *i* + 1: estos son los dígitos
++       de `#factoradic`, del menos significativo al más. Una posición que queda en su sitio tras
++       todas las que se mueven no tiene ningún índice mayor antes de ella, y por eso las
++       posiciones fijas finales no añaden nada al número.
++   entry #expansion   los índices reordenados: la permutación aplicada a `0` hasta `extent - 1`
++       Los índices que recibió `.apply`, hasta el último que se mueve: para
++       `Permutation(Sequence(3, 1, 4, 2, 0, 5))`, `List(3, 1, 4, 2, 0)`. Es tan largo como
++       `#extent`, así que omite los índices finales que la permutación deja en su sitio.
++   entry #apply   reordena una lista, o da el índice del que una posición toma su elemento
++       `permutation(list)` reordena una lista al menos tan larga como `#extent`, y en otro caso
++       lanza `Permutation.Error` con `TooShort`; una lista más larga ve reordenados sus primeros
++       `#extent` elementos y conserva el resto en su sitio.
+
+@ 0 1 0 01cf5a1c79149f4814f8f1324782e4d9
++ entry .Factoradic   un entero no negativo en el sistema de numeración factorial, tal como se escribe una tabla de inversiones
+
+@ 0 9 0 09b0fffac4d2358314803651c90f4b7a
++   entry .apply   un factorádico a partir de sus dígitos, del más significativo al menos, comprobando que cada uno es menor que su base
++       El último dígito tiene base 1, así que debe ser 0; el anterior, base 2, y así sucesivamente.
++       Un dígito que no es menor que su base lanza `Permutation.Error` con `BaseRange`, así que
++       necesita una `Tactic[Permutation.Error]`. El constructor de la case class,
++       `Factoradic(number)`, recibe el `BigInt` directamente.
++   entry #number   el entero, como `BigInt`
++   entry #expand   los dígitos del número, del más significativo al menos, sin ceros a la izquierda
++       `Factoradic(0).expand` es `Nil`; en otro caso, la lista termina con el dígito de las
++       unidades, que siempre es cero. Invertida, es el `#inversions` de una permutación.

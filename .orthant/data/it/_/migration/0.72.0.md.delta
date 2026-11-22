@@ -1,0 +1,1858 @@
+orthant 2 language
+
+@ 0 1 0 022b7ec71d005c830485b16410949b2c
++ # Modifiche dalla 0.71.0
+
+@ 0 3 0 09364ba456f70c46105bac6409b60503
++ Questo file viene letto da un agente LLM per aggiornare dalla 0.71.0 alla release successiva il
++ codice che usa le librerie di Soundness. Ogni voce indica con precisione che cosa è cambiato; si
++ veda `AGENTS.md` per il formato. Le voci sono raggruppate per modulo, con le più recenti in fondo
++ all'interno di ciascun modulo.
+
+% 0 1 0 16f13521983facf213aed73653b0ed8a
+
+@ 0 51 0 1cca58a1515f421d04a9d21f91614064
++ - `acyclicity.Dag#sorted: List[node] raises Dag.Error` è stato rinominato in
++   `linearized: proscenium.List[node]`, che non solleva più errori: un `Dag` è aciclico per
++   costruzione. Ogni nodo segue ancora le sue dipendenze; l'ordine è ora quello in cui i nodi
++   sono stati forniti per la prima volta, quando questo è un ordine valido, anziché l'ordine di
++   hash. (#2227)
++ - `acyclicity.Dag#keys: Set[node]` è stato rinominato in `nodes: proscenium.Set[node]`;
++   `Dag#apply(key: node): Set[node]` è stato rinominato in
++   `successors(node: node): proscenium.Set[node]`; `Dag#edgeMap: Map[node, Set[node]]` è stato
++   rimosso — si legga il grafo tramite `edges`, `successors` e `predecessors` (l'ultimo richiede
++   `import dysasymptotics.linearScan`). Ogni risultato di `Dag` che era un
++   `scala.collection.immutable.Set`, `Map` o `List` è ora quello di `proscenium`. (#2227)
++ - `acyclicity.Dag#has(key: node): Boolean` non è più un metodo: `Dag[node]` (e `Digraph[node]`
++   e un `Topology[node]^{}` congelato) hanno ora istanze di `murmuration.Inclusive by node`,
++   `murmuration.Traversable by node` (i nodi, in ordine topologico per un `Dag`) e
++   `denominative.Countable`, quindi `dag.has(node)`, `dag.size`, `dag.each`, `dag.fold` e il
++   resto del vocabolario delle collezioni provengono dalle estensioni delle typeclass, che
++   `import soundness.*` fornisce. (#2227)
++ - `acyclicity.Dag.apply(edges: (node, node)*)`, `Dag.apply(nodes: (node, Set[node])*)` e
++   `Dag.apply(keys: Set[node])(dependencies: node => Set[node])` ora verificano la presenza di
++   un ciclo e `raises Dag.Error` (`Reason.Cyclic`); l'ultimo prende la sua `Tactic[Dag.Error]`
++   come parametro `using` esplicito anziché tramite `raises`. Le forme non verificate sono
++   `acyclicity.Digraph.apply` con le stesse firme, che restituiscono un `Digraph[node]` (un grafo
++   che può contenere un ciclo), e `digraph.acyclic: Dag[node] raises Dag.Error` è la
++   conversione. In tutte, ogni destinazione di un arco diventa un nodo. (#2227)
++ - `acyclicity.Dag#hasCycle(start: node): Boolean raises Dag.Error` è stato rimosso; un `Dag` non
++   ha cicli. Su un `Digraph`, `cycle: Optional[proscenium.List[node]]` restituisce un testimone
++   (ogni nodo punta al successivo, terminando dove è iniziato) oppure `Unset`, per l'intero grafo.
++   (#2227)
++ - `acyclicity.Dag#sources` ha lo stesso significato (i nodi che non dipendono da nulla); si
++   aggiunge `sinks: proscenium.Set[node]` (i nodi da cui nulla dipende). (#2227)
++ - `acyclicity.Dag#remove(element: node): Dag[node]` è stato rinominato in
++   `bypass(node: node)(using Dysasymptotic.LinearScan): Dag[node]`, e
++   `Dag#filter(predicate: node => Boolean): Dag[node]` in
++   `bypassAll(nodes: proscenium.Set[node])(using Dysasymptotic.LinearScan): Dag[node]`, che
++   prende i nodi da *scartare* anziché un predicato sui nodi da mantenere. Entrambi ora
++   reindirizzano correttamente quando si scartano nodi adiacenti. Anche `Dag#-(key: node)` ora
++   prende `(using Dysasymptotic.LinearScan)` e scarta gli archi che puntano al nodo (prima li
++   lasciava pendenti). `ancestors` e `lineage` prendono lo stesso `using`. Si apra il controllo
++   con `import dysasymptotics.linearScan`. (#2227)
++ - `acyclicity.Dag#subgraph(keep: Set[node]): Dag[node]` ora prende
++   `(using Dysasymptotic.LinearSize)` (`import dysasymptotics.linearSize`) ed è il sottografo
++   indotto: scarta gli archi verso nodi fuori da `keep` anziché reindirizzarli attraverso di
++   essi. (#2227)
++ - `acyclicity.Dag#add(key: node, value: node): Dag[node]` ora `raises Dag.Error`
++   (`Reason.Cyclic`) quando l'arco chiuderebbe un ciclo; `Dag#++(dag: Dag[node])` e il nuovo
++   `Dag#+(edge: (node, node))` restituiscono un `Digraph[node]`, poiché il risultato può essere
++   ciclico. (#2227)
++ - `acyclicity.Dag#map[node2](lambda: node => node2): Dag[node2]` è ora il `map` dell'istanza di
++   `murmuration.Mappable` (`Result[node2] = Digraph[node2]`), raggiunto tramite l'estensione
++   `map` delle collezioni: restituisce `Digraph[node2]` e, quando due nodi vengono mappati su uno
++   solo, ne unisce gli archi (prima manteneva gli archi di un nodo e perdeva quelli dell'altro).
++   Allo stesso modo `Dag#flatMap[node2](lambda: node => Dag[node2])` restituisce `Digraph[node2]`
++   e non applica più una riduzione transitiva al suo risultato. (#2227)
++ - `acyclicity.Dag#reduction` ora rimuove ogni arco implicato da un cammino più lungo (prima
++   rimuoveva solo quelli implicati da un cammino di due archi, quindi era corretto solo su input
++   transitivamente chiusi). `Dag#closure`, `reachable`, `descendants`, `ancestors` e `lineage`
++   non sono più ricorsivi, quindi non traboccano sui grafi profondi né vanno in loop su quelli
++   ciclici; su un `Digraph`, `reachable`, `descendants`, `ancestors`, `lineage` e `closure` sono
++   totali. (#2227)
+
+% 0 1 0 1a1bfe8e805cb3f60fe045a6de4fe863
+
+@ 0 20 0 1fadb5e9f818a0f606fa924d96311f64
++   ?->{lambda} Map[node, node2]` è ora `traversal[result](lambda: (proscenium.Set[result], node)
++   => result): proscenium.Map[node, result]`, senza `Tactic`. (#2227)
++ - `acyclicity.Dag` non è più una `case class`: `Dag.unapply` e `Dag#copy` non ci sono più, e
++   l'uguaglianza è sull'adiacenza come prima. (#2227)
++ - `acyclicity.explore` (`start.explore(dependencies: node => Iterable[node])`) ora restituisce
++   un `Digraph[node]` anziché un `Dag[node]`. (#2227)
++ - Gli oggetti costruttori DOT `acyclicity.Digraph`, `acyclicity.Graph` e `acyclicity.Subgraph`
++   sono stati rimossi e i loro metodi spostati: `Digraph(id, statements*)` →
++   `Dot.digraph(id, statements*)`, `Digraph(statements*)` → `Dot.digraph(statements*)`,
++   `Digraph.strict(id, statements*)` → `Dot.strictDigraph(id, statements*)`,
++   `Graph(id, statements*)` → `Dot.graph(id, statements*)`, `Graph.strict(id, statements*)` →
++   `Dot.strictGraph(id, statements*)`, `Subgraph(id, statements*)` →
++   `Dot.subgraph(id, statements*)`, `Subgraph(statements*)` → `Dot.subgraph(statements*)`.
++   `acyclicity.Digraph` ora nomina il tipo del grafo. (#2227)
++ - `acyclicity.Hasse#parents`, `children`, `elements`, `maxima` e `minima` ora restituiscono
++   `proscenium.Set[element]` anziché `scala.collection.immutable.Set[element]`; i campi
++   `greater`, `lesser` e `aliases` non sono più pubblici. `Hasse.apply(elements: Set[element])`
++   prende un `proscenium.Set`. (#2227)
++ - `acyclicity.Poset#elements` è un `proscenium.Set[element]`; `Poset.apply(elements: element*)`
++   è invariato. `Poset#dag` è calcolato tramite `Hasse` e non dipende più da `reduction`; i suoi
++   archi sono invariati. (#2227)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 4 0 0002a892592124c61bfc9304583da6de
++ - `anthology.CompileProcess#abort()` viene osservato in modo affidabile dal thread del
++   compilatore (il flag di cancellazione è atomico), quindi una compilazione interrotta si ferma
++   al tick di avanzamento successivo anziché poter proseguire fino al completamento. Firme
++   invariate. (#2238)
++ - `anthology.Format` è stato rinominato in `anthology.Artifact`, con i membri invariati
+
+% 0 1 0 1257b40d25ac6d241e174ef3a63fe9af
+
+@ 0 6 0 13046d7cbcbff518183b22e22090f4f7
++   `Artifact.source`/`ir`/`application`, `Artifact(kind, id)`), ed è ora esportato da
++   `soundness`: lì il `Format` di zephyrine mantiene quel nome. Si sostituisca `anthology.Format`
++   con `Artifact`. (#2263)
++ - I nodi di applicazione `anthology.Jar` e `anthology.Binary(triple)` sono stati spostati
++   nell'oggetto compagno, come `Artifact.Jar` e `Artifact.Binary(triple)`, raggiungibili tramite
++   `import soundness.*` (dove `Jar` è quello di zeppelin e `Binary` quello di monotonous).
++   `anthology.Triple` è stato spostato dal componente `nir` a `core`; il suo package e il suo nome
++   sono invariati. (#2263)
+
+% 0 1 0 1eecc11d4eed23d30cc8cf10b4de468a
+
+@ 0 11 0 0919ebfa3058c0a81b205992e628f4c0
++ - `anticipation.LogSink` è classificato `caps.SharedUnscoped` anziché `caps.Unscoped`, e
++   `anticipation.Loggable` estende `caps.SharedCapability`: un logger è una capability condivisa
++   (su cui scrivono tutti i task contemporaneamente) che cattura i suoi sink condivisi. Il corpo
++   di un task può ora catturare e usare un logger. Un `given … is Loggable` tipizzato senza `^` e
++   costruito con `new Loggable` deve essere tipizzato `(… is Loggable)^`, poiché un'istanza di
++   una classe capability è tipizzata `^`; il codice che classifica un sink o un logger come
++   esclusivo deve usare `SharedCapability`. (#2212)
++ - Nuovi classificatori `anticipation.Durable` (`caps.SharedCapability`, che si può trattenere
++   in sicurezza oltre il confine di un thread) e `anticipation.DurableUnscoped` (un `Durable`
++   che è anche esente dai livelli, come `caps.SharedUnscoped`). `Loggable` è ora `Durable` e
++   `LogSink` `DurableUnscoped`; il codice che li classificava come
++   `SharedCapability`/`SharedUnscoped` li vede ancora come tali, poiché entrambi derivano da
++   quelli. (#2217)
+
+% 0 1 0 0c8d30bb8e50726612ab62922a12ed98
+
+@ 0 15 0 15ff29f7eb395be50468341a59ae4109
++ - Nuova typeclass `aperture.Archivable` (`target is Archivable in Form to Result`, con un tipo
++   flag `Operand`), applicatore `aperture.Archiver`, ed estensione `value.archive[form](flags*)`,
++   la controparte di archiviazione di `open[form]`/`create[form]`: `directory.archive[Tar]()`
++   produce un `Tarfile`, `directory.archive[Zip]()` uno `Zipfile`, `directory.archive[Ar]()` un
++   `Arfile`. Esportati in `soundness` come `archive`, `Archivable` e `Archiver`. (#1713)
++ - `aperture.session` (l'estensione `value.session[result](using sessional: (target is
++   Sessional)^)(lambda: (session: sessional.Result) ?=> result): result`) non è più
++   `transparent inline`, ed è ora `session[result, instance^, block^](using sessional: (target is
++   Sessional)^{instance})(lambda: (session: sessional.Result^) ?->{block} result): result`. Il
++   capture checking ora confina l'handle al blocco: un `result` il cui tipo cattura l'handle —
++   l'handle stesso, una closure su di esso, o una collezione o altro valore che lo contiene —
++   viene rifiutato come capability che "outlives its scope", mentre prima si compilava e
++   sopravviveva alla sessione chiusa. I punti di chiamata che restituivano un tale valore da
++   `session` devono consumare l'handle dentro il blocco; i risultati indipendenti dalla sessione
++   non sono toccati, e un argomento di tipo esplicito `session[T]` deve ora anche legare o
++   omettere i due parametri di insieme di cattura. (#2216)
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 7 0 01043d21677e95161bf84b7f7569fe4a
++ - `Tzdb.Entry.Rule#letters`, `Tzdb.Entry.Zone#location` e `Tzdb.ZoneInfo#until` sono passati da
++   `Option[Text]` a `Optional[Text]`. Nel costruirli si sostituisca `Some(x)` con `x` e `None` con
++   `Unset`; nel leggerli si usino `.let`, `.or` e `.absent` al posto di `Option#map`,
++   `Option#getOrElse` e `Option#isEmpty`, oppure `.option` per recuperare un `Option`. (#2190)
++ - `Tzdb.parse` (e `Tzdb.parseFile`) accettano un campo `STDOFF` o `SAVE` negativo, come
++   `-5:00`, e un numero di ore pari o superiore a 24. Una `Tzdb.Duration` negativa ha ogni
++   componente negato: `-0:30` è `Duration(0, -30, 0)` e `-4:56:02` è `Duration(-4, -56, -2)`.
++   (#2258)
+
+% 0 1 0 0fc8ab4b076c19c00524f7be90c364eb
+
+@ 0 4 0 1b6414686163c615082e0e69b6c3b2e4
++ - `baroque.Complex` si può scalare per un `Double` da entrambi i lati:
++   `Complex.multiplicableByDouble` (`Complex[component] is Multiplicable by Double`, per
++   qualsiasi `component` moltiplicabile per `Double`) e `Complex.doubleMultiplicable`
++   (`Double is Multiplicable by Complex[component]`), quindi `i*1.8` e `2.0*complex` si
++   compilano. (#2262)
+
+% 0 1 0 1281cf5693caddee047e57c2960f2348
+
+@ 0 23 0 0fae438782c7abb110b47815993c0c6b
++ - L'estensione `Tarfile.from(directory)` (`bitumen.from`, componente jvm) è stata rimossa; si
++   scriva `directory.archive[Tar]()`. Il ricevente è qualsiasi `Path on plane` con un
++   `FilesystemBackend on plane` nell'ambito, e il risultato è un `Tarfile` come prima. È ancora
++   necessario un `DereferenceSymlinks` (`filesystemOptions.preserveSymlinks` memorizza una voce
++   `Symlink`, `dereferenceSymlinks` il contenuto della destinazione); `TraversalOrder` e
++   `plane is Explorable` non servono più, e le voci sono ora sempre ordinate in pre-ordine, con i
++   figli di ogni directory in ordine di codepoint, quindi due archiviazioni dello stesso albero
++   producono byte identici. `bitumen.from` non è più esportato in `soundness`, quindi
++   `soundness.from` è senza ambiguità il `value.from(ordinal)` di rudiments. (#1713)
++ - `directory.archive[Tar](flags*)` prende `LongNameFormat.Pax | Gnu` (predefinito `Pax`) e i
++   nuovi `bitumen.Archive.Flag`: `Archive.Flag.Owner(user: UnixUser, group: UnixGroup)` e
++   `Archive.Flag.Mtime(seconds: Long)` (anche `Mtime(instant)` per qualsiasi
++   `Abstractable across Instants`), che sostituiscono il proprietario e il timestamp registrati
++   per ogni voce. Le istanze sono `Tar.Archivable[plane]` e `Ar.Archivable[plane]`, annidate
++   negli oggetti compagni dei formati (`bitumen.core`, quindi disponibili su ogni piattaforma che
++   galilei supporta). (#1713)
++ - Nuovo `directory.archive[Ar](flags*)`: `ar` non ha directory, quindi ogni file regolare sotto
++   la radice diventa un membro con il nome del suo path relativo unito da barre, i link simbolici
++   vengono seguiti, e una FIFO o un dispositivo solleva il nuovo
++   `Ar.Error.Reason.Unrepresentable(name: Text)` (`SN-286.9`). `mode` è l'intero `st_mode`, come
++   lo memorizza `ar`. (#1713)
++ - `bitumen.Tar.Entry.apply` non prende più un parametro `mtime`, né un parametro di tipo
++   `instant`: marca la voce con l'ora corrente. Una chiamata che passava `mtime = instant`
++   diventa `Tar.Entry.at(name, data, instant, …)`, il cui `mtime` è il terzo parametro e i cui
++   `mode`, `user` e `group` mantengono i loro valori predefiniti, alla maniera di
++   `zeppelin.Zip.Entry.at`. (#2259)
+
+% 0 1 0 166710858963dd2d0d21952966ed3b25
+
+@ 0 25 0 19c1732475e6850507d7b02cbeb34f8a
++ - `Cbor.Parser` (annidato in `object Cbor`) è sostituito dalla classe di primo livello
++   `breviloquence.CborParser`, una capability con stato (`caps.ExclusiveCapability,
++   caps.Stateful`) con un costruttore privato, costruita solo dai percorsi di lettura di
++   breviloquence; i suoi metodi del bordo diretto mantengono nomi e firme ma sono `update def`,
++   richiamabili solo tramite un `CborParser^`. Il codice che nominava `Cbor.Parser` come tipo
++   nomina `CborParser`; nemmeno prima nulla fuori da breviloquence poteva costruirne uno.
++   (#1249)
++ - `Cbor.Ast.parse` acquisisce un overload per `Chain[Data]`; l'overload per `Data` è invariato.
++   (#1249)
++ - Nuovi `inline def` pubblici `Cbor.Reader.of(carrier: AnyRef): Cbor.Reader^` e
++   `CborParser.of(carrier: AnyRef): CborParser^`, i punti di riasserzione per i parser generati
++   inseriti nei moduli dell'utente (come lo è `Cbor.Parsable.parseField`). Il codice scritto a
++   mano non ne ha alcun uso. (#1249)
++ - Comportamento: `read[Cbor.Ast]`, `read[Cbor]` e `read[T in Cbor]` su una `Chain[Data]` o uno
++   `Stream[Data]` non assemblano più l'input in un unico array prima del parsing; i chunk vengono
++   letti man mano che vengono estratti. Una lettura tramite un `Cbor.Parsable` trattiene al più
++   l'unico elemento in lettura (la scansione del discriminante di una somma trattiene la sua
++   mappa), quindi un documento grande scorre in memoria limitata. Gli offset degli errori sono
++   invariati: posizioni assolute nell'input. (#1249)
++ - `breviloquence.Inlinable` (con il suo oggetto compagno) è stato spostato dall'artefatto
++   `breviloquence.staged` a `breviloquence.core`; il nome pienamente qualificato è invariato, e
++   `breviloquence.staged` dipende ancora da `core`. Un'istanza di `Inlinable` scritta
++   dall'utente, e il `Discriminable in Cbor` di una somma sealed, sono ancora valutati al
++   momento dell'espansione solo quando `breviloquence.staged` è nel classpath di compilazione;
++   senza di esso, `Inlinable.parsable` di una somma segnala che la somma non è inlinabile.
++   `breviloquence.stagedInternal` è rinominato in `breviloquence.inlining`. (#2251)
++ - `aggregableParsed` e `readableParsed` sono tipizzati con la cattura del loro `parsable` e
++   della loro `tactic`, come in `((value in Cbor) is Aggregable by Data)^{parsable, tactic}`,
++   anziché essere sigillati come puri. Un summon che nomina il tipo deve ammettere la cattura,
++   come in `summon[(… )^]`; la risoluzione tramite `read`, `as` o la derivazione non richiede
++   modifiche. (#2229)
+
+% 0 1 0 0f922ec341ccae34075ef751ece930db
+
+@ 0 50 0 037146bbeb46aace08e540b64e750d14
++ - Soundness è compilato con Proscala `3.9.1-dev-p18` (era `3.9.1-dev-p17`); i valori
++   predefiniti di `build.mill` per `SOUNDNESS_SCALA_RELEASE` e `SOUNDNESS_SCALA_VERSION` sono
++   entrambi `3.9.1-dev-p18`. La release aggiunge `scala.caps.SharedUnscoped` (il classificatore
++   condiviso ed esente dai livelli che ora portano le strategie ambientali di `contingency`) e
++   corregge un crash del capture checker
++   (`attempting to add any to {any} of value …$proxyN`) quando un tipo di valore inferito
++   contiene due capability fresche di classificatori non correlati. Un consumatore compila con la
++   stessa versione del fork. (#2195)
++ - Soundness è compilato con Proscala `3.9.1-dev-p19` (era `3.9.1-dev-p18`), in cui
++   `scala.caps.SharedUnscoped` è distribuito nel jar supplementare `proscala-library` anziché in
++   `scala-library`, che è di nuovo identico byte per byte a quello upstream; il compilatore cerca
++   il trait in modo permissivo, quindi un classpath senza quel jar semplicemente non ha alcuna
++   capability classificata in quel modo. Un consumatore che risolve
++   `dev.propensive:scala-library` ottiene `proscala-library` come sua dipendenza, come prima.
++   (#2202)
++ - `make test`, `make test.<lib>`, `make ci`, `make bench` e `make bench.<lib>` eseguono fume
++   tramite `etc/ci/fume-run.sh`, che dà a ogni esecuzione un demone privato e una directory
++   temporanea privata (`java.io.tmpdir` per le suite, `TMPDIR` per ciò che esse invocano nella
++   shell) e li rimuove entrambi al termine dell'esecuzione, così i file temporanei di una suite
++   non sopravvivono mai all'esecuzione e non resta alcun demone fume. Un test che vuole una
++   directory temporanea usa il prestito già esistente di galilei,
++   `temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=> …`, anziché
++   `temporaryDirectory / Uuid()`, che nulla cancella. Nessuna API di libreria cambia. (#2207)
++ - I moduli di benchmark (`trait Benchmarks` in `build.mill`) si compilano con il separation
++   checking per impostazione predefinita, come le librerie e le suite di test; un benchmark
++   contro una libreria rivale che non può accettare le opzioni del fork vi rinuncia nei propri
++   `scalacOptions`. Nessuna API di libreria cambia. (#2202)
++ - Gli strumenti in `etc/tools` sono flare 0.7.0 (il plugin del compilatore con cui si compila
++   Soundness), fume 0.8.1 (il runner dei test) e flame 0.7.1, gli ultimi due costruiti su
++   Pyrocosm 0.7.0 (erano flare 0.5.0, fume 0.6.0 e flame 0.5.0). Nessuna API di libreria cambia.
++ - `etc/xek.tsv` fissa xek 1.3.0 (era 1.2.0), e `etc/ci/xek-fetch.sh` scarica solo le release
++   etichettate con la sola versione, dalla 1.0.0; un pin che nomina un builder `xek-0.x` o
++   `xeq-0.x` non si risolve più. La build scarica il builder in modo sicuro quando più moduli di
++   test lo risolvono contemporaneamente a cache fredda, cosa che falliva quando condividevano un
++   unico file temporaneo. Nessuna API di libreria cambia.
++ - Il compilatore fissato è proscala `3.9.1-dev-p20`, che aggiunge `classifiermeet`: una classe
++   può ereditare due classificatori di cattura non correlati quando un altro classificatore tra
++   le sue classi base deriva da entrambi (il loro meet). Necessario per
++   `anticipation.DurableUnscoped`. (#2217)
++ - Soundness è compilato con la build di Proscala `1.0.0` per Scala `3.10.0`, versione
++   `3.10.0-pro-1.0.0` (era `3.9.1-dev-p20`). Una release di Proscala dalla 1.0.0 in poi è
++   costruita per più versioni di Scala, ciascuna distribuita come
++   `proscala-<scala version>.tar.gz` e con versione `<scala version>-pro-<release>`:
++   `SOUNDNESS_SCALA_RELEASE` di `build.mill` (predefinito `1.0.0`) seleziona la release e il
++   nuovo `SOUNDNESS_SCALA_BASE` (predefinito `3.10.0`) la versione di Scala, quindi
++   `SOUNDNESS_SCALA_BASE=3.9.0` seleziona la build 3.9; `SOUNDNESS_SCALA_VERSION` sovrascrive la
++   versione composta, una release precedente alla 1.0.0 è ancora indicata dal suo tag, e
++   `SOUNDNESS_SCALA_HOME` indica ancora una build locale. `rep/toolchain.sh` accetta le stesse
++   variabili. Gli artefatti pubblicati contengono TASTy di Scala 3.10, che un compilatore 3.9
++   non sa leggere: un consumatore compila con la stessa build del fork, e sulla linea 3.10 gli
++   artefatti `nscplugin`/`scala3lib_native` di Scala Native sono quelli pubblicati per `3.10.0`
++   (`3.9.0-RC3` sulla build 3.9). (#2269)
++ - Il compilatore fissato è Proscala `1.0.1` (`3.10.0-pro-1.0.1`, era `3.10.0-pro-1.0.0`), che
++   ripristina su Scala 3.10.0 le protezioni Wasm al momento del link della scalalib di Scala.js
++   (in 1.0.0 mancavano a `ArrayBuilder`, `Buffer` e `IndexedBuffer`), così un componente solo
++   Wasm si linka di nuovo. `make attest` esegue di nuovo la fase `wasm-e2e` su ogni toolchain;
++   l'esclusione per la 1.0.0 non c'è più (#2272). Nessuna API di libreria cambia.
+
+% 0 1 0 133c947ece881a290e103b473d617f2c
+
+@ 0 9 0 1e078134e2d5f1b403b00797b2a01456
++ - `Audio.apply(format, data)` prende i campioni come `Array[Byte]^{}` congelato (era un
++   `scala.Array[Byte]` mutabile), e `Audio` estende `caps.Pure`: un valore audio non condivide
++   mai un array scrivibile con il suo chiamante, quindi è immutabile e si può condividere
++   liberamente. Si congeli l'array prima di costruirlo: `Audio[Wav](format, Array.freeze(samples))`
++   per un `Array[Byte]^` esclusivo di proscenium, oppure `Array.unsafeFrozen(bytes)` per un array
++   JVM su cui il chiamante dimostrabilmente non scrive più (una copia nuova, o il risultato di
++   `readAllBytes`). (#2221)
++ - `cacophony.Playback#stop()` restituito da `Outlet#play` viene osservato in modo affidabile dal
++   thread di riproduzione (il flag è atomico), e la linea viene fermata e chiusa esattamente una
++   volta, che arrivi prima `stop()` o la fine dell'audio. Firme invariate. (#2238)
+
+% 0 1 0 0709addc77995521151ea74263edf6fe
+
+@ 0 11 0 1a4f5efc58e0e0af011a0aead62f389d
++ - I decoder primitivi delle celle (`int`, `long`, `double`, `float`, `boolean`, `text`,
++   `string`), `optionalDecodable`, gli `aggregable` di `Sheet` e di lettura diretta, e il ponte
++   `Dsv.Field` sono tipizzati con la cattura della tattica o del decoder che contengono, come in
++   `(Int is Decodable in Dsv)^{tactic}`, anziché essere sigillati come puri. `Dsv#as` e
++   `Sheet#as` prendono una prova che cattura, `(using decodable: (value is Decodable in Dsv)^)`,
++   seguita da semplici parametri `Tactic[Dsv.Error]` e `Foci[CellRef]`, anziché un context bound
++   e un risultato `raises … tracks …`; le chiamate sono invariate. Un summon che nomina il tipo
++   deve ammettere la cattura, come in `summon[(… )^]`; la risoluzione tramite `read`, `as` o la
++   derivazione non richiede modifiche. (#2229)
++ - `caesura.Dsv2.aggregableIn` (`read[Foo in Dsv]` senza un `Dsv.Parsable`) prende un parametro
++   `using` aggiuntivo `buffering: zephyrine.Buffering`, che si risolve in `Buffering.standard` a
++   meno che non ce ne sia uno nell'ambito. Da una sorgente stream ora legge solo il primo record,
++   fin dove si estende, anziché analizzare prima ogni riga in uno `Sheet`. (#2252)
+
+% 0 1 0 047ccccd57482ec31cca1ab4c15d66f8
+
+@ 0 5 0 041dc07337b9b4591191ce98c3831559
++ - `clavichord.Keypress.EditKey` è `Keypress & Keypress.Editing`, un'intersezione con il nuovo
++   trait marcatore sealed `Keypress.Editing` che estendono i quattordici casi dei tasti di
++   modifica (`Tab` … `Down`), anziché un'unione dei tipi singleton di quei casi.
++   `Keypress.Shift(Keypress.Enter)` e gli altri casi dei modificatori ora superano il controllo
++   dei tipi tramite `soundness.Keypress`; il ripiego per nome `import clavichord.Keypress` si può
++   eliminare. (#2257)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 4 0 0d9d718b037a50e006d823d290c190c9
++ - L'`handler` di `listenConnections` è `Connection ->{caps.any.only[caps.SharedCapability]} Unit`:
++   ogni connessione è gestita su un task, quindi l'handler può catturare solo capability
++   condivise. (#2212)
++ - L'estensione DNS `endpoint.lookup(name, rtype)` su `Endpoint[Udp.Port]` è ora un overload di
+
+% 0 1 0 0420a0aa2c3166a514c4ac03785e4e11
+
+@ 0 3 0 162d10530f349b21178d9027dbaef981
++   accanto a `query(message: Dns.Message): Dns.Message`. `soundness` esporta il `lookup` di
++   anamnesis, che mantiene il nome. Si sostituisca `.lookup(` con `.query(` su un endpoint di
++   nameserver. (#2256)
+
+% 0 1 0 07cbf3671591ab0617673a498a92a7dd
+
+@ 0 24 0 10fad363417245bd1fe9336099c578c8
++ - `contingency.Emit` (e quindi `Tactic`) estende `caps.SharedCapability` anziché
++   `caps.ExclusiveCapability`. L'aliasing di una tattica — un codec che cattura la tattica
++   ambientale che la stessa chiamata prende anche come prova, come fa `Json#as` — non è più un
++   fallimento di separazione, quindi un `caps.unsafe.unsafeAssumeSeparate(json.as[…])` (o
++   attorno a `Llm.fetch`, `JsonRpc.serve`, un thunk `abort(…)`) si può eliminare. Una
++   sottoclasse di `Emit` può trattenere solo capability condivise e valori puri: una che
++   contiene una capability esclusiva o una funzione impura deve rinunciarvi, e una che estendeva
++   anche `caps.Unscoped` fallisce con "inherits two unrelated classifier traits" — si estenda
++   invece `caps.SharedUnscoped`, come ora fanno `ThrowTactic`, `UncheckedTactic` e
++   `FatalTactic`. (#2195)
++ - `Emit#contramap` e `Tactic#contramap` prendono un `error2 -> error` puro (era
++   `error2 => error`) e restituiscono `Emit[error2]^{this}` / `Tactic[error2]^{this}` (era `^`).
++   Un trasformatore di errori che catturava una capability non si compila più; ogni chiamante
++   esistente passava un costruttore di errore, che è puro. (#2195)
++ - `Emit.apply` prende `consume handler: error ->{caps.any.only[caps.SharedCapability]} Unit`
++   (era `error => Unit`): il corpo di un caso di `handle` può sollevare un errore in una tattica
++   esterna ma non può usare una capability esclusiva (un sink di log, uno stream, un handle
++   mutabile); si sposti tale lavoro fuori dal corpo del caso. (#2195)
++ - Il `combine` di `accrue(initial)(combine)`, e quello di `Accrual.AccrueTactic` e di
++   `Accrual`, è `(accrual, Exception) -> accrual` (era `=>`), come il suo contratto già
++   richiedeva. (#2195)
++ - `import strategies.throwUnsafely` dentro un metodo che decodifica un codec derivato con un
++   campo `Optional`/collezione non richiede più alcun ripiego con la nuova release; su
++   `3.9.1-dev-p17` lo stesso codice fallisce con "capability `any` cannot flow into capture set
++   {any²} … not visible from any² in value wisteria$field$N" — se un consumatore deve restare su
++   p17, leghi un `given tactic: Tactic[Json.Error] = ThrowTactic()` locale al posto dell'import.
++   (#2195)
+
+% 0 1 0 15965c13323b4da117df6152721cd841
+
+% 0 1 0 012d122c4cd1bd8304dacdaf6b93e440
+
+@ 0 1 0 14b41828cfd021c81f0cb3a7f0745953
++   `LaneDagDiagram.apply` e `LayeredDagDiagram.apply` sono ora
+
+% 0 1 0 095fc283d2f6228d0e881797be94a7c8
+
+@ 0 3 0 0721b97f35c0620e1fb5544f7ccf38d3
++   acyclicity.Topological): …Diagram[node]`, senza `raises`: si disegna qualsiasi grafo che
++   ammette un ordine topologico — un `Dag`, un `Topology[node]^{}` congelato, un `Hasse`. Un
++   argomento `Dag` non richiede modifiche. (#2227)
+
+% 0 1 0 1caef898669d1d981fd868ef88f78650
+
+@ 0 9 0 15bbf0881299e9d11894e13fc05f4302
++   Dag.Error` è ora `apply[node](dag: Dag[node])(using acyclicity.Ranking): LayeredDagDiagram[node]
++   raises Dag.Error`. Il given si risolve in `Ranking.LongestPath` dall'oggetto compagno di
++   `Ranking` senza import, e assegna i livelli come prima; `import rankings.balancedRanking` (da
++   `acyclicity` o `soundness`) seleziona `Ranking.Balanced`, che sposta ogni nodo con dipendenti
++   al livello sopra il suo dipendente meno profondo. L'ordine dei nodi all'interno di un livello
++   e le colonne di nodi e connettori sono ora calcolati da `acyclicity.Dag#layered`
++   (minimizzazione degli incroci), quindi le righe rese di un diagramma il cui layout precedente
++   aveva incroci sono diverse; `rows`, `tiles`, `nodesAt`, `render` e `size` mantengono i loro
++   tipi. Il codice che confronta un `LayeredDagDiagram` reso con un'aspettativa memorizzata deve
++   rigenerare l'aspettativa. (#2223)
+
+% 0 1 0 1d07d5aa528e552a1b45fc9f19fb6b51
+
+@ 0 22 0 063db4c26dbf9f4f0fac934d48a1d5f2
++ - Si aggiungono `denominative.Dysasymptotic.LinearScan` e l'abilitatore
++   `dysasymptotics.linearScan`, che subordinano le operazioni che localizzano un soggetto
++   delimitato scandendo una struttura che non ne mantiene un indice (`predecessors` di
++   acyclicity su un grafo solo in avanti e le operazioni costruite su di esso). Additivo;
++   registrato perché i consumatori che chiamano le operazioni di acyclicity appena subordinate
++   devono importarlo. (#2227)
++ - Nuovo `tabulate`, la controparte che raccoglie di `iterate`/`each`: `xs.tabulate { i => … }`
++   su qualsiasi ricevente `Countable`, e `range.tabulate { i => … }` su un `Interval` (con o
++   senza marchio), restituiscono una `Sequence` con un elemento per ordinale, in ordine. Dentro
++   la lambda l'ordinale è confinato (`Ordinal in xs.type`), quindi `xs(i)` è un elemento nudo. Si
++   sostituiscano con esso i cicli sugli indici guidati da `zipWithIndex` o che accumulano in un
++   builder. (#1755)
++ - Nuovi `Coextent[form1, form2]` e `xs.coextent(ys): Optional[Coextent[xs.type, ys.type]]`,
++   prova che due valori numerabili condividono una dimensione. Con `shared` a disposizione,
++   `ys(shared(i))` si legge nudo per un `i: Ordinal in xs.type`; `shared.invert` va nell'altro
++   senso; `shared.each { (i, j) => … }` itera sull'estensione condivisa con un ordinale per
++   ciascun valore; `shared.size` è la dimensione condivisa. Si sostituisca con esso
++   `xs.length == ys.length && (0 until n).forall { i => … readUnchecked … }`. (#1755)
++ - I membri di estensione e l'aritmetica ora si risolvono su un ordinale raffinato da un
++   marchio: `i.n0`, `i.next`, `i.previous`, `i.n1`, `i.subsequent(n)`, `i.preceding(n)` e
++   `i.within(ys)` funzionano su un `Ordinal in xs.type` in ogni forma di lambda, e `i + 1`,
++   `i - 1` e `i - j` si risolvono tramite i nuovi given dell'oggetto compagno
++   `Ordinal.brandedAddable`, `Ordinal.brandedSubtractable` e `Ordinal.brandedSubtractable2` (i
++   risultati sono semplici `Ordinal`/`Int`). L'upcast `(i: Ordinal).n0` prima necessario è ora
++   ridondante; lo si elimini. (#1755)
+
+% 0 1 0 1c4d783a18693f681e38c16afefeb132
+
+@ 0 2 0 1b667cc83b251e5d0dc8f071d5445eeb
++ - `Extractable.decodable` e `Requirable.decodable` sono tipizzati con la cattura della
++   funzione contestuale con cui decodificano, anziché essere sigillati come puri. Un summon che
++   nomina il tipo deve ammettere la cattura, come in `summon[(… )^]`; la risoluzione tramite
++   `read`, `as` o la derivazione non richiede modifiche. (#2229)
+
+% 0 1 0 1fe0a5d6b3e78e9f191005621d380881
+
+@ 0 3 0 05675c6657222a7b02e3793d5b330141
++ - La modalità di carico di lavoro `embarcadero.Signal` è stata rinominata in
++   `embarcadero.Signalling`, come in `container.open[Workload](Read & Launch & Signalling)`:
++   `soundness` esporta anche il `Signal` di profanity, che mantiene il nome. Il trait di permesso
++   `Workload.Grant.Signal` è invariato. (#2256)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 3 0 05b76f9cacb41ffc1a1de4ca65297516
++ - I given PEM `aggregable`, `aggregableAll` e `aggregableIn` sono tipizzati con la cattura della
++   loro tattica (e, per `aggregableIn`, del suo decodable), come in
++   `(Pem is Aggregable by Text)^{tactic}`, anziché essere sigillati come puri. Un summon che
++   nomina il tipo deve ammettere la cattura, come in `summon[(… )^]`; la risoluzione tramite
++   `read`, `as` o la derivazione non richiede modifiche. (#2229)
+
+% 0 1 0 10d5740d33bd672200a59ac24b495f6e
+
+@ 0 8 0 1a3f5d973c0464ad08ff4e0e5081bafc
++ - `Acp.Observer`, `Acp.Registry`, `Acp.Connection` e `Acp.Service` sono
++   `caps.SharedCapability`, per le ragioni indicate per le loro controparti di exegesis;
++   `Acp.Observer.Silent` è un `val` di tipo `Observer^{}`. `Acp.connect` perde il suo parametro
++   di tipo `capture^`: il suo blocco di connessione è `(connection: Acp.Connection) ?=> result` e
++   prende `using Monitor^`, poiché un monitor è condiviso e il blocco può catturarlo liberamente.
++   (#2212)
++ - `Acp.Connection`, `Acp.Registry` e `Acp.Service` sono `anticipation.Durable`, e
++   `Acp.Observer` è `anticipation.DurableUnscoped`. (#2217)
++ - I decoder degli enum (`StopReason`, `ToolKind`, `ToolCallStatus`, `ToolCallContent`,
+
+% 0 1 0 113c6b5f2cc5d6010f7c2412664ecb10
+
+@ 0 3 0 0e6d1ba3d1716c951ccc30c4860301c4
++   `RequestPermissionOutcome`) prendono la `Tactic[Json.Error]` del chiamante e la catturano,
++   anziché racchiudere `strategies.throwUnsafely`: un valore malformato ora solleva un errore
++   tramite la tattica del chiamante. Decodificarne uno richiede una `Tactic[Json.Error]`
++   nell'ambito. (#2229)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 13 0 0a4f287bdbf6b96b02d873bc6fabf797
++ - Il blocco di `ethereal.cli` è `(Resident over bus, Interface, Environment, Monitor)
++   ?->{caps.any.only[caps.SharedCapability]} Return`: viene eseguito una volta per connessione
++   client, sul task di quella connessione, quindi può catturare solo capability condivise (lo
++   sono il monitor, il logger e gli stream standard del demone). Un blocco che racchiudeva una
++   risorsa esclusiva deve aprirla e possederla dentro il blocco. (#2212)
++ - `cli` prende il `Watcher` con cui osserva i suoi file di stato come parametro `using`,
++   risolto nel punto di chiamata (il predefinito viene dall'oggetto compagno di `Watcher`),
++   anziché risolverlo al suo interno: un `Watcher` è ora una capability. Una classe o un oggetto
++   pubblico che chiama `cli` e si affida al watcher predefinito dichiara
++   `uses surveillance.Watcher`. (#2225)
++ - `ethereal.Outlet` (lo stream stdout o stderr di un'invocazione) è stato rinominato in
++   `ethereal.Egress`, e `Outlet.Error` in `Egress.Error`: `soundness` esporta anche l'`Outlet`
++   di dispositivo audio di cacophony, che mantiene il nome. Si rinomini ogni uso dell'`Outlet` di
++   ethereal, inclusi gli handler `case error: Outlet.Error`. (#2256)
+
+% 0 1 0 0f2fae5b9c5fe06518c74765d22a1341
+
+@ 0 10 0 003b933edeefdac103f180febcf4daec
++ - `Lsp.Observer` è una `caps.SharedCapability` (chiamata contemporaneamente dai task di
++   scrittura e di lettura); `Lsp.Observer.Silent` è un `val` di tipo `Observer^{}` anziché un
++   oggetto, e il given `Lsp.Observer.silent` è tipizzato `Observer^{}`. `Lsp.Registry` e
++   `Lsp.Connection` sono `caps.SharedCapability` (registrato prima di servire e letto da ogni
++   task; pilotata contemporaneamente da scrittore, lettore e chiamante). `Lsp.Registry#adjust0`
++   contiene una funzione solo condivisa. (#2212)
++ - `Lsp.proxy` perde il suo parametro di tipo `capture^`: il suo blocco di registrazione è
++   `(proxy: Lsp.Proxy^) ?=> Unit` e prende `using Monitor^`. `Lsp.Client`, `Lsp.Connection` e
++   `Lsp.Registry` sono `anticipation.Durable`, e `Lsp.Observer` è
++   `anticipation.DurableUnscoped`; il dispatcher di `JsonRpc.serve` è
++   `Json ->{caps.any.only[Durable]} Optional[Json]`. (#2217)
++ - I decoder degli enum LSP (`DiagnosticSeverity`, `MessageType`, `TextDocumentSyncKind`,
+
+% 0 1 0 19b5955855eb9bf41fc6599039a78917
+
+@ 0 3 0 1c0cc90a1159c9b90f5a10058ffa81f3
++   `SymbolTag`, `InlayHintKind`, `FileChangeType`) prendono la `Tactic[Json.Error]` del
++   chiamante e la catturano, anziché racchiudere `strategies.throwUnsafely`. Decodificarne uno
++   richiede una `Tactic[Json.Error]` nell'ambito. (#2229)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 8 0 16ee57b73888a8f81a64cd78fa80e612
++ - `exoskeleton.Enclave.Tool` (il descrittore dello strumento costruito del rig di test) è
++   classificato `caps.SharedCapability` anziché `caps.ExclusiveCapability`: ogni sessione tmux di
++   una suite pilota l'unico strumento, quindi l'azione di una sessione può catturarlo mentre il
++   prestito `tmux` lo riceve. I wrapper `caps.unsafe.unsafeAssumeSeparate(Shell.tmux()(…))` che
++   questo richiedeva si possono eliminare. (#2212)
++ - `executives.completionsExecutive` è un'istanza della nuova classe con nome
++   `executives.CompletionsExecutive`, tipizzata `CompletionsExecutive^{parasite.threads}`,
++   poiché supervisiona sotto il `threads` globale. Importarla resta invariato. `Enclave` dichiara
++   `uses parasite.threads` per la stessa ragione, quindi un enclave è tipizzato
+
+% 0 1 0 0daa846b0ccb46e20793efa177acfca2
+
+@ 0 10 0 131878fab429194104fc12d51a7989b2
++ - `exoskeleton.Switch.apply` restituisce `Flag of Unit` anziché un `Flag` nudo, quindi
++   applicare uno switch, `Switch(…)()`, risolve `Interpretable.unit` e legge solo la presenza
++   dello switch. (#2264)
++ - `exoskeleton.Executive` ha un nuovo membro di tipo astratto, `Permit`, e il blocco di
++   `application` è tipizzato `(erased permit: executive.Permit) ?=> Cli ?=> executive.Return`.
++   `directExecutive` imposta `Permit = Effectful`, quindi con esso un flag letto ovunque nel
++   corpo, `Flag[…](…)()`, è un valore `Optional` anziché un `Prospective`, e i metodi che
++   richiedono `Effectful` si possono chiamare direttamente; `completionsExecutive` lo imposta al
++   nuovo marcatore inerte `exoskeleton.Speculative`, quindi lì nulla cambia. Un `Executive`
++   definito dall'utente deve dichiarare `type Permit`. (#2264)
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 19 0 13ab21eee211e3fa06f87c54ea41ec20
++ - `Platform.pathReadable` e `Platform.pathWritable` sono dichiarati per un soggetto delimitato,
++   `[plane <: Platform: Filesystem, path <: Path on plane]`, anziché esattamente per
++   `Path on plane`. `p"/tmp/x.txt".read[Text]`, `(% / "tmp" / name).on[Posix].read[Text]` e
++   `path.write(…)` su qualsiasi sottotipo di `Path on plane` ora si risolvono, mentre prima
++   richiedevano un'ascrizione a `Path on plane` (`Self` è invariante). Il codice che applica
++   esplicitamente uno dei due given passa il tipo del path:
++   `Platform.pathReadable[plane, Path on plane, result]`. Il corpo della scrittura è il nuovo
++   metodo pubblico `Platform.writeWhole[plane](path, stream)`. (#2191)
++ - Il `Topic` di un letterale `p"…"` è la tupla dei tipi letterali dei suoi elementi, a partire
++   dalla foglia, come la costruisce `/`: `p"/foo/bar/baz"` è un
++   `Path of ("baz", "bar", "foo") under %.type on Posix` (era `Path of Tuple …`), e
++   `p"""C:\Windows\System32"""` è un `Path of ("System32", "Windows") under Drive on Windows`.
++   Un valore tipizzato esattamente `Path of Tuple` non è più un supertipo di un letterale; si
++   elimini `of Tuple`. (#2198)
++ - `galilei.Stat` acquisisce quattro campi in coda, `mode: Optional[Int]`, `user: Optional[Int]`,
++   `group: Optional[Int]` e `device: Optional[Long]` — l'intero `st_mode` dell'inode (bit di tipo
++   inclusi), uid, gid e `st_rdev`, `Unset` dove la piattaforma non ha un inode Unix — tutti con
++   valore predefinito `Unset`, quindi le costruzioni posizionali si compilano ancora.
++   `galilei.FilesystemBackend` acquisisce il metodo astratto
++   `linkTarget(path: Path on Plane)(using Tactic[Io.Error]): Text`, il testo memorizzato di un
++   link simbolico; un backend personalizzato deve implementarlo (i backend jvm, native e wasi lo
++   fanno). (#1713)
+
+% 0 1 0 0fa8f427fcee06bf094db708d8d4518a
+
+@ 0 2 0 0d37e4315a94f4db030cb968c44bc2c6
++ - Il given `decodable` di `MediaType` è tipizzato `(MediaType is Decodable in Text)^{tactic}`,
++   e cattura la sua tattica, anziché essere sigillato come puro. Un summon che nomina il tipo deve
++   ammettere la cattura, come in `summon[(… )^]`; la risoluzione tramite `read`, `as` o la
++   derivazione non richiede modifiche. (#2229)
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 6 0 090554061289073519e772f3098ada8d
++ - `Text#sub(from: Text, to: Text)` e `sub(from: Text, to: Text, count: Int)` ora inseriscono
++   `to` alla lettera: un `\` o un `$` nella sostituzione non viene più interpretato come escape
++   di sostituzione Java o riferimento a un gruppo (`t"a.b".sub(t".", t"\\.")` dà `a\.b`, prima
++   `a.b`, e `t"x".sub(t"x", t"$1")` dà `$1`, dove prima lanciava un'eccezione). Gli overload con
++   `Regex` sono invariati, quindi `$1` in una sostituzione con regex si riferisce ancora al primo
++   gruppo. Il codice che raddoppiava una barra rovesciata in una sostituzione letterale per
++   inserirne una dovrebbe scriverla una sola volta. (#2182)
+
+@ 0 8 0 1c6391eadf0a04b904b9fcb679740951
++ - Gli array pubblici di `Dictionary` (`children`, `values`, `depth`, `fail`, `dictLink`) sono
++   array congelati di proscenium (`Array[Int]^{}`, `Array[AnyRef | Null]^{}`), non array JVM
++   mutabili: un dizionario non viene mai scritto dopo essere stato costruito. Si legga un
++   elemento con `.at(index)`, con un ordinale confinato da `each`/`tabulate`, o — in un ciclo
++   critico il cui indice è dimostrato nell'intervallo — `.readUnchecked(index)`; una scrittura
++   tramite questi campi non si compila più. `Dictionary.Alphabet` estende `caps.Pure`, quindi un
++   alfabeto personalizzato non può catturare una capability né contenere stato mutabile. (#2221)
++ - Le lambda di `cut`/corrispondenza che prendono uno scanner sono tipizzate `Scanner^ ?=> …`,
++   poiché lo `Scanner` di kaleidoscope è ora una capability mutabile. (#2230)
+
+% 0 1 0 052d6af0cb62d1bd1fbc477fa1ee3ea7
+
+@ 0 15 0 0ee6026e99f176e20cdad3252eacf21f
++ - Il given `Pid is Decodable in Text` ora solleva `Number.Error(text, Long, Unparseable)` per un
++   valore malformato, anziché `Number.Error(text, Int, Unparseable)`; analizza un `Long`. (#2190)
++ - `guillotine.Process` e `guillotine.Job` sono classificati `caps.SharedCapability` anziché
++   `caps.ExclusiveCapability`: gli stream di output di un job vengono drenati ciascuno da un task
++   mentre un altro ne attende la terminazione, e l'handle può essere interrotto da un terzo. Il
++   corpo di un task può quindi catturare un `Job^`; il codice che classificava un job come
++   esclusivo (un insieme `only[ExclusiveCapability]`) deve usare `SharedCapability`. (#2212)
++ - `Process` e `Job` sono `anticipation.Durable`. (#2217)
++ - `guillotine.Command#pty(width: Int = 80, height: Int = 24)` acquisisce un terzo parametro,
++   `termios: Optional[Termios] = Unset`, la disciplina di linea da impostare prima che il comando
++   parta; `Command.OnTerminal` acquisisce il campo `termios` corrispondente. `guillotine.Termios`
++   è nuovo: una case class di interruttori (`echo`, `canonical`, `signals`, `extensions`,
++   `translateReturn`, `flowControl`, `postprocessing`) con `Termios.cooked` e `Termios.raw`,
++   esportata in `soundness`. `Command.OnTerminal.Job#mode: Termios` legge la disciplina di un
++   terminale in esecuzione e `mode = termios` la imposta. (#1017)
+
+% 0 1 0 162fdd68f08c465a12122d34e6c4d9a3
+
+@ 0 6 0 1a9a20d785d31d150e94e1cbbe777a30
++ - `ClassRef[T]` e `Classloader[T]` risolvono un tipo annidato: un tipo proprio viene collegato
++   con `classOf`, e un costruttore di tipo non applicato viene cercato per il suo nome binario JVM
++   (`ethereal.Launcher$Message`), mentre prima entrambi venivano cercati per il nome sorgente
++   puntato e lanciavano `ClassNotFoundException` per un tipo annidato in un oggetto o in una
++   classe. Un `ClassRef[T]` per un tipo proprio ora lega la classe con cui il chiamante si
++   collega, non quella che il loader che ha definito il chiamante trova per nome. (#2188)
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 16 0 1d10df0367507cbe0874f50c2b6fcc8b
++ - Le estensioni `values`, `toList`, `map` e `foreach` su `honeycomb.Attributes` sono state
++   rimosse. `Attributes` è ora `Traversable by (Text, Optional[Text])`, nell'ordine del
++   documento, quindi si scriva `attributes.to[List]` per `attributes.toList` (produce una
++   `proscenium.List` anziché una `List` della stdlib); `attributes.iterator` produce ancora le
++   coppie, e `attributes.each` e `attributes.toMap` restano. Un ciclo `for` su un valore
++   `Attributes`, che usava `foreach`, deve iterare `attributes.iterator` o usare `each`. (#2190)
++ - `Document[Html]#metadata` è ora un `Html.Provenance` (era il `Dom` nudo), con il DOM in
++   `metadata.dom` e, quando il documento è stato caricato sotto `parsing.trackPositions`, il suo
++   indice delle posizioni in `metadata.positionIndex`. Si costruisca un documento con
++   `Document(root, Html.Provenance(dom))` al posto di `Document(root, dom)`, e si legga
++   `document.metadata.dom` dove `document.metadata` era usato come `Dom`. L'indice non partecipa
++   all'uguaglianza, quindi un caricamento con tracciamento e uno senza risultano uguali.
++ - `Html` ora registra le posizioni nel sorgente al `load` quando `parsing.trackPositions` è
++   nell'ambito, tramite lo schema condiviso: `given Document[Html] is Positionable by Html.Path to
++   Html.Position` risolve `document.locate(path)` nella riga, colonna e lunghezza in caratteri
++   dell'elemento (o attributo) che un `Html.Path` a partire dalla radice nomina, costruito come
+
+% 0 1 0 12befb17642d60a91359e453c7a1ad6c
+
+@ 0 2 0 1ae56fca29f7632e0d78cffd0b9d811d
++   `locateKey` è sempre `Unset`. Nuovi tipi `Html.Path`, `Html.Path.Step` e
++   `Html.PositionIndex`. I frammenti di `read[Html]` restano senza tracciamento.
+
+% 0 1 0 10336422395755bf1e478ba611fcc433
+
+@ 0 41 0 0d23c97f0decbdbd106082a52d1b20b4
++ - Gli operatori aritmetici di `U8`–`U64`, `S8`–`S64`, `F32` e `F64` sono ora i generici `+`,
++   `-`, `*`, `/` e `-` prefisso di `symbolism`, risolti tramite istanze di `Addable`,
++   `Subtractable`, `Multiplicable`, `Divisible` e `Negatable` nell'oggetto compagno di ciascun
++   tipo; i metodi di estensione su misura sono stati rimossi. Il codice che li usa richiede
++   `import symbolism.*` (che `import soundness.*` include) insieme a `import hypotenuse.*`. Prima,
++   con `symbolism.*` importato, `+` su questi tipi non si compilava affatto. Un operando letterale
++   intero non assume più il tipo del ricevente (l'operando dell'operatore generico è un parametro
++   di tipo, che un letterale non vincola), quindi si scriva `count + (1: U64)`, o un `val`
++   tipizzato, dove si scriveva `count + 1`. (#687)
++ - `S8`–`S64` acquisiscono `-` e `*`; `U64#+`, e `-` e `*` su ogni tipo `U*` e `S*`, ora prendono
++   un given `CheckOverflow` come già faceva `+` sugli altri tipi, quindi il codice che esegue
++   sottrazioni o moltiplicazioni senza segno senza una politica di overflow nell'ambito richiede
++   `import arithmeticOptions.uncheckedOverflow` (o `checkedOverflow`, con cui ora possono
++   sollevare `Arithmetic.Error`). (#687)
++ - `hypotenuse.CheckOverflow` e `hypotenuse.DivisionByZero` sono rimodellati: i metodi
++   `addU64(left, right): Wrap[U64]` … `addS8` e `divideU64` … `divideS8` sono sostituiti dai val
++   `addU64: U64 is Addable by U64 to Wrap[U64]` … `addS8`, dai nuovi `subtractU64` …
++   `subtractS8: … is Subtractable …`, `multiplyU64` … `multiplyS8: … is Multiplicable …`, e
++   `divideU64` … `divideS8: … is Divisible …`. Si chiami `overflow.addS32.add(left, right)` dove
++   si scriveva `overflow.addS32(left, right)`, oppure si usino gli operatori. Le politiche sono
++   gli oggetti `CheckOverflow.Unchecked`, `CheckOverflow.Checked`, `DivisionByZero.Unchecked` e
++   `DivisionByZero.Checked`; i given `arithmeticOptions.uncheckedOverflow` ecc. mantengono i loro
++   nomi e hanno ora quei tipi singleton. Il `Wrap[result]` verificato è
++   `Tactic[Arithmetic.Error]^ ?->{} result`, un sottotipo di `result raises Arithmetic.Error`,
++   quindi tutto ciò che accettava il vecchio tipo accetta questo. (#687)
++ - Si aggiungono `hypotenuse.Arithmetic.Addition[number, wrap[_]]`, `Subtraction`,
++   `Multiplication` e `Division`: le forme delle istanze delle politiche. (#687)
++ - `F64.divisible: F64 is Divisible by Double` e `F64.multiplicable: F64 is Multiplicable by
++   Double` sono stati rimossi; ogni operazione mista con un tipo che si converte in `F64` o `F32`
++   — `Double`, `Float`, `Int`, `Short`, `Byte`, `U32`, `S32`, `U16`, `S16`, `U8`, `S8` per `F64`,
++   e gli stessi senza `Double`, `Int`, `U32` e `S32` per `F32` — si risolve invece tramite la
++   conversione, che è ora un oggetto che estende `F64.Widening[right]` (o `F32.Widening[right]`)
++   e porta le istanze di `Addition`, `Subtraction`, `Multiplication` e `Division` per
++   quell'operando. I given `F64.doubleConversion` … `F64.s8Conversion` e `F32.floatConversion` …
++   `F32.s8Conversion` mantengono i loro nomi e hanno ora i tipi singleton di quegli oggetti.
++   (#687)
++ - Correzioni: `U64#/` e `U32#/` ora dividono senza segno (dividevano con segno); l'addizione
++   verificata di `U64` ora rileva l'overflow (il suo test non poteva mai scattare);
++   `S64.Min`/`S64.Max` sono tipizzati `S64` (erano `U64`), `U16.Min`/`U16.Max` sono tipizzati
++   `U16` (erano `S16`), e `U32.Min` è `0` e `U32.Max` è `4294967295` (erano `Int.MinValue` e
++   `Int.MaxValue`); e le conversioni di un `U8` in `F64` e `F32` (`F64.u8Conversion`,
++   `F32.u8Conversion`) ora danno a un valore sopra 127 il suo valore senza segno (prima ne
++   estendevano il segno, quindi `U8(200)` diventava `65480.0`). (#687)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 5 0 022729d73b80fd6f0ca52f2eb196a263
++ - `Json.parseTracked` (gli overload per `Data`, `Iterator[Data]` e `Text`) è stato rimosso,
++   insieme al pubblico `Json.Ast.parseTracked`. Il tracciamento delle posizioni si seleziona con
++   l'interruttore condiviso `zephyrine.PositionTracking`: si sostituisca
++   `Json.parseTracked(source).locate(p)` con `source.read[Json].locate(p)` sotto
++   `import parsing.trackPositions` (una sorgente `Text` richiede ancora un `Codepage`
++   nell'ambito, come per qualsiasi `read[Json]`).
+
+% 0 1 0 06f4e31fa3f59890030401e5542b77d9
+
+@ 0 8 0 0fcb8af9a3d312221b8904c7872a9611
++   `Json.Ast.parserAggregable`, `JsonSchema.decodable` e i decoder temporali in `decodables` sono
++   tipizzati con la cattura delle tattiche o del parsable che contengono, come in
++   `(Json is Aggregable by Data)^{tactic}`, anziché essere sigillati come puri. Un summon che
++   nomina il tipo deve ammettere la cattura, come in `summon[(… )^]`; la risoluzione tramite
++   `read`, `as` o la derivazione non richiede modifiche. (#2229)
++ - `jacinta.Inlinable` (con il suo oggetto compagno) è stato spostato dall'artefatto
++   `jacinta.staged` a `jacinta.core`; il nome pienamente qualificato è invariato, e
++   `jacinta.staged` dipende ancora da `core`. Un'istanza di `Inlinable` scritta dall'utente è
++   ancora valutata al momento dell'espansione solo quando `jacinta.staged` è nel classpath di
++   compilazione. `jacinta.stagedInternal` è rinominato in `jacinta.inlining`. (#2251)
+
+% 0 1 0 1fc810244c2cd3bf14cb7bb4f199169b
+
+@ 0 5 0 0e0a4816a389793906fc62547c27978b
++ - `Scanner` è una classe `caps.Mutable`: una corrispondenza ne fa avanzare la posizione, quindi
++   è posseduto in modo esclusivo. Il given predefinito è tipizzato `Scanner^`, e i motori, gli
++   estrattori e `Regex#matches` prendono `(using Scanner^)`. Un given di scanner scritto a mano si
++   dichiara `given (Scanner^) = Scanner(Unset)`; un `given Scanner = …` nudo è di sola lettura e
++   viene rifiutato dove una corrispondenza ne ha bisogno. (#2230)
+
+% 0 1 0 14282acc9e8c73b21f41ce8351cf5486
+
+@ 0 2 0 18168dfa9abb33db14f307b8ed0072d9
++ - `aggregableParsed` e `readableParsed` sono tipizzati con la cattura del loro `parsable` e
++   della loro `tactic`, anziché essere sigillati come puri. Un summon che nomina il tipo deve
++   ammettere la cattura, come in `summon[(… )^]`; la risoluzione tramite `read`, `as` o la
++   derivazione non richiede modifiche. (#2229)
+
+@ 0 49 0 00657fd93ad479ef07f2cde2ad408a10
++ - Il costruttore di `ProtobufParser` è privato: `ProtobufParser(data)` è ora una factory
++   sull'oggetto compagno che restituisce `ProtobufParser^`, una capability con stato
++   (`caps.ExclusiveCapability, caps.Stateful`), con overload `ProtobufParser(chain: Chain[Data])`
++   e `ProtobufParser(stream)` che leggono i chunk man mano che arrivano. I metodi d'istanza su un
++   intero payload — `atEnd`, `varint()`, `fixed32()`, `fixed64()`, `slice`, `fields()` e
++   `packed(wireType)` — sono sostituiti da funzioni dell'oggetto compagno sul payload:
++   `ProtobufParser.fields(data)`, `ProtobufParser.packed(data, wireType)`,
++   `ProtobufParser.varintOf(data)`, `ProtobufParser.fixed32Of(data)` e
++   `ProtobufParser.fixed64Of(data)`. I metodi del bordo diretto `directLeaveField`,
++   `directStringWindow`, `directDataWindow` e `directMessage` ora prendono un
++   `(using Tactic[Protobuf.Error])`; `directWindow`/`directRestore` devono seguire un
++   `directBufferWindow()`; `directEmptyWindow()` è nuovo. `ProtobufReader` è invariato; i nuovi
++   `inline def` pubblici `ProtobufReader.of(carrier: AnyRef): ProtobufReader^` e
++   `ProtobufParser.of(carrier: AnyRef): ProtobufParser^` sono i punti di riasserzione per i
++   parser generati inseriti nei moduli dell'utente. (#1249)
++ - Comportamento: una lettura tramite un `Protobuf.Parsable` su una `Chain[Data]` o uno
++   `Stream[Data]` non assembla più prima l'input e trattiene al più l'unico campo in lettura (il
++   messaggio di un oneof viene trattenuto mentre se ne sceglie la variante). `read[Protobuf]` e
++   il percorso del `Decodable` derivato leggono ancora l'intero messaggio, ma ne decodificano gli
++   scalari senza allocare un parser per campo. Gli offset degli errori sono invariati. (#1249)
++ - Comportamento: un parser da `Inlinable.parsable` ora raccoglie un campo `proscenium.List`,
++   `proscenium.Set` o `proscenium.Sequence` occorrenza per occorrenza tramite il parser
++   generato, esattamente come già faceva con un campo `scala.collection.immutable.List`, `Set` o
++   `Vector`, anziché mettere in buffer le occorrenze e decodificarle tramite il
++   `Decodable in Protobuf` del campo. Un `Decodable in Protobuf` personalizzato per un tale campo,
++   o per il suo tipo di elemento, non viene più invocato da un parser generato; un `Optional[…]`
++   di una di queste collezioni, e una `proscenium.Map`, si decodificano ancora tramite il loro
++   `Decodable`. (#2233)
++ - Comportamento: un `Decodable in Protobuf` derivato (e `Protobuf.mapDecodable`, per la chiave e
++   il valore di una voce di mappa) ora passa un campo che compare esattamente una volta al
++   decoder del campo come lo stesso `Protobuf.Wire`, mentre prima passava
++   `Protobuf.Repeated(List(wire))`; un campo che compare più di una volta è ancora passato come
++   `Repeated` di tutte le occorrenze, e uno assente come `Protobuf.Absent` (inclusa la chiave o il
++   valore mancante di una voce di mappa, prima `Repeated(Nil)`). `single`, `occurrences`,
++   `payload`, `wireKind` e `isAbsent` rispondono allo stesso modo per entrambe le forme, quindi
++   solo un `Decodable in Protobuf` scritto a mano, o un campo tipizzato `Protobuf`, che fa
++   pattern matching sul costruttore `Repeated` deve accettare anche un `Wire` isolato. (#2233)
++ - Il costruttore di `locomotion.ProtobufPrinter` prende un `rudiments.Scribe[Byte]`, dove
++   prendeva un `zephyrine.Producer.Bytes`: se ne costruisca uno dentro
++   `Array.collect[Byte](hint)` (estendibile) o `Array.scribe[Byte](size)` (dimensione esatta; le
++   scritture oltre la fine vengono scartate), il cui risultato è il `Data` stampato. I suoi metodi
++   di scrittura sono invariati, e il suo nuovo oggetto compagno fornisce le dimensioni codificate
++   `varintSize(value)` e `fieldSize(number, value)`. I byte prodotti da `Encodable in Protobuf`
++   sono invariati. (#2233)
++ - Nuovo: `Protobuf.Printable`, la controparte di stampa diretta di `Protobuf.Parsable`, con
++   `measure(value, sizes: ProtobufSizes^): Int` e `write(value, printer: ProtobufPrinter^,
++   sizes: ProtobufSizes^): Unit`; `Protobuf.Printable.print(value)` esegue entrambe le passate in
++   un array della dimensione esatta misurata, `Protobuf.Printable(measure, write)` e
++   `Protobuf.Printable.fromEncodable(encodable)` costruiscono istanze, e
++   `Inlinable.printable[T]` (in `locomotion.staged`) ne genera una per un messaggio case class o
++   un oneof sealed, come `Inlinable.parsable[T]` genera un parser. `ProtobufSizes` è la tabella
++   delle dimensioni tra le due passate (`reserve`/`set`/`record`, poi `rewind`/`next`;
++   `stash`/`unstash` per i valori di trasmissione codificati alla giuntura). Il printer generato
++   scrive i byte che scrive l'`Encodable in Protobuf` derivato. (#2233)
++ - Comportamento: `value.in[Protobuf]` si risolve nel nuovo `Protobuf.encodablePrinted` ogni
++   volta che un `value is Protobuf.Printable` è nell'ambito — un `Printable` con ambito lessicale
++   rende diretta la codifica — e il suo risultato è l'unico `Wire(Len, bytes)` del messaggio
++   stampato, quindi `message.encode` restituisce quell'array senza copia. Senza alcun `Printable`
++   nell'ambito nulla cambia. (#2233)
++ - `Inlinable` ha tre nuovi membri con valori predefiniti: `prints: Boolean` (`false`),
++   `measure(value: Expr[Self], sizes: Expr[AnyRef])` e `write(value: Expr[Self], printer:
++   Expr[AnyRef], sizes: Expr[AnyRef])`, il lato di stampa di un'istanza scritta a mano; le
++   istanze strutturali e foglia li implementano. Un campo la cui istanza non stampa viene
++   codificato da un printer generato tramite il suo `Encodable in Protobuf`. (#2233)
++ - `ProtobufPrinter` acquisisce `chunk(data)` (un prefisso di lunghezza e poi i byte),
++   `utf8(string)` e `stashedText(sizes)`, e il suo oggetto compagno `tagSize(number)`,
++   `utf8Length(string)` e `of(carrier: AnyRef)`; allo stesso modo `ProtobufSizes.of(carrier)`.
+
+% 0 1 0 132592709f9f89f70501c558e3d2b650
+
+@ 0 33 0 065b7d1d7497a5f30d04d0a4c80a20e9
++ - Nuovo: un array congelato di scalari impacchettabili — `Array[Long]^{}`, `Array[Int]^{}`,
++   `Array[Double]^{}`, `Array[Float]^{}`, `Array[Boolean]^{}` — è un campo `repeated`
++   impacchettato (`longArrayEncodable`, `longArrayDecodable` e simili, una coppia per scalare),
++   con i byte della forma `List`; e un array congelato di qualsiasi altro elemento — un
++   messaggio, `Text`, `Data` — è un campo non impacchettato (`arrayEncodable`, `arrayDecodable`),
++   anch'esso con i byte della forma `List`, quindi un campo messaggio ripetuto può essere un
++   `Array[Message]^{}` e raccolto senza una cella per elemento. (#2250) Limitazione nota: un
++   `Encodable`/`Decodable` *derivato* su un tale campo non supera ancora il capture checking in un
++   modulo completamente verificato (il checker fallisce sul tipo di campo ridichiarato della
++   derivazione — un seguito per wisteria/il compilatore); i percorsi generati di
++   `Inlinable.parsable`/`printable`, che sono lo scopo della rappresentazione, non sono toccati.
++   Un parser generato lo raccoglie tramite il builder di array senza boxing della stdlib e un
++   printer generato lo percorre per indice, quindi nessun elemento subisce boxing in nessuno dei
++   due percorsi: è la rappresentazione da scegliere per i dati numerici. (#2248)
++ - Comportamento: un parser da `Inlinable.parsable` ora raccoglie un campo `Map[K, V]` — del
++   prelude o della stdlib, con una chiave scalare e un valore scalare o messaggio — voce per voce
++   nel builder della mappa, e un printer da `Inlinable.printable` lo scrive voce per voce, con i
++   byte della forma derivata; nessuno dei due invoca più il `Decodable`/`Encodable in Protobuf`
++   della mappa. Una mappa con un altro tipo di chiave o di valore passa ancora per il suo codec.
++   Una voce priva della chiave o del valore legge lo zero di uno scalare o il messaggio vuoto,
++   come fa `mapDecodable`. (#2250)
++ - Comportamento: un parser su un intero `Data` decodifica un campo stringa i cui byte sono tutti
++   ASCII tramite la copia Latin-1 anziché il costruttore UTF-8; il `Text` risultante è identico.
+
+% 0 1 0 13d1d9d3fff98b330a8718d1e99dc174
+
+@ 0 20 0 1f7bc6f30f71cabe1f97acf86de91eb8
++ - Comportamento: `Chain(bytes).read[value in Protobuf]` si risolve nel nuovo
++   `Protobuf.chainReadable`, che legge sul posto una chain di un solo blocco (tramite
++   l'`aggregate` dell'`Aggregable`) anziché trasmetterla come stream; il risultato è invariato.
++   (#2233)
++ - `locomotion.Inlinable` (con il suo oggetto compagno: `parsable`, `printable`, `derived`,
++   `ForProtobuf` e i given foglia) è stato spostato dall'artefatto `locomotion.staged` a
++   `locomotion.core`; il nome pienamente qualificato è invariato, e `locomotion.staged` dipende
++   ancora da `core`. Il codice che dipendeva da `locomotion.staged` solo per
++   `Inlinable.parsable`/`printable` su case class e somme sealed può eliminare quella
++   dipendenza; un'istanza di `Inlinable` scritta dall'utente è ancora valutata al momento
++   dell'espansione solo quando `locomotion.staged` è nel classpath di compilazione, e senza di
++   esso il campo viene decodificato tramite il suo `Decodable in Protobuf` (e codificato tramite
++   il suo `Encodable in Protobuf`). (#2251)
++ - `locomotion.stagedInternal` è stato rinominato in `locomotion.inlining`; la sua valutazione di
++   staging è stata spostata in `locomotion.InlinableStager` in `locomotion.staged`. (#2251)
++ - Il costruttore pubblico di `locomotion.ProtobufPrinter`, `ProtobufPrinter(out: Scribe[Byte])`,
++   è stato rimosso: il printer possiede il suo buffer, creato da
++   `ProtobufPrinter.exact(size: Int)` (un array di esattamente `size` byte, restituito senza
++   copia dal nuovo `data(): Data`), `ProtobufPrinter.growing(hint: Int)` (byte di lunghezza
++   ignota) o `ProtobufPrinter.blocks(size: Int, consume deliver: Data => Unit)` (ogni blocco
++   riempito viene consegnato a `deliver`, l'ultimo dal nuovo `flush()`). Scrivere oltre la fine
++   di un printer a dimensione esatta ora lancia `ArrayIndexOutOfBoundsException`, mentre lo
++   `Scribe` scartava silenziosamente l'eccedenza. (#2252)
+
+% 0 1 0 198a8a0f50e011a109d8b4e58d765f40
+
+@ 0 3 0 15ea628b078cffd80a6ca2426f680e6d
++ - `Alphabet` estende `caps.Pure`. Il given `deserialization` è tipizzato
++   `(Ductile.Instance[Alphabet[encoding], Text, Data, Credit, Credit])^{tactic}`: cattura la sua
++   `Tactic[Serialization.Error]`, che aveva nascosto al checker. (#2221)
+
+% 0 1 0 0433de16fd4ac54a053e00a596fea729
+
+@ 0 3 0 0c54191b71aba6e806e4523aaab1d7dc
++ - `soundness` esporta l'estensione di collezione `zip` (`left.zip(right)`), che prima era
++   raggiungibile solo tramite `import rudiments.*` o `import murmuration.*`; l'accessor di
++   zeppelin che occupava il nome è ora `zipfile`. (#2260)
+
+% 0 1 0 0e751e64d74c65e7052e35ae687cc595
+
+@ 0 3 0 0fb13e811b45473f1ab314c6d55cf3ba
++ - `JsonRpc.serve[interface](interface)` restituisce `Json ->{caps.any.only[caps.SharedCapability]} Optional[Json]`
++   anziché `Json => Optional[Json]`: un dispatcher si chiude soltanto sulla propria interfaccia, e
++   può essere chiamato da un task quando l'interfaccia è pura o condivisa. (#2212)
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 25 0 0afc2607c7d8980f11fa9cb288999aa3
++ - `octogenarian.Git.Repo` non è più una case class che contiene un `gitDir`; `Git.Repo` è ora la
++   *forma* in cui si apre un percorso: `path.open[Git.Repo](Read & Write) { repo ?=> … }` presta
++   un `Git.Repo.Handle` (una `caps.ExclusiveCapability` con `gitDir`, `commonDir: Path on Linux`,
++   `worktree: Optional[Path on Linux]`, `atoms: Set[Mode]`) per il blocco; `Read` da solo è la
++   modalità predefinita. Ogni metodo dell'ex `Git.Repo` è un'estensione su `(Git.Repo.Handle &
++   Granting[Grant.Read])^` (letture) o su `(Git.Repo.Handle & Granting[Grant.Write])^`
++   (scritture); una scrittura su un handle aperto senza `Write` è un errore di compilazione.
++   `Git.Repo.at(path)` è stato rimosso: si apra il percorso. `repo.repoOptions` è stato rimosso.
++   (#1864)
++ - `octogenarian.Worktree` (la case class `Worktree(repo: Git.Repo, path: Path on Linux)`, e
++   `Worktree(path)`) è stato rimosso; `Git.Worktree` è la forma `path.open[Git.Worktree](Read &
++   Write) { worktree ?=> … }`, che presta un `Git.Worktree.Handle`, il quale estende
++   `Git.Repo.Handle` (quindi ogni operazione sul repository è disponibile su di esso, senza il
++   passaggio per `worktree.repo`: si scriva `worktree.log()` al posto di `worktree.repo.log()`) e
++   `galilei.Directory.Handle` con `type Under =
++   Linux` (quindi `worktree / "src" / "a.scala"` è un `Path on worktree.Plane`, utilizzabile con
++   `overwrite`, `contents`, `extant`, `entries`, `remove` di galilei). `worktree.path` è
++   `worktree.stem`. Aprire un repository bare come `Git.Worktree` solleva
++   `Git.Error(NoWorktree)`; aprire un percorso che non è un repository solleva
++   `Git.Error(NoRepository(path))`. (#1864)
++ - Le clausole `(using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error],
++   Tactic[Exec.Error])(using (Git.Event is Loggable)^)` di ogni operazione sono sostituite da
++   `(using
++   Tactic[Git.Error])`, più `(using Internet)` per `fetch`, `push`, `pull`, `remoteRefs`, `clone`
++   e `cloneCommit`. Il comando, la directory di lavoro, l'ambiente e il logger vengono catturati
++   una sola volta dal backend: la nuova typeclass `Git.Backend` (un trait, in
++   `octogenarian.core`), la cui implementazione a riga di comando `octogenarian.Commandline`
++   (nuovo componente `octogenarian.cli`, artefatto `octogenarian-cli`) si seleziona con
++   `import gitBackends.commandlineGit`, un given di tipo `Git.Backend^{loggable, caps.any}` con
++   contesto `(command: Commandline.Command, working:
+
+% 0 1 0 0e5a062a663f177509d1c49cb9f9ebca
+
+@ 0 10 0 1cdc64d4c35d41a3132bdcabebfe303a
++   `octogenarian.Git.Command` è ora `octogenarian.Commandline.Command`; `Git.Event` è
++   `Commandline.Event`; `gitCommands.searchpathGitCommand` passa al componente `cli` e produce
++   un `Commandline.Command`. I dipendenti nella build di `octogenarian.core` che eseguivano git
++   devono aggiungere `octogenarian.cli`. `guillotine.Exec.Error` non viene più sollevato:
++   l'impossibilità di eseguire git è `Git.Error(CannotExecuteGit, detail)`. (#1864)
++ - `octogenarian.Git.Process[result]` (con `progress: Iterator[Progress]` e `complete()`) e
++   `octogenarian.Progress` sono stati rimossi. `Git.clone`, `Git.cloneCommit`, `fetch`, `push` e
++   `pull` si bloccano e restituiscono il loro risultato (`clone` e `cloneCommit` restituiscono
++   `Unit`), ricevendo un parametro finale `activity: Git.Activity^ = Git.Activity()`.
++   `Git.Activity` (nuova, una classe `DurableUnscoped` di celle atomiche) si interroga con
++   `report(): Stale[Git.Activity.Report]`
+
+% 0 1 0 00f49d98fd771caa165f19731153f799
+
+@ 0 7 0 16c4201c63da55d60f6ea88c7da35edd
++   Long)`, `complete: Optional[Double]`) oppure si svuota tramite
++   `updates: Relay[Activity.Report]`; `Phase` è `Idle | Enumerating | Counting | Compressing | Writing | Receiving | Resolving |
++   Unpacking | Checkout | Done`. Si elimini `.complete()` sugli ex valori di processo. (#1864)
++ - Le letture che risolvono un ref, HEAD, un'espressione di revisione, l'indice, i file di
++   lavoro, il reflog, lo stash, la configurazione, i remote o i worktree collegati restituiscono
++   ora `aperture.Stale[…]` (nuovo: `case class Stale[+value](value: value)` con `let`), un valore
++   vero nel momento della lettura: `Git.Repo#log(): List[Commit]` → `log(from: Git.Revision = Git.Revision.head(), limit:
+
+% 0 1 0 08b5cea305e5c4ee1c2a3a6b6d1bdf56
+
+@ 0 2 0 0e61ec963433adcc167d716e299e333f
++   Git.Hash` → `resolve(revision: Git.Revision): Stale[Optional[Git.Hash]]` (non solleva più
++   errori per una revisione sconosciuta); `Worktree#branches(): List[Git.Branch]` →
++   `branches(): Stale[Map[Git.Branch,
+
+% 0 1 0 0267f2cd40acf70e0de41b48e8ae2075
+
+@ 0 3 0 1b00aae3673ed3a3037ddca9f79f09b2
++   (oppure `head(): Stale[Git.Head]`, nuovo, dove `Git.Head` è `Attached(branch: Git.Branch, tip:
++   Optional[Git.Hash])` o `Detached(at: Git.Hash)`); `tags(): List[Git.Tag]` → `tags():
++   Stale[Map[Git.Tag, Git.Hash]]` (commit dereferenziati); `reflog(ref: Optional[Refspec]):
+
+% 0 1 0 0bf64d1f1a1c456a0cc470c5de76178a
+
+% 0 1 0 0c825c1a12ca964519f1b7f2eb869598
+
+@ 0 1 0 1a4ef4877141ad861f9532b8f4e8f55e
++   Stale[List[Git.Worktree.Entry]]` con `Entry(path: Path on Linux, head: Optional[Git.Hash],
+
+% 0 1 0 12afb525d70ea9fe1485b08f5d42ed14
+
+% 0 1 0 1c85c27d5a0c1ef80baa26b8ca8f78bd
+
+% 0 1 0 1116f4a34efa466109606b0ffe802590
+
+@ 0 1 0 0318e1858a7426c901b9b3faecead043
++   `diff(): Stale[List[FileDiff]]` e `diffStaged(): Stale[List[FileDiff]]`; `Worktree#diff(ref)`
+
+% 0 1 0 0107ae7e0541f5fc04615f8e91435373
+
+@ 0 5 0 0e649b87b25353e40110a8d13bb90579
++   `diffBetween(left: Git.Hash, right: Git.Hash): List[FileDiff]` (semplice: indicizzato per
++   hash); `notes.show(target, ref): Optional[Text]` → `note(target, ref): Stale[Optional[Text]]`;
++   `notes.list(ref): List[(Git.Hash, Git.Hash)]` (nota, target) → `notes(ref): Stale[Map[Git.Hash,
++   Git.Hash]]` (target → nota); `config.get[value](variable: Text): value` → si veda la voce
++   sulla configurazione più sotto; l'estensione `NoteRef#content[value]` restituisce ora
++   `Stale[value]` e riceve `(using
+
+% 0 1 0 17f9a8ee53d4e3e2144eaa0b3b5b99ad
+
+@ 0 1 0 09aeec24abaeb99a13ff9c95b4b17e78
++   Tactic[Git.Error], Tactic[Git.RefError])` invece di un `Git.Repo`. (#1864)
+
+% 0 1 0 0f96395b80c727660b3c89a7216fd8a0
+
+% 0 1 0 0fb506f232a9dc5a11c3c2357e0fe94f
+
+% 0 1 0 0377f369316af6e006b1ef0ecdb1ff41
+
+@ 0 4 0 079a1b42bfd28f380735a9cb1f345868
++   ha acquisito `TypeChanged`. (#1864)
++ - Le scritture che spostano un ref ricevono il valore `Stale` da cui dipendono e sollevano
++   `Git.Error(Moved(ref: Text, expected: Optional[Git.Hash], actual: Optional[Git.Hash]))` se il
++   ref non lo contiene più (un compare-and-swap; `git update-ref ref new old`):
++   `Worktree#commit(message:
+
+% 0 1 0 0ade72f5e6d5c0171be96b31f91f4200
+
+@ 0 5 0 12a621089ed0a77b10ab4e93ba4600ae
++   Unset, signer: Optional[Git.Signer] = Unset, allowEmpty: Boolean = false): Git.Hash`, che
++   assembla da sé l'oggetto commit (quindi `commit.gpgsign` e gli hook non vengono consultati) e
++   solleva `NothingToCommit` quando l'albero è invariato; `reset(mode, ref)` → `reset(mode: ResetMode, to:
++   Git.Revision, head: Stale[Git.Head]): Git.Hash` (senza valori predefiniti);
++   `checkout(tag | branch | hash)` (tre overload) →
++   `checkout(revision: Git.Revision, head: Stale[Git.Head]): Stale[Git.Head]`;
+
+% 0 1 0 1306f946cf49318f05d84757468aec2d
+
+@ 0 4 0 1df0fd49a801b991067683b1344b5528
++   Stale[Git.Head]`; `makeBranch(branch)` (che faceva il checkout del branch) →
++   `switch(branch, head,
++   create = true)` su un worktree, oppure `makeBranch(branch: Git.Branch, at: Git.Hash): Git.Branch` su
++   un repository, che crea senza fare il checkout e solleva `Moved(ref, Unset, actual)` se esiste
++   già; `merge(ref, ff, message): Unit` → `merge(revision: Git.Revision, head: Stale[Git.Head],
+
+% 0 1 0 01dc1e659b92bd3f10a059779ecb4421
+
+@ 0 2 0 120914206a75f2a6030b55808c2b8e72
++   Git.Merge.Outcome` (`FastForwarded(head) | Merged(head) | UpToDate | Stopped(operation)`: un
++   conflitto è un esito `Stopped`, non `MergeFailed`); `cherryPick(commit): Unit` →
+
+% 0 1 0 0fd0c51de51ce967135caa1285e165be
+
+% 0 1 0 14428bd31f6ec86d0135fd0c6ff121c6
+
+% 0 1 0 08c71f7f952ab2d21c72dcfcfe2a9231
+
+% 0 1 0 0b9ab739c1f0a8a50ec7517cdb433492
+
+% 0 1 0 0521747cd34b96d3079a2cc87eb87da9
+
+% 0 1 0 1c408eeae44b3c6709b0a38dc8887e3d
+
+@ 0 2 0 1f2a6bff0874dee102ff34efd00fbf87
++   `deleteBranch(branch: Git.Branch, at: Stale[Git.Hash], force: Boolean = false): Unit` (solleva
++   `Unmerged(branch, tip)` anziché `BranchFailed`); `renameBranch(from, to, force)` →
+
+% 0 1 0 0811597a33894ba504dd34492f45fac6
+
+% 0 1 0 024513f5e0969e011174090e540e464d
+
+% 0 1 0 0588b63ab472c86314043ec04c186db6
+
+% 0 1 0 146420718a46ee7d09f5bc67fa35c3bb
+
+@ 0 2 0 1ac535dae2b277f703ba2bc8a26f1ce5
++   Git.Refs.defaultNotes, force: Boolean = false): Git.Hash` (il nuovo commit delle note; `from`
++   è una lettura del ref delle note, `repo.ref(ref)`), e analogamente `notes.append` →
++   `appendNote(target,
+
+% 0 1 0 0664d95ab274da3319246e148f596cfa
+
+% 0 1 0 1dd01a273be2a3590abe4adae76b69b0
+
+% 0 1 0 01b59a1a2e1fad2e0e32e1bf9ec1f0f3
+
+% 0 1 0 02bda0cb3d5e0f5401ccd42ea8921913
+
+% 0 1 0 01ccb6172f5e966e159abe82161cd69a
+
+% 0 1 0 0699e8acada28d1a0de6b97949eda572
+
+% 0 1 0 0736af0dd6656ac114a78754fa349b2a
+
+@ 0 3 0 0b6d53889ef46d561c1877856f952de3
++   newBranch: Optional[Git.Branch] = Unset): Path on Linux` (si apra il percorso in seguito).
++   (#1864)
++ - `octogenarian.Refspec` (il trait esteso da `Git.Hash`, `Git.Branch` e `Git.Tag`, con
++   `Refspec.head(n)`, `Refspec.unsafe(text)`, `Refspec.parse(text)`) è stato rinominato in
+
+% 0 1 0 0dae0d7f0944957108b57ae4808207a6
+
+@ 0 6 0 03c562bd4a606ffe0dffb92ef7d5ad65
++   il suo `Inspectable` rende `Revision(…)` invece di `Refspec(…)`); l'export `soundness.Refspec`
++   è stato rimosso. `Git.Refs.pathIsRefspec` è stato rinominato in `Git.Refs.pathIsRevision`. Un
++   nuovo `Git.Refspec(source:
++   Optional[Text], destination: Optional[Text], force: Boolean = false)` (con `Refspec.parse`,
++   `Refspec(ref)`, `Refspec(source, destination)`, `text`) è un refspec di fetch/push. `Git.Ref`
++   è un nuovo alias per `Path on Git.Refs`; `Git.Refs.parse(text)` e
++   `Git.Refs.remotes(remote, branch)` sono nuovi; `Git.RefError.Reason` ha acquisito
++   `BadRefspec` (SN-976.8). (#1864)
+
+% 0 1 0 0686b93e85fcd3581b66985c93a321d5
+
+% 0 1 0 02f83d19f45286c1090349695bddcde0
+
+% 0 1 0 1b7f2666b9cc22a91749c7061c37ed27
+
+@ 0 1 0 02da981fa0179b9707905dd119145d1b
++   Git.Hash]]` (i ref che il fetch ha modificato); `push(): Unit` e `pushTags(): Unit` →
++   `push(remote:
+
+% 0 1 0 12de92217cce572110417304077a4a58
+
+% 0 1 0 1a93194ce43611f70e7520ba6f1f155b
+
+@ 0 7 0 110d3025b072b32a135f57e63762a9ed
++   Stale[Map[Git.Ref, Git.Push.Outcome]]`, dove `Push.Force` è `Never | Always | Lease(expectations:
++   Map[Git.Ref, Stale[Optional[Git.Hash]]])` (`--force-with-lease`; un'aspettativa non più
++   attuale viene riportata come `Push.Outcome.Rejected`) e `Push.Outcome` è `Updated(from, to, forced) | Created(to) |
++   Deleted(from) | UpToDate | Rejected(reason)`. `addRemote(name, url): Remote` ha acquisito
++   `fetch:
++   Optional[Git.Refspec] = Unset` e solleva `RemoteExists`; `removeRemote` solleva
++   `NoSuchRemote`; `renameRemote`, `setRemoteUrl`, `remote(name)`, `remoteRefs(remote)` e
++   `upstream(branch)` sono nuovi. `Git.clone(source, target, branch, recursive): Git.Process[Worktree]` → `clone(source,
+
+% 0 1 0 0a774128f02c00f01b922aaa6d269d88
+
+% 0 1 0 1c2106c7b44866661653e740a20a6438
+
+% 0 1 0 135a9aac140edbf3047bb7f58934a1b9
+
+@ 0 5 0 134f51443b5d01b101a70570fee52733
++   initialBranch, bare: Boolean = false): Unit`; `Git.initBare(…)` → `init(…, bare = true)`. Tutti
++   ricevono `(using Git.Backend^, Tactic[Git.Error])` (e `Internet` per la clonazione). (#1864)
++ - `Git.Repo#config.get[value: Decodable in Text](variable: Text): value` è sostituito da un
++   handle di configurazione prestato: `repo.config { config ?=> config.get[value](key: Git.Config.Key):
++   Stale[Optional[value]] }` (in sola lettura; anche `all[value](key): Stale[List[value]]` e `list():
+
+% 0 1 0 0873a440ee17e79806df08fc34d44c22
+
+@ 0 5 0 175a02765fcb74320de0ebe1b309cf41
++   config.add(key, value); config.unset(key, all = false) }` (richiede `Write`), e
++   `repo.effectiveConfig { … }` per ogni ambito che git consulta. `Git.Config.Key(section: Text,
++   subsection: Optional[Text], name: Text)` si analizza da `Git.Config.Key.parse(t"user.email")`.
++   Un file di configurazione si apre sul suo percorso:
++   `file.open[Git.Config](Read & Write) { config ?=> … }`. `get` di una chiave non impostata è
++   `Unset`, non un errore. (#1864)
+
+% 0 1 0 1792e3e7d4526136177f684c65a22fe9
+
+% 0 1 0 0ef077f1b7d6f2030fea3b6f1e79225c
+
+% 0 1 0 1461c97d2163794b14dfcd29d1ee4fe8
+
+@ 0 4 0 06a0fdfd283f59060fb0309f916b40a1
++   dove `Git.Signature(identity: Git.Identity(name: Text, email: Text), timestamp:
++   Git.Timestamp(seconds: Long, offsetMinutes: Int))`; il messaggio è l'intero testo senza il
++   newline finale anziché una lista di righe, e la firma è il testo con armatura anziché un
++   `enigmatic.Pem`. `octogenarian.Note` è stato rimosso. (#1864)
+
+% 0 1 0 105db8b2f4d67cfd04ffa9013ae793f3
+
+@ 0 2 0 0a20c06776adf12017c161ba5778bf7a
++ - Il given `guillotine.Parameterizable` di `octogenarian.ResetMode` è stato rimosso;
++   `ResetMode#flag: Text` è nuovo. Il given `Parameterizable` di `Git.Command` è stato rimosso
++   insieme al tipo. (#1864)
+
+% 0 1 0 0426c34d1d65f41b02f7abe0348e224e
+
+@ 0 2 0 13e6e92c43fef6f3197abe85b48910df
++   dove `detail` è il messaggio di git stesso quando il backend a riga di comando ne ha uno.
++   `Git.Error.Reason` è stato sostituito: sono stati rimossi `CloneFailed`, `InvalidRepoPath`,
++   `RepoDoesNotExist`,
+
+% 0 1 0 1a43addc8fe2e0380852e2dce71af166
+
+% 0 1 0 19d6f19544cecf9d1ee88fced82c46ef
+
+% 0 1 0 0ad8206ca5b68bc717a9554354da7f86
+
+@ 0 2 0 011c6e13976a3ddd0b57fa35071ab8a9
++   `RevertFailed`, `RemoteFailed`, `CheckoutFailed`, `PushFailed`, `NotesFailed`; sono stati
++   mantenuti `CannotExecuteGit` (1) e `NoteNotFound` (ora 24); sono nuovi
++   `NoRepository(path: Text)` (2),
+
+% 0 1 0 15ffbe2f218824ab0da33c7e3985d665
+
+% 0 1 0 08677477aa84622e03034cf546f652b0
+
+% 0 1 0 009889d9c1251dab1ffb88400591abc9
+
+% 0 1 0 16ec9a56f4a0812f0429ba499a8ce12d
+
+% 0 1 0 126812154fc78259088ab599a202b334
+
+% 0 1 0 02c520180149c7460718e5720c05b9f4
+
+% 0 1 0 0707ee5177ec612014976f75c1607dc8
+
+% 0 1 0 08df418c723b5e8a19270f0d9f6a6f65
+
+% 0 1 0 1954229978f4c6c21e2ae486f259a5af
+
+@ 0 13 0 1527670ea7fa5c32162c90b4de3f0328
++   `NoteExists(target: Git.Hash)` (31), `NoSuchWorktree(path)` (32), `NoSuchStash` (33). Gli ex
++   `RepoDoesNotExist`/`InvalidRepoPath` sono `NoRepository`; `NoWorkTree` è `NoWorktree`; un
++   conflitto di merge, cherry-pick o revert è un esito `Stopped` anziché un errore; `NotesFailed`
++   su una nota esistente è `NoteExists`. (#1864)
++ - Export di `soundness`: `Worktree` e `Refspec` non sono più esportati da octogenarian (sono
++   `Git.Worktree` e `Git.Revision`); `Progress` non esiste più; `Commandline` è esportato dal
++   componente `cli`, e `aperture.Stale` da aperture. Il blocco di package `gitCommands` passa a
++   `soundness_octogenarian_cli.scala`; `gitBackends` è nuovo. (#1864)
++ - `Git.Error.Reason` ha acquisito `Locked(file: Text)` (34): un file di lock di un ref,
++   dell'indice o della configurazione è detenuto da un altro processo (il backend a riga di
++   comando vi associa il messaggio di git `Unable to create '…lock': File
++   exists`). Un match esaustivo su `Reason` richiede il nuovo caso. Il backend nativo
++   (`gitBackends.soundnessGit`), i trasporti `http` e `ssh` e i firmatari `SshKeygen`/`Gpg` sono
++   aggiuntivi e non richiedono modifiche. (#1864)
+
+% 0 1 0 0752d37b57690d7603592c75ca4c9408
+
+@ 0 5 0 170c43c298dda58709fc9e7396517c5b
++ - Il predicato di `Filter` è una funzione pura, `Filter[key](predicate: key -> Boolean)` (era
++   `key => Boolean`): un'ottica è un valore puro, quindi un filtro non può catturare una
++   capability o uno stato mutabile. Un predicato che si limita a esaminare il suo argomento
++   (`Filter[Role](_.count > 1)`) compila senza modifiche; uno che si chiude su una capability
++   deve invece calcolare prima ciò che gli serve e chiudersi sul risultato semplice. (#2225)
+
+% 0 1 0 1ff629affd81c87111d067a62bcc62a1
+
+% 0 1 0 1e2f1e7152e64dc9138ca7c6a99ff387
+
+@ 0 4 0 0df2e0577403b81e176748ffe5d2e335
++   Monitor^): Unit` è stato rimosso. È sostituito da `parasite.sleep(duration)`. Cambio di
++   comportamento: `delay` era documentato come non interrompibile, ma il `delay` di un task
++   annullato terminava in realtà subito con `InterruptedException`; `sleep` attende sempre
++   tutta la sua durata, e il task annullato si ferma invece al suo `snooze` o `relent()`
++   successivo. (#2209)
+
+% 0 1 0 09ff60e71f5e73af122f955ce23de368
+
+@ 0 74 0 0fb7fe420624042d106e4157791b9a36
++   Monitor^): Unit` è stato rimosso. È sostituito da `parasite.sleep(instant)`, con lo stesso
++   cambio di comportamento di `delay`. (#2209)
++ - Il tipo di `parasite.sleep` è cambiato da `[instant: Abstractable across Instants to Long](instant:
++   instant)` a `[time: Schedulable](time: time)`, e il suo significato è cambiato: ora attende
++   tutta la sua scadenza sia che riceva una durata sia un istante (in precedenza `delay` e
++   `hibernate`), mentre prima era la forma *interrompibile* con un istante. Il codice che
++   chiamava `sleep(instant)` e contava sull'annullamento per risvegliarlo deve invece chiamare
++   `snooze(instant)`. (#2209)
++ - Il tipo di `parasite.snooze` è cambiato da `[duration: Abstractable across Durations to Long](duration:
++   duration)` a `[time: Schedulable](time: time)`. Ora accetta anche un istante, mettendosi in
++   pausa in modo interrompibile finché non arriva; per una durata il suo comportamento è
++   invariato. (#2209)
++ - Il tipo di `parasite.Task.sleep` è cambiato da `[duration: Abstractable across Durations to Long]` a
++   `[time: Schedulable]`; accetta anche istanti. (#2209)
++ - Nuova typeclass `parasite.Schedulable` (esportata da `soundness`), il vincolo condiviso da
++   `snooze` e `sleep`, con i given nel compagno `Schedulable.duration` per qualsiasi `Abstractable across
++   Durations to Long` e `Schedulable.instant` per qualsiasi `Abstractable across Instants to Long`.
++   Conseguenza: un `Long` semplice passato a `snooze` o `sleep` in un file che ha nell'ambito sia
++   un given di unità di durata (`abstractables.nanosecondsAbstractable`, `microsecondsAbstractable`
++   o `millisecondsAbstractable`) sia `abstractables.epochMillisecondsAbstractable` è ora un
++   errore di given ambiguo, mentre in precedenza `snooze(long)` lo leggeva come durata e
++   `sleep(long)` come istante. In un file del genere si importi esattamente una delle due
++   letture. (#2209)
++ - `parasite.Monitor` è classificato come `caps.SharedCapability` anziché
++   `caps.ExclusiveCapability`. Un handle di task cattura ancora il monitor sotto cui è stato
++   avviato e non può uscire dal suo blocco `supervise`, ma il separation checking non segnala più
++   una sovrapposizione quando un handle che cattura un monitor viene unito con lo stesso monitor
++   come argomento `using` — `task.await()` sotto `supervise`, o un prestito come
++   `Shell.tmux()(Tmux.completions(…))` — quindi i wrapper
++   `caps.unsafe.unsafeAssumeSeparate(…)` di cui quelle chiamate avevano bisogno possono essere
++   rimossi. Il codice che classifica le capability in base al classificatore di `Monitor` (un
++   insieme `caps.any.only[ExclusiveCapability]` che ci si aspetta includa un monitor) deve usare
++   `SharedCapability`. (#2212)
++ - Poiché un handle di task è un `Monitor` condiviso, ciò che un task conserva deve essere
++   condiviso: i corpi di `async`, `task`, `Task.apply`, `Task#map`/`bind`, l'azione di `Timeout`
++   e il job di `concurrently` sono tipizzati `->{caps.any.only[caps.SharedCapability]}`. Un corpo
++   può catturare un `Monitor`, un handle di task, un `Tactic`/`Emit` e valori semplici, ma non più
++   una capability *esclusiva* (un `Producer^`, un parser con stato, un handle di file aperto):
++   un codice del genere ora fallisce con "Reference `x`
++   is not included in the allowed capture set {any.only[SharedCapability]}". Si sposti la risorsa
++   esclusiva dentro il corpo (aprendola e possedendola lì), oppure si passino dati invece
++   dell'handle. Una `Probate` che un task conserva è `parasite.SharedProbate`
++   (`Probate^{caps.any.only[caps.SharedCapability]}`), che diventa ogni firma
++   `(using Monitor^, Probate^)`; le successioni pure e `failProbate` sono conformi. I corpi di
++   `daemon` erano già puri e sono invariati. (#2212)
++ - Novità: `resource.transfer(body)` e `resource.transfer(name)(body)` avviano un task che
++   *possiede* una risorsa esclusiva. La risorsa viene consumata dal chiamante (che non può usarla
++   in seguito) e raggiunge il corpo come suo primo parametro di contesto, un portatore
++   `Task.Owned[resource]` letto con `apply()`:
++   `producer.transfer: (producer, _, _) ?=> producer().put(…)`. È così che un task alimenta un
++   `Producer`, fa avanzare uno `Stream` o esegue un oggetto ciclo secondo la regola dei corpi
++   solo condivisi; si prenda l'`iterator` di un producer (il lato del lettore) prima di
++   trasferirlo. (#2212)
++ - Il job di `concurrently` è `Int ->{caps.any.only[caps.SharedCapability]} result`, l'azione di
++   `Timeout` `->{caps.any.only[caps.SharedCapability]} Unit`, e così le lambda di
++   `Task#map`/`bind`: ciascuna gira su un task. (#2212)
++ - `parasite.Timeout` è classificato come `caps.SharedCapability` anziché
++   `caps.ExclusiveCapability`: viene sollecitato da qualunque task veda attività. (#2212)
++ - I corpi dei task sono `->{caps.any.only[anticipation.Durable]}` anziché
++   `->{caps.any.only[caps.SharedCapability]}`, e `SharedProbate` è
++   `Probate^{caps.any.only[Durable]}`: un corpo può catturare monitor, handle di task, logger,
++   processi, connessioni e altre capability `Durable`, ma non più un `Tactic` o un `Emit`, che
++   appartiene allo stack che lo ha installato. Da un task si sollevi tramite la sua tattica (il
++   `Tactic[error]` di contesto del corpo), i cui errori arrivano ad `await`. Il codice che da un
++   corpo di task sollevava tramite una tattica esterna ora fallisce con
++   "Reference `tactic` is not included in the allowed capture set {any.only[Durable]}". La stessa
++   restrizione vale per `Task#map`/`bind`, l'azione di `Timeout` e il job di `concurrently`;
++   `Monitor` e `Timeout` sono `Durable`. (#2217)
++ - `Supervisor` e `Threading` sono capability (`anticipation.DurableUnscoped`): fare fork e
++   parcheggiare sono effetti, e un pool contiene thread attivi. Il package di scelta `threading`
++   è stato rinominato in `threads`, e i suoi given `platformThreading`, `virtualThreading`,
++   `adaptiveThreading`, `pooledThreading` e `javascriptThreading` sono stati rinominati in
++   `platformThreads`, `virtualThreads`, `adaptiveThreads`, `pooledThreads` e
++   `javascriptThreads`: si sostituisca `import threading.virtualThreading` con
++   `import threads.virtualThreads`. `threads` e `supervisors` sono oggetti anziché package,
++   quindi i loro given si importano per nome come prima.
++ - Una classe o un oggetto pubblico che raggiunge un supervisore globale, tramite un given
++   `threads` importato o `supervisors.globalSupervisor`, lo dichiara con una clausola `uses`:
++   `object Main uses parasite.threads:`. Una definizione locale o privata non ne ha bisogno. Un
++   test di `probably` il cui corpo differito ne raggiunge uno lo esegue in linea con `.check` al
++   posto di `.assert`.
++ - `Monitor#supervisor` è tipizzato `Supervisor^{this}`. `Root` riceve il suo supervisore come
++   semplice parametro del costruttore (lo si legge tramite `supervisor`), e il risultato di
++   `supervise` cattura il suo `Threading`. Lo `spawn` di una sottoclasse di `PoolingSupervisor`
++   riceve un `Runnable^`. (#2225)
+
+% 0 1 0 098ec9c8ceec6ec30cbbe4dc068fa572
+
+@ 0 2 0 13ea498733a74ad9172b46bb5622b1c3
++ - `soundness` esporta l'estensione di etichettatura del trasporto `over` (`value.over[Json]`),
++   che prima era raggiungibile solo da `package perihelion` o con `import perihelion.over`.
++   (#2263)
+
+% 0 1 0 0ec6bf76333b603510f2d73726ea2dd6
+
+@ 0 5 0 1167a5a30a2893cb0ff323e6cbee25ee
++ - `Sextant` è una classe `caps.Mutable` anziché una semplice `ExclusiveCapability`: lo
++   spacchettamento fa avanzare la sua posizione, cosa che solo un riferimento esclusivo può fare.
++   `unpack`, `sextant { … }` e i metodi `Bufferable`/`Debufferable`/`Unpackable` ricevono
++   `Sextant^`; un'istanza scritta a mano con `debuffer(sextant: Sextant)` o
++   `sextant(sextant: Sextant, …)` deve dichiarare il parametro `Sextant^`. (#2230)
+
+% 0 1 0 1272eb8ee5dafb9602513a068176169c
+
+@ 0 4 0 03c09c7ecf9787cb04495a09a8a0eae4
++ - `Motif.slots` e `Pike.run` restituiscono `Optional[Array[Int]]`, `Program.ops` è un
++   `Array[Program.Op]` e `Program.Op.Symbol#bounds` un `Array[Int]` (l'array congelato; questi
++   moduli non sono sottoposti a capture checking, quindi il tipo si scrive senza `^{}`), mentre
++   prima erano `scala.IArray`. Le letture per indice usano `readUnchecked`. (#2274)
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 3 0 0d4751afcbdd0a6e09b809a5dc569033
++ - `Benchmark` ha acquisito `operationQuantity: Optional[Double]` (predefinito `Unset`), la
++   dimensione di un'operazione come numero nell'unità indicata da `operationSize`. `TestEvent` è
++   invariato, quindi il layout e l'impronta dello stream di eventi sono quelli di prima.
+
+% 0 1 0 0172194e0cc326ed063fbc1a966cec9f
+
+@ 0 14 0 110a29610154ee88179aaf202836078d
++ - `profanity.Board` estende `caps.ExclusiveCapability, caps.Stateful`, e le sue operazioni di
++   disegno — `move`, `put` (entrambi gli overload), `clear`, `clearLine`, `cursor`, `showCaret`,
++   `flush` — sono `update def`. Un'implementazione marca i suoi override come `update def` (e
++   qualsiasi helper che assegni il suo stato); un chiamante tiene una board come `Board^` e non
++   può disegnare tramite un alias in sola lettura. `width`/`height` restano in sola lettura,
++   quindi un'implementazione non può calcolarli da una funzione impura catturata: i thunk di
++   dimensione di `TerminalBoard` sono `() ->{caps.any.rd} Int`. (#2206)
++ - `TerminalBoard.apply(terminal: Terminal)` restituisce `TerminalBoard^{terminal.rd, caps.any}`
++   (era `TerminalBoard^{terminal}`); `TerminalBoard.apply(width, height)` e
++   `InlineBoard.apply(terminal)` restituiscono un `^` nuovo (prima erano semplici);
++   `Board.inlineBoard` fornisce `Board^`. Si leghi il risultato a un `val` prima di passarlo
++   dove ci si aspetta un `Board^` nuovo. (#2206)
++ - `profanity.Terminal` estende `caps.Stateful`; i suoi setter `mode_=`, `rows_=` e `columns_=`
++   sono `update def`, quindi assegnarli richiede un `Terminal^` esclusivo. Leggere
++   `knownColumns`/
++   `knownRows` da una closure cattura `terminal.rd`. (#2206)
+
+% 0 1 0 13897a5b469c56bc058ae094048dac5d
+
+@ 0 20 0 0aba7eaf7d08a02d139321cd6e56d087
++ - Nuovo `Array.stdlib` su qualsiasi `Array[element]` leggibile: una vista
++   `scala.collection.immutable.ArraySeq` a copia zero e in sola lettura, il ponte verso la stdlib
++   facilmente ricercabile con grep secondo la convenzione di `List.stdlib`, per le API della
++   stdlib e di Java che vogliono una `Seq`. Non serve per accedere agli elementi (il suo `apply`
++   fa boxing ed è parziale); si usi il vocabolario delle collezioni. (#2274)
++ - Nuovo `Array.same(left, right): Boolean`, l'uguaglianza elemento per elemento di due array
++   leggibili. `==` su un array congelato resta il confronto per riferimento della JVM: l'alias
++   opaco non può ridefinirlo. (#2274)
++ - `Array.empty`, `from`, `fill`, `tabulate` e `range` non costruiscono più tramite l'`IArray`
++   della stdlib; il comportamento è invariato. (#2274)
++ - `Array#readable` (la vista `scala.IArray` di un array congelato) e `Array.frozen(iarray)` sono
++   stati rimossi, insieme all'`IArray` stesso della stdlib: l'`Array[element]^{}` congelato è
++   l'unico array immutabile. Si sostituisca `x.readable.<op>` con il vocabolario delle
++   collezioni, oppure con `x.stdlib.<op>` al confine con la stdlib; si sostituisca
++   `Array.frozen(x.readable ++ y.readable)` con `x + y`, e `Array.frozen(<ArraySeq>)` con
++   `Array.from(…)`. Le letture di elementi tramite `readable(i)` diventano `at(i)`, un ordinale
++   confinato, oppure `readUnchecked(i)` dove l'indice è dimostrato. (#2274)
++ - Con `-Zfrozen-pure` (Proscala 1.0.0, ora tra le flag condivise degli insiemi di cattura) un
++   alias opaco su un array congelato è puro, quindi `gossamer.Ascii`, `hypotenuse.Decimal` e
++   `Bcd`, `embarcadero.AnyMessage.Payload`, gli `Attributes`/`Scope` di xylophone e honeycomb, e
++   il `PositionIndex` di ogni parser sono rappresentati dall'array congelato anziché da un
++   `IArray`; le loro superfici pubbliche sono invariate. (#2274)
+
+% 0 1 0 0136e0d647519dc716274602a4340b64
+
+@ 0 29 0 0618ac9695b253a80437d98cead2ce5a
++ - `rudiments.Scribe[Byte]` ha acquisito `appendVarint(value)` e `appendUtf8(string)`, scritture
++   in blocco con un solo controllo di capacità, e `Scribe.varintLength`, `Scribe.utf8Length`,
++   `Scribe.varintInto` e `Scribe.utf8Into`. (#2233)
++ - `append` (in tutte e tre le forme) e `place` di `Scribe` non ricevono più un
++   `(using ClassTag[element])`: uno scribe che cresce prende la classe degli elementi dell'array
++   più grande dal suo buffer. I punti di chiamata non richiedono modifiche, a meno che non
++   passassero il tag esplicitamente. Comportamento: un `append` inline non materializza più un
++   `ClassTag` — una ricerca in un `ClassValue` — a ogni chiamata. (#2248)
++ - Comportamento: `Segmentable.frozenArray` (l'istanza per `Array[element]^{}`, in precedenza
++   chiamata `iarray`) copia un segmento tramite il `ClassTag` del suo elemento anziché tramite
++   lo `slice` della stdlib, che cercava il tag dalla classe a runtime dell'array a ogni chiamata;
++   i limiti vengono ristretti come prima. (#2248)
++ - `unsafeMutable` e `unsafeImmutable`, i cast subordinati a `Unsafe` tra `Array[element]^{}` e
++   `scala.Array[element]`, sono stati rimossi. Per un chiamato del JDK che si limita a leggere il
++   suo argomento array, si passi `Array.unsafeJvm(frozen)`; per un array nuovo restituito da un
++   metodo del JDK, `Array.unsafeFrozen(jvm)`; per modificare una copia, `Array.allocate` +
++   `place` + `Array.freeze`; dove un chiamato scrive (azzera) il suo argomento, gli si dia una
++   sua copia esclusiva tramite `raw`. (#2274)
++ - Nuovo `find(predicate): Optional[element]` su qualsiasi ricevente `Traversable`, il fratello
++   del `find` della stdlib con `Unset` in assenza di corrispondenze. (#2274)
++ - Le istanze `Appendable`, `Prependable` e `Truncable` per l'array congelato non passano più per
++   la stdlib: un array vuoto ora si tronca in sé stesso anziché lanciare un'eccezione. (#2274)
++ - `rudiments.Loop` è una `caps.SharedCapability`: gira su un task e viene fermato da un altro.
++   Il blocco di `loop(block)` è `->{caps.any.only[caps.SharedCapability]} Unit` e `loop`
++   restituisce `Loop^{block, caps.any}`; un blocco che modificava una `var` locale catturata
++   mantiene invece il suo stato in una cella `Atomic`. (#2212)
++ - `Loop` è `anticipation.Durable`, e il blocco di `loop` è `->{caps.any.only[Durable]}`.
++   (#2217)
++ - Nuovo `pick`, la forma fusa di `confine` e `let`: `xs.pick(i) { i => … }` restituisce
++   `Optional[result]`, `Unset` quando `i` non è definito per `xs`, e altrimenti applica la lambda
++   all'indice già confinato a `xs`, così le letture al suo interno sono dirette. Si sostituisca
++   `xs.confine(i).let { i => … }` con `xs.pick(i) { i => … }` e `xs.confine(i).lay(d) { … }` con
++   `xs.pick(i) { … }.or(d)`. È il gemello sicuro di `xs.unsafeAttested(i) { i => … }`; quando la
++   lambda si limita a leggere l'elemento, `xs.at(i)` lo esprime già. (#1755)
+
+% 0 1 0 012115d2210015c8084b240aed3fed8f
+
+@ 0 15 0 126e58b90abfd6e9150d11a432b3285e
++ - `Svg.aggregable`, `Svg.loadable` e `Svg.loadableData` non ricevono più un `XmlSchema`: l'XML
++   sottostante a un SVG viene analizzato rispetto a `XmlSchema.Freeform`, poiché il vocabolario di
++   SVG è fisso e validato dai tipi delle figure. Un `given XmlSchema = XmlSchema.Freeform` scritto
++   per soddisfarli può essere rimosso; uno schema diverso non ha mai avuto senso lì. (#2194)
++ - `Svg` ha due nuovi campi con valori predefiniti, `unit: Optional[Svg.Units] = Unset` (l'unità
++   che portano il suo `width` e il suo `height`, `Svg.Units.Mm` per `width="48.5mm"`; `Unset` sono
++   le unità utente) e `viewBox: Optional[Svg.ViewBox] = Unset` (`Svg.ViewBox(x, y, width, height)`;
++   `Unset` è la viewport a partire dall'origine). `Svg.Parser` legge la grammatica `<length>` di SVG
++   per `width`/`height` della radice (in precedenza un suffisso di unità rendeva entrambi `0.0`) e
++   il `viewBox` per conto suo, e `svg.in[Xml]` riscrive l'unità e il viewBox che ha letto. Un
++   `width`/`height` o un `viewBox` presente ma non analizzabile, oppure un `width` e un `height`
++   con unità diverse, solleva `Svg.Error` con i nuovi motivi `MalformedLength`, `MalformedViewBox`
++   e `MismatchedUnits` (prima era silenziosamente `0.0`). Il `viewBox` reso di un `Svg` senza
++   `viewBox` impostato scrive ora la sua origine come `0.0 0.0` (era `0 0`), così si rilegge come
++   ciò che ha scritto; `width="100.0"` e `height="100.0"` sono invariati. (#2192)
+
+% 0 1 0 0297adaaf208f36b050fef6919e7a155
+
+@ 0 14 0 1cf00c405d373b920849e67128891b4f
++ - `Profile.apply` riceve un parametro `inclusive: Boolean = false` dopo `frames`. Con
++   `inclusive = true` un campione conta per ogni metodo distinto nel suo stack anziché solo per il
++   suo frame in cima, così una riga di `Hotspots` mostra la quota di tempo di ciascun metodo
++   trascorsa in esso *o in qualsiasi cosa abbia chiamato* (le quote allora sommano a più del
++   totale); il valore predefinito è invariato. (#2250)
++ - `OperationSize` ha acquisito un terzo campo, `value: Double`, la quantità nella sua unità di
++   base; la conversione `Quantity` lo fornisce. Il codice che costruisce direttamente
++   `OperationSize(sizeText, rateText)` deve passare il valore.
++ - `Bench.Plan#sized` dimensiona ogni cella di un benchmark assiale in base alle sue coordinate:
++   `plan.sized((_: Parser, document: Document) => size(document))` seguito da
++   `.over(Axis(Parser), Axis(Document))(body)`, oppure una funzione a un argomento per un singolo
++   asse. Restituisce `Bench.Plan.Uniaxial[value]` o
++   `Bench.Plan.Biaxial[left, right]`, il cui `over` riceve solo valori `Axis` (si avvolga il
++   compagno di un enum in `Axis(...)`); una cella per cui la funzione risponde `Unset` usa
++   l'`operationSize` del piano. Gli overload non dimensionati di `Plan#over` sono invariati.
+
+% 0 1 0 101a8988acb4345d0341a393aab67281
+
+@ 0 9 0 0a34bdc9d51f24cc156d514857fe3592
++ - `Llm.Dialect#stream(turn: Exchange)` restituisce `Iterator[Event]^{this, caps.any}` anziché
++   `Iterator[Event]^{this}`: l'iteratore cattura anche il nuovo stato di streaming che fa
++   avanzare. Un'implementazione di `Dialect` (un adattatore per un fornitore personalizzato, o un
++   falso per i test) deve dichiarare il tipo di risultato più ampio nel suo override; un chiamante
++   che memorizza l'iteratore in un valore tipizzato `^{dialect}` allarga quel tipo allo stesso
++   modo. L'API `Session`/`Response` è invariata, compresa la garanzia che una `Response` in
++   stream non possa sopravvivere alla sua sessione. (#2210)
++ - L'estensione `elicit[value](prompt)` di `Llm.Session` di `sibylline` è stata rinominata in
++   `solicit`: `soundness` esporta anche l'`elicit` dei campi di modulo di legerdemain, che mantiene
++   il nome. Si sostituiscano `llm.elicit[…](…)` e `session.elicit[…](…)` con `solicit`. (#2256)
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 11 0 15c86678e7685c8a1e02ebb3076b3218
++ - `stenography.Syntax.apply` non produce più `Syntax.Primitive("<unknown>")` per un membro di
++   tipo selezionato da un prefisso che è un tipo anziché un path (un `TypeRef` il cui prefisso è
++   un alias di tipo applicato come `Foo is Bar to Baz`, o qualsiasi altro prefisso non reso come
++   `Value`, `Simple`, `Structural`, `Symbolic` o `Selection`), né per uno selezionato da uno
++   skolem. Dove il prefisso è un alias del membro, il risultato è la `Syntax` di ciò di cui è
++   alias, presa un passo di alias più in profondità: `(Int is Addable by Int to Long)#Result` è la
++   `Syntax` di `Long`. Dove il prefisso si limita a vincolare il membro, il risultato è
++   `Syntax.Projection(<prefix>, <member>)`. Uno skolem semplice è la `Syntax` del tipo che
++   rappresenta. (#PENDING)
++ - `stenography.Syntax#text` ora mette tra parentesi la base di una `Syntax.Projection` quando la
++   base è un raffinamento o un tipo infisso: `Syntax.name[(Addable { type Q = Int })#Result]` è
++   `t"(Addable { type Q = Int })#Result"` mentre prima era `t"Addable { type Q = Int }#Result"`.
+
+% 0 1 0 0bc7ce4ab576a14000f13e5f68d92512
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 9 0 1ddead260e6cfe371a04ea6d5c6549f6
++ - `stratiform.Tel.Metadata` ha acquisito un quarto parametro con valore predefinito,
++   `continuation: Optional[Int] =
++   Unset`: la riga del sorgente, indicizzata da 1, su cui inizia il contenuto dopo il separatore
++   di documento (`##`), oppure `Unset` quando il documento è terminato alla fine dell'input. La
++   costruzione con tre argomenti è invariata; un pattern
++   `case Tel.Metadata(directive, pragma, lineEndings)` deve aggiungere un quarto binder. (#2196)
++ - L'`optionalDecodable` di `Tel` è tipizzato `(value is Tel.Decodable)^{tactic}`, e cattura la
++   tattica attraverso cui solleva il suo percorso di errori permissivi, anziché essere sigillato
++   come puro. Un summon che nomina il tipo deve ammettere la cattura, come in `summon[(… )^]`; la
++   risoluzione tramite `read`, `as` o derivazione non richiede modifiche. (#2229)
++ - `Tel.Handle` è una classe `caps.Mutable`: `mutate0` e `revise0` sono metodi `update`, quindi un
++   documento si modifica solo tramite l'handle esclusivo che un blocco `open[Tel]` presta. (#2230)
+
+@ 0 8 0 13f27d3e02bdd1d4071e41e8c23ac4fc
++ - I decoder di collezioni, di `Optional` e di `Map` di `Tel` dichiarano le loro catture anziché
++   essere sigillati come puri. `optionalDecodable`, `listDecodable`, `setDecodable`,
++   `seriesDecodable` e `collectionDecodable` restituiscono un `(… is Tel.Decodable)^` con cattura
++   nuova, e ricevono il decoder dei loro elementi come parametro by-name con cattura e
++   `consume`, `=> (element is Tel.Decodable)^`, poiché un parametro by-name non può essere nominato
++   in un insieme di cattura; `mapDecodable` riceve codec stretti e restituisce
++   `(Map[key, value] is Tel.Decodable)^{keyCodec, valueCodec, tactic}`. Il meccanismo di capture
++   checking proprio della derivazione da #2197 è invariato, e i decoder derivati ed evocati non
++   sono interessati; solo il codice che nomina i tipi di uno di questi given deve ammettere la
++   cattura, come in `summon[(List[Int] is
+
+% 0 1 0 13cb72045929eb8c1b1cab6aa01239dd
+
+@ 0 17 0 166588f9005879960503e6b3b6d02a9c
++ - Le istanze derivate di `Tel.Decodable` ora compilano in codice che è a sua volta sottoposto a
++   capture checking (`-Ycc-new`): `DecodableDerivation.conjunction` e `disjunction` restituiscono
++   `(derivation is Tel.Decodable)^` anziché un'istanza pura, e i given di collezioni, di
++   `Optional` e di `Map` (`listDecodable`, `setDecodable`, `seriesDecodable`,
++   `collectionDecodable`, `optionalDecodable`, `mapDecodable`) ricevono i decoder dei loro
++   elementi come parametri by-name con cattura, `=> (element is Tel.Decodable)^`, con il
++   risultato di `mapDecodable` ora puro (era `^{tactic}`). I decoder evocati e derivati non sono
++   interessati; solo il codice che nomina esplicitamente quei given, o che ridefinisce il tipo di
++   risultato della derivazione, deve seguire le nuove firme. (#2197)
++ - `stratiform.Tel.aggregable`, `Tel.aggregableParsed`, `Tel.listAggregable` e
++   `Tel2.aggregableIn` ricevono un parametro `using` aggiuntivo `buffering: zephyrine.Buffering`,
++   che si risolve in `Buffering.standard` a meno che non ce ne sia uno nell'ambito. Ciascuno ora
++   ridefinisce `accept`, quindi una sorgente di stream (`stream.read[Tel]`, `read[Foo in Tel]`,
++   `read[List[Tel]]`) viene analizzata man mano che arriva tramite un cursore, anziché essere
++   prima svuotata in una `Chain` e concatenata; un errore di parsing viene sollevato non appena il
++   parser lo raggiunge, e lo stream non viene letto oltre la fine del documento. (#2251)
++ - Comportamento: `Tel.loadable` e `Tel.loadableData` (`load[Tel]`) analizzano lo stream man mano
++   che arriva invece di memoizzarlo prima in un unico `Data`. (#2251)
+
+% 0 1 0 1b8a4df21a24e9b507d1dd74e6543c8d
+
+@ 0 5 0 1a05c2b6ddfdfeb71ff9dc59bbbe3d2f
++ - `Watcher` è una capability (`anticipation.DurableUnscoped`), poiché un backend rileva i
++   cambiamenti su task supervisionati propri. `watch` restituisce `Watcher.Registration^{this}`,
++   `Watch.apply` restituisce `Watch^{watcher}`, e i given `openable`/`allOpenable` catturano il
++   loro watcher. `watchers` è un oggetto anziché un package; i suoi given si importano per nome
++   come prima. Una classe o un oggetto pubblico che si affida al watcher predefinito dichiara
++   `uses surveillance.Watcher`. (#2225)
+
+% 0 1 0 0a987c74b7cfb42504a1854db0e46ef3
+
+@ 0 2 0 1d5adca7eabef2a916bf50f53b1dc4bc
++ - I given per l'array congelato `Array[element]^{}` che si chiamavano `iarray` sono stati
++   rinominati in `frozenArray` (`doc/standards/given-naming.md`): `Segmentable.frozenArray`,
+
+% 0 1 0 1ad92432da4a6f501a7bbf694009216f
+
+@ 0 4 0 0a7ebe93022b4fa116e30dc0f16fa1b9
++   `Unpackable.frozenArray`, `Checkable.frozenArray` e `Randomizable.frozenArray`. Cambia solo il
++   codice che li nominava (un `using` esplicito, o un import). (#2274)
++ - `gossamer.Joinable.Source.iarray` è stato rimosso: `Source.traversable` copre l'array
++   congelato, quindi `join` su un `Array[element]^{}` si risolve come prima. (#2274)
+
+% 0 1 0 1f0d1964e78bcf5f17f7ba91a65e7247
+
+% 0 1 0 061e093503275b7310ff38549bcb04a2
+
+@ 0 30 0 094010f3a55b945c07a731831bb208ff
++   Discovery.Description)(using Monitor^, Probate^, Tactic[Discovery.Error])` restituisce ora
++   `Discovery.Advertising` (nuovo trait, con un solo membro `def instance: Discovery.Instance`)
++   invece di `Discovery.Instance`, e `Discovery.Backend#withdraw` riceve `(advertising:
++   Discovery.Advertising)(using Monitor^)` invece di `(instance: Discovery.Instance)(using
++   Monitor^)`. Un'implementazione di `Backend` deve restituire un handle e accettarlo di ritorno;
++   un chiamante che usa direttamente la giuntura legge il nome come `advertising.instance`. Il
++   prestito `service.advertise(description) { … }` è invariato. (#2186)
++ - Il costruttore di `syndesis.Discovery.Advertisement` riceve `(advertising: Discovery.Advertising)`
++   invece di `(val instance: Discovery.Instance)`; `instance` è ora un `def` che legge il nome
++   corrente del backend. Il suo valore può cambiare durante il blocco: dopo il nuovo sondaggio
++   della RFC 6762 §9, `Mdns.Responder` rinomina un'istanza consolidata (`Gondor` → `Gondor (2)`)
++   quando si scopre che un altro host detiene il suo nome, mentre prima una tale risposta veniva
++   solo messa in cache. Il codice che legge `instance` una volta e lo riusa deve rileggerlo quando
++   il nome conta. (#2186)
++ - `syndesis.Mdns.Transport` sostituisce `def receive(): Packet raises Socket.Error` con `def
++   inlets: List[Mdns.Transport.Inlet]`, dove `Mdns.Transport.Inlet` (nuovo trait) ha `def
++   receive(): Packet raises Socket.Error`; `Mdns.Transport.sockets` ora si unisce a `ff02::fb` oltre
++   che a `224.0.0.251` (un inlet ciascuno) sulle interfacce con un indirizzo di quella famiglia, e
++   fallisce solo se non è possibile unirsi a nessuno dei due gruppi. Un'implementazione di
++   `Transport` con un solo socket estende anche `Inlet` e restituisce `List(this)`.
++   `Mdns.Transport.Bus#join` restituisce ora `Transport & Transport.Inlet` (prima `Transport`),
++   quindi `receive()` su un membro del bus è invariato. (#2186)
++ - `syndesis.Discovery.Backend#advertise`, `syndesis.Discovery.Backend#browse` e
++   `syndesis.Discovery.Backend#resolve` ricevono un parametro `using` aggiuntivo
++   `(Discovery.Activity is Loggable)^` nella loro clausola `using` finale (dopo
++   `Tactic[Discovery.Error]`), e `syndesis.Discovery.Backend#withdraw` riceve `(using Monitor^, (Discovery.Activity is
++   Loggable)^)` invece di `(using Monitor^)`; `Discovery.Activity` è un nuovo enum (`Probing`,
++   `Yielded`, `Conflicted`, `Claimed`, `Withdrawn`, `Browsing`, `Resolved`) con un given
++   `Communicable`. Anche i prestiti `service.advertise(description) { … }`, `service.browse { … }`
++   e `instance.resolve(timeout)` richiedono `(Discovery.Activity is Loggable)^` nell'ambito, che
++   `anticipation.Loggable.fanOut` deriva dal `Communicable` senza ulteriori import (silenzioso
++   senza un `LogSink` nell'ambito), quindi i punti di chiamata compilano senza modifiche;
++   un'implementazione di `Backend` deve aggiungere i parametri. (#2186)
+
+% 0 1 0 0edeca1688ed1712094917bf1cb39981
+
+@ 0 20 0 0df26eb4d5204f1a077ba88189b3ae94
++ - Una `Mcp.Specification` derivata non elenca più ogni parametro degli strumenti come
++   `required`, e non lancia più un'eccezione quando un client ne omette uno. Un parametro il cui
++   tipo ammette `Unset` (un `Optional[…]`) o che ha un argomento predefinito viene omesso dal
++   `required` dello schema di input; quando è assente da una chiamata è `Unset` o il valore
++   predefinito. Un parametro obbligatorio assente solleva
++   `Mcp.Error(Mcp.Error.Reason.MissingParameter)` (prima era una `NoSuchElementException`). Il
++   `@about` di un parametro diventa la `description` della sua proprietà nello schema (prima
++   veniva ignorato), e la descrizione dell'argomento di un prompt è il `@about` del parametro
++   (prima era quello del metodo). (#2187)
++ - `tools/call` risponde a uno strumento che lancia un'eccezione con un `CallTool` il cui
++   `isError` è `true` e il cui contenuto è il messaggio dell'eccezione (prima era un errore
++   JSON-RPC `-32603` con id `null`). Un `Mcp.Error` (strumento sconosciuto, parametro mancante) è
++   ancora un errore JSON-RPC, ora `-32602`, e ogni errore JSON-RPC con cui `Mcp.send` risponde
++   porta l'`id` della richiesta e l'intestazione `Mcp-Session-Id`. (#2187)
++ - `synesthesia.resource` riceve un secondo parametro, `mimeType: Optional[Text] = Unset`, che
++   `resources/read` e `resources/list` riportano. Senza di esso, una risorsa il cui URI è nominato
++   dall'`@ui` di uno strumento è `text/html;profile=mcp-app` (come lo era ogni risorsa testuale),
++   e altrimenti una risorsa testuale è `text/plain` e una binaria `application/octet-stream`.
++   (#2187)
++ - Una `Mcp.Specification` derivata compila in un modulo compilato con capture checking
++   (`-Ycc-new` con separation checking), quindi un oggetto server non ha più bisogno di risiedere
++   in un modulo non verificato, e uno strumento `@ui` non ha più bisogno di un
++   `(List[Text] & Populated) is Encodable in Text` nel punto di espansione. (#2187)
+
+% 0 1 0 19751db48a45fac8054f045dab5ba311
+
+@ 0 7 0 17a496eb3380d1721e734bf1e97b35f4
++ - La selezione degli elementi è `\` anziché `/`: `element \ selector`, `elements \ selector` (su
++   una `List[WebDriver.Element]`), `shadowRoot \ selector` e il nuovo `browser \ selector` con
++   ambito di pagina (un membro di `WebDriver.Session`). Le estensioni sono passate dal package
++   `tarantula` ai compagni di `WebDriver.Element` e `WebDriver.ShadowRoot`, quindi `soundness` non
++   esporta più un `/` da tarantula, e il `/` aritmetico di symbolism (`1.0*Metre/Second`,
++   `Eur(3.01)/3`) si risolve di nuovo con `import soundness.*`. Si sostituisca `/` con `\` in ogni
++   selezione di elementi; un `import tarantula.`/`` va eliminato. (#2255)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 4 0 100bc74cbf4c7b5f0a84571b042d4841
++ - `Annotated` è stato rinominato in `Noted`: `Noted(3.0, t"Paris")` è un valore con la nota che
++   un grafico a dispersione o a linee pone accanto al suo marcatore. Il vecchio nome entrava in
++   conflitto nell'ombrello `soundness` con la typeclass `Annotated` di adversaria, e il classpath
++   decideva quale dei due indicasse un `Annotated` semplice. Si sostituisca
++   `Annotated(value, note)` con `Noted(value, note)`. (#2225)
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 7 0 007192622b8ce3220ffb1fd1c6540afe
++ - `telekinesis.Hpack` è una capability esclusiva e con stato (`caps.ExclusiveCapability`,
++   `caps.Stateful`): `Hpack()` restituisce `Hpack^`, ed `encode` e `decode` sono metodi `update`,
++   poiché ciascuno modifica la tabella dinamica del codec. Un codec appartiene a un solo reader o
++   writer: lo si tenga in una variabile locale o lo si passi come parametro tipizzato `Hpack^`, e
++   non lo si chiami da una closure o da un `def` locale che lo cattura (il riferimento catturato è
++   in sola lettura, e la chiamata viene rifiutata). `decode` riceve il suo `Tactic[Http2.Error]`
++   come parametro `using` anziché tramite `raises`; i punti di chiamata sono invariati. (#2210)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 4 0 040233f1bbf3c4f502bd02b61f8c6b17
++ - `Aggregable.map` restituisce un'istanza il cui `accept(stream)` inoltra all'`accept`
++   dell'istanza mappata (prima era una lambda che raggiungeva l'istanza mappata solo tramite
++   `aggregate` su una catena materializzata), quindi un aggregable mappato trasmette in stream
++   ogni volta che lo fa la sua sorgente. Nessuna modifica di firma. (#1249)
+
+% 0 1 0 05ae2e565038e46506b8cc852c20137f
+
+@ 0 24 0 12f968b8b36174000bc06e5cce76d0f8
++ - `GridSurface`, `ScreenRoot`, `InlineRoot`, `FlowExtent` ed `Extent` seguono `Board`: i loro
++   metodi di disegno e di inquadratura (`reshape`, `reframe`, `reset`, `anchor`, `finish`, …) sono
++   `update def`. `ScreenRoot.apply(terminal)`/`InlineRoot.apply(terminal)` restituiscono
++   `X^{terminal.rd, caps.any}` (erano `X^{terminal}`); `ScreenRoot.apply(width, height)` e
++   `InlineRoot.apply(width, height)` restituiscono un `X^` nuovo. `ScreenRoot` e `InlineRoot`
++   ricevono thunk di dimensione tipizzati `() ->{caps.any.rd} Int` (erano `() => Int`). Un
++   `FlowExtent` usato come `Stdio` si fornisce come `(Stdio^{extent})`. (#2206)
++ - `ultimatum.Form` è una capability esclusiva e con stato (`caps.ExclusiveCapability`,
++   `caps.Stateful`): `Form(...)` è un `apply` del compagno con i parametri e i valori predefiniti
++   del costruttore, che restituisce `Form^{root, wake, scheduleWake, caps.any}` — il modulo
++   conserva la sua board e le sue callback di risveglio — e `run` è un metodo `update`. Un modulo
++   appartiene alla chiamata che lo esegue: lo si tenga in una variabile locale o lo si passi come
++   `Form^`; una closure che lo cattura lo tiene in sola lettura e non può chiamare `run`. I punti
++   di ingresso `ultimatum.form` sono invariati. (#2210)
++ - `ultimatum.Reading#amend(lambda: status => status): Unit` è una transizione compare-and-set:
++   `lambda` può essere invocata più di una volta quando un altro task aggiorna la lettura in
++   concorrenza, quindi deve essere pura (senza effetti collaterali). Le chiamate concorrenti di
++   `amend` non perdono più aggiornamenti, e `Reading#apply`/`update` sono visibili tra i thread.
++   (#2238)
++ - Le modifiche di `ultimatum.Panes` (`append`, `prepend`, `insert`, `insertBefore`,
++   `insertAfter`, `remove`) sono transizioni compare-and-set atomiche: le modifiche concorrenti da
++   più task non perdono più riquadri, e `insertBefore`/`insertAfter` individuano `reference` nello
++   stesso vettore che modificano. Firme invariate. (#2238)
++ - I frame di `ultimatum.Inlay` sono serializzati sotto un mutex, e `finish()` su un thread ferma
++   in modo affidabile il task di animazione e sopprime qualsiasi frame ancora in corso, così
++   nessun frame viene scritto dopo che il blocco è stato cancellato. Firme invariate. (#2238)
+
+% 0 1 0 01a924463d4d2ade199e4991ad39d095
+
+@ 0 3 0 0774197a9a4fcfdc123fe9abee36aba2
++ - `urticose.Internet` (e quindi `Online`) è classificato come `caps.SharedUnscoped` anziché
++   `caps.Unscoped`: l'accesso alla rete è ambientale e può essere usato da qualsiasi task. (#2212)
++ - `Internet` (`Online`) è `anticipation.DurableUnscoped`. (#2217)
+
+% 0 1 0 0daabac2e02218c20d4f9d914c51325b
+
+@ 0 9 0 16146260d191fdbb05f331a322807a32
++ - `vivisection.Jdwp.Connection` è classificato come `caps.SharedCapability` anziché
++   `caps.ExclusiveCapability`: è guidato contemporaneamente dai suoi task di scrittura, lettura e
++   smistamento e dal thread della sessione. (#2212)
++ - L'`observer` di `vivisection.Dap.listen` è `Text ->{caps.any.only[caps.SharedCapability]} Unit`
++   (gira sul task di scrittura), e il suo parametro `stdio` è `consume`: il task di scrittura
++   possiede gli stream standard, quindi il chiamante non può usare `stdio` dopo aver chiamato
++   `listen`. (#2212)
++ - `Jdwp.Reader` è una classe `caps.Mutable`: la decodifica fa avanzare la sua posizione.
++   `Connection.request` e `bytecodes` restituiscono `Reader^`, e il codice che legge le risposte
++   le tiene come `Reader^` e le passa a parametri tipizzati `Jdwp.Reader^`. (#2230)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 9 0 0b45bdb55f50f50c1084cafa7da0594a
++ - Il package di scelta `xmlSchemas` esporta `freeformXmlSchema: XmlSchema`, e l'ombrello lo
++   rispecchia, così `import xmlSchemas.freeformXmlSchema` fornisce lo schema di cui ogni lettura,
++   caricamento o `Provider` di `Xml` ha bisogno, nello stile di `charsets.utf8Charset`. Un
++   `given XmlSchema = XmlSchema.Freeform` scritto a mano funziona ancora e può essere sostituito
++   dall'import. (#2194)
++ - I decodificatori primitivi (`int`, `long`, `short`, `byte`, `double`, `float`, `boolean`) sono
++   tipizzati con la cattura della loro tattica, come in `(Int is Decodable in Xml)^{tactic}`,
++   anziché essere sigillati come puri. `Xml#as` prende una prova che cattura,
++   `(using decodable: (result is Decodable in Xml)^)`, poi un semplice `Foci[Xml.Focus]`, anziché
++   un context bound e un risultato `tracks`; le chiamate sono invariate. (#2229)
+
+@ 0 12 0 12395cd7b82ab4770011e39f30caa366
++ - `Xml.aggregableText2` è il nuovo nome del given `Xml is Aggregable by Text` (era
++   `Xml.aggregable2Text`); di norma viene evocato strutturalmente, quindi solo un riferimento per
++   nome richiede la ridenominazione. `read[Xml]`, `read[Svg]`, `read[T in Xml]` e le altre letture
++   di frammenti ora accettano una dichiarazione `<?xml …?>` iniziale e la scartano in silenzio,
++   dove prima fallivano con `Parse.Error … <xml> is not a valid tag`; solo `load` conserva la
++   dichiarazione, come metadato `Header` del documento. Una dichiarazione in qualsiasi posizione
++   diversa dalla prima (dopo l'elemento radice o dopo un'altra istruzione di elaborazione) viene
++   ora rifiutata da `load` oltre che da `read`. (#2193)
++ - Un semplice valore `Encodable in Xml` può essere assegnato attraverso una lente di panopticon
++   su un `Xml` (`xml.lens(_.Worker = Worker(t"Alice", 30))`, `xml.lens(_(Each) = 0)`) senza
++   import: il given dell'oggetto compagno `Xml.xmlConversion` fornisce la coercizione, quindi,
++   diversamente dagli altri formati, non c'è alcun `conversions.encodableToXml` da importare. Si
++   tratta di un comportamento documentato e testato, non nuovo; non serve alcuna modifica al
++   codice. (#1384)
+
+% 0 1 0 13926ea68e2a12bc06586c6b37c38cfd
+
+@ 0 6 0 03be4403e8fb5b59133ab19d2a01c885
++   `Xml.aggregableParsed`, `Xml.aggregableParsedText`, `Xml2.aggregableIn` e
++   `Xml2.aggregableInText` prendono un parametro `using` aggiuntivo
++   `buffering: zephyrine.Buffering`, che si risolve in `Buffering.standard` a meno che non ce ne
++   sia uno nell'ambito. Ciascuno ora fa l'override di `accept`, così una sorgente stream
++   (`read[Xml]`, `read[Foo in Xml]`) viene analizzata man mano che arriva (uno stream di testo
++   viene codificato in UTF-8 strada facendo) anziché essere prima svuotata in una `Chain`; un
++   errore di parsing viene sollevato quando il parser lo raggiunge.
+
+% 0 1 0 1811445c859c94061da0a2ffed0e34b8
+
+@ 0 5 0 1ba43de4187007400ae19ca6200f8e72
++ - `xylophone.Inlinable` (con il suo oggetto compagno) è passato dall'artefatto
++   `xylophone.staged` a `xylophone.core`; il nome completamente qualificato è invariato, e
++   `xylophone.staged` dipende ancora da `core`. Un'istanza di `Inlinable` scritta dall'utente, e il
++   `Discriminable in Xml` di una somma sigillata, vengono ancora valutati al momento
++   dell'espansione solo quando `xylophone.staged` è sul classpath di compilazione.
++   `xylophone.stagedInternal` è rinominato in `xylophone.inlining`. (#2251)
+
+% 0 1 0 1f752abdd12c4f920aa1fc7c0aca23a0
+
+@ 0 7 0 0a71055dfdc73ce41af5291464d31e43
++ - `Yaml.Tracking` (l'enum `On`/`Off` e il suo given `default`) è stato rimosso; il tracciamento
++   delle posizioni YAML si seleziona con l'interruttore condiviso `zephyrine.PositionTracking`,
++   come per JSON, TEL, XML e HTML. Si sostituisca `given Yaml.Tracking = Yaml.Tracking.On` con
++   `import parsing.trackPositions` (o `given PositionTracking = PositionTracking.On`), e un
++   parametro using `Yaml.Tracking` con `PositionTracking`.
++ - `Yaml.parseAll` non è più pubblico. Si legge uno stream di più documenti con
++   `text.read[List[Yaml]]`, che rispetta `parsing.trackPositions` allo stesso modo.
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 9 0 0227e6b270623f4906ede3f2fa915c91
++ - Novità: `intake.ingest(stream)` acquisisce uno stream intero, come fa `stream.pump(intake)`, e
++   restituisce l'intake (tipizzato come la classe stessa del chiamante), così ciò che ha raccolto
++   può essere letto senza un secondo riferimento: `Gather().ingest(bytes.stream).data`. `pump`
++   continua a consumare il suo intake. (#2217)
++ - `Ductile` estende `Typeclass` anziché `Typeclass.Pure`, perché un'istanza può catturare ciò
++   attraverso cui i suoi duct sollevano errori. `stream.via(stage)` e `intake.accepting(stage)`
++   prendono l'istanza come prova che cattura, `using ((stage is Ductile by in) { … })^`.
++   Un'istanza `given` di Ductile che cattura una tattica la dichiara nel suo tipo,
++   `((… is Ductile …))^{tactic}`, anziché nasconderla dietro un cast; un'istanza che non cattura
++   nulla non richiede modifiche. Un `Ductile` personalizzato il cui `Self` è un tipo puro scrive il
++   suo parametro `duct` come `consume stage: Self`, senza `^`.
+
+% 0 1 0 13f179e11bb7ea761f65b7fb54e39d4d
+
+% 0 1 0 0862a71b3bceb6170481783ef504f6a7
+
+% 0 1 0 00f35d5d7c41def71e715ddeb1b22857
+
+@ 0 21 0 1375d0221df9e2270ed1639363218d13
++ - Nuovo `directory.archive[Zip](flags*)` (`Zip.Archivable[plane]`): ogni discendente diventa una
++   voce, le directory come voci di directory, ordinate in preordine, con l'orario di modifica di
++   ciascun file; i link simbolici vengono seguiti. La flag è una `Zip.Compression`, che ha la
++   precedenza su quella contestuale. (#1713)
++ - `Zipfile.write(path, prefix)(entries)` è stato rimosso, insieme a `Zip.Event.Wrote`: si scriva
++   `path.write(Zipfile(entries, prefix = prefix))` (il `write` di galilei per file interi; stesso
++   comportamento di sovrascrittura sul posto) o si faccia lo stream di `Zipfile(entries)` ovunque
++   vada uno `Streamable`. Il controllo delle voci duplicate è passato da `write` a
++   `Zipfile#serialize`, che ora prende `(using Tactic[Zip.Error])` e solleva `DuplicateEntry`
++   prima di produrre qualsiasi byte; il given `Zipfile is Streamable` richiede quindi una
++   `Tactic[Zip.Error]` nell'ambito. `Zipfile.read` è invariato. (#1713)
++ - `ZipBuilder`, `JarBuilder`, `ZipBuilder.ZipCreatable`, `ZipBuilder.JarCreatable` e i given
++   `Zip.creatable`/`Jar.creatable` sono stati rimossi, quindi `path.create[Zip]()` e
++   `path.create[Jar]()` non si risolvono più: si costruisce uno `Zipfile` di `Zip.Entry` e lo si
++   scrive. `JarBuilder#manifest(attributes*)` diventa `Jar.manifest(attributes*)(using
++   Zip.Compression): Zip.Entry`, la voce `META-INF/MANIFEST.MF` con lo stesso ritorno a capo a 72
++   byte, da mettere per prima nello `Zipfile`. Gli export `ZipBuilder` e `JarBuilder` di
++   `soundness` non ci sono più. (#1713)
++ - L'accessor di archivio contestuale `zeppelin.zip`, lo handle aperto dentro un blocco
++   `path.open[Zip]()` o `open[Jar]()`, è rinominato in `zipfile`: `zip.entries` e `zip.manifest`
++   diventano `zipfile.entries` e `zipfile.manifest`. `soundness` ora esporta al suo posto lo `zip`
++   di collezione di murmuration, così `list.zip(other)` funziona con `import soundness.*`.
++   (#2260)

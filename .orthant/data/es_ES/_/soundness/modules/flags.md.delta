@@ -1,0 +1,178 @@
+orthant 2 language
+
+@ 0 1 0 1e27888a8077ad330195dde358cb1af9
++ ## Indicadores de bits
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 4 0 0657daf8459867d715d2a25b406ff657
++ Un `Flags[Color]` es un conjunto de interruptores de encendido o apagado, uno por cada caso de la
++ [enumeración] `Color`, guardado en los bits de un único `Long`. Un indicador se activa y se
++ comprueba nombrando su caso, nunca mediante un número de bit. El valor sigue siendo una palabra de
++ máquina, así que es tan barato de copiar y almacenar como un número, pero se lee como un conjunto.
+
+@ 0 1 0 09003c2b61b3b1e219e01362042ed5c5
++ ### Sobre los conjuntos de indicadores
+
+@ 0 4 0 0e038f2237c8089d0970a8a0d4d1bff9
++ Los indicadores de bits son una de las estructuras de datos más antiguas de la programación de
++ sistemas. Un programa escribe `flags | 0x10` para activar una opción y `flags & 0x04` para
++ comprobar otra, y el significado de cada bit se registra en un comentario, si es que se registra en
++ algún sitio. Vale la pena conservar la representación compacta: un `Set[Color]` cuesta una
++ asignación de memoria y varios punteros para guardar lo que cabe en una palabra.
+
+@ 0 2 0 1c7382c8ac24dce50b1b695711f745af
++ No vale la pena conservar el acceso sin tipos. Nada impide que un programa compruebe un bit que
++ pertenece a otro conjunto de opciones, o un bit que no significa nada en absoluto.
+
+@ 0 5 0 08cb35f0f0d540d206414f586a1d01fa
++ `Flags` conserva la palabra y da tipos a los bits. Cada caso de una enumeración posee el bit de su
++ ordinal: el primer caso posee el bit 0, el segundo el bit 1, y así sucesivamente. Un indicador solo
++ puede nombrarse mediante un caso de la enumeración correcta, así que un indicador de otro conjunto
++ de opciones es un [estado imposible](../../philosophy/impossible-states.md), rechazado en
++ [tiempo de compilación]. Todo procede del paquete `soundness`. La segunda importación permite a los
++ ejemplos imprimir sus resultados:
+
+% 2 1 0 164ef4a6940728531a774ec13f38821d
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1ad63f40983f77ce16bc0dcfa9ef4781
++ ### Activar y comprobar indicadores
+
+@ 0 1 0 13c2418a1020370b09fc900f219f85d1
++ `Flags[Color]()` crea un conjunto de indicadores para la enumeración `Color`, con todos los
++ indicadores desactivados:
+
+% 2 1 0 0948bd109f6c13811b4e761063799851
+
+% 0 1 0 047e0b908db5c1d81b4c3f89e7516876
+
+% 0 1 0 07994bdddbc43b40073a203eb509aaf3
+
+% 0 1 0 1c5a4dfad6c00edf16fdf2572f3d57f7
+
+% 1 1 0 125fa9ba2111d7640a4acdba83a3c5ff
+
+@ 0 2 0 0b2db63335cba8c705e0bb11ef925aa2
++ Asignar `true` a un caso activa su indicador. Un valor `Flags` es [inmutable], así que la
++ asignación es una expresión cuyo valor es un nuevo conjunto de indicadores, y `none` se queda como
++ estaba:
+
+% 2 1 0 192803c352e5b732116ac94e9f45df23
+
+% 0 1 0 1ad8f95a2820a1441c8f3318cc1cf120
+
+% 1 1 0 16bf228b75bbebcc1f37413bc5bdecf9
+
+% 0 1 0 1b346ac2dac547531c596eb9185f6811
+
+% 1 1 0 04f278a09a8a0c8e0f77cbb3227895d1
+
+@ 0 1 0 05db09f59d9cca80182aeb7d31661830
++ Aplicar un conjunto de indicadores a un caso comprueba su indicador:
+
+% 2 1 0 1f2bb7a01d97f231076f65099953ffea
+
+% 3 1 0 02535018a109a7c0052e0dc954f090b9
+
+% 4 1 0 060cb3eb4ee64db5176f1bd1c556ae34
+
+% 0 1 0 1f0db126808683c515149f8048309343
+
+% 0 1 0 193830a9aff184f713689370ea754da5
+
+% 0 1 0 107102d95cb319ae1c63eb592c898e5d
+
+% 1 1 0 078574710da8b926111ca9b2bb3eb160
+
+@ 0 2 0 1d36cc10a55b20d417ff12cdb6e20fa5
++ Un programa que cambia varios indicadores suele guardar el conjunto actual en una `var`, y le
++ vuelve a asignar cada nuevo conjunto. Asignar `false` vuelve a desactivar un indicador:
+
+% 2 1 0 17ce060f34ce65b01a0be59053261daa
+
+% 0 1 0 1136c4b8483491ba06babf6ee7ab7cab
+
+% 0 1 0 1fef0366440310cf143a19c879758e17
+
+% 0 1 0 0dfa5fa6833548010bd43fd7f6736dd9
+
+% 0 1 0 19a76cc7acc8b2750088ce0fd18f2fa2
+
+% 0 1 0 16b7c7e5b5916a6b035a0e65a0ac96d8
+
+% 1 1 0 04437123bce726d80d4248626c0d7fac
+
+@ 0 2 0 1843e1a32988c8bd00098213111506a9
++ Como cada paso produce un valor nuevo, un conjunto de indicadores puede compartirse entre hilos, o
++ almacenarse en otra estructura de datos, con la misma seguridad que el `Long` que es.
+
+@ 0 1 0 09f5e0addeba2c5f0fd2c6de3d351d57
++ ### Los indicadores como conjunto
+
+@ 0 2 0 0211b242db1442770a830513807b0fe4
++ `set` lee los indicadores activados como un `Set` corriente de los casos de la enumeración, listo
++ para la iteración y las [operaciones de conjuntos](collections.md#sets-and-maps):
+
+% 2 1 0 045797fdc118a9e90b9f2c0159836228
+
+% 3 1 0 06a21a9aa33439c109a142797b1dace2
+
+% 4 1 0 1417fcf3bf991d5414f7eddeb2532f79
+
+% 0 1 0 1e413f10dc5d8abf07f75b8bb33a6892
+
+% 0 1 0 10693cccac605cc702d4edfe4b4fce40
+
+% 1 1 0 15bdbf10b54f591b03bd3816673bd3d7
+
+@ 0 1 0 1d5688beeece252907ec96cc14750fd6
++ ### Lo que rechaza el compilador
+
+@ 0 2 0 088c907e025585e41f4d00a9a9fde784
++ Un conjunto de indicadores solo acepta los casos de su propia enumeración. Un caso de otra
++ enumeración es un error de tipos, mientras que una máscara de bits en bruto habría comprobado en
++ silencio el bit que ocupara la misma posición:
+
+% 2 1 0 15c9106b63e5ac3d1d600f69bf940a81
+
+% 0 1 0 18677da809aa96ae0f798a9e76197f91
+
+% 0 1 0 1a2b4cf4f0bf96d80dcde922772c4ba0
+
+% 1 1 0 1da5cc49e162bc8911cc0d5541103b44
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0510db5062dd20591db653ae99d065f0
+
+% 1 1 0 0d5bab44fa635adc1a553c02c250d916
+
+@ 0 1 0 1d4b57af7c7c7a600428d7a034208ea3
++ ### Cuántos indicadores
+
+@ 0 5 0 0d7885b1221fe6a70ea2d5887fa16dc4
++ Un indicador ocupa el bit del ordinal de su caso, y un `Long` tiene 64 bits, así que una enumeración
++ de hasta 64 casos cabe en un conjunto de indicadores. Los casos, sus nombres y sus ordinales
++ proceden de la instancia `Enumerable` de la enumeración, que se [deriva][derivación] de la
++ declaración `enum`;
++ [Enumeraciones por nombre y posición](decoding.md#enumerations-by-name-and-position) muestra qué más
++ proporciona esa instancia.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 1 0 09420069984bb0a01ba85f39fde87f94
++ - [Números](numbers.md) y [datos binarios](binary-data.md) describen los bits que hay bajo un conjunto de indicadores.

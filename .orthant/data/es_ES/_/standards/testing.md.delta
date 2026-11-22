@@ -1,0 +1,140 @@
+orthant 2 language
+
+@ 0 1 0 0347f2f17bafdb50062aa78671957587
++ # Normas de pruebas de Soundness
+
+@ 0 4 0 180093f96fd176021b81726097449021
++ Este documento define cómo se escriben y organizan las pruebas en las bibliotecas de Soundness.
++ Las pruebas usan [Probably](https://github.com/propensive/probably/). Complementa `syntax.md`
++ (espacios en blanco y formato) y `benchmarking.md` (medición del rendimiento). Los ejemplos
++ proceden de `lib/*/src/test/*.scala`.
+
+@ 0 1 0 128121213fd1bbc803c5506b0f37a470
++ ## 1. Ubicación y nombres
+
+@ 0 2 0 124fa5e2f4941d520e30c1d16e903188
++ Las pruebas viven en el directorio `src/test` de un módulo. El objeto de pruebas extiende `Suite`
++ e implementa `run()`:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 18044bee7505f5bf1ce827a4102a630d
+
+% 0 1 0 05b21312d4476d490bedde74e2206bb2
+
+% 1 1 0 176ab5997d1a33eb01209ac7d07807b2
+
+@ 0 4 0 06149e7724a0030112a6316081df5f95
++ El título de la suite es un `Message` que nombra el módulo que se prueba. Antes de él va el
++ identificador de la suite, un literal de cadena con el que una selección se dirige a ella:
++ `fume run logging`. El identificador nombra para qué sirve el módulo, no el módulo. Mantenlo
++ corto, y de una sola palabra salvo que hagan falta dos:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 0a63bb414baca57611071104030a64c7
+
+@ 0 5 0 008eff1543a49b3a0846990ffbb75109
++ column  Identificador
++ column  Ejemplo
++ row  la suite de un módulo  para qué sirve el módulo  `logging`, no `eucalyptus`; `html`, no `honeycomb`
++ row  la suite de un área, en `<module>.<Area>Tests.scala`  el identificador del módulo y el área  `json-parser`, `json-records`
++ row  una suite declarada solo por su título  derivado del título; una alternativa, no la convención  `eucalyptus-tests`
+
+% 1 1 0 19131d8fbd3b873c1ff62a940a6261bf
+
+@ 0 2 0 0501f2d48853cec007dba1f2bde88f36
++ Un método fuera de `run()` que declara pruebas para la suite la nombra con el mismo
++ identificador: `(using Testable of "logging")`.
+
+@ 0 1 0 0061313c865e5a150c82da9f02a2b1b8
++ ## 2. Estructura
+
+@ 0 2 0 0f8bd52461a72d8e1915ccb9e902b2c4
++ Agrupa las pruebas relacionadas con `suite`, y escribe cada prueba individual con `test`; ambos
++ toman un `Message`:
+
+% 2 1 0 144d93b1cccb8a680fe040b3ab5d5c48
+
+% 0 1 0 08d8de7dbf1cc98c049469de2e9093da
+
+% 0 1 0 0197b8799e87450007239635f36ada27
+
+% 0 1 0 07dd18d8e9cc763a0b80c686049aa059
+
+% 0 1 0 14ec7224cc90e62c14f570d31d599f84
+
+% 1 1 0 0a11c3e11d36e44607d976454a563117
+
+@ 0 3 0 14ae5fdc7767086913c23013f0c4366e
++ Un bloque `test` se evalúa en el valor que se examina; el `assert` (o `check`) que lo sigue
++ indica qué debe cumplirse sobre él. Mantén una sola aserción lógica por prueba, de modo que un
++ fallo nombre exactamente lo que se rompió.
+
+@ 0 1 0 173d5eecb643b08607fe9647174bede1
++ ## 3. Nombres de las pruebas
+
+@ 0 3 0 10c5c51761cebeb3112f0f6a88d0d5d8
++ El nombre de una prueba es una frase `m"..."` breve y descriptiva, **de menos de 70 caracteres**,
++ que enuncia la propiedad que se verifica y no el método al que se llama. Es preferible
++ `m"a malformed pointer fails to parse"` a `m"test parse"`.
+
+@ 0 1 0 17187bfaa3a48f95101f451f63dc7fc8
++ ## 4. Aserciones
+
+@ 0 2 0 0c7a58f97e3ff6d91fc47657120852e2
++ Las aserciones se escriben en estilo fluido, con el predicado aplicado al resultado del bloque:
+
+% 2 1 0 0322f92bdd85cf66122c7a47c4405425
+
+% 0 1 0 109cb27fc4219ebc0253866de87830ed
+
+% 0 1 0 06afe6fa56576f9c040c3a5e785e977b
+
+% 0 1 0 0c43bc8b58ae90dd00f2f33b9c7eb612
+
+% 1 1 0 14c66cf341f6d87f0507548f432f9f89
+
+@ 0 2 0 094e9caa128f18a418baba832f717d25
++ Compara con un valor esperado mediante `_ == expected`; usa un predicado para comprobaciones más
++ laxas. No lances excepciones ni uses `require`/`assert` de la biblioteca estándar.
+
+@ 0 1 0 1b6a6722be2eafb20c9dbafbaaec5898
++ ## 5. Estrategia de errores
+
+@ 0 3 0 0a3e882742e9a6c110d4517f32f1d2f0
++ Una prueba que ejercita código falible elige explícitamente una estrategia de errores, por lo
++ general importando `strategies.throwUnsafely`, de modo que un fallo inesperado aflore como una
++ prueba fallida y no como un error tragado:
+
+% 2 1 0 06b6f0785ac9e27200a98f376348778b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 199604dd69404d1c072e5c78d6e478c1
++ Para probar que un fallo *sí* se produce, captúralo y haz la aserción sobre su motivo en lugar de
++ dejar que se propague.
+
+@ 0 1 0 0b7bb768997e6f391ef13cb91e531c71
++ ## 6. Pruebas en tiempo de compilación
+
+@ 0 4 0 0bb78481e4b927c717d8d59ab7ae96a3
++ Para comprobar que el compilador *rechaza* un código —que un estado imposible de verdad no puede
++ escribirse—, usa [Larceny](https://github.com/propensive/larceny/), que captura los errores de
++ compilación como valores que una prueba puede inspeccionar. Un ejemplo `// does not compile` de
++ la documentación debe tener la prueba de Larceny correspondiente.
+
+@ 0 1 0 0f0b43066f3a0ee80a85f91378ec5c13
++ ## 7. Qué probar
+
+@ 0 4 0 07f06ddba67f12f819f5e00fad6c73aa
++ Prueba el comportamiento del que depende un usuario: el resultado de cada operación pública, los
++ casos límite (vacío, ausente, máximo) y los fallos que deben lanzarse. Prueba que las
++ construcciones no válidas no compilan. No pruebes directamente los detalles internos privados;
++ llega a ellos a través de la superficie pública.

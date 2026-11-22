@@ -1,0 +1,18 @@
+orthant 2 release
+
+@ 0 1 0 18cb759e1bee9fe71a930c0160fdd3eb
++   entry .int   decodes an `Int` from decimal text, distinguishing unparseable from out-of-range
+
+@ 0 2 0 0cfbf92878da45e30e84a6a9a59c87ce
++       optionally-signed decimal integer with no surrounding space. Text which is not an
++       integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the range
++       of an `Int` raises it with `Reason.OutOfRange`.
+
+@ 0 2 0 0b39ef3a51ac1cc900db4bdd8fafe4a0
++   entry .long   decodes a `Long` from decimal text, distinguishing unparseable from out-of-range
++       Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`. Text which is
++       not an integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the
++       range of a `Long` raises it with `Reason.OutOfRange`.
+
+@ 0 1 0 1e80b094f57bb4e7001878bf68d36213
++   entry .intDouble   widens an `Int` to a `Double`

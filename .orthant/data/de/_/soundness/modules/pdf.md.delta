@@ -1,0 +1,463 @@
+orthant 2 language
+
+% 0 1 0 1e7672bed938fea20e2c274f11822a4a
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 5 0 038300076122094813c64a4888990299
++ Ein [PDF](https://en.wikipedia.org/wiki/PDF)-Dokument wird als typisierter Wert gelesen: seine
++ Seiten und ihre Geometrie, der darauf gesetzte Text, die verwendeten Schriften, seine
++ Metadaten, Lesezeichen, Links und Anhänge. Ein Dokument wird auch bearbeitet. Inhalt wird
++ ersetzt, Seiten werden angehängt oder entfernt, Schriften eingebettet, Metadaten und Links
++ gesetzt. Eine Bearbeitung hängt an die Datei an, statt sie neu zu schreiben, sodass die
++ ursprünglichen Bytes unberührt erhalten bleiben.
+
+@ 0 2 0 169bc4b59bdda91b0ed4553a2e8bb307
++ Alles ist direkt gegen das Format implementiert: die Objektsyntax, die Querverweistabellen, die
++ Stream-Filter, die Verschlüsselung. Nichts wird an eine externe PDF-Bibliothek delegiert.
+
+@ 0 1 0 0a1fba2b558272481c63f012c683ea64
++ ### Über PDF
+
+@ 0 6 0 0e591048436142681baa4262f72af2f4
++ Die äußere Schicht von PDF ist COS, eine kleine Objektsprache aus Zahlen, Namen, Strings,
++ Arrays, Dictionaries und Streams, die über indirekte Referenzen adressiert und durch eine
++ Querverweistabelle am Dateiende indiziert werden. Ihre innere Schicht ist ein Content-Stream:
++ eine Stackmaschine, deren Operatoren Glyphen auf eine Seite setzen. Keine der Schichten ist
++ schwierig, und beide verzeihen nichts. Ein Querverweis-Offset kann um ein Byte falsch sein. Die
++ deklarierte Länge eines Streams kann seinem Inhalt widersprechen. Ein Objekt kann in einem
++ Update vorhanden sein und im Original fehlen.
+
+@ 0 8 0 1b2ae3ccb5c31aa6103f631a711e8767
++ Ein solches Format gut zu lesen heißt, nie anzunehmen, dass die Datei wohlgeformt ist, und nie
++ mehr davon zu halten als nötig. Ein Dokument wird *geöffnet*, was die Datei abbildet und ihre
++ Querverweistabelle liest. Seiten, Metadaten und Text werden über diesen Geltungsbereich gelesen.
++ Die Nutzdaten eines Streams werden lazy abgerufen, über ihre Filterkette dekodiert und beim
++ Eintreffen nicht materialisiert. Ist ein Dokument so beschädigt, dass seiner Querverweistabelle
++ nicht mehr zu trauen ist, wird es wiederhergestellt, indem die Datei direkt nach Objekten
++ durchsucht wird. Ein Dokument lazy über einen Geltungsbereich zu lesen, dem die Datei gehört,
++ ist die Gestalt, die unter
++ [abgegrenzte Geltungsbereiche](../../philosophy/delimited-scopes.md) beschrieben wird.
+
+@ 0 2 0 03e2dc938a74c96a0d4c45ebc82ef710
++ Alles stammt aus dem Paket `soundness`, mit einer [Strategie] für Fehler, einer Textkodierung
++ für den Inhalt, der geschrieben wird, und den Importen, mit denen die Beispiele ihre Ergebnisse
++ ausgeben:
+
+% 2 1 0 18eb85d10c9e973c01a070e263818d0f
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0c8ca1fa23c1001a108cad44af2db4cc
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 1 1 0 094aca692f9a6d410ad91b7490aef935
+
+@ 0 1 0 0edc64547be110a61ebd7c33f369b775
++ ### Ein Dokument erstellen
+
+@ 0 4 0 07725922fbe6c9ce03c1d77e91699305
++ Ein Dokument wird an einem Pfad erstellt und im Geltungsbereich des Blocks geschrieben. Ein
++ frisches Dokument hat einen Katalog und einen leeren Seitenbaum, und `appendPage` fügt eine
++ Seite mit der Media-Box hinzu, die sie haben soll. Boxen sind [Größen](quantities.md) in
++ Punkt, keine bloßen Zahlen, sodass eine A4-Seite 595 mal 842 Punkt misst:
+
+% 2 1 0 051d548165d0506b08b94034e6f0180e
+
+% 0 1 0 0d2ccedf0a394c0216ce0e99f2642654
+
+% 0 1 0 0ba168039159df820993b40d085dfc0c
+
+% 0 1 0 0ac3e19d38f44df406a3a74b2a16be86
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 1f64538ba479ce9c0859df4f3b9f340e
+
+% 1 1 0 021b5cc7a3dc29b206dfe0cb8b621306
+
+% 3 1 0 006c6014e146c0650682b77104f2def2
+
+% 4 1 0 013d0d3ac7a33cb01f57be6f1fcb57dc
+
+% 5 1 0 06d5aaa55a9a18611723541ead6c39a9
+
+% 0 1 0 0dcd0390d13cf5e502bbefa61218347c
+
+% 0 1 0 079436508250c267154a728fb3671c20
+
+% 1 1 0 0a3b69bfb91ab55d1bad2c5668101452
+
+@ 0 2 0 17e88320bf57085d0574476e5840039a
++ Die Datei wird vollständig in ein temporäres Geschwister geschrieben und atomar an das Ziel
++ verschoben, sodass ein Fehlschlag mittendrin nichts hinterlässt.
+
+@ 0 1 0 110b601efc93c96d0a530634fe6d451a
++ ### Ein Dokument öffnen
+
+@ 0 2 0 1259420426d7cc7e0bad1667dc92318b
++ Ein Dokument wird von einem Pfad oder aus Bytes geöffnet und im Geltungsbereich des Blocks
++ gelesen. Der Accessor `pdf` erreicht das kontextuelle Dokument:
+
+% 2 1 0 1c47c70a949042aa06a2e01bbe9d471a
+
+% 3 1 0 1eb9b54dd831f6f307005331f757e475
+
+% 4 1 0 118e7d79d3321b1b0335af827abf73ad
+
+% 5 1 0 1068b7f9ec33d5e601287b758c8e51ae
+
+% 0 1 0 049edda24dec76b0152f5bdecbe2af07
+
+% 0 1 0 1acaff10b75185de16740353b2df9514
+
+% 1 1 0 0d80bada443ebe0101036d221f855e14
+
+@ 0 2 0 1c97e7defefad3960852c64e5570f43a
++ Das Öffnen zum Schreiben nimmt den Modus `Read & Write` und liefert das Dokument als Handle,
++ dessen Bearbeitungsoperationen nur mit der `Write`-Berechtigung erreichbar sind:
+
+% 2 1 0 1491c04d069e4b040674a3f8fa8228b4
+
+% 3 1 0 01f4db906ecf582e1b593e19132a3b42
+
+% 4 1 0 1308ff840b4246ec1da71ca3e45becb9
+
+% 5 1 0 0ff42861fe5ae18415f98c64755d9e0b
+
+% 0 1 0 1f4837e147cbfbb31b23c977bf3957f5
+
+% 1 1 0 0ee459615f9f51a710467124debe6397
+
+@ 0 3 0 1ecb891bb7004c5d039baf5275e1759d
++ Ein verschlüsseltes Dokument wird durch Angabe seines Passworts geöffnet, das beim Öffnen des
++ Dokuments geprüft wird und nicht erst, wenn ein String zum ersten Mal entschlüsselt wird. Ein
++ Passwort ist ein Geheimnis, daher muss ein [`Cloak`](cryptography.md) im Geltungsbereich sein,
++ der angibt, wo es gespeichert wird:
+
+% 2 1 0 1105170254b5267f0ee2d4f0181d26b5
+
+% 3 1 0 10321ff11c0a8efb1ac9f2c7aa4843f8
+
+% 4 1 0 0b8c04c2bb4e560f0c9973df161c2abc
+
+% 0 1 0 0e420dc0f15b9ffe1bcc5f9461b53f86
+
+% 0 1 0 1898ba8e2a62cf0818067577c004ec47
+
+% 0 1 0 09732778d7e7c01d15f59e5f6f0da0ae
+
+% 1 1 0 027a549de7c365b2120d172ac12b582e
+
+@ 0 2 0 0d2315df2cede9bc1c3dfa74d895296d
++ Der Standard-Security-Handler wird über RC4 und AES-256 unterstützt. Ein Public-Key-Handler
++ löst einen `Pdf.Error` aus, der die Verschlüsselung nennt, die er nicht verwenden kann.
+
+@ 0 1 0 0ceaeb262dd8c9220bed09f9c9978e61
++ ### Seiten
+
+@ 0 3 0 1296d34c10e69dbc0b16ad4193fb385f
++ Der Seitenbaum wird zu einer Folge abgeflacht, indiziert nach [Ordinalzahl](numbers.md),
++ sodass `Prim` die erste Seite ist. Die Geometrie jeder Seite wird gegen die Vererbung
++ aufgelöst, die das Format erlaubt, sodass eine an der Wurzel des Baums deklarierte Media-Box
++ für jede Seite darunter gilt:
+
+% 2 1 0 0a2d3a6736c599c116de104c27a71a3f
+
+% 0 1 0 17505d373a3a7f960a31cf8752b64a18
+
+@ 0 5 0 1bfe9e303a317bce1f403cab71ad31e4
++ column  Vererbt
++ column  Andernfalls
++ row  `mediaBox`  ja  ein `Pdf.Error`, da eine Seite eine haben muss
++ row  `cropBox`  ja  die Media-Box
++ row  `bleedBox`, `trimBox`, `artBox`  nein  die Crop-Box
+
+% 1 1 0 1d21fec7b580672e12b8d01975bea9ff
+
+% 3 1 0 0e4d90d2142180b8144dd7a586356106
+
+% 4 1 0 00fb5526f8ea7dad1f6e9f2eaf74db58
+
+% 5 1 0 1b56044e625d5d81145b798092d9dd6e
+
+% 6 1 0 055eb14234c2830111425bd8cb96e197
+
+% 0 1 0 08dd81172ad2f0400efd9ecdff1cc1b9
+
+% 0 1 0 0c72d470f789f74b1923e4b7107c727f
+
+% 0 1 0 015c48ae734b5cb30edab5130e3c2d4a
+
+% 1 1 0 0b2b754fe2a10a5e06de1a3a92fe1c46
+
+@ 0 3 0 0b156331838aab44176d48ef1aaa6d70
++ `width` und `height` einer Seite berücksichtigen ihre Drehung; deshalb ist die oben um eine
++ Vierteldrehung gedrehte Seite jetzt 842 Punkt breit. Ein `/UserUnit` skaliert die Boxen. Die
++ gelesenen Maße sind die, die die Seite präsentiert.
+
+@ 0 1 0 0c6ffb56b6919d221febb8efc4468992
++ ### Text extrahieren
+
+@ 0 2 0 1b8cd98a1b42132713310dade7cde6a9
++ `text` einer Seite führt ihren Content-Stream aus und rekonstruiert die Lesereihenfolge aus
++ den Positionen der Glyphen:
+
+% 2 1 0 1ef6e8595ec0dd780a8b15f34335e87e
+
+@ 0 5 0 00d31974a26b919d17fadac35f4acda9
++ column  Zwischen zwei Textausgaben
++ column  Wird zu
++ row  eine Lücke entlang einer Grundlinie  ein Leerzeichen
++ row  ein Wechsel der Grundlinie  ein Zeilenumbruch
++ row  nichts: sie grenzen aneinander  nichts, sie laufen also zusammen
+
+% 1 1 0 0718e293ccfd3efd08502ad4b3f2b4dc
+
+% 3 1 0 10f8d861c69514a30527b36701c4574e
+
+% 4 1 0 05fa8e8c45808677160b0ead6d9f63a5
+
+% 5 1 0 19745569eb97960b12d5361c0b19c54c
+
+% 6 1 0 0f525cce5d32959a0e1419062f4905b3
+
+% 1 1 0 08b8ee12f4cbaad41912b4e08d8405a0
+
+% 2 1 0 1c7c5afd8b3b3d260eb123c29d0ca3da
+
+@ 0 2 0 03c75164eca9f0f51b8dbdb4d19dcd00
++ Die Seite hat noch keinen Inhalt, daher ist ihr Text leer. Positionierte Folgen sind ebenfalls
++ verfügbar, für einen Leser, der Koordinaten statt eines Absatzes braucht.
+
+@ 0 1 0 001124915de616d219896e1a826c0e2e
++ ### Metadaten, Navigation und Anhänge
+
+@ 0 4 0 10936b0f17c2b80e00c0eacb8424a30e
++ Das Dictionary der Dokumentinformationen wird als `Pdf.Info` gelesen, mit aus dem `D:`-Format
++ von PDF geparsten Datumsangaben, einschließlich ihres Offsets, wo einer angegeben ist. Ein
++ fehlerhaftes Datum wird als fehlend gemeldet, nicht als Fehler. Benannte Ziele werden entweder
++ über den modernen Namensbaum oder das alte `/Dests`-Dictionary aufgelöst, und Lesezeichen bilden
++ einen Baum von `Bookmark`-Werten:
+
+% 2 1 0 009616c8af9018f80754a40226fdf267
+
+% 3 1 0 1f1ef6ed041a90790de6a6931a1790c2
+
+% 4 1 0 1984456ecefce45c02f1c814f431801a
+
+% 5 1 0 061be71e33a7a4a51b240675196da669
+
+% 6 1 0 17bbf1d17eab58fa1c8cbeb275246a33
+
+% 0 1 0 13e4dce9cab1ceb11e9160e3b6f37e61
+
+% 0 1 0 017dbefb9794a4280dad73bb110b9f00
+
+% 0 1 0 1fa80bffee09ffb70e2f0b384a2c2b7a
+
+% 1 1 0 0e379f3053e8a6d1031531bdcf9bd52a
+
+% 1 1 0 1b440e4941d9ca400149df4968bef1a3
+
+@ 0 1 0 19321ee1388bddd103d075f79b254c7c
++ Jedes wird aus dem geöffneten Dokument gelesen:
+
+% 2 1 0 1ebf07e6562ee62212b65052aec06f83
+
+% 0 1 0 199417ca7761523d13722c4ed0652293
+
+@ 0 6 0 0e5df3f9c5f868e31664062426644a05
++ column  Liefert
++ row  `info`  die Dokumentinformationen, als `Pdf.Info`
++ row  `destinations`  die benannten Ziele, als `Map[Text, Pdf.Destination]`
++ row  `bookmarks`  die Gliederung, als Baum von `Bookmark`s
++ row  `attachments`  die eingebetteten Dateien
++ row  `annotations`, auf einer Seite  die Anmerkungen der Seite, als `List[Annotation]`
+
+% 1 1 0 0a2ddcf82a02dc77169ab8bfb1f37101
+
+@ 0 2 0 00da1b3e926da96909bdd251d8b42188
++ Eine Anmerkung ist ein typisierter Fall, etwa `Annotation.Link` mit ihrem Rechteck und ihrer
++ URI oder `Annotation.Note` mit ihrem Inhalt, und kein Dictionary, das nach Schlüssel untersucht
++ werden muss.
+
+@ 0 1 0 05dfe06c565cc7fd173a7eb60bad66cc
++ ### Bearbeiten
+
+@ 0 4 0 0ee790435f6d2d7a131a5e1eb06b370b
++ Bearbeitungsoperationen laufen in einem Schreib-Geltungsbereich und werden als inkrementelles
++ Update festgeschrieben. Die ursprünglichen Bytes bleiben, wo sie waren, und die geänderten
++ Objekte werden mit einem frischen Querverweisabschnitt angehängt. Ein Leser, der nur die
++ ursprüngliche Datei versteht, sieht weiterhin ein gültiges Dokument:
+
+% 2 1 0 1b0306d367819f981e873c878c4252db
+
+% 3 1 0 022e16a9a4af567f03e3b1d633ff68df
+
+% 4 1 0 1063e3cbc895ea0617cbf12c3c38f9f0
+
+% 5 1 0 09be4ce3b4247815106d86d4d11070f2
+
+% 0 1 0 077c89812ca7d42e17dfb705cf797e38
+
+% 0 1 0 1ce89a3c6cf48e17130ed5525354ef69
+
+% 0 1 0 1420d2b58c69ecc91a4fbc47f6dbecb8
+
+% 0 1 0 0beae9324d3f2f0511370599e926e6ef
+
+% 0 1 0 02ce522330b633010cd7083abb8fb3f0
+
+% 0 1 0 1f11357896e57d3a14888c288ef3930e
+
+% 0 1 0 070ce3912fbc8bb418cd75ddf4e2c7aa
+
+% 1 1 0 10610b930ca0816113097141be980cc5
+
+@ 0 1 0 05a8f6cc692d8df0129f9bb9a2cbd1fb
++ Das Dokument hat jetzt Metadaten und einen Link:
+
+% 2 1 0 0bc867fe432a940d0984ab8720bfe2aa
+
+% 3 1 0 0d0e1319dde1a01811eaf68549491647
+
+% 4 1 0 1d166de4b52b0f4e02fee762bf35bda8
+
+% 5 1 0 002ea417325db5541a62f02d67c8bf7f
+
+% 6 1 0 15cea25e6c40d7c20c8e6e4ab2e9ba49
+
+% 0 1 0 0a90e1dfe5394d7f15a62cf29deb118e
+
+% 1 1 0 17b17918a79324fa0f933c1329364991
+
+% 1 1 0 1e486c83d297ce6f0388d1c52e38e5ea
+
+% 2 1 0 1ff7ed35916cb491141e1c0fff8dd0f8
+
+@ 0 2 0 0abaf7a3fed040f113fe1830c189247e
++ Der extrahierte Text ist immer noch leer. Der Inhalt nennt eine Schrift, `F1`, die die Seite
++ noch nicht als Ressource hat und die der nächste Schritt hinzufügt.
+
+@ 0 1 0 17c00150158287b11d364c80ff1d8138
++ Dies sind die Bearbeitungsoperationen, neben den unten beschriebenen Schriften:
+
+% 2 1 0 12dc0b2b46f8b31f03bc1dbfabf3cbc9
+
+% 0 1 0 0021474943c19599105e7f12177dec1c
+
+@ 0 15 0 00c15fc09f9d6c8f0db1b6bd81ea8ca7
++ column  Bewirkt
++ row  `setContents`  ersetzt den Inhalt einer Seite durch eine Liste von Operatoren
++ row  `setRotation`  setzt die Drehung einer Seite
++ row  `setBox`  setzt eine der Boxen einer Seite, etwa `MediaBox` oder `CropBox`
++ row  `setPageEntry`  setzt einen beliebigen Eintrag des Dictionarys einer Seite
++ row  `addLink`  fügt eine Link-Anmerkung hinzu, zu einer URI oder einem Ziel
++ row  `setAnnotations`  ersetzt die Anmerkungen einer Seite vollständig
++ row  `setInfo`  ersetzt die Dokumentinformationen
++ row  `setBookmarks`  ersetzt die Lesezeichen vollständig
++ row  `appendPage`  fügt am Ende des Seitenbaums eine neue Seite hinzu
++ row  `removePage`  entfernt eine Seite, wobei eine unterhalb der ersten Ebene verschachtelte an ihrem Platz bleibt
++ row  `allocate`  fügt ein neues Objekt unter der nächsten freien Objektnummer hinzu
++ row  `newStream`  erzeugt ein Stream-Objekt, das alloziert oder referenziert werden kann
++ row  `set`  ersetzt ein Objekt per Referenz
++ row  `free`  löscht ein Objekt
+
+% 1 1 0 044616a595d8400a015a7dec1aa7c291
+
+@ 0 4 0 05f6125634381c0a1b00ea96ac3dba76
++ Eine [TrueType-Schrift](fonts.md), also jedes `Sfnt`, wird mit `embedFont` eingebettet. Es
++ schreibt das Programm als `FontFile2` und baut das einfache WinAnsi-Schrift-Dictionary darum
++ herum. `addResource` benennt die Schrift auf einer Seite, sodass der Inhalt sie auswählen kann.
++ Hier wird die Schrift aus einer Klassenpfad-Ressource geladen:
+
+% 2 1 0 026783b2f0500a6b1447ac3549f12ec3
+
+% 3 1 0 0f76ade5d3fcfc4b133e93307cf727f1
+
+% 4 1 0 1cb3a63f0004c83218218ad082904cf7
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 1 1 0 1bf13c5909f50a5a1a9c35434f0d7e94
+
+% 0 1 0 0683682e40d93291026314774db2523d
+
+% 0 1 0 1bd6f5c17984a154036be1d129a12df4
+
+% 1 1 0 00670e7d52159e7d1cdaa03026f432b2
+
+@ 0 1 0 00b7fe6333452b7e1724b22d7ac5a18c
++ ### Stream-Nutzdaten
+
+@ 0 3 0 074fb462efa20f5e1772fe3d6325b5c7
++ Die Nutzdaten eines PDF-Streams werden lazy gelesen, durch die Filterkette, die der Stream
++ deklariert, und durch die PNG- und TIFF-Prädiktoren, die oft darauf folgen. Die Bildfilter sind
++ das Ende der Kette. Das Dekodieren hält vor ihnen an, und stattdessen kommt das noch kodierte
++ Bild an:
+
+% 2 1 0 1d87e9462231ce23011a08a014caf544
+
+% 0 1 0 149a959d791cb4bf19d977b1b27b3bdd
+
+@ 0 5 0 048359b90c7786e41da2e90fe7107cbb
++ column  Gelesen als
++ row  `FlateDecode`, `LZWDecode`  die dekomprimierten Bytes
++ row  `ASCII85Decode`, `ASCIIHexDecode`  die dekodierten Bytes
++ row  `RunLengthDecode`  die dekodierten Bytes
++ row  `DCTDecode`, `JPXDecode`, `CCITTFaxDecode`, `JBIG2Decode`  das kodierte Bild, undekodiert
+
+% 1 1 0 17e7258512536ced1bc74feca1b85b18
+
+@ 0 2 0 0d5735cc46c7c94e13cf289fe8dc64ba
++ Die Nutzdaten kommen als [Stream](streams.md) von Bytes an, sodass eine große eingebettete Datei
++ oder ein großes Bild nie vollständig gehalten wird:
+
+% 2 1 0 0ff168d950cc1b060a25a8ad166ef7ac
+
+% 1 1 0 1476b882e3ddc43f0747774883053a4b
+
+% 0 1 0 06522f4f3d6643c1090721716c32b7f9
+
+% 0 1 0 0d181103229a92181ecf9ec724bff817
+
+% 0 1 0 13c8d5ea1afb710905000987caf96210
+
+% 1 1 0 0b7d5e6c0d32642518f909cb2631d4de
+
+@ 0 1 0 16ff23d00a55a5031b9109229a80fd27
++ ### Ein beschädigtes Dokument wiederherstellen
+
+@ 0 6 0 0a4235c7cdf77aef0e6f9af08d418d53
++ Wo eine Querverweistabelle fehlt oder falsch ist, etwa nach einem abgebrochenen Download oder
++ einer Reparatur durch ein anderes Werkzeug, wird die Tabelle neu aufgebaut, statt ihr zu
++ vertrauen. Die ganze Datei wird nach `N G obj`-Markern durchsucht, wobei die jüngste Kopie jedes
++ Objekts gewinnt, und der Trailer wird aus einem erhaltenen `trailer`-Dictionary oder aus dem
++ Katalog selbst wiederhergestellt. Einzeln verschobene Offsets werden korrigiert, während Objekte
++ aufgelöst werden. Ein Dokument, das jeder konforme Leser öffnen würde, öffnet sich auch hier und
++ wird genau wie jedes andere gelesen.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 7 0 0490aa2cac5bda7212066e9bba87f586
++ - [Schriften](fonts.md) beschreibt das `Sfnt`, das in ein Dokument eingebettet wird, und seine
++   Teilmengenbildung.
++ - [Größen](quantities.md) beschreibt die Punkt, in denen Boxen gemessen werden.
++ - [Dateisystem](filesystem.md) beschreibt die Pfade und die Geltungsbereiche `create` und
++   `open`.
++ - [Kryptografie](cryptography.md) beschreibt den `Cloak`, der ein Passwort hält.
++ - [Streams](streams.md) beschreibt die lazy Streams, als die Nutzdaten ankommen.
++ - [Kompression](compression.md) beschreibt Flate und LZW, die Stream-Filter dekodieren.
++ - [Silbentrennung](hyphenation.md) bricht die Wörter, die ein Dokument setzt.

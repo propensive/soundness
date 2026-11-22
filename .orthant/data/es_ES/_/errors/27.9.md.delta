@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 0144f79f62e529cc0380e0c26eea28ee
++ # `↯/s.27.9` — Valor `U8` mayor que 255
+
+@ 0 2 0 021f17a7ee70825605d0787aefb37003
++ Lo lanza en tiempo de compilación la macro `u8` de Hypotenuse cuando el valor supera `255`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 128203b5e39366800e0ab4db2ff94cc8
++ Un `U8` (entero sin signo de 8 bits) tiene `255` como cota superior. La comprobación de la cota
++ superior de la macro usa `0xffff` como constante del rango del literal, pero la cota documentada
++ del tipo es `255`.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 08057fb8751d2f5509d22def79dfa36b
+
+% 1 1 0 162d4f8442dbdcd30dbd1a6fb7acbddb
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 1 0 1f755d044d53f4b105c78a1481867869
++ Proporciona un valor en el rango 0-255.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 2 0 1670b5a1d401440e1b2b356791d92b91
++ - Los demás errores de literales enteros: [Familias](README.md#families)
++ - Código fuente: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

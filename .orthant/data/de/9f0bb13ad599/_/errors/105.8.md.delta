@@ -1,0 +1,50 @@
+orthant 2 language
+
+% 0 1 0 0729b85cc118fb240ea8a31d76db9e10
+
+@ 0 1 0 0bb272e5958510f717fb2b6ac8759078
++ Ausgelöst, wenn ein Schlüsseldokument nicht als öffentlicher Schlüssel der verlangten Chiffre
++ gelesen werden kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 1196e4ec16cfdd9812082b38ff53f622
++ Ein öffentlicher Schlüssel wird aus einem X.509-`SubjectPublicKeyInfo` oder einem PKCS#1-`RSAPublicKey`,
++ bloß oder in PEM-Hülle, als Schlüssel einer benannten Chiffre gelesen, etwa
++ `PublicKey[Rsa[2048]]`. Dieser Fehler umfasst ein Dokument, das kein öffentlicher Schlüssel ist,
++ und eines, das einen Schlüssel eines anderen Algorithmus oder einer anderen Größe enthält.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 0b0c0a891c6f9b9b0838595da393e01f
+
+% 0 1 0 084cf6b424f6716505bf7d5413f3a73e
+
+% 0 1 0 124bb5f13c98da1a179dbd08c8226944
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 3 0 1263efd13e9c80ae0c04abfe84a1c23f
++ Ein `Mismatch` nennt, was das Dokument enthält: Lesen Sie den Schlüssel als diese Chiffre, oder
++ geben Sie den Schlüssel an, der gemeint war. Ein Schlüssel in der einzeiligen Form von OpenSSH ist
++ kein PEM; lesen Sie ihn mit `OpenSsh.publicKey`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 2 0 121e87a662a6bcb50ecbcc1e4364400e
++ - Quelle: `lib/enigmatic/src/core/enigmatic.PublicKey.scala`
++ - `↯/s.105.7` — `PrivateKey.Error`, dasselbe für einen privaten Schlüssel

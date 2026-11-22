@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 4 0 14931b02eca34bd916f67997ce15cdca
++ A volte la domanda non è che cosa il compilatore abbia *tipizzato*, ma che cosa abbia *emesso*: se
++ un combinatore sparisce con l'inlining, o in che cosa si compila un percorso critico. Un classfile
++ si analizza in metodi e istruzioni tipizzati, e ogni istruzione porta lo stato dello stack degli
++ operandi, ricostruito. I byte che non sono un classfile sollevano un `Classfile.Error`:
+
+% 0 1 0 02841fa017604ac603dfae8ad7043c4f

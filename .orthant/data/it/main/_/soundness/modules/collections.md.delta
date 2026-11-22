@@ -1,0 +1,118 @@
+orthant 2 language
+
+@ 0 3 0 1aa6be138ca04a670f8b3625685973eb
++ Una mappa con molte voci si riempie più in fretta sul posto che facendola crescere un `define` alla
++ volta. `Map.build` presta a un blocco un builder su cui scrivere, e restituisce una normale `Map`
++ quando il blocco finisce:
+
+% 2 1 0 0f98b697e6c41d691bb88b1b15af1bfb
+
+% 3 1 0 07210ced258f4a681c1a04dd0d9bea40
+
+% 4 1 0 0d69f8365596a1830d7c84a6bcd8f3a8
+
+% 0 1 0 036e3d18961ea15012c1a11ed7c15bb9
+
+% 0 1 0 11e84dd3395ae40706ff932a92a6dd4f
+
+% 0 1 0 0242fd058a6ed51b174516bb8f02d8b9
+
+% 0 1 0 08ee33db6bc61a321dd907dc77496e1e
+
+% 0 1 0 17c0b84e775bac0d0047726f658b7a14
+
+% 0 1 0 1c4653a8e2d1eb351efbe3d964434828
+
+% 1 1 0 0fd88135493d95c50c914b1d988a84c0
+
+@ 0 3 0 01ac194f5482a86b0a11734124578b6b
++ Solo il builder può scrivere sulla mappa, e il builder non può uscire dal suo blocco: conservarne
++ un riferimento per dopo è un errore di compilazione. Così la mappa è immutabile dal momento in cui
++ `build` restituisce il controllo, ed è uguale a qualunque altra mappa con le stesse voci, comunque
++ sia stata creata.
+
+@ 0 1 0 199601f3bfcba9c507aa093efec6ff55
++ ### Mappe con chiavi note in anticipo
+
+@ 0 4 0 13e0adbddd341ec901dcc789a05df28c
++ Una mappa le cui chiavi sono tutte scritte dove viene creata si può leggere ancora più in
++ fretta. `Map.fixed` trova un *hash perfetto* delle sue chiavi durante la compilazione del
++ codice: un piccolo calcolo che manda ogni chiave in uno slot tutto suo. Una lettura è allora quel
++ calcolo più un confronto, che la chiave ci sia o no:
+
+% 2 1 0 087d99a1146b4a120074b733ad2eec14
+
+% 3 1 0 0295ddd70273dc130d30f791d69f1730
+
+% 4 1 0 0e9a5281fc94b60300a1bffeb4ccf05b
+
+% 0 1 0 0212d6dc582056b60e017ac7daa53118
+
+% 0 1 0 18d82ad5e2e495a211dac03a105a842f
+
+% 0 1 0 00bb1a6629af5b5a011556794353cd16
+
+% 0 1 0 09db8af589296320103e7dda7df82ea0
+
+% 1 1 0 02b41ba3e5ee2b70047bd0310ed1d6d2
+
+@ 0 3 0 12787f9e6defdedf1680e71ffb271af2
++ Le chiavi devono essere letterali: testi, `Int`, `Long` o `Char`, tutti dello stesso genere, e
++ ciascuna data una sola volta. I valori possono essere espressioni qualsiasi. Una mappa fissa è
++ una normale `Map` per tutto ciò che la usa, e `define` e `omit` vi funzionano come su qualsiasi
++ altra.
+
+@ 0 2 0 13533a7a726ab1810af6b285f02bc3c4
++ Una mappa che non si può fissare non compila, quindi una mappa creata con `fixed` non è mai una
++ mappa più lenta sotto mentite spoglie. Dare una chiave due volte è uno di questi errori:
+
+% 2 1 0 0b4191fc662394ae12f8e1a875135793
+
+% 3 1 0 11b7ede8dde8e9ed0bcd121cc5364a26
+
+% 4 1 0 08380a6a5b80b4590a41e3b6670e3495
+
+% 5 1 0 0bde0a401c1b839d0eadffcdb9b0a167
+
+% 0 1 0 0f8847ef63d9ab7b14f2f5b4674154b9
+
+% 1 1 0 059646d391c2806d076974b592879e40
+
+@ 0 3 0 142a051211e5b3501c00f762f66054a1
++ Una chiave che non è un letterale è un altro errore, come lo sono chiavi di generi diversi e due
++ testi che per caso hanno lo stesso hash code. Una mappa di più di 1.024 voci è troppo grande per
++ essere scritta per esteso in questo modo, ed è meglio riempirla con `Map.build`.
+
+@ 0 2 0 18f11cf72a29f23517d76a53d5c3e0b7
++ Quando le chiavi sono note solo a programma in esecuzione, `optimize` riserva lo stesso
++ trattamento a una mappa esistente. Trova l'hash in quel momento, e lo compila con il compilatore
++ Scala:
+
+% 2 1 0 15f6cfbb7d4140f70665625d30a3dc7a
+
+% 0 1 0 019a107168ace25503917c671eca070e
+
+% 1 1 0 02e614f0cb1a9bfa0cdde1bde3957e71
+
+% 3 1 0 0fc97e7e53a573fe08a3879b090c103c
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1f2e2a07b132f63810601e0081043cbc
+
+% 1 1 0 12f37c45d2c674e61a6eea86ee029486
+
+@ 0 4 0 173934e42cc66606075c8a2aef795972
++ Il compilatore deve quindi essere nel classpath quando il programma viene eseguito, ed è per
++ questo che `optimize` viene da un modulo a sé, nel bundle `staged`, e solo sulla JVM. La
++ compilazione richiede circa un decimo di secondo per ogni mappa, e diversi secondi per la prima,
++ quindi si addice a una mappa che viene creata una volta e letta moltissime volte.
+
+@ 0 5 0 1abf0a14a67db8a608f3f4bf3425bcac
++ Giova soprattutto a una mappa con chiavi numeriche, che si legge circa due volte più in fretta.
++ Una mappa con chiavi testuali si legge più in fretta quando le sue chiavi di solito vengono
++ trovate, e più lentamente quando di solito non lo sono, perché un testo assente va comunque
++ confrontato con quello nel suo slot. Una mappa di quattro voci o meno, o una le cui chiavi non
++ sono tutte testi, tutte `Int`, tutte `Long` o tutte `Char`, viene restituita così com'era.

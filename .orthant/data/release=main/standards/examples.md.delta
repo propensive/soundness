@@ -1,4 +1,0 @@
-orthant 1 release
-
-- when such a result has gone wrong; an `// result` comment in `doc/api/*.tel` will not, since
-+ when such a result has gone wrong; an `// result` comment in `doc/work/soundness/api/*.tel` will not, since

@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 6 0 180f15359b93ca3d06aed49479fd5a4b
++     Un type d'erreur a un code bolt — `Error(25, 1, 0)`, la première erreur du vingt-cinquième
++     module, correspond à `↯/s.25.1` — stable d'une version à l'autre, jamais réutilisé, et
++     documenté dans `doc/work/errors/25.1.md` ; ses différentes causes sont les cas d'une énumération
++     `Reason` qui étend `Clarification`, chacun numéroté au sein de l'erreur (`↯/s.25.1.1`) et
++     rendu par son propre `Communicable`. Une erreur complète, construite pas à pas (900 tient lieu
++     du numéro du module où se trouve l'erreur) :
+
+@ 0 11 0 00754b8c838935451e83a02692b7a2af
++       Une erreur est identifiée par trois nombres, qui forment son code bolt. `module` est le
++       numéro de la bibliothèque où se trouve l'erreur, tel que l'enregistre le fichier `s.tel` du
++       registre `bolt` ; `number` est le numéro propre de l'erreur au sein de cette bibliothèque,
++       le prochain libre lors de l'écriture du type d'erreur, et jamais réutilisé (un numéro retiré
++       demeure dans le registre, marqué comme tel) ; et `variant` est le numéro de la raison de
++       l'erreur — le `number` de son cas `Reason`, une énumération qui étend `Clarification` — ou 0
++       lorsque l'erreur n'a pas de raisons. L'erreur est documentée dans
++       `doc/work/errors/<module>.<number>.md` avec sa cause et les remèdes habituels, de sorte que le
++       `↯/s.25.1` d'un rapport d'utilisateur puisse être consulté plutôt que deviné. Une erreur
++       écrite `Error(message)` a `module = 0` : pas de code, et `getMessage` préfixe à la place son
++       composant. Le code est rendu dans le préfixe `[↯/s.25.1.2]` de `#labelled`, de `getMessage`
++       et d'un `halt` à la compilation.
+
+@ 0 4 0 09841ddff78e3e0f1470142376faa577
++       Le style maison des messages est `doc/work/standards/messages.md` : en minuscules, sans point
++       final, au présent, la ressource précise en cause étant interpolée comme valeur typée, et
++       jamais *invalid* ni *bad* comme prédicat à lui seul. Les erreurs sont faites pour être
++       filtrées : un gestionnaire déconstruit la case class et sa `Reason`, jamais son texte.
+
+@ 0 1 0 1b00085c23cb817210b7e86018390e25
++       Le style maison de ce que dit un message est `doc/work/standards/messages.md`.
+
+@ 0 7 0 08833ea66f5b13600c43918ce993c4c9
++   detail
++       `trait Clarification { def number: Int }`. Les différentes causes d'une erreur sont les
++       cas d'une énumération `Reason` qui étend `Clarification`, chacun avec un numéro unique au
++       sein de l'erreur, de sorte que `Error(25, 1, reason.number)` se rend `↯/s.25.1.1`,
++       `↯/s.25.1.2`… et que chacun ait une sous-section de la page de l'erreur dans `doc/work/errors`.
++       Une `Reason` porte ses propres données là où le diagnostic en a besoin
++       (`Ipv4ByteOutOfRange(byte: Int)`), et fournit sa propre instance `Communicable` qui formule
++       chaque cas, que le message de l'erreur interpole. Un `halt` ou un `warn` auquel on donne
++       une `Clarification` place son numéro dans le préfixe du diagnostic.
+
+@ 0 11 0 0cdcc913062c5c38175efbae1826ad6c
++   detail
++       Pour les implémentations de macros, avec `Quotes` dans la portée. `halt(message)` signale le
++       texte du `Message` (en couleur, au moyen de `Message#colorText`, lorsque le réglage `-color`
++       du compilateur est activé) avec `report.errorAndAbort` ; `halt(message, position)` y attache
++       une position. Les surcharges numérotées préfixent le diagnostic par le code de l'erreur sous
++       la forme `[↯/s.25.1] ` — `halt(module, number, message)`,
++       `halt(module, number, message, position)` — ou par le numéro de sa raison sous la forme
++       `[↯/s.25.1.2] ` : `halt(module, number, reason, message)` et
++       `halt(module, number, reason, message, position)`, où `reason` est une `Clarification`. Le
++       paramètre de position des formes numérotées est `Matchable`, et une valeur qui n'est pas une
++       `quotes.reflect.Position` (ou `null`) signale sans position. Chaque code levé par une macro
++       a une page dans `doc/work/errors`, comme celui d'une erreur à l'exécution.

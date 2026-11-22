@@ -1,0 +1,36 @@
+orthant 2 language
+
+% 0 1 0 057a61c7a16113a510a301380e6d6f87
+
+@ 0 2 0 09f1b2f5e9bdd5731e77840daab7b865
++ Se lanza cuando una expresión de la que se esperaba que fallara con un `Error` tuvo éxito.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 1133078568337312129641f7cdf27ef0
++ Lo usan las utilidades de expectativas de Contingency (por ejemplo, auxiliares de prueba que
++ comprueban un error concreto). Cuando la expresión envuelta se evalúa sin lanzar nada, se lanza
++ `Expectation.Error` con el resultado.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 08ba21eff94f7c580d31301749542920
+
+% 1 1 0 115d91380930eed413038701e8b43567
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 2 0 1d90923156f4032614a345b5aa6281c9
++ Ajusta la prueba o la expectativa para que coincida con el comportamiento real, o corrige el
++ código para que de verdad falle.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 10f724901abfec0d169e2ce560a99af3
++ - Código fuente: `lib/contingency/src/core/contingency.Expectation.scala`

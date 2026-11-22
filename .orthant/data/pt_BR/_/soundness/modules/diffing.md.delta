@@ -1,0 +1,333 @@
+orthant 2 language
+
+@ 0 1 0 0e7c75cb59403bca0dbe622dc01f42f9
++ ## Diffs
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 3 0 1be17e75e46aaa361d629c2cee9de35e
++ Um [diff](https://en.wikipedia.org/wiki/Diff) descreve como uma sequência se torna outra. `diff`
++ recebe duas sequências e retorna um `Diff`: um valor [imutável] que lista as inserções, as
++ remoções e os elementos inalterados que as ligam.
+
+@ 0 3 0 13e65ef0aa978111008379f88fa287fa
++ Um diff pode ser aplicado ao original como um patch, ou invertido. Ele pode ser escrito no
++ conhecido formato unix e lido de volta. Também pode ser refinado em um diff *alinhado*, que
++ emparelha cada remoção com a inserção que a substituiu.
+
+@ 0 1 0 120945dce74d3a9a1e9d30d4cadf8646
++ ### Sobre diferenças
+
+@ 0 2 0 11a349710c0f08b105773e0c339b0908
++ Controle de versão, sincronização e saída de testes dependem de diffs. Eles costumam ser vistos
++ como texto: a saída de uma ferramenta, lida a olho ou desmontada com uma expressão regular.
+
+@ 0 4 0 044021b8e10e54d40a042ce293e45b85
++ Mas um diff é dado. Ele é um script de edição preciso e mínimo, calculado pelo
++ [algoritmo de Myers](http://www.xmailserver.org/diff2.pdf), e é útil onde quer que duas versões
++ de qualquer sequência precisem ser reconciliadas. Aqui, ele é um valor sobre elementos de
++ qualquer tipo, não apenas linhas de texto, e quem chama pode substituir a igualdade por um teste
++ de similaridade mais frouxo.
+
+@ 0 3 0 08aa286919641a121102266c73c6718f
++ Tudo vem do pacote `soundness`. O segundo import escolhe uma
++ [estratégia](errors.md#choosing-a-strategy) para erros, e o terceiro permite que os exemplos
++ imprimam seus resultados:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0254a2ced5235ecc0bbd8f6bb0e0dce0
+
+% 1 1 0 1e2351fc1542814f0ebc99b04f5d588b
+
+@ 0 1 0 03e8f9836684c27d1f3c5b572c94501d
++ ### Cálculo de um diff
+
+@ 0 1 0 06423ed9b6e679da150e89eeec22f9f5
++ `diff` compara duas sequências e retorna o script de edição:
+
+% 2 1 0 1bb21ac3370e19e801cf0d6b276200e4
+
+% 0 1 0 0a512d31a6551392017c666c9ac19e2e
+
+% 1 1 0 14cec0c54d0d986512121a9e5238ce40
+
+@ 0 3 0 1d57c3f8f57086ae083cb087cf984e4a
++ Cada edição é uma inserção (`Diff.Ins`), uma remoção (`Diff.Del`) ou um elemento inalterado
++ (`Diff.Par`), e guarda sua posição na sequência da esquerda, na da direita ou em ambas. As edições
++ de um `Diff` são uma sequência comum, que um casamento de padrões desmonta:
+
+% 2 1 0 1bd5decb710e83210a1a2b3d47494ea3
+
+% 3 1 0 1fd150e73bca80bf0cc115ea33e6559c
+
+% 4 1 0 0f73c1139d9aa09d13074958cfeb183d
+
+% 0 1 0 05cf1d020bb6b2f107705d505615dffb
+
+% 0 1 0 17e69baa2f54be9e01ebf0ef65929d3d
+
+% 0 1 0 1bc50206b81d9b750bcc25ecf427a6bd
+
+% 0 1 0 0ed72bc333f138ad1432702b309dd167
+
+% 1 1 0 04dc4c16ba2da359119d6fa2d0745c35
+
+@ 0 3 0 148a8fdcf2043d1514c562786c4143c9
++ `A` e `C` estão nas duas sequências, e `B` foi inserido na posição 1 da sequência da direita. O
++ valor de um `Par` ou de um `Del` é um valor [opcional], já que um diff não precisa carregar os
++ elementos que mantém ou remove.
+
+@ 0 3 0 12e8d8077bead2cc11829547b72ce402
++ O script é mínimo: ele contém o menor número de inserções e remoções que transformam a sequência
++ da esquerda na da direita. Os elementos podem ser caracteres, linhas de texto ou registros. Um
++ terceiro argumento de `diff` substitui a igualdade por uma comparação à escolha de quem chama.
+
+@ 0 1 0 0fd7497a66a253b513b154ef3381ca50
++ ### Aplicação de um patch
+
+@ 0 2 0 0d65fb63cd6046d510f4e3db9384dfff
++ Um diff aplicado à sequência original dá o alvo. Uma diferença calculada uma vez pode, portanto,
++ ser enviada para outro lugar e reproduzida:
+
+% 2 1 0 0c1bc209262b15e919153bc6ff5cfe48
+
+% 0 1 0 103ac3cd0a77cc1a04fe46a4524ee8bb
+
+% 0 1 0 11f2b70a2800aeca18b09903443a7009
+
+% 0 1 0 05bb7abf94c216a513f2afeeb6d6d1b2
+
+% 0 1 0 13280cc0abadb6e400598deab76548d0
+
+% 0 1 0 021d9684b550c3711f410421b2f35939
+
+% 1 1 0 18be2b7f90c935ac1c14c608ad4ea9e9
+
+% 3 1 0 04d69ccd06a3df101112078561b14f2b
+
+% 4 1 0 172dc8ac1eb6e2390721a2822336a530
+
+% 5 1 0 160d40ef3570da2b03793d39f4454a42
+
+% 0 1 0 01814722e922b4920d830a878afa528f
+
+% 1 1 0 03d14a65283176201ad7e6492b6c28b5
+
+@ 0 2 0 1f2991d63cbb1ef1187563cb37238266
++ `flip` inverte um diff. Cada inserção se torna uma remoção, e cada remoção uma inserção, de modo
++ que o patch que ia para a frente se torna o patch que volta.
+
+@ 0 1 0 13f7f406b13987fe16455149bee85d43
++ ### Diferenças alinhadas
+
+@ 0 3 0 0fdd38e6eb2f853b116257179f7556ba
++ Um diff simples informa um elemento alterado como uma remoção e uma inserção. Para exibição, e
++ para comparar registros, é mais útil *emparelhar* as duas, e ver o novo elemento como uma
++ modificação do antigo.
+
+@ 0 3 0 1cf40c85cf4e275d0c2374f1c7b2c889
++ `rdiff` faz isso. Ele recebe um predicado que diz se dois elementos são similares, e dá entradas
++ `Sub` onde uma remoção e uma inserção correspondem. Aqui, duas palavras são similares quando sua
++ [distância de edição](text.md) é pequena:
+
+% 2 1 0 1143be15a4aa1bbd1e2354ba816558a4
+
+% 0 1 0 1aa0a36b4be4ae9b07e198a2584d832b
+
+% 0 1 0 124219d1ab24e5be19822a05e17f002d
+
+% 0 1 0 14d9ab4b24a216f81c1395cc91ba1334
+
+% 0 1 0 1a8c8386a849faf00dc5b82f0e13f8db
+
+% 1 1 0 0e24fdd0991901071b0919c98e5b05d7
+
+% 3 1 0 0a5cdafb53e54c7e05d637a04e3c47fd
+
+% 4 1 0 137999121874555c0f0c4b31ad235e4f
+
+% 5 1 0 0efbe83894799c9f06c84c0917438ca7
+
+% 0 1 0 143d60fddbca5fa8116bdbf3a9eba628
+
+% 0 1 0 09d74f9415cf35191fbc043303d95b76
+
+% 0 1 0 1de7de0f0edb345b10277c33ad7dd289
+
+% 0 1 0 058f51124ac06e770979e8af552263f5
+
+% 0 1 0 1b32159c4843e9d605c69dfe4e9e815e
+
+% 1 1 0 014e2301dc3bc7da022c5ce2dca887ce
+
+@ 0 2 0 1feb695f13e3be0312e8c68ae9e26790
++ Palavras similares se emparelham como substituições. Só um elemento que é realmente novo, ou que
++ realmente sumiu, permaneceria como uma inserção ou uma remoção.
+
+@ 0 1 0 169d44cfbe1f04b50fbe5ba695148689
++ Juntos, `diff` e `rdiff` produzem quatro tipos de edição:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 8 0 17cda8c96c37b1841b7b43136fda008e
++ column  Edição
++ column  Registra
++ column  Posições
++ column  Em
++ row  `Ins`  um elemento só da sequência da direita  direita  `Diff`, `RDiff`
++ row  `Del`  um elemento só da sequência da esquerda  esquerda  `Diff`, `RDiff`
++ row  `Par`  um elemento comum às duas  esquerda e direita  `Diff`, `RDiff`
++ row  `Sub`  um elemento da esquerda emparelhado com seu substituto da direita  esquerda e direita  só `RDiff`
+
+% 1 1 0 08f009cc6d981c231fa97b2fb52f5fc4
+
+@ 0 4 0 1e798535b606d1730325489907e53c86
++ O emparelhamento é feito dentro de cada *região* alterada, e só onde uma região contém pelo menos
++ uma remoção e pelo menos uma inserção, já que só ali uma substituição é possível. Dentro de uma
++ região assim, a ordem em que remoções e inserções são aplicadas não muda o resultado. Isso deixa
++ o algoritmo livre para emparelhar algumas delas e organizar as demais em torno dos pares.
+
+@ 0 4 0 01cc16fd0981475c0b09da3d47e8d0ea
++ Um segundo parâmetro, `subSize`, cobre o caso em que a similaridade é o teste errado. Uma região
++ curta com números iguais de inserções e remoções se torna substituições, diga o predicado o que
++ disser. Por padrão, isso se aplica a uma região com uma de cada. Nesse tamanho, a correspondência
++ é óbvia, mesmo quando os dois valores não têm nada em comum como texto.
+
+@ 0 1 0 1a69f673205fdfed10950ea2ba07cba6
++ ### O formato unix
+
+@ 0 1 0 11f76597d22bc0a91085b4099c3b24a8
++ Um diff de texto é escrito no formato convencional com `serialize`:
+
+% 2 1 0 018543ef90e47b3c07f0755e1799ea38
+
+% 3 1 0 158aa660492a731705c2a97304599c22
+
+% 4 1 0 1046afddfe731fcf04919995316cf7dd
+
+% 0 1 0 0c34e321757707ff0157dc9824cbfe77
+
+% 1 1 0 17cfe1130540aed306297352d253cb84
+
+@ 0 1 0 1f5df47fb6d5873d1e0336a307755107
++ O mesmo formato é lido de volta para um `Diff`, então um arquivo de patch é um dado legível:
+
+% 2 1 0 0e9d32e78c2dce4a03cff1e61b084636
+
+% 3 1 0 000af33b6325202f1372f300e0f8bebd
+
+% 4 1 0 16c36f7102e28434012ed0feb0962643
+
+% 0 1 0 1ce72ef1f081753109b5416e4075c117
+
+% 0 1 0 0303bea6835f83a21938e9ba95e3f6bf
+
+% 1 1 0 1642dd2e4632b39611a19d334c905823
+
+% 0 1 0 0b64e082b53906b716a20a4e162788f2
+
+@ 0 3 0 1b6e3f6e4b3995200040cbe92932ce2f
++ O formato unix é exato. Um patch deve declarar seu contexto e seus números de linha corretamente,
++ ou não se aplica. Isso convém a um sistema de controle de versão. Não convém a uma pessoa, ou a um
++ [modelo de linguagem](llm.md), que propõe uma edição em prosa.
+
+@ 0 2 0 0eb1c715df580ffd084663a5123ef5ee
++ Um *redraft* é a forma indulgente. Ele declara só as linhas a remover e as linhas a acrescentar.
++ Linhas inalteradas ficam de fora, e o redraft encontra o lugar a que suas linhas pertencem:
+
+% 2 1 0 00ac009aa62ada4f183b8956344c0755
+
+% 0 1 0 0efbd2769cce9c5e1c7593a91b852590
+
+% 1 1 0 0c39404e2c7e70f100744d9f0f2eea72
+
+% 3 1 0 00c8e16f65d2d2e8168b960954b72f69
+
+% 4 1 0 08e90453ba814de612902636d482522a
+
+% 5 1 0 0d5e6bf7455a2d600960fdfe754c6ef8
+
+% 0 1 0 0f13cf235e7e2462092e30bfd0a23614
+
+% 1 1 0 089cfd92ff3820231b947d509ea5e8f0
+
+@ 0 1 0 0f70f5b0fd341e8119724d90a5d5c729
++ Um acréscimo sem contexto vai para o início:
+
+% 2 1 0 033ad36e2746257a14718fd60b2e965e
+
+% 3 1 0 09d6df2b914242860587a916fcceb646
+
+% 4 1 0 07d8519804c7b10d0150d398232530af
+
+% 0 1 0 103704920baf03b200246da06222d969
+
+% 1 1 0 0738def84587eca61c71018512f9f522
+
+@ 0 2 0 1a7c54e1b55ce7e11f1146b9a438a486
++ Um redraft pode nomear uma linha que nem está na origem. Isso é informado como um erro, e a
++ edição não é aplicada por adivinhação:
+
+% 2 1 0 1d0fab92fec3108b0f8aecfc4b4dc619
+
+% 3 1 0 06685f08bb9a10d10fa5098397a474ee
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 05784d144c682d1d08cb8eea72470b3f
+
+% 1 1 0 09778a9c9c5c940d00326954dee9b14a
+
+@ 0 1 0 084961946c6f36da157b10ae743df042
++ ### Evolução
+
+@ 0 3 0 0d38cc668b6d153f176c4bd0d7f81be7
++ Um diff compara duas versões. Uma *evolução* acompanha cada elemento por muitas. Um valor que
++ está na primeira versão e na última é reconhecido como o mesmo valor, mesmo que tenha sumido e
++ voltado no meio do caminho:
+
+% 2 1 0 08aaeb0dde34980f1188caa6b8e06e4b
+
+% 0 1 0 026c1929c993c74919432669b540125e
+
+% 0 1 0 168a713411fdfe881d61f5b2d842e220
+
+% 1 1 0 161f179c21f5a8d40e305523d4e3aa88
+
+@ 0 1 0 189afff51f97085d0f1e79fcfab849b2
++ Cada versão é endereçada por um ordinal e é reconstruída exatamente como era:
+
+% 2 1 0 1af613ddc7d4e2631e208642a14d07ed
+
+% 3 1 0 06d379cd1728221512be2e5925f8253c
+
+% 4 1 0 0087881e1566b755165bef816b1b35f6
+
+% 0 1 0 1153bab6252e59340d6828b64d10cab4
+
+% 1 1 0 1d3eb405762363820fa738d7ca7ad5f9
+
+@ 0 1 0 0e96d8e3165d779a130f316098371529
++ Essa é a estrutura de que precisam um histórico de documento, uma pilha de desfazer ou uma série
++ de rascunhos.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 5 0 10615132ccc8674d1aee7f9f4b3ed291
++ - [Texto](text.md) descreve `proximity`, a distância de edição usada acima para decidir a
++   similaridade.
++ - [Testes](testing.md) mostra um diff quando dois valores comparados não são iguais.
++ - [Git](git.md) trabalha com os diffs de um repositório.
++ - [Coleções](collections.md) descreve `Sequence`, `Chain` e ordinais como `Ter`.
++ - [Imutabilidade](../../philosophy/immutability.md) explica por que um diff é um valor.

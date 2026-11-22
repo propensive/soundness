@@ -1,0 +1,31 @@
+orthant 2 language
+
+@ 0 11 0 0d8437f96b7f51390097d96c0bd1f4ef
++ Das flare-Plugin (festgelegt in `etc/tools`, konfiguriert durch `.pyrocosm/flare/config.tel`, auf
++ jeder geprüften Komponente aktiviert durch die `-P:flare:`-Optionen in `flareToolchain`) liefert
++ den Zensus: jede Regel der Konfiguration, über die Quellen gezählt — die deklarierten Notausgänge
++ (`unsafely`, die `caps.unsafe`-Familie, jeder Name mit dem Präfix `unsafe`, jede durch das Token
++ gesperrte Methode), die Umgehungen des Compilervertrauens (`asInstanceOf`, `.nn`, `@unchecked`,
++ `???`, Catch-all-Klauseln), die partiellen Lesezugriffe und die imperativen Konstrukte, die der
++ Streaming-Kern eingrenzen soll. `make unsafety` führt `flare metrics --dry-run` aus und gibt ihn
++ aus; `flare metrics` verzeichnet ihn in Git-Notes, Commit für Commit, sodass der Trend in Git lebt
++ statt in einem Absatz der Roadmap. Eine Regel sperrt bereits: `S1.1`, eine Methode, die
++ `(using Unsafe)` nimmt, muss `unsafe…` heißen, lässt den Build scheitern; ihre Umkehrung `S1.2` ist
++ beratend, und die acht Definitionen, die sie verletzen, sind in `doc/work/standards/naming.md`
++ aufgeführt.
+
+@ 0 7 0 0d173ddf177ff3580a0262c16790a340
++ Die Rezepte, die Capture- und Separation-Checking praktikabel machen — wann ein Typ Exclusive,
++ Shared, Unscoped, Mutable oder Pure ist und die Verbandsfallen zwischen ihnen; das Playbook für
++ ehrliche Givens (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, expliziter erfassender Nachweis
++ statt Kontextschranken); wo ein frisches Ergebnis erzeugt werden darf und wo nicht; die
++ `consume`- und Leih-Nahtstellen; was ein Test darf und was nicht — existieren nur als Einträge in
++ `rep/DECISIONS.md`, einem Protokoll von 2400 Zeilen. Sie gehören in
++ `doc/work/standards/capabilities.md`, mit dem Tag-Vokabular, auf das sich `safety-2` stützt, und der
++ einen sanktionierten Notausgangsform für jedes Tag, sowie einem Verweis aus
++ `doc/work/philosophy/capture-checking.md`.
+
+@ 0 2 0 184abde0f441241915e910e4b48261e0
++ Erledigt, wenn: `doc/work/standards/capabilities.md` existiert, jedes Tag definiert, das der Zensus
++ erkennt, und die Rezeptabschnitte von `rep/DECISIONS.md` darauf verlinken, statt es zu
++ wiederholen.

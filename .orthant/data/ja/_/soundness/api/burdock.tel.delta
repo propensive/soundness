@@ -1,0 +1,423 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 09f9b3580b93958b12c3b3f6816f2dd0
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 164b271f5c6c84e113b0375784e19f44
++ info   スリムなアプリケーション JAR：依存関係を内容ハッシュで名指し、起動時に取得、検証、キャッシュする
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0d22614a4426a84705af0707c7336625
++     _Burdock_ は、アプリケーション JAR を脆くすることなく小さくする。
++     必要なすべての依存関係を持つ JAR は数十メガバイトのライブラリコードを運ぶが、その大部分はすでにどこかで公開されている。
++     Burdock は、公開された各依存関係を、コンパイラが読んだ正確なバイトの SHA-256 で名指す参照に置き換え、小さなブートストラップローダーがアプリケーションの起動時にそれらを取得し、検証し、キャッシュする。
+
+@ 0 1 0 139226c9051e22730df2cf8677630385
++     作業は三つの段階で行われる。
+
+@ 0 11 0 131f44ef7edf332015a82411ee735ea4
++     - **コンパイル時**には、`externalize` がアプリケーションのエントリーポイントを包む。そのマクロはビルドのクラスパス上のすべての依存関係の JAR をハッシュし、それぞれを Burdock のキャッシュにハードリンクし、ハッシュのリストをリソース META-INF/burdock.deps としてコンパイル出力に埋め込む。
++     - **ビルドの後**には、`soundness.repackage` エントリーポイント（ここでの `repackage` メソッド）が JAR をその場で書き換える。公開 URL に解決される各ハッシュ（ヒントとして与えた GitHub リポジトリのリリースアセット（`GitHub`）、または deps.dev（`DepsDev`）を通じて）は `Burdock-Require` の参照になり、それ以外のものはキャッシュからインライン化される。
++     - **起動時**には、再パッケージされた JAR が加える唯一のクラスである `Bootstrap` が、まだキャッシュにないすべての要件をダウンロードし、それぞれをそのハッシュと照合し、マニフェストの順序のクラスパスでアプリケーションを開始する。
+
+% 2 1 0 0b2da459aa70eb6b0973908a153dce34
+
+% 3 1 0 06c0ff0a23330d70059e2d9cec06abf0
+
+% 4 1 0 0a83c018dfabd88b1220ace28c621fd0
+
+% 5 1 0 0166f0d4ee644fac1807ae5402293925
+
+% 7 1 0 1e49be2a5d47ef1a1ef7bdf9a38b136a
+
+% 8 1 0 11837241d1e97b8105d88523e0b43e90
+
+% 9 1 0 0f8e1858a617a1711ff47f04adca2465
+
+% 10 1 0 0f5d07125506a414159da9fc56eb961e
+
+% 0 1 0 04b53e90373db9ee0dcbb0c2bab35fe3
+
+% 0 1 0 14a5bda1ec07d949162b52ecd9e9b0a0
+
+% 0 1 0 068d187c050d033b11ee166b57afb891
+
+% 1 1 0 0eb3a4d2a3dd1c65154b2914098fa517
+
+@ 0 6 0 1d7611d41d71ca2603bac864b3baf66b
++     **キャッシュ。
++     **
++     依存関係の JAR は、ハッシュごとに `~/.cache/soundness/jars/<sha256>.jar` として保持される。
++     `externalize` マクロと再パッケージ器はユーザーのホームのもとにあるそのディレクトリを使う。
++     ブートストラップは `XDG_CACHE_HOME` に従い、それが設定されていて空でなければ `$XDG_CACHE_HOME/soundness/jars` を使う。
++     以前のリリースは `~/.cache/burdock` を使っていた。
++     それを移行するものはないので、アップグレード後の最初の起動ではすべての要件が再びダウンロードされ、古いディレクトリは削除してよい。
+
+@ 0 3 0 0db1b1d06f2e38551f35c8aa3dc05df9
++     参照は正確なバイトを名指すので、完全性の不変条件が成り立つ。
++     すべての依存関係は参照されているか存在しているかのどちらかであり、そのどちらでもないハッシュは `Repackager.RepackageError` で再パッケージを止め、チェックサムが一致しないダウンロードは起動を止める。
+
+@ 0 5 0 19228348add8886c161275291d3054aa
++     ライブラリには JVM 専用の二つのソースセットがある。
++     `burdock.core` は `externalize`、`Repackager` とそのリゾルバーを持ち、`soundness.repackage` コマンドラインのエントリーポイントとともに `soundness` アンブレラにエクスポートされる。
++     `burdock.boot` は単一の Java クラス `Bootstrap` であり、どの依存関係も取得される前に実行できるよう、JDK 以外の何にも依存しない。
+
+% 0 1 0 0931b7e60dd25bf3150928dd9f610638
+
+% 0 1 0 08d48c5e1e07dc071b37cab7daf96619
+
+% 0 1 0 0e945906d49b33771688ae210349e6cb
+
+% 0 1 0 11e972ab47fd639e11d49653b8ae1b22
+
+@ 0 7 0 16486a260e83ba770327f3b30a9eb78e
++ entry .externalize   Burdock が依存関係を外部化できるよう、アプリケーションのエントリーポイントを包む
++     `externalize(block)` は実行時には `block` をそのまま返す。
++     そのマクロはコードのコンパイル中に、コンパイラのクラスパスを読み、その上のすべての依存関係の JAR の SHA-256 を計算し、それぞれをキャッシュの `~/.cache/soundness/jars/<sha256>.jar` にハードリンクし（キャッシュが別のファイルシステムにある場合はコピーする）、ハッシュを一行に一つずつコンパイル出力のリソース META-INF/burdock.deps に書き込む。
++     したがってそれは他のリソースと同じように JAR にパッケージされる。
+
+% 2 1 0 0e99dbb96856deed1bfe34487250c571
+
+% 3 1 0 1cf760a014630032131a351affb02874
+
+% 4 1 0 183a17f8ee5a4f341299c037e83c6902
+
+% 5 1 0 11afc1d17b0751970ddb8203f166e35a
+
+% 7 1 0 0eb60e62c7ebec2b089703a773e8545b
+
+% 8 1 0 11c34d50498e175a0ae47790ad0b317e
+
+% 9 1 0 0020bdcc58fd239e1c109a8146c402cd
+
+% 10 1 0 1f497d8dd48e6f14067cd3eceb07978f
+
+@ 0 5 0 0bd499fda97382a51126a28c9e2f2725
++     アプリケーションのそれ以外の部分は何も変わらない。
++     通常の JAR としてビルドされ、テストされ、実行され、リソースは `repackage` が読むまで何の働きもしない。
++     各依存関係が公開されているかどうかは、後で再パッケージ器が決める。
++     キャッシュは解決できないものを何でも補う。
++     ハードリンクはビルドマシン上にあるので、公開されていない依存関係を持つ JAR は、ビルドされた場所で再パッケージしなければならない。
+
+@ 0 1 0 1cbada924fd2db7f021fb2ded0eba203
++ entry .repackage   実行中のアプリケーションの JAR をその場で書き換え、公開された依存関係を外部化する
+
+% 1 1 0 09d270df3b7fb84c0d386c61854fa3ca
+
+@ 0 2 0 1b4b49ab38566914077fe73aca394571
++       `soundness.repackage` の背後にあるコマンドラインのロジックであり、アプリケーションの JAR と Burdock をクラスパスに置いて起動する。
+
+% 0 1 0 0ea4573b9a94b84305f895477a981119
+
+% 0 1 0 1f73723a902ae2b60b45da869918b11d
+
+% 1 1 0 0deb161ba903856c05416f7294440c5c
+
+@ 0 6 0 1210980a5882d1a8167043c059c3b4d2
++       アプリケーションの JAR を META-INF/burdock.deps を持つクラスパスのエントリーとして見つけ（そのようなものがない場合、またはそのエントリーがディレクトリである場合は `Repackager.UserError` を発生させる）、Burdock 自身の JAR から `Bootstrap` クラスを読み、deps.dev より先にヒントとして与えた GitHub リポジトリを参照するリゾルバーを構築し、一時的な兄弟ファイルへ `Repackager.repackage` を呼ぶ。
++       その兄弟ファイルが元のファイルをアトミックに置き換える。
++       環境変数 `GITHUB_TOKEN` が設定されていれば、GitHub の未認証のレート制限が解除される。
+
+@ 0 6 0 0d6e3521b62ba700041e60902c480ed2
++       受け付ける引数は、`--github owner/repo`、`--github=owner/repo`、またはそのいずれかのカンマ区切りのリストの形だけである（`parseArguments` を参照）。
++       解決中は、標準出力が端末であれば進捗バーがその場で描画され、リダイレクトされていれば抑制される。
++       最後に要約が表示される。
++       読み書きしたエントリー、保持、インライン化、除去したクラス、インデックスした GitHub のアセット、そして外部化した各要件である。
++       エラーはすべて表示され、プロセスはステータス 1 で終了する。
+
+@ 0 3 0 043f76f9a1fdedab16e284d8ce3204bd
++       このメソッドは `soundness` アンブレラにはエクスポートされない。
++       起動すべきエントリーポイントは、引数を `Text*` として取る `@main` メソッドであるアンブレラ自身の `soundness.repackage` であり、それが `burdock.repackage` を呼ぶ。
+
+% 1 1 0 1f48e5804c979b4d11c0beb9ab7884e8
+
+% 0 1 0 0cae827af171905f05384bd36fc64a12
+
+@ 0 6 0 0e92cb8c46f91d70033296e7458121fb
++ entry .parseArguments   `--github` のヒントを GitHub リポジトリにパースする
++     `--github owner/repo`、`--github=owner/repo`、そしてどちらかの形のカンマ区切りのリストを、何度でも受け付ける。
++     認識できない引数、オペランドのない `--github`、owner/repo の形でないリポジトリは、使い方の行 _usage: soundness.repackage [--github owner/repo]..._ を付けて `Repackager.UserError` を発生させる。
++     `soundness` アンブレラにはエクスポートされないので、`burdock.parseArguments` として到達する。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 09533f74603f57ba0eacded4b81f0b69
+
+% 1 1 0 0c001e31ec66b99703edeb8f5962d164
+
+@ 0 1 0 1df4c03f584521611a01eea0b7ce0efb
++ entry .Repackager   JAR を書き換える：公開された依存関係は参照になり、それ以外はキャッシュからインライン化される
+
+% 1 1 0 163607676bda89480bf3cc6f644ecb38
+
+@ 0 6 0 1a44ada56dd335181a71c52953b2efed
++       再パッケージ器の中核であり、入力 JAR の読み取りと出力の書き込み以外の I/O を持たない。
++       `.repackage` はアプリケーション自身のクラスを保持し、URL に解決できるすべての依存関係の同梱されたクラスを捨て（代わりにそれらを `Burdock-Require` マニフェスト属性に列挙する）、残りのクラスをキャッシュからインライン化し、`Bootstrap` クラスを加え、`Main-Class` が `burdock.Bootstrap`、`Burdock-Main` が元のエントリーポイントになるようにマニフェストを書き換える。
+
+@ 0 2 0 1336e017d37f61d80a6bcd49ef6957a2
++       リゾルバー、キャッシュの検索、進捗のコールバックは注入されるので、ロジックはネットワークやファイルシステムなしでテストできる。
+
+% 2 1 0 0abc498caa38428c1ef8691940e4480f
+
+% 3 1 0 0edfd905c3610aa213587d3de558b097
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 139ea05eb8cdf49d09fa72d435c9020e
+
+% 0 1 0 1cc1242f9ac8b87412cbe382eb11e3f0
+
+% 0 1 0 190d1b8975778ff21be5ad9f287382c9
+
+% 0 1 0 057eefc8822dbc30041c7fca98195e4d
+
+% 1 1 0 0f2c90f5e812666d15f7bc909ca1683f
+
+@ 0 5 0 03bf209784f976f009bdeddb1c8b3e76
++       エントリーは圧縮されたまま逐語的にコピーされるので、Stored のエントリーは Stored のままであり、Deflated のエントリーは CRC と圧縮サイズを保つ。
++       新しく圧縮し直されるのは、新しいマニフェストとブートストラップのクラスだけである。
++       ディレクトリのエントリーは捨てられ、二つのエントリーが名前を共有する場合は最初のものが保持される。
++       強制的に含められるブートストラップが同梱のコピーより優先され、アプリケーションのクラスがキャッシュのクラスより優先される。
+
+% 0 1 0 0f95ff38b7c458c0135a8c2b9bdfdb18
+
+% 0 1 0 04f876c8ceebf2f60af4923eff4509bb
+
+% 0 1 0 19073802cd2eecf011a26563eff4be06
+
+@ 0 36 0 14bcbb8670b1636302daa60f33a3bbf9
++   entry .partition   依存関係のハッシュを、参照すべき要件とインライン化すべきキャッシュのエントリーに分ける
++       `partition(hashes, resolve, cached, progress)` はすべてのハッシュを分類する。
++       `resolve` が URL に対応付けるものは `Requirement` になり、`cached` が見つけるものはそのエントリーを提供し、どちらでもないものは `Repackager.RepackageError`、_dependency `hash` is neither published nor cached_ を発生させる。
++       検索は仮想スレッド上で一度に十六ずつ並行に実行され、各グループの後で呼び出し元のスレッドで `progress` が `(completed, total)` とともに呼ばれる。
++       結果は `hashes` の順序、つまりクラスパスの順序である。
++   entry .repackage   `inputJar` を `outputJar` に書き換え、`Repackager.Summary` を返す
++       入力と出力のパス、`Resolver`、`CacheReader`、`Bootstrap` クラスのバイト、そして省略可能な `Progress` コールバックを取る。
++       JAR にマニフェスト、META-INF/burdock.deps リソース、`Main-Class` のいずれかがないとき、依存関係が公開もキャッシュもされていないとき、そしてファイルシステム、ストリーム、アーカイブのあらゆる失敗に対して `Repackager.RepackageError` を発生させる。
++       キャッシュで見つかった公開された依存関係は同梱のエントリーが除去される。
++       キャッシュにないものは識別できないので、そのエントリーは同梱されたまま残る。
++       それでも正しく、スリムにならないだけである。
++   entry .Resolver   依存関係のハッシュをその公開ダウンロード URL に解決する。または `Unset`
++       `Text => Optional[HttpUrl]`。
++       コマンドラインは `GitHub.index` と `DepsDev.mavenUrl` を合成する。
++   entry .Progress   依存関係の各グループが分類された後に `(completed, total)` を受け取るコールバック
++   entry .CacheReader   依存関係のハッシュをローカルのキャッシュで検索し、そのエントリーまたは `Unset` を与える
++       `Text => Optional[List[Zip.Entry]]`。
++       ディレクトリとマニフェストは除外され、ペイロードは遅延されたままなので、公開された依存関係のエントリーを名前で除去しても、キャッシュの JAR の内容は読まれない。
++   entry .Requirement   外部化された依存関係：その URL と、一致しなければならない SHA-256
++     entry #url   ブートストラップが依存関係をダウンロードする場所
++     entry #digest   小文字の 16 進数による依存関係の SHA-256
++     entry #text   `Burdock-Require` に現れるとおりの要件：`<sha256>:<url>`
++   entry .Summary   呼び出し側が報告するための、再パッケージが行ったこと
++     entry #inputEntries   入力 JAR が持っていたエントリーの数
++     entry #directoriesSkipped   捨てられたディレクトリのエントリーの数
++     entry #ownKept   保持されたアプリケーション自身のエントリーの数
++     entry #externalized   クラスパスの順序で `Burdock-Require` に書かれた要件
++     entry #inlined   キャッシュの依存関係からインライン化されたエントリーの数
++     entry #stripped   除去された公開済み依存関係の同梱エントリーの数
++     entry #outputEntries   マニフェストを含む、出力 JAR が持つエントリーの数
++   entry .UserError   再パッケージ器の呼び出し方の誤り
+
+% 1 1 0 028a4557d562a6470e673d9403605f9d
+
+@ 0 5 0 077be3f129bfcc5211f6354e94c2296b
++         Burdock でビルドされていない JAR（_this JAR was not built with Burdock (no META-INF/burdock.deps)_）、ファイルではなくディレクトリであるもの、不正な引数やリポジトリのヒント、そしてヒントとして与えたリポジトリのリリースを列挙できなかったときに発生する。
++     entry #detail   何が誤っていたか
++   entry .RepackageError   再パッケージできなかった JAR
+
+% 1 1 0 1715383ca4c1cb8d0e9fa2561e886ad6
+
+@ 0 12 0 157f2f3b67450e2315685c592df4269a
++         `Repackager.repackage` と `Repackager.partition` が発生させる。
++         マニフェストがない、`Main-Class` がない、META-INF/burdock.deps リソースがない、依存関係が公開もキャッシュもされていない、あるいはファイルシステム、ストリーム、アーカイブ、並行性の失敗である。
++     entry #detail   何がうまくいかなかったか
++   entry .BurdockMain   `Burdock-Main` マニフェスト属性：アプリケーション自身のエントリーポイント
++   entry .BurdockRequire   `Burdock-Require` マニフェスト属性：外部化された依存関係
++   entry .BurdockVerbosity   `Burdock-Verbosity` マニフェスト属性：ブートストラップがどれだけ表示するか
++       `silent`、`error`（デフォルト）、`info`、`debug` のいずれかであり、再パッケージ器は `silent` を書く。
++       それ以外の値はステータス 2 で起動を止める。
++   entry .burdockMain   `Burdock-Main` を完全修飾クラス名として書く
++   entry .burdockRequire   `Burdock-Require` を空白区切りの `<sha256>:<url>` の項目として書く
++   entry .burdockVerbosity   `Burdock-Verbosity` をテキストとして書く
+
+@ 0 1 0 017efeb28fc711ee18dd3b77cc5e33cf
++ entry .Bootstrap   再パッケージされた JAR の実行時のエントリーポイント：依存関係を取得、検証、読み込みする
+
+% 1 1 0 1b2efb5ce38b59a01b91d974e97160ba
+
+@ 0 3 0 10b8d8d9e9437cfd015bb1d44b8a8af3
++       `burdock.boot` にある Java クラスであり、再パッケージされた JAR が加える唯一のクラスである。
++       どの依存関係も存在する前に実行されなければならないので、JDK だけを使い、単一のクラスファイルにコンパイルされる。
++       `java -jar app.jar` は、マニフェストの `Main-Class` としてこれを開始する。
+
+@ 0 7 0 0d8eff739504d6c1003ade7398abfe85
++       `Burdock-Require` を読み、まだキャッシュ（その変数が設定されていて空でなければ `$XDG_CACHE_HOME/soundness/jars`、そうでなければ `~/.cache/soundness/jars`）にないすべての要件を、接続と読み取りのタイムアウト付きで一度に最大八つずつダウンロードし、各ダウンロード（とキャッシュのファイル）の SHA-256 をマニフェストのハッシュと照合する。
++       その後、JAR と要件の上にマニフェストの順序でクラスローダーを構築し、それをスレッドのコンテキストクラスローダーに設定し、`Burdock-Main` が名指すクラスの `main` を呼び出す。
+
+@ 0 6 0 15e52b37128aac2f1c01490edb7c4575
++       チェックサムの不一致はステータス 1 で終了する。
++       不正な `Burdock-Require` の項目、無効な `Burdock-Verbosity`、マニフェストやエントリーポイントの欠落、あるいは起動のあらゆる失敗はステータス 2 で終了する。
++       起動を監督するランチャーは、システムプロパティ `burdock.progress` にファイルパスを設定してよい。
++       取得中、ブートストラップはそのファイルに一行 `<completed> <total> <bytes>` をアトミックに書き込んで保ち、終わればそれを削除する。
++   entry .main   `Burdock-Main` が名指すアプリケーションを、その要件を取得した後で起動する
+
+@ 0 1 0 0a1dd24d114dcf4f049b632f34ddc683
++ entry .DepsDev   Google の deps.dev を通じて、依存関係の SHA-256 をその Maven Central の URL に解決する
+
+% 1 1 0 094237d50d6ea78c037a9c5204273668
+
+@ 0 10 0 0606d3b6dc8cc72d004e43c862373cfb
++       deps.dev（"Open Source Insights"）は公開された成果物を内容ハッシュでインデックスしている。
++       `.mavenUrl` はそのクエリ API に、どの Maven の成果物があるハッシュを持つかを問い合わせ、repo1.maven.org 上の成果物の URL を構築する。
++       deps.dev が Maven の成果物として知らないものは `Unset` であり、その場合、再パッケージ器は代わりにキャッシュから依存関係をインライン化する。
++       ケースクラスは、API の JSON レスポンスのうち重要な部分をモデル化している。
++   entry .mavenUrl   与えられた SHA-256 を持つ JAR の Maven Central の URL。または `Unset`
++       ハッシュを 16 進数で取り、API が期待するとおり base64 でエンコードして送り、システムが `MAVEN` である最初の結果を選ぶ。
++       `DepsEvent.Querying` を `fine` で、`DepsEvent.Resolved` を `info` で記録するので、スコープに `DepsEvent is Loggable` が必要である。
++       あらゆる失敗、すなわちネットワーク、予期しないレスポンス、未知の成果物は `Unset` を与える。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 07da053f9c0b2b5d15bbdce39289346e
+
+% 1 1 0 0d03016d6659f3b713f59404cbd2bc34
+
+@ 0 12 0 14b089f0af61a84e0a6aa897dd9cd1d5
++   entry .Unresolved   既知の Maven の成果物ではないハッシュ
++       _not a known Maven artifact_。
++       `.mavenUrl` の中で発生し捕まえられ、`.mavenUrl` は `Unset` で答える。
++   entry .VersionKey   deps.dev のレスポンスにおける成果物の識別情報
++     entry #system   `MAVEN` のようなパッケージシステム
++     entry #name   成果物の名前。Maven では `group:artifact`
++     entry #version   成果物のバージョン
++   entry .Version   deps.dev のレスポンスにおける一つのバージョン
++     entry #versionKey   バージョンの識別情報
++   entry .Result   deps.dev のレスポンスにおける一つの一致
++     entry #version   一致したバージョン
++   entry .QueryResult   deps.dev のハッシュのクエリに対するレスポンス
++     entry #results   そのハッシュを持つすべての成果物のバージョン
+
+@ 0 1 0 19be9a02a8c15fbe0f88da33ea825730
++ entry .GitHub   ヒントとして与えた GitHub リポジトリのリリースアセットに対して依存関係のハッシュを解決する
+
+% 1 1 0 17f9e09ca091045a1e889963e5a216d1
+
+@ 0 5 0 02ad2c4537e855e1066affc77c88fe10
++       GitHub はハッシュによるグローバルなインデックスを持たないが、その REST API はリポジトリのリリースを列挙し、各アセットは `digest`（`sha256:<hex>`）を持つ。
++       そこで、`--github` で名指したリポジトリは、依存関係ごとに一回ではなくそれぞれ数回のリクエストで、前もってインデックスされる。
++       ユーザーが名指したリポジトリが優先されるべきなので、インデックスは deps.dev より先に参照される。
+
+% 2 1 0 12cc9fc3fd5a47a30e05c0e877e99d06
+
+% 3 1 0 0bc8a46706f4aefb0293b15d762a9e70
+
+% 0 1 0 04929fe2ec184346089b9ceb60c2cddd
+
+% 0 1 0 1370d09ab79aaed3047b32fdced57f66
+
+% 0 1 0 17a7dadad77c147101f325e4b938634e
+
+% 1 1 0 0dbfe35bd647f2d61156c655c9c7bb60
+
+% 1 1 0 09b5503bf82ce0101b4475ce543429d7
+
+@ 0 27 0 1721ed627c7bf6d51beff5c2ec3585f3
++   entry .Repository   所有者と名前で表した GitHub リポジトリ
++     entry .parse   `owner/repo` を読む。それ以外のものには `Repackager.UserError` を発生させる
++         ちょうど一つのスラッシュを持ち、両方の部分が空でないこと。
++         `t"owner"`、`t"owner/"`、`t"/repo"`、`t"a/b/c"` はすべて、_`text` is not a GitHub repository of the form owner/repo_ で拒否される。
++     entry .showable   リポジトリを `owner/repo` として表示する
++     entry #owner   リポジトリを所有するユーザーまたは組織
++     entry #name   リポジトリの名前
++     entry #text   `owner/repo` としてのリポジトリ
++   entry .Asset   リリース API が記述するとおりの、一つのリリースアセット
++     entry #name   アセットのファイル名
++     entry #url   JSON のフィールド `browser_download_url` から読んだ、アセットのダウンロード URL
++     entry #digest   アセットのダイジェスト `sha256:<hex>`。GitHub がダイジェストを計算する前にアップロードされたアセットでは `Unset`
++   entry .Release   リポジトリの一つのリリースとそのアセット
++     entry #assets   リリースのアセット
++   entry .indexReleases   リリースのリストの `.jar` アセットを、その SHA-256 でインデックスする
++       純粋なので、ネットワークを必要としない。
++       名前が .jar で終わり、ダイジェストが SHA-256 であるすべてのアセットは、小文字の 16 進数をキーとする。
++       他のアセットは飛ばされる。
++       API は最新のリリースを最初に列挙するので、一つのハッシュが複数のリリースに現れる場合は、最初の、最新の URL が採用される。
++   entry .releases   GitHub API を通じてリポジトリのすべてのリリースを列挙する
++       ページが空で返ってくるまで、一度に百リリースずつ API のページをたどる。
++       省略可能なトークンはベアラートークンとして送られる。
++       `DepsEvent.Indexing` を記録し、HTTP エラー、接続の失敗、期待した JSON でないレスポンスに対して `Repackager.UserError` を発生させる。
++   entry .index   ヒントとして与えたすべてのリポジトリにわたる、SHA-256 からダウンロード URL への一つのインデックス
++       各リポジトリを順に列挙してインデックスし、見つかったアセットの数とともに `DepsEvent.Indexed` を記録し、複数で見つかったハッシュには最初の URL を保持する。
+
+@ 0 1 0 04842bb705db60c01f87b5ada4e0042d
++ entry .DepsEvent   依存関係を解決する際に Burdock が記録するもの
+
+% 1 1 0 0763ed18cdc8a14b0d8386e188c00069
+
+@ 0 15 0 18cbd6384e3439bf16decde4337da731
++       すべてのイベントには `Log.Dependency` のタグが付き、リクエストを行う二つには `Log.Network` のタグも付く。
++       `DepsDev.mavenUrl` は `Querying` を `fine` で、`Resolved` を `info` で記録する。
++       `GitHub.releases` は `Indexing` を `fine` で記録し、`GitHub.index` は `Indexed` を `info` で記録する。
++       `DepsEvent is Loggable` がスコープになければならない。
++       `logging.silentLogging` はそれらを捨てる。
++   entry .communicable   各イベントをメッセージとして描画する
++   entry .Querying   deps.dev の検索が始まった：_querying deps.dev for the artifact with hash `hash`_
++     entry #hash   依存関係の SHA-256
++   entry .Resolved   ハッシュが解決された：_resolved hash `hash` to `url`_
++     entry #hash   依存関係の SHA-256
++     entry #url   解決された先の URL
++   entry .Indexing   リポジトリのリリースを列挙している：_listing the GitHub releases of `repository`_
++     entry #repository   `owner/repo` としてのリポジトリ
++   entry .Indexed   リポジトリがインデックスされた：_indexed `assets` release assets of `repository`_
++     entry #repository   `owner/repo` としてのリポジトリ
++     entry #assets   インデックスされたアセットの数
+
+@ 0 1 0 09753f9634f20c980accdb31157b1222
++ entry .ProgressBar   再パッケージ器の進捗バー：残り火の色の四十セルのゲージ
+
+% 1 1 0 080c4cb16041d332079db3be3fccaddf
+
+@ 0 7 0 0a708a6472d2d7ad1e857d6be97faaef
++       描画は ultimatum のゲージであり、滑らかな八分割ブロックのバー、Unicode のグリフ、残り火のパレットが固定されている。
++       その場で描き直すのは呼び出し側に委ねられる。
++   entry .width   セル単位のバーの幅：40
++   entry .render   完了の割合を `Teletype` のバーとして描画する
++       割合は 0 から 1 の範囲に収められる。
++       空のバーはすべて空白、満杯のバーはすべて全ブロックであり、セルの間の割合は一つの部分ブロックで終わる。
++       バーは常に四十セルの幅である。
+
+% 2 1 0 12cb43780e486d7c0d6709debba2bb98
+
+% 3 1 0 1c1918cfca42c7ed05bb103b3c17ac4a
+
+% 0 1 0 013da7fb3e51e78f0bd6f66a48e0df8d
+
+% 1 1 0 0b20bd6c3600f261049392c2e2b1b9c9
+
+@ 0 1 0 04485c9a00a1b20217d526b8244d9b98
++ entry .internal   `externalize` の背後にあるマクロの実装
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 0df719edce35862903cfa6461d90de0a
++       直接使うためのものではない。
++       Burdock のコンパイル時の半分であり、コンパイラの JVM で実行されるので JDK だけを使って書かれている。
++   entry .ResourcePath   依存関係のハッシュを保持するリソース：`META-INF/burdock.deps`
++   entry .externalize   マクロ：クラスパスの JAR をハッシュしてキャッシュし、リソースを書き、ブロックを返す

@@ -1,0 +1,36 @@
+orthant 2 language
+
+% 0 1 0 1679d6cbbe8071da196bed3ad3a0c460
+
+@ 0 2 0 133f19324acd7c5f02ffe06ecbac7044
++ Lançado quando se tenta realizar operações interativas de terminal, mas
++ a stdin não está conectada a um TTY.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 1641416e9573f10e13df186543967222
++ O Profanity precisa de um terminal real para os recursos interativos. Quando
++ a stdin é um pipe ou um redirecionamento, este erro é lançado como exceção.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0fc77fa21e7beb1c0bea78ff18724d59
+
+% 1 1 0 12ab49497851f8310badd9703dbd9079
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 1fec0724347196b711d98cdf3f4cc78e
++ Execute o programa em um shell interativo, ou recorra a um
++ caminho de código não interativo.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 0fe924e537919f9b19794885aabd8aca
++ - Código-fonte: `lib/profanity/src/core/profanity.Terminal.scala`

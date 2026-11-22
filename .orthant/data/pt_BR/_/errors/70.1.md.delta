@@ -1,0 +1,75 @@
+orthant 2 language
+
+% 0 1 0 07d17661ab6f927810e909c47890bda0
+
+@ 0 2 0 0c1f6fd9310e6ee11b1a5aca51348139
++ Lançado quando uma operação de caminho não pode prosseguir porque o caminho é de alguma forma
++ inválido.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 5 0 09ab203f412b9c9b04622755ac757fe9
++ O Serpentine relata `Path.Error` para problemas estruturais com caminhos: operar sobre a raiz,
++ raízes incompatíveis entre caminhos, raízes malformadas ou componentes de nome inválidos. A
++ mensagem é `the path $path was invalid because $reason` (o prefixo `path` é omitido quando
++ não é conhecido).
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 06669ac8cc4566a91cfcf1093c8ed096
+
+@ 0 1 0 1a867460c8b14ef90dacd466a8d072b7
++ `parent` foi chamado sobre um caminho raiz, que não tem pai.
+
+@ 0 1 0 1e1eee2fb2b89e96193a1ab1b4b59dd1
++ **Exemplo.** `[↯/s.70.1.1] the path /  was invalid because the root has no parent`
+
+@ 0 2 0 1b8bac8a6ce1ec820dc23017f3eb772b
++ **Resolução.** Verifique se o caminho é uma raiz antes de pedir o seu pai, ou use um acessor
++ que retorne `Optional`.
+
+% 0 1 0 0c7452db5b66215e1866b41c13edb468
+
+@ 0 2 0 0dea288e2726c4c91ae7097c193c7d4b
++ O próprio componente raiz é malformado (por exemplo, um caminho Windows que não começa com uma
++ letra de unidade ou uma raiz UNC).
+
+@ 0 1 0 0c139622aed11a4a1f2c22acef1fb0d9
++ **Exemplo.** `[↯/s.70.1.2] the path was invalid because the root is not valid`
+
+@ 0 2 0 0b72f78959dd27ef06a1ea5c8538e113
++ **Resolução.** Construa caminhos pela API tipada de `Path`, em vez de analisar texto
++ arbitrário, ou passe uma raiz sintaticamente válida.
+
+% 0 1 0 12373971629e29f010b493539dde83da
+
+@ 0 2 0 1ff6ae6204dddb8d0beb6eedfb50eca2
++ Tentou-se relativizar ou juntar dois caminhos cujas raízes são incompatíveis.
+
+@ 0 1 0 027cd48cb009de2506d078f9eaf18895
++ **Exemplo.** `[↯/s.70.1.3] the path was invalid because it does not have the same root as the source`
+
+@ 0 2 0 1487aa37b7e7aa98048a0930dacac1c9
++ **Resolução.** Garanta que os dois caminhos compartilhem a mesma raiz antes de relativizar; caso
++ contrário, trabalhe com caminhos absolutos do começo ao fim.
+
+% 0 1 0 1dfe4030ebaaa88f0e0de7cdc844abfd
+
+@ 0 2 0 18d93388d9f6a19c140f0bc9557af98f
++ Um componente (nome) do caminho é inválido para o sistema de arquivos de destino: por exemplo,
++ contém caracteres ilegais ou é reservado.
+
+@ 0 1 0 1e945241a69c08bb0140b59f29da68af
++ **Exemplo.** `[↯/s.70.1.4] the path was invalid because the name is not valid`
+
+@ 0 2 0 06bafd02dbe1ce7f10c349ed2a8f72ca
++ **Resolução.** Sanitize os nomes dos componentes segundo as regras da plataforma de destino antes
++ de compô-los em um caminho.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 0c655e0e19e1deec1f14b42b088269eb
++ - Código-fonte: `lib/serpentine/src/core/serpentine.Path.scala`
