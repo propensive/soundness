@@ -1825,7 +1825,8 @@ object delicious extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object test extends Tests(core, `scala`, ansi, anthology.`scala`, eucalyptus.core):
+  object test extends Tests(core, `scala`, ansi, anthology.`scala`, eucalyptus.core,
+      frontier.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2149,7 +2150,7 @@ object facsimile extends Library:
       settings.sep(super.scalacOptions())
 
 object frontier extends Library:
-  object core extends Component(dendrology.tree, escapade.core, beneficence.core):
+  object core extends Component(delicious.core, dendrology.tree, escapade.core, beneficence.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))

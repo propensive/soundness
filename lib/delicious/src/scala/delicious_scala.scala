@@ -55,5 +55,7 @@ extension (message: SemanticMessage)
       case Markup.Named(_, _, children)             => recur(children)
       case Markup.Code(_, children)                 => recur(children)
       case Markup.Spanned(_, _, children)           => recur(children)
+      case Markup.Tree(_, children)                 => recur(children)
+      case Markup.Node(_, _, _, _, children)        => recur(children)
 
     recur(message.markup)
