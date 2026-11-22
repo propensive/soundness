@@ -453,7 +453,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         List(Player(t"Viola", 19), Player(t"Orsino", 31), Player(t"Feste", 44), Player(t"Maria", 28),
             Player(t"Olivia", 24))
 
-      val cast: Sorting[Player, Text] = Sorting(players)(_.name)
+      val cast = Sorting(players)(_.name)
 
       test(m"a Sorting holds its elements in the order of their keys"):
         cast.elements.to[List].map(_.name)
@@ -488,7 +488,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       . assert(_ == 0.z)
 
       test(m"lowerBound and upperBound span the elements with equal keys"):
-        val ages: Sorting[Int, Int] = Sorting(List(3, 1, 2, 2, 5, 2))
+        val ages = Sorting(List(3, 1, 2, 2, 5, 2))
         (ages.lowerBound(2), ages.upperBound(2))
       . assert(_ == (1.z, 4.z))
 
@@ -498,7 +498,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       . assert(_ == 1.z)
 
       test(m"a Sorting can be sorted by a key which is not unique"):
-        val byAge: Sorting[Player, Int] = Sorting(players)(_.age/10)
+        val byAge = Sorting(players)(_.age/10)
         (byAge.lowerBound(2), byAge.upperBound(2))
       . assert(_ == (1.z, 3.z))
 

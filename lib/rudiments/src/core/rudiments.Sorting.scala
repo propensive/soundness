@@ -282,10 +282,12 @@ object sortingInternal:
 object Sorting:
   // The elements of `elements`, sorted by the key `lambda` gives each. Elements with equal keys
   // keep the order they came in, under a stable `SortAlgorithm`.
-  def apply[self, element, key](elements: self)(lambda: element -> key)
-    ( using traversable: self is Traversable by element,
-            comparable:  key is Comparable,
-            algorithm:   SortAlgorithm )
+  // The `Traversable` comes before the projection so that the element type is known when the
+  // lambda is typed, and `Sorting(players)(_.name)` needs no annotation.
+  def apply[self, element](elements: self)(using traversable: self is Traversable by element)
+    [ key ]
+    ( lambda: element -> key )
+    ( using comparable: key is Comparable, algorithm: SortAlgorithm )
   :   Sorting[element, key] =
 
     val sorted: Iterator[element]^ =
