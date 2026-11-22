@@ -100,6 +100,36 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
       Markup.parse(mark(t"mystery", Nil, t"???"))
     . assert(_ == List(Markup.Spanned(t"mystery", Rendition.Default, List(Markup.Textual(t"???")))))
 
+    test(m"A tree marker parses to its nodes, without the text that draws them"):
+      val leaf = Markup.wrap(t"node", List(t"role" -> t"propose", t"name" -> t"puck"), t" ▸ propose puck")
+
+      val root =
+        Markup.wrap(t"node", List(t"role" -> t"resolving", t"name" -> t"Fairy"), t" ■ resolving Fairy\n └─$leaf")
+
+      Markup.parse(Markup.wrap(t"tree", Nil, root)) match
+        case List(tree: Markup.Tree) =>
+          tree.nodes.map: node =>
+            (node.role, node.name, node.nodes.map { child => (child.role, child.name) })
+
+        case _ =>
+          Nil
+    . assert(_ == List((Markup.Role.Resolving, t"Fairy", List((Markup.Role.Propose, t"puck")))))
+
+    test(m"A tree marker's plain text is the tree as it was drawn"):
+      val leaf = Markup.wrap(t"node", List(t"role" -> t"found", t"name" -> t"Oberon"), t" ✓ found Oberon")
+      Markup.plain(Markup.wrap(t"tree", List(t"omitted" -> t"3"), t" ■ resolving Fairy\n └─$leaf"))
+    . assert(_ == t" ■ resolving Fairy\n └─ ✓ found Oberon")
+
+    test(m"A node with a role nobody knows falls back to a spanned node"):
+      Markup.parse(Markup.wrap(t"node", List(t"role" -> t"dreaming"), t"?")).map(_.plain)
+    . assert(_ == List(t"?"))
+
+    test(m"A written attribute's reserved characters survive the round trip"):
+      Markup.parse(Markup.wrap(t"node", List(t"role" -> t"found", t"name" -> t"50% \uE000 A=B"), t"")) match
+        case List(node: Markup.Node) => node.name
+        case _                       => t""
+    . assert(_ == t"50% \uE000 A=B")
+
     test(m"Renditions decode from their wire names"):
       Markup.parse(mark(t"sym", List(t"name" -> t"act", t"style" -> t"dcl"), t"def act: Int"))
     . assert(_ == List
@@ -322,6 +352,48 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
                 // came through stenography; `Bad.Local` proves placeholder substitution.
                 rendered.subsumes(t"java.lang.String") && rendered.subsumes(t"Bad.Local")
               }
+
+      // A macro's message is text the compiler passes on as it was written, markers and
+      // all: Frontier's explanation of a contextual value nobody provides is a tree when the
+      // notice arrives, and the same tree drawn in text for whoever reads the message.
+      supervise:
+        temporaryDirectory[soundness.Path on Local].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Local = handle.stem
+
+          val source: Text =
+            // The explanation is of the innermost value that is missing: the `Fairy`.
+            t"""|package wood
+                |import frontier.context.explainMissingContext
+                |trait Fairy
+                |class Bower(using val fairy: Fairy)
+                |object Wood:
+                |  given bower: (fairy: Fairy) => Bower = Bower()
+                |  val titania: Bower = summon[Bower]
+                |""".s.stripMargin.tt
+
+          val options: List[Scalac.Option[3.9]] =
+            List
+              ( scalacOptions.semanticDiagnostics,
+                Scalac.Option[3.9](t"-Zdiagnostic-givens"),
+                Scalac.Option[3.9](t"-experimental") )
+
+          val process = Scalac[3.9](options)(ownClasspath)(Map(t"wood.scala" -> source), out)
+          process.complete()
+          val notices = process.notices.to[List].filter(_.importance == Importance.Error)
+
+          def outline(node: Markup.Node): Text =
+            val inner = if node.nodes.nil then t"" else node.nodes.map(outline).join(t"[", t" ", t"]")
+            t"${node.role.word}:${node.name}$inner"
+
+          test(m"A missing contextual value's explanation arrives as a tree"):
+            notices.bind: notice =>
+              notice.markup.let(SemanticMessage.parse(_)).lay(Nil)(_.trees).bind(_.nodes).map(outline)
+          . assert(_ == List(t"resolving:wood.Fairy"))
+
+          test(m"The same explanation's plain message draws the tree in text"):
+            notices.map(_.message).join(t"\n")
+          . assert: message =>
+              message.subsumes(t"\n\n ■ resolving wood.Fairy\n") && !SemanticMessage.marked(message)
 
       // Under `-Zbolt-codes`, each notice carries the bolt code Proscala gives it: a type
       // mismatch is upstream's `E007`, `↯/p.1.7`. Without the option, none does.

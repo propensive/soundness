@@ -33,12 +33,15 @@
 package frontier
 
 import anticipation.*
+import delicious.*
 import dendrology.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import escapade.*
 import gossamer.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -73,24 +76,13 @@ object Diagnostic:
 
     diagnostic match
       case Diagnostic.Resolving(name, label, children) =>
-        val seen = scala.collection.mutable.HashSet[Diagnostic]()
-        var total = 0
-
-        def collapse(node: Diagnostic): Diagnostic =
-          total += 1
-
-          if node.children.nil then node
-          else if !seen.add(node)
-          then node.rebuild(node.label.lay(t"as above") { label => t"$label, as above" }, Nil)
-          else node.rebuild(node.label, node.children.map(collapse))
-
-        val collapsed = children.map(collapse)
-        val omitted = total - limit
+        val shown = Shown(children)
+        val omitted = shown.total - limit
 
         val ending =
           if omitted <= 0 then e"\n" else e"\n \e[38;5;243m… $omitted more\e[0m\n"
 
-        TreeDiagram[Diagnostic](collapsed*).render(line).keep(limit)
+        TreeDiagram[Diagnostic](shown.nodes*).render(line).keep(limit)
         . join
           ( e"$headline\n\n \e[38;5;88m$Bold(■)\e[0m resolving " +
             e"\e[38;5;208m$Italic($name)\e[0m${labelled(label)}\n",
@@ -101,6 +93,87 @@ object Diagnostic:
 
       case other =>
         render(Diagnostic.Resolving(other.name, Unset, List(other)), headline, limit)
+
+  // Render the diagnostic as semantic markup (`delicious.Markup`): the text `render` writes,
+  // without its colours, with a `tree` marker around the tree and a `node` marker around each
+  // node's line and the lines of its children. Stripped of the markers it is that text
+  // exactly, so a consumer which wants only text loses nothing; one which parses the markers
+  // has the tree itself, and need not read it back out of the box-drawing.
+  def markup
+    ( diagnostic: Diagnostic,
+      headline:   Text = t"contextual value not found",
+      limit:      Int  = 100 )
+  :   Text =
+
+    diagnostic match
+      case root@Diagnostic.Resolving(_, _, children) =>
+        val shown = Shown(children)
+        val omitted = shown.total - limit
+        val style = treeStyle[Text]
+        type Line = (List[TreeDiagram.Tile], Diagnostic)
+
+        def marked(node: Diagnostic, inner: Text): Text =
+          val note: Optional[Text] = shown.repeats.label(node)
+
+          val attributes = List
+            ( t"role"     -> node.role.word,
+              t"name"     -> node.name,
+              t"note"     -> note.or(t""),
+              t"repeated" -> (if shown.repeats.contains(node) then t"true" else t"") )
+
+          Markup.wrap(t"node", attributes.filter(_(1) != t""), t"${unstyled(line(node))}$inner")
+
+        // Takes from `lines`, which are in depth-first order, the nodes at `depth` and
+        // everything beneath them, each drawn on a line of its parent's text.
+        def nest(lines: List[Line], depth: Int): (Text, List[Line]) = lines match
+          case (tiles, node) :: rest if tiles.size == depth =>
+            val (inner, after) = nest(rest, depth + 1)
+            val (siblings, remainder) = nest(after, depth)
+            (t"\n${style.serialize(tiles, t"")}${marked(node, inner)}$siblings", remainder)
+
+          case _ =>
+            (t"", lines)
+
+        val lines = TreeDiagram[Diagnostic](shown.nodes*).lines.keep(limit).to[List]
+        val body = marked(root, nest(lines, 1)(0))
+        val gap = if lines.nil then t"\n" else t""
+
+        if omitted <= 0 then t"$headline\n\n${Markup.wrap(t"tree", Nil, t"$body$gap")}\n" else
+          val more = t"$body\n … $omitted more"
+          t"$headline\n\n${Markup.wrap(t"tree", List(t"omitted" -> omitted.show), more)}\n"
+
+      case other =>
+        markup(Diagnostic.Resolving(other.name, Unset, List(other)), headline, limit)
+
+  // The nodes to show beneath the root: a subtree identical to one already shown is cut down
+  // to its first line. `repeats` has each node so cut down, with the label it had before
+  // `as above` was added to it, and `total` counts the lines there would be without a limit.
+  private class Shown(children: List[Diagnostic]):
+    private val seen = scala.collection.mutable.HashSet[Diagnostic]()
+    private val cut = new java.util.IdentityHashMap[Diagnostic, Diagnostic]()
+
+    private def collapse(node: Diagnostic): Diagnostic =
+      if node.children.nil then node
+      else if !seen.add(node) then
+        val repeat = node.rebuild(node.label.lay(t"as above") { label => t"$label, as above" }, Nil)
+        cut.put(repeat, node)
+        repeat
+      else node.rebuild(node.label, node.children.map(collapse))
+
+    val nodes: List[Diagnostic] = children.map(collapse)
+
+    // Every node becomes one line, and one which is cut down has no children left to count.
+    private def size(node: Diagnostic): Int = node.children.fuse(1)(state + size(next))
+    val total: Int = nodes.fuse(0)(state + size(next))
+
+    object repeats:
+      def contains(node: Diagnostic): Boolean = cut.containsKey(node)
+      def label(node: Diagnostic): Optional[Text] =
+        if contains(node) then cut.get(node).nn.label else node.label
+
+  // A line's text alone: its colours are written into it as escapes, which are not text.
+  private def unstyled(line: Teletype): Text =
+    line.plain.s.replaceAll("\u001B\\[[;\\d]*m", "").nn.tt
 
   private def labelled(label: Optional[Text]): Teletype =
     label.lay(e""): text => e" \e[38;5;243m($Italic($text))\e[0m"
@@ -126,6 +199,14 @@ object Diagnostic:
 
 enum Diagnostic(val name: Text, val label: Optional[Text], val children: List[Diagnostic]):
   // The same kind of node, with the same name, but a new label and children.
+  def role: Markup.Role = this match
+    case Resolving(_, _, _) => Markup.Role.Resolving
+    case Candidate(_, _, _) => Markup.Role.Candidate
+    case Requires(_, _, _)  => Markup.Role.Requires
+    case Propose(_, _, _)   => Markup.Role.Propose
+    case Prohibits(_, _, _) => Markup.Role.Prohibits
+    case Found(_, _, _)     => Markup.Role.Found
+
   def rebuild(label: Optional[Text], children: List[Diagnostic]): Diagnostic = this match
     case Resolving(name, _, _) => Resolving(name, label, children)
     case Candidate(name, _, _) => Candidate(name, label, children)
