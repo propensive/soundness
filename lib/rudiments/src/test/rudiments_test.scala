@@ -522,6 +522,130 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         (0 until 1000).all { index => numbers.locate(index*3) == index.z }
       . assert(_ == true)
 
+    suite(m"Maps with keys kept by a chosen equality"):
+      case class Role(name: Text)
+
+      val first: Role = Role(t"Viola")
+      val second: Role = Role(t"Viola")
+
+      test(m"a map's keys are the same when they are equal, unless another policy is chosen"):
+        val map: Map[Role, Int] = Map.build[Role, Int]: map =>
+          map(first) = 1
+          map(second) = 2
+
+        (map.size, map.at(first))
+      . assert(_ == (1, 2))
+
+      test(m"with identity equality, equal keys in different places stay distinct"):
+        import equalities.identityEquality
+
+        val map: Map[Role, Int] = Map.build[Role, Int]: map =>
+          map(first) = 1
+          map(second) = 2
+
+        (map.size, map.at(first), map.at(second))
+      . assert(_ == (2, 1, 2))
+
+      test(m"an identity map does not find an equal key which is another object"):
+        import equalities.identityEquality
+        val map: Map[Role, Int] = Map.build[Role, Int] { map => map(first) = 1 }
+        (map.at(first), map.at(Role(t"Viola")), map.defines(second))
+      . assert(_ == (1, Unset, false))
+
+      test(m"an identity map keeps its policy when a key is added"):
+        val map: Map[Role, Int] =
+          import equalities.identityEquality
+          Map.build[Role, Int] { map => map(first) = 1 }
+
+        val more: Map[Role, Int] = map.define(second, 2)
+        (more.size, more.at(first), more.at(second))
+      . assert(_ == (2, 1, 2))
+
+      test(m"an identity map keeps its policy when a key is removed"):
+        val map: Map[Role, Int] =
+          import equalities.identityEquality
+
+          Map.build[Role, Int]: map =>
+            map(first) = 1
+            map(second) = 2
+
+        val fewer: Map[Role, Int] = map.omit(second)
+        (fewer.size, fewer.at(first), fewer.at(second))
+      . assert(_ == (1, 1, Unset))
+
+      test(m"an identity map keeps its policy when its values are mapped"):
+        val map: Map[Role, Int] =
+          import equalities.identityEquality
+
+          Map.build[Role, Int]: map =>
+            map(first) = 1
+            map(second) = 2
+
+        val tens: Map[Role, Int] = map.map(_*10)
+        (tens.size, tens.at(first), tens.at(second))
+      . assert(_ == (2, 10, 20))
+
+      test(m"an identity map keeps its policy when another is added to it"):
+        val map: Map[Role, Int] =
+          import equalities.identityEquality
+          Map.build[Role, Int] { map => map(first) = 1 }
+
+        val sum: Map[Role, Int] = map + Map(second -> 2)
+        (sum.size, sum.at(first), sum.at(second))
+      . assert(_ == (2, 1, 2))
+
+      test(m"an identity map is traversed over every key"):
+        import equalities.identityEquality
+
+        val map: Map[Role, Int] = Map.build[Role, Int]: map =>
+          map(first) = 1
+          map(second) = 2
+
+        var total: Int = 0
+        map.each { (role, number) => total += number }
+        total
+      . assert(_ == 3)
+
+      test(m"writing a key twice to an identity map keeps one entry"):
+        import equalities.identityEquality
+
+        val map: Map[Role, Int] = Map.build[Role, Int]: map =>
+          map(first) = 1
+          map(first) = 5
+
+        (map.size, map.at(first))
+      . assert(_ == (1, 5))
+
+      test(m"a builder for an identity map answers by identity while it is filled"):
+        import equalities.identityEquality
+        var seen: (Boolean, Boolean, Int) = (false, false, 0)
+
+        Map.build[Role, Int]: map =>
+          map(first) = 1
+          seen = (map.defines(first), map.defines(second), map.size)
+
+        seen
+      . assert(_ == (true, false, 1))
+
+      test(m"keys can be kept by an equality written for them"):
+        given Text is Equatable = Equatable(_.lower == _.lower)
+        given Text is Hashable = Hashable(_.lower.s.hashCode)
+
+        val map: Map[Text, Int] = Map.build[Text, Int]: map =>
+          map(t"Viola") = 1
+          map(t"VIOLA") = 2
+          map(t"Feste") = 3
+
+        (map.size, map.at(t"viola"), map.at(t"FESTE"), map.at(t"Maria"))
+      . assert(_ == (2, 2, 3, Unset))
+
+      test(m"a map of many identity keys finds each of them"):
+        import equalities.identityEquality
+        val roles: List[Role] = (0 until 500).map { index => Role(t"Viola") }.to(List)
+        val map: Map[Role, Int] = Map.build[Role, Int] { map => roles.each { role => map(role) = 1 } }
+        (map.size, roles.all(map.defines(_)))
+      . assert(_ == (500, true))
+
     suite(m"Keyed tests"):
       test(m"Map keys are a Set"):
         val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)

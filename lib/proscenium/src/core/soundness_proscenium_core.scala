@@ -47,6 +47,7 @@ val Sequence: proscenium.Sequence.type = proscenium.Sequence
 export proscenium.Comparison
 export proscenium.Sized
 export proscenium.PerfectHash
+export proscenium.{Equatable, Hashable}
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
 type Set[element] = proscenium.Set[element]
@@ -95,3 +96,7 @@ transparent inline def infer[context]: context = compiletime.summonInline[contex
 export proscenium.provide
 
 export Conversion.into
+
+// The policies a map's keys can be kept by, other than the universal `==` and `##`.
+package equalities:
+  export proscenium.equalities.identityEquality

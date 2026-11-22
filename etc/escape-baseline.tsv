@@ -458,6 +458,7 @@ lib/proscenium/src/core/proscenium.Chain.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Hashtable.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Ledger.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.List.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0	0
+lib/proscenium/src/core/proscenium.KeyedMap.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Map.scala	4	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.PerfectHash.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.PerfectMap.scala	2	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
