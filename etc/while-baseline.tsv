@@ -186,7 +186,7 @@ lib/punctuation/src/core/punctuation.Serializer.scala	10	0	15
 lib/rudiments/src/core/rudiments.Atomic.scala	1	0	0
 lib/rudiments/src/core/rudiments.Loop.scala	1	0	0
 lib/rudiments/src/core/rudiments.atomicMacros.scala	4	0	0
-lib/rudiments/src/core/rudiments.sorting.scala	3	0	0
+lib/rudiments/src/core/rudiments.Sorting.scala	3	0	0
 lib/rudiments/src/core/rudiments_core.scala	3	0	0
 lib/savagery/src/core/savagery.Svg.scala	9	0	15
 lib/sedentary/src/core/sedentary.Bench.scala	10	0	0

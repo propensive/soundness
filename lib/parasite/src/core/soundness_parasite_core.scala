@@ -38,7 +38,8 @@ export
       Destruction, Fault, Fulfillment, Hook, intercept,
       Interceptable, JavascriptSupervisor, Lane, Monitor, monitor, Observation, Perseverance,
       PlatformSupervisor, PooledSupervisor, PoolingSupervisor, Promise,
-      relent, retry, Schedulable, Shutdown, sleep, snooze, StackSupervisor, Strand, supervise, Supervisor, Task,
+      relent, retry, Schedulable, Shutdown, sleep, snooze, StackSupervisor, Strand, supervise,
+      Supervisor, Task,
       task, Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor,
       Worker,
       AsyncTactic, Remedy, concurrent, concurrently }

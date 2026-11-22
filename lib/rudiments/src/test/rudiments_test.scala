@@ -446,6 +446,82 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         List(1, 2, 2).except(List(2))
       . assert(_ == List(1, 2))
 
+    suite(m"Searching sorted elements"):
+      case class Player(name: Text, age: Int)
+
+      val players: List[Player] =
+        List(Player(t"Viola", 19), Player(t"Orsino", 31), Player(t"Feste", 44), Player(t"Maria", 28),
+            Player(t"Olivia", 24))
+
+      val cast: Sorting[Player, Text] = Sorting(players)(_.name)
+
+      test(m"a Sorting holds its elements in the order of their keys"):
+        cast.elements.to[List].map(_.name)
+      . assert(_ == List(t"Feste", t"Maria", t"Olivia", t"Orsino", t"Viola"))
+
+      test(m"locate finds the position of a key"):
+        cast.locate(t"Olivia")
+      . assert(_ == 2.z)
+
+      test(m"locate gives Unset for a key which is not there"):
+        cast.locate(t"Malvolio")
+      . assert(_.absent)
+
+      test(m"find gives the element with a key"):
+        cast.find(t"Feste").let(_.age)
+      . assert(_ == 44)
+
+      test(m"defines says whether a key is there"):
+        (cast.defines(t"Viola"), cast.defines(t"Sebastian"))
+      . assert(_ == (true, false))
+
+      test(m"lowerBound is where a missing key would be inserted"):
+        cast.lowerBound(t"N")
+      . assert(_ == 2.z)
+
+      test(m"lowerBound of a key past every element is after the last"):
+        cast.lowerBound(t"Z")
+      . assert(_ == 5.z)
+
+      test(m"lowerBound of a key before every element is the first position"):
+        cast.lowerBound(t"A")
+      . assert(_ == 0.z)
+
+      test(m"lowerBound and upperBound span the elements with equal keys"):
+        val ages: Sorting[Int, Int] = Sorting(List(3, 1, 2, 2, 5, 2))
+        (ages.lowerBound(2), ages.upperBound(2))
+      . assert(_ == (1.z, 4.z))
+
+      test(m"locate finds the first of several equal keys"):
+        val ages: Sorting[Int, Int] = Sorting(List(3, 1, 2, 2, 5, 2))
+        ages.locate(2)
+      . assert(_ == 1.z)
+
+      test(m"a Sorting can be sorted by a key which is not unique"):
+        val byAge: Sorting[Player, Int] = Sorting(players)(_.age/10)
+        (byAge.lowerBound(2), byAge.upperBound(2))
+      . assert(_ == (1.z, 3.z))
+
+      test(m"an empty Sorting locates nothing"):
+        val none: Sorting[Int, Int] = Sorting(List[Int]())
+        (none.locate(1), none.lowerBound(1), none.size)
+      . assert(_ == (Unset, 0.z, 0))
+
+      test(m"a Sorting is traversed in order"):
+        var names: List[Text] = Nil
+        cast.each { player => names = player.name :: names }
+        names.reverse
+      . assert(_ == List(t"Feste", t"Maria", t"Olivia", t"Orsino", t"Viola"))
+
+      test(m"a Sorting has a size"):
+        cast.size
+      . assert(_ == 5)
+
+      test(m"every element of a large Sorting is located"):
+        val numbers: Sorting[Int, Int] = Sorting((0 until 1000).map(_*3).to(List))
+        (0 until 1000).all { index => numbers.locate(index*3) == index.z }
+      . assert(_ == true)
+
     suite(m"Keyed tests"):
       test(m"Map keys are a Set"):
         val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)

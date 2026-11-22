@@ -89,7 +89,8 @@ object Bitset:
     Subtractable(_.excluding(_))
 
   // Union, as for a `Set`: `left + right`.
-  given concatenable: Bitset is Concatenable by Bitset to Bitset = (left, right) => left.union(right)
+  given concatenable: Bitset is Concatenable by Bitset to Bitset =
+    (left, right) => left.union(right)
 
   given intersectable: Bitset is Intersectable by Bitset to Bitset =
     new Intersectable:
